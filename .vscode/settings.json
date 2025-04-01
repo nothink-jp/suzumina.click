@@ -2,7 +2,6 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "biomejs.biome",
   "cSpell.enabled": true,
-  "cSpell.validateLocale": false,
   "cSpell.useGitignore": true,
   "cSpell.allowCompoundWords": true,
   "cSpell.customDictionaries": {
@@ -12,5 +11,8 @@
       "description": "Words used in this project",
       "addWords": true
     }
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
   }
 }

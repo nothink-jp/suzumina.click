@@ -1,8 +1,21 @@
 # .clinerules
 
-## 重要
+## JavaScript/TypeScript設定
 
-- 2回以上連続でテストを失敗した時は、現在の状況を整理して、一緒に解決方法を考えます。
+```json
+{
+  // Biome v1.9.4 の規定値に合わせる
+  "javascript": {
+    "indent_style": "space",
+    "indent_size": 2,
+    "quote_type": "double",
+    "semicolons": true,
+    "max_line_length": 80,
+    "trailing_comma": "all",
+    "arrow_parens": "always"
+  }
+}
+```
 
 ## テスト
 
@@ -31,9 +44,20 @@
 - コードのリファクタリングを最優先し、他の人がリファクタリングを改善しやすいように心がけます。
 - 可能な限り、コードの重複を避けるように心がけます。
 
-#--------------------------------------------------
+## Git コミットメッセージ
 
-# コーディングスタイルと自動フォーマットのルール設定
+Conventional Commits 形式を使用:
+- feat: 新機能
+- fix: バグ修正
+- docs: ドキュメントのみの変更
+- style: コードの意味に影響しない変更
+- refactor: リファクタリング
+- test: テストの追加・修正
+- chore: その他の変更
+
+
+
+### ルール設定
 
 #--------------------------------------------------
 # 基本設定
@@ -94,31 +118,6 @@ package_manager:
     auto_update_weekly: true  # 週に一度の自動更新
     no_version_pins: true  # バージョン固定を避ける
 
-#--------------------------------------------------
-# TypeScript/JavaScript設定
-#--------------------------------------------------
-javascript:
-  # Biomeデフォルト設定
-  indent_style: space
-  indent_size: 2
-  quote_type: double
-  semicolons: true
-  max_line_length: 80
-  trailing_comma: all
-  bracket_spacing: true
-  arrow_parens: always
-  jsx_single_quote: false
-  jsx_bracket_same_line: false
-  import_sort: true
-  organize_imports: true
-
-typescript:
-  extends: javascript
-  # TypeScript特有の設定
-  no_unused_vars: error
-  no_implicit_any: error
-  strict_null_checks: true
-  explicit_function_return_type: warn
 
 #--------------------------------------------------
 # Python設定
@@ -292,29 +291,3 @@ exclude_patterns:
   - ".git/**"
   - "venv/**"
   - "__pycache__/**"
-
-#--------------------------------------------------
-# gitコミットメッセージのルール (Conventional Commits)
-#--------------------------------------------------
-git:
-  commit_style: "conventional"  # Conventional Commits形式を使用
-  commit_types:
-    - feat     # 新機能
-    - fix      # バグ修正
-    - docs     # ドキュメントのみの変更
-    - style    # コードの意味に影響しない変更（空白、フォーマット、セミコロンなど）
-    - refactor # バグ修正や機能追加ではないコード変更
-    - perf     # パフォーマンス向上のためのコード変更
-    - test     # テストの追加・修正
-    - build    # ビルドシステムや外部依存関係の変更
-    - ci       # CI設定ファイルやスクリプトの変更
-    - chore    # その他の変更（ソースやテストの変更を含まない）
-    - revert   # 以前のコミットを取り消す
-  
-  commit_message_pattern: "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\(\\w+(-\\w+)*\\))?: .+"
-  commit_scope_pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"  # スコープの命名規則
-  commit_body_required: false  # 本文は必須ではない
-  commit_footer_pattern: "^(BREAKING CHANGE|DEPRECATED|CLOSED|FIXES|RELATED):"  # フッターの形式
-  max_commit_message_length: 100  # コミットメッセージの最大長
-  
-  branch_name_pattern: "^(feature|bugfix|hotfix|release)/[a-z0-9-_]+$"
