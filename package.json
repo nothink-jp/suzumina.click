@@ -18,11 +18,11 @@
     "@biomejs/biome": "^1.9.4",
     "cspell": "^8.18.1",
     "turbo": "^2.4.4",
-    "typescript": "^5.8.2"
+    "typescript": "5.8.2"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
-  "packageManager": "bun@1.2.7",
+  "packageManager": "bun@1.2.8",
   "workspaces": ["apps/*", "packages/*"]
 }

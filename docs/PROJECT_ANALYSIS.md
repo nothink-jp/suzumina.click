@@ -3,15 +3,15 @@
 ## 現状分析
 
 ### パッケージマネージャー
-- bun@1.2.7を使用
+- bun@1.2.8を使用
 - Workspaces機能を活用したモノレポ構成
 - Turboを使用したビルドシステム
 
 ### コアパッケージ
-- Next.js: 15.2.1
+- Next.js: 15.2.4
 - React: 19.1.0
-- TypeScript: 5.8.2
-- Node.js: >=20
+- TypeScript: 5.8.2（固定バージョン）
+- Node.js: >=22
 
 ### 開発ツール
 - Biome: 1.9.4
@@ -25,16 +25,16 @@
 #### Next.js & React
 ```mermaid
 graph TD
-    A[Next.js 15.2.1] -->|アップグレード| B[Next.js 15.3.0]
+    A[Next.js 15.2.4] -->|アップグレード| B[Next.js 15.3.0]
     C[React 19.1.0] -->|アップグレード| D[React 19.2.0]
-    E[React DOM 19.0.4] -->|アップグレード| F[React DOM 19.2.0]
+    E[React DOM 19.1.0] -->|アップグレード| F[React DOM 19.2.0]
 ```
 
 #### TypeScript関連
 ```mermaid
 graph TD
     A[TypeScript 5.8.2] -->|アップグレード| B[TypeScript 5.9.0]
-    C[@types/node 22.13.10] -->|アップグレード| D[@types/node 22.14.0]
+    C[@types/node 22.13.15] -->|アップグレード| D[@types/node 22.14.0]
     E[@types/react 19.0.12] -->|アップグレード| F[@types/react 19.2.0]
     G[@types/react-dom 19.0.4] -->|アップグレード| H[@types/react-dom 19.2.0]
 ```
@@ -49,8 +49,8 @@ graph TD
 ```
 
 ### 3. Node.jsとBunの要件更新
-- Node.js要件を`>=21`に更新
-- Bunを1.2.7から1.3.0に更新
+- Node.js要件は既に`>=22`に更新済み
+- Bunを1.2.8から1.3.0に更新予定
 
 ## 推奨される更新手順
 
@@ -103,16 +103,22 @@ graph TD
    - 新しい型チェック機能への対応
    - 既存コードの型安全性向上
 
-## 今後の展望
+## 次のステップ
 
 1. パフォーマンス最適化
-   - Next.js 15の新機能活用
-   - Turbopackの活用検討
+   - Next.js 15の新機能活用（App Router、Server Actions）
+   - Turbopackの本番環境での活用検討
 
 2. 開発体験の向上
-   - Biomeの新機能活用
-   - CSpellの辞書拡充
+   - Biomeの新機能活用（特にTypeScript関連の機能）
+   - CSpellの辞書拡充とカスタマイズ
 
 3. セキュリティ強化
-   - 依存関係の定期的な監査
+   - 依存関係の定期的な監査（bun run audit）
    - セキュリティアップデートの自動化
+   - GitHub Dependabotの活用検討
+
+4. 型の安全性強化
+   - strictNullChecksの有効化検討
+   - ESLintのTypeScript関連ルールの追加
+   - より厳格なtsconfig設定の適用
