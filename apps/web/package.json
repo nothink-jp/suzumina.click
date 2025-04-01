@@ -9,7 +9,11 @@
     "start": "next start",
     "lint": "biome lint .",
     "format": "biome format .",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "docker:build": "docker build -t asia-northeast1-docker.pkg.dev/suzumina-click-dev/web -f ./Dockerfile ../../",
+    "docker:run": "docker run -p 8080:8080 asia-northeast1-docker.pkg.dev/suzumina-click-dev/web",
+    "deploy:build": "bun run docker:build && docker push asia-northeast1-docker.pkg.dev/suzumina-click-dev/web",
+    "deploy": "gcloud run deploy web --image asia-northeast1-docker.pkg.dev/suzumina-click-dev/web --platform managed --region asia-northeast1 --allow-unauthenticated"
   },
   "dependencies": {
     "next": "^15.2.4",
