@@ -1,80 +1,110 @@
-# Turborepo starter
+# suzumina.click
 
-This Turborepo starter is maintained by the Turborepo core team.
+[suzumina.click](https://suzumina.click)のウェブサイトソースコード
 
-## Using this example
+## 開発環境
 
-Run the following command:
+### 必要条件
 
-```sh
-npx create-turbo@latest
+- Node.js >= 22
+- [bun](https://bun.sh) >= 1.2.8
+
+### 使用技術
+
+- [Next.js](https://nextjs.org/) 15.2.4
+- [React](https://react.dev/) 19.1.0
+- [TypeScript](https://www.typescriptlang.org/) 5.8.2
+- [Turbo](https://turbo.build/) 2.4.4
+- [Biome](https://biomejs.dev/) 1.9.4
+
+## プロジェクト構成
+
+このプロジェクトは[Turborepo](https://turbo.build/repo)を使用したモノレポ構成です。
+
+### アプリケーションとパッケージ
+
+- `apps/web`: メインの[Next.js](https://nextjs.org/)アプリケーション
+- `apps/functions`: サーバーレス関数群
+- `packages/ui`: 共有UIコンポーネントライブラリ
+- `packages/typescript-config`: 共有TypeScript設定
+
+各パッケージ/アプリケーションは100% [TypeScript](https://www.typescriptlang.org/)で記述されています。
+
+### 開発ツール
+
+- [Biome](https://biomejs.dev/): リンターとフォーマッター
+- [CSpell](https://cspell.org/): スペルチェッカー
+- [Turbo](https://turbo.build/): ビルドシステム
+
+## 開発手順
+
+### インストール
+
+```bash
+bun install
 ```
 
-## What's inside?
+### 開発サーバーの起動
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-pnpm build
+```bash
+bun run dev
 ```
 
-### Develop
+### ビルド
 
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-pnpm dev
+```bash
+bun run build
 ```
 
-### Remote Caching
+### 型チェック
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-npx turbo login
+```bash
+bun run check-types
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+### リントとフォーマット
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+```bash
+# リントチェック
+bun run check
 
+# フォーマットチェック
+bun run format
+
+# リントとフォーマットの自動修正
+bun run ci:fix
 ```
-npx turbo link
+
+### スペルチェック
+
+```bash
+bun run spell-check
 ```
 
-## Useful Links
+## CI/CD
 
-Learn more about the power of Turborepo:
+以下のチェックが自動実行されます：
+
+1. コードの型チェック
+2. リントチェック
+3. フォーマットチェック
+4. スペルチェック
+
+## リモートキャッシュ
+
+Turborepoの[リモートキャッシュ](https://turbo.build/repo/docs/core-concepts/remote-caching)機能を使用して、チーム間でのビルドキャッシュの共有が可能です。
+
+### キャッシュの設定
+
+```bash
+# Vercelへのログイン
+bunx turbo login
+
+# リモートキャッシュの設定
+bunx turbo link
+```
+
+## 参考リンク
 
 - [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
 - [Caching](https://turbo.build/repo/docs/core-concepts/caching)
