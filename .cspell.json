@@ -1,0 +1,77 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "biome",
+    "biomejs",
+    "cspell",
+    "nextjs",
+    "suzumina",
+    "turborepo",
+    "turbopack"
+  ],
+  "dictionaries": [
+    "typescript",
+    "node",
+    "npm",
+    "softwareTerms",
+    "companies",
+    "html",
+    "css"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    ".next",
+    "coverage",
+    "bun.lockb",
+    "*.lock",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml"
+  ],
+  "ignoreRegExpList": [
+    "// @ts-.*",
+    "import .* from '.*';?",
+    "export .* from '.*';?",
+    "[\\p{Script=Hiragana}\\p{Script=Katakana}\\p{Script=Han}]+",
+    "「[^」]*」",
+    "『[^』]*』",
+    "\\w+\\.\\w+",
+    "\\b[A-Z][a-z]+([A-Z][a-z]+)*\\b"
+  ],
+  "allowCompoundWords": true,
+  "useGitignore": true,
+  "gitignoreRoot": ".",
+  "minWordLength": 3,
+  "patterns": [
+    {
+      "name": "markdown-code-block",
+      "pattern": "/```[\\s\\S]*?```/g",
+      "description": "Markdown code blocks"
+    },
+    {
+      "name": "jsx-attributes",
+      "pattern": "\\b\\w+={[^}]*}",
+      "description": "JSX attributes"
+    }
+  ],
+  "overrides": [
+    {
+      "filename": "**/*.{ts,tsx,js,jsx}",
+      "dictionaries": ["typescript", "node", "npm"],
+      "ignoreRegExpList": [
+        "^import\\s+.*\\s+from\\s+'.*';?$",
+        "^export\\s+.*\\s+from\\s+'.*';?$",
+        "^const\\s+\\w+\\s*=\\s*require\\('.*'\\);?$"
+      ]
+    },
+    {
+      "filename": "**/*.md",
+      "dictionaries": ["markdown"],
+      "ignoreRegExpList": ["\\[.*\\]\\(.*\\)", "#\\s.*"]
+    }
+  ]
+}
