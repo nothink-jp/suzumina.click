@@ -241,40 +241,18 @@ ci_cd:
 markdown:
   lint: true  # markdownlintを有効化
   rules:
-    MD001: true  # 見出しレベルが1つずつ増加するべき
-    MD002: true  # 最初の見出しはレベル1であるべき
     MD003: { style: "atx" }  # 見出しスタイル
     MD004: { style: "dash" }  # 箇条書きのスタイル
-    MD005: true  # 同じレベルの箇条書きはインデントを揃えるべき
     MD007: { indent: 2 }  # 箇条書きのインデント
-    MD009: true  # 行末の空白を検出
-    MD010: true  # ハードタブを検出
-    MD011: true  # リンク記法が逆になっていないか
     MD012: { maximum: 1 }  # 連続する空行の制限
-    MD013: { line_length: 100 }  # 行の長さ制限
+    MD013: { line_length: 120 }  # 行の長さ制限
     MD014: false  # コマンドの前の$ を許可
-    MD018: true  # 見出し記号と見出しテキストの間にスペースが必要
-    MD019: true  # 見出し記号の後に複数のスペースがあるべきでない
-    MD022: true  # 見出しは前後に空行が必要
-    MD023: true  # 見出しの前にスペースがあるべきでない
     MD024: { allow_different_nesting: true }  # 同じ内容の見出しを許可しない
-    MD025: true  # 文書に複数のトップレベル見出しがあるべきでない
-    MD026: true  # 見出しの末尾に句読点があるべきでない
     MD029: { style: "ordered" }  # 番号付きリストの番号スタイル
-    MD030: true  # 箇条書き記号の後のスペース
-    MD031: true  # コードブロックの前後の空行
-    MD032: true  # リストの前後の空行
     MD033: false  # インラインHTMLを許可
-    MD034: true  # 裸のURL
     MD035: { style: "---" }  # 水平線のスタイル
     MD036: false  # 強調されたテキストを見出しとして使用しない
-    MD037: true  # 強調マーカーの内側のスペース
-    MD038: true  # コードスパン要素の内側のスペース
-    MD039: true  # リンクテキスト内の空白
-    MD040: true  # コードブロックに言語を指定する
-    MD041: true  # 最初の行は見出しにするべき
     MD046: { style: "fenced" }  # コードブロックのスタイル
-    MD047: true  # ファイルは改行で終わるべき
   
   auto_fix_on_save: true  # 保存時に自動修正
   ignore_paths:

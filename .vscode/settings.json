@@ -1,18 +1,8 @@
 {
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "biomejs.biome",
-  "cSpell.enabled": true,
-  "cSpell.useGitignore": true,
-  "cSpell.allowCompoundWords": true,
-  "cSpell.customDictionaries": {
-    "project-words": {
-      "name": "project-words",
-      "path": "${workspaceRoot}/cspell.json",
-      "description": "Words used in this project",
-      "addWords": true
-    }
+  "markdownlint.config": {
+    "extends": "../.markdownlint.json"
   },
-  "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
+  "editor.codeActionsOnSave": {
+    "source.fixAll.markdownlint": true
   }
 }

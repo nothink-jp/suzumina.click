@@ -35,6 +35,7 @@
 - [Biome](https://biomejs.dev/): リンターとフォーマッター
 - [CSpell](https://cspell.org/): スペルチェッカー
 - [Turbo](https://turbo.build/): ビルドシステム
+- [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2): Markdownリンター
 
 ## 開発手順
 
@@ -68,6 +69,9 @@ bun run check-types
 # リントチェック
 bun run check
 
+# Markdownリントチェック
+bun run lint:md
+
 # フォーマットチェック
 bun run format
 
@@ -88,7 +92,8 @@ bun run spell-check
 1. コードの型チェック
 2. リントチェック
 3. フォーマットチェック
-4. スペルチェック
+4. Markdownリントチェック
+5. スペルチェック
 
 ## リモートキャッシュ
 
