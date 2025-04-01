@@ -15,8 +15,10 @@
 
 ### 開発ツール
 - **ビルドツール**: Turbopack
-- **リンター**: ESLint 9.23.0
-- **フォーマッター**: Prettier 3.5.3
+- **リンター**: ESLint 9.23.0（Biomeへの移行中）
+  - 現在はESLintとBiomeが併存
+- **リンター/フォーマッター**: Biome 1.9.4
+- **スペルチェッカー**: CSpell 8.18.1
 
 ## 3. プロジェクト構造
 
@@ -24,7 +26,7 @@
 suzumina.click/
 ├── apps/
 │   ├── web/     # メインアプリケーション
-│   └── docs/    # ドキュメントサイト
+│   └── functions/ # サーバーレス関数
 └── packages/
     ├── ui/              # 共有UIコンポーネント
     ├── typescript-config/ # TypeScript設定
@@ -38,10 +40,6 @@ suzumina.click/
 - Turbopackによる高速な開発環境
 - React 19の最新機能を活用
 - 厳格な型チェックとリンティング
-
-### ドキュメントサイト (apps/docs)
-- メインアプリケーションと同じ技術スタック
-- 独立したNext.jsアプリケーション
 
 ## 5. 共有パッケージ分析
 
@@ -74,7 +72,9 @@ suzumina.click/
 2. `bun run dev` - 開発サーバーの起動
 3. `bun run build` - プロダクションビルド
 4. `bun run lint` - コード品質チェック
-5. `bun run check-types` - 型チェック
+5. `bun run format` - コードフォーマット（Biome）
+6. `bun run check` - コード品質チェック（Biome）
+7. `bun run check-types` - 型チェック
 
 ## 7. 品質管理
 
@@ -84,9 +84,11 @@ suzumina.click/
 - 最新のES機能サポート
 
 ### コード品質
-- ESLintによる静的解析
+- Biomeによる統合的な静的解析（移行中）
+- ESLintによる補完的な静的解析（段階的に廃止予定）
 - ゼロ警告ポリシー
-- Prettierによるコードフォーマット
+- 一貫したコードフォーマット
+- スペルチェックによる文書品質管理
 
 ## 8. 推奨される開発プラクティス
 
@@ -126,3 +128,20 @@ suzumina.click/
    - 新規アプリケーションの追加が容易
    - 共有リソースの効率的な管理
    - モダンな技術スタックの採用
+
+## 10. 進行中の技術的負債と改善計画
+
+1. **ツールチェーン統合**
+   - ESLintからBiomeへの完全移行計画
+     * ESLint関連パッケージの削除
+     * packages/eslint-configの段階的廃止
+       - 依存関係の特定と整理
+       - 参照の削除
+       - ディレクトリの削除
+     * Biomeによる統合的なリンティング/フォーマッティング
+   
+   - CI/CD更新計画
+     * GitHub Actionsワークフローの更新
+     * Pre-commitフックのBiome対応
+     * 移行期間中の並行実行体制
+     * 段階的な移行とロールバック計画
