@@ -25,7 +25,6 @@
 
 - `apps/web`: メインの[Next.js](https://nextjs.org/)アプリケーション
 - `apps/functions`: サーバーレス関数群
-- `packages/ui`: 共有UIコンポーネントライブラリ
 - `packages/typescript-config`: 共有TypeScript設定
 
 各パッケージ/アプリケーションは100% [TypeScript](https://www.typescriptlang.org/)で記述されています。
