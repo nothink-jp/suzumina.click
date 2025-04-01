@@ -5,10 +5,14 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "format": "biome format --write .",
-    "check": "biome check --write .",
+    "format": "biome format .",
+    "format:write": "biome format --write .",
+    "check": "biome check .",
+    "check:write": "biome check --write .",
     "check-types": "turbo run check-types",
-    "spell-check": "cspell \"**/*.{md,ts,tsx,js,jsx,json}\""
+    "spell-check": "cspell \"**/*.{md,ts,tsx,js,jsx,json}\"",
+    "ci:check": "bun run check && bun run format && bun run lint && bun run check-types && bun run spell-check",
+    "ci:fix": "bun run format:write && bun run check:write"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

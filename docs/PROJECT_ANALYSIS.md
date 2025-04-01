@@ -15,9 +15,7 @@
 
 ### 開発ツール
 - **ビルドツール**: Turbopack
-- **リンター**: ESLint 9.23.0（Biomeへの移行中）
-  - 現在はESLintとBiomeが併存
-- **リンター/フォーマッター**: Biome 1.9.4
+- **リンター/フォーマッター**: Biome 1.9.4（統合的なコード品質管理）
 - **スペルチェッカー**: CSpell 8.18.1
 
 ## 3. プロジェクト構造
@@ -29,8 +27,7 @@ suzumina.click/
 │   └── functions/ # サーバーレス関数
 └── packages/
     ├── ui/              # 共有UIコンポーネント
-    ├── typescript-config/ # TypeScript設定
-    └── eslint-config/   # ESLint設定
+    └── typescript-config/ # TypeScript設定
 ```
 
 ## 4. アプリケーション分析
@@ -56,9 +53,6 @@ suzumina.click/
   - 厳格な型チェック
   - ES2022ターゲット
   - Next.js最適化設定
-- **eslint-config**
-  - プロジェクト全体で一貫したコード品質
-  - ゼロ警告ポリシー
 
 ## 6. ビルド・開発プロセス
 
@@ -84,8 +78,7 @@ suzumina.click/
 - 最新のES機能サポート
 
 ### コード品質
-- Biomeによる統合的な静的解析（移行中）
-- ESLintによる補完的な静的解析（段階的に廃止予定）
+- Biomeによる統合的な静的解析
 - ゼロ警告ポリシー
 - 一貫したコードフォーマット
 - スペルチェックによる文書品質管理
@@ -132,16 +125,11 @@ suzumina.click/
 ## 10. 進行中の技術的負債と改善計画
 
 1. **ツールチェーン統合**
-   - ESLintからBiomeへの完全移行計画
-     * ESLint関連パッケージの削除
-     * packages/eslint-configの段階的廃止
-       - 依存関係の特定と整理
-       - 参照の削除
-       - ディレクトリの削除
-     * Biomeによる統合的なリンティング/フォーマッティング
-   
-   - CI/CD更新計画
-     * GitHub Actionsワークフローの更新
-     * Pre-commitフックのBiome対応
-     * 移行期間中の並行実行体制
-     * 段階的な移行とロールバック計画
+   - Biomeワークフロー最適化
+      * CI/CDパイプラインの効率化
+      * Pre-commitフックの改善
+      * キャッシュ戦略の最適化
+
+    - 型システムの強化
+      * より厳格なTypeScript設定
+      * 型定義の整備と改善
