@@ -1,0 +1,5 @@
+functions-framework==3.5.0
+google-api-python-client==2.124.0
+google-auth==2.34.0
+google-cloud-secret-manager==2.22.0
+google-cloud-firestore==2.15.0
