@@ -2,87 +2,49 @@
 
 ## 1. 前提条件
 
-### 必要なツール
+| 必要なツール | バージョン |
+|------------|----------|
+| Node.js | v22 |
+| Bun | 最新版 |
+| Docker Desktop | 最新版 |
+| Google Cloud SDK | 最新版 |
+| Git | 最新版 |
 
-- Node.js v22
-- Bun
-- Docker Desktop
-- Google Cloud SDK
-- Git
-
-### GCPプロジェクト設定
+**GCPプロジェクト設定**:
 
 - プロジェクトID: `suzumina-click-dev`
 - リージョン: `asia-northeast1`
-- 必要なAPIの有効化（GCP Console上で実施）
 
-## 2. 開発環境セットアップ進捗状況
+## 2. 開発環境セットアップ状況
 
-### ✅ 2.1 基本環境のセットアップ（完了）
-
-```bash
-# 1. 依存関係のインストール
-bun install
-
-# 2. Biomeの設定確認
-bun run lint
-```
-
-- [x] Turborepo構成の確立
-- [x] TypeScript設定の共通化（packages/typescript-config）
-- [x] Biome、markdownlint、cspellなどの開発ツールセットアップ
-- [x] 基本的なスクリプト（build、dev、lint等）の設定
-
-### ✅ 2.2 Web アプリケーション (apps/web)（完了）
-
-- [x] Next.js + Reactの最新バージョンセットアップ
-- [x] TypeScript設定の適用
-- [x] Dockerfile作成
-- [x] Cloud Run用のデプロイ設定
-- [x] ローカル開発環境の動作確認
-  - `bun run dev` (localhost:3000)で開発サーバー動作確認済み
-  - `docker build`と`docker run`で本番環境（localhost:8080）動作確認済み
-- [ ] 基本的なページレイアウトの実装
-
-### ❌ 2.3 APIエンドポイント (apps/functions)（未着手）
-
-1. TypeScript環境のセットアップ
-2. ローカル開発サーバーの設定
-3. サンプルAPIの実装
-
-### ❌ 2.4 バッチ処理 (apps/jobs)（未着手）
-
-1. TypeScript環境のセットアップ
-2. Dockerfileの作成
-3. サンプルジョブの実装
+| コンポーネント | 状態 | 詳細 |
+|--------------|-----|------|
+| **基本環境** | ✅ 完了 | ・Turborepo構成確立<br>・TypeScript共通設定<br>・開発ツール(Biome, markdownlint)設定済み |
+| **Web アプリ** | ✅ 完了 | ・Next.js 15.x + React 19.x<br>・Dockerfile作成済み<br>・ローカル/Docker動作確認済み<br>・ページレイアウト実装中 |
+| **API (Python)** | ✅ 完了 | ・Python 3.12環境<br>・YouTube API連携機能実装<br>・Firestore連携実装<br>・エラーハンドリング実装 |
+| **バッチ処理** | ❌ 未着手 | ・TypeScript環境準備<br>・Dockerfile作成<br>・サンプルジョブ実装 |
 
 ## 3. 開発フロー
 
-### 3.1 ローカル開発
+### 3.1 主要コマンド
 
 ```bash
-# Webアプリケーション開発
-cd apps/web
-bun run dev
+# 依存関係インストール
+bun install
 
-# API開発
-cd apps/functions
-bun run dev
+# Webアプリ開発
+cd apps/web && bun run dev  # localhost:3000で起動
 
-# バッチジョブ開発
-cd apps/jobs
-bun run dev:job-name
+# API開発 (Python)
+cd apps/functions-python
+functions-framework --target main --debug
+
+# テスト実行
+cd apps/web && bun run test  # Webアプリテスト
+cd apps/functions-python && python -m pytest  # Python APIテスト
 ```
 
-### 3.2 テスト
-
-各プロジェクトでユニットテストを実行：
-
-```bash
-bun run test
-```
-
-### 3.3 ビルド & デプロイ
+### 3.2 ビルド & デプロイ
 
 ```bash
 # Webアプリケーション
@@ -91,34 +53,16 @@ docker build -t gcr.io/suzumina-click-dev/web .
 docker push gcr.io/suzumina-click-dev/web
 
 # Functions
-cd apps/functions
-bun run deploy
-
-# Jobs
-cd apps/jobs
-docker build -t gcr.io/suzumina-click-dev/jobs .
-docker push gcr.io/suzumina-click-dev/jobs
+cd apps/functions-python
+gcloud functions deploy main --runtime python312 --trigger-http --region asia-northeast1
 ```
 
 ## 4. 次のステップ（優先順位順）
 
-1. ✨ Web アプリケーションの基本実装
-   - コンポーネント構造の設計と実装（ヘッダー、フッター等）
-
-2. 🔧 APIエンドポイントの実装
-   - apps/functions ディレクトリの作成
-   - TypeScript環境のセットアップ
-   - サンプルAPIの実装
-
-3. 🔄 CI/CDパイプラインの構築
-   - GitHub Actionsの設定
-   - 自動テスト・デプロイの設定
-
-4. 📦 バッチ処理の実装
-   - apps/jobs ディレクトリの作成
-   - 基本的な処理フローの実装
-
-5. ⚙️ GCP関連設定
-   - 認証情報の設定
-   - 監視・ロギングの設定
-   - セキュリティ設定の調整
+| 優先度 | タスク | 詳細 |
+|-------|------|------|
+| 1 | Web UI実装 | コンポーネント構造設計、基本レイアウト実装 |
+| 2 | API拡張 | YouTube API関連機能のテスト強化、追加エンドポイント |
+| 3 | CI/CD構築 | GitHub Actions設定、自動テスト・デプロイ |
+| 4 | バッチ実装 | ジョブ処理フロー実装 |
+| 5 | GCP設定強化 | 認証、監視、セキュリティ設定 |

@@ -8,15 +8,16 @@
     "bun",
     "bunx",
     "cspell",
-    "xxxxxxxxxxxxxxxxxxxxxxx",
     "nextjs",
     "nothink",
     "pnp",
     "PYTHONUNBUFFERED",
+    "SEO",
     "shadcn",
     "suzumina",
     "turbopack",
-    "turborepo"
+    "turborepo",
+    "xxxxxxxxxxxxxxxxxxxxxxx"
   ],
   "dictionaries": [
     "en_US",
