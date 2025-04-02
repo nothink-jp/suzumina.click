@@ -108,7 +108,7 @@ export const hello: HttpFunction = async (req, res) => {
 
 Pythonの実装では、以下のようなディレクトリ構造を使用します：
 
-```text
+```sh
 apps/functions-python/
 ├── pyproject.toml
 ├── requirements.txt

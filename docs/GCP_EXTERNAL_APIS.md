@@ -189,7 +189,7 @@ def get_latest_videos(channel_id, max_results=10):
 
 以下は、TypeScript用のYouTube Data API使用例です：
 
-### クライアント初期化
+### YouTubeクライアント初期化
 
 ```typescript
 import { google, youtube_v3 } from 'googleapis';
@@ -212,7 +212,7 @@ async function getYoutubeService(): Promise<youtube_v3.Youtube> {
 }
 ```
 
-### チャンネル情報の取得
+### YouTubeチャンネル情報の取得
 
 ```typescript
 async function getChannelInfo(channelId: string): Promise<any> {
@@ -227,7 +227,7 @@ async function getChannelInfo(channelId: string): Promise<any> {
 }
 ```
 
-### 最新の動画を取得
+### 最新のYouTube動画を取得
 
 ```typescript
 async function getLatestVideos(channelId: string, maxResults = 10): Promise<any[]> {

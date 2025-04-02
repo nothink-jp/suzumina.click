@@ -14,7 +14,9 @@
 
 ## Cloud Code概要
 
-Cloud Codeは、GoogleがVSCodeとJetBrains IDEに提供する拡張機能で、GCPリソースの操作、Kubernetesアプリケーションの開発、Cloud Run・Cloud Functionsなどのサーバーレスアプリケーションの開発を支援します。suzumina.clickプロジェクトでは、Cloud Codeを活用してGCP上での開発効率を高めます。
+Cloud Codeは、GoogleがVSCodeとJetBrains IDEに提供する拡張機能です。
+GCPリソースの操作、Kubernetesアプリケーションの開発、Cloud Run・Cloud Functionsなどのサーバーレスアプリケーションの開発を支援します。
+suzumina.clickプロジェクトでは、Cloud Codeを活用してGCP上での開発効率を高めます。
 
 ```mermaid
 graph TD
@@ -112,7 +114,7 @@ suzumina.clickプロジェクトでのCloud Codeの最適な使用方法：
 
 ### プロジェクト構成
 
-```
+```sh
 .vscode/
   ├── launch.json        # デバッグ設定
   ├── settings.json      # VSCode設定
