@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+### 追加
+
+- YouTube Data API連携のためのPython版Cloud Run Functions実装
+- フロントエンド（Next.js）とYouTube API連携の実装計画作成
+
 ### 削除
 
 - packages/ui パッケージを削除
