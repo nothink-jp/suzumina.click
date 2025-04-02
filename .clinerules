@@ -1,34 +1,11 @@
 # .clinerules
 
-あなたは高度にスケーラブルで保守性の高いシステムの構築に特化したAIコーディングエージェントです。
-ユーザーとのコミュニケーションは常に日本語でお願いします。
-
-以下の指示に従って、効率的かつ正確にタスクを遂行してください。
-
 何かをする前に必要に応じて docs 以下を確認してください。
 何かをした後は必要に応じて docs 以下に保存してください。
-
-## JavaScript/TypeScript設定
-
-```json
-{
-  // Biome v1.9.4 の規定値に合わせる
-  "javascript": {
-    "indent_style": "space",
-    "indent_size": 2,
-    "quote_type": "double",
-    "semicolons": true,
-    "max_line_length": 80,
-    "trailing_comma": "all",
-    "arrow_parens": "always"
-  }
-}
-```
 
 ## テスト
 
 - Red-Green-Refactorサイクルを意識して、テストを先に書くことを徹底します。
-- テストは常に自動化し、手動で実行することは避けます。
 - テストコードは記述的であり、テストの意図を明確にするように心がけます。
 - テストコードはArrange-Act-Assertパターンに従い、テストの構造を明確にするように心がけます。
 
@@ -64,45 +41,28 @@ Conventional Commits 形式を使用:
 - chore: その他の変更
 
 
-
 ### ルール設定
 
-#--------------------------------------------------
-# 基本設定
-#--------------------------------------------------
-end_of_line: lf
-charset: utf-8
-trim_trailing_whitespace: true
-insert_final_newline: true
-
-#--------------------------------------------------
-# 言語設定
-#--------------------------------------------------
-# 言語と思考設定
 language:
-  thinking: "en-US"  # 英語で考える
-  output: "ja-JP"  # 日本語で出力する
-  enforce_output_language: true  # 出力言語を強制
-  translate_comments_if_needed: true  # 必要に応じてコメントを翻訳
-  preserve_technical_terms: true  # 技術用語は英語のまま保持可能
-  
+  thinking: "en-US"
+  output: "ja-JP"
+  enforce_output_language: true
+  translate_comments_if_needed: true
+  preserve_technical_terms: true
   conventions:
-    variable_names: "english"  # 変数名は英語
-    function_names: "english"  # 関数名は英語
-    class_names: "english"  # クラス名は英語
-    comments: "japanese"  # コメントは日本語
-    docs: "japanese"  # ドキュメントは日本語
+    variable_names: "english"
+    function_names: "english"
+    class_names: "english"
+    comments: "japanese"
+    docs: "japanese"
+    commit_messages: "conventional"
 
-#--------------------------------------------------
-# パッケージ管理設定
-#--------------------------------------------------
 package_manager:
-  typescript: "bun"  # TypeScript/JavaScriptはbunを使用
-  python: "uv"  # Pythonはuvを使用
-  prefer_latest_versions: true  # 全体設定：常に最新バージョンを優先
-  security_scan: true  # セキュリティスキャンを有効化
-  allow_prerelease: true  # プレリリースバージョンも許可
-  update_frequency: "weekly"  # 更新頻度
+  typescript:
+  python: "uv"
+  prefer_latest_versions: true
+  security_scan: true
+  update_frequency: "weekly"
   
   bun:
     auto_install_on_save: true
@@ -110,57 +70,43 @@ package_manager:
     check_updates_weekly: true
     prefer_production: false
     scripts_in_package: true
-    test_runner: "bun:test"  # bunのテストランナーを使用
+    test_runner: "bun:test"
     test_pattern: "**/*.test.{ts,tsx,js,jsx}"
-    watch_mode: true
-    prefer_latest: true  # 常に最新バージョンを使用
-    auto_update_dependencies: true  # 依存関係を自動更新
-  
+    prefer_latest: true
+    auto_update_dependencies: true
+    auto_update_dev_dependencies: true
   uv:
     use_pyproject_toml: true
+    use_requirements_txt: false
     auto_activate_venv: true
     compile_wheels: true
     optimize_installs: true
     use_pip_for_fallback: true
-    prefer_latest: true  # 常に最新バージョンを使用
-    auto_update_weekly: true  # 週に一度の自動更新
-    no_version_pins: true  # バージョン固定を避ける
+    prefer_latest: true
+    no_version_pins: true
 
-
-#--------------------------------------------------
-# Python設定
-#--------------------------------------------------
 python:
-  # Ruffのフォーマット設定
-  line_length: 88  # Black互換
+  line_length: 88
   indent_width: 4
   quote_style: double
-  use_spaces: true
   respect_gitignore: true
-  target_version: "py312"  # Python 3.12をターゲット
-  
-  # Ruffのルール設定
+  target_version: "py312"  
   select:
-    - E     # pycodestyle errors
-    - F     # pyflakes
-    - W     # pycodestyle warnings
-    - I     # isort
-    - N     # pep8-naming
-    - UP    # pyupgrade
-    - B     # flake8-bugbear
+    - E
+    - F
+    - W
+    - I
+    - N
+    - UP
+    - B
   ignore:
-    - E203  # Black互換：スライスのスペース
-  
-  # isort互換設定
+    - E203  
   imports_order:
     - standard
     - third-party
     - first-party
     - local
 
-#--------------------------------------------------
-# ドキュメント設定
-#--------------------------------------------------
 docs:
   output_dir: "docs"
   generate_api_docs: true
@@ -168,112 +114,47 @@ docs:
   include_readme: true
   theme: "default"
   auto_generate_on_save: true
-  language: "ja-JP"  # 日本語を優先
-  enforce_japanese_comments: true  # コメントは日本語を強制
-  translate_base_docs: false  # 基本ドキュメントは翻訳しない
+  language: "ja-JP"
+  enforce_japanese_comments: true
+  translate_base_docs: false
 
-#--------------------------------------------------
-# コメント設定
-#--------------------------------------------------
 comments:
-  preferred_language: "ja-JP"  # 日本語を優先
-  require_class_comments: true  # クラスにはコメントを必須に
-  require_function_comments: true  # 関数にはコメントを必須に
+  preferred_language: "ja-JP"
+  require_class_comments: true
+  require_function_comments: true
   docstring_style:
-    python: "google"  # Pythonはgoogleスタイルのドックストリング
-    typescript: "jsdoc"  # TypeScriptはJSDocスタイル
-  enforce_japanese: true  # 日本語コメントを推奨
+    python: "google"
+    typescript: "jsdoc"
+  enforce_japanese: true
 
-#--------------------------------------------------
-# テスト設定
-#--------------------------------------------------
 testing:
   coverage:
     enabled: true
-    threshold: 80  # カバレッジ80%以上を要求
+    threshold: 80
     include_branches: true
     report_dir: "coverage"
     enforce_on_ci: true
   
   requirements:
-    run_before_commit: true  # コミット前にテスト実行
-    must_pass_all: true  # 全てのテストをパスする必要あり
-    fail_on_warning: true  # 警告でも失敗とする
+    run_before_commit: true
+    must_pass_all: true
+    fail_on_warning: true
   
   frameworks:
-    typescript: "bun:test"  # TypeScriptはbun:testを使用
+    typescript: "bun:test"
     python: "pytest"
   
   auto_generate:
-    enabled: true  # テストの自動生成を有効化
+    enabled: true
     template_dir: "test/templates"
-    naming_convention: "{name}_test.{ext}"  # テストファイルの命名規則
+    naming_convention: "{name}_test.{ext}"
 
-#--------------------------------------------------
-# CI/CD設定
-#--------------------------------------------------
-ci_cd:
-  pre_commit_hooks:
-    - lint
-    - format
-    - test
-  
-  workflows:
-    - name: "test"
-      run_on:
-        - push
-        - pull_request
-      steps:
-        - lint
-        - test
-        - coverage
-    
-    - name: "build"
-      run_on:
-        - push:
-            branches: [main, develop]
-        - pull_request:
-            branches: [main]
-      steps:
-        - lint
-        - test
-        - build
-        - package
-  
-  require_tests_pass: true  # テスト通過を必須に
-  block_merge_on_fail: true  # テスト失敗時はマージをブロック
-
-#--------------------------------------------------
-# Markdown設定
-#--------------------------------------------------
-markdown:
-  lint: true  # markdownlintを有効化
-  rules:
-    MD003: { style: "atx" }  # 見出しスタイル
-    MD004: { style: "dash" }  # 箇条書きのスタイル
-    MD007: { indent: 2 }  # 箇条書きのインデント
-    MD012: { maximum: 1 }  # 連続する空行の制限
-    MD013: { line_length: 120 }  # 行の長さ制限
-    MD014: false  # コマンドの前の$ を許可
-    MD024: { allow_different_nesting: true }  # 同じ内容の見出しを許可しない
-    MD029: { style: "ordered" }  # 番号付きリストの番号スタイル
-    MD033: false  # インラインHTMLを許可
-    MD035: { style: "---" }  # 水平線のスタイル
-    MD036: false  # 強調されたテキストを見出しとして使用しない
-    MD046: { style: "fenced" }  # コードブロックのスタイル
-  
-  auto_fix_on_save: true  # 保存時に自動修正
-  ignore_paths:
-    - "node_modules/**"
-    - "vendor/**"
-
-#--------------------------------------------------
-# 特定のディレクトリを除外
-#--------------------------------------------------
 exclude_patterns:
   - "node_modules/**"
   - "dist/**"
   - "build/**"
   - ".git/**"
+  - ".turbo/**"
+  - ".next/**"
   - "venv/**"
   - "__pycache__/**"

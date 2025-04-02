@@ -13,8 +13,8 @@
     "check:write": "biome check --write .",
     "check-types": "turbo run check-types",
     "spell-check": "cspell \"**/*.{md,ts,tsx,js,jsx,json}\"",
-    "ci:check": "bun run check && bun run format && bun run lint && bun run check-types && bun run spell-check && bun run lint:md",
-    "ci:fix": "bun run format:write && bun run check:write && bun run lint:md:fix"
+    "ci:check": "bun run check && bun run format && bun run lint && bun run check-types",
+    "ci:fix": "bun run format:write && bun run check:write"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

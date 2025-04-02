@@ -757,68 +757,70 @@ suzumina-click-dev/jobs/maintenance-job:run" \
 
 #### 実装方針
 
-1. **認証とセキュリティ**
-   - OAuth 2.0またはAPIキーを使用
-   - 認証情報はSecret Managerで安全に管理
-   - 必要最小限の権限スコープを使用
+##### 認証とセキュリティ
 
-2. **クォータ管理**
-   - YouTube Data APIのクォータ制限（デフォルトで1日10,000ユニット）を考慮
-   - バッチ処理で効率的にAPIコールをまとめる
-   - キャッシュ戦略を実装してAPI呼び出しを最小化
+- OAuth 2.0またはAPIキーを使用
+- 認証情報はSecret Managerで安全に管理
+- 必要最小限の権限スコープを使用
 
-3. **実装例（Python）**
+##### クォータ管理
 
-```python
-from googleapiclient.discovery import build
-from google.cloud import secretmanager
+- YouTube Data APIのクォータ制限（デフォルトで1日10,000ユニット）を考慮
+- バッチ処理で効率的にAPIコールをまとめる
+- キャッシュ戦略を実装してAPI呼び出しを最小化
 
-def get_youtube_service():
-    """YouTube Data API サービスを取得"""
-    # Secret Managerから認証情報を取得
-    client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/suzumina-click-dev/secrets/youtube-api-key/versions/latest"
-    response = client.access_secret_version(request={"name": name})
-    api_key = response.payload.data.decode("UTF-8")
-    
-    # YouTube APIサービスを構築
-    return build('youtube', 'v3', developerKey=api_key)
+##### 実装例（Python）
 
-def get_channel_info(channel_id):
-    """チャンネル情報を取得"""
-    youtube = get_youtube_service()
-    
-    request = youtube.channels().list(
-        part="snippet,contentDetails,statistics",
-        id=channel_id
-    )
-    response = request.execute()
-    
-    return response['items'][0] if response['items'] else None
+  ```python
+  from googleapiclient.discovery import build
+  from google.cloud import secretmanager
 
-def get_latest_videos(channel_id, max_results=10):
-    """最新の動画を取得"""
-    youtube = get_youtube_service()
-    
-    # まずチャンネルのアップロードプレイリストIDを取得
-    channel_response = youtube.channels().list(
-        part="contentDetails",
-        id=channel_id
-    ).execute()
-    
-    uploads_playlist_id = channel_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
-    
-    # プレイリストから動画を取得
-    playlist_response = youtube.playlistItems().list(
-        part="snippet,contentDetails",
-        playlistId=uploads_playlist_id,
-        maxResults=max_results
-    ).execute()
-    
-    return playlist_response['items']
-```
+  def get_youtube_service():
+      """YouTube Data API サービスを取得"""
+      # Secret Managerから認証情報を取得
+      client = secretmanager.SecretManagerServiceClient()
+      name = f"projects/suzumina-click-dev/secrets/youtube-api-key/versions/latest"
+      response = client.access_secret_version(request={"name": name})
+      api_key = response.payload.data.decode("UTF-8")
+      
+      # YouTube APIサービスを構築
+      return build('youtube', 'v3', developerKey=api_key)
 
-4. **実装例（TypeScript）**
+  def get_channel_info(channel_id):
+      """チャンネル情報を取得"""
+      youtube = get_youtube_service()
+      
+      request = youtube.channels().list(
+          part="snippet,contentDetails,statistics",
+          id=channel_id
+      )
+      response = request.execute()
+      
+      return response['items'][0] if response['items'] else None
+
+  def get_latest_videos(channel_id, max_results=10):
+      """最新の動画を取得"""
+      youtube = get_youtube_service()
+      
+      # まずチャンネルのアップロードプレイリストIDを取得
+      channel_response = youtube.channels().list(
+          part="contentDetails",
+          id=channel_id
+      ).execute()
+      
+      uploads_playlist_id = channel_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+      
+      # プレイリストから動画を取得
+      playlist_response = youtube.playlistItems().list(
+          part="snippet,contentDetails",
+          playlistId=uploads_playlist_id,
+          maxResults=max_results
+      ).execute()
+      
+      return playlist_response['items']
+  ```
+
+##### 実装例（TypeScript）
 
 ```typescript
 import { google, youtube_v3 } from 'googleapis';
@@ -877,7 +879,7 @@ async function getLatestVideos(channelId: string, maxResults = 10): Promise<any[
 }
 ```
 
-1. **バッチ処理での利用（Cloud Run Jobs）**
+##### バッチ処理での利用（Cloud Run Jobs）
 
 ```python
 # apps/jobs-python/src/jobs/youtube_sync/main.py
@@ -945,9 +947,10 @@ if __name__ == "__main__":
     exit(exit_code)
 ```
 
-2. **定期実行スケジュール**
-   - YouTube APIのクォータを考慮して、1日1回もしくは数時間おきに実行
-   - 重要なイベントの前後には頻度を上げるなど、柔軟に調整
+##### 定期実行スケジュール
+
+- YouTube APIのクォータを考慮して、1日1回もしくは数時間おきに実行
+- 重要なイベントの前後には頻度を上げるなど、柔軟に調整
 
 ## 12. ストレージ方針
 
