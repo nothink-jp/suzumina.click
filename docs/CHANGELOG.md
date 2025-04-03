@@ -11,8 +11,6 @@
 
 ### 完了 (Completed)
 
-- feat: YouTube Data API連携のためのPython版Cloud Run Functions実装 (チャンネル情報、最新動画、動画詳細、検索API)
-
 ## [0.1.0] - 2025-04-01
 
 ### アーキテクチャ

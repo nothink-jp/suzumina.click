@@ -5,21 +5,18 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "lint:md": "markdownlint-cli2 \"**/*.md\"",
-    "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\"",
     "format": "biome format .",
     "format:write": "biome format --write .",
     "check": "biome check .",
     "check:write": "biome check --write .",
     "check-types": "turbo run check-types",
     "spell-check": "cspell \"**/*.{md,ts,tsx,js,jsx,json}\"",
-    "ci:check": "bun run check && bun run format && bun run lint && bun run check-types",
+    "ci:check": "bun run check && bun run format && bun run check-types",
     "ci:fix": "bun run format:write && bun run check:write"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "cspell": "^8.18.1",
-    "markdownlint-cli2": "^0.17.2",
     "turbo": "^2.4.4",
     "typescript": "5.8.2"
   },

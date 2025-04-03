@@ -4,11 +4,6 @@
 
 ## サービス選択指針
 
-### Cloud Run Functions vs Cloud Run Jobs
-
-- **Cloud Run Functions**: HTTPリクエスト対応、ウェブフック処理など短時間実行向き
-- **Jobs**: 定期実行、長時間実行、リソース集約的な処理向き
-
 ### 主要サービス選択
 
 - **Webアプリ**: Cloud Run（柔軟性とコスト効率）
@@ -19,12 +14,12 @@
 ## 言語選択指針
 
 - **TypeScript/Node.js**: フロントエンドAPI、軽量APIエンドポイント向き
-- **Python**: YouTube API連携、データ処理、機械学習向き
+- **Python**: データ処理、機械学習向き (将来的な拡張用)
 
 ### 選択基準
 
 - **TypeScript**: フロントエンドとの型共有、軽量な起動、非同期処理
-- **Python**: データ処理、機械学習、外部APIとの連携
+- **Python**: データ処理、機械学習、外部APIとの連携 (将来的な拡張用)
 
 ## アーキテクチャ設計原則
 
@@ -46,7 +41,6 @@
 
 - [全体概要](GCP_OVERVIEW.md)
 - [Webアプリケーション設計](GCP_WEB_APP.md)
-- [API設計](GCP_CLOUD_RUN_FUNCTIONS.md)
 - [外部API連携設計](GCP_EXTERNAL_APIS.md)
 
 最終更新日: 2025年4月2日
