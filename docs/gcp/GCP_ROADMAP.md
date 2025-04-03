@@ -71,7 +71,11 @@ suzumina.clickのGCP環境の段階的実装計画です。
 
 ## 関連ドキュメント
 
-- [全体概要](GCP_OVERVIEW.md) | [YouTube API連携](PR_YOUTUBE_API_PLAN.md)
-- [プロジェクト設定](GCP_PROJECT_SETUP.md) | [フロントエンド開発](FRONTEND_YOUTUBE_API_PLAN.md)
+- [全体概要](GCP_OVERVIEW.md)
+- [プロジェクト設定](GCP_PROJECT_SETUP.md)
+
+# - [全体概要](GCP_OVERVIEW.md)
+
+# - [プロジェクト設定](GCP_PROJECT_SETUP.md)
 
 最終更新日: 2025年4月3日

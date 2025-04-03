@@ -5,7 +5,7 @@
 ```mermaid
 graph TD
     A[Root] -->|apps| B[Webアプリケーション]
-    A -->|apps| C[Cloud Functions]
+    A -->|apps| C[Cloud Run Functions]
     A -->|packages| D[共有設定/ライブラリ]
     D -->|typescript-config| E[TypeScript設定]
 ```

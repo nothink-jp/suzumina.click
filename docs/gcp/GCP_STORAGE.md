@@ -62,7 +62,9 @@ logs/{logId}/                          # システムログ（短期保存用）
 
 ## 関連ドキュメント
 
-- [全体概要](GCP_OVERVIEW.md) | [バッチ処理設計](GCP_JOBS.md)
+- [全体概要](GCP_OVERVIEW.md)
 - [外部API連携設計](GCP_EXTERNAL_APIS.md) | [セキュリティ設計](GCP_SECURITY.md)
+
+# - [外部API連携設計](GCP_EXTERNAL_APIS.md) | [セキュリティ設計](GCP_SECURITY.md) # 修正: リンクを一行にまとめる
 
 最終更新日: 2025年4月3日

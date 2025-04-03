@@ -5,19 +5,22 @@
 ## ドキュメント一覧
 
 - [プロジェクト分析](PROJECT_ANALYSIS.md) - プロジェクトのアーキテクチャと設計方針
-- [GCP概要](GCP_OVERVIEW.md) - Google Cloud Platformのデプロイ概要
+- [GCP概要](gcp/GCP_OVERVIEW.md) - Google Cloud Platformのデプロイ概要
 - [変更履歴](CHANGELOG.md) - プロジェクトの重要な変更履歴
-- [YouTube API連携計画](PR_YOUTUBE_API_PLAN.md) - YouTube Data API連携のCloud Functions実装計画
-- [フロントエンド開発計画](FRONTEND_YOUTUBE_API_PLAN.md) - Next.jsフロントエンドとYouTube API連携実装計画
 
 ## GCP関連ドキュメント
 
-- [プロジェクト設定](GCP_PROJECT_SETUP.md) - GCPプロジェクトの基本設定
-- [Webアプリケーション設計](GCP_WEB_APP.md) - Cloud Runを使用したNext.jsアプリケーション
-- [API設計](GCP_FUNCTIONS.md) - Cloud Functionsを使用したAPI実装
-- [CI/CD設計](GCP_CICD.md) - GitHub Actionsによる継続的デリバリー
-- [外部API連携設計](GCP_EXTERNAL_APIS.md) - YouTube Data APIなどの外部サービス連携
-- [実装計画](GCP_ROADMAP.md) - 段階的な実装ロードマップ
+- [プロジェクト設定](gcp/GCP_PROJECT_SETUP.md) - GCPプロジェクトの基本設定
+- [Webアプリケーション設計](gcp/GCP_WEB_APP.md) - Cloud Runを使用したNext.jsアプリケーション
+- [API設計](gcp/GCP_CLOUD_RUN_FUNCTIONS.md) - Cloud Run Functionsを使用したAPI実装
+- [CI/CD設計](gcp/GCP_CICD.md) - GitHub Actionsによる継続的デリバリー
+- [外部API連携設計](gcp/GCP_EXTERNAL_APIS.md) - YouTube Data APIなどの外部サービス連携
+- [実装計画](gcp/GCP_ROADMAP.md) - 段階的な実装ロードマップ
+- [ストレージ設計](gcp/GCP_STORAGE.md) - FirestoreとCloud Storageの利用方針
+- [セキュリティ設計](gcp/GCP_SECURITY.md) - 環境変数と機密情報の管理
+- [監視設計](gcp/GCP_MONITORING.md) - ログ収集と監視アラートの設定
+- [ベストプラクティス](gcp/GCP_BEST_PRACTICES.md) - サービスと言語選択のガイドライン
+- [全体デプロイ設計](gcp/GCP_DEPLOYMENT_DESIGN.md) - GCPコンポーネント、サービス/言語選択、ストレージ、CI/CD等の全体設計
 
 ## ドキュメント規約
 

@@ -1,37 +1,36 @@
-import functions_framework
-import json
+from fastapi import FastAPI, HTTPException
 from src.api.youtube import get_channel_info, get_latest_videos, get_video_details, search_videos
 from src.api.hello import hello
-from src.utils.error_handler import handle_error
 
-@functions_framework.http
-def main(request):
-    """Cloud Function entry point that routes to the appropriate API function."""
-    try:
-        path = request.path.strip('/').lower()
-        
-        # API ルーティング
-        if path == 'api/hello' or path == 'hello':
-            return hello(request)
-            
-        elif path == 'api/youtube/channel':
-            return get_channel_info(request)
-            
-        elif path == 'api/youtube/videos':
-            return get_latest_videos(request)
-            
-        elif path.startswith('api/youtube/video/'):
-            video_id = path.split('/')[-1]
-            return get_video_details(request, video_id)
-            
-        elif path == 'api/youtube/search':
-            return search_videos(request)
-            
-        else:
-            return json.dumps({
-                'error': 'Not Found',
-                'message': f'No API endpoint found for path: {path}'
-            }), 404, {'Content-Type': 'application/json'}
-            
-    except Exception as e:
-        return handle_error(e)
+# FastAPIアプリケーションインスタンスを作成
+app = FastAPI(
+    title="suzumina.click API (Python)",
+    description="YouTube API integration for suzumina.click, migrated to Cloud Run.",
+    version="0.1.0",
+)
+
+# --- API Endpoints ---
+
+@app.get("/api/hello", tags=["General"])
+async def route_hello():
+    return hello()
+
+@app.get("/api/youtube/channel", tags=["YouTube"])
+async def route_get_channel_info(channel_id: str):
+    # Pass parameter explicitly using FastAPI's dependency injection
+    return get_channel_info(channel_id=channel_id) 
+
+@app.get("/api/youtube/videos", tags=["YouTube"])
+async def route_get_latest_videos(channel_id: str, max_results: int = 10):
+    # Pass parameters explicitly
+    return get_latest_videos(channel_id=channel_id, max_results=max_results)
+
+@app.get("/api/youtube/video/{video_id}", tags=["YouTube"])
+async def route_get_video_details(video_id: str):
+    # Pass path parameter explicitly
+    return get_video_details(video_id=video_id)
+
+@app.get("/api/youtube/search", tags=["YouTube"])
+async def route_search_videos(query: str, max_results: int = 10):
+    # Pass query parameters explicitly
+    return search_videos(query=query, max_results=max_results)
