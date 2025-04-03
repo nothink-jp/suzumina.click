@@ -24,7 +24,6 @@
 | API名 | 目的 |
 |------|------|
 | Cloud Run API | Webアプリケーションのデプロイ |
-| Cloud Run Functions API | サーバーレス関数の実行 |
 | Cloud Build API | CI/CDパイプラインの構築 |
 | Container Registry API | Dockerイメージの保存 |
 | Artifact Registry API | コンテナイメージとパッケージの保存 |
@@ -50,7 +49,6 @@ gcloud services enable youtube.googleapis.com --project=suzumina-click-dev
    - 名前: `github-actions-deployer@suzumina-click-dev.iam.gserviceaccount.com`
    - 役割:
      - Cloud Run Admin
-     - Cloud Run Functions Admin
      - Cloud Build Editor
      - Storage Admin
      - Artifact Registry Writer
@@ -75,7 +73,6 @@ GCPリソースは以下の命名規則に従います：
 | リソースタイプ | 命名規則 | 例 |
 |--------------|---------|-----|
 | Cloud Run サービス | `{service-name}` | `web`, `api` |
-| Cloud Run Functions | `{function-name}` | `app`, `hello-python` |
 | Cloud Run Jobs | `{job-type}-job[-{language}]` | `data-sync-job`, `report-job-python` |
 | Scheduler Jobs | `{job-name}-scheduler` | `data-sync-scheduler` |
 | Storage Buckets | `suzumina-click-dev-{purpose}` | `suzumina-click-dev-uploads` |
@@ -85,7 +82,6 @@ GCPリソースは以下の命名規則に従います：
 
 - [全体概要](GCP_OVERVIEW.md)
 - [Webアプリケーション設計](GCP_WEB_APP.md)
-- [API設計](GCP_CLOUD_RUN_FUNCTIONS.md)
 - [CI/CD設計](GCP_CICD.md)
 - [セキュリティ設計](GCP_SECURITY.md)
 

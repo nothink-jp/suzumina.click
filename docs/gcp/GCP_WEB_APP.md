@@ -9,7 +9,6 @@ Next.jsアプリケーションをCloud Runでホスティングし、サーバ�
 ```mermaid
 flowchart LR
     A["ユーザー"] --> B["Cloud Run\n(Next.js Web App)"]
-    B <--> C["Cloud Run Functions\n(APIエンドポイント)"]
     B <--> D["Firestore\n(データストア)"]
     B <--> E["Cloud Storage\n(アセット)"]
     F["GitHub Actions"] --> |デプロイ| B
@@ -49,11 +48,11 @@ const nextConfig = {
 
 ## セットアップとデプロイ手順
 
-具体的なDockerfileの作成、テスト手順、デプロイコマンドについては、`apps/web/README.md` や `docs/DEVELOPMENT_SETUP.md` を参照してください。
+具体的なDockerfileの作成、テスト手順、デプロイコマンドについては、`apps/web/README.md` を参照してください。
 
 ## 関連ドキュメント
 
-- [全体概要](GCP_OVERVIEW.md) | [API設計](GCP_CLOUD_RUN_FUNCTIONS.md)
+- [全体概要](GCP_OVERVIEW.md)
 - [プロジェクト設定](GCP_PROJECT_SETUP.md) | [CI/CD設計](GCP_CICD.md)
 
 最終更新日: 2025年4月2日

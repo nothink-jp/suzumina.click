@@ -5,7 +5,6 @@
 ```mermaid
 graph TD
     A[Root] -->|apps| B[Webアプリケーション]
-    A -->|apps| C[Cloud Run Functions]
     A -->|packages| D[共有設定/ライブラリ]
     D -->|typescript-config| E[TypeScript設定]
 ```
@@ -14,7 +13,7 @@ graph TD
 
 - **パッケージマネージャー**: bun（高速実行、効率的依存管理、Workspaces機能）
 - **フレームワーク**: Next.js（App Router活用）、React、TypeScript
-- **開発ツール**: Biome（リンター・フォーマッター統合）、CSpell、markdownlint-cli2、Turbo
+- **開発ツール**: Biome（リンター・フォーマッター統合）、CSpell、Turbo
 
 ## 設計原則
 
