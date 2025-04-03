@@ -14,7 +14,7 @@
 
 - [プロジェクト設定](GCP_PROJECT_SETUP.md) - GCPプロジェクトの基本設定
 - [Webアプリケーション設計](GCP_WEB_APP.md) - Cloud Runを使用したNext.jsアプリケーション
-- [API設計](GCP_FUNCTIONS.md) - Cloud Run Functionsを使用したAPI実装
+- [API設計](GCP_FUNCTIONS.md) - Cloud Functionsを使用したAPI実装
 - [CI/CD設計](GCP_CICD.md) - GitHub Actionsによる継続的デリバリー
 - [外部API連携設計](GCP_EXTERNAL_APIS.md) - YouTube Data APIなどの外部サービス連携
 - [実装計画](GCP_ROADMAP.md) - 段階的な実装ロードマップ

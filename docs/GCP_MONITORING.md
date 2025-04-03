@@ -9,7 +9,7 @@ suzumina.clickの監視システムは、GCPのCloud MonitoringとCloud Logging�
 ```mermaid
 flowchart TD
     A[Cloud Run\nWeb App] --> B[Cloud Monitoring]
-    C[Cloud Run Functions\nAPI] --> B
+    C[Cloud Functions\nAPI] --> B
     D[Cloud Run Jobs\nバッチ処理] --> B
     A --> E[Cloud Logging]
     C --> E

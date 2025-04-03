@@ -4,11 +4,11 @@
 
 ## アーキテクチャ概要
 
-suzumina.clickのバックエンドAPIはCloud Run Functions（第2世代）を使用し、TypeScriptまたはPythonで実装します。
+suzumina.clickのバックエンドAPIはCloud Functions (2nd gen)を使用し、TypeScriptまたはPythonで実装します。
 
 **基本構成**:
 
-- ユーザー/Webアプリ → Cloud Run Functions → データストア/外部API
+- ユーザー/Webアプリ → Cloud Functions → データストア/外部API
 - サーバーレスアーキテクチャ採用
 - 言語選択の柔軟性（TypeScript/Python）
 - マイクロサービス指向設計

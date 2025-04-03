@@ -1,15 +1,15 @@
-# YouTube Data API連携用Cloud Run Functions実装計画
+# YouTube Data API連携用Cloud Functions実装計画
 
-YouTube Data API連携のためのPython版Cloud Run Functions実装計画です。
+YouTube Data API連携のためのPython版Cloud Functions実装計画です。
 
 ## 目的
 
-YouTube Data APIにアクセスするCloud Run Functions (Python)を実装し、Webアプリケーションから利用可能なAPIエンドポイントを提供します。
+YouTube Data APIにアクセスするCloud Functions (Python)を実装し、Webアプリケーションから利用可能なAPIエンドポイントを提供します。
 
 ## 実装概要
 
 ```
-Next.js Webアプリ → Cloud Run Functions (Python) → YouTube Data API
+Next.js Webアプリ → Cloud Functions (Python) → YouTube Data API
                                   ↓
                      Firestore（キャッシュ/データ保存）
 ```

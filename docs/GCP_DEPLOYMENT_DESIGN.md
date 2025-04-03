@@ -5,7 +5,7 @@
 ```mermaid
 flowchart TD
     A["ユーザー"] --> B["Cloud Run - Next.js Web App"]
-    B <--> C["Cloud Run Functions - APIエンドポイント"]
+    B <--> C["Cloud Functions - APIエンドポイント"]
     D["Cloud Scheduler"] --> E["Cloud Run Jobs - バッチ処理"]
     E <--> F["Cloud Firestore - 構造化データ"]
     C <--> F
@@ -36,7 +36,7 @@ flowchart TD
 - Next.js 設定: `output: 'standalone'` で最適化
 - インスタンス：最小1、最大2、メモリ1GB、CPU1
 
-### API エンドポイント (Cloud Run Functions)
+### API エンドポイント (Cloud Functions)
 
 - TypeScript/Node.js と Python 両方をサポート
 - 構造: `api/`, `lib/`, `utils/` ディレクトリ構成
@@ -53,7 +53,7 @@ flowchart TD
 
 | 用途 | 推奨サービス | 理由 |
 |------|------------|------|
-| API エンドポイント | Cloud Run Functions | HTTPリクエスト応答に最適 |
+| API エンドポイント | Cloud Functions | HTTPリクエスト応答に最適 |
 | 定期的なデータ処理 | Cloud Run Jobs | スケジュール実行、長時間実行可能 |
 | リソース集約処理 | Cloud Run Jobs | より多くのリソース割当可能 |
 
@@ -84,7 +84,7 @@ GitHub Actions を使用して:
 
 1. 基本環境整備: GCP プロジェクト作成、API 有効化
 2. Web アプリケーション (Cloud Run) 実装
-3. バックエンド API (Cloud Run Functions) 実装
+3. バックエンド API (Cloud Functions) 実装
 4. バッチ処理 (Cloud Run Jobs) 実装
 5. CI/CD パイプライン整備
 6. 動作検証とデバッグ

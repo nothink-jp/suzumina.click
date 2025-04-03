@@ -1,5 +1,8 @@
 # Web アプリケーション セットアップ手順
 
+このドキュメントでは、suzumina.clickのWebアプリケーション（Next.js）の具体的なセットアップ、テスト、デプロイ手順を説明します。
+全体的な設計思想やアーキテクチャについては、[Google Cloud Platform Webアプリケーション設計](GCP_WEB_APP.md)を参照してください。
+
 ## 実装タスク
 
 ### Dockerfile作成
@@ -18,12 +21,12 @@ const nextConfig = {
 export default nextConfig;
 ```
 
-### 開発スクリプト追加
+### 開発スクリプト追加 (`package.json`)
 
 ```json
 "scripts": {
-  "docker:build": "docker build -t gcr.io/suzumina-click-dev/web .",
-  "docker:run": "docker run -p 8080:8080 gcr.io/suzumina-click-dev/web"
+  "docker:build": "docker build -t asia-northeast1-docker.pkg.dev/suzumina-click-dev/web .",
+  "docker:run": "docker run -p 8080:8080 asia-northeast1-docker.pkg.dev/suzumina-click-dev/web"
 }
 ```
 
@@ -44,16 +47,16 @@ bun run docker:run
 ## デプロイ手順
 
 ```bash
-# 1. GCP認証設定
+# 1. GCP認証設定 (初回のみ)
 gcloud auth configure-docker asia-northeast1-docker.pkg.dev
 
 # 2. イメージビルド・プッシュ
 docker build -t asia-northeast1-docker.pkg.dev/suzumina-click-dev/web:latest .
-docker push asia-northeast1-docker.pkg.dev/suzumina-click-dev/web
+docker push asia-northeast1-docker.pkg.dev/suzumina-click-dev/web:latest
 
 # 3. Cloud Runデプロイ
 gcloud run deploy web \
-  --image asia-northeast1-docker.pkg.dev/suzumina-click-dev/web \
+  --image asia-northeast1-docker.pkg.dev/suzumina-click-dev/web:latest \
   --region asia-northeast1 \
   --allow-unauthenticated
 ```
@@ -67,6 +70,6 @@ gcloud run deploy web \
 
 ## 次のステップ
 
-1. APIエンドポイント実装（Cloud Run Functions）
+1. APIエンドポイント実装（Cloud Functions）
 2. 認証システム導入
 3. CDN・カスタムドメイン設定

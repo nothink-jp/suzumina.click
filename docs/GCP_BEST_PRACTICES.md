@@ -4,7 +4,7 @@
 
 ## サービス選択指針
 
-### Cloud Run Functions vs Cloud Run Jobs
+### Cloud Functions vs Cloud Run Jobs
 
 - **Functions**: HTTPリクエスト対応、ウェブフック処理など短時間実行向き
 - **Jobs**: 定期実行、長時間実行、リソース集約的な処理向き

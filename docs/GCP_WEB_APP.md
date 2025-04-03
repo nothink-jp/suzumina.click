@@ -9,7 +9,7 @@ Next.jsアプリケーションをCloud Runでホスティングし、サーバ�
 ```mermaid
 flowchart LR
     A["ユーザー"] --> B["Cloud Run\n(Next.js Web App)"]
-    B <--> C["Cloud Run Functions\n(APIエンドポイント)"]
+    B <--> C["Cloud Functions\n(APIエンドポイント)"]
     B <--> D["Firestore\n(データストア)"]
     B <--> E["Cloud Storage\n(アセット)"]
     F["GitHub Actions"] --> |デプロイ| B
@@ -23,16 +23,6 @@ flowchart LR
 - 依存関係キャッシュを最適化する階層構造
 - Next.js のスタンドアロン出力を使用
 - 最小限の実行環境へのファイルコピー
-
-コード例:
-
-```
-FROM node:22-alpine AS builder
-# ...ビルドステップ...
-
-FROM node:22-alpine AS runner
-# ...実行環境設定...
-```
 
 ## Next.js設定要点
 
@@ -57,17 +47,9 @@ const nextConfig = {
 | 認証 | なし（検証環境） |
 | HTTPS | 必須 |
 
-## デプロイコマンド例
+## セットアップとデプロイ手順
 
-```bash
-gcloud run deploy web \
-  --image asia-northeast1-docker.pkg.dev/suzumina-click-dev/suzumina/web:${VERSION} \
-  --region asia-northeast1 \
-  --min-instances 1 \
-  --max-instances 2 \
-  --memory 1Gi \
-  --allow-unauthenticated
-```
+具体的なDockerfileの作成、テスト手順、デプロイコマンドについては、[Webアプリケーション セットアップ手順](WEB_APP_SETUP.md)を参照してください。
 
 ## 関連ドキュメント
 

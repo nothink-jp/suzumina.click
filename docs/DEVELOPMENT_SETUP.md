@@ -49,8 +49,8 @@ cd apps/functions-python && python -m pytest  # Python APIテスト
 ```bash
 # Webアプリケーション
 cd apps/web
-docker build -t gcr.io/suzumina-click-dev/web .
-docker push gcr.io/suzumina-click-dev/web
+docker build -t asia-northeast1-docker.pkg.dev/suzumina-click-dev/web .
+docker push asia-northeast1-docker.pkg.dev/suzumina-click-dev/web
 
 # Functions
 cd apps/functions-python
