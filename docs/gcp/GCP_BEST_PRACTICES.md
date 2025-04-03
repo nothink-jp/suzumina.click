@@ -4,11 +4,11 @@
 
 ## サービス選択指針
 
-### Cloud Functions vs Cloud Run Jobs
+### Cloud Run Functions vs Cloud Run Jobs
 
-- **Functions**: HTTPリクエスト対応、ウェブフック処理など短時間実行向き
+- **Cloud Run Functions**: HTTPリクエスト対応、ウェブフック処理など短時間実行向き
 - **Jobs**: 定期実行、長時間実行、リソース集約的な処理向き
-  
+
 ### 主要サービス選択
 
 - **Webアプリ**: Cloud Run（柔軟性とコスト効率）
@@ -46,8 +46,7 @@
 
 - [全体概要](GCP_OVERVIEW.md)
 - [Webアプリケーション設計](GCP_WEB_APP.md)
-- [API設計](GCP_FUNCTIONS.md)
-- [バッチ処理設計](GCP_JOBS.md)
+- [API設計](GCP_CLOUD_RUN_FUNCTIONS.md)
 - [外部API連携設計](GCP_EXTERNAL_APIS.md)
 
 最終更新日: 2025年4月2日

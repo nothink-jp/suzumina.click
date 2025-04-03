@@ -26,14 +26,14 @@ suzumina.clickのCI/CDパイプラインはGitHub Actionsを使用し、コー�
 
 - Google Cloud SDK設定と認証
 - Dockerビルドと認証
-- 各コンポーネントのデプロイ（Web/Functions/Jobs）
+- 各コンポーネントのデプロイ（Web/Cloud Run Functions/Jobs）
 
 ## 認証と権限
 
 ### サービスアカウント設定
 
 - 名前: `github-actions-deployer@suzumina-click-dev.iam.gserviceaccount.com`
-- 主な権限: Cloud Run Admin、Cloud Functions Admin、Cloud Storage Admin、Artifact Registry Writer
+- 主な権限: Cloud Run Admin、Cloud Run Functions Admin、Cloud Storage Admin、Artifact Registry Writer
 
 ### GitHub Secrets設定
 
@@ -54,7 +54,7 @@ suzumina.clickのCI/CDパイプラインはGitHub Actionsを使用し、コー�
 
 ### 3. デプロイ（CD）
 
-- Cloud Run、Functions、Jobs、Schedulerのデプロイ
+- Cloud Run、Cloud Run Functions、Jobs、Schedulerのデプロイ
 - メインブランチへのプッシュ時のみ実行
 
 ## 関連ドキュメント

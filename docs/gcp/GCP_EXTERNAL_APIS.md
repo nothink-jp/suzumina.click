@@ -64,6 +64,6 @@ YouTube データ同期は以下の方針で実行します：
 
 ## 関連ドキュメント
 
-[全体概要](GCP_OVERVIEW.md) | [バッチ処理設計](GCP_JOBS.md) | [ストレージ設計](GCP_STORAGE.md) | [ベストプラクティス](GCP_BEST_PRACTICES.md)
+[全体概要](GCP_OVERVIEW.md) | [ストレージ設計](GCP_STORAGE.md) |
 
 最終更新日: 2025年4月3日

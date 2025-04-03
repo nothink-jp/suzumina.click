@@ -9,7 +9,7 @@ suzumina.clickの監視システムは、GCPのCloud MonitoringとCloud Logging�
 ```mermaid
 flowchart TD
     A[Cloud Run\nWeb App] --> B[Cloud Monitoring]
-    C[Cloud Functions\nAPI] --> B
+    C[Cloud Run Functions\nAPI] --> B
     D[Cloud Run Jobs\nバッチ処理] --> B
     A --> E[Cloud Logging]
     C --> E
@@ -35,7 +35,7 @@ flowchart TD
 ### サービス固有指標
 
 - **Cloud Run**: インスタンス数、リスタート回数、レスポンスコード分布
-- **Functions**: 実行回数、実行時間、コールドスタート時間
+- **Cloud Run Functions**: 実行回数、実行時間、コールドスタート時間
 - **Jobs**: 成功/失敗回数、実行時間、再試行回数
 
 ## ログ管理

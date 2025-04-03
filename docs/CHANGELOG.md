@@ -7,17 +7,11 @@
 
 ### 追加
 
-- YouTube Data API連携のためのPython版Cloud Run Functions実装
-- フロントエンド（Next.js）とYouTube API連携の実装計画作成
+- feat: YouTube API 連携機能を追加 (フロントエンド実装は未着手)
 
-### 削除
+### 完了 (Completed)
 
-- packages/ui パッケージを削除
-- shadcn/uiへの移行計画を中止（packages/uiの削除に伴い不要となったため）
-
-### 開発ツール
-
-- markdownlint-cli2の導入によるMarkdownの一貫性確保
+- feat: YouTube Data API連携のためのPython版Cloud Run Functions実装 (チャンネル情報、最新動画、動画詳細、検索API)
 
 ## [0.1.0] - 2025-04-01
 

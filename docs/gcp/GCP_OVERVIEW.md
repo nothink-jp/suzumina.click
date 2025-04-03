@@ -28,10 +28,10 @@ flowchart TD
 
 suzumina.clickのGCPデプロイに関する詳細設計は、以下のドキュメントに分割されています：
 
-1. **[プロジェクト設定](GCP_PROJECT_SETUP.md)** - GCPプロジェクトの基本設定とAPI有効化
-2. **[Webアプリケーション設計](GCP_WEB_APP.md)** - Cloud Runを使用したNext.jsアプリケーションのデプロイ
-3. **[API設計](GCP_FUNCTIONS.md)** - Cloud Run Functionsを使用したAPIエンドポイントの実装
-4. **[バッチ処理設計](GCP_JOBS.md)** - Cloud Run Jobsを使用した定期バッチ処理の実装
+1. **[全体デプロイ設計](GCP_DEPLOYMENT_DESIGN.md)** - GCPコンポーネント、サービス/言語選択、ストレージ、CI/CD等の全体設計
+2. **[プロジェクト設定](GCP_PROJECT_SETUP.md)** - GCPプロジェクトの基本設定とAPI有効化
+3. **[Webアプリケーション設計](GCP_WEB_APP.md)** - Cloud Runを使用したNext.jsアプリケーションのデプロイ
+4. **[API設計](GCP_CLOUD_RUN_FUNCTIONS.md)** - Cloud Run Functionsを使用したAPIエンドポイントの実装
 5. **[CI/CD設計](GCP_CICD.md)** - GitHub Actionsを使用した継続的インテグレーション/デリバリー
 6. **[セキュリティ設計](GCP_SECURITY.md)** - 環境変数と機密情報の管理
 7. **[監視設計](GCP_MONITORING.md)** - ログ収集と監視アラートの設定
@@ -39,7 +39,6 @@ suzumina.clickのGCPデプロイに関する詳細設計は、以下のドキュ
 9. **[外部API連携設計](GCP_EXTERNAL_APIS.md)** - YouTube Data APIなどの外部サービスとの連携
 10. **[ストレージ設計](GCP_STORAGE.md)** - FirestoreとCloud Storageの利用方針
 11. **[実装計画](GCP_ROADMAP.md)** - 段階的な実装ロードマップとタスク優先順位
-12. **[Cloud Code開発環境](GCP_CLOUD_CODE.md)** - VSCodeとJetBrains IDEでのCloud Code利用ガイド
 
 各ドキュメントは独立して参照できますが、全体像を把握するためには、このオーバービュードキュメントから始めることをお勧めします。
 
@@ -55,7 +54,6 @@ suzumina.clickのGCPデプロイに関する詳細設計は、以下のドキュ
 | CI/CD | GitHub Actions | 自動デプロイとテスト |
 | シークレット管理 | Secret Manager | 認証情報と機密データの管理 |
 | スケジューラ | Cloud Scheduler | バッチジョブのトリガー |
-| 開発環境 | Cloud Code | GCP向けIDEツール |
 
 ## デプロイ環境
 
