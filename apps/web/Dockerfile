@@ -1,5 +1,6 @@
 ### Dockerfile for Bun + Next.js (Standalone Output)
 ### 必ずmonorepoのルートからビルドしてください
+# --------------
 # パッケージのインストールを行うためのステージ
 FROM oven/bun:latest AS deps
 
@@ -14,6 +15,7 @@ COPY ./packages/*/package.json ./packages/*/
 # 依存関係をインストール
 RUN bun install --frozen-lockfile
 
+# --------------
 # アプリケーションをビルドするステージ
 FROM oven/bun:latest AS builder
 
@@ -29,6 +31,7 @@ COPY . .
 # turbo を使ってビルドすることも可能: RUN bun run turbo run build --filter=web...
 RUN bun run --cwd ./apps/web build
 
+# --------------
 # プロダクションイメージ
 FROM oven/bun:latest AS runner
 WORKDIR /app
