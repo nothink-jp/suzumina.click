@@ -34,7 +34,6 @@
 - [Biome](https://biomejs.dev/): リンターとフォーマッター
 - [CSpell](https://cspell.org/): スペルチェッカー
 - [Turbo](https://turbo.build/): ビルドシステム
-- [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2): Markdownリンター
 
 ## 開発手順
 
@@ -67,9 +66,6 @@ bun run check-types
 ```bash
 # リントチェック
 bun run check
-
-# Markdownリントチェック
-bun run lint:md
 
 # フォーマットチェック
 bun run format
