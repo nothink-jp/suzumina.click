@@ -8,20 +8,22 @@ version = "0.1.0"
 authors = [
     {name = "suzumina.click Team", email = "your.email@example.com"},
 ]
-description = "Python Cloud Functions for suzumina.click - YouTube API integration"
+description = "Python Cloud Run Functions for suzumina.click - YouTube API integration"
 requires-python = ">=3.12"
 dependencies = [
-    "functions-framework==3.5.0",
     "google-api-python-client==2.124.0",
     "google-auth==2.34.0",
     "google-cloud-secret-manager==2.22.0",
     "google-cloud-firestore==2.15.0",
+    "fastapi==0.111.0", # FastAPIを追加
+    "uvicorn[standard]==0.29.0", # Uvicornを追加 (ASGIサーバー)
 ]
 
 [project.optional-dependencies]
 dev = [
     "ruff==0.4.3",
     "pytest==8.0.0",
+    "httpx==0.27.0", # FastAPIテストクライアント用に追加
 ]
 
 [tool.ruff]

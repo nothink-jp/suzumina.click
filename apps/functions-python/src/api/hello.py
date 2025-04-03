@@ -1,11 +1,9 @@
-import json
-from flask import Request
-
-def hello(request: Request):
+def hello():
     """
     シンプルな動作確認用APIエンドポイント
     """
-    return json.dumps({
-        'message': 'Hello from Python Cloud Functions!',
+    # FastAPIは辞書を自動的にJSONレスポンスに変換する
+    return {
+        'message': 'Hello from Python Cloud Run Functions!',
         'service': 'suzumina.click YouTube API'
-    }), 200, {'Content-Type': 'application/json'}
+    }
