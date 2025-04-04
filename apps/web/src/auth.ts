@@ -16,23 +16,21 @@ interface UserData {
   updatedAt: Timestamp;
 }
 
-// 環境変数の検証
-const checkEnvVars = () => {
-  const requiredEnvVars = [
-    "NEXTAUTH_URL",
-    "DISCORD_CLIENT_ID",
-    "DISCORD_CLIENT_SECRET",
-    "DISCORD_GUILD_ID",
-  ] as const;
-
-  for (const envVar of requiredEnvVars) {
-    if (!process.env[envVar]) {
-      throw new Error(`${envVar} is not defined`);
-    }
+class ConfigurationError extends Error {
+  constructor(envVar: string) {
+    super(`Configuration Error: ${envVar} is not defined`);
+    this.name = "ConfigurationError";
   }
-};
+}
 
-checkEnvVars();
+// 環境変数を取得して型安全に扱う
+const getRequiredEnvVar = (key: string): string => {
+  const value = process.env[key];
+  if (!value) {
+    throw new ConfigurationError(key);
+  }
+  return value;
+};
 
 export const {
   handlers: { GET, POST },
@@ -42,8 +40,8 @@ export const {
 } = NextAuth({
   providers: [
     Discord({
-      clientId: process.env.DISCORD_CLIENT_ID ?? "",
-      clientSecret: process.env.DISCORD_CLIENT_SECRET ?? "",
+      clientId: getRequiredEnvVar("DISCORD_CLIENT_ID"),
+      clientSecret: getRequiredEnvVar("DISCORD_CLIENT_SECRET"),
       authorization: {
         url: "https://discord.com/api/oauth2/authorize",
         params: {
@@ -79,8 +77,9 @@ export const {
 
         const guilds = await response.json();
 
+        const guildId = getRequiredEnvVar("DISCORD_GUILD_ID");
         const isMember = guilds.some(
-          (guild: { id: string }) => guild.id === process.env.DISCORD_GUILD_ID,
+          (guild: { id: string }) => guild.id === guildId,
         );
 
         if (!isMember) {
@@ -113,7 +112,11 @@ export const {
 
         return true;
       } catch (error) {
-        console.error("Error during sign in:", error);
+        if (error instanceof ConfigurationError) {
+          console.error("Authentication configuration error:", error.message);
+        } else {
+          console.error("Error during sign in:", error);
+        }
         return false;
       }
     },
