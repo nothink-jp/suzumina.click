@@ -1,18 +1,10 @@
 import { Firestore } from "@google-cloud/firestore";
+import type { Timestamp } from "@google-cloud/firestore";
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 
 const firestore = new Firestore();
 const users = firestore.collection("users");
-
-// Discordギルドの型定義
-interface DiscordGuild {
-  id: string;
-  name: string;
-  icon: string | null;
-  owner: boolean;
-  permissions: string;
-}
 
 // ユーザーデータの型定義
 interface UserData {
@@ -20,20 +12,23 @@ interface UserData {
   displayName: string;
   avatarUrl: string;
   role: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
 // 環境変数の検証
 const checkEnvVars = () => {
-  if (!process.env.DISCORD_CLIENT_ID) {
-    throw new Error("DISCORD_CLIENT_ID is not defined");
-  }
-  if (!process.env.DISCORD_CLIENT_SECRET) {
-    throw new Error("DISCORD_CLIENT_SECRET is not defined");
-  }
-  if (!process.env.DISCORD_GUILD_ID) {
-    throw new Error("DISCORD_GUILD_ID is not defined");
+  const requiredEnvVars = [
+    "NEXTAUTH_URL",
+    "DISCORD_CLIENT_ID",
+    "DISCORD_CLIENT_SECRET",
+    "DISCORD_GUILD_ID",
+  ] as const;
+
+  for (const envVar of requiredEnvVars) {
+    if (!process.env[envVar]) {
+      throw new Error(`${envVar} is not defined`);
+    }
   }
 };
 
@@ -47,9 +42,10 @@ export const {
 } = NextAuth({
   providers: [
     Discord({
-      clientId: process.env.DISCORD_CLIENT_ID,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET,
+      clientId: process.env.DISCORD_CLIENT_ID ?? "",
+      clientSecret: process.env.DISCORD_CLIENT_SECRET ?? "",
       authorization: {
+        url: "https://discord.com/api/oauth2/authorize",
         params: {
           scope: "identify guilds",
         },
@@ -81,10 +77,10 @@ export const {
           return false;
         }
 
-        const guilds: DiscordGuild[] = await response.json();
+        const guilds = await response.json();
 
         const isMember = guilds.some(
-          (guild) => guild.id === process.env.DISCORD_GUILD_ID,
+          (guild: { id: string }) => guild.id === process.env.DISCORD_GUILD_ID,
         );
 
         if (!isMember) {
@@ -102,7 +98,7 @@ export const {
             id: profile.id,
             displayName: profile.name ?? "",
             avatarUrl: profile.image ?? "",
-            role: "member", // デフォルトロール
+            role: "member",
             createdAt: now,
             updatedAt: now,
           });
