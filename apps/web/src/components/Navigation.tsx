@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signOutAction } from "@/app/actions";
 
 interface NavigationProps {
   userId?: string | null;
@@ -31,7 +32,7 @@ export function Navigation({ userId }: NavigationProps) {
                 >
                   プロフィール
                 </Link>
-                <form action="/api/auth/signout" method="POST">
+                <form action={signOutAction}>
                   <button
                     type="submit"
                     className="text-sm text-gray-700 hover:text-gray-500"
