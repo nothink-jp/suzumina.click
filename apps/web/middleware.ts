@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { auth } from "@/auth";
-
-// Node.js Runtimeを指定
-export const runtime = "nodejs";
 
 export default auth((req) => {
   // 認証状態とページタイプの確認
