@@ -1,10 +1,20 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 export default function SignInPage() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+
   const handleSignIn = async () => {
-    await signIn("discord", { callbackUrl: "/" });
+    try {
+      await signIn("discord", {
+        callbackUrl,
+      });
+    } catch (error) {
+      console.error("Failed to sign in:", error);
+    }
   };
 
   return (
