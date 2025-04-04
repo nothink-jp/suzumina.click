@@ -81,9 +81,7 @@ export default async function UserPage({ params }: Props) {
                 <h1 className="text-2xl font-bold text-gray-900">
                   {userData.displayName}
                 </h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  {userData.role}
-                </p>
+                <p className="mt-1 text-sm text-gray-500">{userData.role}</p>
                 {session.user.id === params.id && (
                   <p className="mt-1 text-sm text-gray-500">
                     あなたのプロフィールページです
@@ -100,14 +98,14 @@ export default async function UserPage({ params }: Props) {
                 </h2>
                 <div className="mt-4 text-sm text-gray-600 space-y-2">
                   <p>
-                    メンバー登録: {" "}
+                    メンバー登録:{" "}
                     {new Date(userData.createdAt.toDate()).toLocaleString(
                       "ja-JP",
                       { dateStyle: "long", timeStyle: "short" },
                     )}
                   </p>
                   <p>
-                    最終更新: {" "}
+                    最終更新:{" "}
                     {new Date(userData.updatedAt.toDate()).toLocaleString(
                       "ja-JP",
                       { dateStyle: "long", timeStyle: "short" },
