@@ -14,6 +14,16 @@ interface DiscordGuild {
   permissions: string;
 }
 
+// ユーザーデータの型定義
+interface UserData {
+  id: string;
+  displayName: string;
+  avatarUrl: string;
+  role: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // 環境変数の検証
 const checkEnvVars = () => {
   if (!process.env.DISCORD_CLIENT_ID) {
@@ -81,17 +91,29 @@ export const {
           return false;
         }
 
-        // Firestoreにユーザー情報を保存
+        // ユーザー情報の取得または作成
         const userRef = users.doc(profile.id);
-        await userRef.set(
-          {
+        const userDoc = await userRef.get();
+        const now = new Date();
+
+        if (!userDoc.exists) {
+          // 新規ユーザーの場合
+          await userRef.set({
             id: profile.id,
             displayName: profile.name ?? "",
             avatarUrl: profile.image ?? "",
-            updatedAt: new Date(),
-          },
-          { merge: true },
-        );
+            role: "member", // デフォルトロール
+            createdAt: now,
+            updatedAt: now,
+          });
+        } else {
+          // 既存ユーザーの場合は更新のみ
+          await userRef.update({
+            displayName: profile.name ?? "",
+            avatarUrl: profile.image ?? "",
+            updatedAt: now,
+          });
+        }
 
         return true;
       } catch (error) {
@@ -106,15 +128,14 @@ export const {
           const user = await userRef.get();
 
           if (user.exists) {
-            const userData = user.data();
-            if (userData) {
-              session.user = {
-                ...session.user,
-                id: token.sub,
-                displayName: userData.displayName,
-                avatarUrl: userData.avatarUrl,
-              };
-            }
+            const userData = user.data() as UserData;
+            session.user = {
+              ...session.user,
+              id: token.sub,
+              displayName: userData.displayName,
+              avatarUrl: userData.avatarUrl,
+              role: userData.role,
+            };
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
@@ -136,6 +157,7 @@ declare module "next-auth" {
       id: string;
       displayName: string;
       avatarUrl: string;
+      role: string;
       email?: string | null;
     };
   }
