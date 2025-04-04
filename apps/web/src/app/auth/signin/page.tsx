@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "ログイン - すずみなふぁみりー",
-  description: "Discordアカウントでログインしてすずみなふぁみりーに参加しましょう",
+  description:
+    "Discordアカウントでログインしてすずみなふぁみりーに参加しましょう",
 };
 
 export default function SignInPage() {

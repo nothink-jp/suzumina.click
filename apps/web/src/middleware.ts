@@ -1,6 +1,6 @@
-import { auth } from "./auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { auth } from "./auth";
 
 // 認証ミドルウェアの実装
 export default auth((req) => {

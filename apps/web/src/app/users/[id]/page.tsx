@@ -1,8 +1,8 @@
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { Firestore } from "@google-cloud/firestore";
 import type { Timestamp } from "@google-cloud/firestore";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 interface Props {
   params: {
@@ -20,7 +20,7 @@ interface UserData {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const firestore = new Firestore();
   const userDoc = await firestore.collection("users").doc(params.id).get();
-  
+
   if (!userDoc.exists) {
     return {
       title: "ユーザーが見つかりません - すずみなふぁみりー",
@@ -52,7 +52,7 @@ export default async function UserPage({ params }: Props) {
   // Firestoreからユーザー情報を取得
   const firestore = new Firestore();
   const userDoc = await firestore.collection("users").doc(params.id).get();
-  
+
   // ユーザーが存在しない場合は404へリダイレクト
   if (!userDoc.exists) {
     redirect("/404");
@@ -95,7 +95,10 @@ export default async function UserPage({ params }: Props) {
                 </h2>
                 <div className="mt-4 text-sm text-gray-600">
                   <p>
-                    最終更新: {new Date(userData.updatedAt.toDate()).toLocaleString("ja-JP")}
+                    最終更新:{" "}
+                    {new Date(userData.updatedAt.toDate()).toLocaleString(
+                      "ja-JP",
+                    )}
                   </p>
                 </div>
               </div>

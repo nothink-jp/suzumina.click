@@ -11,9 +11,7 @@ export default function AuthErrorPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-md">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
-            認証エラー
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">認証エラー</h1>
           <div className="mt-4 space-y-4">
             <p className="text-sm text-gray-600">
               ログインに失敗しました。以下の点を確認してください：
@@ -32,7 +30,7 @@ export default function AuthErrorPage() {
             >
               ログインを再試行
             </Link>
-            
+
             <Link
               href="/"
               className="inline-block w-full py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"

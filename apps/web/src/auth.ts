@@ -1,5 +1,5 @@
-import NextAuth from "next-auth";
 import { Firestore } from "@google-cloud/firestore";
+import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 
 const firestore = new Firestore();
@@ -58,20 +58,23 @@ export const {
 
       try {
         // Discord ギルドの確認
-        const response = await fetch("https://discord.com/api/users/@me/guilds", {
-          headers: {
-            Authorization: `Bearer ${account.access_token}`,
+        const response = await fetch(
+          "https://discord.com/api/users/@me/guilds",
+          {
+            headers: {
+              Authorization: `Bearer ${account.access_token}`,
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           return false;
         }
 
         const guilds: DiscordGuild[] = await response.json();
-        
+
         const isMember = guilds.some(
-          (guild) => guild.id === process.env.DISCORD_GUILD_ID
+          (guild) => guild.id === process.env.DISCORD_GUILD_ID,
         );
 
         if (!isMember) {
@@ -87,7 +90,7 @@ export const {
             avatarUrl: profile.image ?? "",
             updatedAt: new Date(),
           },
-          { merge: true }
+          { merge: true },
         );
 
         return true;
@@ -101,7 +104,7 @@ export const {
         try {
           const userRef = users.doc(token.sub);
           const user = await userRef.get();
-          
+
           if (user.exists) {
             const userData = user.data();
             if (userData) {

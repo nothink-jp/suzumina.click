@@ -43,10 +43,7 @@ export default async function RootLayout({
                       >
                         プロフィール
                       </Link>
-                      <form
-                        action="/api/auth/signout"
-                        method="post"
-                      >
+                      <form action="/api/auth/signout" method="post">
                         <button
                           type="submit"
                           className="text-sm text-gray-700 hover:text-gray-500"
