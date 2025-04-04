@@ -1,40 +1,81 @@
-# 設計ドキュメント
+# すずみなふぁみりー
 
-このディレクトリには、suzumina.clickプロジェクトの設計ドキュメントが含まれています。
+すずみなふぁみりーのコミュニティサイトです。
 
-## ドキュメント一覧
+## 機能
 
-- [プロジェクト分析](PROJECT_ANALYSIS.md) - プロジェクトのアーキテクチャと設計方針
-- [GCP概要](gcp/GCP_OVERVIEW.md) - Google Cloud Platformのデプロイ概要
-- [変更履歴](CHANGELOG.md) - プロジェクトの重要な変更履歴
-- [実装予定](TODO.md) - 実装予定の機能と優先順位
+- Discord OAuth2認証
+  - サーバーメンバー限定のアクセス制御
+  - セッション管理
+  - ユーザープロフィール
 
-## GCP関連ドキュメント
+## 開発環境のセットアップ
 
-- [Webアプリケーション設計](gcp/GCP_WEB_APP.md) - Cloud Runを使用したNext.jsアプリケーション
-- [CI/CD設計](gcp/GCP_CICD.md) - GitHub Actionsによる継続的デリバリー
-- [外部API連携設計](gcp/GCP_EXTERNAL_APIS.md) - YouTube Data APIなどの外部サービス連携
-- [ストレージ設計](gcp/GCP_STORAGE.md) - FirestoreとCloud Storageの利用方針
-- [セキュリティ設計](gcp/GCP_SECURITY.md) - 環境変数と機密情報の管理
-- [ベストプラクティス](gcp/GCP_BEST_PRACTICES.md) - サービスと言語選択のガイドライン
+### 必要な環境
 
-## ドキュメント規約
+- Node.js 18.0.0以上
+- Bun 1.0.0以上
+- Discord Developer Portal へのアクセス権限
 
-1. すべての設計ドキュメントはこのディレクトリに配置します
-2. ドキュメントは常にMarkdown形式で作成します
-3. 各ドキュメントは100行以内で簡潔にまとめます
-4. 必要に応じてサブディレクトリを使用して整理します
+### インストール
 
-## ドキュメントの種類と目的
+```bash
+# リポジトリのクローン
+git clone git@github.com:nothink-jp/suzumina.click.git
+cd suzumina.click
 
-### アーキテクチャ設計
+# 依存関係のインストール
+bun install
+```
 
-- プロジェクトのアーキテクチャと設計方針を記述
-- 長期的な視点での技術選択の理由を説明
-- コードベース全体に影響を与える決定事項を記録
+### 環境変数の設定
 
-### 変更履歴（CHANGELOG）
+`.env.local`を作成し、以下の環境変数を設定:
 
-- プロジェクトの重要な変更履歴を記録
-- セマンティックバージョニングに従って整理
-- 重要な技術的決定や移行の記録
+```env
+# 認証設定
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="<generated-secret>"
+
+# Discord OAuth2設定
+DISCORD_CLIENT_ID="<client-id>"
+DISCORD_CLIENT_SECRET="<client-secret>"
+DISCORD_GUILD_ID="<guild-id>"
+
+# GCP設定
+GOOGLE_CLOUD_PROJECT="<project-id>"
+GOOGLE_APPLICATION_CREDENTIALS="<path-to-credentials>"
+```
+
+詳細な設定手順は[認証システムのセットアップガイド](./auth/DEVELOPMENT_SETUP.md)を参照してください。
+
+### 開発サーバーの起動
+
+```bash
+bun dev
+```
+
+<http://localhost:3000> でアプリケーションにアクセスできます。
+
+## ディレクトリ構造
+
+```
+apps/web/
+├── src/
+│   ├── app/          # Next.js App Router
+│   ├── components/   # 共有コンポーネント
+│   └── auth.ts       # 認証設定
+├── docs/            # ドキュメント
+└── iac/            # インフラストラクチャコード
+```
+
+## ドキュメント
+
+- [認証システムの設計](./auth/AUTH_DESIGN.md)
+- [開発環境のセットアップ](./auth/DEVELOPMENT_SETUP.md)
+- [変更履歴](./CHANGELOG.md)
+- [GCPインフラストラクチャ](./gcp/GCP_OVERVIEW.md)
+
+## ライセンス
+
+MIT License
