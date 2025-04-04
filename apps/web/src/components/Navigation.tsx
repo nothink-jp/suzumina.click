@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { Fragment } from "react";
 
 export function Navigation() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const userId = session?.user?.id;
 
   return (
@@ -23,7 +24,9 @@ export function Navigation() {
           </div>
 
           <div className="flex items-center">
-            {userId ? (
+            {status === "loading" ? (
+              <Fragment />
+            ) : userId ? (
               <div className="flex items-center space-x-4">
                 <Link
                   href={`/users/${userId}`}
