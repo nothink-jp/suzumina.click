@@ -139,9 +139,9 @@ resource "google_cloud_run_v2_service" "web" {
     google_service_account.runtime,
   ]
 
-  # lifecycle {
-  #   ignore_changes = [template[0].containers[0].image] # CI/CDでイメージが更新されるため、Terraformでの変更を無視
-  # }
+  lifecycle {
+    ignore_changes = [template[0].containers[0].image] # CI/CDでイメージが更新されるため、Terraformでの変更を無視
+  }
 }
 
 # Allow unauthenticated access using google_cloud_run_v2_service_iam_binding
