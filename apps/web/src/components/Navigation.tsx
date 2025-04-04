@@ -1,7 +1,7 @@
 "use client";
 
+import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
 import { Fragment } from "react";
 
 export function Navigation() {
@@ -17,9 +17,7 @@ export function Navigation() {
               href="/"
               className="flex items-center px-2 py-2 text-gray-900 hover:text-gray-600"
             >
-              <span className="text-lg font-medium">
-                すずみなふぁみりー
-              </span>
+              <span className="text-lg font-medium">すずみなふぁみりー</span>
             </Link>
           </div>
 

@@ -1,8 +1,7 @@
 import "./globals.css";
-import type { Metadata } from "next";
 import { auth } from "@/auth";
+import type { Metadata } from "next";
 import { Providers } from "./providers";
-import { GlobalLayout } from "@/components/GlobalLayout";
 
 export const metadata: Metadata = {
   title: "すずみなふぁみりー",
@@ -19,11 +18,7 @@ export default async function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <Providers session={session}>
-          <GlobalLayout>
-            {children}
-          </GlobalLayout>
-        </Providers>
+        <Providers session={session}>{children}</Providers>
       </body>
     </html>
   );
