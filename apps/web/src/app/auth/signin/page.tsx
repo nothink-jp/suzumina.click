@@ -9,7 +9,16 @@ export const metadata: Metadata = {
 
 async function signInWithDiscord() {
   "use server";
-  await signIn("discord", { callbackUrl: "/" });
+  
+  const baseUrl = process.env.NEXTAUTH_URL;
+  if (!baseUrl) {
+    throw new Error("NEXTAUTH_URL is not defined");
+  }
+
+  await signIn("discord", {
+    callbackUrl: baseUrl,
+    redirect: true,
+  });
 }
 
 export default function SignInPage() {
