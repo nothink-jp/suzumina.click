@@ -1,7 +1,8 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { RootProvider } from "./RootProvider";
 import { auth } from "@/auth";
+import { Providers } from "./providers";
+import { Navigation } from "@/components/Navigation";
 
 export const metadata: Metadata = {
   title: "すずみなふぁみりー",
@@ -18,9 +19,14 @@ export default async function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <RootProvider session={session}>
-          {children}
-        </RootProvider>
+        <Providers session={session}>
+          <div className="min-h-screen bg-gray-50">
+            <Navigation />
+            <main className="container mx-auto px-4 py-8">
+              {children}
+            </main>
+          </div>
+        </Providers>
       </body>
     </html>
   );
