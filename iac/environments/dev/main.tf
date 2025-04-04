@@ -42,113 +42,107 @@ resource "google_project_service" "artifactregistry_api" {
   disable_on_destroy         = false
 }
 
-# -----------------------------------------------------------------------------
-# IAM: サービスアカウント
-# -----------------------------------------------------------------------------
-resource "google_service_account" "deployer" {
-  account_id   = var.deployer_service_account_id
-  display_name = "GitHub Actions Deployer Service Account"
-  description  = "Service account for GitHub Actions to deploy resources"
-  project      = var.project_id
-}
-
-resource "google_service_account" "runtime" {
-  account_id   = var.runtime_service_account_id
-  display_name = "Cloud Run Runtime Service Account"
-  description  = "Service account for the Cloud Run service to run as"
-  project      = var.project_id
+resource "google_project_service" "iamcredentials_api" {
+  project                    = var.project_id
+  service                    = "iamcredentials.googleapis.com" # Workload Identity に必要
+  disable_dependent_services = false
+  disable_on_destroy         = false
 }
 
 # -----------------------------------------------------------------------------
-# IAM: ロール付与 (CI/CD Deployer用)
+# IAM: サービスアカウント (既存リソースを参照)
 # -----------------------------------------------------------------------------
-resource "google_project_iam_member" "deployer_run_admin" {
-  project = var.project_id
-  role    = "roles/run.admin"
-  member  = google_service_account.deployer.member
+data "google_service_account" "deployer" {
+  account_id = var.deployer_service_account_id
+  project    = var.project_id
 }
 
-resource "google_project_iam_member" "deployer_artifactregistry_writer" {
-  project = var.project_id
-  role    = "roles/artifactregistry.writer"
-  member  = google_service_account.deployer.member
-}
-
-resource "google_project_iam_member" "deployer_service_account_user" {
-  project = var.project_id
-  role    = "roles/iam.serviceAccountUser" # Cloud RunサービスにSAを割り当てるために必要
-  member  = google_service_account.deployer.member
+data "google_service_account" "runtime" {
+  account_id = var.runtime_service_account_id
+  project    = var.project_id
 }
 
 # -----------------------------------------------------------------------------
-# Artifact Registry
+# Artifact Registry (既存リソースを参照)
 # -----------------------------------------------------------------------------
-resource "google_artifact_registry_repository" "docker_repo" {
-  provider      = google-beta # Dockerリポジトリ作成にはbetaプロバイダが必要な場合がある
+data "google_artifact_registry_repository" "docker_repo" {
   project       = var.project_id
   location      = var.region
   repository_id = var.artifact_registry_repository_id
-  description   = "Docker repository for suzumina.click application images"
-  format        = "DOCKER"
 
   depends_on = [
-    google_project_service.artifactregistry_api # APIが有効になってから作成
+    google_project_service.artifactregistry_api # APIが有効になってから参照
   ]
 }
 
 # -----------------------------------------------------------------------------
-# Cloud Run
+# Cloud Run (既存サービスを参照)
 # -----------------------------------------------------------------------------
-resource "google_cloud_run_v2_service" "web" {
+data "google_cloud_run_v2_service" "web" {
   project  = var.project_id
   location = var.region
   name     = var.cloud_run_service_name
 
-  template {
-    service_account = google_service_account.runtime.email
-    containers {
-      image = "us-docker.pkg.dev/cloudrun/container/hello" # 初期イメージ (CI/CDで更新)
-      ports {
-        container_port = 8080 # Next.jsアプリがリッスンするポート (Dockerfileに合わせる)
-      }
-      resources {
-        limits = {
-          cpu    = "1000m"
-          memory = "512Mi"
-        }
-      }
-    }
-  }
-
-  # Allow unauthenticated access for now
-  # 本番環境では認証を設定すること
-  # iam_policy {
-  #   policy_data = data.google_iam_policy.noauth.policy_data
-  # }
-  # data "google_iam_policy" "noauth" {
-  #   binding {
-  #     role = "roles/run.invoker"
-  #     members = [
-  #       "allUsers",
-  #     ]
-  #   }
-  # }
-
   depends_on = [
     google_project_service.run_api,
-    google_service_account.runtime,
+    data.google_service_account.runtime,
   ]
-
-  # lifecycle {
-  #   ignore_changes = [template[0].containers[0].image] # CI/CDでイメージが更新されるため、Terraformでの変更を無視
-  # }
 }
 
-# Allow unauthenticated access using google_cloud_run_v2_service_iam_binding
-resource "google_cloud_run_v2_service_iam_binding" "allow_unauthenticated" {
-  project  = google_cloud_run_v2_service.web.project
-  location = google_cloud_run_v2_service.web.location
-  name     = google_cloud_run_v2_service.web.name
-  role     = "roles/run.invoker"
-  members  = ["allUsers"]
+# -----------------------------------------------------------------------------
+# Workload Identity Federation for GitHub Actions
+# -----------------------------------------------------------------------------
+resource "google_iam_workload_identity_pool" "github_pool" {
+  project                   = var.project_id
+  workload_identity_pool_id = "github-actions-pool" # プールID (任意)
+  display_name              = "GitHub Actions Pool"
+  description               = "Workload Identity Pool for GitHub Actions"
+
+  depends_on = [
+    google_project_service.iamcredentials_api
+  ]
+}
+
+resource "google_iam_workload_identity_pool_provider" "github_provider" {
+  project                                = var.project_id
+  workload_identity_pool_id              = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-provider" # プロバイダーID (任意)
+  display_name                         = "GitHub Actions Provider"
+  description                          = "Workload Identity Provider for GitHub Actions"
+
+  attribute_mapping = {
+    "google.subject"       = "assertion.sub"
+    "attribute.actor"      = "assertion.actor"
+    "attribute.repository" = "assertion.repository"
+  }
+
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+
+  # 特定のリポジトリに制限
+  attribute_condition = "assertion.repository == 'nothink-jp/suzumina.click'" # 修正: assertion. を使用
+
+  depends_on = [
+    google_iam_workload_identity_pool.github_pool
+  ]
+}
+
+# DeployerサービスアカウントにWorkload Identity Userロールを付与
+resource "google_service_account_iam_member" "deployer_workload_identity_user" {
+  service_account_id = data.google_service_account.deployer.name # 修正: data を使用 (name 属性)
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/*" # 修正: プール内の全IDを許可 (制限は provider で行う)
+
+  depends_on = [ # 追加: プロバイダー作成後に実行
+    google_iam_workload_identity_pool_provider.github_provider
+  ]
+}
+
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
+output "workload_identity_provider_name" {
+  description = "The full name of the Workload Identity Provider for GitHub Actions. Use this value for the GCP_WORKLOAD_IDENTITY_PROVIDER secret in GitHub."
+  value       = google_iam_workload_identity_pool_provider.github_provider.name # `name` 属性を使用 (projects/../providers/...)
 }
