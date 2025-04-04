@@ -32,6 +32,7 @@ const getRequiredEnvVar = (key: string): string => {
   return value;
 };
 
+// Next-Authの設定
 export const {
   handlers: { GET, POST },
   auth,
@@ -45,11 +46,26 @@ export const {
       authorization: {
         params: {
           scope: "identify guilds email",
-          prompt: "consent",
         },
       },
     }),
   ],
+  secret: getRequiredEnvVar("NEXTAUTH_SECRET"),
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   callbacks: {
     async signIn({ account, profile }) {
       if (!account?.access_token || account.provider !== "discord") {
@@ -79,8 +95,6 @@ export const {
         }
 
         const guilds = await response.json();
-        console.log("Fetched guilds:", guilds);
-
         const guildId = getRequiredEnvVar("DISCORD_GUILD_ID");
         const isMember = guilds.some(
           (guild: { id: string }) => guild.id === guildId,
