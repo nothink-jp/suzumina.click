@@ -1,7 +1,7 @@
 import "./globals.css";
 import { auth } from "@/auth";
 import type { Metadata } from "next";
-import { Navigation } from "@/components/Navigation";
+import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "すずみなふぁみりー",
@@ -18,10 +18,9 @@ export default async function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <div className="min-h-screen bg-gray-50">
-          <Navigation userId={session?.user?.id} />
-          <main>{children}</main>
-        </div>
+        <AppShell userId={session?.user?.id}>
+          {children}
+        </AppShell>
       </body>
     </html>
   );
