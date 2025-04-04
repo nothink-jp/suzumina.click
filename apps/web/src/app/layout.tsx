@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { Providers } from "./providers";
-import { Navigation } from "@/components/Navigation";
+import { GlobalLayout } from "@/components/GlobalLayout";
 
 export const metadata: Metadata = {
   title: "すずみなふぁみりー",
@@ -20,12 +20,9 @@ export default async function RootLayout({
     <html lang="ja">
       <body>
         <Providers session={session}>
-          <div className="min-h-screen bg-gray-50">
-            <Navigation />
-            <main className="container mx-auto px-4 py-8">
-              {children}
-            </main>
-          </div>
+          <GlobalLayout>
+            {children}
+          </GlobalLayout>
         </Providers>
       </body>
     </html>
