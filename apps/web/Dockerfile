@@ -10,7 +10,7 @@ WORKDIR /monorepo
 COPY ./package.json ./bun.lock ./turbo.json ./
 COPY ./apps/web/package.json ./apps/web/package.json
 # packages/ 内の package.json もコピー (存在する場合)
-COPY ./packages/*/package.json ./packages/*/
+# COPY ./packages/*/package.json ./packages/*/
 
 # 依存関係をインストール
 RUN bun install --frozen-lockfile
