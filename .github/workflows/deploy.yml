@@ -53,7 +53,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: . # Dockerfile がルートにあることを想定
+          context: . # Dockerfile内のCOPYコマンドがルートからの相対パスのため、コンテキストをルートに設定
           file: ./apps/web/Dockerfile # Dockerfile のパス
           push: true
           tags: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }} # Variables を使用
