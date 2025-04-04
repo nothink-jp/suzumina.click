@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { signOutAction } from "@/app/actions";
+import Link from "next/link";
 
 interface NavigationProps {
   userId?: string | null;
@@ -17,9 +17,7 @@ export function Navigation({ userId }: NavigationProps) {
               href="/"
               className="flex items-center px-2 py-2 text-gray-900 hover:text-gray-600"
             >
-              <span className="text-lg font-medium">
-                すずみなふぁみりー
-              </span>
+              <span className="text-lg font-medium">すずみなふぁみりー</span>
             </Link>
           </div>
 

@@ -1,7 +1,7 @@
 import "./globals.css";
 import { auth } from "@/auth";
-import type { Metadata } from "next";
 import { AppShell } from "@/components/AppShell";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "すずみなふぁみりー",
@@ -18,9 +18,7 @@ export default async function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <AppShell userId={session?.user?.id}>
-          {children}
-        </AppShell>
+        <AppShell userId={session?.user?.id}>{children}</AppShell>
       </body>
     </html>
   );
