@@ -3,6 +3,11 @@ import type { Timestamp } from "@google-cloud/firestore";
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 
+const baseUrl = process.env.NEXTAUTH_URL;
+if (!baseUrl) {
+  throw new Error("NEXTAUTH_URL is not defined");
+}
+
 const firestore = new Firestore();
 const users = firestore.collection("users");
 
@@ -44,6 +49,7 @@ export const {
       clientId: getRequiredEnvVar("DISCORD_CLIENT_ID"),
       clientSecret: getRequiredEnvVar("DISCORD_CLIENT_SECRET"),
       authorization: {
+        url: "https://discord.com/api/oauth2/authorize",
         params: {
           scope: "identify guilds email",
         },
