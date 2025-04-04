@@ -20,7 +20,7 @@
 ```bash
 # Firestoreを有効化（東京リージョン）
 gcloud services enable firestore.googleapis.com
-gcloud firestore databases create --region=asia-northeast1
+gcloud firestore databases create --location=asia-northeast1
 ```
 
 ### Secret Manager の設定

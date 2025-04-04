@@ -1,18 +1,15 @@
 import { Firestore } from "@google-cloud/firestore";
+import type { Timestamp } from "@google-cloud/firestore";
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 
+const baseUrl = process.env.NEXTAUTH_URL;
+if (!baseUrl) {
+  throw new Error("NEXTAUTH_URL is not defined");
+}
+
 const firestore = new Firestore();
 const users = firestore.collection("users");
-
-// Discordギルドの型定義
-interface DiscordGuild {
-  id: string;
-  name: string;
-  icon: string | null;
-  owner: boolean;
-  permissions: string;
-}
 
 // ユーザーデータの型定義
 interface UserData {
@@ -20,25 +17,27 @@ interface UserData {
   displayName: string;
   avatarUrl: string;
   role: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
-// 環境変数の検証
-const checkEnvVars = () => {
-  if (!process.env.DISCORD_CLIENT_ID) {
-    throw new Error("DISCORD_CLIENT_ID is not defined");
+class ConfigurationError extends Error {
+  constructor(envVar: string) {
+    super(`Configuration Error: ${envVar} is not defined`);
+    this.name = "ConfigurationError";
   }
-  if (!process.env.DISCORD_CLIENT_SECRET) {
-    throw new Error("DISCORD_CLIENT_SECRET is not defined");
+}
+
+// 環境変数を取得して型安全に扱う
+const getRequiredEnvVar = (key: string): string => {
+  const value = process.env[key];
+  if (!value) {
+    throw new ConfigurationError(key);
   }
-  if (!process.env.DISCORD_GUILD_ID) {
-    throw new Error("DISCORD_GUILD_ID is not defined");
-  }
+  return value;
 };
 
-checkEnvVars();
-
+// Next-Authの設定
 export const {
   handlers: { GET, POST },
   auth,
@@ -47,22 +46,41 @@ export const {
 } = NextAuth({
   providers: [
     Discord({
-      clientId: process.env.DISCORD_CLIENT_ID,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET,
+      clientId: getRequiredEnvVar("DISCORD_CLIENT_ID"),
+      clientSecret: getRequiredEnvVar("DISCORD_CLIENT_SECRET"),
       authorization: {
+        url: "https://discord.com/api/oauth2/authorize",
         params: {
-          scope: "identify guilds",
+          scope: "identify guilds email",
         },
       },
     }),
   ],
+  secret: getRequiredEnvVar("NEXTAUTH_SECRET"),
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   callbacks: {
     async signIn({ account, profile }) {
-      if (!account || account.provider !== "discord") {
+      if (!account?.access_token || account.provider !== "discord") {
+        console.error("Invalid account data");
         return false;
       }
 
-      if (!profile || !profile.id) {
+      if (!profile?.id) {
+        console.error("Invalid profile data");
         return false;
       }
 
@@ -78,16 +96,18 @@ export const {
         );
 
         if (!response.ok) {
+          console.error("Failed to fetch guild data:", await response.text());
           return false;
         }
 
-        const guilds: DiscordGuild[] = await response.json();
-
+        const guilds = await response.json();
+        const guildId = getRequiredEnvVar("DISCORD_GUILD_ID");
         const isMember = guilds.some(
-          (guild) => guild.id === process.env.DISCORD_GUILD_ID,
+          (guild: { id: string }) => guild.id === guildId,
         );
 
         if (!isMember) {
+          console.error("User is not a member of the required guild");
           return false;
         }
 
@@ -100,24 +120,28 @@ export const {
           // 新規ユーザーの場合
           await userRef.set({
             id: profile.id,
-            displayName: profile.name ?? "",
-            avatarUrl: profile.image ?? "",
-            role: "member", // デフォルトロール
+            displayName: profile.username ?? "",
+            avatarUrl: profile.image_url ?? "",
+            role: "member",
             createdAt: now,
             updatedAt: now,
           });
         } else {
           // 既存ユーザーの場合は更新のみ
           await userRef.update({
-            displayName: profile.name ?? "",
-            avatarUrl: profile.image ?? "",
+            displayName: profile.username ?? "",
+            avatarUrl: profile.image_url ?? "",
             updatedAt: now,
           });
         }
 
         return true;
       } catch (error) {
-        console.error("Error during sign in:", error);
+        if (error instanceof ConfigurationError) {
+          console.error("Authentication configuration error:", error.message);
+        } else {
+          console.error("Error during sign in:", error);
+        }
         return false;
       }
     },
@@ -143,7 +167,14 @@ export const {
       }
       return session;
     },
+    async jwt({ token, account }) {
+      if (account) {
+        token.accessToken = account.access_token;
+      }
+      return token;
+    },
   },
+  debug: process.env.NODE_ENV === "development",
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",
@@ -160,5 +191,9 @@ declare module "next-auth" {
       role: string;
       email?: string | null;
     };
+  }
+
+  interface JWT {
+    accessToken?: string;
   }
 }
