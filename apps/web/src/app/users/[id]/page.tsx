@@ -22,7 +22,10 @@ interface UserData {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const firestore = new Firestore();
   const resolvedParams = await params;
-  const userDoc = await firestore.collection("users").doc(resolvedParams.id).get();
+  const userDoc = await firestore
+    .collection("users")
+    .doc(resolvedParams.id)
+    .get();
 
   if (!userDoc.exists) {
     return {
@@ -57,7 +60,10 @@ export default async function UserPage({ params }: Props) {
 
   // Firestoreからユーザー情報を取得
   const firestore = new Firestore();
-  const userDoc = await firestore.collection("users").doc(resolvedParams.id).get();
+  const userDoc = await firestore
+    .collection("users")
+    .doc(resolvedParams.id)
+    .get();
 
   // ユーザーが存在しない場合は404へリダイレクト
   if (!userDoc.exists) {
