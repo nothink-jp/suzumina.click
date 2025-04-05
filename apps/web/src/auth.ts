@@ -3,10 +3,51 @@ import type { Timestamp } from "@google-cloud/firestore";
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 
-const baseUrl = process.env.NEXTAUTH_URL;
-if (!baseUrl) {
-  throw new Error("NEXTAUTH_URL is not defined");
+// ビルド時かどうかを判定する関数
+const isBuildTime = () => {
+  // NEXT_PHASE環境変数がビルド時に設定される
+  return process.env.NEXT_PHASE === 'phase-production-build';
+};
+
+// ランタイムの本番環境かどうかを判定する関数
+const isProductionRuntime = () => {
+  return process.env.NODE_ENV === 'production' && !isBuildTime();
+};
+
+class ConfigurationError extends Error {
+  constructor(envVar: string) {
+    super(`Configuration Error: ${envVar} is not defined in the production runtime environment. Please ensure it is set correctly.`);
+    this.name = "ConfigurationError";
+  }
 }
+
+// 環境変数を取得して型安全に扱う（改善版）
+const getRequiredEnvVar = (key: string): string => {
+  const value = process.env[key];
+
+  // ビルド時にはダミー値を返す
+  if (isBuildTime()) {
+    // ダミー値でも空文字列は避ける
+    return `dummy-${key}`;
+  }
+
+  // 本番ランタイム時に値が存在しない場合はエラーをスロー
+  if (!value && isProductionRuntime()) {
+    throw new ConfigurationError(key);
+  }
+
+  // 開発環境や、本番ランタイムで値が存在する場合はその値を返す
+  // (開発環境で値がない場合は空文字列が返るが、NextAuth側でハンドリングされる想定)
+  return value || '';
+};
+
+// NEXTAUTH_URLの取得（改善版）
+const baseUrl = process.env.NEXTAUTH_URL;
+if (!baseUrl && isProductionRuntime()) {
+  throw new ConfigurationError("NEXTAUTH_URL");
+}
+// ビルド時にはダミーURLを使用
+const effectiveBaseUrl = isBuildTime() ? 'https://example.com' : baseUrl;
 
 const firestore = new Firestore();
 const users = firestore.collection("users");
@@ -21,22 +62,6 @@ interface UserData {
   updatedAt: Timestamp;
 }
 
-class ConfigurationError extends Error {
-  constructor(envVar: string) {
-    super(`Configuration Error: ${envVar} is not defined`);
-    this.name = "ConfigurationError";
-  }
-}
-
-// 環境変数を取得して型安全に扱う
-const getRequiredEnvVar = (key: string): string => {
-  const value = process.env[key];
-  if (!value) {
-    throw new ConfigurationError(key);
-  }
-  return value;
-};
-
 // Next-Authの設定
 export const {
   handlers: { GET, POST },
@@ -44,6 +69,8 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
+  // baseUrlを明示的に設定（ビルド時とランタイム時で異なる可能性があるため）
+  ...(effectiveBaseUrl && { url: new URL(effectiveBaseUrl) }), // Use URL object for v5
   providers: [
     Discord({
       clientId: getRequiredEnvVar("DISCORD_CLIENT_ID"),
@@ -68,7 +95,8 @@ export const {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        // secure属性は本番ランタイム時のみtrueにする
+        secure: isProductionRuntime(),
       },
     },
   },
@@ -101,6 +129,7 @@ export const {
         }
 
         const guilds = await response.json();
+        // guildIdの取得はエラーハンドリングを含むgetRequiredEnvVarを使用
         const guildId = getRequiredEnvVar("DISCORD_GUILD_ID");
         const isMember = guilds.some(
           (guild: { id: string }) => guild.id === guildId,
@@ -137,11 +166,14 @@ export const {
 
         return true;
       } catch (error) {
+        // 本番ランタイム時の設定エラーはここでキャッチされる
         if (error instanceof ConfigurationError) {
-          console.error("Authentication configuration error:", error.message);
-        } else {
-          console.error("Error during sign in:", error);
+          console.error("Authentication configuration error during signIn:", error.message);
+          // 本番環境で設定エラーがあれば認証を失敗させる
+          return false;
         }
+        // その他のエラー
+        console.error("Error during sign in:", error);
         return false;
       }
     },
@@ -174,7 +206,8 @@ export const {
       return token;
     },
   },
-  debug: process.env.NODE_ENV === "development",
+  // debugは開発環境のランタイム時のみtrueにする
+  debug: process.env.NODE_ENV === "development" && !isBuildTime(),
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",
