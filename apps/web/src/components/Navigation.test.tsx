@@ -11,7 +11,8 @@ mock.module("next-auth/react", () => ({
 }));
 
 describe("Navigation", () => {
-  test("statusがloadingの場合、ユーザー関連のリンクを表示しない", () => { // 説明文を修正
+  test("statusがloadingの場合、ユーザー関連のリンクを表示しない", () => {
+    // 説明文を修正
     mockUseSession.mockReturnValue({
       status: "loading",
       data: null,
