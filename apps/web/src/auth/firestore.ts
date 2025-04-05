@@ -14,18 +14,13 @@ export function getFirestore(): Firestore {
           doc: () => ({
             get: async () => {
               const state = getMockState();
-              console.log("Mock Firestore get returning:", state);
               return {
                 exists: state.exists,
                 data: () => (state.exists ? state.data : undefined),
               };
             },
-            set: async (data: Partial<MockFirestoreData>) => {
-              console.log("Mock Firestore set called with:", data);
-            },
-            update: async (data: Partial<MockFirestoreData>) => {
-              console.log("Mock Firestore update called with:", data);
-            },
+            set: async (_data: Partial<MockFirestoreData>) => {},
+            update: async (_data: Partial<MockFirestoreData>) => {},
           }),
         }),
       } as unknown as Firestore;

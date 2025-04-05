@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-import { getRequiredEnvVar, ConfigurationError } from "./utils";
+import { ConfigurationError, getRequiredEnvVar } from "./utils";
 
 describe("認証システムの環境変数ハンドリング", () => {
   const originalEnv = { ...process.env };

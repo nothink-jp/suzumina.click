@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { auth, GET, POST, signIn, signOut } from "./auth"; // handlersをGET, POSTに変更
 import Discord from "next-auth/providers/discord";
+import { GET, POST, auth, signIn, signOut } from "./auth"; // handlersをGET, POSTに変更
 import { callbacks } from "./auth/callbacks";
 
 describe("NextAuth 設定", () => {
@@ -18,7 +18,7 @@ describe("NextAuth 設定", () => {
     // 期待されるプロバイダータイプが存在するか間接的に確認
     // (より良い方法は設定オブジェクトをエクスポートすること)
     // 現状では、authオブジェクトの存在確認に留める
-    expect(auth).toBeDefined(); 
+    expect(auth).toBeDefined();
     // TODO: authConfigをエクスポートして、providers配列を直接検証する
   });
 

@@ -1,4 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import type { Session } from "next-auth";
+import {
+  getMockState,
+  resetMockData,
+  setMockData,
+  setMockExists,
+  // setMockError, // TODO: エラーテスト時に有効化
+} from "../../tests/mocks/firestore";
 import {
   mockDiscordAccount,
   mockDiscordGuilds,
@@ -8,14 +16,6 @@ import {
 } from "../../tests/mocks/next-auth";
 import { callbacks } from "./callbacks";
 import { resetFirestore } from "./firestore";
-import {
-  setMockData,
-  resetMockData,
-  getMockState,
-  setMockExists,
-  // setMockError, // TODO: エラーテスト時に有効化
-} from "../../tests/mocks/firestore";
-import type { Session } from "next-auth";
 
 describe("認証コールバック", () => {
   const originalEnv = { ...process.env };
@@ -87,7 +87,9 @@ describe("認証コールバック", () => {
 
     it("Guild APIが失敗した場合は認証失敗", async () => {
       global.fetch = mock(() => {
-        return Promise.resolve(createMockResponse({ error: "Forbidden" }, false));
+        return Promise.resolve(
+          createMockResponse({ error: "Forbidden" }, false),
+        );
       }) as unknown as typeof fetch;
       const result = await callbacks.signIn({
         account: mockDiscordAccount,

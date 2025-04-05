@@ -1,8 +1,8 @@
 import type { Account, Profile } from "next-auth";
-import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
-import { getRequiredEnvVar } from "./utils";
+import type { JWT } from "next-auth/jwt";
 import { users } from "./firestore";
+import { getRequiredEnvVar } from "./utils";
 
 interface DiscordProfile extends Profile {
   username?: string;
@@ -28,8 +28,6 @@ export const callbacks = {
     }
 
     try {
-      // Discord APIの呼び出し
-      console.log("Fetching Discord guild data...");
       const response = await fetch("https://discord.com/api/users/@me/guilds", {
         headers: {
           Authorization: `Bearer ${account.access_token}`,
@@ -50,15 +48,14 @@ export const callbacks = {
         return false;
       }
 
-      const isMember = guilds.some((guild: { id: string }) => guild.id === guildId);
+      const isMember = guilds.some(
+        (guild: { id: string }) => guild.id === guildId,
+      );
 
       if (!isMember) {
         console.error("User is not a member of the required guild");
         return false;
       }
-
-      // ユーザー情報の更新
-      console.log("Updating user data...");
       const userRef = users.doc(profile.id);
       const now = new Date();
       const userData = {
@@ -69,11 +66,8 @@ export const callbacks = {
         updatedAt: now,
         createdAt: now,
       };
-
-      console.log("Setting user data:", userData);
       try {
         await userRef.set(userData);
-        console.log("User data updated successfully");
       } catch (error) {
         console.error("Failed to update user data:", error);
         throw error; // エラーを再スローして上位でキャッチする

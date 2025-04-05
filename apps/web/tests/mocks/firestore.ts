@@ -26,38 +26,29 @@ export function createMockFirestore() {
     collection: () => ({
       doc: () => ({
         async get() {
-          console.log("Mock Firestore get called");
           if (mockError) {
-            console.log("Mock Firestore get throwing error:", mockError.message);
             throw mockError;
           }
           const result = {
             exists: mockExists,
             data: () => (mockExists ? { ...mockData } : undefined),
           };
-          console.log("Mock Firestore get returning:", result);
           return result;
         },
         async set(data: Partial<MockFirestoreData>) {
-          console.log("Mock Firestore set called with:", data);
           // エラーチェックを最初に行う
           if (mockError) {
-            console.log("Mock Firestore set throwing error:", mockError.message);
             throw mockError;
           }
           mockData = { ...mockData, ...data };
           mockExists = true;
-          console.log("Mock Firestore set completed");
         },
         async update(data: Partial<MockFirestoreData>) {
-          console.log("Mock Firestore update called with:", data);
           // エラーチェックを最初に行う
           if (mockError) {
-            console.log("Mock Firestore update throwing error:", mockError.message);
             throw mockError;
           }
           mockData = { ...mockData, ...data };
-          console.log("Mock Firestore update completed");
         },
       }),
     }),
@@ -74,12 +65,10 @@ export function setMockExists(exists: boolean) {
 }
 
 export function setMockError(error: Error | null) {
-  console.log("Setting mock error:", error?.message ?? "null");
   mockError = error;
 }
 
 export function resetMockData() {
-  console.log("Resetting mock data and state");
   mockData = {
     id: "test-id",
     displayName: "Test User",
