@@ -4,11 +4,11 @@ import type { Timestamp } from "@google-cloud/firestore";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-interface Props {
-  params: {
+type Props = {
+  params: Promise<{
     id: string;
-  };
-}
+  }>;
+};
 
 interface UserData {
   displayName: string;
@@ -21,7 +21,8 @@ interface UserData {
 // 動的なメタデータの生成
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const firestore = new Firestore();
-  const userDoc = await firestore.collection("users").doc(params.id).get();
+  const resolvedParams = await params;
+  const userDoc = await firestore.collection("users").doc(resolvedParams.id).get();
 
   if (!userDoc.exists) {
     return {
@@ -51,9 +52,12 @@ export default async function UserPage({ params }: Props) {
     redirect("/auth/signin");
   }
 
+  // パラメータの解決
+  const resolvedParams = await params;
+
   // Firestoreからユーザー情報を取得
   const firestore = new Firestore();
-  const userDoc = await firestore.collection("users").doc(params.id).get();
+  const userDoc = await firestore.collection("users").doc(resolvedParams.id).get();
 
   // ユーザーが存在しない場合は404へリダイレクト
   if (!userDoc.exists) {
@@ -82,7 +86,7 @@ export default async function UserPage({ params }: Props) {
                   {userData.displayName}
                 </h1>
                 <p className="mt-1 text-sm text-gray-500">{userData.role}</p>
-                {session.user.id === params.id && (
+                {session.user.id === resolvedParams.id && (
                   <p className="mt-1 text-sm text-gray-500">
                     あなたのプロフィールページです
                   </p>
