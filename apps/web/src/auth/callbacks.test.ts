@@ -1,11 +1,12 @@
+import "@/../tests/setup"; // ルートからの実行を考慮したパスに変更
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import type { Session } from "next-auth";
 import {
   getMockState,
   resetMockData,
   setMockData,
+  setMockError,
   setMockExists,
-  // setMockError, // TODO: エラーテスト時に有効化
 } from "../../tests/mocks/firestore";
 import {
   mockDiscordAccount,
@@ -49,7 +50,7 @@ describe("認証コールバック", () => {
 
     resetMockData();
     resetFirestore();
-    // setMockError(null); // TODO: エラーテスト時に有効化
+    setMockError(null); // 各テストの前にエラー状態をリセット
 
     setMockData({
       id: mockDiscordProfile.id,
@@ -65,7 +66,7 @@ describe("認証コールバック", () => {
 
   afterEach(() => {
     process.env = { ...originalEnv };
-    // setMockError(null); // TODO: エラーテスト時に有効化
+    setMockError(null); // テスト後にもエラー状態をリセット
   });
 
   describe("signIn", () => {
@@ -74,6 +75,7 @@ describe("認証コールバック", () => {
         account: null,
         profile: mockDiscordProfile,
       });
+
       expect(result).toBe(false);
     });
 
@@ -82,6 +84,7 @@ describe("認証コールバック", () => {
         account: mockDiscordAccount,
         profile: undefined,
       });
+
       expect(result).toBe(false);
     });
 
@@ -91,20 +94,24 @@ describe("認証コールバック", () => {
           createMockResponse({ error: "Forbidden" }, false),
         );
       }) as unknown as typeof fetch;
+
       const result = await callbacks.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
       });
+
       expect(result).toBe(false);
     });
 
     it("Guild IDが未設定の場合は認証失敗", async () => {
       const { DISCORD_GUILD_ID, ...envWithoutGuildId } = process.env;
       process.env = envWithoutGuildId;
+
       const result = await callbacks.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
       });
+
       expect(result).toBe(false);
     });
 
@@ -123,6 +130,7 @@ describe("認証コールバック", () => {
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
       });
+
       expect(result).toBe(true);
       expect(getMockState().exists).toBe(true);
       expect(getMockState().data.id).toBe(mockDiscordProfile.id);
@@ -135,15 +143,18 @@ describe("認証コールバック", () => {
         session: mockSession,
         token: {},
       });
+
       expect(result).toEqual(mockSession);
     });
 
     it("ユーザーが存在しない場合は元のセッションを返す", async () => {
       setMockExists(false);
+
       const result = await callbacks.session({
         session: mockSession,
         token: mockToken,
       });
+
       expect(result).toEqual(mockSession);
     });
 
@@ -164,11 +175,14 @@ describe("認証コールバック", () => {
         avatarUrl: "https://example.com/updated.png",
         role: "member",
       };
+
       setMockData(testData);
+
       const result = await callbacks.session({
         session: mockSession,
         token: mockToken,
       });
+
       expect(result.user).toBeDefined();
       expect(result.user.id).toBe(testData.id);
       expect(result.user.displayName).toBe(testData.displayName);

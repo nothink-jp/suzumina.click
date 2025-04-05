@@ -1,6 +1,5 @@
 [test]
-# テストファイルのパターン
-preload = ["./tests/setup.ts"]
+# preload = ["./apps/web/tests/setup.ts"] # setup.tsを各テストファイルでimportするため削除
 coverage = true
 environment = "happy-dom"
 

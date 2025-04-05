@@ -42,16 +42,21 @@ beforeAll(() => {
   }));
 
   // Firestoreのモック
-  // Firestoreクラス自体をモックし、インスタンスのメソッドをモックで置き換える
-  mock.module("@google-cloud/firestore", () => ({
-    Firestore: class MockFirestoreImpl implements MockFirestore { // MockFirestoreインターフェースを実装
-      collection: MockFirestore["collection"]; // 正しい型を使用
+  // モジュール全体をモックし、Firestoreクラスを置き換える
+  mock.module("@google-cloud/firestore", () => {
+    class MockFirestoreImpl implements MockFirestore {
+      collection: MockFirestore["collection"];
       constructor() {
         const mockInstance = createMockFirestore();
         this.collection = mockInstance.collection;
       }
-    },
-  }));
+    }
+    return {
+      Firestore: MockFirestoreImpl,
+      // 他にFirestoreモジュールからエクスポートされているものがあればここに追加
+      // 例: Timestamp: class MockTimestamp {}
+    };
+  });
 
   // fetchのモック
   const mockFetchImplementation = () =>
