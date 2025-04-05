@@ -1,4 +1,6 @@
 import { afterEach, beforeAll, mock } from "bun:test";
+import { createMockFirestore } from "./mocks/firestore"; // モックファクトリをインポート
+import type { MockFirestore } from "./mocks/firestore"; // モックの型をインポート
 
 // テスト実行後のクリーンアップ
 afterEach(() => {
@@ -15,7 +17,8 @@ beforeAll(() => {
     DISCORD_CLIENT_ID: "test-client-id",
     DISCORD_CLIENT_SECRET: "test-client-secret",
     DISCORD_GUILD_ID: "test-guild-id",
-    GOOGLE_CLOUD_PROJECT: "test-project",
+    GOOGLE_CLOUD_PROJECT: "test-project", // テスト用のプロジェクトID
+    GOOGLE_APPLICATION_CREDENTIALS: "", // 認証情報を無効化
   };
 
   process.env = {
@@ -36,6 +39,18 @@ beforeAll(() => {
 
   mock.module("next-auth", () => ({
     default: () => mockNextAuth,
+  }));
+
+  // Firestoreのモック
+  // Firestoreクラス自体をモックし、インスタンスのメソッドをモックで置き換える
+  mock.module("@google-cloud/firestore", () => ({
+    Firestore: class MockFirestoreImpl implements MockFirestore { // MockFirestoreインターフェースを実装
+      collection: MockFirestore["collection"]; // 正しい型を使用
+      constructor() {
+        const mockInstance = createMockFirestore();
+        this.collection = mockInstance.collection;
+      }
+    },
   }));
 
   // fetchのモック

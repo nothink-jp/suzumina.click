@@ -8,6 +8,26 @@ export interface MockFirestoreData {
   updatedAt?: Date;
 }
 
+export interface MockFirestoreDoc {
+  exists: boolean;
+  data: () => MockFirestoreData | undefined;
+}
+
+export interface MockFirestoreDocRef {
+  get: () => Promise<MockFirestoreDoc>;
+  set: (data: Partial<MockFirestoreData>) => Promise<void>;
+  update: (data: Partial<MockFirestoreData>) => Promise<void>;
+}
+
+export interface MockFirestoreCollection {
+  doc: (id: string) => MockFirestoreDocRef;
+}
+
+// Firestoreクライアントのモックインターフェース
+export interface MockFirestore {
+  collection: (name: string) => MockFirestoreCollection;
+}
+
 // モック状態の管理
 let mockData: MockFirestoreData = {
   id: "test-id",
@@ -21,7 +41,7 @@ let mockExists = true;
 let mockError: Error | null = null;
 
 // シンプルなFirestoreモック
-export function createMockFirestore() {
+export function createMockFirestore(): MockFirestore {
   return {
     collection: () => ({
       doc: () => ({
