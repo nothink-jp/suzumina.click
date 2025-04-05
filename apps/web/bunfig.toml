@@ -1,0 +1,26 @@
+[test]
+# テストファイルのパターン
+preload = ["./tests/setup.ts"]
+coverage = true
+environment = "happy-dom"
+
+# テストディレクトリとパターンの設定
+testDirectory = "./src"
+testPattern = "**/*.test.{ts,tsx}"
+
+# カバレッジ設定
+coveragePattern = [
+  "src/**/*.{ts,tsx}",
+  "!src/**/*.d.ts",
+  "!src/**/*.test.{ts,tsx}",
+  "!tests/**/*",
+  "!**/node_modules/**"
+]
+
+# テスト環境変数
+[env]
+NODE_ENV = "test"
+
+# テストスイートの設定
+[test.setup]
+usesHappyDOM = true

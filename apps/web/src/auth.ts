@@ -4,17 +4,17 @@ import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 
 // ビルド時かどうかを判定する関数
-const isBuildTime = () => {
+export const isBuildTime = () => {
   // NEXT_PHASE環境変数がビルド時に設定される
   return process.env.NEXT_PHASE === "phase-production-build";
 };
 
 // ランタイムの本番環境かどうかを判定する関数
-const isProductionRuntime = () => {
+export const isProductionRuntime = () => {
   return process.env.NODE_ENV === "production" && !isBuildTime();
 };
 
-class ConfigurationError extends Error {
+export class ConfigurationError extends Error {
   constructor(envVar: string) {
     super(
       `Configuration Error: ${envVar} is not defined in the production runtime environment. Please ensure it is set correctly.`,
@@ -24,7 +24,7 @@ class ConfigurationError extends Error {
 }
 
 // 環境変数を取得して型安全に扱う（改善版）
-const getRequiredEnvVar = (key: string): string => {
+export const getRequiredEnvVar = (key: string): string => {
   const value = process.env[key];
 
   // ビルド時にはダミー値を返す
