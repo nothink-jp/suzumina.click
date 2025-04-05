@@ -33,8 +33,8 @@ const getRequiredEnvVar = (key: string): string => {
     return `dummy-${key}`;
   }
 
-  // 本番ランタイム時に値が存在しない場合はエラーをスロー
-  if (!value && isProductionRuntime()) {
+  // 本番ランタイム時に値が実際に未設定(undefined or null)の場合のみエラーをスロー
+  if ((value === undefined || value === null) && isProductionRuntime()) {
     throw new ConfigurationError(key);
   }
 
@@ -45,7 +45,8 @@ const getRequiredEnvVar = (key: string): string => {
 
 // NEXTAUTH_URLの取得（改善版）
 const baseUrl = process.env.NEXTAUTH_URL;
-if (!baseUrl && isProductionRuntime()) {
+// 本番ランタイム時に値が実際に未設定(undefined or null)の場合のみエラーをスロー
+if ((baseUrl === undefined || baseUrl === null) && isProductionRuntime()) {
   throw new ConfigurationError("NEXTAUTH_URL");
 }
 // ビルド時にはダミーURLを使用
@@ -72,6 +73,7 @@ export const {
   signOut,
 } = NextAuth({
   // baseUrlを明示的に設定（ビルド時とランタイム時で異なる可能性があるため）
+  // effectiveBaseUrlがnullやundefinedでないことを確認
   ...(effectiveBaseUrl && { url: new URL(effectiveBaseUrl) }), // Use URL object for v5
   providers: [
     Discord({
