@@ -22,6 +22,17 @@
     },
     "check": {
       "cache": false
+    },
+    "test": {
+      "cache": false
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:coverage": {
+      "cache": false,
+      "outputs": ["coverage/**"]
     }
   }
 }

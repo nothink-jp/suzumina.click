@@ -1,7 +1,7 @@
 [test]
-# preload = ["./apps/web/tests/setup.ts"] # setup.tsを各テストファイルでimportするため削除
+preload = ["./happydom.ts", "./tests/setup.ts"] # happydom.ts のパスを修正
 coverage = true
-environment = "happy-dom"
+# environment = "happy-dom" # setup.tsで設定するためコメントアウト
 
 # テストディレクトリとパターンの設定
 testDirectory = "./src"
@@ -21,5 +21,5 @@ coveragePattern = [
 NODE_ENV = "test"
 
 # テストスイートの設定
-[test.setup]
-usesHappyDOM = true
+# [test.setup] # usesHappyDOMはenvironmentで設定するため削除
+# usesHappyDOM = true

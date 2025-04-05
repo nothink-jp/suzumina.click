@@ -1,10 +1,12 @@
 import { afterEach, beforeAll, mock } from "bun:test";
+import { cleanup } from "@testing-library/react"; // cleanup をインポート
+
 import { createMockFirestore } from "./mocks/firestore"; // モックファクトリをインポート
 import type { MockFirestore } from "./mocks/firestore"; // モックの型をインポート
 
 // テスト実行後のクリーンアップ
 afterEach(() => {
-  // クリーンアップロジックをここに実装
+  cleanup(); // cleanup を呼び出す
 });
 
 // グローバルなモック設定
@@ -42,7 +44,6 @@ beforeAll(() => {
   }));
 
   // Firestoreのモック
-  // モジュール全体をモックし、Firestoreクラスを置き換える
   mock.module("@google-cloud/firestore", () => {
     class MockFirestoreImpl implements MockFirestore {
       collection: MockFirestore["collection"];
@@ -53,8 +54,6 @@ beforeAll(() => {
     }
     return {
       Firestore: MockFirestoreImpl,
-      // 他にFirestoreモジュールからエクスポートされているものがあればここに追加
-      // 例: Timestamp: class MockTimestamp {}
     };
   });
 
