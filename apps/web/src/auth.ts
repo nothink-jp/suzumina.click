@@ -6,17 +6,19 @@ import Discord from "next-auth/providers/discord";
 // ビルド時かどうかを判定する関数
 const isBuildTime = () => {
   // NEXT_PHASE環境変数がビルド時に設定される
-  return process.env.NEXT_PHASE === 'phase-production-build';
+  return process.env.NEXT_PHASE === "phase-production-build";
 };
 
 // ランタイムの本番環境かどうかを判定する関数
 const isProductionRuntime = () => {
-  return process.env.NODE_ENV === 'production' && !isBuildTime();
+  return process.env.NODE_ENV === "production" && !isBuildTime();
 };
 
 class ConfigurationError extends Error {
   constructor(envVar: string) {
-    super(`Configuration Error: ${envVar} is not defined in the production runtime environment. Please ensure it is set correctly.`);
+    super(
+      `Configuration Error: ${envVar} is not defined in the production runtime environment. Please ensure it is set correctly.`,
+    );
     this.name = "ConfigurationError";
   }
 }
@@ -38,7 +40,7 @@ const getRequiredEnvVar = (key: string): string => {
 
   // 開発環境や、本番ランタイムで値が存在する場合はその値を返す
   // (開発環境で値がない場合は空文字列が返るが、NextAuth側でハンドリングされる想定)
-  return value || '';
+  return value || "";
 };
 
 // NEXTAUTH_URLの取得（改善版）
@@ -47,7 +49,7 @@ if (!baseUrl && isProductionRuntime()) {
   throw new ConfigurationError("NEXTAUTH_URL");
 }
 // ビルド時にはダミーURLを使用
-const effectiveBaseUrl = isBuildTime() ? 'https://example.com' : baseUrl;
+const effectiveBaseUrl = isBuildTime() ? "https://example.com" : baseUrl;
 
 const firestore = new Firestore();
 const users = firestore.collection("users");
@@ -168,7 +170,10 @@ export const {
       } catch (error) {
         // 本番ランタイム時の設定エラーはここでキャッチされる
         if (error instanceof ConfigurationError) {
-          console.error("Authentication configuration error during signIn:", error.message);
+          console.error(
+            "Authentication configuration error during signIn:",
+            error.message,
+          );
           // 本番環境で設定エラーがあれば認証を失敗させる
           return false;
         }
