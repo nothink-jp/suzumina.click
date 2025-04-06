@@ -26,6 +26,5 @@ jobs:
     with:
       # Use main branch ref for manual deploys
       git_ref: 'refs/heads/main'
-      # Use the SHA associated with the workflow trigger event
-      image_tag: ${{ github.sha }}
+      # image_tag is now generated within the reusable workflow
     # secrets: inherit # If reusable workflow needs secrets

@@ -7,10 +7,7 @@ on:
         description: 'Git ref (branch, tag, or SHA) to checkout'
         required: true
         type: string
-      image_tag:
-        description: 'Docker image tag (e.g., commit SHA)'
-        required: true
-        type: string
+      # image_tag input is removed, tag is generated internally
 
 jobs:
   build-and-deploy:
@@ -31,15 +28,16 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate Image Name
-        id: generate_name # Give the step an ID to reference its outputs
+      - name: Generate Image Tag # Renamed step
+        id: generate_tag # Renamed step ID
         run: |
           VERSION=$(jq -r .version apps/web/package.json)
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-          GENERATED_NAME="web-app-v${VERSION}-${TIMESTAMP}"
-          # Set the generated name as an output of this step
-          echo "image_name=${GENERATED_NAME}" >> $GITHUB_OUTPUT
-          echo "Generated image name: ${GENERATED_NAME}"
+          # Generate tag in vX.Y.Z-YYYYMMDD-HHMMSS format
+          GENERATED_TAG="v${VERSION}-${TIMESTAMP}"
+          # Set the generated tag as an output of this step
+          echo "generated_tag=${GENERATED_TAG}" >> $GITHUB_OUTPUT
+          echo "Generated image tag: ${GENERATED_TAG}"
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -63,8 +61,8 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
-          # Use the output from the generate_name step
-          tags: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ steps.generate_name.outputs.image_name }}:${{ inputs.image_tag }}
+          # Use fixed image name 'web-app' and the generated tag
+          tags: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/web-app:${{ steps.generate_tag.outputs.generated_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -74,8 +72,8 @@ jobs:
         with:
           service: 'web' # Hardcoded service name
           region: ${{ vars.GCP_REGION }}
-          # Use the output from the generate_name step
-          image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ steps.generate_name.outputs.image_name }}:${{ inputs.image_tag }}
+          # Use fixed image name 'web-app' and the generated tag
+          image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/web-app:${{ steps.generate_tag.outputs.generated_tag }}
 
       - name: Show deployed URL
         run: |

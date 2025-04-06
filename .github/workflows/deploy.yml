@@ -7,9 +7,9 @@ on:
       - "apps/web/**"
       - ".github/workflows/deploy.yml"
       - ".github/workflows/reusable-deploy.yml"
-      - "package.json" # Trigger on root package changes
-      - "bun.lock"     # Trigger on lock file changes
-      - "turbo.json"   # Trigger on turbo config changes
+      - "package.json"
+      - "bun.lock"
+      - "turbo.json"
 
 permissions:
   id-token: write
@@ -26,5 +26,5 @@ jobs:
     uses: ./.github/workflows/reusable-deploy.yml
     with:
       git_ref: ${{ github.ref }}
-      image_tag: ${{ github.sha }}
+      # image_tag is now generated within the reusable workflow
     # secrets: inherit # If reusable workflow needs secrets
