@@ -32,12 +32,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Generate Image Name
-        id: generate_name
+        id: generate_name # Give the step an ID to reference its outputs
         run: |
           VERSION=$(jq -r .version apps/web/package.json)
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
           GENERATED_NAME="web-app-v${VERSION}-${TIMESTAMP}"
-          echo "GENERATED_IMAGE_NAME=${GENERATED_NAME}" >> $GITHUB_ENV
+          # Set the generated name as an output of this step
+          echo "image_name=${GENERATED_NAME}" >> $GITHUB_OUTPUT
           echo "Generated image name: ${GENERATED_NAME}"
 
       - name: Authenticate to Google Cloud
@@ -62,7 +63,8 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
-          tags: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.GENERATED_IMAGE_NAME }}:${{ inputs.image_tag }}
+          # Use the output from the generate_name step
+          tags: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ steps.generate_name.outputs.image_name }}:${{ inputs.image_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -72,7 +74,8 @@ jobs:
         with:
           service: 'web' # Hardcoded service name
           region: ${{ vars.GCP_REGION }}
-          image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.GENERATED_IMAGE_NAME }}:${{ inputs.image_tag }}
+          # Use the output from the generate_name step
+          image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ steps.generate_name.outputs.image_name }}:${{ inputs.image_tag }}
 
       - name: Show deployed URL
         run: |
