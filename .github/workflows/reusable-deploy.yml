@@ -75,6 +75,10 @@ jobs:
         run: terraform init
         working-directory: ./iac/environments/dev
 
+      - name: Terraform Refresh # Add refresh step before apply
+        run: terraform refresh
+        working-directory: ./iac/environments/dev
+
       - name: Terraform Apply
         run: |
           terraform apply -auto-approve \
