@@ -32,9 +32,3 @@ variable "runtime_service_account_id" {
   type        = string
   default     = "app-runtime"
 }
-
-variable "docker_image_tag" {
-  description = "The tag for the Docker image to deploy (provided by CI/CD)."
-  type        = string
-  # No default, this will be passed via -var flag during apply
-}

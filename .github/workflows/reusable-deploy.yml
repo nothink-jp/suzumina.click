@@ -61,28 +61,25 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
-          # Use fixed image name 'web-app' and the generated tag
-          tags: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/web-app:${{ steps.generate_tag.outputs.generated_tag }}
+          # Push both the generated tag and the 'latest' tag
+          tags: |
+            ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/web-app:${{ steps.generate_tag.outputs.generated_tag }}
+            ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/web-app:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        # with:
-        #   terraform_version: "1.x.x" # Specify version if needed
+      # Terraform ステップを削除
 
-      - name: Terraform Init
-        run: terraform init
-        working-directory: ./iac/environments/dev
+      - name: Deploy to Cloud Run (Update Image) # Use deploy-cloudrun action again
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: 'web' # Cloud Run service name defined in Terraform
+          region: ${{ vars.GCP_REGION }}
+          # Deploy the specific image tag built in this workflow
+          image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/web-app:${{ steps.generate_tag.outputs.generated_tag }}
+          # No need to specify env vars here, they are managed by Terraform
 
-      # Terraform Import ステップを削除
-
-      - name: Terraform Apply
+      - name: Show deployed URL # Add step to show URL
         run: |
-          terraform apply -auto-approve \
-            -var="docker_image_tag=${{ steps.generate_tag.outputs.generated_tag }}" \
-            -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
-            -var="region=${{ vars.GCP_REGION }}"
-        working-directory: ./iac/environments/dev
-
-      # Deploy to Cloud Run ステップと Show deployed URL ステップを削除
+          echo "Deployed to: ${{ steps.deploy.outputs.url }}"

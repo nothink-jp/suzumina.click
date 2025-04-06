@@ -128,14 +128,19 @@ resource "google_cloud_run_v2_service" "web" {
   location = var.region
   name     = var.cloud_run_service_name
 
-  # lifecycle ブロックを削除 (イメージタグは Terraform で管理)
+  # CI/CD でイメージが更新されるため、イメージの変更は Terraform で無視する
+  lifecycle {
+    ignore_changes = [
+      template.containers[0].image,
+    ]
+  }
 
   template {
     service_account = data.google_service_account.runtime.email # 実行SAを指定
 
     containers {
-      # イメージパスを var.docker_image_tag を使用するように変更
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repository_id}/${var.cloud_run_service_name}:${var.docker_image_tag}"
+      # 初期デプロイ用のイメージパス (CI/CD で上書きされる)
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repository_id}/${var.cloud_run_service_name}:latest"
 
       ports {
         container_port = 3000 # Next.jsのデフォルトポート
