@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation"; // useSearchParams をインポート
-import { useState, useEffect } from "react"; // useState, useEffect をインポート
+import { useEffect, useState } from "react"; // useState, useEffect をインポート
 
 // メタデータは静的なのでそのまま残す (ただし、動的にしたい場合は別途対応が必要)
 // export const metadata: Metadata = {
@@ -11,10 +11,13 @@ import { useState, useEffect } from "react"; // useState, useEffect をインポ
 // };
 
 // エラーメッセージを定義するオブジェクト
-const errorMessages: { [key: string]: { title: string; description: string; details?: string[] } } = {
+const errorMessages: {
+  [key: string]: { title: string; description: string; details?: string[] };
+} = {
   default: {
     title: "認証エラー",
-    description: "ログインに失敗しました。しばらくしてからもう一度お試しください。",
+    description:
+      "ログインに失敗しました。しばらくしてからもう一度お試しください。",
   },
   Configuration: {
     title: "設定エラー",
@@ -22,7 +25,8 @@ const errorMessages: { [key: string]: { title: string; description: string; deta
   },
   AccessDenied: {
     title: "アクセスが拒否されました",
-    description: "ログインに必要な権限がないか、アクセスが許可されませんでした。",
+    description:
+      "ログインに必要な権限がないか、アクセスが許可されませんでした。",
     details: [
       "「すずみなふぁみりー」Discordサーバーのメンバーですか？",
       "Discordでの認証を正しく許可しましたか？",
@@ -63,8 +67,9 @@ export default function AuthErrorPage() {
             <p className="text-sm text-gray-600">{description}</p>
             {details && (
               <ul className="text-sm text-gray-600 list-disc list-inside space-y-2 text-left">
-                {details.map((detail) => (
-                  <li key={detail}>{detail}</li>
+                {details.map((detail, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Static list, index is acceptable here
+                  <li key={`${detail}-${index}`}>{detail}</li>
                 ))}
               </ul>
             )}
@@ -73,11 +78,17 @@ export default function AuthErrorPage() {
           {/* エラーコードとトラッキングID表示セクション */}
           <div className="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500 space-y-1">
             <p>
-              エラーコード: <code className="font-mono bg-gray-100 p-1 rounded">{errorType}</code>
+              エラーコード:{" "}
+              <code className="font-mono bg-gray-100 p-1 rounded">
+                {errorType}
+              </code>
             </p>
             {trackingId && ( // trackingIdが生成されてから表示
               <p>
-                トラッキングID: <code className="font-mono bg-gray-100 p-1 rounded">{trackingId}</code>
+                トラッキングID:{" "}
+                <code className="font-mono bg-gray-100 p-1 rounded">
+                  {trackingId}
+                </code>
               </p>
             )}
             {/* サポート連絡方法の追加 */}
@@ -85,7 +96,6 @@ export default function AuthErrorPage() {
               問題が解決しない場合は、Discordサーバーのサポートチャンネルにて、上記のエラーコードとトラッキングIDを添えてお問い合わせください。
             </p>
           </div>
-
 
           <div className="mt-8 space-y-4">
             <Link
