@@ -75,7 +75,17 @@ jobs:
         run: terraform init
         working-directory: ./iac/environments/dev
 
-      # Terraform Apply Refresh Only ステップを削除
+      - name: Terraform Import Cloud Run Service # Add import step
+        # Ignore errors if the resource is already in state or doesn't exist yet
+        continue-on-error: true
+        run: terraform import google_cloud_run_v2_service.web projects/${{ vars.GCP_PROJECT_ID }}/locations/${{ vars.GCP_REGION }}/services/web
+        working-directory: ./iac/environments/dev
+
+      - name: Terraform Import Workload Identity Pool # Add import step
+        # Ignore errors if the resource is already in state or doesn't exist yet
+        continue-on-error: true
+        run: terraform import google_iam_workload_identity_pool.github_pool projects/${{ vars.GCP_PROJECT_ID }}/locations/global/workloadIdentityPools/github-actions-pool
+        working-directory: ./iac/environments/dev
 
       - name: Terraform Apply
         run: |
