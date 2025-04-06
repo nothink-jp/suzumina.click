@@ -9,6 +9,11 @@ on:
         type: boolean
         default: false
 
+# Grant permissions for the reusable workflow to request ID tokens
+permissions:
+  id-token: write # Required for Workload Identity Federation in the reusable workflow
+  contents: read # Default permission, good practice to be explicit
+
 # Environment variables needed by the reusable workflow
 env:
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
@@ -23,7 +28,6 @@ jobs:
     # Only run if the confirmation input is true
     if: ${{ inputs.confirm == true }}
     # Use the reusable workflow from the same repository/commit
-    # Do NOT specify @ref when calling a local reusable workflow
     uses: ./.github/workflows/reusable-deploy.yml
     # Pass required inputs
     with:
