@@ -1,25 +1,17 @@
-[test]
-preload = ["./happydom.ts", "./tests/setup.ts"] # happydom.ts のパスを修正
-coverage = true
-# environment = "happy-dom" # setup.tsで設定するためコメントアウト
+# Bun configuration file
+# See https://bun.sh/docs/runtime/bunfig
 
-# テストディレクトリとパターンの設定
-testDirectory = "./src"
-testPattern = "**/*.test.{ts,tsx}"
+[test]
+# Files to preload before running tests
+# bunfig.toml からの相対パスで指定
+preload = ["./happydom.ts", "./tests/setup.ts"]
 
 # カバレッジ設定
-coveragePattern = [
-  "src/**/*.{ts,tsx}",
-  "!src/**/*.d.ts",
-  "!src/**/*.test.{ts,tsx}",
-  "!tests/**/*",
-  "!**/node_modules/**"
-]
+coverage = true
+coverageThreshold = { line = 0.8, function = 0.8, statement = 0.8, branch = 0.8 }
+coverageSkipTestFiles = false
+coverageReporter  = ["text", "lcov"]
 
 # テスト環境変数
 [env]
 NODE_ENV = "test"
-
-# テストスイートの設定
-# [test.setup] # usesHappyDOMはenvironmentで設定するため削除
-# usesHappyDOM = true
