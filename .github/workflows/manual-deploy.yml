@@ -22,8 +22,9 @@ jobs:
     name: Build and Deploy (Manual)
     # Only run if the confirmation input is true
     if: ${{ inputs.confirm == true }}
-    # Use the reusable workflow from the main branch
-    uses: ./.github/workflows/reusable-deploy.yml@main
+    # Use the reusable workflow from the same repository/commit
+    # Do NOT specify @ref when calling a local reusable workflow
+    uses: ./.github/workflows/reusable-deploy.yml
     # Pass required inputs
     with:
       # For manual dispatch, use the ref of the main branch by default,
