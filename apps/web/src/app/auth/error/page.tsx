@@ -1,28 +1,77 @@
+"use client"; // useSearchParams を使うためクライアントコンポーネントにする
+
 import type { Metadata } from "next";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation"; // useSearchParams をインポート
 
-export const metadata: Metadata = {
-  title: "認証エラー - すずみなふぁみりー",
-  description: "ログインに失敗しました",
+// メタデータは静的なのでそのまま残す (ただし、動的にしたい場合は別途対応が必要)
+// export const metadata: Metadata = {
+//   title: "認証エラー - すずみなふぁみりー",
+//   description: "ログインに失敗しました",
+// };
+
+// エラーメッセージを定義するオブジェクト
+const errorMessages: {
+  [key: string]: { title: string; description: string; details?: string[] };
+} = {
+  default: {
+    title: "認証エラー",
+    description:
+      "ログインに失敗しました。しばらくしてからもう一度お試しください。",
+  },
+  Configuration: {
+    title: "設定エラー",
+    description: "サーバーの設定に問題があるため、ログインできませんでした。",
+  },
+  AccessDenied: {
+    title: "アクセスが拒否されました",
+    description:
+      "ログインに必要な権限がないか、アクセスが許可されませんでした。",
+    details: [
+      "「すずみなふぁみりー」Discordサーバーのメンバーですか？",
+      "Discordでの認証を正しく許可しましたか？",
+      "必要な権限を付与しましたか？",
+    ],
+  },
+  OAuthAccountNotLinked: {
+    title: "アカウント連携エラー",
+    description:
+      "このDiscordアカウントは、既に使用中の別のアカウントと連携されている可能性があります。",
+  },
+  Callback: {
+    title: "認証コールバックエラー",
+    description: "認証情報の処理中にエラーが発生しました。",
+  },
+  // 他の一般的なエラータイプも必要に応じて追加
 };
 
 export default function AuthErrorPage() {
+  const searchParams = useSearchParams();
+  const errorType = searchParams.get("error") || "default";
+  const { title, description, details } =
+    errorMessages[errorType] ?? errorMessages.default; // 未知のエラータイプはdefaultを使用
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-md">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">認証エラー</h1>
+          <h1 className="text-3xl font-bold text-red-600">{title}</h1>{" "}
+          {/* エラータイトルを動的に */}
           <div className="mt-4 space-y-4">
-            <p className="text-sm text-gray-600">
-              ログインに失敗しました。以下の点を確認してください：
-            </p>
-            <ul className="text-sm text-gray-600 list-disc list-inside space-y-2">
-              <li>「すずみなふぁみりー」Discordサーバーのメンバーですか？</li>
-              <li>Discordでの認証を正しく許可しましたか？</li>
-              <li>必要な権限を付与しましたか？</li>
-            </ul>
+            <p className="text-sm text-gray-600">{description}</p>{" "}
+            {/* エラー説明を動的に */}
+            {details && (
+              <ul className="text-sm text-gray-600 list-disc list-inside space-y-2 text-left">
+                {details.map(
+                  (
+                    detail, // index を削除
+                  ) => (
+                    <li key={detail}>{detail}</li> // detail を key に設定
+                  ),
+                )}
+              </ul>
+            )}
           </div>
-
           <div className="mt-8 space-y-4">
             <Link
               href="/auth/signin"
