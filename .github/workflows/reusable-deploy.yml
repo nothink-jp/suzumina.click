@@ -15,9 +15,9 @@ on:
     # Secrets are not needed as we use vars for configuration
 
 # Environment variables that are NOT repository variables or inputs
-# These are expected to be set by the calling workflow.
+# These are expected to be set by the calling workflow OR generated within.
 # env:
-#   CLOUD_RUN_SERVICE: "web" # Set in caller
+#   GENERATED_IMAGE_NAME: ... # Set in Generate Image Name step
 
 jobs:
   build-and-deploy:
@@ -81,7 +81,7 @@ jobs:
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: ${{ env.CLOUD_RUN_SERVICE }} # Inherited env var from caller
+          service: 'web' # Hardcode the service name as it's fixed by IaC for this env
           region: ${{ vars.GCP_REGION }} # Use repository variable
           # Use repository variables and the generated image name
           image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.GENERATED_IMAGE_NAME }}:${{ inputs.image_tag }}
