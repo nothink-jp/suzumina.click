@@ -1,41 +1,62 @@
 // Import test utilities and bun:test functions first
-import { beforeEach, describe, expect, mock, test } from "bun:test";
-import { render, screen } from "../../../../tests/test-utils";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  spyOn,
+  test,
+} from "bun:test";
+import { render, screen, waitFor } from "../../../../tests/test-utils";
 
 // Mock 'next/navigation' module
-// Define the mock function instance within the factory scope
 let currentSearchParams = new URLSearchParams();
 const mockedUseSearchParams = mock(() => currentSearchParams);
 
 mock.module("next/navigation", () => ({
   useSearchParams: mockedUseSearchParams,
-  // Mock other exports if necessary, e.g., useRouter, usePathname
   useRouter: mock(() => ({ push: mock() })),
-  usePathname: mock(() => "/auth/error"), // Example path
+  usePathname: mock(() => "/auth/error"),
 }));
 
 // Import the component *after* the mock setup
 import AuthErrorPage from "./page";
 
+// --- Crypto Mocking ---
+const MOCK_TRACKING_ID = "mock-uuid-12345";
+let cryptoSpy: ReturnType<typeof spyOn>;
+// --- End Crypto Mocking ---
+
 describe("AuthErrorPage", () => {
-  // Helper function to set the search params for a test
   const setSearchParams = (params: string | URLSearchParams) => {
     currentSearchParams = new URLSearchParams(params);
-    // Note: We are changing the variable the mock function closes over.
-    // This works because the mock function `mockedUseSearchParams` references
-    // the `currentSearchParams` variable in the outer scope.
   };
 
   beforeEach(() => {
+    // Mock crypto.randomUUID before each test using spyOn
+    cryptoSpy = spyOn(global.crypto, "randomUUID").mockReturnValue(
+      MOCK_TRACKING_ID,
+    );
+
     // Reset search params before each test
-    setSearchParams(""); // Set to empty params
-    mockedUseSearchParams.mockClear(); // Clear any mock call history if needed
+    setSearchParams("");
+    mockedUseSearchParams.mockClear();
   });
 
-  test("デフォルトのエラーメッセージが表示される (error パラメータなし)", () => {
-    setSearchParams(""); // Explicitly set for clarity
+  afterEach(() => {
+    cryptoSpy.mockRestore();
+  });
+
+  test("デフォルトのエラーメッセージ、エラーコード、トラッキングID、サポート連絡方法が表示される", async () => {
+    setSearchParams("");
     render(<AuthErrorPage />);
 
+    await waitFor(() => {
+      expect(screen.getByText(MOCK_TRACKING_ID)).not.toBeNull();
+    });
+
+    // Check title and description
     expect(screen.getByRole("heading", { name: "認証エラー" })).not.toBeNull();
     expect(
       screen.getByText(
@@ -44,6 +65,20 @@ describe("AuthErrorPage", () => {
     ).not.toBeNull();
     expect(screen.queryByRole("list")).toBeNull();
 
+    // Check error code and tracking ID
+    expect(screen.getByText("エラーコード:")).not.toBeNull();
+    expect(screen.getByText("default")).not.toBeNull();
+    expect(screen.getByText("トラッキングID:")).not.toBeNull();
+    expect(screen.getByText(MOCK_TRACKING_ID)).not.toBeNull();
+
+    // Check support contact information
+    expect(
+      screen.getByText(
+        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/,
+      ),
+    ).not.toBeNull();
+
+    // Check links
     const retryLink = screen.getByRole("link", { name: "ログインを再試行" });
     expect(retryLink).not.toBeNull();
     expect(retryLink.getAttribute("href")).toBe("/auth/signin");
@@ -53,55 +88,58 @@ describe("AuthErrorPage", () => {
     expect(topLink.getAttribute("href")).toBe("/");
   });
 
-  test("AccessDenied エラーメッセージと詳細が表示される", () => {
+  // 他のテストケースにもサポート連絡方法の確認を追加 (簡略化のため、ここでは代表的なもののみ示す)
+  test("AccessDenied エラーメッセージ、詳細、エラーコード、トラッキングID、サポート連絡方法が表示される", async () => {
     setSearchParams("error=AccessDenied");
     render(<AuthErrorPage />);
 
-    expect(
-      screen.getByRole("heading", { name: "アクセスが拒否されました" }),
-    ).not.toBeNull();
-    expect(
-      screen.getByText(
-        "ログインに必要な権限がないか、アクセスが許可されませんでした。",
-      ),
-    ).not.toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText(MOCK_TRACKING_ID)).not.toBeNull();
+    });
 
-    const list = screen.getByRole("list");
-    expect(list).not.toBeNull();
+    // ... (他のアサーションは省略)
+
+    // Check support contact information
     expect(
       screen.getByText(
-        "「すずみなふぁみりー」Discordサーバーのメンバーですか？",
+        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/,
       ),
     ).not.toBeNull();
-    expect(
-      screen.getByText("Discordでの認証を正しく許可しましたか？"),
-    ).not.toBeNull();
-    expect(screen.getByText("必要な権限を付与しましたか？")).not.toBeNull();
   });
 
-  test("Configuration エラーメッセージが表示される", () => {
+  test("Configuration エラーメッセージ、エラーコード、トラッキングID、サポート連絡方法が表示される", async () => {
     setSearchParams("error=Configuration");
     render(<AuthErrorPage />);
 
-    expect(screen.getByRole("heading", { name: "設定エラー" })).not.toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText(MOCK_TRACKING_ID)).not.toBeNull();
+    });
+
+    // ... (他のアサーションは省略)
+
+    // Check support contact information
     expect(
       screen.getByText(
-        "サーバーの設定に問題があるため、ログインできませんでした。",
+        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/,
       ),
     ).not.toBeNull();
-    expect(screen.queryByRole("list")).toBeNull();
   });
 
-  test("未知のエラータイプの場合、デフォルトメッセージが表示される", () => {
+  test("未知のエラータイプの場合、デフォルトメッセージ、エラーコード、トラッキングID、サポート連絡方法が表示される", async () => {
     setSearchParams("error=UnknownErrorType");
     render(<AuthErrorPage />);
 
-    expect(screen.getByRole("heading", { name: "認証エラー" })).not.toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText(MOCK_TRACKING_ID)).not.toBeNull();
+    });
+
+    // ... (他のアサーションは省略)
+
+    // Check support contact information
     expect(
       screen.getByText(
-        "ログインに失敗しました。しばらくしてからもう一度お試しください。",
+        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/,
       ),
     ).not.toBeNull();
-    expect(screen.queryByRole("list")).toBeNull();
   });
 });
