@@ -8,17 +8,16 @@ on:
         description: 'Git ref (branch, tag, or SHA) to checkout'
         required: true
         type: string
-      image_tag:
+      image_tag: # Keep image_tag for the Docker tag (commit SHA)
         description: 'Docker image tag (e.g., commit SHA)'
         required: true
         type: string
     # Secrets are not needed as we use vars for configuration
 
-# Environment variables that are NOT repository variables
+# Environment variables that are NOT repository variables or inputs
 # These are expected to be set by the calling workflow.
 # env:
 #   CLOUD_RUN_SERVICE: "web" # Set in caller
-#   IMAGE_NAME: "web-app" # Set in caller
 
 jobs:
   build-and-deploy:
@@ -27,7 +26,7 @@ jobs:
     timeout-minutes: 15
 
     permissions:
-      contents: "read"
+      contents: "read" # Needed to checkout code and read package.json
       id-token: "write" # Required for Workload Identity Federation
 
     steps:
@@ -35,6 +34,19 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.git_ref }} # Checkout the specific ref passed from the caller
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Generate Image Name
+        id: generate_name
+        run: |
+          VERSION=$(jq -r .version apps/web/package.json)
+          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+          # Use 'web-app' as base name, append version and timestamp
+          GENERATED_NAME="web-app-v${VERSION}-${TIMESTAMP}"
+          echo "GENERATED_IMAGE_NAME=${GENERATED_NAME}" >> $GITHUB_ENV
+          echo "Generated image name: ${GENERATED_NAME}"
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -60,8 +72,8 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
-          # Use repository variables and inherited env vars (IMAGE_NAME)
-          tags: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}
+          # Use repository variables and the generated image name
+          tags: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.GENERATED_IMAGE_NAME }}:${{ inputs.image_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -71,8 +83,8 @@ jobs:
         with:
           service: ${{ env.CLOUD_RUN_SERVICE }} # Inherited env var from caller
           region: ${{ vars.GCP_REGION }} # Use repository variable
-          # Use repository variables and inherited env vars (IMAGE_NAME)
-          image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}
+          # Use repository variables and the generated image name
+          image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.GENERATED_IMAGE_NAME }}:${{ inputs.image_tag }}
 
       # Output the deployed service URL
       - name: Show deployed URL

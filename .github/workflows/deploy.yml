@@ -7,29 +7,30 @@ on:
       - "apps/web/**"
       - ".github/workflows/deploy.yml"
       - ".github/workflows/reusable-deploy.yml" # Reusable workflow itself
-      - "package.json"
-      - "bun.lock"
-      - "turbo.json"
+      # Consider adding root config files if they affect the build
+      # - "package.json"
+      # - "bun.lock"
+      # - "turbo.json"
 
 # Grant permissions for the reusable workflow to request ID tokens
 permissions:
   id-token: write # Required for Workload Identity Federation in the reusable workflow
-  contents: read # Default permission, good practice to be explicit
+  contents: read # Needed by reusable workflow to checkout code
 
-# Environment variables needed by the reusable workflow
+# Environment variables needed by the reusable workflow (excluding IMAGE_NAME)
 env:
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
   GCP_REGION: ${{ vars.GCP_REGION }}
   ARTIFACT_REGISTRY_REPO: ${{ vars.ARTIFACT_REGISTRY_REPO }}
   CLOUD_RUN_SERVICE: "web"
-  IMAGE_NAME: "web-app"
+  # IMAGE_NAME is now generated within the reusable workflow
 
 jobs:
   call-reusable-deploy:
     name: Build and Deploy
     # Use the reusable workflow from the same repository/commit
     uses: ./.github/workflows/reusable-deploy.yml
-    # Pass required inputs
+    # Pass required inputs (excluding image_name)
     with:
       git_ref: ${{ github.ref }} # Use the ref that triggered the workflow (main branch)
       image_tag: ${{ github.sha }} # Use the commit SHA as the image tag

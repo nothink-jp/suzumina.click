@@ -12,15 +12,15 @@ on:
 # Grant permissions for the reusable workflow to request ID tokens
 permissions:
   id-token: write # Required for Workload Identity Federation in the reusable workflow
-  contents: read # Default permission, good practice to be explicit
+  contents: read # Needed by reusable workflow to checkout code
 
-# Environment variables needed by the reusable workflow
+# Environment variables needed by the reusable workflow (excluding IMAGE_NAME)
 env:
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
   GCP_REGION: ${{ vars.GCP_REGION }}
   ARTIFACT_REGISTRY_REPO: ${{ vars.ARTIFACT_REGISTRY_REPO }}
   CLOUD_RUN_SERVICE: "web"
-  IMAGE_NAME: "web-app"
+  # IMAGE_NAME is now generated within the reusable workflow
 
 jobs:
   call-reusable-deploy:
@@ -29,7 +29,7 @@ jobs:
     if: ${{ inputs.confirm == true }}
     # Use the reusable workflow from the same repository/commit
     uses: ./.github/workflows/reusable-deploy.yml
-    # Pass required inputs
+    # Pass required inputs (excluding image_name)
     with:
       # For manual dispatch, use the ref of the main branch by default,
       # or allow specifying a ref via inputs if needed in the future.
