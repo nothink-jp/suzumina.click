@@ -13,7 +13,7 @@ jobs:
   build-and-deploy:
     name: Build and Deploy to Cloud Run
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30 # Increase timeout to 30 minutes
 
     permissions:
       contents: "read" # Needed to checkout code and read package.json
