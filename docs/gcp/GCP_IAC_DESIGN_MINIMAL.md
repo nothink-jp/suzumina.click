@@ -1,14 +1,14 @@
-# GCP IaC 設計書 (最小構成)
+# GCP IaC 設計書 (Cloud Run管理版)
 
 ## 1. 目的
 
-このドキュメントは、`suzumina-click-dev` GCPプロジェクトにおいて、Next.jsアプリケーションをCloud Runで実行するための最小限のインフラストラクチャをInfrastructure as Code (IaC) で構築するための設計を定義します。
+このドキュメントは、`suzumina-click-dev` GCPプロジェクトにおいて、Next.jsアプリケーションを実行するCloud Runサービスとその関連設定（API有効化, Workload Identity Federation, 環境変数, シークレット参照, IAM）をInfrastructure as Code (IaC) で構築・管理するための設計を定義します。Artifact Registryリポジトリとサービスアカウントは**事前に作成されている前提**とします。
 
 ## 2. IaCツール
 
 - **Terraform** を使用します。
 
-## 3. IaC管理対象リソース (最小構成)
+## 3. IaC管理対象リソース
 
 以下のGCPリソースをTerraformで管理します。
 
@@ -16,41 +16,57 @@
   - 有効化するAPI:
     - `run.googleapis.com` (Cloud Run API)
     - `artifactregistry.googleapis.com` (Artifact Registry API)
-- **IAM:**
-  - サービスアカウント:
-    - `github-actions-deployer@suzumina-click-dev.iam.gserviceaccount.com` (CI/CD用)
-      - 役割: `roles/run.admin`, `roles/artifactregistry.writer`, `roles/iam.serviceAccountUser`
-    - `app-runtime@suzumina-click-dev.iam.gserviceaccount.com` (Cloud Run実行用)
-      - 役割: (初期段階では特定の役割は不要。必要に応じて追加)
-- **Artifact Registry:**
-  - Dockerイメージ用リポジトリ (例: `suzumina-click-dev-docker-repo`)
+    - `iamcredentials.googleapis.com` (IAM Credentials API - WIFに必要)
+    - `secretmanager.googleapis.com` (Secret Manager API)
 - **Cloud Run:**
   - サービス定義 (`web`)
-    - 使用するコンテナイメージ (Artifact Registryのリポジトリを指定)
-    - 実行用サービスアカウント (`app-runtime`)
-    - 基本的なスケーリング設定 (最小/最大インスタンスなど)
-    - 公開アクセス許可 (初期設定として)
+    - 実行サービスアカウント (`app-runtime`) の指定
+    - 環境変数 (`NODE_ENV`, `NEXTAUTH_URL`, `DISCORD_GUILD_ID`) の設定
+    - Secret Managerからのシークレット参照 (`NEXTAUTH_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`) の設定
+    - 公開アクセス設定 (`ingress`)
+    - **注意:** コンテナイメージはCI/CDで更新されるため、Terraformのライフサイクルで `ignore_changes` を設定。
+- **IAM:**
+  - **Workload Identity Federation (WIF) for GitHub Actions:**
+    - Workload Identity Pool (`github-actions-pool`)
+    - Workload Identity Pool Provider (`github-provider`)
+    - IAM Binding: Deployerサービスアカウント (`github-actions-deployer`) に `roles/iam.workloadIdentityUser` ロールを付与。
+  - **Secret Manager Access:**
+    - IAM Binding: Runtimeサービスアカウント (`app-runtime`) に、参照する各シークレット (`nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev`) に対する `roles/secretmanager.secretAccessor` ロールを付与。
 
-## 4. Terraform構成案 (シンプル版)
+## 4. Terraform参照対象リソース (事前作成前提)
 
-初期段階ではモジュール化せず、`environments/dev` ディレクトリ内に直接リソース定義を記述します。
+以下のリソースはTerraformの `data` ソースで参照します。
+
+- **IAM:**
+  - サービスアカウント:
+    - `github-actions-deployer@...` (CI/CD用)
+    - `app-runtime@...` (Cloud Run実行用)
+- **Artifact Registry:**
+  - Dockerイメージ用リポジトリ (例: `suzumina-click-docker-repo`)
+- **Secret Manager:**
+  - シークレット自体 (例: `nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev`)
+    - シークレットの値はTerraform管理外。
+
+## 5. Terraform構成案
+
+`environments/dev` ディレクトリ内にリソース定義を記述します。
 
 ```plaintext
 iac/
 ├── environments/
 │   └── dev/
-│       ├── main.tf         # リソース定義 (API有効化, IAM, Artifact Registry, Cloud Run)
-│       ├── variables.tf    # dev環境用変数 (project_id, region など)
+│       ├── main.tf         # リソース定義 (API, Cloud Run, WIF, IAM Bindings, dataソース)
+│       ├── variables.tf    # dev環境用変数 (project_id, region, nextauth_url, etc.)
 │       └── terraform.tfvars # dev環境用変数ファイル (Git管理外推奨)
 ├── backend.tf          # Terraform状態管理バックエンド設定 (GCS)
 └── variables.tf        # 共通変数 (もしあれば)
 ```
 
-## 5. Terraform状態管理
+## 6. Terraform状態管理
 
 - Terraformの状態ファイル (`.tfstate`) は、GCPプロジェクト内に作成した専用の **Cloud Storageバケット** で管理します (`backend.tf` で設定)。
 
-## 6. Mermaid図による構成イメージ (最小構成)
+## 7. Mermaid図による構成イメージ
 
 ```mermaid
 graph TD
@@ -61,11 +77,20 @@ graph TD
         T_Vars["environments/dev/variables.tf"]
     end
 
-    subgraph "GCP Resources (Managed by Terraform - Minimal)"
-        GCP_Project_APIs["Project Settings (APIs: Run, ArtifactRegistry)"]
-        GCP_IAM["IAM (Service Accounts: deployer, runtime; Roles)"]
+    subgraph "GCP Resources (Managed by Terraform)"
+        GCP_Project_APIs["Project Settings (APIs: Run, AR, IAMCreds, SecretMgr)"]
+        GCP_CR_Service["Cloud Run Service (web definition, env vars, secret refs)"]
+        GCP_WIF_Pool["WIF Pool"]
+        GCP_WIF_Provider["WIF Provider"]
+        GCP_IAM_WIF_Binding["IAM Binding (Deployer SA <- WIF User Role)"]
+        GCP_IAM_Secret_Bindings["IAM Bindings (Runtime SA <- Secret Accessor Role)"]
+    end
+
+    subgraph "GCP Resources (Referenced by Terraform - Pre-existing)"
+        GCP_IAM_SA_Deployer["IAM SA (deployer)"]
+        GCP_IAM_SA_Runtime["IAM SA (runtime)"]
         GCP_AR["Artifact Registry Repo"]
-        GCP_CR_Service["Cloud Run Service (web definition)"]
+        GCP_Secrets["Secrets (nextauth, discord-id, discord-secret)"]
     end
 
     subgraph "CI/CD (GitHub Actions - Conceptual)"
@@ -74,24 +99,41 @@ graph TD
 
     subgraph "External"
         GCS_TFState["GCS Bucket (Terraform State)"]
-        Developer["Developer (nothink@nothink.jp)"]
+        Developer["Developer"]
     end
 
     Developer -- "terraform apply" --> T_EnvDev
+
     T_EnvDev -- "Creates/Updates" --> GCP_Project_APIs
-    T_EnvDev -- "Creates/Updates" --> GCP_IAM
-    T_EnvDev -- "Creates/Updates" --> GCP_AR
-    T_EnvDev -- "Creates/Updates Definition" --> GCP_CR_Service
+    T_EnvDev -- "Creates/Updates" --> GCP_CR_Service
+    T_EnvDev -- "Creates/Updates" --> GCP_WIF_Pool
+    T_EnvDev -- "Creates/Updates" --> GCP_WIF_Provider
+    T_EnvDev -- "Creates/Updates" --> GCP_IAM_WIF_Binding
+    T_EnvDev -- "Creates/Updates" --> GCP_IAM_Secret_Bindings
+
+    T_EnvDev -- "References" --> GCP_IAM_SA_Deployer
+    T_EnvDev -- "References" --> GCP_IAM_SA_Runtime
+    T_EnvDev -- "References" --> GCP_AR
+    T_EnvDev -- "References" --> GCP_Secrets
+
+    GCP_CR_Service -- "Uses Runtime SA" --> GCP_IAM_SA_Runtime
+    GCP_CR_Service -- "References Secrets" --> GCP_Secrets
+    GCP_IAM_Secret_Bindings -- "Grants Access To Secrets For" --> GCP_IAM_SA_Runtime
 
     T_Backend -- "Configures Backend" --> GCS_TFState
     T_EnvDev -- "Reads/Writes State" --> GCS_TFState
 
-    GCP_IAM -- "Grants Permissions to" --> CICD_Pipeline # Conceptual link
-    CICD_Pipeline -- "Builds & Pushes Image to" --> GCP_AR # Conceptual link
-    CICD_Pipeline -- "Deploys Image to" --> GCP_CR_Service # Conceptual link
+    GCP_IAM_WIF_Binding -- "Allows Auth for" --> GCP_IAM_SA_Deployer # Via WIF
+
+    CICD_Pipeline -- "Authenticates via WIF using" ---> GCP_WIF_Provider
+    CICD_Pipeline -- "Acts as" ---> GCP_IAM_SA_Deployer
+    CICD_Pipeline -- "Builds & Pushes Image to" --> GCP_AR
+    CICD_Pipeline -- "Updates Service IMAGE ONLY" --> GCP_CR_Service # Image update only
 ```
 
-## 7. 次のステップ
+## 8. 次のステップ
 
-1. この計画に基づき、`docs/TODO.md` に具体的なIaC構築タスクを追加します。
-2. IaCの実装は、別のモード（例: `code` モード）で行います。
+1. このドキュメントは、Cloud Runサービス設定をTerraformで管理する構成を反映しています。
+2. `terraform.tfvars` または環境変数で `nextauth_url` と `discord_guild_id` を設定する必要があります。
+3. Secret Managerに `nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev` が存在し、適切な値が設定されていることを確認してください。
+4. `terraform apply` を実行して変更を適用します。

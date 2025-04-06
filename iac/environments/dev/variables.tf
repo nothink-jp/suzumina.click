@@ -32,3 +32,15 @@ variable "runtime_service_account_id" {
   type        = string
   default     = "app-runtime"
 }
+
+variable "nextauth_url" {
+  description = "The base URL for the NextAuth application (e.g., https://your-app-url)."
+  type        = string
+  # No default, should be provided via tfvars or environment variables
+}
+
+variable "discord_guild_id" {
+  description = "The Discord Guild ID required for authentication."
+  type        = string
+  # No default, should be provided via tfvars or environment variables
+}

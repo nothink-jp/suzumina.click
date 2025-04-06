@@ -21,11 +21,12 @@
 
 このプロジェクトは[Turborepo](https://turbo.build/repo)を使用したモノレポ構成です。
 
-### アプリケーションとパッケージ
+### 主要ディレクトリ
 
 - `apps/web`: メインの[Next.js](https://nextjs.org/)アプリケーション
-- `apps/functions`: サーバーレス関数群
-- `packages/typescript-config`: 共有TypeScript設定
+- `docs`: プロジェクト関連ドキュメント (設計、TODOリストなど)
+- `iac`: Infrastructure as Code (Terraform) ファイル
+- `packages`: 共有パッケージ (現在は空、将来的に `typescript-config` などを配置予定)
 
 各パッケージ/アプリケーションは100% [TypeScript](https://www.typescriptlang.org/)で記述されています。
 
@@ -79,6 +80,56 @@ bun run ci:fix
 ```bash
 bun run spell-check
 ```
+
+## デプロイ手順 (概要)
+
+通常、デプロイはGitHub ActionsによるCI/CDパイプラインで自動化されます。以下は手動でのデプロイ手順の概要です。
+
+### 前提条件
+
+- Google Cloud SDK (`gcloud`) がインストール・設定済みであること。
+- GCPプロジェクトへの適切な権限があること。
+- Artifact Registryリポジトリが作成済みであること (`iac/` で管理)。
+- Cloud Runサービスが作成済みであること (`iac/` で管理)。
+
+### 手順
+
+1. **Dockerイメージのビルド:**
+
+    ```bash
+    # プロジェクトルートから実行
+    docker build -t asia-northeast1-docker.pkg.dev/suzumina-click-dev/suzumina-click-dev-docker-repo/web:latest -f apps/web/Dockerfile .
+    ```
+
+    - `suzumina-click-dev`: GCPプロジェクトID
+    - `suzumina-click-dev-docker-repo`: Artifact Registryリポジトリ名
+    - `web`: イメージ名 (任意)
+    - `latest`: タグ (任意、コミットハッシュなどが推奨)
+
+2. **Artifact Registryへのプッシュ:**
+
+    ```bash
+    # gcloud 認証ヘルパーの設定 (初回のみ)
+    gcloud auth configure-docker asia-northeast1-docker.pkg.dev
+
+    # イメージのプッシュ
+    docker push asia-northeast1-docker.pkg.dev/suzumina-click-dev/suzumina-click-dev-docker-repo/web:latest
+    ```
+
+3. **Cloud Runへのデプロイ:**
+
+    ```bash
+    gcloud run deploy web \
+      --image asia-northeast1-docker.pkg.dev/suzumina-click-dev/suzumina-click-dev-docker-repo/web:latest \
+      --region asia-northeast1 \
+      --project suzumina-click-dev \
+      --platform managed \
+      --allow-unauthenticated # 必要に応じて変更
+    ```
+
+    - `web`: Cloud Runサービス名
+
+**注意:** 上記は基本的な手順です。実際のCI/CDパイプラインでは、サービスアカウント認証 (Workload Identity Federation)、環境変数の設定、シークレットの参照などが追加されます。詳細は `docs/gcp/GCP_CICD.md` (作成予定) を参照してください。
 
 ## CI/CD
 
