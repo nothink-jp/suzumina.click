@@ -12,21 +12,13 @@ on:
         description: 'Docker image tag (e.g., commit SHA)'
         required: true
         type: string
-    # Secrets can be passed if needed, but vars are generally preferred for non-sensitive config
-    # secrets:
-    #   GCP_WORKLOAD_IDENTITY_PROVIDER:
-    #     required: true
-    #   GCP_SA_EMAIL:
-    #     required: true
+    # Secrets are not needed as we use vars for configuration
 
-# Environment variables needed by the steps below.
+# Environment variables that are NOT repository variables
 # These are expected to be set by the calling workflow.
 # env:
-#   GCP_PROJECT_ID: ...
-#   GCP_REGION: ...
-#   ARTIFACT_REGISTRY_REPO: ...
-#   CLOUD_RUN_SERVICE: "web"
-#   IMAGE_NAME: "web-app"
+#   CLOUD_RUN_SERVICE: "web" # Set in caller
+#   IMAGE_NAME: "web-app" # Set in caller
 
 jobs:
   build-and-deploy:
@@ -48,7 +40,7 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          # These vars are expected to be available in the calling workflow's context
+          # Use repository variables directly
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SA_EMAIL }}
 
@@ -59,8 +51,8 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker to use gcloud credential helper
-        # env vars like GCP_REGION are inherited from the caller workflow
-        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+        # Use repository variable directly
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -68,8 +60,8 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
-          # Use env vars inherited from the caller and the image_tag input
-          tags: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}
+          # Use repository variables and inherited env vars (IMAGE_NAME)
+          tags: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -77,10 +69,10 @@ jobs:
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: ${{ env.CLOUD_RUN_SERVICE }} # Inherited env var
-          region: ${{ env.GCP_REGION }} # Inherited env var
-          # Use the image tag passed as input
-          image: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}
+          service: ${{ env.CLOUD_RUN_SERVICE }} # Inherited env var from caller
+          region: ${{ vars.GCP_REGION }} # Use repository variable
+          # Use repository variables and inherited env vars (IMAGE_NAME)
+          image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}
 
       # Output the deployed service URL
       - name: Show deployed URL
