@@ -75,9 +75,7 @@ jobs:
         run: terraform init
         working-directory: ./iac/environments/dev
 
-      - name: Terraform Refresh # Add refresh step before apply
-        run: terraform refresh
-        working-directory: ./iac/environments/dev
+      # Terraform Refresh ステップを削除
 
       - name: Terraform Apply
         run: |
