@@ -106,6 +106,20 @@ data "google_secret_manager_secret" "discord_client_secret" {
   depends_on = [google_project_service.secretmanager_api]
 }
 
+data "google_secret_manager_secret" "nextauth_url" {
+  project   = var.project_id
+  secret_id = "nextauth-url-dev" # 仮定: 実際のシークレット名に合わせてください
+
+  depends_on = [google_project_service.secretmanager_api]
+}
+
+data "google_secret_manager_secret" "discord_guild_id" {
+  project   = var.project_id
+  secret_id = "discord-guild-id-dev" # 仮定: 実際のシークレット名に合わせてください
+
+  depends_on = [google_project_service.secretmanager_api]
+}
+
 # -----------------------------------------------------------------------------
 # Cloud Run: サービス定義 (環境変数とシークレット参照を設定)
 # -----------------------------------------------------------------------------
@@ -114,21 +128,14 @@ resource "google_cloud_run_v2_service" "web" {
   location = var.region
   name     = var.cloud_run_service_name
 
-  # CI/CDパイプラインがイメージを更新するため、templateはライフサイクルで無視
-  # ただし、初回デプロイや設定変更時には必要
-  lifecycle {
-    ignore_changes = [
-      template.containers[0].image,
-    ]
-  }
+  # lifecycle ブロックを削除 (イメージタグは Terraform で管理)
 
   template {
     service_account = data.google_service_account.runtime.email # 実行SAを指定
 
     containers {
-      # イメージはCI/CDで更新されるため、ここではダミーまたは最新のものを指定
-      # apply時に最新イメージが不明な場合は、既存サービスのイメージを data で取得して使うなどの工夫が必要
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repository_id}/${var.cloud_run_service_name}:latest" # 仮のイメージパス
+      # イメージパスを var.docker_image_tag を使用するように変更
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repository_id}/${var.cloud_run_service_name}:${var.docker_image_tag}"
 
       ports {
         container_port = 3000 # Next.jsのデフォルトポート
@@ -138,13 +145,25 @@ resource "google_cloud_run_v2_service" "web" {
         name  = "NODE_ENV"
         value = "production" # 本番環境として設定
       }
+      # DISCORD_GUILD_ID を Secret Manager から取得するように変更
       env {
-        name  = "NEXTAUTH_URL"
-        value = var.nextauth_url # variables.tf から取得
+        name = "DISCORD_GUILD_ID"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.discord_guild_id.secret_id
+            version = "latest" # 最新バージョンを参照
+          }
+        }
       }
+      # NEXTAUTH_URL を Secret Manager から取得するように変更
       env {
-        name  = "DISCORD_GUILD_ID"
-        value = var.discord_guild_id # variables.tf から取得
+        name = "NEXTAUTH_URL"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.nextauth_url.secret_id
+            version = "latest" # 最新バージョンを参照
+          }
+        }
       }
       env {
         name = "NEXTAUTH_SECRET"
@@ -188,6 +207,8 @@ resource "google_cloud_run_v2_service" "web" {
     data.google_secret_manager_secret.nextauth_secret,
     data.google_secret_manager_secret.discord_client_id,
     data.google_secret_manager_secret.discord_client_secret,
+    data.google_secret_manager_secret.nextauth_url,
+    data.google_secret_manager_secret.discord_guild_id, # 新しいシークレットへの依存を追加
   ]
 }
 
@@ -211,6 +232,21 @@ resource "google_secret_manager_secret_iam_member" "runtime_access_discord_clien
 resource "google_secret_manager_secret_iam_member" "runtime_access_discord_client_secret" {
   project   = data.google_secret_manager_secret.discord_client_secret.project
   secret_id = data.google_secret_manager_secret.discord_client_secret.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_service_account.runtime.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "runtime_access_nextauth_url" {
+  project   = data.google_secret_manager_secret.nextauth_url.project
+  secret_id = data.google_secret_manager_secret.nextauth_url.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_service_account.runtime.email}"
+}
+
+# 新しいシークレットへのアクセス権限を追加
+resource "google_secret_manager_secret_iam_member" "runtime_access_discord_guild_id" {
+  project   = data.google_secret_manager_secret.discord_guild_id.project
+  secret_id = data.google_secret_manager_secret.discord_guild_id.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_service_account.runtime.email}"
 }

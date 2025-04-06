@@ -28,8 +28,8 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate Image Tag # Renamed step
-        id: generate_tag # Renamed step ID
+      - name: Generate Image Tag
+        id: generate_tag
         run: |
           VERSION=$(jq -r .version apps/web/package.json)
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
@@ -66,15 +66,21 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Deploy to Cloud Run
-        id: deploy
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: 'web' # Hardcoded service name
-          region: ${{ vars.GCP_REGION }}
-          # Use fixed image name 'web-app' and the generated tag
-          image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/web-app:${{ steps.generate_tag.outputs.generated_tag }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        # with:
+        #   terraform_version: "1.x.x" # Specify version if needed
 
-      - name: Show deployed URL
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./iac/environments/dev
+
+      - name: Terraform Apply
         run: |
-          echo "Deployed to: ${{ steps.deploy.outputs.url }}"
+          terraform apply -auto-approve \
+            -var="docker_image_tag=${{ steps.generate_tag.outputs.generated_tag }}" \
+            -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
+            -var="region=${{ vars.GCP_REGION }}"
+        working-directory: ./iac/environments/dev
+
+      # Deploy to Cloud Run ステップと Show deployed URL ステップを削除

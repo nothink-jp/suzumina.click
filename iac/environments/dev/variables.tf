@@ -33,14 +33,8 @@ variable "runtime_service_account_id" {
   default     = "app-runtime"
 }
 
-variable "nextauth_url" {
-  description = "The base URL for the NextAuth application (e.g., https://your-app-url)."
+variable "docker_image_tag" {
+  description = "The tag for the Docker image to deploy (provided by CI/CD)."
   type        = string
-  # No default, should be provided via tfvars or environment variables
-}
-
-variable "discord_guild_id" {
-  description = "The Discord Guild ID required for authentication."
-  type        = string
-  # No default, should be provided via tfvars or environment variables
+  # No default, this will be passed via -var flag during apply
 }

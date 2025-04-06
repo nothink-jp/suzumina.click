@@ -29,10 +29,12 @@ gcloud firestore databases create --location=asia-northeast1
 # Secret Managerを有効化
 gcloud services enable secretmanager.googleapis.com
 
-# 必要なシークレットを作成
+# 必要なシークレットを作成 (ローカル開発用)
+# 注意: 本番環境用のシークレット (例: nextauth-url-dev) も別途作成が必要です
 gcloud secrets create discord-client-id-dev --data-file=- # Discord Client ID
 gcloud secrets create discord-client-secret-dev --data-file=- # Discord Client Secret
 gcloud secrets create nextauth-secret-dev --data-file=- # NextAuth Secret
+gcloud secrets create discord-guild-id-dev --data-file=- # Discord Guild ID (ローカル用)
 ```
 
 ### サービスアカウントの設定
@@ -67,9 +69,9 @@ bun install
 cp .env.example .env.local
 ```
 
-## 4. 環境変数の設定
+## 4. 環境変数の設定 (`.env.local`)
 
-`.env.local` に以下の環境変数を設定：
+`.env.local` に以下の環境変数を設定します。**このファイルはローカル開発専用であり、Git にコミットしないでください。**
 
 ```env
 # Discord OAuth2
@@ -83,7 +85,7 @@ NEXTAUTH_URL="http://localhost:3000"
 
 # Google Cloud Platform
 GOOGLE_CLOUD_PROJECT="suzumina-click-dev"
-GOOGLE_APPLICATION_CREDENTIALS="./service-account-key.json"
+GOOGLE_APPLICATION_CREDENTIALS="./service-account-key.json" # apps/web からの相対パス
 ```
 
 ## 5. 開発サーバーの起動
@@ -106,30 +108,38 @@ bun dev
 ### GCP関連の問題
 
 1. 認証エラー
-   - サービスアカウントキーが正しく設定されているか確認
-   - 環境変数 `GOOGLE_APPLICATION_CREDENTIALS` が正しく設定されているか確認
+   - サービスアカウントキー (`service-account-key.json`) が `apps/web` ディレクトリ直下に存在するか確認
+   - 環境変数 `GOOGLE_APPLICATION_CREDENTIALS` が `.env.local` で正しく設定されているか確認
 
 2. Firestore接続エラー
    - Firestoreが有効化されているか確認
-   - サービスアカウントに適切な権限が付与されているか確認
+   - サービスアカウントに適切な権限 (`roles/datastore.user`) が付与されているか確認
 
 ### Discord認証の問題
 
 1. リダイレクトエラー
-   - OAuth2のリダイレクトURLが正確に設定されているか確認
+   - OAuth2のリダイレクトURL (`http://localhost:3000/api/auth/callback/discord`) が Discord Developer Portal で正確に設定されているか確認
    - アプリケーションのステータスを確認
 
-2. 認証ループ
-   - NEXTAUTH_URL が正しく設定されているか確認
-   - NEXTAUTH_SECRET が設定されているか確認
+2. 認証ループ / エラー
+   - `NEXTAUTH_URL` (`http://localhost:3000`) が `.env.local` で正しく設定されているか確認
+   - `NEXTAUTH_SECRET` が `.env.local` で設定されているか確認
+   - `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_GUILD_ID` が `.env.local` で正しく設定されているか確認
 
 ## 補足：本番環境との違い
 
-開発環境は本番環境と以下の点が異なります：
+開発環境 (`.env.local` を使用) と本番環境 (Cloud Run) は以下の点が異なります。
 
-1. GCPプロジェクトが別（dev/prod）
-2. Discord アプリケーションが別
-3. 環境変数とシークレットの値が異なる
-4. サービスアカウントの権限が異なる
+1. **GCPプロジェクト:** 通常、開発用 (`dev`) と本番用 (`prod`) でプロジェクトが分かれます。
+2. **Discord アプリケーション:** 開発用と本番用で Discord アプリケーションを分けることが推奨されます（リダイレクトURLなどが異なるため）。
+3. **環境変数/シークレットの管理:**
+   - **ローカル開発:** `.env.local` ファイルに直接記述します。このファイルは Git 管理下に含めません。
+   - **本番環境 (Cloud Run):** 環境変数は Terraform によって GCP Secret Manager から取得され、Cloud Run サービスに設定されます (`iac/environments/dev/main.tf` 参照)。`.env.local` は使用されません。
+4. **認証:**
+   - **ローカル開発:** サービスアカウントキー (`GOOGLE_APPLICATION_CREDENTIALS`) を使用します。
+   - **本番環境 (Cloud Run):** Workload Identity Federation と Cloud Run の実行サービスアカウント (`app-runtime@...`) を使用します。
+5. **`NEXTAUTH_URL`:**
+   - **ローカル開発:** `http://localhost:3000`
+   - **本番環境:** デプロイされた Cloud Run サービスの公開 URL (Secret Manager `nextauth-url-dev` で管理)
 
-本番環境への移行時は、それぞれの設定を適切に行う必要があります。
+本番環境へのデプロイや設定変更は Terraform を通じて行われます。詳細は `docs/gcp/GCP_CICD.md` を参照してください。
