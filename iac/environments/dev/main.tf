@@ -131,8 +131,8 @@ resource "google_cloud_run_v2_service" "web" {
   # CI/CD でイメージが更新されるため、イメージの変更は Terraform で無視する
   lifecycle {
     ignore_changes = [
-      # template ブロック内の containers リストの最初の要素の image 属性を指定
-      template.containers[0].image,
+      # エラーメッセージに従い、インデックスを使用
+      template[0].containers[0].image,
     ]
   }
 
