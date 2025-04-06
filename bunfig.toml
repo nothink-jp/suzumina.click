@@ -1,6 +1,17 @@
-[test]
-preload = ["./apps/web/happydom.ts", "./apps/web/tests/setup.ts"]
-coverage = true
+# Bun configuration file
+# See https://bun.sh/docs/runtime/bunfig
 
+[test]
+# Files to preload before running tests
+# bunfig.toml からの相対パスで指定
+preload = ["./apps/web/happydom.ts", "./apps/web/tests/setup.ts"]
+
+# カバレッジ設定
+coverage = true
+coverageThreshold = { line = 0.8, function = 0.8, statement = 0.8, branch = 0.8 }
+coverageSkipTestFiles = true
+coverageReporter  = ["text", "lcov"]
+
+# テスト環境変数
 [env]
 NODE_ENV = "test"

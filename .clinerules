@@ -1,157 +1,49 @@
 # .clinerules
 
-- 何をするべきかは docs/TODO.md にチェックリストとしてまとめ、それ以外には記述しないでください。
-- 何かをする前に必要に応じて docs 以下を確認してください。
-- 何かをした後は必要に応じて docs 以下に保存してください。
-- Markdownファイルは極力100行以内で簡潔にまとめてください。
-- 不要になったTODOやドキュメントは削除してください。
+## 基本ルール
+- docs/TODO.md にチェックリストを管理、適宜 docs 確認・更新
+- Markdown は100行以内、不要なドキュメントは削除
 
+## 開発プラクティス
+- テスト: Red-Green-Refactor + Arrange-Act-Assert パターン
+- コード品質:
+  * 純粋関数・短い関数・単一責務を優先
+  * コロケーション、可読性、保守性、テスト容易性を重視
+  * 重複回避、シンプルな設計
 
-## テスト
+## Git
+- Conventional Commits: feat, fix, docs, style, refactor, test, chore
 
-- Red-Green-Refactorサイクルを意識して、テストを先に書くことを徹底します。
-- テストコードは記述的であり、テストの意図を明確にするように心がけます。
-- テストコードはArrange-Act-Assertパターンに従い、テストの構造を明確にするように心がけます。
-
-## コードの品質
-
-- 純粋関数を優先し、状態を持たない関数を意識して実装します。
-- 関数は1つの責務を持つように心がけます。
-- 関数は副作用を持たないように心がけます。
-- 可能ならば、関数は短く保ち、1つの関数が長くなることは避けます。
-- 可能ならば、コードの重複を避けるように心がけます。
-- 設計は常にシンプルであることを心がけ、必要以上に複雑な設計は避けます。
-- コードの可読性を最優先し、他の人が理解しやすいように心がけます。
-- 可能ならば、コードの保守性を最優先し、他の人が修正しやすいように心がけます。
-- 可能ならば、コードのテスト可能性を最優先し、他の人がテストしやすいように心がけます。
-
-## Git コミットメッセージ
-
-Conventional Commits 形式を使用:
-- feat: 新機能
-- fix: バグ修正
-- docs: ドキュメントのみの変更
-- style: コードの意味に影響しない変更
-- refactor: リファクタリング
-- test: テストの追加・修正
-- chore: その他の変更
-
-# フロントエンド開発ガイドラインとGitブランチ戦略については docs/PROJECT_ANALYSIS.md を参照してください
-
-### ルール設定
-
+## 言語設定
 language:
   thinking: "en-US"
   output: "ja-JP"
   enforce_output_language: true
-  translate_comments_if_needed: true
   preserve_technical_terms: true
-  conventions:
-    variable_names: "english"
-    function_names: "english"
-    class_names: "english"
-    comments: "japanese"
-    docs: "japanese"
-    commit_messages: "conventional"
 
+## パッケージ管理
 package_manager:
-  typescript:
+  typescript: "bun"
   python: "uv"
   prefer_latest_versions: true
-  security_scan: true
-  update_frequency: "weekly"
-  
-  bun:
-    auto_install_on_save: true
-    use_lockfile: true
-    check_updates_weekly: true
-    prefer_production: false
-    scripts_in_package: true
-    test_runner: "bun:test"
-    test_pattern: "**/*.test.{ts,tsx,js,jsx}"
-    prefer_latest: true
-    auto_update_dependencies: true
-    auto_update_dev_dependencies: true
-  uv:
-    use_pyproject_toml: true
-    use_requirements_txt: false
-    auto_activate_venv: true
-    compile_wheels: true
-    optimize_installs: true
-    use_pip_for_fallback: true
-    prefer_latest: true
-    no_version_pins: true
 
+## Python設定
 python:
   line_length: 88
-  indent_width: 4
-  quote_style: double
-  respect_gitignore: true
-  target_version: "py312"  
-  select:
-    - E
-    - F
-    - W
-    - I
-    - N
-    - UP
-    - B
-  ignore:
-    - E203  
-  imports_order:
-    - standard
-    - third-party
-    - first-party
-    - local
+  target_version: "py312"
 
-docs:
-  output_dir: "docs"
-  generate_api_docs: true
-  include_private: false
-  include_readme: true
-  theme: "default"
-  auto_generate_on_save: true
+## ドキュメント・コメント
+docs_comments:
   language: "ja-JP"
-  enforce_japanese_comments: true
-  translate_base_docs: false
-
-comments:
-  preferred_language: "ja-JP"
-  require_class_comments: true
-  require_function_comments: true
   docstring_style:
     python: "google"
     typescript: "jsdoc"
-  enforce_japanese: true
 
+## テスト
 testing:
   coverage:
     enabled: true
     threshold: 80
-    include_branches: true
-    report_dir: "coverage"
-    enforce_on_ci: true
-  
-  requirements:
-    run_before_commit: true
-    must_pass_all: true
-    fail_on_warning: true
-  
   frameworks:
     typescript: "bun:test"
     python: "pytest"
-  
-  auto_generate:
-    enabled: true
-    template_dir: "test/templates"
-    naming_convention: "{name}_test.{ext}"
-
-exclude_patterns:
-  - "node_modules/**"
-  - "dist/**"
-  - "build/**"
-  - ".git/**"
-  - ".turbo/**"
-  - ".next/**"
-  - "venv/**"
-  - "__pycache__/**"

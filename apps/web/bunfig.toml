@@ -9,7 +9,7 @@ preload = ["./happydom.ts", "./tests/setup.ts"]
 # カバレッジ設定
 coverage = true
 coverageThreshold = { line = 0.8, function = 0.8, statement = 0.8, branch = 0.8 }
-coverageSkipTestFiles = false
+coverageSkipTestFiles = true
 coverageReporter  = ["text", "lcov"]
 
 # テスト環境変数
