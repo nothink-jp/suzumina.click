@@ -75,13 +75,7 @@ jobs:
         run: terraform init
         working-directory: ./iac/environments/dev
 
-      - name: Terraform Apply Refresh Only # Add apply -refresh-only step
-        run: |
-          terraform apply -refresh-only -auto-approve \
-            -var="docker_image_tag=${{ steps.generate_tag.outputs.generated_tag }}" \
-            -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
-            -var="region=${{ vars.GCP_REGION }}"
-        working-directory: ./iac/environments/dev
+      # Terraform Apply Refresh Only ステップを削除
 
       - name: Terraform Apply
         run: |
