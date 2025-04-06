@@ -9,32 +9,23 @@ on:
         type: boolean
         default: false
 
-# Grant permissions for the reusable workflow to request ID tokens
 permissions:
-  id-token: write # Required for Workload Identity Federation in the reusable workflow
-  contents: read # Needed by reusable workflow to checkout code
+  id-token: write
+  contents: read
 
-# Environment variables needed by the reusable workflow (excluding IMAGE_NAME and CLOUD_RUN_SERVICE)
 env:
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
   GCP_REGION: ${{ vars.GCP_REGION }}
   ARTIFACT_REGISTRY_REPO: ${{ vars.ARTIFACT_REGISTRY_REPO }}
-  # CLOUD_RUN_SERVICE is now hardcoded in the reusable workflow
-  # IMAGE_NAME is now generated within the reusable workflow
 
 jobs:
   call-reusable-deploy:
     name: Build and Deploy (Manual)
-    # Only run if the confirmation input is true
     if: ${{ inputs.confirm == true }}
-    # Use the reusable workflow from the same repository/commit
     uses: ./.github/workflows/reusable-deploy.yml
-    # Pass required inputs (excluding image_name and cloud_run_service)
     with:
-      # For manual dispatch, use the ref of the main branch by default,
-      # or allow specifying a ref via inputs if needed in the future.
+      # Use main branch ref for manual deploys
       git_ref: 'refs/heads/main'
-      # Use the SHA of the main branch head for the image tag
-      image_tag: ${{ github.sha }} # Note: This SHA is from the workflow trigger event, not necessarily latest main. Consider fetching latest main SHA if needed.
-    # Secrets can be passed if the reusable workflow defines them
-    # secrets: inherit
+      # Use the SHA associated with the workflow trigger event
+      image_tag: ${{ github.sha }}
+    # secrets: inherit # If reusable workflow needs secrets

@@ -1,6 +1,5 @@
 name: Reusable Deploy Web App
 
-# This workflow is triggered by other workflows
 on:
   workflow_call:
     inputs:
@@ -8,16 +7,10 @@ on:
         description: 'Git ref (branch, tag, or SHA) to checkout'
         required: true
         type: string
-      image_tag: # Keep image_tag for the Docker tag (commit SHA)
+      image_tag:
         description: 'Docker image tag (e.g., commit SHA)'
         required: true
         type: string
-    # Secrets are not needed as we use vars for configuration
-
-# Environment variables that are NOT repository variables or inputs
-# These are expected to be set by the calling workflow OR generated within.
-# env:
-#   GENERATED_IMAGE_NAME: ... # Set in Generate Image Name step
 
 jobs:
   build-and-deploy:
@@ -33,7 +26,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.git_ref }} # Checkout the specific ref passed from the caller
+          ref: ${{ inputs.git_ref }}
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
@@ -43,7 +36,6 @@ jobs:
         run: |
           VERSION=$(jq -r .version apps/web/package.json)
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-          # Use 'web-app' as base name, append version and timestamp
           GENERATED_NAME="web-app-v${VERSION}-${TIMESTAMP}"
           echo "GENERATED_IMAGE_NAME=${GENERATED_NAME}" >> $GITHUB_ENV
           echo "Generated image name: ${GENERATED_NAME}"
@@ -52,7 +44,6 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          # Use repository variables directly
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SA_EMAIL }}
 
@@ -63,7 +54,6 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker to use gcloud credential helper
-        # Use repository variable directly
         run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
 
       - name: Build and push Docker image
@@ -72,7 +62,6 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
-          # Use repository variables and the generated image name
           tags: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.GENERATED_IMAGE_NAME }}:${{ inputs.image_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -81,12 +70,10 @@ jobs:
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: 'web' # Hardcode the service name as it's fixed by IaC for this env
-          region: ${{ vars.GCP_REGION }} # Use repository variable
-          # Use repository variables and the generated image name
+          service: 'web' # Hardcoded service name
+          region: ${{ vars.GCP_REGION }}
           image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.GENERATED_IMAGE_NAME }}:${{ inputs.image_tag }}
 
-      # Output the deployed service URL
       - name: Show deployed URL
         run: |
           echo "Deployed to: ${{ steps.deploy.outputs.url }}"

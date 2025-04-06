@@ -6,33 +6,25 @@ on:
     paths:
       - "apps/web/**"
       - ".github/workflows/deploy.yml"
-      - ".github/workflows/reusable-deploy.yml" # Reusable workflow itself
-      # Consider adding root config files if they affect the build
-      # - "package.json"
-      # - "bun.lock"
-      # - "turbo.json"
+      - ".github/workflows/reusable-deploy.yml"
+      - "package.json" # Trigger on root package changes
+      - "bun.lock"     # Trigger on lock file changes
+      - "turbo.json"   # Trigger on turbo config changes
 
-# Grant permissions for the reusable workflow to request ID tokens
 permissions:
-  id-token: write # Required for Workload Identity Federation in the reusable workflow
-  contents: read # Needed by reusable workflow to checkout code
+  id-token: write
+  contents: read
 
-# Environment variables needed by the reusable workflow (excluding IMAGE_NAME and CLOUD_RUN_SERVICE)
 env:
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
   GCP_REGION: ${{ vars.GCP_REGION }}
   ARTIFACT_REGISTRY_REPO: ${{ vars.ARTIFACT_REGISTRY_REPO }}
-  # CLOUD_RUN_SERVICE is now hardcoded in the reusable workflow
-  # IMAGE_NAME is now generated within the reusable workflow
 
 jobs:
   call-reusable-deploy:
     name: Build and Deploy
-    # Use the reusable workflow from the same repository/commit
     uses: ./.github/workflows/reusable-deploy.yml
-    # Pass required inputs (excluding image_name and cloud_run_service)
     with:
-      git_ref: ${{ github.ref }} # Use the ref that triggered the workflow (main branch)
-      image_tag: ${{ github.sha }} # Use the commit SHA as the image tag
-    # Secrets can be passed if the reusable workflow defines them
-    # secrets: inherit # Or pass specific secrets
+      git_ref: ${{ github.ref }}
+      image_tag: ${{ github.sha }}
+    # secrets: inherit # If reusable workflow needs secrets
