@@ -1,8 +1,8 @@
 "use client"; // useSearchParams を使うためクライアントコンポーネントにする
 
-import type { Metadata } from "next";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation"; // useSearchParams をインポート
+import { useEffect, useState } from "react"; // useState, useEffect をインポート
 
 // メタデータは静的なのでそのまま残す (ただし、動的にしたい場合は別途対応が必要)
 // export const metadata: Metadata = {
@@ -51,27 +51,52 @@ export default function AuthErrorPage() {
   const { title, description, details } =
     errorMessages[errorType] ?? errorMessages.default; // 未知のエラータイプはdefaultを使用
 
+  const [trackingId, setTrackingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // コンポーネントマウント時に一意のIDを生成
+    setTrackingId(crypto.randomUUID());
+  }, []); // 空の依存配列で初回マウント時のみ実行
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-md">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-red-600">{title}</h1>{" "}
-          {/* エラータイトルを動的に */}
+          <h1 className="text-3xl font-bold text-red-600">{title}</h1>
           <div className="mt-4 space-y-4">
-            <p className="text-sm text-gray-600">{description}</p>{" "}
-            {/* エラー説明を動的に */}
+            <p className="text-sm text-gray-600">{description}</p>
             {details && (
               <ul className="text-sm text-gray-600 list-disc list-inside space-y-2 text-left">
-                {details.map(
-                  (
-                    detail, // index を削除
-                  ) => (
-                    <li key={detail}>{detail}</li> // detail を key に設定
-                  ),
-                )}
+                {details.map((detail, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Static list, index is acceptable here
+                  <li key={`${detail}-${index}`}>{detail}</li>
+                ))}
               </ul>
             )}
           </div>
+
+          {/* エラーコードとトラッキングID表示セクション */}
+          <div className="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500 space-y-1">
+            <p>
+              エラーコード:{" "}
+              <code className="font-mono bg-gray-100 p-1 rounded">
+                {errorType}
+              </code>
+            </p>
+            {trackingId && ( // trackingIdが生成されてから表示
+              <p>
+                トラッキングID:{" "}
+                <code className="font-mono bg-gray-100 p-1 rounded">
+                  {trackingId}
+                </code>
+              </p>
+            )}
+            {/* サポート連絡方法の追加 */}
+            <p className="pt-2">
+              問題が解決しない場合は、Discordサーバーのサポートチャンネルにて、上記のエラーコードとトラッキングIDを添えてお問い合わせください。
+            </p>
+          </div>
+
           <div className="mt-8 space-y-4">
             <Link
               href="/auth/signin"
