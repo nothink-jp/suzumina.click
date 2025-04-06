@@ -9,67 +9,27 @@ on:
         type: boolean
         default: false
 
+# Environment variables needed by the reusable workflow
 env:
-  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }} # GitHub Variables から取得
-  GCP_REGION: ${{ vars.GCP_REGION }} # GitHub Variables から取得
-  ARTIFACT_REGISTRY_REPO: ${{ vars.ARTIFACT_REGISTRY_REPO }} # GitHub Variables から取得
-  CLOUD_RUN_SERVICE: "web" # Terraform の変数に合わせたサービス名
-  # CLOUD_RUN_SERVICE: "suzumina-click-dev" # もし Terraform の変数と異なる場合はこちらを使用
-  IMAGE_NAME: web-app # Artifact Registry 内でのイメージ名
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  ARTIFACT_REGISTRY_REPO: ${{ vars.ARTIFACT_REGISTRY_REPO }}
+  CLOUD_RUN_SERVICE: "web"
+  IMAGE_NAME: "web-app"
 
 jobs:
-  build-and-deploy:
-    name: Build and Deploy to Cloud Run
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  call-reusable-deploy:
+    name: Build and Deploy (Manual)
+    # Only run if the confirmation input is true
     if: ${{ inputs.confirm == true }}
-
-    permissions:
-      contents: "read"
-      id-token: "write" # Workload Identity Federation に必要
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }} # GitHub Variables から取得
-          service_account: ${{ vars.GCP_SA_EMAIL }} # GitHub Variables から取得
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # gcloud CLI をセットアップ (Artifact Registry への認証ヘルパー設定のため)
-      - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure Docker to use gcloud credential helper
-        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: . # Dockerfile内のCOPYコマンドがルートからの相対パスのため、コンテキストをルートに設定
-          file: ./apps/web/Dockerfile # Dockerfile のパス
-          push: true
-          tags: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }} # Variables を使用
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Deploy to Cloud Run
-        id: deploy
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: ${{ env.CLOUD_RUN_SERVICE }}
-          region: ${{ env.GCP_REGION }}
-          image: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }} # Variables を使用
-          # service_account: # Terraform で設定済みなら不要なはず
-          # flags: '--allow-unauthenticated' # Terraform で設定済みなら不要なはず
-
-      # Output the deployed service URL
-      - name: Show deployed URL
-        run: | # 修正: ブロックスカラーを使用
-          echo "Deployed to: ${{ steps.deploy.outputs.url }}"
+    # Use the reusable workflow from the main branch
+    uses: ./.github/workflows/reusable-deploy.yml@main
+    # Pass required inputs
+    with:
+      # For manual dispatch, use the ref of the main branch by default,
+      # or allow specifying a ref via inputs if needed in the future.
+      git_ref: 'refs/heads/main'
+      # Use the SHA of the main branch head for the image tag
+      image_tag: ${{ github.sha }} # Note: This SHA is from the workflow trigger event, not necessarily latest main. Consider fetching latest main SHA if needed.
+    # Secrets can be passed if the reusable workflow defines them
+    # secrets: inherit
