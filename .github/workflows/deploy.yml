@@ -7,10 +7,9 @@ on:
       - "apps/web/**"
       - ".github/workflows/deploy.yml"
       - ".github/workflows/reusable-deploy.yml" # Reusable workflow itself
-      # Consider adding root config files if they affect the build
-      # - "package.json"
-      # - "bun.lock"
-      # - "turbo.json"
+      - "package.json"
+      - "bun.lock"
+      - "turbo.json"
 
 # Grant permissions for the reusable workflow to request ID tokens
 permissions:
