@@ -45,6 +45,7 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SA_EMAIL }}
+          create_credentials_file: 'true' # Explicitly try creating credentials file
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
