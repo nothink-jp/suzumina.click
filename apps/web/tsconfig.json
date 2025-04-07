@@ -4,13 +4,21 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "declaration": false,
+    "declarationMap": false,
+    "skipLibCheck": true
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "tests/**/*.ts"
+    ".next/types/**/*.ts"
+    // "tests/**/*.ts" // Removed from include
+  ],
+  "exclude": [
+    // Added exclude for tests and node_modules
+    "node_modules",
+    "tests"
   ]
 }

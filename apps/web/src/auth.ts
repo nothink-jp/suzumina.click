@@ -1,6 +1,7 @@
 import { Firestore } from "@google-cloud/firestore";
 import type { Timestamp } from "@google-cloud/firestore";
 import NextAuth from "next-auth";
+// import type { Session } from "next-auth"; // No longer needed here for the export type
 import Discord from "next-auth/providers/discord";
 
 // ビルド時かどうかを判定する関数
@@ -65,10 +66,10 @@ interface UserData {
   updatedAt: Timestamp;
 }
 
-// Next-Authの設定
+// Revert to original export using destructuring
 export const {
   handlers: { GET, POST },
-  auth,
+  auth, // Let TS infer the type again
   signIn,
   signOut,
 } = NextAuth({
