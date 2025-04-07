@@ -62,10 +62,13 @@ GitHub Actions から GCP への認証には Workload Identity Federation を利
   - デプロイ用 SA (`github-actions-deployer@...`) への Workload Identity User ロール付与
 - **サービスアカウント権限:**
   - **デプロイ用SA (`github-actions-deployer@...`):**
-    - `roles/run.developer` (Cloud Run サービスのデプロイ権限: `gcloud run deploy` に必要)
-    - `roles/iam.serviceAccountUser` (`gcloud run deploy` でサービスアカウントを指定する場合に必要)
-    - `roles/artifactregistry.writer` (イメージのプッシュに必要)
-    - (Terraform 実行時のみ) Terraform が管理するリソースに応じた権限 (例: `roles/secretmanager.admin`, `roles/iam.serviceAccountAdmin` など)
+    - **CI/CD パイプライン実行に必要な権限:**
+      - `roles/run.developer` (Cloud Run サービスのデプロイ権限: `gcloud run deploy` に必要)
+      - `roles/iam.serviceAccountUser` (`gcloud run deploy` でサービスアカウントを指定する場合に必要)
+      - `roles/artifactregistry.writer` (イメージのプッシュに必要)
+      - `roles/iam.serviceAccountTokenCreator` (Workload Identity Federation でのトークン生成に必要)
+    - **Terraform 実行時に必要な追加権限:** (CI/CD パイプライン自体には不要)
+      - Terraform が管理するリソースに応じた権限 (例: `roles/secretmanager.admin`, `roles/iam.serviceAccountAdmin`, `roles/serviceusage.serviceUsageAdmin` など)
   - **Cloud Run 実行時SA (`app-runtime@...`):** (Terraform で管理)
     - アプリケーションが必要とする権限 (例: `roles/secretmanager.secretAccessor`, `roles/datastore.user`)
 
@@ -103,6 +106,7 @@ GitHub Actions から GCP への認証には Workload Identity Federation を利
 
 Terraform は Cloud Run サービスに必要なシークレットや設定値を GCP Secret Manager から取得します。Terraform を初めて適用する前や、新しいシークレットを追加する際には、以下のシークレットが **dev 環境** の Secret Manager に存在し、適切な値が設定されていることを確認してください。(アルファベット順)
 
+- `auth-trust-host-dev`: `true` (Auth.js の UntrustedHost エラー回避用)
 - `discord-client-id-dev`: Discord OAuth アプリケーションの Client ID
 - `discord-client-secret-dev`: Discord OAuth アプリケーションの Client Secret
 - `discord-guild-id-dev`: Discord サーバーの Guild ID
