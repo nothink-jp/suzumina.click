@@ -16,7 +16,7 @@
     "declarationMap": true,
     "inlineSources": false,
     "composite": false,
-    "skipLibCheck": true,
+    "skipLibCheck": false,
     "preserveWatchOutput": true,
     "moduleDetection": "force",
     "resolveJsonModule": true,
