@@ -40,10 +40,6 @@ enabled = true
 name = "test-coverage"
 enabled = true
 
-  [analyzers.meta]
-  coverage_file = "apps/web/coverage/lcov.info"
-  format = "lcov"
-
 # Secrets Analyzer
 [[analyzers]]
 name = "secrets"
