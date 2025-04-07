@@ -120,6 +120,12 @@ data "google_secret_manager_secret" "discord_guild_id" {
   depends_on = [google_project_service.secretmanager_api]
 }
 
+data "google_secret_manager_secret" "auth_trust_host" {
+  project   = var.project_id
+  secret_id = "auth-trust-host-dev" # 作成したシークレット名
+  depends_on = [google_project_service.secretmanager_api]
+}
+
 # -----------------------------------------------------------------------------
 # Cloud Run: サービス定義 (環境変数とシークレット参照を設定)
 # -----------------------------------------------------------------------------
@@ -198,6 +204,16 @@ resource "google_cloud_run_v2_service" "web" {
           }
         }
       }
+      # AUTH_TRUST_HOST を Secret Manager から取得するように追加
+      env {
+        name = "AUTH_TRUST_HOST"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.auth_trust_host.secret_id
+            version = "latest"
+          }
+        }
+      }
     }
   }
 
@@ -214,7 +230,8 @@ resource "google_cloud_run_v2_service" "web" {
     data.google_secret_manager_secret.discord_client_id,
     data.google_secret_manager_secret.discord_client_secret,
     data.google_secret_manager_secret.nextauth_url,
-    data.google_secret_manager_secret.discord_guild_id, # 新しいシークレットへの依存を追加
+    data.google_secret_manager_secret.discord_guild_id,
+    data.google_secret_manager_secret.auth_trust_host, # 新しいシークレットへの依存を追加
   ]
 }
 
@@ -249,10 +266,17 @@ resource "google_secret_manager_secret_iam_member" "runtime_access_nextauth_url"
   member    = "serviceAccount:${data.google_service_account.runtime.email}"
 }
 
-# 新しいシークレットへのアクセス権限を追加
 resource "google_secret_manager_secret_iam_member" "runtime_access_discord_guild_id" {
   project   = data.google_secret_manager_secret.discord_guild_id.project
   secret_id = data.google_secret_manager_secret.discord_guild_id.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_service_account.runtime.email}"
+}
+
+# 新しいシークレットへのアクセス権限を追加
+resource "google_secret_manager_secret_iam_member" "runtime_access_auth_trust_host" {
+  project   = data.google_secret_manager_secret.auth_trust_host.project
+  secret_id = data.google_secret_manager_secret.auth_trust_host.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_service_account.runtime.email}"
 }
