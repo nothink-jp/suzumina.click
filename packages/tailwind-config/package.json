@@ -1,0 +1,14 @@
+{
+  "name": "@suzumina.click/tailwind-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./globals.css": "./globals.css",
+    "./postcss.config": "./postcss.config.mjs"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.8",
+    "tailwindcss": "^4.0.8"
+  }
+}
