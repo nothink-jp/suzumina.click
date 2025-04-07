@@ -3,6 +3,8 @@
 ## 完了済み
 
 - [x] v0.1.1 へのバージョンアップ (全パッケージ)
+- [x] DeepSource 基本設定 (`.deepsource.toml` 作成・更新)
+- [x] DeepSource テストカバレッジ連携 (CI設定含む)
 
 ## 優先度: 高
 
@@ -30,7 +32,11 @@
 ### セキュリティ
 
 - [ ] 依存関係の脆弱性チェック自動化
-- [ ] コードスキャンの自動化
+- [ ] コードスキャンの自動化 (DeepSource)
+  - [ ] DeepSource Secrets Analyzer の有効化検討
+  - [ ] DeepSource GitHub App 連携確認
+  - [ ] DeepSource DSN の GitHub Secrets 設定 (ユーザー作業)
+- [ ] (旧) コードスキャンの自動化
 
 ### ドキュメント
 
