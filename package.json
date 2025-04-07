@@ -15,11 +15,13 @@
     "test:coverage": "turbo run test:coverage",
     "spell-check": "cspell \"**/*.{md,ts,tsx,js,jsx,json}\"",
     "ci:check": "bun run check && bun run format && bun run check-types",
-    "ci:fix": "bun run format:write && bun run check:write"
+    "ci:fix": "bun run format:write && bun run check:write",
+    "clean": "turbo run clean && rimraf .turbo coverage node_modules"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "cspell": "^8.18.1",
+    "rimraf": "^6.0.1",
     "turbo": "^2.5.0",
     "typescript": "5.8.3"
   },

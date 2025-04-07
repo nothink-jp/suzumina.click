@@ -9,7 +9,7 @@
   - サーバーメンバーシップの確認
   - セッション管理とルート保護
   - ユーザーデータのFirestore保存
-- 共有TypeScript設定パッケージ (`@suzumina/typescript-config`) を追加
+- 共有TypeScript設定パッケージ (`@suzumina.click/typescript-config`) を追加
 
 ### Changed
 
