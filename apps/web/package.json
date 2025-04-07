@@ -11,7 +11,8 @@
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
-    "check": "tsc --noEmit && biome check ."
+    "check": "tsc --noEmit && biome check .",
+    "clean": "rimraf .next .turbo coverage next-env.d.ts node_modules"
   },
   "dependencies": {
     "@google-cloud/firestore": "^7",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^17.4.4",
+    "@suzumina.click/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16",
     "@types/bun": "^1.2.8",

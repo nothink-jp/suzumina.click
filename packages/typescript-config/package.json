@@ -8,7 +8,7 @@
     "access": "public"
   },
   "scripts": {
-    "clean": "rm -rf .turbo node_modules"
+    "clean": "rimraf .turbo node_modules"
   },
   "devDependencies": {
     "typescript": "5.8.3"
