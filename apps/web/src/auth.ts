@@ -222,7 +222,6 @@ export const {
   },
 });
 
-
 // セッションの型定義を拡張
 declare module "next-auth" {
   interface Session {
