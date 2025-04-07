@@ -23,7 +23,7 @@ CI/CD パイプラインは GitHub Actions を使用し、コードのプッシ�
 
 1. `iac/` ディレクトリ以下の Terraform コードを修正 (例: 環境変数追加、スケーリング設定変更)
 2. ローカルまたは専用のワークフローで `terraform plan` を実行し、変更内容を確認
-3. 確認後、`terraform apply` を実行してインフラに変更を適用
+3. 確認後、`terraform apply` を実行してインフラに変更を適用 (※ CI/CD 用のサービスアカウントとは別の、適切な権限を持つアカウント/方法で実行)
 
 ## GitHub Actions構成
 
@@ -62,13 +62,12 @@ GitHub Actions から GCP への認証には Workload Identity Federation を利
   - デプロイ用 SA (`github-actions-deployer@...`) への Workload Identity User ロール付与
 - **サービスアカウント権限:**
   - **デプロイ用SA (`github-actions-deployer@...`):**
-    - **CI/CD パイプライン実行に必要な権限:**
-      - `roles/run.developer` (Cloud Run サービスのデプロイ権限: `gcloud run deploy` に必要)
-      - `roles/iam.serviceAccountUser` (`gcloud run deploy` でサービスアカウントを指定する場合に必要)
+    - **CI/CD パイプライン実行に必要な最小限の権限:**
+      - `roles/run.developer` (Cloud Run サービスのデプロイ権限)
+      - `roles/iam.serviceAccountUser` (Cloud Run 実行 SA を指定するために必要)
       - `roles/artifactregistry.writer` (イメージのプッシュに必要)
       - `roles/iam.serviceAccountTokenCreator` (Workload Identity Federation でのトークン生成に必要)
-    - **Terraform 実行時に必要な追加権限:** (CI/CD パイプライン自体には不要)
-      - Terraform が管理するリソースに応じた権限 (例: `roles/secretmanager.admin`, `roles/iam.serviceAccountAdmin`, `roles/serviceusage.serviceUsageAdmin` など)
+    - **注意:** Terraform を使用してインフラ構成を変更する場合は、このサービスアカウントではなく、別途適切な管理者権限 (例: `roles/secretmanager.admin`, `roles/iam.serviceAccountAdmin`, `roles/serviceusage.serviceUsageAdmin`, `roles/iam.workloadIdentityPoolAdmin` など) を持つアカウント/方法で `terraform apply` を実行する必要があります。
   - **Cloud Run 実行時SA (`app-runtime@...`):** (Terraform で管理)
     - アプリケーションが必要とする権限 (例: `roles/secretmanager.secretAccessor`, `roles/datastore.user`)
 
@@ -99,7 +98,7 @@ GitHub Actions から GCP への認証には Workload Identity Federation を利
 
 ### 3. インフラ構成変更時の適用
 
-- 開発者が `iac/` ディレクトリ以下の Terraform コードを変更した場合、手動または専用のワークフローで `terraform plan` および `terraform apply` を実行します。
+- 開発者が `iac/` ディレクトリ以下の Terraform コードを変更した場合、手動または専用のワークフローで `terraform plan` および `terraform apply` を実行します (※ 適切な権限を持つアカウント/方法で実行)。
 - CI/CD パイプラインはこのプロセスには関与しません。
 
 ## 事前準備: Secret Manager の設定
