@@ -1,16 +1,17 @@
 {
-  "name": "web",
+  "name": "@suzumina.click/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --fix .",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit && biome check ."
   },
   "dependencies": {
     "@google-cloud/firestore": "^7",
@@ -30,6 +31,6 @@
     "@types/react-dom": "^19",
     "happy-dom": "^17",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "5.8.3"
   }
 }

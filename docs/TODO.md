@@ -39,6 +39,11 @@
   - [x] ディレクトリ構造の説明を最新化
   - [x] デプロイ手順の追加
 
+### パッケージ整備
+
+- [x] packages/typescript-configの作成
+  - [x] 共有のTypeScript設定
+
 ## 優先度: 中
 
 ### CI/CD パイプライン
@@ -55,20 +60,7 @@
 - [ ] Storybookのセットアップと設定
 - [ ] アクセシビリティ対応
 
-### インフラストラクチャ
-
-- [ ] Cloud Run Jobsの実装
-  - [ ] バッチ処理の基本構造設計
-  - [ ] Cloud Schedulerの設定
-
 ## 優先度: 低
-
-### パッケージ整備
-
-- [ ] packages/typescript-configの作成
-  - [ ] 共有のTypeScript設定
-
-  # Removed ESLint task
 
 ### モニタリング
 
@@ -97,6 +89,12 @@
 
 - [ ] Playwrightのセットアップ
 - [ ] 認証フローのE2Eテスト
+
+### インフラストラクチャ
+
+- [ ] Cloud Run Jobsの実装
+  - [ ] バッチ処理の基本構造設計
+  - [ ] Cloud Schedulerの設定
 
 ### その他 (優先度見直し)
 
