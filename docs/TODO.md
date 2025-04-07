@@ -48,17 +48,17 @@
   - [x] ビルド・デプロイ設定
   - [x] 依存関係の自動更新
 
-### 共有UIコンポーネント
+### 共有UIコンポーネント (shadcn/ui + Storybook)
 
-- [ ] デザインシステムの整備
-- [ ] 基本コンポーネントの実装
+- [ ] shadcn/ui を利用したデザインシステムの整備
+- [ ] shadcn/ui を利用した基本コンポーネントの実装
+- [ ] Storybookのセットアップと設定
 - [ ] アクセシビリティ対応
 
 ### インフラストラクチャ
 
 - [ ] Cloud Run Jobsの実装
   - [ ] バッチ処理の基本構造設計
-  - [ ] YouTube Data API連携
   - [ ] Cloud Schedulerの設定
 
 ## 優先度: 低
@@ -67,7 +67,8 @@
 
 - [ ] packages/typescript-configの作成
   - [ ] 共有のTypeScript設定
-  - [ ] ESLint設定の統合
+
+  # Removed ESLint task
 
 ### モニタリング
 
@@ -83,7 +84,7 @@
 ### ドキュメント
 
 - [ ] APIドキュメントの自動生成設定
-- [ ] コンポーネントカタログの作成
+- [ ] Storybookによるコンポーネントカタログの作成
 
 ### テストカバレッジの改善
 
@@ -96,3 +97,7 @@
 
 - [ ] Playwrightのセットアップ
 - [ ] 認証フローのE2Eテスト
+
+### その他 (優先度見直し)
+
+- [ ] YouTube Data API連携 (Cloud Run Jobsの一部として検討、優先度: 低)

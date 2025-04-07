@@ -71,7 +71,7 @@ bun dev
 │       │   │   ├── api/    # APIルート
 │       │   │   ├── auth/   # 認証関連ページ
 │       │   │   └── users/  # ユーザー関連ページ
-│       │   ├── components/ # 共有コンポーネント
+│       │   ├── components/ # 共有コンポーネント (shadcn/uiベース, Storybookで管理)
 │       │   └── auth.ts     # 認証設定
 │       └── public/         # 静的ファイル
 ├── docs/                   # ドキュメント
@@ -100,7 +100,32 @@ bun dev
 - [開発環境のセットアップ](./auth/DEVELOPMENT_SETUP.md)
 - [変更履歴](./CHANGELOG.md)
 - [GCPインフラストラクチャ](./gcp/GCP_OVERVIEW.md)
+- [プロジェクト分析](./PROJECT_ANALYSIS.md)
+
+## 涼花みなせ プロフィール
+
+### YouTube
+
+- チャンネル名: 涼花みなせ / Suzuka Minase
+- チャンネルID: `UChiMMOhl6FpzjoRqvZ5rcaA`
+
+### SNS
+
+X（旧Twitter）アカウント: [@suzuka_minase](https://x.com/suzuka_minase)
+
+### コミュニティ
+
+#### Discord
+
+- サーバー名: すずみなふぁみりー
+- サーバーID(ギルドID): `959095494456537158`
+
+#### ci-en
+
+- URL: [https://ci-en.dlsite.com/creator/9805](https://ci-en.dlsite.com/creator/9805)
 
 ## ライセンス
 
 MIT License
+
+最終更新日: 2025年4月7日
