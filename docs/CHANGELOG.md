@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-04-08
+
+### Changed
+
+- 全パッケージのバージョンを `0.1.1` に更新
+- 全 `package.json` に `description` フィールドを追加
+
 ### Added
 
 - Discord OAuth2認証システム
