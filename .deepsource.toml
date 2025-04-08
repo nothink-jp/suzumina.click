@@ -13,7 +13,7 @@ exclude_patterns = [
   ".coverage/**",
   "**/.turbo/**",
   "**/.vercel/**",
-  "iac/**",
+  # "iac/**", # Removed to enable Terraform analysis
   "*.tfstate",
   "*.tfstate.*",
   "*.tfvars",
@@ -44,3 +44,11 @@ enabled = true
 [[analyzers]]
 name = "secrets"
 enabled = true
+
+# Terraform Analyzer
+[[analyzers]]
+name = "terraform"
+enabled = true
+
+  [analyzers.meta]
+  terraform_version = "latest"
