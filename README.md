@@ -13,8 +13,8 @@
 
 - [Next.js](https://nextjs.org/) 15.2.4
 - [React](https://react.dev/) 19.1.0
-- [TypeScript](https://www.typescriptlang.org/) 5.8.2
-- [Turbo](https://turbo.build/) 2.4.4
+- [TypeScript](https://www.typescriptlang.org/) 5.8.3
+- [Turbo](https://turbo.build/) 2.5.0
 - [Biome](https://biomejs.dev/) 1.9.4
 
 ## プロジェクト構成
@@ -26,7 +26,7 @@
 - `apps/web`: メインの[Next.js](https://nextjs.org/)アプリケーション
 - `docs`: プロジェクト関連ドキュメント (設計、TODOリストなど)
 - `iac`: Infrastructure as Code (Terraform) ファイル
-- `packages`: 共有パッケージ (現在は空、将来的に `typescript-config` などを配置予定)
+- `packages`: 共有パッケージ (`tailwind-config`, `typescript-config`, `ui` など)
 
 各パッケージ/アプリケーションは100% [TypeScript](https://www.typescriptlang.org/)で記述されています。
 
@@ -37,6 +37,8 @@
 - [Turbo](https://turbo.build/): ビルドシステム
 
 ## 開発手順
+
+プロジェクトルートから以下の `bun run` コマンドを実行してください。これらのコマンドは内部的に `turbo` や `biome` などを呼び出します。
 
 ### インストール
 
@@ -65,14 +67,26 @@ bun run check-types
 ### リントとフォーマット
 
 ```bash
-# リントチェック
+# リントチェック (Biome)
 bun run check
 
-# フォーマットチェック
+# フォーマットチェック (Biome)
 bun run format
 
-# リントとフォーマットの自動修正
+# リントとフォーマットの自動修正 (Biome)
 bun run ci:fix
+```
+
+*注意: `bun run lint` は `turbo run lint` を実行します。これは各ワークスペースの `lint` スクリプト（存在する場合）を実行します。プロジェクト全体のリントには `bun run check` を使用してください。*
+
+### テスト
+
+```bash
+# 全テスト実行
+bun run test
+
+# カバレッジ付きテスト実行
+bun run test:coverage
 ```
 
 ### スペルチェック
@@ -129,17 +143,17 @@ bun run spell-check
 
     - `web`: Cloud Runサービス名
 
-**注意:** 上記は基本的な手順です。実際のCI/CDパイプラインでは、サービスアカウント認証 (Workload Identity Federation)、環境変数の設定、シークレットの参照などが追加されます。詳細は `docs/gcp/GCP_CICD.md` (作成予定) を参照してください。
+**注意:** 上記は基本的な手順です。実際のCI/CDパイプラインでは、サービスアカウント認証 (Workload Identity Federation)、環境変数の設定、シークレットの参照などが追加されます。詳細は `docs/gcp/GCP_CICD.md` を参照してください。
 
 ## CI/CD
 
-以下のチェックが自動実行されます：
+GitHub Actionsのワークフロー (`.github/workflows/ci.yml`) により、以下のチェックが自動実行されます：
 
-1. コードの型チェック
-2. リントチェック
-3. フォーマットチェック
-4. Markdownリントチェック
-5. スペルチェック
+1. コードのリントチェック (`bun run check`)
+2. コードのフォーマットチェック (`bun run format`)
+3. コードの型チェック (`bun run check-types`)
+4. テスト実行とカバレッジ生成 (`bun run test:coverage`)
+5. (DeepSourceへのカバレッジレポート送信)
 
 ## リモートキャッシュ
 

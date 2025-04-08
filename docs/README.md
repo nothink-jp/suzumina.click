@@ -15,8 +15,8 @@
 
 ### 必要な環境
 
-- Node.js 18.0.0以上
-- Bun 1.0.0以上
+- Node.js >= 22
+- Bun >= 1.2.8
 - Discord Developer Portal へのアクセス権限
 - GCPプロジェクトへのアクセス権限
 
@@ -55,7 +55,7 @@ GOOGLE_APPLICATION_CREDENTIALS="<path-to-credentials>"
 ### 開発サーバーの起動
 
 ```bash
-bun dev
+bun run dev # プロジェクトルートから実行
 ```
 
 <http://localhost:3000> でアプリケーションにアクセスできます。
@@ -78,8 +78,8 @@ bun dev
 │   ├── auth/              # 認証関連ドキュメント
 │   └── gcp/               # GCP関連ドキュメント
 ├── iac/                   # インフラストラクチャコード
-│   └── environments/      # 環境別設定
-└── packages/              # 共有パッケージ（計画中）
+│   └── environments/      # 環境別設定 (dev)
+└── packages/              # 共有パッケージ (tailwind-config, typescript-config, ui)
 ```
 
 ## デプロイ

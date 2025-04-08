@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- プロジェクトドキュメントを更新し、現状のコードベースや設定との整合性を向上 (`README.md`, `docs/README.md`, `docs/auth/AUTH_DESIGN.md`, `docs/PROJECT_ANALYSIS.md`, `docs/gcp/GCP_IAC_DESIGN_MINIMAL.md`)
+
 ## [0.1.1] - 2025-04-08
 
 ### Changed

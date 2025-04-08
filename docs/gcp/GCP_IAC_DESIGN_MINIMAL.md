@@ -21,8 +21,8 @@
 - **Cloud Run:**
   - サービス定義 (`web`)
     - 実行サービスアカウント (`app-runtime`) の指定
-    - 環境変数 (`NODE_ENV`, `NEXTAUTH_URL`, `DISCORD_GUILD_ID`) の設定
-    - Secret Managerからのシークレット参照 (`NEXTAUTH_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`) の設定
+    - 環境変数 (`NODE_ENV`) の設定
+    - Secret Managerからのシークレット参照 (`NEXTAUTH_URL`, `DISCORD_GUILD_ID`, `NEXTAUTH_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `AUTH_TRUST_HOST`) の設定
     - 公開アクセス設定 (`ingress`)
     - **注意:** コンテナイメージはCI/CDで更新されるため、Terraformのライフサイクルで `ignore_changes` を設定。
 - **IAM:**
@@ -31,7 +31,7 @@
     - Workload Identity Pool Provider (`github-provider`)
     - IAM Binding: Deployerサービスアカウント (`github-actions-deployer`) に `roles/iam.workloadIdentityUser` ロールを付与。
   - **Secret Manager Access:**
-    - IAM Binding: Runtimeサービスアカウント (`app-runtime`) に、参照する各シークレット (`nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev`) に対する `roles/secretmanager.secretAccessor` ロールを付与。
+    - IAM Binding: Runtimeサービスアカウント (`app-runtime`) に、参照する各シークレット (`nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev`, `nextauth-url-dev`, `discord-guild-id-dev`, `auth-trust-host-dev`) に対する `roles/secretmanager.secretAccessor` ロールを付与。
 
 ## 4. Terraform参照対象リソース (事前作成前提)
 
@@ -44,7 +44,7 @@
 - **Artifact Registry:**
   - Dockerイメージ用リポジトリ (例: `suzumina-click-docker-repo`)
 - **Secret Manager:**
-  - シークレット自体 (例: `nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev`)
+  - シークレット自体 (例: `nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev`, `nextauth-url-dev`, `discord-guild-id-dev`, `auth-trust-host-dev`)
     - シークレットの値はTerraform管理外。
 
 ## 5. Terraform構成案
@@ -56,7 +56,7 @@ iac/
 ├── environments/
 │   └── dev/
 │       ├── main.tf         # リソース定義 (API, Cloud Run, WIF, IAM Bindings, dataソース)
-│       ├── variables.tf    # dev環境用変数 (project_id, region, nextauth_url, etc.)
+│       ├── variables.tf    # dev環境用変数 (project_id, region, etc.)
 │       └── terraform.tfvars # dev環境用変数ファイル (Git管理外推奨)
 ├── backend.tf          # Terraform状態管理バックエンド設定 (GCS)
 └── variables.tf        # 共通変数 (もしあれば)
@@ -90,7 +90,7 @@ graph TD
         GCP_IAM_SA_Deployer["IAM SA (deployer)"]
         GCP_IAM_SA_Runtime["IAM SA (runtime)"]
         GCP_AR["Artifact Registry Repo"]
-        GCP_Secrets["Secrets (nextauth, discord-id, discord-secret)"]
+        GCP_Secrets["Secrets (nextauth-secret, discord-id, discord-secret, nextauth-url, discord-guild, auth-trust-host)"]
     end
 
     subgraph "CI/CD (GitHub Actions - Conceptual)"
@@ -134,6 +134,5 @@ graph TD
 ## 8. 次のステップ
 
 1. このドキュメントは、Cloud Runサービス設定をTerraformで管理する構成を反映しています。
-2. `terraform.tfvars` または環境変数で `nextauth_url` と `discord_guild_id` を設定する必要があります。
-3. Secret Managerに `nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev` が存在し、適切な値が設定されていることを確認してください。
-4. `terraform apply` を実行して変更を適用します。
+2. Secret Managerに `nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev`, `nextauth-url-dev`, `discord-guild-id-dev`, `auth-trust-host-dev` が存在し、適切な値が設定されていることを確認してください。
+3. `terraform apply` を実行して変更を適用します。
