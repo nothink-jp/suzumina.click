@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     // !! WARN !!
     // Only enable this if you are running type checking separately in your CI pipeline.
-    ignoreBuildErrors: process.env.CI === 'true',
+    ignoreBuildErrors: process.env.CI === "true",
   },
 };
 
