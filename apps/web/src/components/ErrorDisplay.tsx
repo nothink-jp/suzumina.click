@@ -10,10 +10,7 @@ interface ErrorDisplayProps {
 /**
  * 認証エラーの説明と詳細を表示します。
  */
-export function ErrorDisplay({
-  description,
-  details,
-}: ErrorDisplayProps) {
+export function ErrorDisplay({ description, details }: ErrorDisplayProps) {
   return (
     <Alert status="destructive" className="text-left">
       <div className="flex">

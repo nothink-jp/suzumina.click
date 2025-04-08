@@ -6,43 +6,34 @@ import {
   CardBody as HeroUICardBody,
   CardFooter as HeroUICardFooter,
   CardHeader as HeroUICardHeader,
-  // Removed CardHeaderProps, CardBodyProps, CardFooterProps imports
 } from "@heroui/react";
 import { forwardRef } from "react"; // Keep for Card
-import type * as React from "react"; // For HTMLAttributes
+import type { FC, HTMLAttributes } from "react"; // Explicitly import FC and HTMLAttributes
 
 // --- Card ---
-// Keep forwardRef for the main Card component
-// Removed empty interface CardComponentProps extends CardProps {}
-// Use CardProps directly in forwardRef
 const Card = forwardRef<HTMLDivElement, CardProps>(({ ...props }, ref) => {
   return <HeroUICard ref={ref} {...props} />;
 });
 Card.displayName = "Card";
 
 // --- CardHeader ---
-// Remove forwardRef as HeroUICardHeader likely doesn't accept it
-interface CardHeaderComponentProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
-const CardHeader: React.FC<CardHeaderComponentProps> = ({ ...props }) => {
+// Use FC and HTMLAttributes directly
+const CardHeader: FC<HTMLAttributes<HTMLDivElement>> = ({ ...props }) => {
   // Pass props directly, assuming HeroUICardHeader accepts standard HTML attributes
   return <HeroUICardHeader {...props} />;
 };
 CardHeader.displayName = "CardHeader";
 
 // --- CardBody (replaces CardContent) ---
-// Remove forwardRef
-interface CardBodyComponentProps extends React.HTMLAttributes<HTMLDivElement> {}
-const CardBody: React.FC<CardBodyComponentProps> = ({ ...props }) => {
+// Use FC and HTMLAttributes directly
+const CardBody: FC<HTMLAttributes<HTMLDivElement>> = ({ ...props }) => {
   return <HeroUICardBody {...props} />;
 };
 CardBody.displayName = "CardBody";
 
 // --- CardFooter ---
-// Remove forwardRef
-interface CardFooterComponentProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
-const CardFooter: React.FC<CardFooterComponentProps> = ({ ...props }) => {
+// Use FC and HTMLAttributes directly
+const CardFooter: FC<HTMLAttributes<HTMLDivElement>> = ({ ...props }) => {
   return <HeroUICardFooter {...props} />;
 };
 CardFooter.displayName = "CardFooter";
