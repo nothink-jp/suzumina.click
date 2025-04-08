@@ -71,7 +71,7 @@ bun run dev # プロジェクトルートから実行
 │       │   │   ├── api/    # APIルート
 │       │   │   ├── auth/   # 認証関連ページ
 │       │   │   └── users/  # ユーザー関連ページ
-│       │   ├── components/ # 共有コンポーネント (shadcn/uiベース, Storybookで管理)
+│       │   ├── components/ # 共有コンポーネント (HeroUIベース, Storybookで管理)
 │       │   └── auth.ts     # 認証設定
 │       └── public/         # 静的ファイル
 ├── docs/                   # ドキュメント

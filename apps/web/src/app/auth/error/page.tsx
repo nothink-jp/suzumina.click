@@ -3,11 +3,7 @@
 import { ErrorActions } from "@/components/ErrorActions";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { ErrorTrackingInfo } from "@/components/ErrorTrackingInfo";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-} from "@suzumina.click/ui/components/card";
+import { Card, CardHeader } from "@suzumina.click/ui";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -60,21 +56,12 @@ export default function AuthErrorPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      {/* Apply padding and spacing directly to Card, remove CardContent */}
       <Card className="w-full max-w-md shadow-md p-6 space-y-6">
         <CardHeader className="text-center p-0 mb-0">
-          {" "}
-          {/* Adjust padding/margin */}
-          <CardTitle className="text-2xl font-bold text-red-600">
-            {title}
-          </CardTitle>
+          <h2 className="text-2xl font-bold text-red-600">{title}</h2>
         </CardHeader>
-        {/* CardContent removed */}
-        <ErrorDisplay
-          title={title}
-          description={description}
-          details={details}
-        />
+        {/* Removed title prop from ErrorDisplay */}
+        <ErrorDisplay description={description} details={details} />
         <ErrorTrackingInfo errorType={errorType} trackingId={trackingId} />
         <ErrorActions />
       </Card>

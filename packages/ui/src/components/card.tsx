@@ -1,83 +1,51 @@
-import * as React from "react";
+"use client";
 
-import { cn } from "../lib/utils"; // Changed to relative path
+import {
+  type CardProps,
+  Card as HeroUICard,
+  CardBody as HeroUICardBody,
+  CardFooter as HeroUICardFooter,
+  CardHeader as HeroUICardHeader,
+} from "@heroui/react";
+import { forwardRef } from "react"; // Keep for Card
+import type { FC, HTMLAttributes } from "react"; // Explicitly import FC and HTMLAttributes
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-xl border bg-card text-card-foreground shadow",
-      className,
-    )}
-    {...props}
-  />
-));
+// --- Card ---
+const Card = forwardRef<HTMLDivElement, CardProps>(({ ...props }, ref) => {
+  return <HeroUICard ref={ref} {...props} />;
+});
 Card.displayName = "Card";
 
-const CardHeader = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
-    {...props}
-  />
-));
+// --- CardHeader ---
+// Use FC and HTMLAttributes directly
+const CardHeader: FC<HTMLAttributes<HTMLDivElement>> = ({ ...props }) => {
+  // Pass props directly, assuming HeroUICardHeader accepts standard HTML attributes
+  return <HeroUICardHeader {...props} />;
+};
 CardHeader.displayName = "CardHeader";
 
-const CardTitle = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("font-semibold leading-none tracking-tight", className)}
-    {...props}
-  />
-));
-CardTitle.displayName = "CardTitle";
+// --- CardBody (replaces CardContent) ---
+// Use FC and HTMLAttributes directly
+const CardBody: FC<HTMLAttributes<HTMLDivElement>> = ({ ...props }) => {
+  return <HeroUICardBody {...props} />;
+};
+CardBody.displayName = "CardBody";
 
-const CardDescription = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-));
-CardDescription.displayName = "CardDescription";
-
-const CardContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
-));
-CardContent.displayName = "CardContent";
-
-const CardFooter = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex items-center p-6 pt-0", className)}
-    {...props}
-  />
-));
+// --- CardFooter ---
+// Use FC and HTMLAttributes directly
+const CardFooter: FC<HTMLAttributes<HTMLDivElement>> = ({ ...props }) => {
+  return <HeroUICardFooter {...props} />;
+};
 CardFooter.displayName = "CardFooter";
+
+// CardTitle and CardDescription are removed.
 
 export {
   Card,
   CardHeader,
+  CardBody, // Exporting as CardBody
   CardFooter,
-  CardTitle,
-  CardDescription,
-  CardContent,
 };
+
+// Export underlying CardProps type if needed
+export type { CardProps };

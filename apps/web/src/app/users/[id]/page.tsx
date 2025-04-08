@@ -3,11 +3,7 @@ import { UserInfoSection } from "@/components/UserInfoSection";
 import { UserProfileHeader } from "@/components/UserProfileHeader";
 import { Firestore } from "@google-cloud/firestore";
 import type { Timestamp } from "@google-cloud/firestore";
-import {
-  Card,
-  CardContent,
-  // CardHeader, // Removed unused import
-} from "@suzumina.click/ui/components/card";
+import { Card, CardBody } from "@suzumina.click/ui"; // Updated import path and name (CardContent -> CardBody)
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -82,7 +78,8 @@ export default async function UserPage({ params }: Props) {
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <Card className="overflow-hidden shadow-lg">
-          <CardContent className="p-8">
+          {/* Use CardBody instead of CardContent */}
+          <CardBody className="p-8">
             <UserProfileHeader
               avatarUrl={userData.avatarUrl}
               displayName={userData.displayName}
@@ -93,7 +90,7 @@ export default async function UserPage({ params }: Props) {
               createdAt={userData.createdAt}
               updatedAt={userData.updatedAt}
             />
-          </CardContent>
+          </CardBody>
         </Card>
       </div>
     </div>

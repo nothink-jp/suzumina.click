@@ -78,14 +78,18 @@ describe("AuthErrorPage", () => {
       ),
     ).not.toBeNull();
 
-    // Check links
-    const retryLink = screen.getByRole("link", { name: "ログインを再試行" });
-    expect(retryLink).not.toBeNull();
-    expect(retryLink.getAttribute("href")).toBe("/auth/signin");
+    // Check buttons (changed role from "link" to "button")
+    const retryButton = screen.getByRole("button", {
+      name: "ログインを再試行",
+    });
+    expect(retryButton).not.toBeNull();
+    expect(retryButton.getAttribute("href")).toBe("/auth/signin");
 
-    const topLink = screen.getByRole("link", { name: "トップページへ戻る" });
-    expect(topLink).not.toBeNull();
-    expect(topLink.getAttribute("href")).toBe("/");
+    const topButton = screen.getByRole("button", {
+      name: "トップページへ戻る",
+    });
+    expect(topButton).not.toBeNull();
+    expect(topButton.getAttribute("href")).toBe("/");
   });
 
   // 他のテストケースにもサポート連絡方法の確認を追加 (簡略化のため、ここでは代表的なもののみ示す)

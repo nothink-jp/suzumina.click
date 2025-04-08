@@ -1,5 +1,6 @@
 "use client";
 
+import { HeroUIProvider } from "@heroui/react";
 import type { Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 
@@ -10,5 +11,9 @@ export function Providers({
   children: React.ReactNode;
   session: Session | null;
 }) {
-  return <SessionProvider session={session}>{children}</SessionProvider>;
+  return (
+    <HeroUIProvider>
+      <SessionProvider session={session}>{children}</SessionProvider>
+    </HeroUIProvider>
+  );
 }
