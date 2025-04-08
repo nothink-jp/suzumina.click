@@ -1,4 +1,4 @@
-import { Button } from "@suzumina.click/ui/components/button";
+import { Button } from "@suzumina.click/ui"; // Updated to root import
 import Link from "next/link";
 
 interface ErrorActionsProps {
@@ -15,11 +15,13 @@ export function ErrorActions({
 }: ErrorActionsProps) {
   return (
     <div className="mt-8 space-y-4">
-      <Button asChild className="w-full">
-        <Link href={signInHref}>ログインを再試行</Link>
+      {/* Use as={Link} and href for HeroUI Button */}
+      <Button as={Link} href={signInHref} className="w-full">
+        ログインを再試行
       </Button>
-      <Button asChild variant="outline" className="w-full">
-        <Link href={homeHref}>トップページへ戻る</Link>
+      {/* Use variant="bordered" for outline style */}
+      <Button as={Link} href={homeHref} variant="bordered" className="w-full">
+        トップページへ戻る
       </Button>
     </div>
   );

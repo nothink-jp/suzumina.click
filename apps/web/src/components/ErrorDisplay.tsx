@@ -1,40 +1,37 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@suzumina.click/ui/components/alert";
+import { Alert } from "@suzumina.click/ui";
 // skipcq: JS-0257
 import { AlertTriangle } from "lucide-react";
 
 interface ErrorDisplayProps {
-  title: string;
+  // title prop removed
   description: string;
   details?: string[];
 }
 
 /**
- * 認証エラーのタイトル、説明、詳細を表示します。
+ * 認証エラーの説明と詳細を表示します。
  */
 export function ErrorDisplay({
-  title,
+  // title argument removed
   description,
   details,
 }: ErrorDisplayProps) {
   return (
-    <Alert variant="destructive" className="text-left">
-      <AlertTriangle className="h-4 w-4" />
-      <AlertTitle className="font-bold">{title}</AlertTitle>
-      <AlertDescription>
-        <p>{description}</p>
-        {details && (
-          <ul className="mt-2 list-disc list-inside space-y-1">
-            {details.map((detail, index) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: Static list
-              <li key={`${detail}-${index}`}>{detail}</li>
-            ))}
-          </ul>
-        )}
-      </AlertDescription>
+    <Alert status="destructive" className="text-left">
+      <div className="flex">
+        <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0" />
+        <div>
+          <p className="text-sm font-medium">{description}</p>
+          {details && (
+            <ul className="mt-2 list-disc list-inside space-y-1 text-sm">
+              {details.map((detail, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: Static list
+                <li key={`${detail}-${index}`}>{detail}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </Alert>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@suzumina.click/ui/components/button";
+import { Button } from "@suzumina.click/ui"; // Updated to root import
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 // import { Fragment } from "react"; // Fragment のインポートを削除
@@ -27,10 +27,11 @@ export function UserActions({ status, userId }: UserActionsProps) {
         >
           プロフィール
         </Link>
+        {/* Use variant="light" for ghost style */}
         <Button
-          variant="ghost"
+          variant="light" // Changed from "ghost"
           size="sm"
-          onClick={() => signOut()}
+          onPress={() => signOut()} // Changed from onClick to onPress
           className="text-sm text-gray-700 hover:text-gray-500"
         >
           ログアウト

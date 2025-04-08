@@ -6,6 +6,9 @@
 - [x] DeepSource 基本設定 (`.deepsource.toml` 作成・更新)
 - [x] DeepSource テストカバレッジ連携 (CI設定含む)
 - [x] Cloud Run デプロイ時のポート設定修正 (`Dockerfile` から `ENV PORT` を削除)
+- [x] UIライブラリを shadcn/ui から HeroUI へ移行
+- [x] HeroUI を利用した基本コンポーネントの実装 (Button, Card, Avatar, Alert)
+- [x] packages/ui のエントリーポイント作成と exports 更新
 
 ## 優先度: 高
 
@@ -15,12 +18,11 @@
 
 ## 優先度: 中
 
-### 共有UIコンポーネント (shadcn/ui + Storybook)
+### 共有UIコンポーネント (HeroUI + Storybook)
 
-- [ ] shadcn/ui を利用したデザインシステムの整備
-- [ ] shadcn/ui を利用した基本コンポーネントの実装
+- [ ] HeroUI を利用したデザインシステムの整備 (継続)
 - [ ] Storybookのセットアップと設定
-- [ ] アクセシビリティ対応
+- [ ] アクセシビリティ対応 (継続的な確認)
 
 ## 優先度: 低
 
