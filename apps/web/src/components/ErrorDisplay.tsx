@@ -3,7 +3,8 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@suzumina.click/ui/components/alert";
-import { AlertTriangle } from "lucide-react"; // deepsource-disable-line JS-0257
+// skipcq: JS-0257
+import { AlertTriangle } from "lucide-react"
 
 interface ErrorDisplayProps {
   title: string;
