@@ -74,7 +74,7 @@ describe("AuthErrorPage", () => {
     // Check support contact information
     expect(
       screen.getByText(
-        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/,
+        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/u,
       ),
     ).not.toBeNull();
 
@@ -102,7 +102,7 @@ describe("AuthErrorPage", () => {
     // Check support contact information
     expect(
       screen.getByText(
-        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/,
+        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/u,
       ),
     ).not.toBeNull();
   });
@@ -120,7 +120,7 @@ describe("AuthErrorPage", () => {
     // Check support contact information
     expect(
       screen.getByText(
-        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/,
+        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/u,
       ),
     ).not.toBeNull();
   });
@@ -138,7 +138,7 @@ describe("AuthErrorPage", () => {
     // Check support contact information
     expect(
       screen.getByText(
-        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/,
+        /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/u,
       ),
     ).not.toBeNull();
   });
