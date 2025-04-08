@@ -6,11 +6,11 @@ FROM oven/bun:latest AS deps
 
 WORKDIR /monorepo
 
-# ルートと各ワークスペースの package.json をコピー
+# ルートと各ワークスペースの package.json と関連ファイルをコピー
 COPY ./package.json ./bun.lock ./turbo.json ./
 COPY ./apps/web/package.json ./apps/web/package.json
-# packages/ 内の package.json もコピー (存在する場合)
-# COPY ./packages/*/package.json ./packages/*/
+# ワークスペースパッケージの package.json とソースコードをコピー
+COPY ./packages ./packages
 
 # 依存関係をインストール
 RUN bun install --frozen-lockfile
@@ -23,8 +23,10 @@ WORKDIR /monorepo
 
 # deps ステージから node_modules をコピー
 COPY --from=deps /monorepo/node_modules ./node_modules
+# deps ステージからコピーしたワークスペースパッケージもコピー
+COPY --from=deps /monorepo/packages ./packages
 
-# モノレポ全体のソースコードをコピー
+# モノレポ全体のソースコードをコピー (node_modules と packages 以外)
 COPY . .
 
 # web アプリをビルド (standalone output を生成)
