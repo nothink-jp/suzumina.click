@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "apps/web/**"
+      - "packages/ui/**"
       - ".github/workflows/deploy.yml"
       - ".github/workflows/reusable-deploy.yml"
       - "package.json"
@@ -26,5 +27,3 @@ jobs:
     uses: ./.github/workflows/reusable-deploy.yml
     with:
       git_ref: ${{ github.ref }}
-      # image_tag is now generated within the reusable workflow
-    # secrets: inherit # If reusable workflow needs secrets

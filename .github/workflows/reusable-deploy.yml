@@ -7,13 +7,12 @@ on:
         description: 'Git ref (branch, tag, or SHA) to checkout'
         required: true
         type: string
-      # image_tag input is removed, tag is generated internally
 
 jobs:
   build-and-deploy:
     name: Build and Deploy to Cloud Run
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # Increase timeout to 30 minutes
+    timeout-minutes: 10
 
     permissions:
       contents: "read" # Needed to checkout code and read package.json
@@ -53,8 +52,6 @@ jobs:
       - name: Set up gcloud CLI # Keep for deploy-cloudrun action if needed
         uses: google-github-actions/setup-gcloud@v2
 
-      # Configure Docker to use gcloud credential helper ステップを削除
-
       - name: Login to Artifact Registry # Add Docker login step
         uses: docker/login-action@v3
         with:
@@ -75,9 +72,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Terraform ステップを削除
-
-      - name: Deploy to Cloud Run (Update Image) # Use deploy-cloudrun action again
+      - name: Deploy to Cloud Run (Update Image)
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
