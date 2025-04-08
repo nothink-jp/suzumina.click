@@ -22,8 +22,13 @@ env:
   ARTIFACT_REGISTRY_REPO: ${{ vars.ARTIFACT_REGISTRY_REPO }}
 
 jobs:
-  call-reusable-deploy:
+  ci:
+    name: Run CI Checks
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
     name: Build and Deploy
+    needs: [ci]
     uses: ./.github/workflows/reusable-deploy.yml
     with:
       git_ref: ${{ github.ref }}
