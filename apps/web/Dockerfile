@@ -44,10 +44,8 @@ RUN bun install --frozen-lockfile
 
 # web アプリをビルド (standalone output を生成)
 # turbo を使ってビルドすることも可能: RUN bun run turbo run build --filter=web...
-RUN bun run --cwd ./apps/web build
-# デバッグ用に standalone ディレクトリの内容を表示
-RUN echo "--- Contents of /monorepo/apps/web/.next/standalone ---" && ls -la /monorepo/apps/web/.next/standalone || echo "--- standalone directory not found ---"
-
+# 直接 bunx next build を実行
+RUN cd apps/web && bunx next build
 
 # --------------
 # プロダクションイメージ
