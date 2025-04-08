@@ -3,7 +3,6 @@ import { Alert } from "@suzumina.click/ui";
 import { AlertTriangle } from "lucide-react";
 
 interface ErrorDisplayProps {
-  // title prop removed
   description: string;
   details?: string[];
 }
@@ -12,7 +11,6 @@ interface ErrorDisplayProps {
  * 認証エラーの説明と詳細を表示します。
  */
 export function ErrorDisplay({
-  // title argument removed
   description,
   details,
 }: ErrorDisplayProps) {
@@ -24,9 +22,9 @@ export function ErrorDisplay({
           <p className="text-sm font-medium">{description}</p>
           {details && (
             <ul className="mt-2 list-disc list-inside space-y-1 text-sm">
-              {details.map((detail, index) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: Static list
-                <li key={`${detail}-${index}`}>{detail}</li>
+              {details.map((detail) => (
+                // Use the detail string itself as the key, assuming it's unique enough for this static list
+                <li key={detail}>{detail}</li>
               ))}
             </ul>
           )}

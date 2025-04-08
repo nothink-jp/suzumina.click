@@ -1,7 +1,7 @@
 "use client";
 
 import { type AlertProps, Alert as HeroUIAlert } from "@heroui/react";
-import { forwardRef, type ReactNode } from "react"; // Import ReactNode type
+import { type ReactNode, forwardRef } from "react"; // Import ReactNode type
 
 // Define status prop to map to HeroUI color
 type AlertStatus = "default" | "destructive";

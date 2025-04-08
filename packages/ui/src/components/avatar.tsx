@@ -3,10 +3,10 @@
 import { type AvatarProps, Avatar as HeroUIAvatar } from "@heroui/react";
 import { forwardRef } from "react";
 
-// HeroUIのAvatarPropsを継承
-interface Props extends AvatarProps {}
+// Removed empty interface Props extends AvatarProps {}
 
-const Avatar = forwardRef<HTMLSpanElement, Props>(({ ...props }, ref) => {
+// Use AvatarProps directly in forwardRef
+const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(({ ...props }, ref) => {
   // HeroUI Avatar は src や name プロパティで画像やフォールバックを処理
   return <HeroUIAvatar ref={ref} {...props} />;
 });

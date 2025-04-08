@@ -13,12 +13,11 @@ import type * as React from "react"; // For HTMLAttributes
 
 // --- Card ---
 // Keep forwardRef for the main Card component
-interface CardComponentProps extends CardProps {}
-const Card = forwardRef<HTMLDivElement, CardComponentProps>(
-  ({ ...props }, ref) => {
-    return <HeroUICard ref={ref} {...props} />;
-  },
-);
+// Removed empty interface CardComponentProps extends CardProps {}
+// Use CardProps directly in forwardRef
+const Card = forwardRef<HTMLDivElement, CardProps>(({ ...props }, ref) => {
+  return <HeroUICard ref={ref} {...props} />;
+});
 Card.displayName = "Card";
 
 // --- CardHeader ---

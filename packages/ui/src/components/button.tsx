@@ -3,10 +3,10 @@
 import { type ButtonProps, Button as HeroUIButton } from "@heroui/react";
 import { forwardRef } from "react"; // Import only forwardRef
 
-// HeroUIのButtonPropsを継承し、必要に応じて独自のPropsを追加可能
-interface Props extends ButtonProps {}
+// Removed empty interface Props extends ButtonProps {}
 
-const Button = forwardRef<HTMLButtonElement, Props>(
+// Use ButtonProps directly in forwardRef
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   // Use forwardRef directly
   ({ children, ...props }, ref) => {
     return (
