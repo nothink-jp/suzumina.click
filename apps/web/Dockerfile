@@ -65,8 +65,8 @@ COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/static ./.nex
 
 USER nextjs
 
+# EXPOSE はドキュメント目的。Cloud Run は環境変数 PORT を使用する
 EXPOSE 3000
-ENV PORT=3000
 
 # server.js を実行してアプリケーションを起動
 # standalone output では server.js はルートに配置される

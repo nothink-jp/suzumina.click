@@ -5,6 +5,7 @@
 - [x] v0.1.1 へのバージョンアップ (全パッケージ)
 - [x] DeepSource 基本設定 (`.deepsource.toml` 作成・更新)
 - [x] DeepSource テストカバレッジ連携 (CI設定含む)
+- [x] Cloud Run デプロイ時のポート設定修正 (`Dockerfile` から `ENV PORT` を削除)
 
 ## 優先度: 高
 
