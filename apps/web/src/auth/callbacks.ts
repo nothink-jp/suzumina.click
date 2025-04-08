@@ -1,5 +1,4 @@
-import type { Account, Profile } from "next-auth";
-import type { Session } from "next-auth";
+import type { Account, Profile, Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import { users } from "./firestore";
 import { getRequiredEnvVar } from "./utils";

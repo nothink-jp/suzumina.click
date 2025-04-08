@@ -1,5 +1,6 @@
 import "./globals.css";
 import { auth } from "@/auth";
+import { UIProvider } from "@suzumina.click/ui"; // UIProvider をインポート
 import type { Metadata } from "next";
 import { Providers } from "./providers";
 
@@ -18,7 +19,10 @@ export default async function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <Providers session={session}>{children}</Providers>
+        {/* UIProvider で Providers をラップ */}
+        <UIProvider>
+          <Providers session={session}>{children}</Providers>
+        </UIProvider>
       </body>
     </html>
   );
