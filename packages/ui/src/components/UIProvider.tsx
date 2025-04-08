@@ -3,7 +3,7 @@
 // 現在使用している UI ライブラリのプロバイダーをインポート
 import { HeroUIProvider } from "@heroui/react";
 // 必要な型 (ReactNode, JSX) のみをインポート
-import type { ReactNode, JSX } from "react";
+import type { JSX, ReactNode } from "react";
 
 // 将来的に UI ライブラリを切り替える場合は、
 // このファイル内のインポートと以下の ProviderComponent を変更する
