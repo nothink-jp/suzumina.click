@@ -2,77 +2,58 @@
 ### 必ずmonorepoのルートからビルドしてください
 # --------------
 # パッケージのインストールを行うためのステージ
-FROM oven/bun:alpine AS deps
+FROM oven/bun:latest AS deps
 
 WORKDIR /monorepo
 
-# ルートと各ワークスペースの package.json 等をコピー
-COPY ./package.json ./bun.lock ./turbo.json ./bunfig.toml* ./
-
-# ワークスペースのディレクトリを作成
-RUN mkdir -p apps/web packages/ui packages/tailwind-config packages/typescript-config
-
-# 各ワークスペースの package.json を対応するディレクトリにコピー
-COPY ./apps/web/package.json ./apps/web/
-COPY ./packages/ui/package.json ./packages/ui/
-COPY ./packages/tailwind-config/package.json ./packages/tailwind-config/
-COPY ./packages/typescript-config/package.json ./packages/typescript-config/
+# ルートと各ワークスペースの package.json をコピー
+COPY ./package.json ./bun.lock ./turbo.json ./
+COPY ./apps/web/package.json ./apps/web/package.json
+# packages/ 内の package.json もコピー (存在する場合)
+# COPY ./packages/*/package.json ./packages/*/
 
 # 依存関係をインストール
-# Bun はコピーされた package.json と bun.lockb を基に依存関係を解決するはず
 RUN bun install --frozen-lockfile
 
 # --------------
 # アプリケーションをビルドするステージ
-FROM oven/bun:alpine AS builder
+FROM oven/bun:latest AS builder
+
 WORKDIR /monorepo
 
-# ルートと各ワークスペースの package.json 等をコピー (deps ステージと同様)
-COPY ./package.json ./bun.lock ./turbo.json ./bunfig.toml* ./
-RUN mkdir -p apps/web packages/ui packages/tailwind-config packages/typescript-config
-COPY ./apps/web/package.json ./apps/web/
-COPY ./packages/ui/package.json ./packages/ui/
-COPY ./packages/tailwind-config/package.json ./packages/tailwind-config/
-COPY ./packages/typescript-config/package.json ./packages/typescript-config/
+# deps ステージから node_modules をコピー
+COPY --from=deps /monorepo/node_modules ./node_modules
 
-# モノレポ全体のソースコードをコピー (node_modules は除く)
-# .dockerignore で node_modules を除外していることを確認してください
+# モノレポ全体のソースコードをコピー
 COPY . .
-
-# builder ステージ内で依存関係をインストール
-RUN bun install --frozen-lockfile
 
 # web アプリをビルド (standalone output を生成)
 # turbo を使ってビルドすることも可能: RUN bun run turbo run build --filter=web...
-# 直接 bunx next build を実行
-RUN cd apps/web && bunx next build
+RUN bun run --cwd ./apps/web build
 
 # --------------
 # プロダクションイメージ
-# Use an Alpine base image for the smallest size (check compatibility)
-FROM oven/bun:alpine AS runner
+FROM oven/bun:latest AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
-# Combine RUN commands to reduce layers
-# Alpine uses 'addgroup -S' and 'adduser -S' for system users/groups
-RUN addgroup -S --gid 1001 nodejs && adduser -S --uid 1001 -G nodejs nextjs
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
 # standalone ディレクトリに必要なファイルをコピー
-COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/standalone/ ./
+COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/standalone ./
 
 # public フォルダと static ファイルをコピー
-COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/public ./public
-COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/public ./apps/web/public
+COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/static ./apps/web/.next/static
 
 USER nextjs
 
-# EXPOSE はドキュメント目的。Cloud Run は環境変数 PORT を使用する
 EXPOSE 3000
+ENV PORT=3000
 
 # server.js を実行してアプリケーションを起動
-# standalone output では server.js はルートに配置される
-CMD ["bun", "server.js"]
+CMD ["bun", "apps/web/server.js"]
