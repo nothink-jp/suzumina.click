@@ -5,8 +5,10 @@
 ```mermaid
 graph TD
     A[Root] -->|apps| B[Webアプリケーション]
-    A -->|packages| D[共有設定/ライブラリ]
-    D -->|typescript-config| E[TypeScript設定]
+    A -->|packages| P[共有パッケージ]
+    P -->|tailwind-config| TWC[Tailwind設定]
+    P -->|typescript-config| TSC[TypeScript設定]
+    P -->|ui| UI[UIコンポーネント]
 ```
 
 ## 技術スタック

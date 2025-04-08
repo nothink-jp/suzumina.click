@@ -103,14 +103,24 @@ graph TD
 
 ### アクセス制御
 
+ミドルウェア (`apps/web/middleware.ts`) を使用して、特定のパスへのアクセスを制御します。
+
 ```typescript
 // middleware.ts
-export { auth as middleware } from "@auth/nextjs"
+import { auth } from "@/auth";
+import { NextResponse } from "next/server";
+// ... (他のインポート)
+
+export default auth((req) => {
+  // 未認証ユーザーが /users/* にアクセスしたら /auth/signin へリダイレクト
+  // 認証済みユーザーが /auth/* にアクセスしたら /users/[id] へリダイレクト
+  // ... (詳細なロジック)
+});
 
 export const config = {
   matcher: [
-    "/users/:path*",
-    "/api/auth/:path*"
+    "/auth/:path*", // 認証関連ページ
+    "/users/:path*", // ユーザー固有ページ
   ]
 }
 ```

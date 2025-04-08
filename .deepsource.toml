@@ -10,8 +10,7 @@ exclude_patterns = [
   "**/dist/**",
   "**/build/**",
   "**/.next/**",
-  # "**/coverage/**", # カバレッジレポート自体は除外しない
-  ".coverage/**", # ルートのカバレッジディレクトリを除外 (もしあれば)
+  ".coverage/**",
   "**/.turbo/**",
   "**/.vercel/**",
   "iac/**",
@@ -36,23 +35,10 @@ enabled = true
   plugins = ["react"]
   environment = ["nodejs", "browser"]
 
-[[analyzers]]
-name = "typescript"
-enabled = true
-
-  [analyzers.meta]
-  plugins = ["react"]
-  environment = ["nodejs", "browser"]
-  tsconfig_path = "apps/web/tsconfig.json"
-
 # Test Coverage Analyzer
 [[analyzers]]
 name = "test-coverage"
 enabled = true
-
-  [analyzers.meta]
-  coverage_file = "apps/web/coverage/lcov.info"
-  format = "lcov"
 
 # Secrets Analyzer
 [[analyzers]]
