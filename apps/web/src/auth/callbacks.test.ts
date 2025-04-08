@@ -1,6 +1,5 @@
 import "@/../tests/setup"; // ルートからの実行を考慮したパスに変更
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
-import type { Session } from "next-auth";
 import {
   getMockState,
   resetMockData,
@@ -112,6 +111,7 @@ describe("認証コールバック", () => {
         profile: mockDiscordProfile,
       });
 
+      expect(DISCORD_GUILD_ID).not.toBeUndefined();
       expect(result).toBe(false);
     });
 

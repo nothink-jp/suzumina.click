@@ -69,19 +69,6 @@ data "google_service_account" "runtime" {
 }
 
 # -----------------------------------------------------------------------------
-# Artifact Registry (既存リソースを参照)
-# -----------------------------------------------------------------------------
-data "google_artifact_registry_repository" "docker_repo" {
-  project       = var.project_id
-  location      = var.region
-  repository_id = var.artifact_registry_repository_id
-
-  depends_on = [
-    google_project_service.artifactregistry_api # APIが有効になってから参照
-  ]
-}
-
-# -----------------------------------------------------------------------------
 # Secret Manager: シークレット参照 (シークレット自体は外部で作成済みと仮定)
 # -----------------------------------------------------------------------------
 # シークレット名は {secret-name}-dev と仮定

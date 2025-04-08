@@ -1,5 +1,4 @@
 import { mock } from "bun:test";
-import type { NextAuthConfig } from "next-auth";
 import { callbacks } from "../../src/auth/callbacks";
 
 // NextAuthの初期化をモック
