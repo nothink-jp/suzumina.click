@@ -57,7 +57,7 @@ ENV NODE_ENV=production
 RUN addgroup -S --gid 1001 nodejs && adduser -S --uid 1001 -G nodejs nextjs
 
 # standalone ディレクトリに必要なファイルをコピー
-COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/standalone/ ./
 
 # public フォルダと static ファイルをコピー
 COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/public ./public
