@@ -4,7 +4,7 @@ import {
   AlertTitle,
 } from "@suzumina.click/ui/components/alert";
 // skipcq: JS-0257
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle } from "lucide-react";
 
 interface ErrorDisplayProps {
   title: string;
