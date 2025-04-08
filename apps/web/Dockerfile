@@ -25,18 +25,22 @@ RUN bun install --frozen-lockfile
 # --------------
 # アプリケーションをビルドするステージ
 FROM oven/bun:alpine AS builder
-
 WORKDIR /monorepo
 
-# deps ステージから node_modules をコピー
-COPY --from=deps /monorepo/node_modules ./node_modules
-# deps ステージからインストール済みの package.json 等もコピー (ビルド時に必要になる場合がある)
-COPY --from=deps /monorepo/package.json ./
-COPY --from=deps /monorepo/apps/web/package.json ./apps/web/
+# ルートと各ワークスペースの package.json 等をコピー (deps ステージと同様)
+COPY ./package.json ./bun.lock ./turbo.json ./bunfig.toml* ./
+RUN mkdir -p apps/web packages/ui packages/tailwind-config packages/typescript-config
+COPY ./apps/web/package.json ./apps/web/
+COPY ./packages/ui/package.json ./packages/ui/
+COPY ./packages/tailwind-config/package.json ./packages/tailwind-config/
+COPY ./packages/typescript-config/package.json ./packages/typescript-config/
 
 # モノレポ全体のソースコードをコピー (node_modules は除く)
 # .dockerignore で node_modules を除外していることを確認してください
 COPY . .
+
+# builder ステージ内で依存関係をインストール
+RUN bun install --frozen-lockfile
 
 # web アプリをビルド (standalone output を生成)
 # turbo を使ってビルドすることも可能: RUN bun run turbo run build --filter=web...
@@ -70,9 +74,6 @@ USER nextjs
 
 # EXPOSE はドキュメント目的。Cloud Run は環境変数 PORT を使用する
 EXPOSE 3000
-
-# デバッグ用にワーキングディレクトリのファイル一覧を表示
-RUN ls -la
 
 # server.js を実行してアプリケーションを起動
 # standalone output では server.js はルートに配置される
