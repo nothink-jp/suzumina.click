@@ -68,6 +68,9 @@ USER nextjs
 # EXPOSE はドキュメント目的。Cloud Run は環境変数 PORT を使用する
 EXPOSE 3000
 
+# デバッグ用にワーキングディレクトリのファイル一覧を表示
+RUN ls -la
+
 # server.js を実行してアプリケーションを起動
 # standalone output では server.js はルートに配置される
 CMD ["bun", "server.js"]
