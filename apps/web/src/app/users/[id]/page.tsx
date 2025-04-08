@@ -1,6 +1,13 @@
 import { auth } from "@/auth";
+import { UserInfoSection } from "@/components/UserInfoSection";
+import { UserProfileHeader } from "@/components/UserProfileHeader";
 import { Firestore } from "@google-cloud/firestore";
 import type { Timestamp } from "@google-cloud/firestore";
+import {
+  Card,
+  CardContent,
+  // CardHeader, // Removed unused import
+} from "@suzumina.click/ui/components/card";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -49,23 +56,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function UserPage({ params }: Props) {
-  // 認証セッションの確認
   const session = await auth();
   if (!session) {
     redirect("/auth/signin");
   }
 
-  // パラメータの解決
   const resolvedParams = await params;
 
-  // Firestoreからユーザー情報を取得
   const firestore = new Firestore();
   const userDoc = await firestore
     .collection("users")
     .doc(resolvedParams.id)
     .get();
 
-  // ユーザーが存在しない場合は404へリダイレクト
   if (!userDoc.exists) {
     redirect("/404");
   }
@@ -77,55 +80,21 @@ export default async function UserPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow-lg rounded-xl overflow-hidden">
-          <div className="p-8">
-            {/* プロフィールヘッダー */}
-            <div className="flex items-center space-x-6">
-              <img
-                src={userData.avatarUrl}
-                alt={userData.displayName}
-                className="h-24 w-24 rounded-full border-4 border-white shadow-lg"
-              />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {userData.displayName}
-                </h1>
-                <p className="mt-1 text-sm text-gray-500">{userData.role}</p>
-                {session.user.id === resolvedParams.id && (
-                  <p className="mt-1 text-sm text-gray-500">
-                    あなたのプロフィールページです
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* プロフィール情報 */}
-            <div className="mt-8">
-              <div className="border-t border-gray-200 pt-8">
-                <h2 className="text-lg font-medium text-gray-900">
-                  プロフィール情報
-                </h2>
-                <div className="mt-4 text-sm text-gray-600 space-y-2">
-                  <p>
-                    メンバー登録:{" "}
-                    {new Date(userData.createdAt.toDate()).toLocaleString(
-                      "ja-JP",
-                      { dateStyle: "long", timeStyle: "short" },
-                    )}
-                  </p>
-                  <p>
-                    最終更新:{" "}
-                    {new Date(userData.updatedAt.toDate()).toLocaleString(
-                      "ja-JP",
-                      { dateStyle: "long", timeStyle: "short" },
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Card className="overflow-hidden shadow-lg">
+          <CardContent className="p-8">
+            <UserProfileHeader
+              avatarUrl={userData.avatarUrl}
+              displayName={userData.displayName}
+              role={userData.role}
+              isCurrentUser={session.user.id === resolvedParams.id}
+            />
+            <UserInfoSection
+              createdAt={userData.createdAt}
+              updatedAt={userData.updatedAt}
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
