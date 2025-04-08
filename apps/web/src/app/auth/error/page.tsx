@@ -48,6 +48,7 @@ const errorMessages: {
 export default function AuthErrorPage() {
   const searchParams = useSearchParams();
   const errorType = searchParams.get("error") || "default";
+  // Ensure correct destructuring with fallback
   const { title, description, details } =
     errorMessages[errorType] ?? errorMessages.default;
 
