@@ -1,6 +1,6 @@
 {
   "name": "suzumina.click",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Monorepo for the suzumina.click project",
   "type": "module",
   "private": true,
