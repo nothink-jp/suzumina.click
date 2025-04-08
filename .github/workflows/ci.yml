@@ -32,8 +32,9 @@ jobs:
 
       - name: Report Test Coverage to DeepSource
         run: |
-          curl -s https://static.deepsource.com/cli/install.sh | sh
-          ./bin/deepsource report coverage --analyzer test-coverage --key typescript --value-file apps/web/coverage/lcov.info
+          curl -s https://static.deepsource.com/cli/install.sh -o install.sh
+          bash install.sh -p ./bin
+          ./bin/deepsource report --analyzer test-coverage --key typescript --value-file apps/web/coverage/lcov.info
         env:
           DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }} # GitHub SecretsからDSNを読み込む
 
