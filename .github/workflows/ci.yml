@@ -24,18 +24,18 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Spell Check
+        run: bun run spell-check
+
       - name: Run CI Checks (Lint, Format, Type Check)
         run: bun run ci:check
 
       - name: Run Tests and Generate Coverage
         run: bun run test:coverage
 
-      - name: Report Test Coverage to DeepSource
-        run: |
-          curl -sL https://deepsource.io/cli | sh
-          ./bin/deepsource report --analyzer test-coverage --key javascript --value-file apps/web/coverage/lcov.info
-        env:
-          DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }} # GitHub SecretsからDSNを読み込む
-
-      # - name: Spell Check
-      #   run: bun run spell-check
+      # - name: Report Test Coverage to DeepSource
+      #   run: |
+      #     curl -sL https://deepsource.io/cli | sh
+      #     ./bin/deepsource report --analyzer test-coverage --key javascript --value-file apps/web/coverage/lcov.info
+      #   env:
+      #     DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}

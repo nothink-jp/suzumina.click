@@ -35,11 +35,6 @@ enabled = true
   plugins = ["react"]
   environment = ["nodejs", "browser"]
 
-# Test Coverage Analyzer
-[[analyzers]]
-name = "test-coverage"
-enabled = true
-
 # Secrets Analyzer
 [[analyzers]]
 name = "secrets"
@@ -49,6 +44,3 @@ enabled = true
 [[analyzers]]
 name = "terraform"
 enabled = true
-
-  [analyzers.meta]
-  terraform_version = "latest"
