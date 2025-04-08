@@ -2,7 +2,7 @@
 ### 必ずmonorepoのルートからビルドしてください
 # --------------
 # パッケージのインストールを行うためのステージ
-FROM oven/bun:latest AS deps
+FROM oven/bun:alpine AS deps
 
 WORKDIR /monorepo
 
@@ -17,7 +17,7 @@ RUN bun install --frozen-lockfile
 
 # --------------
 # アプリケーションをビルドするステージ
-FROM oven/bun:latest AS builder
+FROM oven/bun:alpine AS builder
 
 WORKDIR /monorepo
 
@@ -35,12 +35,12 @@ RUN bun run --cwd ./apps/web build
 
 # --------------
 # プロダクションイメージ
-FROM oven/bun:latest AS runner
+FROM oven/bun:alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
-# ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
