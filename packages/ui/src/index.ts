@@ -9,6 +9,7 @@ export {
   CardFooter,
   type CardProps,
 } from "./components/card";
+export { UIProvider } from "./components/UIProvider"; // UIProvider をエクスポート
 
 // Hooks (if any in the future)
 // export { useDisclosure } from "./hooks/use-disclosure";
