@@ -30,7 +30,7 @@ sequenceDiagram
 4. コールバックURLで認証情報を受け取り
 5. ギルドメンバーシップを確認
 6. Firestoreにユーザー情報を保存/更新
-7. セッションを作成してユーザーページへリダイレクト
+7. セッションを作成してトップページへリダイレクト
 
 ## データモデル
 
@@ -80,30 +80,53 @@ NEXTAUTH_URL="https://suzumina.click"
    - 必要最小限の情報のみ保存
    - 定期的なデータクリーンアップ
 
-## ユーザーページ設計
+## エラーページ設計
 
 ### コンポーネント構造
 
 ```mermaid
 graph TD
-    A[UserPage] --> B[UserProfile]
-    B --> C[Avatar]
-    B --> D[DisplayName]
-    A --> E[AuthGuard]
+    A[ErrorLayout] --> B[ErrorDisplay]
+    B --> C[ErrorActions]
+    B --> D[ErrorTrackingInfo]
 ```
 
-これらのUIコンポーネントは、共有UIライブラリである HeroUI を利用して構築します。
+各コンポーネントは標準HTMLエレメントを使用して構築され、Tailwind CSSでスタイリングされます。
+
+### ファイル構造
+
+```
+src/
+├── app/
+│   └── auth/
+│       ├── error/
+│       │   ├── layout.tsx
+│       │   └── page.tsx
+│       ├── not-member/
+│       │   └── page.tsx
+│       └── signin/
+│           ├── layout.tsx
+│           └── page.tsx
+├── auth/
+│   ├── callbacks.ts
+│   ├── firestore.ts
+│   └── utils.ts
+└── components/
+    ├── ErrorActions.tsx
+    ├── ErrorDisplay.tsx
+    └── ErrorTrackingInfo.tsx
+```
 
 ### ルーティング設計
 
 - `/auth/signin` - ログインページ
 - `/auth/error` - エラーページ
-- `/users/[id]` - ユーザーページ
+- `/auth/not-member` - 非メンバーエラーページ
 - `/api/auth/[...nextauth]` - 認証API
 
 ### アクセス制御
 
-ミドルウェア (`apps/web/middleware.ts`) を使用して、特定のパスへのアクセスを制御します。
+ミドルウェア (`src/middleware.ts`) を使用して、特定のパスへのアクセスを制御します。
 
 ```typescript
 // middleware.ts
@@ -112,15 +135,16 @@ import { NextResponse } from "next/server";
 // ... (他のインポート)
 
 export default auth((req) => {
-  // 未認証ユーザーが /users/* にアクセスしたら /auth/signin へリダイレクト
-  // 認証済みユーザーが /auth/* にアクセスしたら /users/[id] へリダイレクト
+  // 未認証ユーザーは /auth/signin へリダイレクト
+  // 非メンバーユーザーは /auth/not-member へリダイレクト
+  // 認証済みメンバーはトップページへリダイレクト
   // ... (詳細なロジック)
 });
 
 export const config = {
   matcher: [
-    "/auth/:path*", // 認証関連ページ
-    "/users/:path*", // ユーザー固有ページ
+    "/auth/:path*",   // 認証関連ページ
+    "/",              // トップページ
   ]
 }
 ```
@@ -131,7 +155,8 @@ export const config = {
    - ログインページへリダイレクト
 
 2. 権限エラー
-   - エラーページで「すずみなふぁみりーメンバーのみアクセス可能」を表示
+   - 非メンバーページで「すずみなふぁみりーメンバーのみアクセス可能」を表示
+   - エラートラッキング情報を提供
 
 3. API エラー
    - 適切なステータスコードとエラーメッセージを返却
@@ -139,16 +164,16 @@ export const config = {
 ## 今後の拡張性
 
 1. 追加の認証プロバイダー対応
-2. ユーザープロフィールの拡張
-3. 権限管理の細分化
+2. 権限管理の細分化
+3. エラートラッキングの強化
 
 ## 実装手順
 
 1. NextAuth.js の基本セットアップ
 2. Discord OAuth2 の設定
 3. Firestore 連携の実装
-4. ユーザーページの作成
+4. エラーページの作成
 5. ミドルウェアによるアクセス制御の実装
 6. エラーハンドリングの実装
 
-最終更新日: 2025年4月7日
+最終更新日: 2025年4月9日
