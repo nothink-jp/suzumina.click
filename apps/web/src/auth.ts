@@ -1,21 +1,34 @@
 import { Firestore } from "@google-cloud/firestore";
 import type { Timestamp } from "@google-cloud/firestore";
 import NextAuth from "next-auth";
-// import type { Session } from "next-auth"; // No longer needed here for the export type
 import Discord from "next-auth/providers/discord";
 
-// ビルド時かどうかを判定する関数
+/**
+ * 現在のプロセスが Next.js のビルドフェーズで実行されているかどうかを判定します。
+ * @returns ビルドフェーズの場合は true、それ以外の場合は false。
+ */
 export const isBuildTime = () => {
   // NEXT_PHASE環境変数がビルド時に設定される
   return process.env.NEXT_PHASE === "phase-production-build";
 };
 
-// ランタイムの本番環境かどうかを判定する関数
+/**
+ * 現在のプロセスが本番環境のランタイムで実行されているかどうかを判定します。
+ * ビルドフェーズは除外されます。
+ * @returns 本番ランタイムの場合は true、それ以外の場合は false。
+ */
 export const isProductionRuntime = () => {
   return process.env.NODE_ENV === "production" && !isBuildTime();
 };
 
+/**
+ * 本番ランタイム環境で必須の環境変数が設定されていない場合にスローされるエラー。
+ */
 export class ConfigurationError extends Error {
+  /**
+   * ConfigurationError のインスタンスを作成します。
+   * @param envVar - 設定されていない環境変数の名前。
+   */
   constructor(envVar: string) {
     super(
       `Configuration Error: ${envVar} is not defined in the production runtime environment. Please ensure it is set correctly.`,
@@ -24,14 +37,20 @@ export class ConfigurationError extends Error {
   }
 }
 
-// 環境変数を取得して型安全に扱う（改善版）
+/**
+ * 指定されたキーの環境変数を取得します。
+ * ビルド時にはダミー値を返し、本番ランタイム時に値が存在しない場合は ConfigurationError をスローします。
+ * 開発環境では、値が存在しない場合でもエラーをスローせず、空文字列または実際の値を返します。
+ * @param key - 取得する環境変数のキー。
+ * @returns 環境変数の値。ビルド時はダミー値、本番ランタイムで未設定の場合はエラー、それ以外は実際の値または空文字列。
+ * @throws {ConfigurationError} 本番ランタイム時に環境変数が未設定の場合。
+ */
 export const getRequiredEnvVar = (key: string): string => {
   const value = process.env[key];
 
   // ビルド時にはダミー値を返す
   if (isBuildTime()) {
-    // ダミー値でも空文字列は避ける
-    return `dummy-${key}`;
+    return `dummy-${key}`; // ダミー値でも空文字列は避ける
   }
 
   // 本番ランタイム時に値が実際に未設定(undefined or null)の場合のみエラーをスロー
@@ -40,13 +59,11 @@ export const getRequiredEnvVar = (key: string): string => {
   }
 
   // 開発環境や、本番ランタイムで値が存在する場合はその値を返す
-  // (開発環境で値がない場合は空文字列が返るが、NextAuth側でハンドリングされる想定)
   return value || "";
 };
 
-// NEXTAUTH_URLの取得（改善版）
+// NEXTAUTH_URLの取得と検証
 const baseUrl = process.env.NEXTAUTH_URL;
-// 本番ランタイム時に値が実際に未設定(undefined or null)の場合のみエラーをスロー
 if ((baseUrl === undefined || baseUrl === null) && isProductionRuntime()) {
   throw new ConfigurationError("NEXTAUTH_URL");
 }
@@ -56,7 +73,9 @@ const effectiveBaseUrl = isBuildTime() ? "https://example.com" : baseUrl;
 const firestore = new Firestore();
 const users = firestore.collection("users");
 
-// ユーザーデータの型定義
+/**
+ * Firestore に保存されるユーザーデータの型定義。
+ */
 interface UserData {
   id: string;
   displayName: string;
@@ -66,16 +85,15 @@ interface UserData {
   updatedAt: Timestamp;
 }
 
-// Revert to original export using destructuring
+// NextAuth の設定とハンドラーのエクスポート
 export const {
   handlers: { GET, POST },
-  auth, // Let TS infer the type again
+  auth,
   signIn,
   signOut,
 } = NextAuth({
-  // baseUrlを明示的に設定（ビルド時とランタイム時で異なる可能性があるため）
-  // effectiveBaseUrlがnullやundefinedでないことを確認
-  ...(effectiveBaseUrl && { url: new URL(effectiveBaseUrl) }), // Use URL object for v5
+  // effectiveBaseUrlがnullやundefinedでないことを確認して設定
+  ...(effectiveBaseUrl && { url: new URL(effectiveBaseUrl) }),
   providers: [
     Discord({
       clientId: getRequiredEnvVar("DISCORD_CLIENT_ID"),
@@ -105,15 +123,26 @@ export const {
       },
     },
   },
+  /**
+   * NextAuth のコールバック関数。認証フローのカスタマイズに使用されます。
+   */
   callbacks: {
+    /**
+     * サインイン処理中に呼び出されます。
+     * Discord ギルドメンバーシップを確認し、Firestore にユーザー情報を保存/更新します。
+     * @param params - signIn コールバックのパラメータ。
+     * @param params.account - プロバイダーのアカウント情報。
+     * @param params.profile - プロバイダーから取得したユーザープロファイル。
+     * @returns 認証を許可する場合は true、拒否する場合は false。
+     */
     async signIn({ account, profile }) {
       if (!account?.access_token || account.provider !== "discord") {
-        console.error("Invalid account data");
+        console.error("Invalid account data for Discord sign in.");
         return false;
       }
 
       if (!profile?.id) {
-        console.error("Invalid profile data");
+        console.error("Invalid profile data from Discord.");
         return false;
       }
 
@@ -129,92 +158,120 @@ export const {
         );
 
         if (!response.ok) {
-          console.error("Failed to fetch guild data:", await response.text());
+          console.error(
+            "Failed to fetch Discord guild data:",
+            await response.text(),
+          );
           return false;
         }
 
         const guilds = await response.json();
-        // guildIdの取得はエラーハンドリングを含むgetRequiredEnvVarを使用
-        const guildId = getRequiredEnvVar("DISCORD_GUILD_ID");
+        const guildId = getRequiredEnvVar("DISCORD_GUILD_ID"); // エラーハンドリングを含む
         const isMember = guilds.some(
           (guild: { id: string }) => guild.id === guildId,
         );
 
         if (!isMember) {
-          console.error("User is not a member of the required guild");
-          return false;
+          console.error(
+            `User is not a member of the required guild: ${guildId}`,
+          );
+          return false; // ギルドメンバーでない場合は認証失敗
         }
 
         // ユーザー情報の取得または作成
         const userRef = users.doc(profile.id);
         const userDoc = await userRef.get();
         const now = new Date();
+        const userData = {
+          displayName: profile.username ?? "",
+          avatarUrl: profile.image_url ?? "",
+          updatedAt: now,
+        };
 
         if (!userDoc.exists) {
-          // 新規ユーザーの場合
+          // 新規ユーザー
           await userRef.set({
+            ...userData,
             id: profile.id,
-            displayName: profile.username ?? "",
-            avatarUrl: profile.image_url ?? "",
-            role: "member",
+            role: "member", // デフォルトロール
             createdAt: now,
-            updatedAt: now,
           });
         } else {
-          // 既存ユーザーの場合は更新のみ
-          await userRef.update({
-            displayName: profile.username ?? "",
-            avatarUrl: profile.image_url ?? "",
-            updatedAt: now,
-          });
+          // 既存ユーザー
+          await userRef.update(userData);
         }
 
-        return true;
+        return true; // 認証成功
       } catch (error) {
-        // 本番ランタイム時の設定エラーはここでキャッチされる
         if (error instanceof ConfigurationError) {
           console.error(
             "Authentication configuration error during signIn:",
             error.message,
           );
-          // 本番環境で設定エラーがあれば認証を失敗させる
-          return false;
+          return false; // 本番環境での設定エラーは認証失敗
         }
-        // その他のエラー
-        console.error("Error during sign in:", error);
-        return false;
+        console.error("Error during sign in process:", error);
+        return false; // その他のエラーも認証失敗
       }
     },
+    /**
+     * セッションがチェックされるたびに呼び出されます。
+     * JWT トークンからユーザー情報を取得し、セッションオブジェクトに追加します。
+     * @param params - session コールバックのパラメータ。
+     * @param params.session - 現在のセッションオブジェクト。
+     * @param params.token - JWT トークン。
+     * @returns 更新されたセッションオブジェクト。
+     */
     async session({ session, token }) {
-      if (token.sub) {
+      if (token.sub && session.user) {
+        // session.user の存在も確認
         try {
           const userRef = users.doc(token.sub);
-          const user = await userRef.get();
+          const userSnap = await userRef.get(); // スナップショットを取得
 
-          if (user.exists) {
-            const userData = user.data() as UserData;
-            session.user = {
-              ...session.user,
-              id: token.sub,
-              displayName: userData.displayName,
-              avatarUrl: userData.avatarUrl,
-              role: userData.role,
-            };
+          if (userSnap.exists) {
+            // <<< 修正: .exists() から .exists へ変更
+            const userData = userSnap.data() as UserData; // 型アサーション
+            // セッションユーザー情報を Firestore のデータで更新
+            session.user.id = token.sub;
+            session.user.displayName = userData.displayName;
+            session.user.avatarUrl = userData.avatarUrl;
+            session.user.role = userData.role;
+            // email は token に含まれる可能性があるため、ここでは上書きしない
+          } else {
+            console.warn(
+              `User data not found in Firestore for id: ${token.sub}`,
+            );
+            // Firestoreにデータがない場合、セッションから関連情報を削除するか検討
+            // 例: session.user = undefined; または特定のフィールドをnullにする
           }
         } catch (error) {
-          console.error("Error fetching user data:", error);
+          console.error("Error fetching user data for session:", error);
+          // エラー発生時もセッションを返す（部分的な情報でも）か、エラーを示す値を返すか検討
         }
       }
-      return session;
+      return session; // 更新されたセッションを返す
     },
+    /**
+     * JWT が作成または更新されるたびに呼び出されます。
+     * Discord のアクセストークンを JWT に含めます。
+     * @param params - jwt コールバックのパラメータ。
+     * @param params.token - 現在の JWT トークン。
+     * @param params.account - プロバイダーのアカウント情報（ログイン時のみ）。
+     * @returns 更新された JWT トークン。
+     */
     async jwt({ token, account }) {
-      if (account) {
+      if (account?.provider === "discord") {
+        // プロバイダーを明示的に確認
         token.accessToken = account.access_token;
+        // 必要であれば他のアカウント情報もトークンに追加
+        // token.userId = account.providerAccountId; // 例: Discord ID
       }
+      // token.sub は NextAuth が自動でユーザーIDを設定する
       return token;
     },
   },
-  // debugは開発環境のランタイム時のみtrueにする
+  // debug は開発環境のランタイム時のみ true にする
   debug: process.env.NODE_ENV === "development" && !isBuildTime(),
   pages: {
     signIn: "/auth/signin",
@@ -222,19 +279,34 @@ export const {
   },
 });
 
-// セッションの型定義を拡張
+/**
+ * NextAuth の型定義を拡張し、アプリケーション固有のユーザー情報をセッションと JWT に含めます。
+ */
 declare module "next-auth" {
+  /**
+   * `useSession` や `auth()` から返される Session オブジェクトの型。
+   */
   interface Session {
     user: {
       id: string;
       displayName: string;
       avatarUrl: string;
       role: string;
+      /** Discord から取得したメールアドレス (存在する場合) */
       email?: string | null;
+      /** NextAuth デフォルトの name と image はオプション */
+      name?: string | null;
+      image?: string | null;
     };
   }
 
+  /**
+   * `getToken` から返される、または `session` コールバックの引数として使用される JWT の型。
+   */
   interface JWT {
+    /** Discord のアクセストークン */
     accessToken?: string;
+    // 他のカスタムクレームを追加可能
+    // userId?: string;
   }
 }

@@ -3,7 +3,12 @@ import type { Session } from "next-auth";
 import { NextResponse } from "next/server";
 import type { NextMiddleware, NextRequest } from "next/server";
 
-// Define the core logic using auth()
+/**
+ * NextAuth.js の認証ロジックをラップし、リクエストに基づいてリダイレクト処理を行うミドルウェア関数。
+ * 未認証ユーザーが保護されたページにアクセスした場合や、認証済みユーザーが認証ページにアクセスした場合にリダイレクトします。
+ * @param req - NextRequest オブジェクト。認証情報を含む可能性がある。
+ * @returns NextResponse オブジェクト。リダイレクトまたは次の処理へ進む。
+ */
 const authMiddlewareLogic = auth(
   (req: NextRequest & { auth: Session | null }) => {
     const authResult = req.auth;
@@ -26,14 +31,16 @@ const authMiddlewareLogic = auth(
       );
     }
 
-    // No redirect needed, proceed with the request
+    // リダイレクト不要な場合は次の処理へ
     return NextResponse.next();
   },
 );
 
-// Use type assertion to cast the result of auth() to NextMiddleware
-// This might suppress the TS build error but might hide underlying type issues.
-// Biome will likely still warn about this assertion.
+/**
+ * Next.js アプリケーションの認証ミドルウェア。
+ * `authMiddlewareLogic` を NextMiddleware 型にキャストしてエクスポートします。
+ * 特定のパス (`/auth/*`, `/users/*`) に適用されます。
+ */
 const middleware = authMiddlewareLogic as NextMiddleware;
 
 export default middleware;

@@ -3,6 +3,7 @@
 import { Button } from "@suzumina.click/ui"; // Updated to root import
 import { signOut } from "next-auth/react";
 import Link from "next/link";
+import { useCallback } from "react"; // useCallback をインポート
 // import { Fragment } from "react"; // Fragment のインポートを削除
 
 interface UserActionsProps {
@@ -14,6 +15,11 @@ interface UserActionsProps {
  * ナビゲーションバーのユーザー関連アクション（ログイン/ログアウト/プロフィール）を表示します。
  */
 export function UserActions({ status, userId }: UserActionsProps) {
+  const handleSignOut = useCallback(() => {
+    // useCallback でラップ
+    signOut();
+  }, []); // 依存配列は空
+
   if (status === "loading") {
     return null; // Fragment を null に変更
   }
@@ -31,7 +37,7 @@ export function UserActions({ status, userId }: UserActionsProps) {
         <Button
           variant="light" // Changed from "ghost"
           size="sm"
-          onPress={() => signOut()} // Changed from onClick to onPress
+          onPress={handleSignOut} // useCallback でラップした関数を使用
           className="text-sm text-gray-700 hover:text-gray-500"
         >
           ログアウト
