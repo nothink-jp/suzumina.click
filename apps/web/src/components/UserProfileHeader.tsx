@@ -1,3 +1,5 @@
+"use client"; // Add "use client" directive
+
 import { Avatar } from "@heroui/react"; // Import directly from @heroui/react
 
 interface UserProfileHeaderProps {
