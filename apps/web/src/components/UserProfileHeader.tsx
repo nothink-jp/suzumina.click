@@ -1,4 +1,4 @@
-import { Avatar } from "@suzumina.click/ui"; // Updated import path, removed AvatarFallback/Image
+import { Avatar } from "@/components/ui"; // Updated import path
 
 interface UserProfileHeaderProps {
   avatarUrl: string;

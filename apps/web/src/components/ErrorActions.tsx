@@ -1,4 +1,4 @@
-import { Button } from "@suzumina.click/ui"; // Updated to root import
+import { Button } from "@/components/ui"; // Updated import path
 import Link from "next/link";
 
 interface ErrorActionsProps {

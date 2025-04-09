@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@suzumina.click/ui"; // Updated to root import
+import { Button } from "@/components/ui"; // Updated import path
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useCallback } from "react"; // useCallback をインポート

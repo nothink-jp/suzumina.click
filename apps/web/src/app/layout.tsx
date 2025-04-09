@@ -1,6 +1,6 @@
 import "./globals.css";
 import { auth } from "@/auth";
-import { UIProvider } from "@suzumina.click/ui"; // UIProvider をインポート
+import { UIProvider } from "@/components/ui"; // Updated import path
 import type { Metadata } from "next";
 import { Providers } from "./providers";
 

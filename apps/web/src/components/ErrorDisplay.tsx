@@ -1,4 +1,4 @@
-import { Alert } from "@suzumina.click/ui";
+import { Alert } from "@/components/ui"; // Updated import path
 // skipcq: JS-0257
 import { AlertTriangle } from "lucide-react";
 

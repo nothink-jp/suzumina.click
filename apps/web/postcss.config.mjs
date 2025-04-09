@@ -1,4 +1,6 @@
-// Use the shared PostCSS config
-import sharedConfig from "@suzumina.click/tailwind-config/postcss.config";
+/** @type {import('postcss-load-config').Config} */
+const config = {
+  plugins: { "@tailwindcss/postcss": {} },
+};
 
-export default sharedConfig;
+export default config;

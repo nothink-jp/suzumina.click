@@ -1,20 +1,8 @@
-/* Import shared styles and variables */
-@import "@suzumina.click/tailwind-config/globals.css";
+@import "tailwindcss";
 
-/* Removed redundant @import "tailwindcss"; */
-/* Removed redundant @source directives; managed in tailwind.config.mjs */
-
-/* App-specific theme overrides or additions */
-@theme inline {
-  /* Ensure these font variables are defined, e.g., via Next/Font in layout.tsx */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-/* Removed commented-out :root overrides */
-
-/* App-specific body styles */
-body {
-  /* background and color are applied via shared config */
-  font-family: Arial, Helvetica, sans-serif; /* App-specific font */
-}
+/*
+  Removed shadcn/ui-originated CSS variables, @theme inline, and @layer base.
+  Relying on HeroUI plugin and Tailwind defaults for theming and base styles.
+  If specific base styles or variables are needed across the monorepo,
+  they can be re-added here cautiously.
+*/
