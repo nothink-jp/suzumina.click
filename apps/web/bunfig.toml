@@ -4,7 +4,7 @@
 [test]
 # Files to preload before running tests
 # bunfig.toml からの相対パスで指定
-preload = ["./happydom.ts", "./tests/setup.ts"]
+preload = ["./tests/happydom.ts", "./tests/setup.ts"]
 
 # カバレッジ設定
 coverage = true

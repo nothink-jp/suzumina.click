@@ -39,6 +39,7 @@ let mockData: MockFirestoreData = {
 };
 let mockExists = true;
 let mockError: Error | null = null;
+let lastMethodCalled: "set" | "update" | null = null; // 最後に呼ばれたメソッドを記録
 
 // シンプルなFirestoreモック
 export function createMockFirestore(): MockFirestore {
@@ -51,6 +52,7 @@ export function createMockFirestore(): MockFirestore {
           }
           const result = {
             exists: mockExists,
+            // data メソッドは exists が true の場合のみデータを返す
             data: () => (mockExists ? { ...mockData } : undefined),
           };
           return result;
@@ -62,13 +64,22 @@ export function createMockFirestore(): MockFirestore {
           }
           mockData = { ...mockData, ...data };
           mockExists = true;
+          lastMethodCalled = "set"; // メソッドを記録
         },
         async update(data: Partial<MockFirestoreData>) {
           // エラーチェックを最初に行う
           if (mockError) {
             throw mockError;
           }
-          mockData = { ...mockData, ...data };
+          // update は存在するドキュメントに対してのみ行われる想定
+          if (mockExists) {
+            mockData = { ...mockData, ...data };
+            lastMethodCalled = "update"; // メソッドを記録
+          } else {
+            // 存在しないドキュメントへの update はエラーをスローするか、何もしない
+            // ここでは何もしない実装とする
+            console.warn("Attempted to update a non-existent document mock.");
+          }
         },
       }),
     }),
@@ -76,6 +87,7 @@ export function createMockFirestore(): MockFirestore {
 }
 
 // テスト用のヘルパー関数
+// setMockData は Partial<MockFirestoreData> のみを受け付ける
 export function setMockData(data: Partial<MockFirestoreData>) {
   mockData = { ...mockData, ...data };
 }
@@ -99,6 +111,7 @@ export function resetMockData() {
   };
   mockExists = true;
   mockError = null;
+  lastMethodCalled = null; // リセット
 }
 
 export function getMockState() {
@@ -106,5 +119,6 @@ export function getMockState() {
     data: { ...mockData },
     exists: mockExists,
     error: mockError,
+    method: lastMethodCalled, // 最後に呼ばれたメソッドを返す
   };
 }
