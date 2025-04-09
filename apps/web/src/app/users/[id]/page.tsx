@@ -3,7 +3,7 @@ import { UserInfoSection } from "@/components/UserInfoSection";
 import { UserProfileHeader } from "@/components/UserProfileHeader";
 import { Firestore } from "@google-cloud/firestore";
 import type { Timestamp } from "@google-cloud/firestore";
-import { Card, CardBody } from "@suzumina.click/ui"; // Updated import path and name (CardContent -> CardBody)
+import { Card, CardBody } from "@heroui/react"; // Import directly from @heroui/react
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
