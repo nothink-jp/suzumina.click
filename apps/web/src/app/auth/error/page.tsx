@@ -41,15 +41,22 @@ const errorMessages: {
   },
 };
 
+/**
+ * NextAuth 認証エラーページコンポーネント。
+ * URL のクエリパラメータからエラータイプを読み取り、対応するエラーメッセージ、
+ * トラッキング情報、およびアクションボタンを表示します。
+ * @returns 認証エラーページの React 要素。
+ */
 export default function AuthErrorPage() {
   const searchParams = useSearchParams();
   const errorType = searchParams.get("error") || "default";
-  // Ensure correct destructuring with fallback
+  // エラータイプに対応するメッセージを取得（存在しない場合はデフォルトを使用）
   const { title, description, details } =
     errorMessages[errorType] ?? errorMessages.default;
 
   const [trackingId, setTrackingId] = useState<string | null>(null);
 
+  // クライアントサイドでのみトラッキングIDを生成
   useEffect(() => {
     setTrackingId(crypto.randomUUID());
   }, []);
@@ -60,7 +67,6 @@ export default function AuthErrorPage() {
         <CardHeader className="text-center p-0 mb-0">
           <h2 className="text-2xl font-bold text-red-600">{title}</h2>
         </CardHeader>
-        {/* Removed title prop from ErrorDisplay */}
         <ErrorDisplay description={description} details={details} />
         <ErrorTrackingInfo errorType={errorType} trackingId={trackingId} />
         <ErrorActions />

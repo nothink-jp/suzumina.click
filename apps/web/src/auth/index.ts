@@ -30,7 +30,7 @@ export const {
   secret: getRequiredEnvVar("NEXTAUTH_SECRET"),
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   cookies: {
     sessionToken: {
@@ -56,19 +56,40 @@ export * from "./utils";
 export * from "./firestore";
 export * from "./callbacks";
 
-// セッションの型定義を拡張
+/**
+ * NextAuth の型定義を拡張し、アプリケーション固有のユーザー情報をセッションと JWT に含めます。
+ * これにより、`useSession` や `auth()`、`getToken` などで型安全にカスタムデータを利用できます。
+ */
 declare module "next-auth" {
+  /**
+   * `useSession` や `auth()` から返される Session オブジェクトの型。
+   * Firestore から取得したカスタムユーザー情報を含みます。
+   */
   interface Session {
     user: {
+      /** Firestore に保存されているユーザー ID (Discord ID と同じ) */
       id: string;
+      /** Firestore に保存されている表示名 */
       displayName: string;
+      /** Firestore に保存されているアバター画像の URL */
       avatarUrl: string;
+      /** Firestore に保存されているユーザーロール */
       role: string;
+      /** Discord から取得したメールアドレス (存在する場合) */
       email?: string | null;
+      /** NextAuth デフォルトの name と image はオプション */
+      name?: string | null;
+      image?: string | null;
     };
   }
 
+  /**
+   * `getToken` から返される、または `session` コールバックの引数として使用される JWT の型。
+   */
   interface JWT {
+    /** Discord のアクセストークン (ログイン時のみ) */
     accessToken?: string;
+    // 他のカスタムクレームを追加可能
+    // discordId?: string;
   }
 }

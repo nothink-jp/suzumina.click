@@ -1,5 +1,10 @@
 import { GlobalLayout } from "@/components/GlobalLayout";
 
+/**
+ * アプリケーションのホームページコンポーネント。
+ * ウェルカムメッセージを表示します。
+ * @returns ホームページの React 要素。
+ */
 export default function HomePage() {
   return (
     <GlobalLayout>
