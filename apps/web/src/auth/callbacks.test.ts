@@ -115,16 +115,6 @@ describe("認証コールバック", () => {
       expect(result).toBe(false);
     });
 
-    // TODO: ユーザーデータの更新に失敗した場合は認証失敗
-    // it("ユーザーデータの更新に失敗した場合は認証失敗", async () => {
-    //   setMockError(new Error("Failed to update user data"));
-    //   const result = await callbacks.signIn({
-    //     account: mockDiscordAccount,
-    //     profile: mockDiscordProfile,
-    //   });
-    //   expect(result).toBe(false);
-    // });
-
     it("ギルドメンバーの場合は認証成功", async () => {
       const result = await callbacks.signIn({
         account: mockDiscordAccount,
@@ -157,16 +147,6 @@ describe("認証コールバック", () => {
 
       expect(result).toEqual(mockSession);
     });
-
-    // TODO: ユーザーデータの取得に失敗した場合は元のセッションを返す
-    // it("ユーザーデータの取得に失敗した場合は元のセッションを返す", async () => {
-    //   setMockError(new Error("Failed to fetch user data"));
-    //   const result = await callbacks.session({
-    //     session: mockSession,
-    //     token: mockToken,
-    //   });
-    //   expect(result).toEqual(mockSession);
-    // });
 
     it("ユーザーが存在する場合はユーザー情報を返す", async () => {
       const testData = {

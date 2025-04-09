@@ -11,5 +11,5 @@ describe("NextAuth 設定", () => {
     expect(signOut).toBeInstanceOf(Function);
   });
 
-  // TODO: authConfigをエクスポートして詳細なテストを追加する
+  // authConfigをエクスポートして詳細なテストを追加する必要があるかもしれません
 });

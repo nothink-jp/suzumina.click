@@ -12,6 +12,11 @@ export function UserInfoSection({
   createdAt,
   updatedAt,
 }: UserInfoSectionProps) {
+  /**
+   * FirestoreのTimestampオブジェクトを指定された日本語ロケール形式の日時文字列に変換します。
+   * @param timestamp - フォーマットするTimestampオブジェクト。
+   * @returns フォーマットされた日時文字列。
+   */
   const formatDate = (timestamp: Timestamp) => {
     return new Date(timestamp.toDate()).toLocaleString("ja-JP", {
       dateStyle: "long",
