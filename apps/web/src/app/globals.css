@@ -1,8 +1,1 @@
 @import "tailwindcss";
-
-/*
-  Removed shadcn/ui-originated CSS variables, @theme inline, and @layer base.
-  Relying on HeroUI plugin and Tailwind defaults for theming and base styles.
-  If specific base styles or variables are needed across the monorepo,
-  they can be re-added here cautiously.
-*/

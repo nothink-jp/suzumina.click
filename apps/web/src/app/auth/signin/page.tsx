@@ -4,6 +4,9 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
+// Button のインポートを削除
+// import { Button } from "@heroui/react";
+
 /**
  * サインインページコンポーネント。
  * Discord ログインボタンを表示し、クリック時に NextAuth の signIn 関数を呼び出します。
@@ -38,6 +41,8 @@ export default function SignInPage() {
           </h1>
           <p className="mt-2 text-sm text-gray-600">
             Discordアカウントでログインしてください
+            {/* 不要な Button を削除 */}
+            {/* <Button>home</Button> */}
           </p>
         </div>
 

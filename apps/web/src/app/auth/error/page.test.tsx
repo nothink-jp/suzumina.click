@@ -78,18 +78,20 @@ describe("AuthErrorPage", () => {
       ),
     ).not.toBeNull();
 
-    // Check buttons (changed role from "link" to "button")
-    const retryButton = screen.getByRole("button", {
+    // Check buttons (changed role from "button" to "link")
+    const retryLink = screen.getByRole("link", {
+      // role を "link" に変更
       name: "ログインを再試行",
     });
-    expect(retryButton).not.toBeNull();
-    expect(retryButton.getAttribute("href")).toBe("/auth/signin");
+    expect(retryLink).not.toBeNull();
+    expect(retryLink.getAttribute("href")).toBe("/auth/signin");
 
-    const topButton = screen.getByRole("button", {
+    const topLink = screen.getByRole("link", {
+      // role を "link" に変更
       name: "トップページへ戻る",
     });
-    expect(topButton).not.toBeNull();
-    expect(topButton.getAttribute("href")).toBe("/");
+    expect(topLink).not.toBeNull();
+    expect(topLink.getAttribute("href")).toBe("/");
   });
 
   // 他のテストケースにもサポート連絡方法の確認を追加 (簡略化のため、ここでは代表的なもののみ示す)
@@ -109,6 +111,7 @@ describe("AuthErrorPage", () => {
         /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/u,
       ),
     ).not.toBeNull();
+    // Note: このテストケースではボタンの確認は元々省略されていたため、修正不要
   });
 
   test("Configuration エラーメッセージ、エラーコード、トラッキングID、サポート連絡方法が表示される", async () => {
@@ -127,6 +130,7 @@ describe("AuthErrorPage", () => {
         /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/u,
       ),
     ).not.toBeNull();
+    // Note: このテストケースではボタンの確認は元々省略されていたため、修正不要
   });
 
   test("未知のエラータイプの場合、デフォルトメッセージ、エラーコード、トラッキングID、サポート連絡方法が表示される", async () => {
@@ -145,5 +149,6 @@ describe("AuthErrorPage", () => {
         /問題が解決しない場合は、Discordサーバーのサポートチャンネルにて/u,
       ),
     ).not.toBeNull();
+    // Note: このテストケースではボタンの確認は元々省略されていたため、修正不要
   });
 });
