@@ -31,7 +31,8 @@ export const callbacks = {
   }: {
     account: Account | null;
     profile?: DiscordProfile;
-  }): Promise<boolean> { // Return type changed back to boolean
+  }): Promise<boolean> {
+    // Return type changed back to boolean
     // アカウント情報とプロバイダーが正しいか検証
     if (!account?.access_token || account.provider !== "discord") {
       console.error("Invalid account data for Discord sign in.");
@@ -111,7 +112,6 @@ export const callbacks = {
       }
 
       return true; // Return true on success, let NextAuth handle redirect
-
     } catch (error) {
       console.error("Error during sign in callback:", error);
       return false; // その他のエラーが発生した場合も認証失敗

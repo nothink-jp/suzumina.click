@@ -1,7 +1,7 @@
 import "./globals.css";
 import { auth } from "@/auth";
-import { ClientProviders } from "./client-providers"; // Import ClientProviders
 import type { Metadata } from "next";
+import { ClientProviders } from "./client-providers"; // Import ClientProviders
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
@@ -27,7 +27,9 @@ export default async function RootLayout({
     <html lang="ja">
       <body>
         {/* ClientProviders と Providers でアプリケーション全体をラップ */}
-        <ClientProviders> {/* Use ClientProviders */}
+        <ClientProviders>
+          {" "}
+          {/* Use ClientProviders */}
           <Providers session={session}>{children}</Providers>
         </ClientProviders>
       </body>

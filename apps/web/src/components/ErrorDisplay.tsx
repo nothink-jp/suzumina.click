@@ -12,7 +12,9 @@ interface ErrorDisplayProps {
  */
 export function ErrorDisplay({ description, details }: ErrorDisplayProps) {
   return (
-    <Alert color="danger" className="text-left"> {/* Changed status to color */}
+    <Alert color="danger" className="text-left">
+      {" "}
+      {/* Changed status to color */}
       <div className="flex">
         <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0" />
         <div>

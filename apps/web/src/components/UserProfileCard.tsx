@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, CardBody } from "@heroui/react";
 import type { Timestamp } from "@google-cloud/firestore";
-import { UserProfileHeader } from "./UserProfileHeader";
+import { Card, CardBody } from "@heroui/react";
 import { UserInfoSection } from "./UserInfoSection";
+import { UserProfileHeader } from "./UserProfileHeader";
 
 interface UserData {
   displayName: string;
