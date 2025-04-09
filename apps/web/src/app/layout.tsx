@@ -1,6 +1,6 @@
 import "./globals.css";
 import { auth } from "@/auth";
-import { UIProvider } from "@/components/ui"; // Updated import path
+import { HeroUIProvider } from "@heroui/react"; // Import directly from @heroui/react
 import type { Metadata } from "next";
 import { Providers } from "./providers";
 
@@ -27,9 +27,9 @@ export default async function RootLayout({
     <html lang="ja">
       <body>
         {/* UIProvider と Providers でアプリケーション全体をラップ */}
-        <UIProvider>
+        <HeroUIProvider> {/* Use HeroUIProvider directly */}
           <Providers session={session}>{children}</Providers>
-        </UIProvider>
+        </HeroUIProvider>
       </body>
     </html>
   );

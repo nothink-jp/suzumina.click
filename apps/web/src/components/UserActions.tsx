@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui"; // Updated import path
+import { Button } from "@heroui/react"; // Import directly from @heroui/react
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useCallback } from "react"; // useCallback をインポート

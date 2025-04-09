@@ -3,7 +3,7 @@
 import { ErrorActions } from "@/components/ErrorActions";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { ErrorTrackingInfo } from "@/components/ErrorTrackingInfo";
-import { Card, CardHeader } from "@/components/ui"; // Updated import path
+import { Card, CardHeader } from "@heroui/react"; // Import directly from @heroui/react
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 

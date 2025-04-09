@@ -1,4 +1,4 @@
-import { Avatar } from "@/components/ui"; // Updated import path
+import { Avatar } from "@heroui/react"; // Import directly from @heroui/react
 
 interface UserProfileHeaderProps {
   avatarUrl: string;

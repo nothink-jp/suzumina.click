@@ -1,10 +1,10 @@
 {
-  "extends": "@suzumina.click/typescript-config/nextjs.json", // Reverted path
+  "extends": "@suzumina.click/typescript-config/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/components/ui/*": ["./src/components/ui/*"]
+      "@/*": ["./src/*"]
+      // Removed "@/components/ui/*": ["./src/components/ui/*"]
     },
     "declaration": false,
     "declarationMap": false,

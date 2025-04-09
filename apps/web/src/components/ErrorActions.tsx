@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui"; // Updated import path
+import { Button } from "@heroui/react"; // Import directly from @heroui/react
 import Link from "next/link";
 
 interface ErrorActionsProps {
