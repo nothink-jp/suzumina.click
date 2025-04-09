@@ -5,7 +5,6 @@
       "name": "suzumina.click",
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
-        "@happy-dom/global-registrator": "^17.4.4",
         "cspell": "^8.18.1",
         "rimraf": "^6.0.1",
         "turbo": "^2.5.0",
@@ -64,10 +63,8 @@
         "react-dom": "^19",
       },
       "devDependencies": {
-        "@happy-dom/global-registrator": "^17.4.4",
         "@suzumina.click/tailwind-config": "workspace:*",
         "@suzumina.click/typescript-config": "workspace:*",
-        "@testing-library/react": "^16",
         "@turbo/gen": "^2.5.0",
         "@types/bun": "^1.2.8",
         "@types/node": "^22",
