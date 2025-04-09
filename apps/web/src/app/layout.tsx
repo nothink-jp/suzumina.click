@@ -1,6 +1,6 @@
 import "./globals.css";
 import { auth } from "@/auth";
-import { HeroUIProvider } from "@heroui/react"; // Import directly from @heroui/react
+import { ClientProviders } from "./client-providers"; // Import ClientProviders
 import type { Metadata } from "next";
 import { Providers } from "./providers";
 
@@ -26,10 +26,10 @@ export default async function RootLayout({
   return (
     <html lang="ja">
       <body>
-        {/* UIProvider と Providers でアプリケーション全体をラップ */}
-        <HeroUIProvider> {/* Use HeroUIProvider directly */}
+        {/* ClientProviders と Providers でアプリケーション全体をラップ */}
+        <ClientProviders> {/* Use ClientProviders */}
           <Providers session={session}>{children}</Providers>
-        </HeroUIProvider>
+        </ClientProviders>
       </body>
     </html>
   );
