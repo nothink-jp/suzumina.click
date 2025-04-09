@@ -75,20 +75,21 @@ export const authConfig: NextAuthConfig = {
     /**
      * サインイン処理中に呼び出されます。
      * Discord ギルドメンバーシップを確認し、Firestore にユーザー情報を保存/更新します。
+     * メンバーでない場合は専用ページにリダイレクトします。
      * @param params - signIn コールバックのパラメータ。
      * @param params.account - プロバイダーのアカウント情報。
      * @param params.profile - プロバイダーから取得したユーザープロファイル。
-     * @returns 認証を許可する場合は true、拒否する場合は false。
+     * @returns 認証を許可する場合は true、拒否する場合はリダイレクト先の URL 文字列、エラーの場合は false。
      */
     async signIn({ account, profile }) {
       if (!account?.access_token || account.provider !== "discord") {
         console.error("Invalid account data for Discord sign in.");
-        return false;
+        return false; // エラーページへ
       }
 
       if (!profile?.id) {
         console.error("Invalid profile data from Discord.");
-        return false;
+        return false; // エラーページへ
       }
 
       try {
@@ -107,7 +108,7 @@ export const authConfig: NextAuthConfig = {
             "Failed to fetch Discord guild data:",
             await response.text(),
           );
-          return false;
+          return false; // エラーページへ
         }
 
         const guilds = await response.json();
@@ -117,10 +118,7 @@ export const authConfig: NextAuthConfig = {
         );
 
         if (!isMember) {
-          console.error(
-            `User is not a member of the required guild: ${guildId}`,
-          );
-          return false; // ギルドメンバーでない場合は認証失敗
+          return "/auth/not-member"; // メンバーでない場合は専用ページへリダイレクト
         }
 
         // ユーザー情報の取得または作成
@@ -153,10 +151,10 @@ export const authConfig: NextAuthConfig = {
             "Authentication configuration error during signIn:",
             error.message,
           );
-          return false; // 本番環境での設定エラーは認証失敗
+          return false; // 本番環境での設定エラーはエラーページへ
         }
         console.error("Error during sign in process:", error);
-        return false; // その他のエラーも認証失敗
+        return false; // その他のエラーもエラーページへ
       }
     },
     /**
@@ -220,6 +218,10 @@ export const authConfig: NextAuthConfig = {
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",
+    // newUser: '/auth/new-user', // Example: Redirect new users
+    // verifyRequest: '/auth/verify-request', // Example: Email verification page
+    // signOut: '/auth/signout', // Example: Custom sign out page
+    // 注意: `signIn` コールバックでリダイレクトする場合、`pages` の設定は直接使われません
   },
 };
 

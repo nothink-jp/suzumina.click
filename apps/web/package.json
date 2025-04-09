@@ -19,6 +19,7 @@
   "dependencies": {
     "@google-cloud/firestore": "^7",
     "@google-cloud/secret-manager": "^6",
+    "framer-motion": "^12.6.3",
     "lucide-react": "^0.487.0",
     "next": "15.2.4",
     "next-auth": "^5.0.0-beta.25",
@@ -27,14 +28,16 @@
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^17.4.4",
-    "@suzumina.click/tailwind-config": "workspace:*",
+    "@heroui/theme": "^2.4.13",
     "@suzumina.click/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.1.3",
     "@testing-library/react": "^16",
     "@types/bun": "^1.2.8",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "happy-dom": "^17",
+    "tailwindcss": "^4.1.3",
     "typescript": "5.8.3"
   }
 }

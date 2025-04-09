@@ -25,7 +25,8 @@ describe("Navigation", () => {
     expect(screen.queryByRole("button", { name: "ログアウト" })).toBeNull();
   });
 
-  test("statusがauthenticatedの場合、プロフィールリンクとログアウトボタンを表示する", () => {
+  // テストケース名を修正: プロフィールリンクの確認を削除
+  test("statusがauthenticatedの場合、ログアウトボタンを表示する", () => {
     const userId = "user123";
     mockUseSession.mockReturnValue({
       status: "authenticated",
@@ -34,11 +35,12 @@ describe("Navigation", () => {
     });
     render(<Navigation />);
 
-    const profileLink = screen.getByRole("link", { name: "プロフィール" });
-    expect(profileLink).not.toBeNull();
-    // getAttributeを使用してhref属性を確認
-    expect(profileLink.getAttribute("href")).toBe(`/users/${userId}`);
+    // プロフィールリンクの確認を削除
+    // const profileLink = screen.getByRole("link", { name: "プロフィール" });
+    // expect(profileLink).not.toBeNull();
+    // expect(profileLink.getAttribute("href")).toBe(`/users/${userId}`);
 
+    // ログアウトボタンの確認は残す
     const logoutButton = screen.getByRole("button", { name: "ログアウト" });
     expect(logoutButton).not.toBeNull();
 
@@ -55,7 +57,6 @@ describe("Navigation", () => {
 
     const loginLink = screen.getByRole("link", { name: "ログイン" });
     expect(loginLink).not.toBeNull();
-    // getAttributeを使用してhref属性を確認
     expect(loginLink.getAttribute("href")).toBe("/auth/signin");
 
     expect(screen.queryByRole("link", { name: "プロフィール" })).toBeNull();

@@ -1,8 +1,8 @@
 import "./globals.css";
-import { auth } from "@/auth";
-import { UIProvider } from "@suzumina.click/ui"; // UIProvider をインポート
 import type { Metadata } from "next";
-import { Providers } from "./providers";
+// ClientProviders のインポートを削除
+// import { ClientProviders } from "./client-providers";
+import { Providers } from "./providers"; // Providers は引き続き必要
 
 export const metadata: Metadata = {
   title: "すずみなふぁみりー",
@@ -11,25 +11,21 @@ export const metadata: Metadata = {
 
 /**
  * アプリケーション全体のルートレイアウトコンポーネント。
- * HTML の基本構造、言語設定、およびグローバルなプロバイダー (UIProvider, Providers) を設定します。
+ * HTML の基本構造、言語設定、およびグローバルなプロバイダーを設定します。
  * @param props - レイアウトコンポーネントのプロパティ。
  * @param props.children - レイアウト内にレンダリングされる子要素。
  * @returns ルートレイアウトの React 要素。
  */
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth(); // サーバーサイドでセッション情報を取得
-
   return (
     <html lang="ja">
       <body>
-        {/* UIProvider と Providers でアプリケーション全体をラップ */}
-        <UIProvider>
-          <Providers session={session}>{children}</Providers>
-        </UIProvider>
+        {/* ClientProviders ラッパーを削除し、Providers を直接使用 */}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
