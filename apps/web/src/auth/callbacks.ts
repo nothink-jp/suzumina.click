@@ -20,10 +20,11 @@ export const callbacks = {
    * サインイン試行時に呼び出されます。
    * Discord 認証の場合、ユーザーが指定された Discord ギルドのメンバーであるかを確認し、
    * Firestore にユーザー情報を保存または更新します。
+   * ログイン成功後はユーザー自身のプロフィールページにリダイレクトします。
    * @param params - signIn コールバックのパラメータ。
    * @param params.account - プロバイダーのアカウント情報 (Discord)。
    * @param params.profile - Discord から取得したユーザープロファイル。
-   * @returns 認証を許可する場合は true、拒否する場合は false。
+   * @returns 認証を許可する場合はリダイレクト先のURL文字列、拒否する場合は false。
    */
   async signIn({
     account,
@@ -31,7 +32,7 @@ export const callbacks = {
   }: {
     account: Account | null;
     profile?: DiscordProfile;
-  }): Promise<boolean> {
+  }): Promise<string | boolean> { // Return type updated to string | boolean
     // アカウント情報とプロバイダーが正しいか検証
     if (!account?.access_token || account.provider !== "discord") {
       console.error("Invalid account data for Discord sign in.");
@@ -110,7 +111,9 @@ export const callbacks = {
         });
       }
 
-      return true; // すべて成功した場合、認証を許可
+      // 認証成功後、ユーザーページにリダイレクト
+      return `/users/${profile.id}`; // Return redirect URL on success
+
     } catch (error) {
       console.error("Error during sign in callback:", error);
       return false; // その他のエラーが発生した場合も認証失敗
