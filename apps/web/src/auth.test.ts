@@ -1,5 +1,6 @@
 import "@/../tests/setup"; // ルートからの実行を考慮したパスに変更
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import type { Provider } from "next-auth/providers";
 import { GET, POST, auth, authConfig, signIn, signOut } from "./auth"; // authConfig をインポート
 
 // getRequiredEnvVar をモックして、テスト中に環境変数の影響を制御する
@@ -46,9 +47,8 @@ describe("NextAuth 設定", () => {
       // authConfig はインポート時に評価されるため、再評価が必要な場合は動的インポートを使う
       // ここではインポートされた authConfig の構造を確認する
       expect(authConfig.providers).toBeArrayOfSize(1);
-      // biome-ignore lint/suspicious/noExplicitAny: Provider 型の options は ProviderSpecificOptions<P> であり、直接アクセスが難しい
-      const discordProvider = authConfig.providers[0] as any; // Provider 型を使用
-      expect(discordProvider.id).toBe("discord");
+      const discordProvider = authConfig.providers[0] as Provider;
+      expect(discordProvider).toHaveProperty("id", "discord");
       // clientId などは getRequiredEnvVar の結果に依存するため、ここでは存在確認のみ
       expect(discordProvider.options?.clientId).toBeDefined();
       expect(discordProvider.options?.clientSecret).toBeDefined();
