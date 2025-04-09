@@ -37,4 +37,4 @@ jobs:
           curl https://deepsource.io/cli | sh
           ./bin/deepsource report --analyzer test-coverage --key javascript --value-file ./apps/web/coverage/lcov.info
         env:
-          DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
+          DEEPSOURCE_DSN: ${{ vars.DEEPSOURCE_DSN }}
