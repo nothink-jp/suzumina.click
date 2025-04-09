@@ -46,3 +46,7 @@ enabled = true
 [[analyzers]]
 name = "terraform"
 enabled = true
+
+[[analyzers]]
+name = "test-coverage"
+enabled = true
