@@ -1,9 +1,10 @@
 import { auth } from "@/auth";
-import { UserInfoSection } from "@/components/UserInfoSection";
-import { UserProfileHeader } from "@/components/UserProfileHeader";
+// import { UserInfoSection } from "@/components/UserInfoSection"; // Removed
+// import { UserProfileHeader } from "@/components/UserProfileHeader"; // Removed
+import { UserProfileCard } from "@/components/UserProfileCard"; // Import UserProfileCard
 import { Firestore } from "@google-cloud/firestore";
 import type { Timestamp } from "@google-cloud/firestore";
-import { Card, CardBody } from "@heroui/react"; // Import directly from @heroui/react
+// import { Card, CardBody } from "@heroui/react"; // Removed
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -105,21 +106,11 @@ export default async function UserPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Card className="overflow-hidden shadow-lg">
-          <CardBody className="p-8">
-            <UserProfileHeader
-              avatarUrl={userData.avatarUrl}
-              displayName={userData.displayName}
-              role={userData.role}
-              // session.user が存在することは上で確認済み
-              isCurrentUser={session.user.id === resolvedParams.id}
-            />
-            <UserInfoSection
-              createdAt={userData.createdAt}
-              updatedAt={userData.updatedAt}
-            />
-          </CardBody>
-        </Card>
+        <UserProfileCard
+          userData={userData}
+          // session.user が存在することは上で確認済み
+          isCurrentUser={session.user.id === resolvedParams.id}
+        />
       </div>
     </div>
   );
