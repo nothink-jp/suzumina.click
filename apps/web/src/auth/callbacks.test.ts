@@ -17,7 +17,6 @@ import {
 } from "../../tests/mocks/next-auth";
 import { callbacks } from "./callbacks";
 import { resetFirestore } from "./firestore";
-import { ConfigurationError } from "./utils"; // ConfigurationError をインポート
 
 describe("認証コールバック", () => {
   const originalEnv = { ...process.env };
