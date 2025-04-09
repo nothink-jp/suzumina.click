@@ -18,6 +18,14 @@ interface UserProfileCardProps {
   isCurrentUser: boolean;
 }
 
+/**
+ * ユーザープロフィール情報を表示するカードコンポーネント (クライアントコンポーネント)。
+ * Card, CardBody, UserProfileHeader, UserInfoSection を使用します。
+ * @param props - コンポーネントのプロパティ。
+ * @param props.userData - 表示するユーザーデータ。
+ * @param props.isCurrentUser - 表示しているプロファイルが現在のユーザーのものかどうか。
+ * @returns ユーザープロフィールカードの React 要素。
+ */
 export function UserProfileCard({
   userData,
   isCurrentUser,
