@@ -32,18 +32,7 @@ jobs:
       - name: Run Tests and Generate Coverage
         run: bun run test:coverage
 
-      - name: Debug DSN existence # このステップを追加
-        run: |
-          if [ -z "$DEEPSOURCE_DSN" ]; then
-            echo "DEEPSOURCE_DSN is not set or empty"
-          else
-            echo "DEEPSOURCE_DSN is set (length: ${#DEEPSOURCE_DSN})"
-            # DSN自体は機密情報なので、値そのものは出力しないように注意
-          fi
-        env:
-          DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
-
-      - name: Report Test Coverage to DeepSource # 元々のステップ
+      - name: Report Test Coverage to DeepSource
         run: |
           curl https://deepsource.io/cli | sh
           ./bin/deepsource report --analyzer test-coverage --key javascript --value-file ./apps/web/coverage/lcov.info
