@@ -35,16 +35,6 @@ jobs:
       - name: Report Test Coverage to DeepSource
         run: |
           curl https://deepsource.io/cli | sh
-          # run スクリプト内で直接 export する
-          export DEEPSOURCE_DSN="${{ secrets.DEEPSOURCE_DSN }}"
-          # export 後に再度チェック
-          if [ -z "$DEEPSOURCE_DSN" ]; then
-            echo "Error: DEEPSOURCE_DSN is empty even after export!" >&2
-            exit 1
-          fi
-          echo "DSN length after export: ${#DEEPSOURCE_DSN}" # 追加のデバッグ出力
-          # DeepSource コマンドを実行
           ./bin/deepsource report --analyzer test-coverage --key javascript --value-file ./apps/web/coverage/lcov.info
-        # env ブロックも念のため残しておく
         env:
           DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
