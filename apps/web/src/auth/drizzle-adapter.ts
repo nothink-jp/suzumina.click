@@ -1,6 +1,17 @@
-import { and, eq } from "drizzle-orm";
+import { type InferInsertModel, and, eq } from "drizzle-orm";
 import type { Adapter, AdapterUser } from "next-auth/adapters";
-import { accounts, db, sessions, users, verificationTokens } from "../db";
+// Import the inferred insert type and the table itself for type inference
+import {
+  type accounts as AccountsTable,
+  accounts,
+  db,
+  sessions,
+  users,
+  verificationTokens,
+} from "../db";
+
+// Define the insert type alias
+type AccountInsert = InferInsertModel<typeof AccountsTable>;
 
 export function DrizzleAdapter(): Adapter {
   return {
@@ -160,12 +171,13 @@ export function DrizzleAdapter(): Adapter {
         providerAccountId: account.providerAccountId,
         refreshToken: account.refresh_token ?? null,
         accessToken: account.access_token ?? null,
-        expiresAt: expiresAtValue,
+        expiresAt:
+          expiresAtValue !== null ? new Date(expiresAtValue * 1000) : null, // Convert number (seconds) to Date
         tokenType: account.token_type ?? null,
         scope: account.scope ?? null,
         idToken: account.id_token ?? null,
         sessionState: account.session_state ?? null,
-      } as any); // 一時的に型チェックを回避
+      } as AccountInsert); // Cast the entire object to the inferred insert type
     },
 
     async unlinkAccount({ provider, providerAccountId }) {

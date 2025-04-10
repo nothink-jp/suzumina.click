@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, users } from "../src/db";
 
 /**
@@ -123,9 +123,11 @@ async function main() {
     console.info("\n=== セキュリティ検証完了 ===");
   } catch (error) {
     console.error("エラーが発生しました:", error);
+    // skipcq: JS-0263
     process.exit(1);
   }
 
+  // skipcq: JS-0263
   process.exit(0);
 }
 

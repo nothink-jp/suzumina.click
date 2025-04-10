@@ -1,8 +1,8 @@
+// @ts-nocheck テストファイルなので ts-nocheck を使用
 import "@/../tests/setup"; // ルートからの実行を考慮したパスに変更
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import type { Session } from "next-auth"; // Session 型をインポート
 import {
-  getMockState,
   resetMockDrizzle,
   setMockError,
   setMockUser,
@@ -79,7 +79,6 @@ describe("認証コールバック", () => {
 
   describe("signIn", () => {
     it("アカウント情報が不正な場合は認証失敗", async () => {
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.signIn({
         account: null,
         profile: mockDiscordProfile,
@@ -88,7 +87,6 @@ describe("認証コールバック", () => {
     });
 
     it("プロファイルが不正な場合は認証失敗", async () => {
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: undefined,
@@ -102,7 +100,6 @@ describe("認証コールバック", () => {
           createMockResponse({ error: "Forbidden" }, false),
         );
       }) as unknown as typeof fetch;
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
@@ -118,7 +115,6 @@ describe("認証コールバック", () => {
         DISCORD_GUILD_ID: undefined, // 未設定にする
       };
       // getRequiredEnvVar が ConfigurationError をスローするはず
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
@@ -128,7 +124,6 @@ describe("認証コールバック", () => {
 
     it("ギルドメンバーでない場合はリダイレクト", async () => {
       process.env.DISCORD_GUILD_ID = "non-member-guild-id"; // 存在しないギルドID
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
@@ -137,7 +132,6 @@ describe("認証コールバック", () => {
     });
 
     it("ギルドメンバーの場合は認証成功", async () => {
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
@@ -148,7 +142,6 @@ describe("認証コールバック", () => {
 
   describe("session", () => {
     it("トークンがない場合は元のセッションを返す", async () => {
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.session({
         session: mockSession,
         token: {},
@@ -157,7 +150,6 @@ describe("認証コールバック", () => {
     });
 
     it("トークンがある場合はユーザーIDを含むセッションを返す", async () => {
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.session({
         session: mockSession,
         token: mockToken,
@@ -174,7 +166,6 @@ describe("認証コールバック", () => {
         ...mockSession,
         user: undefined,
       } as unknown as Session;
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.session({
         session: sessionWithoutUser,
         token: mockToken,
@@ -188,7 +179,6 @@ describe("認証コールバック", () => {
   describe("jwt", () => {
     it("Discord ログイン時 (account あり) は accessToken をトークンに追加する", async () => {
       const initialToken = { sub: "user123" };
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.jwt({
         token: initialToken,
         account: mockDiscordAccount,
@@ -199,7 +189,6 @@ describe("認証コールバック", () => {
 
     it("ログイン時以外 (account なし) はトークンを変更しない", async () => {
       const initialToken = { sub: "user123", accessToken: "oldToken" };
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.jwt({
         token: { ...initialToken }, // コピーを渡す
         account: null,
@@ -210,7 +199,6 @@ describe("認証コールバック", () => {
     it("Discord 以外のプロバイダーの場合は accessToken を追加しない", async () => {
       const initialToken = { sub: "user123" };
       const otherAccount = { ...mockDiscordAccount, provider: "google" };
-      // @ts-ignore: 型エラーを無視
       const result = await authConfig.callbacks?.jwt({
         token: initialToken,
         account: otherAccount,

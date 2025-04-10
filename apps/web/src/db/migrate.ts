@@ -11,11 +11,13 @@ async function main() {
   const db = drizzle(client);
   await migrate(db, { migrationsFolder: "./drizzle" }); // パスを修正
 
+  // skipcq: JS-0263
   process.exit(0);
 }
 
 main().catch((err) => {
   console.error("Migration failed!");
   console.error(err);
+  // skipcq: JS-0263
   process.exit(1);
 });

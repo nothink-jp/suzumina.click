@@ -46,6 +46,7 @@ async function main() {
 
     if (users_list.length === 0) {
       console.error("ユーザーが存在しません。テストを終了します。");
+      // skipcq: JS-0263
       process.exit(1);
     }
 
@@ -159,9 +160,11 @@ async function main() {
     console.info("=== パフォーマンス検証完了 ===");
   } catch (error) {
     console.error("エラーが発生しました:", error);
+    // skipcq: JS-0263
     process.exit(1);
   }
 
+  // skipcq: JS-0263
   process.exit(0);
 }
 
