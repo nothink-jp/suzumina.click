@@ -15,7 +15,8 @@ RUN bun install --frozen-lockfile
 FROM oven/bun:alpine AS builder
 WORKDIR /monorepo
 
-ENV CI=true
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY --from=deps /monorepo/node_modules ./node_modules
 COPY --from=deps /monorepo/packages ./packages
