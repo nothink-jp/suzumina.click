@@ -10,52 +10,24 @@
    - Scopes: `identify`, `guilds` を有効化
 5. クライアントID とクライアントシークレットを保存
 
-## 2. Google Cloud Platform の設定
+## 2. データベースのセットアップ
 
-1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
-2. プロジェクト `suzumina-click-dev` を選択
+### SQLiteデータベースの初期化
 
-### Cloud Firestore の設定
-
-```bash
-# Firestoreを有効化（東京リージョン）
-gcloud services enable firestore.googleapis.com
-gcloud firestore databases create --location=asia-northeast1
-```
-
-### Secret Manager の設定
+開発環境ではSQLiteデータベースを使用します。以下の手順でデータベースを初期化します。
 
 ```bash
-# Secret Managerを有効化
-gcloud services enable secretmanager.googleapis.com
+# リポジトリルートで実行
+cd apps/web
 
-# 必要なシークレットを作成 (ローカル開発用)
-# 注意: 本番環境用のシークレットも別途作成が必要です
-gcloud secrets create discord-client-id-dev --data-file=- # Discord Client ID
-gcloud secrets create discord-client-secret-dev --data-file=- # Discord Client Secret
-gcloud secrets create nextauth-secret-dev --data-file=- # NextAuth Secret
-gcloud secrets create discord-guild-id-dev --data-file=- # Discord Guild ID (ローカル用)
+# マイグレーションの生成（スキーマに変更があった場合のみ）
+bun run db:generate
+
+# マイグレーションの実行
+bun run db:migrate
 ```
 
-### サービスアカウントの設定
-
-```bash
-# 開発用サービスアカウントを作成
-gcloud iam service-accounts create dev-runtime \
-    --display-name="Development Runtime Service Account"
-
-# 必要な権限を付与 (Firestore, Secret Managerへのアクセス)
-gcloud projects add-iam-policy-binding suzumina-click-dev \
-    --member="serviceAccount:dev-runtime@suzumina-click-dev.iam.gserviceaccount.com" \
-    --role="roles/datastore.user"
-gcloud projects add-iam-policy-binding suzumina-click-dev \
-    --member="serviceAccount:dev-runtime@suzumina-click-dev.iam.gserviceaccount.com" \
-    --role="roles/secretmanager.secretAccessor"
-
-# サービスアカウントキーを作成 (ローカル開発用)
-gcloud iam service-accounts keys create ./service-account-key.json \
-    --iam-account=dev-runtime@suzumina-click-dev.iam.gserviceaccount.com
-```
+これにより、`apps/web/dev.db`ファイルが作成され、必要なテーブルが初期化されます。
 
 ## 3. ローカル開発環境のセットアップ
 
@@ -71,9 +43,22 @@ cp .env.example .env.local
 
 ## 4. 環境変数の設定 (`.env.local`)
 
-`apps/web/.env.local` に、`docs/README.md` の「環境変数の設定」セクションに記載されている変数を設定します。
+`apps/web/.env.local` に以下の環境変数を設定します。
 **このファイルはローカル開発専用であり、Git にコミットしないでください。**
-特に `GOOGLE_APPLICATION_CREDENTIALS` は、上記で作成したサービスアカウントキー (`./service-account-key.json`) への `apps/web` からの相対パスを指定してください。
+
+```env
+# NextAuth設定
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-nextauth-secret
+
+# Discord OAuth設定
+DISCORD_CLIENT_ID=your-discord-client-id
+DISCORD_CLIENT_SECRET=your-discord-client-secret
+DISCORD_GUILD_ID=your-discord-guild-id
+
+# データベース設定
+DATABASE_URL=file:./dev.db
+```
 
 ## 5. 開発サーバーの起動
 
@@ -92,12 +77,25 @@ bun dev
 
 ## トラブルシューティング
 
-- **GCP関連:** サービスアカウントキーのパス、権限、Firestore/Secret Managerの有効化を確認してください。
+- **データベース関連:** マイグレーションが正常に実行されているか、`dev.db`ファイルが存在するか、`DATABASE_URL`が正しく設定されているかを確認してください。
 - **Discord認証:** Discord Developer PortalのリダイレクトURL、`.env.local` のDiscord関連変数 (`DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_GUILD_ID`)、`NEXTAUTH_URL`, `NEXTAUTH_SECRET` を確認してください。
 
 ## 補足：本番環境との違い
 
-ローカル開発と本番環境 (Cloud Run) では、GCPプロジェクト、Discordアプリケーション、環境変数/シークレット管理（Secret Manager経由）、認証方法（Workload Identity）、`NEXTAUTH_URL` などが異なります。
+ローカル開発と本番環境では、以下の点が異なります：
+
+1. **データベース**
+   - 開発環境: SQLite (`file:./dev.db`)
+   - 本番環境: PostgreSQL (Cloud SQL)
+
+2. **環境変数管理**
+   - 開発環境: `.env.local`ファイル
+   - 本番環境: Secret Manager経由
+
+3. **認証URL**
+   - 開発環境: `http://localhost:3000`
+   - 本番環境: `https://suzumina.click`
+
 本番環境の設定は Terraform (`iac/`) で管理されます。詳細は関連ドキュメント (`docs/gcp/` 配下) を参照してください。
 
-最終更新日: 2025年4月7日
+最終更新日: 2025年4月10日

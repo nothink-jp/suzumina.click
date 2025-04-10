@@ -8,7 +8,7 @@ sequenceDiagram
     participant Next as Next.js App
     participant Auth as NextAuth.js
     participant Discord as Discord OAuth
-    participant Fire as Firestore
+    participant DB as SQLite/PostgreSQL
 
     User->>Next: アクセス
     Next->>Auth: セッション確認
@@ -16,8 +16,8 @@ sequenceDiagram
     Discord-->>Auth: アクセストークン
     Auth->>Discord: ギルドメンバー確認
     Discord-->>Auth: メンバーシップ情報
-    Auth->>Fire: ユーザー情報保存/更新
-    Fire-->>Auth: 完了
+    Auth->>DB: ユーザー情報保存/更新
+    DB-->>Auth: 完了
     Auth-->>Next: 認証情報
     Next-->>User: ページ表示
 ```
@@ -29,23 +29,59 @@ sequenceDiagram
 3. ユーザーが認証を許可
 4. コールバックURLで認証情報を受け取り
 5. ギルドメンバーシップを確認
-6. Firestoreにユーザー情報を保存/更新
+6. データベースにユーザー情報を保存/更新
 7. セッションを作成してトップページへリダイレクト
 
 ## データモデル
 
-### Firestore コレクション構造
+### データベーススキーマ
 
 ```typescript
-// users コレクション
-interface User {
-  id: string;              // Discord ユーザーID
-  displayName: string;     // Discord表示名
-  avatarUrl: string;      // Discordアバター画像URL
-  role: string;           // Discordロール
-  createdAt: Timestamp;   // 作成日時
-  updatedAt: Timestamp;   // 更新日時
-}
+// users テーブル
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey(),
+  displayName: text("display_name").notNull(),
+  avatarUrl: text("avatar_url").notNull(),
+  role: text("role").notNull().default("member"),
+  email: text("email"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+// accounts テーブル（OAuth連携用）
+export const accounts = sqliteTable("accounts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  provider: text("provider").notNull(),
+  providerAccountId: text("provider_account_id").notNull(),
+  refreshToken: text("refresh_token"),
+  accessToken: text("access_token"),
+  expiresAt: integer("expires_at"),
+  tokenType: text("token_type"),
+  scope: text("scope"),
+  idToken: text("id_token"),
+  sessionState: text("session_state"),
+});
+
+// sessions テーブル
+export const sessions = sqliteTable("sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  sessionToken: text("session_token").notNull().unique(),
+  expires: integer("expires", { mode: "timestamp" }).notNull(),
+});
+
+// verification_tokens テーブル
+export const verificationTokens = sqliteTable("verification_tokens", {
+  identifier: text("identifier").notNull(),
+  token: text("token").notNull(),
+  expires: integer("expires", { mode: "timestamp" }).notNull(),
+});
 ```
 
 ## 実装詳細
@@ -53,7 +89,8 @@ interface User {
 ### 必要なパッケージ
 
 ```bash
-bun add @auth/core@beta @auth/nextjs@beta next@latest firebase firebase-admin
+bun add next-auth@beta drizzle-orm @libsql/client
+bun add -d drizzle-kit
 ```
 
 ### 環境変数
@@ -64,6 +101,8 @@ DISCORD_CLIENT_SECRET="Discordアプリケーションのシークレット"
 DISCORD_GUILD_ID="すずみなふぁみりーのギルドID"
 NEXTAUTH_SECRET="NextAuthシークレット"
 NEXTAUTH_URL="https://suzumina.click"
+DATABASE_URL="file:./dev.db" # 開発環境
+# DATABASE_URL="postgres://user:password@host:port/database" # 本番環境
 ```
 
 ## セキュリティ考慮事項
@@ -79,6 +118,7 @@ NEXTAUTH_URL="https://suzumina.click"
 3. データの保護
    - 必要最小限の情報のみ保存
    - 定期的なデータクリーンアップ
+   - トークン情報の暗号化（本番環境）
 
 ## エラーページ設計
 
@@ -95,7 +135,7 @@ graph TD
 
 ### ファイル構造
 
-```
+```sh
 src/
 ├── app/
 │   └── auth/
@@ -109,8 +149,12 @@ src/
 │           └── page.tsx
 ├── auth/
 │   ├── callbacks.ts
-│   ├── firestore.ts
+│   ├── drizzle-adapter.ts
 │   └── utils.ts
+├── db/
+│   ├── index.ts
+│   ├── migrate.ts
+│   └── schema.ts
 └── components/
     ├── ErrorActions.tsx
     ├── ErrorDisplay.tsx
@@ -166,14 +210,16 @@ export const config = {
 1. 追加の認証プロバイダー対応
 2. 権限管理の細分化
 3. エラートラッキングの強化
+4. 本番環境でのPostgreSQLへの移行
 
 ## 実装手順
 
 1. NextAuth.js の基本セットアップ
 2. Discord OAuth2 の設定
-3. Firestore 連携の実装
-4. エラーページの作成
-5. ミドルウェアによるアクセス制御の実装
-6. エラーハンドリングの実装
+3. Drizzle ORMとデータベーススキーマの設定
+4. NextAuth用のDrizzleアダプターの実装
+5. エラーページの作成
+6. ミドルウェアによるアクセス制御の実装
+7. エラーハンドリングの実装
 
-最終更新日: 2025年4月9日
+最終更新日: 2025年4月10日
