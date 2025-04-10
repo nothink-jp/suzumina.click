@@ -1,8 +1,6 @@
 import { afterEach, beforeAll, mock } from "bun:test";
 import { cleanup } from "@testing-library/react"; // cleanup をインポート
-
-import { createMockFirestore } from "./mocks/firestore"; // モックファクトリをインポート
-import type { MockFirestore } from "./mocks/firestore"; // モックの型をインポート
+import { mockDb } from "./mocks/drizzle"; // Drizzleモックをインポート
 
 // テスト実行後のクリーンアップ
 afterEach(() => {
@@ -19,8 +17,7 @@ beforeAll(() => {
     DISCORD_CLIENT_ID: "test-client-id",
     DISCORD_CLIENT_SECRET: "test-client-secret",
     DISCORD_GUILD_ID: "test-guild-id",
-    GOOGLE_CLOUD_PROJECT: "test-project", // テスト用のプロジェクトID
-    GOOGLE_APPLICATION_CREDENTIALS: "", // 認証情報を無効化
+    DATABASE_URL: "file:./test.db", // テスト用のSQLiteデータベースURL
   };
 
   process.env = {
@@ -43,19 +40,14 @@ beforeAll(() => {
     default: () => mockNextAuth,
   }));
 
-  // Firestoreのモック
-  mock.module("@google-cloud/firestore", () => {
-    class MockFirestoreImpl implements MockFirestore {
-      collection: MockFirestore["collection"];
-      constructor() {
-        const mockInstance = createMockFirestore();
-        this.collection = mockInstance.collection;
-      }
-    }
-    return {
-      Firestore: MockFirestoreImpl,
-    };
-  });
+  // dbモジュールのモック
+  mock.module("../src/db", () => ({
+    db: mockDb,
+    users: { name: "users" },
+    accounts: { name: "accounts" },
+    sessions: { name: "sessions" },
+    verificationTokens: { name: "verificationTokens" },
+  }));
 
   // fetchのモック
   const mockFetchImplementation = () =>

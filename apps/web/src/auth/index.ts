@@ -53,7 +53,6 @@ export const {
 
 // 他のモジュールをエクスポート
 export * from "./utils";
-export * from "./firestore";
 export * from "./callbacks";
 
 /**
@@ -63,17 +62,17 @@ export * from "./callbacks";
 declare module "next-auth" {
   /**
    * `useSession` や `auth()` から返される Session オブジェクトの型。
-   * Firestore から取得したカスタムユーザー情報を含みます。
+   * データベースから取得したカスタムユーザー情報を含みます。
    */
   interface Session {
     user: {
-      /** Firestore に保存されているユーザー ID (Discord ID と同じ) */
+      /** データベースに保存されているユーザー ID (Discord ID と同じ) */
       id: string;
-      /** Firestore に保存されている表示名 */
+      /** データベースに保存されている表示名 */
       displayName: string;
-      /** Firestore に保存されているアバター画像の URL */
+      /** データベースに保存されているアバター画像の URL */
       avatarUrl: string;
-      /** Firestore に保存されているユーザーロール */
+      /** データベースに保存されているユーザーロール */
       role: string;
       /** Discord から取得したメールアドレス (存在する場合) */
       email?: string | null;

@@ -1,6 +1,7 @@
+import { eq } from "drizzle-orm";
 import type { Account, Profile, Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import { users } from "./firestore"; // Firestore の users コレクションをインポート
+import { db, users } from "../db"; // Drizzle の db と users テーブルをインポート
 import { getRequiredEnvVar } from "./utils"; // 環境変数取得ユーティリティをインポート
 
 /**
@@ -19,7 +20,7 @@ export const callbacks = {
   /**
    * サインイン試行時に呼び出されます。
    * Discord 認証の場合、ユーザーが指定された Discord ギルドのメンバーであるかを確認し、
-   * Firestore にユーザー情報を保存または更新します。
+   * データベースにユーザー情報を保存または更新します。
    * @param params - signIn コールバックのパラメータ。
    * @param params.account - プロバイダーのアカウント情報 (Discord)。
    * @param params.profile - Discord から取得したユーザープロファイル。
@@ -83,32 +84,34 @@ export const callbacks = {
         return false; // ギルドメンバーでない場合は認証失敗
       }
 
-      // Firestore のユーザー参照を取得
-      const userRef = users.doc(profile.id);
       const now = new Date();
-      // Firestore に保存/更新するユーザーデータを作成
-      const userData = {
-        id: profile.id,
-        displayName: profile.username ?? `User_${profile.id.substring(0, 5)}`, // フォールバック名
-        avatarUrl: profile.image_url ?? "", // デフォルトアバターURLなど設定可能
-        role: "member", // デフォルトロール
-        updatedAt: now,
-        // 新規作成時のみ createdAt を設定
-      };
 
-      // Firestore にユーザーデータをセット（存在しない場合は作成、存在する場合はマージ）
-      // 注意: set({}, { merge: true }) は createdAt を上書きしないように注意が必要
-      // ここでは単純化のため、常に全フィールドをセット（または update を使用）
-      const userDoc = await userRef.get();
-      if (!userDoc.exists) {
-        await userRef.set({ ...userData, createdAt: now });
-      } else {
-        await userRef.update({
-          // 既存ユーザーは更新
-          displayName: userData.displayName,
-          avatarUrl: userData.avatarUrl,
+      // データベースからユーザーを検索
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.id, profile.id),
+      });
+
+      if (!existingUser) {
+        // 新規ユーザーの場合は作成
+        await db.insert(users).values({
+          id: profile.id,
+          displayName: profile.username ?? `User_${profile.id.substring(0, 5)}`,
+          avatarUrl: profile.image_url ?? "",
+          role: "member",
+          email: profile.email ?? "",
+          createdAt: now,
           updatedAt: now,
         });
+      } else {
+        // 既存ユーザーの場合は更新
+        await db
+          .update(users)
+          .set({
+            displayName: profile.username ?? existingUser.displayName,
+            avatarUrl: profile.image_url ?? existingUser.avatarUrl,
+            updatedAt: now,
+          })
+          .where(eq(users.id, profile.id));
       }
 
       return true; // Return true on success, let NextAuth handle redirect
@@ -120,7 +123,7 @@ export const callbacks = {
 
   /**
    * セッションがチェックされるたびに呼び出されます。
-   * JWT トークンに含まれるユーザー ID を使用して Firestore から最新のユーザー情報を取得し、
+   * JWT トークンに含まれるユーザー ID を使用してデータベースから最新のユーザー情報を取得し、
    * セッションオブジェクトにマージします。
    * @param params - session コールバックのパラメータ。
    * @param params.session - 現在のセッションオブジェクト。
@@ -140,19 +143,15 @@ export const callbacks = {
     }
 
     try {
-      // Firestore からユーザーデータを取得
-      const userDoc = await users.doc(token.sub).get();
-      // ドキュメントが存在しない、またはデータがない場合は元のセッションを返す
-      if (!userDoc.exists) {
-        console.warn(
-          `User data not found in Firestore for session token sub: ${token.sub}`,
-        );
-        return session;
-      }
-      const userData = userDoc.data();
+      // データベースからユーザーデータを取得
+      const userData = await db.query.users.findFirst({
+        where: eq(users.id, token.sub),
+      });
+
+      // ユーザーデータが存在しない場合は元のセッションを返す
       if (!userData) {
         console.warn(
-          `User data is empty in Firestore for session token sub: ${token.sub}`,
+          `User data not found in database for session token sub: ${token.sub}`,
         );
         return session;
       }
@@ -160,7 +159,7 @@ export const callbacks = {
       // セッションの user オブジェクトに必要な情報を追加・更新
       // session.user が存在することを保証 (NextAuth v5 の型変更に対応)
       if (!session.user) {
-        // <<< 修正: 必須プロパティを含むデフォルト値を設定
+        // 必須プロパティを含むデフォルト値を設定
         session.user = {
           id: token.sub,
           email: null,

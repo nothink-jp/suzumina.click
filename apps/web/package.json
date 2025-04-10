@@ -19,7 +19,6 @@
     "db:migrate": "bun run src/db/migrate.ts"
   },
   "dependencies": {
-    "@google-cloud/firestore": "^7",
     "@google-cloud/secret-manager": "^6",
     "@libsql/client": "^0.15.2",
     "drizzle-orm": "^0.41.0",
