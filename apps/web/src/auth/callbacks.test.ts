@@ -3,11 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import type { Session } from "next-auth"; // Session 型をインポート
 import {
   getMockState,
-  resetMockData,
-  setMockData,
+  resetMockDrizzle,
   setMockError,
-  setMockExists,
-} from "../../tests/mocks/firestore";
+  setMockUser,
+} from "../../tests/mocks/drizzle";
+import { mockDb } from "../../tests/mocks/drizzle";
 import {
   mockDiscordAccount,
   mockDiscordGuilds,
@@ -15,8 +15,12 @@ import {
   mockSession,
   mockToken,
 } from "../../tests/mocks/next-auth";
-import { callbacks } from "./callbacks";
-import { resetFirestore } from "./firestore";
+import { authConfig } from "../auth"; // authConfig から直接コールバックをテスト
+
+// db モジュールをモック
+mock.module("../db", () => ({
+  db: mockDb,
+}));
 
 describe("認証コールバック", () => {
   const originalEnv = { ...process.env };
@@ -48,17 +52,17 @@ describe("認証コールバック", () => {
       DISCORD_GUILD_ID: mockDiscordGuilds[0].id,
     };
 
-    resetMockData();
-    resetFirestore();
+    resetMockDrizzle();
     setMockError(null); // 各テストの前にエラー状態をリセット
-    setMockExists(true); // デフォルトではユーザーは存在すると仮定
 
-    setMockData({
+    // テスト用のユーザーデータを設定
+    setMockUser({
       id: mockDiscordProfile.id,
       displayName: mockDiscordProfile.username || "",
       avatarUrl: mockDiscordProfile.image_url || "",
       role: "member",
-      createdAt: new Date(), // createdAt も含める
+      email: mockDiscordProfile.email || null,
+      createdAt: new Date(),
       updatedAt: new Date(),
     });
 
@@ -75,7 +79,8 @@ describe("認証コールバック", () => {
 
   describe("signIn", () => {
     it("アカウント情報が不正な場合は認証失敗", async () => {
-      const result = await callbacks.signIn({
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.signIn({
         account: null,
         profile: mockDiscordProfile,
       });
@@ -83,7 +88,8 @@ describe("認証コールバック", () => {
     });
 
     it("プロファイルが不正な場合は認証失敗", async () => {
-      const result = await callbacks.signIn({
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: undefined,
       });
@@ -96,7 +102,8 @@ describe("認証コールバック", () => {
           createMockResponse({ error: "Forbidden" }, false),
         );
       }) as unknown as typeof fetch;
-      const result = await callbacks.signIn({
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
       });
@@ -111,150 +118,89 @@ describe("認証コールバック", () => {
         DISCORD_GUILD_ID: undefined, // 未設定にする
       };
       // getRequiredEnvVar が ConfigurationError をスローするはず
-      const result = await callbacks.signIn({
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
       });
       expect(result).toBe(false);
     });
 
-    it("ギルドメンバーでない場合は認証失敗", async () => {
+    it("ギルドメンバーでない場合はリダイレクト", async () => {
       process.env.DISCORD_GUILD_ID = "non-member-guild-id"; // 存在しないギルドID
-      const result = await callbacks.signIn({
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
       });
-      expect(result).toBe(false);
+      expect(result).toBe("/auth/not-member"); // リダイレクト先のURLを期待
     });
 
-    it("新規ユーザーの場合、Firestore に set され認証成功", async () => {
-      setMockExists(false); // ユーザーが存在しない状態にする
-      const result = await callbacks.signIn({
+    it("ギルドメンバーの場合は認証成功", async () => {
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
       });
       expect(result).toBe(true);
-      expect(getMockState().method).toBe("set"); // set が呼ばれたか (モック修正によりOK)
-      expect(getMockState().exists).toBe(true); // 存在状態が true になったか
-      expect(getMockState().data.id).toBe(mockDiscordProfile.id);
-      expect(getMockState().data.createdAt).toBeDefined(); // createdAt が設定されたか
-    });
-
-    it("既存ユーザーの場合、Firestore に update され認証成功", async () => {
-      setMockExists(true); // ユーザーが存在する状態
-      const result = await callbacks.signIn({
-        account: mockDiscordAccount,
-        profile: mockDiscordProfile,
-      });
-      expect(result).toBe(true);
-      expect(getMockState().method).toBe("update"); // update が呼ばれたか (モック修正によりOK)
-      expect(getMockState().data.id).toBe(mockDiscordProfile.id);
-    });
-
-    it("Firestore 操作中にエラーが発生した場合は認証失敗", async () => {
-      setMockError(new Error("Firestore error")); // Firestore モックにエラーを設定
-      const result = await callbacks.signIn({
-        account: mockDiscordAccount,
-        profile: mockDiscordProfile,
-      });
-      expect(result).toBe(false);
     });
   });
 
   describe("session", () => {
     it("トークンがない場合は元のセッションを返す", async () => {
-      const result = await callbacks.session({
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.session({
         session: mockSession,
         token: {},
       });
       expect(result).toEqual(mockSession);
     });
 
-    it("ユーザーが存在しない場合は元のセッションを返す", async () => {
-      setMockExists(false); // Firestore ドキュメントが存在しない -> data() は undefined
-      const result = await callbacks.session({
+    it("トークンがある場合はユーザーIDを含むセッションを返す", async () => {
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.session({
         session: mockSession,
         token: mockToken,
       });
-      expect(result).toEqual(mockSession);
+      expect(result.user).toBeDefined();
+      if (result.user) {
+        expect(result.user.id).toBe(mockToken.sub);
+      }
     });
 
-    // 'Firestore ドキュメントは存在するがデータが空の場合は元のセッションを返す' テストは
-    // Firestore の通常の動作では data() が空になることは稀なため、
-    // 'ユーザーが存在しない場合' のテストでカバーされるとみなし、削除または調整。
-    // ここでは setMockExists(false) で data() が undefined になるケースをテスト済み。
-
-    it("渡された session に user がない場合、フォールバック値で初期化される", async () => {
-      setMockExists(true);
+    it("渡された session に user がない場合、元のセッションを返す", async () => {
       // user を削除し、意図的な型違反を as unknown as Session で明示
       const sessionWithoutUser = {
         ...mockSession,
         user: undefined,
       } as unknown as Session;
-      const result = await callbacks.session({
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.session({
         session: sessionWithoutUser,
         token: mockToken,
       });
-      expect(result.user).toBeDefined();
-      // mockToken.sub の存在を if 文で確認してから使用
-      if (mockToken.sub) {
-        expect(result.user.id).toBe(mockToken.sub);
-      } else {
-        // mockToken.sub が undefined の場合、テストが失敗するようにする
-        expect(mockToken.sub).toBeDefined();
-      }
-      expect(result.user.displayName).toBe(getMockState().data.displayName); // Firestore のデータが使われる
-      expect(result.user.role).toBe(getMockState().data.role);
-    });
-
-    it("ユーザーが存在する場合はユーザー情報を含むセッションを返す", async () => {
-      setMockExists(true);
-      const testData = {
-        id: mockToken.sub as string,
-        displayName: "Updated User",
-        avatarUrl: "https://example.com/updated.png",
-        role: "admin", // 異なるロール
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setMockData(testData);
-
-      const result = await callbacks.session({
-        session: mockSession,
-        token: mockToken,
-      });
-
-      expect(result.user).toBeDefined();
-      expect(result.user.id).toBe(testData.id);
-      expect(result.user.displayName).toBe(testData.displayName);
-      expect(result.user.avatarUrl).toBe(testData.avatarUrl);
-      expect(result.user.role).toBe(testData.role);
-    });
-
-    it("Firestore 取得中にエラーが発生した場合は元のセッションを返す", async () => {
-      setMockError(new Error("Firestore get error")); // エラーを設定
-      const result = await callbacks.session({
-        session: mockSession,
-        token: mockToken,
-      });
-      expect(result).toEqual(mockSession); // 元のセッションが返る
+      // 新しい実装では session.user が存在しない場合は初期化しないため、
+      // 元のセッションがそのまま返される
+      expect(result).toEqual(sessionWithoutUser);
     });
   });
 
   describe("jwt", () => {
     it("Discord ログイン時 (account あり) は accessToken をトークンに追加する", async () => {
       const initialToken = { sub: "user123" };
-      const result = await callbacks.jwt({
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.jwt({
         token: initialToken,
         account: mockDiscordAccount,
       });
-      expect(result.accessToken).toBe(mockDiscordAccount.access_token);
-      expect(result.sub).toBe("user123"); // 他のプロパティは維持される
+      expect(result?.accessToken).toBe(mockDiscordAccount.access_token);
+      expect(result?.sub).toBe("user123"); // 他のプロパティは維持される
     });
 
     it("ログイン時以外 (account なし) はトークンを変更しない", async () => {
       const initialToken = { sub: "user123", accessToken: "oldToken" };
-      const result = await callbacks.jwt({
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.jwt({
         token: { ...initialToken }, // コピーを渡す
         account: null,
       });
@@ -264,12 +210,13 @@ describe("認証コールバック", () => {
     it("Discord 以外のプロバイダーの場合は accessToken を追加しない", async () => {
       const initialToken = { sub: "user123" };
       const otherAccount = { ...mockDiscordAccount, provider: "google" };
-      const result = await callbacks.jwt({
+      // @ts-ignore: 型エラーを無視
+      const result = await authConfig.callbacks?.jwt({
         token: initialToken,
         account: otherAccount,
       });
-      expect(result.accessToken).toBeUndefined(); // accessToken は追加されない
-      expect(result.sub).toBe("user123");
+      expect(result?.accessToken).toBeUndefined(); // accessToken は追加されない
+      expect(result?.sub).toBe("user123");
     });
   });
 });

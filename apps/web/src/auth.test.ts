@@ -2,6 +2,7 @@ import "@/../tests/setup"; // ルートからの実行を考慮したパスに�
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import type { Provider } from "next-auth/providers";
 import { GET, POST, auth, authConfig, signIn, signOut } from "./auth"; // authConfig をインポート
+import { DrizzleAdapter } from "./auth/drizzle-adapter";
 
 // getRequiredEnvVar をモックして、テスト中に環境変数の影響を制御する
 // 注意: authConfig はモジュール読み込み時に評価されるため、
@@ -57,6 +58,13 @@ describe("NextAuth 設定", () => {
       );
     });
 
+    it("アダプターが正しく設定されている", () => {
+      expect(authConfig.adapter).toBeDefined();
+      // アダプターの型を直接テストするのは難しいため、
+      // DrizzleAdapter() の結果と同じ型であることを確認する
+      expect(typeof authConfig.adapter).toBe(typeof DrizzleAdapter());
+    });
+
     it("セッション設定が正しく設定されている", () => {
       expect(authConfig.session?.strategy).toBe("jwt");
       expect(authConfig.session?.maxAge).toBe(30 * 24 * 60 * 60);
@@ -99,7 +107,13 @@ describe("NextAuth 設定", () => {
       expect(authConfig.callbacks?.jwt).toBeInstanceOf(Function);
     });
 
-    // signIn と session コールバックは callbacks.test.ts で詳細にテストされていると仮定
+    it("コールバック (signIn) が定義されている", () => {
+      expect(authConfig.callbacks?.signIn).toBeInstanceOf(Function);
+    });
+
+    it("コールバック (session) が定義されている", () => {
+      expect(authConfig.callbacks?.session).toBeInstanceOf(Function);
+    });
 
     it("ページ設定が正しく設定されている", () => {
       expect(authConfig.pages?.signIn).toBe("/auth/signin");

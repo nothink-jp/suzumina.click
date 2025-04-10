@@ -14,13 +14,13 @@
 
 ### NextAuthデータベース移行（Firestore → SQLite/PostgreSQL）
 
-- [ ] Drizzle ORMとSQLiteの依存関係追加
-- [ ] データベーススキーマの定義
-- [ ] NextAuth用のDrizzleアダプターの実装
-- [ ] NextAuth設定の更新
-- [ ] テストの更新
-- [ ] データ移行スクリプトの作成と実行
-- [ ] 開発環境でのSQLite動作確認
+- [x] Drizzle ORMとSQLiteの依存関係追加
+- [x] データベーススキーマの定義
+- [x] NextAuth用のDrizzleアダプターの実装
+- [x] NextAuth設定の更新
+- [x] テストの更新
+- [x] ~~データ移行スクリプトの作成と実行~~ → コスト削減のため移行スクリプトは作成せず、新規DBから開始
+- [x] 開発環境でのSQLite動作確認
 - [ ] 検証ステップの実施
   - [ ] Firestore依存コードの完全な削除確認
   - [ ] 依存関係のクリーンアップ（@google-cloud/firestore削除）
