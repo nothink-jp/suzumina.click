@@ -13,7 +13,75 @@ terraform {
   }
 }
 
-# 中略：API有効化、サービスアカウント、VPC、Cloud SQLの設定は同じ
+provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+
+provider "google-beta" {
+  project = var.project_id
+  region  = var.region
+}
+
+# -----------------------------------------------------------------------------
+# API有効化
+# -----------------------------------------------------------------------------
+resource "google_project_service" "run_api" {
+  project                    = var.project_id
+  service                    = "run.googleapis.com"
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
+resource "google_project_service" "artifactregistry_api" {
+  project                    = var.project_id
+  service                    = "artifactregistry.googleapis.com"
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
+resource "google_project_service" "iamcredentials_api" {
+  project                    = var.project_id
+  service                    = "iamcredentials.googleapis.com" # Workload Identity に必要
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
+resource "google_project_service" "secretmanager_api" {
+  project                    = var.project_id
+  service                    = "secretmanager.googleapis.com" # Secret Manager に必要
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
+# Cloud SQL APIを有効化
+resource "google_project_service" "sql_api" {
+  project                    = var.project_id
+  service                    = "sqladmin.googleapis.com" # Cloud SQL に必要
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
+# Service Networking APIを有効化
+resource "google_project_service" "servicenetworking_api" {
+  project                    = var.project_id
+  service                    = "servicenetworking.googleapis.com" # Private Service Connect に必要
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
+# -----------------------------------------------------------------------------
+# IAM: サービスアカウント (既存リソースを参照)
+# -----------------------------------------------------------------------------
+data "google_service_account" "deployer" {
+  account_id = var.deployer_service_account_id
+  project    = var.project_id
+}
+
+data "google_service_account" "runtime" {
+  account_id = var.runtime_service_account_id
+  project    = var.project_id
+}
 
 # -----------------------------------------------------------------------------
 # Secret Manager: シークレット参照 (シークレット自体は外部で作成済みと仮定)
@@ -68,6 +136,89 @@ data "google_secret_manager_secret" "database_url" {
 }
 
 # -----------------------------------------------------------------------------
+# VPCネットワークの設定
+# -----------------------------------------------------------------------------
+# VPCネットワークの作成
+resource "google_compute_network" "vpc_network" {
+  name                    = "suzumina-vpc-network"
+  auto_create_subnetworks = false # サブネットを手動で作成
+  project                 = var.project_id
+}
+
+# サブネットの作成
+resource "google_compute_subnetwork" "vpc_subnetwork" {
+  name          = "suzumina-vpc-subnetwork"
+  ip_cidr_range = "10.0.0.0/16"
+  network       = google_compute_network.vpc_network.id
+  project       = var.project_id
+  region        = var.region
+}
+
+# Service Networking接続の設定
+resource "google_compute_global_address" "private_ip_address" {
+  name          = "suzumina-private-ip-range"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = google_compute_network.vpc_network.id
+  project       = var.project_id
+}
+
+resource "google_service_networking_connection" "private_vpc_connection" {
+  network                 = google_compute_network.vpc_network.id
+  service                = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
+
+  depends_on = [google_project_service.servicenetworking_api]
+}
+
+# -----------------------------------------------------------------------------
+# Cloud SQL: PostgreSQLインスタンスの設定
+# -----------------------------------------------------------------------------
+# Cloud SQLインスタンスの作成
+resource "google_sql_database_instance" "instance" {
+  name             = "suzumina-db-instance-dev"
+  region           = var.region
+  database_version = "POSTGRES_14"
+  
+  settings {
+    tier = "db-f1-micro"  # 開発/テスト用の小さいインスタンス
+    
+    backup_configuration {
+      enabled                        = true
+      start_time                     = "02:00"  # JST 11:00
+      point_in_time_recovery_enabled = true
+    }
+    
+    ip_configuration {
+      ipv4_enabled    = false
+      private_network = google_compute_network.vpc_network.id
+      ssl_mode        = "ENCRYPTED_ONLY"
+    }
+  }
+  
+  deletion_protection = true  # 誤削除防止
+  
+  depends_on = [
+    google_project_service.sql_api,
+    google_service_networking_connection.private_vpc_connection
+  ]
+}
+
+# データベースの作成
+resource "google_sql_database" "database" {
+  name     = "suzumina_db"
+  instance = google_sql_database_instance.instance.name
+}
+
+# データベースユーザーの作成
+resource "google_sql_user" "user" {
+  name     = "suzumina_app"
+  instance = google_sql_database_instance.instance.name
+  password = var.db_password  # 変数から取得
+}
+
+# -----------------------------------------------------------------------------
 # Cloud Run: サービス定義 (環境変数とシークレット参照を設定)
 # -----------------------------------------------------------------------------
 resource "google_cloud_run_v2_service" "web" {
@@ -91,12 +242,11 @@ resource "google_cloud_run_v2_service" "web" {
       }
 
       # 各環境変数のシークレット参照を設定
-      # プロジェクトIDを明示的に指定
       env {
         name = "DISCORD_GUILD_ID"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/discord-guild-id-dev"
+            secret  = data.google_secret_manager_secret.discord_guild_id.secret_id
             version = "latest"
           }
         }
@@ -106,7 +256,7 @@ resource "google_cloud_run_v2_service" "web" {
         name = "NEXTAUTH_URL"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/nextauth-url-dev"
+            secret  = data.google_secret_manager_secret.nextauth_url.secret_id
             version = "latest"
           }
         }
@@ -116,7 +266,7 @@ resource "google_cloud_run_v2_service" "web" {
         name = "NEXTAUTH_SECRET"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/nextauth-secret-dev"
+            secret  = data.google_secret_manager_secret.nextauth_secret.secret_id
             version = "latest"
           }
         }
@@ -126,7 +276,7 @@ resource "google_cloud_run_v2_service" "web" {
         name = "DISCORD_CLIENT_ID"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/discord-client-id-dev"
+            secret  = data.google_secret_manager_secret.discord_client_id.secret_id
             version = "latest"
           }
         }
@@ -136,7 +286,7 @@ resource "google_cloud_run_v2_service" "web" {
         name = "DISCORD_CLIENT_SECRET"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/discord-client-secret-dev"
+            secret  = data.google_secret_manager_secret.discord_client_secret.secret_id
             version = "latest"
           }
         }
@@ -146,7 +296,7 @@ resource "google_cloud_run_v2_service" "web" {
         name = "AUTH_TRUST_HOST"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/auth-trust-host-dev"
+            secret  = data.google_secret_manager_secret.auth_trust_host.secret_id
             version = "latest"
           }
         }
@@ -156,7 +306,7 @@ resource "google_cloud_run_v2_service" "web" {
         name = "DATABASE_URL"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/database-url-dev"
+            secret  = data.google_secret_manager_secret.database_url.secret_id
             version = "latest"
           }
         }
@@ -169,7 +319,6 @@ resource "google_cloud_run_v2_service" "web" {
   depends_on = [
     google_project_service.run_api,
     data.google_service_account.runtime,
-    # シークレット参照の前にAPI有効化とシークレットデータ取得を待つ
     google_project_service.secretmanager_api,
     data.google_secret_manager_secret.nextauth_secret,
     data.google_secret_manager_secret.discord_client_id,
@@ -179,6 +328,12 @@ resource "google_cloud_run_v2_service" "web" {
     data.google_secret_manager_secret.auth_trust_host,
     data.google_secret_manager_secret.database_url
   ]
+
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+    ]
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -240,7 +395,54 @@ resource "google_project_iam_member" "runtime_cloudsql_client" {
   member  = "serviceAccount:${data.google_service_account.runtime.email}"
 }
 
-# 中略：Workload Identity Federation の設定は同じ
+# -----------------------------------------------------------------------------
+# Workload Identity Federation for GitHub Actions
+# -----------------------------------------------------------------------------
+resource "google_iam_workload_identity_pool" "github_pool" {
+  project                   = var.project_id
+  workload_identity_pool_id = "github-actions-pool"
+  display_name              = "GitHub Actions Pool"
+  description              = "Workload Identity Pool for GitHub Actions"
+
+  depends_on = [
+    google_project_service.iamcredentials_api
+  ]
+}
+
+resource "google_iam_workload_identity_pool_provider" "github_provider" {
+  project                            = var.project_id
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-provider"
+  display_name                       = "GitHub Actions Provider"
+  description                        = "Workload Identity Provider for GitHub Actions"
+
+  attribute_mapping = {
+    "google.subject"       = "assertion.sub"
+    "attribute.actor"      = "assertion.actor"
+    "attribute.repository" = "assertion.repository"
+  }
+
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+
+  attribute_condition = "assertion.repository == 'nothink-jp/suzumina.click'"
+
+  depends_on = [
+    google_iam_workload_identity_pool.github_pool
+  ]
+}
+
+# DeployerサービスアカウントにWorkload Identity Userロールを付与
+resource "google_service_account_iam_member" "deployer_workload_identity_user" {
+  service_account_id = data.google_service_account.deployer.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/*"
+
+  depends_on = [
+    google_iam_workload_identity_pool_provider.github_provider
+  ]
+}
 
 # -----------------------------------------------------------------------------
 # Outputs
