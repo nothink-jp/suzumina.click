@@ -18,6 +18,15 @@ jobs:
       contents: "read" # Needed to checkout code and read package.json
       id-token: "write" # Required for Workload Identity Federation
 
+    env:
+      DATABASE_URL: postgres://suzumina_app:build_password@localhost:5432/suzumina_db
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: build_secret
+      DISCORD_CLIENT_ID: build_client_id
+      DISCORD_CLIENT_SECRET: build_client_secret
+      DISCORD_GUILD_ID: build_guild_id
+      NODE_ENV: production
+  
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
