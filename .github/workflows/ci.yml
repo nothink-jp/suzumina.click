@@ -1,8 +1,8 @@
 name: CI
 
 on:
-  workflow_call: {}  # 再利用可能なワークフローとして定義
-  pull_request:     # PRのみをトリガーとする
+  workflow_call: {}
+  pull_request:
     types: [opened, synchronize]
 
 jobs:

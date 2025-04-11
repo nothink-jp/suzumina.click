@@ -17,6 +17,7 @@ WORKDIR /monorepo
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DATABASE_URL="postgres://suzumina_app:build_password@localhost:5432/suzumina_db"
 
 COPY --from=deps /monorepo/node_modules ./node_modules
 COPY --from=deps /monorepo/packages ./packages
