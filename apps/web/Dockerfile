@@ -17,14 +17,15 @@ WORKDIR /monorepo
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-# ビルド時に必要な環境変数を設定
-ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
-ENV NEXTAUTH_URL="http://localhost:3000"
-ENV NEXTAUTH_SECRET="dummy-secret-for-build"
-ENV DISCORD_CLIENT_ID="dummy-client-id"
-ENV DISCORD_CLIENT_SECRET="dummy-secret"
-ENV DISCORD_GUILD_ID="dummy-guild-id"
-ENV AUTH_TRUST_HOST="localhost"
+# ビルド時専用の環境を示すフラグ
+ENV BUILD_TIME_MODE=true
+# データベースとアプリケーションの基本設定
+ENV DATABASE_URL=postgresql://nextjs:nextjs@localhost:5432/nextjs_build
+ENV NEXTAUTH_URL=http://build.local:3000
+# ビルド時のプレースホルダー値
+ENV BUILD_APP=local_app
+ENV BUILD_ORG=local_org
+ENV BUILD_HOST=build.local
 
 COPY --from=deps /monorepo/node_modules ./node_modules
 COPY --from=deps /monorepo/packages ./packages
@@ -47,6 +48,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
+# ビルド時フラグをリセット
+ENV BUILD_TIME_MODE=
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
