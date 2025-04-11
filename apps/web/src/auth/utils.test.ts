@@ -45,6 +45,34 @@ describe("認証システムの環境変数ハンドリング", () => {
       expect(getRequiredEnvVar("MISSING_VAR")).toBe("");
       expect(isProductionRuntime()).toBe(false);
     });
+
+    it("本番環境で値が空文字列の場合はその値を返す", () => {
+      process.env = {
+        ...process.env,
+        NODE_ENV: "production",
+        EMPTY_VAR: "",
+      };
+      expect(getRequiredEnvVar("EMPTY_VAR")).toBe("");
+    });
+
+    it("本番環境で値が設定されている場合は正しく値を返す", () => {
+      process.env = {
+        ...process.env,
+        NODE_ENV: "production",
+        TEST_VAR: "production-value",
+      };
+      expect(getRequiredEnvVar("TEST_VAR")).toBe("production-value");
+    });
+
+    it("URLのような複雑な値も適切に処理される", () => {
+      const testUrl = "postgresql://user:pass@localhost:5432/db";
+      process.env = {
+        ...process.env,
+        NODE_ENV: "production",
+        DATABASE_URL: testUrl,
+      };
+      expect(getRequiredEnvVar("DATABASE_URL")).toBe(testUrl);
+    });
   });
 
   describe("isProductionRuntime", () => {
