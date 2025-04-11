@@ -1,37 +1,26 @@
-import { drizzle } from "drizzle-orm/libsql";
-import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { createClient } from "@libsql/client";
 import * as schema from "./schema";
-import type { LibSQLDatabase } from "drizzle-orm/libsql";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 // 環境変数から接続情報を取得
-const isDevelopment = process.env.NODE_ENV === "development";
-const isBuildTime = process.env.NEXT_PHASE === "phase-production-build";
-const isLocalTest = process.env.PG_LOCAL_TEST === "true";
+const isLocalDev = process.env.NODE_ENV === "development";
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error("DATABASE_URL is not defined");
 }
 
-// 開発環境またはビルド時はSQLite、本番環境はPostgreSQLを使用
-let db: LibSQLDatabase<typeof schema> | PostgresJsDatabase<typeof schema>;
+// PostgreSQLクライアントの設定
+const client = postgres(databaseUrl, {
+  ssl: !isLocalDev, // 開発環境ではSSLを無効化
+  max: 10, // コネクションプールの最大数
+  idle_timeout: 20, // アイドルタイムアウト（秒）
+  connect_timeout: 10, // 接続タイムアウト（秒）
+});
 
-if (isDevelopment || isBuildTime) {
-  // SQLite接続
-  const client = createClient({
-    url: databaseUrl,
-  });
-  db = drizzle(client, { schema });
-} else {
-  // PostgreSQL接続
-  // ローカルテスト環境ではSSLを無効にする
-  const sslEnabled = !isLocalTest;
-  const client = postgres(databaseUrl, { ssl: sslEnabled });
-  db = drizzlePg(client, { schema });
-}
+// Drizzle ORMクライアントの初期化
+export const db = drizzle(client, {
+  schema,
+});
 
-export { db };
 export * from "./schema";

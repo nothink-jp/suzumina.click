@@ -15,12 +15,13 @@
     "test:coverage": "bun test --coverage",
     "check": "tsc --noEmit && biome check .",
     "clean": "rimraf .next .turbo coverage next-env.d.ts node_modules",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun run src/db/migrate.ts"
+    "db:generate": "drizzle-kit generate:pg",
+    "db:migrate": "bun run src/db/migrate.ts",
+    "db:push": "drizzle-kit push:pg",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@google-cloud/secret-manager": "^6",
-    "@libsql/client": "^0.15.2",
     "drizzle-orm": "^0.41.0",
     "framer-motion": "^12.6.3",
     "lucide-react": "^0.487.0",
