@@ -1,10 +1,11 @@
 import "@/../tests/setup";
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import type { Provider } from "next-auth/providers";
-import { GET, POST, auth, authConfig, signIn, signOut } from "./auth";
+import { GET, POST, auth, signIn, signOut } from "./auth";
 import { DrizzleAdapter } from "./auth/drizzle-adapter";
 import { setMockError } from "@/../tests/mocks/drizzle";
 import type { AdapterUser } from "next-auth/adapters";
+import type { NextAuthConfig } from "next-auth";
 
 describe("NextAuth 設定", () => {
   const originalEnv = { ...process.env };
@@ -25,11 +26,15 @@ describe("NextAuth 設定", () => {
     expect(POST).toBeInstanceOf(Function);
     expect(signIn).toBeInstanceOf(Function);
     expect(signOut).toBeInstanceOf(Function);
-    expect(authConfig).toBeDefined();
   });
 
   describe("authConfig の内容", () => {
-    it("Discord プロバイダーが正しく設定されている", () => {
+    async function getAuthConfig(): Promise<NextAuthConfig> {
+      const module = await import("./auth");
+      return module.authConfig;
+    }
+
+    it("Discord プロバイダーが正しく設定されている", async () => {
       process.env = {
         ...process.env,
         DISCORD_CLIENT_ID: "test-client-id",
@@ -38,8 +43,11 @@ describe("NextAuth 設定", () => {
         NEXTAUTH_URL: "http://localhost:3000",
         NODE_ENV: "development",
       };
-      expect(authConfig.providers).toBeArrayOfSize(1);
-      const discordProvider = authConfig.providers[0] as Provider;
+
+      const config = await getAuthConfig();
+
+      expect(config.providers).toBeArrayOfSize(1);
+      const discordProvider = config.providers[0] as Provider;
       expect(discordProvider).toHaveProperty("id", "discord");
       expect(discordProvider.options?.clientId).toBeDefined();
       expect(discordProvider.options?.clientSecret).toBeDefined();
@@ -48,15 +56,15 @@ describe("NextAuth 設定", () => {
       );
     });
 
-    it("アダプターが正しく設定されている", () => {
+    it("アダプターが正しく設定されている", async () => {
       process.env.DATABASE_URL =
         "postgres://test:test@localhost:5432/test_db";
-      expect(authConfig.adapter).toBeDefined();
-      expect(typeof authConfig.adapter).toBe(typeof DrizzleAdapter());
+      const config = await getAuthConfig();
+      expect(config.adapter).toBeDefined();
+      expect(typeof config.adapter).toBe(typeof DrizzleAdapter());
     });
 
     it("PostgreSQL接続エラーを適切に処理できる", async () => {
-      // データベース接続エラーをシミュレート
       setMockError(new Error("Database connection failed"));
       
       const adapter = DrizzleAdapter();
@@ -77,77 +85,88 @@ describe("NextAuth 設定", () => {
       ).rejects.toThrow("Database connection failed");
     });
 
-    it("セッション設定が正しく設定されている", () => {
-      expect(authConfig.session?.strategy).toBe("jwt");
-      expect(authConfig.session?.maxAge).toBe(30 * 24 * 60 * 60);
+    it("セッション設定が正しく設定されている", async () => {
+      const config = await getAuthConfig();
+      expect(config.session?.strategy).toBe("jwt");
+      expect(config.session?.maxAge).toBe(30 * 24 * 60 * 60);
     });
 
-    it("クッキー設定が正しく設定されている (開発環境)", () => {
+    it("クッキー設定が正しく設定されている (開発環境)", async () => {
       process.env = { ...process.env, NODE_ENV: "development" };
-      const secureFlag =
-        process.env.NODE_ENV === "production" &&
-        process.env.NEXT_PHASE !== "phase-production-build";
-      expect(authConfig.cookies?.sessionToken?.options?.secure).toBe(secureFlag);
-      expect(authConfig.cookies?.sessionToken?.options?.httpOnly).toBe(true);
-      expect(authConfig.cookies?.sessionToken?.options?.sameSite).toBe("lax");
-      expect(authConfig.cookies?.sessionToken?.options?.path).toBe("/");
-      expect(authConfig.cookies?.sessionToken?.name).toBe(
+      const config = await getAuthConfig();
+
+      expect(config.cookies?.sessionToken?.options?.secure).toBe(false);
+      expect(config.cookies?.sessionToken?.options?.httpOnly).toBe(true);
+      expect(config.cookies?.sessionToken?.options?.sameSite).toBe("lax");
+      expect(config.cookies?.sessionToken?.options?.path).toBe("/");
+      expect(config.cookies?.sessionToken?.name).toBe(
         "next-auth.session-token",
       );
     });
 
-    it("クッキー設定が正しく設定されている (本番ランタイム環境)", () => {
+    it("クッキー設定が正しく設定されている (本番ランタイム環境)", async () => {
       process.env = {
         ...process.env,
         NODE_ENV: "production",
         NEXT_PHASE: undefined,
       };
-      const secureFlag = true;
-      expect(authConfig.cookies?.sessionToken?.options?.secure).toBe(secureFlag);
+      const config = await getAuthConfig();
+
+      expect(config.cookies?.sessionToken?.options?.secure).toBe(true);
     });
 
-    it("コールバック (jwt) が定義されている", () => {
-      expect(authConfig.callbacks?.jwt).toBeInstanceOf(Function);
+    it("コールバック (jwt) が定義されている", async () => {
+      const config = await getAuthConfig();
+      expect(config.callbacks?.jwt).toBeInstanceOf(Function);
     });
 
-    it("コールバック (signIn) が定義されている", () => {
-      expect(authConfig.callbacks?.signIn).toBeInstanceOf(Function);
+    it("コールバック (signIn) が定義されている", async () => {
+      const config = await getAuthConfig();
+      expect(config.callbacks?.signIn).toBeInstanceOf(Function);
     });
 
-    it("コールバック (session) が定義されている", () => {
-      expect(authConfig.callbacks?.session).toBeInstanceOf(Function);
+    it("コールバック (session) が定義されている", async () => {
+      const config = await getAuthConfig();
+      expect(config.callbacks?.session).toBeInstanceOf(Function);
     });
 
-    it("ページ設定が正しく設定されている", () => {
-      expect(authConfig.pages?.signIn).toBe("/auth/signin");
-      expect(authConfig.pages?.error).toBe("/auth/error");
+    it("ページ設定が正しく設定されている", async () => {
+      const config = await getAuthConfig();
+      expect(config.pages?.signIn).toBe("/auth/signin");
+      expect(config.pages?.error).toBe("/auth/error");
     });
 
-    it("デバッグフラグが正しく設定されている (開発環境)", () => {
+    it("デバッグフラグが正しく設定されている (開発環境)", async () => {
       process.env = {
         ...process.env,
         NODE_ENV: "development",
         NEXT_PHASE: undefined,
       };
-      expect(authConfig.debug).toBe(true);
+      const config = await getAuthConfig();
+
+      expect(config.debug).toBe(true);
     });
 
-    it("デバッグフラグが正しく設定されている (ビルド時)", () => {
+    it("デバッグフラグが正しく設定されている (ビルド時)", async () => {
       process.env = {
         ...process.env,
         NODE_ENV: "production",
         NEXT_PHASE: "phase-production-build",
       };
-      expect(authConfig.debug).toBe(false);
+      const config = await getAuthConfig();
+
+      expect(config.debug).toBe(false);
     });
 
-    it("デバッグフラグが正しく設定されている (本番ランタイム)", () => {
+    it("デバッグフラグが正しく設定されている (本番ランタイム)", async () => {
       process.env = {
         ...process.env,
         NODE_ENV: "production",
         NEXT_PHASE: undefined,
       };
-      expect(authConfig.debug).toBe(false);
+      const config = await getAuthConfig();
+
+      expect(config.debug).toBe(false);
     });
   });
 });
