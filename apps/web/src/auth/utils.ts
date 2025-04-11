@@ -22,18 +22,19 @@ export const isProductionRuntime = () => {
 /**
  * 環境変数を取得し、必要に応じてエラーをスローします。
  * 本番環境で未設定の場合はエラーをスローします。
- * 開発環境では空文字列を返します。
+ * 非本番環境では空文字列を返します。
+ * 空文字列は有効な値として扱います。
  *
  * @param key - 取得する環境変数の名前
- * @returns 環境変数の値（未設定時は開発環境のみ空文字列）
+ * @returns 環境変数の値（未設定時は非本番環境のみ空文字列）
  * @throws {ConfigurationError} 本番環境で環境変数が未設定の場合
  */
 export const getRequiredEnvVar = (key: string): string => {
   const value = process.env[key];
 
-  if (!value && isProductionRuntime()) {
+  if (value === undefined && isProductionRuntime()) {
     throw new ConfigurationError(key);
   }
 
-  return value || "";
+  return value ?? "";
 };

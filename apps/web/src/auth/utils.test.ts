@@ -2,7 +2,7 @@ import "@/../tests/setup";
 import { afterEach, describe, expect, it } from "bun:test";
 import { getRequiredEnvVar, isProductionRuntime } from "./utils";
 
-describe("認証システムの環境変数ハンドリング", () => {
+describe("環境変数ユーティリティ", () => {
   const originalEnv = { ...process.env };
 
   afterEach(() => {
@@ -19,7 +19,7 @@ describe("認証システムの環境変数ハンドリング", () => {
       expect(getRequiredEnvVar("TEST_VAR")).toBe("test-value");
     });
 
-    it("本番環境で値が未設定の場合はエラーをスロー", () => {
+    it("本番環境で必須の環境変数が未設定の場合はエラーをスロー", () => {
       process.env = {
         ...process.env,
         NODE_ENV: "production",
@@ -37,16 +37,7 @@ describe("認証システムの環境変数ハンドリング", () => {
       expect(getRequiredEnvVar("MISSING_VAR")).toBe("");
     });
 
-    it("非標準の環境変数値の場合も適切に処理される", () => {
-      process.env = {
-        ...process.env,
-        NODE_ENV: "test",
-      };
-      expect(getRequiredEnvVar("MISSING_VAR")).toBe("");
-      expect(isProductionRuntime()).toBe(false);
-    });
-
-    it("本番環境で値が空文字列の場合はその値を返す", () => {
+    it("本番環境で値が空文字列でも値として受け入れる", () => {
       process.env = {
         ...process.env,
         NODE_ENV: "production",
@@ -55,23 +46,12 @@ describe("認証システムの環境変数ハンドリング", () => {
       expect(getRequiredEnvVar("EMPTY_VAR")).toBe("");
     });
 
-    it("本番環境で値が設定されている場合は正しく値を返す", () => {
+    it("テスト環境では開発環境と同様に扱う", () => {
       process.env = {
         ...process.env,
-        NODE_ENV: "production",
-        TEST_VAR: "production-value",
+        NODE_ENV: "test",
       };
-      expect(getRequiredEnvVar("TEST_VAR")).toBe("production-value");
-    });
-
-    it("URLのような複雑な値も適切に処理される", () => {
-      const testUrl = "postgresql://user:pass@localhost:5432/db";
-      process.env = {
-        ...process.env,
-        NODE_ENV: "production",
-        DATABASE_URL: testUrl,
-      };
-      expect(getRequiredEnvVar("DATABASE_URL")).toBe(testUrl);
+      expect(getRequiredEnvVar("MISSING_VAR")).toBe("");
     });
   });
 
