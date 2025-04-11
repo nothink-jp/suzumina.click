@@ -55,17 +55,13 @@ let mockError: Error | null = null;
 let lastMethodCalled: string | null = null;
 
 // Drizzleのクエリビルダーのモック
-// findFirstの引数の型定義
 type FindFirstArgs<T> = {
   where?: Partial<Record<keyof T, { value: unknown }>>;
 };
 
-// Helper type guard to check if value has a 'value' property
-// biome-ignore lint/suspicious/noExplicitAny: Mock implementation simplification
-const hasValueProperty = (obj: any): obj is { value: unknown } => {
-  return typeof obj === "object" && obj !== null && "value" in obj;
-};
-
+/**
+ * モック実装のユーティリティ
+ */
 export const mockDb = {
   query: {
     users: {
@@ -79,20 +75,15 @@ export const mockDb = {
           return mockUsers[0] || null;
         }
 
-        // whereの条件に基づいてユーザーを検索
         const user = mockUsers.find((user) => {
           for (const [key, value] of Object.entries(where)) {
-            if (
-              key === "id" &&
-              (!hasValueProperty(value) || value.value !== user.id)
-            ) {
-              return false;
-            }
-            if (
-              key === "email" &&
-              (!hasValueProperty(value) || value.value !== user.email)
-            ) {
-              return false;
+            if (value && typeof value === "object" && "value" in value) {
+              if (key === "id" && value.value !== user.id) {
+                return false;
+              }
+              if (key === "email" && value.value !== user.email) {
+                return false;
+              }
             }
           }
           return true;
@@ -112,21 +103,18 @@ export const mockDb = {
           return mockAccounts[0] || null;
         }
 
-        // whereの条件に基づいてアカウントを検索
         const account = mockAccounts.find((account) => {
           for (const [key, value] of Object.entries(where)) {
-            if (
-              key === "provider" &&
-              (!hasValueProperty(value) || value.value !== account.provider)
-            ) {
-              return false;
-            }
-            if (
-              key === "providerAccountId" &&
-              (!hasValueProperty(value) ||
-                value.value !== account.providerAccountId)
-            ) {
-              return false;
+            if (value && typeof value === "object" && "value" in value) {
+              if (key === "provider" && value.value !== account.provider) {
+                return false;
+              }
+              if (
+                key === "providerAccountId" &&
+                value.value !== account.providerAccountId
+              ) {
+                return false;
+              }
             }
           }
           return true;
@@ -146,14 +134,15 @@ export const mockDb = {
           return mockSessions[0] || null;
         }
 
-        // whereの条件に基づいてセッションを検索
         const session = mockSessions.find((session) => {
           for (const [key, value] of Object.entries(where)) {
-            if (
-              key === "sessionToken" &&
-              (!hasValueProperty(value) || value.value !== session.sessionToken)
-            ) {
-              return false;
+            if (value && typeof value === "object" && "value" in value) {
+              if (
+                key === "sessionToken" &&
+                value.value !== session.sessionToken
+              ) {
+                return false;
+              }
             }
           }
           return true;
@@ -175,20 +164,15 @@ export const mockDb = {
           return mockVerificationTokens[0] || null;
         }
 
-        // whereの条件に基づいて検証トークンを検索
         const token = mockVerificationTokens.find((token) => {
           for (const [key, value] of Object.entries(where)) {
-            if (
-              key === "identifier" &&
-              (!hasValueProperty(value) || value.value !== token.identifier)
-            ) {
-              return false;
-            }
-            if (
-              key === "token" &&
-              (!hasValueProperty(value) || value.value !== token.token)
-            ) {
-              return false;
+            if (value && typeof value === "object" && "value" in value) {
+              if (key === "identifier" && value.value !== token.identifier) {
+                return false;
+              }
+              if (key === "token" && value.value !== token.token) {
+                return false;
+              }
             }
           }
           return true;
@@ -198,12 +182,10 @@ export const mockDb = {
       },
     },
   },
-  // biome-ignore lint/suspicious/noExplicitAny: Mock implementation simplification
-  insert: (table: any) => {
-    lastMethodCalled = `insert.${table.name}`;
+  insert: (table: unknown) => {
+    lastMethodCalled = `insert.${String(table?.name)}`;
     return {
-      // biome-ignore lint/suspicious/noExplicitAny: Mock implementation simplification
-      values: async (data: any) => {
+      values: async (data: unknown) => {
         if (mockError) {
           throw mockError;
         }
@@ -220,35 +202,45 @@ export const mockDb = {
       },
     };
   },
-  // biome-ignore lint/suspicious/noExplicitAny: Mock implementation simplification
-  update: (table: any) => {
-    lastMethodCalled = `update.${table.name}`;
+  update: (table: unknown) => {
+    lastMethodCalled = `update.${String(table?.name)}`;
     return {
-      // biome-ignore lint/suspicious/noExplicitAny: Mock implementation simplification
-      set: (data: any) => {
+      set: (data: unknown) => {
         return {
-          // biome-ignore lint/suspicious/noExplicitAny: Mock implementation simplification
-          where: async (condition: any) => {
+          where: async (condition: unknown) => {
             if (mockError) {
               throw mockError;
             }
 
-            if (table === users) {
+            if (
+              table === users &&
+              condition &&
+              typeof condition === "object" &&
+              "value" in condition
+            ) {
               const index = mockUsers.findIndex(
-                (user) =>
-                  hasValueProperty(condition) && user.id === condition.value,
+                (user) => user.id === condition.value,
               );
               if (index !== -1) {
-                mockUsers[index] = { ...mockUsers[index], ...data };
+                mockUsers[index] = {
+                  ...mockUsers[index],
+                  ...(data as Partial<MockDrizzleUser>),
+                };
               }
-            } else if (table === sessions) {
+            } else if (
+              table === sessions &&
+              condition &&
+              typeof condition === "object" &&
+              "value" in condition
+            ) {
               const index = mockSessions.findIndex(
-                (session) =>
-                  hasValueProperty(condition) &&
-                  session.sessionToken === condition.value,
+                (session) => session.sessionToken === condition.value,
               );
               if (index !== -1) {
-                mockSessions[index] = { ...mockSessions[index], ...data };
+                mockSessions[index] = {
+                  ...mockSessions[index],
+                  ...(data as Partial<MockDrizzleSession>),
+                };
               }
             }
           },
@@ -256,63 +248,66 @@ export const mockDb = {
       },
     };
   },
-  // biome-ignore lint/suspicious/noExplicitAny: Mock implementation simplification
-  delete: (table: any) => {
-    lastMethodCalled = `delete.${table.name}`;
+  delete: (table: unknown) => {
+    lastMethodCalled = `delete.${String(table?.name)}`;
     return {
-      // biome-ignore lint/suspicious/noExplicitAny: Mock implementation simplification
-      where: async (condition: any) => {
+      where: async (condition: unknown) => {
         if (mockError) {
           throw mockError;
         }
 
-        if (table === users) {
-          mockUsers = mockUsers.filter(
-            (user) =>
-              !hasValueProperty(condition) || user.id !== condition.value,
-          );
+        if (
+          table === users &&
+          condition &&
+          typeof condition === "object" &&
+          "value" in condition
+        ) {
+          mockUsers = mockUsers.filter((user) => user.id !== condition.value);
         } else if (table === accounts) {
           mockAccounts = mockAccounts.filter((account) => {
-            for (const [key, value] of Object.entries(condition || {})) {
-              if (
-                key === "provider" &&
-                (!hasValueProperty(value) || value.value !== account.provider)
-              ) {
-                return true; // Keep if condition doesn't match
-              }
-              if (
-                key === "providerAccountId" &&
-                (!hasValueProperty(value) ||
-                  value.value !== account.providerAccountId)
-              ) {
-                return true; // Keep if condition doesn't match
+            if (!condition || typeof condition !== "object") {
+              return true;
+            }
+            for (const [key, value] of Object.entries(condition)) {
+              if (value && typeof value === "object" && "value" in value) {
+                if (key === "provider" && value.value !== account.provider) {
+                  return true;
+                }
+                if (
+                  key === "providerAccountId" &&
+                  value.value !== account.providerAccountId
+                ) {
+                  return true;
+                }
               }
             }
-            return false; // Remove if all conditions match
+            return false;
           });
-        } else if (table === sessions) {
+        } else if (
+          table === sessions &&
+          condition &&
+          typeof condition === "object" &&
+          "value" in condition
+        ) {
           mockSessions = mockSessions.filter(
-            (session) =>
-              !hasValueProperty(condition) ||
-              session.sessionToken !== condition.value,
+            (session) => session.sessionToken !== condition.value,
           );
         } else if (table === verificationTokens) {
           mockVerificationTokens = mockVerificationTokens.filter((token) => {
-            for (const [key, value] of Object.entries(condition || {})) {
-              if (
-                key === "identifier" &&
-                (!hasValueProperty(value) || value.value !== token.identifier)
-              ) {
-                return true; // Keep if condition doesn't match
-              }
-              if (
-                key === "token" &&
-                (!hasValueProperty(value) || value.value !== token.token)
-              ) {
-                return true; // Keep if condition doesn't match
+            if (!condition || typeof condition !== "object") {
+              return true;
+            }
+            for (const [key, value] of Object.entries(condition)) {
+              if (value && typeof value === "object" && "value" in value) {
+                if (key === "identifier" && value.value !== token.identifier) {
+                  return true;
+                }
+                if (key === "token" && value.value !== token.token) {
+                  return true;
+                }
               }
             }
-            return false; // Remove if all conditions match
+            return false;
           });
         }
       },
@@ -321,11 +316,9 @@ export const mockDb = {
   select: () => {
     lastMethodCalled = "select";
     return {
-      // biome-ignore lint/suspicious/noExplicitAny: Mock implementation simplification
-      from: (table: any) => {
+      from: (table: unknown) => {
         return {
-          // biome-ignore lint/suspicious/noExplicitAny: Mock implementation simplification
-          where: (condition: any) => {
+          where: (condition: unknown) => {
             return {
               limit: async (limit: number) => {
                 if (mockError) {
@@ -334,22 +327,27 @@ export const mockDb = {
 
                 if (table === accounts) {
                   const filteredAccounts = mockAccounts.filter((account) => {
-                    for (const [key, value] of Object.entries(
-                      condition || {},
-                    )) {
+                    if (!condition || typeof condition !== "object") {
+                      return true;
+                    }
+                    for (const [key, value] of Object.entries(condition)) {
                       if (
-                        key === "provider" &&
-                        (!hasValueProperty(value) ||
-                          value.value !== account.provider)
+                        value &&
+                        typeof value === "object" &&
+                        "value" in value
                       ) {
-                        return false;
-                      }
-                      if (
-                        key === "providerAccountId" &&
-                        (!hasValueProperty(value) ||
-                          value.value !== account.providerAccountId)
-                      ) {
-                        return false;
+                        if (
+                          key === "provider" &&
+                          value.value !== account.provider
+                        ) {
+                          return false;
+                        }
+                        if (
+                          key === "providerAccountId" &&
+                          value.value !== account.providerAccountId
+                        ) {
+                          return false;
+                        }
                       }
                     }
                     return true;
