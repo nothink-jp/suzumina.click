@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { render } from "@testing-library/react";
-import { useSession } from "next-auth/react";
 import { UserInfoDisplay } from "./UserInfoDisplay";
 
 // useSessionのモック
@@ -52,7 +51,7 @@ describe("UserInfoDisplay", () => {
     };
 
     const { container } = render(<UserInfoDisplay />);
-    
+
     // 見出しの確認
     expect(container.innerHTML).toContain("ログイン情報 (Client Side)");
 
