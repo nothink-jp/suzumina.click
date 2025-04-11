@@ -1,9 +1,17 @@
 import "@/../tests/setup";
-import { afterEach, beforeAll, beforeEach, describe, expect, it, mock } from "bun:test";
-import type { Provider } from "next-auth/providers";
-import type { AdapterUser } from "next-auth/adapters";
-import { DrizzleAdapter } from "./auth/drizzle-adapter";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+} from "bun:test";
 import { setMockError } from "@/../tests/mocks/drizzle";
+import type { AdapterUser } from "next-auth/adapters";
+import type { Provider } from "next-auth/providers";
+import { DrizzleAdapter } from "./auth/drizzle-adapter";
 
 describe("NextAuth 設定", () => {
   const originalEnv = { ...process.env };
@@ -62,7 +70,7 @@ describe("NextAuth 設定", () => {
 
     it("データベース接続エラーを適切に処理できる", async () => {
       setMockError(new Error("Database connection failed"));
-      
+
       const adapter = DrizzleAdapter();
       if (!adapter.createUser) {
         throw new Error("Adapter createUser method not implemented");
@@ -76,9 +84,9 @@ describe("NextAuth 設定", () => {
         image: null,
       };
 
-      await expect(
-        adapter.createUser(testUser),
-      ).rejects.toThrow("Database connection failed");
+      await expect(adapter.createUser(testUser)).rejects.toThrow(
+        "Database connection failed",
+      );
     });
 
     it("セッション設定が正しく設定されている", () => {

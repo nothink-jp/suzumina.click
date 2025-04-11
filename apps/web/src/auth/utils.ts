@@ -23,7 +23,7 @@ export const isProductionRuntime = () => {
 /**
  * 環境変数を取得します。
  * 本番環境で未設定の場合はエラーをスローし、開発環境では空文字列を返します。
- * 
+ *
  * @param key - 取得する環境変数の名前
  * @returns 環境変数の値（未設定時は開発環境のみ空文字列）
  * @throws {ConfigurationError} 本番環境で環境変数が未設定の場合

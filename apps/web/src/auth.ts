@@ -1,7 +1,11 @@
 import NextAuth, { type NextAuthConfig } from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { DrizzleAdapter } from "./auth/drizzle-adapter";
-import { ConfigurationError, getRequiredEnvVar, isProductionRuntime } from "./auth/utils";
+import {
+  ConfigurationError,
+  getRequiredEnvVar,
+  isProductionRuntime,
+} from "./auth/utils";
 
 // NEXTAUTH_URLの取得と検証
 const baseUrl = process.env.NEXTAUTH_URL;
