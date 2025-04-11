@@ -1,179 +1,123 @@
 # suzumina.click
 
-[suzumina.click](https://suzumina.click)のウェブサイトソースコード
+## 概要
 
-## 開発環境
+suzumina.click は Discord 認証を使用したウェブアプリケーションです。
 
-### 必要条件
+## 開発環境のセットアップ
 
-- Node.js >= 22
-- [bun](https://bun.sh) >= 1.2.8
+### 必要な環境
 
-### 使用技術
+- Node.js v20以上
+- Bun v1.0.0以上
+- Visual Studio Code（推奨）
+- Git
 
-- [Next.js](https://nextjs.org/) 15.2.4
-- [React](https://react.dev/) 19.1.0
-- [TypeScript](https://www.typescriptlang.org/) 5.8.3
-- [Turbo](https://turbo.build/) 2.5.0
-- [Biome](https://biomejs.dev/) 1.9.4
+### セットアップ手順
 
-## プロジェクト構成
+1. リポジトリのクローン
 
-このプロジェクトは[Turborepo](https://turbo.build/repo)を使用したモノレポ構成です。
+```bash
+git clone https://github.com/nothink-jp/suzumina.click.git
+cd suzumina.click
+```
 
-### 主要ディレクトリ
-
-- `apps/web`: メインの[Next.js](https://nextjs.org/)アプリケーション
-- `docs`: プロジェクト関連ドキュメント (設計、TODOリストなど)
-- `iac`: Infrastructure as Code (Terraform) ファイル
-- `packages`: 共有パッケージ (`tailwind-config`, `typescript-config`, `ui` など)
-
-各パッケージ/アプリケーションは100% [TypeScript](https://www.typescriptlang.org/)で記述されています。
-
-### 開発ツール
-
-- [Biome](https://biomejs.dev/): リンターとフォーマッター
-- [CSpell](https://cspell.org/): スペルチェッカー
-- [Turbo](https://turbo.build/): ビルドシステム
-
-## 開発手順
-
-プロジェクトルートから以下の `bun run` コマンドを実行してください。これらのコマンドは内部的に `turbo` や `biome` などを呼び出します。
-
-### インストール
+2. 依存関係のインストール
 
 ```bash
 bun install
 ```
 
-### 開発サーバーの起動
+3. 環境変数の設定
+
+```bash
+# .env.localファイルを作成
+cp .env.example .env.local
+
+# 必要な環境変数を設定
+# - NEXTAUTH_URL: 認証コールバックURL
+# - NEXTAUTH_SECRET: 認証用シークレット
+# - DISCORD_CLIENT_ID: DiscordアプリのクライアントID
+# - DISCORD_CLIENT_SECRET: Discordアプリのクライアントシークレット
+# - DISCORD_GUILD_ID: Discordサーバー（ギルド）ID
+```
+
+4. 開発サーバーの起動
 
 ```bash
 bun run dev
 ```
 
-### ビルド
+アプリケーションは <http://localhost:3000> で起動します。
+
+## 環境構成
+
+このプロジェクトは以下の3つの環境で構成されています：
+
+1. **ローカル開発環境**
+   - SQLiteデータベースを使用
+   - `NODE_ENV=development`
+   - ファイルベースの簡易な開発環境
+
+2. **GCP開発環境** (suzumina-click-dev)
+   - PostgreSQLデータベース（Cloud SQL）を使用
+   - `NODE_ENV=production`
+   - 開発版のデプロイとテスト用
+
+3. **GCP本番環境** (suzumina-click)
+   - PostgreSQLデータベース（Cloud SQL）を使用
+   - `NODE_ENV=production`
+   - 本番サービスの提供用
+
+詳細は [環境定義](docs/ENVIRONMENTS.md) を参照してください。
+
+## データベース操作
+
+### マイグレーション
 
 ```bash
-bun run build
+# マイグレーションの生成
+bun run db:generate
+
+# マイグレーションの実行（開発環境）
+bun run db:migrate
+
+# マイグレーションの実行（GCP環境）
+DATABASE_URL=postgres://user:password@host:5432/database bun run db:migrate
 ```
 
-### 型チェック
+### スキーマの更新
+
+`apps/web/src/db/schema.ts` でデータベーススキーマを定義します。
+
+## テスト
 
 ```bash
-bun run check-types
+# 全テストの実行
+bun test
+
+# 特定のテストの実行
+bun test src/auth.test.ts
 ```
 
-### リントとフォーマット
+## デプロイ
 
-```bash
-# リントチェック (Biome)
-bun run check
+GCP環境へのデプロイ手順は [PostgreSQLデプロイ手順](docs/auth/POSTGRESQL_DEPLOYMENT_PROCEDURE.md) を参照してください。
 
-# フォーマットチェック (Biome)
-bun run format
+## ドキュメント
 
-# リントとフォーマットの自動修正 (Biome)
-bun run ci:fix
-```
+- [環境定義](docs/ENVIRONMENTS.md) - 環境構成の詳細
+- [アーキテクチャ設計](docs/ARCHITECTURE_DESIGN.md) - システム全体のアーキテクチャ
+- [認証設計](docs/auth/AUTH_DESIGN.md) - 認証システムの設計
+- [GCP概要](docs/gcp/GCP_OVERVIEW.md) - GCPリソースの概要
 
-*注意: `bun run lint` は `turbo run lint` を実行します。これは各ワークスペースの `lint` スクリプト（存在する場合）を実行します。プロジェクト全体のリントには `bun run check` を使用してください。*
+## ライセンス
 
-### テスト
+AGPL-3.0 License
 
-```bash
-# 全テスト実行
-bun run test
+## コントリビューション
 
-# カバレッジ付きテスト実行
-bun run test:coverage
-```
-
-### スペルチェック
-
-```bash
-bun run spell-check
-```
-
-## デプロイ手順 (概要)
-
-通常、デプロイはGitHub ActionsによるCI/CDパイプラインで自動化されます。以下は手動でのデプロイ手順の概要です。
-
-### 前提条件
-
-- Google Cloud SDK (`gcloud`) がインストール・設定済みであること。
-- GCPプロジェクトへの適切な権限があること。
-- Artifact Registryリポジトリが作成済みであること (`iac/` で管理)。
-- Cloud Runサービスが作成済みであること (`iac/` で管理)。
-
-### 手順
-
-1. **Dockerイメージのビルド:**
-
-    ```bash
-    # プロジェクトルートから実行
-    docker build -t asia-northeast1-docker.pkg.dev/suzumina-click-dev/suzumina-click-dev-docker-repo/web:latest -f apps/web/Dockerfile .
-    ```
-
-    - `suzumina-click-dev`: GCPプロジェクトID
-    - `suzumina-click-dev-docker-repo`: Artifact Registryリポジトリ名
-    - `web`: イメージ名 (任意)
-    - `latest`: タグ (任意、コミットハッシュなどが推奨)
-
-2. **Artifact Registryへのプッシュ:**
-
-    ```bash
-    # gcloud 認証ヘルパーの設定 (初回のみ)
-    gcloud auth configure-docker asia-northeast1-docker.pkg.dev
-
-    # イメージのプッシュ
-    docker push asia-northeast1-docker.pkg.dev/suzumina-click-dev/suzumina-click-dev-docker-repo/web:latest
-    ```
-
-3. **Cloud Runへのデプロイ:**
-
-    ```bash
-    gcloud run deploy web \
-      --image asia-northeast1-docker.pkg.dev/suzumina-click-dev/suzumina-click-dev-docker-repo/web:latest \
-      --region asia-northeast1 \
-      --project suzumina-click-dev \
-      --platform managed \
-      --allow-unauthenticated # 必要に応じて変更
-    ```
-
-    - `web`: Cloud Runサービス名
-
-**注意:** 上記は基本的な手順です。実際のCI/CDパイプラインでは、サービスアカウント認証 (Workload Identity Federation)、環境変数の設定、シークレットの参照などが追加されます。詳細は `docs/gcp/GCP_CICD.md` を参照してください。
-
-## CI/CD
-
-GitHub Actionsのワークフロー (`.github/workflows/ci.yml`) により、以下のチェックが自動実行されます：
-
-1. コードのリントチェック (`bun run check`)
-2. コードのフォーマットチェック (`bun run format`)
-3. コードの型チェック (`bun run check-types`)
-4. テスト実行とカバレッジ生成 (`bun run test:coverage`)
-5. (DeepSourceへのカバレッジレポート送信)
-
-## リモートキャッシュ
-
-Turborepoの[リモートキャッシュ](https://turbo.build/repo/docs/core-concepts/remote-caching)機能を使用して、チーム間でのビルドキャッシュの共有が可能です。
-
-### キャッシュの設定
-
-```bash
-# Vercelへのログイン
-bunx turbo login
-
-# リモートキャッシュの設定
-bunx turbo link
-```
-
-## 参考リンク
-
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+1. Issueを作成して変更内容を説明
+2. フィーチャーブランチを作成
+3. 変更をコミット
+4. プルリクエストを作成
