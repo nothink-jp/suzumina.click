@@ -6,8 +6,8 @@
 - [x] DeepSource 基本設定 (`.deepsource.toml` 作成・更新)
 - [x] DeepSource テストカバレッジ連携 (CI設定含む)
 - [x] Cloud Run デプロイ時のポート設定修正 (`Dockerfile` から `ENV PORT` を削除)
-- [x] UIライブラリを shadcn/ui から HeroUI へ移行
-- [x] HeroUI を利用した基本コンポーネントの実装 (Button, Card, Avatar, Alert)
+- [x] ~~UIライブラリを shadcn/ui から HeroUI へ移行~~
+- [x] ~~HeroUI を利用した基本コンポーネントの実装 (Button, Card, Avatar, Alert)~~
 - [x] packages/ui のエントリーポイント作成と exports 更新
 - [x] NextAuthデータベース移行（Firestore → PostgreSQL）
 - [x] auth.tsのカバレッジ向上
@@ -16,6 +16,19 @@
   - [x] 環境変数のエッジケーステスト
 
 ## 優先度: 高
+
+### フロントエンド実装の刷新
+
+- [ ] HeroUI依存の削除
+  - [ ] 基本コンポーネントの再実装
+  - [ ] スタイリングの見直し
+- [ ] サーバーサイドコンポーネントへの移行
+  - [ ] page.tsxのサーバーサイドコンポーネント化
+  - [ ] layout.tsxのサーバーサイドコンポーネント化
+  - [ ] クライアントコンポーネントの最小化
+- [ ] コロケーション原則の適用
+  - [ ] コンポーネントとロジックの配置見直し
+  - [ ] ディレクトリ構造の再編成
 
 ### E2Eテスト環境の構築
 
