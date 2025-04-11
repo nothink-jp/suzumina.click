@@ -63,6 +63,14 @@ resource "google_project_service" "sql_api" {
   disable_on_destroy         = false
 }
 
+# Service Networking APIを有効化
+resource "google_project_service" "servicenetworking_api" {
+  project                    = var.project_id
+  service                    = "servicenetworking.googleapis.com" # Private Service Connect に必要
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
 # -----------------------------------------------------------------------------
 # IAM: サービスアカウント (既存リソースを参照)
 # -----------------------------------------------------------------------------
@@ -122,15 +130,45 @@ data "google_secret_manager_secret" "auth_trust_host" {
 }
 
 # -----------------------------------------------------------------------------
-# Cloud SQL: PostgreSQLインスタンスの設定
+# VPCネットワークの設定
 # -----------------------------------------------------------------------------
 # VPCネットワークの作成
 resource "google_compute_network" "vpc_network" {
   name                    = "suzumina-vpc-network"
-  auto_create_subnetworks = true
+  auto_create_subnetworks = false # サブネットを手動で作成
   project                 = var.project_id
 }
 
+# サブネットの作成
+resource "google_compute_subnetwork" "vpc_subnetwork" {
+  name          = "suzumina-vpc-subnetwork"
+  ip_cidr_range = "10.0.0.0/16"
+  network       = google_compute_network.vpc_network.id
+  project       = var.project_id
+  region        = var.region
+}
+
+# Service Networking接続の設定
+resource "google_compute_global_address" "private_ip_address" {
+  name          = "suzumina-private-ip-range"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = google_compute_network.vpc_network.id
+  project       = var.project_id
+}
+
+resource "google_service_networking_connection" "private_vpc_connection" {
+  network                 = google_compute_network.vpc_network.id
+  service                = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
+
+  depends_on = [google_project_service.servicenetworking_api]
+}
+
+# -----------------------------------------------------------------------------
+# Cloud SQL: PostgreSQLインスタンスの設定
+# -----------------------------------------------------------------------------
 # Cloud SQLインスタンスの作成
 resource "google_sql_database_instance" "instance" {
   name             = "suzumina-db-instance-dev"
@@ -147,16 +185,17 @@ resource "google_sql_database_instance" "instance" {
     }
     
     ip_configuration {
-      ipv4_enabled        = false
-      private_network     = google_compute_network.vpc_network.id
-      require_ssl         = true
+      ipv4_enabled    = false
+      private_network = google_compute_network.vpc_network.id
+      ssl_mode        = "REQUIRE" # require_sslの代わりにssl_modeを使用
     }
   }
   
   deletion_protection = true  # 誤削除防止
   
   depends_on = [
-    google_project_service.sql_api
+    google_project_service.sql_api,
+    google_service_networking_connection.private_vpc_connection
   ]
 }
 
@@ -195,6 +234,12 @@ resource "google_secret_manager_secret" "database_url" {
 resource "google_secret_manager_secret_version" "database_url_version" {
   secret      = google_secret_manager_secret.database_url.id
   secret_data = "postgres://${google_sql_user.user.name}:${var.db_password}@${google_sql_database_instance.instance.private_ip_address}:5432/${google_sql_database.database.name}"
+
+  depends_on = [
+    google_sql_database_instance.instance,
+    google_sql_database.database,
+    google_sql_user.user
+  ]
 }
 
 # -----------------------------------------------------------------------------
@@ -312,8 +357,9 @@ resource "google_cloud_run_v2_service" "web" {
     data.google_secret_manager_secret.discord_client_secret,
     data.google_secret_manager_secret.nextauth_url,
     data.google_secret_manager_secret.discord_guild_id,
-    data.google_secret_manager_secret.auth_trust_host, # 新しいシークレットへの依存を追加
-    google_secret_manager_secret.database_url, # データベースURLシークレットへの依存を追加
+    data.google_secret_manager_secret.auth_trust_host,
+    google_secret_manager_secret.database_url,
+    google_secret_manager_secret_version.database_url_version,
   ]
 }
 
@@ -386,7 +432,7 @@ resource "google_iam_workload_identity_pool" "github_pool" {
   project                   = var.project_id
   workload_identity_pool_id = "github-actions-pool"
   display_name              = "GitHub Actions Pool"
-  description               = "Workload Identity Pool for GitHub Actions"
+  description              = "Workload Identity Pool for GitHub Actions"
 
   depends_on = [
     google_project_service.iamcredentials_api
@@ -394,11 +440,11 @@ resource "google_iam_workload_identity_pool" "github_pool" {
 }
 
 resource "google_iam_workload_identity_pool_provider" "github_provider" {
-  project                                = var.project_id
-  workload_identity_pool_id              = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
+  project                            = var.project_id
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-provider"
-  display_name                         = "GitHub Actions Provider"
-  description                          = "Workload Identity Provider for GitHub Actions"
+  display_name                       = "GitHub Actions Provider"
+  description                        = "Workload Identity Provider for GitHub Actions"
 
   attribute_mapping = {
     "google.subject"       = "assertion.sub"
