@@ -187,7 +187,7 @@ resource "google_sql_database_instance" "instance" {
     ip_configuration {
       ipv4_enabled    = false
       private_network = google_compute_network.vpc_network.id
-      ssl_mode        = "REQUIRE" # require_sslの代わりにssl_modeを使用
+      ssl_mode        = "ENCRYPTED_ONLY" # 暗号化された接続のみを許可
     }
   }
   
