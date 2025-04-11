@@ -36,6 +36,15 @@ describe("認証システムの環境変数ハンドリング", () => {
       };
       expect(getRequiredEnvVar("MISSING_VAR")).toBe("");
     });
+
+    it("非標準の環境変数値の場合も適切に処理される", () => {
+      process.env = {
+        ...process.env,
+        NODE_ENV: "test",
+      };
+      expect(getRequiredEnvVar("MISSING_VAR")).toBe("");
+      expect(isProductionRuntime()).toBe(false);
+    });
   });
 
   describe("isProductionRuntime", () => {
@@ -51,6 +60,14 @@ describe("認証システムの環境変数ハンドリング", () => {
       process.env = {
         ...process.env,
         NODE_ENV: "development",
+      };
+      expect(isProductionRuntime()).toBe(false);
+    });
+
+    it("NODE_ENVがtestの場合にfalseを返す", () => {
+      process.env = {
+        ...process.env,
+        NODE_ENV: "test",
       };
       expect(isProductionRuntime()).toBe(false);
     });
