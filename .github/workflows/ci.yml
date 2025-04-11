@@ -27,6 +27,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+    env:
+      DATABASE_URL: postgres://suzumina_app:test_password@localhost:5432/suzumina_test_db
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: test_secret
+      DISCORD_CLIENT_ID: test_client_id
+      DISCORD_CLIENT_SECRET: test_client_secret
+      DISCORD_GUILD_ID: test_guild_id
+      NODE_ENV: test
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,27 +54,17 @@ jobs:
       - name: Run CI Checks (Lint, Format, Type Check)
         run: bun run ci:check
 
-      - name: Setup test database
+      - name: Wait for PostgreSQL
         run: |
-          cd apps/web
-          bun run db:migrate
-        env:
-          DATABASE_URL: postgres://suzumina_app:test_password@localhost:5432/suzumina_test_db
-          NEXTAUTH_URL: http://localhost:3000
-          NEXTAUTH_SECRET: test_secret
-          DISCORD_CLIENT_ID: test_client_id
-          DISCORD_CLIENT_SECRET: test_client_secret
-          DISCORD_GUILD_ID: test_guild_id
+          timeout 20s bash -c 'until pg_isready -h localhost -p 5432; do sleep 1; done'
+
+      - name: Setup test database
+        working-directory: apps/web
+        run: bun run db:migrate
 
       - name: Run Tests and Generate Coverage
+        working-directory: apps/web
         run: bun run test:coverage
-        env:
-          DATABASE_URL: postgres://suzumina_app:test_password@localhost:5432/suzumina_test_db
-          NEXTAUTH_URL: http://localhost:3000
-          NEXTAUTH_SECRET: test_secret
-          DISCORD_CLIENT_ID: test_client_id
-          DISCORD_CLIENT_SECRET: test_client_secret
-          DISCORD_GUILD_ID: test_guild_id
 
       - name: Report Test Coverage to DeepSource
         run: |
