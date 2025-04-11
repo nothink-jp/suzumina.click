@@ -1,10 +1,10 @@
 import { afterEach, beforeAll, mock } from "bun:test";
-import { cleanup } from "@testing-library/react"; // cleanup をインポート
-import { mockDb } from "./mocks/drizzle"; // Drizzleモックをインポート
+import { cleanup } from "@testing-library/react";
+import { mockDb } from "./mocks/drizzle";
 
 // テスト実行後のクリーンアップ
 afterEach(() => {
-  cleanup(); // cleanup を呼び出す
+  cleanup();
 });
 
 // グローバルなモック設定
@@ -17,7 +17,10 @@ beforeAll(() => {
     DISCORD_CLIENT_ID: "test-client-id",
     DISCORD_CLIENT_SECRET: "test-client-secret",
     DISCORD_GUILD_ID: "test-guild-id",
-    DATABASE_URL: "file:./test.db", // テスト用のSQLiteデータベースURL
+    // PostgreSQL接続URL（環境変数から取得、未設定の場合はデフォルト値を使用）
+    DATABASE_URL:
+      process.env.DATABASE_URL ||
+      "postgres://suzumina_app:test_password@localhost:5432/suzumina_test_db",
   };
 
   process.env = {
