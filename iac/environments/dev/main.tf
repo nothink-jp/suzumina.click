@@ -55,6 +55,14 @@ resource "google_project_service" "secretmanager_api" {
   disable_on_destroy         = false
 }
 
+# Cloud SQL APIを有効化
+resource "google_project_service" "sql_api" {
+  project                    = var.project_id
+  service                    = "sqladmin.googleapis.com" # Cloud SQL に必要
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
 # -----------------------------------------------------------------------------
 # IAM: サービスアカウント (既存リソースを参照)
 # -----------------------------------------------------------------------------
@@ -75,35 +83,35 @@ data "google_service_account" "runtime" {
 data "google_secret_manager_secret" "nextauth_secret" {
   project   = var.project_id
   secret_id = "nextauth-secret-dev" # 仮定: 実際のシークレット名に合わせてください
-
+  
   depends_on = [google_project_service.secretmanager_api]
 }
 
 data "google_secret_manager_secret" "discord_client_id" {
   project   = var.project_id
   secret_id = "discord-client-id-dev" # 仮定: 実際のシークレット名に合わせてください
-
+  
   depends_on = [google_project_service.secretmanager_api]
 }
 
 data "google_secret_manager_secret" "discord_client_secret" {
   project   = var.project_id
   secret_id = "discord-client-secret-dev" # 仮定: 実際のシークレット名に合わせてください
-
+  
   depends_on = [google_project_service.secretmanager_api]
 }
 
 data "google_secret_manager_secret" "nextauth_url" {
   project   = var.project_id
   secret_id = "nextauth-url-dev" # 仮定: 実際のシークレット名に合わせてください
-
+  
   depends_on = [google_project_service.secretmanager_api]
 }
 
 data "google_secret_manager_secret" "discord_guild_id" {
   project   = var.project_id
   secret_id = "discord-guild-id-dev" # 仮定: 実際のシークレット名に合わせてください
-
+  
   depends_on = [google_project_service.secretmanager_api]
 }
 
@@ -111,6 +119,82 @@ data "google_secret_manager_secret" "auth_trust_host" {
   project   = var.project_id
   secret_id = "auth-trust-host-dev" # 作成したシークレット名
   depends_on = [google_project_service.secretmanager_api]
+}
+
+# -----------------------------------------------------------------------------
+# Cloud SQL: PostgreSQLインスタンスの設定
+# -----------------------------------------------------------------------------
+# VPCネットワークの作成
+resource "google_compute_network" "vpc_network" {
+  name                    = "suzumina-vpc-network"
+  auto_create_subnetworks = true
+  project                 = var.project_id
+}
+
+# Cloud SQLインスタンスの作成
+resource "google_sql_database_instance" "instance" {
+  name             = "suzumina-db-instance-dev"
+  region           = var.region
+  database_version = "POSTGRES_14"
+  
+  settings {
+    tier = "db-f1-micro"  # 開発/テスト用の小さいインスタンス
+    
+    backup_configuration {
+      enabled                        = true
+      start_time                     = "02:00"  # JST 11:00
+      point_in_time_recovery_enabled = true
+    }
+    
+    ip_configuration {
+      ipv4_enabled        = false
+      private_network     = google_compute_network.vpc_network.id
+      require_ssl         = true
+    }
+  }
+  
+  deletion_protection = true  # 誤削除防止
+  
+  depends_on = [
+    google_project_service.sql_api
+  ]
+}
+
+# データベースの作成
+resource "google_sql_database" "database" {
+  name     = "suzumina_db"
+  instance = google_sql_database_instance.instance.name
+}
+
+# データベースユーザーの作成
+resource "google_sql_user" "user" {
+  name     = "suzumina_app"
+  instance = google_sql_database_instance.instance.name
+  password = var.db_password  # 変数から取得
+}
+
+# データベース接続URLをSecret Managerに保存
+resource "google_secret_manager_secret" "database_url" {
+  project   = var.project_id
+  secret_id = "database-url-dev"
+  
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+  
+  depends_on = [
+    google_project_service.secretmanager_api
+  ]
+}
+
+# データベース接続URLの値を設定
+resource "google_secret_manager_secret_version" "database_url_version" {
+  secret      = google_secret_manager_secret.database_url.id
+  secret_data = "postgres://${google_sql_user.user.name}:${var.db_password}@${google_sql_database_instance.instance.private_ip_address}:5432/${google_sql_database.database.name}"
 }
 
 # -----------------------------------------------------------------------------
@@ -201,6 +285,16 @@ resource "google_cloud_run_v2_service" "web" {
           }
         }
       }
+      # DATABASE_URL を Secret Manager から取得するように追加
+      env {
+        name = "DATABASE_URL"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.database_url.secret_id
+            version = "latest"
+          }
+        }
+      }
     }
   }
 
@@ -219,6 +313,7 @@ resource "google_cloud_run_v2_service" "web" {
     data.google_secret_manager_secret.nextauth_url,
     data.google_secret_manager_secret.discord_guild_id,
     data.google_secret_manager_secret.auth_trust_host, # 新しいシークレットへの依存を追加
+    google_secret_manager_secret.database_url, # データベースURLシークレットへの依存を追加
   ]
 }
 
@@ -266,6 +361,21 @@ resource "google_secret_manager_secret_iam_member" "runtime_access_auth_trust_ho
   secret_id = data.google_secret_manager_secret.auth_trust_host.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_service_account.runtime.email}"
+}
+
+# データベースURLシークレットへのアクセス権限を追加
+resource "google_secret_manager_secret_iam_member" "runtime_access_database_url" {
+  project   = google_secret_manager_secret.database_url.project
+  secret_id = google_secret_manager_secret.database_url.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_service_account.runtime.email}"
+}
+
+# Cloud SQLクライアントロールを付与
+resource "google_project_iam_member" "runtime_cloudsql_client" {
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${data.google_service_account.runtime.email}"
 }
 
 
@@ -329,4 +439,14 @@ output "workload_identity_provider_name" {
 output "cloud_run_service_url" {
   description = "The URL of the deployed Cloud Run service."
   value       = google_cloud_run_v2_service.web.uri
+}
+
+output "cloud_sql_instance_name" {
+  description = "The name of the Cloud SQL instance."
+  value       = google_sql_database_instance.instance.name
+}
+
+output "cloud_sql_database_name" {
+  description = "The name of the database in the Cloud SQL instance."
+  value       = google_sql_database.database.name
 }

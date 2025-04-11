@@ -1,0 +1,176 @@
+{
+  "displayName": "PostgreSQL移行モニタリングダッシュボード",
+  "gridLayout": {
+    "columns": "2",
+    "widgets": [
+      {
+        "title": "データベース接続数",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"cloudsql.googleapis.com/database/network/connections\" resource.type=\"cloudsql_database\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_MEAN",
+                    "groupByFields": [
+                      "resource.label.database_id"
+                    ]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "targetAxis": "Y1"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": {
+            "label": "接続数",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "クエリ実行時間",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"cloudsql.googleapis.com/database/postgresql/query_duration\" resource.type=\"cloudsql_database\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_PERCENTILE_99",
+                    "crossSeriesReducer": "REDUCE_MEAN",
+                    "groupByFields": [
+                      "resource.label.database_id"
+                    ]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "targetAxis": "Y1"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": {
+            "label": "実行時間 (ms)",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Cloud Runエラー率",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"run.googleapis.com/request_count\" resource.type=\"cloud_run_revision\" metric.label.response_code_class!=\"2xx\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_RATE",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": [
+                      "metric.label.response_code_class"
+                    ]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "targetAxis": "Y1"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": {
+            "label": "エラー数/秒",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "ディスク使用量",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"cloudsql.googleapis.com/database/disk/bytes_used\" resource.type=\"cloudsql_database\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_MEAN",
+                    "groupByFields": [
+                      "resource.label.database_id"
+                    ]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "targetAxis": "Y1"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": {
+            "label": "使用量 (バイト)",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "CPU使用率",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"cloudsql.googleapis.com/database/cpu/utilization\" resource.type=\"cloudsql_database\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_MEAN",
+                    "groupByFields": [
+                      "resource.label.database_id"
+                    ]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "targetAxis": "Y1"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": {
+            "label": "使用率 (%)",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "メモリ使用率",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"cloudsql.googleapis.com/database/memory/utilization\" resource.type=\"cloudsql_database\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_MEAN",
+                    "groupByFields": [
+                      "resource.label.database_id"
+                    ]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "targetAxis": "Y1"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": {
+            "label": "使用率 (%)",
+            "scale": "LINEAR"
+          }
+        }
+      }
+    ]
+  }
+}
