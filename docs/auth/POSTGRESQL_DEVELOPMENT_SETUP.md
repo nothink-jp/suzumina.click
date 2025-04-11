@@ -10,70 +10,68 @@
 - Docker Compose のインストール
 - bun のインストール
 
+## セキュリティに関する注意事項
+
+### 環境変数の管理
+
+1. `.env.example`をコピーして`.env.local`を作成
+
+```bash
+cp .env.example .env.local
+```
+
+2. 強力なパスワードの生成
+
+```bash
+# PostgreSQLパスワードの生成
+openssl rand -base64 32
+
+# NextAuthシークレットの生成
+openssl rand -base64 32
+```
+
+3. 生成したパスワードを`.env.local`に設定
+
+**重要**: コミットする際は`.env.local`や実際のパスワードを含まないように注意してください。
+
+### 開発環境のセキュリティ
+
+- デフォルトパスワードは使用しない
+- 各開発者は独自の`.env.local`を管理
+- 本番環境の認証情報は別途、安全に管理
+
 ## 開発環境のセットアップ
 
-1. プロジェクトのルートディレクトリに移動:
+1. 環境変数の設定
 
 ```bash
-cd apps/web
+# .env.exampleをコピーして.env.localを作成
+cp .env.example .env.local
+
+# 必要な環境変数を設定
+vi .env.local
 ```
 
-2. docker-compose.ymlの作成:
-
-```yaml
-version: '3.8'
-services:
-  db:
-    image: postgres:17
-    restart: always
-    environment:
-      POSTGRES_USER: suzumina_app
-      POSTGRES_PASSWORD: devpassword
-      POSTGRES_DB: suzumina_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U suzumina_app -d suzumina_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
-```
-
-3. 開発用の環境変数を設定:
-
-```bash
-echo 'DATABASE_URL="postgres://suzumina_app:devpassword@localhost:5432/suzumina_db"' > .env.development
-```
-
-4. PostgreSQLコンテナの起動:
+2. データベースコンテナの起動
 
 ```bash
 docker compose up -d
 ```
 
-5. マイグレーションの実行:
+3. マイグレーションの実行
 
 ```bash
 bun run db:migrate
 ```
 
-## 開発フロー
-
-1. サーバーの起動:
+## データベースの接続確認
 
 ```bash
-bun run dev
-```
+# PostgreSQLへの接続
+docker compose exec db psql -U $POSTGRES_USER -d suzumina_db
 
-2. データベースの確認:
-
-```bash
-docker compose exec db psql -U suzumina_app -d suzumina_db
+# テーブル一覧の確認
+\dt
 ```
 
 ## トラブルシューティング
@@ -88,36 +86,33 @@ sudo lsof -i :5432
 # docker-compose.ymlの ports を "5433:5432" に変更
 ```
 
-### マイグレーションエラーが発生した場合
+### 認証エラーが発生する場合
 
 ```bash
-# データベースのリセット
-docker compose down -v
-docker compose up -d
-bun run db:migrate
+# 環境変数が正しく設定されているか確認
+echo $POSTGRES_USER
+echo $POSTGRES_PASSWORD
+
+# データベースの認証設定を確認
+docker compose exec db cat /var/lib/postgresql/data/pg_hba.conf
 ```
 
 ## 本番環境との違い
 
 1. SSL設定
    - 開発環境: SSL無効
-   - 本番環境: SSL有効
+   - 本番環境: SSL有効（必須）
 
-2. 接続方法
-   - 開発環境: 直接接続
-   - 本番環境: VPCコネクタ経由
+2. 認証設定
+   - 開発環境: パスワード認証
+   - 本番環境: IAM認証
 
-3. バックアップ設定
-   - 開発環境: なし
-   - 本番環境: 自動バックアップ有効
+3. ネットワーク
+   - 開発環境: ローカルネットワーク
+   - 本番環境: VPCネットワーク
 
-## 補足
+## 関連ドキュメント
 
-- PostgreSQL 17を選択した理由:
-  - 最新の機能とセキュリティ更新の利用
-  - パフォーマンスの改善
-  - 開発環境と本番環境の一貫性確保
-
-- データベースツール:
-  - [pgAdmin 4](https://www.pgadmin.org/)
-  - [DBeaver Community](https://dbeaver.io/)
+- [環境変数の設定](./DATABASE_URL_UPDATE.md)
+- [PostgreSQLデプロイ手順](./POSTGRESQL_DEPLOYMENT_PROCEDURE.md)
+- [PostgreSQLセキュリティガイドライン](https://www.postgresql.org/docs/17/auth-pg-hba-conf.html)
