@@ -12,6 +12,8 @@ interface ErrorDisplayProps {
  * 標準の div タグと Tailwind CSS を使用します。
  */
 export function ErrorDisplay({ description, details }: ErrorDisplayProps) {
+  const hasDetails = details && details.length > 0;
+
   return (
     // Alert を div に置き換え、Tailwind でスタイルを適用 (danger color)
     <div className="rounded-md bg-red-50 p-4 text-left">
@@ -21,7 +23,7 @@ export function ErrorDisplay({ description, details }: ErrorDisplayProps) {
         </div>
         <div className="ml-3">
           <p className="text-sm font-medium text-red-800">{description}</p>
-          {details && (
+          {hasDetails && (
             <div className="mt-2 text-sm text-red-700">
               {/* ul から role="list" を削除 */}
               <ul className="list-disc space-y-1 pl-5">
