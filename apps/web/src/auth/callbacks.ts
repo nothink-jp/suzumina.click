@@ -1,11 +1,12 @@
-import { eq } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+import { and, eq } from "drizzle-orm";
 import type { Account, Profile, Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import { db, users } from "../db"; // Drizzle の db と users テーブルをインポート
-import { getRequiredEnvVar } from "./utils"; // 環境変数取得ユーティリティをインポート
+import { accounts, db, users } from "../db";
+import { getRequiredEnvVar } from "./utils";
 
 /**
- * Discord プロファイルの型定義。NextAuth の Profile を拡張します。
+ * Discord プロファイルの型定義
  */
 interface DiscordProfile extends Profile {
   username?: string;
@@ -13,40 +14,47 @@ interface DiscordProfile extends Profile {
 }
 
 /**
- * NextAuth.js の認証コールバック関数群。
- * 認証フローの特定のポイントで実行され、動作をカスタマイズします。
+ * アカウントデータ処理用のユーティリティ
+ */
+function safeString(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return String(value);
+}
+
+/**
+ * NextAuth.js の認証コールバック関数群
  */
 export const callbacks = {
   /**
-   * サインイン試行時に呼び出されます。
-   * Discord 認証の場合、ユーザーが指定された Discord ギルドのメンバーであるかを確認し、
-   * データベースにユーザー情報を保存または更新します。
-   * @param params - signIn コールバックのパラメータ。
-   * @param params.account - プロバイダーのアカウント情報 (Discord)。
-   * @param params.profile - Discord から取得したユーザープロファイル。
-   * @returns 認証を許可する場合は true、拒否する場合は false。
+   * サインイン試行時に呼び出されます
    */
   async signIn({
     account,
     profile,
+    email,
+    user,
   }: {
     account: Account | null;
     profile?: DiscordProfile;
+    email?: string;
+    user: { id: string; email?: string | null };
   }): Promise<boolean> {
-    // Return type changed back to boolean
-    // アカウント情報とプロバイダーが正しいか検証
+    // アカウント情報の検証
     if (!account?.access_token || account.provider !== "discord") {
       console.error("Invalid account data for Discord sign in.");
       return false;
     }
-    // プロファイル ID が存在するか検証
+
+    // プロファイルの検証
     if (!profile?.id) {
       console.error("Invalid profile data from Discord.");
       return false;
     }
 
     try {
-      // Discord API を使用してユーザーが所属するギルドリストを取得
+      // Discord API でギルドメンバーシップを確認
       const response = await fetch("https://discord.com/api/users/@me/guilds", {
         headers: {
           Authorization: `Bearer ${account.access_token}`,
@@ -58,77 +66,102 @@ export const callbacks = {
           "Failed to fetch Discord guild data:",
           await response.text(),
         );
-        return false; // API リクエスト失敗
+        return false;
       }
 
       const guilds = await response.json();
-      let guildId: string;
-      try {
-        // 必須のギルド ID を環境変数から取得
-        guildId = getRequiredEnvVar("DISCORD_GUILD_ID");
-      } catch (configError) {
-        console.error(
-          "Required Discord Guild ID is not configured.",
-          configError,
-        );
-        return false; // 設定エラー
-      }
+      const guildId = getRequiredEnvVar("DISCORD_GUILD_ID");
 
-      // ユーザーが必須ギルドのメンバーであるかを確認
+      // ギルドメンバーシップの確認
       const isMember = guilds.some(
         (guild: { id: string }) => guild.id === guildId,
       );
 
       if (!isMember) {
         console.error(`User is not a member of the required guild: ${guildId}`);
-        return false; // ギルドメンバーでない場合は認証失敗
+        return false;
       }
 
       const now = new Date();
 
-      // データベースからユーザーを検索
-      const existingUser = await db.query.users.findFirst({
-        where: eq(users.id, profile.id),
+      // データベースからユーザーを検索（メールアドレスで）
+      const existingUserByEmail = email
+        ? await db.query.users.findFirst({
+            where: eq(users.email, email),
+          })
+        : null;
+
+      // データベースからユーザーを検索（IDで）
+      const existingUserById = await db.query.users.findFirst({
+        where: eq(users.id, user.id),
       });
 
-      if (!existingUser) {
-        // 新規ユーザーの場合は作成
-        await db.insert(users).values({
-          id: profile.id,
-          displayName: profile.username ?? `User_${profile.id.substring(0, 5)}`,
-          avatarUrl: profile.image_url ?? "",
-          role: "member",
-          email: profile.email ?? "",
-          createdAt: now,
-          updatedAt: now,
-        });
-      } else {
-        // 既存ユーザーの場合は更新
+      // 既存のアカウントがある場合
+      if (existingUserByEmail && existingUserByEmail.id !== user.id) {
+        // 異なるユーザーIDで同じメールアドレスが使用されている場合
+        console.error("Email is already associated with another account");
+        return false;
+      }
+
+      // ユーザーが存在する場合は更新
+      if (existingUserById) {
         await db
           .update(users)
           .set({
-            displayName: profile.username ?? existingUser.displayName,
-            avatarUrl: profile.image_url ?? existingUser.avatarUrl,
+            displayName: profile.username ?? existingUserById.displayName,
+            avatarUrl: profile.image_url ?? existingUserById.avatarUrl,
+            email: email ?? existingUserById.email,
             updatedAt: now,
           })
-          .where(eq(users.id, profile.id));
+          .where(eq(users.id, user.id));
+      } else {
+        // 新規ユーザーの場合は作成
+        await db.insert(users).values({
+          id: user.id,
+          displayName: profile.username ?? user.id,
+          avatarUrl: profile.image_url ?? "",
+          role: "member",
+          email: email ?? "",
+          createdAt: now,
+          updatedAt: now,
+        });
       }
 
-      return true; // Return true on success, let NextAuth handle redirect
+      // アカウントの関連付けを確認
+      const existingAccount = await db.query.accounts.findFirst({
+        where: and(
+          eq(accounts.provider, account.provider),
+          eq(accounts.providerAccountId, profile.id),
+        ),
+      });
+
+      // アカウントが存在しない場合は作成
+      if (!existingAccount) {
+        await db.insert(accounts).values({
+          id: randomUUID(),
+          userId: user.id,
+          type: account.type,
+          provider: account.provider,
+          providerAccountId: profile.id,
+          refreshToken: safeString(account.refresh_token),
+          accessToken: safeString(account.access_token),
+          expiresAt: account.expires_at ? Number(account.expires_at) : null,
+          tokenType: safeString(account.token_type),
+          scope: safeString(account.scope),
+          idToken: safeString(account.id_token),
+          sessionState: safeString(account.session_state),
+        });
+      }
+
+      return true;
     } catch (error) {
       console.error("Error during sign in callback:", error);
-      return false; // その他のエラーが発生した場合も認証失敗
+      return false;
     }
   },
 
   /**
-   * セッションがチェックされるたびに呼び出されます。
-   * JWT トークンに含まれるユーザー ID を使用してデータベースから最新のユーザー情報を取得し、
-   * セッションオブジェクトにマージします。
-   * @param params - session コールバックのパラメータ。
-   * @param params.session - 現在のセッションオブジェクト。
-   * @param params.token - JWT トークン。
-   * @returns 更新されたセッションオブジェクト。
+   * セッションがチェックされるたびに呼び出されます
    */
   async session({
     session,
@@ -137,18 +170,15 @@ export const callbacks = {
     session: Session;
     token: JWT;
   }): Promise<Session> {
-    // トークンにユーザーID (sub) がなければ元のセッションを返す
     if (!token.sub) {
       return session;
     }
 
     try {
-      // データベースからユーザーデータを取得
       const userData = await db.query.users.findFirst({
         where: eq(users.id, token.sub),
       });
 
-      // ユーザーデータが存在しない場合は元のセッションを返す
       if (!userData) {
         console.warn(
           `User data not found in database for session token sub: ${token.sub}`,
@@ -156,40 +186,33 @@ export const callbacks = {
         return session;
       }
 
-      // セッションの user オブジェクトに必要な情報を追加・更新
-      // session.user が存在することを保証 (NextAuth v5 の型変更に対応)
       if (!session.user) {
-        // 必須プロパティを含むデフォルト値を設定
         session.user = {
           id: token.sub,
           email: null,
           name: null,
           image: null,
-          displayName: "取得中...", // プレースホルダー
-          avatarUrl: "", // プレースホルダー
-          role: "member", // デフォルトロール
+          displayName: "取得中...",
+          avatarUrl: "",
+          role: "member",
         };
       }
+
       session.user.id = token.sub;
       session.user.displayName = userData.displayName;
       session.user.avatarUrl = userData.avatarUrl;
       session.user.role = userData.role;
-      // email は token から取得されることが多いため、ここでは上書きしない
+      session.user.email = userData.email;
 
-      return session; // 更新されたセッションを返す
+      return session;
     } catch (error) {
       console.error("Error fetching user data for session:", error);
-      return session; // エラー時も元のセッションを返す（部分的な情報でも）
+      return session;
     }
   },
 
   /**
-   * JWT が作成または更新されるたびに呼び出されます。
-   * ログイン時に Discord から取得したアクセストークンを JWT に含めます。
-   * @param params - jwt コールバックのパラメータ。
-   * @param params.token - 現在の JWT トークン。
-   * @param params.account - プロバイダーのアカウント情報（ログイン時のみ）。
-   * @returns 更新された JWT トークン。
+   * JWT が作成または更新されるたびに呼び出されます
    */
   async jwt({
     token,
@@ -198,13 +221,9 @@ export const callbacks = {
     token: JWT;
     account: Account | null;
   }): Promise<JWT> {
-    // ログイン時 (account が存在する) かつ Discord プロバイダーの場合
     if (account?.provider === "discord") {
-      token.accessToken = account.access_token; // アクセストークンを JWT に追加
-      // 必要に応じて他の情報 (例: Discord ID) をトークンに追加可能
-      // token.discordId = account.providerAccountId;
+      token.accessToken = account.access_token;
     }
-    // token.sub は NextAuth が自動でユーザーID (profile.id) を設定
-    return token; // 更新されたトークンを返す
+    return token;
   },
 };

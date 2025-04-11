@@ -1,6 +1,5 @@
 import { type InferInsertModel, and, eq } from "drizzle-orm";
-import type { Adapter, AdapterUser } from "next-auth/adapters";
-// Import the inferred insert type and the table itself for type inference
+import type { Adapter, AdapterAccount, AdapterUser } from "next-auth/adapters";
 import {
   type accounts as AccountsTable,
   accounts,
@@ -13,9 +12,55 @@ import {
 // Define the insert type alias
 type AccountInsert = InferInsertModel<typeof AccountsTable>;
 
+/**
+ * アカウントデータを安全に処理するためのユーティリティ関数
+ */
+function safeString(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return String(value);
+}
+
+function safeNumber(value: unknown): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const num = Number(value);
+  if (Number.isNaN(num)) {
+    return null;
+  }
+  return num;
+}
+
+/**
+ * NextAuth.js Drizzle Adapter
+ */
 export function DrizzleAdapter(): Adapter {
-  return {
+  const adapter: Adapter = {
     async createUser(userData): Promise<AdapterUser> {
+      if (userData.email) {
+        const existingUser = await db.query.users.findFirst({
+          columns: {
+            id: true,
+            displayName: true,
+            avatarUrl: true,
+            email: true,
+          },
+          where: eq(users.email, userData.email),
+        });
+
+        if (existingUser) {
+          return {
+            id: existingUser.id,
+            name: existingUser.displayName,
+            email: existingUser.email || "",
+            image: existingUser.avatarUrl,
+            emailVerified: null,
+          };
+        }
+      }
+
       const now = new Date();
       const id = crypto.randomUUID();
 
@@ -156,28 +201,50 @@ export function DrizzleAdapter(): Adapter {
       await db.delete(users).where(eq(users.id, userId));
     },
 
-    async linkAccount(account) {
-      // 型変換を明示的に行い、Drizzleが期待する型に合わせる
-      const expiresAtValue = account.expires_at
-        ? Number.parseInt(String(account.expires_at), 10)
-        : null;
+    async linkAccount(account: AdapterAccount): Promise<void> {
+      // アカウントが既に存在するか確認
+      const existingAccount = await db.query.accounts.findFirst({
+        where: and(
+          eq(accounts.provider, account.provider),
+          eq(accounts.providerAccountId, account.providerAccountId),
+        ),
+      });
 
-      // 各フィールドを個別に処理
-      await db.insert(accounts).values({
+      if (existingAccount) {
+        // アカウントが存在する場合は関連付けを更新
+        await db
+          .update(accounts)
+          .set({
+            userId: account.userId,
+            accessToken: safeString(account.access_token),
+            refreshToken: safeString(account.refresh_token),
+            expiresAt: safeNumber(account.expires_at),
+            tokenType: safeString(account.token_type),
+            scope: safeString(account.scope),
+            idToken: safeString(account.id_token),
+            sessionState: safeString(account.session_state),
+          })
+          .where(eq(accounts.id, existingAccount.id));
+        return;
+      }
+
+      // 新規アカウントの作成
+      const accountData: AccountInsert = {
         id: crypto.randomUUID(),
         userId: account.userId,
         type: account.type,
         provider: account.provider,
         providerAccountId: account.providerAccountId,
-        refreshToken: account.refresh_token ?? null,
-        accessToken: account.access_token ?? null,
-        expiresAt:
-          expiresAtValue !== null ? new Date(expiresAtValue * 1000) : null, // Convert number (seconds) to Date
-        tokenType: account.token_type ?? null,
-        scope: account.scope ?? null,
-        idToken: account.id_token ?? null,
-        sessionState: account.session_state ?? null,
-      } as AccountInsert); // Cast the entire object to the inferred insert type
+        refreshToken: safeString(account.refresh_token),
+        accessToken: safeString(account.access_token),
+        expiresAt: safeNumber(account.expires_at),
+        tokenType: safeString(account.token_type),
+        scope: safeString(account.scope),
+        idToken: safeString(account.id_token),
+        sessionState: safeString(account.session_state),
+      };
+
+      await db.insert(accounts).values(accountData);
     },
 
     async unlinkAccount({ provider, providerAccountId }) {
@@ -304,4 +371,6 @@ export function DrizzleAdapter(): Adapter {
       return verificationToken;
     },
   };
+
+  return adapter;
 }
