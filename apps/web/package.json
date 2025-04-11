@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "NODE_ENV=production DATABASE_URL=postgres://localhost/suzumina_db NEXTAUTH_URL=http://localhost DISCORD_CLIENT_ID=dummy next build",
+    "build": "NODE_ENV=production DATABASE_URL=postgres://localhost/suzumina_db NEXTAUTH_URL=http://localhost DISCORD_CLIENT_ID=dummy DISCORD_CLIENT_SECRET=dummy next build",
     "start": "next start",
     "lint": "biome lint .",
     "lint:fix": "biome lint --fix .",
