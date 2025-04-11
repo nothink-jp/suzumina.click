@@ -3,11 +3,11 @@ import "@/../tests/setup"; // ルートからの実行を考慮したパスに�
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import type { Session } from "next-auth"; // Session 型をインポート
 import {
+  mockDb,
   resetMockDrizzle,
   setMockError,
   setMockUser,
 } from "../../tests/mocks/drizzle";
-import { mockDb } from "../../tests/mocks/drizzle";
 import {
   mockDiscordAccount,
   mockDiscordGuilds,
@@ -107,14 +107,12 @@ describe("認証コールバック", () => {
       expect(result).toBe(false);
     });
 
-    it("Guild IDが未設定 (ConfigurationError) の場合は認証失敗", async () => {
+    it("Guild IDが未設定の場合は認証失敗", async () => {
       process.env = {
         ...originalEnv,
-        NODE_ENV: "production", // 本番環境をシミュレートしてエラーを発生させる
-        NEXT_PHASE: undefined,
-        DISCORD_GUILD_ID: undefined, // 未設定にする
+        NODE_ENV: "production",
+        DISCORD_GUILD_ID: undefined,
       };
-      // getRequiredEnvVar が ConfigurationError をスローするはず
       const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
@@ -123,12 +121,12 @@ describe("認証コールバック", () => {
     });
 
     it("ギルドメンバーでない場合はリダイレクト", async () => {
-      process.env.DISCORD_GUILD_ID = "non-member-guild-id"; // 存在しないギルドID
+      process.env.DISCORD_GUILD_ID = "non-member-guild-id";
       const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,
       });
-      expect(result).toBe("/auth/not-member"); // リダイレクト先のURLを期待
+      expect(result).toBe("/auth/not-member");
     });
 
     it("ギルドメンバーの場合は認証成功", async () => {
@@ -161,7 +159,6 @@ describe("認証コールバック", () => {
     });
 
     it("渡された session に user がない場合、元のセッションを返す", async () => {
-      // user を削除し、意図的な型違反を as unknown as Session で明示
       const sessionWithoutUser = {
         ...mockSession,
         user: undefined,
@@ -170,30 +167,28 @@ describe("認証コールバック", () => {
         session: sessionWithoutUser,
         token: mockToken,
       });
-      // 新しい実装では session.user が存在しない場合は初期化しないため、
-      // 元のセッションがそのまま返される
       expect(result).toEqual(sessionWithoutUser);
     });
   });
 
   describe("jwt", () => {
-    it("Discord ログイン時 (account あり) は accessToken をトークンに追加する", async () => {
+    it("Discord ログイン時は accessToken をトークンに追加する", async () => {
       const initialToken = { sub: "user123" };
       const result = await authConfig.callbacks?.jwt({
         token: initialToken,
         account: mockDiscordAccount,
       });
       expect(result?.accessToken).toBe(mockDiscordAccount.access_token);
-      expect(result?.sub).toBe("user123"); // 他のプロパティは維持される
+      expect(result?.sub).toBe("user123");
     });
 
-    it("ログイン時以外 (account なし) はトークンを変更しない", async () => {
+    it("ログイン時以外はトークンを変更しない", async () => {
       const initialToken = { sub: "user123", accessToken: "oldToken" };
       const result = await authConfig.callbacks?.jwt({
-        token: { ...initialToken }, // コピーを渡す
+        token: { ...initialToken },
         account: null,
       });
-      expect(result).toEqual(initialToken); // トークンは変更されない
+      expect(result).toEqual(initialToken);
     });
 
     it("Discord 以外のプロバイダーの場合は accessToken を追加しない", async () => {
@@ -203,7 +198,7 @@ describe("認証コールバック", () => {
         token: initialToken,
         account: otherAccount,
       });
-      expect(result?.accessToken).toBeUndefined(); // accessToken は追加されない
+      expect(result?.accessToken).toBeUndefined();
       expect(result?.sub).toBe("user123");
     });
   });

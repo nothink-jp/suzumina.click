@@ -13,7 +13,10 @@ import {
 type AccountInsert = InferInsertModel<typeof AccountsTable>;
 
 /**
- * アカウントデータを安全に処理するためのユーティリティ関数
+ * 値を安全に文字列に変換します。
+ * null または undefined の場合は null を返します。
+ * @param value - 変換する値
+ * @returns 文字列または null
  */
 function safeString(value: unknown): string | null {
   if (value === null || value === undefined) {
@@ -22,6 +25,12 @@ function safeString(value: unknown): string | null {
   return String(value);
 }
 
+/**
+ * 値を安全に数値に変換します。
+ * null、undefined、または無効な数値の場合は null を返します。
+ * @param value - 変換する値
+ * @returns 数値または null
+ */
 function safeNumber(value: unknown): number | null {
   if (value === null || value === undefined) {
     return null;
@@ -35,6 +44,7 @@ function safeNumber(value: unknown): number | null {
 
 /**
  * NextAuth.js Drizzle Adapter
+ * PostgreSQL用のカスタムアダプターを提供します。
  */
 export function DrizzleAdapter(): Adapter {
   const adapter: Adapter = {
@@ -202,7 +212,6 @@ export function DrizzleAdapter(): Adapter {
     },
 
     async linkAccount(account: AdapterAccount): Promise<void> {
-      // アカウントが既に存在するか確認
       const existingAccount = await db.query.accounts.findFirst({
         where: and(
           eq(accounts.provider, account.provider),
@@ -211,7 +220,6 @@ export function DrizzleAdapter(): Adapter {
       });
 
       if (existingAccount) {
-        // アカウントが存在する場合は関連付けを更新
         await db
           .update(accounts)
           .set({
@@ -228,7 +236,6 @@ export function DrizzleAdapter(): Adapter {
         return;
       }
 
-      // 新規アカウントの作成
       const accountData: AccountInsert = {
         id: crypto.randomUUID(),
         userId: account.userId,

@@ -9,9 +9,17 @@ import { db, users } from "../src/db";
  * 2. 全ユーザーの取得
  * 3. ユーザーデータの更新
  * 4. 複数回の連続操作
+ * 5. 同時実行テスト
  */
 
-// 実行時間を測定するユーティリティ関数
+/**
+ * 関数の実行時間を測定するユーティリティ関数
+ *
+ * @param name - テストケースの名前
+ * @param fn - 実行する非同期関数
+ * @param iterations - 繰り返し回数（デフォルト: 1）
+ * @returns 最後の実行結果
+ */
 async function measureExecutionTime<T>(
   name: string,
   fn: () => Promise<T>,
@@ -33,10 +41,21 @@ async function measureExecutionTime<T>(
     `[${name}] 完了: ${duration.toFixed(2)}ms (${iterations}回実行, 平均: ${avgDuration.toFixed(2)}ms)`,
   );
 
-  // result は少なくとも1回は設定されるため、undefined ではないはず
   return result as T;
 }
 
+/**
+ * メインのテスト実行関数
+ *
+ * 以下のパフォーマンステストを実行します：
+ * 1. 単一ユーザーの取得（10回）
+ * 2. 全ユーザーの取得（10回）
+ * 3. ユーザーデータの更新（10回）
+ * 4. 複数の連続操作（10回）
+ * 5. 同時実行テスト（10並列）
+ *
+ * @throws ユーザーが存在しない場合やデータベースエラーの場合
+ */
 async function main() {
   try {
     console.info("=== パフォーマンス検証開始 ===");

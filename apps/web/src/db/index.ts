@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "./schema";
+import { accounts, sessions, users, verificationTokens } from "./schema";
 
 // 環境変数から接続情報を取得
 const isLocalDev = process.env.NODE_ENV === "development";
@@ -20,7 +20,12 @@ const client = postgres(databaseUrl, {
 
 // Drizzle ORMクライアントの初期化
 export const db = drizzle(client, {
-  schema,
+  schema: { users, accounts, sessions, verificationTokens },
 });
 
-export * from "./schema";
+export {
+  users,
+  accounts,
+  sessions,
+  verificationTokens,
+} from "./schema";
