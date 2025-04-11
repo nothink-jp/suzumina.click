@@ -1,18 +1,10 @@
 import "@/../tests/setup";
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  mock,
-} from "bun:test";
-import { setMockError } from "@/../tests/mocks/drizzle";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, mock } from "bun:test";
+import type { Provider } from "next-auth/providers";
 import type { NextAuthConfig } from "next-auth";
 import type { AdapterUser } from "next-auth/adapters";
-import type { Provider } from "next-auth/providers";
 import { DrizzleAdapter } from "./auth/drizzle-adapter";
+import { setMockError } from "@/../tests/mocks/drizzle";
 
 describe("NextAuth 設定", () => {
   const originalEnv = { ...process.env };
@@ -26,6 +18,8 @@ describe("NextAuth 設定", () => {
       DISCORD_CLIENT_SECRET: "test-client-secret",
       NEXTAUTH_SECRET: "test-secret",
       NEXTAUTH_URL: "http://localhost:3000",
+      // 必須のNODE_ENV
+      NODE_ENV: process.env.NODE_ENV || "test",
     };
   });
 
@@ -78,7 +72,7 @@ describe("NextAuth 設定", () => {
 
     it("PostgreSQL接続エラーを適切に処理できる", async () => {
       setMockError(new Error("Database connection failed"));
-
+      
       const adapter = DrizzleAdapter();
       if (!adapter.createUser) {
         throw new Error("Adapter createUser method not implemented");
@@ -92,9 +86,9 @@ describe("NextAuth 設定", () => {
         image: null,
       };
 
-      await expect(adapter.createUser(testUser)).rejects.toThrow(
-        "Database connection failed",
-      );
+      await expect(
+        adapter.createUser(testUser),
+      ).rejects.toThrow("Database connection failed");
     });
 
     it("セッション設定が正しく設定されている", () => {
@@ -105,30 +99,34 @@ describe("NextAuth 設定", () => {
 
     it("クッキー設定が正しく設定されている (開発環境)", async () => {
       process.env = {
-        ...process.env,
+        ...originalEnv,
+        DISCORD_CLIENT_ID: "test-client-id",
+        DISCORD_CLIENT_SECRET: "test-client-secret",
+        NEXTAUTH_SECRET: "test-secret",
+        NEXTAUTH_URL: "http://localhost:3000",
         NODE_ENV: "development",
-        NEXT_PHASE: undefined,
       };
       authModule = await import("./auth");
-
+      
       const config = authModule.authConfig;
       expect(config.cookies?.sessionToken?.options?.secure).toBe(false);
       expect(config.cookies?.sessionToken?.options?.httpOnly).toBe(true);
       expect(config.cookies?.sessionToken?.options?.sameSite).toBe("lax");
       expect(config.cookies?.sessionToken?.options?.path).toBe("/");
-      expect(config.cookies?.sessionToken?.name).toBe(
-        "next-auth.session-token",
-      );
+      expect(config.cookies?.sessionToken?.name).toBe("next-auth.session-token");
     });
 
     it("クッキー設定が正しく設定されている (本番ランタイム環境)", async () => {
       process.env = {
-        ...process.env,
+        ...originalEnv,
+        DISCORD_CLIENT_ID: "test-client-id",
+        DISCORD_CLIENT_SECRET: "test-client-secret",
+        NEXTAUTH_SECRET: "test-secret",
+        NEXTAUTH_URL: "http://localhost:3000",
         NODE_ENV: "production",
-        NEXT_PHASE: undefined,
       };
       authModule = await import("./auth");
-
+      
       const config = authModule.authConfig;
       expect(config.cookies?.sessionToken?.options?.secure).toBe(true);
     });
@@ -156,36 +154,46 @@ describe("NextAuth 設定", () => {
 
     it("デバッグフラグが正しく設定されている (開発環境)", async () => {
       process.env = {
-        ...process.env,
+        ...originalEnv,
+        DISCORD_CLIENT_ID: "test-client-id",
+        DISCORD_CLIENT_SECRET: "test-client-secret",
+        NEXTAUTH_SECRET: "test-secret",
+        NEXTAUTH_URL: "http://localhost:3000",
         NODE_ENV: "development",
-        NEXT_PHASE: undefined,
       };
       authModule = await import("./auth");
-
+      
       const config = authModule.authConfig;
       expect(config.debug).toBe(true);
     });
 
     it("デバッグフラグが正しく設定されている (ビルド時)", async () => {
       process.env = {
-        ...process.env,
+        ...originalEnv,
+        DISCORD_CLIENT_ID: "test-client-id",
+        DISCORD_CLIENT_SECRET: "test-client-secret",
+        NEXTAUTH_SECRET: "test-secret",
+        NEXTAUTH_URL: "http://localhost:3000",
         NODE_ENV: "production",
         NEXT_PHASE: "phase-production-build",
       };
       authModule = await import("./auth");
-
+      
       const config = authModule.authConfig;
       expect(config.debug).toBe(false);
     });
 
     it("デバッグフラグが正しく設定されている (本番ランタイム)", async () => {
       process.env = {
-        ...process.env,
+        ...originalEnv,
+        DISCORD_CLIENT_ID: "test-client-id",
+        DISCORD_CLIENT_SECRET: "test-client-secret",
+        NEXTAUTH_SECRET: "test-secret",
+        NEXTAUTH_URL: "http://localhost:3000",
         NODE_ENV: "production",
-        NEXT_PHASE: undefined,
       };
       authModule = await import("./auth");
-
+      
       const config = authModule.authConfig;
       expect(config.debug).toBe(false);
     });
