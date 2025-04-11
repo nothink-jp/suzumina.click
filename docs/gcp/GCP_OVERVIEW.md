@@ -8,7 +8,7 @@ suzuminaclick の Google Cloud Platform（GCP）デプロイに関する概要�
 flowchart TD
     A["ユーザー"] --> B["Cloud Run - Next.js Web App"]
     D["Cloud Scheduler"] --> E["Cloud Run Jobs - バッチ処理"]
-    E <--> F["Cloud Firestore - 構造化データ"]
+    E <--> F["Cloud SQL - PostgreSQL"]
     E <--> J["Cloud Storage - 大容量ファイル"]
     G["GitHub Actions"] --> H["CI/CD Pipeline"]
     H --> B
@@ -23,7 +23,7 @@ flowchart TD
 |--------------|------------|--------|------|
 | Webフロントエンド | Cloud Run | ユーザーインターフェース提供 | Next.jsアプリケーションをホスティング。<br>**Cloud Run設定:** サービス名 `web`, 最小1/最大2インスタンス, 1GBメモリ, 1CPU, 60秒タイムアウト, HTTPS必須。<br>**Dockerfile:** マルチステージビルド (Node.js 22 Alpine, Bun), 依存関係キャッシュ最適化, Next.jsスタンドアロン出力。<br>**Next.js設定:** `output: 'standalone'`, `serverActions: true`。詳細は `apps/web/README.md` 参照。 |
 | バッチ処理 | Cloud Run Jobs | 定期的なデータ同期と処理 | |
-| データベース | Firestore | 構造化データの保存 | ユーザー情報、アプリ設定など。<br>**設計原則:** 浅いコレクション、読み取りパターン最適化、データ整合性確保、インデックス活用、1MB上限考慮。<br>**認証:** Cloud Run環境ではサービスアカウント権限 (ADC) を自動利用。 |
+| データベース | Cloud SQL | ユーザーデータと認証情報の永続化 | PostgreSQL 17インスタンス。<br>**設計原則:** プライベートIPアクセス、SSL/TLS暗号化、自動バックアップ、ポイントインタイムリカバリ。<br>**認証:** Cloud Run環境からSecure IAM認証を使用。<br>**パフォーマンス設定:** 最適化済み（max_connections=100, shared_buffers=128MB等）|
 | オブジェクトストレージ | Cloud Storage | 大容量ファイルの保存 | メディアファイル、バックアップ、ログなど。<br>**設計原則:** アクセス頻度に基づくクラス選択、ライフサイクル管理、アクセス制御、CDN連携。 |
 | CI/CD | GitHub Actions | 自動デプロイとテスト | アプリケーションコードの変更を検知し、テスト、Dockerイメージビルド＆プッシュ、Cloud Runサービスのイメージ更新を行う。詳細は [CI/CD設計](./GCP_CICD.md) 参照。 |
 | シークレット管理 | Secret Manager | 認証情報と機密データの管理 | |
@@ -32,24 +32,43 @@ flowchart TD
 
 ## 設計原則とベストプラクティス
 
-- **サーバーレスファースト**: Cloud Run, Firestore などマネージドサービスを優先。
+- **サーバーレスファースト**: Cloud Run などマネージドサービスを優先。
 - **マイクロサービス指向**: 機能ごとに独立したサービスを検討。
 - **セキュリティバイデザイン**: 最小権限、機密情報保護 (Secret Manager)、通信暗号化 (HTTPS)。
-- **コスト最適化**: オートスケーリング、適切なリソースサイジング、ストレージクラス選択、モニタリング。
+- **コスト最適化**: オートスケーリング、適切なリソースサイジング、モニタリング。
 
 ## ストレージ戦略
 
-- **構造化データ**: Cloud Firestore を使用。
+- **構造化データ**: Cloud SQL (PostgreSQL 17) を使用。
+  - ユーザー認証情報、セッション管理
+  - アプリケーションデータ
+  - トランザクション処理が必要なデータ
 - **非構造化・大容量データ**: Cloud Storage を使用。
 - **バックアップ**:
-  - Firestore: Cloud Run Jobsによる自動バックアップ（日次増分・週次完全）、Cloud Storageへエクスポート。
+  - PostgreSQL: Cloud SQLの自動バックアップ（日次）とポイントインタイムリカバリ。
   - Cloud Storage: 複数リージョンストレージ、オブジェクトバージョニング。
 
 ## デプロイ環境
 
-- **開発環境**: `suzumina-click-dev`
-- **本番環境**: `suzumina-click-prod`（計画中）
-- **リージョン**: `asia-northeast1`（東京）
+### 現在の環境
+
+- **ローカル開発環境**
+  - PostgreSQL 17（Dockerコンテナ）
+  - 開発用とテスト用の2つのデータベース
+  - パフォーマンス最適化設定済み
+
+- **GCP開発環境** (`suzumina-click-dev`)
+  - Cloud Run + Cloud SQL (PostgreSQL 17)
+  - 開発版のデプロイとテスト用
+  - リージョン: `asia-northeast1`（東京）
+  - VPCネットワーク経由のプライベート接続
+
+### 計画中の環境
+
+- **GCP本番環境** (`suzumina-click`）
+  - 環境構築とプロジェクト設定は今後対応予定
+  - 開発環境と同様のアーキテクチャを予定
+  - リージョン: `asia-northeast1`（東京）
 
 ## セキュリティ設定
 
@@ -59,11 +78,19 @@ flowchart TD
   - バッチジョブ: サービスアカウントベース。
   - CI/CD: Workload Identity FederationによるGitHub Actionsからの認証。詳細は [CI/CD設計](./GCP_CICD.md) 参照。
 - **Secret Manager**: 機密情報管理。命名規則 `{service}-{purpose}-{env}`、最小権限アクセス、バージョン管理。
-  - **必須シークレット (dev環境):** `nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev`, `discord-guild-id-dev`, `nextauth-url-dev`, `auth-trust-host-dev`。
+  - **必須シークレット (dev環境):** `nextauth-secret-dev`, `discord-client-id-dev`, `discord-client-secret-dev`, `discord-guild-id-dev`, `nextauth-url-dev`, `auth-trust-host-dev`, `database-url-dev`, `database-url-test-dev`。
 - **サービスアカウント**: 主要アカウント (`github-actions-deployer`, `app-runtime`) に最小権限付与、キー発行最小化。
 
 ## 外部API連携
 
 - **YouTube Data API**: 将来的な連携を検討中 (優先度: 低)。
 
-最終更新日: 2025年4月7日
+## 注記
+
+- 全環境でPostgreSQL 17を採用（2025年4月）
+  - 開発環境: Dockerコンテナ
+  - GCP環境: Cloud SQL
+- データベース環境の統一により、開発からデプロイまでの一貫性を確保
+- 詳細な設定手順は [PostgreSQL開発環境セットアップ](../auth/POSTGRESQL_DEVELOPMENT_SETUP.md) を参照
+
+最終更新日: 2025年4月11日

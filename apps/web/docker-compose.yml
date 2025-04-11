@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-suzumina_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword123!@#}
+      POSTGRES_MULTIPLE_DATABASES: suzumina_db,suzumina_test_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-suzumina_app} -d suzumina_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command:
+      - "postgres"
+      # パフォーマンス設定
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=128MB"
+      - "-c"
+      - "effective_cache_size=512MB"
+      - "-c"
+      - "work_mem=4MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+
+volumes:
+  postgres_data:

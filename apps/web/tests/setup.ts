@@ -1,12 +1,10 @@
 import { afterEach, beforeAll, mock } from "bun:test";
-import { cleanup } from "@testing-library/react"; // cleanup をインポート
-
-import { createMockFirestore } from "./mocks/firestore"; // モックファクトリをインポート
-import type { MockFirestore } from "./mocks/firestore"; // モックの型をインポート
+import { cleanup } from "@testing-library/react";
+import { mockDb } from "./mocks/drizzle";
 
 // テスト実行後のクリーンアップ
 afterEach(() => {
-  cleanup(); // cleanup を呼び出す
+  cleanup();
 });
 
 // グローバルなモック設定
@@ -19,8 +17,10 @@ beforeAll(() => {
     DISCORD_CLIENT_ID: "test-client-id",
     DISCORD_CLIENT_SECRET: "test-client-secret",
     DISCORD_GUILD_ID: "test-guild-id",
-    GOOGLE_CLOUD_PROJECT: "test-project", // テスト用のプロジェクトID
-    GOOGLE_APPLICATION_CREDENTIALS: "", // 認証情報を無効化
+    // PostgreSQL接続URL（環境変数から取得、未設定の場合はデフォルト値を使用）
+    DATABASE_URL:
+      process.env.DATABASE_URL ||
+      "postgres://suzumina_app:test_password@localhost:5432/suzumina_test_db",
   };
 
   process.env = {
@@ -43,19 +43,14 @@ beforeAll(() => {
     default: () => mockNextAuth,
   }));
 
-  // Firestoreのモック
-  mock.module("@google-cloud/firestore", () => {
-    class MockFirestoreImpl implements MockFirestore {
-      collection: MockFirestore["collection"];
-      constructor() {
-        const mockInstance = createMockFirestore();
-        this.collection = mockInstance.collection;
-      }
-    }
-    return {
-      Firestore: MockFirestoreImpl,
-    };
-  });
+  // dbモジュールのモック
+  mock.module("../src/db", () => ({
+    db: mockDb,
+    users: { name: "users" },
+    accounts: { name: "accounts" },
+    sessions: { name: "sessions" },
+    verificationTokens: { name: "verificationTokens" },
+  }));
 
   // fetchのモック
   const mockFetchImplementation = () =>
