@@ -31,7 +31,7 @@ COPY ./apps/web ./apps/web
 COPY ./packages ./packages
 
 # Turboでビルド実行時に環境変数を明示的に渡す
-RUN NODE_ENV=production bun run turbo run build --filter=@suzumina.click/web...
+RUN NODE_ENV=production DATABASE_URL="postgres://suzumina_app:build_password@localhost:5432/suzumina_db" bun run turbo run build --filter=@suzumina.click/web...
 
 # --- Runner Stage ---
 FROM oven/bun:alpine AS runner
