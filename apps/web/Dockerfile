@@ -29,8 +29,8 @@ COPY biome.json biome.json
 COPY ./apps/web ./apps/web
 COPY ./packages ./packages
 
-# Use the correct package name in the filter
-RUN bun run turbo run build --filter=@suzumina.click/web...
+# Turboでビルド実行時に環境変数を明示的に渡す
+RUN NODE_ENV=production bun run turbo run build --filter=@suzumina.click/web...
 
 # --- Runner Stage ---
 FROM oven/bun:alpine AS runner

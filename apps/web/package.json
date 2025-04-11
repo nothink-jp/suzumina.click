@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "biome lint .",
     "lint:fix": "biome lint --fix .",

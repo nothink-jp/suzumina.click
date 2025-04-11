@@ -1,6 +1,5 @@
 /**
  * 本番環境で必須の環境変数が設定されていない場合にスローされるエラー。
- * 環境変数の名前とエラーメッセージを含みます。
  */
 export class ConfigurationError extends Error {
   constructor(envVar: string) {
@@ -13,7 +12,7 @@ export class ConfigurationError extends Error {
 
 /**
  * 本番環境での実行かどうかを判定します。
- * NODE_ENV が "production" の場合に true を返します。
+ * development、test環境以外は本番とみなします。
  * @returns 本番環境の場合は true、それ以外は false
  */
 export const isProductionRuntime = () => {
@@ -21,8 +20,9 @@ export const isProductionRuntime = () => {
 };
 
 /**
- * 環境変数を取得します。
- * 本番環境で未設定の場合はエラーをスローし、開発環境では空文字列を返します。
+ * 環境変数を取得し、必要に応じてエラーをスローします。
+ * 本番環境で未設定の場合はエラーをスローします。
+ * 開発環境では空文字列を返します。
  *
  * @param key - 取得する環境変数の名前
  * @returns 環境変数の値（未設定時は開発環境のみ空文字列）

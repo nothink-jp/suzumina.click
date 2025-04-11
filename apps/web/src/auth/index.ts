@@ -1,21 +1,14 @@
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthConfig } from "next-auth";
 import Discord from "next-auth/providers/discord";
-import { callbacks } from "./callbacks";
-import { getRequiredEnvVar, isBuildTime, isProductionRuntime } from "./utils";
+import { getRequiredEnvVar, isProductionRuntime } from "./utils";
 
 // NextAuthに必要な環境変数のチェックと取得
 const baseUrl = getRequiredEnvVar("NEXTAUTH_URL");
 const trustHost = getRequiredEnvVar("AUTH_TRUST_HOST");
-const effectiveBaseUrl = isBuildTime() ? "https://example.com" : baseUrl;
 
 // Next-Authの設定
-export const {
-  handlers: { GET, POST },
-  auth,
-  signIn,
-  signOut,
-} = NextAuth({
-  ...(effectiveBaseUrl && { url: new URL(effectiveBaseUrl) }),
+export const authConfig = {
+  ...(baseUrl && { url: new URL(baseUrl) }),
   providers: [
     Discord({
       clientId: getRequiredEnvVar("DISCORD_CLIENT_ID"),
@@ -45,18 +38,86 @@ export const {
       },
     },
   },
-  callbacks,
-  debug: process.env.NODE_ENV === "development" && !isBuildTime(),
+  callbacks: {
+    async signIn({ account, profile }) {
+      if (!account?.access_token || account.provider !== "discord") {
+        console.error("Invalid account data for Discord sign in.");
+        return false;
+      }
+
+      if (!profile?.sub) {
+        console.error("Invalid profile data from Discord.");
+        return false;
+      }
+
+      try {
+        // Discord API でギルドメンバーシップを確認
+        const response = await fetch(
+          "https://discord.com/api/users/@me/guilds",
+          {
+            headers: {
+              Authorization: `Bearer ${account.access_token}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          console.error(
+            "Failed to fetch Discord guild data:",
+            await response.text(),
+          );
+          return false;
+        }
+
+        const guilds = await response.json();
+        const guildId = getRequiredEnvVar("DISCORD_GUILD_ID");
+
+        // ギルドメンバーシップの確認
+        const isMember = guilds.some(
+          (guild: { id: string }) => guild.id === guildId,
+        );
+
+        if (!isMember) {
+          return "/auth/not-member";
+        }
+
+        return true;
+      } catch (error) {
+        console.error("Error during sign in:", error);
+        return false;
+      }
+    },
+    async session({ session, token }) {
+      if (token.sub && session.user) {
+        session.user.id = token.sub;
+      }
+      return session;
+    },
+    async jwt({ token, account }) {
+      if (account?.provider === "discord") {
+        token.accessToken = account.access_token;
+      }
+      return token;
+    },
+  },
+  debug: !isProductionRuntime(),
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",
   },
   trustHost: true,
-});
+} satisfies NextAuthConfig;
+
+// Next-Auth v5 のハンドラーとヘルパー関数
+export const {
+  handlers: { GET, POST },
+  auth,
+  signIn,
+  signOut,
+} = NextAuth(authConfig);
 
 // 他のモジュールをエクスポート
 export * from "./utils";
-export * from "./callbacks";
 
 /**
  * NextAuth の型定義を拡張し、アプリケーション固有のユーザー情報をセッションと JWT に含めます。
@@ -91,7 +152,5 @@ declare module "next-auth" {
   interface JWT {
     /** Discord のアクセストークン (ログイン時のみ) */
     accessToken?: string;
-    // 他のカスタムクレームを追加可能
-    // discordId?: string;
   }
 }
