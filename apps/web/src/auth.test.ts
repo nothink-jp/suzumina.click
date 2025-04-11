@@ -1,11 +1,11 @@
 import "@/../tests/setup";
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import { setMockError } from "@/../tests/mocks/drizzle";
+import type { NextAuthConfig } from "next-auth";
+import type { AdapterUser } from "next-auth/adapters";
 import type { Provider } from "next-auth/providers";
 import { GET, POST, auth, signIn, signOut } from "./auth";
 import { DrizzleAdapter } from "./auth/drizzle-adapter";
-import { setMockError } from "@/../tests/mocks/drizzle";
-import type { AdapterUser } from "next-auth/adapters";
-import type { NextAuthConfig } from "next-auth";
 
 describe("NextAuth 設定", () => {
   const originalEnv = { ...process.env };
@@ -57,8 +57,7 @@ describe("NextAuth 設定", () => {
     });
 
     it("アダプターが正しく設定されている", async () => {
-      process.env.DATABASE_URL =
-        "postgres://test:test@localhost:5432/test_db";
+      process.env.DATABASE_URL = "postgres://test:test@localhost:5432/test_db";
       const config = await getAuthConfig();
       expect(config.adapter).toBeDefined();
       expect(typeof config.adapter).toBe(typeof DrizzleAdapter());
@@ -66,7 +65,7 @@ describe("NextAuth 設定", () => {
 
     it("PostgreSQL接続エラーを適切に処理できる", async () => {
       setMockError(new Error("Database connection failed"));
-      
+
       const adapter = DrizzleAdapter();
       if (!adapter.createUser) {
         throw new Error("Adapter createUser method not implemented");
@@ -80,9 +79,9 @@ describe("NextAuth 設定", () => {
         image: null,
       };
 
-      await expect(
-        adapter.createUser(testUser),
-      ).rejects.toThrow("Database connection failed");
+      await expect(adapter.createUser(testUser)).rejects.toThrow(
+        "Database connection failed",
+      );
     });
 
     it("セッション設定が正しく設定されている", async () => {
