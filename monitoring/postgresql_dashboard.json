@@ -14,9 +14,7 @@
                   "aggregation": {
                     "perSeriesAligner": "ALIGN_MEAN",
                     "crossSeriesReducer": "REDUCE_MEAN",
-                    "groupByFields": [
-                      "resource.label.database_id"
-                    ]
+                    "groupByFields": ["resource.label.database_id"]
                   }
                 }
               },
@@ -42,9 +40,7 @@
                   "aggregation": {
                     "perSeriesAligner": "ALIGN_PERCENTILE_99",
                     "crossSeriesReducer": "REDUCE_MEAN",
-                    "groupByFields": [
-                      "resource.label.database_id"
-                    ]
+                    "groupByFields": ["resource.label.database_id"]
                   }
                 }
               },
@@ -70,9 +66,7 @@
                   "aggregation": {
                     "perSeriesAligner": "ALIGN_RATE",
                     "crossSeriesReducer": "REDUCE_SUM",
-                    "groupByFields": [
-                      "metric.label.response_code_class"
-                    ]
+                    "groupByFields": ["metric.label.response_code_class"]
                   }
                 }
               },
@@ -98,9 +92,7 @@
                   "aggregation": {
                     "perSeriesAligner": "ALIGN_MEAN",
                     "crossSeriesReducer": "REDUCE_MEAN",
-                    "groupByFields": [
-                      "resource.label.database_id"
-                    ]
+                    "groupByFields": ["resource.label.database_id"]
                   }
                 }
               },
@@ -126,9 +118,7 @@
                   "aggregation": {
                     "perSeriesAligner": "ALIGN_MEAN",
                     "crossSeriesReducer": "REDUCE_MEAN",
-                    "groupByFields": [
-                      "resource.label.database_id"
-                    ]
+                    "groupByFields": ["resource.label.database_id"]
                   }
                 }
               },
@@ -154,9 +144,7 @@
                   "aggregation": {
                     "perSeriesAligner": "ALIGN_MEAN",
                     "crossSeriesReducer": "REDUCE_MEAN",
-                    "groupByFields": [
-                      "resource.label.database_id"
-                    ]
+                    "groupByFields": ["resource.label.database_id"]
                   }
                 }
               },

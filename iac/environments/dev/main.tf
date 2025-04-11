@@ -70,6 +70,14 @@ resource "google_project_service" "servicenetworking_api" {
   disable_on_destroy         = false
 }
 
+# VPC Access APIを有効化
+resource "google_project_service" "vpcaccess_api" {
+  project                    = var.project_id
+  service                    = "vpcaccess.googleapis.com"
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
 # -----------------------------------------------------------------------------
 # IAM: サービスアカウント (既存リソースを参照)
 # -----------------------------------------------------------------------------
@@ -172,6 +180,17 @@ resource "google_service_networking_connection" "private_vpc_connection" {
   depends_on = [google_project_service.servicenetworking_api]
 }
 
+# VPCコネクタの作成
+resource "google_vpc_access_connector" "connector" {
+  name          = "suzumina-vpc-connector"
+  ip_cidr_range = "10.8.0.0/28"
+  network       = google_compute_network.vpc_network.name
+  region        = var.region
+  project       = var.project_id
+
+  depends_on = [google_project_service.vpcaccess_api]
+}
+
 # -----------------------------------------------------------------------------
 # Cloud SQL: PostgreSQLインスタンスの設定
 # -----------------------------------------------------------------------------
@@ -179,7 +198,7 @@ resource "google_service_networking_connection" "private_vpc_connection" {
 resource "google_sql_database_instance" "instance" {
   name             = "suzumina-db-instance-dev"
   region           = var.region
-  database_version = "POSTGRES_14"
+  database_version = "POSTGRES_17"  # PostgreSQL 17 に更新
   
   settings {
     tier = "db-f1-micro"  # 開発/テスト用の小さいインスタンス
@@ -194,6 +213,31 @@ resource "google_sql_database_instance" "instance" {
       ipv4_enabled    = false
       private_network = google_compute_network.vpc_network.id
       ssl_mode        = "ENCRYPTED_ONLY"
+    }
+
+    database_flags {
+      name  = "max_connections"
+      value = "100"
+    }
+
+    database_flags {
+      name  = "shared_buffers"
+      value = "128MB"
+    }
+
+    database_flags {
+      name  = "effective_cache_size"
+      value = "512MB"
+    }
+
+    database_flags {
+      name  = "work_mem"
+      value = "4MB"
+    }
+
+    database_flags {
+      name  = "maintenance_work_mem"
+      value = "64MB"
     }
   }
   
@@ -228,6 +272,16 @@ resource "google_cloud_run_v2_service" "web" {
 
   template {
     service_account = data.google_service_account.runtime.email
+    
+    execution_environment = "EXECUTION_ENVIRONMENT_GEN2"
+    scaling {
+      max_instance_count = 10
+    }
+
+    vpc_access {
+      connector = google_vpc_access_connector.connector.id
+      egress = "ALL_TRAFFIC"
+    }
 
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repository_id}/${var.cloud_run_service_name}:latest"

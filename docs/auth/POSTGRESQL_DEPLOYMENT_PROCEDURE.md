@@ -2,7 +2,7 @@
 
 ## 概要
 
-この文書では、PostgreSQLへの移行手順について詳細を記述します。ローカル開発環境（SQLite）からGCP環境（PostgreSQL）への移行を安全に実施するための手順を提供します。
+この文書では、PostgreSQL 17環境のデプロイ手順について詳細を記述します。ローカル開発環境から本番環境まで、一貫したPostgreSQL環境を提供するための手順を説明します。
 
 ## 前提条件
 
@@ -10,6 +10,7 @@
 - Google Cloud SDKがインストールされていること
 - 必要な権限が設定されていること
 - [環境定義](../ENVIRONMENTS.md)を理解していること
+- [PostgreSQL開発環境](./POSTGRESQL_DEVELOPMENT_SETUP.md)がセットアップされていること
 
 ## デプロイ手順
 
@@ -34,12 +35,16 @@ terraform apply -var="db_password=安全なパスワード"
 terraform output
 ```
 
-#### 1.2. 環境変数の設定
+#### 1.2. データベースURLの更新
 
 ```bash
-# データベース接続情報
-export DATABASE_URL=postgres://suzumina_app:パスワード@プライベートIPアドレス:5432/suzumina_db
-export NODE_ENV=production
+# データベースURLの更新スクリプトを実行
+./db_url_update.sh \
+  suzumina-click-dev \
+  suzumina_app \
+  your-db-password \
+  suzumina-db-instance-dev \
+  suzumina_db
 ```
 
 #### 1.3. マイグレーションの実行
@@ -49,27 +54,19 @@ cd apps/web
 
 # マイグレーションの実行
 bun run db:migrate
-
-# 結果の確認
-if [ $? -eq 0 ]; then
-  echo "マイグレーションが正常に完了しました"
-else
-  echo "マイグレーションに失敗しました"
-  exit 1
-fi
 ```
 
-#### 1.4. テストの実行
+#### 1.4. 動作確認
 
 ```bash
-# 認証フローのテスト
-bun test src/auth.test.ts
+# データベース接続の確認
+gcloud sql connect suzumina-db-instance-dev --user=suzumina_app
 
-# パフォーマンステスト
-bun run scripts/performance-test.ts
+# テーブルの確認
+\dt
 
-# セキュリティテスト
-bun run scripts/security-test.ts
+# Cloud Run サービスの確認
+gcloud run services describe web
 ```
 
 ### 2. モニタリングの設定
@@ -99,15 +96,11 @@ gcloud monitoring dashboards create --config-from-file=monitoring/postgresql_das
 
 ### 3. 本番環境（suzumina-click）へのデプロイ
 
-開発環境でのテストが完了し、問題がないことを確認したら、本番環境へのデプロイを実施します。
-
 #### 3.1. 本番環境用のインフラストラクチャのセットアップ
 
 ```bash
-# 本番環境用のディレクトリに移動
 cd iac/environments/prod
 
-# Terraformの初期化と適用
 terraform init
 terraform plan -var="db_password=安全なパスワード"
 terraform apply -var="db_password=安全なパスワード"
@@ -116,11 +109,6 @@ terraform apply -var="db_password=安全なパスワード"
 #### 3.2. 本番環境でのマイグレーション実行
 
 ```bash
-# 本番環境用の環境変数を設定
-export DATABASE_URL=postgres://suzumina_app:パスワード@プライベートIPアドレス:5432/suzumina_db
-export NODE_ENV=production
-
-# マイグレーションの実行
 cd apps/web
 bun run db:migrate
 ```
@@ -143,6 +131,19 @@ gcloud run services rollback web --to-revision=前のリビジョン
 gcloud sql instances clone suzumina-db-instance \
   --source-instance=suzumina-db-instance \
   --point-in-time="移行前の時刻"
+```
+
+## パフォーマンス設定
+
+両環境で同じパフォーマンス設定を使用：
+
+```sql
+-- 基本設定
+SET max_connections = 100;
+SET shared_buffers = '128MB';
+SET effective_cache_size = '512MB';
+SET work_mem = '4MB';
+SET maintenance_work_mem = '64MB';
 ```
 
 ## 運用管理
@@ -194,6 +195,7 @@ gcloud sql backups list --instance=suzumina-db-instance
 
 ## 参考資料
 
-- [環境定義](../ENVIRONMENTS.md)
+- [PostgreSQL開発環境セットアップ](./POSTGRESQL_DEVELOPMENT_SETUP.md)
+- [データベースURL更新手順](./DATABASE_URL_UPDATE.md)
 - [Google Cloud SQLドキュメント](https://cloud.google.com/sql/docs)
-- [DrizzleORMドキュメント](https://orm.drizzle.team)
+- [PostgreSQL 17ドキュメント](https://www.postgresql.org/docs/17/)
