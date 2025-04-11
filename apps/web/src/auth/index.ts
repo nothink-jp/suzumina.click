@@ -5,6 +5,7 @@ import { getRequiredEnvVar, isBuildTime, isProductionRuntime } from "./utils";
 
 // NextAuthに必要な環境変数のチェックと取得
 const baseUrl = getRequiredEnvVar("NEXTAUTH_URL");
+const trustHost = getRequiredEnvVar("AUTH_TRUST_HOST");
 const effectiveBaseUrl = isBuildTime() ? "https://example.com" : baseUrl;
 
 // Next-Authの設定
@@ -40,6 +41,7 @@ export const {
         sameSite: "lax",
         path: "/",
         secure: isProductionRuntime(),
+        domain: isProductionRuntime() ? trustHost : undefined,
       },
     },
   },
@@ -49,6 +51,7 @@ export const {
     signIn: "/auth/signin",
     error: "/auth/error",
   },
+  trustHost: true,
 });
 
 // 他のモジュールをエクスポート
