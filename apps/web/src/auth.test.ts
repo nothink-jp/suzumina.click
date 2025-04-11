@@ -1,28 +1,22 @@
-import "@/../tests/setup"; // ルートからの実行を考慮したパスに変更
+import "@/../tests/setup";
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import type { Provider } from "next-auth/providers";
-import { GET, POST, auth, authConfig, signIn, signOut } from "./auth"; // authConfig をインポート
+import { GET, POST, auth, authConfig, signIn, signOut } from "./auth";
 import { DrizzleAdapter } from "./auth/drizzle-adapter";
-
-// getRequiredEnvVar をモックして、テスト中に環境変数の影響を制御する
-// 注意: authConfig はモジュール読み込み時に評価されるため、
-// process.env の変更は import 前に行うか、動的インポート/require を使う必要がある。
-// Bun Test はトップレベル await をサポートしているため、動的インポートが使える。
-// しかし、ここではよりシンプルなアプローチとして、authConfig の *中身* をテストする。
-// getRequiredEnvVar の呼び出し自体は utils.test.ts でテストされていると仮定する。
+import { setMockError } from "@/../tests/mocks/drizzle";
+import type { AdapterUser } from "next-auth/adapters";
 
 describe("NextAuth 設定", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    // 各テスト前に環境変数をリセット
     process.env = { ...originalEnv };
   });
 
   afterEach(() => {
-    // 各テスト後に環境変数を元に戻す
     process.env = { ...originalEnv };
-    mock.restore(); // モックをリセット
+    mock.restore();
+    setMockError(null);
   });
 
   it("必要な関数とオブジェクトがエクスポートされている", () => {
@@ -36,21 +30,17 @@ describe("NextAuth 設定", () => {
 
   describe("authConfig の内容", () => {
     it("Discord プロバイダーが正しく設定されている", () => {
-      // 環境変数が設定されていると仮定してテスト
       process.env = {
         ...process.env,
         DISCORD_CLIENT_ID: "test-client-id",
         DISCORD_CLIENT_SECRET: "test-client-secret",
         NEXTAUTH_SECRET: "test-secret",
-        NEXTAUTH_URL: "http://localhost:3000", // URLも設定
-        NODE_ENV: "development", // 開発環境を想定
+        NEXTAUTH_URL: "http://localhost:3000",
+        NODE_ENV: "development",
       };
-      // authConfig はインポート時に評価されるため、再評価が必要な場合は動的インポートを使う
-      // ここではインポートされた authConfig の構造を確認する
       expect(authConfig.providers).toBeArrayOfSize(1);
       const discordProvider = authConfig.providers[0] as Provider;
       expect(discordProvider).toHaveProperty("id", "discord");
-      // clientId などは getRequiredEnvVar の結果に依存するため、ここでは存在確認のみ
       expect(discordProvider.options?.clientId).toBeDefined();
       expect(discordProvider.options?.clientSecret).toBeDefined();
       expect(discordProvider.options?.authorization?.params?.scope).toBe(
@@ -59,10 +49,32 @@ describe("NextAuth 設定", () => {
     });
 
     it("アダプターが正しく設定されている", () => {
+      process.env.DATABASE_URL =
+        "postgres://test:test@localhost:5432/test_db";
       expect(authConfig.adapter).toBeDefined();
-      // アダプターの型を直接テストするのは難しいため、
-      // DrizzleAdapter() の結果と同じ型であることを確認する
       expect(typeof authConfig.adapter).toBe(typeof DrizzleAdapter());
+    });
+
+    it("PostgreSQL接続エラーを適切に処理できる", async () => {
+      // データベース接続エラーをシミュレート
+      setMockError(new Error("Database connection failed"));
+      
+      const adapter = DrizzleAdapter();
+      if (!adapter.createUser) {
+        throw new Error("Adapter createUser method not implemented");
+      }
+
+      const testUser: AdapterUser = {
+        id: "test-id",
+        email: "test@example.com",
+        emailVerified: null,
+        name: "Test User",
+        image: null,
+      };
+
+      await expect(
+        adapter.createUser(testUser),
+      ).rejects.toThrow("Database connection failed");
     });
 
     it("セッション設定が正しく設定されている", () => {
@@ -72,15 +84,10 @@ describe("NextAuth 設定", () => {
 
     it("クッキー設定が正しく設定されている (開発環境)", () => {
       process.env = { ...process.env, NODE_ENV: "development" };
-      // 再度 authConfig を評価するために動的インポートを使用するか、
-      // isProductionRuntime の結果を直接テストする
-      // ここでは isProductionRuntime の結果に依存する secure 属性をテスト
       const secureFlag =
         process.env.NODE_ENV === "production" &&
         process.env.NEXT_PHASE !== "phase-production-build";
-      expect(authConfig.cookies?.sessionToken?.options?.secure).toBe(
-        secureFlag,
-      ); // 開発時は false
+      expect(authConfig.cookies?.sessionToken?.options?.secure).toBe(secureFlag);
       expect(authConfig.cookies?.sessionToken?.options?.httpOnly).toBe(true);
       expect(authConfig.cookies?.sessionToken?.options?.sameSite).toBe("lax");
       expect(authConfig.cookies?.sessionToken?.options?.path).toBe("/");
@@ -95,12 +102,8 @@ describe("NextAuth 設定", () => {
         NODE_ENV: "production",
         NEXT_PHASE: undefined,
       };
-      // isProductionRuntime が true になるように設定
-      // authConfig はインポート時に評価されるため、このテストは authConfig の再評価が必要
-      // ここでは isProductionRuntime の期待値を直接使う
-      // 動的な再評価が難しいため、authConfig の secure プロパティが
-      // isProductionRuntime() の結果に依存していることを確認する意図で記述
-      // 実際のテストは isProductionRuntime のテストに依存する
+      const secureFlag = true;
+      expect(authConfig.cookies?.sessionToken?.options?.secure).toBe(secureFlag);
     });
 
     it("コールバック (jwt) が定義されている", () => {
@@ -126,9 +129,7 @@ describe("NextAuth 設定", () => {
         NODE_ENV: "development",
         NEXT_PHASE: undefined,
       };
-      // isBuildTime() が false, NODE_ENV === 'development'
-      // authConfig.debug はインポート時に評価されるため、直接テストは難しい
-      // 期待値: true
+      expect(authConfig.debug).toBe(true);
     });
 
     it("デバッグフラグが正しく設定されている (ビルド時)", () => {
@@ -137,8 +138,7 @@ describe("NextAuth 設定", () => {
         NODE_ENV: "production",
         NEXT_PHASE: "phase-production-build",
       };
-      // isBuildTime() が true
-      // 期待値: false
+      expect(authConfig.debug).toBe(false);
     });
 
     it("デバッグフラグが正しく設定されている (本番ランタイム)", () => {
@@ -147,8 +147,7 @@ describe("NextAuth 設定", () => {
         NODE_ENV: "production",
         NEXT_PHASE: undefined,
       };
-      // isBuildTime() が false, NODE_ENV === 'production'
-      // 期待値: false
+      expect(authConfig.debug).toBe(false);
     });
   });
 });
