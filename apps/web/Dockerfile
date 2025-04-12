@@ -45,11 +45,11 @@ ENV PORT=3000
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Next.jsのstandaloneビルド出力をコピー（ディレクトリ構造を維持）
-WORKDIR /app/apps/web
-COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/standalone/ /app/
+# Next.jsのstandaloneビルド出力をコピー
+WORKDIR /app
+COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/standalone/ ./
 COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/public ./public
-COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/static ./_next/static
 
 USER nextjs
 EXPOSE 3000
