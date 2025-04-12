@@ -25,14 +25,15 @@ ENV DISCORD_CLIENT_ID="build-time-client-id"
 ENV DISCORD_CLIENT_SECRET="build-time-client-secret"
 ENV DISCORD_GUILD_ID="build-time-guild-id"
 
+COPY --from=deps /monorepo/package.json ./package.json
+COPY --from=deps /monorepo/bun.lock ./bun.lock
 COPY --from=deps /monorepo/node_modules ./node_modules
 COPY --from=deps /monorepo/packages ./packages
 
 COPY ./apps/web ./apps/web
-COPY ./packages ./packages
+COPY ./turbo.json ./turbo.json
 
 # Next.jsのビルドを実行
-WORKDIR /monorepo/apps/web
 RUN bun run build
 
 # --- Runner Stage ---
@@ -46,9 +47,10 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Next.jsのstandaloneビルド出力をコピー
-WORKDIR /app
+WORKDIR /monorepo
 COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/public ./public
+COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/public ./apps/web/public
 
 USER nextjs
 EXPOSE 3000
