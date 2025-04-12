@@ -59,43 +59,69 @@ export const authConfig: NextAuthConfig = {
       }
 
       try {
-        const response = await fetch(
-          "https://discord.com/api/users/@me/guilds",
-          {
-            headers: {
-              Authorization: `Bearer ${account.access_token}`,
-            },
-          },
-        );
+        let guildId: string;
+        try {
+          guildId = getRequiredEnvVar("DISCORD_GUILD_ID");
+        } catch (error) {
+          if (error instanceof ConfigurationError) {
+            console.error("Guild ID configuration error:", error.message);
+            return false;
+          }
+          throw error;
+        }
 
-        if (!response.ok) {
-          console.error(
-            "Failed to fetch Discord guild data:",
-            await response.text(),
+        // Discord APIチェックを非同期で実行し、タイムアウトを設定
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒タイムアウト
+
+        try {
+          const response = await fetch(
+            "https://discord.com/api/users/@me/guilds",
+            {
+              headers: {
+                Authorization: `Bearer ${account.access_token}`,
+              },
+              signal: controller.signal,
+            },
           );
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Failed to fetch Discord guild data:", errorText);
+            return false;
+          }
+
+          const guilds = await response.json();
+          const isMember = guilds.some(
+            (guild: { id: string }) => guild.id === guildId,
+          );
+
+          // メンバーでない場合のみリダイレクト
+          if (!isMember) {
+            console.error("User is not a member of the required guild");
+            return "/auth/not-member";
+          }
+
+          return true;
+        } catch (error: unknown) {
+          if (error instanceof Error && error.name === "AbortError") {
+            console.error("Discord API request timed out");
+          } else {
+            console.error("Error checking Discord guild:", error);
+          }
           return false;
         }
-
-        const guilds = await response.json();
-        const guildId = getRequiredEnvVar("DISCORD_GUILD_ID");
-        const isMember = guilds.some(
-          (guild: { id: string }) => guild.id === guildId,
-        );
-
-        if (!isMember) {
-          return "/auth/not-member";
-        }
-
-        return true;
       } catch (error) {
         if (error instanceof ConfigurationError) {
           console.error(
             "Authentication configuration error during signIn:",
             error.message,
           );
-          return false;
+        } else {
+          console.error("Error during sign in process:", error);
         }
-        console.error("Error during sign in process:", error);
         return false;
       }
     },

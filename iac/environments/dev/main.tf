@@ -217,27 +217,22 @@ resource "google_sql_database_instance" "instance" {
 
     database_flags {
       name  = "max_connections"
-      value = "100"
+      value = "20"
     }
 
     database_flags {
       name  = "shared_buffers"
-      value = "128MB"
-    }
-
-    database_flags {
-      name  = "effective_cache_size"
-      value = "512MB"
+      value = "65536"  # 64KB for micro instance
     }
 
     database_flags {
       name  = "work_mem"
-      value = "4MB"
+      value = "2097152"  # 2MB
     }
 
     database_flags {
       name  = "maintenance_work_mem"
-      value = "64MB"
+      value = "16777216"  # 16MB
     }
   }
   
