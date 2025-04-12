@@ -79,6 +79,8 @@ describe("認証コールバック", () => {
 
   describe("signIn", () => {
     it("アカウント情報が不正な場合は認証失敗", async () => {
+      // プロダクション環境に設定
+      process.env.NODE_ENV = "production";
       const result = await authConfig.callbacks?.signIn({
         account: null,
         profile: mockDiscordProfile,
@@ -87,6 +89,8 @@ describe("認証コールバック", () => {
     });
 
     it("プロファイルが不正な場合は認証失敗", async () => {
+      // プロダクション環境に設定
+      process.env.NODE_ENV = "production";
       const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: undefined,
@@ -95,6 +99,8 @@ describe("認証コールバック", () => {
     });
 
     it("Guild APIが失敗した場合は認証失敗", async () => {
+      // プロダクション環境に設定
+      process.env.NODE_ENV = "production";
       global.fetch = mock(() => {
         return Promise.resolve(
           createMockResponse({ error: "Forbidden" }, false),
@@ -121,6 +127,8 @@ describe("認証コールバック", () => {
     });
 
     it("ギルドメンバーでない場合はリダイレクト", async () => {
+      // プロダクション環境に設定
+      process.env.NODE_ENV = "production";
       process.env.DISCORD_GUILD_ID = "non-member-guild-id";
       const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
@@ -130,6 +138,8 @@ describe("認証コールバック", () => {
     });
 
     it("ギルドメンバーの場合は認証成功", async () => {
+      // プロダクション環境に設定
+      process.env.NODE_ENV = "production";
       const result = await authConfig.callbacks?.signIn({
         account: mockDiscordAccount,
         profile: mockDiscordProfile,

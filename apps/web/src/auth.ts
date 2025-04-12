@@ -48,11 +48,7 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     async signIn({ account, profile }) {
-      // ビルド時は検証をスキップ
-      if (!isProductionRuntime()) {
-        return true;
-      }
-
+      // アカウントとプロファイルの基本的なバリデーション（テスト環境でも実行）
       if (!account?.access_token || account.provider !== "discord") {
         console.error("Invalid account data for Discord sign in.");
         return false;
@@ -61,6 +57,11 @@ export const authConfig: NextAuthConfig = {
       if (!profile?.id) {
         console.error("Invalid profile data from Discord.");
         return false;
+      }
+
+      // テスト環境ではギルドチェックをスキップ
+      if (!isProductionRuntime()) {
+        return true;
       }
 
       try {
