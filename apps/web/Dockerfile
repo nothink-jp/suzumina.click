@@ -39,9 +39,18 @@ RUN bun run build
 # --- Runner Stage ---
 FROM oven/bun:alpine AS runner
 
+# 実行時に必要な環境変数を設定
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
+
+# 認証関連の環境変数も定義（値はCloud Runで上書きされます）
+ENV NEXTAUTH_URL=""
+ENV NEXTAUTH_SECRET=""
+ENV DISCORD_CLIENT_ID=""
+ENV DISCORD_CLIENT_SECRET=""
+ENV DISCORD_GUILD_ID=""
+ENV DATABASE_URL=""
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
