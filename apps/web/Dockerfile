@@ -47,11 +47,10 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # Next.jsのstandaloneビルド出力をコピー
 WORKDIR /app
-COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/standalone/ ./
+COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/public ./public
-COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/static ./_next/static
 
 USER nextjs
 EXPOSE 3000
 
-CMD ["bun", "server.js"]
+CMD ["bun", "apps/web/server.js"]
