@@ -54,4 +54,5 @@ COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/static ./apps
 USER nextjs
 EXPOSE 3000
 
-CMD ["bun", "server.js"]
+# standaloneビルドのserver.jsは apps/web/ の下にある
+CMD ["bun", "apps/web/server.js"]
