@@ -1,123 +1,169 @@
-# Google Cloud Platform CI/CD設計
+# Cloud Run デプロイ手順
 
-このドキュメントでは、suzumina.clickのCI/CD（継続的インテグレーション/継続的デリバリー）パイプラインと Terraform によるインフラ管理の連携について説明します。
+## 環境変数の管理
 
-## アーキテクチャ概要
+### Secret Managerを使用した環境変数の管理
 
-CI/CD パイプラインは GitHub Actions を使用し、コードのプッシュや PR をトリガーに自動テスト・ビルド・デプロイ（イメージ更新）を行います。インフラストラクチャの構成管理には Terraform を使用します。
+現在、以下の環境変数がSecret Managerで管理されています：
 
-**役割分担:**
+```bash
+Secret:nextauth-url-dev:latest
+Secret:nextauth-secret-dev:latest
+Secret:discord-client-id-dev:latest
+Secret:discord-client-secret-dev:latest
+Secret:discord-guild-id-dev:latest
+Secret:auth-trust-host-dev:latest
+Secret:database-url-dev:latest
+```
 
-- **Terraform:** Cloud Run サービス定義 (イメージ除く)、IAM、Secret Manager 参照、Workload Identity Federation など、インフラの基本構成を管理します。構成変更が必要な場合に手動または専用のワークフローで `terraform apply` を実行します。
-- **GitHub Actions (CI/CD):** アプリケーションコードの変更を検知し、テスト、Docker イメージのビルド＆プッシュ、`gcloud run deploy` コマンドによる Cloud Run サービスの**イメージ更新**を行います。
+### 環境変数の更新手順
 
-**通常デプロイフロー (コード変更時):**
+1. Secret Managerで値を更新する場合：
 
-1. GitHub リポジトリへのプッシュ/PR (`main` ブランチ)
-2. GitHub Actions ワークフロー (`deploy.yml` -> `reusable-deploy.yml`) 起動
-3. コードチェックアウト、依存関係インストール
-4. Docker イメージのビルドと Artifact Registry へのプッシュ
-5. `gcloud run deploy` コマンド (または対応 Action) で Cloud Run サービスのイメージを更新
+```bash
+# 新しいバージョンのシークレットを作成
+gcloud secrets versions add [SECRET_NAME] \
+  --data-file=/path/to/secret.txt
+```
 
-**インフラ構成変更フロー:**
+2. Cloud Run サービスの環境変数を更新する場合：
 
-1. `iac/` ディレクトリ以下の Terraform コードを修正 (例: 環境変数追加、スケーリング設定変更)
-2. ローカルまたは専用のワークフローで `terraform plan` を実行し、変更内容を確認
-3. 確認後、`terraform apply` を実行してインフラに変更を適用 (※ CI/CD 用のサービスアカウントとは別の、適切な権限を持つアカウント/方法で実行)
+```bash
+# 既存の環境変数を維持したまま更新
+gcloud run services update web-437899281 \
+  --region=asia-northeast1 \
+  --set-secrets=\
+NEXTAUTH_URL=nextauth-url-dev:latest,\
+NEXTAUTH_SECRET=nextauth-secret-dev:latest,\
+DISCORD_CLIENT_ID=discord-client-id-dev:latest,\
+DISCORD_CLIENT_SECRET=discord-client-secret-dev:latest,\
+DISCORD_GUILD_ID=discord-guild-id-dev:latest,\
+AUTH_TRUST_HOST=auth-trust-host-dev:latest,\
+DATABASE_URL=database-url-dev:latest
+```
 
-## GitHub Actions構成
+## 環境変数の確認方法
 
-### 検証ジョブ (`ci.yml`)
+1. Cloud Run コンソール
+   - サービスの詳細画面で「変数」タブを確認
+   - Secret Managerとの連携状況を確認
 
-- PR や `main` へのプッシュ時に実行
-- コードチェックアウト
-- Bun 依存関係インストール
-- リント・型チェック・テスト実行
+2. アプリケーション上
+   - トップページの環境変数デバッグ情報で確認
+   - Secret Managerからの読み込み状況を確認
 
-### デプロイジョブ (`deploy.yml` -> `reusable-deploy.yml`)
+## トラブルシューティング
 
-- `main` ブランチへのプッシュ時に実行 (アプリケーションコード変更時)
-- Google Cloud への認証 (Workload Identity Federation)
-- Docker イメージのビルドと Artifact Registry へのプッシュ
-- `google-github-actions/deploy-cloudrun` アクション (または `gcloud run deploy` コマンド) を使用して、指定されたイメージタグで Cloud Run サービス (`web`) を更新
-  - **注意:** このステップではイメージのみが更新され、Terraform で管理されている他の設定 (環境変数など) は変更されません。
+### 環境変数が認識されない場合
 
-## Terraform によるインフラ管理
+1. Secret Managerのアクセス権限確認
+   - Cloud Runのサービスアカウントに適切な権限があるか確認
+   - `roles/secretmanager.secretAccessor` ロールが必要
 
-- **管理対象:** `iac/environments/dev/main.tf` に定義されたリソース (Cloud Run サービス定義、IAM、Secret Manager 参照など)。ただし、Cloud Run のコンテナイメージは `lifecycle { ignore_changes }` によって Terraform の管理対象外とします。
-- **実行タイミング:**
-  - **初回構築時:** `terraform apply` を実行してインフラ全体を作成します。
-  - **構成変更時:** 環境変数の追加、CPU/メモリ割り当ての変更、スケーリング設定の変更など、`main.tf` に記述された構成を変更する場合に `terraform apply` を実行します。
-  - **アプリケーションデプロイ時:** 通常のコード変更に伴うデプロイでは `terraform apply` は**実行しません**。
+2. シークレットの値確認
 
-## 認証と権限
+   ```bash
+   # シークレットの最新バージョンを確認
+   gcloud secrets versions access latest \
+     --secret=[SECRET_NAME]
+   ```
 
-### Workload Identity Federation
+3. Cloud Runの設定確認
 
-GitHub Actions から GCP への認証には Workload Identity Federation を利用します。
+   ```bash
+   # サービスの設定を確認
+   gcloud run services describe web-437899281 \
+     --region=asia-northeast1
+   ```
 
-- **GCP 設定:** (Terraform で管理)
-  - Workload Identity Pool (`github-actions-pool`) と Provider (`github-provider`)
-  - GitHub リポジトリ (`nothink-jp/suzumina.click`) からのアクセスのみ許可
-  - デプロイ用 SA (`github-actions-deployer@...`) への Workload Identity User ロール付与
-- **サービスアカウント権限:**
-  - **デプロイ用SA (`github-actions-deployer@...`):**
-    - **CI/CD パイプライン実行に必要な最小限の権限:**
-      - `roles/run.developer` (Cloud Run サービスのデプロイ権限)
-      - `roles/iam.serviceAccountUser` (Cloud Run 実行 SA を指定するために必要)
-      - `roles/artifactregistry.writer` (イメージのプッシュに必要)
-      - `roles/iam.serviceAccountTokenCreator` (Workload Identity Federation でのトークン生成に必要)
-    - **注意:** Terraform を使用してインフラ構成を変更する場合は、このサービスアカウントではなく、別途適切な管理者権限 (例: `roles/secretmanager.admin`, `roles/iam.serviceAccountAdmin`, `roles/serviceusage.serviceUsageAdmin`, `roles/iam.workloadIdentityPoolAdmin` など) を持つアカウント/方法で `terraform apply` を実行する必要があります。
-  - **Cloud Run 実行時SA (`app-runtime@...`):** (Terraform で管理)
-    - アプリケーションが必要とする権限 (例: `roles/secretmanager.secretAccessor`, `roles/datastore.user`)
+### セキュリティに関する注意事項
 
-### GitHub Actions Variables/Secrets 設定
+1. シークレットの管理
+   - 定期的なローテーション
+   - 適切なIAM権限設定
+   - バージョニングの活用
 
-以下の Variables と Secrets を GitHub リポジトリに設定する必要があります。
+2. 環境分離
+   - 開発環境と本番環境で別のシークレットを使用
+   - 命名規則の統一（例: `-dev`, `-prod` サフィックス）
 
-- **Variables:** (アルファベット順)
-  - `ARTIFACT_REGISTRY_REPO`: Artifact Registry のリポジトリ名 (例: `suzumina-click-docker-repo`)
-  - `GCP_PROJECT_ID`: GCPプロジェクトID
-  - `GCP_REGION`: リソースをデプロイするリージョン (例: `asia-northeast1`)
-  - `GCP_SA_EMAIL`: デプロイ用サービスアカウントのメールアドレス (`github-actions-deployer@...`)
-  - `GCP_WORKLOAD_IDENTITY_PROVIDER`: Terraform で作成された Workload Identity Provider のフルネーム (Terraform output `workload_identity_provider_name` の値)
-- **Secrets:**
-  - (アプリケーションシークレットは Secret Manager で管理)
+## CI/CD パイプライン設定
 
-## デプロイプロセス詳細
+### GitHub Actions での設定例
 
-### 1. コード検証（CI）
+```yaml
+name: Deploy to Cloud Run
 
-- `ci.yml` ワークフローが実行され、リントチェック、型チェック、ユニットテストが行われます。
+on:
+  push:
+    branches:
+      - main
 
-### 2. ビルドとイメージ更新（CD）
+env:
+  PROJECT_ID: your-project-id
+  SERVICE_NAME: web-437899281
+  REGION: asia-northeast1
 
-- `main` ブランチへのプッシュをトリガーに `deploy.yml` -> `reusable-deploy.yml` ワークフローが実行されます。
-- Docker イメージがビルドされ、タグ付けされて Artifact Registry にプッシュされます。
-- `google-github-actions/deploy-cloudrun` アクション (または `gcloud run deploy`) が実行され、Cloud Run サービス (`web`) が新しいイメージを使用するように更新されます。
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-### 3. インフラ構成変更時の適用
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
-- 開発者が `iac/` ディレクトリ以下の Terraform コードを変更した場合、手動または専用のワークフローで `terraform plan` および `terraform apply` を実行します (※ 適切な権限を持つアカウント/方法で実行)。
-- CI/CD パイプラインはこのプロセスには関与しません。
+      - name: Build and Deploy
+        run: |
+          gcloud builds submit \
+            --region=$REGION \
+            --tag gcr.io/$PROJECT_ID/$SERVICE_NAME
 
-## 事前準備: Secret Manager の設定
+          # Secret Managerの設定を維持したまま更新
+          gcloud run deploy $SERVICE_NAME \
+            --image gcr.io/$PROJECT_ID/$SERVICE_NAME \
+            --region=$REGION \
+            --platform=managed \
+            --allow-unauthenticated
+```
 
-Terraform は Cloud Run サービスに必要なシークレットや設定値を GCP Secret Manager から取得します。Terraform を初めて適用する前や、新しいシークレットを追加する際には、以下のシークレットが **dev 環境** の Secret Manager に存在し、適切な値が設定されていることを確認してください。(アルファベット順)
+## 新環境のセットアップ
 
-- `auth-trust-host-dev`: `true` (Auth.js の UntrustedHost エラー回避用)
-- `discord-client-id-dev`: Discord OAuth アプリケーションの Client ID
-- `discord-client-secret-dev`: Discord OAuth アプリケーションの Client Secret
-- `discord-guild-id-dev`: Discord サーバーの Guild ID
-- `nextauth-secret-dev`: NextAuth.js 用のランダムなシークレット文字列
-- `nextauth-url-dev`: アプリケーションの完全な公開URL (例: `https://your-app-....a.run.app`)
+1. Secret Managerでシークレットを作成
 
-これらのシークレットが存在しない、または値が正しくない場合、Terraform の適用やアプリケーションの起動に失敗する可能性があります。
+   ```bash
+   # シークレットの作成
+   gcloud secrets create [SECRET_NAME] \
+     --replication-policy="automatic"
+   
+   # 初期値の設定
+   echo -n "secret-value" | \
+     gcloud secrets versions add [SECRET_NAME] --data-file=-
+   ```
 
-## 関連ドキュメント
+2. Cloud Runのサービスアカウント設定
 
-- [全体概要](GCP_OVERVIEW.md)
-- [IaC設計 (Terraform)](GCP_IAC_DESIGN_MINIMAL.md)
-- [認証設計 (Auth)](../auth/AUTH_DESIGN.md)
+   ```bash
+   # サービスアカウントの作成
+   gcloud iam service-accounts create [SA_NAME] \
+     --display-name="Cloud Run Service Account"
 
-最終更新日: 2025年4月7日
+   # Secret Managerアクセス権限の付与
+   gcloud projects add-iam-policy-binding [PROJECT_ID] \
+     --member="serviceAccount:[SA_NAME]@[PROJECT_ID].iam.gserviceaccount.com" \
+     --role="roles/secretmanager.secretAccessor"
+   ```
+
+3. Cloud Runサービスの更新
+
+   ```bash
+   gcloud run services update [SERVICE_NAME] \
+     --service-account=[SA_NAME]@[PROJECT_ID].iam.gserviceaccount.com
+   ```
+
+最終更新日: 2025年4月12日

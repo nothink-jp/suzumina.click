@@ -33,18 +33,26 @@ RUN bun run build
 # --- Runner Stage ---
 FROM oven/bun:alpine AS runner
 
-# 実行時に必要な環境変数を定義（値はCloud Runで設定）
+# 実行時の環境変数をARGで定義（Cloud Runでオーバーライド）
+ARG NEXTAUTH_URL
+ARG NEXTAUTH_SECRET
+ARG DISCORD_CLIENT_ID
+ARG DISCORD_CLIENT_SECRET
+ARG DISCORD_GUILD_ID
+ARG DATABASE_URL
+
+# 実行時の環境変数を設定
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 
-# 認証関連の環境変数を定義（値はCloud Runで設定）
-ENV NEXTAUTH_URL=""
-ENV NEXTAUTH_SECRET=""
-ENV DISCORD_CLIENT_ID=""
-ENV DISCORD_CLIENT_SECRET=""
-ENV DISCORD_GUILD_ID=""
-ENV DATABASE_URL=""
+# ARGの値をENVに設定（デフォルト値付き）
+ENV NEXTAUTH_URL=${NEXTAUTH_URL:-"https://web-437899281.asia-northeast1.run.app"}
+ENV NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-""}
+ENV DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID:-""}
+ENV DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET:-""}
+ENV DISCORD_GUILD_ID=${DISCORD_GUILD_ID:-""}
+ENV DATABASE_URL=${DATABASE_URL:-""}
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
