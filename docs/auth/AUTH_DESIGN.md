@@ -96,14 +96,30 @@ bun add -d drizzle-kit
 ### 環境変数
 
 ```env
+# ビルド時
+NODE_ENV=production                     # 実行環境の指定
+NEXT_TELEMETRY_DISABLED=1              # Telemetryの無効化
+
+# 実行時に必須
 DISCORD_CLIENT_ID="DiscordアプリケーションのクライアントID"
 DISCORD_CLIENT_SECRET="Discordアプリケーションのシークレット"
 DISCORD_GUILD_ID="すずみなふぁみりーのギルドID"
 NEXTAUTH_SECRET="NextAuthシークレット"
 NEXTAUTH_URL="https://suzumina.click"
-DATABASE_URL="file:./dev.db" # 開発環境
-# DATABASE_URL="postgres://user:password@host:port/database" # 本番環境
+DATABASE_URL="postgres://user:password@host:port/database"  # 本番環境
 ```
+
+#### 環境変数の取り扱い
+
+- ビルド時
+  - 基本的な環境変数（NODE_ENV, NEXT_TELEMETRY_DISABLED）のみ必要
+  - 認証関連の環境変数は不要（バリデーションは緩和）
+  - `NEXT_PHASE`環境変数でビルド時を判定
+
+- 実行時
+  - すべての環境変数が必要
+  - 本番環境では厳密なバリデーションを実施
+  - 環境変数が不足している場合はエラーページを表示
 
 ## セキュリティ考慮事項
 
@@ -119,6 +135,11 @@ DATABASE_URL="file:./dev.db" # 開発環境
    - 必要最小限の情報のみ保存
    - 定期的なデータクリーンアップ
    - トークン情報の暗号化（本番環境）
+
+4. 環境変数の保護
+   - ビルド時と実行時で適切な環境変数管理
+   - 本番環境での厳密なバリデーション
+   - 機密情報の適切な取り扱い
 
 ## エラーページ設計
 
@@ -205,6 +226,10 @@ export const config = {
 3. API エラー
    - 適切なステータスコードとエラーメッセージを返却
 
+4. 環境変数エラー
+   - 実行時に必要な環境変数が不足している場合は専用のエラーページを表示
+   - エラー内容をログに記録
+
 ## 今後の拡張性
 
 1. 追加の認証プロバイダー対応
@@ -221,5 +246,6 @@ export const config = {
 5. エラーページの作成
 6. ミドルウェアによるアクセス制御の実装
 7. エラーハンドリングの実装
+8. 環境変数のバリデーション実装
 
-最終更新日: 2025年4月10日
+最終更新日: 2025年4月12日
