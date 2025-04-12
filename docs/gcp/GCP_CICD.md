@@ -1,245 +1,174 @@
 # Cloud Run デプロイ手順
 
-## 環境変数の管理
+## 重要な注意事項
 
-### Secret Managerを使用した環境変数の管理
+### 環境変数の確認
 
-現在、以下の環境変数がSecret Managerで管理されています：
-
-```bash
-Secret:nextauth-url-dev:latest
-Secret:nextauth-secret-dev:latest
-Secret:discord-client-id-dev:latest
-Secret:discord-client-secret-dev:latest
-Secret:discord-guild-id-dev:latest
-Secret:auth-trust-host-dev:latest
-Secret:database-url-dev:latest
-```
-
-### 環境変数の更新手順
-
-1. Secret Managerで値を更新する場合：
+1. 現在のCloud Run URLを確認：
 
 ```bash
-# 新しいバージョンのシークレットを作成
-gcloud secrets versions add [SECRET_NAME] \
-  --data-file=/path/to/secret.txt
+$ gcloud run services describe web \
+    --region=asia-northeast1 \
+    --format='value(status.url)'
+https://web-d6fzgi5mga-an.a.run.app
 ```
 
-2. Cloud Run サービスの環境変数を更新する場合：
+2. NEXTAUTH_URLの設定を確認：
 
 ```bash
-# 既存の環境変数を維持したまま更新
-gcloud run services update web \
-  --region=asia-northeast1 \
-  --set-secrets=\
-NEXTAUTH_URL=nextauth-url-dev:latest,\
-NEXTAUTH_SECRET=nextauth-secret-dev:latest,\
-DISCORD_CLIENT_ID=discord-client-id-dev:latest,\
-DISCORD_CLIENT_SECRET=discord-client-secret-dev:latest,\
-DISCORD_GUILD_ID=discord-guild-id-dev:latest,\
-AUTH_TRUST_HOST=auth-trust-host-dev:latest,\
-DATABASE_URL=database-url-dev:latest
+$ gcloud secrets versions access latest --secret=nextauth-url-dev
+https://web-d6fzgi5mga-an.a.run.app
 ```
 
-### Cloud Run設定
-
-現在の設定：
+3. 環境変数の設定を確認：
 
 ```bash
-# サービス情報
-サービス名: web
-リージョン: asia-northeast1
-URL: https://web-437899281.asia-northeast1.run.app
-
-# 環境変数（ビルドインのみ）
-NODE_ENV: production
-NEXT_TELEMETRY_DISABLED: 1
-PORT: 3000
-
-# シークレット
-AUTH_TRUST_HOST: auth-trust-host-dev:latest
-DATABASE_URL: database-url-dev:latest
-DISCORD_CLIENT_ID: discord-client-id-dev:latest
-DISCORD_CLIENT_SECRET: discord-client-secret-dev:latest
-DISCORD_GUILD_ID: discord-guild-id-dev:latest
-NEXTAUTH_SECRET: nextauth-secret-dev:latest
-NEXTAUTH_URL: nextauth-url-dev:latest
-
-# コンピュートリソース
-メモリ: 512Mi
-CPU: 1000m
-最小インスタンス: 0
-最大インスタンス: 10
-タイムアウト: 300s
-同時実行数: 80
-
-# ネットワーク設定
-VPCコネクタ: suzumina-vpc-connector
-Egress: all-traffic
-
-# サービスアカウント
-app-runtime@suzumina-click-dev.iam.gserviceaccount.com
+$ gcloud run services describe web \
+    --region=asia-northeast1 \
+    --format='yaml(spec.template.spec.containers[0].env)'
+spec:
+  template:
+    spec:
+      containers:
+      - env:
+        - name: NODE_ENV
+          value: production
+        - name: NEXTAUTH_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: nextauth-url-dev
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: nextauth-secret-dev
+        - name: DISCORD_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: discord-client-id-dev
+        - name: DISCORD_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: discord-client-secret-dev
+        - name: DISCORD_GUILD_ID
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: discord-guild-id-dev
+        - name: AUTH_TRUST_HOST
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: auth-trust-host-dev
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: database-url-dev
 ```
 
-## CI/CD パイプライン設定
+### NEXTAUTH_URL の更新手順
 
-GitHub Actionsを使用して、ビルドからデプロイまでを自動化しています：
+Cloud RunのURLが変更された場合は、以下の手順でNEXTAUTH_URLを更新します：
 
-### GitHub Actions ワークフロー
+1. 新しいCloud RunのURLを確認：
 
-```yaml
-name: Deploy to Cloud Run
+```bash
+$ gcloud run services describe web \
+    --region=asia-northeast1 \
+    --format='value(status.url)'
+```
 
-on:
-  push:
-    branches:
-      - main
+2. Secret Managerの値を更新：
 
-env:
-  PROJECT_ID: suzumina-click-dev
-  SERVICE_NAME: web
-  REGION: asia-northeast1
-  DOCKER_REPOSITORY: suzumina-click-docker-repo
-  REGISTRY: asia-northeast1-docker.pkg.dev
-  SERVICE_ACCOUNT: app-runtime@suzumina-click-dev.iam.gserviceaccount.com
+```bash
+$ echo -n "https://web-d6fzgi5mga-an.a.run.app" | \
+  gcloud secrets versions add nextauth-url-dev --data-file=-
+```
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
+3. 更新を確認：
 
-    steps:
-      - uses: actions/checkout@v4
-      
-      - id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: projects/357597616909/locations/global/workloadIdentityPools/github-actions/providers/github-actions
-          service_account: github-actions-deployer@suzumina-click-dev.iam.gserviceaccount.com
+```bash
+gcloud secrets versions access latest --secret=nextauth-url-dev
+```
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+4. サービスを更新（必要な場合）：
 
-      - name: Configure Docker
-        run: |
-          gcloud auth configure-docker ${{ env.REGISTRY }}
-
-      - name: Get version
-        id: version
-        run: |
-          VERSION="v0.1.2-$(date +%Y%m%d-%H%M%S)"
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
-
-      - name: Build and Push
-        run: |
-          IMAGE_URL=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.DOCKER_REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ env.VERSION }}
-          
-          # NODE_ENV=productionを明示的に指定してビルド
-          docker build \
-            --build-arg NEXT_TELEMETRY_DISABLED=1 \
-            -t ${IMAGE_URL} \
-            .
-          
-          docker push ${IMAGE_URL}
-
-      - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.DOCKER_REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ env.VERSION }} \
-            --region ${{ env.REGION }} \
-            --platform managed \
-            --allow-unauthenticated \
-            --memory 512Mi \
-            --cpu 1000m \
-            --min-instances 0 \
-            --max-instances 10 \
-            --port 3000 \
-            --service-account ${{ env.SERVICE_ACCOUNT }} \
-            --vpc-connector suzumina-vpc-connector \
-            --vpc-egress all-traffic \
-            --set-env-vars NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1 \
-            --set-secrets=\
-AUTH_TRUST_HOST=auth-trust-host-dev:latest,\
-DATABASE_URL=database-url-dev:latest,\
-DISCORD_CLIENT_ID=discord-client-id-dev:latest,\
-DISCORD_CLIENT_SECRET=discord-client-secret-dev:latest,\
-DISCORD_GUILD_ID=discord-guild-id-dev:latest,\
-NEXTAUTH_SECRET=nextauth-secret-dev:latest,\
-NEXTAUTH_URL=nextauth-url-dev:latest
-
-      - name: Display service URL
-        run: |
-          gcloud run services describe ${{ env.SERVICE_NAME }} \
-            --region ${{ env.REGION }} \
-            --format='value(status.url)'
+```bash
+$ gcloud run services update web \
+    --region=asia-northeast1 \
+    --no-traffic \
+    --revision-suffix=fix-auth-url
 ```
 
 ## トラブルシューティング
 
-### GitHub Actions
+### セッションAPIのエラー
 
-1. ビルドログの確認
-   - GitHub Actionsのワークフローページでログを確認
-   - 各ステップの詳細な出力を確認可能
+セッションAPI（/api/auth/session）が500エラーを返す場合：
 
-2. デプロイ失敗時の確認
-
-   ```bash
-   # デプロイされているイメージの確認
-   gcloud run services describe web \
-     --region=asia-northeast1 \
-     --format='value(spec.template.spec.containers[0].image)'
-
-   # サービスのリビジョン履歴
-   gcloud run revisions list \
-     --service=web \
-     --region=asia-northeast1
-
-   # リビジョンの詳細確認
-   gcloud run revisions describe [REVISION_NAME] \
-     --region=asia-northeast1
-   ```
-
-### アプリケーションログ
+1. Cloud RunのURLとNEXTAUTH_URLが一致していることを確認
+2. 環境変数がすべて正しく設定されていることを確認
+3. サービスログでエラーの詳細を確認
 
 ```bash
-# 最新のログを確認
-gcloud logging read \
-  "resource.type=cloud_run_revision AND resource.labels.service_name=web" \
-  --limit=50
-
-# エラーログのみを確認
-gcloud logging read \
-  "resource.type=cloud_run_revision AND resource.labels.service_name=web AND severity>=ERROR" \
-  --limit=20
+# エラーログの確認
+$ gcloud logging read \
+    "resource.type=cloud_run_revision AND \
+     resource.labels.service_name=web AND \
+     severity>=ERROR" \
+    --limit=20
 ```
 
-### Workload Identity Federation
+### 環境変数のデバッグ
 
-1. 権限の確認
+トップページの環境変数デバッグ情報で以下の項目を確認：
 
-   ```bash
-   # サービスアカウントの権限確認
-   gcloud projects get-iam-policy $PROJECT_ID \
-     --flatten="bindings[].members" \
-     --format='table(bindings.role)' \
-     --filter="bindings.members:$SERVICE_ACCOUNT"
-   ```
+```
+NODE_ENV: production
+NEXTAUTH_URL: Secret Managerから設定済み
+NEXTAUTH_SECRET: Secret Managerから設定済み
+DISCORD_CLIENT_ID: Secret Managerから設定済み
+DISCORD_CLIENT_SECRET: Secret Managerから設定済み
+DISCORD_GUILD_ID: Secret Managerから設定済み
+AUTH_TRUST_HOST: Secret Managerから設定済み
+DATABASE_URL: Secret Managerから設定済み
+```
 
-2. GitHub Actionsの設定確認
+### 設定の確認コマンド
 
-   ```bash
-   # Workload Identity Poolの確認
-   gcloud iam workload-identity-pools describe github-actions \
-     --location=global
+すべての設定を一度に確認する場合：
 
-   # プロバイダーの確認
-   gcloud iam workload-identity-pools providers describe github-actions \
-     --workload-identity-pool=github-actions \
-     --location=global
-   ```
+```bash
+# サービスの完全な設定を確認
+$ gcloud run services describe web \
+    --region=asia-northeast1
+
+# 特定の設定のみを確認
+$ gcloud run services describe web \
+    --region=asia-northeast1 \
+    --format='yaml(spec.template.spec)'
+
+# シークレットの一覧を確認
+$ gcloud secrets list --filter="name:*-dev"
+```
+
+## 注意事項
+
+1. URLの一致
+   - NEXTAUTH_URLはCloud RunのURLと完全に一致する必要があります
+   - サブパスやパラメータは含めないでください
+
+2. 環境変数の優先順位
+   - Secret Managerの値が優先されます
+   - 直接設定された環境変数は無視されます
+
+3. デプロイ時の考慮事項
+   - 新しいリビジョンはすべての環境変数を継承します
+   - シークレットの更新は即時反映されません
+   - 完全な反映にはサービスの再デプロイが必要な場合があります
 
 最終更新日: 2025年4月12日

@@ -16,6 +16,7 @@ FROM oven/bun:alpine AS builder
 WORKDIR /monorepo
 
 # ビルドに必要な最小限の環境変数のみ設定
+ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY --from=deps /monorepo/package.json ./package.json
@@ -26,7 +27,7 @@ COPY --from=deps /monorepo/packages ./packages
 COPY ./apps/web ./apps/web
 COPY ./turbo.json ./turbo.json
 
-# Next.jsのビルドを実行（NODE_ENV=productionを明示的に指定）
+# Next.jsのビルドを実行
 RUN NODE_ENV=production bun run build
 
 # --- Runner Stage ---
@@ -45,6 +46,9 @@ WORKDIR /monorepo
 COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /monorepo/apps/web/public ./apps/web/public
+
+# postgres パッケージを含む node_modules を追加
+COPY --from=builder --chown=nextjs:nodejs /monorepo/node_modules ./node_modules
 
 USER nextjs
 EXPOSE 3000

@@ -27,11 +27,13 @@ const nextConfig: NextConfig = {
   },
 
   /**
-   * Node.jsの設定
-   * @see https://nextjs.org/docs/api-reference/next.config.js/custom-webpack-config
+   * postgresをバンドルから除外し、実行時に利用できるようにします。
    */
-  webpack: (config) => {
-    config.externals = [...(config.externals || []), "postgres"];
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // サーバーサイドのビルドでpostgresを外部依存として扱う
+      config.externals = [...(config.externals || []), "postgres"];
+    }
     return config;
   },
 };
