@@ -5,7 +5,7 @@
 FROM oven/bun:alpine AS deps
 WORKDIR /monorepo
 
-COPY ./package.json ./bun.lock ./turbo.json ./
+COPY ./package.json ./bun.lock ./
 COPY ./apps/web/package.json ./apps/web/package.json
 COPY ./packages ./packages
 
@@ -15,23 +15,25 @@ RUN bun install --frozen-lockfile
 FROM oven/bun:alpine AS builder
 WORKDIR /monorepo
 
+# ビルド時に必要な環境変数をすべて設定
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgres://suzumina_app:build_password@localhost:5432/suzumina_db"
+ENV NEXTAUTH_URL="https://web-437899281.asia-northeast1.run.app"
+ENV NEXTAUTH_SECRET="build-time-secret"
+ENV DISCORD_CLIENT_ID="build-time-client-id"
+ENV DISCORD_CLIENT_SECRET="build-time-client-secret"
+ENV DISCORD_GUILD_ID="build-time-guild-id"
 
 COPY --from=deps /monorepo/node_modules ./node_modules
 COPY --from=deps /monorepo/packages ./packages
 
-COPY package.json package.json
-COPY bun.lock bun.lock
-COPY turbo.json turbo.json
-COPY biome.json biome.json
-
 COPY ./apps/web ./apps/web
 COPY ./packages ./packages
 
-# Turboでビルド実行時に環境変数を明示的に渡す
-RUN bun run turbo run build --filter=@suzumina.click/web...
+# Next.jsのビルドを実行
+WORKDIR /monorepo/apps/web
+RUN bun run build
 
 # --- Runner Stage ---
 FROM oven/bun:alpine AS runner
