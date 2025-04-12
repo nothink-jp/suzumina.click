@@ -1,56 +1,35 @@
 import { auth } from "@/auth";
-import type { Session } from "next-auth";
 import { NextResponse } from "next/server";
-import type { NextMiddleware, NextRequest } from "next/server";
 
 /**
- * NextAuth.js の認証ロジックをラップし、リクエストに基づいてリダイレクト処理を行うミドルウェア関数。
- * 未認証ユーザーが保護されたページにアクセスした場合や、認証済みユーザーが認証ページにアクセスした場合にリダイレクトします。
- * @param req - NextRequest オブジェクト。認証情報を含む可能性がある。
- * @returns NextResponse オブジェクト。リダイレクトまたは次の処理へ進む。
+ * ミドルウェア関数
+ * 認証とリクエストの処理を行う
  */
-const authMiddlewareLogic = auth(
-  (req: NextRequest & { auth: Session | null }) => {
-    const authResult = req.auth;
+export default auth((req) => {
+  // 現在のパス
+  const path = req.nextUrl.pathname;
 
-    // 認証状態とページタイプの確認
-    const isAuthPage = req.nextUrl.pathname.startsWith("/auth");
-    const isUserPage = req.nextUrl.pathname.startsWith("/users");
-
-    // 未認証ユーザーが保護されたページにアクセスした場合
-    if (!authResult && isUserPage) {
-      const signInUrl = new URL("/auth/signin", req.url);
-      signInUrl.searchParams.set("callbackUrl", req.url);
-      return NextResponse.redirect(signInUrl);
+  // 認証が必要なパスの場合
+  if (path === "/" || path.startsWith("/dashboard")) {
+    if (!req.auth) {
+      // 未認証の場合はログインページへリダイレクト
+      return Response.redirect(new URL("/auth/signin", req.nextUrl));
     }
+  }
 
-    // 認証済みユーザーが認証ページにアクセスした場合
-    if (authResult?.user?.id && isAuthPage) {
-      return NextResponse.redirect(
-        new URL(`/users/${authResult.user.id}`, req.url),
-      );
+  // Secret Managerからの環境変数を処理
+  for (const key of Object.keys(process.env)) {
+    const value = process.env[key];
+    if (value?.startsWith("Secret:")) {
+      // Secret Managerの値は既に解決されているはずなので、
+      // ここでの特別な処理は不要
+      console.info(`Environment variable ${key} is from Secret Manager`);
     }
+  }
 
-    // リダイレクト不要な場合は次の処理へ
-    return NextResponse.next();
-  },
-);
+  return NextResponse.next();
+});
 
-/**
- * Next.js アプリケーションの認証ミドルウェア。
- * `authMiddlewareLogic` を NextMiddleware 型にキャストしてエクスポートします。
- * 特定のパス (`/auth/*`, `/users/*`) に適用されます。
- */
-const middleware = authMiddlewareLogic as NextMiddleware;
-
-export default middleware;
-
-// 認証ミドルウェアを適用するパスを指定
 export const config = {
-  matcher: [
-    // 認証ページ
-    "/auth/:path*",
-    // ユーザーページ
-    "/users/:path*",
-  ],
+  matcher: ["/", "/dashboard/:path*", "/auth/:path*"],
 };

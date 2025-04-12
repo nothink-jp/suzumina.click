@@ -30,7 +30,7 @@ gcloud secrets versions add [SECRET_NAME] \
 
 ```bash
 # 既存の環境変数を維持したまま更新
-gcloud run services update web-437899281 \
+gcloud run services update web \
   --region=asia-northeast1 \
   --set-secrets=\
 NEXTAUTH_URL=nextauth-url-dev:latest,\
@@ -42,54 +42,51 @@ AUTH_TRUST_HOST=auth-trust-host-dev:latest,\
 DATABASE_URL=database-url-dev:latest
 ```
 
-## 環境変数の確認方法
+### Cloud Run設定
 
-1. Cloud Run コンソール
-   - サービスの詳細画面で「変数」タブを確認
-   - Secret Managerとの連携状況を確認
+現在の設定：
 
-2. アプリケーション上
-   - トップページの環境変数デバッグ情報で確認
-   - Secret Managerからの読み込み状況を確認
+```bash
+# サービス情報
+サービス名: web
+リージョン: asia-northeast1
+URL: https://web-437899281.asia-northeast1.run.app
 
-## トラブルシューティング
+# 環境変数（ビルドインのみ）
+NODE_ENV: production
+NEXT_TELEMETRY_DISABLED: 1
+PORT: 3000
 
-### 環境変数が認識されない場合
+# シークレット
+AUTH_TRUST_HOST: auth-trust-host-dev:latest
+DATABASE_URL: database-url-dev:latest
+DISCORD_CLIENT_ID: discord-client-id-dev:latest
+DISCORD_CLIENT_SECRET: discord-client-secret-dev:latest
+DISCORD_GUILD_ID: discord-guild-id-dev:latest
+NEXTAUTH_SECRET: nextauth-secret-dev:latest
+NEXTAUTH_URL: nextauth-url-dev:latest
 
-1. Secret Managerのアクセス権限確認
-   - Cloud Runのサービスアカウントに適切な権限があるか確認
-   - `roles/secretmanager.secretAccessor` ロールが必要
+# コンピュートリソース
+メモリ: 512Mi
+CPU: 1000m
+最小インスタンス: 0
+最大インスタンス: 10
+タイムアウト: 300s
+同時実行数: 80
 
-2. シークレットの値確認
+# ネットワーク設定
+VPCコネクタ: suzumina-vpc-connector
+Egress: all-traffic
 
-   ```bash
-   # シークレットの最新バージョンを確認
-   gcloud secrets versions access latest \
-     --secret=[SECRET_NAME]
-   ```
-
-3. Cloud Runの設定確認
-
-   ```bash
-   # サービスの設定を確認
-   gcloud run services describe web-437899281 \
-     --region=asia-northeast1
-   ```
-
-### セキュリティに関する注意事項
-
-1. シークレットの管理
-   - 定期的なローテーション
-   - 適切なIAM権限設定
-   - バージョニングの活用
-
-2. 環境分離
-   - 開発環境と本番環境で別のシークレットを使用
-   - 命名規則の統一（例: `-dev`, `-prod` サフィックス）
+# サービスアカウント
+app-runtime@suzumina-click-dev.iam.gserviceaccount.com
+```
 
 ## CI/CD パイプライン設定
 
-### GitHub Actions での設定例
+GitHub Actionsを使用して、ビルドからデプロイまでを自動化しています：
+
+### GitHub Actions ワークフロー
 
 ```yaml
 name: Deploy to Cloud Run
@@ -100,70 +97,149 @@ on:
       - main
 
 env:
-  PROJECT_ID: your-project-id
-  SERVICE_NAME: web-437899281
+  PROJECT_ID: suzumina-click-dev
+  SERVICE_NAME: web
   REGION: asia-northeast1
+  DOCKER_REPOSITORY: suzumina-click-docker-repo
+  REGISTRY: asia-northeast1-docker.pkg.dev
+  SERVICE_ACCOUNT: app-runtime@suzumina-click-dev.iam.gserviceaccount.com
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
       - uses: actions/checkout@v4
       
       - id: auth
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+          workload_identity_provider: projects/357597616909/locations/global/workloadIdentityPools/github-actions/providers/github-actions
+          service_account: github-actions-deployer@suzumina-click-dev.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Build and Deploy
+      - name: Configure Docker
         run: |
-          gcloud builds submit \
-            --region=$REGION \
-            --tag gcr.io/$PROJECT_ID/$SERVICE_NAME
+          gcloud auth configure-docker ${{ env.REGISTRY }}
 
-          # Secret Managerの設定を維持したまま更新
-          gcloud run deploy $SERVICE_NAME \
-            --image gcr.io/$PROJECT_ID/$SERVICE_NAME \
-            --region=$REGION \
-            --platform=managed \
-            --allow-unauthenticated
+      - name: Get version
+        id: version
+        run: |
+          VERSION="v0.1.2-$(date +%Y%m%d-%H%M%S)"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Build and Push
+        run: |
+          IMAGE_URL=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.DOCKER_REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ env.VERSION }}
+          
+          # NODE_ENV=productionを明示的に指定してビルド
+          docker build \
+            --build-arg NEXT_TELEMETRY_DISABLED=1 \
+            -t ${IMAGE_URL} \
+            .
+          
+          docker push ${IMAGE_URL}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.DOCKER_REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ env.VERSION }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --memory 512Mi \
+            --cpu 1000m \
+            --min-instances 0 \
+            --max-instances 10 \
+            --port 3000 \
+            --service-account ${{ env.SERVICE_ACCOUNT }} \
+            --vpc-connector suzumina-vpc-connector \
+            --vpc-egress all-traffic \
+            --set-env-vars NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1 \
+            --set-secrets=\
+AUTH_TRUST_HOST=auth-trust-host-dev:latest,\
+DATABASE_URL=database-url-dev:latest,\
+DISCORD_CLIENT_ID=discord-client-id-dev:latest,\
+DISCORD_CLIENT_SECRET=discord-client-secret-dev:latest,\
+DISCORD_GUILD_ID=discord-guild-id-dev:latest,\
+NEXTAUTH_SECRET=nextauth-secret-dev:latest,\
+NEXTAUTH_URL=nextauth-url-dev:latest
+
+      - name: Display service URL
+        run: |
+          gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --format='value(status.url)'
 ```
 
-## 新環境のセットアップ
+## トラブルシューティング
 
-1. Secret Managerでシークレットを作成
+### GitHub Actions
+
+1. ビルドログの確認
+   - GitHub Actionsのワークフローページでログを確認
+   - 各ステップの詳細な出力を確認可能
+
+2. デプロイ失敗時の確認
 
    ```bash
-   # シークレットの作成
-   gcloud secrets create [SECRET_NAME] \
-     --replication-policy="automatic"
-   
-   # 初期値の設定
-   echo -n "secret-value" | \
-     gcloud secrets versions add [SECRET_NAME] --data-file=-
+   # デプロイされているイメージの確認
+   gcloud run services describe web \
+     --region=asia-northeast1 \
+     --format='value(spec.template.spec.containers[0].image)'
+
+   # サービスのリビジョン履歴
+   gcloud run revisions list \
+     --service=web \
+     --region=asia-northeast1
+
+   # リビジョンの詳細確認
+   gcloud run revisions describe [REVISION_NAME] \
+     --region=asia-northeast1
    ```
 
-2. Cloud Runのサービスアカウント設定
+### アプリケーションログ
+
+```bash
+# 最新のログを確認
+gcloud logging read \
+  "resource.type=cloud_run_revision AND resource.labels.service_name=web" \
+  --limit=50
+
+# エラーログのみを確認
+gcloud logging read \
+  "resource.type=cloud_run_revision AND resource.labels.service_name=web AND severity>=ERROR" \
+  --limit=20
+```
+
+### Workload Identity Federation
+
+1. 権限の確認
 
    ```bash
-   # サービスアカウントの作成
-   gcloud iam service-accounts create [SA_NAME] \
-     --display-name="Cloud Run Service Account"
-
-   # Secret Managerアクセス権限の付与
-   gcloud projects add-iam-policy-binding [PROJECT_ID] \
-     --member="serviceAccount:[SA_NAME]@[PROJECT_ID].iam.gserviceaccount.com" \
-     --role="roles/secretmanager.secretAccessor"
+   # サービスアカウントの権限確認
+   gcloud projects get-iam-policy $PROJECT_ID \
+     --flatten="bindings[].members" \
+     --format='table(bindings.role)' \
+     --filter="bindings.members:$SERVICE_ACCOUNT"
    ```
 
-3. Cloud Runサービスの更新
+2. GitHub Actionsの設定確認
 
    ```bash
-   gcloud run services update [SERVICE_NAME] \
-     --service-account=[SA_NAME]@[PROJECT_ID].iam.gserviceaccount.com
+   # Workload Identity Poolの確認
+   gcloud iam workload-identity-pools describe github-actions \
+     --location=global
+
+   # プロバイダーの確認
+   gcloud iam workload-identity-pools providers describe github-actions \
+     --workload-identity-pool=github-actions \
+     --location=global
    ```
 
 最終更新日: 2025年4月12日
