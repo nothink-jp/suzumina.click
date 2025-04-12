@@ -15,15 +15,9 @@ RUN bun install --frozen-lockfile
 FROM oven/bun:alpine AS builder
 WORKDIR /monorepo
 
-# ビルド時に必要な環境変数をすべて設定
+# ビルドに必要な最小限の環境変数のみ設定
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DATABASE_URL="postgres://suzumina_app:build_password@localhost:5432/suzumina_db"
-ENV NEXTAUTH_URL="https://web-437899281.asia-northeast1.run.app"
-ENV NEXTAUTH_SECRET="build-time-secret"
-ENV DISCORD_CLIENT_ID="build-time-client-id"
-ENV DISCORD_CLIENT_SECRET="build-time-client-secret"
-ENV DISCORD_GUILD_ID="build-time-guild-id"
 
 COPY --from=deps /monorepo/package.json ./package.json
 COPY --from=deps /monorepo/bun.lock ./bun.lock
@@ -39,12 +33,12 @@ RUN bun run build
 # --- Runner Stage ---
 FROM oven/bun:alpine AS runner
 
-# 実行時に必要な環境変数を設定
+# 実行時に必要な環境変数を定義（値はCloud Runで設定）
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 
-# 認証関連の環境変数も定義（値はCloud Runで上書きされます）
+# 認証関連の環境変数を定義（値はCloud Runで設定）
 ENV NEXTAUTH_URL=""
 ENV NEXTAUTH_SECRET=""
 ENV DISCORD_CLIENT_ID=""

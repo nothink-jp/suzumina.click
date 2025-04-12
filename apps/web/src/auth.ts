@@ -7,7 +7,7 @@ import {
   isProductionRuntime,
 } from "./auth/utils";
 
-// NEXTAUTH_URLの取得と検証
+// NEXTAUTH_URLの取得と検証（ビルド時は検証をスキップ）
 const baseUrl = process.env.NEXTAUTH_URL;
 if (!baseUrl && isProductionRuntime()) {
   throw new ConfigurationError("NEXTAUTH_URL");
@@ -48,6 +48,11 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     async signIn({ account, profile }) {
+      // ビルド時は検証をスキップ
+      if (!isProductionRuntime()) {
+        return true;
+      }
+
       if (!account?.access_token || account.provider !== "discord") {
         console.error("Invalid account data for Discord sign in.");
         return false;
