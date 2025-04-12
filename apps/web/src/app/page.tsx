@@ -6,14 +6,14 @@ import { UserInfoDisplay } from "@/components/UserInfoDisplay";
  */
 function EnvironmentDebug() {
   const envVars = {
-    "NODE_ENV": process.env.NODE_ENV,
-    "NEXTAUTH_URL": process.env.NEXTAUTH_URL,
-    "NEXTAUTH_SECRET": process.env.NEXTAUTH_SECRET,
-    "DISCORD_CLIENT_ID": process.env.DISCORD_CLIENT_ID,
-    "DISCORD_CLIENT_SECRET": process.env.DISCORD_CLIENT_SECRET,
-    "DISCORD_GUILD_ID": process.env.DISCORD_GUILD_ID,
-    "DATABASE_URL": process.env.DATABASE_URL,
-    "AUTH_TRUST_HOST": process.env.AUTH_TRUST_HOST,
+    NODE_ENV: process.env.NODE_ENV,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
+    DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
+    DISCORD_GUILD_ID: process.env.DISCORD_GUILD_ID,
+    DATABASE_URL: process.env.DATABASE_URL,
+    AUTH_TRUST_HOST: process.env.AUTH_TRUST_HOST,
   };
 
   return (
@@ -24,11 +24,11 @@ function EnvironmentDebug() {
           <div key={key} className="flex">
             <span className="font-mono w-64">{key}:</span>
             <span className="ml-2 break-all">
-              {value ? (
-                value.startsWith("Secret:") ? 
-                  "Secret Managerから設定済み" : 
-                  "直接設定済み"
-              ) : "未設定"}
+              {value
+                ? value.startsWith("Secret:")
+                  ? "Secret Managerから設定済み"
+                  : "直接設定済み"
+                : "未設定"}
             </span>
           </div>
         ))}
