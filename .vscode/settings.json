@@ -1,8 +1,0 @@
-{
-  "markdownlint.config": {
-    "extends": "../.markdownlint.json"
-  },
-  "editor.codeActionsOnSave": {
-    "source.fixAll.markdownlint": "explicit"
-  }
-}
