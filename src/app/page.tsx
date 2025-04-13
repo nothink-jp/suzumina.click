@@ -1,4 +1,5 @@
 import Image from "next/image"; // Image は一旦未使用になるが、将来使う可能性があるので残す
+import HeadlessUiDisclosureExample from "./_components/HeadlessUiDisclosureExample"; // 作成したコンポーネントをインポート
 
 export default function Home() {
   return (
@@ -14,9 +15,17 @@ export default function Home() {
         <p className="mt-8">(コンテンツ準備中...)</p>
         {/* DaisyUI ボタンの例 (動作確認用) */}
         <div className="mt-12">
-          <button className="btn btn-primary mr-2">Primary Button</button>
-          <button className="btn btn-secondary">Secondary Button</button>
+          {/* Biome の lint ルールに従い type="button" を追加 */}
+          <button type="button" className="btn btn-primary mr-2">
+            Primary Button
+          </button>
+          <button type="button" className="btn btn-secondary">
+            Secondary Button
+          </button>
         </div>
+
+        {/* Headless UI サンプルコンポーネントを追加 */}
+        <HeadlessUiDisclosureExample />
       </div>
     </main>
   );

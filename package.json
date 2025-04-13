@@ -8,10 +8,13 @@
     "start": "next start",
     "lint": "biome lint ./src",
     "format": "biome format --write ./src",
-    "check": "biome check --apply ./src"
+    "check": "biome check --apply ./src",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.1",
+    "@heroicons/react": "^2.2.0",
     "next": "15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -19,11 +22,18 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.3.4",
     "daisyui": "^5.0.19",
+    "happy-dom": "^17.4.4",
+    "jsdom": "^26.0.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.1.1"
   }
 }
