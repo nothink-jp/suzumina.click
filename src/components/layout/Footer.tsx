@@ -1,10 +1,12 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="footer footer-center p-4 bg-base-300 text-base-content"> {/* DaisyUI Footer */}
+    <footer className="footer footer-center p-4 bg-base-300 text-base-content">
+      {" "}
+      {/* DaisyUI Footer */}
       <aside>
         <p>
           Copyright © {currentYear} - All right reserved by [運営者名/サイト名]

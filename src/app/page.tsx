@@ -11,9 +11,7 @@ export default function Home() {
         <p className="text-lg">
           ようこそ！ここは涼花みなせさんの活動を応援する非公式ファンサイトです。
         </p>
-        <p className="mt-8">
-          (コンテンツ準備中...)
-        </p>
+        <p className="mt-8">(コンテンツ準備中...)</p>
         {/* DaisyUI ボタンの例 (動作確認用) */}
         <div className="mt-12">
           <button className="btn btn-primary mr-2">Primary Button</button>

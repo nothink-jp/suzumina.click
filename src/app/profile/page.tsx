@@ -11,9 +11,7 @@ export default function ProfilePage() {
             ここにプロフィール情報を記述します。
             YouTubeチャンネルやSNSへのリンクなどを掲載予定です。
           </p>
-          <p className="mt-4">
-            (コンテンツ準備中...)
-          </p>
+          <p className="mt-4">(コンテンツ準備中...)</p>
           {/* 将来的に画像などを追加 */}
           {/* <figure><img src="/path/to/image.jpg" alt="Profile image" /></figure> */}
           <div className="card-actions justify-end mt-4">
