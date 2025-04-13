@@ -6,23 +6,29 @@ import Header from "./Header";
 // モックの設定
 vi.mock("next/link", () => {
   return {
-    default: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => {
+    default: ({
+      href,
+      children,
+      className,
+    }: { href: string; children: React.ReactNode; className?: string }) => {
       return (
         <a href={href} className={className}>
           {children}
         </a>
       );
-    }
+    },
   };
 });
 
 describe("Header コンポーネント", () => {
   test("ヘッダーが正しく表示されること", () => {
     render(<Header />);
-    
+
     // サイト名が表示されていることを確認
-    expect(screen.getByText("涼花みなせ 非公式ファンサイト (仮)")).toBeInTheDocument();
-    
+    expect(
+      screen.getByText("涼花みなせ 非公式ファンサイト (仮)"),
+    ).toBeInTheDocument();
+
     // About リンクが表示されていることを確認
     const aboutLink = screen.getByText("About");
     expect(aboutLink).toBeInTheDocument();
@@ -31,19 +37,19 @@ describe("Header コンポーネント", () => {
 
   test("メニュードロップダウンが正しく動作すること", async () => {
     render(<Header />);
-    
+
     // ドロップダウンメニューが表示されていることを確認
     const dropdownSummary = screen.getByText("メニュー");
     expect(dropdownSummary).toBeInTheDocument();
-    
+
     // 初期状態ではドロップダウンメニューの項目は表示されていないことを確認
     expect(screen.queryByText("メニュー1")).not.toBeVisible();
     expect(screen.queryByText("メニュー2")).not.toBeVisible();
-    
+
     // ドロップダウンをクリックして項目を表示
     const user = userEvent.setup();
     await user.click(dropdownSummary);
-    
+
     // ドロップダウン項目が表示されることを確認
     const menu1 = screen.getByText("メニュー1");
     const menu2 = screen.getByText("メニュー2");
@@ -55,7 +61,7 @@ describe("Header コンポーネント", () => {
 
   test("トップページへのリンクが正しく設定されていること", () => {
     render(<Header />);
-    
+
     // サイト名のリンクがトップページに設定されていることを確認
     const titleLink = screen.getByText("涼花みなせ 非公式ファンサイト (仮)");
     expect(titleLink.closest("a")).toHaveAttribute("href", "/");

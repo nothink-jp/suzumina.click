@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import Footer from './Footer';
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
+import Footer from "./Footer";
 
-describe('Footer Component', () => {
-  it('should render the copyright notice with the current year', () => {
+describe("Footer Component", () => {
+  it("should render the copyright notice with the current year", () => {
     // Arrange
     const currentYear = new Date().getFullYear();
     render(<Footer />);
@@ -16,6 +16,8 @@ describe('Footer Component', () => {
     // 年が含まれているかを確認 (より堅牢なテスト)
     expect(copyrightText.textContent).toContain(`Copyright © ${currentYear}`);
     // 非公式ファンサイトである旨の注意書きが表示されるか
-    expect(screen.getByText(/このサイトは涼花みなせさんの非公式ファンサイトであり/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/このサイトは涼花みなせさんの非公式ファンサイトであり/),
+    ).toBeInTheDocument();
   });
 });
