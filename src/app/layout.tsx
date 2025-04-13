@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import Header from "@/components/layout/Header"; // Header コンポーネントをインポート
+import Footer from "@/components/layout/Footer"; // Footer コンポーネントをインポート
 import "./globals.css";
 
 // Noto Sans JP フォントを設定
@@ -23,9 +25,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" data-theme="light">
-      {/* <html> と <body> の間のコメントと空白を削除 */}
-      <body className={`${notoSansJp.variable} antialiased`}>
-        {children}
+      <body className={`${notoSansJp.variable} antialiased flex flex-col min-h-screen`}>
+        <Header />
+        <main className="flex-grow">
+          {children}
+        </main>
+        <Footer /> {/* Footer を配置 */}
       </body>
     </html>
   );
