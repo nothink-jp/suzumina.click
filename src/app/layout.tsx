@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
-import Header from "@/components/layout/Header"; // Header コンポーネントをインポート
-import Footer from "@/components/layout/Footer"; // Footer コンポーネントをインポート
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import { AuthProvider } from "@/lib/firebase/AuthProvider"; // AuthProvider をインポート
 import "./globals.css";
 
 // Noto Sans JP フォントを設定
@@ -28,9 +29,12 @@ export default function RootLayout({
       <body
         className={`${notoSansJp.variable} antialiased flex flex-col min-h-screen`}
       >
-        <Header />
-        <main className="flex-grow">{children}</main>
-        <Footer /> {/* Footer を配置 */}
+        {/* AuthProvider でラップ */}
+        <AuthProvider>
+          <Header />
+          <main className="flex-grow">{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

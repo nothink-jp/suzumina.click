@@ -1,2 +1,9 @@
-onlyBuiltDependencies:
-  - '@biomejs/biome'
+packages:
+  # ルートの Next.js アプリケーション
+  - '.'
+  # Firebase Functions
+  - 'functions'
+
+# 既存の設定 (必要であれば残す)
+# onlyBuiltDependencies:
+#   - '@biomejs/biome'
