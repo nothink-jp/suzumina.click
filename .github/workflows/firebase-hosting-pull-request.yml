@@ -3,34 +3,19 @@
 
 name: Deploy to Firebase Hosting on PR
 on: pull_request
+
+# permissions は reusable workflow 側で定義されていれば不要な場合もある
 permissions:
   checks: write
   contents: read
   pull-requests: write
+
 jobs:
-  build_and_preview:
+  call_reusable_deploy: # ジョブ名を変更
+    # if 条件は呼び出し元に残す
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      # --- pnpm のセットアップを追加 ---
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10 # 使用する pnpm のバージョン (package.json の engines などと合わせる)
-      # --- Node.js のセットアップ (pnpm action より後に記述) ---
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20 # 使用する Node.js のバージョン
-          cache: 'pnpm' # pnpm のキャッシュを有効化
-      # --- npm コマンドを pnpm に変更 ---
-      - name: Install dependencies and Build
-        run: pnpm install --frozen-lockfile && pnpm build
-      # --- Firebase デプロイ ---
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SUZUMINA_CLICK_FIREBASE }}
-          projectId: suzumina-click-firebase
+    uses: ./.github/workflows/reusable-deploy.yml # 再利用可能なワークフローを呼び出す
+    secrets:
+      # 必要なシークレットを渡す
+      firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SUZUMINA_CLICK_FIREBASE }}
+    # PRプレビューなので channelId は渡さない (デフォルトの空文字が使われる)

@@ -1,0 +1,47 @@
+# Reusable workflow for building and deploying to Firebase Hosting
+name: Reusable Build and Deploy
+
+on:
+  workflow_call:
+    inputs:
+      channelId: # デプロイ先のチャンネルID (PRプレビューの場合は空、mainマージ時は 'live')
+        required: false
+        type: string
+        default: '' # デフォルトは空文字 (PRプレビュー用)
+    secrets:
+      firebaseServiceAccount: # Firebase サービスアカウントキー
+        required: true
+
+permissions: # 呼び出し元ではなく、ここで権限を定義することも可能
+  checks: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies and Build
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }} # GITHUB_TOKEN は自動的に利用可能
+          firebaseServiceAccount: ${{ secrets.firebaseServiceAccount }} # secrets から受け取る
+          projectId: suzumina-click-firebase # プロジェクトIDは固定
+          channelId: ${{ inputs.channelId }} # inputs から受け取る (空ならPRプレビュー)

@@ -6,30 +6,17 @@ on:
   push:
     branches:
       - main
+
+# permissions は reusable workflow 側で定義されていれば不要な場合もある
+permissions:
+  contents: read # デプロイに必要な最低限の権限 (reusable側で定義されていれば省略可)
+
 jobs:
-  build_and_deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      # --- pnpm のセットアップを追加 ---
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10 # 使用する pnpm のバージョン
-      # --- Node.js のセットアップ ---
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20 # 使用する Node.js のバージョン
-          cache: 'pnpm' # pnpm のキャッシュを有効化
-      # --- npm コマンドを pnpm に変更 ---
-      - name: Install dependencies and Build
-        run: pnpm install --frozen-lockfile && pnpm build
-      # --- Firebase デプロイ ---
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SUZUMINA_CLICK_FIREBASE }}
-          channelId: live
-          projectId: suzumina-click-firebase
+  call_reusable_deploy: # ジョブ名を変更
+    uses: ./.github/workflows/reusable-deploy.yml # 再利用可能なワークフローを呼び出す
+    with:
+      # 本番デプロイなので channelId を 'live' に設定
+      channelId: live
+    secrets:
+      # 必要なシークレットを渡す
+      firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SUZUMINA_CLICK_FIREBASE }}
