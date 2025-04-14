@@ -13,8 +13,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npm ci && npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      # --- pnpm のセットアップを追加 ---
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10 # 使用する pnpm のバージョン (package.json の engines などと合わせる)
+      # --- Node.js のセットアップ (pnpm action より後に記述) ---
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # 使用する Node.js のバージョン
+          cache: 'pnpm' # pnpm のキャッシュを有効化
+      # --- npm コマンドを pnpm に変更 ---
+      - name: Install dependencies and Build
+        run: pnpm install --frozen-lockfile && pnpm build
+      # --- Firebase デプロイ ---
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SUZUMINA_CLICK_FIREBASE }}
