@@ -12,10 +12,11 @@ on:
       firebaseServiceAccount: # Firebase サービスアカウントキー
         required: true
 
-permissions: # 呼び出し元ではなく、ここで権限を定義することも可能
-  checks: write
-  contents: read
-  pull-requests: write
+# permissions ブロックを削除 (呼び出し元で定義する)
+# permissions:
+#   checks: write
+#   contents: read
+#   pull-requests: write
 
 jobs:
   build_and_deploy:

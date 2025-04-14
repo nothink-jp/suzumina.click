@@ -7,12 +7,12 @@ on:
     branches:
       - main
 
-# permissions は reusable workflow 側で定義されていれば不要な場合もある
+# 必要な権限のみに修正
 permissions:
-  contents: read # デプロイに必要な最低限の権限 (reusable側で定義されていれば省略可)
+  contents: read # actions/checkout@v4 がコードを読み取るために必要
 
 jobs:
-  call_reusable_deploy: # ジョブ名を変更
+  call_reusable_deploy:
     uses: ./.github/workflows/reusable-deploy.yml # 再利用可能なワークフローを呼び出す
     with:
       # 本番デプロイなので channelId を 'live' に設定
