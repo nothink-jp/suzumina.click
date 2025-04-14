@@ -1,7 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.discordapp.com',
+        // 必要に応じて pathname や port も指定可能
+        // pathname: '/avatars/**',
+      },
+      // 他に許可したい外部ドメインがあればここに追加
+    ],
+  },
+  /* 他の config options があればここに追加 */
 };
 
 export default nextConfig;
