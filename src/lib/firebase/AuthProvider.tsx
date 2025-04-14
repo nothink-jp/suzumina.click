@@ -1,10 +1,10 @@
 "use client"; // クライアントコンポーネント
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { ReactNode } from 'react'; // ReactNode を type としてインポート
-import { onAuthStateChanged } from 'firebase/auth';
-import type { User } from 'firebase/auth'; // User を type としてインポート
-import { auth } from './client'; // Firebase Client SDK の auth インスタンスをインポート
+import React, { createContext, useContext, useEffect, useState } from "react";
+import type { ReactNode } from "react"; // ReactNode を type としてインポート
+import { onAuthStateChanged } from "firebase/auth";
+import type { User } from "firebase/auth"; // User を type としてインポート
+import { auth } from "./client"; // Firebase Client SDK の auth インスタンスをインポート
 
 // Context の型定義
 interface AuthContextType {
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

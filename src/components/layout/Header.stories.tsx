@@ -1,16 +1,16 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import Header from './Header';
+import type { Meta, StoryObj } from "@storybook/react";
+import Header from "./Header";
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
 const meta = {
-  title: 'Layout/Header', // Storybook UIでの表示パス
+  title: "Layout/Header", // Storybook UIでの表示パス
   component: Header,
   parameters: {
     // Optional parameter to center the component in the Canvas. More info: https://storybook.js.org/docs/configure/story-layout
-    layout: 'fullscreen', // ヘッダーは全幅表示が自然なため fullscreen を指定
+    layout: "fullscreen", // ヘッダーは全幅表示が自然なため fullscreen を指定
   },
   // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/writing-docs/autodocs
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   // More on argTypes: https://storybook.js.org/docs/api/argtypes
   argTypes: {
     // Props があればここで定義 (Header は現在 Props を受け取らない)

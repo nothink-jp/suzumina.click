@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import Footer from './Footer';
+import type { Meta, StoryObj } from "@storybook/react";
+import Footer from "./Footer";
 
 const meta = {
-  title: 'Layout/Footer',
+  title: "Layout/Footer",
   component: Footer,
   parameters: {
-    layout: 'fullscreen', // フッターも全幅表示が自然
+    layout: "fullscreen", // フッターも全幅表示が自然
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     // Footer は現在 Props を受け取らない
   },
