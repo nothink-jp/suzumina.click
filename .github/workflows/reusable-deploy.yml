@@ -65,7 +65,6 @@ jobs:
           NEXT_PUBLIC_DISCORD_REDIRECT_URI: ${{ secrets.NEXT_PUBLIC_DISCORD_REDIRECT_URI }}
           NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL: ${{ secrets.NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL }}
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-          FIREBASE_CLI_EXPERIMENTS: webframeworks
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -74,3 +73,6 @@ jobs:
           firebaseServiceAccount: ${{ secrets.firebaseServiceAccount }}
           projectId: suzumina-click-firebase
           channelId: ${{ inputs.channelId }}
+        env:
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
+  
