@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // 静的エクスポートを有効化（Firebase Hostingと互換性を持たせるため）
-  output: 'export',
-  
   images: {
     remotePatterns: [
       {
@@ -14,10 +11,7 @@ const nextConfig: NextConfig = {
       },
       // 他に許可したい外部ドメインがあればここに追加
     ],
-    // 静的エクスポートの場合、unoptimizedを設定
-    unoptimized: true,
   },
-  /* 他の config options があればここに追加 */
 };
 
 export default nextConfig;
