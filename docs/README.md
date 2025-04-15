@@ -7,50 +7,82 @@
 ```
 .
 ├── .clinerules          # Cline (開発支援AI) 設定ファイル
+├── .firebaserc          # Firebase プロジェクト設定 (ローカル)
 ├── .gitignore           # Git 無視リスト
-├── docs/                # プロジェクトドキュメント
-│   ├── COMPONENT_DESIGN.md # コンポーネント設計ガイドライン
-│   ├── INFO.md          # プロジェクト関連情報（連絡先など）
-│   ├── PLAN.md          # 設計ドキュメント作成計画（一時ファイル）
-│   ├── POLICY.md        # 設計・開発ポリシー
-│   ├── README.md        # このファイル (ドキュメントの目次、ディレクトリ構成)
-│   ├── STYLING.md       # スタイリングガイドライン
-│   └── TODO.md          # プロジェクトのTODOリスト
+├── biome.json           # Biome (フォーマッター/リンター) 設定
+├── firebase.json        # Firebase デプロイ設定 (Hosting, Functions)
+├── functions/           # Firebase Cloud Functions コード
+│   ├── .gitignore
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── lib/             # (ビルド後JS出力先)
+│   └── src/
+│       └── index.ts     # Functions エントリーポイント
 ├── next.config.ts       # Next.js 設定ファイル
-├── package.json         # 依存関係とスクリプト
+├── package.json         # 依存関係とスクリプト (ルート)
 ├── pnpm-lock.yaml       # 依存関係ロックファイル
+├── pnpm-workspace.yaml  # pnpm ワークスペース設定
 ├── postcss.config.mjs   # PostCSS 設定ファイル
-├── public/              # 静的ファイル (画像など)
-│   ├── file.svg
-│   ├── globe.svg
-│   ├── next.svg
-│   ├── vercel.svg
-│   └── window.svg
+├── public/              # 静的ファイル (現在は空)
 ├── README.md            # プロジェクトルートのREADME
-├── src/                 # ソースコードルート
-│   ├── app/             # Next.js App Router コア
+├── src/                 # Next.js アプリケーションソースコード
+│   ├── app/             # App Router コア
 │   │   ├── favicon.ico
 │   │   ├── globals.css  # グローバルCSS
 │   │   ├── layout.tsx   # ルートレイアウト (RSC)
-│   │   └── page.tsx     # ルートページ (RSC)
-│   └── (その他: lib/, components/ など、必要に応じて作成)
-└── tsconfig.json        # TypeScript 設定ファイル
+│   │   ├── page.tsx     # ルートページ (RSC)
+│   │   ├── page.test.tsx # ルートページテスト
+│   │   ├── _components/ # ルートページ固有コンポーネント
+│   │   │   └── HeadlessUiDisclosureExample.tsx
+│   │   │   └── HeadlessUiDisclosureExample.test.tsx
+│   │   ├── auth/        # 認証関連ページ
+│   │   │   └── discord/
+│   │   │       └── callback/
+│   │   │           ├── CallbackClient.tsx # 認証コールバック処理 (RCC)
+│   │   │           └── page.tsx         # 認証コールバックページ (RSC + Suspense)
+│   │   └── profile/     # プロフィールページ
+│   │       ├── page.tsx
+│   │       └── page.test.tsx
+│   ├── components/      # 共通コンポーネント
+│   │   ├── layout/      # レイアウト関連
+│   │   │   ├── Footer.stories.tsx
+│   │   │   ├── Footer.test.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   ├── Header.stories.tsx
+│   │   │   ├── Header.test.tsx
+│   │   │   └── Header.tsx
+│   │   └── ui/          # UI 部品
+│   │       └── AuthButton.tsx
+│   └── lib/             # ライブラリ、ユーティリティ
+│       ├── .gitkeep
+│       └── firebase/    # Firebase 関連
+│           ├── AuthProvider.tsx
+│           └── client.ts
+├── tsconfig.json        # TypeScript 設定ファイル (ルート)
+├── vitest.config.ts     # Vitest 設定ファイル
+├── vitest.setup.ts      # Vitest セットアップファイル
+├── vitest.shims.d.ts    # Vitest 型定義シム
+└── vitest.workspace.ts  # Vitest ワークスペース設定 (あれば)
 ```
 
 ## 主要ディレクトリ/ファイル説明
 
-- **`docs/`**: プロジェクト関連ドキュメント。各ファイルの内容は上記の構成図を参照。
-- **`public/`**: ビルド時にそのままコピーされる静的ファイル。画像、フォントなどが配置されます。
-- **`src/`**: アプリケーションのソースコード。
-    - **`src/app/`**: Next.js App Router の規約に基づいたディレクトリ。ルーティング、レイアウト、ページのコア部分。
-        - **`layout.tsx`**: 必須。ルートレイアウト。サーバーコンポーネント(RSC)とします。HTMLの `<html>` や `<body>` タグを含みます。
-        - **`page.tsx`**: 必須。ルート (`/`) のページ。サーバーコンポーネント(RSC)とします。
-        - **`globals.css`**: アプリケーション全体に適用されるグローバルスタイル。TailwindCSS の `@tailwind` ディレクティブや、最小限のカスタムグローバルスタイルを記述します。
-        - **`(page)/_components/`**: 各ページ (例: `src/app/about/page.tsx`) に密接に関連するコンポーネントは、そのページのディレクトリ (例: `src/app/about/`) 配下に `_components` ディレクトリを作成し、そこに配置します（コロケーション）。
-- **`next.config.ts`**: Next.js のビルド時や実行時の挙動を設定します。
-- **`postcss.config.mjs`**: PostCSS の設定。TailwindCSS は PostCSS プラグインとして動作するため、このファイルが必要です。
-- **`package.json`**: プロジェクトの依存関係 (ライブラリ) や、`dev`, `build`, `start` などのスクリプトを定義します。
-- **`pnpm-lock.yaml`**: pnpm によって管理される正確な依存関係のバージョンを記録します。
-- **`tsconfig.json`**: TypeScript コンパイラの設定を行います。
-- **`.clinerules`**: このプロジェクトで使用する開発支援AI (Cline) のカスタムルール。
-- **`.gitignore`**: Git のバージョン管理から除外するファイルやディレクトリを指定します。
+- **`docs/`**: プロジェクト関連ドキュメント。
+- **`functions/`**: Firebase Cloud Functions のソースコードと設定。Discord 認証コールバック処理などを担当。
+- **`public/`**: ビルド時にそのままコピーされる静的ファイル。現在は空。
+- **`src/`**: Next.js アプリケーションのソースコード。
+    - **`src/app/`**: Next.js App Router の規約に基づいたディレクトリ。
+        - **`layout.tsx`**: ルートレイアウト。`AuthProvider` でラップ。
+        - **`page.tsx`**: ホームページ。
+        - **`auth/discord/callback/`**: Discord 認証後のコールバック処理ページ。
+        - **`profile/`**: プロフィール表示ページ。
+        - **`_components/`**: 各ページ/レイアウトに固有のコンポーネント。
+    - **`src/components/`**: アプリケーション全体で再利用される共通コンポーネント。
+        - **`layout/`**: ヘッダー、フッターなど。
+        - **`ui/`**: ボタンなどの汎用 UI 部品 (`AuthButton` など)。
+    - **`src/lib/`**: ユーティリティ関数や外部サービス連携コード。
+        - **`firebase/`**: Firebase Client SDK の初期化 (`client.ts`) や認証プロバイダー (`AuthProvider.tsx`)。
+- **`firebase.json`, `.firebaserc`**: Firebase デプロイ設定。
+- **`next.config.ts`**: Next.js 設定 (画像最適化ドメインなど)。
+- **`biome.json`, `package.json`, `pnpm-*.yaml`, `postcss.config.mjs`, `tsconfig.json`**: プロジェクトのビルド、フォーマット、依存関係管理などの設定。
+- **`vitest.*.ts`**: Vitest (テストフレームワーク) の設定ファイル。
