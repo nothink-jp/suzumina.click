@@ -21,11 +21,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true); // 初期状態は読み込み中
 
   useEffect(() => {
+    // authがnullの場合は早期リターン（サーバーサイドレンダリングなどの場合）
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     // onAuthStateChanged で認証状態の変化を監視
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser); // ユーザー情報を更新
-      setLoading(false); // 読み込み完了
-    });
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (currentUser) => {
+        setUser(currentUser); // ユーザー情報を更新
+        setLoading(false); // 読み込み完了
+      },
+      (error) => {
+        // エラーハンドリング
+        console.error("認証状態の監視中にエラーが発生しました:", error);
+        setLoading(false);
+      },
+    );
 
     // コンポーネントのアンマウント時に監視を解除
     return () => unsubscribe();

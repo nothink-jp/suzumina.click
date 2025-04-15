@@ -53,6 +53,12 @@ export default function CallbackClient() {
             data.error || "カスタムトークンの取得に失敗しました。",
           );
         }
+        
+        // authがnullでないことを確認
+        if (!auth) {
+          throw new Error("認証システムの初期化に失敗しました。");
+        }
+        
         return signInWithCustomToken(auth, data.customToken);
       })
       .then(() => {
