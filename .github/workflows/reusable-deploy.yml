@@ -30,9 +30,8 @@ on:
         required: true
       NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL:
         required: true
-      # NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: (オプション)
-      #   required: false
-      # --- 追加ここまで ---
+      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID:
+        required: false
 
 jobs:
   build_and_deploy:
@@ -65,7 +64,7 @@ jobs:
           NEXT_PUBLIC_DISCORD_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_DISCORD_CLIENT_ID }}
           NEXT_PUBLIC_DISCORD_REDIRECT_URI: ${{ secrets.NEXT_PUBLIC_DISCORD_REDIRECT_URI }}
           NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL: ${{ secrets.NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }} # オプション
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
