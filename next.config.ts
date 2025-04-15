@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
       // 他に許可したい外部ドメインがあればここに追加
     ],
   },
+  /* 他の config options があればここに追加 */
 };
 
 export default nextConfig;
