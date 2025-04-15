@@ -3,8 +3,7 @@
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import { auth } from "@/lib/firebase/client";
 import { signOut } from "firebase/auth";
-import { useRouter } from 'next/navigation';
-// import Image from 'next/image'; // next/image は不要になったので削除
+import { useRouter } from "next/navigation";
 
 export default function AuthButton() {
   const { user, loading } = useAuth();
@@ -26,9 +25,14 @@ export default function AuthButton() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      router.push('/');
-      console.log("Logged out successfully");
+      // authがnullでないことを確認してからsignOutを呼び出す
+      if (auth) {
+        await signOut(auth);
+        router.push("/");
+        console.log("Logged out successfully");
+      } else {
+        console.error("Firebase認証が初期化されていません");
+      }
     } catch (error) {
       console.error("Error signing out: ", error);
     }
@@ -43,7 +47,11 @@ export default function AuthButton() {
     return (
       <div className="dropdown dropdown-end">
         {/* トリガー要素を button に変更 */}
-        <button type="button" tabIndex={0} className="btn btn-ghost btn-circle avatar">
+        <button
+          type="button"
+          tabIndex={0}
+          className="btn btn-ghost btn-circle avatar"
+        >
           <div className="w-10 rounded-full">
             {user.photoURL ? (
               // 標準の img タグを使用
@@ -52,7 +60,9 @@ export default function AuthButton() {
             ) : (
               <div className="avatar placeholder">
                 <div className="bg-neutral text-neutral-content rounded-full w-10">
-                  <span className="text-xl">{user.displayName?.charAt(0) || '?'}</span>
+                  <span className="text-xl">
+                    {user.displayName?.charAt(0) || "?"}
+                  </span>
                 </div>
               </div>
             )}
@@ -66,7 +76,9 @@ export default function AuthButton() {
             <span>{user.displayName || user.uid}</span>
           </li>
           <li>
-            <button type="button" onClick={handleLogout}>ログアウト</button>
+            <button type="button" onClick={handleLogout}>
+              ログアウト
+            </button>
           </li>
           {/* <li><a>プロフィール</a></li> */}
           {/* <li><a>設定</a></li> */}
@@ -77,7 +89,11 @@ export default function AuthButton() {
 
   // 未ログインの場合: ログインボタン
   return (
-    <button type="button" onClick={handleLogin} className="btn btn-primary btn-sm">
+    <button
+      type="button"
+      onClick={handleLogin}
+      className="btn btn-primary btn-sm"
+    >
       Discord でログイン
     </button>
   );
