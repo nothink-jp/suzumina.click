@@ -1,0 +1,6 @@
+# Example variable values.
+# Rename this file to terraform.tfvars and fill in the actual values.
+# Do not commit terraform.tfvars to version control if it contains sensitive data.
+
+# gcp_project_id = "your-gcp-project-id"
+# youtube_api_key = "your-youtube-data-api-key"

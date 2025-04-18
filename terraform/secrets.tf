@@ -59,6 +59,22 @@ resource "google_secret_manager_secret" "discord_target_guild_id" {
   depends_on = [google_project_service.secretmanager]
 }
 
+# YouTube Data API Key Secret
+resource "google_secret_manager_secret" "youtube_api_key" {
+  project   = var.gcp_project_id
+  secret_id = "YOUTUBE_API_KEY" # Use the planned secret ID
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast1" # Match existing replication settings
+      }
+    }
+  }
+  depends_on = [google_project_service.secretmanager]
+}
+
+
 # TODO: 関数実行サービスアカウントに Secret Manager へのアクセス権限を付与
 # data "google_compute_default_service_account" "default" {}
 # resource "google_secret_manager_secret_iam_member" "discord_client_id_accessor" {

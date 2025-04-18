@@ -38,6 +38,27 @@
 - [ ] (TODO) 認証ユーザー情報の表示改善 (例: Header のユーザー名表示)
 - [ ] (TODO) プロフィールページの内容拡充
 
+## 音声ボタンサービス
+
+- [x] **YouTube動画情報取得バッチ 設計・計画 (`docs/AUDIO_BUTTON_PLAN.md`)**
+- [x] **インフラ設定 (Terraform)**
+    - [x] Firestoreデータベース作成
+    - [x] YouTube APIキー用 Secret Manager シークレット作成
+    - [x] `fetchYouTubeVideos` 関数用サービスアカウント作成と権限付与 (Firestore, Secret Manager, Logging, Run Invoker)
+    - [x] Pub/Subトピック (`youtube-video-fetch-trigger`) 作成
+    - [x] Cloud Schedulerジョブ作成 (1時間に1回 Pub/Subトピックをトリガー)
+    - [x] Cloud SchedulerサービスエージェントへのPub/Sub発行権限付与
+    - [x] Pub/Sub, Eventarc サービスエージェントへの関連権限付与 (Token Creator, Event Receiver, Run Invoker)
+- [x] **Cloud Functions 実装 (`fetchYouTubeVideos`)**
+    - [x] 必要なライブラリ (`googleapis`, `@google-cloud/firestore`, `@google-cloud/functions-framework`) 追加
+    - [x] Pub/Subトリガーで起動する関数ロジック実装 (YouTube API呼び出し、Firestore書き込み)
+    - [x] イベント形式の互換性問題のため、Raw CloudEvent ハンドラ形式で実装
+- [x] **Cloud Functions デプロイ (`fetchYouTubeVideos`)**
+    - [x] Terraform でのデプロイと動作確認完了
+- [ ] (TODO) `docs/ENVIRONMENT_VARIABLES.md`: `YOUTUBE_API_KEY` について追記
+- [ ] (TODO) `README.md` または新規ドキュメント: 音声ボタンサービス機能の概要、アーキテクチャ図、Firestoreデータモデルなどを記載
+- [ ] (TODO) `terraform/README.md` (もしあれば): 新規リソースについて追記
+
 ## テスト / Storybook
 
 - [x] `Header` コンポーネントのテスト作成
