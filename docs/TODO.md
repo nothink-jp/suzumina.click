@@ -10,7 +10,7 @@
 - [x] `docs/PLAN.md` の削除 (上記ドキュメント確定後)
 - [x] `docs/AUTH_DESIGN.md` 作成 (認証設計)
 - [x] `docs/ENVIRONMENT_VARIABLES.md` 作成 (環境変数設定ガイド)
-- [ ] `docs/AUTH_DESIGN.md` の簡略化 (実装完了後の整理)
+- [x] `docs/AUTH_DESIGN.md` の簡略化 (実装完了後の整理)
 
 ## 初期セットアップ
 

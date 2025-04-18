@@ -1,7 +1,8 @@
 # .clinerules
 
 ## 基本ルール
-- docs/TODO.md にチェックリストを管理、適宜 docs 確認・更新
+- docs/TODO.md にチェックリストを管理、docs/CHANGELOG.md に変更履歴を管理、適宜 docs 確認・更新
+- リリースノートは、docs/CHANGELOG.md を元に自動生成、GitHubのリリース機能を使用
 - Markdown は100行以内、不要なドキュメントは削除
 
 ## 開発プラクティス

@@ -63,7 +63,7 @@ graph TD
     *   `publishedAt`: timestamp (Firebase Timestamp - 公開日時)
     *   `thumbnailUrl`: string (デフォルトサムネイルURL)
     *   `channelId`: string (チャンネルID - `UChiMMOhl6FpzjoRqvZ5rcaA`)
-    *   `channelTitle`: string (チャンネルタイトル - "涼花みなせ / Suzuhana Minase")
+    *   `channelTitle`: string (チャンネルタイトル - "涼花みなせ / Suzuka Minase")
     *   `lastFetchedAt`: timestamp (Firebase Timestamp - このFunctionで最後に取得/更新した日時)
 
 ### 1.4. インフラストラクチャ (Terraform管理)

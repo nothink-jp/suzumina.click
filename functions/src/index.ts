@@ -38,7 +38,7 @@ if (admin.apps.length === 0) {
 const firestore = admin.firestore();
 
 // --- Constants ---
-const SUZUHANA_MINASE_CHANNEL_ID = "UChiMMOhl6FpzjoRqvZ5rcaA";
+const SUZUKA_MINASE_CHANNEL_ID = "UChiMMOhl6FpzjoRqvZ5rcaA";
 
 // --- Interfaces ---
 interface DiscordUser {
@@ -289,14 +289,14 @@ export const fetchYouTubeVideos = async (event: CloudEvent<SimplePubSubData>): P
     const now = FieldValue.serverTimestamp();
 
     try {
-      logger.info(`Fetching video IDs for channel: ${SUZUHANA_MINASE_CHANNEL_ID}`);
+      logger.info(`Fetching video IDs for channel: ${SUZUKA_MINASE_CHANNEL_ID}`);
       const allVideoIds: string[] = [];
       let nextPageToken: string | undefined = undefined;
 
       do {
         const searchResponse: youtube_v3.Schema$SearchListResponse = (await youtube.search.list({
           part: ["id"],
-          channelId: SUZUHANA_MINASE_CHANNEL_ID,
+          channelId: SUZUKA_MINASE_CHANNEL_ID,
           maxResults: 50,
           type: ["video"],
           order: "date",
