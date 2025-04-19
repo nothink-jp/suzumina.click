@@ -456,7 +456,7 @@ describe("fetchYouTubeVideos", () => {
     mockYoutubeSearchList.mockRejectedValue(searchError);
     await fetchYouTubeVideos(mockEvent);
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "fetchYouTubeVideos 関数で例外が発生しました (外側catch):",
+      "fetchYouTubeVideos 関数で例外が発生しました:",
       searchError,
     );
     expect(mockYoutubeVideosList).not.toHaveBeenCalled();
@@ -493,7 +493,7 @@ describe("fetchYouTubeVideos", () => {
     await fetchYouTubeVideos(mockEvent);
     expect(mockYoutubeSearchList).toHaveBeenCalledTimes(2);
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "fetchYouTubeVideos 関数で例外が発生しました (外側catch):",
+      "fetchYouTubeVideos 関数で例外が発生しました:",
       videoError,
     );
     expect(mockedBatch).not.toHaveBeenCalled();
@@ -773,7 +773,7 @@ describe("fetchYouTubeVideos", () => {
     expect(mockedLoggerWarn).toHaveBeenCalledTimes(2);
     // 期待値を修正: 実際のログ出力に合わせて etag と kind を追加
     expect(mockedLoggerWarn).toHaveBeenCalledWith(
-      "IDまたはスニペットが欠けているため動画をスキップします:",
+      "IDまたはスニペットが不足しているため動画をスキップします:",
       {
         etag: "",
         id: undefined,
@@ -790,7 +790,7 @@ describe("fetchYouTubeVideos", () => {
     );
     // 期待値を修正: 実際のログ出力に合わせて etag と kind を追加
     expect(mockedLoggerWarn).toHaveBeenCalledWith(
-      "IDまたはスニペットが欠けているため動画をスキップします:",
+      "IDまたはスニペットが不足しているため動画をスキップします:",
       { etag: "", id: "vid3", kind: "", snippet: undefined },
     );
 
