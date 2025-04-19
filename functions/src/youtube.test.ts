@@ -98,13 +98,9 @@ vi.mock("./firebaseAdmin", () => {
 
 import { fetchYouTubeVideos } from "./youtube";
 import * as logger from "firebase-functions/logger";
-import { google } from "googleapis";
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import { SUZUKA_MINASE_CHANNEL_ID, type SimplePubSubData } from "./common";
-import {
-  initializeFirebaseAdmin as mockedInitializeFirebaseAdmin,
-  firestore as mockedFirestore,
-} from "./firebaseAdmin";
+import type { SimplePubSubData } from "./common";
+import { firestore as mockedFirestore } from "./firebaseAdmin";
 import type { WriteBatch } from "firebase-admin/firestore";
 import type { Mock } from "vitest";
 
@@ -334,10 +330,12 @@ describe("fetchYouTubeVideos", () => {
     const mockBatchSet = vi.fn();
     const mockBatchCommit = vi.fn().mockResolvedValue([]);
     const mockBatch = { set: mockBatchSet, commit: mockBatchCommit };
-    vi.mocked(mockedFirestore.batch).mockReturnValue(mockBatch as unknown as WriteBatch);
+    vi.mocked(mockedFirestore.batch).mockReturnValue(
+      mockBatch as unknown as WriteBatch,
+    );
 
     // 確実にUTF-8デコードが失敗する不正なbase64文字列を生成
-    const invalidBytes = new Uint8Array([0xFF, 0xFE, 0xFD]);
+    const invalidBytes = new Uint8Array([0xff, 0xfe, 0xfd]);
     const invalidBase64Data = Buffer.from(invalidBytes).toString("base64");
 
     // APIのモックレスポンスを設定 (成功ケース - ただし、デコード失敗で処理が中断されるため、これらのモックは呼ばれないはず)
@@ -416,7 +414,7 @@ describe("fetchYouTubeVideos", () => {
     // エラーログの検証 - logger.error が呼ばれることを確認 (実装に合わせて修正)
     expect(mockedLoggerError).toHaveBeenCalledWith(
       "Failed to decode base64 message data:",
-      expect.any(Error)
+      expect.any(Error),
     );
     // 処理が中断されるため、後続のAPI呼び出しやFirestore操作は行われないことを検証
     expect(mockYoutubeSearchList).not.toHaveBeenCalled();
@@ -425,7 +423,7 @@ describe("fetchYouTubeVideos", () => {
 
     // 処理完了ログは出力されないことを検証
     expect(mockedLoggerInfo).not.toHaveBeenCalledWith(
-      "fetchYouTubeVideos function finished processing."
+      "fetchYouTubeVideos function finished processing.",
     );
   });
 
@@ -661,17 +659,20 @@ describe("fetchYouTubeVideos", () => {
 
     // batch モックを修正して、呼び出しごとに異なる set モックを返すようにする
     vi.mocked(mockedFirestore.batch)
-      .mockImplementationOnce(() => ({
-          set: setMockBatch1,
-          commit: commitMock,
-        }) as unknown as WriteBatch,
+      .mockImplementationOnce(
+        () =>
+          ({
+            set: setMockBatch1,
+            commit: commitMock,
+          }) as unknown as WriteBatch,
       )
-      .mockImplementationOnce(() => ({
-          set: setMockBatch2,
-          commit: commitMock,
-        }) as unknown as WriteBatch,
+      .mockImplementationOnce(
+        () =>
+          ({
+            set: setMockBatch2,
+            commit: commitMock,
+          }) as unknown as WriteBatch,
       );
-
 
     await fetchYouTubeVideos(mockEvent);
     expect(mockYoutubeSearchList).toHaveBeenCalledTimes(11);
@@ -706,7 +707,7 @@ describe("fetchYouTubeVideos", () => {
         items: [
           { id: { videoId: "vid1" }, kind: "", etag: "" },
           { id: { videoId: "vidMissing" }, kind: "", etag: "" }, // このIDに対応する video item は id: undefined
-          { id: { videoId: "vid3" }, kind: "", etag: "" },      // このIDに対応する video item は snippet: undefined
+          { id: { videoId: "vid3" }, kind: "", etag: "" }, // このIDに対応する video item は snippet: undefined
           { id: { videoId: "vid4" }, kind: "", etag: "" },
         ],
       },
@@ -715,7 +716,8 @@ describe("fetchYouTubeVideos", () => {
     const videoResponse: VideoListResponse = {
       data: {
         items: [
-          { // vid1 (正常)
+          {
+            // vid1 (正常)
             id: "vid1",
             snippet: {
               title: "Title 1",
@@ -728,7 +730,8 @@ describe("fetchYouTubeVideos", () => {
             kind: "",
             etag: "",
           },
-          { // vidMissing (id が undefined)
+          {
+            // vidMissing (id が undefined)
             id: undefined,
             snippet: {
               title: "Title Missing ID",
@@ -741,13 +744,15 @@ describe("fetchYouTubeVideos", () => {
             kind: "",
             etag: "",
           },
-          { // vid3 (snippet が undefined)
+          {
+            // vid3 (snippet が undefined)
             id: "vid3",
             snippet: undefined,
             kind: "",
             etag: "",
           },
-          { // vid4 (正常)
+          {
+            // vid4 (正常)
             id: "vid4",
             snippet: {
               title: "Title 4",
@@ -759,7 +764,7 @@ describe("fetchYouTubeVideos", () => {
             },
             kind: "",
             etag: "",
-            },
+          },
         ],
       },
     };
@@ -772,7 +777,19 @@ describe("fetchYouTubeVideos", () => {
     // 期待値を修正: 実際のログ出力に合わせて etag と kind を追加
     expect(mockedLoggerWarn).toHaveBeenCalledWith(
       "Skipping video due to missing ID or snippet:",
-      { etag: "", id: undefined, kind: "", snippet: { title: "Title Missing ID", channelId: "chan1", channelTitle: "Channel 1", description: "", publishedAt: "", thumbnails: { default: { url: "" } } } },
+      {
+        etag: "",
+        id: undefined,
+        kind: "",
+        snippet: {
+          title: "Title Missing ID",
+          channelId: "chan1",
+          channelTitle: "Channel 1",
+          description: "",
+          publishedAt: "",
+          thumbnails: { default: { url: "" } },
+        },
+      },
     );
     // 期待値を修正: 実際のログ出力に合わせて etag と kind を追加
     expect(mockedLoggerWarn).toHaveBeenCalledWith(

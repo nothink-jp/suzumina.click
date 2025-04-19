@@ -161,13 +161,13 @@ export const fetchYouTubeVideos = async (
         `Committing final batch of ${batchCounter} video documents...`,
       );
       // 最後のバッチコミットにも .catch() を追加
-      await batch.commit().catch((err) => {
+      await batch.commit().then(() => {
+        logger.info("Firestore batch commit successful.");
+      }).catch((err) => {
         logger.error("Error committing final Firestore batch:", err);
         // ここでエラーを再スローするかどうかは要件による
         // 再スローしない場合、外側の catch には到達しない
       });
-      // エラーが発生しなかった場合のみ成功ログを出すように変更 (catch の後)
-      // logger.info("Firestore batch commit successful."); // <-- catch の後に移動するか、catch内でエラーがない場合のみログを出す
     } else {
       logger.info(
         "No video details to commit to Firestore in the final batch.",

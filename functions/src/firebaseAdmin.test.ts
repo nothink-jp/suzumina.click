@@ -1,6 +1,5 @@
 // functions/src/firebaseAdmin.test.ts
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import * as admin from "firebase-admin";
 
 // Define mocks outside describe block
 const mockInitializeApp = vi.fn();
