@@ -10,7 +10,9 @@
     "logs": "firebase functions:log",
     "lint": "biome lint ./src",
     "format": "biome format --write ./src",
-    "check": "biome check --apply ./src"
+    "check": "biome check --apply ./src",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "engines": {
     "node": "20"
@@ -29,7 +31,8 @@
     "@types/express": "^5.0.1",
     "@types/node": "^20.17.30",
     "firebase-functions-test": "^3.4.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
   },
   "private": true
 }

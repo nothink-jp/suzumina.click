@@ -11,6 +11,10 @@
     "check": "biome check --apply ./src",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:all": "vitest run --config vitest.workspace.ts",
+    "test:all:coverage": "vitest run --coverage --config vitest.workspace.ts",
+    "test:functions": "cd functions && pnpm test",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -25,6 +29,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@chromatic-com/storybook": "^3.2.6",
+    "@mdx-js/react": "^3.1.0",
     "@storybook/addon-essentials": "^8.6.12",
     "@storybook/addon-onboarding": "^8.6.12",
     "@storybook/blocks": "^8.6.12",

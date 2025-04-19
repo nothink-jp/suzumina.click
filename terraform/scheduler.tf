@@ -10,7 +10,7 @@ resource "google_cloud_scheduler_job" "fetch_youtube_videos_hourly" {
   project  = var.gcp_project_id
   region   = "asia-northeast1" # Match the region of other resources
   name     = "fetch-youtube-videos-hourly"
-  schedule = "0 * * * *" # Every hour at minute 0
+  schedule = "19 * * * *" # Every hour at minute 19
   time_zone = "Asia/Tokyo"
   description = "Triggers the Pub/Sub topic to fetch YouTube videos every hour." # Description updated
 
