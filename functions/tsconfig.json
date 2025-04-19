@@ -12,7 +12,5 @@
     "lib": ["es2022", "dom"]
   },
   "compileOnSave": true,
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

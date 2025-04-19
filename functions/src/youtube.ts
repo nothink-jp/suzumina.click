@@ -39,7 +39,8 @@ export const fetchYouTubeVideos = async (
       logger.info("Decoded message data:", decodedData);
     } catch (err) {
       logger.error("Failed to decode base64 message data:", err);
-      // デコード失敗しても処理は続行する（あるいはここで return するか検討）
+      // デコード失敗したら処理を中断する
+      return;
     }
   } else {
     logger.info("No base64 data found in event.data.data");
