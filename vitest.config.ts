@@ -6,7 +6,7 @@ import { resolve } from 'node:path'
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: 'jsdom',
+    environment: 'happy-dom', // jsdomからhappy-domに変更
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     // カバレッジレポート設定
