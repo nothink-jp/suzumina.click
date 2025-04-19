@@ -8,7 +8,7 @@
 
 ```mermaid
 graph TD
-    subgraph GCP Infrastructure (Managed by Terraform)
+    subgraph "GCP Infrastructure (Managed by Terraform)"
         Scheduler[Cloud Scheduler (1時間に1回)] -- Triggers --> PubSub(Pub/Sub Topic: youtube-video-fetch-trigger)
         PubSub -- Invokes (via Eventarc) --> Functions(Cloud Functions: fetchYouTubeVideos)
         Functions -- Reads API Key --> Secrets(Secrets Manager: YOUTUBE_API_KEY)
