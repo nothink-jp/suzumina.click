@@ -1,6 +1,6 @@
 // functions/src/youtube.ts
 import * as logger from "firebase-functions/logger";
-import { Timestamp } from "firebase-admin/firestore"; // Timestamp をインポート (FieldValue は不要になった)
+import { Timestamp } from "firebase-admin/firestore";
 import { google } from "googleapis";
 import type { youtube_v3 } from "googleapis";
 import type { CloudEvent } from "@google-cloud/functions-framework";
@@ -13,45 +13,61 @@ import {
 
 initializeFirebaseAdmin();
 
+/**
+ * YouTubeから水瀬鈴花チャンネルの動画情報を取得し、Firestoreに保存する関数
+ * 
+ * 1. Pub/Subからのトリガーを受け取る
+ * 2. YouTube Data APIを使用してチャンネルの動画リストを取得
+ * 3. 各動画の詳細情報を取得
+ * 4. 取得した情報をFirestoreに保存
+ * 
+ * @param event - Pub/SubトリガーからのCloudEvent
+ * @returns Promise<void> - 非同期処理の完了を表すPromise
+ */
 export const fetchYouTubeVideos = async (
   event: CloudEvent<SimplePubSubData>,
 ): Promise<void> => {
   logger.info(
-    "Entered fetchYouTubeVideos function (Raw CloudEvent Handler - Adapted)",
+    "fetchYouTubeVideos 関数を開始しました (Raw CloudEvent Handler - Adapted)",
   );
 
+  // イベントデータの検証
   const messageData = event.data;
   if (!messageData) {
-    logger.error("Event data is missing.", { event });
+    logger.error("イベントデータが不足しています", { event });
     return;
   }
 
+  // 属性情報の処理
   const attributes = messageData.attributes ?? event.attributes;
   if (attributes) {
-    logger.info("Received attributes:", attributes);
+    logger.info("受信した属性情報:", attributes);
   }
 
+  // Base64エンコードされたデータがあれば復号
   if (messageData.data) {
     try {
       const decodedData = Buffer.from(messageData.data, "base64").toString(
         "utf-8",
       );
-      logger.info("Decoded message data:", decodedData);
+      logger.info("デコードされたメッセージデータ:", decodedData);
     } catch (err) {
-      logger.error("Failed to decode base64 message data:", err);
+      logger.error("Base64メッセージデータのデコードに失敗しました:", err);
       // デコード失敗したら処理を中断する
       return;
     }
   } else {
-    logger.info("No base64 data found in event.data.data");
+    logger.info("Base64データはイベント内に見つかりませんでした");
   }
 
+  // YouTube API キーの取得と検証
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
-    logger.error("YOUTUBE_API_KEY secret not found in environment variables.");
+    logger.error("環境変数に YOUTUBE_API_KEY が設定されていません");
     return;
   }
 
+  // YouTubeクライアント初期化
   const youtube = google.youtube({
     version: "v3",
     auth: apiKey,
@@ -61,10 +77,11 @@ export const fetchYouTubeVideos = async (
   const now = Timestamp.now();
 
   try {
-    logger.info(`Fetching video IDs for channel: ${SUZUKA_MINASE_CHANNEL_ID}`);
+    logger.info(`チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画IDを取得中`);
     const allVideoIds: string[] = [];
     let nextPageToken: string | undefined = undefined;
 
+    // ページネーションを使用して全動画IDを取得
     do {
       const searchResponse: youtube_v3.Schema$SearchListResponse = (
         await youtube.search.list({
@@ -84,18 +101,20 @@ export const fetchYouTubeVideos = async (
       allVideoIds.push(...videoIds);
       nextPageToken = searchResponse.nextPageToken ?? undefined;
       logger.info(
-        `Fetched ${videoIds.length} video IDs. Next page token: ${nextPageToken}`,
+        `${videoIds.length}件の動画IDを取得しました。次ページトークン: ${nextPageToken}`,
       );
     } while (nextPageToken);
 
-    logger.info(`Total video IDs fetched: ${allVideoIds.length}`);
+    logger.info(`取得した動画ID合計: ${allVideoIds.length}件`);
     if (allVideoIds.length === 0) {
-      logger.info("No videos found for the channel.");
+      logger.info("チャンネルに動画が見つかりませんでした");
       return;
     }
 
-    logger.info("Fetching video details...");
+    logger.info("動画の詳細情報を取得中...");
     const videoDetails: youtube_v3.Schema$Video[] = [];
+    
+    // YouTube API の制限（最大50件）に合わせてバッチ処理
     for (let i = 0; i < allVideoIds.length; i += 50) {
       const batchIds = allVideoIds.slice(i, i + 50);
       const videoResponse: youtube_v3.Schema$VideoListResponse = (
@@ -105,26 +124,29 @@ export const fetchYouTubeVideos = async (
           maxResults: 50,
         })
       ).data;
+      
       if (videoResponse.items) {
         videoDetails.push(...videoResponse.items);
       }
       logger.info(
-        `Fetched details for ${videoResponse.items?.length ?? 0} videos (Batch ${i / 50 + 1})`,
+        `${videoResponse.items?.length ?? 0}件の動画詳細を取得しました（バッチ ${i / 50 + 1}）`,
       );
     }
-    logger.info(`Total video details fetched: ${videoDetails.length}`);
+    logger.info(`取得した動画詳細合計: ${videoDetails.length}件`);
 
-    logger.info("Writing video data to Firestore...");
+    logger.info("動画データをFirestoreに書き込み中...");
     let batch = firestore.batch();
     let batchCounter = 0;
-    const maxBatchSize = 500;
+    const maxBatchSize = 500; // Firestoreのバッチ書き込み上限
 
+    // 動画データをFirestoreにバッチ書き込み
     for (const video of videoDetails) {
       if (!video.id || !video.snippet) {
-        logger.warn("Skipping video due to missing ID or snippet:", video);
+        logger.warn("IDまたはスニペットが不足しているため動画をスキップします:", video);
         continue;
       }
 
+      // Firestoreに保存するデータの作成
       const videoData: YouTubeVideoData = {
         videoId: video.id,
         title: video.snippet.title ?? "",
@@ -142,42 +164,39 @@ export const fetchYouTubeVideos = async (
       batch.set(videoRef, videoData, { merge: true });
       batchCounter++;
 
+      // バッチサイズの上限に達したらコミット
       if (batchCounter >= maxBatchSize) {
-        logger.info(`Committing batch of ${batchCounter} video documents...`);
-        // エラーをログに記録するが、処理は続行する（エラーがあっても次のバッチへ）
+        logger.info(`${batchCounter}件の動画ドキュメントのバッチをコミット中...`);
         await batch
           .commit()
           .catch((err) =>
-            logger.error("Error committing Firestore batch (in loop):", err),
+            logger.error("Firestoreバッチコミット中にエラーが発生しました (ループ内):", err),
           );
-        logger.info("Batch committed. Resetting batch and counter.");
+        logger.info("バッチをコミットしました。バッチとカウンターをリセットします");
         batch = firestore.batch();
         batchCounter = 0;
       }
     }
 
+    // 残りのデータがあればコミット
     if (batchCounter > 0) {
       logger.info(
-        `Committing final batch of ${batchCounter} video documents...`,
+        `最終バッチ ${batchCounter}件の動画ドキュメントをコミット中...`,
       );
-      // 最後のバッチコミットにも .catch() を追加
       await batch.commit().then(() => {
-        logger.info("Firestore batch commit successful.");
+        logger.info("Firestoreバッチコミットが成功しました");
       }).catch((err) => {
-        logger.error("Error committing final Firestore batch:", err);
-        // ここでエラーを再スローするかどうかは要件による
-        // 再スローしない場合、外側の catch には到達しない
+        logger.error("最終Firestoreバッチコミット中にエラーが発生しました:", err);
       });
     } else {
       logger.info(
-        "No video details to commit to Firestore in the final batch.",
+        "最終バッチに書き込む動画詳細がありませんでした",
       );
     }
 
-    // 最終的な成功ログ (バッチコミットのエラーがあってもここには到達する可能性がある)
-    logger.info("fetchYouTubeVideos function finished processing.");
+    logger.info("fetchYouTubeVideos 関数の処理を完了しました");
   } catch (error: unknown) {
     // YouTube API エラーや予期せぬエラーはこちらで捕捉
-    logger.error("Error in fetchYouTubeVideos function (outer catch):", error);
+    logger.error("fetchYouTubeVideos 関数で例外が発生しました:", error);
   }
 };

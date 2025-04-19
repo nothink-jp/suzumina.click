@@ -20,8 +20,9 @@ export default defineConfig({
         '.firebase/**', // Firebaseビルド出力を除外（不要なデプロイメントファイル）
         'vitest.*.{js,ts}',
         '**/*.d.ts',
-        '**/*.config.{js,ts}',
+        '**/*.config.{js,ts,mjs,cjs,mts,cts}',
         '**/dist/**',
+        '**/.storybook/**',
       ],
       thresholds: {
         // .clinerules で指定された80%の閾値を設定

@@ -8,7 +8,7 @@ import * as logger from "firebase-functions/logger";
 import type { Request } from "firebase-functions/v2/https";
 import type { Response } from "express";
 
-// --- Mocks ---
+// --- モック設定 ---
 vi.mock("axios");
 vi.mock("firebase-admin", async (importOriginal) => {
   const actual = await importOriginal<typeof import("firebase-admin")>();
@@ -54,7 +54,8 @@ describe("discordAuthCallback", () => {
   const mockedLoggerError = vi.mocked(logger.error);
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.clearAllMocks(); // すべてのモックをクリア
+
     originalEnv = { ...process.env };
     process.env = { ...process.env, ...mockSecrets };
 
@@ -74,9 +75,6 @@ describe("discordAuthCallback", () => {
       data: { access_token: "test-access-token" },
     });
     // デフォルトの get は beforeEach では設定せず、各テストで設定する方が確実
-    // mockedAxiosGet
-    //   .mockResolvedValueOnce({ /* users/@me */ })
-    //   .mockResolvedValueOnce({ /* users/@me/guilds */ });
 
     // デフォルトの Firebase Auth モック (更新成功)
     mockedUpdateUser.mockResolvedValue({
@@ -90,9 +88,9 @@ describe("discordAuthCallback", () => {
     process.env = originalEnv;
   });
 
-  // --- Test Cases ---
+  // --- テストケース ---
 
-  it("should handle OPTIONS request", async () => {
+  it("OPTIONSリクエストを適切に処理すること", async () => {
     mockRequest.method = "OPTIONS";
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
@@ -104,24 +102,24 @@ describe("discordAuthCallback", () => {
     expect(mockResponse.send).toHaveBeenCalledWith("");
   });
 
-  it("should return 405 if method is not POST or OPTIONS", async () => {
+  it("POSTでもOPTIONSでもないメソッドの場合は405を返すこと", async () => {
     mockRequest.method = "GET";
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "Method Not Allowed (Should be POST)",
+      "許可されていないメソッドです（POSTメソッドのみ許可）",
       { method: "GET" },
     );
     expect(mockResponse.status).toHaveBeenCalledWith(405);
     expect(mockResponse.send).toHaveBeenCalledWith("Method Not Allowed");
   });
 
-  it("should return 400 if authorization code is missing", async () => {
+  it("認証コードが不足している場合は400を返すこと", async () => {
     mockRequest.body = {};
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "Authorization code not found in request body",
+      "リクエスト本文に認証コードが見つかりません",
     );
     expect(mockResponse.status).toHaveBeenCalledWith(400);
     expect(mockResponse.send).toHaveBeenCalledWith({
@@ -130,12 +128,12 @@ describe("discordAuthCallback", () => {
     });
   });
 
-  it("should return 500 if Discord secrets are missing", async () => {
+  it("Discord設定の環境変数が不足している場合は500を返すこと", async () => {
     process.env.DISCORD_CLIENT_SECRET = undefined;
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "Discord configuration environment variables (from secrets) are not set correctly.",
+      "Discord設定用の環境変数（シークレットから）が正しく設定されていません",
       expect.objectContaining({ clientSecretExists: false }),
     );
     expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -145,8 +143,8 @@ describe("discordAuthCallback", () => {
     });
   });
 
-  it("should successfully authenticate, update existing Firebase user, and return custom token", async () => {
-    // Arrange: Setup specific mocks for this success case
+  it("認証に成功し、既存のFirebaseユーザーを更新してカスタムトークンを返すこと", async () => {
+    // 準備: 成功ケース用の特定のモックを設定
     mockedAxiosGet
       .mockResolvedValueOnce({
         // users/@me
@@ -158,15 +156,15 @@ describe("discordAuthCallback", () => {
         },
       })
       .mockResolvedValueOnce({
-        // users/@me/guilds (target guild included)
+        // users/@me/guilds (ターゲットギルドを含む)
         data: [{ id: "test-guild-id", name: "Test Guild" }],
       });
 
-    // Act
+    // 実行
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
 
-    // Assert
+    // 検証
     expect(mockedAxiosPost).toHaveBeenCalledWith(
       "https://discord.com/api/oauth2/token",
       expect.any(URLSearchParams),
@@ -186,7 +184,7 @@ describe("discordAuthCallback", () => {
     );
     expect(mockedUpdateUser).toHaveBeenCalledWith("test-discord-user-id", {
       displayName: "test-discord-username",
-      photoURL: expect.stringContaining("test-avatar-hash.png"), // Check for png
+      photoURL: expect.stringContaining("test-avatar-hash.png"), // png 形式を確認
       email: "test@example.com",
     });
     expect(mockedCreateUser).not.toHaveBeenCalled();
@@ -198,13 +196,13 @@ describe("discordAuthCallback", () => {
       success: true,
       customToken: "mock-custom-token",
     });
-    expect(mockedLoggerInfo).toHaveBeenCalledWith("Firebase user updated.", {
+    expect(mockedLoggerInfo).toHaveBeenCalledWith("Firebaseユーザー情報を更新しました", {
       uid: "test-discord-user-id",
     });
   });
 
-  it("should successfully authenticate, create new Firebase user, and return custom token", async () => {
-    // Arrange: Setup specific mocks for create user case
+  it("認証に成功し、新規Firebaseユーザーを作成してカスタムトークンを返すこと", async () => {
+    // 準備: 新規ユーザー作成ケース用のモックを設定
     mockedAxiosGet
       .mockResolvedValueOnce({
         // users/@me
@@ -219,22 +217,22 @@ describe("discordAuthCallback", () => {
         // users/@me/guilds
         data: [{ id: "test-guild-id", name: "Test Guild" }],
       });
-    mockedUpdateUser.mockRejectedValue({ code: "auth/user-not-found" }); // Make update fail
+    mockedUpdateUser.mockRejectedValue({ code: "auth/user-not-found" }); // 更新を失敗させる
     mockedCreateUser.mockResolvedValue({
       uid: "new-discord-user-id",
-    } as UserRecord); // Make create succeed
+    } as UserRecord); // 作成を成功させる
 
-    // Act
+    // 実行
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
 
-    // Assert
+    // 検証
     expect(mockedUpdateUser).toHaveBeenCalledWith(
       "new-discord-user-id",
       expect.any(Object),
-    ); // Update is attempted
+    ); // 更新が試みられる
     expect(mockedCreateUser).toHaveBeenCalledWith({
-      // Create is called
+      // 作成が呼び出される
       uid: "new-discord-user-id",
       displayName: "new-discord-username",
       photoURL: expect.stringContaining("new-avatar-hash.png"),
@@ -246,13 +244,13 @@ describe("discordAuthCallback", () => {
       success: true,
       customToken: "mock-custom-token",
     });
-    expect(mockedLoggerInfo).toHaveBeenCalledWith("Firebase user created.", {
+    expect(mockedLoggerInfo).toHaveBeenCalledWith("Firebaseユーザーを作成しました", {
       uid: "new-discord-user-id",
     });
   });
 
-  it("should return 403 if user is not a member of the target guild", async () => {
-    // Arrange: Setup specific mocks for non-member case
+  it("ユーザーがターゲットギルドのメンバーでない場合は403を返すこと", async () => {
+    // 準備: 非メンバーケース用の特定のモックを設定
     mockedAxiosGet
       .mockResolvedValueOnce({
         // users/@me
@@ -264,20 +262,20 @@ describe("discordAuthCallback", () => {
         },
       })
       .mockResolvedValueOnce({
-        // users/@me/guilds (target guild NOT included)
+        // users/@me/guilds (ターゲットギルドを含まない)
         data: [{ id: "other-guild-id", name: "Other Guild" }],
       });
 
-    // Act
+    // 実行
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
 
-    // Assert
+    // 検証
     expect(mockedAxiosPost).toHaveBeenCalledTimes(1);
-    expect(mockedAxiosGet).toHaveBeenCalledTimes(2); // Both user and guilds are fetched
+    expect(mockedAxiosGet).toHaveBeenCalledTimes(2); // ユーザーとギルドの両方が取得される
     // logger.warn が期待通り呼び出されることを確認
     expect(mockedLoggerWarn).toHaveBeenCalledWith(
-      "User is not a member of the target guild",
+      "ユーザーが対象ギルドのメンバーではありません",
       { discordUserId: "non-member-id", targetGuildId: "test-guild-id" },
     );
     expect(mockedUpdateUser).not.toHaveBeenCalled();
@@ -290,18 +288,18 @@ describe("discordAuthCallback", () => {
     });
   });
 
-  it("should handle errors during Discord token request", async () => {
-    // Arrange
+  it("Discordトークン取得中にエラーが発生した場合の処理", async () => {
+    // 準備
     const axiosError = new Error("Discord token error");
     mockedAxiosPost.mockRejectedValue(axiosError); // POST を失敗させる
 
-    // Act
+    // 実行
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
 
-    // Assert
+    // 検証
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "Error during Discord auth callback:",
+      "Discord認証コールバック中にエラーが発生しました:",
       axiosError,
     );
     expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -311,8 +309,8 @@ describe("discordAuthCallback", () => {
     });
   });
 
-  it("should handle errors during Firebase user update/create", async () => {
-    // Arrange: Setup mocks, but make updateUser fail with a generic error
+  it("Firebaseユーザーの更新/作成中にエラーが発生した場合の処理", async () => {
+    // 準備: モックを設定し、updateUser を一般的なエラーで失敗させる
     mockedAxiosGet
       .mockResolvedValueOnce({
         // users/@me
@@ -333,17 +331,17 @@ describe("discordAuthCallback", () => {
     firebaseError.code = "auth/internal-error";
     mockedUpdateUser.mockRejectedValue(firebaseError); // updateUser を失敗させる
 
-    // Act
+    // 実行
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
 
-    // Assert
+    // 検証
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "Error updating/creating Firebase user:",
+      "Firebaseユーザーの更新/作成中にエラーが発生しました:",
       firebaseError,
     );
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "Error during Discord auth callback:",
+      "Discord認証コールバック中にエラーが発生しました:",
       firebaseError,
     );
     expect(mockedCreateCustomToken).not.toHaveBeenCalled();
@@ -354,8 +352,8 @@ describe("discordAuthCallback", () => {
     });
   });
 
-  it("should handle null email from Discord", async () => {
-    // Arrange: Setup specific mocks for null email case
+  it("Discordからnullのemailがきた場合の処理", async () => {
+    // 準備: emailがnullのケース用のモックを設定
     mockedAxiosGet
       .mockResolvedValueOnce({
         // users/@me (email: null)
@@ -374,11 +372,11 @@ describe("discordAuthCallback", () => {
     mockedUpdateUser.mockResolvedValue({ uid: "null-email-id" } as UserRecord);
     mockedCreateUser.mockRejectedValue({ code: "auth/user-not-found" });
 
-    // Act
+    // 実行
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
 
-    // Assert
+    // 検証
     // updateUser が email: undefined で呼ばれることを確認
     expect(mockedUpdateUser).toHaveBeenCalledWith("null-email-id", {
       displayName: "null-email-user",
@@ -393,11 +391,11 @@ describe("discordAuthCallback", () => {
     });
   });
 
-  it("should correctly generate gif avatar URL", async () => {
-    // Arrange: Setup specific mocks for animated avatar case
+  it("アニメーションアバター(gifフォーマット)のURLが正しく生成されること", async () => {
+    // 準備: アニメーションアバターケース用のモックを設定
     mockedAxiosGet
       .mockResolvedValueOnce({
-        // users/@me (avatar starts with a_)
+        // users/@me (a_ で始まるアバター)
         data: {
           id: "gif-user-id",
           username: "gif-user",
@@ -413,11 +411,11 @@ describe("discordAuthCallback", () => {
     mockedUpdateUser.mockResolvedValue({ uid: "gif-user-id" } as UserRecord);
     mockedCreateUser.mockRejectedValue({ code: "auth/user-not-found" });
 
-    // Act
+    // 実行
     // @ts-expect-error: Test uses Partial
     await discordAuthCallback(mockRequest, mockResponse);
 
-    // Assert
+    // 検証
     // updateUser が .gif URL で呼ばれることを確認
     expect(mockedUpdateUser).toHaveBeenCalledWith("gif-user-id", {
       displayName: "gif-user",

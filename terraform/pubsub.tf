@@ -3,14 +3,16 @@
 resource "google_project_service" "pubsub" {
   project = var.gcp_project_id
   service = "pubsub.googleapis.com"
-  disable_on_destroy = false
+  disable_on_destroy = false # Terraform実行時にリソースを削除してもAPIは無効化しない
 }
 
-# Cloud Functions をトリガーするための Pub/Sub トピック
+# YouTube動画取得をトリガーするための Pub/Sub トピック
+# Cloud Schedulerからのメッセージを受け取り、Cloud Functionsを起動する
 resource "google_pubsub_topic" "youtube_video_fetch_trigger" {
   project = var.gcp_project_id
-  name    = "youtube-video-fetch-trigger" # Planned topic name
+  name    = "youtube-video-fetch-trigger" # トピック名
 
+  # Pub/Sub APIが有効になってから作成する
   depends_on = [
     google_project_service.pubsub
   ]

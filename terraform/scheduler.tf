@@ -1,33 +1,34 @@
 # Cloud Scheduler API を有効化
+# スケジュールされたジョブを実行するためのAPIを有効にする
 resource "google_project_service" "cloudscheduler" {
   project = var.gcp_project_id
   service = "cloudscheduler.googleapis.com"
-  disable_on_destroy = false
+  disable_on_destroy = false # Terraform実行時にリソースを削除してもAPIは無効化しない
 }
 
 # 1時間に1回 YouTube 動画取得 Pub/Sub トピックをトリガーするジョブ
+# 毎時19分に実行される定期的なスケジュールタスク
 resource "google_cloud_scheduler_job" "fetch_youtube_videos_hourly" {
   project  = var.gcp_project_id
-  region   = "asia-northeast1" # Match the region of other resources
+  region   = "asia-northeast1" # 他のリソースと同じリージョンを使用（東京リージョン）
   name     = "fetch-youtube-videos-hourly"
-  schedule = "19 * * * *" # Every hour at minute 19
-  time_zone = "Asia/Tokyo"
-  description = "Triggers the Pub/Sub topic to fetch YouTube videos every hour." # Description updated
+  schedule = "19 * * * *" # 毎時19分に実行（cronフォーマット）
+  time_zone = "Asia/Tokyo" # タイムゾーンを東京に設定
+  description = "YouTube動画を毎時間取得するためのPub/Subトピックをトリガーします"
 
-  # Pub/Sub ターゲット設定に戻す
+  # Pub/Sub ターゲット設定
   pubsub_target {
     topic_name = google_pubsub_topic.youtube_video_fetch_trigger.id
-    # Provide a valid, non-empty base64 encoded string (e.g., empty JSON object)
+    # 空のJSONオブジェクトをbase64エンコードしたデータを送信
     data       = base64encode("{}")
   }
 
   depends_on = [
-    google_project_service.cloudscheduler,
-    google_pubsub_topic.youtube_video_fetch_trigger, # Re-added dependency
-    # Ensure the scheduler service agent has permission to publish (defined in iam.tf)
-    google_pubsub_topic_iam_member.scheduler_pubsub_publisher, # Re-added dependency
-    # Ensure the function exists before the job tries to depend on its SA (implicitly via IAM)
-    # google_cloudfunctions2_function.fetch_youtube_videos # Dependency on function itself
-    google_service_account.fetch_youtube_videos_sa, # Dependency on the SA used by the function trigger
+    google_project_service.cloudscheduler, # Cloud Scheduler APIが有効になってから作成
+    google_pubsub_topic.youtube_video_fetch_trigger, # トリガー対象のPub/Subトピックが存在する必要がある
+    # スケジューラのサービスエージェントがPub/Subへの発行権限を持っていることを確認（iam.tfで定義）
+    google_pubsub_topic_iam_member.scheduler_pubsub_publisher,
+    # 関数が使用するサービスアカウントに依存
+    google_service_account.fetch_youtube_videos_sa,
   ]
 }

@@ -1,7 +1,7 @@
 // functions/src/firebaseAdmin.test.ts
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Define mocks outside describe block
+// モックをdescribeブロックの外で定義
 const mockInitializeApp = vi.fn();
 const mockFirestoreCollection = vi.fn();
 const mockFirestoreBatch = vi.fn();
@@ -22,37 +22,37 @@ vi.mock("firebase-admin", async (importOriginal) => {
 
 describe("firebaseAdmin", () => {
   beforeEach(async () => {
-    // Reset mocks before each test
+    // 各テスト前にモックをリセット
     vi.clearAllMocks();
-    // Reset modules to ensure clean state for each test, especially for module-level initialization
+    // モジュールレベルの初期化状態をクリーンにするため、モジュールをリセット
     vi.resetModules();
   });
 
-  it("should initialize Firebase Admin SDK only once when initializeFirebaseAdmin is called multiple times", async () => {
-    // Arrange: Import *after* resetting modules, add .js extension
+  it("initializeFirebaseAdminが複数回呼び出されても初期化は1回だけ行われること", async () => {
+    // 準備: モジュールリセット後にインポート、.js拡張子を追加
     const { initializeFirebaseAdmin } = await import("./firebaseAdmin.js");
-    // Mock clear might be redundant due to resetModules, but doesn't hurt
+    // resetModulesによりモックがクリアされるため、冗長かもしれないが念のため
     mockInitializeApp.mockClear();
 
-    // Act
+    // 実行
     initializeFirebaseAdmin();
     initializeFirebaseAdmin();
     initializeFirebaseAdmin();
 
-    // Assert
+    // 検証
     expect(mockInitializeApp).toHaveBeenCalledTimes(1);
   });
 
-  it("should export a defined firestore instance and call admin.firestore on module load", async () => {
-    // Arrange: Import *after* resetting modules, add .js extension
+  it("firestoreインスタンスがエクスポートされ、モジュールロード時にadmin.firestoreが呼ばれること", async () => {
+    // 準備: モジュールリセット後にインポート、.js拡張子を追加
     const { firestore } = await import("./firebaseAdmin.js");
 
-    // Assert
+    // 検証
     expect(firestore).toBeDefined();
     expect(firestore).toBe(mockFirestoreInstance);
-    // Check if admin.firestore was called (at least once due to module import)
+    // admin.firestoreが（少なくともモジュールインポート時に一度）呼ばれることを確認
     expect(mockAdminFirestore).toHaveBeenCalled();
-    // If you need to ensure it's called *exactly* once during the import:
-    // expect(mockAdminFirestore).toHaveBeenCalledTimes(1); // This might be fragile
+    // インポート時に*正確に*1回だけ呼ばれることを検証するなら以下を使用（ただし脆弱になる可能性あり）
+    // expect(mockAdminFirestore).toHaveBeenCalledTimes(1);
   });
 });

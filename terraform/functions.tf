@@ -19,12 +19,12 @@ data "archive_file" "function_source_zip" {
     ".firebase",
     ".vscode",
   ]
-  # Removed incorrect triggers block
+  # 不正なtriggersブロックは削除済み
 }
 
 # zip アーカイブを GCS バケットにアップロード
 resource "google_storage_bucket_object" "function_source_archive" {
-  # Include hash of the built JS file in the object name to force updates
+  # ビルド済みJSファイルのハッシュ値を含めてファイル名を設定（更新を強制するため）
   name   = "source-${filesha256("../functions/lib/index.js")}.zip"
   bucket = google_storage_bucket.function_source.name
   source = data.archive_file.function_source_zip.output_path # archive_file の出力パス
@@ -34,7 +34,8 @@ resource "google_storage_bucket_object" "function_source_archive" {
 }
 
 # ------------------------------------------------------------------------------
-# discordAuthCallback Cloud Function (v2 - HTTPS Trigger)
+# Discord認証コールバック関数 (v2 - HTTPSトリガー)
+# ------------------------------------------------------------------------------
 resource "google_cloudfunctions2_function" "discord_auth_callback" {
   project  = var.gcp_project_id
   name     = "discordAuthCallback"
@@ -47,26 +48,26 @@ resource "google_cloudfunctions2_function" "discord_auth_callback" {
     source {
       storage_source {
         bucket = google_storage_bucket.function_source.name
-        object = google_storage_bucket_object.function_source_archive.name # Reference updated object name
+        object = google_storage_bucket_object.function_source_archive.name # 更新されたオブジェクト名を参照
       }
     }
   }
 
   # サービス設定
   service_config {
-    max_instance_count = 1 # 必要に応じて調整
-    min_instance_count = 0 # コールドスタートを許容する場合
-    available_memory   = "256Mi"
-    timeout_seconds    = 60 # 必要に応じて調整
-    ingress_settings   = "ALLOW_ALL" # HTTPS トリガーのため全許可
-    # Use the correctly named service account
+    max_instance_count = 1 # 最大インスタンス数
+    min_instance_count = 0 # 最小インスタンス数（コールドスタートを許容）
+    available_memory   = "256Mi" # メモリ割り当て
+    timeout_seconds    = 60 # 関数のタイムアウト時間
+    ingress_settings   = "ALLOW_ALL" # HTTPSトリガーのため全許可
+    # 適切に命名されたサービスアカウントを使用
     service_account_email = google_service_account.discord_auth_callback_sa.email
 
     # シークレット設定 (値は Secret Manager から取得)
     secret_environment_variables {
       key        = "DISCORD_CLIENT_ID"
       secret     = google_secret_manager_secret.discord_client_id.secret_id
-      version    = "latest"
+      version    = "latest" # 最新バージョンを使用
       project_id = var.gcp_project_id
     }
     secret_environment_variables {
@@ -90,52 +91,53 @@ resource "google_cloudfunctions2_function" "discord_auth_callback" {
   }
 
   depends_on = [
-    # Source code upload
+    # ソースコードのアップロード
     google_storage_bucket_object.function_source_archive,
-    # Required APIs enabled
+    # 必要なAPIが有効化されていること
     google_project_service.cloudfunctions,
     google_project_service.run,
     google_project_service.artifactregistry,
     google_project_service.secretmanager,
-    # Secrets and IAM bindings for this function
+    # この関数用のシークレットとIAMバインディング
     google_secret_manager_secret_iam_member.discord_client_id_accessor,
     google_secret_manager_secret_iam_member.discord_client_secret_accessor,
     google_secret_manager_secret_iam_member.discord_redirect_uri_accessor,
     google_secret_manager_secret_iam_member.discord_target_guild_id_accessor,
-    # Firestore DB (might be needed indirectly if function logic changes)
+    # Firestore DB (関数ロジック変更時に間接的に必要になる可能性がある)
     google_firestore_database.database,
   ]
 }
 
 # ------------------------------------------------------------------------------
-# fetchYouTubeVideos Cloud Function (v2 - Pub/Sub Trigger)
+# YouTube動画取得関数 (v2 - Pub/Subトリガー)
+# ------------------------------------------------------------------------------
 resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
   project  = var.gcp_project_id
   name     = "fetchYouTubeVideos"
-  location = "asia-northeast1"
+  location = "asia-northeast1" # 東京リージョン
 
   # ビルド設定
   build_config {
-    runtime     = "nodejs20"
-    entry_point = "fetchYouTubeVideos" # Assumed entry point name in index.ts
+    runtime     = "nodejs20" # Node.js 20ランタイム
+    entry_point = "fetchYouTubeVideos" # index.tsでエクスポートされている関数名
     source {
       storage_source {
         bucket = google_storage_bucket.function_source.name
-        object = google_storage_bucket_object.function_source_archive.name # Reference updated object name
+        object = google_storage_bucket_object.function_source_archive.name # 更新されたオブジェクト名を参照
       }
     }
   }
 
   # サービス設定
   service_config {
-    max_instance_count = 1       # Keep low for scheduled task
-    min_instance_count = 0
-    available_memory   = "512Mi" # Corrected unit to Mi
-    timeout_seconds    = 540     # Increased timeout from previous version (9 min)
-    # Use the dedicated service account
+    max_instance_count = 1       # スケジュールタスクのため低めに設定
+    min_instance_count = 0       # スケジュールタスクのためゼロでOK
+    available_memory   = "512Mi" # メモリ割り当て（単位はMi）
+    timeout_seconds    = 540     # 以前のバージョンより増加（9分）
+    # 専用のサービスアカウントを使用
     service_account_email = google_service_account.fetch_youtube_videos_sa.email
 
-    # Secret for YouTube API Key
+    # YouTube API キーのシークレット環境変数
     secret_environment_variables {
       key        = "YOUTUBE_API_KEY"
       secret     = google_secret_manager_secret.youtube_api_key.secret_id
@@ -146,31 +148,31 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
 
   # イベントトリガー設定 (Pub/Sub)
   event_trigger {
-    trigger_region = "asia-northeast1" # Should match function location
+    trigger_region = "asia-northeast1" # 関数のリージョンと一致させる
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.youtube_video_fetch_trigger.id # Reference the topic
-    retry_policy   = "RETRY_POLICY_DO_NOT_RETRY" # Or RETRY_POLICY_RETRY if needed
-    # Use the dedicated service account for the trigger as well
+    pubsub_topic   = google_pubsub_topic.youtube_video_fetch_trigger.id # トピックを参照
+    retry_policy   = "RETRY_POLICY_DO_NOT_RETRY" # 必要に応じてRETRY_POLICY_RETRYも選択可
+    # トリガー用にも同じ専用サービスアカウントを使用
     service_account_email = google_service_account.fetch_youtube_videos_sa.email
   }
 
   depends_on = [
-    # Source code upload
+    # ソースコードのアップロード
     google_storage_bucket_object.function_source_archive,
-    # Required APIs enabled
+    # 必要なAPIが有効化されていること
     google_project_service.cloudfunctions,
     google_project_service.run,
     google_project_service.artifactregistry,
     google_project_service.secretmanager,
     google_project_service.firestore,
     google_project_service.pubsub,
-    # Firestore DB, Pub/Sub Topic, Secret, and IAM bindings for this function
+    # この関数に必要なFirestore DB、Pub/Subトピック、シークレット、IAMバインディング
     google_firestore_database.database,
     google_pubsub_topic.youtube_video_fetch_trigger,
     google_secret_manager_secret_iam_member.youtube_api_key_accessor,
     google_project_iam_member.fetch_youtube_videos_firestore_user,
     google_project_iam_member.fetch_youtube_videos_log_writer,
-    # Ensure the service account exists
+    # サービスアカウントが存在することを確認
     google_service_account.fetch_youtube_videos_sa,
   ]
 }

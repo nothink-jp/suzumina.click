@@ -228,16 +228,16 @@ describe("fetchYouTubeVideos", () => {
     process.env = originalEnv;
   });
 
-  // --- Test Cases ---
-  it("should successfully fetch videos and write to Firestore", async () => {
+  // --- テストケース ---
+  it("動画を取得してFirestoreに書き込むこと", async () => {
     await fetchYouTubeVideos(mockEvent);
     // expect(mockedInitializeFirebaseAdmin).toHaveBeenCalled();
     expect(mockedLoggerInfo).toHaveBeenCalledWith(
-      "Entered fetchYouTubeVideos function (Raw CloudEvent Handler - Adapted)",
+      "fetchYouTubeVideos 関数を開始しました (Raw CloudEvent Handler - Adapted)",
     );
     if (mockEvent.data) {
       expect(mockedLoggerInfo).toHaveBeenCalledWith(
-        "Received attributes:",
+        "受信した属性情報:",
         mockEvent.data.attributes,
       );
     } else {
@@ -259,26 +259,26 @@ describe("fetchYouTubeVideos", () => {
     expect(batchInstance.commit).toHaveBeenCalledTimes(1);
 
     expect(mockedLoggerInfo).toHaveBeenCalledWith(
-      "fetchYouTubeVideos function finished processing.",
+      "fetchYouTubeVideos 関数の処理を完了しました",
     );
     expect(mockedLoggerError).not.toHaveBeenCalled();
   });
 
-  it("should handle missing API key", async () => {
+  it("APIキーが未設定の場合はエラーを処理すること", async () => {
     process.env.YOUTUBE_API_KEY = undefined;
     await fetchYouTubeVideos(mockEvent);
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "YOUTUBE_API_KEY secret not found in environment variables.",
+      "環境変数に YOUTUBE_API_KEY が設定されていません",
     );
     expect(mockYoutubeSearchList).not.toHaveBeenCalled();
     expect(mockYoutubeVideosList).not.toHaveBeenCalled();
     expect(mockedBatch).not.toHaveBeenCalled();
   });
 
-  it("should handle missing event data", async () => {
+  it("イベントデータが不足している場合はエラーを処理すること", async () => {
     const invalidEvent = { ...mockEvent, data: undefined };
     await fetchYouTubeVideos(invalidEvent);
-    expect(mockedLoggerError).toHaveBeenCalledWith("Event data is missing.", {
+    expect(mockedLoggerError).toHaveBeenCalledWith("イベントデータが不足しています", {
       event: invalidEvent,
     });
     expect(mockYoutubeSearchList).not.toHaveBeenCalled();
@@ -286,7 +286,7 @@ describe("fetchYouTubeVideos", () => {
     expect(mockedBatch).not.toHaveBeenCalled();
   });
 
-  it("should handle base64 encoded event data", async () => {
+  it("Base64エンコードされたイベントデータを処理できること", async () => {
     const payload = { message: "hello" };
     const base64Data = Buffer.from(JSON.stringify(payload)).toString("base64");
     const newData = mockEvent.data
@@ -298,28 +298,28 @@ describe("fetchYouTubeVideos", () => {
     };
     await fetchYouTubeVideos(eventWithBase64);
     expect(mockedLoggerInfo).toHaveBeenCalledWith(
-      "Decoded message data:",
+      "デコードされたメッセージデータ:",
       JSON.stringify(payload),
     );
 
-    // YouTube API calls should be made
+    // YouTube API コールが行われるはず
     expect(mockYoutubeSearchList).toHaveBeenCalledTimes(2);
     expect(mockYoutubeVideosList).toHaveBeenCalledTimes(1);
 
-    // Firestore operations should be performed
+    // Firestoreの操作が実行されるはず
     expect(mockedBatch).toHaveBeenCalledTimes(1);
     const batchInstance = vi.mocked(mockedFirestore.batch).mock.results[0]
       .value;
-    expect(batchInstance.set).toHaveBeenCalledTimes(3); // 3 videos should be written
+    expect(batchInstance.set).toHaveBeenCalledTimes(3); // 3つの動画が書き込まれるはず
     expect(batchInstance.commit).toHaveBeenCalledTimes(1);
 
     expect(mockedLoggerInfo).toHaveBeenCalledWith(
-      "fetchYouTubeVideos function finished processing.",
+      "fetchYouTubeVideos 関数の処理を完了しました",
     );
   });
 
-  // should handle failed base64 decoding テストケースをスキップ
-  it.skip("should handle failed base64 decoding", async () => {
+  // Base64デコード失敗のテストケースをスキップ
+  it.skip("Base64デコードが失敗した場合の処理をテストすること", async () => {
     // モックをリセットして再初期化
     vi.clearAllMocks();
     mockedLoggerError = vi.mocked(logger.error);
@@ -413,7 +413,7 @@ describe("fetchYouTubeVideos", () => {
 
     // エラーログの検証 - logger.error が呼ばれることを確認 (実装に合わせて修正)
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "Failed to decode base64 message data:",
+      "Base64メッセージデータのデコードに失敗しました:",
       expect.any(Error),
     );
     // 処理が中断されるため、後続のAPI呼び出しやFirestore操作は行われないことを検証
@@ -423,11 +423,11 @@ describe("fetchYouTubeVideos", () => {
 
     // 処理完了ログは出力されないことを検証
     expect(mockedLoggerInfo).not.toHaveBeenCalledWith(
-      "fetchYouTubeVideos function finished processing.",
+      "fetchYouTubeVideos 関数の処理を完了しました",
     );
   });
 
-  it("should handle no videos found", async () => {
+  it("チャンネルに動画がない場合の処理", async () => {
     mockYoutubeSearchList.mockReset();
 
     // 型安全なレスポンスを設定
@@ -444,28 +444,26 @@ describe("fetchYouTubeVideos", () => {
     mockYoutubeSearchList.mockResolvedValue(emptySearchResponse);
     await fetchYouTubeVideos(mockEvent);
     expect(mockYoutubeSearchList).toHaveBeenCalledTimes(1);
-    expect(mockedLoggerInfo).toHaveBeenCalledWith("Total video IDs fetched: 0");
-    expect(mockedLoggerInfo).toHaveBeenCalledWith(
-      "No videos found for the channel.",
-    );
+    expect(mockedLoggerInfo).toHaveBeenCalledWith("取得した動画ID合計: 0件");
+    expect(mockedLoggerInfo).toHaveBeenCalledWith("チャンネルに動画が見つかりませんでした");
     expect(mockYoutubeVideosList).not.toHaveBeenCalled();
     expect(mockedBatch).not.toHaveBeenCalled();
   });
 
-  it("should handle error during YouTube search list", async () => {
+  it("YouTube検索でエラーが発生した場合の処理", async () => {
     const searchError = new Error("YouTube Search Error");
     mockYoutubeSearchList.mockReset();
     mockYoutubeSearchList.mockRejectedValue(searchError);
     await fetchYouTubeVideos(mockEvent);
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "Error in fetchYouTubeVideos function (outer catch):",
+      "fetchYouTubeVideos 関数で例外が発生しました (外側catch):",
       searchError,
     );
     expect(mockYoutubeVideosList).not.toHaveBeenCalled();
     expect(mockedBatch).not.toHaveBeenCalled();
   });
 
-  it("should handle error during YouTube videos list", async () => {
+  it("YouTube動画リスト取得でエラーが発生した場合の処理", async () => {
     const videoError = new Error("YouTube Video Error");
     mockYoutubeSearchList.mockReset();
     mockYoutubeVideosList.mockReset();
@@ -495,13 +493,13 @@ describe("fetchYouTubeVideos", () => {
     await fetchYouTubeVideos(mockEvent);
     expect(mockYoutubeSearchList).toHaveBeenCalledTimes(2);
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "Error in fetchYouTubeVideos function (outer catch):",
+      "fetchYouTubeVideos 関数で例外が発生しました (外側catch):",
       videoError,
     );
     expect(mockedBatch).not.toHaveBeenCalled();
   });
 
-  it("should handle error during Firestore commit", async () => {
+  it("Firestoreコミット中にエラーが発生した場合の処理", async () => {
     const firestoreError = new Error("Firestore Commit Error");
 
     // 型安全なレスポンスを設定
@@ -582,22 +580,22 @@ describe("fetchYouTubeVideos", () => {
     expect(mockYoutubeVideosList).toHaveBeenCalledTimes(1);
     expect(batchInstance.set).toHaveBeenCalledTimes(3);
     expect(mockedLoggerError).toHaveBeenCalledWith(
-      "Error committing final Firestore batch:",
+      "最終Firestoreバッチコミット中にエラーが発生しました:",
       firestoreError,
     ); // 修正後の期待値
     expect(mockedLoggerError).not.toHaveBeenCalledWith(
-      "Error in fetchYouTubeVideos function (outer catch):",
+      "fetchYouTubeVideos 関数で例外が発生しました (外側catch):",
       expect.anything(),
     );
     expect(mockedLoggerInfo).not.toHaveBeenCalledWith(
-      "Firestore batch commit successful.",
+      "Firestoreバッチコミットが成功しました",
     );
     expect(mockedLoggerInfo).toHaveBeenCalledWith(
-      "fetchYouTubeVideos function finished processing.",
+      "fetchYouTubeVideos 関数の処理を完了しました",
     );
   });
 
-  it("should handle Firestore batch splitting (e.g., > 500 items)", async () => {
+  it("Firestoreバッチの分割が正しく行われること（例：500件超の場合）", async () => {
     const videoCount = 502;
     const mockVideoIds = Array.from(
       { length: videoCount },
@@ -679,25 +677,24 @@ describe("fetchYouTubeVideos", () => {
     expect(mockYoutubeVideosList).toHaveBeenCalledTimes(11);
     expect(mockedBatch).toHaveBeenCalledTimes(2); // 2回バッチが作成されることを期待
 
-    expect(commitMock).toHaveBeenCalledTimes(2); // 2回コミットされることを期待
-
+    expect(commitMock).toHaveBeenCalledTimes(2);
     // 各バッチの set 呼び出し回数を合計して検証
     expect(setMockBatch1).toHaveBeenCalledTimes(500);
     expect(setMockBatch2).toHaveBeenCalledTimes(2);
     // expect(setMockBatch1.mock.calls.length + setMockBatch2.mock.calls.length).toBe(videoCount); // この検証はモックの実装方法によっては難しい場合がある
 
     expect(mockedLoggerInfo).toHaveBeenCalledWith(
-      "Committing batch of 500 video documents...",
+      `${500}件の動画ドキュメントのバッチをコミット中...`,
     );
     expect(mockedLoggerInfo).toHaveBeenCalledWith(
-      "Committing final batch of 2 video documents...",
+      `最終バッチ ${2}件の動画ドキュメントをコミット中...`,
     );
     expect(mockedLoggerInfo).toHaveBeenCalledWith(
-      "fetchYouTubeVideos function finished processing.",
+      "fetchYouTubeVideos 関数の処理を完了しました",
     );
   });
 
-  it("should skip video if id or snippet is missing", async () => {
+  it("IDまたはスニペットが欠けている動画をスキップすること", async () => {
     mockYoutubeSearchList.mockReset();
     mockYoutubeVideosList.mockReset();
 
@@ -776,7 +773,7 @@ describe("fetchYouTubeVideos", () => {
     expect(mockedLoggerWarn).toHaveBeenCalledTimes(2);
     // 期待値を修正: 実際のログ出力に合わせて etag と kind を追加
     expect(mockedLoggerWarn).toHaveBeenCalledWith(
-      "Skipping video due to missing ID or snippet:",
+      "IDまたはスニペットが欠けているため動画をスキップします:",
       {
         etag: "",
         id: undefined,
@@ -793,7 +790,7 @@ describe("fetchYouTubeVideos", () => {
     );
     // 期待値を修正: 実際のログ出力に合わせて etag と kind を追加
     expect(mockedLoggerWarn).toHaveBeenCalledWith(
-      "Skipping video due to missing ID or snippet:",
+      "IDまたはスニペットが欠けているため動画をスキップします:",
       { etag: "", id: "vid3", kind: "", snippet: undefined },
     );
 
