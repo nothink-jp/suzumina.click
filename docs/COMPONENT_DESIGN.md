@@ -10,14 +10,14 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
 
 - **デフォルトは RSC**: すべてのコンポーネントは、明示的に `"use client"` ディレクティブを指定しない限り、サーバーコンポーネントとして扱われます。データフェッチやサーバーサイドでのみ実行可能な処理は RSC で行います。
 - **RCC の利用条件**: 以下のいずれかの要件を満たす場合に限り、クライアントコンポーネント (`"use client"` をファイルの先頭に記述) を使用します。
-    - **インタラクティビティ**: `useState`, `useReducer`, `useEffect` などの React Hooks を使用する場合。
-    - **イベントリスナー**: `onClick`, `onChange` などのイベントハンドラを要素に付与する場合。
-    - **ブラウザ API**: `window`, `localStorage`, `navigator` などのブラウザ固有の API を使用する場合。
-    - **特定のライブラリ**: クライアントサイドでの実行を前提とするライブラリ（例: **Headless UI**、状態管理ライブラリの一部、DOM操作ライブラリ）を使用する場合。
+  - **インタラクティビティ**: `useState`, `useReducer`, `useEffect` などの React Hooks を使用する場合。
+  - **イベントリスナー**: `onClick`, `onChange` などのイベントハンドラを要素に付与する場合。
+  - **ブラウザ API**: `window`, `localStorage`, `navigator` などのブラウザ固有の API を使用する場合。
+  - **特定のライブラリ**: クライアントサイドでの実行を前提とするライブラリ（例: **Headless UI**、状態管理ライブラリの一部、DOM操作ライブラリ）を使用する場合。
 - **インサイドアウト・アプローチ**:
-    - クライアントコンポーネントは、機能的に必要な最小限の範囲に留めます。
-    - ページ全体やレイアウトのような大きな単位ではなく、ボタン、フォーム入力、インタラクティブなUI要素など、具体的な部品レベルで RCC を作成します。
-    - RSC 内で RCC を子コンポーネントとしてインポートし、配置します。これにより、サーバーサイドレンダリングの利点を最大限に活かしつつ、必要な箇所にのみインタラクティビティを追加できます。
+  - クライアントコンポーネントは、機能的に必要な最小限の範囲に留めます。
+  - ページ全体やレイアウトのような大きな単位ではなく、ボタン、フォーム入力、インタラクティブなUI要素など、具体的な部品レベルで RCC を作成します。
+  - RSC 内で RCC を子コンポーネントとしてインポートし、配置します。これにより、サーバーサイドレンダリングの利点を最大限に活かしつつ、必要な箇所にのみインタラクティビティを追加できます。
 
     ```tsx
     // RSC (例: src/app/some-page/page.tsx)
@@ -66,13 +66,13 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
 ## 2. コンポーネントの命名と配置
 
 - **命名規則**:
-    - コンポーネントファイル名およびコンポーネント関数名: `PascalCase` (例: `UserProfileCard.tsx`, `function UserProfileCard() {}`)
+  - コンポーネントファイル名およびコンポーネント関数名: `PascalCase` (例: `UserProfileCard.tsx`, `function UserProfileCard() {}`)
 - **配置 (コロケーション)**:
-    - **ページ固有コンポーネント**: 特定のページ (`src/app/about/page.tsx` など) でのみ使用されるコンポーネントは、そのページのディレクトリ配下に `_components` ディレクトリ (例: `src/app/about/_components/`) を作成し、そこに配置します。
-    - **共通コンポーネント**: 複数のページやレイアウトで再利用されるコンポーネントは、`src/components/` ディレクトリ (必要に応じて作成) に配置します。
-        - `src/components/ui/`: 低レベルなUI部品 (Button, Input, Card など)。DaisyUI コンポーネントのラッパーや、独自実装の基本部品。
-        - `src/components/layout/`: アプリケーション全体のレイアウトに関連するコンポーネント (Header, Footer, Sidebar など)。
-        - `src/components/feature/`: 特定の機能に関連する、より高レベルなコンポーネント群 (例: `src/components/feature/auth/`, `src/components/feature/profile/`)。
+  - **ページ固有コンポーネント**: 特定のページ (`src/app/about/page.tsx` など) でのみ使用されるコンポーネントは、そのページのディレクトリ配下に `_components` ディレクトリ (例: `src/app/about/_components/`) を作成し、そこに配置します。
+  - **共通コンポーネント**: 複数のページやレイアウトで再利用されるコンポーネントは、`src/components/` ディレクトリ (必要に応じて作成) に配置します。
+    - `src/components/ui/`: 低レベルなUI部品 (Button, Input, Card など)。DaisyUI コンポーネントのラッパーや、独自実装の基本部品。
+    - `src/components/layout/`: アプリケーション全体のレイアウトに関連するコンポーネント (Header, Footer, Sidebar など)。
+    - `src/components/feature/`: 特定の機能に関連する、より高レベルなコンポーネント群 (例: `src/components/feature/auth/`, `src/components/feature/profile/`)。
 
 ## 3. 状態管理
 
@@ -84,9 +84,9 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
 
 - **単一責務の原則 (SRP)**: 各コンポーネントは、単一の明確な責務を持つように設計します。
 - **粒度**:
-    - 再利用性や可読性を考慮し、適切な粒度でコンポーネントを分割します。巨大すぎるコンポーネントは避けます。
-    - Presentational Component と Container Component の分離は、RSC/RCC の分離と合わせて自然に行われることが多いですが、意識的に分離することも有効です。
+  - 再利用性や可読性を考慮し、適切な粒度でコンポーネントを分割します。巨大すぎるコンポーネントは避けます。
+  - Presentational Component と Container Component の分離は、RSC/RCC の分離と合わせて自然に行われることが多いですが、意識的に分離することも有効です。
 - **Props の設計**:
-    - コンポーネントが必要とするデータは Props を通じて明確に渡します。
-    - Props の数は適切に保ち、多すぎる場合はオブジェクトにまとめるなどを検討します。
-    - Props の型は TypeScript で厳密に定義します。
+  - コンポーネントが必要とするデータは Props を通じて明確に渡します。
+  - Props の数は適切に保ち、多すぎる場合はオブジェクトにまとめるなどを検討します。
+  - Props の型は TypeScript で厳密に定義します。

@@ -4,12 +4,12 @@
 
 **主な機能:**
 
-*   Discord ギルドメンバー限定の認証機能。
-*   **音声ボタンサービス:** 涼花みなせさんの YouTube 動画情報を定期的に取得し、将来的には動画の切り抜き音声を利用した音声ボタンを提供します (バックエンド機能実装済み)。
+- Discord ギルドメンバー限定の認証機能。
+- **音声ボタンサービス:** 涼花みなせさんの YouTube 動画情報を定期的に取得し、将来的には動画の切り抜き音声を利用した音声ボタンを提供します (バックエンド機能実装済み)。
 
 ## ディレクトリ構成
 
-```
+```sh
 .
 ├── .clinerules          # Cline (開発支援AI) 設定ファイル
 ├── .firebaserc          # Firebase プロジェクト設定 (ローカル)
@@ -87,17 +87,17 @@
 - **`functions/`**: Firebase Cloud Functions のソースコードと設定。Discord 認証コールバック (`discordAuthCallback`) や YouTube 動画情報取得バッチ (`fetchYouTubeVideos`) などを担当。
 - **`public/`**: ビルド時にそのままコピーされる静的ファイル。現在は空。
 - **`src/`**: Next.js アプリケーションのソースコード。
-    - **`src/app/`**: Next.js App Router の規約に基づいたディレクトリ。
-        - **`layout.tsx`**: ルートレイアウト。`AuthProvider` でラップ。
-        - **`page.tsx`**: ホームページ。
-        - **`auth/discord/callback/`**: Discord 認証後のコールバック処理ページ。
-        - **`profile/`**: プロフィール表示ページ。
-        - **`_components/`**: 各ページ/レイアウトに固有のコンポーネント。
-    - **`src/components/`**: アプリケーション全体で再利用される共通コンポーネント。
-        - **`layout/`**: ヘッダー、フッターなど。
-        - **`ui/`**: ボタンなどの汎用 UI 部品 (`AuthButton` など)。
-    - **`src/lib/`**: ユーティリティ関数や外部サービス連携コード。
-        - **`firebase/`**: Firebase Client SDK の初期化 (`client.ts`) や認証プロバイダー (`AuthProvider.tsx`)。
+  - **`src/app/`**: Next.js App Router の規約に基づいたディレクトリ。
+    - **`layout.tsx`**: ルートレイアウト。`AuthProvider` でラップ。
+    - **`page.tsx`**: ホームページ。
+    - **`auth/discord/callback/`**: Discord 認証後のコールバック処理ページ。
+    - **`profile/`**: プロフィール表示ページ。
+    - **`_components/`**: 各ページ/レイアウトに固有のコンポーネント。
+  - **`src/components/`**: アプリケーション全体で再利用される共通コンポーネント。
+    - **`layout/`**: ヘッダー、フッターなど。
+    - **`ui/`**: ボタンなどの汎用 UI 部品 (`AuthButton` など)。
+  - **`src/lib/`**: ユーティリティ関数や外部サービス連携コード。
+    - **`firebase/`**: Firebase Client SDK の初期化 (`client.ts`) や認証プロバイダー (`AuthProvider.tsx`)。
 - **`terraform/`**: Terraform を使用した GCP インフラストラクチャ定義。
 - **`firebase.json`, `.firebaserc`**: Firebase デプロイ設定 (主に Hosting)。
 - **`next.config.ts`**: Next.js 設定 (画像最適化ドメインなど)。
