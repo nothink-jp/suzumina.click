@@ -9,7 +9,7 @@ let initialized = false;
 
 /**
  * Firebase Admin SDKを初期化する関数
- * 
+ *
  * この関数は複数回呼び出されても実際の初期化は1回のみ実行される
  * 各Firebaseモジュールの使用前に呼び出すことで、適切な初期化を保証する
  */
@@ -27,7 +27,7 @@ initializeFirebaseAdmin();
 
 /**
  * Firestoreインスタンス
- * 
+ *
  * 初期化済みのFirebase Admin SDKからFirestoreインスタンスを取得
  * プロジェクト内で一貫したFirestoreインスタンスを使用するために提供
  */

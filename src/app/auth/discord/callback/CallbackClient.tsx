@@ -1,9 +1,9 @@
 "use client"; // クライアントコンポーネント
 
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { signInWithCustomToken } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
+import { signInWithCustomToken } from "firebase/auth";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function CallbackClient() {
   const searchParams = useSearchParams();
@@ -78,7 +78,10 @@ export default function CallbackClient() {
       <p>{message}</p>
       {error && <p className="text-error mt-2">エラー: {error}</p>}
       {!error && message === "認証処理中..." && (
-        <span className="loading loading-dots loading-lg mt-4" />
+        <span
+          data-testid="loading-indicator"
+          className="loading loading-dots loading-lg mt-4"
+        />
       )}
     </>
   );

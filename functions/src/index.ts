@@ -1,19 +1,19 @@
 // functions/src/index.ts
 /**
  * Firebase Functionsのエントリーポイントファイル
- * 
+ *
  * このファイルは各モジュールからCloud Functionsをインポートして
  * まとめてエクスポートする役割を持ちます。
- * 
+ *
  * Firebase Deploymentsはここからエクスポートされた関数を
  * Firebase Project上にデプロイします。
  */
 
+// HTTPサーバー用の標準モジュール
+import * as http from "node:http";
 // Cloud Functions 2世代（GCFv2）用のFunctions Frameworkをインポート
 // ※実行時依存関係として追加済み
 import * as functions from "@google-cloud/functions-framework";
-// HTTPサーバー用の標準モジュール
-import * as http from "node:http";
 // 適切なロギング
 import * as logger from "firebase-functions/logger";
 // Firebase Admin SDKを初期化するために必要
@@ -33,7 +33,7 @@ import { fetchYouTubeVideos } from "./youtube";
 functions.http("discordAuthCallback", async (req, res) => {
   try {
     logger.info("GCFv2 discordAuthCallback 関数を呼び出します");
-    
+
     // CORSヘッダーを設定
     const allowedOrigin = "https://suzumina-click-firebase.web.app";
     res.set("Access-Control-Allow-Origin", allowedOrigin);
@@ -58,13 +58,15 @@ functions.http("discordAuthCallback", async (req, res) => {
 
     // リクエストボディからcodeを取得
     const code = req.body?.code as string | undefined;
-    
+
     if (!code) {
       logger.error("リクエスト本文に認証コードが見つかりません");
-      res.status(400).send({ success: false, error: "Authorization code is required." });
+      res
+        .status(400)
+        .send({ success: false, error: "Authorization code is required." });
       return;
     }
-    
+
     // Firebase Functionsのコールバックを実行するためのシンプル化されたリクエスト
     const mockRequest = {
       method: "POST",
@@ -77,7 +79,7 @@ functions.http("discordAuthCallback", async (req, res) => {
     try {
       // @ts-ignore - 内部実装を直接呼び出し
       const handler = discordAuthFunc._def.func;
-      if (typeof handler === 'function') {
+      if (typeof handler === "function") {
         await handler(mockRequest, res);
       } else {
         throw new Error("Discord認証ハンドラーが関数ではありません");
@@ -87,7 +89,10 @@ functions.http("discordAuthCallback", async (req, res) => {
       res.status(500).send({ success: false, error: "Authentication failed." });
     }
   } catch (error) {
-    logger.error("Discord認証コールバックの実行中にエラーが発生しました:", error);
+    logger.error(
+      "Discord認証コールバックの実行中にエラーが発生しました:",
+      error,
+    );
     res.status(500).send({ success: false, error: "Internal Server Error" });
   }
 });
@@ -97,7 +102,7 @@ functions.cloudEvent("fetchYouTubeVideos", fetchYouTubeVideos);
 
 /**
  * メインコード - Cloud Runでの実行時にヘルスチェックに応答するためのサーバー初期化
- * 
+ *
  * ここではNode.jsの標準HTTPサーバーを使用してCloud Run環境でのヘルスチェックに応答します。
  * Functions Frameworkは自動的に登録された関数をHTTPリクエストにマッピングします。
  */
@@ -122,17 +127,18 @@ if (require.main === module) {
       functions._getFunction(functionTarget)(req, res);
     } else {
       // ヘルスチェック用の基本レスポンス
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
-      res.end('Functions Framework正常動作中');
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("Functions Framework正常動作中");
     }
   });
-  
+
   // サーバーを起動し、エラーハンドリングを設定
-  server.listen(PORT)
-    .on('listening', () => {
+  server
+    .listen(PORT)
+    .on("listening", () => {
       logger.info(`HTTPサーバーがポート${PORT}で正常に起動しました`);
     })
-    .on('error', (error: Error) => {
+    .on("error", (error: Error) => {
       logger.error("HTTPサーバーの起動に失敗しました:", error);
       process.exit(1);
     });

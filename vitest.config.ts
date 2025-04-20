@@ -29,6 +29,7 @@ export default defineConfig({
         "vitest.*.{js,ts}",
         "**/*.d.ts",
         "**/*.config.{js,ts,mjs,cjs,mts,cts}",
+        "**/*.stories.{jsx,tsx,mdx}",
         "**/dist/**",
         "**/.storybook/**",
         "functions/**",

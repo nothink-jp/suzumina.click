@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 // 必要に応じて他の Firebase サービス (Firestore, Storage など) をインポート
 // import { getFirestore } from "firebase/firestore";

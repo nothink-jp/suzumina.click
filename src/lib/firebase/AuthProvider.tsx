@@ -1,9 +1,9 @@
 "use client"; // クライアントコンポーネント
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import type { ReactNode } from "react"; // ReactNode を type としてインポート
 import { onAuthStateChanged } from "firebase/auth";
 import type { User } from "firebase/auth"; // User を type としてインポート
+import React, { createContext, useContext, useEffect, useState } from "react";
+import type { ReactNode } from "react"; // ReactNode を type としてインポート
 import { auth } from "./client"; // Firebase Client SDK の auth インスタンスをインポート
 
 // Context の型定義

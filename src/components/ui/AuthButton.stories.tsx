@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import type React from "react";
 import type { IdTokenResult, User } from "firebase/auth"; // Firebase Userの型をインポート
+import type React from "react";
 
 // モック関数の型定義
 interface MockFn<T = void, R = unknown> {

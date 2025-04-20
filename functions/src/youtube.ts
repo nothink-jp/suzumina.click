@@ -1,14 +1,11 @@
+import type { CloudEvent } from "@google-cloud/functions-framework";
+import { Timestamp } from "firebase-admin/firestore";
 // functions/src/youtube.ts
 import * as logger from "firebase-functions/logger";
-import { Timestamp } from "firebase-admin/firestore";
 import { google } from "googleapis";
 import type { youtube_v3 } from "googleapis";
-import type { CloudEvent } from "@google-cloud/functions-framework";
-import { initializeFirebaseAdmin, firestore } from "./firebaseAdmin";
-import {
-  SUZUKA_MINASE_CHANNEL_ID,
-  type YouTubeVideoData,
-} from "./common";
+import { SUZUKA_MINASE_CHANNEL_ID, type YouTubeVideoData } from "./common";
+import { firestore, initializeFirebaseAdmin } from "./firebaseAdmin";
 
 initializeFirebaseAdmin();
 
@@ -139,7 +136,9 @@ interface PubsubMessage {
 export const fetchYouTubeVideos = async (
   event: CloudEvent<PubsubMessage>,
 ): Promise<void> => {
-  logger.info("fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)");
+  logger.info(
+    "fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)",
+  );
 
   try {
     // CloudEventからPubSubメッセージを取得

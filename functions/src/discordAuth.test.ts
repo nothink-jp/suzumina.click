@@ -1,12 +1,12 @@
-// functions/src/discordAuth.test.ts
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { discordAuthCallback } from "./discordAuth"; // テスト対象の関数
 import axios from "axios";
+import type { Response } from "express";
 import * as admin from "firebase-admin";
 import type { UserRecord } from "firebase-admin/auth";
 import * as logger from "firebase-functions/logger";
 import type { Request } from "firebase-functions/v2/https";
-import type { Response } from "express";
+// functions/src/discordAuth.test.ts
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { discordAuthCallback } from "./discordAuth"; // テスト対象の関数
 
 // --- モック設定 ---
 vi.mock("axios");
@@ -196,9 +196,12 @@ describe("discordAuthCallback", () => {
       success: true,
       customToken: "mock-custom-token",
     });
-    expect(mockedLoggerInfo).toHaveBeenCalledWith("Firebaseユーザー情報を更新しました", {
-      uid: "test-discord-user-id",
-    });
+    expect(mockedLoggerInfo).toHaveBeenCalledWith(
+      "Firebaseユーザー情報を更新しました",
+      {
+        uid: "test-discord-user-id",
+      },
+    );
   });
 
   it("認証に成功し、新規Firebaseユーザーを作成してカスタムトークンを返すこと", async () => {
@@ -244,9 +247,12 @@ describe("discordAuthCallback", () => {
       success: true,
       customToken: "mock-custom-token",
     });
-    expect(mockedLoggerInfo).toHaveBeenCalledWith("Firebaseユーザーを作成しました", {
-      uid: "new-discord-user-id",
-    });
+    expect(mockedLoggerInfo).toHaveBeenCalledWith(
+      "Firebaseユーザーを作成しました",
+      {
+        uid: "new-discord-user-id",
+      },
+    );
   });
 
   it("ユーザーがターゲットギルドのメンバーでない場合は403を返すこと", async () => {
