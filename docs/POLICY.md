@@ -16,12 +16,12 @@
 
 ## 2. 使用技術スタック
 
-- **フレームワーク**: Next.js 15 (App Router)
-- **UI スタイリング**: TailwindCSS 4 + DaisyUI 5
-- **UI コンポーネント (スタイルなし)**: Headless UI 2
-- **言語**: TypeScript
-- **テスト**: Vitest, React Testing Library (RTL)
-- **フォーマット/リント**: Biome
+- **フレームワーク**: Next.js `15.3.1` (App Router)
+- **UI スタイリング**: TailwindCSS `4.1.4` + DaisyUI `5.0.27`
+- **UI コンポーネント (スタイルなし)**: Headless UI `2.2.2`
+- **言語**: TypeScript (`^5.8.3`)
+- **テスト**: Vitest (`^3.1.1`), React Testing Library (RTL) (`^16.3.0`)
+- **フォーマット/リント**: Biome (`^1.9.4`)
 
 ## 3. コーディング規約
 

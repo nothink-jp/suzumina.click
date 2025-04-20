@@ -11,6 +11,7 @@
 - [x] `docs/AUTH_DESIGN.md` 作成 (認証設計)
 - [x] `docs/ENVIRONMENT_VARIABLES.md` 作成 (環境変数設定ガイド)
 - [x] `docs/AUTH_DESIGN.md` の簡略化 (実装完了後の整理)
+- [x] **(DONE) `docs/` 以下のドキュメント全体を現状の実装に合わせてレビュー・更新 (2025-04-21)**
 
 ## 初期セットアップ
 
@@ -40,7 +41,7 @@
 
 ## 音声ボタンサービス
 
-- [x] **YouTube動画情報取得バッチ 設計・計画 (`docs/AUDIO_BUTTON_PLAN.md`)**
+- [x] **YouTube動画情報取得バッチ 設計・計画 (`docs/AUDIO_BUTTON_PLAN.md`)** (実装に合わせて更新済)
 - [x] **インフラ設定 (Terraform)**
   - [x] Firestoreデータベース作成
   - [x] YouTube APIキー用 Secret Manager シークレット作成
@@ -62,10 +63,9 @@
   - [x] エラーハンドリングの強化
   - [x] テストケースの更新
 - [x] **データモデルドキュメント作成**
-  - [x] `docs/SCHEMA.md` 作成 (Firestoreデータモデル、ER図)
-- [ ] (TODO) `docs/ENVIRONMENT_VARIABLES.md`: `YOUTUBE_API_KEY` について追記
-- [ ] (TODO) `README.md` または新規ドキュメント: 音声ボタンサービス機能の概要、アーキテクチャ図、Firestoreデータモデルなどを記載
-- [ ] (TODO) `terraform/README.md` (もしあれば): 新規リソースについて追記
+  - [x] `docs/SCHEMA.md` 作成 (Firestoreデータモデル、ER図) (実装に合わせて更新済)
+- [x] (DONE) `docs/ENVIRONMENT_VARIABLES.md`: `YOUTUBE_API_KEY` について追記
+- [x] (DONE) `docs/README.md`: 音声ボタンサービス機能の概要と関連ドキュメントへの参照を記載
 
 ## テスト / Storybook
 

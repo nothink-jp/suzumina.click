@@ -1,6 +1,6 @@
 # 環境変数設定ガイド
 
-このプロジェクトでは、Firebase プロジェクト設定や Discord アプリケーションの認証情報など、外部サービスのキーを環境変数で管理します。
+このプロジェクトでは、Firebase プロジェクト設定や Discord アプリケーションの認証情報、YouTube API キーなど、外部サービスのキーを環境変数やシークレットで管理します。
 
 ## 1. フロントエンド用環境変数 (`.env.local`)
 
@@ -91,17 +91,39 @@ Cloud Functions で使用する機密情報（Discord Client Secret, YouTube API
 
 ```typescript
 // 例: functions/src/index.ts 内
-const clientId = process.env.DISCORD_CLIENT_ID;
-const clientSecret = process.env.DISCORD_CLIENT_SECRET;
-const redirectUri = process.env.DISCORD_REDIRECT_URI;
-const targetGuildId = process.env.DISCORD_TARGET_GUILD_ID;
-const youtubeApiKey = process.env.YOUTUBE_API_KEY; // 追加
+import { defineSecret } from 'firebase-functions/params';
+
+// シークレットの定義 (デプロイ時に Secret Manager の値が注入される)
+const discordClientId = defineSecret('DISCORD_CLIENT_ID');
+const discordClientSecret = defineSecret('DISCORD_CLIENT_SECRET');
+const discordRedirectUri = defineSecret('DISCORD_REDIRECT_URI');
+const discordTargetGuildId = defineSecret('DISCORD_TARGET_GUILD_ID');
+const youtubeApiKey = defineSecret('YOUTUBE_API_KEY'); // 追加
+
+// 関数内での参照例 (discordAuthCallback 関数など)
+export const discordAuthCallback = onCall(
+  { secrets: [discordClientId, discordClientSecret, discordRedirectUri, discordTargetGuildId] },
+  async (request) => {
+    const clientId = discordClientId.value(); // .value() で値を取得
+    const clientSecret = discordClientSecret.value();
+    // ...
+  }
+);
+
+// 関数内での参照例 (fetchYouTubeVideos 関数など)
+export const fetchYouTubeVideos = onMessagePublished(
+  { topic: 'youtube-video-fetch-trigger', secrets: [youtubeApiKey] },
+  async (event) => {
+    const apiKey = youtubeApiKey.value(); // .value() で値を取得
+    // ...
+  }
+);
 ```
 
 **注意:**
 
-- Terraform で `secret_environment_variables` を設定すると、Cloud Functions はデプロイ時に指定されたシークレットの最新バージョンを環境変数として自動的にマウントします。
-- ローカルで Firebase Emulator を使用する場合、これらのシークレットをエミュレータ環境で利用可能にするための設定（例: `.secret.local` ファイル）が別途必要になります。
+- Terraform で `secret_environment_variables` を設定し、Cloud Functions v2 の `secrets` オプションを使用すると、関数はデプロイ時に指定されたシークレットの最新バージョンを安全に利用できます。`process.env` ではなく、`defineSecret` で定義した Secret Parameter オブジェクトの `.value()` メソッド経由でアクセスします。
+- ローカルで Firebase Emulator を使用する場合、これらのシークレットをエミュレータ環境で利用可能にするための設定（例: `.env.local` や環境変数での設定）が別途必要になる場合があります。Firebase Emulator のドキュメントを参照してください。
 
 ## 3. ローカル開発 (Firebase Emulator)
 
@@ -112,12 +134,36 @@ Firebase Emulator を使用してローカルで開発する場合、環境変�
   - `NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL`: Firebase Emulator の Functions URL を設定します。デフォルトでは `http://127.0.0.1:5001/YOUR_PROJECT_ID/YOUR_REGION/discordAuthCallback` の形式になります。`firebase.json` の `emulators` 設定を確認してください。
     - 例: `http://127.0.0.1:5001/suzumina-click-firebase/asia-northeast1/discordAuthCallback`
 - **バックエンド (Functions Emulator):**
-  - Secret Manager の値 (`process.env.DISCORD_CLIENT_SECRET`, `process.env.YOUTUBE_API_KEY` など) は、エミュレータ起動時に特別な設定が必要です。プロジェクトルートに `.secret.local` ファイルを作成し、以下のように記述する方法があります。
+  - Secret Manager の値 (`DISCORD_CLIENT_SECRET`, `YOUTUBE_API_KEY` など) は、エミュレータ起動時に特別な設定が必要です。Firebase Emulator のドキュメントに従い、`.env.local` ファイルや環境変数、または `--import` オプションなどでエミュレータに値を渡す方法があります。
+  - 例 (`.env.local` を使用する場合、`.gitignore` に追加すること):
+    ```sh
+    # .env.local (プロジェクトルート)
+    DISCORD_CLIENT_SECRET=YOUR_DISCORD_SECRET_VALUE_HERE
+    YOUTUBE_API_KEY=YOUR_YOUTUBE_API_KEY_VALUE_HERE
+    # 他のシークレットも同様に追加
+    ```
+  - Functions コード内では、エミュレータ実行時は `defineSecret` で定義した値が直接利用できないため、`process.env` から読み込むなどのフォールバック処理が必要になる場合があります。
 
-  ```sh
-  DISCORD_CLIENT_SECRET=YOUR_DISCORD_SECRET_VALUE_HERE
-  YOUTUBE_API_KEY=YOUR_YOUTUBE_API_KEY_VALUE_HERE
-  # 他のシークレットも同様に追加
-  ```
+    ```typescript
+    // 例: functions/src/config.ts (など)
+    import { defineSecret } from 'firebase-functions/params';
 
-  詳細は Firebase Emulator のドキュメントを参照してください。
+    const discordClientSecretParam = defineSecret('DISCORD_CLIENT_SECRET');
+    const youtubeApiKeyParam = defineSecret('YOUTUBE_API_KEY');
+
+    // エミュレータ実行時 (process.env.FUNCTIONS_EMULATOR === 'true') は process.env から、
+    // 本番環境では defineSecret().value() から値を取得するヘルパー関数などを用意すると良い
+    export const getDiscordClientSecret = (): string => {
+      return process.env.FUNCTIONS_EMULATOR === 'true'
+        ? process.env.DISCORD_CLIENT_SECRET ?? ''
+        : discordClientSecretParam.value();
+    };
+
+    export const getYoutubeApiKey = (): string => {
+      return process.env.FUNCTIONS_EMULATOR === 'true'
+        ? process.env.YOUTUBE_API_KEY ?? ''
+        : youtubeApiKeyParam.value();
+    };
+    ```
+
+詳細は Firebase Emulator のドキュメントを参照してください。
