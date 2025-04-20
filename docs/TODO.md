@@ -55,6 +55,14 @@
   - [x] イベント形式の互換性問題のため、Raw CloudEvent ハンドラ形式で実装
 - [x] **Cloud Functions デプロイ (`fetchYouTubeVideos`)**
   - [x] Terraform でのデプロイと動作確認完了
+- [x] **YouTube API クォータ制限対応**
+  - [x] メタデータによる状態管理機構の実装
+  - [x] 段階的なデータ取得（ページング制限）の実装
+  - [x] リトライ機能の追加
+  - [x] エラーハンドリングの強化
+  - [x] テストケースの更新
+- [x] **データモデルドキュメント作成**
+  - [x] `docs/SCHEMA.md` 作成 (Firestoreデータモデル、ER図)
 - [ ] (TODO) `docs/ENVIRONMENT_VARIABLES.md`: `YOUTUBE_API_KEY` について追記
 - [ ] (TODO) `README.md` または新規ドキュメント: 音声ボタンサービス機能の概要、アーキテクチャ図、Firestoreデータモデルなどを記載
 - [ ] (TODO) `terraform/README.md` (もしあれば): 新規リソースについて追記
