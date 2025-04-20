@@ -1,7 +1,7 @@
 # Functions のソースコードを zip アーカイブ
 data "archive_file" "function_source_zip" {
   type        = "zip"
-  source_dir  = "../functions" # ルートディレクトリからの相対パス
+  source_dir  = "../functions"                                   # ルートディレクトリからの相対パス
   output_path = "/tmp/function-source-${var.gcp_project_id}.zip" # 一時的な出力先
 
   # node_modules など不要なファイルを除外 (firebase.json の ignore と合わせる)
@@ -11,9 +11,9 @@ data "archive_file" "function_source_zip" {
     "firebase-debug.log",
     "firebase-debug.*.log",
     "*.local",
-    ".gitignore", # .gitignore 自体も除外
+    ".gitignore",        # .gitignore 自体も除外
     "package-lock.json", # pnpm を使っているので除外
-    ".env*", # 環境変数ファイル
+    ".env*",             # 環境変数ファイル
     "*.tsbuildinfo",
     ".DS_Store",
     ".firebase",
@@ -43,7 +43,7 @@ resource "google_cloudfunctions2_function" "discord_auth_callback" {
 
   # ビルド設定
   build_config {
-    runtime     = "nodejs20" # 使用する Node.js のバージョン
+    runtime     = "nodejs20"            # 使用する Node.js のバージョン
     entry_point = "discordAuthCallback" # index.ts で export されている関数名
     source {
       storage_source {
@@ -55,10 +55,10 @@ resource "google_cloudfunctions2_function" "discord_auth_callback" {
 
   # サービス設定
   service_config {
-    max_instance_count = 1 # 最大インスタンス数
-    min_instance_count = 0 # 最小インスタンス数（コールドスタートを許容）
-    available_memory   = "256Mi" # メモリ割り当て
-    timeout_seconds    = 60 # 関数のタイムアウト時間
+    max_instance_count = 1           # 最大インスタンス数
+    min_instance_count = 0           # 最小インスタンス数（コールドスタートを許容）
+    available_memory   = "256Mi"     # メモリ割り当て
+    timeout_seconds    = 60          # 関数のタイムアウト時間
     ingress_settings   = "ALLOW_ALL" # HTTPSトリガーのため全許可
     # 適切に命名されたサービスアカウントを使用
     service_account_email = google_service_account.discord_auth_callback_sa.email
@@ -118,7 +118,7 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
 
   # ビルド設定
   build_config {
-    runtime     = "nodejs20" # Node.js 20ランタイム
+    runtime     = "nodejs20"           # Node.js 20ランタイム
     entry_point = "fetchYouTubeVideos" # index.tsでエクスポートされている関数名
     source {
       storage_source {
@@ -131,9 +131,9 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
   # サービス設定
   service_config {
     max_instance_count = 1       # スケジュールタスクのため低めに設定
-    min_instance_count = 0       # スケジュールタスクのためゼロでOK
+    min_instance_count = 0       # コールドスタートを許容
     available_memory   = "512Mi" # メモリ割り当て（単位はMi）
-    timeout_seconds    = 540     # 以前のバージョンより増加（9分）
+    timeout_seconds    = 900     # タイムアウトを15分に延長（コンテナ起動時間を含む）
     # 専用のサービスアカウントを使用
     service_account_email = google_service_account.fetch_youtube_videos_sa.email
 
@@ -151,7 +151,7 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
     trigger_region = "asia-northeast1" # 関数のリージョンと一致させる
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic   = google_pubsub_topic.youtube_video_fetch_trigger.id # トピックを参照
-    retry_policy   = "RETRY_POLICY_DO_NOT_RETRY" # 必要に応じてRETRY_POLICY_RETRYも選択可
+    retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"                        # 必要に応じてRETRY_POLICY_RETRYも選択可
     # トリガー用にも同じ専用サービスアカウントを使用
     service_account_email = google_service_account.fetch_youtube_videos_sa.email
   }

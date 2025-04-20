@@ -17,13 +17,23 @@ export function initializeFirebaseAdmin() {
   if (!initialized) {
     admin.initializeApp();
     initialized = true;
+    console.log("Firebase Admin SDKが初期化されました");
   }
+  return admin;
 }
+
+// モジュール読み込み時に初期化を実行
+initializeFirebaseAdmin();
 
 /**
  * Firestoreインスタンス
  * 
- * モジュールが読み込まれた時点でアクセス可能なFirestoreインスタンス
+ * 初期化済みのFirebase Admin SDKからFirestoreインスタンスを取得
  * プロジェクト内で一貫したFirestoreインスタンスを使用するために提供
  */
 export const firestore = admin.firestore();
+
+/**
+ * Firebase Auth管理インスタンス
+ */
+export const auth = admin.auth();

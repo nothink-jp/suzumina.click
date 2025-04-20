@@ -8,9 +8,9 @@ vi.mock("@/lib/firebase/AuthProvider", () => {
   return {
     useAuth: () => ({
       user: null,
-      loading: false
+      loading: false,
     }),
-    AuthProvider: ({ children }: { children: React.ReactNode }) => children
+    AuthProvider: ({ children }: { children: React.ReactNode }) => children,
   };
 });
 

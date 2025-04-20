@@ -7,7 +7,6 @@ import type { CloudEvent } from "@google-cloud/functions-framework";
 import { initializeFirebaseAdmin, firestore } from "./firebaseAdmin";
 import {
   SUZUKA_MINASE_CHANNEL_ID,
-  type SimplePubSubData,
   type YouTubeVideoData,
 } from "./common";
 
@@ -41,13 +40,6 @@ const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * リトライ機能付きのYouTube API呼び出し関数
- *
- * @param apiCall - YouTube API呼び出し関数
- * @param attempts - 最大リトライ回数
- * @returns Promise<T> - API呼び出し結果
- */
-/**
  * YouTube API エラーの型定義
  */
 interface YouTubeApiError {
@@ -55,6 +47,13 @@ interface YouTubeApiError {
   message?: string;
 }
 
+/**
+ * リトライ機能付きのYouTube API呼び出し関数
+ *
+ * @param apiCall - YouTube API呼び出し関数
+ * @param attempts - 最大リトライ回数
+ * @returns Promise<T> - API呼び出し結果
+ */
 async function retryApiCall<T>(
   apiCall: () => Promise<T>,
   attempts: number = MAX_RETRY_ATTEMPTS,
@@ -117,6 +116,14 @@ async function updateMetadata(updates: Partial<FetchMetadata>): Promise<void> {
 }
 
 /**
+ * Pub/SubメッセージのPubsubMessage型定義
+ */
+interface PubsubMessage {
+  data?: string;
+  attributes?: Record<string, string>;
+}
+
+/**
  * YouTubeから水瀬鈴花チャンネルの動画情報を取得し、Firestoreに保存する関数
  *
  * 1. Pub/Subからのトリガーを受け取る
@@ -130,76 +137,74 @@ async function updateMetadata(updates: Partial<FetchMetadata>): Promise<void> {
  * @returns Promise<void> - 非同期処理の完了を表すPromise
  */
 export const fetchYouTubeVideos = async (
-  event: CloudEvent<SimplePubSubData>,
+  event: CloudEvent<PubsubMessage>,
 ): Promise<void> => {
-  logger.info(
-    "fetchYouTubeVideos 関数を開始しました (Raw CloudEvent Handler - Adapted)",
-  );
+  logger.info("fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)");
 
-  // イベントデータの検証
-  const messageData = event.data;
-  if (!messageData) {
-    logger.error("イベントデータが不足しています", { event });
-    return;
-  }
+  try {
+    // CloudEventからPubSubメッセージを取得
+    const message = event.data;
 
-  // 属性情報の処理
-  const attributes = messageData.attributes ?? event.attributes;
-  if (attributes) {
-    logger.info("受信した属性情報:", attributes);
-  }
+    if (!message) {
+      logger.error("CloudEventデータが不足しています", { event });
+      return;
+    }
 
-  // Base64エンコードされたデータがあれば復号
-  if (messageData.data) {
+    // 属性情報の処理
+    if (message.attributes) {
+      logger.info("受信した属性情報:", message.attributes);
+    }
+
+    // Base64エンコードされたデータがあれば復号
+    if (message.data) {
+      try {
+        const decodedData = Buffer.from(message.data, "base64").toString(
+          "utf-8",
+        );
+        logger.info("デコードされたメッセージデータ:", decodedData);
+      } catch (err) {
+        logger.error("Base64メッセージデータのデコードに失敗しました:", err);
+        // デコード失敗したら処理を中断する
+        return;
+      }
+    } else {
+      logger.info("Base64データはイベント内に見つかりませんでした");
+    }
+
+    // YouTube API キーの取得と検証
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+      logger.error("環境変数に YOUTUBE_API_KEY が設定されていません");
+      return;
+    }
+
+    // YouTubeクライアント初期化
+    const youtube = google.youtube({
+      version: "v3",
+      auth: apiKey,
+    });
+
+    const videosCollection = firestore.collection("videos");
+    const now = Timestamp.now();
+
+    // 前回の実行状態を取得
+    let metadata: FetchMetadata;
     try {
-      const decodedData = Buffer.from(messageData.data, "base64").toString(
-        "utf-8",
-      );
-      logger.info("デコードされたメッセージデータ:", decodedData);
-    } catch (err) {
-      logger.error("Base64メッセージデータのデコードに失敗しました:", err);
-      // デコード失敗したら処理を中断する
-      return;
-    }
-  } else {
-    logger.info("Base64データはイベント内に見つかりませんでした");
-  }
+      metadata = await getOrCreateMetadata();
 
-  // YouTube API キーの取得と検証
-  const apiKey = process.env.YOUTUBE_API_KEY;
-  if (!apiKey) {
-    logger.error("環境変数に YOUTUBE_API_KEY が設定されていません");
-    return;
-  }
+      // 既に実行中の場合はスキップ（二重実行防止）
+      if (metadata.isInProgress) {
+        logger.warn("前回の実行が完了していません。処理をスキップします。");
+        return;
+      }
 
-  // YouTubeクライアント初期化
-  const youtube = google.youtube({
-    version: "v3",
-    auth: apiKey,
-  });
-
-  const videosCollection = firestore.collection("videos");
-  const now = Timestamp.now();
-
-  // 前回の実行状態を取得
-  let metadata: FetchMetadata;
-  try {
-    metadata = await getOrCreateMetadata();
-
-    // 既に実行中の場合はスキップ（二重実行防止）
-    if (metadata.isInProgress) {
-      logger.warn("前回の実行が完了していません。処理をスキップします。");
+      // 処理開始を記録
+      await updateMetadata({ isInProgress: true });
+    } catch (error) {
+      logger.error("メタデータの取得に失敗しました:", error);
       return;
     }
 
-    // 処理開始を記録
-    await updateMetadata({ isInProgress: true });
-  } catch (error) {
-    logger.error("メタデータの取得に失敗しました:", error);
-    return;
-  }
-
-  try {
     logger.info(`チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画IDを取得中`);
     const allVideoIds: string[] = [];
 

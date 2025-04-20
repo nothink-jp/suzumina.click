@@ -16,30 +16,30 @@ interface MockFn<T = void, R = unknown> {
 const createMockFn = <T = void, R = unknown>(returnValue?: R): MockFn<T, R> => {
   const mockFn: MockFn<T, R> = (...args: T[]) => {
     mockFn.calls.push(args);
-    return typeof mockFn.returnValue === 'function' 
-      ? (mockFn.returnValue as (...args: T[]) => R)(...args) 
+    return typeof mockFn.returnValue === "function"
+      ? (mockFn.returnValue as (...args: T[]) => R)(...args)
       : mockFn.returnValue;
   };
   mockFn.calls = [];
   mockFn.returnValue = returnValue as R;
-  
+
   // メソッドを定義
   mockFn.mockReturnValue = (value: R) => {
     mockFn.returnValue = value;
     return mockFn;
   };
-  
+
   // biome-ignore lint/complexity/useArrowFunction: <explanation>
-    mockFn.mockResolvedValue = function<V>(value: V) {
+  mockFn.mockResolvedValue = function <V>(value: V) {
     mockFn.returnValue = Promise.resolve(value) as unknown as R;
     return mockFn as unknown as MockFn<T, Promise<V>>;
   };
-  
+
   mockFn.mockImplementation = (impl: (...args: T[]) => R) => {
     mockFn.returnValue = impl;
     return mockFn;
   };
-  
+
   return mockFn;
 };
 
@@ -60,15 +60,21 @@ const createMockUser = (overrides?: Partial<User>): Partial<User> => {
     providerId: "firebase",
     // Firebase User型が要求するメソッド
     delete: createMockFn<void, Promise<void>>().mockResolvedValue(undefined),
-    getIdToken: createMockFn<boolean | undefined, Promise<string>>().mockResolvedValue("mock-token"),
-    getIdTokenResult: createMockFn<boolean | undefined, Promise<IdTokenResult>>().mockResolvedValue({
+    getIdToken: createMockFn<
+      boolean | undefined,
+      Promise<string>
+    >().mockResolvedValue("mock-token"),
+    getIdTokenResult: createMockFn<
+      boolean | undefined,
+      Promise<IdTokenResult>
+    >().mockResolvedValue({
       authTime: new Date().toISOString(),
       expirationTime: new Date(Date.now() + 3600000).toISOString(), // 1時間後
       issuedAtTime: new Date().toISOString(),
       signInProvider: "discord.com",
       signInSecondFactor: null,
       token: "mock-id-token",
-      claims: {}
+      claims: {},
     }),
     reload: createMockFn<void, Promise<void>>().mockResolvedValue(undefined),
     toJSON: createMockFn<void, Record<string, unknown>>().mockReturnValue({}),
@@ -78,22 +84,22 @@ const createMockUser = (overrides?: Partial<User>): Partial<User> => {
 
 // 元のAuthButtonコンポーネントをモックした、Storybook用のコンポーネント
 // このコンポーネントは純粋にUIのテストを目的としており、実際のロジックは含まない
-const MockAuthButton = ({ 
-  user = null, 
-  loading = false 
-}: { 
-  user?: User | null; 
+const MockAuthButton = ({
+  user = null,
+  loading = false,
+}: {
+  user?: User | null;
   loading?: boolean;
 }): React.ReactElement => {
   // ハンドラー関数のモック
   const handleLogin = (): void => {
-    console.log('ログインボタンがクリックされました');
+    console.log("ログインボタンがクリックされました");
     // ログイン処理はモックなので実際には何も行わない
   };
 
   // asyncな関数は返り値の型がPromise<void>となるため、明示的に値を返す必要がある
   const handleLogout = async (): Promise<void> => {
-    console.log('ログアウトボタンがクリックされました');
+    console.log("ログアウトボタンがクリックされました");
     // ログアウト処理はモックなので実際には何も行わない
     return Promise.resolve(); // 明示的にPromiseを返す
   };
@@ -127,9 +133,7 @@ const MockAuthButton = ({
             )}
           </div>
         </button>
-        <ul
-          className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
-        >
+        <ul className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
           <li className="menu-title">
             <span>{user.displayName || user.uid}</span>
           </li>
@@ -166,17 +170,17 @@ const meta = {
     mockData: {
       // 実際のネットワークリクエストやFirebaseの操作を無効化
       disableNetworkRequests: true,
-    }
+    },
   },
   // アーギュメントの定義
   argTypes: {
     user: {
-      control: 'object',
-      description: 'ユーザー情報', // 日本語の説明
+      control: "object",
+      description: "ユーザー情報", // 日本語の説明
     },
     loading: {
-      control: 'boolean',
-      description: '読み込み中フラグ', // 日本語の説明
+      control: "boolean",
+      description: "読み込み中フラグ", // 日本語の説明
     },
   },
   // 自動ドキュメント生成を有効化
@@ -186,7 +190,7 @@ const meta = {
     (Story) => (
       // ここでStorybook用のモックコンテキストを提供
       <Story />
-    )
+    ),
   ],
 } satisfies Meta<typeof MockAuthButton>;
 
@@ -198,8 +202,8 @@ export const NotLoggedIn: Story = {
   name: "未ログイン状態", // 日本語でストーリー名を設定
   args: {
     user: null,
-    loading: false
-  }
+    loading: false,
+  },
 };
 
 // ログイン状態のストーリー
@@ -207,8 +211,8 @@ export const LoggedIn: Story = {
   name: "ログイン状態", // 日本語でストーリー名を設定
   args: {
     user: createMockUser() as User,
-    loading: false
-  }
+    loading: false,
+  },
 };
 
 // ロード中状態のストーリー
@@ -216,6 +220,6 @@ export const Loading: Story = {
   name: "ロード中状態", // 日本語でストーリー名を設定
   args: {
     user: null,
-    loading: true
-  }
+    loading: true,
+  },
 };

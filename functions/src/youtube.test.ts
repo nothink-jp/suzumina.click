@@ -319,11 +319,11 @@ describe("fetchYouTubeVideos", () => {
     
     // 基本的な処理の確認
     expect(mockedLoggerInfo).toHaveBeenCalledWith(
-      "fetchYouTubeVideos 関数を開始しました (Raw CloudEvent Handler - Adapted)",
+      "fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)",
     );
     expect(mockEvent.data && mockedLoggerInfo).toHaveBeenCalledWith(
       "受信した属性情報:",
-      mockEvent.data.attributes,
+      mockEvent.data?.attributes,
     );
     expect(mockYoutubeSearchList).toHaveBeenCalledTimes(2);
     expect(mockYoutubeVideosList).toHaveBeenCalledTimes(1);
@@ -368,7 +368,7 @@ describe("fetchYouTubeVideos", () => {
   it("イベントデータが不足している場合はエラーを処理すること", async () => {
     const invalidEvent = { ...mockEvent, data: undefined };
     await fetchYouTubeVideos(invalidEvent);
-    expect(mockedLoggerError).toHaveBeenCalledWith("イベントデータが不足しています", {
+    expect(mockedLoggerError).toHaveBeenCalledWith("CloudEventデータが不足しています", {
       event: invalidEvent,
     });
     expect(mockYoutubeSearchList).not.toHaveBeenCalled();
@@ -844,7 +844,7 @@ describe("fetchYouTubeVideos", () => {
     
     // nextPageTokenが保存されるか確認
     expect(mockMetadataDocUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      nextPageToken: `page4`, // 4ページ目のトークン
+      nextPageToken: "page4", // 4ページ目のトークン
     }));
   });
 
@@ -1151,12 +1151,17 @@ describe("fetchYouTubeVideos", () => {
     
     // sleep関数をモックして即時解決するようにする
     const originalSleep = global.setTimeout;
-    global.setTimeout = vi.fn().mockImplementation((fn) => {
+    const mockSetTimeout = vi.fn().mockImplementation((fn) => {
       if (typeof fn === 'function') {
         fn();
       }
       return null;
-    });
+    }) as unknown as typeof global.setTimeout;
+    
+    // __promisify__ プロパティを追加
+    mockSetTimeout.__promisify__ = vi.fn();
+    
+    global.setTimeout = mockSetTimeout;
     
     // 非同期でテストを実行
     const testPromise = fetchYouTubeVideos(mockEvent);
