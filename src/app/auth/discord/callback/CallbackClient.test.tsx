@@ -69,7 +69,7 @@ describe("CallbackClientコンポーネント", () => {
   afterEach(() => {
     console.error = originalConsoleError;
     // 環境変数をクリア
-    delete process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL;
+    process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL = undefined;
   });
 
   test("認証コードが無い場合はエラーメッセージを表示すること", () => {
@@ -84,7 +84,8 @@ describe("CallbackClientコンポーネント", () => {
   });
 
   test("デフォルトのFunctions URLが使用される場合のテスト", async () => {
-    // 環境変数を一旦削除（デフォルト値が使用される）
+    // 環境変数を明示的に削除（デフォルト値が使用される）
+    // undefineだけでなく、deleteを使って確実に環境変数を削除する
     delete process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL;
 
     // 認証コードが存在するようにモック
@@ -109,9 +110,21 @@ describe("CallbackClientコンポーネント", () => {
 
     // fetchがデフォルトURLで呼び出されることを確認
     await waitFor(() => {
+      // 呼び出し引数を完全に検証
+      const expectedUrl =
+        "http://127.0.0.1:5001/suzumina-click-firebase/asia-northeast1/discordAuthCallback";
+      const expectedOptions = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code: "test-code" }),
+      };
+
+      // mockFetchが正しい引数で呼ばれたか確認
       expect(mockFetch).toHaveBeenCalledWith(
-        "http://127.0.0.1:5001/suzumina-click-firebase/asia-northeast1/discordAuthCallback",
-        expect.anything(),
+        expectedUrl,
+        expect.objectContaining(expectedOptions),
       );
     });
   });

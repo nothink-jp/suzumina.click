@@ -111,7 +111,7 @@ describe("AuthButtonコンポーネント", () => {
   test("ログインボタンをクリックすると正しいDiscord認証URLにリダイレクトすること", async () => {
     // windowのlocationをモック
     const originalLocation = window.location;
-    delete window.location;
+    window.location = undefined;
     window.location = { ...originalLocation, href: "" } as Location;
 
     // useAuthのモックを設定
@@ -140,7 +140,7 @@ describe("AuthButtonコンポーネント", () => {
 
   test("環境変数が未設定の場合にエラーが記録されること", async () => {
     // 環境変数を削除
-    delete process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
+    process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID = undefined;
 
     // useAuthのモックを設定
     (useAuth as vi.Mock).mockReturnValue({
