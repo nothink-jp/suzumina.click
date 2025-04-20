@@ -33,154 +33,172 @@ describe("AuthProviderコンポーネント", () => {
     vi.resetAllMocks();
     consoleErrorMock = vi.fn();
     console.error = consoleErrorMock;
-    
+
     // デフォルトのモック実装
     (onAuthStateChanged as vi.Mock).mockImplementation((auth, callback) => {
       callback(null);
       return vi.fn(); // unsubscribe関数
     });
   });
-  
+
   // テスト後に元のコンソール関数を復元
   afterEach(() => {
     console.error = originalConsoleError;
   });
-  
+
   test("子要素を正しくレンダリングすること", () => {
     render(
       <AuthProvider>
         <div data-testid="child">子要素</div>
-      </AuthProvider>
+      </AuthProvider>,
     );
-    
+
     expect(screen.getByTestId("child")).toHaveTextContent("子要素");
   });
-  
+
   test("onAuthStateChangedが呼び出されること", () => {
     render(
       <AuthProvider>
         <div>テスト</div>
-      </AuthProvider>
+      </AuthProvider>,
     );
-    
+
     expect(onAuthStateChanged).toHaveBeenCalled();
   });
-  
+
   test("認証状態が変更されたときにユーザー情報が更新されること", () => {
     // onAuthStateChangedがユーザー情報を返すようにモック
     (onAuthStateChanged as vi.Mock).mockImplementation((auth, callback) => {
       callback(mockUser);
       return vi.fn();
     });
-    
+
     // AuthProviderとuseAuthを使用するテスト用コンポーネント
     const TestComponent = () => {
       const { user, loading } = useAuth();
       return (
         <div>
-          <div data-testid="loading">{loading ? "読み込み中" : "読み込み完了"}</div>
-          <div data-testid="user-info">{user ? user.displayName : "未ログイン"}</div>
+          <div data-testid="loading">
+            {loading ? "読み込み中" : "読み込み完了"}
+          </div>
+          <div data-testid="user-info">
+            {user ? user.displayName : "未ログイン"}
+          </div>
         </div>
       );
     };
-    
+
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
-    
+
     // ユーザー情報と読み込み状態が反映されていることを確認
     expect(screen.getByTestId("loading")).toHaveTextContent("読み込み完了");
     expect(screen.getByTestId("user-info")).toHaveTextContent("テストユーザー");
   });
-  
+
   test("未認証の場合はnullが設定されること", () => {
     // onAuthStateChangedがnullを返すようにモック
     (onAuthStateChanged as vi.Mock).mockImplementation((auth, callback) => {
       callback(null);
       return vi.fn();
     });
-    
+
     // AuthProviderとuseAuthを使用するテスト用コンポーネント
     const TestComponent = () => {
       const { user, loading } = useAuth();
       return (
         <div>
-          <div data-testid="loading">{loading ? "読み込み中" : "読み込み完了"}</div>
-          <div data-testid="user-info">{user ? user.displayName : "未ログイン"}</div>
+          <div data-testid="loading">
+            {loading ? "読み込み中" : "読み込み完了"}
+          </div>
+          <div data-testid="user-info">
+            {user ? user.displayName : "未ログイン"}
+          </div>
         </div>
       );
     };
-    
+
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
-    
+
     // ユーザー情報と読み込み状態が反映されていることを確認
     expect(screen.getByTestId("loading")).toHaveTextContent("読み込み完了");
     expect(screen.getByTestId("user-info")).toHaveTextContent("未ログイン");
   });
-  
+
   test("authがnullの場合にロード状態が完了すること", () => {
     // authをnullに設定
     vi.doMock("./client", () => ({
       auth: null,
     }));
-    
+
     // AuthProviderとuseAuthを使用するテスト用コンポーネント
     const TestComponent = () => {
       const { user, loading } = useAuth();
       return (
         <div>
-          <div data-testid="loading">{loading ? "読み込み中" : "読み込み完了"}</div>
-          <div data-testid="user-info">{user ? user.displayName : "未ログイン"}</div>
+          <div data-testid="loading">
+            {loading ? "読み込み中" : "読み込み完了"}
+          </div>
+          <div data-testid="user-info">
+            {user ? user.displayName : "未ログイン"}
+          </div>
         </div>
       );
     };
-    
+
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
-    
+
     // 読み込みが完了していることを確認
     expect(screen.getByTestId("loading")).toHaveTextContent("読み込み完了");
   });
-  
+
   test("認証エラーが発生した場合にエラーメッセージが表示されること", () => {
     // onAuthStateChangedがエラーを返すようにモック
-    (onAuthStateChanged as vi.Mock).mockImplementation((auth, callback, errorCallback) => {
-      errorCallback(new Error("認証エラー"));
-      return vi.fn();
-    });
-    
+    (onAuthStateChanged as vi.Mock).mockImplementation(
+      (auth, callback, errorCallback) => {
+        errorCallback(new Error("認証エラー"));
+        return vi.fn();
+      },
+    );
+
     // AuthProviderとuseAuthを使用するテスト用コンポーネント
     const TestComponent = () => {
       const { user, loading } = useAuth();
       return (
         <div>
-          <div data-testid="loading">{loading ? "読み込み中" : "読み込み完了"}</div>
-          <div data-testid="user-info">{user ? user.displayName : "未ログイン"}</div>
+          <div data-testid="loading">
+            {loading ? "読み込み中" : "読み込み完了"}
+          </div>
+          <div data-testid="user-info">
+            {user ? user.displayName : "未ログイン"}
+          </div>
         </div>
       );
     };
-    
+
     render(
       <AuthProvider>
         <TestComponent />
-      </AuthProvider>
+      </AuthProvider>,
     );
-    
+
     // エラーメッセージがコンソールに出力されることを確認
     expect(consoleErrorMock).toHaveBeenCalledWith(
       "認証状態の監視中にエラーが発生しました:",
-      expect.any(Error)
+      expect.any(Error),
     );
-    
+
     // 読み込みが完了していることを確認
     expect(screen.getByTestId("loading")).toHaveTextContent("読み込み完了");
   });
@@ -191,13 +209,13 @@ describe("useAuthフック", () => {
     // コンソールエラーを一時的に抑制（Reactの警告を非表示にするため）
     const originalError = console.error;
     console.error = vi.fn();
-    
+
     // モック関数を作成してエラー発生を検知
     const errorFn = vi.fn();
-    
+
     // 独自のコンテキストを定義してuseContextが未定義を返すようにする
-    vi.spyOn(React, 'useContext').mockImplementation(() => undefined);
-    
+    vi.spyOn(React, "useContext").mockImplementation(() => undefined);
+
     // テスト用コンポーネント（期待されるエラーをキャッチ）
     const TestComponent = () => {
       try {
@@ -205,8 +223,10 @@ describe("useAuthフック", () => {
         useAuth();
       } catch (error) {
         // エラーメッセージを検証
-        if (error instanceof Error && 
-            error.message === "useAuth must be used within an AuthProvider") {
+        if (
+          error instanceof Error &&
+          error.message === "useAuth must be used within an AuthProvider"
+        ) {
           errorFn(error.message);
         } else {
           // その他のエラーは再スロー
@@ -215,13 +235,15 @@ describe("useAuthフック", () => {
       }
       return null;
     };
-    
+
     // コンポーネントをレンダリング
     render(<TestComponent />);
-    
+
     // 期待するエラーメッセージで関数が呼ばれたことを確認
-    expect(errorFn).toHaveBeenCalledWith("useAuth must be used within an AuthProvider");
-    
+    expect(errorFn).toHaveBeenCalledWith(
+      "useAuth must be used within an AuthProvider",
+    );
+
     // コンソールエラーを復元
     console.error = originalError;
     // モックをリセット

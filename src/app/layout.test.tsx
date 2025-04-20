@@ -33,7 +33,7 @@ describe("RootLayoutコンポーネント", () => {
     render(
       <RootLayout>
         <div data-testid="test-children">子コンテンツ</div>
-      </RootLayout>
+      </RootLayout>,
     );
 
     // htmlタグが正しく設定されているか確認
@@ -46,7 +46,7 @@ describe("RootLayoutコンポーネント", () => {
     render(
       <RootLayout>
         <div data-testid="test-children">子コンテンツ</div>
-      </RootLayout>
+      </RootLayout>,
     );
 
     // bodyタグにフォント変数が設定されているか確認
@@ -58,18 +58,18 @@ describe("RootLayoutコンポーネント", () => {
     render(
       <RootLayout>
         <div data-testid="test-children">子コンテンツ</div>
-      </RootLayout>
+      </RootLayout>,
     );
 
     // AuthProviderが存在することを確認
     expect(screen.getByTestId("mock-auth-provider")).toBeInTheDocument();
-    
+
     // ヘッダーが存在することを確認
     expect(screen.getByTestId("mock-header")).toBeInTheDocument();
-    
+
     // mainエリアに子コンテンツが表示されていることを確認
     expect(screen.getByTestId("test-children")).toBeInTheDocument();
-    
+
     // フッターが存在することを確認
     expect(screen.getByTestId("mock-footer")).toBeInTheDocument();
   });
@@ -78,16 +78,16 @@ describe("RootLayoutコンポーネント", () => {
     render(
       <RootLayout>
         <div data-testid="test-children">子コンテンツ</div>
-      </RootLayout>
+      </RootLayout>,
     );
-    
+
     // DOM内の順番を確認
     const mockAuthProvider = screen.getByTestId("mock-auth-provider");
     const mockHeader = screen.getByTestId("mock-header");
     const mainContent = screen.getByRole("main");
     const testChildren = screen.getByTestId("test-children");
     const mockFooter = screen.getByTestId("mock-footer");
-    
+
     expect(mockAuthProvider.contains(mockHeader)).toBeTruthy();
     expect(mockAuthProvider.contains(mainContent)).toBeTruthy();
     expect(mockAuthProvider.contains(mockFooter)).toBeTruthy();
@@ -98,6 +98,8 @@ describe("RootLayoutコンポーネント", () => {
 describe("メタデータ", () => {
   test("適切なタイトルと説明が設定されていること", () => {
     expect(metadata.title).toBe("涼花みなせ 非公式ファンサイト");
-    expect(metadata.description).toBe("涼花みなせさんの活動を応援する非公式ファンサイトです。");
+    expect(metadata.description).toBe(
+      "涼花みなせさんの活動を応援する非公式ファンサイトです。",
+    );
   });
 });

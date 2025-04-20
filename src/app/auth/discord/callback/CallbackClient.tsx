@@ -78,7 +78,10 @@ export default function CallbackClient() {
       <p>{message}</p>
       {error && <p className="text-error mt-2">エラー: {error}</p>}
       {!error && message === "認証処理中..." && (
-        <span data-testid="loading-indicator" className="loading loading-dots loading-lg mt-4" />
+        <span
+          data-testid="loading-indicator"
+          className="loading loading-dots loading-lg mt-4"
+        />
       )}
     </>
   );

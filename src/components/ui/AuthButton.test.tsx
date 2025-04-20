@@ -24,9 +24,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/firebase/client", () => ({
-  get auth() { 
-    return mockAuth; 
-  }
+  get auth() {
+    return mockAuth;
+  },
 }));
 
 describe("AuthButtonコンポーネント", () => {
@@ -47,7 +47,7 @@ describe("AuthButtonコンポーネント", () => {
   beforeEach(() => {
     // テスト前にモックをリセット
     vi.resetAllMocks();
-    
+
     // ルーターのモック設定
     (useRouter as unknown as vi.Mock).mockReturnValue({
       push: mockPush,
@@ -63,7 +63,7 @@ describe("AuthButtonコンポーネント", () => {
     // コンソールのモック
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "log").mockImplementation(() => {});
-    
+
     // ファイバークライアントのauthを初期化
     Object.assign(mockAuth, {}); // デフォルトで空オブジェクトに設定
   });
@@ -83,9 +83,11 @@ describe("AuthButtonコンポーネント", () => {
     });
 
     render(<AuthButton />);
-    
+
     // ローディングスピナーが表示されていることを確認（classで検索）
-    const loadingSpinner = screen.getByText("", { selector: "span.loading.loading-spinner" });
+    const loadingSpinner = screen.getByText("", {
+      selector: "span.loading.loading-spinner",
+    });
     expect(loadingSpinner).toBeInTheDocument();
     expect(loadingSpinner).toHaveClass("loading-spinner");
   });
@@ -98,9 +100,11 @@ describe("AuthButtonコンポーネント", () => {
     });
 
     render(<AuthButton />);
-    
+
     // ログインボタンが表示されていることを確認
-    const loginButton = screen.getByRole("button", { name: "Discord でログイン" });
+    const loginButton = screen.getByRole("button", {
+      name: "Discord でログイン",
+    });
     expect(loginButton).toBeInTheDocument();
   });
 
@@ -118,13 +122,16 @@ describe("AuthButtonコンポーネント", () => {
 
     render(<AuthButton />);
     const user = userEvent.setup();
-    
+
     // ログインボタンをクリック
-    const loginButton = screen.getByRole("button", { name: "Discord でログイン" });
+    const loginButton = screen.getByRole("button", {
+      name: "Discord でログイン",
+    });
     await user.click(loginButton);
-    
+
     // 正しいURLにリダイレクトされることを確認
-    const expectedUrl = "https://discord.com/api/oauth2/authorize?client_id=test-client-id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&response_type=code&scope=identify%20guilds%20email";
+    const expectedUrl =
+      "https://discord.com/api/oauth2/authorize?client_id=test-client-id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&response_type=code&scope=identify%20guilds%20email";
     expect(window.location.href).toBe(expectedUrl);
 
     // 元に戻す
@@ -134,7 +141,7 @@ describe("AuthButtonコンポーネント", () => {
   test("環境変数が未設定の場合にエラーが記録されること", async () => {
     // 環境変数を削除
     delete process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
-    
+
     // useAuthのモックを設定
     (useAuth as vi.Mock).mockReturnValue({
       user: null,
@@ -143,13 +150,17 @@ describe("AuthButtonコンポーネント", () => {
 
     render(<AuthButton />);
     const user = userEvent.setup();
-    
+
     // ログインボタンをクリック
-    const loginButton = screen.getByRole("button", { name: "Discord でログイン" });
+    const loginButton = screen.getByRole("button", {
+      name: "Discord でログイン",
+    });
     await user.click(loginButton);
-    
+
     // コンソールエラーが呼び出されることを確認
-    expect(console.error).toHaveBeenCalledWith("Discord OAuth environment variables are not set.");
+    expect(console.error).toHaveBeenCalledWith(
+      "Discord OAuth environment variables are not set.",
+    );
   });
 
   test("ログイン済み状態でプロフィール画像が表示されること", () => {
@@ -160,7 +171,7 @@ describe("AuthButtonコンポーネント", () => {
     });
 
     render(<AuthButton />);
-    
+
     // プロフィール画像が表示されていることを確認
     const avatar = screen.getByAltText("User Avatar");
     expect(avatar).toBeInTheDocument();
@@ -175,7 +186,7 @@ describe("AuthButtonコンポーネント", () => {
     });
 
     render(<AuthButton />);
-    
+
     // プレースホルダーが表示されていることを確認
     const placeholder = screen.getByText("テ"); // "テストユーザー"の最初の文字
     expect(placeholder).toBeInTheDocument();
@@ -189,7 +200,7 @@ describe("AuthButtonコンポーネント", () => {
     });
 
     render(<AuthButton />);
-    
+
     // '?'が表示されることを確認
     const placeholder = screen.getByText("?");
     expect(placeholder).toBeInTheDocument();
@@ -198,7 +209,7 @@ describe("AuthButtonコンポーネント", () => {
   test("ログアウトボタンをクリックするとsignOutが呼ばれ、トップページにリダイレクトされること", async () => {
     // signOutのモック
     (signOut as vi.Mock).mockResolvedValue(undefined);
-    
+
     // useAuthのモックを設定
     (useAuth as vi.Mock).mockReturnValue({
       user: mockUser,
@@ -207,18 +218,18 @@ describe("AuthButtonコンポーネント", () => {
 
     render(<AuthButton />);
     const user = userEvent.setup();
-    
+
     // アバターボタンをクリック（alt属性で検索）
     const avatarButton = screen.getByAltText("User Avatar").closest("button");
     expect(avatarButton).not.toBeNull();
     if (avatarButton) {
       await user.click(avatarButton);
     }
-    
+
     // ログアウトボタンをクリック
     const logoutButton = screen.getByText("ログアウト");
     await user.click(logoutButton);
-    
+
     // signOutが呼ばれ、トップページにリダイレクトされることを確認
     await waitFor(() => {
       expect(signOut).toHaveBeenCalled();
@@ -229,12 +240,13 @@ describe("AuthButtonコンポーネント", () => {
   test("authがnullの場合にログアウト時にエラーが記録されること", async () => {
     // このテストではロジックのみをテストする
     const consoleErrorSpy = vi.spyOn(console, "error");
-    
+
     // AuthButtonコンポーネントのhandleLogout関数と同じロジックを直接実行
     const mockHandleLogout = async () => {
       try {
         // authがnullの場合のロジックをシミュレート
-        if (null) { // ここでnullをセット
+        if (null) {
+          // ここでnullをセット
           await signOut(null as any);
         } else {
           console.error("Firebase認証が初期化されていません");
@@ -243,19 +255,21 @@ describe("AuthButtonコンポーネント", () => {
         console.error("Error signing out: ", error);
       }
     };
-    
+
     // 模擬的なhandleLogoutを実行
     await mockHandleLogout();
-    
+
     // コンソールエラーが記録されていることを確認
-    expect(console.error).toHaveBeenCalledWith("Firebase認証が初期化されていません");
+    expect(console.error).toHaveBeenCalledWith(
+      "Firebase認証が初期化されていません",
+    );
   });
 
   test("ログアウト時にエラーが発生した場合にエラーが記録されること", async () => {
     // signOutのモックでエラーを発生させる
     const mockError = new Error("ログアウトエラー");
     (signOut as vi.Mock).mockRejectedValue(mockError);
-    
+
     // useAuthのモックを設定
     (useAuth as vi.Mock).mockReturnValue({
       user: mockUser,
@@ -264,21 +278,24 @@ describe("AuthButtonコンポーネント", () => {
 
     render(<AuthButton />);
     const user = userEvent.setup();
-    
+
     // アバターボタンをクリック（alt属性で検索）
     const avatarButton = screen.getByAltText("User Avatar").closest("button");
     expect(avatarButton).not.toBeNull();
     if (avatarButton) {
       await user.click(avatarButton);
     }
-    
+
     // ログアウトボタンをクリック
     const logoutButton = screen.getByText("ログアウト");
     await user.click(logoutButton);
-    
+
     // エラーが記録されることを確認
     await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith("Error signing out: ", mockError);
+      expect(console.error).toHaveBeenCalledWith(
+        "Error signing out: ",
+        mockError,
+      );
     });
   });
 });
