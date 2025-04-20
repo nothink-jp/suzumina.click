@@ -1,5 +1,7 @@
 // src/lib/firebase/client.test.ts
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { FirebaseApp } from "firebase/app";
+import type { Auth } from "firebase/auth";
 
 // Firebaseアプリのモック
 const mockInitializeApp = vi.fn().mockReturnValue({ name: "mock-app" });
@@ -11,7 +13,7 @@ const mockApp = { name: "mock-app" };
 
 // firebase/appをモック
 vi.mock("firebase/app", () => ({
-  initializeApp: (...args: any[]) => mockInitializeApp(...args),
+  initializeApp: (...args: unknown[]) => mockInitializeApp(...args),
   getApps: () => mockGetApps(),
   getApp: () => mockGetApp(),
 }));
@@ -20,7 +22,7 @@ vi.mock("firebase/app", () => ({
 const mockAuth = { name: "mock-auth" };
 const mockGetAuth = vi.fn().mockReturnValue(mockAuth);
 vi.mock("firebase/auth", () => ({
-  getAuth: (app?: any) => mockGetAuth(app),
+  getAuth: (app?: FirebaseApp) => mockGetAuth(app),
 }));
 
 describe("Firebaseクライアント", () => {
@@ -33,8 +35,8 @@ describe("Firebaseクライアント", () => {
 
   // 各テスト前にモジュールをリセットするための関数
   let cleanupModule: () => void;
-  let appVal: any;
-  let authVal: any;
+  let appVal: FirebaseApp | null;
+  let authVal: Auth | null;
 
   beforeEach(() => {
     // テスト前にモックをリセット

@@ -245,9 +245,9 @@ describe("AuthButtonコンポーネント", () => {
     const mockHandleLogout = async () => {
       try {
         // authがnullの場合のロジックをシミュレート
-        if (null) {
-          // ここでnullをセット
-          await signOut(null as any);
+        const auth = null; // authをnullに設定
+        if (auth) {
+          await signOut(auth);
         } else {
           console.error("Firebase認証が初期化されていません");
         }

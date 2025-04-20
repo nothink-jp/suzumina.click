@@ -3,12 +3,13 @@ import { signInWithCustomToken } from "firebase/auth";
 // src/app/auth/discord/callback/CallbackClient.test.tsx
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import CallbackClient from "./CallbackClient";
+import type { Auth } from "firebase/auth";
 
 // モック変数の定義
 const mockedPush = vi.fn();
 const mockSearchParamsGet = vi.fn();
 // authのモック（テスト中に変更できるようにする）
-let mockAuth: any = {};
+let mockAuth: Auth | null = {} as Auth;
 
 // firebase/authをモック
 vi.mock("firebase/auth", () => ({
@@ -43,6 +44,9 @@ const originalConsoleError = console.error;
 let consoleErrorMock: ReturnType<typeof vi.fn>;
 
 describe("CallbackClientコンポーネント", () => {
+  // テスト前の環境変数を保存
+  const originalEnv = { ...process.env };
+
   // 各テスト前の準備
   beforeEach(() => {
     vi.resetAllMocks();
@@ -54,22 +58,24 @@ describe("CallbackClientコンポーネント", () => {
     });
 
     // authを初期化
-    mockAuth = {};
+    mockAuth = {} as Auth;
 
     // コンソールエラーをモック
     consoleErrorMock = vi.fn();
     console.error = consoleErrorMock;
 
     // 環境変数のモック
-    process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL =
-      "https://test-functions-url.com";
+    process.env = {
+      ...originalEnv,
+      NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL: "https://test-functions-url.com",
+    };
   });
 
-  // テスト後に元のコンソール関数を復元
+  // テスト後に元のコンソール関数と環境変数を復元
   afterEach(() => {
     console.error = originalConsoleError;
-    // 環境変数をクリア
-    process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL = undefined;
+    // 環境変数を元の状態に戻す
+    process.env = originalEnv;
   });
 
   test("認証コードが無い場合はエラーメッセージを表示すること", () => {
@@ -84,9 +90,11 @@ describe("CallbackClientコンポーネント", () => {
   });
 
   test("デフォルトのFunctions URLが使用される場合のテスト", async () => {
-    // 環境変数を明示的に削除（デフォルト値が使用される）
-    // undefineだけでなく、deleteを使って確実に環境変数を削除する
-    delete process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL;
+    // 環境変数を完全に削除（値をundefinedに設定）
+    const envBackup = { ...process.env };
+    process.env = { ...envBackup };
+    // 特定のキーの値をundefinedに設定
+    process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL = undefined;
 
     // 認証コードが存在するようにモック
     mockSearchParamsGet.mockReturnValue("test-code");
