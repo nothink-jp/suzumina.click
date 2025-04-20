@@ -69,10 +69,10 @@ export interface SimplePubSubData {
 // --- ヘルパー関数 ---
 /**
  * Discord アバターURLを生成する
- * 
+ *
  * アバターハッシュの先頭が "a_" で始まる場合は GIF フォーマット、
  * それ以外は PNG フォーマットの URL を生成する
- * 
+ *
  * @param userId - Discord ユーザーID
  * @param avatarHash - アバターのハッシュ値（null または空文字の場合は undefined を返却）
  * @returns アバターのURL または undefined（アバターハッシュがない場合）

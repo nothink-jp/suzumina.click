@@ -1,5 +1,5 @@
 // functions/src/firebaseAdmin.test.ts
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // モックオブジェクトの定義
 const mockInitializeApp = vi.fn();
@@ -10,7 +10,9 @@ const mockFirestoreInstance = {
   batch: mockFirestoreBatch,
 };
 const mockAdminFirestore = vi.fn(() => mockFirestoreInstance);
-const mockAdminAuth = vi.fn(() => ({ /* Auth インスタンスのメソッド */ }));
+const mockAdminAuth = vi.fn(() => ({
+  /* Auth インスタンスのメソッド */
+}));
 
 // モジュール内のinitializedフラグを制御するための変数
 let initializedFlag = false;
@@ -47,10 +49,10 @@ vi.mock("./firebaseAdmin", () => {
       return mockAdminAuth();
     },
   };
-  
+
   // モジュールの自動実行をシミュレート
   mockExports.initializeFirebaseAdmin();
-  
+
   return mockExports;
 });
 
@@ -59,7 +61,7 @@ describe("firebaseAdmin", () => {
     // 各テスト前にモックと初期化状態をリセット
     vi.clearAllMocks();
     initializedFlag = false;
-    
+
     // モジュールのキャッシュもクリアして、インポート時の自動実行を制御できるようにする
     vi.resetModules();
   });
@@ -67,7 +69,7 @@ describe("firebaseAdmin", () => {
   it("initializeFirebaseAdminが複数回呼び出されても初期化は1回だけ行われること", async () => {
     // モジュールをインポートする前にmockInitializeAppをリセット
     mockInitializeApp.mockClear();
-    
+
     // モジュールをインポート（モックされた実装が使用される）
     const { initializeFirebaseAdmin } = await import("./firebaseAdmin");
 
@@ -83,7 +85,7 @@ describe("firebaseAdmin", () => {
   it("firestoreインスタンスがエクスポートされ、モジュールロード時にadmin.firestoreが呼ばれること", async () => {
     // admin.firestoreの呼び出し回数を確認するためにモックをリセット
     mockAdminFirestore.mockClear();
-    
+
     // firestoreをインポート
     // この時点でmockAdminFirestoreが呼ばれることを期待
     const { firestore } = await import("./firebaseAdmin");

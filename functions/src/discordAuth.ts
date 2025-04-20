@@ -1,14 +1,14 @@
-// functions/src/discordAuth.ts
-import { onRequest } from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
 import axios from "axios";
 import type { AxiosError } from "axios";
-import type { FirebaseAuthError } from "firebase-admin/auth";
 import * as admin from "firebase-admin";
+import type { FirebaseAuthError } from "firebase-admin/auth";
+import * as logger from "firebase-functions/logger";
+// functions/src/discordAuth.ts
+import { onRequest } from "firebase-functions/v2/https";
 import {
-  getDiscordAvatarUrl,
-  type DiscordUser,
   type DiscordGuild,
+  type DiscordUser,
+  getDiscordAvatarUrl,
 } from "./common";
 import { initializeFirebaseAdmin } from "./firebaseAdmin";
 
@@ -16,14 +16,14 @@ initializeFirebaseAdmin();
 
 /**
  * Discord認証コールバック関数
- * 
+ *
  * Discord OAuth2認証フローのコールバック処理を行い、以下の機能を実装:
  * 1. 認証コードを使用してDiscordからアクセストークンを取得
  * 2. アクセストークンを使用してユーザー情報を取得
  * 3. ユーザーが指定されたDiscordギルドに所属しているか確認
  * 4. Firebase Authenticationでユーザー情報を更新または新規作成
  * 5. Firebaseカスタム認証トークンを生成して返却
- * 
+ *
  * CORS対応も実装しており、プリフライトリクエスト(OPTIONS)も正しく処理
  */
 export const discordAuthCallback = onRequest(
@@ -50,7 +50,9 @@ export const discordAuthCallback = onRequest(
       return;
     }
 
-    logger.info("Discord認証コールバックを受信しました", { method: request.method });
+    logger.info("Discord認証コールバックを受信しました", {
+      method: request.method,
+    });
 
     // POSTメソッド以外は拒否
     if (request.method !== "POST") {
@@ -185,7 +187,9 @@ export const discordAuthCallback = onRequest(
           properties: userProperties,
         });
         await admin.auth().updateUser(discordUserId, userProperties);
-        logger.info("Firebaseユーザー情報を更新しました", { uid: discordUserId });
+        logger.info("Firebaseユーザー情報を更新しました", {
+          uid: discordUserId,
+        });
       } catch (error: unknown) {
         const firebaseAuthError = error as FirebaseAuthError;
         if (firebaseAuthError.code === "auth/user-not-found") {
@@ -201,7 +205,10 @@ export const discordAuthCallback = onRequest(
           logger.info("Firebaseユーザーを作成しました", { uid: discordUserId });
         } else {
           // その他の Firebase Auth エラーは再スロー
-          logger.error("Firebaseユーザーの更新/作成中にエラーが発生しました:", error);
+          logger.error(
+            "Firebaseユーザーの更新/作成中にエラーが発生しました:",
+            error,
+          );
           throw error;
         }
       }
