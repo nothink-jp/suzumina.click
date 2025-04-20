@@ -133,7 +133,7 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
     max_instance_count = 1       # スケジュールタスクのため低めに設定
     min_instance_count = 0       # コールドスタートを許容
     available_memory   = "512Mi" # メモリ割り当て（単位はMi）
-    timeout_seconds    = 900     # タイムアウトを15分に延長（コンテナ起動時間を含む）
+    timeout_seconds    = 540     # タイムアウトを540秒（9分）に制限（イベントトリガー制限に合わせる）
     # 専用のサービスアカウントを使用
     service_account_email = google_service_account.fetch_youtube_videos_sa.email
 
