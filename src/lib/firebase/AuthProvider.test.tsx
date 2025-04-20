@@ -1,9 +1,9 @@
-// src/lib/firebase/AuthProvider.test.tsx
-import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { AuthProvider, useAuth } from "./AuthProvider";
 import { onAuthStateChanged } from "firebase/auth";
 import React from "react";
+// src/lib/firebase/AuthProvider.test.tsx
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { AuthProvider, useAuth } from "./AuthProvider";
 
 // firebase/authをモック
 vi.mock("firebase/auth", () => ({

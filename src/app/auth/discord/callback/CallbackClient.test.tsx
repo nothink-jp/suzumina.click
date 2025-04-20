@@ -1,8 +1,8 @@
-// src/app/auth/discord/callback/CallbackClient.test.tsx
-import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import CallbackClient from "./CallbackClient";
 import { signInWithCustomToken } from "firebase/auth";
+// src/app/auth/discord/callback/CallbackClient.test.tsx
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import CallbackClient from "./CallbackClient";
 
 // モック変数の定義
 const mockedPush = vi.fn();

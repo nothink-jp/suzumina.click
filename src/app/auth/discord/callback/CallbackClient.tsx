@@ -1,9 +1,9 @@
 "use client"; // クライアントコンポーネント
 
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { signInWithCustomToken } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
+import { signInWithCustomToken } from "firebase/auth";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function CallbackClient() {
   const searchParams = useSearchParams();

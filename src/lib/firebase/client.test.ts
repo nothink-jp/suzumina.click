@@ -1,5 +1,5 @@
 // src/lib/firebase/client.test.ts
-import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // Firebaseアプリのモック
 const mockInitializeApp = vi.fn().mockReturnValue({ name: "mock-app" });

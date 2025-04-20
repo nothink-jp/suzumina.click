@@ -1,8 +1,8 @@
+import Footer from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
+import { AuthProvider } from "@/lib/firebase/AuthProvider"; // AuthProvider をインポート
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-import { AuthProvider } from "@/lib/firebase/AuthProvider"; // AuthProvider をインポート
 import "./globals.css";
 
 // Noto Sans JP フォントを設定

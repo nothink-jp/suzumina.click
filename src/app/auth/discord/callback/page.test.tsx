@@ -1,6 +1,6 @@
-// src/app/auth/discord/callback/page.test.tsx
-import { describe, test, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+// src/app/auth/discord/callback/page.test.tsx
+import { describe, expect, test, vi } from "vitest";
 import DiscordCallbackPage from "./page";
 
 // CallbackClientコンポーネントをモック

@@ -1,11 +1,11 @@
+import { useAuth } from "@/lib/firebase/AuthProvider";
 // src/components/ui/AuthButton.test.tsx
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, test, expect, vi, beforeEach } from "vitest";
-import AuthButton from "./AuthButton";
-import { useAuth } from "@/lib/firebase/AuthProvider";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import AuthButton from "./AuthButton";
 
 // モジュール外からアクセスできるようにモックを定義
 const mockAuth = {};

@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import HomePage from "./page"; // page.tsx をインポート
 
 // Headless UI コンポーネントはクライアントコンポーネントなのでモック化が必要な場合がある
