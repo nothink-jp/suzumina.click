@@ -114,9 +114,13 @@ async function updateMetadata(updates: Partial<FetchMetadata>): Promise<void> {
     };
 
   // updatesの各プロパティをチェックし、undefined値をnullに変換
+  // lastFetchedAtは常に上記で設定した値を使用するため、処理から除外する
   for (const [key, value] of Object.entries(updates)) {
-    // undefinedの場合はnullを設定（テスト互換性のため）
-    sanitizedUpdates[key] = value === undefined ? null : value;
+    if (key !== "lastFetchedAt") {
+      // lastFetchedAtは上書きしない
+      // undefinedの場合はnullを設定（テスト互換性のため）
+      sanitizedUpdates[key] = value === undefined ? null : value;
+    }
   }
 
   // 有効な更新データをFirestoreに送信
