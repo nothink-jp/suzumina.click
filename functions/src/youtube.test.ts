@@ -153,7 +153,7 @@ describe("fetchYouTubeVideos", () => {
   // メタデータ関連のモック
   let mockMetadataDoc: {
     exists: boolean;
-    data: Mock<() => any>;
+    data: Mock<() => Record<string, unknown>>;
   };
   let mockMetadataDocGet: Mock;
   let mockMetadataDocUpdate: Mock;
@@ -189,13 +189,13 @@ describe("fetchYouTubeVideos", () => {
               update: mockMetadataDocUpdate,
               set: mockMetadataDocSet,
             })),
-          } as any;
+          } as unknown as ReturnType<typeof mockedFirestore.collection>;
         }
 
         // videosコレクションの場合
         return {
           doc: vi.fn(() => ({})),
-        } as any;
+        } as unknown as ReturnType<typeof mockedFirestore.collection>;
       },
     );
 
@@ -351,7 +351,7 @@ describe("fetchYouTubeVideos", () => {
     expect(mockMetadataDocUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         isInProgress: false,
-        lastError: undefined,
+        lastError: null, // undefined から null に変更
         lastFetchedAt: expect.anything(),
       }),
     );
@@ -758,7 +758,7 @@ describe("fetchYouTubeVideos", () => {
     expect(mockMetadataDocUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         isInProgress: false,
-        lastError: undefined,
+        lastError: null, // undefined から null に変更
       }),
     );
 
@@ -1157,7 +1157,7 @@ describe("fetchYouTubeVideos", () => {
     // 完了フラグがメタデータに記録されること
     expect(mockMetadataDocUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
-        nextPageToken: undefined,
+        nextPageToken: null, // undefinedからnullに変更（実装との整合性のため）
         lastSuccessfulCompleteFetch: expect.anything(),
       }),
     );
