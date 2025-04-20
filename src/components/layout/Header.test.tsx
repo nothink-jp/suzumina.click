@@ -3,7 +3,18 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 import Header from "./Header";
 
-// モックの設定
+// AuthContextと関連フックをモック
+vi.mock("@/lib/firebase/AuthProvider", () => {
+  return {
+    useAuth: () => ({
+      user: null,
+      loading: false
+    }),
+    AuthProvider: ({ children }: { children: React.ReactNode }) => children
+  };
+});
+
+// Linkコンポーネントのモック
 vi.mock("next/link", () => {
   return {
     default: ({
@@ -17,6 +28,15 @@ vi.mock("next/link", () => {
         </a>
       );
     },
+  };
+});
+
+// nextのnavigationをモック
+vi.mock("next/navigation", () => {
+  return {
+    useRouter: () => ({
+      push: vi.fn(),
+    }),
   };
 });
 

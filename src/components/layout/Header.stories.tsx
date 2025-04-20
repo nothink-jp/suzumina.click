@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import Header from "./Header";
+import { AuthProvider } from "@/lib/firebase/AuthProvider";
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
 const meta = {
@@ -17,6 +18,14 @@ const meta = {
   },
   // Use `fn` to spy on the onClick arg, which will appear in the actions panel once invoked: https://storybook.js.org/docs/essentials/actions#action-args
   // args: { onClick: fn() },
+  // Storybookのコンポーネントをデコレートする関数を定義
+  decorators: [
+    (Story) => (
+      <AuthProvider>
+        <Story />
+      </AuthProvider>
+    ),
+  ],
 } satisfies Meta<typeof Header>;
 
 export default meta;

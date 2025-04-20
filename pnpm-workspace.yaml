@@ -1,9 +1,10 @@
 packages:
-  # ルートの Next.js アプリケーション
-  - '.'
-  # Firebase Functions
-  - 'functions'
+  - .
+  - functions
 
-# 既存の設定 (必要であれば残す)
-# onlyBuiltDependencies:
-#   - '@biomejs/biome'
+onlyBuiltDependencies:
+  - '@biomejs/biome'
+  - '@firebase/util'
+  - esbuild
+  - protobufjs
+  - sharp

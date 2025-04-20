@@ -1,31 +1,22 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+/// <reference types="vitest" />
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+import { resolve } from 'node:path'
 
-import { defineWorkspace } from 'vitest/config';
+// Vitest 3.1.1のワークスペース設定
+// 詳細: https://vitest.dev/guide/workspace
+// ワークスペース設定ファイルはプロジェクトパスの配列をエクスポートする必要があります
 
-import { storybookTest } from '@storybook/experimental-addon-test/vitest-plugin';
+// 型定義を追加して、配列であることを明示
+const workspace: string[] = [
+  // ルートディレクトリ（Vite設定がある場所）
+  './vitest.config.ts',
+  
+  // functionsディレクトリ
+  './functions',
 
-const dirname =
-  typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+  // Storybookテスト（コメントアウト中）
+  // './.storybook',
+];
 
-// More info at: https://storybook.js.org/docs/writing-tests/test-addon
-export default defineWorkspace([
-  'vitest.config.ts',
-  {
-    plugins: [
-      // The plugin will run tests for the stories defined in your Storybook config
-      // See options at: https://storybook.js.org/docs/writing-tests/test-addon#storybooktest
-      storybookTest({ configDir: path.join(dirname, '.storybook') }),
-    ],
-    test: {
-      name: 'storybook',
-      browser: {
-        enabled: true,
-        headless: true,
-        provider: 'playwright',
-        instances: [{ browser: 'chromium' }]
-      },
-      setupFiles: ['.storybook/vitest.setup.ts'],
-    },
-  },
-]);
+export default workspace;

@@ -1,25 +1,36 @@
-# Cloud Functions のソースコードをアップロードするための GCS バケット
+# Cloud Functions のソースコード保存バケット
 resource "google_storage_bucket" "function_source" {
-  project                     = var.gcp_project_id
-  name                        = "${var.gcp_project_id}-function-source" # プロジェクト内で一意な名前
-  location                    = "ASIA-NORTHEAST1" # Functions と同じリージョン
-  uniform_bucket_level_access = true              # 推奨されるアクセス制御
+  project       = var.gcp_project_id
+  name          = "${var.gcp_project_id}-functions-source" # 一意のバケット名を生成
+  location      = "asia-northeast1" # 他のリソースと同じリージョン（東京）
+  force_destroy = false # 誤削除防止のためfalseに設定
 
-  # バケット削除時にオブジェクトも削除する (必要に応じて false に変更)
-  force_destroy = true
+  # 標準のストレージクラスを使用
+  storage_class = "STANDARD"
 
-  # Functions のデプロイプロセスがアクセスできるようにライフサイクルルールを設定することも検討
-  # lifecycle_rule {
-  #   action {
-  #     type = "Delete"
-  #   }
-  #   condition {
-  #     age = 1 # 例: 1日後に古いソースコードを削除
-  #   }
-  # }
+  # バージョニングを有効化（誤って削除されたファイルを復元可能に）
+  versioning {
+    enabled = true
+  }
 
+  # 均一なアクセス制御を使用（バケットレベルのIAM）
+  uniform_bucket_level_access = true
+
+  # ライフサイクルルール（古いバージョンやファイルを自動的に削除）
+  lifecycle_rule {
+    condition {
+      # 30日以上前のオブジェクトに適用
+      age = 30
+      # 現在のバージョンには適用しない
+      with_state = "ARCHIVED"
+    }
+    action {
+      type = "DELETE"
+    }
+  }
+
+  # 依存関係
   depends_on = [
-    # Artifact Registry API が有効になってから作成 (直接の依存はないが念のため)
-    google_project_service.artifactregistry
+    google_firebase_project.default,
   ]
 }

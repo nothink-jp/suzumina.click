@@ -1,18 +1,21 @@
 # .clinerules
 
 ## 基本ルール
-- docs/TODO.md にチェックリストを管理、適宜 docs 確認・更新
+- docs/TODO.md にチェックリストを管理、docs/CHANGELOG.md に変更履歴を管理、適宜 docs 確認・更新
+- コード実装方針は docs/POLICY.md に記載、実装時に確認
+- リリースノートは docs/CHANGELOG.md を元に自動生成、GitHubのリリース機能を使用
 - Markdown は100行以内、不要なドキュメントは削除
 
 ## 開発プラクティス
 - テスト: Red-Green-Refactor + Arrange-Act-Assert パターン
 - コード品質:
-  * 純粋関数・短い関数・単一責務を優先
-  * コロケーション、可読性、保守性、テスト容易性を重視
-  * 重複回避、シンプルな設計
+  - 純粋関数・短い関数・単一責務を優先
+  - コロケーション、可読性、保守性、テスト容易性を重視
+  - 重複回避、シンプルな設計
 
 ## Git
 - Conventional Commits: feat, fix, docs, style, refactor, test, chore
+- トランクベース開発、GitHub Flow
 
 ## 言語設定
 language:

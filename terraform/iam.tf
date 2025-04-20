@@ -1,59 +1,181 @@
-# Cloud Function 用のサービスアカウント
-resource "google_service_account" "function_identity" {
-  project      = var.gcp_project_id
-  account_id   = "discord-auth-callback-sa" # わかりやすいアカウント ID
-  display_name = "Service Account for Discord Auth Callback Function"
+# プロジェクト詳細を取得するためのデータソース（プロジェクト番号など）
+data "google_project" "project" {
+  project_id = var.gcp_project_id
 }
 
-# サービスアカウントに Secret Manager Secret Accessor ロールを付与 (DISCORD_CLIENT_ID)
+# ------------------------------------------------------------------------------
+# discordAuthCallback関数用のサービスアカウントとIAM権限設定
+# ------------------------------------------------------------------------------
+
+# Discord認証コールバック関数用のサービスアカウント
+resource "google_service_account" "discord_auth_callback_sa" {
+  project      = var.gcp_project_id
+  account_id   = "discord-auth-callback-sa"
+  display_name = "Discord認証コールバック関数用サービスアカウント"
+}
+
+# サービスアカウントにDISCORD_CLIENT_IDシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "discord_client_id_accessor" {
   project   = google_secret_manager_secret.discord_client_id.project
   secret_id = google_secret_manager_secret.discord_client_id.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.function_identity.email}"
+  role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
+  member    = "serviceAccount:${google_service_account.discord_auth_callback_sa.email}" # サービスアカウントのメールアドレスを参照
 
   # シークレットとサービスアカウントが作成されてから実行
   depends_on = [
     google_secret_manager_secret.discord_client_id,
-    google_service_account.function_identity,
+    google_service_account.discord_auth_callback_sa,
   ]
 }
 
-# サービスアカウントに Secret Manager Secret Accessor ロールを付与 (DISCORD_CLIENT_SECRET)
+# サービスアカウントにDISCORD_CLIENT_SECRETシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "discord_client_secret_accessor" {
   project   = google_secret_manager_secret.discord_client_secret.project
   secret_id = google_secret_manager_secret.discord_client_secret.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.function_identity.email}"
+  role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
+  member    = "serviceAccount:${google_service_account.discord_auth_callback_sa.email}" # サービスアカウントのメールアドレスを参照
 
   depends_on = [
     google_secret_manager_secret.discord_client_secret,
-    google_service_account.function_identity,
+    google_service_account.discord_auth_callback_sa,
   ]
 }
 
-# サービスアカウントに Secret Manager Secret Accessor ロールを付与 (DISCORD_REDIRECT_URI)
+# サービスアカウントにDISCORD_REDIRECT_URIシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "discord_redirect_uri_accessor" {
   project   = google_secret_manager_secret.discord_redirect_uri.project
   secret_id = google_secret_manager_secret.discord_redirect_uri.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.function_identity.email}"
+  role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
+  member    = "serviceAccount:${google_service_account.discord_auth_callback_sa.email}" # サービスアカウントのメールアドレスを参照
 
   depends_on = [
     google_secret_manager_secret.discord_redirect_uri,
-    google_service_account.function_identity,
+    google_service_account.discord_auth_callback_sa,
   ]
 }
 
-# サービスアカウントに Secret Manager Secret Accessor ロールを付与 (DISCORD_TARGET_GUILD_ID)
+# サービスアカウントにDISCORD_TARGET_GUILD_IDシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "discord_target_guild_id_accessor" {
   project   = google_secret_manager_secret.discord_target_guild_id.project
   secret_id = google_secret_manager_secret.discord_target_guild_id.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.function_identity.email}"
+  role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
+  member    = "serviceAccount:${google_service_account.discord_auth_callback_sa.email}" # サービスアカウントのメールアドレスを参照
 
   depends_on = [
     google_secret_manager_secret.discord_target_guild_id,
-    google_service_account.function_identity,
+    google_service_account.discord_auth_callback_sa,
   ]
 }
+
+
+# ------------------------------------------------------------------------------
+# fetchYouTubeVideos関数用のサービスアカウントとIAM権限設定
+# ------------------------------------------------------------------------------
+
+# YouTube動画取得関数用のサービスアカウント
+resource "google_service_account" "fetch_youtube_videos_sa" {
+  project      = var.gcp_project_id
+  account_id   = "fetch-youtube-videos-sa" # 新しいサービスアカウントID
+  display_name = "YouTube動画取得関数用サービスアカウント"
+}
+
+# サービスアカウントにFirestoreユーザーロールを付与
+resource "google_project_iam_member" "fetch_youtube_videos_firestore_user" {
+  project = var.gcp_project_id
+  role    = "roles/datastore.user" # Firestoreの読み書きアクセス用ロール
+  member  = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
+
+  depends_on = [google_service_account.fetch_youtube_videos_sa]
+}
+
+# サービスアカウントにYOUTUBE_API_KEYシークレットへのアクセス権限を付与
+resource "google_secret_manager_secret_iam_member" "youtube_api_key_accessor" {
+  project   = google_secret_manager_secret.youtube_api_key.project
+  secret_id = google_secret_manager_secret.youtube_api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
+  member    = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
+
+  depends_on = [
+    google_secret_manager_secret.youtube_api_key,
+    google_service_account.fetch_youtube_videos_sa,
+  ]
+}
+
+# サービスアカウントにログライターロールを付与
+resource "google_project_iam_member" "fetch_youtube_videos_log_writer" {
+  project = var.gcp_project_id
+  role    = "roles/logging.logWriter" # ログ書き込み用ロール
+  member  = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
+
+  depends_on = [google_service_account.fetch_youtube_videos_sa]
+}
+
+# ADDED: 関数のサービスアカウントにRun Invokerロールを付与
+resource "google_project_iam_member" "fetch_youtube_videos_run_invoker" {
+  project = var.gcp_project_id
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
+
+  depends_on = [google_service_account.fetch_youtube_videos_sa]
+}
+
+
+# ------------------------------------------------------------------------------
+# サービス間の相互作用のためのIAMバインディング（スケジューラー -> Pub/Sub -> 関数）
+# ------------------------------------------------------------------------------
+
+# Cloud Scheduler Service AgentにPub/SubトピックのPublisherロールを付与
+resource "google_pubsub_topic_iam_member" "scheduler_pubsub_publisher" {
+  project = google_pubsub_topic.youtube_video_fetch_trigger.project
+  topic   = google_pubsub_topic.youtube_video_fetch_trigger.name
+  role    = "roles/pubsub.publisher"
+  # データソースからプロジェクト番号を使用してサービスエージェントのメールアドレスを構築
+  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
+
+  depends_on = [
+    google_pubsub_topic.youtube_video_fetch_trigger,
+    data.google_project.project,
+  ]
+}
+
+# Pub/Sub Service Agentに関数のサービスアカウントのToken Creatorロールを付与
+# Pub/SubがEventarc経由で認証された関数呼び出しのためにOIDCトークンを作成できるようにする
+resource "google_service_account_iam_member" "pubsub_token_creator" {
+  service_account_id = google_service_account.fetch_youtube_videos_sa.name # 関数が実行されるSA
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com" # Pub/Sub SA
+
+  depends_on = [
+    google_service_account.fetch_youtube_videos_sa,
+    data.google_project.project,
+  ]
+}
+
+# Eventarc Service AgentにプロジェクトのEvent Receiverロールを付与
+# Eventarcが関数のサービスアカウントにイベントを配信できるようにする
+resource "google_project_iam_member" "eventarc_event_receiver" {
+  project = var.gcp_project_id # プロジェクトレベルにバインド
+  role    = "roles/eventarc.eventReceiver"
+  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-eventarc.iam.gserviceaccount.com" # Eventarc SA
+
+  depends_on = [
+    data.google_project.project,
+  ]
+}
+
+# Eventarc Service AgentにプロジェクトのRun Invokerロールを付与（理想的には、特定の関数のRunサービスに制限）
+# Eventarcが関数の基盤となるCloud Runサービスを呼び出せるようにする
+# 注: プロジェクトレベルにバインドするのは必要以上に広範ですが、この例では簡単にするためです。
+# より厳密なセキュリティのためには、関数に関連する特定のCloud Runサービスにバインドします。
+resource "google_project_iam_member" "eventarc_run_invoker" {
+  project = var.gcp_project_id
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-eventarc.iam.gserviceaccount.com" # Eventarc SA
+
+  depends_on = [
+    data.google_project.project,
+  ]
+}
+
+# 注: Pub/Sub -> Cloud Functions v2（Eventarcトリガー）のバインディングは通常、event_triggerブロックが定義されている場合、google_cloudfunctions2_functionリソースによって自動的に処理されます。
+# これらの明示的なバインディングは、堅牢性を高めるために追加されています。
