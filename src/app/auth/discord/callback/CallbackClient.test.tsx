@@ -67,7 +67,8 @@ describe("CallbackClientコンポーネント", () => {
     // 環境変数のモック
     process.env = {
       ...originalEnv,
-      NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL: "https://test-functions-url.com",
+      NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL:
+        "https://test-functions-url.com",
     };
   });
 

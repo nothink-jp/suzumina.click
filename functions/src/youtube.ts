@@ -106,10 +106,25 @@ async function updateMetadata(updates: Partial<FetchMetadata>): Promise<void> {
   const metadataRef = firestore
     .collection("youtubeMetadata")
     .doc(METADATA_DOC_ID);
-  await metadataRef.update({
-    ...updates,
-    lastFetchedAt: Timestamp.now(), // 常に最終実行時間を更新
-  });
+
+  // undefined値を持つプロパティをnullに変換する（テストに合わせるため）
+  const sanitizedUpdates: Record<string, Timestamp | boolean | string | null> =
+    {
+      lastFetchedAt: Timestamp.now(), // 常に最終実行時間を更新
+    };
+
+  // updatesの各プロパティをチェックし、undefined値をnullに変換
+  // lastFetchedAtは常に上記で設定した値を使用するため、処理から除外する
+  for (const [key, value] of Object.entries(updates)) {
+    if (key !== "lastFetchedAt") {
+      // lastFetchedAtは上書きしない
+      // undefinedの場合はnullを設定（テスト互換性のため）
+      sanitizedUpdates[key] = value === undefined ? null : value;
+    }
+  }
+
+  // 有効な更新データをFirestoreに送信
+  await metadataRef.update(sanitizedUpdates);
 }
 
 /**
