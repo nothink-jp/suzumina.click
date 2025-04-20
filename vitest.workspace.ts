@@ -1,111 +1,22 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { defineWorkspace, defineConfig } from "vitest/config";
-import react from "@vitejs/plugin-react";
-import { resolve } from "node:path";
+/// <reference types="vitest" />
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+import { resolve } from 'node:path'
 
-// ディレクトリパスの取得
-const dirname =
-  typeof __dirname !== "undefined"
-    ? __dirname
-    : path.dirname(fileURLToPath(import.meta.url));
+// Vitest 3.1.1のワークスペース設定
+// 詳細: https://vitest.dev/guide/workspace
+// ワークスペース設定ファイルはプロジェクトパスの配列をエクスポートする必要があります
 
-// Vitest ワークスペース設定
-// 詳細: https://vitest.dev/guide/workspace.html
-export default defineWorkspace([
-  // ルートプロジェクトのテスト設定
-  defineConfig({
-    plugins: [react()],
-    test: {
-      name: "root",
-      environment: "happy-dom",
-      globals: true,
-      setupFiles: ["./vitest.setup.ts"],
-      // テストのタイムアウト時間を10秒に延長（デフォルトは5秒）
-      testTimeout: 10000,
-      // functionsディレクトリのテストを除外
-      exclude: ["functions/**", "node_modules/**", ".next/**", ".firebase/**"],
-      coverage: {
-        provider: "v8",
-        reporter: ["text", "json", "html"],
-        reportsDirectory: "./coverage",
-        exclude: [
-          "node_modules/**",
-          ".next/**",
-          ".firebase/**",
-          "vitest.*.{js,ts}",
-          "**/*.d.ts",
-          "**/*.config.{js,ts,mjs,cjs,mts,cts}",
-          "**/dist/**",
-          "**/.storybook/**",
-          "functions/**",
-        ],
-        thresholds: {
-          statements: 80,
-          branches: 80,
-          functions: 80,
-          lines: 80,
-        },
-      },
-    },
-    resolve: {
-      alias: {
-        "@": resolve(__dirname, "./src"),
-      },
-    },
-  }),
+// 型定義を追加して、配列であることを明示
+const workspace: string[] = [
+  // ルートディレクトリ（Vite設定がある場所）
+  './vitest.config.ts',
+  
+  // functionsディレクトリ
+  './functions',
 
-  // Functions プロジェクトのテスト設定
-  defineConfig({
-    test: {
-      name: "functions",
-      root: "./functions",
-      environment: "node",
-      include: ["./src/**/*.test.ts"],
-      // node_modulesのテストを除外
-      exclude: ["../node_modules/**"],
-      // @mdx-js/react の依存関係エラーを回避
-      deps: {
-        optimizer: {
-          web: {
-            exclude: ["@mdx-js/react"],
-          },
-        },
-      },
+  // Storybookテスト（コメントアウト中）
+  // './.storybook',
+];
 
-      // カバレッジ設定
-      // .clinerules で指定された80%の閾値を設定
-      coverage: {
-        provider: "v8",
-        reporter: ["text", "json", "html"],
-        reportsDirectory: "../coverage/functions",
-        thresholds: {
-          statements: 80,
-          branches: 80,
-          functions: 80,
-          lines: 80,
-        },
-      },
-    },
-  }),
-
-  /*
-   * Storybook テストは一時的に無効化
-   * Playwright がインストールされていないため、テストを実行できません
-   * 必要になったら以下のコメントを解除し、Playwright をインストールしてください
-   */
-  /*
-  {
-    test: {
-      name: 'storybook',
-      browser: {
-        enabled: true,
-        headless: true,
-        provider: 'playwright',
-        instances: [{ browser: 'chromium' }]
-      },
-      setupFiles: ['.storybook/vitest.setup.ts'],
-    },
-  },
-  */
-]);
+export default workspace;
