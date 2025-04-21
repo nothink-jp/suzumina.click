@@ -36,8 +36,8 @@
   - [x] AuthProvider 実装 (`src/lib/firebase/AuthProvider.tsx`)
   - [x] AuthButton 実装 (`src/components/ui/AuthButton.tsx`)
   - [x] 認証コールバックページ実装 (`/auth/discord/callback`)
-- [ ] (TODO) 認証ユーザー情報の表示改善 (例: Header のユーザー名表示)
-- [ ] (TODO) プロフィールページの内容拡充
+- [x] ~~(TODO)~~ 認証ユーザー情報の表示改善 (例: Header のユーザー名表示)
+- [x] ~~(TODO)~~ プロフィールページの内容拡充 (Discord情報のみ表示)
 
 ## 音声ボタンサービス
 
