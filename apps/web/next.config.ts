@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',  // Cloud Run用にstandaloneモードを有効化
   images: {
     remotePatterns: [
       {

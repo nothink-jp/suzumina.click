@@ -5,7 +5,7 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "source": ".",
+    "source": "apps/web",
     "frameworksBackend": {
       "region": "asia-northeast1"
     }

@@ -1,0 +1,29 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: suzumina-click
+build:
+  artifacts:
+    - image: gcr.io/PROJECT_ID/suzumina-click-nextjs-app
+      context: apps/web
+      buildpacks:
+        builder: gcr.io/buildpacks/builder:v1
+        env:
+          - GOOGLE_NODEJS_VERSION=18
+  googleCloudBuild:
+    projectId: PROJECT_ID
+    # 必要に応じてdiskSizeやMachineTypeを指定可能
+deploy:
+  cloudrun:
+    projectId: PROJECT_ID
+    region: asia-northeast1
+portForward:
+  - resourceType: cloudrun
+    resourceName: suzumina-click-nextjs-app
+    port: 8080
+    localPort: 3000
+profiles:
+  - name: dev
+    # 開発環境用プロファイル
+  - name: prod
+    # 本番環境用プロファイル

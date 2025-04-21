@@ -81,3 +81,57 @@
 
 - [x] Firebase Hosting / Functions の初期設定とデプロイ
 - [x] GitHub Actions CI/CD ワークフロー修正 (pnpm 対応、環境変数設定)
+
+## モノレポ構成リファクタリングと Cloud Run 移行
+
+### モノレポ構成改善
+
+- [x] **基盤準備 (2025-04-22 ~ 2025-04-23)**
+  - [x] `pnpm-workspace.yaml` の更新（`apps/*`, `packages/*`, `functions` 形式に変更）
+  - [x] ルート `package.json` の更新（monorepo管理用スクリプト設定）
+  - [x] Webアプリ用 `apps/web/package.json` の作成（`@suzumina.click/web` 名前空間設定）
+  - [x] biome設定ファイルのモノレポ対応化
+
+### リソース移行
+
+- [x] **ソースコードとリソース移行 (2025-04-24)**
+  - [x] `src` ディレクトリを `apps/web/src` へ移動
+  - [x] `public` ディレクトリを `apps/web/public` へ移動
+  - [x] 各種設定ファイル（`next.config.ts`, `postcss.config.mjs`, `tsconfig.json` など）を `apps/web` に移動
+  - [x] テスト関連ファイル（`vitest.config.ts` など）を `apps/web` に移動
+  - [x] 不要になったルートディレクトリのファイルを削除（`src`, `public`, `.storybook`, 設定ファイル類）
+  - [x] `package.json`の`clean`スクリプトを更新（モノレポ構造に対応）
+
+### Cloud Run 移行
+
+- [ ] **Cloud Run用の設定とインフラ構築 (2025-04-25 ~ 2025-04-26)**
+  - [ ] `apps/web/Dockerfile` の作成（Next.js standalone モード対応）
+  - [ ] `cloudbuild.yaml` の更新（モノレポ構成対応）
+  - [ ] `skaffold.yaml` の更新（`apps/web` コンテキスト対応）
+  - [ ] `terraform/cloudrun.tf` の作成（Cloud Runサービス定義）
+  - [ ] `terraform/cloudbuild.tf` の作成（Cloud Buildトリガー定義）
+
+### CI/CD パイプライン更新
+
+- [ ] **デプロイパイプラインの更新 (2025-04-27)**
+  - [ ] GitHub Actions評価環境デプロイワークフローの作成（`.github/workflows/trigger-evaluation-deploy.yml`）
+  - [ ] Cloud Build連携の設定
+  - [ ] IAM権限の構成
+  - [ ] 手動デプロイテスト実施
+
+### 最終確認と本番移行
+
+- [ ] **完全移行と検証 (2025-04-28)**
+  - [ ] 最終動作テストの実施
+  - [ ] 必要に応じてDNS設定の更新
+  - [ ] Firebase Hostingからの移行完了
+  - [ ] 旧設定のクリーンアップ
+  - [ ] 新環境でのパフォーマンス検証
+
+### ドキュメント更新
+
+- [ ] **ドキュメントとナレッジ整備 (2025-04-28)**
+  - [ ] `docs/README.md` のディレクトリ構成更新
+  - [ ] `docs/INFRA_AUDIT.md` のCloud Run構成部分更新
+  - [ ] 開発者向けセットアップガイド更新（モノレポ対応）
+  - [ ] デプロイ手順のマニュアル更新

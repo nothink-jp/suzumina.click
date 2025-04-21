@@ -9,8 +9,8 @@ import { resolve } from 'node:path'
 
 // 型定義を追加して、配列であることを明示
 const workspace: string[] = [
-  // ルートディレクトリ（Vite設定がある場所）
-  './vitest.config.ts',
+  // webアプリケーション（モノレポ構造）
+  './apps/web/vitest.config.ts',
   
   // functionsディレクトリ
   './functions',

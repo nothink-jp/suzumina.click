@@ -1,0 +1,93 @@
+name: 'Terraform Production Deploy'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'functions/**'
+      - 'terraform/**'
+      - '.github/workflows/terraform-*'
+
+jobs:
+  terraform-production:
+    name: 'Terraform Production'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: Functions Install Dependencies
+        run: pnpm install
+        working-directory: ./functions
+      
+      - name: Functions Build
+        run: pnpm run build
+        working-directory: ./functions
+
+      # Terraformをセットアップ
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      # GCPの認証を設定
+      - name: 'Authenticate to Google Cloud'
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+          export_environment_variables: true
+
+      # Terraformの初期化
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform
+
+      # 本番環境用のワークスペース準備（デフォルト）
+      - name: Terraform Workspace
+        run: |
+          terraform workspace select default || terraform workspace new default
+        working-directory: ./terraform
+
+      # Terraformプラン（変更内容の確認）
+      - name: Terraform Plan
+        run: |
+          terraform plan -var-file="terraform.tfvars" -var="environment=production" -no-color -input=false
+        working-directory: ./terraform
+        env:
+          TF_VAR_youtube_api_key: ${{ secrets.YOUTUBE_API_KEY }}
+      
+      # 本番環境への適用前に確認（手動承認ステップ）
+      - name: Manual approval for production deploy
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: nothink-jp  # 承認者のGitHubユーザー名を指定
+          minimum-approvals: 1
+          issue-title: "本番環境へのTerraformデプロイ承認"
+          issue-body: "This PR will deploy changes to **PRODUCTION** via Terraform. Please review and approve."
+          exclude-workflow-initiator-as-approver: false
+          
+      # Terraformの適用（本番環境へのデプロイ）
+      - name: Terraform Apply
+        if: success()
+        run: |
+          terraform apply -var-file="terraform.tfvars" -var="environment=production" -auto-approve -input=false
+        working-directory: ./terraform
+        env:
+          TF_VAR_youtube_api_key: ${{ secrets.YOUTUBE_API_KEY }}

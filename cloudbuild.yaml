@@ -1,0 +1,58 @@
+# Next.jsアプリケーション用のCloud Buildファイル
+steps:
+  # ワーキングディレクトリの設定
+  - name: 'bash'
+    args: ['echo', 'Working directory: /workspace/apps/web']
+  
+  # pnpmのインストール
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['install', '-g', 'pnpm']
+    
+  # ルートの依存関係のインストール
+  - name: 'gcr.io/cloud-builders/npm'
+    entrypoint: 'pnpm'
+    args: ['install', '--frozen-lockfile']
+  
+  # Next.jsアプリケーションのビルド
+  - name: 'gcr.io/cloud-builders/npm'
+    entrypoint: 'pnpm'
+    args: ['--filter', '@suzumina.click/web', 'build']
+  
+  # Next.jsのstandaloneモードでビルド済みのファイルを確認
+  - name: 'bash'
+    args: ['ls', '-la', 'apps/web/.next/standalone']
+  
+  # Dockerイメージのビルド
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', 
+      '-t', 'gcr.io/$PROJECT_ID/suzumina-click-nextjs-app:$COMMIT_SHA', 
+      '-t', 'gcr.io/$PROJECT_ID/suzumina-click-nextjs-app:latest',
+      '-f', 'apps/web/Dockerfile',
+      'apps/web'
+    ]
+  
+  # イメージのプッシュ
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/suzumina-click-nextjs-app:$COMMIT_SHA']
+    
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/suzumina-click-nextjs-app:latest']
+  
+  # Cloud Runへのデプロイ
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'deploy', 'suzumina-click-nextjs-app',
+      '--image', 'gcr.io/$PROJECT_ID/suzumina-click-nextjs-app:$COMMIT_SHA',
+      '--region', 'asia-northeast1',
+      '--platform', 'managed',
+      '--allow-unauthenticated'
+    ]
+
+images:
+  - 'gcr.io/$PROJECT_ID/suzumina-click-nextjs-app:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/suzumina-click-nextjs-app:latest'
+
+# ビルドのタイムアウト設定
+timeout: '1800s'

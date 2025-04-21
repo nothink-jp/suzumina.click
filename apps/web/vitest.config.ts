@@ -4,11 +4,11 @@ import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 
 // Vitest 3.1.1設定
-// プロジェクト配列を直接定義してワークスペース機能を使用
+// webアプリケーションのテスト設定
 export default defineConfig({
   plugins: [react()],
   test: {
-    name: "root",
+    name: "web",
     root: ".",
     environment: "happy-dom",
     globals: true,
@@ -17,7 +17,7 @@ export default defineConfig({
     // テスト対象ファイルを明示的に指定
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     // テスト対象から除外するパターン
-    exclude: ["functions/**", "node_modules/**", ".next/**", ".firebase/**"],
+    exclude: ["node_modules/**", ".next/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
@@ -25,14 +25,12 @@ export default defineConfig({
       exclude: [
         "node_modules/**",
         ".next/**",
-        ".firebase/**",
         "vitest.*.{js,ts}",
         "**/*.d.ts",
         "**/*.config.{js,ts,mjs,cjs,mts,cts}",
         "**/*.stories.{jsx,tsx,mdx}",
         "**/dist/**",
         "**/.storybook/**",
-        "functions/**",
       ],
       thresholds: {
         statements: 80,
