@@ -82,7 +82,7 @@ jobs:
           
           # 必要な権限があるかチェック
           echo "必要な権限チェック:"
-          for role in "roles/cloudbuild.admin" "roles/pubsub.admin" "roles/resourcemanager.projectIamAdmin" "roles/run.admin"; do
+          for role in "roles/cloudbuild.admin" "roles/pubsub.admin" "roles/resourcemanager.projectIamAdmin" "roles/run.admin" "roles/secretmanager.admin" "roles/storage.admin"; do
             echo -n "$role: "
             gcloud projects get-iam-policy ${{ env.GOOGLE_CLOUD_PROJECT }} --flatten="bindings[].members" --format='value(bindings.role)' --filter="bindings.members:$SA_EMAIL AND bindings.role=$role"
             if [ $? -ne 0 ]; then
