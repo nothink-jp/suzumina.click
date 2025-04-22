@@ -69,6 +69,19 @@ jobs:
           access_token_lifetime: 3600s
           access_token_scopes: https://www.googleapis.com/auth/cloud-platform
 
+      # terraform.tfvarsファイルの生成
+      - name: terraform.tfvarsファイルの生成
+        run: |
+          # テンプレートファイルをコピー
+          cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+          
+          # 必要に応じて環境変数から値を設定
+          # 注意: シークレットや機密情報は環境変数から取得し、
+          # コミットされるファイルには含めないようにします
+          echo "# 本番環境用の自動生成された設定ファイル $(date)" >> terraform/terraform.tfvars
+          
+          # YouTube APIキーは後でenvで渡すので、このファイル内では設定しません
+
       # Terraformの初期化
       - name: Terraform初期化
         run: terraform init
