@@ -53,7 +53,7 @@ jobs:
       - name: Terraform セットアップ
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.7.0
+          terraform_version: 1.11.4
           terraform_wrapper: false
 
       # GCPの認証を設定
@@ -68,6 +68,27 @@ jobs:
           cleanup_credentials: true
           access_token_lifetime: 3600s
           access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+      
+      # 認証アカウントの権限を確認
+      - name: サービスアカウントの権限確認
+        run: |
+          # サービスアカウントのメールアドレスを取得
+          SA_EMAIL=$(echo '${{ secrets.GCP_SA_KEY }}' | jq -r '.client_email')
+          echo "使用中のサービスアカウント: $SA_EMAIL"
+          
+          # サービスアカウントの権限を確認
+          echo "サービスアカウントの権限一覧:"
+          gcloud projects get-iam-policy ${{ env.GOOGLE_CLOUD_PROJECT }} --flatten="bindings[].members" --format='table(bindings.role)' --filter="bindings.members:$SA_EMAIL"
+          
+          # 必要な権限があるかチェック
+          echo "必要な権限チェック:"
+          for role in "roles/cloudbuild.admin" "roles/pubsub.admin" "roles/resourcemanager.projectIamAdmin" "roles/run.admin"; do
+            echo -n "$role: "
+            gcloud projects get-iam-policy ${{ env.GOOGLE_CLOUD_PROJECT }} --flatten="bindings[].members" --format='value(bindings.role)' --filter="bindings.members:$SA_EMAIL AND bindings.role=$role"
+            if [ $? -ne 0 ]; then
+              echo "見つかりません - 権限が必要です"
+            fi
+          done
 
       # GCPプロジェクト番号を取得
       - name: GCPプロジェクト番号を取得
