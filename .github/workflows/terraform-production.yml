@@ -69,18 +69,28 @@ jobs:
           access_token_lifetime: 3600s
           access_token_scopes: https://www.googleapis.com/auth/cloud-platform
 
+      # GCPプロジェクト番号を取得
+      - name: GCPプロジェクト番号を取得
+        id: get-project-number
+        run: |
+          # GCP_SA_KEYからプロジェクト番号を抽出する
+          PROJECT_NUMBER=$(echo '${{ secrets.GCP_SA_KEY }}' | jq -r '.project_id' | xargs gcloud projects describe --format='value(projectNumber)')
+          echo "PROJECT_NUMBER=${PROJECT_NUMBER}" >> $GITHUB_ENV
+          echo "project_number=${PROJECT_NUMBER}" >> $GITHUB_OUTPUT
+
       # terraform.tfvarsファイルの生成
       - name: terraform.tfvarsファイルの生成
         run: |
           # テンプレートファイルをコピー
           cp terraform/terraform.tfvars.example terraform/terraform.tfvars
           
-          # 必要に応じて環境変数から値を設定
-          # 注意: シークレットや機密情報は環境変数から取得し、
-          # コミットされるファイルには含めないようにします
-          echo "# 本番環境用の自動生成された設定ファイル $(date)" >> terraform/terraform.tfvars
-          
-          # YouTube APIキーは後でenvで渡すので、このファイル内では設定しません
+          # 必要な変数を設定
+          cat > terraform/terraform.tfvars << EOF
+          # 本番環境用の自動生成された設定ファイル $(date)
+          gcp_project_id = "${{ env.GOOGLE_CLOUD_PROJECT }}"
+          project_number = "${{ env.PROJECT_NUMBER }}"
+          # YouTube APIキーは環境変数として渡すので、ここには含めない
+          EOF
 
       # Terraformの初期化
       - name: Terraform初期化
@@ -96,7 +106,7 @@ jobs:
       # Terraformプラン（変更内容の確認）
       - name: Terraformプラン
         run: |
-          terraform plan -var-file="terraform.tfvars" -var="environment=production" -no-color -input=false
+          terraform plan -var-file="terraform.tfvars" -no-color -input=false
         working-directory: ./terraform
         env:
           TF_VAR_youtube_api_key: ${{ secrets.YOUTUBE_API_KEY }}
@@ -116,7 +126,7 @@ jobs:
       - name: Terraform適用
         if: success()
         run: |
-          terraform apply -var-file="terraform.tfvars" -var="environment=production" -auto-approve -input=false
+          terraform apply -var-file="terraform.tfvars" -auto-approve -input=false
         working-directory: ./terraform
         env:
           TF_VAR_youtube_api_key: ${{ secrets.YOUTUBE_API_KEY }}
