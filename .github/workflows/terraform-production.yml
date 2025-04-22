@@ -13,8 +13,10 @@ jobs:
   terraform-production:
     name: 'Terraform 本番環境デプロイ'
     runs-on: ubuntu-latest
+    # 手動承認のためにissues:write権限を追加
     permissions:
       contents: read
+      issues: write  # 手動承認プロセスでIssueを作成するために必要
       
     steps:
       - name: リポジトリをチェックアウト
