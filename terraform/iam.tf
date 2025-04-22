@@ -4,6 +4,90 @@ data "google_project" "project" {
 }
 
 # ------------------------------------------------------------------------------
+# GitHub Actions CI/CD用のサービスアカウントとIAM権限設定
+# ------------------------------------------------------------------------------
+
+# GitHub Actions用のサービスアカウント
+resource "google_service_account" "github_actions_sa" {
+  project      = var.gcp_project_id
+  account_id   = "github-actions-sa"
+  display_name = "GitHub Actions用サービスアカウント"
+  description  = "GitHub Actionsワークフローからデプロイを実行するためのサービスアカウント"
+}
+
+# GitHubリポジトリにWorkload Identity連携を設定
+resource "google_iam_workload_identity_pool" "github_pool" {
+  project                   = var.gcp_project_id
+  workload_identity_pool_id = "github-pool"
+  display_name              = "GitHub Actions ID Pool"  # 表示名を短く変更
+  description               = "GitHubからの認証用のID Pool"
+}
+
+# GitHubプロバイダを設定
+resource "google_iam_workload_identity_pool_provider" "github_provider" {
+  project                            = var.gcp_project_id
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-provider"
+  display_name                       = "GitHub Actions Provider"
+  
+  attribute_mapping = {
+    "google.subject"       = "assertion.sub"
+    "attribute.actor"      = "assertion.actor"
+    "attribute.repository" = "assertion.repository"
+    "attribute.ref"        = "assertion.ref"
+  }
+  
+  # GitHub Actionsからの認証時に検証する条件を追加
+  attribute_condition = "attribute.repository == \"nothink-jp/suzumina.click\""
+  
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+}
+
+# サービスアカウントとWorkload Identity Poolの連携
+resource "google_service_account_iam_binding" "github_sa_binding" {
+  service_account_id = google_service_account.github_actions_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  
+  members = [
+    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/nothink-jp/suzumina.click"
+  ]
+  
+  depends_on = [
+    google_service_account.github_actions_sa,
+    google_iam_workload_identity_pool.github_pool
+  ]
+}
+
+# GitHub Actions用サービスアカウントにCloud Build起動権限を付与
+resource "google_project_iam_member" "github_actions_cloudbuild_invoker" {
+  project = var.gcp_project_id
+  role    = "roles/cloudbuild.builds.editor"
+  member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
+  
+  depends_on = [google_service_account.github_actions_sa]
+}
+
+# GitHub Actions用サービスアカウントにログ閲覧権限を付与
+resource "google_project_iam_member" "github_actions_log_viewer" {
+  project = var.gcp_project_id
+  role    = "roles/logging.viewer"
+  member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
+  
+  depends_on = [google_service_account.github_actions_sa]
+}
+
+# GitHub Actions用サービスアカウントにCloudRun閲覧権限を付与
+resource "google_project_iam_member" "github_actions_run_viewer" {
+  project = var.gcp_project_id
+  role    = "roles/run.viewer"
+  member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
+  
+  depends_on = [google_service_account.github_actions_sa]
+}
+
+# ------------------------------------------------------------------------------
 # discordAuthCallback関数用のサービスアカウントとIAM権限設定
 # ------------------------------------------------------------------------------
 

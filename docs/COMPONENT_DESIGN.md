@@ -20,7 +20,7 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
   - RSC 内で RCC を子コンポーネントとしてインポートし、配置します。これにより、サーバーサイドレンダリングの利点を最大限に活かしつつ、必要な箇所にのみインタラクティビティを追加できます。
 
     ```tsx
-    // RSC (例: src/app/some-page/page.tsx)
+    // RSC (例: apps/web/src/app/some-page/page.tsx)
     import ClientButton from './_components/ClientButton'; // RCCをインポート
 
     export default function SomePage() {
@@ -37,7 +37,7 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
       );
     }
 
-    // RCC (例: src/app/some-page/_components/ClientButton.tsx)
+    // RCC (例: apps/web/src/app/some-page/_components/ClientButton.tsx)
     "use client";
 
     import { useState } from 'react';
@@ -46,7 +46,7 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
       const [count, setCount] = useState(0);
 
       return (
-        <button type="button" onClick={() => setCount(count + 1)}> {/* type="button" を追加 */}
+        <button type="button" onClick={() => setCount(count + 1)}> {/* アクセシビリティのためtype="button"を明示 */}
           Clicked {count} times
         </button>
       );
@@ -68,17 +68,17 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
 - **命名規則**:
   - コンポーネントファイル名およびコンポーネント関数名: `PascalCase` (例: `UserProfileCard.tsx`, `function UserProfileCard() {}`)
 - **配置 (コロケーション)**:
-  - **ページ固有コンポーネント**: 特定のページ (`src/app/about/page.tsx` など) でのみ使用されるコンポーネントは、そのページのディレクトリ配下に `_components` ディレクトリ (例: `src/app/about/_components/`) を作成し、そこに配置します。
-  - **共通コンポーネント**: 複数のページやレイアウトで再利用されるコンポーネントは、`src/components/` ディレクトリ (必要に応じて作成) に配置します。
-    - `src/components/ui/`: 低レベルなUI部品 (Button, Input, Card など)。DaisyUI コンポーネントのラッパーや、独自実装の基本部品。
-    - `src/components/layout/`: アプリケーション全体のレイアウトに関連するコンポーネント (Header, Footer, Sidebar など)。
-    - `src/components/feature/`: 特定の機能に関連する、より高レベルなコンポーネント群 (例: `src/components/feature/auth/`, `src/components/feature/profile/`)。
+  - **ページ固有コンポーネント**: 特定のページ (`apps/web/src/app/about/page.tsx` など) でのみ使用されるコンポーネントは、そのページのディレクトリ配下に `_components` ディレクトリ (例: `apps/web/src/app/about/_components/`) を作成し、そこに配置します。
+  - **共通コンポーネント**: 複数のページやレイアウトで再利用されるコンポーネントは、`apps/web/src/components/` ディレクトリに配置します。
+    - `apps/web/src/components/ui/`: 低レベルなUI部品 (Button, Input, Card など)。DaisyUI コンポーネントのラッパーや、独自実装の基本部品。
+    - `apps/web/src/components/layout/`: アプリケーション全体のレイアウトに関連するコンポーネント (Header, Footer, Sidebar など)。
+    - `apps/web/src/components/feature/`: 特定の機能に関連する、より高レベルなコンポーネント群 (例: `apps/web/src/components/feature/auth/`, `apps/web/src/components/feature/profile/`)。
 
 ## 3. 状態管理
 
 - **ローカルステート**: コンポーネント固有の状態は `useState` や `useReducer` を用いて管理します。RCC でのみ使用可能です。
 - **URL ステート**: フィルタリング条件やページネーションなど、URL で表現可能な状態は Next.js の `useRouter` や `useSearchParams` を活用します。RSC/RCC 両方で利用可能です（RCC では Hooks を使用）。
-- **グローバルステート**: アプリケーション全体で共有する必要がある状態（例: 認証情報、テーマ設定）については、現時点では導入を保留します。必要性が生じた場合に、React Context API や Zustand などの軽量なライブラリの導入を検討します。サーバーコンポーネントとの親和性を考慮して選定します。
+- **グローバルステート**: アプリケーション全体で共有する必要がある状態（例: 認証情報、テーマ設定）については、Firebase Authentication と連携した AuthProvider を使用しています。他のグローバル状態が必要な場合は、React Context API や Zustand などの軽量なライブラリの導入を検討します。サーバーコンポーネントとの親和性を考慮して選定します。
 
 ## 4. コンポーネント分割
 
@@ -90,3 +90,25 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
   - コンポーネントが必要とするデータは Props を通じて明確に渡します。
   - Props の数は適切に保ち、多すぎる場合はオブジェクトにまとめるなどを検討します。
   - Props の型は TypeScript で厳密に定義します。
+
+## 5. テスト戦略
+
+- **単体テスト**: 各コンポーネントに対して Vitest と React Testing Library を用いた単体テストを作成します。
+  - RSC/RCC それぞれに適した形でテストを記述します。
+  - テストファイルは対象コンポーネントと同じディレクトリに `[ComponentName].test.tsx` の形式で配置します。
+- **Storybook**: UI コンポーネントの見た目とインタラクションを確認するための Storybook を作成します。
+  - 特に再利用性の高いコンポーネントには `[ComponentName].stories.tsx` の形式でストーリーを作成することを推奨します。
+
+## 6. パフォーマンス最適化
+
+- **画像最適化**: Next.js の組み込み `Image` コンポーネントを使用して画像の最適化を行います。
+- **サーバーコンポーネントの活用**: データフェッチはできるだけサーバーコンポーネントで行い、クライアントサイドの負荷を軽減します。
+- **コード分割**: 必要なときだけ特定のコンポーネントを読み込むために、`dynamic import` や React の `lazy` と `Suspense` を適宜活用します。
+- **不要な再レンダリングの防止**: `memo`、`useMemo`、`useCallback` などを用いて、必要に応じて再レンダリングを最適化します。
+
+## 7. アクセシビリティ
+
+- **セマンティックHTML**: 適切なHTML要素を選択し、セマンティックなマークアップを心がけます。
+- **ARIA属性**: 必要に応じてARIA属性を追加し、支援技術によるアクセシビリティを向上させます。
+- **キーボード操作**: すべてのインタラクティブな要素がキーボードで操作できることを確認します。
+- **フォーカス管理**: 特にモーダルやドロップダウンなど、フォーカス管理が重要なコンポーネントでは適切な実装を行います。

@@ -19,5 +19,9 @@
       "quoteStyle": "double",
       "trailingCommas": "all"
     }
+  },
+  "files": {
+    "include": ["apps/**/*.{ts,tsx,js,jsx}", "functions/**/*.{ts,js}", "packages/**/*.{ts,tsx,js,jsx}"],
+    "ignore": ["**/node_modules", "**/dist", "**/.next", "**/storybook-static", "**/coverage"]
   }
 }

@@ -11,7 +11,8 @@
 - [x] `docs/AUTH_DESIGN.md` 作成 (認証設計)
 - [x] `docs/ENVIRONMENT_VARIABLES.md` 作成 (環境変数設定ガイド)
 - [x] `docs/AUTH_DESIGN.md` の簡略化 (実装完了後の整理)
-- [x] **(DONE) `docs/` 以下のドキュメント全体を現状の実装に合わせてレビュー・更新 (2025-04-21)**
+- [x] `docs/` 以下のドキュメント全体を現状の実装に合わせてレビュー・更新 (2025-04-21)
+- [x] **移行計画のトラブルを反映したドキュメント更新** (Firebase認証のみ使用、ステージング環境のみの開発体制)
 
 ## 初期セットアップ
 
@@ -36,8 +37,8 @@
   - [x] AuthProvider 実装 (`src/lib/firebase/AuthProvider.tsx`)
   - [x] AuthButton 実装 (`src/components/ui/AuthButton.tsx`)
   - [x] 認証コールバックページ実装 (`/auth/discord/callback`)
-- [x] ~~(TODO)~~ 認証ユーザー情報の表示改善 (例: Header のユーザー名表示)
-- [x] ~~(TODO)~~ プロフィールページの内容拡充 (Discord情報のみ表示)
+- [x] 認証ユーザー情報の表示改善 (Header のユーザー名表示)
+- [x] プロフィールページの内容拡充 (Discord情報表示)
 
 ## 音声ボタンサービス
 
@@ -64,8 +65,8 @@
   - [x] テストケースの更新
 - [x] **データモデルドキュメント作成**
   - [x] `docs/SCHEMA.md` 作成 (Firestoreデータモデル、ER図) (実装に合わせて更新済)
-- [x] (DONE) `docs/ENVIRONMENT_VARIABLES.md`: `YOUTUBE_API_KEY` について追記
-- [x] (DONE) `docs/README.md`: 音声ボタンサービス機能の概要と関連ドキュメントへの参照を記載
+- [x] `docs/ENVIRONMENT_VARIABLES.md`: `YOUTUBE_API_KEY` について追記
+- [x] `docs/README.md`: 音声ボタンサービス機能の概要と関連ドキュメントへの参照を記載
 
 ## テスト / Storybook
 
@@ -79,5 +80,82 @@
 
 ## デプロイ / CI/CD
 
-- [x] Firebase Hosting / Functions の初期設定とデプロイ
+- [x] ~~Firebase Hosting / Functions の初期設定とデプロイ~~ → Cloud Run移行により廃止
 - [x] GitHub Actions CI/CD ワークフロー修正 (pnpm 対応、環境変数設定)
+
+## モノレポ構成リファクタリングと Cloud Run 移行
+
+### モノレポ構成改善
+
+- [x] **基盤準備 (2025-04-22 ~ 2025-04-23)**
+  - [x] `pnpm-workspace.yaml` の更新（`apps/*`, `packages/*`, `functions` 形式に変更）
+  - [x] ルート `package.json` の更新（monorepo管理用スクリプト設定）
+  - [x] Webアプリ用 `apps/web/package.json` の作成（`@suzumina.click/web` 名前空間設定）
+  - [x] biome設定ファイルのモノレポ対応化
+
+### リソース移行
+
+- [x] **ソースコードとリソース移行 (2025-04-24)**
+  - [x] `src` ディレクトリを `apps/web/src` へ移動
+  - [x] `public` ディレクトリを `apps/web/public` へ移動
+  - [x] 各種設定ファイル（`next.config.ts`, `postcss.config.mjs`, `tsconfig.json` など）を `apps/web` に移動
+  - [x] テスト関連ファイル（`vitest.config.ts` など）を `apps/web` に移動
+  - [x] 不要になったルートディレクトリのファイルを削除（`src`, `public`, `.storybook`, 設定ファイル類）
+  - [x] `package.json`の`clean`スクリプトを更新（モノレポ構造に対応）
+
+### Cloud Run 移行
+
+- [x] **Cloud Run用の設定とインフラ構築 (2025-04-25 ~ 2025-04-26)**
+  - [x] `apps/web/Dockerfile` の作成（Next.js standalone モード対応）
+  - [x] `cloudbuild.yaml` の更新（モノレポ構成対応）
+  - [x] `skaffold.yaml` の更新（`apps/web` コンテキスト対応）
+  - [x] `terraform/cloudrun.tf` の作成（Cloud Runサービス定義）
+  - [x] `terraform/cloudbuild.tf` の作成（Cloud Buildトリガー定義）
+
+### CI/CD パイプライン更新
+
+- [x] **デプロイパイプラインの更新 (2025-04-27)**
+  - [x] GitHub Actions評価環境デプロイワークフローの作成（`.github/workflows/trigger-evaluation-deploy.yml`）
+  - [x] Cloud Build連携の設定
+  - [x] IAM権限の構成
+  - [x] 手動デプロイテスト実施
+
+### ~~最終確認と本番移行~~ → ステージング環境のみの運用体制へ変更
+
+- [x] **実装方針の変更 (2025-04-28)**
+  - [x] ステージング環境のみでの開発体制に変更
+  - [x] Firebase Hostingからの移行完了
+  - [ ] ~~DNSとSSL設定変更（独自ドメイン設定）~~ → 当面の間保留
+  - [x] 旧設定のクリーンアップ
+  - [x] ステージング環境でのパフォーマンス検証
+- [x] **移行計画のトラブルを反映したドキュメント更新** (Firebase認証のみ使用、ステージング環境のみの開発体制)
+
+## 今後のタスク
+
+### 開発環境改善
+
+- [ ] **Cloud Code (VS Code拡張) の導入検討**
+  - [ ] ローカル開発環境でのGCPエミュレーション
+  - [ ] リモートデバッグの設定
+  - [ ] クラウドデプロイ連携
+
+### モニタリングと運用
+
+- [ ] **Cloud Run メトリクス監視の設定**
+  - [ ] ダッシュボード作成
+  - [ ] アラート設定
+- [ ] **コスト最適化**
+  - [ ] コスト推移の追跡
+  - [ ] 予算アラート設定
+  - [ ] 自動スケーリング設定最適化
+
+### ドキュメント整備
+
+- [ ] **開発者向けセットアップガイド更新**
+  - [ ] モノレポ対応の開発フロー説明
+  - [ ] ローカル開発環境のセットアップ手順
+  - [ ] テスト/デプロイの手順更新
+- [ ] **アプリ実装ドキュメント更新**
+  - [ ] 機能概要図の更新
+  - [ ] API設計の再整理
+  - [ ] 認証フローの最終化

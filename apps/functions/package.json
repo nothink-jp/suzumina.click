@@ -1,5 +1,6 @@
 {
-  "name": "functions",
+  "name": "@suzumina.click/functions",
+  "version": "0.1.0",
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
@@ -32,7 +33,7 @@
     "@types/node": "^20.17.30",
     "firebase-functions-test": "^3.4.1",
     "typescript": "^5.8.3",
-    "vitest": "^3.1.1"
+    "vitest": "^3.1.2"
   },
   "private": true
 }

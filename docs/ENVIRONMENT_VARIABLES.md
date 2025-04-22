@@ -1,10 +1,10 @@
 # 環境変数設定ガイド
 
-このプロジェクトでは、Firebase プロジェクト設定や Discord アプリケーションの認証情報、YouTube API キーなど、外部サービスのキーを環境変数やシークレットで管理します。
+このプロジェクトでは、Firebase認証やYouTube APIなど、外部サービスのキーを環境変数とGCP Secret Managerで管理します。
 
-## 1. フロントエンド用環境変数 (`.env.local`)
+## 1. ローカル開発用環境変数 (`.env.local`)
 
-Next.js アプリケーション（フロントエンド）で使用する環境変数は、プロジェクトルートに作成する `.env.local` ファイルに記述します。このファイルは `.gitignore` に含まれているため、Git リポジトリにはコミットされません。
+Next.jsアプリケーション開発時に使用する環境変数は、**モノレポのルートディレクトリ**に作成する `.env.local` ファイルに記述します。このファイルは `.gitignore` に含まれているため、Gitリポジトリにはコミットされません。
 
 **ファイル:** `.env.local` (プロジェクトルートに作成)
 
@@ -14,156 +14,144 @@ Next.js アプリケーション（フロントエンド）で使用する環境
 # Firebase プロジェクト設定 (Firebase Console から取得)
 # プロジェクト設定 > 全般 > マイアプリ > SDK の設定と構成 で「構成」を選択
 NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_FIREBASE_APP_ID=1:...:web:...
-# NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-... (オプション)
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=suzumina-click-firebase.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=suzumina-click-firebase
+# 以下は現在のアーキテクチャでは不要
+# NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+# NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+# NEXT_PUBLIC_FIREBASE_APP_ID=...
 
 # Discord OAuth 設定 (Discord Developer Portal から取得)
-# アプリケーション > OAuth2 > General
 NEXT_PUBLIC_DISCORD_CLIENT_ID=... (Discord アプリの Client ID)
 
-# Discord OAuth リダイレクト URI (環境に応じて設定)
-# ローカル開発 (Next.js dev サーバー): http://localhost:3000/auth/discord/callback
-# Firebase Hosting デプロイ後: https://your-project-id.web.app/auth/discord/callback (またはカスタムドメイン)
+# Discord OAuth リダイレクト URI
+# ローカル開発: http://localhost:3000/auth/discord/callback
+# Cloud Run: https://{CLOUD_RUN_URL}/auth/discord/callback
 NEXT_PUBLIC_DISCORD_REDIRECT_URI=http://localhost:3000/auth/discord/callback
 
-# Firebase Functions コールバックエンドポイント URL (環境に応じて設定)
-# ローカル開発 (Firebase Emulator): http://127.0.0.1:5001/suzumina-click-firebase/asia-northeast1/discordAuthCallback
-# Firebase Functions デプロイ後: Firebase Console の Functions ページで確認できるトリガー URL
-NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL=http://127.0.0.1:5001/suzumina-click-firebase/asia-northeast1/discordAuthCallback
+# Discord認証コールバック関数のURL
+# ローカル開発時に関数エミュレータを使う場合のみ必要
+# NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL=http://127.0.0.1:5001/suzumina-click-firebase/asia-northeast1/discordAuthCallback
 ```
 
 **取得方法:**
 
 - **Firebase プロジェクト設定:**
     1. [Firebase Console](https://console.firebase.google.com/) を開きます。
-    2. 対象のプロジェクト (`suzumina-click-firebase`) を選択します。
+    2. プロジェクト `suzumina-click-firebase` を選択します。
     3. 左メニューの歯車アイコン > 「プロジェクトの設定」をクリックします。
-    4. 「全般」タブの下部にある「マイアプリ」セクションで、対象のウェブアプリを選択します（なければ作成）。
-    5. 「SDK の設定と構成」で「構成」を選択すると、`firebaseConfig` オブジェクトが表示されます。この中の値をコピーして `.env.local` に貼り付け、変数名のプレフィックスを `NEXT_PUBLIC_FIREBASE_` に変更します。
+    4. 「全般」タブの下部にある「マイアプリ」セクションで、対象のウェブアプリを選択します。
+    5. 「SDK の設定と構成」で「構成」を選択し、`firebaseConfig` オブジェクトから必要な値をコピーします。
 - **Discord OAuth 設定:**
     1. [Discord Developer Portal](https://discord.com/developers/applications) を開きます。
     2. 対象のアプリケーションを選択します。
     3. 「OAuth2」>「General」メニューで `CLIENT ID` を確認します。
-    4. `REDIRECTS` セクションに、上記の `NEXT_PUBLIC_DISCORD_REDIRECT_URI` に設定する予定の URL (ローカル用とデプロイ後用) を**両方とも**追加し、保存します。
+    4. `REDIRECTS` セクションに、ローカル用とCloud Run用の両方のURLを追加します。
 
 **注意:**
 
-- `NEXT_PUBLIC_` プレフィックスが付いた変数は、ブラウザ側（フロントエンド）のコードからアクセス可能です。機密情報（API Secret など）にはこのプレフィックスを付けないでください。
-- `.env.local` ファイルを変更した後は、Next.js 開発サーバーの再起動が必要です。
+- `NEXT_PUBLIC_` プレフィックスが付いた変数は、ブラウザ側（フロントエンド）のコードからアクセス可能です。
+- `.env.local` ファイルを変更した後は、Next.js開発サーバーの再起動が必要です。
 
-## 2. バックエンド用環境変数 (Firebase Functions)
+## 2. Cloud Runとクラウド環境の環境変数
 
-Cloud Functions で使用する機密情報（Discord Client Secret, YouTube API Key など）は、GCP Secret Manager を使用して安全に管理します。Terraform でシークレットリソースを作成し、Cloud Functions の定義で参照します。
+Cloud Run環境では、環境変数はSecret Managerで管理し、Terraformを通じてデプロイ時に設定されます。
+
+### 2.1 GCP Secret Managerの設定
 
 **管理されるシークレット:**
 
-- `DISCORD_CLIENT_ID`: Discord アプリの Client ID (Terraform で `google_secret_manager_secret` リソース作成)
-- `DISCORD_CLIENT_SECRET`: Discord アプリの Client Secret (Terraform で `google_secret_manager_secret` リソース作成)
-- `DISCORD_REDIRECT_URI`: Discord OAuth リダイレクト URI (Terraform で `google_secret_manager_secret` リソース作成)
-- `DISCORD_TARGET_GUILD_ID`: 認証対象の Discord サーバー ID (Terraform で `google_secret_manager_secret` リソース作成)
-- `YOUTUBE_API_KEY`: YouTube Data API キー (Terraform で `google_secret_manager_secret` リソース作成)
+- `FIREBASE_API_KEY`: Firebase APIキー
+- `DISCORD_CLIENT_ID`: Discord アプリの Client ID
+- `DISCORD_CLIENT_SECRET`: Discord アプリの Client Secret
+- `DISCORD_REDIRECT_URI`: Cloud RunのURLを含むリダイレクトURI
+- `DISCORD_TARGET_GUILD_ID`: 認証対象のDiscordサーバーID
+- `YOUTUBE_API_KEY`: YouTube Data APIキー
 
-**設定方法 (Terraform & GCP Console):**
+**設定方法:**
 
-1. **Terraform:**
-    - `terraform/secrets.tf` で各シークレットに対応する `google_secret_manager_secret` リソースを定義します。
-    - `terraform/functions.tf` の各 `google_cloudfunctions2_function` リソース定義内で、`service_config.secret_environment_variables` ブロックを使用して、関数がアクセスするシークレットを指定します。
-    - `terraform/iam.tf` で、各関数のサービスアカウントに必要なシークレットへのアクセス権 (`roles/secretmanager.secretAccessor`) を `google_secret_manager_secret_iam_member` リソースで付与します。
-2. **GCP Console (初回のみ):**
-    - Terraform でシークレットの「入れ物」を作成した後、GCP Console の Secret Manager ページに移動します。
-    - 作成された各シークレット（例: `DISCORD_CLIENT_SECRET`, `YOUTUBE_API_KEY`）を選択し、「新しいバージョンを追加」をクリックして、実際のキーや値を最初のバージョンとして登録します。
-    - **重要:** これらの値は機密情報のため、Terraform コードや Git リポジトリには含めません。
+1. **Terraform設定**:
+   - `terraform/secrets.tf` でシークレットリソースを定義します。
+   - `terraform/cloudrun.tf` でCloud Runサービスから参照します。
+   - `terraform/functions.tf` でCloud Functionsから参照します。
 
-**取得方法:**
+2. **Secret Managerへの値の設定**:
+   ```bash
+   # シークレットの値を設定する例
+   echo -n "実際の値" | gcloud secrets versions add DISCORD_CLIENT_SECRET \
+     --data-file=- --project=suzumina-click-firebase
+   ```
 
-- **Discord Client ID, Client Secret:** Discord Developer Portal のアプリケーション > 「OAuth2」>「General」メニューで確認・再生成できます。
-- **Discord Redirect URI:** フロントエンドの `.env.local` に設定した `NEXT_PUBLIC_DISCORD_REDIRECT_URI` と**同じ値**を設定します。Discord Developer Portal にも登録されている必要があります。
-- **Target Guild ID:** `docs/INFO.md` に記載されている `959095494456537158` を使用します。
-- **YouTube API Key:** [Google Cloud Console](https://console.cloud.google.com/) の「APIとサービス」>「認証情報」ページで作成・取得します。YouTube Data API v3 を有効化しておく必要があります。
+3. **GitHub Actions環境変数**:
+   - リポジトリの「Settings」>「Secrets and variables」>「Actions」で以下のシークレットを設定:
+     - `GCP_PROJECT_ID`: GCPプロジェクトID (`suzumina-click-firebase`)
+     - `GCP_SA_KEY`: GitHub Actionsが使用するサービスアカウントのJSONキー
 
-**コードからの参照:**
+### 2.2 Cloud Functions用の環境変数
 
-`functions/src/index.ts` 内では、`secrets` オプションで指定したシークレットは `process.env` 経由で参照できます。
+Cloud Functions v2では、`defineSecret`を使用してSecret Managerの値を参照します：
 
 ```typescript
-// 例: functions/src/index.ts 内
+// functions/src/discordAuth.ts の例
 import { defineSecret } from 'firebase-functions/params';
 
-// シークレットの定義 (デプロイ時に Secret Manager の値が注入される)
+// シークレットの定義
 const discordClientId = defineSecret('DISCORD_CLIENT_ID');
 const discordClientSecret = defineSecret('DISCORD_CLIENT_SECRET');
-const discordRedirectUri = defineSecret('DISCORD_REDIRECT_URI');
-const discordTargetGuildId = defineSecret('DISCORD_TARGET_GUILD_ID');
-const youtubeApiKey = defineSecret('YOUTUBE_API_KEY'); // 追加
 
-// 関数内での参照例 (discordAuthCallback 関数など)
+// 関数内での使用
 export const discordAuthCallback = onCall(
-  { secrets: [discordClientId, discordClientSecret, discordRedirectUri, discordTargetGuildId] },
+  { secrets: [discordClientId, discordClientSecret] },
   async (request) => {
-    const clientId = discordClientId.value(); // .value() で値を取得
+    const clientId = discordClientId.value();
     const clientSecret = discordClientSecret.value();
-    // ...
-  }
-);
-
-// 関数内での参照例 (fetchYouTubeVideos 関数など)
-export const fetchYouTubeVideos = onMessagePublished(
-  { topic: 'youtube-video-fetch-trigger', secrets: [youtubeApiKey] },
-  async (event) => {
-    const apiKey = youtubeApiKey.value(); // .value() で値を取得
-    // ...
+    // ...処理...
   }
 );
 ```
 
-**注意:**
+## 3. ローカル開発でのCloud Functionsのテスト
 
-- Terraform で `secret_environment_variables` を設定し、Cloud Functions v2 の `secrets` オプションを使用すると、関数はデプロイ時に指定されたシークレットの最新バージョンを安全に利用できます。`process.env` ではなく、`defineSecret` で定義した Secret Parameter オブジェクトの `.value()` メソッド経由でアクセスします。
-- ローカルで Firebase Emulator を使用する場合、これらのシークレットをエミュレータ環境で利用可能にするための設定（例: `.env.local` や環境変数での設定）が別途必要になる場合があります。Firebase Emulator のドキュメントを参照してください。
+Cloud Functions v2をローカルでテストするには、以下の手順で環境変数を設定します：
 
-## 3. ローカル開発 (Firebase Emulator)
+1. `.env.local` または `.env.functions` ファイルに必要な環境変数を設定:
 
-Firebase Emulator を使用してローカルで開発する場合、環境変数の設定方法が異なります。
+```bash
+# 関数のテスト用環境変数
+DISCORD_CLIENT_ID=your_client_id_here
+DISCORD_CLIENT_SECRET=your_client_secret_here
+DISCORD_TARGET_GUILD_ID=959095494456537158
+YOUTUBE_API_KEY=your_youtube_api_key_here
+```
 
-- **フロントエンド (`.env.local`):**
-  - `NEXT_PUBLIC_DISCORD_REDIRECT_URI`: `http://localhost:3000/auth/discord/callback` を設定します。
-  - `NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL`: Firebase Emulator の Functions URL を設定します。デフォルトでは `http://127.0.0.1:5001/YOUR_PROJECT_ID/YOUR_REGION/discordAuthCallback` の形式になります。`firebase.json` の `emulators` 設定を確認してください。
-    - 例: `http://127.0.0.1:5001/suzumina-click-firebase/asia-northeast1/discordAuthCallback`
-- **バックエンド (Functions Emulator):**
-  - Secret Manager の値 (`DISCORD_CLIENT_SECRET`, `YOUTUBE_API_KEY` など) は、エミュレータ起動時に特別な設定が必要です。Firebase Emulator のドキュメントに従い、`.env.local` ファイルや環境変数、または `--import` オプションなどでエミュレータに値を渡す方法があります。
-  - 例 (`.env.local` を使用する場合、`.gitignore` に追加すること):
-    ```sh
-    # .env.local (プロジェクトルート)
-    DISCORD_CLIENT_SECRET=YOUR_DISCORD_SECRET_VALUE_HERE
-    YOUTUBE_API_KEY=YOUR_YOUTUBE_API_KEY_VALUE_HERE
-    # 他のシークレットも同様に追加
-    ```
-  - Functions コード内では、エミュレータ実行時は `defineSecret` で定義した値が直接利用できないため、`process.env` から読み込むなどのフォールバック処理が必要になる場合があります。
+2. 以下のようなヘルパー関数を作成して、エミュレータ環境と本番環境での環境変数の取得方法を統一します:
 
-    ```typescript
-    // 例: functions/src/config.ts (など)
-    import { defineSecret } from 'firebase-functions/params';
+```typescript
+// functions/src/config.ts などに追加
+import { defineSecret } from 'firebase-functions/params';
 
-    const discordClientSecretParam = defineSecret('DISCORD_CLIENT_SECRET');
-    const youtubeApiKeyParam = defineSecret('YOUTUBE_API_KEY');
+const discordClientSecret = defineSecret('DISCORD_CLIENT_SECRET');
+const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');
 
-    // エミュレータ実行時 (process.env.FUNCTIONS_EMULATOR === 'true') は process.env から、
-    // 本番環境では defineSecret().value() から値を取得するヘルパー関数などを用意すると良い
-    export const getDiscordClientSecret = (): string => {
-      return process.env.FUNCTIONS_EMULATOR === 'true'
-        ? process.env.DISCORD_CLIENT_SECRET ?? ''
-        : discordClientSecretParam.value();
-    };
+// 環境に応じた設定値の取得
+export function getSecret(name: string, secretParam: ReturnType<typeof defineSecret>): string {
+  // エミュレータ環境では環境変数から、本番環境ではSecret Managerから取得
+  return process.env.FUNCTIONS_EMULATOR === 'true'
+    ? process.env[name] || ''
+    : secretParam.value();
+}
 
-    export const getYoutubeApiKey = (): string => {
-      return process.env.FUNCTIONS_EMULATOR === 'true'
-        ? process.env.YOUTUBE_API_KEY ?? ''
-        : youtubeApiKeyParam.value();
-    };
-    ```
+// 使用例
+export function getDiscordSecret(): string {
+  return getSecret('DISCORD_CLIENT_SECRET', discordClientSecret);
+}
+```
 
-詳細は Firebase Emulator のドキュメントを参照してください。
+## 関連ドキュメント
+
+以下のドキュメントも環境変数の設定に関連する情報を含んでいます：
+
+- [開発環境セットアップガイド](./DEVELOPMENT_SETUP.md#13-環境変数の設定)
+- [デプロイ手順マニュアル](./DEPLOYMENT.md#環境変数の設定)
+- [認証設計](./AUTH.md#環境別設定)
+- [インフラ監査レポート](./INFRA_AUDIT.md#11-リソース管理の方式)

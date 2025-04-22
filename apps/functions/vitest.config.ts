@@ -1,38 +1,30 @@
 /// <reference types="vitest" />
 import { defineConfig } from "vitest/config";
-import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 
-// Vitest 3.1.1設定
-// プロジェクト配列を直接定義してワークスペース機能を使用
+// Functionsアプリケーションのテスト設定
 export default defineConfig({
-  plugins: [react()],
   test: {
-    name: "root",
-    root: ".",
-    environment: "happy-dom",
+    name: "functions",
+    // monorepoの場合、ルートディレクトリを指定
+    root: resolve(__dirname, "."),
+    environment: "node",
     globals: true,
-    setupFiles: ["./vitest.setup.ts"],
     testTimeout: 5000,
     // テスト対象ファイルを明示的に指定
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    include: ["src/**/*.{test,spec}.{ts,js}"],
     // テスト対象から除外するパターン
-    exclude: ["functions/**", "node_modules/**", ".next/**", ".firebase/**"],
+    exclude: ["node_modules/**", "lib/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
       reportsDirectory: "./coverage",
       exclude: [
         "node_modules/**",
-        ".next/**",
-        ".firebase/**",
+        "lib/**",
         "vitest.*.{js,ts}",
         "**/*.d.ts",
         "**/*.config.{js,ts,mjs,cjs,mts,cts}",
-        "**/*.stories.{jsx,tsx,mdx}",
-        "**/dist/**",
-        "**/.storybook/**",
-        "functions/**",
       ],
       thresholds: {
         statements: 80,
