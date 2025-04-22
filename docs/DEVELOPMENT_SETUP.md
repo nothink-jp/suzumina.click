@@ -30,15 +30,31 @@ pnpm install
 
 ### 1.3 環境変数の設定
 
-ローカル開発用に、プロジェクトルートに `.env.local` ファイルを作成します：
+モノレポ構成のため、各アプリケーションディレクトリに環境変数ファイルを作成します：
+
+#### Webアプリケーション用環境変数
+
+`apps/web/.env.local` ファイルを作成します：
 
 ```bash
-# .env.local の例
+# apps/web/.env.local の例
 NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=suzumina-click-firebase
 NEXT_PUBLIC_DISCORD_CLIENT_ID=your_discord_client_id
 NEXT_PUBLIC_DISCORD_REDIRECT_URI=http://localhost:3000/auth/discord/callback
+```
+
+#### Cloud Functions用環境変数（ローカルテスト時）
+
+`apps/functions/.env.local` ファイルを作成します（ローカルでの関数テスト用）：
+
+```bash
+# apps/functions/.env.local の例
+DISCORD_CLIENT_ID=your_client_id_here
+DISCORD_CLIENT_SECRET=your_client_secret_here
+DISCORD_TARGET_GUILD_ID=959095494456537158
+YOUTUBE_API_KEY=your_youtube_api_key_here
 ```
 
 必要な環境変数の詳細については、[環境変数ガイド](./ENVIRONMENT_VARIABLES.md)を参照してください。

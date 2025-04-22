@@ -15,6 +15,134 @@ resource "google_service_account" "github_actions_sa" {
   description  = "GitHub Actionsワークフローからデプロイを実行するためのサービスアカウント"
 }
 
+# ------------------------------------------------------------------------------
+# 最小権限サービスアカウント - Cloud Run専用デプロイアカウント
+# ------------------------------------------------------------------------------
+
+# Cloud Run専用デプロイ用のサービスアカウント
+resource "google_service_account" "cloud_run_deployer_sa" {
+  project      = var.gcp_project_id
+  account_id   = "cloud-run-deployer-sa"
+  display_name = "Cloud Runデプロイ専用サービスアカウント"
+  description  = "GitHub ActionsからCloud Runへのデプロイのみを実行する最小権限サービスアカウント"
+}
+
+# サービスアカウントとWorkload Identity Poolの連携
+resource "google_service_account_iam_binding" "cloud_run_sa_binding" {
+  service_account_id = google_service_account.cloud_run_deployer_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  
+  members = [
+    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/nothink-jp/suzumina.click"
+  ]
+  
+  depends_on = [
+    google_service_account.cloud_run_deployer_sa,
+    google_iam_workload_identity_pool.github_pool
+  ]
+}
+
+# Cloud Run専用サービスアカウントに必要最小限の権限を付与
+# Cloud Runサービス管理者権限
+resource "google_project_iam_member" "cloud_run_deployer_admin" {
+  project = var.gcp_project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${google_service_account.cloud_run_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_run_deployer_sa]
+}
+
+# Artifact Registryプッシュ権限（コンテナイメージのアップロード用）
+resource "google_project_iam_member" "cloud_run_deployer_artifact_admin" {
+  project = var.gcp_project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.cloud_run_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_run_deployer_sa]
+}
+
+# ログ書き込み権限
+resource "google_project_iam_member" "cloud_run_deployer_log_writer" {
+  project = var.gcp_project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.cloud_run_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_run_deployer_sa]
+}
+
+# サービスアカウント利用者権限
+resource "google_project_iam_member" "cloud_run_deployer_sa_user" {
+  project = var.gcp_project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.cloud_run_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_run_deployer_sa]
+}
+
+# ------------------------------------------------------------------------------
+# 最小権限サービスアカウント - Cloud Functions専用デプロイアカウント
+# ------------------------------------------------------------------------------
+
+# Cloud Functions専用デプロイ用のサービスアカウント
+resource "google_service_account" "cloud_functions_deployer_sa" {
+  project      = var.gcp_project_id
+  account_id   = "cloud-functions-deployer-sa"
+  display_name = "Cloud Functionsデプロイ専用サービスアカウント"
+  description  = "GitHub ActionsからCloud Functionsの更新のみを実行する最小権限サービスアカウント"
+}
+
+# サービスアカウントとWorkload Identity Poolの連携
+resource "google_service_account_iam_binding" "cloud_functions_sa_binding" {
+  service_account_id = google_service_account.cloud_functions_deployer_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  
+  members = [
+    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/nothink-jp/suzumina.click"
+  ]
+  
+  depends_on = [
+    google_service_account.cloud_functions_deployer_sa,
+    google_iam_workload_identity_pool.github_pool
+  ]
+}
+
+# Cloud Functions専用サービスアカウントに必要最小限の権限を付与
+# Cloud Functions管理者権限
+resource "google_project_iam_member" "cloud_functions_deployer_developer" {
+  project = var.gcp_project_id
+  role    = "roles/cloudfunctions.developer"
+  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_functions_deployer_sa]
+}
+
+# Cloud Storageアクセス権限（ソースコードアップロード用）
+resource "google_project_iam_member" "cloud_functions_deployer_storage" {
+  project = var.gcp_project_id
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_functions_deployer_sa]
+}
+
+# ログ書き込み権限
+resource "google_project_iam_member" "cloud_functions_deployer_log_writer" {
+  project = var.gcp_project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_functions_deployer_sa]
+}
+
+# サービスアカウント利用者権限
+resource "google_project_iam_member" "cloud_functions_deployer_sa_user" {
+  project = var.gcp_project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_functions_deployer_sa]
+}
+
 # GitHubリポジトリにWorkload Identity連携を設定
 resource "google_iam_workload_identity_pool" "github_pool" {
   project                   = var.gcp_project_id
@@ -100,57 +228,56 @@ resource "google_service_account" "discord_auth_callback_sa" {
 
 # サービスアカウントにDISCORD_CLIENT_IDシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "discord_client_id_accessor" {
-  project   = google_secret_manager_secret.discord_client_id.project
-  secret_id = google_secret_manager_secret.discord_client_id.secret_id
+  project   = var.gcp_project_id
+  secret_id = google_secret_manager_secret.secrets["DISCORD_CLIENT_ID"].secret_id
   role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
   member    = "serviceAccount:${google_service_account.discord_auth_callback_sa.email}" # サービスアカウントのメールアドレスを参照
 
   # シークレットとサービスアカウントが作成されてから実行
   depends_on = [
-    google_secret_manager_secret.discord_client_id,
+    google_secret_manager_secret.secrets,
     google_service_account.discord_auth_callback_sa,
   ]
 }
 
 # サービスアカウントにDISCORD_CLIENT_SECRETシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "discord_client_secret_accessor" {
-  project   = google_secret_manager_secret.discord_client_secret.project
-  secret_id = google_secret_manager_secret.discord_client_secret.secret_id
+  project   = var.gcp_project_id
+  secret_id = google_secret_manager_secret.secrets["DISCORD_CLIENT_SECRET"].secret_id
   role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
   member    = "serviceAccount:${google_service_account.discord_auth_callback_sa.email}" # サービスアカウントのメールアドレスを参照
 
   depends_on = [
-    google_secret_manager_secret.discord_client_secret,
+    google_secret_manager_secret.secrets,
     google_service_account.discord_auth_callback_sa,
   ]
 }
 
 # サービスアカウントにDISCORD_REDIRECT_URIシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "discord_redirect_uri_accessor" {
-  project   = google_secret_manager_secret.discord_redirect_uri.project
-  secret_id = google_secret_manager_secret.discord_redirect_uri.secret_id
+  project   = var.gcp_project_id
+  secret_id = google_secret_manager_secret.secrets["DISCORD_REDIRECT_URI"].secret_id
   role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
   member    = "serviceAccount:${google_service_account.discord_auth_callback_sa.email}" # サービスアカウントのメールアドレスを参照
 
   depends_on = [
-    google_secret_manager_secret.discord_redirect_uri,
+    google_secret_manager_secret.secrets,
     google_service_account.discord_auth_callback_sa,
   ]
 }
 
 # サービスアカウントにDISCORD_TARGET_GUILD_IDシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "discord_target_guild_id_accessor" {
-  project   = google_secret_manager_secret.discord_target_guild_id.project
-  secret_id = google_secret_manager_secret.discord_target_guild_id.secret_id
+  project   = var.gcp_project_id
+  secret_id = google_secret_manager_secret.secrets["DISCORD_TARGET_GUILD_ID"].secret_id
   role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
   member    = "serviceAccount:${google_service_account.discord_auth_callback_sa.email}" # サービスアカウントのメールアドレスを参照
 
   depends_on = [
-    google_secret_manager_secret.discord_target_guild_id,
+    google_secret_manager_secret.secrets,
     google_service_account.discord_auth_callback_sa,
   ]
 }
-
 
 # ------------------------------------------------------------------------------
 # fetchYouTubeVideos関数用のサービスアカウントとIAM権限設定
@@ -174,13 +301,13 @@ resource "google_project_iam_member" "fetch_youtube_videos_firestore_user" {
 
 # サービスアカウントにYOUTUBE_API_KEYシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "youtube_api_key_accessor" {
-  project   = google_secret_manager_secret.youtube_api_key.project
-  secret_id = google_secret_manager_secret.youtube_api_key.secret_id
+  project   = var.gcp_project_id
+  secret_id = google_secret_manager_secret.secrets["YOUTUBE_API_KEY"].secret_id
   role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
   member    = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
 
   depends_on = [
-    google_secret_manager_secret.youtube_api_key,
+    google_secret_manager_secret.secrets,
     google_service_account.fetch_youtube_videos_sa,
   ]
 }
@@ -202,7 +329,6 @@ resource "google_project_iam_member" "fetch_youtube_videos_run_invoker" {
 
   depends_on = [google_service_account.fetch_youtube_videos_sa]
 }
-
 
 # ------------------------------------------------------------------------------
 # サービス間の相互作用のためのIAMバインディング（スケジューラー -> Pub/Sub -> 関数）

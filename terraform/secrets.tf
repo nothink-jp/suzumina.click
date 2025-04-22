@@ -1,91 +1,116 @@
-# Discord Client ID シークレット
-# Discordアプリケーションの認証に使用するクライアントID
-resource "google_secret_manager_secret" "discord_client_id" {
-  project   = var.gcp_project_id
-  secret_id = "DISCORD_CLIENT_ID"
+# ==============================================================================
+# Secret Manager 設定
+# ==============================================================================
+# 概要: アプリケーションで使用する環境変数・シークレットの管理
+# 注: APIの有効化は api_services.tf で一元管理されています
+# ==============================================================================
 
-  replication {
-    user_managed {
-      replicas { # レプリカをブロックとして定義
-        location = "asia-northeast1" # レプリカの地理的位置を指定（東京リージョン）
-      }
+# シークレット定義のためのローカル変数
+locals {
+  # すべてのシークレットに共通の設定
+  common_secret_settings = {
+    replication_location = "asia-northeast1"  # 東京リージョン
+    labels = {
+      "managed-by" = "terraform"
+      "project"    = "suzumina-click"
     }
   }
 
-  depends_on = [google_project_service.secretmanager]
-}
-
-# Discord Client Secret シークレット
-# Discordアプリケーションの認証に使用するクライアントシークレット
-resource "google_secret_manager_secret" "discord_client_secret" {
-  project   = var.gcp_project_id
-  secret_id = "DISCORD_CLIENT_SECRET"
-
-  replication {
-    user_managed {
-      replicas {
-        location = "asia-northeast1"
-      }
+  # Discord認証関連シークレット
+  discord_secrets = [
+    {
+      id          = "DISCORD_CLIENT_ID"
+      description = "Discord OAuthアプリケーションのクライアントID"
+    },
+    {
+      id          = "DISCORD_CLIENT_SECRET"
+      description = "Discord OAuthアプリケーションのクライアントシークレット"
+    },
+    {
+      id          = "DISCORD_REDIRECT_URI"
+      description = "Discord認証後のリダイレクトURI"
+    },
+    {
+      id          = "DISCORD_TARGET_GUILD_ID"
+      description = "メンバーシップ確認対象のDiscordサーバー（ギルド）ID"
     }
-  }
-  depends_on = [google_project_service.secretmanager]
-}
+  ]
 
-# Discord リダイレクトURI シークレット
-# OAuth2認証成功後のリダイレクト先URL
-resource "google_secret_manager_secret" "discord_redirect_uri" {
-  project   = var.gcp_project_id
-  secret_id = "DISCORD_REDIRECT_URI"
-
-  replication {
-    user_managed {
-      replicas {
-        location = "asia-northeast1"
-      }
+  # API関連シークレット
+  api_secrets = [
+    {
+      id          = "YOUTUBE_API_KEY"
+      description = "YouTube Data APIキー"
     }
-  }
-  depends_on = [google_project_service.secretmanager]
+  ]
+
+  # すべてのシークレットをまとめる
+  all_secrets = concat(local.discord_secrets, local.api_secrets)
 }
 
-# Discord ターゲットギルドID シークレット
-# 認証対象となるDiscordサーバー（ギルド）のID
-resource "google_secret_manager_secret" "discord_target_guild_id" {
+# シークレットの作成
+# 注: 既存のシークレットがある場合は、先に以下のコマンドでインポートしてください:
+# terraform import 'google_secret_manager_secret.secrets["DISCORD_CLIENT_ID"]' projects/suzumina-click-firebase/secrets/DISCORD_CLIENT_ID
+resource "google_secret_manager_secret" "secrets" {
+  for_each  = { for secret in local.all_secrets : secret.id => secret }
+  
   project   = var.gcp_project_id
-  secret_id = "DISCORD_TARGET_GUILD_ID"
-
-  replication {
-    user_managed {
-      replicas {
-        location = "asia-northeast1"
-      }
-    }
+  secret_id = each.key
+  
+  # メタデータとしてシークレットの説明を追加
+  labels = merge(local.common_secret_settings.labels, {
+    "category" = contains([for s in local.discord_secrets : s.id], each.key) ? "discord" : "api"
+  })
+  
+  annotations = {
+    description = each.value.description
   }
-  depends_on = [google_project_service.secretmanager]
-}
-
-# YouTube Data API キー シークレット
-# YouTubeデータ取得に使用するAPIキー
-resource "google_secret_manager_secret" "youtube_api_key" {
-  project   = var.gcp_project_id
-  secret_id = "YOUTUBE_API_KEY"
 
   replication {
     user_managed {
       replicas {
-        location = "asia-northeast1" # 既存の設定と合わせる
+        location = local.common_secret_settings.replication_location
       }
     }
   }
+
+  # 既存のシークレット再作成エラーを防止するための設定
+  lifecycle {
+    # 作成に失敗した場合でもリソースをステートに保持し、次回以降のapplyでスキップされるようにする
+    prevent_destroy = true
+    # シークレットの内容（バージョン）は他の方法で管理されるため無視
+    ignore_changes = [
+      labels,
+      annotations
+    ]
+  }
+
+  # api_services.tfで定義されているgoogle_project_service.secretmanagerを参照
   depends_on = [google_project_service.secretmanager]
 }
 
+# シークレットアクセス・管理用のカスタムロール
+resource "google_project_iam_custom_role" "secret_manager_accessor_role" {
+  project     = var.gcp_project_id
+  role_id     = "secretManagerAccessor"
+  title       = "Secret Manager Accessor Role"
+  description = "カスタムロールでSecret Managerへのアクセスのみを許可"
+  permissions = [
+    "secretmanager.secrets.get",
+    "secretmanager.versions.access",
+    "secretmanager.versions.get"
+  ]
+}
 
-# TODO: 関数実行サービスアカウントに Secret Manager へのアクセス権限を付与
-# data "google_compute_default_service_account" "default" {}
-# resource "google_secret_manager_secret_iam_member" "discord_client_id_accessor" {
-#   project   = google_secret_manager_secret.discord_client_id.project
-#   secret_id = google_secret_manager_secret.discord_client_id.secret_id
-#   role      = "roles/secretmanager.secretAccessor"
-#   member    = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-# }
-# ... 他のシークレットも同様 ...
+# 出力値 - シークレットの設定状況
+output "secrets_info" {
+  value = {
+    for id, secret in google_secret_manager_secret.secrets :
+    id => {
+      name = secret.name
+      category = contains([for s in local.discord_secrets : s.id], id) ? "discord" : "api"
+    }
+  }
+  description = "作成されたシークレットの一覧"
+  sensitive   = false  # シークレットの値ではなくメタデータのみなので非センシティブ
+}

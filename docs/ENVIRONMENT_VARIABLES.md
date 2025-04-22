@@ -4,9 +4,9 @@
 
 ## 1. ローカル開発用環境変数 (`.env.local`)
 
-Next.jsアプリケーション開発時に使用する環境変数は、**モノレポのルートディレクトリ**に作成する `.env.local` ファイルに記述します。このファイルは `.gitignore` に含まれているため、Gitリポジトリにはコミットされません。
+Next.jsアプリケーション開発時に使用する環境変数は、**`apps/web` ディレクトリ**に作成する `.env.local` ファイルに記述します。このファイルは `.gitignore` に含まれているため、Gitリポジトリにはコミットされません。
 
-**ファイル:** `.env.local` (プロジェクトルートに作成)
+**ファイル:** `apps/web/.env.local` (Webアプリケーションディレクトリに作成)
 
 **必要な変数:**
 
@@ -114,7 +114,7 @@ export const discordAuthCallback = onCall(
 
 Cloud Functions v2をローカルでテストするには、以下の手順で環境変数を設定します：
 
-1. `.env.local` または `.env.functions` ファイルに必要な環境変数を設定:
+1. `apps/functions/.env.local` ファイルに必要な環境変数を設定:
 
 ```bash
 # 関数のテスト用環境変数

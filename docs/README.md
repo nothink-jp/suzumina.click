@@ -12,12 +12,16 @@
 ## プロジェクト構成
 
 **2025年4月22日のモノレポ構成移行により、ディレクトリ構造が更新されています。**
+**2025年5月2日のCI/CD改善により、デプロイプロセスが統合されました。**
 
 ```sh
 .
 ├── .clinerules          # Cline (開発支援AI) 設定ファイル
 ├── .github/             # GitHub Actions ワークフロー定義
 │   └── workflows/       # CI/CD ワークフローファイル
+│       ├── ci.yml           # 継続的インテグレーション
+│       ├── auto-deploy.yml  # 変更検知による自動デプロイ
+│       └── deploy-production.yml # 本番環境デプロイ
 ├── .gitignore           # Git 無視リスト
 ├── apps/                # アプリケーションコード (モノレポ)
 │   ├── web/             # Next.jsウェブアプリケーション
@@ -28,14 +32,11 @@
 │   │   ├── tsconfig.json # TypeScript設定
 │   │   ├── public/      # 静的ファイル
 │   │   └── src/         # アプリケーションソース
-│   └── functions/       # Firebase Cloud Functions（認証機能のみ）
+│   └── functions/       # Cloud Functions（認証機能、YouTube動画取得など）
 ├── packages/            # 共有パッケージ（将来的に使用予定）
 ├── terraform/           # Terraform インフラ定義
 ├── docs/                # プロジェクトドキュメント
-├── scripts/             # 開発・デプロイスクリプト
 ├── biome.json           # Biome (フォーマッター/リンター) 設定
-├── cloudbuild.yaml      # Google Cloud Build 設定
-├── skaffold.yaml        # Skaffold 設定ファイル
 ├── package.json         # ルート依存関係とモノレポスクリプト
 ├── pnpm-workspace.yaml  # pnpm ワークスペース設定
 ├── tsconfig.json        # ルート TypeScript 設定
@@ -49,7 +50,7 @@
   - **`src/components/`**: 共通コンポーネント
   - **`src/lib/`**: ユーティリティ・サービス連携
 
-- **`apps/functions/`**: Firebase Cloud Functions
+- **`apps/functions/`**: GCP Cloud Functions
   - **`discordAuthCallback`**: Discord認証コールバック処理（認証専用）
   - **`fetchYouTubeVideos`**: YouTube動画情報取得バッチ
 
@@ -72,11 +73,13 @@
 - **[開発環境セットアップ](./DEVELOPMENT_SETUP.md)**: 開発環境の構築手順
 - **[環境変数](./ENVIRONMENT_VARIABLES.md)**: 必要な環境変数の説明
 - **[デプロイ手順マニュアル](./DEPLOYMENT.md)**: CI/CDとデプロイの詳細
+- **[Terraformローカル実行](./TERRAFORM_LOCAL.md)**: ローカル環境でのTerraform実行手順
 
 ### インフラストラクチャ
 
 - **[インフラ監査](./INFRA_AUDIT.md)**: 現在のインフラ構成の詳細
 - **[モノレポ移行](./MONOREPO_MIGRATION.md)**: モノレポ構成とCloud Run移行の詳細
+- **[CI/CDパイプライン](./CI_CD.md)**: CI/CDパイプラインの概要と使用方法
 
 ### プロダクト設計
 
@@ -90,16 +93,17 @@
 
 ## インフラストラクチャの概要
 
-**現在のインフラストラクチャ（2025年4月22日時点）:**
+**現在のインフラストラクチャ（2025年5月2日時点）:**
 
 - **ホスティング**: Google Cloud Run (Next.js standalone)
-- **ビルドパイプライン**: Cloud Build + GitHub Actions
+- **CI/CDパイプライン**: GitHub Actions
 - **認証**: Firebase Authentication (Discord OAuth)
 - **バックエンド**: Cloud Functions
 - **データベース**: Firestore
 
 **詳細情報:**
 - インフラ構成の詳細は [インフラ監査レポート](./INFRA_AUDIT.md) を参照
+- CI/CDパイプラインの詳細は [CI/CDパイプライン](./CI_CD.md) を参照
 - デプロイ手順は [デプロイ手順マニュアル](./DEPLOYMENT.md) を参照
 
 ## 開発フロー
@@ -108,7 +112,8 @@
 
 1. **ローカル開発**: モノレポ構成で `pnpm dev` を使用
 2. **コードレビュー**: GitHub Pull Requestsでレビュー
-3. **デプロイ**: GitHub Actionsを使用したステージング環境へのデプロイ
+3. **自動テスト・検証**: GitHub Actionsによる自動テスト
+4. **自動デプロイ**: 変更に応じた自動デプロイ（パスベースのフィルタリング）
 
 **注: 2025年4月の移行計画変更により、現在はステージング環境のみで開発を行っています。**
 

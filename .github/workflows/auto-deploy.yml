@@ -1,0 +1,300 @@
+name: '変更検知による自動デプロイ'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Web アプリケーション変更時
+      - 'apps/web/**'
+      # Cloud Functions 変更時
+      - 'apps/functions/**'
+
+# 共通の環境変数
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '10'
+  REGION: 'asia-northeast1'
+
+jobs:
+  # 変更を検出するジョブ
+  detect-changes:
+    name: '変更検出'
+    runs-on: ubuntu-latest
+    outputs:
+      web-changed: ${{ steps.filter.outputs.web }}
+      functions-changed: ${{ steps.filter.outputs.functions }}
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # 直前のコミットとの差分を検出するために必要
+      
+      # 変更ファイルのパスフィルタリング
+      - name: パス変更検出フィルタ
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+            functions:
+              - 'apps/functions/**'
+      
+      # 検出結果の出力
+      - name: 変更検出結果
+        run: |
+          echo "変更検出結果:"
+          echo "- Webアプリケーション: ${{ steps.filter.outputs.web == 'true' && '変更あり' || '変更なし' }}"
+          echo "- Cloud Functions: ${{ steps.filter.outputs.functions == 'true' && '変更あり' || '変更なし' }}"
+
+  # WebアプリケーションのCIとデプロイ
+  deploy-web-app:
+    name: 'Webアプリケーションデプロイ'
+    needs: detect-changes
+    if: needs.detect-changes.outputs.web-changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+      
+      - name: Node.js のセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: pnpm のインストール
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      
+      - name: 依存関係のキャッシュ
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-web-${{ hashFiles('apps/web/pnpm-lock.yaml', 'pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-web-
+      
+      - name: 依存関係のインストール
+        run: pnpm install
+      
+      # テスト実行
+      - name: Webアプリのテスト
+        run: pnpm --filter @suzumina.click/web test
+      
+      - name: Next.jsアプリのビルド
+        run: pnpm --filter @suzumina.click/web build
+      
+      # 最小権限のサービスアカウントでGoogle Cloudに認証
+      - name: Google Cloud認証の設定
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'cloud-run-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+      
+      # gcloud CLIをセットアップ
+      - name: gcloud CLIのセットアップ
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      
+      # Docker認証の設定
+      - name: Dockerの認証設定
+        run: |
+          gcloud auth configure-docker asia-northeast1-docker.pkg.dev
+      
+      # Dockerイメージのビルドとプッシュ
+      - name: Dockerイメージのビルドとプッシュ
+        id: docker-build
+        run: |
+          # イメージタグの設定（コミットハッシュとlatestを両方設定）
+          GIT_SHA=$(git rev-parse --short HEAD)
+          IMAGE_BASE="asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/suzumina-click/nextjs-app"
+          IMAGE_TAG="${IMAGE_BASE}:${GIT_SHA}"
+          IMAGE_LATEST="${IMAGE_BASE}:latest"
+          
+          echo "イメージをビルドしています: ${IMAGE_TAG}"
+          
+          # ビルドとタグ付け
+          docker build -t ${IMAGE_TAG} -t ${IMAGE_LATEST} ./apps/web
+          
+          # イメージのプッシュ
+          docker push ${IMAGE_TAG}
+          docker push ${IMAGE_LATEST}
+          
+          echo "イメージがプッシュされました: ${IMAGE_TAG}"
+          echo "image=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+      
+      # Cloud Runへのデプロイ
+      - name: Cloud Runへのデプロイ
+        id: deploy-run
+        run: |
+          echo "Cloud Runサービスをデプロイしています..."
+          
+          # デプロイコマンド
+          gcloud run deploy suzumina-click-nextjs-app \
+            --image=${{ steps.docker-build.outputs.image }} \
+            --platform=managed \
+            --region=${{ env.REGION }} \
+            --allow-unauthenticated \
+            --quiet
+          
+          echo "デプロイが完了しました"
+      
+      # デプロイ後の確認
+      - name: デプロイ結果の確認
+        run: |
+          # デプロイされたURLを取得して表示
+          URL=$(gcloud run services describe suzumina-click-nextjs-app --platform=managed --region=${{ env.REGION }} --format="value(status.url)")
+          echo "デプロイURL: $URL"
+          echo "::notice title=Webアプリケーションデプロイ完了::$URL にデプロイされました"
+
+  # Cloud Functionsのデプロイ
+  deploy-cloud-functions:
+    name: 'Cloud Functionsデプロイ'
+    needs: detect-changes
+    if: needs.detect-changes.outputs.functions-changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+      
+      - name: Node.js のセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: pnpm のインストール
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      
+      - name: 依存関係のキャッシュ
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-functions-${{ hashFiles('apps/functions/pnpm-lock.yaml', 'pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-functions-
+      
+      - name: 依存関係のインストール
+        run: pnpm install
+      
+      # テスト実行
+      - name: Cloud Functionsのテスト
+        run: pnpm --filter @suzumina.click/functions test
+      
+      - name: Cloud Functionsのビルド
+        run: pnpm --filter @suzumina.click/functions build
+      
+      # 最小権限のサービスアカウントでGoogle Cloudに認証
+      - name: Google Cloud認証の設定
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+      
+      # gcloud CLIをセットアップ
+      - name: gcloud CLIのセットアップ
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      
+      # 変更があった関数のみをデプロイ（ファイルベースで検出）
+      - name: 変更された関数の検出
+        id: changed-functions
+        run: |
+          # 変更されたファイルからexportされている関数名を抽出
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep "^apps/functions/src/.*\.ts$" | grep -v "\.test\.ts$" || true)
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "変更された関数ファイルはありません"
+            echo "names=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          FUNCTIONS=""
+          for FILE in $CHANGED_FILES; do
+            FUNCS=$(grep -o "export.*async function [a-zA-Z0-9_]\+" $FILE | sed -E 's/export.*function ([a-zA-Z0-9_]+).*/\1/' || true)
+            if [ -n "$FUNCS" ]; then
+              FUNCTIONS="$FUNCTIONS $FUNCS"
+            fi
+          done
+          
+          # 重複を削除して整形
+          FUNCTIONS=$(echo "$FUNCTIONS" | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
+          echo "デプロイする関数: $FUNCTIONS"
+          echo "names=$FUNCTIONS" >> $GITHUB_OUTPUT
+      
+      # 変更された関数のデプロイ
+      - name: 変更されたCloud Functionsのデプロイ
+        if: steps.changed-functions.outputs.names != ''
+        run: |
+          # 関数名のリストをスペースで分割して処理
+          FUNCTIONS="${{ steps.changed-functions.outputs.names }}"
+          for FUNC in $FUNCTIONS; do
+            echo "関数 $FUNC をデプロイしています..."
+            
+            # gcloudコマンドで関数をデプロイ
+            gcloud functions deploy $FUNC \
+              --gen2 \
+              --region=${{ env.REGION }} \
+              --runtime=nodejs20 \
+              --source=./apps/functions \
+              --entry-point=$FUNC
+            
+            if [ $? -eq 0 ]; then
+              echo "関数 $FUNC のデプロイに成功しました"
+            else
+              echo "関数 $FUNC のデプロイに失敗しました"
+              exit 1
+            fi
+          done
+      
+      # デプロイ情報の出力
+      - name: デプロイサマリー
+        if: steps.changed-functions.outputs.names != ''
+        run: |
+          FUNCTIONS="${{ steps.changed-functions.outputs.names }}"
+          echo "デプロイ完了した関数:"
+          for FUNC in $FUNCTIONS; do
+            DETAILS=$(gcloud functions describe $FUNC --region=${{ env.REGION }} --gen2 --format="yaml(url)")
+            URL=$(echo "$DETAILS" | grep "url:" | awk '{print $2}')
+            echo "- $FUNC: $URL"
+          done
+          echo "::notice title=Cloud Functionsデプロイ完了::変更された関数がデプロイされました"
+      
+      # 変更がなかった場合のメッセージ
+      - name: デプロイ不要メッセージ
+        if: steps.changed-functions.outputs.names == ''
+        run: |
+          echo "::notice title=Cloud Functions変更なし::デプロイが必要な関数の変更はありませんでした"
+
+  # デプロイ完了通知
+  notify-deployment:
+    name: 'デプロイ完了通知'
+    needs: [detect-changes, deploy-web-app, deploy-cloud-functions]
+    # Web または Functions のどちらかが変更され、かつデプロイジョブが成功した場合に実行
+    if: |
+      always() &&
+      (needs.detect-changes.outputs.web-changed == 'true' || needs.detect-changes.outputs.functions-changed == 'true') &&
+      (needs.deploy-web-app.result == 'success' || needs.deploy-web-app.result == 'skipped') &&
+      (needs.deploy-cloud-functions.result == 'success' || needs.deploy-cloud-functions.result == 'skipped')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: デプロイ完了メッセージ
+        run: |
+          echo "::notice title=自動デプロイ完了::変更されたコンポーネントが正常にデプロイされました"
+          echo "デプロイ日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
