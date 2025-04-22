@@ -1,0 +1,99 @@
+name: 'デプロイワークフロー'
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'デプロイするブランチ'
+        required: true
+        default: 'main'
+        type: string
+      environment:
+        description: 'デプロイ先の環境'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    # 環境変数の設定
+    env:
+      ENVIRONMENT: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+      
+      - name: Google Cloud認証の設定
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+      
+      # gcloud CLIをセットアップ
+      - name: gcloud CLIのセットアップ
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      
+      # gcloud CLIを使用してCloud Buildトリガーを実行
+      - name: Cloud Buildトリガー実行
+        id: cloudbuild
+        run: |
+          # 置換変数を設定
+          SUBSTITUTIONS="_DEPLOY_ENV=${{ github.event.inputs.environment }},_BRANCH=${{ github.event.inputs.branch }},_CONTEXT_PATH=.,_APP_PATH=apps/web"
+          
+          # トリガー実行コマンド
+          BUILD_INFO=$(gcloud builds triggers run suzumina-click-github-actions-trigger \
+            --source=${{ github.event.inputs.branch }} \
+            --substitutions=$SUBSTITUTIONS \
+            --format=json)
+          
+          # ビルドIDを取得
+          BUILD_ID=$(echo $BUILD_INFO | jq -r '.metadata.build.id')
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          
+          # ビルド情報の表示
+          echo "トリガーされたビルドID: $BUILD_ID"
+          
+      - name: デプロイ状況の出力
+        run: |
+          echo "ビルドID: ${{ steps.cloudbuild.outputs.build_id }}"
+          echo "ログURL: https://console.cloud.google.com/cloud-build/builds;region=global/${{ steps.cloudbuild.outputs.build_id }}?project=${{ secrets.GCP_PROJECT_ID }}"
+          
+      - name: ビルド結果を待機
+        run: |
+          BUILD_ID="${{ steps.cloudbuild.outputs.build_id }}"
+          
+          echo "ビルド完了を待機中..."
+          gcloud builds log --stream "$BUILD_ID" --project=${{ secrets.GCP_PROJECT_ID }}
+          
+          # ビルド成功か確認
+          STATUS=$(gcloud builds describe "$BUILD_ID" --format="value(status)" --project=${{ secrets.GCP_PROJECT_ID }})
+          if [ "$STATUS" != "SUCCESS" ]; then
+            echo "ビルドが失敗しました。ステータス: $STATUS"
+            exit 1
+          fi
+          
+          echo "ビルドが成功しました！"
+          
+          # デプロイされたURLを取得して表示
+          URL=$(gcloud run services describe suzumina-click-nextjs-app --platform managed --region asia-northeast1 --format="value(status.url)" --project=${{ secrets.GCP_PROJECT_ID }})
+          if [ -n "$URL" ]; then
+            echo "デプロイURL: $URL"
+            echo "::notice title=${{ github.event.inputs.environment }}環境のデプロイ完了::$URL にデプロイされました"
+          fi
+          
+          # デプロイ日時と環境情報をログに記録
+          echo "デプロイ情報:"
+          echo "- 環境: ${{ github.event.inputs.environment }}"
+          echo "- ブランチ: ${{ github.event.inputs.branch }}"
+          echo "- デプロイ日時: $(date '+%Y年%m月%d日 %H:%M:%S')"

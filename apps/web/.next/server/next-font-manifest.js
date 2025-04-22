@@ -1,1 +1,1 @@
-self.__NEXT_FONT_MANIFEST="{\n  \"app\": {},\n  \"appUsingSizeAdjust\": false,\n  \"pages\": {},\n  \"pagesUsingSizeAdjust\": false\n}"
+self.__NEXT_FONT_MANIFEST='{"pages":{},"app":{"/Users/nothink/ghq/github.com/nothink-jp/suzumina.click/apps/web/src/app/layout":["static/media/6c1d3e1a02c4bd06-s.p.woff2","static/media/520117a66a7ba836-s.p.woff2"]},"appUsingSizeAdjust":true,"pagesUsingSizeAdjust":false}';

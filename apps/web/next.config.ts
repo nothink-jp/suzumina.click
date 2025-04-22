@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',  // Cloud Run用にstandaloneモードを有効化
+  output: 'standalone',
   images: {
     remotePatterns: [
       {
@@ -13,7 +13,6 @@ const nextConfig: NextConfig = {
       // 他に許可したい外部ドメインがあればここに追加
     ],
   },
-  /* 他の config options があればここに追加 */
 };
 
 export default nextConfig;
