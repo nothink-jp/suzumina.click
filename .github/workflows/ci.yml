@@ -42,11 +42,8 @@ jobs:
       - name: Biome によるコード検証
         run: pnpm lint
 
-      - name: ルートのVitestテスト実行
+      - name: 全てのテスト実行
         run: pnpm test
-
-      - name: Webアプリのテスト実行
-        run: pnpm test:web
 
   build-check:
     name: ビルド検証

@@ -20,7 +20,7 @@
 - **UI スタイリング**: TailwindCSS `4.1.4` + DaisyUI `5.0.27`
 - **UI コンポーネント (スタイルなし)**: Headless UI `2.2.2`
 - **言語**: TypeScript (`^5.8.3`)
-- **テスト**: Vitest (`^3.1.1`), React Testing Library (RTL) (`^16.3.0`)
+- **テスト**: Vitest (`^3.1.2`), React Testing Library (RTL) (`^16.3.0`)
 - **フォーマット/リント**: Biome (`^1.9.4`)
 - **パッケージ管理**: pnpm (`^9.1.0`) + Workspaces
 - **インフラストラクチャ**: Terraform, Google Cloud Run, Firebase Authentication
@@ -86,7 +86,7 @@
 
 - **ディレクトリ構造**:
   - `apps/web/`: Next.jsフロントエンドアプリケーション
-  - `functions/`: Firebase Cloud Functions（認証機能のみ）
+  - `apps/functions/`: Firebase Cloud Functions（認証機能のみ）
   - `packages/`: 共有パッケージ（将来的に使用）
 - **ワークスペース操作**:
   - `pnpm --filter @suzumina.click/web <コマンド>` のようにワークスペース指定で操作します。

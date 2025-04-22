@@ -20,16 +20,16 @@
 │   └── workflows/       # CI/CD ワークフローファイル
 ├── .gitignore           # Git 無視リスト
 ├── apps/                # アプリケーションコード (モノレポ)
-│   └── web/             # Next.jsウェブアプリケーション
-│       ├── Dockerfile   # Next.js アプリ用コンテナ定義
-│       ├── next.config.ts # Next.js 設定ファイル
-│       ├── package.json # アプリケーション依存関係
-│       ├── postcss.config.mjs # PostCSS 設定
-│       ├── tsconfig.json # TypeScript設定
-│       ├── public/      # 静的ファイル
-│       └── src/         # アプリケーションソース
+│   ├── web/             # Next.jsウェブアプリケーション
+│   │   ├── Dockerfile   # Next.js アプリ用コンテナ定義
+│   │   ├── next.config.ts # Next.js 設定ファイル
+│   │   ├── package.json # アプリケーション依存関係
+│   │   ├── postcss.config.mjs # PostCSS 設定
+│   │   ├── tsconfig.json # TypeScript設定
+│   │   ├── public/      # 静的ファイル
+│   │   └── src/         # アプリケーションソース
+│   └── functions/       # Firebase Cloud Functions（認証機能のみ）
 ├── packages/            # 共有パッケージ（将来的に使用予定）
-├── functions/           # Firebase Cloud Functions（認証機能のみ）
 ├── terraform/           # Terraform インフラ定義
 ├── docs/                # プロジェクトドキュメント
 ├── scripts/             # 開発・デプロイスクリプト
@@ -49,7 +49,7 @@
   - **`src/components/`**: 共通コンポーネント
   - **`src/lib/`**: ユーティリティ・サービス連携
 
-- **`functions/`**: Firebase Cloud Functions
+- **`apps/functions/`**: Firebase Cloud Functions
   - **`discordAuthCallback`**: Discord認証コールバック処理（認証専用）
   - **`fetchYouTubeVideos`**: YouTube動画情報取得バッチ
 

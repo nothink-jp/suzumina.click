@@ -9,15 +9,21 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check --apply .",
-    "clean": "rimraf node_modules/.cache coverage .firebase functions/lib/* dist",
+    "clean": "rimraf node_modules/.cache coverage .firebase",
     "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "run-p \"test:web -- --coverage\" \"test:functions -- --coverage\"",
     "test:web": "pnpm --filter @suzumina.click/web test",
+    "test:functions": "pnpm --filter @suzumina.click/functions test",
+    "functions:build": "pnpm --filter @suzumina.click/functions build",
+    "functions:serve": "pnpm --filter @suzumina.click/functions serve",
+    "functions:deploy": "pnpm --filter @suzumina.click/functions deploy",
     "storybook": "pnpm --filter @suzumina.click/web storybook"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
-    "vitest": "^3.1.1"
+    "vitest": "^3.1.2"
   }
 }

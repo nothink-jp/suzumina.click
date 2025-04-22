@@ -1,7 +1,7 @@
 # Functions のソースコードを zip アーカイブ
 data "archive_file" "function_source_zip" {
   type        = "zip"
-  source_dir  = "../functions"                                   # ルートディレクトリからの相対パス
+  source_dir  = "../apps/functions"                               # モノレポ構造に合わせてパスを更新
   output_path = "/tmp/function-source-${var.gcp_project_id}.zip" # 一時的な出力先
 
   # node_modules など不要なファイルを除外 (firebase.json の ignore と合わせる)
@@ -25,7 +25,7 @@ data "archive_file" "function_source_zip" {
 # zip アーカイブを GCS バケットにアップロード
 resource "google_storage_bucket_object" "function_source_archive" {
   # ビルド済みJSファイルのハッシュ値を含めてファイル名を設定（更新を強制するため）
-  name   = "source-${filesha256("../functions/lib/index.js")}.zip"
+  name   = "source-${filesha256("../apps/functions/lib/index.js")}.zip"
   bucket = google_storage_bucket.function_source.name
   source = data.archive_file.function_source_zip.output_path # archive_file の出力パス
 

@@ -1,7 +1,7 @@
 packages:
   - apps/*
   - packages/*
-  - functions
+  # functionsは apps/* に含まれるようになるため削除
 
 onlyBuiltDependencies:
   - '@biomejs/biome'

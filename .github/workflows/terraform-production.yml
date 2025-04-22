@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'functions/**'
+      - 'apps/functions/**'
       - 'terraform/**'
       - '.github/workflows/terraform-*'
 
@@ -37,17 +37,17 @@ jobs:
           path: |
             ~/.pnpm-store
             **/node_modules
-          key: ${{ runner.os }}-pnpm-functions-${{ hashFiles('functions/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-functions-${{ hashFiles('apps/functions/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-functions-
 
       - name: Functionsの依存関係インストール
         run: pnpm install
-        working-directory: ./functions
+        working-directory: ./apps/functions
       
       - name: Functionsのビルド
         run: pnpm run build
-        working-directory: ./functions
+        working-directory: ./apps/functions
 
       # Terraformをセットアップ
       - name: Terraform セットアップ

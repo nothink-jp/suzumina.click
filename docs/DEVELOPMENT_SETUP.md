@@ -112,7 +112,7 @@ pnpm check
 プロジェクトは以下のワークスペース構造になっています：
 
 - `apps/web`: Next.jsフロントエンドアプリケーション
-- `functions`: Firebase Cloud Functions（認証機能のみ）
+- `apps/functions`: Firebase Cloud Functions（認証機能のみ）
 - `packages`: 共有パッケージ（今後の拡張用）
 
 ### 4.2 ワークスペース操作

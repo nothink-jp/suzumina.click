@@ -25,9 +25,9 @@
 ```
 suzumina.click/
 ├── apps/
-│   └── web/              # Next.jsアプリケーション
+│   ├── web/              # Next.jsアプリケーション
+│   └── functions/        # Firebase Functions（認証機能のみで使用）
 ├── packages/             # 共有コード用（将来的に使用予定）
-├── functions/            # Firebase Functions（認証機能のみで使用）
 ├── terraform/            # インフラコード
 └── docs/                 # ドキュメント
 ```
