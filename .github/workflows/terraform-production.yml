@@ -13,10 +13,8 @@ jobs:
   terraform-production:
     name: 'Terraform 本番環境デプロイ'
     runs-on: ubuntu-latest
-    # 手動承認のためにissues:write権限を追加
     permissions:
       contents: read
-      issues: write  # 手動承認プロセスでIssueを作成するために必要
       
     steps:
       - name: リポジトリをチェックアウト
@@ -113,20 +111,8 @@ jobs:
         env:
           TF_VAR_youtube_api_key: ${{ secrets.YOUTUBE_API_KEY }}
       
-      # 本番環境への適用前に確認（手動承認ステップ）
-      - name: 本番環境デプロイの手動承認
-        uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: nothink-jp  # 承認者のGitHubユーザー名を指定
-          minimum-approvals: 1
-          issue-title: "本番環境へのTerraformデプロイ承認"
-          issue-body: "このPRは**本番環境**にTerraformの変更をデプロイします。レビューして承認してください。"
-          exclude-workflow-initiator-as-approver: false
-          
       # Terraformの適用（本番環境へのデプロイ）
       - name: Terraform適用
-        if: success()
         run: |
           terraform apply -var-file="terraform.tfvars" -auto-approve -input=false
         working-directory: ./terraform
