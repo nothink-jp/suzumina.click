@@ -63,6 +63,11 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
           export_environment_variables: true
+          create_credentials_file: true
+          universe: googleapis.com
+          cleanup_credentials: true
+          access_token_lifetime: 3600s
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
 
       # Terraformの初期化
       - name: Terraform初期化
