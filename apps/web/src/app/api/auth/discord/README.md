@@ -1,0 +1,92 @@
+# Discord認証 Server Actions実装
+
+このディレクトリには、Next.jsのServer Actionsを使用したDiscord認証の実装が含まれています。
+
+## 概要
+
+この実装は、従来Cloud Functionsで行っていたDiscord認証処理をNext.jsのServer Actionsに移行したものです。これにより、Cloud Functionsの1つを削減し、コードの一元管理とメンテナンスの簡素化が可能になります。
+
+## ファイル構成
+
+- `types.ts` - Discord認証関連の型定義
+- `utils.ts` - ヘルパー関数（アバターURL生成、環境変数検証など）
+- `actions.ts` - Server Actions実装（Discord認証処理）
+
+## 認証フロー
+
+1. ユーザーがDiscordログインボタンをクリック
+2. Discord OAuth2認証ページへリダイレクト
+3. ユーザーが認証を許可
+4. Discordからコールバックページへリダイレクト（認証コード付き）
+5. コールバックページでServer Actionを呼び出し
+6. Server Actionが以下を実行：
+   - Discordからアクセストークンを取得
+   - ユーザー情報とギルド所属を確認
+   - Firebase Authでユーザー情報を更新/作成
+   - カスタムトークンを生成して返却
+7. フロントエンドでカスタムトークンを使用してFirebase Authにサインイン
+
+## 使用方法
+
+### 環境変数の設定
+
+以下の環境変数を設定する必要があります：
+
+```
+# Discord OAuth2設定
+DISCORD_CLIENT_ID=your-discord-client-id
+DISCORD_CLIENT_SECRET=your-discord-client-secret
+DISCORD_REDIRECT_URI=https://your-domain.com/auth/discord/callback
+DISCORD_TARGET_GUILD_ID=your-discord-guild-id
+
+# Firebase Admin SDK
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
+```
+
+### Server Actionの呼び出し
+
+```typescript
+import { handleDiscordCallback } from "@/app/api/auth/discord/actions";
+
+// Discord認証コードを使用して認証処理を実行
+const result = await handleDiscordCallback(code);
+
+if (result.success && result.customToken) {
+  // カスタムトークンを使用してFirebase Authにサインイン
+  await signInWithCustomToken(auth, result.customToken);
+} else {
+  // エラー処理
+  console.error(result.error);
+}
+```
+
+## セキュリティ上の考慮事項
+
+1. **サービスアカウントキーの管理**：
+   - 本番環境では、サービスアカウントキーをJSON文字列として環境変数に保存するのではなく、Secret Managerを使用して管理することを推奨します。
+   - Cloud Runでは、サービスアカウントの権限を適切に設定し、必要最小限の権限を付与します。
+
+2. **エラーハンドリング**：
+   - ユーザーフレンドリーなエラーメッセージを表示します。
+   - 詳細なエラーログをサーバーサイドで記録します。
+
+## テスト
+
+Server Actionsのテストを作成する際は、以下の点に注意してください：
+
+1. 環境変数のモック
+2. Discord APIのモック
+3. Firebase Admin SDKのモック
+
+```typescript
+// テスト例
+import { handleDiscordCallback } from "./actions";
+import axios from "axios";
+
+// axiosのモック
+jest.mock("axios");
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+describe("handleDiscordCallback", () => {
+  // テストケースを実装
+});

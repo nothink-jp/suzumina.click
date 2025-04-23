@@ -16,22 +16,27 @@ Next.jsアプリケーション開発時に使用する環境変数は、**`apps
 NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=suzumina-click-firebase.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=suzumina-click-firebase
-# 以下は現在のアーキテクチャでは不要
-# NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-# NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-# NEXT_PUBLIC_FIREBASE_APP_ID=...
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=suzumina-click-firebase.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789012
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abcdef1234567890
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-ABCDEFGHIJ
 
 # Discord OAuth 設定 (Discord Developer Portal から取得)
-NEXT_PUBLIC_DISCORD_CLIENT_ID=... (Discord アプリの Client ID)
-
-# Discord OAuth リダイレクト URI
-# ローカル開発: http://localhost:3000/auth/discord/callback
-# Cloud Run: https://{CLOUD_RUN_URL}/auth/discord/callback
+# フロントエンドとサーバーサイドの両方で使用する変数にはNEXT_PUBLIC_プレフィックスを付ける
+NEXT_PUBLIC_DISCORD_CLIENT_ID=123456789012345678 
 NEXT_PUBLIC_DISCORD_REDIRECT_URI=http://localhost:3000/auth/discord/callback
 
-# Discord認証コールバック関数のURL
-# ローカル開発時に関数エミュレータを使う場合のみ必要
-# NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL=http://127.0.0.1:5001/suzumina-click-firebase/asia-northeast1/discordAuthCallback
+# サーバーサイドのみで使用する環境変数（機密情報）
+# クライアント側からは参照できないためNEXT_PUBLICプレフィックスは使用しない
+DISCORD_CLIENT_SECRET=your_discord_client_secret
+DISCORD_TARGET_GUILD_ID=959095494456537158
+
+# Firebase Admin SDK
+# 本番環境ではSecret Managerを使用することを推奨
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"...","private_key_id":"...","private_key":"...","client_email":"...","client_id":"...","auth_uri":"...","token_uri":"...","auth_provider_x509_cert_url":"...","client_x509_cert_url":"..."}
+
+# YouTube Data API Key
+YOUTUBE_API_KEY=your_youtube_api_key_here
 ```
 
 **取得方法:**
@@ -45,12 +50,13 @@ NEXT_PUBLIC_DISCORD_REDIRECT_URI=http://localhost:3000/auth/discord/callback
 - **Discord OAuth 設定:**
     1. [Discord Developer Portal](https://discord.com/developers/applications) を開きます。
     2. 対象のアプリケーションを選択します。
-    3. 「OAuth2」>「General」メニューで `CLIENT ID` を確認します。
+    3. 「OAuth2」>「General」メニューで `CLIENT ID` と `CLIENT SECRET` を確認します。
     4. `REDIRECTS` セクションに、ローカル用とCloud Run用の両方のURLを追加します。
 
 **注意:**
 
 - `NEXT_PUBLIC_` プレフィックスが付いた変数は、ブラウザ側（フロントエンド）のコードからアクセス可能です。
+- サーバーサイドのみで使用する機密情報には `NEXT_PUBLIC_` プレフィックスを付けないでください。
 - `.env.local` ファイルを変更した後は、Next.js開発サーバーの再起動が必要です。
 
 ## 2. Cloud Runとクラウド環境の環境変数
@@ -61,11 +67,12 @@ Cloud Run環境では、環境変数はSecret Managerで管理し、Terraformを
 
 **管理されるシークレット:**
 
-- `FIREBASE_API_KEY`: Firebase APIキー
-- `DISCORD_CLIENT_ID`: Discord アプリの Client ID
+- `NEXT_PUBLIC_FIREBASE_API_KEY`: Firebase APIキー
+- `NEXT_PUBLIC_DISCORD_CLIENT_ID`: Discord アプリの Client ID
+- `NEXT_PUBLIC_DISCORD_REDIRECT_URI`: Cloud RunのURLを含むリダイレクトURI
 - `DISCORD_CLIENT_SECRET`: Discord アプリの Client Secret
-- `DISCORD_REDIRECT_URI`: Cloud RunのURLを含むリダイレクトURI
 - `DISCORD_TARGET_GUILD_ID`: 認証対象のDiscordサーバーID
+- `FIREBASE_SERVICE_ACCOUNT_KEY`: Firebase AdminSDKのサービスアカウントキー
 - `YOUTUBE_API_KEY`: YouTube Data APIキー
 
 **設定方法:**
@@ -96,7 +103,7 @@ Cloud Functions v2では、`defineSecret`を使用してSecret Managerの値を�
 import { defineSecret } from 'firebase-functions/params';
 
 // シークレットの定義
-const discordClientId = defineSecret('DISCORD_CLIENT_ID');
+const discordClientId = defineSecret('NEXT_PUBLIC_DISCORD_CLIENT_ID');
 const discordClientSecret = defineSecret('DISCORD_CLIENT_SECRET');
 
 // 関数内での使用
@@ -118,7 +125,7 @@ Cloud Functions v2をローカルでテストするには、以下の手順で�
 
 ```bash
 # 関数のテスト用環境変数
-DISCORD_CLIENT_ID=your_client_id_here
+NEXT_PUBLIC_DISCORD_CLIENT_ID=your_client_id_here
 DISCORD_CLIENT_SECRET=your_client_secret_here
 DISCORD_TARGET_GUILD_ID=959095494456537158
 YOUTUBE_API_KEY=your_youtube_api_key_here
@@ -147,6 +154,23 @@ export function getDiscordSecret(): string {
 }
 ```
 
+## 環境変数の命名規則
+
+プロジェクト全体で一貫した環境変数の命名規則を使用します:
+
+1. **クライアント側とサーバー側の両方で使用する変数**: `NEXT_PUBLIC_` プレフィックスを付ける
+   - 例: `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_DISCORD_CLIENT_ID`
+
+2. **サーバー側のみで使用する変数**: プレフィックスなし
+   - 例: `DISCORD_CLIENT_SECRET`, `FIREBASE_SERVICE_ACCOUNT_KEY`
+
+3. **サービス別のグループ化**: サービス名を含める
+   - Firebase関連: `FIREBASE_`, `NEXT_PUBLIC_FIREBASE_`
+   - Discord関連: `DISCORD_`, `NEXT_PUBLIC_DISCORD_`
+   - YouTube関連: `YOUTUBE_`
+
+この命名規則に従うことで、環境変数の管理が容易になり、不要な重複や混乱を避けることができます。
+
 ## 関連ドキュメント
 
 以下のドキュメントも環境変数の設定に関連する情報を含んでいます：
@@ -155,3 +179,4 @@ export function getDiscordSecret(): string {
 - [デプロイ手順マニュアル](./DEPLOYMENT.md#環境変数の設定)
 - [認証設計](./AUTH.md#環境別設定)
 - [インフラ監査レポート](./INFRA_AUDIT.md#11-リソース管理の方式)
+- [Discord認証移行計画](./discord_auth_migration.md#3-環境変数の設定)

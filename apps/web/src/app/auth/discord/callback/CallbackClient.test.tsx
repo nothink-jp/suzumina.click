@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { signInWithCustomToken } from "firebase/auth";
 // src/app/auth/discord/callback/CallbackClient.test.tsx
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi, type Mock } from "vitest";
 import CallbackClient from "./CallbackClient";
 import type { Auth } from "firebase/auth";
 
@@ -10,6 +10,23 @@ const mockedPush = vi.fn();
 const mockSearchParamsGet = vi.fn();
 // authのモック（テスト中に変更できるようにする）
 let mockAuth: Auth | null = {} as Auth;
+
+// Server Actionsのモック
+vi.mock("@/app/api/auth/discord/actions", () => ({
+  handleDiscordCallback: vi.fn().mockImplementation(async (code: string) => {
+    // デフォルトの実装
+    if (!process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID) {
+      return {
+        success: false,
+        error: "Discord設定が不足しています: NEXT_PUBLIC_DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, NEXT_PUBLIC_DISCORD_REDIRECT_URI, DISCORD_TARGET_GUILD_ID"
+      };
+    }
+    return {
+      success: true,
+      customToken: "test-custom-token"
+    };
+  })
+}));
 
 // firebase/authをモック
 vi.mock("firebase/auth", () => ({
@@ -35,10 +52,6 @@ vi.mock("next/navigation", () => {
   };
 });
 
-// グローバルfetchをモック
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
 // コンソール出力をモック
 const originalConsoleError = console.error;
 let consoleErrorMock: ReturnType<typeof vi.fn>;
@@ -51,12 +64,6 @@ describe("CallbackClientコンポーネント", () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
-    // fetchのデフォルト実装を提供
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
-
     // authを初期化
     mockAuth = {} as Auth;
 
@@ -64,11 +71,13 @@ describe("CallbackClientコンポーネント", () => {
     consoleErrorMock = vi.fn();
     console.error = consoleErrorMock;
 
-    // 環境変数のモック
+    // 環境変数のモック - Discord認証に必要な変数を追加
     process.env = {
       ...originalEnv,
-      NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL:
-        "https://test-functions-url.com",
+      NEXT_PUBLIC_DISCORD_CLIENT_ID: "test-discord-client-id",
+      NEXT_PUBLIC_DISCORD_REDIRECT_URI: "http://localhost:3000/auth/discord/callback",
+      DISCORD_CLIENT_SECRET: "test-discord-client-secret",
+      DISCORD_TARGET_GUILD_ID: "test-guild-id"
     };
   });
 
@@ -91,24 +100,18 @@ describe("CallbackClientコンポーネント", () => {
   });
 
   test("デフォルトのFunctions URLが使用される場合のテスト", async () => {
-    // 環境変数を完全に削除（値をundefinedに設定）
-    const envBackup = { ...process.env };
-    process.env = { ...envBackup };
-    // 特定のキーの値をundefinedに設定
-    process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_AUTH_CALLBACK_URL = undefined;
-
     // 認証コードが存在するようにモック
     mockSearchParamsGet.mockReturnValue("test-code");
 
-    // fetchの挙動をモック
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          success: true,
-          customToken: "test-custom-token",
-        }),
+    // Server Actionのモック実装を上書き
+    const { handleDiscordCallback } = await import("@/app/api/auth/discord/actions");
+    (handleDiscordCallback as Mock).mockResolvedValue({
+      success: true,
+      customToken: "test-custom-token"
     });
+
+    // signInWithCustomTokenのレスポンスをモック
+    (signInWithCustomToken as Mock).mockResolvedValue({});
 
     // コンポーネントをレンダリング
     render(<CallbackClient />);
@@ -117,24 +120,9 @@ describe("CallbackClientコンポーネント", () => {
     expect(screen.getByText("認証処理中...")).toBeInTheDocument();
     expect(screen.getByTestId("loading-indicator")).toBeInTheDocument();
 
-    // fetchがデフォルトURLで呼び出されることを確認
+    // Server Actionが呼び出されたことを確認
     await waitFor(() => {
-      // 呼び出し引数を完全に検証
-      const expectedUrl =
-        "http://127.0.0.1:5001/suzumina-click-firebase/asia-northeast1/discordAuthCallback";
-      const expectedOptions = {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ code: "test-code" }),
-      };
-
-      // mockFetchが正しい引数で呼ばれたか確認
-      expect(mockFetch).toHaveBeenCalledWith(
-        expectedUrl,
-        expect.objectContaining(expectedOptions),
-      );
+      expect(handleDiscordCallback).toHaveBeenCalledWith("test-code");
     });
   });
 
@@ -142,18 +130,15 @@ describe("CallbackClientコンポーネント", () => {
     // 認証コードが存在するようにモック
     mockSearchParamsGet.mockReturnValue("test-code");
 
-    // fetchのレスポンスをモック
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          success: true,
-          customToken: "test-custom-token",
-        }),
+    // Server Actionのモック実装を上書き
+    const { handleDiscordCallback } = await import("@/app/api/auth/discord/actions");
+    (handleDiscordCallback as Mock).mockResolvedValue({
+      success: true,
+      customToken: "test-custom-token"
     });
 
     // signInWithCustomTokenのレスポンスをモック
-    (signInWithCustomToken as vi.Mock).mockResolvedValue({});
+    (signInWithCustomToken as Mock).mockResolvedValue({});
 
     render(<CallbackClient />);
 
@@ -165,27 +150,15 @@ describe("CallbackClientコンポーネント", () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          "認証に成功しました！ホームページにリダイレクトします...",
-        ),
+          "認証に成功しました！ホームページにリダイレクトします..."
+        )
       ).toBeInTheDocument();
     });
-
-    // 正しいパラメータでfetchが呼び出されたことを確認
-    expect(mockFetch).toHaveBeenCalledWith(
-      "https://test-functions-url.com",
-      expect.objectContaining({
-        method: "POST",
-        headers: expect.objectContaining({
-          "Content-Type": "application/json",
-        }),
-        body: JSON.stringify({ code: "test-code" }),
-      }),
-    );
 
     // カスタムトークンでサインインが呼び出されたことを確認
     expect(signInWithCustomToken).toHaveBeenCalledWith(
       expect.anything(),
-      "test-custom-token",
+      "test-custom-token"
     );
 
     // ホームページへのリダイレクトが呼び出されたことを確認
@@ -196,14 +169,11 @@ describe("CallbackClientコンポーネント", () => {
     // 認証コードが存在するようにモック
     mockSearchParamsGet.mockReturnValue("test-code");
 
-    // fetchのレスポンスが失敗するようにモック
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: () =>
-        Promise.resolve({
-          error: "サーバー内部エラー",
-        }),
+    // Server Actionのモック実装を上書き
+    const { handleDiscordCallback } = await import("@/app/api/auth/discord/actions");
+    (handleDiscordCallback as Mock).mockResolvedValue({
+      success: false,
+      error: "サーバー内部エラー"
     });
 
     render(<CallbackClient />);
@@ -224,12 +194,9 @@ describe("CallbackClientコンポーネント", () => {
     // 認証コードが存在するようにモック
     mockSearchParamsGet.mockReturnValue("test-code");
 
-    // fetchのレスポンスが失敗するようにモック
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: () => Promise.reject(new Error("JSON parse error")),
-    });
+    // Server Actionのモック実装を上書き
+    const { handleDiscordCallback } = await import("@/app/api/auth/discord/actions");
+    (handleDiscordCallback as Mock).mockRejectedValue(new Error("不明なサーバーエラー"));
 
     render(<CallbackClient />);
 
@@ -249,14 +216,11 @@ describe("CallbackClientコンポーネント", () => {
     // 認証コードが存在するようにモック
     mockSearchParamsGet.mockReturnValue("test-code");
 
-    // fetchのレスポンスはok=trueだがトークンがないようにモック
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          success: true,
-          // customTokenがない
-        }),
+    // Server Actionのモック実装を上書き
+    const { handleDiscordCallback } = await import("@/app/api/auth/discord/actions");
+    (handleDiscordCallback as Mock).mockResolvedValue({
+      success: true,
+      // customTokenがない
     });
 
     render(<CallbackClient />);
@@ -266,25 +230,20 @@ describe("CallbackClientコンポーネント", () => {
       expect(screen.getByText("認証に失敗しました。")).toBeInTheDocument();
     });
 
-    // エラーメッセージが表示されることを確認
-    expect(
-      screen.getByText(/カスタムトークンの取得に失敗しました/),
-    ).toBeInTheDocument();
+    // エラーメッセージが表示されることを確認（実際の実装に合わせて更新）
+    expect(screen.getByText(/認証処理に失敗しました/)).toBeInTheDocument();
   });
 
   test("レスポンスがsuccessでない場合はエラーメッセージを表示すること", async () => {
     // 認証コードが存在するようにモック
     mockSearchParamsGet.mockReturnValue("test-code");
 
-    // fetchのレスポンスがsuccessでないようにモック
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          success: false,
-          error: "権限がありません",
-          customToken: "test-token", // トークンはあるがsuccessでない
-        }),
+    // Server Actionのモック実装を上書き
+    const { handleDiscordCallback } = await import("@/app/api/auth/discord/actions");
+    (handleDiscordCallback as Mock).mockResolvedValue({
+      success: false,
+      error: "権限がありません",
+      customToken: "test-token" // トークンはあるがsuccessでない
     });
 
     render(<CallbackClient />);
@@ -302,14 +261,11 @@ describe("CallbackClientコンポーネント", () => {
     // 認証コードが存在するようにモック
     mockSearchParamsGet.mockReturnValue("test-code");
 
-    // fetchのレスポンスをモック
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          success: true,
-          customToken: "test-custom-token",
-        }),
+    // Server Actionのモック実装を上書き
+    const { handleDiscordCallback } = await import("@/app/api/auth/discord/actions");
+    (handleDiscordCallback as Mock).mockResolvedValue({
+      success: true,
+      customToken: "test-custom-token"
     });
 
     // authをnullに設定
@@ -324,7 +280,7 @@ describe("CallbackClientコンポーネント", () => {
 
     // エラーメッセージが表示されることを確認
     expect(
-      screen.getByText(/認証システムの初期化に失敗しました/),
+      screen.getByText(/認証システムの初期化に失敗しました/)
     ).toBeInTheDocument();
   });
 
@@ -332,19 +288,16 @@ describe("CallbackClientコンポーネント", () => {
     // 認証コードが存在するようにモック
     mockSearchParamsGet.mockReturnValue("test-code");
 
-    // fetchのレスポンスをモック
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          success: true,
-          customToken: "test-custom-token",
-        }),
+    // Server Actionのモック実装を上書き
+    const { handleDiscordCallback } = await import("@/app/api/auth/discord/actions");
+    (handleDiscordCallback as Mock).mockResolvedValue({
+      success: true,
+      customToken: "test-custom-token"
     });
 
     // signInWithCustomTokenがエラーを投げるようにモック
-    (signInWithCustomToken as vi.Mock).mockRejectedValue(
-      new Error("認証エラー"),
+    (signInWithCustomToken as Mock).mockRejectedValue(
+      new Error("認証エラー")
     );
 
     render(<CallbackClient />);
@@ -360,7 +313,7 @@ describe("CallbackClientコンポーネント", () => {
     // コンソールエラーが呼び出されることを確認
     expect(consoleErrorMock).toHaveBeenCalledWith(
       "Authentication failed:",
-      expect.any(Error),
+      expect.any(Error)
     );
   });
 });
