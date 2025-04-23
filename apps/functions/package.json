@@ -1,6 +1,6 @@
 {
   "name": "@suzumina.click/functions",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
