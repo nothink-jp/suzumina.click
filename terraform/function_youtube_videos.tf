@@ -8,7 +8,7 @@
 # デプロイの共通設定
 locals {
   youtube_function_name = "fetchYouTubeVideos"
-  youtube_runtime       = "nodejs20"
+  youtube_runtime       = "nodejs22"
   youtube_entry_point   = "fetchYouTubeVideos"
   youtube_memory        = "512Mi"
   youtube_timeout       = 540 # 秒（9分）- イベントトリガー制限に合わせる

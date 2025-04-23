@@ -8,7 +8,7 @@
 # デプロイの共通設定（すべてのCloud Functionsで共有）
 locals {
   discord_auth_function_name = "discordAuthCallback"
-  discord_auth_runtime       = "nodejs20"
+  discord_auth_runtime       = "nodejs22"
   discord_auth_entry_point   = "discordAuthCallback"
   discord_auth_memory        = "256Mi"
   discord_auth_timeout       = 60 # 秒
