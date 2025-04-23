@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/firebase/AuthProvider"; // AuthProvider を�
 import AuthModal from "@/components/ui/AuthModal"; // 認証モーダルをインポート
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import { Suspense } from "react"; // Suspenseをインポート
 import "./globals.css";
 
 // Noto Sans JP フォントを設定
@@ -32,8 +33,10 @@ export default function RootLayout({
           <Header />
           <main className="flex-grow">{children}</main>
           <Footer />
-          {/* 認証モーダルを追加 - クライアントサイドでクエリパラメータを確認 */}
-          <AuthModal />
+          {/* 認証モーダルを追加 - useSearchParamsを使用するためSuspenseでラップ */}
+          <Suspense fallback={null}>
+            <AuthModal />
+          </Suspense>
         </AuthProvider>
       </body>
     </html>

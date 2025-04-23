@@ -13,7 +13,10 @@ export default function AuthModal() {
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(true);
   const [isProcessing, setIsProcessing] = useState(true);
+  // 認証コードを検出したかどうかを追跡
+  const [authCodeDetected, setAuthCodeDetected] = useState(false);
 
+  // 認証コードの検出とモーダル表示の制御
   useEffect(() => {
     // テスト環境でのエラーを回避するための処理
     if (typeof window === "undefined") {
@@ -31,27 +34,86 @@ export default function AuthModal() {
     }
 
     console.log("認証コードを検出しました:", code);
+    // 認証コードを検出したフラグを設定
+    setAuthCodeDetected(true);
+    // モーダルを表示
+    setIsOpen(true);
+
+  }, [searchParams]);
+
+  // 認証コードが検出された場合の処理
+  useEffect(() => {
+    if (!authCodeDetected) {
+      return;
+    }
+
+    // URLから認証コードを削除する関数
+    const removeCodeFromUrl = () => {
+      // 現在のパス名のみを保持し、クエリパラメータを削除
+      if (typeof window !== "undefined") {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    };
 
     async function processAuth() {
       try {
         setIsProcessing(true);
         
+        const code = searchParams.get("discord_code");
+        
         // TypeScriptエラーを修正するため、codeがnullでないことを確認
-        // （上のif文で既にチェックしているが、TypeScriptはこのスコープでは認識できない）
         if (!code) {
-          throw new Error("認証コードが見つかりません。");
+          // 例外をスローする代わりに、状態を直接更新
+          setError("認証コードが見つかりません。");
+          setMessage("認証に失敗しました。");
+          // 認証失敗時もURLからコードを削除
+          removeCodeFromUrl();
+          // 認証失敗時はリダイレクトせず、モーダルを表示したまま
+          setIsProcessing(false);
+          // 認証処理完了後も強制的にモーダルを表示
+          setIsOpen(true);
+          return;
         }
         
         // Server Actionを呼び出して認証処理
         const result = await handleDiscordCallback(code);
 
         if (!result.success || !result.customToken) {
-          throw new Error(result.error || "認証処理に失敗しました");
+          // エラーメッセージを日本語化
+          let errorMessage = "認証処理に失敗しました";
+          
+          // 特定のエラーメッセージを日本語に変換
+          if (result.error === "Guild membership required.") {
+            errorMessage = "Discordサーバーのメンバーである必要があります。Discordサーバーに参加してから再度お試しください。";
+          } else if (result.error) {
+            errorMessage = result.error;
+          }
+          
+          // 例外をスローする代わりに、状態を直接更新
+          setError(errorMessage);
+          setMessage("認証に失敗しました。");
+          // 認証失敗時もURLからコードを削除
+          removeCodeFromUrl();
+          // 認証失敗時はリダイレクトせず、モーダルを表示したまま
+          setIsProcessing(false);
+          // 認証処理完了後も強制的にモーダルを表示
+          setIsOpen(true);
+          return;
         }
 
         // authがnullでないことを確認
         if (!auth) {
-          throw new Error("認証システムの初期化に失敗しました。");
+          // 例外をスローする代わりに、状態を直接更新
+          setError("認証システムの初期化に失敗しました。");
+          setMessage("認証に失敗しました。");
+          // 認証失敗時もURLからコードを削除
+          removeCodeFromUrl();
+          // 認証失敗時はリダイレクトせず、モーダルを表示したまま
+          setIsProcessing(false);
+          // 認証処理完了後も強制的にモーダルを表示
+          setIsOpen(true);
+          return;
         }
 
         // カスタムトークンでサインイン
@@ -59,34 +121,45 @@ export default function AuthModal() {
         
         setMessage("認証に成功しました！");
         
-        // 認証コードをURLから削除
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
+        // 認証コードをURLから削除（関数に切り出し）
+        removeCodeFromUrl();
         
+        // 認証処理完了
+        setIsProcessing(false);
         // 認証成功後もモーダルを表示し続ける
-        // ユーザーが「閉じる」ボタンをクリックするまでモーダルを表示
+        setIsOpen(true);
+        // 認証コードの検出フラグをリセット
+        setAuthCodeDetected(false);
       } catch (err: unknown) {
-        console.error("Authentication failed:", err);
+        console.error("認証処理中にエラーが発生しました:", err);
         // エラーメッセージの取得
         const errorMessage = err instanceof Error
           ? err.message
-          : "認証中にエラーが発生しました。";
+          : "認証中に予期せぬエラーが発生しました。";
         setError(errorMessage);
         setMessage("認証に失敗しました。");
-      } finally {
+        // 例外発生時もURLからコードを削除
+        removeCodeFromUrl();
+        // 認証失敗時はリダイレクトせず、モーダルを表示したまま
         setIsProcessing(false);
+        // 認証処理完了後も強制的にモーダルを表示
+        setIsOpen(true);
       }
     }
 
     processAuth();
-  }, [searchParams, router]);
+  }, [authCodeDetected, searchParams]);
 
+  // モーダルが表示されていない場合は何も表示しない
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+    >
       <div className="bg-base-100 p-6 rounded-lg shadow-xl max-w-md w-full">
         <h2 className="text-xl font-bold mb-4">Discord認証</h2>
         <div className="text-center py-4">

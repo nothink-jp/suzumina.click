@@ -22,6 +22,12 @@
   },
   "files": {
     "include": ["**/*.{ts,tsx,js,jsx}"],
-    "ignore": ["**/node_modules", "**/dist", "**/.next", "**/storybook-static", "**/coverage"]
+    "ignore": [
+      "**/node_modules",
+      "**/dist",
+      "**/.next",
+      "**/storybook-static",
+      "**/coverage"
+    ]
   }
 }
