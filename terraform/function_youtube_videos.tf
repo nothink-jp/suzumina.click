@@ -2,6 +2,7 @@
 # YouTube動画取得関数 (v2 - Pub/Subトリガー)
 # ==============================================================================
 # 概要: YouTubeから最新の動画情報を定期的に取得しFirestoreに保存する関数
+# GitHub Actions移行完了に伴い、ソースコード管理部分は削除済み
 # ==============================================================================
 
 # デプロイの共通設定
@@ -28,12 +29,8 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
   build_config {
     runtime     = local.youtube_runtime
     entry_point = local.youtube_entry_point
-    source {
-      storage_source {
-        bucket = google_storage_bucket.function_source.name
-        object = google_storage_bucket_object.function_source_archive.name
-      }
-    }
+    # GitHub Actionsからデプロイするため、ソース参照は削除
+    # 代わりにソース管理はCIが担当
   }
 
   # サービス設定
@@ -71,21 +68,11 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
   # ソースコードの変更は無視する（関数の設定変更のみをTerraformで管理）
   lifecycle {
     ignore_changes = [
-      build_config.0.source.0.storage_source.0.object
-      # labels と client は存在しない属性なので削除
+      build_config # ビルド設定全体を無視（GitHub Actionsが管理）
     ]
   }
 
   depends_on = [
-    # ソースコードのアップロード
-    google_storage_bucket_object.function_source_archive,
-    # 必要なAPIが有効化されていること
-    google_project_service.cloudfunctions,
-    google_project_service.run,
-    google_project_service.artifactregistry,
-    google_project_service.secretmanager,
-    google_project_service.firestore,
-    google_project_service.pubsub,
     # この関数に必要なFirestore DB、Pub/Subトピック、シークレット
     google_firestore_database.database,
     google_pubsub_topic.youtube_video_fetch_trigger,

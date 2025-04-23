@@ -2,6 +2,7 @@
 # Discord認証コールバック関数 (v2 - HTTPSトリガー)
 # ==============================================================================
 # 概要: Discordのログインフロー完了後にコールバックを受け取り、Firebaseカスタムトークンを生成する関数
+# GitHub Actions移行完了に伴い、ソースコード管理部分は削除済み
 # ==============================================================================
 
 # デプロイの共通設定（すべてのCloud Functionsで共有）
@@ -31,12 +32,8 @@ resource "google_cloudfunctions2_function" "discord_auth_callback" {
   build_config {
     runtime     = local.discord_auth_runtime
     entry_point = local.discord_auth_entry_point
-    source {
-      storage_source {
-        bucket = google_storage_bucket.function_source.name
-        object = google_storage_bucket_object.function_source_archive.name
-      }
-    }
+    # GitHub Actionsからデプロイするため、ソース参照は削除
+    # 代わりにソース管理はCIが担当
   }
 
   # サービス設定
@@ -65,22 +62,13 @@ resource "google_cloudfunctions2_function" "discord_auth_callback" {
   # ソースコードの変更は無視する（関数の設定変更のみをTerraformで管理）
   lifecycle {
     ignore_changes = [
-      build_config.0.source.0.storage_source.0.object
-      # labels と client は存在しない属性なので削除
+      build_config # ビルド設定全体を無視（GitHub Actionsが管理）
     ]
   }
 
   depends_on = [
-    # ソースコードのアップロード
-    google_storage_bucket_object.function_source_archive,
-    # 必要なAPIが有効化されていること
-    google_project_service.cloudfunctions,
-    google_project_service.run,
-    google_project_service.artifactregistry,
-    google_project_service.secretmanager,
-    # この関数用のシークレット
+    # 必要なシークレットとFirestore DB
     google_secret_manager_secret.secrets,
-    # Firestore DB (関数ロジック変更時に間接的に必要になる可能性がある)
     google_firestore_database.database,
   ]
 }
