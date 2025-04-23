@@ -18,6 +18,11 @@ vi.mock("@/lib/firebase/AuthProvider", () => ({
   ),
 }));
 
+// AuthModalコンポーネントのモック
+vi.mock("@/components/ui/AuthModal", () => ({
+  default: () => <div data-testid="mock-auth-modal">認証モーダルモック</div>,
+}));
+
 // フォントのモック
 vi.mock("next/font/google", () => ({
   Noto_Sans_JP: () => ({
@@ -42,16 +47,31 @@ describe("RootLayoutコンポーネント", () => {
     expect(html).toHaveAttribute("data-theme", "light");
   });
 
-  test("Noto Sans JPフォントでbodyをレンダリングすること", () => {
+  test("Noto Sans JPフォントでHTMLをレンダリングすること", () => {
     render(
       <RootLayout>
         <div data-testid="test-children">子コンテンツ</div>
       </RootLayout>,
     );
 
-    // bodyタグにフォント変数が設定されているか確認
+    // htmlタグにフォント変数が設定されているか確認
+    const html = document.querySelector("html");
+    expect(html?.className).toContain("test-font-variable");
+  });
+
+  test("bodyタグに適切なクラスが設定されていること", () => {
+    render(
+      <RootLayout>
+        <div data-testid="test-children">子コンテンツ</div>
+      </RootLayout>,
+    );
+
+    // bodyタグにクラスが正しく設定されているか確認
     const body = document.querySelector("body");
-    expect(body?.className).toContain("test-font-variable");
+    expect(body?.className).toContain("antialiased");
+    expect(body?.className).toContain("flex");
+    expect(body?.className).toContain("flex-col");
+    expect(body?.className).toContain("min-h-screen");
   });
 
   test("AuthProviderでラップされたレイアウトをレンダリングすること", () => {
@@ -72,6 +92,9 @@ describe("RootLayoutコンポーネント", () => {
 
     // フッターが存在することを確認
     expect(screen.getByTestId("mock-footer")).toBeInTheDocument();
+    
+    // 認証モーダルが存在することを確認
+    expect(screen.getByTestId("mock-auth-modal")).toBeInTheDocument();
   });
 
   test("すべてのレイアウト要素が正しい順番でレンダリングされること", () => {
@@ -87,17 +110,19 @@ describe("RootLayoutコンポーネント", () => {
     const mainContent = screen.getByRole("main");
     const testChildren = screen.getByTestId("test-children");
     const mockFooter = screen.getByTestId("mock-footer");
+    const mockAuthModal = screen.getByTestId("mock-auth-modal");
 
     expect(mockAuthProvider.contains(mockHeader)).toBeTruthy();
     expect(mockAuthProvider.contains(mainContent)).toBeTruthy();
     expect(mockAuthProvider.contains(mockFooter)).toBeTruthy();
+    expect(mockAuthProvider.contains(mockAuthModal)).toBeTruthy();
     expect(mainContent.contains(testChildren)).toBeTruthy();
   });
 });
 
 describe("メタデータ", () => {
   test("適切なタイトルと説明が設定されていること", () => {
-    expect(metadata.title).toBe("涼花みなせ 非公式ファンサイト");
+    expect(metadata.title).toBe("すずみなくりっく！");
     expect(metadata.description).toBe(
       "涼花みなせさんの活動を応援する非公式ファンサイトです。",
     );

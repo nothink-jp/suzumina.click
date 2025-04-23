@@ -1,7 +1,6 @@
 // src/lib/firebase/client.test.ts
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { FirebaseApp } from "firebase/app";
-import type { Auth } from "firebase/auth";
 
 // Firebaseアプリのモック
 const mockInitializeApp = vi.fn().mockReturnValue({ name: "mock-app" });
@@ -132,9 +131,12 @@ describe("Firebaseクライアント", () => {
   });
 
   test("環境変数が不足している場合は警告が表示されappがnullになること", async () => {
-    // 必須環境変数を削除
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "";
-    process.env.NODE_ENV = "development"; // 開発環境であることを指定
+    // テスト用に環境変数を再設定
+    process.env = {
+      ...originalEnv,
+      NEXT_PUBLIC_FIREBASE_API_KEY: "", // 必須環境変数を削除
+      NODE_ENV: "development", // 開発環境であることを指定
+    };
 
     // モックされたclient.tsを再定義
     vi.doMock("./client", () => {

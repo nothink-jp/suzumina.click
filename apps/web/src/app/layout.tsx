@@ -1,6 +1,7 @@
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import { AuthProvider } from "@/lib/firebase/AuthProvider"; // AuthProvider をインポート
+import AuthModal from "@/components/ui/AuthModal"; // 認証モーダルをインポート
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
@@ -14,8 +15,7 @@ const notoSansJp = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  // TODO: より適切なタイトルと説明を設定する
-  title: "涼花みなせ 非公式ファンサイト",
+  title: "すずみなくりっく！",
   description: "涼花みなせさんの活動を応援する非公式ファンサイトです。",
 };
 
@@ -25,15 +25,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" data-theme="light">
-      <body
-        className={`${notoSansJp.variable} antialiased flex flex-col min-h-screen`}
-      >
-        {/* AuthProvider でラップ */}
+    <html lang="ja" data-theme="light" className={notoSansJp.variable}>
+      {/* suppressHydrationWarningを追加してブラウザ拡張機能によるクラス名の変更を許容 */}
+      <body suppressHydrationWarning className="antialiased flex flex-col min-h-screen">
         <AuthProvider>
           <Header />
           <main className="flex-grow">{children}</main>
           <Footer />
+          {/* 認証モーダルを追加 - クライアントサイドでクエリパラメータを確認 */}
+          <AuthModal />
         </AuthProvider>
       </body>
     </html>

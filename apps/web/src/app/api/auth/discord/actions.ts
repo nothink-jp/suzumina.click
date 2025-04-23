@@ -7,7 +7,6 @@
  */
 
 import axios from "axios";
-import { cookies } from "next/headers";
 import { initializeFirebaseAdmin } from "../firebase-admin";
 import { getDiscordAvatarUrl, validateEnvironmentVariables } from "./utils";
 import type { DiscordAuthResult, DiscordGuild, DiscordUser } from "./types";

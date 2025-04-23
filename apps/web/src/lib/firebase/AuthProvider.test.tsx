@@ -2,7 +2,8 @@ import { render, screen } from "@testing-library/react";
 import { onAuthStateChanged } from "firebase/auth";
 import React from "react";
 // src/lib/firebase/AuthProvider.test.tsx
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { Mock } from "vitest";
 import { AuthProvider, useAuth } from "./AuthProvider";
 
 // firebase/authをモック
@@ -34,8 +35,7 @@ describe("AuthProviderコンポーネント", () => {
     consoleErrorMock = vi.fn();
     console.error = consoleErrorMock;
 
-    // デフォルトのモック実装
-    (onAuthStateChanged as vi.Mock).mockImplementation((auth, callback) => {
+    (onAuthStateChanged as Mock).mockImplementation((auth, callback) => {
       callback(null);
       return vi.fn(); // unsubscribe関数
     });
@@ -68,7 +68,7 @@ describe("AuthProviderコンポーネント", () => {
 
   test("認証状態が変更されたときにユーザー情報が更新されること", () => {
     // onAuthStateChangedがユーザー情報を返すようにモック
-    (onAuthStateChanged as vi.Mock).mockImplementation((auth, callback) => {
+    (onAuthStateChanged as Mock).mockImplementation((auth, callback) => {
       callback(mockUser);
       return vi.fn();
     });
@@ -101,7 +101,7 @@ describe("AuthProviderコンポーネント", () => {
 
   test("未認証の場合はnullが設定されること", () => {
     // onAuthStateChangedがnullを返すようにモック
-    (onAuthStateChanged as vi.Mock).mockImplementation((auth, callback) => {
+    (onAuthStateChanged as Mock).mockImplementation((auth, callback) => {
       callback(null);
       return vi.fn();
     });
@@ -163,15 +163,15 @@ describe("AuthProviderコンポーネント", () => {
     expect(screen.getByTestId("loading")).toHaveTextContent("読み込み完了");
   });
 
-  test("認証エラーが発生した場合にエラーメッセージが表示されること", () => {
     // onAuthStateChangedがエラーを返すようにモック
-    (onAuthStateChanged as vi.Mock).mockImplementation(
-      (auth, callback, errorCallback) => {
-        errorCallback(new Error("認証エラー"));
-        return vi.fn();
-      },
-    );
-
+    test("認証エラーが発生した場合に処理されること", () => {
+      // onAuthStateChangedがエラーを返すようにモック
+      (onAuthStateChanged as Mock).mockImplementation(
+        (auth, callback, errorCallback) => {
+          errorCallback(new Error("認証エラー"));
+          return vi.fn();
+        },
+      );
     // AuthProviderとuseAuthを使用するテスト用コンポーネント
     const TestComponent = () => {
       const { user, loading } = useAuth();
