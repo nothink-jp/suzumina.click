@@ -1,22 +1,52 @@
+# ==============================================================================
+# Cloud Run サービス設定
+# ==============================================================================
+# 概要: Next.jsアプリケーションのホスティング用Cloud Runサービス
+# ==============================================================================
+
+# Cloud Run サービスの設定
+locals {
+  cloudrun_service_name = "suzumina-click-nextjs-app"
+  cloudrun_container_port = 8080
+  cloudrun_cpu_limit = "1000m"  # 1 vCPU
+  cloudrun_memory_limit = "512Mi"  # 512 MB
+  # 初期デプロイ時のダミーイメージ
+  cloudrun_initial_image = "gcr.io/cloudrun/hello"
+  # デプロイ後にGitHub Actionsで更新される
+}
+
 # Cloud Run サービスの定義
 resource "google_cloud_run_service" "nextjs_app" {
-  name     = "suzumina-click-nextjs-app"
+  name     = local.cloudrun_service_name
   location = var.region
 
   template {
     spec {
       containers {
-        image = "gcr.io/${var.gcp_project_id}/suzumina-click-nextjs-app:latest"
+        # 初期デプロイ用のダミーイメージ
+        # 注意: 実際のデプロイはGitHub Actionsによって行われます
+        image = local.cloudrun_initial_image
         
         # リソース制限を設定
         resources {
           limits = {
-            cpu    = "1000m"
-            memory = "512Mi"
+            cpu    = local.cloudrun_cpu_limit
+            memory = local.cloudrun_memory_limit
           }
         }
         
         # 環境変数の設定
+        # 基本環境変数
+        env {
+          name  = "NODE_ENV"
+          value = "production"
+        }
+        
+        env {
+          name  = "DEPLOY_ENV"
+          value = "staging"  # 現在はステージング環境のみ
+        }
+        
         # Firebase関連の環境変数
         dynamic "env" {
           for_each = var.firebase_config
@@ -28,7 +58,7 @@ resource "google_cloud_run_service" "nextjs_app" {
         
         # ポート設定
         ports {
-          container_port = 8080
+          container_port = local.cloudrun_container_port
         }
       }
     }
@@ -40,9 +70,22 @@ resource "google_cloud_run_service" "nextjs_app" {
     latest_revision = true
   }
 
-  # 依存関係の管理（他のリソースが必要な場合）
+  # GitHub Actionsがイメージを更新するため
+  # コンテナイメージと環境変数の変更を無視する
+  lifecycle {
+    ignore_changes = [
+      template[0].spec[0].containers[0].image,
+      template[0].spec[0].containers[0].env,
+      metadata[0].annotations,
+      template[0].metadata[0].annotations
+      # client と labels は存在しない属性なので削除
+    ]
+  }
+
+  # 依存関係の管理
   depends_on = [
-    # 必要なリソースがあればここに追加
+    google_project_service.run,           # cloudrun -> run に修正
+    google_project_service.artifactregistry
   ]
 }
 

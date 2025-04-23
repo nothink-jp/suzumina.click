@@ -2,5 +2,24 @@
 # このファイルの名前を terraform.tfvars に変更し、実際の値を入力してください
 # 機密データを含む場合は、terraform.tfvars をバージョン管理から除外してください
 
-# gcp_project_id = "your-gcp-project-id"   # あなたのGCPプロジェクトID
-# youtube_api_key = "your-youtube-data-api-key"   # YouTubeデータAPI用のキー
+# GCPプロジェクトの識別子
+gcp_project_id = "your-gcp-project-id"   # あなたのGCPプロジェクトID
+project_number = "123456789012"          # GCPプロジェクト番号（コンソールのプロジェクト情報から確認可能）
+
+# GCPリージョン（デフォルト: asia-northeast1）
+region = "asia-northeast1"             # 東京リージョン
+
+# YouTube APIキー
+youtube_api_key = "your-youtube-data-api-key"   # YouTubeデータAPI用のキー
+
+# Firebase設定
+# Firebaseコンソール（https://console.firebase.google.com）から取得できます
+# 手順: プロジェクト設定 > 全般タブ > マイアプリセクション > ウェブアプリ（</>）をクリック
+firebase_config = {
+  API_KEY           = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Firebase APIキー
+  AUTH_DOMAIN       = "your-project-id.firebaseapp.com"        # 認証ドメイン
+  PROJECT_ID        = "your-project-id"                        # Firebaseプロジェクトのプロジェクトid
+  STORAGE_BUCKET    = "your-project-id.appspot.com"            # デフォルトストレージバケット
+  MESSAGING_SENDER_ID = "123456789012"                         # FCMの送信者ID
+  APP_ID            = "1:123456789012:web:abc123def456ghi789"  # FirebaseアプリのID
+}

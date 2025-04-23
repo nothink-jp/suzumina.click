@@ -5,6 +5,7 @@
 ## デプロイ環境の概要
 
 **2025年4月22日の構成変更に伴い、現在はステージング環境のみを運用しています。**
+**2025年5月2日にCI/CDパイプラインが改善され、GitHub Actionsに統合されました。**
 
 - **ステージング環境**: 開発とテスト用の単一環境（Cloud Run）
 - **旧環境**: Firebase Hosting（廃止済み）
@@ -12,20 +13,50 @@
 
 ## デプロイ方法
 
-### 1. GitHub Actionsを使用したデプロイ（推奨）
+### 1. GitHub Actionsを使用した自動デプロイ
 
-特定の担当者のみがGitHub Actionsを使って手動でデプロイを実行できます。
+GitHub Actionsが提供する3つのワークフローを使用してデプロイを管理します：
 
-1. リポジトリの「Actions」タブに移動します。
-2. 「**ステージング環境へのデプロイトリガー**」ワークフローを選択します。
-3. 「Run workflow」ボタンをクリックします。
-4. デプロイするブランチを選択し、「Run workflow」を実行します。
-5. デプロイの進捗状況を確認します。
+#### 1.1 継続的インテグレーション（CI）
+
+- **ワークフロー**: `ci.yml`
+- **目的**: コードの品質保証と基本的な検証
+- **トリガー**: 
+  - mainブランチへのプッシュ
+  - mainブランチへのプルリクエスト
+- **処理内容**:
+  - モノレポ共通のコード検証（Biome）
+  - Webアプリケーションのテストとビルド検証
+  - Cloud Functionsのテストとビルド検証
+
+#### 1.2 変更検知による自動デプロイ
+
+- **ワークフロー**: `auto-deploy.yml`
+- **目的**: 効率的な継続的デプロイ
+- **トリガー**: 
+  - mainブランチへのプッシュ（`apps/web/**`または`apps/functions/**`に変更がある場合のみ）
+- **処理内容**:
+  - 変更されたコンポーネントのみをデプロイ
+  - Webアプリケーションの変更時はCloud Runにデプロイ
+  - Cloud Functionsの変更時は関連する関数のみをデプロイ
+
+#### 1.3 本番環境デプロイ
+
+- **ワークフロー**: `deploy-production.yml`
+- **目的**: 完全な環境デプロイ
+- **トリガー**:
+  - 手動実行（GitHub Actionsインターフェースから）
+  - CIワークフロー成功後（オプション）
+- **処理内容**:
+  - デプロイ条件の確認
+  - Webアプリケーションのビルドとデプロイ
+  - すべてのCloud Functionsのデプロイ
+  - デプロイ完了通知
 
 ```mermaid
 graph TD
     A[GitHub Actions開始] --> B[Workload Identity Federation認証]
-    B --> C[Cloud Buildトリガー実行]
+    B --> C[GCPへの認証]
     C --> D[モノレポ依存関係のインストール]
     D --> E[Next.jsアプリケーションのビルド]
     E --> F[Dockerイメージのビルド]
@@ -34,30 +65,15 @@ graph TD
     H --> I[デプロイURL取得と表示]
 ```
 
-### 2. 手動デプロイテスト（開発者用）
+### 2. 手動デプロイの実行
 
-開発者は以下のスクリプトを使用して、ローカルから直接デプロイテストを実行できます：
+手動でデプロイを実行する場合は、GitHub Actionsインターフェイスから行います:
 
-```bash
-# 環境変数を設定
-export PROJECT_ID="suzumina-click-firebase"
-
-# GCPにログイン
-gcloud auth login
-
-# プロジェクトの設定
-gcloud config set project $PROJECT_ID
-
-# デプロイスクリプトの実行
-./scripts/deploy-test.sh
-```
-
-このスクリプトは以下の処理を実行します：
-1. モノレポの依存関係をインストール
-2. Next.jsアプリをビルド
-3. Dockerイメージをビルド
-4. GCRにイメージをプッシュ
-5. Cloud Runにデプロイ
+1. リポジトリの「Actions」タブに移動します。
+2. `deploy-production.yml`ワークフローを選択します。
+3. 「Run workflow」ボタンをクリックします。
+4. デプロイするブランチを選択し、「Run workflow」を実行します。
+5. デプロイの進捗状況を確認します。
 
 ## デプロイ後の確認
 
@@ -88,12 +104,16 @@ terraform plan
 terraform apply
 ```
 
+詳細な手順については、[TERRAFORM_LOCAL.md](./TERRAFORM_LOCAL.md)を参照してください。
+
 ### 主要なTerraformリソース
 
 - **Cloud Run**: `terraform/cloudrun.tf` - Next.jsアプリケーションのホスティング
-- **Cloud Build**: `terraform/cloudbuild.tf` - コンテナビルド・デプロイパイプライン
 - **Firebase Auth**: `terraform/firebase.tf` - Discord OAuth認証（認証機能のみを利用）
-- **Cloud Functions**: `terraform/functions.tf` - DiscordAuthCallback関数など
+- **Cloud Functions**: 
+  - `terraform/function_discord_auth.tf` - DiscordAuthCallback関数
+  - `terraform/function_youtube_videos.tf` - YouTube動画情報取得関数
+  - `terraform/function_common.tf` - 関数共通設定
 - **Secret Manager**: `terraform/secrets.tf` - 環境変数・シークレットの管理
 
 詳細なインフラ構成については[INFRA_AUDIT.md](./INFRA_AUDIT.md)を参照してください。
@@ -131,16 +151,11 @@ echo -n "実際の値" | gcloud secrets versions add シークレット名 --dat
 2. 対象の関数（例：`discordAuthCallback`）をクリックします
 3. 「ログ」タブでログを確認します
 
-### Cloud Buildログの確認
-
-1. Google Cloud Consoleで「Cloud Build」→「履歴」を開きます
-2. 対象のビルドをクリックしてログを確認します
-
 ## トラブルシューティング
 
 ### 1. デプロイに失敗する場合
 
-- Cloud Buildログを確認して、ビルドエラーを特定します
+- GitHub Actionsの実行ログでエラーを確認します
 - IAM権限が適切に設定されているか確認します
 - モノレポのビルド設定に問題がないか確認します
 
@@ -171,3 +186,140 @@ echo -n "実際の値" | gcloud secrets versions add シークレット名 --dat
    - コスト最適化の追跡
 
 詳細な開発環境についての情報は、[DEVELOPMENT_SETUP.md](./DEVELOPMENT_SETUP.md)を参照してください。
+
+## インフラ管理とアプリケーションデプロイの分離
+
+suzumina.clickプロジェクトでは、2025年4月22日よりインフラ管理とアプリケーションコードデプロイの責任分離を実施しています。これにより、セキュリティ向上とデプロイプロセスの安定性を高めています。
+
+### 責任分担
+
+1. **インフラ管理（ローカル実行のみ）**:
+   - 実施者: インフラ管理権限を持った開発者
+   - 実行方法: ローカル環境でのTerraform実行
+   - 対象リソース: 
+     - GCPプロジェクト設定、IAM
+     - Cloud RunサービスやCloud Functions基本設定
+     - Firestore、Storage、Secret Manager等の設定
+     - CI/CD連携の基礎設定
+
+2. **アプリケーションデプロイ（GitHub Actions）**:
+   - 実施者: GitHub Actions（自動化）
+   - 実行方法: mainブランチへのプッシュ時に自動実行または手動トリガー
+   - 対象リソース:
+     - Cloud Functions（コード更新のみ）
+     - Cloud Run（コンテナイメージ更新のみ）
+
+### インフラ更新手順（ローカル）
+
+インフラを変更する場合は、以下の手順に従ってください:
+
+```bash
+# 1. 適切なGCPアカウントでログイン
+gcloud auth login
+
+# 2. アプリケーションのデフォルト認証情報を設定
+gcloud auth application-default login
+
+# 3. プロジェクトをセット
+gcloud config set project suzumina-click-firebase
+
+# 4. Terraformディレクトリに移動
+cd terraform
+
+# 5. Terraformを初期化
+terraform init
+
+# 6. 変更内容を確認
+terraform plan
+
+# 7. 変更を適用
+terraform apply
+
+# 8. 変更を確認
+terraform output
+```
+
+**注意**: Terraformの状態ファイル（terraform.tfstate）はリポジトリに含まれています。インフラ変更を行った場合は、このファイルをコミットして変更内容を共有してください。
+
+## CI/CDパイプラインの概要
+
+2025年5月2日のCI/CD改善により、以下の変更が実装されました：
+
+1. **Cloud Buildの廃止とGitHub Actionsへの統合**
+   - すべてのビルド・デプロイプロセスをGitHub Actions一元化
+   - Cloud Build依存の排除によるアーキテクチャ簡素化
+
+2. **モノレポ構造に最適化されたワークフロー**
+   - アプリケーション、関数ごとに個別の検証とデプロイ
+   - 変更されたコンポーネントのみを効率的にデプロイ
+
+3. **最小権限原則に基づくサービスアカウント**
+   - Cloud Run用とCloud Functions用に専用のデプロイサービスアカウント
+   - 必要最小限の権限による安全なデプロイ
+
+詳細なCI/CDパイプラインの情報は[CI_CD.md](./CI_CD.md)を参照してください。
+
+## サービスアカウント権限
+
+現在のデプロイには以下の専用サービスアカウントが使用されています：
+
+### 最小権限サービスアカウント
+
+**Cloud Run専用デプロイサービスアカウント**:
+- `cloud-run-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com`
+- 権限:
+  - `roles/run.admin` - Cloud Runサービスの管理
+  - `roles/artifactregistry.writer` - コンテナイメージのアップロード
+  - `roles/logging.logWriter` - ログの書き込み
+  - `roles/iam.serviceAccountUser` - サービスアカウントの利用
+
+**Cloud Functions専用デプロイサービスアカウント**:
+- `cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com`
+- 権限:
+  - `roles/cloudfunctions.developer` - Cloud Functionsの管理
+  - `roles/storage.objectAdmin` - ソースコードアップロード用
+  - `roles/logging.logWriter` - ログの書き込み
+  - `roles/iam.serviceAccountUser` - サービスアカウントの利用
+
+### Terraform実行用認証情報（インフラ管理用、ローカル実行のみ）
+
+- GCPリソースを包括的に管理するための権限（IAMポリシーに従って設定）
+
+## GitHub Actionsワークフロー
+
+現在、以下の3つの主要ワークフローが実装されています：
+
+1. **継続的インテグレーション（CI）ワークフロー**:
+   - ファイル: `.github/workflows/ci.yml`
+   - 目的: コードの品質検証とテスト
+   
+2. **変更検知による自動デプロイワークフロー**:
+   - ファイル: `.github/workflows/auto-deploy.yml`
+   - 目的: 特定のディレクトリ変更時の自動デプロイ
+   
+3. **本番環境デプロイワークフロー**:
+   - ファイル: `.github/workflows/deploy-production.yml`
+   - 目的: 手動トリガーまたはCI成功後の総合的なデプロイ
+
+ワークフローの詳細な説明は[CI_CD.md](./CI_CD.md)を参照してください。
+
+## トラブルシューティング
+
+デプロイに失敗した場合は、以下を確認してください:
+
+1. GitHub Actionsの実行ログでエラーを確認
+2. サービスアカウントの権限が適切に設定されているか確認
+3. 環境変数が正しく設定されているか確認
+
+最小権限サービスアカウントに関する問題が発生した場合は、Terraformファイル `terraform/iam.tf` を確認し、必要に応じて権限を調整してください。
+
+## 今後の改善計画
+
+以下の改善を検討中です:
+
+1. Terraform状態ファイルをリモートバックエンド（GCS）で管理
+2. より詳細な権限管理による最小権限原則の徹底
+3. デプロイパイプラインのテスト自動化と品質保証強化
+4. GitHub Actionsワークフローの最適化と実行時間のさらなる短縮
+
+詳細な作業項目は[TODO.md](TODO.md)を参照してください。
