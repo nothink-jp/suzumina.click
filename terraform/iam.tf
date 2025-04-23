@@ -116,15 +116,6 @@ resource "google_project_iam_member" "cloud_functions_deployer_developer" {
   depends_on = [google_service_account.cloud_functions_deployer_sa]
 }
 
-# Cloud Storageアクセス権限（ソースコードアップロード用）
-resource "google_project_iam_member" "cloud_functions_deployer_storage" {
-  project = var.gcp_project_id
-  role    = "roles/storage.objectAdmin"
-  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
-  
-  depends_on = [google_service_account.cloud_functions_deployer_sa]
-}
-
 # ログ書き込み権限
 resource "google_project_iam_member" "cloud_functions_deployer_log_writer" {
   project = var.gcp_project_id
