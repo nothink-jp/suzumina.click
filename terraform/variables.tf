@@ -1,19 +1,13 @@
+# GCPプロジェクト関連の識別子
 # GCPプロジェクトID
 variable "gcp_project_id" {
   description = "GCPプロジェクトのID（例：'my-project-123'）"
   type        = string
 }
 
-# プロジェクトID（互換性のため）
-variable "project_id" {
-  description = "GCPプロジェクトのID（互換性のため、gcp_project_idと同じ）"
-  type        = string
-  default     = ""
-}
-
-# GCPプロジェクト番号
+# GCPプロジェクト番号（プロジェクトIDとは異なる値）
 variable "project_number" {
-  description = "GCPプロジェクトの番号（例：'123456789'）"
+  description = "GCPプロジェクトの番号（例：'123456789'）。プロジェクトIDとは異なる数値形式の識別子で、特定のIAM設定などで必要。"
   type        = string
 }
 

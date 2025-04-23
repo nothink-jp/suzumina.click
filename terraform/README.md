@@ -23,9 +23,13 @@ terraform apply
 
 ## 主要ファイル構成
 
+- `api_services.tf`: 有効化するGCP APIサービスの設定
 - `backend.tf`: Terraformの状態管理設定（GCS）
+- `cloudrun.tf`: Cloud Run サービスの定義
 - `firebase.tf`: Firestore、Firebase関連リソース
-- `functions.tf`: Cloud Functions定義（認証、YouTube動画取得など）
+- `function_common.tf`: 共通のCloud Functions設定
+- `function_discord_auth.tf`: Discord認証関連のCloud Functions
+- `function_youtube_videos.tf`: YouTube動画取得関連のCloud Functions
 - `iam.tf`: IAM権限、サービスアカウント設定
 - `providers.tf`: Google Cloudプロバイダー設定
 - `pubsub.tf`: Pub/Subトピック定義
@@ -47,8 +51,10 @@ terraform apply
 
 ## 新しいCloud Functionsの追加方法
 
-1. `functions/src/index.ts`に関数をエクスポート
-2. `functions.tf`に新しいFunction定義を追加
+1. `functions/src/` に必要な関数のコードを実装
+2. 関数の種類に応じて適切なTerraformファイル（`function_*.tf`）に定義を追加
+   - 共通の設定は `function_common.tf` に配置
+   - 機能ごとに別ファイルに分けることを推奨
 3. 必要なシークレット/IAM権限を設定
 4. 環境変数で`ENVIRONMENT`を設定し、コード内で分岐処理が可能
 

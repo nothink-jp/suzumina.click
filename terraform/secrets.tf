@@ -74,10 +74,9 @@ resource "google_secret_manager_secret" "secrets" {
     }
   }
 
-  # 既存のシークレット再作成エラーを防止するための設定
+  # リソース削除のため、prevent_destroyを無効化
   lifecycle {
-    # 作成に失敗した場合でもリソースをステートに保持し、次回以降のapplyでスキップされるようにする
-    prevent_destroy = true
+    # prevent_destroy = true  # 削除保護を解除（コメントアウト）
     # シークレットの内容（バージョン）は他の方法で管理されるため無視
     ignore_changes = [
       labels,
