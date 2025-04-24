@@ -2,6 +2,12 @@ import HeadlessUiDisclosureExample from "./_components/HeadlessUiDisclosureExamp
 import { getCurrentUser } from "./api/auth/getCurrentUser";
 import AuthButton from "@/components/ui/AuthButton";
 
+/**
+ * このページを動的レンダリングするための設定
+ * cookiesなどの動的サーバー機能を使用するため必要
+ */
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   // サーバーサイドでログイン状態を確認
   const user = await getCurrentUser();
