@@ -172,7 +172,15 @@ jobs:
           echo "イメージをビルドしています: ${IMAGE_TAG}"
           
           # Secret Managerからサービスアカウントキーを取得
-          FIREBASE_SA_KEY=$(gcloud secrets versions access latest --secret="FIREBASE_SERVICE_ACCOUNT_KEY" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "Secret Managerからサービスアカウントキーを取得しています..."
+          FIREBASE_SA_KEY=$(gcloud secrets versions access latest --secret="FIREBASE_SERVICE_ACCOUNT_KEY" --project="${{ secrets.GCP_PROJECT_ID }}" 2>/dev/null)
+          
+          if [ -z "$FIREBASE_SA_KEY" ]; then
+            echo "::error::Firebase Service Account Keyの取得に失敗しました"
+            exit 1
+          fi
+          
+          echo "Firebase Service Account Keyを取得しました"
           
           # ビルドとタグ付け
           # Dockerfileの場所を明示的に指定し、コンテキストをリポジトリのルートに設定

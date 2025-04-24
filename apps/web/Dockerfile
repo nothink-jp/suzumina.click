@@ -21,6 +21,9 @@ RUN pnpm install --frozen-lockfile
 # ソースコードをコピー
 COPY . .
 
+# publicディレクトリが存在しない場合は作成する
+RUN mkdir -p /app/apps/web/public
+
 # Next.jsアプリケーションをビルド
 WORKDIR /app/apps/web
 RUN pnpm build
@@ -45,6 +48,8 @@ ENV PORT=8080
 # ビルドステージからstandaloneビルドをコピー
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+
+# publicディレクトリをコピーする（ビルド時に作成済みなのでエラーにならない）
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 # ポートを公開
