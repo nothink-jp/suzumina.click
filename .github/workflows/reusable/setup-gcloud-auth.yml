@@ -1,0 +1,64 @@
+name: 'Google Cloud認証の設定'
+
+# 再利用可能なワークフローの定義
+on:
+  workflow_call:
+    inputs:
+      workload-identity-provider:
+        description: 'Workload Identity Providerの完全なリソース名'
+        type: string
+        required: true
+      service-account:
+        description: 'サービスアカウントのメールアドレス'
+        type: string
+        required: true
+      project-id:
+        description: 'GCPプロジェクトID'
+        type: string
+        required: true
+      setup-docker:
+        description: 'Dockerの認証も設定するか'
+        type: boolean
+        required: false
+        default: false
+      region:
+        description: 'GCPリージョン（Dockerの認証に必要）'
+        type: string
+        required: false
+        default: 'asia-northeast1'
+
+jobs:
+  setup-gcloud-auth:
+    name: 'Google Cloud認証の設定'
+    runs-on: ubuntu-latest
+    # 出力を定義
+    outputs:
+      auth-status: ${{ steps.auth.outcome }}
+    
+    permissions:
+      contents: read
+      id-token: write  # Workload Identity Federationに必要
+      
+    steps:
+      # 最小権限のサービスアカウントでGoogle Cloudに認証
+      - name: Google Cloud認証の設定
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ inputs.workload-identity-provider }}
+          service_account: ${{ inputs.service-account }}
+          create_credentials_file: true
+          export_environment_variables: true
+      
+      # gcloud CLIをセットアップ
+      - name: gcloud CLIのセットアップ
+        if: steps.auth.outcome == 'success'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ inputs.project-id }}
+      
+      # Docker認証の設定（オプション）
+      - name: Dockerの認証設定
+        if: ${{ inputs.setup-docker == true && steps.auth.outcome == 'success' }}
+        run: |
+          gcloud auth configure-docker ${{ inputs.region }}-docker.pkg.dev

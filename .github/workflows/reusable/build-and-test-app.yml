@@ -1,0 +1,114 @@
+name: 'アプリケーションのビルドとテスト'
+
+# 再利用可能なワークフローの定義
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: 'アプリケーション名（web または functions）'
+        type: string
+        required: true
+      package-name:
+        description: 'パッケージ名（例：@suzumina.click/web）'
+        type: string
+        required: true
+      run-tests:
+        description: 'テストを実行するか'
+        type: boolean
+        required: false
+        default: true
+      run-build:
+        description: 'ビルドを実行するか'
+        type: boolean
+        required: false
+        default: true
+      node-version:
+        description: 'Node.jsのバージョン（package.jsonから読み取った値）'
+        type: string
+        required: false
+        default: ''
+      pnpm-version:
+        description: 'pnpmのバージョン（package.jsonから読み取った値）'
+        type: string
+        required: false
+        default: ''
+    outputs:
+      build-status:
+        description: 'ビルドステータス'
+        value: ${{ jobs.build-app.outputs.status }}
+
+jobs:
+  build-app:
+    name: 'アプリケーションのビルド'
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.build-status.outputs.status }}
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+      
+      # package.jsonからバージョンを読み取るか、パラメータで渡されたバージョンを使用
+      - name: Node.jsとpnpmのバージョン設定
+        id: setup_versions
+        run: |
+          if [ -z "${{ inputs.node-version }}" ]; then
+            # パラメータが空の場合はpackage.jsonから読み取る
+            NODE_VERSION=$(node -p "require('./package.json').engines.node")
+          else
+            # パラメータを使用
+            NODE_VERSION="${{ inputs.node-version }}"
+          fi
+          
+          if [ -z "${{ inputs.pnpm-version }}" ]; then
+            # パラメータが空の場合はpackage.jsonから読み取る
+            PNPM_VERSION=$(node -p "require('./package.json').engines.pnpm")
+          else
+            # パラメータを使用
+            PNPM_VERSION="${{ inputs.pnpm-version }}"
+          fi
+          
+          echo "使用するバージョン: Node.js=$NODE_VERSION, pnpm=$PNPM_VERSION"
+          echo "node_version=$NODE_VERSION" >> $GITHUB_OUTPUT
+          echo "pnpm_version=$PNPM_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Node.js のセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.setup_versions.outputs.node_version }}
+
+      - name: pnpm のインストール
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ steps.setup_versions.outputs.pnpm_version }}
+          run_install: false
+      
+      # 依存関係のキャッシュ
+      - name: 依存関係のキャッシュ
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-${{ inputs.app-name }}-${{ hashFiles(format('apps/{0}/pnpm-lock.yaml', inputs.app-name), 'pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-${{ inputs.app-name }}-
+      
+      - name: 依存関係のインストール
+        run: pnpm install
+      
+      # テスト実行（オプション）
+      - name: アプリケーションのテスト
+        if: ${{ inputs.run-tests == true }}
+        run: pnpm --filter ${{ inputs.package-name }} test
+      
+      # ビルド実行（オプション）
+      - name: アプリケーションのビルド
+        if: ${{ inputs.run-build == true }}
+        run: pnpm --filter ${{ inputs.package-name }} build
+      
+      # ビルド状態の出力
+      - name: ビルド状態の設定
+        id: build-status
+        run: |
+          echo "status=success" >> $GITHUB_OUTPUT

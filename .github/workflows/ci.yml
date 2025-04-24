@@ -6,133 +6,69 @@ on:
   pull_request:
     branches: [main]
 
-# 共通の環境変数
-env:
-  NODE_VERSION: '22'
-  PNPM_VERSION: '10'
+# バージョン情報はpackage.jsonから読み取ります
+# パッケージからバージョンを動的に取得するステップが最初のジョブにあります
 
 jobs:
   # リポジトリ全体の共通検証
   common-lint:
     name: 共通コード検証
     runs-on: ubuntu-latest
+    outputs:
+      node_version: ${{ steps.read_engines.outputs.node_version }}
+      pnpm_version: ${{ steps.read_engines.outputs.pnpm_version }}
 
     steps:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v4
+      
+      # package.jsonからenginesのバージョンを読み取る
+      - name: パッケージからエンジンバージョンを読み取る
+        id: read_engines
+        run: |
+          # package.jsonからNode.jsとpnpmのバージョンを取得
+          NODE_VERSION=$(node -p "require('./package.json').engines.node")
+          PNPM_VERSION=$(node -p "require('./package.json').engines.pnpm")
+          
+          echo "取得したバージョン情報: Node.js=$NODE_VERSION, pnpm=$PNPM_VERSION"
+          
+          # GitHub Actionsの出力として設定
+          echo "node_version=$NODE_VERSION" >> $GITHUB_OUTPUT
+          echo "pnpm_version=$PNPM_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Node.js のセットアップ
-        uses: actions/setup-node@v4
+      # 再利用可能なワークフローを使用してNode.js環境をセットアップ
+      - name: Node.js環境のセットアップ
+        uses: ./.github/workflows/reusable/setup-node-env.yml
         with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: pnpm のインストール
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
-
-      - name: 依存関係のキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: 依存関係のインストール
-        run: pnpm install
+          node-version: ${{ steps.read_engines.outputs.node_version }}
+          pnpm-version: ${{ steps.read_engines.outputs.pnpm_version }}
 
       - name: Biome によるコード検証
         run: pnpm lint
 
   # Next.jsウェブアプリ（Web）の検証
   web-checks:
-    name: Webアプリケーション検証
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/reusable/build-and-test-app.yml
     needs: common-lint
-
-    steps:
-      - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
-
-      - name: Node.js のセットアップ
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: pnpm のインストール
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
-
-      - name: 依存関係のキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-web-${{ hashFiles('apps/web/pnpm-lock.yaml', 'pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-web-
-
-      - name: 依存関係のインストール
-        run: pnpm install
-
-      - name: Webアプリのテスト
-        run: pnpm --filter @suzumina.click/web test
-
-      - name: Webアプリのビルド
-        run: pnpm --filter @suzumina.click/web build
-
-      # ビルドサイズの分析（オプション）
-      - name: ビルドサイズの分析
-        run: |
-          echo "Webアプリのビルドサイズ分析:"
-          du -sh apps/web/.next/
+    with:
+      app-name: 'web'
+      package-name: '@suzumina.click/web'
+      run-tests: true
+      run-build: true
+      node-version: ${{ needs.common-lint.outputs.node_version }}
+      pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
 
   # Cloud Functions の検証
   functions-checks:
-    name: Cloud Functions検証
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/reusable/build-and-test-app.yml
     needs: common-lint
-
-    steps:
-      - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
-
-      - name: Node.js のセットアップ
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: pnpm のインストール
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
-
-      - name: 依存関係のキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-functions-${{ hashFiles('apps/functions/pnpm-lock.yaml', 'pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-functions-
-
-      - name: 依存関係のインストール
-        run: pnpm install
-
-      - name: Cloud Functionsのテスト
-        run: pnpm --filter @suzumina.click/functions test
-
-      - name: Cloud Functionsのビルド
-        run: pnpm --filter @suzumina.click/functions build
+    with:
+      app-name: 'functions'
+      package-name: '@suzumina.click/functions'
+      run-tests: true
+      run-build: true
+      node-version: ${{ needs.common-lint.outputs.node_version }}
+      pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
 
   # すべての検証が完了したら通知
   notify-success:
