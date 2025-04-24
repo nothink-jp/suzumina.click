@@ -5,9 +5,7 @@ import * as logger from "firebase-functions/logger";
 import { google } from "googleapis";
 import type { youtube_v3 } from "googleapis";
 import { SUZUKA_MINASE_CHANNEL_ID, type YouTubeVideoData } from "./common";
-import { firestore, initializeFirebaseAdmin } from "./firebaseAdmin";
-
-initializeFirebaseAdmin();
+import { firestore } from "./firebaseAdmin";
 
 // YouTube API クォータ制限関連の定数
 const MAX_VIDEOS_PER_BATCH = 50; // YouTube APIの最大結果数
@@ -133,26 +131,6 @@ async function updateMetadata(updates: Partial<FetchMetadata>): Promise<void> {
 interface PubsubMessage {
   data?: string;
   attributes?: Record<string, string>;
-}
-
-/**
- * HTTPリクエストの型定義
- */
-interface HttpRequest {
-  body?: any;
-  query?: Record<string, string>;
-  headers?: Record<string, string>;
-  method?: string;
-}
-
-/**
- * HTTPレスポンスの型定義
- */
-interface HttpResponse {
-  send: (body: any) => void;
-  json: (body: any) => void;
-  status: (statusCode: number) => HttpResponse;
-  setHeader: (name: string, value: string) => void;
 }
 
 /**
@@ -421,64 +399,45 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
  * @returns Promise<void> - 非同期処理の完了を表すPromise
  */
 export const fetchYouTubeVideos = async (
-  event: CloudEvent<PubsubMessage> | HttpRequest,
-  res?: HttpResponse
-): Promise<void | any> => {
-  logger.info("fetchYouTubeVideos 関数を開始しました");
+  event: CloudEvent<PubsubMessage>
+): Promise<void> => {
+  logger.info("fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)");
 
   try {
-    // HTTPリクエストの場合はレスポンスオブジェクトを持つ
-    const isHttpRequest = res && typeof res.send === 'function';
-
     // CloudEvent（Pub/Sub）の場合
-    if (!isHttpRequest && 'data' in event) {
-      logger.info("Pub/Subトリガーからの実行を検出しました");
-      const message = (event as CloudEvent<PubsubMessage>).data;
+    logger.info("Pub/Subトリガーからの実行を検出しました");
+    const message = event.data;
 
-      if (!message) {
-        logger.error("CloudEventデータが不足しています", { event });
+    if (!message) {
+      logger.error("CloudEventデータが不足しています", { event });
+      return;
+    }
+
+    // 属性情報の処理
+    if (message.attributes) {
+      logger.info("受信した属性情報:", message.attributes);
+    }
+
+    // Base64エンコードされたデータがあれば復号
+    if (message.data) {
+      try {
+        const decodedData = Buffer.from(message.data, "base64").toString(
+          "utf-8",
+        );
+        logger.info("デコードされたメッセージデータ:", decodedData);
+      } catch (err) {
+        logger.error("Base64メッセージデータのデコードに失敗しました:", err);
         return;
-      }
-
-      // 属性情報の処理
-      if (message.attributes) {
-        logger.info("受信した属性情報:", message.attributes);
-      }
-
-      // Base64エンコードされたデータがあれば復号
-      if (message.data) {
-        try {
-          const decodedData = Buffer.from(message.data, "base64").toString(
-            "utf-8",
-          );
-          logger.info("デコードされたメッセージデータ:", decodedData);
-        } catch (err) {
-          logger.error("Base64メッセージデータのデコードに失敗しました:", err);
-          return;
-        }
       }
     }
     
     // 共通のロジックを実行
     const result = await fetchYouTubeVideosLogic();
     
-    // HTTP関数の場合はレスポンスを返す
-    if (res && typeof res.json === 'function') {
-      if (result.error) {
-        logger.info(`HTTPレスポンスを送信します: エラー - ${result.error}`);
-        return res.status(500).json({
-          success: false,
-          error: result.error,
-          message: "YouTubeデータ取得中にエラーが発生しました"
-        });
-      } else {
-        logger.info(`HTTPレスポンスを送信します: 成功 - ${result.videoCount}件取得`);
-        return res.status(200).json({
-          success: true,
-          videoCount: result.videoCount,
-          message: `${result.videoCount}件のYouTube動画データを取得・保存しました`
-        });
-      }
+    if (result.error) {
+      logger.warn(`YouTube動画取得処理でエラーが発生しました: ${result.error}`);
+    } else {
+      logger.info(`YouTube動画取得処理が正常に完了しました。取得した動画数: ${result.videoCount}件`);
     }
     
     logger.info("fetchYouTubeVideos 関数の処理を完了しました");
@@ -496,15 +455,6 @@ export const fetchYouTubeVideos = async (
       });
     } catch (updateError) {
       logger.error("エラー状態の記録に失敗しました:", updateError);
-    }
-    
-    // HTTP関数の場合はエラーレスポンスを返す
-    if (res && typeof res.status === 'function') {
-      return res.status(500).json({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        message: "YouTube動画データ取得中に重大なエラーが発生しました"
-      });
     }
   }
 };

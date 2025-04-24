@@ -2,31 +2,6 @@
 import type * as admin from "firebase-admin"; // type を追加
 
 // --- インターフェース定義 ---
-/**
- * Discord ユーザー情報のインターフェース
- * Discord APIから取得するユーザー情報の構造を定義
- */
-export interface DiscordUser {
-  /** Discord ユーザーID */
-  id: string;
-  /** Discord ユーザー名 */
-  username: string;
-  /** アバター画像のハッシュ値（nullの場合はアバター未設定） */
-  avatar: string | null;
-  /** ユーザーのメールアドレス（nullの場合は取得不可または未設定） */
-  email: string | null;
-}
-
-/**
- * Discord ギルド（サーバー）情報のインターフェース
- * Discord APIから取得するギルド情報の構造を定義
- */
-export interface DiscordGuild {
-  /** Discord ギルドID */
-  id: string;
-  /** Discord ギルド名 */
-  name: string;
-}
 
 /**
  * YouTube 動画データのインターフェース
@@ -66,29 +41,9 @@ export interface SimplePubSubData {
   attributes?: { [key: string]: string };
 }
 
-// --- ヘルパー関数 ---
-/**
- * Discord アバターURLを生成する
- *
- * アバターハッシュの先頭が "a_" で始まる場合は GIF フォーマット、
- * それ以外は PNG フォーマットの URL を生成する
- *
- * @param userId - Discord ユーザーID
- * @param avatarHash - アバターのハッシュ値（null または空文字の場合は undefined を返却）
- * @returns アバターのURL または undefined（アバターハッシュがない場合）
- */
-export function getDiscordAvatarUrl(
-  userId: string,
-  avatarHash: string | null,
-): string | undefined {
-  if (!avatarHash) return undefined;
-  const format = avatarHash.startsWith("a_") ? "gif" : "png";
-  return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${format}?size=128`;
-}
-
 // --- 定数 ---
 /**
- * 水瀬鈴花のYouTubeチャンネルID
+ * 涼花みなせのYouTubeチャンネルID
  * YouTube Data APIでチャンネル情報を取得する際に使用
  */
 export const SUZUKA_MINASE_CHANNEL_ID = "UChiMMOhl6FpzjoRqvZ5rcaA";

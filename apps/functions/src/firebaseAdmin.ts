@@ -32,8 +32,3 @@ initializeFirebaseAdmin();
  * プロジェクト内で一貫したFirestoreインスタンスを使用するために提供
  */
 export const firestore = admin.firestore();
-
-/**
- * Firebase Auth管理インスタンス
- */
-export const auth = admin.auth();

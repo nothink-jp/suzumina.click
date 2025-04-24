@@ -10,9 +10,6 @@ const mockFirestoreInstance = {
   batch: mockFirestoreBatch,
 };
 const mockAdminFirestore = vi.fn(() => mockFirestoreInstance);
-const mockAdminAuth = vi.fn(() => ({
-  /* Auth インスタンスのメソッド */
-}));
 
 // モジュール内のinitializedフラグを制御するための変数
 let initializedFlag = false;
@@ -22,7 +19,6 @@ vi.mock("firebase-admin", () => {
   return {
     initializeApp: mockInitializeApp,
     firestore: mockAdminFirestore,
-    auth: mockAdminAuth,
   };
 });
 
@@ -38,15 +34,12 @@ vi.mock("./firebaseAdmin", () => {
         mockInitializeApp(); // 初回のみ初期化関数を呼び出す
         initializedFlag = true;
       }
-      return { firestore: mockAdminFirestore, auth: mockAdminAuth };
+      return { firestore: mockAdminFirestore };
     }),
-    // firestoreとauthのエクスポートもモックする
+    // firestoreのエクスポートもモックする
     // ここで実際にmockAdminFirestore()を呼び出して、テストの期待通りになるようにする
     get firestore() {
       return mockAdminFirestore();
-    },
-    get auth() {
-      return mockAdminAuth();
     },
   };
 
