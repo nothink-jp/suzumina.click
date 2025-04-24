@@ -339,7 +339,14 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
       publishedAt: video.snippet.publishedAt
         ? Timestamp.fromDate(new Date(video.snippet.publishedAt))
         : Timestamp.now(),
-      thumbnailUrl: video.snippet.thumbnails?.default?.url ?? "",
+      // 利用可能な最大サイズのサムネイルURLを取得（maxres→standard→high→medium→default）
+      thumbnailUrl:
+        video.snippet.thumbnails?.maxres?.url ||
+        video.snippet.thumbnails?.standard?.url ||
+        video.snippet.thumbnails?.high?.url ||
+        video.snippet.thumbnails?.medium?.url ||
+        video.snippet.thumbnails?.default?.url ||
+        "",
       channelId: video.snippet.channelId ?? "",
       channelTitle: video.snippet.channelTitle ?? "",
       lastFetchedAt: now,
