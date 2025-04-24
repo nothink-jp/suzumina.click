@@ -164,8 +164,8 @@ jobs:
         run: |
           echo "Artifact Registryリポジトリを確認しています..."
           
-          # リポジトリが存在するか確認
-          REPO_EXISTS=$(gcloud artifacts repositories list --location=${{ env.REGION }} --filter="name:suzumina-click" --format="value(name)" 2>/dev/null || echo "")
+          # リポジトリが存在するか確認（完全一致で確認）
+          REPO_EXISTS=$(gcloud artifacts repositories list --location=${{ env.REGION }} --format="value(name)" | grep "^suzumina-click$" || echo "")
           
           if [ -z "$REPO_EXISTS" ]; then
             echo "リポジトリが存在しないため、新規作成します"
