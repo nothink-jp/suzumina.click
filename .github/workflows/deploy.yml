@@ -171,10 +171,15 @@ jobs:
           
           echo "イメージをビルドしています: ${IMAGE_TAG}"
           
+          # Secret Managerからサービスアカウントキーを取得
+          FIREBASE_SA_KEY=$(gcloud secrets versions access latest --secret="FIREBASE_SERVICE_ACCOUNT_KEY" --project="${{ secrets.GCP_PROJECT_ID }}")
+          
           # ビルドとタグ付け
           # Dockerfileの場所を明示的に指定し、コンテキストをリポジトリのルートに設定
-          # モノレポの依存関係解決のためにはルートディレクトリをコンテキストとする必要がある
-          docker build -f apps/web/Dockerfile -t ${IMAGE_TAG} -t ${IMAGE_LATEST} .
+          # Firebase Admin SDK初期化に必要な環境変数を渡す
+          docker build -f apps/web/Dockerfile \
+            --build-arg FIREBASE_SERVICE_ACCOUNT_KEY="$FIREBASE_SA_KEY" \
+            -t ${IMAGE_TAG} -t ${IMAGE_LATEST} .
           
           # イメージのプッシュ
           docker push ${IMAGE_TAG}
