@@ -15,12 +15,32 @@ import * as http from "node:http";
 // ※実行時依存関係として追加済み
 import * as functions from "@google-cloud/functions-framework";
 // 適切なロギング
-import * as logger from "firebase-functions/logger";
-// Firebase Admin SDKを初期化するために必要
-import { initializeFirebaseAdmin } from "./firebaseAdmin";
+import * as logger from "./utils/logger";
 
-// Firebase Admin SDKを初期化
-initializeFirebaseAdmin();
+// アプリケーションの初期化状態を管理するフラグ
+let initialized = false;
+
+/**
+ * アプリケーション初期化関数
+ * 
+ * この関数は複数回呼び出されても実際の初期化は1回のみ実行される
+ */
+export function initializeApplication(): boolean {
+  if (!initialized) {
+    logger.info("アプリケーション初期化を開始します");
+    
+    // 基本的な初期化処理
+    // 注意: 個別モジュール固有の初期化は各モジュールで行う
+    
+    // 初期化完了
+    initialized = true;
+    logger.info("アプリケーション初期化が完了しました");
+  }
+  return true;
+}
+
+// アプリケーションを初期化
+initializeApplication();
 
 // 各モジュールから関数をインポート
 import { fetchYouTubeVideos } from "./youtube";
