@@ -36,9 +36,9 @@ jobs:
           echo "node_version=$NODE_VERSION" >> $GITHUB_OUTPUT
           echo "pnpm_version=$PNPM_VERSION" >> $GITHUB_OUTPUT
 
-      # 再利用可能なワークフローを使用してNode.js環境をセットアップ
+      # 複合アクションを使用してNode.js環境をセットアップ
       - name: Node.js環境のセットアップ
-        uses: ./.github/workflows/reusable/setup-node-env.yml
+        uses: ./.github/actions/setup-node-env
         with:
           node-version: ${{ steps.read_engines.outputs.node_version }}
           pnpm-version: ${{ steps.read_engines.outputs.pnpm_version }}

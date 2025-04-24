@@ -125,9 +125,9 @@ jobs:
         with:
           ref: ${{ needs.verify-deployment-conditions.outputs.deploy_branch }}
       
-      # 再利用可能なワークフローを使用してNode.js環境をセットアップ
+      # 複合アクションを使用してNode.js環境をセットアップ
       - name: Node.js環境のセットアップ
-        uses: ./.github/workflows/reusable/setup-node-env.yml
+        uses: ./.github/actions/setup-node-env
         with:
           node-version: ${{ needs.verify-deployment-conditions.outputs.node_version }}
           pnpm-version: ${{ needs.verify-deployment-conditions.outputs.pnpm_version }}
@@ -222,9 +222,9 @@ jobs:
         with:
           ref: ${{ needs.verify-deployment-conditions.outputs.deploy_branch }}
       
-      # 再利用可能なワークフローを使用してNode.js環境をセットアップ
+      # 複合アクションを使用してNode.js環境をセットアップ
       - name: Node.js環境のセットアップ
-        uses: ./.github/workflows/reusable/setup-node-env.yml
+        uses: ./.github/actions/setup-node-env
         with:
           node-version: ${{ needs.verify-deployment-conditions.outputs.node_version }}
           pnpm-version: ${{ needs.verify-deployment-conditions.outputs.pnpm_version }}

@@ -1,0 +1,71 @@
+name: 'Node.js環境のセットアップ'
+description: 'Node.jsとpnpmの環境をセットアップし、依存関係をインストールする複合アクション'
+
+# 入力パラメータ
+inputs:
+  node-version:
+    description: 'Node.jsのバージョン（指定しない場合はpackage.jsonから読み取ります）'
+    required: false
+    default: ''
+  pnpm-version:
+    description: 'pnpmのバージョン（指定しない場合はpackage.jsonから読み取ります）'
+    required: false
+    default: ''
+  project-path:
+    description: 'プロジェクトのパス（キャッシュキー生成に使用）'
+    required: false
+    default: ''
+
+# 複合アクションの実行定義
+runs:
+  using: 'composite'
+  steps:
+    # バージョン情報の設定
+    - name: Node.jsとpnpmのバージョン設定
+      id: setup_versions
+      shell: bash
+      run: |
+        if [ -z "${{ inputs.node-version }}" ]; then
+          # パラメータが空の場合はpackage.jsonから読み取る
+          NODE_VERSION=$(node -p "require('./package.json').engines.node")
+        else
+          # パラメータを使用
+          NODE_VERSION="${{ inputs.node-version }}"
+        fi
+        
+        if [ -z "${{ inputs.pnpm-version }}" ]; then
+          # パラメータが空の場合はpackage.jsonから読み取る
+          PNPM_VERSION=$(node -p "require('./package.json').engines.pnpm")
+        else
+          # パラメータを使用
+          PNPM_VERSION="${{ inputs.pnpm-version }}"
+        fi
+        
+        echo "使用するバージョン: Node.js=$NODE_VERSION, pnpm=$PNPM_VERSION"
+        echo "node_version=$NODE_VERSION" >> $GITHUB_OUTPUT
+        echo "pnpm_version=$PNPM_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Node.js のセットアップ
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ steps.setup_versions.outputs.node_version || '22' }}
+
+    - name: pnpm のインストール
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ steps.setup_versions.outputs.pnpm_version || '10' }}
+        run_install: false
+    
+    - name: 依存関係のキャッシュ
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pnpm-store
+          **/node_modules
+        key: ${{ runner.os }}-pnpm-${{ inputs.project-path != '' && format('{0}-', inputs.project-path) || '' }}${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-${{ inputs.project-path != '' && format('{0}-', inputs.project-path) || '' }}
+    
+    - name: 依存関係のインストール
+      shell: bash
+      run: pnpm install
