@@ -48,7 +48,7 @@ jobs:
 
   # Next.jsウェブアプリ（Web）の検証
   web-checks:
-    uses: ./.github/workflows/reusable/build-and-test-app.yml
+    uses: ./.github/workflows/build-and-test-app-workflow.yml
     needs: common-lint
     with:
       app-name: 'web'
@@ -60,7 +60,7 @@ jobs:
 
   # Cloud Functions の検証
   functions-checks:
-    uses: ./.github/workflows/reusable/build-and-test-app.yml
+    uses: ./.github/workflows/build-and-test-app-workflow.yml
     needs: common-lint
     with:
       app-name: 'functions'
