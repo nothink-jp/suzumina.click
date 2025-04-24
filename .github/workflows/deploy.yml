@@ -187,12 +187,45 @@ jobs:
           
           echo "イメージをビルドしています: ${IMAGE_TAG}"
           
+          # gcloudの現在の認証情報を確認（デバッグ用）
+          echo "認証情報の確認中..."
+          gcloud auth list
+          echo "認証済みサービスアカウント: $(gcloud auth list --filter=status:ACTIVE --format='value(account)')"
+          
+          # Secret Managerへのアクセス権限を確認（デバッグ用）
+          echo "Secret Managerのアクセス権限を確認中..."
+          gcloud projects get-iam-policy ${{ secrets.GCP_PROJECT_ID }} \
+            --flatten="bindings[].members" \
+            --format="table(bindings.role,bindings.members)" \
+            --filter="bindings.members:cloud-run-deployer-sa AND bindings.role:secretmanager.secretAccessor"
+          
           # Secret Managerからサービスアカウントキーを取得
           echo "Secret Managerからサービスアカウントキーを取得しています..."
-          FIREBASE_SA_KEY=$(gcloud secrets versions access latest --secret="FIREBASE_SERVICE_ACCOUNT_KEY" --project="${{ secrets.GCP_PROJECT_ID }}" 2>/dev/null)
+          # デバッグ情報を追加（エラーの詳細出力）
+          FIREBASE_SA_KEY_RESULT=$(gcloud secrets versions access latest \
+            --secret="FIREBASE_SERVICE_ACCOUNT_KEY" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1)
           
-          if [ -z "$FIREBASE_SA_KEY" ]; then
+          # エラー処理を追加
+          if [ $? -ne 0 ]; then
             echo "::error::Firebase Service Account Keyの取得に失敗しました"
+            echo "エラー詳細: ${FIREBASE_SA_KEY_RESULT}"
+            # シークレットの存在確認
+            echo "シークレットの存在確認:"
+            gcloud secrets list --filter="name:FIREBASE_SERVICE_ACCOUNT_KEY" --project="${{ secrets.GCP_PROJECT_ID }}"
+            # バージョン確認
+            echo "シークレットのバージョン確認:"
+            gcloud secrets versions list FIREBASE_SERVICE_ACCOUNT_KEY --project="${{ secrets.GCP_PROJECT_ID }}"
+            exit 1
+          fi
+          
+          # 結果を変数に格納
+          FIREBASE_SA_KEY="${FIREBASE_SA_KEY_RESULT}"
+          
+          # 取得したキーが有効なJSONかチェック
+          if ! echo "${FIREBASE_SA_KEY}" | jq -e . >/dev/null 2>&1; then
+            echo "::error::Firebase Service Account Keyが有効なJSON形式ではありません"
+            echo "取得されたデータの先頭部分（安全のため一部のみ表示）: ${FIREBASE_SA_KEY:0:50}..."
             exit 1
           fi
           
