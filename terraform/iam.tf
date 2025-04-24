@@ -79,6 +79,19 @@ resource "google_project_iam_member" "cloud_run_deployer_sa_user" {
   depends_on = [google_service_account.cloud_run_deployer_sa]
 }
 
+# Secret Managerアクセス権限 - Firebaseサービスアカウントキーへのアクセス用
+resource "google_secret_manager_secret_iam_member" "cloud_run_deployer_firebase_sa_key_accessor" {
+  project   = var.gcp_project_id
+  secret_id = "FIREBASE_SERVICE_ACCOUNT_KEY"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run_deployer_sa.email}"
+  
+  depends_on = [
+    google_service_account.cloud_run_deployer_sa,
+    google_secret_manager_secret.secrets["FIREBASE_SERVICE_ACCOUNT_KEY"]
+  ]
+}
+
 # ------------------------------------------------------------------------------
 # 最小権限サービスアカウント - Cloud Functions専用デプロイアカウント
 # ------------------------------------------------------------------------------
