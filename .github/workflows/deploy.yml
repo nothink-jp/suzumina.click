@@ -154,7 +154,7 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       
-      # Docker認証の設定
+      # Dockerの認証設定
       - name: Dockerの認証設定
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
@@ -172,7 +172,9 @@ jobs:
           echo "イメージをビルドしています: ${IMAGE_TAG}"
           
           # ビルドとタグ付け
-          docker build -t ${IMAGE_TAG} -t ${IMAGE_LATEST} ./apps/web
+          # Dockerfileの場所を明示的に指定し、コンテキストをリポジトリのルートに設定
+          # モノレポの依存関係解決のためにはルートディレクトリをコンテキストとする必要がある
+          docker build -f apps/web/Dockerfile -t ${IMAGE_TAG} -t ${IMAGE_LATEST} .
           
           # イメージのプッシュ
           docker push ${IMAGE_TAG}
