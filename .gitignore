@@ -57,3 +57,5 @@ terraform/terraform.tfvars
 .terraform/
 *.tfstate
 *.tfstate.backup
+
+service-account-key.json

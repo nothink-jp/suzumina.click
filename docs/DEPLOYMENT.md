@@ -124,13 +124,67 @@ terraform apply
 
 環境変数はSecret Managerで管理され、Terraformで定義されています：
 
-1. Secret Managerに値を設定：
+1. Secret Managerに必要なシークレットを作成：
 
 ```bash
-echo -n "実際の値" | gcloud secrets versions add シークレット名 --data-file=- --project=suzumina-click-firebase
+# 必要なシークレットの一覧
+SECRETS=(
+  "NEXT_PUBLIC_DISCORD_CLIENT_ID"
+  "NEXT_PUBLIC_DISCORD_REDIRECT_URI"
+  "DISCORD_CLIENT_SECRET"
+  "DISCORD_TARGET_GUILD_ID"
+  "FIREBASE_SERVICE_ACCOUNT_KEY"
+  "YOUTUBE_API_KEY"
+)
+
+# プロジェクトIDを設定
+PROJECT_ID="suzumina-click-firebase"
+
+# シークレットを作成
+for SECRET_NAME in "${SECRETS[@]}"; do
+  # シークレットが存在するかチェック
+  if ! gcloud secrets describe "$SECRET_NAME" --project="$PROJECT_ID" &>/dev/null; then
+    echo "シークレット「$SECRET_NAME」を作成します..."
+    gcloud secrets create "$SECRET_NAME" --project="$PROJECT_ID"
+    echo "シークレット「$SECRET_NAME」が作成されました。次に値を設定してください。"
+  else
+    echo "シークレット「$SECRET_NAME」は既に存在します。"
+  fi
+done
 ```
 
-2. `terraform/secrets.tf`で参照設定を更新
+2. 作成したシークレットに値を設定（**重要: このステップは必ず実行してください**）：
+
+```bash
+# 各シークレットに値を設定する
+# 方法1: コマンドラインで直接入力（安全ではないため本番環境では非推奨）
+echo -n "実際の値" | gcloud secrets versions add シークレット名 --data-file=- --project="$PROJECT_ID"
+
+# 方法2: ファイルから値を読み込む（推奨）
+# 1. 値を含むファイルを作成（例: secret_value.txt）
+# 2. ファイルから値を読み込んでシークレットに設定
+gcloud secrets versions add シークレット名 --data-file=./secret_value.txt --project="$PROJECT_ID"
+
+# 方法3: JSON形式のシークレット（FIREBASE_SERVICE_ACCOUNT_KEY等）の場合
+gcloud secrets versions add FIREBASE_SERVICE_ACCOUNT_KEY --data-file=./service-account-key.json --project="$PROJECT_ID"
+```
+
+3. すべてのシークレットが正しく作成されていることを確認：
+
+```bash
+# すべてのシークレットを一覧表示
+gcloud secrets list --project="$PROJECT_ID"
+
+# 各シークレットの最新バージョンが存在するか確認
+for SECRET_NAME in "${SECRETS[@]}"; do
+  echo "シークレット「$SECRET_NAME」の確認:"
+  gcloud secrets versions list "$SECRET_NAME" --project="$PROJECT_ID"
+done
+```
+
+**重要**: シークレットを作成するだけでなく、必ず値を設定してください。値が設定されていないシークレットはデプロイ時にエラーの原因となります。
+
+4. `terraform/secrets.tf`で参照設定を更新
 
 ### ローカル開発環境
 
@@ -170,6 +224,73 @@ echo -n "実際の値" | gcloud secrets versions add シークレット名 --dat
 - Discord Developer Portalの設定を確認します（リダイレクトURL等）
 - Firebase Authenticationの設定を確認します
 - Cloud Functions（`discordAuthCallback`）のログでエラーを確認します
+
+### 4. Terraform関連のエラー
+
+#### 「Error: Error creating WorkloadIdentityPool: googleapi: Error 409: Requested entity already exists」
+
+このエラーは、Terraformが作成しようとしているリソースが既にGCPプロジェクトに存在する場合に発生します。解決するには：
+
+1. 既存のリソースをTerraformの状態にインポートします：
+
+```bash
+# Workload Identity Poolをインポートする例
+terraform import google_iam_workload_identity_pool.github_pool "projects/${PROJECT_ID}/locations/global/workloadIdentityPools/github-pool"
+```
+
+2. インポート後に再度 `terraform plan` を実行し、差分が解消されたか確認します
+
+3. 必要に応じて設定を調整したのち `terraform apply` を実行します
+
+#### その他のTerraformリソース競合エラー
+
+1. エラーメッセージから競合しているリソースを特定します
+2. 以下の方法で対処します：
+   - リソースをTerraformの状態にインポート（推奨）
+   - 既存のリソースを手動で削除（**注意: 本番環境では危険です**）
+   - Terraformコードを修正し、既存リソースと整合させる
+
+```bash
+# リソースインポートの一般的な形式
+terraform import [リソースタイプ].[リソース名] [リソースID]
+
+# 例: Cloud Runサービスのインポート
+terraform import google_cloud_run_service.webapp "projects/${PROJECT_ID}/locations/asia-northeast1/services/suzumina-click-nextjs-app"
+```
+
+3. Terraform状態の確認:
+
+```bash
+# 現在Terraformで管理されているリソースを表示
+terraform state list
+
+# 特定リソースの状態を詳細表示
+terraform state show [リソースタイプ].[リソース名]
+```
+
+#### 状態ファイルの競合
+
+複数の開発者がTerraformを実行している場合、状態ファイルの競合が発生する可能性があります。この場合は：
+
+1. リポジトリから最新の状態ファイルを取得します
+2. ローカルの変更を破棄または統合します
+3. チーム内で誰がいつTerraformを実行するか調整します
+
+**重要**: 将来的にはリモート状態バックエンド（GCS等）の導入を検討してください。これにより状態ファイルの競合を防ぎ、ステート管理が改善されます。
+
+#### Workload Identity Poolの削除
+
+```bash
+# 削除中のWorkload Identity Poolを含めて表示
+gcloud iam workload-identity-pools list --location=global --project=suzumina-click-firebase --show-deleted
+
+# 削除（すでに削除されたプールを完全に消去するには--show-deletedオプションと併用）
+gcloud iam workload-identity-pools delete github-pool --location=global --project=suzumina-click-firebase
+
+# 注：Workload Identity Poolが使用中の場合は、まず関連するプロバイダーや連携を削除する必要があります
+# 例：Workload Identity Pool Providerの削除
+# gcloud iam workload-identity-pool-providers delete github-provider --workload-identity-pool=github-pool --location=global --project=suzumina-click-firebase
+```
 
 ## 今後の改善予定
 

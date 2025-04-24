@@ -140,6 +140,15 @@ resource "google_iam_workload_identity_pool" "github_pool" {
   workload_identity_pool_id = "github-pool"
   display_name              = "GitHub Actions ID Pool"  # 表示名を短く変更
   description               = "GitHubからの認証用のID Pool"
+  
+  # 初回作成後に保護設定を有効化する
+  # lifecycle {
+  #   prevent_destroy = true
+  #   ignore_changes = [
+  #     description,
+  #     display_name
+  #   ]
+  # }
 }
 
 # GitHubプロバイダを設定
@@ -220,7 +229,7 @@ resource "google_service_account" "discord_auth_callback_sa" {
 # サービスアカウントにDISCORD_CLIENT_IDシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "discord_client_id_accessor" {
   project   = var.gcp_project_id
-  secret_id = google_secret_manager_secret.secrets["DISCORD_CLIENT_ID"].secret_id
+  secret_id = google_secret_manager_secret.secrets["NEXT_PUBLIC_DISCORD_CLIENT_ID"].secret_id
   role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
   member    = "serviceAccount:${google_service_account.discord_auth_callback_sa.email}" # サービスアカウントのメールアドレスを参照
 
@@ -247,7 +256,7 @@ resource "google_secret_manager_secret_iam_member" "discord_client_secret_access
 # サービスアカウントにDISCORD_REDIRECT_URIシークレットへのアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "discord_redirect_uri_accessor" {
   project   = var.gcp_project_id
-  secret_id = google_secret_manager_secret.secrets["DISCORD_REDIRECT_URI"].secret_id
+  secret_id = google_secret_manager_secret.secrets["NEXT_PUBLIC_DISCORD_REDIRECT_URI"].secret_id
   role      = "roles/secretmanager.secretAccessor" # シークレットアクセサーロール
   member    = "serviceAccount:${google_service_account.discord_auth_callback_sa.email}" # サービスアカウントのメールアドレスを参照
 

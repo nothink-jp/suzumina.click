@@ -31,3 +31,22 @@ variable "youtube_api_key" {
   type        = string
   sensitive   = true # ログや出力に表示されないよう機密データとして扱う
 }
+
+# Discord OAuth設定
+# Discord Developer Portalから取得できる情報
+variable "discord_client_id" {
+  description = "Discord OAuth認証で使用するクライアントID"
+  type        = string
+  sensitive   = true
+}
+
+variable "discord_client_secret" {
+  description = "Discord OAuth認証で使用するクライアントシークレット"
+  type        = string
+  sensitive   = true
+}
+
+variable "discord_redirect_uri" {
+  description = "Discord OAuth認証後のリダイレクト先URI"
+  type        = string
+}
