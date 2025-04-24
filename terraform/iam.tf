@@ -92,6 +92,33 @@ resource "google_secret_manager_secret_iam_member" "cloud_run_deployer_firebase_
   ]
 }
 
+# Discord認証関連のシークレットへのアクセス権限を付与
+# NEXT_PUBLIC_DISCORD_CLIENT_ID へのアクセス権限
+resource "google_secret_manager_secret_iam_member" "cloud_run_deployer_discord_client_id_accessor" {
+  project   = var.gcp_project_id
+  secret_id = google_secret_manager_secret.secrets["NEXT_PUBLIC_DISCORD_CLIENT_ID"].secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run_deployer_sa.email}"
+  
+  depends_on = [
+    google_service_account.cloud_run_deployer_sa,
+    google_secret_manager_secret.secrets["NEXT_PUBLIC_DISCORD_CLIENT_ID"]
+  ]
+}
+
+# NEXT_PUBLIC_DISCORD_REDIRECT_URI へのアクセス権限
+resource "google_secret_manager_secret_iam_member" "cloud_run_deployer_discord_redirect_uri_accessor" {
+  project   = var.gcp_project_id
+  secret_id = google_secret_manager_secret.secrets["NEXT_PUBLIC_DISCORD_REDIRECT_URI"].secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run_deployer_sa.email}"
+  
+  depends_on = [
+    google_service_account.cloud_run_deployer_sa,
+    google_secret_manager_secret.secrets["NEXT_PUBLIC_DISCORD_REDIRECT_URI"]
+  ]
+}
+
 # ------------------------------------------------------------------------------
 # 最小権限サービスアカウント - Cloud Functions専用デプロイアカウント
 # ------------------------------------------------------------------------------
