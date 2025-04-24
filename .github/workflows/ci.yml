@@ -8,7 +8,7 @@ on:
 
 # 共通の環境変数
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
   PNPM_VERSION: '10'
 
 jobs:

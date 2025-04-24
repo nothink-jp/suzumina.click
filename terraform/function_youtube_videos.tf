@@ -29,8 +29,14 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
   build_config {
     runtime     = local.youtube_runtime
     entry_point = local.youtube_entry_point
-    # GitHub Actionsからデプロイするため、ソース参照は削除
-    # 代わりにソース管理はCIが担当
+    # 初回デプロイ用にダミーのソースコードを設定
+    # GitHub Actionsによる実際のデプロイでは上書きされる
+    source {
+      storage_source {
+        bucket = "${var.gcp_project_id}-functions"
+        object = "function-source-dummy.zip"
+      }
+    }
   }
 
   # サービス設定

@@ -13,6 +13,51 @@ locals {
   # 初期デプロイ時のダミーイメージ
   cloudrun_initial_image = "gcr.io/cloudrun/hello"
   # デプロイ後にGitHub Actionsで更新される
+  # Discord認証に必要なシークレット
+  discord_auth_secrets = [
+    "NEXT_PUBLIC_DISCORD_CLIENT_ID",
+    "DISCORD_CLIENT_SECRET",
+    "NEXT_PUBLIC_DISCORD_REDIRECT_URI",
+    "DISCORD_TARGET_GUILD_ID",
+    "FIREBASE_SERVICE_ACCOUNT_KEY"
+  ]
+}
+
+# Cloud Run用のサービスアカウント
+resource "google_service_account" "nextjs_app_sa" {
+  project      = var.gcp_project_id
+  account_id   = "nextjs-app-sa"
+  display_name = "Next.js App Service Account"
+  description  = "Next.jsアプリケーション用のサービスアカウント（Discord認証を含む）"
+}
+
+# サービスアカウントにSecret Managerへのアクセス権限を付与
+resource "google_project_iam_member" "nextjs_app_secretmanager_accessor" {
+  project = var.gcp_project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_service_account.nextjs_app_sa.email}"
+}
+
+# シークレットごとに明示的なアクセス権限を付与
+# 各シークレットへの明示的な権限付与
+resource "google_secret_manager_secret_iam_binding" "nextjs_app_secrets_access" {
+  for_each  = { for secret in local.all_secrets : secret.id => secret.id }
+  project   = var.gcp_project_id
+  secret_id = each.value
+  role      = "roles/secretmanager.secretAccessor"
+  members   = ["serviceAccount:${google_service_account.nextjs_app_sa.email}"]
+  
+  depends_on = [
+    google_service_account.nextjs_app_sa,
+    google_secret_manager_secret.secrets
+  ]
+}
+
+# サービスアカウントにFirebase Admin権限を付与
+resource "google_project_iam_member" "nextjs_app_firebase_admin" {
+  project = var.gcp_project_id
+  role    = "roles/firebase.admin"
+  member  = "serviceAccount:${google_service_account.nextjs_app_sa.email}"
 }
 
 # Cloud Run サービスの定義
@@ -22,6 +67,9 @@ resource "google_cloud_run_service" "nextjs_app" {
 
   template {
     spec {
+      # サービスアカウントを設定
+      service_account_name = google_service_account.nextjs_app_sa.email
+      
       containers {
         # 初期デプロイ用のダミーイメージ
         # 注意: 実際のデプロイはGitHub Actionsによって行われます
@@ -53,6 +101,20 @@ resource "google_cloud_run_service" "nextjs_app" {
           content {
             name  = "FIREBASE_${env.key}"
             value = env.value
+          }
+        }
+        
+        # Discord認証関連のシークレット環境変数
+        dynamic "env" {
+          for_each = toset(local.discord_auth_secrets)
+          content {
+            name = env.value
+            value_from {
+              secret_key_ref {
+                name = env.value
+                key  = "latest"
+              }
+            }
           }
         }
         
@@ -99,7 +161,7 @@ resource "google_cloud_run_service_iam_member" "public_access" {
 
 # Cloud Runサービスの出力値
 output "nextjs_app_url" {
-  value       = google_cloud_run_service.nextjs_app.status[0].url
+  value       = try(google_cloud_run_service.nextjs_app.status[0].url, "サービスがまだデプロイされていません")
   description = "Next.jsアプリケーションのURL"
 }
 

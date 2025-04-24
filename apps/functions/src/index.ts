@@ -23,79 +23,7 @@ import { initializeFirebaseAdmin } from "./firebaseAdmin";
 initializeFirebaseAdmin();
 
 // 各モジュールから関数をインポート
-import { discordAuthCallback as discordAuthFunc } from "./discordAuth";
 import { fetchYouTubeVideos } from "./youtube";
-
-/**
- * Discord認証コールバック関数（GCFv2向けアダプター）
- * Firebase FunctionsのHTTPS関数をGCFv2形式で実行するためのラッパー
- */
-functions.http("discordAuthCallback", async (req, res) => {
-  try {
-    logger.info("GCFv2 discordAuthCallback 関数を呼び出します");
-
-    // CORSヘッダーを設定
-    const allowedOrigin = "https://suzumina-click-firebase.web.app";
-    res.set("Access-Control-Allow-Origin", allowedOrigin);
-    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.set("Access-Control-Max-Age", "3600");
-
-    // プリフライトリクエストの処理
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
-
-    // POSTメソッド以外は拒否
-    if (req.method !== "POST") {
-      logger.error("許可されていないメソッドです（POSTメソッドのみ許可）", {
-        method: req.method,
-      });
-      res.status(405).send("Method Not Allowed");
-      return;
-    }
-
-    // リクエストボディからcodeを取得
-    const code = req.body?.code as string | undefined;
-
-    if (!code) {
-      logger.error("リクエスト本文に認証コードが見つかりません");
-      res
-        .status(400)
-        .send({ success: false, error: "Authorization code is required." });
-      return;
-    }
-
-    // Firebase Functionsのコールバックを実行するためのシンプル化されたリクエスト
-    const mockRequest = {
-      method: "POST",
-      body: { code },
-      headers: req.headers,
-      // 必要に応じて他のプロパティを追加
-    };
-
-    // Firebase Functionsの関数を安全に実行
-    try {
-      // @ts-ignore - 内部実装を直接呼び出し
-      const handler = discordAuthFunc._def.func;
-      if (typeof handler === "function") {
-        await handler(mockRequest, res);
-      } else {
-        throw new Error("Discord認証ハンドラーが関数ではありません");
-      }
-    } catch (error) {
-      logger.error("Discord認証処理に失敗しました:", error);
-      res.status(500).send({ success: false, error: "Authentication failed." });
-    }
-  } catch (error) {
-    logger.error(
-      "Discord認証コールバックの実行中にエラーが発生しました:",
-      error,
-    );
-    res.status(500).send({ success: false, error: "Internal Server Error" });
-  }
-});
 
 // GCFv2用のCloudEventハンドラーを登録（Pub/Subトリガー関数用）
 functions.cloudEvent("fetchYouTubeVideos", fetchYouTubeVideos);
@@ -114,7 +42,7 @@ if (require.main === module) {
 
   // FUNCTION_TARGET環境変数を設定（指定がなければデフォルト値を使用）
   // Cloud Run環境では通常これが設定されています
-  const functionTarget = process.env.FUNCTION_TARGET || "discordAuthCallback";
+  const functionTarget = process.env.FUNCTION_TARGET || "fetchYouTubeVideos";
   logger.info(`関数ターゲット: ${functionTarget}`);
 
   // 標準的なHTTPサーバーの作成と必要なリクエストのFunctions Frameworkへの転送

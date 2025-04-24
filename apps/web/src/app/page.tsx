@@ -1,17 +1,35 @@
-import Image from "next/image"; // Image は一旦未使用になるが、将来使う可能性があるので残す
-import HeadlessUiDisclosureExample from "./_components/HeadlessUiDisclosureExample"; // 作成したコンポーネントをインポート
+import HeadlessUiDisclosureExample from "./_components/HeadlessUiDisclosureExample";
+import { getCurrentUser } from "./api/auth/getCurrentUser";
+import AuthButton from "@/components/ui/AuthButton";
 
-export default function Home() {
+export default async function Home() {
+  // サーバーサイドでログイン状態を確認
+  const user = await getCurrentUser();
+  const isLoggedIn = !!user;
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
       {/* フォントは layout.tsx の body から継承される想定 */}
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">
-          涼花みなせ 非公式ファンサイト (仮)
+          すずみなくりっく！
         </h1>
         <p className="text-lg">
           ようこそ！ここは涼花みなせさんの活動を応援する非公式ファンサイトです。
         </p>
+
+        {/* ログイン状態に応じて表示を変更 */}
+        {isLoggedIn ? (
+          <div className="mt-4 p-4 bg-success/10 rounded-lg">
+            <p className="text-success font-bold">ログイン中です</p>
+            <p className="text-sm mt-1">ユーザー名: {user?.displayName || 'ゲスト'}</p>
+          </div>
+        ) : (
+          <div className="mt-4 flex justify-center">
+            <AuthButton />
+          </div>
+        )}
+
         <p className="mt-8">(コンテンツ準備中...)</p>
         {/* DaisyUI ボタンの例 (動作確認用) */}
         <div className="mt-12">

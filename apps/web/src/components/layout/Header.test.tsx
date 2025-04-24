@@ -46,7 +46,7 @@ describe("Header コンポーネント", () => {
 
     // サイト名が表示されていることを確認
     expect(
-      screen.getByText("涼花みなせ 非公式ファンサイト (仮)"),
+      screen.getByText("すずみなくりっく！"),
     ).toBeInTheDocument();
 
     // About リンクが表示されていることを確認
@@ -83,7 +83,7 @@ describe("Header コンポーネント", () => {
     render(<Header />);
 
     // サイト名のリンクがトップページに設定されていることを確認
-    const titleLink = screen.getByText("涼花みなせ 非公式ファンサイト (仮)");
+    const titleLink = screen.getByText("すずみなくりっく！");
     expect(titleLink.closest("a")).toHaveAttribute("href", "/");
   });
 });

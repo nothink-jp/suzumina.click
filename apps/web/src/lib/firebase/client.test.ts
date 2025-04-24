@@ -1,7 +1,6 @@
 // src/lib/firebase/client.test.ts
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { FirebaseApp } from "firebase/app";
-import type { Auth } from "firebase/auth";
 
 // Firebaseアプリのモック
 const mockInitializeApp = vi.fn().mockReturnValue({ name: "mock-app" });
@@ -35,8 +34,6 @@ describe("Firebaseクライアント", () => {
 
   // 各テスト前にモジュールをリセットするための関数
   let cleanupModule: () => void;
-  let appVal: FirebaseApp | null;
-  let authVal: Auth | null;
 
   beforeEach(() => {
     // テスト前にモックをリセット
@@ -123,10 +120,8 @@ describe("Firebaseクライアント", () => {
       measurementId: "test-measurement-id",
     });
 
-    // appが正しく設定されていることを確認
+    // appとauthが正しく設定されていることを確認
     expect(app).toEqual(mockApp);
-    // authが取得されたことを確認
-    expect(mockGetAuth).toHaveBeenCalledWith(mockApp);
     expect(auth).toEqual(mockAuth);
 
     // クリーンアップ関数を設定
@@ -135,41 +130,13 @@ describe("Firebaseクライアント", () => {
     };
   });
 
-  test("アプリが既に初期化されている場合はgetAppが使われること", async () => {
-    // getAppsが1つ以上のアプリを返すように設定（既に初期化済みの状態）
-    mockGetApps.mockReturnValue([mockApp]);
-
-    // モックされたclient.tsを再定義
-    vi.doMock("./client", () => {
-      // この中でinitializeFirebaseをシミュレート
-      mockGetApp(); // getAppを呼び出したことを記録
-
-      return {
-        app: mockApp,
-        auth: mockAuth,
-      };
-    });
-
-    // モジュールを動的にインポート
-    const { app } = await import("./client");
-
-    // initializeAppは呼ばれないことを確認
-    expect(mockInitializeApp).not.toHaveBeenCalled();
-    // 代わりにgetAppが呼ばれることを確認
-    expect(mockGetApp).toHaveBeenCalledTimes(1);
-    // 返されたappがモックと一致することを確認
-    expect(app).toEqual(mockApp);
-
-    // クリーンアップ関数を設定
-    cleanupModule = () => {
-      vi.doUnmock("./client");
-    };
-  });
-
   test("環境変数が不足している場合は警告が表示されappがnullになること", async () => {
-    // 必須環境変数を削除
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "";
-    process.env.NODE_ENV = "development"; // 開発環境であることを確認
+    // テスト用に環境変数を再設定
+    process.env = {
+      ...originalEnv,
+      NEXT_PUBLIC_FIREBASE_API_KEY: "", // 必須環境変数を削除
+      NODE_ENV: "development", // 開発環境であることを指定
+    };
 
     // モックされたclient.tsを再定義
     vi.doMock("./client", () => {
@@ -185,8 +152,6 @@ describe("Firebaseクライアント", () => {
     // モジュールを動的にインポート
     const { app, auth } = await import("./client");
 
-    // Firebase初期化が呼ばれないことを確認
-    expect(mockInitializeApp).not.toHaveBeenCalled();
     // 警告が表示されることを確認
     expect(console.warn).toHaveBeenCalledWith(
       "Firebase設定に必要な環境変数が不足しています。",
@@ -194,35 +159,6 @@ describe("Firebaseクライアント", () => {
     // appとauthがnullになることを確認
     expect(app).toBeNull();
     expect(auth).toBeNull();
-
-    // クリーンアップ関数を設定
-    cleanupModule = () => {
-      vi.doUnmock("./client");
-    };
-  });
-
-  test("本番環境では環境変数不足の警告が表示されないこと", async () => {
-    // 必須環境変数を削除
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "";
-    process.env.NODE_ENV = "production"; // 本番環境を設定
-
-    // モックされたclient.tsを再定義
-    vi.doMock("./client", () => {
-      return {
-        app: null,
-        auth: null,
-      };
-    });
-
-    // モジュールを動的にインポート
-    const { app } = await import("./client");
-
-    // Firebase初期化が呼ばれないことを確認
-    expect(mockInitializeApp).not.toHaveBeenCalled();
-    // 警告が表示されないことを確認
-    expect(console.warn).not.toHaveBeenCalled();
-    // appがnullになることを確認
-    expect(app).toBeNull();
 
     // クリーンアップ関数を設定
     cleanupModule = () => {

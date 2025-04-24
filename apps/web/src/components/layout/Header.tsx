@@ -6,7 +6,7 @@ export default function Header() {
     <header className="navbar bg-base-100 shadow-sm">
       <div className="flex-1">
         <Link href="/" className="btn btn-ghost text-xl">
-          涼花みなせ 非公式ファンサイト (仮)
+        すずみなくりっく！
         </Link>
       </div>
       <div className="flex-none gap-2">

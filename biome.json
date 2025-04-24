@@ -21,7 +21,13 @@
     }
   },
   "files": {
-    "include": ["apps/**/*.{ts,tsx,js,jsx}", "functions/**/*.{ts,js}", "packages/**/*.{ts,tsx,js,jsx}"],
-    "ignore": ["**/node_modules", "**/dist", "**/.next", "**/storybook-static", "**/coverage"]
+    "include": ["**/*.{ts,tsx,js,jsx}"],
+    "ignore": [
+      "**/node_modules",
+      "**/dist",
+      "**/.next",
+      "**/storybook-static",
+      "**/coverage"
+    ]
   }
 }

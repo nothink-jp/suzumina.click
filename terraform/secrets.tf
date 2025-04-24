@@ -16,23 +16,23 @@ locals {
     }
   }
 
-  # Discord認証関連シークレット
+  # Discord認証関連シークレット（Next.js Server Actions用）
   discord_secrets = [
     {
-      id          = "DISCORD_CLIENT_ID"
-      description = "Discord OAuthアプリケーションのクライアントID"
+      id          = "NEXT_PUBLIC_DISCORD_CLIENT_ID"
+      description = "Discord OAuthアプリケーションのクライアントID - フロントエンドと共有"
+    },
+    {
+      id          = "NEXT_PUBLIC_DISCORD_REDIRECT_URI"
+      description = "Discord認証後のリダイレクトURI - フロントエンドと共有"
     },
     {
       id          = "DISCORD_CLIENT_SECRET"
-      description = "Discord OAuthアプリケーションのクライアントシークレット"
-    },
-    {
-      id          = "DISCORD_REDIRECT_URI"
-      description = "Discord認証後のリダイレクトURI"
+      description = "Discord OAuthアプリケーションのクライアントシークレット - サーバーサイドのみ"
     },
     {
       id          = "DISCORD_TARGET_GUILD_ID"
-      description = "メンバーシップ確認対象のDiscordサーバー（ギルド）ID"
+      description = "メンバーシップ確認対象のDiscordサーバー（ギルド）ID - サーバーサイドのみ"
     }
   ]
 
@@ -43,14 +43,22 @@ locals {
       description = "YouTube Data APIキー"
     }
   ]
+  
+  # Firebase Admin SDK関連シークレット
+  firebase_admin_secrets = [
+    {
+      id          = "FIREBASE_SERVICE_ACCOUNT_KEY"
+      description = "Firebase Admin SDKのサービスアカウントキー（JSON形式）"
+    }
+  ]
 
   # すべてのシークレットをまとめる
-  all_secrets = concat(local.discord_secrets, local.api_secrets)
+  all_secrets = concat(local.discord_secrets, local.api_secrets, local.firebase_admin_secrets)
 }
 
 # シークレットの作成
 # 注: 既存のシークレットがある場合は、先に以下のコマンドでインポートしてください:
-# terraform import 'google_secret_manager_secret.secrets["DISCORD_CLIENT_ID"]' projects/suzumina-click-firebase/secrets/DISCORD_CLIENT_ID
+# terraform import 'google_secret_manager_secret.secrets["NEXT_PUBLIC_DISCORD_CLIENT_ID"]' projects/suzumina-click-firebase/secrets/NEXT_PUBLIC_DISCORD_CLIENT_ID
 resource "google_secret_manager_secret" "secrets" {
   for_each  = { for secret in local.all_secrets : secret.id => secret }
   
@@ -59,7 +67,9 @@ resource "google_secret_manager_secret" "secrets" {
   
   # メタデータとしてシークレットの説明を追加
   labels = merge(local.common_secret_settings.labels, {
-    "category" = contains([for s in local.discord_secrets : s.id], each.key) ? "discord" : "api"
+    "category" = contains([for s in local.discord_secrets : s.id], each.key) ? "discord" : (
+                 contains([for s in local.firebase_admin_secrets : s.id], each.key) ? "firebase" : "api"
+                 )
   })
   
   annotations = {
@@ -107,7 +117,9 @@ output "secrets_info" {
     for id, secret in google_secret_manager_secret.secrets :
     id => {
       name = secret.name
-      category = contains([for s in local.discord_secrets : s.id], id) ? "discord" : "api"
+      category = contains([for s in local.discord_secrets : s.id], id) ? "discord" : (
+                 contains([for s in local.firebase_admin_secrets : s.id], id) ? "firebase" : "api"
+                 )
     }
   }
   description = "作成されたシークレットの一覧"

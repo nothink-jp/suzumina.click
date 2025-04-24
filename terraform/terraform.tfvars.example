@@ -12,6 +12,13 @@ region = "asia-northeast1"             # 東京リージョン
 # YouTube APIキー
 youtube_api_key = "your-youtube-data-api-key"   # YouTubeデータAPI用のキー
 
+# Discord OAuth設定
+# Discord Developer Portalから取得できます
+# https://discord.com/developers/applications
+discord_client_id     = "your-discord-client-id"        # DiscordアプリケーションのクライアントID
+discord_client_secret = "your-discord-client-secret"    # Discordアプリケーションのクライアントシークレット
+discord_redirect_uri  = "https://your-app-url/api/auth/discord/callback"  # リダイレクトURI
+
 # Firebase設定
 # Firebaseコンソール（https://console.firebase.google.com）から取得できます
 # 手順: プロジェクト設定 > 全般タブ > マイアプリセクション > ウェブアプリ（</>）をクリック

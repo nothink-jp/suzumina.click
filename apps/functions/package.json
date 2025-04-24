@@ -15,9 +15,6 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "engines": {
-    "node": "22"
-  },
   "main": "lib/index.js",
   "dependencies": {
     "@google-cloud/firestore": "^7.11.0",
@@ -30,7 +27,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
-    "@types/node": "^20.17.30",
+    "@types/node": "^22.14.1",
     "firebase-functions-test": "^3.4.1",
     "typescript": "^5.8.3",
     "vitest": "^3.1.2"

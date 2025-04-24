@@ -1,8 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-// 必要に応じて他の Firebase サービス (Firestore, Storage など) をインポート
-// import { getFirestore } from "firebase/firestore";
-// import { getStorage } from "firebase/storage";
 
 /**
  * Firebaseの設定
@@ -52,14 +49,4 @@ const app = initializeFirebase();
 const auth = app ? getAuth(app) : null;
 
 // 各インスタンスをエクスポート
-export { app, auth /*, db, storage */ };
-
-// 注意: 環境変数の設定が必要です。
-// 1. プロジェクトルートに `.env.local` ファイルを作成します。
-// 2. Firebase Console のプロジェクト設定 > 全般 > マイアプリ で
-//    ウェブアプリの設定情報を確認し、対応する NEXT_PUBLIC_FIREBASE_... 変数を `.env.local` に記述します。
-//    例:
-//    NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
-//    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
-//    ...
-// 3. `.env.local` は `.gitignore` に含まれていることを確認してください (通常デフォルトで含まれます)。
+export { app, auth };
