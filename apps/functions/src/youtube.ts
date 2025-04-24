@@ -6,6 +6,14 @@ import type { youtube_v3 } from "googleapis";
 import { SUZUKA_MINASE_CHANNEL_ID, type YouTubeVideoData } from "./common";
 import firestore, { Timestamp } from "./utils/firestore";
 
+// YouTube API初期化時のチェック
+(function initializeYoutubeModule() {
+  // 環境変数のチェック
+  if (!process.env.YOUTUBE_API_KEY) {
+    logger.warn("環境変数 YOUTUBE_API_KEY が設定されていません");
+  }
+})();
+
 // YouTube API クォータ制限関連の定数
 const MAX_VIDEOS_PER_BATCH = 50; // YouTube APIの最大結果数
 const QUOTA_EXCEEDED_CODE = 403; // クォータ超過エラーコード
