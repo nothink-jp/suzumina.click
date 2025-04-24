@@ -192,61 +192,49 @@ jobs:
           CURRENT_SA=$(gcloud auth list --filter=status:ACTIVE --format='value(account)')
           echo "使用中のサービスアカウント: $CURRENT_SA"
           
-          # シークレットの存在確認（デバッグ用）
-          echo "シークレットの存在確認..."
-          SECRETS_LIST=$(gcloud secrets list --filter="name:FIREBASE_SERVICE_ACCOUNT_KEY" --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || echo "シークレット一覧の取得に失敗しました: $SECRETS_LIST"
-          echo "$SECRETS_LIST"
-          
-          # シークレットのバージョン確認（デバッグ用）
-          echo "シークレットバージョンの確認..."
-          VERSIONS_LIST=$(gcloud secrets versions list FIREBASE_SERVICE_ACCOUNT_KEY --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || echo "バージョン一覧の取得に失敗しました: $VERSIONS_LIST"
-          echo "$VERSIONS_LIST"
-          
-          # シークレット取得（エラーの詳細出力を含む）
-          FIREBASE_SA_KEY_RESULT=$(gcloud secrets versions access latest \
+          # Secret Managerからサービスアカウントキーを直接取得
+          echo "Firebase Service Account Keyを取得しています..."
+          FIREBASE_SA_KEY=$(gcloud secrets versions access latest \
             --secret="FIREBASE_SERVICE_ACCOUNT_KEY" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1)
-          
-          # エラー処理
-          if [ $? -ne 0 ]; then
-            echo "::error::Firebase Service Account Keyの取得に失敗しました"
-            echo "エラー詳細: ${FIREBASE_SA_KEY_RESULT}"
-            exit 1
-          fi
-          
-          # 結果を変数に格納
-          FIREBASE_SA_KEY="${FIREBASE_SA_KEY_RESULT}"
-          
-          # 取得したキーが有効なJSONかチェック
-          if ! echo "${FIREBASE_SA_KEY}" | jq -e . >/dev/null 2>&1; then
-            echo "::error::Firebase Service Account Keyが有効なJSON形式ではありません"
-            echo "取得されたデータの先頭部分（安全のため一部のみ表示）: ${FIREBASE_SA_KEY:0:50}..."
-            exit 1
-          fi
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || { 
+              echo "::error::Firebase Service Account Keyの取得に失敗しました" 
+              echo "エラー: $FIREBASE_SA_KEY"
+              exit 1
+            }
           
           echo "Firebase Service Account Keyを取得しました"
           
-          # Discord認証用環境変数の取得
+          # Discord認証用環境変数を直接取得
           echo "Discord認証用環境変数を取得しています..."
           
-          # クライアント側で必要な環境変数を取得
-          DISCORD_CLIENT_ID_RESULT=$(gcloud secrets versions access latest \
+          # クライアント側で必要な環境変数を個別に取得
+          echo "Discord Client IDを取得しています..."
+          DISCORD_CLIENT_ID=$(gcloud secrets versions access latest \
             --secret="NEXT_PUBLIC_DISCORD_CLIENT_ID" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || { echo "Discord Client IDの取得に失敗しました"; exit 1; }
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || { 
+              echo "::error::Discord Client IDの取得に失敗しました"
+              echo "エラー: $DISCORD_CLIENT_ID" 
+              exit 1
+            }
           
-          DISCORD_REDIRECT_URI_RESULT=$(gcloud secrets versions access latest \
+          echo "Discord Redirect URIを取得しています..."
+          DISCORD_REDIRECT_URI=$(gcloud secrets versions access latest \
             --secret="NEXT_PUBLIC_DISCORD_REDIRECT_URI" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || { echo "Discord Redirect URIの取得に失敗しました"; exit 1; }
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
+              echo "::error::Discord Redirect URIの取得に失敗しました"
+              echo "エラー: $DISCORD_REDIRECT_URI"
+              exit 1
+            }
           
-          echo "Discord認証用環境変数を取得しました"
+          echo "Discord認証用環境変数の取得に成功しました"
           
           # ビルドとタグ付け
           # Dockerfileの場所を明示的に指定し、コンテキストをリポジトリのルートに設定
-          # Firebase Admin SDK初期化に必要な環境変数を渡す
+          # 必要な環境変数をビルド引数として渡す
           docker build -f apps/web/Dockerfile \
             --build-arg FIREBASE_SERVICE_ACCOUNT_KEY="$FIREBASE_SA_KEY" \
-            --build-arg NEXT_PUBLIC_DISCORD_CLIENT_ID="$DISCORD_CLIENT_ID_RESULT" \
-            --build-arg NEXT_PUBLIC_DISCORD_REDIRECT_URI="$DISCORD_REDIRECT_URI_RESULT" \
+            --build-arg NEXT_PUBLIC_DISCORD_CLIENT_ID="$DISCORD_CLIENT_ID" \
+            --build-arg NEXT_PUBLIC_DISCORD_REDIRECT_URI="$DISCORD_REDIRECT_URI" \
             -t ${IMAGE_TAG} -t ${IMAGE_LATEST} .
           
           # イメージのプッシュ
