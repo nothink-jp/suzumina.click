@@ -136,309 +136,358 @@ interface PubsubMessage {
 }
 
 /**
- * YouTubeから水瀬鈴花チャンネルの動画情報を取得し、Firestoreに保存する関数
- *
- * 1. Pub/Subからのトリガーを受け取る
- * 2. メタデータを確認し、前回の実行状態を復元
- * 3. YouTube Data APIを使用してチャンネルの動画リストを取得（ページングあり）
- * 4. 各動画の詳細情報を取得
- * 5. 取得した情報をFirestoreに保存
- * 6. 処理状態をメタデータに記録
+ * HTTPリクエストの型定義
+ */
+interface HttpRequest {
+  body?: any;
+  query?: Record<string, string>;
+  headers?: Record<string, string>;
+  method?: string;
+}
+
+/**
+ * HTTPレスポンスの型定義
+ */
+interface HttpResponse {
+  send: (body: any) => void;
+  json: (body: any) => void;
+  status: (statusCode: number) => HttpResponse;
+  setHeader: (name: string, value: string) => void;
+}
+
+/**
+ * YouTube動画情報取得の共通処理
+ * 
+ * @returns Promise<{videoCount: number, error?: string}> - 処理結果
+ */
+async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: string}> {
+  // YouTube API キーの取得と検証
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    logger.error("環境変数に YOUTUBE_API_KEY が設定されていません");
+    return { videoCount: 0, error: "YouTube API Keyが設定されていません" };
+  }
+
+  // YouTubeクライアント初期化
+  const youtube = google.youtube({
+    version: "v3",
+    auth: apiKey,
+  });
+
+  const videosCollection = firestore.collection("videos");
+  const now = Timestamp.now();
+
+  // 前回の実行状態を取得
+  let metadata: FetchMetadata;
+  try {
+    metadata = await getOrCreateMetadata();
+
+    // 既に実行中の場合はスキップ（二重実行防止）
+    if (metadata.isInProgress) {
+      logger.warn("前回の実行が完了していません。処理をスキップします。");
+      return { videoCount: 0, error: "前回の処理が完了していません" };
+    }
+
+    // 処理開始を記録
+    await updateMetadata({ isInProgress: true });
+  } catch (error) {
+    logger.error("メタデータの取得に失敗しました:", error);
+    return { videoCount: 0, error: "メタデータの取得に失敗しました" };
+  }
+
+  logger.info(`チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画IDを取得中`);
+  const allVideoIds: string[] = [];
+
+  // 前回の続きから再開するか、新規に開始するか
+  let nextPageToken: string | undefined = metadata.nextPageToken;
+  const isInitialFetch = !nextPageToken;
+
+  if (nextPageToken) {
+    logger.info(`前回の続きから取得を再開します。トークン: ${nextPageToken}`);
+  } else {
+    logger.info("新規に全動画の取得を開始します");
+  }
+
+  // 最大3ページまでのみ取得（クォータ節約のため）
+  let pageCount = 0;
+  const MAX_PAGES_PER_EXECUTION = 3;
+
+  // ページネーションを使用して動画IDを取得（制限付き）
+  do {
+    try {
+      // YouTube API 呼び出し（リトライ機能付き）
+      const searchResponse: youtube_v3.Schema$SearchListResponse =
+        await retryApiCall(async () => {
+          const response = await youtube.search.list({
+            part: ["id"],
+            channelId: SUZUKA_MINASE_CHANNEL_ID,
+            maxResults: MAX_VIDEOS_PER_BATCH,
+            type: ["video"],
+            order: "date",
+            pageToken: nextPageToken,
+          });
+          return response.data;
+        });
+
+      const videoIds =
+        searchResponse.items
+          ?.map((item) => item.id?.videoId)
+          .filter((id): id is string => !!id) ?? [];
+
+      allVideoIds.push(...videoIds);
+      nextPageToken = searchResponse.nextPageToken ?? undefined;
+
+      logger.info(
+        `${videoIds.length}件の動画IDを取得しました。次ページトークン: ${nextPageToken || "なし"}`,
+      );
+
+      // メタデータ更新
+      await updateMetadata({ nextPageToken });
+
+      // ページカウントを増やす
+      pageCount++;
+
+      // 1回の実行で処理するページ数を制限
+      if (pageCount >= MAX_PAGES_PER_EXECUTION && nextPageToken) {
+        logger.info(
+          `最大ページ数(${MAX_PAGES_PER_EXECUTION})に達しました。次回の実行で続きを処理します。`,
+        );
+        break;
+      }
+    } catch (error: unknown) {
+      const apiError = error as YouTubeApiError;
+      if (apiError.code === QUOTA_EXCEEDED_CODE) {
+        // クォータ超過の場合
+        logger.error(
+          "YouTube API クォータを超過しました。処理を中断します:",
+          error,
+        );
+        await updateMetadata({
+          isInProgress: false,
+          lastError: "YouTube API quota exceeded",
+        });
+        return { videoCount: 0, error: "YouTube APIクォータを超過しました" };
+      }
+      // その他のエラー
+      throw error;
+    }
+  } while (nextPageToken);
+
+  // 全ページ取得完了（nextPageTokenがない）
+  if (!nextPageToken && !isInitialFetch) {
+    logger.info("全ての動画IDの取得が完了しました");
+    // 完全な取得完了を記録
+    await updateMetadata({
+      nextPageToken: undefined,
+      lastSuccessfulCompleteFetch: now,
+    });
+  }
+
+  logger.info(`取得した動画ID合計: ${allVideoIds.length}件`);
+  if (allVideoIds.length === 0) {
+    logger.info("チャンネルに動画が見つかりませんでした");
+    await updateMetadata({ isInProgress: false });
+    return { videoCount: 0 };
+  }
+
+  logger.info("動画の詳細情報を取得中...");
+  const videoDetails: youtube_v3.Schema$Video[] = [];
+
+  // YouTube API の制限（最大50件）に合わせてバッチ処理
+  for (let i = 0; i < allVideoIds.length; i += MAX_VIDEOS_PER_BATCH) {
+    try {
+      const batchIds = allVideoIds.slice(i, i + MAX_VIDEOS_PER_BATCH);
+
+      // YouTube API 呼び出し（リトライ機能付き）
+      const videoResponse: youtube_v3.Schema$VideoListResponse =
+        await retryApiCall(async () => {
+          const response = await youtube.videos.list({
+            part: ["snippet", "contentDetails", "statistics"],
+            id: batchIds,
+            maxResults: MAX_VIDEOS_PER_BATCH,
+          });
+          return response.data;
+        });
+
+      if (videoResponse.items) {
+        videoDetails.push(...videoResponse.items);
+      }
+      logger.info(
+        `${videoResponse.items?.length ?? 0}件の動画詳細を取得しました（バッチ ${Math.floor(i / MAX_VIDEOS_PER_BATCH) + 1}）`,
+      );
+    } catch (error: unknown) {
+      const apiError = error as YouTubeApiError;
+      if (apiError.code === QUOTA_EXCEEDED_CODE) {
+        // クォータ超過の場合
+        logger.error(
+          "YouTube API クォータを超過しました。ここまで取得した情報を保存します:",
+          error,
+        );
+        break; // ループを抜けて、ここまで取得したデータだけを保存
+      }
+      // その他のエラー
+      throw error;
+    }
+  }
+  logger.info(`取得した動画詳細合計: ${videoDetails.length}件`);
+
+  logger.info("動画データをFirestoreに書き込み中...");
+  let batch = firestore.batch();
+  let batchCounter = 0;
+  const maxBatchSize = 500; // Firestoreのバッチ書き込み上限
+
+  // 動画データをFirestoreにバッチ書き込み
+  for (const video of videoDetails) {
+    if (!video.id || !video.snippet) {
+      logger.warn(
+        "IDまたはスニペットが不足しているため動画をスキップします:",
+        video,
+      );
+      continue;
+    }
+
+    // Firestoreに保存するデータの作成
+    const videoData: YouTubeVideoData = {
+      videoId: video.id,
+      title: video.snippet.title ?? "",
+      description: video.snippet.description ?? "",
+      publishedAt: video.snippet.publishedAt
+        ? Timestamp.fromDate(new Date(video.snippet.publishedAt))
+        : Timestamp.now(),
+      thumbnailUrl: video.snippet.thumbnails?.default?.url ?? "",
+      channelId: video.snippet.channelId ?? "",
+      channelTitle: video.snippet.channelTitle ?? "",
+      lastFetchedAt: now,
+    };
+
+    const videoRef = videosCollection.doc(video.id);
+    batch.set(videoRef, videoData, { merge: true });
+    batchCounter++;
+
+    // バッチサイズの上限に達したらコミット
+    if (batchCounter >= maxBatchSize) {
+      logger.info(
+        `${batchCounter}件の動画ドキュメントのバッチをコミット中...`,
+      );
+      await batch
+        .commit()
+        .catch((err) =>
+          logger.error(
+            "Firestoreバッチコミット中にエラーが発生しました (ループ内):",
+            err,
+          ),
+        );
+      logger.info(
+        "バッチをコミットしました。バッチとカウンターをリセットします",
+      );
+      batch = firestore.batch();
+      batchCounter = 0;
+    }
+  }
+
+  // 残りのデータがあればコミット
+  if (batchCounter > 0) {
+    logger.info(
+      `最終バッチ ${batchCounter}件の動画ドキュメントをコミット中...`,
+    );
+    await batch
+      .commit()
+      .then(() => {
+        logger.info("Firestoreバッチコミットが成功しました");
+      })
+      .catch((err) => {
+        logger.error(
+          "最終Firestoreバッチコミット中にエラーが発生しました:",
+          err,
+        );
+      });
+  } else {
+    logger.info("最終バッチに書き込む動画詳細がありませんでした");
+  }
+
+  // 処理完了を記録
+  await updateMetadata({
+    isInProgress: false,
+    lastError: undefined,
+  });
+  
+  return { videoCount: videoDetails.length };
+}
+
+/**
+ * YouTubeから水瀬鈴花チャンネルの動画情報を取得し、Firestoreに保存する関数（Pub/Sub向け）
  *
  * @param event - Pub/SubトリガーからのCloudEvent
  * @returns Promise<void> - 非同期処理の完了を表すPromise
  */
 export const fetchYouTubeVideos = async (
-  event: CloudEvent<PubsubMessage>,
-): Promise<void> => {
-  logger.info(
-    "fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)",
-  );
+  event: CloudEvent<PubsubMessage> | HttpRequest,
+  res?: HttpResponse
+): Promise<void | any> => {
+  logger.info("fetchYouTubeVideos 関数を開始しました");
 
   try {
-    // CloudEventからPubSubメッセージを取得
-    const message = event.data;
+    // HTTPリクエストの場合はレスポンスオブジェクトを持つ
+    const isHttpRequest = res && typeof res.send === 'function';
 
-    if (!message) {
-      logger.error("CloudEventデータが不足しています", { event });
-      return;
-    }
+    // CloudEvent（Pub/Sub）の場合
+    if (!isHttpRequest && 'data' in event) {
+      logger.info("Pub/Subトリガーからの実行を検出しました");
+      const message = (event as CloudEvent<PubsubMessage>).data;
 
-    // 属性情報の処理
-    if (message.attributes) {
-      logger.info("受信した属性情報:", message.attributes);
-    }
-
-    // Base64エンコードされたデータがあれば復号
-    if (message.data) {
-      try {
-        const decodedData = Buffer.from(message.data, "base64").toString(
-          "utf-8",
-        );
-        logger.info("デコードされたメッセージデータ:", decodedData);
-      } catch (err) {
-        logger.error("Base64メッセージデータのデコードに失敗しました:", err);
-        // デコード失敗したら処理を中断する
-        return;
-      }
-    } else {
-      logger.info("Base64データはイベント内に見つかりませんでした");
-    }
-
-    // YouTube API キーの取得と検証
-    const apiKey = process.env.YOUTUBE_API_KEY;
-    if (!apiKey) {
-      logger.error("環境変数に YOUTUBE_API_KEY が設定されていません");
-      return;
-    }
-
-    // YouTubeクライアント初期化
-    const youtube = google.youtube({
-      version: "v3",
-      auth: apiKey,
-    });
-
-    const videosCollection = firestore.collection("videos");
-    const now = Timestamp.now();
-
-    // 前回の実行状態を取得
-    let metadata: FetchMetadata;
-    try {
-      metadata = await getOrCreateMetadata();
-
-      // 既に実行中の場合はスキップ（二重実行防止）
-      if (metadata.isInProgress) {
-        logger.warn("前回の実行が完了していません。処理をスキップします。");
+      if (!message) {
+        logger.error("CloudEventデータが不足しています", { event });
         return;
       }
 
-      // 処理開始を記録
-      await updateMetadata({ isInProgress: true });
-    } catch (error) {
-      logger.error("メタデータの取得に失敗しました:", error);
-      return;
-    }
+      // 属性情報の処理
+      if (message.attributes) {
+        logger.info("受信した属性情報:", message.attributes);
+      }
 
-    logger.info(`チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画IDを取得中`);
-    const allVideoIds: string[] = [];
-
-    // 前回の続きから再開するか、新規に開始するか
-    let nextPageToken: string | undefined = metadata.nextPageToken;
-    const isInitialFetch = !nextPageToken;
-
-    if (nextPageToken) {
-      logger.info(`前回の続きから取得を再開します。トークン: ${nextPageToken}`);
-    } else {
-      logger.info("新規に全動画の取得を開始します");
-    }
-
-    // 最大3ページまでのみ取得（クォータ節約のため）
-    let pageCount = 0;
-    const MAX_PAGES_PER_EXECUTION = 3;
-
-    // ページネーションを使用して動画IDを取得（制限付き）
-    do {
-      try {
-        // YouTube API 呼び出し（リトライ機能付き）
-        const searchResponse: youtube_v3.Schema$SearchListResponse =
-          await retryApiCall(async () => {
-            const response = await youtube.search.list({
-              part: ["id"],
-              channelId: SUZUKA_MINASE_CHANNEL_ID,
-              maxResults: MAX_VIDEOS_PER_BATCH,
-              type: ["video"],
-              order: "date",
-              pageToken: nextPageToken,
-            });
-            return response.data;
-          });
-
-        const videoIds =
-          searchResponse.items
-            ?.map((item) => item.id?.videoId)
-            .filter((id): id is string => !!id) ?? [];
-
-        allVideoIds.push(...videoIds);
-        nextPageToken = searchResponse.nextPageToken ?? undefined;
-
-        logger.info(
-          `${videoIds.length}件の動画IDを取得しました。次ページトークン: ${nextPageToken || "なし"}`,
-        );
-
-        // メタデータ更新
-        await updateMetadata({ nextPageToken });
-
-        // ページカウントを増やす
-        pageCount++;
-
-        // 1回の実行で処理するページ数を制限
-        if (pageCount >= MAX_PAGES_PER_EXECUTION && nextPageToken) {
-          logger.info(
-            `最大ページ数(${MAX_PAGES_PER_EXECUTION})に達しました。次回の実行で続きを処理します。`,
+      // Base64エンコードされたデータがあれば復号
+      if (message.data) {
+        try {
+          const decodedData = Buffer.from(message.data, "base64").toString(
+            "utf-8",
           );
-          break;
-        }
-      } catch (error: unknown) {
-        const apiError = error as YouTubeApiError;
-        if (apiError.code === QUOTA_EXCEEDED_CODE) {
-          // クォータ超過の場合
-          logger.error(
-            "YouTube API クォータを超過しました。処理を中断します:",
-            error,
-          );
-          await updateMetadata({
-            isInProgress: false,
-            lastError: "YouTube API quota exceeded",
-          });
+          logger.info("デコードされたメッセージデータ:", decodedData);
+        } catch (err) {
+          logger.error("Base64メッセージデータのデコードに失敗しました:", err);
           return;
         }
-        // その他のエラー
-        throw error;
-      }
-    } while (nextPageToken);
-
-    // 全ページ取得完了（nextPageTokenがない）
-    if (!nextPageToken && !isInitialFetch) {
-      logger.info("全ての動画IDの取得が完了しました");
-      // 完全な取得完了を記録
-      await updateMetadata({
-        nextPageToken: undefined,
-        lastSuccessfulCompleteFetch: now,
-      });
-    }
-
-    logger.info(`取得した動画ID合計: ${allVideoIds.length}件`);
-    if (allVideoIds.length === 0) {
-      logger.info("チャンネルに動画が見つかりませんでした");
-      await updateMetadata({ isInProgress: false });
-      return;
-    }
-
-    logger.info("動画の詳細情報を取得中...");
-    const videoDetails: youtube_v3.Schema$Video[] = [];
-
-    // YouTube API の制限（最大50件）に合わせてバッチ処理
-    for (let i = 0; i < allVideoIds.length; i += MAX_VIDEOS_PER_BATCH) {
-      try {
-        const batchIds = allVideoIds.slice(i, i + MAX_VIDEOS_PER_BATCH);
-
-        // YouTube API 呼び出し（リトライ機能付き）
-        const videoResponse: youtube_v3.Schema$VideoListResponse =
-          await retryApiCall(async () => {
-            const response = await youtube.videos.list({
-              part: ["snippet", "contentDetails", "statistics"],
-              id: batchIds,
-              maxResults: MAX_VIDEOS_PER_BATCH,
-            });
-            return response.data;
-          });
-
-        if (videoResponse.items) {
-          videoDetails.push(...videoResponse.items);
-        }
-        logger.info(
-          `${videoResponse.items?.length ?? 0}件の動画詳細を取得しました（バッチ ${Math.floor(i / MAX_VIDEOS_PER_BATCH) + 1}）`,
-        );
-      } catch (error: unknown) {
-        const apiError = error as YouTubeApiError;
-        if (apiError.code === QUOTA_EXCEEDED_CODE) {
-          // クォータ超過の場合
-          logger.error(
-            "YouTube API クォータを超過しました。ここまで取得した情報を保存します:",
-            error,
-          );
-          break; // ループを抜けて、ここまで取得したデータだけを保存
-        }
-        // その他のエラー
-        throw error;
       }
     }
-    logger.info(`取得した動画詳細合計: ${videoDetails.length}件`);
-
-    logger.info("動画データをFirestoreに書き込み中...");
-    let batch = firestore.batch();
-    let batchCounter = 0;
-    const maxBatchSize = 500; // Firestoreのバッチ書き込み上限
-
-    // 動画データをFirestoreにバッチ書き込み
-    for (const video of videoDetails) {
-      if (!video.id || !video.snippet) {
-        logger.warn(
-          "IDまたはスニペットが不足しているため動画をスキップします:",
-          video,
-        );
-        continue;
-      }
-
-      // Firestoreに保存するデータの作成
-      const videoData: YouTubeVideoData = {
-        videoId: video.id,
-        title: video.snippet.title ?? "",
-        description: video.snippet.description ?? "",
-        publishedAt: video.snippet.publishedAt
-          ? Timestamp.fromDate(new Date(video.snippet.publishedAt))
-          : Timestamp.now(),
-        thumbnailUrl: video.snippet.thumbnails?.default?.url ?? "",
-        channelId: video.snippet.channelId ?? "",
-        channelTitle: video.snippet.channelTitle ?? "",
-        lastFetchedAt: now,
-      };
-
-      const videoRef = videosCollection.doc(video.id);
-      batch.set(videoRef, videoData, { merge: true });
-      batchCounter++;
-
-      // バッチサイズの上限に達したらコミット
-      if (batchCounter >= maxBatchSize) {
-        logger.info(
-          `${batchCounter}件の動画ドキュメントのバッチをコミット中...`,
-        );
-        await batch
-          .commit()
-          .catch((err) =>
-            logger.error(
-              "Firestoreバッチコミット中にエラーが発生しました (ループ内):",
-              err,
-            ),
-          );
-        logger.info(
-          "バッチをコミットしました。バッチとカウンターをリセットします",
-        );
-        batch = firestore.batch();
-        batchCounter = 0;
-      }
-    }
-
-    // 残りのデータがあればコミット
-    if (batchCounter > 0) {
-      logger.info(
-        `最終バッチ ${batchCounter}件の動画ドキュメントをコミット中...`,
-      );
-      await batch
-        .commit()
-        .then(() => {
-          logger.info("Firestoreバッチコミットが成功しました");
-        })
-        .catch((err) => {
-          logger.error(
-            "最終Firestoreバッチコミット中にエラーが発生しました:",
-            err,
-          );
+    
+    // 共通のロジックを実行
+    const result = await fetchYouTubeVideosLogic();
+    
+    // HTTP関数の場合はレスポンスを返す
+    if (res && typeof res.json === 'function') {
+      if (result.error) {
+        logger.info(`HTTPレスポンスを送信します: エラー - ${result.error}`);
+        return res.status(500).json({
+          success: false,
+          error: result.error,
+          message: "YouTubeデータ取得中にエラーが発生しました"
         });
-    } else {
-      logger.info("最終バッチに書き込む動画詳細がありませんでした");
+      } else {
+        logger.info(`HTTPレスポンスを送信します: 成功 - ${result.videoCount}件取得`);
+        return res.status(200).json({
+          success: true,
+          videoCount: result.videoCount,
+          message: `${result.videoCount}件のYouTube動画データを取得・保存しました`
+        });
+      }
     }
-
-    // 処理完了を記録
-    await updateMetadata({
-      isInProgress: false,
-      lastError: undefined,
-    });
+    
     logger.info("fetchYouTubeVideos 関数の処理を完了しました");
+    return;
+    
   } catch (error: unknown) {
-    // YouTube API エラーや予期せぬエラーはこちらで捕捉
+    // 例外処理
     logger.error("fetchYouTubeVideos 関数で例外が発生しました:", error);
-
+    
     // エラー状態を記録
     try {
       await updateMetadata({
@@ -447,6 +496,15 @@ export const fetchYouTubeVideos = async (
       });
     } catch (updateError) {
       logger.error("エラー状態の記録に失敗しました:", updateError);
+    }
+    
+    // HTTP関数の場合はエラーレスポンスを返す
+    if (res && typeof res.status === 'function') {
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        message: "YouTube動画データ取得中に重大なエラーが発生しました"
+      });
     }
   }
 };
