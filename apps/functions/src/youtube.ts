@@ -1,11 +1,10 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import { Timestamp } from "firebase-admin/firestore";
 // functions/src/youtube.ts
-import * as logger from "firebase-functions/logger";
+import * as logger from "./utils/logger";
 import { google } from "googleapis";
 import type { youtube_v3 } from "googleapis";
 import { SUZUKA_MINASE_CHANNEL_ID, type YouTubeVideoData } from "./common";
-import { firestore } from "./firebaseAdmin";
+import firestore, { Timestamp } from "./utils/firestore";
 
 // YouTube API クォータ制限関連の定数
 const MAX_VIDEOS_PER_BATCH = 50; // YouTube APIの最大結果数
@@ -319,7 +318,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
     if (!video.id || !video.snippet) {
       logger.warn(
         "IDまたはスニペットが不足しているため動画をスキップします:",
-        video,
+        video as any,
       );
       continue;
     }
@@ -393,7 +392,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
 }
 
 /**
- * YouTubeから水瀬鈴花チャンネルの動画情報を取得し、Firestoreに保存する関数（Pub/Sub向け）
+ * YouTubeから涼花みなせチャンネルの動画情報を取得し、Firestoreに保存する関数（Pub/Sub向け）
  *
  * @param event - Pub/SubトリガーからのCloudEvent
  * @returns Promise<void> - 非同期処理の完了を表すPromise
@@ -413,18 +412,18 @@ export const fetchYouTubeVideos = async (
       return;
     }
 
-    // 属性情報の処理
+    // 属性情報の処理 - テストに合わせてフォーマットを変更
     if (message.attributes) {
       logger.info("受信した属性情報:", message.attributes);
     }
 
-    // Base64エンコードされたデータがあれば復号
+    // Base64エンコードされたデータがあれば復号 - テストに合わせてフォーマットを変更
     if (message.data) {
       try {
         const decodedData = Buffer.from(message.data, "base64").toString(
           "utf-8",
         );
-        logger.info("デコードされたメッセージデータ:", decodedData);
+        logger.info("デコードされたメッセージデータ:", decodedData as any);
       } catch (err) {
         logger.error("Base64メッセージデータのデコードに失敗しました:", err);
         return;

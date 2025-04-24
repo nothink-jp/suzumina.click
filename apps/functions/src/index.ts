@@ -15,12 +15,12 @@ import * as http from "node:http";
 // ※実行時依存関係として追加済み
 import * as functions from "@google-cloud/functions-framework";
 // 適切なロギング
-import * as logger from "firebase-functions/logger";
-// Firebase Admin SDKを初期化するために必要
-import { initializeFirebaseAdmin } from "./firebaseAdmin";
+import * as logger from "./utils/logger";
+// アプリケーション初期化用
+import { initializeApplication } from "./firebaseAdmin";
 
-// Firebase Admin SDKを初期化
-initializeFirebaseAdmin();
+// アプリケーションを初期化
+initializeApplication();
 
 // 各モジュールから関数をインポート
 import { fetchYouTubeVideos } from "./youtube";

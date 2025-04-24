@@ -46,7 +46,13 @@ const mockYoutubeVideosList = vi
   );
 
 // モジュールをインポートする前に vi.mock を記述
-vi.mock("firebase-functions/logger");
+vi.mock("./utils/logger", () => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+}));
+
 vi.mock("googleapis", () => ({
   google: {
     youtube: vi.fn().mockImplementation(() => ({
@@ -59,31 +65,8 @@ vi.mock("googleapis", () => ({
     })),
   },
 }));
-vi.mock("firebase-admin/firestore", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("firebase-admin/firestore")>();
-  return {
-    ...actual,
-    Timestamp: {
-      now: vi.fn(() => ({
-        seconds: 1234567890,
-        nanoseconds: 0,
-        toDate: () => new Date(),
-      })),
-      fromDate: vi.fn((date: Date) => ({
-        seconds: Math.floor(date.getTime() / 1000),
-        nanoseconds: 0,
-        toDate: () => date,
-      })),
-    },
-    FieldValue: {
-      serverTimestamp: vi.fn(() => "mockServerTimestamp"),
-    },
-  };
-});
 
-// FirebaseAdminモジュールのモック
-vi.mock("./firebaseAdmin", () => {
+vi.mock("./utils/firestore", () => {
   // モックデータ
   const mockMetadataDoc = {
     exists: false,
@@ -115,20 +98,31 @@ vi.mock("./firebaseAdmin", () => {
     batch: vi.fn(() => mockBatch),
   };
 
-  const mockInitializeFirebaseAdmin = vi.fn();
   return {
-    initializeFirebaseAdmin: mockInitializeFirebaseAdmin,
-    firestore: mockFirestoreInstance,
+    __esModule: true,
+    default: mockFirestoreInstance,
+    Timestamp: {
+      now: vi.fn(() => ({
+        seconds: 1234567890,
+        nanoseconds: 0,
+        toDate: () => new Date(),
+      })),
+      fromDate: vi.fn((date: Date) => ({
+        seconds: Math.floor(date.getTime() / 1000),
+        nanoseconds: 0,
+        toDate: () => date,
+      })),
+    },
   };
 });
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import type { WriteBatch } from "firebase-admin/firestore";
-import * as logger from "firebase-functions/logger";
 import type { Mock } from "vitest";
 import type { SimplePubSubData } from "./common";
-import { firestore as mockedFirestore } from "./firebaseAdmin";
 import { fetchYouTubeVideos } from "./youtube";
+import * as logger from "./utils/logger";
+import firestore, { Timestamp } from "./utils/firestore";
+import { WriteBatch } from "@google-cloud/firestore";
 
 describe("fetchYouTubeVideos", () => {
   let mockEvent: CloudEvent<SimplePubSubData>;
@@ -136,19 +130,14 @@ describe("fetchYouTubeVideos", () => {
   const mockApiKey = "test-youtube-api-key";
 
   // Firestoreのモック参照を取得
-  const mockedCollection = vi.mocked(mockedFirestore.collection);
-  const mockedBatch = vi.mocked(mockedFirestore.batch);
+  const mockedCollection = vi.mocked(firestore.collection);
+  const mockedBatch = vi.mocked(firestore.batch);
 
   // loggerのモック変数を宣言
-  let mockedLoggerError: Mock<
-    (...args: [message?: unknown, ...optionalParams: unknown[]]) => void
-  >;
-  let mockedLoggerInfo: Mock<
-    (...args: [message?: unknown, ...optionalParams: unknown[]]) => void
-  >;
-  let mockedLoggerWarn: Mock<
-    (...args: [message?: unknown, ...optionalParams: unknown[]]) => void
-  >;
+  let mockedLoggerError: Mock;
+  let mockedLoggerInfo: Mock;
+  let mockedLoggerWarn: Mock;
+  let mockedLoggerDebug: Mock;
 
   // メタデータ関連のモック
   let mockMetadataDoc: {
@@ -166,6 +155,7 @@ describe("fetchYouTubeVideos", () => {
     mockedLoggerError = vi.mocked(logger.error);
     mockedLoggerInfo = vi.mocked(logger.info);
     mockedLoggerWarn = vi.mocked(logger.warn);
+    mockedLoggerDebug = vi.mocked(logger.debug);
 
     // メタデータドキュメントのモックを設定
     mockMetadataDoc = {
@@ -180,7 +170,7 @@ describe("fetchYouTubeVideos", () => {
     mockMetadataDocSet = vi.fn().mockResolvedValue({});
 
     // コレクションとドキュメントのモックを再設定
-    vi.mocked(mockedFirestore.collection).mockImplementation(
+    vi.mocked(firestore.collection).mockImplementation(
       (collectionName) => {
         if (collectionName === "youtubeMetadata") {
           return {
@@ -189,23 +179,23 @@ describe("fetchYouTubeVideos", () => {
               update: mockMetadataDocUpdate,
               set: mockMetadataDocSet,
             })),
-          } as unknown as ReturnType<typeof mockedFirestore.collection>;
+          } as unknown as ReturnType<typeof firestore.collection>;
         }
 
         // videosコレクションの場合
         return {
           doc: vi.fn(() => ({})),
-        } as unknown as ReturnType<typeof mockedFirestore.collection>;
+        } as unknown as ReturnType<typeof firestore.collection>;
       },
     );
 
     // batch() が呼ばれるたびに新しいモック batch を返す
     const newMockBatchSet = vi.fn();
     const newMockBatchCommit = vi.fn().mockResolvedValue([]);
-    vi.mocked(mockedFirestore.batch).mockReturnValue({
+    vi.mocked(firestore.batch).mockReturnValue({
       set: newMockBatchSet,
       commit: newMockBatchCommit,
-    } as unknown as WriteBatch);
+    } as any);
 
     // 環境変数を設定
     originalEnv = { ...process.env };
@@ -337,8 +327,7 @@ describe("fetchYouTubeVideos", () => {
     expect(mockedBatch).toHaveBeenCalledTimes(1);
 
     // バッチ処理の確認
-    const batchInstance = vi.mocked(mockedFirestore.batch).mock.results[0]
-      .value;
+    const batchInstance = vi.mocked(firestore.batch).mock.results[0].value;
     expect(batchInstance.set).toHaveBeenCalledTimes(3);
     expect(batchInstance.set).toHaveBeenCalledWith(
       expect.anything(),
@@ -409,8 +398,7 @@ describe("fetchYouTubeVideos", () => {
 
     // Firestoreの操作が実行されるはず
     expect(mockedBatch).toHaveBeenCalledTimes(1);
-    const batchInstance = vi.mocked(mockedFirestore.batch).mock.results[0]
-      .value;
+    const batchInstance = vi.mocked(firestore.batch).mock.results[0].value;
     expect(batchInstance.set).toHaveBeenCalledTimes(3); // 3つの動画が書き込まれるはず
     expect(batchInstance.commit).toHaveBeenCalledTimes(1);
 
@@ -431,7 +419,7 @@ describe("fetchYouTubeVideos", () => {
     const mockBatchSet = vi.fn();
     const mockBatchCommit = vi.fn().mockResolvedValue([]);
     const mockBatch = { set: mockBatchSet, commit: mockBatchCommit };
-    vi.mocked(mockedFirestore.batch).mockReturnValue(
+    vi.mocked(firestore.batch).mockReturnValue(
       mockBatch as unknown as WriteBatch,
     );
 
@@ -741,8 +729,7 @@ describe("fetchYouTubeVideos", () => {
     mockYoutubeVideosList.mockResolvedValue(videoResponse);
 
     const batchInstance =
-      vi.mocked(mockedFirestore.batch).mock.results[0]?.value ??
-      mockedFirestore.batch();
+      vi.mocked(firestore.batch).mock.results[0]?.value ?? firestore.batch();
     vi.mocked(batchInstance.commit).mockRejectedValue(firestoreError);
 
     await fetchYouTubeVideos(mockEvent);
@@ -828,7 +815,7 @@ describe("fetchYouTubeVideos", () => {
     const setMockBatch2 = vi.fn();
 
     // batch モックを修正して、呼び出しごとに異なる set モックを返すようにする
-    vi.mocked(mockedFirestore.batch)
+    vi.mocked(firestore.batch)
       .mockImplementationOnce(
         () =>
           ({
@@ -971,8 +958,7 @@ describe("fetchYouTubeVideos", () => {
       { etag: "", id: "vid3", kind: "", snippet: undefined },
     );
 
-    const batchInstance = vi.mocked(mockedFirestore.batch).mock.results[0]
-      .value;
+    const batchInstance = vi.mocked(firestore.batch).mock.results[0].value;
     expect(batchInstance.set).toHaveBeenCalledTimes(2); // vid1 と vid4 のみ書き込まれる
     expect(batchInstance.set).toHaveBeenCalledWith(
       expect.anything(),

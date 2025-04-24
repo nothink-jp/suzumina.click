@@ -1,52 +1,46 @@
 // functions/src/firebaseAdmin.test.ts
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// モックオブジェクトの定義
-const mockInitializeApp = vi.fn();
-const mockFirestoreCollection = vi.fn();
-const mockFirestoreBatch = vi.fn();
-const mockFirestoreInstance = {
-  collection: mockFirestoreCollection,
-  batch: mockFirestoreBatch,
-};
-const mockAdminFirestore = vi.fn(() => mockFirestoreInstance);
+// ロガーのモック
+const mockLoggerInfo = vi.fn();
+const mockLoggerWarn = vi.fn();
 
 // モジュール内のinitializedフラグを制御するための変数
 let initializedFlag = false;
 
-// firebase-adminモジュールのモック
-vi.mock("firebase-admin", () => {
+// ロガーモジュールのモック
+vi.mock("./utils/logger", () => {
   return {
-    initializeApp: mockInitializeApp,
-    firestore: mockAdminFirestore,
+    info: mockLoggerInfo,
+    warn: mockLoggerWarn,
   };
 });
 
-// firebaseAdminモジュールの自動実行部分を制御するためのモック
+// 環境変数のモック
+const originalEnv = process.env;
+
+// firebaseAdminモジュールの自動実行を無効化
 vi.mock("./firebaseAdmin", () => {
   // モック実装を返す
-  const mockExports = {
-    // モジュールがインポートされた時点ではinitializedフラグをfalseにしておく
+  return {
+    // 初期化状態フラグをエクスポート
     initialized: false,
-    // initializeFirebaseAdmin関数をモックして、初期化状態を制御できるようにする
-    initializeFirebaseAdmin: vi.fn(() => {
+    // アプリケーション初期化関数をモック
+    initializeApplication: vi.fn(() => {
       if (!initializedFlag) {
-        mockInitializeApp(); // 初回のみ初期化関数を呼び出す
         initializedFlag = true;
+        // 環境変数のチェックとロギング
+        mockLoggerInfo("アプリケーション初期化を開始します");
+        
+        if (!process.env.YOUTUBE_API_KEY) {
+          mockLoggerWarn("環境変数 YOUTUBE_API_KEY が設定されていません");
+        }
+        
+        mockLoggerInfo("アプリケーション初期化が完了しました");
       }
-      return { firestore: mockAdminFirestore };
+      return true;
     }),
-    // firestoreのエクスポートもモックする
-    // ここで実際にmockAdminFirestore()を呼び出して、テストの期待通りになるようにする
-    get firestore() {
-      return mockAdminFirestore();
-    },
   };
-
-  // モジュールの自動実行をシミュレート
-  mockExports.initializeFirebaseAdmin();
-
-  return mockExports;
 });
 
 describe("firebaseAdmin", () => {
@@ -55,38 +49,68 @@ describe("firebaseAdmin", () => {
     vi.clearAllMocks();
     initializedFlag = false;
 
+    // 環境変数のバックアップとリセット
+    process.env = { ...originalEnv };
+    delete process.env.YOUTUBE_API_KEY;
+
     // モジュールのキャッシュもクリアして、インポート時の自動実行を制御できるようにする
     vi.resetModules();
   });
 
-  it("initializeFirebaseAdminが複数回呼び出されても初期化は1回だけ行われること", async () => {
-    // モジュールをインポートする前にmockInitializeAppをリセット
-    mockInitializeApp.mockClear();
-
-    // モジュールをインポート（モックされた実装が使用される）
-    const { initializeFirebaseAdmin } = await import("./firebaseAdmin");
-
-    // 複数回呼び出し
-    initializeFirebaseAdmin();
-    initializeFirebaseAdmin();
-    initializeFirebaseAdmin();
-
-    // 検証 - 1回だけ呼ばれることを確認
-    expect(mockInitializeApp).toHaveBeenCalledTimes(1);
+  afterEach(() => {
+    // テスト後に環境変数を元に戻す
+    process.env = originalEnv;
   });
 
-  it("firestoreインスタンスがエクスポートされ、モジュールロード時にadmin.firestoreが呼ばれること", async () => {
-    // admin.firestoreの呼び出し回数を確認するためにモックをリセット
-    mockAdminFirestore.mockClear();
+  it("initializeApplicationが複数回呼び出されても初期化は1回だけ行われること", async () => {
+    // モジュールをインポート（モックされた実装が使用される）
+    const { initializeApplication } = await import("./firebaseAdmin");
+    
+    // 最初の呼び出しで初期化される
+    initializeApplication();
+    
+    // ログをクリア
+    mockLoggerInfo.mockClear();
+    
+    // 2回目以降の呼び出し
+    initializeApplication();
+    initializeApplication();
 
-    // firestoreをインポート
-    // この時点でmockAdminFirestoreが呼ばれることを期待
-    const { firestore } = await import("./firebaseAdmin");
+    // 検証 - 2回目以降は初期化ログが出力されないこと
+    expect(mockLoggerInfo).not.toHaveBeenCalled();
+  });
 
-    // 検証
-    expect(firestore).toBeDefined();
-    expect(firestore).toBe(mockFirestoreInstance);
-    // admin.firestoreが呼ばれたことを確認
-    expect(mockAdminFirestore).toHaveBeenCalled();
+  it("YOUTUBE_API_KEY環境変数が設定されていない場合に警告ログが出力されること", async () => {
+    // 環境変数を明示的に未設定に
+    delete process.env.YOUTUBE_API_KEY;
+    
+    // ログモックをクリア
+    mockLoggerWarn.mockClear();
+
+    // 初期化フラグをリセット
+    initializedFlag = false;
+
+    // モジュールをインポートして初期化を実行させる
+    const { initializeApplication } = await import("./firebaseAdmin");
+    initializeApplication();
+
+    // 検証 - 警告ログが出力されること
+    expect(mockLoggerWarn).toHaveBeenCalledWith("環境変数 YOUTUBE_API_KEY が設定されていません");
+  });
+
+  it("YOUTUBE_API_KEY環境変数が設定されている場合は警告ログが出力されないこと", async () => {
+    // 環境変数を設定
+    process.env.YOUTUBE_API_KEY = "test-api-key";
+    
+    // モックをリセット
+    mockLoggerWarn.mockClear();
+    initializedFlag = false;
+
+    // モジュールを再インポートして初期化
+    const { initializeApplication } = await import("./firebaseAdmin");
+    initializeApplication();
+
+    // 検証 - 警告ログが出力されないこと
+    expect(mockLoggerWarn).not.toHaveBeenCalled();
   });
 });

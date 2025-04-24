@@ -1,5 +1,5 @@
 // functions/src/common.ts
-import type * as admin from "firebase-admin"; // type を追加
+import type { Timestamp } from "@google-cloud/firestore";
 
 // --- インターフェース定義 ---
 
@@ -15,7 +15,7 @@ export interface YouTubeVideoData {
   /** 動画説明文 */
   description: string;
   /** 動画公開日時（Firestoreのタイムスタンプ型） */
-  publishedAt: admin.firestore.Timestamp;
+  publishedAt: Timestamp;
   /** サムネイル画像URL */
   thumbnailUrl: string;
   /** チャンネルID */
@@ -23,7 +23,7 @@ export interface YouTubeVideoData {
   /** チャンネル名 */
   channelTitle: string;
   /** データの最終取得日時（Firestoreのタイムスタンプ型） */
-  lastFetchedAt: admin.firestore.Timestamp;
+  lastFetchedAt: Timestamp;
 }
 
 /**
