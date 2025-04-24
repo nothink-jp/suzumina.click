@@ -159,22 +159,20 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
       
-      # Artifact Registryにリポジトリが存在するか確認し、なければ作成
-      - name: Artifact Registryリポジトリの確認と作成
+      # Artifact Registryリポジトリの確認
+      - name: Artifact Registryリポジトリの確認
         run: |
           echo "Artifact Registryリポジトリを確認しています..."
           
-          # リポジトリが存在するか確認（完全一致で確認）
+          # リポジトリの存在確認のみ行う（Terraformで事前作成済みの前提）
           REPO_EXISTS=$(gcloud artifacts repositories list --location=${{ env.REGION }} --format="value(name)" | grep "^suzumina-click$" || echo "")
           
           if [ -z "$REPO_EXISTS" ]; then
-            echo "リポジトリが存在しないため、新規作成します"
-            gcloud artifacts repositories create suzumina-click \
-              --repository-format=docker \
-              --location=${{ env.REGION }} \
-              --description="suzumina.click用のDockerイメージリポジトリ"
+            echo "::error::リポジトリが存在しません。Terraformで事前に作成してください。"
+            echo "リポジトリ 'suzumina-click' が見つかりません。"
+            exit 1
           else
-            echo "リポジトリは既に存在しています: $REPO_EXISTS"
+            echo "リポジトリを確認しました: $REPO_EXISTS"
           fi
       
       # Dockerイメージのビルドとプッシュ
