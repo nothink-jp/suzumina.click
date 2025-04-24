@@ -10,6 +10,11 @@ on:
       # Cloud Functions 変更時
       - 'apps/functions/**'
 
+# Workload Identity Federationに必要な権限設定
+permissions:
+  contents: read
+  id-token: write  # Google Cloud認証に必要
+
 # 共通の環境変数
 env:
   NODE_VERSION: '22'
