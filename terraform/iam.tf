@@ -79,6 +79,18 @@ resource "google_project_iam_member" "cloud_run_deployer_sa_user" {
   depends_on = [google_service_account.cloud_run_deployer_sa]
 }
 
+# シークレットアクセス管理用のカスタムロール付与
+resource "google_project_iam_member" "cloud_run_deployer_secret_accessor" {
+  project = var.gcp_project_id
+  role    = google_project_iam_custom_role.secret_manager_accessor_role.id
+  member  = "serviceAccount:${google_service_account.cloud_run_deployer_sa.email}"
+  
+  depends_on = [
+    google_service_account.cloud_run_deployer_sa,
+    google_project_iam_custom_role.secret_manager_accessor_role
+  ]
+}
+
 # Secret Managerアクセス権限 - Firebaseサービスアカウントキーへのアクセス用
 resource "google_secret_manager_secret_iam_member" "cloud_run_deployer_firebase_sa_key_accessor" {
   project   = var.gcp_project_id
