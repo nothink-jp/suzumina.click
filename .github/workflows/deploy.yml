@@ -192,9 +192,6 @@ jobs:
           CURRENT_SA=$(gcloud auth list --filter=status:ACTIVE --format='value(account)')
           echo "使用中のサービスアカウント: $CURRENT_SA"
           
-          # Secret Managerからサービスアカウントキーを取得
-          echo "Secret Managerからサービスアカウントキーを取得しています..."
-          
           # シークレットの存在確認（デバッグ用）
           echo "シークレットの存在確認..."
           SECRETS_LIST=$(gcloud secrets list --filter="name:FIREBASE_SERVICE_ACCOUNT_KEY" --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || echo "シークレット一覧の取得に失敗しました: $SECRETS_LIST"
@@ -229,11 +226,27 @@ jobs:
           
           echo "Firebase Service Account Keyを取得しました"
           
+          # Discord認証用環境変数の取得
+          echo "Discord認証用環境変数を取得しています..."
+          
+          # クライアント側で必要な環境変数を取得
+          DISCORD_CLIENT_ID_RESULT=$(gcloud secrets versions access latest \
+            --secret="NEXT_PUBLIC_DISCORD_CLIENT_ID" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || { echo "Discord Client IDの取得に失敗しました"; exit 1; }
+          
+          DISCORD_REDIRECT_URI_RESULT=$(gcloud secrets versions access latest \
+            --secret="NEXT_PUBLIC_DISCORD_REDIRECT_URI" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || { echo "Discord Redirect URIの取得に失敗しました"; exit 1; }
+          
+          echo "Discord認証用環境変数を取得しました"
+          
           # ビルドとタグ付け
           # Dockerfileの場所を明示的に指定し、コンテキストをリポジトリのルートに設定
           # Firebase Admin SDK初期化に必要な環境変数を渡す
           docker build -f apps/web/Dockerfile \
             --build-arg FIREBASE_SERVICE_ACCOUNT_KEY="$FIREBASE_SA_KEY" \
+            --build-arg NEXT_PUBLIC_DISCORD_CLIENT_ID="$DISCORD_CLIENT_ID_RESULT" \
+            --build-arg NEXT_PUBLIC_DISCORD_REDIRECT_URI="$DISCORD_REDIRECT_URI_RESULT" \
             -t ${IMAGE_TAG} -t ${IMAGE_LATEST} .
           
           # イメージのプッシュ
