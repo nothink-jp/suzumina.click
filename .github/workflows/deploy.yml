@@ -347,7 +347,66 @@ jobs:
         if: github.event_name != 'push'
         id: all-functions
         run: |
-          FUNCTIONS=$(grep -r "export.*async function" ./apps/functions/src --include="*.ts" | grep -v ".test.ts" | sed -E 's/.*export.*function ([a-zA-Z0-9_]+).*/\1/' | tr '\n' ' ')
+          # デバッグ出力を追加
+          echo "関数の検索を開始します..."
+          echo "検索ディレクトリ構造:"
+          find ./apps/functions/src -type f -name "*.ts" | sort
+          
+          # より確実な関数検出方法に変更（複数パターンで検索）
+          echo "Cloud Functions関数を検索中..."
+          
+          # エクスポートされている関数を検索（複数のパターンを考慮）
+          EXPORTED_FUNCTIONS=$(grep -r -l "export.*function" ./apps/functions/src --include="*.ts" | grep -v ".test.ts")
+          echo "エクスポート関数ファイル一覧:"
+          echo "$EXPORTED_FUNCTIONS"
+          
+          # 関数名を抽出（複数のパターンに対応）
+          FUNCTIONS=""
+          for FILE in $EXPORTED_FUNCTIONS; do
+            echo "ファイル $FILE から関数を抽出しています..."
+            # 標準的なexport function pattern
+            FUNCS1=$(grep -o "export.*function [a-zA-Z0-9_]\+" $FILE | grep -v "interface\|type\|class" | sed -E 's/.*function ([a-zA-Z0-9_]+).*/\1/' || echo "")
+            # アロー関数パターン
+            FUNCS2=$(grep -o "export const [a-zA-Z0-9_]\+ = async" $FILE | sed -E 's/export const ([a-zA-Z0-9_]+).*/\1/' || echo "")
+            
+            ALL_FUNCS="$FUNCS1 $FUNCS2"
+            if [ -n "$ALL_FUNCS" ]; then
+              echo "抽出された関数: $ALL_FUNCS"
+              FUNCTIONS="$FUNCTIONS $ALL_FUNCS"
+            else
+              echo "関数が抽出されませんでした"
+              # ファイルの内容を表示（デバッグ用）
+              echo "ファイル内容の一部:"
+              head -n 20 $FILE
+            fi
+          done
+          
+          # main関数がterraformで定義されている可能性を考慮
+          echo "Terraformファイルを確認..."
+          TERRAFORM_FUNCTIONS=$(grep -o 'youtube_entry_point.*=.*"\w\+"' ./terraform/*.tf | grep -o '"[^"]\+"' | tr -d '"' || echo "")
+          if [ -n "$TERRAFORM_FUNCTIONS" ]; then
+            echo "Terraformで定義された関数: $TERRAFORM_FUNCTIONS"
+            FUNCTIONS="$FUNCTIONS $TERRAFORM_FUNCTIONS"
+          fi
+          
+          # index.tsで明示的に登録されている関数を確認
+          echo "index.tsで明示的に登録されている関数を確認..."
+          INDEX_FUNCTIONS=$(grep -o 'functions\.cloudEvent.*"\w\+"' ./apps/functions/src/index.ts | grep -o '"[^"]\+"' | tr -d '"' || echo "")
+          if [ -n "$INDEX_FUNCTIONS" ]; then
+            echo "index.tsに登録された関数: $INDEX_FUNCTIONS"
+            FUNCTIONS="$FUNCTIONS $INDEX_FUNCTIONS"
+          fi
+          
+          # 重複を削除して整形
+          FUNCTIONS=$(echo "$FUNCTIONS" | tr ' ' '\n' | grep -v '^$' | sort | uniq | tr '\n' ' ')
+          
+          # 関数が見つからない場合は、Terraformの定義から強制的に取得を試みる
+          if [ -z "$FUNCTIONS" ]; then
+            echo "警告: 通常の方法では関数が見つかりませんでした。Terraformファイルから強制的に抽出します。"
+            FUNCTIONS=$(grep -o "_entry_point.*=.*\"\w\+\"" ./terraform/*.tf | grep -o '"[^"]\+"' | tr -d '"' || echo "fetchYouTubeVideos")
+            echo "Terraformから抽出された関数: $FUNCTIONS"
+          fi
+          
           echo "デプロイする関数: $FUNCTIONS"
           echo "names=$FUNCTIONS" >> $GITHUB_OUTPUT
 
