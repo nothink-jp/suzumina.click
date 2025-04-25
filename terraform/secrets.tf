@@ -52,8 +52,40 @@ locals {
     }
   ]
 
+  # Firebase クライアント認証用シークレット
+  firebase_client_secrets = [
+    {
+      id          = "NEXT_PUBLIC_FIREBASE_API_KEY"
+      description = "Firebase APIキー - クライアントサイド認証用"
+    },
+    {
+      id          = "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"
+      description = "Firebase 認証ドメイン - クライアントサイド認証用"
+    },
+    {
+      id          = "NEXT_PUBLIC_FIREBASE_PROJECT_ID"
+      description = "Firebase プロジェクトID - クライアントサイド認証用"
+    },
+    {
+      id          = "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"
+      description = "Firebase ストレージバケット - クライアントサイド認証用"
+    },
+    {
+      id          = "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"
+      description = "Firebase メッセージ送信者ID - クライアントサイド認証用"
+    },
+    {
+      id          = "NEXT_PUBLIC_FIREBASE_APP_ID"
+      description = "Firebase アプリID - クライアントサイド認証用"
+    },
+    {
+      id          = "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID"
+      description = "Firebase 計測ID - クライアントサイド認証用（オプション）"
+    }
+  ]
+
   # すべてのシークレットをまとめる
-  all_secrets = concat(local.discord_secrets, local.api_secrets, local.firebase_admin_secrets)
+  all_secrets = concat(local.discord_secrets, local.api_secrets, local.firebase_admin_secrets, local.firebase_client_secrets)
 }
 
 # シークレットの作成
@@ -68,8 +100,9 @@ resource "google_secret_manager_secret" "secrets" {
   # メタデータとしてシークレットの説明を追加
   labels = merge(local.common_secret_settings.labels, {
     "category" = contains([for s in local.discord_secrets : s.id], each.key) ? "discord" : (
-                 contains([for s in local.firebase_admin_secrets : s.id], each.key) ? "firebase" : "api"
-                 )
+                 contains([for s in local.firebase_admin_secrets : s.id], each.key) ? "firebase-admin" : (
+                 contains([for s in local.firebase_client_secrets : s.id], each.key) ? "firebase-client" : "api"
+                 ))
   })
   
   annotations = {
@@ -118,8 +151,9 @@ output "secrets_info" {
     id => {
       name = secret.name
       category = contains([for s in local.discord_secrets : s.id], id) ? "discord" : (
-                 contains([for s in local.firebase_admin_secrets : s.id], id) ? "firebase" : "api"
-                 )
+                 contains([for s in local.firebase_admin_secrets : s.id], id) ? "firebase-admin" : (
+                 contains([for s in local.firebase_client_secrets : s.id], id) ? "firebase-client" : "api"
+                 ))
     }
   }
   description = "作成されたシークレットの一覧"
