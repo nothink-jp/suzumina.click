@@ -407,6 +407,18 @@ jobs:
             echo "Terraformから抽出された関数: $FUNCTIONS"
           fi
           
+          # デプロイから除外する関数名リスト
+          # 注意: デプロイすべきでない関数名をここに追加する
+          EXCLUDED_FUNCTIONS="debug"
+          
+          # 除外対象の関数を削除
+          for EXCLUDED in $EXCLUDED_FUNCTIONS; do
+            FUNCTIONS=$(echo "$FUNCTIONS" | sed "s/\b$EXCLUDED\b//g")
+          done
+          
+          # 空白を整理
+          FUNCTIONS=$(echo "$FUNCTIONS" | tr -s ' ' | sed 's/^ *//;s/ *$//')
+          
           echo "デプロイする関数: $FUNCTIONS"
           echo "names=$FUNCTIONS" >> $GITHUB_OUTPUT
 
