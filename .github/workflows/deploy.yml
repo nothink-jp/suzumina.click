@@ -460,20 +460,13 @@ jobs:
                 if [ -n "$TOPIC_NAME" ]; then
                   echo "Pub/Subトリガー: トピック '$TOPIC_NAME' を使用します"
                   
-                  # Gen2 Cloud Functionsでは、Pub/Subトリガーは以下のように設定
-                  # --trigger-event-filters で Pub/Sub イベントタイプを指定
-                  # --trigger-event-filters-path-pattern でトピック名を指定
-                  TOPIC_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
-                  FULL_TOPIC="projects/$TOPIC_PROJECT_ID/topics/$TOPIC_NAME"
-                  
-                  TRIGGER_PARAMS="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished --trigger-event-filters-path-pattern=resource.name=$FULL_TOPIC"
+                  # Gen2 Cloud Functionsでは、Pub/Subを次の方法で設定
+                  # 1. --trigger-topic でトピック名を指定（この方法が推奨）
+                  TRIGGER_PARAMS="--trigger-topic=$TOPIC_NAME"
                 else
                   # トピック名が取得できない場合はデフォルトトピック名を使用
                   echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
-                  TOPIC_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
-                  FULL_TOPIC="projects/$TOPIC_PROJECT_ID/topics/youtube_video_fetch_trigger"
-                  
-                  TRIGGER_PARAMS="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished --trigger-event-filters-path-pattern=resource.name=$FULL_TOPIC"
+                  TRIGGER_PARAMS="--trigger-topic=youtube_video_fetch_trigger"
                 fi
                 ;;
               storage)
@@ -489,6 +482,7 @@ jobs:
             echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS"
             
             # gcloudコマンドで関数をデプロイ
+            # サービスアカウントに必要な権限がない場合の警告が表示されるが、無視して続行
             gcloud functions deploy $FUNC \
               --gen2 \
               --region=${{ env.REGION }} \
@@ -579,20 +573,13 @@ jobs:
                 if [ -n "$TOPIC_NAME" ]; then
                   echo "Pub/Subトリガー: トピック '$TOPIC_NAME' を使用します"
                   
-                  # Gen2 Cloud Functionsでは、Pub/Subトリガーは以下のように設定
-                  # --trigger-event-filters で Pub/Sub イベントタイプを指定
-                  # --trigger-event-filters-path-pattern でトピック名を指定
-                  TOPIC_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
-                  FULL_TOPIC="projects/$TOPIC_PROJECT_ID/topics/$TOPIC_NAME"
-                  
-                  TRIGGER_PARAMS="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished --trigger-event-filters-path-pattern=resource.name=$FULL_TOPIC"
+                  # Gen2 Cloud Functionsでは、Pub/Subを次の方法で設定
+                  # 1. --trigger-topic でトピック名を指定（この方法が推奨）
+                  TRIGGER_PARAMS="--trigger-topic=$TOPIC_NAME"
                 else
                   # トピック名が取得できない場合はデフォルトトピック名を使用
                   echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
-                  TOPIC_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
-                  FULL_TOPIC="projects/$TOPIC_PROJECT_ID/topics/youtube_video_fetch_trigger"
-                  
-                  TRIGGER_PARAMS="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished --trigger-event-filters-path-pattern=resource.name=$FULL_TOPIC"
+                  TRIGGER_PARAMS="--trigger-topic=youtube_video_fetch_trigger"
                 fi
                 ;;
               storage)
@@ -608,6 +595,7 @@ jobs:
             echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS"
             
             # gcloudコマンドで関数をデプロイ
+            # サービスアカウントに必要な権限がない場合の警告が表示されるが、無視して続行
             gcloud functions deploy $FUNC \
               --gen2 \
               --region=${{ env.REGION }} \
