@@ -347,79 +347,43 @@ jobs:
         if: github.event_name != 'push'
         id: all-functions
         run: |
-          # デバッグ出力を追加
-          echo "関数の検索を開始します..."
-          echo "検索ディレクトリ構造:"
-          find ./apps/functions/src -type f -name "*.ts" | sort
-          
-          # より確実な関数検出方法に変更（複数パターンで検索）
+          # index.tsファイルから直接登録された関数を抽出する単純な方法
           echo "Cloud Functions関数を検索中..."
           
-          # エクスポートされている関数を検索（複数のパターンを考慮）
-          EXPORTED_FUNCTIONS=$(grep -r -l "export.*function" ./apps/functions/src --include="*.ts" | grep -v ".test.ts")
-          echo "エクスポート関数ファイル一覧:"
-          echo "$EXPORTED_FUNCTIONS"
+          # index.tsファイルから明示的に登録されている関数を抽出
+          INDEX_FILE="./apps/functions/src/index.ts"
           
-          # 関数名を抽出（複数のパターンに対応）
-          FUNCTIONS=""
-          for FILE in $EXPORTED_FUNCTIONS; do
-            echo "ファイル $FILE から関数を抽出しています..."
-            # 標準的なexport function pattern
-            FUNCS1=$(grep -o "export.*function [a-zA-Z0-9_]\+" $FILE | grep -v "interface\|type\|class" | sed -E 's/.*function ([a-zA-Z0-9_]+).*/\1/' || echo "")
-            # アロー関数パターン
-            FUNCS2=$(grep -o "export const [a-zA-Z0-9_]\+ = async" $FILE | sed -E 's/export const ([a-zA-Z0-9_]+).*/\1/' || echo "")
-            
-            ALL_FUNCS="$FUNCS1 $FUNCS2"
-            if [ -n "$ALL_FUNCS" ]; then
-              echo "抽出された関数: $ALL_FUNCS"
-              FUNCTIONS="$FUNCTIONS $ALL_FUNCS"
-            else
-              echo "関数が抽出されませんでした"
-              # ファイルの内容を表示（デバッグ用）
-              echo "ファイル内容の一部:"
-              head -n 20 $FILE
-            fi
-          done
-          
-          # main関数がterraformで定義されている可能性を考慮
-          echo "Terraformファイルを確認..."
-          TERRAFORM_FUNCTIONS=$(grep -o 'youtube_entry_point.*=.*"\w\+"' ./terraform/*.tf | grep -o '"[^"]\+"' | tr -d '"' || echo "")
-          if [ -n "$TERRAFORM_FUNCTIONS" ]; then
-            echo "Terraformで定義された関数: $TERRAFORM_FUNCTIONS"
-            FUNCTIONS="$FUNCTIONS $TERRAFORM_FUNCTIONS"
+          if [ ! -f "$INDEX_FILE" ]; then
+            echo "エラー: index.tsファイルが見つかりません: $INDEX_FILE"
+            exit 1
           fi
           
-          # index.tsで明示的に登録されている関数を確認
-          echo "index.tsで明示的に登録されている関数を確認..."
-          INDEX_FUNCTIONS=$(grep -o 'functions\.cloudEvent.*"\w\+"' ./apps/functions/src/index.ts | grep -o '"[^"]\+"' | tr -d '"' || echo "")
-          if [ -n "$INDEX_FUNCTIONS" ]; then
-            echo "index.tsに登録された関数: $INDEX_FUNCTIONS"
-            FUNCTIONS="$FUNCTIONS $INDEX_FUNCTIONS"
-          fi
+          # cloudEventとhttpで登録されている関数名を抽出
+          CLOUD_EVENT_FUNCTIONS=$(grep -o 'functions\.cloudEvent.*"\w\+"' $INDEX_FILE | grep -o '"[^"]\+"' | tr -d '"' || echo "")
+          HTTP_FUNCTIONS=$(grep -o 'functions\.http.*"\w\+"' $INDEX_FILE | grep -o '"[^"]\+"' | tr -d '"' || echo "")
           
-          # 重複を削除して整形
-          FUNCTIONS=$(echo "$FUNCTIONS" | tr ' ' '\n' | grep -v '^$' | sort | uniq | tr '\n' ' ')
+          # terraformファイルで明示的に定義されている関数エントリーポイントも取得（バックアップとして）
+          TERRAFORM_ENTRY_POINTS=$(grep -o '_entry_point.*=.*"\w\+"' ./terraform/*.tf | grep -o '"[^"]\+"' | tr -d '"' || echo "")
           
-          # 関数が見つからない場合は、Terraformの定義から強制的に取得を試みる
-          if [ -z "$FUNCTIONS" ]; then
-            echo "警告: 通常の方法では関数が見つかりませんでした。Terraformファイルから強制的に抽出します。"
-            FUNCTIONS=$(grep -o "_entry_point.*=.*\"\w\+\"" ./terraform/*.tf | grep -o '"[^"]\+"' | tr -d '"' || echo "fetchYouTubeVideos")
-            echo "Terraformから抽出された関数: $FUNCTIONS"
-          fi
+          # 結果をマージ
+          ALL_FUNCTIONS="$CLOUD_EVENT_FUNCTIONS $HTTP_FUNCTIONS $TERRAFORM_ENTRY_POINTS"
           
-          # デプロイから除外する関数名リスト
-          # 注意: デプロイすべきでない関数名をここに追加する
-          EXCLUDED_FUNCTIONS="debug"
+          # 重複排除と整形
+          FUNCTIONS=$(echo "$ALL_FUNCTIONS" | tr ' ' '\n' | grep -v '^$' | sort | uniq | tr '\n' ' ')
           
-          # 除外対象の関数を削除
-          for EXCLUDED in $EXCLUDED_FUNCTIONS; do
-            FUNCTIONS=$(echo "$FUNCTIONS" | sed "s/\b$EXCLUDED\b//g")
-          done
+          # httpHandlerはヘルスチェック用のダミー関数なのでデプロイ対象から除外
+          FUNCTIONS=$(echo "$FUNCTIONS" | sed 's/\bhttpHandler\b//g')
           
           # 空白を整理
           FUNCTIONS=$(echo "$FUNCTIONS" | tr -s ' ' | sed 's/^ *//;s/ *$//')
           
-          echo "デプロイする関数: $FUNCTIONS"
+          # 安全対策：関数リストが空の場合、デフォルト値としてfetchYouTubeVideosを使用
+          if [ -z "$FUNCTIONS" ]; then
+            echo "警告: 関数が検出できませんでした。デフォルト値を使用します。"
+            FUNCTIONS="fetchYouTubeVideos"
+          fi
+          
+          echo "デプロイ対象の関数一覧: $FUNCTIONS"
           echo "names=$FUNCTIONS" >> $GITHUB_OUTPUT
 
       # 関数デプロイ - push時の変更された関数のみ
