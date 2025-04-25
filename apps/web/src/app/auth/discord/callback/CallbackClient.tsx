@@ -20,6 +20,14 @@ export default function CallbackClient() {
     // コンソールログを追加して認証コードを確認
     console.log("Discord認証コードを取得しました:", code);
 
+    // 認証コードをセッションストレージに保存（Next.js routerのナビゲーション間で保持するため）
+    try {
+      sessionStorage.setItem("discord_auth_code", code);
+      console.log("認証コードをセッションストレージに保存しました");
+    } catch (e) {
+      console.error("セッションストレージへの保存に失敗しました:", e);
+    }
+
     // ローカルストレージからリダイレクト先URLを取得
     const redirectUrl = localStorage.getItem('auth_redirect_url') || '/';
     
@@ -54,17 +62,17 @@ export default function CallbackClient() {
       // コンソールログでリダイレクト先を確認
       console.log("最終リダイレクト先URL（パラメータ追加前）:", finalUrl.toString());
       
-      // discord_codeクエリパラメータを追加
+      // discord_codeクエリパラメータを追加（バックアップとして）
       finalUrl.searchParams.set('discord_code', code);
       
       console.log("最終リダイレクト先URL（パラメータ追加後）:", finalUrl.toString());
       
-      // リダイレクト
-      router.push(finalUrl.toString());
+      // リダイレクト（履歴を置き換えるためreplaceを使用）
+      router.replace(finalUrl.toString());
     } catch (e) {
       console.error("URLの処理中にエラーが発生しました:", e);
       // エラー発生時はホームにリダイレクト
-      router.push('/');
+      router.replace('/');
     }
   }, [searchParams, router]);
 

@@ -15,6 +15,8 @@ export default function AuthModal() {
   const [isProcessing, setIsProcessing] = useState(true);
   // 認証コードを検出したかどうかを追跡
   const [authCodeDetected, setAuthCodeDetected] = useState(false);
+  // 認証コードを保持
+  const [authCode, setAuthCode] = useState<string | null>(null);
 
   // 認証コードの検出とモーダル表示の制御
   useEffect(() => {
@@ -29,16 +31,31 @@ export default function AuthModal() {
     console.log("現在のURL:", window.location.href);
     console.log("検索パラメーター:", Object.fromEntries(new URLSearchParams(window.location.search).entries()));
 
+    // 1. まず、URLから直接認証コードを取得を試みる
     const code = searchParams.get("discord_code");
     console.log("SearchParamsから取得したdiscord_code:", code);
 
-    // ブラウザURLから直接取得を試みる（バックアップとして）
+    // 2. URLから取得できなかった場合は、ブラウザURLから直接取得を試みる
     const urlParams = new URLSearchParams(window.location.search);
     const codeFromUrl = urlParams.get("discord_code");
     console.log("window.location.searchから直接取得したdiscord_code:", codeFromUrl);
 
-    // どちらの方法でも取得できた認証コードを使用
-    const effectiveCode = code || codeFromUrl;
+    // 3. セッションストレージから認証コードを取得（バックアップとして）
+    let codeFromSession: string | null = null;
+    try {
+      codeFromSession = sessionStorage.getItem("discord_auth_code");
+      console.log("セッションストレージから取得したdiscord_auth_code:", codeFromSession);
+      
+      if (codeFromSession) {
+        // 使用後はセッションストレージから削除（1回限りの使用とするため）
+        console.log("セッションストレージからコードを削除します");
+      }
+    } catch (e) {
+      console.error("セッションストレージからの読み取りに失敗しました:", e);
+    }
+
+    // どの方法でも取得できた認証コードを使用
+    const effectiveCode = code || codeFromUrl || codeFromSession;
 
     if (!effectiveCode) {
       // コードがない場合はモーダルを表示しない
@@ -48,16 +65,27 @@ export default function AuthModal() {
     }
 
     console.log("認証コードを検出しました:", effectiveCode);
+    // 認証コードを状態に保存
+    setAuthCode(effectiveCode);
     // 認証コードを検出したフラグを設定
     setAuthCodeDetected(true);
     // モーダルを表示
     setIsOpen(true);
 
+    // セッションストレージから削除
+    try {
+      if (codeFromSession) {
+        sessionStorage.removeItem("discord_auth_code");
+      }
+    } catch (e) {
+      console.error("セッションストレージからの削除に失敗しました:", e);
+    }
+
   }, [searchParams]);
 
   // 認証コードが検出された場合の処理
   useEffect(() => {
-    if (!authCodeDetected) {
+    if (!authCodeDetected || !authCode) {
       return;
     }
 
@@ -74,31 +102,11 @@ export default function AuthModal() {
       try {
         setIsProcessing(true);
         
-        // SearchParamsから認証コードを取得
-        const code = searchParams.get("discord_code");
-        
-        // 取得できなかった場合はURLから直接取得を試みる
-        const urlParams = new URLSearchParams(window.location.search);
-        const codeFromUrl = urlParams.get("discord_code");
-        
-        // どちらの方法でも取得できた認証コードを使用
-        const effectiveCode = code || codeFromUrl;
-        
-        console.log("認証処理に使用するコード:", effectiveCode);
-        
-        // TypeScriptエラーを修正するため、codeがnullでないことを確認
-        if (!effectiveCode) {
-          // 例外をスローする代わりに、状態を直接更新
-          setError("認証コードが見つかりません。");
-          setMessage("認証に失敗しました。");
-          setIsProcessing(false);
-          setIsOpen(true);
-          return;
-        }
+        console.log("認証処理に使用するコード:", authCode);
         
         // Server Actionを呼び出して認証処理
         console.log("Server Actionを呼び出し中...");
-        const result = await handleDiscordCallback(effectiveCode);
+        const result = await handleDiscordCallback(authCode);
         console.log("Server Action結果:", result);
 
         if (!result.success || !result.customToken) {
@@ -185,7 +193,7 @@ export default function AuthModal() {
     }
 
     processAuth();
-  }, [authCodeDetected, searchParams]);
+  }, [authCodeDetected, authCode]);
 
   // モーダルが表示されていない場合は何も表示しない
   if (!isOpen) {
