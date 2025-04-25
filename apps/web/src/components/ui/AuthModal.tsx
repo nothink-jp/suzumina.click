@@ -11,7 +11,7 @@ export default function AuthModal() {
   const router = useRouter();
   const [message, setMessage] = useState("認証処理中...");
   const [error, setError] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false); // 初期値をfalseに変更
   const [isProcessing, setIsProcessing] = useState(true);
   // 認証コードを検出したかどうかを追跡
   const [authCodeDetected, setAuthCodeDetected] = useState(false);
@@ -45,11 +45,6 @@ export default function AuthModal() {
     try {
       codeFromSession = sessionStorage.getItem("discord_auth_code");
       console.log("セッションストレージから取得したdiscord_auth_code:", codeFromSession);
-      
-      if (codeFromSession) {
-        // 使用後はセッションストレージから削除（1回限りの使用とするため）
-        console.log("セッションストレージからコードを削除します");
-      }
     } catch (e) {
       console.error("セッションストレージからの読み取りに失敗しました:", e);
     }
@@ -69,17 +64,10 @@ export default function AuthModal() {
     setAuthCode(effectiveCode);
     // 認証コードを検出したフラグを設定
     setAuthCodeDetected(true);
-    // モーダルを表示
+    // モーダルを表示（認証処理を開始する前に必ず表示）
     setIsOpen(true);
-
-    // セッションストレージから削除
-    try {
-      if (codeFromSession) {
-        sessionStorage.removeItem("discord_auth_code");
-      }
-    } catch (e) {
-      console.error("セッションストレージからの削除に失敗しました:", e);
-    }
+    setIsProcessing(true);
+    setMessage("認証処理を開始します...");
 
   }, [searchParams]);
 
@@ -89,7 +77,7 @@ export default function AuthModal() {
       return;
     }
 
-    // URLから認証コードを削除する関数
+    // URLから認証コードを削除する関数（認証処理の最後に呼び出す）
     const removeCodeFromUrl = () => {
       // 現在のパス名のみを保持し、クエリパラメータを削除
       if (typeof window !== "undefined") {
@@ -98,8 +86,20 @@ export default function AuthModal() {
       }
     };
 
+    // セッションストレージからコードを削除（認証処理の最後に呼び出す）
+    const removeCodeFromSession = () => {
+      try {
+        sessionStorage.removeItem("discord_auth_code");
+        console.log("セッションストレージからコードを削除しました");
+      } catch (e) {
+        console.error("セッションストレージからの削除に失敗しました:", e);
+      }
+    };
+
     async function processAuth() {
       try {
+        // モーダルを表示し続ける
+        setIsOpen(true);
         setIsProcessing(true);
         
         // コードの存在を確認（コンパイルエラー対策）
@@ -107,101 +107,120 @@ export default function AuthModal() {
           setError("認証コードが見つかりません。");
           setMessage("認証に失敗しました。");
           setIsProcessing(false);
-          setIsOpen(true);
           return;
         }
         
         console.log("認証処理に使用するコード:", authCode);
+        setMessage("認証サーバーと通信中...");
         
         // Server Actionを呼び出して認証処理
         console.log("Server Actionを呼び出し中...");
-        // authCodeがstring型であることをTypeScriptに保証
-        const result = await handleDiscordCallback(authCode);
-        console.log("Server Action結果:", result);
-
-        if (!result.success || !result.customToken) {
-          // エラーメッセージを日本語化
-          let errorMessage = "認証処理に失敗しました";
-          
-          // 特定のエラーメッセージを日本語に変換
-          if (result.error === "Guild membership required.") {
-            errorMessage = "Discordサーバーのメンバーである必要があります。Discordサーバーに参加してから再度お試しください。";
-          } else if (result.error) {
-            errorMessage = result.error;
-          }
-          
-          // 例外をスローする代わりに、状態を直接更新
-          setError(errorMessage);
-          setMessage("認証に失敗しました。");
-          // 認証失敗時はリダイレクトせず、モーダルを表示したまま
-          setIsProcessing(false);
-          // 認証処理完了後も強制的にモーダルを表示
-          setIsOpen(true);
-          // 認証失敗後にURLからコードを削除
-          removeCodeFromUrl();
-          return;
-        }
-
-        // authがnullでないことを確認
-        if (!auth) {
-          // 例外をスローする代わりに、状態を直接更新
-          setError("認証システムの初期化に失敗しました。");
-          setMessage("認証に失敗しました。");
-          // 認証失敗時はリダイレクトせず、モーダルを表示したまま
-          setIsProcessing(false);
-          // 認証処理完了後も強制的にモーダルを表示
-          setIsOpen(true);
-          // 認証失敗後にURLからコードを削除
-          removeCodeFromUrl();
-          return;
-        }
-
         try {
+          // authCodeがstring型であることをTypeScriptに保証
+          const result = await handleDiscordCallback(authCode);
+          console.log("Server Action結果:", result);
+
+          if (!result.success || !result.customToken) {
+            // エラーメッセージを日本語化
+            let errorMessage = "認証処理に失敗しました";
+            
+            // 特定のエラーメッセージを日本語に変換
+            if (result.error === "Guild membership required.") {
+              errorMessage = "Discordサーバーのメンバーである必要があります。Discordサーバーに参加してから再度お試しください。";
+            } else if (result.error) {
+              errorMessage = result.error;
+            }
+            
+            // エラー表示
+            setError(errorMessage);
+            setMessage("認証に失敗しました。");
+            setIsProcessing(false);
+            
+            // コードをクリーンアップ
+            removeCodeFromUrl();
+            removeCodeFromSession();
+            return;
+          }
+
+          // authがnullでないことを確認
+          if (!auth) {
+            setError("認証システムの初期化に失敗しました。");
+            setMessage("認証に失敗しました。");
+            setIsProcessing(false);
+            
+            // コードをクリーンアップ
+            removeCodeFromUrl();
+            removeCodeFromSession();
+            return;
+          }
+
+          setMessage("Firebaseにサインイン中...");
+          
           // カスタムトークンでサインイン
           console.log("Firebaseカスタムトークンでサインイン中...");
-          await signInWithCustomToken(auth, result.customToken);
-          console.log("Firebaseサインイン成功");
-          
-          setMessage("認証に成功しました！");
-          
-          // 認証処理完了
-          setIsProcessing(false);
-          // 認証成功後もモーダルを表示し続ける
-          setIsOpen(true);
-          // 認証コードの検出フラグをリセット
-          setAuthCodeDetected(false);
-          
-          // 認証成功後にURLからコードを削除
-          removeCodeFromUrl();
-        } catch (signInError) {
-          console.error("Firebaseサインイン中にエラーが発生しました:", signInError);
-          const signInErrorMessage = signInError instanceof Error
-            ? signInError.message
-            : "認証中に予期せぬエラーが発生しました。";
-          setError(signInErrorMessage);
+          try {
+            await signInWithCustomToken(auth, result.customToken);
+            console.log("Firebaseサインイン成功");
+            
+            setMessage("認証に成功しました！");
+            setIsProcessing(false);
+            
+            // 認証コードの検出フラグをリセット
+            setAuthCodeDetected(false);
+            setAuthCode(null);
+            
+            // コードをクリーンアップ
+            removeCodeFromUrl();
+            removeCodeFromSession();
+            
+            // 3秒後にモーダルを閉じる
+            setTimeout(() => {
+              setIsOpen(false);
+            }, 3000);
+            
+          } catch (signInError) {
+            console.error("Firebaseサインイン中にエラーが発生しました:", signInError);
+            const signInErrorMessage = signInError instanceof Error
+              ? signInError.message
+              : "認証中に予期せぬエラーが発生しました。";
+            setError(signInErrorMessage);
+            setMessage("認証に失敗しました。");
+            setIsProcessing(false);
+            
+            // コードをクリーンアップ
+            removeCodeFromUrl();
+            removeCodeFromSession();
+          }
+        } catch (serverActionError) {
+          console.error("Server Action呼び出し中にエラーが発生しました:", serverActionError);
+          const serverActionErrorMessage = serverActionError instanceof Error
+            ? serverActionError.message
+            : "サーバーとの通信中にエラーが発生しました。";
+          setError(serverActionErrorMessage);
           setMessage("認証に失敗しました。");
           setIsProcessing(false);
-          setIsOpen(true);
-          // エラー発生後にURLからコードを削除
+          
+          // コードをクリーンアップ
           removeCodeFromUrl();
+          removeCodeFromSession();
         }
       } catch (err) {
+        // 全体的なエラーハンドリング
         console.error("認証処理中にエラーが発生しました:", err);
-        // エラーメッセージの取得
         const errorMessage = err instanceof Error
           ? err.message
           : "認証中に予期せぬエラーが発生しました。";
         setError(errorMessage);
         setMessage("認証に失敗しました。");
-        // 認証失敗時はリダイレクトせず、モーダルを表示したまま
         setIsProcessing(false);
-        // 認証処理完了後も強制的にモーダルを表示
-        setIsOpen(true);
-        // エラー発生後にURLからコードを削除
+        
+        // コードをクリーンアップ
         removeCodeFromUrl();
+        removeCodeFromSession();
       }
     }
 
+    // 認証処理を開始
     processAuth();
   }, [authCodeDetected, authCode]);
 
