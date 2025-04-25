@@ -1,0 +1,328 @@
+name: 'Cloud Functionsデプロイ'
+
+on:
+  # 再利用可能なワークフローとして呼び出し可能
+  workflow_call:
+    inputs:
+      branch:
+        description: 'デプロイするブランチ'
+        required: true
+        default: 'main'
+        type: string
+      trigger_source:
+        description: 'トリガー元（ci または manual）'
+        required: false
+        default: 'manual'
+        type: string
+  
+  # 手動トリガー
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'デプロイするブランチ'
+        required: true
+        default: 'main'
+        type: string
+      trigger_source:
+        description: 'トリガー元（ci または manual）'
+        required: false
+        default: 'manual'
+        type: string
+  
+  # 特定パスの変更の場合も自動でデプロイ
+  push:
+    branches:
+      - main
+    paths:
+      # Cloud Functions 変更時のみ
+      - 'apps/functions/**'
+
+# Workload Identity Federationに必要な権限設定
+permissions:
+  contents: read
+  id-token: write  # Google Cloud認証に必要
+
+# 環境変数
+env:
+  REGION: 'asia-northeast1'
+
+jobs:
+  # デプロイ条件の確認とバージョン情報の読み取り
+  prepare-deployment:
+    name: 'デプロイ準備'
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_branch: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || 'main' }}
+      node_version: ${{ steps.read_engines.outputs.node_version }}
+      pnpm_version: ${{ steps.read_engines.outputs.pnpm_version }}
+      changed_functions: ${{ steps.changed-functions.outputs.names }}
+      has_changes: ${{ steps.changed-functions.outputs.has_changes }}
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ github.event_name == 'push' && 2 || 1 }}  # push時は差分検出のため2に設定
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || 'main' }}
+      
+      # package.jsonからenginesのバージョンを読み取る
+      - name: パッケージからエンジンバージョンを読み取る
+        id: read_engines
+        run: |
+          # package.jsonからNode.jsとpnpmのバージョンを取得
+          NODE_VERSION=$(node -p "require('./package.json').engines.node")
+          PNPM_VERSION=$(node -p "require('./package.json').engines.pnpm")
+          
+          echo "取得したバージョン情報: Node.js=$NODE_VERSION, pnpm=$PNPM_VERSION"
+          
+          # GitHub Actionsの出力として設定
+          echo "node_version=$NODE_VERSION" >> $GITHUB_OUTPUT
+          echo "pnpm_version=$PNPM_VERSION" >> $GITHUB_OUTPUT
+      
+      # pushイベント時は変更があったファイルだけをデプロイ
+      - name: 変更された関数の検出
+        id: changed-functions
+        run: |
+          # 手動トリガーまたはCI経由の場合は全関数を対象にする
+          if [ "${{ github.event_name }}" != "push" ]; then
+            # index.tsファイルから直接登録された関数を抽出する
+            echo "Cloud Functions関数を検索中..."
+            
+            # index.tsファイルから明示的に登録されている関数を抽出
+            INDEX_FILE="./apps/functions/src/index.ts"
+            
+            if [ ! -f "$INDEX_FILE" ]; then
+              echo "エラー: index.tsファイルが見つかりません: $INDEX_FILE"
+              exit 1
+            fi
+            
+            # cloudEventとhttpで登録されている関数名を抽出
+            CLOUD_EVENT_FUNCTIONS=$(grep -o 'functions\.cloudEvent.*"\w\+"' $INDEX_FILE | grep -o '"[^"]\+"' | tr -d '"' || echo "")
+            HTTP_FUNCTIONS=$(grep -o 'functions\.http.*"\w\+"' $INDEX_FILE | grep -o '"[^"]\+"' | tr -d '"' || echo "")
+            
+            # 結果をマージ
+            ALL_FUNCTIONS="$CLOUD_EVENT_FUNCTIONS $HTTP_FUNCTIONS"
+            
+            # 重複排除と整形
+            FUNCTIONS=$(echo "$ALL_FUNCTIONS" | tr ' ' '\n' | grep -v '^$' | sort | uniq | tr '\n' ' ')
+            
+            # httpHandlerはヘルスチェック用のダミー関数なのでデプロイ対象から除外
+            FUNCTIONS=$(echo "$FUNCTIONS" | sed 's/\bhttpHandler\b//g')
+            
+            # 空白を整理
+            FUNCTIONS=$(echo "$FUNCTIONS" | tr -s ' ' | sed 's/^ *//;s/ *$//')
+            
+            # 安全対策：関数リストが空の場合、エラーを発生させる
+            if [ -z "$FUNCTIONS" ]; then
+              echo "エラー: 関数が検出できませんでした。デプロイを中止します。"
+              exit 1
+            fi
+            
+            echo "デプロイ対象の関数一覧: $FUNCTIONS"
+            echo "names=$FUNCTIONS" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            # 変更されたファイルからexportされている関数名を抽出
+            # HEAD^ HEADは初回コミットなどで失敗する可能性があるため、merge-baseを使用
+            CHANGED_FILES=$(git diff --name-only $(git merge-base HEAD origin/${{ github.event.repository.default_branch || 'main' }}) HEAD | grep "^apps/functions/src/.*\.ts$" | grep -v "\.test\.ts$" || true)
+            if [ -z "$CHANGED_FILES" ]; then
+              echo "変更された関数ファイルはありません"
+              echo "names=" >> $GITHUB_OUTPUT
+              echo "has_changes=false" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            
+            FUNCTIONS=""
+            for FILE in $CHANGED_FILES; do
+              FUNCS=$(grep -o "export.*async function [a-zA-Z0-9_]\+" $FILE | sed -E 's/export.*function ([a-zA-Z0-9_]+).*/\1/' || true)
+              if [ -n "$FUNCS" ]; then
+                FUNCTIONS="$FUNCTIONS $FUNCS"
+              fi
+            done
+            
+            # 重複を削除して整形
+            FUNCTIONS=$(echo "$FUNCTIONS" | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
+            echo "デプロイする関数: $FUNCTIONS"
+            echo "names=$FUNCTIONS" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: デプロイ情報を出力
+        run: |
+          echo "デプロイ情報:"
+          echo "- トリガー: ${{ github.event_name }}"
+          echo "- ブランチ: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || 'main' }}"
+          echo "- 変更された関数: ${{ steps.changed-functions.outputs.names }}"
+          echo "- Node.js: ${{ steps.read_engines.outputs.node_version }}"
+          echo "- pnpm: ${{ steps.read_engines.outputs.pnpm_version }}"
+          echo "- コミット: ${{ github.sha }}"
+          echo "- 実行者: ${{ github.actor }}"
+          echo "- 日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
+
+  # Cloud Functionsのデプロイ
+  deploy-functions:
+    name: 'Cloud Functionsデプロイ'
+    needs: prepare-deployment
+    if: needs.prepare-deployment.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-deployment.outputs.deploy_branch }}
+      
+      # 複合アクションを使用してNode.js環境をセットアップ
+      - name: Node.js環境のセットアップ
+        uses: ./.github/actions/setup-node-env
+        with:
+          node-version: ${{ needs.prepare-deployment.outputs.node_version }}
+          pnpm-version: ${{ needs.prepare-deployment.outputs.pnpm_version }}
+          project-path: 'functions'
+
+      # テスト実行
+      - name: Cloud Functionsのテスト
+        run: pnpm --filter @suzumina.click/functions test
+      
+      - name: Cloud Functionsのビルド
+        run: pnpm --filter @suzumina.click/functions build
+      
+      # Google Cloud認証
+      - name: Google Cloud認証の設定
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+          create_credentials_file: true
+          export_environment_variables: true
+      
+      # gcloud CLIをセットアップ
+      - name: gcloud CLIのセットアップ
+        if: steps.auth.outcome == 'success'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      
+      # 関数デプロイ
+      - name: Cloud Functionsのデプロイ
+        run: |
+          # 関数名のリストをスペースで分割して処理
+          FUNCTIONS="${{ needs.prepare-deployment.outputs.changed_functions }}"
+          for FUNC in $FUNCTIONS; do
+            echo "関数 $FUNC をデプロイしています..."
+            
+            # 関数のトリガータイプを検出
+            TRIGGER_TYPE=""
+            TOPIC_NAME=""
+            
+            # index.tsファイルからトリガータイプを直接確認
+            if grep -q "functions\.cloudEvent.*\"$FUNC\"" ./apps/functions/src/index.ts; then
+              TRIGGER_TYPE="pubsub"
+              # Terraformファイルからトピック名を取得
+              TOPIC_ID=$(grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep "pubsub_topic" | sed -E 's/.*pubsub_topic.*=.*"([^"]+)".*/\1/' || echo "")
+              if [ -n "$TOPIC_ID" ]; then
+                # google_pubsub_topic.トピック名.id の形式からトピック名を抽出
+                TOPIC_NAME=$(echo $TOPIC_ID | sed -E 's/.*google_pubsub_topic\.([^\.]+)\.id.*/\1/' || echo "")
+              fi
+            elif grep -q "functions\.http.*\"$FUNC\"" ./apps/functions/src/index.ts; then
+              TRIGGER_TYPE="http"
+            # 関数モジュールの内容を確認
+            elif [ -f "./apps/functions/src/$FUNC.ts" ]; then
+              if grep -q "CloudEvent" "./apps/functions/src/$FUNC.ts"; then
+                TRIGGER_TYPE="pubsub"
+              elif grep -q "Request.*Response" "./apps/functions/src/$FUNC.ts"; then
+                TRIGGER_TYPE="http"
+              fi
+            fi
+            
+            # トリガータイプが検出できない場合は警告を表示
+            if [ -z "$TRIGGER_TYPE" ]; then
+              echo "警告: 関数 $FUNC のトリガータイプが検出できませんでした。デプロイを中止します。"
+              echo "  関数は正しく登録されていますか？ index.ts で functions.cloudEvent または functions.http を使用して登録してください。"
+              exit 1
+            fi
+            
+            # トリガータイプに基づいて適切なデプロイパラメータを設定
+            TRIGGER_PARAMS=""
+            
+            case $TRIGGER_TYPE in
+              http)
+                # HTTPトリガー
+                TRIGGER_PARAMS="--trigger-http"
+                ;;
+              pubsub)
+                # Pub/Subトリガー
+                if [ -n "$TOPIC_NAME" ]; then
+                  echo "Pub/Subトリガー: トピック '$TOPIC_NAME' を使用します"
+                  TRIGGER_PARAMS="--trigger-topic=$TOPIC_NAME"
+                else
+                  # トピック名が取得できない場合はデフォルトトピック名を使用
+                  echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
+                  TRIGGER_PARAMS="--trigger-topic=youtube-video-fetch-trigger"
+                fi
+                ;;
+              *)
+                echo "不明なトリガータイプです: $TRIGGER_TYPE"
+                exit 1
+                ;;
+            esac
+            
+            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS"
+            
+            # gcloudコマンドで関数をデプロイ
+            gcloud functions deploy $FUNC \
+              --gen2 \
+              --region=${{ env.REGION }} \
+              --runtime=nodejs20 \
+              --source=./apps/functions \
+              --entry-point=$FUNC \
+              $TRIGGER_PARAMS \
+              --set-env-vars=FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=$FUNC
+            
+            if [ $? -eq 0 ]; then
+              echo "関数 $FUNC のデプロイに成功しました"
+            else
+              echo "関数 $FUNC のデプロイに失敗しました"
+              exit 1
+            fi
+          done
+      
+      # デプロイ情報の出力
+      - name: デプロイサマリー
+        run: |
+          FUNCTIONS="${{ needs.prepare-deployment.outputs.changed_functions }}"
+          echo "デプロイ完了した関数:"
+          for FUNC in $FUNCTIONS; do
+            DETAILS=$(gcloud functions describe $FUNC --region=${{ env.REGION }} --gen2 --format="yaml(url)")
+            URL=$(echo "$DETAILS" | grep "url:" | awk '{print $2}')
+            echo "- $FUNC: $URL"
+          done
+          echo "::notice title=Cloud Functionsデプロイ完了::関数がデプロイされました"
+
+  # 変更がなかった場合のメッセージ
+  no-changes-notification:
+    name: '変更なし通知'
+    needs: prepare-deployment
+    if: needs.prepare-deployment.outputs.has_changes != 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: デプロイ不要メッセージ
+        run: |
+          echo "::notice title=Cloud Functions変更なし::デプロイが必要な関数の変更はありませんでした"
+
+  # デプロイ完了通知
+  notify-deployment:
+    name: 'デプロイ完了通知'
+    needs: [prepare-deployment, deploy-functions]
+    if: needs.prepare-deployment.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: デプロイ完了メッセージ
+        run: |
+          echo "::notice title=Cloud Functionsデプロイ完了::Cloud Functionsが正常にデプロイされました"
+          echo "デプロイ日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
+          echo "トリガー: ${{ github.event_name }}"
+          echo "実行者: ${{ github.actor }}"

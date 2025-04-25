@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-# バージョン情報はpackage.jsonから読み取ります
-# パッケージからバージョンを動的に取得するステップが最初のジョブにあります
-
 jobs:
   # リポジトリ全体の共通検証
   common-lint:
@@ -48,27 +45,55 @@ jobs:
 
   # Next.jsウェブアプリ（Web）の検証
   web-checks:
-    uses: ./.github/workflows/build-and-test-app-workflow.yml
+    name: 'Webアプリケーション検証'
     needs: common-lint
-    with:
-      app-name: 'web'
-      package-name: '@suzumina.click/web'
-      run-tests: true
-      run-build: true
-      node-version: ${{ needs.common-lint.outputs.node_version }}
-      pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+      
+      # 複合アクションを使用してNode.js環境をセットアップ
+      - name: Node.js環境のセットアップ
+        uses: ./.github/actions/setup-node-env
+        with:
+          node-version: ${{ needs.common-lint.outputs.node_version }}
+          pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
+          project-path: 'web'
+      
+      # テスト実行
+      - name: アプリケーションのテスト
+        run: pnpm --filter @suzumina.click/web test
+      
+      # ビルド実行
+      - name: アプリケーションのビルド
+        run: pnpm --filter @suzumina.click/web build
 
   # Cloud Functions の検証
   functions-checks:
-    uses: ./.github/workflows/build-and-test-app-workflow.yml
+    name: 'Cloud Functions検証'
     needs: common-lint
-    with:
-      app-name: 'functions'
-      package-name: '@suzumina.click/functions'
-      run-tests: true
-      run-build: true
-      node-version: ${{ needs.common-lint.outputs.node_version }}
-      pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+      
+      # 複合アクションを使用してNode.js環境をセットアップ
+      - name: Node.js環境のセットアップ
+        uses: ./.github/actions/setup-node-env
+        with:
+          node-version: ${{ needs.common-lint.outputs.node_version }}
+          pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
+          project-path: 'functions'
+      
+      # テスト実行
+      - name: アプリケーションのテスト
+        run: pnpm --filter @suzumina.click/functions test
+      
+      # ビルド実行
+      - name: アプリケーションのビルド
+        run: pnpm --filter @suzumina.click/functions build
 
   # すべての検証が完了したら通知
   notify-success:
@@ -80,3 +105,20 @@ jobs:
     steps:
       - name: 検証完了メッセージ
         run: echo "::notice title=CI検証成功::すべてのテストとビルド検証が成功しました！"
+      
+      # CI成功時にデプロイワークフローをトリガー
+      - name: デプロイワークフローをトリガー
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy.yml',
+              ref: 'main',
+              inputs: {
+                trigger_source: 'ci'
+              }
+            });
