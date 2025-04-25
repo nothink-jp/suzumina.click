@@ -228,6 +228,80 @@ jobs:
           
           echo "Discord認証用環境変数の取得に成功しました"
           
+          # Firebase認証用環境変数を取得（クライアントサイド認証用）
+          echo "Firebase認証用環境変数を取得しています..."
+          
+          # APIキーを取得
+          echo "Firebase API Keyを取得しています..."
+          FIREBASE_API_KEY=$(gcloud secrets versions access latest \
+            --secret="NEXT_PUBLIC_FIREBASE_API_KEY" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
+              echo "::error::Firebase API Keyの取得に失敗しました"
+              echo "エラー: $FIREBASE_API_KEY"
+              exit 1
+            }
+          
+          # Auth Domainを取得
+          echo "Firebase Auth Domainを取得しています..."
+          FIREBASE_AUTH_DOMAIN=$(gcloud secrets versions access latest \
+            --secret="NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
+              echo "::error::Firebase Auth Domainの取得に失敗しました"
+              echo "エラー: $FIREBASE_AUTH_DOMAIN"
+              exit 1
+            }
+          
+          # Project IDを取得
+          echo "Firebase Project IDを取得しています..."
+          FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest \
+            --secret="NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
+              echo "::error::Firebase Project IDの取得に失敗しました"
+              echo "エラー: $FIREBASE_PROJECT_ID"
+              exit 1
+            }
+          
+          # Storage Bucketを取得
+          echo "Firebase Storage Bucketを取得しています..."
+          FIREBASE_STORAGE_BUCKET=$(gcloud secrets versions access latest \
+            --secret="NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
+              echo "::error::Firebase Storage Bucketの取得に失敗しました"
+              echo "エラー: $FIREBASE_STORAGE_BUCKET"
+              exit 1
+            }
+          
+          # Messaging Sender IDを取得
+          echo "Firebase Messaging Sender IDを取得しています..."
+          FIREBASE_MESSAGING_SENDER_ID=$(gcloud secrets versions access latest \
+            --secret="NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
+              echo "::error::Firebase Messaging Sender IDの取得に失敗しました"
+              echo "エラー: $FIREBASE_MESSAGING_SENDER_ID"
+              exit 1
+            }
+          
+          # App IDを取得
+          echo "Firebase App IDを取得しています..."
+          FIREBASE_APP_ID=$(gcloud secrets versions access latest \
+            --secret="NEXT_PUBLIC_FIREBASE_APP_ID" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
+              echo "::error::Firebase App IDの取得に失敗しました"
+              echo "エラー: $FIREBASE_APP_ID"
+              exit 1
+            }
+          
+          # Measurement IDを取得（オプション）
+          echo "Firebase Measurement IDを取得しています..."
+          FIREBASE_MEASUREMENT_ID=$(gcloud secrets versions access latest \
+            --secret="NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" 2>/dev/null) || {
+              echo "警告: Firebase Measurement IDの取得に失敗しました。省略可能なため処理を続行します。"
+              FIREBASE_MEASUREMENT_ID=""
+            }
+          
+          echo "Firebase認証用環境変数の取得に成功しました"
+          
           # ビルドとタグ付け
           # Dockerfileの場所を明示的に指定し、コンテキストをリポジトリのルートに設定
           # 必要な環境変数をビルド引数として渡す
@@ -235,6 +309,13 @@ jobs:
             --build-arg FIREBASE_SERVICE_ACCOUNT_KEY="$FIREBASE_SA_KEY" \
             --build-arg NEXT_PUBLIC_DISCORD_CLIENT_ID="$DISCORD_CLIENT_ID" \
             --build-arg NEXT_PUBLIC_DISCORD_REDIRECT_URI="$DISCORD_REDIRECT_URI" \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY="$FIREBASE_API_KEY" \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$FIREBASE_AUTH_DOMAIN" \
+            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
+            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="$FIREBASE_STORAGE_BUCKET" \
+            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
+            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID="$FIREBASE_APP_ID" \
+            --build-arg NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="$FIREBASE_MEASUREMENT_ID" \
             -t ${IMAGE_TAG} -t ${IMAGE_LATEST} .
           
           # イメージのプッシュ

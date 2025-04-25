@@ -21,6 +21,16 @@ locals {
     "DISCORD_TARGET_GUILD_ID",
     "FIREBASE_SERVICE_ACCOUNT_KEY"
   ]
+  # クライアントサイド用Firebase設定のキー
+  firebase_client_keys = [
+    "API_KEY",
+    "AUTH_DOMAIN",
+    "PROJECT_ID",
+    "STORAGE_BUCKET",
+    "MESSAGING_SENDER_ID",
+    "APP_ID",
+    "MEASUREMENT_ID"
+  ]
 }
 
 # Cloud Run用のサービスアカウント
@@ -95,12 +105,21 @@ resource "google_cloud_run_service" "nextjs_app" {
           value = "staging"  # 現在はステージング環境のみ
         }
         
-        # Firebase関連の環境変数
+        # Firebase関連の環境変数（サーバーサイド用）
         dynamic "env" {
           for_each = var.firebase_config
           content {
             name  = "FIREBASE_${env.key}"
             value = env.value
+          }
+        }
+        
+        # Firebase関連の環境変数（クライアントサイド用 NEXT_PUBLIC_プレフィックスを付ける）
+        dynamic "env" {
+          for_each = { for k in local.firebase_client_keys : k => k if contains(keys(var.firebase_config), k) }
+          content {
+            name  = "NEXT_PUBLIC_FIREBASE_${env.key}"
+            value = lookup(var.firebase_config, env.key, "")
           }
         }
         
