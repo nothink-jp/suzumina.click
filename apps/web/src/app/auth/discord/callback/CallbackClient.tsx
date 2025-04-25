@@ -67,12 +67,12 @@ export default function CallbackClient() {
       
       console.log("最終リダイレクト先URL（パラメータ追加後）:", finalUrl.toString());
       
-      // リダイレクト（履歴を置き換えるためreplaceを使用）
-      router.replace(finalUrl.toString());
+      // リダイレクト（router.replaceではなくpushを使用）
+      router.push(finalUrl.toString());
     } catch (e) {
       console.error("URLの処理中にエラーが発生しました:", e);
       // エラー発生時はホームにリダイレクト
-      router.replace('/');
+      router.push('/');
     }
   }, [searchParams, router]);
 
