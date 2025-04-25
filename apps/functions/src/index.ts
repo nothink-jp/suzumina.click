@@ -49,6 +49,17 @@ import { fetchYouTubeVideos } from "./youtube";
 functions.cloudEvent("fetchYouTubeVideos", fetchYouTubeVideos);
 
 /**
+ * HTTPリクエスト用のハンドラー（ヘルスチェック対応）
+ * 
+ * このハンドラーはCloudEvent（Pub/Sub）関数とは別に実装されており、
+ * シンプルなヘルスチェック応答のみを返します。
+ */
+functions.http("httpHandler", (req, res) => {
+  logger.info("HTTPリクエストを受信しました");
+  res.status(200).send("Functions Framework正常動作中");
+});
+
+/**
  * メインコード - Cloud Runでの実行時にヘルスチェックに応答するためのサーバー初期化
  *
  * ここではNode.jsの標準HTTPサーバーを使用してCloud Run環境でのヘルスチェックに応答します。
@@ -62,7 +73,7 @@ if (require.main === module) {
 
   // FUNCTION_TARGET環境変数を設定（指定がなければデフォルト値を使用）
   // Cloud Run環境では通常これが設定されています
-  const functionTarget = process.env.FUNCTION_TARGET || "fetchYouTubeVideos";
+  const functionTarget = process.env.FUNCTION_TARGET || "httpHandler";
   logger.info(`関数ターゲット: ${functionTarget}`);
 
   // 標準的なHTTPサーバーの作成と必要なリクエストのFunctions Frameworkへの転送
