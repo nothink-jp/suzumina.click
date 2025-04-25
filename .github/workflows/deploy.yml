@@ -449,23 +449,31 @@ jobs:
             
             # トリガータイプに基づいて適切なデプロイパラメータを設定
             TRIGGER_PARAMS=""
-            EVENT_TYPE=""
             
             case $TRIGGER_TYPE in
               http)
+                # HTTPトリガー
                 TRIGGER_PARAMS="--trigger-http"
                 ;;
               pubsub)
+                # Pub/Subトリガー
                 if [ -n "$TOPIC_NAME" ]; then
                   echo "Pub/Subトリガー: トピック '$TOPIC_NAME' を使用します"
-                  TRIGGER_PARAMS="--trigger-topic=$TOPIC_NAME"
-                  # CloudEvent形式であることを指定
-                  EVENT_TYPE="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished"
+                  
+                  # Gen2 Cloud Functionsでは、Pub/Subトリガーは以下のように設定
+                  # --trigger-event-filters で Pub/Sub イベントタイプを指定
+                  # --trigger-event-filters-path-pattern でトピック名を指定
+                  TOPIC_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
+                  FULL_TOPIC="projects/$TOPIC_PROJECT_ID/topics/$TOPIC_NAME"
+                  
+                  TRIGGER_PARAMS="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished --trigger-event-filters-path-pattern=resource.name=$FULL_TOPIC"
                 else
                   # トピック名が取得できない場合はデフォルトトピック名を使用
                   echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
-                  TRIGGER_PARAMS="--trigger-topic=youtube_video_fetch_trigger"
-                  EVENT_TYPE="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished"
+                  TOPIC_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
+                  FULL_TOPIC="projects/$TOPIC_PROJECT_ID/topics/youtube_video_fetch_trigger"
+                  
+                  TRIGGER_PARAMS="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished --trigger-event-filters-path-pattern=resource.name=$FULL_TOPIC"
                 fi
                 ;;
               storage)
@@ -478,29 +486,16 @@ jobs:
                 ;;
             esac
 
-            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS $EVENT_TYPE"
+            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS"
             
             # gcloudコマンドで関数をデプロイ
-            if [ "$TRIGGER_TYPE" = "pubsub" ]; then
-              # Pub/Sub関数はCloudEvent形式でデプロイ
-              gcloud functions deploy $FUNC \
-                --gen2 \
-                --region=${{ env.REGION }} \
-                --runtime=nodejs20 \
-                --source=./apps/functions \
-                --entry-point=$FUNC \
-                $TRIGGER_PARAMS \
-                $EVENT_TYPE
-            else
-              # HTTP関数は通常の方法でデプロイ
-              gcloud functions deploy $FUNC \
-                --gen2 \
-                --region=${{ env.REGION }} \
-                --runtime=nodejs20 \
-                --source=./apps/functions \
-                --entry-point=$FUNC \
-                $TRIGGER_PARAMS
-            fi
+            gcloud functions deploy $FUNC \
+              --gen2 \
+              --region=${{ env.REGION }} \
+              --runtime=nodejs20 \
+              --source=./apps/functions \
+              --entry-point=$FUNC \
+              $TRIGGER_PARAMS
             
             if [ $? -eq 0 ]; then
               echo "関数 $FUNC のデプロイに成功しました"
@@ -573,23 +568,31 @@ jobs:
             
             # トリガータイプに基づいて適切なデプロイパラメータを設定
             TRIGGER_PARAMS=""
-            EVENT_TYPE=""
             
             case $TRIGGER_TYPE in
               http)
+                # HTTPトリガー
                 TRIGGER_PARAMS="--trigger-http"
                 ;;
               pubsub)
+                # Pub/Subトリガー
                 if [ -n "$TOPIC_NAME" ]; then
                   echo "Pub/Subトリガー: トピック '$TOPIC_NAME' を使用します"
-                  TRIGGER_PARAMS="--trigger-topic=$TOPIC_NAME"
-                  # CloudEvent形式であることを指定
-                  EVENT_TYPE="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished"
+                  
+                  # Gen2 Cloud Functionsでは、Pub/Subトリガーは以下のように設定
+                  # --trigger-event-filters で Pub/Sub イベントタイプを指定
+                  # --trigger-event-filters-path-pattern でトピック名を指定
+                  TOPIC_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
+                  FULL_TOPIC="projects/$TOPIC_PROJECT_ID/topics/$TOPIC_NAME"
+                  
+                  TRIGGER_PARAMS="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished --trigger-event-filters-path-pattern=resource.name=$FULL_TOPIC"
                 else
                   # トピック名が取得できない場合はデフォルトトピック名を使用
                   echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
-                  TRIGGER_PARAMS="--trigger-topic=youtube_video_fetch_trigger"
-                  EVENT_TYPE="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished"
+                  TOPIC_PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
+                  FULL_TOPIC="projects/$TOPIC_PROJECT_ID/topics/youtube_video_fetch_trigger"
+                  
+                  TRIGGER_PARAMS="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished --trigger-event-filters-path-pattern=resource.name=$FULL_TOPIC"
                 fi
                 ;;
               storage)
@@ -602,29 +605,16 @@ jobs:
                 ;;
             esac
 
-            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS $EVENT_TYPE"
+            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS"
             
             # gcloudコマンドで関数をデプロイ
-            if [ "$TRIGGER_TYPE" = "pubsub" ]; then
-              # Pub/Sub関数はCloudEvent形式でデプロイ
-              gcloud functions deploy $FUNC \
-                --gen2 \
-                --region=${{ env.REGION }} \
-                --runtime=nodejs20 \
-                --source=./apps/functions \
-                --entry-point=$FUNC \
-                $TRIGGER_PARAMS \
-                $EVENT_TYPE
-            else
-              # HTTP関数は通常の方法でデプロイ
-              gcloud functions deploy $FUNC \
-                --gen2 \
-                --region=${{ env.REGION }} \
-                --runtime=nodejs20 \
-                --source=./apps/functions \
-                --entry-point=$FUNC \
-                $TRIGGER_PARAMS
-            fi
+            gcloud functions deploy $FUNC \
+              --gen2 \
+              --region=${{ env.REGION }} \
+              --runtime=nodejs20 \
+              --source=./apps/functions \
+              --entry-point=$FUNC \
+              $TRIGGER_PARAMS
             
             if [ $? -eq 0 ]; then
               echo "関数 $FUNC のデプロイに成功しました"
