@@ -1,4 +1,4 @@
-name: '本番環境デプロイ'
+name: '統合デプロイ'
 
 on:
   # 手動トリガー
@@ -9,740 +9,125 @@ on:
         required: true
         default: 'main'
         type: string
-  
-  # mainブランチへのマージ後、CI成功時に自動実行
-  workflow_run:
-    workflows: ["CI"]
-    branches: [main]
-    types:
-      - completed
-  
-  # 特定パスの変更の場合も自動でデプロイ（ファイル単位の変更検知）
-  push:
-    branches:
-      - main
-    paths:
-      # Web アプリケーション変更時
-      - 'apps/web/**'
-      # Cloud Functions 変更時
-      - 'apps/functions/**'
-
-# Workload Identity Federationに必要な権限設定
-permissions:
-  contents: read
-  id-token: write  # Google Cloud認証に必要
-
-# リージョン設定のみ残し、Node.jsとpnpmのバージョンはpackage.jsonから読み取る
-env:
-  REGION: 'asia-northeast1'
+      trigger_source:
+        description: 'トリガー元（ci または manual）'
+        required: false
+        default: 'manual'
+        type: string
+      deploy_web:
+        description: 'Webアプリケーションをデプロイするか'
+        required: false
+        default: true
+        type: boolean
+      deploy_functions:
+        description: 'Cloud Functionsをデプロイするか'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
-  # デプロイ条件の確認とバージョン情報の読み取り
+  # デプロイ条件の確認
   verify-deployment-conditions:
     name: 'デプロイ条件の確認'
     runs-on: ubuntu-latest
-    # CIワークフローが成功した場合または手動トリガーの場合、またはパス変更時に実行
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
-      github.event_name == 'push'
-    
-    outputs:
-      deploy_branch: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || 'main' }}
-      node_version: ${{ steps.read_engines.outputs.node_version }}
-      pnpm_version: ${{ steps.read_engines.outputs.pnpm_version }}
-      web_changed: ${{ steps.filter.outputs.web || 'false' }}
-      functions_changed: ${{ steps.filter.outputs.functions || 'false' }}
 
     steps:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v4
         with:
-          fetch-depth: ${{ github.event_name == 'push' && 2 || 1 }}  # push時は差分検出のため2に設定
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || 'main' }}
+          ref: ${{ github.event.inputs.branch }}
 
-      # push時のみパス変更を検出
-      - name: パス変更検出
-        if: github.event_name == 'push'
-        uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          filters: |
-            web:
-              - 'apps/web/**'
-            functions:
-              - 'apps/functions/**'
-      
-      # 手動トリガーやCI成功後のデプロイ時はすべての対象をデプロイ
-      - name: 手動/CI成功後の場合は全デプロイを設定
-        if: github.event_name != 'push'
-        run: |
-          echo "web=true" >> $GITHUB_OUTPUT
-          echo "functions=true" >> $GITHUB_OUTPUT
-        id: non_push_filter
-
-      # package.jsonからenginesのバージョンを読み取る
-      - name: パッケージからエンジンバージョンを読み取る
-        id: read_engines
-        run: |
-          # package.jsonからNode.jsとpnpmのバージョンを取得
-          NODE_VERSION=$(node -p "require('./package.json').engines.node")
-          PNPM_VERSION=$(node -p "require('./package.json').engines.pnpm")
-          
-          echo "取得したバージョン情報: Node.js=$NODE_VERSION, pnpm=$PNPM_VERSION"
-          
-          # GitHub Actionsの出力として設定
-          echo "node_version=$NODE_VERSION" >> $GITHUB_OUTPUT
-          echo "pnpm_version=$PNPM_VERSION" >> $GITHUB_OUTPUT
-      
       - name: デプロイ情報を出力
         run: |
           echo "デプロイ情報:"
-          echo "- トリガー: ${{ github.event_name }}"
-          echo "- ブランチ: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || 'main' }}"
-          echo "- Webアプリ変更: ${{ steps.filter.outputs.web == 'true' || steps.non_push_filter.outputs.web == 'true' && '変更あり' || '変更なし' }}"
-          echo "- Functions変更: ${{ steps.filter.outputs.functions == 'true' || steps.non_push_filter.outputs.functions == 'true' && '変更あり' || '変更なし' }}"
-          echo "- Node.js: ${{ steps.read_engines.outputs.node_version }}"
-          echo "- pnpm: ${{ steps.read_engines.outputs.pnpm_version }}"
-          echo "- コミット: ${{ github.sha }}"
+          echo "- トリガー: workflow_dispatch"
+          echo "- ブランチ: ${{ github.event.inputs.branch }}"
+          echo "- Webアプリケーション: ${{ github.event.inputs.deploy_web == 'true' && 'デプロイする' || 'デプロイしない' }}"
+          echo "- Cloud Functions: ${{ github.event.inputs.deploy_functions == 'true' && 'デプロイする' || 'デプロイしない' }}"
+          echo "- トリガー元: ${{ github.event.inputs.trigger_source }}"
           echo "- 実行者: ${{ github.actor }}"
           echo "- 日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
 
-  # Next.jsウェブアプリケーションのデプロイ
+  # Webアプリケーションのデプロイ
   deploy-web-app:
     name: 'Webアプリケーションデプロイ'
     needs: verify-deployment-conditions
-    # 変更検知で変更がある場合、または手動・CI経由の場合に実行
-    if: |
-      needs.verify-deployment-conditions.outputs.web_changed == 'true' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'workflow_run'
+    if: github.event.inputs.deploy_web == 'true'
     runs-on: ubuntu-latest
     
     steps:
-      - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
+      - name: Webアプリケーションデプロイワークフローをトリガー
+        uses: actions/github-script@v7
         with:
-          ref: ${{ needs.verify-deployment-conditions.outputs.deploy_branch }}
-      
-      # 複合アクションを使用してNode.js環境をセットアップ
-      - name: Node.js環境のセットアップ
-        uses: ./.github/actions/setup-node-env
-        with:
-          node-version: ${{ needs.verify-deployment-conditions.outputs.node_version }}
-          pnpm-version: ${{ needs.verify-deployment-conditions.outputs.pnpm_version }}
-          project-path: 'web'
-      
-      # テスト実行
-      - name: Webアプリのテスト
-        run: pnpm --filter @suzumina.click/web test
-
-      - name: Next.jsアプリのビルド
-        run: pnpm --filter @suzumina.click/web build
-      
-      # Google Cloud認証
-      - name: Google Cloud認証の設定
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'cloud-run-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-      
-      # gcloud CLIをセットアップ
-      - name: gcloud CLIのセットアップ
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
-      # Dockerの認証設定
-      - name: Dockerの認証設定
-        run: |
-          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
-      
-      # Artifact Registryリポジトリの確認
-      - name: Artifact Registryリポジトリの確認
-        run: |
-          echo "Artifact Registryリポジトリを確認しています..."
-          
-          # リポジトリの存在確認のみ行う（Terraformで事前作成済みの前提）
-          REPO_EXISTS=$(gcloud artifacts repositories list --location=${{ env.REGION }} --format="value(name)" | grep "^suzumina-click$" || echo "")
-          
-          if [ -z "$REPO_EXISTS" ]; then
-            echo "::error::リポジトリが存在しません。Terraformで事前に作成してください。"
-            echo "リポジトリ 'suzumina-click' が見つかりません。"
-            exit 1
-          else
-            echo "リポジトリを確認しました: $REPO_EXISTS"
-          fi
-      
-      # Dockerイメージのビルドとプッシュ
-      - name: Dockerイメージのビルドとプッシュ
-        id: docker-build
-        run: |
-          # イメージタグの設定（コミットハッシュとlatestを両方設定）
-          GIT_SHA=$(git rev-parse --short HEAD)
-          IMAGE_BASE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/suzumina-click/nextjs-app"
-          IMAGE_TAG="${IMAGE_BASE}:${GIT_SHA}"
-          IMAGE_LATEST="${IMAGE_BASE}:latest"
-          
-          echo "イメージをビルドしています: ${IMAGE_TAG}"
-          
-          # サービスアカウントの確認（デバッグ情報として記録）
-          echo "サービスアカウントの確認..."
-          CURRENT_SA=$(gcloud auth list --filter=status:ACTIVE --format='value(account)')
-          echo "使用中のサービスアカウント: $CURRENT_SA"
-          
-          # Secret Managerからサービスアカウントキーを直接取得
-          echo "Firebase Service Account Keyを取得しています..."
-          FIREBASE_SA_KEY=$(gcloud secrets versions access latest \
-            --secret="FIREBASE_SERVICE_ACCOUNT_KEY" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || { 
-              echo "::error::Firebase Service Account Keyの取得に失敗しました" 
-              echo "エラー: $FIREBASE_SA_KEY"
-              exit 1
-            }
-          
-          echo "Firebase Service Account Keyを取得しました"
-          
-          # Discord認証用環境変数を直接取得
-          echo "Discord認証用環境変数を取得しています..."
-          
-          # クライアント側で必要な環境変数を個別に取得
-          echo "Discord Client IDを取得しています..."
-          DISCORD_CLIENT_ID=$(gcloud secrets versions access latest \
-            --secret="NEXT_PUBLIC_DISCORD_CLIENT_ID" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || { 
-              echo "::error::Discord Client IDの取得に失敗しました"
-              echo "エラー: $DISCORD_CLIENT_ID" 
-              exit 1
-            }
-          
-          echo "Discord Redirect URIを取得しています..."
-          DISCORD_REDIRECT_URI=$(gcloud secrets versions access latest \
-            --secret="NEXT_PUBLIC_DISCORD_REDIRECT_URI" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
-              echo "::error::Discord Redirect URIの取得に失敗しました"
-              echo "エラー: $DISCORD_REDIRECT_URI"
-              exit 1
-            }
-          
-          echo "Discord認証用環境変数の取得に成功しました"
-          
-          # Firebase認証用環境変数を取得（クライアントサイド認証用）
-          echo "Firebase認証用環境変数を取得しています..."
-          
-          # APIキーを取得
-          echo "Firebase API Keyを取得しています..."
-          FIREBASE_API_KEY=$(gcloud secrets versions access latest \
-            --secret="NEXT_PUBLIC_FIREBASE_API_KEY" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
-              echo "::error::Firebase API Keyの取得に失敗しました"
-              echo "エラー: $FIREBASE_API_KEY"
-              exit 1
-            }
-          
-          # Auth Domainを取得
-          echo "Firebase Auth Domainを取得しています..."
-          FIREBASE_AUTH_DOMAIN=$(gcloud secrets versions access latest \
-            --secret="NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
-              echo "::error::Firebase Auth Domainの取得に失敗しました"
-              echo "エラー: $FIREBASE_AUTH_DOMAIN"
-              exit 1
-            }
-          
-          # Project IDを取得
-          echo "Firebase Project IDを取得しています..."
-          FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest \
-            --secret="NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
-              echo "::error::Firebase Project IDの取得に失敗しました"
-              echo "エラー: $FIREBASE_PROJECT_ID"
-              exit 1
-            }
-          
-          # Storage Bucketを取得
-          echo "Firebase Storage Bucketを取得しています..."
-          FIREBASE_STORAGE_BUCKET=$(gcloud secrets versions access latest \
-            --secret="NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
-              echo "::error::Firebase Storage Bucketの取得に失敗しました"
-              echo "エラー: $FIREBASE_STORAGE_BUCKET"
-              exit 1
-            }
-          
-          # Messaging Sender IDを取得
-          echo "Firebase Messaging Sender IDを取得しています..."
-          FIREBASE_MESSAGING_SENDER_ID=$(gcloud secrets versions access latest \
-            --secret="NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
-              echo "::error::Firebase Messaging Sender IDの取得に失敗しました"
-              echo "エラー: $FIREBASE_MESSAGING_SENDER_ID"
-              exit 1
-            }
-          
-          # App IDを取得
-          echo "Firebase App IDを取得しています..."
-          FIREBASE_APP_ID=$(gcloud secrets versions access latest \
-            --secret="NEXT_PUBLIC_FIREBASE_APP_ID" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>&1) || {
-              echo "::error::Firebase App IDの取得に失敗しました"
-              echo "エラー: $FIREBASE_APP_ID"
-              exit 1
-            }
-          
-          # Measurement IDを取得（オプション）
-          echo "Firebase Measurement IDを取得しています..."
-          FIREBASE_MEASUREMENT_ID=$(gcloud secrets versions access latest \
-            --secret="NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID" \
-            --project="${{ secrets.GCP_PROJECT_ID }}" 2>/dev/null) || {
-              echo "警告: Firebase Measurement IDの取得に失敗しました。省略可能なため処理を続行します。"
-              FIREBASE_MEASUREMENT_ID=""
-            }
-          
-          echo "Firebase認証用環境変数の取得に成功しました"
-          
-          # ビルドとタグ付け
-          # Dockerfileの場所を明示的に指定し、コンテキストをリポジトリのルートに設定
-          # 必要な環境変数をビルド引数として渡す
-          docker build -f apps/web/Dockerfile \
-            --build-arg FIREBASE_SERVICE_ACCOUNT_KEY="$FIREBASE_SA_KEY" \
-            --build-arg NEXT_PUBLIC_DISCORD_CLIENT_ID="$DISCORD_CLIENT_ID" \
-            --build-arg NEXT_PUBLIC_DISCORD_REDIRECT_URI="$DISCORD_REDIRECT_URI" \
-            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY="$FIREBASE_API_KEY" \
-            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$FIREBASE_AUTH_DOMAIN" \
-            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
-            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="$FIREBASE_STORAGE_BUCKET" \
-            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
-            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID="$FIREBASE_APP_ID" \
-            --build-arg NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="$FIREBASE_MEASUREMENT_ID" \
-            -t ${IMAGE_TAG} -t ${IMAGE_LATEST} .
-          
-          # イメージのプッシュ
-          docker push ${IMAGE_TAG}
-          docker push ${IMAGE_LATEST}
-          
-          echo "イメージがプッシュされました: ${IMAGE_TAG}"
-          echo "image=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-      
-      # Cloud Runへのデプロイ
-      - name: Cloud Runへのデプロイ
-        id: deploy-run
-        run: |
-          echo "Cloud Runサービスをデプロイしています..."
-          
-          # デプロイコマンド
-          gcloud run deploy suzumina-click-nextjs-app \
-            --image=${{ steps.docker-build.outputs.image }} \
-            --platform=managed \
-            --region=${{ env.REGION }} \
-            --allow-unauthenticated \
-            --quiet
-          
-          echo "デプロイが完了しました"
-      
-      # デプロイ後の確認
-      - name: デプロイ結果の確認
-        run: |
-          # デプロイされたURLを取得して表示
-          URL=$(gcloud run services describe suzumina-click-nextjs-app --platform=managed --region=${{ env.REGION }} --format="value(status.url)")
-          echo "デプロイURL: $URL"
-          echo "::notice title=Webアプリケーションデプロイ完了::$URL にデプロイされました"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-web.yml',
+              ref: '${{ github.event.inputs.branch }}',
+              inputs: {
+                branch: '${{ github.event.inputs.branch }}',
+                trigger_source: '${{ github.event.inputs.trigger_source }}'
+              }
+            });
+            console.log('Webアプリケーションデプロイワークフローをトリガーしました');
 
   # Cloud Functionsのデプロイ
   deploy-cloud-functions:
     name: 'Cloud Functionsデプロイ'
     needs: verify-deployment-conditions
-    # 変更検知で変更がある場合、または手動・CI経由の場合に実行
-    if: |
-      needs.verify-deployment-conditions.outputs.functions_changed == 'true' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'workflow_run'
+    if: github.event.inputs.deploy_functions == 'true'
     runs-on: ubuntu-latest
     
     steps:
-      - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
+      - name: Cloud Functionsデプロイワークフローをトリガー
+        uses: actions/github-script@v7
         with:
-          ref: ${{ needs.verify-deployment-conditions.outputs.deploy_branch }}
-      
-      # 複合アクションを使用してNode.js環境をセットアップ
-      - name: Node.js環境のセットアップ
-        uses: ./.github/actions/setup-node-env
-        with:
-          node-version: ${{ needs.verify-deployment-conditions.outputs.node_version }}
-          pnpm-version: ${{ needs.verify-deployment-conditions.outputs.pnpm_version }}
-          project-path: 'functions'
-
-      # テスト実行
-      - name: Cloud Functionsのテスト
-        run: pnpm --filter @suzumina.click/functions test
-      
-      - name: Cloud Functionsのビルド
-        run: pnpm --filter @suzumina.click/functions build
-      
-      # Google Cloud認証
-      - name: Google Cloud認証の設定
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-      
-      # gcloud CLIをセットアップ
-      - name: gcloud CLIのセットアップ
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
-      # pushイベント時は変更があったファイルだけをデプロイ
-      - name: 変更された関数の検出（push時のみ）
-        if: github.event_name == 'push'
-        id: changed-functions
-        run: |
-          # 変更されたファイルからexportされている関数名を抽出
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep "^apps/functions/src/.*\.ts$" | grep -v "\.test\.ts$" || true)
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "変更された関数ファイルはありません"
-            echo "names=" >> $GITHUB_OUTPUT
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          FUNCTIONS=""
-          for FILE in $CHANGED_FILES; do
-            FUNCS=$(grep -o "export.*async function [a-zA-Z0-9_]\+" $FILE | sed -E 's/export.*function ([a-zA-Z0-9_]+).*/\1/' || true)
-            if [ -n "$FUNCS" ]; then
-              FUNCTIONS="$FUNCTIONS $FUNCS"
-            fi
-          done
-          
-          # 重複を削除して整形
-          FUNCTIONS=$(echo "$FUNCTIONS" | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
-          echo "デプロイする関数: $FUNCTIONS"
-          echo "names=$FUNCTIONS" >> $GITHUB_OUTPUT
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-
-      # 手動/CI経由の場合は全関数を対象にする
-      - name: すべての関数を取得（手動/CI経由の場合）
-        if: github.event_name != 'push'
-        id: all-functions
-        run: |
-          # index.tsファイルから直接登録された関数を抽出する単純な方法
-          echo "Cloud Functions関数を検索中..."
-          
-          # index.tsファイルから明示的に登録されている関数を抽出
-          INDEX_FILE="./apps/functions/src/index.ts"
-          
-          if [ ! -f "$INDEX_FILE" ]; then
-            echo "エラー: index.tsファイルが見つかりません: $INDEX_FILE"
-            exit 1
-          fi
-          
-          # cloudEventとhttpで登録されている関数名を抽出
-          CLOUD_EVENT_FUNCTIONS=$(grep -o 'functions\.cloudEvent.*"\w\+"' $INDEX_FILE | grep -o '"[^"]\+"' | tr -d '"' || echo "")
-          HTTP_FUNCTIONS=$(grep -o 'functions\.http.*"\w\+"' $INDEX_FILE | grep -o '"[^"]\+"' | tr -d '"' || echo "")
-          
-          # terraformファイルで明示的に定義されている関数エントリーポイントも取得（バックアップとして）
-          TERRAFORM_ENTRY_POINTS=$(grep -o '_entry_point.*=.*"\w\+"' ./terraform/*.tf | grep -o '"[^"]\+"' | tr -d '"' || echo "")
-          
-          # 結果をマージ
-          ALL_FUNCTIONS="$CLOUD_EVENT_FUNCTIONS $HTTP_FUNCTIONS $TERRAFORM_ENTRY_POINTS"
-          
-          # 重複排除と整形
-          FUNCTIONS=$(echo "$ALL_FUNCTIONS" | tr ' ' '\n' | grep -v '^$' | sort | uniq | tr '\n' ' ')
-          
-          # httpHandlerはヘルスチェック用のダミー関数なのでデプロイ対象から除外
-          FUNCTIONS=$(echo "$FUNCTIONS" | sed 's/\bhttpHandler\b//g')
-          
-          # 空白を整理
-          FUNCTIONS=$(echo "$FUNCTIONS" | tr -s ' ' | sed 's/^ *//;s/ *$//')
-          
-          # 安全対策：関数リストが空の場合、デフォルト値としてfetchYouTubeVideosを使用
-          if [ -z "$FUNCTIONS" ]; then
-            echo "警告: 関数が検出できませんでした。デフォルト値を使用します。"
-            FUNCTIONS="fetchYouTubeVideos"
-          fi
-          
-          echo "デプロイ対象の関数一覧: $FUNCTIONS"
-          echo "names=$FUNCTIONS" >> $GITHUB_OUTPUT
-
-      # 関数デプロイ - push時の変更された関数のみ
-      - name: 変更されたCloud Functionsのデプロイ（push時）
-        if: github.event_name == 'push' && steps.changed-functions.outputs.has_changes == 'true'
-        run: |
-          # 関数名のリストをスペースで分割して処理
-          FUNCTIONS="${{ steps.changed-functions.outputs.names }}"
-          for FUNC in $FUNCTIONS; do
-            echo "関数 $FUNC をデプロイしています..."
-            
-            # 関数のトリガータイプ情報を取得
-            TRIGGER_TYPE=""
-            TOPIC_NAME=""
-            
-            # index.tsファイルからトリガータイプを直接確認
-            if grep -q "functions\.cloudEvent.*\"$FUNC\"" ./apps/functions/src/index.ts; then
-              TRIGGER_TYPE="pubsub"
-              # Terraformファイルからトピック名を取得
-              TOPIC_ID=$(grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep "pubsub_topic" | sed -E 's/.*pubsub_topic.*=.*"([^"]+)".*/\1/' || echo "")
-              if [ -n "$TOPIC_ID" ]; then
-                # google_pubsub_topic.トピック名.id の形式からトピック名を抽出
-                TOPIC_NAME=$(echo $TOPIC_ID | sed -E 's/.*google_pubsub_topic\.([^\.]+)\.id.*/\1/' || echo "")
-              fi
-            elif grep -q "functions\.http.*\"$FUNC\"" ./apps/functions/src/index.ts; then
-              TRIGGER_TYPE="http"
-            # Terraformファイルから関数のトリガータイプを検出
-            elif grep -q "name.*=.*\"$FUNC\"" ./terraform/*.tf; then
-              # HTTPトリガーかPub/Subトリガーか判定
-              if grep -A20 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep -q "trigger_http"; then
-                TRIGGER_TYPE="http"
-              elif grep -A30 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep -q "event_trigger"; then
-                # Pub/Sub、Cloud Storage、Firestoreなどのイベントトリガー
-                if grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep -q "pubsub_topic"; then
-                  TRIGGER_TYPE="pubsub"
-                  # トピック名を抽出
-                  TOPIC_ID=$(grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep "pubsub_topic" | sed -E 's/.*pubsub_topic.*=.*"([^"]+)".*/\1/' || echo "")
-                  if [ -n "$TOPIC_ID" ]; then
-                    # google_pubsub_topic.トピック名.id の形式からトピック名を抽出
-                    TOPIC_NAME=$(echo $TOPIC_ID | sed -E 's/.*google_pubsub_topic\.([^\.]+)\.id.*/\1/' || echo "")
-                  fi
-                elif grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep -q "storage"; then
-                  TRIGGER_TYPE="storage"
-                fi
-              fi
-            fi
-            
-            # トリガータイプが検出できない場合、関数モジュールの内容を確認
-            if [ -z "$TRIGGER_TYPE" ] && [ -f "./apps/functions/src/$FUNC.ts" ]; then
-              if grep -q "CloudEvent" "./apps/functions/src/$FUNC.ts"; then
-                TRIGGER_TYPE="pubsub"
-              elif grep -q "Request.*Response" "./apps/functions/src/$FUNC.ts"; then
-                TRIGGER_TYPE="http"
-              fi
-            fi
-            
-            # それでもトリガータイプが検出できない場合は警告を表示
-            if [ -z "$TRIGGER_TYPE" ]; then
-              echo "警告: 関数 $FUNC のトリガータイプが検出できませんでした。デプロイを中止します。"
-              echo "  関数は正しく登録されていますか？ index.ts で functions.cloudEvent または functions.http を使用して登録してください。"
-              exit 1
-            fi
-            
-            # トリガータイプに基づいて適切なデプロイパラメータを設定
-            TRIGGER_PARAMS=""
-            
-            case $TRIGGER_TYPE in
-              http)
-                # HTTPトリガー
-                TRIGGER_PARAMS="--trigger-http"
-                ;;
-              pubsub)
-                # Pub/Subトリガー
-                if [ -n "$TOPIC_NAME" ]; then
-                  echo "Pub/Subトリガー: トピック '$TOPIC_NAME' を使用します"
-                  
-                  # Gen2 Cloud Functionsでは、Pub/Subを次の方法で設定
-                  # 1. --trigger-topic でトピック名を指定（この方法が推奨）
-                  TRIGGER_PARAMS="--trigger-topic=$TOPIC_NAME"
-                else
-                  # トピック名が取得できない場合はデフォルトトピック名を使用
-                  echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
-                  # Terraform定義と一致するトピック名（ハイフン区切り）を使用
-                  TRIGGER_PARAMS="--trigger-topic=youtube-video-fetch-trigger"
-                fi
-                ;;
-              storage)
-                echo "Cloud Storageトリガーは現在サポートされていません。デプロイを中止します。"
-                exit 1
-                ;;
-              *)
-                echo "不明なトリガータイプです: $TRIGGER_TYPE"
-                exit 1
-                ;;
-            esac
-
-            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS"
-            
-            # gcloudコマンドで関数をデプロイ
-            # サービスアカウントに必要な権限がない場合の警告が表示されるが、無視して続行
-            gcloud functions deploy $FUNC \
-              --gen2 \
-              --region=${{ env.REGION }} \
-              --runtime=nodejs20 \
-              --source=./apps/functions \
-              --entry-point=$FUNC \
-              $TRIGGER_PARAMS \
-              --set-env-vars=FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=$FUNC
-            
-            if [ $? -eq 0 ]; then
-              echo "関数 $FUNC のデプロイに成功しました"
-            else
-              echo "関数 $FUNC のデプロイに失敗しました"
-              exit 1
-            fi
-          done
-
-      # 関数デプロイ - 手動/CI経由の場合は全関数をデプロイ
-      - name: すべてのCloud Functionsのデプロイ（手動/CI経由）
-        if: github.event_name != 'push'
-        run: |
-          # 関数名のリストをスペースで分割して処理
-          FUNCTIONS="${{ steps.all-functions.outputs.names }}"
-          for FUNC in $FUNCTIONS; do
-            echo "関数 $FUNC をデプロイしています..."
-            
-            # 関数のトリガータイプ情報を取得
-            TRIGGER_TYPE=""
-            TOPIC_NAME=""
-            
-            # index.tsファイルからトリガータイプを直接確認
-            if grep -q "functions\.cloudEvent.*\"$FUNC\"" ./apps/functions/src/index.ts; then
-              TRIGGER_TYPE="pubsub"
-              # Terraformファイルからトピック名を取得
-              TOPIC_ID=$(grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep "pubsub_topic" | sed -E 's/.*pubsub_topic.*=.*"([^"]+)".*/\1/' || echo "")
-              if [ -n "$TOPIC_ID" ]; then
-                # google_pubsub_topic.トピック名.id の形式からトピック名を抽出
-                TOPIC_NAME=$(echo $TOPIC_ID | sed -E 's/.*google_pubsub_topic\.([^\.]+)\.id.*/\1/' || echo "")
-              fi
-            elif grep -q "functions\.http.*\"$FUNC\"" ./apps/functions/src/index.ts; then
-              TRIGGER_TYPE="http"
-            # Terraformファイルから関数のトリガータイプを検出
-            elif grep -q "name.*=.*\"$FUNC\"" ./terraform/*.tf; then
-              # HTTPトリガーかPub/Subトリガーか判定
-              if grep -A20 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep -q "trigger_http"; then
-                TRIGGER_TYPE="http"
-              elif grep -A30 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep -q "event_trigger"; then
-                # Pub/Sub、Cloud Storage、Firestoreなどのイベントトリガー
-                if grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep -q "pubsub_topic"; then
-                  TRIGGER_TYPE="pubsub"
-                  # トピック名を抽出
-                  TOPIC_ID=$(grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep "pubsub_topic" | sed -E 's/.*pubsub_topic.*=.*"([^"]+)".*/\1/' || echo "")
-                  if [ -n "$TOPIC_ID" ]; then
-                    # google_pubsub_topic.トピック名.id の形式からトピック名を抽出
-                    TOPIC_NAME=$(echo $TOPIC_ID | sed -E 's/.*google_pubsub_topic\.([^\.]+)\.id.*/\1/' || echo "")
-                  fi
-                elif grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep -q "storage"; then
-                  TRIGGER_TYPE="storage"
-                fi
-              fi
-            fi
-            
-            # トリガータイプが検出できない場合、関数モジュールの内容を確認
-            if [ -z "$TRIGGER_TYPE" ] && [ -f "./apps/functions/src/$FUNC.ts" ]; then
-              if grep -q "CloudEvent" "./apps/functions/src/$FUNC.ts"; then
-                TRIGGER_TYPE="pubsub"
-              elif grep -q "Request.*Response" "./apps/functions/src/$FUNC.ts"; then
-                TRIGGER_TYPE="http"
-              fi
-            fi
-            
-            # それでもトリガータイプが検出できない場合は警告を表示
-            if [ -z "$TRIGGER_TYPE" ]; then
-              echo "警告: 関数 $FUNC のトリガータイプが検出できませんでした。デプロイを中止します。"
-              echo "  関数は正しく登録されていますか？ index.ts で functions.cloudEvent または functions.http を使用して登録してください。"
-              exit 1
-            fi
-            
-            # トリガータイプに基づいて適切なデプロイパラメータを設定
-            TRIGGER_PARAMS=""
-            
-            case $TRIGGER_TYPE in
-              http)
-                # HTTPトリガー
-                TRIGGER_PARAMS="--trigger-http"
-                ;;
-              pubsub)
-                # Pub/Subトリガー
-                if [ -n "$TOPIC_NAME" ]; then
-                  echo "Pub/Subトリガー: トピック '$TOPIC_NAME' を使用します"
-                  
-                  # Gen2 Cloud Functionsでは、Pub/Subを次の方法で設定
-                  # 1. --trigger-topic でトピック名を指定（この方法が推奨）
-                  TRIGGER_PARAMS="--trigger-topic=$TOPIC_NAME"
-                else
-                  # トピック名が取得できない場合はデフォルトトピック名を使用
-                  echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
-                  # Terraform定義と一致するトピック名（ハイフン区切り）を使用
-                  TRIGGER_PARAMS="--trigger-topic=youtube-video-fetch-trigger"
-                fi
-                ;;
-              storage)
-                echo "Cloud Storageトリガーは現在サポートされていません。デプロイを中止します。"
-                exit 1
-                ;;
-              *)
-                echo "不明なトリガータイプです: $TRIGGER_TYPE"
-                exit 1
-                ;;
-            esac
-
-            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS"
-            
-            # gcloudコマンドで関数をデプロイ
-            # サービスアカウントに必要な権限がない場合の警告が表示されるが、無視して続行
-            gcloud functions deploy $FUNC \
-              --gen2 \
-              --region=${{ env.REGION }} \
-              --runtime=nodejs20 \
-              --source=./apps/functions \
-              --entry-point=$FUNC \
-              $TRIGGER_PARAMS \
-              --set-env-vars=FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=$FUNC
-            
-            if [ $? -eq 0 ]; then
-              echo "関数 $FUNC のデプロイに成功しました"
-            else
-              echo "関数 $FUNC のデプロイに失敗しました"
-              exit 1
-            fi
-          done
-
-      # デプロイ情報の出力
-      - name: デプロイサマリー（push時）
-        if: github.event_name == 'push' && steps.changed-functions.outputs.has_changes == 'true'
-        run: |
-          FUNCTIONS="${{ steps.changed-functions.outputs.names }}"
-          echo "デプロイ完了した関数:"
-          for FUNC in $FUNCTIONS; do
-            DETAILS=$(gcloud functions describe $FUNC --region=${{ env.REGION }} --gen2 --format="yaml(url)")
-            URL=$(echo "$DETAILS" | grep "url:" | awk '{print $2}')
-            echo "- $FUNC: $URL"
-          done
-          echo "::notice title=Cloud Functionsデプロイ完了::変更された関数がデプロイされました"
-
-      # デプロイ情報の出力（手動/CI経由の場合）
-      - name: デプロイサマリー（手動/CI経由）
-        if: github.event_name != 'push'
-        run: |
-          FUNCTIONS="${{ steps.all-functions.outputs.names }}"
-          echo "デプロイ完了した関数:"
-          for FUNC in $FUNCTIONS; do
-            DETAILS=$(gcloud functions describe $FUNC --region=${{ env.REGION }} --gen2 --format="yaml(url)")
-            URL=$(echo "$DETAILS" | grep "url:" | awk '{print $2}')
-            echo "- $FUNC: $URL"
-          done
-          echo "::notice title=Cloud Functionsデプロイ完了::すべての関数がデプロイされました"
-      
-      # 変更がなかった場合のメッセージ（push時のみ）
-      - name: デプロイ不要メッセージ
-        if: github.event_name == 'push' && steps.changed-functions.outputs.has_changes != 'true'
-        run: |
-          echo "::notice title=Cloud Functions変更なし::デプロイが必要な関数の変更はありませんでした"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-functions.yml',
+              ref: '${{ github.event.inputs.branch }}',
+              inputs: {
+                branch: '${{ github.event.inputs.branch }}',
+                trigger_source: '${{ github.event.inputs.trigger_source }}'
+              }
+            });
+            console.log('Cloud Functionsデプロイワークフローをトリガーしました');
 
   # デプロイ完了通知
   notify-deployment:
     name: 'デプロイ完了通知'
     needs: [verify-deployment-conditions, deploy-web-app, deploy-cloud-functions]
-    # いずれかのデプロイが実行された場合に通知
     if: |
-      always() &&
-      (needs.deploy-web-app.result == 'success' || needs.deploy-cloud-functions.result == 'success')
+      always() && (
+        (needs.deploy-web-app.result == 'success' || github.event.inputs.deploy_web != 'true') &&
+        (needs.deploy-cloud-functions.result == 'success' || github.event.inputs.deploy_functions != 'true')
+      )
     runs-on: ubuntu-latest
     
     steps:
       - name: デプロイ完了メッセージ
         run: |
-          echo "::notice title=本番環境デプロイ完了::コンポーネントが正常にデプロイされました"
+          echo "::notice title=統合デプロイ完了::指定されたコンポーネントのデプロイワークフローが正常にトリガーされました"
           echo "デプロイ日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
-          echo "トリガー: ${{ github.event_name }}"
+          echo "トリガー: workflow_dispatch"
           echo "実行者: ${{ github.actor }}"
+          
+          # デプロイ結果の詳細
+          if [ "${{ github.event.inputs.deploy_web }}" == "true" ]; then
+            echo "- Webアプリケーション: デプロイワークフローをトリガーしました"
+          else
+            echo "- Webアプリケーション: デプロイ対象外"
+          fi
+          
+          if [ "${{ github.event.inputs.deploy_functions }}" == "true" ]; then
+            echo "- Cloud Functions: デプロイワークフローをトリガーしました"
+          else
+            echo "- Cloud Functions: デプロイ対象外"
+          fi
+          
+          echo "注意: 各コンポーネントのデプロイ状況は、個別のワークフロー実行結果を確認してください。"

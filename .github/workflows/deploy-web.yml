@@ -1,0 +1,256 @@
+name: 'Webアプリケーションデプロイ'
+
+on:
+  # 再利用可能なワークフローとして呼び出し可能
+  workflow_call:
+    inputs:
+      branch:
+        description: 'デプロイするブランチ'
+        required: true
+        default: 'main'
+        type: string
+      trigger_source:
+        description: 'トリガー元（ci または manual）'
+        required: false
+        default: 'manual'
+        type: string
+  
+  # 手動トリガー
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'デプロイするブランチ'
+        required: true
+        default: 'main'
+        type: string
+      trigger_source:
+        description: 'トリガー元（ci または manual）'
+        required: false
+        default: 'manual'
+        type: string
+  
+  # 特定パスの変更の場合も自動でデプロイ
+  push:
+    branches:
+      - main
+    paths:
+      # Web アプリケーション変更時のみ
+      - 'apps/web/**'
+
+# Workload Identity Federationに必要な権限設定
+permissions:
+  contents: read
+  id-token: write  # Google Cloud認証に必要
+
+# 環境変数
+env:
+  REGION: 'asia-northeast1'
+
+jobs:
+  # デプロイ条件の確認とバージョン情報の読み取り
+  prepare-deployment:
+    name: 'デプロイ準備'
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_branch: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || 'main' }}
+      node_version: ${{ steps.read_engines.outputs.node_version }}
+      pnpm_version: ${{ steps.read_engines.outputs.pnpm_version }}
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || 'main' }}
+      
+      # package.jsonからenginesのバージョンを読み取る
+      - name: パッケージからエンジンバージョンを読み取る
+        id: read_engines
+        run: |
+          # package.jsonからNode.jsとpnpmのバージョンを取得
+          NODE_VERSION=$(node -p "require('./package.json').engines.node")
+          PNPM_VERSION=$(node -p "require('./package.json').engines.pnpm")
+          
+          echo "取得したバージョン情報: Node.js=$NODE_VERSION, pnpm=$PNPM_VERSION"
+          
+          # GitHub Actionsの出力として設定
+          echo "node_version=$NODE_VERSION" >> $GITHUB_OUTPUT
+          echo "pnpm_version=$PNPM_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: デプロイ情報を出力
+        run: |
+          echo "デプロイ情報:"
+          echo "- トリガー: ${{ github.event_name }}"
+          echo "- ブランチ: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || 'main' }}"
+          echo "- Node.js: ${{ steps.read_engines.outputs.node_version }}"
+          echo "- pnpm: ${{ steps.read_engines.outputs.pnpm_version }}"
+          echo "- コミット: ${{ github.sha }}"
+          echo "- 実行者: ${{ github.actor }}"
+          echo "- 日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
+
+  # Next.jsウェブアプリケーションのデプロイ
+  deploy-web-app:
+    name: 'Webアプリケーションデプロイ'
+    needs: prepare-deployment
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-deployment.outputs.deploy_branch }}
+      
+      # 複合アクションを使用してNode.js環境をセットアップ
+      - name: Node.js環境のセットアップ
+        uses: ./.github/actions/setup-node-env
+        with:
+          node-version: ${{ needs.prepare-deployment.outputs.node_version }}
+          pnpm-version: ${{ needs.prepare-deployment.outputs.pnpm_version }}
+          project-path: 'web'
+      
+      # テスト実行
+      - name: Webアプリのテスト
+        run: pnpm --filter @suzumina.click/web test
+
+      - name: Next.jsアプリのビルド
+        run: pnpm --filter @suzumina.click/web build
+      
+      # Google Cloud認証
+      - name: Google Cloud認証
+        uses: ./.github/workflows/shared/gcp-auth.yml
+        with:
+          workload-identity-provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service-account: 'cloud-run-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+          project-id: ${{ secrets.GCP_PROJECT_ID }}
+          setup-docker: true
+          region: ${{ env.REGION }}
+      
+      # Artifact Registryリポジトリの確認
+      - name: Artifact Registryリポジトリの確認
+        run: |
+          echo "Artifact Registryリポジトリを確認しています..."
+          
+          # リポジトリの存在確認のみ行う（Terraformで事前作成済みの前提）
+          REPO_EXISTS=$(gcloud artifacts repositories list --location=${{ env.REGION }} --format="value(name)" | grep "^suzumina-click$" || echo "")
+          
+          if [ -z "$REPO_EXISTS" ]; then
+            echo "::error::リポジトリが存在しません。Terraformで事前に作成してください。"
+            echo "リポジトリ 'suzumina-click' が見つかりません。"
+            exit 1
+          else
+            echo "リポジトリを確認しました: $REPO_EXISTS"
+          fi
+      
+      # 環境変数の取得
+      - name: 環境変数の取得
+        id: get-secrets
+        run: |
+          # 必要な環境変数を取得
+          echo "環境変数を取得しています..."
+          
+          # Firebase Service Account Key
+          FIREBASE_SA_KEY=$(gcloud secrets versions access latest --secret="FIREBASE_SERVICE_ACCOUNT_KEY" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "::add-mask::$FIREBASE_SA_KEY"
+          echo "firebase_sa_key=$FIREBASE_SA_KEY" >> $GITHUB_OUTPUT
+          
+          # Discord認証用環境変数
+          DISCORD_CLIENT_ID=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_DISCORD_CLIENT_ID" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "discord_client_id=$DISCORD_CLIENT_ID" >> $GITHUB_OUTPUT
+          
+          DISCORD_REDIRECT_URI=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_DISCORD_REDIRECT_URI" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "discord_redirect_uri=$DISCORD_REDIRECT_URI" >> $GITHUB_OUTPUT
+          
+          # Firebase認証用環境変数
+          FIREBASE_API_KEY=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_API_KEY" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "firebase_api_key=$FIREBASE_API_KEY" >> $GITHUB_OUTPUT
+          
+          FIREBASE_AUTH_DOMAIN=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "firebase_auth_domain=$FIREBASE_AUTH_DOMAIN" >> $GITHUB_OUTPUT
+          
+          FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_PROJECT_ID" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "firebase_project_id=$FIREBASE_PROJECT_ID" >> $GITHUB_OUTPUT
+          
+          FIREBASE_STORAGE_BUCKET=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "firebase_storage_bucket=$FIREBASE_STORAGE_BUCKET" >> $GITHUB_OUTPUT
+          
+          FIREBASE_MESSAGING_SENDER_ID=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "firebase_messaging_sender_id=$FIREBASE_MESSAGING_SENDER_ID" >> $GITHUB_OUTPUT
+          
+          FIREBASE_APP_ID=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_APP_ID" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "firebase_app_id=$FIREBASE_APP_ID" >> $GITHUB_OUTPUT
+          
+          # Measurement IDはオプション
+          FIREBASE_MEASUREMENT_ID=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID" --project="${{ secrets.GCP_PROJECT_ID }}" 2>/dev/null || echo "")
+          echo "firebase_measurement_id=$FIREBASE_MEASUREMENT_ID" >> $GITHUB_OUTPUT
+          
+          echo "環境変数の取得に成功しました"
+      
+      # Dockerイメージのビルドとプッシュ
+      - name: Dockerイメージのビルドとプッシュ
+        id: docker-build
+        run: |
+          # イメージタグの設定（コミットハッシュとlatestを両方設定）
+          GIT_SHA=$(git rev-parse --short HEAD)
+          IMAGE_BASE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/suzumina-click/nextjs-app"
+          IMAGE_TAG="${IMAGE_BASE}:${GIT_SHA}"
+          IMAGE_LATEST="${IMAGE_BASE}:latest"
+          
+          echo "イメージをビルドしています: ${IMAGE_TAG}"
+          
+          # ビルドとタグ付け
+          docker build -f apps/web/Dockerfile \
+            --build-arg FIREBASE_SERVICE_ACCOUNT_KEY="${{ steps.get-secrets.outputs.firebase_sa_key }}" \
+            --build-arg NEXT_PUBLIC_DISCORD_CLIENT_ID="${{ steps.get-secrets.outputs.discord_client_id }}" \
+            --build-arg NEXT_PUBLIC_DISCORD_REDIRECT_URI="${{ steps.get-secrets.outputs.discord_redirect_uri }}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY="${{ steps.get-secrets.outputs.firebase_api_key }}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="${{ steps.get-secrets.outputs.firebase_auth_domain }}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="${{ steps.get-secrets.outputs.firebase_project_id }}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="${{ steps.get-secrets.outputs.firebase_storage_bucket }}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="${{ steps.get-secrets.outputs.firebase_messaging_sender_id }}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID="${{ steps.get-secrets.outputs.firebase_app_id }}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="${{ steps.get-secrets.outputs.firebase_measurement_id }}" \
+            -t ${IMAGE_TAG} -t ${IMAGE_LATEST} .
+          
+          # イメージのプッシュ
+          docker push ${IMAGE_TAG}
+          docker push ${IMAGE_LATEST}
+          
+          echo "イメージがプッシュされました: ${IMAGE_TAG}"
+          echo "image=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+      
+      # Cloud Runへのデプロイ
+      - name: Cloud Runへのデプロイ
+        id: deploy-run
+        run: |
+          echo "Cloud Runサービスをデプロイしています..."
+          
+          # デプロイコマンド
+          gcloud run deploy suzumina-click-nextjs-app \
+            --image=${{ steps.docker-build.outputs.image }} \
+            --platform=managed \
+            --region=${{ env.REGION }} \
+            --allow-unauthenticated \
+            --quiet
+          
+          echo "デプロイが完了しました"
+      
+      # デプロイ後の確認
+      - name: デプロイ結果の確認
+        run: |
+          # デプロイされたURLを取得して表示
+          URL=$(gcloud run services describe suzumina-click-nextjs-app --platform=managed --region=${{ env.REGION }} --format="value(status.url)")
+          echo "デプロイURL: $URL"
+          echo "::notice title=Webアプリケーションデプロイ完了::$URL にデプロイされました"
+
+  # デプロイ完了通知
+  notify-deployment:
+    name: 'デプロイ完了通知'
+    needs: [deploy-web-app]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: デプロイ完了メッセージ
+        run: |
+          echo "::notice title=Webアプリケーションデプロイ完了::Webアプリケーションが正常にデプロイされました"
+          echo "デプロイ日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
+          echo "トリガー: ${{ github.event_name }}"
+          echo "実行者: ${{ github.actor }}"
