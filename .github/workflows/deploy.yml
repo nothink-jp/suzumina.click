@@ -399,8 +399,19 @@ jobs:
             TRIGGER_TYPE=""
             TOPIC_NAME=""
             
+            # index.tsファイルからトリガータイプを直接確認
+            if grep -q "functions\.cloudEvent.*\"$FUNC\"" ./apps/functions/src/index.ts; then
+              TRIGGER_TYPE="pubsub"
+              # Terraformファイルからトピック名を取得
+              TOPIC_ID=$(grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep "pubsub_topic" | sed -E 's/.*pubsub_topic.*=.*"([^"]+)".*/\1/' || echo "")
+              if [ -n "$TOPIC_ID" ]; then
+                # google_pubsub_topic.トピック名.id の形式からトピック名を抽出
+                TOPIC_NAME=$(echo $TOPIC_ID | sed -E 's/.*google_pubsub_topic\.([^\.]+)\.id.*/\1/' || echo "")
+              fi
+            elif grep -q "functions\.http.*\"$FUNC\"" ./apps/functions/src/index.ts; then
+              TRIGGER_TYPE="http"
             # Terraformファイルから関数のトリガータイプを検出
-            if grep -q "name.*=.*\"$FUNC\"" ./terraform/*.tf; then
+            elif grep -q "name.*=.*\"$FUNC\"" ./terraform/*.tf; then
               # HTTPトリガーかPub/Subトリガーか判定
               if grep -A20 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep -q "trigger_http"; then
                 TRIGGER_TYPE="http"
@@ -418,21 +429,28 @@ jobs:
                   TRIGGER_TYPE="storage"
                 fi
               fi
-            else
-              # Terraformに定義がない場合は関数自体を検査
-              if grep -A10 "export.*function.*$FUNC" ./apps/functions/src/*.ts | grep -q "apiRoute"; then
+            fi
+            
+            # トリガータイプが検出できない場合、関数モジュールの内容を確認
+            if [ -z "$TRIGGER_TYPE" ] && [ -f "./apps/functions/src/$FUNC.ts" ]; then
+              if grep -q "CloudEvent" "./apps/functions/src/$FUNC.ts"; then
+                TRIGGER_TYPE="pubsub"
+              elif grep -q "Request.*Response" "./apps/functions/src/$FUNC.ts"; then
                 TRIGGER_TYPE="http"
               fi
             fi
             
-            # トリガータイプ未検出の場合はデフォルトでHTTPトリガーを使用（一般的なケース）
+            # それでもトリガータイプが検出できない場合は警告を表示
             if [ -z "$TRIGGER_TYPE" ]; then
-              echo "警告: 関数 $FUNC のトリガータイプが検出できませんでした。デフォルトでHTTPトリガーを使用します。"
-              TRIGGER_TYPE="http"
+              echo "警告: 関数 $FUNC のトリガータイプが検出できませんでした。デプロイを中止します。"
+              echo "  関数は正しく登録されていますか？ index.ts で functions.cloudEvent または functions.http を使用して登録してください。"
+              exit 1
             fi
             
             # トリガータイプに基づいて適切なデプロイパラメータを設定
             TRIGGER_PARAMS=""
+            EVENT_TYPE=""
+            
             case $TRIGGER_TYPE in
               http)
                 TRIGGER_PARAMS="--trigger-http"
@@ -441,31 +459,48 @@ jobs:
                 if [ -n "$TOPIC_NAME" ]; then
                   echo "Pub/Subトリガー: トピック '$TOPIC_NAME' を使用します"
                   TRIGGER_PARAMS="--trigger-topic=$TOPIC_NAME"
+                  # CloudEvent形式であることを指定
+                  EVENT_TYPE="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished"
                 else
                   # トピック名が取得できない場合はデフォルトトピック名を使用
                   echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
-                  TRIGGER_PARAMS="--trigger-topic=${FUNC}_topic"
+                  TRIGGER_PARAMS="--trigger-topic=youtube_video_fetch_trigger"
+                  EVENT_TYPE="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished"
                 fi
                 ;;
               storage)
-                echo "Cloud Storageトリガーは現在サポートされていません。HTTPトリガーを使用します。"
-                TRIGGER_PARAMS="--trigger-http"
+                echo "Cloud Storageトリガーは現在サポートされていません。デプロイを中止します。"
+                exit 1
                 ;;
               *)
-                TRIGGER_PARAMS="--trigger-http"
+                echo "不明なトリガータイプです: $TRIGGER_TYPE"
+                exit 1
                 ;;
             esac
 
-            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS"
+            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS $EVENT_TYPE"
             
             # gcloudコマンドで関数をデプロイ
-            gcloud functions deploy $FUNC \
-              --gen2 \
-              --region=${{ env.REGION }} \
-              --runtime=nodejs20 \
-              --source=./apps/functions \
-              --entry-point=$FUNC \
-              $TRIGGER_PARAMS
+            if [ "$TRIGGER_TYPE" = "pubsub" ]; then
+              # Pub/Sub関数はCloudEvent形式でデプロイ
+              gcloud functions deploy $FUNC \
+                --gen2 \
+                --region=${{ env.REGION }} \
+                --runtime=nodejs20 \
+                --source=./apps/functions \
+                --entry-point=$FUNC \
+                $TRIGGER_PARAMS \
+                $EVENT_TYPE
+            else
+              # HTTP関数は通常の方法でデプロイ
+              gcloud functions deploy $FUNC \
+                --gen2 \
+                --region=${{ env.REGION }} \
+                --runtime=nodejs20 \
+                --source=./apps/functions \
+                --entry-point=$FUNC \
+                $TRIGGER_PARAMS
+            fi
             
             if [ $? -eq 0 ]; then
               echo "関数 $FUNC のデプロイに成功しました"
@@ -488,8 +523,19 @@ jobs:
             TRIGGER_TYPE=""
             TOPIC_NAME=""
             
+            # index.tsファイルからトリガータイプを直接確認
+            if grep -q "functions\.cloudEvent.*\"$FUNC\"" ./apps/functions/src/index.ts; then
+              TRIGGER_TYPE="pubsub"
+              # Terraformファイルからトピック名を取得
+              TOPIC_ID=$(grep -A40 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep "pubsub_topic" | sed -E 's/.*pubsub_topic.*=.*"([^"]+)".*/\1/' || echo "")
+              if [ -n "$TOPIC_ID" ]; then
+                # google_pubsub_topic.トピック名.id の形式からトピック名を抽出
+                TOPIC_NAME=$(echo $TOPIC_ID | sed -E 's/.*google_pubsub_topic\.([^\.]+)\.id.*/\1/' || echo "")
+              fi
+            elif grep -q "functions\.http.*\"$FUNC\"" ./apps/functions/src/index.ts; then
+              TRIGGER_TYPE="http"
             # Terraformファイルから関数のトリガータイプを検出
-            if grep -q "name.*=.*\"$FUNC\"" ./terraform/*.tf; then
+            elif grep -q "name.*=.*\"$FUNC\"" ./terraform/*.tf; then
               # HTTPトリガーかPub/Subトリガーか判定
               if grep -A20 "name.*=.*\"$FUNC\"" ./terraform/*.tf | grep -q "trigger_http"; then
                 TRIGGER_TYPE="http"
@@ -507,21 +553,28 @@ jobs:
                   TRIGGER_TYPE="storage"
                 fi
               fi
-            else
-              # Terraformに定義がない場合は関数自体を検査
-              if grep -A10 "export.*function.*$FUNC" ./apps/functions/src/*.ts | grep -q "apiRoute"; then
+            fi
+            
+            # トリガータイプが検出できない場合、関数モジュールの内容を確認
+            if [ -z "$TRIGGER_TYPE" ] && [ -f "./apps/functions/src/$FUNC.ts" ]; then
+              if grep -q "CloudEvent" "./apps/functions/src/$FUNC.ts"; then
+                TRIGGER_TYPE="pubsub"
+              elif grep -q "Request.*Response" "./apps/functions/src/$FUNC.ts"; then
                 TRIGGER_TYPE="http"
               fi
             fi
             
-            # トリガータイプ未検出の場合はデフォルトでHTTPトリガーを使用（一般的なケース）
+            # それでもトリガータイプが検出できない場合は警告を表示
             if [ -z "$TRIGGER_TYPE" ]; then
-              echo "警告: 関数 $FUNC のトリガータイプが検出できませんでした。デフォルトでHTTPトリガーを使用します。"
-              TRIGGER_TYPE="http"
+              echo "警告: 関数 $FUNC のトリガータイプが検出できませんでした。デプロイを中止します。"
+              echo "  関数は正しく登録されていますか？ index.ts で functions.cloudEvent または functions.http を使用して登録してください。"
+              exit 1
             fi
             
             # トリガータイプに基づいて適切なデプロイパラメータを設定
             TRIGGER_PARAMS=""
+            EVENT_TYPE=""
+            
             case $TRIGGER_TYPE in
               http)
                 TRIGGER_PARAMS="--trigger-http"
@@ -530,31 +583,48 @@ jobs:
                 if [ -n "$TOPIC_NAME" ]; then
                   echo "Pub/Subトリガー: トピック '$TOPIC_NAME' を使用します"
                   TRIGGER_PARAMS="--trigger-topic=$TOPIC_NAME"
+                  # CloudEvent形式であることを指定
+                  EVENT_TYPE="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished"
                 else
                   # トピック名が取得できない場合はデフォルトトピック名を使用
                   echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
-                  TRIGGER_PARAMS="--trigger-topic=${FUNC}_topic"
+                  TRIGGER_PARAMS="--trigger-topic=youtube_video_fetch_trigger"
+                  EVENT_TYPE="--trigger-event-filters=type=google.cloud.pubsub.topic.v1.messagePublished"
                 fi
                 ;;
               storage)
-                echo "Cloud Storageトリガーは現在サポートされていません。HTTPトリガーを使用します。"
-                TRIGGER_PARAMS="--trigger-http"
+                echo "Cloud Storageトリガーは現在サポートされていません。デプロイを中止します。"
+                exit 1
                 ;;
               *)
-                TRIGGER_PARAMS="--trigger-http"
+                echo "不明なトリガータイプです: $TRIGGER_TYPE"
+                exit 1
                 ;;
             esac
 
-            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS"
+            echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS $EVENT_TYPE"
             
             # gcloudコマンドで関数をデプロイ
-            gcloud functions deploy $FUNC \
-              --gen2 \
-              --region=${{ env.REGION }} \
-              --runtime=nodejs20 \
-              --source=./apps/functions \
-              --entry-point=$FUNC \
-              $TRIGGER_PARAMS
+            if [ "$TRIGGER_TYPE" = "pubsub" ]; then
+              # Pub/Sub関数はCloudEvent形式でデプロイ
+              gcloud functions deploy $FUNC \
+                --gen2 \
+                --region=${{ env.REGION }} \
+                --runtime=nodejs20 \
+                --source=./apps/functions \
+                --entry-point=$FUNC \
+                $TRIGGER_PARAMS \
+                $EVENT_TYPE
+            else
+              # HTTP関数は通常の方法でデプロイ
+              gcloud functions deploy $FUNC \
+                --gen2 \
+                --region=${{ env.REGION }} \
+                --runtime=nodejs20 \
+                --source=./apps/functions \
+                --entry-point=$FUNC \
+                $TRIGGER_PARAMS
+            fi
             
             if [ $? -eq 0 ]; then
               echo "関数 $FUNC のデプロイに成功しました"
