@@ -91,11 +91,7 @@ export default function AuthModal() {
           // 例外をスローする代わりに、状態を直接更新
           setError("認証コードが見つかりません。");
           setMessage("認証に失敗しました。");
-          // 認証失敗時もURLからコードを削除
-          removeCodeFromUrl();
-          // 認証失敗時はリダイレクトせず、モーダルを表示したまま
           setIsProcessing(false);
-          // 認証処理完了後も強制的にモーダルを表示
           setIsOpen(true);
           return;
         }
@@ -119,12 +115,12 @@ export default function AuthModal() {
           // 例外をスローする代わりに、状態を直接更新
           setError(errorMessage);
           setMessage("認証に失敗しました。");
-          // 認証失敗時もURLからコードを削除
-          removeCodeFromUrl();
           // 認証失敗時はリダイレクトせず、モーダルを表示したまま
           setIsProcessing(false);
           // 認証処理完了後も強制的にモーダルを表示
           setIsOpen(true);
+          // 認証失敗後にURLからコードを削除
+          removeCodeFromUrl();
           return;
         }
 
@@ -133,32 +129,45 @@ export default function AuthModal() {
           // 例外をスローする代わりに、状態を直接更新
           setError("認証システムの初期化に失敗しました。");
           setMessage("認証に失敗しました。");
-          // 認証失敗時もURLからコードを削除
-          removeCodeFromUrl();
           // 認証失敗時はリダイレクトせず、モーダルを表示したまま
           setIsProcessing(false);
           // 認証処理完了後も強制的にモーダルを表示
           setIsOpen(true);
+          // 認証失敗後にURLからコードを削除
+          removeCodeFromUrl();
           return;
         }
 
-        // カスタムトークンでサインイン
-        console.log("Firebaseカスタムトークンでサインイン中...");
-        await signInWithCustomToken(auth, result.customToken);
-        console.log("Firebaseサインイン成功");
-        
-        setMessage("認証に成功しました！");
-        
-        // 認証コードをURLから削除（関数に切り出し）
-        removeCodeFromUrl();
-        
-        // 認証処理完了
-        setIsProcessing(false);
-        // 認証成功後もモーダルを表示し続ける
-        setIsOpen(true);
-        // 認証コードの検出フラグをリセット
-        setAuthCodeDetected(false);
-      } catch (err: unknown) {
+        try {
+          // カスタムトークンでサインイン
+          console.log("Firebaseカスタムトークンでサインイン中...");
+          await signInWithCustomToken(auth, result.customToken);
+          console.log("Firebaseサインイン成功");
+          
+          setMessage("認証に成功しました！");
+          
+          // 認証処理完了
+          setIsProcessing(false);
+          // 認証成功後もモーダルを表示し続ける
+          setIsOpen(true);
+          // 認証コードの検出フラグをリセット
+          setAuthCodeDetected(false);
+          
+          // 認証成功後にURLからコードを削除
+          removeCodeFromUrl();
+        } catch (signInError) {
+          console.error("Firebaseサインイン中にエラーが発生しました:", signInError);
+          const signInErrorMessage = signInError instanceof Error
+            ? signInError.message
+            : "認証中に予期せぬエラーが発生しました。";
+          setError(signInErrorMessage);
+          setMessage("認証に失敗しました。");
+          setIsProcessing(false);
+          setIsOpen(true);
+          // エラー発生後にURLからコードを削除
+          removeCodeFromUrl();
+        }
+      } catch (err) {
         console.error("認証処理中にエラーが発生しました:", err);
         // エラーメッセージの取得
         const errorMessage = err instanceof Error
@@ -166,12 +175,12 @@ export default function AuthModal() {
           : "認証中に予期せぬエラーが発生しました。";
         setError(errorMessage);
         setMessage("認証に失敗しました。");
-        // 例外発生時もURLからコードを削除
-        removeCodeFromUrl();
         // 認証失敗時はリダイレクトせず、モーダルを表示したまま
         setIsProcessing(false);
         // 認証処理完了後も強制的にモーダルを表示
         setIsOpen(true);
+        // エラー発生後にURLからコードを削除
+        removeCodeFromUrl();
       }
     }
 
