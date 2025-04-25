@@ -13,18 +13,8 @@ export default function AuthModal() {
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(true);
-  // 認証コードを検出したかどうかを追跡
   const [authCodeDetected, setAuthCodeDetected] = useState(false);
-  // 認証コードを保持
   const [authCode, setAuthCode] = useState<string | null>(null);
-  // デバッグ情報
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
-
-  // デバッグ情報をログに記録する関数
-  const addDebugInfo = (info: string) => {
-    console.log(`[AuthModal Debug] ${info}`);
-    setDebugInfo(prev => [...prev, info]);
-  };
 
   // 認証コードの検出とモーダル表示の制御
   useEffect(() => {
@@ -35,26 +25,19 @@ export default function AuthModal() {
       return;
     }
 
-    // URLパラメーターのロギングを追加（デバッグ用）
-    console.log("現在のURL:", window.location.href);
-    console.log("検索パラメーター:", Object.fromEntries(new URLSearchParams(window.location.search).entries()));
-
     // 1. まず、URLから直接認証コードを取得を試みる
     const code = searchParams.get("discord_code");
-    console.log("SearchParamsから取得したdiscord_code:", code);
 
     // 2. URLから取得できなかった場合は、ブラウザURLから直接取得を試みる
     const urlParams = new URLSearchParams(window.location.search);
     const codeFromUrl = urlParams.get("discord_code");
-    console.log("window.location.searchから直接取得したdiscord_code:", codeFromUrl);
 
     // 3. セッションストレージから認証コードを取得（バックアップとして）
     let codeFromSession: string | null = null;
     try {
       codeFromSession = sessionStorage.getItem("discord_auth_code");
-      console.log("セッションストレージから取得したdiscord_auth_code:", codeFromSession);
     } catch (e) {
-      console.error("セッションストレージからの読み取りに失敗しました:", e);
+      // セッションストレージからの読み取りに失敗
     }
 
     // どの方法でも取得できた認証コードを使用
@@ -62,12 +45,10 @@ export default function AuthModal() {
 
     if (!effectiveCode) {
       // コードがない場合はモーダルを表示しない
-      console.log("認証コードが見つかりませんでした。モーダルは表示されません。");
       setIsOpen(false);
       return;
     }
 
-    console.log("認証コードを検出しました:", effectiveCode);
     // 認証コードを状態に保存
     setAuthCode(effectiveCode);
     // 認証コードを検出したフラグを設定
@@ -76,23 +57,7 @@ export default function AuthModal() {
     setIsOpen(true);
     setIsProcessing(true);
     setMessage("認証処理を開始します...");
-    addDebugInfo("認証コードを検出し、処理を開始します");
-
   }, [searchParams]);
-
-  // Firebase認証の状態を確認
-  useEffect(() => {
-    // クライアントサイドでのみ実行
-    if (typeof window === 'undefined') return;
-
-    // Firebase認証の状態を確認
-    const authObj = getAuthInstance();
-    if (!authObj) {
-      console.log("[AuthModal Debug] Firebase認証オブジェクトを取得できませんでした");
-    } else {
-      console.log("[AuthModal Debug] Firebase認証オブジェクトを取得しました");
-    }
-  }, []);
 
   // 認証コードが検出された場合の処理
   useEffect(() => {
@@ -106,7 +71,6 @@ export default function AuthModal() {
       if (typeof window !== "undefined") {
         const newUrl = window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
-        addDebugInfo("URLからコードパラメータを削除しました");
       }
     };
 
@@ -114,11 +78,8 @@ export default function AuthModal() {
     const removeCodeFromSession = () => {
       try {
         sessionStorage.removeItem("discord_auth_code");
-        console.log("セッションストレージからコードを削除しました");
-        addDebugInfo("セッションストレージからコードを削除しました");
       } catch (e) {
-        console.error("セッションストレージからの削除に失敗しました:", e);
-        addDebugInfo(`セッションストレージからの削除に失敗: ${e instanceof Error ? e.message : String(e)}`);
+        // セッションストレージからの削除に失敗
       }
     };
 
@@ -133,36 +94,20 @@ export default function AuthModal() {
           setError("認証コードが見つかりません。");
           setMessage("認証に失敗しました。");
           setIsProcessing(false);
-          addDebugInfo("認証コードがnullです（想定外の状態）");
           return;
         }
         
-        console.log("認証処理に使用するコード:", authCode);
         setMessage("認証サーバーと通信中...");
-        addDebugInfo(`認証処理開始: コード長=${authCode.length}`);
         
         // Firebase認証の状態を確認し、必要に応じて再取得
         let firebaseAuth = auth;
         if (!firebaseAuth) {
-          addDebugInfo("Firebase authがnullのため再取得を試みます");
           firebaseAuth = getAuthInstance();
         }
         
-        // Firebase認証の状態を確認
-        if (!firebaseAuth) {
-          addDebugInfo("Firebase authインスタンスがnullです");
-        } else {
-          addDebugInfo(`Firebase認証の初期状態: ${firebaseAuth.currentUser ? "ユーザーあり" : "未ログイン"}`);
-        }
-        
-        // Server Actionを呼び出して認証処理
-        console.log("Server Actionを呼び出し中...");
-        addDebugInfo("Server Action呼び出し開始");
         try {
-          // authCodeがstring型であることをTypeScriptに保証
+          // Server Actionを呼び出して認証処理
           const result = await handleDiscordCallback(authCode);
-          console.log("Server Action結果:", result);
-          addDebugInfo(`Server Action結果: success=${result.success}, tokenあり=${!!result.customToken}`);
           
           if (!result.success || !result.customToken) {
             // エラーメッセージを日本語化
@@ -179,7 +124,6 @@ export default function AuthModal() {
             setError(errorMessage);
             setMessage("認証に失敗しました。");
             setIsProcessing(false);
-            addDebugInfo(`Server Actionエラー: ${result.error || "不明なエラー"}`);
             
             // コードをクリーンアップ
             removeCodeFromUrl();
@@ -198,7 +142,6 @@ export default function AuthModal() {
             setError("認証システムの初期化に失敗しました。");
             setMessage("認証に失敗しました。");
             setIsProcessing(false);
-            addDebugInfo("Firebase authオブジェクトが初期化されていません");
             
             // コードをクリーンアップ
             removeCodeFromUrl();
@@ -208,25 +151,9 @@ export default function AuthModal() {
 
           setMessage("Firebaseにサインイン中...");
           
-          // トークンの長さをデバッグ情報として出力
-          const tokenLength = result.customToken?.length || 0;
-          addDebugInfo(`カスタムトークン取得: 長さ=${tokenLength}`);
-          
           // カスタムトークンでサインイン
-          console.log("Firebaseカスタムトークンでサインイン中...");
           try {
-            addDebugInfo("Firebaseサインイン処理開始");
             await signInWithCustomToken(firebaseAuth, result.customToken);
-            console.log("Firebaseサインイン成功");
-            addDebugInfo("Firebaseサインイン成功");
-            
-            // 現在のユーザー情報を確認
-            const currentUser = firebaseAuth.currentUser;
-            if (currentUser) {
-              addDebugInfo(`サインイン後のユーザー: uid=${currentUser.uid}, displayName=${currentUser.displayName || "未設定"}`);
-            } else {
-              addDebugInfo("サインイン成功したがcurrentUserがnullです（予期せぬ状態）");
-            }
             
             setMessage("認証に成功しました！");
             setIsProcessing(false);
@@ -240,14 +167,11 @@ export default function AuthModal() {
             removeCodeFromSession();
             
             // 3秒後にモーダルを閉じる
-            addDebugInfo("認証成功: 3秒後にモーダルを閉じます");
             setTimeout(() => {
               setIsOpen(false);
-              addDebugInfo("モーダルを閉じました");
             }, 3000);
             
           } catch (signInError) {
-            console.error("Firebaseサインイン中にエラーが発生しました:", signInError);
             const signInErrorMessage = signInError instanceof Error
               ? signInError.message
               : "認証中に予期せぬエラーが発生しました。";
@@ -255,18 +179,11 @@ export default function AuthModal() {
             setMessage("認証に失敗しました。");
             setIsProcessing(false);
             
-            // エラーの詳細をデバッグ情報に追加
-            addDebugInfo(`Firebaseサインインエラー: ${signInErrorMessage}`);
-            if (signInError instanceof Error && signInError.stack) {
-              addDebugInfo(`エラースタック: ${signInError.stack.split('\n')[0]}`);
-            }
-            
             // コードをクリーンアップ
             removeCodeFromUrl();
             removeCodeFromSession();
           }
         } catch (serverActionError) {
-          console.error("Server Action呼び出し中にエラーが発生しました:", serverActionError);
           const serverActionErrorMessage = serverActionError instanceof Error
             ? serverActionError.message
             : "サーバーとの通信中にエラーが発生しました。";
@@ -274,25 +191,18 @@ export default function AuthModal() {
           setMessage("認証に失敗しました。");
           setIsProcessing(false);
           
-          // エラーの詳細をデバッグ情報に追加
-          addDebugInfo(`Server Action呼び出しエラー: ${serverActionErrorMessage}`);
-          
           // コードをクリーンアップ
           removeCodeFromUrl();
           removeCodeFromSession();
         }
       } catch (err) {
         // 全体的なエラーハンドリング
-        console.error("認証処理中にエラーが発生しました:", err);
         const errorMessage = err instanceof Error
           ? err.message
           : "認証中に予期せぬエラーが発生しました。";
         setError(errorMessage);
         setMessage("認証に失敗しました。");
         setIsProcessing(false);
-        
-        // エラーの詳細をデバッグ情報に追加
-        addDebugInfo(`全体的なエラー: ${errorMessage}`);
         
         // コードをクリーンアップ
         removeCodeFromUrl();
@@ -326,18 +236,6 @@ export default function AuthModal() {
           )}
           {isProcessing && (
             <span className="loading loading-dots loading-lg mt-4" />
-          )}
-          
-          {/* デバッグ情報（開発環境のみ表示） */}
-          {process.env.NODE_ENV !== 'production' && debugInfo.length > 0 && (
-            <div className="mt-4 p-2 bg-gray-100 rounded text-left text-xs overflow-auto max-h-40">
-              <p className="font-bold mb-1">デバッグ情報:</p>
-              <ul className="list-disc pl-4">
-                {debugInfo.map((info, index) => (
-                  <li key={index}>{info}</li>
-                ))}
-              </ul>
-            </div>
           )}
         </div>
         {!isProcessing && (

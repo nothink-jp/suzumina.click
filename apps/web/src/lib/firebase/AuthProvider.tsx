@@ -35,8 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false); // 読み込み完了
       },
       (error) => {
-        // エラーハンドリング
-        console.error("認証状態の監視中にエラーが発生しました:", error);
+        // エラーハンドリング - ログ出力なし
         setLoading(false);
       },
     );
