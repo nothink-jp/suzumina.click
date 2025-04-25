@@ -1,6 +1,6 @@
 "use client";
 
-import { auth } from "@/lib/firebase/client";
+import { auth, getAuthInstance } from "@/lib/firebase/client";
 import { signInWithCustomToken } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,7 +11,7 @@ export default function AuthModal() {
   const router = useRouter();
   const [message, setMessage] = useState("認証処理中...");
   const [error, setError] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(false); // 初期値をfalseに変更
+  const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(true);
   // 認証コードを検出したかどうかを追跡
   const [authCodeDetected, setAuthCodeDetected] = useState(false);
@@ -80,6 +80,20 @@ export default function AuthModal() {
 
   }, [searchParams]);
 
+  // Firebase認証の状態を確認
+  useEffect(() => {
+    // クライアントサイドでのみ実行
+    if (typeof window === 'undefined') return;
+
+    // Firebase認証の状態を確認
+    const authObj = getAuthInstance();
+    if (!authObj) {
+      console.log("[AuthModal Debug] Firebase認証オブジェクトを取得できませんでした");
+    } else {
+      console.log("[AuthModal Debug] Firebase認証オブジェクトを取得しました");
+    }
+  }, []);
+
   // 認証コードが検出された場合の処理
   useEffect(() => {
     if (!authCodeDetected || !authCode) {
@@ -127,11 +141,18 @@ export default function AuthModal() {
         setMessage("認証サーバーと通信中...");
         addDebugInfo(`認証処理開始: コード長=${authCode.length}`);
         
+        // Firebase認証の状態を確認し、必要に応じて再取得
+        let firebaseAuth = auth;
+        if (!firebaseAuth) {
+          addDebugInfo("Firebase authがnullのため再取得を試みます");
+          firebaseAuth = getAuthInstance();
+        }
+        
         // Firebase認証の状態を確認
-        if (!auth) {
+        if (!firebaseAuth) {
           addDebugInfo("Firebase authインスタンスがnullです");
         } else {
-          addDebugInfo(`Firebase認証の初期状態: ${auth.currentUser ? "ユーザーあり" : "未ログイン"}`);
+          addDebugInfo(`Firebase認証の初期状態: ${firebaseAuth.currentUser ? "ユーザーあり" : "未ログイン"}`);
         }
         
         // Server Actionを呼び出して認証処理
@@ -166,8 +187,14 @@ export default function AuthModal() {
             return;
           }
 
+          // もう一度Firebase認証オブジェクトを確認（念のため）
+          if (!firebaseAuth) {
+            // 最後の手段として再度取得を試みる
+            firebaseAuth = getAuthInstance();
+          }
+          
           // authがnullでないことを確認
-          if (!auth) {
+          if (!firebaseAuth) {
             setError("認証システムの初期化に失敗しました。");
             setMessage("認証に失敗しました。");
             setIsProcessing(false);
@@ -189,12 +216,12 @@ export default function AuthModal() {
           console.log("Firebaseカスタムトークンでサインイン中...");
           try {
             addDebugInfo("Firebaseサインイン処理開始");
-            await signInWithCustomToken(auth, result.customToken);
+            await signInWithCustomToken(firebaseAuth, result.customToken);
             console.log("Firebaseサインイン成功");
             addDebugInfo("Firebaseサインイン成功");
             
             // 現在のユーザー情報を確認
-            const currentUser = auth.currentUser;
+            const currentUser = firebaseAuth.currentUser;
             if (currentUser) {
               addDebugInfo(`サインイン後のユーザー: uid=${currentUser.uid}, displayName=${currentUser.displayName || "未設定"}`);
             } else {

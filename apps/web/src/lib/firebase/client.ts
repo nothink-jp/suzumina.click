@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, Auth } from "firebase/auth";
 
 /**
  * Firebaseの設定
@@ -16,25 +16,34 @@ const firebaseConfig = {
 };
 
 /**
+ * 設定の有効性を確認
+ */
+const isFirebaseConfigValid = () => {
+  const requiredConfig = [
+    firebaseConfig.apiKey,
+    firebaseConfig.authDomain,
+    firebaseConfig.projectId,
+  ];
+  return requiredConfig.every(config => !!config);
+};
+
+/**
  * Firebaseアプリの初期化
  * サーバーサイドレンダリング時にエラーが発生しないようにする
  */
 const initializeFirebase = () => {
   // ブラウザ環境でのみ初期化（Window objectがある場合のみ）
   if (typeof window !== "undefined") {
-    // すべての必須設定が存在する場合のみ初期化
-    const isConfigValid =
-      firebaseConfig.apiKey &&
-      firebaseConfig.authDomain &&
-      firebaseConfig.projectId;
-
-    if (isConfigValid) {
-      return !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    }
-
-    // 開発環境でのみ警告を表示
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("Firebase設定に必要な環境変数が不足しています。");
+    try {
+      // すべての必須設定が存在する場合のみ初期化
+      if (isFirebaseConfigValid()) {
+        return getApps().length ? getApp() : initializeApp(firebaseConfig);
+      }
+      
+      // 設定が不足している場合は警告を表示
+      console.warn("Firebase設定に必要な環境変数が不足しています。必須環境変数: NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, NEXT_PUBLIC_FIREBASE_PROJECT_ID");
+    } catch (error) {
+      console.error("Firebase初期化エラー:", error);
     }
   }
 
@@ -42,11 +51,38 @@ const initializeFirebase = () => {
   return null;
 };
 
+/**
+ * Firebase認証の初期化
+ * 複数回呼び出されても一度だけ初期化される
+ */
+let authInstance: Auth | null = null;
+
+const getAuthInstance = (): Auth | null => {
+  if (typeof window === "undefined") {
+    // サーバーサイドではnullを返す
+    return null;
+  }
+
+  try {
+    if (!authInstance) {
+      const app = initializeFirebase();
+      if (app) {
+        authInstance = getAuth(app);
+        console.log("Firebase認証が初期化されました");
+      }
+    }
+    return authInstance;
+  } catch (error) {
+    console.error("Firebase認証の初期化に失敗しました:", error);
+    return null;
+  }
+};
+
 // Firebase Appを初期化
 const app = initializeFirebase();
 
-// Firebase認証の取得（Appが存在する場合のみ）
-const auth = app ? getAuth(app) : null;
+// Firebase認証の取得
+const auth = getAuthInstance();
 
 // 各インスタンスをエクスポート
-export { app, auth };
+export { app, auth, getAuthInstance };
