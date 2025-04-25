@@ -490,7 +490,8 @@ jobs:
               --runtime=nodejs20 \
               --source=./apps/functions \
               --entry-point=$FUNC \
-              $TRIGGER_PARAMS
+              $TRIGGER_PARAMS \
+              --set-env-vars=FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=$FUNC
             
             if [ $? -eq 0 ]; then
               echo "関数 $FUNC のデプロイに成功しました"
@@ -604,7 +605,8 @@ jobs:
               --runtime=nodejs20 \
               --source=./apps/functions \
               --entry-point=$FUNC \
-              $TRIGGER_PARAMS
+              $TRIGGER_PARAMS \
+              --set-env-vars=FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=$FUNC
             
             if [ $? -eq 0 ]; then
               echo "関数 $FUNC のデプロイに成功しました"
