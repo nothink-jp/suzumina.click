@@ -466,7 +466,8 @@ jobs:
                 else
                   # トピック名が取得できない場合はデフォルトトピック名を使用
                   echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
-                  TRIGGER_PARAMS="--trigger-topic=youtube_video_fetch_trigger"
+                  # Terraform定義と一致するトピック名（ハイフン区切り）を使用
+                  TRIGGER_PARAMS="--trigger-topic=youtube-video-fetch-trigger"
                 fi
                 ;;
               storage)
@@ -579,7 +580,8 @@ jobs:
                 else
                   # トピック名が取得できない場合はデフォルトトピック名を使用
                   echo "警告: Pub/Subトリガー用のトピック名が取得できませんでした。デフォルト名を使用します。"
-                  TRIGGER_PARAMS="--trigger-topic=youtube_video_fetch_trigger"
+                  # Terraform定義と一致するトピック名（ハイフン区切り）を使用
+                  TRIGGER_PARAMS="--trigger-topic=youtube-video-fetch-trigger"
                 fi
                 ;;
               storage)
