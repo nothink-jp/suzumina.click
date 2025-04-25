@@ -102,10 +102,20 @@ export default function AuthModal() {
       try {
         setIsProcessing(true);
         
+        // コードの存在を確認（コンパイルエラー対策）
+        if (!authCode) {
+          setError("認証コードが見つかりません。");
+          setMessage("認証に失敗しました。");
+          setIsProcessing(false);
+          setIsOpen(true);
+          return;
+        }
+        
         console.log("認証処理に使用するコード:", authCode);
         
         // Server Actionを呼び出して認証処理
         console.log("Server Actionを呼び出し中...");
+        // authCodeがstring型であることをTypeScriptに保証
         const result = await handleDiscordCallback(authCode);
         console.log("Server Action結果:", result);
 
