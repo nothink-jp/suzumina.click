@@ -12,9 +12,13 @@ export default function CallbackClient() {
 
     if (!code) {
       // コードがない場合はホームページにリダイレクト
+      console.error("認証コードがURLに存在しません");
       router.push("/");
       return;
     }
+
+    // コンソールログを追加して認証コードを確認
+    console.log("Discord認証コードを取得しました:", code);
 
     // ローカルストレージからリダイレクト先URLを取得
     const redirectUrl = localStorage.getItem('auth_redirect_url') || '/';
@@ -47,8 +51,13 @@ export default function CallbackClient() {
         }
       }
       
+      // コンソールログでリダイレクト先を確認
+      console.log("最終リダイレクト先URL（パラメータ追加前）:", finalUrl.toString());
+      
       // discord_codeクエリパラメータを追加
       finalUrl.searchParams.set('discord_code', code);
+      
+      console.log("最終リダイレクト先URL（パラメータ追加後）:", finalUrl.toString());
       
       // リダイレクト
       router.push(finalUrl.toString());

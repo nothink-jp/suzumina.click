@@ -25,15 +25,29 @@ export default function AuthModal() {
       return;
     }
 
-    const code = searchParams.get("discord_code");
+    // URLパラメーターのロギングを追加（デバッグ用）
+    console.log("現在のURL:", window.location.href);
+    console.log("検索パラメーター:", Object.fromEntries(new URLSearchParams(window.location.search).entries()));
 
-    if (!code) {
+    const code = searchParams.get("discord_code");
+    console.log("SearchParamsから取得したdiscord_code:", code);
+
+    // ブラウザURLから直接取得を試みる（バックアップとして）
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get("discord_code");
+    console.log("window.location.searchから直接取得したdiscord_code:", codeFromUrl);
+
+    // どちらの方法でも取得できた認証コードを使用
+    const effectiveCode = code || codeFromUrl;
+
+    if (!effectiveCode) {
       // コードがない場合はモーダルを表示しない
+      console.log("認証コードが見つかりませんでした。モーダルは表示されません。");
       setIsOpen(false);
       return;
     }
 
-    console.log("認証コードを検出しました:", code);
+    console.log("認証コードを検出しました:", effectiveCode);
     // 認証コードを検出したフラグを設定
     setAuthCodeDetected(true);
     // モーダルを表示
@@ -60,10 +74,20 @@ export default function AuthModal() {
       try {
         setIsProcessing(true);
         
+        // SearchParamsから認証コードを取得
         const code = searchParams.get("discord_code");
         
+        // 取得できなかった場合はURLから直接取得を試みる
+        const urlParams = new URLSearchParams(window.location.search);
+        const codeFromUrl = urlParams.get("discord_code");
+        
+        // どちらの方法でも取得できた認証コードを使用
+        const effectiveCode = code || codeFromUrl;
+        
+        console.log("認証処理に使用するコード:", effectiveCode);
+        
         // TypeScriptエラーを修正するため、codeがnullでないことを確認
-        if (!code) {
+        if (!effectiveCode) {
           // 例外をスローする代わりに、状態を直接更新
           setError("認証コードが見つかりません。");
           setMessage("認証に失敗しました。");
@@ -77,7 +101,9 @@ export default function AuthModal() {
         }
         
         // Server Actionを呼び出して認証処理
-        const result = await handleDiscordCallback(code);
+        console.log("Server Actionを呼び出し中...");
+        const result = await handleDiscordCallback(effectiveCode);
+        console.log("Server Action結果:", result);
 
         if (!result.success || !result.customToken) {
           // エラーメッセージを日本語化
@@ -117,7 +143,9 @@ export default function AuthModal() {
         }
 
         // カスタムトークンでサインイン
+        console.log("Firebaseカスタムトークンでサインイン中...");
         await signInWithCustomToken(auth, result.customToken);
+        console.log("Firebaseサインイン成功");
         
         setMessage("認証に成功しました！");
         
