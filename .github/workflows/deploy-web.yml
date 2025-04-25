@@ -115,14 +115,27 @@ jobs:
         run: pnpm --filter @suzumina.click/web build
       
       # Google Cloud認証
-      - name: Google Cloud認証
-        uses: ./.github/workflows/shared/gcp-auth.yml
+      - name: Google Cloud認証の設定
+        id: auth
+        uses: google-github-actions/auth@v2
         with:
-          workload-identity-provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service-account: 'cloud-run-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-          project-id: ${{ secrets.GCP_PROJECT_ID }}
-          setup-docker: true
-          region: ${{ env.REGION }}
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'cloud-run-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+          create_credentials_file: true
+          export_environment_variables: true
+      
+      # gcloud CLIをセットアップ
+      - name: gcloud CLIのセットアップ
+        if: steps.auth.outcome == 'success'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      
+      # Dockerの認証設定
+      - name: Dockerの認証設定
+        if: steps.auth.outcome == 'success'
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
       
       # Artifact Registryリポジトリの確認
       - name: Artifact Registryリポジトリの確認

@@ -53,30 +53,13 @@ jobs:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v4
       
-      - name: Node.js のセットアップ
-        uses: actions/setup-node@v4
+      # 複合アクションを使用してNode.js環境をセットアップ
+      - name: Node.js環境のセットアップ
+        uses: ./.github/actions/setup-node-env
         with:
           node-version: ${{ needs.common-lint.outputs.node_version }}
-
-      - name: pnpm のインストール
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ needs.common-lint.outputs.pnpm_version }}
-          run_install: false
-      
-      # 依存関係のキャッシュ
-      - name: 依存関係のキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-web-${{ hashFiles('apps/web/pnpm-lock.yaml', 'pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-web-
-      
-      - name: 依存関係のインストール
-        run: pnpm install
+          pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
+          project-path: 'web'
       
       # テスト実行
       - name: アプリケーションのテスト
@@ -96,30 +79,13 @@ jobs:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v4
       
-      - name: Node.js のセットアップ
-        uses: actions/setup-node@v4
+      # 複合アクションを使用してNode.js環境をセットアップ
+      - name: Node.js環境のセットアップ
+        uses: ./.github/actions/setup-node-env
         with:
           node-version: ${{ needs.common-lint.outputs.node_version }}
-
-      - name: pnpm のインストール
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ needs.common-lint.outputs.pnpm_version }}
-          run_install: false
-      
-      # 依存関係のキャッシュ
-      - name: 依存関係のキャッシュ
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-functions-${{ hashFiles('apps/functions/pnpm-lock.yaml', 'pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-functions-
-      
-      - name: 依存関係のインストール
-        run: pnpm install
+          pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
+          project-path: 'functions'
       
       # テスト実行
       - name: アプリケーションのテスト
