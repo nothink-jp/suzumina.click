@@ -46,7 +46,8 @@ initializeApplication();
 import { fetchYouTubeVideos } from "./youtube";
 
 // GCFv2用のCloudEventハンドラーを登録（Pub/Subトリガー関数用）
-functions.cloudEvent("fetchYouTubeVideos", fetchYouTubeVideos);
+// 明示的に型情報を指定してCloudEventハンドラーとして登録
+functions.cloudEvent<any>("fetchYouTubeVideos", fetchYouTubeVideos);
 
 /**
  * HTTPリクエスト用のハンドラー（ヘルスチェック対応）

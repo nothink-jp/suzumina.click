@@ -9,7 +9,7 @@
 locals {
   youtube_function_name = "fetchYouTubeVideos"
   youtube_runtime       = "nodejs22"
-  youtube_entry_point   = "fetchYouTubeVideos"
+  youtube_entry_point   = "fetchYouTubeVideos" # 注: これをindex.tsで登録した関数名と一致させる
   youtube_memory        = "512Mi"
   youtube_timeout       = 540 # 秒（9分）- イベントトリガー制限に合わせる
 
@@ -57,6 +57,12 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
         version    = "latest"
         project_id = var.gcp_project_id
       }
+    }
+
+    # CloudEventトリガーのための環境変数設定
+    environment_variables = {
+      FUNCTION_SIGNATURE_TYPE = "cloudevent"  # CloudEvent形式であることを明示
+      FUNCTION_TARGET        = local.youtube_entry_point  # エントリポイント名を指定
     }
   }
 
