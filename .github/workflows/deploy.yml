@@ -271,7 +271,7 @@ jobs:
   # Cloud Functionsのデプロイ
   deploy-cloud-functions:
     name: 'Cloud Functionsデプロイ'
-    needs: [verify-deployment-conditions, deploy-web-app]
+    needs: verify-deployment-conditions
     # 変更検知で変更がある場合、または手動・CI経由の場合に実行
     if: |
       needs.verify-deployment-conditions.outputs.functions_changed == 'true' ||
