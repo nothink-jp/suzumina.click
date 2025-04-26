@@ -1,4 +1,4 @@
-# Discord認証のNext.js Server Actions移行計画
+# Discord認証のNext.js Server Actions移行計画（完了）
 
 ## 背景
 
@@ -377,3 +377,7 @@ FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"...","priva
 ## 結論
 
 Next.jsのServer Actionsを使用してDiscord認証を実装することで、Cloud Functionsを1つ削減し、コードの一元管理とメンテナンスの簡素化が可能になります。また、認証フローのパフォーマンスも向上する可能性があります。
+
+## 実装完了
+
+このドキュメントに記載された計画は2025年4月26日に完了しました。認証機能はServer Actionsを使用して実装され、Cloud Functionsから移行されています。詳細はAUTH.mdドキュメントを参照してください。

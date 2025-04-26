@@ -34,9 +34,9 @@
 
 ### アプリ実装
 
-- [ ] **Discord認証のNext.js Server Actions移行**
-  - [ ] Server Actionsの実装
-  - [ ] コールバックページの更新
-  - [ ] 環境変数の設定とテスト
-  - [ ] 本番環境へのデプロイとテスト
-  - [ ] Cloud Functions削減後の動作確認
+- [x] **Discord認証のNext.js Server Actions移行**
+  - [x] Server Actionsの実装
+  - [x] コールバックページの更新
+  - [x] 環境変数の設定とテスト
+  - [x] 本番環境へのデプロイとテスト
+  - [x] Cloud Functions削減後の動作確認

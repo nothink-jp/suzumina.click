@@ -13,6 +13,41 @@ CI/CDパイプラインは以下の主要なワークフローで構成されて
 3. **Cloud Functionsデプロイ** - Cloud Functionsのデプロイ
 4. **統合デプロイ** - 複数のコンポーネントを一括デプロイ
 
+## CI/CDパイプラインのワークフロー状態遷移図
+
+以下の図は、CI/CDパイプラインの状態遷移と各ワークフローの関係を示しています：
+
+```mermaid
+stateDiagram-v2
+    [*] --> CI: PR作成/mainブランチへのpush
+
+    CI --> PushToMain: PRマージ/mainブランチへのpush
+    CI --> [*]: テスト失敗
+
+    PushToMain --> CheckChanges: パス変更検出
+    CheckChanges --> DeployWeb: webパス変更あり
+    CheckChanges --> DeployFunctions: functionsパス変更あり
+    CheckChanges --> IntegrationDeploy: CI成功時に自動実行
+
+    DeployWeb --> [*]: デプロイ完了
+    DeployFunctions --> [*]: デプロイ完了
+
+    state IntegrationDeploy {
+        [*] --> VerifyConditions
+        VerifyConditions --> WebTrigger: deploy_web=true
+        VerifyConditions --> FunctionsTrigger: deploy_functions=true
+        WebTrigger --> DeployWebApp: deploy-web.yml呼び出し
+        FunctionsTrigger --> DeployCloudFunctions: deploy-functions.yml呼び出し
+        DeployWebApp --> NotifySuccess
+        DeployCloudFunctions --> NotifySuccess
+        NotifySuccess --> [*]
+    }
+    
+    IntegrationDeploy --> [*]: デプロイ完了
+    
+    ManualTrigger --> IntegrationDeploy: 手動実行
+```
+
 ## モノレポ構造とワークフロー設計
 
 本プロジェクトはモノレポ構造（`apps/web`と`apps/functions`）を採用しており、ワークフローはこの構造に最適化されています：
@@ -156,6 +191,24 @@ CIワークフローはコードの変更がある度に自動的に実行され
 3. **トリガーの整理**
    - デプロイが2回走る問題を解決
    - 明確なトリガー条件の設定
+
+## ワークフロー間の連携
+
+各ワークフローは相互に連携して動作し、効率的なCIとCDを実現しています：
+
+1. **本体コードへの変更時**:
+   - CIワークフローが実行され、コードの品質を検証
+   - 特定パスの変更では個別のデプロイワークフローが自動実行
+   - CI成功時には統合デプロイワークフローを実行可能
+
+2. **ワークフロー連携の仕組み**:
+   - `workflow_dispatch`イベントによる他ワークフローの呼び出し
+   - 条件付き実行による効率化（変更がある部分のみデプロイ）
+   - ワークフロー間でのパラメータ受け渡し
+
+3. **条件分岐の最適化**:
+   - 変更検出ロジックによる効率的なデプロイ
+   - パラメータによるデプロイコンポーネントの選択
 
 ## デプロイ履歴と確認
 
