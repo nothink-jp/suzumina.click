@@ -160,40 +160,54 @@ jobs:
           # 必要な環境変数を取得
           echo "環境変数を取得しています..."
           
-          # Firebase Service Account Key
+          # Firebase Service Account Key (JSONファイルとして保存)
           FIREBASE_SA_KEY=$(gcloud secrets versions access latest --secret="FIREBASE_SERVICE_ACCOUNT_KEY" --project="${{ secrets.GCP_PROJECT_ID }}")
+          # シークレットをログに出力しない
           echo "::add-mask::$FIREBASE_SA_KEY"
-          echo "firebase_sa_key=$FIREBASE_SA_KEY" >> $GITHUB_OUTPUT
+          # JSONファイルとして保存
+          echo "$FIREBASE_SA_KEY" > firebase-service-account.json
+          echo "firebase_sa_key_file=firebase-service-account.json" >> $GITHUB_OUTPUT
           
           # Discord認証用環境変数
           DISCORD_CLIENT_ID=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_DISCORD_CLIENT_ID" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "::add-mask::$DISCORD_CLIENT_ID"
           echo "discord_client_id=$DISCORD_CLIENT_ID" >> $GITHUB_OUTPUT
           
           DISCORD_REDIRECT_URI=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_DISCORD_REDIRECT_URI" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "::add-mask::$DISCORD_REDIRECT_URI"
           echo "discord_redirect_uri=$DISCORD_REDIRECT_URI" >> $GITHUB_OUTPUT
           
           # Firebase認証用環境変数
           FIREBASE_API_KEY=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_API_KEY" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "::add-mask::$FIREBASE_API_KEY"
           echo "firebase_api_key=$FIREBASE_API_KEY" >> $GITHUB_OUTPUT
           
           FIREBASE_AUTH_DOMAIN=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "::add-mask::$FIREBASE_AUTH_DOMAIN"
           echo "firebase_auth_domain=$FIREBASE_AUTH_DOMAIN" >> $GITHUB_OUTPUT
           
           FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_PROJECT_ID" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "::add-mask::$FIREBASE_PROJECT_ID"
           echo "firebase_project_id=$FIREBASE_PROJECT_ID" >> $GITHUB_OUTPUT
           
           FIREBASE_STORAGE_BUCKET=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "::add-mask::$FIREBASE_STORAGE_BUCKET"
           echo "firebase_storage_bucket=$FIREBASE_STORAGE_BUCKET" >> $GITHUB_OUTPUT
           
           FIREBASE_MESSAGING_SENDER_ID=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "::add-mask::$FIREBASE_MESSAGING_SENDER_ID"
           echo "firebase_messaging_sender_id=$FIREBASE_MESSAGING_SENDER_ID" >> $GITHUB_OUTPUT
           
           FIREBASE_APP_ID=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_APP_ID" --project="${{ secrets.GCP_PROJECT_ID }}")
+          echo "::add-mask::$FIREBASE_APP_ID"
           echo "firebase_app_id=$FIREBASE_APP_ID" >> $GITHUB_OUTPUT
           
           # Measurement IDはオプション
           FIREBASE_MEASUREMENT_ID=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID" --project="${{ secrets.GCP_PROJECT_ID }}" 2>/dev/null || echo "")
-          echo "firebase_measurement_id=$FIREBASE_MEASUREMENT_ID" >> $GITHUB_OUTPUT
+          if [ ! -z "$FIREBASE_MEASUREMENT_ID" ]; then
+            echo "::add-mask::$FIREBASE_MEASUREMENT_ID"
+            echo "firebase_measurement_id=$FIREBASE_MEASUREMENT_ID" >> $GITHUB_OUTPUT
+          fi
           
           echo "環境変数の取得に成功しました"
       
@@ -211,7 +225,7 @@ jobs:
           
           # ビルドとタグ付け
           docker build -f apps/web/Dockerfile \
-            --build-arg FIREBASE_SERVICE_ACCOUNT_KEY="${{ steps.get-secrets.outputs.firebase_sa_key }}" \
+            --build-arg FIREBASE_SERVICE_ACCOUNT_KEY_FILE="${{ steps.get-secrets.outputs.firebase_sa_key_file }}" \
             --build-arg NEXT_PUBLIC_DISCORD_CLIENT_ID="${{ steps.get-secrets.outputs.discord_client_id }}" \
             --build-arg NEXT_PUBLIC_DISCORD_REDIRECT_URI="${{ steps.get-secrets.outputs.discord_redirect_uri }}" \
             --build-arg NEXT_PUBLIC_FIREBASE_API_KEY="${{ steps.get-secrets.outputs.firebase_api_key }}" \
