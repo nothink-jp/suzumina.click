@@ -25,6 +25,12 @@ on:
         default: true
         type: boolean
 
+# ワークフローにactions権限を付与
+# 他のワークフローをトリガーするにはactions:write権限が必要
+permissions:
+  contents: read
+  actions: write  # workflow_dispatchイベントをトリガーするために必要
+
 jobs:
   # デプロイ条件の確認
   verify-deployment-conditions:
