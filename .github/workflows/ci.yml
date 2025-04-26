@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# ワークフローにactions権限を付与
+permissions:
+  contents: read
+  actions: write  # workflow_dispatchイベントをトリガーするために必要
+
 jobs:
   # リポジトリ全体の共通検証
   common-lint:
