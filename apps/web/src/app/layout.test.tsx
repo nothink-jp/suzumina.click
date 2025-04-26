@@ -92,7 +92,7 @@ describe("RootLayoutコンポーネント", () => {
 
     // フッターが存在することを確認
     expect(screen.getByTestId("mock-footer")).toBeInTheDocument();
-    
+
     // 認証モーダルが存在することを確認
     expect(screen.getByTestId("mock-auth-modal")).toBeInTheDocument();
   });

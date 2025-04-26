@@ -1,8 +1,8 @@
+import { useAuth } from "@/lib/firebase/AuthProvider";
 import { render, screen } from "@testing-library/react";
+import type { User } from "firebase/auth";
 import { describe, expect, it, vi } from "vitest";
 import ProfilePage from "./page";
-import { useAuth } from "@/lib/firebase/AuthProvider";
-import type { User } from "firebase/auth";
 
 // useAuth モックの作成
 vi.mock("@/lib/firebase/AuthProvider", () => ({

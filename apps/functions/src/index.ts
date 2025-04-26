@@ -22,16 +22,16 @@ let initialized = false;
 
 /**
  * アプリケーション初期化関数
- * 
+ *
  * この関数は複数回呼び出されても実際の初期化は1回のみ実行される
  */
 export function initializeApplication(): boolean {
   if (!initialized) {
     logger.info("アプリケーション初期化を開始します");
-    
+
     // 基本的な初期化処理
     // 注意: 個別モジュール固有の初期化は各モジュールで行う
-    
+
     // 初期化完了
     initialized = true;
     logger.info("アプリケーション初期化が完了しました");
@@ -47,11 +47,12 @@ import { fetchYouTubeVideos } from "./youtube";
 
 // GCFv2用のCloudEventハンドラーを登録（Pub/Subトリガー関数用）
 // 明示的に型情報を指定してCloudEventハンドラーとして登録
+// biome-ignore lint/suspicious/noExplicitAny: Complexity type of cloudEvent
 functions.cloudEvent<any>("fetchYouTubeVideos", fetchYouTubeVideos);
 
 /**
  * HTTPリクエスト用のハンドラー（ヘルスチェック対応）
- * 
+ *
  * このハンドラーはCloudEvent（Pub/Sub）関数とは別に実装されており、
  * シンプルなヘルスチェック応答のみを返します。
  */

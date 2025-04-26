@@ -5,14 +5,9 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "serve": "npm run build && firebase emulators:start --only functions",
-    "shell": "npm run build && firebase functions:shell",
-    "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log",
     "lint": "biome lint ./src",
     "format": "biome format --write ./src",
-    "check": "biome check --apply ./src",
+    "check": "biome check --write ./src",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -23,7 +18,7 @@
     "googleapis": "^148.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "1.9.4",
     "@types/node": "^22.14.1",
     "typescript": "^5.8.3",
     "vitest": "^3.1.2"

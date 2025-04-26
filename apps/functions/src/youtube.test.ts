@@ -116,13 +116,13 @@ vi.mock("./utils/firestore", () => {
   };
 });
 
+import type { WriteBatch } from "@google-cloud/firestore";
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import type { Mock } from "vitest";
 import type { SimplePubSubData } from "./common";
-import { fetchYouTubeVideos } from "./youtube";
-import * as logger from "./utils/logger";
 import firestore, { Timestamp } from "./utils/firestore";
-import { WriteBatch } from "@google-cloud/firestore";
+import * as logger from "./utils/logger";
+import { fetchYouTubeVideos } from "./youtube";
 
 describe("fetchYouTubeVideos", () => {
   let mockEvent: CloudEvent<SimplePubSubData>;
@@ -170,24 +170,22 @@ describe("fetchYouTubeVideos", () => {
     mockMetadataDocSet = vi.fn().mockResolvedValue({});
 
     // コレクションとドキュメントのモックを再設定
-    vi.mocked(firestore.collection).mockImplementation(
-      (collectionName) => {
-        if (collectionName === "youtubeMetadata") {
-          return {
-            doc: vi.fn(() => ({
-              get: mockMetadataDocGet,
-              update: mockMetadataDocUpdate,
-              set: mockMetadataDocSet,
-            })),
-          } as unknown as ReturnType<typeof firestore.collection>;
-        }
-
-        // videosコレクションの場合
+    vi.mocked(firestore.collection).mockImplementation((collectionName) => {
+      if (collectionName === "youtubeMetadata") {
         return {
-          doc: vi.fn(() => ({})),
+          doc: vi.fn(() => ({
+            get: mockMetadataDocGet,
+            update: mockMetadataDocUpdate,
+            set: mockMetadataDocSet,
+          })),
         } as unknown as ReturnType<typeof firestore.collection>;
-      },
-    );
+      }
+
+      // videosコレクションの場合
+      return {
+        doc: vi.fn(() => ({})),
+      } as unknown as ReturnType<typeof firestore.collection>;
+    });
 
     // batch() が呼ばれるたびに新しいモック batch を返す
     const newMockBatchSet = vi.fn();
@@ -389,7 +387,7 @@ describe("fetchYouTubeVideos", () => {
     await fetchYouTubeVideos(eventWithBase64);
     expect(mockedLoggerInfo).toHaveBeenCalledWith(
       "デコードされたメッセージデータ:",
-      JSON.stringify(payload),
+      { message: JSON.stringify(payload) }, // オブジェクト形式に変更
     );
 
     // YouTube API コールが行われるはず

@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth } from "@/lib/firebase/AuthProvider";
 import AuthButton from "@/components/ui/AuthButton";
+import { useAuth } from "@/lib/firebase/AuthProvider";
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
@@ -54,7 +54,9 @@ export default function ProfilePage() {
               )}
               <div>
                 <h2 className="card-title">{user.displayName}</h2>
-                <p className="text-sm text-gray-500">Discord ID: {user.email?.split("@")[0]}</p>
+                <p className="text-sm text-gray-500">
+                  Discord ID: {user.email?.split("@")[0]}
+                </p>
               </div>
             </div>
             <div className="divider" />
@@ -62,8 +64,18 @@ export default function ProfilePage() {
               <h3 className="font-bold mb-2">アカウント情報</h3>
               <ul className="list-disc list-inside space-y-1">
                 <li>認証プロバイダー: Discord</li>
-                <li>認証日時: {new Date(user.metadata.creationTime || "").toLocaleString("ja-JP")}</li>
-                <li>最終ログイン: {new Date(user.metadata.lastSignInTime || "").toLocaleString("ja-JP")}</li>
+                <li>
+                  認証日時:{" "}
+                  {new Date(user.metadata.creationTime || "").toLocaleString(
+                    "ja-JP",
+                  )}
+                </li>
+                <li>
+                  最終ログイン:{" "}
+                  {new Date(user.metadata.lastSignInTime || "").toLocaleString(
+                    "ja-JP",
+                  )}
+                </li>
               </ul>
             </div>
           </div>

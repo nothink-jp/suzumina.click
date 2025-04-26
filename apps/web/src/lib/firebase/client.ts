@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth, Auth } from "firebase/auth";
+import { type Auth, getAuth } from "firebase/auth";
 
 /**
  * Firebaseの設定
@@ -24,7 +24,7 @@ const isFirebaseConfigValid = () => {
     firebaseConfig.authDomain,
     firebaseConfig.projectId,
   ];
-  return requiredConfig.every(config => !!config);
+  return requiredConfig.every((config) => !!config);
 };
 
 /**
@@ -39,9 +39,11 @@ const initializeFirebase = () => {
       if (isFirebaseConfigValid()) {
         return getApps().length ? getApp() : initializeApp(firebaseConfig);
       }
-      
+
       // 設定が不足している場合は警告を表示
-      console.warn("Firebase設定に必要な環境変数が不足しています。必須環境変数: NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, NEXT_PUBLIC_FIREBASE_PROJECT_ID");
+      console.warn(
+        "Firebase設定に必要な環境変数が不足しています。必須環境変数: NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+      );
     } catch (error) {
       console.error("Firebase初期化エラー:", error);
     }

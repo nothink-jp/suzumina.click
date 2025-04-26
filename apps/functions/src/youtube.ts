@@ -1,10 +1,10 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
-// functions/src/youtube.ts
-import * as logger from "./utils/logger";
 import { google } from "googleapis";
 import type { youtube_v3 } from "googleapis";
 import { SUZUKA_MINASE_CHANNEL_ID, type YouTubeVideoData } from "./common";
 import firestore, { Timestamp } from "./utils/firestore";
+// functions/src/youtube.ts
+import * as logger from "./utils/logger";
 
 // YouTube API初期化時のチェック
 (function initializeYoutubeModule() {
@@ -142,10 +142,13 @@ interface PubsubMessage {
 
 /**
  * YouTube動画情報取得の共通処理
- * 
+ *
  * @returns Promise<{videoCount: number, error?: string}> - 処理結果
  */
-async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: string}> {
+async function fetchYouTubeVideosLogic(): Promise<{
+  videoCount: number;
+  error?: string;
+}> {
   // YouTube API キーの取得と検証
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
@@ -180,7 +183,9 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
     return { videoCount: 0, error: "メタデータの取得に失敗しました" };
   }
 
-  logger.info(`チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画IDを取得中`);
+  logger.info(
+    `チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画情報取得を開始します`,
+  );
   const allVideoIds: string[] = [];
 
   // 前回の続きから再開するか、新規に開始するか
@@ -190,7 +195,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
   if (nextPageToken) {
     logger.info(`前回の続きから取得を再開します。トークン: ${nextPageToken}`);
   } else {
-    logger.info("新規に全動画の取得を開始します");
+    logger.debug("新規に全動画の取得を開始します");
   }
 
   // 最大3ページまでのみ取得（クォータ節約のため）
@@ -222,7 +227,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
       allVideoIds.push(...videoIds);
       nextPageToken = searchResponse.nextPageToken ?? undefined;
 
-      logger.info(
+      logger.debug(
         `${videoIds.length}件の動画IDを取得しました。次ページトークン: ${nextPageToken || "なし"}`,
       );
 
@@ -275,7 +280,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
     return { videoCount: 0 };
   }
 
-  logger.info("動画の詳細情報を取得中...");
+  logger.debug("動画の詳細情報を取得中...");
   const videoDetails: youtube_v3.Schema$Video[] = [];
 
   // YouTube API の制限（最大50件）に合わせてバッチ処理
@@ -297,7 +302,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
       if (videoResponse.items) {
         videoDetails.push(...videoResponse.items);
       }
-      logger.info(
+      logger.debug(
         `${videoResponse.items?.length ?? 0}件の動画詳細を取得しました（バッチ ${Math.floor(i / MAX_VIDEOS_PER_BATCH) + 1}）`,
       );
     } catch (error: unknown) {
@@ -316,7 +321,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
   }
   logger.info(`取得した動画詳細合計: ${videoDetails.length}件`);
 
-  logger.info("動画データをFirestoreに書き込み中...");
+  logger.debug("動画データをFirestoreに書き込み中...");
   let batch = firestore.batch();
   let batchCounter = 0;
   const maxBatchSize = 500; // Firestoreのバッチ書き込み上限
@@ -326,6 +331,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
     if (!video.id || !video.snippet) {
       logger.warn(
         "IDまたはスニペットが不足しているため動画をスキップします:",
+        // biome-ignore lint/suspicious/noExplicitAny: Complexity type of Youtube
         video as any,
       );
       continue;
@@ -358,7 +364,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
 
     // バッチサイズの上限に達したらコミット
     if (batchCounter >= maxBatchSize) {
-      logger.info(
+      logger.debug(
         `${batchCounter}件の動画ドキュメントのバッチをコミット中...`,
       );
       await batch
@@ -369,7 +375,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
             err,
           ),
         );
-      logger.info(
+      logger.debug(
         "バッチをコミットしました。バッチとカウンターをリセットします",
       );
       batch = firestore.batch();
@@ -385,7 +391,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
     await batch
       .commit()
       .then(() => {
-        logger.info("Firestoreバッチコミットが成功しました");
+        logger.debug("Firestoreバッチコミットが成功しました");
       })
       .catch((err) => {
         logger.error(
@@ -394,7 +400,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
         );
       });
   } else {
-    logger.info("最終バッチに書き込む動画詳細がありませんでした");
+    logger.debug("最終バッチに書き込む動画詳細がありませんでした");
   }
 
   // 処理完了を記録
@@ -402,7 +408,7 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
     isInProgress: false,
     lastError: undefined,
   });
-  
+
   return { videoCount: videoDetails.length };
 }
 
@@ -413,9 +419,11 @@ async function fetchYouTubeVideosLogic(): Promise<{videoCount: number, error?: s
  * @returns Promise<void> - 非同期処理の完了を表すPromise
  */
 export const fetchYouTubeVideos = async (
-  event: CloudEvent<PubsubMessage>
+  event: CloudEvent<PubsubMessage>,
 ): Promise<void> => {
-  logger.info("fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)");
+  logger.info(
+    "fetchYouTubeVideos 関数を開始しました (GCFv2 CloudEvent Handler)",
+  );
 
   try {
     // CloudEvent（Pub/Sub）の場合
@@ -438,29 +446,33 @@ export const fetchYouTubeVideos = async (
         const decodedData = Buffer.from(message.data, "base64").toString(
           "utf-8",
         );
-        logger.info("デコードされたメッセージデータ:", decodedData as any);
+        // TypeScriptの型チェックに合格するようオブジェクト形式で渡す
+        logger.info("デコードされたメッセージデータ:", {
+          message: decodedData,
+        });
       } catch (err) {
         logger.error("Base64メッセージデータのデコードに失敗しました:", err);
         return;
       }
     }
-    
+
     // 共通のロジックを実行
     const result = await fetchYouTubeVideosLogic();
-    
+
     if (result.error) {
       logger.warn(`YouTube動画取得処理でエラーが発生しました: ${result.error}`);
     } else {
-      logger.info(`YouTube動画取得処理が正常に完了しました。取得した動画数: ${result.videoCount}件`);
+      logger.info(
+        `YouTube動画取得処理が正常に完了しました。取得した動画数: ${result.videoCount}件`,
+      );
     }
-    
+
     logger.info("fetchYouTubeVideos 関数の処理を完了しました");
     return;
-    
   } catch (error: unknown) {
     // 例外処理
     logger.error("fetchYouTubeVideos 関数で例外が発生しました:", error);
-    
+
     // エラー状態を記録
     try {
       await updateMetadata({

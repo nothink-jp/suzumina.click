@@ -1,6 +1,6 @@
 /**
  * アプリケーション初期化機能とHTTP処理のテスト
- * 
+ *
  * このファイルでは、index.tsで実装されている初期化処理と
  * HTTPリクエスト処理機能が正しく動作することを検証します。
  */
@@ -36,10 +36,10 @@ let capturedHttpHandler: Function | null = null;
 
 vi.mock("node:http", () => {
   return {
-    createServer: vi.fn(handler => {
+    createServer: vi.fn((handler) => {
       capturedHttpHandler = handler;
       return mockServer;
-    })
+    }),
   };
 });
 
@@ -81,18 +81,18 @@ const originalModule = require.main;
 async function importIndexWithServerStartup() {
   // モジュールのキャッシュをクリア
   vi.resetModules();
-  
+
   // require.main === moduleのチェックをバイパスするためのモック
   // モジュールの内容そのものを書き換えて対応
-  vi.doMock('./index', async () => {
+  vi.doMock("./index", async () => {
     // 実際のモジュールをインポート
-    const actualModule = await vi.importActual('./index');
-    
+    const actualModule = await vi.importActual("./index");
+
     // サーバーの起動コードを強制的に実行（require.main === moduleをバイパス）
     const PORT = Number.parseInt(process.env.PORT || "8080");
-    
+
     // HTTPサーバーの準備と起動
-    const http = await import('node:http');
+    const http = await import("node:http");
     const server = http.createServer((req, res) => {
       // モックされたFunctions Frameworkの関数を使用
       const functionTarget = "httpHandler";
@@ -116,13 +116,13 @@ async function importIndexWithServerStartup() {
       .on("error", (error: Error) => {
         mockLoggerError("HTTPサーバーの起動に失敗しました:", error);
       });
-    
+
     // 元のモジュールのエクスポートを返す
     return actualModule;
   });
-  
+
   // 書き換えたモジュールをインポート
-  return await import('./index');
+  return await import("./index");
 }
 
 describe("アプリケーション初期化機能", () => {
@@ -148,17 +148,21 @@ describe("アプリケーション初期化機能", () => {
   it("initializeApplicationが複数回呼び出されても初期化は1回だけ行われること", async () => {
     // アプリケーション初期化関数をインポート
     const { initializeApplication } = await import("./index");
-    
+
     // 最初の呼び出しで初期化される
     initializeApplication();
-    
+
     // 初期化ログが出力されたことを確認
-    expect(mockLoggerInfo).toHaveBeenCalledWith("アプリケーション初期化を開始します");
-    expect(mockLoggerInfo).toHaveBeenCalledWith("アプリケーション初期化が完了しました");
-    
+    expect(mockLoggerInfo).toHaveBeenCalledWith(
+      "アプリケーション初期化を開始します",
+    );
+    expect(mockLoggerInfo).toHaveBeenCalledWith(
+      "アプリケーション初期化が完了しました",
+    );
+
     // ログをクリア
     mockLoggerInfo.mockClear();
-    
+
     // 2回目以降の呼び出し
     initializeApplication();
     initializeApplication();
@@ -172,10 +176,10 @@ describe("アプリケーション初期化機能", () => {
 describe("HTTPサーバー機能とヘルスチェック", () => {
   let mockReq: any;
   let mockRes: any;
-  
+
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // HTTP リクエストとレスポンスのモック
     mockReq = {};
     mockRes = {
@@ -184,67 +188,69 @@ describe("HTTPサーバー機能とヘルスチェック", () => {
       status: vi.fn().mockReturnThis(),
       send: vi.fn(),
     };
-    
+
     // 環境変数を設定
     process.env = { ...originalEnv };
-    process.env.PORT = '8080';
-    
+    process.env.PORT = "8080";
+
     // ハンドラをリセット
     savedHttpHandler = null;
     capturedHttpHandler = null;
-    
+
     // require.main === moduleの条件を満たすためのモック
     // 注意: requireとmoduleの関係を正確に模倣する必要がある
-    Object.defineProperty(require, 'main', { 
+    Object.defineProperty(require, "main", {
       value: module,
-      writable: true
+      writable: true,
     });
   });
-  
+
   afterEach(() => {
     process.env = originalEnv;
     // require.mainの設定を元に戻す
-    Object.defineProperty(require, 'main', { 
+    Object.defineProperty(require, "main", {
       value: originalModule,
-      writable: true
+      writable: true,
     });
   });
-  
+
   it.skip("HTTPサーバーが指定されたポートで正しく起動すること", async () => {
     // index.tsをインポート（サーバーが起動する）
     // テスト実行前にrequire.main === moduleとなるようモック済み
     await importIndexWithServerStartup();
-    
+
     // ポート番号が正しく設定されていることを確認
     expect(mockListen).toHaveBeenCalledWith(8080);
-    
+
     // イベントリスナーが正しく設定されていることを確認
     expect(mockOn).toHaveBeenCalledWith("listening", expect.any(Function));
     expect(mockOn).toHaveBeenCalledWith("error", expect.any(Function));
-    
+
     // ログが出力されていることを確認
-    expect(mockLoggerInfo).toHaveBeenCalledWith("HTTPサーバーをポート8080で起動します...");
+    expect(mockLoggerInfo).toHaveBeenCalledWith(
+      "HTTPサーバーをポート8080で起動します...",
+    );
   });
-  
+
   it("登録された関数が存在する場合、Functions Frameworkにリクエストが転送されること", async () => {
     // Functions Frameworkの関数が存在すると仮定
     const mockHandlerFunction = vi.fn();
     mockGetFunction.mockReturnValue(mockHandlerFunction);
-    
+
     // index.tsをインポート（サーバーが起動する）
     await importIndexWithServerStartup();
-    
+
     // HTTPサーバーハンドラが呼び出されたことを確認
     expect(capturedHttpHandler).not.toBeNull();
-    
+
     // キャプチャしたハンドラを実行
     if (capturedHttpHandler) {
       capturedHttpHandler(mockReq, mockRes);
-      
+
       // 関数が正しく呼び出されたことを確認
       expect(mockGetFunction).toHaveBeenCalledWith("httpHandler");
       expect(mockHandlerFunction).toHaveBeenCalledWith(mockReq, mockRes);
-      
+
       // レスポンスのwriteHeadとendは呼ばれないこと（関数が呼び出されたため）
       expect(mockRes.writeHead).not.toHaveBeenCalled();
       expect(mockRes.end).not.toHaveBeenCalled();
@@ -252,42 +258,48 @@ describe("HTTPサーバー機能とヘルスチェック", () => {
       throw new Error("HTTPサーバーハンドラがcreateServerに渡されていません");
     }
   });
-  
+
   it("登録された関数が存在しない場合、基本的なヘルスチェックレスポンスを返すこと", async () => {
     // 関数が存在しないケース
     mockGetFunction.mockReturnValue(null);
-    
+
     // index.tsをインポート（サーバーが起動する）
     await importIndexWithServerStartup();
-    
+
     // キャプチャしたハンドラを実行
     if (capturedHttpHandler) {
       capturedHttpHandler(mockReq, mockRes);
-      
+
       // ヘルスチェックレスポンスが返されることを確認
-      expect(mockRes.writeHead).toHaveBeenCalledWith(200, {"Content-Type": "text/plain"});
+      expect(mockRes.writeHead).toHaveBeenCalledWith(200, {
+        "Content-Type": "text/plain",
+      });
       expect(mockRes.end).toHaveBeenCalledWith("Functions Framework正常動作中");
     } else {
       throw new Error("HTTPサーバーハンドラがcreateServerに渡されていません");
     }
   });
-  
+
   it("httpHandlerがリクエストに対して適切なレスポンスを返すこと", async () => {
     // index.tsをインポート（httpハンドラが登録される）
     await importIndexWithServerStartup();
-    
+
     // httpHandlerが登録されていることを確認
     expect(mockHttp).toHaveBeenCalledWith("httpHandler", expect.any(Function));
     expect(savedHttpHandler).not.toBeNull();
-    
+
     // 保存したハンドラを実行
     if (savedHttpHandler) {
       savedHttpHandler(mockReq, mockRes);
-      
+
       // 適切なステータスとレスポンスが設定されることを確認
       expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.send).toHaveBeenCalledWith("Functions Framework正常動作中");
-      expect(mockLoggerInfo).toHaveBeenCalledWith("HTTPリクエストを受信しました");
+      expect(mockRes.send).toHaveBeenCalledWith(
+        "Functions Framework正常動作中",
+      );
+      expect(mockLoggerInfo).toHaveBeenCalledWith(
+        "HTTPリクエストを受信しました",
+      );
     } else {
       throw new Error("httpHandlerが登録されていません");
     }

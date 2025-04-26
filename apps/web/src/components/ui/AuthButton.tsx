@@ -20,8 +20,8 @@ export default function AuthButton() {
 
     // 現在のページURLをローカルストレージに保存
     // ログイン後にこのURLにリダイレクトするために使用
-    localStorage.setItem('auth_redirect_url', window.location.href);
-    
+    localStorage.setItem("auth_redirect_url", window.location.href);
+
     const scope = "identify guilds email";
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}`;
     window.location.href = discordAuthUrl;

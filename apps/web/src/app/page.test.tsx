@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
 import { UserMetadata } from "firebase-admin/auth";
+import { describe, expect, it, vi } from "vitest";
 import HomePage from "./page"; // page.tsx をインポート
 
 // 非同期サーバーコンポーネントのテストのため、必要なモックを設定
@@ -16,12 +16,12 @@ vi.mock("./_components/HeadlessUiDisclosureExample", () => ({
 
 // AuthButton コンポーネントをモック
 vi.mock("@/components/ui/AuthButton", () => ({
-  default: () => <button data-testid="mock-auth-button">ログイン</button>,
+  default: () => <button type="button" data-testid="mock-auth-button">ログイン</button>,
 }));
 
 // getCurrentUser 関数をモック
 vi.mock("./api/auth/getCurrentUser", () => ({
-  getCurrentUser: vi.fn().mockResolvedValue(null) // デフォルトでは非ログイン状態
+  getCurrentUser: vi.fn().mockResolvedValue(null), // デフォルトでは非ログイン状態
 }));
 
 describe("ホームページ", () => {
@@ -40,19 +40,21 @@ describe("ホームページ", () => {
     render(await HomePage());
 
     // 検証 - モック化されたボタンを検索
-    const disclosureButton = screen.getByText(/Headless UI Disclosure サンプル/i);
+    const disclosureButton = screen.getByText(
+      /Headless UI Disclosure サンプル/i,
+    );
     expect(disclosureButton).toBeInTheDocument();
   });
-  
+
   it("非ログイン時にはAuthButtonが表示されること", async () => {
     // 準備 & 実行
     render(await HomePage());
-    
+
     // 検証
     const authButton = screen.getByTestId("mock-auth-button");
     expect(authButton).toBeInTheDocument();
   });
-  
+
   it("ログイン時にはユーザー情報が表示されること", async () => {
     // 準備 - ログイン状態のモックを設定
     const { getCurrentUser } = await import("./api/auth/getCurrentUser");
@@ -65,21 +67,22 @@ describe("ホームページ", () => {
       metadata: {
         creationTime: "2025-04-01T00:00:00.000Z",
         lastSignInTime: "2025-04-20T00:00:00.000Z",
-        toJSON: () => ({ creationTime: "2025-04-01T00:00:00.000Z", lastSignInTime: "2025-04-20T00:00:00.000Z" })
+        toJSON: () => ({
+          creationTime: "2025-04-01T00:00:00.000Z",
+          lastSignInTime: "2025-04-20T00:00:00.000Z",
+        }),
       },
       providerData: [],
-      toJSON: function (): object {
-        return {
-          uid: "test-uid",
-          displayName: "テストユーザー",
-          email: "test@example.com"
-        };
-      }
+      toJSON: (): object => ({
+        uid: "test-uid",
+        displayName: "テストユーザー",
+        email: "test@example.com",
+      }),
     });
-    
+
     // 実行
     render(await HomePage());
-    
+
     // 検証
     expect(screen.getByText("ログイン中です")).toBeInTheDocument();
     expect(screen.getByText(/ユーザー名: テストユーザー/)).toBeInTheDocument();

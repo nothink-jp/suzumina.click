@@ -45,9 +45,7 @@ describe("Header コンポーネント", () => {
     render(<Header />);
 
     // サイト名が表示されていることを確認
-    expect(
-      screen.getByText("すずみなくりっく！"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("すずみなくりっく！")).toBeInTheDocument();
 
     // About リンクが表示されていることを確認
     const aboutLink = screen.getByText("About");

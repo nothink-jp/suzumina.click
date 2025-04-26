@@ -1,10 +1,10 @@
 "use client";
 
+import { handleDiscordCallback } from "@/app/api/auth/discord/actions";
 import { auth, getAuthInstance } from "@/lib/firebase/client";
 import { signInWithCustomToken } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { handleDiscordCallback } from "@/app/api/auth/discord/actions";
 
 export default function AuthModal() {
   const searchParams = useSearchParams();
@@ -88,7 +88,7 @@ export default function AuthModal() {
         // モーダルを表示し続ける
         setIsOpen(true);
         setIsProcessing(true);
-        
+
         // コードの存在を確認（コンパイルエラー対策）
         if (!authCode) {
           setError("認証コードが見つかりません。");
@@ -96,35 +96,36 @@ export default function AuthModal() {
           setIsProcessing(false);
           return;
         }
-        
+
         setMessage("認証サーバーと通信中...");
-        
+
         // Firebase認証の状態を確認し、必要に応じて再取得
         let firebaseAuth = auth;
         if (!firebaseAuth) {
           firebaseAuth = getAuthInstance();
         }
-        
+
         try {
           // Server Actionを呼び出して認証処理
           const result = await handleDiscordCallback(authCode);
-          
+
           if (!result.success || !result.customToken) {
             // エラーメッセージを日本語化
             let errorMessage = "認証処理に失敗しました";
-            
+
             // 特定のエラーメッセージを日本語に変換
             if (result.error === "Guild membership required.") {
-              errorMessage = "Discordサーバーのメンバーである必要があります。Discordサーバーに参加してから再度お試しください。";
+              errorMessage =
+                "Discordサーバーのメンバーである必要があります。Discordサーバーに参加してから再度お試しください。";
             } else if (result.error) {
               errorMessage = result.error;
             }
-            
+
             // エラー表示
             setError(errorMessage);
             setMessage("認証に失敗しました。");
             setIsProcessing(false);
-            
+
             // コードをクリーンアップ
             removeCodeFromUrl();
             removeCodeFromSession();
@@ -136,13 +137,13 @@ export default function AuthModal() {
             // 最後の手段として再度取得を試みる
             firebaseAuth = getAuthInstance();
           }
-          
+
           // authがnullでないことを確認
           if (!firebaseAuth) {
             setError("認証システムの初期化に失敗しました。");
             setMessage("認証に失敗しました。");
             setIsProcessing(false);
-            
+
             // コードをクリーンアップ
             removeCodeFromUrl();
             removeCodeFromSession();
@@ -150,60 +151,62 @@ export default function AuthModal() {
           }
 
           setMessage("Firebaseにサインイン中...");
-          
+
           // カスタムトークンでサインイン
           try {
             await signInWithCustomToken(firebaseAuth, result.customToken);
-            
+
             setMessage("認証に成功しました！");
             setIsProcessing(false);
-            
+
             // 認証コードの検出フラグをリセット
             setAuthCodeDetected(false);
             setAuthCode(null);
-            
+
             // コードをクリーンアップ
             removeCodeFromUrl();
             removeCodeFromSession();
-            
+
             // 3秒後にモーダルを閉じる
             setTimeout(() => {
               setIsOpen(false);
             }, 3000);
-            
           } catch (signInError) {
-            const signInErrorMessage = signInError instanceof Error
-              ? signInError.message
-              : "認証中に予期せぬエラーが発生しました。";
+            const signInErrorMessage =
+              signInError instanceof Error
+                ? signInError.message
+                : "認証中に予期せぬエラーが発生しました。";
             setError(signInErrorMessage);
             setMessage("認証に失敗しました。");
             setIsProcessing(false);
-            
+
             // コードをクリーンアップ
             removeCodeFromUrl();
             removeCodeFromSession();
           }
         } catch (serverActionError) {
-          const serverActionErrorMessage = serverActionError instanceof Error
-            ? serverActionError.message
-            : "サーバーとの通信中にエラーが発生しました。";
+          const serverActionErrorMessage =
+            serverActionError instanceof Error
+              ? serverActionError.message
+              : "サーバーとの通信中にエラーが発生しました。";
           setError(serverActionErrorMessage);
           setMessage("認証に失敗しました。");
           setIsProcessing(false);
-          
+
           // コードをクリーンアップ
           removeCodeFromUrl();
           removeCodeFromSession();
         }
       } catch (err) {
         // 全体的なエラーハンドリング
-        const errorMessage = err instanceof Error
-          ? err.message
-          : "認証中に予期せぬエラーが発生しました。";
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "認証中に予期せぬエラーが発生しました。";
         setError(errorMessage);
         setMessage("認証に失敗しました。");
         setIsProcessing(false);
-        
+
         // コードをクリーンアップ
         removeCodeFromUrl();
         removeCodeFromSession();
@@ -220,9 +223,9 @@ export default function AuthModal() {
   }
 
   return (
-    <div 
+    <div
       className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
     >
       <div className="bg-base-100 p-6 rounded-lg shadow-xl max-w-md w-full">
         <h2 className="text-xl font-bold mb-4">Discord認証</h2>

@@ -1,6 +1,6 @@
+import type { FirebaseApp } from "firebase/app";
 // src/lib/firebase/client.test.ts
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import type { FirebaseApp } from "firebase/app";
 
 // Firebaseアプリのモック
 const mockInitializeApp = vi.fn().mockReturnValue({ name: "mock-app" });

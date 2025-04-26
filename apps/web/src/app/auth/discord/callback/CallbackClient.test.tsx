@@ -1,9 +1,17 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { signInWithCustomToken } from "firebase/auth";
-// src/app/auth/discord/callback/CallbackClient.test.tsx
-import { afterEach, beforeEach, describe, expect, test, vi, type Mock } from "vitest";
-import CallbackClient from "./CallbackClient";
 import type { Auth } from "firebase/auth";
+// src/app/auth/discord/callback/CallbackClient.test.tsx
+import {
+  type Mock,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest";
+import CallbackClient from "./CallbackClient";
 
 // モック変数の定義
 const mockedPush = vi.fn();
@@ -18,14 +26,15 @@ vi.mock("@/app/api/auth/discord/actions", () => ({
     if (!process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID) {
       return {
         success: false,
-        error: "Discord設定が不足しています: NEXT_PUBLIC_DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, NEXT_PUBLIC_DISCORD_REDIRECT_URI, DISCORD_TARGET_GUILD_ID"
+        error:
+          "Discord設定が不足しています: NEXT_PUBLIC_DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, NEXT_PUBLIC_DISCORD_REDIRECT_URI, DISCORD_TARGET_GUILD_ID",
       };
     }
     return {
       success: true,
-      customToken: "test-custom-token"
+      customToken: "test-custom-token",
     };
-  })
+  }),
 }));
 
 // firebase/authをモック
@@ -53,7 +62,7 @@ const mockLocalStorage = (() => {
     }),
     clear: vi.fn(() => {
       store = {};
-    })
+    }),
   };
 })();
 
@@ -62,11 +71,11 @@ class MockURL {
   public searchParams: URLSearchParams;
   public origin: string;
   public toString: () => string;
-  
+
   constructor(url: string, base?: string) {
     this.searchParams = new URLSearchParams();
-    this.origin = base || 'http://localhost:3000';
-    this.toString = () => url + '?' + this.searchParams.toString();
+    this.origin = base || "http://localhost:3000";
+    this.toString = () => `${url}?${this.searchParams.toString()}`;
   }
 }
 
@@ -107,25 +116,26 @@ describe("CallbackClientコンポーネント", () => {
     global.URL = MockURL as any;
 
     // localStorageをモック
-    Object.defineProperty(window, 'localStorage', {
-      value: mockLocalStorage
+    Object.defineProperty(window, "localStorage", {
+      value: mockLocalStorage,
     });
 
     // window.location.originをモック
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(window, "location", {
       value: {
-        origin: 'http://localhost:3000'
+        origin: "http://localhost:3000",
       },
-      writable: true
+      writable: true,
     });
 
     // 環境変数のモック - Discord認証に必要な変数を追加
     process.env = {
       ...originalEnv,
       NEXT_PUBLIC_DISCORD_CLIENT_ID: "test-discord-client-id",
-      NEXT_PUBLIC_DISCORD_REDIRECT_URI: "http://localhost:3000/auth/discord/callback",
+      NEXT_PUBLIC_DISCORD_REDIRECT_URI:
+        "http://localhost:3000/auth/discord/callback",
       DISCORD_CLIENT_SECRET: "test-discord-client-secret",
-      DISCORD_TARGET_GUILD_ID: "test-guild-id"
+      DISCORD_TARGET_GUILD_ID: "test-guild-id",
     };
   });
 
@@ -165,7 +175,9 @@ describe("CallbackClientコンポーネント", () => {
     // リダイレクトが呼び出されたことを確認
     await waitFor(() => {
       expect(mockedPush).toHaveBeenCalled();
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_redirect_url');
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+        "auth_redirect_url",
+      );
     });
   });
 
@@ -194,7 +206,10 @@ describe("CallbackClientコンポーネント", () => {
     // リダイレクトが呼び出されたことを確認
     await waitFor(() => {
       expect(mockedPush).toHaveBeenCalled();
-      expect(consoleErrorMock).toHaveBeenCalledWith("無効なリダイレクトURLです:", "invalid-url");
+      expect(consoleErrorMock).toHaveBeenCalledWith(
+        "無効なリダイレクトURLです:",
+        "invalid-url",
+      );
     });
   });
 

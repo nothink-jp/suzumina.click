@@ -1,6 +1,6 @@
 /**
  * Cloud Firestoreへのアクセスを提供するモジュール
- * 
+ *
  * firebase-adminからの依存を排除し、直接@google-cloud/firestoreを使用します。
  * Cloud Run Functions環境での軽量化を実現します。
  */
@@ -13,7 +13,7 @@ let firestoreInstance: Firestore | null = null;
 
 /**
  * Firestoreクライアントのインスタンスを取得
- * 
+ *
  * @returns Firestoreクライアントのインスタンス
  */
 export function getFirestore(): Firestore {

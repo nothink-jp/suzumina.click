@@ -23,10 +23,10 @@ export function getDiscordAvatarUrl(
 
 /**
  * 環境変数の検証
- * 
+ *
  * 必要な環境変数が設定されているかを確認し、
  * 不足している場合はエラーをスローする
- * 
+ *
  * @throws {Error} 環境変数が不足している場合
  */
 export function validateEnvironmentVariables(): {
@@ -38,7 +38,7 @@ export function validateEnvironmentVariables(): {
   // フロントエンドとバックエンドで共有する環境変数はNEXT_PUBLIC_プレフィックスを使用
   const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
   const redirectUri = process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI;
-  
+
   // サーバーサイドのみで使用する機密情報の環境変数
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
   const targetGuildId = process.env.DISCORD_TARGET_GUILD_ID;

@@ -1,7 +1,7 @@
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
-import { AuthProvider } from "@/lib/firebase/AuthProvider"; // AuthProvider をインポート
 import AuthModal from "@/components/ui/AuthModal"; // 認証モーダルをインポート
+import { AuthProvider } from "@/lib/firebase/AuthProvider"; // AuthProvider をインポート
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import { Suspense } from "react"; // Suspenseをインポート
@@ -28,7 +28,10 @@ export default function RootLayout({
   return (
     <html lang="ja" data-theme="light" className={notoSansJp.variable}>
       {/* suppressHydrationWarningを追加してブラウザ拡張機能によるクラス名の変更を許容 */}
-      <body suppressHydrationWarning className="antialiased flex flex-col min-h-screen">
+      <body
+        suppressHydrationWarning
+        className="antialiased flex flex-col min-h-screen"
+      >
         <AuthProvider>
           <Header />
           <main className="flex-grow">{children}</main>

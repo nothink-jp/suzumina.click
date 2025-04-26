@@ -159,32 +159,32 @@ describe("AuthProviderコンポーネント", () => {
         return vi.fn();
       },
     );
-  // AuthProviderとuseAuthを使用するテスト用コンポーネント
-  const TestComponent = () => {
-    const { user, loading } = useAuth();
-    return (
-      <div>
-        <div data-testid="loading">
-          {loading ? "読み込み中" : "読み込み完了"}
+    // AuthProviderとuseAuthを使用するテスト用コンポーネント
+    const TestComponent = () => {
+      const { user, loading } = useAuth();
+      return (
+        <div>
+          <div data-testid="loading">
+            {loading ? "読み込み中" : "読み込み完了"}
+          </div>
+          <div data-testid="user-info">
+            {user ? user.displayName : "未ログイン"}
+          </div>
         </div>
-        <div data-testid="user-info">
-          {user ? user.displayName : "未ログイン"}
-        </div>
-      </div>
+      );
+    };
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>,
     );
-  };
 
-  render(
-    <AuthProvider>
-      <TestComponent />
-    </AuthProvider>,
-  );
-
-  // エラー発生時に読み込み状態が完了していることを確認
-  expect(screen.getByTestId("loading")).toHaveTextContent("読み込み完了");
-  // ユーザーは未ログイン状態であることを確認
-  expect(screen.getByTestId("user-info")).toHaveTextContent("未ログイン");
-});
+    // エラー発生時に読み込み状態が完了していることを確認
+    expect(screen.getByTestId("loading")).toHaveTextContent("読み込み完了");
+    // ユーザーは未ログイン状態であることを確認
+    expect(screen.getByTestId("user-info")).toHaveTextContent("未ログイン");
+  });
 });
 
 describe("useAuthフック", () => {

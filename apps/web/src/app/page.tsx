@@ -1,6 +1,6 @@
+import AuthButton from "@/components/ui/AuthButton";
 import HeadlessUiDisclosureExample from "./_components/HeadlessUiDisclosureExample";
 import { getCurrentUser } from "./api/auth/getCurrentUser";
-import AuthButton from "@/components/ui/AuthButton";
 
 /**
  * このページを動的レンダリングするための設定
@@ -17,9 +17,7 @@ export default async function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
       {/* フォントは layout.tsx の body から継承される想定 */}
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">
-          すずみなくりっく！
-        </h1>
+        <h1 className="text-4xl font-bold mb-4">すずみなくりっく！</h1>
         <p className="text-lg">
           ようこそ！ここは涼花みなせさんの活動を応援する非公式ファンサイトです。
         </p>
@@ -28,7 +26,9 @@ export default async function Home() {
         {isLoggedIn ? (
           <div className="mt-4 p-4 bg-success/10 rounded-lg">
             <p className="text-success font-bold">ログイン中です</p>
-            <p className="text-sm mt-1">ユーザー名: {user?.displayName || 'ゲスト'}</p>
+            <p className="text-sm mt-1">
+              ユーザー名: {user?.displayName || "ゲスト"}
+            </p>
           </div>
         ) : (
           <div className="mt-4 flex justify-center">

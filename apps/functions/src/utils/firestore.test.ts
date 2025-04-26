@@ -7,27 +7,27 @@ vi.mock("@google-cloud/firestore", () => {
   const mockNow = vi.fn().mockReturnValue({
     seconds: 1234567890,
     nanoseconds: 0,
-    toDate: () => new Date(1234567890 * 1000)
+    toDate: () => new Date(1234567890 * 1000),
   });
   const mockFromDate = vi.fn().mockImplementation((date) => ({
     seconds: Math.floor(date.getTime() / 1000),
     nanoseconds: 0,
-    toDate: () => date
+    toDate: () => date,
   }));
-  
+
   return {
     Firestore: mockFirestore,
     Timestamp: {
       now: mockNow,
-      fromDate: mockFromDate
-    }
+      fromDate: mockFromDate,
+    },
   };
 });
 
 // ロガーのモック
 vi.mock("./logger", () => ({
   info: vi.fn(),
-  error: vi.fn()
+  error: vi.fn(),
 }));
 
 // テストの前にモジュールをインポート
@@ -41,62 +41,66 @@ let mockTimestampFromDate: any;
 describe("firestore", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     // モジュールのキャッシュをリセット
     vi.resetModules();
-    
+
     // スパイを設定
     const googleFirestore = await import("@google-cloud/firestore");
     mockFirestoreConstructor = vi.spyOn(googleFirestore, "Firestore");
     mockTimestampNow = vi.spyOn(googleFirestore.Timestamp, "now");
     mockTimestampFromDate = vi.spyOn(googleFirestore.Timestamp, "fromDate");
-    
+
     // テスト対象モジュールをインポート
     const importedModule = await import("./firestore");
     firestoreModule = importedModule.default;
     getFirestore = importedModule.getFirestore;
     Timestamp = importedModule.Timestamp;
   });
-  
+
   it("getFirestoreがシングルトンとして動作し、初回呼び出し時のみFirestoreインスタンスを作成すること", () => {
     // 1回目の呼び出し
     const instance1 = getFirestore();
     expect(mockFirestoreConstructor).toHaveBeenCalledTimes(1);
-    
+
     // 2回目の呼び出し
     const instance2 = getFirestore();
     expect(mockFirestoreConstructor).toHaveBeenCalledTimes(1); // 追加で呼ばれていないこと
-    
+
     // 同じインスタンスが返されること
     expect(instance1).toBe(instance2);
   });
-  
+
   it("デフォルトエクスポートとgetFirestore()が同じインスタンスを返すこと", () => {
     const defaultInstance = firestoreModule;
     const getFirestoreInstance = getFirestore();
-    
+
     expect(defaultInstance).toBe(getFirestoreInstance);
   });
-  
+
   it("Timestamp.nowがFirestoreのTimestamp.nowを正しくラップすること", () => {
     const timestamp = Timestamp.now();
-    
+
     expect(mockTimestampNow).toHaveBeenCalledTimes(1);
-    expect(timestamp).toEqual(expect.objectContaining({
-      seconds: 1234567890,
-      nanoseconds: 0
-    }));
+    expect(timestamp).toEqual(
+      expect.objectContaining({
+        seconds: 1234567890,
+        nanoseconds: 0,
+      }),
+    );
   });
-  
+
   it("Timestamp.fromDateがFirestoreのTimestamp.fromDateを正しくラップすること", () => {
     const testDate = new Date(2023, 1, 1);
-    
+
     const timestamp = Timestamp.fromDate(testDate);
-    
+
     expect(mockTimestampFromDate).toHaveBeenCalledWith(testDate);
-    expect(timestamp).toEqual(expect.objectContaining({
-      seconds: Math.floor(testDate.getTime() / 1000),
-      nanoseconds: 0
-    }));
+    expect(timestamp).toEqual(
+      expect.objectContaining({
+        seconds: Math.floor(testDate.getTime() / 1000),
+        nanoseconds: 0,
+      }),
+    );
   });
 });
