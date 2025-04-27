@@ -1,4 +1,3 @@
-import AuthButton from "@/components/ui/AuthButton";
 import VideoList from "./_components/VideoList";
 import { getCurrentUser } from "./api/auth/getCurrentUser";
 
@@ -29,7 +28,9 @@ export default async function Home() {
               <p>ユーザー名: {user?.displayName}</p>
             </div>
           ) : (
-            <AuthButton />
+            <div className="mt-4">
+              <p>未ログイン</p>
+            </div>
           )}
         </div>
       </div>
