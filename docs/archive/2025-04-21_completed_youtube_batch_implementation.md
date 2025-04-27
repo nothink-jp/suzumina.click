@@ -39,8 +39,8 @@ graph TD
   - **実装注記:** `@google-cloud/functions-framework` を使用し、標準的な CloudEvent ハンドラ (`async (event: CloudEvent<...>) => ...`) 形式で実装されています。イベントデータ (`event.data`) は必要に応じて Base64 デコードされます。
 - **Secrets Manager:** YouTube Data APIキーを安全に保管・管理します。
 - **Firestore:**
-    - `videos` コレクション: 取得したYouTube動画情報を格納します。
-    - `youtubeMetadata` コレクション: 動画取得処理の状態（次のページトークン、処理中フラグなど）を管理します。
+  - `videos` コレクション: 取得したYouTube動画情報を格納します。
+  - `youtubeMetadata` コレクション: 動画取得処理の状態（次のページトークン、処理中フラグなど）を管理します。
 - **Service Account:** `fetchYouTubeVideos` 関数がGCPリソース（Secrets Manager, Firestore）にアクセスするための専用IDと権限です。
 - **YouTube Data API:** Googleが提供するAPIで、YouTubeチャンネルの動画情報を取得します。
 
@@ -49,24 +49,24 @@ graph TD
 - **トリガー:** Pub/Sub トピック (`youtube-video-fetch-trigger`) via Eventarc
 - **ランタイム:** Node.js 20
 - **主な処理:**
-    1.  起動時に Firestore から `youtubeMetadata` ドキュメントを読み込み、前回の処理状態（次のページトークン、処理中フラグなど）を確認します。処理中の場合は二重実行を防ぐため終了します。
-    2.  処理開始フラグを `youtubeMetadata` に書き込みます。
-    3.  Secrets Managerから `YOUTUBE_API_KEY` を取得します (環境変数経由)。
-    4.  取得したAPIキーを使用して `googleapis` ライブラリでYouTube Data APIクライアントを初期化します。
-    5.  指定されたチャンネルID (`UChiMMOhl6FpzjoRqvZ5rcaA`) の動画一覧を取得します。
-        -   **状態管理とクォータ節約:** `youtubeMetadata` に保存された `nextPageToken` を使用して、前回の続きから取得を開始します。1回の実行で取得するページ数を制限 (`MAX_PAGES_PER_EXECUTION = 3`) し、APIクォータの消費を抑えます。
-        -   `search.list` APIでチャンネル内の動画IDを取得します。取得した `nextPageToken` は `youtubeMetadata` に保存します。
-        -   **リトライ処理:** API呼び出し時にエラーが発生した場合、自動的に数回リトライします。クォータ超過エラーの場合は処理を中断し、メタデータにエラー情報を記録します。
-    6.  取得した動画IDリストに基づき、動画の詳細情報を取得します。
-        -   `videos.list` APIをバッチ（最大50件ずつ）で呼び出し、詳細情報（`snippet`, `contentDetails`, `statistics`）を取得します。
-        -   ここでもリトライ処理とクォータ超過エラーハンドリングが行われます。
-    7.  取得した動画情報をFirestoreの `videos` コレクションに保存します。
-        -   **バッチ書き込み:** パフォーマンス向上のため、Firestore のバッチ書き込み機能を使用します (最大500件ごと)。
-        -   ドキュメントIDにはYouTubeの動画IDを使用します。
-        -   既存の動画情報があれば更新し (`merge: true`)、なければ新規作成します。
-        -   `lastFetchedAt` タイムスタンプも記録します。
-    8.  処理完了フラグと最終実行時刻を `youtubeMetadata` に書き込みます。エラーが発生した場合はエラー情報も記録します。
-    9.  適切なロギング (`firebase-functions/logger`) を行います。
+    1. 起動時に Firestore から `youtubeMetadata` ドキュメントを読み込み、前回の処理状態（次のページトークン、処理中フラグなど）を確認します。処理中の場合は二重実行を防ぐため終了します。
+    2. 処理開始フラグを `youtubeMetadata` に書き込みます。
+    3. Secrets Managerから `YOUTUBE_API_KEY` を取得します (環境変数経由)。
+    4. 取得したAPIキーを使用して `googleapis` ライブラリでYouTube Data APIクライアントを初期化します。
+    5. 指定されたチャンネルID (`UChiMMOhl6FpzjoRqvZ5rcaA`) の動画一覧を取得します。
+        - **状態管理とクォータ節約:** `youtubeMetadata` に保存された `nextPageToken` を使用して、前回の続きから取得を開始します。1回の実行で取得するページ数を制限 (`MAX_PAGES_PER_EXECUTION = 3`) し、APIクォータの消費を抑えます。
+        - `search.list` APIでチャンネル内の動画IDを取得します。取得した `nextPageToken` は `youtubeMetadata` に保存します。
+        - **リトライ処理:** API呼び出し時にエラーが発生した場合、自動的に数回リトライします。クォータ超過エラーの場合は処理を中断し、メタデータにエラー情報を記録します。
+    6. 取得した動画IDリストに基づき、動画の詳細情報を取得します。
+        - `videos.list` APIをバッチ（最大50件ずつ）で呼び出し、詳細情報（`snippet`, `contentDetails`, `statistics`）を取得します。
+        - ここでもリトライ処理とクォータ超過エラーハンドリングが行われます。
+    7. 取得した動画情報をFirestoreの `videos` コレクションに保存します。
+        - **バッチ書き込み:** パフォーマンス向上のため、Firestore のバッチ書き込み機能を使用します (最大500件ごと)。
+        - ドキュメントIDにはYouTubeの動画IDを使用します。
+        - 既存の動画情報があれば更新し (`merge: true`)、なければ新規作成します。
+        - `lastFetchedAt` タイムスタンプも記録します。
+    8. 処理完了フラグと最終実行時刻を `youtubeMetadata` に書き込みます。エラーが発生した場合はエラー情報も記録します。
+    9. 適切なロギング (`firebase-functions/logger`) を行います。
 
 ### 1.3. Firestore データモデル
 

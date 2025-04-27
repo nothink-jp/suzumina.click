@@ -44,6 +44,7 @@ erDiagram
     %% users コレクションは Firestore では管理されていません
     %% userPreferences コレクションは現在未使用です
 ```
+
 * `string_nullable` は `string | null` を、`timestamp_nullable` は `timestamp | null` を意味します。
 
 ## 3. コレクション詳細
@@ -116,7 +117,8 @@ if (metadata.exists) {
 
 ### 主要なクエリパターン
 
-1.  **最新の動画取得:**
+1. **最新の動画取得:**
+
     ```typescript
     const recentVideos = await firestore.collection('videos')
       .orderBy('publishedAt', 'desc')
@@ -124,14 +126,16 @@ if (metadata.exists) {
       .get();
     ```
 
-2.  **特定の動画の詳細取得:**
+2. **特定の動画の詳細取得:**
+
     ```typescript
     const videoDoc = await firestore.collection('videos')
       .doc(videoId)
       .get();
     ```
 
-3.  **処理メタデータの確認:**
+3. **処理メタデータの確認:**
+
     ```typescript
     const metadataDoc = await firestore.collection('youtubeMetadata')
       .doc('fetch_metadata')
@@ -142,8 +146,8 @@ if (metadata.exists) {
 
 Firestore セキュリティルールは以下の方針に基づいています：
 
-1.  **videos コレクション:** 読み取りは全てのユーザーに許可、書き込みは Cloud Functions からのみ許可 (実質的に管理者のみ)。
-2.  **youtubeMetadata コレクション:** 読み取り/書き込みは Cloud Functions からのみ許可 (実質的に管理者のみ)。
+1. **videos コレクション:** 読み取りは全てのユーザーに許可、書き込みは Cloud Functions からのみ許可 (実質的に管理者のみ)。
+2. **youtubeMetadata コレクション:** 読み取り/書き込みは Cloud Functions からのみ許可 (実質的に管理者のみ)。
 
 ```javascript
 rules_version = '2';
@@ -168,14 +172,15 @@ service cloud.firestore {
   }
 }
 ```
+
 **注意:** 上記のセキュリティルールでは、書き込み権限を `false` としていますが、これは Cloud Functions (サービスアカウント) からのアクセスを前提としているためです。実際のアクセス制御は主に IAM によって行われます。必要に応じて、より詳細なルール（例: `request.auth.token.firebase.sign_in_provider` の確認など）を検討してください。
 
 ## 6. インデックス設定
 
 以下のインデックスが必要です：
 
-1.  `videos` コレクション:
-    -   `publishedAt` (降順) - 最新の動画を取得するため
+1. `videos` コレクション:
+    - `publishedAt` (降順) - 最新の動画を取得するため
 
 ```yaml
 indexes:
@@ -185,13 +190,14 @@ indexes:
       - fieldPath: publishedAt
         order: DESCENDING
 ```
+
 *Firebase コンソールまたは `firebase deploy --only firestore:indexes` でデプロイが必要です。*
 
 ## 7. データ移行・バックアップ戦略
 
-1.  **定期バックアップ:** Firestore のエクスポート機能を使用して定期的にバックアップを取得します。
-2.  **データ移行:** スキーマ変更時は、Cloud Functions を使用して既存データを新スキーマに変換することを検討します。
-3.  **バージョン管理:** データモデルの変更履歴を本ドキュメントに記録します。
+1. **定期バックアップ:** Firestore のエクスポート機能を使用して定期的にバックアップを取得します。
+2. **データ移行:** スキーマ変更時は、Cloud Functions を使用して既存データを新スキーマに変換することを検討します。
+3. **バージョン管理:** データモデルの変更履歴を本ドキュメントに記録します。
 
 ## 変更履歴
 

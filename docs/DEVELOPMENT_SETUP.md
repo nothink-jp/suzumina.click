@@ -73,7 +73,7 @@ pnpm dev
 pnpm --filter @suzumina.click/web dev
 ```
 
-サーバーが起動したら、ブラウザで http://localhost:3000 にアクセスできます。
+サーバーが起動したら、ブラウザで <http://localhost:3000> にアクセスできます。
 
 ### 2.2 Storybookの起動
 
@@ -87,7 +87,7 @@ pnpm storybook
 pnpm --filter @suzumina.click/web storybook
 ```
 
-Storybookは http://localhost:6006 で起動します。
+Storybookは <http://localhost:6006> で起動します。
 
 ## 3. テストとコード品質
 
@@ -171,7 +171,7 @@ docker build -t suzumina-click-nextjs-app:local .
 docker run -p 8080:8080 suzumina-click-nextjs-app:local
 ```
 
-ブラウザで http://localhost:8080 にアクセスしてアプリケーションを確認できます。
+ブラウザで <http://localhost:8080> にアクセスしてアプリケーションを確認できます。
 
 ## 6. トラブルシューティング
 

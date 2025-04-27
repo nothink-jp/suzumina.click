@@ -83,6 +83,7 @@ Cloud Run環境では、環境変数はSecret Managerで管理し、Terraformを
    - `terraform/functions.tf` でCloud Functionsから参照します。
 
 2. **Secret Managerへの値の設定**:
+
    ```bash
    # シークレットの値を設定する例
    echo -n "実際の値" | gcloud secrets versions add DISCORD_CLIENT_SECRET \

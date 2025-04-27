@@ -57,7 +57,7 @@
 
 `.env.local` に以下の環境変数を設定：
 
-```
+```sh
 # Firebase 設定
 NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
@@ -88,7 +88,7 @@ FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"...","priva
 
 ### 5.1 Discordアプリケーション設定
 
-Discord Developer Portal（https://discord.com/developers/applications）で設定：
+Discord Developer Portal（<https://discord.com/developers/applications）で設定：>
 
 1. OAuth2リダイレクトURI:
    - ローカル開発環境: `http://localhost:3000/auth/discord/callback`

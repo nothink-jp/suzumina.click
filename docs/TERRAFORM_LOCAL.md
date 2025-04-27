@@ -69,6 +69,7 @@ terraform plan -out=tfplan
 ```
 
 このコマンドは以下を実行します：
+
 - 現在の状態と設定を比較
 - 変更内容を表示
 - 変更計画をtfplanファイルに保存
@@ -319,7 +320,7 @@ A managed resource "google_project_service" "cloudrun" has not been declared in 
    このエラーが出る場合、以下のいずれかの対策を取ります：
 
    a. 参照先のリソースが正しく定義されているか確認します：
-   
+
       ```bash
       # 依存するAPIサービスの有効化リソースがapi_services.tfで宣言されているか確認
       grep -r "google_project_service" terraform/
@@ -425,7 +426,7 @@ terraform plan -target=google_cloud_run_service.nextjs_app
 ```
 
 5. **状態の確認**: 現在の状態を確認して依存関係の問題を特定
-   
+
 ```bash
 terraform state list
 ```
@@ -528,6 +529,7 @@ echo -n "actual-discord-client-id" | gcloud secrets versions add DISCORD_CLIENT_
 問題を回避するために、次の順序でデプロイすることをお勧めします：
 
 1. Secret Managerリソースのみをデプロイ：
+
    ```bash
    terraform apply -target=google_secret_manager_secret.secrets
    ```
@@ -535,12 +537,14 @@ echo -n "actual-discord-client-id" | gcloud secrets versions add DISCORD_CLIENT_
 2. シークレット値を設定（上記のgcloudコマンドを使用）
 
 3. Cloud Functionsをデプロイ：
+
    ```bash
    terraform apply -target=google_cloudfunctions2_function.discord_auth_callback
    terraform apply -target=google_cloudfunctions2_function.fetch_youtube_videos
    ```
 
 4. 残りのリソースをデプロイ：
+
    ```bash
    terraform apply
    ```

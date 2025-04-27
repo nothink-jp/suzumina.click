@@ -323,6 +323,7 @@ FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"...","priva
 3. Cloud Runの環境変数設定で、これらのシークレットを参照するように設定
 
 これらの設定は、Terraformで管理されています。詳細は以下のファイルを参照してください：
+
 - `terraform/secrets.tf` - シークレットの定義
 - `terraform/cloudrun.tf` - Cloud Runの設定
 
