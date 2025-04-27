@@ -2,9 +2,9 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 認証済みユーザーのみすべてのドキュメントにアクセス可能
+    // 開発環境ではすべてのアクセスを許可
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }

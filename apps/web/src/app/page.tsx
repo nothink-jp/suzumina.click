@@ -1,5 +1,5 @@
 import AuthButton from "@/components/ui/AuthButton";
-import HeadlessUiDisclosureExample from "./_components/HeadlessUiDisclosureExample";
+import VideoList from "./_components/VideoList";
 import { getCurrentUser } from "./api/auth/getCurrentUser";
 
 /**
@@ -14,9 +14,8 @@ export default async function Home() {
   const isLoggedIn = !!user;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      {/* フォントは layout.tsx の body から継承される想定 */}
-      <div className="text-center">
+    <main className="container mx-auto px-4 py-8">
+      <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">すずみなくりっく！</h1>
         <p className="text-lg">
           ようこそ！ここは涼花みなせさんの活動を応援する非公式ファンサイトです。
@@ -24,7 +23,7 @@ export default async function Home() {
 
         {/* ログイン状態に応じて表示を変更 */}
         {isLoggedIn ? (
-          <div className="mt-4 p-4 bg-success/10 rounded-lg">
+          <div className="mt-4 p-4 bg-success/10 rounded-lg inline-block">
             <p className="text-success font-bold">ログイン中です</p>
             <p className="text-sm mt-1">
               ユーザー名: {user?.displayName || "ゲスト"}
@@ -35,22 +34,10 @@ export default async function Home() {
             <AuthButton />
           </div>
         )}
-
-        <p className="mt-8">(コンテンツ準備中...)</p>
-        {/* DaisyUI ボタンの例 (動作確認用) */}
-        <div className="mt-12">
-          {/* Biome の lint ルールに従い type="button" を追加 */}
-          <button type="button" className="btn btn-primary mr-2">
-            Primary Button
-          </button>
-          <button type="button" className="btn btn-secondary">
-            Secondary Button
-          </button>
-        </div>
-
-        {/* Headless UI サンプルコンポーネントを追加 */}
-        <HeadlessUiDisclosureExample />
       </div>
+      
+      {/* 動画一覧 */}
+      <VideoList />
     </main>
   );
 }

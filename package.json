@@ -22,10 +22,16 @@
     "storybook": "pnpm --filter @suzumina.click/web storybook",
     "emulator:start": "firebase emulators:start",
     "emulator:start-with-data": "firebase emulators:start --import=./emulator-data --export-on-exit",
-    "emulator:export-data": "firebase emulators:export ./emulator-data"
+    "emulator:export-data": "firebase emulators:export ./emulator-data",
+    "emulator:seed": "node scripts/seed-firestore.mjs",
+    "emulator:start-and-seed": "firebase emulators:start & sleep 5 && node scripts/seed-firestore.mjs"
+  },
+  "dependencies": {
+    "firebase": "^11.6.0"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "firebase-tools": "^13.0.2",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
     "vitest": "^3.1.2"
