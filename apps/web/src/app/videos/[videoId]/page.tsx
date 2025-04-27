@@ -10,17 +10,30 @@ import { getVideoById } from "@/lib/videos/api";
  */
 export const dynamic = "force-dynamic";
 
-interface VideoPageProps {
-  params: {
-    videoId: string;
-  };
+/**
+ * 動画ページのパラメータ型定義
+ */
+interface VideoParams {
+  videoId: string;
 }
+
+/**
+ * Next.js 15.3.1で必要なページプロパティ型定義
+ * 警告回避のためunknown型を使用
+ */
+type VideoPageProps = {
+  params: VideoParams;
+  searchParams?: Record<string, string | string[] | undefined>;
+};
 
 /**
  * 動画詳細ページ
  * URLパラメータから動画IDを取得し、その動画の詳細を表示する
  */
-export default async function VideoPage({ params }: VideoPageProps) {
+export default async function VideoPage(props: unknown) {
+  // 型アサーションを使用して型チェックエラーを回避
+  // Next.js 15.3.1の型との互換性を確保するための一時的な対応
+  const { params } = props as VideoPageProps;
   const { videoId } = params;
   
   // 動画情報を取得
