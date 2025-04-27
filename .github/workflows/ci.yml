@@ -9,7 +9,7 @@ on:
 # ワークフローにactions権限を付与
 permissions:
   contents: read
-  actions: write  # workflow_dispatchイベントをトリガーするために必要
+  actions: read  # 統合デプロイの自動トリガーを削除したため、writeからreadに権限を下げる
 
 jobs:
   # リポジトリ全体の共通検証
@@ -111,19 +111,5 @@ jobs:
       - name: 検証完了メッセージ
         run: echo "::notice title=CI検証成功::すべてのテストとビルド検証が成功しました！"
       
-      # CI成功時にデプロイワークフローをトリガー
-      - name: デプロイワークフローをトリガー
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'deploy.yml',
-              ref: 'main',
-              inputs: {
-                trigger_source: 'ci'
-              }
-            });
+      # 注: 重複デプロイ防止のため、CI成功時の統合デプロイトリガーは削除
+      # パスベースの個別デプロイワークフローがその役割を担います

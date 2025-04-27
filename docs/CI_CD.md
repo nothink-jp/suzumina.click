@@ -4,14 +4,14 @@
 
 ## CI/CDパイプラインの概要
 
-suzumina.clickプロジェクトでは、GitHub Actionsを使用した自動テスト・ビルド・デプロイのパイプラインを採用しています。2025年5月2日のCI/CD改善により、すべてのビルド・デプロイ処理をGitHub Actionsで一元管理するようになりました。さらに、2025年4月26日のリファクタリングにより、ワークフローの構造が整理され、メンテナンス性が向上しました。
+suzumina.clickプロジェクトでは、GitHub Actionsを使用した自動テスト・ビルド・デプロイのパイプラインを採用しています。2025年5月2日のCI/CD改善により、すべてのビルド・デプロイ処理をGitHub Actionsで一元管理するようになりました。さらに、2025年4月28日の最適化により、重複デプロイの問題を解決し、コスト効率が大幅に向上しました。
 
 CI/CDパイプラインは以下の主要なワークフローで構成されています：
 
 1. **CI（継続的インテグレーション）** - すべてのコードの検証とテスト
 2. **Webアプリケーションデプロイ** - Next.jsアプリケーションのデプロイ
 3. **Cloud Functionsデプロイ** - Cloud Functionsのデプロイ
-4. **統合デプロイ** - 複数のコンポーネントを一括デプロイ
+4. **統合デプロイ** - 複数のコンポーネントを一括デプロイ（手動実行時のみ）
 
 ## CI/CDパイプラインのワークフロー状態遷移図
 
@@ -25,27 +25,14 @@ stateDiagram-v2
     CI --> [*]: テスト失敗
 
     PushToMain --> CheckChanges: パス変更検出
-    CheckChanges --> DeployWeb: webパス変更あり
-    CheckChanges --> DeployFunctions: functionsパス変更あり
-    CheckChanges --> IntegrationDeploy: CI成功時に自動実行
+    CheckChanges --> DeployWeb: webパス変更あり（自動デプロイ）
+    CheckChanges --> DeployFunctions: functionsパス変更あり（自動デプロイ）
+    CheckChanges --> [*]: 変更なし/デプロイ完了
 
     DeployWeb --> [*]: デプロイ完了
     DeployFunctions --> [*]: デプロイ完了
 
-    state IntegrationDeploy {
-        [*] --> VerifyConditions
-        VerifyConditions --> WebTrigger: deploy_web=true
-        VerifyConditions --> FunctionsTrigger: deploy_functions=true
-        WebTrigger --> DeployWebApp: deploy-web.yml呼び出し
-        FunctionsTrigger --> DeployCloudFunctions: deploy-functions.yml呼び出し
-        DeployWebApp --> NotifySuccess
-        DeployCloudFunctions --> NotifySuccess
-        NotifySuccess --> [*]
-    }
-    
-    IntegrationDeploy --> [*]: デプロイ完了
-    
-    ManualTrigger --> IntegrationDeploy: 手動実行
+    ManualTrigger --> IntegrationDeploy: 手動実行のみ
 ```
 
 ## モノレポ構造とワークフロー設計
