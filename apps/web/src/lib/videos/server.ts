@@ -8,7 +8,7 @@ function getAdminFirestore() {
     // Cloud Run環境ではGCPのデフォルト認証情報を使用
     // 開発環境では環境変数からサービスアカウントの情報を取得
     const isCloudRunEnv = process.env.K_SERVICE !== undefined; // Cloud Run環境かどうかを判定
-    
+
     if (isCloudRunEnv) {
       // Cloud Run環境ではデフォルト認証情報を使用
       initializeApp({
@@ -26,7 +26,7 @@ function getAdminFirestore() {
       });
     }
   }
-  
+
   return getFirestore();
 }
 
@@ -56,7 +56,7 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
   // これにより、JSONシリアライズ時に日付情報が失われるのを防ぐ
   const publishedAt = data.publishedAt.toDate();
   const lastFetchedAt = data.lastFetchedAt.toDate();
-  
+
   return {
     id,
     title: data.title,
@@ -67,7 +67,7 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
     channelId: data.channelId,
     channelTitle: data.channelTitle,
     lastFetchedAt,
-    lastFetchedAtISO: lastFetchedAt.toISOString() // ISO文字列を追加
+    lastFetchedAtISO: lastFetchedAt.toISOString(), // ISO文字列を追加
   };
 }
 
@@ -76,24 +76,26 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
  * @param videoId 動画ID
  * @returns 動画詳細情報、存在しない場合はnull
  */
-export async function getVideoByIdServer(videoId: string): Promise<Video | null> {
+export async function getVideoByIdServer(
+  videoId: string,
+): Promise<Video | null> {
   try {
     // Firestoreインスタンスの取得
     const db = getAdminFirestore();
-    
+
     // 動画ドキュメントの取得
     const videoRef = db.collection("videos").doc(videoId);
     const videoDoc = await videoRef.get();
-    
+
     // 動画が存在しない場合はnullを返す
     if (!videoDoc.exists) {
       return null;
     }
-    
+
     // データの変換
     const data = videoDoc.data() as FirestoreVideoData;
     const video = convertToVideo(videoDoc.id, data);
-    
+
     return video;
   } catch (error) {
     console.error(`動画ID ${videoId} の取得に失敗しました:`, error);
@@ -111,13 +113,11 @@ export async function getRecentVideosServer(limit = 10, startAfter?: Date) {
   try {
     // Firestoreインスタンスの取得
     const db = getAdminFirestore();
-    
+
     // クエリの構築
     const videosRef = db.collection("videos");
-    let videosQuery = videosRef
-      .orderBy("publishedAt", "desc")
-      .limit(limit + 1); // 次ページがあるか確認するために1つ多く取得
-    
+    let videosQuery = videosRef.orderBy("publishedAt", "desc").limit(limit + 1); // 次ページがあるか確認するために1つ多く取得
+
     // ページネーション用のstartAfterパラメータがある場合
     if (startAfter) {
       videosQuery = videosRef
@@ -125,25 +125,25 @@ export async function getRecentVideosServer(limit = 10, startAfter?: Date) {
         .startAfter(startAfter)
         .limit(limit + 1);
     }
-    
+
     // データの取得
     const snapshot = await videosQuery.get();
-    const videos = snapshot.docs.map(doc => {
+    const videos = snapshot.docs.map((doc) => {
       const data = doc.data() as FirestoreVideoData;
       return convertToVideo(doc.id, data);
     });
-    
+
     // 次ページがあるかどうかを確認
     const hasMore = videos.length > limit;
     // 次ページ用に余分に取得した1件を削除
     if (hasMore) {
       videos.pop();
     }
-    
+
     return {
       videos,
       hasMore,
-      lastVideo: videos.length > 0 ? videos[videos.length - 1] : undefined
+      lastVideo: videos.length > 0 ? videos[videos.length - 1] : undefined,
     };
   } catch (error) {
     console.error("動画リストの取得に失敗しました:", error);

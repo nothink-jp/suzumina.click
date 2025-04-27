@@ -23,8 +23,10 @@ describe("動画一覧ページ", () => {
     // 検証
     const heading = screen.getByText("動画一覧");
     expect(heading).toBeInTheDocument();
-    
-    const description = screen.getByText("涼花みなせさんの動画をすべて一覧表示しています");
+
+    const description = screen.getByText(
+      "涼花みなせさんの動画をすべて一覧表示しています",
+    );
     expect(description).toBeInTheDocument();
   });
 

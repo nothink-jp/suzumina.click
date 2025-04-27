@@ -164,7 +164,7 @@ export async function handleDiscordCallback(
       success: true,
       customToken,
     };
-  // biome-ignore lint/suspicious/noExplicitAny: Discord error message
+    // biome-ignore lint/suspicious/noExplicitAny: Discord error message
   } catch (error: any) {
     console.error("Discord認証コールバック中にエラーが発生しました:", error);
 

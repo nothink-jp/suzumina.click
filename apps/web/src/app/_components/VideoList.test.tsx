@@ -28,7 +28,7 @@ describe("VideoListコンポーネント", () => {
       thumbnailUrl: "https://example.com/thumbnail1.jpg",
       channelId: "channel1",
       channelTitle: "テストチャンネル",
-      lastFetchedAt: new Date("2025-04-20")
+      lastFetchedAt: new Date("2025-04-20"),
     },
     {
       id: "2",
@@ -39,7 +39,7 @@ describe("VideoListコンポーネント", () => {
       thumbnailUrl: "https://example.com/thumbnail2.jpg",
       channelId: "channel1",
       channelTitle: "テストチャンネル",
-      lastFetchedAt: new Date("2025-04-20")
+      lastFetchedAt: new Date("2025-04-20"),
     },
     {
       id: "3",
@@ -50,7 +50,7 @@ describe("VideoListコンポーネント", () => {
       thumbnailUrl: "https://example.com/thumbnail3.jpg",
       channelId: "channel1",
       channelTitle: "テストチャンネル",
-      lastFetchedAt: new Date("2025-04-20")
+      lastFetchedAt: new Date("2025-04-20"),
     },
     {
       id: "4",
@@ -61,7 +61,7 @@ describe("VideoListコンポーネント", () => {
       thumbnailUrl: "https://example.com/thumbnail4.jpg",
       channelId: "channel1",
       channelTitle: "テストチャンネル",
-      lastFetchedAt: new Date("2025-04-20")
+      lastFetchedAt: new Date("2025-04-20"),
     },
     {
       id: "5",
@@ -72,7 +72,7 @@ describe("VideoListコンポーネント", () => {
       thumbnailUrl: "https://example.com/thumbnail5.jpg",
       channelId: "channel1",
       channelTitle: "テストチャンネル",
-      lastFetchedAt: new Date("2025-04-20")
+      lastFetchedAt: new Date("2025-04-20"),
     },
     {
       id: "6",
@@ -83,7 +83,7 @@ describe("VideoListコンポーネント", () => {
       thumbnailUrl: "https://example.com/thumbnail6.jpg",
       channelId: "channel1",
       channelTitle: "テストチャンネル",
-      lastFetchedAt: new Date("2025-04-20")
+      lastFetchedAt: new Date("2025-04-20"),
     },
   ];
 
@@ -103,7 +103,9 @@ describe("VideoListコンポーネント", () => {
 
     // 検証 - ローディング表示が最初に表示される
     expect(screen.getByText(/最新動画/)).toBeInTheDocument();
-    const loadingSpinner = screen.getByText("", { selector: "span.loading.loading-spinner" });
+    const loadingSpinner = screen.getByText("", {
+      selector: "span.loading.loading-spinner",
+    });
     expect(loadingSpinner).toBeInTheDocument();
 
     // 動画が表示されるのを待つ
@@ -165,14 +167,14 @@ describe("VideoListコンポーネント", () => {
     // 準備
     const firstBatch = mockVideos.slice(0, 3);
     const secondBatch = mockVideos.slice(3, 6);
-    
+
     // 1回目のAPI呼び出し結果
     vi.mocked(getRecentVideos).mockResolvedValueOnce({
       videos: firstBatch,
       hasMore: true,
       lastVideo: firstBatch[firstBatch.length - 1],
     });
-    
+
     // 2回目のAPI呼び出し結果
     vi.mocked(getRecentVideos).mockResolvedValueOnce({
       videos: secondBatch,
@@ -189,7 +191,9 @@ describe("VideoListコンポーネント", () => {
     });
 
     // 「もっと見る」ボタンをクリック
-    const loadMoreButton = await screen.findByRole("button", { name: /もっと見る/ });
+    const loadMoreButton = await screen.findByRole("button", {
+      name: /もっと見る/,
+    });
     fireEvent.click(loadMoreButton);
 
     // 2回目のAPI呼び出しを確認

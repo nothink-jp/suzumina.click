@@ -69,16 +69,21 @@ const getAuthInstance = (): Auth | null => {
   try {
     if (!authInstance) {
       const app = initializeFirebase();
-      
+
       if (app) {
         authInstance = getAuth(app);
         console.log("Firebase認証が初期化されました");
-        
+
         // 開発環境でエミュレータに接続
-        if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_EMULATOR === "true") {
-          connectAuthEmulator(authInstance, "http://localhost:9099", { disableWarnings: false });
+        if (
+          process.env.NODE_ENV === "development" &&
+          process.env.NEXT_PUBLIC_USE_EMULATOR === "true"
+        ) {
+          connectAuthEmulator(authInstance, "http://localhost:9099", {
+            disableWarnings: false,
+          });
           console.log("Firebase Auth Emulatorに接続しました");
-          
+
           // Firestoreもエミュレータに接続
           const firestoreInstance = getFirestore(app);
           connectFirestoreEmulator(firestoreInstance, "localhost", 8080);

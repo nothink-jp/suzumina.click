@@ -15,7 +15,7 @@ export default function VideosPage() {
           涼花みなせさんの動画をすべて一覧表示しています
         </p>
       </div>
-      
+
       {/* 動画一覧（全件表示） */}
       <VideoList />
     </main>

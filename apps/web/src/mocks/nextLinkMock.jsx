@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 // next/linkのモック
 const NextLinkMock = ({ href, children, className, ...props }) => {

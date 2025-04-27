@@ -35,15 +35,15 @@ export default async function VideoPage(props: unknown) {
   // Next.js 15.3.1の型との互換性を確保するための一時的な対応
   const { params } = props as VideoPageProps;
   const { videoId } = params;
-  
+
   // 動画情報を取得
   const video = await getVideoByIdServer(videoId);
-  
+
   // 動画が見つからない場合は404
   if (!video) {
     notFound();
   }
-  
+
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="mb-4">
@@ -51,18 +51,18 @@ export default async function VideoPage(props: unknown) {
           ← 動画一覧に戻る
         </Link>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           {/* YouTube動画プレイヤー */}
           <YouTubeEmbed videoId={video.id} title={video.title} />
-          
+
           {/* 動画情報 */}
           <div className="mt-6">
             <VideoInfo video={video} />
           </div>
         </div>
-        
+
         <div className="lg:col-span-1">
           {/* 将来的に音声クリップボタンを表示するエリア */}
           <div className="p-6 bg-base-200 rounded-lg">

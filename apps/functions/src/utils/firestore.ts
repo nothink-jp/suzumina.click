@@ -21,19 +21,23 @@ export function getFirestore(): Firestore {
   if (!firestoreInstance) {
     // 設定を取得
     const config = getFirestoreConfig();
-    
+
     // Firestoreのオプション
     const options: Record<string, unknown> = {};
-    
+
     // エミュレータモードの場合、接続オプションを追加
     if (isEmulatorMode() && config.useEmulator) {
       options.host = config.host;
       options.port = config.port;
-      logger.info(`Firestoreエミュレータに接続します: ${config.host}:${config.port}`);
+      logger.info(
+        `Firestoreエミュレータに接続します: ${config.host}:${config.port}`,
+      );
     }
-    
+
     // Firestoreインスタンスを初期化
-    firestoreInstance = new Firestore(Object.keys(options).length > 0 ? options : undefined);
+    firestoreInstance = new Firestore(
+      Object.keys(options).length > 0 ? options : undefined,
+    );
     logger.info("Firestoreクライアントが初期化されました");
   }
   return firestoreInstance;

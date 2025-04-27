@@ -22,7 +22,7 @@ export interface VideoListProps {
 export default function VideoList({
   limit,
   showViewAllLink = false,
-  pageSize = 12
+  pageSize = 12,
 }: VideoListProps) {
   const [loading, setLoading] = useState(true);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -42,17 +42,24 @@ export default function VideoList({
         limit: pageSize,
         // startAfterパラメータはDate型で渡す
         // undefinedの場合は渡さない
-        startAfter: reset || !lastVideo ? undefined :
-          // publishedAtISOがある場合はそれを使用し、なければpublishedAtを使用
-          lastVideo.publishedAtISO ? dayjs(lastVideo.publishedAtISO).toDate() :
-          lastVideo.publishedAt instanceof Date ? lastVideo.publishedAt : undefined
+        startAfter:
+          reset || !lastVideo
+            ? undefined
+            : // publishedAtISOがある場合はそれを使用し、なければpublishedAtを使用
+              lastVideo.publishedAtISO
+              ? dayjs(lastVideo.publishedAtISO).toDate()
+              : lastVideo.publishedAt instanceof Date
+                ? lastVideo.publishedAt
+                : undefined,
       });
-      
+
       // 新しい動画リストを作成（limitが指定されている場合は制限する）
-      const newVideos = reset ? result.videos : [...videos, ...result.videos];
-      const limitedVideos = limit ? newVideos.slice(0, limit) : newVideos;
-      
-      setVideos(limitedVideos);
+      setVideos((prevVideos) => {
+        const newVideos = reset
+          ? result.videos
+          : [...prevVideos, ...result.videos];
+        return limit ? newVideos.slice(0, limit) : newVideos;
+      });
       setHasMore(result.hasMore);
       setLastVideo(result.lastVideo);
     } catch (error) {
@@ -72,28 +79,28 @@ export default function VideoList({
   return (
     <div className="w-full">
       <h2 className="text-2xl font-bold mb-6">最新動画</h2>
-      
+
       {/* 動画がない場合 */}
       {videos.length === 0 && !loading && (
         <div className="text-center py-12">
           <p>動画がありません</p>
         </div>
       )}
-      
+
       {/* 動画グリッド */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {videos.map(video => (
+        {videos.map((video) => (
           <VideoCard key={video.id} video={video} />
         ))}
       </div>
-      
+
       {/* ローディング表示 */}
       {loading && (
         <div className="text-center py-8">
           <span className="loading loading-spinner loading-lg" />
         </div>
       )}
-      
+
       {/* もっと見るボタンまたは全一覧へのリンク */}
       {!loading && (
         <div className="mt-8 flex justify-end">

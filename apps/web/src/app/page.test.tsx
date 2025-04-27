@@ -7,7 +7,10 @@ import HomePage from "./page"; // page.tsx をインポート
 
 // VideoList コンポーネントをモック
 vi.mock("./_components/VideoList", () => ({
-  default: ({ limit, showViewAllLink }: { limit?: number; showViewAllLink?: boolean }) => (
+  default: ({
+    limit,
+    showViewAllLink,
+  }: { limit?: number; showViewAllLink?: boolean }) => (
     <div data-testid="mock-video-list">
       <h2 className="text-2xl font-bold mb-6">最新動画</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" />
@@ -16,7 +19,9 @@ vi.mock("./_components/VideoList", () => ({
       </div>
       {showViewAllLink && (
         <div className="mt-8 flex justify-end">
-          <a href="/videos" className="btn btn-primary">もっと見る</a>
+          <a href="/videos" className="btn btn-primary">
+            もっと見る
+          </a>
         </div>
       )}
     </div>
@@ -25,7 +30,11 @@ vi.mock("./_components/VideoList", () => ({
 
 // AuthButton コンポーネントをモック
 vi.mock("@/components/ui/AuthButton", () => ({
-  default: () => <button type="button" data-testid="mock-auth-button">ログイン</button>,
+  default: () => (
+    <button type="button" data-testid="mock-auth-button">
+      ログイン
+    </button>
+  ),
 }));
 
 // getCurrentUser 関数をモック
@@ -51,7 +60,7 @@ describe("ホームページ", () => {
     // 検証 - モック化されたVideoListコンポーネントを検索
     const videoList = screen.getByTestId("mock-video-list");
     expect(videoList).toBeInTheDocument();
-    
+
     // 見出しが表示されていることを確認
     const heading = screen.getByText("最新動画");
     expect(heading).toBeInTheDocument();

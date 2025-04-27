@@ -20,7 +20,7 @@ export default async function Home() {
         <p className="text-lg">
           ようこそ！ここは涼花みなせさんの活動を応援する非公式ファンサイトです。
         </p>
-        
+
         {/* ログイン状態に応じた表示 */}
         <div className="mt-4">
           {isLoggedIn ? (
@@ -33,7 +33,7 @@ export default async function Home() {
           )}
         </div>
       </div>
-      
+
       {/* 動画一覧（最新4件のみ表示） */}
       <VideoList limit={4} showViewAllLink={true} />
     </main>

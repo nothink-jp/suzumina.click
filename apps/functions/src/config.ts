@@ -1,6 +1,6 @@
 /**
  * 環境変数と設定の管理モジュール
- * 
+ *
  * このモジュールは、環境に応じた設定値の取得方法を提供します。
  * ローカル開発環境（エミュレータモード）と本番環境での動作を統一します。
  */
@@ -15,9 +15,9 @@
 
 /**
  * 環境に応じた設定値の取得
- * 
+ *
  * エミュレータモードでは環境変数から、本番環境ではSecret Managerから値を取得します。
- * 
+ *
  * @param name - 環境変数名
  * @param secretParam - シークレットパラメータ（本番環境用）
  * @returns 設定値（文字列）
@@ -32,7 +32,7 @@ export function getSecret(name: string, secretParam?: any): string {
 
 /**
  * Google Cloud Firestoreへの接続設定
- * 
+ *
  * @returns Firestoreの接続設定オブジェクト
  */
 export function getFirestoreConfig() {
@@ -41,17 +41,17 @@ export function getFirestoreConfig() {
     return {
       useEmulator: true,
       host: "localhost",
-      port: 8080
+      port: 8080,
     };
   }
-  
+
   // 本番環境では空のオブジェクトを返す（デフォルト接続）
   return {};
 }
 
 /**
  * ローカルエミュレータ環境かどうかを判定
- * 
+ *
  * @returns エミュレータ環境の場合はtrue
  */
 export function isEmulatorMode(): boolean {
