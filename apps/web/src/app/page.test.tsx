@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import { UserMetadata } from "firebase-admin/auth";
 import { describe, expect, it, vi } from "vitest";
 import HomePage from "./page"; // page.tsx をインポート
 
@@ -25,15 +24,6 @@ vi.mock("./_components/VideoList", () => ({
         </div>
       )}
     </div>
-  ),
-}));
-
-// AuthButton コンポーネントをモック
-vi.mock("@/components/ui/AuthButton", () => ({
-  default: () => (
-    <button type="button" data-testid="mock-auth-button">
-      ログイン
-    </button>
   ),
 }));
 
@@ -66,13 +56,12 @@ describe("ホームページ", () => {
     expect(heading).toBeInTheDocument();
   });
 
-  it("非ログイン時にはAuthButtonが表示されること", async () => {
+  it("非ログイン時には未ログインの表示がされること", async () => {
     // 準備 & 実行
     render(await HomePage());
 
     // 検証
-    const authButton = screen.getByTestId("mock-auth-button");
-    expect(authButton).toBeInTheDocument();
+    expect(screen.getByText("未ログイン")).toBeInTheDocument();
   });
 
   it("ログイン時にはユーザー情報が表示されること", async () => {
