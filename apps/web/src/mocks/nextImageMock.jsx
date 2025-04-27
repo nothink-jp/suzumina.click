@@ -3,7 +3,7 @@ import React from "react";
 // next/imageのモック
 const NextImageMock = ({
   src,
-  alt = "Image",  // 常に意味のあるデフォルト値を設定
+  alt = "Image", // 常に意味のあるデフォルト値を設定
   fill,
   sizes,
   className,
@@ -28,14 +28,14 @@ const NextImageMock = ({
 
   return (
     <img
-      {...restProps}  // 他のpropsを先に展開
+      {...restProps} // 他のpropsを先に展開
       src={src}
       className={className}
       style={{
         ...style,
         ...props.style,
       }}
-      alt={finalAlt}  // 明示的にalt属性を最後に設定（上書き防止）
+      alt={finalAlt} // 明示的にalt属性を最後に設定（上書き防止）
     />
   );
 };

@@ -1,5 +1,5 @@
-import type { StorybookConfig } from "@storybook/experimental-nextjs-vite";
 import { resolve } from "node:path";
+import type { StorybookConfig } from "@storybook/experimental-nextjs-vite";
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],

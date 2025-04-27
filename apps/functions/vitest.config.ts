@@ -1,6 +1,6 @@
+import { resolve } from "node:path";
 /// <reference types="vitest" />
 import { defineConfig } from "vitest/config";
-import { resolve } from "node:path";
 
 // Functionsアプリケーションのテスト設定
 export default defineConfig({

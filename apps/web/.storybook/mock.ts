@@ -1,5 +1,9 @@
 // Storybookのモック関数ユーティリティ
-import type { PaginationParams, Video, VideoListResult } from "../src/lib/videos/types";
+import type {
+  PaginationParams,
+  Video,
+  VideoListResult,
+} from "../src/lib/videos/types";
 
 // グローバル型宣言を追加
 declare global {
@@ -10,8 +14,12 @@ declare global {
       useSearchParams(): URLSearchParams;
     };
     // VideoListコンポーネントのAPIモック
-    getRecentVideosStorybook?: (params?: PaginationParams) => Promise<VideoListResult>;
-    originalGetRecentVideos?: (params?: PaginationParams) => Promise<VideoListResult>;
+    getRecentVideosStorybook?: (
+      params?: PaginationParams,
+    ) => Promise<VideoListResult>;
+    originalGetRecentVideos?: (
+      params?: PaginationParams,
+    ) => Promise<VideoListResult>;
   }
 }
 
@@ -29,26 +37,28 @@ export type MockFn<T = void, R = unknown> = {
  * @param returnValue - 返却値の初期値
  * @returns モック関数
  */
-export const createMockFn = <T = void, R = unknown>(returnValue?: R): MockFn<T, R> => {
+export const createMockFn = <T = void, R = unknown>(
+  returnValue?: R,
+): MockFn<T, R> => {
   // 型安全なモック関数を作成
   const mockFn = ((...args: T[]) => {
     mockFn.calls.push(args);
-    return mockFn.implementation 
-      ? mockFn.implementation(...args) 
-      : mockFn.returnValue as R;
+    return mockFn.implementation
+      ? mockFn.implementation(...args)
+      : (mockFn.returnValue as R);
   }) as MockFn<T, R>;
 
   // プロパティを初期化
   mockFn.calls = [];
   mockFn.returnValue = returnValue ?? null;
   mockFn.implementation = undefined;
-  
+
   // メソッドを定義
   mockFn.mockImplementation = (impl: (...args: T[]) => R) => {
     mockFn.implementation = impl;
     return mockFn;
   };
-  
+
   return mockFn;
 };
 
@@ -86,13 +96,14 @@ export const initVideoListApiMock = (mockData: VideoListMockData): void => {
       // ローディング状態をシミュレート
       return new Promise(() => {});
     }
-    
+
     return {
       videos: mockData.videos || [],
       hasMore: mockData.hasMore || false,
-      lastVideo: mockData.videos && mockData.videos.length > 0
-        ? mockData.videos[mockData.videos.length - 1]
-        : undefined,
+      lastVideo:
+        mockData.videos && mockData.videos.length > 0
+          ? mockData.videos[mockData.videos.length - 1]
+          : undefined,
     };
   };
 };

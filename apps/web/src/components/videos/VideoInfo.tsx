@@ -1,5 +1,5 @@
-import { formatDate } from "@/utils/date-format";
 import type { Video } from "@/lib/videos/types";
+import { formatDate } from "@/utils/date-format";
 
 interface VideoInfoProps {
   video: Video;

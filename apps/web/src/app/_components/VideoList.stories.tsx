@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import VideoList from "./VideoList";
 import type { Video } from "@/lib/videos/types";
+import type { Meta, StoryObj } from "@storybook/react";
 import React from "react";
+import VideoList from "./VideoList";
 
 // モックデータ
 const mockVideos: Video[] = [

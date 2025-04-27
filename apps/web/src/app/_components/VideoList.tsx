@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import VideoCard from "@/components/ui/VideoCard";
 import { getRecentVideos } from "@/lib/videos/api";
 import type { Video, VideoListResult } from "@/lib/videos/types";
 import dayjs from "dayjs";
+import { useEffect, useState } from "react";
 
 /**
  * 動画一覧コンポーネント

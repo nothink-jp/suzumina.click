@@ -1,7 +1,7 @@
+import type { Video } from "@/lib/videos/types";
+import { formatDate } from "@/utils/date-format";
 import Image from "next/image";
 import Link from "next/link";
-import { formatDate } from "@/utils/date-format";
-import type { Video } from "@/lib/videos/types";
 
 interface VideoCardProps {
   video: Video;

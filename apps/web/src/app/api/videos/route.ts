@@ -1,4 +1,9 @@
+import type { Video } from "@/lib/videos/types";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import type { DocumentData } from "firebase-admin/firestore";
 import {
+  type Firestore,
   collection,
   getDocs,
   limit,
@@ -6,14 +11,9 @@ import {
   query,
   startAfter,
   where,
-  type Firestore,
 } from "firebase/firestore";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import type { Video } from "@/lib/videos/types";
-import type { DocumentData } from "firebase-admin/firestore";
 
 // Firestoreから取得したデータの型定義
 interface FirestoreVideoData {

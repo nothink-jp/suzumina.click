@@ -1,4 +1,6 @@
+import dayjs from "dayjs";
 import {
+  type Firestore,
   collection,
   doc,
   getDoc,
@@ -8,7 +10,6 @@ import {
   query,
   startAfter,
   where,
-  type Firestore,
 } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
 import { app } from "../firebase/client";
@@ -18,7 +19,6 @@ import type {
   VideoData,
   VideoListResult,
 } from "./types";
-import dayjs from "dayjs";
 
 /**
  * Firestoreインスタンスを取得する

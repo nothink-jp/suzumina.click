@@ -1,8 +1,8 @@
+import VideoInfo from "@/components/videos/VideoInfo";
+import YouTubeEmbed from "@/components/videos/YouTubeEmbed";
+import { getVideoByIdServer } from "@/lib/videos/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import YouTubeEmbed from "@/components/videos/YouTubeEmbed";
-import VideoInfo from "@/components/videos/VideoInfo";
-import { getVideoByIdServer } from "@/lib/videos/server";
 
 /**
  * 動的レンダリングを有効化

@@ -6,8 +6,8 @@
  */
 
 import { Firestore, Timestamp } from "@google-cloud/firestore";
-import * as logger from "./logger";
 import { getFirestoreConfig, isEmulatorMode } from "../config";
+import * as logger from "./logger";
 
 // シングルトンパターンで一度だけFirestoreインスタンスを作成
 let firestoreInstance: Firestore | null = null;

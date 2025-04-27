@@ -1,7 +1,7 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import VideoList from "./VideoList";
 import { getRecentVideos } from "@/lib/videos/api";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import VideoList from "./VideoList";
 
 // getRecentVideos関数をモック
 vi.mock("@/lib/videos/api", () => ({
