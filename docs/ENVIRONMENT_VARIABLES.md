@@ -4,60 +4,60 @@
 
 ## 1. ローカル開発用環境変数 (`.env.local`)
 
-Next.jsアプリケーション開発時に使用する環境変数は、**`apps/web` ディレクトリ**に作成する `.env.local` ファイルに記述します。このファイルは `.gitignore` に含まれているため、Gitリポジトリにはコミットされません。
+ローカル開発環境では、`.env.local`ファイルを使用して環境変数を設定します。
 
-**ファイル:** `apps/web/.env.local` (Webアプリケーションディレクトリに作成)
+### 1.1 Webアプリケーション用環境変数
 
-**必要な変数:**
+`apps/web/.env.local` に以下の設定を行います：
 
-```bash
-# Firebase プロジェクト設定 (Firebase Console から取得)
-# プロジェクト設定 > 全般 > マイアプリ > SDK の設定と構成 で「構成」を選択
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=suzumina-click-firebase.firebaseapp.com
+```sh
+# Firebase 設定
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=suzumina-click-firebase
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=suzumina-click-firebase.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789012
-NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abcdef1234567890
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-ABCDEFGHIJ
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
-# Discord OAuth 設定 (Discord Developer Portal から取得)
-# フロントエンドとサーバーサイドの両方で使用する変数にはNEXT_PUBLIC_プレフィックスを付ける
-NEXT_PUBLIC_DISCORD_CLIENT_ID=123456789012345678 
+# Cloud Codeエミュレータ設定（開発環境でエミュレータを使用する場合）
+NEXT_PUBLIC_USE_EMULATOR=true
+
+# Discord OAuth2設定
+NEXT_PUBLIC_DISCORD_CLIENT_ID=your_discord_client_id
 NEXT_PUBLIC_DISCORD_REDIRECT_URI=http://localhost:3000/auth/discord/callback
-
-# サーバーサイドのみで使用する環境変数（機密情報）
-# クライアント側からは参照できないためNEXT_PUBLICプレフィックスは使用しない
 DISCORD_CLIENT_SECRET=your_discord_client_secret
-DISCORD_TARGET_GUILD_ID=959095494456537158
+DISCORD_TARGET_GUILD_ID=your_discord_guild_id
 
 # Firebase Admin SDK
-# 本番環境ではSecret Managerを使用することを推奨
-FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"...","private_key_id":"...","private_key":"...","client_email":"...","client_id":"...","auth_uri":"...","token_uri":"...","auth_provider_x509_cert_url":"...","client_x509_cert_url":"..."}
-
-# YouTube Data API Key
-YOUTUBE_API_KEY=your_youtube_api_key_here
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"...","private_key_id":"..."}
 ```
 
-**取得方法:**
+**環境変数の取得先**:
 
-- **Firebase プロジェクト設定:**
-    1. [Firebase Console](https://console.firebase.google.com/) を開きます。
-    2. プロジェクト `suzumina-click-firebase` を選択します。
+- **Firebase設定:**
+    1. [Firebase Console](https://console.firebase.google.com/)にアクセスします。
+    2. プロジェクト「suzumina-click-firebase」を選択します。
     3. 左メニューの歯車アイコン > 「プロジェクトの設定」をクリックします。
     4. 「全般」タブの下部にある「マイアプリ」セクションで、対象のウェブアプリを選択します。
     5. 「SDK の設定と構成」で「構成」を選択し、`firebaseConfig` オブジェクトから必要な値をコピーします。
 - **Discord OAuth 設定:**
     1. [Discord Developer Portal](https://discord.com/developers/applications) を開きます。
-    2. 対象のアプリケーションを選択します。
-    3. 「OAuth2」>「General」メニューで `CLIENT ID` と `CLIENT SECRET` を確認します。
-    4. `REDIRECTS` セクションに、ローカル用とCloud Run用の両方のURLを追加します。
+    2. 「Applications」から該当のアプリケーションを選択します。
+    3. 「OAuth2」セクションからClient IDとClient Secretを取得します。
+    4. Discord サーバー(ギルド)のIDはサーバーの「設定」→「ウィジェット」で確認できます。
 
-**注意:**
+### 1.2 Cloud Functions用環境変数（ローカルテスト時）
 
-- `NEXT_PUBLIC_` プレフィックスが付いた変数は、ブラウザ側（フロントエンド）のコードからアクセス可能です。
-- サーバーサイドのみで使用する機密情報には `NEXT_PUBLIC_` プレフィックスを付けないでください。
-- `.env.local` ファイルを変更した後は、Next.js開発サーバーの再起動が必要です。
+`apps/functions/.env.local` に以下の設定を行います：
+
+```sh
+# 関数のテスト用環境変数
+DISCORD_CLIENT_ID=your_client_id_here
+DISCORD_CLIENT_SECRET=your_client_secret_here
+DISCORD_TARGET_GUILD_ID=959095494456537158
+YOUTUBE_API_KEY=your_youtube_api_key_here
+```
 
 ## 2. Cloud Runとクラウド環境の環境変数
 
@@ -130,6 +130,9 @@ NEXT_PUBLIC_DISCORD_CLIENT_ID=your_client_id_here
 DISCORD_CLIENT_SECRET=your_client_secret_here
 DISCORD_TARGET_GUILD_ID=959095494456537158
 YOUTUBE_API_KEY=your_youtube_api_key_here
+
+# エミュレータフラグ
+FUNCTIONS_EMULATOR=true
 ```
 
 2. 以下のようなヘルパー関数を作成して、エミュレータ環境と本番環境での環境変数の取得方法を統一します:
@@ -157,27 +160,10 @@ export function getDiscordSecret(): string {
 
 ## 環境変数の命名規則
 
-プロジェクト全体で一貫した環境変数の命名規則を使用します:
-
-1. **クライアント側とサーバー側の両方で使用する変数**: `NEXT_PUBLIC_` プレフィックスを付ける
-   - 例: `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_DISCORD_CLIENT_ID`
-
-2. **サーバー側のみで使用する変数**: プレフィックスなし
-   - 例: `DISCORD_CLIENT_SECRET`, `FIREBASE_SERVICE_ACCOUNT_KEY`
-
-3. **サービス別のグループ化**: サービス名を含める
-   - Firebase関連: `FIREBASE_`, `NEXT_PUBLIC_FIREBASE_`
-   - Discord関連: `DISCORD_`, `NEXT_PUBLIC_DISCORD_`
-   - YouTube関連: `YOUTUBE_`
-
-この命名規則に従うことで、環境変数の管理が容易になり、不要な重複や混乱を避けることができます。
+- `NEXT_PUBLIC_`プレフィックス: クライアントサイド（ブラウザ）からもアクセス可能な環境変数
+- プレフィックスなし: サーバーサイドでのみ使用する機密情報（クライアントサイドからはアクセス不可）
 
 ## 関連ドキュメント
 
-以下のドキュメントも環境変数の設定に関連する情報を含んでいます：
-
-- [開発環境セットアップガイド](./DEVELOPMENT_SETUP.md#13-環境変数の設定)
-- [デプロイ手順マニュアル](./DEPLOYMENT.md#環境変数の設定)
-- [認証設計](./AUTH.md#環境別設定)
-- [インフラ監査レポート](./INFRA_AUDIT.md#11-リソース管理の方式)
-- [Discord認証移行計画](./discord_auth_migration.md#3-環境変数の設定)
+- [開発環境セットアップガイド](./DEVELOPMENT_SETUP.md)
+- [デプロイ手順マニュアル](./DEPLOYMENT.md)

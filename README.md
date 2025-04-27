@@ -46,6 +46,45 @@ pnpm dev
 
 ブラウザで [http://localhost:3000](http://localhost:3000) を開くと、結果が表示されます。
 
+## 🔰 Google CloudとFirebaseに慣れていない方へ
+
+このプロジェクトはGoogle CloudとFirebaseのサービスを利用しています。これらに慣れていない方は、以下の順番でドキュメントを読むことをお勧めします：
+
+### 1. まず読むべきドキュメント
+
+1. **開発環境セットアップガイド** [`docs/DEVELOPMENT_SETUP.md`](./docs/DEVELOPMENT_SETUP.md)
+   - プロジェクトの基本的なセットアップ方法について説明しています
+   - 特に「前提条件」と「1. リポジトリのクローンと初期セットアップ」の部分から始めてください
+   - 環境変数の設定は、アプリケーションとGoogleサービスを連携させるために重要です
+
+2. **環境変数ガイド** [`docs/ENVIRONMENT_VARIABLES.md`](./docs/ENVIRONMENT_VARIABLES.md)
+   - Firebase認証情報などの取得方法が詳しく説明されています
+   - 開発に必要な各種APIキーの入手先についても記載されています
+
+### 2. 開発支援ツール
+
+このプロジェクトでは、開発効率化のためにVS CodeのCloud Code拡張機能を活用しています：
+
+- **Cloud Code統合** [`docs/CLOUD_CODE_INTEGRATION.md`](./docs/CLOUD_CODE_INTEGRATION.md)
+  - プロジェクトへのCloud Code統合の概要と利点
+  - 各機能の簡単な説明
+
+- **Firebase Emulatorガイド** [`docs/EMULATOR_GUIDE.md`](./docs/EMULATOR_GUIDE.md)
+  - Cloud Code拡張機能を使ったローカル開発環境の構築方法
+  - 本番環境に影響を与えずに開発・テストを行う方法
+
+- **リモートデバッグガイド** [`docs/REMOTE_DEBUGGING.md`](./docs/REMOTE_DEBUGGING.md)
+  - GCP上のサービス（Cloud RunとCloud Functions）のリモートデバッグ方法
+  - ローカルデバッグ設定の詳細
+
+### 3. 外部リソース
+
+プロジェクト固有のドキュメントに加えて、以下の公式ドキュメントも参考になります：
+
+- [Firebase 公式ドキュメント（日本語）](https://firebase.google.com/docs?hl=ja)
+- [Google Cloud 初めてのステップ（日本語）](https://cloud.google.com/docs/get-started?hl=ja)
+- [Cloud Code 公式ドキュメント](https://cloud.google.com/code/docs/vscode?hl=ja)
+
 ## 🛠️ 利用可能なスクリプト
 
 - `pnpm dev`: Turbopack を使用して開発サーバーを起動します。

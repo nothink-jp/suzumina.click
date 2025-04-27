@@ -19,7 +19,10 @@
     "test:coverage": "run-p \"test:web -- --coverage\" \"test:functions -- --coverage\"",
     "test:web": "pnpm --filter @suzumina.click/web test",
     "test:functions": "pnpm --filter @suzumina.click/functions test",
-    "storybook": "pnpm --filter @suzumina.click/web storybook"
+    "storybook": "pnpm --filter @suzumina.click/web storybook",
+    "emulator:start": "firebase emulators:start",
+    "emulator:start-with-data": "firebase emulators:start --import=./emulator-data --export-on-exit",
+    "emulator:export-data": "firebase emulators:export ./emulator-data"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
