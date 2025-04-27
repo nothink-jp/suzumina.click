@@ -24,10 +24,12 @@ export interface Video {
   title: string;
   description: string;
   publishedAt: Date;
+  publishedAtISO?: string; // ISO文字列形式の公開日時
   thumbnailUrl: string;
   channelId: string;
   channelTitle: string;
   lastFetchedAt: Date;
+  lastFetchedAtISO?: string; // ISO文字列形式の最終取得日時
 }
 
 /**

@@ -55,15 +55,22 @@ interface FirestoreVideoData {
  * @returns 変換後のVideoオブジェクト
  */
 function convertToVideo(id: string, data: FirestoreVideoData): Video {
+  // 日付をISO文字列形式に変換して返す
+  // これにより、JSONシリアライズ時に日付情報が失われるのを防ぐ
+  const publishedAt = data.publishedAt.toDate();
+  const lastFetchedAt = data.lastFetchedAt.toDate();
+  
   return {
     id,
     title: data.title,
     description: data.description,
-    publishedAt: data.publishedAt.toDate(),
+    publishedAt,
+    publishedAtISO: publishedAt.toISOString(), // ISO文字列を追加
     thumbnailUrl: data.thumbnailUrl,
     channelId: data.channelId,
     channelTitle: data.channelTitle,
-    lastFetchedAt: data.lastFetchedAt.toDate()
+    lastFetchedAt,
+    lastFetchedAtISO: lastFetchedAt.toISOString() // ISO文字列を追加
   };
 }
 

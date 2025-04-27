@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import VideoCard from "@/components/ui/VideoCard";
 import { getRecentVideos } from "@/lib/videos/api";
 import type { Video, VideoListResult } from "@/lib/videos/types";
+import dayjs from "dayjs";
 
 /**
  * 動画一覧コンポーネント
@@ -29,6 +30,8 @@ export default function VideoList() {
         // startAfterパラメータはDate型で渡す
         // undefinedの場合は渡さない
         startAfter: reset || !lastVideo ? undefined :
+          // publishedAtISOがある場合はそれを使用し、なければpublishedAtを使用
+          lastVideo.publishedAtISO ? dayjs(lastVideo.publishedAtISO).toDate() :
           lastVideo.publishedAt instanceof Date ? lastVideo.publishedAt : undefined
       });
       
