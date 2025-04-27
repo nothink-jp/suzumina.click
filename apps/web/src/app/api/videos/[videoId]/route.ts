@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import type { DocumentData } from "firebase-admin/firestore";
@@ -70,10 +71,9 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
  * 特定の動画IDの詳細を取得するAPIルート
  */
 export async function GET(
-  request: Request,
-  context: { params: { videoId: string } }
+  request: NextRequest,
+  { params }: { params: { videoId: string } }
 ) {
-  const { params } = context;
   try {
     const { videoId } = params;
     
