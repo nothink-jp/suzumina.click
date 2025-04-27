@@ -1,4 +1,5 @@
 // Storybookのモック関数ユーティリティ
+import type { PaginationParams, Video, VideoListResult } from "../src/lib/videos/types";
 
 // グローバル型宣言を追加
 declare global {
@@ -8,6 +9,9 @@ declare global {
       usePathname(): string;
       useSearchParams(): URLSearchParams;
     };
+    // VideoListコンポーネントのAPIモック
+    getRecentVideosStorybook?: (params?: PaginationParams) => Promise<VideoListResult>;
+    originalGetRecentVideos?: (params?: PaginationParams) => Promise<VideoListResult>;
   }
 }
 
@@ -65,5 +69,30 @@ export const initNextJsNavigationMock = (): void => {
     useRouter: () => mockRouter,
     usePathname: () => "/",
     useSearchParams: () => new URLSearchParams(),
+  };
+};
+
+// VideoListコンポーネントのAPIモックを初期化する関数
+export interface VideoListMockData {
+  videos?: Video[];
+  hasMore?: boolean;
+  loading?: boolean;
+}
+
+export const initVideoListApiMock = (mockData: VideoListMockData): void => {
+  // APIモックを設定
+  window.getRecentVideosStorybook = async () => {
+    if (mockData.loading) {
+      // ローディング状態をシミュレート
+      return new Promise(() => {});
+    }
+    
+    return {
+      videos: mockData.videos || [],
+      hasMore: mockData.hasMore || false,
+      lastVideo: mockData.videos && mockData.videos.length > 0
+        ? mockData.videos[mockData.videos.length - 1]
+        : undefined,
+    };
   };
 };

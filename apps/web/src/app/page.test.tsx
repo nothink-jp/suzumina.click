@@ -7,13 +7,18 @@ import HomePage from "./page"; // page.tsx をインポート
 
 // VideoList コンポーネントをモック
 vi.mock("./_components/VideoList", () => ({
-  default: () => (
+  default: ({ limit, showViewAllLink }: { limit?: number; showViewAllLink?: boolean }) => (
     <div data-testid="mock-video-list">
       <h2 className="text-2xl font-bold mb-6">最新動画</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" />
       <div className="text-center py-8">
         <span className="loading loading-spinner loading-lg" />
       </div>
+      {showViewAllLink && (
+        <div className="mt-8 flex justify-end">
+          <a href="/videos" className="btn btn-primary">もっと見る</a>
+        </div>
+      )}
     </div>
   ),
 }));
