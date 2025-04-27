@@ -71,8 +71,9 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
  */
 export async function GET(
   request: Request,
-  { params }: { params: { videoId: string } }
+  context: { params: { videoId: string } }
 ) {
+  const { params } = context;
   try {
     const { videoId } = params;
     
