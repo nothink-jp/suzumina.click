@@ -1,4 +1,13 @@
-import { collection, getDocs, limit, orderBy, query, startAfter, where, type Firestore } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  startAfter,
+  where,
+  type Firestore,
+} from "firebase/firestore";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
@@ -27,7 +36,7 @@ function getAdminFirestore() {
     // Cloud Run環境ではGCPのデフォルト認証情報を使用
     // 開発環境では環境変数からサービスアカウントの情報を取得
     const isCloudRunEnv = process.env.K_SERVICE !== undefined; // Cloud Run環境かどうかを判定
-    
+
     if (isCloudRunEnv) {
       // Cloud Run環境ではデフォルト認証情報を使用
       initializeApp({
@@ -45,7 +54,7 @@ function getAdminFirestore() {
       });
     }
   }
-  
+
   return getFirestore();
 }
 
@@ -60,7 +69,7 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
   // これにより、JSONシリアライズ時に日付情報が失われるのを防ぐ
   const publishedAt = data.publishedAt.toDate();
   const lastFetchedAt = data.lastFetchedAt.toDate();
-  
+
   return {
     id,
     title: data.title,
@@ -71,7 +80,7 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
     channelId: data.channelId,
     channelTitle: data.channelTitle,
     lastFetchedAt,
-    lastFetchedAtISO: lastFetchedAt.toISOString() // ISO文字列を追加
+    lastFetchedAtISO: lastFetchedAt.toISOString(), // ISO文字列を追加
   };
 }
 
@@ -84,23 +93,23 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const limitParam = searchParams.get("limit");
     const startAfterParam = searchParams.get("startAfter");
-    
+
     const limitValue = limitParam ? Number.parseInt(limitParam, 10) : 10;
-    
+
     // Firestoreインスタンスの取得
     const db = getAdminFirestore();
-    
+
     // クエリの構築
     const videosRef = db.collection("videos");
     let videosQuery = videosRef
       .orderBy("publishedAt", "desc")
       .limit(limitValue + 1); // 次ページがあるか確認するために1つ多く取得
-    
+
     // ページネーション用のstartAfterパラメータがある場合
     if (startAfterParam) {
       try {
         const startAfterDate = new Date(startAfterParam);
-        
+
         // 無効な日付かどうかをチェック
         if (Number.isNaN(startAfterDate.getTime())) {
           console.error("無効な日付パラメータ:", startAfterParam);
@@ -115,32 +124,32 @@ export async function GET(request: NextRequest) {
         // エラーが発生した場合は、デフォルトのクエリを使用
       }
     }
-    
+
     // データの取得
     const snapshot = await videosQuery.get();
-    const videos = snapshot.docs.map(doc => {
+    const videos = snapshot.docs.map((doc) => {
       const data = doc.data() as FirestoreVideoData;
       return convertToVideo(doc.id, data);
     });
-    
+
     // 次ページがあるかどうかを確認
     const hasMore = videos.length > limitValue;
     // 次ページ用に余分に取得した1件を削除
     if (hasMore) {
       videos.pop();
     }
-    
+
     // レスポンスの構築
     return NextResponse.json({
       videos,
       hasMore,
-      lastVideo: videos.length > 0 ? videos[videos.length - 1] : undefined
+      lastVideo: videos.length > 0 ? videos[videos.length - 1] : undefined,
     });
   } catch (error) {
     console.error("動画リストの取得に失敗しました:", error);
     return NextResponse.json(
       { error: "動画リストの取得に失敗しました" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

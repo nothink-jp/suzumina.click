@@ -1,7 +1,23 @@
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, startAfter, where, type Firestore } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  startAfter,
+  where,
+  type Firestore,
+} from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
 import { app } from "../firebase/client";
-import type { PaginationParams, Video, VideoData, VideoListResult } from "./types";
+import type {
+  PaginationParams,
+  Video,
+  VideoData,
+  VideoListResult,
+} from "./types";
 import dayjs from "dayjs";
 
 /**
@@ -28,12 +44,12 @@ function getFirestoreInstance(): Firestore | null {
  * @returns 動画リストと次ページ情報
  */
 export async function getRecentVideos(
-  params: PaginationParams = { limit: 10 }
+  params: PaginationParams = { limit: 10 },
 ): Promise<VideoListResult> {
   try {
     // サーバーサイドAPIを呼び出す
     let url = `/api/videos?limit=${params.limit}`;
-    
+
     // startAfterパラメータがある場合は、ISOString形式に変換して追加
     if (params.startAfter) {
       try {
@@ -48,15 +64,15 @@ export async function getRecentVideos(
         console.error("日付パラメータの処理中にエラーが発生しました:", error);
       }
     }
-    
+
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // レスポンスデータの日付文字列をDate型に変換
     if (data.videos && Array.isArray(data.videos)) {
       data.videos = data.videos.map((video: Video) => {
@@ -71,7 +87,7 @@ export async function getRecentVideos(
             console.error("publishedAtの変換中にエラーが発生しました:", error);
           }
         }
-        
+
         // lastFetchedAtISOがある場合は、それを使用してlastFetchedAtを上書き
         if (video.lastFetchedAtISO) {
           try {
@@ -80,14 +96,17 @@ export async function getRecentVideos(
               video.lastFetchedAt = date.toDate();
             }
           } catch (error) {
-            console.error("lastFetchedAtの変換中にエラーが発生しました:", error);
+            console.error(
+              "lastFetchedAtの変換中にエラーが発生しました:",
+              error,
+            );
           }
         }
-        
+
         return video;
       });
     }
-    
+
     return data;
   } catch (error) {
     console.error("動画リストの取得に失敗しました:", error);
@@ -110,17 +129,17 @@ export async function getVideoById(videoId: string): Promise<Video | null> {
   try {
     // サーバーサイドAPIを呼び出す
     const response = await fetch(`/api/videos/${videoId}`);
-    
+
     if (response.status === 404) {
       return null;
     }
-    
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // 日付文字列をDate型に変換
     if (data) {
       // publishedAtISOがある場合は、それを使用してpublishedAtを上書き
@@ -134,7 +153,7 @@ export async function getVideoById(videoId: string): Promise<Video | null> {
           console.error("publishedAtの変換中にエラーが発生しました:", error);
         }
       }
-      
+
       // lastFetchedAtISOがある場合は、それを使用してlastFetchedAtを上書き
       if (data.lastFetchedAtISO) {
         try {
@@ -147,7 +166,7 @@ export async function getVideoById(videoId: string): Promise<Video | null> {
         }
       }
     }
-    
+
     return data;
   } catch (error) {
     console.error(`動画ID ${videoId} の取得に失敗しました:`, error);
@@ -170,6 +189,6 @@ function convertToVideo(id: string, data: VideoData): Video {
     thumbnailUrl: data.thumbnailUrl,
     channelId: data.channelId,
     channelTitle: data.channelTitle,
-    lastFetchedAt: data.lastFetchedAt.toDate()
+    lastFetchedAt: data.lastFetchedAt.toDate(),
   };
 }

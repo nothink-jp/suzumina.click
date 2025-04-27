@@ -1,4 +1,5 @@
 import type { StorybookConfig } from "@storybook/experimental-nextjs-vite";
+import { resolve } from "node:path";
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
@@ -13,5 +14,18 @@ const config: StorybookConfig = {
     options: {},
   },
   staticDirs: ["../public"],
+  viteFinal: async (config) => {
+    // パスエイリアスの設定
+    if (config.resolve) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "@": resolve(__dirname, "../src"),
+        // Next.jsのコンポーネントをモック
+        "next/image": resolve(__dirname, "../src/mocks/nextImageMock.jsx"),
+        "next/link": resolve(__dirname, "../src/mocks/nextLinkMock.jsx"),
+      };
+    }
+    return config;
+  },
 };
 export default config;

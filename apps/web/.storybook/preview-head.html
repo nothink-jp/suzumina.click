@@ -1,0 +1,22 @@
+<script>
+  // Next.jsのコンポーネントをモックするためのグローバル変数
+  window.nextImageMock = function(props) {
+    return {
+      type: 'img',
+      props: {
+        ...props,
+        style: { maxWidth: '100%', height: 'auto' },
+      }
+    };
+  };
+  
+  window.nextLinkMock = function(props) {
+    return {
+      type: 'a',
+      props: {
+        ...props,
+        href: props.href || '#',
+      }
+    };
+  };
+</script>

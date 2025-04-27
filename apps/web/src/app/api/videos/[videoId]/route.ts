@@ -11,7 +11,7 @@ function getAdminFirestore() {
     // Cloud Run環境ではGCPのデフォルト認証情報を使用
     // 開発環境では環境変数からサービスアカウントの情報を取得
     const isCloudRunEnv = process.env.K_SERVICE !== undefined; // Cloud Run環境かどうかを判定
-    
+
     if (isCloudRunEnv) {
       // Cloud Run環境ではデフォルト認証情報を使用
       initializeApp({
@@ -29,7 +29,7 @@ function getAdminFirestore() {
       });
     }
   }
-  
+
   return getFirestore();
 }
 
@@ -59,7 +59,7 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
   // これにより、JSONシリアライズ時に日付情報が失われるのを防ぐ
   const publishedAt = data.publishedAt.toDate();
   const lastFetchedAt = data.lastFetchedAt.toDate();
-  
+
   return {
     id,
     title: data.title,
@@ -70,53 +70,51 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
     channelId: data.channelId,
     channelTitle: data.channelTitle,
     lastFetchedAt,
-    lastFetchedAtISO: lastFetchedAt.toISOString() // ISO文字列を追加
+    lastFetchedAtISO: lastFetchedAt.toISOString(), // ISO文字列を追加
   };
 }
 
 /**
  * 特定の動画IDの詳細を取得するAPIルート
  */
-export async function GET(
-  request: NextRequest,
-) {
+export async function GET(request: NextRequest) {
   try {
     // URLパスからvideoIdを取得
-    const videoId = request.nextUrl.pathname.split('/').pop();
-    
+    const videoId = request.nextUrl.pathname.split("/").pop();
+
     if (!videoId) {
       return NextResponse.json(
         { error: "動画IDが指定されていません" },
-        { status: 400 }
+        { status: 400 },
       );
     }
-    
+
     // Firestoreインスタンスの取得
     const db = getAdminFirestore();
-    
+
     // 動画ドキュメントの取得
     const videoRef = db.collection("videos").doc(videoId);
     const videoDoc = await videoRef.get();
-    
+
     // 動画が存在しない場合は404を返す
     if (!videoDoc.exists) {
       return NextResponse.json(
         { error: "動画が見つかりません" },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    
+
     // データの変換
     const data = videoDoc.data() as FirestoreVideoData;
     const video = convertToVideo(videoDoc.id, data);
-    
+
     // レスポンスの構築
     return NextResponse.json(video);
   } catch (error) {
     console.error("動画の取得に失敗しました:", error);
     return NextResponse.json(
       { error: "動画の取得に失敗しました" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
