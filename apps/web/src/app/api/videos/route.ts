@@ -91,11 +91,22 @@ export async function GET(request: NextRequest) {
     
     // ページネーション用のstartAfterパラメータがある場合
     if (startAfterParam) {
-      const startAfterDate = new Date(startAfterParam);
-      videosQuery = videosRef
-        .orderBy("publishedAt", "desc")
-        .startAfter(startAfterDate)
-        .limit(limitValue + 1);
+      try {
+        const startAfterDate = new Date(startAfterParam);
+        
+        // 無効な日付かどうかをチェック
+        if (Number.isNaN(startAfterDate.getTime())) {
+          console.error("無効な日付パラメータ:", startAfterParam);
+        } else {
+          videosQuery = videosRef
+            .orderBy("publishedAt", "desc")
+            .startAfter(startAfterDate)
+            .limit(limitValue + 1);
+        }
+      } catch (error) {
+        console.error("日付パラメータの解析に失敗しました:", error);
+        // エラーが発生した場合は、デフォルトのクエリを使用
+      }
     }
     
     // データの取得

@@ -31,7 +31,14 @@ export async function getRecentVideos(
 ): Promise<VideoListResult> {
   try {
     // サーバーサイドAPIを呼び出す
-    const response = await fetch(`/api/videos?limit=${params.limit}${params.startAfter ? `&startAfter=${params.startAfter.toISOString()}` : ''}`);
+    let url = `/api/videos?limit=${params.limit}`;
+    
+    // startAfterパラメータがある場合は、ISOString形式に変換して追加
+    if (params.startAfter && params.startAfter instanceof Date) {
+      url += `&startAfter=${params.startAfter.toISOString()}`;
+    }
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);

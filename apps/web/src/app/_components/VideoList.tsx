@@ -26,7 +26,10 @@ export default function VideoList() {
     try {
       const result = await getRecentVideos({
         limit: 12,
-        startAfter: reset ? undefined : lastVideo?.publishedAt
+        // startAfterパラメータはDate型で渡す
+        // undefinedの場合は渡さない
+        startAfter: reset || !lastVideo ? undefined :
+          lastVideo.publishedAt instanceof Date ? lastVideo.publishedAt : undefined
       });
       
       setVideos(prev => reset ? result.videos : [...prev, ...result.videos]);
