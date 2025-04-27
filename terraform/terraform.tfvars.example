@@ -6,6 +6,9 @@
 gcp_project_id = "your-gcp-project-id"   # あなたのGCPプロジェクトID
 project_number = "123456789012"          # GCPプロジェクト番号（コンソールのプロジェクト情報から確認可能）
 
+# Firebaseプロジェクト名
+firebase_project = "your-firebase-project-id"  # FirebaseプロジェクトのID（通常はGCPプロジェクトIDと同じ）
+
 # GCPリージョン（デフォルト: asia-northeast1）
 region = "asia-northeast1"             # 東京リージョン
 
@@ -26,7 +29,21 @@ firebase_config = {
   API_KEY           = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Firebase APIキー
   AUTH_DOMAIN       = "your-project-id.firebaseapp.com"        # 認証ドメイン
   PROJECT_ID        = "your-project-id"                        # Firebaseプロジェクトのプロジェクトid
-  STORAGE_BUCKET    = "your-project-id.appspot.com"            # デフォルトストレージバケット
+  STORAGE_BUCKET    = "your-project-id.firebasestorage.app"    # ストレージバケット
   MESSAGING_SENDER_ID = "123456789012"                         # FCMの送信者ID
   APP_ID            = "1:123456789012:web:abc123def456ghi789"  # FirebaseアプリのID
 }
+
+# 予算と監視設定
+# 請求先アカウントID（GCPコンソールの請求先ページから取得）
+billing_account_id = "XXXXXX-XXXXXX-XXXXXX"  # 例: 01D84F-188AC5-08F16C
+
+# アラート通知用メールアドレス（複数設定する場合はカンマ区切り）
+alert_email_address = "your-email@example.com"
+
+# 環境設定（development, staging, production）
+environment = "development"
+
+# 予算設定
+monthly_budget_amount = "5000"  # 月間予算額（JPY）、例: 5,000円
+enable_budget = false           # 予算管理機能を有効にするかどうか（true/false）
