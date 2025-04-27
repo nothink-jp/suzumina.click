@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import YouTubeEmbed from "@/components/videos/YouTubeEmbed";
 import VideoInfo from "@/components/videos/VideoInfo";
-import { getVideoById } from "@/lib/videos/api";
+import { getVideoByIdServer } from "@/lib/videos/server";
 
 /**
  * 動的レンダリングを有効化
@@ -37,7 +37,7 @@ export default async function VideoPage(props: unknown) {
   const { videoId } = params;
   
   // 動画情報を取得
-  const video = await getVideoById(videoId);
+  const video = await getVideoByIdServer(videoId);
   
   // 動画が見つからない場合は404
   if (!video) {
