@@ -10,7 +10,20 @@ import dayjs from "dayjs";
  * 動画一覧コンポーネント
  * 最新の動画を一覧表示し、「もっと見る」ボタンでさらに読み込む
  */
-export default function VideoList() {
+export interface VideoListProps {
+  /** 表示する動画の最大数（指定しない場合は制限なし） */
+  limit?: number;
+  /** 「もっと見る」ボタンの代わりに全一覧ページへのリンクを表示するかどうか */
+  showViewAllLink?: boolean;
+  /** 一度に読み込む動画数 */
+  pageSize?: number;
+}
+
+export default function VideoList({
+  limit,
+  showViewAllLink = false,
+  pageSize = 12
+}: VideoListProps) {
   const [loading, setLoading] = useState(true);
   const [videos, setVideos] = useState<Video[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -26,7 +39,7 @@ export default function VideoList() {
     setLoading(true);
     try {
       const result = await getRecentVideos({
-        limit: 12,
+        limit: pageSize,
         // startAfterパラメータはDate型で渡す
         // undefinedの場合は渡さない
         startAfter: reset || !lastVideo ? undefined :
@@ -35,7 +48,11 @@ export default function VideoList() {
           lastVideo.publishedAt instanceof Date ? lastVideo.publishedAt : undefined
       });
       
-      setVideos(prev => reset ? result.videos : [...prev, ...result.videos]);
+      // 新しい動画リストを作成（limitが指定されている場合は制限する）
+      const newVideos = reset ? result.videos : [...videos, ...result.videos];
+      const limitedVideos = limit ? newVideos.slice(0, limit) : newVideos;
+      
+      setVideos(limitedVideos);
       setHasMore(result.hasMore);
       setLastVideo(result.lastVideo);
     } catch (error) {
@@ -77,16 +94,24 @@ export default function VideoList() {
         </div>
       )}
       
-      {/* もっと見るボタン */}
-      {hasMore && !loading && (
-        <div className="text-center mt-8">
-          <button
-            onClick={handleLoadMore}
-            className="btn btn-primary"
-            type="button"
-          >
-            もっと見る
-          </button>
+      {/* もっと見るボタンまたは全一覧へのリンク */}
+      {!loading && (
+        <div className="mt-8 flex justify-end">
+          {showViewAllLink ? (
+            <a href="/videos" className="btn btn-primary">
+              もっと見る
+            </a>
+          ) : (
+            hasMore && (
+              <button
+                onClick={handleLoadMore}
+                className="btn btn-primary"
+                type="button"
+              >
+                もっと見る
+              </button>
+            )
+          )}
         </div>
       )}
     </div>

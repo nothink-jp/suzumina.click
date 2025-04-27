@@ -20,24 +20,10 @@ export default async function Home() {
         <p className="text-lg">
           ようこそ！ここは涼花みなせさんの活動を応援する非公式ファンサイトです。
         </p>
-
-        {/* ログイン状態に応じて表示を変更 */}
-        {isLoggedIn ? (
-          <div className="mt-4 p-4 bg-success/10 rounded-lg inline-block">
-            <p className="text-success font-bold">ログイン中です</p>
-            <p className="text-sm mt-1">
-              ユーザー名: {user?.displayName || "ゲスト"}
-            </p>
-          </div>
-        ) : (
-          <div className="mt-4 flex justify-center">
-            <AuthButton />
-          </div>
-        )}
       </div>
       
-      {/* 動画一覧 */}
-      <VideoList />
+      {/* 動画一覧（最新4件のみ表示） */}
+      <VideoList limit={4} showViewAllLink={true} />
     </main>
   );
 }
