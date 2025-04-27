@@ -72,10 +72,17 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { videoId: string } }
 ) {
   try {
-    const { videoId } = params;
+    // URLパスからvideoIdを取得
+    const videoId = request.nextUrl.pathname.split('/').pop();
+    
+    if (!videoId) {
+      return NextResponse.json(
+        { error: "動画IDが指定されていません" },
+        { status: 400 }
+      );
+    }
     
     // Firestoreインスタンスの取得
     const db = getAdminFirestore();
