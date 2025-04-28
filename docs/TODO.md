@@ -47,16 +47,16 @@
 
 ##### フェーズ2: 基本UIコンポーネント実装
 
-- [ ] AudioClipButtonコンポーネントの実装 (`src/components/audioclips/AudioClipButton.tsx`)
-- [ ] AudioClipPlayerコンポーネントの実装 (`src/components/audioclips/AudioClipPlayer.tsx`)
-- [ ] AudioClipListコンポーネントの実装 (`src/components/audioclips/AudioClipList.tsx`)
-- [ ] 動画詳細ページへの統合 (`src/app/videos/[videoId]/page.tsx`)
+- [x] AudioClipButtonコンポーネントの実装 (`src/components/audioclips/AudioClipButton.tsx`)
+- [x] AudioClipPlayerコンポーネントの実装 (`src/components/audioclips/AudioClipPlayer.tsx`)
+- [x] AudioClipListコンポーネントの実装 (`src/components/audioclips/AudioClipList.tsx`)
+- [x] 動画詳細ページへの統合 (`src/app/videos/[videoId]/page.tsx`)
 
 ##### フェーズ3: 音声クリップ作成機能実装
 
-- [ ] AudioClipCreatorコンポーネントの実装 (`src/components/audioclips/AudioClipCreator.tsx`)
-- [ ] YouTubeプレーヤーとの連携
-- [ ] プレビュー機能の実装
+- [x] AudioClipCreatorコンポーネントの実装 (`src/components/audioclips/AudioClipCreator.tsx`)
+- [x] YouTubeプレーヤーとの連携
+- [x] プレビュー機能の実装
 
 ##### フェーズ4: 拡張機能実装
 
