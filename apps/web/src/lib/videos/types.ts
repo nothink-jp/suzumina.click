@@ -1,6 +1,22 @@
 import type { Timestamp } from "firebase/firestore";
 
 /**
+ * 動画タイプの列挙型
+ * - archived: 配信終了したアーカイブ動画
+ * - upcoming: これから配信予定の動画
+ * - all: すべての動画（フィルタリング用）
+ */
+export type VideoType = "archived" | "upcoming" | "all";
+
+/**
+ * 配信状態の列挙型
+ * - none: 通常の動画（ライブ配信ではない/配信済み）
+ * - live: 現在ライブ配信中の動画
+ * - upcoming: これから配信予定の動画
+ */
+export type LiveBroadcastContent = "none" | "live" | "upcoming";
+
+/**
  * Firestoreから取得した動画データの型
  * Firestoreのデータ構造に合わせた型定義
  */
@@ -13,6 +29,7 @@ export interface VideoData {
   channelId: string;
   channelTitle: string;
   lastFetchedAt: Timestamp;
+  liveBroadcastContent?: LiveBroadcastContent;
 }
 
 /**
@@ -30,6 +47,7 @@ export interface Video {
   channelTitle: string;
   lastFetchedAt: Date;
   lastFetchedAtISO?: string; // ISO文字列形式の最終取得日時
+  liveBroadcastContent?: LiveBroadcastContent; // 配信状態
 }
 
 /**
@@ -38,6 +56,7 @@ export interface Video {
 export interface PaginationParams {
   limit: number;
   startAfter?: Date;
+  videoType?: VideoType; // 動画種別でフィルタリング
 }
 
 /**

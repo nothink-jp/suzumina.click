@@ -24,6 +24,13 @@ export interface YouTubeVideoData {
   channelTitle: string;
   /** データの最終取得日時（Firestoreのタイムスタンプ型） */
   lastFetchedAt: Timestamp;
+  /**
+   * 配信状態
+   * - "none": 通常の動画（ライブ配信ではない/配信済み）
+   * - "live": 現在ライブ配信中の動画
+   * - "upcoming": これから配信予定の動画（配信前）
+   */
+  liveBroadcastContent: string;
 }
 
 /**

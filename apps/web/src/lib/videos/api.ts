@@ -65,6 +65,11 @@ export async function getRecentVideos(
       }
     }
 
+    // videoTypeパラメータがある場合はURLに追加
+    if (params.videoType && params.videoType !== "all") {
+      url += `&videoType=${params.videoType}`;
+    }
+
     const response = await fetch(url);
 
     if (!response.ok) {

@@ -1,17 +1,7 @@
-import type { Video } from "@/lib/videos/types";
+import type { LiveBroadcastContent, Video } from "@/lib/videos/types";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import type { DocumentData } from "firebase-admin/firestore";
-import {
-  type Firestore,
-  collection,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  startAfter,
-  where,
-} from "firebase/firestore";
+import type { DocumentData, Query } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -28,31 +18,21 @@ interface FirestoreVideoData {
   lastFetchedAt: {
     toDate: () => Date;
   };
+  liveBroadcastContent?: LiveBroadcastContent;
 }
 
 // Firebase Admin SDKの初期化
 function getAdminFirestore() {
   if (getApps().length === 0) {
-    // Cloud Run環境ではGCPのデフォルト認証情報を使用
-    // 開発環境では環境変数からサービスアカウントの情報を取得
-    const isCloudRunEnv = process.env.K_SERVICE !== undefined; // Cloud Run環境かどうかを判定
+    // 開発環境ではサービスアカウントキーを使用
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+      ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+      : undefined;
 
-    if (isCloudRunEnv) {
-      // Cloud Run環境ではデフォルト認証情報を使用
-      initializeApp({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      });
-    } else {
-      // 開発環境ではサービスアカウントキーを使用
-      const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-        ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-        : undefined;
-
-      initializeApp({
-        credential: serviceAccount ? cert(serviceAccount) : undefined,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      });
-    }
+    initializeApp({
+      credential: serviceAccount ? cert(serviceAccount) : undefined,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    });
   }
 
   return getFirestore();
@@ -81,6 +61,7 @@ function convertToVideo(id: string, data: FirestoreVideoData): Video {
     channelTitle: data.channelTitle,
     lastFetchedAt,
     lastFetchedAtISO: lastFetchedAt.toISOString(), // ISO文字列を追加
+    liveBroadcastContent: data.liveBroadcastContent, // 配信状態を追加
   };
 }
 
@@ -93,17 +74,40 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const limitParam = searchParams.get("limit");
     const startAfterParam = searchParams.get("startAfter");
+    const videoTypeParam = searchParams.get("videoType"); // 動画タイプパラメータ
 
     const limitValue = limitParam ? Number.parseInt(limitParam, 10) : 10;
 
     // Firestoreインスタンスの取得
     const db = getAdminFirestore();
 
-    // クエリの構築
+    // クエリの構築基本構成
     const videosRef = db.collection("videos");
-    let videosQuery = videosRef
-      .orderBy("publishedAt", "desc")
-      .limit(limitValue + 1); // 次ページがあるか確認するために1つ多く取得
+    let videosQuery: Query<DocumentData>;
+
+    // 配信状態によるフィルタリングを優先
+    if (videoTypeParam === "archived") {
+      // 配信済み動画：LiveBroadcastContentが「none」の動画を表示
+      // (YouTubeのAPIでは配信終了後は "none" になる)
+      const now = new Date();
+
+      // APIから取得した配信状態を使ってフィルタリング
+      videosQuery = videosRef
+        .where("liveBroadcastContent", "in", ["none"])
+        .orderBy("publishedAt", "desc")
+        .limit(limitValue + 1);
+    } else if (videoTypeParam === "upcoming") {
+      // 配信予定：LiveBroadcastContentが「upcoming」または「live」
+      videosQuery = videosRef
+        .where("liveBroadcastContent", "in", ["upcoming", "live"])
+        .orderBy("publishedAt", "asc") // 予定配信は古い順（近い将来のものから）
+        .limit(limitValue + 1);
+    } else {
+      // デフォルト：全動画（日付降順）
+      videosQuery = videosRef
+        .orderBy("publishedAt", "desc")
+        .limit(limitValue + 1);
+    }
 
     // ページネーション用のstartAfterパラメータがある場合
     if (startAfterParam) {
@@ -114,10 +118,25 @@ export async function GET(request: NextRequest) {
         if (Number.isNaN(startAfterDate.getTime())) {
           console.error("無効な日付パラメータ:", startAfterParam);
         } else {
-          videosQuery = videosRef
-            .orderBy("publishedAt", "desc")
-            .startAfter(startAfterDate)
-            .limit(limitValue + 1);
+          // 動画タイプによって異なるクエリを構築
+          if (videoTypeParam === "archived") {
+            videosQuery = videosRef
+              .where("liveBroadcastContent", "in", ["none"])
+              .orderBy("publishedAt", "desc")
+              .startAfter(startAfterDate)
+              .limit(limitValue + 1);
+          } else if (videoTypeParam === "upcoming") {
+            videosQuery = videosRef
+              .where("liveBroadcastContent", "in", ["upcoming", "live"])
+              .orderBy("publishedAt", "asc")
+              .startAfter(startAfterDate)
+              .limit(limitValue + 1);
+          } else {
+            videosQuery = videosRef
+              .orderBy("publishedAt", "desc")
+              .startAfter(startAfterDate)
+              .limit(limitValue + 1);
+          }
         }
       } catch (error) {
         console.error("日付パラメータの解析に失敗しました:", error);

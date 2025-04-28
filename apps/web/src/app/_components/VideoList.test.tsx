@@ -101,8 +101,12 @@ describe("VideoListコンポーネント", () => {
     // 準備 & 実行
     render(<VideoList />);
 
-    // 検証 - ローディング表示が最初に表示される
-    expect(screen.getByText(/最新動画/)).toBeInTheDocument();
+    // 検証 - ヘッダーテキストが表示される
+    // h2要素のみを指定することで一意にする
+    expect(
+      screen.getByRole("heading", { level: 2, name: "すべての動画" }),
+    ).toBeInTheDocument();
+
     const loadingSpinner = screen.getByText("", {
       selector: "span.loading.loading-spinner",
     });
@@ -140,10 +144,11 @@ describe("VideoListコンポーネント", () => {
     });
 
     // 「もっと見る」リンクが表示されることを確認
+    // URLパラメータ付きのhref属性に対応するように修正
     await waitFor(() => {
       const viewAllLink = screen.getByRole("link", { name: /もっと見る/ });
       expect(viewAllLink).toBeInTheDocument();
-      expect(viewAllLink).toHaveAttribute("href", "/videos");
+      expect(viewAllLink).toHaveAttribute("href", "/videos?type=all");
     });
   });
 

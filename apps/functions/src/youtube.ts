@@ -209,7 +209,7 @@ async function fetchYouTubeVideosLogic(): Promise<{
       const searchResponse: youtube_v3.Schema$SearchListResponse =
         await retryApiCall(async () => {
           const response = await youtube.search.list({
-            part: ["id"],
+            part: ["id", "snippet"], // snippetも取得して配信状態を確認できるようにする
             channelId: SUZUKA_MINASE_CHANNEL_ID,
             maxResults: MAX_VIDEOS_PER_BATCH,
             type: ["video"],
@@ -292,7 +292,12 @@ async function fetchYouTubeVideosLogic(): Promise<{
       const videoResponse: youtube_v3.Schema$VideoListResponse =
         await retryApiCall(async () => {
           const response = await youtube.videos.list({
-            part: ["snippet", "contentDetails", "statistics"],
+            part: [
+              "snippet",
+              "contentDetails",
+              "statistics",
+              "liveStreamingDetails",
+            ],
             id: batchIds,
             maxResults: MAX_VIDEOS_PER_BATCH,
           });
@@ -356,6 +361,8 @@ async function fetchYouTubeVideosLogic(): Promise<{
       channelId: video.snippet.channelId ?? "",
       channelTitle: video.snippet.channelTitle ?? "",
       lastFetchedAt: now,
+      // 配信状態を取得（none, live, upcoming のいずれか）
+      liveBroadcastContent: video.snippet.liveBroadcastContent ?? "none",
     };
 
     const videoRef = videosCollection.doc(video.id);
