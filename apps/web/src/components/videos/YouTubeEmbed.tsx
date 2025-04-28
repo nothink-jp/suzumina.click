@@ -10,6 +10,8 @@ export interface YouTubePlayer {
   getCurrentTime: () => number;
   setVolume: (volume: number) => void;
   getPlayerState: () => number;
+  // destroy()はYouTube IFrame APIに存在するが公式の型定義には含まれていないメソッド
+  destroy: () => void;
 }
 
 // YouTube IFrame API用のグローバル型定義
@@ -132,7 +134,6 @@ export default function YouTubeEmbed({
       // クリーンアップ時にプレーヤーを破棄
       if (playerRef.current) {
         try {
-          // @ts-ignore - destroy()メソッドは型定義にないが存在する
           playerRef.current.destroy();
         } catch (error) {
           console.error("プレーヤーの破棄に失敗しました:", error);
