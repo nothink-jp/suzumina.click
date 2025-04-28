@@ -29,11 +29,40 @@
 - [x] サンプルデータ生成スクリプトの作成
 - [x] エミュレーター使用方法のドキュメント作成
 
-#### 将来的な拡張（フェーズ3以降）
+#### 音声クリップ機能の実装（v0.3.0）
 
-- [ ] 音声クリップ用のFirestoreスキーマ設計
-- [ ] 音声クリップ管理機能の実装
-- [ ] 音声ボタンUIの実装
+以下のタスクは音声クリップ機能の実装に関するものです。詳細な計画は [AUDIO_CLIP_DESIGN.md](./AUDIO_CLIP_DESIGN.md) を参照してください。
+
+##### フェーズ1: データモデルとAPI実装
+
+- [x] 音声クリップ用のFirestoreスキーマ設計
+- [x] 型定義の作成 (`src/lib/audioclips/types.ts`)
+- [x] Firestoreセキュリティルールの更新
+- [x] クライアントAPIの実装 (`src/lib/audioclips/api.ts`)
+- [x] サーバーサイドAPIの実装
+  - [x] 音声クリップ一覧/作成 (`src/app/api/audioclips/route.ts`)
+  - [x] 個別クリップ操作 (`src/app/api/audioclips/[clipId]/route.ts`)
+  - [x] 再生回数更新 (`src/app/api/audioclips/[clipId]/play/route.ts`)
+  - [x] お気に入り登録/解除 (`src/app/api/audioclips/[clipId]/favorite/route.ts`)
+
+##### フェーズ2: 基本UIコンポーネント実装
+
+- [ ] AudioClipButtonコンポーネントの実装 (`src/components/audioclips/AudioClipButton.tsx`)
+- [ ] AudioClipPlayerコンポーネントの実装 (`src/components/audioclips/AudioClipPlayer.tsx`)
+- [ ] AudioClipListコンポーネントの実装 (`src/components/audioclips/AudioClipList.tsx`)
+- [ ] 動画詳細ページへの統合 (`src/app/videos/[videoId]/page.tsx`)
+
+##### フェーズ3: 音声クリップ作成機能実装
+
+- [ ] AudioClipCreatorコンポーネントの実装 (`src/components/audioclips/AudioClipCreator.tsx`)
+- [ ] YouTubeプレーヤーとの連携
+- [ ] プレビュー機能の実装
+
+##### フェーズ4: 拡張機能実装
+
+- [ ] お気に入り機能の実装
+- [ ] タグ機能の実装
+- [ ] 検索・フィルタリング機能の実装
 
 ### インフラストラクチャ最適化（v0.1.4）
 
