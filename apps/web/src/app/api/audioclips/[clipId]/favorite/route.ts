@@ -8,15 +8,16 @@ import { getCurrentUser } from "../../../auth/getCurrentUser";
  * 音声クリップお気に入り登録/解除API
  *
  * @param request リクエスト
- * @param params パスパラメータ
+ * @param context コンテキスト
  * @returns レスポンス
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { clipId: string } },
+  { params }: { params: Promise<{ clipId: string }> },
 ) {
   try {
-    const { clipId } = params;
+    // paramsをawaitで解決
+    const { clipId } = await params;
 
     // 認証チェック
     const currentUser = await getCurrentUser();
@@ -113,15 +114,16 @@ export async function POST(
  * お気に入り状態確認API
  *
  * @param request リクエスト
- * @param params パスパラメータ
+ * @param context コンテキスト
  * @returns レスポンス
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { clipId: string } },
+  { params }: { params: Promise<{ clipId: string }> },
 ) {
   try {
-    const { clipId } = params;
+    // paramsをawaitで解決
+    const { clipId } = await params;
 
     // 認証チェック
     const currentUser = await getCurrentUser();

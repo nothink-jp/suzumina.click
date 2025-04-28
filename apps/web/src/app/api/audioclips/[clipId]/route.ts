@@ -8,15 +8,16 @@ import { getCurrentUser } from "../../auth/getCurrentUser";
  * 特定の音声クリップ取得API
  *
  * @param request リクエスト
- * @param params パスパラメータ
+ * @param context コンテキスト
  * @returns レスポンス
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { clipId: string } },
+  { params }: { params: Promise<{ clipId: string }> },
 ) {
   try {
-    const { clipId } = params;
+    // paramsをawaitで解決
+    const { clipId } = await params;
 
     if (!clipId) {
       return NextResponse.json(
@@ -73,15 +74,16 @@ export async function GET(
  * 音声クリップ更新API
  *
  * @param request リクエスト
- * @param params パスパラメータ
+ * @param context コンテキスト
  * @returns レスポンス
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { clipId: string } },
+  { params }: { params: Promise<{ clipId: string }> },
 ) {
   try {
-    const { clipId } = params;
+    // paramsをawaitで解決
+    const { clipId } = await params;
 
     // 認証チェック
     const currentUser = await getCurrentUser();
@@ -147,15 +149,16 @@ export async function PATCH(
  * 音声クリップ削除API
  *
  * @param request リクエスト
- * @param params パスパラメータ
+ * @param context コンテキスト
  * @returns レスポンス
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { clipId: string } },
+  { params }: { params: Promise<{ clipId: string }> },
 ) {
   try {
-    const { clipId } = params;
+    // paramsをawaitで解決
+    const { clipId } = await params;
 
     // 認証チェック
     const currentUser = await getCurrentUser();

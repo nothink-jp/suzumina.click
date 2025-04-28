@@ -7,15 +7,16 @@ import { initializeFirebaseAdmin } from "../../../auth/firebase-admin";
  * 音声クリップ再生回数インクリメントAPI
  *
  * @param request リクエスト
- * @param params パスパラメータ
+ * @param context コンテキスト
  * @returns レスポンス
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { clipId: string } },
+  { params }: { params: Promise<{ clipId: string }> },
 ) {
   try {
-    const { clipId } = params;
+    // paramsをawaitで解決
+    const { clipId } = await params;
 
     if (!clipId) {
       return NextResponse.json(
