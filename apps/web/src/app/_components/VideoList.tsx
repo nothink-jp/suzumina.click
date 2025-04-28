@@ -85,7 +85,10 @@ export default function VideoList({
 
   // フィルタの変更ハンドラ
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setVideoType(e.target.value as VideoType);
+    const newVideoType = e.target.value as VideoType;
+    setVideoType(newVideoType);
+    // フィルタ変更時に即座に動画を再読み込み
+    loadVideos(true);
   };
 
   // 配信状態によって動画リストに表示するヘッダーテキストを変更

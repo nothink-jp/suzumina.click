@@ -2,16 +2,6 @@ import type { LiveBroadcastContent, Video } from "@/lib/videos/types";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import type { DocumentData, Query } from "firebase-admin/firestore";
-import {
-  type Firestore,
-  collection,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  startAfter,
-  where,
-} from "firebase/firestore";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -97,11 +87,11 @@ export async function GET(request: NextRequest) {
 
     // 配信状態によるフィルタリングを優先
     if (videoTypeParam === "archived") {
-      // 配信済み動画：LiveBroadcastContentが「none」または「archived」
-      // または配信状態がなく公開日が過去のもの
+      // 配信済み動画：LiveBroadcastContentが「none」の動画を表示
+      // (YouTubeのAPIでは配信終了後は "none" になる)
       const now = new Date();
 
-      // APIから取得した配信状態が使用可能な場合はそれを使う
+      // APIから取得した配信状態を使ってフィルタリング
       videosQuery = videosRef
         .where("liveBroadcastContent", "in", ["none"])
         .orderBy("publishedAt", "desc")
