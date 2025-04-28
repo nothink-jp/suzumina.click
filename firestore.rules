@@ -2,9 +2,58 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 開発環境ではすべてのアクセスを許可
+    // 開発環境の場合はすべてのアクセスを許可
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null &&
+                           request.resource.data.keys().hasAll(['__dev']) &&
+                           request.resource.data.__dev == true;
+    }
+
+    // videos コレクション - 読み取りは全員可能、書き込みは Cloud Functions のみ
+    match /videos/{videoId} {
+      allow read;
+      allow write: if false;
+    }
+    
+    // youtubeMetadata コレクション - Cloud Functions のみアクセス可能
+    match /youtubeMetadata/{docId} {
+      allow read, write: if false;
+    }
+
+    // audioClips コレクション - 音声クリップ
+    match /audioClips/{clipId} {
+      // 読み取り権限: 公開クリップは全員、非公開クリップは作成者のみ
+      allow read: if resource.data.isPublic == true ||
+                  (request.auth != null && resource.data.userId == request.auth.uid);
+      
+      // 作成権限: 認証済みユーザーのみ、自分のユーザー情報のみ設定可能
+      allow create: if request.auth != null &&
+                    request.resource.data.userId == request.auth.uid;
+      
+      // 更新権限: 作成者のみ、特定フィールドのみ更新可能
+      allow update: if request.auth != null &&
+                    resource.data.userId == request.auth.uid &&
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.videoId == resource.data.videoId;
+      
+      // 削除権限: 作成者のみ
+      allow delete: if request.auth != null &&
+                    resource.data.userId == request.auth.uid;
+    }
+
+    // audioClipFavorites コレクション - お気に入り登録
+    match /audioClipFavorites/{favoriteId} {
+      // 読み取り権限: 関連ユーザーのみ
+      allow read: if request.auth != null &&
+                  resource.data.userId == request.auth.uid;
+      
+      // 作成権限: 認証済みユーザーのみ、自分のIDのみ設定可能
+      allow create: if request.auth != null &&
+                    request.resource.data.userId == request.auth.uid;
+      
+      // 削除権限: 作成者のみ
+      allow delete: if request.auth != null &&
+                    resource.data.userId == request.auth.uid;
     }
   }
 }

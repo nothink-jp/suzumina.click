@@ -30,6 +30,7 @@ erDiagram
         string channelId "チャンネルID"
         string channelTitle "チャンネル名"
         timestamp lastFetchedAt "最終取得日時"
+        string_nullable liveBroadcastContent "配信状態"
     }
 
     youtubeMetadata {
@@ -65,6 +66,7 @@ YouTubeの動画情報を格納します。Cloud Functions (`fetchYouTubeVideos`
 | `channelId` | string | チャンネルID（"UChiMMOhl6FpzjoRqvZ5rcaA"固定） |
 | `channelTitle` | string | チャンネル名（"涼花みなせ / Suzuka Minase"） |
 | `lastFetchedAt` | timestamp | このデータの最終取得/更新日時 |
+| `liveBroadcastContent` | string \| null | 配信状態（"none": 通常動画/配信済み、"live": ライブ配信中、"upcoming": 配信予定） |
 
 #### 使用例
 
@@ -134,7 +136,16 @@ if (metadata.exists) {
       .get();
     ```
 
-3. **処理メタデータの確認:**
+3. **ライブ配信中または予定の動画を取得:**
+
+    ```typescript
+    const liveVideos = await firestore.collection('videos')
+      .where('liveBroadcastContent', 'in', ['live', 'upcoming'])
+      .orderBy('publishedAt')
+      .get();
+    ```
+
+4. **処理メタデータの確認:**
 
     ```typescript
     const metadataDoc = await firestore.collection('youtubeMetadata')
@@ -181,6 +192,7 @@ service cloud.firestore {
 
 1. `videos` コレクション:
     - `publishedAt` (降順) - 最新の動画を取得するため
+    - `liveBroadcastContent`, `publishedAt` (昇順) - ライブ配信・予定の動画をソートするため
 
 ```yaml
 indexes:
@@ -189,6 +201,13 @@ indexes:
     fields:
       - fieldPath: publishedAt
         order: DESCENDING
+  - collectionGroup: videos
+    queryScope: COLLECTION
+    fields:
+      - fieldPath: liveBroadcastContent
+        order: ASCENDING
+      - fieldPath: publishedAt
+        order: ASCENDING
 ```
 
 *Firebase コンソールまたは `firebase deploy --only firestore:indexes` でデプロイが必要です。*
@@ -203,5 +222,6 @@ indexes:
 
 | 日付       | バージョン | 変更内容                                                                                                |
 |------------|-----------|-------------------------------------------------------------------------------------------------------|
+| 2025-04-29 | 1.2       | `videos` コレクションに `liveBroadcastContent` フィールドを追加、配信状態に関連するインデックスとクエリパターンを追加 |
 | 2025-04-21 | 1.1       | 実装に合わせて更新: `youtubeMetadata` の型を修正、`users`, `userPreferences` コレクション定義を削除、関連記述を修正 |
 | 2025-04-20 | 1.0       | 初版作成 - YouTubeビデオ情報とメタデータスキーマの定義                                                     |
