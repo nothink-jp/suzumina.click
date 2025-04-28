@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
-import { createAudioClip } from "../../lib/audioclips/api";
 import type { AudioClipCreateData } from "../../lib/audioclips/types";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 
@@ -146,7 +145,17 @@ export default function AudioClipCreator({
         tags,
       };
 
-      await createAudioClip(clipData);
+      // 直接Firestoreへアクセスする代わりにAPIエンドポイントを使用
+      const response = await fetch("/api/audioclips", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(clipData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "音声クリップの作成に失敗しました");
+      }
 
       // フォームをリセット
       setTitle("");
@@ -159,8 +168,8 @@ export default function AudioClipCreator({
       // 親コンポーネントに通知
       onClipCreated();
     } catch (error) {
-      console.error("クリップの作成に失敗しました:", error);
-      setError("クリップの作成に失敗しました");
+      console.error("音声クリップの作成に失敗しました:", error);
+      setError("音声クリップの作成に失敗しました");
     } finally {
       setIsCreating(false);
     }
