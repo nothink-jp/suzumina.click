@@ -2,6 +2,16 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import VideosPage from "./page";
 
+// Reactのモック
+vi.mock("react", async () => {
+  const actual = await vi.importActual("react");
+  return {
+    ...actual,
+    // Suspenseをモックして、childrenを直接レンダリングするように
+    Suspense: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  };
+});
+
 // next/navigationのモック
 vi.mock("next/navigation", () => ({
   useSearchParams: () => ({
