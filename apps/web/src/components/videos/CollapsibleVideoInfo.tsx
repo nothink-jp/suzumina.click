@@ -36,7 +36,7 @@ export default function CollapsibleVideoInfo({
       {/* 説明を表示/非表示するボタン */}
       <Disclosure>
         {({ open }) => (
-          <>
+          <div>
             <DisclosureButton className="w-full p-3 bg-base-200 flex justify-between items-center text-left border-t border-base-300">
               <h3 className="text-sm font-medium">動画の説明</h3>
               <span className="text-base-content opacity-70">
@@ -63,7 +63,7 @@ export default function CollapsibleVideoInfo({
             <DisclosurePanel className="p-4 bg-base-100 border-t border-base-300">
               <p className="whitespace-pre-line text-sm">{video.description}</p>
             </DisclosurePanel>
-          </>
+          </div>
         )}
       </Disclosure>
     </div>

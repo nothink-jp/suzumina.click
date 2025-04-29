@@ -193,25 +193,28 @@ service cloud.firestore {
 1. `videos` コレクション:
     - `publishedAt` (降順) - 最新の動画を取得するため
     - `liveBroadcastContent`, `publishedAt` (昇順) - ライブ配信・予定の動画をソートするため
+    - `liveBroadcastContent`, `publishedAt` (降順) - ライブ配信・予定の動画を逆順でソートするため
 
-```yaml
-indexes:
-  - collectionGroup: videos # collectionGroup を使用 (単一コレクションインデックスでも可)
-    queryScope: COLLECTION
-    fields:
-      - fieldPath: publishedAt
-        order: DESCENDING
-  - collectionGroup: videos
-    queryScope: COLLECTION
-    fields:
-      - fieldPath: liveBroadcastContent
-        order: ASCENDING
-      - fieldPath: publishedAt
-        order: ASCENDING
+**注意:** インデックスの管理はTerraformで行っています。`terraform/firestore_indexes.tf`ファイルでインデックスを定義し、通常のTerraformワークフローでデプロイしてください。`firestore.indexes.json`ファイルは使用していません。
+
+```hcl
+# Terraform での定義例（terraform/firestore_indexes.tf参照）
+
+resource "google_firestore_index" "videos_liveBroadcast_publishedAt_desc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+  
+  fields {
+    field_path = "liveBroadcastContent"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "publishedAt"
+    order      = "DESCENDING"
+  }
+}
 ```
-
-*Firebase コンソールまたは `firebase deploy --only firestore:indexes` でデプロイが必要です。*
-
 ## 7. データ移行・バックアップ戦略
 
 1. **定期バックアップ:** Firestore のエクスポート機能を使用して定期的にバックアップを取得します。

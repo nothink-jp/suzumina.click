@@ -23,7 +23,7 @@ service cloud.firestore {
     // audioClips コレクション - 音声クリップ
     match /audioClips/{clipId} {
       // 読み取り権限: 公開クリップは全員、非公開クリップは作成者のみ
-      allow read: if resource.data.isPublic == true ||
+      allow read: if resource.data.isPublic == true || 
                   (request.auth != null && resource.data.userId == request.auth.uid);
       
       // 作成権限: 認証済みユーザーのみ、自分のユーザー情報のみ設定可能

@@ -1,12 +1,12 @@
-import type { UserRecord } from "firebase-admin/auth";
 import Link from "next/link";
+import type { UserProfile } from "@/lib/users/types";
 
 /**
  * ユーザーのログイン状態を表示するコンポーネント
  */
 export interface UserStatusCardProps {
   /** ログインしているユーザー情報（nullの場合は非ログイン状態） */
-  user: UserRecord | null;
+  user: UserProfile | null;
 }
 
 export default function UserStatusCard({ user }: UserStatusCardProps) {
@@ -26,7 +26,7 @@ export default function UserStatusCard({ user }: UserStatusCardProps) {
                 <div className="w-12 rounded-full">
                   <img
                     src={user.photoURL}
-                    alt={`${user.displayName}のアバター`}
+                    alt={`${user.preferredName}のアバター`}
                   />
                 </div>
               </div>
@@ -34,9 +34,14 @@ export default function UserStatusCard({ user }: UserStatusCardProps) {
             <p>
               ユーザー名:{" "}
               <span className="font-medium">
-                {user.displayName || "未設定"}
+                {user.preferredName}
               </span>
             </p>
+            {user.bio && (
+              <p className="text-sm italic overflow-hidden text-ellipsis">
+                "{user.bio.length > 50 ? `${user.bio.substring(0, 50)}...` : user.bio}"
+              </p>
+            )}
             <div className="card-actions justify-end mt-2">
               <Link href="/profile" className="btn btn-sm btn-primary">
                 プロフィール

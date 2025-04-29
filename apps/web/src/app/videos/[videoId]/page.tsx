@@ -32,7 +32,9 @@ export default async function VideoPage(props: unknown) {
   // 型アサーションを使用して型チェックエラーを回避
   // Next.js 15.3.1の型との互換性を確保するための一時的な対応
   const { params } = props as VideoPageProps;
-  const { videoId } = params;
+
+  // paramsをawaitすることで問題を解決
+  const { videoId } = await Promise.resolve(params);
 
   // 動画情報を取得
   const video = await getVideoByIdServer(videoId);
