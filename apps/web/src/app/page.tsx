@@ -1,7 +1,7 @@
 import Hero from "@/components/ui/Hero";
 import UserStatusCard from "@/components/ui/UserStatusCard";
 import VideoList from "./_components/VideoList";
-import { getCurrentUser } from "./api/auth/getCurrentUser";
+import { getProfile } from "./api/profile/getProfile";
 
 /**
  * このページを動的レンダリングするための設定
@@ -10,8 +10,8 @@ import { getCurrentUser } from "./api/auth/getCurrentUser";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // サーバーサイドでログイン状態を確認
-  const user = await getCurrentUser();
+  // サーバーサイドでログイン状態とプロフィール情報を確認
+  const userProfile = await getProfile();
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -27,7 +27,7 @@ export default async function Home() {
         {/* サイドバー */}
         <div className="lg:col-span-1 space-y-6">
           {/* ユーザー状態カード */}
-          <UserStatusCard user={user} />
+          <UserStatusCard user={userProfile} />
 
           {/* 他のサイドバーコンテンツをここに追加可能 */}
           <div className="card bg-base-200 shadow-sm">

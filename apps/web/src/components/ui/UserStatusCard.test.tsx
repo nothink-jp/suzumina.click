@@ -33,7 +33,7 @@ describe("UserStatusCardコンポーネント", () => {
     render(<UserStatusCard user={mockUser} />);
 
     // 検証
-    expect(screen.getByText("ログイン中")).toBeInTheDocument();
+    expect(screen.getByText("ログイン中です")).toBeInTheDocument();
 
     // テキストを含む要素を取得するためにテキスト関数を使用
     expect(

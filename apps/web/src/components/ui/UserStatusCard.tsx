@@ -1,4 +1,4 @@
-import type { UserRecord } from "firebase-admin/auth";
+import type { UserProfile } from "@/lib/users/types";
 import Link from "next/link";
 
 /**
@@ -6,7 +6,7 @@ import Link from "next/link";
  */
 export interface UserStatusCardProps {
   /** ログインしているユーザー情報（nullの場合は非ログイン状態） */
-  user: UserRecord | null;
+  user: UserProfile | null;
 }
 
 export default function UserStatusCard({ user }: UserStatusCardProps) {
@@ -16,7 +16,7 @@ export default function UserStatusCard({ user }: UserStatusCardProps) {
     <div className="card bg-base-200 shadow-sm">
       <div className="card-body p-4 md:p-6">
         <h2 className="card-title text-lg">
-          {isLoggedIn ? "ログイン中" : "ログインしていません"}
+          {isLoggedIn ? "ログイン中です" : "ログインしていません"}
         </h2>
 
         {isLoggedIn ? (
@@ -26,7 +26,7 @@ export default function UserStatusCard({ user }: UserStatusCardProps) {
                 <div className="w-12 rounded-full">
                   <img
                     src={user.photoURL}
-                    alt={`${user.displayName}のアバター`}
+                    alt={`${user.displayName || "未設定"}のアバター`}
                   />
                 </div>
               </div>
@@ -37,6 +37,15 @@ export default function UserStatusCard({ user }: UserStatusCardProps) {
                 {user.displayName || "未設定"}
               </span>
             </p>
+            {user.bio && (
+              <p className="text-sm italic overflow-hidden text-ellipsis">
+                "
+                {user.bio.length > 50
+                  ? `${user.bio.substring(0, 50)}...`
+                  : user.bio}
+                "
+              </p>
+            )}
             <div className="card-actions justify-end mt-2">
               <Link href="/profile" className="btn btn-sm btn-primary">
                 プロフィール

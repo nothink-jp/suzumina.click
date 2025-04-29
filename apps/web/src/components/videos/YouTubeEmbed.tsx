@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // YouTubePlayer型の定義
 export interface YouTubePlayer {
@@ -73,10 +73,17 @@ export default function YouTubeEmbed({
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [isApiLoaded, setIsApiLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const playerElementId = `youtube-player-${videoId}`;
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
+  const timeoutDuration = 10000; // 10秒にタイムアウトを延長
 
   // YouTube IFrame APIのロード
   useEffect(() => {
+    // エラー状態をリセット
+    setLoadError(null);
+
     // APIがすでにロードされている場合はスキップ
     if (window.YT?.Player) {
       setIsApiLoaded(true);
@@ -100,6 +107,12 @@ export default function YouTubeEmbed({
     script.id = "youtube-iframe-api";
     script.src = "https://www.youtube.com/iframe_api";
     script.async = true;
+    script.onerror = () => {
+      // スクリプトロード失敗時の処理
+      setLoadError(
+        "YouTube APIの読み込みに失敗しました。ネットワーク接続を確認してください。",
+      );
+    };
     document.body.appendChild(script);
 
     return () => {
@@ -108,10 +121,48 @@ export default function YouTubeEmbed({
     };
   }, []);
 
+  // 再試行機能を含むプレーヤーの初期化
+  const loadYouTubeAPI = useCallback(() => {
+    // 再試行回数をリセット
+    retryCountRef.current = 0;
+
+    // エラー状態をリセット
+    setLoadError(null);
+
+    // APIスクリプトをリロード
+    const existingScript = document.getElementById("youtube-iframe-api");
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    const script = document.createElement("script");
+    script.id = "youtube-iframe-api";
+    script.src = "https://www.youtube.com/iframe_api";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
   // プレーヤーの初期化
   useEffect(() => {
     // APIがロードされていない、またはコンテナが存在しない場合はスキップ
     if (!isApiLoaded || !containerRef.current) return;
+
+    // プレーヤー要素が既に存在するか確認
+    const existingPlayerElement = document.getElementById(playerElementId);
+    if (!existingPlayerElement) {
+      // プレーヤー要素が存在しない場合は、新しく作成
+      const playerElement = document.createElement("div");
+      playerElement.id = playerElementId;
+      playerElement.className = "absolute top-0 left-0 w-full h-full";
+      if (title) {
+        playerElement.setAttribute("title", title);
+      } else {
+        playerElement.setAttribute("title", "YouTube video player");
+      }
+
+      // コンテナに追加
+      containerRef.current.appendChild(playerElement);
+    }
 
     // YTオブジェクトが正しく初期化されているか確認
     if (!window.YT || !window.YT.Player) {
@@ -123,11 +174,25 @@ export default function YouTubeEmbed({
         }
       }, 100);
 
-      // 5秒後にもロードされていなければインターバルをクリア（タイムアウト処理）
+      // タイムアウト設定（10秒に延長）
       setTimeout(() => {
         clearInterval(checkYTInterval);
-        console.error("YouTube IFrame APIのロードに失敗しました");
-      }, 5000);
+        if (!window.YT?.Player) {
+          console.error("YouTube IFrame APIのロードに失敗しました");
+          setLoadError(
+            "YouTube動画プレーヤーの読み込みに失敗しました。再試行してください。",
+          );
+
+          // 再試行回数が上限に達していなければ再試行
+          if (retryCountRef.current < maxRetries) {
+            retryCountRef.current++;
+            console.log(
+              `YouTube API読み込み再試行中... (${retryCountRef.current}/${maxRetries})`,
+            );
+            loadYouTubeAPI();
+          }
+        }
+      }, timeoutDuration);
 
       return () => {
         clearInterval(checkYTInterval);
@@ -153,6 +218,29 @@ export default function YouTubeEmbed({
     function initializePlayer() {
       try {
         setIsLoading(true);
+        setLoadError(null);
+
+        // すでにプレーヤーが存在する場合は破棄
+        if (playerRef.current) {
+          try {
+            playerRef.current.destroy();
+          } catch (error) {
+            console.error("既存プレーヤーの破棄に失敗しました:", error);
+          }
+          playerRef.current = null;
+        }
+
+        // プレーヤー要素が存在することを確認
+        const playerElement = document.getElementById(playerElementId);
+        if (!playerElement) {
+          console.error("プレーヤー要素が見つかりません:", playerElementId);
+          setIsLoading(false);
+          setLoadError(
+            "プレーヤー要素が見つかりませんでした。ページを再読み込みしてください。",
+          );
+          return;
+        }
+
         playerRef.current = new window.YT.Player(playerElementId, {
           videoId,
           playerVars: {
@@ -169,14 +257,24 @@ export default function YouTubeEmbed({
                 onReady(event.target);
               }
             },
+            onError: (event) => {
+              console.error("YouTubeプレーヤーエラー:", event);
+              setIsLoading(false);
+              setLoadError(
+                "動画の読み込みに失敗しました。動画IDが正しいか確認してください。",
+              );
+            },
           },
         });
       } catch (error) {
         console.error("YouTubeプレーヤーの初期化に失敗しました:", error);
         setIsLoading(false);
+        setLoadError(
+          "YouTubeプレーヤーの初期化に失敗しました。ブラウザを更新して再試行してください。",
+        );
       }
     }
-  }, [isApiLoaded, videoId, onReady, playerElementId]);
+  }, [isApiLoaded, videoId, onReady, playerElementId, title, loadYouTubeAPI]);
 
   // レスポンシブ対応
   useEffect(() => {
@@ -200,21 +298,58 @@ export default function YouTubeEmbed({
   }, []);
 
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <div
         ref={containerRef}
         className="w-full bg-base-200 relative rounded-lg overflow-hidden"
       >
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
+        {/* ロード中の表示 */}
+        {isLoading && !loadError && (
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ zIndex: 1 }}
+          >
             <span className="loading loading-spinner loading-lg text-primary" />
           </div>
         )}
-        <div
-          id={playerElementId}
-          className="absolute top-0 left-0 w-full h-full"
-          title={title || "YouTube video player"}
-        />
+
+        {/* エラー表示 */}
+        {loadError && (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-base-100 bg-opacity-90"
+            style={{ zIndex: 2 }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 text-error mb-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <title>エラーアイコン</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <p className="text-error font-bold mb-2">{loadError}</p>
+            <button
+              type="button"
+              className="btn btn-primary mt-2"
+              onClick={loadYouTubeAPI}
+            >
+              再試行する
+            </button>
+          </div>
+        )}
+
+        {/* 
+          プレーヤー要素はJavaScriptで動的に生成するため、
+          ここでは空のdivを用意しておく
+        */}
+        <div id={`${playerElementId}-container`} className="w-full h-full" />
       </div>
     </div>
   );

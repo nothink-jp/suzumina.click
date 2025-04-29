@@ -192,13 +192,13 @@ export default function AudioClipCreator({
     <div className="card bg-base-100 shadow-sm overflow-hidden w-full">
       <Disclosure>
         {({ open }) => (
-          <>
+          <div>
             {/* ヘッダー部分（常に表示） */}
             <DisclosureButton className="w-full p-4 bg-primary bg-opacity-10 flex justify-between items-center text-left">
-              <h3 className="text-lg font-semibold text-primary">
+              <h3 className="text-lg font-bold text-primary-content">
                 音声クリップを作成
               </h3>
-              <span className="text-primary">
+              <span className="text-primary-content">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="20"
@@ -438,13 +438,13 @@ export default function AudioClipCreator({
                     startTime === null ||
                     endTime === null
                   }
-                  className={`btn btn-primary ${isCreating ? "loading" : ""}`}
+                  className={`btn btn-primary text-white ${isCreating ? "loading" : ""}`}
                 >
                   {isCreating ? "作成中..." : "クリップを作成"}
                 </button>
               </div>
             </DisclosurePanel>
-          </>
+          </div>
         )}
       </Disclosure>
     </div>

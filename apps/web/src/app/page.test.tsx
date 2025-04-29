@@ -62,9 +62,9 @@ vi.mock("@/components/ui/UserStatusCard", () => ({
   ),
 }));
 
-// getCurrentUser 関数をモック
-vi.mock("./api/auth/getCurrentUser", () => ({
-  getCurrentUser: vi.fn().mockResolvedValue(null), // デフォルトでは非ログイン状態
+// getProfile 関数をモック
+vi.mock("./api/profile/getProfile", () => ({
+  getProfile: vi.fn().mockResolvedValue(null), // デフォルトでは非ログイン状態
 }));
 
 describe("ホームページ", () => {
@@ -97,7 +97,11 @@ describe("ホームページ", () => {
   });
 
   it("非ログイン時には未ログインの表示がされること", async () => {
-    // 準備 & 実行
+    // 準備 - 非ログイン状態のモックを設定
+    const { getProfile } = await import("./api/profile/getProfile");
+    vi.mocked(getProfile).mockResolvedValue(null);
+
+    // 実行
     render(await HomePage());
 
     // 検証
@@ -106,27 +110,19 @@ describe("ホームページ", () => {
 
   it("ログイン時にはユーザー情報が表示されること", async () => {
     // 準備 - ログイン状態のモックを設定
-    const { getCurrentUser } = await import("./api/auth/getCurrentUser");
-    vi.mocked(getCurrentUser).mockResolvedValue({
+    const { getProfile } = await import("./api/profile/getProfile");
+    vi.mocked(getProfile).mockResolvedValue({
       uid: "test-uid",
       displayName: "テストユーザー",
       email: "test@example.com",
+      preferredName: "テストユーザー",
       emailVerified: false,
       disabled: false,
-      metadata: {
-        creationTime: "2025-04-01T00:00:00.000Z",
-        lastSignInTime: "2025-04-20T00:00:00.000Z",
-        toJSON: () => ({
-          creationTime: "2025-04-01T00:00:00.000Z",
-          lastSignInTime: "2025-04-20T00:00:00.000Z",
-        }),
-      },
-      providerData: [],
-      toJSON: (): object => ({
-        uid: "test-uid",
-        displayName: "テストユーザー",
-        email: "test@example.com",
-      }),
+      photoURL: "https://example.com/avatar.jpg",
+      bio: "テスト用ユーザープロフィール",
+      isPublic: true,
+      createdAt: "2025-04-01T00:00:00.000Z",
+      updatedAt: "2025-04-20T00:00:00.000Z",
     });
 
     // 実行

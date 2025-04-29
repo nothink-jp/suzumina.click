@@ -104,5 +104,25 @@ const app = initializeFirebase();
 // Firebase認証の取得
 const auth = getAuthInstance();
 
+/**
+ * Firestoreインスタンスの取得
+ * アプリが初期化されている場合のみ有効
+ */
+const firestoreInstance = app ? getFirestore(app) : null;
+
+// Firestoreエミュレータに接続（開発環境の場合）
+if (
+  firestoreInstance &&
+  process.env.NODE_ENV === "development" &&
+  process.env.NEXT_PUBLIC_USE_EMULATOR === "true" &&
+  typeof window !== "undefined"
+) {
+  connectFirestoreEmulator(firestoreInstance, "localhost", 8080);
+  console.log("Firestore Emulatorに接続しました");
+}
+
+// Firestoreインスタンスをdbとしてエクスポート
+const db = firestoreInstance;
+
 // 各インスタンスをエクスポート
-export { app, auth, getAuthInstance };
+export { app, auth, db, getAuthInstance };
