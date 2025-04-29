@@ -1,6 +1,7 @@
 import { getApps } from "firebase-admin/app";
 import type {
   DocumentData,
+  Firestore,
   Query,
   QueryDocumentSnapshot,
 } from "firebase-admin/firestore";
@@ -34,8 +35,37 @@ export async function GET(request: NextRequest) {
     }
 
     // Firebase Admin SDKを初期化
-    initializeFirebaseAdmin(); // Authの初期化
-    const db = getFirestore(); // Firestoreの取得
+    try {
+      console.log("Firebase Admin SDKの初期化を開始します");
+      initializeFirebaseAdmin(); // Authの初期化
+      console.log("Firebase Admin SDKの初期化が完了しました");
+    } catch (initError) {
+      console.error("Firebase Admin SDKの初期化に失敗しました:", initError);
+      return NextResponse.json(
+        {
+          error: "サーバー側の認証初期化に失敗しました",
+          details:
+            initError instanceof Error ? initError.message : String(initError),
+        },
+        { status: 500 },
+      );
+    }
+
+    // Firestoreの取得
+    let db: Firestore;
+    try {
+      db = getFirestore();
+      console.log("Firestoreの接続に成功しました");
+    } catch (dbError) {
+      console.error("Firestoreの取得に失敗しました:", dbError);
+      return NextResponse.json(
+        {
+          error: "データベース接続に失敗しました",
+          details: dbError instanceof Error ? dbError.message : String(dbError),
+        },
+        { status: 500 },
+      );
+    }
 
     // クエリ条件の構築
     const clipsCollection = db.collection("audioClips");
@@ -69,29 +99,46 @@ export async function GET(request: NextRequest) {
       queryBuilder = queryBuilder.startAfter(startAfterTimestamp);
     }
 
-    const snapshot = await queryBuilder.get();
-    const clips = snapshot.docs.map((doc: QueryDocumentSnapshot) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate().toISOString(),
-        updatedAt: data.updatedAt?.toDate().toISOString(),
-      };
-    });
+    try {
+      const snapshot = await queryBuilder.get();
+      const clips = snapshot.docs.map((doc: QueryDocumentSnapshot) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate().toISOString(),
+          updatedAt: data.updatedAt?.toDate().toISOString(),
+        };
+      });
 
-    // 次のページがあるかどうか
-    const hasMore = clips.length === limit;
+      // 次のページがあるかどうか
+      const hasMore = clips.length === limit;
 
-    return NextResponse.json({
-      clips,
-      hasMore,
-      lastClip: clips.length > 0 ? clips[clips.length - 1] : null,
-    });
+      return NextResponse.json({
+        clips,
+        hasMore,
+        lastClip: clips.length > 0 ? clips[clips.length - 1] : null,
+      });
+    } catch (queryError) {
+      console.error("Firestoreクエリの実行に失敗しました:", queryError);
+      return NextResponse.json(
+        {
+          error: "音声クリップの取得に失敗しました",
+          details:
+            queryError instanceof Error
+              ? queryError.message
+              : String(queryError),
+        },
+        { status: 500 },
+      );
+    }
   } catch (error) {
-    console.error("音声クリップの取得に失敗しました:", error);
+    console.error("音声クリップの取得中に予期せぬエラーが発生しました:", error);
     return NextResponse.json(
-      { error: "音声クリップの取得に失敗しました" },
+      {
+        error: "音声クリップの取得に失敗しました",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 },
     );
   }
@@ -140,15 +187,54 @@ export async function POST(request: NextRequest) {
     }
 
     // Firebase Admin SDKを初期化
-    initializeFirebaseAdmin(); // Authの初期化
-    const db = getFirestore(); // Firestoreの取得
+    try {
+      initializeFirebaseAdmin(); // Authの初期化
+    } catch (initError) {
+      console.error("Firebase Admin SDKの初期化に失敗しました:", initError);
+      return NextResponse.json(
+        {
+          error: "サーバー側の認証初期化に失敗しました",
+          details:
+            initError instanceof Error ? initError.message : String(initError),
+        },
+        { status: 500 },
+      );
+    }
+
+    let db: Firestore;
+    try {
+      db = getFirestore(); // Firestoreの取得
+    } catch (dbError) {
+      console.error("Firestoreの取得に失敗しました:", dbError);
+      return NextResponse.json(
+        {
+          error: "データベース接続に失敗しました",
+          details: dbError instanceof Error ? dbError.message : String(dbError),
+        },
+        { status: 500 },
+      );
+    }
 
     // 動画の存在確認
-    const videoDoc = await db.collection("videos").doc(videoId).get();
-    if (!videoDoc.exists) {
+    try {
+      const videoDoc = await db.collection("videos").doc(videoId).get();
+      if (!videoDoc.exists) {
+        return NextResponse.json(
+          { error: "指定された動画が存在しません" },
+          { status: 404 },
+        );
+      }
+    } catch (videoError) {
+      console.error("動画データの取得に失敗しました:", videoError);
       return NextResponse.json(
-        { error: "指定された動画が存在しません" },
-        { status: 404 },
+        {
+          error: "動画データの取得に失敗しました",
+          details:
+            videoError instanceof Error
+              ? videoError.message
+              : String(videoError),
+        },
+        { status: 500 },
       );
     }
 
@@ -171,19 +257,36 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    const docRef = await db.collection("audioClips").add(newClip);
+    try {
+      const docRef = await db.collection("audioClips").add(newClip);
 
-    // レスポンス用にタイムスタンプをISOString形式に変換
-    return NextResponse.json({
-      id: docRef.id,
-      ...newClip,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+      // レスポンス用にタイムスタンプをISOString形式に変換
+      return NextResponse.json({
+        id: docRef.id,
+        ...newClip,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (createError) {
+      console.error("音声クリップの作成に失敗しました:", createError);
+      return NextResponse.json(
+        {
+          error: "音声クリップの作成に失敗しました",
+          details:
+            createError instanceof Error
+              ? createError.message
+              : String(createError),
+        },
+        { status: 500 },
+      );
+    }
   } catch (error) {
-    console.error("音声クリップの作成に失敗しました:", error);
+    console.error("音声クリップの作成中に予期せぬエラーが発生しました:", error);
     return NextResponse.json(
-      { error: "音声クリップの作成に失敗しました" },
+      {
+        error: "音声クリップの作成に失敗しました",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 },
     );
   }
