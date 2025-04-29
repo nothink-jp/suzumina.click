@@ -1,7 +1,7 @@
 "use client";
 
-import type { UserProfile, UserProfileFormData } from "@/lib/users/types";
 import { updateProfile } from "@/app/api/profile/updateProfile";
+import type { UserProfile, UserProfileFormData } from "@/lib/users/types";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -27,15 +27,14 @@ export default function ProfileEditForm({ profile }: ProfileEditFormProps) {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value, type } = e.target;
-    
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" 
-        ? (e.target as HTMLInputElement).checked
-        : value,
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
@@ -109,10 +108,8 @@ export default function ProfileEditForm({ profile }: ProfileEditFormProps) {
           className="textarea textarea-bordered h-24"
           placeholder="自己紹介を入力（500文字以内）"
           maxLength={500}
-        ></textarea>
-        <span className="label-text-alt">
-          {formData.bio.length}/500文字
-        </span>
+        />
+        <span className="label-text-alt">{formData.bio.length}/500文字</span>
       </div>
 
       <div className="form-control">
@@ -139,7 +136,7 @@ export default function ProfileEditForm({ profile }: ProfileEditFormProps) {
         >
           {isProcessing ? (
             <>
-              <span className="loading loading-spinner loading-xs"></span>
+              <span className="loading loading-spinner loading-xs" />
               更新中...
             </>
           ) : (

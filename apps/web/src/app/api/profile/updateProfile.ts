@@ -1,10 +1,10 @@
 "use server";
 
-import { initializeFirebaseAdmin } from "../auth/firebase-admin";
-import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
-import { getCurrentUser } from "../auth/getCurrentUser";
 import type { UserProfileFormData } from "@/lib/users/types";
+import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
 import { z } from "zod";
+import { initializeFirebaseAdmin } from "../auth/firebase-admin";
+import { getCurrentUser } from "../auth/getCurrentUser";
 
 // バリデーション用のスキーマ
 const profileSchema = z.object({
@@ -30,17 +30,17 @@ export type ProfileUpdateResult = {
 
 /**
  * サーバーサイドでユーザープロフィール情報を更新する関数
- * 
+ *
  * @param formData プロフィール更新用のフォームデータ
  * @returns 更新結果
  */
 export async function updateProfile(
-  formData: UserProfileFormData
+  formData: UserProfileFormData,
 ): Promise<ProfileUpdateResult> {
   try {
     // 現在のユーザー情報を取得
     const currentUser = await getCurrentUser();
-    
+
     // 未ログインの場合はエラー
     if (!currentUser) {
       return {
@@ -61,12 +61,14 @@ export async function updateProfile(
 
     // Firestore初期化
     const firestore = getFirestore();
-    const userProfileRef = firestore.collection("userProfiles").doc(currentUser.uid);
+    const userProfileRef = firestore
+      .collection("userProfiles")
+      .doc(currentUser.uid);
     const profile = result.data;
 
     // ユーザープロフィール情報が存在するか確認
     const userProfileDoc = await userProfileRef.get();
-    
+
     if (userProfileDoc.exists) {
       // 既存情報の更新
       await userProfileRef.update({

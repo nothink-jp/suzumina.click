@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { UserProfile } from "@/lib/users/types";
+import Link from "next/link";
 
 /**
  * ユーザーのログイン状態を表示するコンポーネント
@@ -33,13 +33,15 @@ export default function UserStatusCard({ user }: UserStatusCardProps) {
             )}
             <p>
               ユーザー名:{" "}
-              <span className="font-medium">
-                {user.preferredName}
-              </span>
+              <span className="font-medium">{user.preferredName}</span>
             </p>
             {user.bio && (
               <p className="text-sm italic overflow-hidden text-ellipsis">
-                "{user.bio.length > 50 ? `${user.bio.substring(0, 50)}...` : user.bio}"
+                "
+                {user.bio.length > 50
+                  ? `${user.bio.substring(0, 50)}...`
+                  : user.bio}
+                "
               </p>
             )}
             <div className="card-actions justify-end mt-2">

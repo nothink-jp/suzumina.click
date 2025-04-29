@@ -1,7 +1,7 @@
 import AuthButton from "@/components/ui/AuthButton";
+import { Suspense } from "react";
 import { getProfile } from "../api/profile/getProfile";
 import ProfileEditForm from "./_components/ProfileEditForm";
-import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -52,15 +52,18 @@ export default async function ProfilePage() {
                     <h2 className="card-title text-center">
                       {profile.preferredName}
                       {!profile.isPublic && (
-                        <span className="badge badge-secondary ml-2">非公開</span>
+                        <span className="badge badge-secondary ml-2">
+                          非公開
+                        </span>
                       )}
                     </h2>
                     <p className="text-sm text-gray-500">
-                      Discord ID: {profile.email?.split("@")[0] || "未設定"}
+                      Discord表示名:{" "}
+                      {profile.displayName?.split("@")[0] || "未設定"}
                     </p>
                   </div>
                 </div>
-                
+
                 {profile.bio && (
                   <div className="mt-4">
                     <h3 className="font-bold text-sm">自己紹介</h3>
@@ -69,9 +72,9 @@ export default async function ProfilePage() {
                     </p>
                   </div>
                 )}
-                
-                <div className="divider"></div>
-                
+
+                <div className="divider" />
+
                 <div>
                   <h3 className="font-bold text-sm mb-2">アカウント情報</h3>
                   <ul className="list-disc list-inside space-y-1">
@@ -89,13 +92,15 @@ export default async function ProfilePage() {
               </div>
             </div>
           </div>
-          
+
           {/* プロフィール編集フォーム */}
           <div className="md:col-span-2">
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body">
                 <h2 className="card-title">プロフィール編集</h2>
-                <Suspense fallback={<div className="loading loading-spinner"></div>}>
+                <Suspense
+                  fallback={<div className="loading loading-spinner" />}
+                >
                   <ProfileEditForm profile={profile} />
                 </Suspense>
               </div>

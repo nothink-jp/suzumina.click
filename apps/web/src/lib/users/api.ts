@@ -1,20 +1,24 @@
+import type { UserRecord } from "firebase-admin/auth";
+import type { User } from "firebase/auth";
 /**
  * ユーザープロフィール情報のAPI
- * 
+ *
  * Firestoreからユーザープロフィール情報を取得・更新するための関数群
  */
 import {
+  Timestamp,
   collection,
   doc,
   getDoc,
-  setDoc,
   serverTimestamp,
-  Timestamp,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/client";
-import type { UserProfile, UserProfileData, UserProfileFormData } from "./types";
-import type { UserRecord } from "firebase-admin/auth";
-import type { User } from "firebase/auth";
+import type {
+  UserProfile,
+  UserProfileData,
+  UserProfileFormData,
+} from "./types";
 
 /**
  * ユーザープロフィール情報をFirestoreから取得
@@ -22,7 +26,9 @@ import type { User } from "firebase/auth";
  * @param uid ユーザーID
  * @returns ユーザープロフィール情報またはnull（存在しない場合）
  */
-export async function getUserProfile(uid: string): Promise<UserProfileData | null> {
+export async function getUserProfile(
+  uid: string,
+): Promise<UserProfileData | null> {
   try {
     const userRef = doc(db, "userProfiles", uid);
     const userSnapshot = await getDoc(userRef);
@@ -55,12 +61,12 @@ export async function getUserProfile(uid: string): Promise<UserProfileData | nul
  */
 export async function updateUserProfile(
   uid: string,
-  profileData: UserProfileFormData
+  profileData: UserProfileFormData,
 ): Promise<boolean> {
   try {
     const userRef = doc(db, "userProfiles", uid);
     const userSnapshot = await getDoc(userRef);
-    
+
     // 既存プロフィールが存在するか確認
     if (userSnapshot.exists()) {
       // 更新の場合
@@ -70,7 +76,7 @@ export async function updateUserProfile(
           ...profileData,
           updatedAt: serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
     } else {
       // 新規作成の場合
@@ -97,7 +103,7 @@ export async function updateUserProfile(
  */
 export function mergeUserData(
   authUser: User | UserRecord | null,
-  profileData: UserProfileData | null
+  profileData: UserProfileData | null,
 ): UserProfile | null {
   if (!authUser) return null;
   if (!profileData) {
@@ -119,6 +125,9 @@ export function mergeUserData(
     ...profileData,
     displayName: authUser.displayName,
     photoURL: authUser.photoURL,
-    preferredName: profileData.siteDisplayName || authUser.displayName || authUser.uid.substring(0, 8),
+    preferredName:
+      profileData.siteDisplayName ||
+      authUser.displayName ||
+      authUser.uid.substring(0, 8),
   };
 }

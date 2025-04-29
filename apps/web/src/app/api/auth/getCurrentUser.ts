@@ -22,14 +22,22 @@ export async function getCurrentUser(): Promise<UserRecord | null> {
     const sessionCookie = cookieStore.get("firebase-session");
 
     // デバッグ用：クッキーの状態を確認
-    console.log("セッションクッキーの状態:", sessionCookie ? "存在します" : "存在しません");
+    console.log(
+      "セッションクッキーの状態:",
+      sessionCookie ? "存在します" : "存在しません",
+    );
 
     if (!sessionCookie?.value) {
       // セッションクッキーがない場合は未ログイン
-      console.log("セッションクッキーがありません。エミュレーター環境ではセッションクッキーの代わりにダミーユーザー情報を返します。");
-      
+      console.log(
+        "セッションクッキーがありません。エミュレーター環境ではセッションクッキーの代わりにダミーユーザー情報を返します。",
+      );
+
       // エミュレーター環境の場合、テスト用のダミーユーザーを返す
-      if (process.env.NODE_ENV === "development" || process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+      if (
+        process.env.NODE_ENV === "development" ||
+        process.env.FIREBASE_AUTH_EMULATOR_HOST
+      ) {
         try {
           // 存在するテストユーザーを取得してみる
           const testUserEmail = "test@example.com"; // テストユーザーのメールアドレス
@@ -55,11 +63,14 @@ export async function getCurrentUser(): Promise<UserRecord | null> {
             }
           }
         } catch (error) {
-          console.error("テストユーザーの取得/作成中にエラーが発生しました:", error);
+          console.error(
+            "テストユーザーの取得/作成中にエラーが発生しました:",
+            error,
+          );
           return null;
         }
       }
-      
+
       return null;
     }
 
@@ -72,7 +83,10 @@ export async function getCurrentUser(): Promise<UserRecord | null> {
       const uid = decodedClaims.uid;
 
       // デバッグ用：検証結果を確認
-      console.log("セッションクッキーの検証結果:", uid ? `UID: ${uid}` : "検証失敗");
+      console.log(
+        "セッションクッキーの検証結果:",
+        uid ? `UID: ${uid}` : "検証失敗",
+      );
 
       if (!uid) {
         return null;
@@ -80,14 +94,14 @@ export async function getCurrentUser(): Promise<UserRecord | null> {
 
       // ユーザー情報を取得
       const userRecord = await auth.getUser(uid);
-      
+
       // デバッグ用：取得したユーザー情報を確認
       console.log("取得したユーザー情報:", {
         uid: userRecord.uid,
         displayName: userRecord.displayName,
         email: userRecord.email,
       });
-      
+
       return userRecord;
     } catch (error) {
       console.error("セッションクッキーの検証に失敗しました:", error);
