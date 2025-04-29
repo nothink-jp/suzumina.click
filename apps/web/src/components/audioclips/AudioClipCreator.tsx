@@ -1,6 +1,10 @@
 "use client";
 
-import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
+import {
+  Disclosure,
+  DisclosureButton,
+  DisclosurePanel,
+} from "@headlessui/react";
 import { useRef, useState } from "react";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
 import type { AudioClipCreateData } from "../../lib/audioclips/types";
@@ -345,7 +349,9 @@ export default function AudioClipCreator({
 
                 <div>
                   <div className="label">
-                    <span className="label-text" id="preview-label">プレビュー</span>
+                    <span className="label-text" id="preview-label">
+                      プレビュー
+                    </span>
                   </div>
                   <button
                     aria-labelledby="preview-label"

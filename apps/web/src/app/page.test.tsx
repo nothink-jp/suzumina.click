@@ -27,20 +27,55 @@ vi.mock("./_components/VideoList", () => ({
   ),
 }));
 
+// Hero コンポーネントをモック
+vi.mock("@/components/ui/Hero", () => ({
+  default: ({
+    title,
+    subtitle,
+    children,
+  }: {
+    title: string;
+    subtitle?: string;
+    children?: React.ReactNode;
+  }) => (
+    <div data-testid="mock-hero">
+      <h1>{title}</h1>
+      {subtitle && <p>{subtitle}</p>}
+      {children}
+    </div>
+  ),
+}));
+
+// UserStatusCard コンポーネントをモック
+vi.mock("@/components/ui/UserStatusCard", () => ({
+  default: ({ user }: { user: any }) => (
+    <div data-testid="mock-user-status-card">
+      {user ? (
+        <div>
+          <p>ログイン中です</p>
+          <p>ユーザー名: {user.displayName || "未設定"}</p>
+        </div>
+      ) : (
+        <p>未ログイン</p>
+      )}
+    </div>
+  ),
+}));
+
 // getCurrentUser 関数をモック
 vi.mock("./api/auth/getCurrentUser", () => ({
   getCurrentUser: vi.fn().mockResolvedValue(null), // デフォルトでは非ログイン状態
 }));
 
 describe("ホームページ", () => {
-  it("メインの見出しが表示されること", async () => {
+  it("Heroコンポーネントが表示されること", async () => {
     // 準備 & 実行
-    const { container } = render(await HomePage());
+    render(await HomePage());
 
-    // 検証 - h1タグを直接検索
-    const heading = container.querySelector("h1");
-    expect(heading).toBeInTheDocument();
-    expect(heading?.textContent).toBe("すずみなくりっく！");
+    // 検証
+    const hero = screen.getByTestId("mock-hero");
+    expect(hero).toBeInTheDocument();
+    expect(hero.querySelector("h1")?.textContent).toBe("すずみなくりっく！");
   });
 
   it("VideoListコンポーネントが表示されること", async () => {
@@ -50,10 +85,15 @@ describe("ホームページ", () => {
     // 検証 - モック化されたVideoListコンポーネントを検索
     const videoList = screen.getByTestId("mock-video-list");
     expect(videoList).toBeInTheDocument();
+  });
 
-    // 見出しが表示されていることを確認
-    const heading = screen.getByText("最新動画");
-    expect(heading).toBeInTheDocument();
+  it("UserStatusCardコンポーネントが表示されること", async () => {
+    // 準備 & 実行
+    render(await HomePage());
+
+    // 検証
+    const userStatusCard = screen.getByTestId("mock-user-status-card");
+    expect(userStatusCard).toBeInTheDocument();
   });
 
   it("非ログイン時には未ログインの表示がされること", async () => {
