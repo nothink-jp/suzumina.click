@@ -53,21 +53,59 @@ export default function AudioClipList({
       setIsLoading(true);
       setError(null);
 
-      const params: AudioClipSearchParams = {
-        videoId: videoId, // 明示的にvideoIdを使用
-        limit: 10,
+      // パラメータの準備
+      const params: Record<string, string> = {
+        videoId: videoId,
+        limit: "10",
       };
 
-      // 「もっと見る」の場合は最後のクリップ以降を取得
+      // ページネーション用パラメータ
       if (isLoadMore && lastClip) {
-        params.startAfter = lastClip.createdAt;
+        params.startAfter = lastClip.createdAt.toISOString();
       } else if (!isLoadMore) {
         // 初回読み込みの場合はリセット
         setClips([]);
         setLastClip(undefined);
       }
 
-      const result = await getAudioClipsByVideo(params);
+      // URLパラメータの構築
+      const queryString = new URLSearchParams(params).toString();
+
+      // ヘッダーの準備
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      // 認証トークンをヘッダーに追加（ログイン中の場合）
+      if (user) {
+        const idToken = await user.getIdToken();
+        headers.Authorization = `Bearer ${idToken}`;
+      }
+
+      // APIからデータを取得
+      const response = await fetch(`/api/audioclips?${queryString}`, {
+        method: "GET",
+        headers: headers,
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("APIレスポンスエラー:", errorData);
+        throw new Error(errorData.error || "音声クリップの取得に失敗しました");
+      }
+
+      const data = await response.json();
+      const result = {
+        clips: data.clips,
+        hasMore: data.hasMore,
+        lastClip: data.lastClip
+          ? {
+              ...data.lastClip,
+              createdAt: new Date(data.lastClip.createdAt),
+            }
+          : undefined,
+      };
 
       setClips((prevClips) =>
         isLoadMore ? [...prevClips, ...result.clips] : result.clips,

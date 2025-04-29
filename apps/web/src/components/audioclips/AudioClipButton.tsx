@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { incrementPlayCount, toggleFavorite } from "../../lib/audioclips/api";
 import type { AudioClip } from "../../lib/audioclips/types";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 
@@ -34,8 +33,22 @@ export default function AudioClipButton({
     setIsPlaying(true);
 
     try {
-      // 再生回数をインクリメント
-      await incrementPlayCount(clip.id);
+      // 認証トークンの取得（ログイン中の場合）
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (user) {
+        const idToken = await user.getIdToken();
+        headers.Authorization = `Bearer ${idToken}`;
+      }
+
+      // 再生回数をインクリメント（APIエンドポイント経由）
+      await fetch(`/api/audioclips/${clip.id}/play`, {
+        method: "POST",
+        headers: headers,
+        credentials: "include",
+      });
 
       // 親コンポーネントに再生イベントを通知
       onPlay(clip);
@@ -55,8 +68,21 @@ export default function AudioClipButton({
     try {
       const newFavoriteState = !localFavorite;
 
-      // お気に入り状態を更新
-      await toggleFavorite(clip.id, user.uid, newFavoriteState);
+      // 認証トークンの取得
+      const idToken = await user.getIdToken();
+
+      // お気に入り状態を更新（APIエンドポイント経由）
+      await fetch(`/api/audioclips/${clip.id}/favorite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          isFavorite: newFavoriteState,
+        }),
+        credentials: "include",
+      });
 
       // ローカル状態を更新
       setLocalFavorite(newFavoriteState);

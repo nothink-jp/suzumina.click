@@ -138,6 +138,9 @@ export default function AudioClipCreator({
       setIsCreating(true);
       setError(null);
 
+      // Firebase認証情報を取得
+      const idToken = await user.getIdToken();
+
       const clipData: AudioClipCreateData = {
         videoId,
         title,
@@ -151,16 +154,20 @@ export default function AudioClipCreator({
         tags,
       };
 
-      // 直接Firestoreへアクセスする代わりにAPIエンドポイントを使用
+      // 認証トークンをAuthorizationヘッダーに含める
       const response = await fetch("/api/audioclips", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
         body: JSON.stringify(clipData),
-        credentials: "include", // クッキーを含めてリクエストを送信
+        credentials: "include", // クッキーも含めてリクエストを送信
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("APIレスポンスエラー:", errorData);
         throw new Error(errorData.error || "音声クリップの作成に失敗しました");
       }
 

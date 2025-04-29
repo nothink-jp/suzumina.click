@@ -6,9 +6,10 @@ import CollapsibleVideoInfo from "@/components/videos/CollapsibleVideoInfo";
 import YouTubeEmbed, {
   type YouTubePlayer,
 } from "@/components/videos/YouTubeEmbed";
+import { useAuth } from "@/lib/firebase/AuthProvider";
 import type { Video } from "@/lib/videos/types";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface VideoPageClientProps {
   video: Video;
@@ -21,6 +22,9 @@ interface VideoPageClientProps {
  * 音声クリップをメインコンテンツとして配置
  */
 export default function VideoPageClient({ video }: VideoPageClientProps) {
+  // 認証情報を取得
+  const { user } = useAuth();
+
   // YouTubeプレーヤーへの参照
   const youtubePlayerRef = useRef<YouTubePlayer>(
     null as unknown as YouTubePlayer,
@@ -31,6 +35,16 @@ export default function VideoPageClient({ video }: VideoPageClientProps) {
 
   // クリップリストの更新用キー
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // 認証状態のデバッグログ（開発用）
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        "VideoPageClient 認証状態:",
+        user ? "ログイン済み" : "未ログイン",
+      );
+    }
+  }, [user]);
 
   // YouTubeプレーヤーの参照を設定
   const handlePlayerReady = (player: YouTubePlayer) => {
