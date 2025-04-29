@@ -49,24 +49,12 @@ export const LoggedInWithAvatar: Story = {
     user: {
       uid: "test-uid",
       displayName: "テストユーザー",
-      email: "test@example.com",
-      emailVerified: true,
       photoURL: "https://placehold.jp/150x150.png",
-      disabled: false,
-      metadata: {
-        creationTime: "2025-04-01T00:00:00.000Z",
-        lastSignInTime: "2025-04-28T00:00:00.000Z",
-        toJSON: () => ({
-          creationTime: "2025-04-01T00:00:00.000Z",
-          lastSignInTime: "2025-04-28T00:00:00.000Z",
-        }),
-      },
-      providerData: [],
-      toJSON: () => ({
-        uid: "test-uid",
-        displayName: "テストユーザー",
-        email: "test@example.com",
-      }),
+      preferredName: "テストユーザー",
+      bio: "テストユーザーの自己紹介文です。よろしくお願いします。",
+      updatedAt: new Date("2025-04-28T00:00:00.000Z"),
+      createdAt: new Date("2025-04-01T00:00:00.000Z"),
+      isPublic: true,
     },
   },
 };
@@ -81,24 +69,12 @@ export const LoggedInWithoutAvatar: Story = {
     user: {
       uid: "test-uid",
       displayName: "テストユーザー",
-      email: "test@example.com",
-      emailVerified: true,
-      photoURL: undefined, // nullからundefinedに変更（型エラー対応）
-      disabled: false,
-      metadata: {
-        creationTime: "2025-04-01T00:00:00.000Z",
-        lastSignInTime: "2025-04-28T00:00:00.000Z",
-        toJSON: () => ({
-          creationTime: "2025-04-01T00:00:00.000Z",
-          lastSignInTime: "2025-04-28T00:00:00.000Z",
-        }),
-      },
-      providerData: [],
-      toJSON: () => ({
-        uid: "test-uid",
-        displayName: "テストユーザー",
-        email: "test@example.com",
-      }),
+      photoURL: null,
+      preferredName: "テストユーザー",
+      bio: "テストユーザーの自己紹介文です。よろしくお願いします。",
+      updatedAt: new Date("2025-04-28T00:00:00.000Z"),
+      createdAt: new Date("2025-04-01T00:00:00.000Z"),
+      isPublic: true,
     },
   },
 };
@@ -112,25 +88,13 @@ export const WithoutDisplayName: Story = {
   args: {
     user: {
       uid: "test-uid",
-      displayName: undefined, // nullからundefinedに変更（型エラー対応）
-      email: "test@example.com",
-      emailVerified: true,
+      displayName: null,
       photoURL: "https://placehold.jp/150x150.png",
-      disabled: false,
-      metadata: {
-        creationTime: "2025-04-01T00:00:00.000Z",
-        lastSignInTime: "2025-04-28T00:00:00.000Z",
-        toJSON: () => ({
-          creationTime: "2025-04-01T00:00:00.000Z",
-          lastSignInTime: "2025-04-28T00:00:00.000Z",
-        }),
-      },
-      providerData: [],
-      toJSON: () => ({
-        uid: "test-uid",
-        displayName: undefined, // nullからundefinedに変更（型エラー対応）
-        email: "test@example.com",
-      }),
+      preferredName: "test-uid",
+      bio: "テストユーザーの自己紹介文です。よろしくお願いします。",
+      updatedAt: new Date("2025-04-28T00:00:00.000Z"),
+      createdAt: new Date("2025-04-01T00:00:00.000Z"),
+      isPublic: true,
     },
   },
 };

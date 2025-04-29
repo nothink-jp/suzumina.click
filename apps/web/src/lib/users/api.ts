@@ -30,6 +30,12 @@ export async function getUserProfile(
   uid: string,
 ): Promise<UserProfileData | null> {
   try {
+    // Firestoreインスタンスの確認
+    if (!db) {
+      console.error("Firestoreインスタンスが初期化されていません");
+      return null;
+    }
+
     const userRef = doc(db, "userProfiles", uid);
     const userSnapshot = await getDoc(userRef);
 
@@ -64,6 +70,12 @@ export async function updateUserProfile(
   profileData: UserProfileFormData,
 ): Promise<boolean> {
   try {
+    // Firestoreインスタンスの確認
+    if (!db) {
+      console.error("Firestoreインスタンスが初期化されていません");
+      return false;
+    }
+
     const userRef = doc(db, "userProfiles", uid);
     const userSnapshot = await getDoc(userRef);
 
@@ -110,8 +122,8 @@ export function mergeUserData(
     // プロフィールデータがない場合は、基本情報のみのプロフィールを返す
     return {
       uid: authUser.uid,
-      displayName: authUser.displayName,
-      photoURL: authUser.photoURL,
+      displayName: authUser.displayName ?? null,
+      photoURL: authUser.photoURL ?? null,
       isPublic: false,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -123,8 +135,8 @@ export function mergeUserData(
   // プロフィールデータがある場合は、両方の情報を統合
   return {
     ...profileData,
-    displayName: authUser.displayName,
-    photoURL: authUser.photoURL,
+    displayName: authUser.displayName ?? null,
+    photoURL: authUser.photoURL ?? null,
     preferredName:
       profileData.siteDisplayName ||
       authUser.displayName ||

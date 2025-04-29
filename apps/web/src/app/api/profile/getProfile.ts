@@ -100,8 +100,8 @@ export async function getProfile(uid?: string): Promise<UserProfile | null> {
         createdAt: new Date(),
         updatedAt: new Date(),
       }),
-      displayName: currentUser.displayName,
-      photoURL: currentUser.photoURL,
+      displayName: currentUser.displayName ?? null,
+      photoURL: currentUser.photoURL ?? null,
       email: currentUser.email,
       preferredName:
         profileData?.siteDisplayName ||
