@@ -2,6 +2,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { initializeFirebaseAdmin } from "../../../auth/firebase-admin";
+import { getCurrentUser } from "../../../auth/getCurrentUser";
 
 /**
  * 音声クリップ再生回数インクリメントAPI

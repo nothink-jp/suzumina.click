@@ -1,23 +1,79 @@
 "use server";
 
 import type { UserRecord } from "firebase-admin/auth";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import type { NextRequest } from "next/server";
 import { initializeFirebaseAdmin } from "./firebase-admin";
+
+/**
+ * APIリクエストからAuthorizationヘッダーのBearerトークンを取得する
+ *
+ * @param req NextRequestオブジェクト（オプション）
+ * @returns Bearerトークン（見つからない場合はnull）
+ */
+export async function getBearerToken(
+  req?: NextRequest,
+): Promise<string | null> {
+  // リクエストオブジェクトから直接取得（API Routeの場合）
+  if (req?.headers) {
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      return authHeader.substring(7);
+    }
+  }
+
+  // ヘッダーオブジェクトから取得（Server Actionの場合）
+  try {
+    const headersList = await headers();
+    const authHeader = headersList.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      return authHeader.substring(7);
+    }
+  } catch (error) {
+    console.log("ヘッダーの取得に失敗しました:", error);
+  }
+
+  return null;
+}
 
 /**
  * サーバーサイドでの現在のユーザー情報取得関数
  *
  * Firebase Admin SDKを使用して、現在のユーザー情報を取得します。
- * セッションクッキーからユーザーIDを取得し、Firebase Authからユーザー情報を取得します。
+ * 1. AuthorizationヘッダーのBearerトークンからユーザー情報を取得
+ * 2. セッションクッキーからユーザー情報を取得
+ * 上記の順で認証を試みます。
  *
+ * @param req NextRequestオブジェクト（オプション）
  * @returns ユーザー情報またはnull（未ログイン時）
  */
-export async function getCurrentUser(): Promise<UserRecord | null> {
+export async function getCurrentUser(
+  req?: NextRequest,
+): Promise<UserRecord | null> {
   try {
     // Firebase Admin SDKを初期化
     const auth = initializeFirebaseAdmin();
 
-    // セッションクッキーからユーザーIDを取得
+    // 1. Bearerトークンからの認証を試みる
+    const idToken = await getBearerToken(req);
+    if (idToken) {
+      try {
+        // IDトークンを検証してユーザー情報を取得
+        const decodedToken = await auth.verifyIdToken(idToken);
+        const uid = decodedToken.uid;
+
+        if (uid) {
+          const userRecord = await auth.getUser(uid);
+          console.log("Bearer認証成功:", userRecord.uid);
+          return userRecord;
+        }
+      } catch (error) {
+        console.error("IDトークンの検証に失敗しました:", error);
+        // トークン認証が失敗した場合はクッキー認証を試みる
+      }
+    }
+
+    // 2. セッションクッキーからの認証を試みる
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("firebase-session");
 
@@ -96,7 +152,7 @@ export async function getCurrentUser(): Promise<UserRecord | null> {
       const userRecord = await auth.getUser(uid);
 
       // デバッグ用：取得したユーザー情報を確認
-      console.log("取得したユーザー情報:", {
+      console.log("クッキー認証成功:", {
         uid: userRecord.uid,
         displayName: userRecord.displayName,
         email: userRecord.email,

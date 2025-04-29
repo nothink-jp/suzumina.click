@@ -19,8 +19,8 @@ export async function POST(
     // paramsをawaitで解決
     const { clipId } = await params;
 
-    // 認証チェック
-    const currentUser = await getCurrentUser();
+    // 認証チェック（requestオブジェクトを渡す）
+    const currentUser = await getCurrentUser(request);
     if (!currentUser) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
@@ -126,7 +126,7 @@ export async function GET(
     const { clipId } = await params;
 
     // 認証チェック
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(request);
     if (!currentUser) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }

@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 現在のユーザーを取得
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(request);
 
     // 非公開クリップの表示条件
     // 自分のクリップを取得する場合のみ非公開も含める
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 認証チェック
-    const currentUser = await getCurrentUser();
+    const currentUser = await getCurrentUser(request);
     if (!currentUser) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
