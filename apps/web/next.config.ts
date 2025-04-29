@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // ページとして扱うファイル拡張子を指定（stories.tsxを含めない）
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'mdx'],
   images: {
     remotePatterns: [
       {
