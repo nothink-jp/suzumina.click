@@ -1,13 +1,10 @@
+"use client";
+
 import { useEffect, useState } from "react";
+import { checkFavoriteStatus as checkFavoriteStatusAction } from "../../app/actions/audioclipFavorites";
+import { getAudioClips } from "../../app/actions/audioclips";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
-import {
-  checkFavoriteStatus,
-  getAudioClipsByVideo,
-} from "../../lib/audioclips/api";
-import type {
-  AudioClip,
-  AudioClipSearchParams,
-} from "../../lib/audioclips/types";
+import type { AudioClip } from "../../lib/audioclips/types";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 import AudioClipButton from "./AudioClipButton";
 import AudioClipPlayer from "./AudioClipPlayer";
@@ -15,6 +12,31 @@ import AudioClipPlayer from "./AudioClipPlayer";
 interface AudioClipListProps {
   videoId: string;
   youtubePlayerRef?: React.RefObject<YouTubePlayer>;
+}
+
+/**
+ * Server Actionから返されるクリップデータの型定義
+ * 必要なプロパティのみ定義
+ */
+interface ServerActionClipData {
+  id?: string;
+  videoId?: string;
+  title?: string;
+  phrase?: string;
+  startTime?: number;
+  endTime?: number;
+  audioUrl?: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  userId?: string;
+  userName?: string;
+  userPhotoURL?: string;
+  isPublic?: boolean;
+  tags?: string[];
+  playCount?: number;
+  favoriteCount?: number;
+  duration?: number;
+  formattedDuration?: string;
 }
 
 /**
@@ -47,75 +69,82 @@ export default function AudioClipList({
     }
   }, [user, clips]);
 
+  // 再生時間をフォーマットするヘルパー関数
+  const formatDuration = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // APIから返されたクリップデータをAudioClip型に変換するヘルパー関数
+  const convertToAudioClip = (clip: ServerActionClipData): AudioClip => {
+    // 安全にプロパティにアクセス
+    const startTime = typeof clip.startTime === "number" ? clip.startTime : 0;
+    const endTime = typeof clip.endTime === "number" ? clip.endTime : 0;
+    const calculatedDuration = endTime - startTime;
+
+    return {
+      id: clip.id || "",
+      videoId: clip.videoId || "",
+      title: clip.title || "",
+      phrase: clip.phrase || "",
+      startTime: startTime,
+      endTime: endTime,
+      audioUrl: clip.audioUrl,
+      createdAt: new Date(clip.createdAt || Date.now()),
+      updatedAt: new Date(clip.updatedAt || Date.now()),
+      userId: clip.userId || "",
+      userName: clip.userName || "",
+      userPhotoURL: clip.userPhotoURL,
+      isPublic: Boolean(clip.isPublic),
+      tags: clip.tags || [],
+      playCount: typeof clip.playCount === "number" ? clip.playCount : 0,
+      favoriteCount:
+        typeof clip.favoriteCount === "number" ? clip.favoriteCount : 0,
+      duration:
+        typeof clip.duration === "number" ? clip.duration : calculatedDuration,
+      formattedDuration:
+        clip.formattedDuration || formatDuration(calculatedDuration),
+    };
+  };
+
   // クリップを読み込む
   const loadClips = async (isLoadMore = false) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // パラメータの準備
-      const params: Record<string, string> = {
-        videoId: videoId,
-        limit: "10",
-      };
-
-      // ページネーション用パラメータ
-      if (isLoadMore && lastClip) {
-        params.startAfter = lastClip.createdAt.toISOString();
-      } else if (!isLoadMore) {
-        // 初回読み込みの場合はリセット
+      // 初回読み込みの場合はリセット
+      if (!isLoadMore) {
         setClips([]);
         setLastClip(undefined);
       }
 
-      // URLパラメータの構築
-      const queryString = new URLSearchParams(params).toString();
-
-      // ヘッダーの準備
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-
-      // 認証トークンをヘッダーに追加（ログイン中の場合）
-      if (user) {
-        const idToken = await user.getIdToken();
-        headers.Authorization = `Bearer ${idToken}`;
-      }
-
-      // APIからデータを取得
-      const response = await fetch(`/api/audioclips?${queryString}`, {
-        method: "GET",
-        headers: headers,
-        credentials: "include",
+      // Server Actionsを使用してクリップ一覧を取得
+      const result = await getAudioClips({
+        videoId,
+        limit: 10,
+        startAfter:
+          isLoadMore && lastClip ? new Date(lastClip.createdAt) : null,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("APIレスポンスエラー:", errorData);
-        throw new Error(errorData.error || "音声クリップの取得に失敗しました");
-      }
+      // データ変換: Server Actionの結果をアプリケーションのAudioClip型に変換
+      const processedClips = result.clips.map(convertToAudioClip);
 
-      const data = await response.json();
-      const result = {
-        clips: data.clips,
-        hasMore: data.hasMore,
-        lastClip: data.lastClip
-          ? {
-              ...data.lastClip,
-              createdAt: new Date(data.lastClip.createdAt),
-            }
-          : undefined,
-      };
-
+      // 型の安全性を保証したデータを設定
       setClips((prevClips) =>
-        isLoadMore ? [...prevClips, ...result.clips] : result.clips,
+        isLoadMore ? [...prevClips, ...processedClips] : processedClips,
       );
+
+      // 最後のクリップとhasMoreフラグを設定
       setHasMore(result.hasMore);
-      setLastClip(result.lastClip);
+      setLastClip(
+        result.lastClip ? convertToAudioClip(result.lastClip) : undefined,
+      );
 
       // ユーザーがログインしている場合はお気に入り状態を取得
       if (user) {
-        updateFavoriteStatuses(result.clips);
+        updateFavoriteStatuses(processedClips);
       }
     } catch (error) {
       console.error("音声クリップの取得に失敗しました:", error);
@@ -135,8 +164,8 @@ export default function AudioClipList({
       // 各クリップのお気に入り状態を取得
       await Promise.all(
         clipsToCheck.map(async (clip) => {
-          const isFavorite = await checkFavoriteStatus(clip.id, user.uid);
-          favoriteStatuses[clip.id] = isFavorite;
+          const result = await checkFavoriteStatusAction(clip.id);
+          favoriteStatuses[clip.id] = result.isFavorite;
         }),
       );
 
