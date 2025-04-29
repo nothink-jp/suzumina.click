@@ -156,6 +156,7 @@ export default function AudioClipCreator({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(clipData),
+        credentials: "include", // クッキーを含めてリクエストを送信
       });
 
       if (!response.ok) {

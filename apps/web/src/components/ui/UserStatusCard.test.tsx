@@ -1,6 +1,26 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import UserStatusCard from "./UserStatusCard";
+
+// Next.jsのナビゲーションをモック
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+  }),
+}));
+
+// Firebaseの認証関連をモック
+vi.mock("firebase/auth", () => ({
+  signOut: vi.fn(),
+}));
+
+vi.mock("@/lib/firebase/AuthProvider", () => ({
+  useAuth: vi.fn(),
+}));
+
+vi.mock("@/lib/firebase/client", () => ({
+  auth: {},
+}));
 
 // テスト用のモックユーザーデータ
 const mockUser = {
@@ -27,7 +47,42 @@ const mockUser = {
   }),
 };
 
+// テスト前の環境変数設定
+const originalEnv = process.env;
+
 describe("UserStatusCardコンポーネント", () => {
+  // 各テスト前に環境変数をセットアップ
+  beforeEach(() => {
+    // 環境変数をモック
+    vi.stubEnv("NEXT_PUBLIC_DISCORD_CLIENT_ID", "mock-client-id");
+    vi.stubEnv(
+      "NEXT_PUBLIC_DISCORD_REDIRECT_URI",
+      "http://localhost:3000/auth/callback",
+    );
+
+    // localStorage APIをモック
+    Object.defineProperty(window, "localStorage", {
+      value: {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn(),
+      },
+      writable: true,
+    });
+
+    // location.hrefをモック
+    Object.defineProperty(window, "location", {
+      value: { href: "http://localhost:3000" },
+      writable: true,
+    });
+  });
+
+  // 各テスト後に環境をクリーンアップ
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
   it("ログイン状態で正しく表示されること", () => {
     // 準備
     render(<UserStatusCard user={mockUser} />);
@@ -86,9 +141,10 @@ describe("UserStatusCardコンポーネント", () => {
       screen.getByText("機能をすべて利用するにはログインしてください"),
     ).toBeInTheDocument();
 
-    // ログインへのリンクが存在すること
-    const loginLink = screen.getByRole("link", { name: "ログイン" });
-    expect(loginLink).toBeInTheDocument();
-    expect(loginLink).toHaveAttribute("href", "/auth");
+    // ログインボタンが存在すること
+    const loginButton = screen.getByRole("button", {
+      name: "Discordでログイン",
+    });
+    expect(loginButton).toBeInTheDocument();
   });
 });
