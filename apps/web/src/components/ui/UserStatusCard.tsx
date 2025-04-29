@@ -16,7 +16,7 @@ export default function UserStatusCard({ user }: UserStatusCardProps) {
     <div className="card bg-base-200 shadow-sm">
       <div className="card-body p-4 md:p-6">
         <h2 className="card-title text-lg">
-          {isLoggedIn ? "ログイン中" : "ログインしていません"}
+          {isLoggedIn ? "ログイン中です" : "ログインしていません"}
         </h2>
 
         {isLoggedIn ? (
@@ -26,14 +26,16 @@ export default function UserStatusCard({ user }: UserStatusCardProps) {
                 <div className="w-12 rounded-full">
                   <img
                     src={user.photoURL}
-                    alt={`${user.preferredName}のアバター`}
+                    alt={`${user.displayName || "未設定"}のアバター`}
                   />
                 </div>
               </div>
             )}
             <p>
               ユーザー名:{" "}
-              <span className="font-medium">{user.preferredName}</span>
+              <span className="font-medium">
+                {user.displayName || "未設定"}
+              </span>
             </p>
             {user.bio && (
               <p className="text-sm italic overflow-hidden text-ellipsis">
