@@ -19,11 +19,11 @@
     "emulator:start-and-seed": "firebase emulators:start & sleep 5 && node scripts/seed-firestore.mjs"
   },
   "dependencies": {
-    "firebase": "^11.6.0"
+    "firebase": "^11.6.1"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "firebase-tools": "^13.0.2",
+    "firebase-tools": "^13.35.1",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
     "vitest": "^3.1.2"

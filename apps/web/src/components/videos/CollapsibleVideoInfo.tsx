@@ -2,7 +2,11 @@
 
 import type { Video } from "@/lib/videos/types";
 import { formatDate } from "@/utils/date-format";
-import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
+import {
+  Disclosure,
+  DisclosureButton,
+  DisclosurePanel,
+} from "@headlessui/react";
 
 interface CollapsibleVideoInfoProps {
   video: Video;
