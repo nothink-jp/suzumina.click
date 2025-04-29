@@ -72,6 +72,7 @@ export default function YouTubeEmbed({
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [isApiLoaded, setIsApiLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const playerElementId = `youtube-player-${videoId}`;
 
   // YouTube IFrame APIのロード
@@ -109,29 +110,35 @@ export default function YouTubeEmbed({
 
   // プレーヤーの初期化
   useEffect(() => {
+    // APIがロードされていない、またはコンテナが存在しない場合はスキップ
     if (!isApiLoaded || !containerRef.current) return;
 
-    // プレーヤーを初期化
-    playerRef.current = new window.YT.Player(playerElementId, {
-      videoId,
-      playerVars: {
-        autoplay: 0,
-        controls: 1,
-        enablejsapi: 1,
-        rel: 0,
-        fs: 1,
-      },
-      events: {
-        onReady: (event) => {
-          if (onReady) {
-            onReady(event.target);
-          }
-        },
-      },
-    });
+    // YTオブジェクトが正しく初期化されているか確認
+    if (!window.YT || !window.YT.Player) {
+      // YTオブジェクトがまだ利用できない場合は、少し待ってからリトライする
+      const checkYTInterval = setInterval(() => {
+        if (window.YT?.Player) {
+          clearInterval(checkYTInterval);
+          initializePlayer();
+        }
+      }, 100);
 
+      // 5秒後にもロードされていなければインターバルをクリア（タイムアウト処理）
+      setTimeout(() => {
+        clearInterval(checkYTInterval);
+        console.error("YouTube IFrame APIのロードに失敗しました");
+      }, 5000);
+
+      return () => {
+        clearInterval(checkYTInterval);
+      };
+    }
+
+    // プレーヤーを初期化する関数
+    initializePlayer();
+
+    // コンポーネント解除時にプレーヤーをクリーンアップ
     return () => {
-      // クリーンアップ時にプレーヤーを破棄
       if (playerRef.current) {
         try {
           playerRef.current.destroy();
@@ -141,6 +148,34 @@ export default function YouTubeEmbed({
         playerRef.current = null;
       }
     };
+
+    // プレーヤー初期化処理を関数化
+    function initializePlayer() {
+      try {
+        setIsLoading(true);
+        playerRef.current = new window.YT.Player(playerElementId, {
+          videoId,
+          playerVars: {
+            autoplay: 0,
+            controls: 1,
+            enablejsapi: 1,
+            rel: 0,
+            fs: 1,
+          },
+          events: {
+            onReady: (event) => {
+              setIsLoading(false);
+              if (onReady) {
+                onReady(event.target);
+              }
+            },
+          },
+        });
+      } catch (error) {
+        console.error("YouTubeプレーヤーの初期化に失敗しました:", error);
+        setIsLoading(false);
+      }
+    }
   }, [isApiLoaded, videoId, onReady, playerElementId]);
 
   // レスポンシブ対応
@@ -165,12 +200,22 @@ export default function YouTubeEmbed({
   }, []);
 
   return (
-    <div ref={containerRef} className="w-full bg-gray-100 relative">
+    <div className="relative">
       <div
-        id={playerElementId}
-        className="absolute top-0 left-0 w-full h-full"
-        title={title || "YouTube video player"}
-      />
+        ref={containerRef}
+        className="w-full bg-base-200 relative rounded-lg overflow-hidden"
+      >
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="loading loading-spinner loading-lg text-primary" />
+          </div>
+        )}
+        <div
+          id={playerElementId}
+          className="absolute top-0 left-0 w-full h-full"
+          title={title || "YouTube video player"}
+        />
+      </div>
     </div>
   );
 }

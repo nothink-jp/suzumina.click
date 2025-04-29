@@ -1,3 +1,6 @@
+"use client";
+
+import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import { useRef, useState } from "react";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
 import { createAudioClip } from "../../lib/audioclips/api";
@@ -32,7 +35,6 @@ export default function AudioClipCreator({
   const [tagInput, setTagInput] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   // 現在の再生位置を取得
   const getCurrentTime = (): number => {
@@ -154,7 +156,6 @@ export default function AudioClipCreator({
       setStartTime(null);
       setEndTime(null);
       setTags([]);
-      setIsExpanded(false);
 
       // 親コンポーネントに通知
       onClipCreated();
@@ -174,260 +175,263 @@ export default function AudioClipCreator({
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // フォームの展開/折りたたみを切り替え
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
-  };
-
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6 overflow-hidden">
-      {/* ヘッダー部分（常に表示） */}
-      <div
-        className="w-full p-4 bg-blue-50 flex justify-between items-center cursor-pointer text-left"
-        onClick={toggleExpand}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            toggleExpand();
-          }
-        }}
-        tabIndex={0}
-        // biome-ignore lint/a11y/useSemanticElements: <explanation>
-        role="button"
-        aria-expanded={isExpanded}
-      >
-        <h3 className="text-lg font-semibold text-blue-800">
-          音声クリップを作成
-        </h3>
-        <span className="text-blue-500" aria-hidden="true">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
-          >
-            <title>{isExpanded ? "閉じるアイコン" : "開くアイコン"}</title>
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </span>
-      </div>
-
-      {/* フォーム部分（展開時のみ表示） */}
-      {isExpanded && (
-        <div className="p-4">
-          {!user && (
-            <div className="bg-yellow-100 p-3 rounded mb-4">
-              <p className="text-yellow-800">
-                音声クリップを作成するにはログインが必要です
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-red-100 p-3 rounded mb-4">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
-
-          <div className="mb-4">
-            <label
-              htmlFor="clip-title"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              タイトル
-            </label>
-            <input
-              id="clip-title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={`「${videoTitle}」からのクリップ`}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              disabled={!user || isCreating}
-            />
-          </div>
-
-          <div className="mb-4">
-            <label
-              htmlFor="clip-phrase"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              フレーズ（オプション）
-            </label>
-            <textarea
-              id="clip-phrase"
-              value={phrase}
-              onChange={(e) => setPhrase(e.target.value)}
-              placeholder="クリップ内の発言内容など"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              rows={2}
-              disabled={!user || isCreating}
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div>
-              <div
-                className="block text-sm font-medium text-gray-700 mb-1"
-                id="start-time-label"
-              >
-                開始時間
-              </div>
-              <div
-                className="flex items-center"
-                aria-labelledby="start-time-label"
-              >
-                <span className="bg-gray-100 px-3 py-2 rounded-l-md border border-r-0 border-gray-300">
-                  {formatTime(startTime)}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSetStartTime}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-r-md transition-colors"
-                  disabled={!user || isCreating || !youtubePlayerRef?.current}
+    <div className="card bg-base-100 shadow-sm overflow-hidden w-full">
+      <Disclosure>
+        {({ open }) => (
+          <>
+            {/* ヘッダー部分（常に表示） */}
+            <DisclosureButton className="w-full p-4 bg-primary bg-opacity-10 flex justify-between items-center text-left">
+              <h3 className="text-lg font-semibold text-primary">
+                音声クリップを作成
+              </h3>
+              <span className="text-primary">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className={`transition-transform ${open ? "rotate-180" : ""}`}
                 >
-                  現在位置を設定
-                </button>
-              </div>
-            </div>
+                  <title>{open ? "閉じるアイコン" : "開くアイコン"}</title>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </span>
+            </DisclosureButton>
 
-            <div>
-              <div
-                className="block text-sm font-medium text-gray-700 mb-1"
-                id="end-time-label"
-              >
-                終了時間
-              </div>
-              <div
-                className="flex items-center"
-                aria-labelledby="end-time-label"
-              >
-                <span className="bg-gray-100 px-3 py-2 rounded-l-md border border-r-0 border-gray-300">
-                  {formatTime(endTime)}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSetEndTime}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-r-md transition-colors"
-                  disabled={!user || isCreating || !youtubePlayerRef?.current}
-                >
-                  現在位置を設定
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div
-                className="block text-sm font-medium text-gray-700 mb-1"
-                id="preview-label"
-              >
-                プレビュー
-              </div>
-              <button
-                aria-labelledby="preview-label"
-                type="button"
-                onClick={handlePreview}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-colors"
-                disabled={
-                  !user ||
-                  isCreating ||
-                  startTime === null ||
-                  !youtubePlayerRef?.current
-                }
-              >
-                選択範囲を再生
-              </button>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label
-              htmlFor="clip-tags"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              タグ（オプション）
-            </label>
-            <div className="flex">
-              <input
-                id="clip-tags"
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleTagKeyDown}
-                placeholder="タグを入力（Enterで追加）"
-                className="flex-grow px-3 py-2 border border-r-0 border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                disabled={!user || isCreating}
-              />
-              <button
-                type="button"
-                onClick={handleAddTag}
-                className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-r-md transition-colors"
-                disabled={!user || isCreating || !tagInput.trim()}
-              >
-                追加
-              </button>
-            </div>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+            {/* フォーム部分（展開時のみ表示） */}
+            <DisclosurePanel className="card-body">
+              {!user && (
+                <div className="alert alert-warning shadow-sm mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current shrink-0 h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
-                    {tag}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <span>音声クリップを作成するにはログインが必要です</span>
+                </div>
+              )}
+
+              {error && (
+                <div className="alert alert-error shadow-sm mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current shrink-0 h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="form-control mb-4">
+                <label className="label" htmlFor="clip-title">
+                  <span className="label-text">タイトル</span>
+                </label>
+                <input
+                  id="clip-title"
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={`「${videoTitle}」からのクリップ`}
+                  className="input input-bordered w-full"
+                  disabled={!user || isCreating}
+                />
+              </div>
+
+              <div className="form-control mb-4">
+                <label className="label" htmlFor="clip-phrase">
+                  <span className="label-text">フレーズ（オプション）</span>
+                </label>
+                <textarea
+                  id="clip-phrase"
+                  value={phrase}
+                  onChange={(e) => setPhrase(e.target.value)}
+                  placeholder="クリップ内の発言内容など"
+                  className="textarea textarea-bordered w-full"
+                  rows={2}
+                  disabled={!user || isCreating}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-4 mb-4">
+                <div>
+                  <label
+                    className="label"
+                    id="start-time-label"
+                    htmlFor="start-time"
+                  >
+                    <span className="label-text">開始時間</span>
+                  </label>
+                  <div className="join" aria-labelledby="start-time-label">
+                    <span
+                      id="start-time"
+                      className="join-item px-3 py-2 bg-base-200 border border-base-300"
+                    >
+                      {formatTime(startTime)}
+                    </span>
                     <button
                       type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="ml-1 text-blue-500 hover:text-blue-700"
-                      aria-label={`${tag}タグを削除`}
+                      onClick={handleSetStartTime}
+                      className="join-item btn btn-primary"
+                      disabled={
+                        !user || isCreating || !youtubePlayerRef?.current
+                      }
                     >
-                      ×
+                      現在位置を設定
                     </button>
-                  </span>
-                ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    className="label"
+                    id="end-time-label"
+                    htmlFor="end-time"
+                  >
+                    <span className="label-text">終了時間</span>
+                  </label>
+                  <div className="join" aria-labelledby="end-time-label">
+                    <span
+                      id="end-time"
+                      className="join-item px-3 py-2 bg-base-200 border border-base-300"
+                    >
+                      {formatTime(endTime)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSetEndTime}
+                      className="join-item btn btn-primary"
+                      disabled={
+                        !user || isCreating || !youtubePlayerRef?.current
+                      }
+                    >
+                      現在位置を設定
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="label">
+                    <span className="label-text" id="preview-label">プレビュー</span>
+                  </div>
+                  <button
+                    aria-labelledby="preview-label"
+                    type="button"
+                    onClick={handlePreview}
+                    className="btn btn-success"
+                    disabled={
+                      !user ||
+                      isCreating ||
+                      startTime === null ||
+                      !youtubePlayerRef?.current
+                    }
+                  >
+                    選択範囲を再生
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
 
-          <div className="mb-4">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                disabled={!user || isCreating}
-              />
-              <span className="ml-2 text-sm text-gray-700">
-                公開する（全員が視聴可能）
-              </span>
-            </label>
-          </div>
+              <div className="form-control mb-4">
+                <label className="label" htmlFor="clip-tags">
+                  <span className="label-text">タグ（オプション）</span>
+                </label>
+                <div className="join w-full">
+                  <input
+                    id="clip-tags"
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={handleTagKeyDown}
+                    placeholder="タグを入力（Enterで追加）"
+                    className="join-item input input-bordered flex-grow"
+                    disabled={!user || isCreating}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTag}
+                    className="join-item btn btn-neutral"
+                    disabled={!user || isCreating || !tagInput.trim()}
+                  >
+                    追加
+                  </button>
+                </div>
 
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleCreateClip}
-              disabled={
-                !user ||
-                isCreating ||
-                !title ||
-                startTime === null ||
-                endTime === null
-              }
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isCreating ? "作成中..." : "クリップを作成"}
-            </button>
-          </div>
-        </div>
-      )}
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {tags.map((tag) => (
+                      <div key={tag} className="badge badge-primary gap-1">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="btn btn-xs btn-circle btn-ghost"
+                          aria-label={`${tag}タグを削除`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-control mb-4">
+                <label className="label cursor-pointer justify-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={isPublic}
+                    onChange={(e) => setIsPublic(e.target.checked)}
+                    className="checkbox checkbox-primary"
+                    disabled={!user || isCreating}
+                  />
+                  <span className="label-text">公開する（全員が視聴可能）</span>
+                </label>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleCreateClip}
+                  disabled={
+                    !user ||
+                    isCreating ||
+                    !title ||
+                    startTime === null ||
+                    endTime === null
+                  }
+                  className={`btn btn-primary ${isCreating ? "loading" : ""}`}
+                >
+                  {isCreating ? "作成中..." : "クリップを作成"}
+                </button>
+              </div>
+            </DisclosurePanel>
+          </>
+        )}
+      </Disclosure>
     </div>
   );
 }
