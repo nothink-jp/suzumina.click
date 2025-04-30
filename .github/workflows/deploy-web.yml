@@ -308,16 +308,32 @@ jobs:
             --allow-unauthenticated \
             --quiet --no-traffic
           
+          # デバッグ情報を追加
+          echo "最新リビジョンの一覧（直近5件）:"
+          gcloud run revisions list \
+            --service=suzumina-click-nextjs-app \
+            --region=${{ env.REGION }} \
+            --limit=5 \
+            --sort-by="~createTime" \
+            --format="value(name,status.conditions[0].type,status.conditions[0].status)"
+          
           # 新しいリビジョン名を取得
           NEW_REVISION=$(gcloud run revisions list \
             --service=suzumina-click-nextjs-app \
             --region=${{ env.REGION }} \
-            --format="value(name)" \
+            --format="value(metadata.name)" \
             --sort-by="~createTime" \
             --limit=1)
           
           echo "新しいリビジョン: $NEW_REVISION"
-          # GitHub Actionsの出力として設定
+          
+          # デバッグのためにリビジョン情報を詳細に取得
+          echo "リビジョン情報:"
+          gcloud run revisions describe $NEW_REVISION \
+            --region=${{ env.REGION }} \
+            --format="yaml(metadata.name,status.url)"
+          
+          # GitHub Actionsの出力として明示的に設定
           echo "revision=$NEW_REVISION" >> $GITHUB_OUTPUT
           
           echo "デプロイが完了しました"
@@ -369,9 +385,33 @@ jobs:
         run: |
           echo "新リビジョンのヘルスチェックを実施します..."
           
+          # デプロイされたリビジョン名を確認
+          REVISION_NAME="${{ needs.deploy-web-app.outputs.deployed_revision }}"
+          echo "デプロイされたリビジョン名: $REVISION_NAME"
+          
+          # まず、リビジョンが存在するか確認
+          if ! gcloud run revisions describe "$REVISION_NAME" --region=${{ env.REGION }} &>/dev/null; then
+            echo "::error::指定されたリビジョン '$REVISION_NAME' が見つかりません。"
+            
+            # デバッグ情報: 利用可能なリビジョンの一覧を表示
+            echo "利用可能なリビジョン一覧:"
+            gcloud run revisions list \
+              --service=suzumina-click-nextjs-app \
+              --region=${{ env.REGION }} \
+              --format="value(name,status.conditions[0].type,status.conditions[0].status)"
+              
+            echo "is_healthy=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # リビジョン情報を詳細に表示
+          echo "リビジョン詳細情報:"
+          gcloud run revisions describe "$REVISION_NAME" \
+            --region=${{ env.REGION }} \
+            --format="yaml(metadata.name,status.url,status.conditions)"
+          
           # 新リビジョン専用URLを取得
-          # {{needs.deploy-web-app.outputs.deployed_revision}}はCloud Runのデプロイステップで設定されたリビジョン名
-          NEW_REVISION_URL=$(gcloud run revisions describe ${{ needs.deploy-web-app.outputs.deployed_revision }} \
+          NEW_REVISION_URL=$(gcloud run revisions describe "$REVISION_NAME" \
             --region=${{ env.REGION }} \
             --format="value(status.url)")
           
@@ -392,8 +432,13 @@ jobs:
           for ((i=1; i<=MAX_ATTEMPTS; i++)); do
             echo "ヘルスチェック試行 $i/$MAX_ATTEMPTS..."
             
-            # curlでステータスコードのみを取得
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$NEW_REVISION_URL")
+            # curlコマンドの実行と詳細ログ
+            echo "実行コマンド: curl -v -s -o /dev/null -w \"%{http_code}\" \"$NEW_REVISION_URL\""
+            HTTP_STATUS=$(curl -v -s -o /dev/null -w "%{http_code}" "$NEW_REVISION_URL" 2>&1)
+            CURL_EXIT_CODE=$?
+            
+            echo "curlの終了コード: $CURL_EXIT_CODE"
+            echo "HTTPステータスコード: $HTTP_STATUS"
             
             if [[ "$HTTP_STATUS" == "200" ]]; then
               echo "ヘルスチェック成功！HTTPステータス: $HTTP_STATUS"
