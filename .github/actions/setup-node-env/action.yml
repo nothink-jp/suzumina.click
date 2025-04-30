@@ -8,7 +8,7 @@ inputs:
   pnpm-version:
     description: 'pnpmのバージョン'
     required: true
-    default: '10.x'
+    default: '10'
   project-path:
     description: 'プロジェクトパス（webまたはfunctions）'
     required: false
@@ -16,19 +16,19 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # Node.jsのセットアップ
-    - name: Node.js ${{ inputs.node-version }} のセットアップ
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ inputs.node-version }}
-        cache: 'pnpm'  # pnpmキャッシュを有効化
-
     # pnpmのインストール
     - name: pnpm ${{ inputs.pnpm-version }} のインストール
       uses: pnpm/action-setup@v4
       with:
         version: ${{ inputs.pnpm-version }}
         run_install: false
+
+    # Node.jsのセットアップ
+    - name: Node.js ${{ inputs.node-version }} のセットアップ
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'pnpm'  # pnpmキャッシュを有効化
 
     # ビルドキャッシュの復元（Next.js用）
     - name: Next.jsビルドキャッシュの復元

@@ -15,6 +15,9 @@ importers:
       '@biomejs/biome':
         specifier: 1.9.4
         version: 1.9.4
+      '@vitest/coverage-v8':
+        specifier: ^3.1.2
+        version: 3.1.2(@vitest/browser@3.1.2)(vitest@3.1.2)
       firebase-tools:
         specifier: ^13.35.1
         version: 13.35.1(encoding@0.1.13)
@@ -46,6 +49,9 @@ importers:
       '@types/node':
         specifier: ^22.14.1
         version: 22.15.3
+      '@vitest/coverage-v8':
+        specifier: ^3.1.2
+        version: 3.1.2(@vitest/browser@3.1.2)(vitest@3.1.2)
       typescript:
         specifier: ^5.8.3
         version: 5.8.3

@@ -10,7 +10,7 @@
     "check": "pnpm -r check",
     "clean": "rimraf node_modules/.cache coverage",
     "test": "vitest run",
-    "test:coverage": "run-p \"test:web -- --coverage\" \"test:functions -- --coverage\"",
+    "test:coverage": "vitest run --coverage",
     "storybook": "pnpm --filter @suzumina.click/web storybook",
     "emulator:start": "firebase emulators:start",
     "emulator:start-with-data": "firebase emulators:start --import=./emulator-data --export-on-exit",
@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@vitest/coverage-v8": "^3.1.2",
     "firebase-tools": "^13.35.1",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
