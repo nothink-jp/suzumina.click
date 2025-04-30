@@ -410,22 +410,16 @@ jobs:
             --region=${{ env.REGION }} \
             --format="yaml(metadata.name,status.conditions)"
           
-          # サービスのURLを取得
-          SERVICE_URL=$(gcloud run services describe suzumina-click-nextjs-app \
+          # リビジョン専用URLを直接取得（修正）
+          NEW_REVISION_URL=$(gcloud run revisions describe "$REVISION_NAME" \
             --region=${{ env.REGION }} \
             --format="value(status.url)")
           
-          # タグ付きリビジョン専用URLを構築
-          # 形式: https://{REVISION_NAME}---{SERVICE_HASH}-{REGION_HASH}.a.run.app
-          # 例: https://my-service-00001-hat---gcp-abcdefg-ew.a.run.app
-          BASE_URL=$(echo "$SERVICE_URL" | sed 's/https:\/\///')
-          NEW_REVISION_URL="https://${REVISION_NAME}---${BASE_URL}"
+          echo "リビジョン専用URL: $NEW_REVISION_URL"
           
-          echo "構築したリビジョン専用URL: $NEW_REVISION_URL"
-          
-          # URLが正しく構築できたか確認
+          # URLが取得できたか確認
           if [ -z "$NEW_REVISION_URL" ]; then
-            echo "::error::新リビジョンのURLが構築できませんでした。"
+            echo "::error::リビジョン専用URLが取得できませんでした。"
             echo "is_healthy=false" >> $GITHUB_OUTPUT
             exit 1
           fi
@@ -467,7 +461,6 @@ jobs:
             echo "::notice title=ヘルスチェック成功::新リビジョンは正常に動作しています"
           else
             echo "::error title=ヘルスチェック失敗::新リビジョンの動作確認に失敗しました"
-          fi
 
   # トラフィックの切り替え
   traffic-migration:
