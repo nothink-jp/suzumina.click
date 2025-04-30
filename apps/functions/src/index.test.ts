@@ -299,9 +299,16 @@ describe("HTTPサーバー作成関数テスト", () => {
     createHttpServer(8080);
 
     // エラーハンドラのコールバックを取得
-    const errorCallback = mockOn.mock.calls.find(
+    const errorCallArray = mockOn.mock.calls.find(
       (call) => call[0] === "error",
-    )[1];
+    );
+
+    // 配列が存在することを確認してからコールバックを取得
+    if (!errorCallArray) {
+      throw new Error("エラーハンドラが見つかりませんでした");
+    }
+
+    const errorCallback = errorCallArray[1];
 
     // 例外オブジェクトを作成
     const testError = new Error("テスト用エラー");
