@@ -23,6 +23,14 @@ const RETRY_DELAY_MS = 5000; // リトライ間隔（ミリ秒）
 // メタデータ保存用のドキュメントID
 const METADATA_DOC_ID = "fetch_metadata";
 
+// Firestore関連の定数
+const VIDEOS_COLLECTION = "videos";
+const METADATA_COLLECTION = "youtubeMetadata";
+const MAX_FIRESTORE_BATCH_SIZE = 500; // Firestoreのバッチ書き込み上限
+
+// 実行制限関連の定数
+const MAX_PAGES_PER_EXECUTION = 3; // 1回の実行での最大ページ数
+
 // メタデータの型定義
 interface FetchMetadata {
   lastFetchedAt: Timestamp;
@@ -33,13 +41,16 @@ interface FetchMetadata {
 }
 
 /**
- * 指定された時間だけ待機する関数
+ * 処理結果の型定義
  *
- * @param ms - 待機するミリ秒
- * @returns Promise<void>
+ * @interface FetchResult
+ * @property {number} videoCount - 取得した動画数
+ * @property {string} [error] - エラーメッセージ（エラー発生時のみ）
  */
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+interface FetchResult {
+  videoCount: number;
+  error?: string;
+}
 
 /**
  * YouTube API エラーの型定義
@@ -48,6 +59,23 @@ interface YouTubeApiError {
   code?: number;
   message?: string;
 }
+
+/**
+ * Pub/SubメッセージのPubsubMessage型定義
+ */
+interface PubsubMessage {
+  data?: string;
+  attributes?: Record<string, string>;
+}
+
+/**
+ * 指定された時間だけ待機する関数
+ *
+ * @param ms - 待機するミリ秒
+ * @returns Promise<void>
+ */
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * リトライ機能付きのYouTube API呼び出し関数
@@ -85,7 +113,7 @@ async function retryApiCall<T>(
  */
 async function getOrCreateMetadata(): Promise<FetchMetadata> {
   const metadataRef = firestore
-    .collection("youtubeMetadata")
+    .collection(METADATA_COLLECTION)
     .doc(METADATA_DOC_ID);
   const doc = await metadataRef.get();
 
@@ -109,7 +137,7 @@ async function getOrCreateMetadata(): Promise<FetchMetadata> {
  */
 async function updateMetadata(updates: Partial<FetchMetadata>): Promise<void> {
   const metadataRef = firestore
-    .collection("youtubeMetadata")
+    .collection(METADATA_COLLECTION)
     .doc(METADATA_DOC_ID);
 
   // undefined値を持つプロパティをnullに変換する（テストに合わせるため）
@@ -133,27 +161,22 @@ async function updateMetadata(updates: Partial<FetchMetadata>): Promise<void> {
 }
 
 /**
- * Pub/SubメッセージのPubsubMessage型定義
- */
-interface PubsubMessage {
-  data?: string;
-  attributes?: Record<string, string>;
-}
-
-/**
- * YouTube動画情報取得の共通処理
+ * YouTube APIクライアントを初期化する
  *
- * @returns Promise<{videoCount: number, error?: string}> - 処理結果
+ * @returns YouTube APIクライアントと結果オブジェクトのタプル
  */
-async function fetchYouTubeVideosLogic(): Promise<{
-  videoCount: number;
-  error?: string;
-}> {
+function initializeYouTubeClient(): [
+  youtube_v3.Youtube | undefined,
+  FetchResult | undefined,
+] {
   // YouTube API キーの取得と検証
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
     logger.error("環境変数に YOUTUBE_API_KEY が設定されていません");
-    return { videoCount: 0, error: "YouTube API Keyが設定されていません" };
+    return [
+      undefined,
+      { videoCount: 0, error: "YouTube API Keyが設定されていません" },
+    ];
   }
 
   // YouTubeクライアント初期化
@@ -162,9 +185,17 @@ async function fetchYouTubeVideosLogic(): Promise<{
     auth: apiKey,
   });
 
-  const videosCollection = firestore.collection("videos");
-  const now = Timestamp.now();
+  return [youtube, undefined];
+}
 
+/**
+ * 処理開始前のメタデータチェックと初期化
+ *
+ * @returns Promise<[FetchMetadata | undefined, FetchResult | undefined]> - メタデータと結果オブジェクトのタプル
+ */
+async function prepareExecution(): Promise<
+  [FetchMetadata | undefined, FetchResult | undefined]
+> {
   // 前回の実行状態を取得
   let metadata: FetchMetadata;
   try {
@@ -173,34 +204,51 @@ async function fetchYouTubeVideosLogic(): Promise<{
     // 既に実行中の場合はスキップ（二重実行防止）
     if (metadata.isInProgress) {
       logger.warn("前回の実行が完了していません。処理をスキップします。");
-      return { videoCount: 0, error: "前回の処理が完了していません" };
+      return [
+        undefined,
+        { videoCount: 0, error: "前回の処理が完了していません" },
+      ];
     }
 
     // 処理開始を記録
     await updateMetadata({ isInProgress: true });
+    return [metadata, undefined];
   } catch (error) {
     logger.error("メタデータの取得に失敗しました:", error);
-    return { videoCount: 0, error: "メタデータの取得に失敗しました" };
+    return [
+      undefined,
+      { videoCount: 0, error: "メタデータの取得に失敗しました" },
+    ];
   }
+}
 
-  logger.info(
-    `チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画情報取得を開始します`,
-  );
+/**
+ * YouTube動画IDを検索して取得
+ *
+ * @param youtube - YouTube APIクライアント
+ * @param metadata - 取得済みのメタデータ
+ * @returns Promise<{videoIds: string[], nextPageToken: string | undefined, isComplete: boolean}> - 取得した動画IDと関連情報
+ */
+async function fetchVideoIds(
+  youtube: youtube_v3.Youtube,
+  metadata: FetchMetadata,
+): Promise<{
+  videoIds: string[];
+  nextPageToken: string | undefined;
+  isComplete: boolean;
+}> {
+  // 初期化
   const allVideoIds: string[] = [];
-
-  // 前回の続きから再開するか、新規に開始するか
   let nextPageToken: string | undefined = metadata.nextPageToken;
   const isInitialFetch = !nextPageToken;
+  let pageCount = 0;
+  let isComplete = false;
 
   if (nextPageToken) {
     logger.info(`前回の続きから取得を再開します。トークン: ${nextPageToken}`);
   } else {
     logger.debug("新規に全動画の取得を開始します");
   }
-
-  // 最大3ページまでのみ取得（クォータ節約のため）
-  let pageCount = 0;
-  const MAX_PAGES_PER_EXECUTION = 3;
 
   // ページネーションを使用して動画IDを取得（制限付き）
   do {
@@ -256,7 +304,7 @@ async function fetchYouTubeVideosLogic(): Promise<{
           isInProgress: false,
           lastError: "YouTube API quota exceeded",
         });
-        return { videoCount: 0, error: "YouTube APIクォータを超過しました" };
+        throw new Error("YouTube APIクォータを超過しました");
       }
       // その他のエラー
       throw error;
@@ -266,27 +314,30 @@ async function fetchYouTubeVideosLogic(): Promise<{
   // 全ページ取得完了（nextPageTokenがない）
   if (!nextPageToken && !isInitialFetch) {
     logger.info("全ての動画IDの取得が完了しました");
-    // 完全な取得完了を記録
-    await updateMetadata({
-      nextPageToken: undefined,
-      lastSuccessfulCompleteFetch: now,
-    });
+    isComplete = true;
   }
 
-  logger.info(`取得した動画ID合計: ${allVideoIds.length}件`);
-  if (allVideoIds.length === 0) {
-    logger.info("チャンネルに動画が見つかりませんでした");
-    await updateMetadata({ isInProgress: false });
-    return { videoCount: 0 };
-  }
+  return { videoIds: allVideoIds, nextPageToken, isComplete };
+}
 
+/**
+ * 動画IDから詳細情報を取得
+ *
+ * @param youtube - YouTube APIクライアント
+ * @param videoIds - 取得する動画IDの配列
+ * @returns Promise<youtube_v3.Schema$Video[]> - 取得した動画詳細情報
+ */
+async function fetchVideoDetails(
+  youtube: youtube_v3.Youtube,
+  videoIds: string[],
+): Promise<youtube_v3.Schema$Video[]> {
   logger.debug("動画の詳細情報を取得中...");
   const videoDetails: youtube_v3.Schema$Video[] = [];
 
   // YouTube API の制限（最大50件）に合わせてバッチ処理
-  for (let i = 0; i < allVideoIds.length; i += MAX_VIDEOS_PER_BATCH) {
+  for (let i = 0; i < videoIds.length; i += MAX_VIDEOS_PER_BATCH) {
     try {
-      const batchIds = allVideoIds.slice(i, i + MAX_VIDEOS_PER_BATCH);
+      const batchIds = videoIds.slice(i, i + MAX_VIDEOS_PER_BATCH);
 
       // YouTube API 呼び出し（リトライ機能付き）
       const videoResponse: youtube_v3.Schema$VideoListResponse =
@@ -324,12 +375,30 @@ async function fetchYouTubeVideosLogic(): Promise<{
       throw error;
     }
   }
+
   logger.info(`取得した動画詳細合計: ${videoDetails.length}件`);
+  return videoDetails;
+}
+
+/**
+ * Firestoreに動画データを保存
+ *
+ * @param videoDetails - 保存する動画詳細情報
+ * @returns Promise<number> - 保存した動画数
+ */
+async function saveVideosToFirestore(
+  videoDetails: youtube_v3.Schema$Video[],
+): Promise<number> {
+  if (videoDetails.length === 0) {
+    logger.debug("保存する動画情報がありません");
+    return 0;
+  }
 
   logger.debug("動画データをFirestoreに書き込み中...");
+  const now = Timestamp.now();
+  const videosCollection = firestore.collection(VIDEOS_COLLECTION);
   let batch = firestore.batch();
   let batchCounter = 0;
-  const maxBatchSize = 500; // Firestoreのバッチ書き込み上限
 
   // 動画データをFirestoreにバッチ書き込み
   for (const video of videoDetails) {
@@ -349,7 +418,7 @@ async function fetchYouTubeVideosLogic(): Promise<{
       description: video.snippet.description ?? "",
       publishedAt: video.snippet.publishedAt
         ? Timestamp.fromDate(new Date(video.snippet.publishedAt))
-        : Timestamp.now(),
+        : now,
       // 利用可能な最大サイズのサムネイルURLを取得（maxres→standard→high→medium→default）
       thumbnailUrl:
         video.snippet.thumbnails?.maxres?.url ||
@@ -370,7 +439,7 @@ async function fetchYouTubeVideosLogic(): Promise<{
     batchCounter++;
 
     // バッチサイズの上限に達したらコミット
-    if (batchCounter >= maxBatchSize) {
+    if (batchCounter >= MAX_FIRESTORE_BATCH_SIZE) {
       logger.debug(
         `${batchCounter}件の動画ドキュメントのバッチをコミット中...`,
       );
@@ -410,13 +479,88 @@ async function fetchYouTubeVideosLogic(): Promise<{
     logger.debug("最終バッチに書き込む動画詳細がありませんでした");
   }
 
-  // 処理完了を記録
-  await updateMetadata({
-    isInProgress: false,
-    lastError: undefined,
-  });
+  return videoDetails.length;
+}
 
-  return { videoCount: videoDetails.length };
+/**
+ * YouTube動画情報取得の共通処理
+ *
+ * @returns Promise<FetchResult> - 処理結果
+ */
+async function fetchYouTubeVideosLogic(): Promise<FetchResult> {
+  try {
+    // 1. YouTube APIクライアントの初期化
+    const [youtube, initError] = initializeYouTubeClient();
+    if (initError) return initError;
+    if (!youtube)
+      return {
+        videoCount: 0,
+        error: "YouTubeクライアントの初期化に失敗しました",
+      };
+
+    // 2. 実行前準備（メタデータ確認）
+    const [metadata, prepError] = await prepareExecution();
+    if (prepError) return prepError;
+    if (!metadata)
+      return { videoCount: 0, error: "メタデータの準備に失敗しました" };
+
+    // 3. 動画IDの取得
+    logger.info(
+      `チャンネル ${SUZUKA_MINASE_CHANNEL_ID} の動画情報取得を開始します`,
+    );
+    const { videoIds, nextPageToken, isComplete } = await fetchVideoIds(
+      youtube,
+      metadata,
+    );
+
+    logger.info(`取得した動画ID合計: ${videoIds.length}件`);
+    if (videoIds.length === 0) {
+      logger.info("チャンネルに動画が見つかりませんでした");
+      await updateMetadata({ isInProgress: false });
+      return { videoCount: 0 };
+    }
+
+    // 4. 動画の詳細情報取得
+    const videoDetails = await fetchVideoDetails(youtube, videoIds);
+
+    // 5. Firestoreにデータ保存
+    const savedCount = await saveVideosToFirestore(videoDetails);
+
+    // 6. 完全な取得完了の場合、メタデータを更新
+    if (isComplete) {
+      await updateMetadata({
+        nextPageToken: undefined,
+        lastSuccessfulCompleteFetch: Timestamp.now(),
+      });
+    }
+
+    // 7. 処理完了を記録
+    await updateMetadata({
+      isInProgress: false,
+      lastError: undefined,
+    });
+
+    return { videoCount: savedCount };
+  } catch (error: unknown) {
+    // エラー発生時はログ出力して処理終了
+    logger.error("YouTube動画情報取得中にエラーが発生しました:", error);
+
+    // 可能な場合はメタデータ更新
+    try {
+      await updateMetadata({
+        isInProgress: false,
+        lastError: error instanceof Error ? error.message : String(error),
+      });
+    } catch (updateError) {
+      logger.error("エラー状態の記録に失敗しました:", updateError);
+    }
+
+    return {
+      videoCount: 0,
+      error:
+        error instanceof Error ? error.message : "不明なエラーが発生しました",
+    };
+  }
 }
 
 /**
