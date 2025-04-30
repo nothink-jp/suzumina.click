@@ -1,236 +1,456 @@
-# ==============================================================================
-# モニタリング設定
-# ==============================================================================
-# 概要: Cloud Run、およびその他のサービスのモニタリングとアラート設定
-# ==============================================================================
+/**
+ * monitoring.tf
+ * Cloud Monitoring関連のリソース定義
+ */
 
-# カスタムダッシュボードの作成
-resource "google_monitoring_dashboard" "cloud_run_dashboard" {
+# メトリクスダッシュボード
+resource "google_monitoring_dashboard" "service_overview" {
   dashboard_json = <<EOF
 {
-  "displayName": "suzumina.click Cloud Run パフォーマンスダッシュボード",
-  "gridLayout": {
-    "widgets": [
+  "displayName": "suzumina.click サービス概要ダッシュボード",
+  "mosaicLayout": {
+    "columns": 12,
+    "tiles": [
       {
-        "title": "リクエスト数",
-        "xyChart": {
-          "dataSets": [
-            {
-              "timeSeriesQuery": {
-                "timeSeriesFilter": {
-                  "filter": "metric.type=\"run.googleapis.com/request_count\" AND resource.type=\"cloud_run_revision\" AND resource.label.\"service_name\"=\"${local.cloudrun_service_name}\"",
-                  "aggregation": {
-                    "perSeriesAligner": "ALIGN_RATE",
-                    "crossSeriesReducer": "REDUCE_SUM",
-                    "groupByFields": [
-                      "resource.label.\"service_name\""
-                    ]
-                  }
-                }
-              },
-              "plotType": "LINE",
-              "legendTemplate": "リクエスト数/秒"
-            }
-          ],
-          "yAxis": {
-            "scale": "LINEAR",
-            "label": "リクエスト/秒"
-          },
-          "timeshiftDuration": "0s"
-        }
-      },
-      {
-        "title": "レイテンシ",
-        "xyChart": {
-          "dataSets": [
-            {
-              "timeSeriesQuery": {
-                "timeSeriesFilter": {
-                  "filter": "metric.type=\"run.googleapis.com/request_latencies\" AND resource.type=\"cloud_run_revision\" AND resource.label.\"service_name\"=\"${local.cloudrun_service_name}\"",
-                  "aggregation": {
-                    "perSeriesAligner": "ALIGN_PERCENTILE_99",
-                    "crossSeriesReducer": "REDUCE_MEAN",
-                    "groupByFields": [
-                      "resource.label.\"service_name\""
-                    ]
-                  }
-                }
-              },
-              "plotType": "LINE",
-              "legendTemplate": "P99レイテンシ"
+        "height": 4,
+        "widget": {
+          "title": "Cloud Run - リクエスト数とレイテンシ",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
             },
-            {
-              "timeSeriesQuery": {
-                "timeSeriesFilter": {
-                  "filter": "metric.type=\"run.googleapis.com/request_latencies\" AND resource.type=\"cloud_run_revision\" AND resource.label.\"service_name\"=\"${local.cloudrun_service_name}\"",
-                  "aggregation": {
-                    "perSeriesAligner": "ALIGN_PERCENTILE_50",
-                    "crossSeriesReducer": "REDUCE_MEAN",
-                    "groupByFields": [
-                      "resource.label.\"service_name\""
-                    ]
+            "dataSets": [
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/request_count\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN"
+                    }
                   }
                 }
               },
-              "plotType": "LINE",
-              "legendTemplate": "P50レイテンシ"
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y2",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_PERCENTILE_99"
+                    },
+                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/request_latencies\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN"
+                    }
+                  }
+                }
+              }
+            ],
+            "timeshiftDuration": "0s",
+            "yAxis": {
+              "label": "リクエスト数",
+              "scale": "LINEAR"
+            },
+            "y2Axis": {
+              "label": "レイテンシ (ms)",
+              "scale": "LINEAR"
             }
-          ],
-          "yAxis": {
-            "scale": "LINEAR",
-            "label": "レイテンシ (ms)"
-          },
-          "timeshiftDuration": "0s"
-        }
+          }
+        },
+        "width": 6,
+        "xPos": 0,
+        "yPos": 0
       },
       {
-        "title": "インスタンス数",
-        "xyChart": {
-          "dataSets": [
-            {
-              "timeSeriesQuery": {
-                "timeSeriesFilter": {
-                  "filter": "metric.type=\"run.googleapis.com/container/instance_count\" AND resource.type=\"cloud_run_revision\" AND resource.label.\"service_name\"=\"${local.cloudrun_service_name}\"",
-                  "aggregation": {
-                    "perSeriesAligner": "ALIGN_MEAN",
-                    "crossSeriesReducer": "REDUCE_SUM",
-                    "groupByFields": [
-                      "resource.label.\"service_name\""
-                    ]
+        "height": 4,
+        "widget": {
+          "title": "Cloud Run - エラー率",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"4xx\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN"
+                    }
                   }
                 }
               },
-              "plotType": "LINE",
-              "legendTemplate": "インスタンス数"
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN"
+                    }
+                  }
+                }
+              }
+            ],
+            "timeshiftDuration": "0s",
+            "yAxis": {
+              "label": "エラー数",
+              "scale": "LINEAR"
             }
-          ],
-          "yAxis": {
-            "scale": "LINEAR",
-            "label": "インスタンス数"
-          },
-          "timeshiftDuration": "0s"
-        }
+          }
+        },
+        "width": 6,
+        "xPos": 6,
+        "yPos": 0
       },
       {
-        "title": "エラー率",
-        "xyChart": {
-          "dataSets": [
-            {
-              "timeSeriesQuery": {
-                "timeSeriesFilter": {
-                  "filter": "metric.type=\"run.googleapis.com/request_count\" AND resource.type=\"cloud_run_revision\" AND resource.label.\"service_name\"=\"${local.cloudrun_service_name}\" AND metric.label.\"response_code_class\"!=\"2xx\"",
-                  "aggregation": {
-                    "perSeriesAligner": "ALIGN_RATE",
-                    "crossSeriesReducer": "REDUCE_SUM",
-                    "groupByFields": [
-                      "metric.label.\"response_code_class\""
-                    ]
+        "height": 4,
+        "widget": {
+          "title": "Cloud Functions - 実行回数",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "resource.type=\"cloud_function\" AND resource.labels.function_name=\"fetchYouTubeVideos\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_SUM"
+                    }
                   }
                 }
               },
-              "plotType": "LINE",
-              "legendTemplate": "エラー数/秒 ({{metric.label.response_code_class}})"
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "resource.type=\"cloud_function\" AND resource.labels.function_name=\"discordAuthCallback\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_SUM"
+                    }
+                  }
+                }
+              }
+            ],
+            "timeshiftDuration": "0s",
+            "yAxis": {
+              "label": "実行回数",
+              "scale": "LINEAR"
             }
-          ],
-          "yAxis": {
-            "scale": "LINEAR",
-            "label": "エラー/秒"
-          },
-          "timeshiftDuration": "0s"
-        }
+          }
+        },
+        "width": 6,
+        "xPos": 0,
+        "yPos": 4
+      },
+      {
+        "height": 4,
+        "widget": {
+          "title": "Cloud Functions - エラー率",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "resource.type=\"cloud_function\" AND resource.labels.function_name=\"fetchYouTubeVideos\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\" AND metric.labels.status=\"error\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_COUNT"
+                    }
+                  }
+                }
+              },
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "resource.type=\"cloud_function\" AND resource.labels.function_name=\"discordAuthCallback\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\" AND metric.labels.status=\"error\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_COUNT"
+                    }
+                  }
+                }
+              }
+            ],
+            "timeshiftDuration": "0s",
+            "yAxis": {
+              "label": "エラー数",
+              "scale": "LINEAR"
+            }
+          }
+        },
+        "width": 6,
+        "xPos": 6,
+        "yPos": 4
+      },
+      {
+        "height": 4,
+        "widget": {
+          "title": "Firestore - 読み取り/書き込み操作",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "resource.type=\"firestore_instance\" AND metric.type=\"firestore.googleapis.com/document/read_count\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_SUM"
+                    }
+                  }
+                }
+              },
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "resource.type=\"firestore_instance\" AND metric.type=\"firestore.googleapis.com/document/write_count\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_SUM"
+                    }
+                  }
+                }
+              }
+            ],
+            "timeshiftDuration": "0s",
+            "yAxis": {
+              "label": "操作数",
+              "scale": "LINEAR"
+            }
+          }
+        },
+        "width": 6,
+        "xPos": 0,
+        "yPos": 8
+      },
+      {
+        "height": 4,
+        "widget": {
+          "title": "Cloud Run - コンテナ・インスタンス数",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_SUM"
+                    },
+                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/container/instance_count\"",
+                    "secondaryAggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN"
+                    }
+                  }
+                }
+              }
+            ],
+            "timeshiftDuration": "0s",
+            "yAxis": {
+              "label": "インスタンス数",
+              "scale": "LINEAR"
+            }
+          }
+        },
+        "width": 6,
+        "xPos": 6,
+        "yPos": 8
       }
     ]
   }
 }
 EOF
 
-  depends_on = [
-    google_cloud_run_service.nextjs_app
-  ]
+  project = var.gcp_project_id
 }
 
-# 高レイテンシアラート
-resource "google_monitoring_alert_policy" "high_latency_alert" {
-  display_name = "Cloud Run 高レイテンシアラート"
-  combiner     = "OR"
-  conditions {
-    display_name = "P99レイテンシが500msを超過"
-    condition_threshold {
-      filter          = "metric.type=\"run.googleapis.com/request_latencies\" AND resource.type=\"cloud_run_revision\" AND resource.label.\"service_name\"=\"${local.cloudrun_service_name}\""
-      duration        = "300s"
-      comparison      = "COMPARISON_GT"
-      threshold_value = 500  # 500ms
-
-      aggregations {
-        alignment_period     = "60s"
-        per_series_aligner   = "ALIGN_PERCENTILE_99"
-        cross_series_reducer = "REDUCE_MEAN"
-        group_by_fields      = ["resource.label.service_name"]
-      }
-    }
-  }
-
-  notification_channels = [
-    google_monitoring_notification_channel.email.id
-  ]
-
-  documentation {
-    content   = "Cloud Runサービス ${local.cloudrun_service_name} のP99レイテンシが500msを超過しています。パフォーマンスの問題がないか確認してください。"
-    mime_type = "text/markdown"
-  }
-
-  depends_on = [
-    google_cloud_run_service.nextjs_app
-  ]
-}
-
-# エラー率アラート（修正版）
-resource "google_monitoring_alert_policy" "error_rate_alert" {
+# 重要なアラートポリシー
+resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
   display_name = "Cloud Run エラー率アラート"
   combiner     = "OR"
+  
   conditions {
-    display_name = "エラーレスポンス数が閾値を超過"
+    display_name = "高エラー率検知 (5xx > 5%)"
+    
     condition_threshold {
-      # エラーレスポンスのみをフィルタリングして監視
-      filter     = <<-EOT
-        resource.type="cloud_run_revision"
-        AND resource.label.service_name="${local.cloudrun_service_name}"
-        AND metric.type="run.googleapis.com/request_count"
-        AND metric.label.response_code_class!="2xx"
-      EOT
-      duration        = "300s"
+      filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\""
+      duration        = "60s"
       comparison      = "COMPARISON_GT"
-      # 1分間に5回以上のエラーが発生した場合にアラート
-      threshold_value = 5
-
+      threshold_value = 0.05  # 5%
+      
       aggregations {
         alignment_period   = "60s"
         per_series_aligner = "ALIGN_RATE"
-        # レスポンスコードクラスごとに集計
-        group_by_fields = ["metric.label.response_code_class"]
+      }
+      
+      trigger {
+        count = 1
       }
     }
   }
-
+  
   notification_channels = [
-    google_monitoring_notification_channel.email.id
+    google_monitoring_notification_channel.email.name
   ]
-
+  
   documentation {
-    content   = "Cloud Runサービス ${local.cloudrun_service_name} で1分間に5回以上のエラーレスポンスが発生しています。アプリケーションログを確認してください。"
+    content = <<-EOT
+    # Cloud Run エラー率が閾値を超過
+    
+    suzumina-click-nextjs-app サービスでエラーレート(5xx)が 5% を超えました。
+    緊急対応が必要です。
+    
+    ## 確認事項
+    1. Cloud Loggingでエラー詳細を確認
+    2. 最新のデプロイとの関連を確認
+    3. 必要に応じて自動/手動ロールバック
+    EOT
     mime_type = "text/markdown"
   }
-
-  depends_on = [
-    google_cloud_run_service.nextjs_app
-  ]
+  
+  depends_on = [google_monitoring_notification_channel.email]
 }
 
-# メール通知チャネル
+# 通知チャンネル - メール
 resource "google_monitoring_notification_channel" "email" {
-  display_name = "開発チーム通知"
+  display_name = "管理者メール通知"
   type         = "email"
+  
   labels = {
-    email_address = var.alert_email_address
+    email_address = "admin@example.com"  # 実際の管理者メールアドレスに置き換え
   }
+  
+  project = var.gcp_project_id
+}
+
+# Cloud Run 自動スケーリングのアラート
+resource "google_monitoring_alert_policy" "cloud_run_scaling" {
+  display_name = "Cloud Run スケーリング通知"
+  combiner     = "OR"
+  
+  conditions {
+    display_name = "インスタンス数が急増 (> 5)"
+    
+    condition_threshold {
+      filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/container/instance_count\""
+      duration        = "60s"
+      comparison      = "COMPARISON_GT"
+      threshold_value = 5  # インスタンス数閾値
+      
+      aggregations {
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_MAX"
+      }
+      
+      trigger {
+        count = 1
+      }
+    }
+  }
+  
+  notification_channels = [
+    google_monitoring_notification_channel.email.name
+  ]
+  
+  documentation {
+    content = <<-EOT
+    # Cloud Run インスタンス数急増
+    
+    suzumina-click-nextjs-app サービスのインスタンス数が急増しました。
+    トラフィック増加または異常な負荷が考えられます。
+    
+    ## 確認事項
+    1. トラフィックパターンの確認
+    2. DoS攻撃の可能性確認
+    3. コスト影響の評価
+    EOT
+    mime_type = "text/markdown"
+  }
+  
+  project = var.gcp_project_id
+  
+  depends_on = [google_monitoring_notification_channel.email]
 }

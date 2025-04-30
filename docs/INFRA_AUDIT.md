@@ -1,6 +1,6 @@
 # インフラ構成監査レポート
 
-**最終更新日: 2025年4月23日**
+**最終更新日: 2025年5月3日**
 
 このドキュメントは、suzumina.clickプロジェクトの現在のインフラ構成を記録し、監査目的で参照できるようにしたものです。
 
@@ -18,25 +18,32 @@
 | **IAM** | Terraform | `terraform/iam.tf` | サービスアカウント・権限管理 |
 | **Storage** | Terraform | `terraform/storage.tf` | 静的アセット保存（現在は未使用） |
 | **API Services** | Terraform | `terraform/api_services.tf` | 必要なAPIの有効化管理 |
+| **Monitoring** | Terraform | `terraform/monitoring.tf` | ダッシュボードとアラート設定 |
+| **Artifact Registry** | Terraform | `terraform/artifact_registry.tf` | Dockerイメージ保存 |
 
 ## 2. ネットワークとサービス連携図
 
 ```mermaid
 graph TD
     A[GitHub Actions] -->|デプロイトリガー| D[Cloud Run]
+    A -->|セキュリティスキャン| B[Cloud Security Scanner]
     D -->|認証処理| E[Firebase Auth]
+    D -->|メトリクス送信| M[Cloud Monitoring]
     E -->|ユーザー情報保存| F[Firestore]
     G[Cloud Scheduler] -->|定期実行| H[Pub/Sub]
     H -->|トリガー| I[Cloud Functions: fetchYouTubeVideos]
     I -->|YouTube API呼び出し| J[YouTube Data API]
     I -->|データ保存| F
+    I -->|メトリクス送信| M
     K[Discord OAuth] -->|認証コールバック| L[Cloud Functions: discordAuthCallback]
     L -->|トークン検証| E
-    M[ブラウザ] -->|アクセス| D
-    M -->|認証リクエスト| K
+    N[ブラウザ] -->|アクセス| D
+    N -->|認証リクエスト| K
+    M -->|アラート| O[通知チャネル]
+    P[Artifact Registry] -->|イメージ提供| D
 ```
 
-## 3. 現在の運用方針
+## 3. 最適化された運用方針
 
 ### 3.1 Firebase利用ポリシー
 
@@ -57,18 +64,28 @@ graph TD
 - **手動変更禁止**: コンソールでの手動変更は原則禁止
 - **デプロイ権限**: 限定されたメンバーのみがデプロイ権限を持つ
 
-## 4. セキュリティ設定
+## 4. セキュリティ設定と監視体制
 
 - **GitHub Actions**: Workload Identity Federation使用
 - **Secret Manager**: 全ての機密情報はSecret Managerで管理
 - **IAM**: 最小権限の原則に基づくサービスアカウント設定
 - **YouTube API鍵**: Secret Managerでの安全な管理
+- **セキュリティスキャン**: GitHub Actions内で依存関係とDockerイメージの自動スキャン（毎日実行）
+- **脆弱性通知**: Dependabotによる自動脆弱性通知
 
 ## 5. 監視とコスト管理
 
-- **今後の課題**: Cloud Runメトリクス監視とアラート設定
-- **コスト管理**: 予算アラートの設定（検討中）
-- **バッチ処理**: YouTube API呼び出し制限を考慮した実装
+- **Cloud Monitoring**: Terraformによるメトリクスダッシュボードとアラートポリシー管理
+- **自動通知**: エラー率、高レイテンシ、リソース枯渇時の自動通知
+- **コスト管理**: 予算アラートの設定（`terraform/budget.tf`）
+- **自動スケーリング最適化**: 負荷に応じた適切なリソース割り当て
+
+## 6. CI/CD最適化
+
+- **ビルドキャッシュ**: GitHub Actionsでのキャッシュ戦略最適化（pnpmおよびNext.js）
+- **デプロイ自動化**: パスベースの選択的デプロイによる重複の排除
+- **自動ロールバック**: デプロイ後のヘルスチェックに基づく自動ロールバック機能
+- **ゼロダウンタイム**: トラフィック制御による無停止デプロイ
 
 ## 参照ドキュメント
 

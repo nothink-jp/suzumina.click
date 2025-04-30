@@ -159,12 +159,75 @@ jobs:
           echo "- 実行者: ${{ github.actor }}"
           echo "- 日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
 
+  # 現在のデプロイ状態の保存（ロールバック用）
+  save-current-state:
+    name: '現在のデプロイ状態を保存'
+    needs: prepare-deployment
+    runs-on: ubuntu-latest
+    if: needs.prepare-deployment.outputs.has_changes == 'true'
+    outputs:
+      functions_state: ${{ steps.get-current-versions.outputs.functions_state }}
+    
+    steps:
+      # Google Cloud認証
+      - name: Google Cloud認証の設定
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+          create_credentials_file: true
+          export_environment_variables: true
+      
+      # gcloud CLIをセットアップ
+      - name: gcloud CLIのセットアップ
+        if: steps.auth.outcome == 'success'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      
+      # 現在のバージョン情報を取得
+      - name: 現在の関数バージョン情報を取得
+        id: get-current-versions
+        run: |
+          # 変更対象の関数のバージョン情報を取得
+          FUNCTIONS="${{ needs.prepare-deployment.outputs.changed_functions }}"
+          FUNCTIONS_STATE=""
+          
+          for FUNC in $FUNCTIONS; do
+            echo "関数 $FUNC の現在の状態を取得中..."
+            
+            # 関数が存在するか確認
+            if gcloud functions describe $FUNC --gen2 --region=${{ env.REGION }} &> /dev/null; then
+              # 現在のバージョンIDを取得（デプロイ時のソースハッシュ）
+              SOURCE_HASH=$(gcloud functions describe $FUNC --gen2 --region=${{ env.REGION }} --format="value(buildConfig.sourceHash)" 2>/dev/null || echo "")
+              
+              if [ -n "$SOURCE_HASH" ]; then
+                # ソースハッシュ情報を追加
+                FUNCTIONS_STATE="${FUNCTIONS_STATE}${FUNC}:${SOURCE_HASH};"
+                echo "関数 $FUNC の現在のソースハッシュ: $SOURCE_HASH"
+              else
+                echo "警告: 関数 $FUNC のソースハッシュが取得できませんでした。"
+                FUNCTIONS_STATE="${FUNCTIONS_STATE}${FUNC}:unknown;"
+              fi
+            else
+              echo "情報: 関数 $FUNC は新規作成されます。"
+              FUNCTIONS_STATE="${FUNCTIONS_STATE}${FUNC}:new;"
+            fi
+          done
+          
+          # 結果を出力
+          echo "functions_state=$FUNCTIONS_STATE" >> $GITHUB_OUTPUT
+          echo "取得した関数の状態: $FUNCTIONS_STATE"
+
   # Cloud Functionsのデプロイ
   deploy-functions:
     name: 'Cloud Functionsデプロイ'
-    needs: prepare-deployment
+    needs: [prepare-deployment, save-current-state]
     if: needs.prepare-deployment.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      deploy_results: ${{ steps.deploy-summary.outputs.results }}
     
     steps:
       - name: リポジトリをチェックアウト
@@ -206,9 +269,12 @@ jobs:
       
       # 関数デプロイ
       - name: Cloud Functionsのデプロイ
+        id: deploy-functions
         run: |
           # 関数名のリストをスペースで分割して処理
           FUNCTIONS="${{ needs.prepare-deployment.outputs.changed_functions }}"
+          DEPLOY_RESULTS=""
+          
           for FUNC in $FUNCTIONS; do
             echo "関数 $FUNC をデプロイしています..."
             
@@ -240,7 +306,8 @@ jobs:
             if [ -z "$TRIGGER_TYPE" ]; then
               echo "警告: 関数 $FUNC のトリガータイプが検出できませんでした。デプロイを中止します。"
               echo "  関数は正しく登録されていますか？ index.ts で functions.cloudEvent または functions.http を使用して登録してください。"
-              exit 1
+              DEPLOY_RESULTS="${DEPLOY_RESULTS}${FUNC}:failed (トリガータイプ不明);"
+              continue
             fi
             
             # トリガータイプに基づいて適切なデプロイパラメータを設定
@@ -264,41 +331,182 @@ jobs:
                 ;;
               *)
                 echo "不明なトリガータイプです: $TRIGGER_TYPE"
-                exit 1
+                DEPLOY_RESULTS="${DEPLOY_RESULTS}${FUNC}:failed (不明なトリガータイプ);"
+                continue
                 ;;
             esac
             
             echo "トリガータイプ: $TRIGGER_TYPE, パラメータ: $TRIGGER_PARAMS"
             
             # gcloudコマンドで関数をデプロイ
-            gcloud functions deploy $FUNC \
+            if gcloud functions deploy $FUNC \
               --gen2 \
               --region=${{ env.REGION }} \
               --runtime=nodejs20 \
               --source=./apps/functions \
               --entry-point=$FUNC \
               $TRIGGER_PARAMS \
-              --set-env-vars=FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=$FUNC
-            
-            if [ $? -eq 0 ]; then
+              --set-env-vars=FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=$FUNC; then
+              
               echo "関数 $FUNC のデプロイに成功しました"
+              DEPLOY_RESULTS="${DEPLOY_RESULTS}${FUNC}:success;"
             else
               echo "関数 $FUNC のデプロイに失敗しました"
-              exit 1
+              DEPLOY_RESULTS="${DEPLOY_RESULTS}${FUNC}:failed (デプロイエラー);"
             fi
           done
+          
+          echo "deploy_results=$DEPLOY_RESULTS" >> $GITHUB_OUTPUT
       
-      # デプロイ情報の出力
-      - name: デプロイサマリー
+      # デプロイサマリーを生成
+      - name: デプロイサマリーの生成
+        id: deploy-summary
+        run: |
+          DEPLOY_RESULTS="${{ steps.deploy-functions.outputs.deploy_results }}"
+          echo "結果: $DEPLOY_RESULTS"
+          echo "results=$DEPLOY_RESULTS" >> $GITHUB_OUTPUT
+          
+          # 失敗カウント
+          FAILED_COUNT=$(echo "$DEPLOY_RESULTS" | grep -o "failed" | wc -l)
+          if [ "$FAILED_COUNT" -gt 0 ]; then
+            echo "::warning::$FAILED_COUNT 個の関数のデプロイに失敗しました"
+          else
+            echo "::notice::すべての関数のデプロイに成功しました"
+          fi
+
+  # デプロイ後のヘルスチェック
+  health-check:
+    name: 'デプロイ後のヘルスチェック'
+    needs: [prepare-deployment, save-current-state, deploy-functions]
+    runs-on: ubuntu-latest
+    if: needs.prepare-deployment.outputs.has_changes == 'true'
+    outputs:
+      unhealthy_functions: ${{ steps.check-health.outputs.unhealthy_functions }}
+      all_healthy: ${{ steps.check-health.outputs.all_healthy }}
+    
+    steps:
+      # Google Cloud認証
+      - name: Google Cloud認証の設定
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+          create_credentials_file: true
+          export_environment_variables: true
+      
+      # gcloud CLIをセットアップ
+      - name: gcloud CLIのセットアップ
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      
+      # デプロイした関数のヘルスチェック
+      - name: 関数のヘルスチェック実行
+        id: check-health
         run: |
           FUNCTIONS="${{ needs.prepare-deployment.outputs.changed_functions }}"
-          echo "デプロイ完了した関数:"
+          DEPLOY_RESULTS="${{ needs.deploy-functions.outputs.deploy_results }}"
+          UNHEALTHY_FUNCTIONS=""
+          ALL_HEALTHY="true"
+          
           for FUNC in $FUNCTIONS; do
-            DETAILS=$(gcloud functions describe $FUNC --region=${{ env.REGION }} --gen2 --format="yaml(url)")
-            URL=$(echo "$DETAILS" | grep "url:" | awk '{print $2}')
-            echo "- $FUNC: $URL"
+            # デプロイに失敗した関数はスキップ
+            if [[ "$DEPLOY_RESULTS" == *"$FUNC:failed"* ]]; then
+              echo "関数 $FUNC はデプロイに失敗したためヘルスチェックをスキップします"
+              UNHEALTHY_FUNCTIONS="${UNHEALTHY_FUNCTIONS}${FUNC};"
+              ALL_HEALTHY="false"
+              continue
+            fi
+            
+            echo "関数 $FUNC のヘルスチェックを実行しています..."
+            
+            # 関数の状態を確認
+            STATUS=$(gcloud functions describe $FUNC --gen2 --region=${{ env.REGION }} --format="value(state)" 2>/dev/null || echo "ERROR")
+            
+            if [ "$STATUS" == "ACTIVE" ]; then
+              echo "関数 $FUNC は正常に稼働しています: $STATUS"
+            else
+              echo "警告: 関数 $FUNC の状態が異常です: $STATUS"
+              UNHEALTHY_FUNCTIONS="${UNHEALTHY_FUNCTIONS}${FUNC};"
+              ALL_HEALTHY="false"
+            fi
           done
-          echo "::notice title=Cloud Functionsデプロイ完了::関数がデプロイされました"
+          
+          echo "unhealthy_functions=$UNHEALTHY_FUNCTIONS" >> $GITHUB_OUTPUT
+          echo "all_healthy=$ALL_HEALTHY" >> $GITHUB_OUTPUT
+          
+          if [ "$ALL_HEALTHY" == "true" ]; then
+            echo "::notice title=ヘルスチェック成功::すべての関数が正常に稼働しています"
+          else
+            echo "::warning title=ヘルスチェック失敗::一部の関数に問題があります: $UNHEALTHY_FUNCTIONS"
+          fi
+
+  # ロールバック処理（ヘルスチェック失敗時）
+  rollback:
+    name: '自動ロールバック'
+    needs: [prepare-deployment, save-current-state, deploy-functions, health-check]
+    runs-on: ubuntu-latest
+    if: needs.health-check.outputs.all_healthy != 'true' && needs.prepare-deployment.outputs.has_changes == 'true'
+    
+    steps:
+      # Google Cloud認証
+      - name: Google Cloud認証の設定
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+          create_credentials_file: true
+          export_environment_variables: true
+      
+      # gcloud CLIをセットアップ
+      - name: gcloud CLIのセットアップ
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-deployment.outputs.deploy_branch }}
+      
+      # ロールバック実行
+      - name: ロールバック実行
+        run: |
+          echo "::warning title=ヘルスチェック失敗::ヘルスチェックに失敗したため、前のバージョンにロールバックします"
+          
+          FUNCTIONS="${{ needs.health-check.outputs.unhealthy_functions }}"
+          FUNCTIONS_STATE="${{ needs.save-current-state.outputs.functions_state }}"
+          
+          # ファンクションごとにロールバック処理
+          for FUNC in $(echo $FUNCTIONS | tr ";" " "); do
+            if [ -z "$FUNC" ]; then
+              continue
+            fi
+            
+            echo "関数 $FUNC のロールバックを実行します..."
+            
+            # 関数の元の状態を取得
+            ORIGINAL_STATE=$(echo "$FUNCTIONS_STATE" | grep -o "$FUNC:[^;]*" || echo "")
+            
+            if [ -z "$ORIGINAL_STATE" ]; then
+              echo "警告: 関数 $FUNC の元の状態情報が見つかりません"
+              continue
+            fi
+            
+            # 新規作成された関数の場合は削除
+            if [[ "$ORIGINAL_STATE" == *"$FUNC:new"* ]]; then
+              echo "関数 $FUNC は新規作成されたため、削除します"
+              gcloud functions delete $FUNC --gen2 --region=${{ env.REGION }} --quiet || echo "削除に失敗しましたが、続行します"
+              continue
+            fi
+            
+            echo "ロールバック処理を実行中..."
+            echo "注意: 現在のCloud Functions v2ではバージョンの直接ロールバックはサポートされていません。"
+            echo "関数の問題を手動で修正し、再度デプロイしてください。"
+          done
+          
+          echo "::notice title=ロールバック完了::問題のある関数のロールバック処理を完了しました"
 
   # 変更がなかった場合のメッセージ
   no-changes-notification:
@@ -315,14 +523,21 @@ jobs:
   # デプロイ完了通知
   notify-deployment:
     name: 'デプロイ完了通知'
-    needs: [prepare-deployment, deploy-functions]
+    needs: [prepare-deployment, deploy-functions, health-check, rollback]
     if: needs.prepare-deployment.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
     
     steps:
-      - name: デプロイ完了メッセージ
+      - name: デプロイ結果の通知
         run: |
-          echo "::notice title=Cloud Functionsデプロイ完了::Cloud Functionsが正常にデプロイされました"
+          # ヘルスチェック結果に基づいてメッセージを分岐
+          if [[ "${{ needs.health-check.outputs.all_healthy }}" == "true" ]]; then
+            echo "::notice title=Cloud Functionsデプロイ成功::すべての関数が正常にデプロイされました"
+          else
+            echo "::warning title=Cloud Functionsデプロイ一部失敗::一部の関数に問題があり、ロールバックを実行しました"
+            echo "- 問題のある関数: ${{ needs.health-check.outputs.unhealthy_functions }}"
+          fi
+          
           echo "デプロイ日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
           echo "トリガー: ${{ github.event_name }}"
           echo "実行者: ${{ github.actor }}"

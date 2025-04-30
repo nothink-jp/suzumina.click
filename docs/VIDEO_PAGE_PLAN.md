@@ -23,13 +23,13 @@
 
 ### 将来的な拡張
 
-音声クリップ機能のために、以下のコレクションを追加予定です：
+音声ボタン機能のために、以下のコレクションを追加予定です：
 
-- `audioClips`: 動画から抽出した音声クリップ情報
+- `audioButtons`: 動画から抽出した音声ボタン情報
 
 ```mermaid
 erDiagram
-    videos ||--o{ audioClips : "関連付け"
+    videos ||--o{ audioButtons : "関連付け"
 
     videos {
         string videoId PK "YouTubeビデオID"
@@ -42,10 +42,10 @@ erDiagram
         timestamp lastFetchedAt "最終取得日時"
     }
 
-    audioClips {
-        string clipId PK "クリップID"
+    audioButtons {
+        string buttonId PK "ボタンID"
         string videoId FK "関連動画ID"
-        string title "クリップタイトル"
+        string title "ボタンタイトル"
         string phrase "フレーズテキスト"
         number startTime "開始時間（秒）"
         number endTime "終了時間（秒）"
@@ -106,13 +106,14 @@ graph TD
     A --> C[戻るボタン]
     A --> D[YouTubeEmbed]
     A --> E[VideoInfo]
-    A --> F[音声クリップエリア]
+    A --> F[音声ボタンエリア]
     A --> G[フッター]
 ```
 
 ## 5. 実装フェーズ
 
 ### フェーズ1: 動画一覧ページの実装
+
 - 型定義の作成
 - データ取得ロジックの実装
 - VideoCardコンポーネントの実装
@@ -120,16 +121,19 @@ graph TD
 - トップページの更新
 
 ### フェーズ2: 動画詳細ページの実装
+
 - YouTubeEmbedコンポーネントの実装
 - VideoInfoコンポーネントの実装
 - 動画詳細ページの実装
 
-### フェーズ3: 音声クリップ機能の準備（将来実装）
-- `audioClips`コレクションのスキーマ設計
-- 音声クリップ管理用のバックエンド機能
+### フェーズ3: 音声ボタン機能の準備（将来実装）
+
+- `audioButtons`コレクションのスキーマ設計
+- 音声ボタン管理用のバックエンド機能
 
 ### フェーズ4: 音声ボタン機能の実装（将来実装）
-- 音声クリップの再生機能
+
+- 音声ボタンの再生機能
 - 音声ボタンUIの実装
 
 ## 6. 主要コンポーネントの実装詳細
@@ -196,7 +200,7 @@ export async function getVideoById(videoId: string): Promise<Video | null> {
 
 ## 9. 将来的な拡張性
 
-- 音声クリップの検索機能
+- 音声ボタンの検索機能
 - タグ付け機能
 - ユーザーによるお気に入り登録機能
 
@@ -222,11 +226,12 @@ service cloud.firestore {
 }
 ```
 
-将来的に`audioClips`コレクションを追加する際は、以下のようなルールを追加する予定です：
+将来的に`audioButtons`コレクションを追加する際は、以下のようなルールを追加する予定です：
 
 ```javascript
-// audioClips コレクション - 読み取りは全員可能、書き込みは管理者のみ
-match /audioClips/{clipId} {
+// audioButtons コレクション - 読み取りは全員可能、書き込みは管理者のみ
+match /audioButtons/{buttonId} {
   allow read;
   allow write: if false; // 管理者のみ書き込み可能
 }
+```

@@ -1,0 +1,218 @@
+name: 'セキュリティスキャン'
+
+on:
+  schedule:
+    - cron: '9 1 * * *'  # 毎日午前1時9分に実行
+  
+  # 手動実行も可能
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write  # セキュリティアラートの書き込み権限
+
+jobs:
+  # 依存関係の脆弱性スキャン
+  dependency-scan:
+    name: '依存関係のセキュリティスキャン'
+    runs-on: ubuntu-latest
+    outputs:
+      node_version: ${{ steps.read_engines.outputs.node_version }}
+      pnpm_version: ${{ steps.read_engines.outputs.pnpm_version }}
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+      
+      # package.jsonからenginesのバージョンを読み取る
+      - name: パッケージからエンジンバージョンを読み取る
+        id: read_engines
+        run: |
+          # package.jsonからNode.jsとpnpmのバージョンを取得
+          NODE_VERSION=$(node -p "require('./package.json').engines.node")
+          PNPM_VERSION=$(node -p "require('./package.json').engines.pnpm")
+          
+          echo "取得したバージョン情報: Node.js=$NODE_VERSION, pnpm=$PNPM_VERSION"
+          
+          # GitHub Actionsの出力として設定
+          echo "node_version=$NODE_VERSION" >> $GITHUB_OUTPUT
+          echo "pnpm_version=$PNPM_VERSION" >> $GITHUB_OUTPUT
+      
+      # 複合アクションを使用してNode.js環境をセットアップ
+      - name: Node.js環境のセットアップ
+        uses: ./.github/actions/setup-node-env
+        with:
+          node-version: ${{ steps.read_engines.outputs.node_version }}
+          pnpm-version: ${{ steps.read_engines.outputs.pnpm_version }}
+      
+      # npmパッケージの脆弱性スキャン
+      - name: npm audit
+        id: npm_audit
+        continue-on-error: true
+        run: |
+          # npm auditの実行に必要なpackage-lock.jsonを一時的に生成
+          cd apps/web
+          npm i --package-lock-only
+          npm audit --json > ../../npm-audit-web.json || true
+          
+          cd ../functions
+          npm i --package-lock-only
+          npm audit --json > ../../npm-audit-functions.json || true
+          
+          cd ../..
+          
+          # 結果のサマリー表示
+          echo "## npm audit 結果サマリー" > npm-audit-summary.md
+          echo "" >> npm-audit-summary.md
+          echo "### Web アプリケーション" >> npm-audit-summary.md
+          node -e "const audit = require('./npm-audit-web.json'); console.log('脆弱性総数: ' + (audit.metadata?.vulnerabilities?.total || '情報なし') + '\n高リスク: ' + (audit.metadata?.vulnerabilities?.high || '0'))" >> npm-audit-summary.md
+          
+          echo "" >> npm-audit-summary.md
+          echo "### Cloud Functions" >> npm-audit-summary.md
+          node -e "const audit = require('./npm-audit-functions.json'); console.log('脆弱性総数: ' + (audit.metadata?.vulnerabilities?.total || '情報なし') + '\n高リスク: ' + (audit.metadata?.vulnerabilities?.high || '0'))" >> npm-audit-summary.md
+      
+      # 結果のアップロード
+      - name: 監査結果をアーティファクトとして保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-reports
+          path: |
+            npm-audit-web.json
+            npm-audit-functions.json
+            npm-audit-summary.md
+          retention-days: 30
+      
+      # コードスキャン - CodeQL
+      - name: CodeQL初期化
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          queries: security-extended
+      
+      - name: CodeQLスキャン実行
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript"
+  
+  # イメージ脆弱性スキャン
+  image-scan:
+    name: 'Dockerイメージのセキュリティスキャン'
+    runs-on: ubuntu-latest
+    needs: dependency-scan
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+      
+      # 複合アクションを使用してNode.js環境をセットアップ
+      - name: Node.js環境のセットアップ
+        uses: ./.github/actions/setup-node-env
+        with:
+          node-version: ${{ needs.dependency-scan.outputs.node_version }}
+          pnpm-version: ${{ needs.dependency-scan.outputs.pnpm_version }}
+          project-path: 'web'
+      
+      # Dockerイメージビルド
+      - name: Dockerイメージビルド
+        run: |
+          docker build -f apps/web/Dockerfile -t suzumina-click-nextjs-app:scan .
+      
+      # Trivy スキャン
+      - name: Trivyによるイメージスキャン
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'suzumina-click-nextjs-app:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+      
+      # 結果をGitHubセキュリティタブにアップロード
+      - name: スキャン結果のアップロード
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      # スキャン結果のサマリーを生成
+      - name: スキャン結果サマリー
+        run: |
+          docker run --rm aquasec/trivy image --severity HIGH,CRITICAL --no-progress suzumina-click-nextjs-app:scan > trivy-summary.txt
+          
+          echo "## Trivy スキャン結果" > trivy-summary.md
+          echo '```' >> trivy-summary.md
+          cat trivy-summary.txt >> trivy-summary.md
+          echo '```' >> trivy-summary.md
+      
+      # 結果のアップロード
+      - name: Trivyスキャン結果をアーティファクトとして保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-scan-results
+          path: |
+            trivy-results.sarif
+            trivy-summary.md
+            trivy-summary.txt
+          retention-days: 30
+  
+  # セキュリティスキャン結果通知
+  notify-results:
+    name: 'スキャン結果通知'
+    needs: [dependency-scan, image-scan]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: 監査結果のダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          path: scan-results
+      
+      - name: 結果のサマリーを生成
+        run: |
+          echo "# セキュリティスキャン結果サマリー" > scan-summary.md
+          echo "実行日時: $(date '+%Y年%m月%d日 %H:%M:%S')" >> scan-summary.md
+          echo "" >> scan-summary.md
+          
+          if [ -f "scan-results/npm-audit-reports/npm-audit-summary.md" ]; then
+            cat scan-results/npm-audit-reports/npm-audit-summary.md >> scan-summary.md
+            echo "" >> scan-summary.md
+          fi
+          
+          if [ -f "scan-results/trivy-scan-results/trivy-summary.md" ]; then
+            cat scan-results/trivy-scan-results/trivy-summary.md >> scan-summary.md
+          fi
+          
+          cat scan-summary.md
+      
+      - name: 結果をアーティファクトとして保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-summary
+          path: scan-summary.md
+          retention-days: 30
+      
+      # 結果の送信（例: Slack通知、メールなど）
+      # 実装例: Slack通知
+      # - name: Slackに通知
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: custom
+      #     custom_payload: |
+      #       {
+      #         "attachments": [
+      #           {
+      #             "color": "${{ job.status == 'success' && 'good' || job.status == 'failure' && 'danger' || 'warning' }}",
+      #             "title": "セキュリティスキャン結果",
+      #             "text": "suzumina.click セキュリティスキャンが完了しました\n詳細はワークフローの実行結果を確認してください",
+      #             "fields": [
+      #               {
+      #                 "title": "ステータス",
+      #                 "value": "${{ job.status }}",
+      #                 "short": true
+      #               }
+      #             ]
+      #           }
+      #         ]
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

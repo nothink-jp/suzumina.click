@@ -4,7 +4,7 @@
 
 ## 今後のタスク
 
-### 動画ページ実装（v0.2.0）
+### 動画ページ実装（v0.1.4）
 
 以下のタスクは動画ページの実装に関するものです。詳細な計画は [VIDEO_PAGE_PLAN.md](./VIDEO_PAGE_PLAN.md) を参照してください。
 
@@ -29,36 +29,53 @@
 - [x] サンプルデータ生成スクリプトの作成
 - [x] エミュレーター使用方法のドキュメント作成
 
-#### 音声クリップ機能の実装（v0.3.0）
+### 音声ボタン機能の実装（v0.1.4 - v0.1.5）
 
-以下のタスクは音声クリップ機能の実装に関するものです。詳細な計画は [AUDIO_CLIP_DESIGN.md](./AUDIO_CLIP_DESIGN.md) を参照してください。
+以下のタスクは音声ボタン機能の実装に関するものです。詳細な計画は [AUDIO_CLIP_DESIGN.md](./AUDIO_CLIP_DESIGN.md) を参照してください。
 
-##### フェーズ1: データモデルとAPI実装
+#### フェーズ1: データモデルとAPI実装
 
-- [x] 音声クリップ用のFirestoreスキーマ設計
-- [x] 型定義の作成 (`src/lib/audioclips/types.ts`)
+- [x] 音声ボタン用のFirestoreスキーマ設計
+- [x] 型定義の作成 (`src/lib/audiobuttons/types.ts`)
 - [x] Firestoreセキュリティルールの更新
-- [x] クライアントAPIの実装 (`src/lib/audioclips/api.ts`)
+- [x] クライアントAPIの実装 (`src/lib/audiobuttons/api.ts`)
 - [x] サーバーサイドAPIの実装
-  - [x] 音声クリップ一覧/作成 (`src/app/api/audioclips/route.ts`)
-  - [x] 個別クリップ操作 (`src/app/api/audioclips/[clipId]/route.ts`)
-  - [x] 再生回数更新 (`src/app/api/audioclips/[clipId]/play/route.ts`)
-  - [x] お気に入り登録/解除 (`src/app/api/audioclips/[clipId]/favorite/route.ts`)
+  - [x] 音声ボタン一覧/作成 (`src/app/api/audiobuttons/route.ts`)
+  - [x] 個別ボタン操作 (`src/app/api/audiobuttons/[buttonId]/route.ts`)
+  - [x] 再生回数更新 (`src/app/api/audiobuttons/[buttonId]/play/route.ts`)
+  - [x] お気に入り登録/解除 (`src/app/api/audiobuttons/[buttonId]/favorite/route.ts`)
 
-##### フェーズ2: 基本UIコンポーネント実装
+#### フェーズ2: 基本UIコンポーネント実装
 
-- [x] AudioClipButtonコンポーネントの実装 (`src/components/audioclips/AudioClipButton.tsx`)
-- [x] AudioClipPlayerコンポーネントの実装 (`src/components/audioclips/AudioClipPlayer.tsx`)
-- [x] AudioClipListコンポーネントの実装 (`src/components/audioclips/AudioClipList.tsx`)
+- [x] AudioButtonコンポーネントの実装 (`src/components/audiobuttons/AudioButton.tsx`)
+- [x] AudioButtonPlayerコンポーネントの実装 (`src/components/audiobuttons/AudioButtonPlayer.tsx`)
+- [x] AudioButtonListコンポーネントの実装 (`src/components/audiobuttons/AudioButtonList.tsx`)
 - [x] 動画詳細ページへの統合 (`src/app/videos/[videoId]/page.tsx`)
 
-##### フェーズ3: 音声クリップ作成機能実装
+#### フェーズ3: 音声ボタン作成機能実装
 
-- [x] AudioClipCreatorコンポーネントの実装 (`src/components/audioclips/AudioClipCreator.tsx`)
+- [x] AudioButtonCreatorコンポーネントの実装 (`src/components/audiobuttons/AudioButtonCreator.tsx`)
 - [x] YouTubeプレーヤーとの連携
 - [x] プレビュー機能の実装
 
-##### フェーズ4: 拡張機能実装
+#### フェーズ4: 重複防止と可視化機能の実装（v0.1.5）
+
+- [ ] 重複チェックロジックの実装 (`src/lib/audiobuttons/validation.ts`)
+  - [ ] 時間範囲重複検出アルゴリズムの実装
+  - [ ] クライアント側バリデーション機能の追加
+  - [ ] サーバー側バリデーション機能の追加
+- [ ] タイムライン可視化コンポーネントの実装
+  - [ ] TimelineVisualizationコンポーネントの作成 (`src/components/audiobuttons/TimelineVisualization.tsx`)
+  - [ ] 時間範囲のレンダリング機能
+  - [ ] 現在再生位置の表示
+  - [ ] マウスオーバー時の詳細表示
+  - [ ] ドラッグによる時間範囲選択機能
+- [ ] AudioButtonCreatorの拡張
+  - [ ] TimelineVisualizationコンポーネントとの連携
+  - [ ] 重複エラーのUI表示
+  - [ ] 重複回避のためのガイダンス提供
+
+#### フェーズ5: 拡張機能実装（v0.1.5）
 
 - [ ] お気に入り機能の実装
 - [ ] タグ機能の実装
@@ -66,24 +83,22 @@
 
 ### インフラストラクチャ最適化（v0.1.4）
 
-インフラ関連の最適化と改善を行います。
+インフラ関連の最適化と改善を行います。（2025年5月3日完了）
 
 - [x] CI/CDパイプラインの重複デプロイ解決（2025年4月28日）
   - mainブランチへのpush時にWebとFunctionsが二重デプロイされる問題を修正
   - CI成功時の統合デプロイ自動トリガーを削除
   - パスベースの個別デプロイのみを実行するよう変更
-- [ ] ビルドキャッシュの最適化
-- [ ] メトリクスダッシュボードの改善
-- [ ] セキュリティスキャンの自動化
-- [ ] 障害時自動ロールバック機能の実装
-
-### v0.1.3リリース完了項目（アーカイブ済み）
-
-以下のタスクは完了し、v0.1.3リリースに含まれています：
-
-- Cloud Code (VS Code拡張) の導入
-- Cloud Run メトリクス監視の設定
-- コスト最適化の実施
-- 開発環境セットアップガイドの更新
-
-詳細は [CHANGELOG.md](./CHANGELOG.md) を参照してください。
+- [x] ビルドキャッシュの最適化（2025年5月3日）
+  - Next.jsビルドキャッシュの最適化
+  - pnpmキャッシュの最適化
+- [x] メトリクスダッシュボードの改善（2025年5月3日）
+  - Cloud Run、Cloud Functions、Firestoreの統合ダッシュボード
+  - アラートポリシーの設定
+- [x] セキュリティスキャンの自動化（2025年5月3日）
+  - 依存関係の脆弱性スキャン
+  - Dockerイメージのセキュリティスキャン
+  - GitHub Dependabotとの統合
+- [x] 障害時自動ロールバック機能の実装（2025年5月3日）
+  - Cloud Runのリビジョン管理とトラフィック制御
+  - ヘルスチェックに基づく自動ロールバック
