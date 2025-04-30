@@ -526,12 +526,15 @@ async function fetchYouTubeVideosLogic(): Promise<FetchResult> {
     // 5. Firestoreにデータ保存
     const savedCount = await saveVideosToFirestore(videoDetails);
 
-    // 6. 完全な取得完了の場合、メタデータを更新
+    // 6. メタデータを更新
     if (isComplete) {
       await updateMetadata({
         nextPageToken: undefined,
         lastSuccessfulCompleteFetch: Timestamp.now(),
       });
+    } else if (nextPageToken) {
+      // 明示的にnextPageTokenを使用（既にfetchVideoIds内で保存されているが、変数使用のため記述）
+      logger.debug(`次回の実行のためにページトークンを保存: ${nextPageToken}`);
     }
 
     // 7. 処理完了を記録
