@@ -1,11 +1,14 @@
 "use client";
 
+import { useForm } from "@conform-to/react";
+import { parseWithZod } from "@conform-to/zod";
 import {
   Disclosure,
   DisclosureButton,
   DisclosurePanel,
 } from "@headlessui/react";
 import { useRef, useState } from "react";
+import { z } from "zod";
 import { createAudioClip } from "../../app/actions/audioclips";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
 import type { AudioClipCreateData } from "../../lib/audioclips/types";
@@ -22,6 +25,7 @@ interface AudioClipCreatorProps {
  * 音声クリップ作成コンポーネント
  *
  * 動画から特定の区間を選択して音声クリップを作成するフォーム
+ * Conform+Zodを利用した型安全なフォームバリデーションを実装
  */
 export default function AudioClipCreator({
   videoId,
@@ -30,15 +34,116 @@ export default function AudioClipCreator({
   youtubePlayerRef,
 }: AudioClipCreatorProps) {
   const { user } = useAuth();
-  const [title, setTitle] = useState("");
-  const [phrase, setPhrase] = useState("");
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [endTime, setEndTime] = useState<number | null>(null);
-  const [isPublic, setIsPublic] = useState(true);
+  // タグ管理用の状態（Conformで管理しにくい部分なので別途管理）
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
+  // エラー表示用の状態
   const [error, setError] = useState<string | null>(null);
+  // フォーム送信状態管理
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // バリデーションスキーマの定義
+  const clipSchema = z
+    .object({
+      title: z.string().min(1, "タイトルは必須です"),
+      phrase: z.string().optional(),
+      startTime: z
+        .number({ coerce: true })
+        .nonnegative("開始時間は0以上の値が必要です")
+        .optional(),
+      endTime: z
+        .number({ coerce: true })
+        .nonnegative("終了時間は0以上の値が必要です")
+        .optional(),
+      isPublic: z.boolean().default(true),
+    })
+    .refine(
+      (data) =>
+        data.startTime !== undefined &&
+        data.endTime !== undefined &&
+        data.startTime < data.endTime,
+      {
+        message: "終了時間は開始時間より後にしてください",
+        path: ["endTime"],
+      },
+    );
+
+  // Conformフックの初期化
+  const [form, fields] = useForm({
+    id: "audio-clip-creator",
+    // 送信ハンドラー
+    onSubmit: async (event) => {
+      if (!user) {
+        setError("ログインが必要です");
+        return { status: "error", errors: { "": ["ログインが必要です"] } };
+      }
+
+      // 送信状態を更新
+      setIsSubmitting(true);
+      setIsSubmitted(false);
+      setSubmitSuccess(false);
+      setError(null);
+
+      const formData = new FormData(event.currentTarget);
+      // Zodスキーマを使用して検証
+      const submission = parseWithZod(formData, {
+        schema: clipSchema,
+      });
+
+      // 検証に失敗した場合
+      if (submission.status !== "success") {
+        setIsSubmitting(false);
+        return submission.reply();
+      }
+
+      try {
+        const clipData: AudioClipCreateData = {
+          videoId,
+          title: submission.value.title,
+          phrase: submission.value.phrase || "",
+          startTime: submission.value.startTime as number,
+          endTime: submission.value.endTime as number,
+          userId: user.uid,
+          userName: user.displayName || "名無しユーザー",
+          userPhotoURL: user.photoURL || undefined,
+          isPublic: submission.value.isPublic,
+          tags, // 別途管理しているタグを使用
+        };
+
+        // Server Actionsを使用してクリップを作成
+        await createAudioClip(clipData);
+
+        // フォームをリセット
+        setTags([]);
+        setTagInput("");
+        setSubmitSuccess(true);
+
+        // 親コンポーネントに通知
+        onClipCreated();
+
+        // 成功メッセージを設定して返却
+        return submission.reply({
+          resetForm: true,
+          formErrors: [],
+        });
+      } catch (error) {
+        console.error("音声クリップの作成に失敗しました:", error);
+        setError("音声クリップの作成に失敗しました");
+        // エラーメッセージを返却
+        return submission.reply({
+          formErrors: ["音声クリップの作成に失敗しました"],
+        });
+      } finally {
+        // 送信状態を更新
+        setIsSubmitting(false);
+        setIsSubmitted(true);
+      }
+    },
+    // 処理中の状態を追跡
+    shouldRevalidate: "onInput",
+  });
 
   // 現在の再生位置を取得
   const getCurrentTime = (): number => {
@@ -51,26 +156,67 @@ export default function AudioClipCreator({
   // 開始時間を設定
   const handleSetStartTime = () => {
     const currentTime = getCurrentTime();
-    setStartTime(currentTime);
+
+    // hidden inputのvalueを更新するためのダミーイベント
+    const input = document.getElementById(
+      fields.startTime.id,
+    ) as HTMLInputElement;
+    if (input) {
+      input.value = currentTime.toString();
+      // Conformに変更を通知
+      const event = new Event("input", { bubbles: true });
+      input.dispatchEvent(event);
+    }
 
     // 終了時間が設定されていない、または開始時間より前の場合は更新
-    if (endTime === null || endTime <= currentTime) {
-      setEndTime(currentTime + 5); // デフォルトで5秒後を終了時間に
+    const endTimeInput = document.getElementById(
+      fields.endTime.id,
+    ) as HTMLInputElement;
+    const endTimeValue = endTimeInput
+      ? Number.parseFloat(endTimeInput.value)
+      : null;
+    if (endTimeValue === null || endTimeValue <= currentTime) {
+      if (endTimeInput) {
+        endTimeInput.value = (currentTime + 5).toString(); // デフォルトで5秒後を終了時間に
+        // Conformに変更を通知
+        const event = new Event("input", { bubbles: true });
+        endTimeInput.dispatchEvent(event);
+      }
     }
   };
 
   // 終了時間を設定
   const handleSetEndTime = () => {
     const currentTime = getCurrentTime();
+    const startTimeInput = document.getElementById(
+      fields.startTime.id,
+    ) as HTMLInputElement;
+    const startTimeValue = startTimeInput
+      ? Number.parseFloat(startTimeInput.value)
+      : null;
 
     // 開始時間が設定されていない場合は、現在時刻の5秒前を開始時間に
-    if (startTime === null) {
-      setStartTime(Math.max(0, currentTime - 5));
+    if (startTimeValue === null || startTimeValue === 0) {
+      if (startTimeInput) {
+        const newStartTime = Math.max(0, currentTime - 5);
+        startTimeInput.value = newStartTime.toString();
+        // Conformに変更を通知
+        const event = new Event("input", { bubbles: true });
+        startTimeInput.dispatchEvent(event);
+      }
     }
 
     // 開始時間より後の場合のみ設定
-    if (startTime !== null && currentTime > startTime) {
-      setEndTime(currentTime);
+    if (startTimeValue !== null && currentTime > startTimeValue) {
+      const endTimeInput = document.getElementById(
+        fields.endTime.id,
+      ) as HTMLInputElement;
+      if (endTimeInput) {
+        endTimeInput.value = currentTime.toString();
+        // Conformに変更を通知
+        const event = new Event("input", { bubbles: true });
+        endTimeInput.dispatchEvent(event);
+      }
     } else {
       setError("終了時間は開始時間より後に設定してください");
     }
@@ -78,6 +224,17 @@ export default function AudioClipCreator({
 
   // クリップをプレビュー
   const handlePreview = () => {
+    const startTimeInput = document.getElementById(
+      fields.startTime.id,
+    ) as HTMLInputElement;
+    const startTime = startTimeInput
+      ? Number.parseFloat(startTimeInput.value)
+      : null;
+    const endTimeInput = document.getElementById(
+      fields.endTime.id,
+    ) as HTMLInputElement;
+    const endTime = endTimeInput ? Number.parseFloat(endTimeInput.value) : null;
+
     if (youtubePlayerRef?.current && startTime !== null) {
       youtubePlayerRef.current.seekTo(startTime, true);
       youtubePlayerRef.current.playVideo();
@@ -113,70 +270,15 @@ export default function AudioClipCreator({
     }
   };
 
-  // クリップを作成
-  const handleCreateClip = async () => {
-    if (!user) {
-      setError("ログインが必要です");
-      return;
-    }
-
-    if (!title) {
-      setError("タイトルを入力してください");
-      return;
-    }
-
-    if (startTime === null || endTime === null) {
-      setError("開始時間と終了時間を設定してください");
-      return;
-    }
-
-    if (endTime <= startTime) {
-      setError("終了時間は開始時間より後に設定してください");
-      return;
-    }
-
-    try {
-      setIsCreating(true);
-      setError(null);
-
-      const clipData: AudioClipCreateData = {
-        videoId,
-        title,
-        phrase,
-        startTime,
-        endTime,
-        userId: user.uid,
-        userName: user.displayName || "名無しユーザー",
-        userPhotoURL: user.photoURL || undefined,
-        isPublic,
-        tags,
-      };
-
-      // Server Actionsを使用してクリップを作成
-      await createAudioClip(clipData);
-
-      // フォームをリセット
-      setTitle("");
-      setPhrase("");
-      setStartTime(null);
-      setEndTime(null);
-      setTags([]);
-
-      // 親コンポーネントに通知
-      onClipCreated();
-    } catch (error) {
-      console.error("音声クリップの作成に失敗しました:", error);
-      setError("音声クリップの作成に失敗しました");
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
   // 時間を「分:秒」形式でフォーマット
-  const formatTime = (seconds: number | null) => {
-    if (seconds === null) return "--:--";
-    const minutes = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
+  const formatTime = (seconds: string | number | null): string => {
+    if (seconds === null || seconds === "") return "--:--";
+    const numSeconds =
+      typeof seconds === "string" ? Number.parseFloat(seconds) : seconds;
+    if (Number.isNaN(numSeconds)) return "--:--";
+
+    const minutes = Math.floor(numSeconds / 60);
+    const secs = Math.floor(numSeconds % 60);
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
@@ -232,7 +334,8 @@ export default function AudioClipCreator({
                 </div>
               )}
 
-              {error && (
+              {/* フォーム全体のエラーメッセージ */}
+              {(error || (form.errors && form.errors.length > 0)) && (
                 <div className="alert alert-error shadow-sm mb-4">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -248,193 +351,278 @@ export default function AudioClipCreator({
                       d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span>{error}</span>
+                  <span>{error || form.errors?.join(", ")}</span>
                 </div>
               )}
 
-              <div className="form-control mb-4">
-                <label className="label" htmlFor="clip-title">
-                  <span className="label-text">タイトル</span>
-                </label>
-                <input
-                  id="clip-title"
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={`「${videoTitle}」からのクリップ`}
-                  className="input input-bordered w-full"
-                  disabled={!user || isCreating}
-                />
-              </div>
-
-              <div className="form-control mb-4">
-                <label className="label" htmlFor="clip-phrase">
-                  <span className="label-text">フレーズ（オプション）</span>
-                </label>
-                <textarea
-                  id="clip-phrase"
-                  value={phrase}
-                  onChange={(e) => setPhrase(e.target.value)}
-                  placeholder="クリップ内の発言内容など"
-                  className="textarea textarea-bordered w-full"
-                  rows={2}
-                  disabled={!user || isCreating}
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-4 mb-4">
-                <div>
-                  <label
-                    className="label"
-                    id="start-time-label"
-                    htmlFor="start-time"
+              {/* 送信成功メッセージ（エラーがなく、送信済みの場合） */}
+              {isSubmitted && submitSuccess && !error && (
+                <div className="alert alert-success shadow-sm mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current shrink-0 h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
-                    <span className="label-text">開始時間</span>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>クリップを作成しました</span>
+                </div>
+              )}
+
+              <form id={form.id} onSubmit={form.onSubmit}>
+                <div className="form-control mb-4">
+                  <label className="label" htmlFor={fields.title.id}>
+                    <span className="label-text">タイトル</span>
                   </label>
-                  <div className="join" aria-labelledby="start-time-label">
-                    <span
-                      id="start-time"
-                      className="join-item px-3 py-2 bg-base-200 border border-base-300"
-                    >
-                      {formatTime(startTime)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleSetStartTime}
-                      className="join-item btn btn-primary"
-                      disabled={
-                        !user || isCreating || !youtubePlayerRef?.current
-                      }
-                    >
-                      現在位置を設定
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    className="label"
-                    id="end-time-label"
-                    htmlFor="end-time"
-                  >
-                    <span className="label-text">終了時間</span>
-                  </label>
-                  <div className="join" aria-labelledby="end-time-label">
-                    <span
-                      id="end-time"
-                      className="join-item px-3 py-2 bg-base-200 border border-base-300"
-                    >
-                      {formatTime(endTime)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleSetEndTime}
-                      className="join-item btn btn-primary"
-                      disabled={
-                        !user || isCreating || !youtubePlayerRef?.current
-                      }
-                    >
-                      現在位置を設定
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="label">
-                    <span className="label-text" id="preview-label">
-                      プレビュー
-                    </span>
-                  </div>
-                  <button
-                    aria-labelledby="preview-label"
-                    type="button"
-                    onClick={handlePreview}
-                    className="btn btn-success"
-                    disabled={
-                      !user ||
-                      isCreating ||
-                      startTime === null ||
-                      !youtubePlayerRef?.current
-                    }
-                  >
-                    選択範囲を再生
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-control mb-4">
-                <label className="label" htmlFor="clip-tags">
-                  <span className="label-text">タグ（オプション）</span>
-                </label>
-                <div className="join w-full">
                   <input
-                    id="clip-tags"
+                    id={fields.title.id}
+                    name={fields.title.name}
                     type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={handleTagKeyDown}
-                    placeholder="タグを入力（Enterで追加）"
-                    className="join-item input input-bordered flex-grow"
-                    disabled={!user || isCreating}
+                    placeholder={`「${videoTitle}」からのクリップ`}
+                    className="input input-bordered w-full"
+                    disabled={!user || isSubmitting}
+                    aria-invalid={!fields.title.valid ? true : undefined}
+                    aria-describedby={
+                      !fields.title.valid
+                        ? `${fields.title.id}-error`
+                        : undefined
+                    }
                   />
-                  <button
-                    type="button"
-                    onClick={handleAddTag}
-                    className="join-item btn btn-neutral"
-                    disabled={!user || isCreating || !tagInput.trim()}
-                  >
-                    追加
-                  </button>
+                  {fields.title.errors && (
+                    <div
+                      id={`${fields.title.id}-error`}
+                      className="text-error text-sm mt-1"
+                    >
+                      {fields.title.errors}
+                    </div>
+                  )}
                 </div>
 
-                {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {tags.map((tag) => (
-                      <div key={tag} className="badge badge-primary gap-1">
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTag(tag)}
-                          className="btn btn-xs btn-circle btn-ghost"
-                          aria-label={`${tag}タグを削除`}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="form-control mb-4">
-                <label className="label cursor-pointer justify-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={isPublic}
-                    onChange={(e) => setIsPublic(e.target.checked)}
-                    className="checkbox checkbox-primary"
-                    disabled={!user || isCreating}
+                <div className="form-control mb-4">
+                  <label className="label" htmlFor={fields.phrase.id}>
+                    <span className="label-text">フレーズ（オプション）</span>
+                  </label>
+                  <textarea
+                    id={fields.phrase.id}
+                    name={fields.phrase.name}
+                    placeholder="クリップ内の発言内容など"
+                    className="textarea textarea-bordered w-full"
+                    rows={2}
+                    disabled={!user || isSubmitting}
+                    aria-invalid={!fields.phrase.valid ? true : undefined}
+                    aria-describedby={
+                      !fields.phrase.valid
+                        ? `${fields.phrase.id}-error`
+                        : undefined
+                    }
                   />
-                  <span className="label-text">公開する（全員が視聴可能）</span>
-                </label>
-              </div>
+                  {fields.phrase.errors && (
+                    <div
+                      id={`${fields.phrase.id}-error`}
+                      className="text-error text-sm mt-1"
+                    >
+                      {fields.phrase.errors}
+                    </div>
+                  )}
+                </div>
 
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleCreateClip}
-                  disabled={
-                    !user ||
-                    isCreating ||
-                    !title ||
-                    startTime === null ||
-                    endTime === null
-                  }
-                  className={`btn btn-primary text-white ${isCreating ? "loading" : ""}`}
-                >
-                  {isCreating ? "作成中..." : "クリップを作成"}
-                </button>
-              </div>
+                <div className="flex flex-wrap gap-4 mb-4">
+                  <div>
+                    <label
+                      className="label"
+                      id="start-time-label"
+                      htmlFor={fields.startTime.id}
+                    >
+                      <span className="label-text">開始時間</span>
+                    </label>
+                    <div className="join" aria-labelledby="start-time-label">
+                      {/* 隠し入力フィールド（実際の値を保持） */}
+                      <input
+                        type="hidden"
+                        id={fields.startTime.id}
+                        name={fields.startTime.name}
+                      />
+                      {/* 表示用の値 */}
+                      <span className="join-item px-3 py-2 bg-base-200 border border-base-300">
+                        {formatTime(
+                          (
+                            document.getElementById(
+                              fields.startTime.id,
+                            ) as HTMLInputElement
+                          )?.value || null,
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSetStartTime}
+                        className="join-item btn btn-primary"
+                        disabled={
+                          !user || isSubmitting || !youtubePlayerRef?.current
+                        }
+                      >
+                        現在位置を設定
+                      </button>
+                    </div>
+                    {fields.startTime.errors && (
+                      <div className="text-error text-sm mt-1">
+                        {fields.startTime.errors}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      className="label"
+                      id="end-time-label"
+                      htmlFor={fields.endTime.id}
+                    >
+                      <span className="label-text">終了時間</span>
+                    </label>
+                    <div className="join" aria-labelledby="end-time-label">
+                      {/* 隠し入力フィールド（実際の値を保持） */}
+                      <input
+                        type="hidden"
+                        id={fields.endTime.id}
+                        name={fields.endTime.name}
+                      />
+                      {/* 表示用の値 */}
+                      <span className="join-item px-3 py-2 bg-base-200 border border-base-300">
+                        {formatTime(
+                          (
+                            document.getElementById(
+                              fields.endTime.id,
+                            ) as HTMLInputElement
+                          )?.value || null,
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSetEndTime}
+                        className="join-item btn btn-primary"
+                        disabled={
+                          !user || isSubmitting || !youtubePlayerRef?.current
+                        }
+                      >
+                        現在位置を設定
+                      </button>
+                    </div>
+                    {fields.endTime.errors && (
+                      <div className="text-error text-sm mt-1">
+                        {fields.endTime.errors}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="label">
+                      <span className="label-text" id="preview-label">
+                        プレビュー
+                      </span>
+                    </div>
+                    <button
+                      aria-labelledby="preview-label"
+                      type="button"
+                      onClick={handlePreview}
+                      className="btn btn-success"
+                      disabled={
+                        !user ||
+                        isSubmitting ||
+                        !(
+                          document.getElementById(
+                            fields.startTime.id,
+                          ) as HTMLInputElement
+                        )?.value ||
+                        !youtubePlayerRef?.current
+                      }
+                    >
+                      選択範囲を再生
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-control mb-4">
+                  <label className="label" htmlFor="clip-tags">
+                    <span className="label-text">タグ（オプション）</span>
+                  </label>
+                  <div className="join w-full">
+                    <input
+                      id="clip-tags"
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={handleTagKeyDown}
+                      placeholder="タグを入力（Enterで追加）"
+                      className="join-item input input-bordered flex-grow"
+                      disabled={!user || isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddTag}
+                      className="join-item btn btn-neutral"
+                      disabled={!user || isSubmitting || !tagInput.trim()}
+                    >
+                      追加
+                    </button>
+                  </div>
+
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {tags.map((tag) => (
+                        <div key={tag} className="badge badge-primary gap-1">
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(tag)}
+                            className="btn btn-xs btn-circle btn-ghost"
+                            aria-label={`${tag}タグを削除`}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-control mb-4">
+                  <label className="label cursor-pointer justify-start gap-2">
+                    <input
+                      type="checkbox"
+                      name={fields.isPublic.name}
+                      defaultChecked={true}
+                      className="checkbox checkbox-primary"
+                      disabled={!user || isSubmitting}
+                    />
+                    <span className="label-text">
+                      公開する（全員が視聴可能）
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={!user || isSubmitting}
+                    className="btn btn-primary text-white"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="loading loading-spinner loading-xs" />
+                        作成中...
+                      </>
+                    ) : (
+                      "クリップを作成"
+                    )}
+                  </button>
+                </div>
+              </form>
             </DisclosurePanel>
           </div>
         )}

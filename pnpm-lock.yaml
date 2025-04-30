@@ -55,6 +55,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@conform-to/react':
+        specifier: ^1.4.0
+        version: 1.4.0(react@19.1.0)
+      '@conform-to/zod':
+        specifier: ^1.4.0
+        version: 1.4.0(zod@3.24.3)
       '@headlessui/react':
         specifier: ^2.2.2
         version: 2.2.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -346,6 +352,19 @@ packages:
   '@colors/colors@1.6.0':
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
     engines: {node: '>=0.1.90'}
+
+  '@conform-to/dom@1.4.0':
+    resolution: {integrity: sha512-BvYzotcvq6PxTmxCOV089VXzv7oij+yeGIO/Q5/K2f8s030EHzxelPHmLmdnGrKrPP4XRVaYqQHdjHExrqbkBg==}
+
+  '@conform-to/react@1.4.0':
+    resolution: {integrity: sha512-1oYN+sErUCmxVcVSGE8mO9PiAHKqkb9KrXstER4rTHw+xC3NrQJjQBs+ifilMCfGFw/UJZRexo05TwyI+h0jpg==}
+    peerDependencies:
+      react: '>=18'
+
+  '@conform-to/zod@1.4.0':
+    resolution: {integrity: sha512-8tEH5jZYHph7A+d4EPr7eIQpoygcOPvqDdMVML//nO3bixQjhu+mLSEoh/zun0BAhL2ePS5nxywhMP9buOlh8w==}
+    peerDependencies:
+      zod: ^3.21.0
 
   '@csstools/color-helpers@5.0.2':
     resolution: {integrity: sha512-JqWH1vsgdGcw2RR6VliXXdA0/59LttzlU8UlRT/iUUsEeWfYq8I+K0yhihEUTTHLRm1EXvpsCx3083EU15ecsA==}
@@ -5232,6 +5251,18 @@ snapshots:
     optional: true
 
   '@colors/colors@1.6.0': {}
+
+  '@conform-to/dom@1.4.0': {}
+
+  '@conform-to/react@1.4.0(react@19.1.0)':
+    dependencies:
+      '@conform-to/dom': 1.4.0
+      react: 19.1.0
+
+  '@conform-to/zod@1.4.0(zod@3.24.3)':
+    dependencies:
+      '@conform-to/dom': 1.4.0
+      zod: 3.24.3
 
   '@csstools/color-helpers@5.0.2': {}
 

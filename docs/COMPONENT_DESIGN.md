@@ -112,3 +112,145 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
 - **ARIA属性**: 必要に応じてARIA属性を追加し、支援技術によるアクセシビリティを向上させます。
 - **キーボード操作**: すべてのインタラクティブな要素がキーボードで操作できることを確認します。
 - **フォーカス管理**: 特にモーダルやドロップダウンなど、フォーカス管理が重要なコンポーネントでは適切な実装を行います。
+
+## 8. フォーム設計
+
+フォームは Web アプリケーションの重要な構成要素です。本プロジェクトではフォーム実装に Conform ライブラリを採用し、型安全でプログレッシブエンハンスメントを実現します。
+
+### 8.1. Conform の採用
+
+- **基本方針**: フォーム実装には [Conform](https://conform.guide/) ライブラリを使用します。Conform は型安全なフォームバリデーションライブラリで、HTML の標準的なフォームをプログレッシブに拡張します。
+- **主な利点**:
+  - プログレッシブエンハンスメント優先の API
+  - 型安全なフィールド推論
+  - 細粒度のサブスクリプション管理
+  - アクセシビリティヘルパーの組み込み
+  - Zod との連携による自動型変換
+
+### 8.2. フォームの実装原則
+
+- **単一責務**: 各フォームは明確に定義された単一の目的を持ち、一つのコンポーネント内で完結するように実装します。フォームをコンポーネント間で分割したり、コンポーネントを跨いだりしないようにします。
+- **クライアントコンポーネントとして実装**: フォームはインタラクティブな要素を含むため、基本的に `"use client"` ディレクティブを使用したクライアントコンポーネントとして実装します。
+- **コンポーネント設計**:
+  - フォームロジック（バリデーション、送信処理など）は、フォームUIを含むコンポーネント内に閉じ込めます。
+  - 必要に応じて、入力フィールドを小さなコンポーネントに分割することは可能ですが、フォームのステートや送信ロジックは親コンポーネント内に保持します。
+
+### 8.3. Zod によるバリデーション
+
+- **スキーマ定義**: 各フォームのバリデーションスキーマは、最新バージョンの Zod を使用して定義します。フォームで扱うすべてのフィールドに適切なバリデーションを設定します。
+- **実装場所**: バリデーションスキーマはフォームコンポーネント内で定義し、Conform の `parseWithZod` 関数と連携させます。
+- **エラーメッセージ**: エラーメッセージは日本語で、ユーザーが理解しやすい形で提供します。
+
+```tsx
+// フォーム実装例
+"use client";
+
+import { useForm } from '@conform-to/react';
+import { parseWithZod } from '@conform-to/zod';
+import { z } from 'zod';
+
+// フォームのスキーマ定義
+const schema = z.object({
+  username: z.string()
+    .min(3, 'ユーザー名は3文字以上で入力してください')
+    .max(20, 'ユーザー名は20文字以内で入力してください'),
+  email: z.string()
+    .email('メールアドレスの形式が正しくありません'),
+  age: z.number({ coerce: true })
+    .int('年齢は整数で入力してください')
+    .min(18, '18歳以上である必要があります')
+    .optional(),
+});
+
+// フォームコンポーネント
+export function UserRegistrationForm() {
+  // Conformのフックを使用してフォームを初期化
+  const [form, fields] = useForm({
+    // フォーム識別子
+    id: 'user-registration',
+    // 送信ハンドラ
+    onSubmit: async (event) => {
+      // フォームデータを取得
+      const formData = new FormData(event.currentTarget);
+      // Zodスキーマを使用して検証
+      const submission = parseWithZod(formData, { schema });
+
+      // 検証に失敗した場合
+      if (submission.status !== 'success') {
+        return submission.reply();
+      }
+
+      // 検証に成功した場合、APIに送信するなどの処理
+      try {
+        await registerUser(submission.value);
+        // 成功時の処理
+      } catch (error) {
+        // エラー処理
+        return submission.reply({
+          formErrors: ['登録に失敗しました。再度お試しください。'],
+        });
+      }
+    },
+  });
+
+  return (
+    <form id={form.id} onSubmit={form.onSubmit} className="space-y-4">
+      {/* フォームエラーの表示 */}
+      {form.errors && (
+        <div className="alert alert-error">
+          <div>{form.errors}</div>
+        </div>
+      )}
+
+      {/* 名前入力フィールド */}
+      <div className="form-control">
+        <label htmlFor={fields.username.id} className="label">
+          <span className="label-text">ユーザー名</span>
+        </label>
+        <input
+          type="text"
+          id={fields.username.id}
+          name={fields.username.name}
+          className="input input-bordered"
+          required
+          aria-invalid={fields.username.errors ? true : undefined}
+          aria-describedby={fields.username.errors ? `${fields.username.id}-error` : undefined}
+        />
+        {fields.username.errors && (
+          <div id={`${fields.username.id}-error`} className="text-error text-sm mt-1">
+            {fields.username.errors}
+          </div>
+        )}
+      </div>
+
+      {/* その他のフォームフィールド */}
+      {/* ... */}
+
+      {/* 送信ボタン */}
+      <div className="form-control mt-6">
+        <button type="submit" className="btn btn-primary">
+          登録する
+        </button>
+      </div>
+    </form>
+  );
+}
+```
+
+### 8.4. サーバーアクションとの連携
+
+- **Server Actions**: Next.js の Server Actions を使用する場合、Conform はシームレスに連携可能です。フォームサブミット時のデータ処理はサーバーサイドで行い、バリデーションエラーはクライアントにストリームバックできます。
+- **実装パターン**: Server Action 内で `parseWithZod` を使用してフォームデータを検証し、エラーがある場合は `submission.reply()` を返してクライアント側で表示します。
+
+### 8.5. アクセシビリティ
+
+- **適切な HTML 構造**: フォーム要素には適切な `label` 要素を関連付け、`for` 属性または `htmlFor` (React) で入力要素と紐付けます。
+- **エラー通知**: エラーが発生した場合、`aria-invalid` と `aria-describedby` 属性を使用して支援技術にエラーを通知します。
+- **フォーム構造**: フィールドセットとレジェンド要素を使用して、論理的に関連するフォーム要素をグループ化します。
+- **必須フィールド**: 必須フィールドには `required` 属性を追加し、視覚的な表示（例: アスタリスク）も提供します。
+
+### 8.6. パフォーマンスとユーザー体験
+
+- **プログレッシブエンハンスメント**: フォームは JavaScript が無効でも基本的な機能が動作するように実装します。Conform はこの原則に基づいて設計されています。
+- **フィードバック**: フォーム送信中はローディング状態を表示し、処理結果に応じた適切なフィードバックを提供します。
+- **リアルタイムバリデーション**: ユーザー体験を向上させるために、可能な場合はフィールドの入力時にリアルタイムでバリデーションを行います。
