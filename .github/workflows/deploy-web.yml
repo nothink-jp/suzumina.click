@@ -408,18 +408,24 @@ jobs:
           echo "リビジョン詳細情報:"
           gcloud run revisions describe "$REVISION_NAME" \
             --region=${{ env.REGION }} \
-            --format="yaml(metadata.name,status.url,status.conditions)"
+            --format="yaml(metadata.name,status.conditions)"
           
-          # 新リビジョン専用URLを取得
-          NEW_REVISION_URL=$(gcloud run revisions describe "$REVISION_NAME" \
+          # サービスのURLを取得
+          SERVICE_URL=$(gcloud run services describe suzumina-click-nextjs-app \
             --region=${{ env.REGION }} \
             --format="value(status.url)")
           
-          echo "チェック対象URL: $NEW_REVISION_URL"
+          # タグ付きリビジョン専用URLを構築
+          # 形式: https://{REVISION_NAME}---{SERVICE_HASH}-{REGION_HASH}.a.run.app
+          # 例: https://my-service-00001-hat---gcp-abcdefg-ew.a.run.app
+          BASE_URL=$(echo "$SERVICE_URL" | sed 's/https:\/\///')
+          NEW_REVISION_URL="https://${REVISION_NAME}---${BASE_URL}"
           
-          # URLが正しく取得できたか確認
+          echo "構築したリビジョン専用URL: $NEW_REVISION_URL"
+          
+          # URLが正しく構築できたか確認
           if [ -z "$NEW_REVISION_URL" ]; then
-            echo "::error::新リビジョンのURLが取得できませんでした。"
+            echo "::error::新リビジョンのURLが構築できませんでした。"
             echo "is_healthy=false" >> $GITHUB_OUTPUT
             exit 1
           fi
