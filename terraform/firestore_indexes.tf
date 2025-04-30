@@ -37,6 +37,27 @@ resource "google_firestore_index" "videos_liveBroadcast_publishedAt_asc" {
   }
 }
 
+# audioClips コレクションのインデックス - isPublic（昇順）、videoId（昇順）と createdAt（降順）
+resource "google_firestore_index" "audioclips_ispublic_videoid_createdat_desc" {
+  project    = var.gcp_project_id
+  collection = "audioClips"
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "videoId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "createdAt"
+    order      = "DESCENDING"
+  }
+}
+
 # もう一つの方法: Firebase CLI を使用したインデックスデプロイ
 # このリソースは、firestore.indexes.json が変更された場合にのみデプロイが実行される
 /*

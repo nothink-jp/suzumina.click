@@ -1,5 +1,6 @@
 "use client";
 
+import { revokeSession } from "@/app/api/auth/revokeSession";
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import { auth } from "@/lib/firebase/client";
 import { signOut } from "firebase/auth";
@@ -9,41 +10,53 @@ export default function AuthButton() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  // Discord認証画面へリダイレクトする関数
   const handleLogin = () => {
+    // Discord OAuth2認証ページのURL
     const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI;
+    const redirectUri = encodeURIComponent(
+      process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI ||
+        `${window.location.origin}/auth/discord/callback`,
+    );
 
-    if (!clientId || !redirectUri) {
-      console.error("Discord OAuth environment variables are not set.");
-      return;
-    }
+    // Discord OAuth2に必要なスコープ
+    const scope = encodeURIComponent("identify guilds email");
 
-    // 現在のページURLをローカルストレージに保存
-    // ログイン後にこのURLにリダイレクトするために使用
-    localStorage.setItem("auth_redirect_url", window.location.href);
-
-    const scope = "identify guilds email";
-    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}`;
-    window.location.href = discordAuthUrl;
+    // Discord OAuth2認証ページへリダイレクト
+    const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+    window.location.href = authUrl;
   };
 
+  // ログアウト処理を行う関数
   const handleLogout = async () => {
     try {
       // authがnullでないことを確認してからsignOutを呼び出す
       if (auth) {
+        // まずFirebaseからサインアウト
         await signOut(auth);
+
+        // サーバー側のセッションクッキーも削除
+        await revokeSession();
+
         router.push("/");
-        console.log("Logged out successfully");
+        console.log("ログアウトに成功しました");
       } else {
         console.error("Firebase認証が初期化されていません");
       }
     } catch (error) {
-      console.error("Error signing out: ", error);
+      console.error("ログアウト中にエラーが発生しました:", error);
     }
   };
 
   if (loading) {
-    return <span className="loading loading-spinner loading-sm" />;
+    // ローディング中はスピナーを表示 - アクセシビリティのためのrole属性を追加
+    return (
+      <span
+        className="loading loading-spinner loading-sm"
+        role="status"
+        data-testid="loading-spinner"
+      />
+    );
   }
 
   if (user) {
@@ -57,48 +70,44 @@ export default function AuthButton() {
           className="btn btn-ghost btn-circle avatar"
         >
           <div className="w-10 rounded-full">
-            {user.photoURL ? (
-              // 標準の img タグを使用
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.photoURL} alt="User Avatar" />
-            ) : (
-              <div className="avatar placeholder">
-                <div className="bg-neutral text-neutral-content rounded-full w-10">
-                  <span className="text-xl">
-                    {user.displayName?.charAt(0) || "?"}
-                  </span>
-                </div>
-              </div>
-            )}
+            <img
+              src={user.photoURL || "https://placehold.jp/150x150.png"}
+              alt="プロフィール画像"
+              width={40}
+              height={40}
+            />
           </div>
         </button>
-        <ul
-          // ul から tabIndex を削除
-          className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
-        >
-          <li className="menu-title">
-            <span>{user.displayName || user.uid}</span>
+        <ul className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
+          <li className="menu-title px-2 py-2">
+            <span className="text-sm font-medium">
+              {user.displayName || user.uid.substring(0, 8)}
+            </span>
+          </li>
+          <li>
+            <a href="/profile">プロフィール</a>
+          </li>
+          <li>
+            <a href="/settings">設定</a>
           </li>
           <li>
             <button type="button" onClick={handleLogout}>
               ログアウト
             </button>
           </li>
-          {/* <li><a>プロフィール</a></li> */}
-          {/* <li><a>設定</a></li> */}
         </ul>
       </div>
     );
   }
 
-  // 未ログインの場合: ログインボタン
+  // 未ログインの場合: ログインボタンを表示
   return (
     <button
       type="button"
-      onClick={handleLogin}
       className="btn btn-primary btn-sm"
+      onClick={handleLogin}
     >
-      Discord でログイン
+      Discordでログイン
     </button>
   );
 }

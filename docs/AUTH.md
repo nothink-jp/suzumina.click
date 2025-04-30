@@ -1,6 +1,6 @@
 # 認証システム仕様書
 
-**最終更新: 2025年4月26日**
+**最終更新: 2025年4月30日**
 
 ## 概要
 
@@ -17,16 +17,22 @@
 5. Server ActionsがDiscordトークン検証とユーザー情報取得を実行
 6. 取得した情報をFirebase Custom Tokenに変換
 7. Webクライアントで受け取ったCustom Tokenを使ってFirebase認証
-8. 認証完了後、プロフィールページへリダイレクト
+8. 認証成功後、IDトークンを取得してサーバーにセッションクッキー作成をリクエスト
+9. サーバーはIDトークンを検証し、長期間有効なセッションクッキーを設定
+10. ユーザーは完全な認証状態になり、クライアントとサーバー両方でログイン状態が維持される
 
 ### 1.2 コンポーネント構成
 
 - **認証ボタン**: `src/components/ui/AuthButton.tsx`
+- **認証モーダル**: `src/components/ui/AuthModal.tsx`
 - **認証コンテキスト**: `src/lib/firebase/AuthProvider.tsx`
 - **Firebaseクライアント初期化**: `src/lib/firebase/client.ts`
 - **コールバックページ**: `src/app/auth/discord/callback/page.tsx`
-- **コールバック処理**: `src/app/auth/discord/callback/CallbackClient.tsx`
-- **Server Actions**: `src/app/api/auth/discord/actions.ts`
+- **Server Actions**:
+  - Discord認証: `src/app/api/auth/discord/actions.ts`
+  - セッションクッキー作成: `src/app/api/auth/createSessionCookie.ts`
+  - セッションクッキー削除: `src/app/api/auth/revokeSession.ts`
+  - ユーザー情報取得: `src/app/api/auth/getCurrentUser.ts`
 
 ## 2. 技術構成
 
@@ -73,7 +79,7 @@ DISCORD_TARGET_GUILD_ID=your_discord_guild_id
 FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"...","private_key_id":"..."}
 ```
 
-### 3.2 ステージング環境（Cloud Run）
+### 3.2 ステージング/本番環境（Cloud Run）
 
 環境変数はSecret Managerで管理し、Terraformで定義されています（`terraform/secrets.tf`）。
 
@@ -82,13 +88,15 @@ FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"...","priva
 - Discord OAuth Secretはサーバーサイド（Server Actions）のみで使用
 - Firebase Custom Token生成はServer Actions内のみで実行
 - ユーザーIDや認証情報のクライアント側での安全な取り扱い
+- セッションクッキーは `HttpOnly` 属性を設定し、JavaScriptからのアクセスを防止
+- 本番環境では `Secure` 属性を有効にし、HTTPS接続のみでクッキーを送信
 - 適切なFirebase Security Rulesの設定
 
 ## 5. Discord OAuth2設定
 
 ### 5.1 Discordアプリケーション設定
 
-Discord Developer Portal（<https://discord.com/developers/applications）で設定：>
+Discord Developer Portal（<https://discord.com/developers/applications>）で設定：
 
 1. OAuth2リダイレクトURI:
    - ローカル開発環境: `http://localhost:3000/auth/discord/callback`
@@ -97,6 +105,7 @@ Discord Developer Portal（<https://discord.com/developers/applications）で設
 2. スコープ設定:
    - `identify` - ユーザー基本情報取得用
    - `guilds` - 所属サーバー（ギルド）情報取得用
+   - `email` - メールアドレス取得用（オプション）
 
 ### 5.2 APIエンドポイント
 
@@ -109,24 +118,39 @@ Discord Developer Portal（<https://discord.com/developers/applications）で設
 
 ```typescript
 interface User {
-  uid: string;          // Firebase UID
+  uid: string;          // Firebase UID（Discord IDと同一）
   displayName: string;  // Discordユーザー名
   photoURL: string;     // Discordアバター画像URL
   providerId: string;   // "discord.com"
-  discordId: string;    // Discord固有ユーザーID
-  guilds: Guild[];      // 所属Discordサーバー一覧
+  email: string | null; // メールアドレス（存在する場合）
 }
 ```
 
-## 7. 今後の改善計画
+## 7. クライアントとサーバー間の認証状態同期
 
-### 7.1 予定されている機能強化
+### 7.1 クライアント認証からサーバー認証への同期
+
+1. クライアント側で Firebase Authentication にサインイン
+2. Firebase IDトークンを取得
+3. IDトークンをサーバーに送信して検証
+4. サーバーは検証後、HTTPOnlyクッキーにセッション情報を保存
+5. 以降のリクエストでは自動的にクッキーが送信される
+
+### 7.2 セッションの有効期間と更新
+
+- セッションクッキーのデフォルト有効期間は2週間
+- クライアント側で新しいIDトークンが生成された場合、セッションクッキーも更新可能
+- ログアウト時には明示的にセッションクッキーを削除
+
+## 8. 今後の改善計画
+
+### 8.1 予定されている機能強化
 
 - ユーザーロール管理の拡充
 - 所属ギルドに基づく機能制限の実装
-- 認証状態の永続化改善
+- トークンリフレッシュ処理の自動化
 
-### 7.2 認証システムのモニタリング
+### 8.2 認証システムのモニタリング
 
 - Firebase Authentication利用状況の監視
 - 異常な認証パターンの検出

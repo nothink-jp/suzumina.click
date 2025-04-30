@@ -1,5 +1,6 @@
 "use client";
 
+import { createSessionCookie } from "@/app/api/auth/createSessionCookie";
 import { handleDiscordCallback } from "@/app/api/auth/discord/actions";
 import { auth, getAuthInstance } from "@/lib/firebase/client";
 import { signInWithCustomToken } from "firebase/auth";
@@ -7,23 +8,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function AuthModal() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const [message, setMessage] = useState("認証処理中...");
-  const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [message, setMessage] = useState<string>("認証処理中...");
+  const [error, setError] = useState<string | null>(null);
   const [authCodeDetected, setAuthCodeDetected] = useState(false);
   const [authCode, setAuthCode] = useState<string | null>(null);
 
-  // 認証コードの検出とモーダル表示の制御
+  // URL検索パラメータとセッションストレージからDiscord認証コードを検出
   useEffect(() => {
-    // テスト環境でのエラーを回避するための処理
-    if (typeof window === "undefined") {
-      // サーバーサイドレンダリング時またはテスト環境では何もしない
-      setIsOpen(false);
-      return;
-    }
+    // すでにコード検出済みの場合は処理しない
+    if (authCodeDetected) return;
 
     // 1. まず、URLから直接認証コードを取得を試みる
     const code = searchParams.get("discord_code");
@@ -41,155 +38,132 @@ export default function AuthModal() {
     }
 
     // どの方法でも取得できた認証コードを使用
-    const effectiveCode = code || codeFromUrl || codeFromSession;
+    const detectedCode = code || codeFromUrl || codeFromSession;
 
-    if (!effectiveCode) {
-      // コードがない場合はモーダルを表示しない
-      setIsOpen(false);
-      return;
+    if (detectedCode) {
+      setAuthCode(detectedCode);
+      setAuthCodeDetected(true);
+      setIsOpen(true);
+      // 認証コードを検出したら処理を開始
+      processAuth(detectedCode);
     }
+  }, [searchParams, authCodeDetected]);
 
-    // 認証コードを状態に保存
-    setAuthCode(effectiveCode);
-    // 認証コードを検出したフラグを設定
-    setAuthCodeDetected(true);
-    // モーダルを表示（認証処理を開始する前に必ず表示）
-    setIsOpen(true);
-    setIsProcessing(true);
-    setMessage("認証処理を開始します...");
-  }, [searchParams]);
-
-  // 認証コードが検出された場合の処理
-  useEffect(() => {
-    if (!authCodeDetected || !authCode) {
-      return;
+  // URLから認証コードを削除する関数（認証処理の最後に呼び出す）
+  const removeCodeFromUrl = () => {
+    // 現在のパス名のみを保持し、クエリパラメータを削除
+    if (typeof window !== "undefined") {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
     }
+  };
 
-    // URLから認証コードを削除する関数（認証処理の最後に呼び出す）
-    const removeCodeFromUrl = () => {
-      // 現在のパス名のみを保持し、クエリパラメータを削除
-      if (typeof window !== "undefined") {
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
+  // セッションストレージからコードを削除（認証処理の最後に呼び出す）
+  const removeCodeFromSession = () => {
+    try {
+      sessionStorage.removeItem("discord_auth_code");
+    } catch (e) {
+      // セッションストレージからの削除に失敗
+    }
+  };
+
+  async function processAuth(code: string) {
+    try {
+      // モーダルを表示し続ける
+      setIsOpen(true);
+      setIsProcessing(true);
+
+      // コードの存在を確認
+      if (!code) {
+        setError("認証コードが見つかりません。");
+        setMessage("認証に失敗しました。");
+        setIsProcessing(false);
+        return;
       }
-    };
 
-    // セッションストレージからコードを削除（認証処理の最後に呼び出す）
-    const removeCodeFromSession = () => {
-      try {
-        sessionStorage.removeItem("discord_auth_code");
-      } catch (e) {
-        // セッションストレージからの削除に失敗
+      setMessage("認証サーバーと通信中...");
+
+      // Firebase認証の状態を確認し、必要に応じて再取得
+      let firebaseAuth = auth;
+      if (!firebaseAuth) {
+        firebaseAuth = getAuthInstance();
       }
-    };
 
-    async function processAuth() {
       try {
-        // モーダルを表示し続ける
-        setIsOpen(true);
-        setIsProcessing(true);
+        // Server Actionを呼び出して認証処理
+        const result = await handleDiscordCallback(code);
 
-        // コードの存在を確認（コンパイルエラー対策）
-        if (!authCode) {
-          setError("認証コードが見つかりません。");
+        if (!result.success || !result.customToken) {
+          setError(result.error || "認証処理に失敗しました。");
           setMessage("認証に失敗しました。");
           setIsProcessing(false);
+
+          // コードをクリーンアップ
+          removeCodeFromUrl();
+          removeCodeFromSession();
           return;
         }
 
-        setMessage("認証サーバーと通信中...");
-
-        // Firebase認証の状態を確認し、必要に応じて再取得
-        let firebaseAuth = auth;
+        // もう一度Firebase認証オブジェクトを確認（念のため）
         if (!firebaseAuth) {
+          // 最後の手段として再度取得を試みる
           firebaseAuth = getAuthInstance();
         }
 
+        // authがnullでないことを確認
+        if (!firebaseAuth) {
+          setError("認証システムの初期化に失敗しました。");
+          setMessage("認証に失敗しました。");
+          setIsProcessing(false);
+
+          // コードをクリーンアップ
+          removeCodeFromUrl();
+          removeCodeFromSession();
+          return;
+        }
+
+        setMessage("Firebaseにサインイン中...");
+
+        // カスタムトークンでサインイン
         try {
-          // Server Actionを呼び出して認証処理
-          const result = await handleDiscordCallback(authCode);
+          // カスタムトークンでFirebaseにサインイン
+          await signInWithCustomToken(firebaseAuth, result.customToken);
 
-          if (!result.success || !result.customToken) {
-            // エラーメッセージを日本語化
-            let errorMessage = "認証処理に失敗しました";
+          setMessage("セッション情報を同期中...");
 
-            // 特定のエラーメッセージを日本語に変換
-            if (result.error === "Guild membership required.") {
-              errorMessage =
-                "Discordサーバーのメンバーである必要があります。Discordサーバーに参加してから再度お試しください。";
-            } else if (result.error) {
-              errorMessage = result.error;
+          // IDトークンを取得してセッションクッキーを作成
+          const idToken = await firebaseAuth.currentUser?.getIdToken(true);
+          if (idToken) {
+            // セッションクッキーを作成
+            const sessionCreated = await createSessionCookie(idToken);
+            if (!sessionCreated) {
+              console.warn(
+                "セッションクッキーの作成に失敗しました。一部機能が制限される可能性があります。",
+              );
             }
-
-            // エラー表示
-            setError(errorMessage);
-            setMessage("認証に失敗しました。");
-            setIsProcessing(false);
-
-            // コードをクリーンアップ
-            removeCodeFromUrl();
-            removeCodeFromSession();
-            return;
           }
 
-          // もう一度Firebase認証オブジェクトを確認（念のため）
-          if (!firebaseAuth) {
-            // 最後の手段として再度取得を試みる
-            firebaseAuth = getAuthInstance();
-          }
+          setMessage("認証に成功しました！");
+          setIsProcessing(false);
 
-          // authがnullでないことを確認
-          if (!firebaseAuth) {
-            setError("認証システムの初期化に失敗しました。");
-            setMessage("認証に失敗しました。");
-            setIsProcessing(false);
+          // 認証コードの検出フラグをリセット
+          setAuthCodeDetected(false);
+          setAuthCode(null);
 
-            // コードをクリーンアップ
-            removeCodeFromUrl();
-            removeCodeFromSession();
-            return;
-          }
+          // コードをクリーンアップ
+          removeCodeFromUrl();
+          removeCodeFromSession();
 
-          setMessage("Firebaseにサインイン中...");
-
-          // カスタムトークンでサインイン
-          try {
-            await signInWithCustomToken(firebaseAuth, result.customToken);
-
-            setMessage("認証に成功しました！");
-            setIsProcessing(false);
-
-            // 認証コードの検出フラグをリセット
-            setAuthCodeDetected(false);
-            setAuthCode(null);
-
-            // コードをクリーンアップ
-            removeCodeFromUrl();
-            removeCodeFromSession();
-
-            // 3秒後にモーダルを閉じる
-            setTimeout(() => {
-              setIsOpen(false);
-            }, 3000);
-          } catch (signInError) {
-            const signInErrorMessage =
-              signInError instanceof Error
-                ? signInError.message
-                : "認証中に予期せぬエラーが発生しました。";
-            setError(signInErrorMessage);
-            setMessage("認証に失敗しました。");
-            setIsProcessing(false);
-
-            // コードをクリーンアップ
-            removeCodeFromUrl();
-            removeCodeFromSession();
-          }
-        } catch (serverActionError) {
-          const serverActionErrorMessage =
-            serverActionError instanceof Error
-              ? serverActionError.message
-              : "サーバーとの通信中にエラーが発生しました。";
-          setError(serverActionErrorMessage);
+          // 3秒後にモーダルを閉じる
+          setTimeout(() => {
+            setIsOpen(false);
+          }, 3000);
+        } catch (signInError) {
+          const signInErrorMessage =
+            signInError instanceof Error
+              ? signInError.message
+              : "Firebaseサインインに失敗しました";
+          setError(signInErrorMessage);
           setMessage("認証に失敗しました。");
           setIsProcessing(false);
 
@@ -197,13 +171,17 @@ export default function AuthModal() {
           removeCodeFromUrl();
           removeCodeFromSession();
         }
-      } catch (err) {
-        // 全体的なエラーハンドリング
-        const errorMessage =
-          err instanceof Error
-            ? err.message
-            : "認証中に予期せぬエラーが発生しました。";
-        setError(errorMessage);
+      } catch (callbackError) {
+        // サーバーエラーの処理
+        console.error(
+          "認証コールバック処理中にエラーが発生しました:",
+          callbackError,
+        );
+        setError(
+          callbackError instanceof Error
+            ? callbackError.message
+            : "サーバーとの通信中にエラーが発生しました",
+        );
         setMessage("認証に失敗しました。");
         setIsProcessing(false);
 
@@ -211,47 +189,53 @@ export default function AuthModal() {
         removeCodeFromUrl();
         removeCodeFromSession();
       }
+    } catch (error) {
+      // 全体的なエラー処理
+      console.error("認証処理中に予期しないエラーが発生しました:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "予期しないエラーが発生しました",
+      );
+      setMessage("認証に失敗しました。");
+      setIsProcessing(false);
+
+      // コードをクリーンアップ
+      removeCodeFromUrl();
+      removeCodeFromSession();
     }
-
-    // 認証処理を開始
-    processAuth();
-  }, [authCodeDetected, authCode]);
-
-  // モーダルが表示されていない場合は何も表示しない
-  if (!isOpen) {
-    return null;
   }
 
+  // モーダルが閉じられていたら何も表示しない
+  if (!isOpen) return null;
+
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
-    >
-      <div className="bg-base-100 p-6 rounded-lg shadow-xl max-w-md w-full">
-        <h2 className="text-xl font-bold mb-4">Discord認証</h2>
-        <div className="text-center py-4">
-          <p>{message}</p>
-          {error && (
-            <div className="text-error mt-2">
-              <p>エラーが発生しました。</p>
-              <p>{error}</p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-base-100 p-6 rounded-lg shadow-lg max-w-sm w-full">
+        <h2 className="text-xl font-bold mb-4 text-center">認証処理</h2>
+
+        {/* メッセージ表示 */}
+        <div className="text-center mb-4">
+          {isProcessing && (
+            <div className="flex justify-center mb-4">
+              <span className="loading loading-spinner loading-md" />
             </div>
           )}
-          {isProcessing && (
-            <span className="loading loading-dots loading-lg mt-4" />
-          )}
+          <p>{message}</p>
+          {error && <p className="text-error mt-2">{error}</p>}
         </div>
-        {!isProcessing && (
-          <div className="flex justify-end mt-4">
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="btn btn-sm"
-            >
-              閉じる
-            </button>
-          </div>
-        )}
+
+        {/* 閉じるボタン (処理中は無効) */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost"
+            onClick={() => setIsOpen(false)}
+            disabled={isProcessing}
+          >
+            閉じる
+          </button>
+        </div>
       </div>
     </div>
   );
