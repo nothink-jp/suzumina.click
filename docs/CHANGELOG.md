@@ -6,6 +6,30 @@
 ## [Unreleased] - 開発中
 
 ### 追加
+
+### 変更
+
+### 修正
+
+### 削除
+
+## [0.1.4] - 2025-04-30
+
+### 追加
+- 動画ページ機能の完全実装
+  - 動画一覧ページの実装 (`src/app/page.tsx`)
+  - 動画詳細ページの実装 (`src/app/videos/[videoId]/page.tsx`)
+  - YouTubeEmbedコンポーネントの実装 (`src/components/videos/YouTubeEmbed.tsx`)
+  - VideoCardコンポーネントの実装 (`src/components/ui/VideoCard.tsx`)
+  - VideoListコンポーネントの実装 (`src/app/_components/VideoList.tsx`)
+- 音声ボタン機能の基本実装
+  - データモデルとAPIの実装
+  - 基本UIコンポーネントの実装
+  - 音声ボタン作成機能の実装
+- 開発環境の整備
+  - Firebase Emulatorの設定
+  - サンプルデータ生成スクリプトの実装
+  - エミュレーター使用方法のドキュメント整備
 - インフラストラクチャ最適化の一環として、CI/CDパイプラインの改善
 
 ### 変更
@@ -13,10 +37,6 @@
   - CI成功時の統合デプロイ自動トリガーを削除
   - パスベースの個別デプロイのみを実行するよう変更
   - ワークフロー状態遷移図の更新
-
-### 修正
-
-### 削除
 
 ## [0.1.3] - 2025-04-21
 
