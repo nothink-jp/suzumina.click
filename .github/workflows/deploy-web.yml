@@ -317,6 +317,7 @@ jobs:
             --limit=1)
           
           echo "新しいリビジョン: $NEW_REVISION"
+          # GitHub Actionsの出力として設定
           echo "revision=$NEW_REVISION" >> $GITHUB_OUTPUT
           
           echo "デプロイが完了しました"
@@ -369,11 +370,19 @@ jobs:
           echo "新リビジョンのヘルスチェックを実施します..."
           
           # 新リビジョン専用URLを取得
+          # {{needs.deploy-web-app.outputs.deployed_revision}}はCloud Runのデプロイステップで設定されたリビジョン名
           NEW_REVISION_URL=$(gcloud run revisions describe ${{ needs.deploy-web-app.outputs.deployed_revision }} \
             --region=${{ env.REGION }} \
             --format="value(status.url)")
           
           echo "チェック対象URL: $NEW_REVISION_URL"
+          
+          # URLが正しく取得できたか確認
+          if [ -z "$NEW_REVISION_URL" ]; then
+            echo "::error::新リビジョンのURLが取得できませんでした。"
+            echo "is_healthy=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
           
           # ヘルスチェック（複数回試行）
           MAX_ATTEMPTS=5
@@ -383,7 +392,8 @@ jobs:
           for ((i=1; i<=MAX_ATTEMPTS; i++)); do
             echo "ヘルスチェック試行 $i/$MAX_ATTEMPTS..."
             
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $NEW_REVISION_URL)
+            # curlでステータスコードのみを取得
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$NEW_REVISION_URL")
             
             if [[ "$HTTP_STATUS" == "200" ]]; then
               echo "ヘルスチェック成功！HTTPステータス: $HTTP_STATUS"
@@ -399,6 +409,7 @@ jobs:
             fi
           done
           
+          # 結果をGitHub Actionsの出力として設定
           echo "is_healthy=$HEALTHY" >> $GITHUB_OUTPUT
           
           if [[ "$HEALTHY" == "true" ]]; then
