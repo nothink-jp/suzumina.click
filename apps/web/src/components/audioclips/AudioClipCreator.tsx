@@ -157,7 +157,7 @@ export default function AudioClipCreator({
         const currentTime = youtubePlayerRef.current.getCurrentTime();
 
         // 値が取得できているか確認
-        if (typeof currentTime !== "number" || isNaN(currentTime)) {
+        if (typeof currentTime !== "number" || Number.isNaN(currentTime)) {
           console.error(
             "YouTubeプレーヤーから無効な時間が返されました:",
             currentTime,
