@@ -217,70 +217,141 @@ export default function AudioClipCreator({
 
   // 開始時間を設定
   const handleSetStartTime = () => {
-    const currentTime = getCurrentTime();
+    try {
+      // 現在時間を取得
+      const currentTime = getCurrentTime();
+      console.log("[デバッグ] handleSetStartTime: 現在時間を取得しました", currentTime);
 
-    // hidden inputのvalueを更新するためのダミーイベント
-    const input = document.getElementById(
-      fields.startTime.id,
-    ) as HTMLInputElement;
-    if (input) {
-      input.value = currentTime.toString();
-      // Conformに変更を通知
-      const event = new Event("input", { bubbles: true });
-      input.dispatchEvent(event);
-    }
-
-    // 終了時間が設定されていない、または開始時間より前の場合は更新
-    const endTimeInput = document.getElementById(
-      fields.endTime.id,
-    ) as HTMLInputElement;
-    const endTimeValue = endTimeInput
-      ? Number.parseFloat(endTimeInput.value)
-      : null;
-    if (endTimeValue === null || endTimeValue <= currentTime) {
-      if (endTimeInput) {
-        endTimeInput.value = (currentTime + 5).toString(); // デフォルトで5秒後を終了時間に
+      // hidden inputのvalueを明示的に更新
+      const input = document.getElementById(
+        fields.startTime.id,
+      ) as HTMLInputElement;
+      
+      console.log("[デバッグ] handleSetStartTime: input要素", {
+        exists: !!input,
+        id: fields.startTime.id,
+        element: input
+      });
+      
+      if (input) {
+        // 値を設定し、コンソールに記録
+        input.value = currentTime.toString();
+        console.log("[デバッグ] handleSetStartTime: input値を更新しました", {
+          value: input.value,
+          element: input
+        });
+        
         // Conformに変更を通知
         const event = new Event("input", { bubbles: true });
-        endTimeInput.dispatchEvent(event);
+        input.dispatchEvent(event);
+        console.log("[デバッグ] handleSetStartTime: input イベントをディスパッチしました");
+
+        // DOM上でも値が反映されているか確認
+        setTimeout(() => {
+          console.log("[デバッグ] handleSetStartTime: 更新後の値", 
+            (document.getElementById(fields.startTime.id) as HTMLInputElement)?.value
+          );
+        }, 0);
+      } else {
+        console.error("[エラー] handleSetStartTime: input要素が見つかりません", fields.startTime.id);
       }
+
+      // 終了時間が設定されていない、または開始時間より前の場合は更新
+      const endTimeInput = document.getElementById(
+        fields.endTime.id,
+      ) as HTMLInputElement;
+      const endTimeValue = endTimeInput
+        ? Number.parseFloat(endTimeInput.value)
+        : null;
+      if (endTimeValue === null || isNaN(endTimeValue) || endTimeValue <= currentTime) {
+        if (endTimeInput) {
+          endTimeInput.value = (currentTime + 5).toString(); // デフォルトで5秒後を終了時間に
+          console.log("[デバッグ] handleSetStartTime: 終了時間も更新しました", endTimeInput.value);
+          // Conformに変更を通知
+          const event = new Event("input", { bubbles: true });
+          endTimeInput.dispatchEvent(event);
+        }
+      }
+
+      // 表示時間を更新
+      updateDisplayTimes();
+    } catch (error) {
+      console.error("[エラー] handleSetStartTime: 処理中にエラーが発生しました", error);
     }
   };
 
   // 終了時間を設定
   const handleSetEndTime = () => {
-    const currentTime = getCurrentTime();
-    const startTimeInput = document.getElementById(
-      fields.startTime.id,
-    ) as HTMLInputElement;
-    const startTimeValue = startTimeInput
-      ? Number.parseFloat(startTimeInput.value)
-      : null;
-
-    // 開始時間が設定されていない場合は、現在時刻の5秒前を開始時間に
-    if (startTimeValue === null || startTimeValue === 0) {
-      if (startTimeInput) {
-        const newStartTime = Math.max(0, currentTime - 5);
-        startTimeInput.value = newStartTime.toString();
-        // Conformに変更を通知
-        const event = new Event("input", { bubbles: true });
-        startTimeInput.dispatchEvent(event);
-      }
-    }
-
-    // 開始時間より後の場合のみ設定
-    if (startTimeValue !== null && currentTime > startTimeValue) {
-      const endTimeInput = document.getElementById(
-        fields.endTime.id,
+    try {
+      const currentTime = getCurrentTime();
+      console.log("[デバッグ] handleSetEndTime: 現在時間を取得しました", currentTime);
+      
+      const startTimeInput = document.getElementById(
+        fields.startTime.id,
       ) as HTMLInputElement;
-      if (endTimeInput) {
-        endTimeInput.value = currentTime.toString();
-        // Conformに変更を通知
-        const event = new Event("input", { bubbles: true });
-        endTimeInput.dispatchEvent(event);
+      const startTimeValue = startTimeInput
+        ? Number.parseFloat(startTimeInput.value)
+        : null;
+
+      console.log("[デバッグ] handleSetEndTime: 開始時間の状態", {
+        input: !!startTimeInput,
+        value: startTimeInput?.value,
+        parsed: startTimeValue
+      });
+
+      // 開始時間が設定されていない場合は、現在時刻の5秒前を開始時間に
+      if (startTimeValue === null || isNaN(startTimeValue) || startTimeValue === 0) {
+        if (startTimeInput) {
+          const newStartTime = Math.max(0, currentTime - 5);
+          startTimeInput.value = newStartTime.toString();
+          console.log("[デバッグ] handleSetEndTime: 開始時間を設定しました", newStartTime);
+          // Conformに変更を通知
+          const event = new Event("input", { bubbles: true });
+          startTimeInput.dispatchEvent(event);
+        }
       }
-    } else {
-      setError("終了時間は開始時間より後に設定してください");
+
+      // 開始時間より後の場合のみ設定
+      if (startTimeValue !== null && currentTime > startTimeValue) {
+        const endTimeInput = document.getElementById(
+          fields.endTime.id,
+        ) as HTMLInputElement;
+        
+        console.log("[デバッグ] handleSetEndTime: 終了時間の要素", {
+          exists: !!endTimeInput,
+          id: fields.endTime.id
+        });
+        
+        if (endTimeInput) {
+          endTimeInput.value = currentTime.toString();
+          console.log("[デバッグ] handleSetEndTime: 終了時間を設定しました", {
+            value: endTimeInput.value,
+            element: endTimeInput
+          });
+          
+          // Conformに変更を通知
+          const event = new Event("input", { bubbles: true });
+          endTimeInput.dispatchEvent(event);
+          
+          // DOM上でも値が反映されているか確認
+          setTimeout(() => {
+            console.log("[デバッグ] handleSetEndTime: 更新後の値", 
+              (document.getElementById(fields.endTime.id) as HTMLInputElement)?.value
+            );
+          }, 0);
+        }
+      } else {
+        setError("終了時間は開始時間より後に設定してください");
+        console.warn("[警告] handleSetEndTime: 終了時間が開始時間以前になっています", {
+          current: currentTime,
+          start: startTimeValue
+        });
+      }
+
+      // 表示時間を更新
+      updateDisplayTimes();
+    } catch (error) {
+      console.error("[エラー] handleSetEndTime: 処理中にエラーが発生しました", error);
     }
   };
 
@@ -342,6 +413,35 @@ export default function AudioClipCreator({
     const minutes = Math.floor(numSeconds / 60);
     const secs = Math.floor(numSeconds % 60);
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // 現在の開始時間、終了時間の値を取得（表示更新用）
+  const [startTimeDisplay, setStartTimeDisplay] = useState<string>("--:--");
+  const [endTimeDisplay, setEndTimeDisplay] = useState<string>("--:--");
+
+  // DOM操作の後でReactの状態も更新（表示を強制更新するため）
+  const updateDisplayTimes = () => {
+    try {
+      const startTimeInput = document.getElementById(fields.startTime.id) as HTMLInputElement;
+      const endTimeInput = document.getElementById(fields.endTime.id) as HTMLInputElement;
+      
+      if (startTimeInput) {
+        setStartTimeDisplay(formatTime(startTimeInput.value));
+      }
+      
+      if (endTimeInput) {
+        setEndTimeDisplay(formatTime(endTimeInput.value));
+      }
+
+      console.log("[デバッグ] 表示時間を更新しました:", { 
+        start: startTimeInput?.value, 
+        end: endTimeInput?.value,
+        startDisplay: formatTime(startTimeInput?.value),
+        endDisplay: formatTime(endTimeInput?.value)
+      });
+    } catch (error) {
+      console.error("[エラー] 表示時間の更新に失敗しました:", error);
+    }
   };
 
   return (
@@ -511,15 +611,9 @@ export default function AudioClipCreator({
                         id={fields.startTime.id}
                         name={fields.startTime.name}
                       />
-                      {/* 表示用の値 */}
+                      {/* 表示用の値（Reactのステートを使用） */}
                       <span className="join-item px-3 py-2 bg-base-200 border border-base-300">
-                        {formatTime(
-                          (
-                            document.getElementById(
-                              fields.startTime.id,
-                            ) as HTMLInputElement
-                          )?.value || null,
-                        )}
+                        {startTimeDisplay}
                       </span>
                       <button
                         type="button"
@@ -556,13 +650,7 @@ export default function AudioClipCreator({
                       />
                       {/* 表示用の値 */}
                       <span className="join-item px-3 py-2 bg-base-200 border border-base-300">
-                        {formatTime(
-                          (
-                            document.getElementById(
-                              fields.endTime.id,
-                            ) as HTMLInputElement
-                          )?.value || null,
-                        )}
+                        {endTimeDisplay}
                       </span>
                       <button
                         type="button"
