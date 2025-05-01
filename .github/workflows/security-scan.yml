@@ -87,7 +87,6 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: javascript
-          queries: security-extended
       
       - name: CodeQLスキャン実行
         uses: github/codeql-action/analyze@v3
