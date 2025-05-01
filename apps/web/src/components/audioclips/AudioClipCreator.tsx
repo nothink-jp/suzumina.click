@@ -145,38 +145,74 @@ export default function AudioClipCreator({
     shouldRevalidate: "onInput",
   });
 
-  // 現在の再生位置を取得
-  const getCurrentTime = (): number => {
-    if (youtubePlayerRef?.current) {
-      try {
-        // デバッグ用ログ（開発環境のみ）
-        if (process.env.NODE_ENV === "development") {
-          console.log("YouTubeプレーヤーから現在時間を取得します");
-        }
+  // 安全にYouTube APIメソッドを呼び出すためのラッパー関数
+  const safeCallYouTubeAPI = <T,>(
+    methodName: string,
+    method: () => T,
+    defaultValue: T,
+  ): T => {
+    try {
+      // API呼び出し前のデバッグログ
+      console.log(`[デバッグ] ${methodName}を実行します`);
 
-        const currentTime = youtubePlayerRef.current.getCurrentTime();
+      // API呼び出し
+      const result = method();
 
-        // 値が取得できているか確認
-        if (typeof currentTime !== "number" || Number.isNaN(currentTime)) {
-          console.error(
-            "YouTubeプレーヤーから無効な時間が返されました:",
-            currentTime,
-          );
-          // デフォルト値として0を返す
-          return 0;
-        }
+      // 結果のデバッグログ
+      console.log(`[デバッグ] ${methodName}の結果:`, result);
+      return result;
+    } catch (error) {
+      // エラー詳細を記録
+      console.error(
+        `[エラー] ${methodName}の実行中にエラーが発生しました:`,
+        error,
+      );
+      console.error("[エラー] エラースタック:", (error as Error).stack);
 
-        return currentTime;
-      } catch (error) {
-        console.error(
-          "YouTubeプレーヤーの現在時間取得中にエラーが発生しました:",
-          error,
-        );
-        // エラーが発生した場合はデフォルト値として0を返す
-        return 0;
-      }
+      // ブラウザ環境とフラグを確認
+      const isCloudRun =
+        typeof window !== "undefined" &&
+        window.location.hostname.includes("run.app");
+      console.error("[エラー] 環境情報:", {
+        isCloudRun,
+        userAgent: navigator.userAgent,
+        href: window.location.href,
+      });
+
+      // デフォルト値を返す
+      return defaultValue;
     }
-    return 0;
+  };
+
+  // 現在の再生位置を取得（安全な実装）
+  const getCurrentTime = (): number => {
+    if (!youtubePlayerRef?.current) {
+      console.warn("[警告] YouTubeプレーヤーの参照が存在しません");
+      return 0;
+    }
+
+    // プレーヤーの存在確認
+    console.log("[デバッグ] プレーヤー状態:", {
+      isDefined: !!youtubePlayerRef.current,
+      hasGetCurrentTime:
+        typeof youtubePlayerRef.current.getCurrentTime === "function",
+      playerType: typeof youtubePlayerRef.current,
+    });
+
+    // APIが利用可能か確認
+    if (typeof youtubePlayerRef.current.getCurrentTime !== "function") {
+      console.error(
+        "[エラー] YouTubeプレーヤーAPIが正しく初期化されていません",
+      );
+      return 0;
+    }
+
+    // 安全なAPI呼び出し
+    return safeCallYouTubeAPI(
+      "getCurrentTime",
+      () => youtubePlayerRef.current.getCurrentTime(),
+      0,
+    );
   };
 
   // 開始時間を設定
@@ -388,7 +424,7 @@ export default function AudioClipCreator({
                     xmlns="http://www.w3.org/2000/svg"
                     className="stroke-current shrink-0 h-6 w-6"
                     fill="none"
-                    viewBox="0 0 24 24"
+                    viewBox="0 24 24"
                     aria-hidden="true"
                   >
                     <path

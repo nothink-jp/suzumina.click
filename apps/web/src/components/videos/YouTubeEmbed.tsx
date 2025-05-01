@@ -79,6 +79,20 @@ export default function YouTubeEmbed({
   const maxRetries = 3;
   const timeoutDuration = 10000; // 10秒にタイムアウトを延長
 
+  // 環境情報を記録
+  const isCloudRun =
+    typeof window !== "undefined" &&
+    window.location.hostname.includes("run.app");
+  useEffect(() => {
+    console.log("[デバッグ] YouTubeEmbed マウント - 環境情報:", {
+      isCloudRun,
+      hostname:
+        typeof window !== "undefined" ? window.location.hostname : "unknown",
+      userAgent:
+        typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
+    });
+  }, [isCloudRun]);
+
   // YouTube IFrame APIのロード
   useEffect(() => {
     // エラー状態をリセット
