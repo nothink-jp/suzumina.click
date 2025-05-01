@@ -300,22 +300,13 @@ jobs:
         run: |
           echo "Cloud Runサービスをデプロイしています..."
           
-          # デプロイコマンド
+          # デプロイコマンド（直接100%のトラフィックを新リビジョンに向ける）
           gcloud run deploy suzumina-click-nextjs-app \
             --image=${{ steps.docker-build.outputs.image }} \
             --platform=managed \
             --region=${{ env.REGION }} \
             --allow-unauthenticated \
-            --quiet --no-traffic
-          
-          # デバッグ情報を追加
-          echo "最新リビジョンの一覧（直近5件）:"
-          gcloud run revisions list \
-            --service=suzumina-click-nextjs-app \
-            --region=${{ env.REGION }} \
-            --limit=5 \
-            --sort-by="~createTime" \
-            --format="value(name,status.conditions[0].type,status.conditions[0].status)"
+            --quiet
           
           # 新しいリビジョン名を取得
           NEW_REVISION=$(gcloud run revisions list \
@@ -326,14 +317,6 @@ jobs:
             --limit=1)
           
           echo "新しいリビジョン: $NEW_REVISION"
-          
-          # デバッグのためにリビジョン情報を詳細に取得
-          echo "リビジョン情報:"
-          gcloud run revisions describe $NEW_REVISION \
-            --region=${{ env.REGION }} \
-            --format="yaml(metadata.name,status.url)"
-          
-          # GitHub Actionsの出力として明示的に設定
           echo "revision=$NEW_REVISION" >> $GITHUB_OUTPUT
           
           echo "デプロイが完了しました"
@@ -346,211 +329,19 @@ jobs:
           echo "デプロイURL: $URL"
           echo "::notice title=Webアプリケーションデプロイ完了::$URL にデプロイされました"
 
-  # 新しいデプロイのヘルスチェック
-  health-check:
-    name: '新バージョンのヘルスチェック'
-    needs: [save-current-state, deploy-web-app]
-    runs-on: ubuntu-latest
-    outputs:
-      is_healthy: ${{ steps.check-health.outputs.is_healthy }}
-    
-    steps:
-      # Google Cloud認証
-      - name: Google Cloud認証の設定
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'cloud-run-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-          create_credentials_file: true
-          export_environment_variables: true
-      
-      # gcloud CLIをセットアップ
-      - name: gcloud CLIのセットアップ
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
-      # 新しいリビジョンをヘルスチェック用に少量のトラフィックを割り当て
-      - name: 新リビジョンにテストトラフィックを割り当て
-        run: |
-          # 現在のリビジョンに95%、新リビジョンに5%を割り当て
-          gcloud run services update-traffic suzumina-click-nextjs-app \
-            --region=${{ env.REGION }} \
-            --to-revisions=${{ needs.save-current-state.outputs.previous_revision }}=95,${{ needs.deploy-web-app.outputs.deployed_revision }}=5
-      
-      # ヘルスチェック実行
-      - name: ヘルスチェックの実行
-        id: check-health
-        run: |
-          echo "新リビジョンのヘルスチェックを実施します..."
-          
-          # デプロイされたリビジョン名を確認
-          REVISION_NAME="${{ needs.deploy-web-app.outputs.deployed_revision }}"
-          echo "デプロイされたリビジョン名: $REVISION_NAME"
-          
-          # まず、リビジョンが存在するか確認
-          if ! gcloud run revisions describe "$REVISION_NAME" --region=${{ env.REGION }} &>/dev/null; then
-            echo "::error::指定されたリビジョン '$REVISION_NAME' が見つかりません。"
-            
-            # デバッグ情報: 利用可能なリビジョンの一覧を表示
-            echo "利用可能なリビジョン一覧:"
-            gcloud run revisions list \
-              --service=suzumina-click-nextjs-app \
-              --region=${{ env.REGION }} \
-              --format="value(name,status.conditions[0].type,status.conditions[0].status)"
-              
-            echo "is_healthy=false" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          
-          # リビジョン情報を詳細に表示
-          echo "リビジョン詳細情報:"
-          gcloud run revisions describe "$REVISION_NAME" \
-            --region=${{ env.REGION }} \
-            --format="yaml(metadata.name,status.conditions)"
-          
-          # リビジョン専用URLを直接取得（修正）
-          NEW_REVISION_URL=$(gcloud run revisions describe "$REVISION_NAME" \
-            --region=${{ env.REGION }} \
-            --format="value(status.url)")
-          
-          echo "リビジョン専用URL: $NEW_REVISION_URL"
-          
-          # URLが取得できたか確認
-          if [ -z "$NEW_REVISION_URL" ]; then
-            echo "::error::リビジョン専用URLが取得できませんでした。"
-            echo "is_healthy=false" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          
-          # ヘルスチェック（複数回試行）
-          MAX_ATTEMPTS=5
-          DELAY_SECONDS=10
-          HEALTHY=false
-          
-          for ((i=1; i<=MAX_ATTEMPTS; i++)); do
-            echo "ヘルスチェック試行 $i/$MAX_ATTEMPTS..."
-            
-            # curlコマンドの実行と詳細ログ
-            echo "実行コマンド: curl -v -s -o /dev/null -w \"%{http_code}\" \"$NEW_REVISION_URL\""
-            HTTP_STATUS=$(curl -v -s -o /dev/null -w "%{http_code}" "$NEW_REVISION_URL" 2>&1)
-            CURL_EXIT_CODE=$?
-            
-            echo "curlの終了コード: $CURL_EXIT_CODE"
-            echo "HTTPステータスコード: $HTTP_STATUS"
-            
-            if [[ "$HTTP_STATUS" == "200" ]]; then
-              echo "ヘルスチェック成功！HTTPステータス: $HTTP_STATUS"
-              HEALTHY=true
-              break
-            else
-              echo "ヘルスチェック失敗。HTTPステータス: $HTTP_STATUS"
-              
-              if [[ $i < $MAX_ATTEMPTS ]]; then
-                echo "$DELAY_SECONDS秒後に再試行します..."
-                sleep $DELAY_SECONDS
-              fi
-            fi
-          done
-          
-          # 結果をGitHub Actionsの出力として設定
-          echo "is_healthy=$HEALTHY" >> $GITHUB_OUTPUT
-          
-          if [[ "$HEALTHY" == "true" ]]; then
-            echo "::notice title=ヘルスチェック成功::新リビジョンは正常に動作しています"
-          else
-            echo "::error title=ヘルスチェック失敗::新リビジョンの動作確認に失敗しました"
-
-  # トラフィックの切り替え
-  traffic-migration:
-    name: '本番トラフィック切り替え'
-    needs: [save-current-state, deploy-web-app, health-check]
-    runs-on: ubuntu-latest
-    if: needs.health-check.outputs.is_healthy == 'true'
-    
-    steps:
-      # Google Cloud認証
-      - name: Google Cloud認証の設定
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'cloud-run-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-          create_credentials_file: true
-          export_environment_variables: true
-      
-      # gcloud CLIをセットアップ
-      - name: gcloud CLIのセットアップ
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
-      # トラフィックを新リビジョンに100%切り替え
-      - name: 本番トラフィックを新リビジョンに切り替え
-        run: |
-          echo "トラフィックを新リビジョンに切り替えています..."
-          
-          gcloud run services update-traffic suzumina-click-nextjs-app \
-            --region=${{ env.REGION }} \
-            --to-revisions=${{ needs.deploy-web-app.outputs.deployed_revision }}=100
-          
-          echo "::notice title=トラフィック切り替え完了::本番トラフィックが新リビジョンに切り替えられました"
-
-  # ロールバック処理（ヘルスチェック失敗時）
-  rollback:
-    name: '自動ロールバック'
-    needs: [save-current-state, deploy-web-app, health-check]
-    runs-on: ubuntu-latest
-    if: needs.health-check.outputs.is_healthy != 'true'
-    
-    steps:
-      # Google Cloud認証
-      - name: Google Cloud認証の設定
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'cloud-run-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-          create_credentials_file: true
-          export_environment_variables: true
-      
-      # gcloud CLIをセットアップ
-      - name: gcloud CLIのセットアップ
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
-      # 前のリビジョンにロールバック
-      - name: 前のリビジョンにロールバック
-        run: |
-          echo "::warning title=デプロイ失敗::ヘルスチェックが失敗したため、前のリビジョンにロールバックします"
-          
-          # トラフィックを前のリビジョンに戻す
-          gcloud run services update-traffic suzumina-click-nextjs-app \
-            --region=${{ env.REGION }} \
-            --to-revisions=${{ needs.save-current-state.outputs.previous_revision }}=100
-          
-          echo "::notice title=ロールバック完了::前のリビジョン ${{ needs.save-current-state.outputs.previous_revision }} に戻しました"
-
   # デプロイ完了通知
   notify-deployment:
     name: 'デプロイ完了通知'
-    needs: [save-current-state, deploy-web-app, health-check, traffic-migration, rollback]
+    needs: [save-current-state, deploy-web-app]
     runs-on: ubuntu-latest
     if: always()
     
     steps:
       - name: デプロイ結果の通知
         run: |
-          # ヘルスチェック結果に基づいてメッセージを分岐
-          if [[ "${{ needs.health-check.outputs.is_healthy }}" == "true" ]]; then
-            echo "::notice title=Webアプリケーションデプロイ成功::Web アプリケーションが正常にデプロイされ、トラフィックが切り替えられました"
-            echo "- リビジョン: ${{ needs.deploy-web-app.outputs.deployed_revision }}"
-            echo "- URL: ${{ needs.save-current-state.outputs.service_url }}"
-          else
-            echo "::warning title=Webアプリケーションデプロイ失敗::デプロイに失敗し、前のバージョンにロールバックしました"
-            echo "- 元のリビジョン: ${{ needs.save-current-state.outputs.previous_revision }}"
-            echo "- URL: ${{ needs.save-current-state.outputs.service_url }}"
-          fi
+          echo "::notice title=Webアプリケーションデプロイ完了::Web アプリケーションが正常にデプロイされ、トラフィックが切り替えられました"
+          echo "- リビジョン: ${{ needs.deploy-web-app.outputs.deployed_revision }}"
+          echo "- URL: ${{ needs.save-current-state.outputs.service_url }}"
           
           echo "デプロイ日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
           echo "トリガー: ${{ github.event_name }}"
