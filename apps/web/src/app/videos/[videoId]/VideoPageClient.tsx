@@ -49,6 +49,31 @@ export default function VideoPageClient({ video }: VideoPageClientProps) {
   // YouTubeプレーヤーの参照を設定
   const handlePlayerReady = (player: YouTubePlayer) => {
     youtubePlayerRef.current = player;
+
+    // デバッグ情報（開発環境のみ）
+    if (process.env.NODE_ENV === "development") {
+      console.log("YouTubeプレーヤーの準備完了:", player);
+      console.log("YouTubeプレーヤーの環境情報:", {
+        isCloud:
+          typeof window !== "undefined" &&
+          window.location.hostname.includes("run.app"),
+        playerMethods: {
+          getCurrentTime: typeof player.getCurrentTime === "function",
+          seekTo: typeof player.seekTo === "function",
+          playVideo: typeof player.playVideo === "function",
+          pauseVideo: typeof player.pauseVideo === "function",
+        },
+      });
+
+      // 現在時間が取得できるか試してみる
+      try {
+        const currentTime = player.getCurrentTime();
+        console.log("現在の再生位置:", currentTime);
+      } catch (error) {
+        console.error("現在の再生位置の取得に失敗しました:", error);
+      }
+    }
+
     setIsPlayerReady(true);
   };
 

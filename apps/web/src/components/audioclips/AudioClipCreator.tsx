@@ -148,7 +148,33 @@ export default function AudioClipCreator({
   // 現在の再生位置を取得
   const getCurrentTime = (): number => {
     if (youtubePlayerRef?.current) {
-      return youtubePlayerRef.current.getCurrentTime();
+      try {
+        // デバッグ用ログ（開発環境のみ）
+        if (process.env.NODE_ENV === "development") {
+          console.log("YouTubeプレーヤーから現在時間を取得します");
+        }
+
+        const currentTime = youtubePlayerRef.current.getCurrentTime();
+
+        // 値が取得できているか確認
+        if (typeof currentTime !== "number" || isNaN(currentTime)) {
+          console.error(
+            "YouTubeプレーヤーから無効な時間が返されました:",
+            currentTime,
+          );
+          // デフォルト値として0を返す
+          return 0;
+        }
+
+        return currentTime;
+      } catch (error) {
+        console.error(
+          "YouTubeプレーヤーの現在時間取得中にエラーが発生しました:",
+          error,
+        );
+        // エラーが発生した場合はデフォルト値として0を返す
+        return 0;
+      }
     }
     return 0;
   };

@@ -58,16 +58,18 @@ resource "google_firestore_index" "audioclips_ispublic_videoid_createdat_desc" {
   }
 }
 
-# もう一つの方法: Firebase CLI を使用したインデックスデプロイ
-# このリソースは、firestore.indexes.json が変更された場合にのみデプロイが実行される
-/*
-resource "null_resource" "deploy_firestore_indexes" {
-  triggers = {
-    indexes_file_hash = filemd5("${path.module}/../firestore.indexes.json")
+# audioClips コレクションのインデックス - videoId（昇順）、createdAt（昇順）
+resource "google_firestore_index" "audioclips_videoid_createdat_asc" {
+  project    = var.gcp_project_id
+  collection = "audioClips"
+  
+  fields {
+    field_path = "videoId"
+    order      = "ASCENDING"
   }
-
-  provisioner "local-exec" {
-    command = "cd ${path.module}/.. && firebase deploy --only firestore:indexes"
+  
+  fields {
+    field_path = "createdAt"
+    order      = "ASCENDING"
   }
 }
-*/
