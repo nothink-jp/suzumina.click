@@ -220,40 +220,50 @@ export default function AudioClipCreator({
     try {
       // 現在時間を取得
       const currentTime = getCurrentTime();
-      console.log("[デバッグ] handleSetStartTime: 現在時間を取得しました", currentTime);
+      console.log(
+        "[デバッグ] handleSetStartTime: 現在時間を取得しました",
+        currentTime,
+      );
 
       // hidden inputのvalueを明示的に更新
       const input = document.getElementById(
         fields.startTime.id,
       ) as HTMLInputElement;
-      
+
       console.log("[デバッグ] handleSetStartTime: input要素", {
         exists: !!input,
         id: fields.startTime.id,
-        element: input
+        element: input,
       });
-      
+
       if (input) {
         // 値を設定し、コンソールに記録
         input.value = currentTime.toString();
         console.log("[デバッグ] handleSetStartTime: input値を更新しました", {
           value: input.value,
-          element: input
+          element: input,
         });
-        
+
         // Conformに変更を通知
         const event = new Event("input", { bubbles: true });
         input.dispatchEvent(event);
-        console.log("[デバッグ] handleSetStartTime: input イベントをディスパッチしました");
+        console.log(
+          "[デバッグ] handleSetStartTime: input イベントをディスパッチしました",
+        );
 
         // DOM上でも値が反映されているか確認
         setTimeout(() => {
-          console.log("[デバッグ] handleSetStartTime: 更新後の値", 
-            (document.getElementById(fields.startTime.id) as HTMLInputElement)?.value
+          console.log(
+            "[デバッグ] handleSetStartTime: 更新後の値",
+            (document.getElementById(fields.startTime.id) as HTMLInputElement)
+              ?.value,
           );
         }, 0);
       } else {
-        console.error("[エラー] handleSetStartTime: input要素が見つかりません", fields.startTime.id);
+        console.error(
+          "[エラー] handleSetStartTime: input要素が見つかりません",
+          fields.startTime.id,
+        );
       }
 
       // 終了時間が設定されていない、または開始時間より前の場合は更新
@@ -263,10 +273,17 @@ export default function AudioClipCreator({
       const endTimeValue = endTimeInput
         ? Number.parseFloat(endTimeInput.value)
         : null;
-      if (endTimeValue === null || isNaN(endTimeValue) || endTimeValue <= currentTime) {
+      if (
+        endTimeValue === null ||
+        Number.isNaN(endTimeValue) ||
+        endTimeValue <= currentTime
+      ) {
         if (endTimeInput) {
           endTimeInput.value = (currentTime + 5).toString(); // デフォルトで5秒後を終了時間に
-          console.log("[デバッグ] handleSetStartTime: 終了時間も更新しました", endTimeInput.value);
+          console.log(
+            "[デバッグ] handleSetStartTime: 終了時間も更新しました",
+            endTimeInput.value,
+          );
           // Conformに変更を通知
           const event = new Event("input", { bubbles: true });
           endTimeInput.dispatchEvent(event);
@@ -276,7 +293,10 @@ export default function AudioClipCreator({
       // 表示時間を更新
       updateDisplayTimes();
     } catch (error) {
-      console.error("[エラー] handleSetStartTime: 処理中にエラーが発生しました", error);
+      console.error(
+        "[エラー] handleSetStartTime: 処理中にエラーが発生しました",
+        error,
+      );
     }
   };
 
@@ -284,8 +304,11 @@ export default function AudioClipCreator({
   const handleSetEndTime = () => {
     try {
       const currentTime = getCurrentTime();
-      console.log("[デバッグ] handleSetEndTime: 現在時間を取得しました", currentTime);
-      
+      console.log(
+        "[デバッグ] handleSetEndTime: 現在時間を取得しました",
+        currentTime,
+      );
+
       const startTimeInput = document.getElementById(
         fields.startTime.id,
       ) as HTMLInputElement;
@@ -296,15 +319,22 @@ export default function AudioClipCreator({
       console.log("[デバッグ] handleSetEndTime: 開始時間の状態", {
         input: !!startTimeInput,
         value: startTimeInput?.value,
-        parsed: startTimeValue
+        parsed: startTimeValue,
       });
 
       // 開始時間が設定されていない場合は、現在時刻の5秒前を開始時間に
-      if (startTimeValue === null || isNaN(startTimeValue) || startTimeValue === 0) {
+      if (
+        startTimeValue === null ||
+        Number.isNaN(startTimeValue) ||
+        startTimeValue === 0
+      ) {
         if (startTimeInput) {
           const newStartTime = Math.max(0, currentTime - 5);
           startTimeInput.value = newStartTime.toString();
-          console.log("[デバッグ] handleSetEndTime: 開始時間を設定しました", newStartTime);
+          console.log(
+            "[デバッグ] handleSetEndTime: 開始時間を設定しました",
+            newStartTime,
+          );
           // Conformに変更を通知
           const event = new Event("input", { bubbles: true });
           startTimeInput.dispatchEvent(event);
@@ -316,42 +346,50 @@ export default function AudioClipCreator({
         const endTimeInput = document.getElementById(
           fields.endTime.id,
         ) as HTMLInputElement;
-        
+
         console.log("[デバッグ] handleSetEndTime: 終了時間の要素", {
           exists: !!endTimeInput,
-          id: fields.endTime.id
+          id: fields.endTime.id,
         });
-        
+
         if (endTimeInput) {
           endTimeInput.value = currentTime.toString();
           console.log("[デバッグ] handleSetEndTime: 終了時間を設定しました", {
             value: endTimeInput.value,
-            element: endTimeInput
+            element: endTimeInput,
           });
-          
+
           // Conformに変更を通知
           const event = new Event("input", { bubbles: true });
           endTimeInput.dispatchEvent(event);
-          
+
           // DOM上でも値が反映されているか確認
           setTimeout(() => {
-            console.log("[デバッグ] handleSetEndTime: 更新後の値", 
-              (document.getElementById(fields.endTime.id) as HTMLInputElement)?.value
+            console.log(
+              "[デバッグ] handleSetEndTime: 更新後の値",
+              (document.getElementById(fields.endTime.id) as HTMLInputElement)
+                ?.value,
             );
           }, 0);
         }
       } else {
         setError("終了時間は開始時間より後に設定してください");
-        console.warn("[警告] handleSetEndTime: 終了時間が開始時間以前になっています", {
-          current: currentTime,
-          start: startTimeValue
-        });
+        console.warn(
+          "[警告] handleSetEndTime: 終了時間が開始時間以前になっています",
+          {
+            current: currentTime,
+            start: startTimeValue,
+          },
+        );
       }
 
       // 表示時間を更新
       updateDisplayTimes();
     } catch (error) {
-      console.error("[エラー] handleSetEndTime: 処理中にエラーが発生しました", error);
+      console.error(
+        "[エラー] handleSetEndTime: 処理中にエラーが発生しました",
+        error,
+      );
     }
   };
 
@@ -422,22 +460,26 @@ export default function AudioClipCreator({
   // DOM操作の後でReactの状態も更新（表示を強制更新するため）
   const updateDisplayTimes = () => {
     try {
-      const startTimeInput = document.getElementById(fields.startTime.id) as HTMLInputElement;
-      const endTimeInput = document.getElementById(fields.endTime.id) as HTMLInputElement;
-      
+      const startTimeInput = document.getElementById(
+        fields.startTime.id,
+      ) as HTMLInputElement;
+      const endTimeInput = document.getElementById(
+        fields.endTime.id,
+      ) as HTMLInputElement;
+
       if (startTimeInput) {
         setStartTimeDisplay(formatTime(startTimeInput.value));
       }
-      
+
       if (endTimeInput) {
         setEndTimeDisplay(formatTime(endTimeInput.value));
       }
 
-      console.log("[デバッグ] 表示時間を更新しました:", { 
-        start: startTimeInput?.value, 
+      console.log("[デバッグ] 表示時間を更新しました:", {
+        start: startTimeInput?.value,
         end: endTimeInput?.value,
         startDisplay: formatTime(startTimeInput?.value),
-        endDisplay: formatTime(endTimeInput?.value)
+        endDisplay: formatTime(endTimeInput?.value),
       });
     } catch (error) {
       console.error("[エラー] 表示時間の更新に失敗しました:", error);
