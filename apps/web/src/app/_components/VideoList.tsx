@@ -85,10 +85,14 @@ export default function VideoList({
 
   // フィルタの変更ハンドラ
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newVideoType = e.target.value as VideoType;
-    setVideoType(newVideoType);
-    // フィルタ変更時に即座に動画を再読み込み
-    loadVideos(true);
+    const newVideoType = e.target.value;
+    if (["all", "archived", "upcoming"].includes(newVideoType)) {
+      setVideoType(newVideoType as VideoType);
+      // フィルタ変更時に即座に動画を再読み込み
+      loadVideos(true);
+    } else {
+      console.warn("Invalid video type:", newVideoType);
+    }
   };
 
   // 配信状態によって動画リストに表示するヘッダーテキストを変更
