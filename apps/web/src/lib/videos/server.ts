@@ -2,8 +2,22 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import type { Video } from "./types";
 
-// Firebase Admin SDKの初期化
-function getAdminFirestore() {
+/**
+ * テスト用のモック可能なFirestoreクライアントを提供
+ * 実装は内部的に使用するため、エクスポートしない
+ */
+let _firestoreDb: ReturnType<typeof getFirestore> | null = null;
+
+/**
+ * Firebase Admin SDKの初期化とFirestoreインスタンスの取得
+ * @returns Firestoreインスタンス
+ */
+export function getAdminFirestore() {
+  // テスト中にモックを注入できるようにキャッシュ確認
+  if (_firestoreDb) {
+    return _firestoreDb;
+  }
+
   if (getApps().length === 0) {
     // Cloud Run環境ではGCPのデフォルト認証情報を使用
     // 開発環境では環境変数からサービスアカウントの情報を取得
@@ -27,7 +41,23 @@ function getAdminFirestore() {
     }
   }
 
-  return getFirestore();
+  _firestoreDb = getFirestore();
+  return _firestoreDb;
+}
+
+/**
+ * テスト用にFirestoreインスタンスをモックする
+ * @param mockDb モックFirestoreインスタンス
+ */
+export function __setMockFirestoreForTesting(mockDb: any) {
+  _firestoreDb = mockDb;
+}
+
+/**
+ * テスト後にFirestoreインスタンスのモックをリセットする
+ */
+export function __resetMockFirestoreForTesting() {
+  _firestoreDb = null;
 }
 
 // Firestoreから取得したデータの型定義
@@ -51,7 +81,7 @@ interface FirestoreVideoData {
  * @param data Firestoreから取得したデータ
  * @returns 変換後のVideoオブジェクト
  */
-function convertToVideo(id: string, data: FirestoreVideoData): Video {
+export function convertToVideo(id: string, data: FirestoreVideoData): Video {
   // 日付をISO文字列形式に変換して返す
   // これにより、JSONシリアライズ時に日付情報が失われるのを防ぐ
   const publishedAt = data.publishedAt.toDate();
@@ -115,16 +145,15 @@ export async function getRecentVideosServer(limit = 10, startAfter?: Date) {
     const db = getAdminFirestore();
 
     // クエリの構築
-    const videosRef = db.collection("videos");
-    let videosQuery = videosRef.orderBy("publishedAt", "desc").limit(limit + 1); // 次ページがあるか確認するために1つ多く取得
+    let videosQuery = db.collection("videos").orderBy("publishedAt", "desc");
 
     // ページネーション用のstartAfterパラメータがある場合
     if (startAfter) {
-      videosQuery = videosRef
-        .orderBy("publishedAt", "desc")
-        .startAfter(startAfter)
-        .limit(limit + 1);
+      videosQuery = videosQuery.startAfter(startAfter);
     }
+
+    // 次ページがあるか確認するために1つ多く取得
+    videosQuery = videosQuery.limit(limit + 1);
 
     // データの取得
     const snapshot = await videosQuery.get();

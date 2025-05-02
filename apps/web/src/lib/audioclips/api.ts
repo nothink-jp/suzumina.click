@@ -1,4 +1,6 @@
 import {
+  type DocumentSnapshot,
+  type QueryDocumentSnapshot,
   Timestamp,
   addDoc,
   collection,
@@ -393,7 +395,9 @@ export async function toggleFavorite(
  */
 export async function getFavoriteClips(
   userId: string,
-  params: Omit<AudioClipSearchParams, "userId">,
+  params: Omit<AudioClipSearchParams, "userId"> & {
+    cursor?: Date | DocumentSnapshot | QueryDocumentSnapshot;
+  },
 ): Promise<AudioClipListResult> {
   try {
     const db = ensureDb();
@@ -407,9 +411,15 @@ export async function getFavoriteClips(
     );
 
     // ページネーション
-    if (params.startAfter) {
-      const startAfterTimestamp = Timestamp.fromDate(params.startAfter);
-      favoritesQuery = query(favoritesQuery, startAfter(startAfterTimestamp));
+    if (params.cursor) {
+      // 直接ドキュメントが渡された場合はそれを使用
+      if ("data" in params.cursor) {
+        favoritesQuery = query(favoritesQuery, startAfter(params.cursor));
+      } else if (params.cursor instanceof Date) {
+        // Dateの場合はTimestampに変換
+        const startAfterTimestamp = Timestamp.fromDate(params.cursor);
+        favoritesQuery = query(favoritesQuery, startAfter(startAfterTimestamp));
+      }
     }
 
     const favoritesSnapshot = await getDocs(favoritesQuery);

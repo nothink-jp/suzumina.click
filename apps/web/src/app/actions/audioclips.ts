@@ -15,6 +15,7 @@ interface AudioClipData {
   videoId: string;
   title: string;
   phrase?: string;
+  description?: string;
   startTime: number;
   endTime: number;
   isPublic?: boolean;
@@ -154,7 +155,16 @@ export async function createAudioClip(data: AudioClipData) {
       throw new Error("認証が必要です");
     }
 
-    const { videoId, title, phrase, startTime, endTime, isPublic, tags } = data;
+    const {
+      videoId,
+      title,
+      phrase,
+      description,
+      startTime,
+      endTime,
+      isPublic,
+      tags,
+    } = data;
 
     // 必須パラメータのバリデーション
     if (
@@ -220,6 +230,7 @@ export async function createAudioClip(data: AudioClipData) {
       videoId,
       title,
       phrase: phrase || "",
+      description: description || "",
       startTime,
       endTime,
       userId: currentUser.uid,
@@ -405,7 +416,7 @@ export async function updateAudioClip(
         throw new Error("このクリップを更新する権限がありません");
       }
 
-      const { title, phrase, isPublic, tags } = data;
+      const { title, phrase, description, isPublic, tags } = data;
 
       // 更新データの準備
       const updateData: Record<string, unknown> = {
@@ -415,6 +426,7 @@ export async function updateAudioClip(
       // 更新可能なフィールドのみ更新
       if (title !== undefined) updateData.title = title;
       if (phrase !== undefined) updateData.phrase = phrase;
+      if (description !== undefined) updateData.description = description;
       if (isPublic !== undefined) updateData.isPublic = isPublic;
       if (tags !== undefined) updateData.tags = tags;
 
@@ -560,12 +572,13 @@ export async function incrementPlayCount(clipId: string) {
       throw new Error("指定されたクリップが存在しません");
     }
 
-    // 再生回数をインクリメント
+    // 再生回数をインクリメントし、最終再生日時を更新
     await db
       .collection("audioClips")
       .doc(clipId)
       .update({
         playCount: FieldValue.increment(1),
+        lastPlayedAt: FieldValue.serverTimestamp(),
       });
 
     return {

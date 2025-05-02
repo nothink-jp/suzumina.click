@@ -303,4 +303,115 @@ describe("動画APIルートのテスト", () => {
     getAppsSpy.mockRestore();
     initializeAppSpy.mockRestore();
   });
+
+  it("アーカイブ動画フィルタリングとstartAfterパラメータの組み合わせが正しく機能する", async () => {
+    // モックリクエスト（videoType=archived & startAfter=2025-04-30T00:00:00Z）
+    const request = {
+      nextUrl: {
+        searchParams: new URLSearchParams(
+          "videoType=archived&startAfter=2025-04-30T00:00:00Z",
+        ),
+      },
+    } as unknown as NextRequest;
+
+    // APIハンドラの呼び出し
+    await GET(request);
+
+    // Firestoreクエリが正しく構築されたことを確認
+    const firestoreMock = await import("firebase-admin/firestore");
+    const db = firestoreMock.getFirestore();
+    expect(db.collection("videos").where).toHaveBeenCalledWith(
+      "liveBroadcastContent",
+      "in",
+      ["none"],
+    );
+    expect(db.collection("videos").orderBy).toHaveBeenCalledWith(
+      "publishedAt",
+      "desc",
+    );
+    expect(db.collection("videos").startAfter).toHaveBeenCalled();
+  });
+
+  it("配信予定動画フィルタリングとstartAfterパラメータの組み合わせが正しく機能する", async () => {
+    // モックリクエスト（videoType=upcoming & startAfter=2025-04-30T00:00:00Z）
+    const request = {
+      nextUrl: {
+        searchParams: new URLSearchParams(
+          "videoType=upcoming&startAfter=2025-04-30T00:00:00Z",
+        ),
+      },
+    } as unknown as NextRequest;
+
+    // APIハンドラの呼び出し
+    await GET(request);
+
+    // Firestoreクエリが正しく構築されたことを確認
+    const firestoreMock = await import("firebase-admin/firestore");
+    const db = firestoreMock.getFirestore();
+    expect(db.collection("videos").where).toHaveBeenCalledWith(
+      "liveBroadcastContent",
+      "in",
+      ["upcoming", "live"],
+    );
+    expect(db.collection("videos").orderBy).toHaveBeenCalledWith(
+      "publishedAt",
+      "asc",
+    );
+    expect(db.collection("videos").startAfter).toHaveBeenCalled();
+  });
+
+  it("startAfterパラメータでDate変換エラーが発生した場合は適切に処理される", async () => {
+    // モックリクエスト（startAfterが例外を投げる場合）
+    const request = {
+      nextUrl: {
+        searchParams: new URLSearchParams("startAfter=throw-error"),
+      },
+    } as unknown as NextRequest;
+
+    // Date変換で例外が発生するようにモック
+    const originalDate = global.Date;
+    global.Date = class extends originalDate {
+      constructor(value?: any) {
+        super();
+        if (value === "throw-error") {
+          throw new Error("日付変換エラー");
+        }
+      }
+    } as typeof Date;
+
+    // APIハンドラの呼び出し
+    await GET(request);
+
+    // エラーが記録されたことを確認
+    expect(consoleErrorMock).toHaveBeenCalledWith(
+      "日付パラメータの解析に失敗しました:",
+      expect.any(Error),
+    );
+
+    // グローバルDateを元に戻す
+    global.Date = originalDate;
+  });
+
+  it("paging情報（hasMore）が正しく設定される場合", async () => {
+    // モックリクエスト（limit=2に設定し、3件のデータがある場合はhasMore=true）
+    const request = {
+      nextUrl: {
+        searchParams: new URLSearchParams("limit=2"),
+      },
+    } as unknown as NextRequest;
+
+    // APIハンドラの呼び出し
+    await GET(request);
+
+    // hasMoreフラグが正しく設定されていることを確認
+    expect(NextResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hasMore: true,
+        videos: expect.arrayContaining([
+          expect.objectContaining({ id: "video1" }),
+          expect.objectContaining({ id: "video2" }),
+        ]),
+      }),
+    );
+  });
 });
