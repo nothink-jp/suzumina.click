@@ -31,6 +31,9 @@ export default defineConfig({
         "**/*.stories.{jsx,tsx,mdx}",
         "**/dist/**",
         "**/.storybook/**",
+        "**/coverage/**",
+        "**/public/**",
+        "**/mocks/**",
       ],
       thresholds: {
         statements: 80,

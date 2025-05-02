@@ -220,11 +220,15 @@ export default function YouTubeEmbed({
     return () => {
       if (playerRef.current) {
         try {
+          // コンソールにデバッグ情報を出力
+          console.log("[デバッグ] YouTubeプレーヤー破棄処理を実行");
           playerRef.current.destroy();
         } catch (error) {
           console.error("プレーヤーの破棄に失敗しました:", error);
+        } finally {
+          // 確実にプレーヤー参照をクリア
+          playerRef.current = null;
         }
-        playerRef.current = null;
       }
     };
 
@@ -237,6 +241,7 @@ export default function YouTubeEmbed({
         // すでにプレーヤーが存在する場合は破棄
         if (playerRef.current) {
           try {
+            console.log("[デバッグ] 既存プレーヤーの破棄処理を実行");
             playerRef.current.destroy();
           } catch (error) {
             console.error("既存プレーヤーの破棄に失敗しました:", error);
@@ -255,6 +260,7 @@ export default function YouTubeEmbed({
           return;
         }
 
+        console.log("[デバッグ] YouTubeプレーヤー初期化開始:", playerElementId);
         playerRef.current = new window.YT.Player(playerElementId, {
           videoId,
           playerVars: {
@@ -266,6 +272,7 @@ export default function YouTubeEmbed({
           },
           events: {
             onReady: (event) => {
+              console.log("[デバッグ] YouTubeプレーヤー準備完了");
               setIsLoading(false);
               if (onReady) {
                 onReady(event.target);
@@ -319,12 +326,14 @@ export default function YouTubeEmbed({
       >
         {/* ロード中の表示 */}
         {isLoading && !loadError && (
-          <div
+          <output
             className="absolute inset-0 flex items-center justify-center"
             style={{ zIndex: 1 }}
+            aria-live="polite"
+            aria-label="動画読み込み中"
           >
             <span className="loading loading-spinner loading-lg text-primary" />
-          </div>
+          </output>
         )}
 
         {/* エラー表示 */}
