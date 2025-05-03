@@ -70,6 +70,7 @@ export function convertAudioClipData(data: AudioClipData): AudioClip {
     tags: data.tags || [],
     playCount: data.playCount,
     favoriteCount: data.favoriteCount,
+    lastPlayedAt: data.lastPlayedAt ? data.lastPlayedAt.toDate() : undefined,
     duration,
     formattedDuration,
   };

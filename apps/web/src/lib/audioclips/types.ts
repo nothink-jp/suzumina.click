@@ -24,6 +24,7 @@ export interface AudioClipData {
   tags?: string[]; // タグ（検索用）
   playCount: number; // 再生回数
   favoriteCount: number; // お気に入り数
+  lastPlayedAt?: Timestamp; // 最終再生日時
 }
 
 /**
@@ -50,6 +51,7 @@ export interface AudioClip {
   tags?: string[]; // タグ（検索用）
   playCount: number; // 再生回数
   favoriteCount: number; // お気に入り数
+  lastPlayedAt?: Date; // 最終再生日時
 
   // UI表示用の追加情報
   duration: number; // 再生時間（秒）

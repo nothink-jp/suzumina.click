@@ -356,6 +356,9 @@ export async function getAudioClip(clipId: string) {
         ...clipData,
         createdAt: clipData?.createdAt?.toDate().toISOString(),
         updatedAt: clipData?.updatedAt?.toDate().toISOString(),
+        lastPlayedAt: clipData?.lastPlayedAt
+          ? clipData.lastPlayedAt.toDate().toISOString()
+          : undefined,
       };
     } catch (queryError) {
       console.error("クリップデータの取得に失敗しました:", queryError);
