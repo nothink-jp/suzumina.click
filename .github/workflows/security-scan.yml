@@ -82,16 +82,9 @@ jobs:
             npm-audit-summary.md
           retention-days: 30
       
-      # コードスキャン - CodeQL
-      - name: CodeQL初期化
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript
-      
-      - name: CodeQLスキャン実行
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:javascript"
+      # 注意: GitHub上でデフォルトのCodeQL設定が有効になっている場合、
+      # 以下のようなカスタムCodeQL設定は使用できないため削除
+      # CodeQLスキャンはGitHub上の設定から自動的に実行されます
   
   # イメージ脆弱性スキャン
   image-scan:
