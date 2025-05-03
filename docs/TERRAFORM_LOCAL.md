@@ -1,6 +1,6 @@
 # ローカル環境でのTerraform実行ガイド
 
-このドキュメントでは、ローカル環境でTerraformを使用してインフラを管理する手順を説明します。2025年4月22日の方針変更により、インフラ管理（Terraform）はローカル環境でのみ実行し、アプリケーションデプロイ（Cloud Functions、Cloud Run）はGitHub Actionsで行うことになりました。
+このガイドでは、suzumina.clickプロジェクトのTerraformを使用したインフラ管理の方法を説明します。2025年5月のインフラ変更以降、すべてのFirebaseおよびGCPリソースはTerraformで一元管理されるようになりました。
 
 ## 前提条件
 
@@ -101,58 +101,59 @@ git commit -m "インフラ更新: 変更内容の説明"
 git push origin main
 ```
 
-## 3. リソースタイプ別の操作手順
+## 3. Firebaseリソース管理
 
-### 3.1 Cloud Runサービス更新（基本設定のみ）
+**重要**: 2025年5月の変更により、すべてのFirebaseリソース（Firestore, Authentication, Security Rules, Indexes）はTerraformで一元管理されるようになりました。`firebase.json`と`firestore.rules`ファイルは使用されなくなりました。
 
-```terraform
-# cloudrun.tf の例
-resource "google_cloud_run_service" "web_service" {
-  name     = "web-service"
-  location = var.region
+### 3.1 Firestoreインデックスの管理
 
-  template {
-    spec {
-      containers {
-        # 初期イメージを設定（GitHub Actionsから更新される）
-        image = "gcr.io/${var.gcp_project_id}/web-service-initial:latest"
-      }
-    }
-  }
+Firestoreインデックスは `firestore_indexes.tf` で定義されています：
 
-  # イメージの変更を無視する設定
-  lifecycle {
-    ignore_changes = [
-      template[0].spec[0].containers[0].image
-    ]
-  }
-}
-```
-
-### 3.2 Cloud Functions更新（基本設定のみ）
-
-```terraform
-# functions.tf の例
-resource "google_cloudfunctions_function" "discord_auth" {
-  name        = "discord-auth"
-  runtime     = "nodejs20"
+```hcl
+resource "google_firestore_index" "videos_publishedAt_desc" {
+  project    = var.gcp_project_id
+  collection = "videos"
   
-  # ソースコードの変更を無視する設定
-  lifecycle {
-    ignore_changes = [
-      source_archive_bucket,
-      source_archive_object
-    ]
+  fields {
+    field_path = "publishedAt"
+    order      = "DESCENDING"
   }
 }
 ```
 
-### 3.3 シークレット管理
+新しいインデックスを追加する場合は、このファイルを編集し、`terraform apply` を実行します。
 
-```bash
-# シークレット値の設定（Terraformの外部で行う）
-echo -n "実際の値" | gcloud secrets versions add DISCORD_CLIENT_ID --data-file=- --project=suzumina-click-firebase
+### 3.2 Firestoreセキュリティルールの管理
+
+セキュリティルールは `firebase.tf` の中で定義されています：
+
+```hcl
+resource "google_firestore_document" "firestore_rules" {
+  project     = var.gcp_project_id
+  collection  = "_firestore_rules_"
+  document_id = "firestore_rules"
+  fields      = jsonencode({
+    rules = {
+      string_value = <<EOT
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // videos コレクション - 読み取りは全員可能、書き込みは Cloud Functions のみ
+    match /videos/{videoId} {
+      allow read;
+      allow write: if false;
+    }
+    
+    // ...その他のルール...
+  }
+}
+EOT
+    }
+  })
+}
 ```
+
+セキュリティルールを変更する場合は、このリソース内のルール定義を編集します。
 
 ## 4. よくある操作とコマンド
 

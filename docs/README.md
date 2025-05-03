@@ -43,6 +43,8 @@
 └── vitest.workspace.ts  # Vitest ワークスペース設定
 ```
 
+**注意**: 2025年5月に行われた環境整理により、`firebase.json`と`firestore.rules`は削除されました。これらのファイルは以前ローカル開発環境でのFirebase Emulatorに使用されていましたが、Cloud Codeを用いたリモート開発環境に完全移行したため不要になりました。インフラ関連の設定はすべてTerraformで一元管理されています。
+
 ## 主要コンポーネント
 
 - **`apps/web/`**: Next.js ウェブアプリケーション

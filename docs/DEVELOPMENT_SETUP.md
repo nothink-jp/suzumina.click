@@ -143,30 +143,22 @@ pnpm --filter @suzumina.click/web build
 pnpm --filter @suzumina.click/functions build
 ```
 
-### 2.2 Firebase Emulatorの起動
+### 2.2 Cloud Codeを使ったリモート開発
 
-ローカルでFirebase Emulatorを起動して、Authentication、Firestore、Cloud Functionsをエミュレートします。
+リモートのCloud Run環境を直接操作して開発を行います。VS CodeのCloud Code拡張機能を使用します：
 
 ```bash
 # プロジェクトルートから実行
-pnpm emulator:start
+pnpm dev:cloud
 ```
 
-または、VS Codeのタスクから実行することも可能です:
+または、VS Codeのコマンドパレットから「Cloud Code: Run on Kubernetes」を選択し、構成済みの環境で起動することもできます。
 
-```
-View -> Command Palette -> Tasks: Run Task -> Firebase Emulator 起動
-```
+詳細な手順は [CLOUD_CODE_INTEGRATION.md](./CLOUD_CODE_INTEGRATION.md) を参照してください。
 
-エミュレータが起動すると、以下のURLでエミュレータUIにアクセスできます：
+### 2.3 Webアプリケーションのローカル開発サーバー起動（代替手段）
 
-- **Emulator UI**: http://localhost:4000
-- **Firebase Authentication**: http://localhost:9099
-- **Firestore Database**: http://localhost:8080
-
-### 2.3 Webアプリケーションの開発サーバー起動
-
-Next.jsの開発サーバーをTurbopackモードで起動します：
+Cloud Codeを使わず、ローカル環境で開発する場合はNext.jsの開発サーバーをTurbopackモードで起動します：
 
 ```bash
 # ルートディレクトリから実行
@@ -177,26 +169,18 @@ pnpm --filter @suzumina.click/web dev
 ```
 
 サーバーが起動したら、ブラウザで <http://localhost:3000> にアクセスできます。
+この方法ではFirebase認証などのリモートサービスに直接接続する必要があります。
 
-### 2.4 テストデータの準備（オプション）
+### 2.4 デモデータの準備とCloud環境での操作
 
-Firestoreエミュレータにテストデータを挿入するには、以下のコマンドを実行します：
-
-```bash
-# テストデータをインポートしてエミュレータを再起動
-pnpm emulator:start-with-data
-```
-
-### 2.5 ローカル環境でのCloud Functionsテスト
-
-Firebase Emulatorが起動している状態で、Cloud Functions のコードを変更した場合は以下の手順でテストできます:
+開発に必要なデモデータを直接Cloud環境に適用する場合：
 
 ```bash
-# Cloud Functionsのビルド（コード変更時に実行）
-pnpm --filter @suzumina.click/functions build
-
-# エミュレータは変更を検知して自動的に関数を再デプロイします
+# Firestoreにデモデータを投入するスクリプト実行
+pnpm cloud:seed-data
 ```
+
+詳細は [CLOUD_DEPLOYMENT.md](./CLOUD_DEPLOYMENT.md) のテストデータ投入セクションを参照してください。
 
 ## 3. テストとコード品質
 

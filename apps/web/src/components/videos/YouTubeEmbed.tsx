@@ -318,7 +318,16 @@ export default function YouTubeEmbed({
         );
       }
     }
-  }, [isApiLoaded, videoId, onReady, onStateChange, playerElementId, title, options, loadYouTubeAPI]);
+  }, [
+    isApiLoaded,
+    videoId,
+    onReady,
+    onStateChange,
+    playerElementId,
+    title,
+    options,
+    loadYouTubeAPI,
+  ]);
 
   // レスポンシブ対応
   useEffect(() => {
