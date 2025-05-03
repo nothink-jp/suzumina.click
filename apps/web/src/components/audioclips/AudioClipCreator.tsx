@@ -21,12 +21,13 @@ import {
   formatTime,
 } from "../../lib/audioclips/validation";
 import { useAuth } from "../../lib/firebase/AuthProvider";
+import TimelineVisualization from "./TimelineVisualization"; // TimelineVisualizationコンポーネントをインポート
 
 interface AudioClipCreatorProps {
   videoId: string;
   videoTitle: string;
-  onClipCreated: () => void;
   youtubePlayerRef?: React.RefObject<YouTubePlayer>;
+  onClipCreated?: () => void;
 }
 
 /**
@@ -143,7 +144,9 @@ export default function AudioClipCreator({
         setSubmitSuccess(true);
 
         // 親コンポーネントに通知
-        onClipCreated();
+        if (onClipCreated) {
+          onClipCreated();
+        }
 
         // 成功メッセージを設定して返却
         return submission.reply({
@@ -919,6 +922,72 @@ export default function AudioClipCreator({
                 </div>
               )}
 
+              {/* タイムライン可視化コンポーネント */}
+              {user && youtubePlayerRef?.current && (
+                <div className="mb-4">
+                  <TimelineVisualization
+                    videoId={videoId}
+                    videoDuration={safeCallYouTubeAPI(
+                      "getDuration",
+                      () => youtubePlayerRef.current?.getDuration() || 0,
+                      0,
+                    )}
+                    currentTime={getCurrentTime()}
+                    onRangeSelect={(start, end) => {
+                      console.log("[デバッグ] 範囲が選択されました:", {
+                        start,
+                        end,
+                      });
+
+                      // 開始時間と終了時間を設定
+                      const startTimeInput = document.getElementById(
+                        fields.startTime.id,
+                      ) as HTMLInputElement;
+                      const endTimeInput = document.getElementById(
+                        fields.endTime.id,
+                      ) as HTMLInputElement;
+
+                      if (startTimeInput && endTimeInput) {
+                        // 値を設定
+                        startTimeInput.value = start.toString();
+                        endTimeInput.value = end.toString();
+
+                        // React状態を更新
+                        setStartTime(start);
+                        setEndTime(end);
+                        setStartTimeDisplay(formatTime(start));
+                        setEndTimeDisplay(formatTime(end));
+
+                        // イベントを発火してConformに通知
+                        const startEvent = new Event("input", {
+                          bubbles: true,
+                        });
+                        startTimeInput.dispatchEvent(startEvent);
+
+                        const endEvent = new Event("input", { bubbles: true });
+                        endTimeInput.dispatchEvent(endEvent);
+
+                        // 重複チェックを実行
+                        checkOverlap(start, end);
+                      }
+                    }}
+                    onClipClick={(clipId) => {
+                      // クリップがクリックされた時の処理
+                      // 該当クリップの開始時間にシークする
+                      if (overlapCheckResult?.overlappingClips) {
+                        const clip = overlapCheckResult.overlappingClips.find(
+                          (c) => c.id === clipId,
+                        );
+                        if (clip && youtubePlayerRef?.current) {
+                          youtubePlayerRef.current.seekTo(clip.startTime, true);
+                        }
+                      }
+                    }}
+                    className="mb-2"
+                  />
+                </div>
+              )}
+
               {/* フォーム全体のエラーメッセージ */}
               {(error || (form.errors && form.errors.length > 0)) && (
                 <div
@@ -936,7 +1005,7 @@ export default function AudioClipCreator({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth="2"
-                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 18 0z"
+                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 18 0z"
                     />
                   </svg>
                   <span>{error || form.errors?.join(", ")}</span>

@@ -60,20 +60,20 @@
 
 #### フェーズ4: 重複防止と可視化機能の実装（v0.1.5）
 
-- [ ] 重複チェックロジックの実装 (`src/lib/audiobuttons/validation.ts`)
-  - [ ] 時間範囲重複検出アルゴリズムの実装
-  - [ ] クライアント側バリデーション機能の追加
-  - [ ] サーバー側バリデーション機能の追加
-- [ ] タイムライン可視化コンポーネントの実装
-  - [ ] TimelineVisualizationコンポーネントの作成 (`src/components/audiobuttons/TimelineVisualization.tsx`)
-  - [ ] 時間範囲のレンダリング機能
-  - [ ] 現在再生位置の表示
-  - [ ] マウスオーバー時の詳細表示
-  - [ ] ドラッグによる時間範囲選択機能
-- [ ] AudioButtonCreatorの拡張
-  - [ ] TimelineVisualizationコンポーネントとの連携
-  - [ ] 重複エラーのUI表示
-  - [ ] 重複回避のためのガイダンス提供
+- [x] 重複チェックロジックの実装 (`src/lib/audiobuttons/validation.ts`)
+  - [x] 時間範囲重複検出アルゴリズムの実装
+  - [x] クライアント側バリデーション機能の追加
+  - [x] サーバー側バリデーション機能の追加
+- [x] タイムライン可視化コンポーネントの実装
+  - [x] TimelineVisualizationコンポーネントの作成 (`src/components/audiobuttons/TimelineVisualization.tsx`)
+  - [x] 時間範囲のレンダリング機能
+  - [x] 現在再生位置の表示
+  - [x] マウスオーバー時の詳細表示
+  - [x] ドラッグによる時間範囲選択機能
+- [x] AudioButtonCreatorの拡張
+  - [x] TimelineVisualizationコンポーネントとの連携
+  - [x] 重複エラーのUI表示
+  - [x] 重複回避のためのガイダンス提供
 
 #### フェーズ5: 拡張機能実装（v0.1.5）
 

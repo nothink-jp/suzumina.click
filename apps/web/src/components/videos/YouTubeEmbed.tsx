@@ -8,6 +8,7 @@ export interface YouTubePlayer {
   pauseVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   getCurrentTime: () => number;
+  getDuration: () => number; // 動画の総再生時間（秒）を取得するメソッド
   setVolume: (volume: number) => void;
   getPlayerState: () => number;
   // destroy()はYouTube IFrame APIに存在するが公式の型定義には含まれていないメソッド
