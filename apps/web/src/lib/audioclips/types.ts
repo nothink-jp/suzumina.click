@@ -112,3 +112,23 @@ export interface AudioClipListResult {
   hasMore: boolean; // さらにデータがあるか
   lastClip?: AudioClip; // 最後のクリップ（ページネーション用）
 }
+
+/**
+ * タイムライン上の時間範囲の型
+ * 作成済み音声クリップの範囲を表示するために使用
+ */
+export interface TimeRange {
+  start: number; // 開始時間（秒）
+  end: number; // 終了時間（秒）
+  clipId: string; // 関連するクリップID
+  title: string; // クリップのタイトル
+  color?: string; // 表示色（オプション）
+}
+
+/**
+ * 重複チェック結果の型
+ */
+export interface OverlapCheckResult {
+  isOverlapping: boolean; // 重複しているかどうか
+  overlappingClips: AudioClip[]; // 重複しているクリップのリスト
+}

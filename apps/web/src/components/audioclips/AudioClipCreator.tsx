@@ -7,11 +7,19 @@ import {
   DisclosureButton,
   DisclosurePanel,
 } from "@headlessui/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { createAudioClip } from "../../app/actions/audioclips";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
-import type { AudioClipCreateData } from "../../lib/audioclips/types";
+import type {
+  AudioClip,
+  AudioClipCreateData,
+  OverlapCheckResult,
+} from "../../lib/audioclips/types";
+import {
+  checkTimeRangeOverlap,
+  formatTime,
+} from "../../lib/audioclips/validation";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 
 interface AudioClipCreatorProps {
@@ -49,6 +57,10 @@ export default function AudioClipCreator({
   // 現在の開始時間、終了時間の表示用
   const [startTimeDisplay, setStartTimeDisplay] = useState<string>("--:--");
   const [endTimeDisplay, setEndTimeDisplay] = useState<string>("--:--");
+  // 重複チェック結果
+  const [overlapCheckResult, setOverlapCheckResult] =
+    useState<OverlapCheckResult | null>(null);
+  const [isCheckingOverlap, setIsCheckingOverlap] = useState(false);
 
   // バリデーションスキーマの定義
   const clipSchema = z
@@ -433,12 +445,12 @@ export default function AudioClipCreator({
     if (startTime !== null && endTime !== null) {
       if (startTime >= endTime) {
         setError("終了時間は開始時間より後にしてください");
-      } else {
-        // 問題がなければエラーをクリア
+      } else if (!overlapCheckResult?.isOverlapping) {
+        // 重複がなければエラーをクリア
         setError(null);
       }
     }
-  }, [startTime, endTime]);
+  }, [startTime, endTime, overlapCheckResult]);
 
   // 入力欄に手動で値を入力した時の更新処理
   useEffect(() => {
@@ -742,7 +754,7 @@ export default function AudioClipCreator({
   };
 
   // フォーム送信前のバリデーション
-  const validateBeforeSubmit = (event: React.FormEvent) => {
+  const validateBeforeSubmit = async (event: React.FormEvent) => {
     // フォームから値を取得
     const formData = new FormData(event.target as HTMLFormElement);
     const formStartTime = formData.get("startTime");
@@ -752,7 +764,7 @@ export default function AudioClipCreator({
     const startTimeVal = formStartTime ? Number(formStartTime) : null;
     const endTimeVal = formEndTime ? Number(formEndTime) : null;
 
-    // バリデーションチェック
+    // 基本バリデーションチェック
     if (
       startTimeVal !== null &&
       endTimeVal !== null &&
@@ -763,8 +775,97 @@ export default function AudioClipCreator({
       return false;
     }
 
+    // 開始時間と終了時間が有効な場合は最終的な重複チェックを実行
+    if (startTimeVal !== null && endTimeVal !== null) {
+      event.preventDefault(); // 非同期処理のためフォーム送信を一時的に阻止
+
+      try {
+        setIsSubmitting(true);
+        const result = await checkOverlap(startTimeVal, endTimeVal);
+
+        if (result?.isOverlapping) {
+          setError("指定した時間範囲が既存のクリップと重複しています");
+          setIsSubmitting(false);
+          return false;
+        }
+
+        // 重複がなければフォーム送信を続行
+        form.onSubmit(event as React.FormEvent<HTMLFormElement>);
+        return true;
+      } catch (error) {
+        console.error(
+          "[エラー] フォーム送信前の重複チェックに失敗しました:",
+          error,
+        );
+        setIsSubmitting(false);
+        return true; // エラー時は送信を許可（サーバーサイドでも検証するため）
+      }
+    }
+
     return true; // バリデーション成功
   };
+
+  // 重複チェックの実行
+  const checkOverlap = useCallback(
+    async (start: number, end: number) => {
+      try {
+        if (!start || !end || start >= end) {
+          return null; // 無効な値の場合は何もしない
+        }
+
+        // 重複チェック中のフラグをセット
+        setIsCheckingOverlap(true);
+
+        // 重複チェックの実行
+        const result = await checkTimeRangeOverlap(videoId, start, end);
+
+        // 結果を状態に保存
+        setOverlapCheckResult(result);
+
+        // 重複がある場合はエラーメッセージを設定
+        if (result.isOverlapping) {
+          setError("指定した時間範囲が既存のクリップと重複しています");
+        } else if (error?.includes("重複")) {
+          // 重複エラーがあったが解消された場合はエラーをクリア
+          setError(null);
+        }
+
+        // ログを出力
+        console.log("[デバッグ] 重複チェック結果:", {
+          isOverlapping: result.isOverlapping,
+          overlappingCount: result.overlappingClips.length,
+        });
+
+        return result;
+      } catch (error) {
+        console.error("[エラー] 重複チェック時にエラーが発生しました:", error);
+        return null;
+      } finally {
+        setIsCheckingOverlap(false);
+      }
+    },
+    [videoId, error],
+  );
+
+  // 開始時間または終了時間が変更された際に重複チェックを実行
+  useEffect(() => {
+    const runOverlapCheck = async () => {
+      // 開始時間と終了時間の両方が設定されている場合のみチェック
+      if (startTime !== null && endTime !== null && startTime < endTime) {
+        await checkOverlap(startTime, endTime);
+      } else {
+        // 無効な値の場合は重複チェック結果をクリア
+        setOverlapCheckResult(null);
+      }
+    };
+
+    // 開始時間または終了時間が変更されてから500ms後に重複チェックを実行（頻繁な呼び出しを防止）
+    const timeoutId = setTimeout(runOverlapCheck, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [startTime, endTime, checkOverlap]);
 
   return (
     <div className="card bg-base-100 shadow-sm overflow-hidden w-full">
@@ -820,7 +921,10 @@ export default function AudioClipCreator({
 
               {/* フォーム全体のエラーメッセージ */}
               {(error || (form.errors && form.errors.length > 0)) && (
-                <div className="alert alert-error shadow-sm mb-4">
+                <div
+                  className="alert alert-error shadow-sm mb-4"
+                  data-testid="error-message"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="stroke-current shrink-0 h-6 w-6"
@@ -832,16 +936,56 @@ export default function AudioClipCreator({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth="2"
-                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0118 0z"
+                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 18 0z"
                     />
                   </svg>
                   <span>{error || form.errors?.join(", ")}</span>
                 </div>
               )}
 
+              {/* 重複クリップの詳細情報表示 */}
+              {overlapCheckResult?.isOverlapping &&
+                overlapCheckResult.overlappingClips.length > 0 && (
+                  <div className="alert alert-warning shadow-sm mb-4">
+                    <div>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="stroke-current shrink-0 h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <title>警告アイコン</title>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                        />
+                      </svg>
+                      <div className="flex flex-col">
+                        <span className="font-semibold">
+                          選択した時間範囲が以下のクリップと重複しています：
+                        </span>
+                        <ul className="list-disc list-inside mt-1">
+                          {overlapCheckResult.overlappingClips.map((clip) => (
+                            <li key={clip.id}>
+                              「{clip.title}」（{formatTime(clip.startTime)} -{" "}
+                              {formatTime(clip.endTime)}）
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               {/* 送信成功メッセージ（エラーがなく、送信済みの場合） */}
               {isSubmitted && submitSuccess && !error && (
-                <div className="alert alert-success shadow-sm mb-4">
+                <div
+                  className="alert alert-success shadow-sm mb-4"
+                  data-testid="success-message"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="stroke-current shrink-0 h-6 w-6"
@@ -853,7 +997,7 @@ export default function AudioClipCreator({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth="2"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0118 0z"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 18 0z"
                     />
                   </svg>
                   <span>クリップを作成しました</span>

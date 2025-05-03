@@ -224,6 +224,22 @@ export async function createAudioClip(data: AudioClipData) {
       );
     }
 
+    // 重複チェック
+    const { isOverlapping, overlappingClips } = await checkTimeRangeOverlap(
+      db,
+      videoId,
+      startTime,
+      endTime,
+    );
+
+    if (isOverlapping) {
+      throw new Error(
+        `指定された時間範囲は既存のクリップと重複しています: ${overlappingClips
+          .map((clip) => clip.title)
+          .join(", ")}`,
+      );
+    }
+
     // 新しいクリップを作成
     const now = FieldValue.serverTimestamp();
     const newClip = {
@@ -416,7 +432,43 @@ export async function updateAudioClip(
         throw new Error("このクリップを更新する権限がありません");
       }
 
-      const { title, phrase, description, isPublic, tags } = data;
+      const { title, phrase, description, isPublic, tags, startTime, endTime } =
+        data;
+
+      // 時間範囲が変更される場合は重複チェック
+      if (startTime !== undefined && endTime !== undefined) {
+        // 時間の基本バリデーション
+        if (
+          typeof startTime !== "number" ||
+          typeof endTime !== "number" ||
+          startTime >= endTime
+        ) {
+          throw new Error("開始時間は終了時間より前である必要があります");
+        }
+
+        // 重複チェック（自分自身のIDを除外）
+        const videoId = clipData?.videoId;
+        if (!videoId) {
+          throw new Error("クリップに関連する動画IDが見つかりません");
+        }
+
+        // 重複チェック（自分自身は除外）
+        const overlappingClips = await checkTimeRangeOverlapForUpdate(
+          db,
+          videoId,
+          startTime,
+          endTime,
+          clipId,
+        );
+
+        if (overlappingClips.isOverlapping) {
+          throw new Error(
+            `指定された時間範囲は既存のクリップと重複しています: ${overlappingClips.overlappingClips
+              .map((clip) => clip.title)
+              .join(", ")}`,
+          );
+        }
+      }
 
       // 更新データの準備
       const updateData: Record<string, unknown> = {
@@ -429,6 +481,8 @@ export async function updateAudioClip(
       if (description !== undefined) updateData.description = description;
       if (isPublic !== undefined) updateData.isPublic = isPublic;
       if (tags !== undefined) updateData.tags = tags;
+      if (startTime !== undefined) updateData.startTime = startTime;
+      if (endTime !== undefined) updateData.endTime = endTime;
 
       // 更新実行
       await db.collection("audioClips").doc(clipId).update(updateData);
@@ -593,4 +647,148 @@ export async function incrementPlayCount(clipId: string) {
       }`,
     );
   }
+}
+
+/**
+ * サーバーサイドで音声クリップの時間範囲重複をチェックする
+ *
+ * @param db Firestoreインスタンス
+ * @param videoId 動画ID
+ * @param startTime 開始時間（秒）
+ * @param endTime 終了時間（秒）
+ * @returns 重複チェック結果
+ */
+async function checkTimeRangeOverlap(
+  db: Firestore,
+  videoId: string,
+  startTime: number,
+  endTime: number,
+): Promise<{ isOverlapping: boolean; overlappingClips: AudioClipDocument[] }> {
+  // 同じ動画の全ての音声クリップを取得
+  const clipsSnapshot = await db
+    .collection("audioClips")
+    .where("videoId", "==", videoId)
+    .get();
+
+  if (clipsSnapshot.empty) {
+    return { isOverlapping: false, overlappingClips: [] };
+  }
+
+  // 重複チェック
+  const overlappingClips = clipsSnapshot.docs
+    .map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate().toISOString(),
+        updatedAt: data.updatedAt?.toDate().toISOString(),
+      } as AudioClipDocument;
+    })
+    .filter((clip) => {
+      // 以下の条件で重複と判定
+      // 1. 新規範囲が既存範囲に完全に含まれる
+      // 2. 新規範囲が既存範囲を完全に含む
+      // 3. 新規範囲の開始点が既存範囲内にある
+      // 4. 新規範囲の終了点が既存範囲内にある
+      return (
+        // 1. 新規範囲が既存範囲に完全に含まれる
+        (startTime >= clip.startTime && endTime <= clip.endTime) ||
+        // 2. 新規範囲が既存範囲を完全に含む
+        (startTime <= clip.startTime && endTime >= clip.endTime) ||
+        // 3. 新規範囲の開始点が既存範囲内にある
+        (startTime >= clip.startTime && startTime < clip.endTime) ||
+        // 4. 新規範囲の終了点が既存範囲内にある
+        (endTime > clip.startTime && endTime <= clip.endTime)
+      );
+    });
+
+  return {
+    isOverlapping: overlappingClips.length > 0,
+    overlappingClips,
+  };
+}
+
+/**
+ * サーバーサイドで音声クリップの時間範囲重複をチェックする（更新用、自分自身を除外）
+ *
+ * @param db Firestoreインスタンス
+ * @param videoId 動画ID
+ * @param startTime 開始時間（秒）
+ * @param endTime 終了時間（秒）
+ * @param excludeClipId 除外するクリップID（自分自身）
+ * @returns 重複チェック結果
+ */
+async function checkTimeRangeOverlapForUpdate(
+  db: Firestore,
+  videoId: string,
+  startTime: number,
+  endTime: number,
+  excludeClipId: string,
+): Promise<{ isOverlapping: boolean; overlappingClips: AudioClipDocument[] }> {
+  // 同じ動画の全ての音声クリップを取得
+  const clipsSnapshot = await db
+    .collection("audioClips")
+    .where("videoId", "==", videoId)
+    .get();
+
+  if (clipsSnapshot.empty) {
+    return { isOverlapping: false, overlappingClips: [] };
+  }
+
+  // 重複チェック（自分自身を除外）
+  const overlappingClips = clipsSnapshot.docs
+    .filter((doc) => doc.id !== excludeClipId) // 自分自身を除外
+    .map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate().toISOString(),
+        updatedAt: data.updatedAt?.toDate().toISOString(),
+      } as AudioClipDocument;
+    })
+    .filter((clip) => {
+      // 以下の条件で重複と判定
+      // 1. 新規範囲が既存範囲に完全に含まれる
+      // 2. 新規範囲が既存範囲を完全に含む
+      // 3. 新規範囲の開始点が既存範囲内にある
+      // 4. 新規範囲の終了点が既存範囲内にある
+      return (
+        // 1. 新規範囲が既存範囲に完全に含まれる
+        (startTime >= clip.startTime && endTime <= clip.endTime) ||
+        // 2. 新規範囲が既存範囲を完全に含む
+        (startTime <= clip.startTime && endTime >= clip.endTime) ||
+        // 3. 新規範囲の開始点が既存範囲内にある
+        (startTime >= clip.startTime && startTime < clip.endTime) ||
+        // 4. 新規範囲の終了点が既存範囲内にある
+        (endTime > clip.startTime && endTime <= clip.endTime)
+      );
+    });
+
+  return {
+    isOverlapping: overlappingClips.length > 0,
+    overlappingClips,
+  };
+}
+
+// 音声クリップの取得結果インターフェース
+interface AudioClipDocument {
+  id: string;
+  videoId: string;
+  title: string;
+  phrase?: string;
+  description?: string;
+  startTime: number;
+  endTime: number;
+  userId: string;
+  userName: string;
+  userPhotoURL: string | null;
+  isPublic: boolean;
+  tags?: string[];
+  playCount: number;
+  favoriteCount: number;
+  createdAt: string;
+  updatedAt: string;
+  lastPlayedAt?: string;
 }
