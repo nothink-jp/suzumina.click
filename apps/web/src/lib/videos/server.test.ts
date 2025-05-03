@@ -1,13 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { 
-  __resetMockFirestoreForTesting, 
-  __setMockFirestoreForTesting, 
-  getAdminFirestore, 
-  getRecentVideosServer, 
-  getVideoByIdServer 
-} from "./server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  __resetMockFirestoreForTesting,
+  __setMockFirestoreForTesting,
+  getAdminFirestore,
+  getRecentVideosServer,
+  getVideoByIdServer,
+} from "./server";
 
 // Firebase Admin SDKのモック
 vi.mock("firebase-admin/app", () => {
@@ -50,48 +50,48 @@ describe("動画サーバーAPI関数のテスト", () => {
   beforeEach(() => {
     // テスト前にモックをリセット
     vi.resetAllMocks();
-    
+
     // モックの戻り値を再設定
     mockCollection.doc.mockReturnValue({ get: mockGetDoc });
     mockCollection.orderBy.mockReturnValue(mockQuery);
     mockQuery.limit.mockReturnThis();
     mockQuery.startAfter.mockReturnThis();
     mockFirestore.collection.mockReturnValue(mockCollection);
-    
+
     // モックFirestoreをセット
     __setMockFirestoreForTesting(mockFirestore);
-    
+
     // コンソールエラーを抑制
     console.error = vi.fn();
-    
+
     // 環境変数の設定
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "test-project";
   });
-  
+
   afterEach(() => {
     // テスト後にモックをリセット
     __resetMockFirestoreForTesting();
-    
+
     // テスト後にコンソールの挙動を元に戻す
     console.error = originalConsoleError;
-    
+
     // 環境変数を元に戻す
     process.env = originalEnv;
   });
-  
+
   describe("getAdminFirestore関数", () => {
     it("Cloud Run環境で正常にFirestoreインスタンスを初期化できる", () => {
       // テスト前にモックリセット
       __resetMockFirestoreForTesting();
-      
+
       // Cloud Run環境をシミュレート
       process.env.K_SERVICE = "my-service";
       vi.mocked(getApps).mockReturnValue([]);
       vi.mocked(getFirestore).mockReturnValue(mockFirestore as any);
-      
+
       // 関数を実行
       const result = getAdminFirestore();
-      
+
       // 初期化が行われたことを確認
       expect(initializeApp).toHaveBeenCalledWith({
         projectId: "test-project",
@@ -99,26 +99,27 @@ describe("動画サーバーAPI関数のテスト", () => {
       expect(getFirestore).toHaveBeenCalled();
       expect(result).toBe(mockFirestore);
     });
-    
+
     it("開発環境で正常にFirestoreインスタンスを初期化できる", () => {
       // テスト前にモックリセット
       __resetMockFirestoreForTesting();
-      
+
       // 開発環境をシミュレート（K_SERVICEがない）
+      // biome-ignore lint/performance/noDelete: <explanation>
       delete process.env.K_SERVICE;
       // サービスアカウントの設定
       process.env.FIREBASE_SERVICE_ACCOUNT_KEY = JSON.stringify({
         type: "service_account",
         project_id: "test-project",
       });
-      
+
       vi.mocked(getApps).mockReturnValue([]);
       vi.mocked(cert).mockReturnValue("mocked-cert" as any);
       vi.mocked(getFirestore).mockReturnValue(mockFirestore as any);
-      
+
       // 関数を実行
       const result = getAdminFirestore();
-      
+
       // 初期化が行われたことを確認
       expect(cert).toHaveBeenCalled();
       expect(initializeApp).toHaveBeenCalledWith({
@@ -128,31 +129,31 @@ describe("動画サーバーAPI関数のテスト", () => {
       expect(getFirestore).toHaveBeenCalled();
       expect(result).toBe(mockFirestore);
     });
-    
+
     it("既にアプリが初期化されている場合は初期化処理をスキップする", () => {
       // テスト前にモックリセット
       __resetMockFirestoreForTesting();
-      
+
       vi.mocked(getApps).mockReturnValue([{} as any]); // すでに初期化済みと判定される
       vi.mocked(getFirestore).mockReturnValue(mockFirestore as any);
-      
+
       // 関数を実行
       const result = getAdminFirestore();
-      
+
       // 初期化が呼ばれないことを確認
       expect(initializeApp).not.toHaveBeenCalled();
       expect(getFirestore).toHaveBeenCalled();
       expect(result).toBe(mockFirestore);
     });
   });
-  
+
   describe("getVideoByIdServer関数", () => {
     it("正常に動画詳細を取得できる", async () => {
       // 動画データのモック
       const videoId = "video-123";
       const mockDate = new Date("2025-05-01T12:00:00Z");
       const lastFetchedDate = new Date("2025-05-02T12:00:00Z");
-      
+
       // ドキュメントのモック
       mockGetDoc.mockResolvedValue({
         exists: true,
@@ -167,15 +168,15 @@ describe("動画サーバーAPI関数のテスト", () => {
           lastFetchedAt: { toDate: () => lastFetchedDate },
         }),
       });
-      
+
       // 関数を実行
       const result = await getVideoByIdServer(videoId);
-      
+
       // 検証
       expect(mockFirestore.collection).toHaveBeenCalledWith("videos");
       expect(mockCollection.doc).toHaveBeenCalledWith(videoId);
       expect(mockGetDoc).toHaveBeenCalled();
-      
+
       // 結果の検証
       expect(result).not.toBeNull();
       expect(result?.id).toBe(videoId);
@@ -189,16 +190,16 @@ describe("動画サーバーAPI関数のテスト", () => {
       expect(result?.lastFetchedAt).toEqual(lastFetchedDate);
       expect(result?.lastFetchedAtISO).toBe(lastFetchedDate.toISOString());
     });
-    
+
     it("動画が存在しない場合はnullを返す", async () => {
       // 存在しない動画のモック
       mockGetDoc.mockResolvedValue({
         exists: false,
       });
-      
+
       // 関数を実行
       const result = await getVideoByIdServer("non-existent");
-      
+
       // 検証
       expect(mockFirestore.collection).toHaveBeenCalledWith("videos");
       expect(mockCollection.doc).toHaveBeenCalledWith("non-existent");
@@ -206,14 +207,14 @@ describe("動画サーバーAPI関数のテスト", () => {
       expect(result).toBeNull();
     });
   });
-  
+
   describe("getRecentVideosServer関数", () => {
     it("正常に動画リストを取得できる", async () => {
       // 動画データのモック
       const mockDate1 = new Date("2025-05-01T10:00:00Z");
       const mockDate2 = new Date("2025-04-28T10:00:00Z");
       const lastFetchedDate = new Date("2025-05-02T12:00:00Z");
-      
+
       // クエリ結果のモック
       mockQuery.get.mockResolvedValue({
         docs: [
@@ -243,16 +244,19 @@ describe("動画サーバーAPI関数のテスト", () => {
           },
         ],
       });
-      
+
       // 関数を実行
       const result = await getRecentVideosServer(2);
-      
+
       // 検証
       expect(mockFirestore.collection).toHaveBeenCalledWith("videos");
-      expect(mockCollection.orderBy).toHaveBeenCalledWith("publishedAt", "desc");
+      expect(mockCollection.orderBy).toHaveBeenCalledWith(
+        "publishedAt",
+        "desc",
+      );
       expect(mockQuery.limit).toHaveBeenCalledWith(3); // limit + 1
       expect(mockQuery.get).toHaveBeenCalled();
-      
+
       // 結果の検証
       expect(result.videos).toHaveLength(2);
       expect(result.videos[0].id).toBe("video-1");
@@ -261,13 +265,13 @@ describe("動画サーバーAPI関数のテスト", () => {
       expect(result.videos[1].title).toBe("最新動画2");
       expect(result.hasMore).toBe(false);
     });
-    
+
     it("ページネーションパラメータを指定して動画リストを取得できる", async () => {
       // startAfterの日付
       const startAfterDate = new Date("2025-04-28T00:00:00Z");
       const mockDate = new Date("2025-04-25T10:00:00Z");
       const lastFetchedDate = new Date("2025-05-02T12:00:00Z");
-      
+
       // 動画データのモック
       mockQuery.get.mockResolvedValue({
         docs: [
@@ -285,23 +289,26 @@ describe("動画サーバーAPI関数のテスト", () => {
           },
         ],
       });
-      
+
       // 関数を実行
       const result = await getRecentVideosServer(10, startAfterDate);
-      
+
       // 検証
-      expect(mockCollection.orderBy).toHaveBeenCalledWith("publishedAt", "desc");
+      expect(mockCollection.orderBy).toHaveBeenCalledWith(
+        "publishedAt",
+        "desc",
+      );
       expect(mockQuery.startAfter).toHaveBeenCalledWith(startAfterDate);
       expect(mockQuery.limit).toHaveBeenCalledWith(11); // limit + 1
       expect(mockQuery.get).toHaveBeenCalled();
-      
+
       // 結果の検証
       expect(result.videos).toHaveLength(1);
       expect(result.videos[0].id).toBe("video-3");
       expect(result.videos[0].title).toBe("古い動画");
       expect(result.hasMore).toBe(false);
     });
-    
+
     it("次ページがある場合はhasMoreがtrueになる", async () => {
       // 6件のデータを持つモックを作成
       const lastFetchedDate = new Date("2025-05-10T12:00:00Z");
@@ -310,20 +317,22 @@ describe("動画サーバーAPI関数のテスト", () => {
         data: () => ({
           title: `動画${i}`,
           description: `動画${i}の説明`,
-          publishedAt: { toDate: () => new Date(`2025-05-0${i+1}T10:00:00Z`) },
+          publishedAt: {
+            toDate: () => new Date(`2025-05-0${i + 1}T10:00:00Z`),
+          },
           thumbnailUrl: `https://example.com/thumb${i}.jpg`,
           channelId: "channel-1",
           channelTitle: "チャンネル1",
           lastFetchedAt: { toDate: () => lastFetchedDate },
         }),
       }));
-      
+
       // 6件のデータを返すモックを設定
       mockQuery.get.mockResolvedValue({ docs: mockDocs });
-      
+
       // 関数を実行
       const result = await getRecentVideosServer(5); // limit=5
-      
+
       // 検証
       expect(result.videos).toHaveLength(5); // 6件取得したが5件だけ返される
       expect(result.hasMore).toBe(true); // 次ページがあるのでtrue

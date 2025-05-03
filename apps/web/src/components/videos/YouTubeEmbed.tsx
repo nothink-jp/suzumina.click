@@ -58,6 +58,21 @@ interface YouTubeEmbedProps {
   videoId: string;
   title?: string;
   onReady?: (player: YouTubePlayer) => void;
+  onStateChange?: (state: number) => void;
+  options?: {
+    playerVars?: {
+      autoplay?: 0 | 1;
+      controls?: 0 | 1;
+      disablekb?: 0 | 1;
+      fs?: 0 | 1;
+      modestbranding?: 0 | 1;
+      rel?: 0 | 1;
+      showinfo?: 0 | 1;
+      start?: number;
+      end?: number;
+      [key: string]: any;
+    };
+  };
 }
 
 /**
@@ -68,6 +83,8 @@ export default function YouTubeEmbed({
   videoId,
   title,
   onReady,
+  onStateChange,
+  options,
 }: YouTubeEmbedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
@@ -269,6 +286,7 @@ export default function YouTubeEmbed({
             enablejsapi: 1,
             rel: 0,
             fs: 1,
+            ...options?.playerVars,
           },
           events: {
             onReady: (event) => {
@@ -276,6 +294,11 @@ export default function YouTubeEmbed({
               setIsLoading(false);
               if (onReady) {
                 onReady(event.target);
+              }
+            },
+            onStateChange: (event) => {
+              if (onStateChange) {
+                onStateChange(event.data);
               }
             },
             onError: (event) => {
@@ -295,7 +318,7 @@ export default function YouTubeEmbed({
         );
       }
     }
-  }, [isApiLoaded, videoId, onReady, playerElementId, title, loadYouTubeAPI]);
+  }, [isApiLoaded, videoId, onReady, onStateChange, playerElementId, title, options, loadYouTubeAPI]);
 
   // レスポンシブ対応
   useEffect(() => {

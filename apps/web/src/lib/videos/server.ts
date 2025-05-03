@@ -49,7 +49,9 @@ export function getAdminFirestore() {
  * テスト用にFirestoreインスタンスをモックする
  * @param mockDb モックFirestoreインスタンス
  */
-export function __setMockFirestoreForTesting(mockDb: any) {
+export function __setMockFirestoreForTesting(
+  mockDb: ReturnType<typeof getFirestore>,
+) {
   _firestoreDb = mockDb;
 }
 
