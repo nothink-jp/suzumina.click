@@ -79,7 +79,17 @@ jobs:
           flags: web
           fail_ci_if_error: true
           verbose: true
+          # リポジトリ情報を明示的に設定
+          slug: nothink-jp/suzumina.click
       
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./apps/web/coverage
+          flags: web
+
       # ビルド実行
       - name: アプリケーションのビルド
         run: pnpm --filter @suzumina.click/web build
@@ -115,7 +125,17 @@ jobs:
           flags: functions
           fail_ci_if_error: true
           verbose: true
-      
+          # リポジトリ情報を明示的に設定
+          slug: nothink-jp/suzumina.click
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./apps/functions/coverage
+          flags: functions
+
       # ビルド実行
       - name: アプリケーションのビルド
         run: pnpm --filter @suzumina.click/functions build
