@@ -68,11 +68,11 @@ jobs:
       
       # テスト実行
       - name: アプリケーションのテスト
-        run: pnpm --filter @suzumina.click/web test
+        run: pnpm --filter @suzumina.click/web test:coverage
       
       # Codecovへカバレッジレポートをアップロード
       - name: Webカバレッジレポートのアップロード
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./apps/web/coverage
@@ -104,11 +104,11 @@ jobs:
       
       # テスト実行
       - name: アプリケーションのテスト
-        run: pnpm --filter @suzumina.click/functions test
+        run: pnpm --filter @suzumina.click/functions test:coverage
       
       # Codecovへカバレッジレポートをアップロード
       - name: Functionsカバレッジレポートのアップロード
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./apps/functions/coverage
