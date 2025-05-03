@@ -70,6 +70,16 @@ jobs:
       - name: アプリケーションのテスト
         run: pnpm --filter @suzumina.click/web test
       
+      # Codecovへカバレッジレポートをアップロード
+      - name: Webカバレッジレポートのアップロード
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./apps/web/coverage
+          flags: web
+          fail_ci_if_error: true
+          verbose: true
+      
       # ビルド実行
       - name: アプリケーションのビルド
         run: pnpm --filter @suzumina.click/web build
@@ -95,6 +105,16 @@ jobs:
       # テスト実行
       - name: アプリケーションのテスト
         run: pnpm --filter @suzumina.click/functions test
+      
+      # Codecovへカバレッジレポートをアップロード
+      - name: Functionsカバレッジレポートのアップロード
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./apps/functions/coverage
+          flags: functions
+          fail_ci_if_error: true
+          verbose: true
       
       # ビルド実行
       - name: アプリケーションのビルド
