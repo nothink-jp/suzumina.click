@@ -70,7 +70,7 @@ interface YouTubeEmbedProps {
       showinfo?: 0 | 1;
       start?: number;
       end?: number;
-      [key: string]: any;
+      [key: string]: string | number | boolean | undefined;
     };
   };
 }
