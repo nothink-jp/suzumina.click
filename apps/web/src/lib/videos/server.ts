@@ -1,6 +1,6 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import type { Video } from "./types";
+import type { LiveBroadcastContent, Video } from "./types";
 
 /**
  * テスト用のモック可能なFirestoreクライアントを提供
@@ -75,6 +75,7 @@ interface FirestoreVideoData {
   lastFetchedAt: {
     toDate: () => Date;
   };
+  liveBroadcastContent?: LiveBroadcastContent; // 配信状態フィールドを追加
 }
 
 /**
@@ -100,6 +101,7 @@ export function convertToVideo(id: string, data: FirestoreVideoData): Video {
     channelTitle: data.channelTitle,
     lastFetchedAt,
     lastFetchedAtISO: lastFetchedAt.toISOString(), // ISO文字列を追加
+    liveBroadcastContent: data.liveBroadcastContent, // 配信状態を追加
   };
 }
 

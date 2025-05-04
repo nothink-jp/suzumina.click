@@ -13,6 +13,9 @@
   - コロケーション、可読性、保守性、テスト容易性を重視
   - 重複回避、シンプルな設計
 
+## 開発手順
+- 実装後に必ずテストとリンターを実行
+
 ## Git
 - Conventional Commits: feat, fix, docs, style, refactor, test, chore
 - トランクベース開発、GitHub Flow

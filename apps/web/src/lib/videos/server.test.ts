@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __resetMockFirestoreForTesting,
   __setMockFirestoreForTesting,
+  convertToVideo,
   getAdminFirestore,
   getRecentVideosServer,
   getVideoByIdServer,
@@ -77,6 +78,71 @@ describe("動画サーバーAPI関数のテスト", () => {
 
     // 環境変数を元に戻す
     process.env = originalEnv;
+  });
+
+  describe("convertToVideo関数", () => {
+    it("Firestoreのデータを正しくVideo型に変換できる", () => {
+      // モックデータ
+      const id = "video-123";
+      const mockDate = new Date("2025-05-01T12:00:00Z");
+      const lastFetchedDate = new Date("2025-05-02T12:00:00Z");
+
+      // Firestoreデータのモック
+      const firestoreData = {
+        title: "テスト動画",
+        description: "これはテスト用の動画です",
+        publishedAt: { toDate: () => mockDate },
+        thumbnailUrl: "https://example.com/thumbnail.jpg",
+        channelId: "channel-123",
+        channelTitle: "テストチャンネル",
+        lastFetchedAt: { toDate: () => lastFetchedDate },
+        liveBroadcastContent: "none",
+      };
+
+      // 関数を実行
+      const result = convertToVideo(id, firestoreData);
+
+      // 結果の検証
+      expect(result).toEqual({
+        id,
+        title: "テスト動画",
+        description: "これはテスト用の動画です",
+        publishedAt: mockDate,
+        publishedAtISO: mockDate.toISOString(),
+        thumbnailUrl: "https://example.com/thumbnail.jpg",
+        channelId: "channel-123",
+        channelTitle: "テストチャンネル",
+        lastFetchedAt: lastFetchedDate,
+        lastFetchedAtISO: lastFetchedDate.toISOString(),
+        liveBroadcastContent: "none",
+      });
+    });
+
+    it("liveBroadcastContentが未定義の場合も正しく変換できる", () => {
+      // モックデータ（liveBroadcastContentなし）
+      const id = "video-456";
+      const mockDate = new Date("2025-05-01T12:00:00Z");
+      const lastFetchedDate = new Date("2025-05-02T12:00:00Z");
+
+      // Firestoreデータのモック（liveBroadcastContentなし）
+      const firestoreData = {
+        title: "テスト動画",
+        description: "これはテスト用の動画です",
+        publishedAt: { toDate: () => mockDate },
+        thumbnailUrl: "https://example.com/thumbnail.jpg",
+        channelId: "channel-123",
+        channelTitle: "テストチャンネル",
+        lastFetchedAt: { toDate: () => lastFetchedDate },
+      };
+
+      // 関数を実行
+      const result = convertToVideo(id, firestoreData);
+
+      // 結果の検証
+      expect(result.liveBroadcastContent).toBeUndefined();
+      expect(result).toHaveProperty("id", id);
+      expect(result).toHaveProperty("title", "テスト動画");
+    });
   });
 
   describe("getAdminFirestore関数", () => {
@@ -166,6 +232,7 @@ describe("動画サーバーAPI関数のテスト", () => {
           channelId: "channel-123",
           channelTitle: "テストチャンネル",
           lastFetchedAt: { toDate: () => lastFetchedDate },
+          liveBroadcastContent: "live", // 配信中ステータスを追加
         }),
       });
 
@@ -189,6 +256,7 @@ describe("動画サーバーAPI関数のテスト", () => {
       expect(result?.channelTitle).toBe("テストチャンネル");
       expect(result?.lastFetchedAt).toEqual(lastFetchedDate);
       expect(result?.lastFetchedAtISO).toBe(lastFetchedDate.toISOString());
+      expect(result?.liveBroadcastContent).toBe("live"); // 配信ステータスが正しく取得されることを確認
     });
 
     it("動画が存在しない場合はnullを返す", async () => {
@@ -228,6 +296,7 @@ describe("動画サーバーAPI関数のテスト", () => {
               channelId: "channel-1",
               channelTitle: "チャンネル1",
               lastFetchedAt: { toDate: () => lastFetchedDate },
+              liveBroadcastContent: "none", // 通常動画
             }),
           },
           {
@@ -240,6 +309,7 @@ describe("動画サーバーAPI関数のテスト", () => {
               channelId: "channel-1",
               channelTitle: "チャンネル1",
               lastFetchedAt: { toDate: () => lastFetchedDate },
+              liveBroadcastContent: "upcoming", // 予定配信
             }),
           },
         ],
@@ -261,8 +331,10 @@ describe("動画サーバーAPI関数のテスト", () => {
       expect(result.videos).toHaveLength(2);
       expect(result.videos[0].id).toBe("video-1");
       expect(result.videos[0].title).toBe("最新動画1");
+      expect(result.videos[0].liveBroadcastContent).toBe("none"); // 通常動画であることを確認
       expect(result.videos[1].id).toBe("video-2");
       expect(result.videos[1].title).toBe("最新動画2");
+      expect(result.videos[1].liveBroadcastContent).toBe("upcoming"); // 予定配信であることを確認
       expect(result.hasMore).toBe(false);
     });
 
