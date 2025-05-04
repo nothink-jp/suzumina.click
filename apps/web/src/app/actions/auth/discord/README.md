@@ -10,7 +10,7 @@
 
 - `types.ts` - Discord認証関連の型定義
 - `utils.ts` - ヘルパー関数（アバターURL生成、環境変数検証など）
-- `actions.ts` - Server Actions実装（Discord認証処理）
+- `index.ts` - Server Actions実装（Discord認証処理）
 
 ## 認証フロー
 
@@ -48,8 +48,8 @@ FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
 ### Server Actionの呼び出し
 
 ```typescript
-import { handleDiscordCallback } from "@/app/api/auth/discord/actions";
-import { createSessionCookie } from "@/app/api/auth/createSessionCookie";
+import { handleDiscordCallback } from "@/app/actions/auth/discord";
+import { createSessionCookie } from "@/app/actions/auth/createSessionCookie";
 import { auth } from "@/lib/firebase/client";
 import { signInWithCustomToken } from "firebase/auth";
 
@@ -99,7 +99,7 @@ Server Actionsのテストを作成する際は、以下の点に注意してく
 
 ```typescript
 // テスト例
-import { handleDiscordCallback } from "./actions";
+import { handleDiscordCallback } from "./index";
 import axios from "axios";
 
 // axiosのモック

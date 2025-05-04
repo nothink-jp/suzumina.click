@@ -1,12 +1,13 @@
 "use client";
 
-import { updateProfile } from "@/app/api/profile/updateProfile";
-import type { UserProfile, UserProfileFormData } from "@/lib/users/types";
+import type { UserProfile } from "@/lib/users/types";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { z } from "zod";
+// 同じディレクトリの関数をインポート
+import { updateProfile } from "./profileActions";
 
 interface ProfileEditFormProps {
   profile: UserProfile;
@@ -26,6 +27,10 @@ export default function ProfileEditForm({ profile }: ProfileEditFormProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // 文字数カウント用のstate
+  const [bioLength, setBioLength] = useState(profile.bio?.length || 0);
+  const bioRef = useRef<HTMLTextAreaElement>(null);
+
   // バリデーションスキーマの定義
   const profileSchema = z.object({
     siteDisplayName: z
@@ -42,6 +47,21 @@ export default function ProfileEditForm({ profile }: ProfileEditFormProps) {
     bio: profile.bio || "",
     isPublic: profile.isPublic,
   };
+
+  // テキストエリアの内容変更を監視
+  useEffect(() => {
+    const textArea = bioRef.current;
+    if (!textArea) return;
+
+    const handleInput = () => {
+      setBioLength(textArea.value.length);
+    };
+
+    textArea.addEventListener("input", handleInput);
+    return () => {
+      textArea.removeEventListener("input", handleInput);
+    };
+  }, []);
 
   // Conformフックの初期化
   const [form, fields] = useForm({
@@ -167,6 +187,7 @@ export default function ProfileEditForm({ profile }: ProfileEditFormProps) {
           <span className="label-text">自己紹介</span>
         </label>
         <textarea
+          ref={bioRef}
           id={fields.bio.id}
           name={fields.bio.name}
           defaultValue={fields.bio.initialValue}
@@ -178,12 +199,8 @@ export default function ProfileEditForm({ profile }: ProfileEditFormProps) {
             !fields.bio.valid ? `${fields.bio.id}-error` : undefined
           }
         />
-        {/* バイオの文字数を表示 - Conformでは直接取得できないため、document APIを使用 */}
-        <span className="label-text-alt">
-          {(document.getElementById(fields.bio.id) as HTMLTextAreaElement)
-            ?.value?.length || 0}
-          /500文字
-        </span>
+        {/* バイオの文字数を表示 - useRefとuseStateを使用 */}
+        <span className="label-text-alt">{bioLength}/500文字</span>
         {fields.bio.errors && (
           <div
             id={`${fields.bio.id}-error`}

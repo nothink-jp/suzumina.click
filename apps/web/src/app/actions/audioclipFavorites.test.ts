@@ -1,12 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { initializeFirebaseAdmin } from "../api/auth/firebase-admin";
-import { getCurrentUser } from "../api/auth/getCurrentUser";
 import {
   checkFavoriteStatus,
   getFavoriteClips,
   setFavoriteStatus,
 } from "./audioclipFavorites";
+import { initializeFirebaseAdmin } from "./auth/firebase-admin";
+import { getCurrentUser } from "./auth/getCurrentUser";
 
 // Firestoreのモック
 const mockCollection = vi.fn();
@@ -39,12 +39,12 @@ vi.mock("next/cache", () => ({
 }));
 
 // getCurrentUserのモック
-vi.mock("../api/auth/getCurrentUser", () => ({
+vi.mock("./auth/getCurrentUser", () => ({
   getCurrentUser: vi.fn(),
 }));
 
 // initializeFirebaseAdminのモック
-vi.mock("../api/auth/firebase-admin", () => ({
+vi.mock("./auth/firebase-admin", () => ({
   initializeFirebaseAdmin: vi.fn(),
 }));
 

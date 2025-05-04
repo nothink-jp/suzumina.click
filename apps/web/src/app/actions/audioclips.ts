@@ -1,5 +1,6 @@
 "use server";
 
+import { formatTime } from "@/lib/audioclips/validation";
 import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
 import type {
   DocumentData,
@@ -8,8 +9,8 @@ import type {
   QueryDocumentSnapshot,
 } from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
-import { initializeFirebaseAdmin } from "../api/auth/firebase-admin";
-import { getCurrentUser } from "../api/auth/getCurrentUser";
+import { initializeFirebaseAdmin } from "./auth/firebase-admin";
+import { getCurrentUser } from "./auth/getCurrentUser";
 
 interface AudioClipData {
   videoId: string;

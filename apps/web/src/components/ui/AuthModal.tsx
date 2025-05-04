@@ -1,8 +1,8 @@
 "use client";
 
-import { createSessionCookie } from "@/app/api/auth/createSessionCookie";
-import { handleDiscordCallback } from "@/app/api/auth/discord/actions";
-import { auth, getAuthInstance } from "@/lib/firebase/client";
+import { createSessionCookie } from "@/app/actions/auth/createSessionCookie";
+import { handleDiscordCallback } from "@/app/actions/auth/discord";
+import { auth } from "@/lib/firebase/client";
 import { signInWithCustomToken } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -86,7 +86,8 @@ export default function AuthModal() {
       // Firebase認証の状態を確認し、必要に応じて再取得
       let firebaseAuth = auth;
       if (!firebaseAuth) {
-        firebaseAuth = getAuthInstance();
+        // firebase/clientの認証を再取得
+        firebaseAuth = auth;
       }
 
       try {
@@ -106,8 +107,8 @@ export default function AuthModal() {
 
         // もう一度Firebase認証オブジェクトを確認（念のため）
         if (!firebaseAuth) {
-          // 最後の手段として再度取得を試みる
-          firebaseAuth = getAuthInstance();
+          // firebase/clientの認証を再取得
+          firebaseAuth = auth;
         }
 
         // authがnullでないことを確認

@@ -55,10 +55,66 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
 
 ### 1.2. データフェッチ
 
-- **RSC でのフェッチ**: ページやレイアウトに必要なデータの取得は、原則として RSC 内で `async/await` を用いて行います。これにより、データ取得のレイテンシをサーバーサイドで吸収できます。
-- **RCC でのフェッチ**: クライアント操作に応じて追加データを取得する場合（例: 無限スクロール、検索候補表示）は、原則として **SWR** ライブラリを用いて行います。SWR はキャッシュ、再検証、フォーカス時の再取得などの機能を提供し、効率的なデータフェッチを実現します。
+- **RSC でのフェッチ**: ページやレイアウトに必要なデータの取得は、原則として RSC 内で `async/await` を用いて直接行います。これにより、データ取得のレイテンシをサーバーサイドで吸収できます。
+- **RCC でのフェッチ**: クライアント操作に応じて追加データを取得する場合は、以下のいずれかの方法を使用します：
+  1. **Server Actions の使用（推奨）**: クライアントコンポーネントから Server Actions を直接呼び出してデータを取得します。
+  2. **SWR の使用**: 再検証や自動再フェッチが必要な場合、SWR ライブラリを使用します。
 
-### 1.3. Headless UI の利用
+### 1.3. Server Actions の活用
+
+- **基本方針**: サーバーサイドでの操作（データ作成・更新・削除、認証など）は API Routes ではなく Server Actions を使用します。
+- **使用方法**:
+  1. **ファイル単位の "use server"**: サーバー専用関数を含むファイル全体に適用する場合
+     ```tsx
+     // src/actions/some-feature/actions.ts
+     "use server";
+     
+     import { getServerSession } from 'next-auth';
+     import { authOptions } from '@/lib/auth/auth-options';
+     
+     export async function createItem(data: FormData) {
+       // 認証チェック
+       const session = await getServerSession(authOptions);
+       if (!session) {
+         return { success: false, error: '認証が必要です' };
+       }
+       
+       // データ処理
+       try {
+         // ...処理ロジック
+         return { success: true, data: result };
+       } catch (error) {
+         return { success: false, error: 'エラーが発生しました' };
+       }
+     }
+     ```
+  
+  2. **関数単位の "use server"**: インラインのサーバーアクション
+     ```tsx
+     // src/components/feature/some-feature/SomeForm.tsx
+     "use client";
+     
+     import { updateData } from '@/actions/some-feature/actions'; // ファイル単位のServer Action
+     
+     // インラインServer Action
+     async function submitForm(formData: FormData) {
+       "use server";
+       // 処理ロジック
+       return { success: true };
+     }
+     
+     export function SomeForm() {
+       return (
+         <form action={submitForm}>
+           {/* フォーム内容 */}
+         </form>
+       );
+     }
+     ```
+
+- **認証とバリデーション**: すべての Server Action 内で必ず認証チェックとデータバリデーションを行います。
+
+### 1.4. Headless UI の利用
 
 - **クライアントコンポーネント必須**: Headless UI のコンポーネントは内部で React Hooks (useState, useEffect など) を使用しているため、**必ずクライアントコンポーネント (`"use client"`) 内で使用する必要があります**。
 - **スタイリング**: Headless UI はスタイルを提供しません。DaisyUI や Tailwind CSS のクラスを適用して見た目を構築します。
@@ -67,12 +123,16 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
 
 - **命名規則**:
   - コンポーネントファイル名およびコンポーネント関数名: `PascalCase` (例: `UserProfileCard.tsx`, `function UserProfileCard() {}`)
+  - Server Action ファイル名: `actions.ts` または `[機能名].actions.ts`
 - **配置 (コロケーション)**:
   - **ページ固有コンポーネント**: 特定のページ (`apps/web/src/app/about/page.tsx` など) でのみ使用されるコンポーネントは、そのページのディレクトリ配下に `_components` ディレクトリ (例: `apps/web/src/app/about/_components/`) を作成し、そこに配置します。
   - **共通コンポーネント**: 複数のページやレイアウトで再利用されるコンポーネントは、`apps/web/src/components/` ディレクトリに配置します。
     - `apps/web/src/components/ui/`: 低レベルなUI部品 (Button, Input, Card など)。DaisyUI コンポーネントのラッパーや、独自実装の基本部品。
     - `apps/web/src/components/layout/`: アプリケーション全体のレイアウトに関連するコンポーネント (Header, Footer, Sidebar など)。
     - `apps/web/src/components/feature/`: 特定の機能に関連する、より高レベルなコンポーネント群 (例: `apps/web/src/components/feature/auth/`, `apps/web/src/components/feature/profile/`)。
+  - **Server Actions**: 
+    - 単一のコンポーネント/機能でのみ使用する場合: 関連するコンポーネントと同じディレクトリ内に配置
+    - 共有サーバーアクション: `apps/web/src/actions/[機能名]/actions.ts` に配置
 
 ## 3. 状態管理
 
@@ -141,13 +201,19 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
 - **実装場所**: バリデーションスキーマはフォームコンポーネント内で定義し、Conform の `parseWithZod` 関数と連携させます。
 - **エラーメッセージ**: エラーメッセージは日本語で、ユーザーが理解しやすい形で提供します。
 
+### 8.4. Server Actions との連携
+
+- **基本実装パターン**: フォームの送信処理は Server Actions を使用して実装します。
+- **Conform と Server Actions の連携例**:
+
 ```tsx
-// フォーム実装例
+// フォーム実装例（Server Actions連携版）
 "use client";
 
 import { useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod';
 import { z } from 'zod';
+import { registerUser } from '@/actions/user/register'; // Server Action
 
 // フォームのスキーマ定義
 const schema = z.object({
@@ -166,9 +232,8 @@ const schema = z.object({
 export function UserRegistrationForm() {
   // Conformのフックを使用してフォームを初期化
   const [form, fields] = useForm({
-    // フォーム識別子
     id: 'user-registration',
-    // 送信ハンドラ
+    // Server Actionへの送信ハンドラ
     onSubmit: async (event) => {
       // フォームデータを取得
       const formData = new FormData(event.currentTarget);
@@ -180,14 +245,25 @@ export function UserRegistrationForm() {
         return submission.reply();
       }
 
-      // 検証に成功した場合、APIに送信するなどの処理
+      // 検証に成功した場合、Server Actionに送信
       try {
-        await registerUser(submission.value);
+        // Server Actionを呼び出し
+        const result = await registerUser(submission.value);
+        
+        // エラーの場合
+        if (!result.success) {
+          return submission.reply({
+            formErrors: [result.error || '登録に失敗しました'],
+          });
+        }
+        
         // 成功時の処理
+        // ここでリダイレクトや成功メッセージ表示などを行う
+        return submission.reply();
       } catch (error) {
-        // エラー処理
+        // 予期せぬエラー処理
         return submission.reply({
-          formErrors: ['登録に失敗しました。再度お試しください。'],
+          formErrors: ['登録処理中にエラーが発生しました。再度お試しください。'],
         });
       }
     },
@@ -237,10 +313,68 @@ export function UserRegistrationForm() {
 }
 ```
 
-### 8.4. サーバーアクションとの連携
+- **ダイレクトServer Actionパターン**: フォームの `action` 属性に直接 Server Action を指定する実装も可能です。
 
-- **Server Actions**: Next.js の Server Actions を使用する場合、Conform はシームレスに連携可能です。フォームサブミット時のデータ処理はサーバーサイドで行い、バリデーションエラーはクライアントにストリームバックできます。
-- **実装パターン**: Server Action 内で `parseWithZod` を使用してフォームデータを検証し、エラーがある場合は `submission.reply()` を返してクライアント側で表示します。
+```tsx
+// フォームコンポーネント（ダイレクトServer Actionパターン）
+"use client";
+
+import { useFormState } from 'react-dom';
+import { register } from '@/actions/user/register'; // Server Action
+
+// 初期状態
+const initialState = { 
+  error: null, 
+  success: false 
+};
+
+export function SimpleRegistrationForm() {
+  // Server Actionとフォーム状態の連携
+  const [state, formAction] = useFormState(register, initialState);
+  
+  return (
+    <form action={formAction} className="space-y-4">
+      {/* エラー表示 */}
+      {state.error && (
+        <div className="alert alert-error">
+          <div>{state.error}</div>
+        </div>
+      )}
+      
+      {/* 成功表示 */}
+      {state.success && (
+        <div className="alert alert-success">
+          <div>登録が完了しました</div>
+        </div>
+      )}
+      
+      {/* 名前入力フィールド */}
+      <div className="form-control">
+        <label htmlFor="username" className="label">
+          <span className="label-text">ユーザー名</span>
+        </label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          className="input input-bordered"
+          required
+        />
+      </div>
+      
+      {/* その他のフォームフィールド */}
+      {/* ... */}
+      
+      {/* 送信ボタン */}
+      <div className="form-control mt-6">
+        <button type="submit" className="btn btn-primary">
+          登録する
+        </button>
+      </div>
+    </form>
+  );
+}
+```
 
 ### 8.5. アクセシビリティ
 

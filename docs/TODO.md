@@ -77,9 +77,67 @@
 
 #### フェーズ5: 拡張機能実装（v0.1.5）
 
-- [ ] お気に入り機能の実装
+- [x] お気に入り機能の実装
+  - [x] Firestore スキーマの拡張 (`users/{userId}/favorites/{buttonId}`)
+  - [x] お気に入りボタンコンポーネントの実装 (`src/components/audioclips/FavoriteButton.tsx`)
+    - [x] 未ログインユーザー向けの動作定義（ログイン促進UI表示）
+    - [x] ログインユーザー向けのトグル動作実装
+  - [x] お気に入り状態管理ロジックの実装 (`src/lib/audioclips/favorites.ts`)
+    - [x] お気に入り追加/削除API実装
+    - [x] ユーザーごとのお気に入りリスト取得関数
+  - [x] お気に入りリスト表示画面の実装 (`src/app/profile/favorites/page.tsx`)
+  - [x] ユニットテスト追加
+    - [x] お気に入りボタンコンポーネントのテスト
+    - [x] お気に入り状態管理ロジックのテスト
+  - [x] E2Eテスト追加（お気に入り操作フロー）
+
 - [ ] タグ機能の実装
+  - [ ] タグ関連の型定義追加 (`src/lib/audioclips/types.ts`)
+  - [ ] Firestore スキーマの拡張（音声ボタンにタグフィールド追加）
+  - [ ] タグ入力コンポーネントの実装 (`src/components/audioclips/TagInput.tsx`)
+    - [ ] マルチタグ入力UI実装
+    - [ ] タグの追加/削除機能
+    - [ ] 既存タグの自動補完機能
+  - [ ] タグ表示コンポーネントの実装 (`src/components/audioclips/TagDisplay.tsx`)
+  - [ ] タグ関連処理の実装
+    - [ ] タグ検索アクション実装 (`src/actions/tags/search.ts`)
+    - [ ] タグ更新アクション実装 (`src/actions/audioclips/tags.ts`)
+    - [ ] 人気タグ一覧取得アクション実装 (`src/actions/tags/popular.ts`)
+  - [ ] AudioButtonCreatorコンポーネントへのタグ入力統合
+  - [ ] AudioButtonコンポーネントへのタグ表示統合
+  - [ ] ユニットテスト追加
+    - [ ] タグ入力コンポーネントのテスト
+    - [ ] タグ関連機能のテスト
+
 - [ ] 検索・フィルタリング機能の実装
+  - [ ] 検索インデックス設定の追加 (Firestoreインデックス)
+  - [ ] 検索フォームコンポーネントの実装 (`src/components/search/SearchForm.tsx`)
+    - [ ] テキスト検索入力
+    - [ ] タグフィルター選択
+    - [ ] 並び替えオプション（再生回数順、作成日時順など）
+  - [ ] 検索結果表示コンポーネントの実装 (`src/components/search/SearchResults.tsx`)
+  - [ ] クライアントサイド検索ロジックの実装 (`src/lib/search/client.ts`)
+    - [ ] SWRを使用したクライアント側キャッシュ実装
+    - [ ] 無限スクロール対応
+  - [ ] 検索サーバーアクションの実装 (`src/actions/search/index.ts`)
+    - [ ] 複合条件検索クエリ構築
+    - [ ] ページネーション対応
+    - [ ] パフォーマンス最適化
+  - [ ] 検索ページの実装 (`src/app/search/page.tsx`)
+  - [ ] 各動画ページ内の音声ボタンリストにフィルター機能追加
+  - [ ] ユニットテスト追加
+    - [ ] 検索フォームコンポーネントのテスト
+    - [ ] 検索ロジックのテスト
+    - [ ] 検索機能のテスト
+
+- [ ] 音声ボタン統計機能の実装
+  - [ ] 再生統計スキーマ設計と実装 (`src/lib/analytics/types.ts`)
+  - [ ] 再生イベント記録機能の実装 (`src/lib/analytics/events.ts`)
+  - [ ] 統計情報表示コンポーネントの実装 (`src/components/analytics/StatsDisplay.tsx`)
+  - [ ] 人気音声ボタンランキング機能の実装 (`src/app/popular/page.tsx`)
+  - [ ] ユニットテスト追加
+    - [ ] 統計記録機能のテスト
+    - [ ] 統計表示機能のテスト
 
 ### インフラストラクチャ最適化（v0.1.4）
 
@@ -155,3 +213,59 @@
 - [ ] A/Bテスト機能の実装（同意率向上のための表示最適化）
 - [ ] 法改正時の更新メカニズムの設計
 - [ ] コンテンツ分類システムの実装（年齢制限フラグ付与）
+
+### APIバックエンドの再構築（v0.1.7）
+
+以下のタスクは既存のAPIバックエンドをServer Actions中心の設計に移行するためのものです。段階的に実施し、ユーザー体験に影響しないように進めます。
+
+#### フェーズ1: 設計と環境準備
+
+- [ ] Server Actions設計ドキュメントの作成
+  - [ ] 実装パターンの定義
+  - [ ] 認証・エラーハンドリング共通処理の設計
+  - [ ] テスト戦略の策定
+- [ ] 移行計画の具体化
+  - [ ] 優先順位と手順の決定
+  - [ ] 既存APIエンドポイントと新Server Actionsの対応表作成
+  - [ ] 移行スケジュールの設定
+
+#### フェーズ2: 基本機能のServer Actions実装
+
+- [ ] 認証関連アクションの実装
+  - [ ] サインイン/サインアウトアクションの実装 (`src/actions/auth/signin.ts`)
+  - [ ] ユーザー情報取得アクションの実装 (`src/actions/auth/user.ts`)
+- [ ] 音声クリップ基本操作のアクション実装
+  - [ ] 音声クリップ取得アクションの実装 (`src/actions/audioclips/get.ts`)
+  - [ ] 音声クリップ作成アクションの実装 (`src/actions/audioclips/create.ts`)
+  - [ ] 音声クリップ更新アクションの実装 (`src/actions/audioclips/update.ts`)
+  - [ ] 音声クリップ削除アクションの実装 (`src/actions/audioclips/delete.ts`)
+- [ ] 既存コンポーネントの更新
+  - [ ] フォームコンポーネントをServer Action連携に変更
+  - [ ] データフェッチをServer Actionsに移行
+
+#### フェーズ3: 機能拡張のアクション実装
+
+- [ ] タグ機能のServer Actions実装
+  - [ ] タグ検索アクションの実装 (`src/actions/tags/search.ts`)
+  - [ ] タグ更新アクションの実装 (`src/actions/audioclips/tags.ts`)
+  - [ ] 人気タグ取得アクションの実装 (`src/actions/tags/popular.ts`)
+- [ ] お気に入り機能のServer Actions実装
+  - [ ] お気に入り状態取得アクションの実装 (`src/actions/favorites/get.ts`)
+  - [ ] お気に入り追加/削除アクションの実装 (`src/actions/favorites/toggle.ts`)
+  - [ ] お気に入りリスト取得アクションの実装 (`src/actions/favorites/list.ts`)
+- [ ] 統計機能のServer Actions実装
+  - [ ] 再生回数更新アクションの実装 (`src/actions/analytics/record-play.ts`)
+  - [ ] 統計情報取得アクションの実装 (`src/actions/analytics/get-stats.ts`)
+
+#### フェーズ4: 統合テストとAPI Routes廃止
+
+- [ ] 新旧実装の互換性テスト
+  - [ ] 機能テストの実施
+  - [ ] パフォーマンス比較
+  - [ ] エラーハンドリングの検証
+- [ ] 既存API Routesの段階的削除
+  - [ ] 移行完了した機能のAPI Routesを無効化
+  - [ ] 一定期間後に完全削除
+- [ ] コードベースのクリーンアップ
+  - [ ] 不要になったAPIクライアントコードの削除
+  - [ ] ドキュメント更新

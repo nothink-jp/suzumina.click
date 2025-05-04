@@ -62,8 +62,8 @@ vi.mock("@/components/ui/UserStatusCard", () => ({
   ),
 }));
 
-// getProfile 関数をモック
-vi.mock("./api/profile/getProfile", () => ({
+// getProfile 関数をモック - パスを修正
+vi.mock("./actions/profile/getProfile", () => ({
   getProfile: vi.fn().mockResolvedValue(null), // デフォルトでは非ログイン状態
 }));
 
@@ -98,7 +98,7 @@ describe("ホームページ", () => {
 
   it("非ログイン時には未ログインの表示がされること", async () => {
     // 準備 - 非ログイン状態のモックを設定
-    const { getProfile } = await import("./api/profile/getProfile");
+    const { getProfile } = await import("./actions/profile/getProfile");
     vi.mocked(getProfile).mockResolvedValue(null);
 
     // 実行
@@ -110,19 +110,16 @@ describe("ホームページ", () => {
 
   it("ログイン時にはユーザー情報が表示されること", async () => {
     // 準備 - ログイン状態のモックを設定
-    const { getProfile } = await import("./api/profile/getProfile");
+    const { getProfile } = await import("./actions/profile/getProfile");
     vi.mocked(getProfile).mockResolvedValue({
       uid: "test-uid",
       displayName: "テストユーザー",
-      email: "test@example.com",
       preferredName: "テストユーザー",
-      emailVerified: false,
-      disabled: false,
       photoURL: "https://example.com/avatar.jpg",
       bio: "テスト用ユーザープロフィール",
       isPublic: true,
-      createdAt: "2025-04-01T00:00:00.000Z",
-      updatedAt: "2025-04-20T00:00:00.000Z",
+      createdAt: new Date("2025-04-01T00:00:00.000Z"),
+      updatedAt: new Date("2025-04-20T00:00:00.000Z"),
     });
 
     // 実行

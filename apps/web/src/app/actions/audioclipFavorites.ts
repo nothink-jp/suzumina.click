@@ -2,8 +2,8 @@
 
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
-import { initializeFirebaseAdmin } from "../api/auth/firebase-admin";
-import { getCurrentUser } from "../api/auth/getCurrentUser";
+import { initializeFirebaseAdmin } from "./auth/firebase-admin";
+import { getCurrentUser } from "./auth/getCurrentUser";
 
 /**
  * お気に入り状態を設定する

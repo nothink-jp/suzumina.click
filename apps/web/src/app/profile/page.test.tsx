@@ -7,8 +7,8 @@ vi.mock("@/components/ui/AuthButton", () => ({
   default: () => <button type="button">モックログインボタン</button>,
 }));
 
-// getProfile APIのモック
-vi.mock("../api/profile/getProfile", () => ({
+// getProfile APIのモック - パスを修正
+vi.mock("../actions/profile/getProfile", () => ({
   getProfile: vi.fn().mockResolvedValue(null),
 }));
 
@@ -36,7 +36,7 @@ vi.mock("react", async () => {
 describe("Profile Page", () => {
   it("ローディング状態が表示されること", async () => {
     // Suspenseのfallbackを表示するためにgetProfileをモック
-    const { getProfile } = await import("../api/profile/getProfile");
+    const { getProfile } = await import("../actions/profile/getProfile");
     vi.mocked(getProfile).mockResolvedValue({
       uid: "test-uid",
       displayName: "テストユーザー",
@@ -44,8 +44,8 @@ describe("Profile Page", () => {
       photoURL: "https://example.com/avatar.jpg",
       bio: "テスト用プロフィール",
       isPublic: true,
-      createdAt: "2025-04-01T00:00:00.000Z",
-      updatedAt: "2025-04-20T00:00:00.000Z",
+      createdAt: new Date("2025-04-01T00:00:00.000Z"),
+      updatedAt: new Date("2025-04-20T00:00:00.000Z"),
     });
 
     render(await ProfilePage());
@@ -61,7 +61,7 @@ describe("Profile Page", () => {
 
   it("非ログイン状態ではログインが必要であることが表示されること", async () => {
     // 非ログイン状態をモック
-    const { getProfile } = await import("../api/profile/getProfile");
+    const { getProfile } = await import("../actions/profile/getProfile");
     vi.mocked(getProfile).mockResolvedValue(null);
 
     render(await ProfilePage());
@@ -82,11 +82,11 @@ describe("Profile Page", () => {
       photoURL: "https://example.com/avatar.jpg",
       bio: "テスト用プロフィール",
       isPublic: true,
-      createdAt: "2024-04-21T00:00:00.000Z",
-      updatedAt: "2024-04-21T01:00:00.000Z",
+      createdAt: new Date("2024-04-21T00:00:00.000Z"),
+      updatedAt: new Date("2024-04-21T01:00:00.000Z"),
     };
 
-    const { getProfile } = await import("../api/profile/getProfile");
+    const { getProfile } = await import("../actions/profile/getProfile");
     vi.mocked(getProfile).mockResolvedValue(mockProfile);
 
     render(await ProfilePage());
@@ -114,11 +114,11 @@ describe("Profile Page", () => {
       photoURL: null,
       bio: null,
       isPublic: false,
-      createdAt: "2024-04-21T00:00:00.000Z",
-      updatedAt: "2024-04-21T01:00:00.000Z",
+      createdAt: new Date("2024-04-21T00:00:00.000Z"),
+      updatedAt: new Date("2024-04-21T01:00:00.000Z"),
     };
 
-    const { getProfile } = await import("../api/profile/getProfile");
+    const { getProfile } = await import("../actions/profile/getProfile");
     vi.mocked(getProfile).mockResolvedValue(mockProfile);
 
     render(await ProfilePage());

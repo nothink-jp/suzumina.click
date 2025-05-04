@@ -134,3 +134,49 @@ export interface OverlapCheckResult {
   isOverlapping: boolean; // 重複しているかどうか
   overlappingClips: AudioClip[]; // 重複しているクリップのリスト
 }
+
+/**
+ * タグ情報の型
+ * タグ入力や表示に使用
+ */
+export interface TagInfo {
+  id: string; // タグID（タグ文字列自体をIDとして使用）
+  text: string; // タグテキスト
+  count?: number; // タグの使用回数（人気タグ表示などに使用）
+}
+
+/**
+ * タグ入力状態の型
+ * タグ入力コンポーネントで使用
+ */
+export interface TagInputState {
+  tags: TagInfo[]; // 現在入力されているタグリスト
+  inputValue: string; // 入力中のタグテキスト
+  suggestions: TagInfo[]; // タグ候補リスト
+  isLoading: boolean; // 読み込み中かどうか
+  error: string | null; // エラーメッセージ
+}
+
+/**
+ * タグ検索パラメータの型
+ */
+export interface TagSearchParams {
+  query: string; // 検索クエリ
+  limit?: number; // 取得上限数
+}
+
+/**
+ * タグ関連APIのレスポンス型
+ */
+export interface TagApiResponse {
+  tags: TagInfo[]; // タグリスト
+  hasMore: boolean; // さらにデータがあるか
+}
+
+/**
+ * 人気タグ取得パラメータの型
+ */
+export interface PopularTagsParams {
+  limit?: number; // 取得上限数
+  timeRange?: "day" | "week" | "month" | "all"; // 期間指定（日、週、月、全期間）
+}

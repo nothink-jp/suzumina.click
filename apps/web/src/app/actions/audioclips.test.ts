@@ -1,7 +1,5 @@
 import { revalidatePath } from "next/cache";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { initializeFirebaseAdmin } from "../api/auth/firebase-admin";
-import { getCurrentUser } from "../api/auth/getCurrentUser";
 import {
   createAudioClip,
   deleteAudioClip,
@@ -10,6 +8,8 @@ import {
   incrementPlayCount,
   updateAudioClip,
 } from "./audioclips";
+import { initializeFirebaseAdmin } from "./auth/firebase-admin";
+import { getCurrentUser } from "./auth/getCurrentUser";
 
 // モック関数の定義
 const mockGet = vi.fn();
@@ -29,12 +29,12 @@ vi.mock("next/cache", () => ({
 }));
 
 // getCurrentUserのモック
-vi.mock("../api/auth/getCurrentUser", () => ({
+vi.mock("./auth/getCurrentUser", () => ({
   getCurrentUser: vi.fn(),
 }));
 
 // initializeFirebaseAdminのモック
-vi.mock("../api/auth/firebase-admin", () => ({
+vi.mock("./auth/firebase-admin", () => ({
   initializeFirebaseAdmin: vi.fn(),
 }));
 
@@ -293,7 +293,8 @@ describe("音声クリップに関する関数のテスト", () => {
       // 検証
       expect(mockWhere).toHaveBeenCalledWith("isPublic", "==", true);
       expect(result.clips.length).toBe(1);
-      expect(result.clips[0].title).toBe("公開クリップ");
+      // 型エラー修正: clips配列の要素にtitleプロパティが含まれることを明示
+      expect(result.clips[0]).toHaveProperty("title", "公開クリップ");
     });
 
     it("パラメータが不足している場合はエラーになること", async () => {
@@ -355,7 +356,8 @@ describe("音声クリップに関する関数のテスト", () => {
       expect(mockCollection).toHaveBeenCalledWith("audioClips");
       expect(mockDoc).toHaveBeenCalledWith("clip-123");
       expect(result.id).toBe("clip-123");
-      expect(result.title).toBe("特定のクリップ");
+      // 型エラー修正: titleプロパティにアクセスする代わりにプロパティの存在を確認
+      expect(result).toHaveProperty("title", "特定のクリップ");
     });
 
     it("存在しないクリップIDの場合はエラーを返すこと", async () => {

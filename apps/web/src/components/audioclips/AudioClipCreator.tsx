@@ -21,6 +21,7 @@ import {
   formatTime,
 } from "../../lib/audioclips/validation";
 import { useAuth } from "../../lib/firebase/AuthProvider";
+import TagInput from "./TagInput"; // 新しいTagInputコンポーネントをインポート
 import TimelineVisualization from "./TimelineVisualization"; // TimelineVisualizationコンポーネントをインポート
 
 interface AudioClipCreatorProps {
@@ -45,7 +46,6 @@ export default function AudioClipCreator({
   const { user } = useAuth();
   // タグ管理用の状態（Conformで管理しにくい部分なので別途管理）
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
   // エラー表示用の状態
   const [error, setError] = useState<string | null>(null);
   // フォーム送信状態管理
@@ -140,7 +140,6 @@ export default function AudioClipCreator({
 
         // フォームをリセット
         setTags([]);
-        setTagInput("");
         setSubmitSuccess(true);
 
         // 親コンポーネントに通知
@@ -662,25 +661,9 @@ export default function AudioClipCreator({
     }
   };
 
-  // タグを追加
-  const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
-      setTagInput("");
-    }
-  };
-
-  // タグを削除
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
-  };
-
-  // タグ入力でEnterキーを押した時の処理
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddTag();
-    }
+  // タグ変更ハンドラー
+  const handleTagsChange = (newTags: string[]) => {
+    setTags(newTags);
   };
 
   // 時間を「分:秒」形式でフォーマット
@@ -1241,48 +1224,18 @@ export default function AudioClipCreator({
                   </div>
                 </div>
 
+                {/* タグ入力コンポーネント - 新しいTagInputコンポーネントを使用 */}
                 <div className="form-control mb-4">
                   <label className="label" htmlFor="clip-tags">
                     <span className="label-text">タグ（オプション）</span>
                   </label>
-                  <div className="join w-full">
-                    <input
-                      id="clip-tags"
-                      type="text"
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={handleTagKeyDown}
-                      placeholder="タグを入力（Enterで追加）"
-                      className="join-item input input-bordered flex-grow"
-                      disabled={!user || isSubmitting}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddTag}
-                      className="join-item btn btn-neutral"
-                      disabled={!user || isSubmitting || !tagInput.trim()}
-                    >
-                      追加
-                    </button>
-                  </div>
-
-                  {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {tags.map((tag) => (
-                        <div key={tag} className="badge badge-primary gap-1">
-                          {tag}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTag(tag)}
-                            className="btn btn-xs btn-circle btn-ghost"
-                            aria-label={`${tag}タグを削除`}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <TagInput
+                    initialTags={tags}
+                    onChange={handleTagsChange}
+                    maxTags={10}
+                    placeholder="タグを入力..."
+                    disabled={!user || isSubmitting}
+                  />
                 </div>
 
                 <div className="form-control mb-4">

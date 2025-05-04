@@ -1,6 +1,7 @@
-import { revokeSession } from "@/app/api/auth/revokeSession";
+import { revokeSession } from "@/app/actions/auth/revokeSession";
 import { useAuth } from "@/lib/firebase/AuthProvider";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -25,7 +26,7 @@ vi.mock("@/lib/firebase/client", () => ({
   },
 }));
 
-vi.mock("@/app/api/auth/revokeSession", () => ({
+vi.mock("@/app/actions/auth/revokeSession", () => ({
   revokeSession: vi.fn().mockResolvedValue(true),
 }));
 
@@ -120,11 +121,11 @@ describe("AuthButton コンポーネントのテスト", () => {
 
     // アバターをクリックしてドロップダウンを表示
     const avatar = screen.getByRole("img", { name: "プロフィール画像" });
-    fireEvent.click(avatar);
+    userEvent.click(avatar);
 
     // ログアウトボタンをクリック
     const logoutButton = screen.getByRole("button", { name: "ログアウト" });
-    fireEvent.click(logoutButton);
+    userEvent.click(logoutButton);
 
     // 非同期処理の完了を待機
     await waitFor(() => {
@@ -162,11 +163,11 @@ describe("AuthButton コンポーネントのテスト", () => {
 
     // アバターをクリックしてドロップダウンを表示
     const avatar = screen.getByRole("img", { name: "プロフィール画像" });
-    fireEvent.click(avatar);
+    userEvent.click(avatar);
 
     // ログアウトボタンをクリック
     const logoutButton = screen.getByRole("button", { name: "ログアウト" });
-    fireEvent.click(logoutButton);
+    userEvent.click(logoutButton);
 
     // エラーログが出力されることを確認
     await waitFor(() => {

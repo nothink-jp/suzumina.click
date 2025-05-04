@@ -11,13 +11,13 @@ vi.mock("next/navigation", () => ({
   })),
 }));
 
-// Discord認証アクションをモック
-vi.mock("@/app/api/auth/discord/actions", () => ({
+// Discord認証アクションをモック - パスを修正
+vi.mock("@/app/actions/auth/discord", () => ({
   handleDiscordCallback: vi.fn(),
 }));
 
 // セッションクッキー作成関数をモック
-vi.mock("@/app/api/auth/createSessionCookie", () => ({
+vi.mock("@/app/actions/auth/createSessionCookie", () => ({
   createSessionCookie: vi.fn(),
 }));
 
@@ -40,12 +40,11 @@ vi.mock("firebase/auth", () => ({
   signInWithCustomToken: vi.fn(),
 }));
 
-import { createSessionCookie } from "@/app/api/auth/createSessionCookie";
-import { handleDiscordCallback } from "@/app/api/auth/discord/actions";
-import { auth, getAuthInstance } from "@/lib/firebase/client";
+import { createSessionCookie } from "@/app/actions/auth/createSessionCookie";
+import { handleDiscordCallback } from "@/app/actions/auth/discord";
 import { signInWithCustomToken } from "firebase/auth";
 // テスト用にモック化したモジュールをインポート
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import AuthModal from "./AuthModal";
 
