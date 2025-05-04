@@ -112,6 +112,9 @@ export async function getAudioClips(params: GetAudioClipsParams) {
           ...data,
           createdAt: data.createdAt?.toDate().toISOString(),
           updatedAt: data.updatedAt?.toDate().toISOString(),
+          lastPlayedAt: data.lastPlayedAt
+            ? data.lastPlayedAt.toDate().toISOString()
+            : undefined,
         };
       });
 
