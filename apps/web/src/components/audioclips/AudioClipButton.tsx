@@ -1,8 +1,8 @@
 "use client";
 
+import { incrementPlayCount } from "@/actions/audioclips/actions";
+import { toggleFavorite } from "@/actions/audioclips/manage-favorites";
 import { useState } from "react";
-import { incrementPlayCount } from "../../actions/audioclips/actions";
-import { setFavoriteStatus } from "../../app/actions/audioclipFavorites";
 import type { AudioClip } from "../../lib/audioclips/types";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 import TagDisplay from "./TagDisplay";
@@ -64,14 +64,14 @@ export default function AudioClipButton({
       const newFavoriteState = !localFavorite;
 
       // お気に入り状態を更新（Server Actionsを使用）
-      await setFavoriteStatus(clip.id, newFavoriteState);
+      const result = await toggleFavorite(clip.id);
 
       // ローカル状態を更新
-      setLocalFavorite(newFavoriteState);
+      setLocalFavorite(result.isFavorite);
 
       // 親コンポーネントに状態変更を通知
       if (onFavoriteChange) {
-        onFavoriteChange(newFavoriteState);
+        onFavoriteChange(result.isFavorite);
       }
     } catch (error) {
       console.error("お気に入り操作に失敗しました:", error);

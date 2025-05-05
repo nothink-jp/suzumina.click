@@ -4,12 +4,12 @@ import type { AudioClip } from "../../lib/audioclips/types";
 
 // モジュールをモック化 - Vitestのホイスティング問題を解消するために
 // インライン関数内で直接vi.fn()を使用
-vi.mock("../../actions/audioclips/actions", () => ({
+vi.mock("@/actions/audioclips/actions", () => ({
   incrementPlayCount: vi.fn(() => Promise.resolve(true)),
 }));
 
-vi.mock("../../app/actions/audioclipFavorites", () => ({
-  setFavoriteStatus: vi.fn(() => Promise.resolve(true)),
+vi.mock("@/actions/audioclips/manage-favorites", () => ({
+  toggleFavorite: vi.fn(() => Promise.resolve({ isFavorite: true })),
 }));
 
 // 認証コンテキストのモック
@@ -17,8 +17,8 @@ vi.mock("../../lib/firebase/AuthProvider", () => ({
   useAuth: vi.fn(),
 }));
 
-import { incrementPlayCount } from "../../actions/audioclips/actions";
-import { setFavoriteStatus } from "../../app/actions/audioclipFavorites";
+import { incrementPlayCount } from "@/actions/audioclips/actions";
+import { toggleFavorite } from "@/actions/audioclips/manage-favorites";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 // モック化したモジュールをインポート（モックファクトリの後に配置）
 import AudioClipButton from "./AudioClipButton";
@@ -112,6 +112,13 @@ describe("AudioClipButtonコンポーネントのテスト", () => {
   });
 
   it("お気に入りボタンをクリックするとお気に入り状態が切り替わる", async () => {
+    // toggleFavoriteのモック戻り値を設定
+    (toggleFavorite as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      isFavorite: true,
+      clipId: mockClip.id,
+      message: "お気に入りに追加しました",
+    });
+
     render(
       <AudioClipButton
         clip={mockClip}
@@ -125,8 +132,8 @@ describe("AudioClipButtonコンポーネントのテスト", () => {
     const favoriteButton = screen.getByLabelText("お気に入りに追加");
     await fireEvent.click(favoriteButton);
 
-    // setFavoriteStatusが正しく呼ばれたか確認
-    expect(setFavoriteStatus).toHaveBeenCalledWith(mockClip.id, true);
+    // toggleFavoriteが正しく呼ばれたか確認
+    expect(toggleFavorite).toHaveBeenCalledWith(mockClip.id);
 
     // onFavoriteChangeが呼び出されたか確認
     expect(mockOnFavoriteChange).toHaveBeenCalledWith(true);

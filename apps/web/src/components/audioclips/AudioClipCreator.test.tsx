@@ -3,7 +3,7 @@ import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // モジュールをモック化 - ホイスティング問題を回避するためにインライン関数を使用
-vi.mock("../../app/actions/audioclips", () => ({
+vi.mock("@/actions/audioclips/actions", () => ({
   createAudioClip: vi.fn().mockResolvedValue({
     success: true,
     clipId: "new-clip-123",
@@ -145,8 +145,8 @@ vi.stubGlobal(
   },
 );
 
+import { createAudioClip } from "@/actions/audioclips/actions";
 import { act } from "react";
-import { createAudioClip } from "../../app/actions/audioclips";
 import { formatTime } from "../../lib/audioclips/validation";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 // モック化したモジュールをモックファクトリの後でインポート

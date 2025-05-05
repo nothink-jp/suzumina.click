@@ -1,8 +1,8 @@
 "use client";
 
+import { getAudioClips } from "@/actions/audioclips/actions";
+import { checkFavoriteStatus as checkFavoriteStatusAction } from "@/actions/audioclips/manage-favorites";
 import { useEffect, useState } from "react";
-import { checkFavoriteStatus as checkFavoriteStatusAction } from "../../app/actions/audioclipFavorites";
-import { getAudioClips } from "../../app/actions/audioclips";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
 import type { AudioClip } from "../../lib/audioclips/types";
 import { useAuth } from "../../lib/firebase/AuthProvider";

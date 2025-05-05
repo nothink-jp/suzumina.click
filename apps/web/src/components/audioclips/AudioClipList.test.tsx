@@ -9,11 +9,11 @@ import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 // モジュールのモック化 - Vitestのホイスティング問題を解消するために
 // インライン関数内で直接vi.fn()を使用
-vi.mock("../../app/actions/audioclips", () => ({
+vi.mock("@/actions/audioclips/actions", () => ({
   getAudioClips: vi.fn(),
 }));
 
-vi.mock("../../app/actions/audioclipFavorites", () => ({
+vi.mock("@/actions/audioclips/manage-favorites", () => ({
   checkFavoriteStatus: vi.fn(),
   setFavoriteStatus: vi.fn(),
 }));
@@ -62,11 +62,11 @@ vi.mock("./AudioClipPlayer", () => ({
   ),
 }));
 
+import { getAudioClips } from "@/actions/audioclips/actions";
 import {
   checkFavoriteStatus,
   setFavoriteStatus,
-} from "../../app/actions/audioclipFavorites";
-import { getAudioClips } from "../../app/actions/audioclips";
+} from "@/actions/audioclips/manage-favorites";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 // モック化したモジュールをインポート（モックファクトリの後に配置）
 import AudioClipList from "./AudioClipList";

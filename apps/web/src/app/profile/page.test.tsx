@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // モジュールのモックを先に設定
-vi.mock("../actions/profile/getProfile", () => ({
+vi.mock("@/actions/profile/getProfile", () => ({
   getProfile: vi.fn(),
 }));
 
@@ -25,7 +25,7 @@ vi.mock("react", async () => {
   };
 });
 
-import { getProfile } from "../actions/profile/getProfile";
+import { getProfile } from "@/actions/profile/getProfile";
 import ProfilePage from "./page";
 
 // テスト開始
