@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AudioClip } from "../../lib/audioclips/types";
-import AudioClipButton from "./AudioClipButton";
 
-// Server Actionsのモック
-vi.mock("../../app/actions/audioclips", () => ({
+// モジュールをモック化 - Vitestのホイスティング問題を解消するために
+// インライン関数内で直接vi.fn()を使用
+vi.mock("../../actions/audioclips/actions", () => ({
   incrementPlayCount: vi.fn(() => Promise.resolve(true)),
 }));
 
@@ -13,15 +13,15 @@ vi.mock("../../app/actions/audioclipFavorites", () => ({
 }));
 
 // 認証コンテキストのモック
-vi.mock("../../lib/firebase/AuthProvider", () => {
-  // モック関数を作成して返す
-  return {
-    useAuth: vi.fn(),
-  };
-});
+vi.mock("../../lib/firebase/AuthProvider", () => ({
+  useAuth: vi.fn(),
+}));
 
-// モックの取得（vi.mockの後に実行される）
-const { useAuth } = vi.mocked(await import("../../lib/firebase/AuthProvider"));
+import { incrementPlayCount } from "../../actions/audioclips/actions";
+import { setFavoriteStatus } from "../../app/actions/audioclipFavorites";
+import { useAuth } from "../../lib/firebase/AuthProvider";
+// モック化したモジュールをインポート（モックファクトリの後に配置）
+import AudioClipButton from "./AudioClipButton";
 
 describe("AudioClipButtonコンポーネントのテスト", () => {
   // テスト用の音声クリップデータ
@@ -54,7 +54,7 @@ describe("AudioClipButtonコンポーネントのテスト", () => {
     vi.clearAllMocks();
 
     // useAuthをデフォルト値にリセット
-    useAuth.mockReturnValue({
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       user: { uid: "test-user-123" }, // デフォルトでログイン状態
     });
   });
@@ -104,8 +104,7 @@ describe("AudioClipButtonコンポーネントのテスト", () => {
     const playButton = screen.getByLabelText(`${mockClip.title}を再生`);
     await fireEvent.click(playButton);
 
-    // incrementPlayCountが呼ばれたか確認
-    const { incrementPlayCount } = await import("../../app/actions/audioclips");
+    // incrementPlayCountが呼ばれたか確認（実際のファイルパスを使用）
     expect(incrementPlayCount).toHaveBeenCalledWith(mockClip.id);
 
     // onPlayが正しいクリップで呼び出されたか確認
@@ -127,9 +126,6 @@ describe("AudioClipButtonコンポーネントのテスト", () => {
     await fireEvent.click(favoriteButton);
 
     // setFavoriteStatusが正しく呼ばれたか確認
-    const { setFavoriteStatus } = await import(
-      "../../app/actions/audioclipFavorites"
-    );
     expect(setFavoriteStatus).toHaveBeenCalledWith(mockClip.id, true);
 
     // onFavoriteChangeが呼び出されたか確認
@@ -146,7 +142,7 @@ describe("AudioClipButtonコンポーネントのテスト", () => {
 
   it("未ログイン状態ではお気に入りボタンが表示されない", () => {
     // 未ログイン状態をモック
-    useAuth.mockReturnValueOnce({
+    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       user: null,
     });
 

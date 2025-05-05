@@ -1,6 +1,9 @@
-"use server";
+/**
+ * オーディオクリップ関連の共通Server Actions
+ *
+ * このファイルにはオーディオクリップ関連の共通アクションをエクスポートします
+ */
 
-import { formatTime } from "@/lib/audioclips/validation";
 import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
 import type {
   DocumentData,
@@ -8,9 +11,12 @@ import type {
   Query,
   QueryDocumentSnapshot,
 } from "firebase-admin/firestore";
-import { revalidatePath } from "next/cache";
-import { initializeFirebaseAdmin } from "./auth/firebase-admin";
-import { getCurrentUser } from "./auth/getCurrentUser";
+// revalidatePath関数は Pages Router では動作しないため削除
+import { initializeFirebaseAdmin } from "../auth/firebase-admin";
+import { getCurrentUser } from "../auth/getCurrentUser";
+
+// 注: "use server" ディレクティブを含むファイルでの再エクスポートは許可されていないため、
+// 個別のファイルで "use server" ディレクティブを使用する必要があります。
 
 interface AudioClipData {
   videoId: string;
@@ -266,8 +272,8 @@ export async function createAudioClip(data: AudioClipData) {
 
     try {
       const docRef = await db.collection("audioClips").add(newClip);
-      const clipPath = `/videos/${videoId}`;
-      revalidatePath(clipPath);
+      // revalidatePath関数の呼び出しを削除
+      // (Pages Routerではサポートされていないため)
 
       // レスポンス用にタイムスタンプをISOString形式に変換
       return {
@@ -494,10 +500,7 @@ export async function updateAudioClip(
       // 更新実行
       await db.collection("audioClips").doc(clipId).update(updateData);
 
-      // キャッシュを更新
-      if (clipData?.videoId) {
-        revalidatePath(`/videos/${clipData.videoId}`);
-      }
+      // Pages Routerでは revalidatePath が使用できないため削除
 
       return {
         id: clipId,
@@ -581,10 +584,7 @@ export async function deleteAudioClip(clipId: string) {
       // 削除実行
       await db.collection("audioClips").doc(clipId).delete();
 
-      // キャッシュを更新
-      if (videoId) {
-        revalidatePath(`/videos/${videoId}`);
-      }
+      // Pages Routerでは revalidatePath が使用できないため削除
 
       return {
         id: clipId,

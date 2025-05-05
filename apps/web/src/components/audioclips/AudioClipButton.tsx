@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { incrementPlayCount } from "../../actions/audioclips/actions";
 import { setFavoriteStatus } from "../../app/actions/audioclipFavorites";
-import { incrementPlayCount } from "../../app/actions/audioclips";
 import type { AudioClip } from "../../lib/audioclips/types";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 import TagDisplay from "./TagDisplay";

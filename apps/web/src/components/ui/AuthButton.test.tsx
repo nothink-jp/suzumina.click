@@ -1,4 +1,4 @@
-import { revokeSession } from "@/app/actions/auth/revokeSession";
+import { revokeSession } from "@/actions/auth/actions";
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -26,7 +26,7 @@ vi.mock("@/lib/firebase/client", () => ({
   },
 }));
 
-vi.mock("@/app/actions/auth/revokeSession", () => ({
+vi.mock("@/actions/auth/actions", () => ({
   revokeSession: vi.fn().mockResolvedValue(true),
 }));
 

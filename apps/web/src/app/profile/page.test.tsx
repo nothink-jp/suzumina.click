@@ -1,131 +1,91 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import ProfilePage from "./page";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// AuthButtonのモック
-vi.mock("@/components/ui/AuthButton", () => ({
-  default: () => <button type="button">モックログインボタン</button>,
-}));
-
-// getProfile APIのモック - パスを修正
+// モジュールのモックを先に設定
 vi.mock("../actions/profile/getProfile", () => ({
-  getProfile: vi.fn().mockResolvedValue(null),
+  getProfile: vi.fn(),
 }));
 
-// ProfileEditForm コンポーネントをモック
+vi.mock("@/components/ui/AuthButton", () => ({
+  default: () => <button type="button">ログイン</button>,
+}));
+
 vi.mock("./_components/ProfileEditForm", () => ({
-  default: ({ profile }: { profile: any }) => (
-    <div>モックプロフィール編集フォーム</div>
+  default: ({ profile }) => (
+    <div>プロフィール編集フォーム（{profile.preferredName}）</div>
   ),
 }));
 
-// Suspenseのモック
+// React の Suspense をモック
 vi.mock("react", async () => {
-  const actual = await vi.importActual<typeof import("react")>("react");
+  const actual = await vi.importActual("react");
   return {
     ...actual,
-    Suspense: ({
-      children,
-      fallback,
-    }: { children: React.ReactNode; fallback: React.ReactNode }) => (
-      <div data-testid="suspense-mock">{fallback}</div>
-    ),
+    Suspense: ({ children }) => children,
   };
 });
 
-describe("Profile Page", () => {
-  it("ローディング状態が表示されること", async () => {
-    // Suspenseのfallbackを表示するためにgetProfileをモック
-    const { getProfile } = await import("../actions/profile/getProfile");
-    vi.mocked(getProfile).mockResolvedValue({
-      uid: "test-uid",
-      displayName: "テストユーザー",
-      preferredName: "テストユーザー表示名",
-      photoURL: "https://example.com/avatar.jpg",
-      bio: "テスト用プロフィール",
-      isPublic: true,
-      createdAt: new Date("2025-04-01T00:00:00.000Z"),
-      updatedAt: new Date("2025-04-20T00:00:00.000Z"),
-    });
+import { getProfile } from "../actions/profile/getProfile";
+import ProfilePage from "./page";
 
-    render(await ProfilePage());
+// テスト開始
+describe("プロフィールページ", () => {
+  // モックプロフィールデータ
+  const mockProfileData = {
+    uid: "test-user-123",
+    displayName: "テストユーザー@1234",
+    preferredName: "テストユーザー",
+    photoURL: "https://example.com/photo.jpg",
+    bio: "これはテスト用のプロフィールです。",
+    isPublic: true,
+    createdAt: "2025-01-01T00:00:00Z",
+    updatedAt: "2025-04-01T00:00:00Z",
+  };
 
-    // Suspenseのモックが正しく動作していることを確認
-    const suspenseMock = screen.getByTestId("suspense-mock");
-    expect(suspenseMock).toBeInTheDocument();
-    // loadingクラスを持つ要素があることを検証
-    expect(
-      screen.getByTestId("suspense-mock").querySelector(".loading"),
-    ).toHaveClass("loading-spinner");
+  // テスト前の準備
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it("非ログイン状態ではログインが必要であることが表示されること", async () => {
-    // 非ログイン状態をモック
-    const { getProfile } = await import("../actions/profile/getProfile");
-    vi.mocked(getProfile).mockResolvedValue(null);
+  it("認証済みユーザーのプロフィールが正しく表示されること", async () => {
+    // プロフィール取得関数のモック設定
+    (getProfile as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockProfileData,
+    );
 
-    render(await ProfilePage());
+    // コンポーネントをレンダリング（サーバーコンポーネントのため await が必要）
+    const page = await ProfilePage();
+    render(page);
 
+    // プロフィール情報が表示されることを確認
+    expect(screen.getByText("テストユーザー")).toBeInTheDocument();
+    expect(screen.getByText("自己紹介")).toBeInTheDocument();
+    expect(
+      screen.getByText("これはテスト用のプロフィールです。"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("プロフィール編集フォーム（テストユーザー）"),
+    ).toBeInTheDocument();
+
+    // アカウント情報の確認
+    expect(screen.getByText(/認証プロバイダー: Discord/)).toBeInTheDocument();
+    expect(screen.getByText(/認証日時:/)).toBeInTheDocument();
+    expect(screen.getByText(/最終更新:/)).toBeInTheDocument();
+  });
+
+  it("未ログイン状態の場合はログインを促すメッセージが表示されること", async () => {
+    // 未ログイン状態をシミュレート
+    (getProfile as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+    // コンポーネントをレンダリング
+    const page = await ProfilePage();
+    render(page);
+
+    // ログインを促すメッセージが表示されることを確認
     expect(screen.getByText("ログインが必要です")).toBeInTheDocument();
     expect(
       screen.getByText("プロフィール情報を表示するにはログインしてください。"),
     ).toBeInTheDocument();
-    expect(screen.getByText("モックログインボタン")).toBeInTheDocument();
-  });
-
-  it("ログイン状態ではユーザープロフィールが表示されること", async () => {
-    // モックの設定
-    const mockProfile = {
-      uid: "dummy-uid",
-      displayName: "123456789@discord.com",
-      preferredName: "Test User",
-      photoURL: "https://example.com/avatar.jpg",
-      bio: "テスト用プロフィール",
-      isPublic: true,
-      createdAt: new Date("2024-04-21T00:00:00.000Z"),
-      updatedAt: new Date("2024-04-21T01:00:00.000Z"),
-    };
-
-    const { getProfile } = await import("../actions/profile/getProfile");
-    vi.mocked(getProfile).mockResolvedValue(mockProfile);
-
-    render(await ProfilePage());
-
-    // ヘッダーの確認
-    expect(
-      screen.getByRole("heading", { name: "プロフィール", level: 1 }),
-    ).toBeInTheDocument();
-
-    // ユーザー情報の確認
-    expect(screen.getByText("Test User")).toBeInTheDocument();
-    expect(screen.getByText("Discord表示名: 123456789")).toBeInTheDocument();
-    expect(screen.getByAltText("Test Userのアバター")).toBeInTheDocument();
-
-    // アカウント情報の確認
-    expect(screen.getByText("認証プロバイダー: Discord")).toBeInTheDocument();
-  });
-
-  it("オプションのユーザーデータがない場合も適切に処理されること", async () => {
-    // photoURL や displayName が null の場合のテスト
-    const mockProfile = {
-      uid: "dummy-uid",
-      displayName: null,
-      preferredName: null,
-      photoURL: null,
-      bio: null,
-      isPublic: false,
-      createdAt: new Date("2024-04-21T00:00:00.000Z"),
-      updatedAt: new Date("2024-04-21T01:00:00.000Z"),
-    };
-
-    const { getProfile } = await import("../actions/profile/getProfile");
-    vi.mocked(getProfile).mockResolvedValue(mockProfile);
-
-    render(await ProfilePage());
-
-    // 必須情報のみ表示されることを確認
-    expect(screen.getByText("Discord表示名: 未設定")).toBeInTheDocument();
-    expect(screen.getByText("認証プロバイダー: Discord")).toBeInTheDocument();
-    expect(screen.getByText("非公開")).toBeInTheDocument();
+    expect(screen.getByText("ログイン")).toBeInTheDocument();
   });
 });

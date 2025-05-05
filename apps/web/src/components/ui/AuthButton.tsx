@@ -1,6 +1,6 @@
 "use client";
 
-import { revokeSession } from "@/app/actions/auth/revokeSession";
+import { revokeSession } from "@/actions/auth/actions";
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import { auth } from "@/lib/firebase/client";
 import { signOut } from "firebase/auth";

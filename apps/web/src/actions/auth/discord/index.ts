@@ -24,9 +24,17 @@ import { getDiscordAvatarUrl, validateEnvironmentVariables } from "./utils";
  * @returns 認証処理の結果
  */
 export async function handleDiscordCallback(
-  code: string,
+  code: string | null,
 ): Promise<DiscordAuthResult> {
   try {
+    // コードが存在しない場合はエラーを返す
+    if (!code) {
+      return {
+        success: false,
+        error: "認証コードが見つかりません",
+      };
+    }
+
     // 環境変数の検証
     const { clientId, clientSecret, redirectUri, targetGuildId } =
       validateEnvironmentVariables();

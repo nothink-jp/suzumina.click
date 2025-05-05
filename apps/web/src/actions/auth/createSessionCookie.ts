@@ -28,7 +28,7 @@ export async function createSessionCookie(idToken: string): Promise<boolean> {
 
     // クッキーを設定
     const cookieStore = await cookies();
-    cookieStore.set("firebase-session", sessionCookie, {
+    cookieStore.set("session", sessionCookie, {
       maxAge: expiresIn / 1000, // 秒単位に変換
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // 本番環境では Secure 属性を有効化

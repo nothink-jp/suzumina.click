@@ -1,9 +1,9 @@
 "use server";
 
 /**
- * セッションクッキーを失効させるAPI
+ * セッション管理に関するServer Actions
  *
- * ログアウト時にサーバー側でセッションクッキーを削除します
+ * セッションの作成、確認、削除などのセッション管理機能を提供します
  */
 import { cookies } from "next/headers";
 
@@ -14,9 +14,9 @@ import { cookies } from "next/headers";
  */
 export async function revokeSession(): Promise<boolean> {
   try {
-    // firebase-sessionクッキーを削除
+    // sessionクッキーを削除
     const cookieStore = await cookies();
-    cookieStore.delete("firebase-session");
+    cookieStore.delete("session");
     return true;
   } catch (error) {
     console.error("セッションクッキーの削除に失敗しました:", error);
