@@ -6,17 +6,14 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
-import * as favoriteActions from "../../app/actions/audioclipFavorites";
-import * as audioClipsActions from "../../app/actions/audioclips";
-import { useAuth } from "../../lib/firebase/AuthProvider";
-import AudioClipList from "./AudioClipList";
 
-// モックの設定
-vi.mock("../../app/actions/audioclips", () => ({
+// モジュールのモック化 - Vitestのホイスティング問題を解消するために
+// インライン関数内で直接vi.fn()を使用
+vi.mock("@/actions/audioclips/actions", () => ({
   getAudioClips: vi.fn(),
 }));
 
-vi.mock("../../app/actions/audioclipFavorites", () => ({
+vi.mock("@/actions/audioclips/manage-favorites", () => ({
   checkFavoriteStatus: vi.fn(),
   setFavoriteStatus: vi.fn(),
 }));
@@ -65,6 +62,15 @@ vi.mock("./AudioClipPlayer", () => ({
   ),
 }));
 
+import { getAudioClips } from "@/actions/audioclips/actions";
+import {
+  checkFavoriteStatus,
+  setFavoriteStatus,
+} from "@/actions/audioclips/manage-favorites";
+import { useAuth } from "../../lib/firebase/AuthProvider";
+// モック化したモジュールをインポート（モックファクトリの後に配置）
+import AudioClipList from "./AudioClipList";
+
 describe("AudioClipListコンポーネント", () => {
   // モックのクリップデータ
   const mockClips = [
@@ -109,7 +115,7 @@ describe("AudioClipListコンポーネント", () => {
     vi.clearAllMocks();
 
     // ログイン状態のデフォルト設定
-    (useAuth as Mock).mockReturnValue({
+    (useAuth as unknown as Mock).mockReturnValue({
       user: {
         uid: "test-user",
         displayName: "テストユーザー",
@@ -117,20 +123,18 @@ describe("AudioClipListコンポーネント", () => {
     });
 
     // getAudioClipsのモック設定
-    (audioClipsActions.getAudioClips as Mock).mockResolvedValue({
+    (getAudioClips as unknown as Mock).mockResolvedValue({
       clips: mockClips,
       hasMore: false,
       lastClip: mockClips[mockClips.length - 1],
     });
 
     // checkFavoriteStatusのモック設定
-    (favoriteActions.checkFavoriteStatus as Mock).mockImplementation(
-      (clipId) => {
-        return Promise.resolve({
-          isFavorite: clipId === "clip-1", // clip-1のみお気に入り登録済みとする
-        });
-      },
-    );
+    (checkFavoriteStatus as unknown as Mock).mockImplementation((clipId) => {
+      return Promise.resolve({
+        isFavorite: clipId === "clip-1", // clip-1のみお気に入り登録済みとする
+      });
+    });
   });
 
   // 基本的なレンダリングテスト
@@ -140,7 +144,7 @@ describe("AudioClipListコンポーネント", () => {
 
     // データ取得が完了するのを待機
     await waitFor(() => {
-      expect(audioClipsActions.getAudioClips).toHaveBeenCalledWith({
+      expect(getAudioClips).toHaveBeenCalledWith({
         videoId: "video-123",
         limit: 10,
         startAfter: null,
@@ -185,7 +189,7 @@ describe("AudioClipListコンポーネント", () => {
   // エラー表示テスト
   it("クリップ取得でエラーが発生した場合にエラーメッセージが表示されること", async () => {
     // エラーを返すようにモックを設定
-    (audioClipsActions.getAudioClips as Mock).mockRejectedValue(
+    (getAudioClips as unknown as Mock).mockRejectedValue(
       new Error("データ取得エラー"),
     );
 
@@ -203,7 +207,7 @@ describe("AudioClipListコンポーネント", () => {
   // データ空の場合のテスト
   it("クリップが存在しない場合に適切なメッセージが表示されること", async () => {
     // 空の配列を返すようにモックを設定
-    (audioClipsActions.getAudioClips as Mock).mockResolvedValue({
+    (getAudioClips as unknown as Mock).mockResolvedValue({
       clips: [],
       hasMore: false,
       lastClip: null,
@@ -223,7 +227,7 @@ describe("AudioClipListコンポーネント", () => {
   // もっと見る機能テスト
   it("「もっと見る」ボタンをクリックすると追加のクリップが読み込まれること", async () => {
     // 最初のレスポンスでhasMoreをtrueに設定
-    (audioClipsActions.getAudioClips as Mock)
+    (getAudioClips as unknown as Mock)
       .mockResolvedValueOnce({
         clips: mockClips.slice(0, 1), // 最初は1件目のみ
         hasMore: true,
@@ -264,7 +268,7 @@ describe("AudioClipListコンポーネント", () => {
   // お気に入り状態変更テスト
   it("お気に入りボタンをクリックするとお気に入り状態が切り替わること", async () => {
     // お気に入り切り替え関数のモック設定
-    (favoriteActions.setFavoriteStatus as Mock).mockResolvedValue({
+    (setFavoriteStatus as unknown as Mock).mockResolvedValue({
       success: true,
       isFavorite: true,
     });
@@ -302,7 +306,7 @@ describe("AudioClipListコンポーネント", () => {
   // 未ログイン状態のテスト
   it("未ログイン状態でもクリップ一覧が表示されること", async () => {
     // 未ログイン状態に設定
-    (useAuth as Mock).mockReturnValue({
+    (useAuth as unknown as Mock).mockReturnValue({
       user: null,
     });
 
@@ -316,7 +320,7 @@ describe("AudioClipListコンポーネント", () => {
     });
 
     // お気に入りチェックは実行されないはず
-    expect(favoriteActions.checkFavoriteStatus).not.toHaveBeenCalled();
+    expect(checkFavoriteStatus).not.toHaveBeenCalled();
   });
 
   // 読み込み中の表示テスト
@@ -328,7 +332,7 @@ describe("AudioClipListコンポーネント", () => {
     });
 
     // 最初のレスポンスでhasMoreをtrueに設定
-    (audioClipsActions.getAudioClips as Mock)
+    (getAudioClips as unknown as Mock)
       .mockResolvedValueOnce({
         clips: mockClips.slice(0, 1), // 最初は1件目のみ
         hasMore: true,

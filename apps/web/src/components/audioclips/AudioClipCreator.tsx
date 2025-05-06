@@ -9,7 +9,7 @@ import {
 } from "@headlessui/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { createAudioClip } from "../../app/actions/audioclips";
+import { createAudioClip } from "../../actions/audioclips/actions";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
 import type {
   AudioClip,

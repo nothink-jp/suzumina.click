@@ -63,7 +63,7 @@ vi.mock("@/components/ui/UserStatusCard", () => ({
 }));
 
 // getProfile 関数をモック - パスを修正
-vi.mock("./actions/profile/getProfile", () => ({
+vi.mock("@/actions/profile/getProfile", () => ({
   getProfile: vi.fn().mockResolvedValue(null), // デフォルトでは非ログイン状態
 }));
 
@@ -98,7 +98,7 @@ describe("ホームページ", () => {
 
   it("非ログイン時には未ログインの表示がされること", async () => {
     // 準備 - 非ログイン状態のモックを設定
-    const { getProfile } = await import("./actions/profile/getProfile");
+    const { getProfile } = await import("@/actions/profile/getProfile");
     vi.mocked(getProfile).mockResolvedValue(null);
 
     // 実行
@@ -110,7 +110,7 @@ describe("ホームページ", () => {
 
   it("ログイン時にはユーザー情報が表示されること", async () => {
     // 準備 - ログイン状態のモックを設定
-    const { getProfile } = await import("./actions/profile/getProfile");
+    const { getProfile } = await import("@/actions/profile/getProfile");
     vi.mocked(getProfile).mockResolvedValue({
       uid: "test-uid",
       displayName: "テストユーザー",

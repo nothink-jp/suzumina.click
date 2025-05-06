@@ -1,5 +1,4 @@
 import { render, screen, waitFor } from "@testing-library/react";
-// vi.mockの呼び出しは自動的にファイルの先頭に巻き上げられるため、テスト内で使用する全てのモジュールを先にモックしておく
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // next/navigation モジュールをモック
@@ -11,13 +10,9 @@ vi.mock("next/navigation", () => ({
   })),
 }));
 
-// Discord認証アクションをモック - パスを修正
-vi.mock("@/app/actions/auth/discord", () => ({
+// 共通認証アクションをモック（新しいパス）
+vi.mock("@/actions/auth/actions", () => ({
   handleDiscordCallback: vi.fn(),
-}));
-
-// セッションクッキー作成関数をモック
-vi.mock("@/app/actions/auth/createSessionCookie", () => ({
   createSessionCookie: vi.fn(),
 }));
 
@@ -40,8 +35,10 @@ vi.mock("firebase/auth", () => ({
   signInWithCustomToken: vi.fn(),
 }));
 
-import { createSessionCookie } from "@/app/actions/auth/createSessionCookie";
-import { handleDiscordCallback } from "@/app/actions/auth/discord";
+import {
+  createSessionCookie,
+  handleDiscordCallback,
+} from "@/actions/auth/actions";
 import { signInWithCustomToken } from "firebase/auth";
 // テスト用にモック化したモジュールをインポート
 import { useSearchParams } from "next/navigation";

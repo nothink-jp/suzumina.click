@@ -114,82 +114,126 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
 
 - **認証とバリデーション**: すべての Server Action 内で必ず認証チェックとデータバリデーションを行います。
 
+#### 1.3.1. Server Actions のディレクトリ配置
+
+Server Actions は機能と再利用性に基づいて適切に整理します。以下のディレクトリ構造を採用します：
+
+- **共有 Server Actions**：複数のコンポーネントや機能で使用される Server Actions
+  ```
+  apps/web/src/actions/
+  ├── [機能分野]/
+  │   ├── actions.ts               # 主要アクション関数
+  │   ├── actions.test.ts          # アクションのテスト
+  │   ├── types.ts                 # 関連する型定義
+  │   └── validation.ts            # バリデーションロジック
+  ├── auth/                        # 例: 認証関連
+  │   ├── actions.ts               # サインイン、サインアウトなど
+  │   └── actions.test.ts
+  ├── user/                        # 例: ユーザー管理
+  │   ├── actions.ts
+  │   ├── actions.test.ts
+  │   └── types.ts
+  └── [その他機能分野]/
+  ```
+
+- **コンポーネント固有 Server Actions**：特定のコンポーネントでのみ使用される Server Actions
+  ```
+  apps/web/src/components/feature/[機能名]/
+  ├── SomeComponent.tsx            # コンポーネント
+  ├── SomeComponent.test.tsx       # コンポーネントのテスト
+  ├── actions.ts                   # コンポーネント固有のServer Actions
+  └── actions.test.ts              # アクションのテスト
+  ```
+
+- **ページ固有 Server Actions**：特定のページでのみ使用される Server Actions
+  ```
+  apps/web/src/app/[ページパス]/
+  ├── page.tsx                     # ページコンポーネント
+  ├── _components/                 # ページ固有のコンポーネント
+  └── _actions/                    # ページ固有のServer Actions
+      ├── actions.ts
+      └── actions.test.ts
+  ```
+
+#### 1.3.2. ファイルと関数の命名規則
+
+- **ファイル命名**:
+  - 基本的には `actions.ts` を使用
+  - 機能が多い場合は目的別に分割: `create.ts`, `update.ts`, `delete.ts` など
+  - 型定義は `types.ts` に格納
+  - バリデーションロジックは `validation.ts` に格納
+
+- **関数命名**:
+  - 動詞 + 目的語の形式で命名: `createUser`, `updateProfile`, `deleteComment` など
+  - 取得系: `getUser`, `listPosts`, `searchProducts` など
+  - 更新系: `createItem`, `updateSettings`, `deleteAccount` など
+  - その他操作: `signIn`, `signOut`, `toggleFavorite` など
+
+#### 1.3.3. Server Actions のテスト
+
+- テストファイルは対応する Server Action ファイルと同じディレクトリに配置し、`.test.ts` の拡張子を使用
+- モック関数と適切な環境変数を使用してテストを記述
+- アクションの入力バリデーション、認証ロジック、正常系・異常系の動作を検証
+
+#### 1.3.4. 戻り値の型定義
+
+Server Action の戻り値は常に型付けされた一貫した形式にします：
+
+```tsx
+// 共通の戻り値型
+type ActionResult<T> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+};
+
+// 使用例
+export async function createUser(data: FormData): Promise<ActionResult<User>> {
+  try {
+    // データ処理ロジック
+  } catch (error) {
+    return { success: false, error: 'エラーが発生しました' };
+  }
+}
+```
+
+#### 1.3.5. エラーハンドリング
+
+- すべての Server Action で try-catch ブロックを使用
+- エラー発生時は開発環境でのみ詳細なエラーログを出力
+- ユーザーに表示するエラーメッセージは日本語で簡潔かつ親切に作成
+- セキュリティに関わる詳細情報は本番環境でユーザーに露出しない
+
+#### 1.3.6. 環境変数とシークレット
+
+- Server Actions内で使用する環境変数は、必ず`NEXT_PUBLIC_`プレフィックスのない変数を使用
+- シークレット情報（APIキー、トークンなど）は必ずサーバーサイドでのみ扱い、クライアントに公開しない
+- 機密性の高い値はGitHubリポジトリやDockerイメージに含めず、環境変数として設定
+
+#### 1.3.7. バッチ処理とスケジューリング
+
+- 重い処理や時間のかかる操作はバックグラウンドタスクとして実装
+- 長時間実行される処理は、進捗状態を保存して中断・再開可能な設計にする
+- 定期実行が必要な処理はCloud Schedulerと連携したServer Actionsとして実装
+
+#### 1.3.8. Server Actions間の連携
+
+- 複雑な処理フローでは、小さな責任を持つServer Actionsに分割
+- 共通処理はユーティリティ関数として抽出し、複数のServer Actionsから再利用
+- Server Actions間の依存関係は明示的に型定義し、インターフェースを明確に
+
+#### 1.3.9. デプロイとスケーリング
+
+- サーバーレスデプロイメント環境（Cloud Run）において、コールドスタートを考慮
+- キャッシュ戦略を適切に設計（Redisキャッシュ、SWRなど）
+- 高負荷時のスケーリング特性を考慮したコード設計
+
 ### 1.4. Headless UI の利用
 
-- **クライアントコンポーネント必須**: Headless UI のコンポーネントは内部で React Hooks (useState, useEffect など) を使用しているため、**必ずクライアントコンポーネント (`"use client"`) 内で使用する必要があります**。
-- **スタイリング**: Headless UI はスタイルを提供しません。DaisyUI や Tailwind CSS のクラスを適用して見た目を構築します。
+### 8. フォームの設計と実装
 
-## 2. コンポーネントの命名と配置
+#### 8.1. フォームの基本方針
 
-- **命名規則**:
-  - コンポーネントファイル名およびコンポーネント関数名: `PascalCase` (例: `UserProfileCard.tsx`, `function UserProfileCard() {}`)
-  - Server Action ファイル名: `actions.ts` または `[機能名].actions.ts`
-- **配置 (コロケーション)**:
-  - **ページ固有コンポーネント**: 特定のページ (`apps/web/src/app/about/page.tsx` など) でのみ使用されるコンポーネントは、そのページのディレクトリ配下に `_components` ディレクトリ (例: `apps/web/src/app/about/_components/`) を作成し、そこに配置します。
-  - **共通コンポーネント**: 複数のページやレイアウトで再利用されるコンポーネントは、`apps/web/src/components/` ディレクトリに配置します。
-    - `apps/web/src/components/ui/`: 低レベルなUI部品 (Button, Input, Card など)。DaisyUI コンポーネントのラッパーや、独自実装の基本部品。
-    - `apps/web/src/components/layout/`: アプリケーション全体のレイアウトに関連するコンポーネント (Header, Footer, Sidebar など)。
-    - `apps/web/src/components/feature/`: 特定の機能に関連する、より高レベルなコンポーネント群 (例: `apps/web/src/components/feature/auth/`, `apps/web/src/components/feature/profile/`)。
-  - **Server Actions**: 
-    - 単一のコンポーネント/機能でのみ使用する場合: 関連するコンポーネントと同じディレクトリ内に配置
-    - 共有サーバーアクション: `apps/web/src/actions/[機能名]/actions.ts` に配置
-
-## 3. 状態管理
-
-- **ローカルステート**: コンポーネント固有の状態は `useState` や `useReducer` を用いて管理します。RCC でのみ使用可能です。
-- **URL ステート**: フィルタリング条件やページネーションなど、URL で表現可能な状態は Next.js の `useRouter` や `useSearchParams` を活用します。RSC/RCC 両方で利用可能です（RCC では Hooks を使用）。
-- **グローバルステート**: アプリケーション全体で共有する必要がある状態（例: 認証情報、テーマ設定）については、Firebase Authentication と連携した AuthProvider を使用しています。他のグローバル状態が必要な場合は、React Context API や Zustand などの軽量なライブラリの導入を検討します。サーバーコンポーネントとの親和性を考慮して選定します。
-
-## 4. コンポーネント分割
-
-- **単一責務の原則 (SRP)**: 各コンポーネントは、単一の明確な責務を持つように設計します。
-- **粒度**:
-  - 再利用性や可読性を考慮し、適切な粒度でコンポーネントを分割します。巨大すぎるコンポーネントは避けます。
-  - Presentational Component と Container Component の分離は、RSC/RCC の分離と合わせて自然に行われることが多いですが、意識的に分離することも有効です。
-- **Props の設計**:
-  - コンポーネントが必要とするデータは Props を通じて明確に渡します。
-  - Props の数は適切に保ち、多すぎる場合はオブジェクトにまとめるなどを検討します。
-  - Props の型は TypeScript で厳密に定義します。
-
-## 5. テスト戦略
-
-- **単体テスト**: 各コンポーネントに対して Vitest と React Testing Library を用いた単体テストを作成します。
-  - RSC/RCC それぞれに適した形でテストを記述します。
-  - テストファイルは対象コンポーネントと同じディレクトリに `[ComponentName].test.tsx` の形式で配置します。
-- **Storybook**: UI コンポーネントの見た目とインタラクションを確認するための Storybook を作成します。
-  - 特に再利用性の高いコンポーネントには `[ComponentName].stories.tsx` の形式でストーリーを作成することを推奨します。
-
-## 6. パフォーマンス最適化
-
-- **画像最適化**: Next.js の組み込み `Image` コンポーネントを使用して画像の最適化を行います。
-- **サーバーコンポーネントの活用**: データフェッチはできるだけサーバーコンポーネントで行い、クライアントサイドの負荷を軽減します。
-- **コード分割**: 必要なときだけ特定のコンポーネントを読み込むために、`dynamic import` や React の `lazy` と `Suspense` を適宜活用します。
-- **不要な再レンダリングの防止**: `memo`、`useMemo`、`useCallback` などを用いて、必要に応じて再レンダリングを最適化します。
-
-## 7. アクセシビリティ
-
-- **セマンティックHTML**: 適切なHTML要素を選択し、セマンティックなマークアップを心がけます。
-- **ARIA属性**: 必要に応じてARIA属性を追加し、支援技術によるアクセシビリティを向上させます。
-- **キーボード操作**: すべてのインタラクティブな要素がキーボードで操作できることを確認します。
-- **フォーカス管理**: 特にモーダルやドロップダウンなど、フォーカス管理が重要なコンポーネントでは適切な実装を行います。
-
-## 8. フォーム設計
-
-フォームは Web アプリケーションの重要な構成要素です。本プロジェクトではフォーム実装に Conform ライブラリを採用し、型安全でプログレッシブエンハンスメントを実現します。
-
-### 8.1. Conform の採用
-
-- **基本方針**: フォーム実装には [Conform](https://conform.guide/) ライブラリを使用します。Conform は型安全なフォームバリデーションライブラリで、HTML の標準的なフォームをプログレッシブに拡張します。
-- **主な利点**:
-  - プログレッシブエンハンスメント優先の API
-  - 型安全なフィールド推論
-  - 細粒度のサブスクリプション管理
-  - アクセシビリティヘルパーの組み込み
-  - Zod との連携による自動型変換
-
-### 8.2. フォームの実装原則
-
-- **単一責務**: 各フォームは明確に定義された単一の目的を持ち、一つのコンポーネント内で完結するように実装します。フォームをコンポーネント間で分割したり、コンポーネントを跨いだりしないようにします。
 - **クライアントコンポーネントとして実装**: フォームはインタラクティブな要素を含むため、基本的に `"use client"` ディレクティブを使用したクライアントコンポーネントとして実装します。
 - **コンポーネント設計**:
   - フォームロジック（バリデーション、送信処理など）は、フォームUIを含むコンポーネント内に閉じ込めます。

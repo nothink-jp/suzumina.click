@@ -1,7 +1,9 @@
 "use client";
 
-import { createSessionCookie } from "@/app/actions/auth/createSessionCookie";
-import { handleDiscordCallback } from "@/app/actions/auth/discord";
+import {
+  createSessionCookie,
+  handleDiscordCallback,
+} from "@/actions/auth/actions";
 import { auth } from "@/lib/firebase/client";
 import { signInWithCustomToken } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";

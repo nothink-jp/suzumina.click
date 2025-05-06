@@ -1,6 +1,6 @@
+import { getProfile } from "@/actions/profile/getProfile";
 import AuthButton from "@/components/ui/AuthButton";
 import { Suspense } from "react";
-import { getProfile } from "../actions/profile/getProfile";
 import ProfileEditForm from "./_components/ProfileEditForm";
 
 // 動的レンダリングを明示的に指定

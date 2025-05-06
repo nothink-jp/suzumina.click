@@ -16,8 +16,8 @@ export const dynamic = "force-dynamic";
  * ログインユーザーのお気に入りクリップを一覧表示する
  */
 export default async function FavoritesPage() {
-  // 認証情報を取得（インポートパスを修正）
-  const { getCurrentUser } = await import("@/app/actions/auth/getCurrentUser");
+  // 認証情報を取得
+  const { getCurrentUser } = await import("@/actions/auth/getCurrentUser");
   const user = await getCurrentUser();
 
   // 未ログインの場合はログインページにリダイレクト
