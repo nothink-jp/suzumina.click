@@ -9,6 +9,7 @@ import { formatErrorMessage, getFirestoreAdmin } from "@/lib/firebase/admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type {
   DocumentData,
+  Firestore,
   Query,
   QueryDocumentSnapshot,
 } from "firebase-admin/firestore";
@@ -50,7 +51,7 @@ export async function getAudioClips(params: GetAudioClipsParams) {
     }
 
     // ヘルパー関数を使用してFirestoreを初期化
-    const db = getFirestoreAdmin();
+    const db = await getFirestoreAdmin();
     console.log("Firestoreの接続に成功しました");
 
     // クエリ条件の構築
@@ -111,13 +112,16 @@ export async function getAudioClips(params: GetAudioClipsParams) {
     } catch (queryError) {
       console.error("Firestoreクエリの実行に失敗しました:", queryError);
       throw new Error(
-        formatErrorMessage("音声クリップの取得に失敗しました", queryError),
+        await formatErrorMessage(
+          "音声クリップの取得に失敗しました",
+          queryError,
+        ),
       );
     }
   } catch (error) {
     console.error("音声クリップの取得中に予期せぬエラーが発生しました:", error);
     throw new Error(
-      formatErrorMessage("音声クリップの取得に失敗しました", error),
+      await formatErrorMessage("音声クリップの取得に失敗しました", error),
     );
   }
 }
@@ -167,7 +171,7 @@ export async function createAudioClip(data: AudioClipData) {
     }
 
     // ヘルパー関数を使用してFirestoreを初期化
-    const db = getFirestoreAdmin();
+    const db = await getFirestoreAdmin();
 
     // 動画の存在確認
     try {
@@ -178,7 +182,7 @@ export async function createAudioClip(data: AudioClipData) {
     } catch (videoError) {
       console.error("動画データの取得に失敗しました:", videoError);
       throw new Error(
-        formatErrorMessage("動画データの取得に失敗しました", videoError),
+        await formatErrorMessage("動画データの取得に失敗しました", videoError),
       );
     }
 
@@ -233,13 +237,16 @@ export async function createAudioClip(data: AudioClipData) {
     } catch (createError) {
       console.error("音声クリップの作成に失敗しました:", createError);
       throw new Error(
-        formatErrorMessage("音声クリップの作成に失敗しました", createError),
+        await formatErrorMessage(
+          "音声クリップの作成に失敗しました",
+          createError,
+        ),
       );
     }
   } catch (error) {
     console.error("音声クリップの作成中に予期せぬエラーが発生しました:", error);
     throw new Error(
-      formatErrorMessage("音声クリップの作成に失敗しました", error),
+      await formatErrorMessage("音声クリップの作成に失敗しました", error),
     );
   }
 }
@@ -257,7 +264,7 @@ export async function getAudioClip(clipId: string) {
     }
 
     // ヘルパー関数を使用してFirestoreを初期化
-    const db = getFirestoreAdmin();
+    const db = await getFirestoreAdmin();
     console.log("Firestoreの接続に成功しました");
 
     // クリップの取得
@@ -292,13 +299,16 @@ export async function getAudioClip(clipId: string) {
     } catch (queryError) {
       console.error("クリップデータの取得に失敗しました:", queryError);
       throw new Error(
-        formatErrorMessage("音声クリップの取得に失敗しました", queryError),
+        await formatErrorMessage(
+          "音声クリップの取得に失敗しました",
+          queryError,
+        ),
       );
     }
   } catch (error) {
     console.error("音声クリップの取得中に予期せぬエラーが発生しました:", error);
     throw new Error(
-      formatErrorMessage("音声クリップの取得に失敗しました", error),
+      await formatErrorMessage("音声クリップの取得に失敗しました", error),
     );
   }
 }
@@ -322,7 +332,7 @@ export async function updateAudioClip(
     }
 
     // ヘルパー関数を使用してFirestoreを初期化
-    const db = getFirestoreAdmin();
+    const db = await getFirestoreAdmin();
 
     // クリップの取得
     try {
@@ -435,7 +445,7 @@ export async function deleteAudioClip(clipId: string) {
     }
 
     // ヘルパー関数を使用してFirestoreを初期化
-    const db = getFirestoreAdmin();
+    const db = await getFirestoreAdmin();
 
     // クリップの取得
     try {
@@ -496,7 +506,7 @@ export async function incrementPlayCount(clipId: string) {
     }
 
     // ヘルパー関数を使用してFirestoreを初期化
-    const db = getFirestoreAdmin();
+    const db = await getFirestoreAdmin();
 
     // クリップの存在確認
     const clipDoc = await db.collection("audioClips").doc(clipId).get();
@@ -520,7 +530,9 @@ export async function incrementPlayCount(clipId: string) {
     };
   } catch (error) {
     console.error("再生回数の更新に失敗しました:", error);
-    throw new Error(formatErrorMessage("再生回数の更新に失敗しました", error));
+    throw new Error(
+      await formatErrorMessage("再生回数の更新に失敗しました", error),
+    );
   }
 }
 

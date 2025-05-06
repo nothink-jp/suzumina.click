@@ -17,9 +17,9 @@ import type { Firestore } from "firebase-admin/firestore";
  * Firebase Admin SDKの初期化とFirestoreインスタンスの取得を一度に行います。
  * エラー処理も行うため、try-catchブロックで囲む必要はありません。
  *
- * @returns 初期化済みのFirestoreインスタンス
+ * @returns 初期化済みのFirestoreインスタンスのPromise
  */
-export function getFirestoreAdmin(): Firestore {
+export async function getFirestoreAdmin(): Promise<Firestore> {
   try {
     // Firebase Admin SDKを初期化
     initializeFirebaseAdmin();
@@ -43,9 +43,9 @@ export function getFirestoreAdmin(): Firestore {
  * このラッパー関数は、Firebase Admin SDKの初期化のみを行い、
  * エラーハンドリングを統一化します。
  *
- * @returns 初期化結果（成功の場合はtrue）
+ * @returns 初期化結果のPromise（成功の場合はtrue）
  */
-export function initializeAdmin(): boolean {
+export async function initializeAdmin(): Promise<boolean> {
   try {
     initializeFirebaseAdmin();
     return true;
@@ -66,8 +66,11 @@ export function initializeAdmin(): boolean {
  *
  * @param prefix エラーメッセージの接頭辞
  * @param error エラーオブジェクト
- * @returns フォーマット済みエラーメッセージ
+ * @returns フォーマット済みエラーメッセージのPromise
  */
-export function formatErrorMessage(prefix: string, error: unknown): string {
+export async function formatErrorMessage(
+  prefix: string,
+  error: unknown,
+): Promise<string> {
   return `${prefix}: ${error instanceof Error ? error.message : String(error)}`;
 }

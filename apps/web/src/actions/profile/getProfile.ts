@@ -37,7 +37,7 @@ export async function getProfile(uid?: string): Promise<UserProfile | null> {
     }
 
     // ヘルパー関数を使用してFirestoreを初期化
-    const firestore = getFirestoreAdmin();
+    const firestore = await getFirestoreAdmin();
 
     // デバッグ用：Firestoreが初期化されたことを確認
     console.log(

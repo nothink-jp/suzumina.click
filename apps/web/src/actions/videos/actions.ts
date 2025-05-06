@@ -37,7 +37,7 @@ export async function getVideo(videoId: string): Promise<VideoData | null> {
     }
 
     // ヘルパー関数を使用してFirestoreを初期化
-    const db = getFirestoreAdmin();
+    const db = await getFirestoreAdmin();
 
     // 動画データを取得
     const videoDoc = await db.collection("videos").doc(videoId).get();
@@ -53,7 +53,9 @@ export async function getVideo(videoId: string): Promise<VideoData | null> {
     };
   } catch (error) {
     console.error("動画データの取得に失敗しました:", error);
-    throw new Error(formatErrorMessage("動画の取得に失敗しました", error));
+    throw new Error(
+      await formatErrorMessage("動画の取得に失敗しました", error),
+    );
   }
 }
 
@@ -75,7 +77,7 @@ export async function getRecentVideos(
 ): Promise<{ videos: VideoData[]; hasMore: boolean; lastVideo?: VideoData }> {
   try {
     // ヘルパー関数を使用してFirestoreを初期化
-    const db = getFirestoreAdmin();
+    const db = await getFirestoreAdmin();
 
     // 互換性のために数値の場合は limitとして扱う
     const limit = typeof options === "number" ? options : (options.limit ?? 10);
@@ -136,7 +138,9 @@ export async function getRecentVideos(
     };
   } catch (error) {
     console.error("動画一覧の取得に失敗しました:", error);
-    throw new Error(formatErrorMessage("動画の取得に失敗しました", error));
+    throw new Error(
+      await formatErrorMessage("動画の取得に失敗しました", error),
+    );
   }
 }
 
@@ -158,7 +162,7 @@ export async function getVideosByPlaylist(
     }
 
     // ヘルパー関数を使用してFirestoreを初期化
-    const db = getFirestoreAdmin();
+    const db = await getFirestoreAdmin();
 
     // プレイリストIDでフィルタして動画を取得
     const query = await db
@@ -191,7 +195,7 @@ export async function getVideosByPlaylist(
   } catch (error) {
     console.error("プレイリスト動画の取得に失敗しました:", error);
     throw new Error(
-      formatErrorMessage("プレイリスト動画の取得に失敗しました", error),
+      await formatErrorMessage("プレイリスト動画の取得に失敗しました", error),
     );
   }
 }

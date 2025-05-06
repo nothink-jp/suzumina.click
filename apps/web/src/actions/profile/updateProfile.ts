@@ -60,7 +60,7 @@ export async function updateProfile(
     }
 
     // ヘルパー関数を使用してFirestoreを初期化
-    const firestore = getFirestoreAdmin();
+    const firestore = await getFirestoreAdmin();
     const userProfileRef = firestore
       .collection("userProfiles")
       .doc(currentUser.uid);
