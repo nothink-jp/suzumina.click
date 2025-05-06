@@ -186,16 +186,16 @@ export async function addTagsToClip(clipId: string, tags: string[]) {
     // 認証チェック
     const currentUser = await getCurrentUser();
     if (!currentUser) {
-      throw new Error("認証が必要です");
+      return { success: false, error: "認証が必要です" };
     }
 
     // パラメータのバリデーション
     if (!clipId) {
-      throw new Error("クリップIDが必要です");
+      return { success: false, error: "クリップIDが必要です" };
     }
 
     if (!Array.isArray(tags) || tags.length === 0) {
-      throw new Error("追加するタグが指定されていません");
+      return { success: false, error: "追加するタグが指定されていません" };
     }
 
     // タグの形式をバリデーション
@@ -204,7 +204,7 @@ export async function addTagsToClip(clipId: string, tags: string[]) {
       .filter((tag) => tag.length > 0);
 
     if (validTags.length === 0) {
-      throw new Error("有効なタグが指定されていません");
+      return { success: false, error: "有効なタグが指定されていません" };
     }
 
     // Firebase Admin SDKを初期化
@@ -215,31 +215,39 @@ export async function addTagsToClip(clipId: string, tags: string[]) {
     const clipDoc = await db.collection("audioClips").doc(clipId).get();
 
     if (!clipDoc.exists) {
-      throw new Error("指定されたクリップが存在しません");
+      return { success: false, error: "指定されたクリップが存在しません" };
     }
 
     const clipData = clipDoc.data();
 
     // クリップの所有者のみがタグを追加可能
     if (clipData && clipData.userId !== currentUser.uid) {
-      throw new Error("このクリップにタグを追加する権限がありません");
+      return {
+        success: false,
+        error: "このクリップにタグを追加する権限がありません",
+      };
     }
 
     // 既存のタグを取得
     const existingTags = clipData?.tags || [];
 
     // 新しいタグを追加（重複を排除）
-    const newTags = Array.from(new Set([...existingTags, ...validTags]));
+    const allTags = [...new Set([...existingTags, ...validTags])];
 
-    // トランザクションでタグを追加
+    // タグの最大数チェック
+    if (allTags.length > 10) {
+      return { success: false, error: "タグは合計10個までしか設定できません" };
+    }
+
+    // トランザクションでタグを更新
     await db.runTransaction(async (transaction) => {
-      // クリップにタグを設定
+      // クリップのタグを更新
       transaction.update(clipDoc.ref, {
-        tags: newTags,
+        tags: allTags,
         updatedAt: FieldValue.serverTimestamp(),
       });
 
-      // 各タグのカウントを増やす
+      // 新しく追加されたタグのカウントを増やす
       for (const tag of validTags) {
         if (!existingTags.includes(tag)) {
           const tagDocRef = db.collection("tags").doc(tag);
@@ -266,17 +274,22 @@ export async function addTagsToClip(clipId: string, tags: string[]) {
     revalidatePath(`/audioclips/${clipId}`);
 
     return {
-      clipId,
-      tags: newTags,
+      success: true,
+      data: {
+        clipId,
+        tags: allTags,
+      },
       message: "タグが追加されました",
     };
   } catch (error) {
-    console.error("タグの追加に失敗しました:", error);
-    throw new Error(
-      `タグの追加に失敗しました: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+    console.error("タグの追加中にエラーが発生しました:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "タグの追加中にエラーが発生しました",
+    };
   }
 }
 
@@ -292,16 +305,16 @@ export async function removeTagFromClip(clipId: string, tag: string) {
     // 認証チェック
     const currentUser = await getCurrentUser();
     if (!currentUser) {
-      throw new Error("認証が必要です");
+      return { success: false, error: "認証が必要です" };
     }
 
     // パラメータのバリデーション
     if (!clipId) {
-      throw new Error("クリップIDが必要です");
+      return { success: false, error: "クリップIDが必要です" };
     }
 
     if (!tag || tag.trim().length === 0) {
-      throw new Error("削除するタグが指定されていません");
+      return { success: false, error: "削除するタグが指定されていません" };
     }
 
     const trimmedTag = tag.trim();
@@ -314,14 +327,17 @@ export async function removeTagFromClip(clipId: string, tag: string) {
     const clipDoc = await db.collection("audioClips").doc(clipId).get();
 
     if (!clipDoc.exists) {
-      throw new Error("指定されたクリップが存在しません");
+      return { success: false, error: "指定されたクリップが存在しません" };
     }
 
     const clipData = clipDoc.data();
 
     // クリップの所有者のみがタグを削除可能
     if (clipData && clipData.userId !== currentUser.uid) {
-      throw new Error("このクリップのタグを削除する権限がありません");
+      return {
+        success: false,
+        error: "このクリップのタグを削除する権限がありません",
+      };
     }
 
     // 既存のタグを取得
@@ -330,8 +346,11 @@ export async function removeTagFromClip(clipId: string, tag: string) {
     // タグが存在しない場合
     if (!existingTags.includes(trimmedTag)) {
       return {
-        clipId,
-        tags: existingTags,
+        success: true,
+        data: {
+          clipId,
+          tags: existingTags,
+        },
         message: "指定されたタグは既に存在しません",
       };
     }
@@ -373,17 +392,20 @@ export async function removeTagFromClip(clipId: string, tag: string) {
     revalidatePath(`/audioclips/${clipId}`);
 
     return {
-      clipId,
-      tags: updatedTags,
+      success: true,
+      data: {
+        clipId,
+        tags: updatedTags,
+      },
       message: "タグが削除されました",
     };
   } catch (error) {
     console.error("タグの削除に失敗しました:", error);
-    throw new Error(
-      `タグの削除に失敗しました: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "タグの削除に失敗しました",
+    };
   }
 }
 
@@ -391,13 +413,13 @@ export async function removeTagFromClip(clipId: string, tag: string) {
  * タグでオーディオクリップを検索する
  *
  * @param tag 検索するタグ
- * @param limit 取得する件数
+ * @param limit 取得する件数（デフォルト: 20）
  * @returns タグに関連するオーディオクリップ
  */
-export async function getClipsByTag(tag: string, limit = 10) {
+export async function getClipsByTag(tag: string, limit = 20) {
   try {
     if (!tag || tag.trim().length === 0) {
-      throw new Error("検索するタグが指定されていません");
+      return { success: false, error: "検索するタグが指定されていません" };
     }
 
     const trimmedTag = tag.trim();
@@ -409,22 +431,29 @@ export async function getClipsByTag(tag: string, limit = 10) {
     // 現在のユーザーを取得
     const currentUser = await getCurrentUser();
 
-    // タグを含むクリップを取得
+    // タグを含むクリップを取得するクエリを作成
     let query = db
       .collection("audioClips")
-      .where("tags", "array-contains", trimmedTag)
-      .orderBy("createdAt", "desc")
-      .limit(limit);
+      .where("tags", "array-contains", trimmedTag);
 
-    // 非ログインユーザーまたは他のユーザーのクリップは公開のもののみ表示
+    // 非ログインユーザーの場合は公開クリップのみを表示
     if (!currentUser) {
       query = query.where("isPublic", "==", true);
+    } else {
+      // ログインユーザーの場合、自分のクリップ（非公開含む）と他のユーザーの公開クリップを表示できるようにする
+      // 注：Firestoreの制約により複雑なOR条件を直接表現できないため、フロントエンド側でフィルタリングする場合もある
     }
+
+    // 新しい順に並べ替え
+    query = query.orderBy("createdAt", "desc").limit(limit);
 
     const clipsSnapshot = await query.get();
 
     if (clipsSnapshot.empty) {
-      return { clips: [] };
+      return {
+        success: true,
+        data: { clips: [] },
+      };
     }
 
     // 検索結果を整形
@@ -438,13 +467,15 @@ export async function getClipsByTag(tag: string, limit = 10) {
       };
     });
 
-    return { clips };
+    return {
+      success: true,
+      data: { clips },
+    };
   } catch (error) {
     console.error("タグによるクリップ検索に失敗しました:", error);
-    throw new Error(
-      `タグによるクリップ検索に失敗しました: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+    return {
+      success: false,
+      error: `タグによるクリップ検索に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }

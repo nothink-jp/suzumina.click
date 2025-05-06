@@ -189,8 +189,9 @@ export default function TimelineVisualization({
     <div className={`w-full ${className}`}>
       <h3 className="text-sm font-medium mb-1">タイムライン</h3>
 
-      <div
+      <section
         ref={timelineRef}
+        aria-label="タイムライン"
         className={`relative h-8 bg-gray-200 rounded w-full cursor-pointer ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -255,7 +256,7 @@ export default function TimelineVisualization({
               style={{ left: `${secondsToPercent((i + 1) * markerInterval)}%` }}
             />
           ))}
-      </div>
+      </section>
 
       {/* 時間表示（開始・中間・終了） */}
       <div className="flex justify-between text-xs mt-1 text-gray-600">
