@@ -1,461 +1,399 @@
 /**
- * お気に入り管理用のServer Actionsテスト
+ * お気に入り管理に関するServer Actionsのテスト
  *
- * このテストファイルは、お気に入り管理用Server Actionsの機能をテストします。
- * - toggleFavorite: お気に入りの追加・削除機能
- * - checkFavoriteStatus: お気に入りの状態確認機能
- * - getUserFavorites: ユーザーのお気に入りリスト取得機能
+ * このファイルでは以下の関数のテストを行います：
+ * - toggleFavorite: お気に入りに追加/削除する
+ * - checkFavoriteStatus: お気に入りの状態を確認する
+ * - getUserFavorites: ユーザーのお気に入りクリップを取得する
  */
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-// モックデータの準備
-const mockClipData = {
-  videoId: "video-id-123",
-  favoriteCount: 5,
-};
-
-// モックドキュメントの作成ヘルパー関数
-const createMockDocSnap = (exists = true, data = {}) => ({
-  exists,
-  data: () => data,
-  ref: {
-    path: "path/to/document",
-  },
-});
-
-// Firebaseのモックを設定
-vi.mock("firebase-admin/firestore", () => {
-  return {
-    getFirestore: vi.fn(() => ({
-      collection: vi.fn((collectionName) => {
-        // コレクション参照のモックを返す
-        return {
-          doc: vi.fn((docId) => {
-            // ドキュメント参照のモックを返す
-            const docRef = {
-              collection: vi.fn(() => ({
-                doc: vi.fn(() => ({
-                  get: vi.fn().mockResolvedValue(createMockDocSnap(false)),
-                  set: vi.fn().mockResolvedValue({}),
-                  delete: vi.fn().mockResolvedValue({}),
-                })),
-                orderBy: vi.fn().mockReturnThis(),
-                limit: vi.fn().mockReturnThis(),
-                startAfter: vi.fn().mockReturnThis(),
-                get: vi.fn().mockResolvedValue({
-                  empty: false,
-                  docs: [
-                    {
-                      id: "clip-id-1",
-                      data: () => ({ addedAt: { toDate: () => new Date() } }),
-                    },
-                    {
-                      id: "clip-id-2",
-                      data: () => ({ addedAt: { toDate: () => new Date() } }),
-                    },
-                  ],
-                }),
-              })),
-              get: vi.fn().mockImplementation(() => {
-                // audioClipsコレクションの場合
-                if (
-                  collectionName === "audioClips" &&
-                  docId === "clip-id-123"
-                ) {
-                  return Promise.resolve(createMockDocSnap(true, mockClipData));
-                }
-                // お気に入りの場合
-                if (
-                  collectionName === "userFavorites" &&
-                  docId === "user-id-123"
-                ) {
-                  return Promise.resolve(createMockDocSnap(true, {}));
-                }
-                // ドキュメントが存在しない場合
-                if (docId === "non-existent-id") {
-                  return Promise.resolve(createMockDocSnap(false));
-                }
-                // デフォルト
-                return Promise.resolve(createMockDocSnap(true, {}));
-              }),
-              update: vi.fn().mockResolvedValue({}),
-            };
-            return docRef;
-          }),
-        };
-      }),
-      runTransaction: vi.fn(async (callback) => {
-        const transactionMock = {
-          get: vi.fn(async (docRef) => createMockDocSnap(true, {})),
-          update: vi.fn(),
-          set: vi.fn(),
-          delete: vi.fn(),
-        };
-
-        await callback(transactionMock);
-        return {}; // トランザクション成功
-      }),
-    })),
-  };
-});
-
-// 他のモジュールのモック
-vi.mock("../../actions/auth/firebase-admin", () => ({
-  initializeFirebaseAdmin: vi.fn(),
-}));
-
-vi.mock("../../actions/auth/getCurrentUser", () => ({
-  getCurrentUser: vi.fn(),
-}));
-
-vi.mock("next/cache", () => ({
-  revalidatePath: vi.fn(),
-}));
-
-import { getFirestore } from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "../../actions/auth/getCurrentUser";
-// テスト対象のモジュールをインポート
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   checkFavoriteStatus,
   getUserFavorites,
   toggleFavorite,
 } from "./manage-favorites";
 
-describe("お気に入り管理関数のテスト", () => {
+// Firebaseのモックを設定
+vi.mock("firebase-admin/firestore", () => {
+  const mockFirestore = {
+    collection: vi.fn(),
+    runTransaction: vi.fn(),
+  };
+
+  return {
+    getFirestore: vi.fn(() => mockFirestore),
+  };
+});
+
+// revalidatePathをモック化
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
+// 他のモジュールのモック
+vi.mock("../auth/firebase-admin", () => ({
+  initializeFirebaseAdmin: vi.fn(),
+}));
+
+vi.mock("../auth/getCurrentUser", () => ({
+  getCurrentUser: vi.fn(),
+}));
+
+import { getFirestore } from "firebase-admin/firestore";
+// モックのインポート
+import { getCurrentUser } from "../auth/getCurrentUser";
+
+describe("お気に入り管理機能", () => {
+  // お気に入り状態のトラッキング用変数
+  let isFavorited = false;
+  // モックのFirestoreインスタンス
+  let mockFirestoreInstance: any;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // モックのリセット
+    isFavorited = false;
 
-    // デフォルトでは認証済みユーザーを設定
-    (getCurrentUser as any).mockResolvedValue({ uid: "user-id-123" });
+    // モックのクリップデータ
+    const mockClipData = {
+      title: "テストクリップ",
+      videoId: "video123",
+      favoriteCount: 5,
+    };
+
+    // getFirestoreの実装を設定
+    mockFirestoreInstance = getFirestore() as unknown;
+    mockFirestoreInstance.collection = vi.fn((collectionName) => {
+      if (collectionName === "audioClips") {
+        return {
+          doc: vi.fn((clipId) => ({
+            get: vi.fn().mockImplementation(() => {
+              if (clipId === "clip123") {
+                return Promise.resolve({
+                  exists: true,
+                  ref: { path: `audioClips/${clipId}` },
+                  id: clipId,
+                  data: () => ({ ...mockClipData }),
+                });
+              }
+              if (clipId === "nonexistent") {
+                return Promise.resolve({
+                  exists: false,
+                });
+              }
+              // その他のクリップIDでは適当なデータを返す
+              return Promise.resolve({
+                exists: true,
+                ref: { path: `audioClips/${clipId}` },
+                id: clipId,
+                data: () => ({
+                  title: `クリップ ${clipId}`,
+                  videoId: "video456",
+                  favoriteCount: 2,
+                  createdAt: { toDate: () => new Date() },
+                  updatedAt: { toDate: () => new Date() },
+                }),
+              });
+            }),
+          })),
+        };
+      }
+
+      // userFavoritesコレクションの場合
+      if (collectionName === "userFavorites") {
+        return {
+          doc: vi.fn((userId) => ({
+            collection: vi.fn(() => ({
+              doc: vi.fn((clipId) => ({
+                get: vi.fn().mockImplementation(() => {
+                  // clip123のお気に入り状態をシミュレート
+                  if (clipId === "clip123") {
+                    return Promise.resolve({
+                      exists: isFavorited,
+                    });
+                  }
+                  return Promise.resolve({
+                    exists: false,
+                  });
+                }),
+              })),
+              orderBy: vi.fn(() => ({
+                limit: vi.fn(() => ({
+                  get: vi.fn().mockImplementation(() => {
+                    // モックのお気に入りデータ
+                    const mockFavorites = [
+                      {
+                        id: "clip123",
+                        data: () => ({
+                          clipId: "clip123",
+                          videoId: "video123",
+                          addedAt: { toDate: () => new Date("2025-05-01") },
+                        }),
+                      },
+                      {
+                        id: "clip456",
+                        data: () => ({
+                          clipId: "clip456",
+                          videoId: "video456",
+                          addedAt: { toDate: () => new Date("2025-05-02") },
+                        }),
+                      },
+                    ];
+
+                    return Promise.resolve({
+                      empty: mockFavorites.length === 0,
+                      docs: mockFavorites,
+                    });
+                  }),
+                  startAfter: vi.fn(() => ({
+                    get: vi.fn().mockImplementation(() => {
+                      // 次ページ用のモックデータ
+                      const nextPageFavorites = [
+                        {
+                          id: "clip789",
+                          data: () => ({
+                            clipId: "clip789",
+                            videoId: "video789",
+                            addedAt: { toDate: () => new Date("2025-04-30") },
+                          }),
+                        },
+                      ];
+
+                      return Promise.resolve({
+                        empty: nextPageFavorites.length === 0,
+                        docs: nextPageFavorites,
+                      });
+                    }),
+                  })),
+                })),
+              })),
+            })),
+          })),
+        };
+      }
+
+      return {
+        doc: vi.fn(),
+      };
+    });
+
+    mockFirestoreInstance.runTransaction = vi.fn(async (callback) => {
+      // トランザクションをシミュレート
+      const transaction = {
+        get: vi.fn(),
+        set: vi.fn(() => {
+          isFavorited = true; // お気に入り追加
+        }),
+        update: vi.fn(),
+        delete: vi.fn(() => {
+          isFavorited = false; // お気に入り削除
+        }),
+      };
+
+      await callback(transaction);
+
+      return Promise.resolve();
+    });
+
+    // デフォルトでログイン状態に設定
+    (getCurrentUser as any).mockResolvedValue({ uid: "user123" });
   });
 
   /**
-   * toggleFavorite関数のテスト
+   * toggleFavoriteのテスト
    */
-  describe("toggleFavorite関数", () => {
+  describe("toggleFavorite", () => {
     it("正常系：お気に入りに追加できること", async () => {
-      // お気に入りが未登録の状態を設定
-      const db = getFirestore();
-      const mockFavoriteRef = {
-        get: vi.fn().mockResolvedValue(createMockDocSnap(false)),
-        set: vi.fn().mockResolvedValue({}),
-      };
+      // 未お気に入り状態をシミュレート（isFavorited = false）
 
-      // コレクションチェーンのモック
-      vi.spyOn(db, "collection").mockImplementation((collectionName) => {
-        if (collectionName === "userFavorites") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              collection: vi.fn().mockReturnValue({
-                doc: vi.fn().mockReturnValue(mockFavoriteRef),
-              }),
-            }),
-          } as any;
-        }
+      // 関数を実行
+      const result = await toggleFavorite("clip123");
 
-        if (collectionName === "audioClips") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi
-                .fn()
-                .mockResolvedValue(createMockDocSnap(true, mockClipData)),
-              ref: { update: vi.fn() },
-            }),
-          } as any;
-        }
+      // 期待される結果を検証
+      expect(result.clipId).toBe("clip123");
+      expect(result.isFavorite).toBe(true);
+      expect(result.message).toContain("お気に入りに追加しました");
 
-        return { doc: vi.fn() } as any;
-      });
-
-      // toggleFavorite関数の戻り値をモック
-      const originalFunction = toggleFavorite;
-      const spy = vi.fn().mockImplementation(async (clipId) => {
-        return {
-          clipId,
-          isFavorite: true,
-          message: "お気に入りに追加しました",
-        };
-      });
-
-      // モック関数を適用
-      (global as any).toggleFavorite = spy;
-
-      try {
-        // 関数を実行
-        const result = await spy("clip-id-123");
-
-        // 期待する結果を検証
-        expect(result).toBeDefined();
-        expect(result.clipId).toBe("clip-id-123");
-        expect(result.isFavorite).toBe(true);
-        expect(result.message).toBe("お気に入りに追加しました");
-      } finally {
-        // 元の関数を復元
-        (global as any).toggleFavorite = originalFunction;
-      }
-    });
-
-    it("正常系：お気に入りから削除できること", async () => {
-      // お気に入り登録済みの状態を設定
-      const db = getFirestore();
-      const mockFavoriteRef = {
-        get: vi
-          .fn()
-          .mockResolvedValue(
-            createMockDocSnap(true, { clipId: "clip-id-123" }),
-          ),
-        delete: vi.fn().mockResolvedValue({}),
-      };
-
-      // コレクションチェーンのモック
-      vi.spyOn(db, "collection").mockImplementation((collectionName) => {
-        if (collectionName === "userFavorites") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              collection: vi.fn().mockReturnValue({
-                doc: vi.fn().mockReturnValue(mockFavoriteRef),
-              }),
-            }),
-          } as any;
-        }
-
-        if (collectionName === "audioClips") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi
-                .fn()
-                .mockResolvedValue(createMockDocSnap(true, mockClipData)),
-              ref: { update: vi.fn() },
-            }),
-          } as any;
-        }
-
-        return { doc: vi.fn() } as any;
-      });
-
-      // toggleFavorite関数の戻り値をモック
-      const originalFunction = toggleFavorite;
-      const spy = vi.fn().mockImplementation(async (clipId) => {
-        return {
-          clipId,
-          isFavorite: false,
-          message: "お気に入りから削除しました",
-        };
-      });
-
-      // モック関数を適用
-      (global as any).toggleFavorite = spy;
-
-      try {
-        // 関数を実行
-        const result = await spy("clip-id-123");
-
-        // 期待する結果を検証
-        expect(result).toBeDefined();
-        expect(result.clipId).toBe("clip-id-123");
-        expect(result.isFavorite).toBe(false);
-        expect(result.message).toBe("お気に入りから削除しました");
-      } finally {
-        // 元の関数を復元
-        (global as any).toggleFavorite = originalFunction;
-      }
+      // キャッシュが更新されたことを確認
+      expect(revalidatePath).toHaveBeenCalledWith("/videos/video123");
+      expect(revalidatePath).toHaveBeenCalledWith("/favorites");
     });
 
     it("異常系：未認証の場合はエラーになること", async () => {
-      // 未認証状態を設定
+      // 未ログイン状態に設定
       (getCurrentUser as any).mockResolvedValue(null);
 
-      // 関数実行とエラー検証
-      await expect(toggleFavorite("clip-id-123")).rejects.toThrow(
-        "認証が必要です",
-      );
+      // 関数呼び出しで例外がスローされることを検証
+      await expect(toggleFavorite("clip123")).rejects.toThrow("認証が必要です");
     });
 
-    it("異常系：存在しないクリップを指定した場合はエラーになること", async () => {
-      // 存在しないクリップを指定
-      const db = getFirestore();
-      vi.spyOn(db, "collection").mockImplementation((collectionName) => {
-        if (collectionName === "audioClips") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue(createMockDocSnap(false)),
-            }),
-          } as any;
-        }
-
-        return { doc: vi.fn() } as any;
-      });
-
-      // 関数実行とエラー検証
-      await expect(toggleFavorite("non-existent-id")).rejects.toThrow(
+    it("異常系：存在しないクリップIDの場合はエラーになること", async () => {
+      // 関数呼び出しで例外がスローされることを検証
+      await expect(toggleFavorite("nonexistent")).rejects.toThrow(
         "指定されたクリップが存在しません",
       );
     });
+
+    it("異常系：データ取得エラーの場合は例外をスローすること", async () => {
+      // モックを上書きしてエラーをシミュレート
+      const errorMessage = "データベース接続エラー";
+
+      const originalCollection = mockFirestoreInstance.collection;
+      mockFirestoreInstance.collection.mockImplementationOnce((name) => {
+        if (name === "audioClips") {
+          return {
+            doc: vi.fn(() => ({
+              get: vi.fn().mockRejectedValue(new Error(errorMessage)),
+            })),
+          };
+        }
+        return originalCollection(name);
+      });
+
+      // 関数呼び出しで例外がスローされることを検証
+      await expect(toggleFavorite("clip123")).rejects.toThrow(
+        `お気に入り操作に失敗しました: ${errorMessage}`,
+      );
+    });
   });
 
   /**
-   * checkFavoriteStatus関数のテスト
+   * checkFavoriteStatusのテスト
    */
-  describe("checkFavoriteStatus関数", () => {
-    it("正常系：お気に入り登録済みの場合はtrueを返すこと", async () => {
-      // お気に入り登録済みの状態を設定
-      const db = getFirestore();
-      const mockFavoriteRef = {
-        get: vi
-          .fn()
-          .mockResolvedValue(
-            createMockDocSnap(true, { clipId: "clip-id-123" }),
-          ),
-      };
-
-      // checkFavoriteStatus関数の戻り値をモック
-      const originalFunction = checkFavoriteStatus;
-      const spy = vi.fn().mockImplementation(async (clipId) => {
-        return {
-          clipId,
-          isFavorite: true,
-        };
-      });
-
-      // モック関数を適用
-      (global as any).checkFavoriteStatus = spy;
-
-      try {
-        // 関数を実行
-        const result = await spy("clip-id-123");
-
-        // 期待する結果を検証
-        expect(result.isFavorite).toBe(true);
-        expect(result.clipId).toBe("clip-id-123");
-      } finally {
-        // 元の関数を復元
-        (global as any).checkFavoriteStatus = originalFunction;
-      }
-    });
-
-    it("正常系：お気に入り未登録の場合はfalseを返すこと", async () => {
-      // お気に入り未登録の状態を設定
-      const db = getFirestore();
-      const mockFavoriteRef = {
-        get: vi.fn().mockResolvedValue(createMockDocSnap(false)),
-      };
-
-      // コレクションチェーンのモック
-      vi.spyOn(db, "collection").mockImplementation((collectionName) => {
-        if (collectionName === "userFavorites") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              collection: vi.fn().mockReturnValue({
-                doc: vi.fn().mockReturnValue(mockFavoriteRef),
-              }),
-            }),
-          } as any;
-        }
-
-        return { doc: vi.fn() } as any;
-      });
+  describe("checkFavoriteStatus", () => {
+    it("正常系：お気に入り状態を確認できること（未お気に入り）", async () => {
+      // 未お気に入り状態（デフォルトでisFavorited = false）
 
       // 関数を実行
-      const result = await checkFavoriteStatus("clip-id-123");
+      const result = await checkFavoriteStatus("clip123");
 
-      // 期待する結果を検証
+      // 期待される結果を検証
+      expect(result.clipId).toBe("clip123");
       expect(result.isFavorite).toBe(false);
-      expect(result.clipId).toBe("clip-id-123");
     });
 
-    it("正常系：未認証の場合はfalseを返すこと", async () => {
-      // 未認証状態を設定
+    it("正常系：未認証の場合は未お気に入り状態を返すこと", async () => {
+      // 未ログイン状態に設定
       (getCurrentUser as any).mockResolvedValue(null);
 
       // 関数を実行
-      const result = await checkFavoriteStatus("clip-id-123");
+      const result = await checkFavoriteStatus("clip123");
 
-      // 期待する結果を検証
+      // 期待される結果を検証
+      expect(result.isFavorite).toBe(false);
+    });
+
+    it("正常系：エラーが発生した場合も未お気に入り状態を返すこと", async () => {
+      // モックを上書きしてエラーをシミュレート
+      const originalCollection = mockFirestoreInstance.collection;
+      mockFirestoreInstance.collection.mockImplementationOnce((name) => {
+        if (name === "userFavorites") {
+          return {
+            doc: vi.fn(() => ({
+              collection: vi.fn(() => ({
+                doc: vi.fn(() => ({
+                  get: vi.fn().mockRejectedValue(new Error("エラー")),
+                })),
+              })),
+            })),
+          };
+        }
+        return originalCollection(name);
+      });
+
+      // 関数を実行
+      const result = await checkFavoriteStatus("clip123");
+
+      // エラーを隠蔽して安全な結果を返すことを期待
       expect(result.isFavorite).toBe(false);
     });
   });
 
   /**
-   * getUserFavorites関数のテスト
+   * getUserFavoritesのテスト
    */
-  describe("getUserFavorites関数", () => {
+  describe("getUserFavorites", () => {
     it("正常系：お気に入りリストを取得できること", async () => {
-      // モックの設定
-      const db = getFirestore();
+      // 関数を実行
+      const result = await getUserFavorites();
 
-      // お気に入りリストの設定
-      const mockFavorites = [
-        { id: "clip-id-1", title: "お気に入りクリップ1" },
-        { id: "clip-id-2", title: "お気に入りクリップ2" },
-      ];
+      // 期待される結果を検証
+      expect(Array.isArray(result.favorites)).toBe(true);
+      expect(result.favorites.length).toBeGreaterThan(0);
+      expect(result.hasMore).toBeDefined();
+    });
 
-      // クリップドキュメントのモック
-      const mockClipDocs = mockFavorites.map((clip) => ({
-        id: clip.id,
-        exists: true,
-        data: () => ({
-          ...clip,
-          createdAt: { toDate: () => new Date() },
-          updatedAt: { toDate: () => new Date() },
-        }),
-      }));
+    it("正常系：件数制限を指定できること", async () => {
+      // 関数を実行（件数制限5件）
+      const result = await getUserFavorites(5);
 
-      // ドキュメント取得のモック
-      const mockDoc = vi.fn();
-      mockDoc.mockImplementation((clipId) => ({
-        get: vi.fn().mockImplementation(() => {
-          const clipDoc = mockClipDocs.find((doc) => doc.id === clipId);
-          return Promise.resolve(clipDoc || createMockDocSnap(false));
-        }),
-      }));
+      // モックを直接制御できないため、関数の正常動作のみを確認
+      expect(Array.isArray(result.favorites)).toBe(true);
+    });
 
-      // Promiseをモック
-      vi.spyOn(Promise, "all").mockResolvedValueOnce(mockClipDocs);
+    it("正常系：ページネーションが機能すること", async () => {
+      // 関数を実行（ページネーションあり）
+      const result = await getUserFavorites(10, new Date());
+
+      // モックのレスポンスを確認
+      expect(Array.isArray(result.favorites)).toBe(true);
+      expect(result.hasMore).toBeDefined();
+      expect(result.lastAddedAt).toBeDefined();
+    });
+
+    it("異常系：未認証の場合はエラーになること", async () => {
+      // 未ログイン状態に設定
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      // 関数呼び出しで例外がスローされることを検証
+      await expect(getUserFavorites()).rejects.toThrow("認証が必要です");
+    });
+
+    it("異常系：エラーが発生した場合は例外をスローすること", async () => {
+      // モックを上書きしてエラーをシミュレート
+      const errorMessage = "データベース接続エラー";
+
+      mockFirestoreInstance.collection.mockImplementationOnce(() => {
+        throw new Error(errorMessage);
+      });
+
+      // 関数呼び出しで例外がスローされることを検証
+      await expect(getUserFavorites()).rejects.toThrow(
+        `お気に入り一覧の取得に失敗しました: ${errorMessage}`,
+      );
+    });
+
+    it("異常系：結果が空の場合は空配列を返すこと", async () => {
+      // モックを上書きして空の結果をシミュレート
+      const originalCollection = mockFirestoreInstance.collection;
+      mockFirestoreInstance.collection.mockImplementationOnce((name) => {
+        if (name === "userFavorites") {
+          return {
+            doc: vi.fn(() => ({
+              collection: vi.fn(() => ({
+                orderBy: vi.fn(() => ({
+                  limit: vi.fn(() => ({
+                    get: vi.fn().mockResolvedValue({
+                      empty: true,
+                      docs: [],
+                    }),
+                  })),
+                })),
+              })),
+            })),
+          };
+        }
+        return originalCollection(name);
+      });
 
       // 関数を実行
       const result = await getUserFavorites();
 
-      // 期待する結果を検証
-      expect(result).toBeDefined();
-      expect(Array.isArray(result.favorites)).toBe(true);
-      expect(result.hasMore).toBeDefined();
-    });
-
-    it("異常系：未認証の場合はエラーになること", async () => {
-      // 未認証状態を設定
-      (getCurrentUser as any).mockResolvedValue(null);
-
-      // 関数実行とエラー検証
-      await expect(getUserFavorites()).rejects.toThrow("認証が必要です");
-    });
-
-    it("正常系：お気に入りが空の場合は空配列を返すこと", async () => {
-      // getUserFavorites関数の戻り値をモック
-      const originalFunction = getUserFavorites;
-      const spy = vi.fn().mockImplementation(async () => {
-        return {
-          favorites: [],
-          hasMore: false,
-          lastAddedAt: null,
-        };
-      });
-
-      // モック関数を適用
-      (global as any).getUserFavorites = spy;
-
-      try {
-        // 関数を実行
-        const result = await spy();
-
-        // 期待する結果を検証
-        expect(result.favorites).toEqual([]);
-        expect(result.hasMore).toBe(false);
-      } finally {
-        // 元の関数を復元
-        (global as any).getUserFavorites = originalFunction;
-      }
+      // 期待される結果を検証
+      expect(result.favorites).toEqual([]);
+      expect(result.hasMore).toBe(false);
     });
   });
 });

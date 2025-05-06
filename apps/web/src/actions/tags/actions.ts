@@ -51,9 +51,9 @@ export async function getPopularTags(limit = 20): Promise<TagData[]> {
 
     return tags;
   } catch (error) {
-    console.error("タグの取得に失敗しました:", error);
+    console.error("人気タグの取得に失敗しました:", error);
     throw new Error(
-      `タグの取得に失敗しました: ${
+      `人気タグの取得に失敗しました: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );

@@ -34,7 +34,7 @@ export async function getVideo(videoId: string): Promise<VideoData | null> {
   try {
     // 動画IDのバリデーション
     if (!videoId || typeof videoId !== "string") {
-      throw new Error("有効な動画IDが必要です");
+      throw new Error("動画IDが指定されていません");
     }
 
     // Firebase Admin SDKを初期化
@@ -56,7 +56,7 @@ export async function getVideo(videoId: string): Promise<VideoData | null> {
   } catch (error) {
     console.error("動画データの取得に失敗しました:", error);
     throw new Error(
-      `動画データの取得に失敗しました: ${
+      `動画の取得に失敗しました: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
@@ -75,6 +75,7 @@ export async function getRecentVideos(
         limit?: number;
         startAfter?: string;
         videoType?: string;
+        lastPublishedAt?: Date;
       }
     | number = 10,
 ): Promise<{ videos: VideoData[]; hasMore: boolean; lastVideo?: VideoData }> {
@@ -89,6 +90,8 @@ export async function getRecentVideos(
       typeof options === "object" ? options.startAfter : undefined;
     const videoType =
       typeof options === "object" ? options.videoType : undefined;
+    const lastPublishedAt =
+      typeof options === "object" ? options.lastPublishedAt : undefined;
 
     // クエリ構築
     let query = db.collection("videos").orderBy("publishedAt", "desc");
@@ -98,9 +101,14 @@ export async function getRecentVideos(
       query = query.where("videoType", "==", videoType);
     }
 
-    // startAfterが指定されている場合はページネーション
+    // ページネーション - startAfterまたはlastPublishedAtが指定されている場合
     if (startAfter) {
-      query = query.startAfter(startAfter);
+      const lastDoc = await db.collection("videos").doc(startAfter).get();
+      if (lastDoc.exists) {
+        query = query.startAfter(lastDoc);
+      }
+    } else if (lastPublishedAt) {
+      query = query.startAfter(lastPublishedAt);
     }
 
     // 取得数の制限（hasMoreを判断するため+1）
@@ -136,7 +144,66 @@ export async function getRecentVideos(
   } catch (error) {
     console.error("動画一覧の取得に失敗しました:", error);
     throw new Error(
-      `動画一覧の取得に失敗しました: ${
+      `動画の取得に失敗しました: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+}
+
+/**
+ * プレイリストIDに基づいて動画一覧を取得する
+ *
+ * @param playlistId YouTubeのプレイリストID
+ * @param limit 取得する件数（デフォルト20件）
+ * @returns 動画リスト結果
+ */
+export async function getVideosByPlaylist(
+  playlistId: string,
+  limit = 20,
+): Promise<{ videos: VideoData[]; hasMore: boolean }> {
+  try {
+    // プレイリストIDのバリデーション
+    if (!playlistId) {
+      throw new Error("プレイリストIDが指定されていません");
+    }
+
+    // Firebase Admin SDKを初期化
+    initializeFirebaseAdmin();
+    const db = getFirestore();
+
+    // プレイリストIDでフィルタして動画を取得
+    const query = await db
+      .collection("videos")
+      .where("playlistId", "==", playlistId)
+      .orderBy("publishedAt", "desc")
+      .limit(limit + 1)
+      .get();
+
+    if (query.empty) {
+      return { videos: [], hasMore: false };
+    }
+
+    // hasMore判定のため、limitより1つ多く取得している
+    const hasMore = query.size > limit;
+
+    // 結果を整形（limitを超えた分は削除）
+    const videos = query.docs.slice(0, limit).map((doc) => {
+      const videoData = doc.data() as Omit<VideoData, "id">;
+      return {
+        id: doc.id,
+        ...videoData,
+      };
+    });
+
+    return {
+      videos,
+      hasMore,
+    };
+  } catch (error) {
+    console.error("プレイリスト動画の取得に失敗しました:", error);
+    throw new Error(
+      `プレイリスト動画の取得に失敗しました: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
