@@ -3,7 +3,7 @@
 import VideoCard from "@/components/ui/VideoCard";
 import { getRecentVideos } from "@/lib/videos/api";
 import type { Video, VideoListResult, VideoType } from "@/lib/videos/types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 /**
  * 動画一覧コンポーネント
@@ -33,40 +33,43 @@ export default function VideoList({
   // 動画タイプフィルタの状態
   const [videoType, setVideoType] = useState<VideoType>(defaultVideoType);
 
+  // 動画を読み込む関数 - useCallbackでメモ化
+  const loadVideos = useCallback(
+    async (reset = false) => {
+      setLoading(true);
+      try {
+        const result = await getRecentVideos({
+          limit: pageSize,
+          // IDベースのページネーションに変更
+          startAfter: reset ? undefined : lastVideoId,
+          // videoTypeはそのまま渡す (APIレイヤーで"all"を処理)
+          videoType,
+        });
+
+        // 新しい動画リストを作成
+        setVideos((prevVideos) => {
+          const newVideos = reset
+            ? result.videos
+            : [...prevVideos, ...result.videos];
+          return limit ? newVideos.slice(0, limit) : newVideos;
+        });
+
+        setHasMore(result.hasMore);
+        // 最後の動画IDを保存
+        setLastVideoId(result.lastVideo?.id);
+      } catch (error) {
+        console.error("動画の読み込みに失敗しました:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [lastVideoId, limit, pageSize, videoType],
+  );
+
   // フィルタが変更された時、または初回読み込み時に動画を取得
   useEffect(() => {
     loadVideos(true);
-  }, []);
-
-  // 動画を読み込む関数 - シンプル化
-  async function loadVideos(reset = false) {
-    setLoading(true);
-    try {
-      const result = await getRecentVideos({
-        limit: pageSize,
-        // IDベースのページネーションに変更
-        startAfter: reset ? undefined : lastVideoId,
-        // videoTypeはそのまま渡す (APIレイヤーで"all"を処理)
-        videoType,
-      });
-
-      // 新しい動画リストを作成
-      setVideos((prevVideos) => {
-        const newVideos = reset
-          ? result.videos
-          : [...prevVideos, ...result.videos];
-        return limit ? newVideos.slice(0, limit) : newVideos;
-      });
-
-      setHasMore(result.hasMore);
-      // 最後の動画IDを保存
-      setLastVideoId(result.lastVideo?.id);
-    } catch (error) {
-      console.error("動画の読み込みに失敗しました:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  }, [loadVideos]); // videoTypeの変更はloadVideos依存に含まれる
 
   // もっと見るボタンのクリックハンドラ
   const handleLoadMore = () => {
@@ -80,7 +83,6 @@ export default function VideoList({
     const newVideoType = e.target.value;
     if (["all", "archived", "upcoming"].includes(newVideoType)) {
       setVideoType(newVideoType as VideoType);
-      // フィルタ変更はuseEffect内でトリガー
     }
   };
 
@@ -97,7 +99,7 @@ export default function VideoList({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full" data-testid="video-list">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
         <h2 className="text-2xl font-bold">{getFilterHeader()}</h2>
 

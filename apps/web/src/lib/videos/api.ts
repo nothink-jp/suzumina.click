@@ -27,7 +27,8 @@ export async function getRecentVideos(
     // Server Actionを呼び出す
     const result = await getVideos(options);
 
-    // VideoData[]をVideo[]に変換
+    // Server Actionの結果をVideoオブジェクトに変換
+    // VideoDataはすでにプレーンなオブジェクトになっているため、必要最小限の変換のみ行う
     const videos = result.videos.map((videoData) => {
       // サムネイル情報の抽出
       const thumbnailUrl =
@@ -36,10 +37,12 @@ export async function getRecentVideos(
         videoData.thumbnails?.default?.url ||
         "";
 
-      // 日付文字列をDate型に変換
+      // 日付文字列をDate型に変換（すでにISO文字列でサーバーから返されている）
       let publishedAt: Date;
       try {
-        publishedAt = dayjs(videoData.publishedAt).toDate();
+        publishedAt = videoData.publishedAt
+          ? dayjs(videoData.publishedAt).toDate()
+          : new Date();
       } catch (e) {
         publishedAt = new Date();
       }
@@ -54,14 +57,15 @@ export async function getRecentVideos(
         thumbnailUrl,
         channelId: videoData.channelId,
         channelTitle: videoData.channelTitle,
-        // 以下のプロパティはVideoDataにない可能性があるため、デフォルト値を設定
+        // 以下のプロパティは必要に応じてデフォルト値を設定
         lastFetchedAt: new Date(),
         lastFetchedAtISO: new Date().toISOString(),
-        liveBroadcastContent: "none",
+        liveBroadcastContent:
+          videoData.videoType === "upcoming" ? "upcoming" : "none",
       } as Video;
     });
 
-    // 最後のビデオを取得
+    // 最後のビデオを取得（Server Actionからは最後のビデオのIDのみが返される）
     const lastVideo = videos.length > 0 ? videos[videos.length - 1] : undefined;
 
     return {
@@ -91,7 +95,6 @@ export async function getVideoById(videoId: string): Promise<Video | null> {
       return null;
     }
 
-    // VideoData型からVideo型へ変換
     // サムネイル情報の抽出
     const thumbnailUrl =
       videoData.thumbnails?.high?.url ||
@@ -99,10 +102,12 @@ export async function getVideoById(videoId: string): Promise<Video | null> {
       videoData.thumbnails?.default?.url ||
       "";
 
-    // 日付文字列をDate型に変換
+    // 日付文字列をDate型に変換（すでにISO文字列でサーバーから返されている）
     let publishedAt: Date;
     try {
-      publishedAt = dayjs(videoData.publishedAt).toDate();
+      publishedAt = videoData.publishedAt
+        ? dayjs(videoData.publishedAt).toDate()
+        : new Date();
     } catch (e) {
       publishedAt = new Date();
     }
@@ -117,10 +122,11 @@ export async function getVideoById(videoId: string): Promise<Video | null> {
       thumbnailUrl,
       channelId: videoData.channelId,
       channelTitle: videoData.channelTitle,
-      // 以下のプロパティはVideoDataにない可能性があるため、デフォルト値を設定
+      // 以下のプロパティは必要に応じてデフォルト値を設定
       lastFetchedAt: new Date(),
       lastFetchedAtISO: new Date().toISOString(),
-      liveBroadcastContent: "none",
+      liveBroadcastContent:
+        videoData.videoType === "upcoming" ? "upcoming" : "none",
     };
 
     return video;

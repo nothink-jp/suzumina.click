@@ -10,18 +10,28 @@ import { formatErrorMessage, getFirestoreAdmin } from "@/lib/firebase/admin";
 import type { DocumentData, Query } from "firebase-admin/firestore";
 
 // 動画関連の型定義
+// シリアライズ可能なプリミティブ型とプレーンオブジェクトのみで構成
 export interface VideoData {
   id: string;
   title: string;
   description: string;
   channelId: string;
   channelTitle: string;
-  publishedAt: string;
+  publishedAt: string; // ISO文字列形式の日付
   thumbnails: {
     default: { url: string; width: number; height: number };
     medium: { url: string; width: number; height: number };
     high: { url: string; width: number; height: number };
   };
+  videoType?: string; // 動画タイプ (archived/upcoming)
+  videoId?: string; // テスト互換性のために追加
+}
+
+// シリアライズ可能なプレーンなレスポンス型
+interface VideoListResponse {
+  videos: VideoData[];
+  hasMore: boolean;
+  lastVideoId?: string; // Date型ではなく文字列型のIDを使用
 }
 
 /**
@@ -47,10 +57,38 @@ export async function getVideo(videoId: string): Promise<VideoData | null> {
       return null;
     }
 
-    const videoData = videoDoc.data() as Omit<VideoData, "id">;
+    const data = videoDoc.data();
+    if (!data) return null;
+
+    // プレーンなオブジェクトとしてデータを返す
+    // 必要なデータのみ抽出し、クラスインスタンスを含まないようにする
     return {
       id: videoDoc.id,
-      ...videoData,
+      title: data.title || "",
+      description: data.description || "",
+      channelId: data.channelId || "",
+      channelTitle: data.channelTitle || "",
+      publishedAt:
+        data.publishedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      thumbnails: {
+        default: {
+          url: data.thumbnails?.default?.url || "",
+          width: data.thumbnails?.default?.width || 120,
+          height: data.thumbnails?.default?.height || 90,
+        },
+        medium: {
+          url: data.thumbnails?.medium?.url || "",
+          width: data.thumbnails?.medium?.width || 320,
+          height: data.thumbnails?.medium?.height || 180,
+        },
+        high: {
+          url: data.thumbnails?.high?.url || "",
+          width: data.thumbnails?.high?.width || 480,
+          height: data.thumbnails?.high?.height || 360,
+        },
+      },
+      videoType: data.videoType,
+      videoId: data.videoId, // テスト互換性のために追加
     };
   } catch (error) {
     console.error("動画データの取得に失敗しました:", error);
@@ -64,7 +102,7 @@ export async function getVideo(videoId: string): Promise<VideoData | null> {
  * 最新の動画を一覧で取得する
  *
  * @param options 取得オプション
- * @returns 動画リスト結果 (VideoListResult)
+ * @returns 動画リスト結果 (VideoListResponse)
  */
 export async function getRecentVideos(
   options:
@@ -72,10 +110,9 @@ export async function getRecentVideos(
         limit?: number;
         startAfter?: string;
         videoType?: string;
-        lastPublishedAt?: Date;
       }
     | number = 10,
-): Promise<{ videos: VideoData[]; hasMore: boolean; lastVideo?: VideoData }> {
+): Promise<VideoListResponse> {
   try {
     // ヘルパー関数を使用してFirestoreを初期化
     const db = await getFirestoreAdmin();
@@ -86,8 +123,8 @@ export async function getRecentVideos(
       typeof options === "object" ? options.startAfter : undefined;
     const videoType =
       typeof options === "object" ? options.videoType : undefined;
+
     // Firestoreのクエリ型を適切に扱うために、型を明示的に宣言
-    // CollectionReferenceを最初に取得し、以降のクエリチェーンでQueryとして扱う
     const videosCollection = db.collection("videos");
 
     // クエリ構築を修正 - インデックスと完全に一致する順序で構築
@@ -126,20 +163,48 @@ export async function getRecentVideos(
 
     // 結果を整形（limitを超えた分は削除）
     const videos = videosSnapshot.docs.slice(0, limit).map((doc) => {
-      const videoData = doc.data() as Omit<VideoData, "id">;
+      const data = doc.data();
+
+      // プレーンなオブジェクトとしてデータを返す
       return {
         id: doc.id,
-        ...videoData,
+        title: data.title || "",
+        description: data.description || "",
+        channelId: data.channelId || "",
+        channelTitle: data.channelTitle || "",
+        publishedAt:
+          data.publishedAt?.toDate?.()?.toISOString() ||
+          new Date().toISOString(),
+        thumbnails: {
+          default: {
+            url: data.thumbnails?.default?.url || "",
+            width: data.thumbnails?.default?.width || 120,
+            height: data.thumbnails?.default?.height || 90,
+          },
+          medium: {
+            url: data.thumbnails?.medium?.url || "",
+            width: data.thumbnails?.medium?.width || 320,
+            height: data.thumbnails?.medium?.height || 180,
+          },
+          high: {
+            url: data.thumbnails?.high?.url || "",
+            width: data.thumbnails?.high?.width || 480,
+            height: data.thumbnails?.high?.height || 360,
+          },
+        },
+        videoType: data.videoType,
+        videoId: data.videoId, // テスト互換性のために追加
       };
     });
 
-    // 最後のドキュメント
-    const lastVideo = hasMore ? videos[videos.length - 1] : undefined;
+    // 最後のビデオIDを返す（Date型ではなくIDのみ）
+    const lastVideoId =
+      hasMore && videos.length > 0 ? videos[videos.length - 1].id : undefined;
 
     return {
       videos,
       hasMore,
-      lastVideo,
+      lastVideoId,
     };
   } catch (error) {
     console.error("動画一覧の取得に失敗しました:", error);
@@ -186,10 +251,37 @@ export async function getVideosByPlaylist(
 
     // 結果を整形（limitを超えた分は削除）
     const videos = query.docs.slice(0, limit).map((doc) => {
-      const videoData = doc.data() as Omit<VideoData, "id">;
+      const data = doc.data();
+
+      // プレーンなオブジェクトとしてデータを返す
       return {
         id: doc.id,
-        ...videoData,
+        title: data.title || "",
+        description: data.description || "",
+        channelId: data.channelId || "",
+        channelTitle: data.channelTitle || "",
+        publishedAt:
+          data.publishedAt?.toDate?.()?.toISOString() ||
+          new Date().toISOString(),
+        thumbnails: {
+          default: {
+            url: data.thumbnails?.default?.url || "",
+            width: data.thumbnails?.default?.width || 120,
+            height: data.thumbnails?.default?.height || 90,
+          },
+          medium: {
+            url: data.thumbnails?.medium?.url || "",
+            width: data.thumbnails?.medium?.width || 320,
+            height: data.thumbnails?.medium?.height || 180,
+          },
+          high: {
+            url: data.thumbnails?.high?.url || "",
+            width: data.thumbnails?.high?.width || 480,
+            height: data.thumbnails?.high?.height || 360,
+          },
+        },
+        videoType: data.videoType,
+        videoId: data.videoId, // テスト互換性のために追加
       };
     });
 
