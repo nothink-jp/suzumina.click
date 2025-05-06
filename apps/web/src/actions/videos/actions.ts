@@ -6,8 +6,7 @@
  * このファイルには動画関連の共通アクションをエクスポートします
  */
 
-import { getFirestore } from "firebase-admin/firestore";
-import { initializeFirebaseAdmin } from "../auth/firebase-admin";
+import { formatErrorMessage, getFirestoreAdmin } from "@/lib/firebase/admin";
 
 // 動画関連の型定義
 export interface VideoData {
@@ -37,9 +36,8 @@ export async function getVideo(videoId: string): Promise<VideoData | null> {
       throw new Error("動画IDが指定されていません");
     }
 
-    // Firebase Admin SDKを初期化
-    initializeFirebaseAdmin();
-    const db = getFirestore();
+    // ヘルパー関数を使用してFirestoreを初期化
+    const db = getFirestoreAdmin();
 
     // 動画データを取得
     const videoDoc = await db.collection("videos").doc(videoId).get();
@@ -55,11 +53,7 @@ export async function getVideo(videoId: string): Promise<VideoData | null> {
     };
   } catch (error) {
     console.error("動画データの取得に失敗しました:", error);
-    throw new Error(
-      `動画の取得に失敗しました: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+    throw new Error(formatErrorMessage("動画の取得に失敗しました", error));
   }
 }
 
@@ -80,9 +74,8 @@ export async function getRecentVideos(
     | number = 10,
 ): Promise<{ videos: VideoData[]; hasMore: boolean; lastVideo?: VideoData }> {
   try {
-    // Firebase Admin SDKを初期化
-    initializeFirebaseAdmin();
-    const db = getFirestore();
+    // ヘルパー関数を使用してFirestoreを初期化
+    const db = getFirestoreAdmin();
 
     // 互換性のために数値の場合は limitとして扱う
     const limit = typeof options === "number" ? options : (options.limit ?? 10);
@@ -143,11 +136,7 @@ export async function getRecentVideos(
     };
   } catch (error) {
     console.error("動画一覧の取得に失敗しました:", error);
-    throw new Error(
-      `動画の取得に失敗しました: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+    throw new Error(formatErrorMessage("動画の取得に失敗しました", error));
   }
 }
 
@@ -168,9 +157,8 @@ export async function getVideosByPlaylist(
       throw new Error("プレイリストIDが指定されていません");
     }
 
-    // Firebase Admin SDKを初期化
-    initializeFirebaseAdmin();
-    const db = getFirestore();
+    // ヘルパー関数を使用してFirestoreを初期化
+    const db = getFirestoreAdmin();
 
     // プレイリストIDでフィルタして動画を取得
     const query = await db
@@ -203,9 +191,7 @@ export async function getVideosByPlaylist(
   } catch (error) {
     console.error("プレイリスト動画の取得に失敗しました:", error);
     throw new Error(
-      `プレイリスト動画の取得に失敗しました: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
+      formatErrorMessage("プレイリスト動画の取得に失敗しました", error),
     );
   }
 }

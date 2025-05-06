@@ -4,6 +4,7 @@ import type { UserRecord } from "firebase-admin/auth";
 import { cookies, headers } from "next/headers";
 import type { NextRequest } from "next/server";
 import { initializeFirebaseAdmin } from "./firebase-admin";
+import { revokeSession } from "./manage-session";
 
 /**
  * APIリクエストからAuthorizationヘッダーのBearerトークンを取得する
@@ -75,7 +76,7 @@ export async function getCurrentUser(
 
     // 2. セッションクッキーからの認証を試みる
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get("firebase-session");
+    const sessionCookie = cookieStore.get("session");
 
     if (!sessionCookie?.value) {
       // セッションクッキーがない場合は未ログイン
@@ -104,8 +105,8 @@ export async function getCurrentUser(
       return userRecord;
     } catch (error) {
       console.error("セッションクッキーの検証に失敗しました:", error);
-      // クッキーが無効な場合は削除
-      cookieStore.delete("firebase-session");
+      // クッキーが無効な場合は削除（revokeSession関数を使用）
+      await revokeSession();
       return null;
     }
   } catch (error) {

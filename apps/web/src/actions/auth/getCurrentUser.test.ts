@@ -259,7 +259,7 @@ describe("getCurrentUser関数のテスト", () => {
       true,
     );
     expect(vi.mocked(headerModule.cookies)().delete).toHaveBeenCalledWith(
-      "firebase-session",
+      "session",
     );
   });
 

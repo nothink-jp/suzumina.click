@@ -4,15 +4,14 @@
  * このファイルにはオーディオクリップ関連の共通アクションをエクスポートします
  */
 
-import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
+// revalidatePath関数は Pages Router では動作しないため削除
+import { formatErrorMessage, getFirestoreAdmin } from "@/lib/firebase/admin";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type {
   DocumentData,
-  Firestore,
   Query,
   QueryDocumentSnapshot,
 } from "firebase-admin/firestore";
-// revalidatePath関数は Pages Router では動作しないため削除
-import { initializeFirebaseAdmin } from "../auth/firebase-admin";
 import { getCurrentUser } from "../auth/getCurrentUser";
 
 // 注: "use server" ディレクティブを含むファイルでの再エクスポートは許可されていないため、
@@ -50,33 +49,9 @@ export async function getAudioClips(params: GetAudioClipsParams) {
       throw new Error("videoIdまたはuserIdが必要です");
     }
 
-    // Firebase Admin SDKを初期化
-    try {
-      console.log("Firebase Admin SDKの初期化を開始します");
-      initializeFirebaseAdmin();
-      console.log("Firebase Admin SDKの初期化が完了しました");
-    } catch (initError) {
-      console.error("Firebase Admin SDKの初期化に失敗しました:", initError);
-      throw new Error(
-        `サーバー側の認証初期化に失敗しました: ${
-          initError instanceof Error ? initError.message : String(initError)
-        }`,
-      );
-    }
-
-    // Firestoreの取得
-    let db: Firestore;
-    try {
-      db = getFirestore();
-      console.log("Firestoreの接続に成功しました");
-    } catch (dbError) {
-      console.error("Firestoreの取得に失敗しました:", dbError);
-      throw new Error(
-        `データベース接続に失敗しました: ${
-          dbError instanceof Error ? dbError.message : String(dbError)
-        }`,
-      );
-    }
+    // ヘルパー関数を使用してFirestoreを初期化
+    const db = getFirestoreAdmin();
+    console.log("Firestoreの接続に成功しました");
 
     // クエリ条件の構築
     const clipsCollection = db.collection("audioClips");
@@ -136,17 +111,13 @@ export async function getAudioClips(params: GetAudioClipsParams) {
     } catch (queryError) {
       console.error("Firestoreクエリの実行に失敗しました:", queryError);
       throw new Error(
-        `音声クリップの取得に失敗しました: ${
-          queryError instanceof Error ? queryError.message : String(queryError)
-        }`,
+        formatErrorMessage("音声クリップの取得に失敗しました", queryError),
       );
     }
   } catch (error) {
     console.error("音声クリップの取得中に予期せぬエラーが発生しました:", error);
     throw new Error(
-      `音声クリップの取得に失敗しました: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
+      formatErrorMessage("音声クリップの取得に失敗しました", error),
     );
   }
 }
@@ -195,29 +166,8 @@ export async function createAudioClip(data: AudioClipData) {
       throw new Error("開始時間は終了時間より前である必要があります");
     }
 
-    // Firebase Admin SDKを初期化
-    try {
-      initializeFirebaseAdmin();
-    } catch (initError) {
-      console.error("Firebase Admin SDKの初期化に失敗しました:", initError);
-      throw new Error(
-        `サーバー側の認証初期化に失敗しました: ${
-          initError instanceof Error ? initError.message : String(initError)
-        }`,
-      );
-    }
-
-    let db: Firestore;
-    try {
-      db = getFirestore();
-    } catch (dbError) {
-      console.error("Firestoreの取得に失敗しました:", dbError);
-      throw new Error(
-        `データベース接続に失敗しました: ${
-          dbError instanceof Error ? dbError.message : String(dbError)
-        }`,
-      );
-    }
+    // ヘルパー関数を使用してFirestoreを初期化
+    const db = getFirestoreAdmin();
 
     // 動画の存在確認
     try {
@@ -228,9 +178,7 @@ export async function createAudioClip(data: AudioClipData) {
     } catch (videoError) {
       console.error("動画データの取得に失敗しました:", videoError);
       throw new Error(
-        `動画データの取得に失敗しました: ${
-          videoError instanceof Error ? videoError.message : String(videoError)
-        }`,
+        formatErrorMessage("動画データの取得に失敗しました", videoError),
       );
     }
 
@@ -285,19 +233,13 @@ export async function createAudioClip(data: AudioClipData) {
     } catch (createError) {
       console.error("音声クリップの作成に失敗しました:", createError);
       throw new Error(
-        `音声クリップの作成に失敗しました: ${
-          createError instanceof Error
-            ? createError.message
-            : String(createError)
-        }`,
+        formatErrorMessage("音声クリップの作成に失敗しました", createError),
       );
     }
   } catch (error) {
     console.error("音声クリップの作成中に予期せぬエラーが発生しました:", error);
     throw new Error(
-      `音声クリップの作成に失敗しました: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
+      formatErrorMessage("音声クリップの作成に失敗しました", error),
     );
   }
 }
@@ -314,32 +256,9 @@ export async function getAudioClip(clipId: string) {
       throw new Error("クリップIDが必要です");
     }
 
-    // Firebase Admin SDKを初期化
-    try {
-      console.log("Firebase Admin SDKの初期化を開始します - getAudioClip");
-      initializeFirebaseAdmin();
-      console.log("Firebase Admin SDKの初期化が完了しました");
-    } catch (initError) {
-      console.error("Firebase Admin SDKの初期化に失敗しました:", initError);
-      throw new Error(
-        `サーバー側の認証初期化に失敗しました: ${
-          initError instanceof Error ? initError.message : String(initError)
-        }`,
-      );
-    }
-
-    let db: Firestore;
-    try {
-      db = getFirestore();
-      console.log("Firestoreの接続に成功しました");
-    } catch (dbError) {
-      console.error("Firestoreの取得に失敗しました:", dbError);
-      throw new Error(
-        `データベース接続に失敗しました: ${
-          dbError instanceof Error ? dbError.message : String(dbError)
-        }`,
-      );
-    }
+    // ヘルパー関数を使用してFirestoreを初期化
+    const db = getFirestoreAdmin();
+    console.log("Firestoreの接続に成功しました");
 
     // クリップの取得
     try {
@@ -373,17 +292,13 @@ export async function getAudioClip(clipId: string) {
     } catch (queryError) {
       console.error("クリップデータの取得に失敗しました:", queryError);
       throw new Error(
-        `音声クリップの取得に失敗しました: ${
-          queryError instanceof Error ? queryError.message : String(queryError)
-        }`,
+        formatErrorMessage("音声クリップの取得に失敗しました", queryError),
       );
     }
   } catch (error) {
     console.error("音声クリップの取得中に予期せぬエラーが発生しました:", error);
     throw new Error(
-      `音声クリップの取得に失敗しました: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
+      formatErrorMessage("音声クリップの取得に失敗しました", error),
     );
   }
 }
@@ -406,29 +321,8 @@ export async function updateAudioClip(
       throw new Error("認証が必要です");
     }
 
-    // Firebase Admin SDKを初期化
-    try {
-      initializeFirebaseAdmin();
-    } catch (initError) {
-      console.error("Firebase Admin SDKの初期化に失敗しました:", initError);
-      throw new Error(
-        `サーバー側の認証初期化に失敗しました: ${
-          initError instanceof Error ? initError.message : String(initError)
-        }`,
-      );
-    }
-
-    let db: Firestore;
-    try {
-      db = getFirestore();
-    } catch (dbError) {
-      console.error("Firestoreの取得に失敗しました:", dbError);
-      throw new Error(
-        `データベース接続に失敗しました: ${
-          dbError instanceof Error ? dbError.message : String(dbError)
-        }`,
-      );
-    }
+    // ヘルパー関数を使用してFirestoreを初期化
+    const db = getFirestoreAdmin();
 
     // クリップの取得
     try {
@@ -540,29 +434,8 @@ export async function deleteAudioClip(clipId: string) {
       throw new Error("認証が必要です");
     }
 
-    // Firebase Admin SDKを初期化
-    try {
-      initializeFirebaseAdmin();
-    } catch (initError) {
-      console.error("Firebase Admin SDKの初期化に失敗しました:", initError);
-      throw new Error(
-        `サーバー側の認証初期化に失敗しました: ${
-          initError instanceof Error ? initError.message : String(initError)
-        }`,
-      );
-    }
-
-    let db: Firestore;
-    try {
-      db = getFirestore();
-    } catch (dbError) {
-      console.error("Firestoreの取得に失敗しました:", dbError);
-      throw new Error(
-        `データベース接続に失敗しました: ${
-          dbError instanceof Error ? dbError.message : String(dbError)
-        }`,
-      );
-    }
+    // ヘルパー関数を使用してFirestoreを初期化
+    const db = getFirestoreAdmin();
 
     // クリップの取得
     try {
@@ -622,9 +495,8 @@ export async function incrementPlayCount(clipId: string) {
       throw new Error("クリップIDが必要です");
     }
 
-    // Firebase Admin SDKを初期化
-    initializeFirebaseAdmin();
-    const db = getFirestore();
+    // ヘルパー関数を使用してFirestoreを初期化
+    const db = getFirestoreAdmin();
 
     // クリップの存在確認
     const clipDoc = await db.collection("audioClips").doc(clipId).get();
@@ -648,11 +520,7 @@ export async function incrementPlayCount(clipId: string) {
     };
   } catch (error) {
     console.error("再生回数の更新に失敗しました:", error);
-    throw new Error(
-      `再生回数の更新に失敗しました: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
+    throw new Error(formatErrorMessage("再生回数の更新に失敗しました", error));
   }
 }
 

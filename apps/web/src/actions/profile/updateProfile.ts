@@ -1,9 +1,9 @@
 "use server";
 
+import { getFirestoreAdmin } from "@/lib/firebase/admin";
 import type { UserProfileFormData } from "@/lib/users/types";
-import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { z } from "zod";
-import { initializeFirebaseAdmin } from "../auth/firebase-admin";
 import { getCurrentUser } from "../auth/getCurrentUser";
 
 // バリデーション用のスキーマ
@@ -59,8 +59,8 @@ export async function updateProfile(
       };
     }
 
-    // Firestore初期化
-    const firestore = getFirestore();
+    // ヘルパー関数を使用してFirestoreを初期化
+    const firestore = getFirestoreAdmin();
     const userProfileRef = firestore
       .collection("userProfiles")
       .doc(currentUser.uid);

@@ -1,8 +1,7 @@
 "use server";
 
+import { getFirestoreAdmin } from "@/lib/firebase/admin";
 import type { UserProfile, UserProfileData } from "@/lib/users/types";
-import { getFirestore } from "firebase-admin/firestore";
-import { initializeFirebaseAdmin } from "../auth/firebase-admin";
 import { getCurrentUser } from "../auth/getCurrentUser";
 
 /**
@@ -37,9 +36,8 @@ export async function getProfile(uid?: string): Promise<UserProfile | null> {
       return null;
     }
 
-    // Firestore初期化
-    const auth = initializeFirebaseAdmin();
-    const firestore = getFirestore();
+    // ヘルパー関数を使用してFirestoreを初期化
+    const firestore = getFirestoreAdmin();
 
     // デバッグ用：Firestoreが初期化されたことを確認
     console.log(
