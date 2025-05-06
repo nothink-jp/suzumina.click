@@ -13,29 +13,6 @@ const nextConfig: NextConfig = {
         ...config.resolve.alias,
         "firebase-admin": false,
       };
-
-      // Node.js固有のモジュールを無効化
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        net: false,
-        fs: false,
-        tls: false,
-        http2: false,
-        crypto: false,
-        os: false,
-        path: false,
-        child_process: false,
-        util: false,
-        stream: false,
-        events: false,
-        process: false,
-      };
-
-      // node:プロトコルを処理するための設定
-      config.module.rules.push({
-        test: /node:/,
-        loader: "ignore-loader",
-      });
     }
     return config;
   },
