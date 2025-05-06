@@ -37,6 +37,27 @@ resource "google_firestore_index" "videos_liveBroadcast_publishedAt_asc" {
   }
 }
 
+# videos コレクションのインデックス - videoType（昇順）、publishedAt（降順）、__name__（降順）
+resource "google_firestore_index" "videos_videoType_publishedAt_desc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+  
+  fields {
+    field_path = "videoType"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "publishedAt"
+    order      = "DESCENDING"
+  }
+
+  fields {
+    field_path = "__name__"
+    order      = "DESCENDING"
+  }
+}
+
 # audioClips コレクションのインデックス - isPublic（昇順）、videoId（昇順）と createdAt（降順）
 resource "google_firestore_index" "audioclips_ispublic_videoid_createdat_desc" {
   project    = var.gcp_project_id

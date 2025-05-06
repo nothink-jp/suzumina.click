@@ -55,7 +55,7 @@ export interface Video {
  */
 export interface PaginationParams {
   limit: number;
-  startAfter?: Date;
+  startAfter?: string; // IDベースのページネーションに変更
   videoType?: VideoType; // 動画種別でフィルタリング
 }
 

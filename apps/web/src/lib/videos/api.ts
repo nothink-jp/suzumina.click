@@ -15,14 +15,17 @@ export async function getRecentVideos(
   params: PaginationParams = { limit: 10 },
 ): Promise<VideoListResult> {
   try {
-    // Server Actionを呼び出す
-    const result = await getVideos({
+    // パラメータの整形
+    const options = {
       limit: params.limit,
-      startAfter: params.startAfter
-        ? dayjs(params.startAfter).toISOString()
-        : undefined,
-      videoType: params.videoType,
-    });
+      // startAfterはstring型としてそのまま渡す
+      startAfter: params.startAfter,
+      // videoTypeが"all"の場合はundefinedとして扱う
+      videoType: params.videoType === "all" ? undefined : params.videoType,
+    };
+
+    // Server Actionを呼び出す
+    const result = await getVideos(options);
 
     // VideoData[]をVideo[]に変換
     const videos = result.videos.map((videoData) => {
@@ -58,29 +61,8 @@ export async function getRecentVideos(
       } as Video;
     });
 
-    // 最後のビデオがある場合は同様に変換
-    let lastVideo: Video | undefined = undefined;
-    if (result.lastVideo) {
-      const thumbnailUrl =
-        result.lastVideo.thumbnails?.high?.url ||
-        result.lastVideo.thumbnails?.medium?.url ||
-        result.lastVideo.thumbnails?.default?.url ||
-        "";
-
-      lastVideo = {
-        id: result.lastVideo.id,
-        title: result.lastVideo.title,
-        description: result.lastVideo.description,
-        publishedAt: dayjs(result.lastVideo.publishedAt).toDate(),
-        publishedAtISO: result.lastVideo.publishedAt,
-        thumbnailUrl,
-        channelId: result.lastVideo.channelId,
-        channelTitle: result.lastVideo.channelTitle,
-        lastFetchedAt: new Date(),
-        lastFetchedAtISO: new Date().toISOString(),
-        liveBroadcastContent: "none",
-      } as Video;
-    }
+    // 最後のビデオを取得
+    const lastVideo = videos.length > 0 ? videos[videos.length - 1] : undefined;
 
     return {
       videos,

@@ -7,6 +7,7 @@
  */
 
 import { formatErrorMessage, getFirestoreAdmin } from "@/lib/firebase/admin";
+import type { DocumentData, Query } from "firebase-admin/firestore";
 
 // 動画関連の型定義
 export interface VideoData {
@@ -85,25 +86,29 @@ export async function getRecentVideos(
       typeof options === "object" ? options.startAfter : undefined;
     const videoType =
       typeof options === "object" ? options.videoType : undefined;
-    const lastPublishedAt =
-      typeof options === "object" ? options.lastPublishedAt : undefined;
+    // Firestoreのクエリ型を適切に扱うために、型を明示的に宣言
+    // CollectionReferenceを最初に取得し、以降のクエリチェーンでQueryとして扱う
+    const videosCollection = db.collection("videos");
 
-    // クエリ構築
-    let query = db.collection("videos").orderBy("publishedAt", "desc");
+    // クエリ構築を修正 - インデックスと完全に一致する順序で構築
+    let query: Query<DocumentData>;
 
-    // 特定のタイプの動画のみ取得する場合
+    // インデックスに合わせて、まずvideoTypeのフィルタリングを行い、その後にソートする
     if (videoType) {
-      query = query.where("videoType", "==", videoType);
+      query = videosCollection
+        .where("videoType", "==", videoType)
+        .orderBy("publishedAt", "desc");
+    } else {
+      // videoTypeフィルタなしの場合は単純に日付でソート
+      query = videosCollection.orderBy("publishedAt", "desc");
     }
 
-    // ページネーション - startAfterまたはlastPublishedAtが指定されている場合
+    // ページネーション - startAfterが指定されている場合
     if (startAfter) {
       const lastDoc = await db.collection("videos").doc(startAfter).get();
       if (lastDoc.exists) {
         query = query.startAfter(lastDoc);
       }
-    } else if (lastPublishedAt) {
-      query = query.startAfter(lastPublishedAt);
     }
 
     // 取得数の制限（hasMoreを判断するため+1）

@@ -35,7 +35,6 @@ describe("動画API関数", () => {
       const mockResult = {
         videos: [mockVideoData],
         hasMore: false,
-        lastVideo: null,
       };
       vi.mocked(videosActions.getRecentVideos).mockResolvedValue(mockResult);
 
@@ -52,7 +51,9 @@ describe("動画API関数", () => {
       expect(result.videos[0].id).toBe("video1");
       expect(result.videos[0].title).toBe("テスト動画1");
       expect(result.hasMore).toBe(false);
-      expect(result.lastVideo).toBeUndefined();
+      // lastVideoは最後のビデオとして設定される挙動に変更
+      expect(result.lastVideo).toBeDefined();
+      expect(result.lastVideo?.id).toBe("video1");
     });
 
     it("正常系: ページネーションパラメータを指定して動画リストが取得できること", async () => {
@@ -65,17 +66,18 @@ describe("動画API関数", () => {
       vi.mocked(videosActions.getRecentVideos).mockResolvedValue(mockResult);
 
       // 関数を実行（パラメータを指定）
-      const startAfterDate = new Date("2025-04-29T12:00:00Z");
+      // startAfterがstring型に変更されたため、直接IDを渡す
+      const startAfterId = "previousVideoId";
       const result = await getRecentVideos({
         limit: 5,
-        startAfter: startAfterDate,
+        startAfter: startAfterId,
         videoType: "archived",
       });
 
       // アサーション
       expect(videosActions.getRecentVideos).toHaveBeenCalledWith({
         limit: 5,
-        startAfter: startAfterDate.toISOString(),
+        startAfter: startAfterId,
         videoType: "archived",
       });
       expect(result.videos).toHaveLength(1);
