@@ -92,51 +92,20 @@ export async function getAudioClips(params: GetAudioClipsParams) {
       const clips = snapshot.docs.map((doc: QueryDocumentSnapshot) => {
         const data = doc.data();
 
-        // オブジェクトを完全にシリアライズ可能な形式に変換
-        // 日付をISO文字列に変換し、プロトタイプを持たないプレーンなオブジェクトを作成
-        const serializedClip = {
+        // sanitizeClipForClient関数を使用して完全にシリアライズ可能なプレーンオブジェクトを作成
+        return sanitizeClipForClient({
           id: doc.id,
-          videoId: data.videoId || "",
-          title: data.title || "",
-          phrase: data.phrase || "",
-          description: data.description || "",
-          startTime: typeof data.startTime === "number" ? data.startTime : 0,
-          endTime: typeof data.endTime === "number" ? data.endTime : 0,
-          userId: data.userId || "",
-          userName: data.userName || "",
-          userPhotoURL: data.userPhotoURL || null,
-          isPublic: Boolean(data.isPublic),
-          tags: Array.isArray(data.tags) ? data.tags : [],
-          playCount: typeof data.playCount === "number" ? data.playCount : 0,
-          favoriteCount:
-            typeof data.favoriteCount === "number" ? data.favoriteCount : 0,
-          createdAt: data.createdAt?.toDate?.()
-            ? data.createdAt.toDate().toISOString()
-            : new Date().toISOString(),
-          updatedAt: data.updatedAt?.toDate?.()
-            ? data.updatedAt.toDate().toISOString()
-            : new Date().toISOString(),
-          lastPlayedAt: data.lastPlayedAt?.toDate?.()
-            ? data.lastPlayedAt.toDate().toISOString()
-            : undefined,
-          audioUrl: data.audioUrl || undefined,
-          duration:
-            typeof data.duration === "number"
-              ? data.duration
-              : (typeof data.endTime === "number" ? data.endTime : 0) -
-                (typeof data.startTime === "number" ? data.startTime : 0),
-        };
-
-        // 完全にシリアライズされたオブジェクトを返す
-        return serializedClip;
+          ...data,
+        });
       });
 
       // 次のページがあるかどうか
       const hasMore = clips.length === limit;
 
-      // 最後のクリップデータがあれば、それも完全にシリアライズする
-      const lastClip = clips.length > 0 ? { ...clips[clips.length - 1] } : null;
+      // 最後のクリップも同様にsanitizeClipForClient関数で処理
+      const lastClip = clips.length > 0 ? clips[clips.length - 1] : null;
 
+      // 完全にシリアライズ可能な状態で返す
       return {
         clips,
         hasMore,
@@ -257,16 +226,17 @@ export async function createAudioClip(data: AudioClipData) {
 
     try {
       const docRef = await db.collection("audioClips").add(newClip);
-      // revalidatePath関数の呼び出しを削除
-      // (Pages Routerではサポートされていないため)
 
-      // レスポンス用にタイムスタンプをISOString形式に変換
-      return {
+      // 作成されたクリップのレスポンス用データを作成
+      // タイムスタンプはISOString形式に変換し、sanitizeClipForClient関数を適用
+      const responseData = sanitizeClipForClient({
         id: docRef.id,
         ...newClip,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      return responseData;
     } catch (createError) {
       console.error("音声クリップの作成に失敗しました:", createError);
       throw new Error(
