@@ -59,6 +59,69 @@ interface BaseAudioClip {
 }
 
 /**
+ * Firestoreのタイムスタンプに似た構造を持つオブジェクトの型
+ * toDate メソッドを持つオブジェクトを表現
+ */
+interface TimestampLike {
+  toDate: () => Date;
+}
+
+/**
+ * 値を再帰的に安全なプレーンな値に変換する
+ * 特にNext.jsのサーバーコンポーネントからクライアントコンポーネントに渡す際の
+ * シリアライズエラーを防ぐため
+ *
+ * @param value 変換する値
+ * @returns シリアライズ可能な値
+ */
+function deepSanitize(value: unknown): unknown {
+  // nullまたはundefinedはそのまま
+  if (value == null) {
+    return value;
+  }
+
+  // 日付オブジェクトはISO文字列に変換
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  // Timestampなどの特殊なオブジェクト（toDate()メソッドを持つ）
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "toDate" in value &&
+    typeof value.toDate === "function"
+  ) {
+    try {
+      return (value as TimestampLike).toDate().toISOString();
+    } catch (e) {
+      return new Date().toISOString();
+    }
+  }
+
+  // 配列の場合は各要素を再帰的に処理
+  if (Array.isArray(value)) {
+    return value.map((item) => deepSanitize(item));
+  }
+
+  // オブジェクトの場合はプロパティごとに再帰的に処理
+  if (typeof value === "object" && value !== null) {
+    const result: Record<string, unknown> = {};
+
+    for (const key in value) {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        result[key] = deepSanitize((value as Record<string, unknown>)[key]);
+      }
+    }
+
+    return result;
+  }
+
+  // プリミティブ値（文字列、数値、真偽値）はそのまま返す
+  return value;
+}
+
+/**
  * 音声クリップのデータを安全に変換する
  * サーバーコンポーネントからクライアントコンポーネントに渡す際のシリアライズエラーを防ぐ
  *
@@ -67,31 +130,41 @@ interface BaseAudioClip {
  */
 export function sanitizeClipForClient<T extends DateLikeObject>(clip: T): T {
   try {
-    // 1. まず型安全に扱うためにRecordとして扱う
-    const record = clip as Record<string, unknown>;
-    // オブジェクトをシャローコピー
-    const preProcessed: Record<string, unknown> = { ...record };
+    // 1. まず再帰的に全てのプロパティを安全な値に変換
+    const sanitizedData = deepSanitize(clip);
 
-    // 日付と思われるプロパティを安全な文字列に変換
+    // 2. 特定の日付プロパティが存在するか確認し、確実に処理する
+    const result = sanitizedData as Record<string, unknown>;
     const dateProperties = ["createdAt", "updatedAt", "lastPlayedAt"];
+
     for (const prop of dateProperties) {
-      if (prop in preProcessed) {
-        // 日付プロパティを文字列に変換 (型安全なアクセス)
-        preProcessed[prop] = toSafeDate(preProcessed[prop]);
+      if (prop in result) {
+        // 既に文字列に変換されているものはそのまま、それ以外は文字列に変換
+        if (typeof result[prop] !== "string") {
+          result[prop] = toSafeDate(result[prop]);
+        }
       }
     }
 
-    // 2. オブジェクト全体をJSON.stringify→JSON.parseでプロトタイプを完全に除去
-    // これにより非シリアライズ可能なオブジェクトが含まれていても問題を回避できる
-    const serializedString = JSON.stringify(preProcessed);
-    const fullySerializedObject = JSON.parse(serializedString);
+    // 3. JSON.stringify → JSON.parseでプロトタイプをすべて除去し、純粋なプレーンオブジェクトにする
+    // これにより、プロトタイプがnullになり、Next.jsのシリアライズエラーを回避
+    const serialized = JSON.stringify(result);
+    const plainObject = JSON.parse(serialized);
 
-    // 型キャストして返す
-    return fullySerializedObject as T;
+    // デバッグログ
+    console.log(
+      "シリアライズ後のプレーンオブジェクト:",
+      Object.keys(plainObject).map(
+        (key) => `${key}: ${typeof plainObject[key]}`,
+      ),
+    );
+
+    return plainObject as T;
   } catch (error) {
     console.error("クリップのシリアライズ中にエラーが発生しました:", error);
+    console.error("問題のあるデータ:", clip);
 
-    // エラーが発生した場合はできるだけ多くの安全なデータを返そうとする
+    // エラー時のフォールバック: 最低限必要な情報のみのオブジェクトを返す
     try {
       // clipをBaseAudioClip型として扱い、型安全にアクセス
       const baseClip = clip as unknown as BaseAudioClip;
@@ -104,10 +177,16 @@ export function sanitizeClipForClient<T extends DateLikeObject>(clip: T): T {
         startTime:
           typeof baseClip.startTime === "number" ? baseClip.startTime : 0,
         endTime: typeof baseClip.endTime === "number" ? baseClip.endTime : 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
-      return safeMinimalObject as unknown as T;
+
+      // さらにプロトタイプを完全に除去
+      const serialized = JSON.stringify(safeMinimalObject);
+      return JSON.parse(serialized) as unknown as T;
     } catch {
       // 最後の手段として空のオブジェクトを返す
+      console.error("フォールバックオブジェクトの作成にも失敗しました");
       return {} as T;
     }
   }
