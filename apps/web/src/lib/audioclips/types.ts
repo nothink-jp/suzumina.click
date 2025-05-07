@@ -37,14 +37,14 @@ export interface AudioClip {
   phrase: string; // フレーズテキスト
   startTime: number; // 開始時間（秒）
   endTime: number; // 終了時間（秒）
-  audioUrl?: string; // 音声ファイルURL（オプション）
+  audioUrl?: string | null; // 音声ファイルURL（オプション） - null値も許容するように修正
   createdAt: string; // 作成日時（ISO文字列）- Dateオブジェクトからシリアライズ可能な文字列に変更
   updatedAt: string; // 更新日時（ISO文字列）- Dateオブジェクトからシリアライズ可能な文字列に変更
 
   // ユーザー関連情報
   userId: string; // 作成者のユーザーID
   userName: string; // 作成者の表示名
-  userPhotoURL?: string; // 作成者のプロフィール画像URL
+  userPhotoURL?: string | null; // 作成者のプロフィール画像URL - null値も許容するように修正
   isPublic: boolean; // 公開設定
 
   // 追加情報
@@ -56,6 +56,7 @@ export interface AudioClip {
   // UI表示用の追加情報
   duration: number; // 再生時間（秒）
   formattedDuration: string; // フォーマット済み再生時間（例: "0:15"）
+  isFavorited?: boolean; // お気に入り登録されているかどうか
 }
 
 /**

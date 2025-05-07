@@ -80,88 +80,101 @@ export default function AudioClipList({
 
   // APIから返されたクリップデータをAudioClip型に変換するヘルパー関数
   const convertToAudioClip = (clip: ServerActionClipData): AudioClip => {
-    // まず日付を安全な形式に変換
-    const sanitized = sanitizeClipForClient(clip);
+    try {
+      console.log("変換前のクリップデータ:", clip);
+      console.log(
+        "変換前のクリップデータ型:",
+        Object.keys(clip).map((key) => `${key}: ${typeof clip[key]}`),
+      );
 
-    // 安全にプロパティにアクセス
-    const startTime =
-      typeof sanitized.startTime === "number" ? sanitized.startTime : 0;
-    const endTime =
-      typeof sanitized.endTime === "number" ? sanitized.endTime : 0;
-    const calculatedDuration = endTime - startTime;
+      // まず日付を安全な形式に変換
+      const sanitized = sanitizeClipForClient(clip);
+      console.log("sanitizeClipForClient後のデータ:", sanitized);
 
-    // 文字列へ変換
-    const id = typeof sanitized.id === "string" ? sanitized.id : "";
-    const videoId =
-      typeof sanitized.videoId === "string" ? sanitized.videoId : "";
-    const title = typeof sanitized.title === "string" ? sanitized.title : "";
-    const phrase = typeof sanitized.phrase === "string" ? sanitized.phrase : "";
-    const userId = typeof sanitized.userId === "string" ? sanitized.userId : "";
-    const userName =
-      typeof sanitized.userName === "string" ? sanitized.userName : "";
+      // 安全にプロパティにアクセス
+      const startTime =
+        typeof sanitized.startTime === "number" ? sanitized.startTime : 0;
+      const endTime =
+        typeof sanitized.endTime === "number" ? sanitized.endTime : 0;
+      const calculatedDuration = endTime - startTime;
 
-    // オプショナルプロパティ
-    let audioUrl: string | undefined = undefined;
-    if (typeof sanitized.audioUrl === "string") {
-      audioUrl = sanitized.audioUrl;
+      // 再生時間のフォーマット（例：1:30）
+      const minutes = Math.floor(calculatedDuration / 60);
+      const seconds = Math.floor(calculatedDuration % 60);
+      const formattedDuration = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+      // 型に合わせてデータを整形
+      const result: AudioClip = {
+        id: sanitized.id || "",
+        videoId: sanitized.videoId || "",
+        title: sanitized.title || "タイトルなし",
+        phrase: sanitized.phrase || "",
+        startTime,
+        endTime,
+        audioUrl: sanitized.audioUrl,
+        // 日付は常に文字列として扱う - Date型の場合は文字列に変換
+        createdAt:
+          typeof sanitized.createdAt === "string"
+            ? sanitized.createdAt
+            : sanitized.createdAt instanceof Date
+              ? sanitized.createdAt.toISOString()
+              : new Date().toISOString(),
+        updatedAt:
+          typeof sanitized.updatedAt === "string"
+            ? sanitized.updatedAt
+            : sanitized.updatedAt instanceof Date
+              ? sanitized.updatedAt.toISOString()
+              : new Date().toISOString(),
+        userId: sanitized.userId || "",
+        userName: sanitized.userName || "名無しユーザー",
+        userPhotoURL: sanitized.userPhotoURL,
+        isPublic: !!sanitized.isPublic,
+        tags: Array.isArray(sanitized.tags) ? sanitized.tags : [],
+        playCount:
+          typeof sanitized.playCount === "number" ? sanitized.playCount : 0,
+        favoriteCount:
+          typeof sanitized.favoriteCount === "number"
+            ? sanitized.favoriteCount
+            : 0,
+        // lastPlayedAtもcreatedAtと同様に文字列型に統一
+        lastPlayedAt:
+          typeof sanitized.lastPlayedAt === "string"
+            ? sanitized.lastPlayedAt
+            : sanitized.lastPlayedAt instanceof Date
+              ? sanitized.lastPlayedAt.toISOString()
+              : undefined,
+        duration: calculatedDuration,
+        formattedDuration,
+        isFavorited: false, // お気に入り状態は別途取得
+      };
+
+      console.log("変換後のクリップデータ:", result);
+      return result;
+    } catch (error) {
+      console.error("クリップデータ変換中にエラーが発生しました:", error);
+      console.error("問題のあるクリップデータ:", clip);
+
+      // エラーが発生した場合は最小限のデータで応答
+      return {
+        id: typeof clip.id === "string" ? clip.id : "error-id",
+        videoId: typeof clip.videoId === "string" ? clip.videoId : "",
+        title: "データ変換エラー",
+        phrase: "",
+        startTime: 0,
+        endTime: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        userId: "",
+        userName: "エラー",
+        isPublic: true,
+        tags: [],
+        playCount: 0,
+        favoriteCount: 0,
+        duration: 0,
+        formattedDuration: "0:00",
+        isFavorited: false,
+      };
     }
-
-    let userPhotoURL: string | undefined = undefined;
-    if (typeof sanitized.userPhotoURL === "string") {
-      userPhotoURL = sanitized.userPhotoURL;
-    }
-
-    // 日付は必ず文字列として扱う（toSafeDate関数は常に文字列を返す）
-    const createdAtStr = toSafeDate(sanitized.createdAt);
-    const updatedAtStr = toSafeDate(sanitized.updatedAt);
-    let lastPlayedAtStr: string | undefined = undefined;
-    if (sanitized.lastPlayedAt) {
-      lastPlayedAtStr = toSafeDate(sanitized.lastPlayedAt);
-    }
-
-    // 配列型のプロパティを適切に変換
-    const tags: string[] = Array.isArray(sanitized.tags) ? sanitized.tags : [];
-
-    // 数値型のプロパティを適切に変換
-    const playCount =
-      typeof sanitized.playCount === "number" ? sanitized.playCount : 0;
-    const favoriteCount =
-      typeof sanitized.favoriteCount === "number" ? sanitized.favoriteCount : 0;
-    const duration =
-      typeof sanitized.duration === "number"
-        ? sanitized.duration
-        : calculatedDuration;
-
-    // 文字列型のフォーマット済み再生時間
-    const formattedDuration =
-      typeof sanitized.formattedDuration === "string"
-        ? sanitized.formattedDuration
-        : formatDuration(calculatedDuration);
-
-    // boolean型のプロパティを適切に変換
-    const isPublic = Boolean(sanitized.isPublic);
-
-    return {
-      id,
-      videoId,
-      title,
-      phrase,
-      startTime,
-      endTime,
-      audioUrl,
-      createdAt: createdAtStr,
-      updatedAt: updatedAtStr,
-      lastPlayedAt: lastPlayedAtStr,
-      userId,
-      userName,
-      userPhotoURL,
-      isPublic,
-      tags,
-      playCount,
-      favoriteCount,
-      duration,
-      formattedDuration,
-    };
   };
 
   // クリップを読み込む
