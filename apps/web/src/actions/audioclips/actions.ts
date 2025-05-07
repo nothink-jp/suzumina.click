@@ -90,120 +90,60 @@ export async function getAudioClips(params: GetAudioClipsParams) {
     try {
       const snapshot = await queryBuilder.get();
 
-      // デバッグ: クエリ結果の概要を出力
-      console.log(`取得したドキュメント数: ${snapshot.docs.length}`);
+      // 単純な構造のオブジェクトに変換（プリミティブ型と標準オブジェクトのみ）
+      const clips = snapshot.docs.map((doc) => {
+        const data = doc.data();
 
-      // 各ドキュメントをマップする前に詳細なデバッグ情報を出力
-      const clips = snapshot.docs.map(
-        (doc: QueryDocumentSnapshot, index: number) => {
-          try {
-            const data = doc.data();
-
-            // デバッグ: 各ドキュメントのデータ構造を確認
-            console.log(`クリップ[${index}] ID: ${doc.id}`);
-            console.log(
-              `クリップ[${index}] データキー: ${Object.keys(data).join(", ")}`,
-            );
-
-            // タイムスタンプフィールドの型を確認
-            if (data.createdAt) {
-              console.log(
-                `クリップ[${index}] createdAt型: ${data.createdAt.constructor.name}`,
-              );
-            }
-            if (data.updatedAt) {
-              console.log(
-                `クリップ[${index}] updatedAt型: ${data.updatedAt.constructor.name}`,
-              );
-            }
-
-            // sanitizeClipForClient実行前のデータをJSONに変換してみる
-            try {
-              JSON.stringify({ id: doc.id, ...data });
-              console.log(`クリップ[${index}] はJSONシリアライズ可能です`);
-            } catch (jsonError) {
-              console.error(
-                `クリップ[${index}] JSONシリアライズエラー:`,
-                jsonError,
-              );
-
-              // シリアライズできない場合は問題のあるプロパティを特定
-              for (const key of Object.keys(data)) {
-                try {
-                  JSON.stringify({ [key]: data[key] });
-                } catch (propError) {
-                  console.error(
-                    `クリップ[${index}] プロパティ ${key} はシリアライズできません:`,
-                    propError,
-                  );
-                }
-              }
-            }
-
-            // sanitizeClipForClient関数を使用して完全にシリアライズ可能なプレーンオブジェクトを作成
-            const sanitizedClip = sanitizeClipForClient({
-              id: doc.id,
-              ...data,
-            });
-
-            // sanitize後のオブジェクトを検証
-            console.log(
-              `クリップ[${index}] sanitize後のデータキー: ${Object.keys(sanitizedClip).join(", ")}`,
-            );
-
-            return sanitizedClip;
-          } catch (mapError) {
-            console.error(
-              `クリップ[${index}] の処理中にエラーが発生:`,
-              mapError,
-            );
-            // エラー時にも最小限の情報を返す
-            return { id: doc.id, error: "データ変換エラー" };
-          }
-        },
-      );
+        // 純粋なJSONオブジェクトを作成
+        return {
+          id: doc.id,
+          videoId: data.videoId || "",
+          title: data.title || "",
+          phrase: data.phrase || "",
+          description: data.description || "",
+          startTime: typeof data.startTime === "number" ? data.startTime : 0,
+          endTime: typeof data.endTime === "number" ? data.endTime : 0,
+          userId: data.userId || "",
+          userName: data.userName || "名無しユーザー",
+          userPhotoURL: data.userPhotoURL || null,
+          isPublic: !!data.isPublic,
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          playCount: typeof data.playCount === "number" ? data.playCount : 0,
+          favoriteCount:
+            typeof data.favoriteCount === "number" ? data.favoriteCount : 0,
+          // タイムスタンプを文字列に変換
+          createdAt:
+            data.createdAt && typeof data.createdAt.toDate === "function"
+              ? data.createdAt.toDate().toISOString()
+              : new Date().toISOString(),
+          updatedAt:
+            data.updatedAt && typeof data.updatedAt.toDate === "function"
+              ? data.updatedAt.toDate().toISOString()
+              : new Date().toISOString(),
+          lastPlayedAt:
+            data.lastPlayedAt && typeof data.lastPlayedAt.toDate === "function"
+              ? data.lastPlayedAt.toDate().toISOString()
+              : undefined,
+        };
+      });
 
       // 次のページがあるかどうか
       const hasMore = clips.length === limit;
 
-      // 最後のクリップも同様にsanitizeClipForClient関数で処理
+      // 最後のクリップ
       const lastClip = clips.length > 0 ? clips[clips.length - 1] : null;
 
-      // 返却前に全体のデータ構造を確認
-      console.log(
-        `返却データ構造: ${JSON.stringify({
-          clipsCount: clips.length,
-          hasMore,
-          lastClipExists: lastClip !== null,
-        })}`,
-      );
+      // オブジェクトを完全にシリアライズ可能にするため、一度文字列化してからパースする
+      const result = {
+        clips,
+        hasMore,
+        lastClip,
+      };
 
-      // 完全にシリアライズ可能な状態で返す
-      try {
-        // 返すデータが完全にシリアライズ可能か確認
-        const result = {
-          clips,
-          hasMore,
-          lastClip,
-        };
-        JSON.stringify(result);
-        return result;
-      } catch (serializeError) {
-        console.error("返却データのシリアライズに失敗:", serializeError);
-        // エラー時には安全なフォールバック値を返す
-        return {
-          clips: [],
-          hasMore: false,
-          lastClip: null,
-          error: "データシリアライズエラー",
-        };
-      }
+      // プロトタイプを完全に削除
+      return JSON.parse(JSON.stringify(result));
     } catch (queryError) {
       console.error("Firestoreクエリの実行に失敗しました:", queryError);
-      console.error(
-        "エラーの詳細:",
-        JSON.stringify(queryError, Object.getOwnPropertyNames(queryError)),
-      );
       throw new Error(
         await formatErrorMessage(
           "音声クリップの取得に失敗しました",
@@ -383,11 +323,40 @@ export async function getAudioClip(clipId: string) {
         }
       }
 
-      // sanitizeClipForClient関数を使用して完全にシリアライズ可能なプレーンオブジェクトを作成
-      return sanitizeClipForClient({
+      // 純粋なJSONオブジェクトを作成して返す
+      const plainObject = {
         id: clipDoc.id,
-        ...data,
-      });
+        videoId: data.videoId || "",
+        title: data.title || "",
+        phrase: data.phrase || "",
+        description: data.description || "",
+        startTime: typeof data.startTime === "number" ? data.startTime : 0,
+        endTime: typeof data.endTime === "number" ? data.endTime : 0,
+        userId: data.userId || "",
+        userName: data.userName || "名無しユーザー",
+        userPhotoURL: data.userPhotoURL || null,
+        isPublic: !!data.isPublic,
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        playCount: typeof data.playCount === "number" ? data.playCount : 0,
+        favoriteCount:
+          typeof data.favoriteCount === "number" ? data.favoriteCount : 0,
+        // タイムスタンプを文字列に変換
+        createdAt:
+          data.createdAt && typeof data.createdAt.toDate === "function"
+            ? data.createdAt.toDate().toISOString()
+            : new Date().toISOString(),
+        updatedAt:
+          data.updatedAt && typeof data.updatedAt.toDate === "function"
+            ? data.updatedAt.toDate().toISOString()
+            : new Date().toISOString(),
+        lastPlayedAt:
+          data.lastPlayedAt && typeof data.lastPlayedAt.toDate === "function"
+            ? data.lastPlayedAt.toDate().toISOString()
+            : undefined,
+      };
+
+      // プロトタイプを完全に削除して返す
+      return JSON.parse(JSON.stringify(plainObject));
     } catch (queryError) {
       console.error("クリップデータの取得に失敗しました:", queryError);
       throw new Error(
