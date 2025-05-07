@@ -45,7 +45,7 @@ export default function VideoPageClient({ video }: VideoPageClientProps) {
   // クリップリストの更新用キー
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // 認証状態のデバッグログ（開発用）
+  // 認証状態のデバッグログ（開発環境のみ）
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       console.log(
@@ -59,39 +59,9 @@ export default function VideoPageClient({ video }: VideoPageClientProps) {
   const handlePlayerReady = (player: YouTubePlayer) => {
     youtubePlayerRef.current = player;
 
-    // 環境情報の取得
-    const isCloudRun =
-      typeof window !== "undefined" &&
-      window.location.hostname.includes("run.app");
-
-    // デバッグ情報（常に出力されるように変更）
-    console.log("YouTubeプレーヤーの準備完了:", {
-      isCloudRun,
-      playerMethods: {
-        getCurrentTime: typeof player.getCurrentTime === "function",
-        seekTo: typeof player.seekTo === "function",
-        playVideo: typeof player.playVideo === "function",
-        pauseVideo: typeof player.pauseVideo === "function",
-      },
-    });
-
-    // 現在時間が取得できるか試してみる（エラーハンドリングを強化）
-    try {
-      const currentTime = player.getCurrentTime();
-      console.log("[デバッグ] 現在の再生位置:", currentTime);
-
-      // より詳細な型情報も記録
-      console.log(
-        "[デバッグ] getCurrentTime()の戻り値の型:",
-        typeof currentTime,
-      );
-      console.log(
-        "[デバッグ] プレーヤーオブジェクトの完全な構造:",
-        Object.getOwnPropertyNames(player),
-      );
-    } catch (error) {
-      console.error("[エラー] 現在の再生位置の取得に失敗しました:", error);
-      console.error("[エラー] エラースタック:", (error as Error).stack);
+    // 開発環境でのみ最小限のデバッグ情報を表示
+    if (process.env.NODE_ENV === "development") {
+      console.log("YouTubeプレーヤーの準備完了");
     }
 
     setIsPlayerReady(true);

@@ -97,20 +97,6 @@ export default function YouTubeEmbed({
   const maxRetries = 3;
   const timeoutDuration = 10000; // 10秒にタイムアウトを延長
 
-  // 環境情報を記録
-  const isCloudRun =
-    typeof window !== "undefined" &&
-    window.location.hostname.includes("run.app");
-  useEffect(() => {
-    console.log("[デバッグ] YouTubeEmbed マウント - 環境情報:", {
-      isCloudRun,
-      hostname:
-        typeof window !== "undefined" ? window.location.hostname : "unknown",
-      userAgent:
-        typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
-    });
-  }, [isCloudRun]);
-
   // YouTube IFrame APIのロード
   useEffect(() => {
     // エラー状態をリセット
@@ -210,7 +196,6 @@ export default function YouTubeEmbed({
       setTimeout(() => {
         clearInterval(checkYTInterval);
         if (!window.YT?.Player) {
-          console.error("YouTube IFrame APIのロードに失敗しました");
           setLoadError(
             "YouTube動画プレーヤーの読み込みに失敗しました。再試行してください。",
           );
@@ -218,9 +203,6 @@ export default function YouTubeEmbed({
           // 再試行回数が上限に達していなければ再試行
           if (retryCountRef.current < maxRetries) {
             retryCountRef.current++;
-            console.log(
-              `YouTube API読み込み再試行中... (${retryCountRef.current}/${maxRetries})`,
-            );
             loadYouTubeAPI();
           }
         }
@@ -238,11 +220,9 @@ export default function YouTubeEmbed({
     return () => {
       if (playerRef.current) {
         try {
-          // コンソールにデバッグ情報を出力
-          console.log("[デバッグ] YouTubeプレーヤー破棄処理を実行");
           playerRef.current.destroy();
         } catch (error) {
-          console.error("プレーヤーの破棄に失敗しました:", error);
+          // エラーがあっても何もしない
         } finally {
           // 確実にプレーヤー参照をクリア
           playerRef.current = null;
@@ -259,10 +239,9 @@ export default function YouTubeEmbed({
         // すでにプレーヤーが存在する場合は破棄
         if (playerRef.current) {
           try {
-            console.log("[デバッグ] 既存プレーヤーの破棄処理を実行");
             playerRef.current.destroy();
           } catch (error) {
-            console.error("既存プレーヤーの破棄に失敗しました:", error);
+            // エラーがあっても何もしない
           }
           playerRef.current = null;
         }
@@ -270,7 +249,6 @@ export default function YouTubeEmbed({
         // プレーヤー要素が存在することを確認
         const playerElement = document.getElementById(playerElementId);
         if (!playerElement) {
-          console.error("プレーヤー要素が見つかりません:", playerElementId);
           setIsLoading(false);
           setLoadError(
             "プレーヤー要素が見つかりませんでした。ページを再読み込みしてください。",
@@ -278,7 +256,6 @@ export default function YouTubeEmbed({
           return;
         }
 
-        console.log("[デバッグ] YouTubeプレーヤー初期化開始:", playerElementId);
         playerRef.current = new window.YT.Player(playerElementId, {
           videoId,
           playerVars: {
@@ -291,7 +268,6 @@ export default function YouTubeEmbed({
           },
           events: {
             onReady: (event) => {
-              console.log("[デバッグ] YouTubeプレーヤー準備完了");
               setIsLoading(false);
               if (onReady) {
                 onReady(event.target);
@@ -303,7 +279,6 @@ export default function YouTubeEmbed({
               }
             },
             onError: (event) => {
-              console.error("YouTubeプレーヤーエラー:", event);
               setIsLoading(false);
               setLoadError(
                 "動画の読み込みに失敗しました。動画IDが正しいか確認してください。",
@@ -312,7 +287,6 @@ export default function YouTubeEmbed({
           },
         });
       } catch (error) {
-        console.error("YouTubeプレーヤーの初期化に失敗しました:", error);
         setIsLoading(false);
         setLoadError(
           "YouTubeプレーヤーの初期化に失敗しました。ブラウザを更新して再試行してください。",

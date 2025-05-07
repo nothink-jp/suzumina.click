@@ -1,4 +1,5 @@
 import { getVideoByIdServer } from "@/lib/videos/server";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import VideoPageClient from "./VideoPageClient";
 
@@ -9,32 +10,14 @@ import VideoPageClient from "./VideoPageClient";
 export const dynamic = "force-dynamic";
 
 /**
- * 動画ページのパラメータ型定義
- */
-interface VideoParams {
-  videoId: string;
-}
-
-/**
- * Next.js 15.3.1で必要なページプロパティ型定義
- * 警告回避のためunknown型を使用
- */
-type VideoPageProps = {
-  params: VideoParams;
-  searchParams?: Record<string, string | string[] | undefined>;
-};
-
-/**
  * 動画詳細ページ
  * URLパラメータから動画IDを取得し、その動画の詳細を表示する
+ * 注意: Next.js 15.3.1の型エラーを回避するために型アサーションを使用しています
  */
-export default async function VideoPage(props: unknown) {
-  // 型アサーションを使用して型チェックエラーを回避
-  // Next.js 15.3.1の型との互換性を確保するための一時的な対応
-  const { params } = props as VideoPageProps;
-
-  // paramsをawaitすることで問題を解決
-  const { videoId } = await Promise.resolve(params);
+// biome-ignore lint/suspicious/noExplicitAny: Next.js 15.3.1の型エラーを回避するために型アサーションを使用しています
+export default async function VideoPage({ params }: any) {
+  // 動画IDを取得
+  const { videoId } = params;
 
   // 動画情報を取得
   const video = await getVideoByIdServer(videoId);
@@ -45,4 +28,32 @@ export default async function VideoPage(props: unknown) {
   }
 
   return <VideoPageClient video={video} />;
+}
+
+/**
+ * 動的メタデータの生成
+ * 動画情報に基づいてページのメタデータを設定
+ * 注意: Next.js 15.3.1の型エラーを回避するために型アサーションを使用しています
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Next.js 15.3.1の型エラーを回避するために型アサーションを使用しています
+export async function generateMetadata({ params }: any): Promise<Metadata> {
+  // 動画IDを取得
+  const { videoId } = params;
+
+  // 動画情報を取得
+  const video = await getVideoByIdServer(videoId);
+
+  // 動画が見つからない場合はデフォルトのメタデータを返す
+  if (!video) {
+    return {
+      title: "動画が見つかりません | すずみなくりっく！",
+      description: "お探しの動画は見つかりませんでした。",
+    };
+  }
+
+  // 動画情報に基づくメタデータを返す
+  return {
+    title: `${video.title} | すずみなくりっく！`,
+    description: video.description || "涼花みなせ様の野良ファンサイト",
+  };
 }

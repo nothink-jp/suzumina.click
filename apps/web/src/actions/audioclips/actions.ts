@@ -4,8 +4,6 @@
  * このファイルにはオーディオクリップ関連の共通アクションをエクスポートします
  */
 
-import { sanitizeClipForClient } from "@/lib/audioclips/utils";
-// revalidatePath関数は Pages Router では動作しないため削除
 import { formatErrorMessage, getFirestoreAdmin } from "@/lib/firebase/admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { DocumentData, Firestore, Query } from "firebase-admin/firestore";
