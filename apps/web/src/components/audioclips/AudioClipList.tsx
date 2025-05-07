@@ -83,37 +83,26 @@ export default function AudioClipList({
     const endTime = typeof clip.endTime === "number" ? clip.endTime : 0;
     const calculatedDuration = endTime - startTime;
 
-    // 日付の処理 - Dateオブジェクトではなく文字列として扱う
+    // 日付の処理 - サーバーアクションからは既にISO文字列形式で返されているはず
     let createdAtStr: string;
     let updatedAtStr: string;
 
-    // 日付が文字列の場合はそのまま使用し、Date型またはnullの場合は現在時刻のISO文字列を使用
+    // 日付が文字列の場合はそのまま使用し、それ以外の場合は現在時刻のISO文字列を使用
     if (typeof clip.createdAt === "string") {
       createdAtStr = clip.createdAt;
-    } else if (clip.createdAt instanceof Date) {
-      // サーバーコンポーネントへの伝播時に問題が起きる可能性があるためtoISOString()を使用する
-      try {
-        createdAtStr = clip.createdAt.toISOString();
-      } catch (error) {
-        console.error("日付の変換エラー:", error);
-        createdAtStr = new Date().toISOString();
-      }
     } else {
+      // Date型のメソッドは使用せず、現在時刻の文字列を作成
       createdAtStr = new Date().toISOString();
+      console.warn("予期せぬ日付フォーマット (createdAt):", clip.createdAt);
     }
 
     // updatedAtも同様に処理
     if (typeof clip.updatedAt === "string") {
       updatedAtStr = clip.updatedAt;
-    } else if (clip.updatedAt instanceof Date) {
-      try {
-        updatedAtStr = clip.updatedAt.toISOString();
-      } catch (error) {
-        console.error("日付の変換エラー:", error);
-        updatedAtStr = new Date().toISOString();
-      }
     } else {
+      // Date型のメソッドは使用せず、現在時刻の文字列を作成
       updatedAtStr = new Date().toISOString();
+      console.warn("予期せぬ日付フォーマット (updatedAt):", clip.updatedAt);
     }
 
     return {
@@ -154,11 +143,10 @@ export default function AudioClipList({
       }
 
       // ページネーション用のstartAfterの処理
-      // lastClip.createdAtは既にISOString形式になっている
       let startAfterParam = null;
-      if (isLoadMore && lastClip) {
-        // 文字列の日付をDateオブジェクトに変換
+      if (isLoadMore && lastClip && typeof lastClip.createdAt === "string") {
         try {
+          // クライアント側で安全にDateオブジェクトを作成
           startAfterParam = new Date(lastClip.createdAt);
         } catch (error) {
           console.error("日付変換エラー:", error);
