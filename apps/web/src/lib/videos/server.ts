@@ -68,12 +68,16 @@ interface FirestoreVideoData {
   description: string;
   publishedAt: {
     toDate: () => Date;
+    _seconds?: number; // Firestoreタイムスタンプの内部表現
+    _nanoseconds?: number; // Firestoreタイムスタンプの内部表現
   };
   thumbnailUrl: string;
   channelId: string;
   channelTitle: string;
   lastFetchedAt: {
     toDate: () => Date;
+    _seconds?: number; // Firestoreタイムスタンプの内部表現
+    _nanoseconds?: number; // Firestoreタイムスタンプの内部表現
   };
   liveBroadcastContent?: LiveBroadcastContent; // 配信状態フィールドを追加
 }
@@ -87,22 +91,40 @@ interface FirestoreVideoData {
  * @returns 変換後のVideoオブジェクト
  */
 export function convertToVideo(id: string, data: FirestoreVideoData): Video {
-  // Date型オブジェクトからISO文字列に変換
-  const publishedAt = data.publishedAt.toDate();
-  const lastFetchedAt = data.lastFetchedAt.toDate();
+  // 日付データの取得および安全な変換
+  let publishedAtISO: string;
+  let lastFetchedAtISO: string;
 
-  const publishedAtISO = publishedAt.toISOString();
-  const lastFetchedAtISO = lastFetchedAt.toISOString();
+  try {
+    // FirestoreのTimestampからDate経由でISO文字列に変換
+    // サーバーでtoString()やその他のメソッドが呼び出される可能性があるため注意
+    publishedAtISO = data.publishedAt.toDate().toISOString();
+  } catch (error) {
+    // エラー発生時のフォールバック
+    console.error("publishedAtの変換エラー:", error);
+    publishedAtISO = new Date().toISOString();
+  }
 
+  try {
+    // 同様にlastFetchedAtも安全に変換
+    lastFetchedAtISO = data.lastFetchedAt.toDate().toISOString();
+  } catch (error) {
+    // エラー発生時のフォールバック
+    console.error("lastFetchedAtの変換エラー:", error);
+    lastFetchedAtISO = new Date().toISOString();
+  }
+
+  // Video型として返却するオブジェクト
+  // 日付はすべて文字列型として扱う
   return {
     id,
-    title: data.title,
-    description: data.description,
+    title: data.title || "",
+    description: data.description || "",
     publishedAtISO,
     lastFetchedAtISO,
-    thumbnailUrl: data.thumbnailUrl,
-    channelId: data.channelId,
-    channelTitle: data.channelTitle,
+    thumbnailUrl: data.thumbnailUrl || "",
+    channelId: data.channelId || "",
+    channelTitle: data.channelTitle || "",
     liveBroadcastContent: data.liveBroadcastContent,
 
     // 旧API互換のためのフィールド（文字列型として保持）
