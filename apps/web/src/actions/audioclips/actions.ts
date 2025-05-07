@@ -92,29 +92,50 @@ export async function getAudioClips(params: GetAudioClipsParams) {
       const clips = snapshot.docs.map((doc: QueryDocumentSnapshot) => {
         const data = doc.data();
 
-        // 日付フィールドをISO文字列に変換
-        const rawClip = {
+        // オブジェクトを完全にシリアライズ可能な形式に変換
+        // 日付をISO文字列に変換し、プロトタイプを持たないプレーンなオブジェクトを作成
+        const serializedClip = {
           id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate().toISOString(),
-          updatedAt: data.updatedAt?.toDate().toISOString(),
-          lastPlayedAt: data.lastPlayedAt
+          videoId: data.videoId || "",
+          title: data.title || "",
+          phrase: data.phrase || "",
+          description: data.description || "",
+          startTime: typeof data.startTime === "number" ? data.startTime : 0,
+          endTime: typeof data.endTime === "number" ? data.endTime : 0,
+          userId: data.userId || "",
+          userName: data.userName || "",
+          userPhotoURL: data.userPhotoURL || null,
+          isPublic: Boolean(data.isPublic),
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          playCount: typeof data.playCount === "number" ? data.playCount : 0,
+          favoriteCount:
+            typeof data.favoriteCount === "number" ? data.favoriteCount : 0,
+          createdAt: data.createdAt?.toDate?.()
+            ? data.createdAt.toDate().toISOString()
+            : new Date().toISOString(),
+          updatedAt: data.updatedAt?.toDate?.()
+            ? data.updatedAt.toDate().toISOString()
+            : new Date().toISOString(),
+          lastPlayedAt: data.lastPlayedAt?.toDate?.()
             ? data.lastPlayedAt.toDate().toISOString()
             : undefined,
+          audioUrl: data.audioUrl || undefined,
+          duration:
+            typeof data.duration === "number"
+              ? data.duration
+              : (typeof data.endTime === "number" ? data.endTime : 0) -
+                (typeof data.startTime === "number" ? data.startTime : 0),
         };
 
-        // サニタイズして安全なオブジェクトにする
-        return sanitizeClipForClient(rawClip);
+        // 完全にシリアライズされたオブジェクトを返す
+        return serializedClip;
       });
 
       // 次のページがあるかどうか
       const hasMore = clips.length === limit;
 
-      // 最後のクリップデータがあれば、それも安全に変換する
-      const lastClip =
-        clips.length > 0
-          ? sanitizeClipForClient(clips[clips.length - 1])
-          : null;
+      // 最後のクリップデータがあれば、それも完全にシリアライズする
+      const lastClip = clips.length > 0 ? { ...clips[clips.length - 1] } : null;
 
       return {
         clips,
