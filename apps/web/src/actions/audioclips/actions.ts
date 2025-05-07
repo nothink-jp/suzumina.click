@@ -308,27 +308,56 @@ export async function getAudioClip(clipId: string) {
         throw new Error("指定されたクリップが存在しません");
       }
 
-      const clipData = clipDoc.data();
+      const data = clipDoc.data();
+      if (!data) {
+        throw new Error("クリップデータを取得できませんでした");
+      }
 
       // 非公開クリップの場合は作成者のみアクセス可能
-      if (clipData && !clipData.isPublic) {
+      if (!data.isPublic) {
         const currentUser = await getCurrentUser();
 
-        if (!currentUser || currentUser.uid !== clipData.userId) {
+        if (!currentUser || currentUser.uid !== data.userId) {
           throw new Error("このクリップにアクセスする権限がありません");
         }
       }
 
-      // レスポンス用にタイムスタンプをISOString形式に変換
-      return {
+      // オブジェクトを完全にシリアライズ可能な形式に変換
+      // FirebaseのTimestampオブジェクトなどをJSONシリアライズ可能な文字列に変換
+      const serializedClip = {
         id: clipDoc.id,
-        ...clipData,
-        createdAt: clipData?.createdAt?.toDate().toISOString(),
-        updatedAt: clipData?.updatedAt?.toDate().toISOString(),
-        lastPlayedAt: clipData?.lastPlayedAt
-          ? clipData.lastPlayedAt.toDate().toISOString()
+        videoId: data.videoId || "",
+        title: data.title || "",
+        phrase: data.phrase || "",
+        description: data.description || "",
+        startTime: typeof data.startTime === "number" ? data.startTime : 0,
+        endTime: typeof data.endTime === "number" ? data.endTime : 0,
+        userId: data.userId || "",
+        userName: data.userName || "",
+        userPhotoURL: data.userPhotoURL || null,
+        isPublic: Boolean(data.isPublic),
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        playCount: typeof data.playCount === "number" ? data.playCount : 0,
+        favoriteCount:
+          typeof data.favoriteCount === "number" ? data.favoriteCount : 0,
+        createdAt: data.createdAt?.toDate?.()
+          ? data.createdAt.toDate().toISOString()
+          : new Date().toISOString(),
+        updatedAt: data.updatedAt?.toDate?.()
+          ? data.updatedAt.toDate().toISOString()
+          : new Date().toISOString(),
+        lastPlayedAt: data.lastPlayedAt?.toDate?.()
+          ? data.lastPlayedAt.toDate().toISOString()
           : undefined,
+        audioUrl: data.audioUrl || undefined,
+        duration:
+          typeof data.duration === "number"
+            ? data.duration
+            : (typeof data.endTime === "number" ? data.endTime : 0) -
+              (typeof data.startTime === "number" ? data.startTime : 0),
       };
+
+      return serializedClip;
     } catch (queryError) {
       console.error("クリップデータの取得に失敗しました:", queryError);
       throw new Error(
