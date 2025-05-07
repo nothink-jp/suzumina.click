@@ -107,12 +107,12 @@ describe("動画サーバーAPI関数のテスト", () => {
         id,
         title: "テスト動画",
         description: "これはテスト用の動画です",
-        publishedAt: mockDate,
+        publishedAt: mockDate.toISOString(), // Dateオブジェクトから文字列型に変更
         publishedAtISO: mockDate.toISOString(),
         thumbnailUrl: "https://example.com/thumbnail.jpg",
         channelId: "channel-123",
         channelTitle: "テストチャンネル",
-        lastFetchedAt: lastFetchedDate,
+        lastFetchedAt: lastFetchedDate.toISOString(), // Dateオブジェクトから文字列型に変更
         lastFetchedAtISO: lastFetchedDate.toISOString(),
         liveBroadcastContent: "none",
       });
@@ -249,12 +249,12 @@ describe("動画サーバーAPI関数のテスト", () => {
       expect(result?.id).toBe(videoId);
       expect(result?.title).toBe("テスト動画");
       expect(result?.description).toBe("これはテスト用の動画です");
-      expect(result?.publishedAt).toEqual(mockDate);
+      expect(result?.publishedAt).toEqual(mockDate.toISOString()); // Dateオブジェクトから文字列型に変更
       expect(result?.publishedAtISO).toBe(mockDate.toISOString());
       expect(result?.thumbnailUrl).toBe("https://example.com/thumbnail.jpg");
       expect(result?.channelId).toBe("channel-123");
       expect(result?.channelTitle).toBe("テストチャンネル");
-      expect(result?.lastFetchedAt).toEqual(lastFetchedDate);
+      expect(result?.lastFetchedAt).toEqual(lastFetchedDate.toISOString()); // Dateオブジェクトから文字列型に変更
       expect(result?.lastFetchedAtISO).toBe(lastFetchedDate.toISOString());
       expect(result?.liveBroadcastContent).toBe("live"); // 配信ステータスが正しく取得されることを確認
     });

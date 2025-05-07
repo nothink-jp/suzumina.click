@@ -2,17 +2,17 @@ import type { Timestamp } from "firebase/firestore";
 
 /**
  * 動画タイプの列挙型
- * - archived: 配信終了したアーカイブ動画
- * - upcoming: これから配信予定の動画
- * - all: すべての動画（フィルタリング用）
+ * - all: すべての動画
+ * - archived: アーカイブ済み動画
+ * - upcoming: 今後配信される動画
  */
-export type VideoType = "archived" | "upcoming" | "all";
+export type VideoType = "all" | "archived" | "upcoming";
 
 /**
  * 配信状態の列挙型
- * - none: 通常の動画（ライブ配信ではない/配信済み）
- * - live: 現在ライブ配信中の動画
- * - upcoming: これから配信予定の動画
+ * - none: ライブ配信ではない通常の動画
+ * - live: 現在ライブ配信中
+ * - upcoming: 今後配信予定
  */
 export type LiveBroadcastContent = "none" | "live" | "upcoming";
 
@@ -33,21 +33,25 @@ export interface VideoData {
 }
 
 /**
- * アプリケーション内で使用する動画データの型
- * TimestampをDate型に変換し、使いやすい形に整形
+ * 動画情報の型定義
+ * サーバーコンポーネントとクライアントコンポーネント間でシリアライズ可能なデータ構造
  */
 export interface Video {
   id: string;
   title: string;
   description: string;
-  publishedAt: Date;
-  publishedAtISO?: string; // ISO文字列形式の公開日時
+  publishedAtISO: string; // ISOフォーマット文字列として保持
+  lastFetchedAtISO: string; // ISOフォーマット文字列として保持
   thumbnailUrl: string;
   channelId: string;
   channelTitle: string;
-  lastFetchedAt: Date;
-  lastFetchedAtISO?: string; // ISO文字列形式の最終取得日時
-  liveBroadcastContent?: LiveBroadcastContent; // 配信状態
+  liveBroadcastContent?: LiveBroadcastContent;
+
+  // 以下のプロパティは非推奨となり、いずれ削除予定
+  /** @deprecated ISOフォーマット文字列を使用してください */
+  publishedAt?: string; // 旧APIとの互換性のために残す（文字列型に変更）
+  /** @deprecated ISOフォーマット文字列を使用してください */
+  lastFetchedAt?: string; // 旧APIとの互換性のために残す（文字列型に変更）
 }
 
 /**

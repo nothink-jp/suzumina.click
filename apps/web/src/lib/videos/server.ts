@@ -80,28 +80,34 @@ interface FirestoreVideoData {
 
 /**
  * FirestoreのVideoDataをアプリケーション用のVideo型に変換
+ * RSC/RCC間のシリアライズ問題を回避するため、日付はISOフォーマット文字列として保持
+ *
  * @param id ドキュメントID
  * @param data Firestoreから取得したデータ
  * @returns 変換後のVideoオブジェクト
  */
 export function convertToVideo(id: string, data: FirestoreVideoData): Video {
-  // 日付をISO文字列形式に変換して返す
-  // これにより、JSONシリアライズ時に日付情報が失われるのを防ぐ
+  // Date型オブジェクトからISO文字列に変換
   const publishedAt = data.publishedAt.toDate();
   const lastFetchedAt = data.lastFetchedAt.toDate();
+
+  const publishedAtISO = publishedAt.toISOString();
+  const lastFetchedAtISO = lastFetchedAt.toISOString();
 
   return {
     id,
     title: data.title,
     description: data.description,
-    publishedAt,
-    publishedAtISO: publishedAt.toISOString(), // ISO文字列を追加
+    publishedAtISO,
+    lastFetchedAtISO,
     thumbnailUrl: data.thumbnailUrl,
     channelId: data.channelId,
     channelTitle: data.channelTitle,
-    lastFetchedAt,
-    lastFetchedAtISO: lastFetchedAt.toISOString(), // ISO文字列を追加
-    liveBroadcastContent: data.liveBroadcastContent, // 配信状態を追加
+    liveBroadcastContent: data.liveBroadcastContent,
+
+    // 旧API互換のためのフィールド（文字列型として保持）
+    publishedAt: publishedAtISO,
+    lastFetchedAt: lastFetchedAtISO,
   };
 }
 
@@ -140,10 +146,13 @@ export async function getVideoByIdServer(
 /**
  * 最新の動画リストを取得する（サーバーサイド用）
  * @param limit 取得する動画の数
- * @param startAfter ページネーション用の開始位置
+ * @param startAfter ページネーション用の開始位置（日付文字列またはID）
  * @returns 動画リストと次ページ情報
  */
-export async function getRecentVideosServer(limit = 10, startAfter?: Date) {
+export async function getRecentVideosServer(
+  limit = 10,
+  startAfter?: Date | string,
+) {
   try {
     // Firestoreインスタンスの取得
     const db = getAdminFirestore();
@@ -153,7 +162,11 @@ export async function getRecentVideosServer(limit = 10, startAfter?: Date) {
 
     // ページネーション用のstartAfterパラメータがある場合
     if (startAfter) {
-      videosQuery = videosQuery.startAfter(startAfter);
+      // startAfterがDateオブジェクトの場合
+      if (startAfter instanceof Date) {
+        videosQuery = videosQuery.startAfter(startAfter);
+      }
+      // 将来的にIDベースのページネーションに対応（現在は実装なし）
     }
 
     // 次ページがあるか確認するために1つ多く取得

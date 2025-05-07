@@ -3,7 +3,12 @@ import {
   getRecentVideos as getVideos,
 } from "@/actions/videos/actions";
 import dayjs from "dayjs";
-import type { PaginationParams, Video, VideoListResult } from "./types";
+import type {
+  LiveBroadcastContent,
+  PaginationParams,
+  Video,
+  VideoListResult,
+} from "./types";
 
 /**
  * 最新の動画リストを取得する
@@ -30,39 +35,40 @@ export async function getRecentVideos(
     // Server Actionの結果をVideoオブジェクトに変換
     // VideoDataはすでにプレーンなオブジェクトになっているため、必要最小限の変換のみ行う
     const videos = result.videos.map((videoData) => {
-      // サムネイル情報の抽出
+      // サムネイル情報の取得
+      // thumbnailsオブジェクトから適切な画質のURLを選択
       const thumbnailUrl =
         videoData.thumbnails?.high?.url ||
         videoData.thumbnails?.medium?.url ||
         videoData.thumbnails?.default?.url ||
         "";
 
-      // 日付文字列をDate型に変換（すでにISO文字列でサーバーから返されている）
-      let publishedAt: Date;
-      try {
-        publishedAt = videoData.publishedAt
-          ? dayjs(videoData.publishedAt).toDate()
-          : new Date();
-      } catch (e) {
-        publishedAt = new Date();
-      }
+      // ISO文字列としての日付を使用
+      const publishedAtISO = videoData.publishedAt || new Date().toISOString();
+      const now = new Date();
+      const lastFetchedAtISO = now.toISOString();
 
-      // Video型に変換
+      // LiveBroadcastContentの型を正しく設定
+      // videoTypeが"upcoming"の場合は"upcoming"、それ以外は"none"
+      const liveBroadcastContent: LiveBroadcastContent =
+        videoData.videoType === "upcoming" ? "upcoming" : "none";
+
+      // Video型に変換（文字列型の日付を使用）
       return {
         id: videoData.id,
         title: videoData.title,
         description: videoData.description,
-        publishedAt,
-        publishedAtISO: videoData.publishedAt,
+        // 更新された型定義に合わせて文字列で設定
+        publishedAt: publishedAtISO,
+        publishedAtISO: publishedAtISO,
         thumbnailUrl,
         channelId: videoData.channelId,
         channelTitle: videoData.channelTitle,
         // 以下のプロパティは必要に応じてデフォルト値を設定
-        lastFetchedAt: new Date(),
-        lastFetchedAtISO: new Date().toISOString(),
-        liveBroadcastContent:
-          videoData.videoType === "upcoming" ? "upcoming" : "none",
-      } as Video;
+        lastFetchedAt: lastFetchedAtISO,
+        lastFetchedAtISO: lastFetchedAtISO,
+        liveBroadcastContent,
+      };
     });
 
     // 最後のビデオを取得（Server Actionからは最後のビデオのIDのみが返される）
@@ -95,38 +101,37 @@ export async function getVideoById(videoId: string): Promise<Video | null> {
       return null;
     }
 
-    // サムネイル情報の抽出
+    // サムネイル情報の取得
+    // thumbnailsオブジェクトから適切な画質のURLを選択
     const thumbnailUrl =
       videoData.thumbnails?.high?.url ||
       videoData.thumbnails?.medium?.url ||
       videoData.thumbnails?.default?.url ||
       "";
 
-    // 日付文字列をDate型に変換（すでにISO文字列でサーバーから返されている）
-    let publishedAt: Date;
-    try {
-      publishedAt = videoData.publishedAt
-        ? dayjs(videoData.publishedAt).toDate()
-        : new Date();
-    } catch (e) {
-      publishedAt = new Date();
-    }
+    // ISO文字列としての日付を使用
+    const publishedAtISO = videoData.publishedAt || new Date().toISOString();
+    const now = new Date();
+    const lastFetchedAtISO = now.toISOString();
 
-    // Video型として整形
+    // LiveBroadcastContentの型を正しく設定
+    // videoTypeが"upcoming"の場合は"upcoming"、それ以外は"none"
+    const liveBroadcastContent: LiveBroadcastContent =
+      videoData.videoType === "upcoming" ? "upcoming" : "none";
+
+    // Video型として整形（文字列型の日付を使用）
     const video: Video = {
       id: videoData.id,
       title: videoData.title,
       description: videoData.description,
-      publishedAt,
-      publishedAtISO: videoData.publishedAt,
+      publishedAt: publishedAtISO,
+      publishedAtISO: publishedAtISO,
       thumbnailUrl,
       channelId: videoData.channelId,
       channelTitle: videoData.channelTitle,
-      // 以下のプロパティは必要に応じてデフォルト値を設定
-      lastFetchedAt: new Date(),
-      lastFetchedAtISO: new Date().toISOString(),
-      liveBroadcastContent:
-        videoData.videoType === "upcoming" ? "upcoming" : "none",
+      lastFetchedAt: lastFetchedAtISO,
+      lastFetchedAtISO: lastFetchedAtISO,
+      liveBroadcastContent,
     };
 
     return video;
