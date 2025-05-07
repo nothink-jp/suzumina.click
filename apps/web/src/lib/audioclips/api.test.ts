@@ -84,7 +84,7 @@ describe("音声クリップAPI関数のテスト", () => {
     it("Firestoreデータを正しくアプリケーションデータに変換する", () => {
       const result = convertAudioClipData(mockAudioClipData);
 
-      // 変換後のデータが期待どおりであることを確認
+      // 日付データがISO文字列形式に正しく変換されていることを確認
       expect(result).toEqual({
         id: "test-clip-1",
         videoId: "test-video-1",
@@ -92,8 +92,8 @@ describe("音声クリップAPI関数のテスト", () => {
         phrase: "これはテスト用のフレーズです",
         startTime: 10,
         endTime: 20,
-        createdAt: mockTimestamp.toDate(),
-        updatedAt: mockTimestamp.toDate(),
+        createdAt: mockTimestamp.toDate().toISOString(), // Date型から文字列型に変更
+        updatedAt: mockTimestamp.toDate().toISOString(), // Date型から文字列型に変更
         userId: "test-user-1",
         userName: "テストユーザー1",
         userPhotoURL: "https://example.com/photo.jpg",
@@ -103,6 +103,7 @@ describe("音声クリップAPI関数のテスト", () => {
         favoriteCount: 2,
         duration: 10, // endTime - startTime
         formattedDuration: "0:10", // フォーマット済み再生時間
+        lastPlayedAt: undefined, // 未設定の場合はundefined
       });
     });
 
@@ -110,6 +111,7 @@ describe("音声クリップAPI関数のテスト", () => {
       const dataWithoutTags = { ...mockAudioClipData, tags: undefined };
       const result = convertAudioClipData(dataWithoutTags);
 
+      // タグが未設定の場合は空配列が設定されることを確認
       expect(result.tags).toEqual([]);
     });
 
@@ -122,6 +124,7 @@ describe("音声クリップAPI関数のテスト", () => {
 
       const result = convertAudioClipData(dataWithLongDuration);
 
+      // 正しい再生時間が計算されることを確認
       expect(result.duration).toBe(120);
       expect(result.formattedDuration).toBe("2:00");
     });

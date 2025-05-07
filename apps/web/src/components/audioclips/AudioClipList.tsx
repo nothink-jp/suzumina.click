@@ -26,8 +26,8 @@ interface ServerActionClipData {
   startTime?: number;
   endTime?: number;
   audioUrl?: string;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
+  createdAt?: string | Date; // Date型は使用しない
+  updatedAt?: string | Date; // Date型は使用しない
   userId?: string;
   userName?: string;
   userPhotoURL?: string;
@@ -83,6 +83,39 @@ export default function AudioClipList({
     const endTime = typeof clip.endTime === "number" ? clip.endTime : 0;
     const calculatedDuration = endTime - startTime;
 
+    // 日付の処理 - Dateオブジェクトではなく文字列として扱う
+    let createdAtStr: string;
+    let updatedAtStr: string;
+
+    // 日付が文字列の場合はそのまま使用し、Date型またはnullの場合は現在時刻のISO文字列を使用
+    if (typeof clip.createdAt === "string") {
+      createdAtStr = clip.createdAt;
+    } else if (clip.createdAt instanceof Date) {
+      // サーバーコンポーネントへの伝播時に問題が起きる可能性があるためtoISOString()を使用する
+      try {
+        createdAtStr = clip.createdAt.toISOString();
+      } catch (error) {
+        console.error("日付の変換エラー:", error);
+        createdAtStr = new Date().toISOString();
+      }
+    } else {
+      createdAtStr = new Date().toISOString();
+    }
+
+    // updatedAtも同様に処理
+    if (typeof clip.updatedAt === "string") {
+      updatedAtStr = clip.updatedAt;
+    } else if (clip.updatedAt instanceof Date) {
+      try {
+        updatedAtStr = clip.updatedAt.toISOString();
+      } catch (error) {
+        console.error("日付の変換エラー:", error);
+        updatedAtStr = new Date().toISOString();
+      }
+    } else {
+      updatedAtStr = new Date().toISOString();
+    }
+
     return {
       id: clip.id || "",
       videoId: clip.videoId || "",
@@ -91,8 +124,8 @@ export default function AudioClipList({
       startTime: startTime,
       endTime: endTime,
       audioUrl: clip.audioUrl,
-      createdAt: new Date(clip.createdAt || Date.now()),
-      updatedAt: new Date(clip.updatedAt || Date.now()),
+      createdAt: createdAtStr, // 文字列として保持
+      updatedAt: updatedAtStr, // 文字列として保持
       userId: clip.userId || "",
       userName: clip.userName || "",
       userPhotoURL: clip.userPhotoURL,
@@ -120,12 +153,25 @@ export default function AudioClipList({
         setLastClip(undefined);
       }
 
+      // ページネーション用のstartAfterの処理
+      // lastClip.createdAtは既にISOString形式になっている
+      let startAfterParam = null;
+      if (isLoadMore && lastClip) {
+        // 文字列の日付をDateオブジェクトに変換
+        try {
+          startAfterParam = new Date(lastClip.createdAt);
+        } catch (error) {
+          console.error("日付変換エラー:", error);
+          // エラーが発生した場合はページネーションなしで続行
+          startAfterParam = null;
+        }
+      }
+
       // Server Actionsを使用してクリップ一覧を取得
       const result = await getAudioClips({
         videoId,
         limit: 10,
-        startAfter:
-          isLoadMore && lastClip ? new Date(lastClip.createdAt) : null,
+        startAfter: startAfterParam,
       });
 
       // データ変換: Server Actionの結果をアプリケーションのAudioClip型に変換

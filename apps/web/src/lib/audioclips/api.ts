@@ -53,6 +53,13 @@ export function convertAudioClipData(data: AudioClipData): AudioClip {
   const seconds = Math.floor(duration % 60);
   const formattedDuration = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
+  // 日付をISOString形式の文字列に変換
+  const createdAtString = data.createdAt.toDate().toISOString();
+  const updatedAtString = data.updatedAt.toDate().toISOString();
+  const lastPlayedAtString = data.lastPlayedAt
+    ? data.lastPlayedAt.toDate().toISOString()
+    : undefined;
+
   return {
     id: data.clipId,
     videoId: data.videoId,
@@ -61,8 +68,8 @@ export function convertAudioClipData(data: AudioClipData): AudioClip {
     startTime: data.startTime,
     endTime: data.endTime,
     audioUrl: data.audioUrl,
-    createdAt: data.createdAt.toDate(),
-    updatedAt: data.updatedAt.toDate(),
+    createdAt: createdAtString,
+    updatedAt: updatedAtString,
     userId: data.userId,
     userName: data.userName,
     userPhotoURL: data.userPhotoURL,
@@ -70,7 +77,7 @@ export function convertAudioClipData(data: AudioClipData): AudioClip {
     tags: data.tags || [],
     playCount: data.playCount,
     favoriteCount: data.favoriteCount,
-    lastPlayedAt: data.lastPlayedAt ? data.lastPlayedAt.toDate() : undefined,
+    lastPlayedAt: lastPlayedAtString,
     duration,
     formattedDuration,
   };

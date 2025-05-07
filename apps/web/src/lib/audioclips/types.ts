@@ -38,8 +38,8 @@ export interface AudioClip {
   startTime: number; // 開始時間（秒）
   endTime: number; // 終了時間（秒）
   audioUrl?: string; // 音声ファイルURL（オプション）
-  createdAt: Date; // 作成日時
-  updatedAt: Date; // 更新日時
+  createdAt: string; // 作成日時（ISO文字列）- Dateオブジェクトからシリアライズ可能な文字列に変更
+  updatedAt: string; // 更新日時（ISO文字列）- Dateオブジェクトからシリアライズ可能な文字列に変更
 
   // ユーザー関連情報
   userId: string; // 作成者のユーザーID
@@ -51,7 +51,7 @@ export interface AudioClip {
   tags?: string[]; // タグ（検索用）
   playCount: number; // 再生回数
   favoriteCount: number; // お気に入り数
-  lastPlayedAt?: Date; // 最終再生日時
+  lastPlayedAt?: string; // 最終再生日時（ISO文字列）- Dateオブジェクトからシリアライズ可能な文字列に変更
 
   // UI表示用の追加情報
   duration: number; // 再生時間（秒）
