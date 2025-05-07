@@ -57,62 +57,144 @@ Next.js App Router の主要な機能であるサーバーコンポーネント 
 
 - **RSC でのフェッチ**: ページやレイアウトに必要なデータの取得は、原則として RSC 内で `async/await` を用いて直接行います。これにより、データ取得のレイテンシをサーバーサイドで吸収できます。
 - **RCC でのフェッチ**: クライアント操作に応じて追加データを取得する場合は、以下のいずれかの方法を使用します：
-  1. **Server Actions の使用（推奨）**: クライアントコンポーネントから Server Actions を直接呼び出してデータを取得します。
+  1. **Server Actions の使用（非推奨）**: クライアントコンポーネントから Server Actions を直接呼び出すのは避けてください。代わりに、以下の「サーバーアクションラッパーパターン」を採用してください。
   2. **SWR の使用**: 再検証や自動再フェッチが必要な場合、SWR ライブラリを使用します。
 
 ### 1.3. Server Actions の活用
 
-- **基本方針**: サーバーサイドでの操作（データ作成・更新・削除、認証など）は API Routes ではなく Server Actions を使用します。
-- **使用方法**:
-  1. **ファイル単位の "use server"**: サーバー専用関数を含むファイル全体に適用する場合
-     ```tsx
-     // src/actions/some-feature/actions.ts
-     "use server";
-     
-     import { getServerSession } from 'next-auth';
-     import { authOptions } from '@/lib/auth/auth-options';
-     
-     export async function createItem(data: FormData) {
-       // 認証チェック
-       const session = await getServerSession(authOptions);
-       if (!session) {
-         return { success: false, error: '認証が必要です' };
-       }
-       
-       // データ処理
-       try {
-         // ...処理ロジック
-         return { success: true, data: result };
-       } catch (error) {
-         return { success: false, error: 'エラーが発生しました' };
-       }
-     }
-     ```
-  
-  2. **関数単位の "use server"**: インラインのサーバーアクション
-     ```tsx
-     // src/components/feature/some-feature/SomeForm.tsx
-     "use client";
-     
-     import { updateData } from '@/actions/some-feature/actions'; // ファイル単位のServer Action
-     
-     // インラインServer Action
-     async function submitForm(formData: FormData) {
-       "use server";
-       // 処理ロジック
-       return { success: true };
-     }
-     
-     export function SomeForm() {
-       return (
-         <form action={submitForm}>
-           {/* フォーム内容 */}
-         </form>
-       );
-     }
-     ```
+- **基本方針**: 
+  - サーバーサイドでの操作（データ作成・更新・削除、認証など）は API Routes ではなく Server Actions を使用します。
+  - **重要**: Server Actions は原則として RSC（サーバーコンポーネント）からのみ呼び出します。具体的には、`page.tsx`または`layout.tsx`などのサーバーコンポーネントから呼び出すことを推奨します。
 
-- **認証とバリデーション**: すべての Server Action 内で必ず認証チェックとデータバリデーションを行います。
+#### 1.3.0. Server Actionsのクライアントコンポーネントでの利用方法
+
+RCCで直接Server Actionsを呼び出すべきではありませんが、RCCがServer Actionsを必要とする場合は以下の「サーバーアクションラッパーパターン」を採用してください：
+
+1. **サーバーアクションラッパーパターン**:
+   - サーバーコンポーネント（page.tsxやlayout.tsx）でServer Actionsを呼び出し、初期データを取得
+   - サーバーコンポーネントからクライアントコンポーネントにServer Actionsをprops経由で渡す
+   - クライアントコンポーネント内ではpropsで受け取ったServer Actionsのみを使用
+
+```tsx
+// 🟢 正しいパターン：サーバーコンポーネント (page.tsx)
+import { getAudioClips } from "@/actions/audioclips/actions"; // Server Action
+import { checkFavoriteStatus } from "@/actions/audioclips/manage-favorites"; // Server Action
+import { incrementPlayCount } from "@/actions/audioclips/actions"; // Server Action
+import AudioClipListClient from "@/components/audioclips/AudioClipListClient";
+
+export default async function VideoPage({ params }: { params: { id: string } }) {
+  // Server Actionsを使って初期データを取得
+  const initialData = await getAudioClips({
+    videoId: params.id,
+    limit: 10
+  });
+
+  // クライアントコンポーネントにServer Actionsを渡す
+  return (
+    <div>
+      <h1>動画タイトル</h1>
+      <AudioClipListClient 
+        videoId={params.id}
+        initialClips={initialData.clips}
+        hasMore={initialData.hasMore}
+        lastClip={initialData.lastClip}
+        // Server ActionsをクライアントコンポーネントにProps経由で渡す
+        getAudioClipsAction={getAudioClips}
+        checkFavoriteStatusAction={checkFavoriteStatus}
+        incrementPlayCountAction={incrementPlayCount}
+      />
+    </div>
+  );
+}
+
+// 🟢 正しいパターン：クライアントコンポーネント
+// apps/web/src/components/audioclips/AudioClipListClient.tsx
+"use client";
+
+import { useState } from "react";
+
+interface AudioClipListClientProps {
+  videoId: string;
+  initialClips: any[];
+  hasMore: boolean;
+  lastClip?: any;
+  // Server Actionsをプロップス経由で受け取る
+  getAudioClipsAction: (params: any) => Promise<any>;
+  checkFavoriteStatusAction: (clipId: string) => Promise<any>;
+  incrementPlayCountAction: (clipId: string) => Promise<any>;
+}
+
+export default function AudioClipListClient({
+  videoId,
+  initialClips,
+  hasMore,
+  lastClip,
+  getAudioClipsAction,
+  checkFavoriteStatusAction,
+  incrementPlayCountAction
+}: AudioClipListClientProps) {
+  const [clips, setClips] = useState(initialClips);
+  // ...省略
+
+  // 「もっと見る」ボタンをクリックしたときの処理
+  const loadMoreClips = async () => {
+    // props経由で受け取ったServer Actionを使用
+    const result = await getAudioClipsAction({
+      videoId,
+      limit: 10,
+      startAfter: lastClip?.createdAt ? new Date(lastClip.createdAt) : null
+    });
+    
+    // 結果を処理
+    setClips([...clips, ...result.clips]);
+  };
+
+  // ...以下省略
+}
+
+// ❌ 避けるべきパターン：クライアントコンポーネントでServer Actionsを直接インポート
+"use client";
+
+import { getAudioClips } from "@/actions/audioclips/actions"; // ❌ RCCでのServer Actionsの直接インポート
+
+export function SomeClientComponent() {
+  // ...
+  const handleClick = async () => {
+    // ❌ Server Actionsを直接呼び出し
+    const data = await getAudioClips({ videoId });
+    // ...
+  };
+  // ...
+}
+```
+
+このパターンの利点：
+- Server Actionsの呼び出しが明示的にサーバーコンポーネントを通じて行われる
+- データフローが明確で追跡しやすい
+- パフォーマンスの最適化やキャッシュの恩恵を受けやすい
+- RSCからRCCへの明確な境界とデータの流れを維持
+
+2. **フォーム提出用Server Actionsの例外**:
+   - フォームの `action` 属性に直接Server Actionを指定する場合のみ、クライアントコンポーネント内でServer Actionsのインポートを許容します
+   - この場合も、可能な限り「サーバーアクションラッパーパターン」を優先的に検討してください
+
+```tsx
+// 🟡 許容されるパターン：フォームのaction属性に直接指定する場合
+"use client";
+
+import { useFormState } from 'react-dom';
+import { register } from '@/actions/user/register'; // フォーム送信用Server Action
+
+export function RegistrationForm() {
+  const [state, formAction] = useFormState(register, { error: null });
+  
+  return (
+    <form action={formAction}>
+      {/* フォームの内容 */}
+    </form>
+  );
+}
+```
 
 #### 1.3.1. Server Actions のディレクトリ配置
 

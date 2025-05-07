@@ -1,3 +1,8 @@
+import { incrementPlayCount } from "@/actions/audioclips/actions";
+import {
+  checkMultipleFavoriteStatus,
+  toggleFavorite,
+} from "@/actions/audioclips/manage-favorites";
 import AudioClipList from "@/components/audioclips/AudioClipList";
 import { getFavoriteClips } from "@/lib/audioclips/favorites";
 import type { Metadata } from "next";
@@ -45,7 +50,16 @@ export default async function FavoritesPage() {
             >
               <AudioClipList
                 videoId={clip.videoId}
-                youtubePlayerRef={undefined}
+                initialClips={[clip]}
+                hasMore={false}
+                getAudioClipsAction={async () => ({
+                  clips: [],
+                  hasMore: false,
+                  lastClip: null,
+                })}
+                checkFavoriteStatusAction={checkMultipleFavoriteStatus}
+                incrementPlayCountAction={incrementPlayCount}
+                toggleFavoriteAction={toggleFavorite}
               />
             </div>
           ))}

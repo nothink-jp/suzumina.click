@@ -8,12 +8,7 @@ import { sanitizeClipForClient } from "@/lib/audioclips/utils";
 // revalidatePath関数は Pages Router では動作しないため削除
 import { formatErrorMessage, getFirestoreAdmin } from "@/lib/firebase/admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import type {
-  DocumentData,
-  Firestore,
-  Query,
-  QueryDocumentSnapshot,
-} from "firebase-admin/firestore";
+import type { DocumentData, Firestore, Query } from "firebase-admin/firestore";
 import { getCurrentUser } from "../auth/getCurrentUser";
 
 // 注: "use server" ディレクティブを含むファイルでの再エクスポートは許可されていないため、
@@ -258,15 +253,35 @@ export async function createAudioClip(data: AudioClipData) {
     try {
       const docRef = await db.collection("audioClips").add(newClip);
 
+      // 再生時間（秒）を計算
+      const duration = endTime - startTime;
+
+      // フォーマット済みの再生時間を作成
+      const minutes = Math.floor(duration / 60);
+      const seconds = Math.floor(duration % 60);
+      const formattedDuration = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+      // 現在の日時をISO文字列で取得（Date型からstring型への変換）
+      const now = new Date();
+      const nowISOString = now.toISOString();
+
       // 作成されたクリップのレスポンス用データを作成
-      // タイムスタンプはISOString形式に変換し、sanitizeClipForClient関数を適用
-      const responseData = sanitizeClipForClient({
+      // タイムスタンプはISOString形式に変換し、AudioClip型に合わせる
+      const responseData = {
         id: docRef.id,
         ...newClip,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+        // サーバータイムスタンプはまだ確定していないので現在時刻を使用
+        createdAt: nowISOString,
+        updatedAt: nowISOString,
+        // AudioClip型に合わせてdurationとformattedDurationを追加
+        duration,
+        formattedDuration,
+        // FieldValueをstring型に変換
+        tags: Array.isArray(tags) ? tags : [],
+        isPublic: isPublic !== false,
+      };
 
+      // sanitizeClipForClientはFieldValue型をクライアントで扱える値に変換する
       return responseData;
     } catch (createError) {
       console.error("音声クリップの作成に失敗しました:", createError);

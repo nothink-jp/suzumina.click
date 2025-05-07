@@ -1,5 +1,14 @@
 "use client";
 
+import {
+  createAudioClip,
+  getAudioClips,
+  incrementPlayCount,
+} from "@/actions/audioclips/actions";
+import {
+  checkMultipleFavoriteStatus,
+  toggleFavorite,
+} from "@/actions/audioclips/manage-favorites";
 import AudioClipCreator from "@/components/audioclips/AudioClipCreator";
 import AudioClipList from "@/components/audioclips/AudioClipList";
 import CollapsibleVideoInfo from "@/components/videos/CollapsibleVideoInfo";
@@ -19,7 +28,7 @@ interface VideoPageClientProps {
  * 動画詳細ページのクライアントコンポーネント
  *
  * YouTubeプレーヤーと音声クリップ機能を統合
- * 音声クリップをメインコンテンツとして配置
+ * コンポーネント設計ガイドラインに従い、サーバーアクションをクライアントコンポーネントに直接渡す
  */
 export default function VideoPageClient({ video }: VideoPageClientProps) {
   // 認証情報を取得
@@ -144,6 +153,7 @@ export default function VideoPageClient({ video }: VideoPageClientProps) {
                 videoTitle={video.title}
                 onClipCreated={handleClipCreated}
                 youtubePlayerRef={youtubePlayerRef}
+                createAudioClipAction={createAudioClip}
               />
             </div>
           )}
@@ -153,7 +163,12 @@ export default function VideoPageClient({ video }: VideoPageClientProps) {
             <AudioClipList
               key={refreshKey}
               videoId={video.id}
-              youtubePlayerRef={youtubePlayerRef}
+              initialClips={[]}
+              hasMore={true}
+              getAudioClipsAction={getAudioClips}
+              checkFavoriteStatusAction={checkMultipleFavoriteStatus}
+              incrementPlayCountAction={incrementPlayCount}
+              toggleFavoriteAction={toggleFavorite}
             />
           </div>
         </div>
@@ -165,7 +180,12 @@ export default function VideoPageClient({ video }: VideoPageClientProps) {
               <AudioClipList
                 key={refreshKey}
                 videoId={video.id}
-                youtubePlayerRef={youtubePlayerRef}
+                initialClips={[]}
+                hasMore={true}
+                getAudioClipsAction={getAudioClips}
+                checkFavoriteStatusAction={checkMultipleFavoriteStatus}
+                incrementPlayCountAction={incrementPlayCount}
+                toggleFavoriteAction={toggleFavorite}
               />
             </div>
           </div>

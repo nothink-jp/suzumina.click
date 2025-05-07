@@ -6,6 +6,8 @@ import type { AudioClip } from "../../lib/audioclips/types";
 
 interface AudioClipPlayerProps {
   clip: AudioClip | null;
+  isPlaying?: boolean;
+  onPlayingChange?: (isPlaying: boolean) => void;
   onClose: () => void;
   youtubePlayerRef?: React.RefObject<YouTubePlayer>;
 }
@@ -18,10 +20,15 @@ interface AudioClipPlayerProps {
  */
 export default function AudioClipPlayer({
   clip,
+  isPlaying: externalIsPlaying,
+  onPlayingChange,
   onClose,
   youtubePlayerRef,
 }: AudioClipPlayerProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [internalIsPlaying, setInternalIsPlaying] = useState(false);
+  // isPlaying が props として渡されている場合はそちらを優先
+  const isPlaying =
+    externalIsPlaying !== undefined ? externalIsPlaying : internalIsPlaying;
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(100);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -51,7 +58,11 @@ export default function AudioClipPlayer({
     youtubePlayerRef.current.playVideo();
 
     // 再生状態を更新
-    setIsPlaying(true);
+    setInternalIsPlaying(true);
+    // 外部のステート更新コールバック
+    if (onPlayingChange) {
+      onPlayingChange(true);
+    }
 
     // 再生位置を追跡するタイマーを設定
     if (timerRef.current) {
@@ -79,7 +90,11 @@ export default function AudioClipPlayer({
     if (!youtubePlayerRef?.current) return;
 
     youtubePlayerRef.current.pauseVideo();
-    setIsPlaying(false);
+    setInternalIsPlaying(false);
+    // 外部のステート更新コールバック
+    if (onPlayingChange) {
+      onPlayingChange(false);
+    }
 
     if (timerRef.current) {
       clearInterval(timerRef.current);

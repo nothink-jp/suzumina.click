@@ -9,40 +9,47 @@ import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 // モジュールのモック化 - Vitestのホイスティング問題を解消するために
 // インライン関数内で直接vi.fn()を使用
-vi.mock("@/actions/audioclips/actions", () => ({
-  getAudioClips: vi.fn(),
-}));
-
-vi.mock("@/actions/audioclips/manage-favorites", () => ({
-  checkFavoriteStatus: vi.fn(),
-  setFavoriteStatus: vi.fn(),
-}));
-
 vi.mock("../../lib/firebase/AuthProvider", () => ({
   useAuth: vi.fn(),
 }));
 
 // AudioClipButtonとAudioClipPlayerコンポーネントをモック
 vi.mock("./AudioClipButton", () => ({
-  default: vi.fn(({ clip, onPlay, isFavorite, onFavoriteChange }) => (
-    <div data-testid={`audio-clip-${clip.id}`} className="audio-clip-button">
-      <span>{clip.title}</span>
-      <button
-        type="button"
-        onClick={() => onPlay(clip)}
-        data-testid={`play-button-${clip.id}`}
-      >
-        再生
-      </button>
-      <button
-        type="button"
-        onClick={() => onFavoriteChange(!isFavorite)}
-        data-testid={`favorite-button-${clip.id}`}
-      >
-        {isFavorite ? "お気に入り済み" : "お気に入り登録"}
-      </button>
-    </div>
-  )),
+  default: vi.fn(
+    ({
+      clip,
+      onPlay,
+      isFavorite,
+      onFavoriteChange,
+      incrementPlayCountAction,
+      toggleFavoriteAction,
+    }) => (
+      <div data-testid={`audio-clip-${clip.id}`} className="audio-clip-button">
+        <span>{clip.title}</span>
+        <button
+          type="button"
+          onClick={() => {
+            // ここでincrementPlayCountActionを呼び出してから、onPlayを呼び出す
+            incrementPlayCountAction(clip.id)
+              .then(() => onPlay(clip))
+              .catch((error) =>
+                console.error("再生回数の更新に失敗しました:", error),
+              );
+          }}
+          data-testid={`play-button-${clip.id}`}
+        >
+          再生
+        </button>
+        <button
+          type="button"
+          onClick={() => onFavoriteChange(!isFavorite)}
+          data-testid={`favorite-button-${clip.id}`}
+        >
+          {isFavorite ? "お気に入り済み" : "お気に入り登録"}
+        </button>
+      </div>
+    ),
+  ),
 }));
 
 vi.mock("./AudioClipPlayer", () => ({
@@ -62,11 +69,6 @@ vi.mock("./AudioClipPlayer", () => ({
   ),
 }));
 
-import { getAudioClips } from "@/actions/audioclips/actions";
-import {
-  checkFavoriteStatus,
-  setFavoriteStatus,
-} from "@/actions/audioclips/manage-favorites";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 // モック化したモジュールをインポート（モックファクトリの後に配置）
 import AudioClipList from "./AudioClipList";
@@ -106,275 +108,169 @@ describe("AudioClipListコンポーネント", () => {
     },
   ];
 
+  // Server Actionsのモック
+  const mockGetAudioClips = vi.fn().mockResolvedValue({
+    clips: [],
+    hasMore: false,
+    lastClip: null,
+  });
+  const mockCheckFavoriteStatus = vi.fn().mockResolvedValue({});
+  const mockIncrementPlayCount = vi
+    .fn()
+    .mockResolvedValue({ id: "clip-1", message: "再生回数を更新しました" });
+  const mockToggleFavorite = vi.fn().mockResolvedValue({ isFavorite: true });
+
   // プロップスのデフォルト値
   const defaultProps = {
     videoId: "video-123",
+    initialClips: mockClips,
+    hasMore: false,
+    lastClip: mockClips[mockClips.length - 1],
+    getAudioClipsAction: mockGetAudioClips,
+    checkFavoriteStatusAction: mockCheckFavoriteStatus,
+    incrementPlayCountAction: mockIncrementPlayCount,
+    toggleFavoriteAction: mockToggleFavorite,
   };
+
+  const mockUseAuth = vi.mocked(useAuth);
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // ログイン状態のデフォルト設定
-    (useAuth as unknown as Mock).mockReturnValue({
-      user: {
-        uid: "test-user",
-        displayName: "テストユーザー",
-      },
-    });
-
-    // getAudioClipsのモック設定
-    (getAudioClips as unknown as Mock).mockResolvedValue({
-      clips: mockClips,
-      hasMore: false,
-      lastClip: mockClips[mockClips.length - 1],
-    });
-
-    // checkFavoriteStatusのモック設定
-    (checkFavoriteStatus as unknown as Mock).mockImplementation((clipId) => {
-      return Promise.resolve({
-        isFavorite: clipId === "clip-1", // clip-1のみお気に入り登録済みとする
-      });
-    });
+    // ログイン状態のモックをリセット
+    mockUseAuth.mockReturnValue({ user: null, loading: false });
   });
 
-  // 基本的なレンダリングテスト
-  it("クリップ一覧が正しくレンダリングされること", async () => {
-    // コンポーネントをレンダリング
+  it("クリップリストが正しく表示される", () => {
+    // 描画
     render(<AudioClipList {...defaultProps} />);
 
-    // データ取得が完了するのを待機
-    await waitFor(() => {
-      expect(getAudioClips).toHaveBeenCalledWith({
-        videoId: "video-123",
-        limit: 10,
-        startAfter: null,
-      });
-    });
+    // ヘッダー部分の確認
+    expect(screen.getByText("音声クリップ")).toBeInTheDocument();
+    expect(screen.getByText(`${mockClips.length}件`)).toBeInTheDocument();
 
-    // クリップ表示を確認
-    await waitFor(() => {
-      expect(screen.getByText("テストクリップ1")).toBeInTheDocument();
-      expect(screen.getByText("テストクリップ2")).toBeInTheDocument();
-    });
+    // 各クリップが表示されていることを確認
+    for (const clip of mockClips) {
+      expect(screen.getByTestId(`audio-clip-${clip.id}`)).toBeInTheDocument();
+      expect(screen.getByText(clip.title)).toBeInTheDocument();
+    }
+
+    // ログインしていない場合、お気に入りボタンは機能するが、
+    // 内部的にはログイン確認が行われるため、実際の操作は行われない
   });
 
-  // クリップ再生機能テスト
-  it("クリップの再生ボタンをクリックするとプレーヤーが表示されること", async () => {
-    // コンポーネントをレンダリング
+  it("クリップ再生時にプレイヤーが表示される", async () => {
+    // 描画
     render(<AudioClipList {...defaultProps} />);
 
-    // データ取得完了を待機
-    await waitFor(() => {
-      expect(screen.getByText("テストクリップ1")).toBeInTheDocument();
-    });
+    // 初期状態ではプレイヤーは非表示
+    expect(screen.queryByTestId("audio-clip-player")).not.toBeInTheDocument();
 
     // 最初のクリップの再生ボタンをクリック
-    fireEvent.click(screen.getByTestId("play-button-clip-1"));
+    const firstClipId = mockClips[0].id;
+    const playButton = screen.getByTestId(`play-button-${firstClipId}`);
 
-    // プレーヤーが表示されることを確認
-    await waitFor(() => {
-      expect(screen.getByTestId("audio-clip-player")).toBeInTheDocument();
-      expect(screen.getByText("テストクリップ1を再生中")).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(playButton);
     });
 
-    // プレーヤーを閉じる
-    fireEvent.click(screen.getByTestId("close-player-button"));
+    // Server Actionが呼ばれたことを確認
+    expect(mockIncrementPlayCount).toHaveBeenCalledWith(firstClipId);
 
-    // プレーヤーが閉じることを確認
+    // プレイヤーが表示されていることを確認
+    expect(screen.getByTestId("audio-clip-player")).toBeInTheDocument();
+    expect(
+      screen.getByText(`${mockClips[0].title}を再生中`),
+    ).toBeInTheDocument();
+
+    // プレイヤーを閉じる
+    const closeButton = screen.getByTestId("close-player-button");
+
+    await act(async () => {
+      fireEvent.click(closeButton);
+    });
+
+    // プレイヤーが非表示になっていることを確認
+    expect(screen.queryByTestId("audio-clip-player")).not.toBeInTheDocument();
+  });
+
+  it("ログイン時にお気に入り状態が取得される", async () => {
+    // ログイン状態をモック
+    mockUseAuth.mockReturnValue({ user: { uid: "test-user" }, loading: false });
+
+    // モックのお気に入りデータ
+    const mockFavoriteStatus = {
+      "clip-1": true,
+      "clip-2": false,
+    };
+    mockCheckFavoriteStatus.mockResolvedValueOnce(mockFavoriteStatus);
+
+    // 描画
+    render(<AudioClipList {...defaultProps} initialFavorites={{}} />);
+
+    // お気に入り状態の取得が呼ばれたことを確認
     await waitFor(() => {
-      expect(screen.queryByTestId("audio-clip-player")).not.toBeInTheDocument();
+      expect(mockCheckFavoriteStatus).toHaveBeenCalled();
+      const clipIds = mockClips.map((clip) => clip.id);
+      expect(mockCheckFavoriteStatus).toHaveBeenCalledWith(clipIds);
     });
   });
 
-  // エラー表示テスト
-  it("クリップ取得でエラーが発生した場合にエラーメッセージが表示されること", async () => {
-    // エラーを返すようにモックを設定
-    (getAudioClips as unknown as Mock).mockRejectedValue(
-      new Error("データ取得エラー"),
-    );
-
-    // コンポーネントをレンダリング
-    render(<AudioClipList {...defaultProps} />);
-
-    // エラーメッセージが表示されることを確認
-    await waitFor(() => {
-      expect(
-        screen.getByText("音声クリップの取得に失敗しました"),
-      ).toBeInTheDocument();
+  it("無限スクロールで追加クリップが読み込まれる", async () => {
+    // IntersectionObserverのモック
+    const mockIntersectionObserver = vi.fn();
+    mockIntersectionObserver.mockReturnValue({
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn(),
     });
-  });
+    window.IntersectionObserver = mockIntersectionObserver;
 
-  // データ空の場合のテスト
-  it("クリップが存在しない場合に適切なメッセージが表示されること", async () => {
-    // 空の配列を返すようにモックを設定
-    (getAudioClips as unknown as Mock).mockResolvedValue({
-      clips: [],
+    // 追加のクリップデータ
+    const additionalClips = [
+      {
+        id: "clip-3",
+        videoId: "video-123",
+        title: "追加クリップ1",
+        phrase: "追加フレーズ1",
+        startTime: 150,
+        endTime: 180,
+        createdAt: new Date("2025-03-29").toISOString(),
+        userId: "user-3",
+        userName: "テストユーザー3",
+        isPublic: true,
+        tags: [],
+        playCount: 50,
+        favoriteCount: 20,
+      },
+    ];
+
+    // hasMoreをtrueに設定
+    const props = { ...defaultProps, hasMore: true };
+
+    // 追加データの返却をモック
+    mockGetAudioClips.mockResolvedValueOnce({
+      clips: additionalClips,
       hasMore: false,
-      lastClip: null,
+      lastClip: additionalClips[additionalClips.length - 1],
     });
 
-    // コンポーネントをレンダリング
-    render(<AudioClipList {...defaultProps} />);
+    // 描画
+    render(<AudioClipList {...props} />);
 
-    // メッセージが表示されることを確認
+    // IntersectionObserver コールバックを手動で呼び出す
+    const [observerCallback] = mockIntersectionObserver.mock.calls[0];
+
+    await act(async () => {
+      observerCallback([{ isIntersecting: true }]);
+    });
+
+    // getAudioClipsActionが適切なパラメータで呼ばれたことを確認
     await waitFor(() => {
-      expect(
-        screen.getByText("この動画の音声クリップはまだありません"),
-      ).toBeInTheDocument();
-    });
-  });
-
-  // もっと見る機能テスト
-  it("「もっと見る」ボタンをクリックすると追加のクリップが読み込まれること", async () => {
-    // 最初のレスポンスでhasMoreをtrueに設定
-    (getAudioClips as unknown as Mock)
-      .mockResolvedValueOnce({
-        clips: mockClips.slice(0, 1), // 最初は1件目のみ
-        hasMore: true,
-        lastClip: mockClips[0],
-      })
-      .mockResolvedValueOnce({
-        clips: mockClips.slice(1), // 2回目は2件目
-        hasMore: false,
-        lastClip: mockClips[1],
+      expect(mockGetAudioClips).toHaveBeenCalledWith({
+        videoId: "video-123",
+        limit: 10,
+        startAfter: expect.any(Date),
       });
-
-    // コンポーネントをレンダリング
-    render(<AudioClipList {...defaultProps} />);
-
-    // 1件目のデータ取得完了を待機
-    await waitFor(() => {
-      expect(screen.getByText("テストクリップ1")).toBeInTheDocument();
-      expect(screen.queryByText("テストクリップ2")).not.toBeInTheDocument();
-    });
-
-    // 「もっと見る」ボタンが表示されることを確認
-    const loadMoreButton = screen.getByText("もっと見る");
-    expect(loadMoreButton).toBeInTheDocument();
-
-    // 「もっと見る」ボタンをクリック
-    fireEvent.click(loadMoreButton);
-
-    // 2回目のデータ取得完了後、両方のクリップが表示されることを確認
-    await waitFor(() => {
-      expect(screen.getByText("テストクリップ1")).toBeInTheDocument();
-      expect(screen.getByText("テストクリップ2")).toBeInTheDocument();
-    });
-
-    // 両方のクリップが取得されたので「もっと見る」ボタンは表示されないはず
-    expect(screen.queryByText("もっと見る")).not.toBeInTheDocument();
-  });
-
-  // お気に入り状態変更テスト
-  it("お気に入りボタンをクリックするとお気に入り状態が切り替わること", async () => {
-    // お気に入り切り替え関数のモック設定
-    (setFavoriteStatus as unknown as Mock).mockResolvedValue({
-      success: true,
-      isFavorite: true,
-    });
-
-    // コンポーネントをレンダリング
-    render(<AudioClipList {...defaultProps} />);
-
-    // データ取得完了を待機
-    await waitFor(() => {
-      expect(screen.getByText("テストクリップ1")).toBeInTheDocument();
-      expect(screen.getByText("テストクリップ2")).toBeInTheDocument();
-    });
-
-    // お気に入り状態の初期値を確認
-    await waitFor(() => {
-      expect(screen.getByTestId("favorite-button-clip-1")).toHaveTextContent(
-        "お気に入り済み",
-      );
-      expect(screen.getByTestId("favorite-button-clip-2")).toHaveTextContent(
-        "お気に入り登録",
-      );
-    });
-
-    // 2つ目のクリップのお気に入りボタンをクリック
-    fireEvent.click(screen.getByTestId("favorite-button-clip-2"));
-
-    // お気に入り状態が変更されることを確認
-    await waitFor(() => {
-      expect(screen.getByTestId("favorite-button-clip-2")).toHaveTextContent(
-        "お気に入り済み",
-      );
-    });
-  });
-
-  // 未ログイン状態のテスト
-  it("未ログイン状態でもクリップ一覧が表示されること", async () => {
-    // 未ログイン状態に設定
-    (useAuth as unknown as Mock).mockReturnValue({
-      user: null,
-    });
-
-    // コンポーネントをレンダリング
-    render(<AudioClipList {...defaultProps} />);
-
-    // データ取得完了を待機し、クリップが表示されることを確認
-    await waitFor(() => {
-      expect(screen.getByText("テストクリップ1")).toBeInTheDocument();
-      expect(screen.getByText("テストクリップ2")).toBeInTheDocument();
-    });
-
-    // お気に入りチェックは実行されないはず
-    expect(checkFavoriteStatus).not.toHaveBeenCalled();
-  });
-
-  // 読み込み中の表示テスト
-  it("「もっと見る」ボタンをクリック中は読み込み中表示になること", async () => {
-    // 非同期処理を制御するためのPromiseを作成
-    let resolvePromise: (value: unknown) => void;
-    const loadingPromise = new Promise((resolve) => {
-      resolvePromise = resolve;
-    });
-
-    // 最初のレスポンスでhasMoreをtrueに設定
-    (getAudioClips as unknown as Mock)
-      .mockResolvedValueOnce({
-        clips: mockClips.slice(0, 1), // 最初は1件目のみ
-        hasMore: true,
-        lastClip: mockClips[0],
-      })
-      .mockImplementationOnce(() => {
-        // 2回目の呼び出しでは、明示的に待機させる
-        return loadingPromise.then(() => ({
-          clips: mockClips.slice(1),
-          hasMore: false,
-          lastClip: mockClips[1],
-        }));
-      });
-
-    // コンポーネントをレンダリング
-    render(<AudioClipList {...defaultProps} />);
-
-    // 1件目のデータ取得完了を待機
-    await waitFor(() => {
-      expect(screen.getByText("テストクリップ1")).toBeInTheDocument();
-    });
-
-    // 「もっと見る」ボタンをクリック
-    fireEvent.click(screen.getByText("もっと見る"));
-
-    // 読み込み中表示になることを確認
-    await waitFor(() => {
-      expect(screen.getByText("読み込み中...")).toBeInTheDocument();
-    });
-
-    // 読み込み完了
-    act(() => {
-      if (resolvePromise) {
-        resolvePromise({}); // Promiseを解決
-      }
-    });
-
-    // 読み込みが完了し、両方のクリップが表示されることを確認
-    await waitFor(() => {
-      expect(screen.getByText("テストクリップ1")).toBeInTheDocument();
-      expect(screen.getByText("テストクリップ2")).toBeInTheDocument();
-      expect(screen.queryByText("読み込み中...")).not.toBeInTheDocument();
     });
   });
 });

@@ -14,7 +14,7 @@
   - 重複回避、シンプルな設計
 
 ## 開発手順
-- 実装後に必ずテストとリンターを実行
+- 実装後に必ずテスト、フォーマッター、リンター、ビルドを実行し、問題がある場合は修正
 
 ## Git
 - Conventional Commits: feat, fix, docs, style, refactor, test, chore

@@ -132,6 +132,52 @@ export async function checkFavoriteStatus(clipId: string) {
 }
 
 /**
+ * 複数のクリップのお気に入り状態を確認する
+ *
+ * @param clipIds クリップIDの配列
+ * @returns お気に入り状態のマップ（キー：クリップID、値：お気に入りかどうか）
+ */
+export async function checkMultipleFavoriteStatus(
+  clipIds: string[],
+): Promise<Record<string, boolean>> {
+  try {
+    // 認証チェック
+    const currentUser = await getCurrentUser();
+    if (!currentUser || clipIds.length === 0) {
+      // ログインしていない場合や、クリップIDがない場合は空のオブジェクトを返す
+      return {};
+    }
+
+    // Firebase Admin SDKを初期化
+    initializeFirebaseAdmin();
+    const db = getFirestore();
+
+    // ユーザーのお気に入りコレクションを参照
+    const favoritesRef = db
+      .collection("userFavorites")
+      .doc(currentUser.uid)
+      .collection("audioClips");
+
+    // 各クリップIDに対してお気に入り状態をチェック
+    const promises = clipIds.map((clipId) => favoritesRef.doc(clipId).get());
+
+    // 並列で全てのリクエストを実行
+    const snapshots = await Promise.all(promises);
+
+    // 結果をマップ形式で整形
+    const result: Record<string, boolean> = {};
+    clipIds.forEach((clipId, index) => {
+      result[clipId] = snapshots[index].exists;
+    });
+
+    return result;
+  } catch (error) {
+    console.error("複数お気に入り状態の確認に失敗しました:", error);
+    return {};
+  }
+}
+
+/**
  * ユーザーのお気に入りクリップを取得する
  *
  * @param limit 取得する件数

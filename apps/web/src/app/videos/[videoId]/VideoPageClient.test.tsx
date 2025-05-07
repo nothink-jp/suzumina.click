@@ -27,7 +27,12 @@ vi.mock("@/components/videos/YouTubeEmbed", () => ({
 }));
 
 vi.mock("@/components/audioclips/AudioClipCreator", () => ({
-  default: ({ videoId, videoTitle, youtubePlayerRef }: any) => (
+  default: ({
+    videoId,
+    videoTitle,
+    youtubePlayerRef,
+    createAudioClipAction,
+  }: any) => (
     <div data-testid="audio-clip-creator">
       音声クリップ作成フォーム（動画ID: {videoId}, タイトル: {videoTitle}）
     </div>
@@ -35,7 +40,14 @@ vi.mock("@/components/audioclips/AudioClipCreator", () => ({
 }));
 
 vi.mock("@/components/audioclips/AudioClipList", () => ({
-  default: ({ videoId, youtubePlayerRef }: any) => (
+  default: ({
+    videoId,
+    youtubePlayerRef,
+    getAudioClipsAction,
+    checkFavoriteStatusAction,
+    incrementPlayCountAction,
+    toggleFavoriteAction,
+  }: any) => (
     <div data-testid="audio-clip-list">
       音声クリップ一覧（動画ID: {videoId}）
     </div>
@@ -48,6 +60,29 @@ vi.mock("@/components/videos/CollapsibleVideoInfo", () => ({
       動画情報（タイトル: {video.title}）
     </div>
   ),
+}));
+
+// Server Actionsのモック
+vi.mock("@/actions/audioclips/actions", () => ({
+  createAudioClip: vi
+    .fn()
+    .mockResolvedValue({ success: true, id: "new-clip-id" }),
+  getAudioClips: vi.fn().mockResolvedValue({
+    clips: [],
+    hasMore: false,
+    lastClip: null,
+  }),
+  checkFavoriteStatus: vi.fn().mockResolvedValue({}),
+  incrementPlayCount: vi
+    .fn()
+    .mockResolvedValue({ id: "clip-id", message: "再生回数を更新しました" }),
+}));
+
+vi.mock("@/actions/audioclips/manage-favorites", () => ({
+  toggleFavorite: vi.fn().mockResolvedValue({ isFavorite: true }),
+  checkFavoriteStatus: vi.fn().mockResolvedValue({ isFavorite: false }),
+  // 新しく追加した関数のモックを定義
+  checkMultipleFavoriteStatus: vi.fn().mockResolvedValue({}),
 }));
 
 // AuthProviderのモック

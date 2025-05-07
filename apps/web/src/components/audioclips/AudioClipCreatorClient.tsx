@@ -20,10 +20,10 @@ import {
   formatTime,
 } from "../../lib/audioclips/validation";
 import { useAuth } from "../../lib/firebase/AuthProvider";
-import TagInput from "./TagInput"; // 新しいTagInputコンポーネントをインポート
-import TimelineVisualization from "./TimelineVisualization"; // TimelineVisualizationコンポーネントをインポート
+import TagInput from "./TagInput";
+import TimelineVisualization from "./TimelineVisualization";
 
-interface AudioClipCreatorProps {
+interface AudioClipCreatorClientProps {
   videoId: string;
   videoTitle: string;
   youtubePlayerRef?: React.RefObject<YouTubePlayer>;
@@ -33,18 +33,18 @@ interface AudioClipCreatorProps {
 }
 
 /**
- * 音声クリップ作成コンポーネント
+ * 音声クリップ作成コンポーネント（クライアント）
  *
  * 動画から特定の区間を選択して音声クリップを作成するフォーム
- * Conform+Zodを利用した型安全なフォームバリデーションを実装
+ * コンポーネント設計ガイドラインに従い、Server Actionsはprops経由で受け取る
  */
-export default function AudioClipCreator({
+export default function AudioClipCreatorClient({
   videoId,
   videoTitle,
   onClipCreated,
   youtubePlayerRef,
   createAudioClipAction,
-}: AudioClipCreatorProps) {
+}: AudioClipCreatorClientProps) {
   const { user } = useAuth();
   // タグ管理用の状態（Conformで管理しにくい部分なので別途管理）
   const [tags, setTags] = useState<string[]>([]);
@@ -666,22 +666,6 @@ export default function AudioClipCreator({
   // タグ変更ハンドラー
   const handleTagsChange = (newTags: string[]) => {
     setTags(newTags);
-  };
-
-  // 時間を「分:秒」形式でフォーマット
-  const formatTime = (seconds: string | number | null): string => {
-    if (seconds === null || seconds === "") return "--:--";
-    const numSeconds =
-      typeof seconds === "string" ? Number.parseFloat(seconds) : seconds;
-    if (Number.isNaN(numSeconds)) return "--:--";
-
-    // 負の値は0として扱う
-    const nonNegativeSeconds = Math.max(0, numSeconds);
-
-    // テストケースに合わせて常に「分:秒」形式で表示（時間を分に変換）
-    const totalMinutes = Math.floor(nonNegativeSeconds / 60);
-    const secs = Math.floor(nonNegativeSeconds % 60);
-    return `${totalMinutes}:${secs.toString().padStart(2, "0")}`;
   };
 
   // DOM操作の後でReactの状態も更新（表示を強制更新するため）

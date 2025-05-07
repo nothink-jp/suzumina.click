@@ -14,12 +14,18 @@ interface AudioClipButtonProps {
   onFavoriteChange?: (isFavorite: boolean) => void;
   showTags?: boolean;
   maxTags?: number;
+  // Server Actions
+  incrementPlayCountAction: (
+    clipId: string,
+  ) => Promise<{ id: string; message: string }>;
+  toggleFavoriteAction: (clipId: string) => Promise<{ isFavorite: boolean }>;
 }
 
 /**
  * 音声クリップボタンコンポーネント
  *
  * 音声クリップを表示し、クリックで再生するボタンコンポーネント
+ * コンポーネント設計ガイドラインに従い、Server Actionsはprops経由で受け取る
  */
 export default function AudioClipButton({
   clip,
@@ -28,6 +34,8 @@ export default function AudioClipButton({
   onFavoriteChange,
   showTags = true,
   maxTags = 3,
+  incrementPlayCountAction,
+  toggleFavoriteAction,
 }: AudioClipButtonProps) {
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -42,8 +50,8 @@ export default function AudioClipButton({
     setIsPlaying(true);
 
     try {
-      // 再生回数をインクリメント（Server Actionsを使用）
-      await incrementPlayCount(clip.id);
+      // props経由で受け取ったServer Actionを使用して再生回数をインクリメント
+      await incrementPlayCountAction(clip.id);
 
       // 親コンポーネントに再生イベントを通知
       onPlay(clip);
@@ -61,10 +69,8 @@ export default function AudioClipButton({
     setIsProcessing(true);
 
     try {
-      const newFavoriteState = !localFavorite;
-
-      // お気に入り状態を更新（Server Actionsを使用）
-      const result = await toggleFavorite(clip.id);
+      // props経由で受け取ったServer Actionを使用してお気に入り状態を更新
+      const result = await toggleFavoriteAction(clip.id);
 
       // ローカル状態を更新
       setLocalFavorite(result.isFavorite);

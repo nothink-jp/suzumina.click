@@ -86,11 +86,20 @@ export async function getVideoTimeRanges(
 /**
  * 時間をフォーマットする関数（mm:ss形式）
  *
- * @param seconds 秒数
+ * @param seconds 秒数または秒数を表す文字列
  * @returns フォーマットされた時間文字列
  */
-export function formatTime(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
+export function formatTime(seconds: number | string): string {
+  // 文字列が渡された場合は数値に変換
+  const numSeconds =
+    typeof seconds === "string" ? Number.parseFloat(seconds) : seconds;
+
+  // NaNの場合は「--:--」を返す
+  if (Number.isNaN(numSeconds)) {
+    return "--:--";
+  }
+
+  const minutes = Math.floor(numSeconds / 60);
+  const remainingSeconds = Math.floor(numSeconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
