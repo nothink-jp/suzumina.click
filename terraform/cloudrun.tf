@@ -70,6 +70,13 @@ resource "google_project_iam_member" "nextjs_app_firebase_admin" {
   member  = "serviceAccount:${google_service_account.nextjs_app_sa.email}"
 }
 
+# サービスアカウントにService Account Token Creator権限を付与（カスタムトークン作成に必要）
+resource "google_project_iam_member" "nextjs_app_token_creator" {
+  project = var.gcp_project_id
+  role    = "roles/iam.serviceAccountTokenCreator"
+  member  = "serviceAccount:${google_service_account.nextjs_app_sa.email}"
+}
+
 # Cloud Run サービスの定義
 resource "google_cloud_run_service" "nextjs_app" {
   name     = local.cloudrun_service_name

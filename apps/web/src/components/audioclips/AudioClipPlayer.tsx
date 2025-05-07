@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
 import type { AudioClip } from "../../lib/audioclips/types";

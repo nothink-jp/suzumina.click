@@ -5,6 +5,7 @@ import { checkFavoriteStatus as checkFavoriteStatusAction } from "@/actions/audi
 import { useEffect, useState } from "react";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
 import type { AudioClip } from "../../lib/audioclips/types";
+import { sanitizeClipForClient, toSafeDate } from "../../lib/audioclips/utils";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 import AudioClipButton from "./AudioClipButton";
 import AudioClipPlayer from "./AudioClipPlayer";
@@ -25,18 +26,19 @@ interface ServerActionClipData {
   phrase?: string;
   startTime?: number;
   endTime?: number;
-  audioUrl?: string;
-  createdAt?: string | Date; // Date型は使用しない
-  updatedAt?: string | Date; // Date型は使用しない
+  audioUrl?: string | null;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
   userId?: string;
   userName?: string;
-  userPhotoURL?: string;
+  userPhotoURL?: string | null;
   isPublic?: boolean;
   tags?: string[];
   playCount?: number;
   favoriteCount?: number;
   duration?: number;
   formattedDuration?: string;
+  [key: string]: string | number | boolean | Date | null | string[] | undefined;
 }
 
 /**
@@ -78,55 +80,87 @@ export default function AudioClipList({
 
   // APIから返されたクリップデータをAudioClip型に変換するヘルパー関数
   const convertToAudioClip = (clip: ServerActionClipData): AudioClip => {
+    // まず日付を安全な形式に変換
+    const sanitized = sanitizeClipForClient(clip);
+
     // 安全にプロパティにアクセス
-    const startTime = typeof clip.startTime === "number" ? clip.startTime : 0;
-    const endTime = typeof clip.endTime === "number" ? clip.endTime : 0;
+    const startTime =
+      typeof sanitized.startTime === "number" ? sanitized.startTime : 0;
+    const endTime =
+      typeof sanitized.endTime === "number" ? sanitized.endTime : 0;
     const calculatedDuration = endTime - startTime;
 
-    // 日付の処理 - サーバーアクションからは既にISO文字列形式で返されているはず
-    let createdAtStr: string;
-    let updatedAtStr: string;
+    // 文字列へ変換
+    const id = typeof sanitized.id === "string" ? sanitized.id : "";
+    const videoId =
+      typeof sanitized.videoId === "string" ? sanitized.videoId : "";
+    const title = typeof sanitized.title === "string" ? sanitized.title : "";
+    const phrase = typeof sanitized.phrase === "string" ? sanitized.phrase : "";
+    const userId = typeof sanitized.userId === "string" ? sanitized.userId : "";
+    const userName =
+      typeof sanitized.userName === "string" ? sanitized.userName : "";
 
-    // 日付が文字列の場合はそのまま使用し、それ以外の場合は現在時刻のISO文字列を使用
-    if (typeof clip.createdAt === "string") {
-      createdAtStr = clip.createdAt;
-    } else {
-      // Date型のメソッドは使用せず、現在時刻の文字列を作成
-      createdAtStr = new Date().toISOString();
-      console.warn("予期せぬ日付フォーマット (createdAt):", clip.createdAt);
+    // オプショナルプロパティ
+    let audioUrl: string | undefined = undefined;
+    if (typeof sanitized.audioUrl === "string") {
+      audioUrl = sanitized.audioUrl;
     }
 
-    // updatedAtも同様に処理
-    if (typeof clip.updatedAt === "string") {
-      updatedAtStr = clip.updatedAt;
-    } else {
-      // Date型のメソッドは使用せず、現在時刻の文字列を作成
-      updatedAtStr = new Date().toISOString();
-      console.warn("予期せぬ日付フォーマット (updatedAt):", clip.updatedAt);
+    let userPhotoURL: string | undefined = undefined;
+    if (typeof sanitized.userPhotoURL === "string") {
+      userPhotoURL = sanitized.userPhotoURL;
     }
+
+    // 日付は必ず文字列として扱う（toSafeDate関数は常に文字列を返す）
+    const createdAtStr = toSafeDate(sanitized.createdAt);
+    const updatedAtStr = toSafeDate(sanitized.updatedAt);
+    let lastPlayedAtStr: string | undefined = undefined;
+    if (sanitized.lastPlayedAt) {
+      lastPlayedAtStr = toSafeDate(sanitized.lastPlayedAt);
+    }
+
+    // 配列型のプロパティを適切に変換
+    const tags: string[] = Array.isArray(sanitized.tags) ? sanitized.tags : [];
+
+    // 数値型のプロパティを適切に変換
+    const playCount =
+      typeof sanitized.playCount === "number" ? sanitized.playCount : 0;
+    const favoriteCount =
+      typeof sanitized.favoriteCount === "number" ? sanitized.favoriteCount : 0;
+    const duration =
+      typeof sanitized.duration === "number"
+        ? sanitized.duration
+        : calculatedDuration;
+
+    // 文字列型のフォーマット済み再生時間
+    const formattedDuration =
+      typeof sanitized.formattedDuration === "string"
+        ? sanitized.formattedDuration
+        : formatDuration(calculatedDuration);
+
+    // boolean型のプロパティを適切に変換
+    const isPublic = Boolean(sanitized.isPublic);
 
     return {
-      id: clip.id || "",
-      videoId: clip.videoId || "",
-      title: clip.title || "",
-      phrase: clip.phrase || "",
-      startTime: startTime,
-      endTime: endTime,
-      audioUrl: clip.audioUrl,
-      createdAt: createdAtStr, // 文字列として保持
-      updatedAt: updatedAtStr, // 文字列として保持
-      userId: clip.userId || "",
-      userName: clip.userName || "",
-      userPhotoURL: clip.userPhotoURL,
-      isPublic: Boolean(clip.isPublic),
-      tags: clip.tags || [],
-      playCount: typeof clip.playCount === "number" ? clip.playCount : 0,
-      favoriteCount:
-        typeof clip.favoriteCount === "number" ? clip.favoriteCount : 0,
-      duration:
-        typeof clip.duration === "number" ? clip.duration : calculatedDuration,
-      formattedDuration:
-        clip.formattedDuration || formatDuration(calculatedDuration),
+      id,
+      videoId,
+      title,
+      phrase,
+      startTime,
+      endTime,
+      audioUrl,
+      createdAt: createdAtStr,
+      updatedAt: updatedAtStr,
+      lastPlayedAt: lastPlayedAtStr,
+      userId,
+      userName,
+      userPhotoURL,
+      isPublic,
+      tags,
+      playCount,
+      favoriteCount,
+      duration,
+      formattedDuration,
     };
   };
 
@@ -144,9 +178,9 @@ export default function AudioClipList({
 
       // ページネーション用のstartAfterの処理
       let startAfterParam = null;
-      if (isLoadMore && lastClip && typeof lastClip.createdAt === "string") {
+      if (isLoadMore && lastClip && lastClip.createdAt) {
         try {
-          // クライアント側で安全にDateオブジェクトを作成
+          // 日付文字列を安全にDateオブジェクトに変換
           startAfterParam = new Date(lastClip.createdAt);
         } catch (error) {
           console.error("日付変換エラー:", error);
@@ -211,6 +245,8 @@ export default function AudioClipList({
 
   // クリップ再生時の処理
   const handlePlayClip = (clip: AudioClip) => {
+    // clipはすでにAudioClip型なので、型変換する必要はない
+    // ただし、最新の状態を保持するために参照をそのまま使う
     setSelectedClip(clip);
   };
 

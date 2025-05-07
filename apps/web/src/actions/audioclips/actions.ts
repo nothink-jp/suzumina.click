@@ -4,6 +4,7 @@
  * このファイルにはオーディオクリップ関連の共通アクションをエクスポートします
  */
 
+import { sanitizeClipForClient } from "@/lib/audioclips/utils";
 // revalidatePath関数は Pages Router では動作しないため削除
 import { formatErrorMessage, getFirestoreAdmin } from "@/lib/firebase/admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
@@ -90,7 +91,9 @@ export async function getAudioClips(params: GetAudioClipsParams) {
       const snapshot = await queryBuilder.get();
       const clips = snapshot.docs.map((doc: QueryDocumentSnapshot) => {
         const data = doc.data();
-        return {
+
+        // 日付フィールドをISO文字列に変換
+        const rawClip = {
           id: doc.id,
           ...data,
           createdAt: data.createdAt?.toDate().toISOString(),
@@ -99,15 +102,24 @@ export async function getAudioClips(params: GetAudioClipsParams) {
             ? data.lastPlayedAt.toDate().toISOString()
             : undefined,
         };
+
+        // サニタイズして安全なオブジェクトにする
+        return sanitizeClipForClient(rawClip);
       });
 
       // 次のページがあるかどうか
       const hasMore = clips.length === limit;
 
+      // 最後のクリップデータがあれば、それも安全に変換する
+      const lastClip =
+        clips.length > 0
+          ? sanitizeClipForClient(clips[clips.length - 1])
+          : null;
+
       return {
         clips,
         hasMore,
-        lastClip: clips.length > 0 ? clips[clips.length - 1] : null,
+        lastClip,
       };
     } catch (queryError) {
       console.error("Firestoreクエリの実行に失敗しました:", queryError);
