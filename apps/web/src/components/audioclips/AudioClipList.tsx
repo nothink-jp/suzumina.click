@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type {
-  AudioClipsFetchParams,
-  FetchResult,
-} from "../../actions/audioclips/types";
+import type { FetchResult } from "../../actions/audioclips/types";
 import type { AudioClip } from "../../lib/audioclips/types";
 import { useAuth } from "../../lib/firebase/AuthProvider";
 import AudioClipButton from "./AudioClipButton";
 import AudioClipPlayer from "./AudioClipPlayer";
+
+// GetAudioClipsParamsの型を定義 - VideoPageClientと一致させる
+interface GetAudioClipsParams {
+  videoId: string;
+  limit?: number;
+  lastClip?: AudioClip | null;
+}
 
 interface AudioClipListProps {
   videoId: string;
@@ -17,14 +21,13 @@ interface AudioClipListProps {
   lastClip?: AudioClip | null;
   initialFavorites?: Record<string, boolean>;
   // Server Actions
-  getAudioClipsAction: (params: AudioClipsFetchParams) => Promise<FetchResult>;
+  getAudioClipsAction: (params: GetAudioClipsParams) => Promise<FetchResult>;
   checkFavoriteStatusAction: (
-    clipIds: string[],
-  ) => Promise<Record<string, boolean>>;
-  incrementPlayCountAction: (
     clipId: string,
-  ) => Promise<{ id: string; message: string }>;
-  toggleFavoriteAction: (clipId: string) => Promise<{ isFavorite: boolean }>;
+    userId?: string,
+  ) => Promise<boolean>;
+  incrementPlayCountAction: (clipId: string) => Promise<void>;
+  toggleFavoriteAction: (clipId: string, userId: string) => Promise<void>;
 }
 
 /**
@@ -52,6 +55,7 @@ export default function AudioClipList({
   const [isLoading, setIsLoading] = useState(false);
   const [favorites, setFavorites] =
     useState<Record<string, boolean>>(initialFavorites);
+  const [error, setError] = useState<string | null>(null);
 
   // 再生関連の状態
   const [currentClip, setCurrentClip] = useState<AudioClip | null>(null);
@@ -68,10 +72,25 @@ export default function AudioClipList({
       if (!user || clips.length === 0) return;
 
       try {
-        const clipIds = clips.map((clip) => clip.id);
-        const favoritesResult = await checkFavoriteStatusAction(clipIds);
-        setFavorites((prev) => ({ ...prev, ...favoritesResult }));
+        // ユーザーIDがある場合のみチェック
+        if (user.uid) {
+          // クリップごとに個別にお気に入り状態を確認
+          const promises = clips.map((clip) =>
+            checkFavoriteStatusAction(clip.id, user.uid),
+          );
+
+          const results = await Promise.all(promises);
+
+          // 結果をオブジェクトにマッピング
+          const newFavorites: Record<string, boolean> = {};
+          clips.forEach((clip, index) => {
+            newFavorites[clip.id] = results[index];
+          });
+
+          setFavorites((prev) => ({ ...prev, ...newFavorites }));
+        }
       } catch (error) {
+        setError("お気に入り状態の取得に失敗しました");
         console.error("お気に入り状態の取得に失敗しました:", error);
       }
     };
@@ -118,13 +137,14 @@ export default function AudioClipList({
     if (!hasMore || isLoading) return;
 
     setIsLoading(true);
+    setError(null);
 
     try {
       // props経由で受け取ったServer Actionを使用してデータを取得
       const result = await getAudioClipsAction({
         videoId,
         limit: 10,
-        startAfter: lastClip?.createdAt ? new Date(lastClip.createdAt) : null,
+        lastClip: lastClip,
       });
 
       if (result.clips.length > 0) {
@@ -136,12 +156,24 @@ export default function AudioClipList({
       setHasMore(result.hasMore);
 
       // ログインしている場合、新しく読み込んだクリップのお気に入り状態を取得
-      if (user && result.clips.length > 0) {
-        const clipIds = result.clips.map((clip) => clip.id);
-        const favoritesResult = await checkFavoriteStatusAction(clipIds);
-        setFavorites((prev) => ({ ...prev, ...favoritesResult }));
+      if (user && result.clips.length > 0 && user.uid) {
+        // クリップごとに個別にお気に入り状態を確認
+        const promises = result.clips.map((clip) =>
+          checkFavoriteStatusAction(clip.id, user.uid),
+        );
+
+        const favResults = await Promise.all(promises);
+
+        // 結果をオブジェクトにマッピング
+        const newFavorites: Record<string, boolean> = {};
+        result.clips.forEach((clip, index) => {
+          newFavorites[clip.id] = favResults[index];
+        });
+
+        setFavorites((prev) => ({ ...prev, ...newFavorites }));
       }
     } catch (error) {
+      setError("クリップの読み込みに失敗しました");
       console.error("クリップの読み込みに失敗しました:", error);
     } finally {
       setIsLoading(false);
@@ -174,6 +206,13 @@ export default function AudioClipList({
         </span>
       </div>
 
+      {/* エラー表示 */}
+      {error && (
+        <div className="alert alert-error p-2 text-sm">
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* クリップリスト */}
       {clips.length > 0 ? (
         <div className="space-y-3">
@@ -201,6 +240,11 @@ export default function AudioClipList({
               </span>
             ) : null}
           </div>
+        </div>
+      ) : isLoading ? (
+        <div className="text-center py-6">
+          <span className="loading loading-spinner loading-sm mr-2" />
+          <span className="text-gray-500">読み込み中...</span>
         </div>
       ) : (
         <div className="text-center py-6">

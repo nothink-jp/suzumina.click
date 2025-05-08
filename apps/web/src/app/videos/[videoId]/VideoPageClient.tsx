@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  createAudioClip,
-  getAudioClips,
-  incrementPlayCount,
-} from "@/actions/audioclips/actions";
-import {
-  checkMultipleFavoriteStatus,
-  toggleFavorite,
-} from "@/actions/audioclips/manage-favorites";
+import { createAudioClip } from "@/actions/audioclips/actions";
+import type { FetchResult } from "@/actions/audioclips/types";
 import AudioClipCreator from "@/components/audioclips/AudioClipCreator";
 import AudioClipList from "@/components/audioclips/AudioClipList";
 import CollapsibleVideoInfo from "@/components/videos/CollapsibleVideoInfo";
@@ -20,8 +13,24 @@ import type { Video } from "@/lib/videos/types";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+// GetAudioClipsParamsの型を定義
+interface GetAudioClipsParams {
+  videoId: string;
+  limit?: number;
+  lastClip?: FetchResult["lastClip"];
+}
+
 interface VideoPageClientProps {
   video: Video;
+  initialClipsData: FetchResult;
+  // Server Actionsをprops経由で受け取る
+  getAudioClipsAction: (params: GetAudioClipsParams) => Promise<FetchResult>;
+  checkFavoriteStatusAction: (
+    clipId: string,
+    userId?: string,
+  ) => Promise<boolean>;
+  incrementPlayCountAction: (clipId: string) => Promise<void>;
+  toggleFavoriteAction: (clipId: string, userId: string) => Promise<void>;
 }
 
 /**
@@ -30,7 +39,14 @@ interface VideoPageClientProps {
  * YouTubeプレーヤーと音声クリップ機能を統合
  * コンポーネント設計ガイドラインに従い、サーバーアクションをクライアントコンポーネントに直接渡す
  */
-export default function VideoPageClient({ video }: VideoPageClientProps) {
+export default function VideoPageClient({
+  video,
+  initialClipsData,
+  getAudioClipsAction,
+  checkFavoriteStatusAction,
+  incrementPlayCountAction,
+  toggleFavoriteAction,
+}: VideoPageClientProps) {
   // 認証情報を取得
   const { user } = useAuth();
 
@@ -133,12 +149,13 @@ export default function VideoPageClient({ video }: VideoPageClientProps) {
             <AudioClipList
               key={refreshKey}
               videoId={video.id}
-              initialClips={[]}
-              hasMore={true}
-              getAudioClipsAction={getAudioClips}
-              checkFavoriteStatusAction={checkMultipleFavoriteStatus}
-              incrementPlayCountAction={incrementPlayCount}
-              toggleFavoriteAction={toggleFavorite}
+              initialClips={initialClipsData.clips}
+              hasMore={initialClipsData.hasMore}
+              lastClip={initialClipsData.lastClip}
+              getAudioClipsAction={getAudioClipsAction}
+              checkFavoriteStatusAction={checkFavoriteStatusAction}
+              incrementPlayCountAction={incrementPlayCountAction}
+              toggleFavoriteAction={toggleFavoriteAction}
             />
           </div>
         </div>
@@ -150,12 +167,13 @@ export default function VideoPageClient({ video }: VideoPageClientProps) {
               <AudioClipList
                 key={refreshKey}
                 videoId={video.id}
-                initialClips={[]}
-                hasMore={true}
-                getAudioClipsAction={getAudioClips}
-                checkFavoriteStatusAction={checkMultipleFavoriteStatus}
-                incrementPlayCountAction={incrementPlayCount}
-                toggleFavoriteAction={toggleFavorite}
+                initialClips={initialClipsData.clips}
+                hasMore={initialClipsData.hasMore}
+                lastClip={initialClipsData.lastClip}
+                getAudioClipsAction={getAudioClipsAction}
+                checkFavoriteStatusAction={checkFavoriteStatusAction}
+                incrementPlayCountAction={incrementPlayCountAction}
+                toggleFavoriteAction={toggleFavoriteAction}
               />
             </div>
           </div>

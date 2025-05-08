@@ -1,7 +1,7 @@
 "use client";
 
 import { useDebounce } from "@/hooks/useDebounce";
-import { normalizeTag, searchTags, validateTag } from "@/lib/audioclips/tags";
+import { normalizeTag, validateTag } from "@/lib/audioclips/tags";
 import type { TagInfo, TagInputState } from "@/lib/audioclips/types";
 import { Loader2, Tag, X } from "lucide-react";
 import {
@@ -21,6 +21,10 @@ interface TagInputProps {
   placeholder?: string;
   disabled?: boolean;
   readOnly?: boolean;
+  // Server Actionを渡すためのプロパティを追加
+  searchTagsAction?: (params: { query: string }) => Promise<{
+    tags: TagInfo[];
+  }>;
 }
 
 /**
@@ -38,6 +42,8 @@ export default function TagInput({
   placeholder = "タグを入力...",
   disabled = false,
   readOnly = false,
+  // Server Actionのデフォルト値を空の配列を返す関数に設定
+  searchTagsAction = async () => ({ tags: [] }),
 }: TagInputProps) {
   // 初期タグを正規化
   const normalizedInitialTags = initialTags.map((tag) =>
@@ -80,7 +86,8 @@ export default function TagInput({
       setState((prev) => ({ ...prev, isLoading: true }));
 
       try {
-        const result = await searchTags({ query: debouncedInput });
+        // Server Actionを使用してタグ候補を検索
+        const result = await searchTagsAction({ query: debouncedInput });
 
         // 既に追加済みのタグを除外
         const filteredSuggestions = result.tags.filter(
@@ -105,7 +112,7 @@ export default function TagInput({
     if (debouncedInput && !readOnly) {
       fetchSuggestions();
     }
-  }, [debouncedInput, readOnly, state.tags]);
+  }, [debouncedInput, readOnly, state.tags, searchTagsAction]);
 
   // タグの追加処理
   const addTag = useCallback(

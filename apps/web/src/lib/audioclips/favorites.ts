@@ -3,12 +3,14 @@
  */
 import {
   type FieldValue,
+  type Firestore,
   collection,
   deleteDoc,
   doc,
   limit as firestoreLimit,
   getDoc,
   getDocs,
+  getFirestore,
   increment,
   orderBy,
   query,
@@ -17,9 +19,30 @@ import {
   setDoc,
   where,
 } from "firebase/firestore";
-import { db } from "../firebase/client";
+import { app } from "../firebase/client"; // アプリインスタンスをインポート
 import { getFavoriteClips as apiFetchFavoriteClips } from "./api";
 import type { AudioClip, AudioClipFavorite } from "./types";
+
+/**
+ * Firestoreインスタンスを取得
+ * クライアントサイドでのみ実行されることに注意
+ */
+const getFirestoreInstance = (): Firestore | null => {
+  // ブラウザでのみFirestoreを初期化
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    if (!app) {
+      throw new Error("Firebaseアプリが初期化されていません");
+    }
+    return getFirestore(app);
+  } catch (error) {
+    console.error("Firestoreの初期化に失敗しました:", error);
+    return null;
+  }
+};
 
 /**
  * お気に入りコレクションへの参照を取得
@@ -27,6 +50,7 @@ import type { AudioClip, AudioClipFavorite } from "./types";
  * @returns コレクション参照
  */
 const getFavoritesCollection = (userId: string) => {
+  const db = getFirestoreInstance();
   if (!db) {
     throw new Error("Firestoreデータベースインスタンスが初期化されていません");
   }
@@ -45,6 +69,7 @@ export const checkFavoriteStatus = async (
 ): Promise<boolean> => {
   if (!userId) return false;
 
+  const db = getFirestoreInstance();
   if (!db) {
     throw new Error("Firestoreデータベースインスタンスが初期化されていません");
   }
@@ -67,6 +92,7 @@ export const addToFavorites = async (
   try {
     if (!userId) return false;
 
+    const db = getFirestoreInstance();
     if (!db) {
       throw new Error(
         "Firestoreデータベースインスタンスが初期化されていません",
@@ -111,6 +137,7 @@ export const removeFromFavorites = async (
   try {
     if (!userId) return false;
 
+    const db = getFirestoreInstance();
     if (!db) {
       throw new Error(
         "Firestoreデータベースインスタンスが初期化されていません",
@@ -166,6 +193,7 @@ export const getUserFavorites = async (
   if (!userId) return [];
 
   try {
+    const db = getFirestoreInstance();
     if (!db) {
       throw new Error(
         "Firestoreデータベースインスタンスが初期化されていません",
@@ -220,6 +248,7 @@ export const getFavoriteClips = async (
  */
 const incrementFavoriteCount = async (clipId: string): Promise<void> => {
   try {
+    const db = getFirestoreInstance();
     if (!db) {
       throw new Error(
         "Firestoreデータベースインスタンスが初期化されていません",
@@ -251,6 +280,7 @@ const incrementFavoriteCount = async (clipId: string): Promise<void> => {
  */
 const decrementFavoriteCount = async (clipId: string): Promise<void> => {
   try {
+    const db = getFirestoreInstance();
     if (!db) {
       throw new Error(
         "Firestoreデータベースインスタンスが初期化されていません",

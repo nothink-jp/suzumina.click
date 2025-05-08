@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { type Auth, connectAuthEmulator, getAuth } from "firebase/auth";
-import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+// Firestoreのインポートを削除
 
 /**
  * Firebaseの設定
@@ -84,10 +84,7 @@ const getAuthInstance = (): Auth | null => {
           });
           console.log("Firebase Auth Emulatorに接続しました");
 
-          // Firestoreもエミュレータに接続
-          const firestoreInstance = getFirestore(app);
-          connectFirestoreEmulator(firestoreInstance, "localhost", 8080);
-          console.log("Firestore Emulatorに接続しました");
+          // Firestoreエミュレータへの接続を削除
         }
       }
     }
@@ -104,25 +101,11 @@ const app = initializeFirebase();
 // Firebase認証の取得
 const auth = getAuthInstance();
 
-/**
- * Firestoreインスタンスの取得
- * アプリが初期化されている場合のみ有効
- */
-const firestoreInstance = app ? getFirestore(app) : null;
-
-// Firestoreエミュレータに接続（開発環境の場合）
-if (
-  firestoreInstance &&
-  process.env.NODE_ENV === "development" &&
-  process.env.NEXT_PUBLIC_USE_EMULATOR === "true" &&
-  typeof window !== "undefined"
-) {
-  connectFirestoreEmulator(firestoreInstance, "localhost", 8080);
-  console.log("Firestore Emulatorに接続しました");
-}
-
-// Firestoreインスタンスをdbとしてエクスポート
-const db = firestoreInstance;
+// ダミーのdbオブジェクトを提供
+// 注意: このオブジェクトは実際には何もしません。
+// クライアントコンポーネントは直接Firestoreにアクセスせず、Server Actionsを使用してください。
+// これは依存関係のビルドエラーを防ぐための一時的な対応です。
+const db = {};
 
 // 各インスタンスをエクスポート
 export { app, auth, db, getAuthInstance };

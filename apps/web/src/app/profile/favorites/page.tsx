@@ -35,6 +35,37 @@ export default async function FavoritesPage() {
   // お気に入りクリップを取得（20件）
   const favoriteClips = await getFavoriteClips(userId, 20);
 
+  // checkMultipleFavoriteStatusをAudioClipListのcheckFavoriteStatusActionの型に合わせるアダプター関数
+  const singleCheckFavoriteStatus = async (clipId: string, userId?: string) => {
+    // ユーザーIDがない場合はfalseを返す
+    if (!userId) return false;
+
+    // 1つのIDだけを配列に入れて元の関数を呼び出す
+    // getCurrentUserは関数内部で呼び出されるため、userIdは渡さない
+    const result = await checkMultipleFavoriteStatus([clipId]);
+    // 結果から該当するクリップのお気に入り状態を返す
+    return result[clipId] || false;
+  };
+
+  // incrementPlayCountの戻り値の型を調整するアダプター関数
+  const incrementPlayCountAdapter = async (clipId: string): Promise<void> => {
+    // 元の関数を呼び出して戻り値は無視
+    await incrementPlayCount(clipId);
+    // voidを返すことで型を合わせる
+    return;
+  };
+
+  // toggleFavoriteの戻り値の型を調整するアダプター関数
+  const toggleFavoriteAdapter = async (
+    clipId: string,
+    userId: string,
+  ): Promise<void> => {
+    // 元の関数を呼び出して戻り値は無視
+    await toggleFavorite(clipId);
+    // voidを返すことで型を合わせる
+    return;
+  };
+
   // clipsプロパティがないため、データを表示するための別の方法を実装
   return (
     <div className="container mx-auto py-8">
@@ -57,9 +88,9 @@ export default async function FavoritesPage() {
                   hasMore: false,
                   lastClip: null,
                 })}
-                checkFavoriteStatusAction={checkMultipleFavoriteStatus}
-                incrementPlayCountAction={incrementPlayCount}
-                toggleFavoriteAction={toggleFavorite}
+                checkFavoriteStatusAction={singleCheckFavoriteStatus}
+                incrementPlayCountAction={incrementPlayCountAdapter}
+                toggleFavoriteAction={toggleFavoriteAdapter}
               />
             </div>
           ))}

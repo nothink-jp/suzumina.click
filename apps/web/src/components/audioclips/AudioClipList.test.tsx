@@ -210,8 +210,15 @@ describe("AudioClipListコンポーネント", () => {
     // お気に入り状態の取得が呼ばれたことを確認
     await waitFor(() => {
       expect(mockCheckFavoriteStatus).toHaveBeenCalled();
-      const clipIds = mockClips.map((clip) => clip.id);
-      expect(mockCheckFavoriteStatus).toHaveBeenCalledWith(clipIds);
+      // 関数の呼び出しを個別に検証（新しい実装ではclipIdとuserIdを個別に渡す）
+      expect(mockCheckFavoriteStatus).toHaveBeenCalledWith(
+        "clip-1",
+        "test-user",
+      );
+      expect(mockCheckFavoriteStatus).toHaveBeenCalledWith(
+        "clip-2",
+        "test-user",
+      );
     });
   });
 
@@ -269,7 +276,7 @@ describe("AudioClipListコンポーネント", () => {
       expect(mockGetAudioClips).toHaveBeenCalledWith({
         videoId: "video-123",
         limit: 10,
-        startAfter: expect.any(Date),
+        lastClip: mockClips[1], // lastClipオブジェクト全体を渡す
       });
     });
   });

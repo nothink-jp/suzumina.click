@@ -12,6 +12,24 @@ vi.mock("next/navigation", () => ({
   notFound: vi.fn(),
 }));
 
+// Server Actionsのモック
+vi.mock("@/actions/audioclips/actions", () => ({
+  getAudioClips: vi.fn().mockResolvedValue({
+    clips: [],
+    hasMore: false,
+    lastClip: null,
+  }),
+  incrementPlayCount: vi.fn().mockResolvedValue({
+    id: "clip-id",
+    message: "再生回数を更新しました",
+  }),
+}));
+
+vi.mock("@/actions/audioclips/manage-favorites", () => ({
+  checkMultipleFavoriteStatus: vi.fn().mockResolvedValue({}),
+  toggleFavorite: vi.fn().mockResolvedValue({ isFavorite: true }),
+}));
+
 // VideoPageClientコンポーネントをモック
 vi.mock("./VideoPageClient", () => ({
   default: vi.fn(() => (

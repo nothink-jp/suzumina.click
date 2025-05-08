@@ -6,19 +6,42 @@ import type { User } from "firebase/auth";
  * Firestoreからユーザープロフィール情報を取得・更新するための関数群
  */
 import {
+  type Firestore,
   Timestamp,
   collection,
   doc,
   getDoc,
+  getFirestore,
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
-import { db } from "../firebase/client";
+import { app } from "../firebase/client"; // appをインポート
 import type {
   UserProfile,
   UserProfileData,
   UserProfileFormData,
 } from "./types";
+
+/**
+ * Firestoreインスタンスを取得
+ * クライアントサイドでのみ実行されることに注意
+ */
+const getFirestoreInstance = (): Firestore | null => {
+  // ブラウザでのみFirestoreを初期化
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    if (!app) {
+      throw new Error("Firebaseアプリが初期化されていません");
+    }
+    return getFirestore(app);
+  } catch (error) {
+    console.error("Firestoreの初期化に失敗しました:", error);
+    return null;
+  }
+};
 
 /**
  * ユーザープロフィール情報をFirestoreから取得
@@ -30,7 +53,8 @@ export async function getUserProfile(
   uid: string,
 ): Promise<UserProfileData | null> {
   try {
-    // Firestoreインスタンスの確認
+    // Firestoreインスタンスの取得
+    const db = getFirestoreInstance();
     if (!db) {
       console.error("Firestoreインスタンスが初期化されていません");
       return null;
@@ -70,7 +94,8 @@ export async function updateUserProfile(
   profileData: UserProfileFormData,
 ): Promise<boolean> {
   try {
-    // Firestoreインスタンスの確認
+    // Firestoreインスタンスの取得
+    const db = getFirestoreInstance();
     if (!db) {
       console.error("Firestoreインスタンスが初期化されていません");
       return false;

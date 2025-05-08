@@ -15,10 +15,8 @@ interface AudioClipButtonProps {
   showTags?: boolean;
   maxTags?: number;
   // Server Actions
-  incrementPlayCountAction: (
-    clipId: string,
-  ) => Promise<{ id: string; message: string }>;
-  toggleFavoriteAction: (clipId: string) => Promise<{ isFavorite: boolean }>;
+  incrementPlayCountAction: (clipId: string) => Promise<void>;
+  toggleFavoriteAction: (clipId: string, userId: string) => Promise<void>;
 }
 
 /**
@@ -69,15 +67,21 @@ export default function AudioClipButton({
     setIsProcessing(true);
 
     try {
-      // props経由で受け取ったServer Actionを使用してお気に入り状態を更新
-      const result = await toggleFavoriteAction(clip.id);
+      // ユーザーIDが存在する場合のみ実行
+      if (user.uid) {
+        // props経由で受け取ったServer Actionを使用してお気に入り状態を更新
+        await toggleFavoriteAction(clip.id, user.uid);
 
-      // ローカル状態を更新
-      setLocalFavorite(result.isFavorite);
+        // トグル操作なので、現在の状態を反転
+        const newFavoriteState = !localFavorite;
 
-      // 親コンポーネントに状態変更を通知
-      if (onFavoriteChange) {
-        onFavoriteChange(result.isFavorite);
+        // ローカル状態を更新
+        setLocalFavorite(newFavoriteState);
+
+        // 親コンポーネントに状態変更を通知
+        if (onFavoriteChange) {
+          onFavoriteChange(newFavoriteState);
+        }
       }
     } catch (error) {
       console.error("お気に入り操作に失敗しました:", error);

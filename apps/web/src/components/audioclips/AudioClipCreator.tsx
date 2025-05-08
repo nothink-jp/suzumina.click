@@ -14,6 +14,7 @@ import type {
   AudioClip,
   AudioClipCreateData,
   OverlapCheckResult,
+  TagInfo, // TagInfo型をインポート
 } from "../../lib/audioclips/types";
 import {
   checkTimeRangeOverlap,
@@ -30,6 +31,10 @@ interface AudioClipCreatorProps {
   onClipCreated?: () => void;
   // Server Actions
   createAudioClipAction: (data: AudioClipCreateData) => Promise<AudioClip>;
+  // タグ検索用のServer Action
+  searchTagsAction?: (params: { query: string }) => Promise<{
+    tags: TagInfo[];
+  }>;
 }
 
 /**
@@ -44,6 +49,8 @@ export default function AudioClipCreator({
   onClipCreated,
   youtubePlayerRef,
   createAudioClipAction,
+  // デフォルト値として空の配列を返す関数を設定
+  searchTagsAction = async () => ({ tags: [] }),
 }: AudioClipCreatorProps) {
   const { user } = useAuth();
   // タグ管理用の状態（Conformで管理しにくい部分なので別途管理）
@@ -440,7 +447,7 @@ export default function AudioClipCreator({
           : null;
         if (value !== null && !Number.isNaN(value)) {
           setStartTime(value);
-          // 表示用の時間も更新（ReactステートのみでDOMを制御）
+          // 表示用の時間も更新（ReactのステートのみでDOMを制御）
           setStartTimeDisplay(formatTime(value));
         }
       }
@@ -453,7 +460,7 @@ export default function AudioClipCreator({
           : null;
         if (value !== null && !Number.isNaN(value)) {
           setEndTime(value);
-          // 表示用の時間も更新（ReactステートのみでDOMを制御）
+          // 表示用の時間も更新（ReactのステートのみでDOMを制御）
           setEndTimeDisplay(formatTime(value));
         }
       }
@@ -1155,6 +1162,7 @@ export default function AudioClipCreator({
                     maxTags={10}
                     placeholder="タグを入力..."
                     disabled={!user || isSubmitting}
+                    searchTagsAction={searchTagsAction}
                   />
                 </div>
 

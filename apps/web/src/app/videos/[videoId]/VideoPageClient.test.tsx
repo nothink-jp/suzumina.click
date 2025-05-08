@@ -43,13 +43,17 @@ vi.mock("@/components/audioclips/AudioClipList", () => ({
   default: ({
     videoId,
     youtubePlayerRef,
+    initialClips,
+    hasMore,
+    lastClip,
     getAudioClipsAction,
     checkFavoriteStatusAction,
     incrementPlayCountAction,
     toggleFavoriteAction,
   }: any) => (
     <div data-testid="audio-clip-list">
-      音声クリップ一覧（動画ID: {videoId}）
+      音声クリップ一覧（動画ID: {videoId}, クリップ数:{" "}
+      {initialClips?.length || 0}）
     </div>
   ),
 }));
@@ -63,6 +67,23 @@ vi.mock("@/components/videos/CollapsibleVideoInfo", () => ({
 }));
 
 // Server Actionsのモック
+const mockGetAudioClipsAction = vi.fn().mockResolvedValue({
+  clips: [],
+  hasMore: false,
+  lastClip: null,
+});
+
+const mockCheckFavoriteStatusAction = vi.fn().mockResolvedValue({});
+
+const mockIncrementPlayCountAction = vi.fn().mockResolvedValue({
+  id: "clip-id",
+  message: "再生回数を更新しました",
+});
+
+const mockToggleFavoriteAction = vi
+  .fn()
+  .mockResolvedValue({ isFavorite: true });
+
 vi.mock("@/actions/audioclips/actions", () => ({
   createAudioClip: vi
     .fn()
@@ -115,6 +136,13 @@ const mockVideo = {
   tags: ["テスト", "サンプル"],
 };
 
+// テスト用の初期データ
+const mockInitialClipsData = {
+  clips: [],
+  hasMore: false,
+  lastClip: null,
+};
+
 // モック関数のインポート
 const useAuthMock = vi.mocked(
   (await import("@/lib/firebase/AuthProvider")).useAuth,
@@ -132,7 +160,16 @@ describe("VideoPageClientコンポーネント", () => {
     // 未ログイン状態をモック
     useAuthMock.mockReturnValue({ user: null, loading: false });
 
-    render(<VideoPageClient video={mockVideo} />);
+    render(
+      <VideoPageClient
+        video={mockVideo}
+        initialClipsData={mockInitialClipsData}
+        getAudioClipsAction={mockGetAudioClipsAction}
+        checkFavoriteStatusAction={mockCheckFavoriteStatusAction}
+        incrementPlayCountAction={mockIncrementPlayCountAction}
+        toggleFavoriteAction={mockToggleFavoriteAction}
+      />,
+    );
 
     // 基本コンポーネントが表示されることを確認
     expect(screen.getByTestId("youtube-embed")).toBeInTheDocument();
@@ -144,7 +181,16 @@ describe("VideoPageClientコンポーネント", () => {
     // 未ログイン状態をモック
     useAuthMock.mockReturnValue({ user: null, loading: false });
 
-    render(<VideoPageClient video={mockVideo} />);
+    render(
+      <VideoPageClient
+        video={mockVideo}
+        initialClipsData={mockInitialClipsData}
+        getAudioClipsAction={mockGetAudioClipsAction}
+        checkFavoriteStatusAction={mockCheckFavoriteStatusAction}
+        incrementPlayCountAction={mockIncrementPlayCountAction}
+        toggleFavoriteAction={mockToggleFavoriteAction}
+      />,
+    );
 
     // AudioClipCreatorは最初は表示されない（isPlayerReadyがfalseのため）
     expect(screen.queryByTestId("audio-clip-creator")).not.toBeInTheDocument();
@@ -160,7 +206,16 @@ describe("VideoPageClientコンポーネント", () => {
     const mockUser = { uid: "test-user-id" } as User;
     useAuthMock.mockReturnValue({ user: mockUser, loading: false });
 
-    render(<VideoPageClient video={mockVideo} />);
+    render(
+      <VideoPageClient
+        video={mockVideo}
+        initialClipsData={mockInitialClipsData}
+        getAudioClipsAction={mockGetAudioClipsAction}
+        checkFavoriteStatusAction={mockCheckFavoriteStatusAction}
+        incrementPlayCountAction={mockIncrementPlayCountAction}
+        toggleFavoriteAction={mockToggleFavoriteAction}
+      />,
+    );
 
     // 基本コンポーネントが表示される
     expect(screen.getByTestId("youtube-embed")).toBeInTheDocument();
@@ -178,7 +233,16 @@ describe("VideoPageClientコンポーネント", () => {
   it("モバイル表示とデスクトップ表示で適切なレイアウトを提供する", async () => {
     useAuthMock.mockReturnValue({ user: null, loading: false });
 
-    render(<VideoPageClient video={mockVideo} />);
+    render(
+      <VideoPageClient
+        video={mockVideo}
+        initialClipsData={mockInitialClipsData}
+        getAudioClipsAction={mockGetAudioClipsAction}
+        checkFavoriteStatusAction={mockCheckFavoriteStatusAction}
+        incrementPlayCountAction={mockIncrementPlayCountAction}
+        toggleFavoriteAction={mockToggleFavoriteAction}
+      />,
+    );
 
     await waitFor(() => {
       // モバイル表示用とデスクトップ表示用の2つのAudioClipListがある
@@ -191,7 +255,16 @@ describe("VideoPageClientコンポーネント", () => {
     // 認証ローディング状態をモック
     useAuthMock.mockReturnValue({ user: null, loading: true });
 
-    render(<VideoPageClient video={mockVideo} />);
+    render(
+      <VideoPageClient
+        video={mockVideo}
+        initialClipsData={mockInitialClipsData}
+        getAudioClipsAction={mockGetAudioClipsAction}
+        checkFavoriteStatusAction={mockCheckFavoriteStatusAction}
+        incrementPlayCountAction={mockIncrementPlayCountAction}
+        toggleFavoriteAction={mockToggleFavoriteAction}
+      />,
+    );
 
     // 基本コンポーネントが表示される
     expect(screen.getByTestId("youtube-embed")).toBeInTheDocument();
@@ -208,7 +281,16 @@ describe("VideoPageClientコンポーネント", () => {
   it("動画が再生されていない状態でシークボタンをクリックしても何も起こらない", async () => {
     useAuthMock.mockReturnValue({ user: null, loading: false });
 
-    render(<VideoPageClient video={mockVideo} />);
+    render(
+      <VideoPageClient
+        video={mockVideo}
+        initialClipsData={mockInitialClipsData}
+        getAudioClipsAction={mockGetAudioClipsAction}
+        checkFavoriteStatusAction={mockCheckFavoriteStatusAction}
+        incrementPlayCountAction={mockIncrementPlayCountAction}
+        toggleFavoriteAction={mockToggleFavoriteAction}
+      />,
+    );
 
     // プレーヤーが準備完了するまで待機
     await waitFor(() => {
