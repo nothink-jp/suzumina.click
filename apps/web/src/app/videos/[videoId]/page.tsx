@@ -45,6 +45,8 @@ export default async function VideoPage({ params }: any) {
   // アダプター関数の作成
   // checkMultipleFavoriteStatusをVideoPageClientのcheckFavoriteStatusActionの型に合わせる
   const singleCheckFavoriteStatus = async (clipId: string, userId?: string) => {
+    "use server"; // Server Actionであることを明示
+
     // ユーザーIDがない場合はfalseを返す
     if (!userId) return false;
 
@@ -56,12 +58,16 @@ export default async function VideoPage({ params }: any) {
 
   // incrementPlayCountの戻り値をvoidに変換するアダプター
   const incrementPlayCountAdapter = async (clipId: string): Promise<void> => {
+    "use server"; // Server Actionであることを明示
+
     await incrementPlayCount(clipId);
     return;
   };
 
   // toggleFavoriteの戻り値をvoidに変換するアダプター
   const toggleFavoriteAdapter = async (clipId: string): Promise<void> => {
+    "use server"; // Server Actionであることを明示
+
     // toggleFavoriteはcurrentUserを内部で取得するため、userIdは不要
     await toggleFavorite(clipId);
     return;
