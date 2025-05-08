@@ -4,6 +4,7 @@
  * このファイルでは以下の関数のテストを行います：
  * - toggleFavorite: お気に入りに追加/削除する
  * - checkFavoriteStatus: お気に入りの状態を確認する
+ * - checkMultipleFavoriteStatus: 複数のクリップのお気に入り状態を確認する
  * - getUserFavorites: ユーザーのお気に入りクリップを取得する
  */
 
@@ -11,6 +12,7 @@ import { revalidatePath } from "next/cache";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   checkFavoriteStatus,
+  checkMultipleFavoriteStatus,
   getUserFavorites,
   toggleFavorite,
 } from "./manage-favorites";
@@ -308,6 +310,135 @@ describe("お気に入り管理機能", () => {
 
       // エラーを隠蔽して安全な結果を返すことを期待
       expect(result.isFavorite).toBe(false);
+    });
+  });
+
+  /**
+   * checkMultipleFavoriteStatusのテスト
+   */
+  describe("checkMultipleFavoriteStatus", () => {
+    it("正常系：複数クリップのお気に入り状態を一度に確認できること", async () => {
+      // テスト用のお気に入り状態を設定
+      // clip123をお気に入りに設定
+      isFavorited = true;
+
+      // 特定のクリップのお気に入り状態をモック
+      const mockFavoriteStates = {
+        clip123: true, // お気に入り済み
+        clip456: false, // お気に入りではない
+        clip789: false, // お気に入りではない
+      };
+
+      // Firestoreのモックを再設定
+      mockFirestoreInstance.collection = vi.fn((collectionName) => {
+        if (collectionName === "userFavorites") {
+          return {
+            doc: vi.fn(() => ({
+              collection: vi.fn(() => ({
+                doc: vi.fn((clipId) => ({
+                  get: vi.fn().mockImplementation(() => {
+                    // モックされたお気に入り状態を返す
+                    return Promise.resolve({
+                      exists: !!mockFavoriteStates[clipId],
+                    });
+                  }),
+                })),
+              })),
+            })),
+          };
+        }
+        return { doc: vi.fn() };
+      });
+
+      // 関数を実行（複数のクリップID）
+      const clipIds = ["clip123", "clip456", "clip789"];
+      const result = await checkMultipleFavoriteStatus(clipIds);
+
+      // 期待される結果を検証
+      expect(result).toEqual({
+        clip123: true,
+        clip456: false,
+        clip789: false,
+      });
+    });
+
+    it("正常系：未認証の場合は空オブジェクトを返すこと", async () => {
+      // 未ログイン状態に設定
+      (getCurrentUser as any).mockResolvedValue(null);
+
+      // 関数を実行
+      const clipIds = ["clip123", "clip456"];
+      const result = await checkMultipleFavoriteStatus(clipIds);
+
+      // 期待される結果を検証
+      expect(result).toEqual({});
+    });
+
+    it("正常系：クリップIDが空の場合は空オブジェクトを返すこと", async () => {
+      // 関数を実行（空の配列）
+      const result = await checkMultipleFavoriteStatus([]);
+
+      // 期待される結果を検証
+      expect(result).toEqual({});
+    });
+
+    it("正常系：エラーが発生した場合も空オブジェクトを返すこと", async () => {
+      // モックを上書きしてエラーをシミュレート
+      mockFirestoreInstance.collection.mockImplementationOnce(() => {
+        throw new Error("データベース接続エラー");
+      });
+
+      // 関数を実行
+      const clipIds = ["clip123", "clip456"];
+      const result = await checkMultipleFavoriteStatus(clipIds);
+
+      // エラーを隠蔽して安全な結果を返すことを期待
+      expect(result).toEqual({});
+    });
+
+    it("正常系：一部のクリップが存在しない場合も適切に状態を返すこと", async () => {
+      // 特定のクリップのお気に入り状態をモック
+      const mockFavoriteStates = {
+        clip123: true, // 存在し、お気に入り済み
+        nonexistent: null, // 存在しないクリップ
+      };
+
+      // Firestoreのモックを再設定
+      mockFirestoreInstance.collection = vi.fn((collectionName) => {
+        if (collectionName === "userFavorites") {
+          return {
+            doc: vi.fn(() => ({
+              collection: vi.fn(() => ({
+                doc: vi.fn((clipId) => ({
+                  get: vi.fn().mockImplementation(() => {
+                    if (clipId === "nonexistent") {
+                      // 存在しないクリップの場合
+                      return Promise.resolve({
+                        exists: false,
+                      });
+                    }
+                    // モックされたお気に入り状態を返す
+                    return Promise.resolve({
+                      exists: !!mockFavoriteStates[clipId],
+                    });
+                  }),
+                })),
+              })),
+            })),
+          };
+        }
+        return { doc: vi.fn() };
+      });
+
+      // 関数を実行
+      const clipIds = ["clip123", "nonexistent"];
+      const result = await checkMultipleFavoriteStatus(clipIds);
+
+      // 期待される結果を検証
+      expect(result).toEqual({
+        clip123: true,
+        nonexistent: false,
+      });
     });
   });
 

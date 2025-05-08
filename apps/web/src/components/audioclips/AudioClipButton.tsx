@@ -5,7 +5,7 @@ import { toggleFavorite } from "@/actions/audioclips/manage-favorites";
 import { useState } from "react";
 import type { AudioClip } from "../../lib/audioclips/types";
 import { useAuth } from "../../lib/firebase/AuthProvider";
-import TagCollection from "./TagDisplay";
+import TagCollection from "./TagCollection";
 
 interface AudioClipButtonProps {
   clip: AudioClip;

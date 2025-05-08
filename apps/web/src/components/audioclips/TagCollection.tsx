@@ -4,7 +4,7 @@ import type { TagInfo } from "@/lib/audioclips/types";
 import { Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-interface TagDisplayProps {
+interface TagCollectionProps {
   tags?: string[] | TagInfo[];
   className?: string;
   maxDisplay?: number;
@@ -14,7 +14,7 @@ interface TagDisplayProps {
 }
 
 /**
- * タグ表示コンポーネント
+ * タグコレクション表示コンポーネント
  *
  * クリップに設定されたタグをバッジとして表示します。
  * クリック可能な場合、タグをクリックすると検索ページに遷移します。
@@ -26,7 +26,7 @@ export default function TagCollection({
   size = "md",
   onClick,
   clickable = true,
-}: TagDisplayProps) {
+}: TagCollectionProps) {
   const router = useRouter();
 
   // タグが配列でない場合や空の場合は表示しない

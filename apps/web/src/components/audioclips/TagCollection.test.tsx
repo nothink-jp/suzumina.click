@@ -1,7 +1,7 @@
 import type { TagInfo } from "@/lib/audioclips/types";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import TagCollection from "./TagDisplay";
+import TagCollection from "./TagCollection";
 
 // Next.js のルーターをモック
 const mockPush = vi.fn();
@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-describe("TagDisplayコンポーネント", () => {
+describe("TagCollectionコンポーネント", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

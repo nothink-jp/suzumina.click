@@ -7,10 +7,10 @@ vi.mock("../../lib/firebase/AuthProvider", () => ({
   useAuth: vi.fn(),
 }));
 
-// TagDisplayコンポーネントをモック
-vi.mock("./TagDisplay", () => ({
+// TagCollectionコンポーネントをモック
+vi.mock("./TagCollection", () => ({
   default: vi.fn(({ tags }) => (
-    <div data-testid="tag-display">
+    <div data-testid="tag-collection">
       {tags.slice(0, 3).map((tag: string) => (
         <span key={tag} className="tag">
           {tag}
