@@ -94,3 +94,24 @@ resource "google_firestore_index" "audioclips_videoid_createdat_asc" {
     order      = "ASCENDING"
   }
 }
+
+# audioClips コレクションのインデックス - videoId（昇順）、createdAt（降順）、__name__（降順）
+resource "google_firestore_index" "audioclips_videoid_createdat_name_desc" {
+  project    = var.gcp_project_id
+  collection = "audioClips"
+  
+  fields {
+    field_path = "videoId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "createdAt"
+    order      = "DESCENDING"
+  }
+
+  fields {
+    field_path = "__name__"
+    order      = "ASCENDING"
+  }
+}
