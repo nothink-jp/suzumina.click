@@ -19,7 +19,7 @@ interface TagDisplayProps {
  * クリップに設定されたタグをバッジとして表示します。
  * クリック可能な場合、タグをクリックすると検索ページに遷移します。
  */
-export default function TagDisplay({
+export default function TagCollection({
   tags = [],
   className = "",
   maxDisplay = 5,

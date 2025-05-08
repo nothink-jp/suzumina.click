@@ -155,7 +155,6 @@ export default function AudioClipCreator({
           formErrors: [],
         });
       } catch (error) {
-        console.error("音声クリップの作成に失敗しました:", error);
         setError("音声クリップの作成に失敗しました");
         // エラーメッセージを返却
         return submission.reply({
@@ -178,33 +177,10 @@ export default function AudioClipCreator({
     defaultValue: T,
   ): T => {
     try {
-      // API呼び出し前のデバッグログ
-      console.log(`[デバッグ] ${methodName}を実行します`);
-
       // API呼び出し
       const result = method();
-
-      // 結果のデバッグログ
-      console.log(`[デバッグ] ${methodName}の結果:`, result);
       return result;
     } catch (error) {
-      // エラー詳細を記録
-      console.error(
-        `[エラー] ${methodName}の実行中にエラーが発生しました:`,
-        error,
-      );
-      console.error("[エラー] エラースタック:", (error as Error).stack);
-
-      // ブラウザ環境とフラグを確認
-      const isCloudRun =
-        typeof window !== "undefined" &&
-        window.location.hostname.includes("run.app");
-      console.error("[エラー] 環境情報:", {
-        isCloudRun,
-        userAgent: navigator.userAgent,
-        href: window.location.href,
-      });
-
       // デフォルト値を返す
       return defaultValue;
     }
@@ -213,23 +189,11 @@ export default function AudioClipCreator({
   // 現在の再生位置を取得（安全な実装）
   const getCurrentTime = (): number => {
     if (!youtubePlayerRef?.current) {
-      console.warn("[警告] YouTubeプレーヤーの参照が存在しません");
       return 0;
     }
 
-    // プレーヤーの存在確認
-    console.log("[デバッグ] プレーヤー状態:", {
-      isDefined: !!youtubePlayerRef.current,
-      hasGetCurrentTime:
-        typeof youtubePlayerRef.current.getCurrentTime === "function",
-      playerType: typeof youtubePlayerRef.current,
-    });
-
     // APIが利用可能か確認
     if (typeof youtubePlayerRef.current.getCurrentTime !== "function") {
-      console.error(
-        "[エラー] YouTubeプレーヤーAPIが正しく初期化されていません",
-      );
       return 0;
     }
 
@@ -246,49 +210,25 @@ export default function AudioClipCreator({
     try {
       // 現在時間を取得
       const currentTime = getCurrentTime();
-      console.log(
-        "[デバッグ] handleSetStartTime: 現在時間を取得しました",
-        currentTime,
-      );
 
       // hidden inputのvalueを明示的に更新
       const input = document.getElementById(
         fields.startTime.id,
       ) as HTMLInputElement;
 
-      console.log("[デバッグ] handleSetStartTime: input要素", {
-        exists: !!input,
-        id: fields.startTime.id,
-        element: input,
-      });
-
       if (input) {
-        // 値を設定し、コンソールに記録
+        // 値を設定
         input.value = currentTime.toString();
         setStartTime(currentTime);
         // 表示用の状態も更新
         setStartTimeDisplay(formatTime(currentTime));
 
-        console.log("[デバッグ] handleSetStartTime: input値を更新しました", {
-          value: input.value,
-          element: input,
-        });
-
         // Conformに変更を通知
         const event = new Event("input", { bubbles: true });
         input.dispatchEvent(event);
-        console.log(
-          "[デバッグ] handleSetStartTime: input イベントをディスパッチしました",
-        );
 
         // DOM上でも値が反映されているか確認
-        setTimeout(() => {
-          console.log(
-            "[デバッグ] handleSetStartTime: 更新後の値",
-            (document.getElementById(fields.startTime.id) as HTMLInputElement)
-              ?.value,
-          );
-        }, 0);
+        setTimeout(() => {}, 0);
       } else {
         console.error(
           "[エラー] handleSetStartTime: input要素が見つかりません",
@@ -315,10 +255,6 @@ export default function AudioClipCreator({
           // 表示用の状態も更新
           setEndTimeDisplay(formatTime(newEndTime));
 
-          console.log(
-            "[デバッグ] handleSetStartTime: 終了時間も更新しました",
-            endTimeInput.value,
-          );
           // Conformに変更を通知
           const event = new Event("input", { bubbles: true });
           endTimeInput.dispatchEvent(event);
@@ -328,10 +264,7 @@ export default function AudioClipCreator({
       // 表示時間を更新
       updateDisplayTimes();
     } catch (error) {
-      console.error(
-        "[エラー] handleSetStartTime: 処理中にエラーが発生しました",
-        error,
-      );
+      // エラー処理はログ出力せずに静かに処理
     }
   };
 
@@ -339,10 +272,6 @@ export default function AudioClipCreator({
   const handleSetEndTime = () => {
     try {
       const currentTime = getCurrentTime();
-      console.log(
-        "[デバッグ] handleSetEndTime: 現在時間を取得しました",
-        currentTime,
-      );
 
       const startTimeInput = document.getElementById(
         fields.startTime.id,
@@ -350,12 +279,6 @@ export default function AudioClipCreator({
       const startTimeValue = startTimeInput
         ? Number.parseFloat(startTimeInput.value)
         : null;
-
-      console.log("[デバッグ] handleSetEndTime: 開始時間の状態", {
-        input: !!startTimeInput,
-        value: startTimeInput?.value,
-        parsed: startTimeValue,
-      });
 
       // 開始時間が設定されていない場合は、現在時刻の5秒前を開始時間に
       if (
@@ -370,10 +293,6 @@ export default function AudioClipCreator({
           // 表示用の状態も更新
           setStartTimeDisplay(formatTime(newStartTime));
 
-          console.log(
-            "[デバッグ] handleSetEndTime: 開始時間を設定しました",
-            newStartTime,
-          );
           // Conformに変更を通知
           const event = new Event("input", { bubbles: true });
           startTimeInput.dispatchEvent(event);
@@ -383,13 +302,6 @@ export default function AudioClipCreator({
       // 現在時間が開始時間以上であるか確認
       if (startTimeValue !== null && currentTime < startTimeValue) {
         setError("終了時間は開始時間より後に設定してください");
-        console.warn(
-          "[警告] handleSetEndTime: 終了時間が開始時間以前になっています",
-          {
-            current: currentTime,
-            start: startTimeValue,
-          },
-        );
         return; // 早期リターンで処理を中止
       }
 
@@ -398,11 +310,6 @@ export default function AudioClipCreator({
       const endTimeInput = document.getElementById(
         fields.endTime.id,
       ) as HTMLInputElement;
-
-      console.log("[デバッグ] handleSetEndTime: 終了時間の要素", {
-        exists: !!endTimeInput,
-        id: fields.endTime.id,
-      });
 
       if (endTimeInput) {
         // 開始時間と同じ場合は+1秒する
@@ -414,32 +321,18 @@ export default function AudioClipCreator({
         // 表示用の状態も更新
         setEndTimeDisplay(formatTime(endValue));
 
-        console.log("[デバッグ] handleSetEndTime: 終了時間を設定しました", {
-          value: endTimeInput.value,
-          element: endTimeInput,
-        });
-
         // Conformに変更を通知
         const event = new Event("input", { bubbles: true });
         endTimeInput.dispatchEvent(event);
 
         // DOM上でも値が反映されているか確認
-        setTimeout(() => {
-          console.log(
-            "[デバッグ] handleSetEndTime: 更新後の値",
-            (document.getElementById(fields.endTime.id) as HTMLInputElement)
-              ?.value,
-          );
-        }, 0);
+        setTimeout(() => {}, 0);
       }
 
       // 表示時間を更新
       updateDisplayTimes();
     } catch (error) {
-      console.error(
-        "[エラー] handleSetEndTime: 処理中にエラーが発生しました",
-        error,
-      );
+      // エラー処理はログ出力せずに静かに処理
     }
   };
 
@@ -488,11 +381,6 @@ export default function AudioClipCreator({
               span.textContent = formattedTime;
             }
           }
-          console.log(
-            "[デバッグ] handleStartTimeChange: 更新後の値",
-            value,
-            formattedTime,
-          );
         }
       }
     };
@@ -518,11 +406,6 @@ export default function AudioClipCreator({
               span.textContent = formattedTime;
             }
           }
-          console.log(
-            "[デバッグ] handleEndTimeChange: 更新後の値",
-            value,
-            formattedTime,
-          );
         }
       }
     };
@@ -625,19 +508,12 @@ export default function AudioClipCreator({
 
       // 開始時間と終了時間の検証
       if (!youtubePlayerRef?.current) {
-        console.warn("[警告] YouTubeプレーヤーの参照が存在しません");
         return;
       }
 
       if (startTimeValue === null) {
-        console.warn("[警告] 開始時間が設定されていません");
         return;
       }
-
-      console.log("[デバッグ] handlePreview: 再生を開始します", {
-        start: startTimeValue,
-        end: endTimeValue,
-      });
 
       // seekToメソッドに正確な値を渡す
       youtubePlayerRef.current.seekTo(startTimeValue, true);
@@ -650,16 +526,12 @@ export default function AudioClipCreator({
         endTimeValue > startTimeValue
       ) {
         const duration = endTimeValue - startTimeValue;
-        console.log(`[デバッグ] handlePreview: ${duration}秒後に停止します`);
         setTimeout(() => {
           youtubePlayerRef.current?.pauseVideo();
         }, duration * 1000);
       }
     } catch (error) {
-      console.error(
-        "[エラー] handlePreview: プレビュー再生に失敗しました",
-        error,
-      );
+      // エラー時は静かに処理
     }
   };
 
@@ -727,17 +599,8 @@ export default function AudioClipCreator({
           }
         }
       }
-
-      console.log("[デバッグ] 表示時間を更新しました:", {
-        start: startTimeInput?.value,
-        end: endTimeInput?.value,
-        startDisplay: startTimeInput
-          ? formatTime(startTimeInput.value)
-          : "--:--",
-        endDisplay: endTimeInput ? formatTime(endTimeInput.value) : "--:--",
-      });
     } catch (error) {
-      console.error("[エラー] 表示時間の更新に失敗しました:", error);
+      // エラー時は静かに処理
     }
   };
 
@@ -781,10 +644,6 @@ export default function AudioClipCreator({
         form.onSubmit(event as React.FormEvent<HTMLFormElement>);
         return true;
       } catch (error) {
-        console.error(
-          "[エラー] フォーム送信前の重複チェックに失敗しました:",
-          error,
-        );
         setIsSubmitting(false);
         return true; // エラー時は送信を許可（サーバーサイドでも検証するため）
       }
@@ -818,15 +677,8 @@ export default function AudioClipCreator({
           setError(null);
         }
 
-        // ログを出力
-        console.log("[デバッグ] 重複チェック結果:", {
-          isOverlapping: result.isOverlapping,
-          overlappingCount: result.overlappingClips.length,
-        });
-
         return result;
       } catch (error) {
-        console.error("[エラー] 重複チェック時にエラーが発生しました:", error);
         return null;
       } finally {
         setIsCheckingOverlap(false);
@@ -919,11 +771,6 @@ export default function AudioClipCreator({
                     )}
                     currentTime={getCurrentTime()}
                     onRangeSelect={(start, end) => {
-                      console.log("[デバッグ] 範囲が選択されました:", {
-                        start,
-                        end,
-                      });
-
                       // 開始時間と終了時間を設定
                       const startTimeInput = document.getElementById(
                         fields.startTime.id,

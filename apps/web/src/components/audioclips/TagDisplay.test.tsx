@@ -1,7 +1,7 @@
 import type { TagInfo } from "@/lib/audioclips/types";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import TagDisplay from "./TagDisplay";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import TagCollection from "./TagDisplay";
 
 // Next.js のルーターをモック
 const mockPush = vi.fn();
@@ -18,7 +18,7 @@ describe("TagDisplayコンポーネント", () => {
 
   it("タグが配列として渡された場合、正しく表示されること", () => {
     const tags = ["タグ1", "タグ2", "タグ3"];
-    render(<TagDisplay tags={tags} />);
+    render(<TagCollection tags={tags} />);
 
     // 各タグが表示されていることを確認
     expect(screen.getByText("タグ1")).toBeInTheDocument();
@@ -31,7 +31,7 @@ describe("TagDisplayコンポーネント", () => {
       { id: "tag1", text: "タグ1" },
       { id: "tag2", text: "タグ2" },
     ];
-    render(<TagDisplay tags={tagInfos} />);
+    render(<TagCollection tags={tagInfos} />);
 
     // 各タグのテキストが表示されていることを確認
     expect(screen.getByText("タグ1")).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe("TagDisplayコンポーネント", () => {
   it("タグ数が最大表示数を超える場合、残りの数が表示されること", () => {
     // 6個のタグ（デフォルトの最大表示数は5）
     const tags = ["タグ1", "タグ2", "タグ3", "タグ4", "タグ5", "タグ6"];
-    render(<TagDisplay tags={tags} />);
+    render(<TagCollection tags={tags} />);
 
     // 最初の5つのタグが表示されていることを確認
     expect(screen.getByText("タグ1")).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe("TagDisplayコンポーネント", () => {
 
   it("maxDisplayプロパティで表示数を制限できること", () => {
     const tags = ["タグ1", "タグ2", "タグ3", "タグ4"];
-    render(<TagDisplay tags={tags} maxDisplay={2} />);
+    render(<TagCollection tags={tags} maxDisplay={2} />);
 
     // 最初の2つのタグのみが表示されていることを確認
     expect(screen.getByText("タグ1")).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe("TagDisplayコンポーネント", () => {
 
   it("タグがクリックされると、検索ページに遷移すること", () => {
     const tags = ["タグ1", "タグ2"];
-    render(<TagDisplay tags={tags} />);
+    render(<TagCollection tags={tags} />);
 
     // タグをクリック
     fireEvent.click(screen.getByText("タグ1"));
@@ -87,7 +87,7 @@ describe("TagDisplayコンポーネント", () => {
     const handleClick = vi.fn();
 
     const tags = ["タグ1", "タグ2"];
-    render(<TagDisplay tags={tags} onClick={handleClick} />);
+    render(<TagCollection tags={tags} onClick={handleClick} />);
 
     // タグをクリック
     fireEvent.click(screen.getByText("タグ1"));
@@ -101,7 +101,9 @@ describe("TagDisplayコンポーネント", () => {
     const handleClick = vi.fn();
 
     const tags = ["タグ1", "タグ2"];
-    render(<TagDisplay tags={tags} onClick={handleClick} clickable={false} />);
+    render(
+      <TagCollection tags={tags} onClick={handleClick} clickable={false} />,
+    );
 
     // タグをクリック
     fireEvent.click(screen.getByText("タグ1"));
@@ -115,21 +117,21 @@ describe("TagDisplayコンポーネント", () => {
     const tags = ["タグ1"];
 
     // サイズ: small
-    const { rerender } = render(<TagDisplay tags={tags} size="sm" />);
+    const { rerender } = render(<TagCollection tags={tags} size="sm" />);
     expect(screen.getByText("タグ1").className).toContain("badge-xs");
 
     // サイズ: large
-    rerender(<TagDisplay tags={tags} size="lg" />);
+    rerender(<TagCollection tags={tags} size="lg" />);
     expect(screen.getByText("タグ1").className).toContain("badge-md");
   });
 
   it("タグが空の場合、何も表示されないこと", () => {
-    const { container } = render(<TagDisplay tags={[]} />);
+    const { container } = render(<TagCollection tags={[]} />);
     expect(container.firstChild).toBeNull();
   });
 
   it("タグがundefinedの場合、何も表示されないこと", () => {
-    const { container } = render(<TagDisplay />);
+    const { container } = render(<TagCollection />);
     expect(container.firstChild).toBeNull();
   });
 });

@@ -5,7 +5,7 @@ import { toggleFavorite } from "@/actions/audioclips/manage-favorites";
 import { useState } from "react";
 import type { AudioClip } from "../../lib/audioclips/types";
 import { useAuth } from "../../lib/firebase/AuthProvider";
-import TagDisplay from "./TagDisplay";
+import TagCollection from "./TagDisplay";
 
 interface AudioClipButtonProps {
   clip: AudioClip;
@@ -205,7 +205,7 @@ export default function AudioClipButton({
       {/* タグ表示部分（showTagsがtrueで、かつタグが存在する場合に表示） */}
       {showTags && clip.tags && clip.tags.length > 0 && (
         <div className="px-3 pb-3 pt-0">
-          <TagDisplay
+          <TagCollection
             tags={clip.tags}
             maxDisplay={maxTags}
             size="sm"

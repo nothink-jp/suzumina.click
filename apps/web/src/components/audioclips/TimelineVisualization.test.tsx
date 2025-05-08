@@ -198,24 +198,30 @@ describe("TimelineVisualizationコンポーネント", () => {
   it("APIエラーが適切に処理されること", async () => {
     // コンソールエラーを監視
     const originalConsoleError = console.error;
-    console.error = vi.fn();
+    const mockConsoleError = vi.fn();
+    console.error = mockConsoleError;
 
-    // APIがエラーを投げるようにする
-    vi.mocked(validation.getVideoTimeRanges).mockRejectedValueOnce(
-      new Error("テストエラー"),
-    );
+    try {
+      // APIがエラーを投げるようにする
+      vi.mocked(validation.getVideoTimeRanges).mockRejectedValueOnce(
+        new Error("テストエラー"),
+      );
 
-    await act(async () => {
       render(<TimelineVisualization {...defaultProps} />);
 
-      // エラーの処理を待つ
-      await Promise.resolve();
-    });
+      // エラー処理を待つため、コンソールエラーが呼び出されるまで待機
+      await waitFor(() => {
+        expect(mockConsoleError).toHaveBeenCalled();
+      });
 
-    // エラーがコンソールに出力されることを確認
-    expect(console.error).toHaveBeenCalled();
-
-    // クリーンアップ
-    console.error = originalConsoleError;
+      // エラーメッセージに適切な内容が含まれていることを確認
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        expect.stringContaining("時間範囲の取得に失敗しました"),
+        expect.any(Error),
+      );
+    } finally {
+      // クリーンアップ
+      console.error = originalConsoleError;
+    }
   });
 });
