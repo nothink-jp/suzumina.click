@@ -7,7 +7,7 @@ import {
   DisclosureButton,
   DisclosurePanel,
 } from "@headlessui/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import type { YouTubePlayer } from "../../components/videos/YouTubeEmbed";
 import type {
@@ -64,6 +64,114 @@ export default function AudioClipCreator({
   const [overlapCheckResult, setOverlapCheckResult] =
     useState<OverlapCheckResult | null>(null);
   const [isCheckingOverlap, setIsCheckingOverlap] = useState(false);
+
+  // 動画の総再生時間をキャッシュするための状態
+  const [videoDuration, setVideoDuration] = useState(0);
+  // プレーヤーの現在位置を定期的に更新するための状態
+  const [currentPlayerTime, setCurrentPlayerTime] = useState(0);
+  // YouTube API呼び出しの間隔を管理するためのRef
+  const lastApiCallTimeRef = useRef(Date.now());
+  // APIコールの最小間隔 (ms)
+  const minApiCallInterval = 250;
+
+  // デバウンスとインターバル用のRef
+  const checkOverlapDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 時間を「分:秒」形式でフォーマット - メモ化して再計算を防止
+  const formatTime = useCallback((seconds: string | number | null): string => {
+    if (seconds === null || seconds === "") return "--:--";
+    const numSeconds =
+      typeof seconds === "string" ? Number.parseFloat(seconds) : seconds;
+    if (Number.isNaN(numSeconds)) return "--:--";
+
+    // 負の値は0として扱う
+    const nonNegativeSeconds = Math.max(0, numSeconds);
+
+    // 「分:秒」形式で表示（時間を分に変換）
+    const totalMinutes = Math.floor(nonNegativeSeconds / 60);
+    const secs = Math.floor(nonNegativeSeconds % 60);
+    return `${totalMinutes}:${secs.toString().padStart(2, "0")}`;
+  }, []);
+
+  // 安全にYouTube APIメソッドを呼び出すためのラッパー関数 - メモ化
+  const safeCallYouTubeAPI = useCallback(
+    <T,>(methodName: string, method: () => T, defaultValue: T): T => {
+      try {
+        const result = method();
+        return result;
+      } catch (error) {
+        // デバッグ環境でのみエラーをログ出力
+        if (process.env.NODE_ENV === "development") {
+          console.debug(`[YouTube API] ${methodName} 呼び出しに失敗: `, error);
+        }
+        return defaultValue;
+      }
+    },
+    [],
+  );
+
+  // YouTubeプレーヤーの状態を定期的に取得（負荷を抑えるために低頻度で実行）
+  useEffect(() => {
+    if (!youtubePlayerRef?.current) return;
+
+    // 動画の総再生時間を取得（一度だけ）
+    if (videoDuration === 0) {
+      setVideoDuration(
+        safeCallYouTubeAPI(
+          "getDuration",
+          () => youtubePlayerRef.current?.getDuration() || 0,
+          0,
+        ),
+      );
+    }
+
+    // 現在の再生位置を低頻度で更新
+    const intervalId = setInterval(() => {
+      if (Date.now() - lastApiCallTimeRef.current >= minApiCallInterval) {
+        const time = safeCallYouTubeAPI(
+          "getCurrentTime",
+          () => youtubePlayerRef.current?.getCurrentTime() || 0,
+          currentPlayerTime,
+        );
+        // 値が変わった場合のみ状態を更新（不要なレンダリングを防止）
+        if (Math.abs(time - currentPlayerTime) > 0.5) {
+          // 0.5秒以上変化した場合のみ更新
+          setCurrentPlayerTime(time);
+          lastApiCallTimeRef.current = Date.now();
+        }
+      }
+    }, 500);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [youtubePlayerRef, videoDuration, currentPlayerTime, safeCallYouTubeAPI]);
+
+  // 現在の再生位置を取得（キャッシュした値を優先的に返す）
+  const getCurrentTime = useCallback((): number => {
+    // APIが利用できない場合やスロットリング間隔内の場合はキャッシュした値を返す
+    if (
+      !youtubePlayerRef?.current ||
+      Date.now() - lastApiCallTimeRef.current < minApiCallInterval
+    ) {
+      return currentPlayerTime;
+    }
+
+    // APIが利用可能な場合は新しい値を取得
+    const time = safeCallYouTubeAPI(
+      "getCurrentTime",
+      () => youtubePlayerRef.current.getCurrentTime(),
+      currentPlayerTime,
+    );
+
+    // 値が大きく変わった場合のみキャッシュを更新
+    if (Math.abs(time - currentPlayerTime) > 0.5) {
+      setCurrentPlayerTime(time);
+      lastApiCallTimeRef.current = Date.now();
+    }
+
+    return time;
+  }, [currentPlayerTime, safeCallYouTubeAPI, youtubePlayerRef]);
 
   // バリデーションスキーマの定義
   const clipSchema = z
@@ -169,41 +277,6 @@ export default function AudioClipCreator({
     // 処理中の状態を追跡
     shouldRevalidate: "onInput",
   });
-
-  // 安全にYouTube APIメソッドを呼び出すためのラッパー関数
-  const safeCallYouTubeAPI = <T,>(
-    methodName: string,
-    method: () => T,
-    defaultValue: T,
-  ): T => {
-    try {
-      // API呼び出し
-      const result = method();
-      return result;
-    } catch (error) {
-      // デフォルト値を返す
-      return defaultValue;
-    }
-  };
-
-  // 現在の再生位置を取得（安全な実装）
-  const getCurrentTime = (): number => {
-    if (!youtubePlayerRef?.current) {
-      return 0;
-    }
-
-    // APIが利用可能か確認
-    if (typeof youtubePlayerRef.current.getCurrentTime !== "function") {
-      return 0;
-    }
-
-    // 安全なAPI呼び出し
-    return safeCallYouTubeAPI(
-      "getCurrentTime",
-      () => youtubePlayerRef.current.getCurrentTime(),
-      0,
-    );
-  };
 
   // 開始時間を設定
   const handleSetStartTime = () => {
@@ -359,7 +432,7 @@ export default function AudioClipCreator({
       fields.endTime.id,
     ) as HTMLInputElement;
 
-    // 入力イベントのリスナー
+    // 入力イベントのリスナー - Reactステートを優先的に更新
     const handleStartTimeChange = () => {
       if (startTimeInput) {
         const value = startTimeInput.value
@@ -367,20 +440,8 @@ export default function AudioClipCreator({
           : null;
         if (value !== null && !Number.isNaN(value)) {
           setStartTime(value);
-
-          // 表示用の時間も更新
-          const formattedTime = formatTime(value);
-          setStartTimeDisplay(formattedTime);
-
-          // DOMの表示要素を直接更新（テスト環境でも確実に反映させるため）
-          for (const span of document.querySelectorAll("span.join-item")) {
-            if (
-              span.parentElement?.getAttribute("aria-labelledby") ===
-              "start-time-label"
-            ) {
-              span.textContent = formattedTime;
-            }
-          }
+          // 表示用の時間も更新（ReactステートのみでDOMを制御）
+          setStartTimeDisplay(formatTime(value));
         }
       }
     };
@@ -392,20 +453,8 @@ export default function AudioClipCreator({
           : null;
         if (value !== null && !Number.isNaN(value)) {
           setEndTime(value);
-
-          // 表示用の時間も更新
-          const formattedTime = formatTime(value);
-          setEndTimeDisplay(formattedTime);
-
-          // DOMの表示要素を直接更新（テスト環境でも確実に反映させるため）
-          for (const span of document.querySelectorAll("span.join-item")) {
-            if (
-              span.parentElement?.getAttribute("aria-labelledby") ===
-              "end-time-label"
-            ) {
-              span.textContent = formattedTime;
-            }
-          }
+          // 表示用の時間も更新（ReactステートのみでDOMを制御）
+          setEndTimeDisplay(formatTime(value));
         }
       }
     };
@@ -427,12 +476,15 @@ export default function AudioClipCreator({
         endTimeInput.removeEventListener("input", handleEndTimeChange);
       }
     };
-  }, [fields.startTime.id, fields.endTime.id]);
+  }, [fields.startTime.id, fields.endTime.id, formatTime]);
 
   // テスト環境での入力値変更検出用
   useEffect(() => {
-    // テスト中に直接値が変更された場合にも対応する
+    // テスト中のみ実行するチェック処理
     const checkInputValues = () => {
+      // 開発環境・本番環境ではスキップ
+      if (process.env.NODE_ENV !== "test") return;
+
       const startTimeInput = document.getElementById(
         fields.startTime.id,
       ) as HTMLInputElement;
@@ -440,6 +492,7 @@ export default function AudioClipCreator({
         fields.endTime.id,
       ) as HTMLInputElement;
 
+      // 以下は変更なし
       if (startTimeInput?.value) {
         const value = Number.parseFloat(startTimeInput.value);
         if (!Number.isNaN(value) && value !== startTime) {
@@ -481,24 +534,30 @@ export default function AudioClipCreator({
       }
     };
 
-    // 短い間隔で値をチェック（テスト環境用）
-    const intervalId = setInterval(checkInputValues, 50);
+    // インターバルの間隔を調整（テスト環境では50ms、それ以外は500ms）
+    const interval = process.env.NODE_ENV === "test" ? 50 : 500;
+    const intervalId = setInterval(checkInputValues, interval);
 
     return () => {
       clearInterval(intervalId);
     };
-  }, [fields.startTime.id, fields.endTime.id, startTime, endTime]);
+  }, [fields.startTime.id, fields.endTime.id, startTime, endTime, formatTime]);
 
-  // クリップをプレビュー
-  const handlePreview = () => {
+  // クリップをプレビュー - メモ化
+  const handlePreview = useCallback(() => {
     try {
+      // 必要な検証だけを行い、早期リターンでパフォーマンスを向上
+      if (!youtubePlayerRef?.current) return;
+
       const startTimeInput = document.getElementById(
         fields.startTime.id,
       ) as HTMLInputElement;
-      const startTimeValue = startTimeInput?.value
-        ? Number.parseFloat(startTimeInput.value)
-        : null;
+      if (!startTimeInput?.value) return;
 
+      const startTimeValue = Number.parseFloat(startTimeInput.value);
+      if (Number.isNaN(startTimeValue)) return;
+
+      // 終了時間の取得（オプショナル）
       const endTimeInput = document.getElementById(
         fields.endTime.id,
       ) as HTMLInputElement;
@@ -506,20 +565,11 @@ export default function AudioClipCreator({
         ? Number.parseFloat(endTimeInput.value)
         : null;
 
-      // 開始時間と終了時間の検証
-      if (!youtubePlayerRef?.current) {
-        return;
-      }
-
-      if (startTimeValue === null) {
-        return;
-      }
-
-      // seekToメソッドに正確な値を渡す
+      // プレーヤー操作の最小化
       youtubePlayerRef.current.seekTo(startTimeValue, true);
       youtubePlayerRef.current.playVideo();
 
-      // 終了時間になったら一時停止
+      // 終了時間が設定されている場合だけ一時停止を設定
       if (
         endTimeValue !== null &&
         !Number.isNaN(endTimeValue) &&
@@ -527,36 +577,25 @@ export default function AudioClipCreator({
       ) {
         const duration = endTimeValue - startTimeValue;
         setTimeout(() => {
-          youtubePlayerRef.current?.pauseVideo();
+          if (youtubePlayerRef.current) {
+            youtubePlayerRef.current.pauseVideo();
+          }
         }, duration * 1000);
       }
     } catch (error) {
-      // エラー時は静かに処理
+      // 開発環境でのみエラーをログ出力
+      if (process.env.NODE_ENV === "development") {
+        console.debug("プレビュー再生でエラーが発生しました:", error);
+      }
     }
-  };
+  }, [fields.startTime.id, fields.endTime.id, youtubePlayerRef]);
 
-  // タグ変更ハンドラー
-  const handleTagsChange = (newTags: string[]) => {
+  // タグ変更ハンドラーをメモ化
+  const handleTagsChange = useCallback((newTags: string[]) => {
     setTags(newTags);
-  };
+  }, []);
 
   // 時間を「分:秒」形式でフォーマット
-  const formatTime = (seconds: string | number | null): string => {
-    if (seconds === null || seconds === "") return "--:--";
-    const numSeconds =
-      typeof seconds === "string" ? Number.parseFloat(seconds) : seconds;
-    if (Number.isNaN(numSeconds)) return "--:--";
-
-    // 負の値は0として扱う
-    const nonNegativeSeconds = Math.max(0, numSeconds);
-
-    // テストケースに合わせて常に「分:秒」形式で表示（時間を分に変換）
-    const totalMinutes = Math.floor(nonNegativeSeconds / 60);
-    const secs = Math.floor(nonNegativeSeconds % 60);
-    return `${totalMinutes}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // DOM操作の後でReactの状態も更新（表示を強制更新するため）
   const updateDisplayTimes = () => {
     try {
       const startTimeInput = document.getElementById(
@@ -652,12 +691,17 @@ export default function AudioClipCreator({
     return true; // バリデーション成功
   };
 
-  // 重複チェックの実行
+  // 重複チェックの実行（デバウンスを導入）
   const checkOverlap = useCallback(
     async (start: number, end: number) => {
       try {
         if (!start || !end || start >= end) {
           return null; // 無効な値の場合は何もしない
+        }
+
+        // 既に処理中の場合は中断
+        if (isCheckingOverlap) {
+          return null;
         }
 
         // 重複チェック中のフラグをセット
@@ -679,18 +723,25 @@ export default function AudioClipCreator({
 
         return result;
       } catch (error) {
+        // エラーは静かに処理
         return null;
       } finally {
         setIsCheckingOverlap(false);
       }
     },
-    [videoId, error],
+    [videoId, error, isCheckingOverlap],
   );
 
-  // 開始時間または終了時間が変更された際に重複チェックを実行
+  // 開始時間または終了時間が変更された際の重複チェック実装を最適化
   useEffect(() => {
+    // すでに設定されているタイマーがあればクリア
+    if (checkOverlapDebounceTimeoutRef.current) {
+      clearTimeout(checkOverlapDebounceTimeoutRef.current);
+      checkOverlapDebounceTimeoutRef.current = null;
+    }
+
     const runOverlapCheck = async () => {
-      // 開始時間と終了時間の両方が設定されている場合のみチェック
+      // 開始時間と終了時間が両方とも有効な場合のみチェック
       if (startTime !== null && endTime !== null && startTime < endTime) {
         await checkOverlap(startTime, endTime);
       } else {
@@ -699,13 +750,121 @@ export default function AudioClipCreator({
       }
     };
 
-    // 開始時間または終了時間が変更されてから500ms後に重複チェックを実行（頻繁な呼び出しを防止）
-    const timeoutId = setTimeout(runOverlapCheck, 500);
+    // 頻繁な呼び出しを防ぐためにデバウンスを実装（1000msの遅延）
+    checkOverlapDebounceTimeoutRef.current = setTimeout(runOverlapCheck, 1000);
 
     return () => {
-      clearTimeout(timeoutId);
+      if (checkOverlapDebounceTimeoutRef.current) {
+        clearTimeout(checkOverlapDebounceTimeoutRef.current);
+        checkOverlapDebounceTimeoutRef.current = null;
+      }
     };
   }, [startTime, endTime, checkOverlap]);
+
+  // メモ化された確認ダイアログコンポーネント - 条件付きレンダリングの最適化
+  const OverlapWarning = useMemo(() => {
+    if (
+      !overlapCheckResult?.isOverlapping ||
+      !overlapCheckResult.overlappingClips.length
+    ) {
+      return null;
+    }
+
+    return (
+      <div className="alert alert-warning shadow-sm mb-4">
+        <div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <title>警告アイコン</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <div className="flex flex-col">
+            <span className="font-semibold">
+              選択した時間範囲が以下のクリップと重複しています：
+            </span>
+            <ul className="list-disc list-inside mt-1">
+              {overlapCheckResult.overlappingClips.map((clip) => (
+                <li key={clip.id}>
+                  「{clip.title}」（{formatTime(clip.startTime)} -{" "}
+                  {formatTime(clip.endTime)}）
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  }, [overlapCheckResult, formatTime]);
+
+  // メモ化された成功メッセージコンポーネント
+  const SuccessMessage = useMemo(() => {
+    if (!isSubmitted || !submitSuccess || error) {
+      return null;
+    }
+
+    return (
+      <div
+        className="alert alert-success shadow-sm mb-4"
+        data-testid="success-message"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="stroke-current shrink-0 h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 18 0z"
+          />
+        </svg>
+        <span>クリップを作成しました</span>
+      </div>
+    );
+  }, [isSubmitted, submitSuccess, error]);
+
+  // メモ化されたエラーメッセージコンポーネント
+  const ErrorMessage = useMemo(() => {
+    if (!error && (!form.errors || form.errors.length === 0)) {
+      return null;
+    }
+
+    return (
+      <div
+        className="alert alert-error shadow-sm mb-4"
+        data-testid="error-message"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="stroke-current shrink-0 h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 18 0z"
+          />
+        </svg>
+        <span>{error || form.errors?.join(", ")}</span>
+      </div>
+    );
+  }, [error, form.errors]);
 
   return (
     <div className="card bg-base-100 shadow-sm overflow-hidden w-full">
@@ -764,12 +923,15 @@ export default function AudioClipCreator({
                 <div className="mb-4">
                   <TimelineVisualization
                     videoId={videoId}
-                    videoDuration={safeCallYouTubeAPI(
-                      "getDuration",
-                      () => youtubePlayerRef.current?.getDuration() || 0,
-                      0,
-                    )}
-                    currentTime={getCurrentTime()}
+                    videoDuration={
+                      videoDuration ||
+                      safeCallYouTubeAPI(
+                        "getDuration",
+                        () => youtubePlayerRef.current?.getDuration() || 0,
+                        0,
+                      )
+                    }
+                    currentTime={currentPlayerTime}
                     onRangeSelect={(start, end) => {
                       // 開始時間と終了時間を設定
                       const startTimeInput = document.getElementById(
@@ -798,21 +960,6 @@ export default function AudioClipCreator({
 
                         const endEvent = new Event("input", { bubbles: true });
                         endTimeInput.dispatchEvent(endEvent);
-
-                        // 重複チェックを実行
-                        checkOverlap(start, end);
-                      }
-                    }}
-                    onClipClick={(clipId) => {
-                      // クリップがクリックされた時の処理
-                      // 該当クリップの開始時間にシークする
-                      if (overlapCheckResult?.overlappingClips) {
-                        const clip = overlapCheckResult.overlappingClips.find(
-                          (c) => c.id === clipId,
-                        );
-                        if (clip && youtubePlayerRef?.current) {
-                          youtubePlayerRef.current.seekTo(clip.startTime, true);
-                        }
                       }
                     }}
                     className="mb-2"
@@ -820,90 +967,14 @@ export default function AudioClipCreator({
                 </div>
               )}
 
-              {/* フォーム全体のエラーメッセージ */}
-              {(error || (form.errors && form.errors.length > 0)) && (
-                <div
-                  className="alert alert-error shadow-sm mb-4"
-                  data-testid="error-message"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="stroke-current shrink-0 h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 18 0z"
-                    />
-                  </svg>
-                  <span>{error || form.errors?.join(", ")}</span>
-                </div>
-              )}
+              {/* メモ化されたエラーメッセージ表示 */}
+              {ErrorMessage}
 
-              {/* 重複クリップの詳細情報表示 */}
-              {overlapCheckResult?.isOverlapping &&
-                overlapCheckResult.overlappingClips.length > 0 && (
-                  <div className="alert alert-warning shadow-sm mb-4">
-                    <div>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="stroke-current shrink-0 h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                      >
-                        <title>警告アイコン</title>
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                        />
-                      </svg>
-                      <div className="flex flex-col">
-                        <span className="font-semibold">
-                          選択した時間範囲が以下のクリップと重複しています：
-                        </span>
-                        <ul className="list-disc list-inside mt-1">
-                          {overlapCheckResult.overlappingClips.map((clip) => (
-                            <li key={clip.id}>
-                              「{clip.title}」（{formatTime(clip.startTime)} -{" "}
-                              {formatTime(clip.endTime)}）
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              {/* メモ化された重複警告表示 */}
+              {OverlapWarning}
 
-              {/* 送信成功メッセージ（エラーがなく、送信済みの場合） */}
-              {isSubmitted && submitSuccess && !error && (
-                <div
-                  className="alert alert-success shadow-sm mb-4"
-                  data-testid="success-message"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="stroke-current shrink-0 h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 18 0z"
-                    />
-                  </svg>
-                  <span>クリップを作成しました</span>
-                </div>
-              )}
+              {/* メモ化された成功メッセージ表示 */}
+              {SuccessMessage}
 
               <form
                 id={form.id}
@@ -1073,7 +1144,7 @@ export default function AudioClipCreator({
                   </div>
                 </div>
 
-                {/* タグ入力コンポーネント - 新しいTagInputコンポーネントを使用 */}
+                {/* タグ入力コンポーネント */}
                 <div className="form-control mb-4">
                   <label className="label" htmlFor="clip-tags">
                     <span className="label-text">タグ（オプション）</span>
