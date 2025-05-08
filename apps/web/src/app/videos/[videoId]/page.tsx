@@ -42,6 +42,15 @@ export default async function VideoPage({ params }: any) {
     limit: 10,
   });
 
+  // getAudioClipsのアダプター関数を作成
+  const getAudioClipsAdapter = async (
+    params: Parameters<typeof getAudioClips>[0],
+  ) => {
+    "use server"; // Server Actionであることを明示
+
+    return getAudioClips(params);
+  };
+
   // アダプター関数の作成
   // checkMultipleFavoriteStatusをVideoPageClientのcheckFavoriteStatusActionの型に合わせる
   const singleCheckFavoriteStatus = async (clipId: string, userId?: string) => {
@@ -78,7 +87,7 @@ export default async function VideoPage({ params }: any) {
       video={video}
       initialClipsData={initialClipsData}
       // Server Actionsをpropsとして渡す
-      getAudioClipsAction={getAudioClips}
+      getAudioClipsAction={getAudioClipsAdapter}
       checkFavoriteStatusAction={singleCheckFavoriteStatus}
       incrementPlayCountAction={incrementPlayCountAdapter}
       toggleFavoriteAction={toggleFavoriteAdapter}
