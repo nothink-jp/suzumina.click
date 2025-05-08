@@ -56,11 +56,8 @@ export default async function FavoritesPage() {
   };
 
   // toggleFavoriteの戻り値の型を調整するアダプター関数
-  const toggleFavoriteAdapter = async (
-    clipId: string,
-    userId: string,
-  ): Promise<void> => {
-    // 元の関数を呼び出して戻り値は無視
+  const toggleFavoriteAdapter = async (clipId: string): Promise<void> => {
+    // toggleFavoriteはcurrentUserを内部で取得するため、userIdは不要
     await toggleFavorite(clipId);
     // voidを返すことで型を合わせる
     return;

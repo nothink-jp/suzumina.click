@@ -30,7 +30,7 @@ interface VideoPageClientProps {
     userId?: string,
   ) => Promise<boolean>;
   incrementPlayCountAction: (clipId: string) => Promise<void>;
-  toggleFavoriteAction: (clipId: string, userId: string) => Promise<void>;
+  toggleFavoriteAction: (clipId: string) => Promise<void>;
 }
 
 /**

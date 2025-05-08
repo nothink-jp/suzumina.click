@@ -143,10 +143,8 @@ describe("AudioClipButtonコンポーネントのテスト", () => {
     await fireEvent.click(favoriteButton);
 
     // toggleFavoriteActionが正しく呼ばれたか確認
-    expect(mockToggleFavorite).toHaveBeenCalledWith(
-      mockClip.id,
-      "test-user-123",
-    );
+    // Server Actionのリファクタリングにより、userIdパラメータは不要になった
+    expect(mockToggleFavorite).toHaveBeenCalledWith(mockClip.id);
 
     // onFavoriteChangeが呼び出されたか確認
     expect(mockOnFavoriteChange).toHaveBeenCalledWith(true);

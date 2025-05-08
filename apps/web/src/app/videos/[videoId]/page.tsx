@@ -61,10 +61,8 @@ export default async function VideoPage({ params }: any) {
   };
 
   // toggleFavoriteの戻り値をvoidに変換するアダプター
-  const toggleFavoriteAdapter = async (
-    clipId: string,
-    userId: string,
-  ): Promise<void> => {
+  const toggleFavoriteAdapter = async (clipId: string): Promise<void> => {
+    // toggleFavoriteはcurrentUserを内部で取得するため、userIdは不要
     await toggleFavorite(clipId);
     return;
   };

@@ -16,7 +16,8 @@ interface AudioClipButtonProps {
   maxTags?: number;
   // Server Actions
   incrementPlayCountAction: (clipId: string) => Promise<void>;
-  toggleFavoriteAction: (clipId: string, userId: string) => Promise<void>;
+  // Server Actionはユーザー認証を内部で処理
+  toggleFavoriteAction: (clipId: string) => Promise<void>;
 }
 
 /**
@@ -70,7 +71,8 @@ export default function AudioClipButton({
       // ユーザーIDが存在する場合のみ実行
       if (user.uid) {
         // props経由で受け取ったServer Actionを使用してお気に入り状態を更新
-        await toggleFavoriteAction(clip.id, user.uid);
+        // 注: toggleFavoriteActionはclipIdのみを受け付ける設計に変更
+        await toggleFavoriteAction(clip.id);
 
         // トグル操作なので、現在の状態を反転
         const newFavoriteState = !localFavorite;

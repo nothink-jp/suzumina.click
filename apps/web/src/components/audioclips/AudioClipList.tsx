@@ -27,7 +27,8 @@ interface AudioClipListProps {
     userId?: string,
   ) => Promise<boolean>;
   incrementPlayCountAction: (clipId: string) => Promise<void>;
-  toggleFavoriteAction: (clipId: string, userId: string) => Promise<void>;
+  // Server Actionは内部でユーザー認証を処理
+  toggleFavoriteAction: (clipId: string) => Promise<void>;
 }
 
 /**
