@@ -6,10 +6,10 @@ import {
   checkMultipleFavoriteStatus,
   toggleFavorite,
 } from "@/actions/audioclips/manage-favorites";
+import VideoPageClient from "@/components/videos/VideoPageClient";
 import { getVideoByIdServer } from "@/lib/videos/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import VideoPageClient from "./VideoPageClient";
 
 /**
  * 動的レンダリングを有効化
@@ -73,7 +73,7 @@ export default async function VideoPage({ params }: any) {
     return;
   };
 
-  // toggleFavoriteの戻り値をvoidに変換するアダプター
+  // toggleFavoriteアダプター - 戻り値をvoidに変更
   const toggleFavoriteAdapter = async (clipId: string): Promise<void> => {
     "use server"; // Server Actionであることを明示
 

@@ -1,4 +1,6 @@
+import type { UserProfile } from "@/lib/users/types";
 import { render, screen } from "@testing-library/react";
+import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // モジュールのモックを先に設定
@@ -10,8 +12,8 @@ vi.mock("@/components/ui/AuthButton", () => ({
   default: () => <button type="button">ログイン</button>,
 }));
 
-vi.mock("./_components/ProfileEditForm", () => ({
-  default: ({ profile }) => (
+vi.mock("@/components/profile/ProfileEditForm", () => ({
+  default: ({ profile }: { profile: UserProfile }) => (
     <div>プロフィール編集フォーム（{profile.preferredName}）</div>
   ),
 }));
@@ -21,9 +23,29 @@ vi.mock("react", async () => {
   const actual = await vi.importActual("react");
   return {
     ...actual,
-    Suspense: ({ children }) => children,
+    Suspense: ({ children }: { children: React.ReactNode }) => children,
   };
 });
+
+// next/navigationのモックを追加
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    push: vi.fn(),
+    replace: vi.fn(),
+  }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "",
+}));
+
+// next/navigationのモックを追加
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}));
 
 import { getProfile } from "@/actions/profile/getProfile";
 import ProfilePage from "./page";

@@ -1,9 +1,9 @@
 "use client";
 
+import VideoList from "@/components/videos/VideoList";
 import type { VideoType } from "@/lib/videos/types";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import VideoList from "../_components/VideoList";
 
 /**
  * フィルタリングを処理するコンポーネント

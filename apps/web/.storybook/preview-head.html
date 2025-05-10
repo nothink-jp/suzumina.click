@@ -1,22 +1,14 @@
+// filepath: /Users/nothink/ghq/github.com/nothink-jp/suzumina.click/apps/web/.storybook/preview-head.html
+<!-- Storybookのプレビューヘッダ、環境変数やスクリプトを注入 -->
 <script>
-  // Next.jsのコンポーネントをモックするためのグローバル変数
-  window.nextImageMock = function(props) {
-    return {
-      type: 'img',
-      props: {
-        ...props,
-        style: { maxWidth: '100%', height: 'auto' },
-      }
-    };
-  };
-  
-  window.nextLinkMock = function(props) {
-    return {
-      type: 'a',
-      props: {
-        ...props,
-        href: props.href || '#',
-      }
-    };
+  // windowにグローバルなprocessオブジェクトを設定
+  // これはNext.jsのコンポーネントがprocess.stdout.isTTYにアクセスするための対策
+  window.process = window.process || {
+    env: {},
+    browser: true,
+    stdout: { isTTY: true },
+    stderr: { isTTY: true }
   };
 </script>
+
+<!-- ここに必要なスタイルやスクリプトを追加 -->

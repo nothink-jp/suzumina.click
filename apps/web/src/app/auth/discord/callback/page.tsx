@@ -1,5 +1,5 @@
+import CallbackClient from "@/components/auth/discord/CallbackClient"; // コンポーネントのインポートパスを更新
 import { Suspense } from "react";
-import CallbackClient from "./CallbackClient"; // 作成したクライアントコンポーネントをインポート
 
 // Suspense フォールバック用のシンプルなローディングコンポーネント
 function LoadingFallback() {

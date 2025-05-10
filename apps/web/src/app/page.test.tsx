@@ -5,7 +5,7 @@ import HomePage from "./page"; // page.tsx をインポート
 // 非同期サーバーコンポーネントのテストのため、必要なモックを設定
 
 // VideoList コンポーネントをモック
-vi.mock("./_components/VideoList", () => ({
+vi.mock("@/components/videos/VideoList", () => ({
   default: ({
     limit,
     showViewAllLink,

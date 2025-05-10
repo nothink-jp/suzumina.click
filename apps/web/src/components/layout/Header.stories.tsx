@@ -1,6 +1,7 @@
 import { AuthProvider } from "@/lib/firebase/AuthProvider";
 import type { Meta, StoryObj } from "@storybook/react";
 import Header from "./Header";
+// 注意: エイリアス設定によって@/lib/firebase/AuthProviderは実際にはモックを参照します
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
 const meta = {

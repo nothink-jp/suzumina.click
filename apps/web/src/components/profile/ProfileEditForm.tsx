@@ -1,13 +1,13 @@
 "use client";
 
+// インポートパスを更新
+import { updateProfile } from "@/actions/profile/profileActions";
 import type { UserProfile } from "@/lib/users/types";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { z } from "zod";
-// 同じディレクトリの関数をインポート
-import { updateProfile } from "./profileActions";
 
 interface ProfileEditFormProps {
   profile: UserProfile;

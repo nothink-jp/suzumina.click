@@ -1,7 +1,7 @@
 import { getProfile } from "@/actions/profile/getProfile";
 import Hero from "@/components/ui/Hero";
 import UserStatusCard from "@/components/ui/UserStatusCard";
-import VideoList from "./_components/VideoList";
+import VideoList from "@/components/videos/VideoList";
 
 /**
  * このページを動的レンダリングするための設定

@@ -20,7 +20,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 // VideoList コンポーネントをモック
-vi.mock("../_components/VideoList", () => ({
+vi.mock("@/components/videos/VideoList", () => ({
   default: ({ defaultVideoType }: { defaultVideoType: string }) => (
     <div data-testid="mock-video-list" data-video-type={defaultVideoType}>
       <h2 className="text-2xl font-bold mb-6">モック動画リスト</h2>

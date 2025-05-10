@@ -1,7 +1,7 @@
 import { getProfile } from "@/actions/profile/getProfile";
+import ProfileEditForm from "@/components/profile/ProfileEditForm";
 import AuthButton from "@/components/ui/AuthButton";
 import { Suspense } from "react";
-import ProfileEditForm from "./_components/ProfileEditForm";
 
 // 動的レンダリングを明示的に指定
 export const dynamic = "force-dynamic";

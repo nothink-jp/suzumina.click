@@ -1,33 +1,26 @@
-import type { Metadata } from "next";
-import AboutHero from "./_components/AboutHero";
-import AboutProject from "./_components/AboutProject";
-import AboutTeam from "./_components/AboutTeam";
-
-// メタデータの設定
-export const metadata: Metadata = {
-  title: "About | すずみなくりっく！",
-  description:
-    "すずみなくりっく！プロジェクトについて紹介します。涼花みなせさんの活動を応援する非公式ファンサイトです。",
-};
+import Hero from "@/components/ui/Hero";
 
 /**
- * Aboutページコンポーネント
- * プロジェクトの概要や目的、チーム情報などを表示します
+ * Aboutページ
+ * サイトについての情報を表示するページ
  */
 export default function AboutPage() {
   return (
-    <div
-      className="container mx-auto px-4 py-8"
-      data-testid="about-page-container"
-    >
+    <main className="container mx-auto px-4 py-8">
       {/* ヒーローセクション */}
-      <AboutHero />
+      <Hero
+        title="すずみなくりっく！"
+        subtitle="ようこそ！ここは涼花みなせさんの活動を応援する非公式ファンサイトです。"
+        alignment="center"
+      />
 
-      {/* プロジェクト概要セクション */}
-      <AboutProject />
-
-      {/* チーム紹介セクション */}
-      <AboutTeam />
-    </div>
+      {/* コンテンツセクション */}
+      <div className="mt-12 prose max-w-none">
+        <p>
+          このサイトはファンによる非公式コンテンツです。Lorem ipsum dolor sit
+          amet, consectetur adipiscing elit.
+        </p>
+      </div>
+    </main>
   );
 }

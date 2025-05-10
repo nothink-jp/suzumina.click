@@ -45,9 +45,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# editor directories and files
-.vscode/
-
 # storybook
 *storybook.log
 storybook-static

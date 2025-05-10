@@ -2,7 +2,7 @@
 
 import VideoCard from "@/components/ui/VideoCard";
 import { getRecentVideos } from "@/lib/videos/api";
-import type { Video, VideoListResult, VideoType } from "@/lib/videos/types";
+import type { Video, VideoType } from "@/lib/videos/types";
 import { useCallback, useEffect, useState } from "react";
 
 /**

@@ -1,0 +1,98 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Functions",
+      "type": "shell",
+      "command": "cd ${workspaceFolder}/packages/shared-types && pnpm build && cd ${workspaceFolder}/apps/functions && pnpm build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "Build Web App",
+      "type": "shell",
+      "command": "cd ${workspaceFolder}/packages/shared-types && pnpm build && cd ${workspaceFolder}/apps/web && pnpm build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "Cloud Run: リモート開発環境起動",
+      "type": "shell",
+      "command": "pnpm dev:cloud",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": ".",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Development server starting",
+          "endsPattern": "Development server ready"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "group": "cloud-development"
+      }
+    },
+    {
+      "label": "Terraform: インフラ変更計画の作成",
+      "type": "shell",
+      "command": "cd ${workspaceFolder}/terraform && terraform plan -out=tfplan",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Terraform: インフラ変更の適用",
+      "type": "shell",
+      "command": "cd ${workspaceFolder}/terraform && terraform apply tfplan",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Terraform: Firestoreインデックスのみ更新",
+      "type": "shell",
+      "command": "cd ${workspaceFolder}/terraform && terraform apply -target=google_firestore_index.videos_publishedAt_desc",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "group": "deploy"
+    }
+  ]
+}

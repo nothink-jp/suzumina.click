@@ -1,10 +1,11 @@
 import { render, screen } from "@testing-library/react";
+import type React from "react";
 // src/app/auth/discord/callback/page.test.tsx
 import { describe, expect, test, vi } from "vitest";
 import DiscordCallbackPage from "./page";
 
 // CallbackClientコンポーネントをモック
-vi.mock("./CallbackClient", () => ({
+vi.mock("@/components/auth/discord/CallbackClient", () => ({
   default: () => (
     <div data-testid="mock-callback-client">モックコールバッククライアント</div>
   ),
@@ -27,6 +28,19 @@ vi.mock("react", async () => {
     ),
   };
 });
+
+// next/navigationのモックを追加
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    push: vi.fn(),
+    replace: vi.fn(),
+  }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "",
+}));
 
 describe("DiscordCallbackPageコンポーネント", () => {
   test("Suspenseでラップされたコンポーネントが正しくレンダリングされること", () => {

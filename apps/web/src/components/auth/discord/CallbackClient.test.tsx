@@ -1,7 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { signInWithCustomToken } from "firebase/auth";
 import type { Auth } from "firebase/auth";
-// src/app/auth/discord/callback/CallbackClient.test.tsx
 import {
   type Mock,
   afterEach,
