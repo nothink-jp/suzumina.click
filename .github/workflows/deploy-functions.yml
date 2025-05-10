@@ -256,11 +256,7 @@ jobs:
       # workspace:* 依存関係の解決とデプロイ用のパッケージ修正
       - name: デプロイ用にpackage.jsonを準備
         run: |
-          echo "Cloud Functions デプロイ用にworkspace:*参照を実際のバージョンに変換しています..."
-          
-          # shared-typesのバージョンを取得
-          SHARED_TYPES_VERSION=$(node -p "require('./packages/shared-types/package.json').version")
-          echo "shared-types パッケージのバージョン: $SHARED_TYPES_VERSION"
+          echo "Cloud Functions デプロイ用にpackage.jsonとshared-typesを準備しています..."
           
           # テンポラリディレクトリの作成
           mkdir -p ./tmp/functions
@@ -269,13 +265,34 @@ jobs:
           cp -r ./apps/functions/lib ./tmp/functions/
           cp ./apps/functions/package.json ./tmp/functions/
           
-          # package.jsonのworkspace:*参照を実際のバージョンに置換
-          sed -i.bak "s|\"@suzumina.click/shared-types\": \"workspace:\\*\"|\"@suzumina.click/shared-types\": \"^$SHARED_TYPES_VERSION\"|g" ./tmp/functions/package.json
+          # package.jsonからパブリックレジストリにない依存関係を削除
+          node -e '
+            const fs = require("fs");
+            const path = require("path");
+            const packagePath = "./tmp/functions/package.json";
+            const pkg = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+            
+            // @suzumina.click/shared-types 依存関係を削除
+            if (pkg.dependencies && pkg.dependencies["@suzumina.click/shared-types"]) {
+              delete pkg.dependencies["@suzumina.click/shared-types"];
+              console.log("@suzumina.click/shared-types 依存関係をpackage.jsonから削除しました");
+            }
+            
+            // 更新したpackage.jsonを書き込み
+            fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2), "utf8");
+          '
           
-          # shared-typesパッケージをデプロイ用に同梱する
-          mkdir -p ./tmp/functions/node_modules/@suzumina.click/shared-types
-          cp -r ./packages/shared-types/dist ./tmp/functions/node_modules/@suzumina.click/shared-types/
-          cp ./packages/shared-types/package.json ./tmp/functions/node_modules/@suzumina.click/shared-types/
+          # shared-typesの型定義を直接functionsのlibディレクトリにコピー
+          echo "ビルド済みのshared-typesをlibに直接埋め込みます..."
+          mkdir -p ./tmp/functions/lib/@suzumina.click/shared-types
+          cp -r ./packages/shared-types/dist/* ./tmp/functions/lib/@suzumina.click/shared-types/
+          
+          # インポートパスの調整
+          find ./tmp/functions/lib -type f -name "*.js" -exec sed -i.bak "s|require(\"@suzumina.click/shared-types|require(\"./@suzumina.click/shared-types|g" {} \;
+          find ./tmp/functions/lib -type f -name "*.js.map" -exec sed -i.bak "s|@suzumina.click/shared-types|./@suzumina.click/shared-types|g" {} \;
+          
+          # バックアップファイルを削除
+          find ./tmp/functions -type f -name "*.bak" -delete
           
           echo "パッケージ調整が完了しました"
       
