@@ -253,6 +253,32 @@ jobs:
       - name: Cloud Functionsのビルド
         run: pnpm --filter @suzumina.click/functions build
       
+      # workspace:* 依存関係の解決とデプロイ用のパッケージ修正
+      - name: デプロイ用にpackage.jsonを準備
+        run: |
+          echo "Cloud Functions デプロイ用にworkspace:*参照を実際のバージョンに変換しています..."
+          
+          # shared-typesのバージョンを取得
+          SHARED_TYPES_VERSION=$(node -p "require('./packages/shared-types/package.json').version")
+          echo "shared-types パッケージのバージョン: $SHARED_TYPES_VERSION"
+          
+          # テンポラリディレクトリの作成
+          mkdir -p ./tmp/functions
+          
+          # ビルド済みのlib内容をコピー
+          cp -r ./apps/functions/lib ./tmp/functions/
+          cp ./apps/functions/package.json ./tmp/functions/
+          
+          # package.jsonのworkspace:*参照を実際のバージョンに置換
+          sed -i.bak "s|\"@suzumina.click/shared-types\": \"workspace:\\*\"|\"@suzumina.click/shared-types\": \"^$SHARED_TYPES_VERSION\"|g" ./tmp/functions/package.json
+          
+          # shared-typesパッケージをデプロイ用に同梱する
+          mkdir -p ./tmp/functions/node_modules/@suzumina.click/shared-types
+          cp -r ./packages/shared-types/dist ./tmp/functions/node_modules/@suzumina.click/shared-types/
+          cp ./packages/shared-types/package.json ./tmp/functions/node_modules/@suzumina.click/shared-types/
+          
+          echo "パッケージ調整が完了しました"
+      
       # Google Cloud認証
       - name: Google Cloud認証の設定
         id: auth
@@ -285,7 +311,7 @@ jobs:
             TRIGGER_TYPE=""
             TOPIC_NAME=""
             
-            # index.tsファイルからトリガータイプを直接確認
+            # index.tsファイルからトリガータイプを直接確認 (元のソースを使用)
             if grep -q "functions\.cloudEvent.*\"$FUNC\"" ./apps/functions/src/index.ts; then
               TRIGGER_TYPE="pubsub"
               # Terraformファイルからトピック名を取得
@@ -346,7 +372,7 @@ jobs:
               --gen2 \
               --region=${{ env.REGION }} \
               --runtime=nodejs20 \
-              --source=./apps/functions \
+              --source=./tmp/functions \
               --entry-point=$FUNC \
               $TRIGGER_PARAMS \
               --set-env-vars=FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=$FUNC; then
