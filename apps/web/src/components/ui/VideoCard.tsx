@@ -15,7 +15,7 @@ export default function VideoCard({ video }: VideoCardProps) {
   return (
     <Link href={`/videos/${video.id}`} className="group">
       <div className="card bg-base-100 shadow-md hover:shadow-lg transition-shadow duration-300">
-        <figure className="relative w-full aspect-video overflow-hidden">
+        <figure className="relative w-full h-[180px] overflow-hidden">
           <Image
             src={video.thumbnailUrl}
             alt={video.title}
