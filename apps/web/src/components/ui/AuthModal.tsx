@@ -221,6 +221,11 @@ export default function AuthModal() {
     }
   }, [isOpen]);
 
+  // 認証コードが検出されない場合は何も表示しない
+  if (!authCodeDetected) {
+    return null;
+  }
+
   return (
     <dialog ref={modalRef} className="modal">
       <div className="modal-box">
