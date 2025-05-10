@@ -82,9 +82,11 @@ jobs:
           # リポジトリ情報を明示的に設定
           slug: nothink-jp/suzumina.click
 
-      # ビルド実行
+      # shared-typesのビルド後にWebアプリをビルド
       - name: アプリケーションのビルド
-        run: pnpm --filter @suzumina.click/web build
+        run: |
+          pnpm --filter @suzumina.click/shared-types build
+          pnpm --filter @suzumina.click/web build
 
   # Cloud Functions の検証
   functions-checks:
@@ -120,9 +122,11 @@ jobs:
           # リポジトリ情報を明示的に設定
           slug: nothink-jp/suzumina.click
 
-      # ビルド実行
+      # shared-typesのビルド後に Functions をビルド
       - name: アプリケーションのビルド
-        run: pnpm --filter @suzumina.click/functions build
+        run: |
+          pnpm --filter @suzumina.click/shared-types build
+          pnpm --filter @suzumina.click/functions build
 
   # すべての検証が完了したら通知
   notify-success:

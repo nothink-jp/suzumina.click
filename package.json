@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter @suzumina.click/web dev",
-    "build": "pnpm -r build",
+    "build": "pnpm --filter @suzumina.click/shared-types build && pnpm --filter @suzumina.click/{functions,web} build",
     "lint": "pnpm -r lint",
     "format": "pnpm -r format",
     "check": "pnpm -r check",
