@@ -7,11 +7,12 @@ import {
 import { auth } from "@/lib/firebase/client";
 import { signInWithCustomToken } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function AuthModal() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const modalRef = useRef<HTMLDialogElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState<string>("認証処理中...");
@@ -209,16 +210,24 @@ export default function AuthModal() {
     }
   }
 
-  // モーダルが閉じられていたら何も表示しない
-  if (!isOpen) return null;
+  // isOpenの変化を監視してモーダルの表示/非表示を制御
+  useEffect(() => {
+    if (!modalRef.current) return;
+
+    if (isOpen) {
+      modalRef.current.showModal();
+    } else {
+      modalRef.current.close();
+    }
+  }, [isOpen]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-base-100 p-6 rounded-lg shadow-lg max-w-sm w-full">
-        <h2 className="text-xl font-bold mb-4 text-center">認証処理</h2>
+    <dialog ref={modalRef} className="modal">
+      <div className="modal-box">
+        <h3 className="font-bold text-xl text-center">認証処理</h3>
 
         {/* メッセージ表示 */}
-        <div className="text-center mb-4">
+        <div className="text-center my-4">
           {isProcessing && (
             <div className="flex justify-center mb-4">
               <span className="loading loading-spinner loading-md" />
@@ -228,18 +237,29 @@ export default function AuthModal() {
           {error && <p className="text-error mt-2">{error}</p>}
         </div>
 
-        {/* 閉じるボタン (処理中は無効) */}
-        <div className="flex justify-center">
-          <button
-            type="button"
-            className="btn btn-sm btn-ghost"
-            onClick={() => setIsOpen(false)}
-            disabled={isProcessing}
-          >
-            閉じる
-          </button>
+        {/* アクションボタン */}
+        <div className="modal-action">
+          <form method="dialog">
+            <button
+              type="button"
+              className="btn"
+              disabled={isProcessing}
+              onClick={() => setIsOpen(false)}
+            >
+              閉じる
+            </button>
+          </form>
         </div>
       </div>
-    </div>
+
+      {/* バックドロップクリックでモーダルを閉じる（処理中は無効） */}
+      {!isProcessing && (
+        <form method="dialog" className="modal-backdrop">
+          <button type="button" onClick={() => setIsOpen(false)}>
+            閉じる
+          </button>
+        </form>
+      )}
+    </dialog>
   );
 }
