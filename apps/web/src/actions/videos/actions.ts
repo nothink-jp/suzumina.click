@@ -7,29 +7,16 @@
  */
 
 import { formatErrorMessage, getFirestoreAdmin } from "@/lib/firebase/admin";
+import {
+  type FirestoreVideoData,
+  type FrontendVideoData,
+  convertToFrontendVideo,
+} from "@suzumina.click/shared-types";
 import type { DocumentData, Query } from "firebase-admin/firestore";
-
-// 動画関連の型定義
-// シリアライズ可能なプリミティブ型とプレーンオブジェクトのみで構成
-export interface VideoData {
-  id: string;
-  title: string;
-  description: string;
-  channelId: string;
-  channelTitle: string;
-  publishedAt: string; // ISO文字列形式の日付
-  thumbnails: {
-    default: { url: string; width: number; height: number };
-    medium: { url: string; width: number; height: number };
-    high: { url: string; width: number; height: number };
-  };
-  videoType?: string; // 動画タイプ (archived/upcoming)
-  videoId?: string; // テスト互換性のために追加
-}
 
 // シリアライズ可能なプレーンなレスポンス型
 interface VideoListResponse {
-  videos: VideoData[];
+  videos: FrontendVideoData[];
   hasMore: boolean;
   lastVideoId?: string; // Date型ではなく文字列型のIDを使用
 }
@@ -40,7 +27,9 @@ interface VideoListResponse {
  * @param videoId YouTubeの動画ID
  * @returns 動画データ
  */
-export async function getVideo(videoId: string): Promise<VideoData | null> {
+export async function getVideo(
+  videoId: string,
+): Promise<FirestoreVideoData | null> {
   try {
     // 動画IDのバリデーション
     if (!videoId || typeof videoId !== "string") {
@@ -60,36 +49,30 @@ export async function getVideo(videoId: string): Promise<VideoData | null> {
     const data = videoDoc.data();
     if (!data) return null;
 
-    // プレーンなオブジェクトとしてデータを返す
-    // 必要なデータのみ抽出し、クラスインスタンスを含まないようにする
-    return {
-      id: videoDoc.id,
-      title: data.title || "",
-      description: data.description || "",
-      channelId: data.channelId || "",
-      channelTitle: data.channelTitle || "",
-      publishedAt:
-        data.publishedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      thumbnails: {
-        default: {
-          url: data.thumbnails?.default?.url || "",
-          width: data.thumbnails?.default?.width || 120,
-          height: data.thumbnails?.default?.height || 90,
-        },
-        medium: {
-          url: data.thumbnails?.medium?.url || "",
-          width: data.thumbnails?.medium?.width || 320,
-          height: data.thumbnails?.medium?.height || 180,
-        },
-        high: {
-          url: data.thumbnails?.high?.url || "",
-          width: data.thumbnails?.high?.width || 480,
-          height: data.thumbnails?.high?.height || 360,
-        },
-      },
-      videoType: data.videoType,
-      videoId: data.videoId, // テスト互換性のために追加
-    };
+    // Firestoreのデータを型安全なオブジェクトに変換
+    try {
+      // FirestoreのデータをFirestoreVideoDataに変換・検証
+      return {
+        id: videoDoc.id,
+        videoId: data.videoId || videoDoc.id, // videoIdを設定
+        title: data.title || "",
+        description: data.description || "",
+        channelId: data.channelId || "",
+        channelTitle: data.channelTitle || "",
+        publishedAt:
+          data.publishedAt?.toDate?.()?.toISOString() ||
+          new Date().toISOString(),
+        thumbnailUrl: data.thumbnailUrl || "",
+        lastFetchedAt:
+          data.lastFetchedAt?.toDate?.()?.toISOString() ||
+          new Date().toISOString(),
+        videoType: data.videoType,
+        liveBroadcastContent: data.liveBroadcastContent,
+      };
+    } catch (validationError) {
+      console.error("動画データの検証に失敗しました:", validationError);
+      throw new Error("動画データの形式が無効です");
+    }
   } catch (error) {
     console.error("動画データの取得に失敗しました:", error);
     throw new Error(
@@ -165,9 +148,10 @@ export async function getRecentVideos(
     const videos = videosSnapshot.docs.slice(0, limit).map((doc) => {
       const data = doc.data();
 
-      // プレーンなオブジェクトとしてデータを返す
-      return {
+      // Firestoreデータをモデルに変換
+      const firestoreVideo: FirestoreVideoData = {
         id: doc.id,
+        videoId: data.videoId || doc.id, // videoIdフィールドを追加
         title: data.title || "",
         description: data.description || "",
         channelId: data.channelId || "",
@@ -175,26 +159,16 @@ export async function getRecentVideos(
         publishedAt:
           data.publishedAt?.toDate?.()?.toISOString() ||
           new Date().toISOString(),
-        thumbnails: {
-          default: {
-            url: data.thumbnails?.default?.url || "",
-            width: data.thumbnails?.default?.width || 120,
-            height: data.thumbnails?.default?.height || 90,
-          },
-          medium: {
-            url: data.thumbnails?.medium?.url || "",
-            width: data.thumbnails?.medium?.width || 320,
-            height: data.thumbnails?.medium?.height || 180,
-          },
-          high: {
-            url: data.thumbnails?.high?.url || "",
-            width: data.thumbnails?.high?.width || 480,
-            height: data.thumbnails?.high?.height || 360,
-          },
-        },
+        thumbnailUrl: data.thumbnailUrl || "",
+        lastFetchedAt:
+          data.lastFetchedAt?.toDate?.()?.toISOString() ||
+          new Date().toISOString(),
         videoType: data.videoType,
-        videoId: data.videoId, // テスト互換性のために追加
+        liveBroadcastContent: data.liveBroadcastContent,
       };
+
+      // フロントエンド表示用に変換
+      return convertToFrontendVideo(firestoreVideo);
     });
 
     // 最後のビデオIDを返す（Date型ではなくIDのみ）
@@ -224,7 +198,7 @@ export async function getRecentVideos(
 export async function getVideosByPlaylist(
   playlistId: string,
   limit = 20,
-): Promise<{ videos: VideoData[]; hasMore: boolean }> {
+): Promise<VideoListResponse> {
   try {
     // プレイリストIDのバリデーション
     if (!playlistId) {
@@ -253,9 +227,10 @@ export async function getVideosByPlaylist(
     const videos = query.docs.slice(0, limit).map((doc) => {
       const data = doc.data();
 
-      // プレーンなオブジェクトとしてデータを返す
-      return {
+      // Firestoreデータをモデルに変換
+      const firestoreVideo: FirestoreVideoData = {
         id: doc.id,
+        videoId: data.videoId || doc.id, // videoIdフィールドを追加
         title: data.title || "",
         description: data.description || "",
         channelId: data.channelId || "",
@@ -263,26 +238,16 @@ export async function getVideosByPlaylist(
         publishedAt:
           data.publishedAt?.toDate?.()?.toISOString() ||
           new Date().toISOString(),
-        thumbnails: {
-          default: {
-            url: data.thumbnails?.default?.url || "",
-            width: data.thumbnails?.default?.width || 120,
-            height: data.thumbnails?.default?.height || 90,
-          },
-          medium: {
-            url: data.thumbnails?.medium?.url || "",
-            width: data.thumbnails?.medium?.width || 320,
-            height: data.thumbnails?.medium?.height || 180,
-          },
-          high: {
-            url: data.thumbnails?.high?.url || "",
-            width: data.thumbnails?.high?.width || 480,
-            height: data.thumbnails?.high?.height || 360,
-          },
-        },
+        thumbnailUrl: data.thumbnailUrl || "",
+        lastFetchedAt:
+          data.lastFetchedAt?.toDate?.()?.toISOString() ||
+          new Date().toISOString(),
         videoType: data.videoType,
-        videoId: data.videoId, // テスト互換性のために追加
+        liveBroadcastContent: data.liveBroadcastContent,
       };
+
+      // フロントエンド表示用に変換
+      return convertToFrontendVideo(firestoreVideo);
     });
 
     return {

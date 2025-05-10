@@ -312,7 +312,187 @@ export async function createUser(data: FormData): Promise<ActionResult<User>> {
 
 ### 1.4. Headless UI の利用
 
-### 8. フォームの設計と実装
+## 2. 型定義とZodによるバリデーション
+
+共有型ライブラリを作成し、モノレポ全体で一貫した型定義とバリデーションを実現します。
+
+### 2.1. 共有型ライブラリ (`@suzumina.click/shared-types`)
+
+- **目的**: アプリケーション全体で一貫した型定義を提供し、RSCとRCC間でのデータ受け渡しを安全に行えるようにします。
+- **技術選定**: TypeScriptとZodを組み合わせて、静的型チェックと実行時バリデーションの両方を実現します。
+- **配置場所**: `packages/shared-types/` ディレクトリに配置し、各アプリケーションから参照します。
+
+### 2.2. ライブラリの構成
+
+```
+packages/shared-types/
+├── src/
+│   ├── index.ts                # エクスポートポイント
+│   ├── video.ts                # 動画関連の型定義とZodスキーマ
+│   ├── audioclip.ts            # 音声クリップ関連の型定義とZodスキーマ
+│   ├── user.ts                 # ユーザー関連の型定義とZodスキーマ
+│   └── common.ts               # 共通の型定義とユーティリティ
+├── package.json
+└── tsconfig.json
+```
+
+### 2.3. Zodスキーマと型定義の基本パターン
+
+各ドメインごとに以下のパターンでZodスキーマと型定義を行います：
+
+```typescript
+// 1. Zodスキーマの定義
+export const UserSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  email: z.string().email(),
+  // ...
+});
+
+// 2. TypeScriptの型を抽出
+export type User = z.infer<typeof UserSchema>;
+
+// 3. シリアライズ/デシリアライズヘルパー
+export function serializeUser(user: User): string {
+  return JSON.stringify(user);
+}
+
+export function deserializeUser(json: string): User {
+  try {
+    const data = JSON.parse(json);
+    return UserSchema.parse(data);
+  } catch (error) {
+    throw new Error('ユーザーデータの形式が無効です');
+  }
+}
+```
+
+### 2.4. RSCとRCCの間でのデータ受け渡し
+
+サーバーコンポーネントとクライアントコンポーネントの間でのデータ受け渡しは、以下のパターンで行います：
+
+```typescript
+// サーバーコンポーネント (RSC)
+import { Video, serializeVideo, VideoSchema } from "@suzumina.click/shared-types";
+
+async function fetchVideoData(): Promise<Video> {
+  // データ取得ロジック
+  const rawData = await db.getVideo(id);
+  
+  // 型検証と変換
+  const validatedData = VideoSchema.parse(rawData);
+  
+  return validatedData;
+}
+
+export default async function VideoPage() {
+  const videoData = await fetchVideoData();
+  
+  // クライアントコンポーネントにデータを渡す
+  return <VideoPlayerClient videoData={videoData} />;
+}
+
+// クライアントコンポーネント (RCC)
+"use client";
+
+import { Video, VideoSchema } from "@suzumina.click/shared-types";
+
+interface VideoPlayerProps {
+  videoData: Video;
+}
+
+export default function VideoPlayerClient({ videoData }: VideoPlayerProps) {
+  // videoDataを使用（型安全）
+  return <div>{videoData.title}</div>;
+}
+```
+
+### 2.5. Server Actionsでの使用
+
+Server Actionsでは、以下のようにZodスキーマを使用してバリデーションを行います：
+
+```typescript
+"use server";
+
+import { VideoCreateSchema, Video, VideoSchema } from "@suzumina.click/shared-types";
+
+export async function createVideo(formData: FormData) {
+  try {
+    // フォームデータをZodスキーマでバリデーション
+    const validatedData = VideoCreateSchema.parse({
+      title: formData.get("title"),
+      description: formData.get("description"),
+      // ...
+    });
+    
+    // データ処理とFirestoreへの保存
+    // ...
+    
+    // 結果を返す（型安全）
+    return { success: true, data: newVideo };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      // バリデーションエラーの処理
+      return { 
+        success: false, 
+        error: "入力データが無効です", 
+        validationErrors: error.errors 
+      };
+    }
+    
+    // その他のエラー処理
+    return { success: false, error: "動画の作成に失敗しました" };
+  }
+}
+```
+
+### 2.6. Firestoreとの連携
+
+Firestoreとのデータ変換も共有型ライブラリを使って一貫して行います：
+
+```typescript
+// Firestoreからのデータ変換
+export function convertFromFirestore<T>(
+  schema: z.ZodType<T>, 
+  data: FirebaseFirestore.DocumentData
+): T {
+  try {
+    return schema.parse(data);
+  } catch (error) {
+    console.error("Firestoreデータのパースエラー:", error);
+    throw new Error("データ形式が無効です");
+  }
+}
+
+// Firestoreへの保存用データ変換
+export function convertToFirestore<T>(data: T): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(data));
+}
+```
+
+### 2.7. バリデーションエラーの統一
+
+アプリケーション全体で一貫したエラー処理を行うために、バリデーションエラーの形式を統一します：
+
+```typescript
+// 共通のエラー形式
+export const ValidationErrorSchema = z.object({
+  path: z.array(z.union([z.string(), z.number()])),
+  message: z.string()
+});
+
+export type ValidationError = z.infer<typeof ValidationErrorSchema>;
+
+// エラーメッセージの日本語化ヘルパー
+export function formatZodError(error: z.ZodError): ValidationError[] {
+  return error.errors.map(err => ({
+    path: err.path,
+    message: err.message
+  }));
+}
+```
+
+## 8. フォームの設計と実装
 
 #### 8.1. フォームの基本方針
 

@@ -1,7 +1,11 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
+import type {
+  FirestoreServerVideoData,
+  LiveBroadcastContent,
+} from "@suzumina.click/shared-types";
 import { google } from "googleapis";
 import type { youtube_v3 } from "googleapis";
-import { SUZUKA_MINASE_CHANNEL_ID, type YouTubeVideoData } from "./common";
+import { SUZUKA_MINASE_CHANNEL_ID } from "./common";
 import firestore, { Timestamp } from "./utils/firestore";
 // functions/src/youtube.ts
 import * as logger from "./utils/logger";
@@ -412,7 +416,7 @@ async function saveVideosToFirestore(
     }
 
     // Firestoreに保存するデータの作成
-    const videoData: YouTubeVideoData = {
+    const videoData: FirestoreServerVideoData = {
       videoId: video.id,
       title: video.snippet.title ?? "",
       description: video.snippet.description ?? "",
@@ -431,7 +435,13 @@ async function saveVideosToFirestore(
       channelTitle: video.snippet.channelTitle ?? "",
       lastFetchedAt: now,
       // 配信状態を取得（none, live, upcoming のいずれか）
-      liveBroadcastContent: video.snippet.liveBroadcastContent ?? "none",
+      // 型安全に変換
+      liveBroadcastContent:
+        video.snippet.liveBroadcastContent === "live"
+          ? ("live" as LiveBroadcastContent)
+          : video.snippet.liveBroadcastContent === "upcoming"
+            ? ("upcoming" as LiveBroadcastContent)
+            : ("none" as LiveBroadcastContent),
     };
 
     const videoRef = videosCollection.doc(video.id);

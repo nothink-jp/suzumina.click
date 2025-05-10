@@ -2,13 +2,39 @@ import {
   getVideo as getVideoByIdAction,
   getRecentVideos as getVideos,
 } from "@/actions/videos/actions";
-import dayjs from "dayjs";
 import type {
   LiveBroadcastContent,
   PaginationParams,
   Video,
   VideoListResult,
 } from "./types";
+
+// テスト用のインターフェース
+interface ThumbnailInfo {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+interface Thumbnails {
+  default?: ThumbnailInfo;
+  medium?: ThumbnailInfo;
+  high?: ThumbnailInfo;
+}
+
+// 拡張されたビデオデータ型（テストデータとactionsからの両方のデータを扱えるように）
+interface VideoDataWithOptionalFields {
+  id: string;
+  title: string;
+  description: string;
+  publishedAt?: string;
+  thumbnailUrl?: string;
+  channelId: string;
+  channelTitle: string;
+  lastFetchedAt?: string;
+  videoType?: string;
+  thumbnails?: Thumbnails;
+}
 
 /**
  * 最新の動画リストを取得する
@@ -36,12 +62,8 @@ export async function getRecentVideos(
     // VideoDataはすでにプレーンなオブジェクトになっているため、必要最小限の変換のみ行う
     const videos = result.videos.map((videoData) => {
       // サムネイル情報の取得
-      // thumbnailsオブジェクトから適切な画質のURLを選択
-      const thumbnailUrl =
-        videoData.thumbnails?.high?.url ||
-        videoData.thumbnails?.medium?.url ||
-        videoData.thumbnails?.default?.url ||
-        "";
+      // FirestoreVideoDataからサムネイルURLを取得
+      const thumbnailUrl = videoData.thumbnailUrl || "";
 
       // ISO文字列としての日付を使用
       const publishedAtISO = videoData.publishedAt || new Date().toISOString();
@@ -94,7 +116,9 @@ export async function getRecentVideos(
 export async function getVideoById(videoId: string): Promise<Video | null> {
   try {
     // Server Actionを呼び出す
-    const videoData = await getVideoByIdAction(videoId);
+    const videoData = (await getVideoByIdAction(
+      videoId,
+    )) as VideoDataWithOptionalFields;
 
     // データがない場合はnullを返す
     if (!videoData) {
@@ -102,12 +126,23 @@ export async function getVideoById(videoId: string): Promise<Video | null> {
     }
 
     // サムネイル情報の取得
-    // thumbnailsオブジェクトから適切な画質のURLを選択
-    const thumbnailUrl =
-      videoData.thumbnails?.high?.url ||
-      videoData.thumbnails?.medium?.url ||
-      videoData.thumbnails?.default?.url ||
-      "";
+    // モックデータの構造に合わせて thumbnails から取得
+    let thumbnailUrl = "";
+    // VideoDataWithOptionalFieldsインターフェースを使用
+    if (videoData.thumbnails) {
+      const thumbnails = videoData.thumbnails;
+      // 優先順位: high > medium > default
+      if (thumbnails.high?.url) {
+        thumbnailUrl = thumbnails.high.url;
+      } else if (thumbnails.medium?.url) {
+        thumbnailUrl = thumbnails.medium.url;
+      } else if (thumbnails.default?.url) {
+        thumbnailUrl = thumbnails.default.url;
+      }
+    } else {
+      // 後方互換性のために thumbnailUrl も確認
+      thumbnailUrl = videoData.thumbnailUrl || "";
+    }
 
     // ISO文字列としての日付を使用
     const publishedAtISO = videoData.publishedAt || new Date().toISOString();

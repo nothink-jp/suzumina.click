@@ -1,37 +1,13 @@
 // functions/src/common.ts
-import type { Timestamp } from "@google-cloud/firestore";
+import type { FirestoreServerVideoData } from "@suzumina.click/shared-types";
 
 // --- インターフェース定義 ---
 
 /**
  * YouTube 動画データのインターフェース
- * Firestore に保存する形式に合わせて定義
+ * @deprecated `@suzumina.click/shared-types` の `FirestoreServerVideoData` を使用してください
  */
-export interface YouTubeVideoData {
-  /** YouTube 動画ID */
-  videoId: string;
-  /** 動画タイトル */
-  title: string;
-  /** 動画説明文 */
-  description: string;
-  /** 動画公開日時（Firestoreのタイムスタンプ型） */
-  publishedAt: Timestamp;
-  /** サムネイル画像URL */
-  thumbnailUrl: string;
-  /** チャンネルID */
-  channelId: string;
-  /** チャンネル名 */
-  channelTitle: string;
-  /** データの最終取得日時（Firestoreのタイムスタンプ型） */
-  lastFetchedAt: Timestamp;
-  /**
-   * 配信状態
-   * - "none": 通常の動画（ライブ配信ではない/配信済み）
-   * - "live": 現在ライブ配信中の動画
-   * - "upcoming": これから配信予定の動画（配信前）
-   */
-  liveBroadcastContent: string;
-}
+export type YouTubeVideoData = FirestoreServerVideoData;
 
 /**
  * Pub/Sub メッセージのデータ構造
