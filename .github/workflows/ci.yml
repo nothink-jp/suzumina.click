@@ -48,9 +48,9 @@ jobs:
       - name: Biome によるコード検証
         run: pnpm lint
 
-  # Next.jsウェブアプリ（Web）の検証
-  web-checks:
-    name: 'Webアプリケーション検証'
+  # 共有パッケージのビルド
+  shared-build:
+    name: '共有パッケージのビルド'
     needs: common-lint
     runs-on: ubuntu-latest
     
@@ -64,7 +64,45 @@ jobs:
         with:
           node-version: ${{ needs.common-lint.outputs.node_version }}
           pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
+      
+      # shared-typesをビルド
+      - name: 共有パッケージのビルド
+        run: pnpm --filter @suzumina.click/shared-types build
+        
+      # ビルド成果物をキャッシュ
+      - name: shared-typesビルド成果物のキャッシュ
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            packages/shared-types/dist
+          key: shared-types-${{ github.sha }}
+
+  # Next.jsウェブアプリ（Web）の検証
+  web-checks:
+    name: 'Webアプリケーション検証'
+    needs: [common-lint, shared-build]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+      
+      # 複合アクションを使用してNode.js環境をセットアップ
+      - name: Node.js環境のセットアップ
+        uses: ./.github/actions/setup-node-env
+        with:
+          node-version: ${{ needs.common-lint.outputs.node_version }}
+          pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
           project-path: 'web'
+      
+      # shared-typesのビルド成果物を復元
+      - name: shared-typesビルド成果物の復元
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            packages/shared-types/dist
+          key: shared-types-${{ github.sha }}
+          fail-on-cache-miss: true
       
       # テスト実行
       - name: アプリケーションのテスト
@@ -82,16 +120,14 @@ jobs:
           # リポジトリ情報を明示的に設定
           slug: nothink-jp/suzumina.click
 
-      # shared-typesのビルド後にWebアプリをビルド
+      # アプリケーションのビルド
       - name: アプリケーションのビルド
-        run: |
-          pnpm --filter @suzumina.click/shared-types build
-          pnpm --filter @suzumina.click/web build
+        run: pnpm --filter @suzumina.click/web build
 
   # Cloud Functions の検証
   functions-checks:
     name: 'Cloud Functions検証'
-    needs: common-lint
+    needs: [common-lint, shared-build]
     runs-on: ubuntu-latest
     
     steps:
@@ -105,6 +141,15 @@ jobs:
           node-version: ${{ needs.common-lint.outputs.node_version }}
           pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
           project-path: 'functions'
+      
+      # shared-typesのビルド成果物を復元
+      - name: shared-typesビルド成果物の復元
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            packages/shared-types/dist
+          key: shared-types-${{ github.sha }}
+          fail-on-cache-miss: true
       
       # テスト実行
       - name: アプリケーションのテスト
@@ -122,11 +167,9 @@ jobs:
           # リポジトリ情報を明示的に設定
           slug: nothink-jp/suzumina.click
 
-      # shared-typesのビルド後に Functions をビルド
+      # アプリケーションのビルド
       - name: アプリケーションのビルド
-        run: |
-          pnpm --filter @suzumina.click/shared-types build
-          pnpm --filter @suzumina.click/functions build
+        run: pnpm --filter @suzumina.click/functions build
 
   # すべての検証が完了したら通知
   notify-success:
