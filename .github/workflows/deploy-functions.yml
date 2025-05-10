@@ -445,71 +445,8 @@ jobs:
             echo "::warning title=ヘルスチェック失敗::一部の関数に問題があります: $UNHEALTHY_FUNCTIONS"
           fi
 
-  # ロールバック処理（ヘルスチェック失敗時）
-  rollback:
-    name: '自動ロールバック'
-    needs: [prepare-deployment, save-current-state, deploy-functions, health-check]
-    runs-on: ubuntu-latest
-    if: needs.health-check.outputs.all_healthy != 'true' && needs.prepare-deployment.outputs.has_changes == 'true'
-    
-    steps:
-      # Google Cloud認証
-      - name: Google Cloud認証の設定
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-          create_credentials_file: true
-          export_environment_variables: true
-      
-      # gcloud CLIをセットアップ
-      - name: gcloud CLIのセットアップ
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
-      - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare-deployment.outputs.deploy_branch }}
-      
-      # ロールバック実行
-      - name: ロールバック実行
-        run: |
-          echo "::warning title=ヘルスチェック失敗::ヘルスチェックに失敗したため、前のバージョンにロールバックします"
-          
-          FUNCTIONS="${{ needs.health-check.outputs.unhealthy_functions }}"
-          FUNCTIONS_STATE="${{ needs.save-current-state.outputs.functions_state }}"
-          
-          # ファンクションごとにロールバック処理
-          for FUNC in $(echo $FUNCTIONS | tr ";" " "); do
-            if [ -z "$FUNC" ]; then
-              continue
-            fi
-            
-            echo "関数 $FUNC のロールバックを実行します..."
-            
-            # 関数の元の状態を取得
-            ORIGINAL_STATE=$(echo "$FUNCTIONS_STATE" | grep -o "$FUNC:[^;]*" || echo "")
-            
-            if [ -z "$ORIGINAL_STATE" ]; then
-              echo "警告: 関数 $FUNC の元の状態情報が見つかりません"
-              continue
-            fi
-            
-            # 新規作成された関数の場合は削除
-            if [[ "$ORIGINAL_STATE" == *"$FUNC:new"* ]]; then
-              echo "関数 $FUNC は新規作成されたため、削除します"
-              gcloud functions delete $FUNC --gen2 --region=${{ env.REGION }} --quiet || echo "削除に失敗しましたが、続行します"
-              continue
-            fi
-            
-            echo "ロールバック処理を実行中..."
-            echo "注意: 現在のCloud Functions v2ではバージョンの直接ロールバックはサポートされていません。"
-            echo "関数の問題を手動で修正し、再度デプロイしてください。"
-          done
-          
-          echo "::notice title=ロールバック完了::問題のある関数のロールバック処理を完了しました"
+  # 注意: Cloud Functions Gen2ではバージョンの直接ロールバックがサポートされていないため、
+  # 自動ロールバック機能を削除しました。問題が発生した場合は手動で修正してください。
 
   # 変更がなかった場合のメッセージ
   no-changes-notification:
@@ -526,7 +463,7 @@ jobs:
   # デプロイ完了通知
   notify-deployment:
     name: 'デプロイ完了通知'
-    needs: [prepare-deployment, deploy-functions, health-check, rollback]
+    needs: [prepare-deployment, deploy-functions, health-check]
     if: needs.prepare-deployment.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
     
@@ -537,7 +474,7 @@ jobs:
           if [[ "${{ needs.health-check.outputs.all_healthy }}" == "true" ]]; then
             echo "::notice title=Cloud Functionsデプロイ成功::すべての関数が正常にデプロイされました"
           else
-            echo "::warning title=Cloud Functionsデプロイ一部失敗::一部の関数に問題があり、ロールバックを実行しました"
+            echo "::warning title=Cloud Functionsデプロイ一部失敗::一部の関数に問題があります。手動で修正が必要です。"
             echo "- 問題のある関数: ${{ needs.health-check.outputs.unhealthy_functions }}"
           fi
           
