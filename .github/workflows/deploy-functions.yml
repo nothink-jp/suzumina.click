@@ -253,33 +253,48 @@ jobs:
       - name: Cloud Functionsのビルド
         run: pnpm --filter @suzumina.click/functions build
       
-      # workspace:* 依存関係の解決とデプロイ用のパッケージ修正
+      # デプロイ用パッケージの準備（ビルドプロセスをスキップするための設定）
       - name: デプロイ用にpackage.jsonを準備
         run: |
-          echo "Cloud Functions デプロイ用にpackage.jsonとshared-typesを準備しています..."
+          echo "Cloud Functions デプロイ用のパッケージを準備しています..."
           
           # テンポラリディレクトリの作成
           mkdir -p ./tmp/functions
           
           # ビルド済みのlib内容をコピー
           cp -r ./apps/functions/lib ./tmp/functions/
-          cp ./apps/functions/package.json ./tmp/functions/
           
-          # package.jsonからパブリックレジストリにない依存関係を削除
+          # tsconfig.jsonをコピー（ビルドプロセスの参照用）
+          cp ./apps/functions/tsconfig.json ./tmp/functions/
+          
+          # カスタムpackage.jsonを作成（Cloud Functionsビルドプロセス向け）
           node -e '
             const fs = require("fs");
             const path = require("path");
-            const packagePath = "./tmp/functions/package.json";
-            const pkg = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+            const srcPkg = JSON.parse(fs.readFileSync("./apps/functions/package.json", "utf8"));
             
-            // @suzumina.click/shared-types 依存関係を削除
-            if (pkg.dependencies && pkg.dependencies["@suzumina.click/shared-types"]) {
-              delete pkg.dependencies["@suzumina.click/shared-types"];
-              console.log("@suzumina.click/shared-types 依存関係をpackage.jsonから削除しました");
-            }
+            // 必要な情報だけを含むシンプルなpackage.jsonを作成
+            const deployPkg = {
+              name: srcPkg.name,
+              version: srcPkg.version,
+              private: true,
+              main: "lib/index.js",
+              // ビルドプロセスをスキップするためのダミースクリプト
+              scripts: {
+                build: "echo \"ビルド済みのコードを使用します。再コンパイルは不要です。\""
+              },
+              engines: {
+                node: "20"
+              },
+              // 必要な依存関係のみを含める（shared-typesを除く）
+              dependencies: Object.entries(srcPkg.dependencies || {})
+                .filter(([key]) => key !== "@suzumina.click/shared-types")
+                .reduce((acc, [key, val]) => ({...acc, [key]: val}), {})
+            };
             
             // 更新したpackage.jsonを書き込み
-            fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2), "utf8");
+            fs.writeFileSync("./tmp/functions/package.json", JSON.stringify(deployPkg, null, 2), "utf8");
+            console.log("デプロイ用のpackage.jsonを作成しました");
           '
           
           # shared-typesの型定義を直接functionsのlibディレクトリにコピー
@@ -293,6 +308,13 @@ jobs:
           
           # バックアップファイルを削除
           find ./tmp/functions -type f -name "*.bak" -delete
+          
+          # パッケージ内容の確認
+          echo "package.jsonの内容:"
+          cat ./tmp/functions/package.json
+          echo "-----------------"
+          echo "ディレクトリ構成:"
+          ls -la ./tmp/functions/
           
           echo "パッケージ調整が完了しました"
       
@@ -391,6 +413,7 @@ jobs:
               --runtime=nodejs20 \
               --source=./tmp/functions \
               --entry-point=$FUNC \
+              --no-user-output-enabled \
               $TRIGGER_PARAMS \
               --set-env-vars=FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=$FUNC; then
               
