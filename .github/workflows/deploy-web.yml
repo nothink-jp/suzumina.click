@@ -157,10 +157,13 @@ jobs:
           pnpm-version: ${{ needs.prepare-deployment.outputs.pnpm_version }}
           project-path: 'web'
       
-      # テスト実行
+      # shared-typesのビルド後にテスト実行
       - name: Webアプリのテスト
-        run: pnpm --filter @suzumina.click/web test
+        run: |
+          pnpm --filter @suzumina.click/shared-types build
+          pnpm --filter @suzumina.click/web test
 
+      # Next.jsアプリのビルド
       - name: Next.jsアプリのビルド
         run: pnpm --filter @suzumina.click/web build
       
