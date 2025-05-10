@@ -4,25 +4,19 @@ import HomePage from "./page"; // page.tsx をインポート
 
 // 非同期サーバーコンポーネントのテストのため、必要なモックを設定
 
-// VideoList コンポーネントをモック
-vi.mock("@/components/videos/VideoList", () => ({
-  default: ({
-    limit,
-    showViewAllLink,
-  }: { limit?: number; showViewAllLink?: boolean }) => (
-    <div data-testid="mock-video-list">
-      <h2 className="text-2xl font-bold mb-6">最新動画</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" />
-      <div className="text-center py-8">
-        <span className="loading loading-spinner loading-lg" />
-      </div>
-      {showViewAllLink && (
-        <div className="mt-8 flex justify-end">
-          <a href="/videos" className="btn btn-primary">
-            もっと見る
-          </a>
+// VideoCarousel コンポーネントをモック
+vi.mock("@/components/videos/VideoCarousel", () => ({
+  default: ({ limit }: { limit?: number }) => (
+    <div data-testid="mock-video-carousel">
+      <h2 className="text-2xl font-bold mb-4">最新動画</h2>
+      <div className="carousel carousel-center w-full p-4 space-x-4 bg-base-200 rounded-box">
+        <div className="carousel-item">
+          <span>モック動画アイテム 1</span>
         </div>
-      )}
+        <div className="carousel-item">
+          <span>モック動画アイテム 2</span>
+        </div>
+      </div>
     </div>
   ),
 }));
@@ -33,12 +27,14 @@ vi.mock("@/components/ui/Hero", () => ({
     title,
     subtitle,
     children,
+    alignment,
   }: {
     title: string;
     subtitle?: string;
     children?: React.ReactNode;
+    alignment?: string;
   }) => (
-    <div data-testid="mock-hero">
+    <div data-testid="mock-hero" className={`text-${alignment}`}>
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
       {children}
@@ -46,25 +42,15 @@ vi.mock("@/components/ui/Hero", () => ({
   ),
 }));
 
-// UserStatusCard コンポーネントをモック
-vi.mock("@/components/ui/UserStatusCard", () => ({
-  default: ({ user }: { user: any }) => (
-    <div data-testid="mock-user-status-card">
-      {user ? (
-        <div>
-          <p>ログイン中です</p>
-          <p>ユーザー名: {user.displayName || "未設定"}</p>
-        </div>
-      ) : (
-        <p>未ログイン</p>
-      )}
-    </div>
-  ),
-}));
-
-// getProfile 関数をモック - パスを修正
-vi.mock("@/actions/profile/getProfile", () => ({
-  getProfile: vi.fn().mockResolvedValue(null), // デフォルトでは非ログイン状態
+// getRecentVideos アクションをモック
+vi.mock("@/actions/videos/actions", () => ({
+  getRecentVideos: vi.fn().mockResolvedValue({
+    videos: [
+      { id: "video1", title: "テスト動画1", thumbnailUrl: "test1.jpg" },
+      { id: "video2", title: "テスト動画2", thumbnailUrl: "test2.jpg" },
+    ],
+    hasMore: false,
+  }),
 }));
 
 describe("ホームページ", () => {
@@ -78,55 +64,50 @@ describe("ホームページ", () => {
     expect(hero.querySelector("h1")?.textContent).toBe("すずみなくりっく！");
   });
 
-  it("VideoListコンポーネントが表示されること", async () => {
+  it("VideoCarouselコンポーネントが表示されること", async () => {
     // 準備 & 実行
     render(await HomePage());
 
-    // 検証 - モック化されたVideoListコンポーネントを検索
-    const videoList = screen.getByTestId("mock-video-list");
-    expect(videoList).toBeInTheDocument();
+    // 検証 - モック化されたVideoCarouselコンポーネントを検索
+    const carousel = screen.getByTestId("mock-video-carousel");
+    expect(carousel).toBeInTheDocument();
+    expect(carousel.querySelector("h2")?.textContent).toBe("最新動画");
   });
 
-  it("UserStatusCardコンポーネントが表示されること", async () => {
+  it("トップページにはメインコンテンツエリアが含まれること", async () => {
     // 準備 & 実行
     render(await HomePage());
 
     // 検証
-    const userStatusCard = screen.getByTestId("mock-user-status-card");
-    expect(userStatusCard).toBeInTheDocument();
+    // mainタグの検証（containerクラスを持つことを確認）
+    const mainContent = document.querySelector("main.container");
+    expect(mainContent).toBeInTheDocument();
   });
 
-  it("非ログイン時には未ログインの表示がされること", async () => {
-    // 準備 - 非ログイン状態のモックを設定
-    const { getProfile } = await import("@/actions/profile/getProfile");
-    vi.mocked(getProfile).mockResolvedValue(null);
-
-    // 実行
+  it("最新動画セクションが正しく表示されること", async () => {
+    // 準備 & 実行
     render(await HomePage());
 
     // 検証
-    expect(screen.getByText("未ログイン")).toBeInTheDocument();
+    // カルーセルが正しいクラスを持つことを確認
+    const carousel = screen.getByTestId("mock-video-carousel");
+    expect(carousel).toBeInTheDocument();
+
+    // カルーセル内のモック動画アイテムが表示されていることを確認
+    expect(screen.getByText("モック動画アイテム 1")).toBeInTheDocument();
+    expect(screen.getByText("モック動画アイテム 2")).toBeInTheDocument();
   });
 
-  it("ログイン時にはユーザー情報が表示されること", async () => {
-    // 準備 - ログイン状態のモックを設定
-    const { getProfile } = await import("@/actions/profile/getProfile");
-    vi.mocked(getProfile).mockResolvedValue({
-      uid: "test-uid",
-      displayName: "テストユーザー",
-      preferredName: "テストユーザー",
-      photoURL: "https://example.com/avatar.jpg",
-      bio: "テスト用ユーザープロフィール",
-      isPublic: true,
-      createdAt: new Date("2025-04-01T00:00:00.000Z"),
-      updatedAt: new Date("2025-04-20T00:00:00.000Z"),
-    });
-
-    // 実行
+  it("ヒーローセクションにサブタイトルが表示されること", async () => {
+    // 準備 & 実行
     render(await HomePage());
 
     // 検証
-    expect(screen.getByText("ログイン中です")).toBeInTheDocument();
-    expect(screen.getByText(/ユーザー名: テストユーザー/)).toBeInTheDocument();
+    const hero = screen.getByTestId("mock-hero");
+    const subtitle = hero.querySelector("p");
+    expect(subtitle).toBeInTheDocument();
+    expect(subtitle?.textContent).toBe(
+      "ようこそ！ここは涼花みなせさんの活動を応援する非公式ファンサイトです。",
+    );
   });
 });
