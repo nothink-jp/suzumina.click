@@ -102,19 +102,12 @@ ENV PORT=8080
 # ビルドステージからstandaloneビルドをコピー
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
-
-# publicディレクトリをコピーする（ビルド時に作成済みなのでエラーにならない）
+# publicディレクトリをコピー
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 # ポートを公開
 EXPOSE 8080
-
-# コンテナ起動時に実行するコマンド
-USER nextjs
-CMD ["node", "apps/web/server.js"]
-
 # 非ルートユーザーに切り替え
 USER nextjs
-
 # サーバーの起動
 CMD ["node", "apps/web/server.js"]
