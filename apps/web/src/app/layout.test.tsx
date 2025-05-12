@@ -30,6 +30,11 @@ vi.mock("next/font/google", () => ({
     style: { fontFamily: "Noto Sans JP" },
     className: "test-font-class",
   }),
+  Slackside_One: () => ({
+    variable: "test-slackside-variable",
+    style: { fontFamily: "Slackside One" },
+    className: "test-slackside-class",
+  }),
 }));
 
 describe("RootLayoutコンポーネント", () => {
@@ -123,8 +128,6 @@ describe("RootLayoutコンポーネント", () => {
 describe("メタデータ", () => {
   test("適切なタイトルと説明が設定されていること", () => {
     expect(metadata.title).toBe("すずみなくりっく！");
-    expect(metadata.description).toBe(
-      "涼花みなせさんの活動を応援する非公式ファンサイトです。",
-    );
+    expect(metadata.description).toBe("涼花みなせ様の非公式ファンサイト");
   });
 });

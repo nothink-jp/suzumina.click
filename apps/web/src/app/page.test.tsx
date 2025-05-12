@@ -107,7 +107,7 @@ describe("ホームページ", () => {
     const subtitle = hero.querySelector("p");
     expect(subtitle).toBeInTheDocument();
     expect(subtitle?.textContent).toBe(
-      "ようこそ！ここは涼花みなせさんの活動を応援する非公式ファンサイトです。",
+      "涼花みなせ様を応援する非公式ファンサイト。",
     );
   });
 });

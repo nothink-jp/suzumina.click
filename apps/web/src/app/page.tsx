@@ -13,7 +13,7 @@ export default async function Home() {
       {/* ヒーローセクション */}
       <Hero
         title="すずみなくりっく！"
-        subtitle="ようこそ！ここは涼花みなせさんの活動を応援する非公式ファンサイトです。"
+        subtitle="涼花みなせ様を応援する非公式ファンサイト。"
         alignment="center"
       />
 

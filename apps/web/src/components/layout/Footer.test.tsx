@@ -17,7 +17,7 @@ describe("Footer Component", () => {
     expect(copyrightText.textContent).toContain(`Copyright © ${currentYear}`);
     // 非公式ファンサイトである旨の注意書きが表示されるか
     expect(
-      screen.getByText(/このサイトは涼花みなせさんの非公式ファンサイトであり/),
+      screen.getByText(/このサイトは涼花みなせ様の非公式ファンサイトであり/),
     ).toBeInTheDocument();
   });
 });

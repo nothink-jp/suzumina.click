@@ -104,6 +104,24 @@ jobs:
           pnpm-version: ${{ needs.dependency-scan.outputs.pnpm_version }}
           project-path: 'web'
       
+      # 共有パッケージのビルド
+      - name: 共有パッケージのビルド
+        run: |
+          echo "共有パッケージ(shared-types)をビルドしています..."
+          cd packages/shared-types
+          pnpm install
+          pnpm build
+          echo "共有パッケージのビルドが完了しました"
+          
+          # packages/shared-typesのビルド成果物を確認
+          echo "共有パッケージのビルド成果物を確認しています..."
+          ls -la dist || echo "distディレクトリが見つかりません"
+          if [ ! -f dist/index.js ]; then
+            echo "警告: 共有パッケージのビルド成果物が見つかりません。"
+          else
+            echo "ビルド成果物の確認が完了しました。"
+          fi
+      
       # Dockerイメージビルド（改善版）
       - name: Dockerイメージビルド
         id: docker_build
@@ -115,8 +133,21 @@ jobs:
           # 完全なイメージ名を使用
           IMAGE_NAME="suzumina-click-nextjs-app:scan"
           
-          # イメージビルド
-          docker build -f apps/web/Dockerfile -t ${IMAGE_NAME} .
+          # モノレポ構造が正しいか確認
+          echo "モノレポ構造を確認しています..."
+          if [ ! -d "packages/shared-types" ]; then
+            echo "エラー: shared-typesパッケージが見つかりません"
+            exit 1
+          fi
+          
+          if [ ! -d "apps/web" ]; then
+            echo "エラー: webアプリケーションが見つかりません"
+            exit 1
+          fi
+          
+          # イメージビルド - ビルド過程の詳細を表示
+          echo "Dockerイメージをビルドしています..."
+          docker build -f apps/web/Dockerfile -t ${IMAGE_NAME} . --progress=plain
           
           # 正常にビルドできたか確認
           if [ $? -eq 0 ]; then

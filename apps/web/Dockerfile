@@ -37,12 +37,20 @@ ENV NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=$NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 # モノレポ全体の依存関係ファイルをコピー
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
+COPY packages/shared-types/package.json ./packages/shared-types/
 
 # 依存関係をインストール
 RUN pnpm install --frozen-lockfile
 
 # ソースコードをコピー
 COPY . .
+
+# 共有パッケージをビルド
+WORKDIR /app/packages/shared-types
+RUN pnpm build
+
+# ワークディレクトリを戻す
+WORKDIR /app
 
 # publicディレクトリが存在しない場合は作成する
 RUN mkdir -p /app/apps/web/public
@@ -100,6 +108,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 # ポートを公開
 EXPOSE 8080
+
+# コンテナ起動時に実行するコマンド
+USER nextjs
+CMD ["node", "apps/web/server.js"]
 
 # 非ルートユーザーに切り替え
 USER nextjs

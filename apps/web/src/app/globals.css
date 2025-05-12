@@ -2,5 +2,5 @@
 
 @plugin "daisyui" {
   /* biome-ignore lint/correctness/noUnknownProperty: <explanation> */
-  themes: light --default; /* Enable only light theme and set as default */
+  themes: light --default;
 }
