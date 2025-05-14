@@ -13,8 +13,8 @@ interface VideoCardProps {
  */
 export default function VideoCard({ video }: VideoCardProps) {
   return (
-    <Link href={`/videos/${video.id}`} className="group">
-      <div className="card bg-base-100 shadow-md hover:shadow-lg transition-shadow duration-300">
+    <Link href={`/videos/${video.id}`} className="group w-full">
+      <div className="card bg-base-100 shadow-md hover:shadow-lg transition-shadow duration-300 h-full">
         <figure className="relative w-full h-[180px] overflow-hidden">
           <Image
             src={video.thumbnailUrl}
@@ -25,7 +25,7 @@ export default function VideoCard({ video }: VideoCardProps) {
             priority
           />
         </figure>
-        <div className="card-body p-4">
+        <div className="card-body p-4 min-h-[120px]">
           <h2 className="card-title text-lg line-clamp-2">{video.title}</h2>
           <p className="text-sm text-gray-500">
             {formatDate(video.publishedAt)}
