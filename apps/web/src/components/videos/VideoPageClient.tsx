@@ -8,7 +8,10 @@ import CollapsibleVideoInfo from "@/components/videos/CollapsibleVideoInfo";
 import YouTubeEmbed, {
   type YouTubePlayer,
 } from "@/components/videos/YouTubeEmbed";
-import type { AudioClipCreateData } from "@/lib/audioclips/types";
+import type {
+  AudioClipCreateData,
+  OverlapCheckResult,
+} from "@/lib/audioclips/types";
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import type { Video } from "@/lib/videos/types";
 import Link from "next/link";
@@ -32,6 +35,13 @@ interface VideoPageClientProps {
   ) => Promise<boolean>;
   incrementPlayCountAction: (clipId: string) => Promise<void>;
   toggleFavoriteAction: (clipId: string) => Promise<void>;
+  // 重複チェック用のサーバーアクション
+  checkOverlapAction: (
+    videoId: string,
+    startTime: number,
+    endTime: number,
+    excludeClipId?: string,
+  ) => Promise<OverlapCheckResult>;
 }
 
 /**
@@ -47,6 +57,7 @@ export default function VideoPageClient({
   checkFavoriteStatusAction,
   incrementPlayCountAction,
   toggleFavoriteAction,
+  checkOverlapAction,
 }: VideoPageClientProps) {
   // 認証情報を取得
   const { user } = useAuth();
@@ -96,10 +107,12 @@ export default function VideoPageClient({
 
     try {
       const result = await createAudioClip(data);
-      console.log("クライアント: 音声クリップ作成成功", { id: result.id });
       return result;
     } catch (error) {
-      console.error("クライアント: 音声クリップ作成エラー", error);
+      // 開発環境でのみエラーログを出力
+      if (process.env.NODE_ENV === "development") {
+        console.error("クリップ作成エラー:", error);
+      }
       throw error;
     }
   };
@@ -161,6 +174,7 @@ export default function VideoPageClient({
                 onClipCreated={handleClipCreated}
                 youtubePlayerRef={youtubePlayerRef}
                 createAudioClipAction={handleCreateAudioClip}
+                checkOverlapAction={checkOverlapAction}
               />
             </div>
           )}

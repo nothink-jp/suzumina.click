@@ -2,6 +2,7 @@ import {
   getAudioClips,
   incrementPlayCount,
 } from "@/actions/audioclips/actions";
+import { checkTimeRangeOverlapAction } from "@/actions/audioclips/check-overlap";
 import {
   checkMultipleFavoriteStatus,
   toggleFavorite,
@@ -91,6 +92,7 @@ export default async function VideoPage({ params }: any) {
       checkFavoriteStatusAction={singleCheckFavoriteStatus}
       incrementPlayCountAction={incrementPlayCountAdapter}
       toggleFavoriteAction={toggleFavoriteAdapter}
+      checkOverlapAction={checkTimeRangeOverlapAction}
     />
   );
 }

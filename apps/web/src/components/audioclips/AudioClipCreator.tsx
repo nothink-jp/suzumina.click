@@ -31,6 +31,13 @@ interface AudioClipCreatorProps {
   onClipCreated?: () => void;
   // Server Actions
   createAudioClipAction: (data: AudioClipCreateData) => Promise<AudioClip>;
+  // 時間範囲重複チェック用のServer Action
+  checkOverlapAction?: (
+    videoId: string,
+    startTime: number,
+    endTime: number,
+    excludeClipId?: string,
+  ) => Promise<OverlapCheckResult>;
   // タグ検索用のServer Action
   searchTagsAction?: (params: { query: string }) => Promise<{
     tags: TagInfo[];
@@ -49,6 +56,7 @@ export default function AudioClipCreator({
   onClipCreated,
   youtubePlayerRef,
   createAudioClipAction,
+  checkOverlapAction,
   // デフォルト値として空の配列を返す関数を設定
   searchTagsAction = async () => ({ tags: [] }),
 }: AudioClipCreatorProps) {
@@ -714,14 +722,21 @@ export default function AudioClipCreator({
         // 重複チェック中のフラグをセット
         setIsCheckingOverlap(true);
 
-        // 重複チェックの実行
-        const result = await checkTimeRangeOverlap(videoId, start, end);
+        // 重複チェックの実行 - サーバーサイドのアクションがあればそちらを使用
+        let result: OverlapCheckResult | null;
+        if (checkOverlapAction) {
+          // Server Actionを使用して重複チェック（認証情報はサーバー側で取得）
+          result = await checkOverlapAction(videoId, start, end);
+        } else {
+          // 従来のクライアントサイド実装をフォールバックとして使用
+          result = await checkTimeRangeOverlap(videoId, start, end);
+        }
 
         // 結果を状態に保存
         setOverlapCheckResult(result);
 
         // 重複がある場合はエラーメッセージを設定
-        if (result.isOverlapping) {
+        if (result?.isOverlapping) {
           setError("指定した時間範囲が既存のクリップと重複しています");
         } else if (error?.includes("重複")) {
           // 重複エラーがあったが解消された場合はエラーをクリア
@@ -736,7 +751,7 @@ export default function AudioClipCreator({
         setIsCheckingOverlap(false);
       }
     },
-    [videoId, error, isCheckingOverlap],
+    [videoId, error, isCheckingOverlap, checkOverlapAction],
   );
 
   // 開始時間または終了時間が変更された際の重複チェック実装を最適化
