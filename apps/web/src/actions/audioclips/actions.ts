@@ -264,23 +264,33 @@ export async function createAudioClip(data: AudioClipData) {
       const nowISOString = now.toISOString();
 
       // 作成されたクリップのレスポンス用データを作成
-      // タイムスタンプはISOString形式に変換し、AudioClip型に合わせる
+      // サーバーコンポーネントからクライアントコンポーネントに渡すデータは
+      // 純粋なJSONオブジェクトである必要があるため、FieldValueなどのオブジェクトは変換する
       const responseData = {
         id: docRef.id,
-        ...newClip,
+        videoId,
+        title,
+        phrase: phrase || "",
+        description: description || "",
+        startTime,
+        endTime,
+        userId: currentUser.uid,
+        userName: currentUser.displayName || "名無しユーザー",
+        userPhotoURL: currentUser.photoURL || null,
+        isPublic: isPublic !== false,
+        tags: Array.isArray(tags) ? tags : [],
+        playCount: 0,
+        favoriteCount: 0,
         // サーバータイムスタンプはまだ確定していないので現在時刻を使用
         createdAt: nowISOString,
         updatedAt: nowISOString,
         // AudioClip型に合わせてdurationとformattedDurationを追加
         duration,
         formattedDuration,
-        // FieldValueをstring型に変換
-        tags: Array.isArray(tags) ? tags : [],
-        isPublic: isPublic !== false,
       };
 
-      // sanitizeClipForClientはFieldValue型をクライアントで扱える値に変換する
-      return responseData;
+      // 平坦化した純粋なJSONオブジェクトを返す
+      return JSON.parse(JSON.stringify(responseData));
     } catch (createError) {
       console.error("音声クリップの作成に失敗しました:", createError);
       throw new Error(
