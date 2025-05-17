@@ -1,8 +1,8 @@
-// filepath: /Users/nothink/ghq/github.com/nothink-jp/suzumina.click/apps/web/src/components/audioclips/TimelineVisualization.tsx
 "use client";
 
+import { getVideoTimeRangesAction } from "@/actions/audioclips/get-timeranges";
 import type { TimeRange } from "@/lib/audioclips/types";
-import { formatTime, getVideoTimeRanges } from "@/lib/audioclips/validation";
+import { formatTime } from "@/lib/audioclips/validation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface TimelineVisualizationProps {
@@ -12,6 +12,8 @@ interface TimelineVisualizationProps {
   onRangeSelect?: (start: number, end: number) => void;
   onClipClick?: (clipId: string) => void;
   className?: string; // 追加のCSSクラス
+  // オプションのサーバーアクション - propsで渡されない場合はデフォルトでgetVideoTimeRangesActionを使用
+  getTimeRangesAction?: (videoId: string) => Promise<TimeRange[]>;
 }
 
 /**
@@ -27,6 +29,7 @@ export default function TimelineVisualization({
   onRangeSelect,
   onClipClick,
   className = "",
+  getTimeRangesAction,
 }: TimelineVisualizationProps) {
   // 状態管理
   const [timeRanges, setTimeRanges] = useState<TimeRange[]>([]);
@@ -48,7 +51,9 @@ export default function TimelineVisualization({
 
       setIsLoading(true);
       try {
-        const ranges = await getVideoTimeRanges(videoId);
+        // propsでアクションが渡されていればそれを使用、なければデフォルトのアクションを使用
+        const getTimeRanges = getTimeRangesAction || getVideoTimeRangesAction;
+        const ranges = await getTimeRanges(videoId);
         setTimeRanges(ranges);
       } catch (error) {
         console.error("[エラー] 時間範囲の取得に失敗しました:", error);
@@ -58,7 +63,7 @@ export default function TimelineVisualization({
     }
 
     fetchTimeRanges();
-  }, [videoId, videoDuration]);
+  }, [videoId, videoDuration, getTimeRangesAction]);
 
   // タイムライン上のピクセル位置を時間（秒）に変換
   const pixelToSeconds = useCallback(

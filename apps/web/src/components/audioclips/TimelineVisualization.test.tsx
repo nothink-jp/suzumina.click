@@ -19,6 +19,9 @@ vi.mock("@/lib/audioclips/validation", () => ({
   getVideoTimeRanges: vi.fn(),
 }));
 
+// サーバーアクションを直接モックする
+const mockGetVideoTimeRangesAction = vi.fn();
+
 describe("TimelineVisualizationコンポーネント", () => {
   // テスト用の一般的なプロップス
   const defaultProps = {
@@ -48,8 +51,8 @@ describe("TimelineVisualizationコンポーネント", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // デフォルトでモックの戻り値を設定
-    vi.mocked(validation.getVideoTimeRanges).mockResolvedValue(mockTimeRanges);
+    // サーバーアクションのモック設定
+    mockGetVideoTimeRangesAction.mockResolvedValue(mockTimeRanges);
 
     // ElementのgetBoundingClientRectをモック
     Element.prototype.getBoundingClientRect = vi.fn(() => ({
@@ -66,7 +69,12 @@ describe("TimelineVisualizationコンポーネント", () => {
   });
 
   it("基本レンダリング: タイムラインが正しく表示されること", async () => {
-    render(<TimelineVisualization {...defaultProps} />);
+    render(
+      <TimelineVisualization
+        {...defaultProps}
+        getTimeRangesAction={mockGetVideoTimeRangesAction}
+      />,
+    );
 
     // タイトルが表示されていることを確認
     expect(screen.getByText("タイムライン")).toBeInTheDocument();
@@ -77,19 +85,38 @@ describe("TimelineVisualizationコンポーネント", () => {
     expect(screen.getByText("5:00")).toBeInTheDocument(); // 動画の長さ
 
     // データ取得のAPIが呼ばれていることを確認
-    expect(validation.getVideoTimeRanges).toHaveBeenCalledWith("test-video-id");
+    expect(mockGetVideoTimeRangesAction).toHaveBeenCalledWith("test-video-id");
   });
 
   it("クリップが読み込まれると正しく表示されること", async () => {
-    render(<TimelineVisualization {...defaultProps} />);
+    // モックデータにクリップ表示用の色情報を追加
+    const rangesWithColor = mockTimeRanges.map((range, index) => ({
+      ...range,
+      color:
+        index === 0 ? "rgba(59, 130, 246, 0.5)" : "rgba(16, 185, 129, 0.5)",
+    }));
+
+    mockGetVideoTimeRangesAction.mockResolvedValue(rangesWithColor);
+
+    render(
+      <TimelineVisualization
+        {...defaultProps}
+        getTimeRangesAction={mockGetVideoTimeRangesAction}
+      />,
+    );
 
     // クリップが非同期で読み込まれるため、Promiseが解決されるのを待つ
-    await act(async () => {
-      // モックの解決を待つ
-      await Promise.resolve();
+    await waitFor(() => {
+      // クリップタイトルが表示されていることを確認
+      expect(
+        screen.getByTitle("テストクリップ1 (1:00 - 1:30)"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTitle("テストクリップ2 (2:30 - 3:30)"),
+      ).toBeInTheDocument();
     });
 
-    // クリップコンテナが表示されていることを確認
+    // aria-labelでクリップを検索する
     const clipElements = screen.getAllByRole("button");
     expect(clipElements).toHaveLength(mockTimeRanges.length);
 
@@ -105,31 +132,50 @@ describe("TimelineVisualizationコンポーネント", () => {
   });
 
   it("クリップをクリックすると、onClipClick関数が呼び出されること", async () => {
-    render(<TimelineVisualization {...defaultProps} />);
+    render(
+      <TimelineVisualization
+        {...defaultProps}
+        getTimeRangesAction={mockGetVideoTimeRangesAction}
+      />,
+    );
 
     // クリップの読み込みを待つ
-    await act(async () => {
-      await Promise.resolve();
+    await waitFor(() => {
+      expect(
+        screen.getByTitle("テストクリップ1 (1:00 - 1:30)"),
+      ).toBeInTheDocument();
     });
 
     // クリップをクリック
-    const clipElements = screen.getAllByRole("button");
-    fireEvent.click(clipElements[0]);
+    const clipElement = screen.getByTitle("テストクリップ1 (1:00 - 1:30)");
+    fireEvent.click(clipElement);
 
     // onClipClickが正しいパラメータで呼ばれたことを確認
     expect(defaultProps.onClipClick).toHaveBeenCalledWith("clip-1");
   });
 
   it("キーボードでクリップが操作できること", async () => {
-    render(<TimelineVisualization {...defaultProps} />);
+    render(
+      <TimelineVisualization
+        {...defaultProps}
+        getTimeRangesAction={mockGetVideoTimeRangesAction}
+      />,
+    );
 
     // クリップの読み込みを待つ
-    await act(async () => {
-      await Promise.resolve();
+    await waitFor(() => {
+      expect(
+        screen.getByTitle("テストクリップ1 (1:00 - 1:30)"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTitle("テストクリップ2 (2:30 - 3:30)"),
+      ).toBeInTheDocument();
     });
 
-    // Enterキーでクリップを操作
+    // クリップ要素を取得
     const clipElements = screen.getAllByRole("button");
+
+    // Enterキーでクリップを操作
     fireEvent.keyDown(clipElements[1], { key: "Enter" });
 
     // onClipClickが正しいパラメータで呼ばれたことを確認
@@ -143,7 +189,11 @@ describe("TimelineVisualizationコンポーネント", () => {
   it("現在の再生位置マーカーが表示されること", () => {
     const currentTime = 150; // 2:30
     render(
-      <TimelineVisualization {...defaultProps} currentTime={currentTime} />,
+      <TimelineVisualization
+        {...defaultProps}
+        currentTime={currentTime}
+        getTimeRangesAction={mockGetVideoTimeRangesAction}
+      />,
     );
 
     // 現在の再生位置を示す要素が存在することを確認
@@ -157,7 +207,12 @@ describe("TimelineVisualizationコンポーネント", () => {
   });
 
   it("マウス操作で時間範囲を選択できること", async () => {
-    render(<TimelineVisualization {...defaultProps} />);
+    render(
+      <TimelineVisualization
+        {...defaultProps}
+        getTimeRangesAction={mockGetVideoTimeRangesAction}
+      />,
+    );
 
     // クリップの読み込みを待つ
     await act(async () => {
@@ -183,11 +238,16 @@ describe("TimelineVisualizationコンポーネント", () => {
 
   it("ロード中の表示がされること", () => {
     // APIがPromiseを解決しないようにする
-    vi.mocked(validation.getVideoTimeRanges).mockImplementation(
+    mockGetVideoTimeRangesAction.mockImplementation(
       () => new Promise(() => {}),
     );
 
-    render(<TimelineVisualization {...defaultProps} />);
+    render(
+      <TimelineVisualization
+        {...defaultProps}
+        getTimeRangesAction={mockGetVideoTimeRangesAction}
+      />,
+    );
 
     // ローディングメッセージが表示されていることを確認
     expect(
@@ -203,11 +263,16 @@ describe("TimelineVisualizationコンポーネント", () => {
 
     try {
       // APIがエラーを投げるようにする
-      vi.mocked(validation.getVideoTimeRanges).mockRejectedValueOnce(
+      mockGetVideoTimeRangesAction.mockRejectedValueOnce(
         new Error("テストエラー"),
       );
 
-      render(<TimelineVisualization {...defaultProps} />);
+      render(
+        <TimelineVisualization
+          {...defaultProps}
+          getTimeRangesAction={mockGetVideoTimeRangesAction}
+        />,
+      );
 
       // エラー処理を待つため、コンソールエラーが呼び出されるまで待機
       await waitFor(() => {
@@ -216,7 +281,7 @@ describe("TimelineVisualizationコンポーネント", () => {
 
       // エラーメッセージに適切な内容が含まれていることを確認
       expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining("時間範囲の取得に失敗しました"),
+        expect.stringContaining("[エラー] 時間範囲の取得に失敗しました"),
         expect.any(Error),
       );
     } finally {

@@ -4,6 +4,7 @@ import { createAudioClip } from "@/actions/audioclips/actions";
 import type { FetchResult } from "@/actions/audioclips/types";
 import AudioClipCreator from "@/components/audioclips/AudioClipCreator";
 import AudioClipList from "@/components/audioclips/AudioClipList";
+import TimelineVisualization from "@/components/audioclips/TimelineVisualization";
 import CollapsibleVideoInfo from "@/components/videos/CollapsibleVideoInfo";
 import YouTubeEmbed, {
   type YouTubePlayer,
@@ -15,7 +16,7 @@ import type {
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import type { Video } from "@/lib/videos/types";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // GetAudioClipsParamsの型を定義
 interface GetAudioClipsParams {
@@ -42,6 +43,15 @@ interface VideoPageClientProps {
     endTime: number,
     excludeClipId?: string,
   ) => Promise<OverlapCheckResult>;
+  // 時間範囲取得用のサーバーアクション
+  getTimeRangesAction: (videoId: string) => Promise<
+    Array<{
+      start: number;
+      end: number;
+      clipId: string;
+      title: string;
+    }>
+  >;
 }
 
 /**
@@ -58,6 +68,7 @@ export default function VideoPageClient({
   incrementPlayCountAction,
   toggleFavoriteAction,
   checkOverlapAction,
+  getTimeRangesAction,
 }: VideoPageClientProps) {
   // 認証情報を取得
   const { user } = useAuth();
@@ -123,6 +134,48 @@ export default function VideoPageClient({
     setRefreshKey((prev) => prev + 1);
   };
 
+  // 動画の長さを追跡するための状態
+  const [videoDuration, setVideoDuration] = useState(0);
+  // 現在の再生位置を追跡するための状態
+  const [currentTime, setCurrentTime] = useState(0);
+
+  // 再生位置の更新用インターバル
+  useEffect(() => {
+    if (!isPlayerReady || !youtubePlayerRef.current) return;
+
+    // 動画の長さを取得
+    try {
+      const duration = youtubePlayerRef.current.getDuration();
+      if (duration > 0) {
+        setVideoDuration(duration);
+      }
+    } catch (error) {
+      console.error("動画の長さの取得に失敗しました:", error);
+    }
+
+    // 再生位置更新用のインターバル設定
+    const updateTimeInterval = setInterval(() => {
+      try {
+        if (youtubePlayerRef.current) {
+          setCurrentTime(youtubePlayerRef.current.getCurrentTime());
+        }
+      } catch (error) {
+        // エラー発生時は何もしない
+      }
+    }, 1000); // 1秒ごとに更新
+
+    return () => {
+      clearInterval(updateTimeInterval);
+    };
+  }, [isPlayerReady]);
+
+  // タイムラインからの時間選択ハンドラー
+  const handleTimeRangeSelect = useCallback((start: number, end: number) => {
+    if (youtubePlayerRef.current) {
+      youtubePlayerRef.current.seekTo(start, true);
+    }
+  }, []);
+
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="mb-6">
@@ -159,6 +212,20 @@ export default function VideoPageClient({
               />
             </div>
           </div>
+
+          {/* タイムライン可視化（動画プレーヤー下に配置） */}
+          {isPlayerReady && videoDuration > 0 && (
+            <div className="mb-6">
+              <TimelineVisualization
+                videoId={video.id}
+                videoDuration={videoDuration}
+                currentTime={currentTime}
+                onRangeSelect={handleTimeRangeSelect}
+                getTimeRangesAction={getTimeRangesAction}
+                className="mt-2"
+              />
+            </div>
+          )}
 
           {/* 動画情報 */}
           <div className="mb-6">
