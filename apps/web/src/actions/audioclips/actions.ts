@@ -48,6 +48,13 @@ export async function getAudioClips(params: GetAudioClipsParams) {
     const db = await getFirestoreAdmin();
     console.log("Firestoreの接続に成功しました");
 
+    // 現在のユーザーを取得
+    const currentUser = await getCurrentUser();
+    console.log(
+      "getAudioClips 認証状態:",
+      currentUser ? `認証済み (${currentUser.uid})` : "未認証",
+    );
+
     // クエリ条件の構築
     const clipsCollection = db.collection("audioClips");
 
@@ -61,9 +68,6 @@ export async function getAudioClips(params: GetAudioClipsParams) {
     if (userId) {
       queryBuilder = queryBuilder.where("userId", "==", userId);
     }
-
-    // 現在のユーザーを取得
-    const currentUser = await getCurrentUser();
 
     // 非公開クリップの表示条件
     // 自分のクリップを取得する場合のみ非公開も含める
@@ -160,8 +164,15 @@ export async function getAudioClips(params: GetAudioClipsParams) {
  */
 export async function createAudioClip(data: AudioClipData) {
   try {
-    // 認証チェック
-    const currentUser = await getCurrentUser();
+    console.log("createAudioClip: 音声クリップ作成開始", {
+      videoId: data.videoId,
+      title: data.title,
+      startTime: data.startTime,
+      endTime: data.endTime,
+    });
+
+    // 認証チェック - 改善されたヘルパー関数を使用
+    const currentUser = await checkAndLogAuthInfo("createAudioClip");
     if (!currentUser) {
       throw new Error("認証が必要です");
     }
@@ -592,6 +603,13 @@ export async function incrementPlayCount(clipId: string) {
     // ヘルパー関数を使用してFirestoreを初期化
     const db = await getFirestoreAdmin();
 
+    // デバッグ: 認証情報を確認
+    const currentUser = await getCurrentUser();
+    console.log(
+      "incrementPlayCount 認証状態:",
+      currentUser ? `認証済み (${currentUser.uid})` : "未認証",
+    );
+
     // クリップの存在確認
     const clipDoc = await db.collection("audioClips").doc(clipId).get();
 
@@ -608,10 +626,13 @@ export async function incrementPlayCount(clipId: string) {
         lastPlayedAt: FieldValue.serverTimestamp(),
       });
 
-    return {
+    const responseData = {
       id: clipId,
       message: "再生回数が更新されました",
     };
+
+    // 確実にシリアライズする
+    return JSON.parse(JSON.stringify(responseData));
   } catch (error) {
     console.error("再生回数の更新に失敗しました:", error);
     throw new Error(
@@ -635,49 +656,59 @@ async function checkTimeRangeOverlap(
   startTime: number,
   endTime: number,
 ): Promise<{ isOverlapping: boolean; overlappingClips: AudioClipDocument[] }> {
-  // 同じ動画の全ての音声クリップを取得
-  const clipsSnapshot = await db
-    .collection("audioClips")
-    .where("videoId", "==", videoId)
-    .get();
+  // デバッグ: 認証情報を確認（改善されたヘルパー関数を使用）
+  await checkAndLogAuthInfo("checkTimeRangeOverlap");
 
-  if (clipsSnapshot.empty) {
-    return { isOverlapping: false, overlappingClips: [] };
-  }
+  try {
+    // 同じ動画の全ての音声クリップを取得
+    const clipsSnapshot = await db
+      .collection("audioClips")
+      .where("videoId", "==", videoId)
+      .get();
 
-  // 重複チェック
-  const overlappingClips = clipsSnapshot.docs
-    .map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate().toISOString(),
-        updatedAt: data.updatedAt?.toDate().toISOString(),
-      } as AudioClipDocument;
-    })
-    .filter((clip) => {
-      // 以下の条件で重複と判定
-      // 1. 新規範囲が既存範囲に完全に含まれる
-      // 2. 新規範囲が既存範囲を完全に含む
-      // 3. 新規範囲の開始点が既存範囲内にある
-      // 4. 新規範囲の終了点が既存範囲内にある
-      return (
+    if (clipsSnapshot.empty) {
+      return { isOverlapping: false, overlappingClips: [] };
+    }
+
+    // 重複チェック
+    const overlappingClips = clipsSnapshot.docs
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate().toISOString(),
+          updatedAt: data.updatedAt?.toDate().toISOString(),
+        } as AudioClipDocument;
+      })
+      .filter((clip) => {
+        // 以下の条件で重複と判定
         // 1. 新規範囲が既存範囲に完全に含まれる
-        (startTime >= clip.startTime && endTime <= clip.endTime) ||
         // 2. 新規範囲が既存範囲を完全に含む
-        (startTime <= clip.startTime && endTime >= clip.endTime) ||
         // 3. 新規範囲の開始点が既存範囲内にある
-        (startTime >= clip.startTime && startTime < clip.endTime) ||
         // 4. 新規範囲の終了点が既存範囲内にある
-        (endTime > clip.startTime && endTime <= clip.endTime)
-      );
-    });
+        return (
+          // 1. 新規範囲が既存範囲に完全に含まれる
+          (startTime >= clip.startTime && endTime <= clip.endTime) ||
+          // 2. 新規範囲が既存範囲を完全に含む
+          (startTime <= clip.startTime && endTime >= clip.endTime) ||
+          // 3. 新規範囲の開始点が既存範囲内にある
+          (startTime >= clip.startTime && startTime < clip.endTime) ||
+          // 4. 新規範囲の終了点が既存範囲内にある
+          (endTime > clip.startTime && endTime <= clip.endTime)
+        );
+      });
 
-  return {
-    isOverlapping: overlappingClips.length > 0,
-    overlappingClips,
-  };
+    return {
+      isOverlapping: overlappingClips.length > 0,
+      overlappingClips,
+    };
+  } catch (error) {
+    console.error("時間範囲重複チェック中にエラーが発生しました:", error);
+    throw new Error(
+      await formatErrorMessage("時間範囲重複チェックに失敗しました", error),
+    );
+  }
 }
 
 /**
@@ -762,4 +793,25 @@ interface AudioClipDocument {
   createdAt: string;
   updatedAt: string;
   lastPlayedAt?: string;
+}
+
+/**
+ * ログインユーザー情報を取得して出力する補助関数
+ * エラーのトラブルシューティング用
+ */
+async function checkAndLogAuthInfo(functionName: string) {
+  try {
+    const currentUser = await getCurrentUser();
+    if (currentUser) {
+      console.log(
+        `${functionName}: 認証成功 - UID: ${currentUser.uid}, 表示名: ${currentUser.displayName || "名無し"}`,
+      );
+      return currentUser;
+    }
+    console.warn(`${functionName}: 未認証状態です`);
+    return null;
+  } catch (error) {
+    console.error(`${functionName}: 認証情報取得エラー:`, error);
+    return null;
+  }
 }

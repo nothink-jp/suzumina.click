@@ -8,6 +8,7 @@ import CollapsibleVideoInfo from "@/components/videos/CollapsibleVideoInfo";
 import YouTubeEmbed, {
   type YouTubePlayer,
 } from "@/components/videos/YouTubeEmbed";
+import type { AudioClipCreateData } from "@/lib/audioclips/types";
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import type { Video } from "@/lib/videos/types";
 import Link from "next/link";
@@ -83,6 +84,26 @@ export default function VideoPageClient({
     setIsPlayerReady(true);
   };
 
+  // クリップ作成をラップしてデバッグ情報を表示するためのハンドラー
+  const handleCreateAudioClip = async (data: AudioClipCreateData) => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("クライアント: 音声クリップ作成開始", {
+        videoId: data.videoId,
+        title: data.title,
+        userId: user?.uid,
+      });
+    }
+
+    try {
+      const result = await createAudioClip(data);
+      console.log("クライアント: 音声クリップ作成成功", { id: result.id });
+      return result;
+    } catch (error) {
+      console.error("クライアント: 音声クリップ作成エラー", error);
+      throw error;
+    }
+  };
+
   // クリップ作成後の処理
   const handleClipCreated = () => {
     // クリップリストを更新
@@ -139,7 +160,7 @@ export default function VideoPageClient({
                 videoTitle={video.title}
                 onClipCreated={handleClipCreated}
                 youtubePlayerRef={youtubePlayerRef}
-                createAudioClipAction={createAudioClip}
+                createAudioClipAction={handleCreateAudioClip}
               />
             </div>
           )}

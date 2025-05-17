@@ -54,6 +54,7 @@ export async function getCurrentUser(
   try {
     // Firebase Admin SDKを初期化
     const auth = initializeFirebaseAdmin();
+    console.log("getCurrentUser: Firebase Admin SDKの初期化完了");
 
     // 1. Bearerトークンからの認証を試みる
     const idToken = await getBearerToken(req);
@@ -72,6 +73,8 @@ export async function getCurrentUser(
         console.error("IDトークンの検証に失敗しました:", error);
         // トークン認証が失敗した場合はクッキー認証を試みる
       }
+    } else {
+      console.log("BearerトークンがHTTPヘッダーにありません");
     }
 
     // 2. セッションクッキーからの認証を試みる
@@ -80,6 +83,7 @@ export async function getCurrentUser(
 
     if (!sessionCookie?.value) {
       // セッションクッキーがない場合は未ログイン
+      console.log("セッションクッキーがありません");
       return null;
     }
 
@@ -92,6 +96,7 @@ export async function getCurrentUser(
       const uid = decodedClaims.uid;
 
       if (!uid) {
+        console.log("セッションクッキーからUIDを取得できません");
         return null;
       }
 
