@@ -9,6 +9,8 @@ import { SUZUKA_MINASE_CHANNEL_ID } from "./common";
 import firestore, { Timestamp } from "./utils/firestore";
 // functions/src/youtube.ts
 import * as logger from "./utils/logger";
+import { retryApiCall } from "./utils/retry";
+import type { ApiError } from "./utils/retry";
 
 // YouTube API初期化時のチェック
 (function initializeYoutubeModule() {
@@ -21,8 +23,6 @@ import * as logger from "./utils/logger";
 // YouTube API クォータ制限関連の定数
 const MAX_VIDEOS_PER_BATCH = 50; // YouTube APIの最大結果数
 const QUOTA_EXCEEDED_CODE = 403; // クォータ超過エラーコード
-const MAX_RETRY_ATTEMPTS = 3; // リトライ回数
-const RETRY_DELAY_MS = 5000; // リトライ間隔（ミリ秒）
 
 // メタデータ保存用のドキュメントID
 const METADATA_DOC_ID = "fetch_metadata";
@@ -57,57 +57,11 @@ interface FetchResult {
 }
 
 /**
- * YouTube API エラーの型定義
- */
-interface YouTubeApiError {
-  code?: number;
-  message?: string;
-}
-
-/**
  * Pub/SubメッセージのPubsubMessage型定義
  */
 interface PubsubMessage {
   data?: string;
   attributes?: Record<string, string>;
-}
-
-/**
- * 指定された時間だけ待機する関数
- *
- * @param ms - 待機するミリ秒
- * @returns Promise<void>
- */
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * リトライ機能付きのYouTube API呼び出し関数
- *
- * @param apiCall - YouTube API呼び出し関数
- * @param attempts - 最大リトライ回数
- * @returns Promise<T> - API呼び出し結果
- */
-async function retryApiCall<T>(
-  apiCall: () => Promise<T>,
-  attempts: number = MAX_RETRY_ATTEMPTS,
-): Promise<T> {
-  try {
-    return await apiCall();
-  } catch (error: unknown) {
-    // クォータ超過エラーまたはリトライ回数超過の場合は例外をスロー
-    const apiError = error as YouTubeApiError;
-    if (apiError.code === QUOTA_EXCEEDED_CODE || attempts <= 1) {
-      throw error;
-    }
-
-    // リトライ処理
-    logger.warn(
-      `API呼び出しに失敗しました。${RETRY_DELAY_MS}ms後に再試行します。残りリトライ回数: ${attempts - 1}`,
-    );
-    await sleep(RETRY_DELAY_MS);
-    return retryApiCall(apiCall, attempts - 1);
-  }
 }
 
 /**
@@ -297,7 +251,7 @@ async function fetchVideoIds(
         break;
       }
     } catch (error: unknown) {
-      const apiError = error as YouTubeApiError;
+      const apiError = error as ApiError;
       if (apiError.code === QUOTA_EXCEEDED_CODE) {
         // クォータ超過の場合
         logger.error(
@@ -366,7 +320,7 @@ async function fetchVideoDetails(
         `${videoResponse.items?.length ?? 0}件の動画詳細を取得しました（バッチ ${Math.floor(i / MAX_VIDEOS_PER_BATCH) + 1}）`,
       );
     } catch (error: unknown) {
-      const apiError = error as YouTubeApiError;
+      const apiError = error as ApiError;
       if (apiError.code === QUOTA_EXCEEDED_CODE) {
         // クォータ超過の場合
         logger.error(
