@@ -6,35 +6,10 @@
  */
 
 import { Firestore, Timestamp } from "@google-cloud/firestore";
-import { getFirestoreConfig, isEmulatorMode } from "../config";
 import * as logger from "./logger";
 
 // シングルトンパターンで一度だけFirestoreインスタンスを作成
 let firestoreInstance: Firestore | null = null;
-
-/**
- * Firestoreインスタンスを作成するための設定オブジェクトを構築
- *
- * @returns Firestoreコンストラクタに渡すオプション
- */
-export function createFirestoreOptions(): Record<string, unknown> | undefined {
-  // 設定を取得
-  const config = getFirestoreConfig();
-
-  // Firestoreのオプション
-  const options: Record<string, unknown> = {};
-
-  // エミュレータモードの場合、接続オプションを追加
-  if (isEmulatorMode() && config.useEmulator) {
-    options.host = config.host;
-    options.port = config.port;
-    logger.info(
-      `Firestoreエミュレータに接続します: ${config.host}:${config.port}`,
-    );
-  }
-
-  return Object.keys(options).length > 0 ? options : undefined;
-}
 
 /**
  * 新しいFirestoreインスタンスを作成
@@ -42,8 +17,7 @@ export function createFirestoreOptions(): Record<string, unknown> | undefined {
  * @returns 新しく作成されたFirestoreインスタンス
  */
 export function createFirestoreInstance(): Firestore {
-  const options = createFirestoreOptions();
-  const instance = new Firestore(options);
+  const instance = new Firestore();
   logger.info("Firestoreクライアントが初期化されました");
   return instance;
 }

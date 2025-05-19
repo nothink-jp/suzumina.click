@@ -24,12 +24,6 @@ vi.mock("@google-cloud/firestore", () => {
   };
 });
 
-// configモジュールのモック
-vi.mock("../config", () => ({
-  getFirestoreConfig: vi.fn(),
-  isEmulatorMode: vi.fn().mockReturnValue(false),
-}));
-
 // ロガーのモック
 vi.mock("./logger", () => ({
   info: vi.fn(),
@@ -39,15 +33,12 @@ vi.mock("./logger", () => ({
 // テストの前にモジュールをインポート
 let firestoreModule: any;
 let getFirestore: any;
-let createFirestoreOptions: any;
 let createFirestoreInstance: any;
 let resetFirestoreInstance: any;
 let Timestamp: any;
 let mockFirestoreConstructor: any;
 let mockTimestampNow: any;
 let mockTimestampFromDate: any;
-let mockGetFirestoreConfig: any;
-let mockIsEmulatorMode: any;
 let mockLoggerInfo: any;
 
 describe("firestore", () => {
@@ -63,11 +54,6 @@ describe("firestore", () => {
     mockTimestampNow = vi.spyOn(googleFirestore.Timestamp, "now");
     mockTimestampFromDate = vi.spyOn(googleFirestore.Timestamp, "fromDate");
 
-    // configのmockをインポート
-    const config = await import("../config");
-    mockGetFirestoreConfig = vi.spyOn(config, "getFirestoreConfig");
-    mockIsEmulatorMode = vi.spyOn(config, "isEmulatorMode");
-
     // loggerのmockをインポート
     const logger = await import("./logger");
     mockLoggerInfo = vi.spyOn(logger, "info");
@@ -76,7 +62,6 @@ describe("firestore", () => {
     const importedModule = await import("./firestore");
     firestoreModule = importedModule.default;
     getFirestore = importedModule.getFirestore;
-    createFirestoreOptions = importedModule.createFirestoreOptions;
     createFirestoreInstance = importedModule.createFirestoreInstance;
     resetFirestoreInstance = importedModule.resetFirestoreInstance;
     Timestamp = importedModule.Timestamp;
@@ -120,101 +105,11 @@ describe("firestore", () => {
     });
   });
 
-  describe("createFirestoreOptions", () => {
-    // 各テスト実行前にモックをリセット
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
-
-    it("エミュレータモードではない場合、undefinedを返すこと", () => {
-      // モックの設定
-      mockIsEmulatorMode.mockReturnValue(false);
-      mockGetFirestoreConfig.mockReturnValue({});
-
-      // 関数を実行
-      const options = createFirestoreOptions();
-
-      // アサーション
-      expect(options).toBeUndefined();
-      // ロガー呼び出しのアサーション（エミュレータモード時のみ呼ばれるべき）
-      expect(mockLoggerInfo).not.toHaveBeenCalledWith(
-        expect.stringContaining("Firestoreエミュレータに接続します"),
-      );
-    });
-
-    it("エミュレータモードかつuseEmulator=trueの場合、ホストとポートが設定されたオプションを返すこと", () => {
-      // モックの設定
-      mockIsEmulatorMode.mockReturnValue(true);
-      mockGetFirestoreConfig.mockReturnValue({
-        useEmulator: true,
-        host: "localhost",
-        port: 8080,
-      });
-
-      // 関数を実行
-      const options = createFirestoreOptions();
-
-      // アサーション
-      expect(options).toEqual({
-        host: "localhost",
-        port: 8080,
-      });
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        "Firestoreエミュレータに接続します: localhost:8080",
-      );
-    });
-
-    it("エミュレータモードでもuseEmulator=falseの場合、undefinedを返すこと", () => {
-      // モックの設定
-      mockIsEmulatorMode.mockReturnValue(true);
-      mockGetFirestoreConfig.mockReturnValue({
-        useEmulator: false,
-      });
-
-      // 関数を実行
-      const options = createFirestoreOptions();
-
-      // アサーション
-      expect(options).toBeUndefined();
-      // ロガー呼び出しのアサーション（エミュレータモード＆useEmulator=trueの場合のみ呼ばれるべき）
-      expect(mockLoggerInfo).not.toHaveBeenCalledWith(
-        expect.stringContaining("Firestoreエミュレータに接続します"),
-      );
-    });
-  });
-
   describe("createFirestoreInstance", () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
-
-    it("createFirestoreOptionsの結果をFirestoreコンストラクタに渡すこと", () => {
-      // エミュレータモードのテストケース
-      mockIsEmulatorMode.mockReturnValue(true);
-      mockGetFirestoreConfig.mockReturnValue({
-        useEmulator: true,
-        host: "localhost",
-        port: 8080,
-      });
-
+    it("Firestoreを初期化すること", () => {
       createFirestoreInstance();
 
-      expect(mockFirestoreConstructor).toHaveBeenCalledWith({
-        host: "localhost",
-        port: 8080,
-      });
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        "Firestoreクライアントが初期化されました",
-      );
-    });
-
-    it("非エミュレータモードの場合、オプションなしでFirestoreを初期化すること", () => {
-      mockIsEmulatorMode.mockReturnValue(false);
-      mockGetFirestoreConfig.mockReturnValue({});
-
-      createFirestoreInstance();
-
-      expect(mockFirestoreConstructor).toHaveBeenCalledWith(undefined);
+      expect(mockFirestoreConstructor).toHaveBeenCalled();
       expect(mockLoggerInfo).toHaveBeenCalledWith(
         "Firestoreクライアントが初期化されました",
       );
