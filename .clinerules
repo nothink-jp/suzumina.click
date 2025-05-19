@@ -1,41 +1,62 @@
-# .clinerules
+# PROJECT GUIDELINES FOR AI ASSISTANT
 
-## 基本ルール
-- docs/TODO.md にチェックリストを管理、docs/CHANGELOG.md に変更履歴を管理、適宜 docs 確認・更新
-- コード実装方針は docs/POLICY.md に記載、実装時に確認
-- リリースノートは docs/CHANGELOG.md を元に自動生成、GitHubのリリース機能を使用
-- Markdown は100行以内、不要なドキュメントは削除
+## 1. Documentation Management
+- Task tracking in `docs/TODO.md` (チェックリスト管理)
+- Change history in `docs/CHANGELOG.md` (変更履歴管理)
+- Implementation policies in `docs/POLICY.md` (実装前に必ず確認)
+- Release notes: Auto-generated from `docs/CHANGELOG.md` using GitHub Releases
+- Markdown rule: Maximum 100 lines, remove unnecessary documents
 
-## 開発プラクティス
-- テスト: Red-Green-Refactor + Arrange-Act-Assert パターン
-- コード品質:
-  - 純粋関数・短い関数・単一責務を優先
-  - コロケーション、可読性、保守性、テスト容易性を重視
-  - 重複回避、シンプルな設計
+## 2. Development Practices
+### Testing Methodology
+- Test approach: Red-Green-Refactor cycle + Arrange-Act-Assert pattern
+- Coverage target: 80% minimum
 
-## 開発手順
-- 実装後に必ずテスト、フォーマッター、リンター、ビルドを実行し、問題がある場合は修正
+### Code Quality Standards
+- Function design:
+  - Pure functions preferred
+  - Short functions
+  - Single responsibility principle
+- Design principles:
+  - Code collocation (関連コードの近接配置)
+  - Readability first
+  - Maintainability
+  - Testability
+  - Avoid duplication
+  - Simple design
 
-## Git
-- Conventional Commits: feat, fix, docs, style, refactor, test, chore
-- トランクベース開発、GitHub Flow
+## 3. Development Workflow
+- Post-implementation checklist:
+  - Run tests
+  - Format code
+  - Lint code
+  - Verify build
+  - Fix issues immediately
 
-## 言語設定
-language:
-  thinking: "en-US"
-  output: "ja-JP"
-  enforce_output_language: true
-  preserve_technical_terms: true
+## 4. Version Control
+- Commit convention (Conventional Commits):
+  - feat: New features
+  - fix: Bug fixes
+  - docs: Documentation
+  - style: Formatting
+  - refactor: Refactoring
+  - test: Tests
+  - chore: Chores
+- Development flow:
+  - Trunk-based development
+  - GitHub Flow
 
-## ドキュメント・コメント
-docs_comments:
-  language: "ja-JP"
-  docstring_style:
-    python: "google"
-    typescript: "jsdoc"
+## 5. Language Settings
+- Thinking: English (en-US)
+- Output: Japanese (ja-JP)
+- Enforce output language: Yes
+- Preserve technical terms: Yes
 
-## テスト
-testing:
-  coverage:
-    enabled: true
-    threshold: 80
+## 6. Documentation Standards
+- Comment language: Japanese (ja-JP)
+- Docstring styles:
+  - TypeScript: JSDoc
+
+## 7. Testing Settings
+- Coverage enabled: Yes
+- Coverage threshold: 80%

@@ -6,14 +6,11 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     name: "functions",
-    // monorepoの場合、ルートディレクトリを指定
     root: resolve(__dirname, "."),
     environment: "node",
     globals: true,
     testTimeout: 5000,
-    // テスト対象ファイルを明示的に指定
     include: ["src/**/*.{test,spec}.{ts,js}"],
-    // テスト対象から除外するパターン
     exclude: ["node_modules/**", "lib/**"],
     coverage: {
       provider: "v8",
