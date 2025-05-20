@@ -81,19 +81,34 @@ function createVideoData(
     liveBroadcastContent: convertLiveBroadcastContent(
       video.snippet.liveBroadcastContent,
     ),
-    // スニペット内の追加データを追加
-    categoryId: video.snippet.categoryId ?? undefined,
-    tags: video.snippet.tags ?? undefined,
+    // スニペット内の追加データを追加（undefined値の場合は省略）
+    ...(video.snippet.categoryId
+      ? { categoryId: video.snippet.categoryId }
+      : {}),
+    ...(video.snippet.tags ? { tags: video.snippet.tags } : {}),
   };
 
   // contentDetailsパートのデータがあれば追加
   if (video.contentDetails) {
-    videoData.duration = video.contentDetails.duration ?? undefined;
-    videoData.dimension = video.contentDetails.dimension ?? undefined;
-    videoData.definition = video.contentDetails.definition ?? undefined;
+    // undefinedでない場合のみフィールドを追加
+    if (video.contentDetails.duration) {
+      videoData.duration = video.contentDetails.duration;
+    }
+    if (video.contentDetails.dimension) {
+      videoData.dimension = video.contentDetails.dimension;
+    }
+    if (video.contentDetails.definition) {
+      videoData.definition = video.contentDetails.definition;
+    }
+
     videoData.caption = video.contentDetails.caption === "true";
-    videoData.licensedContent =
-      video.contentDetails.licensedContent ?? undefined;
+
+    if (
+      video.contentDetails.licensedContent !== undefined &&
+      video.contentDetails.licensedContent !== null
+    ) {
+      videoData.licensedContent = video.contentDetails.licensedContent;
+    }
     // contentRatingオブジェクトがある場合、Record<string, string>形式に変換
     if (video.contentDetails.contentRating) {
       const contentRating: Record<string, string> = {};
@@ -106,17 +121,21 @@ function createVideoData(
         }
       }
       videoData.contentRating = contentRating;
-    } else {
-      videoData.contentRating = undefined;
     }
     // nullをundefinedに変換してregionRestrictionを設定
     if (video.contentDetails.regionRestriction) {
-      videoData.regionRestriction = {
-        allowed: video.contentDetails.regionRestriction.allowed || undefined,
-        blocked: video.contentDetails.regionRestriction.blocked || undefined,
-      };
-    } else {
-      videoData.regionRestriction = undefined;
+      const allowed = video.contentDetails.regionRestriction.allowed;
+      const blocked = video.contentDetails.regionRestriction.blocked;
+
+      if (allowed || blocked) {
+        videoData.regionRestriction = {};
+        if (allowed && allowed.length > 0) {
+          videoData.regionRestriction.allowed = allowed;
+        }
+        if (blocked && blocked.length > 0) {
+          videoData.regionRestriction.blocked = blocked;
+        }
+      }
     }
   }
 

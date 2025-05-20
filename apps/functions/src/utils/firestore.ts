@@ -17,7 +17,10 @@ let firestoreInstance: Firestore | null = null;
  * @returns 新しく作成されたFirestoreインスタンス
  */
 export function createFirestoreInstance(): Firestore {
-  const instance = new Firestore();
+  const instance = new Firestore({
+    // undefined値を無視するオプションを有効化
+    ignoreUndefinedProperties: true,
+  });
   logger.info("Firestoreクライアントが初期化されました");
   return instance;
 }
