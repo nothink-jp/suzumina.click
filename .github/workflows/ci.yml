@@ -193,43 +193,8 @@ jobs:
       actions: write
 
     steps:
-      - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2  # 直前のコミットも取得して比較
-
-      # 変更されたファイルを検出
-      - name: 変更ファイルを検出
-        id: changed-files
-        run: |
-          # 変更されたファイルを取得
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep -v "^\.github/")
-          
-          # Webアプリケーションの変更を検出
-          WEB_CHANGED=$(echo "$CHANGED_FILES" | grep -q "^apps/web/" && echo "true" || echo "false")
-          
-          # Cloud Functionsの変更を検出
-          FUNCTIONS_CHANGED=$(echo "$CHANGED_FILES" | grep -q "^apps/functions/" && echo "true" || echo "false")
-          
-          # 共有パッケージの変更を検出（共有パッケージの変更の場合は両方デプロイする必要がある）
-          SHARED_CHANGED=$(echo "$CHANGED_FILES" | grep -q "^packages/" && echo "true" || echo "false")
-          
-          if [ "$SHARED_CHANGED" = "true" ]; then
-            WEB_CHANGED="true"
-            FUNCTIONS_CHANGED="true"
-          fi
-          
-          echo "web_changed=$WEB_CHANGED" >> $GITHUB_OUTPUT
-          echo "functions_changed=$FUNCTIONS_CHANGED" >> $GITHUB_OUTPUT
-          
-          echo "変更検出結果:"
-          echo "- Webアプリケーション: $WEB_CHANGED"
-          echo "- Cloud Functions: $FUNCTIONS_CHANGED"
-          echo "- 共有パッケージ: $SHARED_CHANGED"
-
-      # 変更に基づいて選択的デプロイを開始
-      - name: 選択的デプロイの開始
-        if: ${{ steps.changed-files.outputs.web_changed == 'true' || steps.changed-files.outputs.functions_changed == 'true' }}
+      # 統合デプロイを開始（選択的デプロイを廃止し常に両方デプロイする）
+      - name: 統合デプロイの開始
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -242,9 +207,9 @@ jobs:
               inputs: {
                 branch: 'main',
                 trigger_source: 'ci',
-                deploy_web: '${{ steps.changed-files.outputs.web_changed }}',
-                deploy_functions: '${{ steps.changed-files.outputs.functions_changed }}',
+                deploy_web: 'true',
+                deploy_functions: 'true',
                 ci_run_id: '${{ github.run_id }}'
               }
             });
-            console.log('変更検出に基づく選択的デプロイをトリガーしました');
+            console.log('CI成功に基づく統合デプロイをトリガーしました');
