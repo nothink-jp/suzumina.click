@@ -1,13 +1,6 @@
 // functions/src/common.ts
-import type { FirestoreServerVideoData } from "@suzumina.click/shared-types";
 
 // --- インターフェース定義 ---
-
-/**
- * YouTube 動画データのインターフェース
- * @deprecated `@suzumina.click/shared-types` の `FirestoreServerVideoData` を使用してください
- */
-export type YouTubeVideoData = FirestoreServerVideoData;
 
 /**
  * Pub/Sub メッセージのデータ構造

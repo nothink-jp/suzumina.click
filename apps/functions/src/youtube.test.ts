@@ -119,8 +119,8 @@ vi.mock("./utils/firestore", () => {
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import type { Mock } from "vitest";
-import type { SimplePubSubData } from "./common";
-import firestore, { Timestamp } from "./utils/firestore";
+import type { SimplePubSubData } from "./utils/common";
+import firestore from "./utils/firestore";
 import * as logger from "./utils/logger";
 import { fetchYouTubeVideos } from "./youtube";
 

@@ -33,7 +33,6 @@
       ],
       "preLaunchTask": "Build Functions",
       "env": {
-        "FUNCTIONS_EMULATOR": "true",
         "PORT": "8081"
       }
     },

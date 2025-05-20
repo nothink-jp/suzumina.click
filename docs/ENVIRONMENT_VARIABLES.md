@@ -131,8 +131,8 @@ DISCORD_CLIENT_SECRET=your_client_secret_here
 DISCORD_TARGET_GUILD_ID=959095494456537158
 YOUTUBE_API_KEY=your_youtube_api_key_here
 
-# エミュレータフラグ
-FUNCTIONS_EMULATOR=true
+# Nextjsエミュレータフラグ（WebクライアントFirebase接続用）
+NEXT_PUBLIC_USE_EMULATOR=true
 ```
 
 2. 以下のようなヘルパー関数を作成して、エミュレータ環境と本番環境での環境変数の取得方法を統一します:
@@ -146,8 +146,8 @@ const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');
 
 // 環境に応じた設定値の取得
 export function getSecret(name: string, secretParam: ReturnType<typeof defineSecret>): string {
-  // エミュレータ環境では環境変数から、本番環境ではSecret Managerから取得
-  return process.env.FUNCTIONS_EMULATOR === 'true'
+  // 開発環境では環境変数から、本番環境ではSecret Managerから取得
+  return process.env.NODE_ENV === 'development'
     ? process.env[name] || ''
     : secretParam.value();
 }

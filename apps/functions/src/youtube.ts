@@ -3,26 +3,17 @@ import type {
   FirestoreServerVideoData,
   LiveBroadcastContent,
 } from "@suzumina.click/shared-types";
-import { google } from "googleapis";
 import type { youtube_v3 } from "googleapis";
-import { SUZUKA_MINASE_CHANNEL_ID } from "./common";
+import { SUZUKA_MINASE_CHANNEL_ID } from "./utils/common";
 import firestore, { Timestamp } from "./utils/firestore";
 // functions/src/youtube.ts
 import * as logger from "./utils/logger";
-import { retryApiCall } from "./utils/retry";
-import type { ApiError } from "./utils/retry";
-
-// YouTube API初期化時のチェック
-(function initializeYoutubeModule() {
-  // 環境変数のチェック
-  if (!process.env.YOUTUBE_API_KEY) {
-    logger.warn("環境変数 YOUTUBE_API_KEY が設定されていません");
-  }
-})();
-
-// YouTube API クォータ制限関連の定数
-const MAX_VIDEOS_PER_BATCH = 50; // YouTube APIの最大結果数
-const QUOTA_EXCEEDED_CODE = 403; // クォータ超過エラーコード
+import {
+  extractVideoIds,
+  fetchVideoDetails,
+  initializeYouTubeClient,
+  searchVideos,
+} from "./utils/youtube-api";
 
 // メタデータ保存用のドキュメントID
 const METADATA_DOC_ID = "fetch_metadata";
@@ -118,33 +109,7 @@ async function updateMetadata(updates: Partial<FetchMetadata>): Promise<void> {
   await metadataRef.update(sanitizedUpdates);
 }
 
-/**
- * YouTube APIクライアントを初期化する
- *
- * @returns YouTube APIクライアントと結果オブジェクトのタプル
- */
-function initializeYouTubeClient(): [
-  youtube_v3.Youtube | undefined,
-  FetchResult | undefined,
-] {
-  // YouTube API キーの取得と検証
-  const apiKey = process.env.YOUTUBE_API_KEY;
-  if (!apiKey) {
-    logger.error("環境変数に YOUTUBE_API_KEY が設定されていません");
-    return [
-      undefined,
-      { videoCount: 0, error: "YouTube API Keyが設定されていません" },
-    ];
-  }
-
-  // YouTubeクライアント初期化
-  const youtube = google.youtube({
-    version: "v3",
-    auth: apiKey,
-  });
-
-  return [youtube, undefined];
-}
+// 注：initializeYouTubeClientはutils/youtube-apiから利用
 
 /**
  * 処理開始前のメタデータチェックと初期化
@@ -211,27 +176,12 @@ async function fetchVideoIds(
   // ページネーションを使用して動画IDを取得（制限付き）
   do {
     try {
-      // YouTube API 呼び出し（リトライ機能付き）
-      const searchResponse: youtube_v3.Schema$SearchListResponse =
-        await retryApiCall(async () => {
-          const response = await youtube.search.list({
-            part: ["id", "snippet"], // snippetも取得して配信状態を確認できるようにする
-            channelId: SUZUKA_MINASE_CHANNEL_ID,
-            maxResults: MAX_VIDEOS_PER_BATCH,
-            type: ["video"],
-            order: "date",
-            pageToken: nextPageToken,
-          });
-          return response.data;
-        });
-
-      const videoIds =
-        searchResponse.items
-          ?.map((item) => item.id?.videoId)
-          .filter((id): id is string => !!id) ?? [];
+      // youtube-api の検索機能を使用
+      const searchResult = await searchVideos(youtube, nextPageToken);
+      const videoIds = extractVideoIds(searchResult.items);
 
       allVideoIds.push(...videoIds);
-      nextPageToken = searchResponse.nextPageToken ?? undefined;
+      nextPageToken = searchResult.nextPageToken;
 
       logger.debug(
         `${videoIds.length}件の動画IDを取得しました。次ページトークン: ${nextPageToken || "なし"}`,
@@ -251,8 +201,11 @@ async function fetchVideoIds(
         break;
       }
     } catch (error: unknown) {
-      const apiError = error as ApiError;
-      if (apiError.code === QUOTA_EXCEEDED_CODE) {
+      // YouTube APIエラー時の処理
+      if (
+        error instanceof Error &&
+        error.message.includes("YouTube APIクォータを超過")
+      ) {
         // クォータ超過の場合
         logger.error(
           "YouTube API クォータを超過しました。処理を中断します:",
@@ -262,7 +215,7 @@ async function fetchVideoIds(
           isInProgress: false,
           lastError: "YouTube API quota exceeded",
         });
-        throw new Error("YouTube APIクォータを超過しました");
+        throw error; // 元のエラーをそのまま再スロー
       }
       // その他のエラー
       throw error;
@@ -278,65 +231,7 @@ async function fetchVideoIds(
   return { videoIds: allVideoIds, nextPageToken, isComplete };
 }
 
-/**
- * 動画IDから詳細情報を取得
- *
- * @param youtube - YouTube APIクライアント
- * @param videoIds - 取得する動画IDの配列
- * @returns Promise<youtube_v3.Schema$Video[]> - 取得した動画詳細情報
- */
-async function fetchVideoDetails(
-  youtube: youtube_v3.Youtube,
-  videoIds: string[],
-): Promise<youtube_v3.Schema$Video[]> {
-  logger.debug("動画の詳細情報を取得中...");
-  const videoDetails: youtube_v3.Schema$Video[] = [];
-
-  // YouTube API の制限（最大50件）に合わせてバッチ処理
-  for (let i = 0; i < videoIds.length; i += MAX_VIDEOS_PER_BATCH) {
-    try {
-      const batchIds = videoIds.slice(i, i + MAX_VIDEOS_PER_BATCH);
-
-      // YouTube API 呼び出し（リトライ機能付き）
-      const videoResponse: youtube_v3.Schema$VideoListResponse =
-        await retryApiCall(async () => {
-          const response = await youtube.videos.list({
-            part: [
-              "snippet",
-              "contentDetails",
-              "statistics",
-              "liveStreamingDetails",
-            ],
-            id: batchIds,
-            maxResults: MAX_VIDEOS_PER_BATCH,
-          });
-          return response.data;
-        });
-
-      if (videoResponse.items) {
-        videoDetails.push(...videoResponse.items);
-      }
-      logger.debug(
-        `${videoResponse.items?.length ?? 0}件の動画詳細を取得しました（バッチ ${Math.floor(i / MAX_VIDEOS_PER_BATCH) + 1}）`,
-      );
-    } catch (error: unknown) {
-      const apiError = error as ApiError;
-      if (apiError.code === QUOTA_EXCEEDED_CODE) {
-        // クォータ超過の場合
-        logger.error(
-          "YouTube API クォータを超過しました。ここまで取得した情報を保存します:",
-          error,
-        );
-        break; // ループを抜けて、ここまで取得したデータだけを保存
-      }
-      // その他のエラー
-      throw error;
-    }
-  }
-
-  logger.info(`取得した動画詳細合計: ${videoDetails.length}件`);
-  return videoDetails;
-}
+// 注：動画詳細取得機能はutils/youtube-apiから利用
 
 /**
  * Firestoreに動画データを保存

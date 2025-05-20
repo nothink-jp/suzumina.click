@@ -119,8 +119,8 @@ DISCORD_CLIENT_SECRET=your_client_secret_here
 DISCORD_TARGET_GUILD_ID=959095494456537158
 YOUTUBE_API_KEY=your_youtube_api_key_here
 
-# エミュレータ使用設定
-FUNCTIONS_EMULATOR=true
+# Nextjsエミュレータフラグ（WebクライアントFirebase接続用）
+NEXT_PUBLIC_USE_EMULATOR=true
 ```
 
 必要な環境変数の詳細については、[環境変数ガイド](./ENVIRONMENT_VARIABLES.md)を参照してください。
