@@ -9,7 +9,7 @@ on:
 # ワークフローにactions権限を付与
 permissions:
   contents: read
-  actions: read  # 統合デプロイの自動トリガーを削除したため、writeからreadに権限を下げる
+  actions: write  # 統合デプロイの自動トリガーのためwrite権限が必要
 
 jobs:
   # リポジトリ全体の共通検証
@@ -181,6 +181,70 @@ jobs:
     steps:
       - name: 検証完了メッセージ
         run: echo "::notice title=CI検証成功::すべてのテストとビルド検証が成功しました！"
-      
-      # 注: 重複デプロイ防止のため、CI成功時の統合デプロイトリガーは削除
-      # パスベースの個別デプロイワークフローがその役割を担います
+
+  # mainブランチへのプッシュ時、統合デプロイをトリガー
+  trigger-deploy:
+    name: 統合デプロイトリガー
+    runs-on: ubuntu-latest
+    needs: [web-checks, functions-checks]
+    if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    # トリガー用にactions:write権限が必要
+    permissions:
+      actions: write
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # 直前のコミットも取得して比較
+
+      # 変更されたファイルを検出
+      - name: 変更ファイルを検出
+        id: changed-files
+        run: |
+          # 変更されたファイルを取得
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep -v "^\.github/")
+          
+          # Webアプリケーションの変更を検出
+          WEB_CHANGED=$(echo "$CHANGED_FILES" | grep -q "^apps/web/" && echo "true" || echo "false")
+          
+          # Cloud Functionsの変更を検出
+          FUNCTIONS_CHANGED=$(echo "$CHANGED_FILES" | grep -q "^apps/functions/" && echo "true" || echo "false")
+          
+          # 共有パッケージの変更を検出（共有パッケージの変更の場合は両方デプロイする必要がある）
+          SHARED_CHANGED=$(echo "$CHANGED_FILES" | grep -q "^packages/" && echo "true" || echo "false")
+          
+          if [ "$SHARED_CHANGED" = "true" ]; then
+            WEB_CHANGED="true"
+            FUNCTIONS_CHANGED="true"
+          fi
+          
+          echo "web_changed=$WEB_CHANGED" >> $GITHUB_OUTPUT
+          echo "functions_changed=$FUNCTIONS_CHANGED" >> $GITHUB_OUTPUT
+          
+          echo "変更検出結果:"
+          echo "- Webアプリケーション: $WEB_CHANGED"
+          echo "- Cloud Functions: $FUNCTIONS_CHANGED"
+          echo "- 共有パッケージ: $SHARED_CHANGED"
+
+      # 変更に基づいて選択的デプロイを開始
+      - name: 選択的デプロイの開始
+        if: ${{ steps.changed-files.outputs.web_changed == 'true' || steps.changed-files.outputs.functions_changed == 'true' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy.yml',
+              ref: 'main',
+              inputs: {
+                branch: 'main',
+                trigger_source: 'ci',
+                deploy_web: '${{ steps.changed-files.outputs.web_changed }}',
+                deploy_functions: '${{ steps.changed-files.outputs.functions_changed }}',
+                ci_run_id: '${{ github.run_id }}'
+              }
+            });
+            console.log('変更検出に基づく選択的デプロイをトリガーしました');
