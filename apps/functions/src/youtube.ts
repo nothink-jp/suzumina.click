@@ -1,12 +1,7 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import type {
-  FirestoreServerVideoData,
-  LiveBroadcastContent,
-} from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
 import { SUZUKA_MINASE_CHANNEL_ID } from "./utils/common";
 import firestore, { Timestamp } from "./utils/firestore";
-// functions/src/youtube.ts
 import * as logger from "./utils/logger";
 import {
   extractVideoIds,
@@ -14,14 +9,13 @@ import {
   initializeYouTubeClient,
   searchVideos,
 } from "./utils/youtube-api";
+import { saveVideosToFirestore } from "./utils/youtube-firestore";
 
 // メタデータ保存用のドキュメントID
 const METADATA_DOC_ID = "fetch_metadata";
 
 // Firestore関連の定数
-const VIDEOS_COLLECTION = "videos";
 const METADATA_COLLECTION = "youtubeMetadata";
-const MAX_FIRESTORE_BATCH_SIZE = 500; // Firestoreのバッチ書き込み上限
 
 // 実行制限関連の定数
 const MAX_PAGES_PER_EXECUTION = 3; // 1回の実行での最大ページ数
@@ -232,114 +226,7 @@ async function fetchVideoIds(
 }
 
 // 注：動画詳細取得機能はutils/youtube-apiから利用
-
-/**
- * Firestoreに動画データを保存
- *
- * @param videoDetails - 保存する動画詳細情報
- * @returns Promise<number> - 保存した動画数
- */
-async function saveVideosToFirestore(
-  videoDetails: youtube_v3.Schema$Video[],
-): Promise<number> {
-  if (videoDetails.length === 0) {
-    logger.debug("保存する動画情報がありません");
-    return 0;
-  }
-
-  logger.debug("動画データをFirestoreに書き込み中...");
-  const now = Timestamp.now();
-  const videosCollection = firestore.collection(VIDEOS_COLLECTION);
-  let batch = firestore.batch();
-  let batchCounter = 0;
-
-  // 動画データをFirestoreにバッチ書き込み
-  for (const video of videoDetails) {
-    if (!video.id || !video.snippet) {
-      logger.warn(
-        "IDまたはスニペットが不足しているため動画をスキップします:",
-        // biome-ignore lint/suspicious/noExplicitAny: Complexity type of Youtube
-        video as any,
-      );
-      continue;
-    }
-
-    // Firestoreに保存するデータの作成
-    const videoData: FirestoreServerVideoData = {
-      videoId: video.id,
-      title: video.snippet.title ?? "",
-      description: video.snippet.description ?? "",
-      publishedAt: video.snippet.publishedAt
-        ? Timestamp.fromDate(new Date(video.snippet.publishedAt))
-        : now,
-      // 利用可能な最大サイズのサムネイルURLを取得（maxres→standard→high→medium→default）
-      thumbnailUrl:
-        video.snippet.thumbnails?.maxres?.url ||
-        video.snippet.thumbnails?.standard?.url ||
-        video.snippet.thumbnails?.high?.url ||
-        video.snippet.thumbnails?.medium?.url ||
-        video.snippet.thumbnails?.default?.url ||
-        "",
-      channelId: video.snippet.channelId ?? "",
-      channelTitle: video.snippet.channelTitle ?? "",
-      lastFetchedAt: now,
-      // 配信状態を取得（none, live, upcoming のいずれか）
-      // 型安全に変換
-      liveBroadcastContent:
-        video.snippet.liveBroadcastContent === "live"
-          ? ("live" as LiveBroadcastContent)
-          : video.snippet.liveBroadcastContent === "upcoming"
-            ? ("upcoming" as LiveBroadcastContent)
-            : ("none" as LiveBroadcastContent),
-    };
-
-    const videoRef = videosCollection.doc(video.id);
-    batch.set(videoRef, videoData, { merge: true });
-    batchCounter++;
-
-    // バッチサイズの上限に達したらコミット
-    if (batchCounter >= MAX_FIRESTORE_BATCH_SIZE) {
-      logger.debug(
-        `${batchCounter}件の動画ドキュメントのバッチをコミット中...`,
-      );
-      await batch
-        .commit()
-        .catch((err) =>
-          logger.error(
-            "Firestoreバッチコミット中にエラーが発生しました (ループ内):",
-            err,
-          ),
-        );
-      logger.debug(
-        "バッチをコミットしました。バッチとカウンターをリセットします",
-      );
-      batch = firestore.batch();
-      batchCounter = 0;
-    }
-  }
-
-  // 残りのデータがあればコミット
-  if (batchCounter > 0) {
-    logger.info(
-      `最終バッチ ${batchCounter}件の動画ドキュメントをコミット中...`,
-    );
-    await batch
-      .commit()
-      .then(() => {
-        logger.debug("Firestoreバッチコミットが成功しました");
-      })
-      .catch((err) => {
-        logger.error(
-          "最終Firestoreバッチコミット中にエラーが発生しました:",
-          err,
-        );
-      });
-  } else {
-    logger.debug("最終バッチに書き込む動画詳細がありませんでした");
-  }
-
-  return videoDetails.length;
-}
+// 注：動画データ保存機能はutils/youtube-firestoreから利用
 
 /**
  * YouTube動画情報取得の共通処理

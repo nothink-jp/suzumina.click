@@ -242,4 +242,63 @@ export interface FirestoreServerVideoData {
   lastFetchedAt: unknown; // Firestore.Timestamp型
   videoType?: VideoType;
   liveBroadcastContent?: LiveBroadcastContent;
+
+  // コンテンツ詳細 (contentDetails)
+  duration?: string; // ISO 8601形式の動画時間（例："PT1H2M3S"）
+  dimension?: string; // "2d" または "3d"
+  definition?: string; // "hd" または "sd"
+  caption?: boolean; // キャプションの有無
+  licensedContent?: boolean; // ライセンスコンテンツかどうか
+  contentRating?: Record<string, string>; // 年齢制限情報
+  regionRestriction?: {
+    allowed?: string[]; // 視聴可能な国コード
+    blocked?: string[]; // 視聴できない国コード
+  };
+
+  // 統計情報 (statistics)
+  statistics?: {
+    viewCount?: number; // 視聴回数
+    likeCount?: number; // 高評価数
+    dislikeCount?: number; // 低評価数（現在APIからは非公開）
+    favoriteCount?: number; // お気に入り数
+    commentCount?: number; // コメント数
+  };
+
+  // ライブ配信詳細 (liveStreamingDetails)
+  liveStreamingDetails?: {
+    scheduledStartTime?: unknown; // Firestore.Timestamp型
+    scheduledEndTime?: unknown; // Firestore.Timestamp型
+    actualStartTime?: unknown; // Firestore.Timestamp型
+    actualEndTime?: unknown; // Firestore.Timestamp型
+    concurrentViewers?: number; // 同時視聴者数
+  };
+
+  // プレイヤー情報 (player)
+  player?: {
+    embedHtml?: string; // 埋め込み用HTML
+    embedHeight?: number; // 埋め込み高さ
+    embedWidth?: number; // 埋め込み幅
+  };
+
+  // 撮影詳細 (recordingDetails)
+  recordingDetails?: {
+    locationDescription?: string; // 撮影場所の説明
+    recordingDate?: unknown; // Firestore.Timestamp型
+  };
+
+  // トピック詳細 (topicDetails)
+  topicDetails?: {
+    topicCategories?: string[]; // トピックカテゴリURL
+  };
+
+  // ステータス情報 (status)
+  status?: {
+    uploadStatus?: string; // アップロードステータス
+    privacyStatus?: string; // プライバシーステータス (public/unlisted/private)
+    commentStatus?: string; // コメント許可状態
+  };
+
+  // カテゴリ情報
+  categoryId?: string; // 動画カテゴリID
+  tags?: string[]; // 動画タグ
 }
