@@ -16,7 +16,7 @@
   "dependencies": {
     "@google-cloud/firestore": "^7.11.1",
     "@google-cloud/functions-framework": "^4.0.0",
-    "@suzumina.click/shared-types": "file:./suzumina.click-shared-types-0.1.4.tgz",
+    "@suzumina.click/shared-types": "file:./suzumina.click-shared-types-0.1.5.tgz",
     "cheerio": "^1.0.0",
     "googleapis": "^150.0.1"
   },
