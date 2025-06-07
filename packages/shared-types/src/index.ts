@@ -9,5 +9,8 @@ export * from "./common";
 // 動画関連の型とスキーマのエクスポート
 export * from "./video";
 
+// DLsite作品関連の型とスキーマのエクスポート
+export * from "./work";
+
 // Firestore関連のユーティリティ
 export * from "./firestore-utils";

@@ -39,6 +39,7 @@ export function initializeApplication(): boolean {
   return true;
 }
 
+import { fetchDLsiteWorks } from "./dlsite";
 // 各モジュールから関数をインポート
 import { fetchYouTubeVideos } from "./youtube";
 
@@ -46,6 +47,8 @@ import { fetchYouTubeVideos } from "./youtube";
 // 明示的に型情報を指定してCloudEventハンドラーとして登録
 // biome-ignore lint/suspicious/noExplicitAny: Complexity type of cloudEvent
 functions.cloudEvent<any>("fetchYouTubeVideos", fetchYouTubeVideos);
+// biome-ignore lint/suspicious/noExplicitAny: Complexity type of cloudEvent
+functions.cloudEvent<any>("fetchDLsiteWorks", fetchDLsiteWorks);
 
 /**
  * HTTPリクエスト用のハンドラー（ヘルスチェック対応）
