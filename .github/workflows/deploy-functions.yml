@@ -247,17 +247,21 @@ jobs:
           pnpm-version: ${{ needs.prepare-deployment.outputs.pnpm_version }}
           project-path: 'functions'
 
-      # shared-typesのビルド後にテスト実行
-      - name: Cloud Functionsのテスト
+      # shared-typesのパッケージング
+      - name: shared-typesのパッケージング
         run: |
-          pnpm --filter @suzumina.click/shared-types build
-          pnpm --filter @suzumina.click/functions test
+          echo "shared-typesをパッケージ化しています..."
+          pnpm run pack:shared-types
+      
+      # Cloud Functionsのテスト実行
+      - name: Cloud Functionsのテスト
+        run: pnpm --filter @suzumina.click/functions test
       
       # Cloud Functionsのビルド
       - name: Cloud Functionsのビルド
         run: pnpm --filter @suzumina.click/functions build
       
-      # デプロイ用パッケージの準備（ビルドプロセスをスキップするための設定）
+      # デプロイ用パッケージの準備
       - name: デプロイ用にpackage.jsonを準備
         run: |
           echo "Cloud Functions デプロイ用のパッケージを準備しています..."
@@ -268,50 +272,14 @@ jobs:
           # ビルド済みのlib内容をコピー
           cp -r ./apps/functions/lib ./tmp/functions/
           
+          # tgzファイルをコピー
+          cp ./apps/functions/suzumina.click-shared-types-*.tgz ./tmp/functions/
+          
+          # package.jsonをコピー
+          cp ./apps/functions/package.json ./tmp/functions/
+          
           # tsconfig.jsonをコピー（ビルドプロセスの参照用）
           cp ./apps/functions/tsconfig.json ./tmp/functions/
-          
-          # カスタムpackage.jsonを作成（Cloud Functionsビルドプロセス向け）
-          node -e '
-            const fs = require("fs");
-            const path = require("path");
-            const srcPkg = JSON.parse(fs.readFileSync("./apps/functions/package.json", "utf8"));
-            
-            // 必要な情報だけを含むシンプルなpackage.jsonを作成
-            const deployPkg = {
-              name: srcPkg.name,
-              version: srcPkg.version,
-              private: true,
-              main: "lib/index.js",
-              // ビルドプロセスをスキップするためのダミースクリプト
-              scripts: {
-                build: "echo \"ビルド済みのコードを使用します。再コンパイルは不要です。\""
-              },
-              engines: {
-                node: "20"
-              },
-              // 必要な依存関係のみを含める（shared-typesを除く）
-              dependencies: Object.entries(srcPkg.dependencies || {})
-                .filter(([key]) => key !== "@suzumina.click/shared-types")
-                .reduce((acc, [key, val]) => ({...acc, [key]: val}), {})
-            };
-            
-            // 更新したpackage.jsonを書き込み
-            fs.writeFileSync("./tmp/functions/package.json", JSON.stringify(deployPkg, null, 2), "utf8");
-            console.log("デプロイ用のpackage.jsonを作成しました");
-          '
-          
-          # shared-typesの型定義を直接functionsのlibディレクトリにコピー
-          echo "ビルド済みのshared-typesをlibに直接埋め込みます..."
-          mkdir -p ./tmp/functions/lib/@suzumina.click/shared-types
-          cp -r ./packages/shared-types/dist/* ./tmp/functions/lib/@suzumina.click/shared-types/
-          
-          # インポートパスの調整
-          find ./tmp/functions/lib -type f -name "*.js" -exec sed -i.bak "s|require(\"@suzumina.click/shared-types|require(\"./@suzumina.click/shared-types|g" {} \;
-          find ./tmp/functions/lib -type f -name "*.js.map" -exec sed -i.bak "s|@suzumina.click/shared-types|./@suzumina.click/shared-types|g" {} \;
-          
-          # バックアップファイルを削除
-          find ./tmp/functions -type f -name "*.bak" -delete
           
           # パッケージ内容の確認
           echo "package.jsonの内容:"

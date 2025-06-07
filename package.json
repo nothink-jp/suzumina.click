@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "build": "pnpm --filter @suzumina.click/shared-types build && pnpm -r build",
+    "pack:shared-types": "cd packages/shared-types && pnpm pack && mv suzumina.click-shared-types-*.tgz ../../apps/functions/",
+    "prepare:functions": "pnpm pack:shared-types && cd apps/functions && pnpm install",
     "lint": "pnpm -r lint",
     "format": "pnpm -r format",
     "check": "pnpm -r check",
