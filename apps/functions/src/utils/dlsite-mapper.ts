@@ -56,7 +56,8 @@ function normalizeUrl(url: string): string {
   if (url.startsWith("/")) {
     return `https://www.dlsite.com${url}`;
   }
-  return url;
+  // スラッシュで始まらない相対パスの場合、DLsiteのルートパスとして扱う
+  return `https://www.dlsite.com/${url}`;
 }
 
 /**
@@ -66,6 +67,13 @@ export function mapToWorkBase(parsed: ParsedWorkData): DLsiteWorkBase {
   try {
     const price = mapToPriceInfo(parsed);
     const rating = mapToRatingInfo(parsed);
+
+    // サンプル画像のURLを正規化
+    const normalizedSampleImages = parsed.sampleImages.map((sample) => ({
+      thumb: normalizeUrl(sample.thumb),
+      width: sample.width,
+      height: sample.height,
+    }));
 
     const workBase: DLsiteWorkBase = {
       id: parsed.productId, // FirestoreドキュメントIDとして商品IDを使用
@@ -82,7 +90,7 @@ export function mapToWorkBase(parsed: ParsedWorkData): DLsiteWorkBase {
       salesCount: parsed.salesCount,
       ageRating: parsed.ageRating,
       tags: [], // HTMLパーサーではタグは抽出しないため空配列
-      sampleImages: parsed.sampleImages,
+      sampleImages: normalizedSampleImages,
       isExclusive: parsed.isExclusive,
     };
 

@@ -58,7 +58,7 @@ export interface ParsedWorkData {
 /**
  * 作品カテゴリをDLsiteのclass名から変換
  */
-function extractCategoryFromClass(
+export function extractCategoryFromClass(
   categoryElement: cheerio.Cheerio,
 ): WorkCategory {
   const classNames = categoryElement.attr("class") || "";
@@ -85,7 +85,7 @@ function extractCategoryFromClass(
 /**
  * 価格文字列から数値を抽出
  */
-function extractPriceNumber(priceText: string): number {
+export function extractPriceNumber(priceText: string): number {
   const match = priceText.match(/(\d+(?:,\d+)*)/);
   if (match) {
     return Number.parseInt(match[1].replace(/,/g, ""), 10);
@@ -96,7 +96,7 @@ function extractPriceNumber(priceText: string): number {
 /**
  * 評価の星の数を抽出
  */
-function extractStarRating(ratingElement: cheerio.Cheerio): number {
+export function extractStarRating(ratingElement: cheerio.Cheerio): number {
   const className = ratingElement.attr("class") || "";
   const match = className.match(/star_(\d+)/);
   if (match) {
@@ -108,7 +108,7 @@ function extractStarRating(ratingElement: cheerio.Cheerio): number {
 /**
  * 括弧内の数値を抽出（評価数、レビュー数など）
  */
-function extractNumberFromParentheses(text: string): number {
+export function extractNumberFromParentheses(text: string): number {
   const match = text.match(/\((\d+(?:,\d+)*)\)/);
   if (match) {
     return Number.parseInt(match[1].replace(/,/g, ""), 10);
@@ -119,7 +119,7 @@ function extractNumberFromParentheses(text: string): number {
 /**
  * サンプル画像データを解析
  */
-function parseSampleImages(
+export function parseSampleImages(
   sampleData: string,
 ): Array<{ thumb: string; width?: number; height?: number }> {
   try {

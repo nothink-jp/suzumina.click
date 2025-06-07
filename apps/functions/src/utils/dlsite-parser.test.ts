@@ -4,8 +4,14 @@
  * 実際のDLsiteから最新データを取得してパーサーの動作を検証します。
  */
 
+import * as cheerio from "cheerio";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
+  extractCategoryFromClass,
+  extractNumberFromParentheses,
+  extractPriceNumber,
+  extractStarRating,
+  parseSampleImages,
   parseWorksFromHTML,
   parseWorksFromSearchResult,
 } from "./dlsite-parser";
@@ -308,6 +314,472 @@ describe("DLsite Parser", () => {
           `作品${index}: sampleImages`,
         ).toBe(true);
       }
+    });
+  });
+
+  describe("parseSampleImages function", () => {
+    // parseSampleImages関数を直接インポートするためのモジュール再エクスポートが必要
+    // ここでは間接的にテストする
+    it("有効なサンプル画像データを処理できる", () => {
+      const mockHtml = `
+        <li data-list_item_product_id="RJ123456">
+          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
+          <div class="maker_name"><a href="#">テストサークル</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="//img.dlsite.jp/test.jpg" />
+          <div class="work_price"><span class="work_price_base">100円</span></div>
+          <div data-view_samples='[{"thumb":"//img.dlsite.jp/sample1.jpg","width":"600","height":"400"},{"thumb":"//img.dlsite.jp/sample2.jpg"}]'>サンプル</div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(mockHtml);
+      expect(works).toHaveLength(1);
+      expect(works[0].sampleImages).toHaveLength(2);
+      expect(works[0].sampleImages[0].thumb).toBe(
+        "//img.dlsite.jp/sample1.jpg",
+      );
+      expect(works[0].sampleImages[0].width).toBe(600);
+      expect(works[0].sampleImages[0].height).toBe(400);
+      expect(works[0].sampleImages[1].thumb).toBe(
+        "//img.dlsite.jp/sample2.jpg",
+      );
+      expect(works[0].sampleImages[1].width).toBeUndefined();
+    });
+
+    it("無効なサンプル画像データを適切に処理できる", () => {
+      const mockHtml = `
+        <li data-list_item_product_id="RJ123456">
+          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
+          <div class="maker_name"><a href="#">テストサークル</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="//img.dlsite.jp/test.jpg" />
+          <div class="work_price"><span class="work_price_base">100円</span></div>
+          <div data-view_samples='invalid json'>サンプル</div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(mockHtml);
+      expect(works).toHaveLength(1);
+      expect(works[0].sampleImages).toHaveLength(0);
+    });
+
+    it("空のサンプル画像データを適切に処理できる", () => {
+      const mockHtml = `
+        <li data-list_item_product_id="RJ123456">
+          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
+          <div class="maker_name"><a href="#">テストサークル</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="//img.dlsite.jp/test.jpg" />
+          <div class="work_price"><span class="work_price_base">100円</span></div>
+          <div data-view_samples="null">サンプル</div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(mockHtml);
+      expect(works).toHaveLength(1);
+      expect(works[0].sampleImages).toHaveLength(0);
+    });
+  });
+
+  describe("extractCategoryFromClass function", () => {
+    it("各種カテゴリクラスを正しく識別できる", () => {
+      const testCases = [
+        {
+          html: '<div class="work_category type_ADV">ADV</div>',
+          expected: "ADV",
+        },
+        {
+          html: '<div class="work_category type_SOU">音声作品</div>',
+          expected: "SOU",
+        },
+        {
+          html: '<div class="work_category type_RPG">RPG</div>',
+          expected: "RPG",
+        },
+        {
+          html: '<div class="work_category type_MOV">動画</div>',
+          expected: "MOV",
+        },
+        {
+          html: '<div class="work_category type_MNG">マンガ</div>',
+          expected: "MNG",
+        },
+        {
+          html: '<div class="work_category type_GAM">ゲーム</div>',
+          expected: "GAM",
+        },
+        {
+          html: '<div class="work_category type_CG">CG・イラスト</div>',
+          expected: "CG",
+        },
+        {
+          html: '<div class="work_category type_TOL">ツール/アクセサリ</div>',
+          expected: "TOL",
+        },
+        {
+          html: '<div class="work_category type_ET3">その他・3D</div>',
+          expected: "ET3",
+        },
+        {
+          html: '<div class="work_category type_SLN">シミュレーション</div>',
+          expected: "SLN",
+        },
+        {
+          html: '<div class="work_category type_ACN">アクション</div>',
+          expected: "ACN",
+        },
+        {
+          html: '<div class="work_category type_PZL">パズル</div>',
+          expected: "PZL",
+        },
+        {
+          html: '<div class="work_category type_QIZ">クイズ</div>',
+          expected: "QIZ",
+        },
+        {
+          html: '<div class="work_category type_TBL">テーブル</div>',
+          expected: "TBL",
+        },
+        {
+          html: '<div class="work_category type_DGT">デジタルノベル</div>',
+          expected: "DGT",
+        },
+        {
+          html: '<div class="work_category unknown_type">不明</div>',
+          expected: "etc",
+        },
+      ];
+
+      for (const testCase of testCases) {
+        const mockHtml = `
+          <li data-list_item_product_id="RJ123456">
+            <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
+            <div class="maker_name"><a href="#">テストサークル</a></div>
+            ${testCase.html}
+            <img src="//img.dlsite.jp/test.jpg" />
+            <div class="work_price"><span class="work_price_base">100円</span></div>
+          </li>
+        `;
+
+        const works = parseWorksFromHTML(mockHtml);
+        expect(works).toHaveLength(1);
+        expect(works[0].category).toBe(testCase.expected);
+      }
+    });
+  });
+
+  describe("エラーハンドリング", () => {
+    it("必須フィールドが欠けている作品をスキップできる", () => {
+      const mockHtml = `
+        <li data-list_item_product_id="RJ123456">
+          <!-- タイトルなし -->
+          <div class="maker_name"><a href="#">テストサークル</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="//img.dlsite.jp/test.jpg" />
+          <div class="work_price"><span class="work_price_base">100円</span></div>
+        </li>
+        <li data-list_item_product_id="RJ123457">
+          <div class="work_name"><a href="/work/=/product_id/RJ123457.html" title="有効な作品">有効な作品</a></div>
+          <div class="maker_name"><a href="#">テストサークル</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="//img.dlsite.jp/test.jpg" />
+          <div class="work_price"><span class="work_price_base">100円</span></div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(mockHtml);
+      expect(works).toHaveLength(1);
+      expect(works[0].productId).toBe("RJ123457");
+    });
+
+    it("サークル名が欠けている作品をスキップできる", () => {
+      const mockHtml = `
+        <li data-list_item_product_id="RJ123456">
+          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
+          <!-- サークル名なし -->
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="//img.dlsite.jp/test.jpg" />
+          <div class="work_price"><span class="work_price_base">100円</span></div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(mockHtml);
+      expect(works).toHaveLength(0);
+    });
+
+    it("作品URLが欠けている作品をスキップできる", () => {
+      const mockHtml = `
+        <li data-list_item_product_id="RJ123456">
+          <div class="work_name"><a title="テスト作品">テスト作品</a></div>
+          <div class="maker_name"><a href="#">テストサークル</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="//img.dlsite.jp/test.jpg" />
+          <div class="work_price"><span class="work_price_base">100円</span></div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(mockHtml);
+      expect(works).toHaveLength(0);
+    });
+
+    it("サムネイル画像URLが欠けている作品をスキップできる", () => {
+      const mockHtml = `
+        <li data-list_item_product_id="RJ123456">
+          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
+          <div class="maker_name"><a href="#">テストサークル</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <!-- 画像なし -->
+          <div class="work_price"><span class="work_price_base">100円</span></div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(mockHtml);
+      expect(works).toHaveLength(0);
+    });
+  });
+
+  describe("URL正規化テスト", () => {
+    it("相対URLを絶対URLに変換できる", () => {
+      const mockHtml = `
+        <li data-list_item_product_id="RJ123456">
+          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
+          <div class="maker_name"><a href="#">テストサークル</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="//img.dlsite.jp/test.jpg" />
+          <div class="work_price"><span class="work_price_base">100円</span></div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(mockHtml);
+      expect(works).toHaveLength(1);
+      expect(works[0].workUrl).toBe(
+        "https://www.dlsite.com/work/=/product_id/RJ123456.html",
+      );
+      expect(works[0].thumbnailUrl).toBe("https://img.dlsite.jp/test.jpg");
+    });
+
+    it("既に絶対URLの場合はそのまま保持できる", () => {
+      const mockHtml = `
+        <li data-list_item_product_id="RJ123456">
+          <div class="work_name"><a href="https://www.dlsite.com/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
+          <div class="maker_name"><a href="#">テストサークル</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="https://img.dlsite.jp/test.jpg" />
+          <div class="work_price"><span class="work_price_base">100円</span></div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(mockHtml);
+      expect(works).toHaveLength(1);
+      expect(works[0].workUrl).toBe(
+        "https://www.dlsite.com/work/=/product_id/RJ123456.html",
+      );
+      expect(works[0].thumbnailUrl).toBe("https://img.dlsite.jp/test.jpg");
+    });
+  });
+
+  describe("ヘルパー関数のユニットテスト", () => {
+    describe("extractPriceNumber", () => {
+      it("通常の価格文字列から正しく数値を抽出できる", () => {
+        expect(extractPriceNumber("100円")).toBe(100);
+        expect(extractPriceNumber("1,000円")).toBe(1000);
+        expect(extractPriceNumber("10,000円")).toBe(10000);
+        expect(extractPriceNumber("￥1,234")).toBe(1234);
+      });
+
+      it("カンマ区切りの価格も正しく処理できる", () => {
+        expect(extractPriceNumber("12,345円")).toBe(12345);
+        expect(extractPriceNumber("100,000円")).toBe(100000);
+        expect(extractPriceNumber("1,234,567円")).toBe(1234567);
+      });
+
+      it("数値が含まれていない場合は0を返す", () => {
+        expect(extractPriceNumber("円")).toBe(0);
+        expect(extractPriceNumber("価格未定")).toBe(0);
+        expect(extractPriceNumber("")).toBe(0);
+        expect(extractPriceNumber("無料")).toBe(0);
+      });
+
+      it("前後にテキストが含まれていても数値を抽出できる", () => {
+        expect(extractPriceNumber("価格: 500円 (税込)")).toBe(500);
+        expect(extractPriceNumber("通常価格 2,500円")).toBe(2500);
+      });
+    });
+
+    describe("extractStarRating", () => {
+      it("星評価のクラス名から正しく評価値を抽出できる", () => {
+        const $ = cheerio.load('<div class="star_45"></div>');
+        const element = $(".star_45");
+        expect(extractStarRating(element)).toBe(4.5);
+      });
+
+      it("異なる評価値も正しく処理できる", () => {
+        const $ = cheerio.load('<div class="star_50"></div>');
+        expect(extractStarRating($(".star_50"))).toBe(5.0);
+
+        const $2 = cheerio.load('<div class="star_35"></div>');
+        expect(extractStarRating($2(".star_35"))).toBe(3.5);
+
+        const $3 = cheerio.load('<div class="star_10"></div>');
+        expect(extractStarRating($3(".star_10"))).toBe(1.0);
+      });
+
+      it("星評価のクラスが無い場合は0を返す", () => {
+        const $ = cheerio.load('<div class="no-rating"></div>');
+        const element = $(".no-rating");
+        expect(extractStarRating(element)).toBe(0);
+      });
+
+      it("クラス名が不正な場合は0を返す", () => {
+        const $ = cheerio.load('<div class="star_invalid"></div>');
+        const element = $(".star_invalid");
+        expect(extractStarRating(element)).toBe(0);
+      });
+    });
+
+    describe("extractNumberFromParentheses", () => {
+      it("括弧内の数値を正しく抽出できる", () => {
+        expect(extractNumberFromParentheses("評価 (123)")).toBe(123);
+        expect(extractNumberFromParentheses("レビュー (45)")).toBe(45);
+        expect(extractNumberFromParentheses("(1)")).toBe(1);
+      });
+
+      it("カンマ区切りの数値も正しく処理できる", () => {
+        expect(extractNumberFromParentheses("評価 (1,234)")).toBe(1234);
+        expect(extractNumberFromParentheses("レビュー (10,000)")).toBe(10000);
+        expect(extractNumberFromParentheses("(123,456)")).toBe(123456);
+      });
+
+      it("括弧が無い場合は0を返す", () => {
+        expect(extractNumberFromParentheses("評価")).toBe(0);
+        expect(extractNumberFromParentheses("123")).toBe(0);
+        expect(extractNumberFromParentheses("")).toBe(0);
+      });
+
+      it("括弧内に数値が無い場合は0を返す", () => {
+        expect(extractNumberFromParentheses("評価 ()")).toBe(0);
+        expect(extractNumberFromParentheses("評価 (なし)")).toBe(0);
+        expect(extractNumberFromParentheses("評価 (abc)")).toBe(0);
+      });
+
+      it("複数の括弧がある場合は最初の数値を抽出する", () => {
+        expect(extractNumberFromParentheses("評価 (123) その他 (456)")).toBe(
+          123,
+        );
+      });
+    });
+
+    describe("parseSampleImages", () => {
+      it("有効なJSONデータからサンプル画像情報を抽出できる", () => {
+        const sampleData = JSON.stringify([
+          { thumb: "thumb1.jpg", width: "200", height: "300" },
+          { thumb: "thumb2.jpg", width: "400", height: "600" },
+        ]);
+
+        const result = parseSampleImages(sampleData);
+        expect(result).toHaveLength(2);
+        expect(result[0]).toEqual({
+          thumb: "thumb1.jpg",
+          width: 200,
+          height: 300,
+        });
+        expect(result[1]).toEqual({
+          thumb: "thumb2.jpg",
+          width: 400,
+          height: 600,
+        });
+      });
+
+      it("width、heightが無い場合もthumbは抽出できる", () => {
+        const sampleData = JSON.stringify([
+          { thumb: "thumb1.jpg" },
+          { thumb: "thumb2.jpg", width: "200" },
+        ]);
+
+        const result = parseSampleImages(sampleData);
+        expect(result).toHaveLength(2);
+        expect(result[0]).toEqual({
+          thumb: "thumb1.jpg",
+          width: undefined,
+          height: undefined,
+        });
+        expect(result[1]).toEqual({
+          thumb: "thumb2.jpg",
+          width: 200,
+          height: undefined,
+        });
+      });
+
+      it("不正なJSONの場合は空配列を返す", () => {
+        const result = parseSampleImages("invalid json");
+        expect(result).toEqual([]);
+      });
+
+      it("配列でないJSONの場合は空配列を返す", () => {
+        const sampleData = JSON.stringify({ thumb: "thumb1.jpg" });
+        const result = parseSampleImages(sampleData);
+        expect(result).toEqual([]);
+      });
+
+      it("空文字列の場合は空配列を返す", () => {
+        const result = parseSampleImages("");
+        expect(result).toEqual([]);
+      });
+    });
+  });
+
+  describe("エラーハンドリングとエッジケース", () => {
+    it("HTMLパース時の各種エラーケースを適切に処理できる", () => {
+      // 不正なHTMLでもエラーを起こさない
+      const invalidHtml = "<invalid><html>test";
+      const works = parseWorksFromHTML(invalidHtml);
+      expect(works).toEqual([]);
+    });
+
+    it("必須フィールドが一部欠けていても他の作品は処理できる", () => {
+      const mixedHtml = `
+        <li data-list_item_product_id="RJ111111">
+          <!-- タイトルが欠けている -->
+          <div class="maker_name"><a href="#">サークル1</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+        </li>
+        <li data-list_item_product_id="RJ222222">
+          <div class="work_name"><a href="/work/=/product_id/RJ222222.html" title="正常な作品">正常な作品</a></div>
+          <div class="maker_name"><a href="#">サークル2</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="//img.dlsite.jp/test2.jpg" />
+          <div class="work_price"><span class="work_price_base">200円</span></div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(mixedHtml);
+      expect(works).toHaveLength(1);
+      expect(works[0].productId).toBe("RJ222222");
+      expect(works[0].title).toBe("正常な作品");
+    });
+
+    it("価格情報が様々な形式でも対応できる", () => {
+      const priceVariationsHtml = `
+        <li data-list_item_product_id="RJ333333">
+          <div class="work_name"><a href="/work" title="価格テスト作品">価格テスト作品</a></div>
+          <div class="maker_name"><a href="#">テストサークル</a></div>
+          <div class="work_category type_SOU">音声作品</div>
+          <img src="test.jpg" />
+          <div class="work_price">
+            <span class="work_price_base">1,500円</span>
+            <span class="strike"><span class="work_price_base">2,000円</span></span>
+          </div>
+          <div class="icon_lead_01 type_sale">25%OFF</div>
+          <div class="work_point">150pt</div>
+        </li>
+      `;
+
+      const works = parseWorksFromHTML(priceVariationsHtml);
+      expect(works).toHaveLength(1);
+      expect(works[0].currentPrice).toBe(1500);
+      expect(works[0].originalPrice).toBe(2000);
+      expect(works[0].discount).toBe(25);
+      expect(works[0].point).toBe(150);
     });
   });
 });
