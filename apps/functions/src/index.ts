@@ -7,6 +7,8 @@
  *
  * Firebase Deploymentsはここからエクスポートされた関数を
  * Firebase Project上にデプロイします。
+ *
+ * Updated: Deploy-functions workflow test
  */
 
 // Cloud Functions 2世代（GCFv2）用のFunctions Frameworkをインポート
