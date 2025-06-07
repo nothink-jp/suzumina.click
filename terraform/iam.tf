@@ -506,3 +506,19 @@ resource "google_project_iam_member" "eventarc_run_invoker" {
 
 # 注: Pub/Sub -> Cloud Functions v2（Eventarcトリガー）のバインディングは通常、event_triggerブロックが定義されている場合、google_cloudfunctions2_functionリソースによって自動的に処理されます。
 # これらの明示的なバインディングは、堅牢性を高めるために追加されています。
+
+# ------------------------------------------------------------------------------
+# 出力値
+# ------------------------------------------------------------------------------
+
+# プロジェクト番号を出力（GitHub Actionsで使用）
+output "project_number" {
+  description = "Google Cloud プロジェクト番号"
+  value       = data.google_project.project.number
+}
+
+# Workload Identity Pool の完全な識別子を出力
+output "workload_identity_provider" {
+  description = "GitHub Actions用のWorkload Identity Provider識別子"
+  value       = "projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.github_pool.workload_identity_pool_id}/providers/${google_iam_workload_identity_pool_provider.github_provider.workload_identity_pool_provider_id}"
+}

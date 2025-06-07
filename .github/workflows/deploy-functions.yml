@@ -169,12 +169,16 @@ jobs:
       functions_state: ${{ steps.get-current-versions.outputs.functions_state }}
     
     steps:
+      # リポジトリをチェックアウト（empty workspace警告を解決）
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
       # Google Cloud認証
       - name: Google Cloud認証の設定
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          workload_identity_provider: 'projects/198349592327/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
           create_credentials_file: true
           export_environment_variables: true
@@ -323,7 +327,7 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          workload_identity_provider: 'projects/198349592327/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
           create_credentials_file: true
           export_environment_variables: true
@@ -454,12 +458,16 @@ jobs:
       all_healthy: ${{ steps.check-health.outputs.all_healthy }}
     
     steps:
+      # リポジトリをチェックアウト（empty workspace警告を解決）
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
       # Google Cloud認証
       - name: Google Cloud認証の設定
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          workload_identity_provider: 'projects/198349592327/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
           create_credentials_file: true
           export_environment_variables: true
