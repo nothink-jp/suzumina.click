@@ -4,7 +4,8 @@
   "description": "涼花みなせウェブサイト用の共有型定義",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
-  "types": "dist/index.d.mts",
+  "types": "dist/index.d.ts",
+  "files": ["dist/**/*", "src/**/*"],
   "scripts": {
     "build": "tsup",
     "pack": "pnpm build && pnpm pack",
