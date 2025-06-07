@@ -50,12 +50,8 @@ jobs:
         id: npm_audit
         continue-on-error: true
         run: |
-          # npm auditの実行に必要なpackage-lock.jsonを一時的に生成
-          cd apps/web
-          npm i --package-lock-only
-          npm audit --json > ../../npm-audit-web.json || true
-          
-          cd ../functions
+          # functionsのnpm audit実行
+          cd apps/functions
           npm i --package-lock-only
           npm audit --json > ../../npm-audit-functions.json || true
           

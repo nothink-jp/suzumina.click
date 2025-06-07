@@ -30,18 +30,6 @@ runs:
         node-version: ${{ inputs.node-version }}
         cache: 'pnpm'  # pnpmキャッシュを有効化
 
-    # ビルドキャッシュの復元（Next.js用）
-    - name: Next.jsビルドキャッシュの復元
-      uses: actions/cache@v4
-      if: inputs.project-path == 'web'
-      with:
-        path: |
-          apps/web/.next/cache
-        key: ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json') }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json') }}-
-          ${{ runner.os }}-nextjs-
-
     # pnpm ストアキャッシュの復元（高度なキャッシュ戦略）
     - name: pnpmキャッシュのセットアップ
       uses: actions/cache@v4

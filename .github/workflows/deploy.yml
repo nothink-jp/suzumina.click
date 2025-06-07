@@ -14,11 +14,7 @@ on:
         required: false
         default: 'manual'
         type: string
-      deploy_web:
-        description: 'Webアプリケーションをデプロイするか'
-        required: false
-        default: true
-        type: boolean
+
       deploy_functions:
         description: 'Cloud Functionsをデプロイするか'
         required: false
@@ -94,37 +90,11 @@ jobs:
           echo "デプロイ情報:"
           echo "- トリガー: workflow_dispatch"
           echo "- ブランチ: ${{ github.event.inputs.branch }}"
-          echo "- Webアプリケーション: ${{ github.event.inputs.deploy_web == 'true' && 'デプロイする' || 'デプロイしない' }}"
           echo "- Cloud Functions: ${{ github.event.inputs.deploy_functions == 'true' && 'デプロイする' || 'デプロイしない' }}"
           echo "- トリガー元: ${{ github.event.inputs.trigger_source }}"
           echo "- CI実行ID: ${{ github.event.inputs.ci_run_id || 'なし' }}"
           echo "- 実行者: ${{ github.actor }}"
           echo "- 日時: $(date '+%Y年%m月%d日 %H:%M:%S')"
-
-  # Webアプリケーションのデプロイ
-  deploy-web-app:
-    name: 'Webアプリケーションデプロイ'
-    needs: verify-deployment-conditions
-    if: github.event.inputs.deploy_web == 'true'
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Webアプリケーションデプロイワークフローをトリガー
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'deploy-web.yml',
-              ref: '${{ github.event.inputs.branch }}',
-              inputs: {
-                branch: '${{ github.event.inputs.branch }}',
-                trigger_source: '${{ github.event.inputs.trigger_source }}'
-              }
-            });
-            console.log('Webアプリケーションデプロイワークフローをトリガーしました');
 
   # Cloud Functionsのデプロイ
   deploy-cloud-functions:
@@ -154,10 +124,9 @@ jobs:
   # デプロイ完了通知
   notify-deployment:
     name: 'デプロイ完了通知'
-    needs: [verify-deployment-conditions, deploy-web-app, deploy-cloud-functions]
+    needs: [verify-deployment-conditions, deploy-cloud-functions]
     if: |
       always() && (
-        (needs.deploy-web-app.result == 'success' || github.event.inputs.deploy_web != 'true') &&
         (needs.deploy-cloud-functions.result == 'success' || github.event.inputs.deploy_functions != 'true')
       )
     runs-on: ubuntu-latest
@@ -171,12 +140,6 @@ jobs:
           echo "実行者: ${{ github.actor }}"
           
           # デプロイ結果の詳細
-          if [ "${{ github.event.inputs.deploy_web }}" == "true" ]; then
-            echo "- Webアプリケーション: デプロイワークフローをトリガーしました"
-          else
-            echo "- Webアプリケーション: デプロイ対象外"
-          fi
-          
           if [ "${{ github.event.inputs.deploy_functions }}" == "true" ]; then
             echo "- Cloud Functions: デプロイワークフローをトリガーしました"
           else

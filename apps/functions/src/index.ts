@@ -9,22 +9,22 @@
  * Firebase Project上にデプロイします。
  */
 
-// HTTPサーバー用の標準モジュール
-import * as http from "node:http";
 // Cloud Functions 2世代（GCFv2）用のFunctions Frameworkをインポート
-// ※実行時依存関係として追加済み
 import * as functions from "@google-cloud/functions-framework";
 // 適切なロギング
 import * as logger from "./utils/logger";
 
-// アプリケーションの初期化状態を管理するフラグ
-let initialized = false;
+// 各モジュールから関数をインポート
+import { fetchDLsiteWorks } from "./dlsite";
+import { fetchYouTubeVideos } from "./youtube";
 
 /**
  * アプリケーション初期化関数
  *
  * この関数は複数回呼び出されても実際の初期化は1回のみ実行される
  */
+let initialized = false;
+
 export function initializeApplication(): boolean {
   if (!initialized) {
     logger.info("アプリケーション初期化を開始します");
@@ -39,26 +39,27 @@ export function initializeApplication(): boolean {
   return true;
 }
 
-import { fetchDLsiteWorks } from "./dlsite";
-// 各モジュールから関数をインポート
-import { fetchYouTubeVideos } from "./youtube";
+// アプリケーション初期化を実行
+initializeApplication();
 
 // GCFv2用のCloudEventハンドラーを登録（Pub/Subトリガー関数用）
-// 明示的に型情報を指定してCloudEventハンドラーとして登録
 // biome-ignore lint/suspicious/noExplicitAny: Complexity type of cloudEvent
 functions.cloudEvent<any>("fetchYouTubeVideos", fetchYouTubeVideos);
 // biome-ignore lint/suspicious/noExplicitAny: Complexity type of cloudEvent
 functions.cloudEvent<any>("fetchDLsiteWorks", fetchDLsiteWorks);
 
 /**
- * HTTPリクエスト用のハンドラー（ヘルスチェック対応）
+ * ヘルスチェック用HTTPハンドラー
  *
- * このハンドラーはCloudEvent（Pub/Sub）関数とは別に実装されており、
- * シンプルなヘルスチェック応答のみを返します。
+ * Cloud Runでのヘルスチェックに応答するための基本的なエンドポイント
  */
-functions.http("httpHandler", (req, res) => {
-  logger.info("HTTPリクエストを受信しました");
-  res.status(200).send("Functions Framework正常動作中");
+functions.http("healthcheck", (req, res) => {
+  logger.info("ヘルスチェックリクエストを受信しました");
+  res.status(200).json({
+    status: "ok",
+    message: "Functions Framework正常動作中",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 /**
@@ -78,78 +79,4 @@ export function safeExit(code: number): void {
   }
 
   process.exit(code);
-}
-
-/**
- * HTTPサーバーの作成と設定
- *
- * @param port サーバーが待機するポート番号
- * @returns 設定済みのHTTPサーバーインスタンス
- */
-export function createHttpServer(port: number): http.Server {
-  // ログメッセージをテストケースと整合させる
-  logger.info(`HTTPサーバーをポート${port}で起動します...`);
-
-  // 標準的なHTTPサーバーの作成と必要なリクエストのFunctions Frameworkへの転送
-  const server = http.createServer((req, res) => {
-    // Functions Frameworkへのリクエストルーティング
-    // @ts-expect-error - Functions Framework内部実装へのアクセス
-    const handler = functions._getFunction("httpHandler");
-    if (handler) {
-      // 登録された関数にリクエストを転送
-      handler(req, res);
-    } else {
-      // ヘルスチェック用の基本レスポンス
-      res.writeHead(200, { "Content-Type": "text/plain" });
-      res.end("Functions Framework正常動作中");
-    }
-  });
-
-  // エラーハンドリングを設定
-  server.on("error", (error: Error) => {
-    logger.error("HTTPサーバーの起動に失敗しました:", error);
-    safeExit(1);
-  });
-
-  // テスト中にlistenメソッドが呼ばれたことをテストできるように
-  // サーバーを起動
-  if (process.env.NODE_ENV !== "test") {
-    server.listen(port).on("listening", () => {
-      logger.info(`HTTPサーバーがポート${port}で正常に起動しました`);
-    });
-  }
-
-  return server;
-}
-
-/**
- * メインコード - Cloud Runでの実行時にヘルスチェックに応答するためのサーバー初期化
- *
- * ここではNode.jsの標準HTTPサーバーを使用してCloud Run環境でのヘルスチェックに応答します。
- * Functions Frameworkは自動的に登録された関数をHTTPリクエストにマッピングします。
- */
-
-// テスト環境でも実行されるようにするため、requireMainチェックを関数に分離
-export function runMainModule(): void {
-  // アプリケーションを初期化
-  initializeApplication();
-
-  // 環境変数からポート設定を取得（デフォルト: 8080）
-  const PORT = Number.parseInt(process.env.PORT || "8080");
-
-  // HTTPサーバーを作成
-  const server = createHttpServer(PORT);
-
-  // テスト環境ではこの部分は実行されない（上の関数内でリスニング設定済み）
-  if (process.env.NODE_ENV !== "test") {
-    // リスニングイベントハンドラーを設定（テスト環境では不要）
-    server.on("listening", () => {
-      logger.info(`HTTPサーバーがポート${PORT}で正常に起動しました`);
-    });
-  }
-}
-
-// メインモジュールとして実行された場合
-if (require.main === module) {
-  runMainModule();
 }

@@ -43,42 +43,6 @@ variable "youtube_api_key" {
   sensitive   = true
 }
 
-# Firebase設定
-variable "firebase_config" {
-  description = "FirebaseクライアントSDK設定"
-  type        = map(string)
-  sensitive   = true
-  default     = {}
-}
-
-# Discord設定
-variable "discord_client_id" {
-  description = "Discord OAuth Client ID"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "discord_client_secret" {
-  description = "Discord OAuth Client Secret"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "discord_redirect_uri" {
-  description = "Discord OAuth Redirect URI"
-  type        = string
-  default     = ""
-}
-
-variable "discord_target_guild_id" {
-  description = "Discord Target Guild ID"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
 # アカウント情報
 variable "billing_account_id" {
   description = "Google Cloud Platform 請求先アカウントID"
@@ -109,18 +73,4 @@ variable "environment" {
   description = "環境の識別子（production, staging, development等）"
   type        = string
   default     = "development"
-}
-
-# 環境変数と秘密情報
-variable "env_variables" {
-  description = "Cloud Run サービスの環境変数"
-  type        = map(string)
-  default     = {}
-}
-
-variable "secrets" {
-  description = "Secret Managerに保存する秘密情報"
-  type        = map(string)
-  sensitive   = true
-  default     = {}
 }

@@ -16,25 +16,8 @@ locals {
     }
   }
 
-  # Discord認証関連シークレット（Next.js Server Actions用）
-  discord_secrets = [
-    {
-      id          = "NEXT_PUBLIC_DISCORD_CLIENT_ID"
-      description = "Discord OAuthアプリケーションのクライアントID - フロントエンドと共有"
-    },
-    {
-      id          = "NEXT_PUBLIC_DISCORD_REDIRECT_URI"
-      description = "Discord認証後のリダイレクトURI - フロントエンドと共有"
-    },
-    {
-      id          = "DISCORD_CLIENT_SECRET"
-      description = "Discord OAuthアプリケーションのクライアントシークレット - サーバーサイドのみ"
-    },
-    {
-      id          = "DISCORD_TARGET_GUILD_ID"
-      description = "メンバーシップ確認対象のDiscordサーバー（ギルド）ID - サーバーサイドのみ"
-    }
-  ]
+  # Discord認証関連シークレット（削除済み - apps/web削除に伴い不要）
+  # discord_secrets = []
 
   # API関連シークレット
   api_secrets = [
@@ -44,48 +27,14 @@ locals {
     }
   ]
   
-  # Firebase Admin SDK関連シークレット
-  firebase_admin_secrets = [
-    {
-      id          = "FIREBASE_SERVICE_ACCOUNT_KEY"
-      description = "Firebase Admin SDKのサービスアカウントキー（JSON形式）"
-    }
-  ]
+  # Firebase Admin SDK関連シークレット（削除済み - apps/web削除に伴い不要）
+  # firebase_admin_secrets = []
 
-  # Firebase クライアント認証用シークレット
-  firebase_client_secrets = [
-    {
-      id          = "NEXT_PUBLIC_FIREBASE_API_KEY"
-      description = "Firebase APIキー - クライアントサイド認証用"
-    },
-    {
-      id          = "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"
-      description = "Firebase 認証ドメイン - クライアントサイド認証用"
-    },
-    {
-      id          = "NEXT_PUBLIC_FIREBASE_PROJECT_ID"
-      description = "Firebase プロジェクトID - クライアントサイド認証用"
-    },
-    {
-      id          = "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"
-      description = "Firebase ストレージバケット - クライアントサイド認証用"
-    },
-    {
-      id          = "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"
-      description = "Firebase メッセージ送信者ID - クライアントサイド認証用"
-    },
-    {
-      id          = "NEXT_PUBLIC_FIREBASE_APP_ID"
-      description = "Firebase アプリID - クライアントサイド認証用"
-    },
-    {
-      id          = "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID"
-      description = "Firebase 計測ID - クライアントサイド認証用（オプション）"
-    }
-  ]
+  # Firebase クライアント認証用シークレット（削除済み - apps/web削除に伴い不要）  
+  # firebase_client_secrets = []
 
-  # すべてのシークレットをまとめる
-  all_secrets = concat(local.discord_secrets, local.api_secrets, local.firebase_admin_secrets, local.firebase_client_secrets)
+  # すべてのシークレットをまとめる（YouTube APIキーのみ残存）
+  all_secrets = local.api_secrets
 }
 
 # シークレットの作成
@@ -99,10 +48,7 @@ resource "google_secret_manager_secret" "secrets" {
   
   # メタデータとしてシークレットの説明を追加
   labels = merge(local.common_secret_settings.labels, {
-    "category" = contains([for s in local.discord_secrets : s.id], each.key) ? "discord" : (
-                 contains([for s in local.firebase_admin_secrets : s.id], each.key) ? "firebase-admin" : (
-                 contains([for s in local.firebase_client_secrets : s.id], each.key) ? "firebase-client" : "api"
-                 ))
+    "category" = "api"  # 現在はAPIキーのみが残存
   })
   
   annotations = {
@@ -150,10 +96,7 @@ output "secrets_info" {
     for id, secret in google_secret_manager_secret.secrets :
     id => {
       name = secret.name
-      category = contains([for s in local.discord_secrets : s.id], id) ? "discord" : (
-                 contains([for s in local.firebase_admin_secrets : s.id], id) ? "firebase-admin" : (
-                 contains([for s in local.firebase_client_secrets : s.id], id) ? "firebase-client" : "api"
-                 ))
+      category = "api"  # 現在はAPIキーのみが残存
     }
   }
   description = "作成されたシークレットの一覧"

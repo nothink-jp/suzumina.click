@@ -25,7 +25,6 @@ terraform apply
 
 - `api_services.tf`: 有効化するGCP APIサービスの設定
 - `backend.tf`: Terraformの状態管理設定（GCS）
-- `cloudrun.tf`: Cloud Run サービスの定義
 - `firebase.tf`: Firestore、Firebase関連リソース
 - `function_common.tf`: 共通のCloud Functions設定
 - `function_discord_auth.tf`: Discord認証関連のCloud Functions

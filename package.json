@@ -3,15 +3,13 @@
   "version": "0.1.4",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter @suzumina.click/web dev",
     "build": "pnpm --filter @suzumina.click/shared-types build && pnpm -r build",
     "lint": "pnpm -r lint",
     "format": "pnpm -r format",
     "check": "pnpm -r check",
     "clean": "rimraf node_modules/.cache coverage",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "storybook": "pnpm --filter @suzumina.click/web storybook"
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "firebase": "^11.9.0"

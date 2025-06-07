@@ -77,53 +77,6 @@ jobs:
             packages/shared-types/dist
           key: shared-types-${{ github.sha }}
 
-  # Next.jsウェブアプリ（Web）の検証
-  web-checks:
-    name: 'Webアプリケーション検証'
-    needs: [common-lint, shared-build]
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
-      
-      # 複合アクションを使用してNode.js環境をセットアップ
-      - name: Node.js環境のセットアップ
-        uses: ./.github/actions/setup-node-env
-        with:
-          node-version: ${{ needs.common-lint.outputs.node_version }}
-          pnpm-version: ${{ needs.common-lint.outputs.pnpm_version }}
-          project-path: 'web'
-      
-      # shared-typesのビルド成果物を復元
-      - name: shared-typesビルド成果物の復元
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            packages/shared-types/dist
-          key: shared-types-${{ github.sha }}
-          fail-on-cache-miss: true
-      
-      # テスト実行
-      - name: アプリケーションのテスト
-        run: pnpm --filter @suzumina.click/web test:coverage
-      
-      # Codecovへカバレッジレポートをアップロード
-      - name: Webカバレッジレポートのアップロード
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          directory: ./apps/web/coverage
-          flags: web
-          fail_ci_if_error: true
-          verbose: true
-          # リポジトリ情報を明示的に設定
-          slug: nothink-jp/suzumina.click
-
-      # アプリケーションのビルド
-      - name: アプリケーションのビルド
-        run: pnpm --filter @suzumina.click/web build
-
   # Cloud Functions の検証
   functions-checks:
     name: 'Cloud Functions検証'
@@ -175,7 +128,7 @@ jobs:
   notify-success:
     name: 検証完了通知
     runs-on: ubuntu-latest
-    needs: [web-checks, functions-checks]
+    needs: [functions-checks]
     if: ${{ success() }}
 
     steps:
@@ -186,7 +139,7 @@ jobs:
   trigger-deploy:
     name: 統合デプロイトリガー
     runs-on: ubuntu-latest
-    needs: [web-checks, functions-checks]
+    needs: [functions-checks]
     if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     # トリガー用にactions:write権限が必要
     permissions:
@@ -207,7 +160,6 @@ jobs:
               inputs: {
                 branch: 'main',
                 trigger_source: 'ci',
-                deploy_web: 'true',
                 deploy_functions: 'true',
                 ci_run_id: '${{ github.run_id }}'
               }

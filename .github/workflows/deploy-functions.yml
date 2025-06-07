@@ -447,77 +447,7 @@ jobs:
             echo "::notice::すべての関数のデプロイに成功しました"
           fi
 
-  # デプロイ後のヘルスチェック
-  health-check:
-    name: 'デプロイ後のヘルスチェック'
-    needs: [prepare-deployment, save-current-state, deploy-functions]
-    runs-on: ubuntu-latest
-    if: needs.prepare-deployment.outputs.has_changes == 'true'
-    outputs:
-      unhealthy_functions: ${{ steps.check-health.outputs.unhealthy_functions }}
-      all_healthy: ${{ steps.check-health.outputs.all_healthy }}
-    
-    steps:
-      # リポジトリをチェックアウト（empty workspace警告を解決）
-      - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
 
-      # Google Cloud認証
-      - name: Google Cloud認証の設定
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/198349592327/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-          create_credentials_file: true
-          export_environment_variables: true
-      
-      # gcloud CLIをセットアップ
-      - name: gcloud CLIのセットアップ
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
-      # デプロイした関数のヘルスチェック
-      - name: 関数のヘルスチェック実行
-        id: check-health
-        run: |
-          FUNCTIONS="${{ needs.prepare-deployment.outputs.changed_functions }}"
-          DEPLOY_RESULTS="${{ needs.deploy-functions.outputs.deploy_results }}"
-          UNHEALTHY_FUNCTIONS=""
-          ALL_HEALTHY="true"
-          
-          for FUNC in $FUNCTIONS; do
-            # デプロイに失敗した関数はスキップ
-            if [[ "$DEPLOY_RESULTS" == *"$FUNC:failed"* ]]; then
-              echo "関数 $FUNC はデプロイに失敗したためヘルスチェックをスキップします"
-              UNHEALTHY_FUNCTIONS="${UNHEALTHY_FUNCTIONS}${FUNC};"
-              ALL_HEALTHY="false"
-              continue
-            fi
-            
-            echo "関数 $FUNC のヘルスチェックを実行しています..."
-            
-            # 関数の状態を確認
-            STATUS=$(gcloud functions describe $FUNC --gen2 --region=${{ env.REGION }} --format="value(state)" 2>/dev/null || echo "ERROR")
-            
-            if [ "$STATUS" == "ACTIVE" ]; then
-              echo "関数 $FUNC は正常に稼働しています: $STATUS"
-            else
-              echo "警告: 関数 $FUNC の状態が異常です: $STATUS"
-              UNHEALTHY_FUNCTIONS="${UNHEALTHY_FUNCTIONS}${FUNC};"
-              ALL_HEALTHY="false"
-            fi
-          done
-          
-          echo "unhealthy_functions=$UNHEALTHY_FUNCTIONS" >> $GITHUB_OUTPUT
-          echo "all_healthy=$ALL_HEALTHY" >> $GITHUB_OUTPUT
-          
-          if [ "$ALL_HEALTHY" == "true" ]; then
-            echo "::notice title=ヘルスチェック成功::すべての関数が正常に稼働しています"
-          else
-            echo "::warning title=ヘルスチェック失敗::一部の関数に問題があります: $UNHEALTHY_FUNCTIONS"
-          fi
 
   # 注意: Cloud Functions Gen2ではバージョンの直接ロールバックがサポートされていないため、
   # 自動ロールバック機能を削除しました。問題が発生した場合は手動で修正してください。
@@ -537,19 +467,22 @@ jobs:
   # デプロイ完了通知
   notify-deployment:
     name: 'デプロイ完了通知'
-    needs: [prepare-deployment, deploy-functions, health-check]
+    needs: [prepare-deployment, deploy-functions]
     if: needs.prepare-deployment.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
     
     steps:
       - name: デプロイ結果の通知
         run: |
-          # ヘルスチェック結果に基づいてメッセージを分岐
-          if [[ "${{ needs.health-check.outputs.all_healthy }}" == "true" ]]; then
+          # デプロイ結果に基づいてメッセージを分岐
+          DEPLOY_RESULTS="${{ needs.deploy-functions.outputs.deploy_results }}"
+          FAILED_COUNT=$(echo "$DEPLOY_RESULTS" | grep -o "failed" | wc -l)
+          
+          if [ "$FAILED_COUNT" -eq 0 ]; then
             echo "::notice title=Cloud Functionsデプロイ成功::すべての関数が正常にデプロイされました"
           else
-            echo "::warning title=Cloud Functionsデプロイ一部失敗::一部の関数に問題があります。手動で修正が必要です。"
-            echo "- 問題のある関数: ${{ needs.health-check.outputs.unhealthy_functions }}"
+            echo "::warning title=Cloud Functionsデプロイ一部失敗::$FAILED_COUNT 個の関数のデプロイに失敗しました。手動で修正が必要です。"
+            echo "- デプロイ結果: $DEPLOY_RESULTS"
           fi
           
           echo "デプロイ日時: $(date '+%Y年%m月%d日 %H:%M:%S')"

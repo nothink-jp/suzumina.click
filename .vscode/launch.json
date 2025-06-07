@@ -2,23 +2,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Next.js: デバッグ",
-      "type": "node",
-      "request": "launch",
-      "cwd": "${workspaceFolder}/apps/web",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
-      "env": {
-        "NODE_OPTIONS": "--inspect"
-      },
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/**",
-        "!**/node_modules/**"
-      ]
-    },
-    {
       "name": "Cloud Functions: ローカルデバッグ",
       "type": "node",
       "request": "launch",
@@ -35,26 +18,6 @@
       "env": {
         "PORT": "8081"
       }
-    },
-    {
-      "name": "GCP: Cloud Run デバッグ",
-      "type": "cloudcode.cloudrun",
-      "request": "attach",
-      "service": {
-        "name": "suzumina-click-nextjs-app",
-        "serviceSource": "image",
-        "minikubeProfileName": "minikube"
-      },
-      "remoteRoot": "/app"
-    },
-    {
-      "name": "GCP: Cloud Functions デバッグ",
-      "type": "cloudcode.cloudfunctions",
-      "request": "attach",
-      "functionName": "fetchYouTubeVideos",
-      "region": "asia-northeast1",
-      "projectId": "suzumina-click-firebase",
-      "runtime": "nodejs20"
     }
   ]
 }
