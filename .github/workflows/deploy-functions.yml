@@ -275,11 +275,49 @@ jobs:
           # tgzファイルをコピー
           cp ./apps/functions/suzumina.click-shared-types-*.tgz ./tmp/functions/
           
-          # package.jsonをコピー
-          cp ./apps/functions/package.json ./tmp/functions/
+          # TypeScript関連ファイルを除外してデプロイパッケージを作成
+          # (tsconfig.json, .ts ファイルなどを除外)
           
-          # tsconfig.jsonをコピー（ビルドプロセスの参照用）
-          cp ./apps/functions/tsconfig.json ./tmp/functions/
+          # カスタムpackage.jsonを作成（Cloud Functionsビルドプロセス向け）
+          node -e '
+            const fs = require("fs");
+            const srcPkg = JSON.parse(fs.readFileSync("./apps/functions/package.json", "utf8"));
+            
+            // TypeScriptビルドを無効化するためのカスタムpackage.json
+            const deployPkg = {
+              name: srcPkg.name,
+              version: srcPkg.version,
+              private: true,
+              main: "lib/index.js",
+              // scriptsセクションを完全に削除してTypeScriptコンパイルを防ぐ
+              engines: {
+                node: "20"
+              },
+              // 必要な依存関係のみを含める（shared-typesを除く）
+              dependencies: Object.entries(srcPkg.dependencies || {})
+                .filter(([key]) => key !== "@suzumina.click/shared-types")
+                .reduce((acc, [key, val]) => ({...acc, [key]: val}), {})
+            };
+            
+            // 更新したpackage.jsonを書き込み
+            fs.writeFileSync("./tmp/functions/package.json", JSON.stringify(deployPkg, null, 2), "utf8");
+            console.log("デプロイ用のpackage.jsonを作成しました");
+          '
+          
+          # .gcloudignoreファイルを作成してTypeScript関連ファイルを除外
+          cat > ./tmp/functions/.gcloudignore << EOF
+          # TypeScript関連ファイルの除外
+          tsconfig.json
+          *.ts
+          src/
+          # テストファイルの除外
+          *.test.js
+          *.test.ts
+          test/
+          # 開発用ファイルの除外
+          .eslintrc*
+          .prettierrc*
+          EOF
           
           # パッケージ内容の確認
           echo "package.jsonの内容:"
