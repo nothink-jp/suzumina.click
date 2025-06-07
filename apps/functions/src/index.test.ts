@@ -1,8 +1,8 @@
 /**
- * アプリケーション初期化機能とHTTP処理のテスト
+ * アプリケーション初期化機能とヘルスチェック機能のテスト
  *
  * このファイルでは、index.tsで実装されている初期化処理と
- * HTTPリクエスト処理機能が正しく動作することを検証します。
+ * ヘルスチェック機能が正しく動作することを検証します。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,39 +18,23 @@ vi.mock("./utils/logger", () => ({
   error: mockLoggerError,
 }));
 
-// HTTPサーバーのモック
-const mockListen = vi.fn().mockReturnThis();
-const mockOn = vi.fn().mockReturnThis();
-const mockServer = {
-  listen: mockListen,
-  on: mockOn,
-};
-
-// HTTPリクエストハンドラを保存するための変数
-let capturedHttpHandler: Function | null = null;
-
-// node:httpのモック（createServerメソッドをキャプチャ）
-vi.mock("node:http", () => ({
-  createServer: vi.fn((handler) => {
-    capturedHttpHandler = handler;
-    return mockServer;
-  }),
-}));
-
 // YouTubeモジュールのモック
 vi.mock("./youtube", () => ({
   fetchYouTubeVideos: vi.fn(),
 }));
 
+// DLsiteモジュールのモック
+vi.mock("./dlsite", () => ({
+  fetchDLsiteWorks: vi.fn(),
+}));
+
 // Functions Frameworkのモック
 const mockCloudEvent = vi.fn();
 const mockHttp = vi.fn();
-const mockGetFunction = vi.fn();
 
 vi.mock("@google-cloud/functions-framework", () => ({
   cloudEvent: mockCloudEvent,
   http: mockHttp,
-  _getFunction: mockGetFunction,
 }));
 
 // process.exitのモック
@@ -76,7 +60,6 @@ const originalEnv = process.env;
  */
 function resetModuleState() {
   vi.resetModules();
-  capturedHttpHandler = null;
   savedHttpHandler = null;
 }
 
@@ -133,16 +116,27 @@ describe("初期化機能テスト", () => {
     );
   });
 
-  it("HTTPハンドラーが正しく登録されること", async () => {
+  it("DLsiteモジュールの関数が正しく登録されること", async () => {
+    // index.tsをインポート
+    await import("./index");
+
+    // cloudEvent関数が正しく呼ばれたことを確認
+    expect(mockCloudEvent).toHaveBeenCalledWith(
+      "fetchDLsiteWorks",
+      expect.any(Function),
+    );
+  });
+
+  it("ヘルスチェック用HTTPハンドラーが正しく登録されること", async () => {
     // index.tsをインポート
     await import("./index");
 
     // HTTP関数が登録されたことを確認
-    expect(mockHttp).toHaveBeenCalledWith("httpHandler", expect.any(Function));
+    expect(mockHttp).toHaveBeenCalledWith("healthcheck", expect.any(Function));
   });
 });
 
-describe("HTTPハンドラー機能テスト", () => {
+describe("ヘルスチェック機能テスト", () => {
   // HTTPリクエストとレスポンスのモック
   let mockReq: any;
   let mockRes: any;
@@ -158,7 +152,7 @@ describe("HTTPハンドラー機能テスト", () => {
     mockReq = {};
     mockRes = {
       status: vi.fn().mockReturnThis(),
-      send: vi.fn(),
+      json: vi.fn(),
     };
   });
 
@@ -167,7 +161,7 @@ describe("HTTPハンドラー機能テスト", () => {
     process.env = originalEnv;
   });
 
-  it("HTTPハンドラーが正しいレスポンスを返すこと", async () => {
+  it("ヘルスチェックエンドポイントが正しいレスポンスを返すこと", async () => {
     // index.tsをインポート
     await import("./index");
 
@@ -178,11 +172,39 @@ describe("HTTPハンドラー機能テスト", () => {
     savedHttpHandler?.(mockReq, mockRes);
 
     // 適切なログが出力されることを確認
-    expect(mockLoggerInfo).toHaveBeenCalledWith("HTTPリクエストを受信しました");
+    expect(mockLoggerInfo).toHaveBeenCalledWith(
+      "ヘルスチェックリクエストを受信しました",
+    );
 
     // 正しいレスポンスが返されることを確認
     expect(mockRes.status).toHaveBeenCalledWith(200);
-    expect(mockRes.send).toHaveBeenCalledWith("Functions Framework正常動作中");
+    expect(mockRes.json).toHaveBeenCalledWith({
+      status: "ok",
+      message: "Functions Framework正常動作中",
+      timestamp: expect.any(String),
+    });
+  });
+
+  it("ヘルスチェックレスポンスのタイムスタンプがISO形式であること", async () => {
+    // index.tsをインポート
+    await import("./index");
+
+    // 保存したハンドラーを実行
+    savedHttpHandler?.(mockReq, mockRes);
+
+    // json呼び出しの引数を取得
+    const jsonCall = mockRes.json.mock.calls[0];
+    const responseData = jsonCall[0];
+
+    // タイムスタンプがISO形式の文字列であることを確認
+    expect(responseData.timestamp).toMatch(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+    );
+
+    // Date.parseで正しい日付として解析できることを確認
+    const parsedDate = new Date(responseData.timestamp);
+    expect(parsedDate).toBeInstanceOf(Date);
+    expect(parsedDate.getTime()).not.toBeNaN();
   });
 });
 
@@ -190,6 +212,10 @@ describe("安全なプロセス終了関数（safeExit）テスト", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetModuleState();
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
   });
 
   it("テスト環境では実際に終了せずに警告ログを出力すること", async () => {
@@ -206,6 +232,9 @@ describe("安全なプロセス終了関数（safeExit）テスト", () => {
     expect(mockLoggerWarn).toHaveBeenCalledWith(
       "プロセス終了が要求されました（コード: 1）- テスト環境では無視されます",
     );
+
+    // process.exitが呼ばれていないことを確認
+    expect(mockExit).not.toHaveBeenCalled();
   });
 
   it("本番環境では実際にプロセスを終了させること", async () => {
@@ -223,232 +252,20 @@ describe("安全なプロセス終了関数（safeExit）テスト", () => {
     // process.exitが呼ばれたことを確認
     expect(mockExit).toHaveBeenCalledWith(1);
   });
-});
 
-describe("HTTPサーバー作成関数テスト", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    resetModuleState();
-
-    // テスト用ハンドラー関数を設定
-    mockGetFunction.mockReturnValue(() => {});
-  });
-
-  afterEach(() => {
-    process.env = originalEnv;
-  });
-
-  it("テスト環境ではサーバーが作成されるがlistenは呼ばれないこと", async () => {
-    // テスト環境を設定
-    process.env = { ...originalEnv, NODE_ENV: "test" };
+  it("開発環境でも実際にプロセスを終了させること", async () => {
+    // 開発環境を設定
+    process.env = { ...originalEnv, NODE_ENV: "development" };
 
     // index.tsをインポート
-    const { createHttpServer } = await import("./index");
+    const { safeExit } = await import("./index");
 
-    // サーバーを作成
-    const server = createHttpServer(8080);
-
-    // http.createServerが呼ばれたことを確認
-    expect(server).toBe(mockServer);
-
-    // エラーハンドラが設定されたことを確認
-    expect(mockOn).toHaveBeenCalledWith("error", expect.any(Function));
-
-    // テスト環境なのでlistenは呼ばれないことを確認
-    expect(mockListen).not.toHaveBeenCalled();
-
-    // ログが出力されたことを確認
-    expect(mockLoggerInfo).toHaveBeenCalledWith(
-      "HTTPサーバーをポート8080で起動します...",
-    );
-  });
-
-  it("本番環境ではサーバーが作成され、listenも呼ばれること", async () => {
-    // 本番環境を設定
-    process.env = { ...originalEnv, NODE_ENV: "production" };
-
-    // index.tsをインポート
-    const { createHttpServer } = await import("./index");
-
-    // サーバーを作成
-    const server = createHttpServer(8080);
-
-    // http.createServerが呼ばれたことを確認
-    expect(server).toBe(mockServer);
-
-    // エラーハンドラが設定されたことを確認
-    expect(mockOn).toHaveBeenCalledWith("error", expect.any(Function));
-
-    // 本番環境なのでlistenが呼ばれることを確認
-    expect(mockListen).toHaveBeenCalled();
-
-    // ログが出力されたことを確認
-    expect(mockLoggerInfo).toHaveBeenCalledWith(
-      "HTTPサーバーをポート8080で起動します...",
-    );
-  });
-
-  it("HTTPサーバーのエラーハンドラが正しく機能すること", async () => {
-    // テスト環境を設定
-    process.env = { ...originalEnv, NODE_ENV: "test" };
-
-    // index.tsをインポート
-    const { createHttpServer } = await import("./index");
-
-    // サーバーを作成
-    createHttpServer(8080);
-
-    // エラーハンドラのコールバックを取得
-    const errorCallArray = mockOn.mock.calls.find(
-      (call) => call[0] === "error",
+    // プロセス終了関数を呼び出し
+    expect(() => safeExit(0)).toThrow(
+      "プロセスが終了コード0で終了しようとしました",
     );
 
-    // 配列が存在することを確認してからコールバックを取得
-    if (!errorCallArray) {
-      throw new Error("エラーハンドラが見つかりませんでした");
-    }
-
-    const errorCallback = errorCallArray[1];
-
-    // 例外オブジェクトを作成
-    const testError = new Error("テスト用エラー");
-
-    // エラーハンドラーを実行
-    errorCallback(testError);
-
-    // エラーログが出力されたことを確認
-    expect(mockLoggerError).toHaveBeenCalledWith(
-      "HTTPサーバーの起動に失敗しました:",
-      testError,
-    );
-
-    // 警告ログが出力されたことを確認（テスト環境なのでsafeExitが実際に終了させない）
-    expect(mockLoggerWarn).toHaveBeenCalledWith(
-      "プロセス終了が要求されました（コード: 1）- テスト環境では無視されます",
-    );
-  });
-
-  it("HTTPリクエストハンドラが登録されている場合はそれが呼ばれること", async () => {
-    // テストハンドラー
-    const testHandler = vi.fn();
-    mockGetFunction.mockReturnValue(testHandler);
-
-    // テスト環境を設定
-    process.env = { ...originalEnv, NODE_ENV: "test" };
-
-    // index.tsをインポート
-    const { createHttpServer } = await import("./index");
-
-    // モックリクエストとレスポンスを準備
-    const mockReq = {};
-    const mockRes = {};
-
-    // サーバーを作成
-    createHttpServer(8080);
-
-    // HTTPハンドラを実行
-    capturedHttpHandler?.(mockReq, mockRes);
-
-    // 登録されたハンドラが呼ばれたことを確認
-    expect(testHandler).toHaveBeenCalledWith(mockReq, mockRes);
-  });
-
-  it("HTTPリクエストハンドラが登録されていない場合はデフォルトレスポンスを返すこと", async () => {
-    // ハンドラがないケース
-    mockGetFunction.mockReturnValue(null);
-
-    // テスト環境を設定
-    process.env = { ...originalEnv, NODE_ENV: "test" };
-
-    // index.tsをインポート
-    const { createHttpServer } = await import("./index");
-
-    // モックリクエストとレスポンスを準備
-    const mockReq = {};
-    const mockRes = {
-      writeHead: vi.fn(),
-      end: vi.fn(),
-    };
-
-    // サーバーを作成
-    createHttpServer(8080);
-
-    // HTTPハンドラを実行
-    capturedHttpHandler?.(mockReq, mockRes);
-
-    // デフォルトレスポンスが返されたことを確認
-    expect(mockRes.writeHead).toHaveBeenCalledWith(200, {
-      "Content-Type": "text/plain",
-    });
-    expect(mockRes.end).toHaveBeenCalledWith("Functions Framework正常動作中");
-  });
-});
-
-describe("メインモジュール実行テスト", () => {
-  const originalRequireMain = require.main;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    resetModuleState();
-
-    // require.mainをモック
-    Object.defineProperty(require, "main", {
-      value: module,
-    });
-  });
-
-  afterEach(() => {
-    // require.mainを元に戻す
-    Object.defineProperty(require, "main", {
-      value: originalRequireMain,
-    });
-
-    process.env = originalEnv;
-  });
-
-  it("メインモジュールとして実行された場合、PORTから取得したポートでサーバーが作成されること", async () => {
-    // テスト環境を設定
-    process.env = { ...originalEnv, NODE_ENV: "test", PORT: "9000" };
-
-    // index.tsをインポートし、明示的にrunMainModule関数を呼び出す
-    const { runMainModule } = await import("./index");
-    runMainModule();
-
-    // デバッグ用：どのようなログが出力されたか確認
-    console.log(
-      "出力されたログ:",
-      mockLoggerInfo.mock.calls.map((call) => call[0]),
-    );
-
-    // 特定のログメッセージが含まれていることを確認
-    expect(
-      mockLoggerInfo.mock.calls.some(
-        (call) => call[0] === "HTTPサーバーをポート9000で起動します...",
-      ),
-    ).toBe(true);
-  });
-
-  it("PORT環境変数がない場合はデフォルト値を使用すること", async () => {
-    // テスト環境を設定（PORT変数なし）
-    process.env = { ...originalEnv, NODE_ENV: "test" };
-    // biome-ignore lint/performance/noDelete: <explanation>
-    delete process.env.PORT;
-
-    // index.tsをインポートし、明示的にrunMainModule関数を呼び出す
-    const { runMainModule } = await import("./index");
-    runMainModule();
-
-    // デバッグ用：どのようなログが出力されたか確認
-    console.log(
-      "出力されたログ:",
-      mockLoggerInfo.mock.calls.map((call) => call[0]),
-    );
-
-    // 特定のログメッセージが含まれていることを確認
-    expect(
-      mockLoggerInfo.mock.calls.some(
-        (call) => call[0] === "HTTPサーバーをポート8080で起動します...",
-      ),
-    ).toBe(true);
+    // process.exitが呼ばれたことを確認
+    expect(mockExit).toHaveBeenCalledWith(0);
   });
 });
