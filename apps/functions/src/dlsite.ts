@@ -1,6 +1,6 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import { saveWorksToFirestore } from "./utils/dlsite-firestore";
-import { mapMultipleWorks, mapToFirestoreData } from "./utils/dlsite-mapper";
+import { mapMultipleWorks } from "./utils/dlsite-mapper";
 import { parseWorksFromSearchResult } from "./utils/dlsite-parser";
 import firestore, { Timestamp } from "./utils/firestore";
 import * as logger from "./utils/logger";

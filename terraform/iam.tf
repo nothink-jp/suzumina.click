@@ -383,10 +383,48 @@ resource "google_project_iam_member" "fetch_youtube_videos_run_invoker" {
 }
 
 # ------------------------------------------------------------------------------
+# fetchDLsiteWorks関数用のサービスアカウントとIAM権限設定
+# ------------------------------------------------------------------------------
+
+# DLsite作品取得関数用のサービスアカウント
+resource "google_service_account" "fetch_dlsite_works_sa" {
+  project      = var.gcp_project_id
+  account_id   = "fetch-dlsite-works-sa"
+  display_name = "DLsite作品取得関数用サービスアカウント"
+}
+
+# サービスアカウントにFirestoreユーザーロールを付与
+resource "google_project_iam_member" "fetch_dlsite_works_firestore_user" {
+  project = var.gcp_project_id
+  role    = "roles/datastore.user" # Firestoreの読み書きアクセス用ロール
+  member  = "serviceAccount:${google_service_account.fetch_dlsite_works_sa.email}"
+
+  depends_on = [google_service_account.fetch_dlsite_works_sa]
+}
+
+# サービスアカウントにログライターロールを付与
+resource "google_project_iam_member" "fetch_dlsite_works_log_writer" {
+  project = var.gcp_project_id
+  role    = "roles/logging.logWriter" # ログ書き込み用ロール
+  member  = "serviceAccount:${google_service_account.fetch_dlsite_works_sa.email}"
+
+  depends_on = [google_service_account.fetch_dlsite_works_sa]
+}
+
+# 関数のサービスアカウントにRun Invokerロールを付与
+resource "google_project_iam_member" "fetch_dlsite_works_run_invoker" {
+  project = var.gcp_project_id
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:${google_service_account.fetch_dlsite_works_sa.email}"
+
+  depends_on = [google_service_account.fetch_dlsite_works_sa]
+}
+
+# ------------------------------------------------------------------------------
 # サービス間の相互作用のためのIAMバインディング（スケジューラー -> Pub/Sub -> 関数）
 # ------------------------------------------------------------------------------
 
-# Cloud Scheduler Service AgentにPub/SubトピックのPublisherロールを付与
+# Cloud Scheduler Service AgentにYouTube用Pub/SubトピックのPublisherロールを付与
 resource "google_pubsub_topic_iam_member" "scheduler_pubsub_publisher" {
   project = google_pubsub_topic.youtube_video_fetch_trigger.project
   topic   = google_pubsub_topic.youtube_video_fetch_trigger.name
@@ -400,7 +438,21 @@ resource "google_pubsub_topic_iam_member" "scheduler_pubsub_publisher" {
   ]
 }
 
-# Pub/Sub Service Agentに関数のサービスアカウントのToken Creatorロールを付与
+# Cloud Scheduler Service AgentにDLsite用Pub/SubトピックのPublisherロールを付与
+resource "google_pubsub_topic_iam_member" "scheduler_dlsite_pubsub_publisher" {
+  project = google_pubsub_topic.dlsite_works_fetch_trigger.project
+  topic   = google_pubsub_topic.dlsite_works_fetch_trigger.name
+  role    = "roles/pubsub.publisher"
+  # データソースからプロジェクト番号を使用してサービスエージェントのメールアドレスを構築
+  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
+
+  depends_on = [
+    google_pubsub_topic.dlsite_works_fetch_trigger,
+    data.google_project.project,
+  ]
+}
+
+# Pub/Sub Service AgentにYouTube関数のサービスアカウントのToken Creatorロールを付与
 # Pub/SubがEventarc経由で認証された関数呼び出しのためにOIDCトークンを作成できるようにする
 resource "google_service_account_iam_member" "pubsub_token_creator" {
   service_account_id = google_service_account.fetch_youtube_videos_sa.name # 関数が実行されるSA
@@ -409,6 +461,19 @@ resource "google_service_account_iam_member" "pubsub_token_creator" {
 
   depends_on = [
     google_service_account.fetch_youtube_videos_sa,
+    data.google_project.project,
+  ]
+}
+
+# Pub/Sub Service AgentにDLsite関数のサービスアカウントのToken Creatorロールを付与
+# Pub/SubがEventarc経由で認証された関数呼び出しのためにOIDCトークンを作成できるようにする
+resource "google_service_account_iam_member" "pubsub_dlsite_token_creator" {
+  service_account_id = google_service_account.fetch_dlsite_works_sa.name # 関数が実行されるSA
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com" # Pub/Sub SA
+
+  depends_on = [
+    google_service_account.fetch_dlsite_works_sa,
     data.google_project.project,
   ]
 }
