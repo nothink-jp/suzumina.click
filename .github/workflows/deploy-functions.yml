@@ -56,10 +56,20 @@ jobs:
           # .gitignore をコピー
           cp apps/functions/.gitignore ./functions-build/ || echo "# Cloud Functions deployment" > ./functions-build/.gitignore
           
-          # workspace依存関係を削除（ビルド済みなので不要）
+          # ビルド済みなので不要なスクリプトと依存関係を削除
           cd ./functions-build
           # workspace依存関係を削除
           sed -i '/"@suzumina.click\/shared-types":/d' package.json
+          # ビルドスクリプトを削除（既にビルド済みなので不要）
+          sed -i '/"build":/d' package.json
+          sed -i '/"build:watch":/d' package.json
+          # 開発用スクリプトも削除
+          sed -i '/"lint":/d' package.json
+          sed -i '/"format":/d' package.json
+          sed -i '/"check":/d' package.json
+          sed -i '/"test":/d' package.json
+          sed -i '/"test:watch":/d' package.json
+          sed -i '/"test:coverage":/d' package.json
 
       - name: Authenticate to GCP
         id: 'auth'
