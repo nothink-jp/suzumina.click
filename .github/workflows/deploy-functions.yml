@@ -247,12 +247,6 @@ jobs:
           pnpm-version: ${{ needs.prepare-deployment.outputs.pnpm_version }}
           project-path: 'functions'
 
-      # shared-typesのパッケージング
-      - name: shared-typesのパッケージング
-        run: |
-          echo "shared-typesをパッケージ化しています..."
-          pnpm run pack:shared-types
-      
       # Cloud Functionsのテスト実行
       - name: Cloud Functionsのテスト
         run: pnpm --filter @suzumina.click/functions test
@@ -262,35 +256,16 @@ jobs:
         run: pnpm --filter @suzumina.click/functions build
       
       # デプロイ用パッケージの準備
-      - name: デプロイパッケージディレクトリの作成
+      - name: monorepo対応デプロイパッケージの作成
         run: |
-          echo "デプロイパッケージディレクトリを準備中..."
-          mkdir -p ./tmp/functions
-          
-          # ビルド済みファイルをコピー
-          cp -r ./apps/functions/lib ./tmp/functions/
-          cp ./apps/functions/suzumina.click-shared-types-*.tgz ./tmp/functions/
-          
-          echo "✅ ファイルコピーが完了しました"
-      
-      - name: デプロイ用設定ファイルの生成
-        run: |
-          echo "デプロイ用設定ファイルを生成中..."
-          node ./.github/scripts/prepare-deployment.js
+          echo "🚀 monorepo対応デプロイパッケージを作成中..."
+          node ./.github/scripts/create-deploy-package.js
           
           echo "📄 生成されたpackage.json:"
           cat ./tmp/functions/package.json
-      
-      - name: 依存関係のインストール
-        run: |
-          echo "依存関係をインストール中..."
-          cd ./tmp/functions
-          npm install --omit=dev --ignore-scripts
-      
-      - name: shared-typesパッケージの確認と修復
-        run: |
-          echo "shared-typesパッケージを確認中..."
-          node ./.github/scripts/fix-shared-types.js
+          
+          echo "📁 デプロイパッケージの内容:"
+          ls -la ./tmp/functions/
       
       # Google Cloud認証
       - name: Google Cloud認証の設定
