@@ -245,7 +245,7 @@ jobs:
         with:
           node-version: ${{ needs.prepare-deployment.outputs.node_version }}
           pnpm-version: ${{ needs.prepare-deployment.outputs.pnpm_version }}
-          project-path: 'functions'
+          # ワークスペース全体の依存関係をインストール（shared-typesのビルドに必要）
 
       # shared-typesのビルド（functionsが依存するため先に実行）
       - name: shared-typesのビルド
