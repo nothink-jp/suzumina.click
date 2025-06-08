@@ -156,14 +156,51 @@ async function fetchDLsiteSearchResult(
     },
   });
 
+  logger.info(
+    `DLsiteレスポンス詳細: ステータス=${response.status}, Content-Type=${response.headers.get("Content-Type")}`,
+  );
+
   if (!response.ok) {
+    const responseText = await response.text();
+    logger.error(
+      `DLsite検索リクエストが失敗しました: ${response.status} ${response.statusText}`,
+      {
+        responsePreview: responseText.substring(0, 500),
+      },
+    );
     throw new Error(
       `DLsite検索リクエストが失敗しました: ${response.status} ${response.statusText}`,
     );
   }
 
-  const data = (await response.json()) as DLsiteSearchResult;
-  return data;
+  // レスポンステキストを先に取得してログ出力
+  const responseText = await response.text();
+  logger.info(
+    `DLsiteレスポンス内容プレビュー: ${responseText.substring(0, 300)}...`,
+  );
+
+  // Content-Typeをチェック
+  const contentType = response.headers.get("Content-Type") || "";
+  if (!contentType.includes("application/json")) {
+    logger.error(`期待していたJSONではなく、${contentType}が返されました`);
+    logger.debug("完全なレスポンス内容:", {
+      responseText: responseText.substring(0, 1000),
+    });
+    throw new Error(
+      `DLsiteからHTMLが返されました（JSON期待）: Content-Type=${contentType}`,
+    );
+  }
+
+  try {
+    const data = JSON.parse(responseText) as DLsiteSearchResult;
+    return data;
+  } catch (parseError) {
+    logger.error("JSONパースエラー:", parseError);
+    logger.debug("パースに失敗したレスポンス:", {
+      responseText: responseText.substring(0, 1000),
+    });
+    throw new Error(`DLsiteレスポンスのJSONパースに失敗: ${parseError}`);
+  }
 }
 
 /**
