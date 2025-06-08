@@ -30,24 +30,14 @@ vi.mock("./dlsite", () => ({
 
 // Functions Frameworkのモック
 const mockCloudEvent = vi.fn();
-const mockHttp = vi.fn();
 
 vi.mock("@google-cloud/functions-framework", () => ({
   cloudEvent: mockCloudEvent,
-  http: mockHttp,
 }));
 
 // process.exitのモック
 const mockExit = vi.spyOn(process, "exit").mockImplementation((code) => {
   throw new Error(`プロセスが終了コード${code}で終了しようとしました`);
-});
-
-// 保存されたHTTP関数ハンドラ
-let savedHttpHandler: Function | null = null;
-
-// HTTP関数ハンドラをキャプチャするモック実装
-mockHttp.mockImplementation((_name: string, handler: Function) => {
-  savedHttpHandler = handler;
 });
 
 // 環境変数のバックアップ
@@ -60,7 +50,6 @@ const originalEnv = process.env;
  */
 function resetModuleState() {
   vi.resetModules();
-  savedHttpHandler = null;
 }
 
 describe("初期化機能テスト", () => {
@@ -125,86 +114,6 @@ describe("初期化機能テスト", () => {
       "fetchDLsiteWorks",
       expect.any(Function),
     );
-  });
-
-  it("ヘルスチェック用HTTPハンドラーが正しく登録されること", async () => {
-    // index.tsをインポート
-    await import("./index");
-
-    // HTTP関数が登録されたことを確認
-    expect(mockHttp).toHaveBeenCalledWith("healthcheck", expect.any(Function));
-  });
-});
-
-describe("ヘルスチェック機能テスト", () => {
-  // HTTPリクエストとレスポンスのモック
-  let mockReq: any;
-  let mockRes: any;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    resetModuleState();
-
-    // テスト環境を設定
-    process.env = { ...originalEnv, NODE_ENV: "test" };
-
-    // リクエストとレスポンスのモック作成
-    mockReq = {};
-    mockRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
-  });
-
-  afterEach(() => {
-    // 環境変数を元に戻す
-    process.env = originalEnv;
-  });
-
-  it("ヘルスチェックエンドポイントが正しいレスポンスを返すこと", async () => {
-    // index.tsをインポート
-    await import("./index");
-
-    // HTTPハンドラーが登録されていることを確認
-    expect(savedHttpHandler).not.toBeNull();
-
-    // 保存したハンドラーを実行
-    savedHttpHandler?.(mockReq, mockRes);
-
-    // 適切なログが出力されることを確認
-    expect(mockLoggerInfo).toHaveBeenCalledWith(
-      "ヘルスチェックリクエストを受信しました",
-    );
-
-    // 正しいレスポンスが返されることを確認
-    expect(mockRes.status).toHaveBeenCalledWith(200);
-    expect(mockRes.json).toHaveBeenCalledWith({
-      status: "ok",
-      message: "Functions Framework正常動作中",
-      timestamp: expect.any(String),
-    });
-  });
-
-  it("ヘルスチェックレスポンスのタイムスタンプがISO形式であること", async () => {
-    // index.tsをインポート
-    await import("./index");
-
-    // 保存したハンドラーを実行
-    savedHttpHandler?.(mockReq, mockRes);
-
-    // json呼び出しの引数を取得
-    const jsonCall = mockRes.json.mock.calls[0];
-    const responseData = jsonCall[0];
-
-    // タイムスタンプがISO形式の文字列であることを確認
-    expect(responseData.timestamp).toMatch(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-    );
-
-    // Date.parseで正しい日付として解析できることを確認
-    const parsedDate = new Date(responseData.timestamp);
-    expect(parsedDate).toBeInstanceOf(Date);
-    expect(parsedDate.getTime()).not.toBeNaN();
   });
 });
 
