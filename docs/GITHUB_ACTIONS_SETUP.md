@@ -12,10 +12,12 @@
 以下の **2つの Secrets** を GitHub リポジトリに設定するだけで済みます：
 
 ### 1. GCP_PROJECT_ID
+
 - **値**: あなたの GCP プロジェクト ID
 - **例**: `my-project-12345`
 
 ### 2. GCP_PROJECT_NUMBER
+
 - **値**: あなたの GCP プロジェクト番号
 - **例**: `123456789012`
 
@@ -81,6 +83,7 @@ gcloud projects describe YOUR_PROJECT_ID --format="value(projectNumber)"
 ### ログの確認
 
 GitHub Actions のログで詳細なエラー情報を確認できます：
+
 - **Actions** タブ > 失敗したワークフロー実行 > ステップの詳細
 
 ### 手動テスト
