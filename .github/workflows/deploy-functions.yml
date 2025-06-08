@@ -44,7 +44,8 @@ jobs:
       - name: Prepare functions for deployment
         # pnpm deploy を使用して、デプロイに必要なファイルとプロダクション依存関係を ./functions-build にコピーします。
         # これにより、Cloud Functions にアップロードされる内容が最適化されます。
-        run: pnpm --filter=@suzumina.click/functions deploy --prod ./functions-build
+        # pnpm v10では --legacy フラグが必要
+        run: pnpm --filter=@suzumina.click/functions deploy --prod --legacy ./functions-build
 
       - name: Authenticate to GCP
         id: 'auth'
