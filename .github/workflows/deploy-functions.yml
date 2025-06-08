@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
-      id-token: 'write' # GCP Workload Identity Federation 認証用
+      id-token: 'write'
 
     steps:
       - name: Checkout repository
@@ -21,16 +21,19 @@ jobs:
         uses: pnpm/action-setup@v3
         with:
           version: 10
-          run_install: false # ルートで手動でインストールするため
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22' # apps/functions/package.json の依存関係に合わせて適切なバージョンを選択してください
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install root dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build shared-types first
+        run: pnpm --filter=@suzumina.click/shared-types build
 
       - name: Build functions
         run: pnpm --filter=@suzumina.click/functions build
