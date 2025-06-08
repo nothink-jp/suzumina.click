@@ -290,16 +290,25 @@ jobs:
               engines: {
                 node: "20"
               },
-              // 必要な依存関係のみを含める（shared-typesを除く）
-              dependencies: Object.entries(srcPkg.dependencies || {})
-                .filter(([key]) => key !== "@suzumina.click/shared-types")
-                .reduce((acc, [key, val]) => ({...acc, [key]: val}), {})
+              // shared-typesをローカルtgzファイルとして依存関係に含める
+              dependencies: {
+                ...Object.entries(srcPkg.dependencies || {})
+                  .filter(([key]) => key !== "@suzumina.click/shared-types")
+                  .reduce((acc, [key, val]) => ({...acc, [key]: val}), {}),
+                "@suzumina.click/shared-types": "file:./suzumina.click-shared-types-0.1.5.tgz"
+              }
             };
             
             // デプロイ用package.jsonを書き込み
             fs.writeFileSync("./tmp/functions/package.json", JSON.stringify(deployPkg, null, 2), "utf8");
             console.log("デプロイ用のpackage.jsonを作成しました");
           '
+          
+          # デプロイパッケージでnpm installを実行して依存関係を解決
+          cd ./tmp/functions
+          echo "依存関係をインストールしています..."
+          npm install --only=production --ignore-scripts
+          cd ../../
           
           # .gcloudignoreファイルを作成してTypeScript関連ファイルを除外
           cat > ./tmp/functions/.gcloudignore << EOF
@@ -314,11 +323,11 @@ jobs:
           # 開発用ファイルの除外
           .eslintrc*
           .prettierrc*
-          # Node.js関連の除外
-          node_modules/
+          # ログファイル関連の除外
           npm-debug.log*
           .npm
           .eslintcache
+          # node_modulesは除外しない（必要な依存関係を含むため）
           EOF
           
           # パッケージ内容の確認
