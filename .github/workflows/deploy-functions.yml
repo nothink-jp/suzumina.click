@@ -41,14 +41,32 @@ jobs:
       - name: Run tests
         run: pnpm --filter=@suzumina.click/functions test
 
+      - name: Pack shared-types
+        # shared-types パッケージをタルボールとしてパック
+        run: |
+          cd packages/shared-types
+          pnpm pack
+          mv suzumina.click-shared-types-*.tgz ../../shared-types.tgz
+
       - name: Prepare functions for deployment
         # pnpm deploy を使用して、デプロイに必要なファイルとプロダクション依存関係を ./functions-build にコピーします。
-        # これにより、Cloud Functions にアップロードされる内容が最適化されます。
-        # pnpm v10では --legacy フラグが必要
+        # その後、workspace依存関係を実際のパッケージに置き換えます
         run: |
           pnpm --filter=@suzumina.click/functions deploy --prod --legacy ./functions-build
+          
           # deploy-cloud-functions アクションが期待する .gitignore ファイルをコピー
           cp apps/functions/.gitignore ./functions-build/ || echo "# Cloud Functions deployment" > ./functions-build/.gitignore
+          
+          # shared-typesのtarballをfunctions-buildディレクトリにコピー
+          cp shared-types.tgz ./functions-build/
+          
+          # package.jsonのworkspace依存関係を実際のパッケージファイルに置き換え
+          cd ./functions-build
+          # workspace:* を相対パスのtarballに置き換え
+          sed -i 's/"@suzumina.click\/shared-types": "workspace:\*"/"@suzumina.click\/shared-types": "file:shared-types.tgz"/g' package.json
+          
+          # npm install を実行してworkspace依存関係を解決
+          npm install --omit=dev
 
       - name: Authenticate to GCP
         id: 'auth'
