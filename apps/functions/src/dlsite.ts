@@ -1,7 +1,10 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import { saveWorksToFirestore } from "./utils/dlsite-firestore";
 import { mapMultipleWorks } from "./utils/dlsite-mapper";
-import { parseWorksFromSearchResult } from "./utils/dlsite-parser";
+import {
+  parseWorksFromHTML,
+  parseWorksFromSearchResult,
+} from "./utils/dlsite-parser";
 import firestore, { Timestamp } from "./utils/firestore";
 import * as logger from "./utils/logger";
 
@@ -137,22 +140,33 @@ async function prepareExecution(): Promise<
 }
 
 /**
- * DLsiteから検索結果を取得
+ * DLsiteから検索結果を取得（HTML形式）
  */
 async function fetchDLsiteSearchResult(
   page: number,
 ): Promise<DLsiteSearchResult> {
-  const url = `${DLSITE_SEARCH_BASE_URL}${page}/show_type/3/format/json`;
+  // JSONエンドポイントが機能しないため、HTMLページを取得
+  const url = `${DLSITE_SEARCH_BASE_URL}${page}/show_type/3`;
 
-  logger.debug(`DLsite検索リクエスト: ${url}`);
+  logger.debug(`DLsite検索リクエスト（HTML）: ${url}`);
 
   const response = await fetch(url, {
     headers: {
       "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-      Accept: "application/json, text/plain, */*",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
       "Accept-Language": "ja-JP,ja;q=0.9,en;q=0.8",
+      "Accept-Encoding": "gzip, deflate, br",
       "Cache-Control": "no-cache",
+      "Sec-Ch-Ua":
+        '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+      "Sec-Ch-Ua-Mobile": "?0",
+      "Sec-Ch-Ua-Platform": '"Windows"',
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Upgrade-Insecure-Requests": "1",
     },
   });
 
@@ -173,34 +187,39 @@ async function fetchDLsiteSearchResult(
     );
   }
 
-  // レスポンステキストを先に取得してログ出力
-  const responseText = await response.text();
+  // HTMLレスポンステキストを取得
+  const htmlContent = await response.text();
   logger.info(
-    `DLsiteレスポンス内容プレビュー: ${responseText.substring(0, 300)}...`,
+    `DLsiteレスポンス内容プレビュー: ${htmlContent.substring(0, 300)}...`,
   );
 
-  // Content-Typeをチェック
+  // Content-Typeをチェック（HTMLを期待）
   const contentType = response.headers.get("Content-Type") || "";
-  if (!contentType.includes("application/json")) {
-    logger.error(`期待していたJSONではなく、${contentType}が返されました`);
-    logger.debug("完全なレスポンス内容:", {
-      responseText: responseText.substring(0, 1000),
-    });
-    throw new Error(
-      `DLsiteからHTMLが返されました（JSON期待）: Content-Type=${contentType}`,
-    );
+  if (!contentType.includes("text/html")) {
+    logger.warn(`予期しないContent-Type: ${contentType}`);
   }
 
-  try {
-    const data = JSON.parse(responseText) as DLsiteSearchResult;
-    return data;
-  } catch (parseError) {
-    logger.error("JSONパースエラー:", parseError);
-    logger.debug("パースに失敗したレスポンス:", {
-      responseText: responseText.substring(0, 1000),
-    });
-    throw new Error(`DLsiteレスポンスのJSONパースに失敗: ${parseError}`);
+  // HTMLが有効かチェック
+  if (
+    !htmlContent.includes("<!DOCTYPE html") &&
+    !htmlContent.includes("<html")
+  ) {
+    logger.error("有効なHTMLページが返されませんでした");
+    throw new Error("DLsiteから無効なHTMLが返されました");
   }
+
+  // DLsiteSearchResult形式で返す（search_resultにHTMLを格納）
+  const result: DLsiteSearchResult = {
+    search_result: htmlContent,
+    page_info: {
+      count: 0, // HTMLから抽出する必要がある場合は後で実装
+      first_indice: (page - 1) * 100 + 1,
+      last_indice: page * 100,
+    },
+  };
+
+  logger.info("HTMLページの取得が成功しました");
+  return result;
 }
 
 /**
@@ -238,9 +257,7 @@ async function fetchDLsiteWorksInternal(metadata: FetchMetadata): Promise<{
       }
 
       // HTMLから作品データを解析
-      const parsedWorks = parseWorksFromSearchResult(
-        JSON.stringify(searchResult),
-      );
+      const parsedWorks = parseWorksFromHTML(searchResult.search_result);
 
       if (parsedWorks.length === 0) {
         logger.info(
