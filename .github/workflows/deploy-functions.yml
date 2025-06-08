@@ -41,32 +41,25 @@ jobs:
       - name: Run tests
         run: pnpm --filter=@suzumina.click/functions test
 
-      - name: Pack shared-types
-        # shared-types パッケージをタルボールとしてパック
+      - name: Copy functions for deployment
+        # ビルド済みのlibディレクトリと必要ファイルをコピー
         run: |
-          cd packages/shared-types
-          pnpm pack
-          mv suzumina.click-shared-types-*.tgz ../../shared-types.tgz
-
-      - name: Prepare functions for deployment
-        # pnpm deploy を使用して、デプロイに必要なファイルとプロダクション依存関係を ./functions-build にコピーします。
-        # その後、workspace依存関係を実際のパッケージに置き換えます
-        run: |
-          pnpm --filter=@suzumina.click/functions deploy --prod --legacy ./functions-build
+          # functions-build ディレクトリを作成
+          mkdir -p ./functions-build
           
-          # deploy-cloud-functions アクションが期待する .gitignore ファイルをコピー
+          # ビルド済みのlibディレクトリをコピー（main エントリーポイント）
+          cp -r apps/functions/lib ./functions-build/
+          
+          # package.json をコピー（依存関係情報用）
+          cp apps/functions/package.json ./functions-build/
+          
+          # .gitignore をコピー
           cp apps/functions/.gitignore ./functions-build/ || echo "# Cloud Functions deployment" > ./functions-build/.gitignore
           
-          # shared-typesのtarballをfunctions-buildディレクトリにコピー
-          cp shared-types.tgz ./functions-build/
-          
-          # package.jsonのworkspace依存関係を実際のパッケージファイルに置き換え
+          # workspace依存関係を削除（ビルド済みなので不要）
           cd ./functions-build
-          # workspace:* を相対パスのtarballに置き換え
-          sed -i 's/"@suzumina.click\/shared-types": "workspace:\*"/"@suzumina.click\/shared-types": "file:shared-types.tgz"/g' package.json
-          
-          # npm install を実行してworkspace依存関係を解決
-          npm install --omit=dev
+          # workspace依存関係を削除
+          sed -i '/"@suzumina.click\/shared-types":/d' package.json
 
       - name: Authenticate to GCP
         id: 'auth'
