@@ -110,11 +110,11 @@ jobs:
           # 依存関係をインストール（production用）
           pnpm install --prod --frozen-lockfile
           
-          # デプロイ用のアーカイブを作成
-          tar -czf ../functions-deployment.tar.gz *
+          # デプロイ用のzipファイルを作成（Cloud Functionsはzipを要求）
+          zip -r ../functions-deployment.zip *
           cd ..
           
-          echo "Deployment bundle created: functions-deployment.tar.gz"
+          echo "Deployment bundle created: functions-deployment.zip"
 
       - name: Upload to Cloud Storage
         run: |
@@ -145,10 +145,10 @@ jobs:
           
           # アーカイブをアップロード
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-          ARCHIVE_NAME="functions-${TIMESTAMP}.tar.gz"
+          ARCHIVE_NAME="functions-${TIMESTAMP}.zip"
           
           echo "📤 Uploading deployment archive..."
-          gsutil cp functions-deployment.tar.gz gs://$BUCKET_NAME/$ARCHIVE_NAME
+          gsutil cp functions-deployment.zip gs://$BUCKET_NAME/$ARCHIVE_NAME
           echo "✅ Uploaded: gs://$BUCKET_NAME/$ARCHIVE_NAME"
           
           # 環境変数として保存
@@ -190,12 +190,12 @@ jobs:
         run: |
           # 一時ファイルを削除
           rm -rf ./deployment-temp
-          rm -f functions-deployment.tar.gz
+          rm -f functions-deployment.zip
           
           # 古いデプロイメントファイルを削除（最新5個を保持）
           if [ ! -z "${{ env.BUCKET_NAME }}" ]; then
             echo "Cleaning up old deployment files..."
-            gsutil ls gs://${{ env.BUCKET_NAME }}/functions-*.tar.gz | \
+            gsutil ls gs://${{ env.BUCKET_NAME }}/functions-*.zip | \
               sort -r | \
               tail -n +6 | \
               xargs -r gsutil rm || echo "No old files to clean up"

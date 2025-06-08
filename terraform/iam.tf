@@ -70,6 +70,24 @@ resource "google_project_iam_member" "cloud_functions_deployer_sa_user" {
   depends_on = [google_service_account.cloud_functions_deployer_sa]
 }
 
+# Cloud Build Service Account権限（デプロイ用）
+resource "google_project_iam_member" "cloud_functions_deployer_cloudbuild_builder" {
+  project = var.gcp_project_id
+  role    = "roles/cloudbuild.builds.builder"
+  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  
+  depends_on = [data.google_project.project]
+}
+
+# IAMポリシー設定権限（デプロイ用）
+resource "google_project_iam_member" "cloud_functions_deployer_iam_admin" {
+  project = var.gcp_project_id
+  role    = "roles/resourcemanager.projectIamAdmin"
+  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_functions_deployer_sa]
+}
+
 # GitHubリポジトリにWorkload Identity連携を設定
 resource "google_iam_workload_identity_pool" "github_pool" {
   project                   = var.gcp_project_id
