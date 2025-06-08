@@ -106,8 +106,8 @@ jobs:
             # 重複排除と整形
             FUNCTIONS=$(echo "$ALL_FUNCTIONS" | tr ' ' '\n' | grep -v '^$' | sort | uniq | tr '\n' ' ')
             
-            # httpHandlerはヘルスチェック用のダミー関数なのでデプロイ対象から除外
-            FUNCTIONS=$(echo "$FUNCTIONS" | sed 's/\bhttpHandler\b//g')
+            # httpHandlerとhealthcheckはヘルスチェック用のダミー関数なのでデプロイ対象から除外
+            FUNCTIONS=$(echo "$FUNCTIONS" | sed 's/\bhttpHandler\b//g' | sed 's/\bhealthcheck\b//g')
             
             # 空白を整理
             FUNCTIONS=$(echo "$FUNCTIONS" | tr -s ' ' | sed 's/^ *//;s/ *$//')
@@ -262,101 +262,35 @@ jobs:
         run: pnpm --filter @suzumina.click/functions build
       
       # デプロイ用パッケージの準備
-      - name: デプロイ用にpackage.jsonを準備
+      - name: デプロイパッケージディレクトリの作成
         run: |
-          echo "Cloud Functions デプロイ用のパッケージを準備しています..."
-          
-          # テンポラリディレクトリの作成
+          echo "デプロイパッケージディレクトリを準備中..."
           mkdir -p ./tmp/functions
           
-          # ビルド済みのlib内容をコピー
+          # ビルド済みファイルをコピー
           cp -r ./apps/functions/lib ./tmp/functions/
-          
-          # tgzファイルをコピー
           cp ./apps/functions/suzumina.click-shared-types-*.tgz ./tmp/functions/
           
-          # TypeScriptビルドを無効化するためのカスタムpackage.jsonを作成
-          node -e '
-            const fs = require("fs");
-            const srcPkg = JSON.parse(fs.readFileSync("./apps/functions/package.json", "utf8"));
-            
-            // Cloud Functionsでビルドプロセスを実行しないカスタムpackage.json
-            const deployPkg = {
-              name: srcPkg.name,
-              version: srcPkg.version,
-              private: true,
-              main: "lib/index.js",
-              // scriptsセクションを完全に削除してTypeScriptコンパイルを防ぐ
-              engines: {
-                node: "20"
-              },
-              // shared-typesをローカルtgzファイルとして依存関係に含める
-              dependencies: {
-                ...Object.entries(srcPkg.dependencies || {})
-                  .filter(([key]) => key !== "@suzumina.click/shared-types")
-                  .reduce((acc, [key, val]) => ({...acc, [key]: val}), {}),
-                "@suzumina.click/shared-types": "file:./suzumina.click-shared-types-0.1.5.tgz"
-              }
-            };
-            
-            // デプロイ用package.jsonを書き込み
-            fs.writeFileSync("./tmp/functions/package.json", JSON.stringify(deployPkg, null, 2), "utf8");
-            console.log("デプロイ用のpackage.jsonを作成しました");
-          '
+          echo "✅ ファイルコピーが完了しました"
+      
+      - name: デプロイ用設定ファイルの生成
+        run: |
+          echo "デプロイ用設定ファイルを生成中..."
+          node ./.github/scripts/prepare-deployment.js
           
-          # デプロイパッケージでnpm installを実行して依存関係を解決
-          cd ./tmp/functions
-          echo "依存関係をインストールしています..."
-          npm install --only=production --ignore-scripts
-          
-          # shared-typesパッケージが正しくインストールされているか確認
-          if [ ! -f "./node_modules/@suzumina.click/shared-types/dist/index.js" ]; then
-            echo "エラー: shared-typesパッケージが正しくインストールされていません"
-            echo "手動でshared-typesを展開します..."
-            
-            # 手動で node_modules にshared-typesを展開
-            mkdir -p ./node_modules/@suzumina.click/shared-types
-            cd ./node_modules/@suzumina.click/shared-types
-            tar -xzf ../../../suzumina.click-shared-types-0.1.5.tgz --strip-components=1
-            cd ../../..
-          fi
-          
-          # インストール結果の確認
-          echo "shared-types パッケージの内容:"
-          ls -la ./node_modules/@suzumina.click/shared-types/ || echo "shared-typesが見つかりません"
-          echo "shared-types dist ディレクトリの内容:"
-          ls -la ./node_modules/@suzumina.click/shared-types/dist/ || echo "distディレクトリが見つかりません"
-          
-          cd ../../
-          
-          # .gcloudignoreファイルを作成してTypeScript関連ファイルを除外
-          cat > ./tmp/functions/.gcloudignore << EOF
-          # TypeScript関連ファイルの除外
-          tsconfig.json
-          *.ts
-          src/
-          # テストファイルの除外
-          *.test.js
-          *.test.ts
-          test/
-          # 開発用ファイルの除外
-          .eslintrc*
-          .prettierrc*
-          # ログファイル関連の除外
-          npm-debug.log*
-          .npm
-          .eslintcache
-          # node_modulesは除外しない（必要な依存関係を含むため）
-          EOF
-          
-          # パッケージ内容の確認
-          echo "package.jsonの内容:"
+          echo "📄 生成されたpackage.json:"
           cat ./tmp/functions/package.json
-          echo "-----------------"
-          echo "ディレクトリ構成:"
-          ls -la ./tmp/functions/
-          
-          echo "パッケージ調整が完了しました"
+      
+      - name: 依存関係のインストール
+        run: |
+          echo "依存関係をインストール中..."
+          cd ./tmp/functions
+          npm install --omit=dev --ignore-scripts
+      
+      - name: shared-typesパッケージの確認と修復
+        run: |
+          echo "shared-typesパッケージを確認中..."
+          node ./.github/scripts/fix-shared-types.js
       
       # Google Cloud認証
       - name: Google Cloud認証の設定
@@ -374,6 +308,31 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
+      
+      # 不要な関数の削除
+      - name: 不要なCloud Functionsの削除
+        if: steps.auth.outcome == 'success'
+        run: |
+          echo "不要な関数の削除を実行します..."
+          
+          # 削除対象の関数リスト
+          FUNCTIONS_TO_DELETE="healthcheck"
+          
+          for FUNC in $FUNCTIONS_TO_DELETE; do
+            echo "関数 $FUNC の削除を試行中..."
+            
+            # 関数が存在するかチェック
+            if gcloud functions list --filter="name:projects/${{ secrets.GCP_PROJECT_ID }}/locations/asia-northeast1/functions/$FUNC" --format="value(name)" | grep -q "$FUNC"; then
+              echo "関数 $FUNC を削除しています..."
+              gcloud functions delete $FUNC \
+                --region=asia-northeast1 \
+                --quiet || echo "関数 $FUNC の削除でエラーが発生しましたが、処理を続行します"
+            else
+              echo "関数 $FUNC は存在しないため、削除をスキップします"
+            fi
+          done
+          
+          echo "不要な関数の削除処理が完了しました"
       
       # 関数デプロイ
       - name: Cloud Functionsのデプロイ

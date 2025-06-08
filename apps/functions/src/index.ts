@@ -50,19 +50,8 @@ functions.cloudEvent<any>("fetchYouTubeVideos", fetchYouTubeVideos);
 // biome-ignore lint/suspicious/noExplicitAny: Complexity type of cloudEvent
 functions.cloudEvent<any>("fetchDLsiteWorks", fetchDLsiteWorks);
 
-/**
- * ヘルスチェック用HTTPハンドラー
- *
- * Cloud Runでのヘルスチェックに応答するための基本的なエンドポイント
- */
-functions.http("healthcheck", (req, res) => {
-  logger.info("ヘルスチェックリクエストを受信しました");
-  res.status(200).json({
-    status: "ok",
-    message: "Functions Framework正常動作中",
-    timestamp: new Date().toISOString(),
-  });
-});
+// ヘルスチェック機能は削除されました
+// Cloud Functionsでは不要のため
 
 /**
  * プロセス終了処理
