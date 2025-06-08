@@ -45,7 +45,10 @@ jobs:
         # pnpm deploy を使用して、デプロイに必要なファイルとプロダクション依存関係を ./functions-build にコピーします。
         # これにより、Cloud Functions にアップロードされる内容が最適化されます。
         # pnpm v10では --legacy フラグが必要
-        run: pnpm --filter=@suzumina.click/functions deploy --prod --legacy ./functions-build
+        run: |
+          pnpm --filter=@suzumina.click/functions deploy --prod --legacy ./functions-build
+          # deploy-cloud-functions アクションが期待する .gitignore ファイルをコピー
+          cp apps/functions/.gitignore ./functions-build/ || echo "# Cloud Functions deployment" > ./functions-build/.gitignore
 
       - name: Authenticate to GCP
         id: 'auth'
