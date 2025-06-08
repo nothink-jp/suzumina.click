@@ -58,17 +58,16 @@ jobs:
           
           # shared-typesをパッケージ化
           cd packages/shared-types
-          SHARED_TYPES_PACKAGE=$(pnpm pack --pack-destination ../../deployment-temp)
-          echo "Packed shared-types: $SHARED_TYPES_PACKAGE"
-          cd ../../
+          pnpm pack --pack-destination ../../deployment-temp
+          
+          # パッケージファイル名を確実に取得
+          cd ../../deployment-temp
+          SHARED_TYPES_FILE=$(ls suzumina.click-shared-types-*.tgz | head -n1)
+          echo "Found shared-types package: $SHARED_TYPES_FILE"
           
           # functionsのビルド成果物とpackage.jsonをコピー
-          cp -r apps/functions/lib ./deployment-temp/
-          cp apps/functions/package.json ./deployment-temp/
-          
-          # package.jsonの依存関係を解決済みパッケージに置き換え
-          cd ./deployment-temp
-          SHARED_TYPES_FILE=$(basename $SHARED_TYPES_PACKAGE)
+          cp -r ../apps/functions/lib ./
+          cp ../apps/functions/package.json ./
           
           # workspace依存関係を実際のファイルパスに変更
           sed -i "s|\"@suzumina.click/shared-types\": \"workspace:\*\"|\"@suzumina.click/shared-types\": \"file:./$SHARED_TYPES_FILE\"|g" package.json
