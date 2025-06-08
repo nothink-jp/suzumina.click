@@ -55,6 +55,9 @@ terraform/terraform.tfvars
 *.tfstate
 *.tfstate.backup
 
+# temporary deploy packages
+tmp/
+
 service-account-key.json
 firebase-debug.log
 firestore-debug.log

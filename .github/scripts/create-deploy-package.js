@@ -217,11 +217,9 @@ function bundleSharedTypes() {
 
   // shared-typesがビルド済みかチェック
   if (!fs.existsSync(sharedTypesSource)) {
-    console.log("📦 shared-typesをビルド中...");
-    execSync("pnpm --filter @suzumina.click/shared-types build", {
-      cwd: CONFIG.workspaceRoot,
-      stdio: "inherit",
-    });
+    throw new Error(
+      "shared-typesがビルドされていません。先に 'pnpm --filter @suzumina.click/shared-types build' を実行してください。",
+    );
   }
 
   // shared-typesの内容をコピー

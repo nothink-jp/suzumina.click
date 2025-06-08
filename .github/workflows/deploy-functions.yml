@@ -247,6 +247,10 @@ jobs:
           pnpm-version: ${{ needs.prepare-deployment.outputs.pnpm_version }}
           project-path: 'functions'
 
+      # shared-typesのビルド（functionsが依存するため先に実行）
+      - name: shared-typesのビルド
+        run: pnpm --filter @suzumina.click/shared-types build
+      
       # Cloud Functionsのテスト実行
       - name: Cloud Functionsのテスト
         run: pnpm --filter @suzumina.click/functions test
