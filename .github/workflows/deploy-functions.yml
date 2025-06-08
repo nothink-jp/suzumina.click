@@ -69,13 +69,15 @@ jobs:
           cp -r ../apps/functions/lib ./
           cp ../apps/functions/package.json ./
           
-          # workspace依存関係を実際のファイルパスに変更
-          sed -i "s|\"@suzumina.click/shared-types\": \"workspace:\*\"|\"@suzumina.click/shared-types\": \"file:./$SHARED_TYPES_FILE\"|g" package.json
-          
-          # 開発用スクリプトとdevDependenciesを削除
-          node -e "
+          # Node.jsスクリプトでpackage.jsonを安全に変更
+          SHARED_TYPES_FILE="$SHARED_TYPES_FILE" node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            
+            // workspace依存関係を実際のファイルパスに変更
+            if (pkg.dependencies && pkg.dependencies['@suzumina.click/shared-types']) {
+              pkg.dependencies['@suzumina.click/shared-types'] = 'file:./' + process.env.SHARED_TYPES_FILE;
+            }
             
             // 開発用スクリプトを削除
             if (pkg.scripts) {
@@ -92,6 +94,16 @@ jobs:
             // devDependenciesを削除
             delete pkg.devDependencies;
             
+            // Cloud Functions v2ではFunctions Frameworkが自動的に起動するため、
+            // startスクリプトは不要。mainエントリーポイントのみ設定
+            pkg.main = 'lib/index.js';
+            
+            // enginesフィールドも確実に設定
+            if (!pkg.engines) {
+              pkg.engines = {};
+            }
+            pkg.engines.node = '22';
+            
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
           
@@ -106,23 +118,38 @@ jobs:
 
       - name: Upload to Cloud Storage
         run: |
-          # デプロイ用のCloud Storageバケットを作成（存在しない場合）
+          # デプロイ用のCloud Storageバケット名を設定
           BUCKET_NAME="${{ secrets.GCP_PROJECT_ID }}-functions-deployment"
           
           # バケットが存在するかチェック
           if ! gsutil ls gs://$BUCKET_NAME/ &>/dev/null; then
-            echo "Creating deployment bucket: $BUCKET_NAME"
-            gsutil mb -p ${{ secrets.GCP_PROJECT_ID }} -l asia-northeast1 gs://$BUCKET_NAME/
+            echo "❌ Error: Deployment bucket does not exist: gs://$BUCKET_NAME"
+            echo "Please create the bucket first using one of these methods:"
+            echo ""
+            echo "1. Using gcloud CLI:"
+            echo "   gcloud storage buckets create gs://$BUCKET_NAME --location=asia-northeast1 --project=${{ secrets.GCP_PROJECT_ID }}"
+            echo ""
+            echo "2. Using Terraform (recommended):"
+            echo "   Add the following resource to your terraform configuration:"
+            echo "   resource \"google_storage_bucket\" \"functions_deployment\" {"
+            echo "     name     = \"$BUCKET_NAME\""
+            echo "     location = \"asia-northeast1\""
+            echo "   }"
+            echo ""
+            echo "3. Using Google Cloud Console:"
+            echo "   Visit https://console.cloud.google.com/storage and create a bucket named '$BUCKET_NAME'"
+            exit 1
           else
-            echo "Deployment bucket already exists: $BUCKET_NAME"
+            echo "✅ Deployment bucket exists: $BUCKET_NAME"
           fi
           
           # アーカイブをアップロード
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           ARCHIVE_NAME="functions-${TIMESTAMP}.tar.gz"
           
+          echo "📤 Uploading deployment archive..."
           gsutil cp functions-deployment.tar.gz gs://$BUCKET_NAME/$ARCHIVE_NAME
-          echo "Uploaded: gs://$BUCKET_NAME/$ARCHIVE_NAME"
+          echo "✅ Uploaded: gs://$BUCKET_NAME/$ARCHIVE_NAME"
           
           # 環境変数として保存
           echo "DEPLOYMENT_SOURCE=gs://$BUCKET_NAME/$ARCHIVE_NAME" >> $GITHUB_ENV
