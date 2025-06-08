@@ -3,8 +3,8 @@ name: Deploy Cloud Functions
 on:
   push:
     branches:
-      - main # デプロイ対象のブランチに合わせて変更してください
-  workflow_dispatch: # 手動実行を可能にする
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -29,10 +29,10 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
-      - name: Install root dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build shared-types first
+      - name: Build shared-types
         run: pnpm --filter=@suzumina.click/shared-types build
 
       - name: Build functions
@@ -41,97 +41,154 @@ jobs:
       - name: Run tests
         run: pnpm --filter=@suzumina.click/functions test
 
-      - name: Copy functions for deployment
-        # ビルド済みのlibディレクトリと必要ファイルをコピー
-        run: |
-          # functions-build ディレクトリを作成
-          mkdir -p ./functions-build
-          
-          # ビルド済みのlibディレクトリをコピー（main エントリーポイント）
-          cp -r apps/functions/lib ./functions-build/
-          
-          # package.json をコピー（依存関係情報用）
-          cp apps/functions/package.json ./functions-build/
-          
-          # .gitignore をコピー
-          cp apps/functions/.gitignore ./functions-build/ || echo "# Cloud Functions deployment" > ./functions-build/.gitignore
-          
-          # ビルド済みなので不要なスクリプトと依存関係を削除
-          cd ./functions-build
-          # workspace依存関係を削除
-          sed -i '/"@suzumina.click\/shared-types":/d' package.json
-          # ビルドスクリプトを削除（既にビルド済みなので不要）
-          sed -i '/"build":/d' package.json
-          sed -i '/"build:watch":/d' package.json
-          # 開発用スクリプトも削除
-          sed -i '/"lint":/d' package.json
-          sed -i '/"format":/d' package.json
-          sed -i '/"check":/d' package.json
-          sed -i '/"test":/d' package.json
-          sed -i '/"test:watch":/d' package.json
-          sed -i '/"test:coverage":/d' package.json
-
       - name: Authenticate to GCP
         id: 'auth'
         uses: 'google-github-actions/auth@v2'
         with:
-          # Workload Identity Provider を PROJECT_NUMBER から動的に構築
           workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          # Cloud Functions デプロイ専用サービスアカウントを PROJECT_ID から動的に構築
           service_account: 'cloud-functions-deployer-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-
-      - name: Deploy fetchYouTubeVideos function
-        id: deploy-youtube
-        uses: google-github-actions/deploy-cloud-functions@v3
-        with:
-          name: fetchYouTubeVideos
-          runtime: nodejs22
-          entry_point: fetchYouTubeVideos
-          source_dir: ./functions-build
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          region: asia-northeast1
-          environment_variables: NODE_ENV=production
-
-      - name: Deploy fetchDLsiteWorks function
-        id: deploy-dlsite
-        uses: google-github-actions/deploy-cloud-functions@v3
-        with:
-          name: fetchDLsiteWorks
-          runtime: nodejs22
-          entry_point: fetchDLsiteWorks
-          source_dir: ./functions-build
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          region: asia-northeast1
-          environment_variables: NODE_ENV=production
 
       - name: Setup Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Pub/Sub triggers
+      - name: Create deployment bundle
         run: |
-          # YouTube関数用のPub/Subトリガーを設定
+          # 一時的なデプロイメントディレクトリを作成
+          mkdir -p ./deployment-temp
+          
+          # shared-typesをパッケージ化
+          cd packages/shared-types
+          SHARED_TYPES_PACKAGE=$(pnpm pack --pack-destination ../../deployment-temp)
+          echo "Packed shared-types: $SHARED_TYPES_PACKAGE"
+          cd ../../
+          
+          # functionsのビルド成果物とpackage.jsonをコピー
+          cp -r apps/functions/lib ./deployment-temp/
+          cp apps/functions/package.json ./deployment-temp/
+          
+          # package.jsonの依存関係を解決済みパッケージに置き換え
+          cd ./deployment-temp
+          SHARED_TYPES_FILE=$(basename $SHARED_TYPES_PACKAGE)
+          
+          # workspace依存関係を実際のファイルパスに変更
+          sed -i "s|\"@suzumina.click/shared-types\": \"workspace:\*\"|\"@suzumina.click/shared-types\": \"file:./$SHARED_TYPES_FILE\"|g" package.json
+          
+          # 開発用スクリプトとdevDependenciesを削除
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            
+            // 開発用スクリプトを削除
+            if (pkg.scripts) {
+              delete pkg.scripts.build;
+              delete pkg.scripts['build:watch'];
+              delete pkg.scripts.lint;
+              delete pkg.scripts.format;
+              delete pkg.scripts.check;
+              delete pkg.scripts.test;
+              delete pkg.scripts['test:watch'];
+              delete pkg.scripts['test:coverage'];
+            }
+            
+            // devDependenciesを削除
+            delete pkg.devDependencies;
+            
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+          
+          # 依存関係をインストール（production用）
+          pnpm install --prod --frozen-lockfile
+          
+          # デプロイ用のアーカイブを作成
+          tar -czf ../functions-deployment.tar.gz *
+          cd ..
+          
+          echo "Deployment bundle created: functions-deployment.tar.gz"
+
+      - name: Upload to Cloud Storage
+        run: |
+          # デプロイ用のCloud Storageバケットを作成（存在しない場合）
+          BUCKET_NAME="${{ secrets.GCP_PROJECT_ID }}-functions-deployment"
+          
+          # バケットが存在するかチェック
+          if ! gsutil ls gs://$BUCKET_NAME/ &>/dev/null; then
+            echo "Creating deployment bucket: $BUCKET_NAME"
+            gsutil mb -p ${{ secrets.GCP_PROJECT_ID }} -l asia-northeast1 gs://$BUCKET_NAME/
+          else
+            echo "Deployment bucket already exists: $BUCKET_NAME"
+          fi
+          
+          # アーカイブをアップロード
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          ARCHIVE_NAME="functions-${TIMESTAMP}.tar.gz"
+          
+          gsutil cp functions-deployment.tar.gz gs://$BUCKET_NAME/$ARCHIVE_NAME
+          echo "Uploaded: gs://$BUCKET_NAME/$ARCHIVE_NAME"
+          
+          # 環境変数として保存
+          echo "DEPLOYMENT_SOURCE=gs://$BUCKET_NAME/$ARCHIVE_NAME" >> $GITHUB_ENV
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+
+      - name: Deploy fetchYouTubeVideos function
+        run: |
           gcloud functions deploy fetchYouTubeVideos \
-            --trigger-topic=youtube-video-fetch-trigger \
-            --region=asia-northeast1 \
-            --project=${{ secrets.GCP_PROJECT_ID }} \
-            --update-labels=trigger=pubsub \
+            --source ${{ env.DEPLOYMENT_SOURCE }} \
+            --runtime nodejs22 \
+            --entry-point fetchYouTubeVideos \
+            --trigger-topic youtube-video-fetch-trigger \
+            --region asia-northeast1 \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --set-env-vars NODE_ENV=production \
+            --memory 512MB \
+            --timeout 540s \
+            --max-instances 10 \
             --quiet
 
-          # DLsite関数用のPub/Subトリガーを設定
+      - name: Deploy fetchDLsiteWorks function
+        run: |
           gcloud functions deploy fetchDLsiteWorks \
-            --trigger-topic=dlsite-works-fetch-trigger \
-            --region=asia-northeast1 \
-            --project=${{ secrets.GCP_PROJECT_ID }} \
-            --update-labels=trigger=pubsub \
+            --source ${{ env.DEPLOYMENT_SOURCE }} \
+            --runtime nodejs22 \
+            --entry-point fetchDLsiteWorks \
+            --trigger-topic dlsite-works-fetch-trigger \
+            --region asia-northeast1 \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --set-env-vars NODE_ENV=production \
+            --memory 512MB \
+            --timeout 540s \
+            --max-instances 10 \
             --quiet
 
-          echo "Pub/Subトリガーの設定が完了しました"
+      - name: Cleanup deployment artifacts
+        if: always()
+        run: |
+          # 一時ファイルを削除
+          rm -rf ./deployment-temp
+          rm -f functions-deployment.tar.gz
+          
+          # 古いデプロイメントファイルを削除（最新5個を保持）
+          if [ ! -z "${{ env.BUCKET_NAME }}" ]; then
+            echo "Cleaning up old deployment files..."
+            gsutil ls gs://${{ env.BUCKET_NAME }}/functions-*.tar.gz | \
+              sort -r | \
+              tail -n +6 | \
+              xargs -r gsutil rm || echo "No old files to clean up"
+          fi
 
       - name: Deploy status summary
         run: |
-          echo "## デプロイ結果" >> $GITHUB_STEP_SUMMARY
-          echo "- fetchYouTubeVideos: デプロイ完了（Pub/Subトリガー: youtube-video-fetch-trigger）" >> $GITHUB_STEP_SUMMARY
-          echo "- fetchDLsiteWorks: デプロイ完了（Pub/Subトリガー: dlsite-works-fetch-trigger）" >> $GITHUB_STEP_SUMMARY
-          echo "プロジェクト: ${{ secrets.GCP_PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
-          echo "リージョン: asia-northeast1" >> $GITHUB_STEP_SUMMARY
-          echo "ランタイム: nodejs22" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 デプロイ結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 デプロイされた関数" >> $GITHUB_STEP_SUMMARY
+          echo "- **fetchYouTubeVideos**: ✅ デプロイ完了" >> $GITHUB_STEP_SUMMARY
+          echo "  - トリガー: \`youtube-video-fetch-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
+          echo "- **fetchDLsiteWorks**: ✅ デプロイ完了" >> $GITHUB_STEP_SUMMARY
+          echo "  - トリガー: \`dlsite-works-fetch-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔧 設定情報" >> $GITHUB_STEP_SUMMARY
+          echo "- **プロジェクト**: \`${{ secrets.GCP_PROJECT_ID }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **リージョン**: \`asia-northeast1\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **ランタイム**: \`nodejs22\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **メモリ**: \`512MB\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **タイムアウト**: \`540秒\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **デプロイソース**: \`${{ env.DEPLOYMENT_SOURCE }}\`" >> $GITHUB_STEP_SUMMARY

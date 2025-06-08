@@ -60,3 +60,34 @@
 ## 7. Testing Settings
 - Coverage enabled: Yes
 - Coverage threshold: 80%
+
+
+# Monorepo with Google Cloud Functions
+
+## プロジェクト構造
+- packages/shared: 共有ライブラリ
+- packages/functions: Cloud Functions
+- workspace:* 依存関係を使用
+
+## デプロイメント注意事項
+- Cloud Buildは workspace:* を直接解決できない
+- pnpm packを使ってbundle化が必要
+- デプロイ前にdist/ディレクトリにバンドル
+
+## 推奨デプロイ方法
+1. `pnpm pack` でパッケージ化
+2. Cloud Storageにアップロード
+3. `--source gs://bucket/file.zip` でデプロイ
+
+## 重要コマンド
+```bash
+# バンドルデプロイ
+./scripts/bundle-deploy.sh
+
+# packデプロイ  
+./scripts/pack-deploy.sh
+```
+
+## 避けるべきこと
+- 直接 `gcloud functions deploy` を実行する
+- workspace:* を含むpackage.jsonをそのままデプロイ
