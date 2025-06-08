@@ -308,6 +308,25 @@ jobs:
           cd ./tmp/functions
           echo "依存関係をインストールしています..."
           npm install --only=production --ignore-scripts
+          
+          # shared-typesパッケージが正しくインストールされているか確認
+          if [ ! -f "./node_modules/@suzumina.click/shared-types/dist/index.js" ]; then
+            echo "エラー: shared-typesパッケージが正しくインストールされていません"
+            echo "手動でshared-typesを展開します..."
+            
+            # 手動で node_modules にshared-typesを展開
+            mkdir -p ./node_modules/@suzumina.click/shared-types
+            cd ./node_modules/@suzumina.click/shared-types
+            tar -xzf ../../../suzumina.click-shared-types-0.1.5.tgz --strip-components=1
+            cd ../../..
+          fi
+          
+          # インストール結果の確認
+          echo "shared-types パッケージの内容:"
+          ls -la ./node_modules/@suzumina.click/shared-types/ || echo "shared-typesが見つかりません"
+          echo "shared-types dist ディレクトリの内容:"
+          ls -la ./node_modules/@suzumina.click/shared-types/dist/ || echo "distディレクトリが見つかりません"
+          
           cd ../../
           
           # .gcloudignoreファイルを作成してTypeScript関連ファイルを除外
