@@ -89,7 +89,7 @@ export function mapToWorkBase(parsed: ParsedWorkData): DLsiteWorkBase {
       rating,
       salesCount: parsed.salesCount,
       ageRating: parsed.ageRating,
-      tags: [], // HTMLパーサーではタグは抽出しないため空配列
+      tags: parsed.tags || [], // HTMLパーサーから抽出されたタグ情報を使用
       sampleImages: normalizedSampleImages,
       isExclusive: parsed.isExclusive,
     };

@@ -47,6 +47,8 @@ export interface ParsedWorkData {
   ageRating?: string;
   /** 独占配信フラグ */
   isExclusive: boolean;
+  /** 作品タグ */
+  tags?: string[];
   /** サンプル画像情報 */
   sampleImages: Array<{
     thumb: string;
@@ -122,6 +124,11 @@ export function extractNumberFromParentheses(text: string): number {
 export function parseSampleImages(
   sampleData: string,
 ): Array<{ thumb: string; width?: number; height?: number }> {
+  if (!sampleData || sampleData.trim() === "") {
+    // 空のデータは正常ケース（サンプル画像がない作品）
+    return [];
+  }
+
   try {
     const samples = JSON.parse(sampleData);
     if (Array.isArray(samples)) {
@@ -132,38 +139,72 @@ export function parseSampleImages(
         height: sample.height ? Number.parseInt(sample.height, 10) : undefined,
       }));
     }
+
+    // 配列でない場合はサンプル画像なしとして処理
+    logger.debug("サンプル画像データが配列ではありません:", {
+      sampleData: sampleData.substring(0, 100),
+    });
   } catch (error) {
-    logger.warn("サンプル画像データの解析に失敗:", { error });
+    // JSONパースエラーは警告レベルを下げ、作品処理を継続
+    logger.debug("サンプル画像データのJSONパースに失敗（作品処理は継続）:", {
+      error: error instanceof Error ? error.message : String(error),
+      sampleDataPreview: sampleData.substring(0, 100),
+    });
   }
   return [];
 }
 
 /**
- * DLsiteの検索結果HTMLから作品データを抽出
+ * タグ情報を抽出する関数
+ */
+export function extractTags($item: cheerio.Cheerio): string[] {
+  const tags: string[] = [];
+
+  // search_tag内のリンクからタグを抽出
+  $item.find(".search_tag a").each((_, element) => {
+    const tagText = cheerio.load(element)(element).text().trim();
+    if (tagText && !tags.includes(tagText)) {
+      tags.push(tagText);
+    }
+  });
+
+  return tags;
+}
+
+/**
+ * DLsiteの検索結果HTMLから作品データを抽出（新HTML構造対応）
  */
 export function parseWorksFromHTML(html: string): ParsedWorkData[] {
   const $ = cheerio.load(html);
   const works: ParsedWorkData[] = [];
 
-  logger.debug("HTMLパース開始");
+  logger.debug("HTMLパース開始（新構造対応）");
 
-  // 作品リストアイテムを取得
-  $("li[data-list_item_product_id]").each(
+  // 新しい構造: table.work_1col_table の tr 要素から作品情報を取得
+  $("table.work_1col_table tr").each(
     (index: number, element: cheerio.Element) => {
       try {
         const $item = $(element);
 
-        // 基本情報の抽出
-        const productId = $item.attr("data-list_item_product_id");
-        if (!productId) {
-          logger.warn(`作品${index}: product_idが見つかりません`);
+        // productIdの抽出（a要素のhrefまたはidから）
+        const linkElement = $item.find("a[href*='/product_id/']").first();
+        if (linkElement.length === 0) {
+          // 作品データがない行（ヘッダー行など）はスキップ
           return;
         }
 
+        const href = linkElement.attr("href") || "";
+        const productIdMatch = href.match(/\/product_id\/([^.]+)\.html/);
+        if (!productIdMatch) {
+          logger.warn(
+            `作品${index}: product_idが抽出できません。href: ${href}`,
+          );
+          return;
+        }
+        const productId = productIdMatch[1];
+
         const title =
-          $item.find(".work_name a").attr("title")?.trim() ||
-          $item.find(".work_name a").text().trim() ||
-          "";
+          linkElement.attr("title")?.trim() || linkElement.text().trim() || "";
         if (!title) {
           logger.warn(`作品${productId}: タイトルが見つかりません`);
           return;
@@ -183,31 +224,38 @@ export function parseWorksFromHTML(html: string): ParsedWorkData[] {
         const category = extractCategoryFromClass(categoryElement);
 
         // URLの抽出
-        const workUrl = $item.find(".work_name a").attr("href") || "";
+        const workUrl = href;
         if (!workUrl) {
           logger.warn(`作品${productId}: 作品URLが見つかりません`);
           return;
         }
 
         // サムネイル画像URLの抽出
-        const thumbnailUrl =
+        let thumbnailUrl =
           $item.find("img.lazy").attr("src") ||
           $item.find("img").first().attr("src") ||
+          $item.find("img.work_thumb").attr("src") ||
+          $item.find("img[data-src]").attr("data-src") ||
           "";
+
         if (!thumbnailUrl) {
-          logger.warn(`作品${productId}: サムネイル画像URLが見つかりません`);
-          return;
+          // サムネイル画像が見つからない場合はデフォルト画像を使用
+          thumbnailUrl = `https://img.dlsite.jp/modpub/images2/work/doujin/${productId.slice(0, 4)}000/${productId}/${productId}_img_main.jpg`;
+          logger.debug(
+            `作品${productId}: サムネイル画像URLが見つからないため、デフォルトURLを使用`,
+          );
         }
 
-        // 価格情報の抽出
+        // 価格情報の抽出（新構造対応）
         const currentPriceText = $item
-          .find(".work_price .work_price_base")
+          .find(".work_price .work_price_parts")
+          .not(".strike .work_price_parts")
           .text()
           .trim();
         const currentPrice = extractPriceNumber(currentPriceText);
 
         const originalPriceText = $item
-          .find(".strike .work_price_base")
+          .find(".strike .work_price_parts")
           .text()
           .trim();
         const originalPrice = originalPriceText
@@ -271,6 +319,9 @@ export function parseWorksFromHTML(html: string): ParsedWorkData[] {
           $item.hasClass("type_exclusive_01") ||
           $item.find(".type_exclusive_01").length > 0;
 
+        // タグ情報の抽出（新機能）
+        const tags = extractTags($item);
+
         // サンプル画像の抽出
         const sampleButton = $item.find("[data-view_samples]");
         let sampleImages: Array<{
@@ -308,10 +359,13 @@ export function parseWorksFromHTML(html: string): ParsedWorkData[] {
           ageRating,
           isExclusive,
           sampleImages,
+          tags, // 新しく追加されたタグ情報
         };
 
         works.push(work);
-        logger.debug(`作品${productId}の解析完了: ${title}`);
+        logger.debug(
+          `作品${productId}の解析完了: ${title}, タグ数: ${tags.length}`,
+        );
       } catch (error) {
         logger.error(`作品${index}の解析中にエラーが発生:`, error);
       }

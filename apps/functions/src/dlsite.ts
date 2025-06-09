@@ -15,9 +15,9 @@ const METADATA_COLLECTION = "dlsiteMetadata";
 const MAX_PAGES_PER_EXECUTION = 5; // 1回の実行での最大ページ数
 const ITEMS_PER_PAGE = 100; // DLsiteの1ページあたりの作品数
 
-// DLsite検索用の定数
+// DLsite検索用の定数（新URL形式対応）
 const DLSITE_SEARCH_BASE_URL =
-  "https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category[0]/male/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order[0]/release/options_and_or/and/options[0]/JPN/options[1]/NM/options_name[0]/%E6%97%A5%E6%9C%AC%E8%AA%9E%E4%BD%9C%E5%93%81/options_name[1]/%E8%A8%80%E8%AA%9E%E4%B8%8D%E5%95%8F%E4%BD%9C%E5%93%81/per_page/100/page/";
+  "https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category[0]/male/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/options_and_or/and/options[0]/JPN/options[1]/NM/page/";
 
 // メタデータの型定義
 interface FetchMetadata {
@@ -143,7 +143,7 @@ async function fetchDLsiteSearchResult(
   page: number,
 ): Promise<DLsiteSearchResult> {
   // JSONエンドポイントが機能しないため、HTMLページを取得
-  const url = `${DLSITE_SEARCH_BASE_URL}${page}/show_type/3`;
+  const url = `${DLSITE_SEARCH_BASE_URL}${page}/show_type/1`;
 
   logger.debug(`DLsite検索リクエスト（HTML）: ${url}`);
 
