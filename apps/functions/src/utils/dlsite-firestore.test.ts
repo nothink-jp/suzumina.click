@@ -189,35 +189,127 @@ describe("dlsite-firestore", () => {
 
       expect(result).toHaveLength(0);
     });
-  });
 
-  describe("getWorksStatistics", () => {
-    it("統計情報を取得できる", async () => {
-      const mockWorks = [
-        { ...mockFirestoreWork, category: "SOU" },
-        { ...mockFirestoreWork, productId: "RJ123457", category: "ADV" },
-        { ...mockFirestoreWork, productId: "RJ123458", category: "SOU" },
-      ];
+    it("複数の検索条件を組み合わせて作品を取得できる", async () => {
+      const mockCollection = vi.mocked(
+        firestore.default.collection("dlsiteWorks"),
+      );
+      const mockWhere = vi.mocked(mockCollection.where);
+      const mockOrderBy = vi.mocked(mockCollection.orderBy);
+      const mockLimit = vi.mocked(mockCollection.limit);
+      const mockGet = vi.mocked(mockCollection.get);
 
+      mockGet.mockResolvedValue({
+        docs: [{ data: () => mockFirestoreWork }],
+        size: 1,
+      } as any);
+
+      const result = await dlsiteFirestore.searchWorksFromFirestore({
+        circle: "テストサークル",
+        category: "音声作品",
+        orderBy: "price.current",
+        orderDirection: "desc",
+        limit: 5,
+      });
+
+      expect(mockWhere).toHaveBeenCalledWith("circle", "==", "テストサークル");
+      expect(mockWhere).toHaveBeenCalledWith("category", "==", "音声作品");
+      expect(mockOrderBy).toHaveBeenCalledWith("price.current", "desc");
+      expect(mockLimit).toHaveBeenCalledWith(5);
+      expect(result).toHaveLength(1);
+    });
+
+    it("検索条件なしで全作品を取得できる", async () => {
       const mockCollection = vi.mocked(
         firestore.default.collection("dlsiteWorks"),
       );
       const mockGet = vi.mocked(mockCollection.get);
 
       mockGet.mockResolvedValue({
-        docs: mockWorks.map((work) => ({ data: () => work })),
+        docs: [
+          { data: () => mockFirestoreWork },
+          { data: () => ({ ...mockFirestoreWork, id: "RJ987654" }) },
+        ],
+        size: 2,
+      } as any);
+
+      const result = await dlsiteFirestore.searchWorksFromFirestore({});
+
+      expect(result).toHaveLength(2);
+    });
+
+    it("orderDirectionがascの場合の並び順指定", async () => {
+      const mockCollection = vi.mocked(
+        firestore.default.collection("dlsiteWorks"),
+      );
+      const mockOrderBy = vi.mocked(mockCollection.orderBy);
+      const mockGet = vi.mocked(mockCollection.get);
+
+      mockGet.mockResolvedValue({
+        docs: [],
+        size: 0,
+      } as any);
+
+      await dlsiteFirestore.searchWorksFromFirestore({
+        orderBy: "createdAt",
+        orderDirection: "asc",
+      });
+
+      expect(mockOrderBy).toHaveBeenCalledWith("createdAt", "asc");
+    });
+  });
+
+  describe("getWorksStatistics", () => {
+    it("作品統計情報を正常に取得できる", async () => {
+      const mockCollection = vi.mocked(
+        firestore.default.collection("dlsiteWorks"),
+      );
+      const mockGet = vi.mocked(mockCollection.get);
+
+      // 複数の作品データをモック
+      const mockWorks = [
+        {
+          data: () => ({
+            ...mockFirestoreWork,
+            category: "SOU",
+            updatedAt: "2023-01-01T00:00:00.000Z",
+          }),
+        },
+        {
+          data: () => ({
+            ...mockFirestoreWork,
+            id: "RJ987654",
+            category: "SOU",
+            updatedAt: "2023-01-01T00:00:00.000Z",
+          }),
+        },
+        {
+          data: () => ({
+            ...mockFirestoreWork,
+            id: "RJ111111",
+            category: "SOU",
+            updatedAt: "2023-01-01T00:00:00.000Z",
+          }),
+        },
+      ];
+
+      mockGet.mockResolvedValue({
+        docs: mockWorks,
         size: 3,
       } as any);
 
-      const result = await dlsiteFirestore.getWorksStatistics();
+      const stats = await dlsiteFirestore.getWorksStatistics();
 
-      expect(result.totalWorks).toBe(3);
-      expect(result.categoryCounts.SOU).toBe(2);
-      expect(result.categoryCounts.ADV).toBe(1);
-      expect(result.lastUpdated).toBe(mockFirestoreWork.updatedAt);
+      expect(stats).toEqual({
+        totalWorks: 3,
+        lastUpdated: "2023-01-01T00:00:00.000Z",
+        categoryCounts: {
+          SOU: 3,
+        },
+      });
     });
 
-    it("空のデータベースの統計を処理できる", async () => {
+    it("作品がない場合の統計情報", async () => {
       const mockCollection = vi.mocked(
         firestore.default.collection("dlsiteWorks"),
       );
@@ -228,11 +320,53 @@ describe("dlsite-firestore", () => {
         size: 0,
       } as any);
 
-      const result = await dlsiteFirestore.getWorksStatistics();
+      const stats = await dlsiteFirestore.getWorksStatistics();
 
-      expect(result.totalWorks).toBe(0);
-      expect(result.categoryCounts).toEqual({});
-      expect(result.lastUpdated).toBeNull();
+      expect(stats).toEqual({
+        totalWorks: 0,
+        lastUpdated: null,
+        categoryCounts: {},
+      });
+    });
+
+    it("価格情報がない作品を適切に処理する", async () => {
+      const mockCollection = vi.mocked(
+        firestore.default.collection("dlsiteWorks"),
+      );
+      const mockGet = vi.mocked(mockCollection.get);
+
+      const mockWorks = [
+        {
+          data: () => ({
+            ...mockFirestoreWork,
+            category: "SOU",
+            updatedAt: "2023-01-01T00:00:00.000Z",
+          }),
+        },
+        {
+          data: () => ({
+            ...mockFirestoreWork,
+            id: "RJ987654",
+            category: "SOU",
+            updatedAt: "2023-01-01T00:00:00.000Z",
+          }),
+        },
+      ];
+
+      mockGet.mockResolvedValue({
+        docs: mockWorks,
+        size: 2,
+      } as any);
+
+      const stats = await dlsiteFirestore.getWorksStatistics();
+
+      expect(stats).toEqual({
+        totalWorks: 2,
+        lastUpdated: "2023-01-01T00:00:00.000Z",
+        categoryCounts: {
+          SOU: 2,
+        },
+      });
     });
   });
 

@@ -44,6 +44,7 @@ vi.mock("./logger", () => ({
 }));
 
 import * as firestore from "./firestore";
+import * as logger from "./logger";
 // モック後にインポート（これが重要）
 import * as youtubeFirestore from "./youtube-firestore";
 
@@ -215,6 +216,117 @@ describe("youtube-firestore", () => {
 
       // バッチコミットが2回呼ばれることを確認（500件 + 1件）
       expect(firestore.default.batch().commit).toHaveBeenCalledTimes(2);
+    });
+
+    it("空の動画リストを処理する", async () => {
+      await youtubeFirestore.saveVideosToFirestore([]);
+
+      // 空の場合はバッチ操作が実行されないことを確認
+      expect(firestore.default.batch().set).not.toHaveBeenCalled();
+      expect(firestore.default.batch().commit).not.toHaveBeenCalled();
+    });
+
+    it("部分的なデータを持つ動画を処理する", async () => {
+      const partialVideo: youtube_v3.Schema$Video = {
+        id: "partial-video-id",
+        snippet: {
+          title: "部分データの動画",
+          // publishedAt や description が欠けている
+        },
+        statistics: {
+          // viewCount が欠けている
+          likeCount: "10",
+        },
+      };
+
+      await youtubeFirestore.saveVideosToFirestore([partialVideo]);
+
+      expect(firestore.default.batch().set).toHaveBeenCalledTimes(1);
+      expect(firestore.default.batch().commit).toHaveBeenCalledTimes(1);
+    });
+
+    it("無効なデータを含む動画をスキップする", async () => {
+      const invalidVideos: youtube_v3.Schema$Video[] = [
+        // IDがない動画
+        {
+          snippet: {
+            title: "IDなしの動画",
+          },
+        },
+        // 正常な動画
+        mockVideoWithAllData,
+        // snippetがない動画
+        {
+          id: "no-snippet-video",
+        },
+      ];
+
+      await youtubeFirestore.saveVideosToFirestore(invalidVideos);
+
+      // 正常な動画1件のみが処理されることを確認
+      expect(firestore.default.batch().set).toHaveBeenCalledTimes(1);
+      expect(firestore.default.batch().commit).toHaveBeenCalledTimes(1);
+    });
+
+    it("統計情報がない動画を処理する", async () => {
+      const videoWithoutStats: youtube_v3.Schema$Video = {
+        id: "no-stats-video",
+        snippet: {
+          title: "統計情報なしの動画",
+          publishedAt: "2023-01-01T00:00:00Z",
+          description: "説明",
+        },
+        // statistics がない
+      };
+
+      await youtubeFirestore.saveVideosToFirestore([videoWithoutStats]);
+
+      expect(firestore.default.batch().set).toHaveBeenCalledTimes(1);
+      expect(firestore.default.batch().commit).toHaveBeenCalledTimes(1);
+    });
+
+    it("thumbnailsがない動画を処理する", async () => {
+      const videoWithoutThumbnails: youtube_v3.Schema$Video = {
+        id: "no-thumbnails-video",
+        snippet: {
+          title: "サムネイルなしの動画",
+          publishedAt: "2023-01-01T00:00:00Z",
+          description: "説明",
+          // thumbnails がない
+        },
+        statistics: {
+          viewCount: "1000",
+          likeCount: "100",
+        },
+      };
+
+      await youtubeFirestore.saveVideosToFirestore([videoWithoutThumbnails]);
+
+      expect(firestore.default.batch().set).toHaveBeenCalledTimes(1);
+      expect(firestore.default.batch().commit).toHaveBeenCalledTimes(1);
+    });
+
+    it("Firestoreエラーが発生した場合の処理", async () => {
+      // バッチコミットでエラーを発生させる
+      const mockBatch = firestore.default.batch();
+      vi.mocked(mockBatch.commit).mockRejectedValue(
+        new Error("Firestore commit error"),
+      );
+
+      const result = await youtubeFirestore.saveVideosToFirestore([
+        mockVideoWithAllData,
+      ]);
+
+      // エラーが発生してもPromiseはresolveし、保存された動画数を返す
+      expect(result).toBe(1);
+
+      // エラーログが出力されることを確認
+      expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "Firestoreバッチコミット中にエラーが発生しました",
+        ),
+        expect.any(Error),
+      );
     });
   });
 });

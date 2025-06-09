@@ -16,9 +16,9 @@ import {
   parseWorksFromSearchResult,
 } from "./dlsite-parser";
 
-// テスト用のDLsite検索URL（30件取得用）
+// テスト用のDLsite検索URL（新しいHTML形式）
 const TEST_DLSITE_URL =
-  "https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category[0]/male/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order[0]/release/options_and_or/and/options[0]/JPN/options[1]/NM/options_name[0]/%E6%97%A5%E6%9C%AC%E8%AA%9E%E4%BD%9C%E5%93%81/options_name[1]/%E8%A8%80%E8%AA%9E%E4%B8%8D%E5%95%8F%E4%BD%9C%E5%93%81/per_page/30/page/1/show_type/3/format/json";
+  "https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category[0]/male/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/options_and_or/and/options[0]/JPN/options[1]/NM/page/1/show_type/1";
 
 /**
  * DLsiteからライブデータを取得する関数
@@ -322,14 +322,34 @@ describe("DLsite Parser", () => {
     // ここでは間接的にテストする
     it("有効なサンプル画像データを処理できる", () => {
       const mockHtml = `
-        <li data-list_item_product_id="RJ123456">
-          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
-          <div class="maker_name"><a href="#">テストサークル</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="//img.dlsite.jp/test.jpg" />
-          <div class="work_price"><span class="work_price_base">100円</span></div>
-          <div data-view_samples='[{"thumb":"//img.dlsite.jp/sample1.jpg","width":"600","height":"400"},{"thumb":"//img.dlsite.jp/sample2.jpg"}]'>サンプル</div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="/product_id/RJ123456.html">
+                  <img src="//img.dlsite.jp/test.jpg" />
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <dt class="work_name">
+                  <a href="/product_id/RJ123456.html" title="テスト作品">
+                    テスト作品
+                  </a>
+                </dt>
+                <dd class="maker_name"><a href="#">テストサークル</a></dd>
+                <dd class="work_price_wrap">
+                  <span class="work_price">
+                    <span class="work_price_parts"><span class="work_price_base">100</span><span class="work_price_suffix">円</span></span>
+                  </span>
+                </dd>
+                <dd data-view_samples='[{"thumb":"//img.dlsite.jp/sample1.jpg","width":"600","height":"400"},{"thumb":"//img.dlsite.jp/sample2.jpg"}]'>サンプル</dd>
+              </dl>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(mockHtml);
@@ -348,14 +368,34 @@ describe("DLsite Parser", () => {
 
     it("無効なサンプル画像データを適切に処理できる", () => {
       const mockHtml = `
-        <li data-list_item_product_id="RJ123456">
-          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
-          <div class="maker_name"><a href="#">テストサークル</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="//img.dlsite.jp/test.jpg" />
-          <div class="work_price"><span class="work_price_base">100円</span></div>
-          <div data-view_samples='invalid json'>サンプル</div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="/product_id/RJ123456.html">
+                  <img src="//img.dlsite.jp/test.jpg" />
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <dt class="work_name">
+                  <a href="/product_id/RJ123456.html" title="テスト作品">
+                    テスト作品
+                  </a>
+                </dt>
+                <dd class="maker_name"><a href="#">テストサークル</a></dd>
+                <dd class="work_price_wrap">
+                  <span class="work_price">
+                    <span class="work_price_parts"><span class="work_price_base">100</span><span class="work_price_suffix">円</span></span>
+                  </span>
+                </dd>
+                <dd data-view_samples='invalid json'>サンプル</dd>
+              </dl>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(mockHtml);
@@ -365,14 +405,34 @@ describe("DLsite Parser", () => {
 
     it("空のサンプル画像データを適切に処理できる", () => {
       const mockHtml = `
-        <li data-list_item_product_id="RJ123456">
-          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
-          <div class="maker_name"><a href="#">テストサークル</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="//img.dlsite.jp/test.jpg" />
-          <div class="work_price"><span class="work_price_base">100円</span></div>
-          <div data-view_samples="null">サンプル</div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="/product_id/RJ123456.html">
+                  <img src="//img.dlsite.jp/test.jpg" />
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <dt class="work_name">
+                  <a href="/product_id/RJ123456.html" title="テスト作品">
+                    テスト作品
+                  </a>
+                </dt>
+                <dd class="maker_name"><a href="#">テストサークル</a></dd>
+                <dd class="work_price_wrap">
+                  <span class="work_price">
+                    <span class="work_price_parts"><span class="work_price_base">100</span><span class="work_price_suffix">円</span></span>
+                  </span>
+                </dd>
+                <dd data-view_samples="null">サンプル</dd>
+              </dl>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(mockHtml);
@@ -452,13 +512,33 @@ describe("DLsite Parser", () => {
 
       for (const testCase of testCases) {
         const mockHtml = `
-          <li data-list_item_product_id="RJ123456">
-            <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
-            <div class="maker_name"><a href="#">テストサークル</a></div>
-            ${testCase.html}
-            <img src="//img.dlsite.jp/test.jpg" />
-            <div class="work_price"><span class="work_price_base">100円</span></div>
-          </li>
+          <table class="work_1col_table">
+            <tr>
+              <td class="work_1col_thumb">
+                <div class="work_thumb">
+                  <a href="/product_id/RJ123456.html">
+                    <img src="//img.dlsite.jp/test.jpg" />
+                  </a>
+                  ${testCase.html}
+                </div>
+              </td>
+              <td>
+                <dl class="work_1col">
+                  <dt class="work_name">
+                    <a href="/product_id/RJ123456.html" title="テスト作品">
+                      テスト作品
+                    </a>
+                  </dt>
+                  <dd class="maker_name"><a href="#">テストサークル</a></dd>
+                  <dd class="work_price_wrap">
+                    <span class="work_price">
+                      <span class="work_price_parts"><span class="work_price_base">100</span><span class="work_price_suffix">円</span></span>
+                    </span>
+                  </dd>
+                </dl>
+              </td>
+            </tr>
+          </table>
         `;
 
         const works = parseWorksFromHTML(mockHtml);
@@ -471,20 +551,54 @@ describe("DLsite Parser", () => {
   describe("エラーハンドリング", () => {
     it("必須フィールドが欠けている作品をスキップできる", () => {
       const mockHtml = `
-        <li data-list_item_product_id="RJ123456">
-          <!-- タイトルなし -->
-          <div class="maker_name"><a href="#">テストサークル</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="//img.dlsite.jp/test.jpg" />
-          <div class="work_price"><span class="work_price_base">100円</span></div>
-        </li>
-        <li data-list_item_product_id="RJ123457">
-          <div class="work_name"><a href="/work/=/product_id/RJ123457.html" title="有効な作品">有効な作品</a></div>
-          <div class="maker_name"><a href="#">テストサークル</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="//img.dlsite.jp/test.jpg" />
-          <div class="work_price"><span class="work_price_base">100円</span></div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="/product_id/RJ123456.html">
+                  <img src="//img.dlsite.jp/test.jpg" />
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <!-- タイトルなし（work_name要素が欠けている） -->
+                <dd class="maker_name"><a href="#">テストサークル</a></dd>
+                <dd class="work_price_wrap">
+                  <span class="work_price">
+                    <span class="work_price_parts"><span class="work_price_base">100</span><span class="work_price_suffix">円</span></span>
+                  </span>
+                </dd>
+              </dl>
+            </td>
+          </tr>
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="/product_id/RJ123457.html">
+                  <img src="//img.dlsite.jp/test.jpg" />
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <dt class="work_name">
+                  <a href="/product_id/RJ123457.html" title="有効な作品">
+                    有効な作品
+                  </a>
+                </dt>
+                <dd class="maker_name"><a href="#">テストサークル</a></dd>
+                <dd class="work_price_wrap">
+                  <span class="work_price">
+                    <span class="work_price_parts"><span class="work_price_base">100</span><span class="work_price_suffix">円</span></span>
+                  </span>
+                </dd>
+              </dl>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(mockHtml);
@@ -494,13 +608,20 @@ describe("DLsite Parser", () => {
 
     it("サークル名が欠けている作品をスキップできる", () => {
       const mockHtml = `
-        <li data-list_item_product_id="RJ123456">
-          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
-          <!-- サークル名なし -->
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="//img.dlsite.jp/test.jpg" />
-          <div class="work_price"><span class="work_price_base">100円</span></div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td>
+              <a href="/product_id/RJ123456.html" title="テスト作品">
+                <img src="//img.dlsite.jp/test.jpg" />
+              </a>
+              <!-- サークル名なし -->
+              <div class="work_category type_SOU">音声作品</div>
+              <div class="work_price">
+                <div class="work_price_parts"><span class="work_price_base">100円</span></div>
+              </div>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(mockHtml);
@@ -509,13 +630,20 @@ describe("DLsite Parser", () => {
 
     it("作品URLが欠けている作品をスキップできる", () => {
       const mockHtml = `
-        <li data-list_item_product_id="RJ123456">
-          <div class="work_name"><a title="テスト作品">テスト作品</a></div>
-          <div class="maker_name"><a href="#">テストサークル</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="//img.dlsite.jp/test.jpg" />
-          <div class="work_price"><span class="work_price_base">100円</span></div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td>
+              <a title="テスト作品">
+                <img src="//img.dlsite.jp/test.jpg" />
+              </a>
+              <div class="maker_name"><a href="#">テストサークル</a></div>
+              <div class="work_category type_SOU">音声作品</div>
+              <div class="work_price">
+                <div class="work_price_parts"><span class="work_price_base">100円</span></div>
+              </div>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(mockHtml);
@@ -524,55 +652,115 @@ describe("DLsite Parser", () => {
 
     it("サムネイル画像URLが欠けている作品をスキップできる", () => {
       const mockHtml = `
-        <li data-list_item_product_id="RJ123456">
-          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
-          <div class="maker_name"><a href="#">テストサークル</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <!-- 画像なし -->
-          <div class="work_price"><span class="work_price_base">100円</span></div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="/product_id/RJ123456.html">
+                  <!-- 画像なし -->
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <dt class="work_name">
+                  <a href="/product_id/RJ123456.html" title="テスト作品">
+                    テスト作品
+                  </a>
+                </dt>
+                <dd class="maker_name"><a href="#">テストサークル</a></dd>
+                <dd class="work_price_wrap">
+                  <span class="work_price">
+                    <span class="work_price_parts"><span class="work_price_base">100</span><span class="work_price_suffix">円</span></span>
+                  </span>
+                </dd>
+              </dl>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(mockHtml);
-      expect(works).toHaveLength(0);
+      expect(works).toHaveLength(1); // サムネイルがなくてもデフォルト画像を使用するため作品は作成される
     });
   });
 
   describe("URL正規化テスト", () => {
     it("相対URLを絶対URLに変換できる", () => {
       const mockHtml = `
-        <li data-list_item_product_id="RJ123456">
-          <div class="work_name"><a href="/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
-          <div class="maker_name"><a href="#">テストサークル</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="//img.dlsite.jp/test.jpg" />
-          <div class="work_price"><span class="work_price_base">100円</span></div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="/product_id/RJ123456.html">
+                  <img src="//img.dlsite.jp/test.jpg" />
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <dt class="work_name">
+                  <a href="/product_id/RJ123456.html" title="テスト作品">
+                    テスト作品
+                  </a>
+                </dt>
+                <dd class="maker_name"><a href="#">テストサークル</a></dd>
+                <dd class="work_price_wrap">
+                  <span class="work_price">
+                    <span class="work_price_parts"><span class="work_price_base">100</span><span class="work_price_suffix">円</span></span>
+                  </span>
+                </dd>
+              </dl>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(mockHtml);
       expect(works).toHaveLength(1);
       expect(works[0].workUrl).toBe(
-        "https://www.dlsite.com/work/=/product_id/RJ123456.html",
+        "https://www.dlsite.com/product_id/RJ123456.html",
       );
       expect(works[0].thumbnailUrl).toBe("https://img.dlsite.jp/test.jpg");
     });
 
     it("既に絶対URLの場合はそのまま保持できる", () => {
       const mockHtml = `
-        <li data-list_item_product_id="RJ123456">
-          <div class="work_name"><a href="https://www.dlsite.com/work/=/product_id/RJ123456.html" title="テスト作品">テスト作品</a></div>
-          <div class="maker_name"><a href="#">テストサークル</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="https://img.dlsite.jp/test.jpg" />
-          <div class="work_price"><span class="work_price_base">100円</span></div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="https://www.dlsite.com/product_id/RJ123456.html">
+                  <img src="https://img.dlsite.jp/test.jpg" />
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <dt class="work_name">
+                  <a href="https://www.dlsite.com/product_id/RJ123456.html" title="テスト作品">
+                    テスト作品
+                  </a>
+                </dt>
+                <dd class="maker_name"><a href="#">テストサークル</a></dd>
+                <dd class="work_price_wrap">
+                  <span class="work_price">
+                    <span class="work_price_parts"><span class="work_price_base">100</span><span class="work_price_suffix">円</span></span>
+                  </span>
+                </dd>
+              </dl>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(mockHtml);
       expect(works).toHaveLength(1);
       expect(works[0].workUrl).toBe(
-        "https://www.dlsite.com/work/=/product_id/RJ123456.html",
+        "https://www.dlsite.com/product_id/RJ123456.html",
       );
       expect(works[0].thumbnailUrl).toBe("https://img.dlsite.jp/test.jpg");
     });
@@ -738,18 +926,49 @@ describe("DLsite Parser", () => {
 
     it("必須フィールドが一部欠けていても他の作品は処理できる", () => {
       const mixedHtml = `
-        <li data-list_item_product_id="RJ111111">
-          <!-- タイトルが欠けている -->
-          <div class="maker_name"><a href="#">サークル1</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-        </li>
-        <li data-list_item_product_id="RJ222222">
-          <div class="work_name"><a href="/work/=/product_id/RJ222222.html" title="正常な作品">正常な作品</a></div>
-          <div class="maker_name"><a href="#">サークル2</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="//img.dlsite.jp/test2.jpg" />
-          <div class="work_price"><span class="work_price_base">200円</span></div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="/product_id/RJ111111.html">
+                  <img src="//img.dlsite.jp/test.jpg" />
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <!-- タイトルが欠けている（work_name要素がない） -->
+                <dd class="maker_name"><a href="#">サークル1</a></dd>
+              </dl>
+            </td>
+          </tr>
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="/product_id/RJ222222.html">
+                  <img src="//img.dlsite.jp/test2.jpg" />
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <dt class="work_name">
+                  <a href="/product_id/RJ222222.html" title="正常な作品">
+                    正常な作品
+                  </a>
+                </dt>
+                <dd class="maker_name"><a href="#">サークル2</a></dd>
+                <dd class="work_price_wrap">
+                  <span class="work_price">
+                    <span class="work_price_parts"><span class="work_price_base">200</span><span class="work_price_suffix">円</span></span>
+                  </span>
+                </dd>
+              </dl>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(mixedHtml);
@@ -760,18 +979,47 @@ describe("DLsite Parser", () => {
 
     it("価格情報が様々な形式でも対応できる", () => {
       const priceVariationsHtml = `
-        <li data-list_item_product_id="RJ333333">
-          <div class="work_name"><a href="/work" title="価格テスト作品">価格テスト作品</a></div>
-          <div class="maker_name"><a href="#">テストサークル</a></div>
-          <div class="work_category type_SOU">音声作品</div>
-          <img src="test.jpg" />
-          <div class="work_price">
-            <span class="work_price_base">1,500円</span>
-            <span class="strike"><span class="work_price_base">2,000円</span></span>
-          </div>
-          <div class="icon_lead_01 type_sale">25%OFF</div>
-          <div class="work_point">150pt</div>
-        </li>
+        <table class="work_1col_table">
+          <tr>
+            <td class="work_1col_thumb">
+              <div class="work_thumb">
+                <a href="/product_id/RJ333333.html">
+                  <img src="test.jpg" />
+                </a>
+                <div class="work_category type_SOU">音声作品</div>
+              </div>
+            </td>
+            <td>
+              <dl class="work_1col">
+                <dt class="work_name">
+                  <div class="icon_wrap">
+                    <span class="icon_lead_01 type_sale" title="25%OFF">25%OFF</span>
+                  </div>
+                  <a href="/product_id/RJ333333.html" title="価格テスト作品">
+                    価格テスト作品
+                  </a>
+                </dt>
+                <dd class="maker_name"><a href="#">テストサークル</a></dd>
+                <dd class="work_price_wrap">
+                  <span class="work_price">
+                    <span class="work_price_parts">
+                      <span class="work_price_base">1500</span>
+                      <span class="work_price_suffix">円</span>
+                    </span>
+                  </span>
+                  <span class="strike">
+                    <span class="work_price_parts">
+                      <span class="work_price_base">2000</span>
+                      <span class="work_price_suffix">円</span>
+                    </span>
+                  </span>
+                  <span class="separator">/</span>
+                  <span class="work_point">150pt (10%還元)</span>
+                </dd>
+              </dl>
+            </td>
+          </tr>
+        </table>
       `;
 
       const works = parseWorksFromHTML(priceVariationsHtml);

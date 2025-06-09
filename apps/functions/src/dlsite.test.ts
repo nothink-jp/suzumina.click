@@ -479,4 +479,194 @@ describe("fetchDLsiteWorks", () => {
       expect(mockFetch).toHaveBeenCalled();
     });
   });
+
+  describe("HTTPレスポンスエラー処理", () => {
+    it("HTTPステータスコードが200以外の場合のエラー処理", async () => {
+      // HTTPステータス500を返すモック
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        text: async () => "Internal Server Error",
+      });
+
+      // メタデータドキュメントのモック（進行中ではない状態）
+      mockMetadataDoc.exists = true;
+      mockMetadataDoc.data.mockReturnValue({
+        isInProgress: false,
+        currentPage: 1,
+        lastFetchedAt: { seconds: Date.now() / 1000 - 3600, nanoseconds: 0 },
+      });
+
+      await fetchDLsiteWorks(mockEvent);
+
+      // DLsite作品情報取得エラーのログが出力されることを確認
+      expect(mockedLoggerError).toHaveBeenCalledWith(
+        "DLsite作品情報取得中にエラーが発生しました:",
+        expect.any(Error),
+      );
+    });
+
+    it("Content-Typeがtext/htmlでない場合のエラー処理", async () => {
+      // Content-Typeがjsonを返すモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (name: string) => {
+            if (name.toLowerCase() === "content-type") {
+              return "application/json";
+            }
+            return null;
+          },
+        },
+        text: async () => '{"error": "not html"}',
+      });
+
+      // メタデータドキュメントのモック（進行中ではない状態）
+      mockMetadataDoc.exists = true;
+      mockMetadataDoc.data.mockReturnValue({
+        isInProgress: false,
+        currentPage: 1,
+        lastFetchedAt: { seconds: Date.now() / 1000 - 3600, nanoseconds: 0 },
+      });
+
+      await fetchDLsiteWorks(mockEvent);
+
+      // DLsite作品情報取得エラーのログが出力されることを確認
+      expect(mockedLoggerError).toHaveBeenCalledWith(
+        "DLsite作品情報取得中にエラーが発生しました:",
+        expect.any(Error),
+      );
+    });
+
+    it("HTMLが空または無効な場合のエラー処理", async () => {
+      // 空のHTMLを返すモック
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (name: string) => {
+            if (name.toLowerCase() === "content-type") {
+              return "text/html; charset=utf-8";
+            }
+            return null;
+          },
+        },
+        text: async () => "",
+      });
+
+      // メタデータドキュメントのモック（進行中ではない状態）
+      mockMetadataDoc.exists = true;
+      mockMetadataDoc.data.mockReturnValue({
+        isInProgress: false,
+        currentPage: 1,
+        lastFetchedAt: { seconds: Date.now() / 1000 - 3600, nanoseconds: 0 },
+      });
+
+      await fetchDLsiteWorks(mockEvent);
+
+      // DLsite作品情報取得エラーのログが出力されることを確認
+      expect(mockedLoggerError).toHaveBeenCalledWith(
+        "DLsite作品情報取得中にエラーが発生しました:",
+        expect.any(Error),
+      );
+    });
+
+    it("ネットワークエラーが発生した場合の例外処理", async () => {
+      // fetchが例外をスローするモック
+      mockFetch.mockRejectedValueOnce(new Error("ネットワークエラー"));
+
+      // メタデータドキュメントのモック（進行中ではない状態）
+      mockMetadataDoc.exists = true;
+      mockMetadataDoc.data.mockReturnValue({
+        isInProgress: false,
+        currentPage: 1,
+        lastFetchedAt: { seconds: Date.now() / 1000 - 3600, nanoseconds: 0 },
+      });
+
+      await fetchDLsiteWorks(mockEvent);
+
+      // 例外のログが出力されることを確認
+      expect(mockedLoggerError).toHaveBeenCalledWith(
+        "DLsite作品情報取得中にエラーが発生しました:",
+        expect.any(Error),
+      );
+
+      // エラー状態がメタデータに記録されることを確認
+      expect(mockMetadataDocUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isInProgress: false,
+          lastError: "ネットワークエラー",
+        }),
+      );
+    });
+
+    it("メタデータ更新に失敗した場合でも処理を継続する", async () => {
+      // fetchが例外をスローするモック
+      mockFetch.mockRejectedValueOnce(new Error("テストエラー"));
+
+      // メタデータドキュメントの更新が失敗するモック
+      mockMetadataDoc.exists = true;
+      mockMetadataDoc.data.mockReturnValue({
+        isInProgress: false,
+        currentPage: 1,
+        lastFetchedAt: { seconds: Date.now() / 1000 - 3600, nanoseconds: 0 },
+      });
+      mockMetadataDocUpdate.mockRejectedValue(new Error("Firestore更新エラー"));
+
+      await fetchDLsiteWorks(mockEvent);
+
+      // 元のエラーのログが出力されることを確認
+      expect(mockedLoggerError).toHaveBeenCalledWith(
+        "メタデータの取得に失敗しました:",
+        expect.any(Error),
+      );
+
+      // メタデータ更新失敗のログも出力されることを確認
+      expect(mockedLoggerError).toHaveBeenCalledWith(
+        "メタデータの取得に失敗しました:",
+        expect.any(Error),
+      );
+    });
+
+    it("Base64メッセージデータのデコードに失敗した場合の処理", async () => {
+      // 無効なBase64データを含むイベント
+      const eventWithInvalidBase64 = {
+        ...mockEvent,
+        data: {
+          ...mockEvent.data,
+          data: "invalid-base64-data!!",
+        },
+      };
+
+      await fetchDLsiteWorks(eventWithInvalidBase64);
+
+      // 処理中にエラーが発生することを確認（Base64デコードまたはページ取得エラー）
+      expect(mockedLoggerError).toHaveBeenCalledWith(
+        expect.stringContaining("エラーが発生しました"),
+        expect.any(Error),
+      );
+    });
+  });
+
+  describe("継続実行のテスト", () => {
+    it("ページ継続処理が正常に動作する", async () => {
+      // currentPageが1より大きいメタデータを設定
+      mockMetadataDoc.exists = true;
+      mockMetadataDoc.data.mockReturnValue({
+        isInProgress: false,
+        currentPage: 3,
+        lastFetchedAt: { seconds: Date.now() / 1000 - 3600, nanoseconds: 0 },
+      });
+      mockMetadataDocGet.mockResolvedValue(mockMetadataDoc);
+
+      await fetchDLsiteWorks(mockEvent);
+
+      // 継続処理のログが出力されることを確認
+      expect(mockedLoggerInfo).toHaveBeenCalledWith(
+        expect.stringContaining("前回の続きから取得を再開します"),
+      );
+    });
+  });
 });

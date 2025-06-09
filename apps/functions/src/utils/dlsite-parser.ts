@@ -203,8 +203,14 @@ export function parseWorksFromHTML(html: string): ParsedWorkData[] {
         }
         const productId = productIdMatch[1];
 
+        // タイトルは .work_name 内のリンクから取得
+        const titleElement = $item
+          .find(".work_name a[href*='/product_id/']")
+          .first();
         const title =
-          linkElement.attr("title")?.trim() || linkElement.text().trim() || "";
+          titleElement.attr("title")?.trim() ||
+          titleElement.text().trim() ||
+          "";
         if (!title) {
           logger.warn(`作品${productId}: タイトルが見つかりません`);
           return;
@@ -316,8 +322,7 @@ export function parseWorksFromHTML(html: string): ParsedWorkData[] {
 
         // 独占配信フラグの判定
         const isExclusive =
-          $item.hasClass("type_exclusive_01") ||
-          $item.find(".type_exclusive_01").length > 0;
+          $item.find(".icon_lead_01.type_exclusive").length > 0;
 
         // タグ情報の抽出（新機能）
         const tags = extractTags($item);
