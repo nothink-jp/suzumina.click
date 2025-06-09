@@ -12,12 +12,12 @@ const METADATA_DOC_ID = "fetch_metadata";
 const METADATA_COLLECTION = "dlsiteMetadata";
 
 // 実行制限関連の定数
-const MAX_PAGES_PER_EXECUTION = 2; // 1回の実行での最大ページ数
-const ITEMS_PER_PAGE = 100; // DLsiteの1ページあたりの作品数
+const MAX_PAGES_PER_EXECUTION = 1; // 1回の実行での最大ページ数
+const ITEMS_PER_PAGE = 30; // DLsiteの1ページあたりの作品数
 
 // DLsite検索用の定数（新URL形式対応）
 const DLSITE_SEARCH_BASE_URL =
-  "https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category[0]/male/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/options_and_or/and/options[0]/JPN/options[1]/NM/per_page/100/page/";
+  "https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category[0]/male/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/options_and_or/and/options[0]/JPN/options[1]/NM/per_page/30/page/";
 
 // メタデータの型定義
 interface FetchMetadata {
