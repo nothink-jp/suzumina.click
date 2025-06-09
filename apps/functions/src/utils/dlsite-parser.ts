@@ -244,12 +244,33 @@ export function parseWorksFromHTML(html: string): ParsedWorkData[] {
         }
 
         // サムネイル画像URLの抽出
-        let thumbnailUrl =
-          $item.find("img.lazy").attr("src") ||
-          $item.find("img").first().attr("src") ||
-          $item.find("img.work_thumb").attr("src") ||
-          $item.find("img[data-src]").attr("data-src") ||
-          "";
+        // 高画質サムネイル画像URLの抽出を試みる
+        let thumbnailUrl = "";
+        const thumbImgPopup = $item.find(
+          "[data-vue-component='thumb-img-popup'] img[v-cloak]",
+        );
+        if (thumbImgPopup.length > 0) {
+          // v-cloak内の:src属性から高画質URLを抽出
+          const srcAttr = thumbImgPopup.attr(":src");
+          if (srcAttr) {
+            const match = srcAttr.match(
+              /'(\/\/img\.dlsite\.jp\/modpub\/images2\/work\/doujin\/[^']+\.jpg)'/,
+            );
+            if (match?.[1]) {
+              thumbnailUrl = match[1];
+            }
+          }
+        }
+
+        if (!thumbnailUrl) {
+          // 従来のサムネイル画像URLの抽出を試みる
+          thumbnailUrl =
+            $item.find("img.lazy").attr("src") ||
+            $item.find("img").first().attr("src") ||
+            $item.find("img.work_thumb").attr("src") ||
+            $item.find("img[data-src]").attr("data-src") ||
+            "";
+        }
 
         if (!thumbnailUrl) {
           // サムネイル画像が見つからない場合はデフォルト画像を使用

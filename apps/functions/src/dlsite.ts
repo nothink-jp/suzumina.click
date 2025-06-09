@@ -17,7 +17,7 @@ const ITEMS_PER_PAGE = 30; // DLsiteの1ページあたりの作品数
 
 // DLsite検索用の定数（新URL形式対応）
 const DLSITE_SEARCH_BASE_URL =
-  "https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category[0]/male/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/options_and_or/and/options[0]/JPN/options[1]/NM/per_page/30/page/";
+  "https://www.dlsite.com/maniax/fsr/ajax/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/options[0]/JPN/options[1]/NM/per_page/30/page/";
 
 // メタデータの型定義
 interface FetchMetadata {
@@ -137,22 +137,20 @@ async function prepareExecution(): Promise<
 }
 
 /**
- * DLsiteから検索結果を取得（HTML形式）
+ * DLsiteから検索結果を取得（JSON形式）
  */
 async function fetchDLsiteSearchResult(
   page: number,
 ): Promise<DLsiteSearchResult> {
-  // JSONエンドポイントが機能しないため、HTMLページを取得
-  const url = `${DLSITE_SEARCH_BASE_URL}${page}/show_type/1`;
+  const url = `${DLSITE_SEARCH_BASE_URL}${page}`;
 
-  logger.debug(`DLsite検索リクエスト（HTML）: ${url}`);
+  logger.debug(`DLsite検索リクエスト（JSON）: ${url}`);
 
   const response = await fetch(url, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      Accept:
-        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+      Accept: "application/json, text/plain, */*",
       "Accept-Language": "ja-JP,ja;q=0.9,en;q=0.8",
       "Accept-Encoding": "gzip, deflate, br",
       "Cache-Control": "no-cache",
@@ -160,10 +158,10 @@ async function fetchDLsiteSearchResult(
         '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
       "Sec-Ch-Ua-Mobile": "?0",
       "Sec-Ch-Ua-Platform": '"Windows"',
-      "Sec-Fetch-Dest": "document",
-      "Sec-Fetch-Mode": "navigate",
-      "Sec-Fetch-Site": "none",
-      "Upgrade-Insecure-Requests": "1",
+      "Sec-Fetch-Dest": "empty", // JSON APIの場合
+      "Sec-Fetch-Mode": "cors", // JSON APIの場合
+      "Sec-Fetch-Site": "same-origin", // JSON APIの場合
+      "Upgrade-Insecure-Requests": "0", // JSON APIの場合
     },
   });
 
@@ -184,38 +182,29 @@ async function fetchDLsiteSearchResult(
     );
   }
 
-  // HTMLレスポンステキストを取得
-  const htmlContent = await response.text();
-  logger.info(
-    `DLsiteレスポンス内容プレビュー: ${htmlContent.substring(0, 300)}...`,
-  );
+  const data = await response.json();
 
-  // Content-Typeをチェック（HTMLを期待）
-  const contentType = response.headers.get("Content-Type") || "";
-  if (!contentType.includes("text/html")) {
-    logger.warn(`予期しないContent-Type: ${contentType}`);
-  }
-
-  // HTMLが有効かチェック
+  // JSONレスポンスの検証
   if (
-    !htmlContent.includes("<!DOCTYPE html") &&
-    !htmlContent.includes("<html")
+    !data ||
+    typeof data.search_result !== "string" ||
+    typeof data.page_info !== "object" ||
+    typeof data.page_info.count !== "number"
   ) {
-    logger.error("有効なHTMLページが返されませんでした");
-    throw new Error("DLsiteから無効なHTMLが返されました");
+    logger.error("DLsiteから無効なJSONが返されました", { data });
+    throw new Error("DLsiteから無効なJSONが返されました");
   }
 
-  // DLsiteSearchResult形式で返す（search_resultにHTMLを格納）
   const result: DLsiteSearchResult = {
-    search_result: htmlContent,
+    search_result: data.search_result,
     page_info: {
-      count: 0, // HTMLから抽出する必要がある場合は後で実装
-      first_indice: (page - 1) * 100 + 1,
-      last_indice: page * 100,
+      count: data.page_info.count,
+      first_indice: data.page_info.first_indice,
+      last_indice: data.page_info.last_indice,
     },
   };
 
-  logger.info("HTMLページの取得が成功しました");
+  logger.info("JSONページの取得が成功しました");
   return result;
 }
 

@@ -34,15 +34,15 @@ resource "google_cloud_scheduler_job" "fetch_youtube_videos_hourly" {
   ]
 }
 
-# 1時間に1回 DLsite 作品取得 Pub/Sub トピックをトリガーするジョブ
-# 毎時49分に実行される定期的なスケジュールタスク（YouTubeと30分間隔を空ける）
-resource "google_cloud_scheduler_job" "fetch_dlsite_works_hourly" {
+# 10分に1回 DLsite 作品取得 Pub/Sub トピックをトリガーするジョブ
+# 毎時0,10,20,30,40,50分に実行される定期的なスケジュールタスク
+resource "google_cloud_scheduler_job" "fetch_dlsite_works_every_10min" {
   project  = var.gcp_project_id
   region   = "asia-northeast1" # 他のリソースと同じリージョンを使用（東京リージョン）
-  name     = "fetch-dlsite-works-hourly"
-  schedule = "49 * * * *" # 毎時49分に実行（cronフォーマット）
+  name     = "fetch-dlsite-works-every-10min"
+  schedule = "*/10 * * * *" # 10分間隔で実行（cronフォーマット）
   time_zone = "Asia/Tokyo" # タイムゾーンを東京に設定
-  description = "DLsite作品を毎時間取得するためのPub/Subトピックをトリガーします"
+  description = "DLsite作品を10分間隔で取得するためのPub/Subトピックをトリガーします"
 
   # Pub/Sub ターゲット設定
   pubsub_target {
