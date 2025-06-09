@@ -34,16 +34,5 @@ firebase_config = {
   APP_ID            = "1:123456789012:web:abc123def456ghi789"  # FirebaseアプリのID
 }
 
-# 予算と監視設定
-# 請求先アカウントID（GCPコンソールの請求先ページから取得）
-billing_account_id = "XXXXXX-XXXXXX-XXXXXX"  # 例: 01D84F-188AC5-08F16C
-
-# アラート通知用メールアドレス（複数設定する場合はカンマ区切り）
-alert_email_address = "your-email@example.com"
-
 # 環境設定（development, staging, production）
 environment = "development"
-
-# 予算設定
-monthly_budget_amount = "5000"  # 月間予算額（JPY）、例: 5,000円
-enable_budget = false           # 予算管理機能を有効にするかどうか（true/false）

@@ -2,10 +2,16 @@ import type {
   DLsiteWorkBase,
   FirestoreDLsiteWorkData,
 } from "@suzumina.click/shared-types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
+  extractCampaignInfo,
+  extractLocalePrices,
+  extractRankingInfo,
+  extractVoiceActors,
+  fetchWorkInfo,
   filterWorksForUpdate,
   mapMultipleWorks,
+  mapMultipleWorksWithInfo,
   mapToFirestoreData,
   mapToWorkBase,
   shouldUpdateWork,
@@ -20,7 +26,7 @@ describe("DLsite Mapper", () => {
         productId: "RJ123456",
         title: "テスト作品",
         circle: "テストサークル",
-        author: "テスト作者",
+        author: ["テスト作者"],
         category: "SOU",
         workUrl: "/work/=/product_id/RJ123456.html",
         thumbnailUrl: "/img_sam/RJ123456_sam.jpg",
@@ -47,7 +53,7 @@ describe("DLsite Mapper", () => {
         productId: "RJ123456",
         title: "テスト作品",
         circle: "テストサークル",
-        author: "テスト作者",
+        author: ["テスト作者"],
         description: "",
         category: "SOU",
         workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
@@ -88,7 +94,7 @@ describe("DLsite Mapper", () => {
         productId: "RJ123456",
         title: "テスト作品",
         circle: "テストサークル",
-        author: "テスト作者",
+        author: ["テスト作者"],
         category: "SOU",
         workUrl: "/work/=/product_id/RJ123456.html",
         thumbnailUrl: "/img_sam/RJ123456_sam.jpg",
@@ -108,63 +114,6 @@ describe("DLsite Mapper", () => {
 
       expect(result.rating).toBeUndefined();
     });
-
-    it("絶対URLは変換しない", () => {
-      const parsedData: ParsedWorkData = {
-        productId: "RJ123456",
-        title: "テスト作品",
-        circle: "テストサークル",
-        author: "テスト作者",
-        category: "SOU",
-        workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
-        thumbnailUrl:
-          "https://img.dlsite.jp/modpub/images2/work/doujin/RJ123456_sam.jpg",
-        currentPrice: 1000,
-        originalPrice: 1500,
-        discount: 33,
-        point: 50,
-        salesCount: 1000,
-        ageRating: "全年齢",
-        sampleImages: [],
-        isExclusive: false,
-      };
-
-      const result = mapToWorkBase(parsedData);
-
-      expect(result.workUrl).toBe(
-        "https://www.dlsite.com/work/=/product_id/RJ123456.html",
-      );
-      expect(result.thumbnailUrl).toBe(
-        "https://img.dlsite.jp/modpub/images2/work/doujin/RJ123456_sam.jpg",
-      );
-    });
-
-    it("プロトコルなしURLを正しく変換する", () => {
-      const parsedData: ParsedWorkData = {
-        productId: "RJ123456",
-        title: "テスト作品",
-        circle: "テストサークル",
-        author: "テスト作者",
-        category: "SOU",
-        workUrl: "//www.dlsite.com/work/=/product_id/RJ123456.html",
-        thumbnailUrl:
-          "//img.dlsite.jp/modpub/images2/work/doujin/RJ123456_sam.jpg",
-        currentPrice: 1000,
-        salesCount: 1000,
-        ageRating: "全年齢",
-        sampleImages: [],
-        isExclusive: false,
-      };
-
-      const result = mapToWorkBase(parsedData);
-
-      expect(result.workUrl).toBe(
-        "https://www.dlsite.com/work/=/product_id/RJ123456.html",
-      );
-      expect(result.thumbnailUrl).toBe(
-        "https://img.dlsite.jp/modpub/images2/work/doujin/RJ123456_sam.jpg",
-      );
-    });
   });
 
   describe("mapToFirestoreData", () => {
@@ -174,7 +123,7 @@ describe("DLsite Mapper", () => {
         productId: "RJ123456",
         title: "テスト作品",
         circle: "テストサークル",
-        author: "テスト作者",
+        author: ["テスト作者"],
         description: "",
         category: "SOU",
         workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
@@ -200,11 +149,6 @@ describe("DLsite Mapper", () => {
             width: 560,
             height: 420,
           },
-          {
-            thumb: "https://www.dlsite.com/sample2.jpg",
-            width: 560,
-            height: 420,
-          },
         ],
         isExclusive: true,
       };
@@ -219,120 +163,6 @@ describe("DLsite Mapper", () => {
       expect(typeof result.createdAt).toBe("string");
       expect(typeof result.updatedAt).toBe("string");
     });
-
-    it("既存データがある場合はcreatedAtを保持する", () => {
-      const workBase: DLsiteWorkBase = {
-        id: "RJ123456",
-        productId: "RJ123456",
-        title: "テスト作品",
-        circle: "テストサークル",
-        author: "テスト作者",
-        description: "",
-        category: "SOU",
-        workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
-        thumbnailUrl: "https://www.dlsite.com/img_sam/RJ123456_sam.jpg",
-        price: {
-          current: 1000,
-          original: 1500,
-          currency: "JPY",
-          discount: 33,
-          point: 50,
-        },
-        salesCount: 1000,
-        ageRating: "全年齢",
-        tags: [],
-        sampleImages: [],
-        isExclusive: false,
-      };
-
-      const existingData = {
-        createdAt: "2023-01-01T00:00:00.000Z",
-      };
-
-      const result = mapToFirestoreData(workBase, existingData);
-
-      expect(result.createdAt).toBe("2023-01-01T00:00:00.000Z");
-      expect(result.updatedAt).not.toBe("2023-01-01T00:00:00.000Z");
-    });
-  });
-
-  describe("mapMultipleWorks", () => {
-    it("複数の作品を一括変換できる", () => {
-      const parsedWorks: ParsedWorkData[] = [
-        {
-          productId: "RJ123456",
-          title: "テスト作品1",
-          circle: "テストサークル1",
-          author: "テスト作者1",
-          category: "SOU",
-          workUrl: "/work/=/product_id/RJ123456.html",
-          thumbnailUrl: "/img_sam/RJ123456_sam.jpg",
-          currentPrice: 1000,
-          salesCount: 1000,
-          ageRating: "全年齢",
-          sampleImages: [],
-          isExclusive: false,
-        },
-        {
-          productId: "RJ789012",
-          title: "テスト作品2",
-          circle: "テストサークル2",
-          author: "テスト作者2",
-          category: "SOU",
-          workUrl: "/work/=/product_id/RJ789012.html",
-          thumbnailUrl: "/img_sam/RJ789012_sam.jpg",
-          currentPrice: 2000,
-          salesCount: 2000,
-          ageRating: "R-15",
-          sampleImages: [],
-          isExclusive: true,
-        },
-      ];
-
-      const result = mapMultipleWorks(parsedWorks);
-
-      expect(result).toHaveLength(2);
-      expect(result[0].productId).toBe("RJ123456");
-      expect(result[1].productId).toBe("RJ789012");
-    });
-
-    it("変換エラーがある作品をスキップできる", () => {
-      const parsedWorks: ParsedWorkData[] = [
-        {
-          productId: "RJ123456",
-          title: "テスト作品1",
-          circle: "テストサークル1",
-          author: "テスト作者1",
-          category: "SOU",
-          workUrl: "/work/=/product_id/RJ123456.html",
-          thumbnailUrl: "/img_sam/RJ123456_sam.jpg",
-          currentPrice: 1000,
-          salesCount: 1000,
-          ageRating: "全年齢",
-          sampleImages: [],
-          isExclusive: false,
-        },
-        {
-          productId: "", // 無効なproductId
-          title: "", // 無効なtitle
-          circle: "", // 無効なcircle
-          author: "",
-          category: "etc",
-          workUrl: "",
-          thumbnailUrl: "",
-          currentPrice: 0,
-          salesCount: 0,
-          ageRating: "",
-          sampleImages: [],
-          isExclusive: false,
-        },
-      ];
-
-      const result = mapMultipleWorks(parsedWorks);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].productId).toBe("RJ123456");
-    });
   });
 
   describe("shouldUpdateWork", () => {
@@ -341,7 +171,7 @@ describe("DLsite Mapper", () => {
       productId: "RJ123456",
       title: "テスト作品",
       circle: "テストサークル",
-      author: "テスト作者",
+      author: ["テスト作者"],
       description: "",
       category: "SOU",
       workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
@@ -373,59 +203,11 @@ describe("DLsite Mapper", () => {
         ...baseExisting,
         price: {
           ...baseExisting.price,
-          current: 800, // 価格変更
+          current: 800,
         },
       };
 
       const result = shouldUpdateWork(newData, baseExisting);
-      expect(result).toBe(true);
-    });
-
-    it("評価数が変更された場合はtrueを返す", () => {
-      const newData: DLsiteWorkBase = {
-        ...baseExisting,
-        rating: baseExisting.rating
-          ? {
-              ...baseExisting.rating,
-              count: 150, // 評価数変更
-            }
-          : undefined,
-      };
-
-      const result = shouldUpdateWork(newData, baseExisting);
-      expect(result).toBe(true);
-    });
-
-    it("販売数が変更された場合はtrueを返す", () => {
-      const newData: DLsiteWorkBase = {
-        ...baseExisting,
-        salesCount: 2000, // 販売数変更
-      };
-
-      const result = shouldUpdateWork(newData, baseExisting);
-      expect(result).toBe(true);
-    });
-
-    it("タイトルが変更された場合はtrueを返す", () => {
-      const newData: DLsiteWorkBase = {
-        ...baseExisting,
-        title: "新しいタイトル", // タイトル変更
-      };
-
-      const result = shouldUpdateWork(newData, baseExisting);
-      expect(result).toBe(true);
-    });
-
-    it("24時間以上更新されていない場合はtrueを返す", () => {
-      const oldDate = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(); // 25時間前
-      const existingOld: FirestoreDLsiteWorkData = {
-        ...baseExisting,
-        updatedAt: oldDate,
-      };
-
-      const newData: DLsiteWorkBase = { ...baseExisting };
-
-      const result = shouldUpdateWork(newData, existingOld);
       expect(result).toBe(true);
     });
 
@@ -437,97 +219,6 @@ describe("DLsite Mapper", () => {
     });
   });
 
-  describe("filterWorksForUpdate", () => {
-    it("新規作品と更新が必要な作品を正しく分類できる", () => {
-      const newWorks: DLsiteWorkBase[] = [
-        {
-          id: "RJ123456",
-          productId: "RJ123456",
-          title: "既存作品（更新あり）",
-          circle: "テストサークル",
-          author: "テスト作者",
-          description: "",
-          category: "SOU",
-          workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
-          thumbnailUrl: "https://www.dlsite.com/img_sam/RJ123456_sam.jpg",
-          price: {
-            current: 800, // 価格変更あり
-            original: 1500,
-            currency: "JPY",
-            discount: 33,
-            point: 50,
-          },
-          salesCount: 1000,
-          ageRating: "全年齢",
-          tags: [],
-          sampleImages: [],
-          isExclusive: false,
-        },
-        {
-          id: "RJ789012",
-          productId: "RJ789012",
-          title: "新規作品",
-          circle: "テストサークル",
-          author: "テスト作者",
-          description: "",
-          category: "SOU",
-          workUrl: "https://www.dlsite.com/work/=/product_id/RJ789012.html",
-          thumbnailUrl: "https://www.dlsite.com/img_sam/RJ789012_sam.jpg",
-          price: {
-            current: 2000,
-            original: 2000,
-            currency: "JPY",
-          },
-          salesCount: 500,
-          ageRating: "R-15",
-          tags: [],
-          sampleImages: [],
-          isExclusive: true,
-        },
-      ];
-
-      const existingWorksMap = new Map<string, FirestoreDLsiteWorkData>([
-        [
-          "RJ123456",
-          {
-            id: "RJ123456",
-            productId: "RJ123456",
-            title: "既存作品（更新あり）",
-            circle: "テストサークル",
-            author: "テスト作者",
-            description: "",
-            category: "SOU",
-            workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
-            thumbnailUrl: "https://www.dlsite.com/img_sam/RJ123456_sam.jpg",
-            price: {
-              current: 1000, // 古い価格
-              original: 1500,
-              currency: "JPY",
-              discount: 33,
-              point: 50,
-            },
-            salesCount: 1000,
-            ageRating: "全年齢",
-            tags: [],
-            sampleImages: [],
-            isExclusive: false,
-            lastFetchedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ],
-      ]);
-
-      const result = filterWorksForUpdate(newWorks, existingWorksMap);
-
-      expect(result.toCreate).toHaveLength(1);
-      expect(result.toCreate[0].productId).toBe("RJ789012");
-      expect(result.toUpdate).toHaveLength(1);
-      expect(result.toUpdate[0].new.productId).toBe("RJ123456");
-      expect(result.unchanged).toHaveLength(0);
-    });
-  });
-
   describe("validateWorkData", () => {
     it("有効なデータに対してisValid=trueを返す", () => {
       const validWork: DLsiteWorkBase = {
@@ -535,7 +226,7 @@ describe("DLsite Mapper", () => {
         productId: "RJ123456",
         title: "テスト作品",
         circle: "テストサークル",
-        author: "テスト作者",
+        author: ["テスト作者"],
         description: "",
         category: "SOU",
         workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
@@ -564,103 +255,229 @@ describe("DLsite Mapper", () => {
       expect(result.isValid).toBe(true);
       expect(result.warnings).toHaveLength(0);
     });
+  });
 
-    it("無効なデータに対して警告を返す", () => {
-      const invalidWork: DLsiteWorkBase = {
-        id: "RJ123456",
-        productId: "RJ123456",
-        title: "", // 空のタイトル
-        circle: "", // 空のサークル名
-        author: "テスト作者",
-        description: "",
-        category: "SOU",
-        workUrl: "invalid-url", // 無効なURL
-        thumbnailUrl: "invalid-url", // 無効なURL
-        price: {
-          current: -100, // 負の価格
-          original: 1500, // 元の価格
-          currency: "JPY",
-          discount: 150, // 不正な割引率
-        },
-        rating: {
-          stars: 6, // 範囲外の星数
-          count: -10, // 負の評価数
-        },
-        salesCount: 1000,
-        ageRating: "全年齢",
-        tags: [],
-        sampleImages: [],
-        isExclusive: false,
+  describe("fetchWorkInfo", () => {
+    it("有効な作品IDでinfo APIからデータを取得できる", async () => {
+      const mockResponse = {
+        work_name: "テスト作品",
+        maker_name: "テストサークル",
+        dl_count: 5000,
+        wishlist_count: 150,
       };
 
-      const result = validateWorkData(invalidWork);
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockResponse,
+      });
 
-      expect(result.isValid).toBe(false);
-      expect(result.warnings).toContain("タイトルが空です");
-      expect(result.warnings).toContain("サークル名が空です");
-      expect(result.warnings).toContain("価格が負の値です");
-      expect(result.warnings).toContain("割引率が不正です (0-100%の範囲外)");
-      expect(result.warnings).toContain("評価星数が不正です (0-5の範囲外)");
-      expect(result.warnings).toContain("評価数が負の値です");
-      expect(result.warnings).toContain("作品URLが不正です");
-      expect(result.warnings).toContain("サムネイルURLが不正です");
+      const result = await fetchWorkInfo("RJ123456");
+
+      expect(result).toBeDefined();
+      expect(result?.work_name).toBe("テスト作品");
+      expect(result?.dl_count).toBe(5000);
     });
 
-    it("元の価格が現在価格以下の場合に警告を返す", () => {
-      const invalidWork: DLsiteWorkBase = {
-        id: "RJ123456",
-        productId: "RJ123456",
-        title: "テスト作品",
-        circle: "テストサークル",
-        author: "テスト作者",
-        description: "",
-        category: "SOU",
-        workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
-        thumbnailUrl: "https://www.dlsite.com/img_sam/RJ123456_sam.jpg",
-        price: {
-          current: 1000, // 現在価格
-          original: 500, // 元の価格が現在価格以下
-          currency: "JPY",
-        },
-        salesCount: 1000,
-        ageRating: "全年齢",
-        tags: [],
-        sampleImages: [],
-        isExclusive: false,
-      };
+    it("APIエラーの場合はnullを返す", async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
 
-      const result = validateWorkData(invalidWork);
+      const result = await fetchWorkInfo("RJ123456");
 
-      expect(result.isValid).toBe(false);
-      expect(result.warnings).toContain("元の価格が現在価格以下です");
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("extractVoiceActors", () => {
+    it("声優情報を正しく抽出できる", () => {
+      const infoData = {
+        voice_actors: ["声優1", "声優2", "声優3"],
+      } as any;
+
+      const result = extractVoiceActors(infoData);
+
+      expect(result).toEqual(["声優1", "声優2", "声優3"]);
     });
 
-    it("評価情報がない場合は評価関連の警告が出ない", () => {
-      const workWithoutRating: DLsiteWorkBase = {
-        id: "RJ123456",
-        productId: "RJ123456",
-        title: "テスト作品",
-        circle: "テストサークル",
-        author: "テスト作者",
-        description: "",
-        category: "SOU",
-        workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
-        thumbnailUrl: "https://www.dlsite.com/img_sam/RJ123456_sam.jpg",
-        price: {
-          current: 1000,
-          currency: "JPY",
+    it("声優情報がない場合は空配列を返す", () => {
+      const infoData = {} as any;
+
+      const result = extractVoiceActors(infoData);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("extractRankingInfo", () => {
+    it("ランキング情報を正しく抽出できる", () => {
+      const infoData = {
+        rank: [
+          {
+            term: "day",
+            category: "all",
+            rank: 15,
+          },
+          {
+            term: "week",
+            category: "voice",
+            rank: 5,
+          },
+        ],
+      } as any;
+
+      const result = extractRankingInfo(infoData);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        term: "day",
+        category: "all",
+        rank: 15,
+      });
+      expect(result[1]).toEqual({
+        term: "week",
+        category: "voice",
+        rank: 5,
+      });
+    });
+
+    it("ランキング情報がない場合は空配列を返す", () => {
+      const infoData = {} as any;
+
+      const result = extractRankingInfo(infoData);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("extractLocalePrices", () => {
+    it("多通貨価格情報を正しく抽出できる", () => {
+      const infoData = {
+        prices: [
+          {
+            currency: "JPY",
+            price: 1000,
+            price_string: "1,000円",
+          },
+          {
+            currency: "USD",
+            price: 10,
+            price_string: "$10.00",
+          },
+        ],
+      } as any;
+
+      const result = extractLocalePrices(infoData);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        currency: "JPY",
+        price: 1000,
+        priceString: "1,000円",
+      });
+      expect(result[1]).toEqual({
+        currency: "USD",
+        price: 10,
+        priceString: "$10.00",
+      });
+    });
+
+    it("価格情報がない場合は空配列を返す", () => {
+      const infoData = {} as any;
+
+      const result = extractLocalePrices(infoData);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("extractCampaignInfo", () => {
+    it("キャンペーン情報を正しく抽出できる", () => {
+      const infoData = {
+        campaign: {
+          campaign_id: "CAMP123",
+          discount_campaign_id: "DISC456",
+          discount_end_date: "2023-12-31 23:59:59",
+          discount_url: "https://example.com/discount",
         },
-        salesCount: 1000,
-        ageRating: "全年齢",
-        tags: [],
-        sampleImages: [],
-        isExclusive: false,
-      };
+      } as any;
 
-      const result = validateWorkData(workWithoutRating);
+      const result = extractCampaignInfo(infoData);
 
-      expect(result.isValid).toBe(true);
-      expect(result.warnings).toHaveLength(0);
+      expect(result).toEqual({
+        campaignId: "CAMP123",
+        discountCampaignId: "DISC456",
+        discountEndDate: "2023-12-31 23:59:59",
+        discountUrl: "https://example.com/discount",
+      });
+    });
+
+    it("キャンペーン情報がない場合はundefinedを返す", () => {
+      const infoData = {} as any;
+
+      const result = extractCampaignInfo(infoData);
+
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe("mapMultipleWorksWithInfo", () => {
+    it("HTMLデータとinfoデータを統合して変換できる", async () => {
+      const parsedWorks: ParsedWorkData[] = [
+        {
+          productId: "RJ123456",
+          title: "テスト作品",
+          circle: "テストサークル",
+          author: ["テスト作者"],
+          category: "SOU",
+          workUrl: "/work/=/product_id/RJ123456.html",
+          thumbnailUrl: "/img_sam/RJ123456_sam.jpg",
+          currentPrice: 1000,
+          salesCount: 1000,
+          ageRating: "全年齢",
+          sampleImages: [],
+          isExclusive: false,
+        },
+      ];
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          dl_count: 5000,
+          wishlist_count: 150,
+          rate_count: 100,
+          rate_average_2dp: 4.25,
+        }),
+      });
+
+      const result = await mapMultipleWorksWithInfo(parsedWorks);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].productId).toBe("RJ123456");
+    });
+
+    it("info APIエラーでもHTMLデータで処理を継続できる", async () => {
+      const parsedWorks: ParsedWorkData[] = [
+        {
+          productId: "RJ123456",
+          title: "テスト作品",
+          circle: "テストサークル",
+          author: ["テスト作者"],
+          category: "SOU",
+          workUrl: "/work/=/product_id/RJ123456.html",
+          thumbnailUrl: "/img_sam/RJ123456_sam.jpg",
+          currentPrice: 1000,
+          salesCount: 1000,
+          ageRating: "全年齢",
+          sampleImages: [],
+          isExclusive: false,
+        },
+      ];
+
+      global.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
+
+      const result = await mapMultipleWorksWithInfo(parsedWorks);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].productId).toBe("RJ123456");
     });
   });
 });

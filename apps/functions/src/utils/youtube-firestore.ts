@@ -127,12 +127,15 @@ function createVideoData(
       const allowed = video.contentDetails.regionRestriction.allowed;
       const blocked = video.contentDetails.regionRestriction.blocked;
 
-      if (allowed || blocked) {
+      const hasValidAllowed = allowed && allowed.length > 0;
+      const hasValidBlocked = blocked && blocked.length > 0;
+
+      if (hasValidAllowed || hasValidBlocked) {
         videoData.regionRestriction = {};
-        if (allowed && allowed.length > 0) {
+        if (hasValidAllowed) {
           videoData.regionRestriction.allowed = allowed;
         }
-        if (blocked && blocked.length > 0) {
+        if (hasValidBlocked) {
           videoData.regionRestriction.blocked = blocked;
         }
       }

@@ -19,8 +19,8 @@ export interface ParsedWorkData {
   title: string;
   /** サークル名 */
   circle: string;
-  /** 声優名（存在する場合） */
-  author?: string;
+  /** 声優名（複数の場合あり） */
+  author?: string[];
   /** 作品カテゴリ */
   category: WorkCategory;
   /** 作品ページURL */
@@ -222,8 +222,15 @@ export function parseWorksFromHTML(html: string): ParsedWorkData[] {
           return;
         }
 
-        // 声優名の抽出（author要素から）
-        const author = $item.find(".author a").text().trim() || undefined;
+        // 声優名の抽出（author要素から）- 複数対応
+        const authorElements = $item.find(".author a");
+        const author =
+          authorElements.length > 0
+            ? authorElements
+                .map((_, el) => $(el).text().trim())
+                .get()
+                .filter((name) => name)
+            : undefined;
 
         // カテゴリの抽出
         const categoryElement = $item.find(".work_category");

@@ -43,30 +43,6 @@ variable "youtube_api_key" {
   sensitive   = true
 }
 
-# アカウント情報
-variable "billing_account_id" {
-  description = "Google Cloud Platform 請求先アカウントID"
-  type        = string
-}
-
-# 予算設定
-variable "monthly_budget_amount" {
-  description = "月間予算金額（JPY）"
-  type        = string
-  default     = "1000"
-}
-
-variable "enable_budget" {
-  description = "予算設定を有効にするかどうか"
-  type        = bool
-  default     = false
-}
-
-# アラート通知メール
-variable "alert_email_address" {
-  description = "アラート通知先メールアドレス"
-  type        = string
-}
 
 # 環境識別子
 variable "environment" {

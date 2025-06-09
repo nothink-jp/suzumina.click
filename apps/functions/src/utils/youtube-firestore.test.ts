@@ -329,4 +329,436 @@ describe("youtube-firestore", () => {
       );
     });
   });
+
+  describe("convertVideoDataForFirestore - contentDetails", () => {
+    it("contentDetailsがある動画を正しく変換できる", () => {
+      const videoWithContentDetails: youtube_v3.Schema$Video = {
+        id: "content-details-video",
+        snippet: {
+          title: "コンテンツ詳細テスト",
+          publishedAt: "2023-01-01T00:00:00Z",
+        },
+        contentDetails: {
+          duration: "PT10M30S",
+          dimension: "2d",
+          definition: "hd",
+          caption: "true",
+          licensedContent: true,
+          contentRating: {
+            ytRating: "ytAgeRestricted",
+            mpaaRating: "mpaaR",
+          },
+          regionRestriction: {
+            allowed: ["US", "CA"],
+            blocked: ["CN"],
+          },
+        },
+      };
+
+      const result = youtubeFirestore.convertVideoDataForFirestore(
+        videoWithContentDetails,
+      );
+
+      expect(result).not.toBeNull();
+      expect(result).toMatchObject({
+        duration: "PT10M30S",
+        dimension: "2d",
+        definition: "hd",
+        caption: true,
+        licensedContent: true,
+        contentRating: {
+          ytRating: "ytAgeRestricted",
+          mpaaRating: "mpaaR",
+        },
+        regionRestriction: {
+          allowed: ["US", "CA"],
+          blocked: ["CN"],
+        },
+      });
+    });
+
+    it("部分的なcontentDetailsを持つ動画を変換できる", () => {
+      const videoWithPartialContentDetails: youtube_v3.Schema$Video = {
+        id: "partial-content-video",
+        snippet: {
+          title: "部分コンテンツ詳細テスト",
+        },
+        contentDetails: {
+          duration: "PT5M15S",
+          caption: "false",
+          licensedContent: false,
+        },
+      };
+
+      const result = youtubeFirestore.convertVideoDataForFirestore(
+        videoWithPartialContentDetails,
+      );
+
+      expect(result).not.toBeNull();
+      expect(result).toMatchObject({
+        duration: "PT5M15S",
+        caption: false,
+        licensedContent: false,
+      });
+      expect(result?.dimension).toBeUndefined();
+      expect(result?.definition).toBeUndefined();
+    });
+
+    it("regionRestrictionの各パターンを正しく処理できる", () => {
+      const videoWithAllowedOnly: youtube_v3.Schema$Video = {
+        id: "allowed-only-video",
+        snippet: { title: "許可リストのみ" },
+        contentDetails: {
+          regionRestriction: {
+            allowed: ["JP", "US"],
+          },
+        },
+      };
+
+      const videoWithBlockedOnly: youtube_v3.Schema$Video = {
+        id: "blocked-only-video",
+        snippet: { title: "ブロックリストのみ" },
+        contentDetails: {
+          regionRestriction: {
+            blocked: ["CN", "RU"],
+          },
+        },
+      };
+
+      const videoWithEmptyRestriction: youtube_v3.Schema$Video = {
+        id: "empty-restriction-video",
+        snippet: { title: "空の制限" },
+        contentDetails: {
+          regionRestriction: {
+            allowed: [],
+            blocked: [],
+          },
+        },
+      };
+
+      const result1 =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithAllowedOnly);
+      const result2 =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithBlockedOnly);
+      const result3 = youtubeFirestore.convertVideoDataForFirestore(
+        videoWithEmptyRestriction,
+      );
+
+      expect(result1?.regionRestriction).toEqual({
+        allowed: ["JP", "US"],
+      });
+      expect(result2?.regionRestriction).toEqual({
+        blocked: ["CN", "RU"],
+      });
+      expect(result3?.regionRestriction).toBeUndefined();
+    });
+  });
+
+  describe("convertVideoDataForFirestore - liveStreamingDetails", () => {
+    it("ライブストリーミング詳細を正しく変換できる", () => {
+      const liveVideoWithDetails: youtube_v3.Schema$Video = {
+        id: "live-details-video",
+        snippet: {
+          title: "ライブ詳細テスト",
+          liveBroadcastContent: "live",
+        },
+        liveStreamingDetails: {
+          scheduledStartTime: "2023-12-01T20:00:00Z",
+          scheduledEndTime: "2023-12-01T22:00:00Z",
+          actualStartTime: "2023-12-01T20:05:00Z",
+          actualEndTime: "2023-12-01T21:55:00Z",
+          concurrentViewers: "1500",
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(liveVideoWithDetails);
+
+      expect(result).not.toBeNull();
+      expect(result?.liveStreamingDetails).toBeDefined();
+      expect(result?.liveStreamingDetails?.concurrentViewers).toBe(1500);
+    });
+
+    it("部分的なライブストリーミング詳細を処理できる", () => {
+      const partialLiveVideo: youtube_v3.Schema$Video = {
+        id: "partial-live-video",
+        snippet: {
+          title: "部分ライブ詳細テスト",
+          liveBroadcastContent: "upcoming",
+        },
+        liveStreamingDetails: {
+          scheduledStartTime: "2023-12-01T20:00:00Z",
+          // その他のフィールドは未設定
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(partialLiveVideo);
+
+      expect(result).not.toBeNull();
+      expect(result?.liveStreamingDetails?.scheduledStartTime).toBeDefined();
+      expect(result?.liveStreamingDetails?.actualStartTime).toBeUndefined();
+    });
+  });
+
+  describe("convertVideoDataForFirestore - topicDetails", () => {
+    it("トピック詳細を正しく変換できる", () => {
+      const videoWithTopics: youtube_v3.Schema$Video = {
+        id: "topic-video",
+        snippet: {
+          title: "トピック詳細テスト",
+        },
+        topicDetails: {
+          topicCategories: [
+            "https://en.wikipedia.org/wiki/Music",
+            "https://en.wikipedia.org/wiki/Entertainment",
+          ],
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithTopics);
+
+      expect(result).not.toBeNull();
+      expect(result?.topicDetails?.topicCategories).toEqual([
+        "https://en.wikipedia.org/wiki/Music",
+        "https://en.wikipedia.org/wiki/Entertainment",
+      ]);
+    });
+  });
+
+  describe("convertVideoDataForFirestore - status", () => {
+    it("ステータス情報を正しく変換できる", () => {
+      const videoWithStatus: youtube_v3.Schema$Video = {
+        id: "status-video",
+        snippet: {
+          title: "ステータステスト",
+        },
+        status: {
+          uploadStatus: "processed",
+          privacyStatus: "public",
+          license: "youtube",
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithStatus);
+
+      expect(result).not.toBeNull();
+      expect(result?.status).toEqual({
+        uploadStatus: "processed",
+        privacyStatus: "public",
+        commentStatus: "youtube", // licenseがcommentStatusにマップされる
+      });
+    });
+  });
+
+  describe("convertVideoDataForFirestore - recordingDetails", () => {
+    it("録画詳細を正しく変換できる", () => {
+      const videoWithRecording: youtube_v3.Schema$Video = {
+        id: "recording-video",
+        snippet: {
+          title: "録画詳細テスト",
+        },
+        recordingDetails: {
+          locationDescription: "Tokyo, Japan",
+          recordingDate: "2023-06-01T15:30:00Z",
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithRecording);
+
+      expect(result).not.toBeNull();
+      expect(result?.recordingDetails?.locationDescription).toBe(
+        "Tokyo, Japan",
+      );
+      expect(result?.recordingDetails?.recordingDate).toBeDefined();
+    });
+  });
+
+  describe("convertVideoDataForFirestore - snippetの追加フィールド", () => {
+    it("categoryIdとtagsを正しく変換できる", () => {
+      const videoWithExtraSnippet: youtube_v3.Schema$Video = {
+        id: "extra-snippet-video",
+        snippet: {
+          title: "拡張スニペットテスト",
+          categoryId: "10", // Music category
+          tags: ["music", "rock", "guitar"],
+        },
+      };
+
+      const result = youtubeFirestore.convertVideoDataForFirestore(
+        videoWithExtraSnippet,
+      );
+
+      expect(result).not.toBeNull();
+      expect(result?.categoryId).toBe("10");
+      expect(result?.tags).toEqual(["music", "rock", "guitar"]);
+    });
+  });
+
+  describe("getBestThumbnailUrl function", () => {
+    it("maxresサムネイルを優先して選択する", () => {
+      const videoWithMaxres: youtube_v3.Schema$Video = {
+        id: "maxres-video",
+        snippet: {
+          title: "Maxresサムネイルテスト",
+          thumbnails: {
+            default: { url: "https://example.com/default.jpg" },
+            medium: { url: "https://example.com/medium.jpg" },
+            high: { url: "https://example.com/high.jpg" },
+            standard: { url: "https://example.com/standard.jpg" },
+            maxres: { url: "https://example.com/maxres.jpg" },
+          },
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithMaxres);
+
+      expect(result?.thumbnailUrl).toBe("https://example.com/maxres.jpg");
+    });
+
+    it("maxresがない場合はstandardを選択する", () => {
+      const videoWithoutMaxres: youtube_v3.Schema$Video = {
+        id: "no-maxres-video",
+        snippet: {
+          title: "Maxresなしサムネイルテスト",
+          thumbnails: {
+            default: { url: "https://example.com/default.jpg" },
+            medium: { url: "https://example.com/medium.jpg" },
+            high: { url: "https://example.com/high.jpg" },
+            standard: { url: "https://example.com/standard.jpg" },
+          },
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithoutMaxres);
+
+      expect(result?.thumbnailUrl).toBe("https://example.com/standard.jpg");
+    });
+
+    it("高品質サムネイルがない場合はhighを選択する", () => {
+      const videoWithHighOnly: youtube_v3.Schema$Video = {
+        id: "high-only-video",
+        snippet: {
+          title: "High品質のみサムネイルテスト",
+          thumbnails: {
+            default: { url: "https://example.com/default.jpg" },
+            medium: { url: "https://example.com/medium.jpg" },
+            high: { url: "https://example.com/high.jpg" },
+          },
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithHighOnly);
+
+      expect(result?.thumbnailUrl).toBe("https://example.com/high.jpg");
+    });
+
+    it("defaultサムネイルのみの場合はdefaultを選択する", () => {
+      const videoWithDefaultOnly: youtube_v3.Schema$Video = {
+        id: "default-only-video",
+        snippet: {
+          title: "Defaultのみサムネイルテスト",
+          thumbnails: {
+            default: { url: "https://example.com/default.jpg" },
+          },
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithDefaultOnly);
+
+      expect(result?.thumbnailUrl).toBe("https://example.com/default.jpg");
+    });
+  });
+
+  describe("統計情報の数値変換", () => {
+    it("統計情報の文字列を数値に正しく変換できる", () => {
+      const videoWithStringStats: youtube_v3.Schema$Video = {
+        id: "string-stats-video",
+        snippet: {
+          title: "文字列統計テスト",
+        },
+        statistics: {
+          viewCount: "123456",
+          likeCount: "7890",
+          commentCount: "234",
+          favoriteCount: "567",
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithStringStats);
+
+      expect(result?.statistics).toEqual({
+        viewCount: 123456,
+        likeCount: 7890,
+        commentCount: 234,
+        favoriteCount: 567,
+      });
+    });
+
+    it("無効な数値文字列の場合は0にフォールバックする", () => {
+      const videoWithInvalidStats: youtube_v3.Schema$Video = {
+        id: "invalid-stats-video",
+        snippet: {
+          title: "無効統計テスト",
+        },
+        statistics: {
+          viewCount: "invalid",
+          likeCount: "",
+          commentCount: undefined as any,
+        },
+      };
+
+      const result = youtubeFirestore.convertVideoDataForFirestore(
+        videoWithInvalidStats,
+      );
+
+      expect(result?.statistics).toEqual({
+        viewCount: 0,
+        likeCount: 0,
+        commentCount: 0,
+        favoriteCount: 0,
+      });
+    });
+  });
+
+  describe("contentRatingのフィルタリング", () => {
+    it("非文字列値をcontentRatingから除外する", () => {
+      const videoWithMixedRating: youtube_v3.Schema$Video = {
+        id: "mixed-rating-video",
+        snippet: {
+          title: "混合レーティングテスト",
+        },
+        contentDetails: {
+          contentRating: {
+            ytRating: "ytAgeRestricted",
+            mpaaRating: "mpaaR",
+            ...({
+              invalidField: 123,
+              nullField: null,
+              undefinedField: undefined,
+            } as any),
+          },
+        },
+      };
+
+      const result =
+        youtubeFirestore.convertVideoDataForFirestore(videoWithMixedRating);
+
+      expect(result?.contentRating).toEqual({
+        ytRating: "ytAgeRestricted",
+        mpaaRating: "mpaaR",
+      });
+      expect(result?.contentRating).not.toHaveProperty("invalidField");
+      expect(result?.contentRating).not.toHaveProperty("nullField");
+      expect(result?.contentRating).not.toHaveProperty("undefinedField");
+    });
+  });
 });

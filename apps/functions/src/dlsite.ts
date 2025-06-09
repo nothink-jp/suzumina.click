@@ -1,6 +1,6 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import { saveWorksToFirestore } from "./utils/dlsite-firestore";
-import { mapMultipleWorks } from "./utils/dlsite-mapper";
+import { mapMultipleWorksWithInfo } from "./utils/dlsite-mapper";
 import { parseWorksFromHTML } from "./utils/dlsite-parser";
 import firestore, { Timestamp } from "./utils/firestore";
 import * as logger from "./utils/logger";
@@ -12,7 +12,7 @@ const METADATA_DOC_ID = "fetch_metadata";
 const METADATA_COLLECTION = "dlsiteMetadata";
 
 // 実行制限関連の定数
-const MAX_PAGES_PER_EXECUTION = 5; // 1回の実行での最大ページ数
+const MAX_PAGES_PER_EXECUTION = 2; // 1回の実行での最大ページ数
 const ITEMS_PER_PAGE = 100; // DLsiteの1ページあたりの作品数
 
 // DLsite検索用の定数（新URL形式対応）
@@ -264,9 +264,8 @@ async function fetchDLsiteWorksInternal(metadata: FetchMetadata): Promise<{
         break;
       }
 
-      // Firestoreデータ形式に変換
-      // Firestoreデータ形式に変換
-      const firestoreWorks = mapMultipleWorks(parsedWorks);
+      // Firestoreデータ形式に変換（infoエンドポイントの詳細データも統合）
+      const firestoreWorks = await mapMultipleWorksWithInfo(parsedWorks);
 
       // Firestoreに保存
       await saveWorksToFirestore(firestoreWorks);
