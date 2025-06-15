@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@suzumina.click/ui/components",
+    "utils": "@suzumina.click/ui/lib/utils",
+    "hooks": "@suzumina.click/ui/hooks",
+    "lib": "@suzumina.click/ui/lib",
+    "ui": "@suzumina.click/ui/components"
+  }
+}

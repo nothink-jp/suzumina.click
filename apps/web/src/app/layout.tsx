@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "@suzumina.click/ui/globals.css";
 
 export const metadata: Metadata = {
   title: "suzumina.click - 涼花みなせファンサイト",

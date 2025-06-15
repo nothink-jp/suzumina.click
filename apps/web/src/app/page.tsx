@@ -1,49 +1,56 @@
-import VideoList from "@/components/VideoList";
-import { Suspense } from "react";
-import { getTotalVideoCount, getVideoTitles } from "./actions";
+import Link from "next/link";
 
-interface HomeProps {
-  searchParams: { [key: string]: string | string[] | undefined };
-}
-
-export default async function Home({ searchParams }: HomeProps) {
-  const pageParam = searchParams.page;
-  const currentPage =
-    pageParam && typeof pageParam === "string"
-      ? Number.parseInt(pageParam, 10)
-      : 1;
-  const validPage = Math.max(1, Number.isNaN(currentPage) ? 1 : currentPage);
-
-  // 並行してデータを取得
-  const [initialData, totalCount] = await Promise.all([
-    getVideoTitles({ page: validPage, limit: 10 }),
-    getTotalVideoCount(),
-  ]);
-
+export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold text-gray-900">suzumina.click</h1>
-          <p className="text-gray-600 mt-2">涼花みなせの動画一覧</p>
+          <p className="text-gray-600 mt-2">涼花みなせファンサイトへようこそ</p>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <Suspense
-          fallback={
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-              <p className="mt-2 text-gray-600">読み込み中...</p>
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+            コンテンツ
+          </h2>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Link
+              href="/admin/videos"
+              className="block p-6 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              <h3 className="text-xl font-medium text-blue-900 mb-2">
+                動画管理
+              </h3>
+              <p className="text-blue-700">YouTube動画の一覧と管理機能</p>
+            </Link>
+
+            <div className="block p-6 bg-gray-50 border border-gray-200 rounded-lg opacity-50">
+              <h3 className="text-xl font-medium text-gray-600 mb-2">
+                DLsite作品
+              </h3>
+              <p className="text-gray-500">DLsite作品情報（開発予定）</p>
             </div>
-          }
-        >
-          <VideoList
-            initialData={initialData}
-            initialTotalCount={totalCount}
-            initialPage={validPage}
-          />
-        </Suspense>
+
+            <div className="block p-6 bg-gray-50 border border-gray-200 rounded-lg opacity-50">
+              <h3 className="text-xl font-medium text-gray-600 mb-2">
+                音声ボタン
+              </h3>
+              <p className="text-gray-500">音声ボタン機能（開発予定）</p>
+            </div>
+
+            <div className="block p-6 bg-gray-50 border border-gray-200 rounded-lg opacity-50">
+              <h3 className="text-xl font-medium text-gray-600 mb-2">
+                検索機能
+              </h3>
+              <p className="text-gray-500">
+                高度な検索・フィルター（開発予定）
+              </p>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );

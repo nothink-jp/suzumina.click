@@ -1,10 +1,18 @@
 "use client";
 
-import { getTotalVideoCount, getVideoTitles } from "@/app/actions";
+import { getVideoTitles } from "@/app/actions";
 import type { VideoListResult } from "@suzumina.click/shared-types/src/video";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@suzumina.click/ui/components/pagination";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import Pagination from "./Pagination";
+import { useState } from "react";
 import ThumbnailImage from "./ThumbnailImage";
 
 interface VideoListProps {
@@ -19,7 +27,7 @@ export default function VideoList({
   initialPage,
 }: VideoListProps) {
   const [data, setData] = useState(initialData);
-  const [totalCount, setTotalCount] = useState(initialTotalCount);
+  const [totalCount] = useState(initialTotalCount);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [loading, setLoading] = useState(false);
 
@@ -121,12 +129,137 @@ export default function VideoList({
 
       {/* ページネーション */}
       {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          hasMore={data.hasMore}
-          onPageChange={handlePageChange}
-        />
+        <div className="mt-8">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage > 1) {
+                      handlePageChange(currentPage - 1);
+                    }
+                  }}
+                  className={
+                    currentPage <= 1 ? "opacity-50 cursor-not-allowed" : ""
+                  }
+                />
+              </PaginationItem>
+
+              {/* 最初のページ */}
+              {(() => {
+                const maxVisiblePages = 5;
+                const startPage = Math.max(
+                  1,
+                  currentPage - Math.floor(maxVisiblePages / 2),
+                );
+                const endPage = Math.min(
+                  totalPages,
+                  startPage + maxVisiblePages - 1,
+                );
+                const adjustedStartPage = Math.max(
+                  1,
+                  endPage - maxVisiblePages + 1,
+                );
+
+                const visiblePages = [];
+                for (let i = adjustedStartPage; i <= endPage; i++) {
+                  visiblePages.push(i);
+                }
+
+                return (
+                  <>
+                    {visiblePages.length > 0 &&
+                      visiblePages[0] !== undefined &&
+                      visiblePages[0] > 1 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(1);
+                              }}
+                            >
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                          {visiblePages[0] > 2 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                        </>
+                      )}
+
+                    {/* ページ番号 */}
+                    {visiblePages.map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          href="#"
+                          isActive={page === currentPage}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePageChange(page);
+                          }}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+
+                    {/* 最後のページ */}
+                    {(() => {
+                      const lastPage = visiblePages[visiblePages.length - 1];
+                      return (
+                        visiblePages.length > 0 &&
+                        lastPage !== undefined &&
+                        lastPage < totalPages && (
+                          <>
+                            {lastPage < totalPages - 1 && (
+                              <PaginationItem>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            )}
+                            <PaginationItem>
+                              <PaginationLink
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handlePageChange(totalPages);
+                                }}
+                              >
+                                {totalPages}
+                              </PaginationLink>
+                            </PaginationItem>
+                          </>
+                        )
+                      );
+                    })()}
+                  </>
+                );
+              })()}
+
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages && data.hasMore) {
+                      handlePageChange(currentPage + 1);
+                    }
+                  }}
+                  className={
+                    currentPage >= totalPages || !data.hasMore
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       )}
     </div>
   );
