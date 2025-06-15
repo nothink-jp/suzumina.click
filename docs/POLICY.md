@@ -98,9 +98,9 @@ export async function getWorks() {
 
 **原則**: Next.js/Vercelの公式推奨事項に準拠する
 
-- **コロケーション原則**: Server Actionsをページと同じディレクトリに配置
+- **コロケーション原則**: Server Actionsをページと同じディレクトリに配置、単体テストを実装と同じディレクトリに配置
 - **App Router最適化**: `app/`内での標準ファイル構成
-- **標準命名規則**: `__tests__/`, `globals.css` など公式推奨命名
+- **標準命名規則**: `globals.css` など公式推奨命名
 
 ```typescript
 // ✅ 良い例: コロケーション設計

@@ -93,7 +93,6 @@ suzumina.click/                    # Monorepoルート
 │   │   │   │   └── ThumbnailImage.tsx # サムネイル画像
 │   │   │   └── lib/             # ユーティリティ
 │   │   │       └── firestore.ts # Firestore接続
-│   │   ├── __tests__/           # テストファイル (未実装)
 │   │   └── package.json
 │   └── v0-suzumina.click/        # v0モック (UIリファレンス)
 │       ├── app/                  # App Router (モック)

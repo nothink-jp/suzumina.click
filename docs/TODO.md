@@ -220,10 +220,6 @@ apps/web/
 ├── public/                   # 静的ファイル
 │   ├── favicon.ico
 │   └── images/
-├── __tests__/                # テストファイル (Vercel推奨命名)
-│   ├── components/
-│   ├── lib/
-│   └── app/
 ├── package.json
 ├── tailwind.config.ts
 ├── next.config.mjs
@@ -235,7 +231,6 @@ apps/web/
 **✅ 改善された点**
 - **Server Actions配置**: 各機能ページと同じディレクトリに`actions.ts`を配置
 - **App Router準拠**: `app/`内にページ固有ファイル（`layout.tsx`, `loading.tsx`, `error.tsx`）を配置
-- **テストディレクトリ**: `__tests__/` 命名でVercel推奨構造
 - **スタイル配置**: `app/globals.css` でグローバルスタイル管理
 - **lib/簡素化**: 必要最小限のユーティリティとFirestore接続に集約
 

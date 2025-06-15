@@ -150,7 +150,6 @@ suzumina.click/
 │   │   │   │   └── search/      # 検索ページ・Actions
 │   │   │   ├── components/      # 再利用可能コンポーネント
 │   │   │   └── lib/             # 最小限のユーティリティ
-│   │   ├── __tests__/           # テストファイル (Vercel推奨命名)
 │   │   └── package.json
 │   └── v0-suzumina.click/        # v0 by Vercel モック (参考用)
 │       ├── app/                  # App Router (モック)
