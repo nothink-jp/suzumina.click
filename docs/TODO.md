@@ -12,65 +12,54 @@ suzumina.clickプロジェクトのタスク管理、機能開発ロードマッ
 - ✅ データ収集機能の安定化 (Cloud Functions)
 - ✅ 開発環境・ツール整備 (Monorepo + pnpm)
 
-**Phase 2: 本格Webアプリ開発** (進行中 🚧)
+**Phase 2: 本格Webアプリ開発** (完了済み ✅)
 
-- 🚧 **apps/web の新規作成・実装** (最重要)
-- 🚧 実用的なUI/UXの設計・開発
-- 🚧 データ表示・検索機能の実装
+- ✅ **apps/web の新規作成・実装** 
+- ✅ Server Component + Client Component アーキテクチャ実装
+- ✅ 動画一覧表示・ページネーション機能
+- ✅ Storybook環境構築・UIコンポーネント開発
+
+**Phase 3: 機能拡張** (進行中 🚧)
+
+- 🚧 DLsite作品表示機能
+- 🚧 音声ボタン機能開発
+- 🚧 検索・フィルタリング機能
 
 ## 🚀 優先度別タスク
 
-### 🔴 緊急・重要 (P0) - **apps/web 作成**
+### 🔴 緊急・重要 (P0) - **機能拡張**
 
-#### **本格Webアプリケーション基盤構築**
+#### **DLsite作品表示機能**
 
-- [ ] **apps/web プロジェクト新規作成**
-  - [ ] Next.js 15 + TypeScript プロジェクト初期化
-  - [ ] Tailwind CSS + Radix UI セットアップ
-  - [ ] pnpm workspace 統合
-  - [ ] 基本的なディレクトリ構造設計
-  - 期限: 2025年6月11日
-  - **最重要タスク**
-
-- [ ] **アーキテクチャ設計・実装**
-  - [ ] App Router 構成設計
-  - [ ] コンポーネント設計システム
-  - [ ] Server Actions によるサーバーサイドデータ取得層設計
-  - [ ] クライアントサイド状態管理戦略 (必要最小限)
-  - 期限: 2025年6月12日
-  - **最重要タスク**
-
-- [ ] **Firestore連携実装 (サーバーサイド限定)**
-  - [ ] @google-cloud/firestore をサーバーサイドに導入
-  - [ ] Next.js 15 Server Actions によるデータ取得関数作成
-  - [ ] 共有型定義の活用
-  - [ ] サーバーサイドエラーハンドリング実装
-  - [ ] クライアントサイドでのFirebase SDK使用禁止
-  - 期限: 2025年6月13日
-  - **最重要タスク**
-
-#### **核心機能実装**
-
-- [ ] **作品一覧表示機能**
-  - [ ] DLsite作品データの表示
-  - [ ] グリッド・リスト表示切り替え
+- [ ] **作品一覧ページ実装**
+  - [ ] Server Component による作品データ表示
   - [ ] ページネーション実装
+  - [ ] カード型UI実装
   - [ ] ローディング・エラーステート
-  - 期限: 2025年6月15日
+  - 期限: 2025年12月末
 
-- [ ] **作品詳細ページ**
+- [ ] **作品詳細ページ実装**
   - [ ] 作品情報の詳細表示
   - [ ] 画像ギャラリー機能
   - [ ] 関連作品表示
-  - [ ] SNS共有機能
-  - 期限: 2025年6月20日
+  - [ ] メタデータ表示
+  - 期限: 2026年1月末
 
-- [ ] **検索・フィルタリング機能**
-  - [ ] 全文検索実装
-  - [ ] カテゴリ・価格帯フィルタ
-  - [ ] 並び替え機能
-  - [ ] 検索結果ハイライト
-  - 期限: 2025年6月21日
+#### **音声ボタン機能** (将来実装)
+
+- [ ] **音声抽出機能**
+  - [ ] YouTube動画からの音声切り出し
+  - [ ] タイムスタンプ指定UI
+  - [ ] 音声ファイル処理・最適化
+  - [ ] クラウドストレージ保存
+  - 期限: 2026年6月末
+
+- [ ] **音声ボタンUI**
+  - [ ] ボタン作成・編集UI
+  - [ ] 再生コントロール
+  - [ ] ボタン一覧表示
+  - [ ] 共有機能
+  - 期限: 2026年7月末
 
 ### 🟡 重要 (P1) - 基盤安定化
 
@@ -154,107 +143,98 @@ suzumina.clickプロジェクトのタスク管理、機能開発ロードマッ
   - 期限: 2026年2月28日
   - 担当者: Full Stack Team
 
-## 🚧 **apps/web 設計仕様**
+## ✅ **apps/web 実装完了仕様**
 
-### **推奨技術スタック**
+### **採用技術スタック**
 
 ```typescript
-// 核心技術
-- Next.js 15 (App Router)
-- TypeScript 5.8+
-- React 19
-- Tailwind CSS 3.4+
+// 核心技術 (実装済み)
+- Next.js 15.3.3 (App Router)
+- TypeScript 5.8.3
+- React 19.1.0
+- Tailwind CSS v4 (PostCSS設定)
 
-// UI/UX
+// UI/UX (実装済み)
+- Storybook 9.0.10 (コンポーネント開発・テスト)
+- @suzumina.click/ui (共有UIコンポーネント)
 - Radix UI (アクセシブルコンポーネント)
-- Framer Motion (アニメーション)
 - Lucide React (アイコン)
 
-// データ取得・状態管理
-- Next.js 15 Server Actions (サーバーサイドデータ取得)
+// アーキテクチャ (実装済み)
+- Server Components (データ表示)
+- Client Components (インタラクション)
+- Server Actions (データ取得)
 - @google-cloud/firestore (サーバーサイドのみ)
-- React 19 use() Hook (クライアントサイド非同期処理)
-- 必要最小限のクライアント状態管理
 
-// 開発支援
+// 開発支援 (実装済み)
 - @suzumina.click/shared-types (共有型定義)
 - Biome (Lint/Format)
 - Vitest (テスト)
 ```
 
-### **ディレクトリ構造案**
+### **実装済みディレクトリ構造**
 
 ```
-apps/web/
+apps/web/                     # 実装完了
 ├── src/
-│   ├── app/                   # Next.js App Router
-│   │   ├── globals.css       # グローバルスタイル
-│   │   ├── layout.tsx        # ルートレイアウト
-│   │   ├── page.tsx          # ホームページ
-│   │   ├── loading.tsx       # ローディングUI
-│   │   ├── error.tsx         # エラーUI
-│   │   ├── not-found.tsx     # 404ページ
-│   │   ├── (dashboard)/      # ダッシュボードページ群
-│   │   ├── works/            # 作品関連ページ
-│   │   │   ├── page.tsx      # 作品一覧
-│   │   │   ├── actions.ts    # 作品関連Server Actions
-│   │   │   └── [id]/page.tsx # 作品詳細
-│   │   ├── videos/           # 動画関連ページ
-│   │   │   ├── page.tsx      # 動画一覧
-│   │   │   ├── actions.ts    # 動画関連Server Actions
-│   │   │   └── [id]/page.tsx # 動画詳細
-│   │   └── search/           # 検索ページ
-│   │       ├── page.tsx      # 検索結果
-│   │       └── actions.ts    # 検索関連Server Actions
-│   ├── components/           # Reactコンポーネント
-│   │   ├── ui/               # 基本UIコンポーネント
-│   │   ├── work/             # 作品関連コンポーネント
-│   │   ├── video/            # 動画関連コンポーネント
-│   │   └── layout/           # レイアウトコンポーネント
-│   └── lib/                  # ビジネスロジック・ユーティリティ
-│       ├── firestore.ts      # Firestore接続 (サーバーサイドのみ)
-│       ├── utils.ts          # 汎用ユーティリティ
-│       ├── constants.ts      # 定数定義
-│       ├── types.ts          # アプリケーション固有型定義
-│       └── validations.ts    # Zod スキーマ・バリデーション
-├── public/                   # 静的ファイル
-│   ├── favicon.ico
-│   └── images/
+│   ├── app/                 # Next.js App Router (実装済み)
+│   │   ├── globals.css     # グローバルスタイル
+│   │   ├── layout.tsx      # ルートレイアウト
+│   │   ├── page.tsx        # ホームページ
+│   │   ├── actions.ts      # Server Actions
+│   │   └── admin/videos/   # 動画管理ページ (実装済み)
+│   │       └── page.tsx    # 動画一覧・ページネーション
+│   ├── components/         # UIコンポーネント (実装済み)
+│   │   ├── VideoList.tsx   # 動画一覧 (Server Component)
+│   │   ├── Pagination.tsx  # ページネーション (Client Component)
+│   │   └── ThumbnailImage.tsx # サムネイル画像
+│   └── lib/                # ユーティリティ (実装済み)
+│       └── firestore.ts    # Firestore接続
+├── .storybook/             # Storybook設定 (実装済み)
 ├── package.json
 ├── tailwind.config.ts
 ├── next.config.mjs
 └── tsconfig.json
+
+packages/ui/                  # 共有UIコンポーネント (実装済み)
+├── src/
+│   ├── components/         # Radix UIベースコンポーネント
+│   │   ├── button.tsx     # ボタンコンポーネント
+│   │   └── pagination.tsx # ページネーションコンポーネント
+│   └── styles/            # Tailwind CSS v4設定
+│       └── globals.css    # グローバルスタイル
+└── .storybook/            # UI専用Storybook設定
 ```
 
-### **Vercel公式準拠の設計改善ポイント**
+### **Next.js 15ベストプラクティス実装**
 
-**✅ 改善された点**
-- **Server Actions配置**: 各機能ページと同じディレクトリに`actions.ts`を配置
-- **App Router準拠**: `app/`内にページ固有ファイル（`layout.tsx`, `loading.tsx`, `error.tsx`）を配置
-- **スタイル配置**: `app/globals.css` でグローバルスタイル管理
-- **lib/簡素化**: 必要最小限のユーティリティとFirestore接続に集約
+**✅ 実装済みポイント**
+- **Server Component設計**: データ表示ロジックをServer Componentに集約
+- **Client Component分離**: インタラクション（ページネーション）のみClient Component
+- **コロケーション原則**: ページとServer Actionsを同ディレクトリに配置
+- **Storybook環境**: Next.js App Router対応の開発環境
+- **型安全性**: 共有型定義とZodスキーマの活用
 
-**🎯 Server Actions設計原則**
-- ページ固有のActionsは同じディレクトリに配置
-- 共通のActionsのみ`lib/`に配置検討
-- コロケーション原則による保守性向上
+**🎯 アーキテクチャ特徴**
+- 責任の明確な分離（表示 vs インタラクション）
+- URLベースのナビゲーション（Client ComponentでのServer Actions回避）
+- サーバーサイド優先のデータ取得
+- Storybook対応のコンポーネント設計
 
-### **実装優先順位**
+### **次期開発優先順位**
 
-1. **Phase 2.1** (6月下旬): プロジェクト初期化・基盤構築
-2. **Phase 2.2** (7月): 作品表示機能・基本UI
-3. **Phase 2.3** (8月): 検索・フィルタリング・詳細機能
-4. **Phase 2.4** (9月): 動画表示・レスポンシブ対応
+1. **Phase 3.1** (2025年後半): DLsite作品表示機能
+2. **Phase 3.2** (2026年前半): 検索・フィルタリング機能
+3. **Phase 3.3** (2026年後半): 音声ボタン機能実装
 
 ## 🐛 既知の課題・バグ
 
-### 🟡 Medium (apps/web作成後に対応)
+### 🟡 Medium
 
-- [ ] **v0モックからの移行作業**
-  - 問題: apps/v0-suzumina.click のモックコードの参考活用
-  - 影響: デザイン・機能要件の整理が必要
-  - 対応策: コンポーネント・デザインパターンの再利用
-  - 期限: 2025年7月15日
+- [x] **apps/web基盤構築** (完了済み)
+  - 問題: Next.js 15 + Server Components アーキテクチャの実装
+  - 対応策: Server/Client Component分離、Storybook環境構築
+  - 完了日: 2025年6月16日
 
 - [ ] **Mobile Safari レイアウト崩れ** (将来対応)
   - 問題: iOS Safariでの一部UI不具合
@@ -293,48 +273,46 @@ apps/web/
 
 ## 📅 マイルストーン
 
-### **2025年 Q3 (7-9月) - apps/web 集中開発期**
+### **2025年 Q2 (4-6月) - apps/web 基盤構築** ✅
 
-**Phase 2.1: 基盤完成** (6月20日〜7月10日)
+**Phase 2.1: 基盤完成** (完了済み)
 
-- [ ] apps/web プロジェクト作成
-- [ ] 基本アーキテクチャ実装
-- [ ] Firestore連携確立
-
-**Phase 2.2: 核心機能実装** (7月10日〜8月10日)
-
-- [ ] 作品一覧・詳細表示
-- [ ] 検索・フィルタリング
-- [ ] 基本的なユーザビリティ確保
-
-**Phase 2.3: UI/UX完成** (8月10日〜9月30日)
-
-- [ ] レスポンシブ対応
-- [ ] パフォーマンス最適化
-- [ ] アクセシビリティ対応
+- [x] apps/web プロジェクト作成
+- [x] Next.js 15 + Server Components アーキテクチャ実装
+- [x] Firestore連携確立
+- [x] 動画一覧・ページネーション機能実装
+- [x] Storybook環境構築
 
 ### **2025年 Q4 (10-12月) - 機能拡充**
 
-**Phase 3: 高度機能** (10月〜12月)
+**Phase 3.1: DLsite作品表示** (10月〜12月)
+
+- [ ] DLsite作品一覧・詳細表示
+- [ ] 作品検索・フィルタリング機能
+- [ ] 作品カテゴリ表示
+
+### **2026年 Q1-Q2 (1-6月) - 高度機能**
+
+**Phase 3.2: 音声ボタン機能** (1月〜6月)
 
 - [ ] YouTube動画表示機能
+- [ ] 音声抽出・ボタン作成機能 (プロトタイプ)
 - [ ] ユーザー認証実装
-- [ ] 音声ボタン作成機能 (プロトタイプ)
 
 ## 🎯 成功指標 (KPI)
 
-### **apps/web 開発成功指標**
+### **apps/web 開発成功指標** ✅
 
-- **開発スピード**: Phase 2完了までに3ヶ月以内
-- **コード品質**: テストカバレッジ 80%以上
-- **パフォーマンス**: Lighthouse スコア 90+
-- **使いやすさ**: モバイル・デスクトップ両対応
+- **開発スピード**: Phase 2完了 (3ヶ月以内達成)
+- **アーキテクチャ**: Next.js 15ベストプラクティス準拠
+- **コンポーネント設計**: Server/Client Component適切な分離
+- **開発環境**: Storybook環境構築完了
 
-### **ビジネス指標**
+### **今後のビジネス指標**
 
-- **プロトタイプ公開**: 2025年8月末
-- **ベータ版リリース**: 2025年10月末
-- **正式版リリース**: 2025年12月末
+- **DLsite機能リリース**: 2025年12月末
+- **音声ボタン機能プロトタイプ**: 2026年6月末
+- **正式版リリース**: 2026年12月末
 
 ## 📝 チーム体制・責任分担
 
@@ -353,6 +331,6 @@ apps/web/
 
 ---
 
-**最終更新**: 2025年6月10日  
-**次回レビュー**: 2025年6月17日 (週次apps/web進捗確認)  
-**マイルストーン見直し**: 2025年7月1日 (Phase 2.1完了確認)
+**最終更新**: 2025年6月16日  
+**次回レビュー**: 2025年12月1日 (Phase 3.1進捗確認)  
+**マイルストーン見直し**: 2026年1月1日 (Phase 3.2計画確認)

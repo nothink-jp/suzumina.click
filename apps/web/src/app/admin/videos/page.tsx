@@ -40,9 +40,9 @@ export default async function AdminVideos({ searchParams }: AdminVideosProps) {
           }
         >
           <VideoList
-            initialData={initialData}
-            initialTotalCount={totalCount}
-            initialPage={validPage}
+            data={initialData}
+            totalCount={totalCount}
+            currentPage={validPage}
           />
         </Suspense>
       </main>
