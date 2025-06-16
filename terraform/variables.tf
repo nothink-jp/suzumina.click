@@ -1,52 +1,76 @@
-# GCPプロジェクト関連の識別子
-# GCPプロジェクトID
+# ==========================================================
+# Terraform変数定義
+# ==========================================================
+
 variable "gcp_project_id" {
-  description = "Google Cloud Projectのプロジェクトid"
+  description = "Google Cloud プロジェクトID"
   type        = string
 }
 
-# GCPプロジェクト番号
-variable "project_number" {
-  description = "Google Cloud Projectのプロジェクト番号（コンソールのプロジェクト情報から確認可能）"
-  type        = string
-}
-
-# GCPリージョン
 variable "region" {
-  description = "Google Cloudのリージョン"
+  description = "Google Cloud リージョン"
   type        = string
-  default     = "asia-northeast1"
+  default     = "us-central1"
 }
 
 variable "zone" {
-  description = "Google Cloudのゾーン"
+  description = "Google Cloud ゾーン"
   type        = string
-  default     = "asia-northeast1-a"
+  default     = "us-central1-a"
 }
 
-# GCPサービスアカウントJSONファイルのパス
-variable "credentials_file" {
-  description = "GCPのサービスアカウントキーファイルのパス"
-  type        = string
-  default     = "service-account-key.json"
+# ==========================================================
+# 音声処理機能用変数
+# ==========================================================
+
+variable "audio_bucket_lifecycle_days" {
+  description = "音声ファイルの自動削除までの日数"
+  type        = number
+  default     = 365
 }
 
-variable "firebase_project" {
-  description = "Firebase プロジェクト名"
-  type        = string
+variable "audio_processing_max_concurrent" {
+  description = "音声処理の最大同時実行数"
+  type        = number
+  default     = 3
 }
 
-# YouTube API関連
-variable "youtube_api_key" {
-  description = "YouTubeデータAPI用のAPIキー"
-  type        = string
-  sensitive   = true
+variable "audio_processing_timeout" {
+  description = "音声処理のタイムアウト（秒）"
+  type        = number
+  default     = 3600
 }
 
-
-# 環境識別子
-variable "environment" {
-  description = "環境の識別子（production, staging, development等）"
+variable "cloud_run_jobs_cpu" {
+  description = "Cloud Run JobsのCPU設定"
   type        = string
-  default     = "development"
+  default     = "4"
+}
+
+variable "cloud_run_jobs_memory" {
+  description = "Cloud Run Jobsのメモリ設定"
+  type        = string
+  default     = "16Gi"
+}
+
+# ==========================================================
+# Cloud Tasks設定用変数
+# ==========================================================
+
+variable "audio_queue_max_dispatches_per_second" {
+  description = "音声処理キューの最大実行レート（秒間）"
+  type        = number
+  default     = 1.0
+}
+
+variable "audio_queue_max_concurrent_dispatches" {
+  description = "音声処理キューの最大同時実行数"
+  type        = number
+  default     = 3
+}
+
+variable "audio_queue_max_retries" {
+  description = "音声処理タスクの最大リトライ回数"
+  type        = number
+  default     = 3
 }

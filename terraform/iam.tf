@@ -160,10 +160,28 @@ resource "google_project_iam_member" "github_actions_log_viewer" {
   depends_on = [google_service_account.github_actions_sa]
 }
 
-# GitHub Actions用サービスアカウントにCloudRun閲覧権限を付与
-resource "google_project_iam_member" "github_actions_run_viewer" {
+# GitHub Actions用サービスアカウントにCloudRun管理権限を付与
+resource "google_project_iam_member" "github_actions_run_developer" {
   project = var.gcp_project_id
-  role    = "roles/run.viewer"
+  role    = "roles/run.developer"
+  member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
+  
+  depends_on = [google_service_account.github_actions_sa]
+}
+
+# GitHub Actions用サービスアカウントにArtifact Registry書き込み権限を付与
+resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
+  project = var.gcp_project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
+  
+  depends_on = [google_service_account.github_actions_sa]
+}
+
+# GitHub Actions用サービスアカウントにサービスアカウント利用者権限を付与
+resource "google_project_iam_member" "github_actions_service_account_user" {
+  project = var.gcp_project_id
+  role    = "roles/iam.serviceAccountUser"
   member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
   
   depends_on = [google_service_account.github_actions_sa]
@@ -344,6 +362,29 @@ resource "google_project_iam_member" "eventarc_run_invoker" {
 
 # 注: Pub/Sub -> Cloud Functions v2（Eventarcトリガー）のバインディングは通常、event_triggerブロックが定義されている場合、google_cloudfunctions2_functionリソースによって自動的に処理されます。
 # これらの明示的なバインディングは、堅牢性を高めるために追加されています。
+
+# ------------------------------------------------------------------------------
+# 音声処理機能用のIAM権限設定
+# ------------------------------------------------------------------------------
+
+# 既存のCloud Functions用サービスアカウントにCloud Tasks操作権限を追加
+# (YouTube動画取得後に音声処理タスクを送信するため)
+resource "google_project_iam_member" "youtube_function_tasks_enqueuer" {
+  project = var.gcp_project_id
+  role    = "roles/cloudtasks.enqueuer"
+  member  = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
+
+  depends_on = [google_service_account.fetch_youtube_videos_sa]
+}
+
+# YouTube関数にCloud Run Jobs起動権限を追加
+resource "google_project_iam_member" "youtube_function_run_jobs_invoker" {
+  project = var.gcp_project_id
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
+
+  depends_on = [google_service_account.fetch_youtube_videos_sa]
+}
 
 # ------------------------------------------------------------------------------
 # 出力値

@@ -1,0 +1,305 @@
+# =============================================================================
+# Audio Processor Docker Image CI/CD
+# =============================================================================
+# Audio Processor用Dockerイメージの自動ビルド・デプロイワークフロー
+# apps/audio-processor/ 配下の変更時にトリガーされる
+
+name: Deploy Audio Processor
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/audio-processor/**'
+      - '.github/workflows/deploy-audio-processor.yml'
+  
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/audio-processor/**'
+      - '.github/workflows/deploy-audio-processor.yml'
+  
+  # 手動実行可能
+  workflow_dispatch:
+    inputs:
+      deploy_to_production:
+        description: 'Deploy to production (main branch only)'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  # Google Cloud設定
+  PROJECT_ID: suzumina-click-firebase
+  GAR_LOCATION: us-central1
+  GAR_REPOSITORY: suzumina-click
+  SERVICE_NAME: audio-processor
+  REGION: us-central1
+  
+  # Docker イメージ設定
+  IMAGE_NAME: audio-processor
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  # =============================================================================
+  # Docker イメージビルド・プッシュ
+  # =============================================================================
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    
+    # 権限設定
+    permissions:
+      contents: read
+      id-token: write
+    
+    outputs:
+      image-url: ${{ steps.build.outputs.image-url }}
+      image-digest: ${{ steps.build.outputs.image-digest }}
+    
+    steps:
+      # =============================================================================
+      # 1. リポジトリチェックアウト
+      # =============================================================================
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # =============================================================================
+      # 2. Google Cloud認証
+      # =============================================================================
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: projects/528184455047/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: github-actions-sa@suzumina-click-firebase.iam.gserviceaccount.com
+      
+      # =============================================================================
+      # 3. Google Cloud SDK セットアップ
+      # =============================================================================
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: 'latest'
+      
+      # =============================================================================
+      # 4. Docker認証設定
+      # =============================================================================
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
+      
+      # =============================================================================
+      # 5. Dockerイメージのビルド・プッシュ
+      # =============================================================================
+      - name: Build and Push Docker Image
+        id: build
+        working-directory: ./apps/audio-processor
+        run: |
+          # イメージ名の完全パス
+          IMAGE_URL="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/${{ env.IMAGE_NAME }}"
+          
+          # タグ設定
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAGS="${IMAGE_URL}:latest,${IMAGE_URL}:${{ env.IMAGE_TAG }}"
+          else
+            TAGS="${IMAGE_URL}:pr-${{ github.event.number }},${IMAGE_URL}:${{ env.IMAGE_TAG }}"
+          fi
+          
+          echo "Building Docker image..."
+          echo "Image URL: ${IMAGE_URL}"
+          echo "Tags: ${TAGS}"
+          
+          # Dockerイメージビルド
+          docker build \
+            --tag "${IMAGE_URL}:latest" \
+            --tag "${IMAGE_URL}:${{ env.IMAGE_TAG }}" \
+            --platform linux/amd64 \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            .
+          
+          echo "Pushing Docker image..."
+          
+          # プッシュ
+          docker push "${IMAGE_URL}:latest"
+          docker push "${IMAGE_URL}:${{ env.IMAGE_TAG }}"
+          
+          # イメージダイジェスト取得
+          IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE_URL}:latest" | cut -d'@' -f2)
+          
+          # 出力設定
+          echo "image-url=${IMAGE_URL}:latest" >> $GITHUB_OUTPUT
+          echo "image-digest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
+          
+          echo "✅ Docker image built and pushed successfully"
+          echo "📦 Image: ${IMAGE_URL}:latest"
+          echo "🏷️  Tag: ${{ env.IMAGE_TAG }}"
+          echo "🔍 Digest: ${IMAGE_DIGEST}"
+      
+      # =============================================================================
+      # 6. イメージ脆弱性スキャン（optional）
+      # =============================================================================
+      - name: Scan Docker Image for Vulnerabilities
+        continue-on-error: true
+        run: |
+          IMAGE_URL="${{ steps.build.outputs.image-url }}"
+          echo "Scanning image for vulnerabilities: ${IMAGE_URL}"
+          
+          # Artifact Registryでの脆弱性スキャン実行
+          gcloud artifacts docker images scan "${IMAGE_URL}" \
+            --location=${{ env.GAR_LOCATION }} \
+            --quiet
+          
+          echo "✅ Vulnerability scan completed"
+
+  # =============================================================================
+  # Cloud Run Jobs デプロイ（本番環境のみ）
+  # =============================================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.deploy_to_production == 'true')
+    
+    # 権限設定
+    permissions:
+      contents: read
+      id-token: write
+    
+    environment:
+      name: production
+      url: https://console.cloud.google.com/run/jobs/details/${{ env.REGION }}/${{ env.SERVICE_NAME }}
+    
+    steps:
+      # =============================================================================
+      # 1. リポジトリチェックアウト
+      # =============================================================================
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # =============================================================================
+      # 2. Google Cloud認証
+      # =============================================================================
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: projects/528184455047/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: github-actions-sa@suzumina-click-firebase.iam.gserviceaccount.com
+      
+      # =============================================================================
+      # 3. Google Cloud SDK セットアップ
+      # =============================================================================
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: 'latest'
+      
+      # =============================================================================
+      # 4. Cloud Run Jobs更新
+      # =============================================================================
+      - name: Update Cloud Run Job
+        run: |
+          IMAGE_URL="${{ needs.build-and-push.outputs.image-url }}"
+          JOB_NAME="${{ env.SERVICE_NAME }}"
+          
+          echo "Updating Cloud Run Job: ${JOB_NAME}"
+          echo "New Image: ${IMAGE_URL}"
+          
+          # Cloud Run Jobsの存在確認
+          if gcloud run jobs describe "${JOB_NAME}" --region="${{ env.REGION }}" --quiet >/dev/null 2>&1; then
+            echo "Updating existing Cloud Run Job..."
+            
+            # 既存のCloud Run Jobs更新
+            gcloud run jobs replace <(
+              gcloud run jobs describe "${JOB_NAME}" \
+                --region="${{ env.REGION }}" \
+                --format="export" | \
+              yq eval '.spec.template.spec.template.spec.containers[0].image = "'${IMAGE_URL}'"' -
+            ) --region="${{ env.REGION }}"
+            
+          else
+            echo "Creating new Cloud Run Job..."
+            
+            # 新規作成（Terraformで作成されている想定だが、フォールバック）
+            gcloud run jobs create "${JOB_NAME}" \
+              --image="${IMAGE_URL}" \
+              --region="${{ env.REGION }}" \
+              --memory="16Gi" \
+              --cpu="4" \
+              --max-retries=1 \
+              --parallelism=1 \
+              --task-timeout="3600" \
+              --service-account="audio-processor@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+              --set-env-vars="GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}" \
+              --set-env-vars="AUDIO_BUCKET_NAME=${{ env.PROJECT_ID }}-audio-files" \
+              --set-env-vars="FIRESTORE_DATABASE=(default)" \
+              --set-env-vars="CLOUD_RUN_JOB=true" \
+              --set-env-vars="LOG_LEVEL=INFO" \
+              --set-env-vars="MAX_AUDIO_BUTTONS=20" \
+              --set-env-vars="OPUS_BITRATE=128k" \
+              --set-env-vars="AAC_BITRATE=128k"
+          fi
+          
+          echo "✅ Cloud Run Job updated successfully"
+          
+          # デプロイ情報出力
+          echo "📦 Service: ${JOB_NAME}"
+          echo "🖼️  Image: ${IMAGE_URL}"
+          echo "🌍 Region: ${{ env.REGION }}"
+          echo "🔗 Console: https://console.cloud.google.com/run/jobs/details/${{ env.REGION }}/${JOB_NAME}"
+      
+      # =============================================================================
+      # 5. デプロイ結果通知
+      # =============================================================================
+      - name: Deployment Summary
+        run: |
+          echo "## 🎉 Audio Processor Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ needs.build-and-push.outputs.image-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [Cloud Run Job Console](https://console.cloud.google.com/run/jobs/details/${{ env.REGION }}/${{ env.SERVICE_NAME }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Cloud Logging](https://console.cloud.google.com/logs/query;query=resource.type%3D%22cloud_run_job%22%0Aresource.labels.job_name%3D%22${{ env.SERVICE_NAME }}%22)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Artifact Registry](https://console.cloud.google.com/artifacts/docker/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/${{ env.GAR_REPOSITORY }})" >> $GITHUB_STEP_SUMMARY
+
+  # =============================================================================
+  # プレビュー環境デプロイ（PR用）
+  # =============================================================================
+  deploy-preview:
+    name: Deploy to Preview
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'pull_request'
+    
+    # 権限設定
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    
+    environment:
+      name: preview
+    
+    steps:
+      # プレビュー環境用の簡易チェック
+      - name: Preview Deployment Check
+        run: |
+          echo "## 🔍 Audio Processor Preview Build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Build Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ needs.build-and-push.outputs.image-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **PR**: #${{ github.event.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚠️ Note" >> $GITHUB_STEP_SUMMARY
+          echo "This is a preview build. The image has been built and pushed to the registry," >> $GITHUB_STEP_SUMMARY
+          echo "but it will only be deployed to production when merged to main branch." >> $GITHUB_STEP_SUMMARY
+          
+          echo "✅ Preview build completed successfully"

@@ -1,0 +1,28 @@
+# Cloud Run Jobs 音声処理依存関係
+
+# YouTube音声ダウンロード
+yt-dlp==2024.12.13
+
+# Google Cloud SDK
+google-cloud-storage==2.18.0
+google-cloud-firestore==2.16.1
+google-cloud-tasks==2.16.4
+
+# 音声処理・解析
+pydub==0.25.1
+
+# HTTP処理
+requests==2.32.3
+
+# 設定・ログ
+python-dotenv==1.0.1
+
+# データ検証
+pydantic==2.10.3
+
+# 並行処理
+asyncio
+concurrent.futures
+
+# 型ヒント（開発用）
+typing-extensions==4.12.2
