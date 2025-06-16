@@ -1,6 +1,6 @@
-import { getTotalVideoCount, getVideoTitles } from "@/app/actions";
-import VideoList from "@/components/VideoList";
 import { Suspense } from "react";
+import { getTotalVideoCount, getVideoTitles } from "./actions";
+import VideoList from "./components/VideoList";
 
 interface AdminVideosProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

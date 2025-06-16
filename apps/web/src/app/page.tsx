@@ -27,12 +27,15 @@ export default function Home() {
               <p className="text-blue-700">YouTube動画の一覧と管理機能</p>
             </Link>
 
-            <div className="block p-6 bg-gray-50 border border-gray-200 rounded-lg opacity-50">
-              <h3 className="text-xl font-medium text-gray-600 mb-2">
-                DLsite作品
+            <Link
+              href="/admin/works"
+              className="block p-6 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+            >
+              <h3 className="text-xl font-medium text-green-900 mb-2">
+                DLsite作品管理
               </h3>
-              <p className="text-gray-500">DLsite作品情報（開発予定）</p>
-            </div>
+              <p className="text-green-700">DLsite作品の一覧と管理機能</p>
+            </Link>
 
             <div className="block p-6 bg-gray-50 border border-gray-200 rounded-lg opacity-50">
               <h3 className="text-xl font-medium text-gray-600 mb-2">

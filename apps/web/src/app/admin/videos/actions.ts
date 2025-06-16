@@ -1,7 +1,7 @@
 "use server";
 
 /**
- * Server Actions for fetching data from Firestore
+ * Server Actions for fetching video data from Firestore
  */
 
 import { getFirestore } from "@/lib/firestore";
@@ -125,5 +125,64 @@ export async function getTotalVideoCount(): Promise<number> {
   } catch (error) {
     console.error("Error fetching total video count:", error);
     return 0;
+  }
+}
+
+/**
+ * 特定の動画IDで動画データを取得するServer Action
+ * @param videoId - 動画ID
+ * @returns 動画データまたはnull
+ */
+export async function getVideoById(
+  videoId: string,
+): Promise<FrontendVideoData | null> {
+  try {
+    console.log(`動画詳細データ取得開始: videoId=${videoId}`);
+
+    const firestore = getFirestore();
+    const doc = await firestore.collection("videos").doc(videoId).get();
+
+    if (!doc.exists) {
+      console.log(`動画が見つかりません: videoId=${videoId}`);
+      return null;
+    }
+
+    const data = doc.data() as FirestoreServerVideoData;
+
+    // Timestamp型をISO文字列に変換
+    const publishedAt =
+      data.publishedAt instanceof Timestamp
+        ? data.publishedAt.toDate().toISOString()
+        : new Date().toISOString();
+
+    const lastFetchedAt =
+      data.lastFetchedAt instanceof Timestamp
+        ? data.lastFetchedAt.toDate().toISOString()
+        : new Date().toISOString();
+
+    // FirestoreVideoData形式に変換
+    const firestoreData = {
+      id: doc.id,
+      videoId: data.videoId || doc.id,
+      title: data.title,
+      description: data.description || "",
+      channelId: data.channelId,
+      channelTitle: data.channelTitle,
+      publishedAt,
+      thumbnailUrl: data.thumbnailUrl || "",
+      lastFetchedAt,
+      videoType: data.videoType,
+      liveBroadcastContent: data.liveBroadcastContent,
+    };
+
+    // フロントエンド用に変換
+    const frontendVideo = convertToFrontendVideo(firestoreData);
+
+    console.log(`動画詳細データ取得完了: ${frontendVideo.title}`);
+
+    return frontendVideo;
+  } catch (error) {
+    console.error(`動画詳細データ取得エラー (${videoId}):`, error);
+    return null;
   }
 }
