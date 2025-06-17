@@ -8,6 +8,7 @@
     "lint": "biome lint ./src",
     "format": "biome format --write ./src",
     "check": "biome check --write ./src",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

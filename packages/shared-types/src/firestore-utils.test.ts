@@ -36,7 +36,7 @@ describe("firestore-utils", () => {
         publishedAt: "2023-05-15T10:30:00Z",
         thumbnailUrl: "https://example.com/thumb.jpg",
         lastFetchedAt: "2023-06-01T12:00:00Z",
-        videoType: "video" as const,
+        videoType: "all" as const,
         liveBroadcastContent: "none" as const,
       };
 
@@ -56,7 +56,7 @@ describe("firestore-utils", () => {
         lastFetchedAt: expect.objectContaining({
           toDate: expect.any(Function),
         }),
-        videoType: "video",
+        videoType: "all",
         liveBroadcastContent: "none",
       });
 
@@ -72,6 +72,7 @@ describe("firestore-utils", () => {
       const clientData = {
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: "2023-05-15T10:30:00Z",
@@ -89,6 +90,7 @@ describe("firestore-utils", () => {
       const clientData = {
         id: "video123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: "2023-05-15T10:30:00Z",
@@ -107,6 +109,7 @@ describe("firestore-utils", () => {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        // description が意図的に欠けている
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: "2023-05-15T10:30:00Z",
@@ -124,6 +127,7 @@ describe("firestore-utils", () => {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         thumbnailUrl: "https://example.com/thumb.jpg",
@@ -150,6 +154,7 @@ describe("firestore-utils", () => {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: "invalid-date-string",
@@ -180,6 +185,7 @@ describe("firestore-utils", () => {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: null,
@@ -210,7 +216,7 @@ describe("firestore-utils", () => {
         publishedAt: createMockTimestamp(publishedDate),
         thumbnailUrl: "https://example.com/thumb.jpg",
         lastFetchedAt: createMockTimestamp(fetchedDate),
-        videoType: "video",
+        videoType: "all",
         liveBroadcastContent: "none",
       };
 
@@ -226,7 +232,7 @@ describe("firestore-utils", () => {
         publishedAt: "2023-05-15T10:30:00.000Z",
         thumbnailUrl: "https://example.com/thumb.jpg",
         lastFetchedAt: "2023-06-01T12:00:00.000Z",
-        videoType: "video",
+        videoType: "all",
         liveBroadcastContent: "none",
       });
     });
@@ -235,6 +241,7 @@ describe("firestore-utils", () => {
       const serverData: FirestoreServerVideoData = {
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: createMockTimestamp(new Date("2023-05-15T10:30:00Z")),
@@ -248,11 +255,12 @@ describe("firestore-utils", () => {
       expect(result.videoId).toBe("ABC123");
     });
 
-    it("should handle missing description with empty string", () => {
+    it("should handle empty description", () => {
       const serverData: FirestoreServerVideoData = {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        description: "", // 空文字列のdescription
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: createMockTimestamp(new Date("2023-05-15T10:30:00Z")),
@@ -270,6 +278,7 @@ describe("firestore-utils", () => {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: createMockTimestamp(new Date("2023-05-15T10:30:00Z")),
@@ -287,6 +296,7 @@ describe("firestore-utils", () => {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: null as any,
@@ -309,6 +319,7 @@ describe("firestore-utils", () => {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: { invalid: "timestamp" } as any,
@@ -332,6 +343,7 @@ describe("firestore-utils", () => {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: publishedDate as any,
@@ -350,6 +362,7 @@ describe("firestore-utils", () => {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: "2023-05-15T10:30:00Z" as any,
@@ -369,6 +382,7 @@ describe("firestore-utils", () => {
         id: "video123",
         videoId: "ABC123",
         title: "テスト動画",
+        description: "テスト動画の説明",
         channelId: "UC123456",
         channelTitle: "テストチャンネル",
         publishedAt: timestamp as any,

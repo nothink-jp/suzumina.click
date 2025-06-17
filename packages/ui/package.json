@@ -8,6 +8,7 @@
     "format": "biome format --write .",
     "check": "biome check .",
     "check:apply": "biome check --apply .",
+    "typecheck": "tsc --noEmit",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

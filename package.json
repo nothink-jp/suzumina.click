@@ -9,6 +9,7 @@
     "lint": "pnpm -r lint",
     "format": "pnpm -r format",
     "check": "pnpm -r check",
+    "typecheck": "pnpm -r typecheck",
     "clean": "rimraf node_modules/.cache coverage",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"

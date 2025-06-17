@@ -12,5 +12,8 @@ export * from "./video";
 // DLsite作品関連の型とスキーマのエクスポート
 export * from "./work";
 
+// 音声ボタン関連の型とスキーマのエクスポート
+export * from "./audio-button";
+
 // Firestore関連のユーティリティ
 export * from "./firestore-utils";

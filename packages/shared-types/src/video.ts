@@ -68,6 +68,9 @@ export const FirestoreVideoSchema = YouTubeVideoBaseSchema.extend({
   lastFetchedAt: z.string().datetime(),
   // 配信状態
   liveBroadcastContent: LiveBroadcastContentSchema.optional(),
+  // 音声ボタン関連情報
+  audioButtonCount: z.number().int().min(0).default(0),
+  hasAudioButtons: z.boolean().default(false),
 });
 
 /**
@@ -86,6 +89,9 @@ export const FrontendVideoSchema = YouTubeVideoBaseSchema.extend({
   lastFetchedAtISO: z.string().datetime(),
   // 配信状態
   liveBroadcastContent: LiveBroadcastContentSchema.optional(),
+  // 音声ボタン関連情報
+  audioButtonCount: z.number().int().min(0).default(0),
+  hasAudioButtons: z.boolean().default(false),
 });
 
 /**
@@ -144,6 +150,9 @@ export function convertToFrontendVideo(
     // publishedAtISO も必ず設定する（publishedAtから生成）
     publishedAtISO: data.publishedAt,
     liveBroadcastContent: data.videoType === "upcoming" ? "upcoming" : "none",
+    // 音声ボタン関連フィールドを追加（デフォルト値）
+    audioButtonCount: data.audioButtonCount || 0,
+    hasAudioButtons: data.hasAudioButtons || false,
   };
 
   // データの検証
@@ -171,6 +180,9 @@ export function convertToFrontendVideo(
       lastFetchedAt: now,
       lastFetchedAtISO: now,
       liveBroadcastContent: "none",
+      // 音声ボタン関連フィールドを追加
+      audioButtonCount: data.audioButtonCount || 0,
+      hasAudioButtons: data.hasAudioButtons || false,
     };
   }
 }
@@ -242,6 +254,10 @@ export interface FirestoreServerVideoData {
   lastFetchedAt: unknown; // Firestore.Timestamp型
   videoType?: VideoType;
   liveBroadcastContent?: LiveBroadcastContent;
+
+  // 音声ボタン関連情報
+  audioButtonCount?: number;
+  hasAudioButtons?: boolean;
 
   // コンテンツ詳細 (contentDetails)
   duration?: string; // ISO 8601形式の動画時間（例："PT1H2M3S"）
