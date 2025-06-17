@@ -10,13 +10,13 @@ variable "gcp_project_id" {
 variable "region" {
   description = "Google Cloud リージョン"
   type        = string
-  default     = "us-central1"
+  default     = "asia-northeast1"
 }
 
 variable "zone" {
   description = "Google Cloud ゾーン"
   type        = string
-  default     = "us-central1-a"
+  default     = "asia-northeast1-a"
 }
 
 # ==========================================================
@@ -73,4 +73,25 @@ variable "audio_queue_max_retries" {
   description = "音声処理タスクの最大リトライ回数"
   type        = number
   default     = 3
+}
+
+# ==========================================================
+# プロジェクト設定用変数
+# ==========================================================
+
+variable "project_number" {
+  description = "Google Cloud プロジェクト番号"
+  type        = string
+}
+
+variable "youtube_api_key" {
+  description = "YouTube Data API キー"
+  type        = string
+  sensitive   = true
+}
+
+variable "environment" {
+  description = "環境名（development, staging, production）"
+  type        = string
+  default     = "development"
 }

@@ -1,16 +1,10 @@
-# Cloud Scheduler API を有効化
-# スケジュールされたジョブを実行するためのAPIを有効にする
-resource "google_project_service" "cloudscheduler" {
-  project = var.gcp_project_id
-  service = "cloudscheduler.googleapis.com"
-  disable_on_destroy = false # Terraform実行時にリソースを削除してもAPIは無効化しない
-}
+# Cloud Scheduler API は api_services.tf で有効化済み
 
 # 1時間に1回 YouTube 動画取得 Pub/Sub トピックをトリガーするジョブ
 # 毎時19分に実行される定期的なスケジュールタスク
 resource "google_cloud_scheduler_job" "fetch_youtube_videos_hourly" {
   project  = var.gcp_project_id
-  region   = "asia-northeast1" # 他のリソースと同じリージョンを使用（東京リージョン）
+  region   = var.region # 他のリソースと同じリージョンを使用
   name     = "fetch-youtube-videos-hourly"
   schedule = "19 * * * *" # 毎時19分に実行（cronフォーマット）
   time_zone = "Asia/Tokyo" # タイムゾーンを東京に設定

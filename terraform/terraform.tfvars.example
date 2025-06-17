@@ -6,33 +6,11 @@
 gcp_project_id = "your-gcp-project-id"   # あなたのGCPプロジェクトID
 project_number = "123456789012"          # GCPプロジェクト番号（コンソールのプロジェクト情報から確認可能）
 
-# Firebaseプロジェクト名
-firebase_project = "your-firebase-project-id"  # FirebaseプロジェクトのID（通常はGCPプロジェクトIDと同じ）
-
 # GCPリージョン（デフォルト: asia-northeast1）
 region = "asia-northeast1"             # 東京リージョン
 
 # YouTube APIキー
 youtube_api_key = "your-youtube-data-api-key"   # YouTubeデータAPI用のキー
-
-# Discord OAuth設定
-# Discord Developer Portalから取得できます
-# https://discord.com/developers/applications
-discord_client_id     = "your-discord-client-id"        # DiscordアプリケーションのクライアントID
-discord_client_secret = "your-discord-client-secret"    # Discordアプリケーションのクライアントシークレット
-discord_redirect_uri  = "https://your-app-url/api/auth/discord/callback"  # リダイレクトURI
-
-# Firebase設定
-# Firebaseコンソール（https://console.firebase.google.com）から取得できます
-# 手順: プロジェクト設定 > 全般タブ > マイアプリセクション > ウェブアプリ（</>）をクリック
-firebase_config = {
-  API_KEY           = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Firebase APIキー
-  AUTH_DOMAIN       = "your-project-id.firebaseapp.com"        # 認証ドメイン
-  PROJECT_ID        = "your-project-id"                        # Firebaseプロジェクトのプロジェクトid
-  STORAGE_BUCKET    = "your-project-id.firebasestorage.app"    # ストレージバケット
-  MESSAGING_SENDER_ID = "123456789012"                         # FCMの送信者ID
-  APP_ID            = "1:123456789012:web:abc123def456ghi789"  # FirebaseアプリのID
-}
 
 # 環境設定（development, staging, production）
 environment = "development"

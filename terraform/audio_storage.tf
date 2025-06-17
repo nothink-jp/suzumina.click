@@ -44,8 +44,8 @@ resource "google_storage_bucket" "audio_files" {
       storage_class = "COLDLINE"
     }
     condition {
-      age           = 90
-      storage_class = "NEARLINE"
+      age                        = 90
+      matches_storage_class      = ["NEARLINE"]
     }
   }
 

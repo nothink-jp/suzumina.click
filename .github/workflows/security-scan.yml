@@ -1,278 +1,223 @@
-name: 'セキュリティスキャン'
+name: Security Scan
 
 on:
   schedule:
-    - cron: '9 1 * * *'  # 毎日午前1時9分に実行
-  
-  # 手動実行も可能
+    - cron: '0 2 * * *'  # Daily at 2:00 AM UTC
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'apps/*/package.json'
+      - 'packages/*/package.json'
+      - '.github/workflows/security-scan.yml'
 
 permissions:
   contents: read
-  security-events: write  # セキュリティアラートの書き込み権限
+  security-events: write
+  actions: read
 
 jobs:
-  # 依存関係の脆弱性スキャン
   dependency-scan:
-    name: '依存関係のセキュリティスキャン'
+    name: Dependency Security Scan
     runs-on: ubuntu-latest
-    outputs:
-      node_version: ${{ steps.read_engines.outputs.node_version }}
-      pnpm_version: ${{ steps.read_engines.outputs.pnpm_version }}
     
     steps:
-      - name: リポジトリをチェックアウト
+      - name: Checkout repository
         uses: actions/checkout@v4
       
-      # package.jsonからenginesのバージョンを読み取る
-      - name: パッケージからエンジンバージョンを読み取る
-        id: read_engines
-        run: |
-          # package.jsonからNode.jsとpnpmのバージョンを取得
-          NODE_VERSION=$(node -p "require('./package.json').engines.node")
-          PNPM_VERSION=$(node -p "require('./package.json').engines.pnpm")
-          
-          echo "取得したバージョン情報: Node.js=$NODE_VERSION, pnpm=$PNPM_VERSION"
-          
-          # GitHub Actionsの出力として設定
-          echo "node_version=$NODE_VERSION" >> $GITHUB_OUTPUT
-          echo "pnpm_version=$PNPM_VERSION" >> $GITHUB_OUTPUT
-      
-      # 複合アクションを使用してNode.js環境をセットアップ
-      - name: Node.js環境のセットアップ
+      - name: Setup Node.js environment
         uses: ./.github/actions/setup-node-env
-        with:
-          node-version: ${{ steps.read_engines.outputs.node_version }}
-          pnpm-version: ${{ steps.read_engines.outputs.pnpm_version }}
       
-      # npmパッケージの脆弱性スキャン
-      - name: npm audit
-        id: npm_audit
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run npm audit
         continue-on-error: true
         run: |
-          # functionsのnpm audit実行
-          cd apps/functions
-          npm i --package-lock-only
-          npm audit --json > ../../npm-audit-functions.json || true
+          echo "## Dependency Audit Results" > audit-summary.md
+          echo "" >> audit-summary.md
           
-          cd ../..
+          # Run audit for each workspace
+          pnpm audit --json > audit-results.json || true
           
-          # 結果のサマリー表示
-          echo "## npm audit 結果サマリー" > npm-audit-summary.md
-          echo "" >> npm-audit-summary.md
-          echo "### Web アプリケーション" >> npm-audit-summary.md
-          node -e "const audit = require('./npm-audit-web.json'); console.log('脆弱性総数: ' + (audit.metadata?.vulnerabilities?.total || '情報なし') + '\n高リスク: ' + (audit.metadata?.vulnerabilities?.high || '0'))" >> npm-audit-summary.md
+          # Generate summary
+          if [ -f audit-results.json ]; then
+            echo "### Summary" >> audit-summary.md
+            node -e "
+              try {
+                const audit = JSON.parse(require('fs').readFileSync('audit-results.json', 'utf8'));
+                if (audit.metadata && audit.metadata.vulnerabilities) {
+                  console.log('Total vulnerabilities: ' + audit.metadata.vulnerabilities.total);
+                  console.log('Critical: ' + (audit.metadata.vulnerabilities.critical || 0));
+                  console.log('High: ' + (audit.metadata.vulnerabilities.high || 0));
+                  console.log('Moderate: ' + (audit.metadata.vulnerabilities.moderate || 0));
+                  console.log('Low: ' + (audit.metadata.vulnerabilities.low || 0));
+                } else {
+                  console.log('No vulnerability data found');
+                }
+              } catch (e) {
+                console.log('Error parsing audit results: ' + e.message);
+              }
+            " >> audit-summary.md
+          fi
           
-          echo "" >> npm-audit-summary.md
-          echo "### Cloud Functions" >> npm-audit-summary.md
-          node -e "const audit = require('./npm-audit-functions.json'); console.log('脆弱性総数: ' + (audit.metadata?.vulnerabilities?.total || '情報なし') + '\n高リスク: ' + (audit.metadata?.vulnerabilities?.high || '0'))" >> npm-audit-summary.md
+          cat audit-summary.md
       
-      # 結果のアップロード
-      - name: 監査結果をアーティファクトとして保存
+      - name: Upload audit results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: npm-audit-reports
+          name: dependency-audit-results
           path: |
-            npm-audit-web.json
-            npm-audit-functions.json
-            npm-audit-summary.md
+            audit-results.json
+            audit-summary.md
           retention-days: 30
-      
-      # 注意: GitHub上でデフォルトのCodeQL設定が有効になっている場合、
-      # 以下のようなカスタムCodeQL設定は使用できないため削除
-      # CodeQLスキャンはGitHub上の設定から自動的に実行されます
-  
-  # イメージ脆弱性スキャン
-  image-scan:
-    name: 'Dockerイメージのセキュリティスキャン'
+
+  container-scan:
+    name: Container Security Scan
     runs-on: ubuntu-latest
-    needs: dependency-scan
     
     steps:
-      - name: リポジトリをチェックアウト
+      - name: Checkout repository
         uses: actions/checkout@v4
       
-      # 複合アクションを使用してNode.js環境をセットアップ
-      - name: Node.js環境のセットアップ
+      - name: Setup Node.js environment
         uses: ./.github/actions/setup-node-env
-        with:
-          node-version: ${{ needs.dependency-scan.outputs.node_version }}
-          pnpm-version: ${{ needs.dependency-scan.outputs.pnpm_version }}
-          project-path: 'web'
       
-      # 共有パッケージのビルド
-      - name: 共有パッケージのビルド
+      - name: Build shared packages
         run: |
-          echo "共有パッケージ(shared-types)をビルドしています..."
-          cd packages/shared-types
-          pnpm install
-          pnpm build
-          echo "共有パッケージのビルドが完了しました"
-          
-          # packages/shared-typesのビルド成果物を確認
-          echo "共有パッケージのビルド成果物を確認しています..."
-          ls -la dist || echo "distディレクトリが見つかりません"
-          if [ ! -f dist/index.js ]; then
-            echo "警告: 共有パッケージのビルド成果物が見つかりません。"
-          else
-            echo "ビルド成果物の確認が完了しました。"
-          fi
+          pnpm install --frozen-lockfile
+          pnpm --filter @suzumina.click/shared-types build
       
-      # Dockerイメージビルド（改善版）
-      - name: Dockerイメージビルド
-        id: docker_build
+      - name: Build Docker image
         run: |
-          # ビルドステータス確認のためにセットアップ
-          set -e
-          echo "Dockerイメージのビルドを開始します..."
-          
-          # 完全なイメージ名を使用
-          IMAGE_NAME="suzumina-click-nextjs-app:scan"
-          
-          # モノレポ構造が正しいか確認
-          echo "モノレポ構造を確認しています..."
-          if [ ! -d "packages/shared-types" ]; then
-            echo "エラー: shared-typesパッケージが見つかりません"
-            exit 1
-          fi
-          
-          if [ ! -d "apps/web" ]; then
-            echo "エラー: webアプリケーションが見つかりません"
-            exit 1
-          fi
-          
-          # イメージビルド - ビルド過程の詳細を表示
-          echo "Dockerイメージをビルドしています..."
-          docker build -f apps/web/Dockerfile -t ${IMAGE_NAME} . --progress=plain
-          
-          # 正常にビルドできたか確認
-          if [ $? -eq 0 ]; then
-            echo "Dockerイメージのビルドに成功しました: ${IMAGE_NAME}"
-            echo "image_name=${IMAGE_NAME}" >> $GITHUB_OUTPUT
-          else
-            echo "Dockerイメージのビルドに失敗しました"
-            exit 1
-          fi
+          docker build -f apps/web/Dockerfile -t suzumina-click:latest .
       
-      # イメージが存在することを確認
-      - name: イメージ存在確認
-        run: |
-          echo "ビルドされたイメージを確認しています..."
-          docker images
-          
-          # 特定のイメージが存在するか確認
-          if docker image inspect suzumina-click-nextjs-app:scan > /dev/null 2>&1; then
-            echo "イメージが正しくビルドされました"
-          else
-            echo "エラー: イメージが見つかりません"
-            exit 1
-          fi
-      
-      # Trivy スキャン
-      - name: Trivyによるイメージスキャン
+      - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'suzumina-click-nextjs-app:scan'
+          image-ref: 'suzumina-click:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH,MEDIUM'
       
-      # 結果をGitHubセキュリティタブにアップロード
-      - name: スキャン結果のアップロード
+      - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: 'trivy-results.sarif'
       
-      # スキャン結果のサマリーを生成
-      - name: スキャン結果サマリー
+      - name: Generate Trivy summary
         run: |
-          # docker run コマンドの代わりにtrivyコマンドを直接使用
-          echo "スキャン結果のサマリーを生成しています..."
+          echo "## Container Security Scan Results" > trivy-summary.md
+          echo "" >> trivy-summary.md
           
-          if command -v trivy &> /dev/null; then
-            # Trivyがインストールされている場合、直接実行
-            trivy image --severity HIGH,CRITICAL --no-progress suzumina-click-nextjs-app:scan > trivy-summary.txt || echo "スキャン完了 - 結果をチェックしてください"
-          else
-            # Trivyがない場合はDockerで実行
-            docker run --rm aquasec/trivy image --severity HIGH,CRITICAL --no-progress suzumina-click-nextjs-app:scan > trivy-summary.txt || echo "スキャン完了 - 結果をチェックしてください"
+          # Run Trivy again for summary output
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress \
+            suzumina-click:latest > trivy-output.txt || true
+          
+          if [ -f trivy-output.txt ]; then
+            echo '```' >> trivy-summary.md
+            cat trivy-output.txt >> trivy-summary.md
+            echo '```' >> trivy-summary.md
           fi
-          
-          echo "## Trivy スキャン結果" > trivy-summary.md
-          echo '```' >> trivy-summary.md
-          cat trivy-summary.txt >> trivy-summary.md || echo "結果の読み取りに失敗しました" >> trivy-summary.md
-          echo '```' >> trivy-summary.md
       
-      # 結果のアップロード
-      - name: Trivyスキャン結果をアーティファクトとして保存
+      - name: Upload container scan results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: trivy-scan-results
+          name: container-scan-results
           path: |
             trivy-results.sarif
             trivy-summary.md
-            trivy-summary.txt
+            trivy-output.txt
           retention-days: 30
-  
-  # セキュリティスキャン結果通知
-  notify-results:
-    name: 'スキャン結果通知'
-    needs: [dependency-scan, image-scan]
+
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+  security-summary:
+    name: Security Summary
+    needs: [dependency-scan, container-scan, codeql]
     runs-on: ubuntu-latest
     if: always()
     
     steps:
-      - name: 監査結果のダウンロード
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: scan-results
+          path: security-results
       
-      - name: 結果のサマリーを生成
+      - name: Generate security summary
         run: |
-          echo "# セキュリティスキャン結果サマリー" > scan-summary.md
-          echo "実行日時: $(date '+%Y年%m月%d日 %H:%M:%S')" >> scan-summary.md
-          echo "" >> scan-summary.md
+          echo "# Security Scan Summary" > security-summary.md
+          echo "Scan Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> security-summary.md
+          echo "Repository: ${{ github.repository }}" >> security-summary.md
+          echo "Commit: ${{ github.sha }}" >> security-summary.md
+          echo "" >> security-summary.md
           
-          if [ -f "scan-results/npm-audit-reports/npm-audit-summary.md" ]; then
-            cat scan-results/npm-audit-reports/npm-audit-summary.md >> scan-summary.md
-            echo "" >> scan-summary.md
+          echo "## Job Status" >> security-summary.md
+          echo "- Dependency Scan: ${{ needs.dependency-scan.result }}" >> security-summary.md
+          echo "- Container Scan: ${{ needs.container-scan.result }}" >> security-summary.md
+          echo "- CodeQL Analysis: ${{ needs.codeql.result }}" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          # Include dependency audit summary if available
+          if [ -f "security-results/dependency-audit-results/audit-summary.md" ]; then
+            echo "## Dependency Vulnerabilities" >> security-summary.md
+            cat security-results/dependency-audit-results/audit-summary.md >> security-summary.md
+            echo "" >> security-summary.md
           fi
           
-          if [ -f "scan-results/trivy-scan-results/trivy-summary.md" ]; then
-            cat scan-results/trivy-scan-results/trivy-summary.md >> scan-summary.md
+          # Include container scan summary if available
+          if [ -f "security-results/container-scan-results/trivy-summary.md" ]; then
+            cat security-results/container-scan-results/trivy-summary.md >> security-summary.md
+            echo "" >> security-summary.md
           fi
           
-          cat scan-summary.md
+          echo "## Next Steps" >> security-summary.md
+          echo "1. Review security alerts in the GitHub Security tab" >> security-summary.md
+          echo "2. Update vulnerable dependencies" >> security-summary.md
+          echo "3. Address any critical or high severity issues" >> security-summary.md
+          echo "4. Monitor for new vulnerabilities regularly" >> security-summary.md
+          
+          cat security-summary.md
       
-      - name: 結果をアーティファクトとして保存
+      - name: Upload security summary
         uses: actions/upload-artifact@v4
         with:
-          name: security-scan-summary
-          path: scan-summary.md
-          retention-days: 30
-      
-      # 結果の送信（例: Slack通知、メールなど）
-      # 実装例: Slack通知
-      # - name: Slackに通知
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: custom
-      #     custom_payload: |
-      #       {
-      #         "attachments": [
-      #           {
-      #             "color": "${{ job.status == 'success' && 'good' || job.status == 'failure' && 'danger' || 'warning' }}",
-      #             "title": "セキュリティスキャン結果",
-      #             "text": "suzumina.click セキュリティスキャンが完了しました\n詳細はワークフローの実行結果を確認してください",
-      #             "fields": [
-      #               {
-      #                 "title": "ステータス",
-      #                 "value": "${{ job.status }}",
-      #                 "short": true
-      #               }
-      #             ]
-      #           }
-      #         ]
-      #       }
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          name: security-summary
+          path: security-summary.md
+          retention-days: 90

@@ -27,7 +27,7 @@ on:
       deploy_to_production:
         description: 'Deploy to production (main branch only)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 env:

@@ -33,7 +33,7 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
     # GitHub Actionsによる実際のデプロイでは上書きされる
     source {
       storage_source {
-        bucket = "${var.gcp_project_id}-functions"
+        bucket = google_storage_bucket.functions_deployment.name
         object = "function-source-dummy.zip"
       }
     }

@@ -1,10 +1,4 @@
-# Pub/Sub API を有効化 (依存関係のため firebase.tf にも定義があるが、念のためここにも記述)
-# Terraform は重複定義を検知し、1つだけ作成する
-resource "google_project_service" "pubsub" {
-  project = var.gcp_project_id
-  service = "pubsub.googleapis.com"
-  disable_on_destroy = false # Terraform実行時にリソースを削除してもAPIは無効化しない
-}
+# Pub/Sub API は api_services.tf で有効化済み
 
 # YouTube動画取得をトリガーするための Pub/Sub トピック
 # Cloud Schedulerからのメッセージを受け取り、Cloud Functionsを起動する

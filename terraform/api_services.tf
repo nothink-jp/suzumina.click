@@ -47,3 +47,24 @@ resource "google_project_service" "firestore" {
   service = "firestore.googleapis.com"
   disable_on_destroy = false # Firestoreデータを維持するためにAPIを無効化しない
 }
+
+# Cloud Tasks API を有効化 (音声処理キューに必要)
+resource "google_project_service" "cloudtasks" {
+  project = var.gcp_project_id
+  service = "cloudtasks.googleapis.com"
+  disable_on_destroy = false # タスクキュー管理に影響を与えないためAPIを無効化しない
+}
+
+# Cloud Scheduler API を有効化 (定期実行に必要)
+resource "google_project_service" "cloudscheduler" {
+  project = var.gcp_project_id
+  service = "cloudscheduler.googleapis.com"
+  disable_on_destroy = false # スケジュール実行に影響を与えないためAPIを無効化しない
+}
+
+# Pub/Sub API を有効化 (スケジューラとFunctions間の連携に必要)
+resource "google_project_service" "pubsub" {
+  project = var.gcp_project_id
+  service = "pubsub.googleapis.com"
+  disable_on_destroy = false # メッセージング基盤に影響を与えないためAPIを無効化しない
+}

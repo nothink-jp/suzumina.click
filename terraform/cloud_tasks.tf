@@ -10,7 +10,6 @@ resource "google_cloud_tasks_queue" "audio_processing" {
   # レート制限設定
   rate_limits {
     max_dispatches_per_second = 1.0  # 1秒に1タスク（音声処理は重い処理のため）
-    max_burst_size           = 5     # バーストで最大5タスク
     max_concurrent_dispatches = 3    # 同時実行最大3タスク
   }
 
@@ -26,13 +25,6 @@ resource "google_cloud_tasks_queue" "audio_processing" {
   # Cloud Run Jobs統合設定
   app_engine_routing_override {
     service = "default"
-  }
-
-  labels = {
-    environment = "production"
-    service     = "suzumina-click"
-    component   = "audio-processing"
-    managed_by  = "terraform"
   }
 }
 
@@ -66,9 +58,9 @@ resource "google_project_iam_member" "task_enqueuer_run_invoker" {
 resource "google_project_iam_member" "youtube_function_task_enqueuer" {
   project = var.gcp_project_id
   role    = "roles/cloudtasks.enqueuer"
-  member  = "serviceAccount:${google_service_account.youtube_videos_function.email}"
+  member  = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
 
-  depends_on = [google_service_account.youtube_videos_function]
+  depends_on = [google_service_account.fetch_youtube_videos_sa]
 }
 
 # ==========================================================
@@ -196,17 +188,7 @@ output "cloud_run_job_name" {
   value       = google_cloud_run_v2_job.audio_processor.name
 }
 
-output "cloud_run_job_uri" {
-  description = "音声処理用Cloud Run Jobs URI"
-  value       = "https://${google_cloud_run_v2_job.audio_processor.name}-${random_id.suffix.hex}.${var.region}.run.app"
-}
-
 output "task_enqueuer_service_account_email" {
   description = "タスク送信用サービスアカウントメール"
   value       = google_service_account.task_enqueuer.email
-}
-
-# ランダムサフィックス生成（Cloud Run URIユニーク化）
-resource "random_id" "suffix" {
-  byte_length = 4
 }

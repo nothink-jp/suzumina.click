@@ -16,9 +16,6 @@ locals {
     }
   }
 
-  # Discord認証関連シークレット（削除済み - apps/web削除に伴い不要）
-  # discord_secrets = []
-
   # API関連シークレット
   api_secrets = [
     {
@@ -26,12 +23,6 @@ locals {
       description = "YouTube Data APIキー"
     }
   ]
-  
-  # Firebase Admin SDK関連シークレット（削除済み - apps/web削除に伴い不要）
-  # firebase_admin_secrets = []
-
-  # Firebase クライアント認証用シークレット（削除済み - apps/web削除に伴い不要）  
-  # firebase_client_secrets = []
 
   # すべてのシークレットをまとめる（YouTube APIキーのみ残存）
   all_secrets = local.api_secrets
@@ -39,7 +30,7 @@ locals {
 
 # シークレットの作成
 # 注: 既存のシークレットがある場合は、先に以下のコマンドでインポートしてください:
-# terraform import 'google_secret_manager_secret.secrets["NEXT_PUBLIC_DISCORD_CLIENT_ID"]' projects/suzumina-click-firebase/secrets/NEXT_PUBLIC_DISCORD_CLIENT_ID
+# terraform import 'google_secret_manager_secret.secrets["YOUTUBE_API_KEY"]' projects/suzumina-click-firebase/secrets/YOUTUBE_API_KEY
 resource "google_secret_manager_secret" "secrets" {
   for_each  = { for secret in local.all_secrets : secret.id => secret }
   
