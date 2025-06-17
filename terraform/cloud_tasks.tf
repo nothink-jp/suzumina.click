@@ -22,10 +22,6 @@ resource "google_cloud_tasks_queue" "audio_processing" {
     max_doublings      = 3
   }
 
-  # Cloud Run Jobs統合設定
-  app_engine_routing_override {
-    service = "default"
-  }
 }
 
 # ==========================================================
@@ -82,7 +78,7 @@ resource "google_cloud_run_v2_job" "audio_processor" {
       timeout     = "3600s"  # 1時間
 
       containers {
-        image = "gcr.io/${var.gcp_project_id}/audio-processor:latest"
+        image = "gcr.io/cloudrun/hello"
 
         # リソース制限
         resources {
@@ -108,10 +104,6 @@ resource "google_cloud_run_v2_job" "audio_processor" {
           value = "(default)"
         }
 
-        env {
-          name  = "CLOUD_RUN_JOB"
-          value = "true"
-        }
 
         env {
           name  = "LOG_LEVEL"

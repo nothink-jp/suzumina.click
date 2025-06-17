@@ -43,40 +43,62 @@ graph TB
     end
     
     subgraph "Google Cloud Platform (本番環境)"
-        CS[Cloud Scheduler] --> PS[Pub/Sub Topics]
-        PS --> CF[Cloud Functions]
-        CF --> FS[Firestore Database]
+        CS[Cloud Scheduler<br/>定期実行] --> PS[Pub/Sub Topics<br/>非同期メッセージング]
+        PS --> CF[Cloud Functions v2<br/>Node.js 22]
+        CF --> FS[Firestore Database<br/>Native mode + 複合インデックス]
         CF --> YT
         CF --> DL
         
-        subgraph "Cloud Functions (運用中)"
-            CF1[fetchYouTubeVideos<br/>毎時19分実行]
-            CF2[fetchDLsiteWorks<br/>10分間隔実行]
+        subgraph "データ収集 (運用中)"
+            CF1[fetchYouTubeVideos<br/>毎時19分実行<br/>512MB, 9分タイムアウト]
+            CF2[fetchDLsiteWorks<br/>6,26,46分/時間実行<br/>512MB, 9分タイムアウト]
+        end
+        
+        subgraph "音声処理 (将来実装)"
+            CT[Cloud Tasks<br/>音声処理キュー] --> CRJ[Cloud Run Jobs<br/>Audio Processor<br/>4CPU, 16GB, 1時間]
+            CRJ --> GCS[Cloud Storage<br/>音声ファイル保存<br/>ライフサイクル管理]
         end
         
         CF1 --> YT
         CF2 --> DL
+        CF1 -.-> CT
+        
+        subgraph "セキュリティ・管理"
+            SM[Secret Manager<br/>APIキー管理]
+            IAM[IAM<br/>最小権限原則]
+            MON[Cloud Monitoring<br/>ダッシュボード・アラート]
+        end
+        
+        CF --> SM
     end
     
-    subgraph "フロントエンド開発"
-        WEB[本格Webアプリ<br/>apps/web<br/>🚧 開発予定]
-        MOCK[v0モック<br/>apps/v0-suzumina.click<br/>📝 参考用]
+    subgraph "フロントエンド (本番運用中)"
+        WEB[本格Webアプリ<br/>apps/web<br/>✅ Next.js 15 App Router]
+        MOCK[v0モック<br/>apps/v0-suzumina.click<br/>📝 UIリファレンス]
         
-        WEB -.-> FS
+        WEB --> FS
+        WEB -.-> GCS
         MOCK -.-> FS
     end
     
-    subgraph "開発環境 (確立済み)"
-        MR[Monorepo<br/>pnpm workspace]
-        ST[共有型定義<br/>packages/shared-types]
-        TF[Infrastructure as Code<br/>terraform/]
+    subgraph "開発・デプロイ環境"
+        GA[GitHub Actions<br/>CI/CD + Workload Identity]
+        AR[Artifact Registry<br/>Dockerコンテナ]
+        TF[Terraform<br/>Infrastructure as Code]
+        
+        GA --> AR
+        GA --> CF
+        GA --> CRJ
     end
     
     style CF1 fill:#e1f5fe
     style CF2 fill:#e8f5e8
-    style WEB fill:#fff3e0
+    style WEB fill:#e8f5e8
     style MOCK fill:#f5f5f5
     style FS fill:#fce4ec
+    style CRJ fill:#fff3e0
+    style CT fill:#f3e5f5
+    style GCS fill:#e3f2fd
 ```
 
 ## 🛠️ 技術スタック
@@ -90,19 +112,26 @@ graph TB
 - **Storybook 9.0.10** - UIコンポーネント開発・テスト
 - **Radix UI** - アクセシブルUIコンポーネント (`packages/ui`)
 
-### バックエンド
+### バックエンド・インフラ
 
-- **Google Cloud Functions (Node.js 22)** - サーバーレス関数
-- **Google Cloud Firestore** - NoSQLデータベース
+- **Google Cloud Functions v2 (Node.js 22)** - サーバーレス関数 (YouTube/DLsite データ収集)
+- **Google Cloud Run Jobs** - 重い計算処理 (音声抽出: 4CPU/16GB)
+- **Google Cloud Firestore** - NoSQLデータベース (Native mode + 複合インデックス)
+- **Google Cloud Storage** - ファイルストレージ (音声ファイル、デプロイアーティファクト)
+- **Google Cloud Tasks** - タスクキューイング (音声処理の非同期実行)
+- **Google Cloud Pub/Sub** - 非同期メッセージング (Scheduler → Functions)
+- **Google Cloud Scheduler** - 定期実行タスク (毎時/20分間隔)
+- **Google Secret Manager** - APIキー・シークレット管理
+- **Google Artifact Registry** - Dockerコンテナレジストリ
+- **Google Cloud Monitoring** - 監視ダッシュボード・アラート
 - **@google-cloud/firestore** - サーバーサイドFirestore接続 (apps/web用)
-- **Google Cloud Pub/Sub** - 非同期メッセージング
-- **Google Cloud Scheduler** - 定期実行タスク
 
 ### インフラ・DevOps
 
-- **Terraform** - Infrastructure as Code
-- **GitHub Actions** - CI/CD
-- **pnpm** - パッケージマネージャ
+- **Terraform** - Infrastructure as Code (GCPリソース管理)
+- **GitHub Actions** - CI/CDパイプライン (Workload Identity連携)
+- **Google Cloud Build** - コンテナビルド・デプロイ
+- **pnpm** - パッケージマネージャ (Workspaceサポート)
 - **Biome** - Linter/Formatter
 - **Lefthook** - Git Hooks
 - **Vitest** - テストフレームワーク

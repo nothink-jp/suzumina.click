@@ -27,11 +27,15 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 ## 🏗️ アーキテクチャ
 
 ```console
-外部サービス → Cloud Functions → Firestore → Next.js Webアプリ
-     ↓              ↓              ↓           ↓
-YouTube API    スケジュール実行   データストレージ  フロントエンド
-DLsite         データ収集        (型安全)      (SSR/CSR)
-               (毎時/20分間隔)
+外部サービス → Cloud Scheduler → Pub/Sub → Cloud Functions → Firestore → Next.js Webアプリ
+     ↓              ↓              ↓         ↓              ↓           ↓
+YouTube API    定期実行         非同期      データ収集      NoSQLストレージ  フロントエンド
+DLsite         (毎時/20分間隔)  メッセージ   (Function v2)   (型安全)      (App Router)
+               ↓                         ↓
+              Cloud Tasks → Cloud Run Jobs → Cloud Storage
+                  ↓              ↓              ↓
+               音声処理キュー    重い計算処理    音声ファイル保存
+               (非同期実行)    (4CPU/16GB)    (ライフサイクル管理)
 ```
 
 ## 🛠️ 技術スタック
@@ -47,14 +51,22 @@ DLsite         データ収集        (型安全)      (SSR/CSR)
 
 ### バックエンド
 
-- **Google Cloud Functions (Node.js 22)** - サーバーレス関数
-- **Google Cloud Firestore** - NoSQLデータベース
-- **Google Cloud Pub/Sub** - 非同期メッセージング
-- **Google Cloud Scheduler** - スケジュールタスク実行
+- **Google Cloud Functions v2 (Node.js 22)** - サーバーレス関数 (YouTube/DLsite データ収集)
+- **Google Cloud Run Jobs** - 重い計算処理 (音声抽出: 4CPU/16GB)
+- **Google Cloud Firestore** - NoSQLデータベース (Native mode + 複合インデックス)
+- **Google Cloud Storage** - ファイルストレージ (音声ファイル、デプロイアーティファクト)
+- **Google Cloud Tasks** - タスクキューイング (音声処理の非同期実行)
+- **Google Cloud Pub/Sub** - 非同期メッセージング (Scheduler → Functions)
+- **Google Cloud Scheduler** - 定期実行タスク (毎時/20分間隔)
+- **Google Secret Manager** - APIキー・シークレット管理
+- **Google Artifact Registry** - Dockerコンテナレジストリ
 
 ### インフラ・DevOps
 
-- **Terraform** - Infrastructure as Code
+- **Terraform** - Infrastructure as Code (GCPリソース管理)
+- **GitHub Actions** - CI/CDパイプライン (Workload Identity連携)
+- **Google Cloud Build** - コンテナビルド・デプロイ
+- **Google Cloud Monitoring** - 監視ダッシュボード・アラート
 - **pnpm 10** - パッケージマネージャー (Workspaceサポート)
 - **Biome** - リンター・フォーマッター
 - **Lefthook** - Gitフック
@@ -229,8 +241,37 @@ pnpm test              # Functions単体テスト
 
 ### 自動データ収集 (本番)
 
-1. **YouTube動画**: Cloud Scheduler → Pub/Sub → fetchYouTubeVideos (毎時19分)
-2. **DLsite作品**: Cloud Scheduler → Pub/Sub → fetchDLsiteWorks (6,26,46分の1時間3回)
+**1. 定期データ収集フロー**
+```
+Cloud Scheduler (定期実行)
+    ↓ (Pub/Sub message)
+Pub/Sub Topics (非同期メッセージング)
+    ↓ (CloudEvent trigger)
+Cloud Functions v2 (Node.js 22)
+    │
+    ├─ fetchYouTubeVideos (毎時19分) → YouTube Data API v3
+    └─ fetchDLsiteWorks (6,26,46分/時間) → DLsite Webスクレイピング
+    ↓ (データ保存)
+Firestore Database (Native mode)
+    ├─ videos collection (型安全データ + 複合インデックス)
+    └─ works collection (メタデータ + ライフサイクル管理)
+```
+
+**2. 音声処理フロー (将来実装)**
+```
+fetchYouTubeVideos (Cloud Function)
+    ↓ (音声処理タスク送信)
+Cloud Tasks Queue (レート制限: 1/秒, 同時実行3タスク)
+    ↓ (HTTPリクエスト)
+Cloud Run Jobs - Audio Processor
+    │ (4 CPU cores, 16GB memory, 1時間タイムアウト)
+    │ ├─ YouTube動画から音声抽出
+    │ ├─ 音声セグメンテーション
+    │ └─ フォーマット変換 (Opus, AAC)
+    ↓ (処理済み音声ファイル)
+Cloud Storage - Audio Files Bucket
+    └─ ライフサイクル: 30日→Nearline, 90日→Coldline, 365日→削除
+```
 
 ### フロントエンド表示 (Next.js 15 App Router)
 
