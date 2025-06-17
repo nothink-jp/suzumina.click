@@ -84,6 +84,8 @@ export async function getVideoTitles(params?: {
           lastFetchedAt,
           videoType: data.videoType,
           liveBroadcastContent: data.liveBroadcastContent,
+          audioButtonCount: data.audioButtonCount || 0,
+          hasAudioButtons: data.hasAudioButtons || false,
         };
 
         // フロントエンド用に変換
@@ -173,6 +175,8 @@ export async function getVideoById(
       lastFetchedAt,
       videoType: data.videoType,
       liveBroadcastContent: data.liveBroadcastContent,
+      audioButtonCount: data.audioButtonCount || 0,
+      hasAudioButtons: data.hasAudioButtons || false,
     };
 
     // フロントエンド用に変換

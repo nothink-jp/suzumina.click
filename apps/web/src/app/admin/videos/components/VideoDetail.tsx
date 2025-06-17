@@ -300,7 +300,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {thumbnailQualities.map((quality, index) => (
               <div
-                key={`${quality.name}-${quality.data.width}x${quality.data.height}`}
+                key={`${quality.name}-${quality.data?.width || 0}x${quality.data?.height || 0}`}
                 className="text-center"
               >
                 <h3 className="text-sm font-medium text-gray-700 mb-3">
@@ -308,17 +308,17 @@ export default function VideoDetail({ video }: VideoDetailProps) {
                 </h3>
                 <div className="mb-3">
                   <ThumbnailImage
-                    src={quality.data.url}
+                    src={quality.data?.url || ""}
                     alt={`${video.title} - ${quality.name}`}
                     className="w-full h-auto rounded border"
                   />
                 </div>
                 <div className="text-xs text-gray-500">
                   <p>
-                    {quality.data.width} × {quality.data.height}
+                    {quality.data?.width || 0} × {quality.data?.height || 0}
                   </p>
                   <a
-                    href={quality.data.url}
+                    href={quality.data?.url || ""}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800 break-all"

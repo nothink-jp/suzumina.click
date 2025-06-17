@@ -1,3 +1,4 @@
+import { Timestamp } from "@google-cloud/firestore";
 import {
   type AudioButtonCategory,
   AudioButtonCategorySchema,
@@ -7,21 +8,7 @@ import {
   type FrontendAudioButtonData,
   convertToFrontendAudioButton,
 } from "@suzumina.click/shared-types";
-import {
-  type DocumentSnapshot,
-  type QueryConstraint,
-  Timestamp,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  startAfter,
-  where,
-} from "firebase/firestore";
-import { firestore } from "./firestore";
+import { getFirestore } from "./firestore";
 
 /**
  * Firestoreタイムスタンプを ISO 文字列に変換
@@ -43,12 +30,14 @@ function timestampToISOString(timestamp: unknown): string {
  * Firestore文書データを FrontendAudioButtonData に変換
  */
 function convertFirestoreDoc(
-  doc: DocumentSnapshot,
+  doc: FirebaseFirestore.DocumentSnapshot,
 ): FrontendAudioButtonData | null {
-  if (!doc.exists()) return null;
+  if (!doc.exists) return null;
 
   try {
     const data = doc.data();
+    if (!data) return null;
+
     const firestoreData: FirestoreAudioButtonData = {
       id: doc.id,
       title: data.title,
@@ -85,8 +74,9 @@ export async function getAudioButtonById(
   id: string,
 ): Promise<FrontendAudioButtonData | null> {
   try {
-    const docRef = doc(firestore, "audioButtons", id);
-    const docSnap = await getDoc(docRef);
+    const firestore = getFirestore();
+    const docRef = firestore.collection("audioButtons").doc(id);
+    const docSnap = await docRef.get();
     return convertFirestoreDoc(docSnap);
   } catch (error) {
     console.error("音声ボタン取得エラー:", error);
@@ -98,7 +88,7 @@ export async function getAudioButtonById(
  * 音声ボタン一覧を検索条件付きで取得
  */
 export async function getAudioButtons(
-  queryParams: AudioButtonQuery = {},
+  queryParams: AudioButtonQuery,
 ): Promise<AudioButtonListResult> {
   try {
     const {
@@ -112,66 +102,65 @@ export async function getAudioButtons(
       onlyPublic = true,
     } = queryParams;
 
-    // クエリ構築
-    const baseQuery = collection(firestore, "audioButtons");
-    const constraints: QueryConstraint[] = [];
+    const firestore = getFirestore();
+    let query: any = firestore.collection("audioButtons");
 
     // 公開フィルター
     if (onlyPublic) {
-      constraints.push(where("isPublic", "==", true));
+      query = query.where("isPublic", "==", true);
     }
 
     // カテゴリフィルター
     if (category) {
-      constraints.push(where("category", "==", category));
+      query = query.where("category", "==", category);
     }
 
     // 元動画フィルター
     if (sourceVideoId) {
-      constraints.push(where("sourceVideoId", "==", sourceVideoId));
+      query = query.where("sourceVideoId", "==", sourceVideoId);
     }
 
     // タグフィルター（配列の要素を含む検索）
     if (tags && tags.length > 0) {
-      constraints.push(where("tags", "array-contains-any", tags));
+      query = query.where("tags", "array-contains-any", tags);
     }
 
     // ソート条件
     switch (sortBy) {
       case "oldest":
-        constraints.push(orderBy("createdAt", "asc"));
+        query = query.orderBy("createdAt", "asc");
         break;
       case "popular":
-        constraints.push(orderBy("likeCount", "desc"));
+        query = query.orderBy("likeCount", "desc");
         break;
       case "mostPlayed":
-        constraints.push(orderBy("playCount", "desc"));
+        query = query.orderBy("playCount", "desc");
         break;
       default:
-        constraints.push(orderBy("createdAt", "desc"));
+        query = query.orderBy("createdAt", "desc");
         break;
     }
-
-    // ページネーション
-    constraints.push(limit(limitCount + 1)); // +1 で hasMore を判定
 
     // startAfter の処理
     if (startAfterId) {
       try {
-        const startAfterDoc = await getDoc(
-          doc(firestore, "audioButtons", startAfterId),
-        );
-        if (startAfterDoc.exists()) {
-          constraints.push(startAfter(startAfterDoc));
+        const startAfterDoc = await firestore
+          .collection("audioButtons")
+          .doc(startAfterId)
+          .get();
+        if (startAfterDoc.exists) {
+          query = query.startAfter(startAfterDoc);
         }
       } catch (error) {
         console.warn("startAfter文書取得エラー:", error);
       }
     }
 
+    // 制限設定（+1 で hasMore を判定）
+    query = query.limit(limitCount + 1);
+
     // クエリ実行
-    const q = query(baseQuery, ...constraints);
-    const snapshot = await getDocs(q);
+    const snapshot = await query.get();
 
     // 結果処理
     const docs = snapshot.docs;
@@ -180,14 +169,16 @@ export async function getAudioButtons(
 
     const audioButtons = audioButtonDocs
       .map(convertFirestoreDoc)
-      .filter((button): button is FrontendAudioButtonData => button !== null);
+      .filter(
+        (button: any): button is FrontendAudioButtonData => button !== null,
+      );
 
     // テキスト検索（クライアントサイドフィルタリング）
     let filteredButtons = audioButtons;
     if (searchText?.trim()) {
       const searchLower = searchText.toLowerCase().trim();
       filteredButtons = audioButtons.filter(
-        (button) =>
+        (button: FrontendAudioButtonData) =>
           button.title.toLowerCase().includes(searchLower) ||
           button.description?.toLowerCase().includes(searchLower) ||
           button.tags?.some((tag) => tag.toLowerCase().includes(searchLower)) ||
@@ -224,15 +215,15 @@ export async function getAudioButtonsByVideoId(
   limitCount = 20,
 ): Promise<FrontendAudioButtonData[]> {
   try {
-    const q = query(
-      collection(firestore, "audioButtons"),
-      where("sourceVideoId", "==", videoId),
-      where("isPublic", "==", true),
-      orderBy("startTime", "asc"),
-      limit(limitCount),
-    );
+    const firestore = getFirestore();
+    const snapshot = await firestore
+      .collection("audioButtons")
+      .where("sourceVideoId", "==", videoId)
+      .where("isPublic", "==", true)
+      .orderBy("startTime", "asc")
+      .limit(limitCount)
+      .get();
 
-    const snapshot = await getDocs(q);
     return snapshot.docs
       .map(convertFirestoreDoc)
       .filter((button): button is FrontendAudioButtonData => button !== null);
@@ -249,14 +240,14 @@ export async function getPopularAudioButtons(
   limitCount = 10,
 ): Promise<FrontendAudioButtonData[]> {
   try {
-    const q = query(
-      collection(firestore, "audioButtons"),
-      where("isPublic", "==", true),
-      orderBy("playCount", "desc"),
-      limit(limitCount),
-    );
+    const firestore = getFirestore();
+    const snapshot = await firestore
+      .collection("audioButtons")
+      .where("isPublic", "==", true)
+      .orderBy("playCount", "desc")
+      .limit(limitCount)
+      .get();
 
-    const snapshot = await getDocs(q);
     return snapshot.docs
       .map(convertFirestoreDoc)
       .filter((button): button is FrontendAudioButtonData => button !== null);
@@ -273,14 +264,14 @@ export async function getRecentAudioButtons(
   limitCount = 10,
 ): Promise<FrontendAudioButtonData[]> {
   try {
-    const q = query(
-      collection(firestore, "audioButtons"),
-      where("isPublic", "==", true),
-      orderBy("createdAt", "desc"),
-      limit(limitCount),
-    );
+    const firestore = getFirestore();
+    const snapshot = await firestore
+      .collection("audioButtons")
+      .where("isPublic", "==", true)
+      .orderBy("createdAt", "desc")
+      .limit(limitCount)
+      .get();
 
-    const snapshot = await getDocs(q);
     return snapshot.docs
       .map(convertFirestoreDoc)
       .filter((button): button is FrontendAudioButtonData => button !== null);
@@ -298,15 +289,15 @@ export async function getAudioButtonsByTag(
   limitCount = 20,
 ): Promise<FrontendAudioButtonData[]> {
   try {
-    const q = query(
-      collection(firestore, "audioButtons"),
-      where("tags", "array-contains", tag),
-      where("isPublic", "==", true),
-      orderBy("createdAt", "desc"),
-      limit(limitCount),
-    );
+    const firestore = getFirestore();
+    const snapshot = await firestore
+      .collection("audioButtons")
+      .where("tags", "array-contains", tag)
+      .where("isPublic", "==", true)
+      .orderBy("createdAt", "desc")
+      .limit(limitCount)
+      .get();
 
-    const snapshot = await getDocs(q);
     return snapshot.docs
       .map(convertFirestoreDoc)
       .filter((button): button is FrontendAudioButtonData => button !== null);
@@ -324,15 +315,15 @@ export async function getAudioButtonsByCategory(
   limitCount = 20,
 ): Promise<FrontendAudioButtonData[]> {
   try {
-    const q = query(
-      collection(firestore, "audioButtons"),
-      where("category", "==", category),
-      where("isPublic", "==", true),
-      orderBy("createdAt", "desc"),
-      limit(limitCount),
-    );
+    const firestore = getFirestore();
+    const snapshot = await firestore
+      .collection("audioButtons")
+      .where("category", "==", category)
+      .where("isPublic", "==", true)
+      .orderBy("createdAt", "desc")
+      .limit(limitCount)
+      .get();
 
-    const snapshot = await getDocs(q);
     return snapshot.docs
       .map(convertFirestoreDoc)
       .filter((button): button is FrontendAudioButtonData => button !== null);
@@ -352,13 +343,13 @@ export async function getAudioButtonStats(): Promise<{
   totalLikeCount: number;
 }> {
   try {
+    const firestore = getFirestore();
     // 公開音声ボタンの全件取得（統計用）
-    const q = query(
-      collection(firestore, "audioButtons"),
-      where("isPublic", "==", true),
-    );
+    const snapshot = await firestore
+      .collection("audioButtons")
+      .where("isPublic", "==", true)
+      .get();
 
-    const snapshot = await getDocs(q);
     const audioButtons = snapshot.docs.map((doc) => doc.data());
 
     // 統計計算
@@ -424,6 +415,8 @@ export async function searchAudioButtons(
   try {
     // まず大量のデータを取得してクライアントサイドでフィルタリング
     const allButtons = await getAudioButtons({
+      sortBy: "newest",
+      onlyPublic: true,
       ...options,
       searchText: undefined, // サーバーサイド検索は一旦無効化
       limit: 100, // 検索用に多めに取得

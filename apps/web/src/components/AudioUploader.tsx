@@ -1,15 +1,5 @@
 "use client";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import {
   AudioExtractionError,
   type AudioExtractionOptions,
@@ -24,6 +14,16 @@ import type {
   AudioFileUploadInfo,
   AudioFormat,
 } from "@suzumina.click/shared-types";
+import { Alert, AlertDescription } from "@suzumina.click/ui/components/alert";
+import { Button } from "@suzumina.click/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@suzumina.click/ui/components/card";
+import { Progress } from "@suzumina.click/ui/components/progress";
 import {
   AlertTriangle,
   CheckCircle,

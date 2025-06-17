@@ -70,7 +70,7 @@ export function checkAudioAPISupport(): {
   const mediaRecorder = typeof MediaRecorder !== "undefined";
   const audioContext =
     typeof AudioContext !== "undefined" ||
-    typeof webkitAudioContext !== "undefined";
+    typeof (window as any).webkitAudioContext !== "undefined";
   const webAudio = typeof OfflineAudioContext !== "undefined";
 
   return {
@@ -261,7 +261,7 @@ export function audioBufferToWav(audioBuffer: AudioBuffer): Blob {
   for (let i = 0; i < audioBuffer.length; i++) {
     for (let channel = 0; channel < channels; channel++) {
       const channelData = audioBuffer.getChannelData(channel);
-      const sample = Math.max(-1, Math.min(1, channelData[i]));
+      const sample = Math.max(-1, Math.min(1, channelData[i] || 0));
       view.setInt16(offset, sample * 0x7fff, true);
       offset += 2;
     }
@@ -396,11 +396,12 @@ export function validateAudioFile(file: File): AudioFileUploadInfo {
   return {
     fileName: file.name,
     fileSize: file.size,
-    mimeType: file.type as
-      | "audio/mp3"
+    mimeType: (file.type === "audio/mp3" ? "audio/mpeg" : file.type) as
+      | "audio/opus"
+      | "audio/aac"
+      | "audio/mpeg"
       | "audio/wav"
-      | "audio/m4a"
-      | "audio/ogg",
+      | "audio/flac",
     duration: 0, // extractAudioMetadata で更新される
   };
 }

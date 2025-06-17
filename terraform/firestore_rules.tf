@@ -33,16 +33,24 @@ resource "google_firestore_document" "firestore_rules" {
               allow write: if false; // 管理者APIのみ書き込み可能
             }
             
-            // 音声クリップコレクション
-            match /audioClips/{clipId} {
-              // 公開クリップは誰でも読み取り可能、非公開は作成者のみ読み取り可能
+            // DLsite作品コレクション
+            match /dlsiteWorks/{workId} {
+              // 誰でも読み取り可能、書き込みは管理者のみ
+              allow read;
+              allow write: if false; // 管理者APIのみ書き込み可能
+            }
+            
+            // 音声ボタンコレクション
+            match /audioButtons/{buttonId} {
+              // 公開音声ボタンは誰でも読み取り可能、非公開は作成者のみ読み取り可能
               allow read: if resource.data.isPublic == true || 
-                           (isAuthenticated() && resource.data.userId == request.auth.uid);
+                           (isAuthenticated() && resource.data.uploadedBy == request.auth.uid);
               
-              // 作成は認証済みユーザーのみ可能、更新と削除は作成者のみ可能
-              allow create: if isAuthenticated() && 
-                             request.resource.data.userId == request.auth.uid;
-              allow update, delete: if isOwner(resource.data.userId);
+              // 作成は認証済みユーザーのみ可能（Phase 2で実装予定）
+              allow create: if false; // 現在はServer Actionsのみで作成
+              
+              // 更新と削除は作成者のみ可能（Phase 2で実装予定）
+              allow update, delete: if false; // 現在はServer Actionsのみで操作
             }
             
             // ユーザーコレクション

@@ -1,18 +1,18 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import type { AudioButtonCategory } from "@suzumina.click/shared-types";
+import { Badge } from "@suzumina.click/ui/components/badge";
+import { Button } from "@suzumina.click/ui/components/button";
+import { Card, CardContent } from "@suzumina.click/ui/components/card";
+import { Input } from "@suzumina.click/ui/components/input";
+import { Label } from "@suzumina.click/ui/components/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import type { AudioButtonCategory } from "@suzumina.click/shared-types";
+} from "@suzumina.click/ui/components/select";
 import { Filter, Search, SortAsc, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";

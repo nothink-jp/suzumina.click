@@ -1,13 +1,4 @@
 import { AudioButtonCard } from "@/components/AudioButtonCard";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   getAudioButtons,
   getPopularAudioButtons,
@@ -17,6 +8,15 @@ import type {
   AudioButtonCategory,
   AudioButtonQuery,
 } from "@suzumina.click/shared-types";
+import { Button } from "@suzumina.click/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@suzumina.click/ui/components/card";
+import { Skeleton } from "@suzumina.click/ui/components/skeleton";
 import { Clock, Plus, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -31,7 +31,7 @@ interface SearchParams {
 }
 
 interface AudioButtonsPageProps {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }
 
 async function AudioButtonsList({
@@ -45,6 +45,7 @@ async function AudioButtonsList({
     sortBy:
       (searchParams.sort as "newest" | "oldest" | "popular" | "mostPlayed") ||
       "newest",
+    onlyPublic: true,
   };
 
   const result = await getAudioButtons(query);
@@ -240,11 +241,13 @@ function AudioButtonsListSkeleton() {
   );
 }
 
-export default function AudioButtonsPage({
+export default async function AudioButtonsPage({
   searchParams,
 }: AudioButtonsPageProps) {
+  // 検索パラメータを解決
+  const resolvedSearchParams = await searchParams;
   // 検索パラメータがある場合は検索結果を表示
-  const hasSearchParams = Object.keys(searchParams).length > 0;
+  const hasSearchParams = Object.keys(resolvedSearchParams).length > 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -274,7 +277,7 @@ export default function AudioButtonsPage({
       {hasSearchParams ? (
         /* 検索結果表示 */
         <Suspense fallback={<AudioButtonsListSkeleton />}>
-          <AudioButtonsList searchParams={searchParams} />
+          <AudioButtonsList searchParams={resolvedSearchParams} />
         </Suspense>
       ) : (
         /* デフォルト表示（人気・最新） */

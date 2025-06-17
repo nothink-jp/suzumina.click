@@ -58,10 +58,10 @@ resource "google_firestore_index" "videos_videoType_publishedAt_desc" {
   }
 }
 
-# audioClips コレクションのインデックス - isPublic（昇順）、videoId（昇順）と createdAt（降順）
-resource "google_firestore_index" "audioclips_ispublic_videoid_createdat_desc" {
+# audioButtons コレクションのインデックス - isPublic（昇順）、createdAt（降順）
+resource "google_firestore_index" "audiobuttons_ispublic_createdat_desc" {
   project    = var.gcp_project_id
-  collection = "audioClips"
+  collection = "audioButtons"
   
   fields {
     field_path = "isPublic"
@@ -69,7 +69,55 @@ resource "google_firestore_index" "audioclips_ispublic_videoid_createdat_desc" {
   }
   
   fields {
-    field_path = "videoId"
+    field_path = "createdAt"
+    order      = "DESCENDING"
+  }
+}
+
+# audioButtons コレクションのインデックス - isPublic（昇順）、playCount（降順）
+resource "google_firestore_index" "audiobuttons_ispublic_playcount_desc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "playCount"
+    order      = "DESCENDING"
+  }
+}
+
+# audioButtons コレクションのインデックス - isPublic（昇順）、likeCount（降順）
+resource "google_firestore_index" "audiobuttons_ispublic_likecount_desc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "likeCount"
+    order      = "DESCENDING"
+  }
+}
+
+# audioButtons コレクションのインデックス - isPublic（昇順）、category（昇順）、createdAt（降順）
+resource "google_firestore_index" "audiobuttons_ispublic_category_createdat_desc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "category"
     order      = "ASCENDING"
   }
   
@@ -79,39 +127,44 @@ resource "google_firestore_index" "audioclips_ispublic_videoid_createdat_desc" {
   }
 }
 
-# audioClips コレクションのインデックス - videoId（昇順）、createdAt（昇順）
-resource "google_firestore_index" "audioclips_videoid_createdat_asc" {
+# audioButtons コレクションのインデックス - isPublic（昇順）、sourceVideoId（昇順）、startTime（昇順）
+resource "google_firestore_index" "audiobuttons_ispublic_sourcevideoid_starttime_asc" {
   project    = var.gcp_project_id
-  collection = "audioClips"
+  collection = "audioButtons"
   
   fields {
-    field_path = "videoId"
+    field_path = "isPublic"
     order      = "ASCENDING"
   }
   
   fields {
-    field_path = "createdAt"
+    field_path = "sourceVideoId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "startTime"
     order      = "ASCENDING"
   }
 }
 
-# audioClips コレクションのインデックス - videoId（昇順）、createdAt（降順）、__name__（降順）
-resource "google_firestore_index" "audioclips_videoid_createdat_name_desc" {
+# audioButtons コレクションのインデックス - tags（配列）、isPublic（昇順）、createdAt（降順）
+resource "google_firestore_index" "audiobuttons_tags_ispublic_createdat_desc" {
   project    = var.gcp_project_id
-  collection = "audioClips"
+  collection = "audioButtons"
   
   fields {
-    field_path = "videoId"
+    field_path   = "tags"
+    array_config = "CONTAINS"
+  }
+  
+  fields {
+    field_path = "isPublic"
     order      = "ASCENDING"
   }
   
   fields {
     field_path = "createdAt"
     order      = "DESCENDING"
-  }
-
-  fields {
-    field_path = "__name__"
-    order      = "ASCENDING"
   }
 }

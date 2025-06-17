@@ -4,7 +4,7 @@ import ThumbnailImage from "@/components/ThumbnailImage";
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { Badge } from "@suzumina.click/ui/components/badge";
 import { Button } from "@suzumina.click/ui/components/button";
-import { Calendar, Clock, ExternalLink, Eye, Share2 } from "lucide-react";
+import { Calendar, Clock, ExternalLink, Eye, Plus, Share2 } from "lucide-react";
 import Link from "next/link";
 
 interface VideoDetailProps {
@@ -80,7 +80,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
           <div className="absolute bottom-4 right-4">
             <Badge className="bg-black/70 text-white">
               <Clock className="h-4 w-4 mr-1" />
-              {video.duration || "動画"}
+              動画
             </Badge>
           </div>
         </div>
@@ -134,17 +134,50 @@ export default function VideoDetail({ video }: VideoDetailProps) {
             </div>
           )}
 
-          {/* 音声ボタンセクション（将来実装） */}
-          <div className="mt-8 p-6 bg-gray-50 rounded-lg text-center">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              音声ボタン
-            </h3>
-            <p className="text-gray-600 mb-4">
-              この動画からの音声ボタンはまだ作成されていません。
-            </p>
-            <Button variant="outline" disabled>
-              音声ボタンを作成（準備中）
-            </Button>
+          {/* 音声ボタンセクション */}
+          <div className="mt-8 p-6 bg-blue-50 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                音声ボタン
+              </h3>
+              {video.hasAudioButtons && (
+                <span className="text-sm text-blue-600">
+                  {video.audioButtonCount}個の音声ボタン
+                </span>
+              )}
+            </div>
+            {video.hasAudioButtons ? (
+              <div className="space-y-3">
+                <p className="text-gray-700">
+                  この動画から作成された音声ボタンがあります。
+                </p>
+                <div className="flex gap-3">
+                  <Button asChild>
+                    <Link href={`/buttons?sourceVideoId=${video.videoId}`}>
+                      音声ボタンを見る
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href={`/buttons/create?video_id=${video.videoId}`}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      新しい音声ボタンを作成
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="text-gray-600 mb-4">
+                  この動画からの音声ボタンはまだ作成されていません。
+                </p>
+                <Button asChild>
+                  <Link href={`/buttons/create?video_id=${video.videoId}`}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    音声ボタンを作成
+                  </Link>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

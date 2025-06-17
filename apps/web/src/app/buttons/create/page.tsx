@@ -1,32 +1,32 @@
 "use client";
 
 import { AudioUploader } from "@/components/AudioUploader";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import type { AudioExtractionResult } from "@/lib/audio-extractor";
+import type {
+  AudioButtonCategory,
+  AudioFileUploadInfo,
+  CreateAudioButtonInput,
+} from "@suzumina.click/shared-types";
+import { Alert, AlertDescription } from "@suzumina.click/ui/components/alert";
+import { Badge } from "@suzumina.click/ui/components/badge";
+import { Button } from "@suzumina.click/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@suzumina.click/ui/components/card";
+import { Input } from "@suzumina.click/ui/components/input";
+import { Label } from "@suzumina.click/ui/components/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import type {
-  AudioButtonCategory,
-  AudioExtractionResult,
-  AudioFileUploadInfo,
-  CreateAudioButtonInput,
-} from "@suzumina.click/shared-types";
+} from "@suzumina.click/ui/components/select";
+import { Textarea } from "@suzumina.click/ui/components/textarea";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { useState } from "react";
 import { createAudioButton, uploadAudioFile } from "../actions";
 
@@ -87,7 +88,7 @@ interface ProcessedAudio {
   uploadInfo: AudioFileUploadInfo;
 }
 
-export default function CreateAudioButtonPage() {
+function CreateAudioButtonForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const videoId = searchParams.get("video_id");
@@ -554,5 +555,22 @@ export default function CreateAudioButtonPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CreateAudioButtonPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            <p className="mt-2 text-gray-600">読み込み中...</p>
+          </div>
+        </div>
+      }
+    >
+      <CreateAudioButtonForm />
+    </Suspense>
   );
 }

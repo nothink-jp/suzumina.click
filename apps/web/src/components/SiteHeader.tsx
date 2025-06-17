@@ -58,9 +58,12 @@ export default function SiteHeader() {
               >
                 作品一覧
               </Link>
-              <div className="text-gray-400 cursor-not-allowed font-medium px-3 py-2">
-                ボタン検索（準備中）
-              </div>
+              <Link
+                href="/buttons"
+                className="text-gray-700 hover:text-suzuka-600 font-medium transition-colors px-3 py-2 rounded-md hover:bg-suzuka-50"
+              >
+                音声ボタン
+              </Link>
             </nav>
 
             {/* 右側のボタン */}
@@ -107,9 +110,13 @@ export default function SiteHeader() {
                 >
                   作品一覧
                 </Link>
-                <div className="text-gray-400 cursor-not-allowed font-medium px-3 py-2">
-                  ボタン検索（準備中）
-                </div>
+                <Link
+                  href="/buttons"
+                  className="text-gray-700 hover:text-suzuka-600 font-medium px-3 py-2 rounded-md hover:bg-suzuka-50 transition-colors"
+                  onClick={closeMenu}
+                >
+                  音声ボタン
+                </Link>
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="text-sm text-gray-500 px-3 py-2">
                     マイページ・ログイン（準備中）

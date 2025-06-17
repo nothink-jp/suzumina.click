@@ -1,6 +1,7 @@
 "use server";
 
-import { firestore, storage } from "@/lib/firestore";
+import { getFirestore } from "@/lib/firestore";
+import { Timestamp } from "@google-cloud/firestore";
 import {
   type ActionResult,
   type AudioFileUploadInfo,
@@ -9,32 +10,11 @@ import {
   CreateAudioButtonInputSchema,
   type FirestoreAudioButtonData,
 } from "@suzumina.click/shared-types";
-import {
-  Timestamp,
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  limit as firestoreLimit,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  startAfter,
-  updateDoc,
-  where,
-  writeBatch,
-} from "firebase/firestore";
-import {
-  deleteObject,
-  getDownloadURL,
-  ref,
-  uploadBytes,
-} from "firebase/storage";
 import { revalidatePath } from "next/cache";
 
 /**
- * 音声ファイルをCloud Storageにアップロード
+ * 音声ファイルをアップロード（Phase 2で実装予定）
+ * 現在はメタデータのみ保存
  */
 export async function uploadAudioFile(
   fileData: FormData,
@@ -44,54 +24,13 @@ export async function uploadAudioFile(
     // メタデータの検証
     const validatedMetadata = AudioFileUploadInfoSchema.parse(metadata);
 
-    // FormDataから音声ファイルを取得
-    const audioFile = fileData.get("audioFile") as File;
-    if (!audioFile || !(audioFile instanceof File)) {
-      return {
-        success: false,
-        error: "音声ファイルが見つかりません",
-      };
-    }
-
-    // ファイルサイズとMIMEタイプの再検証
-    if (audioFile.size !== validatedMetadata.fileSize) {
-      return {
-        success: false,
-        error: "ファイルサイズが一致しません",
-      };
-    }
-
-    if (audioFile.type !== validatedMetadata.mimeType) {
-      return {
-        success: false,
-        error: "ファイル形式が一致しません",
-      };
-    }
-
-    // 一意なファイル名を生成
-    const timestamp = Date.now();
-    const randomId = Math.random().toString(36).substring(2, 15);
-    const fileExtension = audioFile.name.split(".").pop() || "audio";
-    const fileName = `buttons/${timestamp}_${randomId}.${fileExtension}`;
-
-    // Cloud Storageにアップロード
-    const storageRef = ref(storage, fileName);
-    const uploadResult = await uploadBytes(storageRef, audioFile, {
-      contentType: validatedMetadata.mimeType,
-      customMetadata: {
-        originalName: validatedMetadata.fileName,
-        duration: validatedMetadata.duration.toString(),
-        uploadedAt: new Date().toISOString(),
-      },
-    });
-
-    // ダウンロードURLを取得
-    const audioUrl = await getDownloadURL(uploadResult.ref);
+    // Phase 1では仮のURLを返す（実際のファイルアップロードはPhase 2で実装）
+    const mockAudioUrl = `https://example.com/audio/${Date.now()}.${validatedMetadata.mimeType.split("/")[1]}`;
 
     return {
       success: true,
       data: {
-        audioUrl,
+        audioUrl: mockAudioUrl,
         duration: validatedMetadata.duration,
       },
     };
@@ -123,34 +62,34 @@ export async function createAudioButton(
     // 入力データの検証
     const validatedInput = CreateAudioButtonInputSchema.parse(input);
 
+    const firestore = getFirestore();
     const now = new Date();
-    const audioButtonData: Omit<FirestoreAudioButtonData, "id"> = {
+
+    const audioButtonData = {
       title: validatedInput.title,
-      description: validatedInput.description,
+      description: validatedInput.description || "",
       category: validatedInput.category,
       tags: validatedInput.tags || [],
       audioUrl: uploadInfo.audioUrl,
       duration: uploadInfo.duration,
       fileSize: uploadInfo.fileSize,
-      format: uploadInfo.format as "mp3" | "wav" | "m4a" | "ogg",
+      format: uploadInfo.format,
       sourceVideoId: validatedInput.sourceVideoId,
+      sourceVideoTitle: "", // TODO: 元動画タイトル取得
       startTime: validatedInput.startTime,
       endTime: validatedInput.endTime,
       uploadedBy: undefined, // TODO: ユーザー認証実装後に設定
       isPublic: validatedInput.isPublic,
       playCount: 0,
       likeCount: 0,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
+      createdAt: Timestamp.fromDate(now),
+      updatedAt: Timestamp.fromDate(now),
     };
 
     // Firestoreに音声ボタンデータを保存
-    const buttonsRef = collection(firestore, "audioButtons");
-    const docRef = await addDoc(buttonsRef, {
-      ...audioButtonData,
-      createdAt: Timestamp.fromDate(now),
-      updatedAt: Timestamp.fromDate(now),
-    });
+    const docRef = await firestore
+      .collection("audioButtons")
+      .add(audioButtonData);
 
     // 元動画の音声ボタン数を更新（元動画が指定されている場合）
     if (validatedInput.sourceVideoId) {
@@ -175,16 +114,6 @@ export async function createAudioButton(
   } catch (error) {
     console.error("音声ボタン作成エラー:", error);
 
-    // アップロード済みのファイルを削除
-    if (uploadInfo.audioUrl) {
-      try {
-        const fileRef = ref(storage, uploadInfo.audioUrl);
-        await deleteObject(fileRef);
-      } catch (deleteError) {
-        console.error("音声ファイル削除エラー:", deleteError);
-      }
-    }
-
     return {
       success: false,
       error:
@@ -200,22 +129,26 @@ export async function createAudioButton(
  */
 async function updateVideoAudioButtonCount(videoId: string): Promise<void> {
   try {
+    const firestore = getFirestore();
+
     // 指定された動画の音声ボタン数をカウント
-    const buttonsQuery = query(
-      collection(firestore, "audioButtons"),
-      where("sourceVideoId", "==", videoId),
-      where("isPublic", "==", true),
-    );
-    const buttonsSnapshot = await getDocs(buttonsQuery);
+    const buttonsSnapshot = await firestore
+      .collection("audioButtons")
+      .where("sourceVideoId", "==", videoId)
+      .where("isPublic", "==", true)
+      .get();
+
     const audioButtonCount = buttonsSnapshot.size;
 
     // videosコレクションで動画ドキュメントを更新
-    const videoDocRef = doc(firestore, "videos", videoId);
-    await updateDoc(videoDocRef, {
-      audioButtonCount,
-      hasAudioButtons: audioButtonCount > 0,
-      updatedAt: Timestamp.now(),
-    });
+    await firestore
+      .collection("videos")
+      .doc(videoId)
+      .update({
+        audioButtonCount,
+        hasAudioButtons: audioButtonCount > 0,
+        updatedAt: Timestamp.now(),
+      });
   } catch (error) {
     console.error("動画の音声ボタン数更新エラー:", error);
     throw error;
@@ -229,38 +162,25 @@ export async function deleteAudioButton(
   id: string,
 ): Promise<ActionResult<void>> {
   try {
-    // 音声ボタンデータを取得
-    const buttonDocRef = doc(firestore, "audioButtons", id);
-    const buttonDoc = await getDoc(buttonDocRef);
+    const firestore = getFirestore();
 
-    if (!buttonDoc.exists()) {
+    // 音声ボタンデータを取得
+    const buttonDoc = await firestore.collection("audioButtons").doc(id).get();
+
+    if (!buttonDoc.exists) {
       return {
         success: false,
         error: "音声ボタンが見つかりません",
       };
     }
 
-    const buttonData = buttonDoc.data() as FirestoreAudioButtonData;
-
-    // バッチ処理で削除
-    const batch = writeBatch(firestore);
+    const buttonData = buttonDoc.data();
 
     // Firestoreドキュメントを削除
-    batch.delete(buttonDocRef);
-
-    await batch.commit();
-
-    // Cloud Storageから音声ファイルを削除
-    try {
-      const fileRef = ref(storage, buttonData.audioUrl);
-      await deleteObject(fileRef);
-    } catch (storageError) {
-      console.warn("音声ファイル削除エラー:", storageError);
-      // ストレージファイルの削除に失敗しても処理を続行
-    }
+    await firestore.collection("audioButtons").doc(id).delete();
 
     // 元動画の音声ボタン数を更新
-    if (buttonData.sourceVideoId) {
+    if (buttonData?.sourceVideoId) {
       try {
         await updateVideoAudioButtonCount(buttonData.sourceVideoId);
       } catch (error) {
@@ -270,7 +190,7 @@ export async function deleteAudioButton(
 
     // 関連ページの再検証
     revalidatePath("/buttons");
-    if (buttonData.sourceVideoId) {
+    if (buttonData?.sourceVideoId) {
       revalidatePath(`/videos/${buttonData.sourceVideoId}`);
     }
 
@@ -294,11 +214,29 @@ export async function incrementPlayCount(
   id: string,
 ): Promise<ActionResult<void>> {
   try {
-    const buttonDocRef = doc(firestore, "audioButtons", id);
-    await updateDoc(buttonDocRef, {
-      playCount: (await getDoc(buttonDocRef)).data()?.playCount + 1 || 1,
-      updatedAt: Timestamp.now(),
-    });
+    const firestore = getFirestore();
+
+    // 現在のデータを取得
+    const buttonDoc = await firestore.collection("audioButtons").doc(id).get();
+
+    if (!buttonDoc.exists) {
+      return {
+        success: false,
+        error: "音声ボタンが見つかりません",
+      };
+    }
+
+    const currentData = buttonDoc.data();
+    const currentPlayCount = currentData?.playCount || 0;
+
+    // 再生回数を増加
+    await firestore
+      .collection("audioButtons")
+      .doc(id)
+      .update({
+        playCount: currentPlayCount + 1,
+        updatedAt: Timestamp.now(),
+      });
 
     return { success: true };
   } catch (error) {
@@ -317,11 +255,29 @@ export async function incrementLikeCount(
   id: string,
 ): Promise<ActionResult<void>> {
   try {
-    const buttonDocRef = doc(firestore, "audioButtons", id);
-    await updateDoc(buttonDocRef, {
-      likeCount: (await getDoc(buttonDocRef)).data()?.likeCount + 1 || 1,
-      updatedAt: Timestamp.now(),
-    });
+    const firestore = getFirestore();
+
+    // 現在のデータを取得
+    const buttonDoc = await firestore.collection("audioButtons").doc(id).get();
+
+    if (!buttonDoc.exists) {
+      return {
+        success: false,
+        error: "音声ボタンが見つかりません",
+      };
+    }
+
+    const currentData = buttonDoc.data();
+    const currentLikeCount = currentData?.likeCount || 0;
+
+    // いいね数を増加
+    await firestore
+      .collection("audioButtons")
+      .doc(id)
+      .update({
+        likeCount: currentLikeCount + 1,
+        updatedAt: Timestamp.now(),
+      });
 
     return { success: true };
   } catch (error) {

@@ -1,19 +1,19 @@
 import { AudioButtonCard } from "@/components/AudioButtonCard";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   getAudioButtonById,
   getAudioButtonsByCategory,
 } from "@/lib/firestore-audio";
 import type { AudioButtonCategory } from "@suzumina.click/shared-types";
 import { AudioPlayer } from "@suzumina.click/ui/components/audio-player";
+import { Badge } from "@suzumina.click/ui/components/badge";
+import { Button } from "@suzumina.click/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@suzumina.click/ui/components/card";
 import { formatDistanceToNow } from "date-fns";
 import { ja } from "date-fns/locale";
 import {
@@ -35,9 +35,9 @@ import { notFound } from "next/navigation";
 import { incrementPlayCount } from "../actions";
 
 interface AudioButtonDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // カテゴリ表示名
@@ -118,7 +118,8 @@ async function RelatedAudioButtons({
 export default async function AudioButtonDetailPage({
   params,
 }: AudioButtonDetailPageProps) {
-  const audioButton = await getAudioButtonById(params.id);
+  const resolvedParams = await params;
+  const audioButton = await getAudioButtonById(resolvedParams.id);
 
   if (!audioButton) {
     notFound();

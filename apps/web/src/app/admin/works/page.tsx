@@ -3,9 +3,9 @@ import { getWorks } from "./actions";
 import WorkList from "./components/WorkList";
 
 interface AdminWorksProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
-  };
+  }>;
 }
 
 export default async function AdminWorks({ searchParams }: AdminWorksProps) {

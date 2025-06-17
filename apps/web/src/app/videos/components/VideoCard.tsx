@@ -47,7 +47,7 @@ export default function VideoCard({
           <div className="absolute bottom-2 right-2">
             <Badge className="bg-black/70 text-white">
               <Clock className="h-3 w-3 mr-1" />
-              {video.duration || "動画"}
+              動画
             </Badge>
           </div>
           <div className="absolute top-2 left-2">

@@ -1,17 +1,17 @@
 "use client";
 
 import { incrementLikeCount, incrementPlayCount } from "@/app/buttons/actions";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import { AudioPlayer } from "@suzumina.click/ui/components/audio-player";
+import { Badge } from "@suzumina.click/ui/components/badge";
+import { Button } from "@suzumina.click/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
-import { AudioPlayer } from "@suzumina.click/ui/components/audio-player";
+} from "@suzumina.click/ui/components/card";
 import { formatDistanceToNow } from "date-fns";
 import { ja } from "date-fns/locale";
 import {

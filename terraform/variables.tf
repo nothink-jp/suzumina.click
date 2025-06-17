@@ -7,6 +7,18 @@ variable "gcp_project_id" {
   type        = string
 }
 
+variable "project_id" {
+  description = "Google Cloud プロジェクトID（エイリアス）"
+  type        = string
+  default     = ""
+}
+
+variable "domain_name" {
+  description = "ドメイン名"
+  type        = string
+  default     = "suzumina.click"
+}
+
 variable "region" {
   description = "Google Cloud リージョン"
   type        = string
