@@ -23,7 +23,7 @@ export default function AdminList<
   type,
   emptyMessage = "データが見つかりませんでした",
 }: AdminListProps<T>) {
-  const itemsPerPage = 10;
+  const itemsPerPage = 100;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   return (

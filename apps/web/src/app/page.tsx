@@ -2,18 +2,49 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
+    <div className="bg-gray-50">
+      <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold text-gray-900">suzumina.click</h1>
           <p className="text-gray-600 mt-2">涼花みなせファンサイトへようこそ</p>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {/* ユーザー向けコンテンツ */}
         <div className="bg-white rounded-lg shadow-sm p-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-            コンテンツ
+            🎵 コンテンツを楽しむ
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Link
+              href="/videos"
+              className="block p-6 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+            >
+              <h3 className="text-xl font-medium text-purple-900 mb-2">
+                📺 動画一覧
+              </h3>
+              <p className="text-purple-700">
+                涼花みなせさんのYouTube動画を視聴
+              </p>
+            </Link>
+
+            <Link
+              href="/works"
+              className="block p-6 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition-colors"
+            >
+              <h3 className="text-xl font-medium text-rose-900 mb-2">
+                🎧 音声作品一覧
+              </h3>
+              <p className="text-rose-700">DLsite音声作品を探索・購入</p>
+            </Link>
+          </div>
+        </div>
+
+        {/* 管理機能 */}
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+            ⚙️ コンテンツ管理
           </h2>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -54,7 +85,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -2,11 +2,11 @@ import { Suspense } from "react";
 import { getTotalVideoCount, getVideoTitles } from "./actions";
 import VideoList from "./components/VideoList";
 
-interface AdminVideosProps {
+interface VideosPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default async function AdminVideos({ searchParams }: AdminVideosProps) {
+export default async function VideosPage({ searchParams }: VideosPageProps) {
   const resolvedSearchParams = await searchParams;
   const pageParam = resolvedSearchParams.page;
   const currentPage =
@@ -17,7 +17,7 @@ export default async function AdminVideos({ searchParams }: AdminVideosProps) {
 
   // 並行してデータを取得
   const [initialData, totalCount] = await Promise.all([
-    getVideoTitles({ page: validPage, limit: 100 }),
+    getVideoTitles({ page: validPage, limit: 12 }),
     getTotalVideoCount(),
   ]);
 
@@ -25,8 +25,10 @@ export default async function AdminVideos({ searchParams }: AdminVideosProps) {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">動画管理</h1>
-          <p className="text-gray-600 mt-2">涼花みなせの動画一覧 - 管理画面</p>
+          <h1 className="text-4xl font-bold text-suzuka-800 mb-2">動画一覧</h1>
+          <p className="text-suzuka-600">
+            涼花みなせさんのYouTube動画から音声ボタンを作成できます
+          </p>
         </div>
       </header>
 
@@ -34,8 +36,8 @@ export default async function AdminVideos({ searchParams }: AdminVideosProps) {
         <Suspense
           fallback={
             <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-              <p className="mt-2 text-gray-600">読み込み中...</p>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-suzuka-500" />
+              <p className="mt-2 text-suzuka-600">読み込み中...</p>
             </div>
           }
         >
@@ -49,3 +51,10 @@ export default async function AdminVideos({ searchParams }: AdminVideosProps) {
     </div>
   );
 }
+
+// メタデータ設定
+export const metadata = {
+  title: "動画一覧 | suzumina.click",
+  description:
+    "涼花みなせさんのYouTube動画一覧。お気に入りの動画から音声ボタンを作成できます。",
+};

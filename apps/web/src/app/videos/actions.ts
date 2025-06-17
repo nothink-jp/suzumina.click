@@ -1,7 +1,7 @@
 "use server";
 
 /**
- * Server Actions for fetching video data from Firestore
+ * Server Actions for fetching video data from Firestore (ユーザー向け)
  */
 
 import { getFirestore } from "@/lib/firestore";
@@ -14,7 +14,7 @@ import {
 } from "@suzumina.click/shared-types/src/video";
 
 /**
- * Firestoreからビデオタイトル一覧を取得するServer Action（ページネーション対応）
+ * Firestoreからビデオタイトル一覧を取得するServer Action（ユーザー向けページネーション対応）
  */
 export async function getVideoTitles(params?: {
   page?: number;
@@ -23,7 +23,7 @@ export async function getVideoTitles(params?: {
 }): Promise<VideoListResult> {
   try {
     const firestore = getFirestore();
-    const limit = params?.limit || 100;
+    const limit = params?.limit || 12;
     const page = params?.page || 1;
 
     // videosコレクションの参照を取得

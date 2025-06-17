@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "@suzumina.click/ui/globals.css";
+import SiteFooter from "@/components/SiteFooter";
+import SiteHeader from "@/components/SiteHeader";
 
 export const metadata: Metadata = {
   title: "suzumina.click - 涼花みなせファンサイト",
@@ -13,7 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body className="min-h-screen flex flex-col">
+        <SiteHeader />
+        <main id="main-content" className="flex-1">
+          {children}
+        </main>
+        <SiteFooter />
+      </body>
     </html>
   );
 }

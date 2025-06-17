@@ -16,7 +16,7 @@ export default async function AdminWorks({ searchParams }: AdminWorksProps) {
   const validPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
 
   // Server Actionでデータ取得
-  const result = await getWorks({ page: validPage, limit: 10 });
+  const result = await getWorks({ page: validPage, limit: 100 });
   const { works: initialData, totalCount } = result;
 
   return (

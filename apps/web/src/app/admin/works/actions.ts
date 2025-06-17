@@ -15,7 +15,7 @@ import { convertToFrontendWork } from "@suzumina.click/shared-types/src/work";
  */
 export async function getWorks({
   page = 1,
-  limit = 10,
+  limit = 100,
 }: {
   page?: number;
   limit?: number;
@@ -154,7 +154,7 @@ export async function getWorkById(
 export async function getWorksByCircle({
   circle,
   page = 1,
-  limit = 10,
+  limit = 100,
 }: {
   circle: string;
   page?: number;
@@ -248,7 +248,7 @@ export async function getWorksByCircle({
  */
 export async function getSuzuminaWorks({
   page = 1,
-  limit = 10,
+  limit = 100,
 }: {
   page?: number;
   limit?: number;
