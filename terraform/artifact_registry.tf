@@ -22,7 +22,7 @@ resource "google_artifact_registry_repository" "docker_repo" {
     condition {
       tag_state             = "ANY"
       tag_prefixes          = ["latest"]
-      package_name_prefixes = ["nextjs-app", "audio-processor"]
+      package_name_prefixes = ["nextjs-app"]
     }
   }
   

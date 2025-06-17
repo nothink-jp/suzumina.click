@@ -61,3 +61,6 @@ tmp/
 service-account-key.json
 firebase-debug.log
 firestore-debug.log
+
+venv
+__pycache__

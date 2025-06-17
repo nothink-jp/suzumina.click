@@ -28,18 +28,17 @@ graph TD
         CF2[fetchDLsiteWorks<br/>512Mi, 9分]
     end
 
-    %% Audio Processing
-    subgraph "音声処理基盤"
-        CT[Cloud Tasks Queue<br/>audio-processing-queue<br/>1req/sec, 3並列]
-        CRJ[Cloud Run Jobs<br/>audio-processor<br/>4CPU, 16Gi, 1時間]
+    %% User Audio Creation
+    subgraph "音声ボタン作成"
+        WEB_AUDIO[Web Audio API<br/>ブラウザ内音声処理]
+        FILE_UPLOAD[Next.js Server Actions<br/>ファイルアップロード]
     end
 
     %% Storage
     subgraph "ストレージ"
-        FS[(Cloud Firestore Database<br/>videos, works, audioClips<br/>Native Mode)]
-        CS_AUDIO[Cloud Storage<br/>audio-files<br/>ライフサイクル管理]
+        FS[(Cloud Firestore Database<br/>videos, works, audioButtons<br/>Native Mode)]
+        CS_AUDIO[Cloud Storage<br/>user-audio-files<br/>ユーザー作成音声]
         CS_DEPLOY[Cloud Storage<br/>functions-deployment]
-        AR[Artifact Registry<br/>Docker Images]
     end
 
     %% Web Application
@@ -67,9 +66,8 @@ graph TD
         SA1[Service Account<br/>github-actions-sa]
         SA2[Service Account<br/>fetch-youtube-videos-sa]
         SA3[Service Account<br/>fetch-dlsite-works-sa]
-        SA4[Service Account<br/>audio-processor]
-        SA5[Service Account<br/>web-app]
-        SA6[Service Account<br/>task-enqueuer]
+        SA4[Service Account<br/>web-app]
+        SA5[Service Account<br/>user-content]
     end
 
     %% Connections
@@ -80,32 +78,28 @@ graph TD
     
     CF1 -->|動画データ取得| YT
     CF1 -->|データ保存| FS
-    CF1 -->|音声処理タスク送信| CT
-    
     CF2 -->|作品データ取得| DL
     CF2 -->|データ保存| FS
     
-    CT -->|音声処理実行| CRJ
-    CRJ -->|音声ファイル保存| CS_AUDIO
-    CRJ -->|メタデータ更新| FS
-    
     WEB -->|データ読み取り| FS
     WEB -->|音声ファイル再生| CS_AUDIO
+    WEB_AUDIO -->|音声処理| FILE_UPLOAD
+    FILE_UPLOAD -->|音声ファイル保存| CS_AUDIO
+    FILE_UPLOAD -->|メタデータ保存| FS
     
     CF1 -.->|APIキー取得| SM
     CF1 -.->|認証| SA2
     CF2 -.->|認証| SA3
-    CRJ -.->|認証| SA4
-    WEB -.->|認証| SA5
+    WEB -.->|認証| SA4
+    FILE_UPLOAD -.->|認証| SA5
     
     WIF -.->|CI/CD| SA1
     SA1 -->|デプロイ| CS_DEPLOY
-    SA1 -->|イメージ管理| AR
     
     MD -->|メトリクス監視| CF1
     MD -->|メトリクス監視| CF2
-    MD -->|メトリクス監視| CRJ
     MD -->|メトリクス監視| FS
+    MD -->|メトリクス監視| WEB
     
     AP1 -->|アラート送信| NC
     AP2 -->|アラート送信| NC
@@ -121,11 +115,12 @@ graph TD
     classDef messaging fill:#ffd700
     
     class YT,DL external
-    class CF1,CF2,CRJ compute
-    class FS,CS_AUDIO,CS_DEPLOY,AR storage
-    class SM,FR,WIF,SA1,SA2,SA3,SA4,SA5,SA6 security
+    class CF1,CF2,WEB compute
+    class FS,CS_AUDIO,CS_DEPLOY storage
+    class SM,FR,WIF,SA1,SA2,SA3,SA4,SA5 security
     class MD,AP1,AP2,NC monitoring
-    class CS1,CS2,PS1,PS2,CT messaging
+    class CS1,CS2,PS1,PS2 messaging
+    class WEB_AUDIO,FILE_UPLOAD compute
 ```
 
 ## データフロー詳細
@@ -140,7 +135,6 @@ Cloud Scheduler → Pub/Sub → Cloud Functions → External APIs → Cloud Fire
 2. fetchYouTubeVideos 関数が Pub/Sub イベントで起動
 3. YouTube Data API v3 から最新動画情報を取得
 4. Cloud Firestore の videos コレクションに保存
-5. 音声処理が必要な動画は Cloud Tasks キューにタスク送信
 
 **DLsite作品収集 (1時間に3回実行: 6,26,46分)**
 1. Cloud Scheduler が Pub/Sub トピックにメッセージ送信
@@ -148,16 +142,16 @@ Cloud Scheduler → Pub/Sub → Cloud Functions → External APIs → Cloud Fire
 3. DLsite からWebスクレイピングで作品情報取得
 4. Cloud Firestore の works コレクションに保存
 
-### 2. 音声処理フロー
+### 2. ユーザー音声ボタン作成フロー
 ```
-YouTube Function → Cloud Tasks → Cloud Run Jobs → Cloud Storage + Cloud Firestore
+ユーザー → Web Audio API → Next.js Server Actions → Cloud Storage + Cloud Firestore
 ```
 
-1. YouTube動画収集時に音声処理タスクを Cloud Tasks キューに送信
-2. Cloud Run Jobs (audio-processor) が Cloud Tasks からタスクを受信
-3. YouTube動画から音声を抽出・処理（複数形式で生成）
-4. 生成した音声ファイルを Cloud Storage に保存
-5. 音声ボタンのメタデータを Cloud Firestore に保存
+1. ユーザーがWebブラウザ上で音声ファイルをアップロード・編集
+2. Web Audio APIによるブラウザ内音声処理（トリミング、フェード等）
+3. Next.js Server Actionsによる処理済み音声ファイルの受信
+4. 音声ファイルをCloud Storageに保存
+5. 音声ボタンのメタデータをCloud Firestoreに保存
 
 ### 3. Webアプリケーションアクセスフロー
 ```
@@ -165,7 +159,8 @@ YouTube Function → Cloud Tasks → Cloud Run Jobs → Cloud Storage + Cloud Fi
 ```
 
 1. Next.js アプリが Cloud Firestore から動画・作品データを取得
-2. 音声ボタン再生時は Cloud Storage から音声ファイルを配信
+2. 音声ボタン再生時はCloud Storageから音声ファイルを配信
+3. ユーザー作成音声ボタンのアップロード・管理機能
 3. Cloud Firestore Rules により適切なアクセス制御を実施
 
 ## リソース詳細分析
@@ -181,7 +176,6 @@ YouTube Function → Cloud Tasks → Cloud Run Jobs → Cloud Storage + Cloud Fi
 | **Cloud Run API** | Functions v2 実行基盤 | api_services.tf |
 | **Artifact Registry API** | Functions v2 イメージ保存 | api_services.tf |
 | **Cloud Firestore API** | NoSQLデータベース | api_services.tf |
-| **Cloud Tasks API** | 音声処理キュー管理 | api_services.tf |
 | **Cloud Scheduler API** | 定期実行管理 | api_services.tf |
 | **Pub/Sub API** | メッセージング基盤 | api_services.tf |
 
@@ -196,16 +190,14 @@ YouTube Function → Cloud Tasks → Cloud Run Jobs → Cloud Storage + Cloud Fi
 |----------|------|------|-------------|
 | **fetchYouTubeVideos** | YouTube動画データ収集 | 512Mi, 9分タイムアウト | Pub/Sub (毎時19分) |
 | **fetchDLsiteWorks** | DLsite作品データ収集 | 512Mi, 9分タイムアウト | Pub/Sub (6,26,46分) |
-| **audio-processor** | 音声ボタン生成処理 | 4CPU, 16Gi, 1時間タイムアウト | Cloud Tasks キュー |
 
 ### ストレージシステム
 
 | ストレージ | 用途 | 特徴 | ライフサイクル |
 |-----------|------|------|---------------|
 | **Cloud Firestore Database** | アプリケーションデータ | ネイティブモード, 複合インデックス | 永続保存 |
-| **audio-files bucket** | 音声ファイル保存 | CORS設定, 地域最適化 | 30日→Nearline, 90日→Coldline, 365日→削除 |
+| **user-audio-files bucket** | ユーザー音声ファイル保存 | CORS設定, 地域最適化 | 1年保持, サイズ制限 |
 | **functions-deployment** | デプロイパッケージ | GitHub Actions連携 | 30日保持 |
-| **Artifact Registry** | Dockerイメージ | 音声処理・Webアプリ用 | タグベース保持ポリシー |
 
 ### セキュリティ・IAMアーキテクチャ
 
@@ -214,18 +206,17 @@ YouTube Function → Cloud Tasks → Cloud Run Jobs → Cloud Storage + Cloud Fi
 | サービスアカウント | 用途 | 主要権限 | 使用場所 |
 |------------------|------|----------|----------|
 | **github-actions-sa** | CI/CDパイプライン | Cloud Build, Artifact Registry, Cloud Run | GitHub Actions |
-| **fetch-youtube-videos-sa** | YouTube データ収集 | Cloud Firestore User, Secret Manager, Cloud Tasks Enqueuer | YouTube関数 |
+| **fetch-youtube-videos-sa** | YouTube データ収集 | Cloud Firestore User, Secret Manager | YouTube関数 |
 | **fetch-dlsite-works-sa** | DLsite データ収集 | Cloud Firestore User, Logging Writer | DLsite関数 |
-| **audio-processor** | 音声処理 | Storage Admin, Cloud Firestore User, Monitoring Writer | Cloud Run Jobs |
-| **web-app** | Webアプリケーション | Storage Object Viewer | Next.js アプリ |
-| **task-enqueuer** | タスク管理 | Cloud Tasks Enqueuer, Cloud Run Invoker | タスクキュー管理 |
+| **web-app** | Webアプリケーション | Storage Object Viewer, Cloud Firestore User | Next.js アプリ |
+| **user-content** | ユーザーコンテンツ管理 | Storage Admin, Cloud Firestore User | 音声アップロード |
 
 #### Workload Identity Federation
 - **GitHub Actions認証**: リポジトリ制限付きOIDC認証
 - **セキュアなCI/CD**: サービスアカウントキー不要の認証
 
 #### アクセス制御
-- **Cloud Firestore Rules**: 動画は公開読み取り、音声クリップは認証ベース、ユーザーデータ分離
+- **Cloud Firestore Rules**: 動画は公開読み取り、音声ボタンはユーザー認証ベース、ユーザーデータ分離
 - **Storage IAM**: バケット単位の厳密なアクセス制御
 - **Secret Manager**: 最小権限でのAPIキー管理
 
@@ -233,7 +224,7 @@ YouTube Function → Cloud Tasks → Cloud Run Jobs → Cloud Storage + Cloud Fi
 
 #### ダッシュボード監視項目
 - Cloud Functions 実行状況・エラー率・レスポンス時間
-- Cloud Run Jobs パフォーマンス・リソース使用率
+- Next.js アプリケーションパフォーマンス・レスポンス時間
 - Cloud Firestore オペレーション・読み書きパフォーマンス
 - Cloud Storage アクセスパターン・転送量
 
@@ -247,7 +238,7 @@ YouTube Function → Cloud Tasks → Cloud Run Jobs → Cloud Storage + Cloud Fi
 ### スケジューリング戦略
 - **YouTube収集**: 毎時19分（新着動画の一般的な投稿時間を考慮）
 - **DLsite収集**: 1時間3回（6,26,46分）で更新頻度と負荷分散を両立
-- **音声処理**: イベント駆動でオンデマンド実行
+- **音声ボタン作成**: ユーザー駆動のオンデマンド処理
 
 ### コスト最適化
 - **適切なリソースサイジング**: 用途別の最適な CPU・メモリ配分
@@ -279,7 +270,7 @@ YouTube Function → Cloud Tasks → Cloud Run Jobs → Cloud Storage + Cloud Fi
 
 ### 短期拡張
 - **リアルタイム更新**: Cloud Firestore リアルタイムリスナーによる即時UI更新
-- **音声品質向上**: より高品質な音声処理アルゴリズムの実装
+- **音声編集機能強化**: Web Audio APIによる高度な音声編集機能
 - **検索・フィルター機能**: 高度な検索・フィルター機能の追加
 
 ### 長期拡張
@@ -298,8 +289,7 @@ YouTube Function → Cloud Tasks → Cloud Run Jobs → Cloud Storage + Cloud Fi
 
 #### 追加・統合されたファイル
 - **api_services.tf**: 全API有効化の一元管理（9つのGCP API）
-- **cloud_tasks.tf**: 音声処理用Cloud Tasksキューの追加
-- **audio_storage.tf**: 音声ファイル用Cloud Storage（ライフサイクル管理付き）
+- **user_audio_storage.tf**: ユーザー音声ファイル用Cloud Storage（サイズ制限・保持期間付き）
 - **firestore_database.tf**: Firebase依存のないCloud Firestoreデータベース（`firebase.tf` から名称変更）
 
 #### 設定の統一化

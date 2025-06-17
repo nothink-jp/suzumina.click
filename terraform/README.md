@@ -10,11 +10,9 @@ suzumina.clickプロジェクトのGoogle Cloud Platform (GCP)インフラスト
 - **Cloud Scheduler**: 定期実行（毎時・20分間隔）
 - **Pub/Sub**: 非同期メッセージング
 
-### 新規追加（音声ボタン機能）
-- **Cloud Storage**: 音声ファイル保存（`audio_storage.tf`）
-- **Cloud Tasks**: 音声処理キュー（`cloud_tasks.tf`）
-- **Cloud Run Jobs**: 音声処理エンジン（`cloud_tasks.tf`）
-- **IAM**: 音声処理用権限設定（`iam.tf`）
+### 音声ボタン機能（ユーザー作成方式）
+- **Cloud Storage**: ユーザー音声ファイル保存
+- **IAM**: 音声ファイルアップロード用権限設定（`iam.tf`）
 
 ## 📁 ファイル構成
 
@@ -33,9 +31,9 @@ terraform/
 ├── secrets.tf                   # Secret Manager
 ├── iam.tf                       # IAM権限・サービスアカウント
 │
-├── # 音声ボタン機能（新規）
-├── audio_storage.tf             # 音声ファイル用Cloud Storage
-├── cloud_tasks.tf               # Cloud Tasks + Cloud Run Jobs
+├── # 音声ボタン機能（削除済み - ユーザー作成方式に変更）
+├── # audio_storage.tf             # 削除済み
+├── # cloud_tasks.tf               # 削除済み
 │
 └── # その他
     ├── api_services.tf          # 有効化API
@@ -45,28 +43,26 @@ terraform/
     └── storage.tf               # その他ストレージ
 ```
 
-## 🎯 音声ボタン機能アーキテクチャ
+## 🎯 音声ボタン機能アーキテクチャ（ユーザー作成方式）
 
 ```mermaid
 graph TB
     A[YouTube Data API] --> B[Cloud Functions<br/>fetchYouTubeVideos]
     B --> C[Firestore<br/>動画メタデータ]
-    B --> D[Cloud Tasks<br/>audio-processing-queue]
-    D --> E[Cloud Run Jobs<br/>audio-processor]
+    
+    D[ユーザー] --> E[Next.js Web App<br/>音声アップロード]
     E --> F[Cloud Storage<br/>音声ファイル]
-    E --> C
+    E --> C[Firestore<br/>音声ボタンメタデータ]
     
     G[Cloud Scheduler] --> B
-    H[yt-dlp + FFmpeg] --> E
 ```
 
 ### データフロー
 1. **Cloud Scheduler** → **fetchYouTubeVideos** (毎時19分)
 2. **YouTube API** → **Firestore** (動画メタデータ保存)
-3. **Cloud Functions** → **Cloud Tasks** (音声処理タスク送信)
-4. **Cloud Tasks** → **Cloud Run Jobs** (音声処理実行)
-5. **yt-dlp + FFmpeg** → **Cloud Storage** (Opus/AAC音声保存)
-6. **Cloud Run Jobs** → **Firestore** (音声ボタンメタデータ更新)
+3. **ユーザー** → **Web Audio API** (ブラウザ内音声処理)
+4. **Next.js Server Actions** → **Cloud Storage** (音声ファイル保存)
+5. **Next.js Server Actions** → **Firestore** (音声ボタンメタデータ保存)
 
 ## 🚀 デプロイ手順
 
@@ -160,14 +156,9 @@ terraform apply
 - **自動削除**: 1年後完全削除
 - **リージョン**: us-central1（標準料金）
 
-### Cloud Run Jobs
-- **オンデマンド実行**: 処理時のみ課金
-- **最適リソース**: CPU 4/Memory 16GB（音声処理最適化）
-- **タイムアウト**: 1時間（無限実行防止）
-
-### Cloud Tasks
-- **レート制限**: 1 task/sec（リソース過負荷防止）
-- **無料枠**: 月100万オペレーション（十分な範囲）
+### Next.js Server Actions
+- **ユーザーアップロード**: ブラウザ直接アップロード（サーバー処理最小化）
+- **ファイルサイズ制限**: 10MB（音声ファイル適正サイズ）
 
 ## 🔍 監視・運用
 
@@ -179,24 +170,21 @@ terraform apply
 ### 運用コマンド
 
 ```bash
-# 音声処理キューの状況確認
-gcloud tasks queues describe audio-processing-queue --location=us-central1
-
-# Cloud Run Jobs実行状況確認
-gcloud run jobs executions list --job=audio-processor --region=us-central1
-
 # 音声ファイル容量確認
 gsutil du -sh gs://suzumina-click-firebase-audio-files
 
-# ログ確認
-gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name="audio-processor"' --limit=50
+# Web App ログ確認
+gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="suzumina-click-web"' --limit=50
+
+# 音声ファイルアップロード統計
+gcloud logging read 'protoPayload.methodName="storage.objects.insert" AND protoPayload.resourceName=~"audio-files"' --limit=20
 ```
 
 ## 🛠️ トラブルシューティング
 
 ### よくある問題
 
-1. **Cloud Tasks権限エラー**
+1. **音声ファイルアップロード権限エラー**
    ```bash
    # IAM権限確認
    gcloud projects get-iam-policy suzumina-click-firebase
@@ -208,22 +196,24 @@ gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=
    gsutil cors get gs://suzumina-click-firebase-audio-files
    ```
 
-3. **Cloud Run Jobs実行失敗**
+3. **音声ファイルアップロード失敗**
    ```bash
-   # 最新実行ログ確認
-   gcloud run jobs executions describe EXECUTION_NAME --region=us-central1
+   # Cloud Storage設定確認
+   gsutil cors get gs://suzumina-click-firebase-audio-files
    ```
 
 ### 緊急時手順
 
-1. **音声処理停止**
+1. **音声アップロード一時停止**
    ```bash
-   gcloud tasks queues pause audio-processing-queue --location=us-central1
+   # メンテナンスモード設定
+   gcloud run services update suzumina-click-web --set-env-vars MAINTENANCE_MODE=true
    ```
 
-2. **処理再開**
+2. **サービス復旧**
    ```bash
-   gcloud tasks queues resume audio-processing-queue --location=us-central1
+   # メンテナンスモード解除
+   gcloud run services update suzumina-click-web --remove-env-vars MAINTENANCE_MODE
    ```
 
 ## 📋 デプロイチェックリスト
@@ -231,15 +221,12 @@ gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=
 ### 初回デプロイ前
 - [ ] terraform.tfvars設定完了
 - [ ] GCP認証設定完了
-- [ ] Docker イメージビルド完了
 - [ ] 既存インフラへの影響確認
 
 ### デプロイ後確認
 - [ ] Cloud Storage バケット作成確認
-- [ ] Cloud Tasks キュー作成確認
-- [ ] Cloud Run Jobs デプロイ確認
 - [ ] IAM権限設定確認
-- [ ] 音声処理テスト実行
+- [ ] Web App音声アップロード機能テスト
 
 ### 本番移行
 - [ ] 段階的デプロイ（開発→ステージング→本番）
@@ -249,6 +236,6 @@ gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=
 
 ---
 
-**最終更新**: 2025年6月16日  
-**バージョン**: 1.0.0 (音声ボタン機能対応)  
+**最終更新**: 2025年6月17日  
+**バージョン**: 2.0.0 (ユーザー作成音声ボタン機能対応)  
 **管理者**: suzumina.click開発チーム

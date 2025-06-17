@@ -1,10 +1,10 @@
 # suzumina.click プロジェクト概要
 
-声優「涼花みなせ」のファンサイト - YouTubeビデオから音声ボタンを作成し、DLsite作品情報を表示
+声優「涼花みなせ」のファンサイト - ユーザーが作成する音声ボタンの共有とDLsite作品情報を表示
 
 ## 🎯 プロジェクト概要
 
-suzumina.clickは、声優「涼花みなせ」ファンコミュニティのためのWebプラットフォームです。YouTubeビデオから抽出した音声ボタンの作成・共有機能と、DLsiteからの最新作品情報閲覧機能を提供します。
+suzumina.clickは、声優「涼花みなせ」ファンコミュニティのためのWebプラットフォームです。ユーザーが作成する音声ボタンの共有機能と、DLsiteからの最新作品情報閲覧機能を提供します。
 
 ### 開発状況
 
@@ -18,7 +18,7 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 
 **🚧 進行中**
 
-- **音声ボタン機能**: YouTubeビデオからの音声抽出（今後の機能）
+- **音声ボタン機能**: ユーザー作成音声ボタンのアップロード・共有機能（4週間開発予定）
 
 **📝 参考**
 
@@ -31,11 +31,11 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
      ↓              ↓              ↓         ↓              ↓           ↓
 YouTube API    定期実行         非同期      データ収集      NoSQLストレージ  フロントエンド
 DLsite         (毎時/20分間隔)  メッセージ   (Function v2)   (型安全)      (App Router)
-               ↓                         ↓
-              Cloud Tasks → Cloud Run Jobs → Cloud Storage
-                  ↓              ↓              ↓
-               音声処理キュー    重い計算処理    音声ファイル保存
-               (非同期実行)    (4CPU/16GB)    (ライフサイクル管理)
+               ↓                                            ↓
+              ユーザー音声アップロード → Cloud Storage → 音声ボタン表示
+                  ↓                    ↓              ↓
+               (Web Audio API)     音声ファイル保存    ブラウザ再生
+               (ブラウザ処理)      (ライフサイクル管理)  (Next.js)
 ```
 
 ## 🛠️ 技術スタック
@@ -52,14 +52,12 @@ DLsite         (毎時/20分間隔)  メッセージ   (Function v2)   (型安�
 ### バックエンド
 
 - **Google Cloud Functions v2 (Node.js 22)** - サーバーレス関数 (YouTube/DLsite データ収集)
-- **Google Cloud Run Jobs** - 重い計算処理 (音声抽出: 4CPU/16GB)
 - **Google Cloud Firestore** - NoSQLデータベース (Native mode + 複合インデックス)
-- **Google Cloud Storage** - ファイルストレージ (音声ファイル、デプロイアーティファクト)
-- **Google Cloud Tasks** - タスクキューイング (音声処理の非同期実行)
+- **Google Cloud Storage** - ファイルストレージ (ユーザー音声ファイル、デプロイアーティファクト)
 - **Google Cloud Pub/Sub** - 非同期メッセージング (Scheduler → Functions)
 - **Google Cloud Scheduler** - 定期実行タスク (毎時/20分間隔)
 - **Google Secret Manager** - APIキー・シークレット管理
-- **Google Artifact Registry** - Dockerコンテナレジストリ
+- **Web Audio API** - ブラウザベース音声処理
 
 ### インフラ・DevOps
 
@@ -99,9 +97,13 @@ suzumina.click/                    # Monorepoルート
 │   │   │   │   ├── actions.ts   # Server Actions
 │   │   │   │   ├── works/       # DLsite作品関連 (未実装)
 │   │   │   │   ├── videos/      # YouTube動画関連 (未実装)
+│   │   │   │   ├── audio/       # 音声ボタン関連 (4週間開発予定)
 │   │   │   │   └── search/      # 検索機能 (未実装)
 │   │   │   ├── components/      # UIコンポーネント
 │   │   │   │   ├── VideoList.tsx      # 動画一覧 (Server Component)
+│   │   │   │   ├── AudioButtonList.tsx # 音声ボタン一覧 (Server Component)
+│   │   │   │   ├── AudioUploader.tsx  # 音声アップロード (Client Component)
+│   │   │   │   ├── AudioPlayer.tsx    # 音声プレイヤー (Client Component)
 │   │   │   │   ├── Pagination.tsx     # ページネーション (Client Component)
 │   │   │   │   └── ThumbnailImage.tsx # サムネイル画像
 │   │   │   └── lib/             # ユーティリティ
@@ -123,6 +125,7 @@ suzumina.click/                    # Monorepoルート
 │   │   │   ├── common.ts         # 共通型・ユーティリティ
 │   │   │   ├── video.ts          # YouTube動画型定義
 │   │   │   ├── work.ts           # DLsite作品型定義
+│   │   │   ├── audio-button.ts   # 音声ボタン型定義
 │   │   │   └── firestore-utils.ts # Firestore変換ユーティリティ
 │   │   └── dist/                 # ビルド成果物
 │   └── ui/                       # 共有UIコンポーネント
@@ -170,6 +173,16 @@ suzumina.click/                    # Monorepoルート
 - `price`, `rating`, `salesCount` - 販売情報
 - `tags`, `thumbnailUrl` - 表示情報
 - `lastFetchedAt`, `createdAt`, `updatedAt` - 管理情報
+
+### 音声ボタンデータ (`FirestoreAudioButtonData`)
+
+- `id`, `title`, `description` - 基本情報
+- `audioUrl`, `duration`, `fileSize` - 音声ファイル情報
+- `sourceVideoId`, `startTime`, `endTime` - 元動画情報
+- `tags[]`, `category` - 分類情報
+- `uploadedBy`, `isPublic` - ユーザー・公開設定
+- `playCount`, `likeCount` - 統計情報
+- `createdAt`, `updatedAt` - 管理情報
 
 ## 🚀 開発コマンド
 
@@ -257,24 +270,26 @@ Firestore Database (Native mode)
     └─ works collection (メタデータ + ライフサイクル管理)
 ```
 
-**2. 音声処理フロー (将来実装)**
+**2. ユーザー音声ボタン作成フロー**
 ```
-fetchYouTubeVideos (Cloud Function)
-    ↓ (音声処理タスク送信)
-Cloud Tasks Queue (レート制限: 1/秒, 同時実行3タスク)
-    ↓ (HTTPリクエスト)
-Cloud Run Jobs - Audio Processor
-    │ (4 CPU cores, 16GB memory, 1時間タイムアウト)
-    │ ├─ YouTube動画から音声抽出
-    │ ├─ 音声セグメンテーション
-    │ └─ フォーマット変換 (Opus, AAC)
-    ↓ (処理済み音声ファイル)
-Cloud Storage - Audio Files Bucket
-    └─ ライフサイクル: 30日→Nearline, 90日→Coldline, 365日→削除
+ユーザー (Web Audio API)
+    │ ├─ 音声ファイル選択・アップロード
+    │ ├─ ブラウザ内音声処理 (切り抜き・調整)
+    │ └─ メタデータ入力 (タイトル、タグ等)
+    ↓ (Server Actions)
+Next.js Server Actions
+    │ ├─ 音声ファイル検証・変換
+    │ ├─ メタデータ保存 (Firestore)
+    │ └─ ファイルアップロード (Cloud Storage)
+    ↓ (保存完了)
+Firestore + Cloud Storage
+    ├─ audio_buttons collection (メタデータ)
+    └─ 音声ファイル (ライフサイクル管理)
 ```
 
 ### フロントエンド表示 (Next.js 15 App Router)
 
+**動画一覧ページ**
 ```
 Page (Server Component)
 ├── データ取得 (Server Actions)
@@ -284,10 +299,24 @@ Page (Server Component)
 │       └── URL更新によるナビゲーション
 ```
 
+**音声ボタンページ (4週間開発予定)**
+```
+Audio Page (Server Component)
+├── 音声ボタンデータ取得 (Server Actions)
+├── AudioUploader (Client Component)
+│   ├── Web Audio API (ファイル選択・処理)
+│   ├── メタデータ入力フォーム
+│   └── Server Actions (アップロード)
+└── AudioButtonList (Server Component)
+    ├── AudioPlayer (Client Component)
+    │   └── ブラウザ音声再生
+    └── Pagination (Client Component)
+```
+
 1. **Server Component**: ページでデータ取得 (Server Actions)
 2. **型変換**: `FirestoreData` → `FrontendData` (shared-types使用)
-3. **Server Component**: VideoListで表示ロジック
-4. **Client Component**: Paginationでインタラクション
+3. **Server Component**: VideoList・AudioButtonListで表示ロジック
+4. **Client Component**: インタラクション (Pagination, AudioPlayer, AudioUploader)
 
 ## 🔒 セキュリティ・設計原則
 
@@ -305,24 +334,53 @@ Page (Server Component)
 - **型安全性**: 共有型定義とZodスキーマ
 - **Monorepo**: 開発効率のための一元管理
 - **Storybook活用**: UIコンポーネントの開発・テスト環境
+- **ブラウザファースト**: Web Audio APIを使用したクライアントサイド音声処理
+- **ユーザー主導**: コンテンツ作成でのユーザーエンパワーメント
 
 ## 🎯 今後の予定
 
-1. **DLsite作品表示機能**: 作品一覧ページの実装
-2. **音声ボタン機能**: YouTubeビデオからの音声抽出
+### 優先度順位
+
+1. **音声ボタン機能 (4週間開発計画)**
+   - Week 1: ファイルアップロード・Web Audio API基盤
+   - Week 2: 音声ボタンデータモデル・Firestore連携
+   - Week 3: ユーザーインターフェース・音声プレイヤー
+   - Week 4: メタデータ管理・公開設定・テスト
+
+2. **DLsite作品表示機能**: 作品一覧ページの実装
+
 3. **検索・フィルター**: 高度な検索機能
+
 4. **レスポンシブUI**: モバイル対応
+
+### 音声ボタン機能詳細設計
+
+**コア機能**
+- ユーザーが音声ファイルをアップロード
+- Web Audio APIでブラウザ内音声処理 (切り抜き・調整)
+- メタデータ入力 (タイトル、タグ、元動画情報)
+- Cloud Storageへの音声ファイル保存
+- Firestoreへのメタデータ保存
+
+**ユーザーインターフェース**
+- ドラッグ&ドロップアップローダー
+- インタラクティブ音声プレイヤー
+- メタデータ入力フォーム
+- 音声ボタン一覧・検索機能
+- ユーザー投稿・公開設定管理
 
 ## 📝 重要ファイル
 
 - `docs/README.md` - 詳細仕様
 - `docs/FIRESTORE_STRUCTURE.md` - Firestoreデータ構造
-- `packages/shared-types/` - コア型定義
+- `packages/shared-types/` - コア型定義 (音声ボタン型含む)
 - `apps/functions/src/` - データ収集ロジック
+- `apps/web/src/app/audio/` - 音声ボタン機能 (4週間開発予定)
+- `apps/web/src/components/Audio*` - 音声関連UIコンポーネント
 - `terraform/` - インフラ設定
 - `biome.json` - コード品質設定
 
-このプロジェクトは、自動データ収集インフラ上に構築されたユーザー向けWebアプリケーションの型安全なフルスタック開発を重視しています。
+このプロジェクトは、データ収集インフラとユーザー作成コンテンツ機能を組み合わせたファンコミュニティプラットフォームで、型安全なフルスタック開発を重視しています。
 
 ## 🔧 開発ガイドライン
 
@@ -341,7 +399,9 @@ Page (Server Component)
 **アンチパターン**
 - ❌ Client ComponentでServer Actionsを直接呼び出し
 - ❌ UIコンポーネント内でのデータ取得ロジック
+- ❌ 重いサーバーサイド音声処理
 - ✅ Server ComponentでのデータプリロードとProps渡し
+- ✅ Web Audio APIでのクライアントサイド音声処理
 
 ### Storybook開発
 
