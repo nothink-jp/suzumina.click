@@ -365,10 +365,148 @@ Page (Server Component)
 
 ### テスト戦略
 
-- ユーティリティ・関数の単体テスト
-- データフローの統合テスト
-- Storybookでのビジュアルテスト
-- カバレッジレポートの自動生成
+プロジェクトでは **ハイブリッドテストアプローチ** を採用し、コンポーネントの性質に応じて最適なテスト手法を使い分けています。
+
+#### **1. Server Actions & ビジネスロジック → Vitest + 単体テスト**
+
+**対象:**
+- `apps/functions/src/` - Cloud Functions (データ収集ロジック)
+- `apps/web/src/app/*/actions.ts` - Server Actions
+- `packages/shared-types/src/` - 共有ユーティリティ
+
+**重点テスト項目:**
+- DLsite ID並び替えアルゴリズム (文字列長 + 辞書順)
+- 複雑なページネーションロジック (cursor + offset)
+- Firestore Timestamp変換とエラーハンドリング
+- データ変換・検索・フィルタリング機能
+
+```bash
+# Server Actions & Functions テスト実行
+pnpm test                    # 全体テスト実行
+pnpm test:coverage          # カバレッジ付きテスト実行
+cd apps/functions && pnpm test  # Functions個別テスト
+```
+
+#### **2. UIコンポーネント → Storybook (ビジュアルテスト)**
+
+**対象:**
+- `packages/ui/src/components/` - 共有UIコンポーネント
+- レイアウト・デザインが重要なコンポーネント
+
+**重点項目:**
+- デザインシステムの一貫性
+- 異なるprops・状態での見た目確認
+- アクセシビリティの視覚的検証
+- レスポンシブデザインの確認
+
+```bash
+# Storybook開発サーバー
+cd packages/ui && pnpm storybook     # 共有UIコンポーネント
+cd apps/web && pnpm storybook       # Web専用コンポーネント
+
+# 対象コンポーネント例
+packages/ui/src/components/
+├── button.tsx ✅ Storybook
+├── pagination.tsx ✅ Storybook
+├── card.tsx ✅ Storybook
+└── form-fields.tsx ✅ Storybook
+```
+
+#### **3. インタラクティブコンポーネント → React Testing Library**
+
+**対象:**
+- ユーザーインタラクションロジック
+- 条件分岐・エラーハンドリングを含むコンポーネント
+- 状態管理が重要なコンポーネント
+
+**重点項目:**
+- ページネーションの次/前ページロジック
+- 検索・フィルタリング機能
+- フォーム入力・バリデーション
+- エラーバウンダリ
+
+```bash
+# React Testing Library セットアップ
+cd apps/web
+npm install -D @testing-library/react @testing-library/jest-dom happy-dom
+
+# 対象コンポーネント例
+apps/web/src/components/
+├── Pagination.tsx ✅ RTL (ページネーションロジック)
+├── SearchPanel.tsx ✅ RTL (検索・フィルタリング)
+├── VideoList.tsx ✅ RTL (データ表示ロジック)
+└── ErrorBoundary.tsx ✅ RTL (エラーハンドリング)
+```
+
+#### **4. 統合テスト → Next.js Testing + E2E**
+
+**対象:**
+- Page Components + Server Actions
+- Client/Server Component境界
+- 実際のユーザーフロー
+
+**重点項目:**
+- Server ComponentとClient Componentの連携
+- Server Actionsからのデータフロー
+- エラーバウンダリとSuspenseの動作
+
+#### **テスト実装の優先順位**
+
+**Phase 1: Storybook強化** (即効性高い)
+```bash
+# 既存Storybookインフラの活用
+- Visual Regression Testing追加
+- アクセシビリティテスト強化
+- レスポンシブデザインテスト
+```
+
+**Phase 2: 重要コンポーネントのRTL** (品質向上)
+```bash
+# 最優先テスト対象
+1. Pagination (既に実装済み) ✅
+2. SearchPanel - 検索ロジック
+3. VideoList - データ表示とエラーハンドリング
+4. WorkCard - インタラクション
+```
+
+**Phase 3: Integration Tests** (Server Componentsとの結合)
+```bash
+# Next.js App Router特有のテスト
+- Page Components + Server Actions
+- Client/Server Component境界のテスト
+- エラーバウンダリとSuspenseのテスト
+```
+
+#### **テスト環境設定**
+
+**Vitest Workspace**
+```typescript
+// vitest.workspace.ts
+export default defineWorkspace([
+  "apps/functions/vitest.config.ts",      // Cloud Functions
+  "apps/web/vitest.config.ts",            // Web App (RTL)
+  "packages/shared-types/vitest.config.ts", // 共有型・ユーティリティ
+]);
+```
+
+**React Testing Library設定例**
+```typescript
+// apps/web/vitest.config.ts
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: "happy-dom", // jsdomより高速
+    setupFiles: ["./test-setup.ts"],
+  },
+});
+```
+
+#### **現在のテストカバレッジ**
+
+- **テスト件数**: 258件
+- **カバー済み**: Server Actions, データ変換, アルゴリズム
+- **カバー対象**: ビジネスロジック, エラーハンドリング, 複雑な並び替え
+- **今後の拡張**: UIコンポーネント, インタラクション, 統合テスト
 
 ## 🚨 重要: リント・テスト実行コマンド
 
