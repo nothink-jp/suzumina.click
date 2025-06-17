@@ -12,7 +12,7 @@ google-cloud-tasks==2.16.4
 pydub==0.25.1
 
 # HTTP処理
-requests==2.32.3
+requests==2.32.4
 
 # 設定・ログ
 python-dotenv==1.0.1
