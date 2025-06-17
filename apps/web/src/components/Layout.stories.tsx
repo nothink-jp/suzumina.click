@@ -129,13 +129,22 @@ export const VideoListPage: Story = {
 
           <div className="mt-8 flex justify-center">
             <div className="flex gap-2">
-              <button type="button" className="px-3 py-2 bg-suzuka-500 text-white rounded">
+              <button
+                type="button"
+                className="px-3 py-2 bg-suzuka-500 text-white rounded"
+              >
                 1
               </button>
-              <button type="button" className="px-3 py-2 bg-gray-200 text-gray-700 rounded">
+              <button
+                type="button"
+                className="px-3 py-2 bg-gray-200 text-gray-700 rounded"
+              >
                 2
               </button>
-              <button type="button" className="px-3 py-2 bg-gray-200 text-gray-700 rounded">
+              <button
+                type="button"
+                className="px-3 py-2 bg-gray-200 text-gray-700 rounded"
+              >
                 3
               </button>
             </div>
