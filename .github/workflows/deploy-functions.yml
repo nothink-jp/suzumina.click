@@ -155,35 +155,111 @@ jobs:
           echo "DEPLOYMENT_SOURCE=gs://$BUCKET_NAME/$ARCHIVE_NAME" >> $GITHUB_ENV
           echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
+      - name: Check and wait for pending operations
+        run: |
+          echo "🔍 Checking for pending Cloud Functions operations..."
+          
+          # 進行中のオペレーションをチェック
+          PENDING_OPS=$(gcloud functions operations list \
+            --region=asia-northeast1 \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --filter="done=false" \
+            --format="value(name)" || echo "")
+          
+          if [ ! -z "$PENDING_OPS" ]; then
+            echo "⏳ Found pending operations, waiting for completion..."
+            echo "$PENDING_OPS"
+            
+            # 最大5分間待機
+            for i in {1..30}; do
+              sleep 10
+              PENDING_OPS=$(gcloud functions operations list \
+                --region=asia-northeast1 \
+                --project=${{ secrets.GCP_PROJECT_ID }} \
+                --filter="done=false" \
+                --format="value(name)" || echo "")
+              
+              if [ -z "$PENDING_OPS" ]; then
+                echo "✅ All pending operations completed"
+                break
+              fi
+              
+              echo "Still waiting... ($i/30)"
+              
+              if [ $i -eq 30 ]; then
+                echo "⚠️ Warning: Some operations are still pending after 5 minutes"
+                echo "Continuing with deployment..."
+              fi
+            done
+          else
+            echo "✅ No pending operations found"
+          fi
+
       - name: Deploy fetchYouTubeVideos function
         run: |
-          gcloud functions deploy fetchYouTubeVideos \
-            --source ${{ env.DEPLOYMENT_SOURCE }} \
-            --runtime nodejs22 \
-            --entry-point fetchYouTubeVideos \
-            --trigger-topic youtube-video-fetch-trigger \
-            --region asia-northeast1 \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
-            --set-env-vars NODE_ENV=production \
-            --memory 512MB \
-            --timeout 540s \
-            --max-instances 10 \
-            --quiet
+          echo "🚀 Deploying fetchYouTubeVideos function..."
+          
+          # リトライロジック付きでデプロイ
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt/3..."
+            
+            if gcloud functions deploy fetchYouTubeVideos \
+              --source ${{ env.DEPLOYMENT_SOURCE }} \
+              --runtime nodejs22 \
+              --entry-point fetchYouTubeVideos \
+              --trigger-topic youtube-video-fetch-trigger \
+              --region asia-northeast1 \
+              --project ${{ secrets.GCP_PROJECT_ID }} \
+              --set-env-vars NODE_ENV=production \
+              --memory 512MB \
+              --timeout 540s \
+              --max-instances 10 \
+              --quiet; then
+              echo "✅ fetchYouTubeVideos deployed successfully"
+              break
+            else
+              echo "❌ Deploy failed on attempt $attempt"
+              if [ $attempt -eq 3 ]; then
+                echo "🚨 All retry attempts failed"
+                exit 1
+              fi
+              echo "⏳ Waiting 30 seconds before retry..."
+              sleep 30
+            fi
+          done
 
       - name: Deploy fetchDLsiteWorks function
         run: |
-          gcloud functions deploy fetchDLsiteWorks \
-            --source ${{ env.DEPLOYMENT_SOURCE }} \
-            --runtime nodejs22 \
-            --entry-point fetchDLsiteWorks \
-            --trigger-topic dlsite-works-fetch-trigger \
-            --region asia-northeast1 \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
-            --set-env-vars NODE_ENV=production \
-            --memory 512MB \
-            --timeout 540s \
-            --max-instances 10 \
-            --quiet
+          echo "🚀 Deploying fetchDLsiteWorks function..."
+          
+          # リトライロジック付きでデプロイ
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt/3..."
+            
+            if gcloud functions deploy fetchDLsiteWorks \
+              --source ${{ env.DEPLOYMENT_SOURCE }} \
+              --runtime nodejs22 \
+              --entry-point fetchDLsiteWorks \
+              --trigger-topic dlsite-works-fetch-trigger \
+              --region asia-northeast1 \
+              --project ${{ secrets.GCP_PROJECT_ID }} \
+              --set-env-vars NODE_ENV=production \
+              --memory 512MB \
+              --timeout 540s \
+              --max-instances 10 \
+              --quiet; then
+              echo "✅ fetchDLsiteWorks deployed successfully"
+              break
+            else
+              echo "❌ Deploy failed on attempt $attempt"
+              if [ $attempt -eq 3 ]; then
+                echo "🚨 All retry attempts failed"
+                exit 1
+              fi
+              echo "⏳ Waiting 30 seconds before retry..."
+              sleep 30
+            fi
+          done
 
       - name: Cleanup deployment artifacts
         if: always()
@@ -206,9 +282,9 @@ jobs:
           echo "## 🚀 デプロイ結果" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 デプロイされた関数" >> $GITHUB_STEP_SUMMARY
-          echo "- **fetchYouTubeVideos**: ✅ デプロイ完了" >> $GITHUB_STEP_SUMMARY
+          echo "- **fetchYouTubeVideos**: ✅ デプロイ完了 (リトライロジック付き)" >> $GITHUB_STEP_SUMMARY
           echo "  - トリガー: \`youtube-video-fetch-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
-          echo "- **fetchDLsiteWorks**: ✅ デプロイ完了" >> $GITHUB_STEP_SUMMARY
+          echo "- **fetchDLsiteWorks**: ✅ デプロイ完了 (リトライロジック付き)" >> $GITHUB_STEP_SUMMARY
           echo "  - トリガー: \`dlsite-works-fetch-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔧 設定情報" >> $GITHUB_STEP_SUMMARY
@@ -218,3 +294,8 @@ jobs:
           echo "- **メモリ**: \`512MB\`" >> $GITHUB_STEP_SUMMARY
           echo "- **タイムアウト**: \`540秒\`" >> $GITHUB_STEP_SUMMARY
           echo "- **デプロイソース**: \`${{ env.DEPLOYMENT_SOURCE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛡️ 改善点" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ デプロイ前にペンディング中のオペレーションをチェック" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 3回のリトライロジックで信頼性向上" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 関数デプロイを順次実行して競合を回避" >> $GITHUB_STEP_SUMMARY
