@@ -103,7 +103,7 @@ export async function getAudioButtons(
     } = queryParams;
 
     const firestore = getFirestore();
-    let query: any = firestore.collection("audioButtons");
+    let query = firestore.collection("audioButtons");
 
     // 公開フィルター
     if (onlyPublic) {
@@ -170,7 +170,9 @@ export async function getAudioButtons(
     const audioButtons = audioButtonDocs
       .map(convertFirestoreDoc)
       .filter(
-        (button: any): button is FrontendAudioButtonData => button !== null,
+        (
+          button: FrontendAudioButtonData | null,
+        ): button is FrontendAudioButtonData => button !== null,
       );
 
     // テキスト検索（クライアントサイドフィルタリング）

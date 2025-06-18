@@ -107,3 +107,13 @@ variable "environment" {
   type        = string
   default     = "development"
 }
+
+# ==========================================================
+# Cloud Run設定用変数
+# ==========================================================
+
+variable "custom_domain" {
+  description = "Cloud Runにマッピングするカスタムドメイン（空文字列の場合はマッピングしない）"
+  type        = string
+  default     = ""
+}

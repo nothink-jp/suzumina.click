@@ -30,7 +30,7 @@ resource "google_monitoring_dashboard" "service_overview" {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_RATE"
                     },
-                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/request_count\"",
+                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_count\"",
                     "secondaryAggregation": {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_MEAN"
@@ -48,7 +48,7 @@ resource "google_monitoring_dashboard" "service_overview" {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_PERCENTILE_99"
                     },
-                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/request_latencies\"",
+                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_latencies\"",
                     "secondaryAggregation": {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_MEAN"
@@ -91,7 +91,7 @@ resource "google_monitoring_dashboard" "service_overview" {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_RATE"
                     },
-                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"4xx\"",
+                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"4xx\"",
                     "secondaryAggregation": {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_MEAN"
@@ -109,7 +109,7 @@ resource "google_monitoring_dashboard" "service_overview" {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_RATE"
                     },
-                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
+                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
                     "secondaryAggregation": {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_MEAN"
@@ -319,7 +319,7 @@ resource "google_monitoring_dashboard" "service_overview" {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_SUM"
                     },
-                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/container/instance_count\"",
+                    "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/container/instance_count\"",
                     "secondaryAggregation": {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_MEAN"
@@ -356,7 +356,7 @@ resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
     display_name = "高エラー率検知 (5xx > 5%)"
     
     condition_threshold {
-      filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\""
+      filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\""
       duration        = "60s"
       comparison      = "COMPARISON_GT"
       threshold_value = 0.05  # 5%
@@ -380,7 +380,7 @@ resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
     content = <<-EOT
     # Cloud Run エラー率が閾値を超過
     
-    suzumina-click-nextjs-app サービスでエラーレート(5xx)が 5% を超えました。
+    suzumina-click-web サービスでエラーレート(5xx)が 5% を超えました。
     緊急対応が必要です。
     
     ## 確認事項
@@ -415,7 +415,7 @@ resource "google_monitoring_alert_policy" "cloud_run_scaling" {
     display_name = "インスタンス数が急増 (> 5)"
     
     condition_threshold {
-      filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-nextjs-app\" AND metric.type=\"run.googleapis.com/container/instance_count\""
+      filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/container/instance_count\""
       duration        = "60s"
       comparison      = "COMPARISON_GT"
       threshold_value = 5  # インスタンス数閾値
@@ -439,7 +439,7 @@ resource "google_monitoring_alert_policy" "cloud_run_scaling" {
     content = <<-EOT
     # Cloud Run インスタンス数急増
     
-    suzumina-click-nextjs-app サービスのインスタンス数が急増しました。
+    suzumina-click-web サービスのインスタンス数が急増しました。
     トラフィック増加または異常な負荷が考えられます。
     
     ## 確認事項

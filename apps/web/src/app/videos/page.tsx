@@ -25,8 +25,8 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-4xl font-bold text-suzuka-800 mb-2">動画一覧</h1>
-          <p className="text-suzuka-600">
+          <h1 className="text-4xl font-bold text-foreground mb-2">動画一覧</h1>
+          <p className="text-muted-foreground">
             涼花みなせさんのYouTube動画から音声ボタンを作成できます
           </p>
         </div>
@@ -36,8 +36,8 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
         <Suspense
           fallback={
             <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-suzuka-500" />
-              <p className="mt-2 text-suzuka-600">読み込み中...</p>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <p className="mt-2 text-muted-foreground">読み込み中...</p>
             </div>
           }
         >

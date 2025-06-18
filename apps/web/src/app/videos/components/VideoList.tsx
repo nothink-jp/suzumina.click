@@ -2,7 +2,7 @@
 
 import Pagination from "@/components/Pagination";
 import type { VideoListResult } from "@suzumina.click/shared-types/src/video";
-import { useState } from "react";
+import { startTransition, useMemo, useState } from "react";
 import VideoCard from "./VideoCard";
 
 interface VideoListProps {
@@ -23,17 +23,26 @@ export default function VideoList({
   const itemsPerPage = 12;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
+  // FID改善: startTransition で非緊急更新を遅延
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      // 検索機能は将来実装
-      console.log("Search:", searchQuery);
+      startTransition(() => {
+        // 検索機能は将来実装
+        console.log("Search:", searchQuery);
+      });
     }
   };
+
+  // FID改善: 検索・フィルタリング結果をメモ化
+  const filteredVideos = useMemo(() => {
+    // 現在は全て表示、将来的にフィルタリングロジックを追加
+    return data.videos;
+  }, [data.videos]);
 
   return (
     <div>
       {/* 検索・フィルター パネル */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 mb-8">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -41,14 +50,21 @@ export default function VideoList({
                 type="text"
                 placeholder="動画タイトルで検索..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  // FID改善: 入力遅延で重い処理を避ける
+                  startTransition(() => {
+                    setSearchQuery(e.target.value);
+                  });
+                }}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-suzuka-500 focus:border-transparent"
+                className="w-full px-4 py-3 pr-10 border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent min-h-[44px]"
+                // FID改善: passive listener で応答性向上
+                style={{ touchAction: "manipulation" }}
               />
               <button
                 type="button"
                 onClick={handleSearch}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-suzuka-500 hover:text-suzuka-600"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 aria-label="検索"
               >
                 <svg
@@ -68,11 +84,17 @@ export default function VideoList({
               </button>
             </div>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-suzuka-500 focus:border-transparent"
+              onChange={(e) => {
+                // FID改善: 選択変更も遅延処理
+                startTransition(() => {
+                  setSortBy(e.target.value);
+                });
+              }}
+              className="px-4 py-3 border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent min-h-[44px]"
+              style={{ touchAction: "manipulation" }}
             >
               <option value="">並び順</option>
               <option value="newest">新しい順</option>
@@ -81,8 +103,14 @@ export default function VideoList({
             </select>
             <select
               value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-suzuka-500 focus:border-transparent"
+              onChange={(e) => {
+                // FID改善: 年代フィルタも遅延処理
+                startTransition(() => {
+                  setYearFilter(e.target.value);
+                });
+              }}
+              className="px-4 py-3 border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent min-h-[44px]"
+              style={{ touchAction: "manipulation" }}
             >
               <option value="">年代</option>
               <option value="2024">2024年</option>
@@ -94,19 +122,19 @@ export default function VideoList({
       </div>
 
       {/* ヘッダー */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-6 gap-2">
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground">
           動画一覧 (全{totalCount.toLocaleString()}件)
         </h2>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-muted-foreground">
           {currentPage}ページ / {totalPages}ページ
         </div>
       </div>
 
       {/* 動画一覧 */}
-      {data.videos.length === 0 ? (
+      {filteredVideos.length === 0 ? (
         <div className="text-center py-12">
-          <div className="mx-auto w-24 h-24 mb-4 text-gray-300">
+          <div className="mx-auto w-24 h-24 mb-4 text-muted-foreground">
             <svg
               fill="currentColor"
               viewBox="0 0 24 24"
@@ -117,17 +145,23 @@ export default function VideoList({
               <path d="M10,15L15.19,12L10,9V15Z" />
             </svg>
           </div>
-          <p className="text-gray-500 text-lg">動画が見つかりませんでした</p>
+          <p className="text-muted-foreground text-lg">
+            動画が見つかりませんでした
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data.videos.map((video) => (
-            <VideoCard
-              key={video.id}
-              video={video}
-              buttonCount={0} // 将来的にaudioClipsコレクションから取得
-              variant="grid"
-            />
+          {filteredVideos.map((video, index) => (
+            <div key={video.id} className="min-h-video-card">
+              {" "}
+              {/* CLS削減: 最小高さ予約 */}
+              <VideoCard
+                video={video}
+                buttonCount={0} // 将来的にaudioClipsコレクションから取得
+                variant="grid"
+                priority={index < 6} // 最初の6枚をLCP最適化
+              />
+            </div>
           ))}
         </div>
       )}
@@ -140,8 +174,8 @@ export default function VideoList({
       )}
 
       {/* 統計情報 */}
-      {data.videos.length > 0 && (
-        <div className="mt-6 text-sm text-gray-500 text-center">
+      {filteredVideos.length > 0 && (
+        <div className="mt-6 text-sm text-muted-foreground text-center">
           {totalCount.toLocaleString()}件中{" "}
           {((currentPage - 1) * itemsPerPage + 1).toLocaleString()}〜
           {Math.min(currentPage * itemsPerPage, totalCount).toLocaleString()}

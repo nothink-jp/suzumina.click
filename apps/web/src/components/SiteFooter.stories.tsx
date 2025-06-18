@@ -113,7 +113,7 @@ export const DarkBackground: Story = {
     docs: {
       description: {
         story:
-          "異なる背景色でのフッター表示の確認。suzuka-800の背景色がどの背景でも適切に表示されることを確認。",
+          "異なる背景色でのフッター表示の確認。背景色がどの背景でも適切に表示されることを確認。",
       },
     },
   },

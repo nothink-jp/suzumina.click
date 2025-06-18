@@ -26,7 +26,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-5 w-5 ${star <= rating ? "text-rose-400 fill-current" : "text-gray-300"}`}
+            className={`h-5 w-5 ${star <= rating ? "text-foreground fill-current" : "text-gray-300"}`}
           />
         ))}
       </div>
@@ -78,7 +78,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
       <nav className="mb-6 text-sm">
         <ol className="flex items-center space-x-2 text-gray-600">
           <li>
-            <Link href="/" className="hover:text-suzuka-600">
+            <Link href="/" className="hover:text-foreground/80">
               ホーム
             </Link>
           </li>
@@ -86,7 +86,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
             <span className="mx-2">/</span>
           </li>
           <li>
-            <Link href="/works" className="hover:text-suzuka-600">
+            <Link href="/works" className="hover:text-foreground/80">
               作品一覧
             </Link>
           </li>
@@ -113,12 +113,14 @@ export default function WorkDetail({ work }: WorkDetailProps) {
                   />
                   {isOnSale && (
                     <div className="absolute top-2 left-2">
-                      <Badge className="bg-rose-500 text-white">セール中</Badge>
+                      <Badge className="bg-destructive text-white">
+                        セール中
+                      </Badge>
                     </div>
                   )}
                   {latestRank && (
                     <div className="absolute top-2 right-2">
-                      <Badge className="bg-suzuka-500 text-white">
+                      <Badge className="bg-primary text-white">
                         #{latestRank}位
                       </Badge>
                     </div>
@@ -139,13 +141,13 @@ export default function WorkDetail({ work }: WorkDetailProps) {
                 <div className="space-y-2">
                   {isOnSale && originalPrice ? (
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl font-bold text-rose-600">
+                      <span className="text-2xl font-bold text-destructive">
                         ¥{currentPrice.toLocaleString()}
                       </span>
                       <span className="text-lg text-gray-600 line-through">
                         ¥{originalPrice.toLocaleString()}
                       </span>
-                      <Badge className="bg-rose-100 text-rose-700">
+                      <Badge className="bg-destructive/10 text-destructive">
                         {work.price.discount}% OFF
                       </Badge>
                     </div>
@@ -173,7 +175,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   {work.salesCount && (
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-suzuka-500" />
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
                       <span className="text-gray-700">販売数:</span>
                       <span className="font-medium text-gray-900">
                         {work.salesCount.toLocaleString()}
@@ -182,7 +184,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
                   )}
                   {work.registDate && (
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-suzuka-500" />
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="text-gray-700">発売日:</span>
                       <span className="font-medium text-gray-900">
                         {formatDate(work.registDate)}
@@ -198,7 +200,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
                       <Badge
                         key={tag}
                         variant="outline"
-                        className="border-suzuka-400 text-suzuka-700 flex items-center gap-1"
+                        className="border text-foreground flex items-center gap-1"
                       >
                         <Tag className="h-3 w-3" />
                         {tag}
@@ -212,14 +214,14 @@ export default function WorkDetail({ work }: WorkDetailProps) {
                   <div className="flex gap-3">
                     <Button
                       variant="outline"
-                      className="flex-1 border-suzuka-400 text-suzuka-700 hover:bg-suzuka-50"
+                      className="flex-1 border text-foreground hover:bg-accent"
                       onClick={handleShare}
                     >
                       <Share2 className="h-4 w-4 mr-2" />
                       共有
                     </Button>
                     <Button
-                      className="flex-1 bg-rose-500 hover:bg-rose-600 text-white"
+                      className="flex-1 bg-destructive hover:bg-destructive/90 text-white"
                       asChild
                     >
                       <a
@@ -260,8 +262,8 @@ export default function WorkDetail({ work }: WorkDetailProps) {
               サークル情報
             </h3>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-suzuka-100 rounded-full flex items-center justify-center">
-                <span className="text-suzuka-700 font-bold text-lg">
+              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                <span className="text-foreground font-bold text-lg">
                   {work.circle.charAt(0)}
                 </span>
               </div>
@@ -271,7 +273,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
             </div>
             <Button
               variant="outline"
-              className="w-full border-suzuka-400 text-suzuka-700 hover:bg-suzuka-50"
+              className="w-full border text-foreground hover:bg-accent"
               disabled
             >
               他の作品を見る（準備中）
@@ -287,8 +289,8 @@ export default function WorkDetail({ work }: WorkDetailProps) {
               <div className="space-y-3">
                 {work.author.map((actor) => (
                   <div key={actor} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-suzuka-100 rounded-full flex items-center justify-center">
-                      <span className="text-suzuka-700 font-bold text-sm">
+                    <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                      <span className="text-foreground font-bold text-sm">
                         {actor.charAt(0)}
                       </span>
                     </div>

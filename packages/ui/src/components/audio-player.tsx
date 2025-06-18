@@ -12,8 +12,8 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "./button.js";
-import { Slider } from "./slider.js";
+import { Button } from "./button";
+import { Slider } from "./slider";
 
 interface AudioPlayerProps {
   src: string;
@@ -272,6 +272,63 @@ export function AudioPlayer({
     audio.currentTime = Math.min(duration, audio.currentTime + 10);
   }, [duration]);
 
+  // キーボード操作
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (hasError || isLoading) return;
+
+      switch (event.key) {
+        case " ": // スペースキー
+        case "k": // YouTube風操作
+          event.preventDefault();
+          togglePlayPause();
+          break;
+        case "ArrowLeft":
+          event.preventDefault();
+          handleSkipBackward();
+          break;
+        case "ArrowRight":
+          event.preventDefault();
+          handleSkipForward();
+          break;
+        case "m":
+          event.preventDefault();
+          toggleMute();
+          break;
+        case "0":
+          event.preventDefault();
+          handleReplay();
+          break;
+        case "ArrowUp":
+          event.preventDefault();
+          if (showVolume) {
+            const newVolume = Math.min(1, volume + 0.1);
+            handleVolumeChange([newVolume]);
+          }
+          break;
+        case "ArrowDown":
+          event.preventDefault();
+          if (showVolume) {
+            const newVolume = Math.max(0, volume - 0.1);
+            handleVolumeChange([newVolume]);
+          }
+          break;
+      }
+    },
+    [
+      hasError,
+      isLoading,
+      togglePlayPause,
+      handleSkipBackward,
+      handleSkipForward,
+      toggleMute,
+      handleReplay,
+      showVolume,
+      volume,
+      handleVolumeChange,
+    ],
+  );
+
   // サイズクラス
   const sizeClasses = {
     sm: {
@@ -303,22 +360,25 @@ export function AudioPlayer({
   const getVariantStyle = () => {
     switch (variant) {
       case "compact":
-        return "bg-gray-50 border rounded-lg";
+        return "bg-muted border border-border rounded-lg";
       case "minimal":
         return "";
       default:
-        return "bg-white border rounded-lg shadow-sm";
+        return "bg-card border border-border rounded-lg shadow-sm";
     }
   };
 
   return (
-    <div
+    <section
       className={cn(
         "audio-player",
         sizeClass.container,
         getVariantStyle(),
         className,
       )}
+      onKeyDown={handleKeyDown}
+      aria-label={`音声プレイヤー: ${title || "無題"}`}
+      aria-describedby="keyboard-instructions"
     >
       <audio
         ref={audioRef}
@@ -328,6 +388,21 @@ export function AudioPlayer({
       >
         <track kind="captions" />
       </audio>
+
+      {/* キーボード操作説明（スクリーンリーダー用） */}
+      <div id="keyboard-instructions" className="sr-only">
+        キーボード操作:
+        スペースキーで再生/停止、左右矢印キーでシーク、上下矢印キーで音量調整、Mキーでミュート、0キーで最初から再生
+      </div>
+
+      {/* スクリーンリーダー用状態通知 */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {isLoading
+          ? "音声を読み込み中..."
+          : isPlaying
+            ? `音声を再生中: ${title || "無題"}`
+            : "音声が一時停止されています"}
+      </div>
 
       {/* タイトル */}
       {showTitle && title && variant !== "minimal" && (
@@ -370,10 +445,12 @@ export function AudioPlayer({
         <Button
           variant="default"
           size="sm"
-          className={cn(sizeClass.button, "bg-blue-600 hover:bg-blue-700")}
+          className={cn(sizeClass.button, "bg-primary hover:bg-primary/90")}
           onClick={togglePlayPause}
           disabled={isLoading || hasError}
           aria-label={isPlaying ? "一時停止" : "再生"}
+          aria-live="polite"
+          aria-pressed={isPlaying}
         >
           {isLoading ? (
             <Loader2 className={cn(sizeClass.icon, "animate-spin")} />
@@ -412,9 +489,13 @@ export function AudioPlayer({
                 className="w-full"
                 aria-label="再生位置"
               />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span aria-label={`現在の再生時間: ${formatTime(currentTime)}`}>
+                  {formatTime(currentTime)}
+                </span>
+                <span aria-label={`総再生時間: ${formatTime(duration)}`}>
+                  {formatTime(duration)}
+                </span>
               </div>
             </div>
           )}
@@ -450,10 +531,14 @@ export function AudioPlayer({
 
       {/* エラー表示 */}
       {hasError && (
-        <div className="mt-2 text-sm text-red-600">
+        <div
+          className="mt-2 text-sm text-destructive"
+          role="alert"
+          aria-live="assertive"
+        >
           音声の読み込みに失敗しました
         </div>
       )}
-    </div>
+    </section>
   );
 }

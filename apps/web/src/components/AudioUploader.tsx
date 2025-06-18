@@ -299,13 +299,13 @@ export function AudioUploader({
   }, [audioPreview?.audioUrl]);
 
   return (
-    <Card className="border-2 border-dashed border-gray-300 transition-colors duration-200">
+    <Card className="border-2 border-dashed border-border transition-colors duration-200">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileAudio className="h-5 w-5" />
           音声ファイルのアップロード
         </CardTitle>
-        <CardDescription>
+        <CardDescription id="upload-description">
           対応形式: MP3, AAC, Opus, WAV, FLAC（最大{formatFileSize(maxFileSize)}
           、{formatAudioDuration(maxDuration)}以内）
         </CardDescription>
@@ -313,15 +313,15 @@ export function AudioUploader({
 
       <CardContent className="space-y-4">
         {/* ドラッグ&ドロップエリア */}
-        <div
+        <button
+          type="button"
           className={`
-            relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
-            ${dragOver ? "border-blue-400 bg-blue-50" : "border-gray-300"}
-            ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-gray-400"}
+            w-full relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
+            ${dragOver ? "border-primary bg-muted" : "border-border"}
+            ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-muted-foreground"}
             ${processingState.isProcessing ? "pointer-events-none" : ""}
           `}
-          role="button"
-          tabIndex={0}
+          disabled={disabled || processingState.isProcessing}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -330,16 +330,8 @@ export function AudioUploader({
             !processingState.isProcessing &&
             fileInputRef.current?.click()
           }
-          onKeyDown={(e) => {
-            if (
-              (e.key === "Enter" || e.key === " ") &&
-              !disabled &&
-              !processingState.isProcessing
-            ) {
-              e.preventDefault();
-              fileInputRef.current?.click();
-            }
-          }}
+          aria-label="音声ファイルを選択またはドラッグ&ドロップ"
+          aria-describedby="upload-description"
         >
           <input
             ref={fileInputRef}
@@ -353,12 +345,12 @@ export function AudioUploader({
           <div className="space-y-4">
             {processingState.stage === "upload" && (
               <>
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                 <div>
-                  <p className="text-lg font-medium text-gray-900">
+                  <p className="text-lg font-medium text-foreground">
                     音声ファイルをドロップするか、クリックして選択
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     または下のボタンからファイルを選択してください
                   </p>
                 </div>
@@ -367,41 +359,55 @@ export function AudioUploader({
 
             {processingState.isProcessing && (
               <>
-                <FileAudio className="mx-auto h-12 w-12 text-blue-500 animate-pulse" />
+                <FileAudio className="mx-auto h-12 w-12 text-primary animate-pulse" />
                 <div>
-                  <p className="text-lg font-medium text-gray-900">
+                  <p className="text-lg font-medium text-foreground">
                     {processingState.message}
                   </p>
-                  <Progress value={processingState.progress} className="mt-2" />
+                  <Progress
+                    value={processingState.progress}
+                    className="mt-2"
+                    aria-label="処理進行状況"
+                  />
                 </div>
               </>
             )}
 
             {processingState.stage === "complete" && (
               <>
-                <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
-                <p className="text-lg font-medium text-green-700">
+                <CheckCircle className="mx-auto h-12 w-12 text-green-600" />
+                <output
+                  className="text-lg font-medium text-green-700"
+                  aria-live="polite"
+                >
                   {processingState.message}
-                </p>
+                </output>
               </>
             )}
 
             {processingState.stage === "error" && (
               <>
-                <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
-                <p className="text-lg font-medium text-red-700">
+                <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
+                <p
+                  className="text-lg font-medium text-destructive"
+                  role="alert"
+                  aria-live="assertive"
+                >
                   処理に失敗しました
                 </p>
               </>
             )}
           </div>
-        </div>
+        </button>
 
         {/* エラー表示 */}
         {processingState.stage === "error" && (
-          <Alert className="border-red-200 bg-red-50">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
+          <Alert
+            className="border-destructive/20 bg-destructive/5"
+            role="alert"
+          >
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-destructive">
               {processingState.message}
             </AlertDescription>
           </Alert>
@@ -409,7 +415,7 @@ export function AudioUploader({
 
         {/* 音声プレビュー */}
         {audioPreview && (
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-primary/20 bg-primary/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">プレビュー</CardTitle>
             </CardHeader>
@@ -419,7 +425,7 @@ export function AudioUploader({
                   <p className="text-sm font-medium">
                     {audioPreview.file.name}
                   </p>
-                  <div className="flex gap-4 text-xs text-gray-600">
+                  <div className="flex gap-4 text-xs text-muted-foreground">
                     <span>
                       時間:{" "}
                       {formatAudioDuration(audioPreview.metadata.duration)}

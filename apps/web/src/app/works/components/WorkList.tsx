@@ -33,7 +33,7 @@ export default function WorkList({
   return (
     <div>
       {/* 検索・フィルター パネル */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-8">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -43,12 +43,12 @@ export default function WorkList({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-suzuka-500 focus:border-transparent"
+                className="w-full px-4 py-2 pr-10 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
               />
               <button
                 type="button"
                 onClick={handleSearch}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-suzuka-500 hover:text-suzuka-600"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 aria-label="検索"
               >
                 <svg
@@ -72,7 +72,7 @@ export default function WorkList({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-suzuka-500 focus:border-transparent"
+              className="px-4 py-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
             >
               <option value="">並び順</option>
               <option value="newest">新しい順</option>
@@ -85,7 +85,7 @@ export default function WorkList({
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-suzuka-500 focus:border-transparent"
+              className="px-4 py-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
             >
               <option value="">カテゴリ</option>
               <option value="SOU">ボイス・ASMR</option>
@@ -99,10 +99,10 @@ export default function WorkList({
 
       {/* ヘッダー */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">
+        <h2 className="text-xl font-semibold text-foreground">
           作品一覧 (全{totalCount.toLocaleString()}件)
         </h2>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-muted-foreground">
           {currentPage}ページ / {totalPages}ページ
         </div>
       </div>
@@ -110,7 +110,7 @@ export default function WorkList({
       {/* 作品一覧 */}
       {data.length === 0 ? (
         <div className="text-center py-12">
-          <div className="mx-auto w-24 h-24 mb-4 text-gray-300">
+          <div className="mx-auto w-24 h-24 mb-4 text-muted-foreground">
             <svg
               fill="currentColor"
               viewBox="0 0 24 24"
@@ -121,12 +121,19 @@ export default function WorkList({
               <path d="M13.96,12.71L11.05,15.62L8.23,12.8L5.65,15.38L5.38,15.38V5.38H18.62V15.38L13.96,12.71Z" />
             </svg>
           </div>
-          <p className="text-gray-500 text-lg">作品が見つかりませんでした</p>
+          <p className="text-muted-foreground text-lg">
+            作品が見つかりませんでした
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {data.map((work) => (
-            <WorkCard key={work.id} work={work} variant="default" />
+          {data.map((work, index) => (
+            <WorkCard
+              key={work.id}
+              work={work}
+              variant="default"
+              priority={index < 8} // 最初の8枚をLCP最適化
+            />
           ))}
         </div>
       )}
@@ -140,7 +147,7 @@ export default function WorkList({
 
       {/* 統計情報 */}
       {data.length > 0 && (
-        <div className="mt-6 text-sm text-gray-500 text-center">
+        <div className="mt-6 text-sm text-muted-foreground text-center">
           {totalCount.toLocaleString()}件中{" "}
           {((currentPage - 1) * itemsPerPage + 1).toLocaleString()}〜
           {Math.min(currentPage * itemsPerPage, totalCount).toLocaleString()}

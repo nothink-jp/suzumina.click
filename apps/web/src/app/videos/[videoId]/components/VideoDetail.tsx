@@ -49,7 +49,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
       <nav className="mb-6 text-sm">
         <ol className="flex items-center space-x-2 text-gray-600">
           <li>
-            <Link href="/" className="hover:text-suzuka-600">
+            <Link href="/" className="hover:text-foreground/80">
               ホーム
             </Link>
           </li>
@@ -57,7 +57,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
             <span className="mx-2">/</span>
           </li>
           <li>
-            <Link href="/videos" className="hover:text-suzuka-600">
+            <Link href="/videos" className="hover:text-foreground/80">
               動画一覧
             </Link>
           </li>
@@ -106,7 +106,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
           {/* アクションボタン */}
           <div className="flex flex-wrap gap-3 mb-6">
             <Button
-              className="bg-suzuka-500 hover:bg-suzuka-600 text-white"
+              className="bg-primary hover:bg-primary/90 text-white"
               asChild
             >
               <a href={youtubeUrl} target="_blank" rel="noopener noreferrer">

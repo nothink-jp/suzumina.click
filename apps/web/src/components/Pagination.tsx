@@ -10,6 +10,7 @@ import {
   Pagination as UIPagination,
 } from "@suzumina.click/ui/components/pagination";
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 
 interface PaginationProps {
   currentPage: number;
@@ -23,14 +24,18 @@ export default function Pagination({
 }: PaginationProps) {
   const router = useRouter();
 
-  const handlePageChange = (page: number) => {
-    if (page === currentPage) return;
+  // FID改善: ページ変更をメモ化して再レンダリングを減らす
+  const handlePageChange = useCallback(
+    (page: number) => {
+      if (page === currentPage) return;
 
-    // URLを更新してServer Componentでのデータ再取得をトリガー
-    const url = new URL(window.location.href);
-    url.searchParams.set("page", page.toString());
-    router.push(url.pathname + url.search);
-  };
+      // URLを更新してServer Componentでのデータ再取得をトリガー
+      const url = new URL(window.location.href);
+      url.searchParams.set("page", page.toString());
+      router.push(url.pathname + url.search);
+    },
+    [currentPage, router],
+  );
 
   return (
     <UIPagination>
@@ -45,7 +50,7 @@ export default function Pagination({
                 handlePageChange(currentPage - 1);
               }
             }}
-            className={currentPage <= 1 ? "opacity-50 cursor-not-allowed" : ""}
+            className={`min-h-[44px] min-w-[44px] ${currentPage <= 1 ? "opacity-50 cursor-not-allowed" : ""}`}
           />
         </PaginationItem>
 
@@ -78,6 +83,7 @@ export default function Pagination({
                           e.preventDefault();
                           handlePageChange(1);
                         }}
+                        className="min-h-[44px] min-w-[44px]"
                       >
                         1
                       </PaginationLink>
@@ -100,6 +106,7 @@ export default function Pagination({
                       e.preventDefault();
                       handlePageChange(page);
                     }}
+                    className="min-h-[44px] min-w-[44px]"
                   >
                     {page}
                   </PaginationLink>
@@ -126,6 +133,7 @@ export default function Pagination({
                             e.preventDefault();
                             handlePageChange(totalPages);
                           }}
+                          className="min-h-[44px] min-w-[44px]"
                         >
                           {totalPages}
                         </PaginationLink>
@@ -148,9 +156,9 @@ export default function Pagination({
                 handlePageChange(currentPage + 1);
               }
             }}
-            className={
+            className={`min-h-[44px] min-w-[44px] ${
               currentPage >= totalPages ? "opacity-50 cursor-not-allowed" : ""
-            }
+            }`}
           />
         </PaginationItem>
       </PaginationContent>

@@ -1,7 +1,27 @@
 "use client";
 
-import { AudioUploader } from "@/components/AudioUploader";
 import type { AudioExtractionResult } from "@/lib/audio-extractor";
+import dynamic from "next/dynamic";
+
+// AudioUploaderを動的読み込み（遅延読み込み）
+const AudioUploader = dynamic(
+  () =>
+    import("@/components/AudioUploader").then((mod) => ({
+      default: mod.AudioUploader,
+    })),
+  {
+    loading: () => (
+      <div className="border-2 border-dashed border-border rounded-lg p-8 text-center animate-pulse">
+        <div className="space-y-4">
+          <div className="h-12 w-12 mx-auto bg-muted rounded-full" />
+          <div className="h-4 bg-muted rounded w-48 mx-auto" />
+          <div className="h-3 bg-muted rounded w-32 mx-auto" />
+        </div>
+      </div>
+    ),
+    ssr: false, // クライアントサイドでのみ読み込み
+  },
+);
 import type {
   AudioButtonCategory,
   AudioFileUploadInfo,
@@ -252,10 +272,10 @@ function CreateAudioButtonForm() {
             </Link>
           </Button>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
           音声ボタンを作成
         </h1>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           音声ファイルをアップロードして、新しい音声ボタンを作成しましょう
         </p>
       </div>
@@ -329,7 +349,7 @@ function CreateAudioButtonForm() {
                   maxLength={100}
                   disabled={isSubmitting || submitStatus.type === "success"}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {formData.title.length}/100 文字
                 </p>
               </div>
@@ -371,7 +391,7 @@ function CreateAudioButtonForm() {
                   maxLength={500}
                   disabled={isSubmitting || submitStatus.type === "success"}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {formData.description.length}/500 文字
                 </p>
               </div>
@@ -419,7 +439,7 @@ function CreateAudioButtonForm() {
               {/* 追加済みタグ */}
               {formData.tags.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-600">追加済みタグ:</p>
+                  <p className="text-sm text-muted-foreground">追加済みタグ:</p>
                   <div className="flex flex-wrap gap-1">
                     {formData.tags.map((tag) => (
                       <Badge
@@ -449,7 +469,7 @@ function CreateAudioButtonForm() {
                       <Badge
                         key={tag}
                         variant="outline"
-                        className="cursor-pointer hover:bg-gray-100"
+                        className="cursor-pointer hover:bg-muted"
                         onClick={() => addTag(tag)}
                       >
                         {tag}
@@ -564,8 +584,8 @@ export default function CreateAudioButtonPage() {
       fallback={
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            <p className="mt-2 text-gray-600">読み込み中...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <p className="mt-2 text-muted-foreground">読み込み中...</p>
           </div>
         </div>
       }

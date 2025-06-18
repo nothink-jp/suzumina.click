@@ -85,11 +85,13 @@ export const HomePage: Story = {
                 涼花みなせさんのYouTube動画を視聴
               </p>
             </div>
-            <div className="p-6 bg-rose-50 border border-rose-200 rounded-lg">
-              <h3 className="text-xl font-medium text-rose-900 mb-2">
+            <div className="p-6 bg-muted border rounded-lg">
+              <h3 className="text-xl font-medium text-foreground mb-2">
                 🎧 音声作品一覧
               </h3>
-              <p className="text-rose-700">DLsite音声作品を探索・購入</p>
+              <p className="text-muted-foreground">
+                DLsite音声作品を探索・購入
+              </p>
             </div>
           </div>
         </div>
@@ -131,7 +133,7 @@ export const VideoListPage: Story = {
             <div className="flex gap-2">
               <button
                 type="button"
-                className="px-3 py-2 bg-suzuka-500 text-white rounded"
+                className="px-3 py-2 bg-primary text-primary-foreground rounded"
               >
                 1
               </button>
