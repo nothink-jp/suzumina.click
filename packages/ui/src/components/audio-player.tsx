@@ -12,8 +12,8 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "./button";
-import { Slider } from "./slider";
+import { Button } from "./button.js";
+import { Slider } from "./slider.js";
 
 interface AudioPlayerProps {
   src: string;

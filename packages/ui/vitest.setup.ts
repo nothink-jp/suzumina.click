@@ -1,6 +1,11 @@
 import "@testing-library/jest-dom";
 
-// Mocks for Web Audio API
+// Mocks for Web Audio API  
+declare global {
+  var AudioContext: any;
+  var webkitAudioContext: any;
+}
+
 global.AudioContext = class AudioContext {};
 global.webkitAudioContext = class webkitAudioContext {};
 
