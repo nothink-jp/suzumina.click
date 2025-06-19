@@ -1,9 +1,17 @@
-import SearchForm from "@/components/SearchForm";
 import { Button } from "@suzumina.click/ui/components/button";
 import Link from "next/link";
+import { FeaturedVideosCarousel } from "@/components/FeaturedVideosCarousel";
+import { FeaturedWorksCarousel } from "@/components/FeaturedWorksCarousel";
+import SearchForm from "@/components/SearchForm";
+import { getLatestVideos, getLatestWorks } from "./actions";
 
 // Server Component として実装し、LCPを改善
-export default function Home() {
+export default async function Home() {
+  // 新着作品と動画を並行取得
+  const [latestWorks, latestVideos] = await Promise.all([
+    getLatestWorks(10),
+    getLatestVideos(10),
+  ]);
   return (
     <div>
       {/* メインビジュアル - LCP最適化済み */}
@@ -36,12 +44,44 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 新着ボイスボタン */}
+      {/* 新着作品一覧 */}
       <section className="py-12 bg-white/50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl sm:text-3xl font-bold text-foreground">
-              新着ボイスボタン
+              🎧 新着作品
+            </h3>
+            <Button variant="outline" asChild className="min-h-[44px]">
+              <Link href="/works">すべて見る</Link>
+            </Button>
+          </div>
+
+          <FeaturedWorksCarousel works={latestWorks} />
+        </div>
+      </section>
+
+      {/* 新着動画一覧 */}
+      <section className="py-12">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-2xl sm:text-3xl font-bold text-foreground">
+              📺 新着動画
+            </h3>
+            <Button variant="outline" asChild className="min-h-[44px]">
+              <Link href="/videos">すべて見る</Link>
+            </Button>
+          </div>
+
+          <FeaturedVideosCarousel videos={latestVideos} />
+        </div>
+      </section>
+
+      {/* 新着ボイスボタン（開発予定） */}
+      <section className="py-12 bg-white/50">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-2xl sm:text-3xl font-bold text-foreground">
+              🎵 新着ボイスボタン
             </h3>
             <Button variant="outline" asChild className="min-h-[44px]">
               <Link href="/buttons">すべて見る</Link>
@@ -55,39 +95,6 @@ export default function Home() {
                 音声ボタン機能
               </h4>
               <p className="text-muted-foreground">開発予定の機能です</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* コンテンツセクション */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid gap-8 md:grid-cols-2">
-            {/* 動画コンテンツ */}
-            <div className="bg-card rounded-lg shadow-sm p-6 sm:p-8 border">
-              <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-4 sm:mb-6">
-                📺 動画一覧
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                涼花みなせさんのYouTube動画を視聴
-              </p>
-              <Button asChild className="w-full sm:w-auto min-h-[44px]">
-                <Link href="/videos">動画を見る</Link>
-              </Button>
-            </div>
-
-            {/* 作品コンテンツ */}
-            <div className="bg-card rounded-lg shadow-sm p-6 sm:p-8 border">
-              <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-4 sm:mb-6">
-                🎧 音声作品一覧
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                DLsite音声作品を探索・購入
-              </p>
-              <Button asChild className="w-full sm:w-auto min-h-[44px]">
-                <Link href="/works">作品を見る</Link>
-              </Button>
             </div>
           </div>
         </div>

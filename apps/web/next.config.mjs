@@ -28,7 +28,7 @@ const nextConfig = {
     // 画像サイズの最適化
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    // 外部画像ドメインの許可（YouTubeサムネイル用）
+    // 外部画像ドメインの許可（YouTubeサムネイル・DLsite画像用）
     remotePatterns: [
       {
         protocol: "https",
@@ -41,6 +41,12 @@ const nextConfig = {
         hostname: "img.youtube.com",
         port: "",
         pathname: "/vi/**",
+      },
+      {
+        protocol: "https",
+        hostname: "img.dlsite.jp",
+        port: "",
+        pathname: "/resize/images2/**",
       },
     ],
     // LCPを改善する画像の最適化
