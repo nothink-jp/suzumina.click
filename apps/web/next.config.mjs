@@ -10,15 +10,14 @@ const nextConfig = {
 
   // Core Web Vitals最適化
   experimental: {
-    // 部分的プリレンダリング（PPR）を有効化
-    ppr: true,
     // React Compiler（実験的）
     reactCompiler: true,
-    // Turbopack（開発時のみ）
-    turbo: {
-      loaders: {
-        ".svg": ["@svgr/webpack"],
-      },
+  },
+
+  // Turbopack設定
+  turbopack: {
+    rules: {
+      "*.svg": ["@svgr/webpack"],
     },
   },
 
@@ -85,8 +84,7 @@ const nextConfig = {
   // パフォーマンス最適化
   compress: true,
 
-  // ビルド時の最適化
-  swcMinify: true,
+  // SWCコンパイラーはNext.js 15でデフォルト有効
 
   // 静的ファイルの最適化
   assetPrefix: process.env.NODE_ENV === "production" ? undefined : undefined,

@@ -1,38 +1,30 @@
-import { AudioButtonCard } from "@/components/AudioButtonCard";
-import {
-  getAudioButtonById,
-  getAudioButtonsByCategory,
-} from "@/lib/firestore-audio";
-import type { AudioButtonCategory } from "@suzumina.click/shared-types";
-import { AudioPlayer } from "@suzumina.click/ui/components/audio-player";
+import { getAudioReferenceById, getAudioReferences } from "@/app/buttons/actions";
+import { AudioReferenceCard } from "@/components/AudioReferenceCard";
+import { YouTubePlayer } from "@/components/YouTubePlayer";
+import type { AudioReferenceQuery } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/badge";
 import { Button } from "@suzumina.click/ui/components/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@suzumina.click/ui/components/card";
-import { formatDistanceToNow } from "date-fns";
-import { ja } from "date-fns/locale";
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  ExternalLink,
-  Eye,
-  FileAudio,
-  Heart,
-  Play,
-  Share2,
+import { Separator } from "@suzumina.click/ui/components/separator";
+import { 
+  ArrowLeft, 
+  Calendar, 
+  Clock, 
+  Eye, 
+  Heart, 
+  Play, 
+  Share2, 
   Tag,
-  User,
-  Volume2,
+  Youtube 
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { incrementPlayCount } from "../actions";
+import { Suspense } from "react";
 
 interface AudioButtonDetailPageProps {
   params: Promise<{
@@ -40,90 +32,124 @@ interface AudioButtonDetailPageProps {
   }>;
 }
 
-// カテゴリ表示名
-const getCategoryLabel = (category: string) => {
-  const labels: Record<string, string> = {
-    voice: "ボイス",
-    bgm: "BGM・音楽",
-    se: "効果音",
-    talk: "トーク・会話",
-    singing: "歌唱",
-    other: "その他",
+// 時間フォーマット関数
+function formatTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+// 相対時間表示
+function formatRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) {
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours === 0) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return `${diffMinutes}分前`;
+    }
+    return `${diffHours}時間前`;
+  }
+  if (diffDays < 7) {
+    return `${diffDays}日前`;
+  }
+  return date.toLocaleDateString('ja-JP');
+}
+
+// カテゴリ表示名の変換
+function getCategoryDisplayName(category: string): string {
+  const categoryNames: Record<string, string> = {
+    voice: 'ボイス',
+    bgm: 'BGM',
+    se: '効果音',
+    talk: 'トーク',
+    singing: '歌唱',
+    other: 'その他',
   };
-  return labels[category] || category;
-};
+  return categoryNames[category] || category;
+}
 
-// 相対時間を計算
-const getRelativeTime = (dateString: string) => {
+// 関連音声ボタンコンポーネント
+async function RelatedAudioButtons({ 
+  currentId, 
+  videoId, 
+  tags 
+}: { 
+  currentId: string; 
+  videoId: string; 
+  tags: string[]; 
+}) {
   try {
-    return formatDistanceToNow(new Date(dateString), {
-      addSuffix: true,
-      locale: ja,
-    });
-  } catch {
-    return "不明";
+    // 同じ動画の音声ボタンを取得
+    const sameVideoQuery: AudioReferenceQuery = {
+      videoId,
+      limit: 6,
+      sortBy: "newest",
+    };
+    
+    const sameVideoResult = await getAudioReferences(sameVideoQuery);
+    
+    if (sameVideoResult.success) {
+      const relatedButtons = sameVideoResult.data.audioReferences
+        .filter(button => button.id !== currentId);
+      
+      if (relatedButtons.length > 0) {
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Youtube className="h-5 w-5" />
+                同じ動画の音声ボタン
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {relatedButtons.slice(0, 4).map((audioReference) => (
+                  <AudioReferenceCard
+                    key={audioReference.id}
+                    audioReference={audioReference}
+                    showSourceVideo={false}
+                    size="sm"
+                    variant="compact"
+                  />
+                ))}
+              </div>
+              {relatedButtons.length > 4 && (
+                <div className="mt-4 text-center">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/buttons?videoId=${videoId}`}>
+                      この動画の音声ボタンをもっと見る
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      }
+    }
+  } catch (error) {
+    console.error("関連音声ボタン取得エラー:", error);
   }
-};
-
-async function RelatedAudioButtons({
-  category,
-  currentId,
-}: { category: string; currentId: string }) {
-  const relatedButtons = await getAudioButtonsByCategory(
-    category as AudioButtonCategory,
-    6,
-  );
-  const filteredButtons = relatedButtons.filter(
-    (button) => button.id !== currentId,
-  );
-
-  if (filteredButtons.length === 0) {
-    return null;
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>関連する音声ボタン</CardTitle>
-        <CardDescription>
-          同じカテゴリ「{getCategoryLabel(category)}」の音声ボタン
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredButtons.slice(0, 6).map((audioButton) => (
-            <AudioButtonCard
-              key={audioButton.id}
-              audioButton={audioButton}
-              showSourceVideo={false}
-              size="sm"
-              variant="compact"
-            />
-          ))}
-        </div>
-        {filteredButtons.length > 6 && (
-          <div className="mt-4 text-center">
-            <Button variant="outline" asChild>
-              <Link href={`/buttons?category=${category}`}>
-                {getCategoryLabel(category)}の音声ボタンをもっと見る
-              </Link>
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+  
+  return null;
 }
 
 export default async function AudioButtonDetailPage({
   params,
 }: AudioButtonDetailPageProps) {
   const resolvedParams = await params;
-  const audioButton = await getAudioButtonById(resolvedParams.id);
-
-  if (!audioButton) {
+  
+  const result = await getAudioReferenceById(resolvedParams.id);
+  
+  if (!result.success) {
     notFound();
   }
+  
+  const audioReference = result.data;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -137,200 +163,143 @@ export default async function AudioButtonDetailPage({
         </Button>
       </div>
 
-      <div className="space-y-8">
-        {/* メイン情報 */}
+      <div className="space-y-6">
+        {/* メインコンテンツ */}
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <CardTitle className="text-2xl mb-2">
-                  {audioButton.title}
-                </CardTitle>
-                {audioButton.description && (
-                  <CardDescription className="text-base">
-                    {audioButton.description}
-                  </CardDescription>
-                )}
-              </div>
-              <Badge variant="secondary" className="ml-4">
-                {getCategoryLabel(audioButton.category)}
-              </Badge>
-            </div>
-
-            {/* タグ */}
-            {audioButton.tags && audioButton.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {audioButton.tags.map((tag) => (
-                  <Badge key={tag} variant="outline" asChild>
-                    <Link
-                      href={`/buttons?tags=${encodeURIComponent(tag)}`}
-                      className="cursor-pointer hover:bg-gray-100"
-                    >
-                      <Tag className="h-3 w-3 mr-1" />
-                      {tag}
-                    </Link>
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* 音声プレイヤー */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <AudioPlayer
-                src={audioButton.audioUrl}
-                title={audioButton.title}
-                showTitle={false}
-                showProgress={true}
-                showVolume={true}
-                showSkipButtons={true}
-                showReplayButton={true}
-                size="lg"
-                variant="default"
-                onPlay={async () => {
-                  // 再生回数を増加（サーバーアクション）
-                  try {
-                    await incrementPlayCount(audioButton.id);
-                  } catch (error) {
-                    console.error("再生回数更新エラー:", error);
-                  }
-                }}
-              />
-            </div>
-
-            {/* 統計情報 */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <Eye className="h-6 w-6 mx-auto mb-2 text-blue-600" />
-                <div className="text-2xl font-bold text-blue-700">
-                  {audioButton.playCount.toLocaleString()}
+              <div className="space-y-2 flex-1">
+                <h1 className="text-2xl font-bold text-foreground">
+                  {audioReference.title}
+                </h1>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {formatRelativeTime(audioReference.createdAt)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {audioReference.duration}秒
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Play className="h-4 w-4" />
+                    {audioReference.playCount}回再生
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Heart className="h-4 w-4" />
+                    {audioReference.likeCount}
+                  </span>
                 </div>
-                <div className="text-sm text-blue-600">再生回数</div>
               </div>
-
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <Heart className="h-6 w-6 mx-auto mb-2 text-red-600" />
-                <div className="text-2xl font-bold text-red-700">
-                  {audioButton.likeCount.toLocaleString()}
-                </div>
-                <div className="text-sm text-red-600">いいね</div>
-              </div>
-
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <Volume2 className="h-6 w-6 mx-auto mb-2 text-green-600" />
-                <div className="text-2xl font-bold text-green-700">
-                  {audioButton.durationText}
-                </div>
-                <div className="text-sm text-green-600">再生時間</div>
-              </div>
-
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <FileAudio className="h-6 w-6 mx-auto mb-2 text-purple-600" />
-                <div className="text-2xl font-bold text-purple-700">
-                  {audioButton.fileSizeText}
-                </div>
-                <div className="text-sm text-purple-600">ファイルサイズ</div>
-              </div>
-            </div>
-
-            {/* アクションボタン */}
-            <div className="flex gap-4">
-              <Button className="flex-1">
-                <Heart className="h-4 w-4 mr-2" />
-                いいね
-              </Button>
-              <Button variant="outline" className="flex-1">
+              <Button variant="outline" size="sm">
                 <Share2 className="h-4 w-4 mr-2" />
                 共有
               </Button>
             </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* カテゴリとタグ */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary">
+                {getCategoryDisplayName(audioReference.category)}
+              </Badge>
+              {audioReference.tags && audioReference.tags.length > 0 && (
+                <>
+                  <Separator orientation="vertical" className="h-4" />
+                  {audioReference.tags.map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs">
+                      <Tag className="h-3 w-3 mr-1" />
+                      {tag}
+                    </Badge>
+                  ))}
+                </>
+              )}
+            </div>
+
+            {/* 説明 */}
+            {audioReference.description && (
+              <div>
+                <h3 className="font-medium text-sm text-muted-foreground mb-2">説明</h3>
+                <p className="text-sm text-foreground">
+                  {audioReference.description}
+                </p>
+              </div>
+            )}
+
+            {/* YouTube動画情報 */}
+            <div className="p-4 bg-muted rounded-lg">
+              <h3 className="font-medium text-sm text-muted-foreground mb-2">元動画</h3>
+              <div className="space-y-1">
+                <p className="font-medium text-foreground">
+                  {audioReference.videoTitle}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  時間: {formatTime(audioReference.startTime)} - {formatTime(audioReference.endTime)}
+                  ({audioReference.duration}秒)
+                </p>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/videos/${audioReference.videoId}`}>
+                    <Youtube className="h-4 w-4 mr-2" />
+                    動画詳細を見る
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* 詳細情報 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* メタデータ */}
-          <Card>
-            <CardHeader>
-              <CardTitle>詳細情報</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <div>
-                  <div className="font-medium">作成日時</div>
-                  <div className="text-sm text-gray-600">
-                    {getRelativeTime(audioButton.createdAt)}
-                  </div>
-                </div>
-              </div>
+        {/* YouTube Player */}
+        <Card>
+          <CardHeader>
+            <CardTitle>YouTube動画プレイヤー</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <YouTubePlayer
+              videoId={audioReference.videoId}
+              width="100%"
+              height="400"
+              startTime={audioReference.startTime}
+              endTime={audioReference.endTime}
+              controls
+              autoplay={false}
+            />
+          </CardContent>
+        </Card>
 
-              <div className="flex items-center gap-3">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <div>
-                  <div className="font-medium">音声形式</div>
-                  <div className="text-sm text-gray-600">
-                    {audioButton.format.toUpperCase()}
-                  </div>
-                </div>
-              </div>
-
-              {audioButton.uploadedBy && (
-                <div className="flex items-center gap-3">
-                  <User className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <div className="font-medium">作成者</div>
-                    <div className="text-sm text-gray-600">
-                      {audioButton.uploadedBy}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 元動画情報 */}
-          {audioButton.sourceVideoId && (
-            <Card>
-              <CardHeader>
-                <CardTitle>元動画情報</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="font-medium">動画タイトル</div>
-                  <div className="text-sm text-gray-600">
-                    {audioButton.sourceVideoTitle || "不明"}
-                  </div>
-                </div>
-
-                {audioButton.startTime !== undefined &&
-                  audioButton.endTime !== undefined && (
-                    <div>
-                      <div className="font-medium">切り抜き範囲</div>
-                      <div className="text-sm text-gray-600">
-                        {audioButton.startTime}秒 - {audioButton.endTime}秒 （
-                        {audioButton.endTime - audioButton.startTime}秒間）
-                      </div>
-                    </div>
-                  )}
-
-                <Button variant="outline" size="sm" asChild className="w-full">
-                  <Link href={`/videos/${audioButton.sourceVideoId}`}>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    元動画を見る
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        {/* 音声ボタンアクション */}
+        <Card>
+          <CardHeader>
+            <CardTitle>この音声ボタン</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AudioReferenceCard
+              audioReference={audioReference}
+              showSourceVideo={true}
+              size="lg"
+              variant="detailed"
+            />
+          </CardContent>
+        </Card>
 
         {/* 関連音声ボタン */}
-        <RelatedAudioButtons
-          category={audioButton.category}
-          currentId={audioButton.id}
-        />
+        <Suspense fallback={
+          <Card>
+            <CardHeader>
+              <CardTitle>関連音声ボタン</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-center py-8">
+                <Eye className="h-8 w-8 animate-pulse text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        }>
+          <RelatedAudioButtons
+            currentId={audioReference.id}
+            videoId={audioReference.videoId}
+            tags={audioReference.tags || []}
+          />
+        </Suspense>
       </div>
     </div>
   );

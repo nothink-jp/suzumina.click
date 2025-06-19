@@ -1,12 +1,12 @@
-import { AudioButtonCard } from "@/components/AudioButtonCard";
 import {
-  getAudioButtons,
-  getPopularAudioButtons,
-  getRecentAudioButtons,
-} from "@/lib/firestore-audio";
+  getAudioReferences,
+  getPopularAudioReferences,
+  getRecentAudioReferences,
+} from "@/app/buttons/actions";
+import { AudioReferenceCard } from "@/components/AudioReferenceCard";
 import type {
-  AudioButtonCategory,
-  AudioButtonQuery,
+  AudioReferenceCategory,
+  AudioReferenceQuery,
 } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/button";
 import {
@@ -37,20 +37,43 @@ interface AudioButtonsPageProps {
 async function AudioButtonsList({
   searchParams,
 }: { searchParams: SearchParams }) {
-  const query: AudioButtonQuery = {
+  const query: AudioReferenceQuery = {
     limit: 20,
     searchText: searchParams.q,
-    category: searchParams.category as AudioButtonCategory | undefined,
+    category: searchParams.category as AudioReferenceCategory | undefined,
     tags: searchParams.tags ? searchParams.tags.split(",") : undefined,
     sortBy:
-      (searchParams.sort as "newest" | "oldest" | "popular" | "mostPlayed") ||
-      "newest",
-    onlyPublic: true,
+      (searchParams.sort as
+        | "newest"
+        | "oldest"
+        | "popular"
+        | "mostPlayed"
+        | "mostLiked") || "newest",
   };
 
-  const result = await getAudioButtons(query);
+  const result = await getAudioReferences(query);
 
-  if (result.audioButtons.length === 0) {
+  if (!result.success) {
+    return (
+      <Card className="text-center py-12">
+        <CardContent>
+          <div className="space-y-4">
+            <Sparkles className="mx-auto h-12 w-12 text-gray-400" />
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">
+                エラーが発生しました
+              </h3>
+              <p className="text-gray-500 mt-1">{result.error}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const audioReferences = result.data.audioReferences;
+
+  if (audioReferences.length === 0) {
     return (
       <Card className="text-center py-12">
         <CardContent>
@@ -83,7 +106,7 @@ async function AudioButtonsList({
         <div>
           <h2 className="text-xl font-bold text-gray-900">検索結果</h2>
           <p className="text-gray-600">
-            {result.audioButtons.length} 件の音声ボタン
+            {audioReferences.length} 件の音声ボタン
           </p>
         </div>
         <Button asChild>
@@ -96,10 +119,10 @@ async function AudioButtonsList({
 
       {/* 音声ボタン一覧 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {result.audioButtons.map((audioButton) => (
-          <AudioButtonCard
-            key={audioButton.id}
-            audioButton={audioButton}
+        {audioReferences.map((audioReference) => (
+          <AudioReferenceCard
+            key={audioReference.id}
+            audioReference={audioReference}
             showSourceVideo={true}
             size="md"
             variant="default"
@@ -108,7 +131,7 @@ async function AudioButtonsList({
       </div>
 
       {/* ページネーション（TODO: 実装予定） */}
-      {result.hasMore && (
+      {result.data.hasMore && (
         <Card className="text-center py-6">
           <CardContent>
             <p className="text-gray-600 mb-4">さらに音声ボタンがあります</p>
@@ -121,7 +144,7 @@ async function AudioButtonsList({
 }
 
 async function PopularAudioButtons() {
-  const popularButtons = await getPopularAudioButtons(6);
+  const popularButtons = await getPopularAudioReferences(6);
 
   if (popularButtons.length === 0) {
     return null;
@@ -138,10 +161,10 @@ async function PopularAudioButtons() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {popularButtons.map((audioButton) => (
-            <AudioButtonCard
-              key={audioButton.id}
-              audioButton={audioButton}
+          {popularButtons.map((audioReference) => (
+            <AudioReferenceCard
+              key={audioReference.id}
+              audioReference={audioReference}
               showSourceVideo={false}
               size="sm"
               variant="compact"
@@ -161,7 +184,7 @@ async function PopularAudioButtons() {
 }
 
 async function RecentAudioButtons() {
-  const recentButtons = await getRecentAudioButtons(6);
+  const recentButtons = await getRecentAudioReferences(6);
 
   if (recentButtons.length === 0) {
     return null;
@@ -178,10 +201,10 @@ async function RecentAudioButtons() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {recentButtons.map((audioButton) => (
-            <AudioButtonCard
-              key={audioButton.id}
-              audioButton={audioButton}
+          {recentButtons.map((audioReference) => (
+            <AudioReferenceCard
+              key={audioReference.id}
+              audioReference={audioReference}
               showSourceVideo={false}
               size="sm"
               variant="compact"

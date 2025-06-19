@@ -15,5 +15,9 @@ export * from "./work";
 // 音声ボタン関連の型とスキーマのエクスポート
 export * from "./audio-button";
 
+// 音声リファレンス関連の型とスキーマのエクスポート
+export * from "./audio-reference";
+export * from "./audio-reference-utils";
+
 // Firestore関連のユーティリティ
 export * from "./firestore-utils";

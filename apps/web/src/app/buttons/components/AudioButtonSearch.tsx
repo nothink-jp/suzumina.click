@@ -1,6 +1,6 @@
 "use client";
 
-import type { AudioButtonCategory } from "@suzumina.click/shared-types";
+import type { AudioReferenceCategory } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/badge";
 import { Button } from "@suzumina.click/ui/components/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/card";
@@ -17,7 +17,7 @@ import { Filter, Search, SortAsc, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-const CATEGORIES: { value: AudioButtonCategory; label: string }[] = [
+const CATEGORIES: { value: AudioReferenceCategory; label: string }[] = [
   { value: "voice", label: "ボイス" },
   { value: "bgm", label: "BGM・音楽" },
   { value: "se", label: "効果音" },
@@ -31,6 +31,7 @@ const SORT_OPTIONS = [
   { value: "oldest", label: "古い順" },
   { value: "popular", label: "人気順" },
   { value: "mostPlayed", label: "再生数順" },
+  { value: "mostLiked", label: "いいね数順" },
 ];
 
 const POPULAR_TAGS = [

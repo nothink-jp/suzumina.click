@@ -228,6 +228,233 @@
 
 ---
 
+## 🎵 タイムスタンプ参照システム（音声ボタン機能）開発TODO
+
+**開始**: 2025年6月19日  
+**Phase 1完了**: 2025年6月19日  
+**完了予定**: 2025年7月2日 (2週間)  
+**開発方針**: 認証なし・匿名投稿による早期市場投入
+
+### ✅ Phase 1: 基盤実装完了（2025年6月19日）
+
+#### ✅ Day 1-2: データ構造・型定義
+- [x] `AudioReference` 型定義を `packages/shared-types` に追加
+  - [x] `audio-reference.ts` - AudioReferenceスキーマ定義
+  - [x] `audio-reference-utils.ts` - Firestore変換ユーティリティ
+  - [x] カテゴリ・検索・バリデーション関数の実装
+- [x] Firestore変換ユーティリティ作成
+  - [x] `convertToFrontendAudioReference`
+  - [x] `convertCreateInputToFirestoreAudioReference` (匿名対応)
+  - [x] `validateAudioReferenceCreation`
+- [x] 認証なし設計の型定義調整
+  - [x] `createdBy: 'anonymous'` 設定
+  - [x] IPベースレート制限実装
+
+#### ✅ Day 3-4: Server Actions実装
+- [x] `createAudioReference` 実装
+  - [x] バリデーション処理
+  - [x] Firestore保存処理
+  - [x] 動画統計更新
+  - [x] キャッシュ無効化
+  - [x] YouTube Data API v3統合
+- [x] `getAudioReferences` 検索・取得機能
+  - [x] カテゴリ・タグ・動画ID検索
+  - [x] 並び順（新着・人気・再生数・いいね数順）
+  - [x] ページネーション対応
+  - [x] 高度なフィルタリング機能
+- [x] 統計更新機能実装
+  - [x] `updateAudioReferenceStats` (再生・いいね・表示回数)
+  - [x] `updateVideoAudioButtonStats`
+  - [x] 個別統計更新関数群
+
+#### ✅ Day 5-7: 基本コンポーネント
+- [x] `YouTubePlayer` コンポーネント
+  - [x] YouTube IFrame API統合
+  - [x] プレイヤー初期化・制御
+  - [x] 時間更新イベント
+  - [x] 状態管理
+  - [x] カスタムhook `useYouTubePlayer`
+- [x] `AudioReferenceCard` 基本版
+  - [x] 音声ボタン表示
+  - [x] YouTube動画再生機能
+  - [x] いいね・統計機能
+  - [x] サイズバリアント対応（sm/md/lg）
+  - [x] ダイアログベース再生
+  - [x] 共有機能
+- [x] 音声ボタン一覧ページ拡張
+  - [x] 既存 `/buttons` ページの更新
+  - [x] 検索・フィルター機能
+  - [x] 人気・最新セクション
+  - [x] エラーハンドリング
+
+### 🚧 Phase 2: 作成UI・統合・デプロイ（残り1週間）
+
+#### 🎯 優先度1: 作成UI実装（2-3日）
+- [ ] `AudioReferenceCreator` コンポーネント作成
+  - [ ] YouTube動画URL入力・検証機能実装
+  - [ ] YouTube Player統合（フル機能版 - 既存YouTubePlayerコンポーネント拡張）
+  - [ ] タイムスタンプ選択UI実装
+    - [ ] リアルタイム再生位置表示機能
+    - [ ] 開始・終了時間スライダー（shadcn/ui Slider使用）
+    - [ ] 現在時間設定ボタン機能
+    - [ ] 範囲プレビュー機能（1-30秒制限、AUDIO_BUTTON_DESIGN.md準拠）
+  - [ ] メタデータ入力フォーム実装
+    - [ ] タイトル・説明入力（最大文字数制限付き）
+    - [ ] カテゴリ選択（既存enum使用: voice/bgm/se/talk/singing/other）
+    - [ ] タグ入力コンポーネント（推奨タグ表示機能付き）
+  - [ ] 作成前プレビュー・バリデーション機能
+  - [ ] 既存createAudioReference Server Action連携・エラーハンドリング
+- [ ] `/buttons/create` ページ更新
+  - [ ] 工事中ページを `AudioReferenceCreator` に置き換え
+  - [ ] レスポンシブレイアウト実装
+  - [ ] ナビゲーション・パンくず改善
+
+#### 🎯 優先度2: 詳細ページ・統合（2日）
+- [ ] `/buttons/[id]` 詳細ページ実装
+  - [ ] 既存actions.tsの`getAudioReferenceById`実装（現在未実装）
+  - [ ] 既存YouTubePlayerコンポーネント使用（タイムスタンプ付き）
+  - [ ] メタデータ表示・統計情報表示
+  - [ ] 関連音声ボタン表示（同一動画・類似タグ）
+  - [ ] 既存社会的機能統合（いいね・共有 - updateAudioReferenceStats使用）
+- [ ] `/videos/[videoId]` ページ拡張
+  - [ ] 既存動画詳細ページに音声ボタンセクション追加
+  - [ ] 動画関連音声ボタン一覧（既存getAudioReferences使用）
+  - [ ] 「音声ボタンを作成」ボタン追加（当該動画のvideoId指定）
+
+#### 🎯 優先度3: インフラ・デプロイ準備（2日）
+- [ ] Firestore セキュリティルール
+  - [ ] `audioReferences` コレクション用ルール作成
+  - [ ] 匿名書き込み・読み取り許可設定
+  - [ ] レート制限・バリデーション強化
+- [ ] Firestore インデックス設定
+  - [ ] 検索・並び替え用複合インデックス
+  - [ ] `category + createdAt`, `playCount desc`, `likeCount desc`
+  - [ ] `videoId + isPublic` 等
+- [ ] 本番デプロイ準備
+  - [ ] YouTube API Key設定確認
+  - [ ] 環境変数・シークレット管理
+  - [ ] パフォーマンス・バンドル最適化確認
+
+#### 🎯 優先度4: 品質・テスト（随時）
+- [ ] コードクリーンアップ
+  - [ ] Lint・TypeScript エラー修正
+  - [ ] パフォーマンス最適化
+  - [ ] アクセシビリティ確認
+- [ ] 手動テスト
+  - [ ] 音声ボタン作成フロー
+  - [ ] 検索・フィルタリング・再生機能
+  - [ ] モバイル・レスポンシブ確認
+
+### 📁 実装ファイル状況
+
+#### ✅ 完了ファイル
+```
+packages/shared-types/src/
+├── audio-reference.ts          # ✅ 型定義・スキーマ完全実装
+├── audio-reference-utils.ts    # ✅ 変換・バリデーション・レート制限完全実装
+└── index.ts                   # ✅ エクスポート更新完了
+
+apps/web/src/
+├── app/buttons/
+│   ├── actions.ts             # ✅ Server Actions完全実装（CRUD、統計、検索機能）
+│   ├── page.tsx              # ✅ 一覧ページ（AudioReference完全対応、検索・人気・最新機能）
+│   ├── components/AudioButtonSearch.tsx # ✅ 検索機能（AudioReference完全対応）
+│   ├── [id]/page.tsx         # ⚠️ 工事中ページ（getAudioReferenceById未実装）
+│   └── create/page.tsx       # ⚠️ 工事中ページ（AudioReferenceCreator未実装）
+├── components/
+│   ├── AudioReferenceCard.tsx # ✅ 表示UI（完全機能、ダイアログ再生、統計、いいね機能）
+│   └── YouTubePlayer.tsx     # ✅ YouTube IFrame API完全統合（カスタムhook含む）
+└── lib/
+    └── firestore-admin.ts     # ✅ Firestore管理クラス（Admin SDK統合）
+```
+
+#### 🚧 残り実装ファイル
+```
+apps/web/src/
+├── app/buttons/
+│   ├── create/page.tsx       # 🚧 AudioReferenceCreator統合予定（既存actions.ts使用）
+│   └── [id]/page.tsx         # 🚧 詳細ページ実装予定（getAudioReferenceById追加必要）
+├── app/videos/[videoId]/
+│   └── page.tsx             # 🚧 音声ボタンセクション追加予定（既存getAudioReferences使用）
+└── components/
+    └── AudioReferenceCreator.tsx # 🚧 新規作成予定（AUDIO_BUTTON_DESIGN.md仕様準拠）
+
+terraform/
+└── firestore_security_rules.tf  # 🚧 セキュリティルール作成予定（匿名投稿対応）
+```
+
+### 技術仕様
+
+#### データ型
+- `AudioReference` - メイン型定義
+- `CreateAudioReferenceInput` - 作成用型（AUDIO_BUTTON_DESIGN.md準拠）
+- `AudioReferenceQuery` - 検索用型
+- `AudioReferenceCategory` - カテゴリ列挙型（voice/bgm/se/talk/singing/other）
+
+#### Firestoreコレクション
+```
+/audioReferences/{id}
+├── title: string
+├── videoId: string  
+├── videoTitle: string
+├── startTime: number
+├── endTime: number
+├── duration: number
+├── category: string
+├── tags?: string[]
+├── description?: string
+├── createdBy: 'anonymous'
+├── createdAt: Timestamp
+├── updatedAt: Timestamp
+├── playCount: number
+├── likeCount: number
+└── isPublic: boolean
+```
+
+#### セキュリティ（認証なし版）
+- **作成**: 誰でも可能（バリデーション付き）
+- **読み取り**: 公開ボタンのみ
+- **更新**: 統計情報のみ
+- **削除**: 不可（匿名のため）
+- **レート制限**: IPあたり1日20個まで
+
+### 🎯 完了基準
+
+- [x] **音声ボタンの表示・再生機能** - AudioReferenceCard + YouTubePlayer
+- [x] **YouTube動画との統合** - YouTube IFrame API + Data API v3
+- [x] **検索・フィルタリング機能** - 高度な検索システム
+- [x] **統計・社会的機能** - いいね・再生・表示回数
+- [x] **レスポンシブデザイン** - モバイルファースト対応
+- [x] **Server Actions基盤** - 完全なバックエンドAPI（getAudioReferenceById除く）
+- [ ] **音声ボタン作成UI** - AudioReferenceCreator (Phase 2)
+- [ ] **詳細ページ** - 個別音声ボタンページ + getAudioReferenceById実装 (Phase 2)
+- [ ] **Firestoreセキュリティ** - 本番用ルール (Phase 2)
+- [ ] **本番デプロイ** - インフラ設定完了 (Phase 2)
+
+### 📊 進捗状況
+
+**Phase 1完了**: 2025年6月19日 ✅  
+**総開発期間**: 2週間（認証なし・早期市場投入版）  
+**進捗率**: 70% (Phase 1: 100%, Phase 2: 0%)
+
+**✅ Phase 1 完了項目 (70%)**
+
+- データ構造・型定義システム
+- Server Actions完全実装
+- YouTube Player統合
+- AudioReferenceCard コンポーネント
+- 検索・一覧ページ更新
+- 基本的な品質・リント対応
+
+**🚧 Phase 2 残り項目 (30%)**
+
+- AudioReferenceCreator作成UI
+- 詳細ページ実装
+- インフラ・セキュリティ設定
+- 最終テスト・デプロイ
+
+---
+
 **開始**: 2025年6月17日  
 **担当**: suzumina.click開発チーム  
 **前フェーズ**: 音声ボタン機能開発完了 (v0.1.5)
