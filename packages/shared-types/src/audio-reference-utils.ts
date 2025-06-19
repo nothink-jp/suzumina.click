@@ -1,15 +1,15 @@
 import {
   type AudioReferenceCategory,
   type CreateAudioReferenceInput,
-  type FirestoreAudioReferenceData,
-  type FrontendAudioReferenceData,
-  FrontendAudioReferenceSchema,
-  type YouTubeVideoInfo,
   createYouTubeEmbedUrl,
   createYouTubeThumbnailUrl,
   createYouTubeUrl,
+  type FirestoreAudioReferenceData,
+  type FrontendAudioReferenceData,
+  FrontendAudioReferenceSchema,
   formatTimeRange,
   formatTimestamp,
+  type YouTubeVideoInfo,
 } from "./audio-reference";
 
 /**
@@ -70,7 +70,7 @@ export function convertToFrontendAudioReference(
     );
 
     // エラー時でも最低限のデータを返す
-    const now = new Date().toISOString();
+    const _now = new Date().toISOString();
     return {
       id: data.id,
       title: data.title,

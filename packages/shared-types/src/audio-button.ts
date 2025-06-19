@@ -267,7 +267,7 @@ export function convertToFrontendAudioButton(
     console.error("音声ボタンフロントエンド変換中のスキーマ検証エラー:", error);
 
     // エラー時でも最低限のデータを返す
-    const now = new Date().toISOString();
+    const _now = new Date().toISOString();
     return {
       id: data.id,
       title: data.title,

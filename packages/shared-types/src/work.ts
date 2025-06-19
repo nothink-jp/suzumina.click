@@ -430,7 +430,7 @@ export function convertToFrontendWork(
     console.error("フロントエンド変換中にスキーマ検証エラー:", error);
 
     // エラー時でも最低限のデータを返す
-    const now = new Date().toISOString();
+    const _now = new Date().toISOString();
     return {
       id: data.id,
       productId: data.productId,

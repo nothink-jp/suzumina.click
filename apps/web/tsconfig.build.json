@@ -1,0 +1,32 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "next-env.d.ts",
+    "next.config.ts",
+    "src/app/layout.tsx",
+    "src/app/page.tsx",
+    "src/app/not-found.tsx",
+    "src/app/globals.css",
+    "src/app/videos/**/*.ts",
+    "src/app/videos/**/*.tsx",
+    "src/app/works/**/*.ts",
+    "src/app/works/**/*.tsx",
+    "src/app/admin/**/*.ts",
+    "src/app/admin/**/*.tsx",
+    "src/components/**/*.tsx",
+    "src/lib/**/*.ts",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.stories.tsx",
+    "**/*.stories.ts",
+    "**/*.test.tsx",
+    "**/*.test.ts",
+    "vitest.setup.ts",
+    ".storybook",
+    "src/app/buttons/**/*",
+    "src/components/AudioReferenceCreator.tsx",
+    "src/components/PerformanceMonitor.tsx"
+  ]
+}

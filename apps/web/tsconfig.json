@@ -23,6 +23,9 @@
     "node_modules",
     "**/*.stories.tsx",
     "**/*.stories.ts",
+    "**/*.test.tsx",
+    "**/*.test.ts",
+    "vitest.setup.ts",
     ".storybook"
   ]
 }

@@ -200,8 +200,9 @@
   /* フォーカス状態の改善 */
   *:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px hsl(var(--focus-ring)), 0 0 0 4px
-      hsl(var(--focus-ring-offset));
+    box-shadow:
+      0 0 0 2px hsl(var(--focus-ring)),
+      0 0 0 4px hsl(var(--focus-ring-offset));
   }
 
   /* ハイコントラストモード対応 */
@@ -273,7 +274,9 @@
 
   /* ホバー効果の強化 */
   .hover-lift {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition:
+      transform 0.2s ease-in-out,
+      box-shadow 0.2s ease-in-out;
   }
 
   .hover-lift:hover {
