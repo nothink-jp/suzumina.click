@@ -4,8 +4,10 @@
  * YouTube実装パターンに従い、DLsite作品データのFirestore保存・取得・更新を行います。
  */
 
-import type { FirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
-import type { DLsiteWorkBase } from "@suzumina.click/shared-types";
+import type {
+  DLsiteWorkBase,
+  FirestoreDLsiteWorkData,
+} from "@suzumina.click/shared-types";
 import {
   filterWorksForUpdate,
   mapToFirestoreData,

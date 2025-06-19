@@ -13,11 +13,10 @@
 
 // Cloud Functions 2世代（GCFv2）用のFunctions Frameworkをインポート
 import * as functions from "@google-cloud/functions-framework";
-// 適切なロギング
-import * as logger from "./utils/logger";
-
 // 各モジュールから関数をインポート
 import { fetchDLsiteWorks } from "./dlsite";
+// 適切なロギング
+import * as logger from "./utils/logger";
 import { fetchYouTubeVideos } from "./youtube";
 
 /**

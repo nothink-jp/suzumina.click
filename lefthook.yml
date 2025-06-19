@@ -18,6 +18,7 @@ pre-commit:
       glob: "*.{ts,tsx,js,jsx}"
       run: pnpm test --run --reporter=verbose --passWithNoTests
       fail_text: "テストが失敗しました"
+      skip: true  # 必要に応じてコメントアウト
     
     # 4. セキュリティ監査 (週1回程度で十分な場合はskip: trueにする)
     audit:

@@ -2,8 +2,8 @@ import type { youtube_v3 } from "googleapis";
 import { google } from "googleapis";
 import { SUZUKA_MINASE_CHANNEL_ID } from "./common";
 import * as logger from "./logger";
-import { retryApiCall } from "./retry";
 import type { ApiError } from "./retry";
+import { retryApiCall } from "./retry";
 
 // YouTube API クォータ制限関連の定数
 export const MAX_VIDEOS_PER_BATCH = 50; // YouTube APIの最大結果数
