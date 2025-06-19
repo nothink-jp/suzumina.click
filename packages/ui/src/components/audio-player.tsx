@@ -11,7 +11,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "./button.js";
 import { Slider } from "./slider.js";
 
@@ -64,6 +64,7 @@ export function AudioPlayer({
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const previousVolumeRef = useRef(1);
+  const keyboardInstructionsId = useId();
 
   // 時間フォーマット関数
   const formatTime = useCallback((time: number): string => {
@@ -390,7 +391,7 @@ export function AudioPlayer({
       </audio>
 
       {/* キーボード操作説明（スクリーンリーダー用） */}
-      <div id="keyboard-instructions" className="sr-only">
+      <div id={keyboardInstructionsId} className="sr-only">
         キーボード操作:
         スペースキーで再生/停止、左右矢印キーでシーク、上下矢印キーで音量調整、Mキーでミュート、0キーで最初から再生
       </div>
@@ -490,12 +491,18 @@ export function AudioPlayer({
                 aria-label="再生位置"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span aria-label={`現在の再生時間: ${formatTime(currentTime)}`}>
+                <time
+                  dateTime={`PT${Math.floor(currentTime)}S`}
+                  title={`現在の再生時間: ${formatTime(currentTime)}`}
+                >
                   {formatTime(currentTime)}
-                </span>
-                <span aria-label={`総再生時間: ${formatTime(duration)}`}>
+                </time>
+                <time
+                  dateTime={`PT${Math.floor(duration)}S`}
+                  title={`総再生時間: ${formatTime(duration)}`}
+                >
                   {formatTime(duration)}
-                </span>
+                </time>
               </div>
             </div>
           )}
