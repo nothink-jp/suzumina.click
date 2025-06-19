@@ -1,42 +1,35 @@
-'use client';
+"use client";
 
-import { createAudioReference } from '@/app/buttons/actions';
-import { AudioReferenceCard } from '@/components/AudioReferenceCard';
-import { YouTubePlayer, useYouTubePlayer } from '@/components/YouTubePlayer';
+import { createAudioReference } from "@/app/buttons/actions";
+import { AudioReferenceCard } from "@/components/AudioReferenceCard";
+import { YouTubePlayer, useYouTubePlayer } from "@/components/YouTubePlayer";
 import type {
   AudioReferenceCategory,
   CreateAudioReferenceInput,
-} from '@suzumina.click/shared-types';
-import { Button } from '@suzumina.click/ui/components/button';
+} from "@suzumina.click/shared-types";
+import { Button } from "@suzumina.click/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@suzumina.click/ui/components/card';
-import { Input } from '@suzumina.click/ui/components/input';
-import { Label } from '@suzumina.click/ui/components/label';
+} from "@suzumina.click/ui/components/card";
+import { Input } from "@suzumina.click/ui/components/input";
+import { Label } from "@suzumina.click/ui/components/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@suzumina.click/ui/components/select';
-import { Slider } from '@suzumina.click/ui/components/slider';
-import { Textarea } from '@suzumina.click/ui/components/textarea';
-import {
-  Clock,
-  Loader2,
-  MapPin,
-  Play,
-  Plus,
-  X,
-} from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+} from "@suzumina.click/ui/components/select";
+import { Slider } from "@suzumina.click/ui/components/slider";
+import { Textarea } from "@suzumina.click/ui/components/textarea";
+import { Clock, Loader2, MapPin, Play, Plus, X } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 interface AudioReferenceCreatorProps {
   videoId?: string;
@@ -49,7 +42,7 @@ interface AudioReferenceCreatorProps {
 function TagInput({
   tags,
   onChange,
-  placeholder = 'タグを入力...',
+  placeholder = "タグを入力...",
   maxTags = 10,
 }: {
   tags: string[];
@@ -57,26 +50,35 @@ function TagInput({
   placeholder?: string;
   maxTags?: number;
 }) {
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
 
-  const addTag = useCallback((tag: string) => {
-    const trimmedTag = tag.trim();
-    if (trimmedTag && !tags.includes(trimmedTag) && tags.length < maxTags) {
-      onChange([...tags, trimmedTag]);
-    }
-    setInputValue('');
-  }, [tags, onChange, maxTags]);
+  const addTag = useCallback(
+    (tag: string) => {
+      const trimmedTag = tag.trim();
+      if (trimmedTag && !tags.includes(trimmedTag) && tags.length < maxTags) {
+        onChange([...tags, trimmedTag]);
+      }
+      setInputValue("");
+    },
+    [tags, onChange, maxTags],
+  );
 
-  const removeTag = useCallback((tagToRemove: string) => {
-    onChange(tags.filter(tag => tag !== tagToRemove));
-  }, [tags, onChange]);
+  const removeTag = useCallback(
+    (tagToRemove: string) => {
+      onChange(tags.filter((tag) => tag !== tagToRemove));
+    },
+    [tags, onChange],
+  );
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      addTag(inputValue);
-    }
-  }, [addTag, inputValue]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === ",") {
+        e.preventDefault();
+        addTag(inputValue);
+      }
+    },
+    [addTag, inputValue],
+  );
 
   return (
     <div className="space-y-2">
@@ -118,7 +120,7 @@ function TagInput({
 function formatTime(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
 export default function AudioReferenceCreator({
@@ -128,28 +130,28 @@ export default function AudioReferenceCreator({
   initialStartTime = 0,
 }: AudioReferenceCreatorProps) {
   const router = useRouter();
-  
+
   // YouTube URL入力用の状態
-  const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [videoId, setVideoId] = useState(initialVideoId || '');
-  const [videoTitle, setVideoTitle] = useState(initialVideoTitle || '');
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [videoId, setVideoId] = useState(initialVideoId || "");
+  const [videoTitle, setVideoTitle] = useState(initialVideoTitle || "");
   const [videoDuration, setVideoDuration] = useState(initialVideoDuration || 0);
-  
+
   // 音声ボタン情報の状態
   const [startTime, setStartTime] = useState(initialStartTime);
   const [endTime, setEndTime] = useState(initialStartTime + 5);
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<AudioReferenceCategory>('other');
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState<AudioReferenceCategory>("other");
   const [tags, setTags] = useState<string[]>([]);
-  const [description, setDescription] = useState('');
-  
+  const [description, setDescription] = useState("");
+
   // UI状態
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
-  
+
   // YouTube Playerの参照
-  const [playerInstance, setPlayerInstance] = useState<any>(null);
+  const [playerInstance, setPlayerInstance] = useState<unknown>(null);
 
   // YouTube URL からビデオIDを抽出
   const extractVideoId = useCallback((url: string): string | null => {
@@ -162,23 +164,23 @@ export default function AudioReferenceCreator({
   const handleYouTubeUrlSubmit = useCallback(async () => {
     const extractedVideoId = extractVideoId(youtubeUrl);
     if (!extractedVideoId) {
-      setError('有効なYouTube URLを入力してください');
+      setError("有効なYouTube URLを入力してください");
       return;
     }
-    
+
     setVideoId(extractedVideoId);
     setError(null);
     // ここで必要に応じてYouTube Data APIから動画情報を取得できます
   }, [youtubeUrl, extractVideoId]);
 
   // プレイヤーの準備完了時
-  const handlePlayerReady = useCallback((player: any) => {
+  const handlePlayerReady = useCallback((player: unknown) => {
     setPlayerInstance(player);
-    
+
     if (player) {
       const duration = player.getDuration();
       setVideoDuration(duration);
-      
+
       // 動画タイトルの取得（可能な場合）
       try {
         const data = player.getVideoData();
@@ -210,13 +212,16 @@ export default function AudioReferenceCreator({
     if (playerInstance && startTime < endTime) {
       playerInstance.seekTo(startTime);
       playerInstance.playVideo();
-      
+
       // 終了時間で停止
-      const timeoutId = setTimeout(() => {
-        if (playerInstance) {
-          playerInstance.pauseVideo();
-        }
-      }, (endTime - startTime) * 1000);
+      const timeoutId = setTimeout(
+        () => {
+          if (playerInstance) {
+            playerInstance.pauseVideo();
+          }
+        },
+        (endTime - startTime) * 1000,
+      );
 
       // クリーンアップ用にタイムアウトIDを保存（必要に応じて）
       return () => clearTimeout(timeoutId);
@@ -226,24 +231,24 @@ export default function AudioReferenceCreator({
   // バリデーション
   const isValidInput = useCallback(() => {
     return (
-      videoId.trim() !== '' &&
-      title.trim() !== '' &&
+      videoId.trim() !== "" &&
+      title.trim() !== "" &&
       startTime < endTime &&
-      (endTime - startTime) <= 30 &&
-      (endTime - startTime) >= 1
+      endTime - startTime <= 30 &&
+      endTime - startTime >= 1
     );
   }, [videoId, title, startTime, endTime]);
 
   // 音声ボタン作成
   const handleCreate = useCallback(async () => {
     if (!isValidInput()) {
-      setError('入力内容を確認してください');
+      setError("入力内容を確認してください");
       return;
     }
 
     setIsCreating(true);
     setError(null);
-    
+
     try {
       const input: CreateAudioReferenceInput = {
         videoId: videoId.trim(),
@@ -251,25 +256,36 @@ export default function AudioReferenceCreator({
         startTime,
         endTime,
         category,
-        tags: tags.filter(tag => tag.trim() !== ''),
+        tags: tags.filter((tag) => tag.trim() !== ""),
         description: description.trim() || undefined,
+        isPublic: true,
       };
 
       const result = await createAudioReference(input);
-      
+
       if (result.success) {
         // 成功時は詳細ページまたは一覧ページにリダイレクト
         router.push(`/buttons?created=${result.data.id}`);
       } else {
-        setError(result.error || '作成に失敗しました');
+        setError(result.error || "作成に失敗しました");
       }
     } catch (error) {
-      console.error('作成エラー:', error);
-      setError('予期しないエラーが発生しました');
+      console.error("作成エラー:", error);
+      setError("予期しないエラーが発生しました");
     } finally {
       setIsCreating(false);
     }
-  }, [isValidInput, videoId, title, startTime, endTime, category, tags, description, router]);
+  }, [
+    isValidInput,
+    videoId,
+    title,
+    startTime,
+    endTime,
+    category,
+    tags,
+    description,
+    router,
+  ]);
 
   // 初期化時の処理
   useEffect(() => {
@@ -331,7 +347,11 @@ export default function AudioReferenceCreator({
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               対象動画
-              {videoTitle && <span className="text-sm font-normal text-muted-foreground">{videoTitle}</span>}
+              {videoTitle && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  {videoTitle}
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -345,7 +365,8 @@ export default function AudioReferenceCreator({
               autoplay={false}
             />
             <div className="mt-2 text-sm text-muted-foreground">
-              現在時間: {formatTime(Math.floor(currentTime))} / {formatTime(videoDuration)}
+              現在時間: {formatTime(Math.floor(currentTime))} /{" "}
+              {formatTime(videoDuration)}
             </div>
           </CardContent>
         </Card>
@@ -387,9 +408,9 @@ export default function AudioReferenceCreator({
               </Label>
               <Slider
                 value={[endTime]}
-                onValueChange={([value]) => setEndTime(value)}
-                min={startTime + 1}
-                max={Math.min(startTime + 30, videoDuration)}
+                onValueChange={([value]) => value !== undefined && setEndTime(value)}
+                min={(startTime || 0) + 1}
+                max={Math.min((startTime || 0) + 30, videoDuration)}
                 step={1}
                 className="mt-2"
               />
@@ -397,7 +418,11 @@ export default function AudioReferenceCreator({
 
             {/* コントロールボタン */}
             <div className="flex gap-3">
-              <Button onClick={setCurrentTimeAsStart} variant="outline" size="sm">
+              <Button
+                onClick={setCurrentTimeAsStart}
+                variant="outline"
+                size="sm"
+              >
                 <MapPin className="h-4 w-4 mr-2" />
                 現在時間を開始に
               </Button>
@@ -410,8 +435,8 @@ export default function AudioReferenceCreator({
             {/* 情報表示 */}
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">
-                選択範囲: {formatTime(startTime)} - {formatTime(endTime)} 
-                ({endTime - startTime}秒)
+                選択範囲: {formatTime(startTime)} - {formatTime(endTime)}(
+                {endTime - startTime}秒)
               </p>
             </div>
           </CardContent>
@@ -444,7 +469,12 @@ export default function AudioReferenceCreator({
             {/* カテゴリ */}
             <div>
               <Label>カテゴリ</Label>
-              <Select value={category} onValueChange={(value: AudioReferenceCategory) => setCategory(value)}>
+              <Select
+                value={category}
+                onValueChange={(value: AudioReferenceCategory) =>
+                  setCategory(value)
+                }
+              >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
@@ -501,19 +531,19 @@ export default function AudioReferenceCreator({
           <CardContent>
             <AudioReferenceCard
               audioReference={{
-                id: 'preview',
-                title: title || '(タイトルなし)',
+                id: "preview",
+                title: title || "(タイトルなし)",
                 videoId,
-                videoTitle: videoTitle || '動画タイトル',
+                videoTitle: videoTitle || "動画タイトル",
                 startTime,
                 endTime,
                 duration: endTime - startTime,
                 category,
                 tags,
                 description,
-                createdBy: 'anonymous',
-                createdAt: new Date(),
-                updatedAt: new Date(),
+                createdBy: "anonymous",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
                 playCount: 0,
                 likeCount: 0,
                 isPublic: true,
@@ -530,9 +560,7 @@ export default function AudioReferenceCreator({
       {/* 作成ボタン */}
       <div className="flex justify-end gap-3">
         <Button variant="outline" asChild>
-          <Link href="/buttons">
-            キャンセル
-          </Link>
+          <Link href="/buttons">キャンセル</Link>
         </Button>
         <Button
           onClick={handleCreate}

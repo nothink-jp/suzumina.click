@@ -1,14 +1,5 @@
 import "@testing-library/jest-dom";
 
-// Mocks for Web Audio API  
-declare global {
-  var AudioContext: any;
-  var webkitAudioContext: any;
-}
-
-global.AudioContext = class AudioContext {};
-global.webkitAudioContext = class webkitAudioContext {};
-
 // Mock for ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   observe() {}
@@ -18,9 +9,16 @@ global.ResizeObserver = class ResizeObserver {
 
 // Mock for IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
+  root = null;
+  rootMargin = "";
+  thresholds = [];
+
   observe() {}
   unobserve() {}
   disconnect() {}
+  takeRecords() {
+    return [];
+  }
 };
 
 // Mock for matchMedia

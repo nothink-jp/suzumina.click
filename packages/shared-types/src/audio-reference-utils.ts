@@ -1,15 +1,15 @@
 import {
   type AudioReferenceCategory,
+  type CreateAudioReferenceInput,
   type FirestoreAudioReferenceData,
   type FrontendAudioReferenceData,
-  type CreateAudioReferenceInput,
-  type YouTubeVideoInfo,
   FrontendAudioReferenceSchema,
-  formatTimestamp,
-  formatTimeRange,
-  createYouTubeUrl,
+  type YouTubeVideoInfo,
   createYouTubeEmbedUrl,
   createYouTubeThumbnailUrl,
+  createYouTubeUrl,
+  formatTimeRange,
+  formatTimestamp,
 } from "./audio-reference";
 
 /**
@@ -24,14 +24,15 @@ export function convertToFrontendAudioReference(
     description: data.description,
     category: data.category,
     tags: data.tags,
-    
+
     // YouTube動画情報
     videoId: data.videoId,
     videoTitle: data.videoTitle,
-    videoThumbnailUrl: data.videoThumbnailUrl || createYouTubeThumbnailUrl(data.videoId),
+    videoThumbnailUrl:
+      data.videoThumbnailUrl || createYouTubeThumbnailUrl(data.videoId),
     channelId: data.channelId,
     channelTitle: data.channelTitle,
-    
+
     // タイムスタンプ情報
     startTime: data.startTime,
     endTime: data.endTime,
@@ -52,14 +53,21 @@ export function convertToFrontendAudioReference(
     durationText: formatTimestamp(data.duration),
     timestampText: formatTimeRange(data.startTime, data.endTime),
     youtubeUrl: createYouTubeUrl(data.videoId, data.startTime),
-    youtubeEmbedUrl: createYouTubeEmbedUrl(data.videoId, data.startTime, data.endTime),
+    youtubeEmbedUrl: createYouTubeEmbedUrl(
+      data.videoId,
+      data.startTime,
+      data.endTime,
+    ),
   };
 
   // データの検証
   try {
     return FrontendAudioReferenceSchema.parse(frontendData);
   } catch (error) {
-    console.error("音声リファレンスフロントエンド変換中のスキーマ検証エラー:", error);
+    console.error(
+      "音声リファレンスフロントエンド変換中のスキーマ検証エラー:",
+      error,
+    );
 
     // エラー時でも最低限のデータを返す
     const now = new Date().toISOString();
@@ -71,7 +79,8 @@ export function convertToFrontendAudioReference(
       tags: data.tags || [],
       videoId: data.videoId,
       videoTitle: data.videoTitle,
-      videoThumbnailUrl: data.videoThumbnailUrl || createYouTubeThumbnailUrl(data.videoId),
+      videoThumbnailUrl:
+        data.videoThumbnailUrl || createYouTubeThumbnailUrl(data.videoId),
       channelId: data.channelId,
       channelTitle: data.channelTitle,
       startTime: data.startTime,
@@ -87,7 +96,11 @@ export function convertToFrontendAudioReference(
       durationText: formatTimestamp(data.duration),
       timestampText: formatTimeRange(data.startTime, data.endTime),
       youtubeUrl: createYouTubeUrl(data.videoId, data.startTime),
-      youtubeEmbedUrl: createYouTubeEmbedUrl(data.videoId, data.startTime, data.endTime),
+      youtubeEmbedUrl: createYouTubeEmbedUrl(
+        data.videoId,
+        data.startTime,
+        data.endTime,
+      ),
     };
   }
 }
@@ -111,14 +124,15 @@ export function convertCreateInputToFirestoreAudioReference(
     description: input.description,
     category: input.category,
     tags: input.tags,
-    
+
     // YouTube動画情報
     videoId: input.videoId,
     videoTitle: videoInfo.title,
-    videoThumbnailUrl: videoInfo.thumbnailUrl || createYouTubeThumbnailUrl(input.videoId),
+    videoThumbnailUrl:
+      videoInfo.thumbnailUrl || createYouTubeThumbnailUrl(input.videoId),
     channelId: videoInfo.channelId,
     channelTitle: videoInfo.channelTitle,
-    
+
     // タイムスタンプ情報
     startTime: input.startTime,
     endTime: input.endTime,
@@ -166,7 +180,10 @@ export function deserializeAudioReferenceForRCC(
     const data = JSON.parse(serialized);
     return FrontendAudioReferenceSchema.parse(data);
   } catch (error) {
-    console.error("音声リファレンスデシリアライズまたはスキーマ検証エラー:", error);
+    console.error(
+      "音声リファレンスデシリアライズまたはスキーマ検証エラー:",
+      error,
+    );
     throw new Error("音声リファレンスデータの形式が無効です");
   }
 }
@@ -240,7 +257,10 @@ export function validateAudioReferenceCreation(
 /**
  * カテゴリによる並び替え順序を定義
  */
-export function getAudioReferenceCategorySortOrder(): Record<AudioReferenceCategory, number> {
+export function getAudioReferenceCategorySortOrder(): Record<
+  AudioReferenceCategory,
+  number
+> {
   return {
     voice: 1,
     talk: 2,
@@ -256,25 +276,37 @@ export function getAudioReferenceCategorySortOrder(): Record<AudioReferenceCateg
  */
 export function sortAudioReferences(
   audioReferences: FrontendAudioReferenceData[],
-  sortBy: "newest" | "oldest" | "popular" | "mostPlayed" | "mostLiked" = "newest",
+  sortBy:
+    | "newest"
+    | "oldest"
+    | "popular"
+    | "mostPlayed"
+    | "mostLiked" = "newest",
 ): FrontendAudioReferenceData[] {
   return [...audioReferences].sort((a, b) => {
     switch (sortBy) {
       case "newest":
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       case "oldest":
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      case "popular":
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      case "popular": {
         // 再生数 + いいね数 * 2 + 表示数 * 0.1 の重み付けスコア
         const scoreA = a.playCount + a.likeCount * 2 + a.viewCount * 0.1;
         const scoreB = b.playCount + b.likeCount * 2 + b.viewCount * 0.1;
         return scoreB - scoreA;
+      }
       case "mostPlayed":
         return b.playCount - a.playCount;
       case "mostLiked":
         return b.likeCount - a.likeCount;
       default:
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
     }
   });
 }
@@ -300,10 +332,12 @@ export function filterAudioReferences(
         audioReference.description || "",
         audioReference.videoTitle,
         ...(audioReference.tags || []),
-      ].join(" ").toLowerCase();
+      ]
+        .join(" ")
+        .toLowerCase();
 
       const matchesSearch = searchTerms.every((term) =>
-        searchableText.includes(term)
+        searchableText.includes(term),
       );
       if (!matchesSearch) return false;
     }
@@ -317,7 +351,7 @@ export function filterAudioReferences(
     if (filters.tags && filters.tags.length > 0) {
       const audioReferenceTags = audioReference.tags || [];
       const hasMatchingTag = filters.tags.some((tag) =>
-        audioReferenceTags.includes(tag)
+        audioReferenceTags.includes(tag),
       );
       if (!hasMatchingTag) return false;
     }
@@ -367,7 +401,7 @@ export function createStatsUpdateData(updates: {
 export function checkRateLimit(
   recentCreations: FirestoreAudioReferenceData[],
   clientIp?: string,
-  dailyLimit: number = 20,
+  dailyLimit = 20,
 ): { allowed: boolean; remainingQuota: number; resetTime: Date } {
   if (!clientIp) {
     return {
@@ -384,10 +418,7 @@ export function checkRateLimit(
   // 過去24時間での作成数をカウント
   const recentCreationsFromIp = recentCreations.filter((creation) => {
     const createdAt = new Date(creation.createdAt);
-    return (
-      creation.createdByIp === hashedIp &&
-      createdAt > twentyFourHoursAgo
-    );
+    return creation.createdByIp === hashedIp && createdAt > twentyFourHoursAgo;
   });
 
   const usedQuota = recentCreationsFromIp.length;
@@ -395,11 +426,14 @@ export function checkRateLimit(
   const allowed = remainingQuota > 0;
 
   // 最も古い作成から24時間後がリセット時間
-  const oldestCreation = recentCreationsFromIp
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
-  
+  const oldestCreation = recentCreationsFromIp.sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  )[0];
+
   const resetTime = oldestCreation
-    ? new Date(new Date(oldestCreation.createdAt).getTime() + 24 * 60 * 60 * 1000)
+    ? new Date(
+        new Date(oldestCreation.createdAt).getTime() + 24 * 60 * 60 * 1000,
+      )
     : new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
   return {
@@ -417,7 +451,7 @@ function hashIpAddress(ip: string): string {
   let hash = 0;
   for (let i = 0; i < ip.length; i++) {
     const char = ip.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // 32bit整数に変換
   }
   return Math.abs(hash).toString(36);
