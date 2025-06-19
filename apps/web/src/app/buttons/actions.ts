@@ -2,6 +2,7 @@
 
 import { FirestoreAdmin } from "@/lib/firestore-admin";
 import {
+  type AudioReferenceCategory,
   type AudioReferenceListResult,
   type AudioReferenceQuery,
   AudioReferenceQuerySchema,
@@ -83,7 +84,7 @@ export async function createAudioReference(
       const recentCreations = recentCreationsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-      })) as any[];
+      })) as FirestoreAudioReferenceData[];
 
       const rateLimitCheck = checkRateLimit(recentCreations, clientIp);
       if (!rateLimitCheck.allowed) {
@@ -218,7 +219,7 @@ export async function getAudioReferences(
 
     // Firestore データをフロントエンド用に変換
     let audioReferences = audioReferenceDocs.map((doc) => {
-      const data = { id: doc.id, ...doc.data() } as any;
+      const data = { id: doc.id, ...doc.data() } as FirestoreAudioReferenceData;
       return convertToFrontendAudioReference(data);
     });
 
@@ -304,7 +305,6 @@ export async function getRecentAudioReferences(
   }
 }
 
-
 /**
  * カテゴリ別の音声リファレンスを取得するServer Action
  */
@@ -315,7 +315,7 @@ export async function getAudioReferencesByCategory(
   try {
     const result = await getAudioReferences({
       limit,
-      category: category as any,
+      category: category as AudioReferenceCategory,
       sortBy: "newest",
       onlyPublic: true,
     });
@@ -352,7 +352,7 @@ export async function updateAudioReferenceStats(
     const firestore = FirestoreAdmin.getInstance();
 
     // 更新データの作成
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
     };
 
@@ -548,15 +548,16 @@ function parseDuration(duration: string): number {
 /**
  * IDによる音声リファレンス取得
  */
-export async function getAudioReferenceById(
-  id: string,
-): Promise<{
-  success: true;
-  data: FrontendAudioReferenceData;
-} | {
-  success: false;
-  error: string;
-}> {
+export async function getAudioReferenceById(id: string): Promise<
+  | {
+      success: true;
+      data: FrontendAudioReferenceData;
+    }
+  | {
+      success: false;
+      error: string;
+    }
+> {
   try {
     if (!id || typeof id !== "string") {
       return {

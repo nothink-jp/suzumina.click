@@ -91,7 +91,9 @@ export const FirestoreAudioReferenceSchema = AudioReferenceBaseSchema.extend({
   // モデレーション情報
   isReported: z.boolean().default(false),
   reportCount: z.number().int().min(0).default(0),
-  moderationStatus: z.enum(["approved", "pending", "rejected"]).default("approved"),
+  moderationStatus: z
+    .enum(["approved", "pending", "rejected"])
+    .default("approved"),
 });
 
 /**
@@ -104,7 +106,7 @@ export const FrontendAudioReferenceSchema = AudioReferenceBaseSchema.extend({
   videoThumbnailUrl: z.string().url().optional(),
   channelId: z.string().optional(),
   channelTitle: z.string().optional(),
-  
+
   // タイムスタンプ情報
   startTime: z.number().min(0),
   endTime: z.number().min(0),
@@ -131,46 +133,41 @@ export const FrontendAudioReferenceSchema = AudioReferenceBaseSchema.extend({
 /**
  * 音声リファレンス作成時の入力データスキーマ
  */
-export const CreateAudioReferenceInputSchema = z.object({
-  title: z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
-  category: AudioReferenceCategorySchema,
-  tags: z.array(z.string().min(1).max(20)).max(10).optional(),
+export const CreateAudioReferenceInputSchema = z
+  .object({
+    title: z.string().min(1).max(100),
+    description: z.string().max(500).optional(),
+    category: AudioReferenceCategorySchema,
+    tags: z.array(z.string().min(1).max(20)).max(10).optional(),
 
-  // YouTube動画情報
-  videoId: z.string().min(1, {
-    message: "YouTube動画IDは必須です",
-  }),
-  
-  // タイムスタンプ情報
-  startTime: z.number().min(0, {
-    message: "開始時間は0以上である必要があります",
-  }),
-  endTime: z.number().min(0, {
-    message: "終了時間は0以上である必要があります",
-  }),
+    // YouTube動画情報
+    videoId: z.string().min(1, {
+      message: "YouTube動画IDは必須です",
+    }),
 
-  // 公開設定
-  isPublic: z.boolean().default(true),
-}).refine(
-  (data) => data.endTime > data.startTime,
-  {
+    // タイムスタンプ情報
+    startTime: z.number().min(0, {
+      message: "開始時間は0以上である必要があります",
+    }),
+    endTime: z.number().min(0, {
+      message: "終了時間は0以上である必要があります",
+    }),
+
+    // 公開設定
+    isPublic: z.boolean().default(true),
+  })
+  .refine((data) => data.endTime > data.startTime, {
     message: "終了時間は開始時間より後である必要があります",
     path: ["endTime"],
-  }
-).refine(
-  (data) => (data.endTime - data.startTime) <= 60,
-  {
+  })
+  .refine((data) => data.endTime - data.startTime <= 60, {
     message: "音声ボタンの長さは60秒以下である必要があります",
     path: ["endTime"],
-  }
-).refine(
-  (data) => (data.endTime - data.startTime) >= 1,
-  {
+  })
+  .refine((data) => data.endTime - data.startTime >= 1, {
     message: "音声ボタンの長さは1秒以上である必要があります",
     path: ["endTime"],
-  }
-);
+  });
 
 /**
  * 音声リファレンス更新時の入力データスキーマ
@@ -235,21 +232,37 @@ export const YouTubeVideoInfoSchema = z.object({
 });
 
 // 型定義のエクスポート
-export type AudioReferenceCategory = z.infer<typeof AudioReferenceCategorySchema>;
+export type AudioReferenceCategory = z.infer<
+  typeof AudioReferenceCategorySchema
+>;
 export type AudioReferenceBase = z.infer<typeof AudioReferenceBaseSchema>;
-export type FirestoreAudioReferenceData = z.infer<typeof FirestoreAudioReferenceSchema>;
-export type FrontendAudioReferenceData = z.infer<typeof FrontendAudioReferenceSchema>;
-export type CreateAudioReferenceInput = z.infer<typeof CreateAudioReferenceInputSchema>;
-export type UpdateAudioReferenceInput = z.infer<typeof UpdateAudioReferenceInputSchema>;
-export type UpdateAudioReferenceStats = z.infer<typeof UpdateAudioReferenceStatsSchema>;
+export type FirestoreAudioReferenceData = z.infer<
+  typeof FirestoreAudioReferenceSchema
+>;
+export type FrontendAudioReferenceData = z.infer<
+  typeof FrontendAudioReferenceSchema
+>;
+export type CreateAudioReferenceInput = z.infer<
+  typeof CreateAudioReferenceInputSchema
+>;
+export type UpdateAudioReferenceInput = z.infer<
+  typeof UpdateAudioReferenceInputSchema
+>;
+export type UpdateAudioReferenceStats = z.infer<
+  typeof UpdateAudioReferenceStatsSchema
+>;
 export type AudioReferenceQuery = z.infer<typeof AudioReferenceQuerySchema>;
-export type AudioReferenceListResult = z.infer<typeof AudioReferenceListResultSchema>;
+export type AudioReferenceListResult = z.infer<
+  typeof AudioReferenceListResultSchema
+>;
 export type YouTubeVideoInfo = z.infer<typeof YouTubeVideoInfoSchema>;
 
 /**
  * カテゴリ表示名を取得するヘルパー関数
  */
-export function getAudioReferenceCategoryLabel(category: AudioReferenceCategory): string {
+export function getAudioReferenceCategoryLabel(
+  category: AudioReferenceCategory,
+): string {
   const labels: Record<AudioReferenceCategory, string> = {
     voice: "ボイス",
     bgm: "BGM・音楽",
@@ -325,24 +338,24 @@ export function createYouTubeUrl(videoId: string, startTime?: number): string {
 export function createYouTubeEmbedUrl(
   videoId: string,
   startTime?: number,
-  endTime?: number
+  endTime?: number,
 ): string {
-  let embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  const embedUrl = `https://www.youtube.com/embed/${videoId}`;
   const params = new URLSearchParams();
-  
+
   if (startTime !== undefined && startTime > 0) {
     params.set("start", Math.floor(startTime).toString());
   }
-  
+
   if (endTime !== undefined && endTime > 0) {
     params.set("end", Math.floor(endTime).toString());
   }
-  
+
   // 自動再生を無効化、関連動画を制限
   params.set("autoplay", "0");
   params.set("rel", "0");
   params.set("modestbranding", "1");
-  
+
   const queryString = params.toString();
   return queryString ? `${embedUrl}?${queryString}` : embedUrl;
 }
@@ -351,7 +364,8 @@ export function createYouTubeEmbedUrl(
  * YouTube動画IDをURLから抽出するヘルパー関数
  */
 export function extractYouTubeVideoId(url: string): string | null {
-  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+  const regex =
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
   const match = url.match(regex);
   return match ? match[1] : null;
 }
@@ -359,7 +373,10 @@ export function extractYouTubeVideoId(url: string): string | null {
 /**
  * YouTubeサムネイルURLを生成するヘルパー関数
  */
-export function createYouTubeThumbnailUrl(videoId: string, quality: "default" | "hq" | "maxres" = "hq"): string {
+export function createYouTubeThumbnailUrl(
+  videoId: string,
+  quality: "default" | "hq" | "maxres" = "hq",
+): string {
   const qualityMap = {
     default: "default",
     hq: "hqdefault",

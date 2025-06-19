@@ -1,4 +1,7 @@
-import { getAudioReferenceById, getAudioReferences } from "@/app/buttons/actions";
+import {
+  getAudioReferenceById,
+  getAudioReferences,
+} from "@/app/buttons/actions";
 import { AudioReferenceCard } from "@/components/AudioReferenceCard";
 import { YouTubePlayer } from "@/components/YouTubePlayer";
 import type { AudioReferenceQuery } from "@suzumina.click/shared-types";
@@ -11,16 +14,16 @@ import {
   CardTitle,
 } from "@suzumina.click/ui/components/card";
 import { Separator } from "@suzumina.click/ui/components/separator";
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Clock, 
-  Eye, 
-  Heart, 
-  Play, 
-  Share2, 
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Eye,
+  Heart,
+  Play,
+  Share2,
   Tag,
-  Youtube 
+  Youtube,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -36,7 +39,7 @@ interface AudioButtonDetailPageProps {
 function formatTime(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
 // 相対時間表示
@@ -44,7 +47,7 @@ function formatRelativeTime(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     if (diffHours === 0) {
@@ -56,31 +59,31 @@ function formatRelativeTime(date: Date): string {
   if (diffDays < 7) {
     return `${diffDays}日前`;
   }
-  return date.toLocaleDateString('ja-JP');
+  return date.toLocaleDateString("ja-JP");
 }
 
 // カテゴリ表示名の変換
 function getCategoryDisplayName(category: string): string {
   const categoryNames: Record<string, string> = {
-    voice: 'ボイス',
-    bgm: 'BGM',
-    se: '効果音',
-    talk: 'トーク',
-    singing: '歌唱',
-    other: 'その他',
+    voice: "ボイス",
+    bgm: "BGM",
+    se: "効果音",
+    talk: "トーク",
+    singing: "歌唱",
+    other: "その他",
   };
   return categoryNames[category] || category;
 }
 
 // 関連音声ボタンコンポーネント
-async function RelatedAudioButtons({ 
-  currentId, 
-  videoId, 
-  tags 
-}: { 
-  currentId: string; 
-  videoId: string; 
-  tags: string[]; 
+async function RelatedAudioButtons({
+  currentId,
+  videoId,
+  tags,
+}: {
+  currentId: string;
+  videoId: string;
+  tags: string[];
 }) {
   try {
     // 同じ動画の音声ボタンを取得
@@ -89,13 +92,14 @@ async function RelatedAudioButtons({
       limit: 6,
       sortBy: "newest",
     };
-    
+
     const sameVideoResult = await getAudioReferences(sameVideoQuery);
-    
+
     if (sameVideoResult.success) {
-      const relatedButtons = sameVideoResult.data.audioReferences
-        .filter(button => button.id !== currentId);
-      
+      const relatedButtons = sameVideoResult.data.audioReferences.filter(
+        (button) => button.id !== currentId,
+      );
+
       if (relatedButtons.length > 0) {
         return (
           <Card>
@@ -134,7 +138,7 @@ async function RelatedAudioButtons({
   } catch (error) {
     console.error("関連音声ボタン取得エラー:", error);
   }
-  
+
   return null;
 }
 
@@ -142,13 +146,13 @@ export default async function AudioButtonDetailPage({
   params,
 }: AudioButtonDetailPageProps) {
   const resolvedParams = await params;
-  
+
   const result = await getAudioReferenceById(resolvedParams.id);
-  
+
   if (!result.success) {
     notFound();
   }
-  
+
   const audioReference = result.data;
 
   return (
@@ -219,7 +223,9 @@ export default async function AudioButtonDetailPage({
             {/* 説明 */}
             {audioReference.description && (
               <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-2">説明</h3>
+                <h3 className="font-medium text-sm text-muted-foreground mb-2">
+                  説明
+                </h3>
                 <p className="text-sm text-foreground">
                   {audioReference.description}
                 </p>
@@ -228,14 +234,17 @@ export default async function AudioButtonDetailPage({
 
             {/* YouTube動画情報 */}
             <div className="p-4 bg-muted rounded-lg">
-              <h3 className="font-medium text-sm text-muted-foreground mb-2">元動画</h3>
+              <h3 className="font-medium text-sm text-muted-foreground mb-2">
+                元動画
+              </h3>
               <div className="space-y-1">
                 <p className="font-medium text-foreground">
                   {audioReference.videoTitle}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  時間: {formatTime(audioReference.startTime)} - {formatTime(audioReference.endTime)}
-                  ({audioReference.duration}秒)
+                  時間: {formatTime(audioReference.startTime)} -{" "}
+                  {formatTime(audioReference.endTime)}({audioReference.duration}
+                  秒)
                 </p>
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/videos/${audioReference.videoId}`}>
@@ -282,18 +291,20 @@ export default async function AudioButtonDetailPage({
         </Card>
 
         {/* 関連音声ボタン */}
-        <Suspense fallback={
-          <Card>
-            <CardHeader>
-              <CardTitle>関連音声ボタン</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-center py-8">
-                <Eye className="h-8 w-8 animate-pulse text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-        }>
+        <Suspense
+          fallback={
+            <Card>
+              <CardHeader>
+                <CardTitle>関連音声ボタン</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-center py-8">
+                  <Eye className="h-8 w-8 animate-pulse text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+          }
+        >
           <RelatedAudioButtons
             currentId={audioReference.id}
             videoId={audioReference.videoId}
