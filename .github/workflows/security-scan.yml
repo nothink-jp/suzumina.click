@@ -153,40 +153,13 @@ jobs:
             trivy-output.txt
           retention-days: 30
 
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      packages: read
-      actions: read
-      contents: read
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - language: javascript-typescript
-            build-mode: none
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-      
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:${{matrix.language}}"
+  # CodeQL Analysis - Disabled to avoid conflict with default setup
+  # GitHub's default CodeQL setup is enabled in repository settings
+  # This provides automatic security scanning without workflow conflicts
 
   security-summary:
     name: Security Summary
-    needs: [dependency-scan, container-scan, codeql]
+    needs: [dependency-scan, container-scan]
     runs-on: ubuntu-latest
     if: always()
     
@@ -207,7 +180,7 @@ jobs:
           echo "## Job Status" >> security-summary.md
           echo "- Dependency Scan: ${{ needs.dependency-scan.result }}" >> security-summary.md
           echo "- Container Scan: ${{ needs.container-scan.result }}" >> security-summary.md
-          echo "- CodeQL Analysis: ${{ needs.codeql.result }}" >> security-summary.md
+          echo "- CodeQL Analysis: Enabled via GitHub default setup" >> security-summary.md
           echo "" >> security-summary.md
           
           # Include dependency audit summary if available
