@@ -132,6 +132,14 @@ jobs:
             --max-instances 10 \
             --timeout 300 \
             --port 8080
+
+      # Ensure public access is properly configured
+      - name: Configure public access
+        run: |
+          gcloud run services add-iam-policy-binding ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --member="allUsers" \
+            --role="roles/run.invoker"
       
       # Health check
       - name: Wait for deployment and health check
@@ -143,21 +151,35 @@ jobs:
           
           echo "Service URL: $SERVICE_URL"
           
-          # Wait for deployment to be ready
-          sleep 30
+          # Wait for deployment to be ready and IAM to propagate
+          echo "Waiting for deployment and IAM policy propagation..."
+          sleep 60
           
-          # Health check
-          for i in {1..5}; do
-            if curl -f "$SERVICE_URL/api/health"; then
-              echo "✅ Health check passed"
+          # Health check with more retries and better error handling
+          for i in {1..10}; do
+            echo "Health check attempt $i/10..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/api/health" || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ Health check passed (HTTP $HTTP_CODE)"
+              curl -s "$SERVICE_URL/api/health" | jq '.' || echo "Response received"
               exit 0
             else
-              echo "❌ Health check failed (attempt $i/5)"
-              sleep 10
+              echo "❌ Health check failed (HTTP $HTTP_CODE) - attempt $i/10"
+              if [ "$HTTP_CODE" = "403" ]; then
+                echo "403 Forbidden - IAM policy may still be propagating..."
+              elif [ "$HTTP_CODE" = "404" ]; then
+                echo "404 Not Found - service may still be starting..."
+              elif [ "$HTTP_CODE" = "000" ]; then
+                echo "Connection failed - service may be unavailable..."
+              fi
+              sleep 15
             fi
           done
           
-          echo "❌ Health check failed after 5 attempts"
+          echo "❌ Health check failed after 10 attempts"
+          echo "Final attempt details:"
+          curl -v "$SERVICE_URL/api/health" || true
           exit 1
       
       # Cleanup old images
