@@ -1,9 +1,9 @@
-import { AudioReferenceCreator } from "@/components/AudioReferenceCreator";
-import { getVideoById } from "@/app/videos/actions";
 import { Button } from "@suzumina.click/ui/components/button";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getVideoById } from "@/app/videos/actions";
+import { AudioReferenceCreator } from "@/components/AudioReferenceCreator";
 
 interface CreateAudioButtonPageProps {
   searchParams: Promise<{
@@ -35,7 +35,7 @@ export default async function CreateAudioButtonPage({
             </Link>
           </Button>
         </div>
-        
+
         <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-muted-foreground" />
           <h1 className="text-2xl font-bold text-foreground">
@@ -59,7 +59,7 @@ export default async function CreateAudioButtonPage({
 
   // 動画情報を取得
   const videoResult = await getVideoById(videoId);
-  
+
   if (!videoResult) {
     notFound();
   }

@@ -12,7 +12,7 @@ const mockOrderBy = vi.fn();
 const mockStartAfter = vi.fn();
 const mockOffset = vi.fn();
 const mockLimit = vi.fn();
-const mockCount = vi.fn();
+const _mockCount = vi.fn();
 
 // Firestoreインスタンスのモック
 const mockFirestore = {

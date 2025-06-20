@@ -1,5 +1,5 @@
-import AdminList from "@/components/AdminList";
 import type { VideoListResult } from "@suzumina.click/shared-types/src/video";
+import AdminList from "@/components/AdminList";
 
 interface VideoListProps {
   data: VideoListResult;

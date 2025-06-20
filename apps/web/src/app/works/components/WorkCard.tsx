@@ -1,9 +1,9 @@
-import ThumbnailImage from "@/components/ThumbnailImage";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import { Badge } from "@suzumina.click/ui/components/badge";
 import { Button } from "@suzumina.click/ui/components/button";
 import { Calendar, ExternalLink, Star, Tag, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface WorkCardProps {
   work: FrontendDLsiteWorkData;

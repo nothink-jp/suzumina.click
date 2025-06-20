@@ -1,5 +1,5 @@
-import ThumbnailImage from "@/components/ThumbnailImage";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
+import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface WorkDetailProps {
   work: FrontendDLsiteWorkData;
@@ -137,7 +137,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
                         声優
                       </h3>
                       <div className="flex flex-wrap gap-2">
-                        {work.author.map((author, index) => (
+                        {work.author.map((author, _index) => (
                           <span
                             key={`author-${author}`}
                             className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-50 text-blue-800"
@@ -222,7 +222,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
                     タグ
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {work.tags.map((tag, index) => (
+                    {work.tags.map((tag, _index) => (
                       <span
                         key={`tag-${tag}`}
                         className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"

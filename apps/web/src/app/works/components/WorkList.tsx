@@ -1,8 +1,8 @@
 "use client";
 
-import Pagination from "@/components/Pagination";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import { useState } from "react";
+import Pagination from "@/components/Pagination";
 import WorkCard from "./WorkCard";
 
 interface WorkListProps {

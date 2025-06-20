@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AudioReferenceCreator } from "./AudioReferenceCreator";
 
 // Mock the actions
@@ -39,7 +39,15 @@ vi.mock("./AudioReferenceCard", () => ({
 
 // Mock UI components
 vi.mock("@suzumina.click/ui/components/slider", () => ({
-  Slider: ({ value, onValueChange, min, max, step, disabled, ...props }: any) => (
+  Slider: ({
+    value,
+    onValueChange,
+    min,
+    max,
+    step,
+    disabled,
+    ...props
+  }: any) => (
     <div data-testid="slider" {...props}>
       <input
         type="range"
@@ -66,9 +74,7 @@ vi.mock("@suzumina.click/ui/components/select", () => ({
       {children}
     </button>
   ),
-  SelectValue: ({ placeholder }: any) => (
-    <span>{placeholder || "ボイス"}</span>
-  ),
+  SelectValue: ({ placeholder }: any) => <span>{placeholder || "ボイス"}</span>,
   SelectContent: ({ children }: any) => (
     <div data-testid="select-content">{children}</div>
   ),
@@ -92,7 +98,9 @@ describe("AudioReferenceCreator", () => {
   it("基本的なフォームが表示される", () => {
     render(<AudioReferenceCreator {...defaultProps} />);
 
-    expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /音声ボタンを作成/ }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/テスト動画タイトル/)).toBeInTheDocument();
   });
 
@@ -108,7 +116,9 @@ describe("AudioReferenceCreator", () => {
   it("説明入力フィールドが存在する", () => {
     render(<AudioReferenceCreator {...defaultProps} />);
 
-    const descriptionInput = screen.getByPlaceholderText("この音声ボタンの説明...");
+    const descriptionInput = screen.getByPlaceholderText(
+      "この音声ボタンの説明...",
+    );
     expect(descriptionInput).toBeInTheDocument();
     expect(descriptionInput).toHaveAttribute("maxLength", "500");
   });
@@ -118,7 +128,7 @@ describe("AudioReferenceCreator", () => {
 
     // Check that the category label exists
     expect(screen.getByText("カテゴリ")).toBeInTheDocument();
-    
+
     // Check for the Select component by looking for a combobox role
     const categorySelect = screen.getByRole("combobox");
     expect(categorySelect).toBeInTheDocument();
@@ -138,7 +148,9 @@ describe("AudioReferenceCreator", () => {
     const user = userEvent.setup();
     render(<AudioReferenceCreator {...defaultProps} />);
 
-    const descriptionInput = screen.getByPlaceholderText("この音声ボタンの説明...");
+    const descriptionInput = screen.getByPlaceholderText(
+      "この音声ボタンの説明...",
+    );
     await user.type(descriptionInput, "これは新しい音声ボタンの説明です");
 
     expect(descriptionInput).toHaveValue("これは新しい音声ボタンの説明です");
@@ -174,7 +186,9 @@ describe("AudioReferenceCreator", () => {
   it("作成ボタンが存在する", () => {
     render(<AudioReferenceCreator {...defaultProps} />);
 
-    const createButton = screen.getByRole("button", { name: /音声ボタンを作成/ });
+    const createButton = screen.getByRole("button", {
+      name: /音声ボタンを作成/,
+    });
     expect(createButton).toBeInTheDocument();
   });
 
@@ -208,13 +222,17 @@ describe("AudioReferenceCreator", () => {
     render(<AudioReferenceCreator {...defaultProps} initialStartTime={30} />);
 
     // コンポーネントが正常にレンダリングされることを確認
-    expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /音声ボタンを作成/ }),
+    ).toBeInTheDocument();
   });
 
   it("videoDurationが正しく設定される", () => {
     render(<AudioReferenceCreator {...defaultProps} videoDuration={600} />);
 
     // コンポーネントが正常にレンダリングされることを確認
-    expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /音声ボタンを作成/ }),
+    ).toBeInTheDocument();
   });
 });

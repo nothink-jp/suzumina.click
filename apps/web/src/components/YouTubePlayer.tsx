@@ -174,7 +174,7 @@ export function YouTubePlayer({
   // YouTube API の読み込み
   useEffect(() => {
     // すでにAPIが読み込まれている場合
-    if (window.YT && window.YT.Player) {
+    if (window.YT?.Player) {
       setIsAPIReady(true);
       return;
     }

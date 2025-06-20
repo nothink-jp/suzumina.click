@@ -55,9 +55,11 @@ vi.mock("./actions", () => ({
 vi.mock("./components/AudioButtonSearch", () => ({
   AudioButtonSearch: () => {
     // Mock the useSearchParams hook to get current search parameters
-    const mockSearchParams = new URLSearchParams("q=テスト検索&category=voice&sort=popular");
+    const mockSearchParams = new URLSearchParams(
+      "q=テスト検索&category=voice&sort=popular",
+    );
     const q = mockSearchParams.get("q");
-    
+
     return (
       <div data-testid="audio-button-search">
         Audio Button Search Mock
@@ -135,11 +137,13 @@ describe("AudioButtonsPage", () => {
     render(await AudioButtonsPage({ searchParams }));
 
     // Page title
-    expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
-    
+    expect(
+      screen.getByRole("heading", { name: /音声ボタン/ }),
+    ).toBeInTheDocument();
+
     // Search component
     expect(screen.getByTestId("audio-button-search")).toBeInTheDocument();
-    
+
     // Since the page uses Suspense, we should see skeleton loading initially
     const skeletons = screen.getAllByRole("generic"); // skeleton divs
     expect(skeletons.length).toBeGreaterThan(0);
@@ -157,7 +161,7 @@ describe("AudioButtonsPage", () => {
 
     // Page should render the search component with search parameters
     expect(screen.getByTestId("audio-button-search")).toBeInTheDocument();
-    
+
     // Since we have search params, AudioButtonsList should be rendered (with search query in mock)
     expect(screen.getByText("Search: テスト検索")).toBeInTheDocument();
   });
@@ -173,7 +177,9 @@ describe("AudioButtonsPage", () => {
     render(await AudioButtonsPage({ searchParams }));
 
     // Page should render the base structure
-    expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /音声ボタン/ }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("audio-button-search")).toBeInTheDocument();
   });
 
@@ -188,7 +194,9 @@ describe("AudioButtonsPage", () => {
     render(await AudioButtonsPage({ searchParams }));
 
     // Page should render the base structure
-    expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /音声ボタン/ }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("audio-button-search")).toBeInTheDocument();
   });
 
@@ -203,7 +211,9 @@ describe("AudioButtonsPage", () => {
     render(await AudioButtonsPage({ searchParams }));
 
     // Page should render the base structure
-    expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /音声ボタン/ }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("audio-button-search")).toBeInTheDocument();
   });
 

@@ -1,9 +1,3 @@
-import {
-  getAudioReferences,
-  getPopularAudioReferences,
-  getRecentAudioReferences,
-} from "@/app/buttons/actions";
-import { AudioReferenceCard } from "@/components/AudioReferenceCard";
 import type {
   AudioReferenceCategory,
   AudioReferenceQuery,
@@ -20,6 +14,12 @@ import { Skeleton } from "@suzumina.click/ui/components/skeleton";
 import { Clock, Plus, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
+import {
+  getAudioReferences,
+  getPopularAudioReferences,
+  getRecentAudioReferences,
+} from "@/app/buttons/actions";
+import { AudioReferenceCard } from "@/components/AudioReferenceCard";
 import { AudioButtonSearch } from "./components/AudioButtonSearch";
 
 interface SearchParams {
@@ -36,7 +36,9 @@ interface AudioButtonsPageProps {
 
 async function AudioButtonsList({
   searchParams,
-}: { searchParams: SearchParams }) {
+}: {
+  searchParams: SearchParams;
+}) {
   const query: AudioReferenceQuery = {
     limit: 20,
     searchText: searchParams.q,

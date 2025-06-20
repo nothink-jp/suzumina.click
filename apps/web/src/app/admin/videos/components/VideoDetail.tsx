@@ -1,5 +1,5 @@
-import ThumbnailImage from "@/components/ThumbnailImage";
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
+import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface VideoDetailProps {
   video: FrontendVideoData;
@@ -298,7 +298,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {thumbnailQualities.map((quality, index) => (
+            {thumbnailQualities.map((quality, _index) => (
               <div
                 key={`${quality.name}-${quality.data?.width || 0}x${quality.data?.height || 0}`}
                 className="text-center"

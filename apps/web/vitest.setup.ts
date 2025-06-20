@@ -57,7 +57,11 @@ vi.mock("next/image", () => ({
     src,
     alt,
     ...props
-  }: { src: string; alt: string; [key: string]: unknown }) => {
+  }: {
+    src: string;
+    alt: string;
+    [key: string]: unknown;
+  }) => {
     return React.createElement("img", { src, alt, ...props });
   },
 }));

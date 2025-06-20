@@ -1,9 +1,3 @@
-import {
-  getAudioReferenceById,
-  getAudioReferences,
-} from "@/app/buttons/actions";
-import { AudioReferenceCard } from "@/components/AudioReferenceCard";
-import { YouTubePlayer } from "@/components/YouTubePlayer";
 import type { AudioReferenceQuery } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/badge";
 import { Button } from "@suzumina.click/ui/components/button";
@@ -28,6 +22,12 @@ import {
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import {
+  getAudioReferenceById,
+  getAudioReferences,
+} from "@/app/buttons/actions";
+import { AudioReferenceCard } from "@/components/AudioReferenceCard";
+import { YouTubePlayer } from "@/components/YouTubePlayer";
 
 interface AudioButtonDetailPageProps {
   params: Promise<{

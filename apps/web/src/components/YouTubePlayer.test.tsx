@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { YouTubePlayer } from "./YouTubePlayer";
 
 // Mock global window object
@@ -60,7 +60,9 @@ describe("YouTubePlayer", () => {
   });
 
   it("カスタムサイズが適用される", () => {
-    render(<YouTubePlayer videoId="test-video-id" width="500px" height="300px" />);
+    render(
+      <YouTubePlayer videoId="test-video-id" width="500px" height="300px" />,
+    );
 
     const container = document.querySelector(".youtube-player-container");
     expect(container).toHaveStyle({ width: "500px", height: "300px" });
@@ -77,7 +79,9 @@ describe("YouTubePlayer", () => {
 
   it("onStateChangeコールバックが設定される", () => {
     const onStateChange = vi.fn();
-    render(<YouTubePlayer videoId="test-video-id" onStateChange={onStateChange} />);
+    render(
+      <YouTubePlayer videoId="test-video-id" onStateChange={onStateChange} />,
+    );
 
     // コンポーネントが正常にレンダリングされることを確認
     const container = document.querySelector(".youtube-player-container");
@@ -86,7 +90,9 @@ describe("YouTubePlayer", () => {
 
   it("onTimeUpdateコールバックが設定される", () => {
     const onTimeUpdate = vi.fn();
-    render(<YouTubePlayer videoId="test-video-id" onTimeUpdate={onTimeUpdate} />);
+    render(
+      <YouTubePlayer videoId="test-video-id" onTimeUpdate={onTimeUpdate} />,
+    );
 
     // コンポーネントが正常にレンダリングされることを確認
     const container = document.querySelector(".youtube-player-container");
@@ -128,11 +134,7 @@ describe("YouTubePlayer", () => {
 
   it("startTimeとendTimeが設定される", () => {
     render(
-      <YouTubePlayer 
-        videoId="test-video-id" 
-        startTime={30} 
-        endTime={120} 
-      />
+      <YouTubePlayer videoId="test-video-id" startTime={30} endTime={120} />,
     );
 
     // コンポーネントが正常にレンダリングされることを確認

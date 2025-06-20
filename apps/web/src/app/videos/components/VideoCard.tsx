@@ -1,10 +1,10 @@
-import ThumbnailImage from "@/components/ThumbnailImage";
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { Badge } from "@suzumina.click/ui/components/badge";
 import { Button } from "@suzumina.click/ui/components/button";
 import { Calendar, Clock, ExternalLink, Eye, Plus } from "lucide-react";
 import Link from "next/link";
 import { memo, useMemo } from "react";
+import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface VideoCardProps {
   video: FrontendVideoData;
@@ -37,7 +37,7 @@ const VideoCard = memo(function VideoCard({
   }, [video.publishedAt]);
 
   // メモ化: YouTube URLを最適化
-  const youtubeUrl = useMemo(
+  const _youtubeUrl = useMemo(
     () => `https://youtube.com/watch?v=${video.videoId}`,
     [video.videoId],
   );

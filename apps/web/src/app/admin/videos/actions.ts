@@ -4,14 +4,14 @@
  * Server Actions for fetching video data from Firestore
  */
 
-import { getFirestore } from "@/lib/firestore";
 import { Timestamp } from "@google-cloud/firestore";
 import {
+  convertToFrontendVideo,
   type FirestoreServerVideoData,
   type FrontendVideoData,
   type VideoListResult,
-  convertToFrontendVideo,
 } from "@suzumina.click/shared-types/src/video";
+import { getFirestore } from "@/lib/firestore";
 
 /**
  * Firestoreからビデオタイトル一覧を取得するServer Action（ページネーション対応）

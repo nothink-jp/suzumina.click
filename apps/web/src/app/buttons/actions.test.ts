@@ -1,6 +1,10 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { createAudioReference, getAudioReferences, getAudioReferenceById } from "./actions";
 import type { CreateAudioReferenceInput } from "@suzumina.click/shared-types";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createAudioReference,
+  getAudioReferenceById,
+  getAudioReferences,
+} from "./actions";
 
 // Mock Firestore Admin
 const mockAdd = vi.fn();
@@ -39,10 +43,10 @@ vi.mock("next/cache", () => ({
 describe("Audio Reference Server Actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock YouTube API key
     process.env.YOUTUBE_API_KEY = "test-api-key";
-    
+
     // Setup collection chain - collection should return a query that has all methods
     const mockQuery = {
       add: mockAdd,
@@ -53,7 +57,7 @@ describe("Audio Reference Server Actions", () => {
       startAfter: mockStartAfter,
       get: mockGet,
     };
-    
+
     mockCollection.mockReturnValue(mockQuery);
 
     // Each query method should return an object that also has all query methods
@@ -66,7 +70,6 @@ describe("Audio Reference Server Actions", () => {
       get: mockGet,
       update: vi.fn(),
     });
-
   });
 
   describe("createAudioReference", () => {
@@ -83,26 +86,29 @@ describe("Audio Reference Server Actions", () => {
     it("有効な入力で音声リファレンスが作成される", async () => {
       // Mock successful add
       mockAdd.mockResolvedValue({ id: "new-audio-ref-id" });
-      
+
       // Mock YouTube API response
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({
-          items: [{
-            snippet: {
-              title: "Test Video",
-              channelId: "test-channel",
-              channelTitle: "Test Channel",
-              publishedAt: "2024-01-01T00:00:00Z",
-              thumbnails: {
-                high: { url: "https://example.com/thumb.jpg" },
+        json: () =>
+          Promise.resolve({
+            items: [
+              {
+                snippet: {
+                  title: "Test Video",
+                  channelId: "test-channel",
+                  channelTitle: "Test Channel",
+                  publishedAt: "2024-01-01T00:00:00Z",
+                  thumbnails: {
+                    high: { url: "https://example.com/thumb.jpg" },
+                  },
+                },
+                contentDetails: {
+                  duration: "PT5M30S", // 5 minutes 30 seconds
+                },
               },
-            },
-            contentDetails: {
-              duration: "PT5M30S", // 5 minutes 30 seconds
-            },
-          }],
-        }),
+            ],
+          }),
       });
 
       // Mock rate limit check
@@ -138,9 +144,10 @@ describe("Audio Reference Server Actions", () => {
       // Mock YouTube API response with no items
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({
-          items: [],
-        }),
+        json: () =>
+          Promise.resolve({
+            items: [],
+          }),
       });
 
       const result = await createAudioReference(validInput);
@@ -156,19 +163,22 @@ describe("Audio Reference Server Actions", () => {
       // Mock successful YouTube API
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({
-          items: [{
-            snippet: {
-              title: "Test Video",
-              channelId: "test-channel",
-              channelTitle: "Test Channel",
-              publishedAt: "2024-01-01T00:00:00Z",
-            },
-            contentDetails: {
-              duration: "PT5M30S",
-            },
-          }],
-        }),
+        json: () =>
+          Promise.resolve({
+            items: [
+              {
+                snippet: {
+                  title: "Test Video",
+                  channelId: "test-channel",
+                  channelTitle: "Test Channel",
+                  publishedAt: "2024-01-01T00:00:00Z",
+                },
+                contentDetails: {
+                  duration: "PT5M30S",
+                },
+              },
+            ],
+          }),
       });
 
       // Mock rate limit check

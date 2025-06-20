@@ -1,22 +1,24 @@
 "use client";
 
-import ThumbnailImage from "@/components/ThumbnailImage";
-import { AudioReferenceCard } from "@/components/AudioReferenceCard";
-import { getAudioReferences } from "@/app/buttons/actions";
-import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import type { FrontendAudioReferenceData } from "@suzumina.click/shared-types/src/audio-reference";
+import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { Badge } from "@suzumina.click/ui/components/badge";
 import { Button } from "@suzumina.click/ui/components/button";
 import { Calendar, Clock, ExternalLink, Eye, Plus, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { getAudioReferences } from "@/app/buttons/actions";
+import { AudioReferenceCard } from "@/components/AudioReferenceCard";
+import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface VideoDetailProps {
   video: FrontendVideoData;
 }
 
 export default function VideoDetail({ video }: VideoDetailProps) {
-  const [audioReferences, setAudioReferences] = useState<FrontendAudioReferenceData[]>([]);
+  const [audioReferences, setAudioReferences] = useState<
+    FrontendAudioReferenceData[]
+  >([]);
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioCount, setAudioCount] = useState(0);
 
@@ -30,7 +32,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
           limit: 6,
           sortBy: "newest",
         });
-        
+
         if (result.success) {
           setAudioReferences(result.data.audioReferences);
           setAudioCount(result.data.audioReferences.length);
@@ -179,7 +181,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
                 </span>
               )}
             </div>
-            
+
             {audioLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -190,7 +192,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
                 <p className="text-gray-700">
                   この動画から作成された音声ボタンがあります。
                 </p>
-                
+
                 {/* 音声ボタン一覧 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {audioReferences.map((audioReference) => (
@@ -203,7 +205,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
                     />
                   ))}
                 </div>
-                
+
                 <div className="flex gap-3 pt-2">
                   <Button asChild>
                     <Link href={`/buttons?videoId=${video.videoId}`}>

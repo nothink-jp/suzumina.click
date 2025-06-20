@@ -74,7 +74,7 @@ test.describe("動画ページ", () => {
     await firstDetailButton.click();
 
     // 動画詳細ページに遷移することを確認
-    await expect(page).toHaveURL(/\/videos\/[^\/]+$/);
+    await expect(page).toHaveURL(/\/videos\/[^/]+$/);
 
     // 詳細ページのコンテンツが表示される
     await expect(page.getByRole("heading")).toBeVisible();

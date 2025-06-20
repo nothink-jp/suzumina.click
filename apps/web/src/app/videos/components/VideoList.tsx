@@ -1,8 +1,8 @@
 "use client";
 
-import Pagination from "@/components/Pagination";
 import type { VideoListResult } from "@suzumina.click/shared-types/src/video";
 import { startTransition, useMemo, useState } from "react";
+import Pagination from "@/components/Pagination";
 import VideoCard from "./VideoCard";
 
 interface VideoListProps {

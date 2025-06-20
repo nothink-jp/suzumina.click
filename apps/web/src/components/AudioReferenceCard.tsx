@@ -1,12 +1,6 @@
 "use client";
 
 import {
-  decrementLikeCount,
-  incrementLikeCount,
-  incrementPlayCount,
-  incrementViewCount,
-} from "@/app/buttons/actions";
-import {
   type FrontendAudioReferenceData,
   formatTimestamp,
   getAudioReferenceCategoryLabel,
@@ -37,11 +31,16 @@ import {
   Play,
   Share2,
   Tag,
-  Volume2,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { YouTubePlayer, useYouTubePlayer } from "./YouTubePlayer";
+import {
+  decrementLikeCount,
+  incrementLikeCount,
+  incrementPlayCount,
+  incrementViewCount,
+} from "@/app/buttons/actions";
+import { useYouTubePlayer, YouTubePlayer } from "./YouTubePlayer";
 
 /**
  * AudioReferenceCard component props

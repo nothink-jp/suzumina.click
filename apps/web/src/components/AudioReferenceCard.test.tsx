@@ -1,8 +1,8 @@
+import type { FrontendAudioReferenceData } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AudioReferenceCard } from "./AudioReferenceCard";
-import type { FrontendAudioReferenceData } from "@suzumina.click/shared-types";
 
 // Mock the actions
 vi.mock("@/app/buttons/actions", () => ({
@@ -78,26 +78,28 @@ describe("AudioReferenceCard", () => {
 
   it("基本的な音声リファレンスカードが表示される", () => {
     render(
-      <AudioReferenceCard 
-        audioReference={mockAudioReference} 
+      <AudioReferenceCard
+        audioReference={mockAudioReference}
         showSourceVideo={true}
         size="md"
         variant="default"
-      />
+      />,
     );
 
     expect(screen.getByText("テスト音声ボタン")).toBeInTheDocument();
-    expect(screen.getByText("これはテスト用の音声ボタンです")).toBeInTheDocument();
+    expect(
+      screen.getByText("これはテスト用の音声ボタンです"),
+    ).toBeInTheDocument();
   });
 
   it("プレイボタンが存在する", () => {
     render(
-      <AudioReferenceCard 
-        audioReference={mockAudioReference} 
+      <AudioReferenceCard
+        audioReference={mockAudioReference}
         showSourceVideo={true}
         size="md"
         variant="default"
-      />
+      />,
     );
 
     // プレイボタンまたは再生関連のボタンが存在することを確認
@@ -107,12 +109,12 @@ describe("AudioReferenceCard", () => {
 
   it("統計情報が表示される", () => {
     render(
-      <AudioReferenceCard 
-        audioReference={mockAudioReference} 
+      <AudioReferenceCard
+        audioReference={mockAudioReference}
         showSourceVideo={true}
         size="md"
         variant="default"
-      />
+      />,
     );
 
     expect(screen.getByText("100")).toBeInTheDocument(); // play count
@@ -121,12 +123,12 @@ describe("AudioReferenceCard", () => {
 
   it("タグが表示される", () => {
     render(
-      <AudioReferenceCard 
-        audioReference={mockAudioReference} 
+      <AudioReferenceCard
+        audioReference={mockAudioReference}
         showSourceVideo={true}
         size="md"
         variant="default"
-      />
+      />,
     );
 
     expect(screen.getByText("テスト")).toBeInTheDocument();
@@ -135,12 +137,12 @@ describe("AudioReferenceCard", () => {
 
   it("元動画情報が表示される", () => {
     render(
-      <AudioReferenceCard 
-        audioReference={mockAudioReference} 
+      <AudioReferenceCard
+        audioReference={mockAudioReference}
         showSourceVideo={true}
         size="md"
         variant="default"
-      />
+      />,
     );
 
     expect(screen.getByText("テスト動画タイトル")).toBeInTheDocument();
@@ -148,12 +150,12 @@ describe("AudioReferenceCard", () => {
 
   it("元動画を非表示にできる", () => {
     render(
-      <AudioReferenceCard 
-        audioReference={mockAudioReference} 
+      <AudioReferenceCard
+        audioReference={mockAudioReference}
         showSourceVideo={false}
         size="md"
         variant="default"
-      />
+      />,
     );
 
     // showSourceVideo=falseの場合でも基本情報は表示される
@@ -162,12 +164,12 @@ describe("AudioReferenceCard", () => {
 
   it("カテゴリラベルが表示される", () => {
     render(
-      <AudioReferenceCard 
-        audioReference={mockAudioReference} 
+      <AudioReferenceCard
+        audioReference={mockAudioReference}
         showSourceVideo={true}
         size="md"
         variant="default"
-      />
+      />,
     );
 
     // カテゴリに関連するテキストが表示されることを確認
@@ -176,15 +178,17 @@ describe("AudioReferenceCard", () => {
 
   it("説明が表示される", () => {
     render(
-      <AudioReferenceCard 
-        audioReference={mockAudioReference} 
+      <AudioReferenceCard
+        audioReference={mockAudioReference}
         showSourceVideo={true}
         size="md"
         variant="default"
-      />
+      />,
     );
 
-    expect(screen.getByText("これはテスト用の音声ボタンです")).toBeInTheDocument();
+    expect(
+      screen.getByText("これはテスト用の音声ボタンです"),
+    ).toBeInTheDocument();
   });
 
   it("空の説明でもエラーが起こらない", () => {
@@ -194,12 +198,12 @@ describe("AudioReferenceCard", () => {
     };
 
     render(
-      <AudioReferenceCard 
-        audioReference={refWithoutDescription} 
+      <AudioReferenceCard
+        audioReference={refWithoutDescription}
         showSourceVideo={true}
         size="md"
         variant="default"
-      />
+      />,
     );
 
     expect(screen.getByText("テスト音声ボタン")).toBeInTheDocument();
@@ -212,12 +216,12 @@ describe("AudioReferenceCard", () => {
     };
 
     render(
-      <AudioReferenceCard 
-        audioReference={refWithoutTags} 
+      <AudioReferenceCard
+        audioReference={refWithoutTags}
         showSourceVideo={true}
         size="md"
         variant="default"
-      />
+      />,
     );
 
     expect(screen.getByText("テスト音声ボタン")).toBeInTheDocument();

@@ -1,12 +1,12 @@
 "use server";
 
-import { getFirestore } from "@/lib/firestore";
 import type {
   FirestoreDLsiteWorkData,
   FrontendDLsiteWorkData,
   WorkListResult,
 } from "@suzumina.click/shared-types/src/work";
 import { convertToFrontendWork } from "@suzumina.click/shared-types/src/work";
+import { getFirestore } from "@/lib/firestore";
 
 /**
  * DLsite作品データをページネーション付きで取得するServer Action

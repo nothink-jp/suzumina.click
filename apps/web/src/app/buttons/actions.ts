@@ -1,6 +1,5 @@
 "use server";
 
-import { FirestoreAdmin } from "@/lib/firestore-admin";
 import {
   type AudioReferenceCategory,
   type AudioReferenceListResult,
@@ -8,20 +7,21 @@ import {
   AudioReferenceQuerySchema,
   type CreateAudioReferenceInput,
   CreateAudioReferenceInputSchema,
-  type FirestoreAudioReferenceData,
-  type FrontendAudioReferenceData,
-  type UpdateAudioReferenceStats,
-  UpdateAudioReferenceStatsSchema,
-  type YouTubeVideoInfo,
   checkRateLimit,
   convertCreateInputToFirestoreAudioReference,
   convertToFrontendAudioReference,
+  type FirestoreAudioReferenceData,
+  type FrontendAudioReferenceData,
   filterAudioReferences,
   sortAudioReferences,
+  type UpdateAudioReferenceStats,
+  UpdateAudioReferenceStatsSchema,
   validateAudioReferenceCreation,
+  type YouTubeVideoInfo,
 } from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { FirestoreAdmin } from "@/lib/firestore-admin";
 
 /**
  * 音声リファレンスを作成するServer Action
@@ -603,4 +603,3 @@ function parseDuration(duration: string): number {
 
   return (hours * 3600 + minutes * 60 + seconds) * 1000; // ミリ秒で返す
 }
-

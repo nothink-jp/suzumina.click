@@ -1,5 +1,5 @@
-import AdminList from "@/components/AdminList";
 import type { WorkListResult } from "@suzumina.click/shared-types/src/work";
+import AdminList from "@/components/AdminList";
 
 interface WorkListProps {
   data: WorkListResult["works"];

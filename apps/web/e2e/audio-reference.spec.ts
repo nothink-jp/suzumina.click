@@ -10,9 +10,9 @@ test.describe("音声リファレンス機能", () => {
     ).toBeVisible();
 
     // 検索フォームが表示される
-    const searchPanel = page.locator('[data-testid="search-panel"]').or(
-      page.getByRole("search")
-    );
+    const searchPanel = page
+      .locator('[data-testid="search-panel"]')
+      .or(page.getByRole("search"));
     await expect(searchPanel).toBeVisible();
 
     // 音声ボタン作成リンクが表示される
@@ -43,9 +43,7 @@ test.describe("音声リファレンス機能", () => {
     await page.goto("/buttons/create");
 
     // エラーメッセージが表示される
-    await expect(
-      page.getByText(/動画IDが指定されていません/),
-    ).toBeVisible();
+    await expect(page.getByText(/動画IDが指定されていません/)).toBeVisible();
 
     // 動画一覧への誘導リンクが表示される
     await expect(
@@ -64,7 +62,9 @@ test.describe("音声リファレンス機能", () => {
     // 説明入力
     const descriptionInput = page.getByLabel("説明");
     await descriptionInput.fill("これはE2Eテスト用の音声ボタンです");
-    await expect(descriptionInput).toHaveValue("これはE2Eテスト用の音声ボタンです");
+    await expect(descriptionInput).toHaveValue(
+      "これはE2Eテスト用の音声ボタンです",
+    );
 
     // カテゴリ選択
     const categorySelect = page.getByLabel("カテゴリ");
@@ -140,10 +140,10 @@ test.describe("音声リファレンス機能", () => {
     await page.goto("/buttons");
 
     // 検索フォームが表示される場合
-    const searchInput = page.getByPlaceholder(/検索/).or(
-      page.getByRole("textbox", { name: /検索/ })
-    );
-    
+    const searchInput = page
+      .getByPlaceholder(/検索/)
+      .or(page.getByRole("textbox", { name: /検索/ }));
+
     if (await searchInput.isVisible()) {
       // 検索キーワード入力
       await searchInput.fill("テスト");
@@ -154,10 +154,10 @@ test.describe("音声リファレンス機能", () => {
     }
 
     // カテゴリフィルター（存在する場合）
-    const categoryFilter = page.getByLabel(/カテゴリ/).or(
-      page.locator('select[name="category"]')
-    );
-    
+    const categoryFilter = page
+      .getByLabel(/カテゴリ/)
+      .or(page.locator('select[name="category"]'));
+
     if (await categoryFilter.isVisible()) {
       await categoryFilter.selectOption("voice");
       await expect(page).toHaveURL(/category=voice/);
@@ -172,19 +172,23 @@ test.describe("音声リファレンス機能", () => {
     await expect(page.getByText("音声ボタン")).toBeVisible();
 
     // 音声ボタン作成リンクが表示される
-    const createButton = page.getByRole("link", { 
-      name: /音声ボタンを作成/ 
-    }).or(page.getByRole("link", { 
-      name: /新しい音声ボタンを作成/ 
-    }));
-    
+    const createButton = page
+      .getByRole("link", {
+        name: /音声ボタンを作成/,
+      })
+      .or(
+        page.getByRole("link", {
+          name: /新しい音声ボタンを作成/,
+        }),
+      );
+
     if (await createButton.isVisible()) {
       // 音声ボタン作成ページに遷移
       await createButton.click();
 
       // 適切なURLパラメータ付きで遷移することを確認
       await expect(page).toHaveURL(/\/buttons\/create\?video_id=test-video-id/);
-      
+
       // 作成フォームが表示される
       await expect(
         page.getByRole("heading", { name: /音声ボタンを作成/ }),
@@ -204,9 +208,9 @@ test.describe("音声リファレンス機能", () => {
     ).toBeVisible();
 
     // 検索フォームがモバイルでも操作可能
-    const searchPanel = page.locator('[data-testid="search-panel"]').or(
-      page.getByRole("search")
-    );
+    const searchPanel = page
+      .locator('[data-testid="search-panel"]')
+      .or(page.getByRole("search"));
     if (await searchPanel.isVisible()) {
       await expect(searchPanel).toBeVisible();
     }
@@ -216,7 +220,7 @@ test.describe("音声リファレンス機能", () => {
 
     // フォーム要素がモバイルでも適切に表示される
     await expect(page.getByLabel("タイトル")).toBeVisible();
-    
+
     // タッチ操作に適したサイズ（最小44px）
     const titleInput = page.getByLabel("タイトル");
     const inputBounds = await titleInput.boundingBox();
@@ -244,7 +248,7 @@ test.describe("音声リファレンス機能", () => {
   test("エラーハンドリング: 不正なアクセス", async ({ page }) => {
     // 存在しない音声ボタンIDでアクセス
     const response = await page.goto("/buttons/non-existent-id");
-    
+
     // 404ページまたはエラーメッセージが表示される
     if (response?.status() === 404) {
       await expect(page.getByText(/見つかりません|Not Found/)).toBeVisible();

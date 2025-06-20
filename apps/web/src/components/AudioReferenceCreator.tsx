@@ -1,27 +1,39 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@suzumina.click/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@suzumina.click/ui/components/card";
-import { Input } from "@suzumina.click/ui/components/input";
-import { Textarea } from "@suzumina.click/ui/components/textarea";
-import { Slider } from "@suzumina.click/ui/components/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@suzumina.click/ui/components/select";
-import { Badge } from "@suzumina.click/ui/components/badge";
-import { Loader2, Play, Plus, X, RotateCcw, Clock } from "lucide-react";
-import { 
-  type CreateAudioReferenceInput, 
+import {
   type AudioReferenceCategory,
+  type CreateAudioReferenceInput,
+  formatTimeRange,
+  formatTimestamp,
   getAudioReferenceCategoryLabel,
   SUGGESTED_AUDIO_REFERENCE_TAGS,
-  formatTimestamp,
-  formatTimeRange
 } from "@suzumina.click/shared-types/src/audio-reference";
+import { Badge } from "@suzumina.click/ui/components/badge";
+import { Button } from "@suzumina.click/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@suzumina.click/ui/components/card";
+import { Input } from "@suzumina.click/ui/components/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@suzumina.click/ui/components/select";
+import { Slider } from "@suzumina.click/ui/components/slider";
+import { Textarea } from "@suzumina.click/ui/components/textarea";
+import { Clock, Loader2, Play, Plus, RotateCcw, X } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createAudioReference } from "@/app/buttons/actions";
-import { YouTubePlayer } from "./YouTubePlayer";
 import { AudioReferenceCard } from "./AudioReferenceCard";
+import { YouTubePlayer } from "./YouTubePlayer";
 
 interface AudioReferenceCreatorProps {
   videoId: string;
@@ -40,41 +52,62 @@ interface TagInputProps {
   suggestions?: readonly string[];
 }
 
-function TagInput({ tags, onChange, placeholder = "タグを入力...", maxTags = 10, suggestions = [] }: TagInputProps) {
+function TagInput({
+  tags,
+  onChange,
+  placeholder = "タグを入力...",
+  maxTags = 10,
+  suggestions = [],
+}: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const addTag = useCallback((tag: string) => {
-    const trimmedTag = tag.trim();
-    if (trimmedTag && !tags.includes(trimmedTag) && tags.length < maxTags) {
-      onChange([...tags, trimmedTag]);
-    }
-    setInputValue("");
-    setShowSuggestions(false);
-  }, [tags, onChange, maxTags]);
+  const addTag = useCallback(
+    (tag: string) => {
+      const trimmedTag = tag.trim();
+      if (trimmedTag && !tags.includes(trimmedTag) && tags.length < maxTags) {
+        onChange([...tags, trimmedTag]);
+      }
+      setInputValue("");
+      setShowSuggestions(false);
+    },
+    [tags, onChange, maxTags],
+  );
 
-  const removeTag = useCallback((index: number) => {
-    onChange(tags.filter((_, i) => i !== index));
-  }, [tags, onChange]);
+  const removeTag = useCallback(
+    (index: number) => {
+      onChange(tags.filter((_, i) => i !== index));
+    },
+    [tags, onChange],
+  );
 
-  const handleInputKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      addTag(inputValue);
-    }
-  }, [inputValue, addTag]);
+  const handleInputKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === ",") {
+        e.preventDefault();
+        addTag(inputValue);
+      }
+    },
+    [inputValue, addTag],
+  );
 
-  const filteredSuggestions = suggestions.filter(
-    suggestion => 
-      !tags.includes(suggestion) &&
-      suggestion.toLowerCase().includes(inputValue.toLowerCase())
-  ).slice(0, 8);
+  const filteredSuggestions = suggestions
+    .filter(
+      (suggestion) =>
+        !tags.includes(suggestion) &&
+        suggestion.toLowerCase().includes(inputValue.toLowerCase()),
+    )
+    .slice(0, 8);
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         {tags.map((tag, index) => (
-          <Badge key={index} variant="secondary" className="flex items-center gap-1">
+          <Badge
+            key={index}
+            variant="secondary"
+            className="flex items-center gap-1"
+          >
             {tag}
             <button
               type="button"
@@ -87,7 +120,7 @@ function TagInput({ tags, onChange, placeholder = "タグを入力...", maxTags 
           </Badge>
         ))}
       </div>
-      
+
       <div className="relative">
         <Input
           value={inputValue}
@@ -98,10 +131,12 @@ function TagInput({ tags, onChange, placeholder = "タグを入力...", maxTags 
           onKeyDown={handleInputKeyDown}
           onFocus={() => setShowSuggestions(inputValue.length > 0)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          placeholder={tags.length >= maxTags ? `最大${maxTags}個まで` : placeholder}
+          placeholder={
+            tags.length >= maxTags ? `最大${maxTags}個まで` : placeholder
+          }
           disabled={tags.length >= maxTags}
         />
-        
+
         {showSuggestions && filteredSuggestions.length > 0 && (
           <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg">
             <div className="p-2 space-y-1">
@@ -119,7 +154,7 @@ function TagInput({ tags, onChange, placeholder = "タグを入力...", maxTags 
           </div>
         )}
       </div>
-      
+
       <div className="text-xs text-muted-foreground">
         {tags.length}/{maxTags}個のタグ
       </div>
@@ -136,21 +171,23 @@ export function AudioReferenceCreator({
   onSuccess,
 }: AudioReferenceCreatorProps) {
   const router = useRouter();
-  
+
   // Form state
   const [startTime, setStartTime] = useState(initialStartTime);
-  const [endTime, setEndTime] = useState(Math.min(initialStartTime + 5, videoDuration));
+  const [endTime, setEndTime] = useState(
+    Math.min(initialStartTime + 5, videoDuration),
+  );
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<AudioReferenceCategory>("voice");
   const [tags, setTags] = useState<string[]>([]);
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
-  
+
   // UI state
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [currentTime, setCurrentTime] = useState(initialStartTime);
-  
+
   const youtubePlayerRef = useRef<any>(null);
 
   // Computed values
@@ -188,7 +225,7 @@ export function AudioReferenceCreator({
     if (youtubePlayerRef.current) {
       youtubePlayerRef.current.seekTo(startTime);
       youtubePlayerRef.current.playVideo();
-      
+
       // 終了時間で停止
       setTimeout(() => {
         if (youtubePlayerRef.current) {
@@ -201,10 +238,10 @@ export function AudioReferenceCreator({
   // Form submission
   const handleSubmit = useCallback(async () => {
     if (!isValid) return;
-    
+
     setIsCreating(true);
     setError("");
-    
+
     try {
       const input: CreateAudioReferenceInput = {
         videoId,
@@ -216,9 +253,9 @@ export function AudioReferenceCreator({
         endTime,
         isPublic,
       };
-      
+
       const result = await createAudioReference(input);
-      
+
       if (result.success) {
         onSuccess?.(result.data.id);
         router.push(`/buttons/${result.data.id}`);
@@ -231,7 +268,19 @@ export function AudioReferenceCreator({
     } finally {
       setIsCreating(false);
     }
-  }, [isValid, videoId, title, description, category, tags, startTime, endTime, isPublic, onSuccess, router]);
+  }, [
+    isValid,
+    videoId,
+    title,
+    description,
+    category,
+    tags,
+    startTime,
+    endTime,
+    isPublic,
+    onSuccess,
+    router,
+  ]);
 
   // Update endTime when startTime changes
   useEffect(() => {
@@ -298,7 +347,10 @@ export function AudioReferenceCreator({
           {/* Current time display */}
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">
-              現在の再生時間: <span className="font-mono font-medium text-foreground">{formatTimestamp(currentTime)}</span>
+              現在の再生時間:{" "}
+              <span className="font-mono font-medium text-foreground">
+                {formatTimestamp(currentTime)}
+              </span>
             </p>
           </div>
 
@@ -360,7 +412,8 @@ export function AudioReferenceCreator({
                 選択範囲: {formatTimeRange(startTime, endTime)}
               </p>
               <p className="text-xs text-muted-foreground">
-                長さ: {duration}秒 {duration > 60 && "（60秒以下にしてください）"}
+                長さ: {duration}秒{" "}
+                {duration > 60 && "（60秒以下にしてください）"}
               </p>
             </div>
             <Button
@@ -405,7 +458,13 @@ export function AudioReferenceCreator({
           {/* Category */}
           <div className="space-y-2">
             <label className="text-sm font-medium">カテゴリ</label>
-            <Select value={category} onValueChange={(value: AudioReferenceCategory) => setCategory(value)} disabled={isCreating}>
+            <Select
+              value={category}
+              onValueChange={(value: AudioReferenceCategory) =>
+                setCategory(value)
+              }
+              disabled={isCreating}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
