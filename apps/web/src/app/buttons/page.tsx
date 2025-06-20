@@ -49,6 +49,7 @@ async function AudioButtonsList({
         | "popular"
         | "mostPlayed"
         | "mostLiked") || "newest",
+    onlyPublic: true,
   };
 
   const result = await getAudioReferences(query);

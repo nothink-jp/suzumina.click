@@ -87,11 +87,19 @@ venv.bak/
 logs/
 *.log
 
-# Other apps (when building specific app)
-apps/web/
+# Keep workspace structure for web app build
+!packages/shared-types/
+!packages/ui/
+!apps/web/
+
+# Exclude other apps
 apps/functions/
 apps/v0-suzumina.click/
-packages/
 
-# Keep only the target app directory
-!apps/audio-processor/
+# Exclude unnecessary package contents (but keep source)
+packages/*/node_modules/
+packages/*/dist/
+packages/*/.next/
+apps/*/node_modules/
+apps/*/.next/
+apps/*/dist/

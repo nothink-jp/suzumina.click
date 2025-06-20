@@ -150,13 +150,13 @@ export default function PerformanceMonitor() {
 
           // DOMコンテンツロード時間
           const domContentLoadedTime =
-            navigation.domContentLoadedEventEnd - navigation.navigationStart;
+            navigation.domContentLoadedEventEnd - navigation.fetchStart;
           reportMetric("page_load_dom_content_loaded", domContentLoadedTime, {
             metric_type: "dom_content_loaded",
           });
 
           // 完全ロード時間
-          const loadTime = navigation.loadEventEnd - navigation.navigationStart;
+          const loadTime = navigation.loadEventEnd - navigation.fetchStart;
           reportMetric("page_load_complete", loadTime, {
             metric_type: "page_load_complete",
           });

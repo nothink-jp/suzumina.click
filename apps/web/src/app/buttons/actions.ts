@@ -135,7 +135,7 @@ export async function createAudioReference(
  * 音声リファレンスを検索・取得するServer Action
  */
 export async function getAudioReferences(
-  query: AudioReferenceQuery = {},
+  query: Partial<AudioReferenceQuery> = {},
 ): Promise<
   | { success: true; data: AudioReferenceListResult }
   | { success: false; error: string }
@@ -335,7 +335,7 @@ export async function getAudioReferencesByCategory(
  * 音声リファレンスの統計を更新するServer Action
  */
 export async function updateAudioReferenceStats(
-  statsUpdate: UpdateAudioReferenceStats,
+  statsUpdate: Partial<UpdateAudioReferenceStats> & { id: string },
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // バリデーション
@@ -426,6 +426,65 @@ export async function decrementLikeCount(
     id,
     decrementLikeCount: true,
   });
+}
+
+/**
+ * IDによって音声リファレンスを取得するServer Action
+ */
+export async function getAudioReferenceById(
+  id: string,
+): Promise<
+  | { success: true; data: FrontendAudioReferenceData }
+  | { success: false; error: string }
+> {
+  try {
+    if (!id || typeof id !== "string") {
+      return {
+        success: false,
+        error: "音声ボタンIDが指定されていません",
+      };
+    }
+
+    const firestore = FirestoreAdmin.getInstance();
+    const doc = await firestore.collection("audioReferences").doc(id).get();
+
+    if (!doc.exists) {
+      return {
+        success: false,
+        error: "指定された音声ボタンが見つかりません",
+      };
+    }
+
+    const firestoreData = {
+      id: doc.id,
+      ...doc.data(),
+    } as FirestoreAudioReferenceData;
+
+    // プライベートな投稿の場合はエラー
+    if (!firestoreData.isPublic) {
+      return {
+        success: false,
+        error: "この音声ボタンは非公開です",
+      };
+    }
+
+    // フロントエンド用に変換
+    const frontendData = convertToFrontendAudioReference(firestoreData);
+
+    // 表示回数を増加
+    await incrementViewCount(id);
+
+    return {
+      success: true,
+      data: frontendData,
+    };
+  } catch (error) {
+    console.error(`音声リファレンス取得エラー (ID: ${id}):`, error);
+    return {
+      success: false,
+      error: "音声ボタンの取得に失敗しました",
+    };
+  }
 }
 
 /**
@@ -545,61 +604,3 @@ function parseDuration(duration: string): number {
   return (hours * 3600 + minutes * 60 + seconds) * 1000; // ミリ秒で返す
 }
 
-/**
- * IDによる音声リファレンス取得
- */
-export async function getAudioReferenceById(id: string): Promise<
-  | {
-      success: true;
-      data: FrontendAudioReferenceData;
-    }
-  | {
-      success: false;
-      error: string;
-    }
-> {
-  try {
-    if (!id || typeof id !== "string") {
-      return {
-        success: false,
-        error: "有効なIDを指定してください。",
-      };
-    }
-
-    const firestore = FirestoreAdmin.getInstance();
-    const doc = await firestore
-      .collection("audioReferences")
-      .doc(id.trim())
-      .get();
-
-    if (!doc.exists) {
-      return {
-        success: false,
-        error: "音声ボタンが見つかりませんでした。",
-      };
-    }
-
-    // Firestore データをフロントエンド用に変換
-    const data = { id: doc.id, ...doc.data() } as FirestoreAudioReferenceData;
-    const audioReference = convertToFrontendAudioReference(data);
-
-    // 公開設定のチェック
-    if (!audioReference.isPublic) {
-      return {
-        success: false,
-        error: "この音声ボタンは非公開です。",
-      };
-    }
-
-    return {
-      success: true,
-      data: audioReference,
-    };
-  } catch (error) {
-    console.error("音声リファレンス取得エラー:", error);
-    return {
-      success: false,
-      error: "音声ボタンの取得に失敗しました。",
-    };
-  }
-}

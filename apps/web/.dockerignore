@@ -123,6 +123,10 @@ test-results/
 playwright-report/
 coverage/
 
+# Important: Don't ignore workspace directories
+!packages/
+!apps/
+
 # Storybook
 .storybook/
 storybook-static/

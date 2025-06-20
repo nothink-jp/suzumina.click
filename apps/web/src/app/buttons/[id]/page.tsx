@@ -43,7 +43,8 @@ function formatTime(seconds: number): string {
 }
 
 // 相対時間表示
-function formatRelativeTime(date: Date): string {
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -91,6 +92,7 @@ async function RelatedAudioButtons({
       videoId,
       limit: 6,
       sortBy: "newest",
+      onlyPublic: true,
     };
 
     const sameVideoResult = await getAudioReferences(sameVideoQuery);

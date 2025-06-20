@@ -15,7 +15,11 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "docker:build": "./scripts/docker-build.sh",
+    "docker:run": "./scripts/docker-run.sh",
+    "deploy:build": "cd ../.. && docker build -f apps/web/Dockerfile -t suzumina-web .",
+    "deploy:test": "docker run --rm -p 8080:8080 suzumina-web"
   },
   "dependencies": {
     "@google-cloud/firestore": "^7.11.1",

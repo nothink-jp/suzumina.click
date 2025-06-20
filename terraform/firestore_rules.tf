@@ -40,7 +40,7 @@ resource "google_firestore_document" "firestore_rules" {
               allow write: if false; // 管理者APIのみ書き込み可能
             }
             
-            // 音声ボタンコレクション
+            // 音声ボタンコレクション（Phase 1では非推奨、audioReferencesを使用）
             match /audioButtons/{buttonId} {
               // 公開音声ボタンは誰でも読み取り可能、非公開は作成者のみ読み取り可能
               allow read: if resource.data.isPublic == true || 
@@ -51,6 +51,42 @@ resource "google_firestore_document" "firestore_rules" {
               
               // 更新と削除は作成者のみ可能（Phase 2で実装予定）
               allow update, delete: if false; // 現在はServer Actionsのみで操作
+            }
+            
+            // 音声リファレンスコレクション（新しい実装）
+            match /audioReferences/{referenceId} {
+              // 公開音声リファレンスは誰でも読み取り可能、非公開は作成者のみ読み取り可能
+              allow read: if resource.data.isPublic == true || 
+                           (isAuthenticated() && resource.data.createdBy == request.auth.uid);
+              
+              // データ検証関数
+              function isValidAudioReference() {
+                return request.resource.data.keys().hasAll(['title', 'startTime', 'endTime', 'videoId', 'isPublic', 'createdBy', 'createdAt']) &&
+                       request.resource.data.title is string &&
+                       request.resource.data.title.size() > 0 &&
+                       request.resource.data.title.size() <= 100 &&
+                       request.resource.data.startTime is number &&
+                       request.resource.data.endTime is number &&
+                       request.resource.data.startTime >= 0 &&
+                       request.resource.data.endTime > request.resource.data.startTime &&
+                       request.resource.data.videoId is string &&
+                       request.resource.data.videoId.size() > 0 &&
+                       request.resource.data.isPublic is bool &&
+                       request.resource.data.createdBy is string &&
+                       request.resource.data.createdAt is timestamp;
+              }
+              
+              // 作成は認証済みユーザーのみ可能
+              allow create: if isAuthenticated() && 
+                               request.resource.data.createdBy == request.auth.uid &&
+                               isValidAudioReference();
+              
+              // 更新と削除は作成者のみ可能
+              allow update: if isOwner(resource.data.createdBy) &&
+                               request.resource.data.createdBy == resource.data.createdBy &&
+                               isValidAudioReference();
+              
+              allow delete: if isOwner(resource.data.createdBy);
             }
             
             // ユーザーコレクション

@@ -13,58 +13,56 @@ test.describe("音声ボタンページ", () => {
     await expect(page.getByRole("search")).toBeVisible();
   });
 
-  test("音声ボタン作成ページが表示される", async ({ page }) => {
-    await page.goto("/buttons/create");
+  test("音声ボタン作成ページ（新システム）が表示される", async ({ page }) => {
+    // 動画IDパラメータ付きでアクセス
+    await page.goto("/buttons/create?video_id=test-video-id");
 
     // ページタイトルを確認
-    await expect(page.getByText("音声ファイルのアップロード")).toBeVisible();
-
-    // アップロードエリアが表示される
-    const uploadArea = page.getByRole("button", {
-      name: /音声ファイルを選択またはドラッグ&ドロップ/,
-    });
-    await expect(uploadArea).toBeVisible();
-
-    // ファイル選択ボタンが表示される
-    const fileSelectButton = page.getByRole("button", {
-      name: "ファイルを選択",
-    });
-    await expect(fileSelectButton).toBeVisible();
-  });
-
-  test("音声ボタン作成: ファイル選択UI", async ({ page }) => {
-    await page.goto("/buttons/create");
-
-    // ファイル選択ボタンをクリック
-    const fileSelectButton = page.getByRole("button", {
-      name: "ファイルを選択",
-    });
-    await fileSelectButton.click();
-
-    // ファイル入力がトリガーされることを確認（ブラウザのファイルダイアログは開けないため、要素の存在を確認）
-    const fileInput = page.locator('input[type="file"]');
-    await expect(fileInput).toBeAttached();
-  });
-
-  test("音声ボタン作成: ドラッグ&ドロップエリア", async ({ page }) => {
-    await page.goto("/buttons/create");
-
-    const uploadArea = page.getByRole("button", {
-      name: /音声ファイルを選択またはドラッグ&ドロップ/,
-    });
-
-    // ドラッグオーバー状態をシミュレート
-    await uploadArea.hover();
-
-    // アップロードエリアが適切なaria属性を持つ
-    await expect(uploadArea).toHaveAttribute(
-      "aria-describedby",
-      "upload-description",
-    );
-
-    // ヘルプテキストが表示される
     await expect(
-      page.getByText(/対応形式: MP3, AAC, Opus, WAV, FLAC/),
+      page.getByRole("heading", { name: /音声ボタンを作成/ }),
+    ).toBeVisible();
+
+    // AudioReferenceCreator フォームが表示される
+    await expect(page.getByLabel("タイトル")).toBeVisible();
+    await expect(page.getByLabel("説明")).toBeVisible();
+    await expect(page.getByLabel("カテゴリ")).toBeVisible();
+
+    // YouTubeプレイヤーが表示される
+    await expect(page.locator(".youtube-player-container")).toBeVisible();
+  });
+
+  test("音声ボタン作成: フォーム入力", async ({ page }) => {
+    await page.goto("/buttons/create?video_id=test-video-id");
+
+    // タイトル入力
+    const titleInput = page.getByLabel("タイトル");
+    await titleInput.fill("テスト音声ボタン");
+    await expect(titleInput).toHaveValue("テスト音声ボタン");
+
+    // 説明入力
+    const descriptionInput = page.getByLabel("説明");
+    await descriptionInput.fill("テスト用の説明");
+    await expect(descriptionInput).toHaveValue("テスト用の説明");
+
+    // カテゴリ選択
+    const categorySelect = page.getByLabel("カテゴリ");
+    await categorySelect.selectOption("voice");
+    await expect(categorySelect).toHaveValue("voice");
+  });
+
+  test("音声ボタン作成: タイムスタンプ選択", async ({ page }) => {
+    await page.goto("/buttons/create?video_id=test-video-id");
+
+    // タイムスタンプ選択セクションが表示される
+    await expect(page.getByText("タイムスタンプ選択")).toBeVisible();
+
+    // 開始時間と終了時間のスライダーが表示される
+    const sliders = page.locator('input[type="range"]');
+    await expect(sliders).toHaveCount(2);
+
+    // 現在時刻設定ボタンが表示される
+    await expect(
+      page.getByRole("button", { name: /現在時刻を開始時間に設定/ }),
     ).toBeVisible();
   });
 
