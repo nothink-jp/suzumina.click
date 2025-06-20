@@ -10,8 +10,8 @@ locals {
   dlsite_function_name = "fetchDLsiteWorks"
   dlsite_runtime       = "nodejs22"
   dlsite_entry_point   = "fetchDLsiteWorks" # 注: これをindex.tsで登録した関数名と一致させる
-  dlsite_memory        = "512Mi"
-  dlsite_timeout       = 540 # 秒（9分）- イベントトリガー制限に合わせる
+  dlsite_memory        = local.current_env.functions_memory
+  dlsite_timeout       = local.current_env.functions_timeout
 
   # この関数が必要とする環境変数（シークレット）のリスト（現在は不要だが将来拡張用）
   dlsite_secrets = [
@@ -19,8 +19,10 @@ locals {
   ]
 }
 
-# DLsite作品取得関数 (v2 - Pub/Subトリガー)
+# DLsite作品取得関数 (v2 - Pub/Subトリガー)（環境設定により条件付き作成）
 resource "google_cloudfunctions2_function" "fetch_dlsite_works" {
+  count = local.current_env.functions_enabled ? 1 : 0
+  
   project  = var.gcp_project_id
   name     = local.dlsite_function_name
   location = var.region

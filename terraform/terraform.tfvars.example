@@ -12,5 +12,15 @@ region = "asia-northeast1"             # 東京リージョン
 # YouTube APIキー
 youtube_api_key = "your-youtube-data-api-key"   # YouTubeデータAPI用のキー
 
-# 環境設定（development, staging, production）
-environment = "development"
+# 環境設定（staging, production）  
+environment = "staging"
+
+# 監視・アラート設定
+admin_email = "your-email@example.com"           # 監視アラート通知先メールアドレス
+
+# カスタムドメイン設定（オプション）
+custom_domain = "suzumina.click"                # カスタムドメイン名
+
+# 予算管理設定（個人開発向け）
+budget_amount = 50                              # 月次予算（USD）約5000円
+budget_threshold_percent = [50, 80, 100]        # アラート閾値（%）

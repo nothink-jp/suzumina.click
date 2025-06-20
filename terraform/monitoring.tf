@@ -400,7 +400,7 @@ resource "google_monitoring_notification_channel" "email" {
   type         = "email"
   
   labels = {
-    email_address = "admin@example.com"  # 実際の管理者メールアドレスに置き換え
+    email_address = var.admin_email
   }
   
   project = var.gcp_project_id

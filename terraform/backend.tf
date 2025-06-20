@@ -1,15 +1,12 @@
 /**
- * Terraformの状態ファイルをローカルで管理する設定（一時的）
- * 注：本番環境では GCS バケットを作成してから以下のようにGCSバックエンドに戻す
- * terraform {
- *   backend "gcs" {
- *     bucket = "suzumina-click-terraform-state"
- *     prefix = "terraform/state"
- *   }
- * }
+ * Terraformの状態ファイルをGCSで管理する設定
+ *
+ * Terraformの実行状態（.tfstate）をGCSバケットで一元管理します。
+ * これにより、チームでの共同作業やCI/CDパイプラインからの実行が安全になります。
  */
 terraform {
-  backend "local" {
-    path = "terraform.tfstate"
+  backend "gcs" {
+    bucket = "suzumina-click-tfstate" # このバケット名は事前に作成しておく必要があります
+    prefix = "terraform/state"
   }
 }

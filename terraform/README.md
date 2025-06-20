@@ -18,29 +18,37 @@ suzumina.clickプロジェクトのGoogle Cloud Platform (GCP)インフラスト
 
 ```
 terraform/
-├── README.md                    # このファイル
-├── providers.tf                 # GCPプロバイダー設定
-├── variables.tf                 # 変数定義（音声処理用変数追加）
-├── backend.tf                   # Terraformステート管理
+├── README.md
+├── providers.tf
+├── variables.tf
+├── locals.tf
+├── backend.tf
+├── terraform.tfvars.example
 │
-├── # 既存インフラ（本番稼働中）
-├── firebase.tf                  # Firebase/Firestore設定
-├── function_*.tf                # Cloud Functions定義
-├── pubsub.tf                    # Pub/Sub トピック・サブスクリプション
-├── scheduler.tf                 # Cloud Scheduler ジョブ
-├── secrets.tf                   # Secret Manager
-├── iam.tf                       # IAM権限・サービスアカウント
+├── # Core Services
+├── api_services.tf
+├── network.tf
+├── iam.tf
 │
-├── # 音声ボタン機能（削除済み - ユーザー作成方式に変更）
-├── # audio_storage.tf             # 削除済み
-├── # cloud_tasks.tf               # 削除済み
+├── # Application: Cloud Run
+├── cloud_run.tf
+├── artifact_registry.tf
 │
-└── # その他
-    ├── api_services.tf          # 有効化API
-    ├── artifact_registry.tf     # Container Registry
-    ├── firestore_*.tf           # Firestoreルール・インデックス
-    ├── monitoring.tf            # 監視設定
-    └── storage.tf               # その他ストレージ
+├── # Application: Cloud Functions
+├── function_*.tf
+├── pubsub.tf
+├── scheduler.tf
+│
+├── # Storage
+├── firestore_*.tf
+├── storage.tf
+├── gcs.tf
+│
+├── # Operations
+├── monitoring*.tf
+├── logging.tf
+├── billing.tf
+└── secrets.tf
 ```
 
 ## 🎯 音声ボタン機能アーキテクチャ（ユーザー作成方式）
@@ -78,7 +86,7 @@ gcloud auth login
 gcloud auth application-default login
 
 # プロジェクト設定
-gcloud config set project suzumina-click-firebase
+gcloud config set project your-gcp-project-id
 ```
 
 ### 2. 環境設定
@@ -88,8 +96,11 @@ gcloud config set project suzumina-click-firebase
 cp terraform.tfvars.example terraform.tfvars
 
 # 必要な変数を設定
-echo 'gcp_project_id = "suzumina-click-firebase"' >> terraform.tfvars
-echo 'region = "us-central1"' >> terraform.tfvars
+echo 'gcp_project_id = "your-gcp-project-id"' >> terraform.tfvars
+echo 'project_number = "123456789012"' >> terraform.tfvars
+echo 'region = "asia-northeast1"' >> terraform.tfvars
+echo 'environment = "staging"' >> terraform.tfvars
+# ...その他必要な変数を設定
 ```
 
 ### 3. Terraform初期化・実行

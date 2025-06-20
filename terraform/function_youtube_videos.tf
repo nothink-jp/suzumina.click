@@ -10,8 +10,8 @@ locals {
   youtube_function_name = "fetchYouTubeVideos"
   youtube_runtime       = "nodejs22"
   youtube_entry_point   = "fetchYouTubeVideos" # 注: これをindex.tsで登録した関数名と一致させる
-  youtube_memory        = "512Mi"
-  youtube_timeout       = 540 # 秒（9分）- イベントトリガー制限に合わせる
+  youtube_memory        = local.current_env.functions_memory
+  youtube_timeout       = local.current_env.functions_timeout
 
   # この関数が必要とする環境変数（シークレット）のリスト
   youtube_secrets = [
@@ -19,8 +19,10 @@ locals {
   ]
 }
 
-# YouTube動画取得関数 (v2 - Pub/Subトリガー)
+# YouTube動画取得関数 (v2 - Pub/Subトリガー)（環境設定により条件付き作成）
 resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
+  count = local.current_env.functions_enabled ? 1 : 0
+  
   project  = var.gcp_project_id
   name     = local.youtube_function_name
   location = var.region

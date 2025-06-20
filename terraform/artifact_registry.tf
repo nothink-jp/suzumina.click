@@ -10,7 +10,7 @@ resource "google_artifact_registry_repository" "docker_repo" {
   provider = google
 
   location      = var.region
-  repository_id = "suzumina-click"
+  repository_id = var.artifact_registry_repository_id
   description   = "suzumina.click用のDockerイメージリポジトリ"
   format        = "DOCKER"
 

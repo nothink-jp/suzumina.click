@@ -8,293 +8,374 @@ suzumina.clickは、声優「涼花みなせ」のファンサイトとして、
 
 ```mermaid
 graph TD
-    %% External APIs
+    subgraph "開発・CI/CD フロー"
+        DEV[ローカル開発<br/>feature/* ブランチ]
+        MAIN[main ブランチ<br/>開発統合]
+        GHA[GitHub Actions<br/>CI/CDパイプライン]
+        STAGING[Staging環境<br/>自動テスト・QA]
+        TAG[Git Tag<br/>v1.x.x リリース]
+        PROD[Production環境<br/>本番サービス]
+    end
+
     subgraph "外部API"
         YT[YouTube Data API v3]
         DL[DLsite Web Scraping]
     end
 
-    %% Scheduling & Messaging
     subgraph "スケジュール・メッセージング"
-        CS1[Cloud Scheduler<br/>YouTube収集<br/>毎時19分]
-        CS2[Cloud Scheduler<br/>DLsite収集<br/>6,26,46分]
+        CS1[Cloud Scheduler<br/>YouTube収集]
+        CS2[Cloud Scheduler<br/>DLsite収集]
         PS1[Pub/Sub Topic<br/>youtube-video-fetch-trigger]
         PS2[Pub/Sub Topic<br/>dlsite-works-fetch-trigger]
+        PS3[Pub/Sub Topic<br/>budget-alerts]
     end
 
-    %% Cloud Functions
     subgraph "データ収集 (Cloud Functions v2)"
-        CF1[fetchYouTubeVideos<br/>512Mi, 9分]
-        CF2[fetchDLsiteWorks<br/>512Mi, 9分]
+        CF1[fetchYouTubeVideos<br/>本番のみ有効]
+        CF2[fetchDLsiteWorks<br/>本番のみ有効]
     end
 
-    %% User Audio Creation
-    subgraph "音声ボタン作成"
-        WEB_AUDIO[Web Audio API<br/>ブラウザ内音声処理]
-        FILE_UPLOAD[Next.js Server Actions<br/>ファイルアップロード]
-    end
-
-    %% Storage
-    subgraph "ストレージ"
-        FS[(Cloud Firestore Database<br/>videos, works, audioButtons<br/>Native Mode)]
-        CS_AUDIO[Cloud Storage<br/>user-audio-files<br/>ユーザー作成音声]
-        CS_DEPLOY[Cloud Storage<br/>functions-deployment]
-    end
-
-    %% Web Application
     subgraph "Webアプリケーション"
-        WEB[Next.js App<br/>suzumina.click]
+        WEB_STAGING[Cloud Run<br/>Staging環境<br/>軽量構成]
+        WEB_PROD[Cloud Run<br/>Production環境<br/>本番構成]
     end
 
-    %% Security & Secrets
+    subgraph "ネットワーク (VPC)"
+        VPC[VPC<br/>suzumina-click-vpc]
+        SUBNET[Subnet<br/>suzumina-click-subnet]
+        NAT[Cloud NAT]
+        DNS[Cloud DNS<br/>suzumina.click]
+    end
+
+    subgraph "ストレージ"
+        FS[(Cloud Firestore<br/>Native Mode)]
+        CS_AUDIO[Cloud Storage<br/>user-audio-files]
+        CS_TFSTATE[Cloud Storage<br/>suzumina-click-tfstate]
+        AR[Artifact Registry<br/>Docker Images]
+    end
+
     subgraph "セキュリティ・シークレット"
         SM[Secret Manager<br/>YOUTUBE_API_KEY]
-        FR[Cloud Firestore Rules<br/>認証・アクセス制御]
+        FR[Cloud Firestore Rules]
+        WIF[Workload Identity Federation]
     end
 
-    %% Monitoring
-    subgraph "監視・アラート"
-        MD[Monitoring Dashboard<br/>サービス概要]
-        AP1[Alert Policy<br/>エラー率監視]
-        AP2[Alert Policy<br/>スケール監視]
-        NC[Email Notification<br/>管理者アラート]
+    subgraph "監視・アラート・予算管理"
+        MD[Monitoring Dashboard]
+        AP[Alert Policies]
+        NC[Email Notification]
+        BUDGET[Budget Alerts<br/>月5000円制限]
     end
 
-    %% Identity & Access Management
-    subgraph "IAM・認証"
-        WIF[Workload Identity Federation<br/>GitHub Actions]
-        SA1[Service Account<br/>github-actions-sa]
-        SA2[Service Account<br/>fetch-youtube-videos-sa]
-        SA3[Service Account<br/>fetch-dlsite-works-sa]
-        SA4[Service Account<br/>web-app]
-        SA5[Service Account<br/>user-content]
-    end
+    %% Development Flow
+    DEV --> MAIN
+    MAIN --> GHA
+    GHA -->|自動デプロイ| STAGING
+    GHA -->|自動テスト| STAGING
+    STAGING -->|QA完了| TAG
+    TAG --> GHA
+    GHA -->|手動承認| PROD
 
-    %% Connections
+    %% Data Collection Flow (Production only)
     CS1 -->|トリガー| PS1
     CS2 -->|トリガー| PS2
     PS1 -->|イベント| CF1
     PS2 -->|イベント| CF2
-    
-    CF1 -->|動画データ取得| YT
-    CF1 -->|データ保存| FS
-    CF2 -->|作品データ取得| DL
-    CF2 -->|データ保存| FS
-    
-    WEB -->|データ読み取り| FS
-    WEB -->|音声ファイル再生| CS_AUDIO
-    WEB_AUDIO -->|音声処理| FILE_UPLOAD
-    FILE_UPLOAD -->|音声ファイル保存| CS_AUDIO
-    FILE_UPLOAD -->|メタデータ保存| FS
-    
-    CF1 -.->|APIキー取得| SM
-    CF1 -.->|認証| SA2
-    CF2 -.->|認証| SA3
-    WEB -.->|認証| SA4
-    FILE_UPLOAD -.->|認証| SA5
-    
-    WIF -.->|CI/CD| SA1
-    SA1 -->|デプロイ| CS_DEPLOY
-    
-    MD -->|メトリクス監視| CF1
-    MD -->|メトリクス監視| CF2
-    MD -->|メトリクス監視| FS
-    MD -->|メトリクス監視| WEB
-    
-    AP1 -->|アラート送信| NC
-    AP2 -->|アラート送信| NC
-    
-    FS -.->|アクセス制御| FR
 
-    %% Styling
+    CF1 -->|データ取得| YT
+    CF1 -->|データ保存| FS
+    CF2 -->|データ取得| DL
+    CF2 -->|データ保存| FS
+
+    %% Application Data Flow
+    WEB_STAGING -->|データ読み書き| FS
+    WEB_STAGING -->|音声ファイル| CS_AUDIO
+    WEB_PROD -->|データ読み書き| FS
+    WEB_PROD -->|音声ファイル| CS_AUDIO
+
+    %% Network Flow
+    CF1 -- VPC --> SUBNET
+    CF2 -- VPC --> SUBNET
+    WEB_STAGING -- VPC --> SUBNET
+    WEB_PROD -- VPC --> SUBNET
+    SUBNET -- VPC --> VPC
+    VPC --> NAT
+    DNS --> WEB_PROD
+
+    %% Security & CI/CD
+    CF1 -.->|APIキー| SM
+    WIF -.->|CI/CD| AR
+    GHA -.->|認証| WIF
+
+    %% Monitoring & Budget
+    MD -->|メトリクス| CF1
+    MD -->|メトリクス| CF2
+    MD -->|メトリクス| WEB_STAGING
+    MD -->|メトリクス| WEB_PROD
+    AP -->|アラート| NC
+    BUDGET -->|予算アラート| PS3
+    PS3 -->|通知| NC
+
     classDef external fill:#ffcc99
     classDef compute fill:#99ccff
     classDef storage fill:#99ff99
     classDef security fill:#ffb3ba
     classDef monitoring fill:#bfa3ff
     classDef messaging fill:#ffd700
-    
+    classDef network fill:#e6e6fa
+    classDef cicd fill:#f0f4ff
+
     class YT,DL external
-    class CF1,CF2,WEB compute
-    class FS,CS_AUDIO,CS_DEPLOY storage
-    class SM,FR,WIF,SA1,SA2,SA3,SA4,SA5 security
-    class MD,AP1,AP2,NC monitoring
-    class CS1,CS2,PS1,PS2 messaging
-    class WEB_AUDIO,FILE_UPLOAD compute
+    class CF1,CF2,WEB_STAGING,WEB_PROD compute
+    class FS,CS_AUDIO,CS_TFSTATE,AR storage
+    class SM,FR,WIF security
+    class MD,AP,NC,BUDGET monitoring
+    class CS1,CS2,PS1,PS2,PS3 messaging
+    class VPC,SUBNET,NAT,DNS network
+    class DEV,MAIN,GHA,STAGING,TAG,PROD cicd
 ```
 
 ## データフロー詳細
 
-### 1. 自動データ収集フロー
-```
-Cloud Scheduler → Pub/Sub → Cloud Functions → External APIs → Cloud Firestore
-```
+### 1. 開発・CI/CDフロー（新設計）
+`ローカル開発 → main統合 → Staging自動デプロイ・テスト → Git Tag → Production手動承認デプロイ`
 
-**YouTube動画収集 (毎時19分実行)**
-1. Cloud Scheduler が Pub/Sub トピックにメッセージ送信
-2. fetchYouTubeVideos 関数が Pub/Sub イベントで起動
-3. YouTube Data API v3 から最新動画情報を取得
-4. Cloud Firestore の videos コレクションに保存
+**開発統合フロー:**
+1. **feature/* ブランチ開発**: ローカル環境（pnpm dev + Firestore Emulator）で機能開発
+2. **main ブランチ統合**: Pull Request承認後、mainブランチにマージ
+3. **Staging自動デプロイ**: GitHub Actionsが即座にStaging環境にデプロイ
+4. **自動テスト実行**: Unit/E2E/Performance/Security テストの包括実行
+5. **手動QA**: Staging環境での機能・UI/UX確認
+6. **Git Tag作成**: セマンティックバージョニング（v1.x.x）でリリースタグ作成
+7. **Production承認デプロイ**: 手動承認後、Production環境に安全デプロイ
 
-**DLsite作品収集 (1時間に3回実行: 6,26,46分)**
-1. Cloud Scheduler が Pub/Sub トピックにメッセージ送信
-2. fetchDLsiteWorks 関数が Pub/Sub イベントで起動
-3. DLsite からWebスクレイピングで作品情報取得
-4. Cloud Firestore の works コレクションに保存
+### 2. 自動データ収集フロー（Production環境のみ）
+`Cloud Scheduler → Pub/Sub → Cloud Functions → External APIs → Cloud Firestore`
+- **YouTube動画収集**: Production環境でのみ有効。Cloud Schedulerが定刻にPub/Subトピックへメッセージを送信し、`fetchYouTubeVideos`関数をトリガーします。関数はYouTube Data APIから動画情報を取得し、Cloud Firestoreに保存します。
+- **DLsite作品収集**: 同様に、`fetchDLsiteWorks`関数がトリガーされ、DLsiteから作品情報を取得し、Cloud Firestoreに保存します。
+- **コスト最適化**: Staging環境ではCloud Functions無効化により、データ収集コストを削減します。
 
-### 2. ユーザー音声ボタン作成フロー
-```
-ユーザー → Web Audio API → Next.js Server Actions → Cloud Storage + Cloud Firestore
-```
+### 3. 2環境構成Webアプリケーションフロー
 
-1. ユーザーがWebブラウザ上で音声ファイルをアップロード・編集
-2. Web Audio APIによるブラウザ内音声処理（トリミング、フェード等）
-3. Next.js Server Actionsによる処理済み音声ファイルの受信
-4. 音声ファイルをCloud Storageに保存
-5. 音声ボタンのメタデータをCloud Firestoreに保存
+**Staging環境:**
+`GitHub Actions → Cloud Run (軽量) → Cloud Firestore / Cloud Storage`
+- **目的**: 自動テスト・QA・プレビュー確認
+- **構成**: 最小インスタンス、512MBメモリ、Functions無効
+- **アクセス**: Staging専用URL（https://staging-suzumina-click.run.app）
 
-### 3. Webアプリケーションアクセスフロー
-```
-ユーザー → Next.js App → Cloud Firestore (データ) + Cloud Storage (音声ファイル)
-```
+**Production環境:**
+`ユーザー → Cloud DNS → Cloud Run (本番) → Cloud Firestore / Cloud Storage`
+1. ユーザーが `suzumina.click` にアクセスすると、Cloud DNSがリクエストをCloud RunでホストされているNext.jsアプリケーションにルーティングします。
+2. アプリケーションはCloud Firestoreから必要なデータを取得し、ユーザーに表示します。
+3. 音声ファイルの再生やアップロードは、Cloud Storageとの間で直接行われます。
+4. 外部へのアウトバウンド通信は、VPC内のCloud NATを経由して行われます。
 
-1. Next.js アプリが Cloud Firestore から動画・作品データを取得
-2. 音声ボタン再生時はCloud Storageから音声ファイルを配信
-3. ユーザー作成音声ボタンのアップロード・管理機能
-3. Cloud Firestore Rules により適切なアクセス制御を実施
+### 4. 予算管理・監視フロー
+`リソース使用量 → Budget Alerts → Pub/Sub → Email通知`
+- **予算監視**: 月次予算（Staging: 1000円、Production: 4000円）を設定
+- **自動アラート**: 予算の50%、80%、100%時点でアラート発信
+- **通知システム**: 予算超過時のPub/Sub経由での即座通知
 
 ## リソース詳細分析
 
-### Google Cloud Platform API
+### ネットワーク（共通インフラ）
+| リソース | 用途 | 管理ファイル | 両環境共有 |
+|---|---|---|---|
+| **VPC** | プロジェクト専用の仮想ネットワーク | `network.tf` | ✅ |
+| **Subnet** | Cloud RunやFunctionsが配置されるサブネットワーク | `network.tf` | ✅ |
+| **Cloud NAT** | プライベートなリソースからのアウトバウンド通信を許可 | `network.tf` | ✅ |
+| **Cloud DNS** | `suzumina.click`ドメインの名前解決（Production のみ） | `dns.tf` | ❌ |
 
-#### 有効化されたAPIサービス
-| API | 用途 | 管理 |
-|-----|------|------|
-| **Cloud Functions API** | サーバーレス関数実行 | api_services.tf |
-| **Cloud Build API** | Functions デプロイ | api_services.tf |
-| **Secret Manager API** | APIキー・シークレット管理 | api_services.tf |
-| **Cloud Run API** | Functions v2 実行基盤 | api_services.tf |
-| **Artifact Registry API** | Functions v2 イメージ保存 | api_services.tf |
-| **Cloud Firestore API** | NoSQLデータベース | api_services.tf |
-| **Cloud Scheduler API** | 定期実行管理 | api_services.tf |
-| **Pub/Sub API** | メッセージング基盤 | api_services.tf |
+### コンピュートリソース（環境別構成）
+| リソース | Staging環境 | Production環境 | 実行トリガー |
+|---|---|---|---|
+| **fetchYouTubeVideos** | ❌ 無効（コスト削減） | ✅ 有効 | Pub/Sub |
+| **fetchDLsiteWorks** | ❌ 無効（コスト削減） | ✅ 有効 | Pub/Sub |
+| **Cloud Run (Web App)** | 軽量構成（512MB/1インスタンス） | 本番構成（1GB/2インスタンス） | HTTP リクエスト |
 
-**設計原則**: 
-- すべてのAPI有効化は `api_services.tf` で一元管理
-- `disable_on_destroy = false` でインフラ削除時もAPI無効化を防止
-- 既存サービスへの影響を最小化
+### ストレージシステム（共有リソース）
+| ストレージ | 用途 | 特徴 | 管理ファイル | 両環境共有 |
+|---|---|---|---|---|
+| **Cloud Firestore** | アプリケーションデータ | ネイティブモード, 複合インデックス | `firestore_database.tf` | ✅ |
+| **Cloud Storage (user-audio)** | ユーザー作成の音声ファイル | CORS設定, ライフサイクル管理 | `storage.tf` | ✅ |
+| **Cloud Storage (tfstate)** | Terraformの状態ファイル | バージョニング有効, 削除保護 | `gcs.tf` | ✅ |
+| **Artifact Registry** | Dockerコンテナイメージ | GitHub Actions連携 | `artifact_registry.tf` | ✅ |
 
-### コンピュートリソース
+### CI/CD・デプロイメント
+| コンポーネント | 役割 | トリガー | 対象環境 |
+|---|---|---|---|
+| **GitHub Actions (Staging)** | 自動デプロイ・テスト | main ブランチ push | Staging |
+| **GitHub Actions (Production)** | 本番デプロイ | Git Tag push (v*) | Production |
+| **Workload Identity Federation** | 安全なGCP認証 | CI/CD実行時 | 両環境 |
+| **Terraform Workspace** | 環境分離管理 | Manual/CI/CD | 両環境 |
 
-| リソース | 目的 | 仕様 | 実行トリガー |
-|----------|------|------|-------------|
-| **fetchYouTubeVideos** | YouTube動画データ収集 | 512Mi, 9分タイムアウト | Pub/Sub (毎時19分) |
-| **fetchDLsiteWorks** | DLsite作品データ収集 | 512Mi, 9分タイムアウト | Pub/Sub (6,26,46分) |
-
-### ストレージシステム
-
-| ストレージ | 用途 | 特徴 | ライフサイクル |
-|-----------|------|------|---------------|
-| **Cloud Firestore Database** | アプリケーションデータ | ネイティブモード, 複合インデックス | 永続保存 |
-| **user-audio-files bucket** | ユーザー音声ファイル保存 | CORS設定, 地域最適化 | 1年保持, サイズ制限 |
-| **functions-deployment** | デプロイパッケージ | GitHub Actions連携 | 30日保持 |
+### 予算・監視システム
+| リソース | Staging | Production | 管理ファイル |
+|---|---|---|---|
+| **予算アラート** | 月1000円制限 | 月4000円制限 | `billing.tf` |
+| **監視ダッシュボード** | 基本監視 | 完全監視 | `monitoring*.tf` |
+| **アラートポリシー** | 重要アラートのみ | 包括的アラート | `monitoring.tf` |
+| **ログ集約** | 基本ログ | 詳細ログ | `logging.tf` |
 
 ### セキュリティ・IAMアーキテクチャ
+- **Workload Identity Federation**: サービスアカウントキーを使わずに、GitHub ActionsからGCPリソースを安全に認証します。
+- **最小権限の原則**: 各サービスアカウントには、その役割に必要な最小限の権限のみが付与されています。
+- **ネットワークセキュリティ**: すべてのコンピュートリソースは専用VPC内に配置され、外部との通信はCloud NATを経由することでセキュリティを強化しています。
 
-#### サービスアカウント設計（最小権限の原則）
+## Terraformファイル構成（個人開発最適化）
 
-| サービスアカウント | 用途 | 主要権限 | 使用場所 |
-|------------------|------|----------|----------|
-| **github-actions-sa** | CI/CDパイプライン | Cloud Build, Artifact Registry, Cloud Run | GitHub Actions |
-| **fetch-youtube-videos-sa** | YouTube データ収集 | Cloud Firestore User, Secret Manager | YouTube関数 |
-| **fetch-dlsite-works-sa** | DLsite データ収集 | Cloud Firestore User, Logging Writer | DLsite関数 |
-| **web-app** | Webアプリケーション | Storage Object Viewer, Cloud Firestore User | Next.js アプリ |
-| **user-content** | ユーザーコンテンツ管理 | Storage Admin, Cloud Firestore User | 音声アップロード |
+### **環境管理の簡素化**
+個人開発・個人運用向けに2環境構成（Staging + Production）を採用し、以下のファイル構成で管理します：
 
-#### Workload Identity Federation
-- **GitHub Actions認証**: リポジトリ制限付きOIDC認証
-- **セキュアなCI/CD**: サービスアカウントキー不要の認証
+**コア設定ファイル:**
+- **`variables.tf`**: 環境別変数定義（staging/production バリデーション付き）
+- **`locals.tf`**: 環境別リソース設定（コスト最適化パラメータ）
+- **`backend.tf`**: Terraform状態管理（GCS バックエンド）
+- **`providers.tf`**: GCP プロバイダー設定
 
-#### アクセス制御
-- **Cloud Firestore Rules**: 動画は公開読み取り、音声ボタンはユーザー認証ベース、ユーザーデータ分離
-- **Storage IAM**: バケット単位の厳密なアクセス制御
-- **Secret Manager**: 最小権限でのAPIキー管理
+**インフラリソースファイル:**
+- **`network.tf`**: 共有VPC・サブネット・Cloud NAT
+- **`dns.tf`**: Production専用カスタムドメイン（条件付き作成）
+- **`cloud_run.tf`**: 環境別Cloud Run設定（軽量 vs 本番構成）
+- **`function_*.tf`**: Production専用Cloud Functions（Staging無効化）
+- **`storage.tf`**: 共有ストレージ（Firestore・Cloud Storage）
+- **`billing.tf`**: 環境別予算管理（1000円 vs 4000円制限）
 
-### 監視・アラート体系
+**セキュリティ・監視ファイル:**
+- **`iam.tf`**: 最小権限IAM・Workload Identity Federation
+- **`secrets.tf`**: Secret Manager・APIキー管理
+- **`monitoring*.tf`**: 環境別監視・アラート設定
 
-#### ダッシュボード監視項目
-- Cloud Functions 実行状況・エラー率・レスポンス時間
-- Next.js アプリケーションパフォーマンス・レスポンス時間
-- Cloud Firestore オペレーション・読み書きパフォーマンス
-- Cloud Storage アクセスパターン・転送量
+### **個人開発向け設計原則**
 
-#### アラートポリシー
-- **エラー率監視**: 5xx エラー > 5% でアラート
-- **スケール監視**: インスタンス数 > 5 でアラート
-- **通知先**: 管理者メールアドレス
+**1. コスト最適化:**
+```hcl
+# Staging: 超軽量構成
+staging = {
+  cloud_run_max_instances = 1
+  cloud_run_memory       = "512Mi"  
+  functions_enabled      = false    # コスト削減
+  budget_amount         = 1000     # 月1000円制限
+}
 
-## 運用設計
+# Production: 個人利用レベル
+production = {
+  cloud_run_max_instances = 2
+  cloud_run_memory       = "1Gi"
+  functions_enabled      = true
+  budget_amount         = 4000     # 月4000円制限
+}
+```
 
-### スケジューリング戦略
-- **YouTube収集**: 毎時19分（新着動画の一般的な投稿時間を考慮）
-- **DLsite収集**: 1時間3回（6,26,46分）で更新頻度と負荷分散を両立
-- **音声ボタン作成**: ユーザー駆動のオンデマンド処理
+**2. 環境分離:**
+- 同一GCPプロジェクト内での論理分離
+- Terraform workspace による状態管理分離
+- 環境別リソース名プレフィックス
 
-### コスト最適化
-- **適切なリソースサイジング**: 用途別の最適な CPU・メモリ配分
-- **ライフサイクルポリシー**: 自動的なストレージクラス変更と削除
-- **スケーリング設定**: 需要に応じた自動スケールアップ・ダウン
+**3. CI/CD統合:**
+- GitHub Actions によるTerraform自動実行
+- 環境変数による動的設定切り替え
+- Workload Identity Federation による安全認証
 
-### 可用性・拡張性
-- **マルチリージョン対応**: プライマリ asia-northeast1（東京）
-- **イベント駆動アーキテクチャ**: 高い可用性と拡張性
-- **適切な分離**: データ収集・処理・配信の責任分離
+**4. 運用性重視:**
+- 予算アラートによる自動コスト管理
+- 環境別監視・ログ設定
+- 緊急時対応のための柔軟な設定
 
-## セキュリティ考慮事項
+### **デプロイ戦略との統合**
 
-### データ保護
-- **転送中暗号化**: HTTPS/TLS によるすべての通信暗号化
-- **保存時暗号化**: Google Cloud デフォルト暗号化
-- **アクセスログ**: Cloud Audit Logs による操作追跡
+このTerraform構成は、[リリースプロセス](./RELEASE_PROCESS.md)と[デプロイ戦略](./DEPLOYMENT_STRATEGY.md)と完全に統合されており、以下の自動化を実現します：
 
-### 認証・認可
-- **多層防御**: Workload Identity, IAM, Cloud Firestore Rules
-- **最小権限**: 各コンポーネントに必要最小限の権限のみ付与
-- **シークレット管理**: Secret Manager による安全なAPIキー管理
+1. **main ブランチ統合** → Staging環境自動デプロイ
+2. **Git Tag作成** → Production環境手動承認デプロイ  
+3. **環境別設定自動適用** → コスト・パフォーマンス最適化
+4. **予算監視自動実行** → コスト超過時の即座アラート
 
-### ネットワークセキュリティ
-- **CORS設定**: 音声ファイルアクセス用の適切なCORS設定
-- **VPC設定**: 必要に応じてプライベートネットワーク構成可能
+このインフラストラクチャは、**個人開発・個人運用に最適化**された、**コスト効率と運用性を両立**した設計となっています。純粋なGCPサービスで構成され、**自動化、品質担保、セキュリティ**を重視した堅牢な基盤を提供します。
 
-## 今後の拡張予定
+## 🔧 環境設定・認証ガイド
 
-### 短期拡張
-- **リアルタイム更新**: Cloud Firestore リアルタイムリスナーによる即時UI更新
-- **音声編集機能強化**: Web Audio APIによる高度な音声編集機能
-- **検索・フィルター機能**: 高度な検索・フィルター機能の追加
+### **Application Default Credentials (ADC) 設定**
 
-### 長期拡張
-- **CDN統合**: Cloud CDN による配信パフォーマンス向上
-- **機械学習統合**: 音声分析・推薦システム
-- **マルチリージョン展開**: グローバル展開に向けた地理的分散
+**開発環境セットアップ:**
+```bash
+# Google Cloud SDK インストール
+brew install google-cloud-sdk
 
-## Terraformファイル構成
+# ADC 設定
+gcloud auth application-default login
 
-### 主要なファイル構成変更（2025年）
+# プロジェクト設定
+gcloud config set project suzumina-click
 
-#### 削除されたファイル・機能
-- **Firebase関連**: `google_firebase_project` リソースの削除（Firebase → 純粋なCloud Firestore構成）
-- **Discord認証**: 全Discord関連リソースと変数の削除
-- **random provider**: 不要になったランダムID生成の削除
+# 設定確認
+gcloud auth application-default print-access-token
+gcloud config get-value project
+```
 
-#### 追加・統合されたファイル
-- **api_services.tf**: 全API有効化の一元管理（9つのGCP API）
-- **user_audio_storage.tf**: ユーザー音声ファイル用Cloud Storage（サイズ制限・保持期間付き）
-- **firestore_database.tf**: Firebase依存のないCloud Firestoreデータベース（`firebase.tf` から名称変更）
+**本番環境:**
+- Cloud Run/Cloud Functions: サービスアカウント自動認証
+- GitHub Actions: Workload Identity Federation による安全認証
 
-#### 設定の統一化
-- **地域設定**: 全リソースで `var.region` (asia-northeast1) を使用
-- **変数管理**: 必要最小限の変数のみ（YouTube API、GCPプロジェクト設定）
-- **依存関係**: 適切なクロスファイル依存関係の整理
+### **環境変数設定**
 
-このインフラストラクチャは、**Firebase依存の排除**と**純粋なGCPサービス構成**により、自動化・拡張性・セキュリティを重視し、suzumina.clickアプリケーションの安定稼働と将来の成長をサポートする設計となっています。
+**Next.js Application (環境別):**
+```bash
+# Staging環境
+NEXT_PUBLIC_ENVIRONMENT=staging
+GOOGLE_CLOUD_PROJECT=suzumina-click
+
+# Production環境  
+NEXT_PUBLIC_ENVIRONMENT=production
+GOOGLE_CLOUD_PROJECT=suzumina-click
+```
+
+**Cloud Functions:**
+```bash
+# 環境変数は Secret Manager から自動注入
+# YOUTUBE_API_KEY: Secret Manager で管理
+NODE_ENV=production
+FUNCTION_TARGET=fetchYouTubeVideos
+```
+
+### **セキュリティ設定**
+
+**Firestore Security Rules:**
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 音声ボタン - 公開分のみ読み取り可能
+    match /audioButtons/{buttonId} {
+      allow read: if resource.data.isPublic == true;
+      allow write: if false; // 将来的にユーザー認証実装予定
+    }
+    
+    // 動画・作品データ - 読み取りのみ
+    match /{collection}/{document} {
+      allow read: if collection in ['videos', 'dlsiteWorks'];
+      allow write: if false;
+    }
+  }
+}
+```
+
+**Cloud Storage IAM:**
+- `allUsers`: objectViewer (音声ファイル再生用)
+- Service Account: objectAdmin (アップロード用)
+
+### **本番環境確認コマンド**
+
+```bash
+# Cloud Run サービス確認
+gcloud run services list --region=asia-northeast1
+
+# Cloud Functions 確認  
+gcloud functions list --region=asia-northeast1
+
+# Firestore データベース確認
+gcloud firestore databases list
+
+# 予算アラート確認
+gcloud billing budgets list
+```

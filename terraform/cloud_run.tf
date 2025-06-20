@@ -4,35 +4,38 @@
  * Next.js 15 App RouterアプリケーションをCloud Runにデプロイする設定
  */
 
-# Cloud Runサービス
+# Cloud Runサービス（全環境で有効）
 resource "google_cloud_run_v2_service" "nextjs_app" {
+  
   provider = google
 
-  name     = "suzumina-click-web"
+  name     = var.cloud_run_service_name
   location = var.region
   
   description = "suzumina.click Next.js 15 Web Application"
+  
+  labels = local.common_labels
 
   template {
-    # スケーリング設定
+    # スケーリング設定（環境別）
     scaling {
-      min_instance_count = 0  # コールドスタート許可（コスト最適化）
-      max_instance_count = 10 # 最大10インスタンス
+      min_instance_count = local.current_env.cloud_run_min_instances
+      max_instance_count = local.current_env.cloud_run_max_instances
     }
 
     # コンテナ設定
     containers {
       # Artifact Registryのイメージを参照
-      image = "${var.region}-docker.pkg.dev/${local.project_id}/suzumina-click/web:latest"
+      image = "${var.region}-docker.pkg.dev/${local.project_id}/${var.artifact_registry_repository_id}/web:latest"
 
-      # リソース制限
+      # リソース制限（環境別・コスト最適化）
       resources {
         limits = {
-          cpu    = "1000m"   # 1 vCPU
-          memory = "2Gi"     # 2GB RAM
+          cpu    = local.current_env.cloud_run_cpu
+          memory = local.current_env.cloud_run_memory
         }
         cpu_idle = true      # アイドル時のCPU制限
-        startup_cpu_boost = true # 起動時のCPUブースト
+        startup_cpu_boost = var.environment == "production" # 本番のみCPUブースト
       }
 
       # ポート設定
@@ -44,7 +47,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       # 環境変数
       env {
         name  = "NODE_ENV"
-        value = "production"
+        value = var.environment == "development" ? "development" : "production"
       }
       
 
@@ -106,8 +109,9 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
   ]
 }
 
-# Cloud Run用サービスアカウント
+# Cloud Run用サービスアカウント（全環境で有効）
 resource "google_service_account" "cloud_run_service_account" {
+  
   provider = google
 
   account_id   = "cloud-run-nextjs"
@@ -115,7 +119,7 @@ resource "google_service_account" "cloud_run_service_account" {
   description  = "Next.js アプリケーションがFirestoreにアクセスするためのサービスアカウント"
 }
 
-# Firestore読み取り権限
+# Firestore読み取り権限（全環境で有効）
 resource "google_project_iam_member" "cloud_run_firestore_user" {
   provider = google
 
@@ -124,7 +128,7 @@ resource "google_project_iam_member" "cloud_run_firestore_user" {
   member  = "serviceAccount:${google_service_account.cloud_run_service_account.email}"
 }
 
-# Cloud Storage読み取り権限（音声ファイル用）
+# Cloud Storage読み取り権限（音声ファイル用）（全環境で有効）
 resource "google_project_iam_member" "cloud_run_storage_viewer" {
   provider = google
 
@@ -133,7 +137,7 @@ resource "google_project_iam_member" "cloud_run_storage_viewer" {
   member  = "serviceAccount:${google_service_account.cloud_run_service_account.email}"
 }
 
-# Cloud Run Invoker権限（パブリックアクセス）
+# Cloud Run Invoker権限（パブリックアクセス）（全環境で有効）
 resource "google_cloud_run_v2_service_iam_binding" "public_access" {
   provider = google
 
@@ -152,7 +156,7 @@ resource "google_cloud_run_v2_service_iam_binding" "public_access" {
 # カスタムドメイン用のドメインマッピング（オプション）
 resource "google_cloud_run_domain_mapping" "custom_domain" {
   provider = google
-  count    = var.custom_domain != "" ? 1 : 0
+  count    = local.current_env.enable_custom_domain && var.custom_domain != "" ? 1 : 0
 
   location = var.region
   name     = var.custom_domain

@@ -12,7 +12,7 @@ locals {
     replication_location = "asia-northeast1"  # 東京リージョン
     labels = {
       "managed-by" = "terraform"
-      "project"    = "suzumina-click"
+      "project"    = local.project_id
     }
   }
 
@@ -30,7 +30,7 @@ locals {
 
 # シークレットの作成
 # 注: 既存のシークレットがある場合は、先に以下のコマンドでインポートしてください:
-# terraform import 'google_secret_manager_secret.secrets["YOUTUBE_API_KEY"]' projects/suzumina-click-firebase/secrets/YOUTUBE_API_KEY
+# terraform import 'google_secret_manager_secret.secrets["YOUTUBE_API_KEY"]' projects/${local.project_id}/secrets/YOUTUBE_API_KEY
 resource "google_secret_manager_secret" "secrets" {
   for_each  = { for secret in local.all_secrets : secret.id => secret }
   
