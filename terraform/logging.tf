@@ -27,7 +27,7 @@ resource "google_logging_project_sink" "application_logs" {
 
 # ログ保存用のCloud Storageバケット
 resource "google_storage_bucket" "log_storage" {
-  name     = "${var.project_id}-application-logs"
+  name     = "${var.project_id}applicationlogs"
   location = var.region
   
   # ライフサイクル管理（90日後に削除）
@@ -137,7 +137,7 @@ resource "google_logging_metric" "application_errors" {
   EOT
   
   metric_descriptor {
-    metric_kind = "COUNTER"
+    metric_kind = "CUMULATIVE"
     value_type  = "INT64"
     display_name = "Application Error Count"
   }
