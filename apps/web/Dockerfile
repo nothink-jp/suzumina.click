@@ -12,6 +12,8 @@ WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable pnpm && corepack use pnpm@10
+# Ensure yarn is disabled to prevent conflicts
+RUN npm config delete prefix 2>/dev/null || true
 
 # Copy package files from project root
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -32,6 +34,8 @@ WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable pnpm && corepack use pnpm@10
+# Ensure yarn is disabled to prevent conflicts
+RUN npm config delete prefix 2>/dev/null || true
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages ./packages
