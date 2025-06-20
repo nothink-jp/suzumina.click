@@ -38,7 +38,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       # ポート設定
       ports {
         name           = "http1"
-        container_port = 3000
+        container_port = 8080
       }
 
       # 環境変数
@@ -49,7 +49,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       
       env {
         name  = "PORT"
-        value = "3000"
+        value = "8080"
       }
 
       # Firestore設定（プロジェクトIDを環境変数で設定）
@@ -68,7 +68,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       startup_probe {
         http_get {
           path = "/api/health"
-          port = 3000
+          port = 8080
         }
         initial_delay_seconds = 10
         timeout_seconds       = 5
@@ -79,7 +79,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       liveness_probe {
         http_get {
           path = "/api/health"
-          port = 3000
+          port = 8080
         }
         initial_delay_seconds = 30
         timeout_seconds       = 5
