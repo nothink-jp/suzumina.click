@@ -9,12 +9,15 @@
     "ignoreUnknown": false,
     "includes": ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.json"],
     "experimentalScannerIgnores": [
-      "**/node_modules",
-      "**/dist",
-      "**/.next",
-      "**/storybook-static",
-      "**/coverage"
-    ]
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.next/**",
+      "**/storybook-static/**",
+      "**/coverage/**",
+      "**/build/**",
+      "**/*.d.ts"
+    ],
+    "maxSize": 5242880
   },
   "formatter": {
     "enabled": true,
