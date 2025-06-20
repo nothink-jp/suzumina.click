@@ -43,7 +43,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
           run_install: false
       
       - name: Get pnpm store directory
@@ -130,7 +130,7 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 300 \
-            --port 3000
+            --port 8080
       
       # Health check
       - name: Wait for deployment and health check
