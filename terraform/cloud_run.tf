@@ -23,7 +23,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
     # コンテナ設定
     containers {
       # Artifact Registryのイメージを参照
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/suzumina-click/nextjs-app:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/suzumina-click/web:latest"
 
       # リソース制限
       resources {
@@ -148,6 +148,23 @@ resource "google_cloud_run_v2_service_iam_binding" "public_access" {
   members = [
     "allUsers"
   ]
+
+  depends_on = [google_cloud_run_v2_service.nextjs_app]
+}
+
+# v1 API用のIAMバインディング（互換性確保）
+resource "google_cloud_run_service_iam_binding" "public_access_v1" {
+  provider = google
+
+  location = google_cloud_run_v2_service.nextjs_app.location
+  service  = google_cloud_run_v2_service.nextjs_app.name
+  role     = "roles/run.invoker"
+
+  members = [
+    "allUsers"
+  ]
+
+  depends_on = [google_cloud_run_v2_service.nextjs_app]
 }
 
 # カスタムドメイン用のドメインマッピング（オプション）

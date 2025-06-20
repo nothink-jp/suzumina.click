@@ -136,10 +136,26 @@ jobs:
       # Ensure public access is properly configured
       - name: Configure public access
         run: |
+          echo "Configuring public access for Cloud Run service..."
+          
+          # Remove any existing IAM bindings first to ensure clean state
+          gcloud run services remove-iam-policy-binding ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --quiet || echo "No existing policy binding to remove"
+          
+          # Add IAM policy binding for public access
           gcloud run services add-iam-policy-binding ${{ env.SERVICE_NAME }} \
             --region=${{ env.REGION }} \
             --member="allUsers" \
             --role="roles/run.invoker"
+          
+          # Verify the policy was applied
+          echo "Verifying IAM policy..."
+          gcloud run services get-iam-policy ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format="yaml"
       
       # Health check
       - name: Wait for deployment and health check
