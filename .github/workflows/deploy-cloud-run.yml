@@ -59,10 +59,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       
       - name: Install dependencies
-        run: |
-          # Ensure we're using pnpm and not yarn
-          npm config set package-manager pnpm
-          pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
       
       - name: Build shared types
         run: pnpm --filter @suzumina.click/shared-types build
