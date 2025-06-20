@@ -181,7 +181,7 @@ resource "google_monitoring_dashboard" "nextjs_performance" {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_PERCENTILE_95"
                     },
-                    "filter": "resource.type=\"firestore_instance\" AND metric.type=\"firestore.googleapis.com/document/read_latencies\""
+                    "filter": "resource.type=\"firestore_instance\" AND metric.type=\"firestore.googleapis.com/api/request_latencies\""
                   }
                 }
               },
@@ -284,7 +284,9 @@ resource "google_monitoring_dashboard" "nextjs_performance" {
                       "perSeriesAligner": "ALIGN_RATE"
                     },
                     "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_count\"",
-                    "groupByFields": ["metric.label.response_code"]
+                    "secondaryAggregation": {
+                      "groupByFields": ["metric.label.response_code"]
+                    }
                   }
                 }
               }
@@ -373,7 +375,7 @@ resource "google_monitoring_alert_policy" "high_cpu" {
       
       aggregations {
         alignment_period   = "60s"
-        per_series_aligner = "ALIGN_MEAN"
+        per_series_aligner = "ALIGN_PERCENTILE_95"
       }
       
       trigger {
@@ -422,7 +424,7 @@ resource "google_monitoring_alert_policy" "high_memory" {
       
       aggregations {
         alignment_period   = "60s"
-        per_series_aligner = "ALIGN_MEAN"
+        per_series_aligner = "ALIGN_PERCENTILE_95"
       }
       
       trigger {
@@ -456,6 +458,8 @@ resource "google_monitoring_alert_policy" "high_memory" {
 }
 
 # Firestoreクエリパフォーマンスアラート
+# Firestore metrics not available yet - can be enabled later
+/*
 resource "google_monitoring_alert_policy" "slow_firestore_queries" {
   display_name = "Firestoreクエリ遅延アラート"
   combiner     = "OR"
@@ -464,7 +468,7 @@ resource "google_monitoring_alert_policy" "slow_firestore_queries" {
     display_name = "Firestore読み取りレイテンシ高 (P95 > 500ms)"
     
     condition_threshold {
-      filter          = "resource.type=\"firestore_instance\" AND metric.type=\"firestore.googleapis.com/document/read_latencies\""
+      filter          = "resource.type=\"firestore_instance\" AND metric.type=\"firestore.googleapis.com/api/request_latencies\""
       duration        = "300s"  # 5分間継続
       comparison      = "COMPARISON_GT"
       threshold_value = 500     # 500ms
@@ -500,6 +504,7 @@ resource "google_monitoring_alert_policy" "slow_firestore_queries" {
     mime_type = "text/markdown"
   }
   
-  project = var.gcp_project_id
+  project = local.project_id
   depends_on = [google_monitoring_notification_channel.email]
 }
+*/

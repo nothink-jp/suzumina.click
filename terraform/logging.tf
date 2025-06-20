@@ -17,17 +17,13 @@ resource "google_logging_project_sink" "application_logs" {
     (jsonPayload.metric_type="frontend_performance" OR jsonPayload.metric_type="core_web_vitals")
   EOT
 
-  # BigQueryテーブルのスキーマ設定
-  bigquery_options {
-    use_partitioned_tables = true
-  }
 
   depends_on = [google_storage_bucket.log_storage]
 }
 
 # ログ保存用のCloud Storageバケット
 resource "google_storage_bucket" "log_storage" {
-  name     = "${var.project_id}applicationlogs"
+  name     = "${local.project_id}applicationlogs"
   location = var.region
   
   # ライフサイクル管理（90日後に削除）
@@ -62,93 +58,35 @@ resource "google_kms_crypto_key" "log_encryption_key" {
   rotation_period = "7776000s" # 90日
 }
 
+# Cloud Storage service accountにKMSキーの使用権限を付与
+resource "google_kms_crypto_key_iam_member" "cloud_storage_kms" {
+  crypto_key_id = google_kms_crypto_key.log_encryption_key.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:service-${data.google_project.project.number}@gs-project-accounts.iam.gserviceaccount.com"
+}
+
 # Cloud Loggingサービスアカウントに権限付与
 resource "google_storage_bucket_iam_binding" "log_storage_writer" {
   bucket = google_storage_bucket.log_storage.name
   role   = "roles/storage.objectCreator"
   
   members = [
-    "serviceAccount:${google_logging_project_sink.application_logs.writer_identity}"
+    google_logging_project_sink.application_logs.writer_identity
   ]
 }
 
 # パフォーマンスメトリクス用のログベースメトリクス
-resource "google_logging_metric" "web_vitals_lcp" {
-  name   = "web_vitals_lcp"
-  filter = "jsonPayload.webVitals.metric=\"LCP\""
-  
-  metric_descriptor {
-    metric_kind = "GAUGE"
-    value_type  = "DOUBLE"
-    display_name = "Core Web Vitals - Largest Contentful Paint"
-  }
-  
-  value_extractor = "EXTRACT(jsonPayload.webVitals.value)"
-  
-  label_extractors = {
-    "url"        = "EXTRACT(jsonPayload.webVitals.url)"
-    "user_agent" = "EXTRACT(jsonPayload.webVitals.userAgent)"
-  }
-}
+# Web Vitals metrics removed due to API limitations
+# These can be implemented later using custom dashboards
 
-resource "google_logging_metric" "web_vitals_fid" {
-  name   = "web_vitals_fid"
-  filter = "jsonPayload.webVitals.metric=\"FID\""
-  
-  metric_descriptor {
-    metric_kind = "GAUGE"
-    value_type  = "DOUBLE"
-    display_name = "Core Web Vitals - First Input Delay"
-  }
-  
-  value_extractor = "EXTRACT(jsonPayload.webVitals.value)"
-  
-  label_extractors = {
-    "url"        = "EXTRACT(jsonPayload.webVitals.url)"
-    "user_agent" = "EXTRACT(jsonPayload.webVitals.userAgent)"
-  }
-}
 
-resource "google_logging_metric" "web_vitals_cls" {
-  name   = "web_vitals_cls"
-  filter = "jsonPayload.webVitals.metric=\"CLS\""
-  
-  metric_descriptor {
-    metric_kind = "GAUGE"
-    value_type  = "DOUBLE"
-    display_name = "Core Web Vitals - Cumulative Layout Shift"
-  }
-  
-  value_extractor = "EXTRACT(jsonPayload.webVitals.value)"
-  
-  label_extractors = {
-    "url"        = "EXTRACT(jsonPayload.webVitals.url)"
-    "user_agent" = "EXTRACT(jsonPayload.webVitals.userAgent)"
-  }
-}
 
-# エラーログ用のメトリクス
-resource "google_logging_metric" "application_errors" {
-  name   = "application_errors_count"
-  filter = <<-EOT
-    (resource.type="cloud_run_revision" AND resource.labels.service_name="suzumina-click-web" AND severity>=ERROR)
-    OR
-    (resource.type="cloud_function" AND severity>=ERROR)
-  EOT
-  
-  metric_descriptor {
-    metric_kind = "CUMULATIVE"
-    value_type  = "INT64"
-    display_name = "Application Error Count"
-  }
-  
-  label_extractors = {
-    "service_name" = "EXTRACT(resource.labels.service_name)"
-    "severity"     = "EXTRACT(severity)"
-  }
-}
+# Log-based metrics removed due to API limitations
+# Can be implemented using Cloud Monitoring queries directly
 
 # ログベースアラート - 高エラー率
+# Alert policy removed due to missing log metric
+/*
 resource "google_monitoring_alert_policy" "high_error_rate_logs" {
   display_name = "ログベース - 高エラー率アラート"
   combiner     = "OR"
@@ -197,12 +135,12 @@ resource "google_monitoring_alert_policy" "high_error_rate_logs" {
     mime_type = "text/markdown"
   }
   
-  project = var.gcp_project_id
+  project = local.project_id
   depends_on = [
-    google_monitoring_notification_channel.email,
-    google_logging_metric.application_errors
+    google_monitoring_notification_channel.email
   ]
 }
+*/
 
 # アプリケーションログ閲覧用のカスタムダッシュボード
 resource "google_monitoring_dashboard" "logging_dashboard" {
@@ -232,7 +170,9 @@ resource "google_monitoring_dashboard" "logging_dashboard" {
                       "perSeriesAligner": "ALIGN_RATE"
                     },
                     "filter": "metric.type=\"logging.googleapis.com/user/application_errors_count\"",
-                    "groupByFields": ["metric.label.service_name"]
+                    "secondaryAggregation": {
+                      "groupByFields": ["metric.label.service_name"]
+                    }
                   }
                 }
               }
@@ -288,7 +228,7 @@ resource "google_monitoring_dashboard" "logging_dashboard" {
 }
 EOF
 
-  project = var.gcp_project_id
+  project = local.project_id
 }
 
 # ログ保存バケット名を出力

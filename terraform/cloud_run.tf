@@ -23,7 +23,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
     # コンテナ設定
     containers {
       # Artifact Registryのイメージを参照
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/suzumina-click/web:latest"
+      image = "${var.region}-docker.pkg.dev/${local.project_id}/suzumina-click/web:latest"
 
       # リソース制限
       resources {
@@ -47,15 +47,11 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = "production"
       }
       
-      env {
-        name  = "PORT"
-        value = "8080"
-      }
 
       # Firestore設定（プロジェクトIDを環境変数で設定）
       env {
         name  = "GOOGLE_CLOUD_PROJECT"
-        value = var.project_id
+        value = local.project_id
       }
 
       # Next.js telemetry無効化
@@ -123,7 +119,7 @@ resource "google_service_account" "cloud_run_service_account" {
 resource "google_project_iam_member" "cloud_run_firestore_user" {
   provider = google
 
-  project = var.project_id
+  project = local.project_id
   role    = "roles/datastore.user"
   member  = "serviceAccount:${google_service_account.cloud_run_service_account.email}"
 }
@@ -132,7 +128,7 @@ resource "google_project_iam_member" "cloud_run_firestore_user" {
 resource "google_project_iam_member" "cloud_run_storage_viewer" {
   provider = google
 
-  project = var.project_id
+  project = local.project_id
   role    = "roles/storage.objectViewer"
   member  = "serviceAccount:${google_service_account.cloud_run_service_account.email}"
 }
@@ -152,20 +148,6 @@ resource "google_cloud_run_v2_service_iam_binding" "public_access" {
   depends_on = [google_cloud_run_v2_service.nextjs_app]
 }
 
-# v1 API用のIAMバインディング（互換性確保）
-resource "google_cloud_run_service_iam_binding" "public_access_v1" {
-  provider = google
-
-  location = google_cloud_run_v2_service.nextjs_app.location
-  service  = google_cloud_run_v2_service.nextjs_app.name
-  role     = "roles/run.invoker"
-
-  members = [
-    "allUsers"
-  ]
-
-  depends_on = [google_cloud_run_v2_service.nextjs_app]
-}
 
 # カスタムドメイン用のドメインマッピング（オプション）
 resource "google_cloud_run_domain_mapping" "custom_domain" {
@@ -176,7 +158,7 @@ resource "google_cloud_run_domain_mapping" "custom_domain" {
   name     = var.custom_domain
 
   metadata {
-    namespace = var.project_id
+    namespace = local.project_id
   }
 
   spec {

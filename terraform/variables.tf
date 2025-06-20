@@ -7,10 +7,9 @@ variable "gcp_project_id" {
   type        = string
 }
 
-variable "project_id" {
-  description = "Google Cloud プロジェクトID（エイリアス）"
-  type        = string
-  default     = ""
+# プロジェクトIDの統一のためのローカル変数
+locals {
+  project_id = var.gcp_project_id
 }
 
 variable "domain_name" {
