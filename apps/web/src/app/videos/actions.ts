@@ -22,6 +22,9 @@ export async function getVideoTitles(params?: {
   startAfterDocId?: string;
 }): Promise<VideoListResult> {
   try {
+    console.log(
+      `📹 [Videos] 動画データ取得開始: page=${params?.page || 1}, limit=${params?.limit || 12}`,
+    );
     const firestore = getFirestore();
     const limit = params?.limit || 12;
     const page = params?.page || 1;
@@ -46,7 +49,7 @@ export async function getVideoTitles(params?: {
     const snapshot = await query.limit(limit + 1).get();
 
     if (snapshot.empty) {
-      console.log("No videos found in Firestore");
+      console.log("📹 [Videos] No videos found in Firestore");
       return { videos: [], hasMore: false };
     }
 
@@ -101,7 +104,7 @@ export async function getVideoTitles(params?: {
     const lastVideo = videos.length > 0 ? videos[videos.length - 1] : undefined;
 
     console.log(
-      `Successfully fetched ${videos.length} videos (page: ${page}, hasMore: ${hasMore})`,
+      `📹 [Videos] Successfully fetched ${videos.length} videos (page: ${page}, hasMore: ${hasMore})`,
     );
 
     return {
@@ -110,7 +113,7 @@ export async function getVideoTitles(params?: {
       lastVideo,
     };
   } catch (error) {
-    console.error("Error fetching video titles:", error);
+    console.error("📹 [Videos] Error fetching video titles:", error);
     return { videos: [], hasMore: false };
   }
 }

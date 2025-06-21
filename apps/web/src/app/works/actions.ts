@@ -21,7 +21,7 @@ export async function getWorks({
   limit?: number;
 } = {}): Promise<WorkListResult> {
   try {
-    console.log(`作品データ取得開始: page=${page}, limit=${limit}`);
+    console.log(`📊 [Works] 作品データ取得開始: page=${page}, limit=${limit}`);
 
     const firestore = getFirestore();
 
@@ -29,7 +29,7 @@ export async function getWorks({
     // (DLsiteのIDフォーマットに対応するため)
     const allSnapshot = await firestore.collection("dlsiteWorks").get();
 
-    console.log(`全作品データ取得: ${allSnapshot.size}件`);
+    console.log(`📊 [Works] 全作品データ取得: ${allSnapshot.size}件`);
 
     // 全データを配列に変換
     const allWorks = allSnapshot.docs.map((doc) => ({
@@ -92,12 +92,12 @@ export async function getWorks({
     };
 
     console.log(
-      `作品データ取得完了: ${works.length}件返却, hasMore=${hasMore}`,
+      `📊 [Works] 作品データ取得完了: ${works.length}件返却, hasMore=${hasMore}`,
     );
 
     return result;
   } catch (error) {
-    console.error("作品データ取得エラー:", error);
+    console.error("📊 [Works] 作品データ取得エラー:", error);
 
     // エラー時は空の結果を返す
     return {
