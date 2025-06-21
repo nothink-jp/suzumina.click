@@ -25,7 +25,7 @@ describe("firestore module", () => {
       const instance = createFirestoreInstance();
 
       expect(MockFirestore).toHaveBeenCalledWith({
-        projectId: "suzumina-click-firebase",
+        projectId: "suzumina-click",
         ignoreUndefinedProperties: true,
       });
       expect(instance).toBe(mockFirestoreInstance);
@@ -51,7 +51,7 @@ describe("firestore module", () => {
       getFirestore();
 
       expect(MockFirestore).toHaveBeenCalledWith({
-        projectId: "suzumina-click-firebase",
+        projectId: "suzumina-click",
         ignoreUndefinedProperties: true,
       });
     });

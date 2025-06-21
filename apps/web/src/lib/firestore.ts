@@ -12,7 +12,7 @@ let firestoreInstance: Firestore | null = null;
  */
 export function createFirestoreInstance(): Firestore {
   const instance = new Firestore({
-    projectId: "suzumina-click-firebase",
+    projectId: "suzumina-click",
     ignoreUndefinedProperties: true,
   });
   return instance;

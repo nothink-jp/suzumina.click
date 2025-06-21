@@ -106,7 +106,7 @@ git pull origin main
 
 #### **2-3. 手動QA実施**
 ```bash
-# Staging環境URL: https://staging-suzumina-click.run.app
+# Staging環境URL: https://staging-${PROJECT_ID}.run.app
 
 QA確認項目:
 - [ ] 新機能の動作確認

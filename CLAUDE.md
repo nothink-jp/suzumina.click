@@ -198,7 +198,7 @@ cd packages/ui && pnpm storybook     # 共有UIコンポーネント
 
 ### 開発用Google Cloudセットアップ
 
-Webアプリは `suzumina-click-firebase` GCPプロジェクトに接続します:
+Webアプリは `suzumina-click` GCPプロジェクトに接続します:
 
 ```bash
 # 1. Google Cloud SDKのインストール
@@ -208,7 +208,7 @@ brew install google-cloud-sdk
 gcloud auth application-default login
 
 # 3. プロジェクトアクセスの確認
-gcloud firestore databases list --project=suzumina-click-firebase
+gcloud firestore databases list --project=suzumina-click
 
 # 4. 開発サーバー起動 (実際のFirestoreデータに接続)
 cd apps/web && pnpm dev

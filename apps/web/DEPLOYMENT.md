@@ -11,7 +11,7 @@
 - pnpm 10
 
 ### Google Cloud プロジェクト設定
-- プロジェクトID: `suzumina-click-firebase`
+- プロジェクトID: `suzumina-click`
 - リージョン: `asia-northeast1`
 - 必要なAPI有効化:
   - Cloud Run API
@@ -39,7 +39,7 @@
 ```bash
 # Google Cloud にログイン
 gcloud auth login
-gcloud config set project suzumina-click-firebase
+gcloud config set project suzumina-click
 
 # Docker レジストリ認証
 gcloud auth configure-docker
@@ -48,7 +48,7 @@ gcloud auth configure-docker
 cd /path/to/suzumina.click
 
 # イメージをビルド
-IMAGE_TAG="gcr.io/suzumina-click-firebase/suzumina-web:$(git rev-parse --short HEAD)"
+IMAGE_TAG="gcr.io/suzumina-click/suzumina-web:$(git rev-parse --short HEAD)"
 docker build -f apps/web/Dockerfile -t $IMAGE_TAG .
 
 # イメージをプッシュ
@@ -139,10 +139,10 @@ pnpm install --frozen-lockfile
 #### 2. Cloud Run デプロイエラー
 ```bash
 # サービスアカウント権限確認
-gcloud projects get-iam-policy suzumina-click-firebase
+gcloud projects get-iam-policy suzumina-click
 
 # イメージの確認
-gcloud container images list --repository=gcr.io/suzumina-click-firebase
+gcloud container images list --repository=gcr.io/suzumina-click
 ```
 
 #### 3. 起動エラー
@@ -151,7 +151,7 @@ gcloud container images list --repository=gcr.io/suzumina-click-firebase
 gcloud logs tail --service=suzumina-web --region=asia-northeast1
 
 # ローカルでコンテナ実行
-docker run -p 8080:8080 gcr.io/suzumina-click-firebase/suzumina-web:latest
+docker run -p 8080:8080 gcr.io/suzumina-click/suzumina-web:latest
 ```
 
 ## 🔄 デプロイ戦略

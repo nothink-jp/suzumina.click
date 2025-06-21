@@ -41,15 +41,15 @@ graph TD
     end
 
     subgraph "ネットワーク (VPC)"
-        VPC[VPC<br/>suzumina-click-vpc]
-        SUBNET[Subnet<br/>suzumina-click-subnet]
+        VPC[VPC<br/>${PROJECT_ID}-vpc]
+        SUBNET[Subnet<br/>${PROJECT_ID}-subnet]
         NAT[Cloud NAT]
         DNS[Cloud DNS<br/>suzumina.click]
     end
 
     subgraph "ストレージ"
         FS[(Cloud Firestore<br/>Native Mode)]
-        CS_TFSTATE[Cloud Storage<br/>suzumina-click-tfstate]
+        CS_TFSTATE[Cloud Storage<br/>${PROJECT_ID}-tfstate]
         AR[Artifact Registry<br/>Docker Images]
     end
 
@@ -160,7 +160,7 @@ graph TD
 `GitHub Actions → Cloud Run (軽量) → Cloud Firestore / Cloud Storage`
 - **目的**: 自動テスト・QA・プレビュー確認
 - **構成**: 最小インスタンス、512MBメモリ、Functions無効
-- **アクセス**: Staging専用URL（https://staging-suzumina-click.run.app）
+- **アクセス**: Staging専用URL（https://staging-${PROJECT_ID}.run.app）
 
 **Production環境:**
 `ユーザー → Cloud DNS → Cloud Run (本番) → Cloud Firestore / Cloud Storage`
@@ -305,7 +305,7 @@ brew install google-cloud-sdk
 gcloud auth application-default login
 
 # プロジェクト設定
-gcloud config set project suzumina-click
+gcloud config set project YOUR_PROJECT_ID
 
 # 設定確認
 gcloud auth application-default print-access-token
@@ -322,11 +322,11 @@ gcloud config get-value project
 ```bash
 # Staging環境
 NEXT_PUBLIC_ENVIRONMENT=staging
-GOOGLE_CLOUD_PROJECT=suzumina-click
+GOOGLE_CLOUD_PROJECT=${GCP_PROJECT_ID}
 
 # Production環境  
 NEXT_PUBLIC_ENVIRONMENT=production
-GOOGLE_CLOUD_PROJECT=suzumina-click
+GOOGLE_CLOUD_PROJECT=${GCP_PROJECT_ID}
 ```
 
 **Cloud Functions:**

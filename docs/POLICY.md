@@ -358,6 +358,33 @@ logger.info(`API Key: ${process.env.YOUTUBE_API_KEY}`);
 - **サービスアカウント**: 機能別に専用アカウントを作成
 - **Firestore Rules**: データアクセス制御を実装
 
+### 4. プロジェクトID・認証情報管理
+
+**原則**: ソースコードにプロジェクトIDや機密情報をハードコーディングしない
+
+- **環境変数使用**: `GCP_PROJECT_ID`, `GOOGLE_CLOUD_PROJECT` を使用
+- **GitHub Secrets**: CI/CDでは GitHub Actions Secrets を活用
+- **ドキュメント**: プレースホルダー値を使用（例: `YOUR_PROJECT_ID`, `${PROJECT_ID}`）
+
+```bash
+# ✅ 良い例: 環境変数の使用
+export GCP_PROJECT_ID=your-actual-project-id
+./scripts/deploy-cloud-run.sh
+
+# ✅ 良い例: gcloud設定の活用
+gcloud config set project your-project-id
+./scripts/deploy-cloud-run.sh
+
+# ❌ 悪い例: ハードコーディング
+PROJECT_ID="suzumina-click"  # セキュリティリスク
+```
+
+**チェックリスト**:
+- [ ] スクリプトで環境変数を使用
+- [ ] ドキュメントにプレースホルダーを使用
+- [ ] GitHub ActionsでSecretsを使用
+- [ ] .gitignoreに機密ファイルを追加
+
 ## 📊 パフォーマンス基準
 
 ### 1. フロントエンド

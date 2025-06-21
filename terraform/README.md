@@ -122,7 +122,7 @@ terraform apply
 
 | リソース | 説明 | 設定値 |
 |---------|------|--------|
-| **バケット名** | `${project_id}-audio-files` | `suzumina-click-firebase-audio-files` |
+| **バケット名** | `${project_id}-audio-files` | `suzumina-click-audio-files` |
 | **ライフサイクル** | 1年後自動削除 | 365日 |
 | **ストレージクラス** | 30日→Nearline, 90日→Coldline | コスト最適化 |
 | **CORS** | Web再生用クロスオリジン設定 | `*.suzumina.click` |
@@ -182,7 +182,7 @@ terraform apply
 
 ```bash
 # 音声ファイル容量確認
-gsutil du -sh gs://suzumina-click-firebase-audio-files
+gsutil du -sh gs://suzumina-click-audio-files
 
 # Web App ログ確認
 gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="suzumina-click-web"' --limit=50
@@ -198,19 +198,19 @@ gcloud logging read 'protoPayload.methodName="storage.objects.insert" AND protoP
 1. **音声ファイルアップロード権限エラー**
    ```bash
    # IAM権限確認
-   gcloud projects get-iam-policy suzumina-click-firebase
+   gcloud projects get-iam-policy suzumina-click
    ```
 
 2. **Cloud Storage CORS設定**
    ```bash
    # CORS設定確認
-   gsutil cors get gs://suzumina-click-firebase-audio-files
+   gsutil cors get gs://suzumina-click-audio-files
    ```
 
 3. **音声ファイルアップロード失敗**
    ```bash
    # Cloud Storage設定確認
-   gsutil cors get gs://suzumina-click-firebase-audio-files
+   gsutil cors get gs://suzumina-click-audio-files
    ```
 
 ### 緊急時手順

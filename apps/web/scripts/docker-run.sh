@@ -47,7 +47,7 @@ docker run \
     -p "$PORT:8080" \
     -e NODE_ENV=production \
     -e NEXT_TELEMETRY_DISABLED=1 \
-    -e GOOGLE_CLOUD_PROJECT=suzumina-click-firebase \
+    -e GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)} \
     --rm \
     "$IMAGE_NAME:$TAG" &
 
