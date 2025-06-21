@@ -187,6 +187,28 @@ resource "google_project_iam_member" "github_actions_run_developer" {
   depends_on = [google_service_account.github_actions_sa]
 }
 
+# GitHub Actions用カスタムロール（Artifact Registry管理権限）
+resource "google_project_iam_custom_role" "github_actions_artifact_registry_role" {
+  project     = var.gcp_project_id
+  role_id     = "githubActionsArtifactRegistryManager"
+  title       = "GitHub Actions Artifact Registry Manager"
+  description = "Custom role for GitHub Actions to manage Artifact Registry images with cleanup permissions"
+  
+  permissions = [
+    "artifactregistry.repositories.get",
+    "artifactregistry.repositories.list", 
+    "artifactregistry.packages.get",
+    "artifactregistry.packages.list",
+    "artifactregistry.versions.get",
+    "artifactregistry.versions.list",
+    "artifactregistry.versions.delete",  # クリーンアップに必要
+    "artifactregistry.tags.create",
+    "artifactregistry.tags.update",
+    "artifactregistry.tags.get",
+    "artifactregistry.tags.list"
+  ]
+}
+
 # GitHub Actions用サービスアカウントにArtifact Registry書き込み権限を付与
 resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
   project = var.gcp_project_id
@@ -194,6 +216,18 @@ resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
   member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
   
   depends_on = [google_service_account.github_actions_sa]
+}
+
+# GitHub Actions用サービスアカウントにカスタムArtifact Registry管理権限を付与  
+resource "google_project_iam_member" "github_actions_artifact_registry_manager" {
+  project = var.gcp_project_id
+  role    = google_project_iam_custom_role.github_actions_artifact_registry_role.name
+  member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
+  
+  depends_on = [
+    google_service_account.github_actions_sa,
+    google_project_iam_custom_role.github_actions_artifact_registry_role
+  ]
 }
 
 # GitHub Actions用サービスアカウントにサービスアカウント利用者権限を付与
