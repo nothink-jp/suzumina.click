@@ -5,6 +5,9 @@ import { FeaturedWorksCarousel } from "@/components/FeaturedWorksCarousel";
 import SearchForm from "@/components/SearchForm";
 import { getLatestVideos, getLatestWorks } from "./actions";
 
+// Force dynamic rendering to ensure Server Actions are called on each request
+export const dynamic = "force-dynamic";
+
 // Server Component として実装し、LCPを改善
 export default async function Home() {
   // 新着作品と動画を並行取得
