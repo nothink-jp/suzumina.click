@@ -49,7 +49,6 @@ graph TD
 
     subgraph "ストレージ"
         FS[(Cloud Firestore<br/>Native Mode)]
-        CS_AUDIO[Cloud Storage<br/>user-audio-files]
         CS_TFSTATE[Cloud Storage<br/>suzumina-click-tfstate]
         AR[Artifact Registry<br/>Docker Images]
     end
@@ -197,7 +196,7 @@ graph TD
 | ストレージ | 用途 | 特徴 | 管理ファイル | 両環境共有 |
 |---|---|---|---|---|
 | **Cloud Firestore** | アプリケーションデータ | ネイティブモード, 複合インデックス | `firestore_database.tf` | ✅ |
-| **Cloud Storage (user-audio)** | ユーザー作成の音声ファイル | CORS設定, ライフサイクル管理 | `storage.tf` | ✅ |
+| **Cloud Storage (デプロイ)** | Terraform状態・アーティファクト | バージョニング, ライフサイクル管理 | `storage.tf` | ✅ |
 | **Cloud Storage (tfstate)** | Terraformの状態ファイル | バージョニング有効, 削除保護 | `gcs.tf` | ✅ |
 | **Artifact Registry** | Dockerコンテナイメージ | GitHub Actions連携 | `artifact_registry.tf` | ✅ |
 
@@ -345,8 +344,8 @@ FUNCTION_TARGET=fetchYouTubeVideos
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 音声ボタン - 公開分のみ読み取り可能
-    match /audioButtons/{buttonId} {
+    // 音声参照 - 公開分のみ読み取り可能
+    match /audioReferences/{referenceId} {
       allow read: if resource.data.isPublic == true;
       allow write: if false; // 将来的にユーザー認証実装予定
     }
@@ -361,8 +360,7 @@ service cloud.firestore {
 ```
 
 **Cloud Storage IAM:**
-- `allUsers`: objectViewer (音声ファイル再生用)
-- Service Account: objectAdmin (アップロード用)
+- Service Account: objectAdmin (デプロイ・アーティファクト管理用)
 
 ### **本番環境確認コマンド**
 

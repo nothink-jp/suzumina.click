@@ -116,10 +116,10 @@ resource "google_secret_manager_secret_iam_member" "youtube_video_secret_accesso
 
 # Cloud Function のリソース情報を出力
 output "fetch_youtube_videos_function_info" {
-  value = {
-    name     = google_cloudfunctions2_function.fetch_youtube_videos.name
-    location = google_cloudfunctions2_function.fetch_youtube_videos.location
-    state    = google_cloudfunctions2_function.fetch_youtube_videos.state
-  }
+  value = local.current_env.functions_enabled ? {
+    name     = google_cloudfunctions2_function.fetch_youtube_videos[0].name
+    location = google_cloudfunctions2_function.fetch_youtube_videos[0].location
+    state    = google_cloudfunctions2_function.fetch_youtube_videos[0].state
+  } : null
   description = "YouTube動画取得関数の情報"
 }

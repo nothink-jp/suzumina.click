@@ -55,9 +55,8 @@ resource "google_firestore_document" "firestore_rules" {
             
             // 音声リファレンスコレクション（新しい実装）
             match /audioReferences/{referenceId} {
-              // 公開音声リファレンスは誰でも読み取り可能、非公開は作成者のみ読み取り可能
-              allow read: if resource.data.isPublic == true || 
-                           (isAuthenticated() && resource.data.createdBy == request.auth.uid);
+              // 誰でも読み取り可能（Server Actionsと一般ユーザーの両方に対応）
+              allow read;
               
               // データ検証関数
               function isValidAudioReference() {

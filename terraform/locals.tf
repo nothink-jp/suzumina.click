@@ -13,7 +13,7 @@ locals {
       cloud_run_max_instances = 1     # 最小限（テスト用）
       cloud_run_cpu          = "1000m"
       cloud_run_memory       = "512Mi" # 最小メモリ
-      functions_memory        = "256MB" # 最小メモリ
+      functions_memory        = "256Mi" # 最小メモリ
       functions_timeout       = 120    # 短いタイムアウト
       functions_enabled       = false  # staging環境ではfunctions無効化（コスト削減）
       budget_amount          = 1000   # 約1000円（月）
@@ -26,7 +26,7 @@ locals {
       cloud_run_max_instances = 2     # 個人利用レベル
       cloud_run_cpu          = "1000m"
       cloud_run_memory       = "1Gi"
-      functions_memory        = "512MB" 
+      functions_memory        = "512Mi" 
       functions_timeout       = 300
       functions_enabled       = true   # 本番では有効
       budget_amount          = 4000   # 約4000円（月）

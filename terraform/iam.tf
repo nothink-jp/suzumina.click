@@ -363,32 +363,18 @@ resource "google_project_iam_member" "eventarc_run_invoker" {
 # 注: Pub/Sub -> Cloud Functions v2（Eventarcトリガー）のバインディングは通常、event_triggerブロックが定義されている場合、google_cloudfunctions2_functionリソースによって自動的に処理されます。
 # これらの明示的なバインディングは、堅牢性を高めるために追加されています。
 
-# ------------------------------------------------------------------------------
-# 音声処理機能用のIAM権限設定
-# ------------------------------------------------------------------------------
-
-# 既存のCloud Functions用サービスアカウントにCloud Tasks操作権限を追加
-# (YouTube動画取得後に音声処理タスクを送信するため)
-resource "google_project_iam_member" "youtube_function_tasks_enqueuer" {
-  project = var.gcp_project_id
-  role    = "roles/cloudtasks.enqueuer"
-  member  = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
-
-  depends_on = [google_service_account.fetch_youtube_videos_sa]
-}
-
-# YouTube関数にCloud Run Jobs起動権限を追加
-resource "google_project_iam_member" "youtube_function_run_jobs_invoker" {
-  project = var.gcp_project_id
-  role    = "roles/run.invoker"
-  member  = "serviceAccount:${google_service_account.fetch_youtube_videos_sa.email}"
-
-  depends_on = [google_service_account.fetch_youtube_videos_sa]
-}
 
 # ------------------------------------------------------------------------------
 # 出力値
 # ------------------------------------------------------------------------------
+
+# Compute Engine デフォルトサービスアカウントにSecret Manager アクセス権限を付与
+# (手動デプロイとの互換性のため - 将来的には専用SAに移行予定)
+resource "google_project_iam_member" "compute_engine_secret_accessor" {
+  project = var.gcp_project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+}
 
 # プロジェクト番号を出力（GitHub Actionsで使用）
 output "project_number" {

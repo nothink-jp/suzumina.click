@@ -94,7 +94,6 @@ logs/
 
 # Exclude other apps
 apps/functions/
-apps/v0-suzumina.click/
 
 # Exclude unnecessary package contents (but keep source)
 packages/*/node_modules/

@@ -210,42 +210,38 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 }
 ```
 
-### 5. `audioButtons` コレクション ✅ 実装完了
+### 5. `audioReferences` コレクション ✅ 実装完了
 
-**目的**: ユーザー作成の音声ボタンデータを保存（音声ファイルアップロード機能）
+**目的**: ユーザー作成の音声参照データを保存（タイムスタンプ参照システム）
 
 **ドキュメントID**: 自動生成ID（Firestore自動生成または UUID）
 
-**データ構造** (`FirestoreServerAudioButtonData`):
+**データ構造** (`FirestoreAudioReferenceData`):
 
 ```typescript
 {
   // 基本情報
-  id: string,                         // 音声ボタンID
-  title: string,                      // 音声ボタンタイトル（1-100文字）
-  description?: string,               // 音声ボタン説明（最大500文字）
-  category: "voice" | "bgm" | "se" | "talk" | "singing" | "other", // カテゴリ
+  id: string,                         // 音声参照ID
+  title: string,                      // 音声参照タイトル（1-100文字）
+  description?: string,               // 音声参照説明（最大500文字）
+  
+  // YouTube動画参照情報
+  videoId: string,                    // YouTube動画ID（videosコレクション参照）
+  videoTitle?: string,                // 動画タイトル
+  startTime: number,                  // 開始時刻（秒）
+  endTime: number,                    // 終了時刻（秒）
+  youtubeEmbedUrl: string,           // 埋め込み再生URL
+
+  // 分類・メタデータ
   tags?: string[],                    // タグ配列（最大10個、各タグ最大20文字）
-
-  // 音声ファイル情報
-  audioUrl: string,                   // Cloud Storage音声ファイルURL
-  duration: number,                   // 音声の長さ（秒数）
-  fileSize: number,                   // ファイルサイズ（バイト数）
-  format: "opus" | "aac" | "mp3" | "wav" | "flac", // 音声フォーマット
-
-  // 元動画情報（オプション）
-  sourceVideoId?: string,             // 元YouTubeビデオID（videosコレクション参照）
-  sourceVideoTitle?: string,          // 元動画タイトル
-  startTime?: number,                 // 元動画での開始時刻（秒）
-  endTime?: number,                   // 元動画での終了時刻（秒）
+  category?: string,                  // カテゴリ
 
   // ユーザー・権限情報
-  uploadedBy?: string,                // アップロードユーザーID（将来のユーザー認証用）
+  createdBy?: string,                 // 作成者ID（将来のユーザー認証用）
   isPublic: boolean,                  // 公開/非公開設定
 
   // 統計情報
   playCount: number,                  // 再生回数
-  likeCount: number,                  // いいね数
 
   // 管理情報
   createdAt: Timestamp,               // 作成日時
@@ -254,15 +250,14 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 ```
 
 **制約事項**:
-- **ファイルサイズ制限**: 最大10MB
-- **音声長制限**: 最大5分
+- **時間制限**: 最大参照時間5分
 - **タイトル制限**: 1-100文字
 - **説明制限**: 最大500文字
 - **タグ制限**: 最大10個、各タグ最大20文字
 
 **セキュリティルール**:
-- **読み取り**: 公開音声ボタンは誰でも読み取り可能、非公開は作成者のみ
-- **作成・更新・削除**: 現在はServer Actionsのみで操作（Phase 2でクライアント側実装予定）
+- **読み取り**: 公開音声参照は誰でも読み取り可能、非公開は作成者のみ
+- **作成・更新・削除**: 現在はServer Actionsのみで操作
 
 ## 計画中のコレクション（将来実装予定）
 
@@ -270,20 +265,22 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 
 **目的**: ユーザープロファイルと設定
 
-**サブコレクション**: `favorites` - ユーザーのお気に入りクリップ
+**サブコレクション**: `favorites` - ユーザーのお気に入り音声参照
 
-### 7. `audioReferences` コレクション
+### 7. `audioButtons` コレクション
 
-**目的**: 軽量な音声リファレンス（音声ファイルを伴わない、時間範囲のみの参照）
+**目的**: 実音声ファイル機能（将来検討・法的評価後）
 
-**データ構造**（実装済み・セキュリティルール設定済み）:
+**データ構造**（将来実装時）:
 
 ```typescript
 {
-  title: string,                      // 音声リファレンスタイトル
-  startTime: number,                  // 開始時刻（秒）
-  endTime: number,                    // 終了時刻（秒）
-  videoId: string,                    // YouTube動画ID
+  title: string,                      // 音声ボタンタイトル
+  audioUrl: string,                   // Cloud Storage音声ファイルURL
+  duration: number,                   // 音声の長さ（秒数）
+  sourceVideoId: string,              // 元YouTube動画ID
+  startTime: number,                  // 元動画での開始時刻（秒）
+  endTime: number,                    // 元動画での終了時刻（秒）
   isPublic: boolean,                  // 公開/非公開設定
   createdBy: string,                  // 作成者ユーザーID
   createdAt: Timestamp                // 作成日時
@@ -297,12 +294,11 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 - `liveBroadcastContent` (ASC) + `publishedAt` (ASC)
 - `videoType` (ASC) + `publishedAt` (DESC) + `__name__` (DESC)
 
-### audioButtonsコレクション:
-- `isPublic` (ASC) + `createdAt` (DESC) - 基本的な音声ボタン一覧取得
+### audioReferencesコレクション:
+- `isPublic` (ASC) + `createdAt` (DESC) - 基本的な音声参照一覧取得
 - `isPublic` (ASC) + `playCount` (DESC) - 人気順ソート
-- `isPublic` (ASC) + `likeCount` (DESC) - いいね順ソート
 - `isPublic` (ASC) + `category` (ASC) + `createdAt` (DESC) - カテゴリフィルター
-- `isPublic` (ASC) + `sourceVideoId` (ASC) + `startTime` (ASC) - 元動画別表示
+- `isPublic` (ASC) + `videoId` (ASC) + `startTime` (ASC) - 元動画別表示
 - `tags` (CONTAINS) + `isPublic` (ASC) + `createdAt` (DESC) - タグ検索
 
 ## データ収集パターン

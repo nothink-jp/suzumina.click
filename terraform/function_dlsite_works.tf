@@ -115,10 +115,10 @@ resource "google_secret_manager_secret_iam_member" "dlsite_works_secret_accessor
 
 # Cloud Function のリソース情報を出力
 output "fetch_dlsite_works_function_info" {
-  value = {
-    name     = google_cloudfunctions2_function.fetch_dlsite_works.name
-    location = google_cloudfunctions2_function.fetch_dlsite_works.location
-    state    = google_cloudfunctions2_function.fetch_dlsite_works.state
-  }
+  value = local.current_env.functions_enabled ? {
+    name     = google_cloudfunctions2_function.fetch_dlsite_works[0].name
+    location = google_cloudfunctions2_function.fetch_dlsite_works[0].location
+    state    = google_cloudfunctions2_function.fetch_dlsite_works[0].state
+  } : null
   description = "DLsite作品取得関数の情報"
 }

@@ -14,7 +14,7 @@ resource "google_dns_managed_zone" "main" {
   description = "Managed zone for ${var.domain_name}"
 
   labels = merge(local.common_labels, {
-    "dns-zone" = var.domain_name
+    "dns-zone" = replace(var.domain_name, ".", "-")
   })
 }
 
@@ -54,6 +54,20 @@ resource "google_dns_record_set" "cloud_run_aaaa" {
     google_cloud_run_domain_mapping.custom_domain,
     google_dns_managed_zone.main
   ]
+}
+
+# Googleドメイン確認用TXTレコード
+resource "google_dns_record_set" "domain_verification" {
+  count = local.current_env.enable_custom_domain ? 1 : 0
+  
+  project      = var.gcp_project_id
+  managed_zone = google_dns_managed_zone.main[0].name
+  name         = "${var.domain_name}."
+  type         = "TXT"
+  ttl          = 300
+  rrdatas      = ["google-site-verification=-exKNQxRVyFMAShs3esyT416TEUsqVUsFy4sTWM0H24"]
+  
+  depends_on = [google_dns_managed_zone.main]
 }
 
 # 出力: DNSのネームサーバー（カスタムドメイン有効時のみ）
