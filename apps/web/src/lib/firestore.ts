@@ -11,8 +11,11 @@ let firestoreInstance: Firestore | null = null;
  * 新しいFirestoreインスタンスを作成
  */
 export function createFirestoreInstance(): Firestore {
+  // 環境変数からプロジェクトIDを取得、フォールバックとして'suzumina-click'を使用
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT || "suzumina-click";
+
   const instance = new Firestore({
-    projectId: "suzumina-click",
+    projectId,
     ignoreUndefinedProperties: true,
   });
   return instance;

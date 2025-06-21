@@ -20,7 +20,26 @@ describe("firestore module", () => {
   });
 
   describe("createFirestoreInstance", () => {
-    it("should create new Firestore instance with correct configuration", async () => {
+    it("should create new Firestore instance with environment variable project ID", async () => {
+      process.env.GOOGLE_CLOUD_PROJECT = "suzumina-click-firebase";
+      vi.resetModules();
+
+      const { createFirestoreInstance } = await import("./firestore");
+      const instance = createFirestoreInstance();
+
+      expect(MockFirestore).toHaveBeenCalledWith({
+        projectId: "suzumina-click-firebase",
+        ignoreUndefinedProperties: true,
+      });
+      expect(instance).toBe(mockFirestoreInstance);
+
+      delete process.env.GOOGLE_CLOUD_PROJECT;
+    });
+
+    it("should create new Firestore instance with fallback project ID when env var is not set", async () => {
+      delete process.env.GOOGLE_CLOUD_PROJECT;
+      vi.resetModules();
+
       const { createFirestoreInstance } = await import("./firestore");
       const instance = createFirestoreInstance();
 
@@ -45,6 +64,7 @@ describe("firestore module", () => {
     });
 
     it("should create instance with correct project configuration", async () => {
+      delete process.env.GOOGLE_CLOUD_PROJECT;
       vi.resetModules();
       const { getFirestore } = await import("./firestore");
 
