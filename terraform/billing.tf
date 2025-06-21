@@ -103,7 +103,7 @@ resource "google_monitoring_dashboard" "cost_overview" {
                 {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter = "resource.type=\"billing_account\""
+                      filter = "metric.type=\"billing.googleapis.com/billing/total_cost\" AND resource.type=\"billing_account\""
                       aggregation = {
                         alignmentPeriod  = "86400s"
                         perSeriesAligner = "ALIGN_SUM"

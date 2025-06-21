@@ -84,6 +84,8 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
     ignore_changes = [
       build_config # ビルド設定全体を無視（GitHub Actionsが管理）
     ]
+    # 既存のリソースとの競合を避けるため、作成失敗時は手動で解決する
+    create_before_destroy = false
   }
 
   depends_on = [

@@ -79,6 +79,24 @@ resource "google_project_iam_member" "cloud_functions_deployer_cloudbuild_builde
   depends_on = [data.google_project.project]
 }
 
+# プロジェクト閲覧権限（Cloud Resource Manager API使用に必要）
+resource "google_project_iam_member" "cloud_functions_deployer_viewer" {
+  project = var.gcp_project_id
+  role    = "roles/viewer"
+  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_functions_deployer_sa]
+}
+
+# Storage管理権限（Functions用zipファイルアップロードに必要）
+resource "google_project_iam_member" "cloud_functions_deployer_storage_admin" {
+  project = var.gcp_project_id
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
+  
+  depends_on = [google_service_account.cloud_functions_deployer_sa]
+}
+
 # IAMポリシー設定権限（デプロイ用）
 resource "google_project_iam_member" "cloud_functions_deployer_iam_admin" {
   project = var.gcp_project_id
@@ -182,6 +200,15 @@ resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
 resource "google_project_iam_member" "github_actions_service_account_user" {
   project = var.gcp_project_id
   role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
+  
+  depends_on = [google_service_account.github_actions_sa]
+}
+
+# GitHub Actions用サービスアカウントにCloud Run IAM管理権限を付与
+resource "google_project_iam_member" "github_actions_run_admin" {
+  project = var.gcp_project_id
+  role    = "roles/run.admin"
   member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
   
   depends_on = [google_service_account.github_actions_sa]

@@ -3,7 +3,15 @@
  * 
  * このファイルでは、FirestoreのインデックスをTerraformで管理しています。
  * 各インデックスは google_firestore_index リソースとして定義されています。
+ * 
+ * 既存インデックスのインポート方法:
+ * terraform import google_firestore_index.{resource_name} projects/{project_id}/databases/(default)/collectionGroups/{collection}/indexes/{index_id}
  */
+
+# 既存のFirestoreインデックス管理について
+# 注意: google_firestore_indexesデータソースは存在しないため、
+# 既存インデックスの管理は手動インポートまたはスクリプトで行う
+# 詳細: terraform/firestore_index_mapping.md を参照
 
 # videos コレクションのインデックス - liveBroadcastContent（昇順）と publishedAt（降順）
 resource "google_firestore_index" "videos_liveBroadcast_publishedAt_desc" {
