@@ -12,7 +12,7 @@ const METADATA_DOC_ID = "fetch_metadata";
 const METADATA_COLLECTION = "dlsiteMetadata";
 
 // 実行制限関連の定数
-const MAX_PAGES_PER_EXECUTION = 5; // 1回の実行での最大ページ数
+const MAX_PAGES_PER_EXECUTION = 1; // 1回の実行での最大ページ数
 const ITEMS_PER_PAGE = 100; // DLsiteの1ページあたりの作品数
 
 // DLsite検索用の定数（新URL形式対応）
