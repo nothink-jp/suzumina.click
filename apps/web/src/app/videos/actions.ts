@@ -117,13 +117,14 @@ export async function getVideoTitles(params?: {
 
 /**
  * 総動画数を取得するServer Action
+ * Note: count()クエリは権限問題があるため、通常のクエリで代替
  */
 export async function getTotalVideoCount(): Promise<number> {
   try {
     const firestore = getFirestore();
     const videosRef = firestore.collection("videos");
-    const countSnapshot = await videosRef.count().get();
-    return countSnapshot.data().count;
+    const snapshot = await videosRef.select().get(); // IDのみ取得で効率化
+    return snapshot.size;
   } catch (error) {
     console.error("Error fetching total video count:", error);
     return 0;
