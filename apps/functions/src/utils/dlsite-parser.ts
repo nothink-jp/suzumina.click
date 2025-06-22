@@ -138,7 +138,7 @@ export function parseSampleImages(
   try {
     const samples = JSON.parse(sampleData);
     if (Array.isArray(samples)) {
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: DLsite sample data structure varies
       return samples.map((sample: any) => ({
         thumb: sample.thumb || "",
         width: sample.width ? Number.parseInt(sample.width, 10) : undefined,

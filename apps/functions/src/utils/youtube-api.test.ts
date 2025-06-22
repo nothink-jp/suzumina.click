@@ -74,7 +74,6 @@ describe("youtube-api", () => {
 
     it("APIキーが設定されていない場合、エラーを返すこと", () => {
       // APIキーをクリア
-      // biome-ignore lint/performance/noDelete: <explanation>
       delete process.env.YOUTUBE_API_KEY;
 
       // 関数を実行
