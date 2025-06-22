@@ -40,6 +40,16 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+// Mock auth
+vi.mock("@/components/ProtectedRoute", () => ({
+  requireAuth: vi.fn().mockResolvedValue({
+    discordId: "123456789012345678",
+    username: "testuser",
+    displayName: "Test User",
+    role: "member",
+  }),
+}));
+
 describe("Audio Reference Server Actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -10,6 +10,8 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 
 **✅ 完了済み**
 
+- **Discordギルド認証システム**: NextAuth + Discord OAuth + ギルドメンバーシップ確認
+- **ユーザー管理機能**: Firestore基盤のユーザープロファイル・ロール管理・セッション管理
 - **データ収集インフラ**: YouTubeビデオ・DLsite作品情報の自動取得システム
 - **インフラ基盤**: TerraformによるGCPリソース管理（2環境構成・コスト最適化）
 - **共有型定義**: Zodスキーマを使用した型安全なデータ構造
@@ -44,14 +46,16 @@ DLsite         (Production環境)  メッセージ   (Function v2)   (型安全)
 - **Radix UI** - アクセシブルUIコンポーネント (`packages/ui`)
 - **React 19.1.0** - 最新React機能
 
-### バックエンド
+### バックエンド・認証
 
+- **NextAuth.js** - Discord OAuth認証・セッション管理
+- **Discord OAuth Provider** - ギルドメンバーシップ確認による認証
 - **Google Cloud Functions v2 (Node.js 22)** - サーバーレス関数 (YouTube/DLsite データ収集)
-- **Google Cloud Firestore** - NoSQLデータベース (Native mode + 複合インデックス)
+- **Google Cloud Firestore** - NoSQLデータベース (Native mode + 複合インデックス + ユーザー管理)
 - **Google Cloud Storage** - ファイルストレージ (デプロイアーティファクト、将来の音声ファイル用)
 - **Google Cloud Pub/Sub** - 非同期メッセージング (Scheduler → Functions)
 - **Google Cloud Scheduler** - 定期実行タスク (Production環境のみ)
-- **Google Secret Manager** - APIキー・シークレット管理
+- **Google Secret Manager** - APIキー・シークレット管理 (Discord認証情報・NextAuth Secret)
 - **YouTube Embed API** - 動画の特定区間再生
 
 ### インフラ・DevOps
@@ -72,7 +76,7 @@ DLsite         (Production環境)  メッセージ   (Function v2)   (型安全)
 
 ## 📁 プロジェクト構造
 
-```
+```console
 suzumina.click/                    # Monorepoルート
 ├── apps/
 │   ├── functions/                 # Cloud Functions (本番準備完了)
@@ -173,6 +177,16 @@ suzumina.click/                    # Monorepoルート
 - `playCount` - 統計情報
 - `createdAt`, `updatedAt` - 管理情報
 
+### ユーザーデータ (`FirestoreUserData`)
+
+- `discordId`, `username`, `globalName` - Discord基本情報
+- `avatar`, `displayName` - 表示情報
+- `guildMembership` - Discord ギルド所属確認情報
+- `role` - アプリ内権限 (member/moderator/admin)
+- `audioReferencesCount`, `totalPlayCount` - 統計情報
+- `isActive`, `isPublicProfile`, `showStatistics` - 状態・プライバシー設定
+- `createdAt`, `updatedAt`, `lastLoginAt` - 管理情報
+
 ## 🚀 開発コマンド
 
 ### セットアップ
@@ -257,26 +271,42 @@ Firestore Database (Native mode)
     └─ works collection (メタデータ + ライフサイクル管理)
 ```
 
-**2. ユーザー音声参照作成フロー**
+**2. Discord認証・ユーザー管理フロー**
+
+```console
+ユーザー → Discord OAuth → NextAuth.js
+    ↓ (認証成功)
+Discord Guild API → ギルドメンバーシップ確認
+    ↓ (ギルドメンバーの場合)
+Firestore users collection → ユーザー情報作成・更新
+    ↓ (セッション確立)
+JWT セッション → 認証状態管理
 ```
-ユーザー (AudioReferenceCreator)
+
+**3. ユーザー音声参照作成フロー**
+
+```console
+認証済みユーザー (AudioReferenceCreator)
     │ ├─ YouTube動画選択
     │ ├─ 時間範囲指定 (開始・終了時刻)
     │ └─ メタデータ入力 (タイトル、タグ等)
-    ↓ (Server Actions)
+    ↓ (Server Actions + ユーザー認証確認)
 Next.js Server Actions
+    │ ├─ セッション検証・権限確認
     │ ├─ タイムスタンプ検証
     │ ├─ YouTube埋め込みURL生成
-    │ └─ メタデータ保存 (Firestore)
+    │ └─ メタデータ保存 (Firestore) + 作成者情報
     ↓ (保存完了)
 Firestore
-    └─ audioReferences collection (参照メタデータ)
+    ├─ audioReferences collection (参照メタデータ + createdBy)
+    └─ users collection (統計情報更新)
 ```
 
 ### フロントエンド表示 (Next.js 15 App Router)
 
 **動画一覧ページ**
-```
+
+```console
 Page (Server Component)
 ├── データ取得 (Server Actions)
 ├── VideoList (Server Component)
@@ -286,7 +316,8 @@ Page (Server Component)
 ```
 
 **音声参照ページ (実装完了)**
-```
+
+```console
 Audio Reference Page (Server Component)
 ├── 音声参照データ取得 (Server Actions)
 ├── AudioReferenceCreator (Client Component)
@@ -308,9 +339,12 @@ Audio Reference Page (Server Component)
 
 ### セキュリティ
 
-- **Secret Manager**: APIキー管理
+- **Discord Guild認証**: 特定Discordサーバーのメンバーのみアクセス許可
+- **NextAuth.js**: JWT ベースのセッション管理・CSRF保護
+- **Secret Manager**: APIキー・認証情報の安全な管理
 - **IAM**: 最小権限の原則
 - **サーバーサイド優先**: FirestoreはServer Actionsのみでアクセス
+- **権限ベース機能制御**: ユーザーロール (member/moderator/admin) による機能制限
 
 ### 設計原則
 
@@ -355,11 +389,16 @@ Audio Reference Page (Server Component)
 
 - `docs/README.md` - 詳細仕様
 - `docs/FIRESTORE_STRUCTURE.md` - Firestoreデータ構造
-- `packages/shared-types/` - コア型定義 (音声参照型含む)
+- `packages/shared-types/` - コア型定義 (音声参照型・ユーザー型含む)
+- `apps/web/src/auth.ts` - Discord認証・NextAuth設定
+- `apps/web/src/lib/user-firestore.ts` - ユーザー管理Firestore操作
 - `apps/functions/src/` - データ収集ロジック
 - `apps/web/src/app/buttons/` - 音声参照機能 (実装完了)
+- `apps/web/src/app/auth/` - 認証関連ページ (signin/error)
+- `apps/web/src/components/Auth*` - 認証関連UIコンポーネント
 - `apps/web/src/components/Audio*` - 音声参照関連UIコンポーネント
-- `terraform/` - インフラ設定
+- `terraform/AUTH_DEPLOYMENT_GUIDE.md` - Discord認証デプロイガイド
+- `terraform/` - インフラ設定 (Discord認証含む)
 - `biome.json` - コード品質設定
 
 このプロジェクトは、データ収集インフラとユーザー作成コンテンツ機能を組み合わせたファンコミュニティプラットフォームで、型安全なフルスタック開発を重視しています。
@@ -369,16 +408,19 @@ Audio Reference Page (Server Component)
 ### Next.js 15 コンポーネント設計
 
 **Server Components (推奨)**
+
 - データ取得・表示ロジック
 - SEO対応が必要な部分
 - 静的なUI部分
 
 **Client Components (必要時のみ)**
+
 - ユーザーインタラクション
 - ブラウザAPIの使用
 - 状態管理が必要な部分
 
 **アンチパターン**
+
 - ❌ Client ComponentでServer Actionsを直接呼び出し
 - ❌ UIコンポーネント内でのデータ取得ロジック
 - ❌ 重いサーバーサイド音声処理
@@ -432,10 +474,12 @@ cd apps/functions && pnpm test  # Functions個別テスト
 #### **2. UIコンポーネント → Storybook (ビジュアルテスト)**
 
 **対象:**
+
 - `packages/ui/src/components/` - 共有UIコンポーネント
 - レイアウト・デザインが重要なコンポーネント
 
 **重点項目:**
+
 - デザインシステムの一貫性
 - 異なるprops・状態での見た目確認
 - アクセシビリティの視覚的検証
@@ -457,11 +501,13 @@ packages/ui/src/components/
 #### **3. インタラクティブコンポーネント → React Testing Library**
 
 **対象:**
+
 - ユーザーインタラクションロジック
 - 条件分岐・エラーハンドリングを含むコンポーネント
 - 状態管理が重要なコンポーネント
 
 **重点項目:**
+
 - ページネーションの次/前ページロジック
 - 検索・フィルタリング機能
 - フォーム入力・バリデーション
@@ -487,11 +533,13 @@ apps/web/src/components/
 #### **4. 統合テスト → Next.js Testing + E2E**
 
 **対象:**
+
 - Page Components + Server Actions
 - Client/Server Component境界
 - 実際のユーザーフロー
 
 **重点項目:**
+
 - Server ComponentとClient Componentの連携
 - Server Actionsからのデータフロー
 - エラーバウンダリとSuspenseの動作
@@ -499,6 +547,7 @@ apps/web/src/components/
 #### **テスト実装状況**
 
 **✅ Phase 1: Core Testing Complete** (重要機能100%カバレッジ)
+
 ```bash
 # 完了済み - 全重要機能がテスト済み
 ✅ Server Actions & ビジネスロジック (78件)
@@ -508,6 +557,7 @@ apps/web/src/components/
 ```
 
 **🎯 Phase 2: Storybook強化** (次の改善目標)
+
 ```bash
 # 今後の拡張候補
 - Visual Regression Testing追加
@@ -516,6 +566,7 @@ apps/web/src/components/
 ```
 
 **🎯 Phase 3: Advanced Testing** (高度なテスト機能)
+
 ```bash
 # Next.js App Router特有のテスト
 - Page Components + Server Actions
@@ -526,6 +577,7 @@ apps/web/src/components/
 #### **テスト環境設定**
 
 **Vitest Workspace**
+
 ```typescript
 // vitest.workspace.ts
 export default defineWorkspace([
@@ -536,6 +588,7 @@ export default defineWorkspace([
 ```
 
 **React Testing Library設定例**
+
 ```typescript
 // apps/web/vitest.config.ts
 export default defineConfig({
@@ -547,11 +600,11 @@ export default defineConfig({
 });
 ```
 
-#### **現在のテストカバレッジ状況**
+### 現在のテストカバレッジ状況
 
 - **テスト件数**: **226件** (高品質・包括的)
 - **テストファイル**: **16ファイル** (すべて通過)
-- **カバー済み**: 
+- **カバー済み**:
   - ✅ **Server Actions**: 全Actionsの単体テスト完了
   - ✅ **Core Types & Utils**: shared-types全モジュール100%カバレッジ
   - ✅ **重要UIコンポーネント**: 8個の主要コンポーネント完全テスト

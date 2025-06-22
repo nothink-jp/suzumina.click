@@ -4,6 +4,38 @@ suzumina.clickプロジェクトの変更履歴
 
 ## [Unreleased]
 
+## [v0.2.1] - 2025-06-22
+
+### 🔐 Discord認証システム完全実装
+
+- **NextAuth.js + Discord OAuth**: 「すずみなふぁみりー」Discord サーバーメンバー専用認証
+- **ギルドメンバーシップ確認**: Discord Guild API連携による自動メンバー確認
+- **ユーザー管理システム**: Firestore users collection + プロファイル・統計管理
+- **ロールベース権限制御**: member/moderator/admin による機能制限
+- **認証UI・UX**: AuthButton, UserAvatar, サインイン/エラーページ完備
+- **Session管理**: JWT ベース・CSRF保護・自動ログイン状態管理
+
+### 🔧 インフラ・セキュリティ強化
+
+- **Secret Manager統合**: Discord認証情報・NextAuth Secret の安全な管理
+- **Terraform認証サポート**: AUTH_DEPLOYMENT_GUIDE.md によるデプロイ自動化
+- **型安全性強化**: packages/shared-types に User関連型定義・バリデーション追加
+
+### 📖 ドキュメント大幅刷新
+
+- **統合ドキュメント**: docs/README.md - 全体概要・認証情報統合
+- **クイックリファレンス**: docs/QUICK-REFERENCE.md - 即座参照可能な開発情報
+- **開発ガイド統合**: docs/DEVELOPMENT.md - ポリシー・インフラ・認証を一元化
+- **認証デプロイガイド**: terraform/AUTH_DEPLOYMENT_GUIDE.md - Discord認証設定手順
+
+### ✨ コンポーネント・機能追加
+
+- **AuthButton**: ユーザー情報表示・サインイン/アウト
+- **UserAvatar**: Discord アバター表示 (カスタム/デフォルト対応)
+- **UserProfile**: ユーザープロファイル管理
+- **ProtectedRoute**: 認証必須ページ保護
+- **SessionProvider**: Next.js App Router 対応セッション管理
+
 ## [v0.2.0] - 2025-06-20
 
 ### 🔄 重要なアーキテクチャ変更
