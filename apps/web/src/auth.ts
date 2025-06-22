@@ -11,10 +11,10 @@ import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import {
   createUser,
-  getUserByDiscordId,
   updateLastLogin,
   userExists,
 } from "@/lib/user-firestore";
+import { getFirestore } from "@/lib/firestore";
 
 /**
  * Discord Guild情報を取得するヘルパー関数
@@ -134,14 +134,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async session({ session, token }) {
-      if (token.discordUser && token.guildMembership) {
+      const extendedToken = token as any;
+      if (extendedToken.discordUser && extendedToken.guildMembership && extendedToken.discordUser.id) {
         try {
           // Firestoreから最新のユーザー情報を取得
-          const user = await getUserByDiscordId(token.discordUser.id);
+          const firestore = getFirestore();
+          const userDoc = await firestore.collection("users").doc(extendedToken.discordUser.id).get();
 
-          if (!user || !user.isActive) {
-            console.log(`User not found or inactive: ${token.discordUser.id}`);
-            return null;
+          if (!userDoc.exists) {
+            console.log(`User not found: ${extendedToken.discordUser.id}`);
+            // セッションを無効化するため、userをundefinedに設定
+            session.user = undefined as any;
+            return session;
+          }
+
+          const user = userDoc.data() as { isActive: boolean; [key: string]: any };
+
+          if (!user.isActive) {
+            console.log(`User inactive: ${extendedToken.discordUser.id}`);
+            // セッションを無効化するため、userをundefinedに設定
+            session.user = undefined as any;
+            return session;
           }
 
           // UserSessionスキーマに準拠したセッション情報を作成
@@ -152,19 +165,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             avatar: user.avatar,
             displayName: user.displayName,
             role: user.role,
-            guildMembership: token.guildMembership as GuildMembership,
+            guildMembership: extendedToken.guildMembership as GuildMembership,
             isActive: user.isActive,
           };
 
           // スキーマ検証
-          session.user = UserSessionSchema.parse(userSession);
+          const validatedUserSession = UserSessionSchema.parse(userSession);
+          session.user = validatedUserSession as any;
 
           // ログイン時刻を更新（非同期、エラーは無視）
           updateLastLogin(user.discordId).catch(console.error);
         } catch (error) {
           console.error("Session validation error:", error);
-          // 検証失敗時はログアウト
-          return null;
+          // 検証失敗時はセッションを無効化
+          session.user = undefined as any;
+          return session;
         }
       }
 
@@ -213,15 +228,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.log(`New user created in Firestore: ${user.id}`);
           } catch (error) {
             console.error("Error creating new user in Firestore:", error);
-            // ユーザー作成失敗時はログインを拒否
-            return false;
+            // ユーザー作成失敗時はログに記録（eventsは戻り値なし）
           }
         }
       }
     },
 
-    async signOut({ token }) {
-      console.log(`User signed out: ${token?.sub}`);
+    async signOut(params) {
+      const token = 'token' in params ? params.token : null;
+      console.log(`User signed out: ${token?.sub || 'unknown'}`);
     },
   },
 
@@ -239,10 +254,4 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    discordUser?: DiscordUser;
-    guildMembership?: GuildMembership;
-    displayName?: string;
-  }
-}
+// JWT type extensions removed to avoid module resolution errors
