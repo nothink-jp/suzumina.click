@@ -1,7 +1,7 @@
-import { auth } from "@/auth";
+import type { UserSession } from "@suzumina.click/shared-types";
 import { redirect } from "next/navigation";
-import { type ReactNode } from "react";
-import { type UserSession } from "@suzumina.click/shared-types";
+import type { ReactNode } from "react";
+import { auth } from "@/auth";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -14,39 +14,39 @@ interface ProtectedRouteProps {
  * 未認証ユーザーはサインインページにリダイレクト
  * 権限不足ユーザーは403エラーページにリダイレクト
  */
-export default async function ProtectedRoute({ 
-  children, 
+export default async function ProtectedRoute({
+  children,
   requireRole = "member",
-  fallbackUrl = "/auth/signin"
+  fallbackUrl = "/auth/signin",
 }: ProtectedRouteProps) {
   const session = await auth();
-  
+
   // 未認証の場合
   if (!session?.user) {
     redirect(fallbackUrl);
   }
 
   const user = session.user;
-  
+
   // 非アクティブユーザーの場合
   if (!user.isActive) {
     redirect("/auth/error?error=AccessDenied");
   }
-  
+
   // 権限チェック
   const roleHierarchy = {
     member: 0,
     moderator: 1,
     admin: 2,
   };
-  
+
   const userLevel = roleHierarchy[user.role];
   const requiredLevel = roleHierarchy[requireRole];
-  
+
   if (userLevel < requiredLevel) {
     redirect("/auth/error?error=AccessDenied");
   }
-  
+
   return <>{children}</>;
 }
 
@@ -55,11 +55,11 @@ export default async function ProtectedRoute({
  */
 export async function requireAuth(): Promise<UserSession> {
   const session = await auth();
-  
+
   if (!session?.user || !session.user.isActive) {
     redirect("/auth/signin");
   }
-  
+
   return session.user;
 }
 
@@ -68,11 +68,11 @@ export async function requireAuth(): Promise<UserSession> {
  */
 export async function requireAdmin(): Promise<UserSession> {
   const user = await requireAuth();
-  
+
   if (user.role !== "admin") {
     redirect("/auth/error?error=AccessDenied");
   }
-  
+
   return user;
 }
 
@@ -81,10 +81,10 @@ export async function requireAdmin(): Promise<UserSession> {
  */
 export async function requireModerator(): Promise<UserSession> {
   const user = await requireAuth();
-  
+
   if (user.role !== "admin" && user.role !== "moderator") {
     redirect("/auth/error?error=AccessDenied");
   }
-  
+
   return user;
 }

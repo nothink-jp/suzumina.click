@@ -30,7 +30,7 @@ interface VideoListResponse {
 const mockYoutubeSearchList = vi
   .fn()
   .mockImplementation(
-    async (params: SearchListParams): Promise<SearchListResponse> => {
+    async (_params: SearchListParams): Promise<SearchListResponse> => {
       // 非同期処理を簡略化して、タイムアウトを防ぐ
       return { data: { items: [] } };
     },
@@ -39,7 +39,7 @@ const mockYoutubeSearchList = vi
 const mockYoutubeVideosList = vi
   .fn()
   .mockImplementation(
-    async (params: VideoListParams): Promise<VideoListResponse> => {
+    async (_params: VideoListParams): Promise<VideoListResponse> => {
       // 非同期処理を簡略化して、タイムアウトを防ぐ
       return { data: { items: [] } };
     },
@@ -137,7 +137,7 @@ describe("fetchYouTubeVideos", () => {
   let mockedLoggerError: Mock;
   let mockedLoggerInfo: Mock;
   let mockedLoggerWarn: Mock;
-  let mockedLoggerDebug: Mock;
+  let _mockedLoggerDebug: Mock;
 
   // メタデータ関連のモック
   let mockMetadataDoc: {
@@ -155,7 +155,7 @@ describe("fetchYouTubeVideos", () => {
     mockedLoggerError = vi.mocked(logger.error);
     mockedLoggerInfo = vi.mocked(logger.info);
     mockedLoggerWarn = vi.mocked(logger.warn);
-    mockedLoggerDebug = vi.mocked(logger.debug);
+    _mockedLoggerDebug = vi.mocked(logger.debug);
 
     // メタデータドキュメントのモックを設定
     mockMetadataDoc = {

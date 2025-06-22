@@ -1,32 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
 import {
-  SUZUMINA_GUILD_ID,
-  isValidGuildMember,
   type GuildMembership,
+  isValidGuildMember,
+  SUZUMINA_GUILD_ID,
 } from "@suzumina.click/shared-types";
+import { type NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 
 /**
  * Guild所属確認API
  * 現在のユーザーが対象Guild（すずみなふぁみりー）のメンバーかどうかを確認
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // セッション確認
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: "Unauthorized", message: "認証が必要です" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     const user = session.user;
-    
+
     // Guild所属確認
     const isValid = isValidGuildMember(user.guildMembership);
-    
+
     return NextResponse.json({
       success: true,
       data: {
@@ -42,11 +42,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Guild verification error:", error);
     return NextResponse.json(
-      { 
-        error: "Internal Server Error", 
-        message: "Guild所属確認に失敗しました" 
+      {
+        error: "Internal Server Error",
+        message: "Guild所属確認に失敗しました",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -59,11 +59,11 @@ export async function POST(request: NextRequest) {
   try {
     // セッション確認
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: "Unauthorized", message: "認証が必要です" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -71,30 +71,30 @@ export async function POST(request: NextRequest) {
     if (session.user.role !== "admin" && session.user.role !== "moderator") {
       return NextResponse.json(
         { error: "Forbidden", message: "管理者権限が必要です" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     const { discordId } = await request.json();
-    
+
     if (!discordId) {
       return NextResponse.json(
         { error: "Bad Request", message: "Discord IDが必要です" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Discord Bot APIを使用してGuild所属を確認
     // Note: これにはBot TokenとGuild権限が必要
     const botToken = process.env.DISCORD_BOT_TOKEN;
-    
+
     if (!botToken) {
       return NextResponse.json(
-        { 
-          error: "Service Unavailable", 
-          message: "Discord Bot設定が無効です" 
+        {
+          error: "Service Unavailable",
+          message: "Discord Bot設定が無効です",
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         headers: {
           Authorization: `Bot ${botToken}`,
         },
-      }
+      },
     );
 
     if (guildMemberResponse.status === 404) {
@@ -130,16 +130,16 @@ export async function POST(request: NextRequest) {
     if (!guildMemberResponse.ok) {
       console.error("Discord API error:", guildMemberResponse.status);
       return NextResponse.json(
-        { 
-          error: "External API Error", 
-          message: "Discord APIエラーが発生しました" 
+        {
+          error: "External API Error",
+          message: "Discord APIエラーが発生しました",
         },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
     const memberData = await guildMemberResponse.json();
-    
+
     // Guild所属情報を構築
     const guildMembership: GuildMembership = {
       guildId: SUZUMINA_GUILD_ID,
@@ -168,11 +168,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Guild re-verification error:", error);
     return NextResponse.json(
-      { 
-        error: "Internal Server Error", 
-        message: "Guild再確認に失敗しました" 
+      {
+        error: "Internal Server Error",
+        message: "Guild再確認に失敗しました",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

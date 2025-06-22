@@ -5,7 +5,6 @@ import {
   type CreateAudioReferenceInput,
   formatTimeRange,
   formatTimestamp,
-  getAudioReferenceCategoryLabel,
   SUGGESTED_AUDIO_REFERENCE_TAGS,
 } from "@suzumina.click/shared-types/src/audio-reference";
 import { Badge } from "@suzumina.click/ui/components/badge";
@@ -27,8 +26,7 @@ import {
 } from "@suzumina.click/ui/components/select";
 import { Slider } from "@suzumina.click/ui/components/slider";
 import { Textarea } from "@suzumina.click/ui/components/textarea";
-import { Clock, Loader2, Play, Plus, RotateCcw, X } from "lucide-react";
-import Link from "next/link";
+import { Clock, Loader2, Play, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createAudioReference } from "@/app/buttons/actions";
@@ -181,7 +179,7 @@ export function AudioReferenceCreator({
   const [category, setCategory] = useState<AudioReferenceCategory>("voice");
   const [tags, setTags] = useState<string[]>([]);
   const [description, setDescription] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
+  const [isPublic, _setIsPublic] = useState(true);
 
   // UI state
   const [isCreating, setIsCreating] = useState(false);

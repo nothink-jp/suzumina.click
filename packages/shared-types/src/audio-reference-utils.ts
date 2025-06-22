@@ -413,7 +413,9 @@ export function checkRateLimit(
   // 過去24時間での作成数をカウント
   const recentCreationsFromUser = recentCreations.filter((creation) => {
     const createdAt = new Date(creation.createdAt);
-    return creation.createdBy === userDiscordId && createdAt > twentyFourHoursAgo;
+    return (
+      creation.createdBy === userDiscordId && createdAt > twentyFourHoursAgo
+    );
   });
 
   const usedQuota = recentCreationsFromUser.length;
@@ -441,7 +443,7 @@ export function checkRateLimit(
 /**
  * IPアドレスをハッシュ化する関数（プライバシー保護）
  */
-function hashIpAddress(ip: string): string {
+function _hashIpAddress(ip: string): string {
   // 簡単なハッシュ関数（本番環境では crypto を使用することを推奨）
   let hash = 0;
   for (let i = 0; i < ip.length; i++) {

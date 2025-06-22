@@ -150,7 +150,7 @@ describe("dlsite-firestore", () => {
 
     it("空の配列を渡した場合は正常に処理される", async () => {
       // 基本的なモック設定（空配列なので実際には使われない）
-      const mockCollection = vi.mocked(
+      const _mockCollection = vi.mocked(
         firestore.default.collection("dlsiteWorks"),
       );
       const mockBatch = {

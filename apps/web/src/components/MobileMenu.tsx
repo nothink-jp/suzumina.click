@@ -1,5 +1,6 @@
 "use client";
 
+import type { UserSession } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/button";
 import {
   Sheet,
@@ -9,7 +10,6 @@ import {
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import AuthButton from "./AuthButton";
-import { type UserSession } from "@suzumina.click/shared-types";
 
 interface MobileMenuProps {
   user?: UserSession | null;
@@ -55,7 +55,7 @@ export default function MobileMenu({ user }: MobileMenuProps) {
           >
             作品一覧
           </Link>
-          
+
           {/* ログイン時のみ表示されるメニュー */}
           {user && (
             <Link
@@ -65,7 +65,7 @@ export default function MobileMenu({ user }: MobileMenuProps) {
               マイページ
             </Link>
           )}
-          
+
           {/* 認証ボタン */}
           <div className="mt-4 pt-4 border-t border-border">
             <AuthButton user={user} />

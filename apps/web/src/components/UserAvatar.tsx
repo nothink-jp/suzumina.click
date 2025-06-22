@@ -10,12 +10,12 @@ interface UserAvatarProps {
   className?: string;
 }
 
-export default function UserAvatar({ 
-  discordId, 
-  avatar, 
-  displayName, 
+export default function UserAvatar({
+  discordId,
+  avatar,
+  displayName,
   size = 32,
-  className = "" 
+  className = "",
 }: UserAvatarProps) {
   const avatarUrl = createDiscordAvatarUrl(discordId, avatar, size);
   const fallbackUrl = `https://cdn.discordapp.com/embed/avatars/${parseInt(discordId) % 5}.png`;

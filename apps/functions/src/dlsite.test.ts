@@ -171,7 +171,7 @@ describe("fetchDLsiteWorks", () => {
   let mockedLoggerError: Mock;
   let mockedLoggerInfo: Mock;
   let mockedLoggerWarn: Mock;
-  let mockedLoggerDebug: Mock;
+  let _mockedLoggerDebug: Mock;
 
   // メタデータ関連のモック
   let mockMetadataDoc: {
@@ -205,7 +205,7 @@ describe("fetchDLsiteWorks", () => {
     mockedLoggerError = vi.mocked(logger.error);
     mockedLoggerInfo = vi.mocked(logger.info);
     mockedLoggerWarn = vi.mocked(logger.warn);
-    mockedLoggerDebug = vi.mocked(logger.debug);
+    _mockedLoggerDebug = vi.mocked(logger.debug);
 
     // メタデータドキュメントのモック設定
     mockMetadataDoc = {

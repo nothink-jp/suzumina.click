@@ -58,23 +58,23 @@ export const FirestoreUserSchema = z.object({
   }),
   globalName: z.string().optional(),
   avatar: z.string().nullable().optional(),
-  
+
   // Guild確認情報
   guildMembership: GuildMembershipSchema,
-  
+
   // アプリ内ユーザー情報
   displayName: z.string().min(1).max(50, {
     message: "表示名は50文字以下である必要があります",
   }),
   isActive: z.boolean().default(true),
-  
+
   // 権限・ロール
   role: z.enum(["member", "moderator", "admin"]).default("member"),
-  
+
   // 統計情報
   audioReferencesCount: z.number().int().min(0).default(0),
   totalPlayCount: z.number().int().min(0).default(0),
-  
+
   // 管理情報
   createdAt: z.string().datetime({
     message: "作成日時はISO形式の日時である必要があります",
@@ -85,7 +85,7 @@ export const FirestoreUserSchema = z.object({
   lastLoginAt: z.string().datetime({
     message: "最終ログイン日時はISO形式の日時である必要があります",
   }),
-  
+
   // プライバシー設定
   isPublicProfile: z.boolean().default(true),
   showStatistics: z.boolean().default(true),
@@ -101,19 +101,19 @@ export const FrontendUserSchema = z.object({
   avatar: z.string().nullable().optional(),
   displayName: z.string(),
   role: z.enum(["member", "moderator", "admin"]),
-  
+
   // 表示用統計情報
   audioReferencesCount: z.number().int().min(0),
   totalPlayCount: z.number().int().min(0),
-  
+
   // 表示用日時
   createdAt: z.string().datetime(),
   lastLoginAt: z.string().datetime(),
-  
+
   // プライバシー設定に応じた表示制御
   isPublicProfile: z.boolean(),
   showStatistics: z.boolean(),
-  
+
   // 表示用の追加情報
   avatarUrl: z.string().url().optional(),
   memberSince: z.string(), // "2024年1月から" のような表示用テキスト
@@ -158,7 +158,9 @@ export const UserQuerySchema = z.object({
   startAfter: z.string().optional(),
   role: z.enum(["member", "moderator", "admin"]).optional(),
   searchText: z.string().max(50).optional(), // username, globalName, displayNameで検索
-  sortBy: z.enum(["newest", "oldest", "mostActive", "alphabetical"]).default("newest"),
+  sortBy: z
+    .enum(["newest", "oldest", "mostActive", "alphabetical"])
+    .default("newest"),
   onlyPublic: z.boolean().default(true),
 });
 
@@ -187,10 +189,12 @@ export type UserListResult = z.infer<typeof UserListResultSchema>;
 /**
  * ユーザーロール表示名を取得するヘルパー関数
  */
-export function getUserRoleLabel(role: "member" | "moderator" | "admin"): string {
+export function getUserRoleLabel(
+  role: "member" | "moderator" | "admin",
+): string {
   const labels = {
     member: "メンバー",
-    moderator: "モデレーター", 
+    moderator: "モデレーター",
     admin: "管理者",
   };
   return labels[role];
@@ -202,14 +206,14 @@ export function getUserRoleLabel(role: "member" | "moderator" | "admin"): string
 export function createDiscordAvatarUrl(
   userId: string,
   avatarHash: string | null | undefined,
-  size: number = 128
+  size: number = 128,
 ): string {
   if (!avatarHash) {
     // デフォルトアバター (ユーザーIDベース)
     const defaultAvatarIndex = parseInt(userId) % 5;
     return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;
   }
-  
+
   // カスタムアバター
   const extension = avatarHash.startsWith("a_") ? "gif" : "png";
   return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${extension}?size=${size}`;
@@ -221,7 +225,7 @@ export function createDiscordAvatarUrl(
 export function resolveDisplayName(
   displayName: string | undefined,
   globalName: string | undefined,
-  username: string
+  username: string,
 ): string {
   return displayName || globalName || username;
 }
@@ -230,7 +234,9 @@ export function resolveDisplayName(
  * Guild所属確認のヘルパー関数
  */
 export function isValidGuildMember(guildMembership: GuildMembership): boolean {
-  return guildMembership.guildId === SUZUMINA_GUILD_ID && guildMembership.isMember;
+  return (
+    guildMembership.guildId === SUZUMINA_GUILD_ID && guildMembership.isMember
+  );
 }
 
 /**
@@ -241,7 +247,7 @@ export function formatRelativeTime(dateString: string): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     if (diffHours === 0) {

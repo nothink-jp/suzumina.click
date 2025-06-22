@@ -2,26 +2,28 @@
  * ユーザー関連のFirestore操作を提供するモジュール
  */
 
-import { getFirestore } from "./firestore";
 import {
-  type FirestoreUserData,
   type CreateUserInput,
-  type UpdateUserInput,
-  type UserQuery,
-  type UserListResult,
-  type FrontendUserData,
-  FirestoreUserSchema,
-  FrontendUserSchema,
   createDiscordAvatarUrl,
-  resolveDisplayName,
+  type FirestoreUserData,
+  FirestoreUserSchema,
+  type FrontendUserData,
+  FrontendUserSchema,
   formatMemberSince,
   formatRelativeTime,
+  resolveDisplayName,
+  type UpdateUserInput,
+  type UserListResult,
+  type UserQuery,
 } from "@suzumina.click/shared-types";
+import { getFirestore } from "./firestore";
 
 /**
  * Firestoreユーザーデータをフロントエンド表示用に変換
  */
-export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData {
+export function convertToFrontendUser(
+  data: FirestoreUserData,
+): FrontendUserData {
   const frontendData: FrontendUserData = {
     discordId: data.discordId,
     username: data.username,
@@ -35,7 +37,7 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
     lastLoginAt: data.lastLoginAt,
     isPublicProfile: data.isPublicProfile,
     showStatistics: data.showStatistics,
-    
+
     // 表示用の追加情報
     avatarUrl: createDiscordAvatarUrl(data.discordId, data.avatar),
     memberSince: formatMemberSince(data.createdAt),
@@ -53,11 +55,13 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
 /**
  * Discord IDでユーザーを取得
  */
-export async function getUserByDiscordId(discordId: string): Promise<FrontendUserData | null> {
+export async function getUserByDiscordId(
+  discordId: string,
+): Promise<FrontendUserData | null> {
   try {
     const firestore = getFirestore();
     const userDoc = await firestore.collection("users").doc(discordId).get();
-    
+
     if (!userDoc.exists) {
       return null;
     }
@@ -73,17 +77,21 @@ export async function getUserByDiscordId(discordId: string): Promise<FrontendUse
 /**
  * 新しいユーザーを作成
  */
-export async function createUser(input: CreateUserInput): Promise<FrontendUserData> {
+export async function createUser(
+  input: CreateUserInput,
+): Promise<FrontendUserData> {
   try {
     const firestore = getFirestore();
     const now = new Date().toISOString();
-    
+
     // 表示名の決定
-    const displayName = input.displayName || resolveDisplayName(
-      undefined,
-      input.discordUser.globalName,
-      input.discordUser.username
-    );
+    const displayName =
+      input.displayName ||
+      resolveDisplayName(
+        undefined,
+        input.discordUser.globalName,
+        input.discordUser.username,
+      );
 
     const userData: FirestoreUserData = {
       discordId: input.discordUser.id,
@@ -107,7 +115,10 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
     const validatedData = FirestoreUserSchema.parse(userData);
 
     // Firestoreに保存
-    await firestore.collection("users").doc(input.discordUser.id).set(validatedData);
+    await firestore
+      .collection("users")
+      .doc(input.discordUser.id)
+      .set(validatedData);
 
     console.log(`New user created: ${input.discordUser.id} (${displayName})`);
     return convertToFrontendUser(validatedData);
@@ -120,7 +131,9 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 /**
  * ユーザー情報を更新
  */
-export async function updateUser(input: UpdateUserInput): Promise<FrontendUserData> {
+export async function updateUser(
+  input: UpdateUserInput,
+): Promise<FrontendUserData> {
   try {
     const firestore = getFirestore();
     const now = new Date().toISOString();
@@ -128,8 +141,12 @@ export async function updateUser(input: UpdateUserInput): Promise<FrontendUserDa
     const updateData: Partial<FirestoreUserData> = {
       updatedAt: now,
       ...(input.displayName && { displayName: input.displayName }),
-      ...(input.isPublicProfile !== undefined && { isPublicProfile: input.isPublicProfile }),
-      ...(input.showStatistics !== undefined && { showStatistics: input.showStatistics }),
+      ...(input.isPublicProfile !== undefined && {
+        isPublicProfile: input.isPublicProfile,
+      }),
+      ...(input.showStatistics !== undefined && {
+        showStatistics: input.showStatistics,
+      }),
     };
 
     await firestore.collection("users").doc(input.discordId).update(updateData);
@@ -176,13 +193,13 @@ export async function updateUserStats(
   updates: {
     incrementAudioReferences?: boolean;
     incrementPlayCount?: number;
-  }
+  },
 ): Promise<void> {
   try {
     const firestore = getFirestore();
     const now = new Date().toISOString();
 
-    const updateData: any = {
+    const updateData: Partial<FirestoreUserData> = {
       updatedAt: now,
     };
 
@@ -241,7 +258,10 @@ export async function getUserList(query: UserQuery): Promise<UserListResult> {
 
     // ページネーション
     if (query.startAfter) {
-      const startAfterDoc = await firestore.collection("users").doc(query.startAfter).get();
+      const startAfterDoc = await firestore
+        .collection("users")
+        .doc(query.startAfter)
+        .get();
       if (startAfterDoc.exists) {
         firestoreQuery = firestoreQuery.startAfter(startAfterDoc);
       }
@@ -253,7 +273,7 @@ export async function getUserList(query: UserQuery): Promise<UserListResult> {
     const docs = snapshot.docs;
 
     const hasMore = docs.length > query.limit;
-    const users = docs.slice(0, query.limit).map(doc => {
+    const users = docs.slice(0, query.limit).map((doc) => {
       const userData = doc.data() as FirestoreUserData;
       return convertToFrontendUser(userData);
     });
@@ -262,21 +282,26 @@ export async function getUserList(query: UserQuery): Promise<UserListResult> {
     let filteredUsers = users;
     if (query.searchText) {
       const searchTerms = query.searchText.toLowerCase().split(/\s+/);
-      filteredUsers = users.filter(user => {
+      filteredUsers = users.filter((user) => {
         const searchableText = [
           user.username,
           user.globalName || "",
           user.displayName,
-        ].join(" ").toLowerCase();
+        ]
+          .join(" ")
+          .toLowerCase();
 
-        return searchTerms.every(term => searchableText.includes(term));
+        return searchTerms.every((term) => searchableText.includes(term));
       });
     }
 
     return {
       users: filteredUsers,
       hasMore,
-      lastUser: filteredUsers.length > 0 ? filteredUsers[filteredUsers.length - 1] : undefined,
+      lastUser:
+        filteredUsers.length > 0
+          ? filteredUsers[filteredUsers.length - 1]
+          : undefined,
     };
   } catch (error) {
     console.error("Error getting user list:", error);

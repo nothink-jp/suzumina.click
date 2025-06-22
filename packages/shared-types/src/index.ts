@@ -12,9 +12,9 @@ export * from "./audio-reference-utils";
 export * from "./common";
 // Firestore関連のユーティリティ
 export * from "./firestore-utils";
+// ユーザー認証関連の型とスキーマのエクスポート
+export * from "./user";
 // 動画関連の型とスキーマのエクスポート
 export * from "./video";
 // DLsite作品関連の型とスキーマのエクスポート
 export * from "./work";
-// ユーザー認証関連の型とスキーマのエクスポート
-export * from "./user";

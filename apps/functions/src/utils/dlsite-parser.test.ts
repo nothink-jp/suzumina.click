@@ -7,7 +7,6 @@
 import * as cheerio from "cheerio";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
-  extractCategoryFromClass,
   extractNumberFromParentheses,
   extractPriceNumber,
   extractStarRating,

@@ -68,7 +68,7 @@ export default function PerformanceMonitor() {
       try {
         lcpObserver.observe({ entryTypes: ["largest-contentful-paint"] });
         observers.push(lcpObserver);
-      } catch (e) {
+      } catch (_e) {
         // ブラウザサポートがない場合は無視
       }
 
@@ -89,7 +89,7 @@ export default function PerformanceMonitor() {
       try {
         fidObserver.observe({ entryTypes: ["first-input"] });
         observers.push(fidObserver);
-      } catch (e) {
+      } catch (_e) {
         // ブラウザサポートがない場合は無視
       }
 
@@ -109,7 +109,7 @@ export default function PerformanceMonitor() {
       try {
         clsObserver.observe({ entryTypes: ["layout-shift"] });
         observers.push(clsObserver);
-      } catch (e) {
+      } catch (_e) {
         // ブラウザサポートがない場合は無視
       }
 
@@ -186,7 +186,7 @@ export default function PerformanceMonitor() {
       try {
         resourceObserver.observe({ entryTypes: ["resource"] });
         observers.push(resourceObserver);
-      } catch (e) {
+      } catch (_e) {
         // ブラウザサポートがない場合は無視
       }
     }

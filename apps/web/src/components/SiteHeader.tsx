@@ -58,7 +58,7 @@ export default async function SiteHeader() {
                   <Link href="/users/me">マイページ</Link>
                 </Button>
               )}
-              
+
               {/* 認証ボタン */}
               <div className="hidden md:flex">
                 <AuthButton user={session?.user} />

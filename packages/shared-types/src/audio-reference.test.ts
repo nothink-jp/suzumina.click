@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
 import {
   AudioReferenceBaseSchema,
-  type AudioReferenceCategory,
   AudioReferenceCategorySchema,
   type AudioReferenceListResult,
   AudioReferenceListResultSchema,
@@ -41,8 +39,8 @@ const validFirestoreAudioReference: FirestoreAudioReferenceData = {
   startTime: 45,
   endTime: 68,
   duration: 23,
-  createdBy: "anonymous",
-  createdByIp: "hashed-ip-123",
+  createdBy: "123456789012345678",
+  createdByName: "TestUser",
   isPublic: true,
   playCount: 150,
   likeCount: 25,
@@ -68,6 +66,8 @@ const validFrontendAudioReference: FrontendAudioReferenceData = {
   startTime: 45,
   endTime: 68,
   duration: 23,
+  createdBy: "123456789012345678",
+  createdByName: "TestUser",
   playCount: 150,
   likeCount: 25,
   viewCount: 200,
@@ -185,7 +185,7 @@ describe("FirestoreAudioReferenceSchema", () => {
       expect(result.data.startTime).toBe(45);
       expect(result.data.endTime).toBe(68);
       expect(result.data.duration).toBe(23);
-      expect(result.data.createdBy).toBe("anonymous");
+      expect(result.data.createdBy).toBe("123456789012345678");
     }
   });
 
@@ -217,6 +217,8 @@ describe("FirestoreAudioReferenceSchema", () => {
       startTime: 0,
       endTime: 10,
       duration: 10,
+      createdBy: "123456789012345678",
+      createdByName: "TestUser",
       createdAt: "2023-01-01T00:00:00Z",
       updatedAt: "2023-01-01T00:00:00Z",
     };
@@ -224,7 +226,7 @@ describe("FirestoreAudioReferenceSchema", () => {
     const result = FirestoreAudioReferenceSchema.safeParse(minimalData);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.createdBy).toBe("anonymous");
+      expect(result.data.createdBy).toBe("123456789012345678");
       expect(result.data.isPublic).toBe(true);
       expect(result.data.playCount).toBe(0);
       expect(result.data.likeCount).toBe(0);

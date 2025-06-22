@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
 import {
-  CampaignInfoSchema,
   convertToFrontendWork,
   deserializeWorkForRCC,
   deserializeWorkListResult,
@@ -9,7 +7,6 @@ import {
   FirestoreDLsiteWorkSchema,
   type FrontendDLsiteWorkData,
   FrontendDLsiteWorkSchema,
-  LanguageDownloadSchema,
   LocalePriceSchema,
   type PriceInfo,
   PriceInfoSchema,
@@ -20,10 +17,8 @@ import {
   SalesStatusSchema,
   type SampleImage,
   SampleImageSchema,
-  SeriesInfoSchema,
   serializeWorkForRSC,
   serializeWorkListResult,
-  TranslationInfoSchema,
   WorkCategorySchema,
   type WorkListResult,
   WorkListResultSchema,

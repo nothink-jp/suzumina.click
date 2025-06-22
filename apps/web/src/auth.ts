@@ -1,21 +1,20 @@
+import {
+  type DiscordUser,
+  type GuildMembership,
+  isValidGuildMember,
+  resolveDisplayName,
+  SUZUMINA_GUILD_ID,
+  type UserSession,
+  UserSessionSchema,
+} from "@suzumina.click/shared-types";
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
-import { 
-  getUserByDiscordId,
+import {
   createUser,
+  getUserByDiscordId,
   updateLastLogin,
   userExists,
 } from "@/lib/user-firestore";
-import {
-  type UserSession,
-  type DiscordUser,
-  type GuildMembership,
-  SUZUMINA_GUILD_ID,
-  isValidGuildMember,
-  resolveDisplayName,
-  createDiscordAvatarUrl,
-  UserSessionSchema,
-} from "@suzumina.click/shared-types";
 
 /**
  * Discord Guild情報を取得するヘルパー関数
@@ -31,7 +30,7 @@ async function fetchDiscordGuildMembership(
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -40,7 +39,9 @@ async function fetchDiscordGuildMembership(
     }
 
     const guilds = await response.json();
-    const suzuminaGuild = guilds.find((guild: any) => guild.id === SUZUMINA_GUILD_ID);
+    const suzuminaGuild = guilds.find(
+      (guild: { id: string }) => guild.id === SUZUMINA_GUILD_ID,
+    );
 
     if (!suzuminaGuild) {
       console.log(`User ${userId} is not a member of suzumina guild`);
@@ -69,11 +70,11 @@ async function fetchDiscordGuildMembership(
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // カスタムFirestore管理（アダプターなし）
-  
+
   providers: [
     Discord({
-      clientId: process.env.DISCORD_CLIENT_ID!,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+      clientId: process.env.DISCORD_CLIENT_ID || "",
+      clientSecret: process.env.DISCORD_CLIENT_SECRET || "",
       // Guild情報取得のためのスコープを追加
       authorization: {
         params: {
@@ -89,11 +90,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === "discord" && account.access_token) {
         const guildMembership = await fetchDiscordGuildMembership(
           account.access_token,
-          user.id
+          user.id,
         );
 
         if (!guildMembership || !isValidGuildMember(guildMembership)) {
-          console.log(`Access denied for user ${user.id}: not a valid guild member`);
+          console.log(
+            `Access denied for user ${user.id}: not a valid guild member`,
+          );
           return false; // ログイン拒否
         }
 
@@ -117,13 +120,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
 
         const guildMembership = user.guildMembership as GuildMembership;
-        
+
         token.discordUser = discordUser;
         token.guildMembership = guildMembership;
         token.displayName = resolveDisplayName(
           undefined, // displayNameは後でユーザーが設定
           discordUser.globalName,
-          discordUser.username
+          discordUser.username,
         );
       }
 
@@ -135,7 +138,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           // Firestoreから最新のユーザー情報を取得
           const user = await getUserByDiscordId(token.discordUser.id);
-          
+
           if (!user || !user.isActive) {
             console.log(`User not found or inactive: ${token.discordUser.id}`);
             return null;
@@ -155,10 +158,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           // スキーマ検証
           session.user = UserSessionSchema.parse(userSession);
-          
+
           // ログイン時刻を更新（非同期、エラーは無視）
           updateLastLogin(user.discordId).catch(console.error);
-          
         } catch (error) {
           console.error("Session validation error:", error);
           // 検証失敗時はログアウト
@@ -182,11 +184,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     async signIn({ user, account, isNewUser }) {
       console.log(`User signed in: ${user.id} (new: ${isNewUser})`);
-      
+
       // Discord認証での新規ユーザーの場合、Firestoreにユーザーデータを作成
       if (account?.provider === "discord" && user.guildMembership) {
         const alreadyExists = await userExists(user.id);
-        
+
         if (!alreadyExists) {
           try {
             const discordUser: DiscordUser = {

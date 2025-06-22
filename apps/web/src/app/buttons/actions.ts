@@ -20,9 +20,8 @@ import {
   type YouTubeVideoInfo,
 } from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { FirestoreAdmin } from "@/lib/firestore-admin";
 import { requireAuth } from "@/components/ProtectedRoute";
+import { FirestoreAdmin } from "@/lib/firestore-admin";
 import { updateUserStats } from "@/lib/user-firestore";
 
 /**
@@ -92,7 +91,6 @@ export async function createAudioReference(
         error: validation.errors.join(", "),
       };
     }
-
 
     // Firestoreデータの作成（ユーザー情報付き）
     const firestoreData = convertCreateInputToFirestoreAudioReference(
@@ -343,7 +341,7 @@ export async function updateAudioReferenceStats(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // 認証チェック（統計更新は認証ユーザーのみ）
-    const user = await requireAuth();
+    const _user = await requireAuth();
     // バリデーション
     const validationResult =
       UpdateAudioReferenceStatsSchema.safeParse(statsUpdate);
@@ -391,7 +389,7 @@ export async function updateAudioReferenceStats(
         .collection("audioReferences")
         .doc(validatedUpdate.id)
         .get();
-      
+
       if (audioRefDoc.exists) {
         const audioRefData = audioRefDoc.data() as FirestoreAudioReferenceData;
         if (audioRefData.createdBy) {

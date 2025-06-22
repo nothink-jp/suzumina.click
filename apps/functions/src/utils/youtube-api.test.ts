@@ -1,5 +1,5 @@
 import type { youtube_v3 } from "googleapis";
-import { afterEach, beforeEach, describe, expect, it, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SUZUKA_MINASE_CHANNEL_ID } from "./common";
 import * as youtubeApi from "./youtube-api";
 

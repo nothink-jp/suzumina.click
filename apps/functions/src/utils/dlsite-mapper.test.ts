@@ -9,8 +9,6 @@ import {
   extractRankingInfo,
   extractVoiceActors,
   fetchWorkInfo,
-  filterWorksForUpdate,
-  mapMultipleWorks,
   mapMultipleWorksWithInfo,
   mapToFirestoreData,
   mapToWorkBase,
