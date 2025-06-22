@@ -55,6 +55,7 @@ async function ErrorContent({ error }: { error?: string }) {
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
+              <title>エラー警告アイコン</title>
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -83,6 +84,7 @@ async function ErrorContent({ error }: { error?: string }) {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
+                <title>リトライアイコン</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -104,6 +106,7 @@ async function ErrorContent({ error }: { error?: string }) {
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
+              <title>ホームアイコン</title>
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

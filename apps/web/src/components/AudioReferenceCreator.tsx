@@ -28,10 +28,10 @@ import { Slider } from "@suzumina.click/ui/components/slider";
 import { Textarea } from "@suzumina.click/ui/components/textarea";
 import { Clock, Loader2, Play, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createAudioReference } from "@/app/buttons/actions";
 import { AudioReferenceCard } from "./AudioReferenceCard";
-import { YouTubePlayer } from "./YouTubePlayer";
+import { YouTubePlayer, type YTPlayer } from "./YouTubePlayer";
 
 interface AudioReferenceCreatorProps {
   videoId: string;
@@ -102,7 +102,7 @@ function TagInput({
       <div className="flex flex-wrap gap-2">
         {tags.map((tag, index) => (
           <Badge
-            key={index}
+            key={tag}
             variant="secondary"
             className="flex items-center gap-1"
           >
@@ -186,14 +186,18 @@ export function AudioReferenceCreator({
   const [error, setError] = useState("");
   const [currentTime, setCurrentTime] = useState(initialStartTime);
 
-  const youtubePlayerRef = useRef<any>(null);
+  const youtubePlayerRef = useRef<YTPlayer | null>(null);
+
+  // Unique IDs for form elements
+  const titleInputId = useId();
+  const descriptionInputId = useId();
 
   // Computed values
   const duration = endTime - startTime;
   const isValid = title.trim().length > 0 && duration >= 1 && duration <= 60;
 
   // YouTube Player handlers
-  const handlePlayerReady = useCallback((player: any) => {
+  const handlePlayerReady = useCallback((player: YTPlayer) => {
     youtubePlayerRef.current = player;
   }, []);
 
@@ -355,9 +359,9 @@ export function AudioReferenceCreator({
           {/* Start time */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">
+              <span className="text-sm font-medium">
                 開始時間: {formatTimestamp(startTime)}
-              </label>
+              </span>
               <Button
                 variant="outline"
                 size="sm"
@@ -380,9 +384,9 @@ export function AudioReferenceCreator({
           {/* End time */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">
+              <span className="text-sm font-medium">
                 終了時間: {formatTimestamp(endTime)}
-              </label>
+              </span>
               <Button
                 variant="outline"
                 size="sm"
@@ -438,10 +442,11 @@ export function AudioReferenceCreator({
         <CardContent className="space-y-6">
           {/* Title */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label htmlFor={titleInputId} className="text-sm font-medium">
               タイトル <span className="text-destructive">*</span>
             </label>
             <Input
+              id={titleInputId}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="例: おはようございます"
@@ -455,7 +460,9 @@ export function AudioReferenceCreator({
 
           {/* Category */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">カテゴリ</label>
+            <label htmlFor="category-select" className="text-sm font-medium">
+              カテゴリ
+            </label>
             <Select
               value={category}
               onValueChange={(value: AudioReferenceCategory) =>
@@ -479,7 +486,9 @@ export function AudioReferenceCreator({
 
           {/* Tags */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">タグ（任意）</label>
+            <label htmlFor="tags-input" className="text-sm font-medium">
+              タグ（任意）
+            </label>
             <TagInput
               tags={tags}
               onChange={setTags}
@@ -491,8 +500,11 @@ export function AudioReferenceCreator({
 
           {/* Description */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">説明（任意）</label>
+            <label htmlFor={descriptionInputId} className="text-sm font-medium">
+              説明（任意）
+            </label>
             <Textarea
+              id={descriptionInputId}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="この音声ボタンの説明..."

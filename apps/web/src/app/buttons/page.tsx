@@ -239,7 +239,7 @@ function AudioButtonsListSkeleton() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array.from({ length: 6 }, (_, i) => (
-          <Card key={`main-skeleton-${i}`}>
+          <Card key={`main-skeleton-${Date.now()}-${i}`}>
             <CardHeader>
               <Skeleton className="h-5 w-3/4" />
               <Skeleton className="h-4 w-full" />
@@ -318,7 +318,7 @@ export default async function AudioButtonsPage({
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {Array.from({ length: 6 }, (_, i) => (
-                      <Card key={`popular-skeleton-${i}`}>
+                      <Card key={`popular-skeleton-${Date.now()}-${i}`}>
                         <CardContent className="p-4">
                           <Skeleton className="h-12 w-full" />
                         </CardContent>
@@ -342,7 +342,7 @@ export default async function AudioButtonsPage({
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {Array.from({ length: 6 }, (_, i) => (
-                      <Card key={`recent-skeleton-${i}`}>
+                      <Card key={`recent-skeleton-${Date.now()}-${i}`}>
                         <CardContent className="p-4">
                           <Skeleton className="h-12 w-full" />
                         </CardContent>

@@ -102,7 +102,7 @@ const VideoCard = memo(function VideoCard({
             <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
             <time
               dateTime={video.publishedAt}
-              aria-label={`公開日: ${formattedDate}`}
+              title={`公開日: ${formattedDate}`}
             >
               {formattedDate}
             </time>

@@ -80,6 +80,7 @@ function getCategoryDisplayName(category: string): string {
 async function RelatedAudioButtons({
   currentId,
   videoId,
+  // biome-ignore lint/correctness/noUnusedFunctionParameters: tags will be used for related audio recommendation in future
   tags,
 }: {
   currentId: string;

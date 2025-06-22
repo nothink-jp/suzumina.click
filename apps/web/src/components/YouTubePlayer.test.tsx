@@ -390,7 +390,6 @@ describe("YouTubePlayer", () => {
 // Test component for useYouTubePlayer hook
 function TestHookComponent() {
   const {
-    player,
     isPlaying,
     currentTime,
     duration,
@@ -415,25 +414,33 @@ function TestHookComponent() {
         <span data-testid="volume">{volume}</span>
         <span data-testid="is-muted">{isMuted.toString()}</span>
       </div>
-      <button onClick={controls.play} data-testid="play-btn">
+      <button type="button" onClick={controls.play} data-testid="play-btn">
         Play
       </button>
-      <button onClick={controls.pause} data-testid="pause-btn">
+      <button type="button" onClick={controls.pause} data-testid="pause-btn">
         Pause
       </button>
-      <button onClick={controls.stop} data-testid="stop-btn">
+      <button type="button" onClick={controls.stop} data-testid="stop-btn">
         Stop
       </button>
-      <button onClick={() => controls.seekTo(30)} data-testid="seek-btn">
+      <button
+        type="button"
+        onClick={() => controls.seekTo(30)}
+        data-testid="seek-btn"
+      >
         Seek
       </button>
-      <button onClick={() => controls.setVolume(75)} data-testid="volume-btn">
+      <button
+        type="button"
+        onClick={() => controls.setVolume(75)}
+        data-testid="volume-btn"
+      >
         Volume
       </button>
-      <button onClick={controls.mute} data-testid="mute-btn">
+      <button type="button" onClick={controls.mute} data-testid="mute-btn">
         Mute
       </button>
-      <button onClick={controls.unmute} data-testid="unmute-btn">
+      <button type="button" onClick={controls.unmute} data-testid="unmute-btn">
         Unmute
       </button>
     </div>

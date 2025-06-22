@@ -7,6 +7,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
+      {/* biome-ignore lint/nursery/useUniqueElementIds: main-content is unique in Storybook context */}
       <main id="main-content" className="flex-1 bg-gray-50 p-8">
         {children}
       </main>

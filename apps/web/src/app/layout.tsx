@@ -38,6 +38,7 @@ export default function RootLayout({
       >
         <PerformanceMonitor />
         <SiteHeader />
+        {/* biome-ignore lint/nursery/useUniqueElementIds: main-content is unique across the entire application */}
         <main id="main-content" className="flex-1">
           {children}
         </main>

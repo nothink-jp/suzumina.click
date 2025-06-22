@@ -151,8 +151,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (!userDoc.exists) {
             console.log(`User not found: ${extendedToken.discordUser.id}`);
             // セッションを無効化するため、userをundefinedに設定
-            (session as any).user = undefined;
-            return session;
+            return { ...session, user: undefined };
           }
 
           const user = userDoc.data() as {
@@ -169,8 +168,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (!user.isActive) {
             console.log(`User inactive: ${extendedToken.discordUser.id}`);
             // セッションを無効化するため、userをundefinedに設定
-            (session as any).user = undefined;
-            return session;
+            return { ...session, user: undefined };
           }
 
           // UserSessionスキーマに準拠したセッション情報を作成
@@ -187,15 +185,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           // スキーマ検証
           const validatedUserSession = UserSessionSchema.parse(userSession);
-          (session as any).user = validatedUserSession;
 
           // ログイン時刻を更新（非同期、エラーは無視）
           updateLastLogin(user.discordId).catch(console.error);
+
+          return { ...session, user: validatedUserSession };
         } catch (error) {
           console.error("Session validation error:", error);
           // 検証失敗時はセッションを無効化
-          (session as any).user = undefined;
-          return session;
+          return { ...session, user: undefined };
         }
       }
 

@@ -82,9 +82,8 @@ vi.mock("@/components/AudioReferenceCard", () => ({
 
 // Mock AudioButtonsList component
 vi.mock("./components/AudioButtonsList", () => ({
+  // biome-ignore lint/correctness/noUnusedFunctionParameters: searchParams used for testing interface compatibility
   AudioButtonsList: ({ searchParams }: any) => {
-    // Use the mocked getAudioReferences action
-    const { getAudioReferences } = require("./actions");
     return (
       <div data-testid="audio-buttons-list">
         <div data-testid="audio-reference-card">

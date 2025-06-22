@@ -1,6 +1,7 @@
 "use client";
 
 import { createDiscordAvatarUrl } from "@suzumina.click/shared-types";
+import Image from "next/image";
 
 interface UserAvatarProps {
   discordId: string;
@@ -21,9 +22,11 @@ export default function UserAvatar({
   const fallbackUrl = `https://cdn.discordapp.com/embed/avatars/${parseInt(discordId) % 5}.png`;
 
   return (
-    <img
+    <Image
       src={avatarUrl}
       alt={`${displayName}のアバター`}
+      width={size}
+      height={size}
       className={`rounded-full ${className}`}
       onError={(e) => {
         // フォールバック画像

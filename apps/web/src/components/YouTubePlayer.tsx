@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * YouTube Player API の型定義
@@ -60,7 +60,7 @@ interface YTPlayerConfig {
   };
 }
 
-interface YTPlayer {
+export interface YTPlayer {
   playVideo(): void;
   pauseVideo(): void;
   stopVideo(): void;
@@ -92,8 +92,8 @@ interface YTPlayer {
   getPlaylist(): string[];
   getPlaylistIndex(): number;
   destroy(): void;
-  addEventListener(event: string, listener: (event: any) => void): void;
-  removeEventListener(event: string, listener: (event: any) => void): void;
+  addEventListener(event: string, listener: (event: Event) => void): void;
+  removeEventListener(event: string, listener: (event: Event) => void): void;
   getIframe(): HTMLIFrameElement;
   loadVideoById(
     videoId: string,
@@ -156,6 +156,7 @@ export function YouTubePlayer({
   controls = true,
   startTime,
   endTime,
+  // biome-ignore lint/correctness/noUnusedFunctionParameters: loop will be implemented in future YouTube API integration
   loop = false,
   modestBranding = true,
   rel = false,
@@ -206,6 +207,50 @@ export function YouTubePlayer({
       }
     };
   }, []);
+
+  // 時間更新インターバルの開始
+  const startTimeUpdateInterval = useCallback(() => {
+    if (timeUpdateIntervalRef.current) return;
+
+    timeUpdateIntervalRef.current = setInterval(() => {
+      if (playerRef.current && onTimeUpdate) {
+        try {
+          const currentTime = playerRef.current.getCurrentTime();
+          const duration = playerRef.current.getDuration();
+          onTimeUpdate(currentTime, duration);
+        } catch (error) {
+          console.error("Time update error:", error);
+        }
+      }
+    }, 1000); // 1秒間隔で更新
+  }, [onTimeUpdate]);
+
+  // 時間更新インターバルの停止
+  const stopTimeUpdateInterval = useCallback(() => {
+    if (timeUpdateIntervalRef.current) {
+      clearInterval(timeUpdateIntervalRef.current);
+      timeUpdateIntervalRef.current = null;
+    }
+  }, []);
+
+  // プレイヤー制御メソッドの公開
+  const playerControls = useMemo(
+    () => ({
+      play: () => playerRef.current?.playVideo(),
+      pause: () => playerRef.current?.pauseVideo(),
+      stop: () => playerRef.current?.stopVideo(),
+      seekTo: (seconds: number) => playerRef.current?.seekTo(seconds, true),
+      getCurrentTime: () => playerRef.current?.getCurrentTime() || 0,
+      getDuration: () => playerRef.current?.getDuration() || 0,
+      getPlayerState: () => playerRef.current?.getPlayerState() || -1,
+      setVolume: (volume: number) => playerRef.current?.setVolume(volume),
+      getVolume: () => playerRef.current?.getVolume() || 50,
+      mute: () => playerRef.current?.mute(),
+      unmute: () => playerRef.current?.unMute(),
+      isMuted: () => playerRef.current?.isMuted() || false,
+    }),
+    [],
+  );
 
   // プレイヤーの初期化
   useEffect(() => {
@@ -282,51 +327,14 @@ export function YouTubePlayer({
     controls,
     startTime,
     endTime,
-    loop,
     modestBranding,
     rel,
+    startTimeUpdateInterval,
+    stopTimeUpdateInterval,
+    onReady,
+    onStateChange,
+    onError,
   ]);
-
-  // 時間更新インターバルの開始
-  const startTimeUpdateInterval = useCallback(() => {
-    if (timeUpdateIntervalRef.current) return;
-
-    timeUpdateIntervalRef.current = setInterval(() => {
-      if (playerRef.current && onTimeUpdate) {
-        try {
-          const currentTime = playerRef.current.getCurrentTime();
-          const duration = playerRef.current.getDuration();
-          onTimeUpdate(currentTime, duration);
-        } catch (error) {
-          console.error("Time update error:", error);
-        }
-      }
-    }, 1000); // 1秒間隔で更新
-  }, [onTimeUpdate]);
-
-  // 時間更新インターバルの停止
-  const stopTimeUpdateInterval = useCallback(() => {
-    if (timeUpdateIntervalRef.current) {
-      clearInterval(timeUpdateIntervalRef.current);
-      timeUpdateIntervalRef.current = null;
-    }
-  }, []);
-
-  // プレイヤー制御メソッドの公開
-  const playerControls = {
-    play: () => playerRef.current?.playVideo(),
-    pause: () => playerRef.current?.pauseVideo(),
-    stop: () => playerRef.current?.stopVideo(),
-    seekTo: (seconds: number) => playerRef.current?.seekTo(seconds, true),
-    getCurrentTime: () => playerRef.current?.getCurrentTime() || 0,
-    getDuration: () => playerRef.current?.getDuration() || 0,
-    getPlayerState: () => playerRef.current?.getPlayerState() || -1,
-    setVolume: (volume: number) => playerRef.current?.setVolume(volume),
-    getVolume: () => playerRef.current?.getVolume() || 50,
-    mute: () => playerRef.current?.mute(),
-    unmute: () => playerRef.current?.unMute(),
-    isMuted: () => playerRef.current?.isMuted() || false,
-  };
 
   // 親コンポーネントに制御メソッドを公開
   useEffect(() => {
@@ -334,7 +342,7 @@ export function YouTubePlayer({
       // プレイヤーインスタンスに制御メソッドを追加
       Object.assign(playerRef.current, playerControls);
     }
-  }, [playerReady]);
+  }, [playerReady, onReady, playerControls]);
 
   if (!videoId) {
     return (

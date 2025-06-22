@@ -195,7 +195,7 @@ describe("Videos Actions", () => {
     });
 
     it("ページネーション（startAfter）が正しく動作する", async () => {
-      const { mockFirestore, mockCollection, mockDoc } = createMockFirestore();
+      const { mockFirestore, mockCollection } = createMockFirestore();
       (getFirestore as Mock).mockReturnValue(mockFirestore);
 
       const mockStartAfterDoc = {

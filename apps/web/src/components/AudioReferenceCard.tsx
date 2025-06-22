@@ -40,7 +40,11 @@ import {
   incrementPlayCount,
   incrementViewCount,
 } from "@/app/buttons/actions";
-import { useYouTubePlayer, YouTubePlayer } from "./YouTubePlayer";
+import {
+  useYouTubePlayer,
+  YouTubePlayer,
+  type YTPlayer,
+} from "./YouTubePlayer";
 
 /**
  * AudioReferenceCard component props
@@ -95,14 +99,7 @@ export function AudioReferenceCard({
     viewCount: audioReference.viewCount,
   });
 
-  const {
-    player,
-    isPlaying: playerIsPlaying,
-    currentTime,
-    duration,
-    controls,
-    handlers,
-  } = useYouTubePlayer();
+  const { player, handlers } = useYouTubePlayer();
 
   // YouTube URLを生成
   const youtubeUrl = `https://www.youtube.com/watch?v=${audioReference.videoId}&t=${audioReference.startTime}s`;
@@ -204,12 +201,12 @@ export function AudioReferenceCard({
         }
       }
     },
-    [audioReference],
+    [audioReference, youtubeUrl],
   );
 
   // プレイヤーの制御
   const handlePlayerReady = useCallback(
-    (playerInstance: any) => {
+    (playerInstance: YTPlayer) => {
       handlers.onReady(playerInstance);
 
       // 指定範囲に自動シーク
@@ -228,7 +225,11 @@ export function AudioReferenceCard({
       if (state === 1 && audioReference.endTime) {
         // PLAYING
         const checkEndTime = setInterval(() => {
-          if (player && player.getCurrentTime() >= audioReference.endTime!) {
+          if (
+            player &&
+            audioReference.endTime &&
+            player.getCurrentTime() >= audioReference.endTime
+          ) {
             player.pauseVideo();
             clearInterval(checkEndTime);
           }

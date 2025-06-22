@@ -1,7 +1,6 @@
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { auth } from "@/auth";
 
 // Mock next/navigation
 const mockPush = vi.fn();
@@ -199,7 +198,7 @@ describe("SiteHeader", () => {
   });
 
   it("モバイルメニューが開閉できる", async () => {
-    const user = userEvent.setup();
+    const _user = userEvent.setup();
     render(<TestSiteHeader />);
 
     // TestSiteHeaderにはモバイルメニューの開閉機能はない（簡略化されたテスト用コンポーネント）
@@ -209,7 +208,7 @@ describe("SiteHeader", () => {
   });
 
   it("モバイルメニュー内のリンクが正しく設定される", async () => {
-    const user = userEvent.setup();
+    const _user = userEvent.setup();
     render(<TestSiteHeader />);
 
     // TestSiteHeaderにはモバイルメニューの開閉機能はない（簡略化されたテスト用コンポーネント）

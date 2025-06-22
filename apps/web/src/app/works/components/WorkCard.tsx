@@ -155,7 +155,7 @@ export default function WorkCard({
               />
               <time
                 dateTime={work.registDate}
-                aria-label={`発売日: ${work.registDate ? formatDate(work.registDate) : "不明"}`}
+                title={`発売日: ${work.registDate ? formatDate(work.registDate) : "不明"}`}
               >
                 <span className="text-foreground">
                   {work.registDate ? formatDate(work.registDate) : "不明"}
@@ -170,7 +170,7 @@ export default function WorkCard({
                 />
                 <span
                   className="text-foreground"
-                  aria-label={`販売数: ${work.salesCount.toLocaleString()}件`}
+                  title={`販売数: ${work.salesCount.toLocaleString()}件`}
                 >
                   {work.salesCount.toLocaleString()}
                 </span>

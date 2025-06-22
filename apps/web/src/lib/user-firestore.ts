@@ -2,6 +2,7 @@
  * ユーザー関連のFirestore操作を提供するモジュール
  */
 
+import type { Query } from "@google-cloud/firestore";
 import {
   type CreateUserInput,
   createDiscordAvatarUrl,
@@ -226,7 +227,7 @@ export async function updateUserStats(
 export async function getUserList(query: UserQuery): Promise<UserListResult> {
   try {
     const firestore = getFirestore();
-    let firestoreQuery = firestore.collection("users");
+    let firestoreQuery: Query = firestore.collection("users");
 
     // 公開プロファイルのみのフィルター
     if (query.onlyPublic) {

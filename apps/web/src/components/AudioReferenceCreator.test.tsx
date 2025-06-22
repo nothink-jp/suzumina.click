@@ -21,6 +21,7 @@ vi.mock("next/navigation", () => ({
 
 // Mock YouTubePlayer
 vi.mock("./YouTubePlayer", () => ({
+  // biome-ignore lint/correctness/noUnusedFunctionParameters: props used for testing interface compatibility
   YouTubePlayer: ({ videoId, ...props }: any) => (
     <div data-testid="youtube-player" data-video-id={videoId}>
       YouTube Player Mock
@@ -30,6 +31,7 @@ vi.mock("./YouTubePlayer", () => ({
 
 // Mock AudioReferenceCard
 vi.mock("./AudioReferenceCard", () => ({
+  // biome-ignore lint/correctness/noUnusedFunctionParameters: props used for testing interface compatibility
   AudioReferenceCard: ({ audioReference, ...props }: any) => (
     <div data-testid="audio-reference-card">
       Audio Reference Card Mock: {audioReference?.title}
@@ -66,13 +68,14 @@ vi.mock("@suzumina.click/ui/components/slider", () => ({
 
 // Mock Select components
 vi.mock("@suzumina.click/ui/components/select", () => ({
+  // biome-ignore lint/correctness/noUnusedFunctionParameters: value and onValueChange used for testing interface compatibility
   Select: ({ children, value, onValueChange }: any) => (
     <div data-testid="select-container">{children}</div>
   ),
   SelectTrigger: ({ children }: any) => (
-    <button role="combobox" aria-expanded="false">
-      {children}
-    </button>
+    <select>
+      <option>{children}</option>
+    </select>
   ),
   SelectValue: ({ placeholder }: any) => <span>{placeholder || "ボイス"}</span>,
   SelectContent: ({ children }: any) => (
