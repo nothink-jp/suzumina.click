@@ -531,6 +531,8 @@ export function AudioReferenceCreator({
               playCount: 0,
               likeCount: 0,
               viewCount: 0,
+              createdBy: "preview-user",
+              createdByName: "プレビュー",
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               createdAtISO: new Date().toISOString(),
