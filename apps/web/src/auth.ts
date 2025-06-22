@@ -87,7 +87,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ user, account }) {
       // Discord認証の場合のみGuild確認を実行
-      if (account?.provider === "discord" && account.access_token) {
+      if (account?.provider === "discord" && account.access_token && user.id) {
         const guildMembership = await fetchDiscordGuildMembership(
           account.access_token,
           user.id,
@@ -109,7 +109,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
     async jwt({ token, user, account }) {
       // 初回ログイン時にユーザー情報とGuild情報を保存
-      if (user && account?.provider === "discord") {
+      if (user && account?.provider === "discord" && user.id) {
         const discordUser: DiscordUser = {
           id: user.id,
           username: user.name || user.email?.split("@")[0] || "Unknown",
@@ -183,6 +183,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   events: {
     async signIn({ user, account, isNewUser }) {
+      if (!user.id) {
+        console.error("User ID is undefined, cannot proceed with signIn event");
+        return;
+      }
+
       console.log(`User signed in: ${user.id} (new: ${isNewUser})`);
 
       // Discord認証での新規ユーザーの場合、Firestoreにユーザーデータを作成
