@@ -22,6 +22,8 @@ import {
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { FirestoreAdmin } from "@/lib/firestore-admin";
+import { requireAuth } from "@/components/ProtectedRoute";
+import { updateUserStats } from "@/lib/user-firestore";
 
 /**
  * 音声リファレンスを作成するServer Action
@@ -32,6 +34,8 @@ export async function createAudioReference(
   { success: true; data: { id: string } } | { success: false; error: string }
 > {
   try {
+    // 認証チェック
+    const user = await requireAuth();
     // 入力データのバリデーション
     const validationResult = CreateAudioReferenceInputSchema.safeParse(input);
     if (!validationResult.success) {
@@ -43,10 +47,30 @@ export async function createAudioReference(
 
     const validatedInput = validationResult.data;
 
-    // クライアントIPアドレスの取得（レート制限用）
-    const headersList = await headers();
-    const clientIp =
-      headersList.get("x-forwarded-for") || headersList.get("x-real-ip");
+    // レート制限のためのユーザーベースチェック
+    const firestore = FirestoreAdmin.getInstance();
+    const recentCreationsSnapshot = await firestore
+      .collection("audioReferences")
+      .where("createdBy", "==", user.discordId)
+      .where(
+        "createdAt",
+        ">",
+        new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      )
+      .get();
+
+    const recentCreations = recentCreationsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as FirestoreAudioReferenceData[];
+
+    const rateLimitCheck = checkRateLimit(recentCreations, user.discordId);
+    if (!rateLimitCheck.allowed) {
+      return {
+        success: false,
+        error: `投稿制限に達しています。1日に作成できる音声ボタンは20個までです。リセット時間: ${rateLimitCheck.resetTime.toLocaleString()}`,
+      };
+    }
 
     // YouTube動画情報の取得
     const videoInfo = await fetchYouTubeVideoInfo(validatedInput.videoId);
@@ -69,41 +93,16 @@ export async function createAudioReference(
       };
     }
 
-    // レート制限チェック
-    if (clientIp) {
-      const firestore = FirestoreAdmin.getInstance();
-      const recentCreationsSnapshot = await firestore
-        .collection("audioReferences")
-        .where(
-          "createdAt",
-          ">",
-          new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        )
-        .get();
 
-      const recentCreations = recentCreationsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as FirestoreAudioReferenceData[];
-
-      const rateLimitCheck = checkRateLimit(recentCreations, clientIp);
-      if (!rateLimitCheck.allowed) {
-        return {
-          success: false,
-          error: `投稿制限に達しています。1日に作成できる音声ボタンは20個までです。リセット時間: ${rateLimitCheck.resetTime.toLocaleString()}`,
-        };
-      }
-    }
-
-    // Firestoreデータの作成
+    // Firestoreデータの作成（ユーザー情報付き）
     const firestoreData = convertCreateInputToFirestoreAudioReference(
       validatedInput,
       videoInfo,
-      clientIp || undefined,
+      user.discordId,
+      user.displayName,
     );
 
     // Firestoreに保存
-    const firestore = FirestoreAdmin.getInstance();
     const docRef = await firestore
       .collection("audioReferences")
       .add(firestoreData);
@@ -111,6 +110,11 @@ export async function createAudioReference(
     // 元動画の統計を更新（音声ボタン数を増加）
     await updateVideoAudioButtonStats(validatedInput.videoId, {
       increment: true,
+    });
+
+    // ユーザー統計を更新
+    await updateUserStats(user.discordId, {
+      incrementAudioReferences: true,
     });
 
     // キャッシュの無効化
@@ -338,6 +342,8 @@ export async function updateAudioReferenceStats(
   statsUpdate: Partial<UpdateAudioReferenceStats> & { id: string },
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // 認証チェック（統計更新は認証ユーザーのみ）
+    const user = await requireAuth();
     // バリデーション
     const validationResult =
       UpdateAudioReferenceStatsSchema.safeParse(statsUpdate);
@@ -377,6 +383,24 @@ export async function updateAudioReferenceStats(
       .collection("audioReferences")
       .doc(validatedUpdate.id)
       .update(updateData);
+
+    // 再生回数が増加した場合、ユーザー統計も更新
+    if (validatedUpdate.incrementPlayCount) {
+      // 音声リファレンスの作成者情報を取得
+      const audioRefDoc = await firestore
+        .collection("audioReferences")
+        .doc(validatedUpdate.id)
+        .get();
+      
+      if (audioRefDoc.exists) {
+        const audioRefData = audioRefDoc.data() as FirestoreAudioReferenceData;
+        if (audioRefData.createdBy) {
+          await updateUserStats(audioRefData.createdBy, {
+            incrementPlayCount: 1,
+          });
+        }
+      }
+    }
 
     // キャッシュの無効化
     revalidatePath("/buttons");

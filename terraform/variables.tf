@@ -98,3 +98,39 @@ variable "budget_threshold_percent" {
   type        = list(number)
   default     = [50, 80, 100]
 }
+
+# ==========================================================
+# 認証関連変数
+# ==========================================================
+
+variable "discord_client_id" {
+  description = "Discord OAuth Application Client ID"
+  type        = string
+  sensitive   = false  # Client IDは公開情報のためsensitiveではない
+}
+
+variable "discord_client_secret" {
+  description = "Discord OAuth Application Client Secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "discord_bot_token" {
+  description = "Discord Bot Token for guild member verification (optional)"
+  type        = string
+  sensitive   = true
+  default     = ""  # オプション
+}
+
+variable "nextauth_secret" {
+  description = "NextAuth.js secret for JWT encryption (generate with: openssl rand -base64 32)"
+  type        = string
+  sensitive   = true
+}
+
+variable "suzumina_guild_id" {
+  description = "すずみなふぁみりー Discord Guild ID"
+  type        = string
+  default     = "959095494456537158"
+  sensitive   = false  # Guild IDは公開情報
+}

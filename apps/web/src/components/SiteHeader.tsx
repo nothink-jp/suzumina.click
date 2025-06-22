@@ -1,15 +1,11 @@
-"use client";
-
 import { Button } from "@suzumina.click/ui/components/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@suzumina.click/ui/components/sheet";
-import { Menu } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/auth";
+import AuthButton from "./AuthButton";
+import MobileMenu from "./MobileMenu";
 
-export default function SiteHeader() {
+export default async function SiteHeader() {
+  const session = await auth();
   return (
     <>
       {/* スキップリンク */}
@@ -56,64 +52,20 @@ export default function SiteHeader() {
             </nav>
 
             <div className="flex items-center space-x-4">
-              <Button variant="outline" className="hidden md:flex" asChild>
-                <Link href="/users/me">マイページ</Link>
-              </Button>
-              <Button className="hidden md:flex" asChild>
-                <Link href="/login">ログイン</Link>
-              </Button>
+              {/* マイページリンク（ログイン時のみ表示） */}
+              {session?.user && (
+                <Button variant="outline" className="hidden md:flex" asChild>
+                  <Link href="/users/me">マイページ</Link>
+                </Button>
+              )}
+              
+              {/* 認証ボタン */}
+              <div className="hidden md:flex">
+                <AuthButton user={session?.user} />
+              </div>
 
               {/* モバイルメニュー */}
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="md:hidden"
-                    aria-label="メニューを開く"
-                  >
-                    <Menu className="h-5 w-5" aria-hidden="true" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                  side="right"
-                  className="w-[300px] sm:w-[400px]"
-                  aria-label="モバイルナビゲーション"
-                >
-                  <nav
-                    className="flex flex-col space-y-4 mt-8"
-                    aria-label="モバイルメニュー"
-                  >
-                    <Link
-                      href="/videos"
-                      className="text-lg font-medium text-foreground hover:text-foreground/80 p-2 rounded transition-colors"
-                    >
-                      動画一覧
-                    </Link>
-                    <Link
-                      href="/buttons"
-                      className="text-lg font-medium text-foreground hover:text-foreground/80 p-2 rounded transition-colors"
-                    >
-                      ボタン検索
-                    </Link>
-                    <Link
-                      href="/works"
-                      className="text-lg font-medium text-foreground hover:text-foreground/80 p-2 rounded transition-colors"
-                    >
-                      作品一覧
-                    </Link>
-                    <Link
-                      href="/users/me"
-                      className="text-lg font-medium text-foreground hover:text-foreground/80 p-2 rounded transition-colors"
-                    >
-                      マイページ
-                    </Link>
-                    <Button className="mt-4" asChild>
-                      <Link href="/login">ログイン</Link>
-                    </Button>
-                  </nav>
-                </SheetContent>
-              </Sheet>
+              <MobileMenu user={session?.user} />
             </div>
           </div>
         </div>

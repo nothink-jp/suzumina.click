@@ -16,3 +16,5 @@ export * from "./firestore-utils";
 export * from "./video";
 // DLsite作品関連の型とスキーマのエクスポート
 export * from "./work";
+// ユーザー認証関連の型とスキーマのエクスポート
+export * from "./user";

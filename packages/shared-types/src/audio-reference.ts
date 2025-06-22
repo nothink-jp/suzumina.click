@@ -68,9 +68,13 @@ export const FirestoreAudioReferenceSchema = AudioReferenceBaseSchema.extend({
     message: "再生時間は正の数である必要があります",
   }), // endTime - startTime
 
-  // 匿名投稿設定
-  createdBy: z.literal("anonymous").default("anonymous"),
-  createdByIp: z.string().optional(), // レート制限用（ハッシュ化されたIP）
+  // ユーザー認証情報
+  createdBy: z.string().min(1, {
+    message: "作成者情報は必須です",
+  }), // Discord User ID
+  createdByName: z.string().min(1, {
+    message: "作成者名は必須です",
+  }), // 表示用ユーザー名
 
   // 公開設定
   isPublic: z.boolean().default(true),
@@ -111,6 +115,10 @@ export const FrontendAudioReferenceSchema = AudioReferenceBaseSchema.extend({
   startTime: z.number().min(0),
   endTime: z.number().min(0),
   duration: z.number().positive(),
+
+  // ユーザー情報
+  createdBy: z.string(),
+  createdByName: z.string(),
 
   // 統計情報
   playCount: z.number().int().min(0),

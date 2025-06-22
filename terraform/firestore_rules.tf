@@ -53,14 +53,15 @@ resource "google_firestore_document" "firestore_rules" {
               allow update, delete: if false; // 現在はServer Actionsのみで操作
             }
             
-            // 音声リファレンスコレクション（新しい実装）
+            // 音声リファレンスコレクション（認証済みユーザー向け）
             match /audioReferences/{referenceId} {
-              // 誰でも読み取り可能（Server Actionsと一般ユーザーの両方に対応）
-              allow read;
+              // 公開音声リファレンスは誰でも読み取り可能、非公開は作成者のみ
+              allow read: if resource.data.isPublic == true || 
+                           (isAuthenticated() && resource.data.createdBy == request.auth.uid);
               
-              // データ検証関数
+              // データ検証関数（Discord ID対応）
               function isValidAudioReference() {
-                return request.resource.data.keys().hasAll(['title', 'startTime', 'endTime', 'videoId', 'isPublic', 'createdBy', 'createdAt']) &&
+                return request.resource.data.keys().hasAll(['title', 'startTime', 'endTime', 'videoId', 'isPublic', 'createdBy', 'createdByName', 'createdAt']) &&
                        request.resource.data.title is string &&
                        request.resource.data.title.size() > 0 &&
                        request.resource.data.title.size() <= 100 &&
@@ -72,32 +73,39 @@ resource "google_firestore_document" "firestore_rules" {
                        request.resource.data.videoId.size() > 0 &&
                        request.resource.data.isPublic is bool &&
                        request.resource.data.createdBy is string &&
-                       request.resource.data.createdAt is timestamp;
+                       request.resource.data.createdByName is string &&
+                       request.resource.data.createdAt is string;
               }
               
-              // 作成は認証済みユーザーのみ可能
-              allow create: if isAuthenticated() && 
-                               request.resource.data.createdBy == request.auth.uid &&
-                               isValidAudioReference();
+              // 作成は認証済みユーザーのみ可能（Server Actions経由）
+              allow create: if false; // Server Actionsのみで作成
               
-              // 更新と削除は作成者のみ可能
-              allow update: if isOwner(resource.data.createdBy) &&
-                               request.resource.data.createdBy == resource.data.createdBy &&
-                               isValidAudioReference();
-              
-              allow delete: if isOwner(resource.data.createdBy);
+              // 更新と削除は作成者のみ可能（Server Actions経由）
+              allow update, delete: if false; // Server Actionsのみで操作
             }
             
-            // ユーザーコレクション
-            match /users/{userId} {
-              // ユーザー自身のみが自分のデータを読み書き可能
-              allow read, write: if isOwner(userId);
+            // ユーザーコレクション（Discord ID ベース）
+            match /users/{discordId} {
+              // 公開プロフィールは誰でも読み取り可能、プライベートは所有者のみ
+              allow read: if resource.data.isPublicProfile == true || 
+                           (isAuthenticated() && request.auth.token.discord_id == discordId);
               
-              // お気に入りサブコレクション
-              match /favorites/{clipId} {
-                // お気に入りの読み書きはユーザー自身のみ可能
-                allow read, write: if isOwner(userId);
+              // ユーザーデータ検証関数
+              function isValidUserData() {
+                return request.resource.data.keys().hasAll(['discordId', 'username', 'displayName', 'role', 'isActive', 'createdAt']) &&
+                       request.resource.data.discordId is string &&
+                       request.resource.data.username is string &&
+                       request.resource.data.displayName is string &&
+                       request.resource.data.role in ['member', 'moderator', 'admin'] &&
+                       request.resource.data.isActive is bool &&
+                       request.resource.data.createdAt is string;
               }
+              
+              // 作成・更新はServer Actionsのみ
+              allow create, update: if false; // Server Actionsのみで操作
+              
+              // 削除は管理者のみ
+              allow delete: if false; // 管理者APIのみ
             }
           }
         }

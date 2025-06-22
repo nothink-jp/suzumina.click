@@ -63,6 +63,73 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = "1"
       }
 
+      # NextAuth設定
+      env {
+        name  = "NEXTAUTH_URL"
+        value = var.environment == "production" ? "https://${var.custom_domain}" : "auto"
+      }
+
+      # Discord OAuth Client ID (Secret Managerから取得)
+      env {
+        name = "DISCORD_CLIENT_ID"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.auth_secrets["DISCORD_CLIENT_ID"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      # Discord OAuth Client Secret (Secret Managerから取得)
+      env {
+        name = "DISCORD_CLIENT_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.auth_secrets["DISCORD_CLIENT_SECRET"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      # Discord Bot Token (Secret Managerから取得)
+      env {
+        name = "DISCORD_BOT_TOKEN"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.auth_secrets["DISCORD_BOT_TOKEN"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      # NextAuth Secret (Secret Managerから取得)
+      env {
+        name = "NEXTAUTH_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.auth_secrets["NEXTAUTH_SECRET"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      # YouTube API Key (既存のSecret Managerから取得)
+      env {
+        name = "YOUTUBE_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["YOUTUBE_API_KEY"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      # すずみなふぁみりー Guild ID
+      env {
+        name  = "SUZUMINA_GUILD_ID"
+        value = var.suzumina_guild_id
+      }
+
       # ヘルスチェック設定
       startup_probe {
         http_get {
@@ -105,7 +172,8 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
 
   depends_on = [
     google_artifact_registry_repository.docker_repo,
-    google_service_account.cloud_run_service_account
+    google_service_account.cloud_run_service_account,
+    google_secret_manager_secret.auth_secrets
   ]
 }
 

@@ -38,6 +38,10 @@ export function convertToFrontendAudioReference(
     endTime: data.endTime,
     duration: data.duration,
 
+    // ユーザー情報
+    createdBy: data.createdBy,
+    createdByName: data.createdByName,
+
     // 統計情報
     playCount: data.playCount,
     likeCount: data.likeCount,
@@ -86,6 +90,8 @@ export function convertToFrontendAudioReference(
       startTime: data.startTime,
       endTime: data.endTime,
       duration: data.duration,
+      createdBy: data.createdBy,
+      createdByName: data.createdByName,
       playCount: data.playCount,
       likeCount: data.likeCount,
       viewCount: data.viewCount,
@@ -111,13 +117,11 @@ export function convertToFrontendAudioReference(
 export function convertCreateInputToFirestoreAudioReference(
   input: CreateAudioReferenceInput,
   videoInfo: YouTubeVideoInfo,
-  clientIp?: string,
+  userDiscordId: string,
+  userDisplayName: string,
 ): Omit<FirestoreAudioReferenceData, "id"> {
   const now = new Date().toISOString();
   const duration = input.endTime - input.startTime;
-
-  // IPアドレスのハッシュ化（レート制限用）
-  const hashedIp = clientIp ? hashIpAddress(clientIp) : undefined;
 
   return {
     title: input.title,
@@ -138,9 +142,9 @@ export function convertCreateInputToFirestoreAudioReference(
     endTime: input.endTime,
     duration,
 
-    // 匿名投稿設定
-    createdBy: "anonymous",
-    createdByIp: hashedIp,
+    // ユーザー認証情報
+    createdBy: userDiscordId,
+    createdByName: userDisplayName,
 
     // 公開設定
     isPublic: input.isPublic,
@@ -400,33 +404,24 @@ export function createStatsUpdateData(updates: {
  */
 export function checkRateLimit(
   recentCreations: FirestoreAudioReferenceData[],
-  clientIp?: string,
+  userDiscordId: string,
   dailyLimit = 20,
 ): { allowed: boolean; remainingQuota: number; resetTime: Date } {
-  if (!clientIp) {
-    return {
-      allowed: true,
-      remainingQuota: dailyLimit,
-      resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    };
-  }
-
-  const hashedIp = hashIpAddress(clientIp);
   const now = new Date();
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   // 過去24時間での作成数をカウント
-  const recentCreationsFromIp = recentCreations.filter((creation) => {
+  const recentCreationsFromUser = recentCreations.filter((creation) => {
     const createdAt = new Date(creation.createdAt);
-    return creation.createdByIp === hashedIp && createdAt > twentyFourHoursAgo;
+    return creation.createdBy === userDiscordId && createdAt > twentyFourHoursAgo;
   });
 
-  const usedQuota = recentCreationsFromIp.length;
+  const usedQuota = recentCreationsFromUser.length;
   const remainingQuota = Math.max(0, dailyLimit - usedQuota);
   const allowed = remainingQuota > 0;
 
   // 最も古い作成から24時間後がリセット時間
-  const oldestCreation = recentCreationsFromIp.sort(
+  const oldestCreation = recentCreationsFromUser.sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   )[0];
 
@@ -480,9 +475,9 @@ export interface FirestoreServerAudioReferenceData {
   endTime: number;
   duration: number;
 
-  // 匿名投稿設定
-  createdBy: "anonymous";
-  createdByIp?: string;
+  // ユーザー認証情報
+  createdBy: string;
+  createdByName: string;
 
   // 公開設定
   isPublic: boolean;

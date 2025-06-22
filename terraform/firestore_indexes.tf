@@ -176,3 +176,130 @@ resource "google_firestore_index" "audiobuttons_tags_ispublic_createdat_desc" {
     order      = "DESCENDING"
   }
 }
+
+# audioReferences コレクションのインデックス - isPublic（昇順）、createdAt（降順）
+resource "google_firestore_index" "audioreferences_ispublic_createdat_desc" {
+  project    = var.gcp_project_id
+  collection = "audioReferences"
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "createdAt"
+    order      = "DESCENDING"
+  }
+}
+
+# audioReferences コレクションのインデックス - createdBy（昇順）、createdAt（降順）
+resource "google_firestore_index" "audioreferences_createdby_createdat_desc" {
+  project    = var.gcp_project_id
+  collection = "audioReferences"
+  
+  fields {
+    field_path = "createdBy"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "createdAt"
+    order      = "DESCENDING"
+  }
+}
+
+# audioReferences コレクションのインデックス - isPublic（昇順）、playCount（降順）
+resource "google_firestore_index" "audioreferences_ispublic_playcount_desc" {
+  project    = var.gcp_project_id
+  collection = "audioReferences"
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "playCount"
+    order      = "DESCENDING"
+  }
+}
+
+# audioReferences コレクションのインデックス - isPublic（昇順）、category（昇順）、createdAt（降順）
+resource "google_firestore_index" "audioreferences_ispublic_category_createdat_desc" {
+  project    = var.gcp_project_id
+  collection = "audioReferences"
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "category"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "createdAt"
+    order      = "DESCENDING"
+  }
+}
+
+# audioReferences コレクションのインデックス - isPublic（昇順）、videoId（昇順）、startTime（昇順）
+resource "google_firestore_index" "audioreferences_ispublic_videoid_starttime_asc" {
+  project    = var.gcp_project_id
+  collection = "audioReferences"
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "videoId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "startTime"
+    order      = "ASCENDING"
+  }
+}
+
+# users コレクションのインデックス - isPublicProfile（昇順）、createdAt（降順）
+resource "google_firestore_index" "users_ispublicprofile_createdat_desc" {
+  project    = var.gcp_project_id
+  collection = "users"
+  
+  fields {
+    field_path = "isPublicProfile"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "createdAt"
+    order      = "DESCENDING"
+  }
+}
+
+# users コレクションのインデックス - isPublicProfile（昇順）、role（昇順）、lastLoginAt（降順）
+resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" {
+  project    = var.gcp_project_id
+  collection = "users"
+  
+  fields {
+    field_path = "isPublicProfile"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "role"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "lastLoginAt"
+    order      = "DESCENDING"
+  }
+}
