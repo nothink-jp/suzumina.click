@@ -28,7 +28,6 @@ vi.mock("next/image", () => ({
     [key: string]: unknown;
   }) => {
     return (
-      // biome-ignore lint/performance/noImgElement: Test mock component requires img element
       <img
         src={src}
         alt={alt}
