@@ -298,3 +298,60 @@ jobs:
           echo "- ✅ デプロイ前にペンディング中のオペレーションをチェック" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ 3回のリトライロジックで信頼性向上" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ 関数デプロイを順次実行して競合を回避" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 古いリビジョンの自動クリーンアップ（最新5個を保持）" >> $GITHUB_STEP_SUMMARY
+
+      # Cleanup old Cloud Functions revisions
+      - name: Cleanup old Cloud Functions revisions
+        run: |
+          echo "🧹 Cleaning up old Cloud Functions revisions (keeping last 5 versions)"
+          
+          # Function names
+          FUNCTIONS=("fetchyoutubevideos" "fetchdlsiteworks")
+          KEEP_COUNT=5
+          
+          for function_name in "${FUNCTIONS[@]}"; do
+            echo "Processing function: $function_name"
+            
+            # Get revisions sorted by creation time (newest first)
+            revisions=$(gcloud run revisions list \
+              --service="$function_name" \
+              --region="asia-northeast1" \
+              --project="${{ secrets.GCP_PROJECT_ID }}" \
+              --sort-by="~metadata.creationTimestamp" \
+              --format="value(metadata.name)" \
+              --limit=20)
+            
+            if [ -z "$revisions" ]; then
+              echo "No revisions found for $function_name"
+              continue
+            fi
+            
+            # Convert to array
+            revision_array=($revisions)
+            total_count=${#revision_array[@]}
+            
+            echo "Total revisions for $function_name: $total_count"
+            
+            if [ $total_count -le $KEEP_COUNT ]; then
+              echo "Revision count is within keep limit, skipping cleanup"
+              continue
+            fi
+            
+            # Delete old revisions
+            deleted=0
+            for ((i=KEEP_COUNT; i<total_count; i++)); do
+              revision=${revision_array[$i]}
+              echo "Deleting revision: $revision"
+              
+              if gcloud run revisions delete "$revision" \
+                --region="asia-northeast1" \
+                --project="${{ secrets.GCP_PROJECT_ID }}" \
+                --quiet; then
+                deleted=$((deleted + 1))
+              else
+                echo "Failed to delete $revision, but continuing..."
+              fi
+            done
+            
+            echo "✅ Deleted $deleted revisions for $function_name"
+          done || true  # Don't fail the entire workflow if cleanup fails
