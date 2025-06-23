@@ -279,6 +279,16 @@ pnpm check             # Lint + フォーマット
 pnpm typecheck         # 🆕 型チェック
 pnpm build             # 全パッケージのビルド
 
+# クリーンアップ 🆕
+pnpm clean             # 生成ファイルのクリーンアップ (coverage, dist, .next等)
+pnpm clean:all         # 全クリーンアップ (node_modules含む)
+
+# パッケージ個別クリーンアップ
+pnpm --filter @suzumina.click/ui clean          # UIパッケージ (coverage, storybook-static等)
+pnpm --filter @suzumina.click/shared-types clean # 共有型 (dist, *.tgz等)
+pnpm --filter @suzumina.click/web clean         # Webアプリ (.next, test-results等)
+pnpm --filter @suzumina.click/functions clean   # Functions (lib, *.tgz等)
+
 # E2Eテスト
 cd apps/web && pnpm test:e2e        # Playwright E2E実行
 cd apps/web && pnpm test:e2e:ui     # E2E UIモード

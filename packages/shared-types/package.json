@@ -17,6 +17,7 @@
     "format": "biome format --write ./src",
     "check": "biome check --write ./src",
     "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist *.tgz node_modules/.cache",
     "test": "echo 'No tests configured for shared-types' && exit 0",
     "test:coverage": "echo 'No tests configured for shared-types' && exit 0"
   },
@@ -24,6 +25,7 @@
     "zod": "^3.25.67"
   },
   "devDependencies": {
+    "rimraf": "^6.0.1",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   }
