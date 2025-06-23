@@ -207,17 +207,17 @@ export function getUserRoleLabel(
 export function createDiscordAvatarUrl(
   userId: string,
   avatarHash: string | null | undefined,
-  size: number = 128,
+  size = 128,
 ): string {
   // ユーザーIDの検証
   if (!userId || typeof userId !== "string") {
     console.error("Invalid userId:", userId);
-    return `https://cdn.discordapp.com/embed/avatars/0.png`;
+    return "https://cdn.discordapp.com/embed/avatars/0.png";
   }
 
   if (!avatarHash) {
     // デフォルトアバター (ユーザーIDベース)
-    const defaultAvatarIndex = parseInt(userId) % 5;
+    const defaultAvatarIndex = Number.parseInt(userId) % 5;
     return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;
   }
 
@@ -262,20 +262,23 @@ export function formatRelativeTime(dateString: string): string {
       return diffMinutes <= 1 ? "たった今" : `${diffMinutes}分前`;
     }
     return `${diffHours}時間前`;
-  } else if (diffDays === 1) {
+  }
+  if (diffDays === 1) {
     return "昨日";
-  } else if (diffDays < 7) {
+  }
+  if (diffDays < 7) {
     return `${diffDays}日前`;
-  } else if (diffDays < 30) {
+  }
+  if (diffDays < 30) {
     const diffWeeks = Math.floor(diffDays / 7);
     return `${diffWeeks}週間前`;
-  } else if (diffDays < 365) {
+  }
+  if (diffDays < 365) {
     const diffMonths = Math.floor(diffDays / 30);
     return `${diffMonths}ヶ月前`;
-  } else {
-    const diffYears = Math.floor(diffDays / 365);
-    return `${diffYears}年前`;
   }
+  const diffYears = Math.floor(diffDays / 365);
+  return `${diffYears}年前`;
 }
 
 /**

@@ -21,7 +21,7 @@ async function fetchDiscordGuildMembership(
 ): Promise<GuildMembership | null> {
   try {
     const response = await fetch(
-      `https://discord.com/api/v10/users/@me/guilds`,
+      "https://discord.com/api/v10/users/@me/guilds",
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

@@ -184,7 +184,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 
             {audioLoading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
                 <p className="text-gray-600 mt-2">音声ボタンを読み込み中...</p>
               </div>
             ) : audioReferences.length > 0 ? (

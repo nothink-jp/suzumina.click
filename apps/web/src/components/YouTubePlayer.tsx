@@ -364,7 +364,7 @@ export function YouTubePlayer({
       {!isAPIReady && (
         <div className="flex items-center justify-center w-full h-full bg-gray-100">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             <p className="mt-2 text-gray-500">YouTube Player を読み込み中...</p>
           </div>
         </div>
