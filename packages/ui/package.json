@@ -4,10 +4,10 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build": "echo 'UI package does not require build step' && exit 0",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "check": "biome check .",
-    "check:apply": "biome check --apply .",
+    "check": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
