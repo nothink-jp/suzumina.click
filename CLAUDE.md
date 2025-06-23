@@ -4,7 +4,7 @@
 
 ## 🎯 プロジェクト概要
 
-suzumina.clickは、声優「涼花みなせ」ファンコミュニティのためのWebプラットフォームです。YouTube動画の音声ボタン（タイムスタンプ参照）機能と、DLsiteからの最新作品情報閲覧機能を提供します。
+suzumina.clickは、声優「涼花みなせ」ファンコミュニティのためのWebプラットフォームです。YouTube動画の音声参照機能、実音声ファイルボタン、DLsite作品情報閲覧、そして包括的な管理者機能を提供します。
 
 ### 開発状況
 
@@ -17,8 +17,9 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 - **共有型定義**: Zodスキーマを使用した型安全なデータ構造
 - **開発環境**: 開発ツールを含むMonorepoセットアップ
 - **本番Webアプリケーション** (`apps/web`): ページネーション付き動画・作品一覧表示
-- **音声ボタン機能** (`apps/web`): タイムスタンプ参照システム（YouTube動画区間ブックマーク）
-- **包括的テストスイート**: 226件のテストで全重要機能をカバー（100%テストカバレッジ）
+- **音声システム** (`apps/web`): タイムスタンプ参照 + 実音声ファイルボタンの二重システム
+- **管理者インターフェース** (`apps/web/admin`): ユーザー・動画・作品の包括的管理機能
+- **包括的テストスイート**: 388+件のテストで全重要機能をカバー（E2E含む完全テスト）
 
 
 ## 🏗️ アーキテクチャ
@@ -28,21 +29,22 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
      ↓              ↓              ↓         ↓              ↓           ↓
 YouTube API    定期実行         非同期      データ収集      NoSQLストレージ  フロントエンド
 DLsite         (Production環境)  メッセージ   (Function v2)   (型安全)      (App Router)
-               ↓                                            ↓
-              ユーザー音声参照作成 → タイムスタンプ保存 → YouTube埋め込み再生
-                  ↓                    ↓              ↓
-               (ブラウザUI)        Firestore保存    YouTube Player
-               (時間指定)          (参照情報のみ)    (特定区間再生)
+               ↓                                            ↓              ↓
+              ユーザーコンテンツ作成                    管理者インターフェース  一般ユーザーUI
+                  ↓                                        ↓              ↓
+            音声参照 + 音声ボタン                      ユーザー・コンテンツ管理  コンテンツ閲覧
+                  ↓                                        ↓              ↓
+          タイムスタンプ + 実音声ファイル              ロール管理・統計表示   音声再生・検索
 ```
 
 ## 🛠️ 技術スタック
 
 ### フロントエンド
 
-- **Next.js 15.3.3** - Reactフレームワーク (App Router)
+- **Next.js 15.3.4** - Reactフレームワーク (App Router)
 - **TypeScript 5.8.3** - 型安全性
 - **Tailwind CSS v4** - UIスタイリング (PostCSS設定)
-- **Storybook 9.0.10** - UIコンポーネント開発・テスト
+- **Storybook 9.0.12** - UIコンポーネント開発・テスト
 - **Radix UI** - アクセシブルUIコンポーネント (`packages/ui`)
 - **React 19.1.0** - 最新React機能
 
@@ -52,7 +54,7 @@ DLsite         (Production環境)  メッセージ   (Function v2)   (型安全)
 - **Discord OAuth Provider** - ギルドメンバーシップ確認による認証
 - **Google Cloud Functions v2 (Node.js 22)** - サーバーレス関数 (YouTube/DLsite データ収集)
 - **Google Cloud Firestore** - NoSQLデータベース (Native mode + 複合インデックス + ユーザー管理)
-- **Google Cloud Storage** - ファイルストレージ (デプロイアーティファクト、将来の音声ファイル用)
+- **Google Cloud Storage** - ファイルストレージ (デプロイアーティファクト、音声ファイル用)
 - **Google Cloud Pub/Sub** - 非同期メッセージング (Scheduler → Functions)
 - **Google Cloud Scheduler** - 定期実行タスク (Production環境のみ)
 - **Google Secret Manager** - APIキー・シークレット管理 (Discord認証情報・NextAuth Secret)
@@ -77,58 +79,79 @@ DLsite         (Production環境)  メッセージ   (Function v2)   (型安全)
 ## 📁 プロジェクト構造
 
 ```console
-suzumina.click/                    # Monorepoルート
+suzumina.click/                    # Monorepoルート (v0.2.1)
 ├── apps/
-│   ├── functions/                 # Cloud Functions (本番準備完了)
+│   ├── functions/                 # Cloud Functions (本番稼働中)
 │   │   ├── src/
 │   │   │   ├── dlsite.ts         # DLsite作品取得 (20分間隔)
 │   │   │   ├── youtube.ts        # YouTube動画取得 (毎時19分)
 │   │   │   ├── index.ts          # Functions エントリーポイント
-│   │   │   └── utils/            # 共通ユーティリティ
+│   │   │   └── utils/            # 共通ユーティリティ (157件テスト)
 │   │   ├── lib/                  # ビルド成果物
 │   │   ├── coverage/             # テストカバレッジ
-│   │   └── package.json          # Functions依存関係
-│   ├── web/                      # 本番Webアプリ (開発完了)
+│   │   └── package.json          # @suzumina.click/functions v0.2.1
+│   ├── web/                      # 本番Webアプリ (機能完備)
 │   │   ├── src/
 │   │   │   ├── app/             # Next.js App Router
 │   │   │   │   ├── layout.tsx   # ルートレイアウト
 │   │   │   │   ├── page.tsx     # ホームページ (ページネーション対応)
 │   │   │   │   ├── actions.ts   # Server Actions
-│   │   │   │   ├── works/       # DLsite作品関連 (未実装)
-│   │   │   │   ├── videos/      # YouTube動画関連 (未実装)
-│   │   │   │   ├── buttons/     # 音声ボタン関連 (タイムスタンプ参照・完了)
-│   │   │   │   └── search/      # 検索機能 (未実装)
-│   │   │   ├── components/      # UIコンポーネント (完全テスト済み)
-│   │   │   │   ├── VideoList.tsx      # 動画一覧 (Server Component)
-│   │   │   │   ├── AudioReferenceCreator.tsx # 音声参照作成 (Client Component) ✅
-│   │   │   │   ├── AudioReferenceCard.tsx   # 音声参照表示 (Server Component) ✅
+│   │   │   │   ├── admin/       # 🆕 管理者インターフェース
+│   │   │   │   │   ├── layout.tsx    # 管理者専用レイアウト
+│   │   │   │   │   ├── users/        # ユーザー管理
+│   │   │   │   │   ├── videos/       # 動画管理
+│   │   │   │   │   └── works/        # 作品管理
+│   │   │   │   ├── works/       # DLsite作品関連 (実装済み)
+│   │   │   │   ├── videos/      # YouTube動画関連 (実装済み)
+│   │   │   │   ├── buttons/     # 音声機能 (参照+ボタン・完了)
+│   │   │   │   └── auth/        # 認証関連ページ
+│   │   │   ├── components/      # UIコンポーネント (229件テスト)
+│   │   │   │   ├── AdminList.tsx      # 管理者用一覧 (汎用) ✅
+│   │   │   │   ├── AdminListItem.tsx  # 管理者用アイテム (汎用) ✅
+│   │   │   │   ├── VideoList.tsx      # 動画一覧 (Server Component) ✅
+│   │   │   │   ├── AudioReferenceCreator.tsx # 音声参照作成 (15件テスト) ✅
+│   │   │   │   ├── AudioReferenceCard.tsx   # 音声参照表示 (10件テスト) ✅
 │   │   │   │   ├── YouTubePlayer.tsx        # YouTube埋め込み再生 (44件テスト) ✅
-│   │   │   │   ├── Pagination.tsx     # ページネーション (Client Component) ✅
-│   │   │   │   ├── ThumbnailImage.tsx # サムネイル画像 ✅
-│   │   │   │   ├── SearchForm.tsx     # 検索フォーム ✅
-│   │   │   │   ├── SiteHeader.tsx     # サイトヘッダー ✅
-│   │   │   │   └── SiteFooter.tsx     # サイトフッター ✅
+│   │   │   │   ├── Pagination.tsx     # ページネーション (10件テスト) ✅
+│   │   │   │   ├── ThumbnailImage.tsx # サムネイル画像 (15件テスト) ✅
+│   │   │   │   ├── SearchForm.tsx     # 検索フォーム (15件テスト) ✅
+│   │   │   │   ├── SiteHeader.tsx     # サイトヘッダー (10件テスト) ✅
+│   │   │   │   ├── SiteFooter.tsx     # サイトフッター (9件テスト) ✅
+│   │   │   │   ├── AuthButton.tsx     # 認証ボタン ✅
+│   │   │   │   └── UserAvatar.tsx     # ユーザーアバター ✅
 │   │   │   └── lib/             # ユーティリティ
-│   │   │       └── firestore.ts # Firestore接続
+│   │   │       ├── firestore.ts      # Firestore接続
+│   │   │       └── user-firestore.ts # ユーザー管理専用
+│   │   ├── e2e/                  # 🆕 Playwright E2E テスト
+│   │   │   ├── audio-buttons.spec.ts  # 音声ボタンテスト
+│   │   │   ├── audio-reference.spec.ts # 音声参照テスト
+│   │   │   ├── home.spec.ts          # ホームページテスト
+│   │   │   └── videos.spec.ts        # 動画ページテスト
 │   │   ├── .storybook/           # Web App専用Storybook設定
-│   │   └── package.json
+│   │   └── package.json          # @suzumina.click/web v0.2.1
 ├── packages/
-│   ├── shared-types/             # 共有型定義 (重要)
+│   ├── shared-types/             # 共有型定義 (重要) v0.2.1
 │   │   ├── src/
 │   │   │   ├── common.ts         # 共通型・ユーティリティ
 │   │   │   ├── video.ts          # YouTube動画型定義
 │   │   │   ├── work.ts           # DLsite作品型定義
 │   │   │   ├── audio-reference.ts # 音声参照型定義（タイムスタンプベース）
+│   │   │   ├── audio-button.ts   # 🆕 音声ボタン型定義（実ファイルベース）
+│   │   │   ├── user.ts           # ユーザー管理型定義（拡張済み）
 │   │   │   └── firestore-utils.ts # Firestore変換ユーティリティ
 │   │   └── dist/                 # ビルド成果物
-│   └── ui/                       # 共有UIコンポーネント
-│       ├── src/
-│       │   ├── components/       # Radix UI ベースコンポーネント
-│       │   │   ├── button.tsx    # ボタンコンポーネント
-│       │   │   └── pagination.tsx # ページネーションコンポーネント
-│       │   └── styles/           # Tailwind CSS v4設定
-│       │       └── globals.css   # グローバルスタイル
-│       └── .storybook/           # UI専用Storybook設定
+│   ├── ui/                       # 共有UIコンポーネント v0.2.1
+│   │   ├── src/
+│   │   │   ├── components/       # Radix UI ベースコンポーネント
+│   │   │   │   ├── button.tsx    # ボタンコンポーネント
+│   │   │   │   ├── pagination.tsx # ページネーションコンポーネント
+│   │   │   │   ├── card.tsx      # カードコンポーネント
+│   │   │   │   ├── audio-player.tsx # 🆕 音声プレイヤー (4件テスト)
+│   │   │   │   └── form-fields.tsx  # フォームフィールド
+│   │   │   └── styles/           # Tailwind CSS v4設定
+│   │   │       └── globals.css   # グローバルスタイル
+│   │   └── .storybook/           # UI専用Storybook設定
+│   └── typescript-config/        # 共有TypeScript設定 v0.2.1
 ├── terraform/                    # インフラ定義 (本番)
 │   ├── function_*.tf             # Cloud Functions設定
 │   ├── scheduler.tf              # スケジュール実行設定
@@ -177,6 +200,16 @@ suzumina.click/                    # Monorepoルート
 - `playCount` - 統計情報
 - `createdAt`, `updatedAt` - 管理情報
 
+### 音声ボタンデータ (`FirestoreAudioButtonData`) 🆕
+
+- `id`, `title`, `description` - 基本情報
+- `audioFileUrl`, `duration`, `fileSize` - 音声ファイル情報
+- `category` - `voice`, `bgm`, `se`, `talk`, `singing`, `other`
+- `tags[]`, `isPublic` - 分類・公開設定
+- `createdBy`, `uploadedBy` - 作成者・アップロード者
+- `playCount`, `downloadCount` - 統計情報
+- `createdAt`, `updatedAt` - 管理情報
+
 ### ユーザーデータ (`FirestoreUserData`)
 
 - `discordId`, `username`, `globalName` - Discord基本情報
@@ -200,6 +233,9 @@ pnpm --filter @suzumina.click/shared-types build
 
 # Functions準備 (デプロイ前)
 pnpm prepare:functions
+
+# E2Eテスト準備 (Playwright)
+pnpm --filter @suzumina.click/web exec playwright install
 ```
 
 ### 開発サーバー
@@ -235,12 +271,17 @@ cd apps/web && pnpm dev
 ### テスト・品質管理
 
 ```bash
-pnpm test              # テスト実行
+pnpm test              # テスト実行 (388+件)
 pnpm test:coverage     # カバレッジ付きテスト実行
 pnpm lint              # 全パッケージのLint
 pnpm format            # 全パッケージのフォーマット
 pnpm check             # Lint + フォーマット
+pnpm typecheck         # 🆕 型チェック
 pnpm build             # 全パッケージのビルド
+
+# E2Eテスト
+cd apps/web && pnpm test:e2e        # Playwright E2E実行
+cd apps/web && pnpm test:e2e:ui     # E2E UIモード
 ```
 
 ### Cloud Functions
@@ -283,22 +324,30 @@ Firestore users collection → ユーザー情報作成・更新
 JWT セッション → 認証状態管理
 ```
 
-**3. ユーザー音声参照作成フロー**
+**3. 音声コンテンツ作成フロー (二重システム)**
 
 ```console
-認証済みユーザー (AudioReferenceCreator)
-    │ ├─ YouTube動画選択
-    │ ├─ 時間範囲指定 (開始・終了時刻)
-    │ └─ メタデータ入力 (タイトル、タグ等)
+認証済みユーザー
+    │
+    ├─ 音声参照作成 (AudioReferenceCreator)
+    │   ├─ YouTube動画選択
+    │   ├─ 時間範囲指定 (開始・終了時刻)
+    │   └─ メタデータ入力 (タイトル、タグ等)
+    │
+    └─ 音声ボタン作成 (AudioButtonCreator) 🆕
+        ├─ 音声ファイルアップロード
+        ├─ カテゴリ選択 (voice/bgm/se/talk/singing/other)
+        └─ メタデータ入力 (タイトル、タグ等)
     ↓ (Server Actions + ユーザー認証確認)
 Next.js Server Actions
     │ ├─ セッション検証・権限確認
-    │ ├─ タイムスタンプ検証
-    │ ├─ YouTube埋め込みURL生成
+    │ ├─ ファイル/タイムスタンプ検証
+    │ ├─ Cloud Storage保存 (音声ボタンの場合)
     │ └─ メタデータ保存 (Firestore) + 作成者情報
     ↓ (保存完了)
 Firestore
-    ├─ audioReferences collection (参照メタデータ + createdBy)
+    ├─ audioReferences collection (YouTube参照)
+    ├─ audioButtons collection (実音声ファイル) 🆕
     └─ users collection (統計情報更新)
 ```
 
@@ -315,19 +364,37 @@ Page (Server Component)
 │       └── URL更新によるナビゲーション
 ```
 
-**音声参照ページ (実装完了)**
+**音声機能ページ (実装完了)**
 
 ```console
-Audio Reference Page (Server Component)
-├── 音声参照データ取得 (Server Actions)
+Audio System Pages (Server Component)
+├── 音声データ取得 (Server Actions)
 ├── AudioReferenceCreator (Client Component)
 │   ├── YouTube動画選択・時間指定
 │   ├── メタデータ入力フォーム
 │   └── Server Actions (参照作成)
-└── AudioReferenceList (Server Component)
+├── AudioButtonCreator (Client Component) 🆕
+│   ├── 音声ファイルアップロード
+│   ├── カテゴリ・メタデータ入力
+│   └── Server Actions (ボタン作成)
+└── AudioContentList (Server Component)
     ├── YouTubePlayer (Client Component)
     │   └── YouTube埋め込み再生 (特定区間)
+    ├── AudioPlayer (Client Component) 🆕
+    │   └── 実音声ファイル再生
     └── Pagination (Client Component)
+
+管理者ページ (Admin Interface) 🆕
+├── UserManagement (Server Component)
+│   ├── ユーザー一覧・検索・フィルタリング
+│   ├── ロール変更 (member/moderator/admin)
+│   └── アカウント有効化/無効化
+├── ContentManagement (Server Component)
+│   ├── 動画管理 (タイトル編集)
+│   ├── 作品管理 (DLsite連携)
+│   └── 音声コンテンツ管理
+└── AdminStats (Server Component)
+    └── システム統計・ダッシュボード
 ```
 
 1. **Server Component**: ページでデータ取得 (Server Actions)
@@ -361,29 +428,41 @@ Audio Reference Page (Server Component)
 
 ### 優先度順位
 
-1. **DLsite作品表示機能**: 作品一覧ページの実装
+1. **レスポンシブUI強化**: モバイル・タブレット対応の改善
 
-2. **検索・フィルター**: 高度な検索機能（音声参照・動画・作品）
+2. **検索・フィルター強化**: 高度な検索機能（全コンテンツ横断）
 
-3. **レスポンシブUI**: モバイル対応
+3. **音声機能拡張**: 
+   - 音声ファイル一括管理
+   - プレイリスト機能
+   - 音声品質最適化
 
-4. **音声ファイル機能**: 実音声アップロード（将来検討・法的評価後）
+4. **パフォーマンス最適化**: 
+   - 画像・音声ファイル配信最適化
+   - キャッシュ戦略改善
 
-### 音声参照機能詳細 (実装完了)
+### 音声システム詳細 (実装完了)
 
 **コア機能**
-- ユーザーがYouTube動画の時間範囲を指定
-- タイムスタンプベースの音声参照作成
-- メタデータ入力 (タイトル、タグ、説明)
-- YouTube埋め込みURL生成
-- Firestoreへの参照メタデータ保存
+- **音声参照**: YouTube動画タイムスタンプベース
+- **音声ボタン**: 実音声ファイルアップロード・再生
+- **二重システム**: 参照とファイルの統合管理
+- **カテゴリ管理**: voice/bgm/se/talk/singing/other
+- **Cloud Storage連携**: 音声ファイル安全保存
+
+**管理者機能 (新規追加)**
+- **ユーザー管理**: ロール変更・アカウント制御
+- **コンテンツ管理**: 音声・動画・作品の一元管理
+- **統計ダッシュボード**: リアルタイム利用状況
+- **検索・フィルタ**: 管理者向け高度検索
 
 **ユーザーインターフェース**
 - 音声参照作成フォーム (AudioReferenceCreator)
+- 音声ボタン作成フォーム (AudioButtonCreator) 🆕
 - YouTube埋め込みプレイヤー (特定区間再生)
-- メタデータ入力フォーム
-- 音声参照一覧・検索機能
-- 公開設定管理
+- 音声ファイルプレイヤー (AudioPlayer) 🆕
+- 統合検索・一覧表示
+- 公開設定・プライバシー管理
 
 ## 📝 重要ファイル
 
@@ -393,10 +472,15 @@ Audio Reference Page (Server Component)
 - `apps/web/src/auth.ts` - Discord認証・NextAuth設定
 - `apps/web/src/lib/user-firestore.ts` - ユーザー管理Firestore操作
 - `apps/functions/src/` - データ収集ロジック
-- `apps/web/src/app/buttons/` - 音声参照機能 (実装完了)
+- `apps/web/src/app/buttons/` - 音声機能 (参照+ボタン・実装完了)
+- `apps/web/src/app/admin/` - 管理者インターフェース (実装完了) 🆕
 - `apps/web/src/app/auth/` - 認証関連ページ (signin/error)
+- `apps/web/src/components/Admin*` - 管理者用UIコンポーネント 🆕
 - `apps/web/src/components/Auth*` - 認証関連UIコンポーネント
-- `apps/web/src/components/Audio*` - 音声参照関連UIコンポーネント
+- `apps/web/src/components/Audio*` - 音声関連UIコンポーネント
+- `apps/web/e2e/` - E2Eテスト (Playwright) 🆕
+- `packages/shared-types/src/audio-button.ts` - 音声ボタン型定義 🆕
+- `packages/ui/src/components/audio-player.tsx` - 音声プレイヤー 🆕
 - `terraform/AUTH_DEPLOYMENT_GUIDE.md` - Discord認証デプロイガイド
 - `terraform/` - インフラ設定 (Discord認証含む)
 - `biome.json` - コード品質設定
@@ -602,15 +686,20 @@ export default defineConfig({
 
 ### 現在のテストカバレッジ状況
 
-- **テスト件数**: **226件** (高品質・包括的)
-- **テストファイル**: **16ファイル** (すべて通過)
+- **テスト件数**: **388+件** (高品質・包括的)
+- **テストファイル**: **21ファイル** (すべて通過)
+- **E2Eテスト**: **4件** (Playwright + 複数ブラウザ)
 - **カバー済み**:
-  - ✅ **Server Actions**: 全Actionsの単体テスト完了
-  - ✅ **Core Types & Utils**: shared-types全モジュール100%カバレッジ
-  - ✅ **重要UIコンポーネント**: 8個の主要コンポーネント完全テスト
-  - ✅ **複雑なロジック**: DLsite ID並び替え、ページネーション、エラーハンドリング
-- **最新の成果**: YouTubePlayerコンポーネントの44件包括テスト追加
-- **品質**: 無限再帰・プロパティ操作エラーを解決した安定テスト
+  - ✅ **Cloud Functions**: 157件テスト (データ収集・変換ロジック)
+  - ✅ **Web App**: 229件テスト (UI・Server Actions・統合)
+  - ✅ **UI Package**: 4件テスト (音声プレイヤー)
+  - ✅ **E2E**: 4件テスト (ユーザーフロー全体)
+  - ✅ **管理者機能**: 新規追加機能の完全テスト 🆕
+- **最新の成果**: 
+  - 管理者インターフェースの包括的テスト追加
+  - E2Eテストによるブラウザ横断検証
+  - 音声システムの統合テスト強化
+- **品質**: Biome 2.0 + Lefthook による厳格な品質管理
 
 ## 🚨 重要: リント・テスト実行コマンド
 
