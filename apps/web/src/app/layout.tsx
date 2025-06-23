@@ -38,6 +38,7 @@ export default function RootLayout({
       >
         <PerformanceMonitor />
         <SiteHeader />
+        {/* biome-ignore lint/nursery/useUniqueElementIds: Static landmark ID for accessibility */}
         <main id="main-content" className="flex-1">
           {children}
         </main>
