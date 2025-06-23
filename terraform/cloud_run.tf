@@ -69,6 +69,12 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = var.environment == "production" ? "https://${var.custom_domain}" : "auto"
       }
 
+      # NextAuth.js v5でカスタムドメイン使用時に必要
+      env {
+        name  = "AUTH_TRUST_HOST"
+        value = var.environment == "production" ? "true" : "false"
+      }
+
       # Discord OAuth Client ID (Secret Managerから取得)
       env {
         name = "DISCORD_CLIENT_ID"

@@ -127,7 +127,8 @@ const VideoCard = memo(function VideoCard({
               </Button>
               <Button
                 size="sm"
-                className="flex-1 bg-primary hover:bg-primary/90 text-white min-h-[44px]"
+                variant="default"
+                className="flex-1 min-h-[44px]"
                 asChild
               >
                 <Link
