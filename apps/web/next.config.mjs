@@ -28,7 +28,7 @@ const nextConfig = {
     // 画像サイズの最適化
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    // 外部画像ドメインの許可（YouTubeサムネイル・DLsite画像用）
+    // 外部画像ドメインの許可（YouTubeサムネイル・DLsite画像・Discord CDN用）
     remotePatterns: [
       {
         protocol: "https",
@@ -47,6 +47,18 @@ const nextConfig = {
         hostname: "img.dlsite.jp",
         port: "",
         pathname: "/resize/images2/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.discordapp.com",
+        port: "",
+        pathname: "/avatars/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.discordapp.com",
+        port: "",
+        pathname: "/embed/avatars/**",
       },
     ],
     // LCPを改善する画像の最適化

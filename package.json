@@ -10,9 +10,9 @@
     "format": "pnpm -r format",
     "check": "pnpm -r check",
     "typecheck": "pnpm -r typecheck",
-    "clean": "rimraf node_modules/.cache coverage",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test": "pnpm -r test",
+    "test:coverage": "pnpm -r test:coverage",
+    "clean": "rimraf node_modules/.cache coverage"
   },
   "devDependencies": {
     "@biomejs/biome": "2.0.0",

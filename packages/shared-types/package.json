@@ -16,7 +16,9 @@
     "lint": "biome lint ./src",
     "format": "biome format --write ./src",
     "check": "biome check --write ./src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'No tests configured for shared-types' && exit 0",
+    "test:coverage": "echo 'No tests configured for shared-types' && exit 0"
   },
   "dependencies": {
     "zod": "^3.25.67"

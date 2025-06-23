@@ -83,15 +83,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ user, account }) {
       // Discord認証の場合のみGuild確認を実行
-      if (account?.provider === "discord" && account.access_token && user.id) {
+      if (
+        account?.provider === "discord" &&
+        account.access_token &&
+        account.providerAccountId
+      ) {
         const guildMembership = await fetchDiscordGuildMembership(
           account.access_token,
-          user.id,
+          account.providerAccountId,
         );
 
         if (!guildMembership || !isValidGuildMember(guildMembership)) {
           console.log(
-            `Access denied for user ${user.id}: not a valid guild member`,
+            `Access denied for user ${account.providerAccountId}: not a valid guild member`,
           );
           return false; // ログイン拒否
         }
@@ -105,12 +109,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
     async jwt({ token, user, account }) {
       // 初回ログイン時にユーザー情報とGuild情報を保存
-      if (user && account?.provider === "discord" && user.id) {
+      if (
+        user &&
+        account?.provider === "discord" &&
+        account.providerAccountId
+      ) {
+        // Discordから正しいアバターハッシュを抽出
+        let avatarHash: string | null = null;
+        if (user.image) {
+          // Discord画像URLからハッシュを抽出: https://cdn.discordapp.com/avatars/{id}/{hash}.{ext}
+          const match = user.image.match(/\/avatars\/\d+\/([a-f0-9]+)\./);
+          avatarHash = match ? match[1] || null : null;
+        }
+
         const discordUser: DiscordUser = {
-          id: user.id,
+          id: account.providerAccountId, // 実際のDiscord User ID
           username: user.name || user.email?.split("@")[0] || "Unknown",
           globalName: user.name || undefined,
-          avatar: user.image?.split("/").pop()?.split(".")[0] || null,
+          avatar: avatarHash,
           email: user.email || undefined,
           verified: true, // Discord OAuth経由なので検証済みとみなす
         };
@@ -212,24 +228,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   events: {
     async signIn({ user, account, isNewUser }) {
-      if (!user.id) {
-        console.error("User ID is undefined, cannot proceed with signIn event");
+      if (!account?.providerAccountId) {
+        console.error(
+          "Provider account ID is undefined, cannot proceed with signIn event",
+        );
         return;
       }
 
-      console.log(`User signed in: ${user.id} (new: ${isNewUser})`);
+      console.log(
+        `User signed in: ${account.providerAccountId} (new: ${isNewUser})`,
+      );
 
       // Discord認証での新規ユーザーの場合、Firestoreにユーザーデータを作成
       if (account?.provider === "discord" && user.guildMembership) {
-        const alreadyExists = await userExists(user.id);
+        const alreadyExists = await userExists(account.providerAccountId);
 
         if (!alreadyExists) {
           try {
+            // Discordから正しいアバターハッシュを抽出
+            let avatarHash: string | null = null;
+            if (user.image) {
+              const match = user.image.match(/\/avatars\/\d+\/([a-f0-9]+)\./);
+              avatarHash = match ? match[1] || null : null;
+            }
+
             const discordUser: DiscordUser = {
-              id: user.id,
+              id: account.providerAccountId,
               username: user.name || user.email?.split("@")[0] || "Unknown",
               globalName: user.name || undefined,
-              avatar: user.image?.split("/").pop()?.split(".")[0] || null,
+              avatar: avatarHash,
               email: user.email || undefined,
               verified: true,
             };
@@ -239,7 +266,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               guildMembership: user.guildMembership as GuildMembership,
             });
 
-            console.log(`New user created in Firestore: ${user.id}`);
+            console.log(
+              `New user created in Firestore: ${account.providerAccountId}`,
+            );
           } catch (error) {
             console.error("Error creating new user in Firestore:", error);
             // ユーザー作成失敗時はログに記録（eventsは戻り値なし）

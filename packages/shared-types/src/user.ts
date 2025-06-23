@@ -113,6 +113,7 @@ export const FrontendUserSchema = z.object({
   // プライバシー設定に応じた表示制御
   isPublicProfile: z.boolean(),
   showStatistics: z.boolean(),
+  isActive: z.boolean(),
 
   // 表示用の追加情報
   avatarUrl: z.string().url().optional(),
@@ -208,6 +209,12 @@ export function createDiscordAvatarUrl(
   avatarHash: string | null | undefined,
   size: number = 128,
 ): string {
+  // ユーザーIDの検証
+  if (!userId || typeof userId !== "string") {
+    console.error("Invalid userId:", userId);
+    return `https://cdn.discordapp.com/embed/avatars/0.png`;
+  }
+
   if (!avatarHash) {
     // デフォルトアバター (ユーザーIDベース)
     const defaultAvatarIndex = parseInt(userId) % 5;

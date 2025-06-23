@@ -38,6 +38,7 @@ export function convertToFrontendUser(
     lastLoginAt: data.lastLoginAt,
     isPublicProfile: data.isPublicProfile,
     showStatistics: data.showStatistics,
+    isActive: data.isActive,
 
     // 表示用の追加情報
     avatarUrl: createDiscordAvatarUrl(data.discordId, data.avatar),
