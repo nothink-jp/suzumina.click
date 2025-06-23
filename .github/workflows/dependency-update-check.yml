@@ -1,0 +1,120 @@
+name: Dependency Update Verification
+
+on:
+  pull_request:
+    paths: 
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "apps/*/package.json"
+      - "packages/*/package.json"
+
+jobs:
+  dependency-check:
+    name: Verify Dependency Updates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for dependency conflicts
+        run: |
+          echo "🔍 Checking for dependency conflicts..."
+          pnpm ls --depth=0 || echo "Dependencies installed with warnings"
+
+      - name: Run TypeScript check
+        run: |
+          echo "📝 Running TypeScript check..."
+          pnpm typecheck
+
+      - name: Run linting
+        run: |
+          echo "🧹 Running linting..."
+          pnpm lint
+
+      - name: Build all packages
+        run: |
+          echo "🏗️ Building all packages..."
+          pnpm build
+
+      - name: Run tests
+        run: |
+          echo "🧪 Running tests..."
+          pnpm test:coverage
+
+      - name: Security audit
+        run: |
+          echo "🔒 Running security audit..."
+          pnpm audit --audit-level moderate
+
+      - name: Check bundle size impact
+        run: |
+          echo "📦 Checking bundle size..."
+          cd apps/web
+          pnpm build
+          echo "Build completed. Check the output above for bundle size changes."
+
+      - name: Report dependency changes
+        run: |
+          echo "📊 Dependency change summary:"
+          echo "Changed files:"
+          git diff --name-only HEAD~1 | grep -E "(package\.json|pnpm-lock\.yaml)" || echo "No package files changed"
+          
+          echo "Package.json changes:"
+          git diff HEAD~1 -- "*.json" | grep -E "[\+\-].*\".*\":" || echo "No dependency changes detected"
+
+  e2e-verification:
+    name: E2E Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: contains(github.event.pull_request.labels.*.name, 'dependencies:framework') || contains(github.event.pull_request.labels.*.name, 'dependencies:auth')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @suzumina.click/web exec playwright install chromium
+
+      - name: Run E2E tests
+        run: |
+          echo "🎭 Running E2E tests for critical dependency updates..."
+          pnpm --filter @suzumina.click/web test:e2e
+
+      - name: Upload E2E artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: |
+            apps/web/test-results/
+            apps/web/playwright-report/

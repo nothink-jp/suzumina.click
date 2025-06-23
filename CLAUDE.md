@@ -294,6 +294,45 @@ cd apps/web && pnpm test:e2e        # Playwright E2E実行
 cd apps/web && pnpm test:e2e:ui     # E2E UIモード
 ```
 
+### 依存関係の安全な更新 🆕
+
+**⚠️ 重要: `pnpm update --latest` は使用禁止**
+
+```bash
+# 📅 日常的な安全更新 (週次推奨)
+pnpm update                    # セマンティックバージョン範囲内のみ
+pnpm update --dev             # 開発依存関係のみ
+pnpm audit --fix              # セキュリティ修正のみ
+
+# 🎯 計画的な更新 (月次推奨)
+pnpm outdated                 # 更新可能パッケージ確認
+pnpm add @types/react@latest  # 型定義の個別更新
+pnpm add typescript@latest    # TypeScript個別更新
+
+# 🛡️ 自動化スクリプト使用
+./scripts/safe-update.sh patch    # パッチ更新のみ
+./scripts/safe-update.sh minor    # マイナー更新含む
+./scripts/safe-update.sh dev      # 開発依存関係のみ
+./scripts/safe-update.sh security # セキュリティ修正のみ
+
+# ⚡ 各更新後の必須確認
+pnpm test && pnpm typecheck && pnpm build
+```
+
+**🚨 特に注意が必要なパッケージ:**
+- `next-auth@5.0.0-beta.28` + `@auth/core@0.39.1` (固定バージョン)
+- `next`, `react`, `react-dom` (メジャーバージョンは慎重に)
+- `recharts` (v3.0.0は型互換性問題)
+
+**📋 更新手順:**
+1. 現状確認: `pnpm outdated`
+2. 個別更新: `pnpm add package@latest` 
+3. テスト実行: `pnpm test && pnpm typecheck && pnpm build`
+4. E2E確認: `pnpm test:e2e`
+5. コミット・レビュー
+
+詳細: `docs/DEPENDENCY_UPDATE_STRATEGY.md`
+
 ### Cloud Functions
 
 ```bash
