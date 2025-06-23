@@ -1,6 +1,6 @@
 {
   "name": "suzumina.click",
-  "version": "0.1.6",
+  "version": "0.2.1",
   "private": true,
   "scripts": {
     "build": "pnpm --filter @suzumina.click/shared-types build && pnpm -r build",
