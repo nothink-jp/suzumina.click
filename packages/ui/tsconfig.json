@@ -1,11 +1,11 @@
 {
-	"extends": "@suzumina.click/typescript-config/react-library.json",
-	"compilerOptions": {
-		"baseUrl": ".",
-		"paths": {
-			"@suzumina.click/ui/*": ["./src/*"]
-		}
-	},
-	"include": ["."],
-	"exclude": ["node_modules", "dist", "**/*.stories.tsx"]
+  "extends": "@suzumina.click/typescript-config/react-library.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@suzumina.click/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist", "**/*.stories.tsx"]
 }
