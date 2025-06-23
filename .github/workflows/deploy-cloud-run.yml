@@ -70,10 +70,8 @@ jobs:
       - name: Run tests
         run: pnpm --filter web test
       
-      # Temporarily disabled lint check to allow deployment
-      # TODO: Fix lint errors and re-enable
-      # - name: Run linting
-      #   run: pnpm --filter web lint
+      - name: Run linting
+        run: pnpm --filter web lint
       
       - name: Run type checking
         run: pnpm --filter web typecheck
@@ -201,14 +199,24 @@ jobs:
       # Cleanup old images
       - name: Cleanup old images
         run: |
-          # Keep last 5 versions
+          echo "Cleaning up old Docker images (keeping last 5 versions)"
+          
+          # Get list of images sorted by creation time (newest first)
           gcloud artifacts docker images list \
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }} \
-            --sort-by="~createTime" \
-            --format="value(DIGEST)" \
-            --limit=999 | tail -n +6 | \
-            while read digest; do
-              gcloud artifacts docker images delete \
-                "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}@$digest" \
-                --quiet --async
-            done
+            --include-tags \
+            --sort-by="~CREATE_TIME" \
+            --format="value(IMAGE)" \
+            --limit=20 | tail -n +6 | \
+            while read image; do
+              if [ -n "$image" ]; then
+                echo "Deleting image: $image"
+                # Use --delete-tags to automatically remove tags before deleting image
+                gcloud artifacts docker images delete "$image" \
+                  --delete-tags \
+                  --quiet \
+                  --async || {
+                  echo "Failed to delete $image, but continuing..."
+                }
+              fi
+            done || true  # Don't fail the entire workflow if cleanup fails
