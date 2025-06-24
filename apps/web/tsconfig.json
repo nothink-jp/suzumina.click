@@ -1,31 +1,25 @@
 {
-  "extends": "@suzumina.click/typescript-config/nextjs.json",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@suzumina.click/ui/*": ["../../packages/ui/src/*"]
-    },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
-  },
-  "include": [
-    "next-env.d.ts",
-    "next.config.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "**/*.stories.tsx",
-    "**/*.stories.ts",
-    "**/*.test.tsx",
-    "**/*.test.ts",
-    "vitest.setup.ts",
-    ".storybook"
-  ]
+	"extends": "@suzumina.click/typescript-config/nextjs.json",
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"],
+			"@suzumina.click/ui/*": ["../../packages/ui/src/*"]
+		},
+		"plugins": [
+			{
+				"name": "next"
+			}
+		]
+	},
+	"include": ["next-env.d.ts", "next.config.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+	"exclude": [
+		"node_modules",
+		"**/*.stories.tsx",
+		"**/*.stories.ts",
+		"**/*.test.tsx",
+		"**/*.test.ts",
+		"vitest.setup.ts",
+		".storybook"
+	]
 }

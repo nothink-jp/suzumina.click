@@ -5,9 +5,7 @@ import { cn } from "@suzumina.click/ui/lib/utils";
 import { ChevronDownIcon } from "lucide-react";
 import type * as React from "react";
 
-function Accordion({
-	...props
-}: React.ComponentProps<typeof AccordionPrimitive.Root>) {
+function Accordion({ ...props }: React.ComponentProps<typeof AccordionPrimitive.Root>) {
 	return <AccordionPrimitive.Root data-slot="accordion" {...props} />;
 }
 

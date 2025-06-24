@@ -4,14 +4,209 @@ import { useEffect } from "react";
 
 // TypeScript definitions for performance APIs
 interface LayoutShift extends PerformanceEntry {
-  value: number;
-  hadRecentInput: boolean;
+	value: number;
+	hadRecentInput: boolean;
 }
 
 interface MemoryInfo {
-  usedJSHeapSize: number;
-  totalJSHeapSize: number;
-  jsHeapSizeLimit: number;
+	usedJSHeapSize: number;
+	totalJSHeapSize: number;
+	jsHeapSizeLimit: number;
+}
+
+// メトリクス送信関数
+function createMetricReporter() {
+	return (name: string, value: number, labels?: Record<string, string>) => {
+		if (process.env.NODE_ENV === "production") {
+			// 本番環境: カスタムメトリクスとしてサーバーに送信
+			fetch("/api/metrics", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					name,
+					value,
+					labels: {
+						...labels,
+						userAgent: navigator.userAgent,
+						url: window.location.pathname,
+					},
+				}),
+			}).catch(() => {
+				// エラーは無視（監視システムの障害がアプリに影響しないように）
+			});
+		}
+		// 開発環境では何もしない
+	};
+}
+
+// LCP (Largest Contentful Paint) の測定
+function setupLCPObserver(
+	reportMetric: ReturnType<typeof createMetricReporter>,
+): PerformanceObserver | null {
+	try {
+		const observer = new PerformanceObserver((list) => {
+			for (const entry of list.getEntries()) {
+				if (entry.entryType === "largest-contentful-paint") {
+					reportMetric("web_vitals_lcp", entry.startTime, {
+						metric_type: "largest_contentful_paint",
+					});
+				}
+			}
+		});
+		observer.observe({ entryTypes: ["largest-contentful-paint"] });
+		return observer;
+	} catch {
+		return null;
+	}
+}
+
+// FID (First Input Delay) の測定
+function setupFIDObserver(
+	reportMetric: ReturnType<typeof createMetricReporter>,
+): PerformanceObserver | null {
+	try {
+		const observer = new PerformanceObserver((list) => {
+			for (const entry of list.getEntries()) {
+				if (entry.entryType === "first-input") {
+					const fid = (entry as PerformanceEventTiming).processingStart - entry.startTime;
+					reportMetric("web_vitals_fid", fid, {
+						metric_type: "first_input_delay",
+					});
+				}
+			}
+		});
+		observer.observe({ entryTypes: ["first-input"] });
+		return observer;
+	} catch {
+		return null;
+	}
+}
+
+// CLS (Cumulative Layout Shift) の測定
+function setupCLSObserver(reportMetric: ReturnType<typeof createMetricReporter>): {
+	observer: PerformanceObserver | null;
+	cleanup: () => void;
+} {
+	let clsValue = 0;
+
+	const reportCLS = () => {
+		if (clsValue > 0) {
+			reportMetric("web_vitals_cls", clsValue, {
+				metric_type: "cumulative_layout_shift",
+			});
+		}
+	};
+
+	let observer: PerformanceObserver | null = null;
+
+	try {
+		observer = new PerformanceObserver((list) => {
+			for (const entry of list.getEntries()) {
+				if (entry.entryType === "layout-shift" && !(entry as LayoutShift).hadRecentInput) {
+					clsValue += (entry as LayoutShift).value;
+				}
+			}
+		});
+		observer.observe({ entryTypes: ["layout-shift"] });
+	} catch {
+		observer = null;
+	}
+
+	// イベントリスナーの設定
+	window.addEventListener("beforeunload", reportCLS);
+	const handleVisibilityChange = () => {
+		if (document.visibilityState === "hidden") {
+			reportCLS();
+		}
+	};
+	window.addEventListener("visibilitychange", handleVisibilityChange);
+
+	const cleanup = () => {
+		window.removeEventListener("beforeunload", reportCLS);
+		window.removeEventListener("visibilitychange", handleVisibilityChange);
+	};
+
+	return { observer, cleanup };
+}
+
+// Navigation Timing の測定
+function setupNavigationTiming(reportMetric: ReturnType<typeof createMetricReporter>) {
+	if (!("performance" in window) || !window.performance.navigation) {
+		return;
+	}
+
+	const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
+	if (!navigation) {
+		return;
+	}
+
+	// DNS解決時間
+	const dnsTime = navigation.domainLookupEnd - navigation.domainLookupStart;
+	reportMetric("page_load_dns_time", dnsTime, { metric_type: "dns_resolution" });
+
+	// サーバー応答時間
+	const serverTime = navigation.responseEnd - navigation.requestStart;
+	reportMetric("page_load_server_time", serverTime, { metric_type: "server_response" });
+
+	// DOMコンテンツロード時間
+	const domContentLoadedTime = navigation.domContentLoadedEventEnd - navigation.fetchStart;
+	reportMetric("page_load_dom_content_loaded", domContentLoadedTime, {
+		metric_type: "dom_content_loaded",
+	});
+
+	// 完全ロード時間
+	const loadTime = navigation.loadEventEnd - navigation.fetchStart;
+	reportMetric("page_load_complete", loadTime, { metric_type: "page_load_complete" });
+}
+
+// リソースロード時間の測定
+function setupResourceObserver(
+	reportMetric: ReturnType<typeof createMetricReporter>,
+): PerformanceObserver | null {
+	try {
+		const observer = new PerformanceObserver((list) => {
+			for (const entry of list.getEntries()) {
+				const resource = entry as PerformanceResourceTiming;
+				const loadTime = resource.responseEnd - resource.startTime;
+
+				// 画像とスクリプトのロード時間を特に監視
+				if (resource.initiatorType === "img" || resource.initiatorType === "script") {
+					reportMetric("resource_load_time", loadTime, {
+						metric_type: "resource_load",
+						resource_type: resource.initiatorType,
+						resource_name: resource.name.split("/").pop() || "unknown",
+					});
+				}
+			}
+		});
+		observer.observe({ entryTypes: ["resource"] });
+		return observer;
+	} catch {
+		return null;
+	}
+}
+
+// メモリ使用量の測定
+function setupMemoryMonitoring(reportMetric: ReturnType<typeof createMetricReporter>): () => void {
+	const reportMemoryUsage = () => {
+		if ("memory" in performance) {
+			const memory = (performance as Performance & { memory: MemoryInfo }).memory;
+			reportMetric("browser_memory_used", memory.usedJSHeapSize, {
+				metric_type: "memory_usage",
+				memory_type: "used_heap",
+			});
+			reportMetric("browser_memory_total", memory.totalJSHeapSize, {
+				metric_type: "memory_usage",
+				memory_type: "total_heap",
+			});
+		}
+	};
+
+	// 初回測定とその後定期測定
+	reportMemoryUsage();
+	const interval = setInterval(reportMemoryUsage, 30000); // 30秒ごと
+
+	return () => clearInterval(interval);
 }
 
 /**
@@ -19,206 +214,48 @@ interface MemoryInfo {
  * Core Web Vitalsと独自メトリクスを測定・送信
  */
 export default function PerformanceMonitor() {
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+	useEffect(() => {
+		if (typeof window === "undefined") {
+			return;
+		}
 
-    // 本番環境ではCloud Monitoringに送信、開発環境ではコンソール出力
-    const reportMetric = (
-      name: string,
-      value: number,
-      labels?: Record<string, string>,
-    ) => {
-      if (process.env.NODE_ENV === "production") {
-        // 本番環境: カスタムメトリクスとしてサーバーに送信
-        fetch("/api/metrics", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name,
-            value,
-            labels: {
-              ...labels,
-              userAgent: navigator.userAgent,
-              url: window.location.pathname,
-            },
-          }),
-        }).catch(() => {
-          // エラーは無視（監視システムの障害がアプリに影響しないように）
-        });
-      } else {
-        // 開発環境: コンソール出力
-        console.log(`[Performance] ${name}:`, value, labels);
-      }
-    };
+		// Performance Observer がサポートされていない場合は何もしない
+		if (!("PerformanceObserver" in window)) {
+			return;
+		}
 
-    const observers: PerformanceObserver[] = [];
+		const reportMetric = createMetricReporter();
+		const observers: (PerformanceObserver | null)[] = [];
+		const cleanupFunctions: (() => void)[] = [];
 
-    // LCP (Largest Contentful Paint) の測定
-    if ("PerformanceObserver" in window) {
-      const lcpObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (entry.entryType === "largest-contentful-paint") {
-            reportMetric("web_vitals_lcp", entry.startTime, {
-              metric_type: "largest_contentful_paint",
-            });
-          }
-        }
-      });
+		// 各監視機能をセットアップ
+		observers.push(setupLCPObserver(reportMetric));
+		observers.push(setupFIDObserver(reportMetric));
 
-      try {
-        lcpObserver.observe({ entryTypes: ["largest-contentful-paint"] });
-        observers.push(lcpObserver);
-      } catch (_e) {
-        // ブラウザサポートがない場合は無視
-      }
+		const { observer: clsObserver, cleanup: clsCleanup } = setupCLSObserver(reportMetric);
+		observers.push(clsObserver);
+		cleanupFunctions.push(clsCleanup);
 
-      // FID (First Input Delay) の測定
-      const fidObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (entry.entryType === "first-input") {
-            const fid =
-              (entry as PerformanceEventTiming).processingStart -
-              entry.startTime;
-            reportMetric("web_vitals_fid", fid, {
-              metric_type: "first_input_delay",
-            });
-          }
-        }
-      });
+		setupNavigationTiming(reportMetric);
+		observers.push(setupResourceObserver(reportMetric));
 
-      try {
-        fidObserver.observe({ entryTypes: ["first-input"] });
-        observers.push(fidObserver);
-      } catch (_e) {
-        // ブラウザサポートがない場合は無視
-      }
+		const memoryCleanup = setupMemoryMonitoring(reportMetric);
+		cleanupFunctions.push(memoryCleanup);
 
-      // CLS (Cumulative Layout Shift) の測定
-      let clsValue = 0;
-      const clsObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (
-            entry.entryType === "layout-shift" &&
-            !(entry as LayoutShift).hadRecentInput
-          ) {
-            clsValue += (entry as LayoutShift).value;
-          }
-        }
-      });
+		return () => {
+			// すべてのオブザーバーを停止
+			for (const observer of observers) {
+				if (observer) {
+					observer.disconnect();
+				}
+			}
 
-      try {
-        clsObserver.observe({ entryTypes: ["layout-shift"] });
-        observers.push(clsObserver);
-      } catch (_e) {
-        // ブラウザサポートがない場合は無視
-      }
+			// すべてのクリーンアップ関数を実行
+			for (const cleanup of cleanupFunctions) {
+				cleanup();
+			}
+		};
+	}, []);
 
-      // ページアンロード時にCLSを報告
-      const reportCLS = () => {
-        if (clsValue > 0) {
-          reportMetric("web_vitals_cls", clsValue, {
-            metric_type: "cumulative_layout_shift",
-          });
-        }
-      };
-
-      window.addEventListener("beforeunload", reportCLS);
-      window.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") {
-          reportCLS();
-        }
-      });
-
-      // Navigation Timing API でページロード時間を測定
-      if ("performance" in window && window.performance.navigation) {
-        const navigation = performance.getEntriesByType(
-          "navigation",
-        )[0] as PerformanceNavigationTiming;
-        if (navigation) {
-          // DNS解決時間
-          const dnsTime =
-            navigation.domainLookupEnd - navigation.domainLookupStart;
-          reportMetric("page_load_dns_time", dnsTime, {
-            metric_type: "dns_resolution",
-          });
-
-          // サーバー応答時間
-          const serverTime = navigation.responseEnd - navigation.requestStart;
-          reportMetric("page_load_server_time", serverTime, {
-            metric_type: "server_response",
-          });
-
-          // DOMコンテンツロード時間
-          const domContentLoadedTime =
-            navigation.domContentLoadedEventEnd - navigation.fetchStart;
-          reportMetric("page_load_dom_content_loaded", domContentLoadedTime, {
-            metric_type: "dom_content_loaded",
-          });
-
-          // 完全ロード時間
-          const loadTime = navigation.loadEventEnd - navigation.fetchStart;
-          reportMetric("page_load_complete", loadTime, {
-            metric_type: "page_load_complete",
-          });
-        }
-      }
-
-      // リソースロード時間の測定
-      const resourceObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          const resource = entry as PerformanceResourceTiming;
-          const loadTime = resource.responseEnd - resource.startTime;
-
-          // 画像とスクリプトのロード時間を特に監視
-          if (
-            resource.initiatorType === "img" ||
-            resource.initiatorType === "script"
-          ) {
-            reportMetric("resource_load_time", loadTime, {
-              metric_type: "resource_load",
-              resource_type: resource.initiatorType,
-              resource_name: resource.name.split("/").pop() || "unknown",
-            });
-          }
-        }
-      });
-
-      try {
-        resourceObserver.observe({ entryTypes: ["resource"] });
-        observers.push(resourceObserver);
-      } catch (_e) {
-        // ブラウザサポートがない場合は無視
-      }
-    }
-
-    // メモリ使用量の測定（サポートされている場合）
-    const reportMemoryUsage = () => {
-      if ("memory" in performance) {
-        const memory = (performance as Performance & { memory: MemoryInfo })
-          .memory;
-        reportMetric("browser_memory_used", memory.usedJSHeapSize, {
-          metric_type: "memory_usage",
-          memory_type: "used_heap",
-        });
-        reportMetric("browser_memory_total", memory.totalJSHeapSize, {
-          metric_type: "memory_usage",
-          memory_type: "total_heap",
-        });
-      }
-    };
-
-    // 初回測定とその後定期測定
-    reportMemoryUsage();
-    const memoryInterval = setInterval(reportMemoryUsage, 30000); // 30秒ごと
-
-    return () => {
-      // クリーンアップ
-      for (const observer of observers) {
-        observer.disconnect();
-      }
-      clearInterval(memoryInterval);
-    };
-  }, []);
-
-  return null; // UI を表示しない
+	return null; // UI を表示しない
 }

@@ -7,16 +7,16 @@
 
 // ログレベルの定義
 export enum LogLevel {
-  DEBUG = "DEBUG",
-  INFO = "INFO",
-  WARN = "WARNING",
-  ERROR = "ERROR",
+	DEBUG = "DEBUG",
+	INFO = "INFO",
+	WARN = "WARNING",
+	ERROR = "ERROR",
 }
 
 // ログオプションのインターフェース
 interface LogOptions {
-  // 追加のメタデータ
-  [key: string]: unknown;
+	// 追加のメタデータ
+	[key: string]: unknown;
 }
 
 /**
@@ -26,34 +26,31 @@ interface LogOptions {
  * @param message - ログメッセージ（文字列）
  * @param optionsOrError - 追加のメタデータまたはエラーオブジェクト
  */
-function logMessage(
-  level: LogLevel,
-  message: string,
-  optionsOrError?: LogOptions | unknown,
-): void {
-  // 基本ログ構造
-  const logEntry: Record<string, unknown> = {
-    severity: level,
-    message,
-  };
+function logMessage(level: LogLevel, message: string, optionsOrError?: LogOptions | unknown): void {
+	// 基本ログ構造
+	const logEntry: Record<string, unknown> = {
+		severity: level,
+		message,
+	};
 
-  // オプションまたはエラーの処理
-  if (optionsOrError) {
-    if (optionsOrError instanceof Error) {
-      // エラーオブジェクトの場合
-      logEntry.error = {
-        message: optionsOrError.message,
-        name: optionsOrError.name,
-        stack: optionsOrError.stack,
-      };
-    } else {
-      // その他のオプションの場合
-      Object.assign(logEntry, optionsOrError);
-    }
-  }
+	// オプションまたはエラーの処理
+	if (optionsOrError) {
+		if (optionsOrError instanceof Error) {
+			// エラーオブジェクトの場合
+			logEntry.error = {
+				message: optionsOrError.message,
+				name: optionsOrError.name,
+				stack: optionsOrError.stack,
+			};
+		} else {
+			// その他のオプションの場合
+			Object.assign(logEntry, optionsOrError);
+		}
+	}
 
-  // Google Cloudの構造化ログ形式に合わせてJSON出力
-  console.log(JSON.stringify(logEntry));
+	// ログを出力
+	// biome-ignore lint/suspicious/noConsole: Cloud Functions用ログ出力のためconsole.logが必要
+	console.log(JSON.stringify(logEntry));
 }
 
 /**
@@ -63,7 +60,7 @@ function logMessage(
  * @param options - 追加のメタデータ（オプション）
  */
 export function debug(message: string, options?: LogOptions): void {
-  logMessage(LogLevel.DEBUG, message, options);
+	logMessage(LogLevel.DEBUG, message, options);
 }
 
 /**
@@ -73,7 +70,7 @@ export function debug(message: string, options?: LogOptions): void {
  * @param options - 追加のメタデータ（オプション）
  */
 export function info(message: string, options?: LogOptions): void {
-  logMessage(LogLevel.INFO, message, options);
+	logMessage(LogLevel.INFO, message, options);
 }
 
 /**
@@ -83,7 +80,7 @@ export function info(message: string, options?: LogOptions): void {
  * @param options - 追加のメタデータ（オプション）
  */
 export function warn(message: string, options?: LogOptions): void {
-  logMessage(LogLevel.WARN, message, options);
+	logMessage(LogLevel.WARN, message, options);
 }
 
 /**
@@ -93,5 +90,5 @@ export function warn(message: string, options?: LogOptions): void {
  * @param errorOrOptions - エラーオブジェクトまたは追加のメタデータ
  */
 export function error(message: string, errorOrOptions?: unknown): void {
-  logMessage(LogLevel.ERROR, message, errorOrOptions);
+	logMessage(LogLevel.ERROR, message, errorOrOptions);
 }

@@ -3,27 +3,27 @@ import "../src/app/globals.css";
 import "../../../packages/ui/src/styles/globals.css";
 
 const preview: Preview = {
-  parameters: {
-    controls: {
-      matchers: {
-        color: /(background|color)$/i,
-        date: /Date$/i,
-      },
-    },
-    nextjs: {
-      appDirectory: true,
-      navigation: {
-        pathname: "/",
-        query: {},
-      },
-    },
-    a11y: {
-      // 'todo' - show a11y violations in the test UI only
-      // 'error' - fail CI on a11y violations
-      // 'off' - skip a11y checks entirely
-      test: "todo",
-    },
-  },
+	parameters: {
+		controls: {
+			matchers: {
+				color: /(background|color)$/i,
+				date: /Date$/i,
+			},
+		},
+		nextjs: {
+			appDirectory: true,
+			navigation: {
+				pathname: "/",
+				query: {},
+			},
+		},
+		a11y: {
+			// 'todo' - show a11y violations in the test UI only
+			// 'error' - fail CI on a11y violations
+			// 'off' - skip a11y checks entirely
+			test: "todo",
+		},
+	},
 };
 
 export default preview;

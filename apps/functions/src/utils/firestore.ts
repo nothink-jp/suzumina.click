@@ -17,12 +17,12 @@ let firestoreInstance: Firestore | null = null;
  * @returns 新しく作成されたFirestoreインスタンス
  */
 export function createFirestoreInstance(): Firestore {
-  const instance = new Firestore({
-    // undefined値を無視するオプションを有効化
-    ignoreUndefinedProperties: true,
-  });
-  logger.info("Firestoreクライアントが初期化されました");
-  return instance;
+	const instance = new Firestore({
+		// undefined値を無視するオプションを有効化
+		ignoreUndefinedProperties: true,
+	});
+	logger.info("Firestoreクライアントが初期化されました");
+	return instance;
 }
 
 /**
@@ -31,10 +31,10 @@ export function createFirestoreInstance(): Firestore {
  * @returns Firestoreクライアントのインスタンス
  */
 export function getFirestore(): Firestore {
-  if (!firestoreInstance) {
-    firestoreInstance = createFirestoreInstance();
-  }
-  return firestoreInstance;
+	if (!firestoreInstance) {
+		firestoreInstance = createFirestoreInstance();
+	}
+	return firestoreInstance;
 }
 
 /**
@@ -42,7 +42,7 @@ export function getFirestore(): Firestore {
  * テストでのみ使用し、本番コードでは使用しないでください
  */
 export function resetFirestoreInstance(): void {
-  firestoreInstance = null;
+	firestoreInstance = null;
 }
 
 // エクスポート用にFirestoreとTimestampを再エクスポート

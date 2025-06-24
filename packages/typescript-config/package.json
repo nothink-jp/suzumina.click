@@ -1,9 +1,9 @@
 {
-  "name": "@suzumina.click/typescript-config",
-  "version": "0.2.1",
-  "private": true,
-  "license": "PROPRIETARY",
-  "publishConfig": {
-    "access": "public"
-  }
+	"name": "@suzumina.click/typescript-config",
+	"version": "0.2.1",
+	"private": true,
+	"license": "PROPRIETARY",
+	"publishConfig": {
+		"access": "public"
+	}
 }

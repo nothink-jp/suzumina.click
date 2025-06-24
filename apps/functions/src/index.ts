@@ -27,17 +27,17 @@ import { fetchYouTubeVideos } from "./youtube";
 let initialized = false;
 
 export function initializeApplication(): boolean {
-  if (!initialized) {
-    logger.info("アプリケーション初期化を開始します");
+	if (!initialized) {
+		logger.info("アプリケーション初期化を開始します");
 
-    // 基本的な初期化処理
-    // 注意: 個別モジュール固有の初期化は各モジュールで行う
+		// 基本的な初期化処理
+		// 注意: 個別モジュール固有の初期化は各モジュールで行う
 
-    // 初期化完了
-    initialized = true;
-    logger.info("アプリケーション初期化が完了しました");
-  }
-  return true;
+		// 初期化完了
+		initialized = true;
+		logger.info("アプリケーション初期化が完了しました");
+	}
+	return true;
 }
 
 // アプリケーション初期化を実行
@@ -60,13 +60,11 @@ functions.cloudEvent<any>("fetchDLsiteWorks", fetchDLsiteWorks);
  * @param code 終了コード
  */
 export function safeExit(code: number): void {
-  // テスト環境では実際に終了しない
-  if (process.env.NODE_ENV === "test") {
-    logger.warn(
-      `プロセス終了が要求されました（コード: ${code}）- テスト環境では無視されます`,
-    );
-    return;
-  }
+	// テスト環境では実際に終了しない
+	if (process.env.NODE_ENV === "test") {
+		logger.warn(`プロセス終了が要求されました（コード: ${code}）- テスト環境では無視されます`);
+		return;
+	}
 
-  process.exit(code);
+	process.exit(code);
 }

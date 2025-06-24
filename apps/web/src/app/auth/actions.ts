@@ -3,9 +3,9 @@
 import { signIn, signOut } from "@/auth";
 
 export async function signInAction() {
-  await signIn("discord", { redirectTo: "/" });
+	await signIn("discord", { redirectTo: "/" });
 }
 
 export async function signOutAction() {
-  await signOut({ redirectTo: "/" });
+	await signOut({ redirectTo: "/" });
 }

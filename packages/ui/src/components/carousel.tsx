@@ -2,9 +2,7 @@
 
 import { Button } from "@suzumina.click/ui/components/button";
 import { cn } from "@suzumina.click/ui/lib/utils";
-import useEmblaCarousel, {
-	type UseEmblaCarouselType,
-} from "embla-carousel-react";
+import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import * as React from "react";
 
@@ -61,7 +59,9 @@ function Carousel({
 	const [canScrollNext, setCanScrollNext] = React.useState(false);
 
 	const onSelect = React.useCallback((api: CarouselApi) => {
-		if (!api) return;
+		if (!api) {
+			return;
+		}
 		setCanScrollPrev(api.canScrollPrev());
 		setCanScrollNext(api.canScrollNext());
 	}, []);
@@ -88,12 +88,16 @@ function Carousel({
 	);
 
 	React.useEffect(() => {
-		if (!api || !setApi) return;
+		if (!api || !setApi) {
+			return;
+		}
 		setApi(api);
 	}, [api, setApi]);
 
 	React.useEffect(() => {
-		if (!api) return;
+		if (!api) {
+			return;
+		}
 		onSelect(api);
 		api.on("reInit", onSelect);
 		api.on("select", onSelect);
@@ -109,8 +113,7 @@ function Carousel({
 				carouselRef,
 				api: api,
 				opts,
-				orientation:
-					orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
+				orientation: orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
 				scrollPrev,
 				scrollNext,
 				canScrollPrev,
@@ -134,17 +137,9 @@ function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
 	const { carouselRef, orientation } = useCarousel();
 
 	return (
-		<div
-			ref={carouselRef}
-			className="overflow-hidden"
-			data-slot="carousel-content"
-		>
+		<div ref={carouselRef} className="overflow-hidden" data-slot="carousel-content">
 			<div
-				className={cn(
-					"flex",
-					orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col",
-					className,
-				)}
+				className={cn("flex", orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col", className)}
 				{...props}
 			/>
 		</div>

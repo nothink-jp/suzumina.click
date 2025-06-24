@@ -1,7 +1,4 @@
-import type {
-  FirestoreServerVideoData,
-  LiveBroadcastContent,
-} from "@suzumina.click/shared-types";
+import type { FirestoreServerVideoData, LiveBroadcastContent } from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
 import firestore, { Timestamp } from "./firestore";
 import * as logger from "./logger";
@@ -16,19 +13,19 @@ const MAX_FIRESTORE_BATCH_SIZE = 500; // Firestoreのバッチ書き込み上限
  * @param thumbnails - YouTube APIから返されるサムネイル情報
  * @returns 最適なサムネイルURL（見つからない場合は空文字列）
  */
-function getBestThumbnailUrl(
-  thumbnails?: youtube_v3.Schema$ThumbnailDetails,
-): string {
-  if (!thumbnails) return "";
+function getBestThumbnailUrl(thumbnails?: youtube_v3.Schema$ThumbnailDetails): string {
+	if (!thumbnails) {
+		return "";
+	}
 
-  return (
-    thumbnails.maxres?.url ||
-    thumbnails.standard?.url ||
-    thumbnails.high?.url ||
-    thumbnails.medium?.url ||
-    thumbnails.default?.url ||
-    ""
-  );
+	return (
+		thumbnails.maxres?.url ||
+		thumbnails.standard?.url ||
+		thumbnails.high?.url ||
+		thumbnails.medium?.url ||
+		thumbnails.default?.url ||
+		""
+	);
 }
 
 /**
@@ -38,11 +35,251 @@ function getBestThumbnailUrl(
  * @returns 型安全な配信状態
  */
 function convertLiveBroadcastContent(
-  liveBroadcastContent: string | null | undefined,
+	liveBroadcastContent: string | null | undefined,
 ): LiveBroadcastContent {
-  if (liveBroadcastContent === "live") return "live";
-  if (liveBroadcastContent === "upcoming") return "upcoming";
-  return "none";
+	if (liveBroadcastContent === "live") {
+		return "live";
+	}
+	if (liveBroadcastContent === "upcoming") {
+		return "upcoming";
+	}
+	return "none";
+}
+
+/**
+ * 基本的な動画データを作成
+ */
+function createBasicVideoData(
+	video: youtube_v3.Schema$Video,
+	now: Timestamp,
+): Pick<
+	FirestoreServerVideoData,
+	| "videoId"
+	| "title"
+	| "description"
+	| "publishedAt"
+	| "thumbnailUrl"
+	| "channelId"
+	| "channelTitle"
+	| "lastFetchedAt"
+	| "liveBroadcastContent"
+> {
+	return {
+		videoId: video.id || "",
+		title: video.snippet?.title ?? "",
+		description: video.snippet?.description ?? "",
+		publishedAt: video.snippet?.publishedAt
+			? Timestamp.fromDate(new Date(video.snippet.publishedAt))
+			: now,
+		thumbnailUrl: getBestThumbnailUrl(video.snippet?.thumbnails),
+		channelId: video.snippet?.channelId ?? "",
+		channelTitle: video.snippet?.channelTitle ?? "",
+		lastFetchedAt: now,
+		liveBroadcastContent: convertLiveBroadcastContent(video.snippet?.liveBroadcastContent),
+	};
+}
+
+/**
+ * スニペットから追加データを抽出
+ */
+function extractSnippetExtras(
+	snippet?: youtube_v3.Schema$VideoSnippet,
+): Partial<FirestoreServerVideoData> {
+	const extras: Partial<FirestoreServerVideoData> = {};
+
+	if (snippet?.categoryId) {
+		extras.categoryId = snippet.categoryId;
+	}
+
+	if (snippet?.tags) {
+		extras.tags = snippet.tags;
+	}
+
+	return extras;
+}
+
+/**
+ * 基本コンテンツ情報を抽出
+ */
+function extractBasicContentInfo(
+	contentDetails: youtube_v3.Schema$VideoContentDetails,
+): Partial<FirestoreServerVideoData> {
+	const extras: Partial<FirestoreServerVideoData> = {};
+
+	if (contentDetails.duration) {
+		extras.duration = contentDetails.duration;
+	}
+	if (contentDetails.dimension) {
+		extras.dimension = contentDetails.dimension;
+	}
+	if (contentDetails.definition) {
+		extras.definition = contentDetails.definition;
+	}
+
+	extras.caption = contentDetails.caption === "true";
+
+	if (contentDetails.licensedContent !== undefined && contentDetails.licensedContent !== null) {
+		extras.licensedContent = contentDetails.licensedContent;
+	}
+
+	return extras;
+}
+
+/**
+ * コンテンツレーティング情報を抽出
+ */
+function extractContentRating(
+	contentRating: youtube_v3.Schema$VideoContentDetails["contentRating"],
+): Record<string, string> | undefined {
+	if (!contentRating) {
+		return undefined;
+	}
+
+	const rating: Record<string, string> = {};
+	for (const [key, value] of Object.entries(contentRating)) {
+		if (typeof value === "string") {
+			rating[key] = value;
+		}
+	}
+	return rating;
+}
+
+/**
+ * 地域制限情報を抽出
+ */
+function extractRegionRestriction(
+	regionRestriction: youtube_v3.Schema$VideoContentDetails["regionRestriction"],
+): FirestoreServerVideoData["regionRestriction"] {
+	if (!regionRestriction) {
+		return undefined;
+	}
+
+	const allowed = regionRestriction.allowed;
+	const blocked = regionRestriction.blocked;
+
+	const hasValidAllowed = allowed && allowed.length > 0;
+	const hasValidBlocked = blocked && blocked.length > 0;
+
+	if (!hasValidAllowed && !hasValidBlocked) {
+		return undefined;
+	}
+
+	const restriction: NonNullable<FirestoreServerVideoData["regionRestriction"]> = {};
+	if (hasValidAllowed) {
+		restriction.allowed = allowed;
+	}
+	if (hasValidBlocked) {
+		restriction.blocked = blocked;
+	}
+	return restriction;
+}
+
+/**
+ * contentDetailsから統計データを抽出 - 詳細処理版
+ */
+function extractContentDetailsExtended(
+	contentDetails: youtube_v3.Schema$VideoContentDetails,
+): Partial<FirestoreServerVideoData> {
+	const extras = extractBasicContentInfo(contentDetails);
+
+	// コンテンツレーティングを追加
+	const contentRating = extractContentRating(contentDetails.contentRating);
+	if (contentRating) {
+		extras.contentRating = contentRating;
+	}
+
+	// 地域制限を追加
+	const regionRestriction = extractRegionRestriction(contentDetails.regionRestriction);
+	if (regionRestriction) {
+		extras.regionRestriction = regionRestriction;
+	}
+
+	return extras;
+}
+
+/**
+ * statisticsから統計データを抽出 - 詳細処理版
+ */
+function extractStatisticsExtended(
+	statistics: youtube_v3.Schema$VideoStatistics,
+): Partial<FirestoreServerVideoData> {
+	return {
+		statistics: {
+			viewCount: Number.parseInt(statistics.viewCount || "0", 10) || 0,
+			likeCount: Number.parseInt(statistics.likeCount || "0", 10) || 0,
+			commentCount: Number.parseInt(statistics.commentCount || "0", 10) || 0,
+			favoriteCount: Number.parseInt(statistics.favoriteCount || "0", 10) || 0,
+		},
+	};
+}
+
+/**
+ * liveStreamingDetailsから配信情報を抽出
+ */
+function extractLiveStreamingDetails(
+	liveStreamingDetails: youtube_v3.Schema$VideoLiveStreamingDetails,
+): Partial<FirestoreServerVideoData> {
+	return {
+		liveStreamingDetails: {
+			scheduledStartTime: liveStreamingDetails.scheduledStartTime
+				? Timestamp.fromDate(new Date(liveStreamingDetails.scheduledStartTime))
+				: undefined,
+			scheduledEndTime: liveStreamingDetails.scheduledEndTime
+				? Timestamp.fromDate(new Date(liveStreamingDetails.scheduledEndTime))
+				: undefined,
+			actualStartTime: liveStreamingDetails.actualStartTime
+				? Timestamp.fromDate(new Date(liveStreamingDetails.actualStartTime))
+				: undefined,
+			actualEndTime: liveStreamingDetails.actualEndTime
+				? Timestamp.fromDate(new Date(liveStreamingDetails.actualEndTime))
+				: undefined,
+			concurrentViewers: liveStreamingDetails.concurrentViewers
+				? Number.parseInt(liveStreamingDetails.concurrentViewers, 10)
+				: undefined,
+		},
+	};
+}
+
+/**
+ * topicDetailsからトピック情報を抽出
+ */
+function extractTopicDetails(
+	topicDetails: youtube_v3.Schema$VideoTopicDetails,
+): Partial<FirestoreServerVideoData> {
+	return {
+		topicDetails: {
+			topicCategories: topicDetails.topicCategories ?? undefined,
+		},
+	};
+}
+
+/**
+ * statusからステータス情報を抽出
+ */
+function extractStatus(status: youtube_v3.Schema$VideoStatus): Partial<FirestoreServerVideoData> {
+	return {
+		status: {
+			uploadStatus: status.uploadStatus ?? undefined,
+			privacyStatus: status.privacyStatus ?? undefined,
+			commentStatus: status.license ?? undefined,
+		},
+	};
+}
+
+/**
+ * recordingDetailsから録画情報を抽出
+ */
+function extractRecordingDetails(
+	recordingDetails: youtube_v3.Schema$VideoRecordingDetails,
+): Partial<FirestoreServerVideoData> {
+	return {
+		recordingDetails: {
+			locationDescription: recordingDetails.locationDescription ?? undefined,
+			recordingDate: recordingDetails.recordingDate
+				? Timestamp.fromDate(new Date(recordingDetails.recordingDate))
+				: undefined,
+		},
+	};
 }
 
 /**
@@ -53,162 +290,51 @@ function convertLiveBroadcastContent(
  * @returns Firestore用の動画データ、または無効なデータの場合はnull
  */
 function createVideoData(
-  video: youtube_v3.Schema$Video,
-  now: Timestamp,
+	video: youtube_v3.Schema$Video,
+	now: Timestamp,
 ): FirestoreServerVideoData | null {
-  // 必須フィールドの検証
-  if (!video.id || !video.snippet) {
-    logger.warn(
-      "IDまたはスニペットが不足しているため動画をスキップします:",
-      // biome-ignore lint/suspicious/noExplicitAny: Complexity type of Youtube
-      video as any,
-    );
-    return null;
-  }
+	// 必須フィールドの検証
+	if (!video.id || !video.snippet) {
+		logger.warn(
+			"IDまたはスニペットが不足しているため動画をスキップします:",
+			// biome-ignore lint/suspicious/noExplicitAny: Complexity type of Youtube
+			video as any,
+		);
+		return null;
+	}
 
-  // 基本データの作成
-  const videoData: FirestoreServerVideoData = {
-    videoId: video.id,
-    title: video.snippet.title ?? "",
-    description: video.snippet.description ?? "",
-    publishedAt: video.snippet.publishedAt
-      ? Timestamp.fromDate(new Date(video.snippet.publishedAt))
-      : now,
-    thumbnailUrl: getBestThumbnailUrl(video.snippet.thumbnails),
-    channelId: video.snippet.channelId ?? "",
-    channelTitle: video.snippet.channelTitle ?? "",
-    lastFetchedAt: now,
-    liveBroadcastContent: convertLiveBroadcastContent(
-      video.snippet.liveBroadcastContent,
-    ),
-    // スニペット内の追加データを追加（undefined値の場合は省略）
-    ...(video.snippet.categoryId
-      ? { categoryId: video.snippet.categoryId }
-      : {}),
-    ...(video.snippet.tags ? { tags: video.snippet.tags } : {}),
-  };
+	// 基本データの作成
+	const videoData: FirestoreServerVideoData = {
+		...createBasicVideoData(video, now),
+		...extractSnippetExtras(video.snippet),
+	};
 
-  // contentDetailsパートのデータがあれば追加
-  if (video.contentDetails) {
-    // undefinedでない場合のみフィールドを追加
-    if (video.contentDetails.duration) {
-      videoData.duration = video.contentDetails.duration;
-    }
-    if (video.contentDetails.dimension) {
-      videoData.dimension = video.contentDetails.dimension;
-    }
-    if (video.contentDetails.definition) {
-      videoData.definition = video.contentDetails.definition;
-    }
+	// 各パートからのデータを追加
+	if (video.contentDetails) {
+		Object.assign(videoData, extractContentDetailsExtended(video.contentDetails));
+	}
 
-    videoData.caption = video.contentDetails.caption === "true";
+	if (video.statistics) {
+		Object.assign(videoData, extractStatisticsExtended(video.statistics));
+	}
 
-    if (
-      video.contentDetails.licensedContent !== undefined &&
-      video.contentDetails.licensedContent !== null
-    ) {
-      videoData.licensedContent = video.contentDetails.licensedContent;
-    }
-    // contentRatingオブジェクトがある場合、Record<string, string>形式に変換
-    if (video.contentDetails.contentRating) {
-      const contentRating: Record<string, string> = {};
-      // 各プロパティを確認し、stringの値のみを抽出
-      for (const [key, value] of Object.entries(
-        video.contentDetails.contentRating,
-      )) {
-        if (typeof value === "string") {
-          contentRating[key] = value;
-        }
-      }
-      videoData.contentRating = contentRating;
-    }
-    // nullをundefinedに変換してregionRestrictionを設定
-    if (video.contentDetails.regionRestriction) {
-      const allowed = video.contentDetails.regionRestriction.allowed;
-      const blocked = video.contentDetails.regionRestriction.blocked;
+	if (video.liveStreamingDetails) {
+		Object.assign(videoData, extractLiveStreamingDetails(video.liveStreamingDetails));
+	}
 
-      const hasValidAllowed = allowed && allowed.length > 0;
-      const hasValidBlocked = blocked && blocked.length > 0;
+	if (video.topicDetails) {
+		Object.assign(videoData, extractTopicDetails(video.topicDetails));
+	}
 
-      if (hasValidAllowed || hasValidBlocked) {
-        videoData.regionRestriction = {};
-        if (hasValidAllowed) {
-          videoData.regionRestriction.allowed = allowed;
-        }
-        if (hasValidBlocked) {
-          videoData.regionRestriction.blocked = blocked;
-        }
-      }
-    }
-  }
+	if (video.status) {
+		Object.assign(videoData, extractStatus(video.status));
+	}
 
-  // statisticsパートのデータがあれば追加
-  if (video.statistics) {
-    videoData.statistics = {
-      viewCount: Number.parseInt(video.statistics.viewCount || "0", 10) || 0,
-      likeCount: Number.parseInt(video.statistics.likeCount || "0", 10) || 0,
-      commentCount:
-        Number.parseInt(video.statistics.commentCount || "0", 10) || 0,
-      favoriteCount:
-        Number.parseInt(video.statistics.favoriteCount || "0", 10) || 0,
-    };
-  }
+	if (video.recordingDetails) {
+		Object.assign(videoData, extractRecordingDetails(video.recordingDetails));
+	}
 
-  // liveStreamingDetailsパートのデータがあれば追加
-  if (video.liveStreamingDetails) {
-    videoData.liveStreamingDetails = {
-      scheduledStartTime: video.liveStreamingDetails.scheduledStartTime
-        ? Timestamp.fromDate(
-            new Date(video.liveStreamingDetails.scheduledStartTime),
-          )
-        : undefined,
-      scheduledEndTime: video.liveStreamingDetails.scheduledEndTime
-        ? Timestamp.fromDate(
-            new Date(video.liveStreamingDetails.scheduledEndTime),
-          )
-        : undefined,
-      actualStartTime: video.liveStreamingDetails.actualStartTime
-        ? Timestamp.fromDate(
-            new Date(video.liveStreamingDetails.actualStartTime),
-          )
-        : undefined,
-      actualEndTime: video.liveStreamingDetails.actualEndTime
-        ? Timestamp.fromDate(new Date(video.liveStreamingDetails.actualEndTime))
-        : undefined,
-      concurrentViewers: video.liveStreamingDetails.concurrentViewers
-        ? Number.parseInt(video.liveStreamingDetails.concurrentViewers, 10)
-        : undefined,
-    };
-  }
-
-  // playerパートからのデータを取得するには追加リクエストが必要
-  // topicDetailsパートからのデータを取得
-  if (video.topicDetails) {
-    videoData.topicDetails = {
-      topicCategories: video.topicDetails.topicCategories ?? undefined,
-    };
-  }
-
-  // statusパートからのデータを取得
-  if (video.status) {
-    videoData.status = {
-      uploadStatus: video.status.uploadStatus ?? undefined,
-      privacyStatus: video.status.privacyStatus ?? undefined,
-      commentStatus: video.status.license ?? undefined,
-    };
-  }
-
-  // recordingDetailsパートのデータを取得
-  if (video.recordingDetails) {
-    videoData.recordingDetails = {
-      locationDescription:
-        video.recordingDetails.locationDescription ?? undefined,
-      recordingDate: video.recordingDetails.recordingDate
-        ? Timestamp.fromDate(new Date(video.recordingDetails.recordingDate))
-        : undefined,
-    };
-  }
-  return videoData;
+	return videoData;
 }
 
 /**
@@ -218,73 +344,63 @@ function createVideoData(
  * @returns Promise<number> - 保存した動画数
  */
 export async function saveVideosToFirestore(
-  videoDetails: youtube_v3.Schema$Video[],
+	videoDetails: youtube_v3.Schema$Video[],
 ): Promise<number> {
-  if (videoDetails.length === 0) {
-    logger.debug("保存する動画情報がありません");
-    return 0;
-  }
+	if (videoDetails.length === 0) {
+		logger.debug("保存する動画情報がありません");
+		return 0;
+	}
 
-  logger.debug("動画データをFirestoreに書き込み中...");
-  const now = Timestamp.now();
-  const videosCollection = firestore.collection(VIDEOS_COLLECTION);
-  let batch = firestore.batch();
-  let batchCounter = 0;
-  let validVideoCount = 0;
+	logger.debug("動画データをFirestoreに書き込み中...");
+	const now = Timestamp.now();
+	const videosCollection = firestore.collection(VIDEOS_COLLECTION);
+	let batch = firestore.batch();
+	let batchCounter = 0;
+	let validVideoCount = 0;
 
-  // 動画データをFirestoreにバッチ書き込み
-  for (const video of videoDetails) {
-    // 動画データを変換
-    const videoData = createVideoData(video, now);
-    if (!videoData || !video.id) continue;
+	// 動画データをFirestoreにバッチ書き込み
+	for (const video of videoDetails) {
+		// 動画データを変換
+		const videoData = createVideoData(video, now);
+		if (!videoData || !video.id) {
+			continue;
+		}
 
-    validVideoCount++;
-    const videoRef = videosCollection.doc(video.id);
-    batch.set(videoRef, videoData, { merge: true });
-    batchCounter++;
+		validVideoCount++;
+		const videoRef = videosCollection.doc(video.id);
+		batch.set(videoRef, videoData, { merge: true });
+		batchCounter++;
 
-    // バッチサイズの上限に達したらコミット
-    if (batchCounter >= MAX_FIRESTORE_BATCH_SIZE) {
-      logger.debug(
-        `${batchCounter}件の動画ドキュメントのバッチをコミット中...`,
-      );
-      await batch
-        .commit()
-        .catch((err) =>
-          logger.error(
-            "Firestoreバッチコミット中にエラーが発生しました (ループ内):",
-            err,
-          ),
-        );
-      logger.debug(
-        "バッチをコミットしました。バッチとカウンターをリセットします",
-      );
-      batch = firestore.batch();
-      batchCounter = 0;
-    }
-  }
+		// バッチサイズの上限に達したらコミット
+		if (batchCounter >= MAX_FIRESTORE_BATCH_SIZE) {
+			logger.debug(`${batchCounter}件の動画ドキュメントのバッチをコミット中...`);
+			await batch
+				.commit()
+				.catch((err) =>
+					logger.error("Firestoreバッチコミット中にエラーが発生しました (ループ内):", err),
+				);
+			logger.debug("バッチをコミットしました。バッチとカウンターをリセットします");
+			batch = firestore.batch();
+			batchCounter = 0;
+		}
+	}
 
-  // 残りのデータがあればコミット
-  if (batchCounter > 0) {
-    logger.info(
-      `最終バッチ ${batchCounter}件の動画ドキュメントをコミット中...`,
-    );
-    await batch
-      .commit()
-      .then(() => {
-        logger.debug("Firestoreバッチコミットが成功しました");
-      })
-      .catch((err) => {
-        logger.error(
-          "最終Firestoreバッチコミット中にエラーが発生しました:",
-          err,
-        );
-      });
-  } else {
-    logger.debug("最終バッチに書き込む動画詳細がありませんでした");
-  }
+	// 残りのデータがあればコミット
+	if (batchCounter > 0) {
+		logger.info(`最終バッチ ${batchCounter}件の動画ドキュメントをコミット中...`);
+		await batch
+			.commit()
+			.then(() => {
+				logger.debug("Firestoreバッチコミットが成功しました");
+			})
+			.catch((err) => {
+				logger.error("最終Firestoreバッチコミット中にエラーが発生しました:", err);
+			});
+	} else {
+		logger.debug("最終バッチに書き込む動画詳細がありませんでした");
+	}
 
-  return validVideoCount;
+	return validVideoCount;
 }
 
 /**
@@ -294,7 +410,7 @@ export async function saveVideosToFirestore(
  * @returns Firestore用の動画データ
  */
 export function convertVideoDataForFirestore(
-  videoData: youtube_v3.Schema$Video,
+	videoData: youtube_v3.Schema$Video,
 ): FirestoreServerVideoData | null {
-  return createVideoData(videoData, Timestamp.now());
+	return createVideoData(videoData, Timestamp.now());
 }

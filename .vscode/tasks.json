@@ -1,62 +1,62 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Build Functions",
-      "type": "shell",
-      "command": "cd ${workspaceFolder}/packages/shared-types && pnpm build && cd ${workspaceFolder}/apps/functions && pnpm build",
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "showReuseMessage": false,
-        "clear": true
-      },
-      "problemMatcher": "$tsc"
-    },
-    {
-      "label": "Terraform: インフラ変更計画の作成",
-      "type": "shell",
-      "command": "cd ${workspaceFolder}/terraform && terraform plan -out=tfplan",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "showReuseMessage": false,
-        "clear": true
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Terraform: インフラ変更の適用",
-      "type": "shell",
-      "command": "cd ${workspaceFolder}/terraform && terraform apply tfplan",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "showReuseMessage": false,
-        "clear": true
-      },
-      "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      }
-    },
-    {
-      "label": "Terraform: Firestoreインデックスのみ更新",
-      "type": "shell",
-      "command": "cd ${workspaceFolder}/terraform && terraform apply -target=google_firestore_index.videos_publishedAt_desc",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "showReuseMessage": false,
-        "clear": true
-      },
-      "problemMatcher": [],
-      "group": "deploy"
-    }
-  ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Functions",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/packages/shared-types && pnpm build && cd ${workspaceFolder}/apps/functions && pnpm build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": "$tsc"
+		},
+		{
+			"label": "Terraform: インフラ変更計画の作成",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/terraform && terraform plan -out=tfplan",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Terraform: インフラ変更の適用",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/terraform && terraform apply tfplan",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": false
+			}
+		},
+		{
+			"label": "Terraform: Firestoreインデックスのみ更新",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/terraform && terraform apply -target=google_firestore_index.videos_publishedAt_desc",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [],
+			"group": "deploy"
+		}
+	]
 }

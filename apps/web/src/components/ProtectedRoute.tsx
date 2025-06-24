@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import { auth } from "@/auth";
 
 interface ProtectedRouteProps {
-  children: ReactNode;
-  requireRole?: "admin" | "moderator" | "member";
-  fallbackUrl?: string;
+	children: ReactNode;
+	requireRole?: "admin" | "moderator" | "member";
+	fallbackUrl?: string;
 }
 
 /**
@@ -15,76 +15,76 @@ interface ProtectedRouteProps {
  * 権限不足ユーザーは403エラーページにリダイレクト
  */
 export default async function ProtectedRoute({
-  children,
-  requireRole = "member",
-  fallbackUrl = "/auth/signin",
+	children,
+	requireRole = "member",
+	fallbackUrl = "/auth/signin",
 }: ProtectedRouteProps) {
-  const session = await auth();
+	const session = await auth();
 
-  // 未認証の場合
-  if (!session?.user) {
-    redirect(fallbackUrl);
-  }
+	// 未認証の場合
+	if (!session?.user) {
+		redirect(fallbackUrl);
+	}
 
-  const user = session.user;
+	const user = session.user;
 
-  // 非アクティブユーザーの場合
-  if (!user.isActive) {
-    redirect("/auth/error?error=AccessDenied");
-  }
+	// 非アクティブユーザーの場合
+	if (!user.isActive) {
+		redirect("/auth/error?error=AccessDenied");
+	}
 
-  // 権限チェック
-  const roleHierarchy = {
-    member: 0,
-    moderator: 1,
-    admin: 2,
-  };
+	// 権限チェック
+	const roleHierarchy = {
+		member: 0,
+		moderator: 1,
+		admin: 2,
+	};
 
-  const userLevel = roleHierarchy[user.role];
-  const requiredLevel = roleHierarchy[requireRole];
+	const userLevel = roleHierarchy[user.role];
+	const requiredLevel = roleHierarchy[requireRole];
 
-  if (userLevel < requiredLevel) {
-    redirect("/auth/error?error=AccessDenied");
-  }
+	if (userLevel < requiredLevel) {
+		redirect("/auth/error?error=AccessDenied");
+	}
 
-  return <>{children}</>;
+	return <>{children}</>;
 }
 
 /**
  * 認証ステータスチェック用のユーティリティ関数
  */
 export async function requireAuth(): Promise<UserSession> {
-  const session = await auth();
+	const session = await auth();
 
-  if (!session?.user || !session.user.isActive) {
-    redirect("/auth/signin");
-  }
+	if (!session?.user || !session.user.isActive) {
+		redirect("/auth/signin");
+	}
 
-  return session.user;
+	return session.user;
 }
 
 /**
  * 管理者権限チェック用のユーティリティ関数
  */
 export async function requireAdmin(): Promise<UserSession> {
-  const user = await requireAuth();
+	const user = await requireAuth();
 
-  if (user.role !== "admin") {
-    redirect("/auth/error?error=AccessDenied");
-  }
+	if (user.role !== "admin") {
+		redirect("/auth/error?error=AccessDenied");
+	}
 
-  return user;
+	return user;
 }
 
 /**
  * モデレーター以上の権限チェック用のユーティリティ関数
  */
 export async function requireModerator(): Promise<UserSession> {
-  const user = await requireAuth();
+	const user = await requireAuth();
 
-  if (user.role !== "admin" && user.role !== "moderator") {
-    redirect("/auth/error?error=AccessDenied");
-  }
+	if (user.role !== "admin" && user.role !== "moderator") {
+		redirect("/auth/error?error=AccessDenied");
+	}
 
-  return user;
+	return user;
 }

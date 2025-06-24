@@ -1,9 +1,9 @@
 "use server";
 
 import type {
-  FirestoreDLsiteWorkData,
-  FrontendDLsiteWorkData,
-  WorkListResult,
+	FirestoreDLsiteWorkData,
+	FrontendDLsiteWorkData,
+	WorkListResult,
 } from "@suzumina.click/shared-types/src/work";
 import { convertToFrontendWork } from "@suzumina.click/shared-types/src/work";
 import { getFirestore } from "@/lib/firestore";
@@ -14,98 +14,83 @@ import { getFirestore } from "@/lib/firestore";
  * @returns 作品リスト結果
  */
 export async function getWorks({
-  page = 1,
-  limit = 100,
+	page = 1,
+	limit = 100,
 }: {
-  page?: number;
-  limit?: number;
+	page?: number;
+	limit?: number;
 } = {}): Promise<WorkListResult> {
-  try {
-    console.log(`作品データ取得開始: page=${page}, limit=${limit}`);
+	try {
+		const firestore = getFirestore();
 
-    const firestore = getFirestore();
+		// まず全てのデータを取得して、クライアント側で並び替え
+		// (DLsiteのIDフォーマットに対応するため)
+		const allSnapshot = await firestore.collection("dlsiteWorks").get();
 
-    // まず全てのデータを取得して、クライアント側で並び替え
-    // (DLsiteのIDフォーマットに対応するため)
-    const allSnapshot = await firestore.collection("dlsiteWorks").get();
+		// 全データを配列に変換
+		const allWorks = allSnapshot.docs.map((doc) => ({
+			...doc.data(),
+			id: doc.id,
+		})) as FirestoreDLsiteWorkData[];
 
-    console.log(`全作品データ取得: ${allSnapshot.size}件`);
+		// DLsite ID順でソート (文字列長が長い方が新しいフォーマット)
+		allWorks.sort((a, b) => {
+			const aId = a.productId;
+			const bId = b.productId;
 
-    // 全データを配列に変換
-    const allWorks = allSnapshot.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    })) as FirestoreDLsiteWorkData[];
+			// 文字列長で比較 (長い方が新しい)
+			if (aId.length !== bId.length) {
+				return bId.length - aId.length;
+			}
 
-    // DLsite ID順でソート (文字列長が長い方が新しいフォーマット)
-    allWorks.sort((a, b) => {
-      const aId = a.productId;
-      const bId = b.productId;
+			// 同じ長さの場合は辞書順降順
+			return bId.localeCompare(aId);
+		});
 
-      // 文字列長で比較 (長い方が新しい)
-      if (aId.length !== bId.length) {
-        return bId.length - aId.length;
-      }
+		// ページネーション適用
+		const startIndex = (page - 1) * limit;
+		const endIndex = startIndex + limit;
+		const paginatedWorks = allWorks.slice(startIndex, endIndex);
 
-      // 同じ長さの場合は辞書順降順
-      return bId.localeCompare(aId);
-    });
+		// 総数は全取得データから算出
+		const totalCount = allWorks.length;
 
-    // ページネーション適用
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedWorks = allWorks.slice(startIndex, endIndex);
+		// FirestoreデータをFrontend用に変換
+		const works: FrontendDLsiteWorkData[] = [];
 
-    console.log(`ページネーション後: ${paginatedWorks.length}件`);
+		for (const data of paginatedWorks) {
+			try {
+				// データにIDが設定されていない場合、ドキュメントIDを使用
+				if (!data.id) {
+					data.id = data.productId; // productIdをフォールバック
+				}
 
-    // 総数は全取得データから算出
-    const totalCount = allWorks.length;
+				// フロントエンド形式に変換
+				const frontendData = convertToFrontendWork(data);
+				works.push(frontendData);
+			} catch (_error) {
+				// エラーがあっても他のデータの処理は続行
+			}
+		}
 
-    console.log(`総作品数: ${totalCount}`);
+		const hasMore = page * limit < totalCount;
 
-    // FirestoreデータをFrontend用に変換
-    const works: FrontendDLsiteWorkData[] = [];
+		const result: WorkListResult = {
+			works,
+			hasMore,
+			lastWork: works[works.length - 1],
+			totalCount,
+		};
 
-    for (const data of paginatedWorks) {
-      try {
-        // データにIDが設定されていない場合、ドキュメントIDを使用
-        if (!data.id) {
-          data.id = data.productId; // productIdをフォールバック
-        }
-
-        // フロントエンド形式に変換
-        const frontendData = convertToFrontendWork(data);
-        works.push(frontendData);
-      } catch (error) {
-        console.error(`作品データ変換エラー (${data.productId}):`, error);
-        // エラーがあっても他のデータの処理は続行
-      }
-    }
-
-    const hasMore = page * limit < totalCount;
-
-    const result: WorkListResult = {
-      works,
-      hasMore,
-      lastWork: works[works.length - 1],
-      totalCount,
-    };
-
-    console.log(
-      `作品データ取得完了: ${works.length}件返却, hasMore=${hasMore}`,
-    );
-
-    return result;
-  } catch (error) {
-    console.error("作品データ取得エラー:", error);
-
-    // エラー時は空の結果を返す
-    return {
-      works: [],
-      hasMore: false,
-      totalCount: 0,
-    };
-  }
+		return result;
+	} catch (_error) {
+		// エラー時は空の結果を返す
+		return {
+			works: [],
+			hasMore: false,
+			totalCount: 0,
+		};
+	}
 }
 
 /**
@@ -113,37 +98,29 @@ export async function getWorks({
  * @param workId - 作品ID
  * @returns 作品データまたはnull
  */
-export async function getWorkById(
-  workId: string,
-): Promise<FrontendDLsiteWorkData | null> {
-  try {
-    console.log(`作品詳細データ取得開始: workId=${workId}`);
+export async function getWorkById(workId: string): Promise<FrontendDLsiteWorkData | null> {
+	try {
+		const firestore = getFirestore();
+		const doc = await firestore.collection("dlsiteWorks").doc(workId).get();
 
-    const firestore = getFirestore();
-    const doc = await firestore.collection("dlsiteWorks").doc(workId).get();
+		if (!doc.exists) {
+			return null;
+		}
 
-    if (!doc.exists) {
-      console.log(`作品が見つかりません: workId=${workId}`);
-      return null;
-    }
+		const data = doc.data() as FirestoreDLsiteWorkData;
 
-    const data = doc.data() as FirestoreDLsiteWorkData;
+		// データにIDが設定されていない場合、ドキュメントIDを使用
+		if (!data.id) {
+			data.id = doc.id;
+		}
 
-    // データにIDが設定されていない場合、ドキュメントIDを使用
-    if (!data.id) {
-      data.id = doc.id;
-    }
+		// フロントエンド形式に変換
+		const frontendData = convertToFrontendWork(data);
 
-    // フロントエンド形式に変換
-    const frontendData = convertToFrontendWork(data);
-
-    console.log(`作品詳細データ取得完了: ${frontendData.title}`);
-
-    return frontendData;
-  } catch (error) {
-    console.error(`作品詳細データ取得エラー (${workId}):`, error);
-    return null;
-  }
+		return frontendData;
+	} catch (_error) {
+		return null;
+	}
 }
 
 /**
@@ -152,93 +129,83 @@ export async function getWorkById(
  * @returns 作品リスト結果
  */
 export async function getWorksByCircle({
-  circle,
-  page = 1,
-  limit = 100,
+	circle,
+	page = 1,
+	limit = 100,
 }: {
-  circle: string;
-  page?: number;
-  limit?: number;
+	circle: string;
+	page?: number;
+	limit?: number;
 }): Promise<WorkListResult> {
-  try {
-    console.log(
-      `サークル検索開始: circle=${circle}, page=${page}, limit=${limit}`,
-    );
+	try {
+		const firestore = getFirestore();
 
-    const firestore = getFirestore();
+		// サークル名で全データを取得してクライアント側でソート
+		const allSnapshot = await firestore
+			.collection("dlsiteWorks")
+			.where("circle", "==", circle)
+			.get();
 
-    // サークル名で全データを取得してクライアント側でソート
-    const allSnapshot = await firestore
-      .collection("dlsiteWorks")
-      .where("circle", "==", circle)
-      .get();
+		// 全データを配列に変換
+		const allWorks = allSnapshot.docs.map((doc) => ({
+			...doc.data(),
+			id: doc.id,
+		})) as FirestoreDLsiteWorkData[];
 
-    console.log(`サークル検索結果: ${allSnapshot.size}件`);
+		// DLsite ID順でソート (文字列長が長い方が新しいフォーマット)
+		allWorks.sort((a, b) => {
+			const aId = a.productId;
+			const bId = b.productId;
 
-    // 全データを配列に変換
-    const allWorks = allSnapshot.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    })) as FirestoreDLsiteWorkData[];
+			// 文字列長で比較 (長い方が新しい)
+			if (aId.length !== bId.length) {
+				return bId.length - aId.length;
+			}
 
-    // DLsite ID順でソート (文字列長が長い方が新しいフォーマット)
-    allWorks.sort((a, b) => {
-      const aId = a.productId;
-      const bId = b.productId;
+			// 同じ長さの場合は辞書順降順
+			return bId.localeCompare(aId);
+		});
 
-      // 文字列長で比較 (長い方が新しい)
-      if (aId.length !== bId.length) {
-        return bId.length - aId.length;
-      }
+		// ページネーション適用
+		const startIndex = (page - 1) * limit;
+		const endIndex = startIndex + limit;
+		const paginatedWorks = allWorks.slice(startIndex, endIndex);
 
-      // 同じ長さの場合は辞書順降順
-      return bId.localeCompare(aId);
-    });
+		const totalCount = allWorks.length;
 
-    // ページネーション適用
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedWorks = allWorks.slice(startIndex, endIndex);
+		// FirestoreデータをFrontend用に変換
+		const works: FrontendDLsiteWorkData[] = [];
 
-    const totalCount = allWorks.length;
+		for (const data of paginatedWorks) {
+			try {
+				if (!data.id) {
+					data.id = data.productId;
+				}
 
-    // FirestoreデータをFrontend用に変換
-    const works: FrontendDLsiteWorkData[] = [];
+				const frontendData = convertToFrontendWork(data);
+				works.push(frontendData);
+			} catch (_error) {
+				// 変換エラーは無視して次の作品を処理
+			}
+		}
 
-    for (const data of paginatedWorks) {
-      try {
-        if (!data.id) {
-          data.id = data.productId;
-        }
+		const hasMore = page * limit < totalCount;
 
-        const frontendData = convertToFrontendWork(data);
-        works.push(frontendData);
-      } catch (error) {
-        console.error(`作品データ変換エラー (${data.productId}):`, error);
-      }
-    }
+		const result: WorkListResult = {
+			works,
+			hasMore,
+			lastWork: works[works.length - 1],
+			totalCount,
+		};
 
-    const hasMore = page * limit < totalCount;
-
-    const result: WorkListResult = {
-      works,
-      hasMore,
-      lastWork: works[works.length - 1],
-      totalCount,
-    };
-
-    console.log(`サークル検索完了: ${works.length}件返却`);
-
-    return result;
-  } catch (error) {
-    console.error(`サークル検索エラー (${circle}):`, error);
-
-    return {
-      works: [],
-      hasMore: false,
-      totalCount: 0,
-    };
-  }
+		return result;
+	} catch (_error) {
+		return {
+			works: [],
+			hasMore: false,
+			totalCount: 0,
+		};
+	}
 }
 
 /**
@@ -247,96 +214,88 @@ export async function getWorksByCircle({
  * @returns 作品リスト結果
  */
 export async function getSuzuminaWorks({
-  page = 1,
-  limit = 100,
+	page = 1,
+	limit = 100,
 }: {
-  page?: number;
-  limit?: number;
+	page?: number;
+	limit?: number;
 } = {}): Promise<WorkListResult> {
-  try {
-    console.log(`涼花みなせ作品取得開始: page=${page}, limit=${limit}`);
+	try {
+		const firestore = getFirestore();
 
-    const firestore = getFirestore();
+		// 涼花みなせさんの名前バリエーション
+		const authorVariations = [
+			"涼花みなせ",
+			"suzuka minase",
+			"すずかみなせ",
+			"鈴花みなせ",
+			// 必要に応じて他のバリエーションを追加
+		];
 
-    // 涼花みなせさんの名前バリエーション
-    const authorVariations = [
-      "涼花みなせ",
-      "suzuka minase",
-      "すずかみなせ",
-      "鈴花みなせ",
-      // 必要に応じて他のバリエーションを追加
-    ];
+		// author配列に涼花みなせが含まれる作品を検索
+		const allSnapshot = await firestore
+			.collection("dlsiteWorks")
+			.where("author", "array-contains-any", authorVariations)
+			.get();
 
-    // author配列に涼花みなせが含まれる作品を検索
-    const allSnapshot = await firestore
-      .collection("dlsiteWorks")
-      .where("author", "array-contains-any", authorVariations)
-      .get();
+		// 全データを配列に変換
+		const allWorks = allSnapshot.docs.map((doc) => ({
+			...doc.data(),
+			id: doc.id,
+		})) as FirestoreDLsiteWorkData[];
 
-    console.log(`涼花みなせ作品検索結果: ${allSnapshot.size}件`);
+		// DLsite ID順でソート (文字列長が長い方が新しいフォーマット)
+		allWorks.sort((a, b) => {
+			const aId = a.productId;
+			const bId = b.productId;
 
-    // 全データを配列に変換
-    const allWorks = allSnapshot.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    })) as FirestoreDLsiteWorkData[];
+			// 文字列長で比較 (長い方が新しい)
+			if (aId.length !== bId.length) {
+				return bId.length - aId.length;
+			}
 
-    // DLsite ID順でソート (文字列長が長い方が新しいフォーマット)
-    allWorks.sort((a, b) => {
-      const aId = a.productId;
-      const bId = b.productId;
+			// 同じ長さの場合は辞書順降順
+			return bId.localeCompare(aId);
+		});
 
-      // 文字列長で比較 (長い方が新しい)
-      if (aId.length !== bId.length) {
-        return bId.length - aId.length;
-      }
+		// ページネーション適用
+		const startIndex = (page - 1) * limit;
+		const endIndex = startIndex + limit;
+		const paginatedWorks = allWorks.slice(startIndex, endIndex);
 
-      // 同じ長さの場合は辞書順降順
-      return bId.localeCompare(aId);
-    });
+		const totalCount = allWorks.length;
 
-    // ページネーション適用
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedWorks = allWorks.slice(startIndex, endIndex);
+		// FirestoreデータをFrontend用に変換
+		const works: FrontendDLsiteWorkData[] = [];
 
-    const totalCount = allWorks.length;
+		for (const data of paginatedWorks) {
+			try {
+				if (!data.id) {
+					data.id = data.productId;
+				}
 
-    // FirestoreデータをFrontend用に変換
-    const works: FrontendDLsiteWorkData[] = [];
+				const frontendData = convertToFrontendWork(data);
+				works.push(frontendData);
+			} catch (_error) {
+				// 変換エラーは無視して次の作品を処理
+			}
+		}
 
-    for (const data of paginatedWorks) {
-      try {
-        if (!data.id) {
-          data.id = data.productId;
-        }
+		const hasMore = page * limit < totalCount;
 
-        const frontendData = convertToFrontendWork(data);
-        works.push(frontendData);
-      } catch (error) {
-        console.error(`作品データ変換エラー (${data.productId}):`, error);
-      }
-    }
+		const result: WorkListResult = {
+			works,
+			hasMore,
+			lastWork: works[works.length - 1],
+			totalCount,
+		};
 
-    const hasMore = page * limit < totalCount;
-
-    const result: WorkListResult = {
-      works,
-      hasMore,
-      lastWork: works[works.length - 1],
-      totalCount,
-    };
-
-    console.log(`涼花みなせ作品取得完了: ${works.length}件返却`);
-
-    return result;
-  } catch (error) {
-    console.error("涼花みなせ作品取得エラー:", error);
-
-    return {
-      works: [],
-      hasMore: false,
-      totalCount: 0,
-    };
-  }
+		return result;
+	} catch (_error) {
+		return {
+			works: [],
+			hasMore: false,
+			totalCount: 0,
+		};
+	}
 }
