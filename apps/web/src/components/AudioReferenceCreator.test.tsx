@@ -106,14 +106,14 @@ describe("AudioReferenceCreator", () => {
 		render(<AudioReferenceCreator {...defaultProps} />);
 
 		expect(screen.getByText("切り抜き範囲")).toBeInTheDocument();
-		expect(screen.getByText(/開始:/)).toBeInTheDocument();
-		expect(screen.getByText(/終了:/)).toBeInTheDocument();
+		expect(screen.getByText("開始時間に設定")).toBeInTheDocument();
+		expect(screen.getByText("終了時間に設定")).toBeInTheDocument();
 	});
 
 	it("現在時間表示が存在する", () => {
 		render(<AudioReferenceCreator {...defaultProps} />);
 
-		expect(screen.getByText(/現在:/)).toBeInTheDocument();
+		expect(screen.getByText("動画再生時間")).toBeInTheDocument();
 	});
 
 	it("タイトル入力が正しく動作する", async () => {
@@ -130,27 +130,30 @@ describe("AudioReferenceCreator", () => {
 		const user = userEvent.setup();
 		render(<AudioReferenceCreator {...defaultProps} />);
 
-		const startTimeButtons = screen.getAllByText("現在時間");
-		expect(startTimeButtons.length).toBeGreaterThanOrEqual(2);
+		const startTimeButton = screen.getByRole("button", { name: /開始時間に設定/ });
+		const endTimeButton = screen.getByRole("button", { name: /終了時間に設定/ });
+
+		expect(startTimeButton).toBeInTheDocument();
+		expect(endTimeButton).toBeInTheDocument();
 
 		// 開始時間設定ボタンをクリック
-		await user.click(startTimeButtons[0]);
+		await user.click(startTimeButton);
 
 		// ボタンが存在して操作可能であることを確認
-		expect(startTimeButtons[0]).toBeInTheDocument();
+		expect(startTimeButton).toBeInTheDocument();
 	});
 
 	it("プレビューボタンが存在する", () => {
 		render(<AudioReferenceCreator {...defaultProps} />);
 
-		const previewButton = screen.getByRole("button", { name: /プレビュー再生/ });
+		const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
 		expect(previewButton).toBeInTheDocument();
 	});
 
 	it("長さ表示セクションが存在する", () => {
 		render(<AudioReferenceCreator {...defaultProps} />);
 
-		expect(screen.getByText(/長さ:/)).toBeInTheDocument();
+		expect(screen.getByText(/切り抜き時間:/)).toBeInTheDocument();
 	});
 
 	it("YouTubeプレイヤーが表示される", () => {
@@ -181,7 +184,7 @@ describe("AudioReferenceCreator", () => {
 		render(<AudioReferenceCreator {...defaultProps} />);
 
 		// Look for the specific preview button text
-		const previewButton = screen.getByText("プレビュー再生");
+		const previewButton = screen.getByText("選択範囲をプレビュー");
 		expect(previewButton).toBeInTheDocument();
 	});
 

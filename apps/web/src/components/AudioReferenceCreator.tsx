@@ -186,109 +186,145 @@ export function AudioReferenceCreator({
 					</div>
 				)}
 
-				{/* メインレイアウト: 2ペイン横並び */}
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[600px]">
-					{/* 左ペイン: YouTube動画 (大きく) */}
-					<div className="lg:col-span-2">
-						<div className="sticky top-6">
-							<div className="aspect-video bg-muted rounded-lg overflow-hidden">
-								<YouTubePlayer
-									videoId={videoId}
-									onReady={handlePlayerReady}
-									onTimeUpdate={handleTimeUpdate}
-									startTime={initialStartTime}
-									controls={true}
-								/>
-							</div>
+				{/* メインレイアウト: 動画を大きく、操作パネルを下部に */}
+				<div className="max-w-6xl mx-auto space-y-6">
+					{/* YouTube動画プレイヤー (16:9で大きく表示) */}
+					<div className="relative">
+						<div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg max-w-5xl mx-auto">
+							<YouTubePlayer
+								videoId={videoId}
+								onReady={handlePlayerReady}
+								onTimeUpdate={handleTimeUpdate}
+								startTime={initialStartTime}
+								controls={true}
+							/>
 						</div>
 					</div>
 
-					{/* 右ペイン: 操作パネル (シンプル) */}
-					<div className="lg:col-span-1">
-						<div className="sticky top-6 space-y-4">
-							{/* 現在時間表示 */}
-							<div className="p-3 bg-muted/50 rounded-lg">
-								<div className="flex items-center gap-2 text-sm text-muted-foreground">
-									<Clock className="h-4 w-4" />
-									現在: {formatTimestamp(currentTime)}
+					{/* 操作パネル: 動画下に横並びレイアウト */}
+					<div className="bg-card border rounded-lg p-6 shadow-sm">
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+							{/* 左側: タイトル入力と基本操作 */}
+							<div className="space-y-4">
+								{/* 現在時間表示 */}
+								<div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-2 text-sm text-muted-foreground">
+											<Clock className="h-4 w-4" />
+											動画再生時間
+										</div>
+										<div className="text-lg font-mono font-semibold text-primary">
+											{formatTimestamp(currentTime)}
+										</div>
+									</div>
 								</div>
-							</div>
 
-							{/* タイトル入力 */}
-							<div className="space-y-2">
-								<label htmlFor={titleId} className="text-sm font-medium">
-									ボタンタイトル <span className="text-destructive">*</span>
-								</label>
-								<Input
-									id={titleId}
-									value={title}
-									onChange={(e) => setTitle(e.target.value)}
-									placeholder="例: おはようございます"
-									maxLength={100}
-									disabled={isCreating}
-									className="text-base"
-								/>
-								<p className="text-xs text-muted-foreground">{title.length}/100</p>
-							</div>
-
-							{/* 範囲選択 */}
-							<div className="space-y-3">
-								<div className="text-sm font-medium">切り抜き範囲</div>
-
-								{/* 開始時間 */}
-								<div className="flex items-center justify-between">
-									<span className="text-sm">開始: {formatTimestamp(startTime)}</span>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={setCurrentAsStart}
+								{/* タイトル入力 */}
+								<div className="space-y-2">
+									<label htmlFor={titleId} className="text-sm font-medium">
+										ボタンタイトル <span className="text-destructive">*</span>
+									</label>
+									<Input
+										id={titleId}
+										value={title}
+										onChange={(e) => setTitle(e.target.value)}
+										placeholder="例: おはようございます"
+										maxLength={100}
 										disabled={isCreating}
-									>
-										現在時間
-									</Button>
+										className="text-base"
+									/>
+									<p className="text-xs text-muted-foreground">{title.length}/100</p>
 								</div>
-
-								{/* 終了時間 */}
-								<div className="flex items-center justify-between">
-									<span className="text-sm">終了: {formatTimestamp(endTime)}</span>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={setCurrentAsEnd}
-										disabled={isCreating || currentTime <= startTime}
-									>
-										現在時間
-									</Button>
-								</div>
-
-								{/* 長さ表示 */}
-								<div className="p-2 bg-muted/50 rounded text-center">
-									<p className="text-sm">
-										長さ: <strong>{duration}秒</strong>
-										{duration > 60 && (
-											<span className="text-destructive ml-1">(60秒以下にしてください)</span>
-										)}
-									</p>
-								</div>
-
-								{/* プレビューボタン */}
-								<Button
-									variant="secondary"
-									onClick={previewRange}
-									disabled={isCreating || duration <= 0}
-									className="w-full"
-								>
-									<Play className="h-4 w-4 mr-2" />
-									プレビュー再生
-								</Button>
 							</div>
 
-							{/* 作成ボタン */}
-							<div className="pt-4 space-y-3">
+							{/* 右側: 範囲選択と操作 */}
+							<div className="space-y-4">
+								{/* 範囲選択 */}
+								<div className="space-y-4">
+									<div className="text-sm font-medium flex items-center gap-2">
+										切り抜き範囲
+										<span className="text-xs text-muted-foreground">
+											({formatTimestamp(startTime)} - {formatTimestamp(endTime)})
+										</span>
+									</div>
+
+									{/* 時間設定ボタンを大きく、わかりやすく */}
+									<div className="grid grid-cols-2 gap-3">
+										<Button
+											variant="outline"
+											onClick={setCurrentAsStart}
+											disabled={isCreating}
+											className="h-16 flex flex-col items-center justify-center text-xs"
+										>
+											<div className="font-medium text-sm">開始時間に設定</div>
+											<div className="text-muted-foreground">{formatTimestamp(startTime)}</div>
+										</Button>
+
+										<Button
+											variant="outline"
+											onClick={setCurrentAsEnd}
+											disabled={isCreating || currentTime <= startTime}
+											className="h-16 flex flex-col items-center justify-center text-xs"
+										>
+											<div className="font-medium text-sm">終了時間に設定</div>
+											<div className="text-muted-foreground">{formatTimestamp(endTime)}</div>
+										</Button>
+									</div>
+
+									{/* 長さ表示を目立たせる */}
+									<div
+										className={`p-3 rounded-lg text-center ${
+											duration > 60
+												? "bg-destructive/10 border border-destructive/20"
+												: "bg-primary/10 border border-primary/20"
+										}`}
+									>
+										<p className="text-sm">
+											<span className="text-muted-foreground">切り抜き時間: </span>
+											<strong className={duration > 60 ? "text-destructive" : "text-primary"}>
+												{duration}秒
+											</strong>
+										</p>
+										{duration > 60 && (
+											<p className="text-xs text-destructive mt-1">60秒以下にしてください</p>
+										)}
+									</div>
+
+									{/* プレビューボタンを目立たせる */}
+									<Button
+										variant="secondary"
+										onClick={previewRange}
+										disabled={isCreating || duration <= 0}
+										className="w-full h-11 font-medium"
+										size="lg"
+									>
+										<Play className="h-4 w-4 mr-2" />
+										選択範囲をプレビュー
+									</Button>
+								</div>
+							</div>
+						</div>
+
+						{/* 下部: 作成ボタンと説明 */}
+						<div className="flex flex-col lg:flex-row gap-4 items-center justify-between mt-6 pt-6 border-t">
+							<div className="text-xs text-muted-foreground space-y-1 lg:space-y-0 lg:space-x-4 lg:flex">
+								<span>• 動画を見ながら範囲を決めてください</span>
+								<span>• 最大60秒まで切り抜き可能です</span>
+							</div>
+
+							<div className="flex gap-3 w-full lg:w-auto">
+								<Button
+									variant="outline"
+									onClick={() => router.back()}
+									disabled={isCreating}
+									className="flex-1 lg:flex-none"
+								>
+									キャンセル
+								</Button>
 								<Button
 									onClick={handleCreate}
 									disabled={!isValid || isCreating}
-									className="w-full h-12 text-base"
+									className="flex-1 lg:flex-none h-11 px-8"
 									size="lg"
 								>
 									{isCreating ? (
@@ -303,22 +339,6 @@ export function AudioReferenceCreator({
 										</>
 									)}
 								</Button>
-
-								<Button
-									variant="outline"
-									onClick={() => router.back()}
-									disabled={isCreating}
-									className="w-full"
-								>
-									キャンセル
-								</Button>
-							</div>
-
-							{/* 簡単な説明 */}
-							<div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-								<p>• 動画を見ながら範囲を決めてください</p>
-								<p>• 最大60秒まで切り抜き可能です</p>
-								<p>• 詳細設定は作成後に編集できます</p>
 							</div>
 						</div>
 					</div>
