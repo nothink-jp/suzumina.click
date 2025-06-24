@@ -66,6 +66,19 @@
 		--chart-4: 43 74% 66%;
 		--chart-5: 27 87% 67%;
 
+		/* Suzuka color palette - 涼花みなせ theme */
+		--suzuka-50: 340 100% 98%;  /* #fff5fa - 最も薄い桜色 */
+		--suzuka-100: 340 95% 95%;   /* #ffe0ed - 薄い桜色 */
+		--suzuka-200: 340 90% 88%;   /* #ffc2d9 - 淡い桜色 */
+		--suzuka-300: 340 85% 78%;   /* #ff9ebf - 桜色 */
+		--suzuka-400: 340 80% 65%;   /* #ff6b9d - 濃い桜色 */
+		--suzuka-500: 340 75% 55%;   /* #ff4785 - 基準の桜色 */
+		--suzuka-600: 340 70% 45%;   /* #e0266e - 濃い目の桜色 */
+		--suzuka-700: 340 65% 38%;   /* #b81d5b - より濃い桜色 */
+		--suzuka-800: 340 60% 30%;   /* #8f1447 - かなり濃い桜色 */
+		--suzuka-900: 340 55% 23%;   /* #660d33 - 最も濃い桜色 */
+		--suzuka-950: 340 50% 15%;   /* #3d0820 - ほぼ黒に近い桜色 */
+
 		/* Sidebar (Stone palette) */
 		--sidebar: 0 0% 100%;
 		--sidebar-foreground: 28 25% 8%;
@@ -137,6 +150,19 @@
 		--chart-4: 280 65% 60%;
 		--chart-5: 340 75% 55%;
 
+		/* Dark mode Suzuka color palette - 涼花みなせ theme */
+		--suzuka-50: 340 50% 15%;    /* ダークモードでは反転 */
+		--suzuka-100: 340 55% 23%;
+		--suzuka-200: 340 60% 30%;
+		--suzuka-300: 340 65% 38%;
+		--suzuka-400: 340 70% 45%;
+		--suzuka-500: 340 75% 55%;
+		--suzuka-600: 340 80% 65%;
+		--suzuka-700: 340 85% 78%;
+		--suzuka-800: 340 90% 88%;
+		--suzuka-900: 340 95% 95%;
+		--suzuka-950: 340 100% 98%;
+
 		/* Dark mode sidebar (Stone palette) */
 		--sidebar: 20 14% 4%;
 		--sidebar-foreground: 60 9% 98%;
@@ -186,6 +212,18 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
+	/* Suzuka color palette */
+	--color-suzuka-50: var(--suzuka-50);
+	--color-suzuka-100: var(--suzuka-100);
+	--color-suzuka-200: var(--suzuka-200);
+	--color-suzuka-300: var(--suzuka-300);
+	--color-suzuka-400: var(--suzuka-400);
+	--color-suzuka-500: var(--suzuka-500);
+	--color-suzuka-600: var(--suzuka-600);
+	--color-suzuka-700: var(--suzuka-700);
+	--color-suzuka-800: var(--suzuka-800);
+	--color-suzuka-900: var(--suzuka-900);
+	--color-suzuka-950: var(--suzuka-950);
 }
 
 @layer base {
@@ -270,6 +308,66 @@
 	/* 標準背景 */
 	.gradient-bg {
 		background: hsl(var(--background));
+	}
+
+	/* Suzuka gradient backgrounds */
+	.suzuka-gradient {
+		background: linear-gradient(
+			135deg,
+			hsl(var(--suzuka-50)) 0%,
+			hsl(var(--suzuka-100)) 25%,
+			hsl(var(--suzuka-50)) 50%,
+			hsl(var(--suzuka-100)) 75%,
+			hsl(var(--suzuka-50)) 100%
+		);
+	}
+
+	.suzuka-gradient-subtle {
+		background: linear-gradient(
+			to bottom,
+			hsl(var(--background)) 0%,
+			hsl(var(--suzuka-50)) 50%,
+			hsl(var(--background)) 100%
+		);
+	}
+
+	.suzuka-gradient-radial {
+		background: radial-gradient(
+			ellipse at top center,
+			hsl(var(--suzuka-100)) 0%,
+			hsl(var(--suzuka-50)) 40%,
+			hsl(var(--background)) 100%
+		);
+	}
+
+	/* Dark mode gradients */
+	.dark .suzuka-gradient {
+		background: linear-gradient(
+			135deg,
+			hsl(var(--background)) 0%,
+			hsl(var(--suzuka-950)) 25%,
+			hsl(var(--background)) 50%,
+			hsl(var(--suzuka-950)) 75%,
+			hsl(var(--background)) 100%
+		);
+	}
+
+	.dark .suzuka-gradient-subtle {
+		background: linear-gradient(
+			to bottom,
+			hsl(var(--background)) 0%,
+			hsl(var(--suzuka-950)) 50%,
+			hsl(var(--background)) 100%
+		);
+	}
+
+	.dark .suzuka-gradient-radial {
+		background: radial-gradient(
+			ellipse at top center,
+			hsl(var(--suzuka-900)) 0%,
+			hsl(var(--suzuka-950)) 40%,
+			hsl(var(--background)) 100%
+		);
 	}
 
 	/* ホバー効果の強化 */

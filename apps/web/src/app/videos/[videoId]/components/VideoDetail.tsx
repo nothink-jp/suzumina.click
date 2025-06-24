@@ -4,11 +4,11 @@ import type { FrontendAudioReferenceData } from "@suzumina.click/shared-types/sr
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Calendar, Clock, ExternalLink, Eye, Plus, Share2 } from "lucide-react";
+import { Card } from "@suzumina.click/ui/components/ui/card";
+import { Calendar, Eye, Hash, PlayCircle, Plus, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getAudioReferences } from "@/app/buttons/actions";
-import { AudioReferenceCard } from "@/components/AudioReferenceCard";
 import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface VideoDetailProps {
@@ -77,146 +77,210 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 	};
 
 	return (
-		<div className="max-w-4xl mx-auto">
+		<div className="max-w-7xl mx-auto space-y-6">
 			{/* パンくずリスト */}
-			<nav className="mb-6 text-sm">
-				<ol className="flex items-center space-x-2 text-gray-600">
+			<nav aria-label="パンくずリスト" className="text-sm">
+				<ol className="flex items-center space-x-2 text-muted-foreground">
 					<li>
-						<Link href="/" className="hover:text-foreground/80">
+						<Link href="/" className="hover:text-foreground transition-colors">
 							ホーム
 						</Link>
 					</li>
 					<li>
-						<span className="mx-2">/</span>
+						<span className="mx-1">/</span>
 					</li>
 					<li>
-						<Link href="/videos" className="hover:text-foreground/80">
+						<Link href="/videos" className="hover:text-foreground transition-colors">
 							動画一覧
 						</Link>
 					</li>
 					<li>
-						<span className="mx-2">/</span>
+						<span className="mx-1">/</span>
 					</li>
-					<li className="text-gray-800 font-medium truncate">{video.title}</li>
+					<li className="text-foreground font-medium truncate max-w-xs">{video.title}</li>
 				</ol>
 			</nav>
 
-			{/* メインコンテンツ */}
-			<div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-				{/* サムネイル */}
-				<div className="relative">
-					<ThumbnailImage
-						src={video.thumbnailUrl}
-						alt={video.title}
-						className="w-full h-80 object-cover"
-					/>
-					<div className="absolute bottom-4 right-4">
-						<Badge className="bg-black/70 text-white">
-							<Clock className="h-4 w-4 mr-1" />
-							動画
-						</Badge>
-					</div>
-				</div>
-
-				{/* 動画情報 */}
-				<div className="p-6">
-					<h1 className="text-3xl font-bold text-gray-900 mb-4">{video.title}</h1>
-
-					{/* メタ情報 */}
-					<div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-6">
-						<div className="flex items-center">
-							<Calendar className="h-4 w-4 mr-1" />
-							{formatDate(video.publishedAt)}
-						</div>
-						<div className="flex items-center">
-							<Eye className="h-4 w-4 mr-1" />
-							チャンネル: {video.channelTitle}
-						</div>
-					</div>
-
-					{/* アクションボタン */}
-					<div className="flex flex-wrap gap-3 mb-6">
-						<Button className="bg-primary hover:bg-primary/90 text-white" asChild>
-							<a href={youtubeUrl} target="_blank" rel="noopener noreferrer">
-								<ExternalLink className="h-4 w-4 mr-2" />
-								YouTubeで見る
-							</a>
-						</Button>
-						<Button variant="outline" onClick={handleShare}>
-							<Share2 className="h-4 w-4 mr-2" />
-							共有
-						</Button>
-					</div>
-
-					{/* 説明 */}
-					{video.description && (
-						<div>
-							<h2 className="text-xl font-semibold text-gray-900 mb-3">動画の説明</h2>
-							<div className="bg-gray-50 rounded-lg p-4">
-								<p className="text-gray-700 whitespace-pre-line leading-relaxed">
-									{video.description}
-								</p>
+			{/* メインコンテンツグリッド */}
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				{/* 左側：メインコンテンツ（2/3幅） */}
+				<div className="lg:col-span-2 space-y-6">
+					{/* 動画カード */}
+					<Card className="overflow-hidden border-suzuka-200 dark:border-suzuka-800">
+						{/* サムネイル */}
+						<div className="relative aspect-video bg-muted">
+							<ThumbnailImage
+								src={video.thumbnailUrl}
+								alt={video.title}
+								className="w-full h-full object-cover"
+							/>
+							{/* 動画時間バッジ（もしあれば） */}
+							<div className="absolute top-4 right-4">
+								<Badge className="bg-black/80 text-white border-none">
+									<PlayCircle className="h-3 w-3 mr-1" />
+									動画
+								</Badge>
 							</div>
 						</div>
-					)}
+
+						{/* 動画情報 */}
+						<div className="p-6 space-y-4">
+							<div>
+								<h1 className="text-2xl font-bold text-foreground mb-3">{video.title}</h1>
+
+								{/* メタ情報 */}
+								<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+									<div className="flex items-center gap-1">
+										<Eye className="h-4 w-4" />
+										<span>15,420 回視聴</span>
+									</div>
+									<div className="flex items-center gap-1">
+										<Calendar className="h-4 w-4" />
+										<span>{formatDate(video.publishedAt)}</span>
+									</div>
+								</div>
+							</div>
+
+							{/* アクションボタン */}
+							<div className="flex flex-wrap gap-2">
+								<Button size="lg" className="bg-suzuka-500 hover:bg-suzuka-600 text-white" asChild>
+									<Link href={`/buttons/create?video_id=${video.videoId}`}>
+										<Plus className="h-4 w-4 mr-2" />
+										ボタンを作成
+									</Link>
+								</Button>
+								<Button size="lg" variant="outline" asChild>
+									<a href={youtubeUrl} target="_blank" rel="noopener noreferrer">
+										<PlayCircle className="h-4 w-4 mr-2" />
+										YouTubeで見る
+									</a>
+								</Button>
+								<Button size="lg" variant="ghost" onClick={handleShare}>
+									<Share2 className="h-4 w-4" />
+								</Button>
+							</div>
+
+							{/* 説明文 */}
+							{video.description && (
+								<div className="pt-4 border-t">
+									<p className="text-muted-foreground whitespace-pre-wrap break-words">
+										{video.description}
+									</p>
+									{/* ハッシュタグ風の表示（説明文から抽出） */}
+									<div className="flex flex-wrap gap-2 mt-4">
+										{video.description
+											.match(/#\S+/g)
+											?.slice(0, 5)
+											.map((tag) => (
+												<Badge
+													key={tag}
+													variant="secondary"
+													className="bg-suzuka-100 text-suzuka-700 dark:bg-suzuka-900 dark:text-suzuka-300"
+												>
+													<Hash className="h-3 w-3 mr-1" />
+													{tag.slice(1)}
+												</Badge>
+											))}
+									</div>
+								</div>
+							)}
+						</div>
+					</Card>
 
 					{/* 音声ボタンセクション */}
-					<div className="mt-8 p-6 bg-blue-50 rounded-lg">
+					<Card className="p-6 bg-suzuka-50 dark:bg-suzuka-950 border-suzuka-200 dark:border-suzuka-800">
 						<div className="flex items-center justify-between mb-4">
-							<h3 className="text-lg font-semibold text-gray-900">音声ボタン</h3>
+							<h2 className="text-xl font-semibold text-foreground">
+								この動画から作成されたボタン
+							</h2>
 							{audioCount > 0 && (
-								<span className="text-sm text-blue-600">{audioCount}個の音声ボタン</span>
+								<Badge
+									variant="secondary"
+									className="bg-suzuka-200 text-suzuka-700 dark:bg-suzuka-800 dark:text-suzuka-300"
+								>
+									{audioCount}個
+								</Badge>
 							)}
 						</div>
 
 						{audioLoading ? (
-							<div className="text-center py-8">
-								<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
-								<p className="text-gray-600 mt-2">音声ボタンを読み込み中...</p>
+							<div className="flex items-center justify-center py-12">
+								<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-suzuka-500" />
 							</div>
 						) : audioReferences.length > 0 ? (
 							<div className="space-y-4">
-								<p className="text-gray-700">この動画から作成された音声ボタンがあります。</p>
-
 								{/* 音声ボタン一覧 */}
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="grid grid-cols-1 gap-3">
 									{audioReferences.map((audioReference) => (
-										<AudioReferenceCard
-											key={audioReference.id}
-											audioReference={audioReference}
-											showSourceVideo={false}
-											size="sm"
-											variant="compact"
-										/>
+										<Card key={audioReference.id} className="p-4 hover:shadow-md transition-shadow">
+											<div className="flex items-center justify-between">
+												<div className="flex-1">
+													<h3 className="font-medium text-foreground mb-1">
+														{audioReference.title}
+													</h3>
+													<div className="flex items-center gap-4 text-sm text-muted-foreground">
+														<span>
+															{audioReference.startTime}秒 - {audioReference.endTime}秒
+														</span>
+														<span>by {audioReference.createdBy}</span>
+													</div>
+												</div>
+												<Button size="sm" variant="ghost" asChild>
+													<Link href={`/buttons/${audioReference.id}`}>
+														<PlayCircle className="h-4 w-4" />
+													</Link>
+												</Button>
+											</div>
+										</Card>
 									))}
 								</div>
 
-								<div className="flex gap-3 pt-2">
-									<Button asChild>
-										<Link href={`/buttons?videoId=${video.videoId}`}>すべての音声ボタンを見る</Link>
-									</Button>
+								{/* もっと見るボタン */}
+								<div className="pt-4 border-t flex justify-center">
 									<Button variant="outline" asChild>
-										<Link href={`/buttons/create?video_id=${video.videoId}`}>
-											<Plus className="h-4 w-4 mr-2" />
-											新しい音声ボタンを作成
-										</Link>
+										<Link href={`/buttons?videoId=${video.videoId}`}>すべてのボタンを見る</Link>
 									</Button>
 								</div>
 							</div>
 						) : (
-							<div className="text-center">
-								<p className="text-gray-600 mb-4">
-									この動画からの音声ボタンはまだ作成されていません。
-								</p>
-								<Button asChild>
+							<div className="text-center py-12">
+								<p className="text-muted-foreground mb-4">まだボタンが作成されていません</p>
+								<Button className="bg-suzuka-500 hover:bg-suzuka-600 text-white" asChild>
 									<Link href={`/buttons/create?video_id=${video.videoId}`}>
 										<Plus className="h-4 w-4 mr-2" />
-										音声ボタンを作成
+										最初のボタンを作成
 									</Link>
 								</Button>
 							</div>
 						)}
-					</div>
+					</Card>
+				</div>
+
+				{/* 右側：サイドバー（1/3幅） */}
+				<div className="space-y-6">
+					{/* チャンネル情報 */}
+					<Card className="p-6">
+						<h3 className="font-semibold text-foreground mb-4">チャンネル情報</h3>
+						<div className="space-y-3">
+							<div className="flex items-center gap-3">
+								<div className="h-12 w-12 rounded-full bg-suzuka-200 dark:bg-suzuka-800 flex items-center justify-center">
+									<span className="text-suzuka-700 dark:text-suzuka-300 font-semibold">
+										{video.channelTitle.charAt(0)}
+									</span>
+								</div>
+								<div>
+									<p className="font-medium text-foreground">{video.channelTitle}</p>
+									<p className="text-sm text-muted-foreground">YouTube チャンネル</p>
+								</div>
+							</div>
+						</div>
+					</Card>
+
+					{/* 関連動画（将来的に追加） */}
+					<Card className="p-6">
+						<h3 className="font-semibold text-foreground mb-4">関連動画</h3>
+						<p className="text-sm text-muted-foreground">関連動画はまだありません</p>
+					</Card>
 				</div>
 			</div>
 		</div>

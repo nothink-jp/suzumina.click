@@ -19,8 +19,8 @@ export default async function VideoDetailPage({ params }: VideoDetailPageProps) 
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
-			<main className="max-w-7xl mx-auto px-4 py-8">
+		<div className="min-h-screen suzuka-gradient-subtle">
+			<main className="container mx-auto px-4 py-8">
 				<VideoDetail video={video} />
 			</main>
 		</div>
