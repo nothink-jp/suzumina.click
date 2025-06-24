@@ -218,8 +218,8 @@ describe("YouTubePlayer", () => {
 				expect(window.YT.Player).toHaveBeenCalledWith(
 					expect.any(String),
 					expect.objectContaining({
-						width: 640,
-						height: 360,
+						width: "100%",
+						height: "100%",
 						videoId: "test-video-id",
 						playerVars: expect.objectContaining({
 							autoplay: 1,
