@@ -1,3 +1,8 @@
+import {
+	ListPageContent,
+	ListPageHeader,
+	ListPageLayout,
+} from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
 import { getTotalVideoCount, getVideoTitles } from "./actions";
 import VideoList from "./components/VideoList";
@@ -16,23 +21,20 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 	const year = yearParam && typeof yearParam === "string" ? yearParam : undefined;
 
 	// 並行してデータを取得
-	const [initialData, totalCount] = await Promise.all([
+	const [initialData, filteredCount, totalCount] = await Promise.all([
 		getVideoTitles({ page: validPage, limit: 12, year }),
 		getTotalVideoCount({ year }),
+		getTotalVideoCount({}), // フィルタなしの総件数
 	]);
 
 	return (
-		<div className="min-h-screen bg-gray-50">
-			<header className="bg-white shadow-sm">
-				<div className="max-w-7xl mx-auto px-4 py-6">
-					<h1 className="text-4xl font-bold text-foreground mb-2">動画一覧</h1>
-					<p className="text-muted-foreground">
-						涼花みなせさんのYouTube動画から音声ボタンを作成できます
-					</p>
-				</div>
-			</header>
+		<ListPageLayout>
+			<ListPageHeader
+				title="動画一覧"
+				description="涼花みなせさんのYouTube動画から音声ボタンを作成できます"
+			/>
 
-			<main className="max-w-7xl mx-auto px-4 py-8">
+			<ListPageContent>
 				<Suspense
 					fallback={
 						<div className="text-center py-12">
@@ -41,10 +43,15 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						</div>
 					}
 				>
-					<VideoList data={initialData} totalCount={totalCount} currentPage={validPage} />
+					<VideoList
+						data={initialData}
+						totalCount={totalCount}
+						filteredCount={year ? filteredCount : undefined}
+						currentPage={validPage}
+					/>
 				</Suspense>
-			</main>
-		</div>
+			</ListPageContent>
+		</ListPageLayout>
 	);
 }
 

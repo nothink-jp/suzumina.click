@@ -51,22 +51,6 @@ vi.mock("./actions", () => ({
 	}),
 }));
 
-// Mock search panel component
-vi.mock("./components/AudioButtonSearch", () => ({
-	AudioButtonSearch: () => {
-		// Mock the useSearchParams hook to get current search parameters
-		const mockSearchParams = new URLSearchParams("q=テスト検索&category=voice&sort=popular");
-		const q = mockSearchParams.get("q");
-
-		return (
-			<div data-testid="audio-button-search">
-				Audio Button Search Mock
-				{q && <span>Search: {q}</span>}
-			</div>
-		);
-	},
-}));
-
 // Mock AudioReferenceCard component
 vi.mock("@/components/AudioReferenceCard", () => ({
 	AudioReferenceCard: ({ audioReference }: any) => (
@@ -80,17 +64,16 @@ vi.mock("@/components/AudioReferenceCard", () => ({
 
 // Mock AudioButtonsList component
 vi.mock("./components/AudioButtonsList", () => ({
-	// biome-ignore lint/correctness/noUnusedFunctionParameters: searchParams used for testing interface compatibility
-	AudioButtonsList: ({ searchParams }: any) => {
+	default: ({ searchParams }: any) => {
 		return (
 			<div data-testid="audio-buttons-list">
 				<div data-testid="audio-reference-card">
-					<h3>テスト音声ボタン1</h3>
+					<h4>テストサウンド1</h4>
 					<p>説明1</p>
 					<span>Category: voice</span>
 				</div>
 				<div data-testid="audio-reference-card">
-					<h3>テスト音声ボタン2</h3>
+					<h4>テストサウンド2</h4>
 					<p>説明2</p>
 					<span>Category: bgm</span>
 				</div>
@@ -134,9 +117,6 @@ describe("AudioButtonsPage", () => {
 		// Page title
 		expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
 
-		// Search component
-		expect(screen.getByTestId("audio-button-search")).toBeInTheDocument();
-
 		// Since the page uses Suspense, we should see skeleton loading initially
 		const skeletons = screen.getAllByRole("generic"); // skeleton divs
 		expect(skeletons.length).toBeGreaterThan(0);
@@ -152,11 +132,8 @@ describe("AudioButtonsPage", () => {
 
 		render(await AudioButtonsPage({ searchParams }));
 
-		// Page should render the search component with search parameters
-		expect(screen.getByTestId("audio-button-search")).toBeInTheDocument();
-
-		// Since we have search params, AudioButtonsList should be rendered (with search query in mock)
-		expect(screen.getByText("Search: テスト検索")).toBeInTheDocument();
+		// Page should render the heading
+		expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
 	});
 
 	it("空の結果が適切に表示される", async () => {
@@ -171,7 +148,6 @@ describe("AudioButtonsPage", () => {
 
 		// Page should render the base structure
 		expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
-		expect(screen.getByTestId("audio-button-search")).toBeInTheDocument();
 	});
 
 	it("エラー状態が適切に表示される", async () => {
@@ -186,7 +162,6 @@ describe("AudioButtonsPage", () => {
 
 		// Page should render the base structure
 		expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
-		expect(screen.getByTestId("audio-button-search")).toBeInTheDocument();
 	});
 
 	it("ページネーションが表示される", async () => {
@@ -201,7 +176,6 @@ describe("AudioButtonsPage", () => {
 
 		// Page should render the base structure
 		expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
-		expect(screen.getByTestId("audio-button-search")).toBeInTheDocument();
 	});
 
 	it("作成ボタンが表示される", async () => {

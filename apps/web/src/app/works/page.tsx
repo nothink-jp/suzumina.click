@@ -1,3 +1,8 @@
+import {
+	ListPageContent,
+	ListPageHeader,
+	ListPageLayout,
+} from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
 import { getWorks } from "./actions";
 import WorkList from "./components/WorkList";
@@ -18,15 +23,10 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const { works: initialData, totalCount } = result;
 
 	return (
-		<div className="min-h-screen bg-gray-50">
-			<header className="bg-white shadow-sm">
-				<div className="max-w-7xl mx-auto px-4 py-6">
-					<h1 className="text-4xl font-bold text-foreground mb-2">作品一覧</h1>
-					<p className="text-muted-foreground">涼花みなせさんの音声作品を探索・購入できます</p>
-				</div>
-			</header>
+		<ListPageLayout>
+			<ListPageHeader title="作品一覧" description="涼花みなせさんの音声作品を探索・購入できます" />
 
-			<main className="max-w-7xl mx-auto px-4 py-8">
+			<ListPageContent>
 				<Suspense
 					fallback={
 						<div className="text-center py-12">
@@ -37,8 +37,8 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 				>
 					<WorkList data={initialData} totalCount={totalCount || 0} currentPage={validPage} />
 				</Suspense>
-			</main>
-		</div>
+			</ListPageContent>
+		</ListPageLayout>
 	);
 }
 

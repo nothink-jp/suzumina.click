@@ -1,6 +1,18 @@
 "use client";
 
 import type { VideoListResult } from "@suzumina.click/shared-types/src/video";
+import { ListHeader } from "@suzumina.click/ui/components/custom/list-header";
+import {
+	ListPageEmptyState,
+	ListPageGrid,
+	ListPageStats,
+} from "@suzumina.click/ui/components/custom/list-page-layout";
+import {
+	FilterSelect,
+	SearchFilterPanel,
+	SortSelect,
+} from "@suzumina.click/ui/components/custom/search-filter-panel";
+import { PlayCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useMemo, useState } from "react";
 import Pagination from "@/components/Pagination";
@@ -9,10 +21,16 @@ import VideoCard from "./VideoCard";
 interface VideoListProps {
 	data: VideoListResult;
 	totalCount: number;
+	filteredCount?: number;
 	currentPage: number;
 }
 
-export default function VideoList({ data, totalCount, currentPage }: VideoListProps) {
+export default function VideoList({
+	data,
+	totalCount,
+	filteredCount,
+	currentPage,
+}: VideoListProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState("");
@@ -20,7 +38,8 @@ export default function VideoList({ data, totalCount, currentPage }: VideoListPr
 	const [yearFilter, setYearFilter] = useState(searchParams.get("year") || "");
 
 	const itemsPerPage = 12;
-	const totalPages = Math.ceil(totalCount / itemsPerPage);
+	const displayCount = filteredCount !== undefined ? filteredCount : totalCount;
+	const totalPages = Math.ceil(displayCount / itemsPerPage);
 
 	// 年代選択肢を動的に生成（2018年から現在年まで）
 	const currentYear = new Date().getFullYear();
@@ -67,113 +86,69 @@ export default function VideoList({ data, totalCount, currentPage }: VideoListPr
 
 	return (
 		<div>
-			{/* 検索・フィルター パネル */}
-			<div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 mb-8">
-				<div className="flex flex-col sm:flex-row gap-4">
-					<div className="flex-1">
-						<div className="relative">
-							<input
-								type="text"
-								placeholder="動画タイトルで検索..."
-								value={searchQuery}
-								onChange={(e) => {
-									// FID改善: 入力遅延で重い処理を避ける
-									startTransition(() => {
-										setSearchQuery(e.target.value);
-									});
-								}}
-								onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-								className="w-full px-4 py-3 pr-10 border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent min-h-[44px]"
-								// FID改善: passive listener で応答性向上
-								style={{ touchAction: "manipulation" }}
-							/>
-							<button
-								type="button"
-								onClick={handleSearch}
-								className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-								aria-label="検索"
-							>
-								<svg
-									className="w-5 h-5"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-									aria-hidden="true"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-									/>
-								</svg>
-							</button>
-						</div>
-					</div>
-					<div className="flex flex-col sm:flex-row gap-4">
-						<select
+			{/* 検索・フィルター */}
+			<SearchFilterPanel
+				searchValue={searchQuery}
+				onSearchChange={(value) => {
+					// FID改善: 入力遅延で重い処理を避ける
+					startTransition(() => {
+						setSearchQuery(value);
+					});
+				}}
+				onSearch={handleSearch}
+				searchPlaceholder="動画タイトルで検索..."
+				filters={
+					<>
+						<SortSelect
 							value={sortBy}
-							onChange={(e) => {
+							onValueChange={(value) => {
 								// FID改善: 選択変更も遅延処理
 								startTransition(() => {
-									setSortBy(e.target.value);
+									setSortBy(value);
 								});
 							}}
-							className="px-4 py-3 border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent min-h-[44px]"
-							style={{ touchAction: "manipulation" }}
-						>
-							<option value="">並び順</option>
-							<option value="newest">新しい順</option>
-							<option value="oldest">古い順</option>
-							<option value="popular">人気順</option>
-						</select>
-						<select
+							options={[
+								{ value: "", label: "並び順" },
+								{ value: "newest", label: "新しい順" },
+								{ value: "oldest", label: "古い順" },
+								{ value: "popular", label: "人気順" },
+							]}
+						/>
+						<FilterSelect
 							value={yearFilter}
-							onChange={(e) => {
-								// 年代変更時に即座にフィルタリング
-								handleYearChange(e.target.value);
-							}}
-							className="px-4 py-3 border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent min-h-[44px]"
-							style={{ touchAction: "manipulation" }}
-						>
-							<option value="">すべての年代</option>
-							{yearOptions.map((year) => (
-								<option key={year} value={year.toString()}>
-									{year}年
-								</option>
-							))}
-						</select>
-					</div>
-				</div>
-			</div>
+							onValueChange={handleYearChange}
+							placeholder="すべての年代"
+							options={[
+								{ value: "", label: "すべての年代" },
+								...yearOptions.map((year) => ({
+									value: year.toString(),
+									label: `${year}年`,
+								})),
+							]}
+						/>
+					</>
+				}
+			/>
 
 			{/* ヘッダー */}
-			<div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-6 gap-2">
-				<h2 className="text-lg sm:text-xl font-semibold text-foreground">
-					動画一覧 (全{totalCount.toLocaleString()}件)
-				</h2>
-				<div className="text-sm text-muted-foreground">
-					{currentPage}ページ / {totalPages}ページ
-				</div>
-			</div>
+			<ListHeader
+				title="動画一覧"
+				totalCount={totalCount}
+				filteredCount={filteredCount}
+				currentPage={currentPage}
+				totalPages={totalPages}
+			/>
 
 			{/* 動画一覧 */}
 			{filteredVideos.length === 0 ? (
-				<div className="text-center py-12">
-					<div className="mx-auto w-24 h-24 mb-4 text-muted-foreground">
-						<svg fill="currentColor" viewBox="0 0 24 24" role="img" aria-label="Video player icon">
-							<path d="M21,3H3C1.89,3 1,3.89 1,5V19A2,2 0 0,0 3,21H21A2,2 0 0,0 23,19V5C23,3.89 22.1,3 21,3M21,19H3V5H21V19Z" />
-							<path d="M10,15L15.19,12L10,9V15Z" />
-						</svg>
-					</div>
-					<p className="text-muted-foreground text-lg">動画が見つかりませんでした</p>
-				</div>
+				<ListPageEmptyState
+					icon={<PlayCircle className="mx-auto h-12 w-12" />}
+					title="動画が見つかりませんでした"
+				/>
 			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<ListPageGrid>
 					{filteredVideos.map((video, index) => (
 						<div key={video.id} className="min-h-video-card">
-							{" "}
-							{/* CLS削減: 最小高さ予約 */}
 							<VideoCard
 								video={video}
 								buttonCount={0} // 将来的にaudioClipsコレクションから取得
@@ -182,7 +157,7 @@ export default function VideoList({ data, totalCount, currentPage }: VideoListPr
 							/>
 						</div>
 					))}
-				</div>
+				</ListPageGrid>
 			)}
 
 			{/* ページネーション */}
@@ -194,12 +169,12 @@ export default function VideoList({ data, totalCount, currentPage }: VideoListPr
 
 			{/* 統計情報 */}
 			{filteredVideos.length > 0 && (
-				<div className="mt-6 text-sm text-muted-foreground text-center">
-					{totalCount.toLocaleString()}件中{" "}
-					{((currentPage - 1) * itemsPerPage + 1).toLocaleString()}〜
-					{Math.min(currentPage * itemsPerPage, totalCount).toLocaleString()}
-					件を表示
-				</div>
+				<ListPageStats
+					currentPage={currentPage}
+					totalPages={totalPages}
+					totalCount={displayCount}
+					itemsPerPage={itemsPerPage}
+				/>
 			)}
 		</div>
 	);
