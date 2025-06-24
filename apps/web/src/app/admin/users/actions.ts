@@ -7,7 +7,7 @@ import {
 	type UserQuery,
 	UserQuerySchema,
 } from "@suzumina.click/shared-types";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getFirestore } from "@/lib/firestore";
 import { getUserList } from "@/lib/user-firestore";
@@ -21,7 +21,7 @@ async function requireAdmin() {
 		redirect("/auth/signin");
 	}
 	if (session.user.role !== "admin") {
-		redirect("/");
+		notFound();
 	}
 	return session.user;
 }
