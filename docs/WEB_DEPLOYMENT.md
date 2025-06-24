@@ -1,214 +1,102 @@
-# suzumina.click Web Application - Cloud Run Deployment Guide
+# Web App デプロイ・運用ガイド
 
-このドキュメントは、suzumina.click WebアプリケーションをGoogle Cloud Runにデプロイする手順を説明します。
+suzumina.click WebアプリケーションのCloud Run運用リファレンス
 
-## 📋 前提条件
+## 🚀 現在のデプロイ状況
 
-### 必要なツール
-- Docker Desktop
-- Google Cloud SDK (`gcloud`)
-- Node.js 22
-- pnpm 10
+**本番URL**: `https://suzumina-click-web-production-[hash]-an.a.run.app`  
+**デプロイ方式**: GitHub Actions自動デプロイ (main ブランチ)  
+**インフラ**: Google Cloud Run (asia-northeast1)
 
-### Google Cloud プロジェクト設定
-- プロジェクトID: `suzumina-click`
-- リージョン: `asia-northeast1`
-- 必要なAPI有効化:
-  - Cloud Run API
-  - Container Registry API
-  - Cloud Build API
+## 📊 ステータス確認
 
-## 🚀 デプロイ方法
-
-### 1. ローカル Docker ビルドテスト
-
-プロジェクトルートから以下を実行：
+### サービス状態確認
 
 ```bash
-# Docker イメージをビルド
-./apps/web/scripts/docker-build.sh
+# サービス稼働状況
+gcloud run services describe suzumina-click-web --region=asia-northeast1
 
-# ローカルでコンテナを実行
-./apps/web/scripts/docker-run.sh
+# 最新リビジョン確認
+gcloud run revisions list --service=suzumina-click-web --region=asia-northeast1
+
+# ログ確認（直近1時間）
+gcloud logs read "resource.type=cloud_run_revision" --since="1h"
 ```
-
-ブラウザで `http://localhost:8080` にアクセスして動作確認。
-
-### 2. 手動デプロイ
-
-```bash
-# Google Cloud にログイン
-gcloud auth login
-gcloud config set project suzumina-click
-
-# Docker レジストリ認証
-gcloud auth configure-docker
-
-# プロジェクトルートに移動
-cd /path/to/suzumina.click
-
-# イメージをビルド
-IMAGE_TAG="gcr.io/suzumina-click/suzumina-web:$(git rev-parse --short HEAD)"
-docker build -f apps/web/Dockerfile -t $IMAGE_TAG .
-
-# イメージをプッシュ
-docker push $IMAGE_TAG
-
-# Cloud Run にデプロイ
-gcloud run deploy suzumina-web \
-  --image $IMAGE_TAG \
-  --platform managed \
-  --region asia-northeast1 \
-  --allow-unauthenticated \
-  --memory 1Gi \
-  --cpu 1 \
-  --min-instances 0 \
-  --max-instances 100 \
-  --concurrency 1000 \
-  --timeout 300 \
-  --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1" \
-  --execution-environment gen2 \
-  --cpu-boost
-```
-
-### 3. GitHub Actions 自動デプロイ
-
-GitHub リポジトリの Secrets に以下を設定：
-
-- `WIF_PROVIDER`: Workload Identity Federation プロバイダー
-- `WIF_SERVICE_ACCOUNT`: サービスアカウント
-- `CLOUD_RUN_SERVICE_ACCOUNT`: Cloud Run 用サービスアカウント
-
-`main` ブランチへのプッシュで自動デプロイが実行されます。
-
-## 🔧 設定ファイル
-
-### Dockerfile
-- **場所**: `apps/web/Dockerfile`
-- **特徴**: 
-  - マルチステージビルド
-  - Next.js standalone モード
-  - Cloud Run 最適化（port 8080、tini init）
-  - セキュリティ強化（非root ユーザー）
-
-### Cloud Run 設定
-- **場所**: `apps/web/cloud-run.yaml`
-- **設定内容**:
-  - リソース制限: CPU 1000m、メモリ 1Gi
-  - オートスケーリング: 0-100 インスタンス
-  - ヘルスチェック設定
-
-### GitHub Actions
-- **場所**: `apps/web/.github/workflows/deploy-cloud-run.yml`
-- **機能**:
-  - テスト実行
-  - Docker ビルド・プッシュ
-  - Cloud Run デプロイ
-  - Workload Identity Federation 認証
-
-## 📊 監視・ログ
 
 ### ヘルスチェック
+
 ```bash
-curl https://suzumina-web-[hash]-an.a.run.app/api/health
+# アプリケーション応答確認
+curl -I https://suzumina-click-web-production-[hash]-an.a.run.app/
+
+# Firestore接続確認
+curl https://suzumina-click-web-production-[hash]-an.a.run.app/api/health
 ```
 
-### ログ確認
+## 🚨 緊急対応
+
+### トラフィック制御
+
 ```bash
-gcloud logs read --service=suzumina-web --region=asia-northeast1
+# トラフィック停止（緊急時）
+gcloud run services update-traffic suzumina-click-web \
+  --to-revisions=REVISION_NAME=0 --region=asia-northeast1
+
+# 前リビジョンへの緊急ロールバック
+gcloud run services update-traffic suzumina-click-web \
+  --to-latest --region=asia-northeast1
 ```
 
-### メトリクス確認
+### 手動デプロイ（緊急時のみ）
+
 ```bash
-curl https://suzumina-web-[hash]-an.a.run.app/api/metrics
+# イメージビルド・デプロイ
+gcloud builds submit --config=apps/web/cloudbuild.yaml \
+  --substitutions=_SERVICE_NAME=suzumina-click-web
 ```
 
-## 🛠️ トラブルシューティング
+## 📈 監視・メトリクス
+
+### パフォーマンス監視
+
+- **Cloud Console**: [Cloud Run メトリクス](https://console.cloud.google.com/run)
+- **Cloud Monitoring**: CPU・メモリ・リクエスト数・エラー率
+- **Cloud Logging**: アプリケーションログ・エラーログ
+
+### 主要メトリクス
+
+- **レスポンス時間**: < 2秒 (目標)
+- **CPU使用率**: < 80% (通常時)
+- **メモリ使用率**: < 512MB
+- **エラー率**: < 1%
+
+## 🔧 設定・環境変数
+
+### 重要な環境変数
+
+- `NEXTAUTH_URL`: アプリケーションのベースURL
+- `NEXTAUTH_SECRET`: セッション暗号化キー (Secret Manager)
+- `DISCORD_CLIENT_ID/SECRET`: Discord OAuth認証 (Secret Manager)
+- `GOOGLE_CLOUD_PROJECT`: Firestoreプロジェクト設定
+
+### 設定変更
+
+環境変数・設定変更はTerraformで管理されています。  
+詳細は `docs/TERRAFORM_GUIDE.md` を参照してください。
+
+## 📚 関連ドキュメント
+
+- `docs/TERRAFORM_GUIDE.md` - インフラ設定・変更
+- `docs/AUTH_DEPLOYMENT_GUIDE.md` - Discord認証設定
+- `docs/DEPLOYMENT_STRATEGY.md` - デプロイ戦略
+- GitHub Actions - `.github/workflows/` でCI/CD設定確認
+
+## 🆘 トラブルシューティング
 
 ### よくある問題
 
-#### 1. Docker ビルドエラー
-```bash
-# キャッシュをクリア
-docker system prune -a
+1. **Firestore接続エラー**: サービスアカウント権限を確認
+2. **Discord認証失敗**: Secret Managerの認証情報を確認
+3. **メモリ不足**: Cloud Run設定でメモリ上限を調整
 
-# 依存関係の再インストール
-pnpm install --frozen-lockfile
-```
-
-#### 2. Cloud Run デプロイエラー
-```bash
-# サービスアカウント権限確認
-gcloud projects get-iam-policy suzumina-click
-
-# イメージの確認
-gcloud container images list --repository=gcr.io/suzumina-click
-```
-
-#### 3. 起動エラー
-```bash
-# Cloud Run ログ確認
-gcloud logs tail --service=suzumina-web --region=asia-northeast1
-
-# ローカルでコンテナ実行
-docker run -p 8080:8080 gcr.io/suzumina-click/suzumina-web:latest
-```
-
-## 🔄 デプロイ戦略
-
-### ブルーグリーンデプロイ
-```bash
-# 新バージョンをデプロイ（トラフィック0%）
-gcloud run deploy suzumina-web --no-traffic --revision-suffix=v2
-
-# 段階的にトラフィックを移行
-gcloud run services update-traffic suzumina-web --to-revisions=suzumina-web-v2=10
-
-# 問題なければ100%移行
-gcloud run services update-traffic suzumina-web --to-latest
-```
-
-### カナリアデプロイ
-```bash
-# 新バージョンに5%のトラフィックを送る
-gcloud run services update-traffic suzumina-web \
-  --to-revisions=suzumina-web-v1=95,suzumina-web-v2=5
-```
-
-## 📈 パフォーマンス最適化
-
-### Next.js 設定
-- `output: "standalone"` による最小化デプロイ
-- イメージ最適化設定
-- バンドル分割設定
-
-### Docker 最適化
-- マルチステージビルド
-- .dockerignore による不要ファイル除外
-- Alpine Linux ベースイメージ
-
-### Cloud Run 最適化
-- CPU boost 有効化
-- 適切なリソース制限
-- コールドスタート最小化
-
-## 🔐 セキュリティ
-
-### コンテナセキュリティ
-- 非root ユーザーでの実行
-- 最小権限の原則
-- セキュリティヘッダー設定
-
-### Cloud Run セキュリティ
-- サービスアカウント認証
-- IAM による アクセス制御
-- VPC コネクタ（必要に応じて）
-
-## 📝 関連ファイル
-
-- `apps/web/Dockerfile` - Docker イメージ定義
-- `apps/web/cloud-run.yaml` - Cloud Run サービス設定
-- `apps/web/.dockerignore` - Docker ビルド除外設定
-- `apps/web/scripts/docker-build.sh` - ローカルビルドスクリプト
-- `apps/web/scripts/docker-run.sh` - ローカル実行スクリプト
-- `apps/web/.github/workflows/deploy-cloud-run.yml` - CI/CD パイプライン
+詳細なトラブルシューティングは運用中の状況に応じて随時更新します。
