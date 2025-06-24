@@ -46,14 +46,19 @@ const mockDLsiteHtml = `
 
 // グローバルfetchのモック
 const mockFetch = vi.fn().mockImplementation((url: string): Promise<MockFetchResponse> => {
-	if (url.includes("dlsite.com")) {
-		return Promise.resolve({
-			ok: true,
-			status: 200,
-			text: async () => mockDLsiteHtml,
-		});
+	try {
+		const parsedUrl = new URL(url);
+		if (parsedUrl.hostname === "www.dlsite.com") {
+			return Promise.resolve({
+				ok: true,
+				status: 200,
+				text: async () => mockDLsiteHtml,
+			});
+		}
+		return Promise.reject(new Error(`Unexpected URL: ${url}`));
+	} catch (_error) {
+		return Promise.reject(new Error(`Invalid URL: ${url}`));
 	}
-	return Promise.reject(new Error(`Unexpected URL: ${url}`));
 });
 
 // グローバルfetchを設定
