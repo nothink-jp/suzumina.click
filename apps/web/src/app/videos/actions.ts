@@ -32,7 +32,7 @@ function buildUserPaginationQuery(
 	// 年代フィルタリング
 	if (params?.year) {
 		const year = Number.parseInt(params.year, 10);
-		if (!isNaN(year)) {
+		if (!Number.isNaN(year)) {
 			const startOfYear = new Date(year, 0, 1); // 1月1日
 			const endOfYear = new Date(year + 1, 0, 1); // 翌年の1月1日
 			query = query
@@ -169,7 +169,7 @@ export async function getTotalVideoCount(params?: { year?: string }): Promise<nu
 		// 年代フィルタリング
 		if (params?.year) {
 			const year = Number.parseInt(params.year, 10);
-			if (!isNaN(year)) {
+			if (!Number.isNaN(year)) {
 				const startOfYear = new Date(year, 0, 1);
 				const endOfYear = new Date(year + 1, 0, 1);
 				query = query

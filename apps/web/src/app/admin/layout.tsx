@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -7,10 +7,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 	// Check if user is authenticated and has admin role
 	if (!session?.user) {
 		redirect("/auth/signin");
+		return; // This won't be reached in production, but helps with testing
 	}
 
+	// 管理者以外は404を返す（セキュリティ上、管理画面の存在を隠す）
 	if (session.user.role !== "admin") {
-		redirect("/");
+		notFound();
+		return; // This won't be reached in production, but helps with testing
 	}
 
 	return (

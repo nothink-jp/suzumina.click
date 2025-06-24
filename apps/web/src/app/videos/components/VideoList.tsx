@@ -2,7 +2,7 @@
 
 import type { VideoListResult } from "@suzumina.click/shared-types/src/video";
 import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { startTransition, useMemo, useState } from "react";
 import Pagination from "@/components/Pagination";
 import VideoCard from "./VideoCard";
 
