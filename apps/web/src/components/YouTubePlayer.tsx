@@ -140,7 +140,7 @@ export interface YouTubePlayerProps {
 export function YouTubePlayer({
 	videoId,
 	width = "100%",
-	height = "315",
+	height = "100%",
 	autoplay = false,
 	controls = true,
 	startTime,
@@ -280,8 +280,8 @@ export function YouTubePlayer({
 
 		// プレイヤーの初期化
 		const player = new window.YT.Player(playerId, {
-			height,
-			width,
+			height: "100%",
+			width: "100%",
 			videoId,
 			playerVars: {
 				autoplay: autoplay ? 1 : 0,
@@ -375,7 +375,7 @@ export function YouTubePlayer({
 	return (
 		<div
 			ref={containerRef}
-			className={`youtube-player-container ${className}`}
+			className={`youtube-player-container w-full h-full ${className}`}
 			style={{ width, height }}
 		>
 			{!isAPIReady && (

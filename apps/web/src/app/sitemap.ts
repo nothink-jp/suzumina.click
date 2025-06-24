@@ -1,0 +1,124 @@
+import type { MetadataRoute } from "next";
+import { getFirestore } from "@/lib/firestore";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+	const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://suzumina.click";
+
+	// 静的ページ
+	const staticPages: MetadataRoute.Sitemap = [
+		{
+			url: baseUrl,
+			lastModified: new Date(),
+			changeFrequency: "daily",
+			priority: 1,
+		},
+		{
+			url: `${baseUrl}/buttons`,
+			lastModified: new Date(),
+			changeFrequency: "daily",
+			priority: 0.9,
+		},
+		{
+			url: `${baseUrl}/buttons/create`,
+			lastModified: new Date(),
+			changeFrequency: "monthly",
+			priority: 0.7,
+		},
+		{
+			url: `${baseUrl}/videos`,
+			lastModified: new Date(),
+			changeFrequency: "daily",
+			priority: 0.9,
+		},
+		{
+			url: `${baseUrl}/works`,
+			lastModified: new Date(),
+			changeFrequency: "weekly",
+			priority: 0.8,
+		},
+		{
+			url: `${baseUrl}/auth/signin`,
+			lastModified: new Date(),
+			changeFrequency: "yearly",
+			priority: 0.3,
+		},
+	];
+
+	try {
+		const firestore = getFirestore();
+		const dynamicPages: MetadataRoute.Sitemap = [];
+
+		// 動画ページを追加
+		try {
+			const videosSnapshot = await firestore
+				.collection("videos")
+				.where("isPublic", "==", true)
+				.limit(1000)
+				.get();
+
+			for (const doc of videosSnapshot.docs) {
+				const video = doc.data();
+				dynamicPages.push({
+					url: `${baseUrl}/videos/${doc.id}`,
+					lastModified: new Date(video.updatedAt || video.createdAt || Date.now()),
+					changeFrequency: "weekly",
+					priority: 0.7,
+				});
+			}
+		} catch (error) {
+			// biome-ignore lint/suspicious/noConsole: Debug logging for sitemap generation errors
+			console.warn("Failed to fetch videos for sitemap:", error);
+		}
+
+		// 作品ページを追加
+		try {
+			const worksSnapshot = await firestore
+				.collection("works")
+				.where("isPublic", "==", true)
+				.limit(1000)
+				.get();
+
+			for (const doc of worksSnapshot.docs) {
+				const work = doc.data();
+				dynamicPages.push({
+					url: `${baseUrl}/works/${doc.id}`,
+					lastModified: new Date(work.updatedAt || work.createdAt || Date.now()),
+					changeFrequency: "monthly",
+					priority: 0.6,
+				});
+			}
+		} catch (error) {
+			// biome-ignore lint/suspicious/noConsole: Debug logging for sitemap generation errors
+			console.warn("Failed to fetch works for sitemap:", error);
+		}
+
+		// 音声ボタンページを追加
+		try {
+			const audioReferencesSnapshot = await firestore
+				.collection("audioReferences")
+				.where("isPublic", "==", true)
+				.limit(1000)
+				.get();
+
+			for (const doc of audioReferencesSnapshot.docs) {
+				const audioRef = doc.data();
+				dynamicPages.push({
+					url: `${baseUrl}/buttons/${doc.id}`,
+					lastModified: new Date(audioRef.updatedAt || audioRef.createdAt || Date.now()),
+					changeFrequency: "monthly",
+					priority: 0.5,
+				});
+			}
+		} catch (error) {
+			// biome-ignore lint/suspicious/noConsole: Debug logging for sitemap generation errors
+			console.warn("Failed to fetch audio references for sitemap:", error);
+		}
+
+		return [...staticPages, ...dynamicPages];
+	} catch (error) {
+		// Firestoreが利用できない場合は静的ページのみ返す
+		// biome-ignore lint/suspicious/noConsole: Debug logging for sitemap generation errors
+		console.warn("Failed to fetch dynamic content for sitemap:", error);
+		return staticPages;
+	}
+}

@@ -186,26 +186,25 @@ export function AudioReferenceCreator({
 					</div>
 				)}
 
-				{/* メインレイアウト: 動画を大きく、操作パネルを下部に */}
-				<div className="max-w-6xl mx-auto space-y-6">
-					{/* YouTube動画プレイヤー (16:9で大きく表示) */}
-					<div className="relative">
-						<div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg max-w-5xl mx-auto">
-							<YouTubePlayer
-								videoId={videoId}
-								onReady={handlePlayerReady}
-								onTimeUpdate={handleTimeUpdate}
-								startTime={initialStartTime}
-								controls={true}
-							/>
+				{/* メインレイアウト: 動画の右側に操作パネル */}
+				<div className="max-w-7xl mx-auto">
+					<div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+						{/* 左側: YouTube動画プレイヤー (16:9で大きく表示) */}
+						<div className="xl:col-span-2">
+							<div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
+								<YouTubePlayer
+									videoId={videoId}
+									onReady={handlePlayerReady}
+									onTimeUpdate={handleTimeUpdate}
+									startTime={initialStartTime}
+									controls={true}
+								/>
+							</div>
 						</div>
-					</div>
 
-					{/* 操作パネル: 動画下に横並びレイアウト */}
-					<div className="bg-card border rounded-lg p-6 shadow-sm">
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-							{/* 左側: タイトル入力と基本操作 */}
-							<div className="space-y-4">
+						{/* 右側: 操作パネル */}
+						<div className="xl:col-span-1">
+							<div className="bg-card border rounded-lg p-6 shadow-sm h-fit sticky top-6 space-y-6">
 								{/* 現在時間表示 */}
 								<div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
 									<div className="flex items-center justify-between">
@@ -235,10 +234,7 @@ export function AudioReferenceCreator({
 									/>
 									<p className="text-xs text-muted-foreground">{title.length}/100</p>
 								</div>
-							</div>
 
-							{/* 右側: 範囲選択と操作 */}
-							<div className="space-y-4">
 								{/* 範囲選択 */}
 								<div className="space-y-4">
 									<div className="text-sm font-medium flex items-center gap-2">
