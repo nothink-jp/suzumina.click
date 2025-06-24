@@ -350,12 +350,30 @@ export function createYouTubeEmbedUrl(
 
 /**
  * YouTube動画IDをURLから抽出するヘルパー関数
+ * ReDoS攻撃を防ぐため、より安全な正規表現を使用
  */
 export function extractYouTubeVideoId(url: string): string | null {
-	const regex =
-		/(?:youtube\.com\/(?:[^/]+\/[^/]+\/|(?:v|e(?:mbed)?)\/|[^?&]*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/;
-	const match = url.match(regex);
-	return match ? (match[1] ?? null) : null;
+	// 安全性のため、URLの長さを制限
+	if (url.length > 1000) {
+		return null;
+	}
+
+	// より安全で明示的な正規表現パターンを使用
+	const patterns = [
+		/youtube\.com\/watch\?(?:[^&]*&)*v=([a-zA-Z0-9_-]{11})(?:&|$)/,
+		/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})(?:\?|$)/,
+		/youtube\.com\/v\/([a-zA-Z0-9_-]{11})(?:\?|$)/,
+		/youtu\.be\/([a-zA-Z0-9_-]{11})(?:\?|$)/,
+	];
+
+	for (const pattern of patterns) {
+		const match = url.match(pattern);
+		if (match && match[1]) {
+			return match[1];
+		}
+	}
+
+	return null;
 }
 
 /**
