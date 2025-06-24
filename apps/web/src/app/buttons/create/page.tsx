@@ -4,13 +4,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getVideoById } from "@/app/videos/actions";
 import { AudioReferenceCreator } from "@/components/AudioReferenceCreator";
-import { AudioReferenceCreatorSimple } from "@/components/AudioReferenceCreatorSimple";
 
 interface CreateAudioButtonPageProps {
 	searchParams: Promise<{
 		video_id?: string;
 		start_time?: string;
-		ui?: string; // 'simple' | 'full'
 	}>;
 }
 
@@ -22,7 +20,6 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	const startTime = resolvedSearchParams.start_time
 		? Number.parseInt(resolvedSearchParams.start_time, 10)
 		: 0;
-	const uiMode = resolvedSearchParams.ui || "simple"; // デフォルトはシンプルUI
 
 	// video_idが指定されていない場合のエラーハンドリング
 	if (!videoId) {
@@ -63,27 +60,12 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 		notFound();
 	}
 
-	// UIモードに応じて適切なコンポーネントを表示
-	if (uiMode === "simple") {
-		return (
-			<AudioReferenceCreatorSimple
-				videoId={videoId}
-				videoTitle={videoResult.title}
-				videoDuration={600} // デフォルト10分、実際の動画長は別途API取得が必要
-				initialStartTime={startTime}
-			/>
-		);
-	}
-
 	return (
-		<div className="container mx-auto px-4 py-8">
-			{/* 従来のUI */}
-			<AudioReferenceCreator
-				videoId={videoId}
-				videoTitle={videoResult.title}
-				videoDuration={600} // デフォルト10分、実際の動画長は別途API取得が必要
-				initialStartTime={startTime}
-			/>
-		</div>
+		<AudioReferenceCreator
+			videoId={videoId}
+			videoTitle={videoResult.title}
+			videoDuration={600} // デフォルト10分、実際の動画長は別途API取得が必要
+			initialStartTime={startTime}
+		/>
 	);
 }

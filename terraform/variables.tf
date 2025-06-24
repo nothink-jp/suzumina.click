@@ -61,6 +61,11 @@ variable "custom_domain" {
   description = "Cloud Runにマッピングするカスタムドメイン（空文字列の場合はマッピングしない）"
   type        = string
   default     = ""
+  
+  validation {
+    condition = var.custom_domain == "" || can(regex("^[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]*\\.[a-zA-Z]{2,}$", var.custom_domain))
+    error_message = "custom_domain は有効なドメイン名である必要があります。"
+  }
 }
 variable "artifact_registry_repository_id" {
   description = "Artifact RegistryのリポジトリID"

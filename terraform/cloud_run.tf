@@ -66,7 +66,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       # NextAuth設定
       env {
         name  = "NEXTAUTH_URL"
-        value = var.environment == "production" ? "https://${var.custom_domain}" : "auto"
+        value = var.environment == "production" && var.custom_domain != "" ? "https://${var.custom_domain}" : "auto"
       }
 
       # NextAuth.js v5でカスタムドメイン使用時に必要
@@ -245,4 +245,15 @@ output "cloud_run_url" {
 output "cloud_run_service_account_email" {
   description = "Cloud Run service account email"
   value       = google_service_account.cloud_run_service_account.email
+}
+
+# デバッグ用出力
+output "nextauth_url_debug" {
+  description = "NextAuth URL configuration for debugging"
+  value = {
+    environment   = var.environment
+    custom_domain = var.custom_domain
+    nextauth_url  = var.environment == "production" && var.custom_domain != "" ? "https://${var.custom_domain}" : "auto"
+  }
+  sensitive = false
 }
