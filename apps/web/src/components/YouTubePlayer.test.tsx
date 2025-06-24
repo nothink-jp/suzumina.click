@@ -622,7 +622,7 @@ describe("useYouTubePlayer Hook", () => {
 
 		it("エラー状態からの回復", () => {
 			const onError = vi.fn();
-			const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
 			const mockPlayer = {
 				getCurrentTime: vi.fn(() => {
@@ -666,7 +666,7 @@ describe("useYouTubePlayer Hook", () => {
 				vi.advanceTimersByTime(1000);
 			});
 
-			expect(consoleSpy).toHaveBeenCalledWith("Time update error:", expect.any(Error));
+			expect(consoleSpy).toHaveBeenCalledWith("YouTube API time update failed:", "Player error");
 
 			// エラー後もプレイヤーが機能し続けることを確認
 			const container = document.querySelector(".youtube-player-container");
