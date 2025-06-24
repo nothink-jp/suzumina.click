@@ -8,7 +8,7 @@ import {
 	PaginationLink,
 	PaginationNext,
 	PaginationPrevious,
-} from "./pagination.js";
+} from "./pagination";
 
 const meta = {
 	title: "UI/Pagination",
