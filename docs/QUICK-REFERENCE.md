@@ -96,12 +96,29 @@ git push origin feature/new-feature
 
 ### 3. デプロイ
 
+**推奨: GitHub Actions自動デプロイ**
 ```bash
-# Production デプロイ
-cd terraform && terraform apply
+# mainブランチにプッシュすると自動デプロイ
+git push origin main
+```
 
-# Cloud Run 確認
-gcloud run services describe web --region=asia-northeast1
+**手動デプロイ:**
+- GitHub「Actions」タブ → 「Deploy to Cloud Run」を実行
+
+**レガシー方式（非推奨）:**
+```bash
+# ⚠️ 非推奨: GitHub Actionsを使用してください
+# cd terraform && terraform apply
+# ./scripts/deploy-cloud-run.sh
+```
+
+**デプロイ確認:**
+```bash
+# Cloud Run サービス確認
+gcloud run services describe suzumina-click-web --region=asia-northeast1
+
+# ログ確認
+gcloud logging read "resource.type=cloud_run_revision" --limit=20
 ```
 
 ## 🧪 テスト戦略

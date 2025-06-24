@@ -1,7 +1,22 @@
 #!/bin/bash
 
+# ⚠️  DEPRECATED: このスクリプトは非推奨です
+# 代わりにGitHub Actionsベースのデプロイを使用してください
+# 詳細: docs/GITHUB_ACTIONS_DEPLOYMENT.md
+#
 # suzumina.click Cloud Run デプロイスクリプト
 # 使用法: ./scripts/deploy-cloud-run.sh [environment]
+
+echo "⚠️  警告: このスクリプトは非推奨です"
+echo "代わりにGitHub Actionsベースのデプロイを使用してください"
+echo "詳細: docs/GITHUB_ACTIONS_DEPLOYMENT.md"
+echo ""
+echo "続行しますか？ (y/N)"
+read -r confirmation
+if [[ ! "$confirmation" =~ ^[Yy]$ ]]; then
+    echo "デプロイをキャンセルしました"
+    exit 0
+fi
 
 set -e
 
@@ -99,13 +114,14 @@ gcloud run deploy $SERVICE_NAME \
     --region $REGION \
     --platform managed \
     --allow-unauthenticated \
-    --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GOOGLE_CLOUD_PROJECT=$PROJECT_ID" \
+    --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,NEXTAUTH_URL=https://suzumina.click,AUTH_TRUST_HOST=true" \
+    --set-secrets="DISCORD_CLIENT_ID=DISCORD_CLIENT_ID:latest,DISCORD_CLIENT_SECRET=DISCORD_CLIENT_SECRET:latest,DISCORD_BOT_TOKEN=DISCORD_BOT_TOKEN:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,YOUTUBE_API_KEY=YOUTUBE_API_KEY:latest" \
     --memory 2Gi \
     --cpu 1 \
     --min-instances 0 \
     --max-instances 10 \
     --timeout 300 \
-    --port 3000 \
+    --port 8080 \
     --service-account "cloud-run-nextjs@$PROJECT_ID.iam.gserviceaccount.com"
 
 # サービスURL取得
