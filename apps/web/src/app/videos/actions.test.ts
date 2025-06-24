@@ -35,6 +35,7 @@ const createMockFirestore = () => {
 	const mockCollection = {
 		doc: vi.fn().mockReturnValue(mockDoc),
 		orderBy: vi.fn().mockReturnThis(),
+		where: vi.fn().mockReturnThis(),
 		startAfter: vi.fn().mockReturnThis(),
 		offset: vi.fn().mockReturnThis(),
 		limit: vi.fn().mockReturnThis(),
@@ -322,6 +323,51 @@ describe("Videos Actions", () => {
 			await getVideoTitles({ limit: 1 });
 		});
 
+		it("年代フィルタが正しく適用される", async () => {
+			const { mockFirestore, mockCollection } = createMockFirestore();
+			(getFirestore as Mock).mockReturnValue(mockFirestore);
+
+			mockCollection.get.mockResolvedValue({
+				empty: false,
+				docs: [
+					{
+						id: "video-2023",
+						data: () => createMockVideoData({ title: "2023 Video" }),
+					},
+				],
+			});
+
+			(convertToFrontendVideo as Mock).mockImplementation((data) =>
+				createMockFrontendVideo({ id: data.id, title: data.title }),
+			);
+
+			await getVideoTitles({ year: "2023", limit: 10 });
+
+			// 年代フィルタのクエリが2回呼ばれることを確認
+			expect(mockCollection.where).toHaveBeenCalledTimes(2);
+
+			// 2023年1月1日以降のフィルタ
+			expect(mockCollection.where).toHaveBeenCalledWith("publishedAt", ">=", expect.any(Timestamp));
+
+			// 2024年1月1日未満のフィルタ
+			expect(mockCollection.where).toHaveBeenCalledWith("publishedAt", "<", expect.any(Timestamp));
+		});
+
+		it("無効な年代パラメータは無視される", async () => {
+			const { mockFirestore, mockCollection } = createMockFirestore();
+			(getFirestore as Mock).mockReturnValue(mockFirestore);
+
+			mockCollection.get.mockResolvedValue({
+				empty: false,
+				docs: [],
+			});
+
+			await getVideoTitles({ year: "invalid-year", limit: 10 });
+
+			// 年代フィルタが適用されないことを確認
+			expect(mockCollection.where).not.toHaveBeenCalled();
+		});
+
 		// biome-ignore lint/suspicious/noSkippedTests: Test requires console.log mock which conflicts with logger changes
 		it.skip("個別ドキュメントの処理エラーでも他のドキュメントは処理される", async () => {
 			const { mockFirestore, mockCollection } = createMockFirestore();
@@ -439,6 +485,35 @@ describe("Videos Actions", () => {
 			const result = await getTotalVideoCount();
 
 			expect(result).toBe(0);
+		});
+
+		it("年代フィルタ付きで総動画数を取得できる", async () => {
+			const { mockFirestore, mockCollection } = createMockFirestore();
+			(getFirestore as Mock).mockReturnValue(mockFirestore);
+
+			mockCollection.get.mockResolvedValue({
+				size: 15,
+			});
+
+			const result = await getTotalVideoCount({ year: "2023" });
+
+			expect(result).toBe(15);
+			expect(mockCollection.select).toHaveBeenCalled();
+			expect(mockCollection.where).toHaveBeenCalledTimes(2);
+		});
+
+		it("無効な年代パラメータは無視される（getTotalVideoCount）", async () => {
+			const { mockFirestore, mockCollection } = createMockFirestore();
+			(getFirestore as Mock).mockReturnValue(mockFirestore);
+
+			mockCollection.get.mockResolvedValue({
+				size: 100,
+			});
+
+			const result = await getTotalVideoCount({ year: "invalid" });
+
+			expect(result).toBe(100);
+			expect(mockCollection.where).not.toHaveBeenCalled();
 		});
 	});
 

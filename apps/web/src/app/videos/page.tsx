@@ -9,14 +9,16 @@ interface VideosPageProps {
 export default async function VideosPage({ searchParams }: VideosPageProps) {
 	const resolvedSearchParams = await searchParams;
 	const pageParam = resolvedSearchParams.page;
+	const yearParam = resolvedSearchParams.year;
 	const currentPage =
 		pageParam && typeof pageParam === "string" ? Number.parseInt(pageParam, 10) : 1;
 	const validPage = Math.max(1, Number.isNaN(currentPage) ? 1 : currentPage);
+	const year = yearParam && typeof yearParam === "string" ? yearParam : undefined;
 
 	// 並行してデータを取得
 	const [initialData, totalCount] = await Promise.all([
-		getVideoTitles({ page: validPage, limit: 12 }),
-		getTotalVideoCount(),
+		getVideoTitles({ page: validPage, limit: 12, year }),
+		getTotalVideoCount({ year }),
 	]);
 
 	return (

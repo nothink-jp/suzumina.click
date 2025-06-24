@@ -22,11 +22,24 @@ function buildUserPaginationQuery(
 		page?: number;
 		limit?: number;
 		startAfterDocId?: string;
+		year?: string;
 	},
 ) {
 	const limit = params?.limit || 12;
 	const page = params?.page || 1;
 	let query = videosRef.orderBy("publishedAt", "desc");
+
+	// 年代フィルタリング
+	if (params?.year) {
+		const year = Number.parseInt(params.year, 10);
+		if (!isNaN(year)) {
+			const startOfYear = new Date(year, 0, 1); // 1月1日
+			const endOfYear = new Date(year + 1, 0, 1); // 翌年の1月1日
+			query = query
+				.where("publishedAt", ">=", Timestamp.fromDate(startOfYear))
+				.where("publishedAt", "<", Timestamp.fromDate(endOfYear));
+		}
+	}
 
 	if (params?.startAfterDocId) {
 		return { query, limit, useStartAfter: true, docId: params.startAfterDocId };
@@ -104,6 +117,7 @@ export async function getVideoTitles(params?: {
 	page?: number;
 	limit?: number;
 	startAfterDocId?: string;
+	year?: string;
 }): Promise<VideoListResult> {
 	try {
 		const firestore = getFirestore();
@@ -146,11 +160,25 @@ export async function getVideoTitles(params?: {
  * 総動画数を取得するServer Action
  * Note: count()クエリは権限問題があるため、通常のクエリで代替
  */
-export async function getTotalVideoCount(): Promise<number> {
+export async function getTotalVideoCount(params?: { year?: string }): Promise<number> {
 	try {
 		const firestore = getFirestore();
 		const videosRef = firestore.collection("videos");
-		const snapshot = await videosRef.select().get(); // IDのみ取得で効率化
+		let query = videosRef.select(); // IDのみ取得で効率化
+
+		// 年代フィルタリング
+		if (params?.year) {
+			const year = Number.parseInt(params.year, 10);
+			if (!isNaN(year)) {
+				const startOfYear = new Date(year, 0, 1);
+				const endOfYear = new Date(year + 1, 0, 1);
+				query = query
+					.where("publishedAt", ">=", Timestamp.fromDate(startOfYear))
+					.where("publishedAt", "<", Timestamp.fromDate(endOfYear));
+			}
+		}
+
+		const snapshot = await query.get();
 		return snapshot.size;
 	} catch (_error) {
 		return 0;

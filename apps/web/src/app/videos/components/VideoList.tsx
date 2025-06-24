@@ -1,7 +1,8 @@
 "use client";
 
 import type { VideoListResult } from "@suzumina.click/shared-types/src/video";
-import { startTransition, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import Pagination from "@/components/Pagination";
 import VideoCard from "./VideoCard";
 
@@ -12,12 +13,42 @@ interface VideoListProps {
 }
 
 export default function VideoList({ data, totalCount, currentPage }: VideoListProps) {
+	const router = useRouter();
+	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [sortBy, setSortBy] = useState("");
-	const [yearFilter, setYearFilter] = useState("");
+	const [yearFilter, setYearFilter] = useState(searchParams.get("year") || "");
 
 	const itemsPerPage = 12;
 	const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+	// 年代選択肢を動的に生成（2018年から現在年まで）
+	const currentYear = new Date().getFullYear();
+	const yearOptions = useMemo(() => {
+		const years = [];
+		for (let year = currentYear; year >= 2018; year--) {
+			years.push(year);
+		}
+		return years;
+	}, [currentYear]);
+
+	// 年代フィルターの変更をURLに反映
+	const handleYearChange = (year: string) => {
+		setYearFilter(year);
+		const params = new URLSearchParams(searchParams.toString());
+
+		if (year) {
+			params.set("year", year);
+		} else {
+			params.delete("year");
+		}
+
+		// ページ番号をリセット
+		params.delete("page");
+
+		// URLを更新（ページ再読み込み）
+		router.push(`/videos?${params.toString()}`);
+	};
 
 	// FID改善: startTransition で非緊急更新を遅延
 	const handleSearch = () => {
@@ -99,18 +130,18 @@ export default function VideoList({ data, totalCount, currentPage }: VideoListPr
 						<select
 							value={yearFilter}
 							onChange={(e) => {
-								// FID改善: 年代フィルタも遅延処理
-								startTransition(() => {
-									setYearFilter(e.target.value);
-								});
+								// 年代変更時に即座にフィルタリング
+								handleYearChange(e.target.value);
 							}}
 							className="px-4 py-3 border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent min-h-[44px]"
 							style={{ touchAction: "manipulation" }}
 						>
-							<option value="">年代</option>
-							<option value="2024">2024年</option>
-							<option value="2023">2023年</option>
-							<option value="2022">2022年</option>
+							<option value="">すべての年代</option>
+							{yearOptions.map((year) => (
+								<option key={year} value={year.toString()}>
+									{year}年
+								</option>
+							))}
 						</select>
 					</div>
 				</div>
