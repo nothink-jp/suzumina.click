@@ -26,33 +26,33 @@
 		--radius-md: calc(var(--radius) - 2px);
 		--radius-sm: calc(var(--radius) - 4px);
 
-		/* Theme colors - WCAG AA compliant */
+		/* Theme colors - WCAG AA compliant (Stone palette) */
 		--background: 0 0% 100%;
-		--foreground: 222.2 84% 4.9%;
+		--foreground: 28 25% 8%;
 
 		--card: 0 0% 100%;
-		--card-foreground: 222.2 84% 4.9%;
+		--card-foreground: 28 25% 8%;
 
 		--popover: 0 0% 100%;
-		--popover-foreground: 222.2 84% 4.9%;
+		--popover-foreground: 28 25% 8%;
 
 		--primary: 221.2 70% 45%; /* Updated for WCAG AA: 6.36:1 contrast ratio */
-		--primary-foreground: 210 40% 98%;
+		--primary-foreground: 60 9% 98%;
 
-		--secondary: 210 40% 96%;
-		--secondary-foreground: 222.2 84% 4.9%;
+		--secondary: 60 5% 96%;
+		--secondary-foreground: 28 25% 8%;
 
-		--muted: 210 40% 96%;
-		--muted-foreground: 215.4 16.3% 42%; /* Darkened for WCAG AA: 4.60:1 contrast ratio */
+		--muted: 60 5% 96%;
+		--muted-foreground: 25 5% 45%; /* Darkened for WCAG AA: 4.60:1 contrast ratio */
 
-		--accent: 210 40% 96%;
-		--accent-foreground: 222.2 84% 4.9%;
+		--accent: 60 5% 96%;
+		--accent-foreground: 28 25% 8%;
 
 		--destructive: 0 75% 50%; /* Updated for WCAG AA: 4.60:1 contrast ratio */
-		--destructive-foreground: 210 40% 98%;
+		--destructive-foreground: 60 9% 98%;
 
-		--border: 214.3 31.8% 91.4%;
-		--input: 214.3 31.8% 91.4%;
+		--border: 20 6% 90%;
+		--input: 20 6% 90%;
 		--ring: 221.2 70% 45%; /* Updated to match new primary color */
 
 		/* フォーカス状態 */
@@ -66,14 +66,14 @@
 		--chart-4: 43 74% 66%;
 		--chart-5: 27 87% 67%;
 
-		/* Sidebar */
+		/* Sidebar (Stone palette) */
 		--sidebar: 0 0% 100%;
-		--sidebar-foreground: 222.2 84% 4.9%;
+		--sidebar-foreground: 28 25% 8%;
 		--sidebar-primary: 221.2 70% 45%; /* Updated to match new primary color */
-		--sidebar-primary-foreground: 210 40% 98%;
-		--sidebar-accent: 210 40% 96%;
-		--sidebar-accent-foreground: 222.2 84% 4.9%;
-		--sidebar-border: 214.3 31.8% 91.4%;
+		--sidebar-primary-foreground: 60 9% 98%;
+		--sidebar-accent: 60 5% 96%;
+		--sidebar-accent-foreground: 28 25% 8%;
+		--sidebar-border: 20 6% 90%;
 		--sidebar-ring: 221.2 70% 45%; /* Updated to match new primary color */
 
 		/* Animation keyframes */
@@ -98,37 +98,37 @@
 	.dark {
 		--color-scheme: dark;
 
-		--background: 222.2 84% 4.9%;
-		--foreground: 210 40% 98%;
+		--background: 20 14% 4%;
+		--foreground: 60 9% 98%;
 
-		--card: 222.2 84% 4.9%;
-		--card-foreground: 210 40% 98%;
+		--card: 20 14% 4%;
+		--card-foreground: 60 9% 98%;
 
-		--popover: 222.2 84% 4.9%;
-		--popover-foreground: 210 40% 98%;
+		--popover: 20 14% 4%;
+		--popover-foreground: 60 9% 98%;
 
-		--primary: 210 40% 98%;
-		--primary-foreground: 222.2 84% 4.9%;
+		--primary: 60 9% 98%;
+		--primary-foreground: 20 14% 4%;
 
-		--secondary: 217.2 32.6% 17.5%;
-		--secondary-foreground: 210 40% 98%;
+		--secondary: 12 6% 15%;
+		--secondary-foreground: 60 9% 98%;
 
-		--muted: 217.2 32.6% 17.5%;
-		--muted-foreground: 215 20.2% 65.1%;
+		--muted: 12 6% 15%;
+		--muted-foreground: 24 5% 64%;
 
-		--accent: 217.2 32.6% 17.5%;
-		--accent-foreground: 210 40% 98%;
+		--accent: 12 6% 15%;
+		--accent-foreground: 60 9% 98%;
 
 		--destructive: 0 62.8% 30.6%;
-		--destructive-foreground: 210 40% 98%;
+		--destructive-foreground: 60 9% 98%;
 
-		--border: 217.2 32.6% 17.5%;
-		--input: 217.2 32.6% 17.5%;
-		--ring: 212.7 26.8% 83.9%;
+		--border: 12 6% 15%;
+		--input: 12 6% 15%;
+		--ring: 24 5% 83%;
 
-		/* ダークモードでのフォーカス状態 */
-		--focus-ring: 212.7 26.8% 83.9%;
-		--focus-ring-offset: 222.2 84% 4.9%;
+		/* ダークモードでのフォーカス状態 (Stone palette) */
+		--focus-ring: 24 5% 83%;
+		--focus-ring-offset: 20 14% 4%;
 
 		/* Dark mode chart colors */
 		--chart-1: 220 70% 50%;
@@ -137,15 +137,15 @@
 		--chart-4: 280 65% 60%;
 		--chart-5: 340 75% 55%;
 
-		/* Dark mode sidebar */
-		--sidebar: 222.2 84% 4.9%;
-		--sidebar-foreground: 210 40% 98%;
-		--sidebar-primary: 210 40% 98%;
-		--sidebar-primary-foreground: 222.2 84% 4.9%;
-		--sidebar-accent: 217.2 32.6% 17.5%;
-		--sidebar-accent-foreground: 210 40% 98%;
-		--sidebar-border: 217.2 32.6% 17.5%;
-		--sidebar-ring: 212.7 26.8% 83.9%;
+		/* Dark mode sidebar (Stone palette) */
+		--sidebar: 20 14% 4%;
+		--sidebar-foreground: 60 9% 98%;
+		--sidebar-primary: 60 9% 98%;
+		--sidebar-primary-foreground: 20 14% 4%;
+		--sidebar-accent: 12 6% 15%;
+		--sidebar-accent-foreground: 60 9% 98%;
+		--sidebar-border: 12 6% 15%;
+		--sidebar-ring: 24 5% 83%;
 	}
 }
 
