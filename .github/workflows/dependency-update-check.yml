@@ -13,6 +13,8 @@ jobs:
     name: Verify Dependency Updates
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -83,6 +85,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: contains(github.event.pull_request.labels.*.name, 'dependencies:framework') || contains(github.event.pull_request.labels.*.name, 'dependencies:auth')
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
