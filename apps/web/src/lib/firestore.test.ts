@@ -37,7 +37,6 @@ describe("firestore module", () => {
 		});
 
 		it("should create new Firestore instance with fallback project ID when env var is not set", async () => {
-			// biome-ignore lint/performance/noDelete: Test needs to remove env var to test fallback behavior
 			delete process.env.GOOGLE_CLOUD_PROJECT;
 			vi.resetModules();
 
@@ -65,7 +64,6 @@ describe("firestore module", () => {
 		});
 
 		it("should create instance with correct project configuration", async () => {
-			// biome-ignore lint/performance/noDelete: Test needs to remove env var to test fallback behavior
 			delete process.env.GOOGLE_CLOUD_PROJECT;
 			vi.resetModules();
 			const { getFirestore } = await import("./firestore");
