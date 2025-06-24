@@ -1,28 +1,17 @@
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
-import { Button } from "@suzumina.click/ui/components/button";
-import { Input } from "@suzumina.click/ui/components/input";
-import { Separator } from "@suzumina.click/ui/components/separator";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-} from "@suzumina.click/ui/components/sheet";
-import { Skeleton } from "@suzumina.click/ui/components/skeleton";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@suzumina.click/ui/components/tooltip";
 import { useIsMobile } from "@suzumina.click/ui/hooks/use-mobile";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
 import * as React from "react";
+import { Button } from "./button.js";
+import { Input } from "./input.js";
+import { Separator } from "./separator.js";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./sheet.js";
+import { Skeleton } from "./skeleton.js";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip.js";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -260,7 +249,7 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
 			variant="ghost"
 			size="icon"
 			className={cn("size-7", className)}
-			onClick={(event) => {
+			onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
 				onClick?.(event);
 				toggleSidebar();
 			}}

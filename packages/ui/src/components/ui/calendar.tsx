@@ -1,10 +1,10 @@
 "use client";
 
-import { Button, buttonVariants } from "@suzumina.click/ui/components/button";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import * as React from "react";
 import { type DayButton, DayPicker, getDefaultClassNames } from "react-day-picker";
+import { Button, buttonVariants } from "./button.js";
 
 // Calendar component definitions moved outside to avoid nested component warnings
 const CalendarRoot = (

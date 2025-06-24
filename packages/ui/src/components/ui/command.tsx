@@ -1,16 +1,10 @@
 "use client";
 
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@suzumina.click/ui/components/dialog";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Command as CommandPrimitive } from "cmdk";
 import { SearchIcon } from "lucide-react";
 import type * as React from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./dialog.js";
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
 	return (
