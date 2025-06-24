@@ -9,15 +9,7 @@ import { retryApiCall } from "./retry";
 export const MAX_VIDEOS_PER_BATCH = 50; // YouTube APIの最大結果数
 export const QUOTA_EXCEEDED_CODE = 403; // クォータ超過エラーコード
 
-/**
- * YouTube API初期化時のチェック
- */
-(function initializeYoutubeModule() {
-	// 環境変数のチェック
-	if (!process.env.YOUTUBE_API_KEY) {
-		logger.warn("環境変数 YOUTUBE_API_KEY が設定されていません");
-	}
-})();
+// YouTube APIの環境変数チェックはinitializeYouTubeClient()内で実行
 
 /**
  * YouTube APIクライアントを初期化する
