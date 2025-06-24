@@ -52,13 +52,38 @@ export function AudioReferenceCreator({
 			if (lastTimeRef.current !== roundedTime) {
 				lastTimeRef.current = roundedTime;
 				setCurrentTime(roundedTime);
+				// biome-ignore lint/suspicious/noConsole: Debug logging for time updates
+				console.log("Time updated:", roundedTime);
 			}
+		} else {
+			// biome-ignore lint/suspicious/noConsole: Debug logging for invalid time values
+			console.warn("Invalid time value received:", time, typeof time);
 		}
 	}, []);
 
 	// 時間設定のシンプル化
 	const setCurrentAsStart = useCallback(() => {
-		const time = Math.floor(currentTime);
+		// YouTubeプレイヤーから直接時間を取得を試行
+		let time = Math.floor(currentTime);
+
+		if (youtubePlayerRef.current) {
+			try {
+				const playerTime = youtubePlayerRef.current.getCurrentTime();
+				if (
+					typeof playerTime === "number" &&
+					!Number.isNaN(playerTime) &&
+					Number.isFinite(playerTime)
+				) {
+					time = Math.floor(playerTime);
+					// biome-ignore lint/suspicious/noConsole: Debug logging for player time
+					console.log("開始時間設定:", time, "秒");
+				}
+			} catch (error) {
+				// biome-ignore lint/suspicious/noConsole: Debug logging for player errors
+				console.warn("プレイヤー時間取得エラー:", error);
+			}
+		}
+
 		setStartTime(time);
 		if (endTime <= time) {
 			setEndTime(Math.min(time + 5, videoDuration));
@@ -66,9 +91,30 @@ export function AudioReferenceCreator({
 	}, [currentTime, endTime, videoDuration]);
 
 	const setCurrentAsEnd = useCallback(() => {
-		const time = Math.floor(currentTime);
+		// YouTubeプレイヤーから直接時間を取得を試行
+		let time = Math.floor(currentTime);
+
+		if (youtubePlayerRef.current) {
+			try {
+				const playerTime = youtubePlayerRef.current.getCurrentTime();
+				if (
+					typeof playerTime === "number" &&
+					!Number.isNaN(playerTime) &&
+					Number.isFinite(playerTime)
+				) {
+					time = Math.floor(playerTime);
+				}
+			} catch (error) {
+				// biome-ignore lint/suspicious/noConsole: Debug logging for player errors
+				console.warn("プレイヤー時間取得エラー:", error);
+			}
+		}
+
 		if (time > startTime) {
-			setEndTime(Math.min(time, startTime + 60));
+			const newEndTime = Math.min(time, startTime + 60);
+			// biome-ignore lint/suspicious/noConsole: Debug logging for end time setting
+			console.log("終了時間設定:", newEndTime, "秒");
+			setEndTime(newEndTime);
 		}
 	}, [currentTime, startTime]);
 

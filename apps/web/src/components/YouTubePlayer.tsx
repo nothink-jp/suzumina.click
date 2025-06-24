@@ -216,6 +216,11 @@ export function YouTubePlayer({
 						Number.isFinite(currentTime)
 					) {
 						onTimeUpdate(currentTime, duration || 0);
+						// biome-ignore lint/suspicious/noConsole: Debug logging for time updates
+						console.log("YouTube Player time update:", currentTime);
+					} else {
+						// biome-ignore lint/suspicious/noConsole: Debug logging for invalid values
+						console.warn("YouTube Player invalid time:", currentTime, typeof currentTime);
 					}
 				} catch (error) {
 					// YouTube APIエラー時は静かにスキップ（ログレベルを下げる）
@@ -343,8 +348,16 @@ export function YouTubePlayer({
 	// 親コンポーネントに制御メソッドを公開
 	useEffect(() => {
 		if (playerReady && onReady && playerRef.current) {
-			// プレイヤーインスタンスに制御メソッドを追加
-			Object.assign(playerRef.current, playerControls);
+			// プレイヤーインスタンスに追加のメソッドのみ追加（既存メソッドは上書きしない）
+			const additionalMethods = {
+				play: playerControls.play,
+				pause: playerControls.pause,
+				stop: playerControls.stop,
+				// getCurrentTime は既存のメソッドを保持
+				// getDuration は既存のメソッドを保持
+				// seekTo は既存のメソッドを保持
+			};
+			Object.assign(playerRef.current, additionalMethods);
 		}
 	}, [playerReady, onReady, playerControls]);
 
