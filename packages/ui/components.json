@@ -11,10 +11,10 @@
 	},
 	"iconLibrary": "lucide",
 	"aliases": {
-		"components": "@suzumina.click/ui/components",
+		"components": "@suzumina.click/ui/components/ui",
 		"utils": "@suzumina.click/ui/lib/utils",
 		"hooks": "@suzumina.click/ui/hooks",
 		"lib": "@suzumina.click/ui/lib",
-		"ui": "@suzumina.click/ui/components"
+		"ui": "@suzumina.click/ui/components/ui"
 	}
 }

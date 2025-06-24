@@ -7,25 +7,25 @@ import {
 	formatTimestamp,
 	SUGGESTED_AUDIO_REFERENCE_TAGS,
 } from "@suzumina.click/shared-types/src/audio-reference";
-import { Badge } from "@suzumina.click/ui/components/badge";
-import { Button } from "@suzumina.click/ui/components/button";
+import { Badge } from "@suzumina.click/ui/components/ui/badge";
+import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@suzumina.click/ui/components/card";
-import { Input } from "@suzumina.click/ui/components/input";
+} from "@suzumina.click/ui/components/ui/card";
+import { Input } from "@suzumina.click/ui/components/ui/input";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@suzumina.click/ui/components/select";
-import { Slider } from "@suzumina.click/ui/components/slider";
-import { Textarea } from "@suzumina.click/ui/components/textarea";
+} from "@suzumina.click/ui/components/ui/select";
+import { Slider } from "@suzumina.click/ui/components/ui/slider";
+import { Textarea } from "@suzumina.click/ui/components/ui/textarea";
 import { Clock, Loader2, Play, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";

@@ -16,9 +16,7 @@
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:debug": "playwright test --debug",
-		"clean": "rimraf .next coverage storybook-static node_modules/.cache .vitest test-results playwright-report",
-		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build",
+		"clean": "rimraf .next coverage node_modules/.cache .vitest test-results playwright-report",
 		"docker:build": "./scripts/docker-build.sh",
 		"docker:run": "./scripts/docker-run.sh",
 		"deploy:build": "cd ../.. && docker build -f apps/web/Dockerfile -t suzumina-web .",
@@ -39,14 +37,7 @@
 		"zod": "^3.25.67"
 	},
 	"devDependencies": {
-		"@chromatic-com/storybook": "^4.0.1",
 		"@playwright/test": "^1.53.1",
-		"@storybook/addon-a11y": "^9.0.12",
-		"@storybook/addon-docs": "^9.0.12",
-		"@storybook/addon-onboarding": "^9.0.12",
-		"@storybook/addon-vitest": "^9.0.12",
-		"@storybook/nextjs-vite": "9.0.12",
-		"@storybook/react-vite": "^9.0.12",
 		"@suzumina.click/typescript-config": "workspace:*",
 		"@tailwindcss/postcss": "^4.1.10",
 		"@testing-library/jest-dom": "^6.6.3",
@@ -62,7 +53,6 @@
 		"happy-dom": "^18.0.1",
 		"playwright": "^1.53.1",
 		"rimraf": "^6.0.1",
-		"storybook": "^9.0.12",
 		"tailwindcss": "^4.1.10",
 		"typescript": "^5.8.3",
 		"vitest": "^3.2.4"

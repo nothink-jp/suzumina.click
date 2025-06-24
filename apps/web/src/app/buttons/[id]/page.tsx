@@ -1,8 +1,8 @@
 import type { AudioReferenceQuery } from "@suzumina.click/shared-types";
-import { Badge } from "@suzumina.click/ui/components/badge";
-import { Button } from "@suzumina.click/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/card";
-import { Separator } from "@suzumina.click/ui/components/separator";
+import { Badge } from "@suzumina.click/ui/components/ui/badge";
+import { Button } from "@suzumina.click/ui/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
+import { Separator } from "@suzumina.click/ui/components/ui/separator";
 import { ArrowLeft, Calendar, Clock, Eye, Heart, Play, Share2, Tag, Youtube } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";

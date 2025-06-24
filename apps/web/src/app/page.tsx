@@ -1,4 +1,4 @@
-import { Button } from "@suzumina.click/ui/components/button";
+import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
 import { FeaturedVideosCarousel } from "@/components/FeaturedVideosCarousel";
 import { FeaturedWorksCarousel } from "@/components/FeaturedWorksCarousel";

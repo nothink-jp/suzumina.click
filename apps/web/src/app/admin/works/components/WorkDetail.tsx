@@ -1,6 +1,6 @@
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
-import { Badge } from "@suzumina.click/ui/components/badge";
-import { Button } from "@suzumina.click/ui/components/button";
+import { Badge } from "@suzumina.click/ui/components/ui/badge";
+import { Button } from "@suzumina.click/ui/components/ui/button";
 import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface WorkDetailProps {

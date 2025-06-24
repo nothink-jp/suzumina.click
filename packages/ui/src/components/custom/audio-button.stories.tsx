@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { AudioButton } from "./audio-button.js";
 
 const meta: Meta<typeof AudioButton> = {
-	title: "UI/AudioButton",
+	title: "Custom/AudioButton",
 	component: AudioButton,
 	parameters: {
 		layout: "centered",

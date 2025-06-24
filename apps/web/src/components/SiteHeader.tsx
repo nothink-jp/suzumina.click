@@ -1,10 +1,10 @@
-import { Button } from "@suzumina.click/ui/components/button";
+import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
 	NavigationMenu,
 	NavigationMenuItem,
 	NavigationMenuLink,
 	NavigationMenuList,
-} from "@suzumina.click/ui/components/navigation-menu";
+} from "@suzumina.click/ui/components/ui/navigation-menu";
 import Link from "next/link";
 import { auth } from "@/auth";
 import AuthButton from "./AuthButton";

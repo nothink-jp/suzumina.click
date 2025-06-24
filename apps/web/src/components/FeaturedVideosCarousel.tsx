@@ -5,7 +5,7 @@ import {
 	CarouselItem,
 	CarouselNext,
 	CarouselPrevious,
-} from "@suzumina.click/ui/components/carousel";
+} from "@suzumina.click/ui/components/ui/carousel";
 import VideoCard from "@/app/videos/components/VideoCard";
 
 interface FeaturedVideosCarouselProps {

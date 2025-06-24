@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@suzumina.click/ui/components/button";
-import { Input } from "@suzumina.click/ui/components/input";
+import { Button } from "@suzumina.click/ui/components/ui/button";
+import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useState } from "react";

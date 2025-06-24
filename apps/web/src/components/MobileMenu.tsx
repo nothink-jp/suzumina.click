@@ -1,8 +1,8 @@
 "use client";
 
 import type { UserSession } from "@suzumina.click/shared-types";
-import { Button } from "@suzumina.click/ui/components/button";
-import { Sheet, SheetContent, SheetTrigger } from "@suzumina.click/ui/components/sheet";
+import { Button } from "@suzumina.click/ui/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@suzumina.click/ui/components/ui/sheet";
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import AuthButton from "./AuthButton";

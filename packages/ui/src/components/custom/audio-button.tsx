@@ -3,7 +3,7 @@
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Loader2, Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "./button.js";
+import { Button } from "../ui/button.js";
 
 interface AudioButtonProps {
 	/** 音声ファイルのURL */

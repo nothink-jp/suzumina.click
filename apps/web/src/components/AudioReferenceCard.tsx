@@ -5,15 +5,15 @@ import {
 	formatTimestamp,
 	getAudioReferenceCategoryLabel,
 } from "@suzumina.click/shared-types";
-import { Badge } from "@suzumina.click/ui/components/badge";
-import { Button } from "@suzumina.click/ui/components/button";
+import { Badge } from "@suzumina.click/ui/components/ui/badge";
+import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@suzumina.click/ui/components/card";
+} from "@suzumina.click/ui/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -21,7 +21,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "@suzumina.click/ui/components/dialog";
+} from "@suzumina.click/ui/components/ui/dialog";
 import { Clock, ExternalLink, Eye, Heart, Pause, Play, Share2, Tag } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";

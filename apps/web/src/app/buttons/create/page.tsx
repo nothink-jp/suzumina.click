@@ -1,4 +1,4 @@
-import { Button } from "@suzumina.click/ui/components/button";
+import { Button } from "@suzumina.click/ui/components/ui/button";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";

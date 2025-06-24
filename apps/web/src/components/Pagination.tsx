@@ -8,7 +8,7 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 	Pagination as UIPagination,
-} from "@suzumina.click/ui/components/pagination";
+} from "@suzumina.click/ui/components/ui/pagination";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 

@@ -5,7 +5,7 @@ import {
 	CarouselItem,
 	CarouselNext,
 	CarouselPrevious,
-} from "@suzumina.click/ui/components/carousel";
+} from "@suzumina.click/ui/components/ui/carousel";
 import WorkCard from "@/app/works/components/WorkCard";
 
 interface FeaturedWorksCarouselProps {

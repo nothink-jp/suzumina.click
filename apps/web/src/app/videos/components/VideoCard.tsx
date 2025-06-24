@@ -1,6 +1,6 @@
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
-import { Badge } from "@suzumina.click/ui/components/badge";
-import { Button } from "@suzumina.click/ui/components/button";
+import { Badge } from "@suzumina.click/ui/components/ui/badge";
+import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Calendar, Clock, ExternalLink, Eye, Plus } from "lucide-react";
 import Link from "next/link";
 import { memo, useMemo } from "react";

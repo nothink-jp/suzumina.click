@@ -15,6 +15,6 @@
 		"hooks": "@/hooks",
 		"lib": "@/lib",
 		"utils": "@suzumina.click/ui/lib/utils",
-		"ui": "@suzumina.click/ui/components"
+		"ui": "@suzumina.click/ui/components/ui"
 	}
 }

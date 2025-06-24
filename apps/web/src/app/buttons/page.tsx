@@ -1,13 +1,13 @@
 import type { AudioReferenceCategory, AudioReferenceQuery } from "@suzumina.click/shared-types";
-import { Button } from "@suzumina.click/ui/components/button";
+import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@suzumina.click/ui/components/card";
-import { Skeleton } from "@suzumina.click/ui/components/skeleton";
+} from "@suzumina.click/ui/components/ui/card";
+import { Skeleton } from "@suzumina.click/ui/components/ui/skeleton";
 import { Clock, Plus, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";

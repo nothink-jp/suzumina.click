@@ -38,7 +38,7 @@ vi.mock("./AudioReferenceCard", () => ({
 }));
 
 // Mock UI components
-vi.mock("@suzumina.click/ui/components/slider", () => ({
+vi.mock("@suzumina.click/ui/components/ui/slider", () => ({
 	Slider: ({ value, onValueChange, min, max, step, disabled, ...props }: any) => (
 		<div data-testid="slider" {...props}>
 			<input
@@ -57,7 +57,7 @@ vi.mock("@suzumina.click/ui/components/slider", () => ({
 }));
 
 // Mock Select components
-vi.mock("@suzumina.click/ui/components/select", () => ({
+vi.mock("@suzumina.click/ui/components/ui/select", () => ({
 	// biome-ignore lint/correctness/noUnusedFunctionParameters: value and onValueChange used for testing interface compatibility
 	Select: ({ children, value, onValueChange }: any) => (
 		<div data-testid="select-container">{children}</div>

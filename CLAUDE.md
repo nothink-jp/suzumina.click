@@ -47,7 +47,7 @@ DLsite      (本番環境)       (自動化)       ストレージ    (認証・
 
 - **pnpm Workspace** - Monorepo管理
 - **Vitest** - テストフレームワーク
-- **Storybook** - UIコンポーネント開発
+- **Storybook** - UIコンポーネント開発 (UI Package一本化)
 - **Biome** - リンター・フォーマッター
 
 ## 📁 プロジェクト構造
@@ -69,6 +69,8 @@ suzumina.click/ (v0.2.1)
 ├── packages/
 │   ├── shared-types/       # 共有型定義 (Zodスキーマ)
 │   ├── ui/                 # 共有UIコンポーネント
+│   │   ├── components/ui/     # shadcn/ui (51個)
+│   │   └── components/custom/ # 独自UI (audio-button等)
 │   └── typescript-config/  # TypeScript設定
 ├── terraform/              # インフラ定義
 └── docs/                   # プロジェクトドキュメント
@@ -109,8 +111,7 @@ gcloud auth application-default login
 cd apps/web && pnpm dev
 
 # Storybook UI開発
-cd apps/web && pnpm storybook      # Web専用
-cd packages/ui && pnpm storybook   # 共有UI
+cd packages/ui && pnpm storybook   # UIコンポーネント開発 (一本化)
 ```
 
 ### 品質管理
@@ -171,6 +172,110 @@ Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → セ�
 - **責任分離**: 表示ロジックとインタラクション分離
 - **コロケーション**: 関連コードの近接配置
 - **テスト駆動**: 重要機能の包括的テスト
+
+## 🎨 コンポーネント設計・Storybook戦略
+
+### コンポーネント分離基準
+
+#### **`@packages/ui/components/ui/` (shadcn/ui)**
+```
+✅ 純粋なデザインシステムコンポーネント
+- button, card, input, dialog など (51個)
+- 一切のビジネスロジックを含まない
+- プロジェクト間で完全に再利用可能
+- shadcn CLI による自動管理
+```
+
+#### **`@packages/ui/components/custom/` (拡張UIコンポーネント)**
+```
+✅ プロジェクト再利用可能な独自コンポーネント
+- audio-button (音声ファイル再生)
+- 汎用性があるが suzumina.click 特化機能
+- UI Package内で Storybook 管理
+```
+
+#### **`@apps/web/src/components/` (アプリケーション特化)**
+```
+✅ suzumina.click 特有のビジネスロジック
+- AudioReferenceCard, AudioReferenceCreator (重いビジネスロジック)
+- SiteHeader, MobileMenu (サイト固有ナビゲーション)
+- AdminList, ThumbnailImage (ドメイン特化)
+- Next.js 固有API依存 (useRouter, Image等)
+- E2E テストでカバー
+```
+
+### Storybook一本化戦略
+
+#### **UI Package Storybook** (唯一の Storybook)
+```typescript
+// 対象：全UIコンポーネント
+title: "UI/Button"           // shadcn/ui標準
+title: "Custom/AudioButton"  // プロジェクト拡張
+
+// 目的：デザインシステム・API文書化
+- 全バリアント・プロパティの体系的テスト
+- 視覚的回帰テスト (Chromatic対応)
+- コンポーネント単体の品質保証
+```
+
+#### **品質保証の役割分担**
+```typescript
+✅ UI一貫性     → UI Package Storybook
+✅ ロジックテスト → Unit Tests (Vitest) 
+✅ 統合テスト    → E2E Tests (Playwright)
+✅ 型安全性     → TypeScript strict
+```
+
+### shadcn/ui管理方針
+
+#### **components.json設定**
+```json
+// 両パッケージで統一された設定
+"aliases": {
+  "ui": "@suzumina.click/ui/components/ui"
+}
+```
+
+#### **新規コンポーネント追加**
+```bash
+# UI Package での実行
+cd packages/ui && pnpm dlx shadcn@latest add <component>
+
+# 自動的に ui/ サブディレクトリに配置
+# Web App からは @suzumina.click/ui/components/ui/* でインポート
+```
+
+#### **Storybook ストーリー作成**
+```typescript
+// 新規 shadcn/ui コンポーネント追加時は必ずストーリー作成
+// 既存の button.stories.tsx をテンプレートとして活用
+// 主要バリアント・状態を網羅的にテスト
+```
+
+### 個人開発最適化
+
+#### **Chromatic 活用範囲**
+```
+優先度：高 → 必須管理
+- Button, Card, Input (基盤UI)
+- AudioButton (独自性高)
+- Dialog, Alert (UX重要)
+
+優先度：中 → 段階的追加
+- 複雑なshadcn/uiコンポーネント
+
+優先度：低 → 後回し/除外
+- 単純なコンポーネント (Badge, Separator等)
+- 使用頻度が低いコンポーネント
+```
+
+#### **メンテナンス方針**
+```
+✅ Web App Storybook削除完了
+✅ UI Package Storybook一本化
+✅ E2E テストによるビジネスロジック品質保証
+✅ 工数対効果を重視した段階的品質管理
+```
 
 ## 🎯 今後の改善予定
 

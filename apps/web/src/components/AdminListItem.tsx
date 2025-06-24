@@ -1,6 +1,6 @@
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
-import { Button } from "@suzumina.click/ui/components/button";
+import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ChevronRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import ThumbnailImage from "./ThumbnailImage";
