@@ -1,4 +1,6 @@
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
+import { Badge } from "@suzumina.click/ui/components/badge";
+import { Button } from "@suzumina.click/ui/components/button";
 import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface WorkDetailProps {
@@ -68,27 +70,24 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 
 								{/* アクションボタン */}
 								<div className="mt-6 space-y-3">
-									<a
-										href={work.workUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-									>
-										DLsiteで見る
-										<svg
-											className="ml-2 -mr-1 w-5 h-5"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-											role="img"
-											aria-label="External link"
-										>
-											<path
-												fillRule="evenodd"
-												d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-												clipRule="evenodd"
-											/>
-										</svg>
-									</a>
+									<Button asChild size="lg" className="w-full">
+										<a href={work.workUrl} target="_blank" rel="noopener noreferrer">
+											DLsiteで見る
+											<svg
+												className="ml-2 -mr-1 w-5 h-5"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+												role="img"
+												aria-label="External link"
+											>
+												<path
+													fillRule="evenodd"
+													d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+													clipRule="evenodd"
+												/>
+											</svg>
+										</a>
+									</Button>
 								</div>
 							</div>
 						</div>
@@ -98,20 +97,12 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							{/* タイトルとバッジ */}
 							<div className="mb-6">
 								<div className="flex flex-wrap gap-2 mb-4">
-									<span
-										className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${ageRatingInfo.className}`}
-									>
-										{ageRatingInfo.text}
-									</span>
+									<Badge className={ageRatingInfo.className}>{ageRatingInfo.text}</Badge>
 									{work.isExclusive && (
-										<span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-											独占配信
-										</span>
+										<Badge className="bg-purple-100 text-purple-800">独占配信</Badge>
 									)}
 									{work.discountText && (
-										<span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-											{work.discountText}
-										</span>
+										<Badge className="bg-red-100 text-red-800">{work.discountText}</Badge>
 									)}
 								</div>
 

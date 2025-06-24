@@ -1,5 +1,7 @@
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
+import { Button } from "@suzumina.click/ui/components/button";
+import { ChevronRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import ThumbnailImage from "./ThumbnailImage";
 
@@ -174,47 +176,20 @@ function ActionButtons({
 	return (
 		<div className="flex-shrink-0 flex flex-col gap-2">
 			{/* 詳細ボタン */}
-			<Link href={detailHref}>
-				<div className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors w-full justify-center">
+			<Button variant="outline" size="sm" className="w-full justify-center" asChild>
+				<Link href={detailHref}>
 					詳細
-					<svg
-						className="ml-1 -mr-0.5 w-4 h-4"
-						fill="currentColor"
-						viewBox="0 0 20 20"
-						role="img"
-						aria-label="Right chevron"
-					>
-						<path
-							fillRule="evenodd"
-							d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-							clipRule="evenodd"
-						/>
-					</svg>
-				</div>
-			</Link>
+					<ChevronRight className="ml-1 -mr-0.5 w-4 h-4" />
+				</Link>
+			</Button>
 
 			{/* 外部リンクボタン */}
-			<a
-				href={actionUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-			>
-				{actionText}
-				<svg
-					className="ml-1 -mr-0.5 w-4 h-4"
-					fill="currentColor"
-					viewBox="0 0 20 20"
-					role="img"
-					aria-label="External link"
-				>
-					<path
-						fillRule="evenodd"
-						d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-						clipRule="evenodd"
-					/>
-				</svg>
-			</a>
+			<Button size="sm" asChild>
+				<a href={actionUrl} target="_blank" rel="noopener noreferrer">
+					{actionText}
+					<ExternalLink className="ml-1 -mr-0.5 w-4 h-4" />
+				</a>
+			</Button>
 		</div>
 	);
 }

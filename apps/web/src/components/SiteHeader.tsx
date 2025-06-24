@@ -1,4 +1,10 @@
 import { Button } from "@suzumina.click/ui/components/button";
+import {
+	NavigationMenu,
+	NavigationMenuItem,
+	NavigationMenuLink,
+	NavigationMenuList,
+} from "@suzumina.click/ui/components/navigation-menu";
 import Link from "next/link";
 import { auth } from "@/auth";
 import AuthButton from "./AuthButton";
@@ -27,29 +33,25 @@ export default async function SiteHeader() {
 						</div>
 
 						{/* デスクトップナビゲーション */}
-						<nav
-							className="hidden md:flex items-center space-x-2"
-							aria-label="メインナビゲーション"
-						>
-							<Link
-								href="/videos"
-								className="text-foreground hover:text-foreground/80 block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent focus:bg-accent font-medium"
-							>
-								動画一覧
-							</Link>
-							<Link
-								href="/buttons"
-								className="text-foreground hover:text-foreground/80 block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent focus:bg-accent font-medium"
-							>
-								ボタン検索
-							</Link>
-							<Link
-								href="/works"
-								className="text-foreground hover:text-foreground/80 block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent focus:bg-accent font-medium"
-							>
-								作品一覧
-							</Link>
-						</nav>
+						<NavigationMenu className="hidden md:flex">
+							<NavigationMenuList>
+								<NavigationMenuItem>
+									<NavigationMenuLink asChild>
+										<Link href="/videos">動画一覧</Link>
+									</NavigationMenuLink>
+								</NavigationMenuItem>
+								<NavigationMenuItem>
+									<NavigationMenuLink asChild>
+										<Link href="/buttons">ボタン検索</Link>
+									</NavigationMenuLink>
+								</NavigationMenuItem>
+								<NavigationMenuItem>
+									<NavigationMenuLink asChild>
+										<Link href="/works">作品一覧</Link>
+									</NavigationMenuLink>
+								</NavigationMenuItem>
+							</NavigationMenuList>
+						</NavigationMenu>
 
 						<div className="flex items-center space-x-4">
 							{/* マイページリンク（ログイン時のみ表示） */}
