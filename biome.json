@@ -141,6 +141,16 @@
 			}
 		},
 		{
+			"includes": ["packages/ui/src/components/ui/chart.tsx"],
+			"linter": {
+				"rules": {
+					"complexity": {
+						"noExcessiveCognitiveComplexity": "off"
+					}
+				}
+			}
+		},
+		{
 			"includes": ["**/terraform/**", "**/coverage/**"],
 			"linter": {
 				"enabled": false
