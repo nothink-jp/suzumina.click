@@ -37,6 +37,7 @@ export function AudioReferenceCreator({
 	const [error, setError] = useState("");
 
 	const youtubePlayerRef = useRef<YTPlayer | null>(null);
+	const lastTimeRef = useRef<number>(initialStartTime);
 
 	// YouTube Player handlers
 	const handlePlayerReady = useCallback((player: YTPlayer) => {
@@ -44,7 +45,15 @@ export function AudioReferenceCreator({
 	}, []);
 
 	const handleTimeUpdate = useCallback((time: number) => {
-		setCurrentTime(time);
+		// 数値チェックとデバウンス
+		if (typeof time === "number" && !Number.isNaN(time) && Number.isFinite(time)) {
+			const roundedTime = Math.floor(time);
+			// 前回と同じ値なら更新をスキップ
+			if (lastTimeRef.current !== roundedTime) {
+				lastTimeRef.current = roundedTime;
+				setCurrentTime(roundedTime);
+			}
+		}
 	}, []);
 
 	// 時間設定のシンプル化

@@ -208,11 +208,21 @@ export function YouTubePlayer({
 				try {
 					const currentTime = playerRef.current.getCurrentTime();
 					const duration = playerRef.current.getDuration();
-					onTimeUpdate(currentTime, duration);
+
+					// 有効な数値のみコールバックを呼び出す
+					if (
+						typeof currentTime === "number" &&
+						!Number.isNaN(currentTime) &&
+						Number.isFinite(currentTime)
+					) {
+						onTimeUpdate(currentTime, duration || 0);
+					}
 				} catch (error) {
-					// YouTube APIエラーをログに記録してリトライ
-					// biome-ignore lint/suspicious/noConsole: Debug logging for YouTube API errors
-					console.error("Time update error:", error);
+					// YouTube APIエラー時は静かにスキップ（ログレベルを下げる）
+					if (error instanceof Error && !error.message.includes("Maximum call stack")) {
+						// biome-ignore lint/suspicious/noConsole: Debug logging for YouTube API errors
+						console.warn("YouTube API time update failed:", error.message);
+					}
 				}
 			}
 		}, 1000); // 1秒間隔で更新
