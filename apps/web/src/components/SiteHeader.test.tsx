@@ -43,7 +43,17 @@ vi.mock("@/auth", () => ({
 // Mock AuthButton
 vi.mock("./AuthButton", () => ({
 	default: ({ user }: { user?: any }) => (
-		<div data-testid="auth-button">{user ? `Welcome ${user.displayName}` : "Sign In"}</div>
+		<div data-testid="auth-button">
+			{user ? (
+				<div data-testid="user-menu">
+					<button type="button" aria-label="ユーザーメニューを開く">
+						{user.displayName}
+					</button>
+				</div>
+			) : (
+				"Sign In"
+			)}
+		</div>
 	),
 }));
 
@@ -102,16 +112,16 @@ function TestSiteHeader({ session }: { session?: any }) {
 						{/* デスクトップ用ボタン */}
 						<div className="hidden md:flex items-center space-x-3">
 							<div data-testid="auth-button">
-								{session ? `Welcome ${session.user?.displayName}` : "Sign In"}
+								{session ? (
+									<div data-testid="user-menu">
+										<button type="button" aria-label="ユーザーメニューを開く">
+											{session.user?.displayName}
+										</button>
+									</div>
+								) : (
+									"Sign In"
+								)}
 							</div>
-							{session?.user && (
-								<a
-									href="/buttons/create"
-									className="text-sm text-foreground/70 hover:text-foreground transition-colors"
-								>
-									マイページ
-								</a>
-							)}
 						</div>
 
 						{/* モバイルメニューボタン */}
@@ -166,8 +176,36 @@ describe("SiteHeader", () => {
 		expect(screen.getByTestId("auth-button")).toBeInTheDocument();
 		expect(screen.getByText("Sign In")).toBeInTheDocument();
 
-		// ログインしていない場合はマイページリンクは表示されない
-		expect(screen.queryByText("マイページ")).not.toBeInTheDocument();
+		// ログインしていない場合はユーザーメニューは表示されない
+		expect(screen.queryByTestId("user-menu")).not.toBeInTheDocument();
+	});
+
+	it("ログイン済みユーザーにはユーザーメニューが表示される", () => {
+		const mockSession = {
+			user: {
+				discordId: "123456789",
+				username: "testuser",
+				displayName: "テストユーザー",
+				avatar: "avatar-hash",
+				role: "member",
+				guildMembership: {
+					guildId: "test-guild",
+					userId: "123456789",
+					isMember: true,
+				},
+				isActive: true,
+			},
+		};
+
+		render(<TestSiteHeader session={mockSession} />);
+
+		// ユーザーメニューが表示される
+		expect(screen.getByTestId("user-menu")).toBeInTheDocument();
+		expect(screen.getByText("テストユーザー")).toBeInTheDocument();
+		expect(screen.getByLabelText("ユーザーメニューを開く")).toBeInTheDocument();
+
+		// サインインボタンは表示されない
+		expect(screen.queryByText("Sign In")).not.toBeInTheDocument();
 	});
 
 	it("モバイルメニューボタンが表示される", () => {

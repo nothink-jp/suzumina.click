@@ -1,6 +1,6 @@
 import type { UserSession } from "@suzumina.click/shared-types";
-import { signInAction, signOutAction } from "@/app/auth/actions";
-import UserAvatar from "./UserAvatar";
+import { signInAction } from "@/app/auth/actions";
+import UserMenu from "./UserMenu";
 
 interface AuthButtonProps {
 	user?: UserSession | null;
@@ -8,55 +8,7 @@ interface AuthButtonProps {
 
 export default function AuthButton({ user }: AuthButtonProps) {
 	if (user) {
-		return (
-			<div className="flex items-center gap-3">
-				{/* ユーザー情報表示 */}
-				<div className="flex items-center gap-2">
-					<UserAvatar
-						discordId={user.discordId}
-						avatar={user.avatar}
-						displayName={user.displayName}
-						size={32}
-						className="w-8 h-8"
-					/>
-					<div className="hidden sm:block">
-						<p className="text-sm font-medium text-gray-900">{user.displayName}</p>
-						<p className="text-xs text-gray-500">
-							{user.role === "admin"
-								? "管理者"
-								: user.role === "moderator"
-									? "モデレーター"
-									: "メンバー"}
-						</p>
-					</div>
-				</div>
-
-				{/* ログアウトボタン */}
-				<form action={signOutAction}>
-					<button
-						type="submit"
-						className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-						title="ログアウト"
-					>
-						<svg
-							className="w-4 h-4"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							aria-hidden="true"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-							/>
-						</svg>
-						<span className="hidden sm:inline">ログアウト</span>
-					</button>
-				</form>
-			</div>
-		);
+		return <UserMenu user={user} />;
 	}
 
 	return (

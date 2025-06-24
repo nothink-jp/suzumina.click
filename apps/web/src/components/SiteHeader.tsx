@@ -1,4 +1,3 @@
-import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
 	NavigationMenu,
 	NavigationMenuItem,
@@ -54,13 +53,6 @@ export default async function SiteHeader() {
 						</NavigationMenu>
 
 						<div className="flex items-center space-x-4">
-							{/* マイページリンク（ログイン時のみ表示） */}
-							{session?.user && (
-								<Button variant="outline" className="hidden md:flex" asChild>
-									<Link href="/users/me">マイページ</Link>
-								</Button>
-							)}
-
 							{/* 認証ボタン */}
 							<div className="hidden md:flex">
 								<AuthButton user={session?.user} />

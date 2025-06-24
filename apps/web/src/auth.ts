@@ -114,6 +114,9 @@ async function fetchDiscordGuildMembership(
 export const { handlers, auth, signIn, signOut } = NextAuth({
 	// カスタムFirestore管理（アダプターなし）
 
+	// 本番環境でのリバースプロキシ対応
+	trustHost: true,
+
 	providers: [
 		Discord({
 			clientId: process.env.DISCORD_CLIENT_ID || "",
