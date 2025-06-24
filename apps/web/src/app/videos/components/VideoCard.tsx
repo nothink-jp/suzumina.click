@@ -1,4 +1,5 @@
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
+import { canCreateAudioButton } from "@suzumina.click/shared-types/src/video";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Calendar, Clock, ExternalLink, Eye, Plus } from "lucide-react";
@@ -41,6 +42,9 @@ const VideoCard = memo(function VideoCard({
 		() => `https://youtube.com/watch?v=${video.videoId}`,
 		[video.videoId],
 	);
+
+	// メモ化: 音声ボタン作成可能判定
+	const canCreateButton = useMemo(() => canCreateAudioButton(video), [video]);
 
 	return (
 		<article
@@ -116,14 +120,30 @@ const VideoCard = memo(function VideoCard({
 									詳細を見る
 								</Link>
 							</Button>
-							<Button size="sm" variant="default" className="flex-1 min-h-[44px]" asChild>
-								<Link
-									href={`/buttons/create?video_id=${video.id}`}
-									aria-label={`${video.title}の音声ボタンを作成`}
-								>
-									<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
-									ボタン作成
-								</Link>
+							<Button
+								size="sm"
+								variant="default"
+								className="flex-1 min-h-[44px]"
+								disabled={!canCreateButton}
+								asChild={canCreateButton}
+								title={
+									canCreateButton ? undefined : "配信中または配信予定の動画はボタン作成できません"
+								}
+							>
+								{canCreateButton ? (
+									<Link
+										href={`/buttons/create?video_id=${video.id}`}
+										aria-label={`${video.title}の音声ボタンを作成`}
+									>
+										<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
+										ボタン作成
+									</Link>
+								) : (
+									<span>
+										<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
+										ボタン作成
+									</span>
+								)}
 							</Button>
 						</fieldset>
 					) : (

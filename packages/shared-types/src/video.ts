@@ -312,3 +312,15 @@ export interface FirestoreServerVideoData {
 	categoryId?: string; // 動画カテゴリID
 	tags?: string[]; // 動画タグ
 }
+
+/**
+ * 動画が音声ボタン作成可能かどうかを判定する関数
+ * ビジネスルール: 音声ボタンを作れるのは配信が終わったライブ配信のみ
+ * @param video 動画データ
+ * @returns 音声ボタン作成可能かどうか
+ */
+export function canCreateAudioButton(video: FrontendVideoData): boolean {
+	// ライブ配信状態をチェック
+	// "live" = 現在配信中、"upcoming" = 配信予定、"none" = 通常動画または終了済み配信
+	return video.liveBroadcastContent !== "live" && video.liveBroadcastContent !== "upcoming";
+}
