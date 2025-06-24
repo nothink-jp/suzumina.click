@@ -275,10 +275,12 @@ describe("YouTubePlayer", () => {
 
 			const player = onReady.mock.calls[0][0];
 
-			// 制御メソッドが追加されていることを確認
+			// 追加された制御メソッドが存在することを確認
 			expect(typeof player.play).toBe("function");
 			expect(typeof player.pause).toBe("function");
 			expect(typeof player.stop).toBe("function");
+
+			// 既存のYouTubeプレイヤーメソッドが存在することを確認
 			expect(typeof player.seekTo).toBe("function");
 			expect(typeof player.getCurrentTime).toBe("function");
 			expect(typeof player.getDuration).toBe("function");
@@ -286,7 +288,7 @@ describe("YouTubePlayer", () => {
 			expect(typeof player.setVolume).toBe("function");
 			expect(typeof player.getVolume).toBe("function");
 			expect(typeof player.mute).toBe("function");
-			expect(typeof player.unmute).toBe("function");
+			expect(typeof player.unMute).toBe("function"); // unMute (大文字M)
 			expect(typeof player.isMuted).toBe("function");
 		});
 	});
