@@ -1,6 +1,12 @@
-# 開発ガイド・ポリシー
+# 開発ガイド
 
-suzumina.click プロジェクトの開発手順・設計原則・インフラ運用ガイド
+## 📋 概要
+
+本ドキュメントでは、suzumina.clickプロジェクトの開発ガイド、設計原則、コーディング規約、および品質基準を定義します。
+
+**技術スタック**: Next.js 15 App Router、TypeScript 5.8、Tailwind CSS v4、Storybook 9.0  
+**開発体制**: 個人開発・個人運用（2環境構成: Staging + Production）  
+**更新日**: 2025年6月24日
 
 ## 🎯 設計原則
 
@@ -8,55 +14,104 @@ suzumina.click プロジェクトの開発手順・設計原則・インフラ�
 
 **原則**: すべてのデータ構造は型安全であること
 
-- **TypeScript strict mode**: `any` 型の使用禁止
-- **Zod Schema**: 実行時型検証の実装
+- **TypeScript**: strict モードを使用し、`any` 型の使用を原則禁止
+- **Zod Schema**: 実行時の型検証を実装
 - **共有型定義**: packages/shared-types による一元管理
 
 ```typescript
 // ✅ 良い例: Zodスキーマによる型定義
-export const UserSessionSchema = z.object({
-  discordId: z.string(),
-  username: z.string(),
-  displayName: z.string(),
-  role: z.enum(["member", "moderator", "admin"]),
+export const VideoSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  publishedAt: z.string().datetime()
 });
 
 // ❌ 悪い例: any型の使用
 function processData(data: any) { ... }
 ```
 
-### 2. Discord認証・セキュリティ
+### 2. 関数設計原則
 
-**原則**: ギルドメンバーのみアクセス許可・最小権限の原則
+**原則**: 純粋関数を優先し、副作用を最小化する
 
-- **NextAuth.js**: JWT セッション管理・CSRF保護
-- **Discord Guild確認**: 「すずみなふぁみりー」メンバーシップ検証
-- **権限ベース制御**: ユーザーロール (member/moderator/admin)
-- **Secret Manager**: 認証情報の安全な管理
+- **純粋関数**: 同じ入力に対して常に同じ出力を返す
+- **短い関数**: 1つの関数は1つの責任のみを持つ
+- **単一責任原則**: 明確で理解しやすい関数名
 
 ```typescript
-// ✅ 良い例: Guild確認付き認証
-export function isValidGuildMember(guildMembership: GuildMembership): boolean {
-  return guildMembership.guildId === SUZUMINA_GUILD_ID && guildMembership.isMember;
+// ✅ 良い例: 純粋関数
+export function formatPrice(price: number, currency = 'JPY'): string {
+  return `${price.toLocaleString()}円`;
 }
 
-// ❌ 悪い例: ハードコードされたプロジェクトID
-const PROJECT_ID = "suzumina-click"; // セキュリティリスク
+// ❌ 悪い例: 副作用のある関数
+function updateAndLog(data: any) {
+  updateDatabase(data); // 副作用
+  console.log(data);    // 副作用
+  return data;
+}
 ```
 
-### 3. Next.js 15準拠設計
+### 3. コードコロケーション
 
-**原則**: Server Component/Client Component を適切に分離
+**原則**: 関連するコードは近接して配置する
 
-- **Server Components**: データ取得・表示ロジック・SEO
-- **Client Components**: インタラクション・ブラウザAPI・状態管理
+```
+components/
+├── voice-button/
+│   ├── voice-button.tsx      # メインコンポーネント
+│   ├── voice-button.test.tsx # テスト
+│   ├── voice-button.types.ts # 型定義
+│   └── index.ts              # エクスポート
+```
+
+### 4. 可読性優先
+
+**原則**: パフォーマンスよりも可読性を優先する
+
+- 明確な変数名・関数名を使用
+- 適切なコメントの追加
+- 複雑なロジックの分割
+
+### 5. Next.js 15準拠設計
+
+**原則**: Server Component/Client Component を適切に分離する
+
+- **Server Components**: データ取得・表示ロジック
+- **Client Components**: インタラクション・ブラウザAPI使用
 - **Server Actions**: サーバーサイドデータ操作
-- **コロケーション**: ページとActionsを同一ディレクトリに配置
+- **Firestore接続制限**: `@google-cloud/firestore` をサーバーサイドのみで使用
+
+```typescript
+// ✅ 良い例: Server Action (ページと同じディレクトリに配置)
+// app/works/actions.ts
+'use server';
+
+import { firestore } from '@/lib/firestore';
+
+export async function getWorks() {
+  const snapshot = await firestore.collection('works').get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+// ❌ 悪い例: クライアントサイドFirebase
+// import { initializeApp } from 'firebase/app';
+// import { getFirestore } from 'firebase/firestore';
+```
+
+### 6. コンポーネント設計原則
+
+**原則**: Server Component/Client Component を責任に応じて設計する
+
+- **Server Component**: データ表示、SEO、静的UI部分
+- **Client Component**: ユーザーインタラクション、ブラウザAPI、状態管理
+- **責任分離**: 表示ロジックとインタラクションロジックの明確な分離
+- **Storybook対応**: UIコンポーネント開発・テスト環境の活用
 
 ```typescript
 // ✅ 良い例: Server Component + Client Component分離
 // VideoList.tsx (Server Component)
-export default function VideoList({ data, user }) {
+export default function VideoList({ data, totalCount, currentPage }) {
   return (
     <div>
       {data.videos.map(video => <VideoCard key={video.id} video={video} />)}
@@ -72,67 +127,63 @@ export default function Pagination({ currentPage, totalPages }) {
   const handlePageChange = (page) => router.push(`?page=${page}`);
   // インタラクションロジック
 }
+
+// ❌ 悪い例: Client ComponentでServer Actions直接呼び出し
+"use client";
+function VideoList() {
+  const [data, setData] = useState();
+  const handlePageChange = async (page) => {
+    const newData = await getVideoTitles({ page }); // アンチパターン
+    setData(newData);
+  };
+}
 ```
+
+**Storybook開発原則**:
+- **コンポーネント単位開発**: 個別コンポーネントの開発・テスト
+- **Next.js App Router対応**: `useRouter`などのNext.jsフックのモック設定
+- **UI/UXテスト**: 視覚的なコンポーネントテスト環境
+- **デザインシステム**: 一貫したUIコンポーネントライブラリ構築
 
 ## 🧪 テスト戦略
 
-### ハイブリッドテストアプローチ
+### テストアプローチ
 
-プロジェクトでは、コンポーネントの性質に応じて最適なテスト手法を使い分けています。
+**Red-Green-Refactor サイクル**
 
-#### 1. Server Actions & ビジネスロジック → Vitest
+1. **Red**: 失敗するテストを書く
+2. **Green**: テストを通すための最小限のコードを書く
+3. **Refactor**: コードを改善する
 
-**対象**: Cloud Functions, Server Actions, 共有ユーティリティ
+**Arrange-Act-Assert パターン**
 
-```bash
-# Server Actions & Functions テスト
-pnpm test                           # 全体実行
-pnpm test:coverage                  # カバレッジ付き
-cd apps/functions && pnpm test      # Functions個別
+```typescript
+describe('formatPrice', () => {
+  it('should format price with comma separators', () => {
+    // Arrange
+    const price = 1000;
+    
+    // Act
+    const result = formatPrice(price);
+    
+    // Assert
+    expect(result).toBe('1,000円');
+  });
+});
 ```
 
-#### 2. UIコンポーネント → Storybook
+### カバレッジ目標
 
-**対象**: 共有UIコンポーネント, レイアウト重要コンポーネント
+- **最小カバレッジ**: 80%
+- **重要な関数**: 100%カバレッジ
+- **エッジケース**: 必ずテストする
 
-```bash
-# Storybook開発サーバー
-cd packages/ui && pnpm storybook     # 共有UI
-cd apps/web && pnpm storybook       # Web専用
-```
+### テスト種別
 
-#### 3. インタラクティブコンポーネント → React Testing Library
-
-**対象**: ユーザーインタラクション, 条件分岐, エラーハンドリング
-
-```bash
-# React Testing Library セットアップ
-cd apps/web
-npm install -D @testing-library/react @testing-library/jest-dom happy-dom
-```
-
-### 現在のテストカバレッジ
-
-- **テスト件数**: **226件** (高品質・包括的)
-- **Server Actions**: 78件 ✅
-- **重要UIコンポーネント**: 128件 ✅
-- **統合テスト**: 20件 ✅
-
-### テストファイル命名規則
-
-```
-src/
-├── components/
-│   ├── VideoList.tsx
-│   ├── VideoList.test.tsx          # RTL テスト
-│   └── VideoList.stories.tsx       # Storybook
-├── app/
-│   ├── actions.ts
-│   └── actions.test.ts             # Vitest テスト
-└── utils/
-    ├── helpers.ts
-    └── helpers.test.ts             # Vitest テスト
-```
+- **Unit Tests**: 個別関数のテスト
+- **Storybook Tests**: UIコンポーネントの視覚的テスト
+- **Integration Tests**: API連携テスト
+- **E2E Tests**: ユーザーシナリオテスト (将来実装)
 
 ## 🔧 開発ワークフロー
 
@@ -142,9 +193,9 @@ src/
 
 ```
 main (production)
-├── feature/add-user-profile
-├── feature/improve-auth-flow
-└── hotfix/fix-session-error
+├── feature/add-voice-button-filter
+├── feature/improve-dlsite-parser
+└── hotfix/fix-youtube-api-error
 ```
 
 ### 2. コミット規約
@@ -161,171 +212,200 @@ test: テスト追加・修正
 chore: その他の変更
 
 # 例
-feat: add user profile management
-fix: resolve discord auth guild verification
-docs: update authentication setup guide
+feat: add voice button filtering by tags
+fix: resolve youtube api quota exceeded error
+docs: update api documentation
 ```
 
 ### 3. 実装後チェックリスト
 
 **必須項目**
 
-```bash
-# 品質チェック (一括実行)
-pnpm check
-
-# 個別実行
-pnpm test              # テスト実行
-pnpm lint              # Lint実行
-pnpm format            # フォーマット
-pnpm build             # ビルド確認
-tsc --noEmit           # 型チェック
-```
+- [ ] テスト実行: `pnpm test`
+- [ ] コードフォーマット: `pnpm format`
+- [ ] Lint実行: `pnpm lint`
+- [ ] ビルド確認: `pnpm build`
+- [ ] 型チェック: `tsc --noEmit`
 
 **推奨項目**
 
-```bash
-pnpm test:coverage     # カバレッジ確認
-cd apps/web && pnpm storybook  # UIテスト
+- [ ] カバレッジ確認: `pnpm test:coverage`
+- [ ] パフォーマンステスト
+- [ ] セキュリティチェック
+- [ ] アクセシビリティ確認
+
+## 🏗️ アーキテクチャ原則
+
+### 1. 責任分離
+
+**実装済みレイヤー構造**
+
+```
+apps/web/                     # 本番Webアプリ
+├── src/
+│   ├── app/                 # Next.js App Router (Server Components)
+│   ├── components/          # UIコンポーネント
+│   │   ├── VideoList.tsx    # Server Component (表示ロジック)
+│   │   └── Pagination.tsx   # Client Component (インタラクション)
+│   └── lib/                 # ユーティリティ
+
+packages/ui/                  # 共有UIコンポーネント
+├── src/
+│   ├── components/          # Radix UIベースコンポーネント
+│   └── styles/              # Tailwind CSS v4設定
+└── .storybook/              # UI開発環境
+
+apps/functions/               # バックエンド
+├── src/
+│   ├── dlsite.ts            # DLsite作品取得
+│   ├── youtube.ts           # YouTube動画取得
+│   └── utils/               # ドメインロジック
 ```
 
-## 🏗️ インフラ・デプロイメント
+### 2. 依存関係管理
 
-### アーキテクチャ概要
+**依存関係の方向**
 
 ```
-GitHub Actions (CI/CD) → Cloud Build → Cloud Run
-                     ↓
-                Terraform (IaC)
-                     ↓
-Secret Manager ← → Cloud Run ← → Firestore
-     ↓                ↑            ↑
-Discord OAuth   Next.js App   Functions
+UI層 → ビジネスロジック層 → データアクセス層
 ```
 
-### 環境分離
+- 上位層は下位層に依存する
+- 下位層は上位層に依存しない
+- 循環依存を禁止
 
-- **production**: 本番環境 (suzumina.click)
-- **staging**: 開発・テスト環境 (Cloud Run URL)
+### 3. エラーハンドリング
 
-### デプロイフロー
+**階層別エラー処理**
 
-```mermaid
-graph LR
-    A[Code Push] --> B[GitHub Actions]
-    B --> C[Tests + Build]
-    C --> D[Cloud Build]
-    D --> E[Deploy to Cloud Run]
-    E --> F[Health Check]
-    F --> G[Production Live]
-```
+```typescript
+// Cloud Functions
+export async function fetchYouTubeVideos(event: CloudEvent) {
+  try {
+    const result = await fetchYouTubeVideosLogic();
+    if (result.error) {
+      logger.warn(`YouTube動画取得処理でエラー: ${result.error}`);
+    }
+  } catch (error) {
+    logger.error('予期しないエラー:', error);
+    await updateMetadata({ 
+      isInProgress: false,
+      lastError: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
 
-### 認証デプロイ
-
-1. **Discord OAuth App作成**
-   - [Discord Developer Portal](https://discord.com/developers/applications)
-   - Client ID/Secret取得
-   - Redirect URI設定
-
-2. **terraform.tfvars設定**
-
-```hcl
-# 必須設定
-discord_client_id = "your-client-id"
-discord_client_secret = "your-secret"
-nextauth_secret = "$(openssl rand -base64 32)"
-
-# オプション
-discord_bot_token = "bot-token"  # Guild詳細管理用
-suzumina_guild_id = "959095494456537158"
-```
-
-3. **Terraform適用**
-
-```bash
-cd terraform
-terraform plan      # 変更確認
-terraform apply     # デプロイ実行
-```
-
-### 監視・運用
-
-#### 重要メトリクス
-
-- **認証成功率**: >95%
-- **ページ表示速度**: <3秒
-- **月次コスト**: <5000円
-- **アップタイム**: >99.5%
-
-#### ログ確認
-
-```bash
-# アプリケーションログ
-gcloud logging read "resource.type=cloud_run_revision" --limit=50
-
-# 認証エラー
-gcloud logging read "resource.type=cloud_run_revision severity=ERROR" --limit=20
-
-# Secret Manager確認
-gcloud secrets versions access latest --secret="DISCORD_CLIENT_ID"
+// Frontend
+export function VideoCard({ video }: { video: VideoData }) {
+  if (!video) {
+    return <ErrorAlert message="動画データが見つかりません" />;
+  }
+  // ...
+}
 ```
 
 ## 📦 依存関係管理
+
+### 定期更新コマンド
+
+```bash
+# 現状確認
+pnpm outdated && pnpm audit
+
+# 安全更新（パッチ・マイナー）
+pnpm update
+
+# 各更新後テスト
+pnpm test && pnpm typecheck && pnpm build
+```
 
 ### パッケージ選定基準
 
 1. **アクティブメンテナンス**: 定期的な更新
 2. **型安全性**: TypeScript サポート
-3. **軽量性**: バンドルサイズ影響を考慮
-4. **セキュリティ**: 既知の脆弱性なし
-
-### 更新手順
-
-```bash
-# 定期チェック (月1回)
-pnpm outdated
-
-# セキュリティ監査
-pnpm audit
-
-# 更新実行
-pnpm update
-
-# テスト確認
-pnpm test && pnpm build
-```
+3. **軽量性**: バンドルサイズ影響の考慮
+4. **セキュリティ**: 既知脆弱性なし
 
 ## 🔒 セキュリティガイドライン
 
 ### 1. 機密情報管理
 
 - **環境変数**: すべての機密情報は環境変数で管理
-- **Secret Manager**: Google Cloud Secret Manager使用
+- **Secret Manager**: Google Cloud Secret Manager を使用
 - **ログ出力**: 機密情報をログに出力しない
 
 ```typescript
 // ✅ 良い例
-const apiKey = process.env.DISCORD_CLIENT_SECRET;
+const apiKey = process.env.YOUTUBE_API_KEY;
 if (!apiKey) {
-  logger.error('Discord Client Secret が設定されていません');
+  logger.error('YouTube API Keyが設定されていません');
   return;
 }
 
 // ❌ 悪い例
-logger.info(`API Key: ${process.env.DISCORD_CLIENT_SECRET}`);
+logger.info(`API Key: ${process.env.YOUTUBE_API_KEY}`);
 ```
 
-### 2. Discord認証セキュリティ
+### 2. 入力検証
 
-- **Guild ID固定**: 「すずみなふぁみりー」サーバー固定
-- **スコープ制限**: `identify email guilds` のみ
-- **CSRF保護**: NextAuth.js によるトークン検証
+- **Zod Schema**: すべての外部入力を検証
+- **サニタイゼーション**: HTMLエスケープの実施
+- **CSRFトークン**: 状態変更APIでのトークン検証
 
-### 3. Firestore セキュリティ
+### 3. アクセス制御
 
-- **Server Actions限定**: クライアントからの直接アクセス禁止
-- **ユーザー認証確認**: 全データ操作でセッション検証
-- **権限ベース制御**: ロールによる機能制限
+- **最小権限原則**: 必要最小限の権限のみ付与
+- **サービスアカウント**: 機能別に専用アカウントを作成
+- **Firestore Rules**: データアクセス制御を実装
+
+### 4. プロジェクトID・認証情報管理
+
+**原則**: ソースコードにプロジェクトIDや機密情報をハードコーディングしない
+
+- **環境変数使用**: `GCP_PROJECT_ID`, `GOOGLE_CLOUD_PROJECT` を使用
+- **GitHub Secrets**: CI/CDでは GitHub Actions Secrets を活用
+- **ドキュメント**: プレースホルダー値を使用（例: `YOUR_PROJECT_ID`, `${PROJECT_ID}`）
+
+```bash
+# ✅ 良い例: 環境変数の使用
+export GCP_PROJECT_ID=your-actual-project-id
+./scripts/deploy-cloud-run.sh
+
+# ✅ 良い例: gcloud設定の活用
+gcloud config set project your-project-id
+./scripts/deploy-cloud-run.sh
+
+# ❌ 悪い例: ハードコーディング
+PROJECT_ID="suzumina-click"  # セキュリティリスク
+```
+
+**チェックリスト**:
+- [ ] スクリプトで環境変数を使用
+- [ ] ドキュメントにプレースホルダーを使用
+- [ ] GitHub ActionsでSecretsを使用
+- [ ] .gitignoreに機密ファイルを追加
+
+## 📊 パフォーマンス基準
+
+### 1. フロントエンド
+
+- **Core Web Vitals**
+  - LCP (Largest Contentful Paint): < 2.5s
+  - FID (First Input Delay): < 100ms
+  - CLS (Cumulative Layout Shift): < 0.1
+
+- **バンドルサイズ**: 初期ロードは500KB以下
+
+### 2. バックエンド
+
+- **Cloud Functions**
+  - コールドスタート: < 5秒
+  - レスポンス時間: < 3秒
+  - メモリ使用量: 512MB以下
+
+- **データベース**
+  - クエリレスポンス: < 1秒
+  - インデックス最適化の実施
 
 ## 📝 ドキュメンテーション
 
@@ -335,71 +415,80 @@ logger.info(`API Key: ${process.env.DISCORD_CLIENT_SECRET}`);
 
 ```typescript
 /**
- * Discord Guild メンバーシップを確認する
+ * DLsiteから作品情報を取得する
  * 
- * @param accessToken - Discord OAuth access token
- * @param userId - Discord User ID
- * @returns Guild membership information or null
- * @throws {Error} Discord API error
+ * @param page - 取得するページ番号
+ * @returns 作品データの配列
+ * @throws {Error} APIエラーまたはパースエラー
  */
-export async function fetchDiscordGuildMembership(
-  accessToken: string,
-  userId: string,
-): Promise<GuildMembership | null> {
+export async function fetchDLsiteWorks(page: number): Promise<WorkData[]> {
   // 実装...
 }
 ```
 
 ### 2. README更新
 
-- 新機能追加時はREADME更新
-- 破壊的変更は移行ガイド作成
-- API変更はCHANGELOG.md記録
+- 新機能追加時はREADMEを更新
+- 破壊的変更は移行ガイドを作成
+- API変更はCHANGELOG.mdに記録
 
-## 🚀 パフォーマンス基準
+## 🚀 デプロイメント原則
 
-### フロントエンド
+### 1. 環境分離
 
-- **Core Web Vitals**
-  - LCP: < 2.5s
-  - FID: < 100ms
-  - CLS: < 0.1
-- **バンドルサイズ**: 初期ロード 500KB以下
+- **production**: 本番環境
+- **preview**: プルリクエスト確認用
 
-### バックエンド
+### 2. デプロイフロー
 
-- **Cloud Run**
-  - コールドスタート: < 5秒
-  - レスポンス時間: < 3秒
-  - メモリ使用量: 512MB以下
+```mermaid
+graph LR
+    A[Code Push] --> B[GitHub Actions]
+    B --> C[Tests]
+    C --> D[Build]
+    D --> E[Deploy Preview]
+    E --> F[Manual Review]
+    F --> G[Deploy Production]
+```
 
-- **Firestore**
-  - クエリレスポンス: < 1秒
-  - インデックス最適化実施
+### 3. ロールバック戦略
+
+- **即座にロールバック**: 重大なバグ発見時
+- **段階的デプロイ**: 新機能の段階的公開
+- **モニタリング**: デプロイ後の継続監視
 
 ## 🔍 品質保証
 
-### 自動化チェック
+### 1. 自動化チェック
 
 - **Pre-commit hooks**: Lefthook による自動チェック
 - **CI/CD**: GitHub Actions による継続的テスト
 - **依存関係**: Dependabot による自動更新
 
-### コードレビュー
+### 2. コードレビュー
 
-**必須チェック項目**:
-- 設計原則への準拠
-- テストカバレッジ
-- セキュリティ考慮 (認証・権限確認)
-- パフォーマンス影響
+- **必須レビュー**: すべてのPRに1名以上のレビュー
+- **チェック項目**:
+  - 設計原則への準拠
+  - テストカバレッジ
+  - セキュリティ考慮
+  - パフォーマンス影響
 
-### 定期監査
+### 3. 定期監査
 
-- **月次**: 依存関係脆弱性チェック
+- **月次**: 依存関係の脆弱性チェック
 - **四半期**: アーキテクチャレビュー
 - **年次**: 技術スタック見直し
 
+## 📚 参考資料
+
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Google Cloud Functions Best Practices](https://cloud.google.com/functions/docs/bestpractices)
+- [Conventional Commits](https://www.conventionalcommits.org/)
+- [Clean Code](https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350884)
+
 ---
 
-**最終更新**: 2025年6月22日  
-**適用バージョン**: v0.2.1 (Discord認証対応)
+**最終更新**: 2025年6月16日  
+**次回レビュー予定**: 2025年12月16日
