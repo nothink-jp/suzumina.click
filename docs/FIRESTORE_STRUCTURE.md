@@ -270,41 +270,147 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 
 **サブコレクション**: `favorites` - ユーザーのお気に入り音声参照
 
-### 7. `audioButtons` コレクション
+### 7. ~~`audioButtons` コレクション~~ ✅ **実装完了**
 
-**目的**: 実音声ファイル機能（将来検討・法的評価後）
+~~**目的**: 実音声ファイル機能（将来検討・法的評価後）~~
 
-**データ構造**（将来実装時）:
+**✅ 実装完了**: 上記 `audioButtons` コレクションでYouTube参照統合システムとして実装済み
 
-```typescript
-{
-  title: string,                      // 音声ボタンタイトル
-  audioUrl: string,                   // Cloud Storage音声ファイルURL
-  duration: number,                   // 音声の長さ（秒数）
-  sourceVideoId: string,              // 元YouTube動画ID
-  startTime: number,                  // 元動画での開始時刻（秒）
-  endTime: number,                    // 元動画での終了時刻（秒）
-  isPublic: boolean,                  // 公開/非公開設定
-  createdBy: string,                  // 作成者ユーザーID
-  createdAt: Timestamp                // 作成日時
+## Firestore 複合インデックス
+
+> **最終更新**: 2025-06-25 | **インデックス総数**: 11個（全て READY 状態）
+> 
+> **分析対象**: `apps/web/src/` のFirestoreクエリパターンを網羅的に調査
+
+### 📊 現在のインデックス状況（Google Cloud Firestore）
+
+#### ✅ **audioButtons コレクション** (7個)
+
+| インデックス | フィールド | 使用状況 | 使用箇所 |
+|-------------|------------|----------|----------|
+| `createdBy + createdAt (DESC)` | [`createdBy`, `createdAt`, `__name__`] | 🔴 **未使用** | レート制限で `uploadedBy` を使用 |
+| `isPublic + createdAt (DESC)` | [`isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | `getAudioButtons()` - 基本一覧 |
+| `isPublic + likeCount (DESC)` | [`isPublic`, `likeCount`, `__name__`] | ✅ **使用中** | 人気順ソート (`sortBy: "popular"`) |
+| `isPublic + playCount (DESC)` | [`isPublic`, `playCount`, `__name__`] | ✅ **使用中** | 再生数順ソート (`sortBy: "mostPlayed"`) |
+| `isPublic + category + createdAt (DESC)` | [`isPublic`, `category`, `createdAt`, `__name__`] | ✅ **使用中** | カテゴリフィルター |
+| `isPublic + sourceVideoId + startTime (ASC)` | [`isPublic`, `sourceVideoId`, `startTime`, `__name__`] | 🔴 **未使用** | `startTime` での並び替えなし |
+| `tags (CONTAINS) + isPublic + createdAt (DESC)` | [`tags`, `isPublic`, `createdAt`, `__name__`] | 🔴 **未使用** | タグフィルターはクライアントサイド |
+
+**⚠️ 必要なインデックス（未作成）**:
+```hcl
+# レート制限用 - 高頻度クエリ
+resource "google_firestore_index" "audiobuttons_uploadedby_createdat_desc" {
+  collection = "audioButtons"
+  fields {
+    field_path = "uploadedBy"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "createdAt" 
+    order      = "DESCENDING"
+  }
+}
+
+# 動画別音声ボタン一覧用
+resource "google_firestore_index" "audiobuttons_sourcevideoid_createdat_desc" {
+  collection = "audioButtons"
+  fields {
+    field_path = "sourceVideoId"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "createdAt"
+    order      = "DESCENDING"
+  }
 }
 ```
 
-## データベースインデックス
+#### ✅ **videos コレクション** (3個)
 
-### videosコレクション:
-- `liveBroadcastContent` (ASC) + `publishedAt` (DESC)
-- `liveBroadcastContent` (ASC) + `publishedAt` (ASC)
-- `videoType` (ASC) + `publishedAt` (DESC) + `__name__` (DESC)
+| インデックス | フィールド | 使用状況 | 使用箇所 |
+|-------------|------------|----------|----------|
+| `liveBroadcastContent + publishedAt (ASC)` | [`liveBroadcastContent`, `publishedAt`, `__name__`] | 🔴 **未使用** | コード内でクエリなし |
+| `liveBroadcastContent + publishedAt (DESC)` | [`liveBroadcastContent`, `publishedAt`, `__name__`] | 🔴 **未使用** | コード内でクエリなし |
+| `videoType + publishedAt (DESC)` | [`videoType`, `publishedAt`, `__name__`] | 🔴 **未使用** | コード内でクエリなし |
 
-### audioButtonsコレクション:
-- `isPublic` (ASC) + `createdAt` (DESC) - 基本的な音声ボタン一覧取得
-- `isPublic` (ASC) + `playCount` (DESC) - 再生数順ソート
-- `isPublic` (ASC) + `likeCount` (DESC) - いいね数順ソート
-- `isPublic` (ASC) + `category` (ASC) + `createdAt` (DESC) - カテゴリフィルター
-- `isPublic` (ASC) + `sourceVideoId` (ASC) + `startTime` (ASC) - 元動画別表示
-- `createdBy` (ASC) + `createdAt` (DESC) - ユーザー別表示
-- `tags` (CONTAINS) + `isPublic` (ASC) + `createdAt` (DESC) - タグ検索
+**必要なインデックス（未作成）**:
+- 現在のクエリパターンでは追加インデックス不要
+
+#### ✅ **users コレクション** (2個)
+
+| インデックス | フィールド | 使用状況 | 使用箇所 |
+|-------------|------------|----------|----------|
+| `isPublicProfile + createdAt (DESC)` | [`isPublicProfile`, `createdAt`, `__name__`] | ✅ **使用中** | 管理者画面ユーザー一覧 |
+| `isPublicProfile + role + lastLoginAt (DESC)` | [`isPublicProfile`, `role`, `lastLoginAt`, `__name__`] | ✅ **使用中** | 管理者画面フィルター |
+
+### 🔍 実際のクエリパターン分析
+
+#### **audioButtons コレクション**
+```typescript
+// ✅ 使用中のクエリ
+.where("isPublic", "==", true).orderBy("createdAt", "desc")  // 基本一覧
+.where("isPublic", "==", true).where("category", "==", category).orderBy("createdAt", "desc")  // カテゴリフィルター
+.where("isPublic", "==", true).orderBy("likeCount", "desc")  // 人気順
+.where("isPublic", "==", true).orderBy("playCount", "desc")  // 再生数順
+.where("isPublic", "==", true).where("sourceVideoId", "==", videoId)  // 動画別（ソートなし）
+
+// ⚠️ インデックス不足のクエリ
+.where("uploadedBy", "==", userId).where("createdAt", ">", date)  // レート制限チェック
+.where("sourceVideoId", "==", videoId)  // 重複チェック
+```
+
+#### **videos コレクション**
+```typescript
+// ✅ 使用中のクエリ（シンプルクエリのみ）
+.doc(videoId).get()  // ID による取得
+.collection("videos").get()  // 全件取得（少数のため）
+```
+
+#### **users コレクション**
+```typescript
+// ✅ 使用中のクエリ
+.where("isPublicProfile", "==", true).orderBy("createdAt", "desc")  // 公開ユーザー一覧
+.where("isPublicProfile", "==", true).where("role", "==", role).orderBy("lastLoginAt", "desc")  // 管理者フィルター
+```
+
+### 🚨 最適化推奨事項
+
+#### **🗑️ 削除推奨インデックス**（コスト最適化）
+
+```bash
+# 1. audioButtons - createdBy → uploadedBy フィールド使用のため不要
+gcloud firestore indexes composite delete \
+  projects/suzumina-click/databases/\(default\)/collectionGroups/audioButtons/indexes/CICAgOi3voUJ
+
+# 2. audioButtons - startTime 並び替えなしのため不要  
+gcloud firestore indexes composite delete \
+  projects/suzumina-click/databases/\(default\)/collectionGroups/audioButtons/indexes/CICAgJjmiJEK
+
+# 3. audioButtons - クライアントサイドフィルターのため不要
+gcloud firestore indexes composite delete \
+  projects/suzumina-click/databases/\(default\)/collectionGroups/audioButtons/indexes/CICAgOi3kJAK
+
+# 4-6. videos - コード内でクエリなしのため全て不要
+gcloud firestore indexes composite delete \
+  projects/suzumina-click/databases/\(default\)/collectionGroups/videos/indexes/CICAgNi47oMK
+gcloud firestore indexes composite delete \
+  projects/suzumina-click/databases/\(default\)/collectionGroups/videos/indexes/CICAgJiUsZIK  
+gcloud firestore indexes composite delete \
+  projects/suzumina-click/databases/\(default\)/collectionGroups/videos/indexes/CICAgJiH2JAK
+```
+
+#### **➕ 追加推奨インデックス**
+```bash
+# 高頻度クエリ用インデックスをTerraformで追加
+terraform apply -target=google_firestore_index.audiobuttons_uploadedby_createdat_desc
+terraform apply -target=google_firestore_index.audiobuttons_sourcevideoid_createdat_desc  
+```
+
+#### **📊 コスト影響試算**
+- **削除済み**: 旧 audioReferences インデックス 2個
+- **削除推奨**: 未使用インデックス 6個 → **月額約$12削減**
+- **追加推奨**: 必要インデックス 2個 → 月額約$4增加
+- **純減**: 月額約$8コスト削減効果
 
 ## データ収集パターン
 
@@ -321,11 +427,60 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 - **認証制御**: `audioButtons`と`users`コレクション（実装完了）
 - **セキュリティルール**: Terraform管理のFirestoreセキュリティルールで実装
 
-### 音声ボタンアクセスパターン詳細:
+### 🔧 インデックス管理
+
+#### **インデックス監視方法**
+```bash
+# 現在のインデックス一覧取得
+gcloud firestore indexes composite list --format="table(name.segment(-3):label=COLLECTION,fields[].fieldPath:label=FIELDS,state)"
+
+# 特定コレクションのインデックス確認
+gcloud firestore indexes composite list --filter="collectionGroup:audioButtons"
+
+# インデックス削除（例）
+gcloud firestore indexes composite delete projects/suzumina-click/databases/\(default\)/collectionGroups/audioButtons/indexes/INDEX_ID
+```
+
+#### **Terraform管理**
+- **設定ファイル**: `terraform/firestore_indexes.tf`
+- **適用**: `terraform apply -target=google_firestore_index.INDEX_NAME`
+- **インポート**: `terraform import google_firestore_index.INDEX_NAME projects/PROJECT/databases/(default)/collectionGroups/COLLECTION/indexes/INDEX_ID`
+
+### 🎯 パフォーマンス最適化
+
+#### **クエリ最適化戦略**
+- **ページネーション**: 全クエリで `startAfter()` + `limit()` 使用
+- **クライアントサイドフィルター**: タグ・検索テキストフィルターで複合インデックス不要
+- **バッチ操作**: ユーザー統計更新で `FieldValue.increment()` 使用
+- **キャッシュ戦略**: `revalidatePath()` でISRキャッシュ無効化
+- **レート制限**: 24時間でユーザーあたり20回作成制限
+
+### 📋 定期メンテナンスタスク
+
+#### **月次タスク** (コスト最適化)
+
+- [ ] インデックス使用状況の確認
+- [ ] 新しいクエリパターンのチェック
+- [ ] 未使用インデックスの洗い出し
+
+#### **機能追加時タスク**
+
+- [ ] 新しいFirestoreクエリのインデックス必要性算定
+- [ ] パフォーマンステスト実施
+- [ ] このドキュメントの更新
+
+#### **緊急時タスク**
+
+- [ ] インデックスエラー発生時の緊急対応
+- [ ] クエリパフォーマンス問題の特定
+
+
+#### **音声ボタンアクセスパターン詳細**
 - **読み取り**: 公開音声ボタン（`isPublic: true`）は誰でも読み取り可能
-- **非公開読み取り**: 非公開音声ボタンは作成者のみ読み取り可能（将来のユーザー認証実装時）
-- **書き込み**: 現在はNext.js Server Actionsのみで操作
-- **Cloud Storage**: 音声ファイルはパブリック読み取り可能、アプリケーションのみ書き込み可能
+- **非公開読み取り**: 非公開音声ボタンは作成者のみ読み取り可能（Discord認証）
+- **書き込み**: Next.js Server Actionsのみで操作（型安全・認証済み）
+- **レート制限**: ユーザーあたり1日20個の作成制限
+- **重複チェック**: 同一動画・時間範囲での重複防止
 
 ## 型定義の場所
 
@@ -342,3 +497,39 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
   - `AudioFileUploadInfo`: ファイルアップロード用
 - **型変換関数**: `convertToFrontendAudioButton()` - Firestore → フロントエンド変換
 - **シリアライズ関数**: RSC/RCC間の安全なデータ渡し用
+
+---
+
+## 📅 インデックス分析ログ
+
+### 2025-06-25 audioReferences → audioButtons 統合完了
+
+**実行した操作**:
+- ✅ audioReferences コレクションのインデックス 2個を手動削除
+- ✅ audioButtons コレクションのインデックス 7個を確認（全て READY）
+- ✅ `apps/web/src/` 全体のFirestoreクエリパターンを網羅的調査
+
+**発見した問題**:
+- 🔴 `uploadedBy` フィールド用インデックスが未作成（レート制限クエリで高頻度使用）
+- 🔴 `sourceVideoId` 用インデックスが未作成（動画別表示で使用）
+- 🔴 videos コレクションの 3個のインデックスが完全未使用
+- 🔴 audioButtons コレクションの 3個のインデックスが未使用
+
+**コスト最適化機会**:
+- **現在の月額コスト**: 11インデックス × 約$2 = 約$22/月
+- **最適化後**: 7インデックス × 約$2 = 約$14/月 (約$8/月削減)
+
+**推奨アクション**:
+1. 未使用インデックス 6個の削除
+2. 必要インデックス 2個の追加
+3. 定期的なインデックス使用状況監視
+
+**監視方法**:
+
+```bash
+# 毎月実行推奨
+gcloud firestore indexes composite list --format="table(name.segment(-3):label=COLLECTION,fields[].fieldPath:label=FIELDS,state)"
+
+# クエリパターン変更時のチェック
+grep -r "\.where\|.orderBy" apps/web/src/ --include="*.ts" | grep -v test
+```
