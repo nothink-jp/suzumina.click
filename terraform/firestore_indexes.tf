@@ -193,9 +193,9 @@ resource "google_firestore_index" "audiobuttons_createdby_createdat_desc" {
   }
 }
 
-# audioButtons コレクションのインデックス - uploadedBy（昇順）、createdAt（降順）
-# レート制限チェッククエリで使用
-resource "google_firestore_index" "audiobuttons_uploadedby_createdat_desc" {
+# audioButtons コレクションのインデックス - uploadedBy（昇順）、createdAt（昇順）
+# レート制限チェッククエリで使用（範囲クエリ対応）
+resource "google_firestore_index" "audiobuttons_uploadedby_createdat_asc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
   
@@ -206,7 +206,7 @@ resource "google_firestore_index" "audiobuttons_uploadedby_createdat_desc" {
   
   fields {
     field_path = "createdAt"
-    order      = "DESCENDING"
+    order      = "ASCENDING"
   }
 }
 

@@ -46,7 +46,7 @@ gcloud firestore indexes composite list \
     elif [[ $index == *"tags"*"isPublic"*"createdAt"* ]]; then
         echo "terraform import google_firestore_index.audiobuttons_tags_ispublic_createdat_desc '$index'"
     elif [[ $index == *"uploadedBy"*"createdAt"* ]]; then
-        echo "terraform import google_firestore_index.audiobuttons_uploadedby_createdat_desc '$index'"
+        echo "terraform import google_firestore_index.audiobuttons_uploadedby_createdat_asc '$index'"
     else
         echo "# 未定義のインデックス: $index"
     fi
