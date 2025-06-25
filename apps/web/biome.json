@@ -1,0 +1,59 @@
+{
+	"extends": "//",
+	"root": false,
+	"overrides": [
+		{
+			"includes": [
+				"src/app/**/page.tsx",
+				"src/app/**/layout.tsx",
+				"src/app/**/loading.tsx",
+				"src/app/**/error.tsx",
+				"src/app/**/not-found.tsx",
+				"src/app/**/route.ts"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noDefaultExport": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"**/*.config.js",
+				"**/*.config.ts",
+				"**/*.config.mjs"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noDefaultExport": "off"
+					},
+					"suspicious": {
+						"noExplicitAny": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"**/*.test.ts",
+				"**/*.test.tsx",
+				"**/*.spec.ts",
+				"**/*.spec.tsx"
+			],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off",
+						"noConsole": "off"
+					},
+					"style": {
+						"noNonNullAssertion": "off"
+					}
+				}
+			}
+		}
+	]
+}

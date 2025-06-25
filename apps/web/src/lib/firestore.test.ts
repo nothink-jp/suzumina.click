@@ -37,7 +37,7 @@ describe("firestore module", () => {
 		});
 
 		it("should create new Firestore instance with fallback project ID when env var is not set", async () => {
-			delete process.env.GOOGLE_CLOUD_PROJECT;
+			process.env.GOOGLE_CLOUD_PROJECT = undefined;
 			vi.resetModules();
 
 			const { createFirestoreInstance } = await import("./firestore");
@@ -64,7 +64,7 @@ describe("firestore module", () => {
 		});
 
 		it("should create instance with correct project configuration", async () => {
-			delete process.env.GOOGLE_CLOUD_PROJECT;
+			process.env.GOOGLE_CLOUD_PROJECT = undefined;
 			vi.resetModules();
 			const { getFirestore } = await import("./firestore");
 

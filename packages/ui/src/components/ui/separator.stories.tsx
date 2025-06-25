@@ -43,16 +43,12 @@ export const Horizontal: Story = {
 		<div className="w-full max-w-md space-y-4">
 			<div className="space-y-1">
 				<h4 className="text-sm font-medium leading-none">セクション1</h4>
-				<p className="text-sm text-muted-foreground">
-					最初のセクションの内容です。
-				</p>
+				<p className="text-sm text-muted-foreground">最初のセクションの内容です。</p>
 			</div>
 			<Separator className="my-4" />
 			<div className="space-y-1">
 				<h4 className="text-sm font-medium leading-none">セクション2</h4>
-				<p className="text-sm text-muted-foreground">
-					2番目のセクションの内容です。
-				</p>
+				<p className="text-sm text-muted-foreground">2番目のセクションの内容です。</p>
 			</div>
 		</div>
 	),
@@ -98,13 +94,11 @@ export const InCardLayout: Story = {
 			<div className="space-y-4">
 				<div>
 					<h3 className="text-lg font-semibold">音声ボタン情報</h3>
-					<p className="text-sm text-muted-foreground">
-						音声ボタンの詳細情報を表示します
-					</p>
+					<p className="text-sm text-muted-foreground">音声ボタンの詳細情報を表示します</p>
 				</div>
-				
+
 				<Separator />
-				
+
 				<div className="grid grid-cols-2 gap-4 text-sm">
 					<div>
 						<span className="font-medium">タイトル:</span>
@@ -115,18 +109,18 @@ export const InCardLayout: Story = {
 						<span className="ml-2 text-muted-foreground">挨拶</span>
 					</div>
 				</div>
-				
+
 				<Separator />
-				
+
 				<div className="text-sm">
 					<span className="font-medium">説明:</span>
 					<p className="mt-1 text-muted-foreground">
 						朝の挨拶に使える元気いっぱいの音声ボタンです。
 					</p>
 				</div>
-				
+
 				<Separator />
-				
+
 				<div className="flex items-center justify-between text-sm">
 					<span className="text-muted-foreground">作成日: 2024年12月25日</span>
 					<span className="text-muted-foreground">再生回数: 1,234回</span>
@@ -142,9 +136,9 @@ export const InSidebar: Story = {
 			<div className="p-4">
 				<h3 className="text-sm font-semibold">メニュー</h3>
 			</div>
-			
+
 			<Separator />
-			
+
 			<div className="p-2 space-y-1">
 				<a href="#" className="block px-2 py-1.5 text-sm rounded hover:bg-accent">
 					ダッシュボード
@@ -156,9 +150,9 @@ export const InSidebar: Story = {
 					動画一覧
 				</a>
 			</div>
-			
+
 			<Separator />
-			
+
 			<div className="p-2 space-y-1">
 				<a href="#" className="block px-2 py-1.5 text-sm rounded hover:bg-accent">
 					設定
@@ -167,9 +161,9 @@ export const InSidebar: Story = {
 					ヘルプ
 				</a>
 			</div>
-			
+
 			<Separator />
-			
+
 			<div className="p-2">
 				<a href="#" className="block px-2 py-1.5 text-sm rounded hover:bg-accent text-red-600">
 					ログアウト
@@ -184,31 +178,31 @@ export const InFormLayout: Story = {
 		<div className="max-w-md space-y-6">
 			<div className="space-y-4">
 				<h2 className="text-lg font-semibold">アカウント設定</h2>
-				
+
 				<div className="space-y-2">
 					<label className="text-sm font-medium">ユーザー名</label>
-					<input 
-						type="text" 
-						className="w-full px-3 py-2 border rounded-md text-sm" 
+					<input
+						type="text"
+						className="w-full px-3 py-2 border rounded-md text-sm"
 						defaultValue="user123"
 					/>
 				</div>
-				
+
 				<div className="space-y-2">
 					<label className="text-sm font-medium">メールアドレス</label>
-					<input 
-						type="email" 
-						className="w-full px-3 py-2 border rounded-md text-sm" 
+					<input
+						type="email"
+						className="w-full px-3 py-2 border rounded-md text-sm"
 						defaultValue="user@example.com"
 					/>
 				</div>
 			</div>
-			
+
 			<Separator />
-			
+
 			<div className="space-y-4">
 				<h3 className="text-base font-medium">プライバシー設定</h3>
-				
+
 				<div className="space-y-2">
 					<label className="flex items-center space-x-2">
 						<input type="checkbox" className="rounded" />
@@ -220,13 +214,11 @@ export const InFormLayout: Story = {
 					</label>
 				</div>
 			</div>
-			
+
 			<Separator />
-			
+
 			<div className="flex justify-end space-x-2">
-				<button className="px-4 py-2 text-sm border rounded-md hover:bg-accent">
-					キャンセル
-				</button>
+				<button className="px-4 py-2 text-sm border rounded-md hover:bg-accent">キャンセル</button>
 				<button className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
 					保存
 				</button>
@@ -242,22 +234,22 @@ export const CustomStyling: Story = {
 				<h3 className="font-medium">デフォルト</h3>
 				<Separator />
 			</div>
-			
+
 			<div className="space-y-4">
 				<h3 className="font-medium">カスタムカラー (suzuka)</h3>
 				<Separator className="bg-suzuka-500" />
 			</div>
-			
+
 			<div className="space-y-4">
 				<h3 className="font-medium">太い線</h3>
 				<Separator className="h-[2px]" />
 			</div>
-			
+
 			<div className="space-y-4">
 				<h3 className="font-medium">点線</h3>
 				<Separator className="border-t border-dashed bg-transparent h-0" />
 			</div>
-			
+
 			<div className="space-y-4">
 				<h3 className="font-medium">グラデーション</h3>
 				<Separator className="bg-gradient-to-r from-suzuka-500 to-minase-500 h-[2px]" />

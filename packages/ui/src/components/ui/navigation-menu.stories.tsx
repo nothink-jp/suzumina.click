@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { PlayCircle, Video, Music, Users, Settings, ExternalLink } from "lucide-react";
+import { ExternalLink, Music, PlayCircle, Settings, Users, Video } from "lucide-react";
 import {
 	NavigationMenu,
 	NavigationMenuContent,
@@ -41,9 +41,7 @@ export const Default: Story = {
 										href="#"
 									>
 										<PlayCircle className="h-6 w-6" />
-										<div className="mb-2 mt-4 text-lg font-medium">
-											suzumina.click
-										</div>
+										<div className="mb-2 mt-4 text-lg font-medium">suzumina.click</div>
 										<p className="text-sm leading-tight text-muted-foreground">
 											涼花みなせの音声ボタンと動画を楽しめるファンサイト
 										</p>
@@ -52,7 +50,10 @@ export const Default: Story = {
 							</div>
 							<div className="grid gap-1">
 								<NavigationMenuLink asChild>
-									<a href="#" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+									<a
+										href="#"
+										className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+									>
 										<div className="text-sm font-medium leading-none">音声ボタン</div>
 										<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
 											涼花みなせの音声を楽しめるボタン集
@@ -60,7 +61,10 @@ export const Default: Story = {
 									</a>
 								</NavigationMenuLink>
 								<NavigationMenuLink asChild>
-									<a href="#" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+									<a
+										href="#"
+										className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+									>
 										<div className="text-sm font-medium leading-none">動画一覧</div>
 										<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
 											YouTube動画の一覧とお気に入り管理
@@ -68,7 +72,10 @@ export const Default: Story = {
 									</a>
 								</NavigationMenuLink>
 								<NavigationMenuLink asChild>
-									<a href="#" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+									<a
+										href="#"
+										className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+									>
 										<div className="text-sm font-medium leading-none">作品一覧</div>
 										<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
 											DLsite作品の情報と購入リンク
@@ -84,7 +91,10 @@ export const Default: Story = {
 					<NavigationMenuContent>
 						<div className="grid w-[400px] gap-3 p-4 md:grid-cols-2">
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<Users className="h-4 w-4 mb-2" />
 									<div className="text-sm font-medium leading-none">Discord</div>
 									<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -93,7 +103,10 @@ export const Default: Story = {
 								</a>
 							</NavigationMenuLink>
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<ExternalLink className="h-4 w-4 mb-2" />
 									<div className="text-sm font-medium leading-none">公式サイト</div>
 									<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -105,7 +118,10 @@ export const Default: Story = {
 					</NavigationMenuContent>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<NavigationMenuLink href="#" className="group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+					<NavigationMenuLink
+						href="#"
+						className="group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
+					>
 						設定
 					</NavigationMenuLink>
 				</NavigationMenuItem>
@@ -123,17 +139,26 @@ export const SimpleMenu: Story = {
 					<NavigationMenuContent>
 						<div className="grid gap-1 p-2 w-[300px]">
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<div className="text-sm font-medium">項目1</div>
 								</a>
 							</NavigationMenuLink>
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<div className="text-sm font-medium">項目2</div>
 								</a>
 							</NavigationMenuLink>
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<div className="text-sm font-medium">項目3</div>
 								</a>
 							</NavigationMenuLink>
@@ -154,19 +179,28 @@ export const WithIcons: Story = {
 					<NavigationMenuContent>
 						<div className="grid gap-1 p-2 w-[250px]">
 							<NavigationMenuLink asChild>
-								<a href="#" className="flex items-center select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="flex items-center select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<Video className="mr-3 h-4 w-4" />
 									<div className="text-sm font-medium">動画</div>
 								</a>
 							</NavigationMenuLink>
 							<NavigationMenuLink asChild>
-								<a href="#" className="flex items-center select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="flex items-center select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<Music className="mr-3 h-4 w-4" />
 									<div className="text-sm font-medium">音楽</div>
 								</a>
 							</NavigationMenuLink>
 							<NavigationMenuLink asChild>
-								<a href="#" className="flex items-center select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="flex items-center select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<PlayCircle className="mr-3 h-4 w-4" />
 									<div className="text-sm font-medium">プレイリスト</div>
 								</a>
@@ -188,12 +222,18 @@ export const MultipleMenus: Story = {
 					<NavigationMenuContent>
 						<div className="grid gap-1 p-2 w-[200px]">
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<div className="text-sm font-medium">音声ボタン</div>
 								</a>
 							</NavigationMenuLink>
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<div className="text-sm font-medium">音声参照</div>
 								</a>
 							</NavigationMenuLink>
@@ -205,17 +245,26 @@ export const MultipleMenus: Story = {
 					<NavigationMenuContent>
 						<div className="grid gap-1 p-2 w-[200px]">
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<div className="text-sm font-medium">最新動画</div>
 								</a>
 							</NavigationMenuLink>
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<div className="text-sm font-medium">人気動画</div>
 								</a>
 							</NavigationMenuLink>
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<div className="text-sm font-medium">プレイリスト</div>
 								</a>
 							</NavigationMenuLink>
@@ -223,7 +272,10 @@ export const MultipleMenus: Story = {
 					</NavigationMenuContent>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<NavigationMenuLink href="#" className="group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+					<NavigationMenuLink
+						href="#"
+						className="group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
+					>
 						<Settings className="mr-2 h-4 w-4" />
 						設定
 					</NavigationMenuLink>
@@ -242,12 +294,18 @@ export const WithoutViewport: Story = {
 					<NavigationMenuContent>
 						<div className="grid gap-1 p-2 w-[200px]">
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<div className="text-sm font-medium">項目1</div>
 								</a>
 							</NavigationMenuLink>
 							<NavigationMenuLink asChild>
-								<a href="#" className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+								<a
+									href="#"
+									className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+								>
 									<div className="text-sm font-medium">項目2</div>
 								</a>
 							</NavigationMenuLink>
@@ -265,7 +323,7 @@ export const RealWorldExample: Story = {
 			<div className="container flex h-14 items-center">
 				<div className="mr-4 flex">
 					<a className="mr-6 flex items-center space-x-2" href="#">
-						<div className="h-6 w-6 bg-suzuka-500 rounded"></div>
+						<div className="h-6 w-6 bg-suzuka-500 rounded" />
 						<span className="font-bold">suzumina.click</span>
 					</a>
 					<NavigationMenu>
@@ -281,9 +339,7 @@ export const RealWorldExample: Story = {
 													href="#"
 												>
 													<PlayCircle className="h-6 w-6" />
-													<div className="mb-2 mt-4 text-lg font-medium">
-														音声ボタン
-													</div>
+													<div className="mb-2 mt-4 text-lg font-medium">音声ボタン</div>
 													<p className="text-sm leading-tight text-muted-foreground">
 														涼花みなせの様々な音声を楽しめる
 													</p>
@@ -292,7 +348,10 @@ export const RealWorldExample: Story = {
 										</div>
 										<div className="grid gap-1">
 											<NavigationMenuLink asChild>
-												<a href="#" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+												<a
+													href="#"
+													className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+												>
 													<div className="text-sm font-medium leading-none">音声ボタン一覧</div>
 													<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
 														全ての音声ボタンを閲覧
@@ -300,7 +359,10 @@ export const RealWorldExample: Story = {
 												</a>
 											</NavigationMenuLink>
 											<NavigationMenuLink asChild>
-												<a href="#" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+												<a
+													href="#"
+													className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+												>
 													<div className="text-sm font-medium leading-none">音声参照</div>
 													<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
 														YouTube動画の音声参照機能
@@ -308,7 +370,10 @@ export const RealWorldExample: Story = {
 												</a>
 											</NavigationMenuLink>
 											<NavigationMenuLink asChild>
-												<a href="#" className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+												<a
+													href="#"
+													className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+												>
 													<div className="text-sm font-medium leading-none">新規作成</div>
 													<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
 														新しい音声ボタンを作成
@@ -320,12 +385,18 @@ export const RealWorldExample: Story = {
 								</NavigationMenuContent>
 							</NavigationMenuItem>
 							<NavigationMenuItem>
-								<NavigationMenuLink href="#" className="group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+								<NavigationMenuLink
+									href="#"
+									className="group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
+								>
 									動画
 								</NavigationMenuLink>
 							</NavigationMenuItem>
 							<NavigationMenuItem>
-								<NavigationMenuLink href="#" className="group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+								<NavigationMenuLink
+									href="#"
+									className="group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
+								>
 									作品
 								</NavigationMenuLink>
 							</NavigationMenuItem>

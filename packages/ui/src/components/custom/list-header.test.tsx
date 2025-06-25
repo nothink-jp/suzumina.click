@@ -81,4 +81,87 @@ describe("ListHeader", () => {
 		expect(screen.getByText("テスト一覧")).toBeInTheDocument();
 		expect(screen.getByText("(全100件)")).toBeInTheDocument();
 	});
+
+	it("0件の場合でも正しく表示される", () => {
+		render(<ListHeader title="空の一覧" totalCount={0} />);
+
+		expect(screen.getByText("空の一覧")).toBeInTheDocument();
+		expect(screen.getByText("(全0件)")).toBeInTheDocument();
+	});
+
+	it("フィルタで0件の場合でも正しく表示される", () => {
+		render(<ListHeader title="一覧" totalCount={100} filteredCount={0} />);
+
+		expect(screen.getByText("一覧")).toBeInTheDocument();
+		expect(screen.getByText("(0件 / 全100件)")).toBeInTheDocument();
+	});
+
+	it("全てのプロパティが指定された場合の複合表示", () => {
+		const actionButton = <button type="button">操作</button>;
+
+		render(
+			<ListHeader
+				title="完全テスト"
+				totalCount={1000}
+				filteredCount={150}
+				currentPage={5}
+				totalPages={20}
+				actions={actionButton}
+				className="test-class"
+			/>,
+		);
+
+		expect(screen.getByText("完全テスト")).toBeInTheDocument();
+		expect(screen.getByText("(150件 / 全1,000件)")).toBeInTheDocument();
+		expect(screen.getByText("5ページ / 20ページ")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "操作" })).toBeInTheDocument();
+	});
+
+	it("複数のアクションボタンが表示される", () => {
+		const multipleActions = (
+			<div>
+				<button type="button">作成</button>
+				<button type="button">削除</button>
+			</div>
+		);
+
+		render(<ListHeader title="テスト" totalCount={50} actions={multipleActions} />);
+
+		expect(screen.getByRole("button", { name: "作成" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "削除" })).toBeInTheDocument();
+	});
+
+	it("currentPageのみ指定してもページ情報は表示されない", () => {
+		render(<ListHeader title="テスト" totalCount={50} currentPage={2} />);
+
+		expect(screen.queryByText(/ページ/)).not.toBeInTheDocument();
+	});
+
+	it("totalPagesのみ指定してもページ情報は表示されない", () => {
+		render(<ListHeader title="テスト" totalCount={50} totalPages={5} />);
+
+		expect(screen.queryByText(/ページ/)).not.toBeInTheDocument();
+	});
+
+	it("ページ数が0の場合はページ情報が表示されない", () => {
+		render(<ListHeader title="テスト" totalCount={0} currentPage={1} totalPages={0} />);
+
+		expect(screen.queryByText(/ページ/)).not.toBeInTheDocument();
+	});
+
+	it("大きな数値のカンマ区切りが正しく動作する", () => {
+		render(<ListHeader title="大規模テスト" totalCount={9876543} filteredCount={1234567} />);
+
+		expect(screen.getByText("(1,234,567件 / 全9,876,543件)")).toBeInTheDocument();
+	});
+
+	it("レスポンシブクラスが正しく適用されている", () => {
+		const { container } = render(<ListHeader title="テスト" totalCount={10} />);
+
+		const headerDiv = container.firstChild as HTMLElement;
+		expect(headerDiv).toHaveClass("flex");
+		expect(headerDiv).toHaveClass("flex-col");
+		expect(headerDiv).toHaveClass("sm:flex-row");
+		expect(headerDiv).toHaveClass("sm:justify-between");
+	});
 });

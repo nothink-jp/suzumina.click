@@ -64,7 +64,7 @@ vi.mock("@/components/AudioReferenceCard", () => ({
 
 // Mock AudioButtonsList component
 vi.mock("./components/AudioButtonsList", () => ({
-	default: ({ searchParams }: any) => {
+	default: () => {
 		return (
 			<div data-testid="audio-buttons-list">
 				<div data-testid="audio-reference-card">

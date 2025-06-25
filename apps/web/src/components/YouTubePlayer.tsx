@@ -197,41 +197,46 @@ export function YouTubePlayer({
 		};
 	}, []);
 
+	// 時間更新処理
+	const handleTimeUpdate = useCallback(() => {
+		if (!playerRef.current || !onTimeUpdate) {
+			return;
+		}
+
+		try {
+			const currentTime = playerRef.current.getCurrentTime();
+			const duration = playerRef.current.getDuration();
+
+			// 有効な数値のみコールバックを呼び出す
+			if (
+				typeof currentTime === "number" &&
+				!Number.isNaN(currentTime) &&
+				Number.isFinite(currentTime)
+			) {
+				onTimeUpdate(currentTime, duration || 0);
+				// biome-ignore lint/suspicious/noConsole: Debug logging for time updates
+				console.log("YouTube Player time update:", currentTime);
+			} else {
+				// biome-ignore lint/suspicious/noConsole: Debug logging for invalid values
+				console.warn("YouTube Player invalid time:", currentTime, typeof currentTime);
+			}
+		} catch (error) {
+			// YouTube APIエラー時は静かにスキップ（ログレベルを下げる）
+			if (error instanceof Error && !error.message.includes("Maximum call stack")) {
+				// biome-ignore lint/suspicious/noConsole: Debug logging for YouTube API errors
+				console.warn("YouTube API time update failed:", error.message);
+			}
+		}
+	}, [onTimeUpdate]);
+
 	// 時間更新インターバルの開始
 	const startTimeUpdateInterval = useCallback(() => {
 		if (timeUpdateIntervalRef.current) {
 			return;
 		}
 
-		timeUpdateIntervalRef.current = setInterval(() => {
-			if (playerRef.current && onTimeUpdate) {
-				try {
-					const currentTime = playerRef.current.getCurrentTime();
-					const duration = playerRef.current.getDuration();
-
-					// 有効な数値のみコールバックを呼び出す
-					if (
-						typeof currentTime === "number" &&
-						!Number.isNaN(currentTime) &&
-						Number.isFinite(currentTime)
-					) {
-						onTimeUpdate(currentTime, duration || 0);
-						// biome-ignore lint/suspicious/noConsole: Debug logging for time updates
-						console.log("YouTube Player time update:", currentTime);
-					} else {
-						// biome-ignore lint/suspicious/noConsole: Debug logging for invalid values
-						console.warn("YouTube Player invalid time:", currentTime, typeof currentTime);
-					}
-				} catch (error) {
-					// YouTube APIエラー時は静かにスキップ（ログレベルを下げる）
-					if (error instanceof Error && !error.message.includes("Maximum call stack")) {
-						// biome-ignore lint/suspicious/noConsole: Debug logging for YouTube API errors
-						console.warn("YouTube API time update failed:", error.message);
-					}
-				}
-			}
-		}, 1000); // 1秒間隔で更新
-	}, [onTimeUpdate]);
+		timeUpdateIntervalRef.current = setInterval(handleTimeUpdate, 1000); // 1秒間隔で更新
+	}, [handleTimeUpdate]);
 
 	// 時間更新インターバルの停止
 	const stopTimeUpdateInterval = useCallback(() => {
@@ -330,8 +335,6 @@ export function YouTubePlayer({
 	}, [
 		isAPIReady,
 		videoId,
-		width,
-		height,
 		autoplay,
 		controls,
 		startTime,

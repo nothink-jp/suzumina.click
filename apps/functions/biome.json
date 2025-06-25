@@ -1,0 +1,55 @@
+{
+	"extends": "//",
+	"root": false,
+	"linter": {
+		"rules": {
+			"suspicious": {
+				"noConsole": "off"
+			},
+			"correctness": {
+				"noNodejsModules": "off"
+			},
+			"performance": {
+				"noDelete": "warn"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": [
+				"**/*.test.ts",
+				"**/*.spec.ts"
+			],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off",
+						"noConsole": "off"
+					},
+					"style": {
+						"noNonNullAssertion": "off"
+					},
+					"performance": {
+						"noDelete": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"**/*.config.js",
+				"**/*.config.ts"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noDefaultExport": "off"
+					},
+					"suspicious": {
+						"noExplicitAny": "off"
+					}
+				}
+			}
+		}
+	]
+}

@@ -191,9 +191,7 @@ export const RealWorldExample: Story = {
 									</div>
 									<CardContent className="p-4">
 										<h3 className="font-semibold mb-1">サンプル動画タイトル {i + 1}</h3>
-										<p className="text-sm text-muted-foreground mb-2">
-											2024年12月25日 公開
-										</p>
+										<p className="text-sm text-muted-foreground mb-2">2024年12月25日 公開</p>
 										<div className="flex items-center justify-between text-xs text-muted-foreground">
 											<span>👁 1,234 回視聴</span>
 											<span>💖 89</span>

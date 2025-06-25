@@ -203,95 +203,157 @@ function ChartTooltipContent({
 		>
 			{nestLabel ? null : tooltipLabel}
 			<div className="grid gap-1.5">
-				{payload?.map(
-					(
-						item: {
-							value?: string | number | (string | number)[];
-							name?: string;
-							dataKey?: string;
-							color?: string;
-							[key: string]: unknown;
-						},
-						index: number,
-					) => {
-						const key = `${nameKey || item.name || item.dataKey || "value"}`;
-						const itemConfig = getPayloadConfigFromPayload(config, item, key);
-						const indicatorColor =
-							color || (item.payload as Record<string, unknown>)?.fill || item.color;
+				{payload?.map((item, index) => (
+					<ChartTooltipItem
+						key={item.dataKey}
+						item={item}
+						index={index}
+						config={config}
+						nameKey={nameKey}
+						color={color}
+						indicator={indicator}
+						hideIndicator={hideIndicator}
+						formatter={formatter}
+						nestLabel={nestLabel}
+						tooltipLabel={tooltipLabel}
+					/>
+				))}
+			</div>
+		</div>
+	);
+}
 
-						return (
-							<div
-								key={item.dataKey}
-								className={cn(
-									"[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5",
-									indicator === "dot" && "items-center",
-								)}
-							>
-								{formatter && item?.value !== undefined && item.name ? (
-									formatter(
-										item.value,
-										item.name,
-										item,
-										index,
-										(item.payload as Array<{
-											value?: string | number | (string | number)[];
-											name?: string;
-											dataKey?: string;
-											color?: string;
-											[key: string]: unknown;
-										}>) || [],
-									)
-								) : (
-									<>
-										{itemConfig?.icon ? (
-											<itemConfig.icon />
-										) : (
-											!hideIndicator && (
-												<div
-													className={cn(
-														"shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)",
-														{
-															"h-2.5 w-2.5": indicator === "dot",
-															"w-1": indicator === "line",
-															"w-0 border-[1.5px] border-dashed bg-transparent":
-																indicator === "dashed",
-															"my-0.5": nestLabel && indicator === "dashed",
-														},
-													)}
-													style={
-														{
-															"--color-bg": indicatorColor,
-															"--color-border": indicatorColor,
-														} as React.CSSProperties
-													}
-												/>
-											)
-										)}
-										<div
-											className={cn(
-												"flex flex-1 justify-between leading-none",
-												nestLabel ? "items-end" : "items-center",
-											)}
-										>
-											<div className="grid gap-1.5">
-												{nestLabel ? tooltipLabel : null}
-												<span className="text-muted-foreground">
-													{itemConfig?.label || item.name}
-												</span>
-											</div>
-											{item.value && (
-												<span className="text-foreground font-mono font-medium tabular-nums">
-													{Array.isArray(item.value) ? item.value.join(", ") : String(item.value)}
-												</span>
-											)}
-										</div>
-									</>
-								)}
-							</div>
-						);
-					},
+type TooltipItemProps = {
+	item: {
+		value?: string | number | (string | number)[];
+		name?: string;
+		dataKey?: string;
+		color?: string;
+		[key: string]: unknown;
+	};
+	index: number;
+	config: ChartConfig;
+	nameKey?: string;
+	color?: string;
+	indicator?: "line" | "dot" | "dashed";
+	hideIndicator?: boolean;
+	formatter?: (
+		value: string | number | (string | number)[],
+		name: string,
+		item: {
+			value?: string | number | (string | number)[];
+			name?: string;
+			dataKey?: string;
+			color?: string;
+			[key: string]: unknown;
+		},
+		index: number,
+		payload: Array<{
+			value?: string | number | (string | number)[];
+			name?: string;
+			dataKey?: string;
+			color?: string;
+			[key: string]: unknown;
+		}>,
+	) => React.ReactNode;
+	nestLabel?: boolean;
+	tooltipLabel?: React.ReactNode;
+};
+
+function ChartTooltipItem({
+	item,
+	index,
+	config,
+	nameKey,
+	color,
+	indicator = "dot",
+	hideIndicator,
+	formatter,
+	nestLabel,
+	tooltipLabel,
+}: TooltipItemProps) {
+	const key = `${nameKey || item.name || item.dataKey || "value"}`;
+	const itemConfig = getPayloadConfigFromPayload(config, item, key);
+	const indicatorColor = color || (item.payload as Record<string, unknown>)?.fill || item.color;
+
+	const renderFormattedContent = () => {
+		if (formatter && item?.value !== undefined && item.name) {
+			return formatter(
+				item.value,
+				item.name,
+				item,
+				index,
+				(item.payload as Array<{
+					value?: string | number | (string | number)[];
+					name?: string;
+					dataKey?: string;
+					color?: string;
+					[key: string]: unknown;
+				}>) || [],
+			);
+		}
+		return null;
+	};
+
+	const renderIndicator = () => {
+		if (itemConfig?.icon) {
+			return <itemConfig.icon />;
+		}
+
+		if (hideIndicator) {
+			return null;
+		}
+
+		return (
+			<div
+				className={cn("shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)", {
+					"h-2.5 w-2.5": indicator === "dot",
+					"w-1": indicator === "line",
+					"w-0 border-[1.5px] border-dashed bg-transparent": indicator === "dashed",
+					"my-0.5": nestLabel && indicator === "dashed",
+				})}
+				style={
+					{
+						"--color-bg": indicatorColor,
+						"--color-border": indicatorColor,
+					} as React.CSSProperties
+				}
+			/>
+		);
+	};
+
+	const renderDefaultContent = () => (
+		<>
+			{renderIndicator()}
+			<div
+				className={cn(
+					"flex flex-1 justify-between leading-none",
+					nestLabel ? "items-end" : "items-center",
+				)}
+			>
+				<div className="grid gap-1.5">
+					{nestLabel ? tooltipLabel : null}
+					<span className="text-muted-foreground">{itemConfig?.label || item.name}</span>
+				</div>
+				{item.value && (
+					<span className="text-foreground font-mono font-medium tabular-nums">
+						{Array.isArray(item.value) ? item.value.join(", ") : String(item.value)}
+					</span>
 				)}
 			</div>
+		</>
+	);
+
+	const formattedContent = renderFormattedContent();
+
+	return (
+		<div
+			className={cn(
+				"[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5",
+				indicator === "dot" && "items-center",
+			)}
+		>
+			{formattedContent || renderDefaultContent()}
 		</div>
 	);
 }

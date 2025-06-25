@@ -49,7 +49,6 @@ function logMessage(level: LogLevel, message: string, optionsOrError?: LogOption
 	}
 
 	// ログを出力
-	// biome-ignore lint/suspicious/noConsole: Cloud Functions用ログ出力のためconsole.logが必要
 	console.log(JSON.stringify(logEntry));
 }
 

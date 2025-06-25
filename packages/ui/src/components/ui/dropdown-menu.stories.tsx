@@ -1,20 +1,20 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { 
-	User, 
-	Settings, 
-	LogOut, 
-	MoreHorizontal, 
-	Plus,
-	Mail,
-	Phone,
+import {
+	ChevronRight,
+	Cloud,
 	CreditCard,
+	Github,
+	Keyboard,
+	LifeBuoy,
+	LogOut,
+	Mail,
+	MoreHorizontal,
+	Phone,
+	Plus,
+	Settings,
+	User,
 	UserPlus,
 	Users,
-	Cloud,
-	Github,
-	LifeBuoy,
-	Keyboard,
-	ChevronRight
 } from "lucide-react";
 import { Button } from "./button";
 import {
@@ -121,19 +121,11 @@ export const WithCheckboxes: Story = {
 			<DropdownMenuContent className="w-56">
 				<DropdownMenuLabel>表示オプション</DropdownMenuLabel>
 				<DropdownMenuSeparator />
-				<DropdownMenuCheckboxItem checked>
-					サイドバーを表示
-				</DropdownMenuCheckboxItem>
-				<DropdownMenuCheckboxItem checked={false}>
-					ツールバーを表示
-				</DropdownMenuCheckboxItem>
-				<DropdownMenuCheckboxItem checked>
-					ステータスバーを表示
-				</DropdownMenuCheckboxItem>
+				<DropdownMenuCheckboxItem checked>サイドバーを表示</DropdownMenuCheckboxItem>
+				<DropdownMenuCheckboxItem checked={false}>ツールバーを表示</DropdownMenuCheckboxItem>
+				<DropdownMenuCheckboxItem checked>ステータスバーを表示</DropdownMenuCheckboxItem>
 				<DropdownMenuSeparator />
-				<DropdownMenuCheckboxItem checked={false}>
-					全画面モード
-				</DropdownMenuCheckboxItem>
+				<DropdownMenuCheckboxItem checked={false}>全画面モード</DropdownMenuCheckboxItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	),
@@ -149,15 +141,9 @@ export const WithRadioGroup: Story = {
 				<DropdownMenuLabel>テーマ</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuRadioGroup value="light">
-					<DropdownMenuRadioItem value="light">
-						ライトテーマ
-					</DropdownMenuRadioItem>
-					<DropdownMenuRadioItem value="dark">
-						ダークテーマ
-					</DropdownMenuRadioItem>
-					<DropdownMenuRadioItem value="system">
-						システムに従う
-					</DropdownMenuRadioItem>
+					<DropdownMenuRadioItem value="light">ライトテーマ</DropdownMenuRadioItem>
+					<DropdownMenuRadioItem value="dark">ダークテーマ</DropdownMenuRadioItem>
+					<DropdownMenuRadioItem value="system">システムに従う</DropdownMenuRadioItem>
 				</DropdownMenuRadioGroup>
 			</DropdownMenuContent>
 		</DropdownMenu>
@@ -248,9 +234,7 @@ export const UserMenu: Story = {
 				<DropdownMenuLabel className="font-normal">
 					<div className="flex flex-col space-y-1">
 						<p className="text-sm font-medium leading-none">ユーザー名</p>
-						<p className="text-xs leading-none text-muted-foreground">
-							user@example.com
-						</p>
+						<p className="text-xs leading-none text-muted-foreground">user@example.com</p>
 					</div>
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
@@ -285,9 +269,7 @@ export const UserMenu: Story = {
 export const ContextMenu: Story = {
 	render: () => (
 		<div className="flex flex-col items-center space-y-4">
-			<p className="text-sm text-muted-foreground">
-				音声ボタンのコンテキストメニュー例
-			</p>
+			<p className="text-sm text-muted-foreground">音声ボタンのコンテキストメニュー例</p>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Button variant="outline" size="icon">
@@ -323,7 +305,7 @@ export const StatusMenu: Story = {
 			<DropdownMenuTrigger asChild>
 				<Button variant="outline">
 					<div className="flex items-center space-x-2">
-						<div className="w-2 h-2 bg-green-500 rounded-full"></div>
+						<div className="w-2 h-2 bg-green-500 rounded-full" />
 						<span>オンライン</span>
 						<ChevronRight className="h-4 w-4 rotate-90" />
 					</div>
@@ -335,25 +317,25 @@ export const StatusMenu: Story = {
 				<DropdownMenuRadioGroup value="online">
 					<DropdownMenuRadioItem value="online">
 						<div className="flex items-center space-x-2">
-							<div className="w-2 h-2 bg-green-500 rounded-full"></div>
+							<div className="w-2 h-2 bg-green-500 rounded-full" />
 							<span>オンライン</span>
 						</div>
 					</DropdownMenuRadioItem>
 					<DropdownMenuRadioItem value="away">
 						<div className="flex items-center space-x-2">
-							<div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+							<div className="w-2 h-2 bg-yellow-500 rounded-full" />
 							<span>離席中</span>
 						</div>
 					</DropdownMenuRadioItem>
 					<DropdownMenuRadioItem value="busy">
 						<div className="flex items-center space-x-2">
-							<div className="w-2 h-2 bg-red-500 rounded-full"></div>
+							<div className="w-2 h-2 bg-red-500 rounded-full" />
 							<span>取り込み中</span>
 						</div>
 					</DropdownMenuRadioItem>
 					<DropdownMenuRadioItem value="offline">
 						<div className="flex items-center space-x-2">
-							<div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+							<div className="w-2 h-2 bg-gray-500 rounded-full" />
 							<span>オフライン</span>
 						</div>
 					</DropdownMenuRadioItem>

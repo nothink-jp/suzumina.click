@@ -167,4 +167,176 @@ describe("AudioButton", () => {
 			expect(onPlayCountIncrement).toHaveBeenCalledTimes(1);
 		});
 	});
+
+	it("autoPlayが有効な場合、読み込み後に自動再生される", async () => {
+		const onPlay = vi.fn();
+
+		render(<AudioButton audioUrl="test-audio.mp3" title="音声" autoPlay onPlay={onPlay} />);
+
+		simulateAudioLoad();
+
+		await waitFor(() => {
+			expect(mockPlay).toHaveBeenCalled();
+		});
+	});
+
+	it("autoPlayが有効でもdisabledの場合は自動再生されない", async () => {
+		render(<AudioButton audioUrl="test-audio.mp3" title="音声" autoPlay disabled />);
+
+		simulateAudioLoad();
+
+		// 少し待機
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
+		expect(mockPlay).not.toHaveBeenCalled();
+	});
+
+	it("一時停止ボタンをクリックすると一時停止される", async () => {
+		const onPause = vi.fn();
+
+		render(<AudioButton audioUrl="test-audio.mp3" title="音声" onPause={onPause} />);
+
+		simulateAudioLoad();
+
+		// 再生状態にする
+		const audioElement = document.querySelector("audio") as HTMLAudioElement;
+		if (audioElement) {
+			act(() => {
+				audioElement.dispatchEvent(new Event("play"));
+			});
+		}
+
+		// 一時停止ボタンをクリック
+		await waitFor(() => {
+			const pauseButton = screen.getByRole("button", { name: "一時停止" });
+			fireEvent.click(pauseButton);
+		});
+
+		expect(mockPause).toHaveBeenCalled();
+	});
+
+	it("全てのカテゴリの色が正しく適用される", () => {
+		const categories = ["voice", "bgm", "se", "talk", "singing", "other"] as const;
+		const expectedColors = [
+			"text-pink-600",
+			"text-purple-600",
+			"text-yellow-600",
+			"text-blue-600",
+			"text-red-600",
+			"text-gray-600",
+		] as const;
+
+		categories.forEach((category, index) => {
+			const { unmount } = render(
+				<AudioButton audioUrl="test-audio.mp3" title="音声" category={category} />,
+			);
+
+			const button = screen.getByRole("button", { name: "再生" });
+			expect(button).toHaveClass(expectedColors[index] as string);
+
+			unmount();
+		});
+	});
+
+	it("全てのサイズバリエーションが正しく表示される", () => {
+		const sizes = ["sm", "md", "lg"] as const;
+
+		sizes.forEach((size) => {
+			const { unmount } = render(
+				<AudioButton audioUrl="test-audio.mp3" title="音声" size={size} />,
+			);
+
+			const button = screen.getByRole("button", { name: "再生" });
+			expect(button).toBeInTheDocument();
+
+			unmount();
+		});
+	});
+
+	it("音声URLが空の場合は何も読み込まない", () => {
+		render(<AudioButton audioUrl="" title="音声" />);
+
+		const audioElement = document.querySelector("audio") as HTMLAudioElement;
+		expect(audioElement.src).toBe("");
+	});
+
+	it("音声URLが変更されたときに新しい音声を読み込む", () => {
+		const { rerender } = render(<AudioButton audioUrl="first-audio.mp3" title="音声" />);
+
+		rerender(<AudioButton audioUrl="second-audio.mp3" title="音声" />);
+
+		expect(mockLoad).toHaveBeenCalled();
+	});
+
+	it("再生エラーが発生した場合のハンドリング", async () => {
+		mockPlay.mockRejectedValueOnce(new Error("Play failed"));
+		const onError = vi.fn();
+
+		render(<AudioButton audioUrl="test-audio.mp3" title="音声" onError={onError} />);
+
+		simulateAudioLoad();
+
+		const playButton = screen.getByRole("button", { name: "再生" });
+		fireEvent.click(playButton);
+
+		await waitFor(() => {
+			expect(onError).toHaveBeenCalledWith("音声の再生に失敗しました");
+		});
+	});
+
+	it("autoPlay時の再生エラーを正しくハンドリング", async () => {
+		mockPlay.mockRejectedValueOnce(new Error("Autoplay failed"));
+
+		render(<AudioButton audioUrl="test-audio.mp3" title="音声" autoPlay />);
+
+		simulateAudioLoad();
+
+		// autoPlay失敗時は状態がfalseになることを確認
+		await waitFor(() => {
+			const button = screen.getByRole("button", { name: "再生" });
+			expect(button).toBeInTheDocument();
+		});
+	});
+
+	it("エラー状態でボタンクリックしても何も起こらない", async () => {
+		render(<AudioButton audioUrl="test-audio.mp3" title="音声" />);
+
+		// エラー状態にする
+		const audioElement = document.querySelector("audio") as HTMLAudioElement;
+		if (audioElement) {
+			act(() => {
+				audioElement.dispatchEvent(new Event("error"));
+			});
+		}
+
+		await waitFor(() => {
+			expect(screen.getByText("エラー")).toBeInTheDocument();
+		});
+
+		const button = screen.getByRole("button", { name: "再生" });
+		fireEvent.click(button);
+
+		// 何も起こらないことを確認
+		expect(mockPlay).not.toHaveBeenCalled();
+	});
+
+	it("durationなしの場合は時間表示されない", () => {
+		render(<AudioButton audioUrl="test-audio.mp3" title="音声" />);
+
+		// duration表示がないことを確認
+		expect(screen.queryByText(/\d+:\d+/)).not.toBeInTheDocument();
+	});
+
+	it("formatDuration関数が正しく動作する", () => {
+		render(<AudioButton audioUrl="test-audio.mp3" title="音声" duration={125} />);
+
+		expect(screen.getByText("2:05")).toBeInTheDocument();
+	});
+
+	it("0秒のdurationも正しく表示される", () => {
+		render(<AudioButton audioUrl="test-audio.mp3" title="音声" duration={0} />);
+
+		// duration が 0 の場合は条件部が falsy になるため表示されない
+		expect(screen.queryByText("0:00")).not.toBeInTheDocument();
+	});
 });

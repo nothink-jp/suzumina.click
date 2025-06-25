@@ -204,4 +204,179 @@ describe("ListPageEmptyState", () => {
 		expect(screen.getByText("最初のデータを作成してみましょう")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "データを追加" })).toBeInTheDocument();
 	});
+
+	it("カスタムクラスが適用される", () => {
+		const { container } = render(<ListPageEmptyState title="テスト" className="custom-empty" />);
+
+		expect(container.firstChild).toHaveClass("custom-empty");
+		expect(container.firstChild).toHaveClass("text-center");
+		expect(container.firstChild).toHaveClass("py-12");
+	});
+});
+
+describe("ListPageGrid エッジケース", () => {
+	it("カラム設定がない場合はデフォルト値が使用される", () => {
+		const { container } = render(
+			<ListPageGrid columns={{}}>
+				<div>テスト</div>
+			</ListPageGrid>,
+		);
+
+		expect(container.firstChild).toHaveClass("grid-cols-1");
+	});
+
+	it("部分的なカラム設定が適用される", () => {
+		const { container } = render(
+			<ListPageGrid
+				columns={{
+					default: 2,
+					lg: 4,
+				}}
+			>
+				<div>テスト</div>
+			</ListPageGrid>,
+		);
+
+		expect(container.firstChild).toHaveClass("grid");
+		expect(container.firstChild).toHaveClass("gap-6");
+	});
+
+	it("全画面サイズのカラム設定が適用される", () => {
+		const { container } = render(
+			<ListPageGrid
+				columns={{
+					default: 1,
+					sm: 2,
+					md: 3,
+					lg: 4,
+					xl: 5,
+				}}
+			>
+				<div>テスト</div>
+			</ListPageGrid>,
+		);
+
+		expect(container.firstChild).toHaveClass("grid");
+	});
+});
+
+describe("ListPageStats エッジケース", () => {
+	it("1ページ目で1件のみの場合", () => {
+		render(<ListPageStats currentPage={1} totalPages={1} totalCount={1} itemsPerPage={10} />);
+
+		expect(screen.getByText("1件中 1〜1件を表示")).toBeInTheDocument();
+	});
+
+	it("0件の場合も正しく表示される", () => {
+		render(<ListPageStats currentPage={1} totalPages={1} totalCount={0} itemsPerPage={10} />);
+
+		expect(screen.getByText("0件中 1〜0件を表示")).toBeInTheDocument();
+	});
+
+	it("最後のページで端数がある場合", () => {
+		render(<ListPageStats currentPage={4} totalPages={4} totalCount={35} itemsPerPage={10} />);
+
+		expect(screen.getByText("35件中 31〜35件を表示")).toBeInTheDocument();
+	});
+
+	it("大きな数値でのページネーション計算", () => {
+		render(
+			<ListPageStats currentPage={500} totalPages={1000} totalCount={50000} itemsPerPage={50} />,
+		);
+
+		expect(screen.getByText("50,000件中 24,951〜25,000件を表示")).toBeInTheDocument();
+	});
+
+	it("カスタムクラスが適用される", () => {
+		const { container } = render(
+			<ListPageStats
+				currentPage={1}
+				totalPages={1}
+				totalCount={10}
+				itemsPerPage={10}
+				className="custom-stats"
+			/>,
+		);
+
+		expect(container.firstChild).toHaveClass("custom-stats");
+		expect(container.firstChild).toHaveClass("mt-6");
+		expect(container.firstChild).toHaveClass("text-sm");
+	});
+});
+
+describe("ListPageHeader エッジケース", () => {
+	it("長いタイトルと説明でも正しくレイアウトされる", () => {
+		render(
+			<ListPageHeader
+				title="非常に長いタイトルの場合のテストケースです"
+				description="これは非常に長い説明文で、レスポンシブデザインが正しく機能するかをテストしています。"
+			/>,
+		);
+
+		expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+			"非常に長いタイトルの場合のテストケースです",
+		);
+		expect(
+			screen.getByText(
+				"これは非常に長い説明文で、レスポンシブデザインが正しく機能するかをテストしています。",
+			),
+		).toBeInTheDocument();
+	});
+
+	it("複数のアクションボタンが配置される", () => {
+		render(
+			<ListPageHeader title="テスト">
+				<button type="button">作成</button>
+				<button type="button">インポート</button>
+				<button type="button">設定</button>
+			</ListPageHeader>,
+		);
+
+		expect(screen.getByRole("button", { name: "作成" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "インポート" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "設定" })).toBeInTheDocument();
+	});
+
+	it("カスタムクラスが適用される", () => {
+		const { container } = render(<ListPageHeader title="テスト" className="custom-header" />);
+
+		const headerElement = container.querySelector("header");
+		expect(headerElement).toHaveClass("custom-header");
+		expect(headerElement).toHaveClass("bg-white");
+		expect(headerElement).toHaveClass("shadow-sm");
+	});
+});
+
+describe("統合テスト：複合レイアウト", () => {
+	it("全コンポーネントが組み合わせて正しく動作する", () => {
+		render(
+			<ListPageLayout className="test-layout">
+				<ListPageHeader title="テスト統合ページ" description="全コンポーネントのテスト">
+					<button type="button">アクション</button>
+				</ListPageHeader>
+				<ListPageContent>
+					<ListPageGrid>
+						<div>アイテム1</div>
+						<div>アイテム2</div>
+					</ListPageGrid>
+					<ListPageStats currentPage={2} totalPages={5} totalCount={100} itemsPerPage={20} />
+					<ListPageEmptyState
+						title="データなし"
+						description="テスト用の空状態"
+						action={<button type="button">作成</button>}
+					/>
+				</ListPageContent>
+			</ListPageLayout>,
+		);
+
+		// 各コンポーネントの要素が正しく表示されることを確認
+		expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("テスト統合ページ");
+		expect(screen.getByText("全コンポーネントのテスト")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "アクション" })).toBeInTheDocument();
+		expect(screen.getByText("アイテム1")).toBeInTheDocument();
+		expect(screen.getByText("アイテム2")).toBeInTheDocument();
+		expect(screen.getByText("100件中 21〜40件を表示")).toBeInTheDocument();
+		expect(screen.getByText("データなし")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "作成" })).toBeInTheDocument();
+	});
 });

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Menu, Home, Users, Settings, LogOut } from "lucide-react";
+import { Home, LogOut, Menu, Settings, Users } from "lucide-react";
 import { Button } from "./button";
 import { Separator } from "./separator";
 import {
