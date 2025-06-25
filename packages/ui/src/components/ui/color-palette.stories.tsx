@@ -1,4 +1,3 @@
-import { ColorItem, ColorPalette } from "@storybook/blocks";
 import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta = {
@@ -74,17 +73,17 @@ export const SuzukaColorPalette: Story = {
 				<p className="text-gray-600">涼花みなせテーマの桜色パレット</p>
 			</div>
 
-			{/* Storybook公式のColorPaletteコンポーネント */}
-			<ColorPalette>
+			{/* カラーパレット表示 */}
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
 				{suzukaColorDetails.map((color) => (
-					<ColorItem
-						key={color.name}
-						title={color.name}
-						subtitle={color.description}
-						colors={{ [color.name]: color.hex }}
-					/>
+					<div key={color.name} className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-16 rounded-md mb-3" style={{ backgroundColor: color.hex }} />
+						<h4 className="font-semibold text-sm mb-1">{color.name}</h4>
+						<p className="text-xs text-gray-600 mb-2">{color.description}</p>
+						<code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{color.hex}</code>
+					</div>
 				))}
-			</ColorPalette>
+			</div>
 
 			<div className="mt-8">
 				<h2 className="text-2xl font-bold mb-4">Quick Reference</h2>
@@ -184,18 +183,18 @@ export const DarkMode: Story = {
 				<p className="text-gray-300">ダークモードでの表示</p>
 			</div>
 
-			{/* Storybook ColorPaletteコンポーネント (ダークモード対応) */}
-			<div className="mb-8">
-				<ColorPalette>
-					{suzukaColorDetails.map((color) => (
-						<ColorItem
-							key={color.name}
-							title={color.name}
-							subtitle={color.description}
-							colors={{ [color.name]: color.hex }}
-						/>
-					))}
-				</ColorPalette>
+			{/* カラーパレット表示（ダークモード対応） */}
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+				{suzukaColorDetails.map((color) => (
+					<div key={color.name} className="border border-gray-600 rounded-lg p-4">
+						<div className="w-full h-16 rounded-md mb-3" style={{ backgroundColor: color.hex }} />
+						<h4 className="font-semibold text-sm mb-1 text-gray-100">{color.name}</h4>
+						<p className="text-xs text-gray-300 mb-2">{color.description}</p>
+						<code className="text-xs font-mono bg-gray-800 text-gray-100 px-2 py-1 rounded">
+							{color.hex}
+						</code>
+					</div>
+				))}
 			</div>
 
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
@@ -233,89 +232,89 @@ export const ColorGroups: Story = {
 			{/* 背景色グループ */}
 			<div className="mb-8">
 				<h3 className="text-lg font-semibold mb-4">Background Colors</h3>
-				<ColorPalette>
-					<ColorItem
-						title="Main Background"
-						subtitle="bg-suzuka-50"
-						colors={{ "suzuka-50": "#fff5fa" }}
-					/>
-					<ColorItem
-						title="Card Background"
-						subtitle="bg-suzuka-100"
-						colors={{ "suzuka-100": "#ffe0ed" }}
-					/>
-					<ColorItem
-						title="Hover Background"
-						subtitle="bg-suzuka-200"
-						colors={{ "suzuka-200": "#ffc2d9" }}
-					/>
-				</ColorPalette>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#fff5fa" }} />
+						<h4 className="font-semibold text-sm">Main Background</h4>
+						<p className="text-xs text-gray-600">bg-suzuka-50</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#ffe0ed" }} />
+						<h4 className="font-semibold text-sm">Card Background</h4>
+						<p className="text-xs text-gray-600">bg-suzuka-100</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#ffc2d9" }} />
+						<h4 className="font-semibold text-sm">Hover Background</h4>
+						<p className="text-xs text-gray-600">bg-suzuka-200</p>
+					</div>
+				</div>
 			</div>
 
 			{/* アクションカラーグループ */}
 			<div className="mb-8">
 				<h3 className="text-lg font-semibold mb-4">Action Colors</h3>
-				<ColorPalette>
-					<ColorItem
-						title="Primary Action"
-						subtitle="bg-suzuka-500"
-						colors={{ "suzuka-500": "#ff4785" }}
-					/>
-					<ColorItem
-						title="Primary Hover"
-						subtitle="bg-suzuka-600"
-						colors={{ "suzuka-600": "#e0266e" }}
-					/>
-					<ColorItem
-						title="Primary Active"
-						subtitle="bg-suzuka-700"
-						colors={{ "suzuka-700": "#b81d5b" }}
-					/>
-				</ColorPalette>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#ff4785" }} />
+						<h4 className="font-semibold text-sm">Primary Action</h4>
+						<p className="text-xs text-gray-600">bg-suzuka-500</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#e0266e" }} />
+						<h4 className="font-semibold text-sm">Primary Hover</h4>
+						<p className="text-xs text-gray-600">bg-suzuka-600</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#b81d5b" }} />
+						<h4 className="font-semibold text-sm">Primary Active</h4>
+						<p className="text-xs text-gray-600">bg-suzuka-700</p>
+					</div>
+				</div>
 			</div>
 
 			{/* テキストカラーグループ */}
 			<div className="mb-8">
 				<h3 className="text-lg font-semibold mb-4">Text Colors</h3>
-				<ColorPalette>
-					<ColorItem
-						title="Body Text"
-						subtitle="text-suzuka-800"
-						colors={{ "suzuka-800": "#8f1447" }}
-					/>
-					<ColorItem
-						title="Heading Text"
-						subtitle="text-suzuka-900"
-						colors={{ "suzuka-900": "#660d33" }}
-					/>
-					<ColorItem
-						title="Dark Background Text"
-						subtitle="text-suzuka-950"
-						colors={{ "suzuka-950": "#3d0820" }}
-					/>
-				</ColorPalette>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#8f1447" }} />
+						<h4 className="font-semibold text-sm">Body Text</h4>
+						<p className="text-xs text-gray-600">text-suzuka-800</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#660d33" }} />
+						<h4 className="font-semibold text-sm">Heading Text</h4>
+						<p className="text-xs text-gray-600">text-suzuka-900</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#3d0820" }} />
+						<h4 className="font-semibold text-sm">Dark Background Text</h4>
+						<p className="text-xs text-gray-600">text-suzuka-950</p>
+					</div>
+				</div>
 			</div>
 
 			{/* ボーダー・アクセントカラーグループ */}
 			<div className="mb-8">
 				<h3 className="text-lg font-semibold mb-4">Border & Accent Colors</h3>
-				<ColorPalette>
-					<ColorItem
-						title="Default Border"
-						subtitle="border-suzuka-200"
-						colors={{ "suzuka-200": "#ffc2d9" }}
-					/>
-					<ColorItem
-						title="Hover Border"
-						subtitle="border-suzuka-300"
-						colors={{ "suzuka-300": "#ff9ebf" }}
-					/>
-					<ColorItem
-						title="Focus Ring"
-						subtitle="ring-suzuka-500"
-						colors={{ "suzuka-500": "#ff4785" }}
-					/>
-				</ColorPalette>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#ffc2d9" }} />
+						<h4 className="font-semibold text-sm">Default Border</h4>
+						<p className="text-xs text-gray-600">border-suzuka-200</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#ff9ebf" }} />
+						<h4 className="font-semibold text-sm">Hover Border</h4>
+						<p className="text-xs text-gray-600">border-suzuka-300</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-12 rounded-md mb-3" style={{ backgroundColor: "#ff4785" }} />
+						<h4 className="font-semibold text-sm">Focus Ring</h4>
+						<p className="text-xs text-gray-600">ring-suzuka-500</p>
+					</div>
+				</div>
 			</div>
 		</div>
 	),
@@ -329,31 +328,51 @@ export const AccessibilityContrast: Story = {
 				<p className="text-gray-600">コントラスト比とアクセシビリティの確認</p>
 			</div>
 
-			{/* Storybook ColorItemで推奨組み合わせを表示 */}
+			{/* 推奨カラー組み合わせ表示 */}
 			<div className="mb-8">
 				<h3 className="text-lg font-semibold mb-4">Recommended Color Combinations</h3>
-				<ColorPalette>
-					<ColorItem
-						title="Light Background"
-						subtitle="bg-suzuka-50 + text-suzuka-900"
-						colors={{ Background: "#fff5fa", Text: "#660d33" }}
-					/>
-					<ColorItem
-						title="Primary Action"
-						subtitle="bg-suzuka-500 + text-white"
-						colors={{ Background: "#ff4785", Text: "#ffffff" }}
-					/>
-					<ColorItem
-						title="Secondary Action"
-						subtitle="bg-suzuka-100 + text-suzuka-800"
-						colors={{ Background: "#ffe0ed", Text: "#8f1447" }}
-					/>
-					<ColorItem
-						title="Danger State"
-						subtitle="bg-suzuka-600 + text-white"
-						colors={{ Background: "#e0266e", Text: "#ffffff" }}
-					/>
-				</ColorPalette>
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div
+							className="w-full h-12 rounded-md mb-3 flex items-center justify-center text-sm font-medium"
+							style={{ backgroundColor: "#fff5fa", color: "#660d33" }}
+						>
+							Sample Text
+						</div>
+						<h4 className="font-semibold text-sm">Light Background</h4>
+						<p className="text-xs text-gray-600">bg-suzuka-50 + text-suzuka-900</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div
+							className="w-full h-12 rounded-md mb-3 flex items-center justify-center text-sm font-medium"
+							style={{ backgroundColor: "#ff4785", color: "#ffffff" }}
+						>
+							Sample Text
+						</div>
+						<h4 className="font-semibold text-sm">Primary Action</h4>
+						<p className="text-xs text-gray-600">bg-suzuka-500 + text-white</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div
+							className="w-full h-12 rounded-md mb-3 flex items-center justify-center text-sm font-medium"
+							style={{ backgroundColor: "#ffe0ed", color: "#8f1447" }}
+						>
+							Sample Text
+						</div>
+						<h4 className="font-semibold text-sm">Secondary Action</h4>
+						<p className="text-xs text-gray-600">bg-suzuka-100 + text-suzuka-800</p>
+					</div>
+					<div className="border border-gray-200 rounded-lg p-4">
+						<div
+							className="w-full h-12 rounded-md mb-3 flex items-center justify-center text-sm font-medium"
+							style={{ backgroundColor: "#e0266e", color: "#ffffff" }}
+						>
+							Sample Text
+						</div>
+						<h4 className="font-semibold text-sm">Danger State</h4>
+						<p className="text-xs text-gray-600">bg-suzuka-600 + text-white</p>
+					</div>
+				</div>
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
