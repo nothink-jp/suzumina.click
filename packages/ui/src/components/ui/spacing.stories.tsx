@@ -72,9 +72,7 @@ const SpacingDemo = ({
 				<div className="font-medium text-sm">{name}</div>
 				<div className="text-xs text-gray-600">{value}</div>
 			</div>
-			<code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
-				{className}
-			</code>
+			<code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">{className}</code>
 		</div>
 		{/* 視覚的表現 */}
 		<div className="flex items-center space-x-2 mb-2">
@@ -105,9 +103,7 @@ const PaddingDemo = ({
 	<div className="border border-gray-200 rounded-lg p-3">
 		<div className="mb-3">
 			<div className="font-medium text-sm">{name}</div>
-			<code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
-				{className}
-			</code>
+			<code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">{className}</code>
 		</div>
 		<div className="border-2 border-dashed border-suzuka-300 rounded">
 			<div className={`${className} bg-suzuka-100 rounded`}>
@@ -137,9 +133,7 @@ const MarginDemo = ({
 	<div className="border border-gray-200 rounded-lg p-3">
 		<div className="mb-3">
 			<div className="font-medium text-sm">{name}</div>
-			<code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
-				{className}
-			</code>
+			<code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">{className}</code>
 		</div>
 		<div className="border-2 border-dashed border-gray-300 rounded p-2">
 			<div className="bg-suzuka-200 text-suzuka-800 text-xs text-center py-1 rounded">
@@ -163,9 +157,7 @@ export const SpacingScale: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Spacing Scale</h1>
-				<p className="text-gray-600">
-					Tailwind CSSベースの一貫性のあるスペーシングシステム
-				</p>
+				<p className="text-gray-600">Tailwind CSSベースの一貫性のあるスペーシングシステム</p>
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -183,10 +175,18 @@ export const SpacingScale: Story = {
 			<div className="mt-12 p-6 bg-gray-50 rounded-lg">
 				<h2 className="text-lg font-semibold mb-4">スペーシングの原則</h2>
 				<ul className="space-y-2 text-sm text-gray-700">
-					<li>• <strong>4pxベース:</strong> 4の倍数で一貫性を保つ</li>
-					<li>• <strong>階層構造:</strong> 関連要素は小さい間隔、独立要素は大きい間隔</li>
-					<li>• <strong>視覚的グループ化:</strong> 同じ間隔で関連性を表現</li>
-					<li>• <strong>レスポンシブ:</strong> 画面サイズに応じて適切に調整</li>
+					<li>
+						• <strong>4pxベース:</strong> 4の倍数で一貫性を保つ
+					</li>
+					<li>
+						• <strong>階層構造:</strong> 関連要素は小さい間隔、独立要素は大きい間隔
+					</li>
+					<li>
+						• <strong>視覚的グループ化:</strong> 同じ間隔で関連性を表現
+					</li>
+					<li>
+						• <strong>レスポンシブ:</strong> 画面サイズに応じて適切に調整
+					</li>
 				</ul>
 			</div>
 		</div>
@@ -198,9 +198,7 @@ export const PaddingExamples: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Padding Examples</h1>
-				<p className="text-gray-600">
-					内余白（padding）の使用パターンとガイドライン
-				</p>
+				<p className="text-gray-600">内余白（padding）の使用パターンとガイドライン</p>
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -256,9 +254,7 @@ export const MarginExamples: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Margin Examples</h1>
-				<p className="text-gray-600">
-					外余白（margin）の使用パターンとレイアウト構成
-				</p>
+				<p className="text-gray-600">外余白（margin）の使用パターンとレイアウト構成</p>
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -271,7 +267,7 @@ export const MarginExamples: Story = {
 				{/* 実際のレイアウト例 */}
 				<div className="border border-gray-200 rounded-lg p-6">
 					<h3 className="text-lg font-semibold mb-4">Layout Examples</h3>
-					
+
 					{/* 記事レイアウト */}
 					<div className="max-w-2xl">
 						<h4 className="text-xl font-bold mb-4">記事レイアウト例</h4>
@@ -283,18 +279,17 @@ export const MarginExamples: Story = {
 							この段落の後にはmb-6（24px）の間隔があり、次のセクションとの
 							明確な分離を示しています。
 						</p>
-						
+
 						<h5 className="text-lg font-semibold mb-3">サブセクション</h5>
 						<p className="mb-4 text-gray-700">
 							サブセクションの見出しにはmb-3（12px）を使用し、
 							コンテンツとの適切な関係性を表現します。
 						</p>
-						
+
 						<div className="mt-8 p-4 bg-gray-50 rounded">
 							<h6 className="font-medium mb-2">ボックス内コンテンツ</h6>
 							<p className="text-sm text-gray-600">
-								mt-8（32px）で大きなセクション分離を行い、
-								視覚的なグループ化を明確にします。
+								mt-8（32px）で大きなセクション分離を行い、 視覚的なグループ化を明確にします。
 							</p>
 						</div>
 					</div>
@@ -304,30 +299,16 @@ export const MarginExamples: Story = {
 				<div className="border border-gray-200 rounded-lg p-6">
 					<h3 className="text-lg font-semibold mb-4">Grid Layout with Gap</h3>
 					<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-						<div className="bg-suzuka-100 p-3 rounded text-center text-sm">
-							gap-4 (16px)
-						</div>
-						<div className="bg-suzuka-100 p-3 rounded text-center text-sm">
-							Item 2
-						</div>
-						<div className="bg-suzuka-100 p-3 rounded text-center text-sm">
-							Item 3
-						</div>
-						<div className="bg-suzuka-100 p-3 rounded text-center text-sm">
-							Item 4
-						</div>
+						<div className="bg-suzuka-100 p-3 rounded text-center text-sm">gap-4 (16px)</div>
+						<div className="bg-suzuka-100 p-3 rounded text-center text-sm">Item 2</div>
+						<div className="bg-suzuka-100 p-3 rounded text-center text-sm">Item 3</div>
+						<div className="bg-suzuka-100 p-3 rounded text-center text-sm">Item 4</div>
 					</div>
-					
+
 					<div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-6">
-						<div className="bg-suzuka-200 p-4 rounded text-center text-sm">
-							gap-6 (24px)
-						</div>
-						<div className="bg-suzuka-200 p-4 rounded text-center text-sm">
-							Item 2
-						</div>
-						<div className="bg-suzuka-200 p-4 rounded text-center text-sm">
-							Item 3
-						</div>
+						<div className="bg-suzuka-200 p-4 rounded text-center text-sm">gap-6 (24px)</div>
+						<div className="bg-suzuka-200 p-4 rounded text-center text-sm">Item 2</div>
+						<div className="bg-suzuka-200 p-4 rounded text-center text-sm">Item 3</div>
 					</div>
 				</div>
 			</div>
@@ -340,9 +321,7 @@ export const ResponsiveSpacing: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Responsive Spacing</h1>
-				<p className="text-gray-600">
-					画面サイズに応じたレスポンシブなスペーシング
-				</p>
+				<p className="text-gray-600">画面サイズに応じたレスポンシブなスペーシング</p>
 			</div>
 
 			<div className="space-y-8">
@@ -353,10 +332,10 @@ export const ResponsiveSpacing: Story = {
 						<div className="bg-suzuka-100 p-4 rounded">
 							<h4 className="font-medium mb-2">適応的コンテナ</h4>
 							<p className="text-sm text-gray-600">
-								<code className="bg-white px-1 rounded">p-4 md:p-6 lg:p-8</code><br/>
-								• モバイル: 16px<br/>
-								• タブレット: 24px<br/>
-								• デスクトップ: 32px
+								<code className="bg-white px-1 rounded">p-4 md:p-6 lg:p-8</code>
+								<br />• モバイル: 16px
+								<br />• タブレット: 24px
+								<br />• デスクトップ: 32px
 							</p>
 						</div>
 					</div>
@@ -366,18 +345,13 @@ export const ResponsiveSpacing: Story = {
 				<div className="border border-gray-200 rounded-lg p-6">
 					<h3 className="text-lg font-semibold mb-4">Responsive Margins</h3>
 					<div className="space-y-4 sm:space-y-6 lg:space-y-8">
-						<div className="bg-suzuka-200 p-3 rounded text-center">
-							セクション 1
-						</div>
-						<div className="bg-suzuka-300 p-3 rounded text-center">
-							セクション 2
-						</div>
-						<div className="bg-suzuka-400 p-3 rounded text-center text-white">
-							セクション 3
-						</div>
+						<div className="bg-suzuka-200 p-3 rounded text-center">セクション 1</div>
+						<div className="bg-suzuka-300 p-3 rounded text-center">セクション 2</div>
+						<div className="bg-suzuka-400 p-3 rounded text-center text-white">セクション 3</div>
 					</div>
 					<p className="text-sm text-gray-600 mt-4">
-						<code className="bg-gray-100 px-1 rounded">space-y-4 sm:space-y-6 lg:space-y-8</code><br/>
+						<code className="bg-gray-100 px-1 rounded">space-y-4 sm:space-y-6 lg:space-y-8</code>
+						<br />
 						画面サイズに応じて要素間隔が変化します
 					</p>
 				</div>
@@ -428,9 +402,7 @@ export const SpacingBestPractices: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Spacing Best Practices</h1>
-				<p className="text-gray-600">
-					効果的なスペーシングのガイドラインとベストプラクティス
-				</p>
+				<p className="text-gray-600">効果的なスペーシングのガイドラインとベストプラクティス</p>
 			</div>
 
 			<div className="space-y-8">
@@ -442,9 +414,7 @@ export const SpacingBestPractices: Story = {
 						<div className="space-y-4">
 							<div className="bg-white p-4 rounded border">
 								<h4 className="font-medium mb-2">見出し</h4>
-								<p className="text-sm text-gray-600 mb-4">
-									適切な間隔で読みやすい段落。
-								</p>
+								<p className="text-sm text-gray-600 mb-4">適切な間隔で読みやすい段落。</p>
 								<button className="px-4 py-2 bg-suzuka-500 text-white rounded text-sm">
 									アクション
 								</button>
@@ -463,9 +433,7 @@ export const SpacingBestPractices: Story = {
 						<div className="space-y-1">
 							<div className="bg-white p-1 rounded border">
 								<h4 className="font-medium mb-0.5">見出し</h4>
-								<p className="text-sm text-gray-600 mb-1">
-									間隔が狭すぎて窮屈。
-								</p>
+								<p className="text-sm text-gray-600 mb-1">間隔が狭すぎて窮屈。</p>
 								<button className="px-1 py-0.5 bg-suzuka-500 text-white rounded text-xs">
 									アクション
 								</button>
@@ -486,19 +454,35 @@ export const SpacingBestPractices: Story = {
 						<div>
 							<h4 className="font-medium mb-3">階層的スペーシング</h4>
 							<ul className="space-y-2 text-sm text-gray-600">
-								<li>• <strong>関連要素:</strong> 小さな間隔（4-8px）</li>
-								<li>• <strong>グループ要素:</strong> 中程度の間隔（12-16px）</li>
-								<li>• <strong>セクション:</strong> 大きな間隔（24-32px）</li>
-								<li>• <strong>ページレベル:</strong> 最大間隔（48px以上）</li>
+								<li>
+									• <strong>関連要素:</strong> 小さな間隔（4-8px）
+								</li>
+								<li>
+									• <strong>グループ要素:</strong> 中程度の間隔（12-16px）
+								</li>
+								<li>
+									• <strong>セクション:</strong> 大きな間隔（24-32px）
+								</li>
+								<li>
+									• <strong>ページレベル:</strong> 最大間隔（48px以上）
+								</li>
 							</ul>
 						</div>
 						<div>
 							<h4 className="font-medium mb-3">一貫性の原則</h4>
 							<ul className="space-y-2 text-sm text-gray-600">
-								<li>• <strong>同じ機能:</strong> 同じスペーシング</li>
-								<li>• <strong>4px単位:</strong> システム全体で統一</li>
-								<li>• <strong>レスポンシブ:</strong> 画面サイズに応じて調整</li>
-								<li>• <strong>コンテキスト:</strong> 用途に応じた適切な選択</li>
+								<li>
+									• <strong>同じ機能:</strong> 同じスペーシング
+								</li>
+								<li>
+									• <strong>4px単位:</strong> システム全体で統一
+								</li>
+								<li>
+									• <strong>レスポンシブ:</strong> 画面サイズに応じて調整
+								</li>
+								<li>
+									• <strong>コンテキスト:</strong> 用途に応じた適切な選択
+								</li>
 							</ul>
 						</div>
 					</div>
@@ -536,9 +520,7 @@ export const SpacingBestPractices: Story = {
 								<h5 className="font-medium mb-2">音声ボタンタイトル</h5>
 								<p className="text-sm text-gray-600 mb-3">説明文との間隔 mb-2</p>
 								<p className="text-sm text-gray-600 mb-4">コンテンツとボタンの間隔 mb-3</p>
-								<button className="px-4 py-2 bg-suzuka-500 text-white rounded text-sm">
-									再生
-								</button>
+								<button className="px-4 py-2 bg-suzuka-500 text-white rounded text-sm">再生</button>
 							</div>
 						</div>
 					</div>

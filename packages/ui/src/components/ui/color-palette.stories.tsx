@@ -29,6 +29,21 @@ const suzukaColors = {
 	"suzuka-950": "#3d0820",
 };
 
+// サブカラーパレット（涼花みなせ様のオレンジ系）
+const minaseColors = {
+	"minase-50": "#fff8f3",
+	"minase-100": "#ffedd5",
+	"minase-200": "#fed7aa",
+	"minase-300": "#fdba74",
+	"minase-400": "#fb923c",
+	"minase-500": "#ff7e2d", // ホームページのメインオレンジ
+	"minase-600": "#ea5a0b",
+	"minase-700": "#c2410c",
+	"minase-800": "#9a3412",
+	"minase-900": "#7c2d12",
+	"minase-950": "#431407",
+};
+
 const suzukaColorDetails = [
 	{ name: "suzuka-50", description: "最も薄い桜色", hex: "#fff5fa" },
 	{ name: "suzuka-100", description: "薄い桜色", hex: "#ffe0ed" },
@@ -41,6 +56,21 @@ const suzukaColorDetails = [
 	{ name: "suzuka-800", description: "かなり濃い桜色", hex: "#8f1447" },
 	{ name: "suzuka-900", description: "最も濃い桜色", hex: "#660d33" },
 	{ name: "suzuka-950", description: "ほぼ黒に近い桜色", hex: "#3d0820" },
+];
+
+// サブカラーパレット詳細（涼花みなせ様のオレンジ系）
+const minaseColorDetails = [
+	{ name: "minase-50", description: "最も薄いウォーム色", hex: "#fff8f3" },
+	{ name: "minase-100", description: "薄いクリーム色", hex: "#ffedd5" },
+	{ name: "minase-200", description: "淡いピーチ色", hex: "#fed7aa" },
+	{ name: "minase-300", description: "ソフトオレンジ", hex: "#fdba74" },
+	{ name: "minase-400", description: "ライトオレンジ", hex: "#fb923c" },
+	{ name: "minase-500", description: "メインオレンジ", hex: "#ff7e2d" },
+	{ name: "minase-600", description: "濃いオレンジ", hex: "#ea5a0b" },
+	{ name: "minase-700", description: "ディープオレンジ", hex: "#c2410c" },
+	{ name: "minase-800", description: "ダークオレンジ", hex: "#9a3412" },
+	{ name: "minase-900", description: "最も濃いオレンジ", hex: "#7c2d12" },
+	{ name: "minase-950", description: "ブラウンオレンジ", hex: "#431407" },
 ];
 
 const ColorSwatch = ({
@@ -70,10 +100,10 @@ export const SuzukaColorPalette: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Suzuka Color Palette</h1>
-				<p className="text-gray-600">涼花みなせテーマの桜色パレット</p>
+				<p className="text-gray-600">涼花みなせテーマのメインカラーパレット（桜色系）</p>
 			</div>
 
-			{/* カラーパレット表示 */}
+			{/* メインカラーパレット表示 */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
 				{suzukaColorDetails.map((color) => (
 					<div key={color.name} className="border border-gray-200 rounded-lg p-4">
@@ -221,12 +251,175 @@ export const DarkMode: Story = {
 	),
 };
 
+export const MinaseColorPalette: Story = {
+	render: () => (
+		<div className="p-6">
+			<div className="mb-8">
+				<h1 className="text-3xl font-bold mb-2">Minase Color Palette</h1>
+				<p className="text-gray-600">涼花みなせテーマのサブカラーパレット（オレンジ・ウォーム系）</p>
+			</div>
+
+			{/* サブカラーパレット表示 */}
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+				{minaseColorDetails.map((color) => (
+					<div key={color.name} className="border border-gray-200 rounded-lg p-4">
+						<div className="w-full h-16 rounded-md mb-3" style={{ backgroundColor: color.hex }} />
+						<h4 className="font-semibold text-sm mb-1">{color.name}</h4>
+						<p className="text-xs text-gray-600 mb-2">{color.description}</p>
+						<code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{color.hex}</code>
+					</div>
+				))}
+			</div>
+
+			<div className="mt-8">
+				<h2 className="text-2xl font-bold mb-4">Quick Reference</h2>
+				<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+					{minaseColorDetails.map((color) => (
+						<ColorSwatch key={color.name} {...color} />
+					))}
+				</div>
+			</div>
+
+			<div className="mt-12">
+				<h2 className="text-2xl font-bold mb-4">Usage Examples</h2>
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{/* Button Examples */}
+					<div className="space-y-4">
+						<h3 className="text-lg font-semibold">Buttons</h3>
+						<button
+							type="button"
+							className="px-4 py-2 hover:bg-minase-600 text-white rounded-md transition-colors"
+							style={{ backgroundColor: "#ff7e2d" }}
+						>
+							Primary Button
+						</button>
+						<button
+							type="button"
+							className="px-4 py-2 hover:bg-minase-200 rounded-md transition-colors"
+							style={{ backgroundColor: "#ffedd5", color: "#c2410c" }}
+						>
+							Secondary Button
+						</button>
+						<button
+							type="button"
+							className="px-4 py-2 border hover:bg-minase-50 rounded-md transition-colors"
+							style={{ borderColor: "#fdba74", color: "#ea5a0b" }}
+						>
+							Outline Button
+						</button>
+					</div>
+
+					{/* Card Examples */}
+					<div className="space-y-4">
+						<h3 className="text-lg font-semibold">Cards</h3>
+						<div className="p-4 border rounded-lg" style={{ backgroundColor: "#fff8f3", borderColor: "#fed7aa" }}>
+							<h4 className="font-medium mb-2" style={{ color: "#9a3412" }}>Light Card</h4>
+							<p className="text-sm" style={{ color: "#ea5a0b" }}>カード内容のサンプルテキスト</p>
+						</div>
+						<div className="p-4 text-white rounded-lg" style={{ backgroundColor: "#ff7e2d" }}>
+							<h4 className="font-medium mb-2">Primary Card</h4>
+							<p className="text-sm" style={{ color: "#ffedd5" }}>カード内容のサンプルテキスト</p>
+						</div>
+					</div>
+
+					{/* Badge Examples */}
+					<div className="space-y-4">
+						<h3 className="text-lg font-semibold">Badges</h3>
+						<div className="flex flex-wrap gap-2">
+							<span className="px-2 py-1 text-xs font-medium rounded" style={{ backgroundColor: "#ffedd5", color: "#c2410c" }}>
+								Tag
+							</span>
+							<span className="px-2 py-1 text-xs font-medium rounded" style={{ backgroundColor: "#fed7aa", color: "#9a3412" }}>
+								Category
+							</span>
+							<span className="px-2 py-1 text-white text-xs font-medium rounded" style={{ backgroundColor: "#ff7e2d" }}>
+								Active
+							</span>
+							<span className="px-2 py-1 text-xs font-medium rounded" style={{ backgroundColor: "#9a3412", color: "#ffedd5" }}>
+								Important
+							</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div className="mt-12">
+				<h2 className="text-2xl font-bold mb-4">Color Harmony</h2>
+				<div className="p-6 bg-gray-50 rounded-lg">
+					<h3 className="text-lg font-semibold mb-4">メインカラーとの組み合わせ</h3>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div className="p-4 border rounded-lg" style={{ backgroundColor: "#fff5fa", borderColor: "#ffc2d9" }}>
+							<div className="flex items-center space-x-2 mb-3">
+								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ff4785" }}></div>
+								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ff7e2d" }}></div>
+								<span className="text-sm font-medium">Primary + Accent</span>
+							</div>
+							<p className="text-sm text-gray-600">桜色とオレンジの調和のとれた組み合わせ</p>
+						</div>
+						<div className="p-4 border rounded-lg" style={{ backgroundColor: "#fff8f3", borderColor: "#fed7aa" }}>
+							<div className="flex items-center space-x-2 mb-3">
+								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ffe0ed" }}></div>
+								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ffedd5" }}></div>
+								<span className="text-sm font-medium">Light Tones</span>
+							</div>
+							<p className="text-sm text-gray-600">柔らかく優しい印象の淡色組み合わせ</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	),
+};
+
 export const ColorGroups: Story = {
 	render: () => (
 		<div className="p-6">
 			<div className="mb-8">
-				<h1 className="text-3xl font-bold mb-2">Color Groups</h1>
-				<p className="text-gray-600">用途別のカラーグループ</p>
+				<h1 className="text-3xl font-bold mb-2">Complete Color System</h1>
+				<p className="text-gray-600">suzuka（桜色）+ minase（オレンジ）の完全なカラーシステム</p>
+			</div>
+
+			{/* カラーシステム概要 */}
+			<div className="mb-12">
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+					{/* Suzuka Colors */}
+					<div className="border border-gray-200 rounded-lg p-6">
+						<h3 className="text-lg font-semibold mb-4 flex items-center">
+							<div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: "#ff4785" }}></div>
+							Suzuka Colors（メインカラー）
+						</h3>
+						<div className="flex space-x-1 mb-3">
+							{suzukaColorDetails.slice(0, 8).map((color) => (
+								<div
+									key={color.name}
+									className="w-8 h-8 rounded"
+									style={{ backgroundColor: color.hex }}
+									title={`${color.name}: ${color.hex}`}
+								/>
+							))}
+						</div>
+						<p className="text-sm text-gray-600">プライマリアクション、ブランド要素、強調表示</p>
+					</div>
+
+					{/* Minase Colors */}
+					<div className="border border-gray-200 rounded-lg p-6">
+						<h3 className="text-lg font-semibold mb-4 flex items-center">
+							<div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: "#ff7e2d" }}></div>
+							Minase Colors（サブカラー）
+						</h3>
+						<div className="flex space-x-1 mb-3">
+							{minaseColorDetails.slice(0, 8).map((color) => (
+								<div
+									key={color.name}
+									className="w-8 h-8 rounded"
+									style={{ backgroundColor: color.hex }}
+									title={`${color.name}: ${color.hex}`}
+								/>
+							))}
+						</div>
+						<p className="text-sm text-gray-600">セカンダリアクション、アクセント、ウォーム表現</p>
+					</div>
+				</div>
 			</div>
 
 			{/* 背景色グループ */}

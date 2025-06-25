@@ -1,48 +1,48 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import {
-	// ナビゲーション系
-	ChevronRight,
-	ChevronLeft,
-	ChevronDown,
-	ChevronUp,
+	AlertCircle,
 	ArrowLeft,
 	ArrowRight,
-	Menu,
+	Calendar,
+	Check,
+	ChevronDown,
+	ChevronLeft,
+	// ナビゲーション系
+	ChevronRight,
+	ChevronUp,
+	Clock,
 	ExternalLink,
+	Eye,
+	FileText,
+	GripVertical,
+	Hash,
+	Heart,
+	// UI/UX系
+	Loader2,
+	LogOut,
+	Menu,
 	MoreHorizontal,
+	Pause,
 	// アクション系
 	Play,
-	Pause,
+	PlayCircle,
 	Plus,
 	Search,
 	Share2,
-	Heart,
-	Eye,
-	X,
+	// 商業・作品系
+	ShoppingCart,
+	Sparkles,
+	Star,
 	// コンテンツ系
 	Tag,
-	Clock,
-	Calendar,
-	Star,
-	PlayCircle,
-	Video,
-	Youtube,
-	FileText,
-	Sparkles,
-	// UI/UX系
-	Loader2,
-	Check,
-	AlertCircle,
 	Terminal,
-	GripVertical,
+	TrendingUp,
 	// ユーザー・コミュニティ系
 	User,
 	Users,
-	LogOut,
-	// 商業・作品系
-	ShoppingCart,
-	TrendingUp,
-	Hash,
+	Video,
+	X,
+	Youtube,
 } from "lucide-react";
 
 const meta: Meta = {
@@ -140,12 +140,24 @@ const IconGrid = ({ icons, title }: { icons: any[]; title: string }) => (
 );
 
 // サイズデモコンポーネント
-const SizeDemo = ({ name, className, size, usage }: { name: string; className: string; size: string; usage: string }) => (
+const SizeDemo = ({
+	name,
+	className,
+	size,
+	usage,
+}: {
+	name: string;
+	className: string;
+	size: string;
+	usage: string;
+}) => (
 	<div className="border border-gray-200 rounded-lg p-4 text-center">
 		<Play className={`${className} mx-auto mb-2 text-suzuka-500`} />
 		<div className="font-medium text-sm">{name}</div>
 		<div className="text-xs text-gray-600">{size}</div>
-		<code className="text-xs bg-gray-100 px-1 py-0.5 rounded font-mono block mt-1">{className}</code>
+		<code className="text-xs bg-gray-100 px-1 py-0.5 rounded font-mono block mt-1">
+			{className}
+		</code>
 		<div className="text-xs text-gray-600 mt-1">{usage}</div>
 	</div>
 );
@@ -155,9 +167,7 @@ export const IconSizes: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Icon Sizes</h1>
-				<p className="text-gray-600">
-					suzumina.clickで使用されるアイコンサイズの標準規格
-				</p>
+				<p className="text-gray-600">suzumina.clickで使用されるアイコンサイズの標準規格</p>
 			</div>
 
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -169,12 +179,24 @@ export const IconSizes: Story = {
 			<div className="mt-12 p-6 bg-gray-50 rounded-lg">
 				<h2 className="text-lg font-semibold mb-4">サイズ使用ガイドライン</h2>
 				<ul className="space-y-2 text-sm text-gray-700">
-					<li>• <strong>h-3 w-3 (12px):</strong> 統計情報、タグ内の小さなアイコン</li>
-					<li>• <strong>h-4 w-4 (16px):</strong> 標準的なボタン内アイコン（最頻出）</li>
-					<li>• <strong>h-5 w-5 (20px):</strong> 検索バー、中サイズのUI要素</li>
-					<li>• <strong>h-6 w-6 (24px):</strong> 大きなボタン、ヘッダー要素</li>
-					<li>• <strong>h-8 w-8 (32px):</strong> 強調表示、エラー状態表示</li>
-					<li>• <strong>h-12 w-12 (48px):</strong> 空状態、大きな表示エリア</li>
+					<li>
+						• <strong>h-3 w-3 (12px):</strong> 統計情報、タグ内の小さなアイコン
+					</li>
+					<li>
+						• <strong>h-4 w-4 (16px):</strong> 標準的なボタン内アイコン（最頻出）
+					</li>
+					<li>
+						• <strong>h-5 w-5 (20px):</strong> 検索バー、中サイズのUI要素
+					</li>
+					<li>
+						• <strong>h-6 w-6 (24px):</strong> 大きなボタン、ヘッダー要素
+					</li>
+					<li>
+						• <strong>h-8 w-8 (32px):</strong> 強調表示、エラー状態表示
+					</li>
+					<li>
+						• <strong>h-12 w-12 (48px):</strong> 空状態、大きな表示エリア
+					</li>
 				</ul>
 			</div>
 		</div>
@@ -186,9 +208,7 @@ export const IconCategories: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Icon Categories</h1>
-				<p className="text-gray-600">
-					用途別に分類されたアイコンライブラリ
-				</p>
+				<p className="text-gray-600">用途別に分類されたアイコンライブラリ</p>
 			</div>
 
 			<IconGrid icons={navigationIcons} title="ナビゲーション系" />
@@ -205,9 +225,7 @@ export const IconInContext: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Icons in Context</h1>
-				<p className="text-gray-600">
-					実際のUI要素でのアイコン使用例
-				</p>
+				<p className="text-gray-600">実際のUI要素でのアイコン使用例</p>
 			</div>
 
 			<div className="space-y-8">
@@ -367,8 +385,12 @@ export const IconInContext: Story = {
 					<h3 className="text-lg font-semibold mb-4">Empty States</h3>
 					<div className="text-center py-12">
 						<Sparkles className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-						<h4 className="text-lg font-medium text-gray-900 mb-2">音声ボタンが見つかりませんでした</h4>
-						<p className="text-gray-600 mb-6">検索条件を変更するか、新しい音声ボタンを作成してみましょう</p>
+						<h4 className="text-lg font-medium text-gray-900 mb-2">
+							音声ボタンが見つかりませんでした
+						</h4>
+						<p className="text-gray-600 mb-6">
+							検索条件を変更するか、新しい音声ボタンを作成してみましょう
+						</p>
 						<button className="flex items-center mx-auto px-4 py-2 bg-suzuka-500 text-white rounded">
 							<Plus className="h-4 w-4 mr-2" />
 							音声ボタンを作成
@@ -385,9 +407,7 @@ export const IconBestPractices: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Icon Best Practices</h1>
-				<p className="text-gray-600">
-					アイコン使用における推奨事項とアクセシビリティ配慮
-				</p>
+				<p className="text-gray-600">アイコン使用における推奨事項とアクセシビリティ配慮</p>
 			</div>
 
 			<div className="space-y-8">
@@ -411,18 +431,14 @@ export const IconBestPractices: Story = {
 									<Eye className="h-3 w-3 mr-1" />
 									1,234 表示回数
 								</div>
-								<p className="text-xs text-green-700 mt-2">
-									統計情報に適した小サイズアイコン
-								</p>
+								<p className="text-xs text-green-700 mt-2">統計情報に適した小サイズアイコン</p>
 							</div>
 							<div className="bg-white p-3 rounded border">
 								<div className="text-center py-6">
 									<Sparkles className="h-12 w-12 mx-auto mb-2 text-gray-400" />
 									<p className="text-gray-600">コンテンツがありません</p>
 								</div>
-								<p className="text-xs text-green-700 mt-2">
-									空状態での大サイズアイコン使用
-								</p>
+								<p className="text-xs text-green-700 mt-2">空状態での大サイズアイコン使用</p>
 							</div>
 						</div>
 					</div>
@@ -436,27 +452,21 @@ export const IconBestPractices: Story = {
 									<Play className="h-8 w-8 mr-1" />
 									再生
 								</button>
-								<p className="text-xs text-red-700 mt-2">
-									サイズが大きすぎ、間隔が不適切
-								</p>
+								<p className="text-xs text-red-700 mt-2">サイズが大きすぎ、間隔が不適切</p>
 							</div>
 							<div className="bg-white p-3 rounded border">
 								<div className="flex items-center text-sm text-gray-600">
 									<Eye className="h-6 w-6 mr-1" />
 									1,234
 								</div>
-								<p className="text-xs text-red-700 mt-2">
-									統計情報にサイズが大きすぎるアイコン
-								</p>
+								<p className="text-xs text-red-700 mt-2">統計情報にサイズが大きすぎるアイコン</p>
 							</div>
 							<div className="bg-white p-3 rounded border">
 								<div className="text-center py-6">
 									<Sparkles className="h-3 w-3 mx-auto mb-2 text-gray-400" />
 									<p className="text-gray-600">コンテンツがありません</p>
 								</div>
-								<p className="text-xs text-red-700 mt-2">
-									空状態でのアイコンが小さすぎる
-								</p>
+								<p className="text-xs text-red-700 mt-2">空状態でのアイコンが小さすぎる</p>
 							</div>
 						</div>
 					</div>
@@ -469,7 +479,7 @@ export const IconBestPractices: Story = {
 						<div>
 							<h4 className="font-medium mb-3">推奨実装パターン</h4>
 							<pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
-{`// 装飾的アイコン
+								{`// 装飾的アイコン
 <Play className="h-4 w-4" aria-hidden="true" />
 
 // 意味のあるアイコン
@@ -487,11 +497,21 @@ export const IconBestPractices: Story = {
 						<div>
 							<h4 className="font-medium mb-3">アクセシビリティガイドライン</h4>
 							<ul className="space-y-2 text-sm text-gray-600">
-								<li>• <strong>aria-hidden:</strong> 装飾的アイコンには必須</li>
-								<li>• <strong>aria-label:</strong> 単体で意味を持つアイコン</li>
-								<li>• <strong>色だけに依存しない:</strong> 形状でも情報を伝達</li>
-								<li>• <strong>十分なコントラスト:</strong> WCAG基準準拠</li>
-								<li>• <strong>タッチターゲット:</strong> 最小44px×44px</li>
+								<li>
+									• <strong>aria-hidden:</strong> 装飾的アイコンには必須
+								</li>
+								<li>
+									• <strong>aria-label:</strong> 単体で意味を持つアイコン
+								</li>
+								<li>
+									• <strong>色だけに依存しない:</strong> 形状でも情報を伝達
+								</li>
+								<li>
+									• <strong>十分なコントラスト:</strong> WCAG基準準拠
+								</li>
+								<li>
+									• <strong>タッチターゲット:</strong> 最小44px×44px
+								</li>
 							</ul>
 						</div>
 					</div>
@@ -504,7 +524,7 @@ export const IconBestPractices: Story = {
 						<div>
 							<h4 className="font-medium mb-3">推奨インポート方法</h4>
 							<pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
-{`// 推奨: 個別インポート
+								{`// 推奨: 個別インポート
 import { Play, Pause } from "lucide-react";
 
 // 非推奨: 全体インポート
@@ -514,10 +534,18 @@ import * as Icons from "lucide-react";`}
 						<div>
 							<h4 className="font-medium mb-3">最適化のポイント</h4>
 							<ul className="space-y-2 text-sm text-gray-600">
-								<li>• <strong>個別インポート:</strong> バンドルサイズ削減</li>
-								<li>• <strong>アイコン統一:</strong> 同機能には同アイコン</li>
-								<li>• <strong>SVG最適化:</strong> Lucide Reactが自動対応</li>
-								<li>• <strong>キャッシュ活用:</strong> 同じアイコンの再利用</li>
+								<li>
+									• <strong>個別インポート:</strong> バンドルサイズ削減
+								</li>
+								<li>
+									• <strong>アイコン統一:</strong> 同機能には同アイコン
+								</li>
+								<li>
+									• <strong>SVG最適化:</strong> Lucide Reactが自動対応
+								</li>
+								<li>
+									• <strong>キャッシュ活用:</strong> 同じアイコンの再利用
+								</li>
 							</ul>
 						</div>
 					</div>

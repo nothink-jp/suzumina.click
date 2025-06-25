@@ -52,7 +52,12 @@ const shadows = [
 const borderColors = [
 	{ name: "Gray 200", class: "border-gray-200", color: "#e5e7eb", usage: "標準的な境界線" },
 	{ name: "Gray 300", class: "border-gray-300", color: "#d1d5db", usage: "強調した境界線" },
-	{ name: "Suzuka 200", class: "border-suzuka-200", color: "#ffc2d9", usage: "ブランドカラー境界線" },
+	{
+		name: "Suzuka 200",
+		class: "border-suzuka-200",
+		color: "#ffc2d9",
+		usage: "ブランドカラー境界線",
+	},
 	{ name: "Suzuka 300", class: "border-suzuka-300", color: "#ff9ebf", usage: "アクセント境界線" },
 	{ name: "Suzuka 500", class: "border-suzuka-500", color: "#ff4785", usage: "強いブランド強調" },
 ];
@@ -70,7 +75,9 @@ const BorderDemo = ({
 	usage: string;
 }) => (
 	<div className="p-4">
-		<div className={`${className} border-gray-400 w-24 h-16 flex items-center justify-center bg-gray-50`}>
+		<div
+			className={`${className} border-gray-400 w-24 h-16 flex items-center justify-center bg-gray-50`}
+		>
 			<span className="text-xs text-gray-600">{value}</span>
 		</div>
 		<div className="mt-2">
@@ -94,7 +101,9 @@ const RadiusDemo = ({
 	usage: string;
 }) => (
 	<div className="p-4">
-		<div className={`${className} border-2 border-suzuka-300 bg-suzuka-100 w-24 h-16 flex items-center justify-center`}>
+		<div
+			className={`${className} border-2 border-suzuka-300 bg-suzuka-100 w-24 h-16 flex items-center justify-center`}
+		>
 			<span className="text-xs text-suzuka-800">{value}</span>
 		</div>
 		<div className="mt-2">
@@ -116,7 +125,9 @@ const ShadowDemo = ({
 	usage: string;
 }) => (
 	<div className="p-6">
-		<div className={`${className} rounded-lg border border-gray-200 bg-white p-4 w-32 h-20 flex items-center justify-center`}>
+		<div
+			className={`${className} rounded-lg border border-gray-200 bg-white p-4 w-32 h-20 flex items-center justify-center`}
+		>
 			<span className="text-sm text-gray-700">{name}</span>
 		</div>
 		<div className="mt-3">
@@ -140,7 +151,9 @@ const BorderColorDemo = ({
 	usage: string;
 }) => (
 	<div className="p-4">
-		<div className={`${className} border-2 rounded-lg w-24 h-16 bg-white flex items-center justify-center`}>
+		<div
+			className={`${className} border-2 rounded-lg w-24 h-16 bg-white flex items-center justify-center`}
+		>
 			<div className="w-4 h-4 rounded" style={{ backgroundColor: color }} />
 		</div>
 		<div className="mt-2">
@@ -156,9 +169,7 @@ export const BorderWidths: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Border Widths</h1>
-				<p className="text-gray-600">
-					境界線の太さとその使用用途
-				</p>
+				<p className="text-gray-600">境界線の太さとその使用用途</p>
 			</div>
 
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -170,10 +181,18 @@ export const BorderWidths: Story = {
 			<div className="mt-12 p-6 bg-gray-50 rounded-lg">
 				<h2 className="text-lg font-semibold mb-4">ボーダー使用ガイドライン</h2>
 				<ul className="space-y-2 text-sm text-gray-700">
-					<li>• <strong>border (1px):</strong> 最も一般的、カード・フォーム要素</li>
-					<li>• <strong>border-2 (2px):</strong> 強調したい境界線、アクティブ状態</li>
-					<li>• <strong>border-4以上:</strong> 特別な強調、装飾的な要素</li>
-					<li>• <strong>border-0:</strong> 境界線を削除、ミニマルデザイン</li>
+					<li>
+						• <strong>border (1px):</strong> 最も一般的、カード・フォーム要素
+					</li>
+					<li>
+						• <strong>border-2 (2px):</strong> 強調したい境界線、アクティブ状態
+					</li>
+					<li>
+						• <strong>border-4以上:</strong> 特別な強調、装飾的な要素
+					</li>
+					<li>
+						• <strong>border-0:</strong> 境界線を削除、ミニマルデザイン
+					</li>
 				</ul>
 			</div>
 		</div>
@@ -185,9 +204,7 @@ export const BorderRadius: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Border Radius</h1>
-				<p className="text-gray-600">
-					角丸の種類とUI要素への適用
-				</p>
+				<p className="text-gray-600">角丸の種類とUI要素への適用</p>
 			</div>
 
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -252,9 +269,7 @@ export const BorderRadius: Story = {
 								<span className="px-2 py-1 bg-suzuka-100 text-suzuka-800 rounded-full text-xs">
 									Badge
 								</span>
-								<span className="px-3 py-1 bg-suzuka-500 text-white rounded-full text-sm">
-									Tag
-								</span>
+								<span className="px-3 py-1 bg-suzuka-500 text-white rounded-full text-sm">Tag</span>
 							</div>
 						</div>
 					</div>
@@ -269,9 +284,7 @@ export const Shadows: Story = {
 		<div className="p-6 bg-gray-100 min-h-screen">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Shadows</h1>
-				<p className="text-gray-600">
-					影による視覚的階層と深度の表現
-				</p>
+				<p className="text-gray-600">影による視覚的階層と深度の表現</p>
 			</div>
 
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
@@ -350,9 +363,7 @@ export const BorderColors: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Border Colors</h1>
-				<p className="text-gray-600">
-					ブランドカラーとニュートラルカラーの境界線
-				</p>
+				<p className="text-gray-600">ブランドカラーとニュートラルカラーの境界線</p>
 			</div>
 
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -453,9 +464,7 @@ export const CombinedExamples: Story = {
 		<div className="p-6 bg-gray-50 min-h-screen">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Combined Examples</h1>
-				<p className="text-gray-600">
-					ボーダー・角丸・影を組み合わせた実際のUI例
-				</p>
+				<p className="text-gray-600">ボーダー・角丸・影を組み合わせた実際のUI例</p>
 			</div>
 
 			<div className="space-y-12">
@@ -466,31 +475,21 @@ export const CombinedExamples: Story = {
 						{/* シンプルカード */}
 						<div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
 							<h4 className="font-medium mb-2">Simple Card</h4>
-							<p className="text-sm text-gray-600 mb-4">
-								border + rounded-lg + shadow-sm
-							</p>
-							<button className="px-4 py-2 bg-suzuka-500 text-white rounded text-sm">
-								Action
-							</button>
+							<p className="text-sm text-gray-600 mb-4">border + rounded-lg + shadow-sm</p>
+							<button className="px-4 py-2 bg-suzuka-500 text-white rounded text-sm">Action</button>
 						</div>
 
 						{/* 強調カード */}
 						<div className="border-2 border-suzuka-200 rounded-lg p-6 bg-suzuka-50 shadow-md">
 							<h4 className="font-medium mb-2">Highlighted Card</h4>
-							<p className="text-sm text-suzuka-700 mb-4">
-								border-suzuka + rounded-lg + shadow-md
-							</p>
-							<button className="px-4 py-2 bg-suzuka-500 text-white rounded text-sm">
-								Action
-							</button>
+							<p className="text-sm text-suzuka-700 mb-4">border-suzuka + rounded-lg + shadow-md</p>
+							<button className="px-4 py-2 bg-suzuka-500 text-white rounded text-sm">Action</button>
 						</div>
 
 						{/* プレミアムカード */}
 						<div className="border border-suzuka-300 rounded-xl p-6 bg-white shadow-lg">
 							<h4 className="font-medium mb-2">Premium Card</h4>
-							<p className="text-sm text-gray-600 mb-4">
-								border-suzuka + rounded-xl + shadow-lg
-							</p>
+							<p className="text-sm text-gray-600 mb-4">border-suzuka + rounded-xl + shadow-lg</p>
 							<button className="px-4 py-2 bg-suzuka-500 text-white rounded-md text-sm">
 								Action
 							</button>

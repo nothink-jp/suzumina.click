@@ -5,7 +5,8 @@ const meta: Meta = {
 	parameters: {
 		docs: {
 			description: {
-				component: "suzumina.clickのタイポグラフィシステム - M PLUS Rounded 1cフォントとアクセシブルなテキストスタイル",
+				component:
+					"suzumina.clickのタイポグラフィシステム - M PLUS Rounded 1cフォントとアクセシブルなテキストスタイル",
 			},
 		},
 	},
@@ -160,7 +161,7 @@ const TypesetStyle = ({
 					<strong>用途:</strong> {usage}
 				</div>
 			</div>
-			
+
 			{/* 仕様情報 */}
 			<div className="space-y-2 text-sm">
 				<div>
@@ -199,7 +200,10 @@ const FontWeightDemo = ({
 	example: string;
 }) => (
 	<div className="border border-gray-200 rounded-lg p-4">
-		<div className={`text-lg ${className} mb-2`} style={{ fontFamily: "M PLUS Rounded 1c, sans-serif" }}>
+		<div
+			className={`text-lg ${className} mb-2`}
+			style={{ fontFamily: "M PLUS Rounded 1c, sans-serif" }}
+		>
 			{example}
 		</div>
 		<div className="space-y-1 text-sm text-gray-600">
@@ -222,9 +226,7 @@ export const TypographyScale: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Typography Scale</h1>
-				<p className="text-gray-600">
-					M PLUS Rounded 1cフォントを使用したタイポグラフィスケール
-				</p>
+				<p className="text-gray-600">M PLUS Rounded 1cフォントを使用したタイポグラフィスケール</p>
 			</div>
 
 			<div className="space-y-6">
@@ -236,10 +238,18 @@ export const TypographyScale: Story = {
 			<div className="mt-12 p-6 bg-gray-50 rounded-lg">
 				<h2 className="text-lg font-semibold mb-4">アクセシビリティ配慮</h2>
 				<ul className="space-y-2 text-sm text-gray-700">
-					<li>• <strong>行間:</strong> WCAG 2.1 AA準拠（1.5以上）</li>
-					<li>• <strong>フォントサイズ:</strong> 最小12px、推奨16px以上</li>
-					<li>• <strong>コントラスト:</strong> 背景との十分なコントラスト比</li>
-					<li>• <strong>レスポンシブ:</strong> iOS zoomを防ぐ16px設定</li>
+					<li>
+						• <strong>行間:</strong> WCAG 2.1 AA準拠（1.5以上）
+					</li>
+					<li>
+						• <strong>フォントサイズ:</strong> 最小12px、推奨16px以上
+					</li>
+					<li>
+						• <strong>コントラスト:</strong> 背景との十分なコントラスト比
+					</li>
+					<li>
+						• <strong>レスポンシブ:</strong> iOS zoomを防ぐ16px設定
+					</li>
 				</ul>
 			</div>
 		</div>
@@ -251,9 +261,7 @@ export const FontWeights: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Font Weights</h1>
-				<p className="text-gray-600">
-					M PLUS Rounded 1cで利用可能なフォントウェイト
-				</p>
+				<p className="text-gray-600">M PLUS Rounded 1cで利用可能なフォントウェイト</p>
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -288,9 +296,7 @@ export const TypographyExamples: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Typography in Use</h1>
-				<p className="text-gray-600">
-					実際のUIコンポーネントでのタイポグラフィ使用例
-				</p>
+				<p className="text-gray-600">実際のUIコンポーネントでのタイポグラフィ使用例</p>
 			</div>
 
 			<div className="space-y-8">
@@ -302,9 +308,7 @@ export const TypographyExamples: Story = {
 						<p className="text-base text-muted-foreground">
 							涼花みなせの音声ボタンを検索・再生できます
 						</p>
-						<div className="text-sm text-muted-foreground">
-							全 42 件のボタン
-						</div>
+						<div className="text-sm text-muted-foreground">全 42 件のボタン</div>
 					</div>
 				</div>
 
@@ -312,12 +316,8 @@ export const TypographyExamples: Story = {
 				<div className="border border-gray-200 rounded-lg p-6">
 					<h3 className="text-lg font-semibold mb-4">Card Content</h3>
 					<div className="border border-gray-100 rounded-lg p-4 max-w-sm">
-						<h4 className="text-base font-medium text-foreground mb-2">
-							おはよう！
-						</h4>
-						<p className="text-sm text-muted-foreground mb-3">
-							朝の挨拶ボイス - 元気いっぱい
-						</p>
+						<h4 className="text-base font-medium text-foreground mb-2">おはよう！</h4>
+						<p className="text-sm text-muted-foreground mb-3">朝の挨拶ボイス - 元気いっぱい</p>
 						<div className="flex justify-between items-center text-xs text-muted-foreground">
 							<span>カテゴリ: 挨拶</span>
 							<span>2024/12/25</span>
@@ -330,10 +330,9 @@ export const TypographyExamples: Story = {
 					<h3 className="text-lg font-semibold mb-4">Form Elements</h3>
 					<div className="space-y-4 max-w-md">
 						<div>
-							<label className="text-sm font-medium text-foreground block mb-1">
-								タイトル
-							</label>
+							<label htmlFor="title-input" className="text-sm font-medium text-foreground block mb-1">タイトル</label>
 							<input
+								id="title-input"
 								type="text"
 								placeholder="音声ボタンのタイトルを入力"
 								className="w-full px-3 py-2 border border-gray-300 rounded-md text-base"
@@ -343,7 +342,7 @@ export const TypographyExamples: Story = {
 								わかりやすいタイトルを入力してください
 							</p>
 						</div>
-						<button className="px-4 py-2 bg-suzuka-500 text-white text-base font-medium rounded-md hover:bg-suzuka-600">
+						<button type="button" className="px-4 py-2 bg-suzuka-500 text-white text-base font-medium rounded-md hover:bg-suzuka-600">
 							保存
 						</button>
 					</div>
@@ -356,13 +355,22 @@ export const TypographyExamples: Story = {
 						<a href="#" className="text-base font-medium text-foreground hover:text-suzuka-600">
 							ホーム
 						</a>
-						<a href="#" className="text-base font-medium text-muted-foreground hover:text-suzuka-600">
+						<a
+							href="#"
+							className="text-base font-medium text-muted-foreground hover:text-suzuka-600"
+						>
 							音声ボタン
 						</a>
-						<a href="#" className="text-base font-medium text-muted-foreground hover:text-suzuka-600">
+						<a
+							href="#"
+							className="text-base font-medium text-muted-foreground hover:text-suzuka-600"
+						>
 							動画一覧
 						</a>
-						<a href="#" className="text-base font-medium text-muted-foreground hover:text-suzuka-600">
+						<a
+							href="#"
+							className="text-base font-medium text-muted-foreground hover:text-suzuka-600"
+						>
 							作品一覧
 						</a>
 					</nav>
@@ -377,9 +385,7 @@ export const AccessibilityTypography: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Accessibility Features</h1>
-				<p className="text-gray-600">
-					アクセシビリティを重視したタイポグラフィ設計
-				</p>
+				<p className="text-gray-600">アクセシビリティを重視したタイポグラフィ設計</p>
 			</div>
 
 			<div className="space-y-8">
@@ -390,27 +396,19 @@ export const AccessibilityTypography: Story = {
 						<div className="space-y-4">
 							<h4 className="font-medium">良いコントラスト例 ✅</h4>
 							<div className="bg-white p-4 border rounded">
-								<p className="text-gray-900 text-base">
-									濃い文字色と白背景 (21:1)
-								</p>
+								<p className="text-gray-900 text-base">濃い文字色と白背景 (21:1)</p>
 							</div>
 							<div className="bg-suzuka-50 p-4 border rounded">
-								<p className="text-suzuka-900 text-base">
-									suzuka-900とsuzuka-50 (12.5:1)
-								</p>
+								<p className="text-suzuka-900 text-base">suzuka-900とsuzuka-50 (12.5:1)</p>
 							</div>
 						</div>
 						<div className="space-y-4">
 							<h4 className="font-medium">注意が必要な例 ⚠️</h4>
 							<div className="bg-gray-100 p-4 border rounded">
-								<p className="text-gray-400 text-base">
-									薄い文字色 (コントラスト不足)
-								</p>
+								<p className="text-gray-400 text-base">薄い文字色 (コントラスト不足)</p>
 							</div>
 							<div className="bg-suzuka-200 p-4 border rounded">
-								<p className="text-suzuka-400 text-base">
-									近い色同士の組み合わせ
-								</p>
+								<p className="text-suzuka-400 text-base">近い色同士の組み合わせ</p>
 							</div>
 						</div>
 					</div>
@@ -422,18 +420,12 @@ export const AccessibilityTypography: Story = {
 					<div className="space-y-4">
 						<div className="p-4 bg-green-50 rounded">
 							<h4 className="font-medium text-green-800 mb-2">推奨サイズ</h4>
-							<p className="text-base text-green-700">
-								本文は16px以上を使用（text-base以上）
-							</p>
-							<p className="text-sm text-green-600 mt-1">
-								説明文は14px以上を使用（text-sm以上）
-							</p>
+							<p className="text-base text-green-700">本文は16px以上を使用（text-base以上）</p>
+							<p className="text-sm text-green-600 mt-1">説明文は14px以上を使用（text-sm以上）</p>
 						</div>
 						<div className="p-4 bg-yellow-50 rounded">
 							<h4 className="font-medium text-yellow-800 mb-2">注意が必要</h4>
-							<p className="text-xs text-yellow-700">
-								12px（text-xs）は補助情報のみに使用
-							</p>
+							<p className="text-xs text-yellow-700">12px（text-xs）は補助情報のみに使用</p>
 						</div>
 					</div>
 				</div>
@@ -446,8 +438,8 @@ export const AccessibilityTypography: Story = {
 							<h4 className="font-medium mb-2">適切な行間 (1.5以上)</h4>
 							<p className="text-base leading-6">
 								適切な行間を設定することで、文章の読みやすさが大幅に向上します。
-								特に長い文章や複数行にわたるテキストでは、行間の設定が重要になります。
-								WCAG 2.1では最低1.5の行間を推奨しています。
+								特に長い文章や複数行にわたるテキストでは、行間の設定が重要になります。 WCAG
+								2.1では最低1.5の行間を推奨しています。
 							</p>
 						</div>
 						<div>
@@ -477,9 +469,7 @@ export const DarkModeTypography: Story = {
 		<div className="dark p-6 bg-gray-900 text-white min-h-screen">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Typography - Dark Mode</h1>
-				<p className="text-gray-300">
-					ダークモードでのタイポグラフィ表示
-				</p>
+				<p className="text-gray-300">ダークモードでのタイポグラフィ表示</p>
 			</div>
 
 			<div className="space-y-8">
@@ -500,12 +490,8 @@ export const DarkModeTypography: Story = {
 				<div className="border border-gray-700 rounded-lg p-6">
 					<h3 className="text-lg font-semibold mb-4 text-gray-100">Dark Mode Card</h3>
 					<div className="bg-gray-800 border border-gray-600 rounded-lg p-4 max-w-sm">
-						<h4 className="text-base font-medium text-gray-100 mb-2">
-							音声ボタンタイトル
-						</h4>
-						<p className="text-sm text-gray-300 mb-3">
-							ダークモードでも読みやすい説明文
-						</p>
+						<h4 className="text-base font-medium text-gray-100 mb-2">音声ボタンタイトル</h4>
+						<p className="text-sm text-gray-300 mb-3">ダークモードでも読みやすい説明文</p>
 						<div className="flex justify-between items-center text-xs text-gray-400">
 							<span>カテゴリ: 挨拶</span>
 							<span>2024/12/25</span>
