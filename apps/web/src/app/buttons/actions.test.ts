@@ -1,6 +1,6 @@
-import type { CreateAudioReferenceInput } from "@suzumina.click/shared-types";
+import type { CreateAudioButtonInput } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createAudioReference, getAudioReferenceById, getAudioReferences } from "./actions";
+import { createAudioButton, getAudioButtonById, getAudioButtons } from "./actions";
 
 // Mock Firestore Admin
 const mockAdd = vi.fn();
@@ -46,7 +46,7 @@ vi.mock("@/components/ProtectedRoute", () => ({
 	}),
 }));
 
-describe("Audio Reference Server Actions", () => {
+describe("Audio Button Server Actions", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 
@@ -78,20 +78,21 @@ describe("Audio Reference Server Actions", () => {
 		});
 	});
 
-	describe("createAudioReference", () => {
-		const validInput: CreateAudioReferenceInput = {
+	describe("createAudioButton", () => {
+		const validInput: CreateAudioButtonInput = {
 			title: "テスト音声ボタン",
 			description: "テスト用の説明",
 			category: "voice",
 			tags: ["テスト"],
-			videoId: "test-video-id",
+			sourceVideoId: "test-video-id",
 			startTime: 30,
 			endTime: 45,
+			isPublic: true,
 		};
 
-		it("有効な入力で音声リファレンスが作成される", async () => {
+		it("有効な入力で音声ボタンが作成される", async () => {
 			// Mock successful add
-			mockAdd.mockResolvedValue({ id: "new-audio-ref-id" });
+			mockAdd.mockResolvedValue({ id: "new-audio-button-id" });
 
 			// Mock YouTube API response
 			global.fetch = vi.fn().mockResolvedValue({
@@ -122,11 +123,11 @@ describe("Audio Reference Server Actions", () => {
 				docs: [], // No recent creations
 			});
 
-			const result = await createAudioReference(validInput);
+			const result = await createAudioButton(validInput);
 
 			expect(result.success).toBe(true);
 			if (result.success) {
-				expect(result.data.id).toBe("new-audio-ref-id");
+				expect(result.data.id).toBe("new-audio-button-id");
 			}
 			expect(mockAdd).toHaveBeenCalled();
 		});
@@ -137,7 +138,7 @@ describe("Audio Reference Server Actions", () => {
 				title: "", // Empty title should fail validation
 			};
 
-			const result = await createAudioReference(invalidInput);
+			const result = await createAudioButton(invalidInput);
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
@@ -156,7 +157,7 @@ describe("Audio Reference Server Actions", () => {
 					}),
 			});
 
-			const result = await createAudioReference(validInput);
+			const result = await createAudioButton(validInput);
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
@@ -195,7 +196,7 @@ describe("Audio Reference Server Actions", () => {
 			// Mock Firestore error
 			mockAdd.mockRejectedValue(new Error("Firestore error"));
 
-			const result = await createAudioReference(validInput);
+			const result = await createAudioButton(validInput);
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
@@ -204,8 +205,8 @@ describe("Audio Reference Server Actions", () => {
 		});
 	});
 
-	describe("getAudioReferences", () => {
-		it("音声リファレンスリストが正常に取得される", async () => {
+	describe("getAudioButtons", () => {
+		it("音声ボタンリストが正常に取得される", async () => {
 			const mockDocs = [
 				{
 					id: "audio-ref-1",
@@ -213,7 +214,7 @@ describe("Audio Reference Server Actions", () => {
 						title: "音声ボタン1",
 						description: "説明1",
 						category: "voice",
-						videoId: "video-1",
+						sourceVideoId: "video-1",
 						videoTitle: "動画タイトル1",
 						startTime: 10,
 						endTime: 20,
@@ -232,7 +233,7 @@ describe("Audio Reference Server Actions", () => {
 						title: "音声ボタン2",
 						description: "説明2",
 						category: "bgm",
-						videoId: "video-2",
+						sourceVideoId: "video-2",
 						videoTitle: "動画タイトル2",
 						startTime: 30,
 						endTime: 45,
@@ -251,7 +252,7 @@ describe("Audio Reference Server Actions", () => {
 				docs: mockDocs,
 			});
 
-			const result = await getAudioReferences({
+			const result = await getAudioButtons({
 				limit: 20,
 				sortBy: "newest",
 				onlyPublic: true,
@@ -259,8 +260,8 @@ describe("Audio Reference Server Actions", () => {
 
 			expect(result.success).toBe(true);
 			if (result.success) {
-				expect(result.data.audioReferences).toHaveLength(2);
-				expect(result.data.audioReferences[0].title).toBe("音声ボタン1");
+				expect(result.data.audioButtons).toHaveLength(2);
+				expect(result.data.audioButtons[0].title).toBe("音声ボタン1");
 				expect(result.data.hasMore).toBe(false);
 			}
 		});
@@ -270,7 +271,7 @@ describe("Audio Reference Server Actions", () => {
 				docs: [],
 			});
 
-			const result = await getAudioReferences({
+			const result = await getAudioButtons({
 				limit: 20,
 				category: "voice",
 				sortBy: "newest",
@@ -282,7 +283,7 @@ describe("Audio Reference Server Actions", () => {
 		});
 
 		it("無効なクエリでエラーが返される", async () => {
-			const result = await getAudioReferences({
+			const result = await getAudioButtons({
 				limit: -1, // Invalid limit
 				sortBy: "newest",
 				onlyPublic: true,
@@ -295,13 +296,13 @@ describe("Audio Reference Server Actions", () => {
 		});
 	});
 
-	describe("getAudioReferenceById", () => {
-		it("IDで音声リファレンスが正常に取得される", async () => {
+	describe("getAudioButtonById", () => {
+		it("IDで音声ボタンが正常に取得される", async () => {
 			const mockDocData = {
 				title: "テスト音声ボタン",
 				description: "テスト用の説明",
 				category: "voice",
-				videoId: "test-video",
+				sourceVideoId: "test-video",
 				videoTitle: "テスト動画",
 				startTime: 10,
 				endTime: 25,
@@ -320,7 +321,7 @@ describe("Audio Reference Server Actions", () => {
 				data: () => mockDocData,
 			});
 
-			const result = await getAudioReferenceById("test-audio-ref-id");
+			const result = await getAudioButtonById("test-audio-ref-id");
 
 			expect(result.success).toBe(true);
 			if (result.success) {
@@ -334,7 +335,7 @@ describe("Audio Reference Server Actions", () => {
 				exists: false,
 			});
 
-			const result = await getAudioReferenceById("non-existent-id");
+			const result = await getAudioButtonById("non-existent-id");
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
@@ -342,7 +343,7 @@ describe("Audio Reference Server Actions", () => {
 			}
 		});
 
-		it("非公開の音声リファレンスでエラーが返される", async () => {
+		it("非公開の音声ボタンでエラーが返される", async () => {
 			mockGet.mockResolvedValue({
 				exists: true,
 				id: "private-audio-ref",
@@ -350,7 +351,7 @@ describe("Audio Reference Server Actions", () => {
 					title: "非公開音声ボタン",
 					description: "非公開説明",
 					category: "voice",
-					videoId: "private-video",
+					sourceVideoId: "private-video",
 					videoTitle: "非公開動画",
 					startTime: 0,
 					endTime: 10,
@@ -364,7 +365,7 @@ describe("Audio Reference Server Actions", () => {
 				}),
 			});
 
-			const result = await getAudioReferenceById("private-audio-ref");
+			const result = await getAudioButtonById("private-audio-ref");
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
@@ -373,7 +374,7 @@ describe("Audio Reference Server Actions", () => {
 		});
 
 		it("無効なIDでエラーが返される", async () => {
-			const result = await getAudioReferenceById("");
+			const result = await getAudioButtonById("");
 
 			expect(result.success).toBe(false);
 			if (!result.success) {

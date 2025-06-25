@@ -210,38 +210,41 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 }
 ```
 
-### 5. `audioReferences` コレクション ✅ 実装完了
+### 5. `audioButtons` コレクション ✅ 実装完了
 
-**目的**: ユーザー作成の音声参照データを保存（タイムスタンプ参照システム）
+**目的**: ユーザー作成の音声ボタンデータを保存（YouTube タイムスタンプ参照統合システム）
 
 **ドキュメントID**: 自動生成ID（Firestore自動生成または UUID）
 
-**データ構造** (`FirestoreAudioReferenceData`):
+**データ構造** (`FirestoreAudioButtonData`):
 
 ```typescript
 {
   // 基本情報
-  id: string,                         // 音声参照ID
-  title: string,                      // 音声参照タイトル（1-100文字）
-  description?: string,               // 音声参照説明（最大500文字）
+  id: string,                         // 音声ボタンID
+  title: string,                      // 音声ボタンタイトル（1-100文字）
+  description?: string,               // 音声ボタン説明（最大500文字）
   
   // YouTube動画参照情報
-  videoId: string,                    // YouTube動画ID（videosコレクション参照）
-  videoTitle?: string,                // 動画タイトル
+  sourceVideoId: string,              // YouTube動画ID（videosコレクション参照）
+  videoTitle: string,                 // 動画タイトル
   startTime: number,                  // 開始時刻（秒）
   endTime: number,                    // 終了時刻（秒）
-  youtubeEmbedUrl: string,           // 埋め込み再生URL
+  duration: number,                   // 再生時間（秒）
 
   // 分類・メタデータ
   tags?: string[],                    // タグ配列（最大10個、各タグ最大20文字）
-  category?: string,                  // カテゴリ
+  category: string,                   // カテゴリ（必須）
 
   // ユーザー・権限情報
-  createdBy?: string,                 // 作成者ID（将来のユーザー認証用）
+  createdBy: string,                  // 作成者Discord ID
+  createdByName: string,              // 作成者表示名
   isPublic: boolean,                  // 公開/非公開設定
 
   // 統計情報
   playCount: number,                  // 再生回数
+  likeCount: number,                  // いいね数
+  viewCount: number,                  // 表示回数
 
   // 管理情報
   createdAt: Timestamp,               // 作成日時
@@ -256,7 +259,7 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 - **タグ制限**: 最大10個、各タグ最大20文字
 
 **セキュリティルール**:
-- **読み取り**: 公開音声参照は誰でも読み取り可能、非公開は作成者のみ
+- **読み取り**: 公開音声ボタンは誰でも読み取り可能、非公開は作成者のみ
 - **作成・更新・削除**: 現在はServer Actionsのみで操作
 
 ## 計画中のコレクション（将来実装予定）
@@ -294,11 +297,13 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 - `liveBroadcastContent` (ASC) + `publishedAt` (ASC)
 - `videoType` (ASC) + `publishedAt` (DESC) + `__name__` (DESC)
 
-### audioReferencesコレクション:
-- `isPublic` (ASC) + `createdAt` (DESC) - 基本的な音声参照一覧取得
-- `isPublic` (ASC) + `playCount` (DESC) - 人気順ソート
+### audioButtonsコレクション:
+- `isPublic` (ASC) + `createdAt` (DESC) - 基本的な音声ボタン一覧取得
+- `isPublic` (ASC) + `playCount` (DESC) - 再生数順ソート
+- `isPublic` (ASC) + `likeCount` (DESC) - いいね数順ソート
 - `isPublic` (ASC) + `category` (ASC) + `createdAt` (DESC) - カテゴリフィルター
-- `isPublic` (ASC) + `videoId` (ASC) + `startTime` (ASC) - 元動画別表示
+- `isPublic` (ASC) + `sourceVideoId` (ASC) + `startTime` (ASC) - 元動画別表示
+- `createdBy` (ASC) + `createdAt` (DESC) - ユーザー別表示
 - `tags` (CONTAINS) + `isPublic` (ASC) + `createdAt` (DESC) - タグ検索
 
 ## データ収集パターン
@@ -313,7 +318,7 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 - **パブリック読み取り**: `videos`、`dlsiteWorks`、公開`audioButtons`
 - **管理者書き込み**: `videos`と`dlsiteWorks`はCloud Functionsのみが書き込み可能
 - **ユーザー制御**: `audioButtons`はServer Actionsで作成・更新・削除（実装完了、運用準備完了）
-- **認証制御**: `audioReferences`と`users`コレクション（将来実装）
+- **認証制御**: `audioButtons`と`users`コレクション（実装完了）
 - **セキュリティルール**: Terraform管理のFirestoreセキュリティルールで実装
 
 ### 音声ボタンアクセスパターン詳細:

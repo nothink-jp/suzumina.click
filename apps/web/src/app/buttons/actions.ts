@@ -1,22 +1,22 @@
 "use server";
 
 import {
-	type AudioReferenceCategory,
-	type AudioReferenceListResult,
-	type AudioReferenceQuery,
-	AudioReferenceQuerySchema,
-	type CreateAudioReferenceInput,
-	CreateAudioReferenceInputSchema,
+	type AudioButtonCategory,
+	type AudioButtonListResult,
+	type AudioButtonQuery,
+	AudioButtonQuerySchema,
+	type CreateAudioButtonInput,
+	CreateAudioButtonInputSchema,
 	checkRateLimit,
-	convertCreateInputToFirestoreAudioReference,
-	convertToFrontendAudioReference,
-	type FirestoreAudioReferenceData,
-	type FrontendAudioReferenceData,
-	filterAudioReferences,
-	sortAudioReferences,
-	type UpdateAudioReferenceStats,
-	UpdateAudioReferenceStatsSchema,
-	validateAudioReferenceCreation,
+	convertCreateInputToFirestoreAudioButton,
+	convertToFrontendAudioButton,
+	type FirestoreAudioButtonData,
+	type FrontendAudioButtonData,
+	filterAudioButtons,
+	sortAudioButtons,
+	type UpdateAudioButtonStats,
+	UpdateAudioButtonStatsSchema,
+	validateAudioButtonCreation,
 	type YouTubeVideoInfo,
 } from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
@@ -25,21 +25,17 @@ import { FirestoreAdmin } from "@/lib/firestore-admin";
 import { updateUserStats } from "@/lib/user-firestore";
 
 /**
- * 音声リファレンスを作成するServer Action
+ * 音声ボタンを作成するServer Action
  */
-export async function createAudioReference(
-	input: CreateAudioReferenceInput,
+export async function createAudioButton(
+	input: CreateAudioButtonInput,
 ): Promise<{ success: true; data: { id: string } } | { success: false; error: string }> {
 	try {
-		console.log("Starting audio reference creation:", { input });
-
 		// 認証チェック
 		const user = await requireAuth();
-		console.log("User authenticated:", { userId: user.discordId, username: user.displayName });
 		// 入力データのバリデーション
-		const validationResult = CreateAudioReferenceInputSchema.safeParse(input);
+		const validationResult = CreateAudioButtonInputSchema.safeParse(input);
 		if (!validationResult.success) {
-			console.error("Input validation failed:", validationResult.error.errors);
 			return {
 				success: false,
 				error: `入力データが無効です: ${validationResult.error.errors.map((e) => e.message).join(", ")}`,
@@ -47,20 +43,19 @@ export async function createAudioReference(
 		}
 
 		const validatedInput = validationResult.data;
-		console.log("Input validation passed:", { validatedInput });
 
 		// レート制限のためのユーザーベースチェック
 		const firestore = FirestoreAdmin.getInstance();
 		const recentCreationsSnapshot = await firestore
-			.collection("audioReferences")
-			.where("createdBy", "==", user.discordId)
+			.collection("audioButtons")
+			.where("uploadedBy", "==", user.discordId)
 			.where("createdAt", ">", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
 			.get();
 
 		const recentCreations = recentCreationsSnapshot.docs.map((doc) => ({
 			id: doc.id,
 			...doc.data(),
-		})) as FirestoreAudioReferenceData[];
+		})) as FirestoreAudioButtonData[];
 
 		const rateLimitCheck = checkRateLimit(recentCreations, user.discordId);
 		if (!rateLimitCheck.allowed) {
@@ -69,69 +64,59 @@ export async function createAudioReference(
 				error: `投稿制限に達しています。1日に作成できる音声ボタンは20個までです。リセット時間: ${rateLimitCheck.resetTime.toLocaleString()}`,
 			};
 		}
-
-		// YouTube動画情報の取得
-		console.log("Fetching YouTube video info:", { videoId: validatedInput.videoId });
-		const videoInfo = await fetchYouTubeVideoInfo(validatedInput.videoId);
+		const videoInfo = await fetchYouTubeVideoInfo(validatedInput.sourceVideoId);
 		if (!videoInfo) {
-			console.error("YouTube video not found:", { videoId: validatedInput.videoId });
 			return {
 				success: false,
 				error: "指定されたYouTube動画が見つからないか、アクセスできません",
 			};
 		}
-		console.log("YouTube video info retrieved:", { videoInfo });
+
+		// 同じ動画の他の音声ボタンを取得して重複チェック
+		const existingAudioButtonsQuery = await firestore
+			.collection("audioButtons")
+			.where("sourceVideoId", "==", validatedInput.sourceVideoId)
+			.get();
+
+		const existingButtons = existingAudioButtonsQuery.docs.map((doc) => ({
+			id: doc.id,
+			...doc.data(),
+		})) as FirestoreAudioButtonData[];
 
 		// バリデーション
-		const validation = validateAudioReferenceCreation(validatedInput, videoInfo);
-		if (!validation.isValid) {
+		const validationError = validateAudioButtonCreation(
+			validatedInput,
+			videoInfo,
+			user.discordId,
+			existingButtons,
+		);
+		if (validationError) {
 			return {
 				success: false,
-				error: validation.errors.join(", "),
+				error: validationError,
 			};
 		}
 
 		// Firestoreデータの作成（ユーザー情報付き）
-		const firestoreData = convertCreateInputToFirestoreAudioReference(
+		const firestoreData = convertCreateInputToFirestoreAudioButton(
 			validatedInput,
-			videoInfo,
 			user.discordId,
 			user.displayName,
 		);
-
-		// Firestoreに保存
-		console.log("Saving to Firestore:", { firestoreData });
-		const docRef = await firestore.collection("audioReferences").add(firestoreData);
-		console.log("Saved to Firestore with ID:", docRef.id);
-
-		// 元動画の統計を更新（音声ボタン数を増加）
-		console.log("Updating video stats:", { videoId: validatedInput.videoId });
-		await updateVideoAudioButtonStats(validatedInput.videoId, {
+		const docRef = await firestore.collection("audioButtons").add(firestoreData);
+		await updateVideoAudioButtonStats(validatedInput.sourceVideoId, {
 			increment: true,
 		});
-
-		// ユーザー統計を更新
-		console.log("Updating user stats:", { userId: user.discordId });
 		await updateUserStats(user.discordId, {
-			incrementAudioReferences: true,
+			incrementAudioButtons: true,
 		});
-
-		// キャッシュの無効化
-		console.log("Revalidating paths");
 		revalidatePath("/buttons");
-		revalidatePath(`/videos/${validatedInput.videoId}`);
-
-		console.log("Audio reference creation completed successfully:", { id: docRef.id });
+		revalidatePath(`/videos/${validatedInput.sourceVideoId}`);
 		return {
 			success: true,
 			data: { id: docRef.id },
 		};
-	} catch (error) {
-		console.error("Error creating audio reference:", {
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
-			input,
-		});
+	} catch (_error) {
 		return {
 			success: false,
 			error: "音声ボタンの作成に失敗しました。しばらく時間をおいてから再度お試しください。",
@@ -140,14 +125,14 @@ export async function createAudioReference(
 }
 
 /**
- * 音声リファレンスを検索・取得するServer Action
+ * 音声ボタンを検索・取得するServer Action
  */
-export async function getAudioReferences(
-	query: Partial<AudioReferenceQuery> = {},
-): Promise<{ success: true; data: AudioReferenceListResult } | { success: false; error: string }> {
+export async function getAudioButtons(
+	query: Partial<AudioButtonQuery> = {},
+): Promise<{ success: true; data: AudioButtonListResult } | { success: false; error: string }> {
 	try {
 		// クエリのバリデーション
-		const validationResult = AudioReferenceQuerySchema.safeParse(query);
+		const validationResult = AudioButtonQuerySchema.safeParse(query);
 		if (!validationResult.success) {
 			return {
 				success: false,
@@ -159,7 +144,7 @@ export async function getAudioReferences(
 		const firestore = FirestoreAdmin.getInstance();
 
 		// Firestoreクエリの構築
-		let firestoreQuery = firestore.collection("audioReferences").where("isPublic", "==", true);
+		let firestoreQuery = firestore.collection("audioButtons").where("isPublic", "==", true);
 
 		// カテゴリフィルター
 		if (validatedQuery.category) {
@@ -167,8 +152,8 @@ export async function getAudioReferences(
 		}
 
 		// 動画IDフィルター
-		if (validatedQuery.videoId) {
-			firestoreQuery = firestoreQuery.where("videoId", "==", validatedQuery.videoId);
+		if (validatedQuery.sourceVideoId) {
+			firestoreQuery = firestoreQuery.where("sourceVideoId", "==", validatedQuery.sourceVideoId);
 		}
 
 		// 並び順の設定
@@ -180,11 +165,10 @@ export async function getAudioReferences(
 				firestoreQuery = firestoreQuery.orderBy("createdAt", "asc");
 				break;
 			case "popular":
+				firestoreQuery = firestoreQuery.orderBy("likeCount", "desc");
+				break;
 			case "mostPlayed":
 				firestoreQuery = firestoreQuery.orderBy("playCount", "desc");
-				break;
-			case "mostLiked":
-				firestoreQuery = firestoreQuery.orderBy("likeCount", "desc");
 				break;
 			default:
 				firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
@@ -193,7 +177,7 @@ export async function getAudioReferences(
 		// ページネーション
 		if (validatedQuery.startAfter) {
 			const startAfterDoc = await firestore
-				.collection("audioReferences")
+				.collection("audioButtons")
 				.doc(validatedQuery.startAfter)
 				.get();
 			if (startAfterDoc.exists) {
@@ -210,30 +194,29 @@ export async function getAudioReferences(
 
 		// hasMoreの判定
 		const hasMore = docs.length > validatedQuery.limit;
-		const audioReferenceDocs = hasMore ? docs.slice(0, -1) : docs;
+		const audioButtonDocs = hasMore ? docs.slice(0, -1) : docs;
 
 		// Firestore データをフロントエンド用に変換
-		let audioReferences = audioReferenceDocs.map((doc) => {
-			const data = { id: doc.id, ...doc.data() } as FirestoreAudioReferenceData;
-			return convertToFrontendAudioReference(data);
+		let audioButtons = audioButtonDocs.map((doc) => {
+			const data = { id: doc.id, ...doc.data() } as FirestoreAudioButtonData;
+			return convertToFrontendAudioButton(data);
 		});
 
 		// クライアントサイドフィルタリング（Firestoreでは対応できない条件）
-		audioReferences = filterAudioReferences(audioReferences, {
+		audioButtons = filterAudioButtons(audioButtons, {
 			searchText: validatedQuery.searchText,
 			tags: validatedQuery.tags,
 		});
 
 		// クライアントサイド並び替え（複合条件の場合）
 		if (validatedQuery.sortBy === "popular") {
-			audioReferences = sortAudioReferences(audioReferences, "popular");
+			audioButtons = sortAudioButtons(audioButtons, "popular");
 		}
 
-		const result: AudioReferenceListResult = {
-			audioReferences,
+		const result: AudioButtonListResult = {
+			audioButtons,
 			hasMore,
-			lastAudioReference:
-				audioReferences.length > 0 ? audioReferences[audioReferences.length - 1] : undefined,
+			lastAudioButton: audioButtons.length > 0 ? audioButtons[audioButtons.length - 1] : undefined,
 			totalCount: undefined, // 高コストなため省略
 		};
 
@@ -241,12 +224,7 @@ export async function getAudioReferences(
 			success: true,
 			data: result,
 		};
-	} catch (error) {
-		console.error("Error fetching audio references:", {
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
-			query,
-		});
+	} catch (_error) {
 		return {
 			success: false,
 			error: "音声ボタンの取得に失敗しました。",
@@ -255,18 +233,18 @@ export async function getAudioReferences(
 }
 
 /**
- * 人気の音声リファレンスを取得するServer Action
+ * 人気の音声ボタンを取得するServer Action
  */
-export async function getPopularAudioReferences(limit = 6): Promise<FrontendAudioReferenceData[]> {
+export async function getPopularAudioButtons(limit = 6): Promise<FrontendAudioButtonData[]> {
 	try {
-		const result = await getAudioReferences({
+		const result = await getAudioButtons({
 			limit,
 			sortBy: "popular",
 			onlyPublic: true,
 		});
 
 		if (result.success) {
-			return result.data.audioReferences;
+			return result.data.audioButtons;
 		}
 
 		return [];
@@ -276,18 +254,18 @@ export async function getPopularAudioReferences(limit = 6): Promise<FrontendAudi
 }
 
 /**
- * 最新の音声リファレンスを取得するServer Action
+ * 最新の音声ボタンを取得するServer Action
  */
-export async function getRecentAudioReferences(limit = 6): Promise<FrontendAudioReferenceData[]> {
+export async function getRecentAudioButtons(limit = 6): Promise<FrontendAudioButtonData[]> {
 	try {
-		const result = await getAudioReferences({
+		const result = await getAudioButtons({
 			limit,
 			sortBy: "newest",
 			onlyPublic: true,
 		});
 
 		if (result.success) {
-			return result.data.audioReferences;
+			return result.data.audioButtons;
 		}
 
 		return [];
@@ -297,22 +275,22 @@ export async function getRecentAudioReferences(limit = 6): Promise<FrontendAudio
 }
 
 /**
- * カテゴリ別の音声リファレンスを取得するServer Action
+ * カテゴリ別の音声ボタンを取得するServer Action
  */
-export async function getAudioReferencesByCategory(
+export async function getAudioButtonsByCategory(
 	category: string,
 	limit = 6,
-): Promise<FrontendAudioReferenceData[]> {
+): Promise<FrontendAudioButtonData[]> {
 	try {
-		const result = await getAudioReferences({
+		const result = await getAudioButtons({
 			limit,
-			category: category as AudioReferenceCategory,
+			category: category as AudioButtonCategory,
 			sortBy: "newest",
 			onlyPublic: true,
 		});
 
 		if (result.success) {
-			return result.data.audioReferences;
+			return result.data.audioButtons;
 		}
 
 		return [];
@@ -322,16 +300,16 @@ export async function getAudioReferencesByCategory(
 }
 
 /**
- * 音声リファレンスの統計を更新するServer Action
+ * 音声ボタンの統計を更新するServer Action
  */
-export async function updateAudioReferenceStats(
-	statsUpdate: Partial<UpdateAudioReferenceStats> & { id: string },
+export async function updateAudioButtonStats(
+	statsUpdate: Partial<UpdateAudioButtonStats> & { id: string },
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		// 認証チェック（統計更新は認証ユーザーのみ）
 		const _user = await requireAuth();
 		// バリデーション
-		const validationResult = UpdateAudioReferenceStatsSchema.safeParse(statsUpdate);
+		const validationResult = UpdateAudioButtonStatsSchema.safeParse(statsUpdate);
 		if (!validationResult.success) {
 			return {
 				success: false,
@@ -355,29 +333,25 @@ export async function updateAudioReferenceStats(
 			updateData.likeCount = firestore.FieldValue.increment(1);
 		}
 
-		if (validatedUpdate.incrementViewCount) {
-			updateData.viewCount = firestore.FieldValue.increment(1);
-		}
-
 		if (validatedUpdate.decrementLikeCount) {
 			updateData.likeCount = firestore.FieldValue.increment(-1);
 		}
 
 		// Firestoreを更新
-		await firestore.collection("audioReferences").doc(validatedUpdate.id).update(updateData);
+		await firestore.collection("audioButtons").doc(validatedUpdate.id).update(updateData);
 
 		// 再生回数が増加した場合、ユーザー統計も更新
 		if (validatedUpdate.incrementPlayCount) {
-			// 音声リファレンスの作成者情報を取得
-			const audioRefDoc = await firestore
-				.collection("audioReferences")
+			// 音声ボタンの作成者情報を取得
+			const audioButtonDoc = await firestore
+				.collection("audioButtons")
 				.doc(validatedUpdate.id)
 				.get();
 
-			if (audioRefDoc.exists) {
-				const audioRefData = audioRefDoc.data() as FirestoreAudioReferenceData;
-				if (audioRefData.createdBy) {
-					await updateUserStats(audioRefData.createdBy, {
+			if (audioButtonDoc.exists) {
+				const audioButtonData = audioButtonDoc.data() as FirestoreAudioButtonData;
+				if (audioButtonData.uploadedBy) {
+					await updateUserStats(audioButtonData.uploadedBy, {
 						incrementPlayCount: 1,
 					});
 				}
@@ -389,12 +363,7 @@ export async function updateAudioReferenceStats(
 		revalidatePath(`/buttons/${validatedUpdate.id}`);
 
 		return { success: true };
-	} catch (error) {
-		console.error("Error updating audio reference stats:", {
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
-			statsUpdate,
-		});
+	} catch (_error) {
 		return {
 			success: false,
 			error: "統計情報の更新に失敗しました。",
@@ -408,7 +377,7 @@ export async function updateAudioReferenceStats(
 export async function incrementPlayCount(
 	id: string,
 ): Promise<{ success: boolean; error?: string }> {
-	return await updateAudioReferenceStats({
+	return await updateAudioButtonStats({
 		id,
 		incrementPlayCount: true,
 	});
@@ -420,7 +389,7 @@ export async function incrementPlayCount(
 export async function incrementLikeCount(
 	id: string,
 ): Promise<{ success: boolean; error?: string }> {
-	return await updateAudioReferenceStats({
+	return await updateAudioButtonStats({
 		id,
 		incrementLikeCount: true,
 	});
@@ -432,20 +401,18 @@ export async function incrementLikeCount(
 export async function decrementLikeCount(
 	id: string,
 ): Promise<{ success: boolean; error?: string }> {
-	return await updateAudioReferenceStats({
+	return await updateAudioButtonStats({
 		id,
 		decrementLikeCount: true,
 	});
 }
 
 /**
- * IDによって音声リファレンスを取得するServer Action
+ * IDによって音声ボタンを取得するServer Action
  */
-export async function getAudioReferenceById(
+export async function getAudioButtonById(
 	id: string,
-): Promise<
-	{ success: true; data: FrontendAudioReferenceData } | { success: false; error: string }
-> {
+): Promise<{ success: true; data: FrontendAudioButtonData } | { success: false; error: string }> {
 	try {
 		if (!id || typeof id !== "string") {
 			return {
@@ -455,7 +422,7 @@ export async function getAudioReferenceById(
 		}
 
 		const firestore = FirestoreAdmin.getInstance();
-		const doc = await firestore.collection("audioReferences").doc(id).get();
+		const doc = await firestore.collection("audioButtons").doc(id).get();
 
 		if (!doc.exists) {
 			return {
@@ -467,7 +434,7 @@ export async function getAudioReferenceById(
 		const firestoreData = {
 			id: doc.id,
 			...doc.data(),
-		} as FirestoreAudioReferenceData;
+		} as FirestoreAudioButtonData;
 
 		// プライベートな投稿の場合はエラー
 		if (!firestoreData.isPublic) {
@@ -478,38 +445,18 @@ export async function getAudioReferenceById(
 		}
 
 		// フロントエンド用に変換
-		const frontendData = convertToFrontendAudioReference(firestoreData);
-
-		// 表示回数を増加
-		await incrementViewCount(id);
+		const frontendData = convertToFrontendAudioButton(firestoreData);
 
 		return {
 			success: true,
 			data: frontendData,
 		};
-	} catch (error) {
-		console.error("Error fetching audio reference by ID:", {
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
-			id,
-		});
+	} catch (_error) {
 		return {
 			success: false,
 			error: "音声ボタンの取得に失敗しました",
 		};
 	}
-}
-
-/**
- * 表示回数を増加させるServer Action
- */
-export async function incrementViewCount(
-	id: string,
-): Promise<{ success: boolean; error?: string }> {
-	return await updateAudioReferenceStats({
-		id,
-		incrementViewCount: true,
-	});
 }
 
 /**
@@ -545,20 +492,14 @@ async function fetchYouTubeVideoInfo(videoId: string): Promise<YouTubeVideoInfo 
 		const duration = contentDetails?.duration ? parseDuration(contentDetails.duration) : undefined;
 
 		return {
-			videoId,
+			id: videoId,
 			title: snippet.title,
-			channelId: snippet.channelId,
 			channelTitle: snippet.channelTitle,
 			thumbnailUrl: snippet.thumbnails?.maxresdefault?.url || snippet.thumbnails?.high?.url,
-			duration: duration ? Math.floor(duration / 1000) : undefined,
+			duration: duration ? Math.floor(duration / 1000) : 0,
 			publishedAt: snippet.publishedAt,
 		};
-	} catch (error) {
-		console.error("Error fetching YouTube video info:", {
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
-			videoId,
-		});
+	} catch (_error) {
 		return null;
 	}
 }

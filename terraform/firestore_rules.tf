@@ -40,28 +40,15 @@ resource "google_firestore_document" "firestore_rules" {
               allow write: if false; // 管理者APIのみ書き込み可能
             }
             
-            // 音声ボタンコレクション（Phase 1では非推奨、audioReferencesを使用）
+            // 音声ボタンコレクション（統一システム）
             match /audioButtons/{buttonId} {
               // 公開音声ボタンは誰でも読み取り可能、非公開は作成者のみ読み取り可能
-              allow read: if resource.data.isPublic == true || 
-                           (isAuthenticated() && resource.data.uploadedBy == request.auth.uid);
-              
-              // 作成は認証済みユーザーのみ可能（Phase 2で実装予定）
-              allow create: if false; // 現在はServer Actionsのみで作成
-              
-              // 更新と削除は作成者のみ可能（Phase 2で実装予定）
-              allow update, delete: if false; // 現在はServer Actionsのみで操作
-            }
-            
-            // 音声リファレンスコレクション（認証済みユーザー向け）
-            match /audioReferences/{referenceId} {
-              // 公開音声リファレンスは誰でも読み取り可能、非公開は作成者のみ
               allow read: if resource.data.isPublic == true || 
                            (isAuthenticated() && resource.data.createdBy == request.auth.uid);
               
               // データ検証関数（Discord ID対応）
-              function isValidAudioReference() {
-                return request.resource.data.keys().hasAll(['title', 'startTime', 'endTime', 'videoId', 'isPublic', 'createdBy', 'createdByName', 'createdAt']) &&
+              function isValidAudioButton() {
+                return request.resource.data.keys().hasAll(['title', 'startTime', 'endTime', 'sourceVideoId', 'isPublic', 'createdBy', 'createdByName', 'createdAt']) &&
                        request.resource.data.title is string &&
                        request.resource.data.title.size() > 0 &&
                        request.resource.data.title.size() <= 100 &&
@@ -69,19 +56,16 @@ resource "google_firestore_document" "firestore_rules" {
                        request.resource.data.endTime is number &&
                        request.resource.data.startTime >= 0 &&
                        request.resource.data.endTime > request.resource.data.startTime &&
-                       request.resource.data.videoId is string &&
-                       request.resource.data.videoId.size() > 0 &&
+                       request.resource.data.sourceVideoId is string &&
+                       request.resource.data.sourceVideoId.size() > 0 &&
                        request.resource.data.isPublic is bool &&
                        request.resource.data.createdBy is string &&
                        request.resource.data.createdByName is string &&
                        request.resource.data.createdAt is string;
               }
               
-              // 作成は認証済みユーザーのみ可能（Server Actions経由）
-              allow create: if false; // Server Actionsのみで作成
-              
-              // 更新と削除は作成者のみ可能（Server Actions経由）
-              allow update, delete: if false; // Server Actionsのみで操作
+              // 作成・更新・削除はServer Actionsのみで操作
+              allow create, update, delete: if false; // Server Actionsのみで操作
             }
             
             // ユーザーコレクション（Discord ID ベース）

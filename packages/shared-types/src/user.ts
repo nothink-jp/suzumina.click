@@ -72,7 +72,7 @@ export const FirestoreUserSchema = z.object({
 	role: z.enum(["member", "moderator", "admin"]).default("member"),
 
 	// 統計情報
-	audioReferencesCount: z.number().int().min(0).default(0),
+	audioButtonsCount: z.number().int().min(0).default(0),
 	totalPlayCount: z.number().int().min(0).default(0),
 
 	// 管理情報
@@ -103,7 +103,7 @@ export const FrontendUserSchema = z.object({
 	role: z.enum(["member", "moderator", "admin"]),
 
 	// 表示用統計情報
-	audioReferencesCount: z.number().int().min(0),
+	audioButtonsCount: z.number().int().min(0),
 	totalPlayCount: z.number().int().min(0),
 
 	// 表示用日時

@@ -26,7 +26,7 @@ Guild確認        JWT Session    Server Actions + Admin UI
      ↓              ↓              ↓
 Firestore Users → Session管理 → データ操作 + 管理機能
                                   ↓              ↓
-Cloud Functions (定期実行) → Firestore (videos/works/audioReferences/audioButtons)
+Cloud Functions (定期実行) → Firestore (videos/works/audioButtons)
      ↓                            ↓
 YouTube/DLsite APIs         フロントエンド表示 + 管理画面
 ```
@@ -57,8 +57,7 @@ YouTube/DLsite APIs         フロントエンド表示 + 管理画面
 ### コレクション構成
 
 - **`users`**: Discord認証ユーザー情報・権限管理 (member/moderator/admin)
-- **`audioReferences`**: 音声参照メタデータ (タイムスタンプ + 作成者情報)
-- **`audioButtons`**: 実音声ファイルボタンデータ (Cloud Storage連携)
+- **`audioButtons`**: 音声ボタンメタデータ (YouTube タイムスタンプ + 作成者情報の統合システム)
 - **`videos`**: YouTube動画情報 (自動収集)
 - **`dlsiteWorks`**: DLsite作品情報 (自動収集)
 

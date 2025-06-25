@@ -298,6 +298,6 @@ describe("ActionResult型", () => {
 
 		expect(validationErrorResult.success).toBe(false);
 		expect(validationErrorResult.validationErrors).toEqual(validationErrors);
-		expect(validationErrorResult.validationErrors?.[0].path).toEqual(["name"]);
+		expect(validationErrorResult.validationErrors?.[0]?.path).toEqual(["name"]);
 	});
 });

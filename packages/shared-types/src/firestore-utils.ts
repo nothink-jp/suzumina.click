@@ -5,9 +5,6 @@
 
 import type { FirestoreServerVideoData, LiveBroadcastContent, VideoType } from "./video";
 
-// エクスポートを追加してモジュールとして認識されるようにする
-export const __esModule = true;
-
 /**
  * クライアント用のFirestoreVideoDataからサーバーサイド用のデータに変換
  * この関数はサーバーサイド(Cloud Functions)でのみ使用すること

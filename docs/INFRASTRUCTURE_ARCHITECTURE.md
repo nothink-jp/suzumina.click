@@ -344,10 +344,10 @@ FUNCTION_TARGET=fetchYouTubeVideos
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 音声参照 - 公開分のみ読み取り可能
-    match /audioReferences/{referenceId} {
+    // 音声ボタン - 公開分のみ読み取り可能
+    match /audioButtons/{buttonId} {
       allow read: if resource.data.isPublic == true;
-      allow write: if false; // 将来的にユーザー認証実装予定
+      allow write: if false; // ユーザー認証により管理
     }
     
     // 動画・作品データ - 読み取りのみ

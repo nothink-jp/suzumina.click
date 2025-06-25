@@ -85,14 +85,12 @@ suzumina.click/ (v0.2.1)
 
 - **videos**: YouTube動画データ (`FirestoreYouTubeVideoData`)
 - **works**: DLsite作品データ (`FirestoreDLsiteWorkData`)
-- **audioReferences**: 音声参照 (YouTube区間指定)
-- **audioButtons**: 音声ボタン (実ファイル)
+- **audioButtons**: 音声ボタン (YouTube区間指定 + 実ファイル統合システム)
 - **users**: ユーザーデータ (Discord認証・ロール管理)
 
-### 音声システム (二重構成)
+### 音声システム (統合)
 
-1. **音声参照**: YouTube動画の特定区間を参照
-2. **音声ボタン**: Cloud Storageにアップロードされた実音声ファイル
+**音声ボタン**: YouTube動画の特定区間を参照する統一システム
 
 ## 🎨 デザインシステム
 
@@ -233,7 +231,7 @@ Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → セ�
 #### **`@apps/web/src/components/` (アプリケーション特化)**
 ```
 ✅ suzumina.click 特有のビジネスロジック
-- AudioReferenceCard, AudioReferenceCreator (重いビジネスロジック)
+- AudioButtonCard, AudioButtonCreator (重いビジネスロジック)
 - SiteHeader, MobileMenu (サイト固有ナビゲーション)
 - AdminList, ThumbnailImage (ドメイン特化)
 - Next.js 固有API依存 (useRouter, Image等)

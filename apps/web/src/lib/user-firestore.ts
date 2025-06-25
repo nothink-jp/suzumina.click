@@ -30,7 +30,7 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
 		avatar: data.avatar,
 		displayName: data.displayName,
 		role: data.role,
-		audioReferencesCount: data.audioReferencesCount,
+		audioButtonsCount: data.audioButtonsCount,
 		totalPlayCount: data.totalPlayCount,
 		createdAt: data.createdAt,
 		lastLoginAt: data.lastLoginAt,
@@ -92,7 +92,7 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 			displayName,
 			isActive: true,
 			role: "member",
-			audioReferencesCount: 0,
+			audioButtonsCount: 0,
 			totalPlayCount: 0,
 			createdAt: now,
 			updatedAt: now,
@@ -167,7 +167,7 @@ export async function updateLastLogin(discordId: string): Promise<void> {
 export async function updateUserStats(
 	discordId: string,
 	updates: {
-		incrementAudioReferences?: boolean;
+		incrementAudioButtons?: boolean;
 		incrementPlayCount?: number;
 	},
 ): Promise<void> {
@@ -179,8 +179,8 @@ export async function updateUserStats(
 			updatedAt: now,
 		};
 
-		if (updates.incrementAudioReferences) {
-			updateData.audioReferencesCount = 1; // Firestore increment
+		if (updates.incrementAudioButtons) {
+			updateData.audioButtonsCount = 1; // Firestore increment
 		}
 
 		if (updates.incrementPlayCount && updates.incrementPlayCount > 0) {

@@ -1,14 +1,13 @@
-import type { FrontendAudioReferenceData } from "@suzumina.click/shared-types";
+import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AudioReferenceCard } from "./AudioReferenceCard";
+import { AudioButtonCard } from "./AudioButtonCard";
 
 // Mock the actions
 vi.mock("@/app/buttons/actions", () => ({
 	incrementPlayCount: vi.fn().mockResolvedValue({ success: true }),
 	incrementLikeCount: vi.fn().mockResolvedValue({ success: true }),
 	decrementLikeCount: vi.fn().mockResolvedValue({ success: true }),
-	incrementViewCount: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 // Mock Next.js Link
@@ -52,34 +51,36 @@ vi.mock("./YouTubePlayer", () => ({
 	}),
 }));
 
-const mockAudioReference: FrontendAudioReferenceData = {
-	id: "test-audio-ref-1",
+const mockAudioButton: FrontendAudioButtonData = {
+	id: "test-audio-button-1",
 	title: "テスト音声ボタン",
 	description: "これはテスト用の音声ボタンです",
 	category: "voice",
 	tags: ["テスト", "音声"],
-	videoId: "test-video-id",
-	videoTitle: "テスト動画タイトル",
+	sourceVideoId: "test-video-id",
+	sourceVideoTitle: "テスト動画タイトル",
 	startTime: 30,
 	endTime: 45,
-	duration: 15,
+	uploadedBy: "test-user-id",
+	uploadedByName: "テストユーザー",
 	playCount: 100,
 	likeCount: 25,
-	viewCount: 500,
 	isPublic: true,
 	createdAt: "2024-01-01T00:00:00Z",
 	updatedAt: "2024-01-01T00:00:00Z",
+	durationText: "15秒",
+	relativeTimeText: "1年前",
 };
 
-describe("AudioReferenceCard", () => {
+describe("AudioButtonCard", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	it("基本的な音声リファレンスカードが表示される", () => {
+	it("基本的な音声ボタンカードが表示される", () => {
 		render(
-			<AudioReferenceCard
-				audioReference={mockAudioReference}
+			<AudioButtonCard
+				audioButton={mockAudioButton}
 				showSourceVideo={true}
 				size="md"
 				variant="default"
@@ -92,8 +93,8 @@ describe("AudioReferenceCard", () => {
 
 	it("プレイボタンが存在する", () => {
 		render(
-			<AudioReferenceCard
-				audioReference={mockAudioReference}
+			<AudioButtonCard
+				audioButton={mockAudioButton}
 				showSourceVideo={true}
 				size="md"
 				variant="default"
@@ -107,8 +108,8 @@ describe("AudioReferenceCard", () => {
 
 	it("統計情報が表示される", () => {
 		render(
-			<AudioReferenceCard
-				audioReference={mockAudioReference}
+			<AudioButtonCard
+				audioButton={mockAudioButton}
 				showSourceVideo={true}
 				size="md"
 				variant="default"
@@ -121,8 +122,8 @@ describe("AudioReferenceCard", () => {
 
 	it("タグが表示される", () => {
 		render(
-			<AudioReferenceCard
-				audioReference={mockAudioReference}
+			<AudioButtonCard
+				audioButton={mockAudioButton}
 				showSourceVideo={true}
 				size="md"
 				variant="default"
@@ -135,8 +136,8 @@ describe("AudioReferenceCard", () => {
 
 	it("元動画情報が表示される", () => {
 		render(
-			<AudioReferenceCard
-				audioReference={mockAudioReference}
+			<AudioButtonCard
+				audioButton={mockAudioButton}
 				showSourceVideo={true}
 				size="md"
 				variant="default"
@@ -148,8 +149,8 @@ describe("AudioReferenceCard", () => {
 
 	it("元動画を非表示にできる", () => {
 		render(
-			<AudioReferenceCard
-				audioReference={mockAudioReference}
+			<AudioButtonCard
+				audioButton={mockAudioButton}
 				showSourceVideo={false}
 				size="md"
 				variant="default"
@@ -162,8 +163,8 @@ describe("AudioReferenceCard", () => {
 
 	it("カテゴリラベルが表示される", () => {
 		render(
-			<AudioReferenceCard
-				audioReference={mockAudioReference}
+			<AudioButtonCard
+				audioButton={mockAudioButton}
 				showSourceVideo={true}
 				size="md"
 				variant="default"
@@ -176,8 +177,8 @@ describe("AudioReferenceCard", () => {
 
 	it("説明が表示される", () => {
 		render(
-			<AudioReferenceCard
-				audioReference={mockAudioReference}
+			<AudioButtonCard
+				audioButton={mockAudioButton}
 				showSourceVideo={true}
 				size="md"
 				variant="default"
@@ -189,13 +190,13 @@ describe("AudioReferenceCard", () => {
 
 	it("空の説明でもエラーが起こらない", () => {
 		const refWithoutDescription = {
-			...mockAudioReference,
+			...mockAudioButton,
 			description: undefined,
 		};
 
 		render(
-			<AudioReferenceCard
-				audioReference={refWithoutDescription}
+			<AudioButtonCard
+				audioButton={refWithoutDescription}
 				showSourceVideo={true}
 				size="md"
 				variant="default"
@@ -207,13 +208,13 @@ describe("AudioReferenceCard", () => {
 
 	it("タグが空の場合でもエラーが起こらない", () => {
 		const refWithoutTags = {
-			...mockAudioReference,
+			...mockAudioButton,
 			tags: [],
 		};
 
 		render(
-			<AudioReferenceCard
-				audioReference={refWithoutTags}
+			<AudioButtonCard
+				audioButton={refWithoutTags}
 				showSourceVideo={true}
 				size="md"
 				variant="default"

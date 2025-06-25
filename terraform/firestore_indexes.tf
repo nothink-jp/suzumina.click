@@ -177,26 +177,10 @@ resource "google_firestore_index" "audiobuttons_tags_ispublic_createdat_desc" {
   }
 }
 
-# audioReferences コレクションのインデックス - isPublic（昇順）、createdAt（降順）
-resource "google_firestore_index" "audioreferences_ispublic_createdat_desc" {
+# audioButtons コレクションのインデックス - createdBy（昇順）、createdAt（降順）
+resource "google_firestore_index" "audiobuttons_createdby_createdat_desc" {
   project    = var.gcp_project_id
-  collection = "audioReferences"
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "createdAt"
-    order      = "DESCENDING"
-  }
-}
-
-# audioReferences コレクションのインデックス - createdBy（昇順）、createdAt（降順）
-resource "google_firestore_index" "audioreferences_createdby_createdat_desc" {
-  project    = var.gcp_project_id
-  collection = "audioReferences"
+  collection = "audioButtons"
   
   fields {
     field_path = "createdBy"
@@ -206,64 +190,6 @@ resource "google_firestore_index" "audioreferences_createdby_createdat_desc" {
   fields {
     field_path = "createdAt"
     order      = "DESCENDING"
-  }
-}
-
-# audioReferences コレクションのインデックス - isPublic（昇順）、playCount（降順）
-resource "google_firestore_index" "audioreferences_ispublic_playcount_desc" {
-  project    = var.gcp_project_id
-  collection = "audioReferences"
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "playCount"
-    order      = "DESCENDING"
-  }
-}
-
-# audioReferences コレクションのインデックス - isPublic（昇順）、category（昇順）、createdAt（降順）
-resource "google_firestore_index" "audioreferences_ispublic_category_createdat_desc" {
-  project    = var.gcp_project_id
-  collection = "audioReferences"
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "category"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "createdAt"
-    order      = "DESCENDING"
-  }
-}
-
-# audioReferences コレクションのインデックス - isPublic（昇順）、videoId（昇順）、startTime（昇順）
-resource "google_firestore_index" "audioreferences_ispublic_videoid_starttime_asc" {
-  project    = var.gcp_project_id
-  collection = "audioReferences"
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "videoId"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "startTime"
-    order      = "ASCENDING"
   }
 }
 

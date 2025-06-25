@@ -1,30 +1,27 @@
 "use client";
 
-import {
-	type CreateAudioReferenceInput,
-	formatTimestamp,
-} from "@suzumina.click/shared-types/src/audio-reference";
+import { type CreateAudioButtonInput, formatTimestamp } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Clock, Loader2, Play, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useRef, useState } from "react";
-import { createAudioReference } from "@/app/buttons/actions";
+import { createAudioButton } from "@/app/buttons/actions";
 import { YouTubePlayer, type YTPlayer } from "./YouTubePlayer";
 
-interface AudioReferenceCreatorProps {
+interface AudioButtonCreatorProps {
 	videoId: string;
 	videoTitle: string;
 	videoDuration?: number;
 	initialStartTime?: number;
 }
 
-export function AudioReferenceCreator({
+export function AudioButtonCreator({
 	videoId,
 	videoTitle,
 	videoDuration = 600,
 	initialStartTime = 0,
-}: AudioReferenceCreatorProps) {
+}: AudioButtonCreatorProps) {
 	const router = useRouter();
 	const titleId = useId();
 
@@ -52,12 +49,8 @@ export function AudioReferenceCreator({
 			if (lastTimeRef.current !== roundedTime) {
 				lastTimeRef.current = roundedTime;
 				setCurrentTime(roundedTime);
-				// biome-ignore lint/suspicious/noConsole: Debug logging for time updates
-				console.log("Time updated:", roundedTime);
 			}
 		} else {
-			// biome-ignore lint/suspicious/noConsole: Debug logging for invalid time values
-			console.warn("Invalid time value received:", time, typeof time);
 		}
 	}, []);
 
@@ -75,13 +68,8 @@ export function AudioReferenceCreator({
 					Number.isFinite(playerTime)
 				) {
 					time = Math.floor(playerTime);
-					// biome-ignore lint/suspicious/noConsole: Debug logging for player time
-					console.log("開始時間設定:", time, "秒");
 				}
-			} catch (error) {
-				// biome-ignore lint/suspicious/noConsole: Debug logging for player errors
-				console.warn("プレイヤー時間取得エラー:", error);
-			}
+			} catch (_error) {}
 		}
 
 		setStartTime(time);
@@ -104,16 +92,11 @@ export function AudioReferenceCreator({
 				) {
 					time = Math.floor(playerTime);
 				}
-			} catch (error) {
-				// biome-ignore lint/suspicious/noConsole: Debug logging for player errors
-				console.warn("プレイヤー時間取得エラー:", error);
-			}
+			} catch (_error) {}
 		}
 
 		if (time > startTime) {
 			const newEndTime = Math.min(time, startTime + 60);
-			// biome-ignore lint/suspicious/noConsole: Debug logging for end time setting
-			console.log("終了時間設定:", newEndTime, "秒");
 			setEndTime(newEndTime);
 		}
 	}, [currentTime, startTime]);
@@ -147,8 +130,8 @@ export function AudioReferenceCreator({
 		setError("");
 
 		try {
-			const input: CreateAudioReferenceInput = {
-				videoId,
+			const input: CreateAudioButtonInput = {
+				sourceVideoId: videoId,
 				title: title.trim(),
 				category: "voice", // デフォルト
 				startTime,
@@ -156,24 +139,14 @@ export function AudioReferenceCreator({
 				isPublic: true,
 			};
 
-			const result = await createAudioReference(input);
+			const result = await createAudioButton(input);
 
 			if (result.success) {
 				router.push(`/buttons/${result.data.id}`);
 			} else {
 				setError(result.error || "作成に失敗しました");
 			}
-		} catch (error) {
-			console.error("Error in handleCreate:", {
-				error: error instanceof Error ? error.message : String(error),
-				stack: error instanceof Error ? error.stack : undefined,
-				input: {
-					videoId,
-					title: title.trim(),
-					startTime,
-					endTime,
-				},
-			});
+		} catch (_error) {
 			setError("予期しないエラーが発生しました");
 		} finally {
 			setIsCreating(false);

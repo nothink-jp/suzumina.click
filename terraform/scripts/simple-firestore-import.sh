@@ -41,7 +41,7 @@ if gcloud firestore indexes composite list --project="$PROJECT_ID" >/dev/null 2>
     echo "   terraform import google_firestore_index.RESOURCE_NAME 'INDEX_FULL_PATH'"
     echo ""
     echo "例:"
-    echo "   terraform import google_firestore_index.audioreferences_ispublic_createdat_desc 'projects/$PROJECT_ID/databases/(default)/collectionGroups/audioReferences/indexes/YOUR_INDEX_ID'"
+    echo "   terraform import google_firestore_index.audiobuttons_ispublic_createdat_desc 'projects/$PROJECT_ID/databases/(default)/collectionGroups/audioButtons/indexes/YOUR_INDEX_ID'"
     echo ""
     
     # インデックス詳細名を取得

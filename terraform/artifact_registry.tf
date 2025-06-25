@@ -40,8 +40,6 @@ resource "google_artifact_registry_repository" "docker_repo" {
     action = "KEEP"
     most_recent_versions {
       keep_count = 5
-    }
-    condition {
       package_name_prefixes = ["web"]
     }
   }

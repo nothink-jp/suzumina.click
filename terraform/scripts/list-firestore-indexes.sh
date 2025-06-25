@@ -24,23 +24,27 @@ echo ""
 echo "🚀 インポートコマンド例:"
 echo ""
 
-# audioReferences コレクションのインデックス
-echo "# audioReferences コレクション"
+# audioButtons コレクションのインデックス
+echo "# audioButtons コレクション"
 gcloud firestore indexes composite list \
     --project="$PROJECT_ID" \
-    --filter="collectionGroup:audioReferences" \
+    --filter="collectionGroup:audioButtons" \
     --format="value(name)" | while read -r index; do
     
     if [[ $index == *"isPublic"*"createdAt"* ]]; then
-        echo "terraform import google_firestore_index.audioreferences_ispublic_createdat_desc '$index'"
+        echo "terraform import google_firestore_index.audiobuttons_ispublic_createdat_desc '$index'"
     elif [[ $index == *"createdBy"*"createdAt"* ]]; then
-        echo "terraform import google_firestore_index.audioreferences_createdby_createdat_desc '$index'"
+        echo "terraform import google_firestore_index.audiobuttons_createdby_createdat_desc '$index'"
     elif [[ $index == *"isPublic"*"playCount"* ]]; then
-        echo "terraform import google_firestore_index.audioreferences_ispublic_playcount_desc '$index'"
+        echo "terraform import google_firestore_index.audiobuttons_ispublic_playcount_desc '$index'"
+    elif [[ $index == *"isPublic"*"likeCount"* ]]; then
+        echo "terraform import google_firestore_index.audiobuttons_ispublic_likecount_desc '$index'"
     elif [[ $index == *"isPublic"*"category"*"createdAt"* ]]; then
-        echo "terraform import google_firestore_index.audioreferences_ispublic_category_createdat_desc '$index'"
-    elif [[ $index == *"isPublic"*"videoId"*"startTime"* ]]; then
-        echo "terraform import google_firestore_index.audioreferences_ispublic_videoid_starttime_asc '$index'"
+        echo "terraform import google_firestore_index.audiobuttons_ispublic_category_createdat_desc '$index'"
+    elif [[ $index == *"isPublic"*"sourceVideoId"*"startTime"* ]]; then
+        echo "terraform import google_firestore_index.audiobuttons_ispublic_sourcevideoid_starttime_asc '$index'"
+    elif [[ $index == *"tags"*"isPublic"*"createdAt"* ]]; then
+        echo "terraform import google_firestore_index.audiobuttons_tags_ispublic_createdat_desc '$index'"
     else
         echo "# 未定義のインデックス: $index"
     fi

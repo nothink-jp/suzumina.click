@@ -1,9 +1,9 @@
 "use client";
 
 import {
-	type FrontendAudioReferenceData,
+	type FrontendAudioButtonData,
 	formatTimestamp,
-	getAudioReferenceCategoryLabel,
+	getAudioButtonCategoryLabel,
 } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -22,23 +22,18 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@suzumina.click/ui/components/ui/dialog";
-import { Clock, ExternalLink, Eye, Heart, Pause, Play, Share2, Tag } from "lucide-react";
+import { Clock, ExternalLink, Heart, Pause, Play, Share2, Tag } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import {
-	decrementLikeCount,
-	incrementLikeCount,
-	incrementPlayCount,
-	incrementViewCount,
-} from "@/app/buttons/actions";
+import { decrementLikeCount, incrementLikeCount, incrementPlayCount } from "@/app/buttons/actions";
 import { useYouTubePlayer, YouTubePlayer, type YTPlayer } from "./YouTubePlayer";
 
 /**
- * AudioReferenceCard component props
+ * AudioButtonCard component props
  */
-export interface AudioReferenceCardProps {
-	/** 音声リファレンスデータ */
-	audioReference: FrontendAudioReferenceData;
+export interface AudioButtonCardProps {
+	/** 音声ボタンデータ */
+	audioButton: FrontendAudioButtonData;
 	/** サイズバリアント */
 	size?: "sm" | "md" | "lg";
 	/** 表示バリアント */
@@ -54,18 +49,18 @@ export interface AudioReferenceCardProps {
 	/** プレビューモード（作成時のプレビュー） */
 	isPreview?: boolean;
 	/** クリック時のコールバック */
-	onClick?: (audioReference: FrontendAudioReferenceData) => void;
+	onClick?: (audioButton: FrontendAudioButtonData) => void;
 	/** クラス名 */
 	className?: string;
 }
 
 /**
- * AudioReferenceCard Component
+ * AudioButtonCard Component
  *
  * タイムスタンプ参照システムによる音声ボタンカード
  */
-export function AudioReferenceCard({
-	audioReference,
+export function AudioButtonCard({
+	audioButton,
 	size = "md",
 	variant = "default",
 	showSourceVideo = true,
@@ -75,34 +70,27 @@ export function AudioReferenceCard({
 	isPreview = false,
 	onClick,
 	className = "",
-}: AudioReferenceCardProps) {
+}: AudioButtonCardProps) {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [hasViewed, setHasViewed] = useState(false);
 	const [liked, setLiked] = useState(false);
 	const [localStats, setLocalStats] = useState({
-		playCount: audioReference.playCount,
-		likeCount: audioReference.likeCount,
-		viewCount: audioReference.viewCount,
+		playCount: audioButton.playCount,
+		likeCount: audioButton.likeCount,
 	});
 
 	const { player, handlers } = useYouTubePlayer();
 
 	// YouTube URLを生成
-	const youtubeUrl = `https://www.youtube.com/watch?v=${audioReference.videoId}&t=${audioReference.startTime}s`;
+	const youtubeUrl = `https://www.youtube.com/watch?v=${audioButton.sourceVideoId}&t=${audioButton.startTime}s`;
 
 	// カード表示時の処理
 	const handleCardView = useCallback(async () => {
 		if (!hasViewed && !isPreview) {
 			setHasViewed(true);
-			try {
-				await incrementViewCount(audioReference.id);
-				setLocalStats((prev) => ({ ...prev, viewCount: prev.viewCount + 1 }));
-			} catch (_error) {
-				// 表示回数更新エラーは無視してカード表示を継続
-			}
 		}
-	}, [audioReference.id, hasViewed, isPreview]);
+	}, [hasViewed, isPreview]);
 
 	// 再生ボタンクリック処理
 	const handlePlayClick = useCallback(async () => {
@@ -117,17 +105,17 @@ export function AudioReferenceCard({
 
 			// 再生統計を更新（プレビューモードでは無効）
 			if (!isPlaying && !isPreview) {
-				await incrementPlayCount(audioReference.id);
+				await incrementPlayCount(audioButton.id);
 				setLocalStats((prev) => ({ ...prev, playCount: prev.playCount + 1 }));
 			}
 
 			setIsPlaying(!isPlaying);
-			onClick?.(audioReference);
+			onClick?.(audioButton);
 			handleCardView();
 		} catch (_error) {
 			// 再生・インタラクションエラーは無視してカード表示を継続
 		}
-	}, [interactive, isDialogOpen, isPlaying, isPreview, audioReference, onClick, handleCardView]);
+	}, [interactive, isDialogOpen, isPlaying, isPreview, audioButton, onClick, handleCardView]);
 
 	// いいね処理
 	const handleLikeClick = useCallback(
@@ -139,11 +127,11 @@ export function AudioReferenceCard({
 
 			try {
 				if (liked) {
-					await decrementLikeCount(audioReference.id);
+					await decrementLikeCount(audioButton.id);
 					setLocalStats((prev) => ({ ...prev, likeCount: prev.likeCount - 1 }));
 					setLiked(false);
 				} else {
-					await incrementLikeCount(audioReference.id);
+					await incrementLikeCount(audioButton.id);
 					setLocalStats((prev) => ({ ...prev, likeCount: prev.likeCount + 1 }));
 					setLiked(true);
 				}
@@ -151,7 +139,7 @@ export function AudioReferenceCard({
 				// 表示回数更新エラーは無視してカード表示を継続
 			}
 		},
-		[interactive, isPreview, liked, audioReference.id],
+		[interactive, isPreview, liked, audioButton.id],
 	);
 
 	// 共有処理
@@ -162,8 +150,8 @@ export function AudioReferenceCard({
 			if (navigator.share) {
 				try {
 					await navigator.share({
-						title: audioReference.title,
-						text: audioReference.description || `「${audioReference.title}」の音声ボタン`,
+						title: audioButton.title,
+						text: audioButton.description || `「${audioButton.title}」の音声ボタン`,
 						url: youtubeUrl,
 					});
 				} catch (error) {
@@ -180,7 +168,7 @@ export function AudioReferenceCard({
 				}
 			}
 		},
-		[audioReference, youtubeUrl],
+		[audioButton, youtubeUrl],
 	);
 
 	// プレイヤーの制御
@@ -189,11 +177,11 @@ export function AudioReferenceCard({
 			handlers.onReady(playerInstance);
 
 			// 指定範囲に自動シーク
-			if (audioReference.startTime > 0) {
-				playerInstance.seekTo(audioReference.startTime);
+			if (audioButton.startTime > 0) {
+				playerInstance.seekTo(audioButton.startTime);
 			}
 		},
-		[audioReference.startTime, handlers.onReady],
+		[audioButton.startTime, handlers.onReady],
 	);
 
 	const handlePlayerStateChange = useCallback(
@@ -201,21 +189,17 @@ export function AudioReferenceCard({
 			handlers.onStateChange(state);
 
 			// 終了時間に達したら停止
-			if (state === 1 && audioReference.endTime) {
+			if (state === 1 && audioButton.endTime) {
 				// PLAYING
 				const checkEndTime = setInterval(() => {
-					if (
-						player &&
-						audioReference.endTime &&
-						player.getCurrentTime() >= audioReference.endTime
-					) {
+					if (player && audioButton.endTime && player.getCurrentTime() >= audioButton.endTime) {
 						player.pauseVideo();
 						clearInterval(checkEndTime);
 					}
 				}, 100);
 			}
 		},
-		[audioReference.endTime, player, handlers.onStateChange],
+		[audioButton.endTime, player, handlers.onStateChange],
 	);
 
 	// サイズとバリアントに基づくスタイル
@@ -251,30 +235,30 @@ export function AudioReferenceCard({
 			<CardHeader className="pb-3">
 				<div className="flex items-start justify-between">
 					<div className="flex-1 min-w-0">
-						<CardTitle className={`${getTitleSize()} truncate`}>{audioReference.title}</CardTitle>
-						{showDescription && audioReference.description && variant !== "compact" && (
+						<CardTitle className={`${getTitleSize()} truncate`}>{audioButton.title}</CardTitle>
+						{showDescription && audioButton.description && variant !== "compact" && (
 							<CardDescription className="mt-1 text-sm line-clamp-2">
-								{audioReference.description}
+								{audioButton.description}
 							</CardDescription>
 						)}
 					</div>
 					<Badge variant="secondary" className="ml-2 shrink-0">
-						{getAudioReferenceCategoryLabel(audioReference.category)}
+						{getAudioButtonCategoryLabel(audioButton.category)}
 					</Badge>
 				</div>
 
 				{/* タグ表示 */}
-				{audioReference.tags && audioReference.tags.length > 0 && variant !== "compact" && (
+				{audioButton.tags && audioButton.tags.length > 0 && variant !== "compact" && (
 					<div className="flex flex-wrap gap-1 mt-2">
-						{audioReference.tags.slice(0, 3).map((tag) => (
+						{audioButton.tags.slice(0, 3).map((tag) => (
 							<Badge key={tag} variant="outline" className="text-xs">
 								<Tag className="h-2 w-2 mr-1" />
 								{tag}
 							</Badge>
 						))}
-						{audioReference.tags.length > 3 && (
+						{audioButton.tags.length > 3 && (
 							<Badge variant="outline" className="text-xs">
-								+{audioReference.tags.length - 3}
+								+{audioButton.tags.length - 3}
 							</Badge>
 						)}
 					</div>
@@ -293,25 +277,25 @@ export function AudioReferenceCard({
 							>
 								{isPlaying ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
 								{isPlaying ? "停止" : "再生"}
-								<span className="ml-2 text-xs">{audioReference.timestampText}</span>
+								<span className="ml-2 text-xs">{formatTimestamp(audioButton.startTime)}</span>
 							</Button>
 						</DialogTrigger>
 
 						<DialogContent className="max-w-4xl">
 							<DialogHeader>
-								<DialogTitle>{audioReference.title}</DialogTitle>
+								<DialogTitle>{audioButton.title}</DialogTitle>
 								<DialogDescription>
-									{audioReference.videoTitle} - {audioReference.timestampText}
+									{audioButton.sourceVideoTitle} - {formatTimestamp(audioButton.startTime)}
 								</DialogDescription>
 							</DialogHeader>
 
 							<div className="space-y-4">
 								<YouTubePlayer
-									videoId={audioReference.videoId}
+									videoId={audioButton.sourceVideoId}
 									width="100%"
 									height="400"
-									startTime={audioReference.startTime}
-									endTime={audioReference.endTime}
+									startTime={audioButton.startTime}
+									endTime={audioButton.endTime}
 									onReady={handlePlayerReady}
 									onStateChange={handlePlayerStateChange}
 									onTimeUpdate={handlers.onTimeUpdate}
@@ -319,11 +303,11 @@ export function AudioReferenceCard({
 
 								<div className="flex items-center justify-between">
 									<div className="text-sm text-muted-foreground">
-										再生範囲: {formatTimestamp(audioReference.startTime)} -{" "}
-										{formatTimestamp(audioReference.endTime)}（{audioReference.durationText}）
+										再生範囲: {formatTimestamp(audioButton.startTime)} -{" "}
+										{formatTimestamp(audioButton.endTime)}（{audioButton.durationText}）
 									</div>
 									<Button variant="outline" size="sm" asChild>
-										<Link href={audioReference.youtubeUrl} target="_blank">
+										<Link href={youtubeUrl} target="_blank">
 											<ExternalLink className="h-4 w-4 mr-2" />
 											YouTubeで開く
 										</Link>
@@ -362,14 +346,10 @@ export function AudioReferenceCard({
 								<Heart className="h-3 w-3" />
 								{localStats.likeCount.toLocaleString()}
 							</span>
-							<span className="flex items-center gap-1">
-								<Eye className="h-3 w-3" />
-								{localStats.viewCount.toLocaleString()}
-							</span>
 						</div>
 						<span className="flex items-center gap-1">
 							<Clock className="h-3 w-3" />
-							{audioReference.durationText}
+							{audioButton.durationText}
 						</span>
 					</div>
 				)}
@@ -379,15 +359,10 @@ export function AudioReferenceCard({
 					<div className="border-t pt-3">
 						<div className="flex items-center justify-between">
 							<div className="min-w-0 flex-1">
-								<p className="text-sm font-medium truncate">{audioReference.videoTitle}</p>
-								{audioReference.channelTitle && (
-									<p className="text-xs text-muted-foreground truncate">
-										{audioReference.channelTitle}
-									</p>
-								)}
+								<p className="text-sm font-medium truncate">{audioButton.sourceVideoTitle}</p>
 							</div>
 							<Button variant="ghost" size="sm" asChild>
-								<Link href={`/videos/${audioReference.videoId}`}>
+								<Link href={`/videos/${audioButton.sourceVideoId}`}>
 									<ExternalLink className="h-4 w-4" />
 								</Link>
 							</Button>
@@ -397,7 +372,7 @@ export function AudioReferenceCard({
 
 				{/* 作成日時 */}
 				<div className="text-xs text-muted-foreground text-right">
-					{new Date(audioReference.createdAt).toLocaleDateString("ja-JP", {
+					{new Date(audioButton.createdAt).toLocaleDateString("ja-JP", {
 						year: "numeric",
 						month: "short",
 						day: "numeric",
@@ -409,14 +384,14 @@ export function AudioReferenceCard({
 }
 
 /**
- * AudioReferenceCardSkeleton Component
+ * AudioButtonCardSkeleton Component
  *
  * ローディング中に表示するスケルトン
  */
-export function AudioReferenceCardSkeleton({
+export function AudioButtonCardSkeleton({
 	size = "md",
 	variant = "default",
-}: Pick<AudioReferenceCardProps, "size" | "variant">) {
+}: Pick<AudioButtonCardProps, "size" | "variant">) {
 	const getCardStyles = () => {
 		const sizeStyles = {
 			sm: "p-3",
@@ -456,4 +431,4 @@ export function AudioReferenceCardSkeleton({
 	);
 }
 
-export default AudioReferenceCard;
+export default AudioButtonCard;

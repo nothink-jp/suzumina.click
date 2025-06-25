@@ -1,13 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AudioReferenceCreator } from "./AudioReferenceCreator";
+import { AudioButtonCreator } from "./AudioButtonCreator";
 
 // Mock the actions
 vi.mock("@/app/buttons/actions", () => ({
-	createAudioReference: vi.fn().mockResolvedValue({
+	createAudioButton: vi.fn().mockResolvedValue({
 		success: true,
-		data: { id: "new-audio-ref-id" },
+		data: { id: "new-audio-button-id" },
 	}),
 }));
 
@@ -29,11 +29,11 @@ vi.mock("./YouTubePlayer", () => ({
 	),
 }));
 
-// Mock AudioReferenceCard
-vi.mock("./AudioReferenceCard", () => ({
+// Mock AudioButtonCard
+vi.mock("./AudioButtonCard", () => ({
 	// biome-ignore lint/correctness/noUnusedFunctionParameters: props used for testing interface compatibility
-	AudioReferenceCard: ({ audioReference, ...props }: any) => (
-		<div data-testid="audio-reference-card">Audio Reference Card Mock: {audioReference?.title}</div>
+	AudioButtonCard: ({ audioButton, ...props }: any) => (
+		<div data-testid="audio-button-card">Audio Button Card Mock: {audioButton?.title}</div>
 	),
 }));
 
@@ -74,7 +74,7 @@ vi.mock("@suzumina.click/ui/components/ui/select", () => ({
 	),
 }));
 
-describe("AudioReferenceCreator", () => {
+describe("AudioButtonCreator", () => {
 	const defaultProps = {
 		videoId: "test-video-id",
 		videoTitle: "テスト動画タイトル",
@@ -87,14 +87,14 @@ describe("AudioReferenceCreator", () => {
 	});
 
 	it("基本的なフォームが表示される", () => {
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
 		expect(screen.getByText(/テスト動画タイトル/)).toBeInTheDocument();
 	});
 
 	it("タイトル入力フィールドが存在する", () => {
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		// Use placeholder text since the label includes asterisk
 		const titleInput = screen.getByPlaceholderText("例: おはようございます");
@@ -103,7 +103,7 @@ describe("AudioReferenceCreator", () => {
 	});
 
 	it("切り抜き範囲セクションが存在する", () => {
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		expect(screen.getByText("切り抜き範囲")).toBeInTheDocument();
 		expect(screen.getByText("開始時間に設定")).toBeInTheDocument();
@@ -111,14 +111,14 @@ describe("AudioReferenceCreator", () => {
 	});
 
 	it("現在時間表示が存在する", () => {
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		expect(screen.getByText("動画再生時間")).toBeInTheDocument();
 	});
 
 	it("タイトル入力が正しく動作する", async () => {
 		const user = userEvent.setup();
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		const titleInput = screen.getByPlaceholderText("例: おはようございます");
 		await user.type(titleInput, "新しい音声ボタン");
@@ -128,7 +128,7 @@ describe("AudioReferenceCreator", () => {
 
 	it("現在時間ボタンが正しく動作する", async () => {
 		const user = userEvent.setup();
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		const startTimeButton = screen.getByRole("button", { name: /開始時間に設定/ });
 		const endTimeButton = screen.getByRole("button", { name: /終了時間に設定/ });
@@ -144,20 +144,20 @@ describe("AudioReferenceCreator", () => {
 	});
 
 	it("プレビューボタンが存在する", () => {
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
 		expect(previewButton).toBeInTheDocument();
 	});
 
 	it("長さ表示セクションが存在する", () => {
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		expect(screen.getByText(/切り抜き時間:/)).toBeInTheDocument();
 	});
 
 	it("YouTubeプレイヤーが表示される", () => {
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		const youtubePlayer = screen.getByTestId("youtube-player");
 		expect(youtubePlayer).toBeInTheDocument();
@@ -165,7 +165,7 @@ describe("AudioReferenceCreator", () => {
 	});
 
 	it("作成ボタンが存在する", () => {
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		const createButton = screen.getByRole("button", {
 			name: /音声ボタンを作成/,
@@ -174,14 +174,14 @@ describe("AudioReferenceCreator", () => {
 	});
 
 	it("キャンセルボタンが存在する", () => {
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		const cancelButton = screen.getByRole("button", { name: /キャンセル/i });
 		expect(cancelButton).toBeInTheDocument();
 	});
 
 	it("プレビューボタンが表示される", () => {
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		// Look for the specific preview button text
 		const previewButton = screen.getByText("選択範囲をプレビュー");
@@ -190,7 +190,7 @@ describe("AudioReferenceCreator", () => {
 
 	it("キャンセルボタンがクリック可能である", async () => {
 		const user = userEvent.setup();
-		render(<AudioReferenceCreator {...defaultProps} />);
+		render(<AudioButtonCreator {...defaultProps} />);
 
 		const cancelButton = screen.getByRole("button", { name: /キャンセル/i });
 		await user.click(cancelButton);
@@ -200,14 +200,14 @@ describe("AudioReferenceCreator", () => {
 	});
 
 	it("initialStartTimeが正しく設定される", () => {
-		render(<AudioReferenceCreator {...defaultProps} initialStartTime={30} />);
+		render(<AudioButtonCreator {...defaultProps} initialStartTime={30} />);
 
 		// コンポーネントが正常にレンダリングされることを確認
 		expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
 	});
 
 	it("videoDurationが正しく設定される", () => {
-		render(<AudioReferenceCreator {...defaultProps} videoDuration={600} />);
+		render(<AudioButtonCreator {...defaultProps} videoDuration={600} />);
 
 		// コンポーネントが正常にレンダリングされることを確認
 		expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();

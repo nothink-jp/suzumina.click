@@ -4,24 +4,26 @@ import AudioButtonsPage from "./page";
 
 // Mock the server actions
 vi.mock("./actions", () => ({
-	getAudioReferences: vi.fn().mockResolvedValue({
+	getAudioButtons: vi.fn().mockResolvedValue({
 		success: true,
 		data: {
-			audioReferences: [
+			audioButtons: [
 				{
 					id: "audio-1",
 					title: "テスト音声ボタン1",
 					description: "説明1",
 					category: "voice",
 					tags: ["テスト"],
-					videoId: "video-1",
-					videoTitle: "テスト動画1",
+					sourceVideoId: "video-1",
+					sourceVideoTitle: "テスト動画1",
+					uploadedBy: "user-1",
+					uploadedByName: "ユーザー1",
+					durationText: "10秒",
+					relativeTimeText: "1日前",
 					startTime: 10,
 					endTime: 20,
-					duration: 10,
 					playCount: 5,
 					likeCount: 2,
-					viewCount: 10,
 					isPublic: true,
 					createdAt: "2024-01-01T00:00:00Z",
 					updatedAt: "2024-01-01T00:00:00Z",
@@ -32,14 +34,16 @@ vi.mock("./actions", () => ({
 					description: "説明2",
 					category: "bgm",
 					tags: ["音楽"],
-					videoId: "video-2",
-					videoTitle: "テスト動画2",
+					sourceVideoId: "video-2",
+					sourceVideoTitle: "テスト動画2",
+					uploadedBy: "user-2",
+					uploadedByName: "ユーザー2",
+					durationText: "15秒",
+					relativeTimeText: "2日前",
 					startTime: 30,
 					endTime: 45,
-					duration: 15,
 					playCount: 8,
 					likeCount: 3,
-					viewCount: 15,
 					isPublic: true,
 					createdAt: "2024-01-02T00:00:00Z",
 					updatedAt: "2024-01-02T00:00:00Z",
@@ -51,13 +55,13 @@ vi.mock("./actions", () => ({
 	}),
 }));
 
-// Mock AudioReferenceCard component
-vi.mock("@/components/AudioReferenceCard", () => ({
-	AudioReferenceCard: ({ audioReference }: any) => (
-		<div data-testid="audio-reference-card">
-			<h3>{audioReference.title}</h3>
-			<p>{audioReference.description}</p>
-			<span>Category: {audioReference.category}</span>
+// Mock AudioButtonCard component
+vi.mock("@/components/AudioButtonCard", () => ({
+	AudioButtonCard: ({ audioButton }: any) => (
+		<div data-testid="audio-button-card">
+			<h3>{audioButton.title}</h3>
+			<p>{audioButton.description}</p>
+			<span>Category: {audioButton.category}</span>
 		</div>
 	),
 }));
@@ -67,12 +71,12 @@ vi.mock("./components/AudioButtonsList", () => ({
 	default: () => {
 		return (
 			<div data-testid="audio-buttons-list">
-				<div data-testid="audio-reference-card">
+				<div data-testid="audio-button-card">
 					<h4>テストサウンド1</h4>
 					<p>説明1</p>
 					<span>Category: voice</span>
 				</div>
-				<div data-testid="audio-reference-card">
+				<div data-testid="audio-button-card">
 					<h4>テストサウンド2</h4>
 					<p>説明2</p>
 					<span>Category: bgm</span>

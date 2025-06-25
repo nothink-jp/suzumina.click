@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("音声リファレンス機能", () => {
+test.describe("音声ボタン機能", () => {
 	test("音声ボタン一覧ページが表示される", async ({ page }) => {
 		await page.goto("/buttons");
 
@@ -19,7 +19,7 @@ test.describe("音声リファレンス機能", () => {
 		// 動画IDパラメータ付きで音声ボタン作成ページにアクセス
 		await page.goto("/buttons/create?video_id=test-video-id");
 
-		// AudioReferenceCreator コンポーネントが表示される
+		// AudioButtonCreator コンポーネントが表示される
 		await expect(page.getByRole("heading", { name: /音声ボタンを作成/ })).toBeVisible();
 
 		// YouTubeプレイヤーエリアが表示される
@@ -99,7 +99,7 @@ test.describe("音声リファレンス機能", () => {
 	test("音声ボタン詳細ページ", async ({ page }) => {
 		// 実際のIDがある場合の詳細ページにアクセス
 		// テストデータがない場合は、モックURLでUI確認
-		await page.goto("/buttons/test-audio-ref-id");
+		await page.goto("/buttons/test-audio-button-id");
 
 		// 詳細ページの要素が表示される（データがある場合）
 		const heading = page.getByRole("heading").first();

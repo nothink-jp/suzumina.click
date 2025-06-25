@@ -65,7 +65,7 @@ suzumina.clickプロジェクトの変更履歴
 ### 🎵 新機能
 
 - **タイムスタンプ参照システム完全実装** - YouTube動画の特定時間区間への参照による音声ボタン機能
-- **AudioReferenceCreator** - 高機能音声ボタン作成UI（タイムスタンプ選択、プレビュー、メタデータ入力）
+- **AudioButtonCreator** - 高機能音声ボタン作成UI（タイムスタンプ選択、プレビュー、メタデータ入力）
 - **音声ボタン詳細ページ** - 個別音声ボタンの詳細表示、関連ボタン表示、YouTube Player統合
 - **高度な検索・フィルタリング** - カテゴリ、タグ、動画ID、並び順による音声ボタン検索
 
@@ -73,7 +73,7 @@ suzumina.clickプロジェクトの変更履歴
 
 - **Cloud Run完全対応** - Next.js 15用Dockerfile、マルチステージビルド、本番最適化
 - **GitHub Actions CI/CD** - 自動デプロイパイプライン、Workload Identity連携
-- **Firestore セキュリティルール** - audioReferencesコレクション用本番ルール
+- **Firestore セキュリティルール** - audioButtonsコレクション用本番ルール
 - **監視・ロギング** - Cloud Logging、エラートラッキング、パフォーマンス監視
 
 ### ✨ UI・品質向上

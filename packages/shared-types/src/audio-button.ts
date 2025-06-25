@@ -57,26 +57,21 @@ export const AudioButtonBaseSchema = z.object({
  * Firestoreに保存する音声ボタンデータのスキーマ
  */
 export const FirestoreAudioButtonSchema = AudioButtonBaseSchema.extend({
-	// 音声ファイル情報
-	audioUrl: z.string().url({
-		message: "音声URLは有効なURL形式である必要があります",
+	// YouTube動画情報（必須）
+	sourceVideoId: z.string().min(1, {
+		message: "YouTube動画IDは必須です",
 	}),
-	duration: z.number().positive({
-		message: "音声の長さは正の数である必要があります",
-	}), // 秒数
-	fileSize: z.number().positive({
-		message: "ファイルサイズは正の数である必要があります",
-	}), // バイト数
-	format: AudioFormatSchema,
-
-	// 元動画情報（オプション）
-	sourceVideoId: z.string().optional(),
 	sourceVideoTitle: z.string().optional(),
-	startTime: z.number().min(0).optional(), // 元動画での開始時刻（秒）
-	endTime: z.number().min(0).optional(), // 元動画での終了時刻（秒）
+	startTime: z.number().min(0), // 開始時刻（秒）
+	endTime: z.number().min(0), // 終了時刻（秒）
 
-	// ユーザー・権限情報
-	uploadedBy: z.string().optional(), // 将来のユーザー認証用
+	// ユーザー情報
+	uploadedBy: z.string().min(1, {
+		message: "アップローダーIDは必須です",
+	}),
+	uploadedByName: z.string().min(1, {
+		message: "アップローダー名は必須です",
+	}),
 	isPublic: z.boolean().default(true),
 
 	// 統計情報
@@ -96,61 +91,66 @@ export const FirestoreAudioButtonSchema = AudioButtonBaseSchema.extend({
  * フロントエンド表示用の音声ボタンデータスキーマ
  */
 export const FrontendAudioButtonSchema = AudioButtonBaseSchema.extend({
-	// 音声ファイル情報
-	audioUrl: z.string().url(),
-	duration: z.number().positive(),
-	fileSize: z.number().positive(),
-	format: AudioFormatSchema,
-
-	// 元動画情報
-	sourceVideoId: z.string().optional(),
+	// YouTube動画情報
+	sourceVideoId: z.string().min(1),
 	sourceVideoTitle: z.string().optional(),
 	sourceVideoThumbnailUrl: z.string().url().optional(),
-	startTime: z.number().min(0).optional(),
-	endTime: z.number().min(0).optional(),
+	startTime: z.number().min(0),
+	endTime: z.number().min(0),
 
-	// ユーザー・権限情報
-	uploadedBy: z.string().optional(),
+	// ユーザー情報
+	uploadedBy: z.string().min(1),
+	uploadedByName: z.string().min(1),
 	isPublic: z.boolean(),
 
 	// 統計情報
 	playCount: z.number().int().min(0),
 	likeCount: z.number().int().min(0),
 
-	// 管理情報（ISO文字列形式）
+	// 管理情報
 	createdAt: z.string().datetime(),
 	updatedAt: z.string().datetime(),
-	createdAtISO: z.string().datetime(),
-	updatedAtISO: z.string().datetime(),
 
 	// 表示用の追加情報
-	durationText: z.string(), // "1:23" のような表示用テキスト
-	fileSizeText: z.string(), // "2.5MB" のような表示用テキスト
+	durationText: z.string(), // "30秒" のような表示用テキスト
+	relativeTimeText: z.string(), // "3日前" のような表示用テキスト
 });
 
 /**
  * 音声ボタン作成時の入力データスキーマ
  */
-export const CreateAudioButtonInputSchema = z.object({
-	title: z.string().min(1).max(100),
-	description: z.string().max(500).optional(),
-	category: AudioButtonCategorySchema,
-	tags: z.array(z.string().min(1).max(20)).max(10).optional(),
+export const CreateAudioButtonInputSchema = z
+	.object({
+		title: z.string().min(1).max(100),
+		description: z.string().max(500).optional(),
+		category: AudioButtonCategorySchema,
+		tags: z.array(z.string().min(1).max(20)).max(10).optional(),
 
-	// 元動画情報（オプション）
-	sourceVideoId: z.string().optional(),
-	startTime: z.number().min(0).optional(),
-	endTime: z.number().min(0).optional(),
+		// YouTube動画情報（必須）
+		sourceVideoId: z.string().min(1, {
+			message: "YouTube動画IDは必須です",
+		}),
+		startTime: z.number().min(0),
+		endTime: z.number().min(0),
 
-	// 公開設定
-	isPublic: z.boolean().default(true),
-});
+		// 公開設定
+		isPublic: z.boolean().default(true),
+	})
+	.refine((data) => data.endTime > data.startTime, {
+		message: "終了時間は開始時間より後である必要があります",
+		path: ["endTime"],
+	});
 
 /**
  * 音声ボタン更新時の入力データスキーマ
  */
-export const UpdateAudioButtonInputSchema = CreateAudioButtonInputSchema.partial().extend({
+export const UpdateAudioButtonInputSchema = z.object({
 	id: z.string().min(1),
+	title: z.string().min(1).max(100).optional(),
+	description: z.string().max(500).optional(),
+	category: AudioButtonCategorySchema.optional(),
+	tags: z.array(z.string().min(1).max(20)).max(10).optional(),
+	isPublic: z.boolean().optional(),
 });
 
 /**
@@ -221,34 +221,52 @@ export type AudioFileUploadInfo = z.infer<typeof AudioFileUploadInfoSchema>;
 export function convertToFrontendAudioButton(
 	data: FirestoreAudioButtonData,
 ): FrontendAudioButtonData {
-	// 時間をフォーマット（例: 83 -> "1:23"）
-	const formatDuration = (seconds: number): string => {
-		const mins = Math.floor(seconds / 60);
-		const secs = Math.floor(seconds % 60);
-		return `${mins}:${secs.toString().padStart(2, "0")}`;
+	// 時間をフォーマット（例: 30 -> "30秒"）
+	const formatDuration = (startTime: number, endTime: number): string => {
+		const duration = endTime - startTime;
+		return `${duration}秒`;
 	};
 
-	// ファイルサイズをフォーマット（例: 2621440 -> "2.5MB"）
-	const formatFileSize = (bytes: number): string => {
-		const mb = bytes / (1024 * 1024);
-		if (mb >= 1) {
-			return `${mb.toFixed(1)}MB`;
+	// 相対時間表示
+	const formatRelativeTime = (dateString: string): string => {
+		const date = new Date(dateString);
+		const now = new Date();
+		const diffMs = now.getTime() - date.getTime();
+		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+		if (diffDays === 0) {
+			const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+			if (diffHours === 0) {
+				const diffMinutes = Math.floor(diffMs / (1000 * 60));
+				return diffMinutes <= 1 ? "たった今" : `${diffMinutes}分前`;
+			}
+			return `${diffHours}時間前`;
 		}
-		const kb = bytes / 1024;
-		return `${kb.toFixed(1)}KB`;
+		if (diffDays === 1) {
+			return "昨日";
+		}
+		if (diffDays < 7) {
+			return `${diffDays}日前`;
+		}
+		if (diffDays < 30) {
+			const diffWeeks = Math.floor(diffDays / 7);
+			return `${diffWeeks}週間前`;
+		}
+		if (diffDays < 365) {
+			const diffMonths = Math.floor(diffDays / 30);
+			return `${diffMonths}ヶ月前`;
+		}
+		const diffYears = Math.floor(diffDays / 365);
+		return `${diffYears}年前`;
 	};
 
 	const frontendData: FrontendAudioButtonData = {
 		...data,
-		createdAtISO: data.createdAt,
-		updatedAtISO: data.updatedAt,
-		durationText: formatDuration(data.duration),
-		fileSizeText: formatFileSize(data.fileSize),
+		durationText: formatDuration(data.startTime, data.endTime),
+		relativeTimeText: formatRelativeTime(data.createdAt),
 
-		// 元動画のサムネイル情報を生成（YouTubeの場合）
-		sourceVideoThumbnailUrl: data.sourceVideoId
-			? `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`
-			: undefined,
+		// YouTubeのサムネイル情報を生成
+		sourceVideoThumbnailUrl: `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
 	};
 
 	// データの検証
@@ -256,34 +274,26 @@ export function convertToFrontendAudioButton(
 		return FrontendAudioButtonSchema.parse(frontendData);
 	} catch (_error) {
 		// エラー時でも最低限のデータを返す
-		const _now = new Date().toISOString();
 		return {
 			id: data.id,
 			title: data.title,
-			description: data.description || "",
+			description: data.description,
 			category: data.category,
 			tags: data.tags || [],
-			audioUrl: data.audioUrl,
-			duration: data.duration,
-			fileSize: data.fileSize,
-			format: data.format,
 			sourceVideoId: data.sourceVideoId,
 			sourceVideoTitle: data.sourceVideoTitle,
-			sourceVideoThumbnailUrl: data.sourceVideoId
-				? `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`
-				: undefined,
+			sourceVideoThumbnailUrl: `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
 			startTime: data.startTime,
 			endTime: data.endTime,
 			uploadedBy: data.uploadedBy,
+			uploadedByName: data.uploadedByName,
 			isPublic: data.isPublic,
 			playCount: data.playCount,
 			likeCount: data.likeCount,
 			createdAt: data.createdAt,
 			updatedAt: data.updatedAt,
-			createdAtISO: data.createdAt,
-			updatedAtISO: data.updatedAt,
-			durationText: formatDuration(data.duration),
-			fileSizeText: formatFileSize(data.fileSize),
+			durationText: formatDuration(data.startTime, data.endTime),
+			relativeTimeText: formatRelativeTime(data.createdAt),
 		};
 	}
 }
@@ -327,8 +337,217 @@ export function deserializeAudioButtonListResult(serialized: string): AudioButto
 }
 
 /**
+ * 音声ボタン統計更新用のスキーマ
+ */
+export const UpdateAudioButtonStatsSchema = z.object({
+	id: z.string().min(1),
+	playCount: z.number().int().min(0).optional(),
+	likeCount: z.number().int().min(0).optional(),
+	incrementPlayCount: z.boolean().optional(),
+	incrementLikeCount: z.boolean().optional(),
+	decrementLikeCount: z.boolean().optional(),
+});
+
+export type UpdateAudioButtonStats = z.infer<typeof UpdateAudioButtonStatsSchema>;
+
+/**
+ * 作成入力をFirestoreデータに変換
+ */
+export function convertCreateInputToFirestoreAudioButton(
+	input: CreateAudioButtonInput,
+	uploadedBy: string,
+	uploadedByName: string,
+): FirestoreAudioButtonData {
+	const now = new Date().toISOString();
+
+	return {
+		id: "", // Firestoreで自動生成
+		title: input.title,
+		description: input.description,
+		category: input.category,
+		tags: input.tags,
+		sourceVideoId: input.sourceVideoId,
+		startTime: input.startTime,
+		endTime: input.endTime,
+		uploadedBy,
+		uploadedByName,
+		isPublic: input.isPublic,
+		playCount: 0,
+		likeCount: 0,
+		createdAt: now,
+		updatedAt: now,
+	};
+}
+
+/**
+ * 音声ボタン作成のバリデーション
+ */
+export function validateAudioButtonCreation(
+	input: CreateAudioButtonInput,
+	videoInfo: YouTubeVideoInfo,
+	userId: string,
+	existingButtons: FirestoreAudioButtonData[],
+): string | null {
+	// 動画の長さチェック
+	if (input.endTime > (videoInfo?.duration || 0)) {
+		return "終了時間が動画の長さを超えています";
+	}
+
+	// 重複チェック
+	const isDuplicate = existingButtons.some(
+		(button) =>
+			button.uploadedBy === userId &&
+			Math.abs(button.startTime - input.startTime) < 5 &&
+			Math.abs(button.endTime - input.endTime) < 5,
+	);
+
+	if (isDuplicate) {
+		return "類似の時間範囲で既に音声ボタンが作成されています";
+	}
+
+	return null;
+}
+
+/**
+ * 音声ボタンのフィルタリング
+ */
+export function filterAudioButtons(
+	buttons: FrontendAudioButtonData[],
+	filters: { category?: AudioButtonCategory; tags?: string[]; searchText?: string },
+): FrontendAudioButtonData[] {
+	return buttons.filter((button) => {
+		if (filters.category && button.category !== filters.category) {
+			return false;
+		}
+
+		if (filters.tags && filters.tags.length > 0) {
+			const buttonTags = button.tags || [];
+			const hasMatchingTag = filters.tags.some((tag) =>
+				buttonTags.some((buttonTag) => buttonTag.toLowerCase().includes(tag.toLowerCase())),
+			);
+			if (!hasMatchingTag) {
+				return false;
+			}
+		}
+
+		if (filters.searchText) {
+			const searchLower = filters.searchText.toLowerCase();
+			const searchableText = [button.title, button.description || "", ...(button.tags || [])]
+				.join(" ")
+				.toLowerCase();
+
+			if (!searchableText.includes(searchLower)) {
+				return false;
+			}
+		}
+
+		return true;
+	});
+}
+
+/**
+ * 音声ボタンのソート
+ */
+export function sortAudioButtons(
+	buttons: FrontendAudioButtonData[],
+	sortBy: "newest" | "oldest" | "popular" | "mostPlayed",
+): FrontendAudioButtonData[] {
+	return [...buttons].sort((a, b) => {
+		switch (sortBy) {
+			case "newest":
+				return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+			case "oldest":
+				return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+			case "popular":
+				return b.likeCount - a.likeCount;
+			case "mostPlayed":
+				return b.playCount - a.playCount;
+			default:
+				return 0;
+		}
+	});
+}
+
+/**
+ * レート制限チェック用のヘルパー関数
+ */
+export function checkRateLimit(
+	recentCreations: FirestoreAudioButtonData[],
+	userDiscordId: string,
+	dailyLimit = 20,
+): { allowed: boolean; remainingQuota: number; resetTime: Date } {
+	const now = new Date();
+	const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+	// 過去24時間での作成数をカウント
+	const recentCreationsFromUser = recentCreations.filter((creation) => {
+		const createdAt = new Date(creation.createdAt);
+		return creation.uploadedBy === userDiscordId && createdAt > twentyFourHoursAgo;
+	});
+
+	const usedQuota = recentCreationsFromUser.length;
+	const remainingQuota = Math.max(0, dailyLimit - usedQuota);
+	const allowed = remainingQuota > 0;
+
+	// 最も古い作成から24時間後がリセット時間
+	const oldestCreation = recentCreationsFromUser.sort(
+		(a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+	)[0];
+
+	const resetTime = oldestCreation
+		? new Date(new Date(oldestCreation.createdAt).getTime() + 24 * 60 * 60 * 1000)
+		: new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+	return {
+		allowed,
+		remainingQuota,
+		resetTime,
+	};
+}
+
+/**
+ * YouTube動画情報の型定義
+ */
+export interface YouTubeVideoInfo {
+	id: string;
+	title: string;
+	duration: number; // 秒数
+	thumbnailUrl: string;
+	channelTitle: string;
+	publishedAt: string;
+}
+
+/**
+ * 音声ボタンカテゴリの表示名を取得
+ */
+export function getAudioButtonCategoryLabel(category: AudioButtonCategory): string {
+	const labels = {
+		voice: "ボイス",
+		bgm: "BGM",
+		se: "効果音",
+		talk: "トーク",
+		singing: "歌唱",
+		other: "その他",
+	};
+	return labels[category];
+}
+
+/**
+ * 秒数を時:分:秒形式にフォーマット
+ */
+export function formatTimestamp(seconds: number): string {
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.floor((seconds % 3600) / 60);
+	const secs = Math.floor(seconds % 60);
+
+	if (hours > 0) {
+		return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+	}
+	return `${minutes}:${secs.toString().padStart(2, "0")}`;
+}
+
+/**
  * Firestoreサーバーサイド（Cloud Functions）向けのデータ型定義
- * Timestampを使用するサーバーサイド向け
  */
 export interface FirestoreServerAudioButtonData {
 	id: string;
@@ -337,20 +556,15 @@ export interface FirestoreServerAudioButtonData {
 	category: AudioButtonCategory;
 	tags?: string[];
 
-	// 音声ファイル情報
-	audioUrl: string;
-	duration: number;
-	fileSize: number;
-	format: AudioFormat;
-
-	// 元動画情報
-	sourceVideoId?: string;
+	// YouTube動画情報
+	sourceVideoId: string;
 	sourceVideoTitle?: string;
-	startTime?: number;
-	endTime?: number;
+	startTime: number;
+	endTime: number;
 
 	// ユーザー・権限情報
-	uploadedBy?: string;
+	uploadedBy: string;
+	uploadedByName: string;
 	isPublic: boolean;
 
 	// 統計情報

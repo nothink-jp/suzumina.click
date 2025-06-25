@@ -1,9 +1,9 @@
 "use client";
 
 import type {
-	AudioReferenceCategory,
-	AudioReferenceQuery,
-	FrontendAudioReferenceData,
+	AudioButtonCategory,
+	AudioButtonQuery,
+	FrontendAudioButtonData,
 } from "@suzumina.click/shared-types";
 import { ListHeader } from "@suzumina.click/ui/components/custom/list-header";
 import {
@@ -21,8 +21,8 @@ import { Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
-import { getAudioReferences } from "@/app/buttons/actions";
-import { AudioReferenceCard } from "@/components/AudioReferenceCard";
+import { getAudioButtons } from "@/app/buttons/actions";
+import { AudioButtonCard } from "@/components/AudioButtonCard";
 import Pagination from "@/components/Pagination";
 
 interface SearchParams {
@@ -40,7 +40,7 @@ interface AudioButtonsListProps {
 export default function AudioButtonsList({ searchParams }: AudioButtonsListProps) {
 	const router = useRouter();
 	const urlSearchParams = useSearchParams();
-	const [audioReferences, setAudioReferences] = useState<FrontendAudioReferenceData[]>([]);
+	const [audioButtons, setAudioButtons] = useState<FrontendAudioButtonData[]>([]);
 	const [totalCount, setTotalCount] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -60,23 +60,21 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 			setLoading(true);
 			setError(null);
 
-			const query: AudioReferenceQuery = {
+			const query: AudioButtonQuery = {
 				limit: itemsPerPage,
 				searchText: searchParams.q,
-				category: searchParams.category as AudioReferenceCategory | undefined,
+				category: searchParams.category as AudioButtonCategory | undefined,
 				tags: searchParams.tags ? searchParams.tags.split(",") : undefined,
-				sortBy:
-					(searchParams.sort as "newest" | "oldest" | "popular" | "mostPlayed" | "mostLiked") ||
-					"newest",
+				sortBy: (searchParams.sort as "newest" | "oldest" | "popular" | "mostPlayed") || "newest",
 				onlyPublic: true,
 			};
 
 			try {
-				const result = await getAudioReferences(query);
+				const result = await getAudioButtons(query);
 				if (result.success) {
-					setAudioReferences(result.data.audioReferences);
+					setAudioButtons(result.data.audioButtons);
 					// TODO: バックエンドでtotalCountを返すように修正が必要
-					setTotalCount(result.data.audioReferences.length);
+					setTotalCount(result.data.audioButtons.length);
 				} else {
 					setError(result.error || "エラーが発生しました");
 				}
@@ -168,7 +166,6 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 								{ value: "oldest", label: "古い順" },
 								{ value: "popular", label: "人気順" },
 								{ value: "mostPlayed", label: "再生回数順" },
-								{ value: "mostLiked", label: "いいね順" },
 							]}
 						/>
 						<FilterSelect
@@ -197,7 +194,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 			/>
 
 			{/* 音声ボタン一覧 */}
-			{audioReferences.length === 0 ? (
+			{audioButtons.length === 0 ? (
 				<ListPageEmptyState
 					icon={<Sparkles className="mx-auto h-12 w-12" />}
 					title="音声ボタンが見つかりませんでした"
@@ -213,10 +210,10 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 				/>
 			) : (
 				<ListPageGrid>
-					{audioReferences.map((audioReference) => (
-						<div key={audioReference.id} className="min-h-card">
-							<AudioReferenceCard
-								audioReference={audioReference}
+					{audioButtons.map((audioButton) => (
+						<div key={audioButton.id} className="min-h-card">
+							<AudioButtonCard
+								audioButton={audioButton}
 								showSourceVideo={true}
 								size="md"
 								variant="default"
@@ -234,7 +231,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 			)}
 
 			{/* 統計情報 */}
-			{audioReferences.length > 0 && (
+			{audioButtons.length > 0 && (
 				<ListPageStats
 					currentPage={currentPage}
 					totalPages={totalPages}

@@ -115,7 +115,7 @@ function UserItem({ user, onUserUpdate }: UserItemProps) {
 			<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
 				{user.showStatistics && (
 					<div>
-						<div>{user.audioReferencesCount} 音声ボタン</div>
+						<div>{user.audioButtonsCount} 音声ボタン</div>
 						<div>{user.totalPlayCount} 再生</div>
 					</div>
 				)}

@@ -18,7 +18,7 @@ test.describe("音声ボタンページ", () => {
 		// ページタイトルを確認
 		await expect(page.getByRole("heading", { name: /音声ボタンを作成/ })).toBeVisible();
 
-		// AudioReferenceCreator フォームが表示される
+		// AudioButtonCreator フォームが表示される
 		await expect(page.getByLabel("タイトル")).toBeVisible();
 		await expect(page.getByLabel("説明")).toBeVisible();
 		await expect(page.getByLabel("カテゴリ")).toBeVisible();

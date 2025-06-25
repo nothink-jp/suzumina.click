@@ -68,14 +68,14 @@ import_index() {
     echo ""
 }
 
-# audioReferences コレクションのインデックスをインポート
-log_step "audioReferences コレクションのインデックスをインポート開始..."
+# audioButtons コレクションのインデックスをインポート
+log_step "audioButtons コレクションのインデックスをインポート開始..."
 
 # 既存インデックスを取得
-AUDIO_INDEXES=$(get_existing_indexes "audioReferences")
+AUDIO_INDEXES=$(get_existing_indexes "audioButtons")
 
 if [ -n "$AUDIO_INDEXES" ]; then
-    log_info "見つかったaudioReferencesインデックス:"
+    log_info "見つかったaudioButtonsインデックス:"
     echo "$AUDIO_INDEXES" | while read -r index; do
         echo "  - $index"
     done
@@ -85,19 +85,25 @@ if [ -n "$AUDIO_INDEXES" ]; then
     echo "$AUDIO_INDEXES" | while read -r index; do
         case "$index" in
             *"isPublic,ASCENDING createdAt,DESCENDING"*)
-                import_index "google_firestore_index.audioreferences_ispublic_createdat_desc" "$index"
+                import_index "google_firestore_index.audiobuttons_ispublic_createdat_desc" "$index"
                 ;;
             *"createdBy,ASCENDING createdAt,DESCENDING"*)
-                import_index "google_firestore_index.audioreferences_createdby_createdat_desc" "$index"
+                import_index "google_firestore_index.audiobuttons_createdby_createdat_desc" "$index"
                 ;;
             *"isPublic,ASCENDING playCount,DESCENDING"*)
-                import_index "google_firestore_index.audioreferences_ispublic_playcount_desc" "$index"
+                import_index "google_firestore_index.audiobuttons_ispublic_playcount_desc" "$index"
+                ;;
+            *"isPublic,ASCENDING likeCount,DESCENDING"*)
+                import_index "google_firestore_index.audiobuttons_ispublic_likecount_desc" "$index"
                 ;;
             *"isPublic,ASCENDING category,ASCENDING createdAt,DESCENDING"*)
-                import_index "google_firestore_index.audioreferences_ispublic_category_createdat_desc" "$index"
+                import_index "google_firestore_index.audiobuttons_ispublic_category_createdat_desc" "$index"
                 ;;
-            *"isPublic,ASCENDING videoId,ASCENDING startTime,ASCENDING"*)
-                import_index "google_firestore_index.audioreferences_ispublic_videoid_starttime_asc" "$index"
+            *"isPublic,ASCENDING sourceVideoId,ASCENDING startTime,ASCENDING"*)
+                import_index "google_firestore_index.audiobuttons_ispublic_sourcevideoid_starttime_asc" "$index"
+                ;;
+            *"tags,CONTAINS isPublic,ASCENDING createdAt,DESCENDING"*)
+                import_index "google_firestore_index.audiobuttons_tags_ispublic_createdat_desc" "$index"
                 ;;
             *)
                 log_info "未定義のインデックス: $index"

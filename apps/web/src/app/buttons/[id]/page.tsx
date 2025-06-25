@@ -1,4 +1,4 @@
-import type { AudioReferenceQuery } from "@suzumina.click/shared-types";
+import type { AudioButtonQuery } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
@@ -7,8 +7,8 @@ import { ArrowLeft, Calendar, Clock, Eye, Heart, Play, Share2, Tag, Youtube } fr
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { getAudioReferenceById, getAudioReferences } from "@/app/buttons/actions";
-import { AudioReferenceCard } from "@/components/AudioReferenceCard";
+import { getAudioButtonById, getAudioButtons } from "@/app/buttons/actions";
+import { AudioButtonCard } from "@/components/AudioButtonCard";
 import { YouTubePlayer } from "@/components/YouTubePlayer";
 
 interface AudioButtonDetailPageProps {
@@ -71,17 +71,17 @@ async function RelatedAudioButtons({
 }) {
 	try {
 		// 同じ動画の音声ボタンを取得
-		const sameVideoQuery: AudioReferenceQuery = {
-			videoId,
+		const sameVideoQuery: AudioButtonQuery = {
+			sourceVideoId: videoId,
 			limit: 6,
 			sortBy: "newest",
 			onlyPublic: true,
 		};
 
-		const sameVideoResult = await getAudioReferences(sameVideoQuery);
+		const sameVideoResult = await getAudioButtons(sameVideoQuery);
 
 		if (sameVideoResult.success) {
-			const relatedButtons = sameVideoResult.data.audioReferences.filter(
+			const relatedButtons = sameVideoResult.data.audioButtons.filter(
 				(button) => button.id !== currentId,
 			);
 
@@ -96,10 +96,10 @@ async function RelatedAudioButtons({
 						</CardHeader>
 						<CardContent>
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-								{relatedButtons.slice(0, 4).map((audioReference) => (
-									<AudioReferenceCard
-										key={audioReference.id}
-										audioReference={audioReference}
+								{relatedButtons.slice(0, 4).map((audioButton) => (
+									<AudioButtonCard
+										key={audioButton.id}
+										audioButton={audioButton}
 										showSourceVideo={false}
 										size="sm"
 										variant="compact"
@@ -130,13 +130,13 @@ async function RelatedAudioButtons({
 export default async function AudioButtonDetailPage({ params }: AudioButtonDetailPageProps) {
 	const resolvedParams = await params;
 
-	const result = await getAudioReferenceById(resolvedParams.id);
+	const result = await getAudioButtonById(resolvedParams.id);
 
 	if (!result.success) {
 		notFound();
 	}
 
-	const audioReference = result.data;
+	const audioButton = result.data;
 
 	return (
 		<div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -156,23 +156,23 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 					<CardHeader>
 						<div className="flex items-start justify-between">
 							<div className="space-y-2 flex-1">
-								<h1 className="text-2xl font-bold text-foreground">{audioReference.title}</h1>
+								<h1 className="text-2xl font-bold text-foreground">{audioButton.title}</h1>
 								<div className="flex items-center gap-4 text-sm text-muted-foreground">
 									<span className="flex items-center gap-1">
 										<Calendar className="h-4 w-4" />
-										{formatRelativeTime(audioReference.createdAt)}
+										{formatRelativeTime(audioButton.createdAt)}
 									</span>
 									<span className="flex items-center gap-1">
 										<Clock className="h-4 w-4" />
-										{audioReference.duration}秒
+										{audioButton.endTime - audioButton.startTime}秒
 									</span>
 									<span className="flex items-center gap-1">
 										<Play className="h-4 w-4" />
-										{audioReference.playCount}回再生
+										{audioButton.playCount}回再生
 									</span>
 									<span className="flex items-center gap-1">
 										<Heart className="h-4 w-4" />
-										{audioReference.likeCount}
+										{audioButton.likeCount}
 									</span>
 								</div>
 							</div>
@@ -185,11 +185,11 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 					<CardContent className="space-y-4">
 						{/* カテゴリとタグ */}
 						<div className="flex items-center gap-2 flex-wrap">
-							<Badge variant="secondary">{getCategoryDisplayName(audioReference.category)}</Badge>
-							{audioReference.tags && audioReference.tags.length > 0 && (
+							<Badge variant="secondary">{getCategoryDisplayName(audioButton.category)}</Badge>
+							{audioButton.tags && audioButton.tags.length > 0 && (
 								<>
 									<Separator orientation="vertical" className="h-4" />
-									{audioReference.tags.map((tag) => (
+									{audioButton.tags.map((tag) => (
 										<Badge key={tag} variant="outline" className="text-xs">
 											<Tag className="h-3 w-3 mr-1" />
 											{tag}
@@ -200,10 +200,10 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 						</div>
 
 						{/* 説明 */}
-						{audioReference.description && (
+						{audioButton.description && (
 							<div>
 								<h3 className="font-medium text-sm text-muted-foreground mb-2">説明</h3>
-								<p className="text-sm text-foreground">{audioReference.description}</p>
+								<p className="text-sm text-foreground">{audioButton.description}</p>
 							</div>
 						)}
 
@@ -211,14 +211,14 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 						<div className="p-4 bg-muted rounded-lg">
 							<h3 className="font-medium text-sm text-muted-foreground mb-2">元動画</h3>
 							<div className="space-y-1">
-								<p className="font-medium text-foreground">{audioReference.videoTitle}</p>
+								<p className="font-medium text-foreground">{audioButton.sourceVideoTitle}</p>
 								<p className="text-sm text-muted-foreground">
-									時間: {formatTime(audioReference.startTime)} -{" "}
-									{formatTime(audioReference.endTime)}({audioReference.duration}
+									時間: {formatTime(audioButton.startTime)} - {formatTime(audioButton.endTime)}(
+									{audioButton.endTime - audioButton.startTime}
 									秒)
 								</p>
 								<Button variant="outline" size="sm" asChild>
-									<Link href={`/videos/${audioReference.videoId}`}>
+									<Link href={`/videos/${audioButton.sourceVideoId}`}>
 										<Youtube className="h-4 w-4 mr-2" />
 										動画詳細を見る
 									</Link>
@@ -235,11 +235,11 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 					</CardHeader>
 					<CardContent>
 						<YouTubePlayer
-							videoId={audioReference.videoId}
+							videoId={audioButton.sourceVideoId}
 							width="100%"
 							height="400"
-							startTime={audioReference.startTime}
-							endTime={audioReference.endTime}
+							startTime={audioButton.startTime}
+							endTime={audioButton.endTime}
 							controls
 							autoplay={false}
 						/>
@@ -252,8 +252,8 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 						<CardTitle>この音声ボタン</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<AudioReferenceCard
-							audioReference={audioReference}
+						<AudioButtonCard
+							audioButton={audioButton}
 							showSourceVideo={true}
 							size="lg"
 							variant="detailed"
@@ -277,9 +277,9 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 					}
 				>
 					<RelatedAudioButtons
-						currentId={audioReference.id}
-						videoId={audioReference.videoId}
-						tags={audioReference.tags || []}
+						currentId={audioButton.id}
+						videoId={audioButton.sourceVideoId}
+						tags={audioButton.tags || []}
 					/>
 				</Suspense>
 			</div>

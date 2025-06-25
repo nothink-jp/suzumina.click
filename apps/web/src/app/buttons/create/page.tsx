@@ -3,7 +3,7 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getVideoById } from "@/app/videos/actions";
-import { AudioReferenceCreator } from "@/components/AudioReferenceCreator";
+import { AudioButtonCreator } from "@/components/AudioButtonCreator";
 
 interface CreateAudioButtonPageProps {
 	searchParams: Promise<{
@@ -61,7 +61,7 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	}
 
 	return (
-		<AudioReferenceCreator
+		<AudioButtonCreator
 			videoId={videoId}
 			videoTitle={videoResult.title}
 			videoDuration={600} // デフォルト10分、実際の動画長は別途API取得が必要

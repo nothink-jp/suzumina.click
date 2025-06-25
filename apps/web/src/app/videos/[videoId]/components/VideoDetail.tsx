@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendAudioReferenceData } from "@suzumina.click/shared-types/src/audio-reference";
+import type { FrontendAudioButtonData } from "@suzumina.click/shared-types/src/audio-button";
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -8,7 +8,7 @@ import { Card } from "@suzumina.click/ui/components/ui/card";
 import { Calendar, Eye, Hash, PlayCircle, Plus, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getAudioReferences } from "@/app/buttons/actions";
+import { getAudioButtons } from "@/app/buttons/actions";
 import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface VideoDetailProps {
@@ -16,24 +16,24 @@ interface VideoDetailProps {
 }
 
 export default function VideoDetail({ video }: VideoDetailProps) {
-	const [audioReferences, setAudioReferences] = useState<FrontendAudioReferenceData[]>([]);
+	const [audioButtons, setAudioButtons] = useState<FrontendAudioButtonData[]>([]);
 	const [audioLoading, setAudioLoading] = useState(false);
 	const [audioCount, setAudioCount] = useState(0);
 
 	// 音声ボタンを取得
 	useEffect(() => {
-		const fetchAudioReferences = async () => {
+		const fetchAudioButtons = async () => {
 			setAudioLoading(true);
 			try {
-				const result = await getAudioReferences({
-					videoId: video.videoId,
+				const result = await getAudioButtons({
+					sourceVideoId: video.videoId,
 					limit: 6,
 					sortBy: "newest",
 				});
 
 				if (result.success) {
-					setAudioReferences(result.data.audioReferences);
-					setAudioCount(result.data.audioReferences.length);
+					setAudioButtons(result.data.audioButtons);
+					setAudioCount(result.data.audioButtons.length);
 				}
 			} catch (_error) {
 				// 音声ボタン取得エラーは無視してページ表示を継続
@@ -42,7 +42,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 			}
 		};
 
-		fetchAudioReferences();
+		fetchAudioButtons();
 	}, [video.videoId]);
 
 	// ISO形式の日付を表示用にフォーマット
@@ -207,26 +207,24 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 							<div className="flex items-center justify-center py-12">
 								<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-suzuka-500" />
 							</div>
-						) : audioReferences.length > 0 ? (
+						) : audioButtons.length > 0 ? (
 							<div className="space-y-4">
 								{/* 音声ボタン一覧 */}
 								<div className="grid grid-cols-1 gap-3">
-									{audioReferences.map((audioReference) => (
-										<Card key={audioReference.id} className="p-4 hover:shadow-md transition-shadow">
+									{audioButtons.map((audioButton) => (
+										<Card key={audioButton.id} className="p-4 hover:shadow-md transition-shadow">
 											<div className="flex items-center justify-between">
 												<div className="flex-1">
-													<h3 className="font-medium text-foreground mb-1">
-														{audioReference.title}
-													</h3>
+													<h3 className="font-medium text-foreground mb-1">{audioButton.title}</h3>
 													<div className="flex items-center gap-4 text-sm text-muted-foreground">
 														<span>
-															{audioReference.startTime}秒 - {audioReference.endTime}秒
+															{audioButton.startTime}秒 - {audioButton.endTime}秒
 														</span>
-														<span>by {audioReference.createdBy}</span>
+														<span>by {audioButton.uploadedByName}</span>
 													</div>
 												</div>
 												<Button size="sm" variant="ghost" asChild>
-													<Link href={`/buttons/${audioReference.id}`}>
+													<Link href={`/buttons/${audioButton.id}`}>
 														<PlayCircle className="h-4 w-4" />
 													</Link>
 												</Button>
@@ -238,7 +236,9 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 								{/* もっと見るボタン */}
 								<div className="pt-4 border-t flex justify-center">
 									<Button variant="outline" asChild>
-										<Link href={`/buttons?videoId=${video.videoId}`}>すべてのボタンを見る</Link>
+										<Link href={`/buttons?sourceVideoId=${video.videoId}`}>
+											すべてのボタンを見る
+										</Link>
 									</Button>
 								</div>
 							</div>

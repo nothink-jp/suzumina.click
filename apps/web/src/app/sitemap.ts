@@ -94,24 +94,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 		// 音声ボタンページを追加
 		try {
-			const audioReferencesSnapshot = await firestore
-				.collection("audioReferences")
+			const audioButtonsSnapshot = await firestore
+				.collection("audioButtons")
 				.where("isPublic", "==", true)
 				.limit(1000)
 				.get();
 
-			for (const doc of audioReferencesSnapshot.docs) {
-				const audioRef = doc.data();
+			for (const doc of audioButtonsSnapshot.docs) {
+				const audioButton = doc.data();
 				dynamicPages.push({
 					url: `${baseUrl}/buttons/${doc.id}`,
-					lastModified: new Date(audioRef.updatedAt || audioRef.createdAt || Date.now()),
+					lastModified: new Date(audioButton.updatedAt || audioButton.createdAt || Date.now()),
 					changeFrequency: "monthly",
 					priority: 0.5,
 				});
 			}
 		} catch (error) {
 			// biome-ignore lint/suspicious/noConsole: Debug logging for sitemap generation errors
-			console.warn("Failed to fetch audio references for sitemap:", error);
+			console.warn("Failed to fetch audio buttons for sitemap:", error);
 		}
 
 		return [...staticPages, ...dynamicPages];
