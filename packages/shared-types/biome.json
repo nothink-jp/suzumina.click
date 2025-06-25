@@ -1,0 +1,33 @@
+{
+	"extends": "//",
+	"root": false,
+	"linter": {
+		"rules": {
+			"suspicious": {
+				"noExplicitAny": "error"
+			},
+			"style": {
+				"noInferrableTypes": "error",
+				"useAsConstAssertion": "error"
+			},
+			"correctness": {
+				"noUnusedVariables": "error"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["**/*.test.ts", "**/*.spec.ts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off"
+					},
+					"style": {
+						"noNonNullAssertion": "off"
+					}
+				}
+			}
+		}
+	]
+}
