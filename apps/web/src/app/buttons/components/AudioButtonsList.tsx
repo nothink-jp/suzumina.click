@@ -47,8 +47,8 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 
 	// フォームの状態
 	const [searchQuery, setSearchQuery] = useState(searchParams.q || "");
-	const [sortBy, setSortBy] = useState(searchParams.sort || "");
-	const [categoryFilter, setCategoryFilter] = useState(searchParams.category || "");
+	const [sortBy, setSortBy] = useState(searchParams.sort || "default");
+	const [categoryFilter, setCategoryFilter] = useState(searchParams.category || "all");
 
 	const currentPage = searchParams.page ? Number.parseInt(searchParams.page, 10) : 1;
 	const itemsPerPage = 12;
@@ -119,14 +119,14 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	const handleSortChange = (value: string) => {
 		setSortBy(value);
 		startTransition(() => {
-			updateSearchParams({ sort: value || undefined });
+			updateSearchParams({ sort: value === "default" ? undefined : value });
 		});
 	};
 
 	const handleCategoryChange = (value: string) => {
 		setCategoryFilter(value);
 		startTransition(() => {
-			updateSearchParams({ category: value || undefined });
+			updateSearchParams({ category: value === "all" ? undefined : value });
 		});
 	};
 
@@ -163,7 +163,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 							value={sortBy}
 							onValueChange={handleSortChange}
 							options={[
-								{ value: "", label: "並び順" },
+								{ value: "default", label: "並び順" },
 								{ value: "newest", label: "新しい順" },
 								{ value: "oldest", label: "古い順" },
 								{ value: "popular", label: "人気順" },
@@ -176,7 +176,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 							onValueChange={handleCategoryChange}
 							placeholder="カテゴリー"
 							options={[
-								{ value: "", label: "すべてのカテゴリー" },
+								{ value: "all", label: "すべてのカテゴリー" },
 								{ value: "greeting", label: "挨拶" },
 								{ value: "reaction", label: "リアクション" },
 								{ value: "emotion", label: "感情" },

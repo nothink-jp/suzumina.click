@@ -34,8 +34,8 @@ export default function VideoList({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState("");
-	const [sortBy, setSortBy] = useState("");
-	const [yearFilter, setYearFilter] = useState(searchParams.get("year") || "");
+	const [sortBy, setSortBy] = useState("default");
+	const [yearFilter, setYearFilter] = useState(searchParams.get("year") || "all");
 
 	const itemsPerPage = 12;
 	const displayCount = filteredCount !== undefined ? filteredCount : totalCount;
@@ -56,7 +56,7 @@ export default function VideoList({
 		setYearFilter(year);
 		const params = new URLSearchParams(searchParams.toString());
 
-		if (year) {
+		if (year && year !== "all") {
 			params.set("year", year);
 		} else {
 			params.delete("year");
@@ -108,7 +108,7 @@ export default function VideoList({
 								});
 							}}
 							options={[
-								{ value: "", label: "並び順" },
+								{ value: "default", label: "並び順" },
 								{ value: "newest", label: "新しい順" },
 								{ value: "oldest", label: "古い順" },
 								{ value: "popular", label: "人気順" },
@@ -119,7 +119,7 @@ export default function VideoList({
 							onValueChange={handleYearChange}
 							placeholder="すべての年代"
 							options={[
-								{ value: "", label: "すべての年代" },
+								{ value: "all", label: "すべての年代" },
 								...yearOptions.map((year) => ({
 									value: year.toString(),
 									label: `${year}年`,

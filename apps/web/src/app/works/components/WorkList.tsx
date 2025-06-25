@@ -28,8 +28,8 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState("");
-	const [sortBy, setSortBy] = useState("");
-	const [categoryFilter, setCategoryFilter] = useState("");
+	const [sortBy, setSortBy] = useState("default");
+	const [categoryFilter, setCategoryFilter] = useState("all");
 
 	const itemsPerPage = 12;
 	const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -65,14 +65,14 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 	const handleSortChange = (value: string) => {
 		setSortBy(value);
 		startTransition(() => {
-			updateSearchParams({ sort: value || undefined });
+			updateSearchParams({ sort: value === "default" ? undefined : value });
 		});
 	};
 
 	const handleCategoryChange = (value: string) => {
 		setCategoryFilter(value);
 		startTransition(() => {
-			updateSearchParams({ category: value || undefined });
+			updateSearchParams({ category: value === "all" ? undefined : value });
 		});
 	};
 
@@ -90,7 +90,7 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 							value={sortBy}
 							onValueChange={handleSortChange}
 							options={[
-								{ value: "", label: "並び順" },
+								{ value: "default", label: "並び順" },
 								{ value: "newest", label: "新しい順" },
 								{ value: "oldest", label: "古い順" },
 								{ value: "popular", label: "人気順" },
@@ -104,7 +104,7 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 							onValueChange={handleCategoryChange}
 							placeholder="カテゴリ"
 							options={[
-								{ value: "", label: "すべてのカテゴリ" },
+								{ value: "all", label: "すべてのカテゴリ" },
 								{ value: "SOU", label: "ボイス・ASMR" },
 								{ value: "ADV", label: "アドベンチャー" },
 								{ value: "RPG", label: "ロールプレイング" },
