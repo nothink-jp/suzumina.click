@@ -16,6 +16,8 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
   
   labels = local.common_labels
 
+  # Note: デフォルトURLアクセス制御はアプリケーションレベルで実装
+
   template {
     # スケーリング設定（環境別）
     scaling {
@@ -134,6 +136,12 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       env {
         name  = "SUZUMINA_GUILD_ID"
         value = var.suzumina_guild_id
+      }
+
+      # 許可されたホスト名（デフォルトURL制御用）
+      env {
+        name  = "ALLOWED_HOSTS"
+        value = var.environment == "production" && var.custom_domain != "" ? var.custom_domain : ""
       }
 
       # ヘルスチェック設定

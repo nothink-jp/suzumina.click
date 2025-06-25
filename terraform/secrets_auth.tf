@@ -100,7 +100,7 @@ resource "google_secret_manager_secret_iam_member" "auth_secret_access" {
 # YouTube API Key シークレットへのアクセス権限をCloud Runサービスアカウントに付与
 resource "google_secret_manager_secret_iam_member" "youtube_api_key_access_for_cloud_run" {
   project   = var.gcp_project_id
-  secret_id = google_secret_manager_secret.youtube_api_key.secret_id
+  secret_id = google_secret_manager_secret.secrets["YOUTUBE_API_KEY"].secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.cloud_run_service_account.email}"
 }

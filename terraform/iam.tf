@@ -199,6 +199,7 @@ resource "google_project_iam_custom_role" "github_actions_artifact_registry_role
     "artifactregistry.repositories.list", 
     "artifactregistry.packages.get",
     "artifactregistry.packages.list",
+    "artifactregistry.packages.delete",  # Dockerイメージ削除に必要
     "artifactregistry.versions.get",
     "artifactregistry.versions.list",
     "artifactregistry.versions.delete",  # クリーンアップに必要
