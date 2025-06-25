@@ -256,7 +256,9 @@ export const MinaseColorPalette: Story = {
 		<div className="p-6">
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2">Minase Color Palette</h1>
-				<p className="text-gray-600">涼花みなせテーマのサブカラーパレット（オレンジ・ウォーム系）</p>
+				<p className="text-gray-600">
+					涼花みなせテーマのサブカラーパレット（オレンジ・ウォーム系）
+				</p>
 			</div>
 
 			{/* サブカラーパレット表示 */}
@@ -312,13 +314,22 @@ export const MinaseColorPalette: Story = {
 					{/* Card Examples */}
 					<div className="space-y-4">
 						<h3 className="text-lg font-semibold">Cards</h3>
-						<div className="p-4 border rounded-lg" style={{ backgroundColor: "#fff8f3", borderColor: "#fed7aa" }}>
-							<h4 className="font-medium mb-2" style={{ color: "#9a3412" }}>Light Card</h4>
-							<p className="text-sm" style={{ color: "#ea5a0b" }}>カード内容のサンプルテキスト</p>
+						<div
+							className="p-4 border rounded-lg"
+							style={{ backgroundColor: "#fff8f3", borderColor: "#fed7aa" }}
+						>
+							<h4 className="font-medium mb-2" style={{ color: "#9a3412" }}>
+								Light Card
+							</h4>
+							<p className="text-sm" style={{ color: "#ea5a0b" }}>
+								カード内容のサンプルテキスト
+							</p>
 						</div>
 						<div className="p-4 text-white rounded-lg" style={{ backgroundColor: "#ff7e2d" }}>
 							<h4 className="font-medium mb-2">Primary Card</h4>
-							<p className="text-sm" style={{ color: "#ffedd5" }}>カード内容のサンプルテキスト</p>
+							<p className="text-sm" style={{ color: "#ffedd5" }}>
+								カード内容のサンプルテキスト
+							</p>
 						</div>
 					</div>
 
@@ -326,16 +337,28 @@ export const MinaseColorPalette: Story = {
 					<div className="space-y-4">
 						<h3 className="text-lg font-semibold">Badges</h3>
 						<div className="flex flex-wrap gap-2">
-							<span className="px-2 py-1 text-xs font-medium rounded" style={{ backgroundColor: "#ffedd5", color: "#c2410c" }}>
+							<span
+								className="px-2 py-1 text-xs font-medium rounded"
+								style={{ backgroundColor: "#ffedd5", color: "#c2410c" }}
+							>
 								Tag
 							</span>
-							<span className="px-2 py-1 text-xs font-medium rounded" style={{ backgroundColor: "#fed7aa", color: "#9a3412" }}>
+							<span
+								className="px-2 py-1 text-xs font-medium rounded"
+								style={{ backgroundColor: "#fed7aa", color: "#9a3412" }}
+							>
 								Category
 							</span>
-							<span className="px-2 py-1 text-white text-xs font-medium rounded" style={{ backgroundColor: "#ff7e2d" }}>
+							<span
+								className="px-2 py-1 text-white text-xs font-medium rounded"
+								style={{ backgroundColor: "#ff7e2d" }}
+							>
 								Active
 							</span>
-							<span className="px-2 py-1 text-xs font-medium rounded" style={{ backgroundColor: "#9a3412", color: "#ffedd5" }}>
+							<span
+								className="px-2 py-1 text-xs font-medium rounded"
+								style={{ backgroundColor: "#9a3412", color: "#ffedd5" }}
+							>
 								Important
 							</span>
 						</div>
@@ -348,18 +371,24 @@ export const MinaseColorPalette: Story = {
 				<div className="p-6 bg-gray-50 rounded-lg">
 					<h3 className="text-lg font-semibold mb-4">メインカラーとの組み合わせ</h3>
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						<div className="p-4 border rounded-lg" style={{ backgroundColor: "#fff5fa", borderColor: "#ffc2d9" }}>
+						<div
+							className="p-4 border rounded-lg"
+							style={{ backgroundColor: "#fff5fa", borderColor: "#ffc2d9" }}
+						>
 							<div className="flex items-center space-x-2 mb-3">
-								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ff4785" }}></div>
-								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ff7e2d" }}></div>
+								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ff4785" }} />
+								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ff7e2d" }} />
 								<span className="text-sm font-medium">Primary + Accent</span>
 							</div>
 							<p className="text-sm text-gray-600">桜色とオレンジの調和のとれた組み合わせ</p>
 						</div>
-						<div className="p-4 border rounded-lg" style={{ backgroundColor: "#fff8f3", borderColor: "#fed7aa" }}>
+						<div
+							className="p-4 border rounded-lg"
+							style={{ backgroundColor: "#fff8f3", borderColor: "#fed7aa" }}
+						>
 							<div className="flex items-center space-x-2 mb-3">
-								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ffe0ed" }}></div>
-								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ffedd5" }}></div>
+								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ffe0ed" }} />
+								<div className="w-4 h-4 rounded" style={{ backgroundColor: "#ffedd5" }} />
 								<span className="text-sm font-medium">Light Tones</span>
 							</div>
 							<p className="text-sm text-gray-600">柔らかく優しい印象の淡色組み合わせ</p>
@@ -385,7 +414,7 @@ export const ColorGroups: Story = {
 					{/* Suzuka Colors */}
 					<div className="border border-gray-200 rounded-lg p-6">
 						<h3 className="text-lg font-semibold mb-4 flex items-center">
-							<div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: "#ff4785" }}></div>
+							<div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: "#ff4785" }} />
 							Suzuka Colors（メインカラー）
 						</h3>
 						<div className="flex space-x-1 mb-3">
@@ -404,7 +433,7 @@ export const ColorGroups: Story = {
 					{/* Minase Colors */}
 					<div className="border border-gray-200 rounded-lg p-6">
 						<h3 className="text-lg font-semibold mb-4 flex items-center">
-							<div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: "#ff7e2d" }}></div>
+							<div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: "#ff7e2d" }} />
 							Minase Colors（サブカラー）
 						</h3>
 						<div className="flex space-x-1 mb-3">

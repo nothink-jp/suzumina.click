@@ -330,7 +330,12 @@ export const TypographyExamples: Story = {
 					<h3 className="text-lg font-semibold mb-4">Form Elements</h3>
 					<div className="space-y-4 max-w-md">
 						<div>
-							<label htmlFor="title-input" className="text-sm font-medium text-foreground block mb-1">タイトル</label>
+							<label
+								htmlFor="title-input"
+								className="text-sm font-medium text-foreground block mb-1"
+							>
+								タイトル
+							</label>
 							<input
 								id="title-input"
 								type="text"
@@ -342,7 +347,10 @@ export const TypographyExamples: Story = {
 								わかりやすいタイトルを入力してください
 							</p>
 						</div>
-						<button type="button" className="px-4 py-2 bg-suzuka-500 text-white text-base font-medium rounded-md hover:bg-suzuka-600">
+						<button
+							type="button"
+							className="px-4 py-2 bg-suzuka-500 text-white text-base font-medium rounded-md hover:bg-suzuka-600"
+						>
 							保存
 						</button>
 					</div>
