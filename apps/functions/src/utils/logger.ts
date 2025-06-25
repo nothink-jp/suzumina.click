@@ -21,14 +21,17 @@ interface LogOptions {
 	[key: string]: unknown;
 }
 
-// Cloud Loggingクライアントの初期化
-const logging = new Logging({
-	projectId: process.env.GOOGLE_CLOUD_PROJECT || "suzumina-click",
-});
+// Cloud Loggingクライアントの初期化（テスト環境では無効化）
+const isTestEnvironment = process.env.NODE_ENV === "test" || process.env.VITEST === "true";
+const logging = isTestEnvironment
+	? null
+	: new Logging({
+			projectId: process.env.GOOGLE_CLOUD_PROJECT || "suzumina-click",
+		});
 
 // ログ名の設定（Cloud Functions v2に最適化）
 const logName = process.env.K_SERVICE || "cloud-functions";
-const log = logging.log(logName);
+const log = logging?.log(logName);
 
 /**
  * Cloud Loggingに構造化ログを送信する基本関数
@@ -70,6 +73,12 @@ async function logMessage(
 			// その他のオプションの場合
 			Object.assign(data, optionsOrError);
 		}
+	}
+
+	// テスト環境またはCloud Logging無効時はconsoleに出力
+	if (!log) {
+		console.log(JSON.stringify({ severity: level, message, ...data }));
+		return;
 	}
 
 	// Cloud Loggingエントリの作成
