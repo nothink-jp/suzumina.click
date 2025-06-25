@@ -20,11 +20,7 @@
 			}
 		},
 		{
-			"includes": [
-				"**/*.config.js",
-				"**/*.config.ts",
-				"**/*.config.mjs"
-			],
+			"includes": ["**/*.config.js", "**/*.config.ts", "**/*.config.mjs"],
 			"linter": {
 				"rules": {
 					"style": {
@@ -37,12 +33,7 @@
 			}
 		},
 		{
-			"includes": [
-				"**/*.test.ts",
-				"**/*.test.tsx",
-				"**/*.spec.ts",
-				"**/*.spec.tsx"
-			],
+			"includes": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
 			"linter": {
 				"rules": {
 					"suspicious": {
@@ -51,6 +42,9 @@
 					},
 					"style": {
 						"noNonNullAssertion": "off"
+					},
+					"performance": {
+						"noDelete": "off"
 					}
 				}
 			}
