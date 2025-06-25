@@ -12,6 +12,7 @@ import {
 	type VideoListResult,
 } from "@suzumina.click/shared-types/src/video";
 import { getFirestore } from "@/lib/firestore";
+import * as logger from "@/lib/logger";
 
 /**
  * ページネーション用のクエリを構築する関数（ユーザー向け）

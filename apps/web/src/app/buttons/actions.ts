@@ -22,6 +22,7 @@ import {
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/components/ProtectedRoute";
 import { FirestoreAdmin } from "@/lib/firestore-admin";
+import * as logger from "@/lib/logger";
 import { updateUserStats } from "@/lib/user-firestore";
 
 /**
@@ -31,11 +32,23 @@ export async function createAudioButton(
 	input: CreateAudioButtonInput,
 ): Promise<{ success: true; data: { id: string } } | { success: false; error: string }> {
 	try {
+		logger.info("音声ボタン作成を開始", {
+			sourceVideoId: input.sourceVideoId,
+			startTime: input.startTime,
+			endTime: input.endTime,
+		});
+
 		// 認証チェック
 		const user = await requireAuth();
+		logger.debug("認証チェック完了", { userId: user.discordId });
+
 		// 入力データのバリデーション
 		const validationResult = CreateAudioButtonInputSchema.safeParse(input);
 		if (!validationResult.success) {
+			logger.warn("入力データのバリデーション失敗", {
+				errors: validationResult.error.errors,
+				input,
+			});
 			return {
 				success: false,
 				error: `入力データが無効です: ${validationResult.error.errors.map((e) => e.message).join(", ")}`,
@@ -43,8 +56,10 @@ export async function createAudioButton(
 		}
 
 		const validatedInput = validationResult.data;
+		logger.debug("入力データのバリデーション成功", { validatedInput });
 
 		// レート制限のためのユーザーベースチェック
+		logger.debug("レート制限チェック開始", { userId: user.discordId });
 		const firestore = FirestoreAdmin.getInstance();
 		const recentCreationsSnapshot = await firestore
 			.collection("audioButtons")
@@ -57,22 +72,44 @@ export async function createAudioButton(
 			...doc.data(),
 		})) as FirestoreAudioButtonData[];
 
+		logger.debug("最近の作成済み音声ボタン取得完了", {
+			recentCreationsCount: recentCreations.length,
+		});
+
 		const rateLimitCheck = checkRateLimit(recentCreations, user.discordId);
 		if (!rateLimitCheck.allowed) {
+			logger.warn("レート制限に引っかかりました", {
+				userId: user.discordId,
+				recentCreationsCount: recentCreations.length,
+				resetTime: rateLimitCheck.resetTime,
+			});
 			return {
 				success: false,
 				error: `投稿制限に達しています。1日に作成できる音声ボタンは20個までです。リセット時間: ${rateLimitCheck.resetTime.toLocaleString()}`,
 			};
 		}
+
+		logger.debug("YouTube動画情報取得開始", { videoId: validatedInput.sourceVideoId });
 		const videoInfo = await fetchYouTubeVideoInfo(validatedInput.sourceVideoId);
 		if (!videoInfo) {
+			logger.warn("YouTube動画が見つかりません", {
+				videoId: validatedInput.sourceVideoId,
+			});
 			return {
 				success: false,
 				error: "指定されたYouTube動画が見つからないか、アクセスできません",
 			};
 		}
+		logger.debug("YouTube動画情報取得成功", {
+			videoId: validatedInput.sourceVideoId,
+			title: videoInfo.title,
+			duration: videoInfo.duration,
+		});
 
 		// 同じ動画の他の音声ボタンを取得して重複チェック
+		logger.debug("既存音声ボタンの重複チェック開始", {
+			videoId: validatedInput.sourceVideoId,
+		});
 		const existingAudioButtonsQuery = await firestore
 			.collection("audioButtons")
 			.where("sourceVideoId", "==", validatedInput.sourceVideoId)
@@ -83,6 +120,10 @@ export async function createAudioButton(
 			...doc.data(),
 		})) as FirestoreAudioButtonData[];
 
+		logger.debug("既存音声ボタン取得完了", {
+			existingButtonsCount: existingButtons.length,
+		});
+
 		// バリデーション
 		const validationError = validateAudioButtonCreation(
 			validatedInput,
@@ -91,11 +132,19 @@ export async function createAudioButton(
 			existingButtons,
 		);
 		if (validationError) {
+			logger.warn("音声ボタン作成バリデーション失敗", {
+				error: validationError,
+				videoId: validatedInput.sourceVideoId,
+				startTime: validatedInput.startTime,
+				endTime: validatedInput.endTime,
+			});
 			return {
 				success: false,
 				error: validationError,
 			};
 		}
+
+		logger.debug("バリデーション成功、Firestoreに保存開始");
 
 		// Firestoreデータの作成（ユーザー情報付き）
 		const firestoreData = convertCreateInputToFirestoreAudioButton(
@@ -103,20 +152,49 @@ export async function createAudioButton(
 			user.discordId,
 			user.displayName,
 		);
+
+		logger.debug("Firestoreデータ作成完了", {
+			title: firestoreData.title,
+			category: firestoreData.category,
+		});
+
 		const docRef = await firestore.collection("audioButtons").add(firestoreData);
+		logger.debug("Firestore保存完了", { documentId: docRef.id });
+
+		logger.debug("統計情報更新開始");
 		await updateVideoAudioButtonStats(validatedInput.sourceVideoId, {
 			increment: true,
 		});
 		await updateUserStats(user.discordId, {
 			incrementAudioButtons: true,
 		});
+		logger.debug("統計情報更新完了");
+
+		logger.debug("キャッシュ無効化開始");
 		revalidatePath("/buttons");
 		revalidatePath(`/videos/${validatedInput.sourceVideoId}`);
+		logger.debug("キャッシュ無効化完了");
+
+		logger.info("音声ボタン作成が正常に完了", {
+			documentId: docRef.id,
+			userId: user.discordId,
+			videoId: validatedInput.sourceVideoId,
+			title: firestoreData.title,
+		});
+
 		return {
 			success: true,
 			data: { id: docRef.id },
 		};
-	} catch (_error) {
+	} catch (error) {
+		logger.error("音声ボタン作成でエラーが発生しました", {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+			sourceVideoId: input.sourceVideoId,
+			startTime: input.startTime,
+			endTime: input.endTime,
+		});
+
 		return {
 			success: false,
 			error: "音声ボタンの作成に失敗しました。しばらく時間をおいてから再度お試しください。",
@@ -307,7 +385,7 @@ export async function updateAudioButtonStats(
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		// 認証チェック（統計更新は認証ユーザーのみ）
-		const _user = await requireAuth();
+		await requireAuth();
 		// バリデーション
 		const validationResult = UpdateAudioButtonStatsSchema.safeParse(statsUpdate);
 		if (!validationResult.success) {

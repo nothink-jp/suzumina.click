@@ -7,6 +7,7 @@ import type {
 } from "@suzumina.click/shared-types/src/work";
 import { convertToFrontendWork } from "@suzumina.click/shared-types/src/work";
 import { getFirestore } from "@/lib/firestore";
+import * as logger from "@/lib/logger";
 
 /**
  * DLsite作品データをページネーション付きで取得するServer Action（ユーザー向け）

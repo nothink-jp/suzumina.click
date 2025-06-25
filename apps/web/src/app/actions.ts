@@ -1,5 +1,6 @@
 "use server";
 
+import * as logger from "@/lib/logger";
 import { getVideoTitles } from "./videos/actions";
 import { getWorks } from "./works/actions";
 
@@ -9,35 +10,37 @@ import { getWorks } from "./works/actions";
  * @returns 新着作品リスト
  */
 export async function getLatestWorks(limit = 10) {
-	// biome-ignore lint/suspicious/noConsole: Server Action logging for monitoring
-	console.log(`🏠 Homepage getLatestWorks called with limit=${limit}`);
+	logger.info("新着作品取得を開始", {
+		action: "getLatestWorks",
+		limit,
+	});
 
 	try {
 		const result = await getWorks({ page: 1, limit });
 
 		if (result.works.length === 0) {
-			// biome-ignore lint/suspicious/noConsole: Server Action logging for monitoring
-			console.warn("⚠️ Homepage getLatestWorks: No works returned from getWorks");
+			logger.warn("新着作品取得で0件返却", {
+				action: "getLatestWorks",
+				limit,
+			});
 		} else {
-			// biome-ignore lint/suspicious/noConsole: Server Action logging for monitoring
-			console.log(
-				`🏠 Homepage getLatestWorks result: ${result.works.length} works, hasMore=${result.hasMore}, totalCount=${result.totalCount}`,
-			);
-			// biome-ignore lint/suspicious/noConsole: Server Action logging for monitoring
-			console.log(
-				`✅ Homepage getLatestWorks: First work: ${result.works[0]?.title} (${result.works[0]?.productId})`,
-			);
+			logger.info("新着作品取得成功", {
+				action: "getLatestWorks",
+				worksCount: result.works.length,
+				hasMore: result.hasMore,
+				totalCount: result.totalCount,
+				firstWorkTitle: result.works[0]?.title,
+				firstWorkId: result.works[0]?.productId,
+			});
 		}
 
 		return result.works;
 	} catch (error) {
-		// biome-ignore lint/suspicious/noConsole: Server Action error logging
-		console.error("❌ Homepage 新着作品取得エラー:", error);
-		// biome-ignore lint/suspicious/noConsole: Server Action error logging
-		console.error("❌ Homepage Error details:", {
-			message: error instanceof Error ? error.message : String(error),
+		logger.error("新着作品取得でエラーが発生", {
+			action: "getLatestWorks",
+			limit,
+			error: error instanceof Error ? error.message : String(error),
 			stack: error instanceof Error ? error.stack : undefined,
-			name: error instanceof Error ? error.name : typeof error,
 		});
 		return [];
 	}
@@ -49,35 +52,36 @@ export async function getLatestWorks(limit = 10) {
  * @returns 新着動画リスト
  */
 export async function getLatestVideos(limit = 10) {
-	// biome-ignore lint/suspicious/noConsole: Server Action logging for monitoring
-	console.log(`🏠 Homepage getLatestVideos called with limit=${limit}`);
+	logger.info("新着動画取得を開始", {
+		action: "getLatestVideos",
+		limit,
+	});
 
 	try {
 		const result = await getVideoTitles({ page: 1, limit });
 
 		if (result.videos.length === 0) {
-			// biome-ignore lint/suspicious/noConsole: Server Action logging for monitoring
-			console.warn("⚠️ Homepage getLatestVideos: No videos returned from getVideoTitles");
+			logger.warn("新着動画取得で0件返却", {
+				action: "getLatestVideos",
+				limit,
+			});
 		} else {
-			// biome-ignore lint/suspicious/noConsole: Server Action logging for monitoring
-			console.log(
-				`🏠 Homepage getLatestVideos result: ${result.videos.length} videos, hasMore=${result.hasMore}`,
-			);
-			// biome-ignore lint/suspicious/noConsole: Server Action logging for monitoring
-			console.log(
-				`✅ Homepage getLatestVideos: First video: ${result.videos[0]?.title} (${result.videos[0]?.videoId})`,
-			);
+			logger.info("新着動画取得成功", {
+				action: "getLatestVideos",
+				videosCount: result.videos.length,
+				hasMore: result.hasMore,
+				firstVideoTitle: result.videos[0]?.title,
+				firstVideoId: result.videos[0]?.videoId,
+			});
 		}
 
 		return result.videos;
 	} catch (error) {
-		// biome-ignore lint/suspicious/noConsole: Server Action error logging
-		console.error("❌ Homepage 新着動画取得エラー:", error);
-		// biome-ignore lint/suspicious/noConsole: Server Action error logging
-		console.error("❌ Homepage Error details:", {
-			message: error instanceof Error ? error.message : String(error),
+		logger.error("新着動画取得でエラーが発生", {
+			action: "getLatestVideos",
+			limit,
+			error: error instanceof Error ? error.message : String(error),
 			stack: error instanceof Error ? error.stack : undefined,
-			name: error instanceof Error ? error.name : typeof error,
 		});
 		return [];
 	}
