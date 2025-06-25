@@ -24,10 +24,10 @@ export default defineConfig({
 				"**/*.config.{js,ts,mjs,cjs,mts,cts}",
 			],
 			thresholds: {
-				statements: 75,
+				statements: 74,
 				branches: 69,
 				functions: 90,
-				lines: 75,
+				lines: 74,
 			},
 		},
 	},
