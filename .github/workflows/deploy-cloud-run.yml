@@ -159,32 +159,60 @@ jobs:
       # Health check
       - name: Wait for deployment and health check
         run: |
-          # Get service URL
+          # Get service URL (Cloud Run v2 format)
           SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region ${{ env.REGION }} \
-            --format 'value(status.url)')
+            --format 'value(status.address.url)')
           
           echo "Service URL: $SERVICE_URL"
+          
+          # Fallback if v2 format doesn't work
+          if [ -z "$SERVICE_URL" ]; then
+            echo "Trying v1 format..."
+            SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+              --region ${{ env.REGION }} \
+              --format 'value(status.url)')
+            echo "V1 Service URL: $SERVICE_URL"
+          fi
           
           # Wait for deployment to be ready and IAM to propagate
           echo "Waiting for deployment and IAM policy propagation..."
           sleep 60
           
           # Health check with more retries and better error handling
+          # Use custom domain if available, otherwise use service URL with bypassed host check
+          HEALTH_URL="$SERVICE_URL/api/health"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "Using custom domain for health check..."
+            HEALTH_URL="https://suzumina.click/api/health"
+          fi
+          
+          echo "Health check URL: $HEALTH_URL"
+          
           for i in {1..10}; do
             echo "Health check attempt $i/10..."
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/api/health" || echo "000")
+            
+            # If using service URL, add Host header to bypass middleware restriction
+            if [[ "$HEALTH_URL" == "$SERVICE_URL"* ]]; then
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: suzumina.click" "$HEALTH_URL" || echo "000")
+            else
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+            fi
             
             if [ "$HTTP_CODE" = "200" ]; then
               echo "✅ Health check passed (HTTP $HTTP_CODE)"
-              curl -s "$SERVICE_URL/api/health" | jq '.' || echo "Response received"
+              if [[ "$HEALTH_URL" == "$SERVICE_URL"* ]]; then
+                curl -s -H "Host: suzumina.click" "$HEALTH_URL" | jq '.' || echo "Response received"
+              else
+                curl -s "$HEALTH_URL" | jq '.' || echo "Response received"
+              fi
               exit 0
             else
               echo "❌ Health check failed (HTTP $HTTP_CODE) - attempt $i/10"
               if [ "$HTTP_CODE" = "403" ]; then
                 echo "403 Forbidden - IAM policy may still be propagating..."
               elif [ "$HTTP_CODE" = "404" ]; then
-                echo "404 Not Found - service may still be starting..."
+                echo "404 Not Found - service may still be starting or host blocked..."
               elif [ "$HTTP_CODE" = "000" ]; then
                 echo "Connection failed - service may be unavailable..."
               fi
@@ -194,7 +222,11 @@ jobs:
           
           echo "❌ Health check failed after 10 attempts"
           echo "Final attempt details:"
-          curl -v "$SERVICE_URL/api/health" || true
+          if [[ "$HEALTH_URL" == "$SERVICE_URL"* ]]; then
+            curl -v -H "Host: suzumina.click" "$HEALTH_URL" || true
+          else
+            curl -v "$HEALTH_URL" || true
+          fi
           exit 1
       
       # Cleanup old images
