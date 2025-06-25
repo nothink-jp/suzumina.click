@@ -163,7 +163,17 @@ export function AudioReferenceCreator({
 			} else {
 				setError(result.error || "作成に失敗しました");
 			}
-		} catch {
+		} catch (error) {
+			console.error("Error in handleCreate:", {
+				error: error instanceof Error ? error.message : String(error),
+				stack: error instanceof Error ? error.stack : undefined,
+				input: {
+					videoId,
+					title: title.trim(),
+					startTime,
+					endTime,
+				},
+			});
 			setError("予期しないエラーが発生しました");
 		} finally {
 			setIsCreating(false);

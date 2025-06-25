@@ -31,11 +31,15 @@ export async function createAudioReference(
 	input: CreateAudioReferenceInput,
 ): Promise<{ success: true; data: { id: string } } | { success: false; error: string }> {
 	try {
+		console.log("Starting audio reference creation:", { input });
+
 		// 認証チェック
 		const user = await requireAuth();
+		console.log("User authenticated:", { userId: user.discordId, username: user.displayName });
 		// 入力データのバリデーション
 		const validationResult = CreateAudioReferenceInputSchema.safeParse(input);
 		if (!validationResult.success) {
+			console.error("Input validation failed:", validationResult.error.errors);
 			return {
 				success: false,
 				error: `入力データが無効です: ${validationResult.error.errors.map((e) => e.message).join(", ")}`,
@@ -43,6 +47,7 @@ export async function createAudioReference(
 		}
 
 		const validatedInput = validationResult.data;
+		console.log("Input validation passed:", { validatedInput });
 
 		// レート制限のためのユーザーベースチェック
 		const firestore = FirestoreAdmin.getInstance();
@@ -66,13 +71,16 @@ export async function createAudioReference(
 		}
 
 		// YouTube動画情報の取得
+		console.log("Fetching YouTube video info:", { videoId: validatedInput.videoId });
 		const videoInfo = await fetchYouTubeVideoInfo(validatedInput.videoId);
 		if (!videoInfo) {
+			console.error("YouTube video not found:", { videoId: validatedInput.videoId });
 			return {
 				success: false,
 				error: "指定されたYouTube動画が見つからないか、アクセスできません",
 			};
 		}
+		console.log("YouTube video info retrieved:", { videoInfo });
 
 		// バリデーション
 		const validation = validateAudioReferenceCreation(validatedInput, videoInfo);
@@ -92,27 +100,38 @@ export async function createAudioReference(
 		);
 
 		// Firestoreに保存
+		console.log("Saving to Firestore:", { firestoreData });
 		const docRef = await firestore.collection("audioReferences").add(firestoreData);
+		console.log("Saved to Firestore with ID:", docRef.id);
 
 		// 元動画の統計を更新（音声ボタン数を増加）
+		console.log("Updating video stats:", { videoId: validatedInput.videoId });
 		await updateVideoAudioButtonStats(validatedInput.videoId, {
 			increment: true,
 		});
 
 		// ユーザー統計を更新
+		console.log("Updating user stats:", { userId: user.discordId });
 		await updateUserStats(user.discordId, {
 			incrementAudioReferences: true,
 		});
 
 		// キャッシュの無効化
+		console.log("Revalidating paths");
 		revalidatePath("/buttons");
 		revalidatePath(`/videos/${validatedInput.videoId}`);
 
+		console.log("Audio reference creation completed successfully:", { id: docRef.id });
 		return {
 			success: true,
 			data: { id: docRef.id },
 		};
-	} catch (_error) {
+	} catch (error) {
+		console.error("Error creating audio reference:", {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+			input,
+		});
 		return {
 			success: false,
 			error: "音声ボタンの作成に失敗しました。しばらく時間をおいてから再度お試しください。",
@@ -222,7 +241,12 @@ export async function getAudioReferences(
 			success: true,
 			data: result,
 		};
-	} catch (_error) {
+	} catch (error) {
+		console.error("Error fetching audio references:", {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+			query,
+		});
 		return {
 			success: false,
 			error: "音声ボタンの取得に失敗しました。",
@@ -365,7 +389,12 @@ export async function updateAudioReferenceStats(
 		revalidatePath(`/buttons/${validatedUpdate.id}`);
 
 		return { success: true };
-	} catch (_error) {
+	} catch (error) {
+		console.error("Error updating audio reference stats:", {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+			statsUpdate,
+		});
 		return {
 			success: false,
 			error: "統計情報の更新に失敗しました。",
@@ -458,7 +487,12 @@ export async function getAudioReferenceById(
 			success: true,
 			data: frontendData,
 		};
-	} catch (_error) {
+	} catch (error) {
+		console.error("Error fetching audio reference by ID:", {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+			id,
+		});
 		return {
 			success: false,
 			error: "音声ボタンの取得に失敗しました",
@@ -519,7 +553,12 @@ async function fetchYouTubeVideoInfo(videoId: string): Promise<YouTubeVideoInfo 
 			duration: duration ? Math.floor(duration / 1000) : undefined,
 			publishedAt: snippet.publishedAt,
 		};
-	} catch (_error) {
+	} catch (error) {
+		console.error("Error fetching YouTube video info:", {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+			videoId,
+		});
 		return null;
 	}
 }
