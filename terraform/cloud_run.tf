@@ -16,6 +16,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
   
   labels = local.common_labels
 
+
   # Note: デフォルトURLアクセス制御はアプリケーションレベルで実装
 
   template {
