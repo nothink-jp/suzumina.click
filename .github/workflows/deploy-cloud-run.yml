@@ -229,27 +229,30 @@ jobs:
           fi
           exit 1
       
-      # Cleanup old images
+      # Cleanup old images (safer approach)
       - name: Cleanup old images
         run: |
-          echo "Cleaning up old Docker images (keeping last 5 versions)"
+          echo "Checking Docker images in repository (cleanup temporarily disabled due to deletion issues)"
           
-          # Get list of images sorted by creation time (newest first)
+          # Show current images for monitoring
+          echo "Current images in repository:"
           gcloud artifacts docker images list \
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }} \
             --include-tags \
             --sort-by="~CREATE_TIME" \
-            --format="value(IMAGE)" \
-            --limit=20 | tail -n +6 | \
-            while read image; do
-              if [ -n "$image" ]; then
-                echo "Deleting image: $image"
-                # Use --delete-tags to automatically remove tags before deleting image
-                gcloud artifacts docker images delete "$image" \
-                  --delete-tags \
-                  --quiet \
-                  --async || {
-                  echo "Failed to delete $image, but continuing..."
-                }
-              fi
-            done || true  # Don't fail the entire workflow if cleanup fails
+            --format="table(IMAGE,CREATE_TIME,TAGS)" || echo "No images found or error listing"
+          
+          # Count total images
+          IMAGE_COUNT=$(gcloud artifacts docker images list \
+            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }} \
+            --format="value(IMAGE)" 2>/dev/null | wc -l || echo "0")
+          
+          echo "Total images in repository: $IMAGE_COUNT"
+          
+          if [ "$IMAGE_COUNT" -gt 10 ]; then
+            echo "⚠️  Repository has $IMAGE_COUNT images. Consider manual cleanup or implementing lifecycle policies."
+            echo "💡 You can manually delete old images using:"
+            echo "   gcloud artifacts docker images delete IMAGE_PATH --delete-tags --quiet"
+          else
+            echo "✅ Repository size is manageable ($IMAGE_COUNT images)"
+          fi

@@ -22,7 +22,7 @@ resource "google_artifact_registry_repository" "docker_repo" {
     condition {
       tag_state             = "ANY"
       tag_prefixes          = ["latest"]
-      package_name_prefixes = ["nextjs-app"]
+      package_name_prefixes = ["web"]
     }
   }
   
@@ -30,8 +30,19 @@ resource "google_artifact_registry_repository" "docker_repo" {
     id     = "delete-old-versions"
     action = "DELETE"
     condition {
-      older_than = "2592000s" # 30日 (30 * 24 * 60 * 60秒)
-      tag_state  = "ANY"
+      older_than = "604800s" # 7日 (7 * 24 * 60 * 60秒)
+      tag_state  = "UNTAGGED"
+    }
+  }
+  
+  cleanup_policies {
+    id     = "keep-recent-versions"
+    action = "KEEP"
+    most_recent_versions {
+      keep_count = 5
+    }
+    condition {
+      package_name_prefixes = ["web"]
     }
   }
 
