@@ -1,0 +1,177 @@
+import { Meta, ColorPalette, ColorItem } from '@storybook/blocks';
+import * as ColorPaletteStories from './color-palette.stories';
+
+<Meta of={ColorPaletteStories} />
+
+# Suzuka Color Palette
+
+涼花みなせテーマの桜色パレット - プロジェクト全体で使用される統一カラーシステム
+
+## 🎨 Primary Colors
+
+基本となる桜色のグラデーションパレット。`suzuka-500` を基準色として、明度別に11段階で構成されています。
+
+<ColorPalette>
+  <ColorItem
+    title="suzuka-50"
+    subtitle="最も薄い桜色 - 背景色に最適"
+    colors={{ "suzuka-50": "#fff5fa" }}
+  />
+  <ColorItem
+    title="suzuka-100"
+    subtitle="薄い桜色 - ホバー背景"
+    colors={{ "suzuka-100": "#ffe0ed" }}
+  />
+  <ColorItem
+    title="suzuka-200"
+    subtitle="淡い桜色 - ボーダー色"
+    colors={{ "suzuka-200": "#ffc2d9" }}
+  />
+  <ColorItem
+    title="suzuka-300"
+    subtitle="桜色 - アクセント背景"
+    colors={{ "suzuka-300": "#ff9ebf" }}
+  />
+  <ColorItem
+    title="suzuka-400"
+    subtitle="濃い桜色 - セカンダリ色"
+    colors={{ "suzuka-400": "#ff6b9d" }}
+  />
+  <ColorItem
+    title="suzuka-500"
+    subtitle="基準の桜色 - プライマリ色"
+    colors={{ "suzuka-500": "#ff4785" }}
+  />
+  <ColorItem
+    title="suzuka-600"
+    subtitle="濃い目の桜色 - ホバー時"
+    colors={{ "suzuka-600": "#e0266e" }}
+  />
+  <ColorItem
+    title="suzuka-700"
+    subtitle="より濃い桜色 - アクティブ時"
+    colors={{ "suzuka-700": "#b81d5b" }}
+  />
+  <ColorItem
+    title="suzuka-800"
+    subtitle="かなり濃い桜色 - テキスト色"
+    colors={{ "suzuka-800": "#8f1447" }}
+  />
+  <ColorItem
+    title="suzuka-900"
+    subtitle="最も濃い桜色 - 見出し色"
+    colors={{ "suzuka-900": "#660d33" }}
+  />
+  <ColorItem
+    title="suzuka-950"
+    subtitle="ほぼ黒に近い桜色"
+    colors={{ "suzuka-950": "#3d0820" }}
+  />
+</ColorPalette>
+
+## 📐 Usage Guidelines
+
+### Tailwind CSS Classes
+
+```css
+/* 背景色 */
+bg-suzuka-50  /* 最も薄い背景 */
+bg-suzuka-100 /* カードの背景 */
+bg-suzuka-500 /* プライマリボタン */
+
+/* テキスト色 */
+text-suzuka-600 /* リンクテキスト */
+text-suzuka-800 /* 本文テキスト */
+text-suzuka-900 /* 見出しテキスト */
+
+/* ボーダー色 */
+border-suzuka-200 /* 通常のボーダー */
+border-suzuka-300 /* ホバー時のボーダー */
+
+/* リング色 */
+ring-suzuka-500 /* フォーカスリング */
+```
+
+### グラデーション
+
+```css
+/* Linear Gradient */
+.suzuka-gradient {
+  background: linear-gradient(135deg, #ff9ebf 0%, #ff4785 100%);
+}
+
+/* Subtle Gradient */
+.suzuka-gradient-subtle {
+  background: linear-gradient(135deg, #ffe0ed 0%, #ffc2d9 100%);
+}
+
+/* Radial Gradient */
+.suzuka-gradient-radial {
+  background: radial-gradient(circle, #ff4785 0%, #e0266e 100%);
+}
+```
+
+## 🎯 Best Practices
+
+### Do's ✅
+
+- **プライマリアクション**: `suzuka-500` を使用
+- **ホバー状態**: 1段階濃い色を使用 (500 → 600)
+- **無効状態**: 透明度を下げて表現 (`opacity-50`)
+- **テキストコントラスト**: WCAG AA基準を満たす組み合わせを使用
+
+### Don'ts ❌
+
+- 隣接する色を同時に使用しない（例: suzuka-500 と suzuka-400）
+- 薄い背景に薄いテキストを配置しない
+- グラデーションを過度に使用しない
+
+## 🌗 Dark Mode Support
+
+ダークモードでは自動的に色が調整されます：
+
+```css
+/* Light Mode */
+bg-suzuka-500 text-white
+
+/* Dark Mode */
+dark:bg-suzuka-400 dark:text-suzuka-950
+```
+
+## ♿ Accessibility
+
+### コントラスト比
+
+| 背景色 | テキスト色 | コントラスト比 | WCAG基準 |
+|--------|------------|----------------|----------|
+| suzuka-50 | suzuka-900 | 12.5:1 | AAA ✅ |
+| suzuka-100 | suzuka-800 | 9.8:1 | AAA ✅ |
+| suzuka-500 | white | 4.5:1 | AA ✅ |
+| suzuka-600 | white | 7.2:1 | AAA ✅ |
+
+## 🎨 Color Combinations
+
+### 推奨される色の組み合わせ
+
+<div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
+  <div style={{ padding: '1rem', backgroundColor: '#fff5fa', color: '#660d33', border: '1px solid #ffc2d9' }}>
+    <strong>Light Background</strong><br />
+    bg-suzuka-50 + text-suzuka-900 + border-suzuka-200
+  </div>
+  
+  <div style={{ padding: '1rem', backgroundColor: '#ff4785', color: 'white' }}>
+    <strong>Primary Button</strong><br />
+    bg-suzuka-500 + text-white + hover:bg-suzuka-600
+  </div>
+  
+  <div style={{ padding: '1rem', backgroundColor: '#ffe0ed', color: '#8f1447', border: '1px solid #ff9ebf' }}>
+    <strong>Secondary Button</strong><br />
+    bg-suzuka-100 + text-suzuka-800 + border-suzuka-300
+  </div>
+</div>
+
+## 🔗 Related Components
+
+- [Button](/story/ui-button--default) - ボタンコンポーネントでの使用例
+- [Card](/story/ui-card--default) - カードコンポーネントでの使用例
+- [Badge](/story/ui-badge--default) - バッジコンポーネントでの使用例

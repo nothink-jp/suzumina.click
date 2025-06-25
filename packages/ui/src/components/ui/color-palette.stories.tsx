@@ -1,3 +1,4 @@
+import { ColorItem, ColorPalette } from "@storybook/blocks";
 import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta = {
@@ -15,7 +16,21 @@ export default meta;
 type Story = StoryObj;
 
 // カラーパレットの定義
-const suzukaColors = [
+const suzukaColors = {
+	"suzuka-50": "#fff5fa",
+	"suzuka-100": "#ffe0ed",
+	"suzuka-200": "#ffc2d9",
+	"suzuka-300": "#ff9ebf",
+	"suzuka-400": "#ff6b9d",
+	"suzuka-500": "#ff4785",
+	"suzuka-600": "#e0266e",
+	"suzuka-700": "#b81d5b",
+	"suzuka-800": "#8f1447",
+	"suzuka-900": "#660d33",
+	"suzuka-950": "#3d0820",
+};
+
+const suzukaColorDetails = [
 	{ name: "suzuka-50", description: "最も薄い桜色", hex: "#fff5fa" },
 	{ name: "suzuka-100", description: "薄い桜色", hex: "#ffe0ed" },
 	{ name: "suzuka-200", description: "淡い桜色", hex: "#ffc2d9" },
@@ -59,10 +74,25 @@ export const SuzukaColorPalette: Story = {
 				<p className="text-gray-600">涼花みなせテーマの桜色パレット</p>
 			</div>
 
-			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-				{suzukaColors.map((color) => (
-					<ColorSwatch key={color.name} {...color} />
+			{/* Storybook公式のColorPaletteコンポーネント */}
+			<ColorPalette>
+				{suzukaColorDetails.map((color) => (
+					<ColorItem
+						key={color.name}
+						title={color.name}
+						subtitle={color.description}
+						colors={{ [color.name]: color.hex }}
+					/>
 				))}
+			</ColorPalette>
+
+			<div className="mt-8">
+				<h2 className="text-2xl font-bold mb-4">Quick Reference</h2>
+				<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+					{suzukaColorDetails.map((color) => (
+						<ColorSwatch key={color.name} {...color} />
+					))}
+				</div>
 			</div>
 
 			<div className="mt-12">
@@ -154,8 +184,22 @@ export const DarkMode: Story = {
 				<p className="text-gray-300">ダークモードでの表示</p>
 			</div>
 
+			{/* Storybook ColorPaletteコンポーネント (ダークモード対応) */}
+			<div className="mb-8">
+				<ColorPalette>
+					{suzukaColorDetails.map((color) => (
+						<ColorItem
+							key={color.name}
+							title={color.name}
+							subtitle={color.description}
+							colors={{ [color.name]: color.hex }}
+						/>
+					))}
+				</ColorPalette>
+			</div>
+
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-				{suzukaColors.map((color) => (
+				{suzukaColorDetails.map((color) => (
 					<ColorSwatch key={color.name} {...color} />
 				))}
 			</div>
@@ -178,6 +222,105 @@ export const DarkMode: Story = {
 	),
 };
 
+export const ColorGroups: Story = {
+	render: () => (
+		<div className="p-6">
+			<div className="mb-8">
+				<h1 className="text-3xl font-bold mb-2">Color Groups</h1>
+				<p className="text-gray-600">用途別のカラーグループ</p>
+			</div>
+
+			{/* 背景色グループ */}
+			<div className="mb-8">
+				<h3 className="text-lg font-semibold mb-4">Background Colors</h3>
+				<ColorPalette>
+					<ColorItem
+						title="Main Background"
+						subtitle="bg-suzuka-50"
+						colors={{ "suzuka-50": "#fff5fa" }}
+					/>
+					<ColorItem
+						title="Card Background"
+						subtitle="bg-suzuka-100"
+						colors={{ "suzuka-100": "#ffe0ed" }}
+					/>
+					<ColorItem
+						title="Hover Background"
+						subtitle="bg-suzuka-200"
+						colors={{ "suzuka-200": "#ffc2d9" }}
+					/>
+				</ColorPalette>
+			</div>
+
+			{/* アクションカラーグループ */}
+			<div className="mb-8">
+				<h3 className="text-lg font-semibold mb-4">Action Colors</h3>
+				<ColorPalette>
+					<ColorItem
+						title="Primary Action"
+						subtitle="bg-suzuka-500"
+						colors={{ "suzuka-500": "#ff4785" }}
+					/>
+					<ColorItem
+						title="Primary Hover"
+						subtitle="bg-suzuka-600"
+						colors={{ "suzuka-600": "#e0266e" }}
+					/>
+					<ColorItem
+						title="Primary Active"
+						subtitle="bg-suzuka-700"
+						colors={{ "suzuka-700": "#b81d5b" }}
+					/>
+				</ColorPalette>
+			</div>
+
+			{/* テキストカラーグループ */}
+			<div className="mb-8">
+				<h3 className="text-lg font-semibold mb-4">Text Colors</h3>
+				<ColorPalette>
+					<ColorItem
+						title="Body Text"
+						subtitle="text-suzuka-800"
+						colors={{ "suzuka-800": "#8f1447" }}
+					/>
+					<ColorItem
+						title="Heading Text"
+						subtitle="text-suzuka-900"
+						colors={{ "suzuka-900": "#660d33" }}
+					/>
+					<ColorItem
+						title="Dark Background Text"
+						subtitle="text-suzuka-950"
+						colors={{ "suzuka-950": "#3d0820" }}
+					/>
+				</ColorPalette>
+			</div>
+
+			{/* ボーダー・アクセントカラーグループ */}
+			<div className="mb-8">
+				<h3 className="text-lg font-semibold mb-4">Border & Accent Colors</h3>
+				<ColorPalette>
+					<ColorItem
+						title="Default Border"
+						subtitle="border-suzuka-200"
+						colors={{ "suzuka-200": "#ffc2d9" }}
+					/>
+					<ColorItem
+						title="Hover Border"
+						subtitle="border-suzuka-300"
+						colors={{ "suzuka-300": "#ff9ebf" }}
+					/>
+					<ColorItem
+						title="Focus Ring"
+						subtitle="ring-suzuka-500"
+						colors={{ "suzuka-500": "#ff4785" }}
+					/>
+				</ColorPalette>
+			</div>
+		</div>
+	),
+};
+
 export const AccessibilityContrast: Story = {
 	render: () => (
 		<div className="p-6">
@@ -186,13 +329,44 @@ export const AccessibilityContrast: Story = {
 				<p className="text-gray-600">コントラスト比とアクセシビリティの確認</p>
 			</div>
 
+			{/* Storybook ColorItemで推奨組み合わせを表示 */}
+			<div className="mb-8">
+				<h3 className="text-lg font-semibold mb-4">Recommended Color Combinations</h3>
+				<ColorPalette>
+					<ColorItem
+						title="Light Background"
+						subtitle="bg-suzuka-50 + text-suzuka-900"
+						colors={{ Background: "#fff5fa", Text: "#660d33" }}
+					/>
+					<ColorItem
+						title="Primary Action"
+						subtitle="bg-suzuka-500 + text-white"
+						colors={{ Background: "#ff4785", Text: "#ffffff" }}
+					/>
+					<ColorItem
+						title="Secondary Action"
+						subtitle="bg-suzuka-100 + text-suzuka-800"
+						colors={{ Background: "#ffe0ed", Text: "#8f1447" }}
+					/>
+					<ColorItem
+						title="Danger State"
+						subtitle="bg-suzuka-600 + text-white"
+						colors={{ Background: "#e0266e", Text: "#ffffff" }}
+					/>
+				</ColorPalette>
+			</div>
+
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 				{/* Light text on suzuka backgrounds */}
 				<div>
 					<h3 className="text-lg font-semibold mb-4">Light Text on Suzuka Backgrounds</h3>
 					<div className="space-y-2">
-						{suzukaColors.slice(4).map((color) => (
-							<div key={color.name} className={`p-3 bg-${color.name} text-white rounded`}>
+						{suzukaColorDetails.slice(4).map((color) => (
+							<div
+								key={color.name}
+								className="p-3 text-white rounded"
+								style={{ backgroundColor: color.hex }}
+							>
 								<span className="font-medium">{color.name}</span> - White text
 							</div>
 						))}
@@ -203,8 +377,12 @@ export const AccessibilityContrast: Story = {
 				<div>
 					<h3 className="text-lg font-semibold mb-4">Dark Text on Suzuka Backgrounds</h3>
 					<div className="space-y-2">
-						{suzukaColors.slice(0, 4).map((color) => (
-							<div key={color.name} className={`p-3 bg-${color.name} text-suzuka-900 rounded`}>
+						{suzukaColorDetails.slice(0, 4).map((color) => (
+							<div
+								key={color.name}
+								className="p-3 text-suzuka-900 rounded"
+								style={{ backgroundColor: color.hex }}
+							>
 								<span className="font-medium">{color.name}</span> - Dark text
 							</div>
 						))}
