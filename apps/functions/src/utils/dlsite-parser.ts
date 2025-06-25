@@ -98,7 +98,7 @@ export function extractCategoryFromClass(categoryElement: unknown): WorkCategory
  */
 export function extractPriceNumber(priceText: string): number {
 	const match = priceText.match(/(\d+(?:,\d+)*)/);
-	if (match) {
+	if (match?.[1]) {
 		return Number.parseInt(match[1].replace(/,/g, ""), 10);
 	}
 	return 0;
@@ -111,7 +111,7 @@ export function extractStarRating(ratingElement: unknown): number {
 	const className =
 		(ratingElement as { attr: (name: string) => string | undefined }).attr("class") || "";
 	const match = className.match(/star_(\d+)/);
-	if (match) {
+	if (match?.[1]) {
 		return Number.parseInt(match[1], 10) / 10; // star_45 -> 4.5
 	}
 	return 0;
@@ -122,7 +122,7 @@ export function extractStarRating(ratingElement: unknown): number {
  */
 export function extractNumberFromParentheses(text: string): number {
 	const match = text.match(/\((\d+(?:,\d+)*)\)/);
-	if (match) {
+	if (match?.[1]) {
 		return Number.parseInt(match[1].replace(/,/g, ""), 10);
 	}
 	return 0;

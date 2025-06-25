@@ -144,6 +144,7 @@ function VideoList() {
 - **Next.js App Router対応**: `useRouter`などのNext.jsフックのモック設定
 - **UI/UXテスト**: 視覚的なコンポーネントテスト環境
 - **デザインシステム**: 一貫したUIコンポーネントライブラリ構築
+- **デザイントークン**: 色・スペース・タイポグラフィの体系的管理
 
 ## 🧪 テスト戦略
 
@@ -303,6 +304,52 @@ export function VideoCard({ video }: { video: VideoData }) {
   // ...
 }
 ```
+
+## 🎨 デザインシステム・UI開発
+
+### デザイントークン体系
+
+**ブランドカラーパレット**:
+- **suzuka colors**: 涼花みなせメインピンク系（50～950の10段階）
+- **minase colors**: 涼花みなせオレンジ系（50～950の10段階）
+
+**トークン構成**:
+```text
+packages/ui/src/components/design-tokens/
+├── color-palette.stories.tsx    # ブランドカラー + セマンティックカラー
+├── typography.stories.tsx       # フォントサイズ・行間・ウェイト
+├── spacing.stories.tsx          # 4px基準のスペーシング
+├── borders-shadows.stories.tsx  # 角丸・ボーダー・シャドウ
+└── icons.stories.tsx           # Lucide Reactアイコンセット
+```
+
+**使用例**:
+```typescript
+// ✅ 良い例: Tailwind CSS v4 + デザイントークン
+<Button className="bg-suzuka-500 hover:bg-suzuka-600 text-white">
+  メインCTA
+</Button>
+
+<Button className="bg-minase-500 hover:bg-minase-600 text-white">
+  セカンダリCTA
+</Button>
+
+// ✅ 良い例: スペーシングトークン活用
+<div className="p-4 mb-6 gap-2">
+  {/* 4px基準の一貫したスペーシング */}
+</div>
+```
+
+### Storybook デザイントークン管理
+
+**Lint設定**: デザイントークンStorybook は `biome.json` でlint除外
+- 理由: ドキュメンテーション目的のため未使用変数が多数存在
+- 対象: `**/src/components/design-tokens/*.stories.tsx`
+
+**メンテナンス方針**:
+- デザイントークンの変更時は対応するStorybookを更新
+- 新しいカラー・スペース・アイコン追加時はStorybook反映
+- Chromaticによる視覚的回帰テスト対象
 
 ## 📦 依存関係管理
 

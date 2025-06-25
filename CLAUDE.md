@@ -33,6 +33,7 @@ DLsite      (本番環境)       (自動化)       ストレージ    (認証・
 
 - **Next.js 15** (App Router) + **TypeScript 5.8** + **React 19**
 - **Tailwind CSS v4** + **Radix UI** (shadcn/ui)
+- **デザインシステム**: 涼花みなせブランドカラー (suzuka/minase) + 包括的デザイントークン
 - **NextAuth.js** (Discord OAuth認証)
 
 ### バックエンド・インフラ
@@ -40,6 +41,7 @@ DLsite      (本番環境)       (自動化)       ストレージ    (認証・
 - **Google Cloud Functions v2** (Node.js 22) - データ収集
 - **Google Cloud Firestore** - メインデータベース
 - **Google Cloud Storage** - ファイル保存
+- **Google Cloud Logging** - 構造化ログ出力・運用監視
 - **Terraform** - インフラ管理
 - **GitHub Actions** - CI/CDパイプライン
 
@@ -69,8 +71,9 @@ suzumina.click/ (v0.2.1)
 ├── packages/
 │   ├── shared-types/       # 共有型定義 (Zodスキーマ)
 │   ├── ui/                 # 共有UIコンポーネント
-│   │   ├── components/ui/     # shadcn/ui (51個)
-│   │   └── components/custom/ # 独自UI (audio-button等)
+│   │   ├── components/ui/           # shadcn/ui (51個)
+│   │   ├── components/custom/       # 独自UI (audio-button等)
+│   │   └── components/design-tokens/ # デザイントークン (Storybook)
 │   └── typescript-config/  # TypeScript設定
 ├── terraform/              # インフラ定義
 └── docs/                   # プロジェクトドキュメント
@@ -90,6 +93,39 @@ suzumina.click/ (v0.2.1)
 
 1. **音声参照**: YouTube動画の特定区間を参照
 2. **音声ボタン**: Cloud Storageにアップロードされた実音声ファイル
+
+## 🎨 デザインシステム
+
+### ブランドカラーパレット
+
+#### **suzuka colors (メインテーマ)**
+- **suzuka-500**: `#ff4785` - 涼花みなせメインピンク
+- **suzuka-50～950**: 10段階のピンク系グラデーション
+- 用途: プライマリボタン、アクセント、ブランディング
+
+#### **minase colors (サブテーマ)**
+- **minase-500**: `#ff7e2d` - 涼花みなせオレンジ
+- **minase-50～950**: 10段階のオレンジ系グラデーション  
+- 用途: セカンダリボタン、ハイライト、CTA
+
+### デザイントークン構成
+
+- **Color Palette**: suzuka/minase colors + semantic colors
+- **Typography**: フォントサイズ・行間・ウェイトの体系的定義
+- **Spacing**: 4px基準の一貫したスペーシングシステム
+- **Borders & Shadows**: 角丸・ボーダー・シャドウの統一ルール
+- **Icons**: Lucide React アイコンセット（200+アイコン）
+
+### Storybook デザイントークン
+
+```text
+packages/ui/src/components/design-tokens/
+├── color-palette.stories.tsx    # カラーパレット一覧
+├── typography.stories.tsx       # フォント・テキストスタイル
+├── spacing.stories.tsx          # マージン・パディング・ギャップ
+├── borders-shadows.stories.tsx  # ボーダー・角丸・シャドウ
+└── icons.stories.tsx           # アイコン一覧・使用例
+```
 
 ## 🚀 開発コマンド
 
@@ -208,12 +244,14 @@ Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → セ�
 
 #### **UI Package Storybook** (唯一の Storybook)
 ```typescript
-// 対象：全UIコンポーネント
-title: "UI/Button"           // shadcn/ui標準
-title: "Custom/AudioButton"  // プロジェクト拡張
+// 対象：全UIコンポーネント + デザイントークン
+title: "UI/Button"                    // shadcn/ui標準
+title: "Custom/AudioButton"           // プロジェクト拡張
+title: "Design Tokens/Color Palette"  // デザイントークン
 
 // 目的：デザインシステム・API文書化
 - 全バリアント・プロパティの体系的テスト
+- デザイントークン（色・スペース・タイポグラフィ）の視覚的ドキュメント
 - 視覚的回帰テスト (Chromatic対応)
 - コンポーネント単体の品質保証
 ```

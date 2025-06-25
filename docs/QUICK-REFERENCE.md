@@ -19,6 +19,9 @@ pnpm build
 
 # 🔍 テスト + カバレッジ
 pnpm test:coverage
+
+# 🎨 Storybook (デザイントークン)
+cd packages/ui && pnpm storybook
 ```
 
 ## 🔐 認証・環境変数
@@ -55,6 +58,11 @@ packages/shared-types/src/user.ts       # ユーザー型定義
 # 🎵 音声参照機能
 apps/web/src/app/buttons/               # 音声参照ページ・Actions
 packages/shared-types/src/audio-reference.ts  # 音声参照型定義
+
+# 🎨 UI・デザインシステム
+packages/ui/src/components/ui/          # shadcn/ui コンポーネント (51個)
+packages/ui/src/components/custom/      # 独自UIコンポーネント
+packages/ui/src/components/design-tokens/  # デザイントークンStorybook
 
 # 🧪 テスト
 apps/web/src/components/*.test.tsx       # コンポーネントテスト
@@ -167,14 +175,42 @@ pnpm audit
 
 ```bash
 # Storybook
-cd apps/web && pnpm storybook          # Web UI
-cd packages/ui && pnpm storybook       # 共有UI
+cd packages/ui && pnpm storybook       # UI + デザイントークン (一本化)
 
 # 型チェック
 pnpm --filter @suzumina.click/web tsc --noEmit
 
 # 共有型ビルド
 pnpm --filter @suzumina.click/shared-types build
+```
+
+### デザイントークン
+
+```bash
+# Storybook でデザイントークン確認
+cd packages/ui && pnpm storybook
+
+# 対象ファイル
+packages/ui/src/components/design-tokens/
+├── color-palette.stories.tsx    # suzuka/minase colors
+├── typography.stories.tsx       # フォント・行間
+├── spacing.stories.tsx          # 4px基準スペーシング
+├── borders-shadows.stories.tsx  # 角丸・シャドウ
+└── icons.stories.tsx           # Lucide React icons
+```
+
+### ブランドカラー
+
+```typescript
+// suzuka colors (メインピンク)
+bg-suzuka-50   # #fff5fa
+bg-suzuka-500  # #ff4785 (ブランドメイン)
+bg-suzuka-950  # #3d0820
+
+// minase colors (サブオレンジ)  
+bg-minase-50   # #fff8f3
+bg-minase-500  # #ff7e2d (ブランドサブ)
+bg-minase-950  # #431407
 ```
 
 ### Cloud関連

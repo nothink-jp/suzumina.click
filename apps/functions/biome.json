@@ -4,7 +4,7 @@
 	"linter": {
 		"rules": {
 			"suspicious": {
-				"noConsole": "off"
+				"noConsole": "warn"
 			},
 			"correctness": {
 				"noNodejsModules": "off"
@@ -16,10 +16,17 @@
 	},
 	"overrides": [
 		{
-			"includes": [
-				"**/*.test.ts",
-				"**/*.spec.ts"
-			],
+			"includes": ["**/utils/logger.ts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noConsole": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["**/*.test.ts", "**/*.spec.ts"],
 			"linter": {
 				"rules": {
 					"suspicious": {
@@ -36,10 +43,7 @@
 			}
 		},
 		{
-			"includes": [
-				"**/*.config.js",
-				"**/*.config.ts"
-			],
+			"includes": ["**/*.config.js", "**/*.config.ts"],
 			"linter": {
 				"rules": {
 					"style": {
