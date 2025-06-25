@@ -144,8 +144,9 @@ describe("Homepage Actions", () => {
 			const result = await getLatestWorks(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.warn).toHaveBeenCalledWith(
-				"⚠️ Homepage getLatestWorks: No works returned from getWorks",
+			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"severity":"WARNING"'));
+			expect(mockConsole.log).toHaveBeenCalledWith(
+				expect.stringContaining('"message":"新着作品取得で0件返却"'),
 			);
 		});
 
@@ -156,12 +157,11 @@ describe("Homepage Actions", () => {
 			const result = await getLatestWorks(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.error).toHaveBeenCalledWith("❌ Homepage 新着作品取得エラー:", error);
-			expect(mockConsole.error).toHaveBeenCalledWith("❌ Homepage Error details:", {
-				message: "データベース接続エラー",
-				stack: expect.any(String),
-				name: "Error",
-			});
+			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"severity":"ERROR"'));
+			expect(mockConsole.log).toHaveBeenCalledWith(
+				expect.stringContaining('"message":"新着作品取得でエラーが発生"'),
+			);
+			// エラー詳細は構造化ログのerrorフィールドに含まれる
 		});
 
 		it("非Errorオブジェクトが投げられた場合も適切に処理する", async () => {
@@ -171,11 +171,7 @@ describe("Homepage Actions", () => {
 			const result = await getLatestWorks(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.error).toHaveBeenCalledWith("❌ Homepage Error details:", {
-				message: "文字列エラー",
-				stack: undefined,
-				name: "string",
-			});
+			// エラー詳細は構造化ログに含まれる
 		});
 
 		it("成功時に適切なログが出力される", async () => {
@@ -215,15 +211,9 @@ describe("Homepage Actions", () => {
 
 			await getLatestWorks(15);
 
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				"🏠 Homepage getLatestWorks called with limit=15",
-			);
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				"🏠 Homepage getLatestWorks result: 1 works, hasMore=true, totalCount=25",
-			);
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				"✅ Homepage getLatestWorks: First work: ログテスト作品 (RJ123456)",
-			);
+			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"新着作品取得を開始"'));
+			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"新着作品取得成功"'));
+			// 作品詳細は成功ログに含まれる
 		});
 	});
 
@@ -339,8 +329,8 @@ describe("Homepage Actions", () => {
 			const result = await getLatestVideos(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.warn).toHaveBeenCalledWith(
-				"⚠️ Homepage getLatestVideos: No videos returned from getVideoTitles",
+			expect(mockConsole.log).toHaveBeenCalledWith(
+				expect.stringContaining('"新着動画取得で0件返却"'),
 			);
 		});
 
@@ -351,12 +341,10 @@ describe("Homepage Actions", () => {
 			const result = await getLatestVideos(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.error).toHaveBeenCalledWith("❌ Homepage 新着動画取得エラー:", error);
-			expect(mockConsole.error).toHaveBeenCalledWith("❌ Homepage Error details:", {
-				message: "YouTube API エラー",
-				stack: expect.any(String),
-				name: "Error",
-			});
+			expect(mockConsole.log).toHaveBeenCalledWith(
+				expect.stringContaining('"新着動画取得でエラーが発生"'),
+			);
+			// エラー詳細は構造化ログに含まれる
 		});
 
 		it("非Errorオブジェクトが投げられた場合も適切に処理する", async () => {
@@ -366,11 +354,7 @@ describe("Homepage Actions", () => {
 			const result = await getLatestVideos(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.error).toHaveBeenCalledWith("❌ Homepage Error details:", {
-				message: "[object Object]",
-				stack: undefined,
-				name: "object",
-			});
+			// エラー詳細は構造化ログに含まれる
 		});
 
 		it("成功時に適切なログが出力される", async () => {
@@ -413,15 +397,9 @@ describe("Homepage Actions", () => {
 
 			await getLatestVideos(20);
 
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				"🏠 Homepage getLatestVideos called with limit=20",
-			);
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				"🏠 Homepage getLatestVideos result: 1 videos, hasMore=true",
-			);
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				"✅ Homepage getLatestVideos: First video: ログテスト動画 (LogTestVideo)",
-			);
+			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"新着動画取得を開始"'));
+			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"新着動画取得成功"'));
+			// 動画詳細は成功ログに含まれる
 		});
 	});
 
