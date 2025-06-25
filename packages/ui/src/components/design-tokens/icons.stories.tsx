@@ -46,7 +46,7 @@ import {
 } from "lucide-react";
 
 const meta: Meta = {
-	title: "Design System/Icons",
+	title: "Design Tokens/Icons",
 	parameters: {
 		docs: {
 			description: {

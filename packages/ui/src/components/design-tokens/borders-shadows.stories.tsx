@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta = {
-	title: "Design System/Borders & Shadows",
+	title: "Design Tokens/Borders & Shadows",
 	parameters: {
 		docs: {
 			description: {
