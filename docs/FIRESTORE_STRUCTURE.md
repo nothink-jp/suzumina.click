@@ -278,17 +278,18 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 
 ## Firestore 複合インデックス
 
-> **最終更新**: 2025-06-25 | **インデックス総数**: 11個（全て READY 状態）
+> **最終更新**: 2025-06-26 | **インデックス総数**: 12個（全て READY 状態）
 > 
 > **分析対象**: `apps/web/src/` のFirestoreクエリパターンを網羅的に調査
 
 ### 📊 現在のインデックス状況（Google Cloud Firestore）
 
-#### ✅ **audioButtons コレクション** (7個)
+#### ✅ **audioButtons コレクション** (8個)
 
 | インデックス | フィールド | 使用状況 | 使用箇所 |
 |-------------|------------|----------|----------|
 | `createdBy + createdAt (DESC)` | [`createdBy`, `createdAt`, `__name__`] | 🔴 **未使用** | レート制限で `uploadedBy` を使用 |
+| `uploadedBy + createdAt (DESC)` | [`uploadedBy`, `createdAt`, `__name__`] | ✅ **使用中** | レート制限チェック（音声ボタン作成時） |
 | `isPublic + createdAt (DESC)` | [`isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | `getAudioButtons()` - 基本一覧 |
 | `isPublic + likeCount (DESC)` | [`isPublic`, `likeCount`, `__name__`] | ✅ **使用中** | 人気順ソート (`sortBy: "popular"`) |
 | `isPublic + playCount (DESC)` | [`isPublic`, `playCount`, `__name__`] | ✅ **使用中** | 再生数順ソート (`sortBy: "mostPlayed"`) |
@@ -296,21 +297,11 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 | `isPublic + sourceVideoId + startTime (ASC)` | [`isPublic`, `sourceVideoId`, `startTime`, `__name__`] | 🔴 **未使用** | `startTime` での並び替えなし |
 | `tags (CONTAINS) + isPublic + createdAt (DESC)` | [`tags`, `isPublic`, `createdAt`, `__name__`] | 🔴 **未使用** | タグフィルターはクライアントサイド |
 
+**✅ 作成済みインデックス**:
+- `uploadedBy + createdAt (DESC)` - レート制限用（2025-06-26 作成完了）
+
 **⚠️ 必要なインデックス（未作成）**:
 ```hcl
-# レート制限用 - 高頻度クエリ
-resource "google_firestore_index" "audiobuttons_uploadedby_createdat_desc" {
-  collection = "audioButtons"
-  fields {
-    field_path = "uploadedBy"
-    order      = "ASCENDING"
-  }
-  fields {
-    field_path = "createdAt" 
-    order      = "DESCENDING"
-  }
-}
-
 # 動画別音声ボタン一覧用
 resource "google_firestore_index" "audiobuttons_sourcevideoid_createdat_desc" {
   collection = "audioButtons"
@@ -354,8 +345,10 @@ resource "google_firestore_index" "audiobuttons_sourcevideoid_createdat_desc" {
 .where("isPublic", "==", true).orderBy("playCount", "desc")  // 再生数順
 .where("isPublic", "==", true).where("sourceVideoId", "==", videoId)  // 動画別（ソートなし）
 
-// ⚠️ インデックス不足のクエリ
-.where("uploadedBy", "==", userId).where("createdAt", ">", date)  // レート制限チェック
+// ✅ インデックス対応済み
+.where("uploadedBy", "==", userId).where("createdAt", ">", date)  // レート制限チェック (2025-06-26 対応完了)
+
+// ⚠️ インデックス不足のクエリ  
 .where("sourceVideoId", "==", videoId)  // 重複チェック
 ```
 
@@ -402,7 +395,7 @@ gcloud firestore indexes composite delete \
 #### **➕ 追加推奨インデックス**
 ```bash
 # 高頻度クエリ用インデックスをTerraformで追加
-terraform apply -target=google_firestore_index.audiobuttons_uploadedby_createdat_desc
+# ✅ 完了: terraform apply -target=google_firestore_index.audiobuttons_uploadedby_createdat_desc (2025-06-26)
 terraform apply -target=google_firestore_index.audiobuttons_sourcevideoid_createdat_desc  
 ```
 
@@ -501,6 +494,23 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 ---
 
 ## 📅 インデックス分析ログ
+
+### 2025-06-26 uploadedBy インデックス追加完了
+
+**実行した操作**:
+- ✅ `audiobuttons_uploadedby_createdat_desc` インデックスを Terraform で追加
+- ✅ 既存インデックス（ID: CICAgOi3voUL）を Terraform にインポート
+- ✅ 音声ボタン作成時の FAILED_PRECONDITION エラーを修正
+- ✅ ドキュメントを最新状態に更新
+
+**解決した問題**:
+- 🔴 → ✅ レート制限クエリ `.where("uploadedBy", "==", userId).where("createdAt", ">", date)` が正常動作
+- 🔴 → ✅ 音声ボタン作成時の Firestore インデックスエラーを解消
+
+**現在の状況**:
+- **インデックス総数**: 12個（audioButtons: 8個、videos: 3個、users: 2個）
+- **未使用インデックス**: 依然として 6個が削除推奨状態
+- **必要インデックス**: `sourceVideoId + createdAt` が 1個残り
 
 ### 2025-06-25 audioReferences → audioButtons 統合完了
 
