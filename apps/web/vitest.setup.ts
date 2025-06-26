@@ -35,6 +35,56 @@ Object.defineProperty(window, "matchMedia", {
 	}),
 });
 
+// Mock for getComputedStyle (needed for Radix UI components)
+Object.defineProperty(window, "getComputedStyle", {
+	writable: true,
+	value: (_element: Element) => ({
+		getPropertyValue: () => "",
+		position: "static",
+		top: "auto",
+		left: "auto",
+		right: "auto",
+		bottom: "auto",
+		width: "auto",
+		height: "auto",
+		transform: "none",
+		transformOrigin: "50% 50% 0px",
+		display: "block",
+		zIndex: "auto",
+	}),
+});
+
+// Mock for HTMLElement methods (needed for positioning)
+Object.defineProperty(HTMLElement.prototype, "offsetParent", {
+	get() {
+		return this.parentNode;
+	},
+});
+
+Object.defineProperty(HTMLElement.prototype, "offsetTop", {
+	get() {
+		return 0;
+	},
+});
+
+Object.defineProperty(HTMLElement.prototype, "offsetLeft", {
+	get() {
+		return 0;
+	},
+});
+
+Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+	get() {
+		return 0;
+	},
+});
+
+Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+	get() {
+		return 0;
+	},
+});
+
 // Mock for next/router
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({

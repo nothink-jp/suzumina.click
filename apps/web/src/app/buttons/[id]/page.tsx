@@ -1,4 +1,5 @@
 import type { AudioButtonQuery } from "@suzumina.click/shared-types";
+import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
@@ -9,7 +10,6 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getAudioButtonById, getAudioButtons } from "@/app/buttons/actions";
 import { AudioButtonCard } from "@/components/AudioButtonCard";
-import { YouTubePlayer } from "@/components/YouTubePlayer";
 
 interface AudioButtonDetailPageProps {
 	params: Promise<{

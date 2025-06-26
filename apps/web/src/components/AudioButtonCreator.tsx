@@ -1,13 +1,13 @@
 "use client";
 
 import { type CreateAudioButtonInput, formatTimestamp } from "@suzumina.click/shared-types";
+import { YouTubePlayer, type YTPlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Clock, Loader2, Play, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useRef, useState } from "react";
 import { createAudioButton } from "@/app/buttons/actions";
-import { YouTubePlayer, type YTPlayer } from "./YouTubePlayer";
 
 interface AudioButtonCreatorProps {
 	videoId: string;

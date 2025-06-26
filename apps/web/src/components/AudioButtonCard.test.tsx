@@ -20,9 +20,8 @@ vi.mock("next/link", () => ({
 }));
 
 // Mock YouTubePlayer with simple implementation
-vi.mock("./YouTubePlayer", () => ({
-	// biome-ignore lint/correctness/noUnusedFunctionParameters: props used for testing interface compatibility
-	YouTubePlayer: ({ videoId, ...props }: any) => (
+vi.mock("@suzumina.click/ui/components/custom/youtube-player", () => ({
+	YouTubePlayer: ({ videoId }: any) => (
 		<div data-testid="youtube-player" data-video-id={videoId}>
 			YouTube Player Mock
 		</div>

@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useYouTubePlayer, YouTubePlayer } from "./YouTubePlayer";
+import { useYouTubePlayer, YouTubePlayer } from "./youtube-player";
 
 // Mock global window object
 Object.defineProperty(window, "YT", {

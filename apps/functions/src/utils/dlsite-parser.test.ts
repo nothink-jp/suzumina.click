@@ -122,21 +122,21 @@ describe("DLsite Parser", () => {
 
 		describe("extractStarRating", () => {
 			it("星評価のクラス名から正しく評価値を抽出できる", () => {
-				const mockElement = { attr: (name: string) => "star_50" };
+				const mockElement = { attr: (_name: string) => "star_50" };
 				expect(extractStarRating(mockElement)).toBe(5.0);
 
-				const mockElement2 = { attr: (name: string) => "star_40" };
+				const mockElement2 = { attr: (_name: string) => "star_40" };
 				expect(extractStarRating(mockElement2)).toBe(4.0);
 
-				const mockElement3 = { attr: (name: string) => "star_25" };
+				const mockElement3 = { attr: (_name: string) => "star_25" };
 				expect(extractStarRating(mockElement3)).toBe(2.5);
 			});
 
 			it("星評価のクラスが無い場合は0を返す", () => {
-				const mockElement = { attr: (name: string) => "" };
+				const mockElement = { attr: (_name: string) => "" };
 				expect(extractStarRating(mockElement)).toBe(0);
 
-				const mockElement2 = { attr: (name: string) => "other-class" };
+				const mockElement2 = { attr: (_name: string) => "other-class" };
 				expect(extractStarRating(mockElement2)).toBe(0);
 			});
 		});

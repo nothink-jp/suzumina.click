@@ -2,6 +2,7 @@
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types/src/audio-button";
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
+import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card } from "@suzumina.click/ui/components/ui/card";
@@ -212,24 +213,14 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 								{/* 音声ボタン一覧 */}
 								<div className="grid grid-cols-1 gap-3">
 									{audioButtons.map((audioButton) => (
-										<Card key={audioButton.id} className="p-4 hover:shadow-md transition-shadow">
-											<div className="flex items-center justify-between">
-												<div className="flex-1">
-													<h3 className="font-medium text-foreground mb-1">{audioButton.title}</h3>
-													<div className="flex items-center gap-4 text-sm text-muted-foreground">
-														<span>
-															{audioButton.startTime}秒 - {audioButton.endTime}秒
-														</span>
-														<span>by {audioButton.uploadedByName}</span>
-													</div>
-												</div>
-												<Button size="sm" variant="ghost" asChild>
-													<Link href={`/buttons/${audioButton.id}`}>
-														<PlayCircle className="h-4 w-4" />
-													</Link>
-												</Button>
-											</div>
-										</Card>
+										<SimpleAudioButton
+											key={audioButton.id}
+											audioButton={audioButton}
+											onPlay={() => {
+												// TODO: アナリティクス・再生統計の更新
+											}}
+											className="w-full"
+										/>
 									))}
 								</div>
 

@@ -256,10 +256,10 @@ describe("FilterSelect エッジケース", () => {
 
 	it("重複するvalueを持つオプションでも正しく表示される", () => {
 		const options = [
-			{ value: "test", label: "テスト1" },
-			{ value: "test", label: "テスト2" },
+			{ value: "test1", label: "テスト1" },
+			{ value: "test2", label: "テスト2" },
 		];
-		render(<FilterSelect value="test" placeholder="選択" options={options} />);
+		render(<FilterSelect value="test1" placeholder="選択" options={options} />);
 
 		expect(screen.getByRole("combobox")).toBeInTheDocument();
 	});

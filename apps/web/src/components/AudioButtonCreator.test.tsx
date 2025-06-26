@@ -20,9 +20,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Mock YouTubePlayer
-vi.mock("./YouTubePlayer", () => ({
-	// biome-ignore lint/correctness/noUnusedFunctionParameters: props used for testing interface compatibility
-	YouTubePlayer: ({ videoId, ...props }: any) => (
+vi.mock("@suzumina.click/ui/components/custom/youtube-player", () => ({
+	YouTubePlayer: ({ videoId }: any) => (
 		<div data-testid="youtube-player" data-video-id={videoId}>
 			YouTube Player Mock
 		</div>
@@ -31,20 +30,21 @@ vi.mock("./YouTubePlayer", () => ({
 
 // Mock AudioButtonCard
 vi.mock("./AudioButtonCard", () => ({
-	// biome-ignore lint/correctness/noUnusedFunctionParameters: props used for testing interface compatibility
-	AudioButtonCard: ({ audioButton, ...props }: any) => (
+	AudioButtonCard: ({ audioButton }: any) => (
 		<div data-testid="audio-button-card">Audio Button Card Mock: {audioButton?.title}</div>
 	),
 }));
 
 // Mock UI components
 vi.mock("@suzumina.click/ui/components/ui/slider", () => ({
-	Slider: ({ value, onValueChange, min, max, step, disabled, ...props }: any) => (
-		<div data-testid="slider" {...props}>
+	Slider: ({ min, max, step, disabled }: any) => (
+		<div data-testid="slider">
 			<input
 				type="range"
-				value={value?.[0] || 0}
-				onChange={(e) => onValueChange?.([Number(e.target.value)])}
+				defaultValue={0}
+				onChange={(_e) => {
+					/* noop */
+				}}
 				min={min || 0}
 				max={max || 100}
 				step={step || 1}
@@ -58,10 +58,7 @@ vi.mock("@suzumina.click/ui/components/ui/slider", () => ({
 
 // Mock Select components
 vi.mock("@suzumina.click/ui/components/ui/select", () => ({
-	// biome-ignore lint/correctness/noUnusedFunctionParameters: value and onValueChange used for testing interface compatibility
-	Select: ({ children, value, onValueChange }: any) => (
-		<div data-testid="select-container">{children}</div>
-	),
+	Select: ({ children }: any) => <div data-testid="select-container">{children}</div>,
 	SelectTrigger: ({ children }: any) => (
 		<select>
 			<option>{children}</option>

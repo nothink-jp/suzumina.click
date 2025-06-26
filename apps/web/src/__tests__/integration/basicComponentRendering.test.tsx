@@ -3,6 +3,8 @@
  * 個別ファイルの重複する基本テストを統合
  */
 
+import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import Pagination from "@/components/Pagination";
@@ -20,7 +22,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/image", () => ({
 	default: ({ src, alt, ...props }: { src: string; alt: string; [key: string]: unknown }) => (
-		// biome-ignore lint/performance/noImgElement: <explanation>
+		// biome-ignore lint/performance/noImgElement: Mock implementation for testing
 		<img src={src} alt={alt} data-testid="next-image" {...props} />
 	),
 }));
@@ -30,6 +32,71 @@ vi.mock("next/navigation", () => ({
 	useSearchParams: () => ({ get: vi.fn(() => "1"), toString: vi.fn(() => "") }),
 	usePathname: () => "/test",
 }));
+
+// YouTube API のモック（SimpleAudioButton用）
+interface MockYT {
+	Player: (id: string, config: unknown) => unknown;
+	PlayerState: {
+		UNSTARTED: number;
+		ENDED: number;
+		PLAYING: number;
+		PAUSED: number;
+		BUFFERING: number;
+		CUED: number;
+	};
+	ready: () => void;
+}
+
+(
+	global as typeof global & {
+		window: Window & {
+			YT: MockYT;
+			onYouTubeIframeAPIReady: () => void;
+		};
+	}
+).window = {
+	...global.window,
+	YT: {
+		Player: vi.fn().mockImplementation(() => ({
+			playVideo: vi.fn(),
+			pauseVideo: vi.fn(),
+			destroy: vi.fn(),
+		})),
+		PlayerState: {
+			UNSTARTED: -1,
+			ENDED: 0,
+			PLAYING: 1,
+			PAUSED: 2,
+			BUFFERING: 3,
+			CUED: 5,
+		},
+		ready: vi.fn(),
+	},
+	onYouTubeIframeAPIReady: vi.fn(),
+};
+
+// SimpleAudioButton用のモックデータ
+const mockAudioButtonData: FrontendAudioButtonData = {
+	id: "test-audio-button-1",
+	title: "テスト音声ボタン",
+	description: "統合テスト用の音声ボタン",
+	category: "voice" as const,
+	tags: ["テスト", "統合"],
+	sourceVideoId: "dQw4w9WgXcQ",
+	sourceVideoTitle: "テスト動画",
+	sourceVideoThumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+	startTime: 10,
+	endTime: 15,
+	uploadedBy: "test-user-123",
+	uploadedByName: "テストユーザー",
+	isPublic: true,
+	playCount: 100,
+	likeCount: 25,
+	createdAt: "2024-06-26T00:00:00.000Z",
+	updatedAt: "2024-06-26T00:00:00.000Z",
+	durationText: "5秒",
+	relativeTimeText: "1日前",
+};
 
 describe("Basic Component Rendering Integration Tests", () => {
 	// 基本的なレンダリングテスト（パラメータ化）
@@ -70,6 +137,16 @@ describe("Basic Component Rendering Integration Tests", () => {
 				{ type: "role", selector: "navigation" },
 			],
 		],
+		[
+			"SimpleAudioButton",
+			SimpleAudioButton,
+			{ audioButton: mockAudioButtonData },
+			[
+				{ type: "text", selector: "テスト音声ボタン" },
+				{ type: "label", selector: "テスト音声ボタンを再生" },
+				{ type: "label", selector: "詳細情報を表示" },
+			],
+		],
 	])("renders %s component correctly", (_name, Component, props, assertions) => {
 		render(<Component {...props} />);
 
@@ -90,6 +167,9 @@ describe("Basic Component Rendering Integration Tests", () => {
 					break;
 				case "placeholder":
 					expect(screen.getByPlaceholderText(selector)).toBeInTheDocument();
+					break;
+				case "label":
+					expect(screen.getByLabelText(selector)).toBeInTheDocument();
 					break;
 			}
 		});

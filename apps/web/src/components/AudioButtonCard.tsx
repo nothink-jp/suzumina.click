@@ -5,6 +5,11 @@ import {
 	formatTimestamp,
 	getAudioButtonCategoryLabel,
 } from "@suzumina.click/shared-types";
+import {
+	useYouTubePlayer,
+	YouTubePlayer,
+	type YTPlayer,
+} from "@suzumina.click/ui/components/custom/youtube-player";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
@@ -26,7 +31,6 @@ import { Clock, ExternalLink, Heart, Pause, Play, Share2, Tag } from "lucide-rea
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { decrementLikeCount, incrementLikeCount, incrementPlayCount } from "@/app/buttons/actions";
-import { useYouTubePlayer, YouTubePlayer, type YTPlayer } from "./YouTubePlayer";
 
 /**
  * AudioButtonCard component props
