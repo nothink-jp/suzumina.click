@@ -224,6 +224,9 @@ Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → セ�
 ```
 ✅ プロジェクト再利用可能な独自コンポーネント
 - audio-button (音声ファイル再生)
+- simple-audio-button (即座のYouTube音声再生) ← Phase 1新規追加
+- audio-only-player (非表示YouTube Player) ← Phase 1新規追加  
+- youtube-player (YouTube IFrame API統合) ← Web appから移行
 - 汎用性があるが suzumina.click 特化機能
 - UI Package内で Storybook 管理
 ```
