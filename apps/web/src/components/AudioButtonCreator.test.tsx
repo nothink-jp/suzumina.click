@@ -86,35 +86,8 @@ describe("AudioButtonCreator", () => {
 		vi.clearAllMocks();
 	});
 
-	it("基本的なフォームが表示される", () => {
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
-		expect(screen.getByText(/テスト動画タイトル/)).toBeInTheDocument();
-	});
-
-	it("タイトル入力フィールドが存在する", () => {
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		// Use placeholder text since the label includes asterisk
-		const titleInput = screen.getByPlaceholderText("例: おはようございます");
-		expect(titleInput).toBeInTheDocument();
-		expect(titleInput).toHaveAttribute("maxLength", "100");
-	});
-
-	it("切り抜き範囲セクションが存在する", () => {
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		expect(screen.getByText("切り抜き範囲")).toBeInTheDocument();
-		expect(screen.getByText("開始時間に設定")).toBeInTheDocument();
-		expect(screen.getByText("終了時間に設定")).toBeInTheDocument();
-	});
-
-	it("現在時間表示が存在する", () => {
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		expect(screen.getByText("動画再生時間")).toBeInTheDocument();
-	});
+	// 基本的なレンダリングテストは統合テストに移行済み
+	// (src/__tests__/integration/audioButtonComponents.test.tsx)
 
 	it("タイトル入力が正しく動作する", async () => {
 		const user = userEvent.setup();

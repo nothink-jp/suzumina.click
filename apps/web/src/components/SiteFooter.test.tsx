@@ -10,79 +10,8 @@ vi.mock("next/link", () => ({
 }));
 
 describe("SiteFooter", () => {
-	it("基本的なフッター要素が表示される", () => {
-		render(<SiteFooter />);
-
-		// フッター要素
-		expect(screen.getByRole("contentinfo")).toBeInTheDocument();
-
-		// サイト名
-		expect(screen.getByText("suzumina.click")).toBeInTheDocument();
-
-		// サイト説明
-		expect(screen.getByText("ファンによる、ファンのためのコミュニティサイト")).toBeInTheDocument();
-
-		// コピーライト
-		expect(screen.getByText(/© 2024 涼花みなせ ファンサイト/)).toBeInTheDocument();
-		expect(screen.getByText(/このサイトは非公式のファンサイトです/)).toBeInTheDocument();
-	});
-
-	it("フッターリンクが正しく表示される", () => {
-		render(<SiteFooter />);
-
-		// 各フッターリンクの存在確認
-		const aboutLink = screen.getByText("このサイトについて");
-		const contactLink = screen.getByText("お問い合わせ");
-		const termsLink = screen.getByText("利用規約");
-		const privacyLink = screen.getByText("プライバシーポリシー");
-
-		expect(aboutLink).toBeInTheDocument();
-		expect(contactLink).toBeInTheDocument();
-		expect(termsLink).toBeInTheDocument();
-		expect(privacyLink).toBeInTheDocument();
-
-		// リンクのhref属性確認
-		expect(aboutLink.closest("a")).toHaveAttribute("href", "/about");
-		expect(contactLink.closest("a")).toHaveAttribute("href", "/contact");
-		expect(termsLink.closest("a")).toHaveAttribute("href", "/terms");
-		expect(privacyLink.closest("a")).toHaveAttribute("href", "/privacy");
-	});
-
-	it("フッターリンクのアクセシビリティが適切に設定される", () => {
-		render(<SiteFooter />);
-
-		const aboutLink = screen.getByText("このサイトについて");
-		const contactLink = screen.getByText("お問い合わせ");
-		const termsLink = screen.getByText("利用規約");
-		const privacyLink = screen.getByText("プライバシーポリシー");
-
-		// フォーカス可能な要素であることを確認
-		expect(aboutLink.closest("a")).toHaveAttribute("href");
-		expect(contactLink.closest("a")).toHaveAttribute("href");
-		expect(termsLink.closest("a")).toHaveAttribute("href");
-		expect(privacyLink.closest("a")).toHaveAttribute("href");
-
-		// リンクが正しく設定されていることを確認
-		expect(aboutLink.closest("a")).toHaveAttribute("href", "/about");
-		expect(contactLink.closest("a")).toHaveAttribute("href", "/contact");
-		expect(termsLink.closest("a")).toHaveAttribute("href", "/terms");
-		expect(privacyLink.closest("a")).toHaveAttribute("href", "/privacy");
-	});
-
-	it("フッターの構造が正しく配置される", () => {
-		render(<SiteFooter />);
-
-		// フッター全体のコンテナ
-		const footer = screen.getByRole("contentinfo");
-		expect(footer).toHaveClass("bg-background", "text-foreground", "border-t", "py-12", "mt-auto");
-
-		// サイト情報セクション
-		const siteTitle = screen.getByText("suzumina.click");
-		expect(siteTitle).toHaveClass("font-bold", "text-lg", "mb-2");
-
-		const siteDescription = screen.getByText("ファンによる、ファンのためのコミュニティサイト");
-		expect(siteDescription).toHaveClass("text-muted-foreground", "text-sm");
-	});
+	// 基本的なレンダリングテストは統合テストに移行済み
+	// (src/__tests__/integration/basicComponentRendering.test.tsx)
 
 	it("レスポンシブグリッドレイアウトが適用される", () => {
 		render(<SiteFooter />);

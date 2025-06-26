@@ -205,11 +205,11 @@ export function AudioButtonCard({
 	const getStateName = useCallback((state: number): string => {
 		const stateMap: Record<number, string> = {
 			[-1]: "UNSTARTED",
-			[0]: "ENDED",
-			[1]: "PLAYING",
-			[2]: "PAUSED",
-			[3]: "BUFFERING",
-			[5]: "CUED",
+			0: "ENDED",
+			1: "PLAYING",
+			2: "PAUSED",
+			3: "BUFFERING",
+			5: "CUED",
 		};
 		return stateMap[state] || "UNKNOWN";
 	}, []);

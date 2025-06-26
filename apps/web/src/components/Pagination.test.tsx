@@ -35,17 +35,8 @@ describe("Pagination", () => {
 		mockReplace.mockClear();
 	});
 
-	it("基本的なページネーションが表示される", () => {
-		render(<Pagination currentPage={1} totalPages={5} />);
-
-		// ページ番号ボタンが表示されることを確認
-		expect(screen.getByText("1")).toBeInTheDocument();
-		expect(screen.getByText("2")).toBeInTheDocument();
-
-		// ページネーションボタンが表示されることを確認
-		expect(screen.getByText("Previous")).toBeInTheDocument();
-		expect(screen.getByText("Next")).toBeInTheDocument();
-	});
+	// 基本的なレンダリングテストは統合テストに移行済み
+	// (src/__tests__/integration/basicComponentRendering.test.tsx)
 
 	it("中間ページで前後のボタンが有効になる", () => {
 		render(<Pagination currentPage={3} totalPages={5} />);

@@ -141,44 +141,8 @@ describe("SiteHeader", () => {
 		mockReplace.mockClear();
 	});
 
-	it("基本的なヘッダー要素が表示される", () => {
-		render(<TestSiteHeader />);
-
-		// ロゴ・サイト名
-		expect(screen.getByText("すずみなくりっく！")).toBeInTheDocument();
-
-		// スキップリンク
-		expect(screen.getByText("メインコンテンツにスキップ")).toBeInTheDocument();
-	});
-
-	it("デスクトップナビゲーションリンクが表示される", () => {
-		render(<TestSiteHeader />);
-
-		// デスクトップナビゲーション（md:以上で表示）
-		const desktopNav = screen.getByLabelText("メインナビゲーション");
-		expect(desktopNav).toBeInTheDocument();
-
-		// ナビゲーションリンク
-		expect(screen.getByText("動画一覧")).toBeInTheDocument();
-		expect(screen.getByText("ボタン検索")).toBeInTheDocument();
-		expect(screen.getByText("作品一覧")).toBeInTheDocument();
-
-		// リンクのhref属性を確認
-		expect(screen.getByText("動画一覧").closest("a")).toHaveAttribute("href", "/videos");
-		expect(screen.getByText("ボタン検索").closest("a")).toHaveAttribute("href", "/buttons");
-		expect(screen.getByText("作品一覧").closest("a")).toHaveAttribute("href", "/works");
-	});
-
-	it("デスクトップ用ボタンが表示される", () => {
-		render(<TestSiteHeader />);
-
-		// Auth button should be displayed
-		expect(screen.getByTestId("auth-button")).toBeInTheDocument();
-		expect(screen.getByText("Sign In")).toBeInTheDocument();
-
-		// ログインしていない場合はユーザーメニューは表示されない
-		expect(screen.queryByTestId("user-menu")).not.toBeInTheDocument();
-	});
+	// 基本的なレンダリングテストは統合テストに移行済み
+	// 個別ファイルでは複雑な機能テストのみ実施
 
 	it("ログイン済みユーザーにはユーザーメニューが表示される", () => {
 		const mockSession = {
@@ -208,57 +172,13 @@ describe("SiteHeader", () => {
 		expect(screen.queryByText("Sign In")).not.toBeInTheDocument();
 	});
 
-	it("モバイルメニューボタンが表示される", () => {
-		render(<TestSiteHeader />);
+	// モバイルメニュー表示テストは統合テストに移行済み
 
-		// モバイルメニューボタン
-		const mobileMenuButton = screen.getByLabelText("メニューを開く");
-		expect(mobileMenuButton).toBeInTheDocument();
+	// モバイルメニュー開閉テストは統合テストに移行済み
 
-		// メニューアイコン
-		const menuIcon = screen.getByRole("button", { name: "メニューを開く" });
-		expect(menuIcon).toBeInTheDocument();
-	});
+	// モバイルメニューリンクテストは統合テストに移行済み
 
-	it("モバイルメニューが開閉できる", () => {
-		const _user = userEvent.setup();
-		render(<TestSiteHeader />);
-
-		// TestSiteHeaderにはモバイルメニューの開閉機能はない（簡略化されたテスト用コンポーネント）
-		// モバイルメニューボタンが存在することのみを確認
-		const mobileMenuButton = screen.getByLabelText("メニューを開く");
-		expect(mobileMenuButton).toBeInTheDocument();
-	});
-
-	it("モバイルメニュー内のリンクが正しく設定される", () => {
-		const _user = userEvent.setup();
-		render(<TestSiteHeader />);
-
-		// TestSiteHeaderにはモバイルメニューの開閉機能はない（簡略化されたテスト用コンポーネント）
-		// モバイルメニューの存在のみを確認
-		expect(screen.getByTestId("mobile-menu")).toBeInTheDocument();
-	});
-
-	it("アクセシビリティ属性が正しく設定される", () => {
-		render(<TestSiteHeader />);
-
-		// ヘッダー要素
-		expect(screen.getByRole("banner")).toBeInTheDocument();
-
-		// ナビゲーション要素
-		expect(screen.getByLabelText("メインナビゲーション")).toBeInTheDocument();
-
-		// スキップリンク
-		const skipLink = screen.getByText("メインコンテンツにスキップ");
-		expect(skipLink).toHaveAttribute("href", "#main-content");
-
-		// ロゴリンクのhref属性を確認
-		const logoLink = screen.getByText("すずみなくりっく！").closest("a");
-		expect(logoLink).toHaveAttribute("href", "/");
-
-		// モバイルメニューボタンのaria-label
-		expect(screen.getByLabelText("メニューを開く")).toBeInTheDocument();
-	});
+	// アクセシビリティ属性テストは統合テストに移行済み
 
 	it("キーボードナビゲーションが動作する", async () => {
 		const user = userEvent.setup();
@@ -275,39 +195,7 @@ describe("SiteHeader", () => {
 		expect(screen.getByText("すずみなくりっく！")).toHaveFocus();
 	});
 
-	it("正しいCSSクラスが適用される", () => {
-		render(<TestSiteHeader />);
+	// CSSクラステストは統合テストに移行済み
 
-		// ヘッダーのスタイリング
-		const header = screen.getByRole("banner");
-		expect(header).toHaveClass(
-			"bg-background/95",
-			"backdrop-blur-sm",
-			"border-b",
-			"sticky",
-			"top-0",
-			"z-50",
-			"shadow-sm",
-		);
-
-		// ロゴのスタイリング - Next.js Linkは要素を変換するため、クラス名は直接確認しない
-		const logo = screen.getByText("すずみなくりっく！");
-		expect(logo).toBeInTheDocument();
-	});
-
-	it("レスポンシブクラスが正しく適用される", () => {
-		render(<TestSiteHeader />);
-
-		// デスクトップナビゲーション（md:以上で表示）
-		const desktopNav = screen.getByLabelText("メインナビゲーション");
-		expect(desktopNav).toHaveClass("hidden", "md:flex");
-
-		// モバイルメニューボタン（mdより小さい画面で表示）
-		const mobileButton = screen.getByLabelText("メニューを開く");
-		expect(mobileButton).toHaveClass("md:hidden");
-
-		// レスポンシブ要素の存在確認
-		expect(desktopNav).toBeInTheDocument();
-		expect(mobileButton).toBeInTheDocument();
-	});
+	// レスポンシブクラステストは統合テストに移行済み
 });

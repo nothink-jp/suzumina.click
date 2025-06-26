@@ -108,87 +108,18 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("AudioButtonsPage", () => {
-	it("音声ボタンページが正常に表示される", async () => {
-		const searchParams = {
-			page: "1",
-			q: "",
-			category: "",
-			sort: "newest",
-		};
+	// 基本的なページレンダリングテストは統合テストに移行済み
 
-		render(await AudioButtonsPage({ searchParams }));
+	// 検索クエリテストは統合テストに移行済み
 
-		// Page title
-		expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
+	// 空状態テストは統合テストに移行済み
 
-		// Since the page uses Suspense, we should see skeleton loading initially
-		const skeletons = screen.getAllByRole("generic"); // skeleton divs
-		expect(skeletons.length).toBeGreaterThan(0);
-	});
+	// エラー状態テストは統合テストに移行済み
 
-	it("検索クエリが適用される", async () => {
-		const searchParams = {
-			page: "1",
-			q: "テスト検索",
-			category: "voice",
-			sort: "popular",
-		};
+	// ページネーションテストは統合テストに移行済み
 
-		render(await AudioButtonsPage({ searchParams }));
-
-		// Page should render the heading
-		expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
-	});
-
-	it("空の結果が適切に表示される", async () => {
-		const searchParams = {
-			page: "1",
-			q: "",
-			category: "",
-			sort: "newest",
-		};
-
-		render(await AudioButtonsPage({ searchParams }));
-
-		// Page should render the base structure
-		expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
-	});
-
-	it("エラー状態が適切に表示される", async () => {
-		const searchParams = {
-			page: "1",
-			q: "",
-			category: "",
-			sort: "newest",
-		};
-
-		render(await AudioButtonsPage({ searchParams }));
-
-		// Page should render the base structure
-		expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
-	});
-
-	it("ページネーションが表示される", async () => {
-		const searchParams = {
-			page: "2",
-			q: "",
-			category: "",
-			sort: "newest",
-		};
-
-		render(await AudioButtonsPage({ searchParams }));
-
-		// Page should render the base structure
-		expect(screen.getByRole("heading", { name: /音声ボタン/ })).toBeInTheDocument();
-	});
-
-	it("作成ボタンが表示される", async () => {
-		const searchParams = {
-			page: "1",
-			q: "",
-			category: "",
-			sort: "newest",
-		};
+	it("作成ボタンが正しく動作する", async () => {
+		const searchParams = { page: "1", q: "", category: "", sort: "newest" };
 
 		render(await AudioButtonsPage({ searchParams }));
 

@@ -77,75 +77,8 @@ describe("AudioButtonCard", () => {
 		vi.clearAllMocks();
 	});
 
-	it("基本的な音声ボタンカードが表示される", () => {
-		render(
-			<AudioButtonCard
-				audioButton={mockAudioButton}
-				showSourceVideo={true}
-				size="md"
-				variant="default"
-			/>,
-		);
-
-		expect(screen.getByText("テスト音声ボタン")).toBeInTheDocument();
-		expect(screen.getByText("これはテスト用の音声ボタンです")).toBeInTheDocument();
-	});
-
-	it("プレイボタンが存在する", () => {
-		render(
-			<AudioButtonCard
-				audioButton={mockAudioButton}
-				showSourceVideo={true}
-				size="md"
-				variant="default"
-			/>,
-		);
-
-		// プレイボタンまたは再生関連のボタンが存在することを確認
-		const buttons = screen.getAllByRole("button");
-		expect(buttons.length).toBeGreaterThan(0);
-	});
-
-	it("統計情報が表示される", () => {
-		render(
-			<AudioButtonCard
-				audioButton={mockAudioButton}
-				showSourceVideo={true}
-				size="md"
-				variant="default"
-			/>,
-		);
-
-		expect(screen.getByText("100")).toBeInTheDocument(); // play count
-		expect(screen.getByText("25")).toBeInTheDocument(); // like count
-	});
-
-	it("タグが表示される", () => {
-		render(
-			<AudioButtonCard
-				audioButton={mockAudioButton}
-				showSourceVideo={true}
-				size="md"
-				variant="default"
-			/>,
-		);
-
-		expect(screen.getByText("テスト")).toBeInTheDocument();
-		expect(screen.getByText("音声")).toBeInTheDocument();
-	});
-
-	it("元動画情報が表示される", () => {
-		render(
-			<AudioButtonCard
-				audioButton={mockAudioButton}
-				showSourceVideo={true}
-				size="md"
-				variant="default"
-			/>,
-		);
-
-		expect(screen.getByText("テスト動画タイトル")).toBeInTheDocument();
-	});
+	// 基本的なレンダリングテストは統合テストに移行済み
+	// (src/__tests__/integration/audioButtonComponents.test.tsx)
 
 	it("元動画を非表示にできる", () => {
 		render(

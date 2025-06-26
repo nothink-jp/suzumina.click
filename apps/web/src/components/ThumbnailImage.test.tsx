@@ -52,34 +52,8 @@ describe("ThumbnailImage", () => {
 		alt: "テスト画像",
 	};
 
-	it("基本的な画像が表示される", () => {
-		render(<ThumbnailImage {...defaultProps} />);
-
-		const image = screen.getByTestId("next-image");
-		expect(image).toBeInTheDocument();
-		expect(image).toHaveAttribute("src", "https://example.com/image.jpg");
-		expect(image).toHaveAttribute("alt", "テスト画像");
-	});
-
-	it("デフォルトのwidth、height、sizesが適用される", () => {
-		render(<ThumbnailImage {...defaultProps} />);
-
-		const container = screen.getByTestId("next-image").parentElement;
-		expect(container).toHaveStyle({ aspectRatio: "320 / 240" });
-
-		const image = screen.getByTestId("next-image");
-		expect(image).toHaveAttribute(
-			"sizes",
-			"(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw",
-		);
-	});
-
-	it("カスタムwidth、heightが適用される", () => {
-		render(<ThumbnailImage {...defaultProps} width={640} height={480} />);
-
-		const container = screen.getByTestId("next-image").parentElement;
-		expect(container).toHaveStyle({ aspectRatio: "640 / 480" });
-	});
+	// 基本的なレンダリングテストは統合テストに移行済み
+	// (src/__tests__/integration/basicComponentRendering.test.tsx)
 
 	it("カスタムsizesが適用される", () => {
 		const customSizes = "(max-width: 480px) 100vw, 50vw";
