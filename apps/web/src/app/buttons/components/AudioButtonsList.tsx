@@ -31,6 +31,7 @@ interface SearchParams {
 	tags?: string;
 	sort?: string;
 	page?: string;
+	sourceVideoId?: string;
 }
 
 interface AudioButtonsListProps {
@@ -66,6 +67,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 				category: searchParams.category as AudioButtonCategory | undefined,
 				tags: searchParams.tags ? searchParams.tags.split(",") : undefined,
 				sortBy: (searchParams.sort as "newest" | "oldest" | "popular" | "mostPlayed") || "newest",
+				sourceVideoId: searchParams.sourceVideoId,
 				onlyPublic: true,
 			};
 
@@ -187,10 +189,20 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 
 			{/* ヘッダー */}
 			<ListHeader
-				title="音声ボタン一覧"
+				title={searchParams.sourceVideoId ? "この動画の音声ボタン" : "音声ボタン一覧"}
 				totalCount={totalCount}
 				currentPage={currentPage}
 				totalPages={totalPages}
+				actions={
+					searchParams.sourceVideoId ? (
+						<Link
+							href={`/videos/${searchParams.sourceVideoId}`}
+							className="text-sm text-muted-foreground hover:text-foreground"
+						>
+							← 動画詳細に戻る
+						</Link>
+					) : undefined
+				}
 			/>
 
 			{/* 音声ボタン一覧 */}

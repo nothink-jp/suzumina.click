@@ -2,13 +2,14 @@
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types/src/audio-button";
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
+import { canCreateAudioButton } from "@suzumina.click/shared-types/src/video";
 import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card } from "@suzumina.click/ui/components/ui/card";
-import { Calendar, Eye, Hash, PlayCircle, Plus, Share2 } from "lucide-react";
+import { Calendar, Clock, Eye, Hash, PlayCircle, Plus, Radio, Share2, Video } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { getAudioButtons } from "@/app/buttons/actions";
 import ThumbnailImage from "@/components/ThumbnailImage";
 
@@ -62,6 +63,52 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 
 	// YouTube動画URLを生成
 	const youtubeUrl = `https://youtube.com/watch?v=${video.videoId}`;
+
+	// メモ化: 動画タイプバッジの情報
+	const videoBadgeInfo = useMemo(() => {
+		switch (video.liveBroadcastContent) {
+			case "live":
+				return {
+					text: "配信中",
+					icon: Radio,
+					className: "bg-red-600/80 text-white border-none",
+					ariaLabel: "現在配信中のライブ配信",
+				};
+			case "upcoming":
+				return {
+					text: "配信予告",
+					icon: Clock,
+					className: "bg-blue-600/80 text-white border-none",
+					ariaLabel: "配信予定のライブ配信",
+				};
+			case "none":
+				// videoTypeが"archived"の場合は配信アーカイブ、それ以外は動画
+				if (video.videoType === "archived") {
+					return {
+						text: "配信アーカイブ",
+						icon: Radio,
+						className: "bg-gray-600/80 text-white border-none",
+						ariaLabel: "ライブ配信のアーカイブ",
+					};
+				}
+				return {
+					text: "動画",
+					icon: Video,
+					className: "bg-black/80 text-white border-none",
+					ariaLabel: "動画コンテンツ",
+				};
+			default:
+				return {
+					text: "動画",
+					icon: Video,
+					className: "bg-black/80 text-white border-none",
+					ariaLabel: "動画コンテンツ",
+				};
+		}
+	}, [video.liveBroadcastContent, video.videoType]);
+
+	// メモ化: 音声ボタン作成可能判定
+	const canCreateButton = useMemo(() => canCreateAudioButton(video), [video]);
 
 	const handleShare = () => {
 		if (navigator.share) {
@@ -117,9 +164,12 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 							/>
 							{/* 動画時間バッジ（もしあれば） */}
 							<div className="absolute top-4 right-4">
-								<Badge className="bg-black/80 text-white border-none">
-									<PlayCircle className="h-3 w-3 mr-1" />
-									動画
+								<Badge className={videoBadgeInfo.className} aria-label={videoBadgeInfo.ariaLabel}>
+									{React.createElement(videoBadgeInfo.icon, {
+										className: "h-3 w-3 mr-1",
+										"aria-hidden": "true",
+									})}
+									{videoBadgeInfo.text}
 								</Badge>
 							</div>
 						</div>
@@ -144,11 +194,28 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 
 							{/* アクションボタン */}
 							<div className="flex flex-wrap gap-2">
-								<Button size="lg" className="bg-suzuka-500 hover:bg-suzuka-600 text-white" asChild>
-									<Link href={`/buttons/create?video_id=${video.videoId}`}>
-										<Plus className="h-4 w-4 mr-2" />
-										ボタンを作成
-									</Link>
+								<Button
+									size="lg"
+									className="bg-suzuka-500 hover:bg-suzuka-600 text-white"
+									disabled={!canCreateButton}
+									asChild={canCreateButton}
+									title={
+										canCreateButton
+											? undefined
+											: "許諾により音声ボタンを作成できるのは配信アーカイブのみです"
+									}
+								>
+									{canCreateButton ? (
+										<Link href={`/buttons/create?video_id=${video.videoId}`}>
+											<Plus className="h-4 w-4 mr-2" />
+											ボタンを作成
+										</Link>
+									) : (
+										<span>
+											<Plus className="h-4 w-4 mr-2" />
+											ボタンを作成
+										</span>
+									)}
 								</Button>
 								<Button size="lg" variant="outline" asChild>
 									<a href={youtubeUrl} target="_blank" rel="noopener noreferrer">
@@ -235,13 +302,23 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 							</div>
 						) : (
 							<div className="text-center py-12">
-								<p className="text-muted-foreground mb-4">まだボタンが作成されていません</p>
-								<Button className="bg-suzuka-500 hover:bg-suzuka-600 text-white" asChild>
-									<Link href={`/buttons/create?video_id=${video.videoId}`}>
-										<Plus className="h-4 w-4 mr-2" />
-										最初のボタンを作成
-									</Link>
-								</Button>
+								<p className="text-muted-foreground mb-4">
+									{canCreateButton
+										? "まだボタンが作成されていません"
+										: "この動画からは音声ボタンを作成できません"}
+								</p>
+								{canCreateButton ? (
+									<Button className="bg-suzuka-500 hover:bg-suzuka-600 text-white" asChild>
+										<Link href={`/buttons/create?video_id=${video.videoId}`}>
+											<Plus className="h-4 w-4 mr-2" />
+											最初のボタンを作成
+										</Link>
+									</Button>
+								) : (
+									<p className="text-sm text-muted-foreground">
+										許諾により音声ボタンを作成できるのは配信アーカイブのみです
+									</p>
+								)}
 							</div>
 						)}
 					</Card>

@@ -15,6 +15,7 @@ interface SearchParams {
 	tags?: string;
 	sort?: string;
 	page?: string;
+	sourceVideoId?: string;
 }
 
 interface AudioButtonsPageProps {

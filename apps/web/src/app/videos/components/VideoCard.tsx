@@ -2,9 +2,9 @@ import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { canCreateAudioButton } from "@suzumina.click/shared-types/src/video";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Calendar, Clock, ExternalLink, Eye, Plus } from "lucide-react";
+import { Calendar, Clock, ExternalLink, Eye, Plus, Radio, Video } from "lucide-react";
 import Link from "next/link";
-import { memo, useMemo } from "react";
+import React, { memo, useMemo } from "react";
 import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface VideoCardProps {
@@ -46,6 +46,49 @@ const VideoCard = memo(function VideoCard({
 	// メモ化: 音声ボタン作成可能判定
 	const canCreateButton = useMemo(() => canCreateAudioButton(video), [video]);
 
+	// メモ化: 動画タイプバッジの情報
+	const videoBadgeInfo = useMemo(() => {
+		switch (video.liveBroadcastContent) {
+			case "live":
+				return {
+					text: "配信中",
+					icon: Radio,
+					className: "bg-red-600/90 text-white",
+					ariaLabel: "現在配信中のライブ配信",
+				};
+			case "upcoming":
+				return {
+					text: "配信予告",
+					icon: Clock,
+					className: "bg-blue-600/90 text-white",
+					ariaLabel: "配信予定のライブ配信",
+				};
+			case "none":
+				// videoTypeが"archived"の場合は配信アーカイブ、それ以外は動画
+				if (video.videoType === "archived") {
+					return {
+						text: "配信アーカイブ",
+						icon: Radio,
+						className: "bg-gray-600/90 text-white",
+						ariaLabel: "ライブ配信のアーカイブ",
+					};
+				}
+				return {
+					text: "動画",
+					icon: Video,
+					className: "bg-black/70 text-white",
+					ariaLabel: "動画コンテンツ",
+				};
+			default:
+				return {
+					text: "動画",
+					icon: Video,
+					className: "bg-black/70 text-white",
+					ariaLabel: "動画コンテンツ",
+				};
+		}
+	}, [video.liveBroadcastContent, video.videoType]);
+
 	return (
 		<article
 			className="hover:shadow-lg transition-shadow group border bg-card text-card-foreground rounded-lg shadow-sm"
@@ -68,9 +111,12 @@ const VideoCard = memo(function VideoCard({
 							sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
 						/>
 						<div className="absolute bottom-2 right-2">
-							<Badge className="bg-black/70 text-white" aria-label="動画コンテンツ">
-								<Clock className="h-3 w-3 mr-1" aria-hidden="true" />
-								動画
+							<Badge className={videoBadgeInfo.className} aria-label={videoBadgeInfo.ariaLabel}>
+								{React.createElement(videoBadgeInfo.icon, {
+									className: "h-3 w-3 mr-1",
+									"aria-hidden": "true",
+								})}
+								{videoBadgeInfo.text}
 							</Badge>
 						</div>
 						<div className="absolute top-2 left-2">
@@ -127,7 +173,7 @@ const VideoCard = memo(function VideoCard({
 								disabled={!canCreateButton}
 								asChild={canCreateButton}
 								title={
-									canCreateButton ? undefined : "配信中または配信予定の動画はボタン作成できません"
+									canCreateButton ? undefined : "音声ボタンを作成できるのは配信アーカイブのみです"
 								}
 							>
 								{canCreateButton ? (
