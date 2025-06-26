@@ -1,6 +1,7 @@
 "use server";
 
 import * as logger from "@/lib/logger";
+import { getRecentAudioButtons } from "./buttons/actions";
 import { getVideoTitles } from "./videos/actions";
 import { getWorks } from "./works/actions";
 
@@ -79,6 +80,46 @@ export async function getLatestVideos(limit = 10) {
 	} catch (error) {
 		logger.error("新着動画取得でエラーが発生", {
 			action: "getLatestVideos",
+			limit,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
+		return [];
+	}
+}
+
+/**
+ * トップページ用の新着音声ボタンを取得するServer Action
+ * @param limit - 取得件数（デフォルト10件）
+ * @returns 新着音声ボタンリスト
+ */
+export async function getLatestAudioButtons(limit = 10) {
+	logger.info("新着音声ボタン取得を開始", {
+		action: "getLatestAudioButtons",
+		limit,
+	});
+
+	try {
+		const audioButtons = await getRecentAudioButtons(limit);
+
+		if (audioButtons.length === 0) {
+			logger.warn("新着音声ボタン取得で0件返却", {
+				action: "getLatestAudioButtons",
+				limit,
+			});
+		} else {
+			logger.info("新着音声ボタン取得成功", {
+				action: "getLatestAudioButtons",
+				audioButtonsCount: audioButtons.length,
+				firstButtonTitle: audioButtons[0]?.title,
+				firstButtonId: audioButtons[0]?.id,
+			});
+		}
+
+		return audioButtons;
+	} catch (error) {
+		logger.error("新着音声ボタン取得でエラーが発生", {
+			action: "getLatestAudioButtons",
 			limit,
 			error: error instanceof Error ? error.message : String(error),
 			stack: error instanceof Error ? error.stack : undefined,

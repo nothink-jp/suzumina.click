@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getLatestVideos, getLatestWorks } from "./actions";
+import { getLatestAudioButtons, getLatestVideos, getLatestWorks } from "./actions";
 
 // Server Actionsのモック
 vi.mock("./videos/actions", () => ({
@@ -10,6 +10,11 @@ vi.mock("./works/actions", () => ({
 	getWorks: vi.fn(),
 }));
 
+vi.mock("./buttons/actions", () => ({
+	getRecentAudioButtons: vi.fn(),
+}));
+
+import { getRecentAudioButtons } from "./buttons/actions";
 // モックのインポート
 import { getVideoTitles } from "./videos/actions";
 import { getWorks } from "./works/actions";
@@ -403,8 +408,143 @@ describe("Homepage Actions", () => {
 		});
 	});
 
+	describe("getLatestAudioButtons", () => {
+		it("正常に新着音声ボタンを取得できる", async () => {
+			const mockAudioButtons = [
+				{
+					id: "audio-1",
+					title: "テスト音声ボタン1",
+					description: "テスト用の音声ボタン",
+					category: "voice" as const,
+					tags: ["テスト"],
+					sourceVideoId: "video-1",
+					sourceVideoTitle: "テスト動画1",
+					sourceVideoThumbnailUrl: "https://img.youtube.com/vi/video-1/maxresdefault.jpg",
+					startTime: 10,
+					endTime: 20,
+					uploadedBy: "user-1",
+					uploadedByName: "ユーザー1",
+					isPublic: true,
+					playCount: 5,
+					likeCount: 2,
+					createdAt: "2023-01-01T00:00:00Z",
+					updatedAt: "2023-01-01T00:00:00Z",
+					durationText: "10秒",
+					relativeTimeText: "1日前",
+				},
+				{
+					id: "audio-2",
+					title: "テスト音声ボタン2",
+					description: "テスト用の音声ボタン2",
+					category: "bgm" as const,
+					tags: ["音楽"],
+					sourceVideoId: "video-2",
+					sourceVideoTitle: "テスト動画2",
+					sourceVideoThumbnailUrl: "https://img.youtube.com/vi/video-2/maxresdefault.jpg",
+					startTime: 30,
+					endTime: 45,
+					uploadedBy: "user-2",
+					uploadedByName: "ユーザー2",
+					isPublic: true,
+					playCount: 8,
+					likeCount: 3,
+					createdAt: "2023-01-02T00:00:00Z",
+					updatedAt: "2023-01-02T00:00:00Z",
+					durationText: "15秒",
+					relativeTimeText: "2日前",
+				},
+			];
+
+			(getRecentAudioButtons as any).mockResolvedValue(mockAudioButtons);
+
+			const result = await getLatestAudioButtons(10);
+
+			expect(getRecentAudioButtons).toHaveBeenCalledWith(10);
+			expect(result).toEqual(mockAudioButtons);
+			expect(result).toHaveLength(2);
+			expect(result[0].title).toBe("テスト音声ボタン1");
+			expect(result[1].title).toBe("テスト音声ボタン2");
+		});
+
+		it("デフォルトのlimit値で動作する", async () => {
+			(getRecentAudioButtons as any).mockResolvedValue([]);
+
+			await getLatestAudioButtons();
+
+			expect(getRecentAudioButtons).toHaveBeenCalledWith(10);
+		});
+
+		it("カスタムlimit値で動作する", async () => {
+			(getRecentAudioButtons as any).mockResolvedValue([]);
+
+			await getLatestAudioButtons(5);
+
+			expect(getRecentAudioButtons).toHaveBeenCalledWith(5);
+		});
+
+		it("音声ボタンが0件の場合でも正常に動作する", async () => {
+			(getRecentAudioButtons as any).mockResolvedValue([]);
+
+			const result = await getLatestAudioButtons(10);
+
+			expect(result).toEqual([]);
+			expect(mockConsole.log).toHaveBeenCalledWith(
+				expect.stringContaining('"新着音声ボタン取得で0件返却"'),
+			);
+		});
+
+		it("エラーが発生した場合空配列を返す", async () => {
+			const error = new Error("Firestore エラー");
+			(getRecentAudioButtons as any).mockRejectedValue(error);
+
+			const result = await getLatestAudioButtons(10);
+
+			expect(result).toEqual([]);
+			expect(mockConsole.log).toHaveBeenCalledWith(
+				expect.stringContaining('"新着音声ボタン取得でエラーが発生"'),
+			);
+		});
+
+		it("成功時に適切なログが出力される", async () => {
+			const mockAudioButtons = [
+				{
+					id: "audio-log-test",
+					title: "ログテスト音声ボタン",
+					description: "テスト",
+					category: "voice" as const,
+					tags: [],
+					sourceVideoId: "video-log-test",
+					sourceVideoTitle: "ログテスト動画",
+					sourceVideoThumbnailUrl: "https://img.youtube.com/vi/video-log-test/maxresdefault.jpg",
+					startTime: 0,
+					endTime: 5,
+					uploadedBy: "user-log-test",
+					uploadedByName: "ログテストユーザー",
+					isPublic: true,
+					playCount: 0,
+					likeCount: 0,
+					createdAt: "2023-01-01T00:00:00Z",
+					updatedAt: "2023-01-01T00:00:00Z",
+					durationText: "5秒",
+					relativeTimeText: "今",
+				},
+			];
+
+			(getRecentAudioButtons as any).mockResolvedValue(mockAudioButtons);
+
+			await getLatestAudioButtons(15);
+
+			expect(mockConsole.log).toHaveBeenCalledWith(
+				expect.stringContaining('"新着音声ボタン取得を開始"'),
+			);
+			expect(mockConsole.log).toHaveBeenCalledWith(
+				expect.stringContaining('"新着音声ボタン取得成功"'),
+			);
+		});
+	});
+
 	describe("統合テスト", () => {
-		it("getLatestWorksとgetLatestVideosが独立して動作する", async () => {
+		it("全データ取得関数が独立して動作する", async () => {
 			const mockWorks = [
 				{
 					id: "work-1",
@@ -466,15 +606,44 @@ describe("Homepage Actions", () => {
 				hasMore: false,
 			});
 
-			const [worksResult, videosResult] = await Promise.all([
+			const mockAudioButtons = [
+				{
+					id: "audio-1",
+					title: "音声1",
+					description: "音声説明1",
+					category: "voice" as const,
+					tags: [],
+					sourceVideoId: "TestVideo123",
+					sourceVideoTitle: "動画1",
+					sourceVideoThumbnailUrl: "https://img.youtube.com/vi/TestVideo123/maxresdefault.jpg",
+					startTime: 0,
+					endTime: 5,
+					uploadedBy: "user-1",
+					uploadedByName: "ユーザー1",
+					isPublic: true,
+					playCount: 0,
+					likeCount: 0,
+					createdAt: "2023-01-01T00:00:00Z",
+					updatedAt: "2023-01-01T00:00:00Z",
+					durationText: "5秒",
+					relativeTimeText: "今",
+				},
+			];
+
+			(getRecentAudioButtons as any).mockResolvedValue(mockAudioButtons);
+
+			const [worksResult, videosResult, audioButtonsResult] = await Promise.all([
 				getLatestWorks(5),
 				getLatestVideos(5),
+				getLatestAudioButtons(5),
 			]);
 
 			expect(worksResult).toEqual(mockWorks);
 			expect(videosResult).toEqual(mockVideos);
+			expect(audioButtonsResult).toEqual(mockAudioButtons);
 			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 5 });
 			expect(getVideoTitles).toHaveBeenCalledWith({ page: 1, limit: 5 });
+			expect(getRecentAudioButtons).toHaveBeenCalledWith(5);
 		});
 
 		it("一方がエラーでももう一方は正常に動作する", async () => {
