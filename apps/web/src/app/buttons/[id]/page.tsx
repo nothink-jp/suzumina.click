@@ -1,15 +1,15 @@
 import type { AudioButtonQuery } from "@suzumina.click/shared-types";
+import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
 import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { Separator } from "@suzumina.click/ui/components/ui/separator";
-import { ArrowLeft, Calendar, Clock, Eye, Heart, Play, Share2, Tag, Youtube } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Eye, Tag, Youtube } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getAudioButtonById, getAudioButtons } from "@/app/buttons/actions";
-import { AudioButtonCard } from "@/components/AudioButtonCard";
 
 interface AudioButtonDetailPageProps {
 	params: Promise<{
@@ -97,12 +97,10 @@ async function RelatedAudioButtons({
 						<CardContent>
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								{relatedButtons.slice(0, 4).map((audioButton) => (
-									<AudioButtonCard
+									<SimpleAudioButton
 										key={audioButton.id}
 										audioButton={audioButton}
-										showSourceVideo={false}
-										size="sm"
-										variant="compact"
+										className="w-full"
 									/>
 								))}
 							</div>
@@ -166,20 +164,8 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 										<Clock className="h-4 w-4" />
 										{audioButton.endTime - audioButton.startTime}秒
 									</span>
-									<span className="flex items-center gap-1">
-										<Play className="h-4 w-4" />
-										{audioButton.playCount}回再生
-									</span>
-									<span className="flex items-center gap-1">
-										<Heart className="h-4 w-4" />
-										{audioButton.likeCount}
-									</span>
 								</div>
 							</div>
-							<Button variant="outline" size="sm">
-								<Share2 className="h-4 w-4 mr-2" />
-								共有
-							</Button>
 						</div>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -252,12 +238,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 						<CardTitle>この音声ボタン</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<AudioButtonCard
-							audioButton={audioButton}
-							showSourceVideo={true}
-							size="lg"
-							variant="detailed"
-						/>
+						<SimpleAudioButton audioButton={audioButton} className="w-full" />
 					</CardContent>
 				</Card>
 

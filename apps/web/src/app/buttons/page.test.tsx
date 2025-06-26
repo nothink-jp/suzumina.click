@@ -55,10 +55,10 @@ vi.mock("./actions", () => ({
 	}),
 }));
 
-// Mock AudioButtonCard component
-vi.mock("@/components/AudioButtonCard", () => ({
-	AudioButtonCard: ({ audioButton }: any) => (
-		<div data-testid="audio-button-card">
+// Mock SimpleAudioButton component
+vi.mock("@suzumina.click/ui/components/custom/simple-audio-button", () => ({
+	SimpleAudioButton: ({ audioButton }: any) => (
+		<div data-testid="simple-audio-button">
 			<h3>{audioButton.title}</h3>
 			<p>{audioButton.description}</p>
 			<span>Category: {audioButton.category}</span>
@@ -71,12 +71,12 @@ vi.mock("./components/AudioButtonsList", () => ({
 	default: () => {
 		return (
 			<div data-testid="audio-buttons-list">
-				<div data-testid="audio-button-card">
+				<div data-testid="simple-audio-button">
 					<h4>テストサウンド1</h4>
 					<p>説明1</p>
 					<span>Category: voice</span>
 				</div>
-				<div data-testid="audio-button-card">
+				<div data-testid="simple-audio-button">
 					<h4>テストサウンド2</h4>
 					<p>説明2</p>
 					<span>Category: bgm</span>

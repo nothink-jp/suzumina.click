@@ -16,13 +16,13 @@ import {
 	SearchFilterPanel,
 	SortSelect,
 } from "@suzumina.click/ui/components/custom/search-filter-panel";
+import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
 import { getAudioButtons } from "@/app/buttons/actions";
-import { AudioButtonCard } from "@/components/AudioButtonCard";
 import Pagination from "@/components/Pagination";
 
 interface SearchParams {
@@ -212,12 +212,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 				<ListPageGrid>
 					{audioButtons.map((audioButton) => (
 						<div key={audioButton.id} className="min-h-card">
-							<AudioButtonCard
-								audioButton={audioButton}
-								showSourceVideo={true}
-								size="md"
-								variant="default"
-							/>
+							<SimpleAudioButton audioButton={audioButton} className="w-full h-full" />
 						</div>
 					))}
 				</ListPageGrid>

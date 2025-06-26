@@ -28,10 +28,10 @@ vi.mock("@suzumina.click/ui/components/custom/youtube-player", () => ({
 	),
 }));
 
-// Mock AudioButtonCard
-vi.mock("./AudioButtonCard", () => ({
-	AudioButtonCard: ({ audioButton }: any) => (
-		<div data-testid="audio-button-card">Audio Button Card Mock: {audioButton?.title}</div>
+// Mock SimpleAudioButton
+vi.mock("@suzumina.click/ui/components/custom/simple-audio-button", () => ({
+	SimpleAudioButton: ({ audioButton }: any) => (
+		<div data-testid="simple-audio-button">Simple Audio Button Mock: {audioButton?.title}</div>
 	),
 }));
 
