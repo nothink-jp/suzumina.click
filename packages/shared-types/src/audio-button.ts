@@ -357,11 +357,11 @@ export function convertCreateInputToFirestoreAudioButton(
 	input: CreateAudioButtonInput,
 	uploadedBy: string,
 	uploadedByName: string,
-): FirestoreAudioButtonData {
+): Omit<FirestoreAudioButtonData, "id"> {
 	const now = new Date().toISOString();
 
 	return {
-		id: "", // Firestoreで自動生成
+		// id は add() 後に別途設定するため、初期作成時は含めない
 		title: input.title,
 		description: input.description,
 		category: input.category,
@@ -376,7 +376,7 @@ export function convertCreateInputToFirestoreAudioButton(
 		likeCount: 0,
 		createdAt: now,
 		updatedAt: now,
-	};
+	} as Omit<FirestoreAudioButtonData, "id">;
 }
 
 /**

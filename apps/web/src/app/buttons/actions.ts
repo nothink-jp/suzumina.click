@@ -159,6 +159,10 @@ export async function createAudioButton(
 		});
 
 		const docRef = await firestore.collection("audioButtons").add(firestoreData);
+
+		// ドキュメント作成後にIDフィールドを設定
+		await docRef.update({ id: docRef.id });
+
 		logger.debug("Firestore保存完了", { documentId: docRef.id });
 
 		logger.debug("統計情報更新開始");

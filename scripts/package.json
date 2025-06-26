@@ -1,0 +1,13 @@
+{
+	"name": "suzumina-scripts",
+	"version": "1.0.0",
+	"description": "One-time scripts for suzumina.click maintenance",
+	"main": "index.js",
+	"scripts": {
+		"fix-audio-button-ids": "node fix-audio-button-ids.js"
+	},
+	"dependencies": {
+		"firebase-admin": "^12.0.0"
+	},
+	"private": true
+}

@@ -49,6 +49,9 @@ functions.cloudEvent<any>("fetchYouTubeVideos", fetchYouTubeVideos);
 // biome-ignore lint/suspicious/noExplicitAny: Complexity type of cloudEvent
 functions.cloudEvent<any>("fetchDLsiteWorks", fetchDLsiteWorks);
 
+// HTTPトリガー関数は独立したファイルで管理
+// fix-audio-button-ids.ts を直接デプロイして使用
+
 // ヘルスチェック機能は削除されました
 // Cloud Functionsでは不要のため
 

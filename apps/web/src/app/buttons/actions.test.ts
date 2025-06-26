@@ -4,6 +4,7 @@ import { createAudioButton, getAudioButtonById, getAudioButtons } from "./action
 
 // Mock Firestore Admin
 const mockAdd = vi.fn();
+const mockUpdate = vi.fn();
 const mockGet = vi.fn();
 const mockDoc = vi.fn();
 const mockCollection = vi.fn();
@@ -91,8 +92,11 @@ describe("Audio Button Server Actions", () => {
 		};
 
 		it("有効な入力で音声ボタンが作成される", async () => {
-			// Mock successful add
-			mockAdd.mockResolvedValue({ id: "new-audio-button-id" });
+			// Mock successful add with update method
+			mockAdd.mockResolvedValue({
+				id: "new-audio-button-id",
+				update: mockUpdate.mockResolvedValue(undefined),
+			});
 
 			// Mock YouTube API response
 			global.fetch = vi.fn().mockResolvedValue({
@@ -130,6 +134,7 @@ describe("Audio Button Server Actions", () => {
 				expect(result.data.id).toBe("new-audio-button-id");
 			}
 			expect(mockAdd).toHaveBeenCalled();
+			expect(mockUpdate).toHaveBeenCalledWith({ id: "new-audio-button-id" });
 		});
 
 		it("無効な入力でエラーが返される", async () => {
