@@ -5,17 +5,14 @@ import type {
 	AudioButtonQuery,
 	FrontendAudioButtonData,
 } from "@suzumina.click/shared-types";
-import { ListHeader } from "@suzumina.click/ui/components/custom/list-header";
+import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
 import {
 	ListPageEmptyState,
 	ListPageGrid,
 	ListPageStats,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
-import {
-	FilterSelect,
-	SearchFilterPanel,
-	SortSelect,
-} from "@suzumina.click/ui/components/custom/search-filter-panel";
+import { SearchAndFilterPanel } from "@suzumina.click/ui/components/custom/search-and-filter-panel";
+import { FilterSelect } from "@suzumina.click/ui/components/custom/search-filter-panel";
 import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Plus, Sparkles } from "lucide-react";
@@ -50,10 +47,11 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	const [searchQuery, setSearchQuery] = useState(searchParams.q || "");
 	const [sortBy, setSortBy] = useState(searchParams.sort || "default");
 	const [categoryFilter, setCategoryFilter] = useState(searchParams.category || "all");
+	const [itemsPerPageValue, setItemsPerPageValue] = useState("12");
 
 	const currentPage = searchParams.page ? Number.parseInt(searchParams.page, 10) : 1;
-	const itemsPerPage = 12;
-	const totalPages = Math.ceil(totalCount / itemsPerPage);
+	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
+	const totalPages = Math.ceil(totalCount / itemsPerPageNum);
 
 	// データ取得
 	useEffect(() => {
@@ -62,7 +60,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 			setError(null);
 
 			const query: AudioButtonQuery = {
-				limit: itemsPerPage,
+				limit: itemsPerPageNum,
 				searchText: searchParams.q,
 				category: searchParams.category as AudioButtonCategory | undefined,
 				tags: searchParams.tags ? searchParams.tags.split(",") : undefined,
@@ -88,7 +86,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		};
 
 		fetchData();
-	}, [searchParams]);
+	}, [searchParams, itemsPerPageNum]);
 
 	// URLパラメータを更新
 	const updateSearchParams = (params: Record<string, string | undefined>) => {
@@ -130,6 +128,22 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		});
 	};
 
+	// 検索・フィルターリセット
+	const handleReset = () => {
+		setSearchQuery("");
+		setCategoryFilter("all");
+		startTransition(() => {
+			updateSearchParams({ q: undefined, category: undefined });
+		});
+	};
+
+	// 件数/ページ変更
+	const handleItemsPerPageChange = (value: string) => {
+		startTransition(() => {
+			setItemsPerPageValue(value);
+		});
+	};
+
 	if (loading) {
 		return (
 			<div className="text-center py-12">
@@ -151,48 +165,48 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 
 	return (
 		<div>
-			{/* 検索・フィルター */}
-			<SearchFilterPanel
+			{/* 1. 検索・フィルターエリア */}
+			<SearchAndFilterPanel
 				searchValue={searchQuery}
 				onSearchChange={setSearchQuery}
 				onSearch={handleSearch}
+				onReset={handleReset}
 				searchPlaceholder="音声ボタンを検索..."
+				hasActiveFilters={searchQuery !== "" || categoryFilter !== "all"}
 				filters={
-					<>
-						<SortSelect
-							value={sortBy}
-							onValueChange={handleSortChange}
-							options={[
-								{ value: "default", label: "並び順" },
-								{ value: "newest", label: "新しい順" },
-								{ value: "oldest", label: "古い順" },
-								{ value: "popular", label: "人気順" },
-								{ value: "mostPlayed", label: "再生回数順" },
-							]}
-						/>
-						<FilterSelect
-							value={categoryFilter}
-							onValueChange={handleCategoryChange}
-							placeholder="カテゴリー"
-							options={[
-								{ value: "all", label: "すべてのカテゴリー" },
-								{ value: "greeting", label: "挨拶" },
-								{ value: "reaction", label: "リアクション" },
-								{ value: "emotion", label: "感情" },
-								{ value: "action", label: "アクション" },
-								{ value: "other", label: "その他" },
-							]}
-						/>
-					</>
+					<FilterSelect
+						value={categoryFilter}
+						onValueChange={handleCategoryChange}
+						placeholder="カテゴリー"
+						options={[
+							{ value: "all", label: "すべてのカテゴリー" },
+							{ value: "greeting", label: "挨拶" },
+							{ value: "reaction", label: "リアクション" },
+							{ value: "emotion", label: "感情" },
+							{ value: "action", label: "アクション" },
+							{ value: "other", label: "その他" },
+						]}
+					/>
 				}
 			/>
 
-			{/* ヘッダー */}
-			<ListHeader
+			{/* 2. リスト表示制御 */}
+			<ListDisplayControls
 				title={searchParams.sourceVideoId ? "この動画の音声ボタン" : "音声ボタン一覧"}
 				totalCount={totalCount}
 				currentPage={currentPage}
 				totalPages={totalPages}
+				sortValue={sortBy}
+				onSortChange={handleSortChange}
+				sortOptions={[
+					{ value: "default", label: "並び順" },
+					{ value: "newest", label: "新しい順" },
+					{ value: "oldest", label: "古い順" },
+					{ value: "popular", label: "人気順" },
+					{ value: "mostPlayed", label: "再生回数順" },
+				]}
+				itemsPerPageValue={itemsPerPageValue}
+				onItemsPerPageChange={handleItemsPerPageChange}
 				actions={
 					searchParams.sourceVideoId ? (
 						<Link
@@ -230,7 +244,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 				</ListPageGrid>
 			)}
 
-			{/* ページネーション */}
+			{/* 3. ページネーション */}
 			{totalPages > 1 && (
 				<div className="mt-8">
 					<Pagination currentPage={currentPage} totalPages={totalPages} />
@@ -243,7 +257,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 					currentPage={currentPage}
 					totalPages={totalPages}
 					totalCount={totalCount}
-					itemsPerPage={itemsPerPage}
+					itemsPerPage={itemsPerPageNum}
 				/>
 			)}
 		</div>

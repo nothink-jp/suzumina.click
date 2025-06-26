@@ -1,17 +1,14 @@
 "use client";
 
 import type { VideoListResult } from "@suzumina.click/shared-types/src/video";
-import { ListHeader } from "@suzumina.click/ui/components/custom/list-header";
+import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
 import {
 	ListPageEmptyState,
 	ListPageGrid,
 	ListPageStats,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
-import {
-	FilterSelect,
-	SearchFilterPanel,
-	SortSelect,
-} from "@suzumina.click/ui/components/custom/search-filter-panel";
+import { SearchAndFilterPanel } from "@suzumina.click/ui/components/custom/search-and-filter-panel";
+import { FilterSelect } from "@suzumina.click/ui/components/custom/search-filter-panel";
 import { PlayCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useMemo, useState } from "react";
@@ -36,10 +33,11 @@ export default function VideoList({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [sortBy, setSortBy] = useState("default");
 	const [yearFilter, setYearFilter] = useState(searchParams.get("year") || "all");
+	const [itemsPerPageValue, setItemsPerPageValue] = useState("12");
 
-	const itemsPerPage = 12;
+	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
 	const displayCount = filteredCount !== undefined ? filteredCount : totalCount;
-	const totalPages = Math.ceil(displayCount / itemsPerPage);
+	const totalPages = Math.ceil(displayCount / itemsPerPageNum);
 
 	// 年代選択肢を動的に生成（2018年から現在年まで）
 	const currentYear = new Date().getFullYear();
@@ -78,6 +76,28 @@ export default function VideoList({
 		}
 	};
 
+	// 検索・フィルターリセット
+	const handleReset = () => {
+		setSearchQuery("");
+		setYearFilter("all");
+		const params = new URLSearchParams();
+		router.push(`/videos?${params.toString()}`);
+	};
+
+	// 並び順変更
+	const handleSortChange = (value: string) => {
+		startTransition(() => {
+			setSortBy(value);
+		});
+	};
+
+	// 件数/ページ変更
+	const handleItemsPerPageChange = (value: string) => {
+		startTransition(() => {
+			setItemsPerPageValue(value);
+		});
+	};
+
 	// FID改善: 検索・フィルタリング結果をメモ化
 	const filteredVideos = useMemo(() => {
 		// 現在は全て表示、将来的にフィルタリングロジックを追加
@@ -86,8 +106,8 @@ export default function VideoList({
 
 	return (
 		<div>
-			{/* 検索・フィルター */}
-			<SearchFilterPanel
+			{/* 1. 検索・フィルターエリア */}
+			<SearchAndFilterPanel
 				searchValue={searchQuery}
 				onSearchChange={(value) => {
 					// FID改善: 入力遅延で重い処理を避ける
@@ -96,47 +116,42 @@ export default function VideoList({
 					});
 				}}
 				onSearch={handleSearch}
+				onReset={handleReset}
 				searchPlaceholder="動画タイトルで検索..."
+				hasActiveFilters={searchQuery !== "" || yearFilter !== "all"}
 				filters={
-					<>
-						<SortSelect
-							value={sortBy}
-							onValueChange={(value) => {
-								// FID改善: 選択変更も遅延処理
-								startTransition(() => {
-									setSortBy(value);
-								});
-							}}
-							options={[
-								{ value: "default", label: "並び順" },
-								{ value: "newest", label: "新しい順" },
-								{ value: "oldest", label: "古い順" },
-								{ value: "popular", label: "人気順" },
-							]}
-						/>
-						<FilterSelect
-							value={yearFilter}
-							onValueChange={handleYearChange}
-							placeholder="すべての年代"
-							options={[
-								{ value: "all", label: "すべての年代" },
-								...yearOptions.map((year) => ({
-									value: year.toString(),
-									label: `${year}年`,
-								})),
-							]}
-						/>
-					</>
+					<FilterSelect
+						value={yearFilter}
+						onValueChange={handleYearChange}
+						placeholder="すべての年代"
+						options={[
+							{ value: "all", label: "すべての年代" },
+							...yearOptions.map((year) => ({
+								value: year.toString(),
+								label: `${year}年`,
+							})),
+						]}
+					/>
 				}
 			/>
 
-			{/* ヘッダー */}
-			<ListHeader
+			{/* 2. リスト表示制御 */}
+			<ListDisplayControls
 				title="動画一覧"
 				totalCount={totalCount}
 				filteredCount={filteredCount}
 				currentPage={currentPage}
 				totalPages={totalPages}
+				sortValue={sortBy}
+				onSortChange={handleSortChange}
+				sortOptions={[
+					{ value: "default", label: "並び順" },
+					{ value: "newest", label: "新しい順" },
+					{ value: "oldest", label: "古い順" },
+					{ value: "popular", label: "人気順" },
+				]}
+				itemsPerPageValue={itemsPerPageValue}
+				onItemsPerPageChange={handleItemsPerPageChange}
 			/>
 
 			{/* 動画一覧 */}
@@ -160,7 +175,7 @@ export default function VideoList({
 				</ListPageGrid>
 			)}
 
-			{/* ページネーション */}
+			{/* 3. ページネーション */}
 			{totalPages > 1 && (
 				<div className="mt-8">
 					<Pagination currentPage={currentPage} totalPages={totalPages} />
@@ -173,7 +188,7 @@ export default function VideoList({
 					currentPage={currentPage}
 					totalPages={totalPages}
 					totalCount={displayCount}
-					itemsPerPage={itemsPerPage}
+					itemsPerPage={itemsPerPageNum}
 				/>
 			)}
 		</div>
