@@ -242,6 +242,23 @@ export async function getVideoById(videoId: string): Promise<FrontendVideoData |
 			lastFetchedAt,
 			videoType: data.videoType,
 			liveBroadcastContent: data.liveBroadcastContent,
+			liveStreamingDetails: data.liveStreamingDetails
+				? {
+						scheduledStartTime: data.liveStreamingDetails.scheduledStartTime
+							? convertTimestampToISO(data.liveStreamingDetails.scheduledStartTime)
+							: undefined,
+						scheduledEndTime: data.liveStreamingDetails.scheduledEndTime
+							? convertTimestampToISO(data.liveStreamingDetails.scheduledEndTime)
+							: undefined,
+						actualStartTime: data.liveStreamingDetails.actualStartTime
+							? convertTimestampToISO(data.liveStreamingDetails.actualStartTime)
+							: undefined,
+						actualEndTime: data.liveStreamingDetails.actualEndTime
+							? convertTimestampToISO(data.liveStreamingDetails.actualEndTime)
+							: undefined,
+						concurrentViewers: data.liveStreamingDetails.concurrentViewers,
+					}
+				: undefined,
 			audioButtonCount: data.audioButtonCount || 0,
 			hasAudioButtons: data.hasAudioButtons || false,
 		};

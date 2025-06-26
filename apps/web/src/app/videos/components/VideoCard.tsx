@@ -64,8 +64,11 @@ const VideoCard = memo(function VideoCard({
 					ariaLabel: "配信予定のライブ配信",
 				};
 			case "none":
-				// videoTypeが"archived"の場合は配信アーカイブ、それ以外は動画
-				if (video.videoType === "archived") {
+				// videoType が"archived"の場合、または liveStreamingDetails に actualStartTime と actualEndTime がある場合は配信アーカイブ
+				if (
+					video.videoType === "archived" ||
+					(video.liveStreamingDetails?.actualStartTime && video.liveStreamingDetails?.actualEndTime)
+				) {
 					return {
 						text: "配信アーカイブ",
 						icon: Radio,
@@ -87,7 +90,12 @@ const VideoCard = memo(function VideoCard({
 					ariaLabel: "動画コンテンツ",
 				};
 		}
-	}, [video.liveBroadcastContent, video.videoType]);
+	}, [
+		video.liveBroadcastContent,
+		video.videoType,
+		video.liveStreamingDetails?.actualStartTime,
+		video.liveStreamingDetails?.actualEndTime,
+	]);
 
 	return (
 		<article
