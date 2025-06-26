@@ -93,10 +93,9 @@ export function SimpleAudioButton({
 	return (
 		<div
 			className={cn(
-				"group relative inline-flex items-center gap-2 rounded-lg border bg-card p-3 transition-all hover:shadow-md",
+				"group relative flex items-center gap-2 rounded-lg border bg-card p-3 transition-all hover:shadow-md",
 				className,
 			)}
-			style={{ minWidth: "fit-content" }}
 		>
 			{/* メインボタンエリア */}
 			<button
@@ -113,7 +112,7 @@ export function SimpleAudioButton({
 						<Play className="h-5 w-5 translate-x-0.5" />
 					)}
 				</div>
-				<span className="font-medium whitespace-nowrap" title={audioButton.title}>
+				<span className="font-medium truncate flex-1 min-w-0" title={audioButton.title}>
 					{truncatedTitle}
 				</span>
 			</button>

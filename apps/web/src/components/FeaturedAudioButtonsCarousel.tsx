@@ -29,12 +29,8 @@ export function FeaturedAudioButtonsCarousel({ audioButtons }: FeaturedAudioButt
 						key={audioButton.id}
 						className="pl-2 md:pl-4 basis-full xs:basis-1/2 sm:basis-1/3 lg:basis-1/4 xl:basis-1/5"
 					>
-						<div className="h-full">
-							<SimpleAudioButton
-								audioButton={audioButton}
-								className="w-full h-full"
-								maxTitleLength={50}
-							/>
+						<div className="h-full min-h-[80px] flex">
+							<SimpleAudioButton audioButton={audioButton} className="w-full" maxTitleLength={50} />
 						</div>
 					</CarouselItem>
 				))}
