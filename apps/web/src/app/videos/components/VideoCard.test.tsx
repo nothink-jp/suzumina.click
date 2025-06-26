@@ -111,6 +111,22 @@ describe("VideoCard", () => {
 		expect(createButton).toHaveAttribute("href", "/buttons/create?video_id=test-video-1");
 	});
 
+	it("liveStreamingDetailsがある動画でボタン作成が有効になる", () => {
+		const liveStreamArchive: FrontendVideoData = {
+			...baseVideoData,
+			liveStreamingDetails: {
+				actualStartTime: "2024-01-01T10:00:00Z",
+				actualEndTime: "2024-01-01T12:00:00Z",
+			},
+		};
+
+		render(<VideoCard video={liveStreamArchive} />);
+
+		const createButton = screen.getByRole("link", { name: /テスト動画の音声ボタンを作成/ });
+		expect(createButton).toBeInTheDocument();
+		expect(createButton).toHaveAttribute("href", "/buttons/create?video_id=test-video-1");
+	});
+
 	it("音声ボタン数が表示される", () => {
 		const videoWithButtons: FrontendVideoData = {
 			...baseVideoData,

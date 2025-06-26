@@ -68,6 +68,16 @@ export const FirestoreVideoSchema = YouTubeVideoBaseSchema.extend({
 	lastFetchedAt: z.string().datetime(),
 	// 配信状態
 	liveBroadcastContent: LiveBroadcastContentSchema.optional(),
+	// ライブ配信詳細
+	liveStreamingDetails: z
+		.object({
+			scheduledStartTime: z.string().datetime().optional(),
+			scheduledEndTime: z.string().datetime().optional(),
+			actualStartTime: z.string().datetime().optional(),
+			actualEndTime: z.string().datetime().optional(),
+			concurrentViewers: z.number().optional(),
+		})
+		.optional(),
 	// 音声ボタン関連情報
 	audioButtonCount: z.number().int().min(0).default(0),
 	hasAudioButtons: z.boolean().default(false),
@@ -89,6 +99,16 @@ export const FrontendVideoSchema = YouTubeVideoBaseSchema.extend({
 	lastFetchedAtISO: z.string().datetime(),
 	// 配信状態
 	liveBroadcastContent: LiveBroadcastContentSchema.optional(),
+	// ライブ配信詳細
+	liveStreamingDetails: z
+		.object({
+			scheduledStartTime: z.string().datetime().optional(),
+			scheduledEndTime: z.string().datetime().optional(),
+			actualStartTime: z.string().datetime().optional(),
+			actualEndTime: z.string().datetime().optional(),
+			concurrentViewers: z.number().optional(),
+		})
+		.optional(),
 	// 音声ボタン関連情報
 	audioButtonCount: z.number().int().min(0).default(0),
 	hasAudioButtons: z.boolean().default(false),
@@ -323,7 +343,7 @@ export function canCreateAudioButton(video: FrontendVideoData): boolean {
 	// 許諾により音声ボタンを作成できるのは配信アーカイブのみ
 	// 以下の条件を満たす場合に音声ボタン作成を許可:
 	// 1. 明示的に videoType が "archived" の場合
-	// 2. または、liveBroadcastContent が "none" で、タイトルに配信を示すキーワードが含まれる場合
+	// 2. または、liveStreamingDetails が存在し、actualStartTime と actualEndTime がある場合
 
 	// 明示的にアーカイブと設定されている場合
 	if (video.videoType === "archived") {
@@ -335,25 +355,10 @@ export function canCreateAudioButton(video: FrontendVideoData): boolean {
 		return false;
 	}
 
-	// タイトルに配信アーカイブを示すキーワードが含まれている場合は作成を許可
-	const title = video.title.toLowerCase();
-	const archiveKeywords = [
-		"【配信",
-		"配信アーカイブ",
-		"生配信",
-		"live",
-		"ライブ",
-		"雑談",
-		"朝活",
-		"記念配信",
-		"anniversary",
-		"celebration",
-		"stream",
-		"配信",
-		"【雑談",
-		"【live",
-		"【ライブ",
-	];
+	// liveStreamingDetails が存在し、actualStartTime と actualEndTime がある場合は配信アーカイブとして判定
+	if (video.liveStreamingDetails?.actualStartTime && video.liveStreamingDetails?.actualEndTime) {
+		return true;
+	}
 
-	return archiveKeywords.some((keyword) => title.includes(keyword));
+	return false;
 }
