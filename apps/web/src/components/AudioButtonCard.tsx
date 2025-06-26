@@ -201,6 +201,19 @@ export function AudioButtonCard({
 		],
 	);
 
+	// YouTube Player state names mapping
+	const getStateName = (state: number): string => {
+		const stateMap: Record<number, string> = {
+			[-1]: "UNSTARTED",
+			[0]: "ENDED",
+			[1]: "PLAYING",
+			[2]: "PAUSED",
+			[3]: "BUFFERING",
+			[5]: "CUED",
+		};
+		return stateMap[state] || "UNKNOWN";
+	};
+
 	const handlePlayerStateChange = useCallback(
 		(state: number) => {
 			handlers.onStateChange(state);
@@ -210,27 +223,14 @@ export function AudioButtonCard({
 			console.log("Audio Button Player State Change:", {
 				buttonId: audioButton.id,
 				state,
-				stateName:
-					state === -1
-						? "UNSTARTED"
-						: state === 0
-							? "ENDED"
-							: state === 1
-								? "PLAYING"
-								: state === 2
-									? "PAUSED"
-									: state === 3
-										? "BUFFERING"
-										: state === 5
-											? "CUED"
-											: "UNKNOWN",
+				stateName: getStateName(state),
 			});
 
 			// YouTube Player API の built-in end parameter を使用するため、
 			// カスタムの終了時間チェックは不要
 			// endTime は YouTubePlayer コンポーネントで playerVars.end として設定済み
 		},
-		[audioButton.id, handlers.onStateChange],
+		[audioButton.id, handlers.onStateChange, getStateName],
 	);
 
 	// サイズとバリアントに基づくスタイル
