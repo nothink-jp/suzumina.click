@@ -156,6 +156,72 @@ resource "google_firestore_index" "audiobuttons_ispublic_sourcevideoid_starttime
   }
 }
 
+# audioButtons コレクションのインデックス - sourceVideoId（昇順）、isPublic（昇順）、createdAt（降順）
+# 動画詳細ページでの音声ボタン取得用
+resource "google_firestore_index" "audiobuttons_sourcevideoid_ispublic_createdat_desc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+  
+  fields {
+    field_path = "sourceVideoId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "createdAt"
+    order      = "DESCENDING"
+  }
+}
+
+# audioButtons コレクションのインデックス - sourceVideoId（昇順）、isPublic（昇順）、likeCount（降順）
+# 動画詳細ページでの音声ボタン取得用（人気順）
+resource "google_firestore_index" "audiobuttons_sourcevideoid_ispublic_likecount_desc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+  
+  fields {
+    field_path = "sourceVideoId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "likeCount"
+    order      = "DESCENDING"
+  }
+}
+
+# audioButtons コレクションのインデックス - sourceVideoId（昇順）、isPublic（昇順）、playCount（降順）
+# 動画詳細ページでの音声ボタン取得用（再生回数順）
+resource "google_firestore_index" "audiobuttons_sourcevideoid_ispublic_playcount_desc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+  
+  fields {
+    field_path = "sourceVideoId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "playCount"
+    order      = "DESCENDING"
+  }
+}
+
 # audioButtons コレクションのインデックス - tags（配列）、isPublic（昇順）、createdAt（降順）
 resource "google_firestore_index" "audiobuttons_tags_ispublic_createdat_desc" {
   project    = var.gcp_project_id

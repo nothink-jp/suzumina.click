@@ -148,7 +148,23 @@ export function SimpleAudioButton({
 							</p>
 						</div>
 
-						<div className="pt-2">
+						<div className="pt-2 space-y-2">
+							<a
+								href={`/videos/${audioButton.sourceVideoId}`}
+								className="inline-flex items-center text-sm text-suzuka-600 hover:underline"
+							>
+								動画詳細ページ
+								<svg className="ml-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<title>内部リンク</title>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M13 7l5 5m0 0l-5 5m5-5H6"
+									/>
+								</svg>
+							</a>
+							<br />
 							<a
 								href={youtubeUrl}
 								target="_blank"
