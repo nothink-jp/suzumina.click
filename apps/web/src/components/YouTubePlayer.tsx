@@ -320,6 +320,13 @@ export function YouTubePlayer({
 					}
 				},
 				onError: (event) => {
+					// biome-ignore lint/suspicious/noConsole: Debug logging for YouTube Player errors
+					console.error("YouTube Player Error:", {
+						errorCode: event.data,
+						videoId,
+						startTime,
+						endTime,
+					});
 					onError?.(event.data);
 				},
 			},

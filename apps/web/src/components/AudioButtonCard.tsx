@@ -80,7 +80,7 @@ export function AudioButtonCard({
 		likeCount: audioButton.likeCount,
 	});
 
-	const { player, handlers } = useYouTubePlayer();
+	const { handlers } = useYouTubePlayer();
 
 	// YouTube URLを生成
 	const youtubeUrl = `https://www.youtube.com/watch?v=${audioButton.sourceVideoId}&t=${audioButton.startTime}s`;
@@ -176,30 +176,61 @@ export function AudioButtonCard({
 		(playerInstance: YTPlayer) => {
 			handlers.onReady(playerInstance);
 
+			// デバッグログ
+			// biome-ignore lint/suspicious/noConsole: Debug logging for audio button playback
+			console.log("Audio Button Player Ready:", {
+				buttonId: audioButton.id,
+				videoId: audioButton.sourceVideoId,
+				startTime: audioButton.startTime,
+				endTime: audioButton.endTime,
+				title: audioButton.title,
+			});
+
 			// 指定範囲に自動シーク
 			if (audioButton.startTime > 0) {
 				playerInstance.seekTo(audioButton.startTime);
 			}
 		},
-		[audioButton.startTime, handlers.onReady],
+		[
+			audioButton.startTime,
+			audioButton.endTime,
+			audioButton.id,
+			audioButton.sourceVideoId,
+			audioButton.title,
+			handlers.onReady,
+		],
 	);
 
 	const handlePlayerStateChange = useCallback(
 		(state: number) => {
 			handlers.onStateChange(state);
 
-			// 終了時間に達したら停止
-			if (state === 1 && audioButton.endTime) {
-				// PLAYING
-				const checkEndTime = setInterval(() => {
-					if (player && audioButton.endTime && player.getCurrentTime() >= audioButton.endTime) {
-						player.pauseVideo();
-						clearInterval(checkEndTime);
-					}
-				}, 100);
-			}
+			// デバッグログ
+			// biome-ignore lint/suspicious/noConsole: Debug logging for audio button playback
+			console.log("Audio Button Player State Change:", {
+				buttonId: audioButton.id,
+				state,
+				stateName:
+					state === -1
+						? "UNSTARTED"
+						: state === 0
+							? "ENDED"
+							: state === 1
+								? "PLAYING"
+								: state === 2
+									? "PAUSED"
+									: state === 3
+										? "BUFFERING"
+										: state === 5
+											? "CUED"
+											: "UNKNOWN",
+			});
+
+			// YouTube Player API の built-in end parameter を使用するため、
+			// カスタムの終了時間チェックは不要
+			// endTime は YouTubePlayer コンポーネントで playerVars.end として設定済み
 		},
-		[audioButton.endTime, player, handlers.onStateChange],
+		[audioButton.id, handlers.onStateChange],
 	);
 
 	// サイズとバリアントに基づくスタイル
