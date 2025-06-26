@@ -202,7 +202,7 @@ export function AudioButtonCard({
 	);
 
 	// YouTube Player state names mapping
-	const getStateName = (state: number): string => {
+	const getStateName = useCallback((state: number): string => {
 		const stateMap: Record<number, string> = {
 			[-1]: "UNSTARTED",
 			[0]: "ENDED",
@@ -212,7 +212,7 @@ export function AudioButtonCard({
 			[5]: "CUED",
 		};
 		return stateMap[state] || "UNKNOWN";
-	};
+	}, []);
 
 	const handlePlayerStateChange = useCallback(
 		(state: number) => {
