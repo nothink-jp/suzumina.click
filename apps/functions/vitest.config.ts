@@ -22,6 +22,7 @@ export default defineConfig({
 				"vitest.*.{js,ts}",
 				"**/*.d.ts",
 				"**/*.config.{js,ts,mjs,cjs,mts,cts}",
+				"**/fix-audio-button-ids.ts", // 一回限りの修正スクリプト
 			],
 			thresholds: {
 				statements: 74,
