@@ -15,14 +15,16 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 	const resolvedSearchParams = await searchParams;
 	const pageParam = resolvedSearchParams.page;
 	const yearParam = resolvedSearchParams.year;
+	const sortParam = resolvedSearchParams.sort;
 	const currentPage =
 		pageParam && typeof pageParam === "string" ? Number.parseInt(pageParam, 10) : 1;
 	const validPage = Math.max(1, Number.isNaN(currentPage) ? 1 : currentPage);
 	const year = yearParam && typeof yearParam === "string" ? yearParam : undefined;
+	const sort = sortParam && typeof sortParam === "string" ? sortParam : "newest";
 
 	// 並行してデータを取得
 	const [initialData, filteredCount, totalCount] = await Promise.all([
-		getVideoTitles({ page: validPage, limit: 12, year }),
+		getVideoTitles({ page: validPage, limit: 12, year, sort }),
 		getTotalVideoCount({ year }),
 		getTotalVideoCount({}), // フィルタなしの総件数
 	]);

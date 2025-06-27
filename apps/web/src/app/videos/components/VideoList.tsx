@@ -31,7 +31,7 @@ export default function VideoList({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState("");
-	const [sortBy, setSortBy] = useState("default");
+	const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 	const [yearFilter, setYearFilter] = useState(searchParams.get("year") || "all");
 	const [itemsPerPageValue, setItemsPerPageValue] = useState("12");
 
@@ -80,15 +80,27 @@ export default function VideoList({
 	const handleReset = () => {
 		setSearchQuery("");
 		setYearFilter("all");
+		setSortBy("newest");
 		const params = new URLSearchParams();
 		router.push(`/videos?${params.toString()}`);
 	};
 
 	// 並び順変更
 	const handleSortChange = (value: string) => {
-		startTransition(() => {
-			setSortBy(value);
-		});
+		setSortBy(value);
+		const params = new URLSearchParams(searchParams.toString());
+
+		if (value && value !== "newest") {
+			params.set("sort", value);
+		} else {
+			params.delete("sort");
+		}
+
+		// ページ番号をリセット
+		params.delete("page");
+
+		// URLを更新（ページ再読み込み）
+		router.push(`/videos?${params.toString()}`);
 	};
 
 	// 件数/ページ変更
@@ -118,7 +130,7 @@ export default function VideoList({
 				onSearch={handleSearch}
 				onReset={handleReset}
 				searchPlaceholder="動画タイトルで検索..."
-				hasActiveFilters={searchQuery !== "" || yearFilter !== "all"}
+				hasActiveFilters={searchQuery !== "" || yearFilter !== "all" || sortBy !== "newest"}
 				filters={
 					<FilterSelect
 						value={yearFilter}
@@ -145,10 +157,8 @@ export default function VideoList({
 				sortValue={sortBy}
 				onSortChange={handleSortChange}
 				sortOptions={[
-					{ value: "default", label: "並び順" },
 					{ value: "newest", label: "新しい順" },
 					{ value: "oldest", label: "古い順" },
-					{ value: "popular", label: "人気順" },
 				]}
 				itemsPerPageValue={itemsPerPageValue}
 				onItemsPerPageChange={handleItemsPerPageChange}

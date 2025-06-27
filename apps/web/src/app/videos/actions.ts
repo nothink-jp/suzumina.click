@@ -23,11 +23,15 @@ function buildUserPaginationQuery(
 		limit?: number;
 		startAfterDocId?: string;
 		year?: string;
+		sort?: string;
 	},
 ) {
 	const limit = params?.limit || 12;
 	const page = params?.page || 1;
-	let query = videosRef.orderBy("publishedAt", "desc");
+
+	// ソート順の設定（デフォルトは新しい順）
+	const sortOrder = params?.sort === "oldest" ? "asc" : "desc";
+	let query = videosRef.orderBy("publishedAt", sortOrder);
 
 	// 年代フィルタリング
 	if (params?.year) {
@@ -135,6 +139,7 @@ export async function getVideoTitles(params?: {
 	limit?: number;
 	startAfterDocId?: string;
 	year?: string;
+	sort?: string;
 }): Promise<VideoListResult> {
 	try {
 		const firestore = getFirestore();
