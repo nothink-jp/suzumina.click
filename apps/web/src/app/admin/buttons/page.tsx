@@ -15,13 +15,13 @@ import { getFirestore } from "@/lib/firestore";
 import { ButtonList } from "./components/ButtonList";
 
 type ButtonsPageProps = {
-	searchParams: {
+	searchParams: Promise<{
 		category?: string;
 		user?: string;
 		search?: string;
 		page?: string;
 		sort?: string;
-	};
+	}>;
 };
 
 async function getButtons({
@@ -130,7 +130,7 @@ async function getButtonStats() {
 }
 
 export default async function ButtonsAdminPage({ searchParams }: ButtonsPageProps) {
-	const { category, user, search, page, sort } = searchParams;
+	const { category, user, search, page, sort } = await searchParams;
 
 	const [{ buttons, total, hasMore }, stats] = await Promise.all([
 		getButtons({ category, user, search, page, sort }),

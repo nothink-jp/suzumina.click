@@ -14,12 +14,12 @@ import { getFirestore } from "@/lib/firestore";
 import { ContactList } from "./components/ContactList";
 
 type ContactsPageProps = {
-	searchParams: {
+	searchParams: Promise<{
 		status?: string;
 		category?: string;
 		search?: string;
 		page?: string;
-	};
+	}>;
 };
 
 async function getContacts({
@@ -127,7 +127,7 @@ async function getContactStats() {
 }
 
 export default async function ContactsAdminPage({ searchParams }: ContactsPageProps) {
-	const { status, category, search, page } = searchParams;
+	const { status, category, search, page } = await searchParams;
 
 	const [{ contacts, total, hasMore }, stats] = await Promise.all([
 		getContacts({ status, category, search, page }),
