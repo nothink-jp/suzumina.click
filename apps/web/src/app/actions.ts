@@ -6,34 +6,28 @@ import { getVideoTitles } from "./videos/actions";
 import { getWorks } from "./works/actions";
 
 /**
- * 汎用的な新着アイテム取得関数
+ * トップページ用の新着作品を取得するServer Action
  */
-async function getLatestItems<T>(
-	fetcher: (params: { page: number; limit: number }) => Promise<{ [key: string]: T[] }>,
-	actionName: string,
-	itemsKey: string,
-	limit = 10,
-): Promise<T[]> {
-	logger.info(`${actionName}を開始`, { action: actionName, limit });
+export async function getLatestWorks(limit = 10) {
+	logger.info("新着作品取得を開始", { action: "getLatestWorks", limit });
 
 	try {
-		const result = await fetcher({ page: 1, limit });
-		const items = result[itemsKey] || [];
+		const result = await getWorks({ page: 1, limit });
 
-		if (items.length === 0) {
-			logger.warn(`${actionName}で0件返却`, { action: actionName, limit });
+		if (result.works.length === 0) {
+			logger.warn("新着作品取得で0件返却", { action: "getLatestWorks", limit });
 		} else {
-			logger.info(`${actionName}成功`, {
-				action: actionName,
-				count: items.length,
-				firstItem: items[0],
+			logger.info("新着作品取得成功", {
+				action: "getLatestWorks",
+				count: result.works.length,
+				firstItem: result.works[0],
 			});
 		}
 
-		return items;
+		return result.works;
 	} catch (error) {
-		logger.error(`${actionName}でエラーが発生`, {
-			action: actionName,
+		logger.error("新着作品取得でエラーが発生", {
+			action: "getLatestWorks",
 			limit,
 			error: error instanceof Error ? error.message : String(error),
 			stack: error instanceof Error ? error.stack : undefined,
@@ -43,17 +37,34 @@ async function getLatestItems<T>(
 }
 
 /**
- * トップページ用の新着作品を取得するServer Action
- */
-export async function getLatestWorks(limit = 10) {
-	return getLatestItems(getWorks, "新着作品取得", "works", limit);
-}
-
-/**
  * トップページ用の新着動画を取得するServer Action
  */
 export async function getLatestVideos(limit = 10) {
-	return getLatestItems(getVideoTitles, "新着動画取得", "videos", limit);
+	logger.info("新着動画取得を開始", { action: "getLatestVideos", limit });
+
+	try {
+		const result = await getVideoTitles({ page: 1, limit });
+
+		if (result.videos.length === 0) {
+			logger.warn("新着動画取得で0件返却", { action: "getLatestVideos", limit });
+		} else {
+			logger.info("新着動画取得成功", {
+				action: "getLatestVideos",
+				count: result.videos.length,
+				firstItem: result.videos[0],
+			});
+		}
+
+		return result.videos;
+	} catch (error) {
+		logger.error("新着動画取得でエラーが発生", {
+			action: "getLatestVideos",
+			limit,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
+		return [];
+	}
 }
 
 /**
