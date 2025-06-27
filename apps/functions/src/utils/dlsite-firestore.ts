@@ -4,6 +4,7 @@
  * YouTube実装パターンに従い、DLsite作品データのFirestore保存・取得・更新を行います。
  */
 
+import type { CollectionReference, Query, WriteBatch } from "@google-cloud/firestore";
 import type { DLsiteWorkBase, FirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
 import { filterWorksForUpdate, mapToFirestoreData, validateWorkData } from "./dlsite-mapper";
 import firestore from "./firestore";
@@ -16,8 +17,8 @@ const DLSITE_WORKS_COLLECTION = "dlsiteWorks";
  * 新規作品をバッチに追加
  */
 function addCreateOperationsToBatch(
-	batch: FirebaseFirestore.WriteBatch,
-	collection: FirebaseFirestore.CollectionReference,
+	batch: WriteBatch,
+	collection: CollectionReference,
 	toCreate: DLsiteWorkBase[],
 ): number {
 	let operationCount = 0;
@@ -47,8 +48,8 @@ function addCreateOperationsToBatch(
  * 更新作品をバッチに追加
  */
 function addUpdateOperationsToBatch(
-	batch: FirebaseFirestore.WriteBatch,
-	collection: FirebaseFirestore.CollectionReference,
+	batch: WriteBatch,
+	collection: CollectionReference,
 	toUpdate: Array<{ new: DLsiteWorkBase; existing: FirestoreDLsiteWorkData }>,
 ): number {
 	let operationCount = 0;
@@ -80,11 +81,11 @@ function addUpdateOperationsToBatch(
  * バッチ操作を実行
  */
 async function executeBatchOperations(
-	batch: FirebaseFirestore.WriteBatch,
+	batch: WriteBatch,
 	operationCount: number,
 	toCreate: DLsiteWorkBase[],
 	toUpdate: Array<{ new: DLsiteWorkBase; existing: FirestoreDLsiteWorkData }>,
-	collection: FirebaseFirestore.CollectionReference,
+	collection: CollectionReference,
 	unchanged: DLsiteWorkBase[],
 ): Promise<void> {
 	if (operationCount === 0) {
@@ -194,7 +195,7 @@ async function getExistingWorksMap(
 async function executeBatchInChunks(
 	toCreate: DLsiteWorkBase[],
 	toUpdate: Array<{ new: DLsiteWorkBase; existing: FirestoreDLsiteWorkData }>,
-	collection: FirebaseFirestore.CollectionReference,
+	collection: CollectionReference,
 ): Promise<void> {
 	const BATCH_SIZE = 500;
 
@@ -271,7 +272,7 @@ export async function searchWorksFromFirestore(options: {
 	orderDirection?: "asc" | "desc";
 }): Promise<FirestoreDLsiteWorkData[]> {
 	try {
-		let query: FirebaseFirestore.Query = firestore.collection(DLSITE_WORKS_COLLECTION);
+		let query: Query = firestore.collection(DLSITE_WORKS_COLLECTION);
 
 		// フィルター条件
 		if (options.circle) {

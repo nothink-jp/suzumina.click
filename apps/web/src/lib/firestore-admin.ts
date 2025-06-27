@@ -2,7 +2,7 @@
  * Cloud Firestore Admin SDK access for Server Actions
  */
 
-import { FieldValue, type Firestore } from "@google-cloud/firestore";
+import { FieldValue, type Firestore, type Transaction } from "@google-cloud/firestore";
 import { getFirestore } from "./firestore";
 
 /**
@@ -65,7 +65,7 @@ export class FirestoreAdmin {
 	 * トランザクション実行
 	 */
 	public async runTransaction<T>(
-		updateFunction: (transaction: FirebaseFirestore.Transaction) => Promise<T>,
+		updateFunction: (transaction: Transaction) => Promise<T>,
 	): Promise<T> {
 		return await this.firestore.runTransaction(updateFunction);
 	}

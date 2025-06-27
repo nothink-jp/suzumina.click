@@ -4,7 +4,11 @@
  * Server Actions for fetching video data from Firestore
  */
 
-import { Timestamp } from "@google-cloud/firestore";
+import {
+	type CollectionReference,
+	type DocumentSnapshot,
+	Timestamp,
+} from "@google-cloud/firestore";
 import {
 	convertToFrontendVideo,
 	type FirestoreServerVideoData,
@@ -17,7 +21,7 @@ import { getFirestore } from "@/lib/firestore";
  * ページネーション用のクエリを構築する関数
  */
 function buildPaginationQuery(
-	videosRef: FirebaseFirestore.CollectionReference,
+	videosRef: CollectionReference,
 	params?: {
 		page?: number;
 		limit?: number;
@@ -52,10 +56,7 @@ function convertTimestamp(timestamp: unknown): string {
 /**
  * FirestoreサーバーデータをFirestoreデータ形式に変換する関数
  */
-function convertServerDataToFirestoreData(
-	doc: FirebaseFirestore.DocumentSnapshot,
-	data: FirestoreServerVideoData,
-) {
+function convertServerDataToFirestoreData(doc: DocumentSnapshot, data: FirestoreServerVideoData) {
 	return {
 		id: doc.id,
 		videoId: data.videoId || doc.id,
@@ -76,10 +77,7 @@ function convertServerDataToFirestoreData(
 /**
  * ドキュメントリストを処理してフロントエンド用動画データに変換する関数
  */
-function processVideoDocuments(
-	docs: FirebaseFirestore.DocumentSnapshot[],
-	limit: number,
-): FrontendVideoData[] {
+function processVideoDocuments(docs: DocumentSnapshot[], limit: number): FrontendVideoData[] {
 	const videos: FrontendVideoData[] = [];
 	const videosToProcess = docs.slice(0, limit);
 

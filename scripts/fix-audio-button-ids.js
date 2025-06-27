@@ -7,20 +7,17 @@
  * 3. Node.js で実行: node fix-audio-button-ids.js
  */
 
-const { initializeApp, cert } = require("firebase-admin/app");
-const { getFirestore } = require("firebase-admin/firestore");
+const { Firestore } = require("@google-cloud/firestore");
 
 // プロジェクト設定
 const PROJECT_ID = "suzumina-click"; // プロジェクトIDを確認してください
 
-// Firebase Admin SDK を初期化
+// Firestore クライアントを初期化
 // 本番環境では Google Cloud Shell や Functions 環境で実行するため、
 // デフォルト認証情報を使用
-initializeApp({
+const db = new Firestore({
 	projectId: PROJECT_ID,
 });
-
-const db = getFirestore();
 
 async function fixAudioButtonIds() {
 	console.log("🔍 audioButtonsコレクションの空IDフィールドを修正開始...");
