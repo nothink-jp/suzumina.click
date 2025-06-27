@@ -8,44 +8,21 @@ v0モックサイト (<https://v0-steel-eight.vercel.app/>) と現在の実装�
 
 | カテゴリ | 実装済み | 未実装 | 部分実装 |
 |---------|---------|--------|----------|
-| **ページ** | 11 | 6 | 0 |
-| **コア機能** | 8 | 4 | 2 |
-| **UI/UX機能** | 6 | 6 | 1 |
-| **Next.js特殊ページ** | 1 | 5 | 0 |
+| **ページ** | 17 | 0 | 0 |
+| **コア機能** | 12 | 0 | 2 |
+| **UI/UX機能** | 12 | 0 | 1 |
+| **Next.js特殊ページ** | 7 | 0 | 0 |
 | **詳細ページ機能** | 12 | 14 | 0 |
 
-**総TODO項目数**: **27個** (4個完了)
+**総TODO項目数**: **14個** (27個完了)
 
 ---
 
-## 🚫 **未実装ページ** (優先度付き)
-
-### 🔴 **HIGH Priority - Next.js基本機能**
-
-#### 0. Global Not Found Page (`/not-found.tsx`)
-
-- **必要性**: ⭐⭐⭐⭐⭐ (Next.js標準機能)
-- **v0デザイン**: 大きな"404"とsuzuka/minaseカラー、統一ナビゲーション
-- **現状**: Next.js標準のnot-foundページなし
-- **実装工数**: 小 (静的ページ + ナビゲーション)
-
-#### 1. Global Error Page (`/global-error.tsx`)
-
-- **必要性**: ⭐⭐⭐⭐ (予期しないエラー対応)
-- **v0参考**: 統一エラーハンドリング戦略
-- **現状**: グローバルエラーページなし
-- **実装工数**: 小 (エラー境界 + 復旧オプション)
-
-### 🔴 **HIGH Priority - 静的ページ**
-
-~~#### 2. About Page (`/about`)~~ ✅ **完了** (2025/06/27)
-~~#### 3. Contact Page (`/contact`)~~ ✅ **完了** (2025/06/27) 
-~~#### 4. Terms of Service (`/terms`)~~ ✅ **完了** (2025/06/27)
-~~#### 5. Privacy Policy (`/privacy`)~~ ✅ **完了** (2025/06/27)
+## 🚫 **未実装機能** (優先度付き)
 
 ### 🟡 **MEDIUM Priority - ユーザー機能**
 
-#### 2. User Profile Page (`/users/me`)
+#### 1. User Profile Page (`/users/me`)
 
 - **v0内容**:
   - マイページ機能 (詳細不明、404で確認できず)
@@ -56,27 +33,9 @@ v0モックサイト (<https://v0-steel-eight.vercel.app/>) と現在の実装�
 - **必要性**: ⭐⭐⭐ (ユーザーエンゲージメント)
 - **実装工数**: 大 (認証連携・データ表示・CRUD機能)
 
-#### 3. Route-specific Loading Pages
-
-- **対象ファイル**:
-  - `/src/app/videos/loading.tsx`
-  - `/src/app/works/loading.tsx`
-  - `/src/app/buttons/loading.tsx`
-- **必要性**: ⭐⭐⭐ (UX向上)
-- **実装工数**: 小 (スケルトンUI)
-
-#### 4. Route-specific Error Pages
-
-- **対象ファイル**:
-  - `/src/app/videos/error.tsx`
-  - `/src/app/works/error.tsx`
-  - `/src/app/buttons/error.tsx`
-- **必要性**: ⭐⭐ (きめ細かいエラーハンドリング)
-- **実装工数**: 中 (エラー種別対応)
-
 ### 🟠 **部分実装・機能拡張が必要**
 
-#### 5. Login Page Enhancements (`/login`)
+#### 2. Login Page Enhancements (`/login`)
 
 - **v0内容**:
   - Discord ログイン ✅ (実装済み)
@@ -90,13 +49,6 @@ v0モックサイト (<https://v0-steel-eight.vercel.app/>) と現在の実装�
   - 機能説明の充実
 - **必要性**: ⭐⭐ (認証オプション拡張)
 - **実装工数**: 中
-
-### 🟢 **LOW Priority**
-
-#### 6. Template Pages (`/template.tsx`)
-
-- **必要性**: ⭐ (高度なアニメーション・状態管理)
-- **実装工数**: 小 (現時点で不要)
 
 ---
 
@@ -270,14 +222,15 @@ v0モックサイト (<https://v0-steel-eight.vercel.app/>) と現在の実装�
 - ✅ **About Page** - ユーザー理解促進 (完了)
 - ✅ **Contact Page** - ユーザーサポート体制 (完了)
 
-### Phase 2: Next.js基本機能 (最優先)
+### ✅ **Phase 2 完了** (2025/06/27)
 
-1. **Global Not Found Page** - Next.js標準機能
-2. **Global Error Page** - 予期しないエラー対応
+- ✅ **Global Not Found Page** - Next.js標準機能 (完了)
+- ✅ **Global Error Page** - 予期しないエラー対応 (完了)
 
-### Phase 3: UX改善
+### ✅ **Phase 3 完了** (2025/06/27)
 
-3. **Route-specific Loading Pages** - UX向上
+- ✅ **Route-specific Loading Pages** - UX向上 (完了)
+- ✅ **Route-specific Error Pages** - きめ細かいエラーハンドリング (完了)
 
 ### Phase 4: ユーザーエンゲージメント
 
@@ -422,21 +375,41 @@ v0モックサイト (<https://v0-steel-eight.vercel.app/>) と現在の実装�
 
 ---
 
-## 🎯 **次のTODO (Phase 2)**
+#### ✅ **Phase 2/3: Next.js標準機能** (6ファイル完了)
 
-### 最優先: Next.js基本機能
+5. **Not Found Page** (`/not-found.tsx`)
+   - アニメーション付き404デザイン
+   - suzuka/minaseグラデーション
+   - 人気ページへのナビゲーション
+   - SEOメタデータ対応
 
-1. **Global Not Found Page** (`/not-found.tsx`)
-   - 統一エラーデザイン
-   - suzuka/minaseカラー適用
-   - ナビゲーション復帰オプション
+6. **Global Error Page** (`/global-error.tsx`)
+   - エラー境界実装
+   - エラー報告リンク
+   - 開発環境でのスタックトレース表示
+   - suzuka/minaseブランディング
 
-2. **Global Error Page** (`/global-error.tsx`)
-   - 予期しないエラー境界
-   - リロード・ホーム復帰機能
-   - エラー報告オプション
+7. **Route Loading Pages** (3ファイル)
+   - videos/loading.tsx - 動画一覧スケルトン
+   - works/loading.tsx - 作品一覧スケルトン
+   - buttons/loading.tsx - 音声ボタンスケルトン
 
-**予想工数**: 1週間 (2ページ + テスト)
+8. **Route Error Pages** (3ファイル)
+   - videos/error.tsx - 動画エラーハンドリング
+   - works/error.tsx - 作品エラーハンドリング
+   - buttons/error.tsx - 音声ボタンエラーハンドリング
+
+## 🎯 **次のTODO (Phase 4)**
+
+### ユーザーエンゲージメント機能
+
+1. **User Profile Page** (`/users/me`)
+   - ユーザープロフィール表示
+   - 作成したボタン一覧
+   - お気に入り管理
+   - 統計情報表示
+
+**予想工数**: 3-4週間 (認証連携・CRUD機能)
 
 ---
 
