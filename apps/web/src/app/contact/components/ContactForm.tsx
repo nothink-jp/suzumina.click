@@ -14,7 +14,7 @@ import {
 } from "@suzumina.click/ui/components/ui/select";
 import { Textarea } from "@suzumina.click/ui/components/ui/textarea";
 import { CheckCircle, Send } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -41,9 +41,51 @@ const categoryOptions = [
 	{ value: "other", label: "📢 その他", description: "上記以外" },
 ];
 
+// 成功メッセージコンポーネント
+function SuccessMessage({ onReset }: { onReset: () => void }) {
+	return (
+		<div className="text-center py-8 space-y-4">
+			<div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+				<CheckCircle className="w-8 h-8 text-green-600" />
+			</div>
+			<div className="space-y-2">
+				<h3 className="text-xl font-semibold text-foreground">送信完了</h3>
+				<p className="text-muted-foreground">
+					お問い合わせありがとうございます。
+					<br />
+					内容を確認させていただきます。
+				</p>
+				<p className="text-sm text-muted-foreground">（返信をお約束するものではありません）</p>
+			</div>
+			<Button variant="outline" onClick={onReset} className="mt-4">
+				新しいお問い合わせを送信
+			</Button>
+		</div>
+	);
+}
+
+// プレースホルダー生成関数
+function getPlaceholder(category: string): string {
+	switch (category) {
+		case "bug":
+			return "例: どのページで、どのような操作をした時に、どんな問題が発生しましたか？\n\n• 発生したページ: \n• 操作内容: \n• エラーメッセージ: \n• 使用ブラウザ: ";
+		case "feature":
+			return "例: どのような機能があると便利か、具体的にご説明ください。";
+		case "usage":
+			return "例: どの機能の使い方がわからないか、具体的にご説明ください。";
+		default:
+			return "詳細をお聞かせください";
+	}
+}
+
 export function ContactForm() {
 	const [isSubmitted, setIsSubmitted] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// 一意なIDを生成
+	const subjectId = useId();
+	const contentId = useId();
+	const emailId = useId();
 
 	const {
 		register,
@@ -87,25 +129,7 @@ export function ContactForm() {
 	};
 
 	if (isSubmitted) {
-		return (
-			<div className="text-center py-8 space-y-4">
-				<div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-					<CheckCircle className="w-8 h-8 text-green-600" />
-				</div>
-				<div className="space-y-2">
-					<h3 className="text-xl font-semibold text-foreground">送信完了</h3>
-					<p className="text-muted-foreground">
-						お問い合わせありがとうございます。
-						<br />
-						内容を確認させていただきます。
-					</p>
-					<p className="text-sm text-muted-foreground">（返信をお約束するものではありません）</p>
-				</div>
-				<Button variant="outline" onClick={() => setIsSubmitted(false)} className="mt-4">
-					新しいお問い合わせを送信
-				</Button>
-			</div>
-		);
+		return <SuccessMessage onReset={() => setIsSubmitted(false)} />;
 	}
 
 	return (
@@ -139,11 +163,11 @@ export function ContactForm() {
 
 			{/* 件名 */}
 			<div className="space-y-2">
-				<Label htmlFor="subject">
+				<Label htmlFor={subjectId}>
 					件名 <span className="text-destructive">*</span>
 				</Label>
 				<Input
-					id="subject"
+					id={subjectId}
 					placeholder="例: 音声ボタンが再生されない"
 					{...register("subject")}
 					className={errors.subject ? "border-destructive" : ""}
@@ -153,20 +177,12 @@ export function ContactForm() {
 
 			{/* 内容 */}
 			<div className="space-y-2">
-				<Label htmlFor="content">
+				<Label htmlFor={contentId}>
 					内容 <span className="text-destructive">*</span>
 				</Label>
 				<Textarea
-					id="content"
-					placeholder={
-						selectedCategory === "bug"
-							? "例: どのページで、どのような操作をした時に、どんな問題が発生しましたか？\n\n• 発生したページ: \n• 操作内容: \n• エラーメッセージ: \n• 使用ブラウザ: "
-							: selectedCategory === "feature"
-								? "例: どのような機能があると便利か、具体的にご説明ください。"
-								: selectedCategory === "usage"
-									? "例: どの機能の使い方がわからないか、具体的にご説明ください。"
-									: "詳細をお聞かせください"
-					}
+					id={contentId}
+					placeholder={getPlaceholder(selectedCategory)}
 					rows={8}
 					{...register("content")}
 					className={errors.content ? "border-destructive" : ""}
@@ -179,11 +195,11 @@ export function ContactForm() {
 
 			{/* メールアドレス */}
 			<div className="space-y-2">
-				<Label htmlFor="email">
+				<Label htmlFor={emailId}>
 					メールアドレス <span className="text-muted-foreground text-sm">(任意)</span>
 				</Label>
 				<Input
-					id="email"
+					id={emailId}
 					type="email"
 					placeholder="返信希望の場合のみ入力してください"
 					{...register("email")}

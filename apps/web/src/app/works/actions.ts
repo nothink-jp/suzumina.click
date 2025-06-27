@@ -8,6 +8,46 @@ import type {
 import { convertToFrontendWork } from "@suzumina.click/shared-types/src/work";
 import { getFirestore } from "@/lib/firestore";
 
+type SortOption = "newest" | "oldest" | "price_low" | "price_high" | "rating" | "popular";
+
+/**
+ * ID順ソート処理
+ */
+function sortById(
+	a: FirestoreDLsiteWorkData,
+	b: FirestoreDLsiteWorkData,
+	isOldest: boolean,
+): number {
+	if (a.productId.length !== b.productId.length) {
+		return isOldest
+			? a.productId.length - b.productId.length
+			: b.productId.length - a.productId.length;
+	}
+	return isOldest ? a.productId.localeCompare(b.productId) : b.productId.localeCompare(a.productId);
+}
+
+/**
+ * 作品ソート処理
+ */
+function sortWorks(works: FirestoreDLsiteWorkData[], sort: SortOption): FirestoreDLsiteWorkData[] {
+	return works.sort((a, b) => {
+		switch (sort) {
+			case "oldest":
+				return sortById(a, b, true);
+			case "price_low":
+				return (a.price?.current || 0) - (b.price?.current || 0);
+			case "price_high":
+				return (b.price?.current || 0) - (a.price?.current || 0);
+			case "rating":
+				return (b.rating?.stars || 0) - (a.rating?.stars || 0);
+			case "popular":
+				return (b.rating?.count || 0) - (a.rating?.count || 0);
+			default:
+				return sortById(a, b, false);
+		}
+	});
+}
+
 /**
  * DLsite作品データをページネーション付きで取得するServer Action（ユーザー向け）
  * @param params - ページネーション用パラメータ
@@ -36,35 +76,12 @@ export async function getWorks({
 		})) as FirestoreDLsiteWorkData[];
 
 		// ソート処理
-		allWorks.sort((a, b) => {
-			switch (sort) {
-				case "oldest":
-					// 古い順：正逆のソート
-					if (a.productId.length !== b.productId.length) {
-						return a.productId.length - b.productId.length;
-					}
-					return a.productId.localeCompare(b.productId);
-				case "price_low":
-					return (a.price?.current || 0) - (b.price?.current || 0);
-				case "price_high":
-					return (b.price?.current || 0) - (a.price?.current || 0);
-				case "rating":
-					return (b.rating?.stars || 0) - (a.rating?.stars || 0);
-				case "popular":
-					return (b.rating?.count || 0) - (a.rating?.count || 0);
-				default:
-					// 新しい順：DLsite ID順 (文字列長が長い方が新しいフォーマット)
-					if (a.productId.length !== b.productId.length) {
-						return b.productId.length - a.productId.length;
-					}
-					return b.productId.localeCompare(a.productId);
-			}
-		});
+		const sortedWorks = sortWorks(allWorks, sort as SortOption);
 
 		// ページネーション適用
 		const startIndex = (page - 1) * limit;
 		const endIndex = startIndex + limit;
-		const paginatedWorks = allWorks.slice(startIndex, endIndex);
+		const paginatedWorks = sortedWorks.slice(startIndex, endIndex);
 
 		// 総数は全取得データから算出
 		const totalCount = allWorks.length;
