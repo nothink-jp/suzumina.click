@@ -378,3 +378,6 @@ resource "google_firestore_index" "audiobuttons_uploadedby_ispublic_playcount_de
     order      = "DESCENDING"
   }
 }
+
+# Note: Single-field indexes for favorites collection are created automatically by Firestore
+# Complex queries requiring composite indexes would be added here if needed
