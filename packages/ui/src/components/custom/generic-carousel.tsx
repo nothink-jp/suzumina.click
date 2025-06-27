@@ -1,11 +1,11 @@
+import type { ReactNode } from "react";
 import {
 	Carousel,
 	CarouselContent,
 	CarouselItem,
 	CarouselNext,
 	CarouselPrevious,
-} from "@suzumina.click/ui/components/ui/carousel";
-import type { ReactNode } from "react";
+} from "../ui/carousel";
 
 interface GenericCarouselProps<T> {
 	items: T[];

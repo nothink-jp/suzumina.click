@@ -37,16 +37,22 @@ const createMockWorkData = (productId: string, title: string): FirestoreDLsiteWo
 	title,
 	circle: "テストサークル",
 	author: ["テスト作者"],
-	category: "音声作品",
+	category: "SOU",
 	workUrl: `https://www.dlsite.com/maniax/work/=/product_id/${productId}.html`,
-	price: 1000,
-	rating: 4.5,
+	price: {
+		current: 1000,
+		currency: "JPY",
+	},
+	rating: {
+		stars: 4.5,
+		count: 100,
+	},
 	salesCount: 100,
 	tags: ["テストタグ"],
 	thumbnailUrl: `https://img.dlsite.jp/modpub/images2/work/doujin/${productId}/${productId}_img_main.jpg`,
-	createdAt: new Date("2023-01-01"),
-	updatedAt: new Date("2023-01-01"),
-	lastFetchedAt: new Date("2023-01-01"),
+	createdAt: "2023-01-01T00:00:00.000Z",
+	updatedAt: "2023-01-01T00:00:00.000Z",
+	lastFetchedAt: "2023-01-01T00:00:00.000Z",
 });
 
 describe("works actions", () => {
@@ -195,6 +201,64 @@ describe("works actions", () => {
 			expect(result.works).toHaveLength(12);
 			expect(result.hasMore).toBe(true);
 			expect(result.totalCount).toBe(20);
+		});
+
+		it("should sort works by oldest when sort=oldest", async () => {
+			const mockWorks = [
+				createMockWorkData("RJ123456", "古い形式6桁"),
+				createMockWorkData("RJ01234567", "新しい形式8桁"),
+				createMockWorkData("RJ234567", "古い形式6桁・大"),
+			];
+
+			const mockSnapshot = {
+				size: mockWorks.length,
+				docs: mockWorks.map((work) => ({
+					data: () => work,
+					id: work.productId,
+				})),
+			};
+
+			mockCollection.mockReturnValue({ get: mockGet });
+			mockGet.mockResolvedValue(mockSnapshot);
+
+			const result = await getWorks({ page: 1, limit: 10, sort: "oldest" });
+
+			// 古い順：6桁が先、同じ長さ内では辞書順昇順
+			expect(result.works[0].productId).toBe("RJ123456");
+			expect(result.works[1].productId).toBe("RJ234567");
+			expect(result.works[2].productId).toBe("RJ01234567");
+		});
+
+		it("should sort works by price when sort=price_low", async () => {
+			const mockWorks = [
+				{
+					...createMockWorkData("RJ123456", "高い作品"),
+					price: { current: 1500, currency: "JPY" },
+				},
+				{ ...createMockWorkData("RJ234567", "安い作品"), price: { current: 500, currency: "JPY" } },
+				{
+					...createMockWorkData("RJ345678", "中程度作品"),
+					price: { current: 1000, currency: "JPY" },
+				},
+			];
+
+			const mockSnapshot = {
+				size: mockWorks.length,
+				docs: mockWorks.map((work) => ({
+					data: () => work,
+					id: work.productId,
+				})),
+			};
+
+			mockCollection.mockReturnValue({ get: mockGet });
+			mockGet.mockResolvedValue(mockSnapshot);
+
+			const result = await getWorks({ page: 1, limit: 10, sort: "price_low" });
+
+			// 価格安い順
+			expect(result.works[0].price?.current).toBe(500);
+			expect(result.works[1].price?.current).toBe(1000);
+			expect(result.works[2].price?.current).toBe(1500);
 		});
 	});
 

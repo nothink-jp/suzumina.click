@@ -12,14 +12,15 @@ interface WorksPageProps {
 }
 
 export default async function WorksPage({ searchParams }: WorksPageProps) {
-	const resolvedSearchParams = await searchParams;
-	const pageParam = resolvedSearchParams.page;
-	const currentPage =
-		pageParam && typeof pageParam === "string" ? Number.parseInt(pageParam, 10) : 1;
-	const validPage = Math.max(1, Number.isNaN(currentPage) ? 1 : currentPage);
+	const params = await searchParams;
+	const pageNumber = Number.parseInt(params.page as string, 10) || 1;
+	const validPage = Math.max(1, pageNumber);
+	const sort = typeof params.sort === "string" ? params.sort : "newest";
+	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
+	const validLimit = [12, 24, 48, 96].includes(limitValue) ? limitValue : 12;
 
-	// 並行してデータを取得（ユーザー向けなので12件表示）
-	const result = await getWorks({ page: validPage, limit: 12 });
+	// 並行してデータを取得
+	const result = await getWorks({ page: validPage, limit: validLimit, sort });
 	const { works: initialData, totalCount } = result;
 
 	return (

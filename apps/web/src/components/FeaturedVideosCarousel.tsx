@@ -1,6 +1,6 @@
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
+import { GenericCarousel } from "@suzumina.click/ui/components/custom/generic-carousel";
 import VideoCard from "@/app/videos/components/VideoCard";
-import { GenericCarousel } from "./GenericCarousel";
 
 interface FeaturedVideosCarouselProps {
 	videos: FrontendVideoData[];

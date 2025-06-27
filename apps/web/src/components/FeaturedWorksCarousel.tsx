@@ -1,6 +1,6 @@
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
+import { GenericCarousel } from "@suzumina.click/ui/components/custom/generic-carousel";
 import WorkCard from "@/app/works/components/WorkCard";
-import { GenericCarousel } from "./GenericCarousel";
 
 interface FeaturedWorksCarouselProps {
 	works: FrontendDLsiteWorkData[];

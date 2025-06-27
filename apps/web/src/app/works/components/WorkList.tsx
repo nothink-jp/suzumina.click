@@ -11,7 +11,7 @@ import { SearchAndFilterPanel } from "@suzumina.click/ui/components/custom/searc
 import { FilterSelect } from "@suzumina.click/ui/components/custom/search-filter-panel";
 import { FileText } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useState } from "react";
+import { startTransition, useMemo, useState } from "react";
 import Pagination from "@/components/Pagination";
 import WorkCard from "./WorkCard";
 
@@ -25,68 +25,62 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState("");
-	const [sortBy, setSortBy] = useState("default");
+	const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 	const [categoryFilter, setCategoryFilter] = useState("all");
-	const [itemsPerPageValue, setItemsPerPageValue] = useState("12");
+	const [itemsPerPageValue, setItemsPerPageValue] = useState(searchParams.get("limit") || "12");
+
+	// URLパラメータ更新用ユーティリティ
+	const updateUrlParam = useMemo(
+		() => (key: string, value: string, defaultValue: string) => {
+			const params = new URLSearchParams(searchParams.toString());
+
+			if (value && value !== defaultValue) {
+				params.set(key, value);
+			} else {
+				params.delete(key);
+			}
+
+			params.delete("page"); // ページ番号をリセット
+			router.push(`/works?${params.toString()}`);
+		},
+		[searchParams, router],
+	);
 
 	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
 	const totalPages = Math.ceil(totalCount / itemsPerPageNum);
 
-	// URLパラメータを更新
-	const updateSearchParams = (params: Record<string, string | undefined>) => {
-		const newParams = new URLSearchParams(searchParams.toString());
-
-		Object.entries(params).forEach(([key, value]) => {
-			if (value) {
-				newParams.set(key, value);
-			} else {
-				newParams.delete(key);
-			}
-		});
-
-		// ページ番号をリセット
-		if (!params.page) {
-			newParams.delete("page");
-		}
-
-		router.push(`/works?${newParams.toString()}`);
-	};
-
 	const handleSearch = () => {
 		if (searchQuery.trim()) {
 			startTransition(() => {
-				updateSearchParams({ q: searchQuery });
+				// 将来的に検索機能を実装予定
 			});
 		}
 	};
 
 	const handleSortChange = (value: string) => {
 		setSortBy(value);
-		startTransition(() => {
-			updateSearchParams({ sort: value === "default" ? undefined : value });
-		});
+		updateUrlParam("sort", value, "newest");
 	};
 
 	const handleCategoryChange = (value: string) => {
 		setCategoryFilter(value);
-		startTransition(() => {
-			updateSearchParams({ category: value === "all" ? undefined : value });
-		});
+		updateUrlParam("category", value, "all");
 	};
 
 	// 検索・フィルターリセット
 	const handleReset = () => {
 		setSearchQuery("");
 		setCategoryFilter("all");
+		setSortBy("newest");
+		setItemsPerPageValue("12");
 		const params = new URLSearchParams();
 		router.push(`/works?${params.toString()}`);
 	};
 
 	// 件数/ページ変更
 	const handleItemsPerPageChange = (value: string) => {
-		startTransition(() => {
-			setItemsPerPageValue(value);
-		});
+		setItemsPerPageValue(value);
+		updateUrlParam("limit", value, "12");
 	};
 
 	return (
@@ -124,7 +118,6 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 				sortValue={sortBy}
 				onSortChange={handleSortChange}
 				sortOptions={[
-					{ value: "default", label: "並び順" },
 					{ value: "newest", label: "新しい順" },
 					{ value: "oldest", label: "古い順" },
 					{ value: "popular", label: "人気順" },

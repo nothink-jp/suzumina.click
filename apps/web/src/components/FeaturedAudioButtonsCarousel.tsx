@@ -1,6 +1,6 @@
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import { GenericCarousel } from "@suzumina.click/ui/components/custom/generic-carousel";
 import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
-import { GenericCarousel } from "./GenericCarousel";
 
 interface FeaturedAudioButtonsCarouselProps {
 	audioButtons: FrontendAudioButtonData[];
