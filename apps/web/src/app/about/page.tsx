@@ -1,7 +1,7 @@
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { ExternalLink, Github, Heart, Music, Play, Shield } from "lucide-react";
+import { Heart, Music, Play, Shield } from "lucide-react";
 import Link from "next/link";
 
 export default function AboutPage() {
@@ -42,7 +42,7 @@ export default function AboutPage() {
 								<span className="text-sm">YouTube動画の整理・検索</span>
 							</div>
 							<div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-								<ExternalLink className="h-5 w-5 text-suzuka-500" />
+								<Play className="h-5 w-5 text-suzuka-500" />
 								<span className="text-sm">DLsite作品情報の閲覧</span>
 							</div>
 						</div>
@@ -112,34 +112,7 @@ export default function AboutPage() {
 					</CardContent>
 				</Card>
 
-				{/* 技術仕様 */}
-				<Card>
-					<CardHeader>
-						<CardTitle>技術仕様</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-							<div>
-								<h4 className="font-semibold mb-2">フロントエンド</h4>
-								<ul className="space-y-1 text-muted-foreground">
-									<li>• Next.js 15</li>
-									<li>• TypeScript</li>
-									<li>• Tailwind CSS</li>
-								</ul>
-							</div>
-							<div>
-								<h4 className="font-semibold mb-2">バックエンド</h4>
-								<ul className="space-y-1 text-muted-foreground">
-									<li>• Google Cloud Platform</li>
-									<li>• Cloud Firestore</li>
-									<li>• NextAuth.js (Discord)</li>
-								</ul>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-
-				{/* お問い合わせ・更新履歴 */}
+				{/* お問い合わせ・運営について */}
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<Card>
 						<CardHeader>
@@ -160,26 +133,15 @@ export default function AboutPage() {
 
 					<Card>
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Github className="h-5 w-5" />
-								更新履歴
-							</CardTitle>
+							<CardTitle>サイト運営について</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<p className="text-sm text-muted-foreground mb-4">
-								最新の変更はGitHubで確認できます。
+								このサイトは個人が趣味で運営しており、継続的な更新や新機能の追加をお約束するものではありません。
 							</p>
-							<Button variant="outline" size="sm" asChild>
-								<a
-									href="https://github.com/your-repo"
-									target="_blank"
-									rel="noopener noreferrer"
-									className="flex items-center gap-2"
-								>
-									<ExternalLink className="h-4 w-4" />
-									GitHub
-								</a>
-							</Button>
+							<p className="text-xs text-muted-foreground">
+								サイトの状況は予告なく変更される場合があります。
+							</p>
 						</CardContent>
 					</Card>
 				</div>
