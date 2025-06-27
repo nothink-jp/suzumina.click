@@ -100,7 +100,12 @@ export async function getAudioButtonsByUser(
 		});
 
 		return audioButtons;
-	} catch (_error) {
+	} catch (error) {
+		// デバッグ情報（一時的）
+		if (process.env.NODE_ENV === "development") {
+			// biome-ignore lint/suspicious/noConsole: Development debugging only
+			console.error("getAudioButtonsByUser error:", { discordId, error });
+		}
 		throw new Error("音声ボタン一覧の取得に失敗しました");
 	}
 }
