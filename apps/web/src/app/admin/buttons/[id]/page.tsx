@@ -14,9 +14,9 @@ import { ButtonDetailHeader } from "./components/ButtonDetailHeader";
 import { ButtonSidebar } from "./components/ButtonSidebar";
 
 type ButtonDetailPageProps = {
-	params: {
+	params: Promise<{
 		id: string;
-	};
+	}>;
 };
 
 async function getButton(id: string): Promise<FrontendAudioButtonData | null> {
@@ -43,7 +43,8 @@ async function getButton(id: string): Promise<FrontendAudioButtonData | null> {
 }
 
 export default async function ButtonDetailPage({ params }: ButtonDetailPageProps) {
-	const button = await getButton(params.id);
+	const { id } = await params;
+	const button = await getButton(id);
 
 	if (!button) {
 		notFound();

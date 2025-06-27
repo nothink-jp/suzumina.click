@@ -23,9 +23,9 @@ import { getFirestore } from "@/lib/firestore";
 import { ContactStatusButtons } from "../components/ContactStatusButtons";
 
 type ContactDetailPageProps = {
-	params: {
+	params: Promise<{
 		id: string;
-	};
+	}>;
 };
 
 async function getContact(id: string): Promise<FrontendContactData | null> {
@@ -51,7 +51,8 @@ async function getContact(id: string): Promise<FrontendContactData | null> {
 }
 
 export default async function ContactDetailPage({ params }: ContactDetailPageProps) {
-	const contact = await getContact(params.id);
+	const { id } = await params;
+	const contact = await getContact(id);
 
 	if (!contact) {
 		notFound();
