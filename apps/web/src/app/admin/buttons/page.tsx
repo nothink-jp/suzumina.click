@@ -215,7 +215,6 @@ export default async function ButtonsAdminPage({ searchParams }: ButtonsPageProp
 								カテゴリ
 							</label>
 							<Select defaultValue={category || "all"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="category-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -234,7 +233,6 @@ export default async function ButtonsAdminPage({ searchParams }: ButtonsPageProp
 								並び順
 							</label>
 							<Select defaultValue={sort || "newest"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="sort-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -252,7 +250,6 @@ export default async function ButtonsAdminPage({ searchParams }: ButtonsPageProp
 								作成者
 							</label>
 							<Select defaultValue={user || "all"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="user-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -270,7 +267,6 @@ export default async function ButtonsAdminPage({ searchParams }: ButtonsPageProp
 							</label>
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<Input
 									id="search-input"
 									placeholder="タイトル、説明、作成者で検索..."

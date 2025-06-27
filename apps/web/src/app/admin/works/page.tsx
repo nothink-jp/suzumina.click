@@ -109,7 +109,6 @@ export default async function AdminWorks({ searchParams }: AdminWorksProps) {
 								並び順
 							</label>
 							<Select defaultValue={sort || "newest"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="sort-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -128,7 +127,6 @@ export default async function AdminWorks({ searchParams }: AdminWorksProps) {
 								カテゴリ
 							</label>
 							<Select defaultValue={category || "all"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="category-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -148,7 +146,6 @@ export default async function AdminWorks({ searchParams }: AdminWorksProps) {
 							</label>
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<Input
 									id="search-input"
 									placeholder="作品タイトル、作者、RJ番号で検索..."

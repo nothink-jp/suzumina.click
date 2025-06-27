@@ -115,7 +115,6 @@ export default async function AdminVideos({ searchParams }: AdminVideosProps) {
 								並び順
 							</label>
 							<Select defaultValue={sort || "newest"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="sort-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -134,7 +133,6 @@ export default async function AdminVideos({ searchParams }: AdminVideosProps) {
 								カテゴリ
 							</label>
 							<Select defaultValue={category || "all"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="category-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -154,7 +152,6 @@ export default async function AdminVideos({ searchParams }: AdminVideosProps) {
 							</label>
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<Input
 									id="search-input"
 									placeholder="動画タイトル、説明、動画IDで検索..."

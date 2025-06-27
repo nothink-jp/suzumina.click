@@ -9,6 +9,7 @@ import type { Request, Response } from "@google-cloud/functions-framework";
 import firestore from "./utils/firestore";
 import * as logger from "./utils/logger";
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: One-time data migration script with necessary complexity
 export async function fixAudioButtonIds(request: Request, response: Response) {
 	// セキュリティ: 管理者のみ実行可能
 	const authHeader = request.headers.authorization;

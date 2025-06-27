@@ -234,17 +234,30 @@ export function convertToFrontendAudioButton(
 		const diffMs = now.getTime() - date.getTime();
 		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
+		// 今日
 		if (diffDays === 0) {
-			const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-			if (diffHours === 0) {
-				const diffMinutes = Math.floor(diffMs / (1000 * 60));
-				return diffMinutes <= 1 ? "たった今" : `${diffMinutes}分前`;
-			}
-			return `${diffHours}時間前`;
+			return formatSameDayTime(diffMs);
 		}
+
+		// 昨日
 		if (diffDays === 1) {
 			return "昨日";
 		}
+
+		// それ以前
+		return formatPastTime(diffDays);
+	};
+
+	const formatSameDayTime = (diffMs: number): string => {
+		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+		if (diffHours === 0) {
+			const diffMinutes = Math.floor(diffMs / (1000 * 60));
+			return diffMinutes <= 1 ? "たった今" : `${diffMinutes}分前`;
+		}
+		return `${diffHours}時間前`;
+	};
+
+	const formatPastTime = (diffDays: number): string => {
 		if (diffDays < 7) {
 			return `${diffDays}日前`;
 		}
@@ -416,34 +429,44 @@ export function filterAudioButtons(
 	filters: { category?: AudioButtonCategory; tags?: string[]; searchText?: string },
 ): FrontendAudioButtonData[] {
 	return buttons.filter((button) => {
-		if (filters.category && button.category !== filters.category) {
-			return false;
-		}
-
-		if (filters.tags && filters.tags.length > 0) {
-			const buttonTags = button.tags || [];
-			const hasMatchingTag = filters.tags.some((tag) =>
-				buttonTags.some((buttonTag) => buttonTag.toLowerCase().includes(tag.toLowerCase())),
-			);
-			if (!hasMatchingTag) {
-				return false;
-			}
-		}
-
-		if (filters.searchText) {
-			const searchLower = filters.searchText.toLowerCase();
-			const searchableText = [button.title, button.description || "", ...(button.tags || [])]
-				.join(" ")
-				.toLowerCase();
-
-			if (!searchableText.includes(searchLower)) {
-				return false;
-			}
-		}
-
-		return true;
+		return (
+			matchesCategory(button, filters.category) &&
+			matchesTags(button, filters.tags) &&
+			matchesSearchText(button, filters.searchText)
+		);
 	});
 }
+
+const matchesCategory = (
+	button: FrontendAudioButtonData,
+	category?: AudioButtonCategory,
+): boolean => {
+	return !category || button.category === category;
+};
+
+const matchesTags = (button: FrontendAudioButtonData, tags?: string[]): boolean => {
+	if (!tags || tags.length === 0) {
+		return true;
+	}
+
+	const buttonTags = button.tags || [];
+	return tags.some((tag) =>
+		buttonTags.some((buttonTag) => buttonTag.toLowerCase().includes(tag.toLowerCase())),
+	);
+};
+
+const matchesSearchText = (button: FrontendAudioButtonData, searchText?: string): boolean => {
+	if (!searchText) {
+		return true;
+	}
+
+	const searchLower = searchText.toLowerCase();
+	const searchableText = [button.title, button.description || "", ...(button.tags || [])]
+		.join(" ")
+		.toLowerCase();
+
+	return searchableText.includes(searchLower);
+};
 
 /**
  * 音声ボタンのソート

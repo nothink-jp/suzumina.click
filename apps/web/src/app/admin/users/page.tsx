@@ -124,7 +124,6 @@ export default async function AdminUsers({ searchParams }: AdminUsersProps) {
 								ロール
 							</label>
 							<Select defaultValue={role || "all"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="role-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -143,7 +142,6 @@ export default async function AdminUsers({ searchParams }: AdminUsersProps) {
 								並び順
 							</label>
 							<Select defaultValue={sortBy || "newest"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="sort-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -163,7 +161,6 @@ export default async function AdminUsers({ searchParams }: AdminUsersProps) {
 							</label>
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<Input
 									id="search-input"
 									placeholder="ユーザー名、表示名、メールアドレスで検索..."

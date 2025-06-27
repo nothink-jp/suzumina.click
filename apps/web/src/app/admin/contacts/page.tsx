@@ -204,7 +204,6 @@ export default async function ContactsAdminPage({ searchParams }: ContactsPagePr
 								ステータス
 							</label>
 							<Select defaultValue={status || "all"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="status-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -223,7 +222,6 @@ export default async function ContactsAdminPage({ searchParams }: ContactsPagePr
 								カテゴリ
 							</label>
 							<Select defaultValue={category || "all"}>
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="category-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -244,7 +242,6 @@ export default async function ContactsAdminPage({ searchParams }: ContactsPagePr
 							</label>
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<Input
 									id="search-input"
 									placeholder="件名、内容、メールアドレスで検索..."
