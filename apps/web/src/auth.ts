@@ -150,7 +150,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 			return true;
 		},
 
-		jwt({ token, user, account }) {
+		async jwt({ token, user, account }) {
 			// 初回ログイン時にユーザー情報とGuild情報を保存
 			if (user && account?.provider === "discord" && account.providerAccountId) {
 				const discordUser = createDiscordUserObject(account.providerAccountId, user);
@@ -164,6 +164,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 					discordUser.globalName,
 					discordUser.username,
 				);
+
+				// ロール情報をFirestoreから取得してJWTトークンに追加
+				try {
+					const firestore = getFirestore();
+					const userDoc = await firestore.collection("users").doc(discordUser.id).get();
+					if (userDoc.exists) {
+						const userData = userDoc.data() as { role?: string };
+						token.role = userData.role || "member";
+					} else {
+						// 新規ユーザーの場合はデフォルトロールを設定
+						const defaultAdminIds = process.env.DEFAULT_ADMIN_DISCORD_IDS?.split(",") || [];
+						token.role = defaultAdminIds.includes(discordUser.id) ? "admin" : "member";
+					}
+				} catch (error) {
+					// 本番環境ではエラーログを抑制
+					if (process.env.NODE_ENV === "development") {
+						// biome-ignore lint/suspicious/noConsole: Development debugging only
+						console.error("Failed to fetch user role:", error);
+					}
+					token.role = "member";
+				}
 			}
 
 			return token;

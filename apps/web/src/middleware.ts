@@ -20,8 +20,11 @@ async function handleAdminAccess(request: NextRequest): Promise<NextResponse | n
 			secret: process.env.NEXTAUTH_SECRET,
 		});
 
+		// 管理者チェック
+		const isAdmin = token && token.role === "admin";
+
 		// 未認証または管理者以外はホームページにリダイレクト
-		if (!token || token.role !== "admin") {
+		if (!token || !isAdmin) {
 			const { ip, userAgent } = getClientInfo(request);
 			logAdminAccessAttempt(ip, userAgent, request.nextUrl.pathname, token?.sub);
 			return NextResponse.redirect(new URL("/", request.url));
