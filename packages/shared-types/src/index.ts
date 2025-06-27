@@ -7,6 +7,8 @@
 export * from "./audio-button";
 // 共通ユーティリティと型のエクスポート
 export * from "./common";
+// お問い合わせ関連の型とスキーマのエクスポート
+export * from "./contact";
 // Firestore関連のユーティリティ
 export * from "./firestore-utils";
 // ユーザー認証関連の型とスキーマのエクスポート

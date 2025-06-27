@@ -72,6 +72,9 @@ importers:
       '@google-cloud/firestore':
         specifier: ^7.11.1
         version: 7.11.2
+      '@hookform/resolvers':
+        specifier: ^5.1.1
+        version: 5.1.1(react-hook-form@7.58.1(react@19.1.0))
       '@suzumina.click/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -99,6 +102,9 @@ importers:
       react-dom:
         specifier: ^19.1.0
         version: 19.1.0(react@19.1.0)
+      react-hook-form:
+        specifier: ^7.58.1
+        version: 7.58.1(react@19.1.0)
       zod:
         specifier: ^3.25.67
         version: 3.25.67
