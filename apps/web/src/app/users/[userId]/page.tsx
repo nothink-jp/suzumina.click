@@ -6,14 +6,15 @@ import { getUserByDiscordId } from "@/lib/user-firestore";
 import { UserProfileContent } from "./components/UserProfileContent";
 
 interface UserProfilePageProps {
-	params: {
+	params: Promise<{
 		userId: string;
-	};
+	}>;
 }
 
 export async function generateMetadata({ params }: UserProfilePageProps): Promise<Metadata> {
 	try {
-		const user = await getUserByDiscordId(params.userId);
+		const resolvedParams = await params;
+		const user = await getUserByDiscordId(resolvedParams.userId);
 		if (!user) {
 			return {
 				title: "ユーザーが見つかりません | suzumina.click",
@@ -40,21 +41,22 @@ export async function generateMetadata({ params }: UserProfilePageProps): Promis
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {
 	const session = await auth();
+	const resolvedParams = await params;
 
 	// ユーザー情報を取得
-	const user = await getUserByDiscordId(params.userId);
+	const user = await getUserByDiscordId(resolvedParams.userId);
 	if (!user) {
 		notFound();
 	}
 
 	// プライベートプロフィールのチェック
-	const isOwnProfile = session?.user?.discordId === params.userId;
+	const isOwnProfile = session?.user?.discordId === resolvedParams.userId;
 	if (!user.isPublicProfile && !isOwnProfile) {
 		notFound();
 	}
 
 	// ユーザーが作成した音声ボタンを取得
-	const audioButtons = await getAudioButtonsByUser(params.userId);
+	const audioButtons = await getAudioButtonsByUser(resolvedParams.userId);
 
 	return <UserProfileContent user={user} audioButtons={audioButtons} isOwnProfile={isOwnProfile} />;
 }
