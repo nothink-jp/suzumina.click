@@ -29,10 +29,14 @@ async function getButton(id: string): Promise<FrontendAudioButtonData | null> {
 		}
 
 		const data = doc.data();
+		if (!data) {
+			return null;
+		}
 		return convertToFrontendAudioButton({
 			...data,
 			id: doc.id,
-		});
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore document data needs type assertion for convertToFrontendAudioButton
+		} as any);
 	} catch {
 		return null;
 	}

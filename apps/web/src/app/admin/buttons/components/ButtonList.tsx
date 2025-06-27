@@ -1,10 +1,13 @@
 "use client";
 
-import { type FrontendAudioButtonData, getCategoryDisplayName } from "@suzumina.click/shared-types";
+import {
+	type FrontendAudioButtonData,
+	getAudioButtonCategoryLabel,
+} from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
-import { Clock, Edit, Eye, FileAudio, Music, Play, Trash2, User, Youtube } from "lucide-react";
+import { Clock, Edit, Eye, Music, Play, Trash2, User, Youtube } from "lucide-react";
 import Link from "next/link";
 
 type ButtonListProps = {
@@ -31,29 +34,12 @@ export function ButtonList({ buttons }: ButtonListProps) {
 							<div className="flex-1 min-w-0">
 								{/* ヘッダー */}
 								<div className="flex items-center gap-2 mb-2">
-									<Badge
-										variant={
-											button.category === "special"
-												? "default"
-												: button.category === "normal"
-													? "secondary"
-													: "outline"
-										}
-									>
-										{getCategoryDisplayName(button.category)}
+									<Badge variant={button.category === "voice" ? "default" : "outline"}>
+										{getAudioButtonCategoryLabel(button.category)}
 									</Badge>
 									<Badge variant="outline" className="flex items-center gap-1">
-										{button.audioFileUrl ? (
-											<>
-												<FileAudio className="h-3 w-3" />
-												音声ファイル
-											</>
-										) : (
-											<>
-												<Youtube className="h-3 w-3" />
-												YouTube
-											</>
-										)}
+										<Youtube className="h-3 w-3" />
+										YouTube
 									</Badge>
 									<div className="flex items-center gap-1 text-xs text-muted-foreground">
 										<Clock className="h-3 w-3" />
@@ -73,24 +59,22 @@ export function ButtonList({ buttons }: ButtonListProps) {
 
 								{/* メタ情報 */}
 								<div className="flex items-center gap-4 text-xs text-muted-foreground">
-									{button.userName && (
+									{button.uploadedByName && (
 										<div className="flex items-center gap-1">
 											<User className="h-3 w-3" />
-											<span className="truncate max-w-[200px]">{button.userName}</span>
+											<span className="truncate max-w-[200px]">{button.uploadedByName}</span>
 										</div>
 									)}
-									{button.videoTitle && (
+									{button.sourceVideoTitle && (
 										<div className="flex items-center gap-1">
 											<Youtube className="h-3 w-3" />
-											<span className="truncate max-w-[300px]">{button.videoTitle}</span>
+											<span className="truncate max-w-[300px]">{button.sourceVideoTitle}</span>
 										</div>
 									)}
-									{button.duration && (
-										<div className="flex items-center gap-1">
-											<Clock className="h-3 w-3" />
-											<span>{button.duration}秒</span>
-										</div>
-									)}
+									<div className="flex items-center gap-1">
+										<Clock className="h-3 w-3" />
+										<span>{button.durationText}</span>
+									</div>
 								</div>
 							</div>
 
@@ -121,24 +105,15 @@ export function ButtonList({ buttons }: ButtonListProps) {
 						</div>
 
 						{/* 音声情報の詳細表示 */}
-						{button.audioFileUrl ? (
-							<div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md">
-								<div className="flex items-center gap-2 text-xs text-green-700">
-									<FileAudio className="h-3 w-3" />
-									<span className="font-medium">音声ファイル: 直接再生可能</span>
+						{button.sourceVideoId && (
+							<div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
+								<div className="flex items-center gap-2 text-xs text-blue-700">
+									<Youtube className="h-3 w-3" />
+									<span className="font-medium">
+										YouTube: {button.startTime}秒〜{button.endTime}秒
+									</span>
 								</div>
 							</div>
-						) : (
-							button.youtubeVideoId && (
-								<div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
-									<div className="flex items-center gap-2 text-xs text-blue-700">
-										<Youtube className="h-3 w-3" />
-										<span className="font-medium">
-											YouTube: {button.startTime}秒〜{button.endTime}秒
-										</span>
-									</div>
-								</div>
-							)
 						)}
 					</CardContent>
 				</Card>

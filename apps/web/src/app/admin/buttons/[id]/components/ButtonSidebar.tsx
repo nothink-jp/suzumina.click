@@ -64,12 +64,10 @@ export function ButtonSidebar({ button }: ButtonSidebarProps) {
 						</Link>
 					</Button>
 
-					{button.audioFileUrl && (
-						<Button variant="outline" className="w-full">
-							<Download className="h-4 w-4 mr-2" />
-							音声ファイルをダウンロード
-						</Button>
-					)}
+					<Button variant="outline" className="w-full">
+						<Download className="h-4 w-4 mr-2" />
+						YouTube動画を開く
+					</Button>
 
 					<Button variant="outline" className="w-full">
 						<Edit className="h-4 w-4 mr-2" />
@@ -109,25 +107,14 @@ export function ButtonSidebar({ button }: ButtonSidebarProps) {
 								</ul>
 							</div>
 						)}
-						{button.audioFileUrl ? (
-							<div className="space-y-1">
-								<div className="font-medium text-green-600">音声ファイル</div>
-								<ul className="text-muted-foreground space-y-1">
-									<li>• 高品質な音声</li>
-									<li>• ストレージ使用量に注意</li>
-									<li>• バックアップ推奨</li>
-								</ul>
-							</div>
-						) : (
-							<div className="space-y-1">
-								<div className="font-medium text-blue-600">YouTube参照</div>
-								<ul className="text-muted-foreground space-y-1">
-									<li>• 元動画の可用性に依存</li>
-									<li>• 定期的な動作確認</li>
-									<li>• 時間指定の精度確認</li>
-								</ul>
-							</div>
-						)}
+						<div className="space-y-1">
+							<div className="font-medium text-blue-600">YouTube参照</div>
+							<ul className="text-muted-foreground space-y-1">
+								<li>• 元動画の可用性に依存</li>
+								<li>• 定期的な動作確認</li>
+								<li>• 時間指定の精度確認</li>
+							</ul>
+						</div>
 					</div>
 				</CardContent>
 			</Card>

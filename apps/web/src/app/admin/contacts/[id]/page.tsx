@@ -38,10 +38,13 @@ async function getContact(id: string): Promise<FrontendContactData | null> {
 		}
 
 		const data = doc.data();
-		return convertToFrontendContact({
+		if (!data) {
+			return null;
+		}
+		return {
 			...data,
 			id: doc.id,
-		});
+		} as FrontendContactData;
 	} catch (_error) {
 		return null;
 	}

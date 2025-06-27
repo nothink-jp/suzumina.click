@@ -1,7 +1,10 @@
-import { type FrontendAudioButtonData, getCategoryDisplayName } from "@suzumina.click/shared-types";
+import {
+	type FrontendAudioButtonData,
+	getAudioButtonCategoryLabel,
+} from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Edit, FileAudio, Play, Trash2, Youtube } from "lucide-react";
+import { Edit, Play, Trash2, Youtube } from "lucide-react";
 
 interface ButtonDetailHeaderProps {
 	button: FrontendAudioButtonData;
@@ -14,19 +17,10 @@ export function ButtonDetailHeader({ button }: ButtonDetailHeaderProps) {
 				<div>
 					<h1 className="text-3xl font-bold text-foreground mb-2">音声ボタン詳細</h1>
 					<div className="flex items-center gap-2">
-						<Badge variant="outline">{getCategoryDisplayName(button.category)}</Badge>
+						<Badge variant="outline">{getAudioButtonCategoryLabel(button.category)}</Badge>
 						<Badge variant="outline" className="flex items-center gap-1">
-							{button.audioFileUrl ? (
-								<>
-									<FileAudio className="h-3 w-3" />
-									音声ファイル
-								</>
-							) : (
-								<>
-									<Youtube className="h-3 w-3" />
-									YouTube
-								</>
-							)}
+							<Youtube className="h-3 w-3" />
+							YouTube動画
 						</Badge>
 					</div>
 				</div>
