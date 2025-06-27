@@ -9,7 +9,7 @@ import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface VideoCardProps {
 	video: FrontendVideoData;
-	buttonCount?: number;
+	buttonCount?: number; // 従来の互換性のため残すが、video.audioButtonCountを優先
 	variant?: "grid" | "sidebar";
 	priority?: boolean; // LCP画像最適化用
 }
@@ -17,11 +17,14 @@ interface VideoCardProps {
 // パフォーマンス向上: VideoCardをメモ化して不要な再レンダリングを防ぐ
 const VideoCard = memo(function VideoCard({
 	video,
-	buttonCount = 0,
+	buttonCount,
 	variant = "grid",
 	priority = false,
 }: VideoCardProps) {
 	const isGrid = variant === "grid";
+
+	// 音声ボタン数: video.audioButtonCountを優先し、なければbuttonCountを使用
+	const actualButtonCount = video.audioButtonCount ?? buttonCount ?? 0;
 
 	// メモ化: 日付フォーマットを最適化
 	const formattedDate = useMemo(() => {
@@ -127,15 +130,17 @@ const VideoCard = memo(function VideoCard({
 								{videoBadgeInfo.text}
 							</Badge>
 						</div>
-						<div className="absolute top-2 left-2">
-							<Badge
-								variant="secondary"
-								className="bg-white/90 text-foreground"
-								aria-label={`${buttonCount}個の音声ボタンが作成されています`}
-							>
-								{buttonCount} ボタン
-							</Badge>
-						</div>
+						{actualButtonCount > 0 && (
+							<div className="absolute top-2 left-2">
+								<Badge
+									variant="secondary"
+									className="bg-white/90 text-foreground"
+									aria-label={`${actualButtonCount}個の音声ボタンが作成されています`}
+								>
+									{actualButtonCount} ボタン
+								</Badge>
+							</div>
+						)}
 					</Link>
 				</div>
 				<div className="p-4">

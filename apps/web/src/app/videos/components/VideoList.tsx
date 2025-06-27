@@ -166,7 +166,6 @@ export default function VideoList({
 						<div key={video.id} className="min-h-video-card">
 							<VideoCard
 								video={video}
-								buttonCount={0} // 将来的にaudioClipsコレクションから取得
 								variant="grid"
 								priority={index < 6} // 最初の6枚をLCP最適化
 							/>

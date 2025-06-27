@@ -133,15 +133,27 @@ describe("VideoCard", () => {
 			audioButtonCount: 5,
 		};
 
-		render(<VideoCard video={videoWithButtons} buttonCount={5} />);
+		render(<VideoCard video={videoWithButtons} />);
 
 		expect(screen.getByLabelText("5個の音声ボタンが作成されています")).toBeInTheDocument();
 	});
 
-	it("音声ボタンが0個の場合も数字が表示される", () => {
-		render(<VideoCard video={baseVideoData} buttonCount={0} />);
+	it("音声ボタンが0個の場合はバッジが表示されない", () => {
+		render(<VideoCard video={baseVideoData} />);
 
-		expect(screen.getByLabelText("0個の音声ボタンが作成されています")).toBeInTheDocument();
+		expect(screen.queryByLabelText("0個の音声ボタンが作成されています")).not.toBeInTheDocument();
+	});
+
+	it("video.audioButtonCountがbuttonCount propより優先される", () => {
+		const videoWithButtons: FrontendVideoData = {
+			...baseVideoData,
+			audioButtonCount: 3,
+		};
+
+		render(<VideoCard video={videoWithButtons} buttonCount={5} />);
+
+		expect(screen.getByLabelText("3個の音声ボタンが作成されています")).toBeInTheDocument();
+		expect(screen.queryByLabelText("5個の音声ボタンが作成されています")).not.toBeInTheDocument();
 	});
 
 	it("サイドバーバリアントで適切なレイアウトが表示される", () => {
