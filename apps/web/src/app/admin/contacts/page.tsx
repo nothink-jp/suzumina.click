@@ -1,5 +1,4 @@
 import type { FrontendContactData } from "@suzumina.click/shared-types";
-import { convertToFrontendContact } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { Input } from "@suzumina.click/ui/components/ui/input";
@@ -40,26 +39,29 @@ async function getContacts({
 
 		// ステータスフィルター
 		if (status && status !== "all") {
-			query = query.where("status", "==", status);
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore query typing issue
+			query = query.where("status", "==", status) as any;
 		}
 
 		// カテゴリフィルター
 		if (category && category !== "all") {
-			query = query.where("category", "==", category);
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore query typing issue
+			query = query.where("category", "==", category) as any;
 		}
 
 		// 作成日順でソート（新しい順）
-		query = query.orderBy("createdAt", "desc");
+		// biome-ignore lint/suspicious/noExplicitAny: Firestore query typing issue
+		query = query.orderBy("createdAt", "desc") as any;
 
 		const snapshot = await query.get();
 
 		let contacts = snapshot.docs.map((doc) => {
 			const data = doc.data();
-			return convertToFrontendContact({
+			return {
 				...data,
 				id: doc.id,
-			});
-		}) as FrontendContactData[];
+			} as FrontendContactData;
+		});
 
 		// 検索フィルター（クライアントサイド）
 		if (search) {
@@ -198,9 +200,12 @@ export default async function ContactsAdminPage({ searchParams }: ContactsPagePr
 					<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 						{/* ステータスフィルター */}
 						<div>
-							<label className="text-sm font-medium">ステータス</label>
+							<label htmlFor="status-select" className="text-sm font-medium">
+								ステータス
+							</label>
 							<Select defaultValue={status || "all"}>
-								<SelectTrigger>
+								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
+								<SelectTrigger id="status-select">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
@@ -214,8 +219,11 @@ export default async function ContactsAdminPage({ searchParams }: ContactsPagePr
 
 						{/* カテゴリフィルター */}
 						<div>
-							<label htmlFor="category-select" className="text-sm font-medium">カテゴリ</label>
+							<label htmlFor="category-select" className="text-sm font-medium">
+								カテゴリ
+							</label>
 							<Select defaultValue={category || "all"}>
+								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="category-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -231,9 +239,12 @@ export default async function ContactsAdminPage({ searchParams }: ContactsPagePr
 
 						{/* 検索 */}
 						<div className="md:col-span-2">
-							<label htmlFor="search-input" className="text-sm font-medium">検索</label>
+							<label htmlFor="search-input" className="text-sm font-medium">
+								検索
+							</label>
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<Input
 									id="search-input"
 									placeholder="件名、内容、メールアドレスで検索..."

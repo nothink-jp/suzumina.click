@@ -43,26 +43,27 @@ async function getButtons({
 
 		// カテゴリフィルター
 		if (category && category !== "all") {
-			query = query.where("category", "==", category);
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore query typing issue
+			query = query.where("category", "==", category) as any;
 		}
 
 		// ユーザーフィルター
 		if (user && user !== "all") {
-			query = query.where("userId", "==", user);
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore query typing issue
+			query = query.where("userId", "==", user) as any;
 		}
 
 		// ソート順
 		const orderDirection = sort === "oldest" ? "asc" : "desc";
-		query = query.orderBy("createdAt", orderDirection);
+		// biome-ignore lint/suspicious/noExplicitAny: Firestore query typing issue
+		query = query.orderBy("createdAt", orderDirection) as any;
 
 		const snapshot = await query.get();
 
 		let buttons = snapshot.docs.map((doc) => {
 			const data = doc.data();
-			return convertToFrontendAudioButton({
-				...data,
-				id: doc.id,
-			});
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore data typing issue
+			return convertToFrontendAudioButton(data as any);
 		}) as FrontendAudioButtonData[];
 
 		// 検索フィルター（クライアントサイド）
@@ -72,7 +73,7 @@ async function getButtons({
 				(button) =>
 					button.title.toLowerCase().includes(searchLower) ||
 					button.description?.toLowerCase().includes(searchLower) ||
-					button.userName?.toLowerCase().includes(searchLower),
+					button.uploadedByName?.toLowerCase().includes(searchLower),
 			);
 		}
 
@@ -210,8 +211,11 @@ export default async function ButtonsAdminPage({ searchParams }: ButtonsPageProp
 					<div className="grid grid-cols-1 md:grid-cols-5 gap-4">
 						{/* カテゴリフィルター */}
 						<div>
-							<label htmlFor="category-select" className="text-sm font-medium">カテゴリ</label>
+							<label htmlFor="category-select" className="text-sm font-medium">
+								カテゴリ
+							</label>
 							<Select defaultValue={category || "all"}>
+								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="category-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -226,8 +230,11 @@ export default async function ButtonsAdminPage({ searchParams }: ButtonsPageProp
 
 						{/* ソート */}
 						<div>
-							<label htmlFor="sort-select" className="text-sm font-medium">並び順</label>
+							<label htmlFor="sort-select" className="text-sm font-medium">
+								並び順
+							</label>
 							<Select defaultValue={sort || "newest"}>
+								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="sort-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -241,8 +248,11 @@ export default async function ButtonsAdminPage({ searchParams }: ButtonsPageProp
 
 						{/* ユーザーフィルター */}
 						<div>
-							<label htmlFor="user-select" className="text-sm font-medium">作成者</label>
+							<label htmlFor="user-select" className="text-sm font-medium">
+								作成者
+							</label>
 							<Select defaultValue={user || "all"}>
+								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="user-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -255,9 +265,12 @@ export default async function ButtonsAdminPage({ searchParams }: ButtonsPageProp
 
 						{/* 検索 */}
 						<div className="md:col-span-2">
-							<label htmlFor="search-input" className="text-sm font-medium">検索</label>
+							<label htmlFor="search-input" className="text-sm font-medium">
+								検索
+							</label>
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<Input
 									id="search-input"
 									placeholder="タイトル、説明、作成者で検索..."

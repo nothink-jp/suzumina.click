@@ -14,7 +14,7 @@ import { Label } from "@suzumina.click/ui/components/ui/label";
 import { Textarea } from "@suzumina.click/ui/components/ui/textarea";
 import { AlertCircle, CheckCircle, Edit, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition, useId } from "react";
+import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { deleteContact, updateContactStatus } from "../actions";
 

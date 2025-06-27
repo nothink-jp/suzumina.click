@@ -22,6 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 	if (!session?.user || session.user.role !== "admin") {
 		// 未認証・非管理者問わず、存在しないページのように見せる
 		redirect("/");
+		return null; // このコードは実行されないが、TypeScript/テスト環境での安全性のため
 	}
 
 	return (

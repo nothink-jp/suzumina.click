@@ -1,5 +1,4 @@
 import {
-	convertToFrontendContact,
 	type FrontendContactData,
 	getCategoryDisplayName,
 	getStatusDisplayName,

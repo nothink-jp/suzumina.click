@@ -19,59 +19,62 @@ describe("AdminLayout", () => {
 		vi.clearAllMocks();
 	});
 
-	it("認証されていないユーザーはサインインページにリダイレクトされる", async () => {
+	it("認証されていないユーザーはホームページにリダイレクトされる", async () => {
 		(auth as Mock).mockResolvedValue(null);
 
 		await AdminLayout({ children: <div>Test Content</div> });
 
-		expect(redirect).toHaveBeenCalledWith("/auth/signin");
+		expect(redirect).toHaveBeenCalledWith("/");
 		expect(notFound).not.toHaveBeenCalled();
 	});
 
-	it("セッションはあるがユーザーが存在しない場合はサインインページにリダイレクトされる", async () => {
+	it("セッションはあるがユーザーが存在しない場合はホームページにリダイレクトされる", async () => {
 		(auth as Mock).mockResolvedValue({ user: null });
 
 		await AdminLayout({ children: <div>Test Content</div> });
 
-		expect(redirect).toHaveBeenCalledWith("/auth/signin");
+		expect(redirect).toHaveBeenCalledWith("/");
 		expect(notFound).not.toHaveBeenCalled();
 	});
 
-	it("管理者以外のユーザーは404エラーが返される", async () => {
+	it("管理者以外のユーザーはホームページにリダイレクトされる", async () => {
 		(auth as Mock).mockResolvedValue({
 			user: {
 				id: "user-1",
-				name: "Test User",
+				username: "Test User",
+				discordId: "123456789",
 				role: "member",
 			},
 		});
 
 		await AdminLayout({ children: <div>Test Content</div> });
 
-		expect(notFound).toHaveBeenCalled();
-		expect(redirect).not.toHaveBeenCalled();
+		expect(redirect).toHaveBeenCalledWith("/");
+		expect(notFound).not.toHaveBeenCalled();
 	});
 
-	it("モデレーターユーザーも404エラーが返される", async () => {
+	it("モデレーターユーザーもホームページにリダイレクトされる", async () => {
 		(auth as Mock).mockResolvedValue({
 			user: {
 				id: "user-2",
-				name: "Moderator User",
+				username: "Moderator User",
+				discordId: "987654321",
 				role: "moderator",
 			},
 		});
 
 		await AdminLayout({ children: <div>Test Content</div> });
 
-		expect(notFound).toHaveBeenCalled();
-		expect(redirect).not.toHaveBeenCalled();
+		expect(redirect).toHaveBeenCalledWith("/");
+		expect(notFound).not.toHaveBeenCalled();
 	});
 
 	it("管理者ユーザーはアクセスが許可される", async () => {
 		(auth as Mock).mockResolvedValue({
 			user: {
 				id: "admin-1",
-				name: "Admin User",
+				username: "Admin User",
+				discordId: "111222333",
 				role: "admin",
 			},
 		});
@@ -89,7 +92,8 @@ describe("AdminLayout", () => {
 		(auth as Mock).mockResolvedValue({
 			user: {
 				id: "admin-1",
-				name: "Admin User",
+				username: "Admin User",
+				discordId: "111222333",
 				role: "admin",
 			},
 		});

@@ -21,10 +21,8 @@ interface AdminUsersProps {
 	}>;
 }
 
-export default async function AdminUsers({ searchParams }: AdminUsersProps) {
-	// URLパラメータの解析
-	const resolvedSearchParams = await searchParams;
-	const { role: roleParam, search: searchParam, sort: sortParam } = resolvedSearchParams;
+function parseAdminUsersParams(searchParams: { role?: string; search?: string; sort?: string }) {
+	const { role: roleParam, search: searchParam, sort: sortParam } = searchParams;
 
 	const role =
 		roleParam && typeof roleParam === "string"
@@ -37,6 +35,14 @@ export default async function AdminUsers({ searchParams }: AdminUsersProps) {
 		sortParam && typeof sortParam === "string"
 			? (sortParam as "newest" | "oldest" | "mostActive" | "alphabetical")
 			: "newest";
+
+	return { role, searchText, sortBy };
+}
+
+export default async function AdminUsers({ searchParams }: AdminUsersProps) {
+	// URLパラメータの解析
+	const resolvedSearchParams = await searchParams;
+	const { role, searchText, sortBy } = parseAdminUsersParams(resolvedSearchParams);
 
 	// 並行してデータを取得
 	const [initialData, stats] = await Promise.all([
@@ -93,7 +99,9 @@ export default async function AdminUsers({ searchParams }: AdminUsersProps) {
 				<Card>
 					<CardContent className="p-4">
 						<div className="text-center">
-							<div className="text-2xl font-bold text-green-600">{stats?.memberUsers || 0}</div>
+							<div className="text-2xl font-bold text-green-600">
+								{(stats?.totalUsers || 0) - (stats?.adminUsers || 0) - (stats?.moderatorUsers || 0)}
+							</div>
 							<div className="text-sm text-muted-foreground">メンバー</div>
 						</div>
 					</CardContent>
@@ -112,8 +120,11 @@ export default async function AdminUsers({ searchParams }: AdminUsersProps) {
 					<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 						{/* ロールフィルター */}
 						<div>
-							<label htmlFor="role-select" className="text-sm font-medium">ロール</label>
+							<label htmlFor="role-select" className="text-sm font-medium">
+								ロール
+							</label>
 							<Select defaultValue={role || "all"}>
+								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="role-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -128,8 +139,11 @@ export default async function AdminUsers({ searchParams }: AdminUsersProps) {
 
 						{/* ソート */}
 						<div>
-							<label htmlFor="sort-select" className="text-sm font-medium">並び順</label>
+							<label htmlFor="sort-select" className="text-sm font-medium">
+								並び順
+							</label>
 							<Select defaultValue={sortBy || "newest"}>
+								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<SelectTrigger id="sort-select">
 									<SelectValue />
 								</SelectTrigger>
@@ -144,9 +158,12 @@ export default async function AdminUsers({ searchParams }: AdminUsersProps) {
 
 						{/* 検索 */}
 						<div className="md:col-span-2">
-							<label htmlFor="search-input" className="text-sm font-medium">検索</label>
+							<label htmlFor="search-input" className="text-sm font-medium">
+								検索
+							</label>
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+								{/* biome-ignore lint/nursery/useUniqueElementIds: Server component with unique page context */}
 								<Input
 									id="search-input"
 									placeholder="ユーザー名、表示名、メールアドレスで検索..."
