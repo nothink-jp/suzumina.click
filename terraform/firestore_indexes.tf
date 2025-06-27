@@ -312,3 +312,69 @@ resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" 
     order      = "DESCENDING"
   }
 }
+
+# audioButtons コレクションのインデックス - uploadedBy（昇順）、isPublic（昇順）、createdAt（降順）
+# ユーザープロフィールページでの音声ボタン取得用（最新順）
+resource "google_firestore_index" "audiobuttons_uploadedby_ispublic_createdat_desc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+  
+  fields {
+    field_path = "uploadedBy"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "createdAt"
+    order      = "DESCENDING"
+  }
+}
+
+# audioButtons コレクションのインデックス - uploadedBy（昇順）、isPublic（昇順）、createdAt（昇順）
+# ユーザープロフィールページでの音声ボタン取得用（古い順）
+resource "google_firestore_index" "audiobuttons_uploadedby_ispublic_createdat_asc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+  
+  fields {
+    field_path = "uploadedBy"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "createdAt"
+    order      = "ASCENDING"
+  }
+}
+
+# audioButtons コレクションのインデックス - uploadedBy（昇順）、isPublic（昇順）、playCount（降順）
+# ユーザープロフィールページでの音声ボタン取得用（再生回数順）
+resource "google_firestore_index" "audiobuttons_uploadedby_ispublic_playcount_desc" {
+  project    = var.gcp_project_id
+  collection = "audioButtons"
+  
+  fields {
+    field_path = "uploadedBy"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "isPublic"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "playCount"
+    order      = "DESCENDING"
+  }
+}
