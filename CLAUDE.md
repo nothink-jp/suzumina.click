@@ -50,7 +50,8 @@ DLsite      (本番環境)       (自動化)       ストレージ    (認証・
 - **pnpm Workspace** - Monorepo管理
 - **Vitest** - テストフレームワーク
 - **Storybook** - UIコンポーネント開発 (UI Package一本化)
-- **Biome** - リンター・フォーマッター
+- **Biome 2.0.6** - リンター・フォーマッター (統一・最適化済み)
+- **Lefthook** - Git フック管理（pre-commit/pre-push品質チェック）
 
 ## 📁 プロジェクト構造
 
@@ -178,10 +179,12 @@ Cloud Functions (fetchYouTubeVideos/fetchDLsiteWorks)
 Firestore Database (型安全データ保存)
 ```
 
-### ユーザー認証
+### ユーザー認証・管理者機能
 
 ```text
-Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → セッション確立
+Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → ロール判定 → セッション確立
+                                                      ↓
+                                      環境変数DEFAULT_ADMIN_DISCORD_IDS → 管理者権限付与
 ```
 
 ### 音声コンテンツ作成
@@ -195,9 +198,12 @@ Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → セ�
 ### セキュリティ
 
 - Discord ギルド認証による限定アクセス
-- NextAuth.js JWT セッション管理
+- NextAuth.js JWT セッション管理  
+- ロールベースアクセス制御 (member/moderator/admin)
+- 環境変数による管理者権限設定
 - Google Secret Manager による認証情報管理
 - 最小権限の原則 (IAM・Firestore Rules)
+- 完全な@google-cloud パッケージ統一（Firebase依存関係削除完了）
 
 ### 設計原則
 
@@ -346,11 +352,38 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 
 ## 🚨 重要コマンド
 
-コミット前の必須チェック:
+### 品質管理
 
 ```bash
-pnpm check  # Lint + フォーマット + 型チェック + テスト
+# 包括的品質チェック（コミット前推奨）
+pnpm check        # 全パッケージ: Lint + フォーマット + 型チェック
+
+# 個別品質チェック
+pnpm lint         # 全パッケージ: Biome lint (0エラー・0警告達成済み)
+pnpm typecheck    # 全パッケージ: TypeScript型チェック
+pnpm test         # 全パッケージ: 単体テスト実行
+
+# 依存関係管理
+pnpm update && pnpm audit --fix  # 安全な依存関係更新
 ```
+
+### 管理者セットアップ
+
+```bash
+# 管理者権限付与スクリプト
+cd apps/web && node scripts/setup-admin.js <DISCORD_USER_ID>
+
+# 環境変数設定（推奨）
+DEFAULT_ADMIN_DISCORD_IDS="discord_id1,discord_id2,discord_id3"
+```
+
+## 📊 品質メトリクス（2025年6月現在）
+
+- **Lint状態**: 全パッケージ 0エラー・0警告 ✅
+- **依存関係**: 最新バージョン（Biome 2.0.6、React 19等）✅  
+- **テストカバレッジ**: 400+件のテストスイート ✅
+- **型安全性**: TypeScript strict mode ✅
+- **セキュリティ**: Firebase依存関係完全削除 ✅
 
 このプロジェクトは、型安全なフルスタック開発を重視したファンコミュニティプラットフォームです。
 データ収集インフラとユーザー作成コンテンツ機能を組み合わせ、高品質な開発体験を提供します。

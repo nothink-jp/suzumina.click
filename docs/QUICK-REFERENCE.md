@@ -7,12 +7,14 @@ suzumina.click 開発者向け即座参照ドキュメント
 ```bash
 # 📦 セットアップ
 pnpm install && pnpm --filter @suzumina.click/shared-types build
+gcloud auth application-default login
 
 # 🚀 開発開始
 cd apps/web && pnpm dev
 
-# ✅ 品質チェック (コミット前必須)
-pnpm check && pnpm test
+# ✅ 品質チェック (コミット前必須) - Git フック自動実行
+pnpm check         # Lint + フォーマット + 型チェック (0エラー・0警告達成済み)
+pnpm test          # 単体テスト (400+件)
 
 # 🏗️ 本番ビルド
 pnpm build
@@ -20,8 +22,11 @@ pnpm build
 # 🔍 テスト + カバレッジ
 pnpm test:coverage
 
-# 🎨 Storybook (デザイントークン)
+# 🎨 Storybook (UIコンポーネント・デザイントークン)
 cd packages/ui && pnpm storybook
+
+# 🔧 管理者権限設定
+cd apps/web && node scripts/setup-admin.js <DISCORD_USER_ID>
 ```
 
 ## 🔐 認証・環境変数
@@ -39,6 +44,9 @@ NEXTAUTH_URL="https://suzumina.click"
 
 # Google Cloud (開発時)
 GOOGLE_CLOUD_PROJECT="suzumina-click"
+
+# 管理者権限設定 (任意)
+DEFAULT_ADMIN_DISCORD_IDS="discord_id1,discord_id2,discord_id3"
 ```
 
 ### Discord設定
