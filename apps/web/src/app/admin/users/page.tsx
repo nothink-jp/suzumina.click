@@ -1,17 +1,30 @@
+import { Button } from "@suzumina.click/ui/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
+import { Input } from "@suzumina.click/ui/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@suzumina.click/ui/components/ui/select";
+import { Download, Filter, Search, Users as UsersIcon } from "lucide-react";
 import { Suspense } from "react";
 import { getUserStats, getUsers } from "./actions";
 import UserList from "./components/UserList";
-import UserStats from "./components/UserStats";
 
 interface AdminUsersProps {
-	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+	searchParams: Promise<{
+		role?: string;
+		search?: string;
+		sort?: string;
+	}>;
 }
 
 export default async function AdminUsers({ searchParams }: AdminUsersProps) {
+	// URLパラメータの解析
 	const resolvedSearchParams = await searchParams;
-	const roleParam = resolvedSearchParams.role;
-	const searchParam = resolvedSearchParams.search;
-	const sortParam = resolvedSearchParams.sort;
+	const { role: roleParam, search: searchParam, sort: sortParam } = resolvedSearchParams;
 
 	const role =
 		roleParam && typeof roleParam === "string"
@@ -38,87 +51,135 @@ export default async function AdminUsers({ searchParams }: AdminUsersProps) {
 	]);
 
 	return (
-		<div>
-			<header className="bg-white shadow-sm">
-				<div className="max-w-7xl mx-auto px-4 py-6">
-					<h1 className="text-3xl font-bold text-gray-900">ユーザー管理</h1>
-					<p className="text-gray-600 mt-2">ユーザーの管理、ロール変更、アクティブ状態の管理</p>
+		<div className="p-6 space-y-6">
+			{/* ページヘッダー */}
+			<div className="flex items-center justify-between">
+				<div>
+					<h1 className="text-3xl font-bold text-foreground">ユーザー管理</h1>
+					<p className="text-muted-foreground mt-1">全 {stats?.totalUsers || 0} 人のユーザー</p>
 				</div>
-			</header>
+				<Button variant="outline" className="flex items-center gap-2">
+					<Download className="h-4 w-4" />
+					CSVエクスポート
+				</Button>
+			</div>
 
-			<main className="max-w-7xl mx-auto px-4 py-8">
-				{/* 統計情報 */}
-				<UserStats stats={stats} />
+			{/* 統計カード */}
+			<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+				<Card>
+					<CardContent className="p-4">
+						<div className="text-center">
+							<div className="text-2xl font-bold text-suzuka-600">{stats?.totalUsers || 0}</div>
+							<div className="text-sm text-muted-foreground">総ユーザー</div>
+						</div>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardContent className="p-4">
+						<div className="text-center">
+							<div className="text-2xl font-bold text-red-600">{stats?.adminUsers || 0}</div>
+							<div className="text-sm text-muted-foreground">管理者</div>
+						</div>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardContent className="p-4">
+						<div className="text-center">
+							<div className="text-2xl font-bold text-blue-600">{stats?.moderatorUsers || 0}</div>
+							<div className="text-sm text-muted-foreground">モデレーター</div>
+						</div>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardContent className="p-4">
+						<div className="text-center">
+							<div className="text-2xl font-bold text-green-600">{stats?.memberUsers || 0}</div>
+							<div className="text-sm text-muted-foreground">メンバー</div>
+						</div>
+					</CardContent>
+				</Card>
+			</div>
 
-				{/* フィルター・検索 */}
-				<div className="bg-white shadow rounded-lg p-6 mb-8">
-					<form method="GET" className="space-y-4 md:space-y-0 md:flex md:items-end md:space-x-4">
-						<div className="flex-1">
-							<label className="block text-sm font-medium text-gray-700">
-								検索
-								<input
-									type="text"
-									name="search"
-									defaultValue={searchText}
-									placeholder="ユーザー名、表示名で検索..."
-									className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+			{/* フィルター・検索 */}
+			<Card>
+				<CardHeader>
+					<CardTitle className="flex items-center gap-2">
+						<Filter className="h-5 w-5" />
+						フィルター・検索
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+						{/* ロールフィルター */}
+						<div>
+							<label htmlFor="role-select" className="text-sm font-medium">ロール</label>
+							<Select defaultValue={role || "all"}>
+								<SelectTrigger id="role-select">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">すべて</SelectItem>
+									<SelectItem value="admin">🔴 管理者</SelectItem>
+									<SelectItem value="moderator">🔵 モデレーター</SelectItem>
+									<SelectItem value="member">🔘 メンバー</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						{/* ソート */}
+						<div>
+							<label htmlFor="sort-select" className="text-sm font-medium">並び順</label>
+							<Select defaultValue={sortBy || "newest"}>
+								<SelectTrigger id="sort-select">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="newest">新しい順</SelectItem>
+									<SelectItem value="oldest">古い順</SelectItem>
+									<SelectItem value="mostActive">アクティブ順</SelectItem>
+									<SelectItem value="alphabetical">名前順</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						{/* 検索 */}
+						<div className="md:col-span-2">
+							<label htmlFor="search-input" className="text-sm font-medium">検索</label>
+							<div className="relative">
+								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+								<Input
+									id="search-input"
+									placeholder="ユーザー名、表示名、メールアドレスで検索..."
+									defaultValue={searchText || ""}
+									className="pl-10"
 								/>
-							</label>
+							</div>
 						</div>
+					</div>
+				</CardContent>
+			</Card>
 
-						<div>
-							<label className="block text-sm font-medium text-gray-700">
-								ロール
-								<select
-									name="role"
-									defaultValue={role || ""}
-									className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-								>
-									<option value="">すべて</option>
-									<option value="member">メンバー</option>
-									<option value="moderator">モデレーター</option>
-									<option value="admin">管理者</option>
-								</select>
-							</label>
-						</div>
-
-						<div>
-							<label className="block text-sm font-medium text-gray-700">
-								並び順
-								<select
-									name="sort"
-									defaultValue={sortBy}
-									className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-								>
-									<option value="newest">新しい順</option>
-									<option value="oldest">古い順</option>
-									<option value="mostActive">アクティブ順</option>
-									<option value="alphabetical">名前順</option>
-								</select>
-							</label>
-						</div>
-
-						<button
-							type="submit"
-							className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-						>
-							フィルター
-						</button>
-					</form>
-				</div>
-
-				{/* ユーザー一覧 */}
-				<Suspense
-					fallback={
-						<div className="text-center py-12">
-							<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-							<p className="mt-2 text-gray-600">読み込み中...</p>
-						</div>
-					}
-				>
-					<UserList data={initialData} currentPage={1} />
-				</Suspense>
-			</main>
+			{/* ユーザー一覧 */}
+			<Card>
+				<CardHeader>
+					<CardTitle className="flex items-center gap-2">
+						<UsersIcon className="h-5 w-5" />
+						ユーザー一覧
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<Suspense
+						fallback={
+							<div className="text-center py-12">
+								<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-suzuka-500" />
+								<p className="mt-2 text-muted-foreground">ユーザーデータを読み込み中...</p>
+							</div>
+						}
+					>
+						<UserList data={initialData} currentPage={1} />
+					</Suspense>
+				</CardContent>
+			</Card>
 		</div>
 	);
 }

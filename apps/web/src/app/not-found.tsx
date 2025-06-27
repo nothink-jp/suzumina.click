@@ -1,7 +1,7 @@
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
-import { BookOpen, Home, Music, Play, Search, TrendingUp } from "lucide-react";
+import { BookOpen, Home, Music, Play, Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 

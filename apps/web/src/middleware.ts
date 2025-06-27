@@ -1,6 +1,37 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { logAdminAccessAttempt, logAdminLoginSuccess } from "@/lib/security-logger";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+	// /admin パスへのアクセスをミドルウェアレベルでフィルタリング
+	if (request.nextUrl.pathname.startsWith("/admin")) {
+		try {
+			const token = await getToken({
+				req: request,
+				secret: process.env.NEXTAUTH_SECRET,
+			});
+
+			// 未認証または管理者以外はホームページにリダイレクト
+			// ※ この時、404やエラーページではなくホームにリダイレクトすることで
+			//   管理画面の存在を完全に隠蔽
+			if (!token || token.role !== "admin") {
+				// 不正アクセス試行をログ記録
+				const ip = request.ip || request.headers.get("x-forwarded-for") || "unknown";
+				const userAgent = request.headers.get("user-agent") || "unknown";
+				logAdminAccessAttempt(ip, userAgent, request.nextUrl.pathname, token?.sub);
+
+				return NextResponse.redirect(new URL("/", request.url));
+			}
+			// 管理者の正当なアクセスをログ記録
+			const ip = request.ip || request.headers.get("x-forwarded-for") || "unknown";
+			const userAgent = request.headers.get("user-agent") || "unknown";
+			logAdminLoginSuccess(ip, userAgent, token.sub || "unknown");
+		} catch {
+			// トークン取得エラーの場合もホームページにリダイレクト
+			return NextResponse.redirect(new URL("/", request.url));
+		}
+	}
+
 	// 本番環境でのみHost headerチェックを実行
 	if (process.env.NODE_ENV === "production" && process.env.ALLOWED_HOSTS) {
 		const allowedHosts = process.env.ALLOWED_HOSTS.split(",").map((host) => host.trim());

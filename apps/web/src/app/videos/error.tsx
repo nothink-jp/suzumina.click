@@ -13,10 +13,7 @@ export default function VideosError({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
-	useEffect(() => {
-		// エラーログを記録
-		console.error("Videos page error:", error);
-	}, [error]);
+	useEffect(() => {}, []);
 
 	return (
 		<div className="container mx-auto px-4 py-16">

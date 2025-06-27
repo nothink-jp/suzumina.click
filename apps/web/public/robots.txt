@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Allow: /buttons
+Allow: /videos  
+Allow: /works
+Allow: /about
+Allow: /contact
+Allow: /terms
+Allow: /privacy
+
+# 管理画面をクローラーから完全に隠蔽
+Disallow: /admin*
+Disallow: /api/admin*
+
+# 認証関連
+Disallow: /auth*
+
+# その他のプライベートパス
+Disallow: /_next/
+Disallow: /api/
+
+Sitemap: https://suzumina.click/sitemap.xml

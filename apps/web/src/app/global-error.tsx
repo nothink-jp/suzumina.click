@@ -13,10 +13,7 @@ export default function GlobalError({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
-	useEffect(() => {
-		// エラーログを記録（本番環境では外部サービスに送信可能）
-		console.error("Global error occurred:", error);
-	}, [error]);
+	useEffect(() => {}, []);
 
 	return (
 		<html lang="ja">
