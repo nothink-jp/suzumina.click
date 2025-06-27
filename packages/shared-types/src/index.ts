@@ -9,6 +9,8 @@ export * from "./audio-button";
 export * from "./common";
 // お問い合わせ関連の型とスキーマのエクスポート
 export * from "./contact";
+// お気に入り関連の型とスキーマのエクスポート
+export * from "./favorite";
 // Firestore関連のユーティリティ
 export * from "./firestore-utils";
 // ユーザー認証関連の型とスキーマのエクスポート

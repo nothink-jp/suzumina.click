@@ -41,6 +41,7 @@ export function convertToFrontendAudioButton(
 		isPublic: data.isPublic,
 		playCount: data.playCount,
 		likeCount: data.likeCount,
+		favoriteCount: data.favoriteCount || 0,
 		createdAt: data.createdAt,
 		updatedAt: data.updatedAt,
 

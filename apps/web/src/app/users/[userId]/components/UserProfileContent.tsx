@@ -9,6 +9,7 @@ import {
 	Calendar,
 	Eye,
 	EyeOff,
+	Heart,
 	Music,
 	Play,
 	Settings,
@@ -27,6 +28,7 @@ interface UserProfileContentProps {
 	user: FrontendUserData;
 	audioButtons: FrontendAudioButtonData[];
 	isOwnProfile: boolean;
+	favoritesCount?: number;
 }
 
 // Helper components to reduce complexity
@@ -160,8 +162,13 @@ function AudioButtonsList({
 	);
 }
 
-export function UserProfileContent({ user, audioButtons, isOwnProfile }: UserProfileContentProps) {
-	const [selectedTab, setSelectedTab] = useState<"buttons" | "stats">("buttons");
+export function UserProfileContent({
+	user,
+	audioButtons,
+	isOwnProfile,
+	favoritesCount = 0,
+}: UserProfileContentProps) {
+	const [selectedTab, setSelectedTab] = useState<"buttons" | "stats" | "favorites">("buttons");
 	const averagePlays =
 		user.audioButtonsCount > 0 ? Math.round(user.totalPlayCount / user.audioButtonsCount) : 0;
 
@@ -215,7 +222,7 @@ export function UserProfileContent({ user, audioButtons, isOwnProfile }: UserPro
 								<div className="text-sm text-muted-foreground">平均再生数</div>
 							</div>
 							<div className="text-center">
-								<div className="text-2xl font-bold text-minase-600">-</div>
+								<div className="text-2xl font-bold text-minase-600">{favoritesCount || 0}</div>
 								<div className="text-sm text-muted-foreground">お気に入り</div>
 							</div>
 						</div>
@@ -239,10 +246,35 @@ export function UserProfileContent({ user, audioButtons, isOwnProfile }: UserPro
 						<TrendingUp className="w-4 h-4" />
 						統計情報
 					</Button>
+					{isOwnProfile && (
+						<Button
+							variant={selectedTab === "favorites" ? "default" : "ghost"}
+							onClick={() => setSelectedTab("favorites")}
+							className="flex items-center gap-2"
+						>
+							<Heart className="w-4 h-4" />
+							お気に入り ({favoritesCount})
+						</Button>
+					)}
 				</div>
 
 				{selectedTab === "buttons" && (
 					<AudioButtonsList audioButtons={audioButtons} user={user} isOwnProfile={isOwnProfile} />
+				)}
+
+				{selectedTab === "favorites" && (
+					<Card>
+						<CardContent className="p-12 text-center">
+							<Heart className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+							<h3 className="text-lg font-semibold mb-2">お気に入り機能</h3>
+							<p className="text-muted-foreground mb-4">
+								お気に入りに登録した音声ボタンを管理できます。
+							</p>
+							<Button asChild>
+								<Link href="/favorites">お気に入り一覧を見る</Link>
+							</Button>
+						</CardContent>
+					</Card>
 				)}
 
 				{selectedTab === "stats" && (

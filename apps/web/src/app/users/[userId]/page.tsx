@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getAudioButtonsByUser } from "@/lib/audio-buttons-firestore";
+import { getUserFavoritesCount } from "@/lib/favorites-firestore";
 import { getUserByDiscordId } from "@/lib/user-firestore";
 import { UserProfileContent } from "./components/UserProfileContent";
 
@@ -58,5 +59,18 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 	// ユーザーが作成した音声ボタンを取得
 	const audioButtons = await getAudioButtonsByUser(resolvedParams.userId);
 
-	return <UserProfileContent user={user} audioButtons={audioButtons} isOwnProfile={isOwnProfile} />;
+	// お気に入り数を取得（自分のプロフィールの場合のみ）
+	let favoritesCount = 0;
+	if (isOwnProfile) {
+		favoritesCount = await getUserFavoritesCount(resolvedParams.userId);
+	}
+
+	return (
+		<UserProfileContent
+			user={user}
+			audioButtons={audioButtons}
+			isOwnProfile={isOwnProfile}
+			favoritesCount={favoritesCount}
+		/>
+	);
 }

@@ -77,6 +77,7 @@ export const FirestoreAudioButtonSchema = AudioButtonBaseSchema.extend({
 	// 統計情報
 	playCount: z.number().int().min(0).default(0),
 	likeCount: z.number().int().min(0).default(0),
+	favoriteCount: z.number().int().min(0).default(0),
 
 	// 管理情報
 	createdAt: z.string().datetime({
@@ -106,6 +107,7 @@ export const FrontendAudioButtonSchema = AudioButtonBaseSchema.extend({
 	// 統計情報
 	playCount: z.number().int().min(0),
 	likeCount: z.number().int().min(0),
+	favoriteCount: z.number().int().min(0),
 
 	// 管理情報
 	createdAt: z.string().datetime(),
@@ -280,6 +282,9 @@ export function convertToFrontendAudioButton(
 
 		// YouTubeのサムネイル情報を生成
 		sourceVideoThumbnailUrl: `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
+
+		// お気に入り数のデフォルト値
+		favoriteCount: data.favoriteCount || 0,
 	};
 
 	// データの検証
@@ -303,6 +308,7 @@ export function convertToFrontendAudioButton(
 			isPublic: data.isPublic,
 			playCount: data.playCount,
 			likeCount: data.likeCount,
+			favoriteCount: data.favoriteCount || 0,
 			createdAt: data.createdAt,
 			updatedAt: data.updatedAt,
 			durationText: formatDuration(data.startTime, data.endTime),
@@ -387,6 +393,7 @@ export function convertCreateInputToFirestoreAudioButton(
 		isPublic: input.isPublic,
 		playCount: 0,
 		likeCount: 0,
+		favoriteCount: 0,
 		createdAt: now,
 		updatedAt: now,
 	} as Omit<FirestoreAudioButtonData, "id">;
@@ -593,6 +600,7 @@ export interface FirestoreServerAudioButtonData {
 	// 統計情報
 	playCount: number;
 	likeCount: number;
+	favoriteCount: number;
 
 	// 管理情報（Firestore Timestamp型）
 	createdAt: unknown; // Firestore.Timestamp型

@@ -46,12 +46,20 @@ export default function MobileMenu({ user }: MobileMenuProps) {
 
 					{/* ログイン時のみ表示されるメニュー */}
 					{user && (
-						<Link
-							href="/users/me"
-							className="text-lg font-medium text-foreground hover:text-foreground/80 p-2 rounded transition-colors"
-						>
-							マイページ
-						</Link>
+						<>
+							<Link
+								href="/favorites"
+								className="text-lg font-medium text-foreground hover:text-foreground/80 p-2 rounded transition-colors"
+							>
+								お気に入り
+							</Link>
+							<Link
+								href="/users/me"
+								className="text-lg font-medium text-foreground hover:text-foreground/80 p-2 rounded transition-colors"
+							>
+								マイページ
+							</Link>
+						</>
 					)}
 
 					{/* 認証ボタン */}
