@@ -16,9 +16,11 @@ import { getFirestore } from "@/lib/firestore";
 export async function getWorks({
 	page = 1,
 	limit = 12,
+	sort = "newest",
 }: {
 	page?: number;
 	limit?: number;
+	sort?: string;
 } = {}): Promise<WorkListResult> {
 	try {
 		const firestore = getFirestore();
@@ -33,18 +35,30 @@ export async function getWorks({
 			id: doc.id,
 		})) as FirestoreDLsiteWorkData[];
 
-		// DLsite ID順でソート (文字列長が長い方が新しいフォーマット)
+		// ソート処理
 		allWorks.sort((a, b) => {
-			const aId = a.productId;
-			const bId = b.productId;
-
-			// 文字列長で比較 (長い方が新しい)
-			if (aId.length !== bId.length) {
-				return bId.length - aId.length;
+			switch (sort) {
+				case "oldest":
+					// 古い順：正逆のソート
+					if (a.productId.length !== b.productId.length) {
+						return a.productId.length - b.productId.length;
+					}
+					return a.productId.localeCompare(b.productId);
+				case "price_low":
+					return (a.price || 0) - (b.price || 0);
+				case "price_high":
+					return (b.price || 0) - (a.price || 0);
+				case "rating":
+					return (b.averageRating || 0) - (a.averageRating || 0);
+				case "popular":
+					return (b.reviewCount || 0) - (a.reviewCount || 0);
+				default:
+					// 新しい順：DLsite ID順 (文字列長が長い方が新しいフォーマット)
+					if (a.productId.length !== b.productId.length) {
+						return b.productId.length - a.productId.length;
+					}
+					return b.productId.localeCompare(a.productId);
 			}
-
-			// 同じ長さの場合は辞書順降順
-			return bId.localeCompare(aId);
 		});
 
 		// ページネーション適用

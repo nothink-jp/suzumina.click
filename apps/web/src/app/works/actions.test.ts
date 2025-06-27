@@ -196,6 +196,58 @@ describe("works actions", () => {
 			expect(result.hasMore).toBe(true);
 			expect(result.totalCount).toBe(20);
 		});
+
+		it("should sort works by oldest when sort=oldest", async () => {
+			const mockWorks = [
+				createMockWorkData("RJ123456", "古い形式6桁"),
+				createMockWorkData("RJ01234567", "新しい形式8桁"),
+				createMockWorkData("RJ234567", "古い形式6桁・大"),
+			];
+
+			const mockSnapshot = {
+				size: mockWorks.length,
+				docs: mockWorks.map((work) => ({
+					data: () => work,
+					id: work.productId,
+				})),
+			};
+
+			mockCollection.mockReturnValue({ get: mockGet });
+			mockGet.mockResolvedValue(mockSnapshot);
+
+			const result = await getWorks({ page: 1, limit: 10, sort: "oldest" });
+
+			// 古い順：6桁が先、同じ長さ内では辞書順昇順
+			expect(result.works[0].productId).toBe("RJ123456");
+			expect(result.works[1].productId).toBe("RJ234567");
+			expect(result.works[2].productId).toBe("RJ01234567");
+		});
+
+		it("should sort works by price when sort=price_low", async () => {
+			const mockWorks = [
+				{ ...createMockWorkData("RJ123456", "高い作品"), price: 1500 },
+				{ ...createMockWorkData("RJ234567", "安い作品"), price: 500 },
+				{ ...createMockWorkData("RJ345678", "中程度作品"), price: 1000 },
+			];
+
+			const mockSnapshot = {
+				size: mockWorks.length,
+				docs: mockWorks.map((work) => ({
+					data: () => work,
+					id: work.productId,
+				})),
+			};
+
+			mockCollection.mockReturnValue({ get: mockGet });
+			mockGet.mockResolvedValue(mockSnapshot);
+
+			const result = await getWorks({ page: 1, limit: 10, sort: "price_low" });
+
+			// 価格安い順
+			expect(result.works[0].price).toBe(500);
+			expect(result.works[1].price).toBe(1000);
+			expect(result.works[2].price).toBe(1500);
+		});
 	});
 
 	describe("getWorkById", () => {
