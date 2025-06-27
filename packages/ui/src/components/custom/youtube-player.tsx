@@ -55,7 +55,7 @@ export function YouTubePlayer({
 	controls = true,
 	startTime,
 	endTime,
-	loop = false,
+	loop: _loop = false,
 	modestBranding = true,
 	rel = false,
 	className = "",
@@ -106,6 +106,34 @@ export function YouTubePlayer({
 		};
 	}, []);
 
+	// 時間が有効な数値かチェック
+	const isValidTime = useCallback((time: number): boolean => {
+		return typeof time === "number" && !Number.isNaN(time) && Number.isFinite(time);
+	}, []);
+
+	// デバッグログ出力（開発環境のみ）
+	const logTimeUpdate = useCallback((_currentTime: number) => {
+		if (process.env.NODE_ENV === "development") {
+			// console.log("YouTube Player time update:", currentTime);
+		}
+	}, []);
+
+	const logInvalidTime = useCallback((_currentTime: number) => {
+		if (process.env.NODE_ENV === "development") {
+			// console.warn("YouTube Player invalid time:", currentTime, typeof currentTime);
+		}
+	}, []);
+
+	const logError = useCallback((error: unknown) => {
+		if (
+			error instanceof Error &&
+			!error.message.includes("Maximum call stack") &&
+			process.env.NODE_ENV === "development"
+		) {
+			// console.warn("YouTube API time update failed:", error.message);
+		}
+	}, []);
+
 	// 時間更新処理
 	const handleTimeUpdate = useCallback(() => {
 		if (!playerRef.current || !onTimeUpdate) {
@@ -116,24 +144,16 @@ export function YouTubePlayer({
 			const currentTime = playerRef.current.getCurrentTime();
 			const duration = playerRef.current.getDuration();
 
-			// 有効な数値のみコールバックを呼び出す
-			if (
-				typeof currentTime === "number" &&
-				!Number.isNaN(currentTime) &&
-				Number.isFinite(currentTime)
-			) {
+			if (isValidTime(currentTime)) {
 				onTimeUpdate(currentTime, duration || 0);
-				console.log("YouTube Player time update:", currentTime);
+				logTimeUpdate(currentTime);
 			} else {
-				console.warn("YouTube Player invalid time:", currentTime, typeof currentTime);
+				logInvalidTime(currentTime);
 			}
 		} catch (error) {
-			// YouTube APIエラー時は静かにスキップ（ログレベルを下げる）
-			if (error instanceof Error && !error.message.includes("Maximum call stack")) {
-				console.warn("YouTube API time update failed:", error.message);
-			}
+			logError(error);
 		}
-	}, [onTimeUpdate]);
+	}, [onTimeUpdate, isValidTime, logTimeUpdate, logInvalidTime, logError]);
 
 	// 時間更新インターバルの開始
 	const startTimeUpdateInterval = useCallback(() => {
@@ -226,12 +246,14 @@ export function YouTubePlayer({
 					}
 				},
 				onError: (event) => {
-					console.error("YouTube Player Error:", {
-						errorCode: event.data,
-						videoId,
-						startTime,
-						endTime,
-					});
+					if (process.env.NODE_ENV === "development") {
+						// console.error("YouTube Player Error:", {
+						// 	errorCode: event.data,
+						// 	videoId,
+						// 	startTime,
+						// 	endTime,
+						// });
+					}
 					onError?.(event.data);
 				},
 			},

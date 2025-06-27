@@ -13,7 +13,7 @@
 		"build": "tsup",
 		"pack": "pnpm build && pnpm pack",
 		"dev": "tsup --watch",
-		"lint": "biome lint ./src",
+		"lint": "biome check ./src",
 		"format": "biome format --write ./src",
 		"check": "biome check --write ./src",
 		"typecheck": "tsc --noEmit",

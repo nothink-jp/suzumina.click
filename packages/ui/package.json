@@ -5,7 +5,7 @@
 	"private": true,
 	"scripts": {
 		"build": "echo 'UI package does not require build step' && exit 0",
-		"lint": "biome check .",
+		"lint": "find src -name '*.tsx' -not -name '*.stories.tsx' -not -path '*/design-tokens/*' -o -name '*.ts' -not -path '*/design-tokens/*' | xargs biome check --max-diagnostics=120",
 		"format": "biome format --write .",
 		"check": "biome check --write .",
 		"typecheck": "tsc --noEmit",

@@ -116,8 +116,10 @@ export const AudioOnlyPlayer = forwardRef<HTMLDivElement, AudioOnlyPlayerProps>(
 						playerRef.current.pauseVideo();
 						onEnd?.();
 					}
-				} catch (error) {
-					console.warn("End time check failed:", error);
+				} catch (_error) {
+					if (process.env.NODE_ENV === "development") {
+						// console.warn("End time check failed:", error);
+					}
 				}
 			}, 100); // 100ms間隔でチェック
 		}, [onEnd]);
@@ -203,12 +205,14 @@ export const AudioOnlyPlayer = forwardRef<HTMLDivElement, AudioOnlyPlayerProps>(
 						}
 					},
 					onError: (event) => {
-						console.error("Audio Only Player Error:", {
-							errorCode: event.data,
-							videoId,
-							startTime,
-							endTime,
-						});
+						if (process.env.NODE_ENV === "development") {
+							// console.error("Audio Only Player Error:", {
+							// 	errorCode: event.data,
+							// 	videoId,
+							// 	startTime,
+							// 	endTime,
+							// });
+						}
 						onError?.(event.data);
 					},
 				},

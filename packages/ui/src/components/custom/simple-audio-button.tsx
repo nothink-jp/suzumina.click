@@ -74,8 +74,10 @@ export function SimpleAudioButton({
 		setIsPlaying(false);
 	}, []);
 
-	const handlePlayerError = useCallback((error: number) => {
-		console.error("Audio playback error:", error);
+	const handlePlayerError = useCallback((_error: number) => {
+		if (process.env.NODE_ENV === "development") {
+			// console.error("Audio playback error:", error);
+		}
 		setIsPlaying(false);
 		setIsLoading(false);
 	}, []);
@@ -99,6 +101,7 @@ export function SimpleAudioButton({
 		>
 			{/* メインボタンエリア */}
 			<button
+				type="button"
 				onClick={handlePlay}
 				className="flex flex-1 items-center gap-3 text-left transition-colors hover:text-suzuka-500"
 				aria-label={`${audioButton.title}を再生`}

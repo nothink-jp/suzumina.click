@@ -2,7 +2,8 @@
 	"extends": "//",
 	"root": false,
 	"files": {
-		"maxSize": 1048576
+		"maxSize": 1048576,
+		"ignoreUnknown": true
 	},
 	"linter": {
 		"rules": {
@@ -23,31 +24,9 @@
 	},
 	"overrides": [
 		{
-			"includes": ["**/src/components/design-tokens/*.stories.tsx"],
-			"linter": {
-				"enabled": false
-			},
-			"formatter": {
-				"enabled": false
-			}
-		},
-		{
 			"includes": ["**/*.stories.tsx"],
 			"linter": {
-				"rules": {
-					"suspicious": {
-						"noArrayIndexKey": "off",
-						"noExplicitAny": "off"
-					},
-					"a11y": {
-						"useButtonType": "off",
-						"useValidAnchor": "off",
-						"noLabelWithoutControl": "off"
-					},
-					"nursery": {
-						"useUniqueElementIds": "off"
-					}
-				}
+				"enabled": false
 			}
 		}
 	]

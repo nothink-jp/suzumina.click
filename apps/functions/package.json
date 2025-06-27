@@ -5,7 +5,7 @@
 	"scripts": {
 		"build": "tsc",
 		"build:watch": "tsc --watch",
-		"lint": "biome lint ./src",
+		"lint": "biome check ./src",
 		"format": "biome format --write ./src",
 		"check": "biome check --write ./src",
 		"typecheck": "tsc --noEmit",

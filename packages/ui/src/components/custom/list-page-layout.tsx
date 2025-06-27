@@ -112,7 +112,7 @@ interface ListPageStatsProps {
  */
 export function ListPageStats({
 	currentPage,
-	totalPages,
+	totalPages: _totalPages,
 	totalCount,
 	itemsPerPage,
 	className,
