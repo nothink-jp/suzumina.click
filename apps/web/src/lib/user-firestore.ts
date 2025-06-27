@@ -83,6 +83,10 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 			input.displayName ||
 			resolveDisplayName(undefined, input.discordUser.globalName, input.discordUser.username);
 
+		// 環境変数からデフォルト管理者のDiscord IDを取得
+		const defaultAdminIds = process.env.DEFAULT_ADMIN_DISCORD_IDS?.split(",") || [];
+		const isDefaultAdmin = defaultAdminIds.includes(input.discordUser.id);
+
 		const userData: FirestoreUserData = {
 			discordId: input.discordUser.id,
 			username: input.discordUser.username,
@@ -91,7 +95,7 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 			guildMembership: input.guildMembership,
 			displayName,
 			isActive: true,
-			role: "member",
+			role: isDefaultAdmin ? "admin" : "member",
 			audioButtonsCount: 0,
 			totalPlayCount: 0,
 			createdAt: now,
