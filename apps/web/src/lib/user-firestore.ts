@@ -66,11 +66,13 @@ export async function getUserByDiscordId(discordId: string): Promise<FrontendUse
 		const userData = userDoc.data() as FirestoreUserData;
 		return convertToFrontendUser(userData);
 	} catch (error) {
-		// デバッグ情報（一時的）
-		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("getUserByDiscordId error:", { discordId, error });
-		}
+		// 詳細ログ（一時的 - 本番環境でも表示）
+		// biome-ignore lint/suspicious/noConsole: Temporary debugging for production
+		console.error("getUserByDiscordId error:", {
+			discordId,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
 		throw new Error("ユーザー情報の取得に失敗しました");
 	}
 }

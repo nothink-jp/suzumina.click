@@ -69,7 +69,11 @@ export async function getAudioButtonsByUser(
 ): Promise<FrontendAudioButtonData[]> {
 	try {
 		const firestore = getFirestore();
-		const { limit = 20, onlyPublic = true, orderBy = "newest" } = options;
+		const { limit = 20, onlyPublic = true } = options;
+
+		// 詳細ログ（一時的）
+		// biome-ignore lint/suspicious/noConsole: Temporary debugging for production
+		console.log("Building Firestore query:", { discordId, options });
 
 		let query: Query = firestore.collection("audioButtons").where("uploadedBy", "==", discordId);
 
@@ -78,7 +82,9 @@ export async function getAudioButtonsByUser(
 			query = query.where("isPublic", "==", true);
 		}
 
+		// 一時的にソートを無効化してインデックス問題を排除
 		// ソート設定
+		/*
 		switch (orderBy) {
 			case "newest":
 				query = query.orderBy("createdAt", "desc");
@@ -90,22 +96,39 @@ export async function getAudioButtonsByUser(
 				query = query.orderBy("playCount", "desc");
 				break;
 		}
+		*/
 
 		query = query.limit(limit);
 
+		// biome-ignore lint/suspicious/noConsole: Temporary debugging for production
+		console.log("Executing Firestore query...");
 		const snapshot = await query.get();
-		const audioButtons = snapshot.docs.map((doc) => {
-			const data = doc.data() as FirestoreAudioButtonData;
-			return convertToFrontendAudioButton({ ...data, id: doc.id });
+
+		// biome-ignore lint/suspicious/noConsole: Temporary debugging for production
+		console.log("Query completed, processing docs:", { docCount: snapshot.docs.length });
+
+		const audioButtons = snapshot.docs.map((doc, index) => {
+			try {
+				const data = doc.data() as FirestoreAudioButtonData;
+				const converted = convertToFrontendAudioButton({ ...data, id: doc.id });
+				return converted;
+			} catch (error) {
+				// biome-ignore lint/suspicious/noConsole: Temporary debugging for production
+				console.error(`Error converting document ${index}:`, { docId: doc.id, error });
+				throw error;
+			}
 		});
 
 		return audioButtons;
 	} catch (error) {
-		// デバッグ情報（一時的）
-		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("getAudioButtonsByUser error:", { discordId, error });
-		}
+		// 詳細ログ（一時的 - 本番環境でも表示）
+		// biome-ignore lint/suspicious/noConsole: Temporary debugging for production
+		console.error("getAudioButtonsByUser error:", {
+			discordId,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+			options,
+		});
 		throw new Error("音声ボタン一覧の取得に失敗しました");
 	}
 }

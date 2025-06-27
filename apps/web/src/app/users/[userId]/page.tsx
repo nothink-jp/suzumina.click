@@ -43,14 +43,15 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 	const session = await auth();
 	const resolvedParams = await params;
 
-	// デバッグ情報（一時的）
-	if (process.env.NODE_ENV === "development") {
-		// biome-ignore lint/suspicious/noConsole: Development debugging only
-		console.log("User profile debug:", {
-			userId: resolvedParams.userId,
-			sessionUser: session?.user,
-		});
-	}
+	// 詳細デバッグ情報（一時的 - 本番環境でも表示）
+	// biome-ignore lint/suspicious/noConsole: Temporary debugging for production
+	console.log("User profile debug:", {
+		userId: resolvedParams.userId,
+		sessionUser: session?.user,
+		hasSession: !!session,
+		hasUser: !!session?.user,
+		discordId: session?.user?.discordId,
+	});
 
 	// ユーザー情報を取得
 	const user = await getUserByDiscordId(resolvedParams.userId);
