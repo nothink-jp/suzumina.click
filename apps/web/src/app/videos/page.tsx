@@ -12,19 +12,17 @@ interface VideosPageProps {
 }
 
 export default async function VideosPage({ searchParams }: VideosPageProps) {
-	const resolvedSearchParams = await searchParams;
-	const pageParam = resolvedSearchParams.page;
-	const yearParam = resolvedSearchParams.year;
-	const sortParam = resolvedSearchParams.sort;
-	const currentPage =
-		pageParam && typeof pageParam === "string" ? Number.parseInt(pageParam, 10) : 1;
-	const validPage = Math.max(1, Number.isNaN(currentPage) ? 1 : currentPage);
-	const year = yearParam && typeof yearParam === "string" ? yearParam : undefined;
-	const sort = sortParam && typeof sortParam === "string" ? sortParam : "newest";
+	const params = await searchParams;
+	const pageNumber = Number.parseInt(params.page as string, 10) || 1;
+	const validPage = Math.max(1, pageNumber);
+	const year = typeof params.year === "string" ? params.year : undefined;
+	const sort = typeof params.sort === "string" ? params.sort : "newest";
+	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
+	const validLimit = [12, 24, 48, 96].includes(limitValue) ? limitValue : 12;
 
 	// 並行してデータを取得
 	const [initialData, filteredCount, totalCount] = await Promise.all([
-		getVideoTitles({ page: validPage, limit: 12, year, sort }),
+		getVideoTitles({ page: validPage, limit: validLimit, year, sort }),
 		getTotalVideoCount({ year }),
 		getTotalVideoCount({}), // フィルタなしの総件数
 	]);

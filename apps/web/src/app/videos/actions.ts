@@ -217,61 +217,11 @@ export async function getVideoById(videoId: string): Promise<FrontendVideoData |
 		const firestore = getFirestore();
 		const doc = await firestore.collection("videos").doc(videoId).get();
 
-		if (!doc.exists) {
-			return null;
-		}
+		if (!doc.exists) return null;
 
 		const data = doc.data() as FirestoreServerVideoData;
-
-		// Timestamp型をISO文字列に変換
-		const publishedAt =
-			data.publishedAt instanceof Timestamp
-				? data.publishedAt.toDate().toISOString()
-				: new Date().toISOString();
-
-		const lastFetchedAt =
-			data.lastFetchedAt instanceof Timestamp
-				? data.lastFetchedAt.toDate().toISOString()
-				: new Date().toISOString();
-
-		// FirestoreVideoData形式に変換
-		const firestoreData = {
-			id: doc.id,
-			videoId: data.videoId || doc.id,
-			title: data.title,
-			description: data.description || "",
-			channelId: data.channelId,
-			channelTitle: data.channelTitle,
-			publishedAt,
-			thumbnailUrl: data.thumbnailUrl || "",
-			lastFetchedAt,
-			videoType: data.videoType,
-			liveBroadcastContent: data.liveBroadcastContent,
-			liveStreamingDetails: data.liveStreamingDetails
-				? {
-						scheduledStartTime: data.liveStreamingDetails.scheduledStartTime
-							? convertTimestampToISO(data.liveStreamingDetails.scheduledStartTime)
-							: undefined,
-						scheduledEndTime: data.liveStreamingDetails.scheduledEndTime
-							? convertTimestampToISO(data.liveStreamingDetails.scheduledEndTime)
-							: undefined,
-						actualStartTime: data.liveStreamingDetails.actualStartTime
-							? convertTimestampToISO(data.liveStreamingDetails.actualStartTime)
-							: undefined,
-						actualEndTime: data.liveStreamingDetails.actualEndTime
-							? convertTimestampToISO(data.liveStreamingDetails.actualEndTime)
-							: undefined,
-						concurrentViewers: data.liveStreamingDetails.concurrentViewers,
-					}
-				: undefined,
-			audioButtonCount: data.audioButtonCount || 0,
-			hasAudioButtons: data.hasAudioButtons || false,
-		};
-
-		// フロントエンド用に変換
-		const frontendVideo = convertToFrontendVideo(firestoreData);
-
-		return frontendVideo;
+		const firestoreData = transformServerDataToFirestoreData(doc, data);
+		return convertToFrontendVideo(firestoreData);
 	} catch (_error) {
 		return null;
 	}

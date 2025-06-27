@@ -33,7 +33,24 @@ export default function VideoList({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 	const [yearFilter, setYearFilter] = useState(searchParams.get("year") || "all");
-	const [itemsPerPageValue, setItemsPerPageValue] = useState("12");
+	const [itemsPerPageValue, setItemsPerPageValue] = useState(searchParams.get("limit") || "12");
+
+	// URLパラメータ更新用ユーティリティ
+	const updateUrlParam = useMemo(
+		() => (key: string, value: string, defaultValue: string) => {
+			const params = new URLSearchParams(searchParams.toString());
+
+			if (value && value !== defaultValue) {
+				params.set(key, value);
+			} else {
+				params.delete(key);
+			}
+
+			params.delete("page"); // ページ番号をリセット
+			router.push(`/videos?${params.toString()}`);
+		},
+		[searchParams, router],
+	);
 
 	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
 	const displayCount = filteredCount !== undefined ? filteredCount : totalCount;
@@ -52,19 +69,7 @@ export default function VideoList({
 	// 年代フィルターの変更をURLに反映
 	const handleYearChange = (year: string) => {
 		setYearFilter(year);
-		const params = new URLSearchParams(searchParams.toString());
-
-		if (year && year !== "all") {
-			params.set("year", year);
-		} else {
-			params.delete("year");
-		}
-
-		// ページ番号をリセット
-		params.delete("page");
-
-		// URLを更新（ページ再読み込み）
-		router.push(`/videos?${params.toString()}`);
+		updateUrlParam("year", year, "all");
 	};
 
 	// FID改善: startTransition で非緊急更新を遅延
@@ -81,6 +86,7 @@ export default function VideoList({
 		setSearchQuery("");
 		setYearFilter("all");
 		setSortBy("newest");
+		setItemsPerPageValue("12");
 		const params = new URLSearchParams();
 		router.push(`/videos?${params.toString()}`);
 	};
@@ -88,26 +94,13 @@ export default function VideoList({
 	// 並び順変更
 	const handleSortChange = (value: string) => {
 		setSortBy(value);
-		const params = new URLSearchParams(searchParams.toString());
-
-		if (value && value !== "newest") {
-			params.set("sort", value);
-		} else {
-			params.delete("sort");
-		}
-
-		// ページ番号をリセット
-		params.delete("page");
-
-		// URLを更新（ページ再読み込み）
-		router.push(`/videos?${params.toString()}`);
+		updateUrlParam("sort", value, "newest");
 	};
 
 	// 件数/ページ変更
 	const handleItemsPerPageChange = (value: string) => {
-		startTransition(() => {
-			setItemsPerPageValue(value);
-		});
+		setItemsPerPageValue(value);
+		updateUrlParam("limit", value, "12");
 	};
 
 	// FID改善: 検索・フィルタリング結果をメモ化
