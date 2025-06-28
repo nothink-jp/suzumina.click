@@ -80,7 +80,6 @@ const mockAudioButtonData: FrontendAudioButtonData = {
 	id: "test-audio-button-1",
 	title: "テスト音声ボタン",
 	description: "統合テスト用の音声ボタン",
-	category: "voice" as const,
 	tags: ["テスト", "統合"],
 	sourceVideoId: "dQw4w9WgXcQ",
 	sourceVideoTitle: "テスト動画",
@@ -92,6 +91,7 @@ const mockAudioButtonData: FrontendAudioButtonData = {
 	isPublic: true,
 	playCount: 100,
 	likeCount: 25,
+	favoriteCount: 10,
 	createdAt: "2024-06-26T00:00:00.000Z",
 	updatedAt: "2024-06-26T00:00:00.000Z",
 	durationText: "5秒",
@@ -144,7 +144,7 @@ describe("Basic Component Rendering Integration Tests", () => {
 			[
 				{ type: "text", selector: "テスト音声ボタン" },
 				{ type: "label", selector: "テスト音声ボタンを再生" },
-				{ type: "label", selector: "詳細情報を表示" },
+				{ type: "label", selector: "メニューを表示" },
 			],
 		],
 	])("renders %s component correctly", (_name, Component, props, assertions) => {
