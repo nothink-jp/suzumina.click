@@ -213,12 +213,9 @@ export async function getAudioButtons(
 	query: Partial<AudioButtonQuery> = {},
 ): Promise<{ success: true; data: AudioButtonListResult } | { success: false; error: string }> {
 	try {
-		console.log("[getAudioButtons] Starting with query:", query);
-
 		// クエリのバリデーション
 		const validationResult = AudioButtonQuerySchema.safeParse(query);
 		if (!validationResult.success) {
-			console.log("[getAudioButtons] Validation failed:", validationResult.error);
 			return {
 				success: false,
 				error: `検索条件が無効です: ${validationResult.error.errors.map((e) => e.message).join(", ")}`,
@@ -226,11 +223,7 @@ export async function getAudioButtons(
 		}
 
 		const validatedQuery = validationResult.data;
-		console.log("[getAudioButtons] Validated query:", validatedQuery);
-
-		console.log("[getAudioButtons] Getting Firestore instance...");
 		const firestore = FirestoreAdmin.getInstance();
-		console.log("[getAudioButtons] Firestore instance obtained");
 
 		// Firestoreクエリの構築
 		let firestoreQuery = firestore.collection("audioButtons").where("isPublic", "==", true);
@@ -308,18 +301,11 @@ export async function getAudioButtons(
 			lastAudioButton: audioButtons.length > 0 ? audioButtons[audioButtons.length - 1] : undefined,
 			totalCount: undefined, // 高コストなため省略
 		};
-
-		console.log("[getAudioButtons] Returning success with result:", result);
 		return {
 			success: true,
 			data: result,
 		};
-	} catch (error) {
-		console.error("[getAudioButtons] Error occurred:", error);
-		console.error(
-			"[getAudioButtons] Error stack:",
-			error instanceof Error ? error.stack : "No stack trace",
-		);
+	} catch (_error) {
 		return {
 			success: false,
 			error: "音声ボタンの取得に失敗しました。",

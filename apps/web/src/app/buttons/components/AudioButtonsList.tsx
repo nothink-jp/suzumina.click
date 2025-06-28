@@ -1,10 +1,6 @@
 "use client";
 
-import type {
-	AudioButtonCategory,
-	AudioButtonQuery,
-	FrontendAudioButtonData,
-} from "@suzumina.click/shared-types";
+import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
 import {
 	ListPageEmptyState,
@@ -17,7 +13,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
 import Pagination from "@/components/Pagination";
 
@@ -52,6 +48,35 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
 	const totalPages = Math.ceil(totalCount / itemsPerPageNum);
 
+	// URLパラメータからクエリパラメータを構築
+	const buildQueryParams = useCallback((): URLSearchParams => {
+		const queryParams = new URLSearchParams();
+		queryParams.set("limit", itemsPerPageNum.toString());
+
+		if (searchParams.q) queryParams.set("q", searchParams.q);
+		if (searchParams.category) queryParams.set("category", searchParams.category);
+		if (searchParams.tags) queryParams.set("tags", searchParams.tags);
+		if (searchParams.sort) queryParams.set("sort", searchParams.sort);
+		if (searchParams.sourceVideoId) queryParams.set("sourceVideoId", searchParams.sourceVideoId);
+
+		return queryParams;
+	}, [searchParams, itemsPerPageNum]);
+
+	// APIレスポンスの処理
+	const handleApiResponse = useCallback((result: any) => {
+		if (!result) {
+			setError("データの取得に失敗しました");
+			return;
+		}
+
+		if (result.success && result.data) {
+			setAudioButtons(result.data.audioButtons || []);
+			setTotalCount(result.data.audioButtons?.length || 0);
+		} else {
+			setError(result.error || "エラーが発生しました");
+		}
+	}, []);
+
 	// データ取得
 	useEffect(() => {
 		const fetchData = async () => {
@@ -59,33 +84,11 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 			setError(null);
 
 			try {
-				const queryParams = new URLSearchParams();
-				queryParams.set("limit", itemsPerPageNum.toString());
-
-				if (searchParams.q) queryParams.set("q", searchParams.q);
-				if (searchParams.category) queryParams.set("category", searchParams.category);
-				if (searchParams.tags) queryParams.set("tags", searchParams.tags);
-				if (searchParams.sort) queryParams.set("sort", searchParams.sort);
-				if (searchParams.sourceVideoId)
-					queryParams.set("sourceVideoId", searchParams.sourceVideoId);
-
+				const queryParams = buildQueryParams();
 				const response = await fetch(`/api/audio-buttons?${queryParams.toString()}`);
 				const result = await response.json();
-
-				if (!result) {
-					setError("データの取得に失敗しました");
-					return;
-				}
-
-				if (result.success && result.data) {
-					setAudioButtons(result.data.audioButtons || []);
-					// TODO: バックエンドでtotalCountを返すように修正が必要
-					setTotalCount(result.data.audioButtons?.length || 0);
-				} else {
-					setError("error" in result ? result.error : "エラーが発生しました");
-				}
-			} catch (err) {
-				console.error("Error fetching audio buttons:", err);
+				handleApiResponse(result);
+			} catch (_err) {
 				setError("データの取得に失敗しました");
 			} finally {
 				setLoading(false);
@@ -93,7 +96,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		};
 
 		fetchData();
-	}, [searchParams, itemsPerPageNum]);
+	}, [buildQueryParams, handleApiResponse]);
 
 	// URLパラメータを更新
 	const updateSearchParams = (params: Record<string, string | undefined>) => {

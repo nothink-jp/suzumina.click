@@ -40,7 +40,7 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
 		.map((fav) => {
 			const audioButtonData = audioButtonsMap.get(fav.audioButtonId);
 			if (!audioButtonData) return null;
-			return convertToFrontendAudioButton(audioButtonData);
+			return convertToFrontendAudioButton(audioButtonData as any);
 		})
 		.filter((button) => button !== null);
 

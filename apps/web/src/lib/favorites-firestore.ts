@@ -323,10 +323,10 @@ export async function getUserFavoritesCount(userId: string): Promise<number> {
  */
 export async function getAudioButtonsFromFavorites(
 	favoriteData: FirestoreFavoriteData[],
-): Promise<Map<string, any>> {
+): Promise<Map<string, unknown>> {
 	try {
 		const firestore = getFirestore();
-		const audioButtonsMap = new Map<string, any>();
+		const audioButtonsMap = new Map<string, unknown>();
 
 		if (favoriteData.length === 0) {
 			return audioButtonsMap;
