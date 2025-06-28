@@ -40,7 +40,6 @@ const mockAudioButton: FrontendAudioButtonData = {
 	id: "test-1",
 	title: "テスト音声ボタン",
 	description: "テスト用の説明",
-	category: "voice" as const,
 	tags: ["テスト", "音声"],
 	sourceVideoId: "dQw4w9WgXcQ",
 	sourceVideoTitle: "テスト動画タイトル",

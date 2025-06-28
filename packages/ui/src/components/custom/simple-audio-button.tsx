@@ -4,7 +4,7 @@ import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@suzumina.click/ui/components/ui/popover";
 import { cn } from "@suzumina.click/ui/lib/utils";
-import { Info, Loader2, Pause, Play } from "lucide-react";
+import { ExternalLink, Info, Loader2, Pause, Play } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { AudioOnlyPlayer } from "./audio-only-player";
 
@@ -13,6 +13,8 @@ interface SimpleAudioButtonProps {
 	onPlay?: () => void;
 	className?: string;
 	maxTitleLength?: number;
+	showDetailLink?: boolean;
+	onDetailClick?: () => void;
 }
 
 export function SimpleAudioButton({
@@ -20,6 +22,8 @@ export function SimpleAudioButton({
 	onPlay,
 	className,
 	maxTitleLength = 100,
+	showDetailLink = false,
+	onDetailClick,
 }: SimpleAudioButtonProps) {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [showInfo, setShowInfo] = useState(false);
@@ -152,6 +156,19 @@ export function SimpleAudioButton({
 						</div>
 
 						<div className="pt-2 space-y-2">
+							{showDetailLink && onDetailClick && (
+								<>
+									<button
+										type="button"
+										onClick={onDetailClick}
+										className="inline-flex items-center text-sm text-suzuka-600 hover:underline mb-1"
+									>
+										音声ボタン詳細
+										<ExternalLink className="ml-1 h-3 w-3" />
+									</button>
+									<br />
+								</>
+							)}
 							<a
 								href={`/videos/${audioButton.sourceVideoId}`}
 								className="inline-flex items-center text-sm text-suzuka-600 hover:underline"

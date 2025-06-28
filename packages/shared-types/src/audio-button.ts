@@ -1,16 +1,6 @@
 import { z } from "zod";
 
-/**
- * 音声ボタンのカテゴリ
- */
-export const AudioButtonCategorySchema = z.enum([
-	"voice", // ボイス
-	"bgm", // BGM・音楽
-	"se", // 効果音
-	"talk", // トーク・会話
-	"singing", // 歌唱
-	"other", // その他
-]);
+// カテゴリーシステムを削除し、タグベースのシステムに移行
 
 /**
  * 音声ファイル形式
@@ -44,13 +34,12 @@ export const AudioButtonBaseSchema = z.object({
 			message: "説明は500文字以下である必要があります",
 		})
 		.optional(),
-	category: AudioButtonCategorySchema,
 	tags: z
-		.array(z.string().min(1).max(20))
-		.max(10, {
-			message: "タグは最大10個まで設定できます",
+		.array(z.string().min(1).max(30))
+		.max(15, {
+			message: "タグは最大15個まで設定できます",
 		})
-		.optional(),
+		.default([]),
 });
 
 /**
@@ -125,8 +114,7 @@ export const CreateAudioButtonInputSchema = z
 	.object({
 		title: z.string().min(1).max(100),
 		description: z.string().max(500).optional(),
-		category: AudioButtonCategorySchema,
-		tags: z.array(z.string().min(1).max(20)).max(10).optional(),
+		tags: z.array(z.string().min(1).max(30)).max(15).default([]),
 
 		// YouTube動画情報（必須）
 		sourceVideoId: z.string().min(1, {
@@ -150,8 +138,7 @@ export const UpdateAudioButtonInputSchema = z.object({
 	id: z.string().min(1),
 	title: z.string().min(1).max(100).optional(),
 	description: z.string().max(500).optional(),
-	category: AudioButtonCategorySchema.optional(),
-	tags: z.array(z.string().min(1).max(20)).max(10).optional(),
+	tags: z.array(z.string().min(1).max(30)).max(15).optional(),
 	isPublic: z.boolean().optional(),
 });
 
@@ -161,7 +148,6 @@ export const UpdateAudioButtonInputSchema = z.object({
 export const AudioButtonQuerySchema = z.object({
 	limit: z.number().int().positive().max(50).default(20),
 	startAfter: z.string().optional(),
-	category: AudioButtonCategorySchema.optional(),
 	tags: z.array(z.string()).optional(),
 	sourceVideoId: z.string().optional(),
 	searchText: z.string().max(100).optional(),
@@ -206,7 +192,6 @@ export const AudioFileUploadInfoSchema = z.object({
 });
 
 // 型定義のエクスポート
-export type AudioButtonCategory = z.infer<typeof AudioButtonCategorySchema>;
 export type AudioFormat = z.infer<typeof AudioFormatSchema>;
 export type AudioButtonBase = z.infer<typeof AudioButtonBaseSchema>;
 export type FirestoreAudioButtonData = z.infer<typeof FirestoreAudioButtonSchema>;
@@ -277,6 +262,8 @@ export function convertToFrontendAudioButton(
 
 	const frontendData: FrontendAudioButtonData = {
 		...data,
+		// タグのデフォルト値を設定
+		tags: data.tags || [],
 		durationText: formatDuration(data.startTime, data.endTime),
 		relativeTimeText: formatRelativeTime(data.createdAt),
 
@@ -296,7 +283,6 @@ export function convertToFrontendAudioButton(
 			id: data.id,
 			title: data.title,
 			description: data.description,
-			category: data.category,
 			tags: data.tags || [],
 			sourceVideoId: data.sourceVideoId,
 			sourceVideoTitle: data.sourceVideoTitle,
@@ -383,8 +369,7 @@ export function convertCreateInputToFirestoreAudioButton(
 		// id は add() 後に別途設定するため、初期作成時は含めない
 		title: input.title,
 		description: input.description,
-		category: input.category,
-		tags: input.tags,
+		tags: input.tags || [],
 		sourceVideoId: input.sourceVideoId,
 		startTime: input.startTime,
 		endTime: input.endTime,
@@ -433,23 +418,12 @@ export function validateAudioButtonCreation(
  */
 export function filterAudioButtons(
 	buttons: FrontendAudioButtonData[],
-	filters: { category?: AudioButtonCategory; tags?: string[]; searchText?: string },
+	filters: { tags?: string[]; searchText?: string },
 ): FrontendAudioButtonData[] {
 	return buttons.filter((button) => {
-		return (
-			matchesCategory(button, filters.category) &&
-			matchesTags(button, filters.tags) &&
-			matchesSearchText(button, filters.searchText)
-		);
+		return matchesTags(button, filters.tags) && matchesSearchText(button, filters.searchText);
 	});
 }
-
-const matchesCategory = (
-	button: FrontendAudioButtonData,
-	category?: AudioButtonCategory,
-): boolean => {
-	return !category || button.category === category;
-};
 
 const matchesTags = (button: FrontendAudioButtonData, tags?: string[]): boolean => {
 	if (!tags || tags.length === 0) {
@@ -547,20 +521,7 @@ export interface YouTubeVideoInfo {
 	publishedAt: string;
 }
 
-/**
- * 音声ボタンカテゴリの表示名を取得
- */
-export function getAudioButtonCategoryLabel(category: AudioButtonCategory): string {
-	const labels = {
-		voice: "ボイス",
-		bgm: "BGM",
-		se: "効果音",
-		talk: "トーク",
-		singing: "歌唱",
-		other: "その他",
-	};
-	return labels[category];
-}
+// カテゴリー関連の関数は削除（タグベースシステムに移行）
 
 /**
  * 秒数を時:分:秒形式にフォーマット
@@ -583,8 +544,7 @@ export interface FirestoreServerAudioButtonData {
 	id: string;
 	title: string;
 	description?: string;
-	category: AudioButtonCategory;
-	tags?: string[];
+	tags: string[];
 
 	// YouTube動画情報
 	sourceVideoId: string;
