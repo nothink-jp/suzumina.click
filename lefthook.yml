@@ -18,22 +18,20 @@ pre-commit:
       glob: "*.{ts,tsx,js,jsx}"
       run: pnpm test --run --reporter=verbose --passWithNoTests
       fail_text: "テストが失敗しました"
-      skip: true  # 必要に応じてコメントアウト
     
     # 4. セキュリティ監査 (週1回程度で十分な場合はskip: trueにする)
     audit:
       run: pnpm audit --audit-level moderate
       fail_text: "セキュリティ脆弱性が検出されました"
-      skip: true  # 必要に応じてコメントアウト
 
 pre-push:
   commands:
-    # プッシュ前の最終チェック
-    final-check:
-      run: pnpm check && pnpm test:coverage
-      fail_text: "最終チェックに失敗しました"
-    
     # 共有型のビルド確認
     build-shared-types:
       run: pnpm --filter @suzumina.click/shared-types build
       fail_text: "共有型のビルドに失敗しました"
+    
+    # プッシュ前の最終チェック (段階的実行)
+    final-check:
+      run: pnpm check && pnpm test:coverage
+      fail_text: "最終チェックに失敗しました"

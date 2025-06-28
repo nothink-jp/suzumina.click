@@ -18,7 +18,7 @@
 		"check": "biome check --write ./src",
 		"typecheck": "tsc --noEmit",
 		"clean": "rimraf dist *.tgz node_modules/.cache",
-		"test": "echo 'No tests configured for shared-types' && exit 0",
+		"test": "echo 'No tests configured for shared-types'",
 		"test:coverage": "echo 'No tests configured for shared-types' && exit 0"
 	},
 	"dependencies": {
