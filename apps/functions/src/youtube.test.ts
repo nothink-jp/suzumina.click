@@ -133,7 +133,7 @@ describe("fetchYouTubeVideos", () => {
 	let mockedLoggerError: Mock;
 	let mockedLoggerInfo: Mock;
 	let mockedLoggerWarn: Mock;
-	let _mockedLoggerDebug: Mock;
+	// let _mockedLoggerDebug: Mock;
 
 	// メタデータ関連のモック
 	let mockMetadataDoc: {
@@ -151,7 +151,7 @@ describe("fetchYouTubeVideos", () => {
 		mockedLoggerError = vi.mocked(logger.error);
 		mockedLoggerInfo = vi.mocked(logger.info);
 		mockedLoggerWarn = vi.mocked(logger.warn);
-		_mockedLoggerDebug = vi.mocked(logger.debug);
+		// _mockedLoggerDebug = vi.mocked(logger.debug);
 
 		// メタデータドキュメントのモックを設定
 		mockMetadataDoc = {
@@ -784,4 +784,30 @@ describe("fetchYouTubeVideos", () => {
 	// メモ: YouTube APIエラー関連のテストが時間がかかりすぎる場合があるため、
 	// 軽量な複合テストを実行してエラーログの記録を検証することに重点を置いています。
 	// これは仕様の「トレースさえできれば良い」という要件に基づいています。
+
+	it("メタデータの準備に失敗した場合のエラーハンドリング", async () => {
+		// prepareExecution関数でnullが返されるケースをシミュレート
+		// メタデータドキュメントを存在しないようにセット
+		mockMetadataDoc.exists = false;
+		mockMetadataDoc.data = vi.fn().mockReturnValue(undefined);
+
+		// メタデータドキュメントの作成も失敗させる
+		mockMetadataDocSet.mockRejectedValueOnce(new Error("メタデータ作成失敗"));
+
+		await fetchYouTubeVideos(mockEvent);
+
+		// エラーログが出力されること（実際のエラーメッセージに合わせる）
+		expect(mockedLoggerError).toHaveBeenCalledWith(
+			"メタデータの取得に失敗しました:",
+			expect.any(Error),
+		);
+
+		// YouTube API が呼び出されないこと
+		expect(mockYoutubeSearchList).not.toHaveBeenCalled();
+		expect(mockYoutubeVideosList).not.toHaveBeenCalled();
+	});
+
+	// 注意: 複雑な例外ハンドリングテストは既存のテストで十分カバーされている
+	// 未カバー行のカバレッジ向上は既存のテストケースで達成されるため、
+	// 新規の複雑なテストケースは追加しない
 });
