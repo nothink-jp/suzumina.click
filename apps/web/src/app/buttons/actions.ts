@@ -637,3 +637,179 @@ function parseDuration(duration: string): number {
 
 	return (hours * 3600 + minutes * 60 + seconds) * 1000; // ミリ秒で返す
 }
+
+/**
+ * 音声ボタンを削除するServer Action
+ */
+export async function deleteAudioButton(
+	audioButtonId: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		logger.info("音声ボタン削除を開始", { audioButtonId });
+
+		// 認証チェック
+		const user = await requireAuth();
+		logger.debug("認証チェック完了", { userId: user.discordId });
+
+		if (!audioButtonId || typeof audioButtonId !== "string") {
+			return {
+				success: false,
+				error: "音声ボタンIDが指定されていません",
+			};
+		}
+
+		const firestore = FirestoreAdmin.getInstance();
+
+		// 音声ボタンデータを取得して権限チェック
+		const audioButtonDoc = await firestore.collection("audioButtons").doc(audioButtonId).get();
+
+		if (!audioButtonDoc.exists) {
+			return {
+				success: false,
+				error: "指定された音声ボタンが見つかりません",
+			};
+		}
+
+		const audioButtonData = {
+			id: audioButtonDoc.id,
+			...audioButtonDoc.data(),
+		} as FirestoreAudioButtonData;
+
+		// 作成者または管理者のみ削除可能
+		if (audioButtonData.uploadedBy !== user.discordId && user.role !== "admin") {
+			logger.warn("削除権限なし", {
+				audioButtonId,
+				uploadedBy: audioButtonData.uploadedBy,
+				requestUserId: user.discordId,
+				userRole: user.role,
+			});
+			return {
+				success: false,
+				error: "この音声ボタンを削除する権限がありません",
+			};
+		}
+
+		logger.debug("削除権限確認完了", {
+			audioButtonId,
+			uploadedBy: audioButtonData.uploadedBy,
+			userRole: user.role,
+		});
+
+		// 1. まずお気に入りから削除（トランザクション外）
+		logger.debug("お気に入りからの削除開始");
+		await deleteAudioButtonFromAllFavorites(audioButtonId);
+
+		// 2. トランザクションで統計情報更新とメイン削除
+		await firestore.runTransaction(async (transaction) => {
+			// 統計情報の更新
+			logger.debug("統計情報の更新開始");
+
+			// 作成者の統計を更新
+			const userRef = firestore.collection("users").doc(audioButtonData.uploadedBy);
+			const userDoc = await transaction.get(userRef);
+			if (userDoc.exists) {
+				const updateData: {
+					updatedAt: string;
+					audioButtonsCount: ReturnType<typeof firestore.FieldValue.increment>;
+					totalPlayCount?: ReturnType<typeof firestore.FieldValue.increment>;
+				} = {
+					updatedAt: new Date().toISOString(),
+					audioButtonsCount: firestore.FieldValue.increment(-1),
+				};
+
+				// 再生回数も調整
+				if (audioButtonData.playCount > 0) {
+					updateData.totalPlayCount = firestore.FieldValue.increment(-audioButtonData.playCount);
+				}
+
+				transaction.update(userRef, updateData);
+			}
+
+			// 動画の統計を更新
+			const videoRef = firestore.collection("videos").doc(audioButtonData.sourceVideoId);
+			const videoDoc = await transaction.get(videoRef);
+			if (videoDoc.exists) {
+				transaction.update(videoRef, {
+					updatedAt: new Date().toISOString(),
+					audioButtonCount: firestore.FieldValue.increment(-1),
+				});
+			}
+
+			// メインの音声ボタンドキュメントを削除
+			logger.debug("メインドキュメントの削除");
+			const audioButtonRef = firestore.collection("audioButtons").doc(audioButtonId);
+			transaction.delete(audioButtonRef);
+		});
+
+		logger.debug("トランザクション完了");
+
+		// キャッシュの無効化
+		logger.debug("キャッシュ無効化開始");
+		revalidatePath("/buttons");
+		revalidatePath(`/buttons/${audioButtonId}`);
+		revalidatePath(`/videos/${audioButtonData.sourceVideoId}`);
+		revalidatePath("/favorites");
+		logger.debug("キャッシュ無効化完了");
+
+		logger.info("音声ボタン削除が正常に完了", {
+			audioButtonId,
+			deletedBy: user.discordId,
+			originalUploader: audioButtonData.uploadedBy,
+		});
+
+		return { success: true };
+	} catch (error) {
+		logger.error("音声ボタン削除でエラーが発生しました", {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+			audioButtonId,
+		});
+
+		return {
+			success: false,
+			error: "音声ボタンの削除に失敗しました。しばらく時間をおいてから再度お試しください。",
+		};
+	}
+}
+
+/**
+ * 全ユーザーのお気に入りから指定された音声ボタンを削除するヘルパー関数
+ */
+async function deleteAudioButtonFromAllFavorites(audioButtonId: string): Promise<void> {
+	const firestore = FirestoreAdmin.getInstance();
+
+	// 効率的な削除のため、collection group queryを使用
+	const favoritesQuery = firestore
+		.collectionGroup("favorites")
+		.where("audioButtonId", "==", audioButtonId);
+
+	const favoritesSnapshot = await favoritesQuery.get();
+
+	logger.debug("削除対象のお気に入り件数", {
+		audioButtonId,
+		favoritesCount: favoritesSnapshot.docs.length,
+	});
+
+	// バッチ処理で削除
+	const batchSize = 500; // Firestoreの制限
+	const batches = [];
+
+	for (let i = 0; i < favoritesSnapshot.docs.length; i += batchSize) {
+		const batch = firestore.batch();
+		const batchDocs = favoritesSnapshot.docs.slice(i, i + batchSize);
+
+		batchDocs.forEach((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
+			batch.delete(doc.ref);
+		});
+
+		batches.push(batch);
+	}
+
+	// 全バッチを実行
+	await Promise.all(batches.map((batch) => batch.commit()));
+
+	logger.debug("お気に入りからの削除完了", {
+		audioButtonId,
+		deletedFavorites: favoritesSnapshot.docs.length,
+	});
+}

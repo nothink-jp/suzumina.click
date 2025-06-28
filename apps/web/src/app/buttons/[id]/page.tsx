@@ -10,6 +10,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getAudioButtonById, getAudioButtons } from "@/app/buttons/actions";
+import { AudioButtonDeleteButton } from "@/components/AudioButtonDeleteButton";
 
 interface AudioButtonDetailPageProps {
 	params: Promise<{
@@ -166,6 +167,15 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 									</span>
 								</div>
 							</div>
+							{/* 削除ボタン */}
+							<AudioButtonDeleteButton
+								audioButtonId={audioButton.id}
+								audioButtonTitle={audioButton.title}
+								uploadedBy={audioButton.uploadedBy}
+								variant="outline"
+								size="sm"
+								showLabel={true}
+							/>
 						</div>
 					</CardHeader>
 					<CardContent className="space-y-4">

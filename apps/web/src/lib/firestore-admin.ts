@@ -41,6 +41,13 @@ export class FirestoreAdmin {
 	}
 
 	/**
+	 * コレクショングループクエリを取得
+	 */
+	public collectionGroup(collectionId: string) {
+		return this.firestore.collectionGroup(collectionId);
+	}
+
+	/**
 	 * ドキュメント参照を取得
 	 */
 	public doc(path: string) {

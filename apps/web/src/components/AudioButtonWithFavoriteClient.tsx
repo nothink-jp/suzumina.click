@@ -5,12 +5,14 @@ import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-a
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { getFavoritesStatusAction } from "@/actions/favorites";
+import { AudioButtonDeleteButton } from "./AudioButtonDeleteButton";
 import { FavoriteButton } from "./FavoriteButton";
 
 interface AudioButtonWithFavoriteClientProps {
 	audioButton: FrontendAudioButtonData;
 	onPlay?: () => void;
 	showFavorite?: boolean;
+	showDelete?: boolean;
 	className?: string;
 	maxTitleLength?: number;
 	initialIsFavorited?: boolean;
@@ -20,6 +22,7 @@ export function AudioButtonWithFavoriteClient({
 	audioButton,
 	onPlay,
 	showFavorite = true,
+	showDelete = true,
 	className,
 	maxTitleLength,
 	initialIsFavorited = false,
@@ -45,16 +48,29 @@ export function AudioButtonWithFavoriteClient({
 				className={className}
 				maxTitleLength={maxTitleLength}
 			/>
-			{showFavorite && (
+			{(showFavorite || showDelete) && (
 				<div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-					<FavoriteButton
-						audioButtonId={audioButton.id}
-						isFavorited={isFavorited}
-						favoriteCount={audioButton.favoriteCount}
-						showCount={false}
-						size="sm"
-						isAuthenticated={isAuthenticated}
-					/>
+					<div className="flex items-center gap-1">
+						{showDelete && (
+							<AudioButtonDeleteButton
+								audioButtonId={audioButton.id}
+								audioButtonTitle={audioButton.title}
+								uploadedBy={audioButton.uploadedBy}
+								variant="ghost"
+								size="icon"
+							/>
+						)}
+						{showFavorite && (
+							<FavoriteButton
+								audioButtonId={audioButton.id}
+								isFavorited={isFavorited}
+								favoriteCount={audioButton.favoriteCount}
+								showCount={false}
+								size="sm"
+								isAuthenticated={isAuthenticated}
+							/>
+						)}
+					</div>
 				</div>
 			)}
 		</div>
