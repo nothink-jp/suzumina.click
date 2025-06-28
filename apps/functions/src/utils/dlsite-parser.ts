@@ -180,7 +180,11 @@ export function extractTags($item: unknown): string[] {
 	)
 		.find(".search_tag a")
 		.each((_, element) => {
-			const tagText = cheerio.load("")(element).text().trim();
+			const tagText = cheerio
+				// biome-ignore lint/suspicious/noExplicitAny: cheerio element type is complex
+				.load("")(element as any)
+				.text()
+				.trim();
 			if (tagText && !tags.includes(tagText)) {
 				tags.push(tagText);
 			}

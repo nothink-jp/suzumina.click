@@ -125,7 +125,6 @@ git push origin main
 ```bash
 # ⚠️ 非推奨: GitHub Actionsを使用してください
 # cd terraform && terraform apply
-# ./scripts/deploy-cloud-run.sh
 ```
 
 **デプロイ確認:**

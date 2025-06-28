@@ -16,10 +16,9 @@
 		"baseUrl": ".",
 		"paths": {
 			"@suzumina.click/shared-types": ["../../packages/shared-types/dist/index.d.ts"]
-		},
-		"typeRoots": ["../../node_modules/.pnpm/@types+node@24.0.7/node_modules/@types"]
+		}
 	},
 	"compileOnSave": true,
-	"include": ["src", "src/types/*.d.ts"],
+	"include": ["src"],
 	"exclude": ["src/**/*.test.ts"]
 }

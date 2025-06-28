@@ -11,7 +11,7 @@ export default defineConfig({
 		globals: true,
 		testTimeout: 5000,
 		include: ["src/**/*.{test,spec}.{ts,js}"],
-		exclude: ["node_modules/**", "lib/**", "**/dlsite.test.ts", "**/dlsite-parser.test.ts"],
+		exclude: ["node_modules/**", "lib/**"],
 		server: {
 			deps: {
 				inline: [
@@ -35,7 +35,6 @@ export default defineConfig({
 				"vitest.*.{js,ts}",
 				"**/*.d.ts",
 				"**/*.config.{js,ts,mjs,cjs,mts,cts}",
-				"**/fix-audio-button-ids.ts", // 一回限りの修正スクリプト
 			],
 			thresholds: {
 				statements: 52,

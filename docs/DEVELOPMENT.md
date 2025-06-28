@@ -418,13 +418,11 @@ logger.info(`API Key: ${process.env.YOUTUBE_API_KEY}`);
 - **ドキュメント**: プレースホルダー値を使用（例: `YOUR_PROJECT_ID`, `${PROJECT_ID}`）
 
 ```bash
+# ✅ 良い例: GitHub Actionsによるデプロイ（推奨）
+# GitHubリポジトリの「Actions」タブから「Deploy to Cloud Run」を実行
+
 # ✅ 良い例: 環境変数の使用
 export GCP_PROJECT_ID=your-actual-project-id
-./scripts/deploy-cloud-run.sh
-
-# ✅ 良い例: gcloud設定の活用
-gcloud config set project your-project-id
-./scripts/deploy-cloud-run.sh
 
 # ❌ 悪い例: ハードコーディング
 PROJECT_ID="suzumina-click"  # セキュリティリスク

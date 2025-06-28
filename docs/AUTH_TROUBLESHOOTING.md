@@ -26,7 +26,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 #### 2. Cloud Run デプロイ時の環境変数設定
 
 ```bash
-# scripts/deploy-cloud-run.sh で以下を設定
+# GitHub Actions または Cloud Run コンソールで以下を設定
 --set-env-vars="NEXTAUTH_URL=https://suzumina.click,AUTH_TRUST_HOST=true"
 ```
 
@@ -52,7 +52,7 @@ SSL routines:ssl3_get_record:wrong version number
 
 1. **ポート設定の統一**
    - Dockerfile: `EXPOSE 8080`
-   - deploy-cloud-run.sh: `--port 8080`
+   - Cloud Run: `--port 8080`
 
 2. **プロトコルの一貫性**
    - すべてのURLでHTTPSを使用
@@ -79,7 +79,8 @@ SSL routines:ssl3_get_record:wrong version number
 3. デプロイスクリプトを実行：
 
 ```bash
-./scripts/deploy-cloud-run.sh production
+# GitHub Actionsでデプロイ（推奨）
+# または Cloud Run コンソールから直接デプロイ
 ```
 
 4. ヘルスチェックで確認：

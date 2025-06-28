@@ -1,14 +1,9 @@
 // functions/src/index.ts
 /**
- * Firebase Functionsのエントリーポイントファイル
+ * Cloud Functionsのエントリーポイントファイル
  *
  * このファイルは各モジュールからCloud Functionsをインポートして
  * まとめてエクスポートする役割を持ちます。
- *
- * Firebase Deploymentsはここからエクスポートされた関数を
- * Firebase Project上にデプロイします。
- *
- * Updated: Deploy-functions workflow test - with proper TypeScript types
  */
 
 // Cloud Functions 2世代（GCFv2）用のFunctions Frameworkをインポート
@@ -50,10 +45,6 @@ functions.cloudEvent<any>("fetchYouTubeVideos", fetchYouTubeVideos);
 functions.cloudEvent<any>("fetchDLsiteWorks", fetchDLsiteWorks);
 
 // HTTPトリガー関数は独立したファイルで管理
-// fix-audio-button-ids.ts を直接デプロイして使用
-
-// ヘルスチェック機能は削除されました
-// Cloud Functionsでは不要のため
 
 /**
  * プロセス終了処理
