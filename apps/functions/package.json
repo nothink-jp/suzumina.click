@@ -22,12 +22,16 @@
 		"@google-cloud/firestore": "^7.11.1",
 		"@google-cloud/functions-framework": "^4.0.0",
 		"@suzumina.click/shared-types": "workspace:*",
-		"cheerio": "1.0.0",
+		"boolbase": "^1.0.0",
+		"cheerio": "1.1.0",
+		"cheerio-select": "^2.1.0",
+		"css-select": "^5.2.1",
+		"css-what": "^6.2.1",
+		"domutils": "^3.2.2",
 		"googleapis": "^150.0.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.0.5",
-		"@types/cheerio": "^1.0.0",
 		"@types/node": "^24.0.3",
 		"@vitest/coverage-v8": "^3.2.4",
 		"rimraf": "^6.0.1",
