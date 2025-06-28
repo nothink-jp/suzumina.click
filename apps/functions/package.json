@@ -15,11 +15,14 @@
 		"test:coverage": "vitest run --coverage"
 	},
 	"main": "lib/index.js",
+	"engines": {
+		"node": "20"
+	},
 	"dependencies": {
 		"@google-cloud/firestore": "^7.11.1",
 		"@google-cloud/functions-framework": "^4.0.0",
 		"@suzumina.click/shared-types": "workspace:*",
-		"cheerio": "^1.1.0",
+		"cheerio": "^1.0.0",
 		"googleapis": "^150.0.1"
 	},
 	"devDependencies": {

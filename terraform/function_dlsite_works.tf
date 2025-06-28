@@ -8,7 +8,7 @@
 # デプロイの共通設定
 locals {
   dlsite_function_name = "fetchDLsiteWorks"
-  dlsite_runtime       = "nodejs22"
+  dlsite_runtime       = "nodejs20"
   dlsite_entry_point   = "fetchDLsiteWorks" # 注: これをindex.tsで登録した関数名と一致させる
   dlsite_memory        = local.current_env.functions_memory
   dlsite_timeout       = local.current_env.functions_timeout
