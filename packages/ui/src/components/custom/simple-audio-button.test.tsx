@@ -68,7 +68,7 @@ describe("SimpleAudioButton", () => {
 
 		expect(screen.getByText("テスト音声ボタン")).toBeInTheDocument();
 		expect(screen.getByLabelText("テスト音声ボタンを再生")).toBeInTheDocument();
-		expect(screen.getByLabelText("詳細情報を表示")).toBeInTheDocument();
+		expect(screen.getByLabelText("メニューを表示")).toBeInTheDocument();
 	});
 
 	it("初期状態ではローディングアイコンが表示される", () => {
@@ -87,11 +87,11 @@ describe("SimpleAudioButton", () => {
 		expect(audioPlayer).toBeInTheDocument();
 	});
 
-	it("情報アイコンが存在する", () => {
+	it("メニューアイコンが存在する", () => {
 		render(<SimpleAudioButton audioButton={mockAudioButton} />);
 
-		const infoButton = screen.getByLabelText("詳細情報を表示");
-		expect(infoButton).toBeInTheDocument();
+		const menuButton = screen.getByLabelText("メニューを表示");
+		expect(menuButton).toBeInTheDocument();
 	});
 
 	it("異なるendTimeでも正しくレンダリングされる", () => {
@@ -103,7 +103,7 @@ describe("SimpleAudioButton", () => {
 		render(<SimpleAudioButton audioButton={audioButtonWithDifferentEndTime} />);
 
 		expect(screen.getByText("テスト音声ボタン")).toBeInTheDocument();
-		expect(screen.getByLabelText("詳細情報を表示")).toBeInTheDocument();
+		expect(screen.getByLabelText("メニューを表示")).toBeInTheDocument();
 	});
 
 	it("YouTubeURLが正しく生成される", () => {
