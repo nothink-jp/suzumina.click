@@ -8,7 +8,6 @@ import {
 	ListPageStats,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { SearchAndFilterPanel } from "@suzumina.click/ui/components/custom/search-and-filter-panel";
-import { FilterSelect } from "@suzumina.click/ui/components/custom/search-filter-panel";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -19,7 +18,6 @@ import Pagination from "@/components/Pagination";
 
 interface SearchParams {
 	q?: string;
-	category?: string;
 	tags?: string;
 	sort?: string;
 	page?: string;
@@ -41,7 +39,6 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	// フォームの状態
 	const [searchQuery, setSearchQuery] = useState(searchParams.q || "");
 	const [sortBy, setSortBy] = useState(searchParams.sort || "default");
-	const [categoryFilter, setCategoryFilter] = useState(searchParams.category || "all");
 	const [itemsPerPageValue, setItemsPerPageValue] = useState("12");
 
 	const currentPage = searchParams.page ? Number.parseInt(searchParams.page, 10) : 1;
@@ -54,7 +51,6 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		queryParams.set("limit", itemsPerPageNum.toString());
 
 		if (searchParams.q) queryParams.set("q", searchParams.q);
-		if (searchParams.category) queryParams.set("category", searchParams.category);
 		if (searchParams.tags) queryParams.set("tags", searchParams.tags);
 		if (searchParams.sort) queryParams.set("sort", searchParams.sort);
 		if (searchParams.sourceVideoId) queryParams.set("sourceVideoId", searchParams.sourceVideoId);
@@ -131,19 +127,13 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		});
 	};
 
-	const handleCategoryChange = (value: string) => {
-		setCategoryFilter(value);
-		startTransition(() => {
-			updateSearchParams({ category: value === "all" ? undefined : value });
-		});
-	};
+	// カテゴリー機能は削除（タグベースシステムに移行）
 
 	// 検索・フィルターリセット
 	const handleReset = () => {
 		setSearchQuery("");
-		setCategoryFilter("all");
 		startTransition(() => {
-			updateSearchParams({ q: undefined, category: undefined });
+			updateSearchParams({ q: undefined, tags: undefined });
 		});
 	};
 
@@ -182,23 +172,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 				onSearch={handleSearch}
 				onReset={handleReset}
 				searchPlaceholder="音声ボタンを検索..."
-				hasActiveFilters={searchQuery !== "" || categoryFilter !== "all"}
-				filters={
-					<FilterSelect
-						value={categoryFilter}
-						onValueChange={handleCategoryChange}
-						placeholder="カテゴリー"
-						options={[
-							{ value: "all", label: "すべてのカテゴリー" },
-							{ value: "voice", label: "ボイス" },
-							{ value: "bgm", label: "BGM" },
-							{ value: "se", label: "効果音" },
-							{ value: "talk", label: "トーク" },
-							{ value: "singing", label: "歌唱" },
-							{ value: "other", label: "その他" },
-						]}
-					/>
-				}
+				hasActiveFilters={searchQuery !== ""}
 			/>
 
 			{/* 2. リスト表示制御 */}

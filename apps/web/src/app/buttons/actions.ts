@@ -1,7 +1,6 @@
 "use server";
 
 import {
-	type AudioButtonCategory,
 	type AudioButtonListResult,
 	type AudioButtonQuery,
 	AudioButtonQuerySchema,
@@ -155,7 +154,7 @@ export async function createAudioButton(
 
 		logger.debug("Firestoreデータ作成完了", {
 			title: firestoreData.title,
-			category: firestoreData.category,
+			tags: firestoreData.tags,
 		});
 
 		const docRef = await firestore.collection("audioButtons").add(firestoreData);
@@ -228,10 +227,7 @@ export async function getAudioButtons(
 		// Firestoreクエリの構築
 		let firestoreQuery = firestore.collection("audioButtons").where("isPublic", "==", true);
 
-		// カテゴリフィルター
-		if (validatedQuery.category) {
-			firestoreQuery = firestoreQuery.where("category", "==", validatedQuery.category);
-		}
+		// カテゴリフィルターは削除（タグベースシステムに移行）
 
 		// 動画IDフィルター
 		if (validatedQuery.sourceVideoId) {
@@ -358,27 +354,7 @@ export async function getRecentAudioButtons(limit = 6): Promise<FrontendAudioBut
 /**
  * カテゴリ別の音声ボタンを取得するServer Action
  */
-export async function getAudioButtonsByCategory(
-	category: string,
-	limit = 6,
-): Promise<FrontendAudioButtonData[]> {
-	try {
-		const result = await getAudioButtons({
-			limit,
-			category: category as AudioButtonCategory,
-			sortBy: "newest",
-			onlyPublic: true,
-		});
-
-		if (result.success) {
-			return result.data.audioButtons;
-		}
-
-		return [];
-	} catch (_error) {
-		return [];
-	}
-}
+// カテゴリー別取得は削除（タグベースシステムに移行）
 
 /**
  * 音声ボタンの統計を更新するServer Action

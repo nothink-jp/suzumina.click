@@ -133,7 +133,7 @@ export function AudioButtonCreator({
 			const input: CreateAudioButtonInput = {
 				sourceVideoId: videoId,
 				title: title.trim(),
-				category: "voice", // デフォルト
+				tags: [],
 				startTime,
 				endTime,
 				isPublic: true,

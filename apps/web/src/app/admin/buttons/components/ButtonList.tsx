@@ -1,13 +1,10 @@
 "use client";
 
-import {
-	type FrontendAudioButtonData,
-	getAudioButtonCategoryLabel,
-} from "@suzumina.click/shared-types";
+import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
-import { Clock, Edit, Eye, Music, Play, Trash2, User, Youtube } from "lucide-react";
+import { Clock, Edit, Eye, Music, Play, Tag, Trash2, User, Youtube } from "lucide-react";
 import Link from "next/link";
 
 type ButtonListProps = {
@@ -33,14 +30,28 @@ export function ButtonList({ buttons }: ButtonListProps) {
 							{/* メイン情報 */}
 							<div className="flex-1 min-w-0">
 								{/* ヘッダー */}
-								<div className="flex items-center gap-2 mb-2">
-									<Badge variant={(button.category || "other") === "voice" ? "default" : "outline"}>
-										{getAudioButtonCategoryLabel(button.category || "other")}
-									</Badge>
+								<div className="flex items-center gap-2 mb-2 flex-wrap">
 									<Badge variant="outline" className="flex items-center gap-1">
 										<Youtube className="h-3 w-3" />
 										YouTube
 									</Badge>
+									<Badge variant="outline" className="flex items-center gap-1">
+										<Music className="h-3 w-3" />
+										{button.endTime - button.startTime}秒
+									</Badge>
+									{button.tags &&
+										button.tags.length > 0 &&
+										button.tags.slice(0, 3).map((tag) => (
+											<Badge key={tag} variant="secondary" className="text-xs">
+												<Tag className="h-3 w-3 mr-1" />
+												{tag}
+											</Badge>
+										))}
+									{button.tags && button.tags.length > 3 && (
+										<Badge variant="secondary" className="text-xs">
+											+{button.tags.length - 3}
+										</Badge>
+									)}
 									<div className="flex items-center gap-1 text-xs text-muted-foreground">
 										<Clock className="h-3 w-3" />
 										{new Date(button.createdAt).toLocaleString("ja-JP")}

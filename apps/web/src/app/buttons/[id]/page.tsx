@@ -4,7 +4,6 @@ import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-play
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { Separator } from "@suzumina.click/ui/components/ui/separator";
 import { ArrowLeft, Calendar, Clock, Eye, Tag, Youtube } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -46,18 +45,7 @@ function formatRelativeTime(dateString: string): string {
 	return date.toLocaleDateString("ja-JP");
 }
 
-// カテゴリ表示名の変換
-function getCategoryDisplayName(category: string): string {
-	const categoryNames: Record<string, string> = {
-		voice: "ボイス",
-		bgm: "BGM",
-		se: "効果音",
-		talk: "トーク",
-		singing: "歌唱",
-		other: "その他",
-	};
-	return categoryNames[category] || category;
-}
+// カテゴリー機能は削除（タグベースシステムに移行）
 
 // 関連音声ボタンコンポーネント
 async function RelatedAudioButtons({
@@ -179,23 +167,17 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 						</div>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						{/* カテゴリとタグ */}
-						<div className="flex items-center gap-2 flex-wrap">
-							<Badge variant="secondary">
-								{getCategoryDisplayName(audioButton.category || "other")}
-							</Badge>
-							{audioButton.tags && audioButton.tags.length > 0 && (
-								<>
-									<Separator orientation="vertical" className="h-4" />
-									{audioButton.tags.map((tag) => (
-										<Badge key={tag} variant="outline" className="text-xs">
-											<Tag className="h-3 w-3 mr-1" />
-											{tag}
-										</Badge>
-									))}
-								</>
-							)}
-						</div>
+						{/* タグ */}
+						{audioButton.tags && audioButton.tags.length > 0 && (
+							<div className="flex items-center gap-2 flex-wrap">
+								{audioButton.tags.map((tag) => (
+									<Badge key={tag} variant="outline" className="text-xs">
+										<Tag className="h-3 w-3 mr-1" />
+										{tag}
+									</Badge>
+								))}
+							</div>
+						)}
 
 						{/* 説明 */}
 						{audioButton.description && (

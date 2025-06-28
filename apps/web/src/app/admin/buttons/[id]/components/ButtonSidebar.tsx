@@ -87,26 +87,15 @@ export function ButtonSidebar({ button }: ButtonSidebarProps) {
 				</CardHeader>
 				<CardContent>
 					<div className="text-xs space-y-2">
-						{button.category === "voice" && (
-							<div className="space-y-1">
-								<div className="font-medium text-suzuka-600">特別ボタン</div>
-								<ul className="text-muted-foreground space-y-1">
-									<li>• 高品質・特別な音声</li>
-									<li>• 削除時は慎重に判断</li>
-									<li>• ユーザー体験への影響大</li>
-								</ul>
-							</div>
-						)}
-						{button.category === "bgm" && (
-							<div className="space-y-1">
-								<div className="font-medium text-blue-600">通常ボタン</div>
-								<ul className="text-muted-foreground space-y-1">
-									<li>• 一般的な音声ボタン</li>
-									<li>• 品質確認を定期実施</li>
-									<li>• 重複チェック推奨</li>
-								</ul>
-							</div>
-						)}
+						<div className="space-y-1">
+							<div className="font-medium text-suzuka-600">音声ボタン管理</div>
+							<ul className="text-muted-foreground space-y-1">
+								<li>• タグで内容を分類・検索</li>
+								<li>• 削除時は慎重に判断</li>
+								<li>• ユーザー体験への影響を考慮</li>
+								<li>• 品質確認を定期実施</li>
+							</ul>
+						</div>
 						<div className="space-y-1">
 							<div className="font-medium text-blue-600">YouTube参照</div>
 							<ul className="text-muted-foreground space-y-1">

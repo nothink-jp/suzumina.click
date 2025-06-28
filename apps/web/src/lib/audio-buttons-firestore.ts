@@ -30,7 +30,7 @@ export function convertToFrontendAudioButton(
 	const frontendData: FrontendAudioButtonData = {
 		id: data.id,
 		title: data.title,
-		category: data.category,
+		tags: data.tags || [],
 		sourceVideoId: data.sourceVideoId,
 		sourceVideoTitle: data.sourceVideoTitle,
 		sourceVideoThumbnailUrl: `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
