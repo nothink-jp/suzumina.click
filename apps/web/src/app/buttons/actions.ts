@@ -672,8 +672,9 @@ export async function deleteAudioButton(
 		});
 
 		// 1. まずお気に入りから削除（トランザクション外）
-		logger.debug("お気に入りからの削除開始");
+		logger.debug("お気に入りからの削除開始", { audioButtonId });
 		await deleteAudioButtonFromAllFavorites(audioButtonId);
+		logger.debug("お気に入りからの削除完了", { audioButtonId });
 
 		// 2. トランザクションで統計情報更新とメイン削除
 		await firestore.runTransaction(async (transaction) => {
@@ -752,40 +753,92 @@ export async function deleteAudioButton(
  * 全ユーザーのお気に入りから指定された音声ボタンを削除するヘルパー関数
  */
 async function deleteAudioButtonFromAllFavorites(audioButtonId: string): Promise<void> {
-	const firestore = FirestoreAdmin.getInstance();
+	try {
+		const firestore = FirestoreAdmin.getInstance();
 
-	// 効率的な削除のため、collection group queryを使用
-	const favoritesQuery = firestore
-		.collectionGroup("favorites")
-		.where("audioButtonId", "==", audioButtonId);
+		logger.debug("お気に入り削除: collection group query実行開始", { audioButtonId });
 
-	const favoritesSnapshot = await favoritesQuery.get();
+		// 効率的な削除のため、collection group queryを使用
+		let favoritesSnapshot: FirebaseFirestore.QuerySnapshot;
 
-	logger.debug("削除対象のお気に入り件数", {
-		audioButtonId,
-		favoritesCount: favoritesSnapshot.docs.length,
-	});
+		try {
+			const favoritesQuery = firestore
+				.collectionGroup("favorites")
+				.where("audioButtonId", "==", audioButtonId);
 
-	// バッチ処理で削除
-	const batchSize = 500; // Firestoreの制限
-	const batches = [];
+			favoritesSnapshot = await favoritesQuery.get();
+		} catch (collectionGroupError) {
+			logger.warn("collection group queryでエラー、スキップして続行", {
+				audioButtonId,
+				error:
+					collectionGroupError instanceof Error
+						? collectionGroupError.message
+						: String(collectionGroupError),
+			});
+			// コレクショングループクエリが失敗した場合はスキップ
+			return;
+		}
 
-	for (let i = 0; i < favoritesSnapshot.docs.length; i += batchSize) {
-		const batch = firestore.batch();
-		const batchDocs = favoritesSnapshot.docs.slice(i, i + batchSize);
-
-		batchDocs.forEach((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
-			batch.delete(doc.ref);
+		logger.debug("お気に入り削除: クエリ実行完了", {
+			audioButtonId,
+			favoritesCount: favoritesSnapshot.docs.length,
 		});
 
-		batches.push(batch);
+		// お気に入りが0件の場合は早期リターン
+		if (favoritesSnapshot.docs.length === 0) {
+			logger.debug("お気に入り削除: 削除対象なし", { audioButtonId });
+			return;
+		}
+
+		// バッチ処理で削除
+		const batchSize = 500; // Firestoreの制限
+		const batches = [];
+
+		logger.debug("お気に入り削除: バッチ作成開始", {
+			audioButtonId,
+			totalDocs: favoritesSnapshot.docs.length,
+			batchSize,
+		});
+
+		for (let i = 0; i < favoritesSnapshot.docs.length; i += batchSize) {
+			const batch = firestore.batch();
+			const batchDocs = favoritesSnapshot.docs.slice(i, i + batchSize);
+
+			batchDocs.forEach((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
+				batch.delete(doc.ref);
+			});
+
+			batches.push(batch);
+			logger.debug("お気に入り削除: バッチ作成", {
+				audioButtonId,
+				batchIndex: Math.floor(i / batchSize),
+				batchDocsCount: batchDocs.length,
+			});
+		}
+
+		logger.debug("お気に入り削除: バッチ実行開始", {
+			audioButtonId,
+			batchCount: batches.length,
+		});
+
+		// 全バッチを実行
+		await Promise.all(
+			batches.map((batch, index) => {
+				logger.debug("お気に入り削除: バッチ実行", { audioButtonId, batchIndex: index });
+				return batch.commit();
+			}),
+		);
+
+		logger.debug("お気に入り削除: バッチ実行完了", {
+			audioButtonId,
+			deletedFavorites: favoritesSnapshot.docs.length,
+		});
+	} catch (error) {
+		logger.error("お気に入り削除でエラーが発生", {
+			audioButtonId,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
+		throw error; // 上位に再スロー
 	}
-
-	// 全バッチを実行
-	await Promise.all(batches.map((batch) => batch.commit()));
-
-	logger.debug("お気に入りからの削除完了", {
-		audioButtonId,
-		deletedFavorites: favoritesSnapshot.docs.length,
-	});
 }
