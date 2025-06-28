@@ -376,7 +376,7 @@ export async function saveVideosToFirestore(
 			logger.debug(`${batchCounter}件の動画ドキュメントのバッチをコミット中...`);
 			await batch
 				.commit()
-				.catch((err) =>
+				.catch((err: unknown) =>
 					logger.error("Firestoreバッチコミット中にエラーが発生しました (ループ内):", err),
 				);
 			logger.debug("バッチをコミットしました。バッチとカウンターをリセットします");
@@ -393,7 +393,7 @@ export async function saveVideosToFirestore(
 			.then(() => {
 				logger.debug("Firestoreバッチコミットが成功しました");
 			})
-			.catch((err) => {
+			.catch((err: unknown) => {
 				logger.error("最終Firestoreバッチコミット中にエラーが発生しました:", err);
 			});
 	} else {

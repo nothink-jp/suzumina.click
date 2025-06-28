@@ -9,8 +9,15 @@
 		"outDir": "lib",
 		"sourceMap": true,
 		"strict": true,
-		"target": "ESNext",
-		"lib": ["ESNext", "dom"]
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"skipLibCheck": true,
+		"allowSyntheticDefaultImports": true,
+		"baseUrl": ".",
+		"paths": {
+			"@suzumina.click/shared-types": ["../../packages/shared-types/dist/index.d.ts"]
+		},
+		"typeRoots": ["../../node_modules/.pnpm/@types+node@24.0.7/node_modules/@types"]
 	},
 	"compileOnSave": true,
 	"include": ["src"],
