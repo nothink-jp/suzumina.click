@@ -102,9 +102,47 @@ vi.mock("next/navigation", () => ({
 	usePathname: () => "/",
 }));
 
-// Mock for next/image
+// Mock for next/image - Enhanced for better test stability
 vi.mock("next/image", () => ({
-	default: ({ src, alt, ...props }: { src: string; alt: string; [key: string]: unknown }) => {
-		return React.createElement("img", { src, alt, ...props });
+	default: ({
+		src,
+		alt,
+		onError,
+		fill,
+		priority,
+		sizes,
+		placeholder,
+		blurDataURL,
+		style,
+		...props
+	}: {
+		src: string;
+		alt: string;
+		onError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
+		fill?: boolean;
+		priority?: boolean;
+		sizes?: string;
+		placeholder?: string;
+		blurDataURL?: string;
+		style?: React.CSSProperties;
+		[key: string]: unknown;
+	}) => {
+		// Convert Next.js specific props to data attributes to avoid React warnings
+		const dataAttributes: Record<string, string> = {};
+		if (fill !== undefined) dataAttributes["data-fill"] = String(fill);
+		if (priority !== undefined) dataAttributes["data-priority"] = String(priority);
+		if (placeholder !== undefined) dataAttributes["data-placeholder"] = placeholder;
+		if (blurDataURL !== undefined) dataAttributes["data-blur-data-url"] = blurDataURL;
+
+		return React.createElement("img", {
+			src,
+			alt,
+			sizes,
+			style,
+			onError,
+			"data-testid": "next-image",
+			...dataAttributes,
+			...props,
+		});
 	},
 }));

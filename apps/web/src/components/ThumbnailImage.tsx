@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 
 interface ThumbnailImageProps {
 	src: string;
@@ -28,6 +28,12 @@ const ThumbnailImage = memo(function ThumbnailImage({
 }: ThumbnailImageProps) {
 	const [imageSrc, setImageSrc] = useState(src);
 	const [hasError, setHasError] = useState(false);
+
+	// srcプロップが変更された際に内部状態をリセット
+	useEffect(() => {
+		setImageSrc(src);
+		setHasError(false);
+	}, [src]);
 
 	const handleError = () => {
 		if (!hasError) {
