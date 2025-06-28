@@ -4,16 +4,17 @@
 
 ## 🎯 プロジェクト概要
 
-suzumina.clickは、声優「涼花みなせ」ファンコミュニティのためのWebプラットフォームです。YouTube動画の音声参照機能、実音声ファイルボタン、DLsite作品情報閲覧、そして包括的な管理者機能を提供します。
+suzumina.clickは、声優「涼花みなせ」ファンコミュニティのためのWebプラットフォームです。YouTube動画の音声参照機能、DLsite作品情報閲覧、お気に入りシステム、そして包括的な管理者機能を提供します。
 
 ### 🚀 現在のステータス
 
-**本番稼働中の完成システム**
+**本番稼働中の完成システム (v0.2.2)**
 
 - **Webアプリケーション**: Next.js 15 + TypeScript + Tailwind CSS v4
 - **認証システム**: Discord OAuth + ギルドメンバーシップ確認
 - **データ収集**: YouTube Data API + DLsite スクレイピング (自動実行)
-- **音声システム**: タイムスタンプ参照 + 実音声ファイルボタンの二重システム
+- **音声システム**: YouTube動画タイムスタンプ参照システム
+- **お気に入りシステム**: 音声ボタンのお気に入り登録・管理機能
 - **管理者機能**: ユーザー・コンテンツ管理インターフェース
 - **インフラ**: Terraform + Google Cloud Platform (本番稼働)
 - **品質保証**: 400+件のテストスイート + E2Eテスト
@@ -50,13 +51,12 @@ DLsite      (本番環境)       (自動化)       ストレージ    (認証・
 - **pnpm Workspace** - Monorepo管理
 - **Vitest** - テストフレームワーク
 - **Storybook** - UIコンポーネント開発 (UI Package一本化)
-- **Biome 2.0.6** - リンター・フォーマッター (統一・最適化済み)
-- **Lefthook** - Git フック管理（pre-commit/pre-push品質チェック）
+- **Biome** - リンター・フォーマッター
 
 ## 📁 プロジェクト構造
 
 ```text
-suzumina.click/ (v0.2.1)
+suzumina.click/ (v0.2.2)
 ├── apps/
 │   ├── functions/          # Cloud Functions (本番稼働)
 │   │   ├── src/dlsite.ts   # DLsite作品収集
@@ -65,12 +65,19 @@ suzumina.click/ (v0.2.1)
 │       ├── src/app/        # App Router
 │       │   ├── admin/      # 管理者インターフェース
 │       │   ├── buttons/    # 音声機能
+│       │   ├── favorites/  # お気に入り機能
 │       │   ├── videos/     # 動画一覧
 │       │   └── works/      # 作品一覧
 │       ├── src/components/ # UIコンポーネント
+│       │   └── FavoriteButton.tsx # お気に入りボタン
+│       ├── src/actions/    # Server Actions
+│       │   └── favorites.ts # お気に入り関連
+│       ├── src/lib/        # ライブラリ・ユーティリティ
+│       │   └── favorites-firestore.ts # お気に入りFirestore操作
 │       └── e2e/            # E2Eテスト
 ├── packages/
 │   ├── shared-types/       # 共有型定義 (Zodスキーマ)
+│   │   └── src/favorite.ts # お気に入り型定義
 │   ├── ui/                 # 共有UIコンポーネント
 │   │   ├── components/ui/           # shadcn/ui (51個)
 │   │   ├── components/custom/       # 独自UI (audio-button等)
@@ -86,12 +93,16 @@ suzumina.click/ (v0.2.1)
 
 - **videos**: YouTube動画データ (`FirestoreYouTubeVideoData`)
 - **works**: DLsite作品データ (`FirestoreDLsiteWorkData`)
-- **audioButtons**: 音声ボタン (YouTube区間指定 + 実ファイル統合システム)
+- **audioButtons**: 音声ボタン (YouTube区間指定システム)
 - **users**: ユーザーデータ (Discord認証・ロール管理)
+- **users/{userId}/favorites**: お気に入り音声ボタン (サブコレクション)
 
-### 音声システム (統合)
+### 音声システム
 
-**音声ボタン**: YouTube動画の特定区間を参照する統一システム
+**音声ボタン**: YouTube動画の特定区間を参照するシステム
+- タイムスタンプ指定による音声再生
+- お気に入り登録・管理機能
+- 統計情報 (再生数・いいね数・お気に入り数)
 
 ## 🎨 デザインシステム
 
@@ -229,10 +240,9 @@ Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → ロ�
 #### **`@packages/ui/components/custom/` (拡張UIコンポーネント)**
 ```
 ✅ プロジェクト再利用可能な独自コンポーネント
-- audio-button (音声ファイル再生)
-- simple-audio-button (即座のYouTube音声再生) ← Phase 1新規追加
-- audio-only-player (非表示YouTube Player) ← Phase 1新規追加  
-- youtube-player (YouTube IFrame API統合) ← Web appから移行
+- simple-audio-button (YouTube音声再生)
+- audio-only-player (非表示YouTube Player)
+- youtube-player (YouTube IFrame API統合)
 - 汎用性があるが suzumina.click 特化機能
 - UI Package内で Storybook 管理
 ```
@@ -240,7 +250,9 @@ Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → ロ�
 #### **`@apps/web/src/components/` (アプリケーション特化)**
 ```
 ✅ suzumina.click 特有のビジネスロジック
-- AudioButtonCard, AudioButtonCreator (重いビジネスロジック)
+- AudioButtonCreator (音声ボタン作成機能)
+- AudioButtonWithFavoriteClient (お気に入り機能付き音声ボタン)
+- FavoriteButton (お気に入り機能)
 - SiteHeader, MobileMenu (サイト固有ナビゲーション)
 - AdminList, ThumbnailImage (ドメイン特化)
 - Next.js 固有API依存 (useRouter, Image等)
@@ -328,6 +340,7 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 2. **検索・フィルター強化**: 全コンテンツ横断検索
 3. **音声機能拡張**: プレイリスト・一括管理
 4. **パフォーマンス最適化**: キャッシュ・配信戦略
+5. **お気に入り機能拡張**: カテゴリ分類・共有機能
 
 ## 📚 ドキュメント
 
@@ -367,23 +380,14 @@ pnpm test         # 全パッケージ: 単体テスト実行
 pnpm update && pnpm audit --fix  # 安全な依存関係更新
 ```
 
-### 管理者セットアップ
-
-```bash
-# 管理者権限付与スクリプト
-cd apps/web && node scripts/setup-admin.js <DISCORD_USER_ID>
-
-# 環境変数設定（推奨）
-DEFAULT_ADMIN_DISCORD_IDS="discord_id1,discord_id2,discord_id3"
-```
 
 ## 📊 品質メトリクス（2025年6月現在）
 
 - **Lint状態**: 全パッケージ 0エラー・0警告 ✅
-- **依存関係**: 最新バージョン（Biome 2.0.6、React 19等）✅  
+- **依存関係**: 最新バージョン（React 19等）✅  
 - **テストカバレッジ**: 400+件のテストスイート ✅
 - **型安全性**: TypeScript strict mode ✅
-- **セキュリティ**: Firebase依存関係完全削除 ✅
+- **新機能**: お気に入りシステム完全実装 ✅
 
 このプロジェクトは、型安全なフルスタック開発を重視したファンコミュニティプラットフォームです。
 データ収集インフラとユーザー作成コンテンツ機能を組み合わせ、高品質な開発体験を提供します。

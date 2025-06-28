@@ -18,9 +18,9 @@ import { Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
-import { getAudioButtons } from "@/app/buttons/actions";
 import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
 import Pagination from "@/components/Pagination";
+import { getAudioButtons } from "../actions";
 
 interface SearchParams {
 	q?: string;
@@ -71,12 +71,18 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 
 			try {
 				const result = await getAudioButtons(query);
-				if (result.success) {
-					setAudioButtons(result.data.audioButtons);
+
+				if (!result) {
+					setError("データの取得に失敗しました");
+					return;
+				}
+
+				if (result.success && result.data) {
+					setAudioButtons(result.data.audioButtons || []);
 					// TODO: バックエンドでtotalCountを返すように修正が必要
-					setTotalCount(result.data.audioButtons.length);
+					setTotalCount(result.data.audioButtons?.length || 0);
 				} else {
-					setError(result.error || "エラーが発生しました");
+					setError("error" in result ? result.error : "エラーが発生しました");
 				}
 			} catch (_err) {
 				setError("データの取得に失敗しました");

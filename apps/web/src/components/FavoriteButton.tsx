@@ -48,7 +48,7 @@ export function FavoriteButton({
 				} else {
 					toast.error(result.error || "エラーが発生しました");
 				}
-			} catch (error) {
+			} catch (_error) {
 				toast.error("エラーが発生しました");
 			}
 		});

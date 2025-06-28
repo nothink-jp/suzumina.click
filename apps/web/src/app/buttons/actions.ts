@@ -389,7 +389,8 @@ export async function updateAudioButtonStats(
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		// 認証チェック（統計更新は認証ユーザーのみ）
-		await requireAuth();
+		// NOTE: 統計更新（再生回数など）は認証不要とする
+		// await requireAuth();
 		// バリデーション
 		const validationResult = UpdateAudioButtonStatsSchema.safeParse(statsUpdate);
 		if (!validationResult.success) {

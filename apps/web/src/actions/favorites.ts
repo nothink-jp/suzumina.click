@@ -95,7 +95,7 @@ export async function getFavoriteStatusAction(audioButtonId: string): Promise<Fa
 		}
 
 		return await getFavoriteStatus(session.user.discordId, audioButtonId);
-	} catch (error) {
+	} catch (_error) {
 		return { isFavorited: false };
 	}
 }
@@ -116,7 +116,7 @@ export async function getFavoritesStatusAction(
 		}
 
 		return await getFavoritesStatus(session.user.discordId, audioButtonIds);
-	} catch (error) {
+	} catch (_error) {
 		// エラー時は全てfalseを返す
 		const statusMap = new Map<string, boolean>();
 		audioButtonIds.forEach((id) => statusMap.set(id, false));
