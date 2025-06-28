@@ -144,7 +144,7 @@ describe("Basic Component Rendering Integration Tests", () => {
 			[
 				{ type: "text", selector: "テスト音声ボタン" },
 				{ type: "label", selector: "テスト音声ボタンを再生" },
-				{ type: "label", selector: "メニューを表示" },
+				{ type: "label", selector: "詳細情報を表示" },
 			],
 		],
 	])("renders %s component correctly", (_name, Component, props, assertions) => {

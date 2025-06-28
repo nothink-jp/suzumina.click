@@ -293,12 +293,12 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 				</div>
 			) : (
 				<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
-					<div className="space-y-3">
+					<div className="flex flex-wrap gap-3 items-start">
 						{audioButtons.map((audioButton) => (
 							<AudioButtonWithFavoriteClient
 								key={audioButton.id}
 								audioButton={audioButton}
-								className="w-full border border-suzuka-100 hover:border-suzuka-200 rounded-lg bg-white/60 hover:bg-suzuka-50/50 transition-all duration-200"
+								className="shadow-sm hover:shadow-md transition-all duration-200"
 							/>
 						))}
 					</div>

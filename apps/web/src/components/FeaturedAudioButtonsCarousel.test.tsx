@@ -13,28 +13,7 @@ vi.mock("@suzumina.click/ui/components/custom/simple-audio-button", () => ({
 	),
 }));
 
-// Carousel コンポーネントのモック
-vi.mock("@suzumina.click/ui/components/ui/carousel", () => ({
-	Carousel: ({ children }: { children: React.ReactNode }) => (
-		<div data-testid="carousel">{children}</div>
-	),
-	CarouselContent: ({ children }: { children: React.ReactNode }) => (
-		<div data-testid="carousel-content">{children}</div>
-	),
-	CarouselItem: ({ children }: { children: React.ReactNode }) => (
-		<div data-testid="carousel-item">{children}</div>
-	),
-	CarouselNext: () => (
-		<button type="button" data-testid="carousel-next">
-			Next
-		</button>
-	),
-	CarouselPrevious: () => (
-		<button type="button" data-testid="carousel-previous">
-			Previous
-		</button>
-	),
-}));
+// Carousel コンポーネントのモックは不要になったため削除
 
 describe("FeaturedAudioButtonsCarousel", () => {
 	const mockAudioButtons: FrontendAudioButtonData[] = [
@@ -85,9 +64,6 @@ describe("FeaturedAudioButtonsCarousel", () => {
 	it("音声ボタンが正しく表示される", () => {
 		render(<FeaturedAudioButtonsCarousel audioButtons={mockAudioButtons} />);
 
-		expect(screen.getByTestId("carousel")).toBeInTheDocument();
-		expect(screen.getByTestId("carousel-content")).toBeInTheDocument();
-
 		// すべての音声ボタンが表示されることを確認
 		const audioButtonTitles = screen.getAllByTestId("audio-button-title");
 		expect(audioButtonTitles).toHaveLength(2);
@@ -100,40 +76,42 @@ describe("FeaturedAudioButtonsCarousel", () => {
 		expect(audioButtonIds[1]).toHaveTextContent("audio-2");
 	});
 
-	it("カルーセルのナビゲーションボタンが表示される", () => {
+	it("flex-wrapレイアウトで音声ボタンが配置される", () => {
 		render(<FeaturedAudioButtonsCarousel audioButtons={mockAudioButtons} />);
 
-		expect(screen.getByTestId("carousel-previous")).toBeInTheDocument();
-		expect(screen.getByTestId("carousel-next")).toBeInTheDocument();
+		// flex-wrapコンテナが存在することを確認
+		const buttons = screen.getAllByTestId("simple-audio-button");
+		const container = buttons[0].parentElement;
+		expect(container).toHaveClass("flex", "flex-wrap", "gap-3", "items-start");
 	});
 
 	it("音声ボタンが空の場合にローディング状態を表示する", () => {
 		render(<FeaturedAudioButtonsCarousel audioButtons={[]} />);
 
 		expect(screen.getByText("新着音声ボタンを読み込み中...")).toBeInTheDocument();
-		expect(screen.queryByTestId("carousel")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("simple-audio-button")).not.toBeInTheDocument();
 	});
 
 	it("単一の音声ボタンも正しく表示される", () => {
 		const singleAudioButton = [mockAudioButtons[0]];
 		render(<FeaturedAudioButtonsCarousel audioButtons={singleAudioButton} />);
 
-		expect(screen.getByTestId("carousel")).toBeInTheDocument();
+		expect(screen.getByTestId("simple-audio-button")).toBeInTheDocument();
 		expect(screen.getByTestId("audio-button-title")).toHaveTextContent("テスト音声ボタン1");
 		expect(screen.getByTestId("audio-button-id")).toHaveTextContent("audio-1");
 	});
 
-	it("各音声ボタンがカルーセルアイテムとして配置される", () => {
+	it("各音声ボタンがインライン要素として配置される", () => {
 		render(<FeaturedAudioButtonsCarousel audioButtons={mockAudioButtons} />);
 
-		const carouselItems = screen.getAllByTestId("carousel-item");
-		expect(carouselItems).toHaveLength(2);
+		const audioButtons = screen.getAllByTestId("simple-audio-button");
+		expect(audioButtons).toHaveLength(2);
 
-		// 各アイテム内に音声ボタンが含まれることを確認
-		carouselItems.forEach((item, index) => {
+		// 各音声ボタンが正しいタイトルとIDを持つことを確認
+		audioButtons.forEach((button, index) => {
 			const audioButton = mockAudioButtons[index];
-			expect(item).toHaveTextContent(audioButton.title);
-			expect(item).toHaveTextContent(audioButton.id);
+			expect(button).toHaveTextContent(audioButton.title);
+			expect(button).toHaveTextContent(audioButton.id);
 		});
 	});
 });
