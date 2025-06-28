@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
 import "@suzumina.click/ui/globals.css";
+import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
+import { SessionProvider } from "@/components/SessionProvider";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 
@@ -26,12 +28,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			<body
 				className={`${mPlusRounded.className} min-h-screen flex flex-col antialiased gradient-bg`}
 			>
-				<PerformanceMonitor />
-				<SiteHeader />
-				<main id="main-content" className="flex-1">
-					{children}
-				</main>
-				<SiteFooter />
+				<SessionProvider>
+					<PerformanceMonitor />
+					<SiteHeader />
+					<main id="main-content" className="flex-1">
+						{children}
+					</main>
+					<SiteFooter />
+					<Toaster />
+				</SessionProvider>
 			</body>
 		</html>
 	);

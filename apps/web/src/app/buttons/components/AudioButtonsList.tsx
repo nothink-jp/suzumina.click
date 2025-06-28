@@ -20,7 +20,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
 import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
 import Pagination from "@/components/Pagination";
-import { getAudioButtons } from "../actions";
 
 interface SearchParams {
 	q?: string;
@@ -59,18 +58,19 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 			setLoading(true);
 			setError(null);
 
-			const query: AudioButtonQuery = {
-				limit: itemsPerPageNum,
-				searchText: searchParams.q,
-				category: searchParams.category as AudioButtonCategory | undefined,
-				tags: searchParams.tags ? searchParams.tags.split(",") : undefined,
-				sortBy: (searchParams.sort as "newest" | "oldest" | "popular" | "mostPlayed") || "newest",
-				sourceVideoId: searchParams.sourceVideoId,
-				onlyPublic: true,
-			};
-
 			try {
-				const result = await getAudioButtons(query);
+				const queryParams = new URLSearchParams();
+				queryParams.set("limit", itemsPerPageNum.toString());
+
+				if (searchParams.q) queryParams.set("q", searchParams.q);
+				if (searchParams.category) queryParams.set("category", searchParams.category);
+				if (searchParams.tags) queryParams.set("tags", searchParams.tags);
+				if (searchParams.sort) queryParams.set("sort", searchParams.sort);
+				if (searchParams.sourceVideoId)
+					queryParams.set("sourceVideoId", searchParams.sourceVideoId);
+
+				const response = await fetch(`/api/audio-buttons?${queryParams.toString()}`);
+				const result = await response.json();
 
 				if (!result) {
 					setError("データの取得に失敗しました");
@@ -84,7 +84,8 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 				} else {
 					setError("error" in result ? result.error : "エラーが発生しました");
 				}
-			} catch (_err) {
+			} catch (err) {
+				console.error("Error fetching audio buttons:", err);
 				setError("データの取得に失敗しました");
 			} finally {
 				setLoading(false);
