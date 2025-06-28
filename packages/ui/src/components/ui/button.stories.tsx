@@ -99,3 +99,17 @@ export const Disabled: Story = {
 		children: "Disabled",
 	},
 };
+
+export const CustomSuzuka: Story = {
+	args: {
+		children: "Suzuka Style",
+		className: "bg-suzuka-500 hover:bg-suzuka-600 text-white",
+	},
+};
+
+export const CustomMinase: Story = {
+	args: {
+		children: "Minase Style",
+		className: "bg-minase-500 hover:bg-minase-600 text-white",
+	},
+};

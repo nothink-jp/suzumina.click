@@ -1,19 +1,9 @@
 "use client";
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
-import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@suzumina.click/ui/components/ui/popover";
 import { cn } from "@suzumina.click/ui/lib/utils";
-import {
-	ExternalLink,
-	Heart,
-	Info,
-	Loader2,
-	MoreVertical,
-	Pause,
-	Play,
-	Trash2,
-} from "lucide-react";
+import { ExternalLink, Heart, Info, Loader2, Pause, Play, Trash2 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { AudioOnlyPlayer } from "./audio-only-player";
 
@@ -118,7 +108,8 @@ export function SimpleAudioButton({
 	return (
 		<div
 			className={cn(
-				"group relative flex items-center gap-2 rounded-lg border bg-card p-3 transition-all hover:shadow-md",
+				"group relative inline-flex items-stretch rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all",
+				"bg-gradient-to-r from-minase-400 to-minase-500",
 				className,
 			)}
 		>
@@ -126,34 +117,33 @@ export function SimpleAudioButton({
 			<button
 				type="button"
 				onClick={handlePlay}
-				className="flex flex-1 items-center gap-3 text-left transition-colors hover:text-suzuka-500"
+				className="flex items-center gap-2 text-left px-3 py-2 text-white transition-all hover:from-minase-500 hover:to-minase-600"
 				aria-label={`${audioButton.title}を再生`}
 			>
-				<div className="flex h-10 w-10 items-center justify-center rounded-full bg-suzuka-100 text-suzuka-600 transition-all group-hover:bg-suzuka-200">
+				<div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white transition-all group-hover:bg-white/30">
 					{isLoading ? (
-						<Loader2 className="h-5 w-5 animate-spin" />
+						<Loader2 className="h-4 w-4 animate-spin" />
 					) : isPlaying ? (
-						<Pause className="h-5 w-5" />
+						<Pause className="h-4 w-4" />
 					) : (
-						<Play className="h-5 w-5 translate-x-0.5" />
+						<Play className="h-4 w-4 translate-x-0.5" />
 					)}
 				</div>
-				<span className="font-medium truncate flex-1 min-w-0" title={audioButton.title}>
+				<span className="font-medium whitespace-nowrap" title={audioButton.title}>
 					{truncatedTitle}
 				</span>
 			</button>
 
-			{/* メニューアイコン */}
+			{/* 情報ボタンエリア */}
 			<Popover open={showInfo} onOpenChange={setShowInfo}>
 				<PopoverTrigger asChild>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-						aria-label="メニューを表示"
+					<button
+						type="button"
+						className="flex items-center justify-center px-3 py-2 bg-white/10 text-white hover:bg-white/20 transition-colors border-l border-white/20"
+						aria-label="詳細情報を表示"
 					>
-						<MoreVertical className="h-4 w-4" />
-					</Button>
+						<Info className="h-4 w-4" />
+					</button>
 				</PopoverTrigger>
 				<PopoverContent className="w-64 p-2" align="end">
 					<div className="space-y-1">

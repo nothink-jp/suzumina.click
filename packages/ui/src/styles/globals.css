@@ -36,11 +36,11 @@
 		--popover: 0 0% 100%;
 		--popover-foreground: 28 25% 8%;
 
-		--primary: 221.2 70% 45%; /* Updated for WCAG AA: 6.36:1 contrast ratio */
+		--primary: 340 75% 55%; /* suzuka-500 - 涼花みなせメインカラー */
 		--primary-foreground: 60 9% 98%;
 
-		--secondary: 60 5% 96%;
-		--secondary-foreground: 28 25% 8%;
+		--secondary: 27 100% 59%; /* minase-500 - セカンダリーカラー */
+		--secondary-foreground: 60 9% 98%; /* 白文字 */
 
 		--muted: 60 5% 96%;
 		--muted-foreground: 25 5% 45%; /* Darkened for WCAG AA: 4.60:1 contrast ratio */
@@ -78,6 +78,19 @@
 		--suzuka-800: 340 60% 30%;   /* #8f1447 - かなり濃い桜色 */
 		--suzuka-900: 340 55% 23%;   /* #660d33 - 最も濃い桜色 */
 		--suzuka-950: 340 50% 15%;   /* #3d0820 - ほぼ黒に近い桜色 */
+
+		/* Minase color palette - 涼花みなせ サブテーマ (オレンジ・ウォーム系) */
+		--minase-50: 33 100% 97%;    /* #fff8f3 - 最も薄いウォーム色 */
+		--minase-100: 31 90% 91%;    /* #ffedd5 - 薄いクリーム色 */
+		--minase-200: 30 85% 82%;    /* #fed7aa - 淡いピーチ色 */
+		--minase-300: 29 80% 73%;    /* #fdba74 - ソフトオレンジ */
+		--minase-400: 28 75% 62%;    /* #fb923c - ライトオレンジ */
+		--minase-500: 27 100% 59%;   /* #ff7e2d - メインオレンジ */
+		--minase-600: 23 89% 49%;    /* #ea5a0b - 濃いオレンジ */
+		--minase-700: 23 78% 40%;    /* #c2410c - ディープオレンジ */
+		--minase-800: 23 75% 34%;    /* #9a3412 - ダークオレンジ */
+		--minase-900: 23 71% 27%;    /* #7c2d12 - 最も濃いオレンジ */
+		--minase-950: 23 69% 16%;    /* #431407 - ブラウンオレンジ */
 
 		/* Sidebar (Stone palette) */
 		--sidebar: 0 0% 100%;
@@ -120,10 +133,10 @@
 		--popover: 20 14% 4%;
 		--popover-foreground: 60 9% 98%;
 
-		--primary: 60 9% 98%;
-		--primary-foreground: 20 14% 4%;
+		--primary: 340 75% 55%; /* suzuka-500 - ダークモードでも同じ */
+		--primary-foreground: 60 9% 98%;
 
-		--secondary: 12 6% 15%;
+		--secondary: 27 100% 59%; /* minase-500 - ダークモードでも同じ */
 		--secondary-foreground: 60 9% 98%;
 
 		--muted: 12 6% 15%;
@@ -163,6 +176,19 @@
 		--suzuka-900: 340 95% 95%;
 		--suzuka-950: 340 100% 98%;
 
+		/* Dark mode Minase color palette - 涼花みなせ サブテーマ (オレンジ・ウォーム系) */
+		--minase-50: 23 69% 16%;     /* ダークモードでは反転 */
+		--minase-100: 23 71% 27%;
+		--minase-200: 23 75% 34%;
+		--minase-300: 23 78% 40%;
+		--minase-400: 23 89% 49%;
+		--minase-500: 27 100% 59%;
+		--minase-600: 28 75% 62%;
+		--minase-700: 29 80% 73%;
+		--minase-800: 30 85% 82%;
+		--minase-900: 31 90% 91%;
+		--minase-950: 33 100% 97%;
+
 		/* Dark mode sidebar (Stone palette) */
 		--sidebar: 20 14% 4%;
 		--sidebar-foreground: 60 9% 98%;
@@ -175,7 +201,8 @@
 	}
 }
 
-@theme inline {
+@theme {
+	/* Base theme variables */
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -212,18 +239,107 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
-	/* Suzuka color palette */
-	--color-suzuka-50: var(--suzuka-50);
-	--color-suzuka-100: var(--suzuka-100);
-	--color-suzuka-200: var(--suzuka-200);
-	--color-suzuka-300: var(--suzuka-300);
-	--color-suzuka-400: var(--suzuka-400);
-	--color-suzuka-500: var(--suzuka-500);
-	--color-suzuka-600: var(--suzuka-600);
-	--color-suzuka-700: var(--suzuka-700);
-	--color-suzuka-800: var(--suzuka-800);
-	--color-suzuka-900: var(--suzuka-900);
-	--color-suzuka-950: var(--suzuka-950);
+}
+
+/* Custom color utilities for Tailwind CSS v4 compatibility */
+@layer utilities {
+	/* Minase color backgrounds */
+	.bg-minase-50 { background-color: hsl(33 100% 97%); }
+	.bg-minase-100 { background-color: hsl(31 90% 91%); }
+	.bg-minase-200 { background-color: hsl(30 85% 82%); }
+	.bg-minase-300 { background-color: hsl(29 80% 73%); }
+	.bg-minase-400 { background-color: hsl(28 75% 62%); }
+	.bg-minase-500 { background-color: hsl(27 100% 59%); }
+	.bg-minase-600 { background-color: hsl(23 89% 49%); }
+	.bg-minase-700 { background-color: hsl(23 78% 40%); }
+	.bg-minase-800 { background-color: hsl(23 75% 34%); }
+	.bg-minase-900 { background-color: hsl(23 71% 27%); }
+	.bg-minase-950 { background-color: hsl(23 69% 16%); }
+	
+	/* Minase text colors */
+	.text-minase-50 { color: hsl(33 100% 97%); }
+	.text-minase-100 { color: hsl(31 90% 91%); }
+	.text-minase-200 { color: hsl(30 85% 82%); }
+	.text-minase-300 { color: hsl(29 80% 73%); }
+	.text-minase-400 { color: hsl(28 75% 62%); }
+	.text-minase-500 { color: hsl(27 100% 59%); }
+	.text-minase-600 { color: hsl(23 89% 49%); }
+	.text-minase-700 { color: hsl(23 78% 40%); }
+	.text-minase-800 { color: hsl(23 75% 34%); }
+	.text-minase-900 { color: hsl(23 71% 27%); }
+	.text-minase-950 { color: hsl(23 69% 16%); }
+	
+	/* Suzuka color backgrounds */
+	.bg-suzuka-50 { background-color: hsl(340 100% 98%); }
+	.bg-suzuka-100 { background-color: hsl(340 95% 95%); }
+	.bg-suzuka-200 { background-color: hsl(340 90% 88%); }
+	.bg-suzuka-300 { background-color: hsl(340 85% 78%); }
+	.bg-suzuka-400 { background-color: hsl(340 80% 65%); }
+	.bg-suzuka-500 { background-color: hsl(340 75% 55%); }
+	.bg-suzuka-600 { background-color: hsl(340 70% 45%); }
+	.bg-suzuka-700 { background-color: hsl(340 65% 38%); }
+	.bg-suzuka-800 { background-color: hsl(340 60% 30%); }
+	.bg-suzuka-900 { background-color: hsl(340 55% 23%); }
+	.bg-suzuka-950 { background-color: hsl(340 50% 15%); }
+	
+	/* Suzuka text colors */
+	.text-suzuka-50 { color: hsl(340 100% 98%); }
+	.text-suzuka-100 { color: hsl(340 95% 95%); }
+	.text-suzuka-200 { color: hsl(340 90% 88%); }
+	.text-suzuka-300 { color: hsl(340 85% 78%); }
+	.text-suzuka-400 { color: hsl(340 80% 65%); }
+	.text-suzuka-500 { color: hsl(340 75% 55%); }
+	.text-suzuka-600 { color: hsl(340 70% 45%); }
+	.text-suzuka-700 { color: hsl(340 65% 38%); }
+	.text-suzuka-800 { color: hsl(340 60% 30%); }
+	.text-suzuka-900 { color: hsl(340 55% 23%); }
+	.text-suzuka-950 { color: hsl(340 50% 15%); }
+	
+	/* Gradient from/to utilities */
+	.from-minase-400 { --tw-gradient-from: hsl(28 75% 62%); --tw-gradient-to: hsl(28 75% 62% / 0); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+	.to-minase-500 { --tw-gradient-to: hsl(27 100% 59%); }
+	.from-suzuka-200 { --tw-gradient-from: hsl(340 90% 88%); --tw-gradient-to: hsl(340 90% 88% / 0); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+	.from-suzuka-500 { --tw-gradient-from: hsl(340 75% 55%); --tw-gradient-to: hsl(340 75% 55% / 0); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+	.to-suzuka-400 { --tw-gradient-to: hsl(340 80% 65%); }
+	.to-suzuka-600 { --tw-gradient-to: hsl(340 70% 45%); }
+	.to-minase-500 { --tw-gradient-to: hsl(27 100% 59%); }
+	
+	/* Color with opacity utilities */
+	.bg-suzuka-500\/20 { background-color: hsl(340 75% 55% / 0.2); }
+	.bg-suzuka-600\/20 { background-color: hsl(340 70% 45% / 0.2); }
+	
+	/* Primary and secondary color utilities */
+	.bg-primary { background-color: hsl(var(--primary)); }
+	.text-primary { color: hsl(var(--primary)); }
+	.text-primary-foreground { color: hsl(var(--primary-foreground)); }
+	.bg-secondary { background-color: hsl(var(--secondary)); }
+	.text-secondary-foreground { color: hsl(var(--secondary-foreground)); }
+	.bg-destructive { background-color: hsl(var(--destructive)); }
+	.text-destructive { color: hsl(var(--destructive)); }
+	.bg-accent { background-color: hsl(var(--accent)); }
+	.text-accent-foreground { color: hsl(var(--accent-foreground)); }
+	.bg-muted { background-color: hsl(var(--muted)); }
+	.text-muted-foreground { color: hsl(var(--muted-foreground)); }
+	.border-border { border-color: hsl(var(--border)); }
+	.bg-background { background-color: hsl(var(--background)); }
+	.text-foreground { color: hsl(var(--foreground)); }
+	.bg-card { background-color: hsl(var(--card)); }
+	.text-card-foreground { color: hsl(var(--card-foreground)); }
+	.bg-popover { background-color: hsl(var(--popover)); }
+	.text-popover-foreground { color: hsl(var(--popover-foreground)); }
+	.bg-input { background-color: hsl(var(--input)); }
+	.border-input { border-color: hsl(var(--input)); }
+	.ring-ring { --tw-ring-color: hsl(var(--ring)); }
+	
+	/* Shadow utilities */
+	.shadow-xs { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+	
+	/* Hover states for buttons */
+	.hover\:bg-primary\/90:hover { background-color: hsl(var(--primary) / 0.9); }
+	.hover\:bg-destructive\/90:hover { background-color: hsl(var(--destructive) / 0.9); }
+	.hover\:bg-secondary\/80:hover { background-color: hsl(var(--secondary) / 0.8); }
+	.hover\:bg-accent:hover { background-color: hsl(var(--accent)); }
+	.hover\:text-accent-foreground:hover { color: hsl(var(--accent-foreground)); }
 }
 
 @layer base {
