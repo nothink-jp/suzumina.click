@@ -180,10 +180,7 @@ export function extractTags($item: unknown): string[] {
 	)
 		.find(".search_tag a")
 		.each((_, element) => {
-			const tagText = cheerio
-				.load(element as string)(element as string)
-				.text()
-				.trim();
+			const tagText = $(element).text().trim();
 			if (tagText && !tags.includes(tagText)) {
 				tags.push(tagText);
 			}
@@ -241,7 +238,7 @@ function extractProductInfo($item: unknown, index: number): BasicProductInfo | n
 		authorElements.length > 0
 			? authorElements
 					// biome-ignore lint/suspicious/noExplicitAny: cheerio element mapping
-					.map((_: any, el: any) => cheerio.load(el).text().trim())
+					.map((_: any, el: any) => $(el).text().trim())
 					.get()
 					.filter((name: string) => name)
 			: undefined;

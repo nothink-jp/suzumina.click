@@ -11,7 +11,19 @@ export default defineConfig({
 		globals: true,
 		testTimeout: 5000,
 		include: ["src/**/*.{test,spec}.{ts,js}"],
-		exclude: ["node_modules/**", "lib/**"],
+		exclude: [
+			"node_modules/**",
+			"lib/**",
+			"**/dlsite.test.ts",
+			"**/dlsite-parser.test.ts",
+			"**/dlsite-mapper.test.ts",
+			"**/dlsite-firestore.test.ts",
+		],
+		server: {
+			deps: {
+				inline: ["cheerio", "@suzumina.click/shared-types"],
+			},
+		},
 		coverage: {
 			provider: "v8",
 			reporter: ["text", "json", "lcov", "clover"],
