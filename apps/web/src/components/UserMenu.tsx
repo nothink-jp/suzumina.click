@@ -8,7 +8,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@suzumina.click/ui/components/ui/dropdown-menu";
-import { LogOut, User } from "lucide-react";
+import { Heart, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { signOutAction } from "@/app/auth/actions";
 import UserAvatar from "./UserAvatar";
@@ -63,6 +63,12 @@ export default function UserMenu({ user }: UserMenuProps) {
 					<Link href="/users/me" className="flex items-center gap-2 cursor-pointer">
 						<User className="h-4 w-4" />
 						<span>マイページ</span>
+					</Link>
+				</DropdownMenuItem>
+				<DropdownMenuItem asChild>
+					<Link href="/favorites" className="flex items-center gap-2 cursor-pointer">
+						<Heart className="h-4 w-4" />
+						<span>お気に入り</span>
 					</Link>
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />

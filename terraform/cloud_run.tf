@@ -139,6 +139,17 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = var.suzumina_guild_id
       }
 
+      # Default Admin Discord IDs (Secret Managerから取得)
+      env {
+        name = "DEFAULT_ADMIN_DISCORD_IDS"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.auth_secrets["DEFAULT_ADMIN_DISCORD_IDS"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
       # 許可されたホスト名（デフォルトURL制御用）
       env {
         name  = "ALLOWED_HOSTS"

@@ -139,3 +139,9 @@ variable "suzumina_guild_id" {
   default     = "959095494456537158"
   sensitive   = false  # Guild IDは公開情報
 }
+
+variable "default_admin_discord_ids" {
+  description = "Default admin Discord user IDs (comma separated)"
+  type        = string
+  sensitive   = false  # Discord user IDsは公開情報
+}

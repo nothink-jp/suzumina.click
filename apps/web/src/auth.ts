@@ -68,6 +68,27 @@ async function handleNewDiscordUser(
 }
 
 /**
+ * Firestoreからユーザーロールを取得する関数
+ */
+async function getUserRoleFromFirestore(discordId: string): Promise<string> {
+	try {
+		const firestore = getFirestore();
+		const userDoc = await firestore.collection("users").doc(discordId).get();
+		if (userDoc.exists) {
+			const userData = userDoc.data() as { role?: string };
+			return userData.role || "member";
+		}
+		// 新規ユーザーの場合はデフォルトロールを設定
+		const defaultAdminIds = process.env.DEFAULT_ADMIN_DISCORD_IDS?.split(",") || [];
+		return defaultAdminIds.includes(discordId) ? "admin" : "member";
+	} catch (_error) {
+		// フォールバック: 環境変数のデフォルト管理者IDをチェック
+		const defaultAdminIds = process.env.DEFAULT_ADMIN_DISCORD_IDS?.split(",") || [];
+		return defaultAdminIds.includes(discordId) ? "admin" : "member";
+	}
+}
+
+/**
  * Discord Guild情報を取得するヘルパー関数
  */
 async function fetchDiscordGuildMembership(
@@ -154,7 +175,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 			// 初回ログイン時にユーザー情報とGuild情報を保存
 			if (user && account?.provider === "discord" && account.providerAccountId) {
 				const discordUser = createDiscordUserObject(account.providerAccountId, user);
-
 				const guildMembership = user.guildMembership as GuildMembership;
 
 				token.discordUser = discordUser;
@@ -166,25 +186,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 				);
 
 				// ロール情報をFirestoreから取得してJWTトークンに追加
-				try {
-					const firestore = getFirestore();
-					const userDoc = await firestore.collection("users").doc(discordUser.id).get();
-					if (userDoc.exists) {
-						const userData = userDoc.data() as { role?: string };
-						token.role = userData.role || "member";
-					} else {
-						// 新規ユーザーの場合はデフォルトロールを設定
-						const defaultAdminIds = process.env.DEFAULT_ADMIN_DISCORD_IDS?.split(",") || [];
-						token.role = defaultAdminIds.includes(discordUser.id) ? "admin" : "member";
-					}
-				} catch (error) {
-					// 本番環境ではエラーログを抑制
-					if (process.env.NODE_ENV === "development") {
-						// biome-ignore lint/suspicious/noConsole: Development debugging only
-						console.error("Failed to fetch user role:", error);
-					}
-					token.role = "member";
-				}
+				token.role = await getUserRoleFromFirestore(discordUser.id);
 			}
 
 			return token;

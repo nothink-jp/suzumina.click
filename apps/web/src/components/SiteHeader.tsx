@@ -49,13 +49,6 @@ export default async function SiteHeader() {
 										<Link href="/works">作品一覧</Link>
 									</NavigationMenuLink>
 								</NavigationMenuItem>
-								{session?.user && (
-									<NavigationMenuItem>
-										<NavigationMenuLink asChild>
-											<Link href="/favorites">お気に入り</Link>
-										</NavigationMenuLink>
-									</NavigationMenuItem>
-								)}
 							</NavigationMenuList>
 						</NavigationMenu>
 

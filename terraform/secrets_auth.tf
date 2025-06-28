@@ -27,6 +27,11 @@ locals {
       id          = "NEXTAUTH_SECRET"
       description = "NextAuth.js secret for JWT encryption"
       category    = "auth"
+    },
+    {
+      id          = "DEFAULT_ADMIN_DISCORD_IDS"
+      description = "Default admin Discord user IDs (comma separated)"
+      category    = "auth"
     }
   ]
 }
@@ -85,6 +90,11 @@ resource "google_secret_manager_secret_version" "discord_bot_token" {
 resource "google_secret_manager_secret_version" "nextauth_secret" {
   secret      = google_secret_manager_secret.auth_secrets["NEXTAUTH_SECRET"].id
   secret_data = var.nextauth_secret
+}
+
+resource "google_secret_manager_secret_version" "default_admin_discord_ids" {
+  secret      = google_secret_manager_secret.auth_secrets["DEFAULT_ADMIN_DISCORD_IDS"].id
+  secret_data = var.default_admin_discord_ids
 }
 
 # Secret Manager読み取り権限をCloud Runサービスアカウントに付与
