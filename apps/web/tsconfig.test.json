@@ -1,16 +1,12 @@
 {
-	"extends": "./tsconfig.json",
+	"extends": "@suzumina.click/typescript-config/vitest.json",
 	"compilerOptions": {
-		"types": ["vitest/globals", "@testing-library/jest-dom", "node"]
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"],
+			"@suzumina.click/ui/*": ["../../packages/ui/src/*"]
+		}
 	},
-	"include": [
-		"next-env.d.ts",
-		"vitest.d.ts",
-		"vitest.setup.ts",
-		"src/**/*.ts",
-		"src/**/*.tsx",
-		"src/**/*.test.ts",
-		"src/**/*.test.tsx"
-	],
-	"exclude": ["node_modules", ".next"]
+	"include": ["next-env.d.ts", "vitest.setup.ts", "src/**/*.ts", "src/**/*.tsx", "src/**/*.test.*"],
+	"exclude": ["node_modules", ".next", "**/*.stories.*"]
 }

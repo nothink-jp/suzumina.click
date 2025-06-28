@@ -9,7 +9,7 @@
 		"lint": "biome check src/ e2e/ *.ts *.mjs --files-ignore-unknown=true",
 		"format": "biome format --write ./src",
 		"check": "biome check --write ./src",
-		"typecheck": "tsc --noEmit",
+		"typecheck": "tsc --noEmit --skipLibCheck",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",

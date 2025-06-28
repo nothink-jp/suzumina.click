@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
 import ThumbnailImage from "./ThumbnailImage";
 
 // Note: Next.js Image mock is now provided globally in vitest.setup.ts

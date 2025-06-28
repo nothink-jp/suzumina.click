@@ -5,5 +5,11 @@
 	"license": "PROPRIETARY",
 	"publishConfig": {
 		"access": "public"
-	}
+	},
+	"files": [
+		"base.json",
+		"nextjs.json",
+		"react-library.json",
+		"vitest.json"
+	]
 }

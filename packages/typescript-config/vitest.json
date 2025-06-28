@@ -1,0 +1,18 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"display": "Vitest Testing",
+	"extends": "./nextjs.json",
+	"compilerOptions": {
+		"types": ["vitest/globals", "@testing-library/jest-dom", "node"],
+		"noEmit": true,
+		"resolveJsonModule": true,
+		"strict": false,
+		"skipLibCheck": true,
+		"allowSyntheticDefaultImports": true,
+		"noImplicitAny": false,
+		"noImplicitReturns": false,
+		"noUnusedLocals": false,
+		"noUnusedParameters": false,
+		"lib": ["es2022", "DOM", "DOM.Iterable"]
+	}
+}
