@@ -83,7 +83,6 @@ describe("Audio Button Server Actions", () => {
 		const validInput: CreateAudioButtonInput = {
 			title: "テスト音声ボタン",
 			description: "テスト用の説明",
-			category: "voice",
 			tags: ["テスト"],
 			sourceVideoId: "test-video-id",
 			startTime: 30,
@@ -218,7 +217,7 @@ describe("Audio Button Server Actions", () => {
 					data: () => ({
 						title: "音声ボタン1",
 						description: "説明1",
-						category: "voice",
+						tags: ["挨拶"],
 						sourceVideoId: "video-1",
 						videoTitle: "動画タイトル1",
 						startTime: 10,
@@ -237,7 +236,7 @@ describe("Audio Button Server Actions", () => {
 					data: () => ({
 						title: "音声ボタン2",
 						description: "説明2",
-						category: "bgm",
+						tags: ["BGM"],
 						sourceVideoId: "video-2",
 						videoTitle: "動画タイトル2",
 						startTime: 30,
@@ -306,7 +305,7 @@ describe("Audio Button Server Actions", () => {
 			const mockDocData = {
 				title: "テスト音声ボタン",
 				description: "テスト用の説明",
-				category: "voice",
+				tags: ["テスト"],
 				sourceVideoId: "test-video",
 				videoTitle: "テスト動画",
 				startTime: 10,
@@ -355,7 +354,7 @@ describe("Audio Button Server Actions", () => {
 				data: () => ({
 					title: "非公開音声ボタン",
 					description: "非公開説明",
-					category: "voice",
+					tags: ["非公開"],
 					sourceVideoId: "private-video",
 					videoTitle: "非公開動画",
 					startTime: 0,
