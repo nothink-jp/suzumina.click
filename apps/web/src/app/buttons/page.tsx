@@ -1,8 +1,3 @@
-import {
-	ListPageContent,
-	ListPageHeader,
-	ListPageLayout,
-} from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
@@ -26,32 +21,43 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 	const resolvedSearchParams = await searchParams;
 
 	return (
-		<ListPageLayout>
-			<ListPageHeader
-				title="音声ボタン一覧"
-				description="涼花みなせさんの音声ボタンを検索・再生できます"
-			>
-				<Button asChild>
-					<Link href="/buttons/create">
-						<Plus className="h-4 w-4 mr-2" />
-						音声ボタンを作成
-					</Link>
-				</Button>
-			</ListPageHeader>
+		<div className="min-h-screen bg-gradient-to-br from-suzuka-50 via-background to-minase-50">
+			{/* Header */}
+			<header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-suzuka-100">
+				<div className="max-w-7xl mx-auto px-4 py-6">
+					<div className="flex items-center justify-between">
+						<div>
+							<h1 className="text-4xl font-bold bg-gradient-to-r from-suzuka-600 to-minase-600 bg-clip-text text-transparent mb-2">
+								音声ボタン一覧
+							</h1>
+							<p className="text-muted-foreground">
+								涼花みなせさんの音声ボタンを検索・再生できます
+							</p>
+						</div>
+						<Button asChild className="bg-suzuka-500 hover:bg-suzuka-600 text-white">
+							<Link href="/buttons/create">
+								<Plus className="h-4 w-4 mr-2" />
+								音声ボタンを作成
+							</Link>
+						</Button>
+					</div>
+				</div>
+			</header>
 
-			<ListPageContent>
+			{/* Content */}
+			<main className="max-w-7xl mx-auto px-4 py-8">
 				<Suspense
 					fallback={
 						<div className="text-center py-12">
-							<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+							<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-suzuka-500" />
 							<p className="mt-2 text-muted-foreground">読み込み中...</p>
 						</div>
 					}
 				>
 					<AudioButtonsList searchParams={resolvedSearchParams} />
 				</Suspense>
-			</ListPageContent>
-		</ListPageLayout>
+			</main>
+		</div>
 	);
 }
 

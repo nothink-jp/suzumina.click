@@ -2,14 +2,8 @@
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
-import {
-	ListPageEmptyState,
-	ListPageGrid,
-	ListPageStats,
-} from "@suzumina.click/ui/components/custom/list-page-layout";
-import { SearchAndFilterPanel } from "@suzumina.click/ui/components/custom/search-and-filter-panel";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus, Search, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useCallback, useEffect, useState } from "react";
@@ -59,19 +53,26 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	}, [searchParams, itemsPerPageNum]);
 
 	// APIレスポンスの処理
-	const handleApiResponse = useCallback((result: any) => {
-		if (!result) {
-			setError("データの取得に失敗しました");
-			return;
-		}
+	const handleApiResponse = useCallback(
+		(result: {
+			success: boolean;
+			data?: { audioButtons?: FrontendAudioButtonData[] };
+			error?: string;
+		}) => {
+			if (!result) {
+				setError("データの取得に失敗しました");
+				return;
+			}
 
-		if (result.success && result.data) {
-			setAudioButtons(result.data.audioButtons || []);
-			setTotalCount(result.data.audioButtons?.length || 0);
-		} else {
-			setError(result.error || "エラーが発生しました");
-		}
-	}, []);
+			if (result.success && result.data) {
+				setAudioButtons(result.data.audioButtons || []);
+				setTotalCount(result.data.audioButtons?.length || 0);
+			} else {
+				setError(result.error || "エラーが発生しました");
+			}
+		},
+		[],
+	);
 
 	// データ取得
 	useEffect(() => {
@@ -146,104 +147,180 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 
 	if (loading) {
 		return (
-			<div className="text-center py-12">
-				<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-				<p className="mt-2 text-muted-foreground">読み込み中...</p>
+			<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-12">
+				<div className="text-center">
+					<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-suzuka-500" />
+					<p className="mt-2 text-muted-foreground">読み込み中...</p>
+				</div>
 			</div>
 		);
 	}
 
 	if (error) {
 		return (
-			<ListPageEmptyState
-				icon={<Sparkles className="mx-auto h-12 w-12" />}
-				title="エラーが発生しました"
-				description={error}
-			/>
+			<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-rose-100 p-12">
+				<div className="text-center">
+					<Sparkles className="mx-auto h-16 w-16 text-rose-400 mb-4" />
+					<h3 className="text-xl font-semibold text-foreground mb-2">エラーが発生しました</h3>
+					<p className="text-muted-foreground">{error}</p>
+				</div>
+			</div>
 		);
 	}
 
 	return (
-		<div>
+		<div className="space-y-6">
 			{/* 1. 検索・フィルターエリア */}
-			<SearchAndFilterPanel
-				searchValue={searchQuery}
-				onSearchChange={setSearchQuery}
-				onSearch={handleSearch}
-				onReset={handleReset}
-				searchPlaceholder="音声ボタンを検索..."
-				hasActiveFilters={searchQuery !== ""}
-			/>
+			<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
+				<div className="space-y-4">
+					{/* 検索バー */}
+					<div className="flex flex-col sm:flex-row gap-4">
+						<div className="flex-1">
+							<div className="relative">
+								<input
+									type="text"
+									placeholder="音声ボタンを検索..."
+									value={searchQuery}
+									onChange={(e) => setSearchQuery(e.target.value)}
+									onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+									className="w-full h-12 px-4 pr-12 rounded-lg border border-suzuka-200 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-suzuka-400 focus:border-transparent placeholder:text-muted-foreground"
+								/>
+								<button
+									type="button"
+									onClick={handleSearch}
+									className="absolute right-3 top-1/2 transform -translate-y-1/2 text-suzuka-500 hover:text-suzuka-600 p-1"
+									aria-label="検索"
+								>
+									<Search className="h-5 w-5" />
+								</button>
+							</div>
+						</div>
+
+						{/* アクションボタン */}
+						<div className="flex gap-2">
+							<Button
+								onClick={handleSearch}
+								className="h-12 px-8 bg-suzuka-500 hover:bg-suzuka-600 text-white border-0"
+							>
+								検索
+							</Button>
+							{searchQuery && (
+								<Button
+									variant="outline"
+									onClick={handleReset}
+									className="h-12 px-4 border-suzuka-200 text-suzuka-600 hover:bg-suzuka-50"
+									aria-label="検索をリセット"
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							)}
+						</div>
+					</div>
+
+					{/* 人気タグ */}
+					<div className="space-y-2">
+						<p className="text-sm font-medium text-muted-foreground">人気タグ</p>
+						<div className="flex flex-wrap gap-2">
+							{["挨拶", "応援", "おやすみ", "ありがとう", "お疲れ様"].map((tag) => (
+								<button
+									key={tag}
+									type="button"
+									onClick={() => {
+										setSearchQuery(tag);
+										startTransition(() => {
+											updateSearchParams({ q: tag });
+										});
+									}}
+									className="px-3 py-1.5 text-sm rounded-full bg-suzuka-100 text-suzuka-700 hover:bg-suzuka-200 transition-colors"
+								>
+									{tag}
+								</button>
+							))}
+						</div>
+					</div>
+				</div>
+			</div>
 
 			{/* 2. リスト表示制御 */}
-			<ListDisplayControls
-				title={searchParams.sourceVideoId ? "この動画の音声ボタン" : "音声ボタン一覧"}
-				totalCount={totalCount}
-				currentPage={currentPage}
-				totalPages={totalPages}
-				sortValue={sortBy}
-				onSortChange={handleSortChange}
-				sortOptions={[
-					{ value: "default", label: "並び順" },
-					{ value: "newest", label: "新しい順" },
-					{ value: "oldest", label: "古い順" },
-					{ value: "popular", label: "人気順" },
-					{ value: "mostPlayed", label: "再生回数順" },
-				]}
-				itemsPerPageValue={itemsPerPageValue}
-				onItemsPerPageChange={handleItemsPerPageChange}
-				actions={
-					searchParams.sourceVideoId ? (
-						<Link
-							href={`/videos/${searchParams.sourceVideoId}`}
-							className="text-sm text-muted-foreground hover:text-foreground"
-						>
-							← 動画詳細に戻る
-						</Link>
-					) : undefined
-				}
-			/>
+			<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
+				<ListDisplayControls
+					title={searchParams.sourceVideoId ? "この動画の音声ボタン" : "音声ボタン一覧"}
+					totalCount={totalCount}
+					currentPage={currentPage}
+					totalPages={totalPages}
+					sortValue={sortBy}
+					onSortChange={handleSortChange}
+					sortOptions={[
+						{ value: "default", label: "並び順" },
+						{ value: "newest", label: "新しい順" },
+						{ value: "oldest", label: "古い順" },
+						{ value: "popular", label: "人気順" },
+						{ value: "mostPlayed", label: "再生回数順" },
+					]}
+					itemsPerPageValue={itemsPerPageValue}
+					onItemsPerPageChange={handleItemsPerPageChange}
+					actions={
+						searchParams.sourceVideoId ? (
+							<Link
+								href={`/videos/${searchParams.sourceVideoId}`}
+								className="text-sm text-suzuka-600 hover:text-suzuka-700 font-medium"
+							>
+								← 動画詳細に戻る
+							</Link>
+						) : undefined
+					}
+				/>
+			</div>
 
 			{/* 音声ボタン一覧 */}
 			{audioButtons.length === 0 ? (
-				<ListPageEmptyState
-					icon={<Sparkles className="mx-auto h-12 w-12" />}
-					title="音声ボタンが見つかりませんでした"
-					description="検索条件を変更するか、新しい音声ボタンを作成してみましょう"
-					action={
-						<Button asChild>
+				<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-12">
+					<div className="text-center">
+						<Sparkles className="mx-auto h-16 w-16 text-suzuka-400 mb-4" />
+						<h3 className="text-xl font-semibold text-foreground mb-2">
+							音声ボタンが見つかりませんでした
+						</h3>
+						<p className="text-muted-foreground mb-6">
+							検索条件を変更するか、新しい音声ボタンを作成してみましょう
+						</p>
+						<Button asChild className="bg-suzuka-500 hover:bg-suzuka-600 text-white">
 							<Link href="/buttons/create">
 								<Plus className="h-4 w-4 mr-2" />
 								音声ボタンを作成
 							</Link>
 						</Button>
-					}
-				/>
+					</div>
+				</div>
 			) : (
-				<ListPageGrid>
-					{audioButtons.map((audioButton) => (
-						<div key={audioButton.id} className="min-h-card">
-							<AudioButtonWithFavoriteClient audioButton={audioButton} className="w-full h-full" />
-						</div>
-					))}
-				</ListPageGrid>
+				<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
+					<div className="space-y-3">
+						{audioButtons.map((audioButton) => (
+							<AudioButtonWithFavoriteClient
+								key={audioButton.id}
+								audioButton={audioButton}
+								className="w-full border border-suzuka-100 hover:border-suzuka-200 rounded-lg bg-white/60 hover:bg-suzuka-50/50 transition-all duration-200"
+							/>
+						))}
+					</div>
+				</div>
 			)}
 
 			{/* 3. ページネーション */}
 			{totalPages > 1 && (
-				<div className="mt-8">
+				<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
 					<Pagination currentPage={currentPage} totalPages={totalPages} />
 				</div>
 			)}
 
 			{/* 統計情報 */}
 			{audioButtons.length > 0 && (
-				<ListPageStats
-					currentPage={currentPage}
-					totalPages={totalPages}
-					totalCount={totalCount}
-					itemsPerPage={itemsPerPageNum}
-				/>
+				<div className="text-center">
+					<div className="inline-block bg-white/60 backdrop-blur-sm rounded-full px-6 py-2 text-sm text-muted-foreground border border-suzuka-100">
+						{totalCount.toLocaleString()}件中{" "}
+						{((currentPage - 1) * itemsPerPageNum + 1).toLocaleString()}〜
+						{Math.min(currentPage * itemsPerPageNum, totalCount).toLocaleString()}件を表示
+					</div>
+				</div>
 			)}
 		</div>
 	);

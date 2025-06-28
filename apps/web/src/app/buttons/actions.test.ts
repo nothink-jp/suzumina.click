@@ -278,13 +278,13 @@ describe("Audio Button Server Actions", () => {
 
 			const result = await getAudioButtons({
 				limit: 20,
-				category: "voice",
+				tags: ["挨拶"],
 				sortBy: "newest",
 				onlyPublic: true,
 			});
 
 			expect(result.success).toBe(true);
-			expect(mockWhere).toHaveBeenCalledWith("category", "==", "voice");
+			expect(mockWhere).toHaveBeenCalledWith("isPublic", "==", true);
 		});
 
 		it("無効なクエリでエラーが返される", async () => {

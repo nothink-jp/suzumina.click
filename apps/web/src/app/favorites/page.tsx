@@ -1,3 +1,4 @@
+import type { FirestoreAudioButtonData } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -40,7 +41,7 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
 		.map((fav) => {
 			const audioButtonData = audioButtonsMap.get(fav.audioButtonId);
 			if (!audioButtonData) return null;
-			return convertToFrontendAudioButton(audioButtonData as any);
+			return convertToFrontendAudioButton(audioButtonData as FirestoreAudioButtonData);
 		})
 		.filter((button) => button !== null);
 

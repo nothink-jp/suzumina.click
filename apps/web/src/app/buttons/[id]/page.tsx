@@ -1,15 +1,15 @@
 import type { AudioButtonQuery } from "@suzumina.click/shared-types";
-import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
 import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { ArrowLeft, Calendar, Clock, Eye, Tag, Youtube } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Eye, Heart, Play, Star, Tag, Youtube } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getAudioButtonById, getAudioButtons } from "@/app/buttons/actions";
 import { AudioButtonDeleteButton } from "@/components/AudioButtonDeleteButton";
+import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
 
 interface AudioButtonDetailPageProps {
 	params: Promise<{
@@ -45,8 +45,6 @@ function formatRelativeTime(dateString: string): string {
 	return date.toLocaleDateString("ja-JP");
 }
 
-// カテゴリー機能は削除（タグベースシステムに移行）
-
 // 関連音声ボタンコンポーネント
 async function RelatedAudioButtons({
 	currentId,
@@ -76,26 +74,33 @@ async function RelatedAudioButtons({
 
 			if (relatedButtons.length > 0) {
 				return (
-					<Card>
+					<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
 						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Youtube className="h-5 w-5" />
+							<CardTitle className="flex items-center gap-2 text-lg">
+								<Youtube className="h-5 w-5 text-suzuka-600" />
 								同じ動画の音声ボタン
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								{relatedButtons.slice(0, 4).map((audioButton) => (
-									<SimpleAudioButton
+									<AudioButtonWithFavoriteClient
 										key={audioButton.id}
 										audioButton={audioButton}
-										className="w-full"
+										showFavorite={true}
+										showDelete={false}
+										className="w-full border border-suzuka-100 hover:border-suzuka-200"
 									/>
 								))}
 							</div>
 							{relatedButtons.length > 4 && (
-								<div className="mt-4 text-center">
-									<Button variant="outline" size="sm" asChild>
+								<div className="mt-6 text-center">
+									<Button
+										variant="outline"
+										size="sm"
+										asChild
+										className="border-suzuka-200 text-suzuka-600 hover:bg-suzuka-50"
+									>
 										<Link href={`/buttons?videoId=${videoId}`}>
 											この動画の音声ボタンをもっと見る
 										</Link>
@@ -126,24 +131,26 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 	const audioButton = result.data;
 
 	return (
-		<div className="container mx-auto px-4 py-8 max-w-4xl">
+		<div className="min-h-screen bg-gradient-to-br from-suzuka-50 via-background to-minase-50">
 			{/* パンくずナビゲーション */}
-			<div className="mb-6">
+			<div className="container mx-auto px-4 py-4">
 				<Button variant="ghost" size="sm" asChild>
-					<Link href="/buttons" className="flex items-center gap-2">
+					<Link href="/buttons" className="flex items-center gap-2 hover:text-suzuka-600">
 						<ArrowLeft className="h-4 w-4" />
 						音声ボタン一覧に戻る
 					</Link>
 				</Button>
 			</div>
 
-			<div className="space-y-6">
-				{/* メインコンテンツ */}
-				<Card>
-					<CardHeader>
-						<div className="flex items-start justify-between">
-							<div className="space-y-2 flex-1">
-								<h1 className="text-2xl font-bold text-foreground">{audioButton.title}</h1>
+			<div className="container mx-auto px-4 pb-8 max-w-4xl">
+				{/* メインカード */}
+				<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0 mb-8">
+					<CardContent className="p-8">
+						<div className="flex items-start justify-between mb-6">
+							<div className="space-y-3 flex-1">
+								<h1 className="text-3xl font-bold text-foreground leading-tight">
+									{audioButton.title}
+								</h1>
 								<div className="flex items-center gap-4 text-sm text-muted-foreground">
 									<span className="flex items-center gap-1">
 										<Calendar className="h-4 w-4" />
@@ -152,6 +159,9 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 									<span className="flex items-center gap-1">
 										<Clock className="h-4 w-4" />
 										{audioButton.endTime - audioButton.startTime}秒
+									</span>
+									<span className="text-xs text-muted-foreground">
+										by {audioButton.uploadedByName}
 									</span>
 								</div>
 							</div>
@@ -165,83 +175,131 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 								showLabel={true}
 							/>
 						</div>
-					</CardHeader>
-					<CardContent className="space-y-4">
+
+						{/* 統計情報 */}
+						<div className="grid grid-cols-3 gap-4 mb-6">
+							<div className="text-center p-3 bg-suzuka-50 rounded-lg border border-suzuka-100">
+								<div className="flex items-center justify-center mb-1">
+									<Play className="h-4 w-4 text-suzuka-600" />
+								</div>
+								<div className="text-lg font-bold text-suzuka-700">
+									{audioButton.playCount.toLocaleString()}
+								</div>
+								<div className="text-xs text-suzuka-600">再生</div>
+							</div>
+							<div className="text-center p-3 bg-rose-50 rounded-lg border border-rose-100">
+								<div className="flex items-center justify-center mb-1">
+									<Heart className="h-4 w-4 text-rose-600" />
+								</div>
+								<div className="text-lg font-bold text-rose-700">
+									{audioButton.favoriteCount.toLocaleString()}
+								</div>
+								<div className="text-xs text-rose-600">お気に入り</div>
+							</div>
+							<div className="text-center p-3 bg-amber-50 rounded-lg border border-amber-100">
+								<div className="flex items-center justify-center mb-1">
+									<Star className="h-4 w-4 text-amber-600" />
+								</div>
+								<div className="text-lg font-bold text-amber-700">
+									{audioButton.likeCount.toLocaleString()}
+								</div>
+								<div className="text-xs text-amber-600">いいね</div>
+							</div>
+						</div>
+
 						{/* タグ */}
 						{audioButton.tags && audioButton.tags.length > 0 && (
-							<div className="flex items-center gap-2 flex-wrap">
-								{audioButton.tags.map((tag) => (
-									<Badge key={tag} variant="outline" className="text-xs">
-										<Tag className="h-3 w-3 mr-1" />
-										{tag}
-									</Badge>
-								))}
+							<div className="mb-6">
+								<h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+									<Tag className="h-4 w-4" />
+									タグ
+								</h3>
+								<div className="flex items-center gap-2 flex-wrap">
+									{audioButton.tags.map((tag) => (
+										<Badge
+											key={tag}
+											variant="secondary"
+											className="bg-suzuka-100 text-suzuka-700 hover:bg-suzuka-200"
+										>
+											{tag}
+										</Badge>
+									))}
+								</div>
 							</div>
 						)}
 
-						{/* 説明 */}
-						{audioButton.description && (
-							<div>
-								<h3 className="font-medium text-sm text-muted-foreground mb-2">説明</h3>
-								<p className="text-sm text-foreground">{audioButton.description}</p>
-							</div>
-						)}
+						{/* 音声ボタン再生エリア */}
+						<div className="mb-6">
+							<h3 className="text-sm font-medium text-muted-foreground mb-3">音声ボタン</h3>
+							<AudioButtonWithFavoriteClient
+								audioButton={audioButton}
+								showFavorite={true}
+								showDelete={false}
+								className="border-2 border-suzuka-200 hover:border-suzuka-300"
+							/>
+						</div>
 
 						{/* YouTube動画情報 */}
-						<div className="p-4 bg-muted rounded-lg">
-							<h3 className="font-medium text-sm text-muted-foreground mb-2">元動画</h3>
-							<div className="space-y-1">
+						<div className="bg-gradient-to-r from-suzuka-50 to-minase-50 p-6 rounded-lg border border-suzuka-100">
+							<h3 className="font-medium text-sm text-muted-foreground mb-3 flex items-center gap-2">
+								<Youtube className="h-4 w-4" />
+								元動画
+							</h3>
+							<div className="space-y-3">
 								<p className="font-medium text-foreground">{audioButton.sourceVideoTitle}</p>
 								<p className="text-sm text-muted-foreground">
-									時間: {formatTime(audioButton.startTime)} - {formatTime(audioButton.endTime)}(
-									{audioButton.endTime - audioButton.startTime}
-									秒)
+									再生時間: {formatTime(audioButton.startTime)} - {formatTime(audioButton.endTime)}{" "}
+									(切り抜き時間: {audioButton.endTime - audioButton.startTime}秒)
 								</p>
-								<Button variant="outline" size="sm" asChild>
-									<Link href={`/videos/${audioButton.sourceVideoId}`}>
-										<Youtube className="h-4 w-4 mr-2" />
-										動画詳細を見る
-									</Link>
-								</Button>
+								<div className="flex gap-2">
+									<Button variant="outline" size="sm" asChild>
+										<Link href={`/videos/${audioButton.sourceVideoId}`}>
+											<Youtube className="h-4 w-4 mr-2" />
+											動画詳細を見る
+										</Link>
+									</Button>
+									<Button variant="outline" size="sm" asChild>
+										<a
+											href={`https://www.youtube.com/watch?v=${audioButton.sourceVideoId}&t=${Math.floor(audioButton.startTime)}`}
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											<Youtube className="h-4 w-4 mr-2" />
+											YouTubeで開く
+										</a>
+									</Button>
+								</div>
 							</div>
 						</div>
 					</CardContent>
 				</Card>
 
 				{/* YouTube Player */}
-				<Card>
+				<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0 mb-8">
 					<CardHeader>
-						<CardTitle>YouTube動画プレイヤー</CardTitle>
+						<CardTitle className="text-lg">YouTube動画プレイヤー</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<YouTubePlayer
-							videoId={audioButton.sourceVideoId}
-							width="100%"
-							height="400"
-							startTime={audioButton.startTime}
-							endTime={audioButton.endTime}
-							controls
-							autoplay={false}
-						/>
-					</CardContent>
-				</Card>
-
-				{/* 音声ボタンアクション */}
-				<Card>
-					<CardHeader>
-						<CardTitle>この音声ボタン</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<SimpleAudioButton audioButton={audioButton} className="w-full" />
+						<div className="aspect-video bg-black rounded-lg overflow-hidden">
+							<YouTubePlayer
+								videoId={audioButton.sourceVideoId}
+								width="100%"
+								height="100%"
+								startTime={audioButton.startTime}
+								endTime={audioButton.endTime}
+								controls
+								autoplay={false}
+							/>
+						</div>
 					</CardContent>
 				</Card>
 
 				{/* 関連音声ボタン */}
 				<Suspense
 					fallback={
-						<Card>
+						<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
 							<CardHeader>
-								<CardTitle>関連音声ボタン</CardTitle>
+								<CardTitle className="text-lg">関連音声ボタン</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<div className="flex items-center justify-center py-8">

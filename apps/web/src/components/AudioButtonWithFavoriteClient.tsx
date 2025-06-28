@@ -2,6 +2,7 @@
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { getFavoritesStatusAction } from "@/actions/favorites";
@@ -28,6 +29,7 @@ export function AudioButtonWithFavoriteClient({
 	initialIsFavorited = false,
 }: AudioButtonWithFavoriteClientProps) {
 	const { data: session } = useSession();
+	const router = useRouter();
 	const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
 	const isAuthenticated = !!session?.user;
 
@@ -47,6 +49,8 @@ export function AudioButtonWithFavoriteClient({
 				onPlay={onPlay}
 				className={className}
 				maxTitleLength={maxTitleLength}
+				showDetailLink={true}
+				onDetailClick={() => router.push(`/buttons/${audioButton.id}`)}
 			/>
 			{(showFavorite || showDelete) && (
 				<div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
