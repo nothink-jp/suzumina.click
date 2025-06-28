@@ -17,7 +17,9 @@ export function ButtonDetailHeader({ button }: ButtonDetailHeaderProps) {
 				<div>
 					<h1 className="text-3xl font-bold text-foreground mb-2">音声ボタン詳細</h1>
 					<div className="flex items-center gap-2">
-						<Badge variant="outline">{getAudioButtonCategoryLabel(button.category)}</Badge>
+						<Badge variant="outline">
+							{getAudioButtonCategoryLabel(button.category || "other")}
+						</Badge>
 						<Badge variant="outline" className="flex items-center gap-1">
 							<Youtube className="h-3 w-3" />
 							YouTube動画

@@ -171,7 +171,9 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 					<CardContent className="space-y-4">
 						{/* カテゴリとタグ */}
 						<div className="flex items-center gap-2 flex-wrap">
-							<Badge variant="secondary">{getCategoryDisplayName(audioButton.category)}</Badge>
+							<Badge variant="secondary">
+								{getCategoryDisplayName(audioButton.category || "other")}
+							</Badge>
 							{audioButton.tags && audioButton.tags.length > 0 && (
 								<>
 									<Separator orientation="vertical" className="h-4" />

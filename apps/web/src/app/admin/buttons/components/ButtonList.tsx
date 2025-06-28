@@ -34,8 +34,8 @@ export function ButtonList({ buttons }: ButtonListProps) {
 							<div className="flex-1 min-w-0">
 								{/* ヘッダー */}
 								<div className="flex items-center gap-2 mb-2">
-									<Badge variant={button.category === "voice" ? "default" : "outline"}>
-										{getAudioButtonCategoryLabel(button.category)}
+									<Badge variant={(button.category || "other") === "voice" ? "default" : "outline"}>
+										{getAudioButtonCategoryLabel(button.category || "other")}
 									</Badge>
 									<Badge variant="outline" className="flex items-center gap-1">
 										<Youtube className="h-3 w-3" />

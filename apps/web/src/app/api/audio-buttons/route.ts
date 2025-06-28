@@ -6,10 +6,14 @@ export async function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
 
+		const categoryParam = searchParams.get("category");
 		const query: Partial<AudioButtonQuery> = {
 			limit: Number(searchParams.get("limit")) || 12,
 			searchText: searchParams.get("q") || undefined,
-			category: searchParams.get("category") as AudioButtonCategory | undefined,
+			category:
+				categoryParam && categoryParam !== "all"
+					? (categoryParam as AudioButtonCategory)
+					: undefined,
 			tags: searchParams.get("tags") ? searchParams.get("tags")?.split(",") : undefined,
 			sortBy:
 				(searchParams.get("sort") as "newest" | "oldest" | "popular" | "mostPlayed") || "newest",
