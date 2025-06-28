@@ -190,10 +190,11 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 						placeholder="カテゴリー"
 						options={[
 							{ value: "all", label: "すべてのカテゴリー" },
-							{ value: "greeting", label: "挨拶" },
-							{ value: "reaction", label: "リアクション" },
-							{ value: "emotion", label: "感情" },
-							{ value: "action", label: "アクション" },
+							{ value: "voice", label: "ボイス" },
+							{ value: "bgm", label: "BGM" },
+							{ value: "se", label: "効果音" },
+							{ value: "talk", label: "トーク" },
+							{ value: "singing", label: "歌唱" },
 							{ value: "other", label: "その他" },
 						]}
 					/>
