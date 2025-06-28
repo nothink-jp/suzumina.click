@@ -20,6 +20,6 @@
 		"typeRoots": ["../../node_modules/.pnpm/@types+node@24.0.7/node_modules/@types"]
 	},
 	"compileOnSave": true,
-	"include": ["src"],
+	"include": ["src", "src/types/*.d.ts"],
 	"exclude": ["src/**/*.test.ts"]
 }
