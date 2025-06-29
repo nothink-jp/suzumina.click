@@ -30,7 +30,7 @@ interface ContactManagementClientProps {
 }
 
 export function ContactManagementClient({ initialContacts }: ContactManagementClientProps) {
-	const [contacts, setContacts] = useState(initialContacts);
+	const [contacts, _setContacts] = useState(initialContacts);
 
 	const refreshContacts = async () => {
 		// ページをリロードしてデータを更新

@@ -1,14 +1,6 @@
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@suzumina.click/ui/components/ui/table";
 import { ArrowLeft, Shield, ShieldCheck, User, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -55,7 +47,7 @@ async function getUsers(): Promise<AdminUser[]> {
 }
 
 // ロールバッジのスタイル
-function getRoleBadge(role: string) {
+function _getRoleBadge(role: string) {
 	switch (role) {
 		case "admin":
 			return (
@@ -82,7 +74,7 @@ function getRoleBadge(role: string) {
 }
 
 // 最終ログイン時刻の表示
-function formatLastLogin(lastLoginAt?: string) {
+function _formatLastLogin(lastLoginAt?: string) {
 	if (!lastLoginAt) return "未ログイン";
 	const date = new Date(lastLoginAt);
 	return date.toLocaleString("ja-JP");

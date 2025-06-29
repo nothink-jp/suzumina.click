@@ -42,9 +42,8 @@ export function WorkDeleteDialog({ work, onDelete }: WorkDeleteDialogProps) {
 			} else {
 				alert(`エラー: ${result.error}`);
 			}
-		} catch (error) {
+		} catch (_error) {
 			alert("削除に失敗しました");
-			console.error("Delete error:", error);
 		} finally {
 			setLoading(false);
 		}

@@ -44,9 +44,8 @@ export function UserDeleteDialog({ user, onDelete }: UserDeleteDialogProps) {
 			} else {
 				showToast.error(`エラー: ${result.error}`);
 			}
-		} catch (error) {
+		} catch (_error) {
 			showToast.error("削除に失敗しました");
-			console.error("Delete error:", error);
 		} finally {
 			setLoading(false);
 		}

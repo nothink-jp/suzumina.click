@@ -32,7 +32,7 @@ interface UserManagementClientProps {
 }
 
 export function UserManagementClient({ initialUsers, currentUserId }: UserManagementClientProps) {
-	const [users, setUsers] = useState(initialUsers);
+	const [users, _setUsers] = useState(initialUsers);
 
 	const refreshUsers = async () => {
 		// ページをリロードしてデータを更新

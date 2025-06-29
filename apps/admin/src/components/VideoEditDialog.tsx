@@ -63,9 +63,8 @@ export function VideoEditDialog({ video, onUpdate }: VideoEditDialogProps) {
 			} else {
 				alert(`エラー: ${result.error}`);
 			}
-		} catch (error) {
+		} catch (_error) {
 			alert("更新に失敗しました");
-			console.error("Update error:", error);
 		} finally {
 			setLoading(false);
 		}

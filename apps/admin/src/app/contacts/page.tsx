@@ -1,23 +1,7 @@
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@suzumina.click/ui/components/ui/table";
-import {
-	AlertCircle,
-	ArrowLeft,
-	CheckCircle,
-	Clock,
-	Mail,
-	MessageSquare,
-	User,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle, Clock, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ContactManagementClient } from "@/components/ContactManagementClient";
@@ -67,7 +51,7 @@ async function getContacts(): Promise<ContactData[]> {
 }
 
 // ステータスバッジ
-function getStatusBadge(status: string) {
+function _getStatusBadge(status: string) {
 	switch (status) {
 		case "new":
 			return (
@@ -96,7 +80,7 @@ function getStatusBadge(status: string) {
 }
 
 // 優先度バッジ
-function getPriorityBadge(priority: string) {
+function _getPriorityBadge(priority: string) {
 	switch (priority) {
 		case "high":
 			return <Badge variant="destructive">高</Badge>;

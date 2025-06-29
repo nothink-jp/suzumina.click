@@ -75,9 +75,8 @@ export function ContactDetailDialog({
 			} else {
 				showToast.error(`エラー: ${result.error}`);
 			}
-		} catch (error) {
+		} catch (_error) {
 			showToast.error("更新に失敗しました");
-			console.error("Update error:", error);
 		} finally {
 			setLoading(false);
 		}

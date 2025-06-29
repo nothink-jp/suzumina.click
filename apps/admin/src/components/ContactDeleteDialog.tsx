@@ -44,9 +44,8 @@ export function ContactDeleteDialog({ contact, onDelete }: ContactDeleteDialogPr
 			} else {
 				alert(`エラー: ${result.error}`);
 			}
-		} catch (error) {
+		} catch (_error) {
 			alert("削除に失敗しました");
-			console.error("Delete error:", error);
 		} finally {
 			setLoading(false);
 		}
