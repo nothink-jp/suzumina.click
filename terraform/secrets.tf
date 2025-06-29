@@ -88,6 +88,22 @@ resource "google_secret_manager_secret" "secrets" {
   depends_on = [google_project_service.secretmanager]
 }
 
+# シークレットバージョンの作成
+resource "google_secret_manager_secret_version" "secret_versions" {
+  for_each = {
+    "DISCORD_CLIENT_ID"     = var.discord_client_id
+    "DISCORD_CLIENT_SECRET" = var.discord_client_secret
+    "DISCORD_BOT_TOKEN"     = var.discord_bot_token
+    "NEXTAUTH_SECRET"       = var.nextauth_secret
+    "YOUTUBE_API_KEY"       = var.youtube_api_key
+  }
+
+  secret      = google_secret_manager_secret.secrets[each.key].id
+  secret_data = each.value
+
+  depends_on = [google_secret_manager_secret.secrets]
+}
+
 # シークレットアクセス・管理用のカスタムロール
 resource "google_project_iam_custom_role" "secret_manager_accessor_role" {
   project     = var.gcp_project_id
