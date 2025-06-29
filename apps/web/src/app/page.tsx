@@ -19,8 +19,8 @@ export default async function Home() {
 	]);
 	return (
 		<div>
-			{/* メインビジュアル - LCP最適化済み */}
-			<section className="py-20 text-center">
+			{/* メインビジュアル - LCP最適化済み + suzukaブランドカラー背景 */}
+			<section className="py-20 text-center bg-suzuka-50">
 				<div className="container mx-auto px-4">
 					<div className="max-w-4xl mx-auto">
 						{/* LCP要素として最適化 - 明示的サイズとフォント最適化 */}
@@ -49,22 +49,22 @@ export default async function Home() {
 				</div>
 			</section>
 
-			{/* 新着作品一覧 */}
-			<section className="py-12 bg-white/50">
+			{/* 新着音声ボタン */}
+			<section className="py-12 bg-suzuka-100">
 				<div className="container mx-auto px-4">
 					<div className="flex items-center justify-between mb-8">
-						<h3 className="text-2xl sm:text-3xl font-bold text-foreground">🎧 新着作品</h3>
+						<h3 className="text-2xl sm:text-3xl font-bold text-foreground">🎵 新着音声ボタン</h3>
 						<Button variant="outline" asChild className="min-h-[44px]">
-							<Link href="/works">すべて見る</Link>
+							<Link href="/buttons">すべて見る</Link>
 						</Button>
 					</div>
 
-					<FeaturedWorksCarousel works={latestWorks} />
+					<FeaturedAudioButtonsCarousel audioButtons={latestAudioButtons} />
 				</div>
 			</section>
 
 			{/* 新着動画一覧 */}
-			<section className="py-12">
+			<section className="py-12 bg-background">
 				<div className="container mx-auto px-4">
 					<div className="flex items-center justify-between mb-8">
 						<h3 className="text-2xl sm:text-3xl font-bold text-foreground">📺 新着動画</h3>
@@ -77,17 +77,17 @@ export default async function Home() {
 				</div>
 			</section>
 
-			{/* 新着音声ボタン */}
-			<section className="py-12 bg-white/50">
+			{/* 新着作品一覧 */}
+			<section className="py-12 bg-suzuka-100">
 				<div className="container mx-auto px-4">
 					<div className="flex items-center justify-between mb-8">
-						<h3 className="text-2xl sm:text-3xl font-bold text-foreground">🎵 新着音声ボタン</h3>
+						<h3 className="text-2xl sm:text-3xl font-bold text-foreground">🎧 新着作品</h3>
 						<Button variant="outline" asChild className="min-h-[44px]">
-							<Link href="/buttons">すべて見る</Link>
+							<Link href="/works">すべて見る</Link>
 						</Button>
 					</div>
 
-					<FeaturedAudioButtonsCarousel audioButtons={latestAudioButtons} />
+					<FeaturedWorksCarousel works={latestWorks} />
 				</div>
 			</section>
 		</div>

@@ -248,7 +248,7 @@ describe("Basic Component Rendering Integration Tests", () => {
 				{},
 				{
 					element: () => screen.getByRole("contentinfo"),
-					classes: ["bg-background", "border-t", "py-12", "mt-auto"],
+					classes: ["bg-minase-800", "text-minase-50", "py-12", "mt-auto"],
 				},
 			],
 			[

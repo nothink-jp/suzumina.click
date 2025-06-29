@@ -69,7 +69,7 @@ describe("SiteFooter", () => {
 		);
 
 		// コピーライト情報が含まれていることを確認
-		expect(footer).toContainElement(screen.getByText(/© 2024 涼花みなせ ファンサイト/));
+		expect(footer).toContainElement(screen.getByText(/© 2025 nothink.jp/));
 	});
 
 	it("フッターが全体レイアウトの最下部に配置される", () => {
@@ -88,14 +88,14 @@ describe("SiteFooter", () => {
 
 		// 説明文
 		const description = screen.getByText("ファンによる、ファンのためのコミュニティサイト");
-		expect(description).toHaveClass("text-muted-foreground", "text-sm");
+		expect(description).toHaveClass("text-minase-200", "text-sm");
 
 		// フッターリンクとコピーライトの存在確認
 		const aboutLink = screen.getByText("このサイトについて");
 		expect(aboutLink).toBeInTheDocument();
 
 		// コピーライト
-		const copyright = screen.getByText(/© 2024 涼花みなせ ファンサイト/);
+		const copyright = screen.getByText(/© 2025 nothink.jp/);
 		expect(copyright).toBeInTheDocument();
 	});
 });

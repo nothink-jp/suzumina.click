@@ -179,7 +179,7 @@ describe("Homepage Actions", () => {
 			// エラー詳細は構造化ログに含まれる
 		});
 
-		it("成功時に適切なログが出力される", async () => {
+		it("成功時に正しい結果が返される", async () => {
 			const mockWorks = [
 				{
 					id: "work-1",
@@ -214,11 +214,11 @@ describe("Homepage Actions", () => {
 
 			(getWorks as any).mockResolvedValue(mockResult);
 
-			await getLatestWorks(15);
+			const result = await getLatestWorks(15);
 
-			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"新着作品取得を開始"'));
-			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"新着作品取得成功"'));
-			// 作品詳細は成功ログに含まれる
+			// ログ出力は削除されたので、結果のみ確認
+			expect(result).toEqual(mockWorks);
+			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 15 });
 		});
 	});
 
@@ -362,7 +362,7 @@ describe("Homepage Actions", () => {
 			// エラー詳細は構造化ログに含まれる
 		});
 
-		it("成功時に適切なログが出力される", async () => {
+		it("成功時に正しい結果が返される", async () => {
 			const mockVideos = [
 				{
 					id: "video-1",
@@ -400,11 +400,11 @@ describe("Homepage Actions", () => {
 
 			(getVideoTitles as any).mockResolvedValue(mockResult);
 
-			await getLatestVideos(20);
+			const result = await getLatestVideos(20);
 
-			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"新着動画取得を開始"'));
-			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"新着動画取得成功"'));
-			// 動画詳細は成功ログに含まれる
+			// ログ出力は削除されたので、結果のみ確認
+			expect(result).toEqual(mockVideos);
+			expect(getVideoTitles).toHaveBeenCalledWith({ page: 1, limit: 20 });
 		});
 	});
 
@@ -505,7 +505,7 @@ describe("Homepage Actions", () => {
 			);
 		});
 
-		it("成功時に適切なログが出力される", async () => {
+		it("成功時に正しい結果が返される", async () => {
 			const mockAudioButtons = [
 				{
 					id: "audio-log-test",
@@ -532,14 +532,11 @@ describe("Homepage Actions", () => {
 
 			(getRecentAudioButtons as any).mockResolvedValue(mockAudioButtons);
 
-			await getLatestAudioButtons(15);
+			const result = await getLatestAudioButtons(15);
 
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				expect.stringContaining('"新着音声ボタン取得を開始"'),
-			);
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				expect.stringContaining('"新着音声ボタン取得成功"'),
-			);
+			// ログ出力は削除されたので、結果のみ確認
+			expect(result).toEqual(mockAudioButtons);
+			expect(getRecentAudioButtons).toHaveBeenCalledWith(15);
 		});
 	});
 

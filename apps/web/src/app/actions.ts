@@ -9,19 +9,11 @@ import { getWorks } from "./works/actions";
  * トップページ用の新着作品を取得するServer Action
  */
 export async function getLatestWorks(limit = 10) {
-	logger.info("新着作品取得を開始", { action: "getLatestWorks", limit });
-
 	try {
 		const result = await getWorks({ page: 1, limit });
 
 		if (result.works.length === 0) {
 			logger.warn("新着作品取得で0件返却", { action: "getLatestWorks", limit });
-		} else {
-			logger.info("新着作品取得成功", {
-				action: "getLatestWorks",
-				count: result.works.length,
-				firstItem: result.works[0],
-			});
 		}
 
 		return result.works;
@@ -40,19 +32,11 @@ export async function getLatestWorks(limit = 10) {
  * トップページ用の新着動画を取得するServer Action
  */
 export async function getLatestVideos(limit = 10) {
-	logger.info("新着動画取得を開始", { action: "getLatestVideos", limit });
-
 	try {
 		const result = await getVideoTitles({ page: 1, limit });
 
 		if (result.videos.length === 0) {
 			logger.warn("新着動画取得で0件返却", { action: "getLatestVideos", limit });
-		} else {
-			logger.info("新着動画取得成功", {
-				action: "getLatestVideos",
-				count: result.videos.length,
-				firstItem: result.videos[0],
-			});
 		}
 
 		return result.videos;
@@ -72,19 +56,12 @@ export async function getLatestVideos(limit = 10) {
  */
 export async function getLatestAudioButtons(limit = 10) {
 	// getRecentAudioButtonsはarrayを直接返すので特別な処理が必要
-	logger.info("新着音声ボタン取得を開始", { action: "getLatestAudioButtons", limit });
 
 	try {
 		const audioButtons = await getRecentAudioButtons(limit);
 
 		if (audioButtons.length === 0) {
 			logger.warn("新着音声ボタン取得で0件返却", { action: "getLatestAudioButtons", limit });
-		} else {
-			logger.info("新着音声ボタン取得成功", {
-				action: "getLatestAudioButtons",
-				count: audioButtons.length,
-				firstItem: audioButtons[0],
-			});
 		}
 
 		return audioButtons;
