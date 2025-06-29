@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import "@suzumina.click/ui/globals.css";
+import { AdminLayoutWrapper } from "@/components/AdminLayoutWrapper";
 import { NextAuthSessionProvider } from "@/providers/session-provider";
 
 const notoSansJp = Noto_Sans_JP({
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 	return (
 		<html lang="ja" className={notoSansJp.className}>
 			<body className="min-h-screen bg-background font-sans antialiased">
-				<NextAuthSessionProvider>{children}</NextAuthSessionProvider>
+				<NextAuthSessionProvider>
+					<AdminLayoutWrapper>{children}</AdminLayoutWrapper>
+				</NextAuthSessionProvider>
 			</body>
 		</html>
 	);
