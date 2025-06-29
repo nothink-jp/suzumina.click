@@ -22,7 +22,7 @@ const nextConfig = {
 		formats: ["image/webp", "image/avif"],
 	},
 
-	// セキュリティヘッダー（管理者アプリ用に強化）
+	// セキュリティヘッダー（CSS問題修正のため一時的にCSPを無効化）
 	async headers() {
 		return [
 			{
@@ -44,11 +44,12 @@ const nextConfig = {
 						key: "Permissions-Policy",
 						value: "camera=(), microphone=(), geolocation=()",
 					},
-					{
-						key: "Content-Security-Policy",
-						value:
-							"default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:",
-					},
+					// CSPを一時的にコメントアウト
+					// {
+					// 	key: "Content-Security-Policy",
+					// 	value:
+					// 		"default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' data:; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:",
+					// },
 				],
 			},
 		];
