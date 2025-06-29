@@ -17,6 +17,7 @@
 	"dependencies": {
 		"@auth/core": "0.40.0",
 		"@google-cloud/firestore": "^7.11.1",
+		"@google-cloud/pubsub": "^5.1.0",
 		"@suzumina.click/shared-types": "workspace:*",
 		"@suzumina.click/ui": "workspace:*",
 		"lucide-react": "^0.524.0",

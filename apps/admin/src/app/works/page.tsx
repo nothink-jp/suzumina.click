@@ -45,6 +45,9 @@ async function getWorks(): Promise<WorkData[]> {
 			.limit(100)
 			.get();
 
+		if (worksSnap.docs.length > 0) {
+		}
+
 		return worksSnap.docs.map((doc) => {
 			const data = doc.data();
 			return {

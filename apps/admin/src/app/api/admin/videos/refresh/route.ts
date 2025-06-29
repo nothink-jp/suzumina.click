@@ -1,3 +1,4 @@
+import { PubSub } from "@google-cloud/pubsub";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
@@ -9,29 +10,27 @@ export async function POST() {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		// Cloud Functions の YouTube データ収集をトリガー
-		const functionsUrl = process.env.CLOUD_FUNCTIONS_BASE_URL;
-		if (!functionsUrl) {
-			return NextResponse.json({ error: "Cloud Functions URL not configured" }, { status: 500 });
+		// Pub/Sub経由でCloud FunctionsのYouTube データ収集をトリガー
+		const projectId = process.env.GCP_PROJECT_ID;
+		if (!projectId) {
+			return NextResponse.json({ error: "GCP Project ID not configured" }, { status: 500 });
 		}
 
-		const response = await fetch(`${functionsUrl}/fetchYouTubeVideos`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+		const pubsub = new PubSub({ projectId });
+		const topicName = "youtube-video-fetch-trigger";
 
-		if (!response.ok) {
-			throw new Error(`Cloud Functions error: ${response.status}`);
-		}
+		const message = {
+			source: "admin-manual-trigger",
+			timestamp: new Date().toISOString(),
+			user: session.user.id,
+		};
 
-		const result = await response.json();
+		const dataBuffer = Buffer.from(JSON.stringify(message));
+		await pubsub.topic(topicName).publishMessage({ data: dataBuffer });
 
 		return NextResponse.json({
 			success: true,
 			message: "YouTube動画データの更新を開始しました",
-			data: result,
 		});
 	} catch (error) {
 		return NextResponse.json(

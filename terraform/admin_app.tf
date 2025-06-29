@@ -122,6 +122,13 @@ resource "google_project_iam_member" "admin_app_logging" {
   member  = "serviceAccount:${google_service_account.admin_app_service_account.email}"
 }
 
+# Pub/Sub パブリッシャー権限（Cloud Functions手動トリガー用）
+resource "google_project_iam_member" "admin_app_pubsub_publisher" {
+  project = var.gcp_project_id
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:${google_service_account.admin_app_service_account.email}"
+}
+
 # 管理者アプリは既存のSecret Managerシークレットを使用
 
 # パブリックアクセス許可（アプリケーション内でDiscord認証による制御）

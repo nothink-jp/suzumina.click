@@ -39,10 +39,13 @@ async function getVideos(): Promise<VideoData[]> {
 	try {
 		const firestore = getFirestore();
 		const videosSnap = await firestore
-			.collection("youtubeVideos")
+			.collection("videos")
 			.orderBy("publishedAt", "desc")
 			.limit(100)
 			.get();
+
+		if (videosSnap.docs.length > 0) {
+		}
 
 		return videosSnap.docs.map((doc) => {
 			const data = doc.data();

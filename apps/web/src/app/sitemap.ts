@@ -73,7 +73,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		// 作品ページを追加
 		try {
 			const worksSnapshot = await firestore
-				.collection("works")
+				.collection("dlsiteWorks")
 				.where("isPublic", "==", true)
 				.limit(1000)
 				.get();
