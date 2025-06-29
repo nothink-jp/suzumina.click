@@ -3,7 +3,10 @@ import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
 // 音声ボタン情報更新
-export async function PUT(request: NextRequest, { params }: { params: { buttonId: string } }) {
+export async function PUT(
+	request: NextRequest,
+	context: { params: Promise<{ buttonId: string }> },
+) {
 	try {
 		// 管理者権限確認
 		const session = await auth();
@@ -11,7 +14,7 @@ export async function PUT(request: NextRequest, { params }: { params: { buttonId
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { buttonId } = params;
+		const { buttonId } = await context.params;
 		const body = await request.json();
 
 		const firestore = getFirestore();
@@ -52,7 +55,10 @@ export async function PUT(request: NextRequest, { params }: { params: { buttonId
 }
 
 // 音声ボタン削除
-export async function DELETE(_request: NextRequest, { params }: { params: { buttonId: string } }) {
+export async function DELETE(
+	_request: NextRequest,
+	context: { params: Promise<{ buttonId: string }> },
+) {
 	try {
 		// 管理者権限確認
 		const session = await auth();
@@ -60,7 +66,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { butt
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { buttonId } = params;
+		const { buttonId } = await context.params;
 		const firestore = getFirestore();
 
 		// 音声ボタンの存在確認

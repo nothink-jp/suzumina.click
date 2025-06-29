@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
 // ユーザー情報更新
-export async function PUT(request: NextRequest, { params }: { params: { userId: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ userId: string }> }) {
 	try {
 		// 管理者権限確認
 		const session = await auth();
@@ -11,7 +11,7 @@ export async function PUT(request: NextRequest, { params }: { params: { userId: 
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { userId } = params;
+		const { userId } = await context.params;
 		const body = await request.json();
 
 		const firestore = getFirestore();
@@ -62,7 +62,10 @@ export async function PUT(request: NextRequest, { params }: { params: { userId: 
 }
 
 // ユーザー削除（非アクティブ化）
-export async function DELETE(_request: NextRequest, { params }: { params: { userId: string } }) {
+export async function DELETE(
+	_request: NextRequest,
+	context: { params: Promise<{ userId: string }> },
+) {
 	try {
 		// 管理者権限確認
 		const session = await auth();
@@ -70,7 +73,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { user
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { userId } = params;
+		const { userId } = await context.params;
 
 		// 自分自身の削除を防止
 		if (userId === session.user.id) {

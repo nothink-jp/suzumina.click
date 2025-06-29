@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
 // 動画情報更新
-export async function PUT(request: NextRequest, { params }: { params: { videoId: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ videoId: string }> }) {
 	try {
 		// 管理者権限確認
 		const session = await auth();
@@ -11,7 +11,7 @@ export async function PUT(request: NextRequest, { params }: { params: { videoId:
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { videoId } = params;
+		const { videoId } = await context.params;
 		const body = await request.json();
 
 		const firestore = getFirestore();
@@ -51,7 +51,10 @@ export async function PUT(request: NextRequest, { params }: { params: { videoId:
 }
 
 // 動画削除
-export async function DELETE(_request: NextRequest, { params }: { params: { videoId: string } }) {
+export async function DELETE(
+	_request: NextRequest,
+	context: { params: Promise<{ videoId: string }> },
+) {
 	try {
 		// 管理者権限確認
 		const session = await auth();
@@ -59,7 +62,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { vide
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { videoId } = params;
+		const { videoId } = await context.params;
 		const firestore = getFirestore();
 
 		// 動画の存在確認

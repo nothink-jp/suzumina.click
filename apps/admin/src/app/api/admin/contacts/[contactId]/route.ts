@@ -3,7 +3,10 @@ import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
 // お問い合わせ状態更新
-export async function PUT(request: NextRequest, { params }: { params: { contactId: string } }) {
+export async function PUT(
+	request: NextRequest,
+	context: { params: Promise<{ contactId: string }> },
+) {
 	try {
 		// 管理者権限確認
 		const session = await auth();
@@ -11,7 +14,7 @@ export async function PUT(request: NextRequest, { params }: { params: { contactI
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { contactId } = params;
+		const { contactId } = await context.params;
 		const body = await request.json();
 
 		const firestore = getFirestore();
@@ -66,7 +69,10 @@ export async function PUT(request: NextRequest, { params }: { params: { contactI
 }
 
 // お問い合わせ削除
-export async function DELETE(_request: NextRequest, { params }: { params: { contactId: string } }) {
+export async function DELETE(
+	_request: NextRequest,
+	context: { params: Promise<{ contactId: string }> },
+) {
 	try {
 		// 管理者権限確認
 		const session = await auth();
@@ -74,7 +80,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { cont
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { contactId } = params;
+		const { contactId } = await context.params;
 		const firestore = getFirestore();
 
 		// お問い合わせの存在確認

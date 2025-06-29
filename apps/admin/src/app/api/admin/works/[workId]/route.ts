@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
 // 作品情報更新
-export async function PUT(request: NextRequest, { params }: { params: { workId: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ workId: string }> }) {
 	try {
 		// 管理者権限確認
 		const session = await auth();
@@ -11,7 +11,7 @@ export async function PUT(request: NextRequest, { params }: { params: { workId: 
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { workId } = params;
+		const { workId } = await context.params;
 		const body = await request.json();
 
 		const firestore = getFirestore();
@@ -53,7 +53,10 @@ export async function PUT(request: NextRequest, { params }: { params: { workId: 
 }
 
 // 作品削除
-export async function DELETE(_request: NextRequest, { params }: { params: { workId: string } }) {
+export async function DELETE(
+	_request: NextRequest,
+	context: { params: Promise<{ workId: string }> },
+) {
 	try {
 		// 管理者権限確認
 		const session = await auth();
@@ -61,7 +64,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { work
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { workId } = params;
+		const { workId } = await context.params;
 		const firestore = getFirestore();
 
 		// 作品の存在確認
