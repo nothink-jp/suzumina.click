@@ -212,6 +212,15 @@ resource "google_project_iam_member" "cloud_run_firestore_user" {
   member  = "serviceAccount:${google_service_account.cloud_run_service_account.email}"
 }
 
+# Secret Manager アクセス権限（全環境で有効）
+resource "google_project_iam_member" "cloud_run_secret_manager_accessor" {
+  provider = google
+
+  project = local.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_service_account.cloud_run_service_account.email}"
+}
+
 
 # Cloud Run Invoker権限（パブリックアクセス）（全環境で有効）
 resource "google_cloud_run_v2_service_iam_binding" "public_access" {
