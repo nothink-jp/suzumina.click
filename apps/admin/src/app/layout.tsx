@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
-import "./globals.css";
+import "@suzumina.click/ui/globals.css";
 import { NextAuthSessionProvider } from "@/providers/session-provider";
 
 const notoSansJp = Noto_Sans_JP({

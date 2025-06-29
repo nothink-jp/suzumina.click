@@ -41,9 +41,6 @@ importers:
       '@suzumina.click/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@tailwindcss/postcss':
-        specifier: ^4.1.10
-        version: 4.1.11
       lucide-react:
         specifier: ^0.524.0
         version: 0.524.0(react@19.0.0)
@@ -59,9 +56,6 @@ importers:
       react-dom:
         specifier: 19.0.0
         version: 19.0.0(react@19.0.0)
-      tailwindcss:
-        specifier: ^4.1.10
-        version: 4.1.11
     devDependencies:
       '@biomejs/biome':
         specifier: 2.0.6
@@ -69,6 +63,9 @@ importers:
       '@suzumina.click/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
+      '@tailwindcss/postcss':
+        specifier: ^4.1.11
+        version: 4.1.11
       '@types/node':
         specifier: ^24.0.3
         version: 24.0.7
@@ -78,6 +75,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.2
         version: 19.1.6(@types/react@19.1.8)
+      tailwindcss:
+        specifier: ^4.1.11
+        version: 4.1.11
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
