@@ -9,9 +9,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@suzumina.click/ui/components/ui/table";
-import { ArrowLeft, ExternalLink, Heart, Music, Play, ThumbsUp, Trash2, User } from "lucide-react";
+import { ArrowLeft, ExternalLink, Heart, Music, Play, ThumbsUp, User } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ButtonActionsCell } from "@/components/ButtonActionsCell";
 import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
@@ -283,14 +284,7 @@ export default async function ButtonsPage() {
 											{new Date(button.createdAt).toLocaleDateString("ja-JP")}
 										</TableCell>
 										<TableCell className="text-right">
-											<div className="flex gap-1 justify-end">
-												<Button variant="outline" size="sm" disabled>
-													編集
-												</Button>
-												<Button variant="destructive" size="sm" disabled>
-													<Trash2 className="h-3 w-3" />
-												</Button>
-											</div>
+											<ButtonActionsCell button={button} />
 										</TableCell>
 									</TableRow>
 								))}

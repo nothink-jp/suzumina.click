@@ -9,19 +9,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "@suzumina.click/ui/components/ui/table";
-import {
-	ArrowLeft,
-	BookOpen,
-	Calendar,
-	DollarSign,
-	ExternalLink,
-	RefreshCw,
-	Star,
-	Tag,
-} from "lucide-react";
+import { ArrowLeft, BookOpen, Calendar, DollarSign, Star, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { RefreshButton } from "@/components/RefreshButton";
+import { WorkActionsCell } from "@/components/WorkActionsCell";
 import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
@@ -117,10 +110,7 @@ export default async function WorksPage() {
 					<h1 className="text-3xl font-bold text-foreground">作品管理</h1>
 					<p className="text-muted-foreground mt-1">DLsite作品データの管理・監視</p>
 				</div>
-				<Button variant="outline" className="gap-2" disabled>
-					<RefreshCw className="h-4 w-4" />
-					手動更新
-				</Button>
+				<RefreshButton type="works" />
 			</div>
 
 			{/* 統計カード */}
@@ -264,17 +254,7 @@ export default async function WorksPage() {
 											)}
 										</TableCell>
 										<TableCell className="text-right">
-											<Button variant="outline" size="sm" asChild>
-												<a
-													href={`https://www.dlsite.com/maniax/work/=/product_id/${work.workId}.html`}
-													target="_blank"
-													rel="noopener noreferrer"
-													className="gap-1"
-												>
-													<ExternalLink className="h-3 w-3" />
-													DLsite
-												</a>
-											</Button>
+											<WorkActionsCell work={work} />
 										</TableCell>
 									</TableRow>
 								))}
