@@ -16,8 +16,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				return false;
 			}
 
-			// DiscordIDでFirestoreユーザーを確認
-			if (!user.id) {
+			// Discord IDを取得（providerAccountIdがDiscord ID）
+			const discordId = account?.providerAccountId;
+			if (!discordId) {
 				// biome-ignore lint/suspicious/noConsole: Essential security logging for admin authentication
 				console.warn("Discord ID not available");
 				return false;
@@ -27,11 +28,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				const { getFirestore } = await import("@/lib/firestore");
 				const firestore = getFirestore();
 
-				const userDoc = await firestore.collection("users").doc(user.id).get();
+				const userDoc = await firestore.collection("users").doc(discordId).get();
 
 				if (!userDoc.exists) {
 					// biome-ignore lint/suspicious/noConsole: Essential security logging for admin authentication
-					console.warn(`User not found in Firestore: ${user.id}`);
+					console.warn(`User not found in Firestore: ${discordId}`);
 					return false;
 				}
 
@@ -41,13 +42,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				if (userData?.role !== "admin" || userData?.isActive !== true) {
 					// biome-ignore lint/suspicious/noConsole: Essential security logging for admin authentication
 					console.warn(
-						`Unauthorized admin access attempt by Discord ID: ${user.id} (role: ${userData?.role}, active: ${userData?.isActive})`,
+						`Unauthorized admin access attempt by Discord ID: ${discordId} (role: ${userData?.role}, active: ${userData?.isActive})`,
 					);
 					return false;
 				}
 
 				// biome-ignore lint/suspicious/noConsole: Essential security logging for admin authentication
-				console.log(`Admin login successful: ${user.name} (${user.id})`);
+				console.log(`Admin login successful: ${user.name} (${discordId})`);
 				return true;
 			} catch (error) {
 				// biome-ignore lint/suspicious/noConsole: Essential security logging for admin authentication
@@ -65,10 +66,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			return session;
 		},
 
-		async jwt({ token, user }) {
+		async jwt({ token, user, account }) {
 			// JWTトークンにユーザー情報を保存
-			if (user) {
-				token.sub = user.id;
+			if (user && account?.provider === "discord") {
+				token.sub = account.providerAccountId; // Discord IDを設定
 				token.isAdmin = true; // Admin appアクセス時点で管理者権限確認済み
 			}
 			return token;
