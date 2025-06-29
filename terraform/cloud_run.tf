@@ -83,7 +83,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         name = "DISCORD_CLIENT_ID"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.auth_secrets["DISCORD_CLIENT_ID"].secret_id
+            secret  = google_secret_manager_secret.secrets["DISCORD_CLIENT_ID"].secret_id
             version = "latest"
           }
         }
@@ -94,7 +94,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         name = "DISCORD_CLIENT_SECRET"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.auth_secrets["DISCORD_CLIENT_SECRET"].secret_id
+            secret  = google_secret_manager_secret.secrets["DISCORD_CLIENT_SECRET"].secret_id
             version = "latest"
           }
         }
@@ -105,7 +105,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         name = "DISCORD_BOT_TOKEN"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.auth_secrets["DISCORD_BOT_TOKEN"].secret_id
+            secret  = google_secret_manager_secret.secrets["DISCORD_BOT_TOKEN"].secret_id
             version = "latest"
           }
         }
@@ -116,7 +116,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         name = "NEXTAUTH_SECRET"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.auth_secrets["NEXTAUTH_SECRET"].secret_id
+            secret  = google_secret_manager_secret.secrets["NEXTAUTH_SECRET"].secret_id
             version = "latest"
           }
         }
@@ -139,16 +139,6 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = var.suzumina_guild_id
       }
 
-      # Default Admin Discord IDs (Secret Managerから取得)
-      env {
-        name = "DEFAULT_ADMIN_DISCORD_IDS"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.auth_secrets["DEFAULT_ADMIN_DISCORD_IDS"].secret_id
-            version = "latest"
-          }
-        }
-      }
 
       # 許可されたホスト名（デフォルトURL制御用）
       env {
@@ -199,7 +189,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
   depends_on = [
     google_artifact_registry_repository.docker_repo,
     google_service_account.cloud_run_service_account,
-    google_secret_manager_secret.auth_secrets
+    google_secret_manager_secret.secrets
   ]
 }
 

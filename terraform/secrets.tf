@@ -41,10 +41,6 @@ locals {
     {
       id          = "NEXTAUTH_SECRET"
       description = "NextAuth.js encryption secret"
-    },
-    {
-      id          = "default-admin-discord-ids"
-      description = "管理者Discord ID一覧（カンマ区切り）"
     }
   ]
 

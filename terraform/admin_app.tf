@@ -72,15 +72,6 @@ resource "google_cloud_run_v2_service" "admin_app" {
         }
       }
 
-      env {
-        name = "ADMIN_DISCORD_IDS"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.secrets["default-admin-discord-ids"].secret_id
-            version = "latest"
-          }
-        }
-      }
 
       env {
         name  = "NEXTAUTH_URL"
