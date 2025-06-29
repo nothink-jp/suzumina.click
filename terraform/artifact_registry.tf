@@ -22,7 +22,7 @@ resource "google_artifact_registry_repository" "docker_repo" {
     condition {
       tag_state             = "ANY"
       tag_prefixes          = ["latest"]
-      package_name_prefixes = ["web"]
+      package_name_prefixes = ["web", "suzumina-admin"]
     }
   }
   
@@ -41,6 +41,15 @@ resource "google_artifact_registry_repository" "docker_repo" {
     most_recent_versions {
       keep_count = 5
       package_name_prefixes = ["web"]
+    }
+  }
+
+  cleanup_policies {
+    id     = "keep-recent-admin-versions"
+    action = "KEEP"
+    most_recent_versions {
+      keep_count = 3  # 管理者アプリは更新頻度が低いため3個まで
+      package_name_prefixes = ["suzumina-admin"]
     }
   }
 

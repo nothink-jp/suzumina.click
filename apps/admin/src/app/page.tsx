@@ -12,6 +12,8 @@ import {
 	Users,
 } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
 // 統計データ取得関数
@@ -65,6 +67,12 @@ async function getAdminStats() {
 }
 
 export default async function AdminDashboard() {
+	const session = await auth();
+
+	if (!session?.user?.isAdmin) {
+		redirect("/login");
+	}
+
 	const stats = await getAdminStats();
 
 	if (!stats) {
@@ -116,7 +124,7 @@ export default async function AdminDashboard() {
 								</Badge>
 							</div>
 							<Button variant="outline" size="sm" asChild className="w-full mt-3">
-								<Link href="/admin/users">ユーザー管理を開く</Link>
+								<Link href="/users">ユーザー管理を開く</Link>
 							</Button>
 						</div>
 					</CardContent>
@@ -141,7 +149,7 @@ export default async function AdminDashboard() {
 								<span className="text-xs text-muted-foreground">自動収集中</span>
 							</div>
 							<Button variant="outline" size="sm" asChild className="w-full mt-3">
-								<Link href="/admin/videos">動画管理を開く</Link>
+								<Link href="/videos">動画管理を開く</Link>
 							</Button>
 						</div>
 					</CardContent>
@@ -166,7 +174,7 @@ export default async function AdminDashboard() {
 								<span className="text-xs text-muted-foreground">自動収集中</span>
 							</div>
 							<Button variant="outline" size="sm" asChild className="w-full mt-3">
-								<Link href="/admin/works">作品管理を開く</Link>
+								<Link href="/works">作品管理を開く</Link>
 							</Button>
 						</div>
 					</CardContent>
@@ -190,7 +198,7 @@ export default async function AdminDashboard() {
 								<span className="text-xs text-muted-foreground">ユーザー作成コンテンツ</span>
 							</div>
 							<Button variant="outline" size="sm" asChild className="w-full mt-3">
-								<Link href="/admin/buttons">音声ボタン管理を開く</Link>
+								<Link href="/buttons">音声ボタン管理を開く</Link>
 							</Button>
 						</div>
 					</CardContent>
@@ -231,7 +239,7 @@ export default async function AdminDashboard() {
 								</div>
 							</div>
 							<Button variant="outline" size="sm" asChild className="w-full mt-3">
-								<Link href="/admin/contacts">お問い合わせ管理を開く</Link>
+								<Link href="/contacts">お問い合わせ管理を開く</Link>
 							</Button>
 						</div>
 					</CardContent>
@@ -271,37 +279,17 @@ export default async function AdminDashboard() {
 				</Card>
 			</div>
 
-			{/* アクションセクション */}
+			{/* 管理者情報 */}
 			<Card>
 				<CardHeader>
-					<CardTitle>クイックアクション</CardTitle>
+					<CardTitle>管理者情報</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-						<Button variant="outline" asChild>
-							<Link href="/admin/contacts?status=new" className="flex items-center gap-2">
-								<MessageSquare className="h-4 w-4" />
-								新規お問い合わせ
-							</Link>
-						</Button>
-						<Button variant="outline" asChild>
-							<Link href="/admin/buttons?sort=newest" className="flex items-center gap-2">
-								<Music className="h-4 w-4" />
-								最新音声ボタン
-							</Link>
-						</Button>
-						<Button variant="outline" asChild>
-							<Link href="/admin/users?role=admin" className="flex items-center gap-2">
-								<Users className="h-4 w-4" />
-								管理者ユーザー
-							</Link>
-						</Button>
-						<Button variant="outline" asChild>
-							<Link href="/" className="flex items-center gap-2">
-								<TrendingUp className="h-4 w-4" />
-								サイトを表示
-							</Link>
-						</Button>
+					<div className="text-sm text-muted-foreground">
+						<p>
+							ログイン管理者: {session.user.name} ({session.user.id})
+						</p>
+						<p className="mt-1">v0.2.2 | 涼花みなせファンコミュニティ 管理システム</p>
 					</div>
 				</CardContent>
 			</Card>

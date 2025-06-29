@@ -24,8 +24,32 @@ locals {
     }
   ]
 
-  # すべてのシークレットをまとめる（YouTube APIキーのみ残存）
-  all_secrets = local.api_secrets
+  # 認証関連シークレット
+  auth_secrets = [
+    {
+      id          = "DISCORD_CLIENT_ID"
+      description = "Discord OAuth Client ID"
+    },
+    {
+      id          = "DISCORD_CLIENT_SECRET"
+      description = "Discord OAuth Client Secret"
+    },
+    {
+      id          = "DISCORD_BOT_TOKEN"
+      description = "Discord Bot Token"
+    },
+    {
+      id          = "NEXTAUTH_SECRET"
+      description = "NextAuth.js encryption secret"
+    },
+    {
+      id          = "default-admin-discord-ids"
+      description = "管理者Discord ID一覧（カンマ区切り）"
+    }
+  ]
+
+  # すべてのシークレットをまとめる
+  all_secrets = concat(local.api_secrets, local.auth_secrets)
 }
 
 # シークレットの作成
@@ -39,7 +63,7 @@ resource "google_secret_manager_secret" "secrets" {
   
   # メタデータとしてシークレットの説明を追加
   labels = merge(local.common_secret_settings.labels, {
-    "category" = "api"  # 現在はAPIキーのみが残存
+    "category" = contains(["YOUTUBE_API_KEY"], each.key) ? "api" : "auth"
   })
   
   annotations = {
@@ -87,7 +111,7 @@ output "secrets_info" {
     for id, secret in google_secret_manager_secret.secrets :
     id => {
       name = secret.name
-      category = "api"  # 現在はAPIキーのみが残存
+      category = contains(["YOUTUBE_API_KEY"], id) ? "api" : "auth"
     }
   }
   description = "作成されたシークレットの一覧"

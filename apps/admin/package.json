@@ -1,0 +1,37 @@
+{
+	"name": "@suzumina.click/admin",
+	"version": "0.2.2",
+	"private": true,
+	"scripts": {
+		"build": "next build",
+		"dev": "next dev --port 3001",
+		"start": "next start",
+		"test": "echo 'No tests configured for admin app yet'",
+		"lint": "biome check ./src",
+		"format": "biome format --write ./src",
+		"check": "biome check --write ./src",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@google-cloud/firestore": "^7.11.1",
+		"@suzumina.click/shared-types": "workspace:*",
+		"@suzumina.click/ui": "workspace:*",
+		"lucide-react": "^0.524.0",
+		"next": "15.3.4",
+		"@auth/core": "0.40.0",
+		"next-auth": "5.0.0-beta.29",
+		"react": "19.0.0",
+		"react-dom": "19.0.0"
+	},
+	"devDependencies": {
+		"@suzumina.click/typescript-config": "workspace:*",
+		"@types/node": "^24.0.3",
+		"@types/react": "^19.0.6",
+		"@types/react-dom": "^19.0.2",
+		"@biomejs/biome": "1.9.4",
+		"typescript": "^5.8.3"
+	},
+	"engines": {
+		"node": "22"
+	}
+}
