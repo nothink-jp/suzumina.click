@@ -12,6 +12,7 @@ import {
 import { ArrowLeft, Shield, ShieldCheck, User, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { UserManagementClient } from "@/components/UserManagementClient";
 import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
@@ -178,57 +179,7 @@ export default async function UsersPage() {
 					<CardTitle>ユーザー一覧</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="rounded-md border">
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>ユーザー</TableHead>
-									<TableHead>Discord ID</TableHead>
-									<TableHead>ロール</TableHead>
-									<TableHead>ステータス</TableHead>
-									<TableHead>最終ログイン</TableHead>
-									<TableHead>登録日</TableHead>
-									<TableHead className="text-right">操作</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{users.map((user) => (
-									<TableRow key={user.id}>
-										<TableCell className="font-medium">
-											<div>
-												<div className="font-semibold">{user.displayName}</div>
-												{user.globalName && user.globalName !== user.username && (
-													<div className="text-sm text-muted-foreground">@{user.username}</div>
-												)}
-											</div>
-										</TableCell>
-										<TableCell>
-											<code className="text-xs bg-muted px-1 py-0.5 rounded">{user.discordId}</code>
-										</TableCell>
-										<TableCell>{getRoleBadge(user.role)}</TableCell>
-										<TableCell>
-											{user.isActive ? (
-												<Badge variant="outline" className="text-green-600 border-green-600">
-													アクティブ
-												</Badge>
-											) : (
-												<Badge variant="secondary">無効</Badge>
-											)}
-										</TableCell>
-										<TableCell className="text-sm">{formatLastLogin(user.lastLoginAt)}</TableCell>
-										<TableCell className="text-sm">
-											{new Date(user.createdAt).toLocaleDateString("ja-JP")}
-										</TableCell>
-										<TableCell className="text-right">
-											<Button variant="outline" size="sm" disabled>
-												編集
-											</Button>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</div>
+					<UserManagementClient initialUsers={users} currentUserId={session.user.id} />
 
 					{users.length === 0 && (
 						<div className="text-center py-8 text-muted-foreground">ユーザーが見つかりません</div>

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ContactManagementClient } from "@/components/ContactManagementClient";
 import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
@@ -199,66 +200,7 @@ export default async function ContactsPage() {
 					<CardTitle>お問い合わせ一覧</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="rounded-md border">
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>送信者</TableHead>
-									<TableHead>件名</TableHead>
-									<TableHead>内容</TableHead>
-									<TableHead>ステータス</TableHead>
-									<TableHead>優先度</TableHead>
-									<TableHead>受信日時</TableHead>
-									<TableHead className="text-right">操作</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{contacts.map((contact) => (
-									<TableRow key={contact.id}>
-										<TableCell>
-											<div className="space-y-1">
-												<div className="flex items-center gap-2">
-													<User className="h-3 w-3" />
-													<span className="font-medium text-sm">{contact.name}</span>
-												</div>
-												{contact.email && (
-													<div className="flex items-center gap-2">
-														<Mail className="h-3 w-3" />
-														<span className="text-xs text-muted-foreground">{contact.email}</span>
-													</div>
-												)}
-											</div>
-										</TableCell>
-										<TableCell className="font-medium max-w-xs">
-											<div className="truncate" title={contact.subject}>
-												{contact.subject}
-											</div>
-										</TableCell>
-										<TableCell className="max-w-md">
-											<div className="text-sm text-muted-foreground line-clamp-2">
-												{contact.message}
-											</div>
-										</TableCell>
-										<TableCell>{getStatusBadge(contact.status)}</TableCell>
-										<TableCell>{getPriorityBadge(contact.priority)}</TableCell>
-										<TableCell className="text-sm">
-											{new Date(contact.createdAt).toLocaleString("ja-JP")}
-										</TableCell>
-										<TableCell className="text-right">
-											<div className="flex gap-1 justify-end">
-												<Button variant="outline" size="sm" disabled>
-													詳細
-												</Button>
-												<Button variant="outline" size="sm" disabled>
-													返信
-												</Button>
-											</div>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</div>
+					<ContactManagementClient initialContacts={contacts} />
 
 					{contacts.length === 0 && (
 						<div className="text-center py-8 text-muted-foreground">

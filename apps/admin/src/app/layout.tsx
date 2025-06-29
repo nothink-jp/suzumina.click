@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import "@suzumina.click/ui/globals.css";
+import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
 import { AdminLayoutWrapper } from "@/components/AdminLayoutWrapper";
 import { NextAuthSessionProvider } from "@/providers/session-provider";
 
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			<body className="min-h-screen bg-background font-sans antialiased">
 				<NextAuthSessionProvider>
 					<AdminLayoutWrapper>{children}</AdminLayoutWrapper>
+					<Toaster />
 				</NextAuthSessionProvider>
 			</body>
 		</html>
