@@ -41,6 +41,9 @@ importers:
       '@suzumina.click/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@tailwindcss/postcss':
+        specifier: ^4.1.10
+        version: 4.1.11
       lucide-react:
         specifier: ^0.524.0
         version: 0.524.0(react@19.0.0)
@@ -56,6 +59,9 @@ importers:
       react-dom:
         specifier: 19.0.0
         version: 19.0.0(react@19.0.0)
+      tailwindcss:
+        specifier: ^4.1.10
+        version: 4.1.11
     devDependencies:
       '@biomejs/biome':
         specifier: 2.0.6
