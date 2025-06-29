@@ -4,6 +4,14 @@ suzumina.clickプロジェクトの変更履歴
 
 ## [Unreleased]
 
+### 🛡️ 管理者システム分離・認証改善
+
+- **管理者アプリ分離**: apps/admin 独立アプリケーション化
+- **Firestore認証統合**: DEFAULT_ADMIN_DISCORD_IDS環境変数完全削除
+- **0インスタンス運用**: admin.suzumina.click 専用URL、必要時のみ起動
+- **Edge Runtime対応**: 動的Firestore インポートによるビルド最適化
+- **セキュリティ強化**: role="admin" + isActive=true による動的権限管理
+
 ## [v0.2.2] - 2025-06-27
 
 ### 🔧 品質管理・依存関係大幅改善
@@ -12,7 +20,7 @@ suzumina.clickプロジェクトの変更履歴
 - **Biome 2.0.6更新**: 最新リンター・フォーマッターへアップデート
 - **全依存関係最新化**: React 19、Next.js 15.3.4など主要パッケージを最新版に更新
 - **Lint完全クリーンアップ**: UIパッケージ含む全パッケージで0エラー・0警告達成
-- **管理者認証実装**: 環境変数DEFAULT_ADMIN_DISCORD_IDsによる管理者権限設定
+- **管理者認証実装**: 環境変数DEFAULT_ADMIN_DISCORD_IDsによる管理者権限設定 (v0.2.3でFirestore認証に移行)
 
 ### 🛠️ コード品質向上
 

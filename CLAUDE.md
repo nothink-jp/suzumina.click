@@ -62,9 +62,13 @@ suzumina.click/ (v0.2.2)
 │   ├── functions/          # Cloud Functions (本番稼働)
 │   │   ├── src/dlsite.ts   # DLsite作品収集
 │   │   └── src/youtube.ts  # YouTube動画収集
+│   ├── admin/              # 管理者専用アプリ (分離済み)
+│   │   ├── src/app/        # 管理者ダッシュボード・管理機能
+│   │   ├── src/components/ # 管理者UI (LoginButton等)
+│   │   ├── src/lib/        # Firestore認証・クライアント分離
+│   │   └── src/providers/  # セッション管理
 │   └── web/                # Next.js Webアプリ
 │       ├── src/app/        # App Router
-│       │   ├── admin/      # 管理者インターフェース (buttons/users/videos/works/contacts)
 │       │   ├── buttons/    # 音声機能 (一覧・作成・詳細)
 │       │   ├── favorites/  # お気に入り機能
 │       │   ├── videos/     # 動画一覧・詳細
@@ -79,8 +83,8 @@ suzumina.click/ (v0.2.2)
 │       ├── src/components/ # UIコンポーネント (25+個)
 │       │   ├── AudioButtonCreator.tsx # 音声ボタン作成
 │       │   ├── FavoriteButton.tsx # お気に入りボタン
-│       │   ├── AdminList.tsx # 管理者UI
-│       │   └── SiteHeader.tsx # サイトヘッダー
+│       │   ├── SiteHeader.tsx # サイトヘッダー
+│       │   └── UserMenu.tsx # ユーザーメニュー
 │       ├── src/actions/    # Server Actions
 │       │   └── favorites.ts # お気に入り関連
 │       ├── src/lib/        # ライブラリ・ユーティリティ
@@ -214,7 +218,7 @@ Firestore Database (型安全データ保存)
 ```text
 Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → ロール判定 → セッション確立
                                                       ↓
-                                      環境変数DEFAULT_ADMIN_DISCORD_IDS → 管理者権限付与
+                                      Firestoreロールベース認証 → 管理者権限判定
 ```
 
 ### 音声コンテンツ作成
@@ -230,7 +234,7 @@ Discord OAuth → NextAuth.js → ギルドメンバーシップ確認 → ロ�
 - Discord ギルド認証による限定アクセス
 - NextAuth.js JWT セッション管理  
 - ロールベースアクセス制御 (member/moderator/admin)
-- 環境変数による管理者権限設定
+- Firestoreベース管理者権限管理 (環境変数依存削除)
 - Google Secret Manager による認証情報管理
 - 最小権限の原則 (IAM・Firestore Rules)
 - 完全な@google-cloud パッケージ統一（Firebase依存関係削除完了）
@@ -355,39 +359,50 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 ✅ 工数対効果を重視した段階的品質管理
 ```
 
-## 🛡️ 管理者機能詳細
+## 🛡️ 管理者機能詳細 (分離済み専用アプリ)
+
+### 🏗️ 管理者アプリ (apps/admin) 
+独立したNext.js アプリケーションとして分離・運用
+
+#### **アクセス方式**
+- **専用URL**: admin.suzumina.click (独立デプロイ)
+- **0インスタンス運用**: 通常時はインスタンス0、アクセス時のみ起動
+- **Firestore認証**: Firestoreのrole="admin"かつisActive=trueによる認証
+- **環境変数非依存**: DEFAULT_ADMIN_DISCORD_IDS完全削除済み
 
 ### 管理者ダッシュボード
 - **統計情報**: ユーザー数・動画数・作品数・音声ボタン数・お問い合わせ数のリアルタイム表示
 - **クイックアクション**: 各管理機能への迅速アクセス
 - **システム情報**: バージョン情報・環境情報・稼働状況
+- **ログイン管理者表示**: 現在の管理者セッション情報
 
-### ユーザー管理 (`/admin/users`)
+### ユーザー管理 (予定)
 - **ユーザー一覧**: 全ユーザーの表示・検索・フィルタリング
 - **ロール管理**: member/moderator/admin のロール変更
 - **統計情報**: ユーザーごとの音声ボタン作成数・再生数統計
 - **アクセス制御**: 管理者権限による細かな権限管理
 
-### 音声ボタン管理 (`/admin/buttons`)
+### 音声ボタン管理 (予定)
 - **一覧表示**: 全音声ボタンの管理・検索・フィルタリング
 - **詳細管理**: 個別ボタンの編集・削除・公開制御
 - **統計確認**: 再生数・いいね数・お気に入り数の確認
 - **品質管理**: 不適切コンテンツの検出・削除
 
-### 動画・作品管理 (`/admin/videos`, `/admin/works`)
+### 動画・作品管理 (予定)
 - **データ同期状況**: Cloud Functions による自動収集状況の監視
 - **手動更新**: 必要に応じた手動データ更新・修正
 - **統計確認**: 収集データの品質・完全性チェック
 
-### お問い合わせ管理 (`/admin/contacts`)
+### お問い合わせ管理 (予定)
 - **状態管理**: 新規・確認中・対応済みのステータス管理
 - **詳細表示**: お問い合わせ内容の詳細確認・対応履歴
 - **一括操作**: 複数件の一括ステータス変更
 
 ### セキュリティ機能
-- **アクセスログ**: 管理者操作の完全ログ記録 (`security-logger.ts`)
-- **認証強化**: Discord ギルドメンバーシップ + ロールベース制御
-- **セッション管理**: Firestore ベースの安全なセッション管理
+- **Firestore認証**: role="admin" + isActive=true での動的認証
+- **セッション管理**: NextAuth.js JWT + Cookie ベースセッション
+- **Edge Runtime対応**: 動的インポートによるFirestore接続
+- **アクセス制御**: 管理者のみアクセス可能な独立アプリケーション
 
 ## 🌐 API Routes 詳細
 

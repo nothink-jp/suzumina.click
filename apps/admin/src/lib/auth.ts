@@ -1,9 +1,6 @@
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 
-// 管理者Discord IDのリスト（環境変数から読み込み）
-const ADMIN_DISCORD_IDS = process.env.ADMIN_DISCORD_IDS?.split(",").map((id) => id.trim()) || [];
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
 	providers: [
 		Discord({
@@ -19,21 +16,52 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				return false;
 			}
 
-			// 管理者IDリストに含まれているかチェック
-			if (!user.id || !ADMIN_DISCORD_IDS.includes(user.id)) {
-				console.warn(`Unauthorized admin access attempt by Discord ID: ${user.id}`);
+			// DiscordIDでFirestoreユーザーを確認
+			if (!user.id) {
+				// biome-ignore lint/suspicious/noConsole: Essential security logging for admin authentication
+				console.warn("Discord ID not available");
 				return false;
 			}
 
-			console.log(`Admin login successful: ${user.name} (${user.id})`);
-			return true;
+			try {
+				// Dynamic import to avoid Edge Runtime issues
+				const { Firestore } = await import("@google-cloud/firestore");
+				const firestore = new Firestore();
+
+				const userDoc = await firestore.collection("users").doc(user.id).get();
+
+				if (!userDoc.exists) {
+					// biome-ignore lint/suspicious/noConsole: Essential security logging for admin authentication
+					console.warn(`User not found in Firestore: ${user.id}`);
+					return false;
+				}
+
+				const userData = userDoc.data();
+
+				// 管理者権限とアクティブ状態をチェック
+				if (userData?.role !== "admin" || userData?.isActive !== true) {
+					// biome-ignore lint/suspicious/noConsole: Essential security logging for admin authentication
+					console.warn(
+						`Unauthorized admin access attempt by Discord ID: ${user.id} (role: ${userData?.role}, active: ${userData?.isActive})`,
+					);
+					return false;
+				}
+
+				// biome-ignore lint/suspicious/noConsole: Essential security logging for admin authentication
+				console.log(`Admin login successful: ${user.name} (${user.id})`);
+				return true;
+			} catch (error) {
+				// biome-ignore lint/suspicious/noConsole: Essential security logging for admin authentication
+				console.error("Error checking admin status:", error);
+				return false;
+			}
 		},
 
 		async session({ session, token }) {
 			// セッションにDiscord IDを追加
 			if (token.sub) {
 				session.user.id = token.sub;
-				session.user.isAdmin = ADMIN_DISCORD_IDS.includes(token.sub);
+				session.user.isAdmin = true; // Admin appアクセス時点で管理者権限確認済み
 			}
 			return session;
 		},
@@ -42,7 +70,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			// JWTトークンにユーザー情報を保存
 			if (user) {
 				token.sub = user.id;
-				token.isAdmin = ADMIN_DISCORD_IDS.includes(user.id);
+				token.isAdmin = true; // Admin appアクセス時点で管理者権限確認済み
 			}
 			return token;
 		},
@@ -57,6 +85,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 		strategy: "jwt",
 		maxAge: 24 * 60 * 60, // 24時間
 	},
+
+	// Trust the host since we're using NEXTAUTH_URL
+	trustHost: true,
 
 	debug: process.env.NODE_ENV === "development",
 });

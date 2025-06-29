@@ -1,51 +1,126 @@
-# 管理者設定スクリプト
+# 管理者権限設定ガイド
 
-## 管理者ユーザーの設定方法
+## 📋 概要
 
-### 方法1: 環境変数を使用（推奨）
+suzumina.click v0.2.3+ では、管理者権限は **Firestore ベース** で管理されます。
+環境変数（DEFAULT_ADMIN_DISCORD_IDS）は完全に廃止され、すべての管理者権限はFirestoreのuser documentで管理されます。
 
-1. `.env.local` ファイルに以下を追加:
+## 🛡️ 管理者アプリケーション
+
+- **専用URL**: admin.suzumina.click
+- **アクセス方式**: 独立したNext.js アプリケーション
+- **認証方式**: Firestore ロールベース認証
+- **インスタンス**: 0インスタンス運用（アクセス時のみ起動）
+
+## 🔧 管理者権限の設定方法
+
+### 方法1: Firestore Console（推奨）
+
+1. **Google Cloud Console**でFirestoreにアクセス
+2. `users` コレクションを開く
+3. 該当ユーザーのドキュメントを検索（Discord IDで検索）
+4. 以下のフィールドを編集:
+   ```json
+   {
+     "role": "admin",
+     "isActive": true
+   }
    ```
-   DEFAULT_ADMIN_DISCORD_IDS=あなたのDiscordID
-   ```
+5. 保存後、再ログインで管理者権限が有効化
 
-2. 初回ログイン時に自動的に管理者として登録されます
+### 方法2: Firebase Emulator UI（開発環境）
 
-### 方法2: Firebase Emulator UI を使用（開発環境）
-
-1. Firebase Emulatorを起動:
+1. **開発環境でEmulatorを起動**:
    ```bash
    pnpm firebase:emulators
    ```
 
-2. http://localhost:4000 でEmulator UIを開く
+2. **http://localhost:4000** でEmulator UIを開く
 
-3. Firestore > users コレクションから該当ユーザーを見つける
+3. **Firestore > users** コレクションから該当ユーザーを検索
 
-4. `role` フィールドを `"member"` から `"admin"` に変更
+4. **ユーザーdocumentを編集**:
+   - `role`: `"member"` → `"admin"`
+   - `isActive`: `true` に設定
 
-5. 保存して再ログイン
+5. **保存してブラウザリロード**
 
-### 方法3: setup-adminスクリプトを使用（本番環境）
+### 方法3: gcloud CLI（本番環境）
 
-1. 必要な環境変数を設定:
-   ```
-   GOOGLE_CLOUD_PROJECT=suzumina-click
-   ```
+```bash
+# Firestore user documentを直接更新
+gcloud firestore documents update users/[DISCORD_ID] \
+  --update-mask="role,isActive" \
+  --data='{"role":"admin","isActive":true}'
+```
 
-2. スクリプトを実行:
-   ```bash
-   pnpm tsx scripts/setup-admin.ts <Discord ID>
-   ```
+## 📱 管理者アプリアクセス手順
 
-## Discord IDの確認方法
+1. **admin.suzumina.click** にアクセス
+2. **「Discord でログイン」**をクリック
+3. **Discord OAuth認証**を完了
+4. **Firestore認証チェック**:
+   - `role === "admin"`
+   - `isActive === true`
+5. **認証成功**で管理者ダッシュボードが表示
 
-1. Discordの設定で「開発者モード」を有効化
-2. 自分のプロフィールを右クリック
-3. 「IDをコピー」を選択
+## 🔍 Discord IDの確認方法
 
-## トラブルシューティング
+1. **Discordの設定**で「開発者モード」を有効化
+2. **自分のプロフィール**を右クリック
+3. **「IDをコピー」**を選択
+4. **長い数字列**（例: `570920263135264778`）が Discord ID
 
-- **ユーザーが見つからない**: 先にサイトにログインしてユーザーを作成してください
-- **権限エラー**: Google Cloud認証情報が正しく設定されているか確認してください
-- **再ログインが必要**: ロール変更後は一度ログアウトして再ログインしてください
+## 🚨 トラブルシューティング
+
+### ❌ ログインできない
+
+**確認ポイント**:
+- ユーザーが `users` コレクションに存在するか
+- `role` が `"admin"` になっているか
+- `isActive` が `true` になっているか
+- Discord ギルドメンバーシップが有効か
+
+**解決方法**:
+```bash
+# 1. ユーザー存在確認
+gcloud firestore documents describe users/[DISCORD_ID]
+
+# 2. 権限確認・修正
+gcloud firestore documents update users/[DISCORD_ID] \
+  --update-mask="role,isActive" \
+  --data='{"role":"admin","isActive":true}'
+```
+
+### ❌ "管理者が見つかりません"エラー
+
+**原因**: 初回ログイン前にFirestoreにユーザーが作成されていない
+
+**解決方法**:
+1. **suzumina.click** (メインサイト) に一度ログイン
+2. **ユーザー作成後**、上記の方法で管理者権限を付与
+3. **admin.suzumina.click** に再アクセス
+
+### ❌ セッションエラー
+
+**解決方法**:
+- **ブラウザのCookieをクリア**
+- **シークレット/プライベートブラウジング**でテスト
+- **一度ログアウト**してから再ログイン
+
+## 🔄 従来との差分
+
+| 項目 | v0.2.2以前 | v0.2.3以降 |
+|------|------------|------------|
+| **認証方式** | 環境変数 DEFAULT_ADMIN_DISCORD_IDS | Firestore role ベース |
+| **管理者ページ** | /admin (Web app 内) | admin.suzumina.click (独立アプリ) |
+| **設定方法** | 環境変数設定 + デプロイ | Firestore document編集 |
+| **新規ユーザー** | 環境変数で管理者自動設定 | 全員 "member" 開始 |
+| **運用コスト** | 常時稼働 | 0インスタンス（必要時のみ） |
+
+## ⚠️ 重要な注意事項
+
+1. **環境変数は完全廃止**: DEFAULT_ADMIN_DISCORD_IDS は使用されません
+2. **新規ユーザーは member**: すべての新規ユーザーは "member" ロールで開始
+3. **手動権限付与が必要**: 管理者権限はFirestore で手動設定が必要
+4. **再デプロイ不要**: 管理者権限変更にデプロイは不要

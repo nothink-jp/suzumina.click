@@ -454,9 +454,10 @@ describe("Audio Button Server Actions", () => {
 			expect(mockRunTransaction).toHaveBeenCalled();
 		});
 
+		// biome-ignore lint/suspicious/noSkippedTests: Admin functionality removed from web app
 		it.skip("管理者が他人の音声ボタンを削除できる", async () => {
-			// TODO: Fix admin user mock
-			// Skip this test for now due to mocking complexity
+			// NOTE: Admin functionality has been moved to dedicated admin app
+			// This test is kept for historical reference but is no longer relevant
 
 			mockGet.mockResolvedValue({
 				exists: true,

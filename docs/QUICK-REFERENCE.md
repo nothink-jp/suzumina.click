@@ -25,8 +25,8 @@ pnpm test:coverage
 # 🎨 Storybook (UIコンポーネント・デザイントークン)
 cd packages/ui && pnpm storybook
 
-# 🔧 管理者権限設定
-cd apps/web && node scripts/setup-admin.js <DISCORD_USER_ID>
+# 🔧 管理者アプリ (分離済み)
+cd apps/admin && pnpm dev  # 管理者専用アプリ開発
 ```
 
 ## 🔐 認証・環境変数
@@ -45,8 +45,8 @@ NEXTAUTH_URL="https://suzumina.click"
 # Google Cloud (開発時)
 GOOGLE_CLOUD_PROJECT="suzumina-click"
 
-# 管理者権限設定 (任意)
-DEFAULT_ADMIN_DISCORD_IDS="discord_id1,discord_id2,discord_id3"
+# 管理者権限は Firestore で管理 (環境変数使用なし)
+# role="admin" かつ isActive=true のユーザーが管理者権限を持つ
 ```
 
 ### Discord設定
@@ -59,9 +59,15 @@ DEFAULT_ADMIN_DISCORD_IDS="discord_id1,discord_id2,discord_id3"
 
 ```bash
 # 🔑 認証関連
-apps/web/src/auth.ts                    # NextAuth設定
+apps/web/src/auth.ts                    # NextAuth設定 (Web)
+apps/admin/src/lib/auth.ts              # NextAuth設定 (Admin - Firestore認証)
 apps/web/src/lib/user-firestore.ts      # ユーザー管理
 packages/shared-types/src/user.ts       # ユーザー型定義
+
+# 🛡️ 管理者専用
+apps/admin/                             # 管理者専用アプリ (分離済み)
+apps/admin/src/app/page.tsx             # 管理者ダッシュボード
+apps/admin/src/lib/auth-client.ts       # クライアント認証関数
 
 # 🎵 音声参照機能
 apps/web/src/app/buttons/               # 音声参照ページ・Actions

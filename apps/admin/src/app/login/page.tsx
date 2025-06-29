@@ -1,4 +1,3 @@
-import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
 	Card,
 	CardContent,

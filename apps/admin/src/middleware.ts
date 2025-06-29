@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
 	// ログインページとAPIルートはアクセス許可
@@ -7,16 +6,18 @@ export async function middleware(request: NextRequest) {
 		return NextResponse.next();
 	}
 
-	// 認証チェック
-	const session = await auth();
+	// 簡単なセッションチェック（詳細な認証はページレベルで実装）
+	const sessionCookie =
+		request.cookies.get("next-auth.session-token") ||
+		request.cookies.get("__Secure-next-auth.session-token");
 
-	if (!session?.user?.isAdmin) {
-		// 未認証または管理者でない場合はログインページにリダイレクト
+	if (!sessionCookie) {
+		// セッションがない場合はログインページにリダイレクト
 		const loginUrl = new URL("/login", request.url);
 		return NextResponse.redirect(loginUrl);
 	}
 
-	// 認証済み管理者はアクセス許可
+	// セッションがある場合はアクセス許可（詳細チェックはページコンポーネントで実行）
 	return NextResponse.next();
 }
 

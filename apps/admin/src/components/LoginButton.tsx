@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { signIn } from "@/lib/auth";
+import { signIn } from "@/lib/auth-client";
 
 export function LoginButton() {
 	const handleLogin = async () => {
