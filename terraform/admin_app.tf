@@ -124,29 +124,12 @@ resource "google_project_iam_member" "admin_app_logging" {
 
 # 管理者アプリは既存のSecret Managerシークレットを使用
 
-# IAM ポリシー設定（管理者のみアクセス可能）
-resource "google_cloud_run_v2_service_iam_member" "admin_app_invoker" {
-  for_each = toset([
-    # 環境変数で管理される管理者Discord IDsに対応するGoogleアカウント
-    # 実際の運用時は適切なGoogleアカウントに設定
-    "user:${var.admin_email}"
-  ])
-
-  location = google_cloud_run_v2_service.admin_app.location
-  name     = google_cloud_run_v2_service.admin_app.name
-  role     = "roles/run.invoker"
-  member   = each.value
-}
-
-# Cloud Run の外部アクセス無効化（認証必須）
-resource "google_cloud_run_v2_service_iam_member" "admin_app_no_public" {
+# パブリックアクセス許可（アプリケーション内でDiscord認証による制御）
+resource "google_cloud_run_v2_service_iam_member" "admin_app_public_access" {
   location = google_cloud_run_v2_service.admin_app.location
   name     = google_cloud_run_v2_service.admin_app.name
   role     = "roles/run.invoker"
   member   = "allUsers"
-  
-  # 明示的に拒否するため、このリソースは作成しない
-  count = 0
 }
 
 # DNS レコード（サブドメイン）- 手動設定が必要

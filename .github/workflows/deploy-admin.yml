@@ -121,7 +121,7 @@ jobs:
             --image ${{ env.IMAGE_TAG }} \
             --region ${{ env.REGION }} \
             --platform managed \
-            --no-allow-unauthenticated \
+            --allow-unauthenticated \
             --service-account="suzumina-admin-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
             --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GCP_PROJECT_ID=${{ env.PROJECT_ID }},NEXTAUTH_URL=https://admin.suzumina.click" \
             --set-secrets="DISCORD_CLIENT_ID=DISCORD_CLIENT_ID:latest,DISCORD_CLIENT_SECRET=DISCORD_CLIENT_SECRET:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest" \
@@ -132,35 +132,8 @@ jobs:
             --timeout 300 \
             --port 8080
 
-      # Configure admin-only access
-      - name: Configure admin access
-        run: |
-          echo "Configuring admin-only access for Cloud Run service..."
-          
-          # Remove any existing public access
-          gcloud run services remove-iam-policy-binding ${{ env.SERVICE_NAME }} \
-            --region=${{ env.REGION }} \
-            --member="allUsers" \
-            --role="roles/run.invoker" \
-            --quiet || echo "No public access to remove"
-          
-          # Add IAM policy binding for admin users only
-          # Note: This requires the admin email to be stored in secrets
-          if [ -n "${{ secrets.ADMIN_EMAIL }}" ]; then
-            gcloud run services add-iam-policy-binding ${{ env.SERVICE_NAME }} \
-              --region=${{ env.REGION }} \
-              --member="user:${{ secrets.ADMIN_EMAIL }}" \
-              --role="roles/run.invoker"
-            echo "✅ Added admin access for ${{ secrets.ADMIN_EMAIL }}"
-          else
-            echo "⚠️  ADMIN_EMAIL secret not configured. Service will require manual IAM configuration."
-          fi
-          
-          # Verify the policy was applied
-          echo "Verifying IAM policy..."
-          gcloud run services get-iam-policy ${{ env.SERVICE_NAME }} \
-            --region=${{ env.REGION }} \
-            --format="yaml"
+      # Note: Admin access control is handled by the application's Discord authentication
+      # The service is publicly accessible but requires admin-level Discord authentication to use
       
       # Health check (admin authentication required)
       - name: Service deployment verification
