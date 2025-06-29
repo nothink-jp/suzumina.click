@@ -132,20 +132,21 @@ resource "google_cloud_run_v2_service_iam_member" "admin_app_public_access" {
   member   = "allUsers"
 }
 
-# DNS レコード（サブドメイン）- 手動設定が必要
-# admin.suzumina.click は Cloud Run サービスURLを手動でCNAMEレコードに設定する必要があります
-# 
-# 例: admin.suzumina.click CNAME suzumina-admin-xxxx-an.a.run.app
-#
-# または以下のようにCloud Runカスタムドメインマッピングを使用:
-# resource "google_cloud_run_domain_mapping" "admin_custom_domain" {
-#   location = var.region
-#   name     = "admin.suzumina.click"
-#   
-#   spec {
-#     route_name = google_cloud_run_v2_service.admin_app.name
-#   }
-# }
+# カスタムドメインマッピング（admin.suzumina.click）
+resource "google_cloud_run_domain_mapping" "admin_custom_domain" {
+  location = var.region
+  name     = "admin.${var.domain_name}"
+  
+  metadata {
+    namespace = var.gcp_project_id
+  }
+  
+  spec {
+    route_name = google_cloud_run_v2_service.admin_app.name
+  }
+  
+  depends_on = [google_cloud_run_v2_service.admin_app]
+}
 
 # アウトプット
 output "admin_app_url" {
