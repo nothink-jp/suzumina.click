@@ -24,9 +24,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			}
 
 			try {
-				// Dynamic import to avoid Edge Runtime issues
-				const { Firestore } = await import("@google-cloud/firestore");
-				const firestore = new Firestore();
+				const { getFirestore } = await import("@/lib/firestore");
+				const firestore = getFirestore();
 
 				const userDoc = await firestore.collection("users").doc(user.id).get();
 
