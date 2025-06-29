@@ -1,5 +1,31 @@
 @import "tailwindcss";
 
+@theme {
+  --color-suzuka-50: oklch(98% 0.02 327);
+  --color-suzuka-100: oklch(94% 0.08 327);
+  --color-suzuka-200: oklch(88% 0.16 327);
+  --color-suzuka-300: oklch(79% 0.24 327);
+  --color-suzuka-400: oklch(68% 0.32 327);
+  --color-suzuka-500: oklch(56% 0.40 327);
+  --color-suzuka-600: oklch(48% 0.35 327);
+  --color-suzuka-700: oklch(40% 0.30 327);
+  --color-suzuka-800: oklch(33% 0.25 327);
+  --color-suzuka-900: oklch(28% 0.20 327);
+  --color-suzuka-950: oklch(15% 0.15 327);
+
+  --color-minase-50: oklch(95% 0.03 22);
+  --color-minase-100: oklch(90% 0.06 21);
+  --color-minase-200: oklch(80% 0.12 21);
+  --color-minase-300: oklch(69% 0.18 21);
+  --color-minase-400: oklch(58% 0.24 21);
+  --color-minase-500: oklch(57% 0.25 21);
+  --color-minase-600: oklch(51% 0.23 21);
+  --color-minase-700: oklch(43% 0.20 21);
+  --color-minase-800: oklch(36% 0.17 21);
+  --color-minase-900: oklch(30% 0.14 21);
+  --color-minase-950: oklch(16% 0.12 21);
+}
+
 @layer base {
 	:root {
 		--background: 0 0% 100%;
