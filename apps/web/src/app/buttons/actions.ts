@@ -62,7 +62,7 @@ export async function createAudioButton(
 		const firestore = FirestoreAdmin.getInstance();
 		const recentCreationsSnapshot = await firestore
 			.collection("audioButtons")
-			.where("uploadedBy", "==", user.discordId)
+			.where("createdBy", "==", user.discordId)
 			.where("createdAt", ">", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
 			.get();
 
@@ -408,8 +408,8 @@ export async function updateAudioButtonStats(
 
 			if (audioButtonDoc.exists) {
 				const audioButtonData = audioButtonDoc.data() as FirestoreAudioButtonData;
-				if (audioButtonData.uploadedBy) {
-					await updateUserStats(audioButtonData.uploadedBy, {
+				if (audioButtonData.createdBy) {
+					await updateUserStats(audioButtonData.createdBy, {
 						incrementPlayCount: 1,
 					});
 				}
@@ -652,10 +652,10 @@ export async function deleteAudioButton(
 		} as FirestoreAudioButtonData;
 
 		// 作成者または管理者のみ削除可能
-		if (audioButtonData.uploadedBy !== user.discordId && user.role !== "admin") {
+		if (audioButtonData.createdBy !== user.discordId && user.role !== "admin") {
 			logger.warn("削除権限なし", {
 				audioButtonId,
-				uploadedBy: audioButtonData.uploadedBy,
+				createdBy: audioButtonData.createdBy,
 				requestUserId: user.discordId,
 				userRole: user.role,
 			});
@@ -667,7 +667,7 @@ export async function deleteAudioButton(
 
 		logger.debug("削除権限確認完了", {
 			audioButtonId,
-			uploadedBy: audioButtonData.uploadedBy,
+			createdBy: audioButtonData.createdBy,
 			userRole: user.role,
 		});
 
@@ -682,7 +682,7 @@ export async function deleteAudioButton(
 			logger.debug("統計情報の更新開始");
 
 			// 作成者の統計を更新
-			const userRef = firestore.collection("users").doc(audioButtonData.uploadedBy);
+			const userRef = firestore.collection("users").doc(audioButtonData.createdBy);
 			const userDoc = await transaction.get(userRef);
 			if (userDoc.exists) {
 				const updateData: {
@@ -731,7 +731,7 @@ export async function deleteAudioButton(
 		logger.info("音声ボタン削除が正常に完了", {
 			audioButtonId,
 			deletedBy: user.discordId,
-			originalUploader: audioButtonData.uploadedBy,
+			originalCreator: audioButtonData.createdBy,
 		});
 
 		return { success: true };

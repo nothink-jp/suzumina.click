@@ -45,6 +45,9 @@ importers:
         specifier: ^150.0.1
         version: 150.0.1
     devDependencies:
+      '@suzumina.click/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
       '@types/node':
         specifier: ^24.0.3
         version: 24.0.7
@@ -173,6 +176,9 @@ importers:
         specifier: ^3.25.67
         version: 3.25.67
     devDependencies:
+      '@suzumina.click/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1

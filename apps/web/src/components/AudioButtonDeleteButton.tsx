@@ -12,7 +12,7 @@ import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 interface AudioButtonDeleteButtonProps {
 	audioButtonId: string;
 	audioButtonTitle: string;
-	uploadedBy: string;
+	createdBy: string;
 	variant?: "default" | "ghost" | "outline";
 	size?: "default" | "sm" | "lg" | "icon";
 	showLabel?: boolean;
@@ -22,7 +22,7 @@ interface AudioButtonDeleteButtonProps {
 export function AudioButtonDeleteButton({
 	audioButtonId,
 	audioButtonTitle,
-	uploadedBy,
+	createdBy,
 	variant = "ghost",
 	size = "sm",
 	showLabel = false,
@@ -36,7 +36,7 @@ export function AudioButtonDeleteButton({
 	// 削除権限チェック
 	const canDelete =
 		session?.user?.discordId &&
-		(session.user.discordId === uploadedBy || session.user.role === "admin");
+		(session.user.discordId === createdBy || session.user.role === "admin");
 
 	if (!canDelete) {
 		return null;

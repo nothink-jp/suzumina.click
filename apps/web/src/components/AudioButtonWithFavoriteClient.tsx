@@ -36,7 +36,7 @@ export function AudioButtonWithFavoriteClient({
 	const canDelete =
 		showDelete &&
 		session?.user &&
-		(session.user.discordId === audioButton.uploadedBy || session.user.role === "admin");
+		(session.user.discordId === audioButton.createdBy || session.user.role === "admin");
 
 	useEffect(() => {
 		if (showFavorite && session?.user && !initialIsFavorited) {

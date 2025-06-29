@@ -161,7 +161,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 										{audioButton.endTime - audioButton.startTime}秒
 									</span>
 									<span className="text-xs text-muted-foreground">
-										by {audioButton.uploadedByName}
+										by {audioButton.createdByName}
 									</span>
 								</div>
 							</div>
@@ -169,7 +169,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 							<AudioButtonDeleteButton
 								audioButtonId={audioButton.id}
 								audioButtonTitle={audioButton.title}
-								uploadedBy={audioButton.uploadedBy}
+								createdBy={audioButton.createdBy}
 								variant="outline"
 								size="sm"
 								showLabel={true}

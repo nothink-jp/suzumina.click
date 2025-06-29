@@ -434,8 +434,8 @@ describe("Audio Button Server Actions", () => {
 				data: () => ({
 					title: "テスト音声ボタン",
 					tags: ["テスト"],
-					uploadedBy: "123456789012345678", // Same as mock auth user
-					uploadedByName: "Test User",
+					createdBy: "123456789012345678", // Same as mock auth user
+					createdByName: "Test User",
 					sourceVideoId: "test-video",
 					startTime: 0,
 					endTime: 10,
@@ -464,8 +464,8 @@ describe("Audio Button Server Actions", () => {
 				data: () => ({
 					title: "他人の音声ボタン",
 					tags: ["他人"],
-					uploadedBy: "other-user-id",
-					uploadedByName: "Other User",
+					createdBy: "other-user-id",
+					createdByName: "Other User",
 					sourceVideoId: "test-video",
 					startTime: 0,
 					endTime: 10,
@@ -490,8 +490,8 @@ describe("Audio Button Server Actions", () => {
 				data: () => ({
 					title: "他人の音声ボタン",
 					tags: ["他人"],
-					uploadedBy: "other-user-id", // Different from mock auth user
-					uploadedByName: "Other User",
+					createdBy: "other-user-id", // Different from mock auth user
+					createdByName: "Other User",
 					sourceVideoId: "test-video",
 					startTime: 0,
 					endTime: 10,

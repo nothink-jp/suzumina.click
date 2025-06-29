@@ -92,7 +92,7 @@ suzumina.click/ (v0.2.2)
 
 ### 主要コレクション
 
-- **videos**: YouTube動画データ (`FirestoreYouTubeVideoData`)
+- **videos**: YouTube動画データ (`FirestoreVideoData`)
 - **works**: DLsite作品データ (`FirestoreDLsiteWorkData`)
 - **audioButtons**: 音声ボタン (YouTube区間指定システム)
 - **users**: ユーザーデータ (Discord認証・ロール管理)

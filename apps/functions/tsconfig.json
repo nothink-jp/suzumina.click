@@ -1,17 +1,11 @@
 {
-	"extends": "../../packages/typescript-config/base.json",
+	"extends": "@suzumina.click/typescript-config/base.json",
 	"compilerOptions": {
-		"module": "NodeNext",
-		"esModuleInterop": true,
-		"moduleResolution": "nodenext",
 		"noImplicitReturns": true,
 		"noUnusedLocals": true,
 		"outDir": "lib",
 		"sourceMap": true,
-		"strict": true,
-		"target": "ES2022",
 		"lib": ["ES2022"],
-		"skipLibCheck": true,
 		"allowSyntheticDefaultImports": true,
 		"baseUrl": ".",
 		"paths": {

@@ -247,6 +247,6 @@ gcloud logging read 'protoPayload.methodName="storage.objects.insert" AND protoP
 
 ---
 
-**最終更新**: 2025年6月17日  
-**バージョン**: 2.0.0 (ユーザー作成音声ボタン機能対応)  
+**最終更新**: 2025年6月28日  
+**バージョン**: v0.2.2 (お気に入りシステム + 音声ボタンデザイン刷新)  
 **管理者**: suzumina.click開発チーム

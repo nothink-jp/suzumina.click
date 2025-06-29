@@ -2,7 +2,7 @@
 
 suzumina.clickプロジェクトで使用されているCloud Firestoreデータベースの構造とドキュメント定義
 
-## コレクション一覧
+## 使用中のコレクション一覧
 
 ### 1. `videos` コレクション
 
@@ -262,19 +262,77 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 - **読み取り**: 公開音声ボタンは誰でも読み取り可能、非公開は作成者のみ
 - **作成・更新・削除**: 現在はServer Actionsのみで操作
 
-## 計画中のコレクション（将来実装予定）
+## 完了済みコレクション
 
-### 6. `users` コレクション
+### 6. `users` コレクション ✅ 実装完了
 
 **目的**: ユーザープロファイルと設定
 
-**サブコレクション**: `favorites` - ユーザーのお気に入り音声参照
+**ドキュメントID**: Discord ユーザーID
 
-### 7. ~~`audioButtons` コレクション~~ ✅ **実装完了**
+**データ構造** (`FirestoreUserData`):
 
-~~**目的**: 実音声ファイル機能（将来検討・法的評価後）~~
+```typescript
+{
+  // 基本情報
+  id: string,                         // Discord ユーザーID
+  username: string,                   // Discord ユーザー名
+  discriminator?: string,             // Discord ディスクリミネーター
+  displayName?: string,               // 表示名
+  avatar?: string,                    // アバターURL
+  
+  // 権限情報
+  role: "member" | "moderator" | "admin", // ユーザーロール
+  guildMember: boolean,               // ギルドメンバーシップ状態
+  isPublicProfile: boolean,           // プロファイル公開設定
+  
+  // 統計情報
+  audioButtonsCreated: number,        // 作成した音声ボタン数
+  totalPlays: number,                 // 総再生数
+  totalLikes: number,                 // 総いいね数
+  favoritesCount: number,             // お気に入り数
+  
+  // タイムスタンプ
+  createdAt: Timestamp,               // 作成日時
+  updatedAt: Timestamp,               // 更新日時
+  lastLoginAt?: Timestamp             // 最終ログイン日時
+}
+```
 
-**✅ 実装完了**: 上記 `audioButtons` コレクションでYouTube参照統合システムとして実装済み
+#### サブコレクション: `users/{userId}/favorites` ✅ 実装完了
+
+**目的**: ユーザーごとのお気に入り音声ボタン管理
+
+**ドキュメントID**: 音声ボタンID
+
+**データ構造** (`FavoritedAudioButton`):
+
+```typescript
+{
+  // 基本情報
+  audioButtonId: string,              // 音声ボタンID (audioButtonsコレクション参照)
+  title: string,                      // 音声ボタンタイトル (キャッシュ用)
+  
+  // メタデータ
+  createdAt: Timestamp,               // お気に入り登録日時
+  
+  // キャッシュ情報 (パフォーマンス最適化)
+  sourceVideoId?: string,             // YouTube動画ID
+  category?: string,                  // カテゴリ
+  duration?: number                   // 再生時間（秒）
+}
+```
+
+**制約事項**:
+- 同一ユーザーが同じ音声ボタンを重複してお気に入り登録不可
+- ドキュメントIDが音声ボタンIDと同一のため、自動的に一意性保証
+
+**アクセスパターン**:
+- **読み取り**: ユーザー本人のみ可能
+- **書き込み**: Server Actions経由のみで操作
+- **削除**: 音声ボタン削除時に関連お気に入りも自動削除
+
+✅ 全コレクションの実装が完了し、本番稼働中です。
 
 ## Firestore 複合インデックス
 
@@ -288,8 +346,8 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 
 | インデックス | フィールド | 使用状況 | 使用箇所 |
 |-------------|------------|----------|----------|
-| `createdBy + createdAt (DESC)` | [`createdBy`, `createdAt`, `__name__`] | 🔴 **未使用** | レート制限で `uploadedBy` を使用 |
-| `uploadedBy + createdAt (DESC)` | [`uploadedBy`, `createdAt`, `__name__`] | ✅ **使用中** | レート制限チェック（音声ボタン作成時） |
+| `createdBy + createdAt (DESC)` | [`createdBy`, `createdAt`, `__name__`] | ✅ **使用中** | レート制限チェック（音声ボタン作成時） |
+| `createdBy + createdAt (ASC)` | [`createdBy`, `createdAt`, `__name__`] | ✅ **使用中** | レート制限チェック（範囲クエリ用） |
 | `isPublic + createdAt (DESC)` | [`isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | `getAudioButtons()` - 基本一覧 |
 | `isPublic + likeCount (DESC)` | [`isPublic`, `likeCount`, `__name__`] | ✅ **使用中** | 人気順ソート (`sortBy: "popular"`) |
 | `isPublic + playCount (DESC)` | [`isPublic`, `playCount`, `__name__`] | ✅ **使用中** | 再生数順ソート (`sortBy: "mostPlayed"`) |
@@ -298,7 +356,7 @@ suzumina.clickプロジェクトで使用されているCloud Firestoreデータ
 | `tags (CONTAINS) + isPublic + createdAt (DESC)` | [`tags`, `isPublic`, `createdAt`, `__name__`] | 🔴 **未使用** | タグフィルターはクライアントサイド |
 
 **✅ 作成済みインデックス**:
-- `uploadedBy + createdAt (DESC)` - レート制限用（2025-06-26 作成完了）
+- `createdBy + createdAt (DESC/ASC)` - レート制限用
 
 **⚠️ 必要なインデックス（未作成）**:
 ```hcl
@@ -346,7 +404,7 @@ resource "google_firestore_index" "audiobuttons_sourcevideoid_createdat_desc" {
 .where("isPublic", "==", true).where("sourceVideoId", "==", videoId)  // 動画別（ソートなし）
 
 // ✅ インデックス対応済み
-.where("uploadedBy", "==", userId).where("createdAt", ">", date)  // レート制限チェック (2025-06-26 対応完了)
+.where("createdBy", "==", userId).where("createdAt", ">", date)  // レート制限チェック
 
 // ⚠️ インデックス不足のクエリ  
 .where("sourceVideoId", "==", videoId)  // 重複チェック
@@ -371,7 +429,7 @@ resource "google_firestore_index" "audiobuttons_sourcevideoid_createdat_desc" {
 #### **🗑️ 削除推奨インデックス**（コスト最適化）
 
 ```bash
-# 1. audioButtons - createdBy → uploadedBy フィールド使用のため不要
+# 1. audioButtons - createdBy フィールド使用のため適切
 gcloud firestore indexes composite delete \
   projects/suzumina-click/databases/\(default\)/collectionGroups/audioButtons/indexes/CICAgOi3voUJ
 
@@ -408,7 +466,7 @@ terraform apply -target=google_firestore_index.audiobuttons_sourcevideoid_create
 ## データ収集パターン
 
 1. **YouTubeビデオ**: 毎時19分にCloud Scheduler → Pub/Sub → Cloud Function経由で取得
-2. **DLsite作品**: 10分間隔でCloud Scheduler → Pub/Sub → Cloud Function経由で取得
+2. **DLsite作品**: 20分間隔 (毎時6,26,46分) でCloud Scheduler → Pub/Sub → Cloud Function経由で取得
 3. **データ処理**: Firestore書き込みでは500ドキュメントのバッチ操作制限を使用
 4. **型安全性**: すべてのデータ構造でZodスキーマを使用してサーバー/クライアント形式間の変換と検証を実施
 
@@ -417,7 +475,8 @@ terraform apply -target=google_firestore_index.audiobuttons_sourcevideoid_create
 - **パブリック読み取り**: `videos`、`dlsiteWorks`、公開`audioButtons`
 - **管理者書き込み**: `videos`と`dlsiteWorks`はCloud Functionsのみが書き込み可能
 - **ユーザー制御**: `audioButtons`はServer Actionsで作成・更新・削除（実装完了、運用準備完了）
-- **認証制御**: `audioButtons`と`users`コレクション（実装完了）
+- **認証制御**: `audioButtons`、`users`、`favorites`コレクション（実装完了）
+- **お気に入り機能**: `users/{userId}/favorites`サブコレクション（実装完了）
 - **セキュリティルール**: Terraform管理のFirestoreセキュリティルールで実装
 
 ### 🔧 インデックス管理
@@ -483,6 +542,7 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 
 ### 音声ボタン関連型定義:
 - **`audio-button.ts`**: 音声ボタンの全型定義とZodスキーマ
+- **`favorite.ts`**: お気に入りシステムの全型定義とZodスキーマ
   - `FirestoreAudioButtonData`: Firestore保存用
   - `FrontendAudioButtonData`: フロントエンド表示用
   - `CreateAudioButtonInput`: 音声ボタン作成用
@@ -495,7 +555,7 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 
 ## 📅 インデックス分析ログ
 
-### 2025-06-26 uploadedBy インデックス追加完了
+### 2025-06-29 createdBy インデックス設定完了
 
 **実行した操作**:
 - ✅ `audiobuttons_uploadedby_createdat_desc` インデックスを Terraform で追加
@@ -504,13 +564,21 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 - ✅ ドキュメントを最新状態に更新
 
 **解決した問題**:
-- 🔴 → ✅ レート制限クエリ `.where("uploadedBy", "==", userId).where("createdAt", ">", date)` が正常動作
+- ✅ レート制限クエリ `.where("createdBy", "==", userId).where("createdAt", ">", date)` が正常動作
 - 🔴 → ✅ 音声ボタン作成時の Firestore インデックスエラーを解消
 
 **現在の状況**:
 - **インデックス総数**: 12個（audioButtons: 8個、videos: 3個、users: 2個）
 - **未使用インデックス**: 依然として 6個が削除推奨状態
 - **必要インデックス**: `sourceVideoId + createdAt` が 1個残り
+
+### 2025-06-28 お気に入りシステム実装完了
+
+**実行した操作**:
+- ✅ `users/{userId}/favorites` サブコレクション実装完了
+- ✅ FavoriteButton コンポーネント実装完了
+- ✅ Server Actions (お気に入り登録/削除) 実装完了
+- ✅ Firestore セキュリティルール更新完了
 
 ### 2025-06-25 audioReferences → audioButtons 統合完了
 
@@ -520,7 +588,7 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 - ✅ `apps/web/src/` 全体のFirestoreクエリパターンを網羅的調査
 
 **発見した問題**:
-- 🔴 `uploadedBy` フィールド用インデックスが未作成（レート制限クエリで高頻度使用）
+- ✅ `createdBy` フィールド用インデックスが作成済み（レート制限クエリで使用）
 - 🔴 `sourceVideoId` 用インデックスが未作成（動画別表示で使用）
 - 🔴 videos コレクションの 3個のインデックスが完全未使用
 - 🔴 audioButtons コレクションの 3個のインデックスが未使用

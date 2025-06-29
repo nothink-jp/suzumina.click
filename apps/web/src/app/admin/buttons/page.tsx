@@ -73,7 +73,7 @@ async function getButtons({
 				(button) =>
 					button.title.toLowerCase().includes(searchLower) ||
 					button.description?.toLowerCase().includes(searchLower) ||
-					button.uploadedByName?.toLowerCase().includes(searchLower),
+					button.createdByName?.toLowerCase().includes(searchLower),
 			);
 		}
 

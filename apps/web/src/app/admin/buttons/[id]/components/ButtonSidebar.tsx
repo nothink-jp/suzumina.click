@@ -27,12 +27,12 @@ export function ButtonSidebar({ button }: ButtonSidebarProps) {
 						</div>
 					</div>
 
-					{button.uploadedByName && (
+					{button.createdByName && (
 						<div className="flex items-center gap-2 text-sm">
 							<User className="h-4 w-4 text-muted-foreground" />
 							<div>
 								<div className="font-medium">作成者</div>
-								<div className="text-muted-foreground">{button.uploadedByName}</div>
+								<div className="text-muted-foreground">{button.createdByName}</div>
 							</div>
 						</div>
 					)}

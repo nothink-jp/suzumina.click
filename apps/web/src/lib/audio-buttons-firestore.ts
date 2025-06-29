@@ -36,8 +36,8 @@ export function convertToFrontendAudioButton(
 		sourceVideoThumbnailUrl: `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
 		startTime: data.startTime,
 		endTime: data.endTime,
-		uploadedBy: data.uploadedBy,
-		uploadedByName: data.uploadedByName,
+		createdBy: data.createdBy,
+		createdByName: data.createdByName,
 		isPublic: data.isPublic,
 		playCount: data.playCount,
 		likeCount: data.likeCount,
@@ -72,7 +72,7 @@ export async function getAudioButtonsByUser(
 		const firestore = getFirestore();
 		const { limit = 20, onlyPublic = true, orderBy = "newest" } = options;
 
-		let query: Query = firestore.collection("audioButtons").where("uploadedBy", "==", discordId);
+		let query: Query = firestore.collection("audioButtons").where("createdBy", "==", discordId);
 
 		// 公開のみのフィルター
 		if (onlyPublic) {
@@ -144,11 +144,11 @@ export async function getUserAudioButtonStats(discordId: string): Promise<{
 		// ユーザーの全音声ボタンを取得
 		const allButtonsQuery = firestore
 			.collection("audioButtons")
-			.where("uploadedBy", "==", discordId);
+			.where("createdBy", "==", discordId);
 
 		const publicButtonsQuery = firestore
 			.collection("audioButtons")
-			.where("uploadedBy", "==", discordId)
+			.where("createdBy", "==", discordId)
 			.where("isPublic", "==", true);
 
 		const [allButtonsSnapshot, publicButtonsSnapshot] = await Promise.all([

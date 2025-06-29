@@ -25,6 +25,7 @@
 		"zod": "^3.25.67"
 	},
 	"devDependencies": {
+		"@suzumina.click/typescript-config": "workspace:*",
 		"rimraf": "^6.0.1",
 		"tsup": "^8.5.0",
 		"typescript": "^5.8.3"

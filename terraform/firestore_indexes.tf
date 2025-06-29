@@ -114,26 +114,7 @@ resource "google_firestore_index" "audiobuttons_ispublic_likecount_desc" {
   }
 }
 
-# audioButtons コレクションのインデックス - isPublic（昇順）、category（昇順）、createdAt（降順）
-resource "google_firestore_index" "audiobuttons_ispublic_category_createdat_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "category"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "createdAt"
-    order      = "DESCENDING"
-  }
-}
+# Note: category フィールドはタグベースシステムに移行したため、インデックスを削除
 
 # audioButtons コレクションのインデックス - isPublic（昇順）、sourceVideoId（昇順）、startTime（昇順）
 resource "google_firestore_index" "audiobuttons_ispublic_sourcevideoid_starttime_asc" {
@@ -259,22 +240,23 @@ resource "google_firestore_index" "audiobuttons_createdby_createdat_desc" {
   }
 }
 
-# audioButtons コレクションのインデックス - uploadedBy（昇順）、createdAt（昇順）
+# audioButtons コレクションのインデックス - createdBy（昇順）、createdAt（昇順）
 # レート制限チェッククエリで使用（範囲クエリ対応）
-resource "google_firestore_index" "audiobuttons_uploadedby_createdat_asc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "uploadedBy"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "createdAt"
-    order      = "ASCENDING"
-  }
-}
+# TODO: インデックス作成の問題により一時的に無効化
+# resource "google_firestore_index" "audiobuttons_createdby_createdat_asc" {
+#   project    = var.gcp_project_id
+#   collection = "audioButtons"
+#   
+#   fields {
+#     field_path = "createdBy"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "createdAt"
+#     order      = "ASCENDING"
+#   }
+# }
 
 # users コレクションのインデックス - isPublicProfile（昇順）、createdAt（降順）
 resource "google_firestore_index" "users_ispublicprofile_createdat_desc" {
@@ -313,71 +295,74 @@ resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" 
   }
 }
 
-# audioButtons コレクションのインデックス - uploadedBy（昇順）、isPublic（昇順）、createdAt（降順）
+# audioButtons コレクションのインデックス - createdBy（昇順）、isPublic（昇順）、createdAt（降順）
 # ユーザープロフィールページでの音声ボタン取得用（最新順）
-resource "google_firestore_index" "audiobuttons_uploadedby_ispublic_createdat_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "uploadedBy"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "createdAt"
-    order      = "DESCENDING"
-  }
-}
+# TODO: インデックス作成の問題により一時的に無効化
+# resource "google_firestore_index" "audiobuttons_createdby_ispublic_createdat_desc" {
+#   project    = var.gcp_project_id
+#   collection = "audioButtons"
+#   
+#   fields {
+#     field_path = "createdBy"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "isPublic"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "createdAt"
+#     order      = "DESCENDING"
+#   }
+# }
 
-# audioButtons コレクションのインデックス - uploadedBy（昇順）、isPublic（昇順）、createdAt（昇順）
+# audioButtons コレクションのインデックス - createdBy（昇順）、isPublic（昇順）、createdAt（昇順）
 # ユーザープロフィールページでの音声ボタン取得用（古い順）
-resource "google_firestore_index" "audiobuttons_uploadedby_ispublic_createdat_asc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "uploadedBy"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "createdAt"
-    order      = "ASCENDING"
-  }
-}
+# TODO: インデックス作成の問題により一時的に無効化
+# resource "google_firestore_index" "audiobuttons_createdby_ispublic_createdat_asc" {
+#   project    = var.gcp_project_id
+#   collection = "audioButtons"
+#   
+#   fields {
+#     field_path = "createdBy"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "isPublic"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "createdAt"
+#     order      = "ASCENDING"
+#   }
+# }
 
-# audioButtons コレクションのインデックス - uploadedBy（昇順）、isPublic（昇順）、playCount（降順）
+# audioButtons コレクションのインデックス - createdBy（昇順）、isPublic（昇順）、playCount（降順）
 # ユーザープロフィールページでの音声ボタン取得用（再生回数順）
-resource "google_firestore_index" "audiobuttons_uploadedby_ispublic_playcount_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "uploadedBy"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "playCount"
-    order      = "DESCENDING"
-  }
-}
+# TODO: インデックス作成の問題により一時的に無効化
+# resource "google_firestore_index" "audiobuttons_createdby_ispublic_playcount_desc" {
+#   project    = var.gcp_project_id
+#   collection = "audioButtons"
+#   
+#   fields {
+#     field_path = "createdBy"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "isPublic"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "playCount"
+#     order      = "DESCENDING"
+#   }
+# }
 
 # Note: Single-field indexes for favorites collection are created automatically by Firestore
 # Complex queries requiring composite indexes would be added here if needed

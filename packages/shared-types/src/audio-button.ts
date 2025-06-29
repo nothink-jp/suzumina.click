@@ -55,11 +55,11 @@ export const FirestoreAudioButtonSchema = AudioButtonBaseSchema.extend({
 	endTime: z.number().min(0), // 終了時刻（秒）
 
 	// ユーザー情報
-	uploadedBy: z.string().min(1, {
-		message: "アップローダーIDは必須です",
+	createdBy: z.string().min(1, {
+		message: "作成者IDは必須です",
 	}),
-	uploadedByName: z.string().min(1, {
-		message: "アップローダー名は必須です",
+	createdByName: z.string().min(1, {
+		message: "作成者名は必須です",
 	}),
 	isPublic: z.boolean().default(true),
 
@@ -89,8 +89,8 @@ export const FrontendAudioButtonSchema = AudioButtonBaseSchema.extend({
 	endTime: z.number().min(0),
 
 	// ユーザー情報
-	uploadedBy: z.string().min(1),
-	uploadedByName: z.string().min(1),
+	createdBy: z.string().min(1),
+	createdByName: z.string().min(1),
 	isPublic: z.boolean(),
 
 	// 統計情報
@@ -289,8 +289,8 @@ export function convertToFrontendAudioButton(
 			sourceVideoThumbnailUrl: `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
 			startTime: data.startTime,
 			endTime: data.endTime,
-			uploadedBy: data.uploadedBy,
-			uploadedByName: data.uploadedByName,
+			createdBy: data.createdBy,
+			createdByName: data.createdByName,
 			isPublic: data.isPublic,
 			playCount: data.playCount,
 			likeCount: data.likeCount,
@@ -360,8 +360,8 @@ export type UpdateAudioButtonStats = z.infer<typeof UpdateAudioButtonStatsSchema
  */
 export function convertCreateInputToFirestoreAudioButton(
 	input: CreateAudioButtonInput,
-	uploadedBy: string,
-	uploadedByName: string,
+	createdBy: string,
+	createdByName: string,
 ): Omit<FirestoreAudioButtonData, "id"> {
 	const now = new Date().toISOString();
 
@@ -373,8 +373,8 @@ export function convertCreateInputToFirestoreAudioButton(
 		sourceVideoId: input.sourceVideoId,
 		startTime: input.startTime,
 		endTime: input.endTime,
-		uploadedBy,
-		uploadedByName,
+		createdBy,
+		createdByName,
 		isPublic: input.isPublic,
 		playCount: 0,
 		likeCount: 0,
@@ -401,7 +401,7 @@ export function validateAudioButtonCreation(
 	// 重複チェック
 	const isDuplicate = existingButtons.some(
 		(button) =>
-			button.uploadedBy === userId &&
+			button.createdBy === userId &&
 			Math.abs(button.startTime - input.startTime) < 5 &&
 			Math.abs(button.endTime - input.endTime) < 5,
 	);
@@ -486,7 +486,7 @@ export function checkRateLimit(
 	// 過去24時間での作成数をカウント
 	const recentCreationsFromUser = recentCreations.filter((creation) => {
 		const createdAt = new Date(creation.createdAt);
-		return creation.uploadedBy === userDiscordId && createdAt > twentyFourHoursAgo;
+		return creation.createdBy === userDiscordId && createdAt > twentyFourHoursAgo;
 	});
 
 	const usedQuota = recentCreationsFromUser.length;
@@ -553,8 +553,8 @@ export interface FirestoreServerAudioButtonData {
 	endTime: number;
 
 	// ユーザー・権限情報
-	uploadedBy: string;
-	uploadedByName: string;
+	createdBy: string;
+	createdByName: string;
 	isPublic: boolean;
 
 	// 統計情報

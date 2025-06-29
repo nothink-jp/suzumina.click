@@ -65,7 +65,7 @@ packages/shared-types/src/user.ts       # ユーザー型定義
 
 # 🎵 音声参照機能
 apps/web/src/app/buttons/               # 音声参照ページ・Actions
-packages/shared-types/src/audio-reference.ts  # 音声参照型定義
+packages/shared-types/src/audio-button.ts     # 音声ボタン型定義
 
 # 🎨 UI・デザインシステム
 packages/ui/src/components/ui/          # shadcn/ui コンポーネント (51個)
@@ -140,7 +140,7 @@ gcloud logging read "resource.type=cloud_run_revision" --limit=20
 
 ### 現在のカバレッジ
 
-- **テスト件数**: 226件
+- **テスト件数**: 400+件
 - **Server Actions**: 78件 ✅
 - **UIコンポーネント**: 128件 ✅
 - **統合テスト**: 20件 ✅
@@ -300,4 +300,4 @@ gcloud billing budgets list
 ---
 
 **🚨 緊急時連絡**: GitHub Issues または Discord「すずみなふぁみりー」サーバー  
-**📝 最終更新**: 2025年6月22日
+**📝 最終更新**: 2025年6月28日 (v0.2.2 - お気に入りシステム + 音声ボタンデザイン刷新)

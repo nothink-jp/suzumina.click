@@ -11,10 +11,10 @@ suzumina.clickは、「すずみなふぁみりー」Discordサーバーメン�
 - **Discord Guild認証システム**: NextAuth + Discord OAuth + ギルドメンバーシップ確認
 - **ユーザー管理**: Firestore基盤のプロファイル・ロール管理 (member/moderator/admin)
 - **管理者インターフェース**: ユーザー管理・動画管理・作品管理の包括的Admin UI
-- **デュアル音声システム**: タイムスタンプ参照 + 実音声ファイルボタンの両方に対応
-- **音声参照システム**: YouTube動画タイムスタンプベースの音声ボタン作成・共有
+- **音声ボタンシステム**: YouTube動画タイムスタンプベースの音声ボタン作成・共有（オレンジグラデーションデザイン）
+- **お気に入りシステム**: 音声ボタンのお気に入り登録・管理機能
 - **データ収集**: YouTube動画・DLsite作品の自動取得・更新システム
-- **包括的テスト**: 388+件のテストスイートによる品質保証
+- **包括的テスト**: 400+件のテストスイートによる品質保証
 - **E2Eテスト**: Playwright による多ブラウザ対応のエンドツーエンドテスト
 
 ## 🏗️ アーキテクチャ概要
@@ -35,7 +35,7 @@ YouTube/DLsite APIs         フロントエンド表示 + 管理画面
 
 ### フロントエンド
 - **Next.js 15.3.4** (App Router) + **React 19.1.0** + **TypeScript 5.8.3**
-- **Tailwind CSS v4** + **Radix UI** + **Storybook 9.0.12**
+- **Tailwind CSS v4** + **Radix UI** (shadcn/ui) + **Storybook** (UI Package一本化)
 
 ### 認証・バックエンド
 - **NextAuth.js** (Discord OAuth + Guild認証 + 管理者権限)
@@ -58,6 +58,7 @@ YouTube/DLsite APIs         フロントエンド表示 + 管理画面
 
 - **`users`**: Discord認証ユーザー情報・権限管理 (member/moderator/admin)
 - **`audioButtons`**: 音声ボタンメタデータ (YouTube タイムスタンプ + 作成者情報の統合システム)
+- **`users/{userId}/favorites`**: ユーザーごとのお気に入り音声ボタン (サブコレクション)
 - **`videos`**: YouTube動画情報 (自動収集)
 - **`dlsiteWorks`**: DLsite作品情報 (自動収集)
 
@@ -101,7 +102,7 @@ cd apps/web && pnpm test:e2e
 ### テスト・品質管理
 
 ```bash
-pnpm test              # 全テスト実行 (388+件)
+pnpm test              # 全テスト実行 (400+件)
 pnpm test:coverage     # カバレッジ付きテスト
 pnpm test:e2e          # E2Eテスト実行 (Playwright)
 pnpm check             # Lint + Format (Biome)
@@ -117,15 +118,19 @@ suzumina.click/
 │   │   ├── src/auth.ts         # NextAuth + Discord認証設定
 │   │   ├── src/app/auth/       # 認証関連ページ
 │   │   ├── src/app/admin/      # 管理者インターフェース
-│   │   ├── src/app/buttons/    # 音声参照機能
-│   │   ├── src/components/     # UIコンポーネント (認証・音声・管理)
+│   │   ├── src/app/buttons/    # 音声ボタン機能
+│   │   ├── src/app/favorites/  # お気に入り機能
+│   │   ├── src/components/     # UIコンポーネント (認証・音声・お気に入り・管理)
+│   │   ├── src/actions/        # Server Actions (お気に入り操作等)
+│   │   ├── src/lib/favorites-firestore.ts # お気に入りFirestore操作
 │   │   ├── src/lib/user-firestore.ts # ユーザー管理
 │   │   ├── e2e/                # E2Eテスト (Playwright)
 │   │   └── playwright.config.ts # E2E設定
 │   └── functions/              # Cloud Functions (データ収集)
 ├── packages/
 │   ├── shared-types/           # 共有型定義 (ユーザー・音声・YouTube・DLsite)
-│   │   └── src/audio-button.ts # 実音声ファイル型定義
+│   │   ├── src/audio-button.ts # 音声ボタン型定義
+│   │   └── src/favorite.ts     # お気に入り型定義
 │   └── ui/                     # 共有UIコンポーネント
 ├── terraform/                  # インフラ定義 (認証機能含む)
 │   └── AUTH_DEPLOYMENT_GUIDE.md # Discord認証デプロイガイド
@@ -142,8 +147,10 @@ suzumina.click/
 
 ## 🎯 今後の開発予定
 
-### Phase 5: 運用最適化・機能拡張 (進行中)
-- 実音声ファイルボタン機能の完全実装
+### Phase 5: 運用最適化・機能拡張 (完了)
+- ✅ お気に入りシステムの完全実装
+- ✅ 音声ボタンのオレンジグラデーションデザイン実装
+- ✅ Storybook UI Package一本化
 - DLsite作品表示機能の強化
 - 高度な検索・フィルタリング機能
 - モバイル対応・レスポンシブUI強化
@@ -172,5 +179,5 @@ suzumina.click/
 ---
 
 **作成者**: suzumina.click 開発チーム  
-**最終更新**: 2025年6月23日  
-**バージョン**: v0.2.1 (管理者インターフェース + デュアル音声システム対応)
+**最終更新**: 2025年6月28日  
+**バージョン**: v0.2.2 (お気に入りシステム + 音声ボタンデザイン刷新 + Storybook一本化)

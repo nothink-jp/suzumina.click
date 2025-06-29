@@ -4,9 +4,10 @@
 
 本ドキュメントでは、suzumina.clickプロジェクトの開発ガイド、設計原則、コーディング規約、および品質基準を定義します。
 
-**技術スタック**: Next.js 15 App Router、TypeScript 5.8、Tailwind CSS v4、Storybook 9.0  
+**技術スタック**: Next.js 15 App Router、TypeScript 5.8、Tailwind CSS v4、Storybook (UI Package一本化)  
 **開発体制**: 個人開発・個人運用（2環境構成: Staging + Production）  
-**更新日**: 2025年6月24日
+**バージョン**: v0.2.2 (お気に入りシステム + 音声ボタンデザイン刷新)  
+**更新日**: 2025年6月28日
 
 ## 🎯 設計原則
 
