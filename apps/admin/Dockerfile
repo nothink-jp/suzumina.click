@@ -20,12 +20,13 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
+# pnpm インストール
+RUN corepack enable
+
 # 依存関係をコピー
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/shared-types/node_modules ./packages/shared-types/node_modules
-COPY --from=deps /app/packages/ui/node_modules ./packages/ui/node_modules
-COPY --from=deps /app/packages/typescript-config/node_modules ./packages/typescript-config/node_modules
-COPY --from=deps /app/apps/admin/node_modules ./apps/admin/node_modules
+COPY --from=deps /app/packages ./packages
+COPY --from=deps /app/apps ./apps
 
 # ソースコードをコピー
 COPY . .
@@ -46,8 +47,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# public フォルダをコピー
-COPY --from=builder /app/apps/admin/public ./public
+# public フォルダをコピー（admin アプリには不要のため空ディレクトリを作成）
+RUN mkdir -p ./public
 
 # standalone 出力をコピー
 COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/standalone ./
@@ -55,9 +56,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/static ./apps/ad
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 8080
 
-ENV PORT=3000
+ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
 
 # Next.js standalone サーバーを起動
