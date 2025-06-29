@@ -1,5 +1,6 @@
 "use server";
 
+import { FieldValue } from "@google-cloud/firestore";
 import {
 	type AudioButtonListResult,
 	type AudioButtonQuery,
@@ -20,7 +21,7 @@ import {
 } from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/components/ProtectedRoute";
-import { FirestoreAdmin } from "@/lib/firestore-admin";
+import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 import { updateUserStats } from "@/lib/user-firestore";
 
@@ -59,7 +60,7 @@ export async function createAudioButton(
 
 		// レート制限のためのユーザーベースチェック
 		logger.debug("レート制限チェック開始", { userId: user.discordId });
-		const firestore = FirestoreAdmin.getInstance();
+		const firestore = getFirestore();
 		const recentCreationsSnapshot = await firestore
 			.collection("audioButtons")
 			.where("createdBy", "==", user.discordId)
@@ -222,7 +223,7 @@ export async function getAudioButtons(
 		}
 
 		const validatedQuery = validationResult.data;
-		const firestore = FirestoreAdmin.getInstance();
+		const firestore = getFirestore();
 
 		// Firestoreクエリの構築
 		let firestoreQuery = firestore.collection("audioButtons").where("isPublic", "==", true);
@@ -376,7 +377,7 @@ export async function updateAudioButtonStats(
 		}
 
 		const validatedUpdate = validationResult.data;
-		const firestore = FirestoreAdmin.getInstance();
+		const firestore = getFirestore();
 
 		// 更新データの作成
 		const updateData: Record<string, unknown> = {
@@ -384,15 +385,15 @@ export async function updateAudioButtonStats(
 		};
 
 		if (validatedUpdate.incrementPlayCount) {
-			updateData.playCount = firestore.FieldValue.increment(1);
+			updateData.playCount = FieldValue.increment(1);
 		}
 
 		if (validatedUpdate.incrementLikeCount) {
-			updateData.likeCount = firestore.FieldValue.increment(1);
+			updateData.likeCount = FieldValue.increment(1);
 		}
 
 		if (validatedUpdate.decrementLikeCount) {
-			updateData.likeCount = firestore.FieldValue.increment(-1);
+			updateData.likeCount = FieldValue.increment(-1);
 		}
 
 		// Firestoreを更新
@@ -479,7 +480,7 @@ export async function getAudioButtonById(
 			};
 		}
 
-		const firestore = FirestoreAdmin.getInstance();
+		const firestore = getFirestore();
 		const doc = await firestore.collection("audioButtons").doc(id).get();
 
 		if (!doc.exists) {
@@ -570,7 +571,7 @@ async function updateVideoAudioButtonStats(
 	options: { increment?: boolean; decrement?: boolean },
 ): Promise<void> {
 	try {
-		const firestore = FirestoreAdmin.getInstance();
+		const firestore = getFirestore();
 
 		// 既存の動画ドキュメントを取得
 		const videoDoc = await firestore.collection("videos").doc(videoId).get();
@@ -578,17 +579,17 @@ async function updateVideoAudioButtonStats(
 		if (videoDoc.exists) {
 			const updateData: {
 				updatedAt: string;
-				audioButtonCount?: ReturnType<typeof firestore.FieldValue.increment>;
+				audioButtonCount?: ReturnType<typeof FieldValue.increment>;
 			} = {
 				updatedAt: new Date().toISOString(),
 			};
 
 			if (options.increment) {
-				updateData.audioButtonCount = firestore.FieldValue.increment(1);
+				updateData.audioButtonCount = FieldValue.increment(1);
 			}
 
 			if (options.decrement) {
-				updateData.audioButtonCount = firestore.FieldValue.increment(-1);
+				updateData.audioButtonCount = FieldValue.increment(-1);
 			}
 
 			await firestore.collection("videos").doc(videoId).update(updateData);
@@ -634,7 +635,7 @@ export async function deleteAudioButton(
 			};
 		}
 
-		const firestore = FirestoreAdmin.getInstance();
+		const firestore = getFirestore();
 
 		// 音声ボタンデータを取得して権限チェック
 		const audioButtonDoc = await firestore.collection("audioButtons").doc(audioButtonId).get();
@@ -687,16 +688,16 @@ export async function deleteAudioButton(
 			if (userDoc.exists) {
 				const updateData: {
 					updatedAt: string;
-					audioButtonsCount: ReturnType<typeof firestore.FieldValue.increment>;
-					totalPlayCount?: ReturnType<typeof firestore.FieldValue.increment>;
+					audioButtonsCount: ReturnType<typeof FieldValue.increment>;
+					totalPlayCount?: ReturnType<typeof FieldValue.increment>;
 				} = {
 					updatedAt: new Date().toISOString(),
-					audioButtonsCount: firestore.FieldValue.increment(-1),
+					audioButtonsCount: FieldValue.increment(-1),
 				};
 
 				// 再生回数も調整
 				if (audioButtonData.playCount > 0) {
-					updateData.totalPlayCount = firestore.FieldValue.increment(-audioButtonData.playCount);
+					updateData.totalPlayCount = FieldValue.increment(-audioButtonData.playCount);
 				}
 
 				transaction.update(userRef, updateData);
@@ -708,7 +709,7 @@ export async function deleteAudioButton(
 			if (videoDoc.exists) {
 				transaction.update(videoRef, {
 					updatedAt: new Date().toISOString(),
-					audioButtonCount: firestore.FieldValue.increment(-1),
+					audioButtonCount: FieldValue.increment(-1),
 				});
 			}
 
@@ -754,7 +755,7 @@ export async function deleteAudioButton(
  */
 async function deleteAudioButtonFromAllFavorites(audioButtonId: string): Promise<void> {
 	try {
-		const firestore = FirestoreAdmin.getInstance();
+		const firestore = getFirestore();
 
 		logger.debug("お気に入り削除: collection group query実行開始", { audioButtonId });
 

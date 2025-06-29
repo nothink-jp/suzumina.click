@@ -7,7 +7,7 @@ import {
 	getAudioButtons,
 } from "./actions";
 
-// Mock Firestore Admin
+// Mock Firestore
 const mockAdd = vi.fn();
 const mockUpdate = vi.fn();
 const mockGet = vi.fn();
@@ -21,19 +21,19 @@ const mockDelete = vi.fn();
 const mockRunTransaction = vi.fn();
 const mockCollectionGroup = vi.fn();
 const mockBatch = vi.fn();
-const mockFieldValue = {
-	increment: vi.fn(),
-};
 
-vi.mock("@/lib/firestore-admin", () => ({
-	FirestoreAdmin: {
-		getInstance: () => ({
-			collection: mockCollection,
-			FieldValue: mockFieldValue,
-			runTransaction: mockRunTransaction,
-			collectionGroup: mockCollectionGroup,
-			batch: mockBatch,
-		}),
+vi.mock("@/lib/firestore", () => ({
+	getFirestore: () => ({
+		collection: mockCollection,
+		runTransaction: mockRunTransaction,
+		collectionGroup: mockCollectionGroup,
+		batch: mockBatch,
+	}),
+}));
+
+vi.mock("@google-cloud/firestore", () => ({
+	FieldValue: {
+		increment: vi.fn(),
 	},
 }));
 

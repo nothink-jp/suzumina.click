@@ -17,9 +17,6 @@ declare namespace NodeJS {
 		// YouTube API
 		readonly YOUTUBE_API_KEY?: string;
 
-		// Admin Configuration
-		readonly DEFAULT_ADMIN_DISCORD_IDS?: string;
-
 		// Node Environment
 		readonly NODE_ENV: "development" | "production" | "test";
 	}

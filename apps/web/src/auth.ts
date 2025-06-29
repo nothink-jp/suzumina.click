@@ -78,13 +78,11 @@ async function getUserRoleFromFirestore(discordId: string): Promise<string> {
 			const userData = userDoc.data() as { role?: string };
 			return userData.role || "member";
 		}
-		// 新規ユーザーの場合はデフォルトロールを設定
-		const defaultAdminIds = process.env.DEFAULT_ADMIN_DISCORD_IDS?.split(",") || [];
-		return defaultAdminIds.includes(discordId) ? "admin" : "member";
+		// 新規ユーザーの場合はデフォルトロールを返す
+		return "member";
 	} catch (_error) {
-		// フォールバック: 環境変数のデフォルト管理者IDをチェック
-		const defaultAdminIds = process.env.DEFAULT_ADMIN_DISCORD_IDS?.split(",") || [];
-		return defaultAdminIds.includes(discordId) ? "admin" : "member";
+		// エラー時はデフォルトロールを返す
+		return "member";
 	}
 }
 
