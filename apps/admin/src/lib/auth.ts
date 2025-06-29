@@ -59,9 +59,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
 		async session({ session, token }) {
 			// セッションにDiscord IDを追加
-			if (token.sub) {
+			if (token.sub && token.isAdmin) {
 				session.user.id = token.sub;
-				session.user.isAdmin = true; // Admin appアクセス時点で管理者権限確認済み
+				session.user.isAdmin = token.isAdmin as boolean;
 			}
 			return session;
 		},
