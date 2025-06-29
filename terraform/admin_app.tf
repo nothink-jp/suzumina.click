@@ -18,7 +18,7 @@ resource "google_cloud_run_v2_service" "admin_app" {
       image = "${var.region}-docker.pkg.dev/${var.gcp_project_id}/${var.artifact_registry_repository_id}/suzumina-admin:latest"
       
       ports {
-        container_port = 3000
+        container_port = 8080
       }
       
       # リソース設定（最小構成）
