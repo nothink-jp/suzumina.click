@@ -17,7 +17,7 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 - **お気に入りシステム**: 音声ボタンのお気に入り登録・管理機能
 - **管理者機能**: ユーザー・コンテンツ管理インターフェース
 - **インフラ**: Terraform + Google Cloud Platform (本番稼働)
-- **品質保証**: 400+件のテストスイート + E2Eテスト
+- **品質保証**: 660+件のテストスイート + E2Eテスト
 - **最新機能**: しぐれういボタン風インライン音声ボタンレイアウト (2025年6月実装)
 
 ## 🏗️ システム構成
@@ -65,8 +65,10 @@ suzumina.click/ (v0.2.2)
 │   ├── admin/              # 管理者専用アプリ (分離済み)
 │   │   ├── src/app/        # 管理者ダッシュボード・管理機能
 │   │   ├── src/components/ # 管理者UI (LoginButton等)
-│   │   ├── src/lib/        # Firestore認証・クライアント分離
-│   │   └── src/providers/  # セッション管理
+│   │   ├── src/lib/        # データヘルパー・バリデーションユーティリティ
+│   │   ├── src/__tests__/  # 60+件のユニットテスト (data-helpers/validation)
+│   │   ├── src/providers/  # セッション管理
+│   │   └── tsconfig.test.json # テスト用TypeScript設定 (二段階型チェック)
 │   └── web/                # Next.js Webアプリ
 │       ├── src/app/        # App Router
 │       │   ├── buttons/    # 音声機能 (一覧・作成・詳細)
@@ -187,7 +189,7 @@ cd packages/ui && pnpm storybook   # UIコンポーネント開発 (一本化)
 
 ```bash
 pnpm check        # Lint + フォーマット + 型チェック
-pnpm test         # 全テスト実行 (400+件)
+pnpm test         # 全テスト実行 (660+件)
 pnpm build        # 全ビルド
 ```
 
@@ -303,9 +305,10 @@ title: "Design Tokens/Color Palette"  // デザイントークン
 #### **品質保証の役割分担**
 ```typescript
 ✅ UI一貫性     → UI Package Storybook
-✅ ロジックテスト → Unit Tests (Vitest) 
+✅ ロジックテスト → Unit Tests (Vitest) - 660+件
 ✅ 統合テスト    → E2E Tests (Playwright)
-✅ 型安全性     → TypeScript strict
+✅ 型安全性     → TypeScript strict (二段階チェック)
+✅ Adminテスト   → tsconfig.test.json (テスト用緩和設定)
 ```
 
 ### shadcn/ui管理方針
@@ -356,6 +359,8 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 ✅ Web App Storybook削除完了
 ✅ UI Package Storybook一本化
 ✅ E2E テストによるビジネスロジック品質保証
+✅ Adminアプリの包括的ユニットテスト実装
+✅ 未使用コードの系統的削除 (18ファイル削除完了)
 ✅ 工数対効果を重視した段階的品質管理
 ```
 
@@ -408,11 +413,20 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 - **Edge Runtime対応**: 動的インポートによるFirestore接続
 - **アクセス制御**: 管理者のみアクセス可能な独立アプリケーション
 
+### テスト戦略 (2025年6月30日追加)
+- **包括的ユニットテスト**: 60+件のテストスイート実装済み
+  - **データヘルパー関数**: formatDate, formatRole, sortByField等の29件
+  - **バリデーション機能**: validateEmail, validateUserData等の26件
+  - **基本機能**: 認証・セットアップ・環境設定の5件
+- **二段階型チェック**: tsconfig.test.json による緩和設定
+  - 本番コード: TypeScript strict mode
+  - テストコード: 実用性重視の緩和モード
+- **品質基準**: Lint 0エラー・型チェック完全パス・全テスト成功
+
 ## 🌐 API Routes 詳細
 
 ### 認証関連 (`/api/auth/*`)
 - **NextAuth**: `/api/auth/[...nextauth]` - Discord OAuth認証エンドポイント
-- **ギルド認証**: `/api/auth/guild/verify` - Discord ギルドメンバーシップ確認
 
 ### コンテンツAPI (`/api/audio-buttons`)
 - **音声ボタン取得**: 公開音声ボタンの検索・フィルタリング
@@ -471,7 +485,7 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 - ✅ **Tailwind CSS v4対応**: @layer utilities によるカスタムカラー実装
 - ✅ **primary/secondary更新**: suzuka-500/minase-500 をテーマカラーに設定
 - ✅ **型安全性**: 全変更でTypeScript strict mode維持
-- ✅ **テスト完全対応**: 600+件のテストスイート（管理者機能含む）
+- ✅ **テスト完全対応**: 660+件のテストスイート（管理者機能含む）
 - ✅ **デバッグログ削除**: トップページの不要なログ出力を削除
 
 ## 📚 ドキュメント
@@ -504,7 +518,7 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 pnpm check        # 全パッケージ: Lint + フォーマット + 型チェック
 
 # 個別品質チェック
-pnpm lint         # 全パッケージ: Biome lint (0エラー・0警告達成済み)
+pnpm lint         # 全パッケージ: Biome lint (Admin: 3警告許容・他0エラー達成済み)
 pnpm typecheck    # 全パッケージ: TypeScript型チェック
 pnpm test         # 全パッケージ: 単体テスト実行
 
@@ -517,7 +531,7 @@ pnpm update && pnpm audit --fix  # 安全な依存関係更新
 
 - **Lint状態**: 全パッケージ 0エラー・0警告 ✅
 - **依存関係**: 最新バージョン（React 19、Next.js 15等）✅  
-- **テストカバレッジ**: 600+件のテストスイート（包括的品質保証）✅
+- **テストカバレッジ**: 660+件のテストスイート（包括的品質保証）✅
 - **型安全性**: TypeScript strict mode + Zod schema 検証 ✅
 - **ドキュメント整合性**: 実装とドキュメントの98%一致 ✅
 - **デザインシステム**: suzuka/minase ブランドカラー統合 ✅
@@ -532,13 +546,18 @@ pnpm update && pnpm audit --fix  # 安全な依存関係更新
 - **セキュリティ**: Discord OAuth + ロールベース + アクセスログ ✅
 - **パフォーマンス**: LCP最適化 + 画像最適化 + バンドル分割 ✅
 
-### 最新変更内容 (2025年6月29日)
+### 最新変更内容 (2025年6月30日)
 
+#### **コードベース品質向上**
+- **未使用コード削除**: @apps/以下の18個のファイル・ディレクトリを削除
+- **Admin app テスト強化**: 60+件のユニットテスト追加（データヘルパー・バリデーション）
+- **二段階型チェック**: 本番コード（厳格）・テストコード（緩和）の分離設計
+- **品質管理**: Lint 0エラー・TypeScript完全パス・660+件テストスイート達成
+
+#### **以前の実装 (2025年6月29日)**
 - **管理者機能完全実装**: ユーザー・お問い合わせ管理の編集機能追加
 - **UI/UX改善**: v0モック準拠のトップページデザイン
 - **背景色統一**: suzuka/minaseカラーによるブランディング強化
-- **テスト追加**: 管理者機能の包括的テストスイート（47件追加）
-- **パフォーマンス改善**: 不要なデバッグログの削除
 
 このプロジェクトは、型安全なフルスタック開発を重視したファンコミュニティプラットフォームです。
 データ収集インフラとユーザー作成コンテンツ機能を組み合わせ、高品質な開発体験を提供します。
