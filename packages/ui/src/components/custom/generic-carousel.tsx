@@ -24,26 +24,26 @@ export function GenericCarousel<T>({
 }: GenericCarouselProps<T>) {
 	if (items.length === 0) {
 		return (
-			<div className="flex items-center justify-center min-h-[280px] bg-muted rounded-lg">
-				<p className="text-muted-foreground">{emptyStateMessage}</p>
+			<div className="flex items-center justify-center min-h-[240px] sm:min-h-[280px] bg-muted rounded-lg mx-2 sm:mx-0">
+				<p className="text-muted-foreground text-center px-4">{emptyStateMessage}</p>
 			</div>
 		);
 	}
 
 	return (
 		<Carousel className="w-full">
-			<CarouselContent className="-ml-2 md:-ml-4">
+			<CarouselContent className="-ml-1 sm:-ml-2 md:-ml-4">
 				{items.map((item) => (
 					<CarouselItem
 						key={getItemKey(item)}
-						className={`pl-2 md:pl-4 basis-full xs:basis-1/2 sm:basis-1/3 lg:basis-1/4 xl:basis-1/5 ${itemClassName || ""}`}
+						className={`pl-1 sm:pl-2 md:pl-4 basis-full xs:basis-1/2 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 ${itemClassName || ""}`}
 					>
 						{renderItem(item)}
 					</CarouselItem>
 				))}
 			</CarouselContent>
-			<CarouselPrevious className="left-2" />
-			<CarouselNext className="right-2" />
+			<CarouselPrevious className="left-1 sm:left-2 h-10 w-10 sm:h-12 sm:w-12" />
+			<CarouselNext className="right-1 sm:right-2 h-10 w-10 sm:h-12 sm:w-12" />
 		</Carousel>
 	);
 }

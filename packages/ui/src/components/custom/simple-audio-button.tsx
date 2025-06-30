@@ -121,6 +121,7 @@ export function SimpleAudioButton({
 			className={cn(
 				"group relative inline-flex items-stretch rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all",
 				"bg-gradient-to-r from-minase-400 to-minase-500",
+				"touch-manipulation", // タッチ操作最適化
 				className,
 			)}
 		>
@@ -128,10 +129,10 @@ export function SimpleAudioButton({
 			<button
 				type="button"
 				onClick={handlePlay}
-				className="flex items-center gap-2 text-left px-3 py-2 text-white transition-all hover:from-minase-500 hover:to-minase-600"
+				className="flex items-center gap-2 text-left px-3 py-2 text-white transition-all hover:from-minase-500 hover:to-minase-600 min-h-[44px] touch-manipulation"
 				aria-label={`${audioButton.title}を再生`}
 			>
-				<div className="flex h-10 w-10 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-white/20 text-white transition-all group-hover:bg-white/30">
+				<div className="flex h-10 w-10 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-white/20 text-white transition-all group-hover:bg-white/30 flex-shrink-0">
 					{isLoading ? (
 						<Loader2 className="h-4 w-4 animate-spin" />
 					) : isPlaying ? (
@@ -140,7 +141,7 @@ export function SimpleAudioButton({
 						<Play className="h-4 w-4 translate-x-0.5" />
 					)}
 				</div>
-				<span className="font-medium whitespace-nowrap" title={audioButton.title}>
+				<span className="font-medium text-sm sm:text-base truncate" title={audioButton.title}>
 					{truncatedTitle}
 				</span>
 			</button>

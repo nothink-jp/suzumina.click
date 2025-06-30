@@ -82,7 +82,15 @@ describe("FeaturedAudioButtonsCarousel", () => {
 		// flex-wrapコンテナが存在することを確認
 		const buttons = screen.getAllByTestId("audio-button-with-favorite");
 		const container = buttons[0].parentElement;
-		expect(container).toHaveClass("flex", "flex-wrap", "gap-3", "items-start");
+		expect(container).toHaveClass(
+			"flex",
+			"flex-wrap",
+			"gap-2",
+			"sm:gap-3",
+			"items-start",
+			"justify-center",
+			"sm:justify-start",
+		);
 	});
 
 	it("音声ボタンが空の場合にローディング状態を表示する", () => {

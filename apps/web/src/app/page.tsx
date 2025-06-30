@@ -20,25 +20,25 @@ export default async function Home() {
 	return (
 		<div>
 			{/* メインビジュアル - LCP最適化済み + suzukaブランドカラー背景 */}
-			<section className="py-20 text-center bg-suzuka-50">
-				<div className="container mx-auto px-4">
+			<section className="py-12 sm:py-16 md:py-20 text-center bg-suzuka-50">
+				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="max-w-4xl mx-auto">
 						{/* LCP要素として最適化 - 明示的サイズとフォント最適化 */}
 						<h1
-							className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-6"
+							className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6"
 							style={{
 								// LCP改善: 明示的なサイズとレイアウト
-								minHeight: "3rem",
+								minHeight: "2.5rem",
 								contentVisibility: "visible",
 							}}
 						>
 							すずみなくりっく！
 						</h1>
 						<p
-							className="text-lg sm:text-xl text-muted-foreground mb-8"
+							className="text-base sm:text-lg md:text-xl text-muted-foreground mb-6 sm:mb-8 px-4 sm:px-0"
 							style={{
 								// CLS防止: 明示的な高さ
-								minHeight: "2rem",
+								minHeight: "1.5rem",
 							}}
 						>
 							お気に入りの音声ボタンを作成・共有し、最新の作品情報をチェックしよう
@@ -50,11 +50,13 @@ export default async function Home() {
 			</section>
 
 			{/* 新着音声ボタン */}
-			<section className="py-12 bg-suzuka-100">
-				<div className="container mx-auto px-4">
-					<div className="flex items-center justify-between mb-8">
-						<h3 className="text-2xl sm:text-3xl font-bold text-foreground">🎵 新着音声ボタン</h3>
-						<Button variant="outline" asChild className="min-h-[44px]">
+			<section className="py-8 sm:py-10 md:py-12 bg-suzuka-100">
+				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+						<h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+							🎵 新着音声ボタン
+						</h3>
+						<Button variant="outline" asChild className="min-h-[44px] w-full sm:w-auto">
 							<Link href="/buttons">すべて見る</Link>
 						</Button>
 					</div>
@@ -64,11 +66,13 @@ export default async function Home() {
 			</section>
 
 			{/* 新着動画一覧 */}
-			<section className="py-12 bg-background">
-				<div className="container mx-auto px-4">
-					<div className="flex items-center justify-between mb-8">
-						<h3 className="text-2xl sm:text-3xl font-bold text-foreground">📺 新着動画</h3>
-						<Button variant="outline" asChild className="min-h-[44px]">
+			<section className="py-8 sm:py-10 md:py-12 bg-background">
+				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+						<h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+							📺 新着動画
+						</h3>
+						<Button variant="outline" asChild className="min-h-[44px] w-full sm:w-auto">
 							<Link href="/videos">すべて見る</Link>
 						</Button>
 					</div>
@@ -78,11 +82,13 @@ export default async function Home() {
 			</section>
 
 			{/* 新着作品一覧 */}
-			<section className="py-12 bg-suzuka-100">
-				<div className="container mx-auto px-4">
-					<div className="flex items-center justify-between mb-8">
-						<h3 className="text-2xl sm:text-3xl font-bold text-foreground">🎧 新着作品</h3>
-						<Button variant="outline" asChild className="min-h-[44px]">
+			<section className="py-8 sm:py-10 md:py-12 bg-suzuka-100">
+				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+						<h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+							🎧 新着作品
+						</h3>
+						<Button variant="outline" asChild className="min-h-[44px] w-full sm:w-auto">
 							<Link href="/works">すべて見る</Link>
 						</Button>
 					</div>
