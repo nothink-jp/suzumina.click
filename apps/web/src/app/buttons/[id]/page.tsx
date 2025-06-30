@@ -3,13 +3,14 @@ import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-play
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { ArrowLeft, Calendar, Clock, Eye, Heart, Play, Star, Tag, Youtube } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Eye, Heart, Play, Tag, Youtube } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getAudioButtonById, getAudioButtons } from "@/app/buttons/actions";
 import { AudioButtonDeleteButton } from "@/components/AudioButtonDeleteButton";
 import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
+import { LikeButton } from "@/components/LikeButton";
 
 interface AudioButtonDetailPageProps {
 	params: Promise<{
@@ -198,11 +199,14 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 								<div className="text-xs text-rose-600">お気に入り</div>
 							</div>
 							<div className="text-center p-3 bg-amber-50 rounded-lg border border-amber-100">
-								<div className="flex items-center justify-center mb-1">
-									<Star className="h-4 w-4 text-amber-600" />
-								</div>
-								<div className="text-lg font-bold text-amber-700">
-									{audioButton.likeCount.toLocaleString()}
+								<div className="flex items-center justify-center mb-2">
+									<LikeButton
+										audioButtonId={audioButton.id}
+										initialLikeCount={audioButton.likeCount}
+										variant="ghost"
+										size="sm"
+										className="text-amber-700 hover:text-amber-800"
+									/>
 								</div>
 								<div className="text-xs text-amber-600">いいね</div>
 							</div>
