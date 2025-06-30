@@ -193,12 +193,13 @@ const VideoCard = memo(function VideoCard({
 									<Link
 										href={`/buttons/create?video_id=${video.id}`}
 										aria-label={`${video.title}の音声ボタンを作成`}
+										className="flex items-center whitespace-nowrap"
 									>
 										<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
 										ボタン作成
 									</Link>
 								) : (
-									<span>
+									<span className="flex items-center whitespace-nowrap">
 										<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
 										ボタン作成
 									</span>
