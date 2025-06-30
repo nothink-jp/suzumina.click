@@ -55,8 +55,8 @@ export function FavoriteButton({
 	};
 
 	const sizeClasses = {
-		sm: "h-8 w-8",
-		default: "h-10 w-10",
+		sm: "h-11 w-11 sm:h-8 sm:w-8",
+		default: "h-11 w-11 sm:h-10 sm:w-10",
 		lg: "h-12 w-12",
 	};
 

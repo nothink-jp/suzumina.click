@@ -131,7 +131,7 @@ export function SimpleAudioButton({
 				className="flex items-center gap-2 text-left px-3 py-2 text-white transition-all hover:from-minase-500 hover:to-minase-600"
 				aria-label={`${audioButton.title}を再生`}
 			>
-				<div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white transition-all group-hover:bg-white/30">
+				<div className="flex h-10 w-10 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-white/20 text-white transition-all group-hover:bg-white/30">
 					{isLoading ? (
 						<Loader2 className="h-4 w-4 animate-spin" />
 					) : isPlaying ? (
@@ -150,13 +150,13 @@ export function SimpleAudioButton({
 				<PopoverTrigger asChild>
 					<button
 						type="button"
-						className="flex items-center justify-center px-3 py-2 bg-white/10 text-white hover:bg-white/20 transition-colors border-l border-white/20"
+						className="flex items-center justify-center px-3 py-2 min-h-[44px] min-w-[44px] bg-white/10 text-white hover:bg-white/20 transition-colors border-l border-white/20"
 						aria-label="詳細情報を表示"
 					>
 						<Info className="h-4 w-4" />
 					</button>
 				</PopoverTrigger>
-				<PopoverContent className="w-72 p-0" align="end">
+				<PopoverContent className="w-72 sm:w-80 p-0" align="end">
 					<div className="p-3 space-y-3">
 						{/* ヘッダー: タイトル */}
 						<div>

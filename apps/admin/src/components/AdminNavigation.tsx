@@ -90,8 +90,8 @@ export function AdminNavigation() {
 				</Button>
 			</div>
 
-			{/* モバイル用ナビゲーション */}
-			<div className="md:hidden mt-3 flex flex-wrap gap-2">
+			{/* モバイル用ナビゲーション - タッチ最適化 */}
+			<div className="md:hidden mt-3 flex flex-wrap gap-3">
 				{navigationItems.map((item) => {
 					const Icon = item.icon;
 					const isActive = pathname === item.href;
@@ -100,12 +100,12 @@ export function AdminNavigation() {
 						<Button
 							key={item.href}
 							variant={isActive ? "default" : "ghost"}
-							size="sm"
+							size="default"
 							asChild
-							className="gap-1 text-xs"
+							className="gap-2 text-sm min-h-[44px] px-4"
 						>
 							<Link href={item.href}>
-								<Icon className="h-3 w-3" />
+								<Icon className="h-4 w-4" />
 								{item.label}
 							</Link>
 						</Button>

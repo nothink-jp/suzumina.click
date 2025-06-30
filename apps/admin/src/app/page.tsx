@@ -102,8 +102,8 @@ export default async function AdminDashboard() {
 				</Badge>
 			</div>
 
-			{/* 統計カード */}
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+			{/* 統計カード - モバイル最適化 */}
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 				{/* ユーザー統計 */}
 				<Card className="hover:shadow-md transition-shadow">
 					<CardHeader className="pb-2">

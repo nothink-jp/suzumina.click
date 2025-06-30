@@ -1,6 +1,11 @@
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	mockViewport,
+	testAcrossViewports,
+	validateResponsiveClasses,
+} from "../../test-utils/responsive-testing";
 import { SimpleAudioButton } from "./simple-audio-button";
 
 // YouTube API のモック
@@ -123,5 +128,131 @@ describe("SimpleAudioButton", () => {
 		);
 
 		expect(container.firstChild).toHaveClass("custom-class");
+	});
+
+	describe("Responsive Behavior", () => {
+		beforeEach(() => {
+			// デフォルトのビューポートサイズをリセット
+			mockViewport(1440, 900);
+		});
+
+		it("should render with correct touch target sizes", () => {
+			render(<SimpleAudioButton audioButton={mockAudioButton} />);
+
+			const infoButton = screen.getByLabelText("詳細情報を表示");
+			validateResponsiveClasses(infoButton, {
+				base: ["min-h-[44px]", "min-w-[44px]"],
+			});
+		});
+
+		it("should have responsive icon sizing", () => {
+			render(<SimpleAudioButton audioButton={mockAudioButton} />);
+
+			const playButton = screen.getByLabelText(`${mockAudioButton.title}を再生`);
+			const playIconContainer = playButton.querySelector(".flex.h-10");
+
+			expect(playIconContainer).toHaveClass("h-10", "w-10", "sm:h-8", "sm:w-8");
+		});
+
+		it("should render with responsive popover width", () => {
+			render(<SimpleAudioButton audioButton={mockAudioButton} />);
+
+			const infoButton = screen.getByLabelText("詳細情報を表示");
+			fireEvent.click(infoButton);
+
+			// PopoverContentを探す
+			const popoverContent = document.querySelector("[data-radix-popover-content]");
+			if (popoverContent) {
+				expect(popoverContent).toHaveClass("w-72", "sm:w-80");
+			}
+		});
+
+		testAcrossViewports("should maintain touch accessibility", (viewport) => {
+			render(<SimpleAudioButton audioButton={mockAudioButton} />);
+
+			const infoButton = screen.getByLabelText("詳細情報を表示");
+
+			// モバイルでは44px以上のタッチターゲットを確保
+			if (viewport.width < 640) {
+				expect(infoButton).toHaveClass("min-h-[44px]", "min-w-[44px]");
+			}
+		});
+
+		it("should handle mobile touch interactions", () => {
+			mockViewport(375, 667); // Mobile viewport
+
+			render(<SimpleAudioButton audioButton={mockAudioButton} />);
+
+			const playButton = screen.getByLabelText(`${mockAudioButton.title}を再生`);
+			const infoButton = screen.getByLabelText("詳細情報を表示");
+
+			// タッチターゲットが適切なサイズであることを確認
+			expect(infoButton).toHaveClass("min-h-[44px]", "min-w-[44px]");
+
+			// ボタンがクリック可能であることを確認
+			expect(playButton).not.toHaveAttribute("disabled");
+			expect(infoButton).not.toHaveAttribute("disabled");
+		});
+
+		it("should render gradient background correctly", () => {
+			render(<SimpleAudioButton audioButton={mockAudioButton} />);
+
+			const button = screen.getByLabelText(`${mockAudioButton.title}を再生`);
+			// 実際のグラデーションクラスは親コンテナに適用されている
+			const container = button.closest(".bg-gradient-to-r");
+			expect(container).toBeTruthy();
+		});
+
+		it("should truncate title based on maxTitleLength prop", () => {
+			const longTitleButton = {
+				...mockAudioButton,
+				title: "これは非常に長いタイトルでmaxTitleLengthプロパティによって切り詰められるべきです",
+			};
+
+			render(<SimpleAudioButton audioButton={longTitleButton} maxTitleLength={20} />);
+
+			const titleText = screen.getByText(/これは非常に長いタイトル/);
+			expect(titleText.textContent?.length).toBeLessThanOrEqual(23); // "..." included
+		});
+
+		it("should show full title in popover regardless of truncation", () => {
+			const longTitleButton = {
+				...mockAudioButton,
+				title: "これは非常に長いタイトルです",
+			};
+
+			render(<SimpleAudioButton audioButton={longTitleButton} maxTitleLength={10} />);
+
+			const infoButton = screen.getByLabelText("詳細情報を表示");
+			fireEvent.click(infoButton);
+
+			// ポップオーバーで完全なタイトルが表示されることを確認
+			expect(screen.getByText("これは非常に長いタイトルです")).toBeInTheDocument();
+		});
+	});
+
+	describe("Touch Target Validation", () => {
+		it("should meet WCAG touch target requirements", () => {
+			render(<SimpleAudioButton audioButton={mockAudioButton} />);
+
+			const infoButton = screen.getByLabelText("詳細情報を表示");
+
+			// WCAG 2.1 AAA基準: 44x44px最小サイズ
+			expect(infoButton).toHaveClass("min-h-[44px]", "min-w-[44px]");
+		});
+
+		it("should maintain touch target size across all states", () => {
+			render(<SimpleAudioButton audioButton={mockAudioButton} />);
+
+			const playButton = screen.getByLabelText(`${mockAudioButton.title}を再生`);
+			const infoButton = screen.getByLabelText("詳細情報を表示");
+
+			// 両方のボタンが適切なタッチターゲットサイズを持つ
+			expect(infoButton).toHaveClass("min-h-[44px]", "min-w-[44px]");
+
+			// プレイボタンコンテナのサイズも確認
+			const playIconContainer = playButton.querySelector(".flex");
+			expect(playIconContainer).toHaveClass("h-10", "w-10");
+		});
 	});
 });

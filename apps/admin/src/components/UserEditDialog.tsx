@@ -85,12 +85,12 @@ export function UserEditDialog({ user, onUpdate }: UserEditDialogProps) {
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button variant="outline" size="sm">
-					<Edit className="h-4 w-4 mr-1" />
-					編集
+				<Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px] sm:min-w-0">
+					<Edit className="h-4 w-4 sm:mr-1" />
+					<span className="hidden sm:inline">編集</span>
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[425px]">
+			<DialogContent className="mx-4 sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>ユーザー編集</DialogTitle>
 				</DialogHeader>

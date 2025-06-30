@@ -4,7 +4,8 @@
 		"baseUrl": ".",
 		"paths": {
 			"@suzumina.click/ui/*": ["./src/*"]
-		}
+		},
+		"types": ["vitest/globals", "@testing-library/jest-dom"]
 	},
 	"include": ["."],
 	"exclude": ["node_modules", "dist", "**/*.stories.tsx"]

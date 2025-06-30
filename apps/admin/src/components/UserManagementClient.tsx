@@ -79,16 +79,16 @@ export function UserManagementClient({ initialUsers, currentUserId }: UserManage
 	};
 
 	return (
-		<div className="rounded-md border">
+		<div className="rounded-md border overflow-x-auto">
 			<Table>
 				<TableHeader>
 					<TableRow>
-						<TableHead>ユーザー</TableHead>
-						<TableHead>ロール</TableHead>
-						<TableHead>ステータス</TableHead>
-						<TableHead>最終ログイン</TableHead>
-						<TableHead>登録日</TableHead>
-						<TableHead className="text-right">操作</TableHead>
+						<TableHead className="min-w-[200px]">ユーザー</TableHead>
+						<TableHead className="min-w-[100px]">ロール</TableHead>
+						<TableHead className="min-w-[100px]">ステータス</TableHead>
+						<TableHead className="min-w-[120px] hidden sm:table-cell">最終ログイン</TableHead>
+						<TableHead className="min-w-[100px] hidden md:table-cell">登録日</TableHead>
+						<TableHead className="text-right min-w-[120px]">操作</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
@@ -113,12 +113,14 @@ export function UserManagementClient({ initialUsers, currentUserId }: UserManage
 									<Badge variant="secondary">無効</Badge>
 								)}
 							</TableCell>
-							<TableCell className="text-sm">{formatLastLogin(user.lastLoginAt)}</TableCell>
-							<TableCell className="text-sm">
+							<TableCell className="text-sm hidden sm:table-cell">
+								{formatLastLogin(user.lastLoginAt)}
+							</TableCell>
+							<TableCell className="text-sm hidden md:table-cell">
 								{new Date(user.createdAt).toLocaleDateString("ja-JP")}
 							</TableCell>
 							<TableCell className="text-right">
-								<div className="flex justify-end space-x-2">
+								<div className="flex justify-end space-x-1 sm:space-x-2">
 									<UserEditDialog user={user} onUpdate={refreshUsers} />
 									{user.id !== currentUserId && (
 										<UserDeleteDialog user={user} onDelete={refreshUsers} />

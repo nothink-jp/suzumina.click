@@ -169,11 +169,11 @@ export function AudioButtonCreator({
 					</div>
 				)}
 
-				{/* メインレイアウト: 動画の右側に操作パネル */}
+				{/* メインレイアウト: レスポンシブ対応 */}
 				<div className="max-w-7xl mx-auto">
-					<div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+					<div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
 						{/* 左側: YouTube動画プレイヤー (16:9で大きく表示) */}
-						<div className="xl:col-span-2">
+						<div className="lg:col-span-1 xl:col-span-2">
 							<div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
 								<YouTubePlayer
 									videoId={videoId}
@@ -186,16 +186,17 @@ export function AudioButtonCreator({
 						</div>
 
 						{/* 右側: 操作パネル */}
-						<div className="xl:col-span-1">
-							<div className="bg-card border rounded-lg p-6 shadow-sm h-fit sticky top-6 space-y-6">
+						<div className="lg:col-span-1 xl:col-span-1">
+							<div className="bg-card border rounded-lg p-4 lg:p-6 shadow-sm h-fit lg:sticky lg:top-6 space-y-4 lg:space-y-6">
 								{/* 現在時間表示 */}
-								<div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+								<div className="p-3 lg:p-4 bg-primary/10 border border-primary/20 rounded-lg">
 									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-2 text-sm text-muted-foreground">
+										<div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
 											<Clock className="h-4 w-4" />
-											動画再生時間
+											<span className="hidden sm:inline">動画再生時間</span>
+											<span className="sm:hidden">再生時間</span>
 										</div>
-										<div className="text-lg font-mono font-semibold text-primary">
+										<div className="text-base sm:text-lg font-mono font-semibold text-primary">
 											{formatTimestamp(currentTime)}
 										</div>
 									</div>
@@ -203,7 +204,7 @@ export function AudioButtonCreator({
 
 								{/* タイトル入力 */}
 								<div className="space-y-2">
-									<label htmlFor={titleId} className="text-sm font-medium">
+									<label htmlFor={titleId} className="text-sm sm:text-base font-medium">
 										ボタンタイトル <span className="text-destructive">*</span>
 									</label>
 									<Input
@@ -213,68 +214,74 @@ export function AudioButtonCreator({
 										placeholder="例: おはようございます"
 										maxLength={100}
 										disabled={isCreating}
-										className="text-base"
+										className="text-base min-h-[44px]"
 									/>
-									<p className="text-xs text-muted-foreground">{title.length}/100</p>
+									<p className="text-xs sm:text-sm text-muted-foreground">{title.length}/100</p>
 								</div>
 
 								{/* 範囲選択 */}
 								<div className="space-y-4">
-									<div className="text-sm font-medium flex items-center gap-2">
-										切り抜き範囲
-										<span className="text-xs text-muted-foreground">
+									<div className="text-sm sm:text-base font-medium flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+										<span>切り抜き範囲</span>
+										<span className="text-xs sm:text-sm text-muted-foreground">
 											({formatTimestamp(startTime)} - {formatTimestamp(endTime)})
 										</span>
 									</div>
 
-									{/* 時間設定ボタンを大きく、わかりやすく */}
-									<div className="grid grid-cols-2 gap-3">
+									{/* 時間設定ボタン: モバイル対応 */}
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 										<Button
 											variant="outline"
 											onClick={setCurrentAsStart}
 											disabled={isCreating}
-											className="h-16 flex flex-col items-center justify-center text-xs"
+											className="h-16 sm:h-20 flex flex-col items-center justify-center min-h-[44px]"
 										>
-											<div className="font-medium text-sm">開始時間に設定</div>
-											<div className="text-muted-foreground">{formatTimestamp(startTime)}</div>
+											<div className="font-medium text-sm sm:text-base">開始時間に設定</div>
+											<div className="text-xs sm:text-sm text-muted-foreground">
+												{formatTimestamp(startTime)}
+											</div>
 										</Button>
 
 										<Button
 											variant="outline"
 											onClick={setCurrentAsEnd}
 											disabled={isCreating || currentTime <= startTime}
-											className="h-16 flex flex-col items-center justify-center text-xs"
+											className="h-16 sm:h-20 flex flex-col items-center justify-center min-h-[44px]"
 										>
-											<div className="font-medium text-sm">終了時間に設定</div>
-											<div className="text-muted-foreground">{formatTimestamp(endTime)}</div>
+											<div className="font-medium text-sm sm:text-base">終了時間に設定</div>
+											<div className="text-xs sm:text-sm text-muted-foreground">
+												{formatTimestamp(endTime)}
+											</div>
 										</Button>
 									</div>
 
-									{/* 長さ表示を目立たせる */}
+									{/* 長さ表示: モバイル対応 */}
 									<div
-										className={`p-3 rounded-lg text-center ${
+										className={`p-3 sm:p-4 rounded-lg text-center ${
 											duration > 60
 												? "bg-destructive/10 border border-destructive/20"
 												: "bg-primary/10 border border-primary/20"
 										}`}
 									>
-										<p className="text-sm">
+										<p className="text-sm sm:text-base">
 											<span className="text-muted-foreground">切り抜き時間: </span>
 											<strong className={duration > 60 ? "text-destructive" : "text-primary"}>
 												{duration}秒
 											</strong>
 										</p>
 										{duration > 60 && (
-											<p className="text-xs text-destructive mt-1">60秒以下にしてください</p>
+											<p className="text-xs sm:text-sm text-destructive mt-1">
+												60秒以下にしてください
+											</p>
 										)}
 									</div>
 
-									{/* プレビューボタンを目立たせる */}
+									{/* プレビューボタン: モバイル対応 */}
 									<Button
 										variant="secondary"
 										onClick={previewRange}
 										disabled={isCreating || duration <= 0}
-										className="w-full h-11 font-medium"
+										className="w-full min-h-[44px] h-11 sm:h-12 font-medium text-sm sm:text-base"
 										size="lg"
 									>
 										<Play className="h-4 w-4 mr-2" />
@@ -284,26 +291,26 @@ export function AudioButtonCreator({
 							</div>
 						</div>
 
-						{/* 下部: 作成ボタンと説明 */}
-						<div className="flex flex-col lg:flex-row gap-4 items-center justify-between mt-6 pt-6 border-t">
-							<div className="text-xs text-muted-foreground space-y-1 lg:space-y-0 lg:space-x-4 lg:flex">
+						{/* 下部: 作成ボタンと説明（スマホ対応） */}
+						<div className="col-span-full flex flex-col gap-4 mt-6 pt-6 border-t">
+							<div className="text-xs sm:text-sm text-muted-foreground space-y-1 lg:space-y-0 lg:space-x-4 lg:flex text-center lg:text-left">
 								<span>• 動画を見ながら範囲を決めてください</span>
 								<span>• 最大60秒まで切り抜き可能です</span>
 							</div>
 
-							<div className="flex gap-3 w-full lg:w-auto">
+							<div className="flex flex-col sm:flex-row gap-3 w-full lg:justify-end">
 								<Button
 									variant="outline"
 									onClick={() => router.back()}
 									disabled={isCreating}
-									className="flex-1 lg:flex-none"
+									className="w-full sm:w-auto min-h-[44px] order-2 sm:order-1"
 								>
 									キャンセル
 								</Button>
 								<Button
 									onClick={handleCreate}
 									disabled={!isValid || isCreating}
-									className="flex-1 lg:flex-none h-11 px-8"
+									className="w-full sm:w-auto min-h-[44px] h-11 sm:h-12 px-6 sm:px-8 order-1 sm:order-2"
 									size="lg"
 								>
 									{isCreating ? (

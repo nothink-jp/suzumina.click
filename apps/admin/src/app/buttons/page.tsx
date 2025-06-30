@@ -205,18 +205,18 @@ export default async function ButtonsPage() {
 					<CardTitle>音声ボタン一覧</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="rounded-md border">
+					<div className="rounded-md border overflow-x-auto">
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>タイトル</TableHead>
-									<TableHead>作成者</TableHead>
-									<TableHead>動画ID</TableHead>
-									<TableHead>時間範囲</TableHead>
-									<TableHead>統計</TableHead>
-									<TableHead>ステータス</TableHead>
-									<TableHead>作成日</TableHead>
-									<TableHead className="text-right">操作</TableHead>
+									<TableHead className="min-w-[200px]">タイトル</TableHead>
+									<TableHead className="min-w-[120px] hidden sm:table-cell">作成者</TableHead>
+									<TableHead className="min-w-[100px] hidden md:table-cell">動画ID</TableHead>
+									<TableHead className="min-w-[100px] hidden lg:table-cell">時間範囲</TableHead>
+									<TableHead className="min-w-[80px] hidden lg:table-cell">統計</TableHead>
+									<TableHead className="min-w-[80px]">ステータス</TableHead>
+									<TableHead className="min-w-[100px] hidden md:table-cell">作成日</TableHead>
+									<TableHead className="text-right min-w-[100px]">操作</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -227,13 +227,13 @@ export default async function ButtonsPage() {
 												{button.title}
 											</div>
 										</TableCell>
-										<TableCell>
+										<TableCell className="hidden sm:table-cell">
 											<div className="flex items-center gap-2">
 												<User className="h-3 w-3" />
 												<span className="text-sm">{button.creatorName}</span>
 											</div>
 										</TableCell>
-										<TableCell>
+										<TableCell className="hidden md:table-cell">
 											<div className="flex items-center gap-2">
 												<code className="text-xs bg-muted px-1 py-0.5 rounded">
 													{button.youtubeVideoId}
@@ -250,12 +250,12 @@ export default async function ButtonsPage() {
 												</Button>
 											</div>
 										</TableCell>
-										<TableCell>
+										<TableCell className="hidden lg:table-cell">
 											<div className="text-sm">
 												{formatTime(button.startTime)} - {formatTime(button.endTime)}
 											</div>
 										</TableCell>
-										<TableCell>
+										<TableCell className="hidden lg:table-cell">
 											<div className="flex gap-2 text-xs">
 												<div className="flex items-center gap-1">
 													<Play className="h-3 w-3" />
@@ -280,7 +280,7 @@ export default async function ButtonsPage() {
 												<Badge variant="secondary">非公開</Badge>
 											)}
 										</TableCell>
-										<TableCell className="text-sm">
+										<TableCell className="text-sm hidden md:table-cell">
 											{new Date(button.createdAt).toLocaleDateString("ja-JP")}
 										</TableCell>
 										<TableCell className="text-right">
