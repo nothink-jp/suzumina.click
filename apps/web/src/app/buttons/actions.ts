@@ -153,6 +153,9 @@ export async function createAudioButton(
 			user.displayName,
 		);
 
+		// YouTube動画情報を追加
+		firestoreData.sourceVideoTitle = videoInfo.title;
+
 		logger.debug("Firestoreデータ作成完了", {
 			title: firestoreData.title,
 			tags: firestoreData.tags,
