@@ -1,7 +1,6 @@
 "use client";
 
 import type { FrontendAudioButtonData, FrontendUserData } from "@suzumina.click/shared-types";
-import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
@@ -14,7 +13,6 @@ import {
 	Play,
 	Settings,
 	Shield,
-	Star,
 	TrendingUp,
 	User,
 	Users,
@@ -23,6 +21,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
 
 interface UserProfileContentProps {
 	user: FrontendUserData;
@@ -118,39 +117,16 @@ function AudioButtonsList({
 
 	return (
 		<>
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+			<div className="flex flex-wrap gap-3 items-start">
 				{audioButtons.map((button) => (
-					<Card key={button.id} className="hover:shadow-md transition-shadow">
-						<CardContent className="p-4">
-							<div className="space-y-3">
-								<div>
-									<h3 className="font-semibold line-clamp-2">{button.title}</h3>
-									<p className="text-sm text-muted-foreground">
-										{button.durationText} • {button.relativeTimeText}
-									</p>
-								</div>
-								<SimpleAudioButton audioButton={button} className="w-full" />
-								<div className="flex items-center justify-between text-xs text-muted-foreground">
-									<div className="flex items-center gap-1">
-										<Play className="w-3 h-3" />
-										<span>{button.playCount}回再生</span>
-									</div>
-									<div className="flex items-center gap-1">
-										<Star className="w-3 h-3" />
-										<span>{button.likeCount}</span>
-									</div>
-								</div>
-								<div className="pt-2 border-t">
-									<Link
-										href={`/videos/${button.sourceVideoId}`}
-										className="text-xs text-suzuka-600 hover:text-suzuka-700 line-clamp-1"
-									>
-										{button.sourceVideoTitle}
-									</Link>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
+					<AudioButtonWithFavoriteClient
+						key={button.id}
+						audioButton={button}
+						showFavorite={true}
+						showDelete={isOwnProfile}
+						maxTitleLength={50}
+						className="shadow-sm hover:shadow-md transition-all duration-200"
+					/>
 				))}
 			</div>
 			{audioButtons.length >= 20 && (
