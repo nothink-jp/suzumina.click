@@ -4,7 +4,6 @@ import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { Popover, PopoverContent, PopoverTrigger } from "@suzumina.click/ui/components/ui/popover";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import {
-	Calendar,
 	Clock,
 	ExternalLink,
 	Heart,
@@ -12,7 +11,6 @@ import {
 	Loader2,
 	Pause,
 	Play,
-	Tag,
 	Trash2,
 	User,
 	Video,
@@ -158,85 +156,75 @@ export function SimpleAudioButton({
 						<Info className="h-4 w-4" />
 					</button>
 				</PopoverTrigger>
-				<PopoverContent className="w-80 p-0" align="end">
-					<div className="p-4 space-y-4">
+				<PopoverContent className="w-72 p-0" align="end">
+					<div className="p-3 space-y-3">
 						{/* ヘッダー: タイトル */}
 						<div>
-							<h3 className="font-semibold text-lg text-foreground mb-2 leading-tight">
+							<h3 className="font-semibold text-base text-foreground mb-1 leading-tight line-clamp-2">
 								{audioButton.title}
 							</h3>
 							{audioButton.description && (
-								<p className="text-sm text-muted-foreground mb-3">{audioButton.description}</p>
+								<p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+									{audioButton.description}
+								</p>
 							)}
 						</div>
 
 						{/* タグ */}
 						{audioButton.tags && audioButton.tags.length > 0 && (
-							<div>
-								<h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-1">
-									<Tag className="h-4 w-4" />
-									タグ
-								</h4>
-								<div className="flex flex-wrap gap-1">
-									{audioButton.tags.map((tag) => (
-										<span
-											key={tag}
-											className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-minase-100 text-minase-700 border border-minase-200"
-										>
-											{tag}
-										</span>
-									))}
-								</div>
+							<div className="flex flex-wrap gap-1">
+								{audioButton.tags.slice(0, 3).map((tag) => (
+									<span
+										key={tag}
+										className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-minase-100 text-minase-700"
+									>
+										{tag}
+									</span>
+								))}
+								{audioButton.tags.length > 3 && (
+									<span className="text-xs text-muted-foreground">
+										+{audioButton.tags.length - 3}
+									</span>
+								)}
 							</div>
 						)}
 
-						{/* 統計情報 */}
-						<div className="grid grid-cols-2 gap-4">
-							<div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-								<Play className="h-5 w-5 text-minase-600" />
-								<div>
-									<div className="text-sm font-medium text-foreground">再生回数</div>
-									<div className="text-lg font-bold text-minase-600">
-										{audioButton.playCount.toLocaleString()}回
-									</div>
+						{/* 統計情報とメタデータ */}
+						<div className="bg-muted/20 rounded-md p-2 space-y-1">
+							<div className="flex items-center justify-between text-xs">
+								<div className="flex items-center gap-1">
+									<Play className="h-3 w-3 text-minase-600" />
+									<span className="font-medium">
+										{audioButton.playCount.toLocaleString()}回再生
+									</span>
+								</div>
+								<div className="flex items-center gap-1">
+									<Clock className="h-3 w-3 text-minase-600" />
+									<span className="font-medium">{Math.floor(duration)}秒</span>
 								</div>
 							</div>
-							<div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-								<Clock className="h-5 w-5 text-minase-600" />
-								<div>
-									<div className="text-sm font-medium text-foreground">長さ</div>
-									<div className="text-lg font-bold text-minase-600">{Math.floor(duration)}秒</div>
+							<div className="flex items-center justify-between text-xs text-muted-foreground">
+								<div className="flex items-center gap-1">
+									<User className="h-3 w-3" />
+									<span className="truncate max-w-20">{audioButton.createdByName}</span>
 								</div>
-							</div>
-						</div>
-
-						{/* 作成者・作成日 */}
-						<div className="space-y-2">
-							<div className="flex items-center gap-2 text-sm">
-								<User className="h-4 w-4 text-muted-foreground" />
-								<span className="text-muted-foreground">作成者</span>
-								<span className="font-medium text-minase-600">{audioButton.createdByName}</span>
-							</div>
-							<div className="flex items-center gap-2 text-sm">
-								<Calendar className="h-4 w-4 text-muted-foreground" />
-								<span className="text-muted-foreground">作成日</span>
-								<span className="font-medium">{audioButton.relativeTimeText}</span>
+								<span>{audioButton.relativeTimeText}</span>
 							</div>
 						</div>
 
 						{/* 元動画 */}
-						<div>
-							<div className="flex items-center gap-2 text-sm mb-2">
-								<Video className="h-4 w-4 text-muted-foreground" />
+						<div className="text-xs">
+							<div className="flex items-center gap-1 mb-1">
+								<Video className="h-3 w-3 text-muted-foreground" />
 								<span className="text-muted-foreground">元動画</span>
 							</div>
-							<p className="font-medium text-sm text-minase-600 leading-tight">
+							<p className="font-medium text-minase-600 leading-tight line-clamp-2">
 								{audioButton.sourceVideoTitle || "動画タイトル取得中..."}
 							</p>
 						</div>
 
 						{/* アクションボタン */}
-						<div className="pt-2 border-t border-border space-y-1">
+						<div className="pt-2 border-t border-border space-y-0.5">
 							{onFavoriteToggle && (
 								<button
 									type="button"
@@ -244,9 +232,9 @@ export function SimpleAudioButton({
 										onFavoriteToggle();
 										setShowInfo(false);
 									}}
-									className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+									className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent transition-colors"
 								>
-									<Heart className={cn("h-4 w-4", isFavorite && "fill-current text-red-500")} />
+									<Heart className={cn("h-3 w-3", isFavorite && "fill-current text-red-500")} />
 									<span>{isFavorite ? "お気に入りから削除" : "お気に入りに追加"}</span>
 								</button>
 							)}
@@ -259,19 +247,19 @@ export function SimpleAudioButton({
 										onDetailClick();
 										setShowInfo(false);
 									}}
-									className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+									className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent transition-colors"
 								>
-									<Info className="h-4 w-4" />
+									<Info className="h-3 w-3" />
 									<span>詳細を見る</span>
 								</button>
 							)}
 
 							<a
 								href={`/videos/${audioButton.sourceVideoId}`}
-								className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+								className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent transition-colors"
 								onClick={() => setShowInfo(false)}
 							>
-								<Video className="h-4 w-4" />
+								<Video className="h-3 w-3" />
 								<span>動画詳細ページ</span>
 							</a>
 
@@ -279,17 +267,17 @@ export function SimpleAudioButton({
 								href={youtubeUrl}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+								className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent transition-colors"
 								onClick={() => setShowInfo(false)}
 							>
-								<ExternalLink className="h-4 w-4" />
+								<ExternalLink className="h-3 w-3" />
 								<span>YouTubeで開く</span>
 							</a>
 
 							{/* 削除ボタン */}
 							{canDelete && onDelete && (
 								<>
-									<div className="my-2 h-px bg-border" />
+									<div className="my-1 h-px bg-border" />
 									<button
 										type="button"
 										onClick={() => {
@@ -298,28 +286,14 @@ export function SimpleAudioButton({
 												setShowInfo(false);
 											}
 										}}
-										className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+										className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
 									>
-										<Trash2 className="h-4 w-4" />
+										<Trash2 className="h-3 w-3" />
 										<span>削除</span>
 									</button>
 								</>
 							)}
 						</div>
-
-						{/* 詳細を見るボタン（v0モック準拠） */}
-						{showDetailLink && onDetailClick && (
-							<button
-								type="button"
-								onClick={() => {
-									onDetailClick();
-									setShowInfo(false);
-								}}
-								className="w-full mt-4 px-4 py-2 border border-minase-300 text-minase-600 rounded-md hover:bg-minase-50 transition-colors font-medium"
-							>
-								詳細を見る
-							</button>
-						)}
 					</div>
 				</PopoverContent>
 			</Popover>
