@@ -173,7 +173,7 @@ export function SimpleAudioButton({
 						{/* タグ */}
 						{audioButton.tags && audioButton.tags.length > 0 && (
 							<div className="flex flex-wrap gap-1">
-								{audioButton.tags.slice(0, 3).map((tag) => (
+								{audioButton.tags.slice(0, 3).map((tag: string) => (
 									<span
 										key={tag}
 										className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-minase-100 text-minase-700"
