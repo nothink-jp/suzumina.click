@@ -82,18 +82,19 @@ async function RelatedAudioButtons({
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-								{relatedButtons.slice(0, 4).map((audioButton) => (
+							<div className="flex flex-wrap gap-3 items-start">
+								{relatedButtons.slice(0, 6).map((audioButton) => (
 									<AudioButtonWithFavoriteClient
 										key={audioButton.id}
 										audioButton={audioButton}
 										showFavorite={true}
 										showDelete={false}
-										className="w-full border border-suzuka-100 hover:border-suzuka-200"
+										maxTitleLength={50}
+										className="shadow-sm hover:shadow-md transition-all duration-200"
 									/>
 								))}
 							</div>
-							{relatedButtons.length > 4 && (
+							{relatedButtons.length > 6 && (
 								<div className="mt-6 text-center">
 									<Button
 										variant="outline"
