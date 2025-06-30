@@ -176,22 +176,55 @@ export async function getVideoTitles(params?: {
 
 		const docs = snapshot.docs;
 
-		// 検索クエリがある場合、より多くのドキュメントを取得してフィルタリング
+		// 検索クエリがある場合、全ドキュメントを取得してフィルタリング
 		let videosToProcess = docs;
 		if (params?.search) {
-			// 検索時は全ドキュメントから検索するため、制限を緩める
-			const allDocsSnapshot = await paginationConfig.query.limit(1000).get();
+			// 検索時は全ドキュメントから検索するため、新しいクエリを作成
+			let allDocsQuery = videosRef.orderBy(
+				"publishedAt",
+				params?.sort === "oldest" ? "asc" : "desc",
+			);
+
+			// 年代フィルタリングがある場合は適用
+			if (params?.year) {
+				const year = Number.parseInt(params.year, 10);
+				if (!Number.isNaN(year)) {
+					const startOfYear = new Date(year, 0, 1);
+					const endOfYear = new Date(year + 1, 0, 1);
+					allDocsQuery = allDocsQuery
+						.where("publishedAt", ">=", Timestamp.fromDate(startOfYear))
+						.where("publishedAt", "<", Timestamp.fromDate(endOfYear));
+				}
+			}
+
+			const allDocsSnapshot = await allDocsQuery.limit(1000).get();
 			videosToProcess = allDocsSnapshot.docs;
 		}
 
-		const videos = processUserVideoDocuments(
-			videosToProcess,
-			paginationConfig.limit,
-			params?.search,
-		);
+		// 検索時は異なる処理が必要
+		let videos: FrontendVideoData[];
+		let hasMore: boolean;
 
-		// 次のページがあるかどうかを判定
-		const hasMore = params?.search ? false : docs.length > paginationConfig.limit;
+		if (params?.search) {
+			// 検索結果を取得してページネーション適用
+			const allFilteredVideos = processUserVideoDocuments(
+				videosToProcess,
+				videosToProcess.length, // 全件処理
+				params.search,
+			);
+
+			// ページネーション適用
+			const startIndex = ((params?.page || 1) - 1) * paginationConfig.limit;
+			const endIndex = startIndex + paginationConfig.limit;
+			videos = allFilteredVideos.slice(startIndex, endIndex);
+
+			// 次のページがあるかどうかを判定
+			const currentPage = params?.page || 1;
+			hasMore = currentPage * paginationConfig.limit < allFilteredVideos.length;
+		} else {
+			videos = processUserVideoDocuments(videosToProcess, paginationConfig.limit, undefined);
+			hasMore = docs.length > paginationConfig.limit;
+		}
 		const lastVideo = videos.length > 0 ? videos[videos.length - 1] : undefined;
 
 		return {
@@ -215,7 +248,8 @@ export async function getTotalVideoCount(params?: {
 	try {
 		const firestore = getFirestore();
 		const videosRef = firestore.collection("videos");
-		let query = videosRef.select(); // IDのみ取得で効率化
+		// 検索時はタイトルも必要なので、select()は使わない
+		let query = params?.search ? videosRef : videosRef.select(); // IDのみ取得で効率化
 
 		// 年代フィルタリング
 		if (params?.year) {
@@ -229,7 +263,8 @@ export async function getTotalVideoCount(params?: {
 			}
 		}
 
-		const snapshot = await query.get();
+		// 検索時は多くのドキュメントが必要になる可能性があるため、制限を設ける
+		const snapshot = await query.limit(params?.search ? 1000 : 500).get();
 
 		// 検索フィルタリング
 		if (params?.search) {
