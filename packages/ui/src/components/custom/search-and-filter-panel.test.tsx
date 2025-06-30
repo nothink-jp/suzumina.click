@@ -51,6 +51,26 @@ describe("SearchAndFilterPanel", () => {
 		expect(mockOnSearch).toHaveBeenCalled();
 	});
 
+	it("calls custom onSearchKeyDown when provided", () => {
+		const mockOnSearchKeyDown = vi.fn();
+		const mockOnSearch = vi.fn();
+		render(
+			<SearchAndFilterPanel
+				searchValue="test"
+				onSearchChange={vi.fn()}
+				onSearch={mockOnSearch}
+				onReset={vi.fn()}
+				onSearchKeyDown={mockOnSearchKeyDown}
+			/>,
+		);
+
+		const input = screen.getByRole("textbox");
+		fireEvent.keyDown(input, { key: "Enter" });
+
+		expect(mockOnSearchKeyDown).toHaveBeenCalled();
+		expect(mockOnSearch).not.toHaveBeenCalled();
+	});
+
 	it("calls onSearch when search button is clicked", () => {
 		const mockOnSearch = vi.fn();
 		render(

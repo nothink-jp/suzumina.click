@@ -111,13 +111,27 @@ function transformServerDataToFirestoreData(doc: DocumentSnapshot, data: Firesto
 /**
  * ドキュメントリストを処理してフロントエンド用動画データに変換する関数（ユーザー向け）
  */
-function processUserVideoDocuments(docs: DocumentSnapshot[], limit: number): FrontendVideoData[] {
+function processUserVideoDocuments(
+	docs: DocumentSnapshot[],
+	limit: number,
+	searchQuery?: string,
+): FrontendVideoData[] {
 	const videos: FrontendVideoData[] = [];
 	const videosToProcess = docs.slice(0, limit);
 
 	for (const doc of videosToProcess) {
 		try {
 			const data = doc.data() as FirestoreServerVideoData;
+
+			// 検索クエリが指定されている場合、タイトルでフィルタリング
+			if (searchQuery) {
+				const lowerQuery = searchQuery.toLowerCase();
+				const lowerTitle = data.title.toLowerCase();
+				if (!lowerTitle.includes(lowerQuery)) {
+					continue;
+				}
+			}
+
 			const firestoreData = transformServerDataToFirestoreData(doc, data);
 			const frontendVideo = convertToFrontendVideo(firestoreData);
 			videos.push(frontendVideo);
@@ -138,6 +152,7 @@ export async function getVideoTitles(params?: {
 	startAfterDocId?: string;
 	year?: string;
 	sort?: string;
+	search?: string;
 }): Promise<VideoListResult> {
 	try {
 		const firestore = getFirestore();
@@ -160,10 +175,23 @@ export async function getVideoTitles(params?: {
 		}
 
 		const docs = snapshot.docs;
-		const videos = processUserVideoDocuments(docs, paginationConfig.limit);
+
+		// 検索クエリがある場合、より多くのドキュメントを取得してフィルタリング
+		let videosToProcess = docs;
+		if (params?.search) {
+			// 検索時は全ドキュメントから検索するため、制限を緩める
+			const allDocsSnapshot = await paginationConfig.query.limit(1000).get();
+			videosToProcess = allDocsSnapshot.docs;
+		}
+
+		const videos = processUserVideoDocuments(
+			videosToProcess,
+			paginationConfig.limit,
+			params?.search,
+		);
 
 		// 次のページがあるかどうかを判定
-		const hasMore = docs.length > paginationConfig.limit;
+		const hasMore = params?.search ? false : docs.length > paginationConfig.limit;
 		const lastVideo = videos.length > 0 ? videos[videos.length - 1] : undefined;
 
 		return {

@@ -24,7 +24,7 @@ interface WorkListProps {
 export default function WorkList({ data, totalCount, currentPage }: WorkListProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const [searchQuery, setSearchQuery] = useState("");
+	const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
 	const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 	const [categoryFilter, setCategoryFilter] = useState("all");
 	const [itemsPerPageValue, setItemsPerPageValue] = useState(searchParams.get("limit") || "12");
@@ -52,8 +52,11 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 	const handleSearch = () => {
 		if (searchQuery.trim()) {
 			startTransition(() => {
-				// 将来的に検索機能を実装予定
+				updateUrlParam("search", searchQuery.trim(), "");
 			});
+		} else {
+			// 検索クエリが空の場合はパラメータを削除
+			updateUrlParam("search", "", "");
 		}
 	};
 
@@ -93,6 +96,11 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 				onReset={handleReset}
 				searchPlaceholder="作品タイトルで検索..."
 				hasActiveFilters={searchQuery !== "" || categoryFilter !== "all"}
+				onSearchKeyDown={(e) => {
+					if (e.key === "Enter") {
+						handleSearch();
+					}
+				}}
 				filters={
 					<FilterSelect
 						value={categoryFilter}

@@ -16,6 +16,7 @@ interface SearchAndFilterPanelProps {
 	filters?: ReactNode;
 	className?: string;
 	hasActiveFilters?: boolean;
+	onSearchKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
 /**
@@ -33,9 +34,12 @@ export function SearchAndFilterPanel({
 	filters,
 	className,
 	hasActiveFilters = false,
+	onSearchKeyDown,
 }: SearchAndFilterPanelProps) {
 	const handleKeyDown = (e: React.KeyboardEvent) => {
-		if (e.key === "Enter") {
+		if (onSearchKeyDown) {
+			onSearchKeyDown(e);
+		} else if (e.key === "Enter") {
 			onSearch?.();
 		}
 	};

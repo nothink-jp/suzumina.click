@@ -57,10 +57,12 @@ export async function getWorks({
 	page = 1,
 	limit = 12,
 	sort = "newest",
+	search,
 }: {
 	page?: number;
 	limit?: number;
 	sort?: string;
+	search?: string;
 } = {}): Promise<WorkListResult> {
 	try {
 		const firestore = getFirestore();
@@ -70,10 +72,19 @@ export async function getWorks({
 		const allSnapshot = await firestore.collection("dlsiteWorks").get();
 
 		// 全データを配列に変換
-		const allWorks = allSnapshot.docs.map((doc) => ({
+		let allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
 		})) as FirestoreDLsiteWorkData[];
+
+		// 検索フィルタリング
+		if (search) {
+			const lowerSearch = search.toLowerCase();
+			allWorks = allWorks.filter((work) => {
+				const lowerTitle = work.title.toLowerCase();
+				return lowerTitle.includes(lowerSearch);
+			});
+		}
 
 		// ソート処理
 		const sortedWorks = sortWorks(allWorks, sort as SortOption);

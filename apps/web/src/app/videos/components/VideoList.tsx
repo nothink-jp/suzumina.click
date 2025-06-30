@@ -30,7 +30,7 @@ export default function VideoList({
 }: VideoListProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const [searchQuery, setSearchQuery] = useState("");
+	const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
 	const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 	const [yearFilter, setYearFilter] = useState(searchParams.get("year") || "all");
 	const [itemsPerPageValue, setItemsPerPageValue] = useState(searchParams.get("limit") || "12");
@@ -76,8 +76,11 @@ export default function VideoList({
 	const handleSearch = () => {
 		if (searchQuery.trim()) {
 			startTransition(() => {
-				// 将来的に検索機能を実装予定
+				updateUrlParam("search", searchQuery.trim(), "");
 			});
+		} else {
+			// 検索クエリが空の場合はパラメータを削除
+			updateUrlParam("search", "", "");
 		}
 	};
 
@@ -124,6 +127,11 @@ export default function VideoList({
 				onReset={handleReset}
 				searchPlaceholder="動画タイトルで検索..."
 				hasActiveFilters={searchQuery !== "" || yearFilter !== "all" || sortBy !== "newest"}
+				onSearchKeyDown={(e) => {
+					if (e.key === "Enter") {
+						handleSearch();
+					}
+				}}
 				filters={
 					<FilterSelect
 						value={yearFilter}
