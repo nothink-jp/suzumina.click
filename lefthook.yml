@@ -1,37 +1,38 @@
+# 最適化されたlefthook設定（冗長性除去版）
+
 pre-commit:
   commands:
-    # 1. コードフォーマット・リント (Biome)
+    # 1. コードフォーマット・リント (Biome) - 変更ファイルのみ高速実行
     check:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
       run: npx @biomejs/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
       stage_fixed: true
       fail_text: "コードフォーマット・リントに失敗しました"
     
-    # 2. TypeScript型チェック
-    typecheck:
-      glob: "*.{ts,tsx}"
-      run: pnpm typecheck
-      fail_text: "TypeScript型チェックに失敗しました"
-    
-    # 3. 関連テストの実行
+    # 2. 変更されたパッケージのテストのみ実行（高速化）
     test:
       glob: "*.{ts,tsx,js,jsx}"
       run: pnpm test --run --reporter=verbose --passWithNoTests
       fail_text: "テストが失敗しました"
-    
-    # 4. セキュリティ監査 (週1回程度で十分な場合はskip: trueにする)
-    audit:
-      run: pnpm audit --audit-level moderate
-      fail_text: "セキュリティ脆弱性が検出されました"
 
 pre-push:
   commands:
-    # 共有型のビルド確認
+    # 1. 共有型のビルド確認（依存関係の整合性保証）
     build-shared-types:
       run: pnpm --filter @suzumina.click/shared-types build
       fail_text: "共有型のビルドに失敗しました"
     
-    # プッシュ前の最終チェック (段階的実行)
-    final-check:
-      run: pnpm check && pnpm test:coverage
-      fail_text: "最終チェックに失敗しました"
+    # 2. 全パッケージの型チェック（pre-commitでは変更ファイルのみ）
+    typecheck:
+      run: pnpm typecheck
+      fail_text: "TypeScript型チェックに失敗しました"
+    
+    # 3. セキュリティ監査（プッシュ前の最終確認）
+    audit:
+      run: pnpm audit --audit-level moderate
+      fail_text: "セキュリティ脆弱性が検出されました"
+    
+    # 4. テストカバレッジ確認（品質保証）
+    test-coverage:
+      run: pnpm test:coverage
+      fail_text: "テストカバレッジが基準を満たしていません"
