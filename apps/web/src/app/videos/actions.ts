@@ -208,7 +208,10 @@ export async function getVideoTitles(params?: {
  * 総動画数を取得するServer Action
  * Note: count()クエリは権限問題があるため、通常のクエリで代替
  */
-export async function getTotalVideoCount(params?: { year?: string }): Promise<number> {
+export async function getTotalVideoCount(params?: {
+	year?: string;
+	search?: string;
+}): Promise<number> {
 	try {
 		const firestore = getFirestore();
 		const videosRef = firestore.collection("videos");
@@ -227,6 +230,25 @@ export async function getTotalVideoCount(params?: { year?: string }): Promise<nu
 		}
 
 		const snapshot = await query.get();
+
+		// 検索フィルタリング
+		if (params?.search) {
+			const lowerSearch = params.search.toLowerCase();
+			let count = 0;
+			for (const doc of snapshot.docs) {
+				try {
+					const data = doc.data() as FirestoreServerVideoData;
+					const lowerTitle = data.title.toLowerCase();
+					if (lowerTitle.includes(lowerSearch)) {
+						count++;
+					}
+				} catch (_error) {
+					// エラーは無視
+				}
+			}
+			return count;
+		}
+
 		return snapshot.size;
 	} catch (_error) {
 		return 0;

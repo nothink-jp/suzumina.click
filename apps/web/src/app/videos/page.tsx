@@ -24,7 +24,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 	// 並行してデータを取得
 	const [initialData, filteredCount, totalCount] = await Promise.all([
 		getVideoTitles({ page: validPage, limit: validLimit, year, sort, search }),
-		getTotalVideoCount({ year }),
+		getTotalVideoCount({ year, search }),
 		getTotalVideoCount({}), // フィルタなしの総件数
 	]);
 
@@ -47,7 +47,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 					<VideoList
 						data={initialData}
 						totalCount={totalCount}
-						filteredCount={year ? filteredCount : undefined}
+						filteredCount={year || search ? filteredCount : undefined}
 						currentPage={validPage}
 					/>
 				</Suspense>

@@ -53,7 +53,12 @@ export default function VideoList({
 	);
 
 	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
-	const displayCount = filteredCount !== undefined ? filteredCount : totalCount;
+	// 検索結果がある場合は実際の結果数を使用、それ以外はフィルタリング結果を使用
+	const displayCount = searchQuery
+		? data.videos.length
+		: filteredCount !== undefined
+			? filteredCount
+			: totalCount;
 	const totalPages = Math.ceil(displayCount / itemsPerPageNum);
 
 	// 年代選択肢を動的に生成（2018年から現在年まで）
@@ -147,7 +152,7 @@ export default function VideoList({
 			<ListDisplayControls
 				title="動画一覧"
 				totalCount={totalCount}
-				filteredCount={filteredCount}
+				filteredCount={searchQuery || yearFilter !== "all" ? displayCount : undefined}
 				currentPage={currentPage}
 				totalPages={totalPages}
 				sortValue={sortBy}
@@ -181,14 +186,14 @@ export default function VideoList({
 			)}
 
 			{/* 3. ページネーション */}
-			{totalPages > 1 && (
+			{totalPages > 1 && data.videos.length > 0 && (
 				<div className="mt-8">
 					<Pagination currentPage={currentPage} totalPages={totalPages} />
 				</div>
 			)}
 
 			{/* 統計情報 */}
-			{filteredVideos.length > 0 && (
+			{data.videos.length > 0 && (
 				<ListPageStats
 					currentPage={currentPage}
 					totalPages={totalPages}
