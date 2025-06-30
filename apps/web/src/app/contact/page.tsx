@@ -1,4 +1,3 @@
-import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { AlertTriangle, Bug, HelpCircle, Lightbulb, MessageSquare } from "lucide-react";
 import { ContactForm } from "./components/ContactForm";
@@ -27,12 +26,12 @@ export default function ContactPage() {
 						<div className="space-y-2">
 							<p className="text-orange-800">
 								• 個人が趣味で運営しているため、
-								<Badge variant="outline" className="mx-1 border-orange-300 text-orange-700">
-									返信をお約束できません
-								</Badge>
+								<b>返信をお約束できません</b>
 							</p>
 							<p className="text-orange-800">• 緊急性のあるお問い合わせには対応できません</p>
-							<p className="text-orange-800">• 涼花みなせさんご本人への連絡手段ではありません</p>
+							<p className="text-orange-800">
+								• 涼花みなせさんご本人や関係者様への連絡手段ではありません
+							</p>
 						</div>
 					</CardContent>
 				</Card>
@@ -94,14 +93,14 @@ export default function ContactPage() {
 								<h4 className="font-semibold text-foreground">Q: ログインできません</h4>
 								<p className="text-sm text-muted-foreground mt-1">
 									A:
-									すずみなふぁみりーDiscordサーバーのメンバーのみご利用いただけます。先にDiscordサーバーにご参加してからお試しください。
+									現状、すずみなふぁみりーDiscordサーバーのメンバーのみご利用いただけます。先にDiscordサーバーにご参加してからお試しください。
 								</p>
 							</div>
 							<div className="border-l-4 border-suzuka-500 pl-4">
 								<h4 className="font-semibold text-foreground">Q: 作成したボタンが表示されません</h4>
 								<p className="text-sm text-muted-foreground mt-1">
 									A:
-									配信アーカイブ以外からは著作権の関係でボタンを作成できません。また、作成後しばらくお待ちいただく場合があります。
+									著作権を考慮して、切り抜き許諾のある配信アーカイブ以外からはボタンを作成できません。また、作成後しばらくお待ちいただく場合があります。
 								</p>
 							</div>
 						</div>

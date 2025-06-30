@@ -198,7 +198,7 @@ export default function PrivacyPage() {
 											<strong>データ:</strong> 公開作品データのみ
 										</p>
 										<p>
-											<strong>方法:</strong> APIアクセス
+											<strong>方法:</strong> Web経由での取得
 										</p>
 										<p>
 											<strong>個人情報:</strong> 一切取得しません
@@ -264,7 +264,7 @@ export default function PrivacyPage() {
 							<div>
 								<h4 className="font-semibold text-foreground">保存・管理</h4>
 								<ul className="text-sm text-muted-foreground mt-2 space-y-1">
-									<li>• Google Cloud Firestoreでの暗号化保存</li>
+									<li>• Google Cloud Platform での暗号化保存</li>
 									<li>• 定期的なセキュリティアップデート</li>
 									<li>• アクセス権限の最小化</li>
 									<li>• 不正アクセス監視</li>
@@ -351,7 +351,7 @@ export default function PrivacyPage() {
 							<div>
 								<h4 className="font-semibold text-foreground">データ転送</h4>
 								<p className="text-sm text-muted-foreground">
-									Google Cloud Platformを利用しているため、データは適切な保護措置の下で
+									Google Cloud Platform を利用しているため、データは適切な保護措置の下で
 									国際的に転送・処理される場合があります。
 								</p>
 							</div>

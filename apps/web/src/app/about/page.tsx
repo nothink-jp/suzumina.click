@@ -1,4 +1,3 @@
-import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { Heart, Music, Play, Shield } from "lucide-react";
@@ -12,9 +11,7 @@ export default function AboutPage() {
 				<h1 className="text-3xl font-bold text-foreground mb-4">suzumina.click について</h1>
 				<p className="text-lg text-muted-foreground">
 					涼花みなせさんのファンによる、ファンのための
-					<Badge variant="outline" className="mx-2">
-						非公式
-					</Badge>
+					<b>非公式</b>
 					コミュニティサイトです
 				</p>
 			</div>
@@ -61,7 +58,7 @@ export default function AboutPage() {
 						<div className="bg-destructive/5 p-4 rounded-lg">
 							<h4 className="font-semibold text-destructive mb-2">非公式サイト</h4>
 							<p className="text-sm text-muted-foreground">
-								涼花みなせさんや所属事務所とは一切関係ありません
+								涼花みなせさんや関係者様とは一切関係ありません
 							</p>
 						</div>
 						<div className="bg-orange-50 p-4 rounded-lg">

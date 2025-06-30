@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getLatestAudioButtons, getLatestVideos, getLatestWorks } from "./actions";
+import {
+	getLatestAudioButtons,
+	getLatestVideos,
+	getLatestWorks,
+	searchAudioButtons,
+	searchVideos,
+	searchWorks,
+} from "./actions";
 
 // Server Actionsのモック
 vi.mock("./videos/actions", () => ({
@@ -12,9 +19,10 @@ vi.mock("./works/actions", () => ({
 
 vi.mock("./buttons/actions", () => ({
 	getRecentAudioButtons: vi.fn(),
+	getAudioButtons: vi.fn(),
 }));
 
-import { getRecentAudioButtons } from "./buttons/actions";
+import { getAudioButtons, getRecentAudioButtons } from "./buttons/actions";
 // モックのインポート
 import { getVideoTitles } from "./videos/actions";
 import { getWorks } from "./works/actions";
@@ -681,6 +689,568 @@ describe("Homepage Actions", () => {
 
 			expect(worksResult).toEqual([]); // エラー時は空配列
 			expect(videosResult).toEqual(mockVideos); // 正常に取得
+		});
+	});
+
+	describe("Search Functions", () => {
+		describe("searchVideos", () => {
+			it("正常に動画検索が実行される", async () => {
+				const mockVideos = [
+					{
+						id: "video-search-1",
+						videoId: "SearchVideo1",
+						title: "涼花みなせ テスト動画",
+						description: "涼花みなせさんのテスト動画です",
+						channelId: "UC123456789",
+						channelTitle: "テストチャンネル",
+						publishedAt: "2023-01-01T00:00:00Z",
+						thumbnailUrl: "https://img.youtube.com/vi/SearchVideo1/hqdefault.jpg",
+						thumbnails: {
+							default: {
+								url: "https://img.youtube.com/vi/SearchVideo1/default.jpg",
+							},
+							medium: {
+								url: "https://img.youtube.com/vi/SearchVideo1/mqdefault.jpg",
+							},
+							high: {
+								url: "https://img.youtube.com/vi/SearchVideo1/hqdefault.jpg",
+							},
+						},
+						lastFetchedAt: "2023-01-01T00:00:00Z",
+						publishedAtISO: "2023-01-01T00:00:00Z",
+						lastFetchedAtISO: "2023-01-01T00:00:00Z",
+						liveBroadcastContent: "none" as const,
+						audioButtonCount: 3,
+						hasAudioButtons: true,
+					},
+					{
+						id: "video-search-2",
+						videoId: "SearchVideo2",
+						title: "涼花みなせ 配信アーカイブ",
+						description: "配信のアーカイブ動画",
+						channelId: "UC987654321",
+						channelTitle: "配信チャンネル",
+						publishedAt: "2023-01-02T00:00:00Z",
+						thumbnailUrl: "https://img.youtube.com/vi/SearchVideo2/hqdefault.jpg",
+						thumbnails: {
+							default: {
+								url: "https://img.youtube.com/vi/SearchVideo2/default.jpg",
+							},
+							medium: {
+								url: "https://img.youtube.com/vi/SearchVideo2/mqdefault.jpg",
+							},
+							high: {
+								url: "https://img.youtube.com/vi/SearchVideo2/hqdefault.jpg",
+							},
+						},
+						lastFetchedAt: "2023-01-02T00:00:00Z",
+						publishedAtISO: "2023-01-02T00:00:00Z",
+						lastFetchedAtISO: "2023-01-02T00:00:00Z",
+						liveBroadcastContent: "none" as const,
+						audioButtonCount: 1,
+						hasAudioButtons: true,
+					},
+				];
+
+				const mockResult = {
+					videos: mockVideos,
+					hasMore: false,
+				};
+
+				(getVideoTitles as any).mockResolvedValue(mockResult);
+
+				const result = await searchVideos("涼花みなせ", 6);
+
+				expect(getVideoTitles).toHaveBeenCalledWith({
+					page: 1,
+					limit: 6,
+					search: "涼花みなせ",
+					sort: "newest",
+				});
+				expect(result).toEqual(mockVideos);
+				expect(result).toHaveLength(2);
+				expect(result[0].title).toContain("涼花みなせ");
+			});
+
+			it("デフォルトのlimit値で動作する", async () => {
+				const mockResult = {
+					videos: [],
+					hasMore: false,
+				};
+
+				(getVideoTitles as any).mockResolvedValue(mockResult);
+
+				await searchVideos("テスト");
+
+				expect(getVideoTitles).toHaveBeenCalledWith({
+					page: 1,
+					limit: 6,
+					search: "テスト",
+					sort: "newest",
+				});
+			});
+
+			it("カスタムlimit値で動作する", async () => {
+				const mockResult = {
+					videos: [],
+					hasMore: false,
+				};
+
+				(getVideoTitles as any).mockResolvedValue(mockResult);
+
+				await searchVideos("テスト", 12);
+
+				expect(getVideoTitles).toHaveBeenCalledWith({
+					page: 1,
+					limit: 12,
+					search: "テスト",
+					sort: "newest",
+				});
+			});
+
+			it("検索結果が0件の場合でも正常に動作する", async () => {
+				const mockResult = {
+					videos: [],
+					hasMore: false,
+				};
+
+				(getVideoTitles as any).mockResolvedValue(mockResult);
+
+				const result = await searchVideos("存在しない動画");
+
+				expect(result).toEqual([]);
+				expect(result).toHaveLength(0);
+			});
+
+			it("エラーが発生した場合空配列を返す", async () => {
+				const error = new Error("YouTube検索エラー");
+				(getVideoTitles as any).mockRejectedValue(error);
+
+				const result = await searchVideos("エラーテスト");
+
+				expect(result).toEqual([]);
+				expect(mockConsole.log).toHaveBeenCalledWith(
+					expect.stringContaining('"動画検索でエラーが発生"'),
+				);
+			});
+
+			it("空文字列での検索も処理される", async () => {
+				const mockResult = {
+					videos: [],
+					hasMore: false,
+				};
+
+				(getVideoTitles as any).mockResolvedValue(mockResult);
+
+				const result = await searchVideos("", 6);
+
+				expect(getVideoTitles).toHaveBeenCalledWith({
+					page: 1,
+					limit: 6,
+					search: "",
+					sort: "newest",
+				});
+				expect(result).toEqual([]);
+			});
+		});
+
+		describe("searchWorks", () => {
+			it("正常に作品検索が実行される", async () => {
+				const mockWorks = [
+					{
+						id: "work-search-1",
+						productId: "RJ123456",
+						title: "涼花みなせ 声優作品1",
+						circle: "テストサークル",
+						author: ["涼花みなせ"],
+						description: "涼花みなせさんが出演する音声作品",
+						category: "SOU" as const,
+						workUrl: "https://www.dlsite.com/maniax/work/=/product_id/RJ123456.html",
+						thumbnailUrl: "https://example.com/thumbnail1.jpg",
+						price: { current: 1100, currency: "JPY" },
+						tags: ["涼花みなせ", "音声作品"],
+						sampleImages: [],
+						isExclusive: false,
+						lastFetchedAt: "2023-01-01T00:00:00Z",
+						createdAt: "2023-01-01T00:00:00Z",
+						updatedAt: "2023-01-01T00:00:00Z",
+						displayPrice: "1,100円",
+						relativeUrl: "/maniax/work/=/product_id/RJ123456.html",
+						createdAtISO: "2023-01-01T00:00:00Z",
+						lastFetchedAtISO: "2023-01-01T00:00:00Z",
+						updatedAtISO: "2023-01-01T00:00:00Z",
+					},
+					{
+						id: "work-search-2",
+						productId: "RJ789012",
+						title: "涼花みなせ ASMR作品",
+						circle: "ASMRサークル",
+						author: ["涼花みなせ"],
+						description: "リラックスできるASMR作品",
+						category: "SOU" as const,
+						workUrl: "https://www.dlsite.com/maniax/work/=/product_id/RJ789012.html",
+						thumbnailUrl: "https://example.com/thumbnail2.jpg",
+						price: { current: 880, currency: "JPY" },
+						tags: ["ASMR", "涼花みなせ"],
+						sampleImages: [],
+						isExclusive: false,
+						lastFetchedAt: "2023-01-02T00:00:00Z",
+						createdAt: "2023-01-02T00:00:00Z",
+						updatedAt: "2023-01-02T00:00:00Z",
+						displayPrice: "880円",
+						relativeUrl: "/maniax/work/=/product_id/RJ789012.html",
+						createdAtISO: "2023-01-02T00:00:00Z",
+						lastFetchedAtISO: "2023-01-02T00:00:00Z",
+						updatedAtISO: "2023-01-02T00:00:00Z",
+					},
+				];
+
+				const mockResult = {
+					works: mockWorks,
+					hasMore: true,
+					totalCount: 15,
+				};
+
+				(getWorks as any).mockResolvedValue(mockResult);
+
+				const result = await searchWorks("涼花みなせ", 6);
+
+				expect(getWorks).toHaveBeenCalledWith({
+					page: 1,
+					limit: 6,
+					search: "涼花みなせ",
+					sort: "newest",
+				});
+				expect(result).toEqual(mockWorks);
+				expect(result).toHaveLength(2);
+				expect(result[0].author).toContain("涼花みなせ");
+			});
+
+			it("デフォルトのlimit値で動作する", async () => {
+				const mockResult = {
+					works: [],
+					hasMore: false,
+					totalCount: 0,
+				};
+
+				(getWorks as any).mockResolvedValue(mockResult);
+
+				await searchWorks("テスト");
+
+				expect(getWorks).toHaveBeenCalledWith({
+					page: 1,
+					limit: 6,
+					search: "テスト",
+					sort: "newest",
+				});
+			});
+
+			it("カスタムlimit値で動作する", async () => {
+				const mockResult = {
+					works: [],
+					hasMore: false,
+					totalCount: 0,
+				};
+
+				(getWorks as any).mockResolvedValue(mockResult);
+
+				await searchWorks("テスト", 12);
+
+				expect(getWorks).toHaveBeenCalledWith({
+					page: 1,
+					limit: 12,
+					search: "テスト",
+					sort: "newest",
+				});
+			});
+
+			it("検索結果が0件の場合でも正常に動作する", async () => {
+				const mockResult = {
+					works: [],
+					hasMore: false,
+					totalCount: 0,
+				};
+
+				(getWorks as any).mockResolvedValue(mockResult);
+
+				const result = await searchWorks("存在しない作品");
+
+				expect(result).toEqual([]);
+				expect(result).toHaveLength(0);
+			});
+
+			it("エラーが発生した場合空配列を返す", async () => {
+				const error = new Error("DLsite検索エラー");
+				(getWorks as any).mockRejectedValue(error);
+
+				const result = await searchWorks("エラーテスト");
+
+				expect(result).toEqual([]);
+				expect(mockConsole.log).toHaveBeenCalledWith(
+					expect.stringContaining('"作品検索でエラーが発生"'),
+				);
+			});
+
+			it("特殊文字を含む検索クエリでも処理される", async () => {
+				const mockResult = {
+					works: [],
+					hasMore: false,
+					totalCount: 0,
+				};
+
+				(getWorks as any).mockResolvedValue(mockResult);
+
+				const result = await searchWorks("検索&テスト=値+スペース");
+
+				expect(getWorks).toHaveBeenCalledWith({
+					page: 1,
+					limit: 6,
+					search: "検索&テスト=値+スペース",
+					sort: "newest",
+				});
+				expect(result).toEqual([]);
+			});
+		});
+
+		describe("searchAudioButtons", () => {
+			it("正常に音声ボタン検索が実行される", async () => {
+				const mockAudioButtons = [
+					{
+						id: "audio-search-1",
+						title: "涼花みなせ 挨拶ボタン",
+						description: "涼花みなせさんの挨拶音声",
+						category: "voice" as const,
+						tags: ["挨拶", "涼花みなせ"],
+						sourceVideoId: "search-video-1",
+						sourceVideoTitle: "涼花みなせ 配信",
+						sourceVideoThumbnailUrl: "https://img.youtube.com/vi/search-video-1/maxresdefault.jpg",
+						startTime: 10,
+						endTime: 25,
+						createdBy: "user-search-1",
+						createdByName: "検索ユーザー1",
+						isPublic: true,
+						playCount: 15,
+						likeCount: 5,
+						createdAt: "2023-01-01T00:00:00Z",
+						updatedAt: "2023-01-01T00:00:00Z",
+						durationText: "15秒",
+						relativeTimeText: "1日前",
+					},
+					{
+						id: "audio-search-2",
+						title: "涼花みなせ 応援ボタン",
+						description: "元気な応援メッセージ",
+						category: "voice" as const,
+						tags: ["応援", "涼花みなせ"],
+						sourceVideoId: "search-video-2",
+						sourceVideoTitle: "涼花みなせ 雑談",
+						sourceVideoThumbnailUrl: "https://img.youtube.com/vi/search-video-2/maxresdefault.jpg",
+						startTime: 30,
+						endTime: 40,
+						createdBy: "user-search-2",
+						createdByName: "検索ユーザー2",
+						isPublic: true,
+						playCount: 25,
+						likeCount: 8,
+						createdAt: "2023-01-02T00:00:00Z",
+						updatedAt: "2023-01-02T00:00:00Z",
+						durationText: "10秒",
+						relativeTimeText: "2日前",
+					},
+				];
+
+				const mockResult = {
+					success: true,
+					data: {
+						audioButtons: mockAudioButtons,
+						hasMore: true,
+					},
+				};
+
+				(getAudioButtons as any).mockResolvedValue(mockResult);
+
+				const params = {
+					searchText: "涼花みなせ",
+					limit: 6,
+					onlyPublic: true,
+					sortBy: "newest" as const,
+				};
+
+				const result = await searchAudioButtons(params);
+
+				expect(getAudioButtons).toHaveBeenCalledWith(params);
+				expect(result.audioButtons).toEqual(mockAudioButtons);
+				expect(result.totalCount).toBe(2);
+				expect(result.hasMore).toBe(true);
+				expect(result.audioButtons).toHaveLength(2);
+				expect(result.audioButtons[0].title).toContain("涼花みなせ");
+			});
+
+			it("検索条件のパラメータが正しく渡される", async () => {
+				const mockResult = {
+					success: true,
+					data: {
+						audioButtons: [],
+						hasMore: false,
+					},
+				};
+
+				(getAudioButtons as any).mockResolvedValue(mockResult);
+
+				const params = {
+					searchText: "テスト検索",
+					limit: 12,
+					onlyPublic: true,
+					sortBy: "popular" as const,
+				};
+
+				await searchAudioButtons(params);
+
+				expect(getAudioButtons).toHaveBeenCalledWith({
+					searchText: "テスト検索",
+					limit: 12,
+					onlyPublic: true,
+					sortBy: "popular",
+				});
+			});
+
+			it("検索結果が0件の場合でも正常に動作する", async () => {
+				const mockResult = {
+					success: true,
+					data: {
+						audioButtons: [],
+						hasMore: false,
+					},
+				};
+
+				(getAudioButtons as any).mockResolvedValue(mockResult);
+
+				const params = {
+					searchText: "存在しない音声",
+					limit: 6,
+					onlyPublic: true,
+					sortBy: "newest" as const,
+				};
+
+				const result = await searchAudioButtons(params);
+
+				expect(result.audioButtons).toEqual([]);
+				expect(result.totalCount).toBe(0);
+				expect(result.hasMore).toBe(false);
+			});
+
+			it("getAudioButtons が失敗した場合のエラーハンドリング", async () => {
+				const mockResult = {
+					success: false,
+					error: "音声ボタン取得エラー",
+				};
+
+				(getAudioButtons as any).mockResolvedValue(mockResult);
+
+				const params = {
+					searchText: "エラーテスト",
+					limit: 6,
+					onlyPublic: true,
+					sortBy: "newest" as const,
+				};
+
+				const result = await searchAudioButtons(params);
+
+				expect(result.audioButtons).toEqual([]);
+				expect(result.totalCount).toBe(0);
+				expect(result.hasMore).toBe(false);
+			});
+
+			it("例外が発生した場合空の結果を返す", async () => {
+				const error = new Error("音声ボタン検索エラー");
+				(getAudioButtons as any).mockRejectedValue(error);
+
+				const params = {
+					searchText: "例外テスト",
+					limit: 6,
+					onlyPublic: true,
+					sortBy: "newest" as const,
+				};
+
+				const result = await searchAudioButtons(params);
+
+				expect(result.audioButtons).toEqual([]);
+				expect(result.totalCount).toBe(0);
+				expect(result.hasMore).toBe(false);
+				expect(mockConsole.log).toHaveBeenCalledWith(
+					expect.stringContaining('"音声ボタン検索でエラーが発生"'),
+				);
+			});
+
+			it("異なるソート順序で検索される", async () => {
+				const mockResult = {
+					success: true,
+					data: {
+						audioButtons: [],
+						hasMore: false,
+					},
+				};
+
+				(getAudioButtons as any).mockResolvedValue(mockResult);
+
+				// 人気順での検索
+				await searchAudioButtons({
+					searchText: "テスト",
+					limit: 6,
+					onlyPublic: true,
+					sortBy: "popular",
+				});
+
+				expect(getAudioButtons).toHaveBeenCalledWith({
+					searchText: "テスト",
+					limit: 6,
+					onlyPublic: true,
+					sortBy: "popular",
+				});
+
+				// 再生数順での検索
+				await searchAudioButtons({
+					searchText: "テスト",
+					limit: 6,
+					onlyPublic: true,
+					sortBy: "mostPlayed",
+				});
+
+				expect(getAudioButtons).toHaveBeenCalledWith({
+					searchText: "テスト",
+					limit: 6,
+					onlyPublic: true,
+					sortBy: "mostPlayed",
+				});
+			});
+
+			it("非公開ボタンも含む検索が実行される", async () => {
+				const mockResult = {
+					success: true,
+					data: {
+						audioButtons: [],
+						hasMore: false,
+					},
+				};
+
+				(getAudioButtons as any).mockResolvedValue(mockResult);
+
+				const params = {
+					searchText: "全ボタン検索",
+					limit: 6,
+					onlyPublic: false, // 非公開も含む
+					sortBy: "newest" as const,
+				};
+
+				await searchAudioButtons(params);
+
+				expect(getAudioButtons).toHaveBeenCalledWith({
+					searchText: "全ボタン検索",
+					limit: 6,
+					onlyPublic: false,
+					sortBy: "newest",
+				});
+			});
 		});
 	});
 });

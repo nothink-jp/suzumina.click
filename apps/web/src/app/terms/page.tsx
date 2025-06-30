@@ -28,7 +28,7 @@ export default function TermsPage() {
 						<div className="bg-blue-50 p-4 rounded-lg">
 							<h4 className="font-semibold text-blue-800 mb-2">重要事項</h4>
 							<ul className="text-sm text-blue-700 space-y-1">
-								<li>• 涼花みなせさんや所属事務所とは一切関係のない非公式サイトです</li>
+								<li>• 涼花みなせさんや関係者様とは一切関係のない非公式サイトです</li>
 								<li>• 非営利のファン活動として運営されています</li>
 								<li>• 個人運営のため、サービスの継続性は保証されません</li>
 							</ul>
@@ -125,7 +125,7 @@ export default function TermsPage() {
 									<li>• 音声・画像の著作権は原著作者に帰属します</li>
 									<li>• 公開されている動画・音声作品への参照のみを行います</li>
 									<li>• 著作物の直接的な複製・配布は行いません</li>
-									<li>• 涼花みなせさんの二次創作ガイドラインに従います</li>
+									<li>• 涼花みなせさんおよび関係者様の二次創作ガイドラインに従います</li>
 								</ul>
 							</div>
 							<div className="bg-green-50 p-4 rounded-lg">
