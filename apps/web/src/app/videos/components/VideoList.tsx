@@ -117,12 +117,7 @@ export default function VideoList({
 			{/* 1. 検索・フィルターエリア */}
 			<SearchAndFilterPanel
 				searchValue={searchQuery}
-				onSearchChange={(value) => {
-					// FID改善: 入力遅延で重い処理を避ける
-					startTransition(() => {
-						setSearchQuery(value);
-					});
-				}}
+				onSearchChange={setSearchQuery}
 				onSearch={handleSearch}
 				onReset={handleReset}
 				searchPlaceholder="動画タイトルで検索..."
