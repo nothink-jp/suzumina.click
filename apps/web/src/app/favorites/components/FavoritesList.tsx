@@ -2,10 +2,7 @@
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
-import {
-	ListPageEmptyState,
-	ListPageGrid,
-} from "@suzumina.click/ui/components/custom/list-page-layout";
+import { ListPageEmptyState } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Heart, Music } from "lucide-react";
 import Link from "next/link";
@@ -62,17 +59,18 @@ export default function FavoritesList({
 				]}
 			/>
 
-			<ListPageGrid>
+			<div className="flex flex-wrap gap-3 items-start">
 				{audioButtons.map((audioButton) => (
-					<div key={audioButton.id} className="min-h-card">
-						<AudioButtonWithFavoriteClient
-							audioButton={audioButton}
-							className="w-full h-full"
-							initialIsFavorited={true}
-						/>
-					</div>
+					<AudioButtonWithFavoriteClient
+						key={audioButton.id}
+						audioButton={audioButton}
+						showFavorite={true}
+						maxTitleLength={50}
+						className="shadow-sm hover:shadow-md transition-all duration-200"
+						initialIsFavorited={true}
+					/>
 				))}
-			</ListPageGrid>
+			</div>
 		</div>
 	);
 }
