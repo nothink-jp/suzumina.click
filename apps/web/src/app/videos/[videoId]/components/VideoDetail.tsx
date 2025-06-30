@@ -286,7 +286,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 						) : audioButtons.length > 0 ? (
 							<div className="space-y-4">
 								{/* 音声ボタン一覧 */}
-								<div className="grid grid-cols-1 gap-3">
+								<div className="flex flex-wrap gap-3 items-start">
 									{audioButtons.map((audioButton) => (
 										<SimpleAudioButton
 											key={audioButton.id}
@@ -294,7 +294,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 											onPlay={() => {
 												// TODO: アナリティクス・再生統計の更新
 											}}
-											className="w-full"
+											maxTitleLength={50}
 										/>
 									))}
 								</div>
