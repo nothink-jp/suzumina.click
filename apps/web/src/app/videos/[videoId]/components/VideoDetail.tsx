@@ -3,7 +3,6 @@
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types/src/audio-button";
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { canCreateAudioButton } from "@suzumina.click/shared-types/src/video";
-import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card } from "@suzumina.click/ui/components/ui/card";
@@ -11,6 +10,7 @@ import { Calendar, Clock, Eye, Hash, PlayCircle, Plus, Radio, Share2, Video } fr
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { getAudioButtons } from "@/app/buttons/actions";
+import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
 import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface VideoDetailProps {
@@ -288,13 +288,14 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 								{/* 音声ボタン一覧 */}
 								<div className="flex flex-wrap gap-3 items-start">
 									{audioButtons.map((audioButton) => (
-										<SimpleAudioButton
+										<AudioButtonWithFavoriteClient
 											key={audioButton.id}
 											audioButton={audioButton}
 											onPlay={() => {
 												// TODO: アナリティクス・再生統計の更新
 											}}
 											maxTitleLength={50}
+											className="shadow-sm hover:shadow-md transition-all duration-200"
 										/>
 									))}
 								</div>

@@ -1,5 +1,7 @@
+"use client";
+
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
-import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
+import { AudioButtonWithFavoriteClient } from "./AudioButtonWithFavoriteClient";
 
 interface FeaturedAudioButtonsCarouselProps {
 	audioButtons: FrontendAudioButtonData[];
@@ -15,7 +17,7 @@ export function FeaturedAudioButtonsCarousel({ audioButtons }: FeaturedAudioButt
 	return (
 		<div className="flex flex-wrap gap-3 items-start">
 			{audioButtons.map((audioButton) => (
-				<SimpleAudioButton
+				<AudioButtonWithFavoriteClient
 					key={audioButton.id}
 					audioButton={audioButton}
 					className="shadow-sm hover:shadow-md transition-all duration-200"

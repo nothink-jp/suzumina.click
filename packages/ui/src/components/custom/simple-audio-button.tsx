@@ -3,7 +3,20 @@
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { Popover, PopoverContent, PopoverTrigger } from "@suzumina.click/ui/components/ui/popover";
 import { cn } from "@suzumina.click/ui/lib/utils";
-import { ExternalLink, Heart, Info, Loader2, Pause, Play, Trash2 } from "lucide-react";
+import {
+	Calendar,
+	Clock,
+	ExternalLink,
+	Heart,
+	Info,
+	Loader2,
+	Pause,
+	Play,
+	Tag,
+	Trash2,
+	User,
+	Video,
+} from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { AudioOnlyPlayer } from "./audio-only-player";
 
@@ -145,24 +158,156 @@ export function SimpleAudioButton({
 						<Info className="h-4 w-4" />
 					</button>
 				</PopoverTrigger>
-				<PopoverContent className="w-64 p-2" align="end">
-					<div className="space-y-1">
-						{/* アクションボタン */}
-						{onFavoriteToggle && (
-							<button
-								type="button"
-								onClick={() => {
-									onFavoriteToggle();
-									setShowInfo(false);
-								}}
-								className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent"
-							>
-								<Heart className={cn("h-4 w-4", isFavorite && "fill-current text-red-500")} />
-								<span>{isFavorite ? "お気に入りから削除" : "お気に入りに追加"}</span>
-							</button>
+				<PopoverContent className="w-80 p-0" align="end">
+					<div className="p-4 space-y-4">
+						{/* ヘッダー: タイトル */}
+						<div>
+							<h3 className="font-semibold text-lg text-foreground mb-2 leading-tight">
+								{audioButton.title}
+							</h3>
+							{audioButton.description && (
+								<p className="text-sm text-muted-foreground mb-3">{audioButton.description}</p>
+							)}
+						</div>
+
+						{/* タグ */}
+						{audioButton.tags && audioButton.tags.length > 0 && (
+							<div>
+								<h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-1">
+									<Tag className="h-4 w-4" />
+									タグ
+								</h4>
+								<div className="flex flex-wrap gap-1">
+									{audioButton.tags.map((tag) => (
+										<span
+											key={tag}
+											className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-minase-100 text-minase-700 border border-minase-200"
+										>
+											{tag}
+										</span>
+									))}
+								</div>
+							</div>
 						)}
 
-						{/* 詳細ページへのリンク */}
+						{/* 統計情報 */}
+						<div className="grid grid-cols-2 gap-4">
+							<div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
+								<Play className="h-5 w-5 text-minase-600" />
+								<div>
+									<div className="text-sm font-medium text-foreground">再生回数</div>
+									<div className="text-lg font-bold text-minase-600">
+										{audioButton.playCount.toLocaleString()}回
+									</div>
+								</div>
+							</div>
+							<div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
+								<Clock className="h-5 w-5 text-minase-600" />
+								<div>
+									<div className="text-sm font-medium text-foreground">長さ</div>
+									<div className="text-lg font-bold text-minase-600">{Math.floor(duration)}秒</div>
+								</div>
+							</div>
+						</div>
+
+						{/* 作成者・作成日 */}
+						<div className="space-y-2">
+							<div className="flex items-center gap-2 text-sm">
+								<User className="h-4 w-4 text-muted-foreground" />
+								<span className="text-muted-foreground">作成者</span>
+								<span className="font-medium text-minase-600">{audioButton.createdByName}</span>
+							</div>
+							<div className="flex items-center gap-2 text-sm">
+								<Calendar className="h-4 w-4 text-muted-foreground" />
+								<span className="text-muted-foreground">作成日</span>
+								<span className="font-medium">{audioButton.relativeTimeText}</span>
+							</div>
+						</div>
+
+						{/* 元動画 */}
+						<div>
+							<div className="flex items-center gap-2 text-sm mb-2">
+								<Video className="h-4 w-4 text-muted-foreground" />
+								<span className="text-muted-foreground">元動画</span>
+							</div>
+							<p className="font-medium text-sm text-minase-600 leading-tight">
+								{audioButton.sourceVideoTitle || "動画タイトル取得中..."}
+							</p>
+						</div>
+
+						{/* アクションボタン */}
+						<div className="pt-2 border-t border-border space-y-1">
+							{onFavoriteToggle && (
+								<button
+									type="button"
+									onClick={() => {
+										onFavoriteToggle();
+										setShowInfo(false);
+									}}
+									className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+								>
+									<Heart className={cn("h-4 w-4", isFavorite && "fill-current text-red-500")} />
+									<span>{isFavorite ? "お気に入りから削除" : "お気に入りに追加"}</span>
+								</button>
+							)}
+
+							{/* 詳細ページへのリンク */}
+							{showDetailLink && onDetailClick && (
+								<button
+									type="button"
+									onClick={() => {
+										onDetailClick();
+										setShowInfo(false);
+									}}
+									className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+								>
+									<Info className="h-4 w-4" />
+									<span>詳細を見る</span>
+								</button>
+							)}
+
+							<a
+								href={`/videos/${audioButton.sourceVideoId}`}
+								className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+								onClick={() => setShowInfo(false)}
+							>
+								<Video className="h-4 w-4" />
+								<span>動画詳細ページ</span>
+							</a>
+
+							<a
+								href={youtubeUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+								onClick={() => setShowInfo(false)}
+							>
+								<ExternalLink className="h-4 w-4" />
+								<span>YouTubeで開く</span>
+							</a>
+
+							{/* 削除ボタン */}
+							{canDelete && onDelete && (
+								<>
+									<div className="my-2 h-px bg-border" />
+									<button
+										type="button"
+										onClick={() => {
+											if (window.confirm("この音声ボタンを削除しますか？")) {
+												onDelete();
+												setShowInfo(false);
+											}
+										}}
+										className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+									>
+										<Trash2 className="h-4 w-4" />
+										<span>削除</span>
+									</button>
+								</>
+							)}
+						</div>
+
+						{/* 詳細を見るボタン（v0モック準拠） */}
 						{showDetailLink && onDetailClick && (
 							<button
 								type="button"
@@ -170,91 +315,11 @@ export function SimpleAudioButton({
 									onDetailClick();
 									setShowInfo(false);
 								}}
-								className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent"
+								className="w-full mt-4 px-4 py-2 border border-minase-300 text-minase-600 rounded-md hover:bg-minase-50 transition-colors font-medium"
 							>
-								<Info className="h-4 w-4" />
-								<span>詳細を見る</span>
+								詳細を見る
 							</button>
 						)}
-
-						{/* 削除ボタン */}
-						{canDelete && onDelete && (
-							<>
-								<div className="my-1 h-px bg-border" />
-								<button
-									type="button"
-									onClick={() => {
-										if (window.confirm("この音声ボタンを削除しますか？")) {
-											onDelete();
-											setShowInfo(false);
-										}
-									}}
-									className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
-								>
-									<Trash2 className="h-4 w-4" />
-									<span>削除</span>
-								</button>
-							</>
-						)}
-
-						{/* 情報セクション */}
-						<div className="my-1 h-px bg-border" />
-
-						<div className="px-3 py-2">
-							<div className="space-y-2 text-xs">
-								<div>
-									<span className="text-muted-foreground">元動画:</span>
-									<p className="font-medium truncate">{audioButton.sourceVideoTitle}</p>
-								</div>
-								<div className="flex gap-4">
-									<div>
-										<span className="text-muted-foreground">長さ:</span>
-										<span className="ml-1 font-medium">{Math.floor(duration)}秒</span>
-									</div>
-									<div>
-										<span className="text-muted-foreground">再生:</span>
-										<span className="ml-1 font-medium">
-											{audioButton.playCount.toLocaleString()}回
-										</span>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<div className="my-1 h-px bg-border" />
-
-						{/* 外部リンク */}
-						<a
-							href={`/videos/${audioButton.sourceVideoId}`}
-							className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent"
-						>
-							<svg
-								className="h-4 w-4"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-								aria-label="リンク"
-							>
-								<title>リンク</title>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M13 7l5 5m0 0l-5 5m5-5H6"
-								/>
-							</svg>
-							<span>動画詳細ページ</span>
-						</a>
-
-						<a
-							href={youtubeUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent"
-						>
-							<ExternalLink className="h-4 w-4" />
-							<span>YouTubeで開く</span>
-						</a>
 					</div>
 				</PopoverContent>
 			</Popover>
