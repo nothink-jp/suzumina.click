@@ -1,181 +1,226 @@
 import { describe, expect, it } from "vitest";
+import {
+	filterBySearch,
+	filterByStatus,
+	formatCategory,
+	formatDate,
+	formatNumber,
+	formatPriority,
+	formatRole,
+	formatStatus,
+	sortByField,
+} from "@/lib/data-helpers";
 
-// Test utility functions that might be used in the admin app
-describe("Data Helpers", () => {
-	describe("formatTime", () => {
-		const formatTime = (seconds: number): string => {
-			const mins = Math.floor(seconds / 60);
-			const secs = Math.floor(seconds % 60);
-			return `${mins}:${secs.toString().padStart(2, "0")}`;
-		};
-
-		it("should format seconds correctly", () => {
-			expect(formatTime(0)).toBe("0:00");
-			expect(formatTime(30)).toBe("0:30");
-			expect(formatTime(60)).toBe("1:00");
-			expect(formatTime(90)).toBe("1:30");
-			expect(formatTime(125)).toBe("2:05");
-			expect(formatTime(3661)).toBe("61:01");
-		});
-
-		it("should handle decimal seconds", () => {
-			expect(formatTime(30.7)).toBe("0:30");
-			expect(formatTime(90.9)).toBe("1:30");
-		});
-	});
-
-	describe("formatPrice", () => {
-		const formatPrice = (price: number): string => {
-			return `¥${price.toLocaleString()}`;
-		};
-
-		it("should format prices correctly", () => {
-			expect(formatPrice(0)).toBe("¥0");
-			expect(formatPrice(100)).toBe("¥100");
-			expect(formatPrice(1000)).toBe("¥1,000");
-			expect(formatPrice(10000)).toBe("¥10,000");
-			expect(formatPrice(1234567)).toBe("¥1,234,567");
-		});
-
-		it("should handle decimal prices", () => {
-			expect(formatPrice(99.99)).toBe("¥99.99");
-			expect(formatPrice(1000.5)).toBe("¥1,000.5");
-		});
-	});
-
-	describe("formatRating", () => {
-		const formatRating = (rating: number): string => {
-			return rating > 0 ? rating.toFixed(1) : "未評価";
-		};
-
-		it("should format ratings correctly", () => {
-			expect(formatRating(0)).toBe("未評価");
-			expect(formatRating(4.5)).toBe("4.5");
-			expect(formatRating(3.0)).toBe("3.0");
-			expect(formatRating(4.789)).toBe("4.8");
-		});
-
-		it("should handle edge cases", () => {
-			expect(formatRating(-1)).toBe("未評価");
-			expect(formatRating(0.0)).toBe("未評価");
-			expect(formatRating(5.0)).toBe("5.0");
-		});
-	});
-
-	describe("validateButtonData", () => {
-		// Helper functions to reduce complexity
-		const isValidTitle = (title: unknown): boolean => typeof title === "string" && title.length > 0;
-
-		const isValidTimeRange = (startTime: unknown, endTime: unknown): boolean =>
-			typeof startTime === "number" &&
-			startTime >= 0 &&
-			typeof endTime === "number" &&
-			endTime > startTime;
-
-		const isValidPublicFlag = (isPublic: unknown): boolean => typeof isPublic === "boolean";
-
-		// biome-ignore lint/suspicious/noExplicitAny: Test utility function needs flexible input
-		const validateButtonData = (data: any): boolean => {
-			return (
-				isValidTitle(data.title) &&
-				isValidTimeRange(data.startTime, data.endTime) &&
-				isValidPublicFlag(data.isPublic)
-			);
-		};
-
-		it("should validate correct button data", () => {
-			const validData = {
-				title: "Test Button",
-				startTime: 10,
-				endTime: 30,
-				isPublic: true,
+describe("Data Processing Utilities", () => {
+	describe("formatDate", () => {
+		it("should format Firestore timestamp correctly", () => {
+			const mockTimestamp = {
+				toDate: () => new Date("2024-01-15T10:30:00Z"),
 			};
 
-			expect(validateButtonData(validData)).toBe(true);
+			const result = formatDate(mockTimestamp);
+			expect(result).toMatch(/2024/);
+			expect(result).toMatch(/01/);
+			expect(result).toMatch(/15/);
 		});
 
-		it("should reject invalid button data", () => {
-			expect(validateButtonData({})).toBe(false);
-			expect(validateButtonData({ title: "" })).toBe(false);
-			expect(
-				validateButtonData({
-					title: "Test",
-					startTime: -1,
-					endTime: 30,
-					isPublic: true,
-				}),
-			).toBe(false);
-			expect(
-				validateButtonData({
-					title: "Test",
-					startTime: 30,
-					endTime: 10,
-					isPublic: true,
-				}),
-			).toBe(false);
-			expect(
-				validateButtonData({
-					title: "Test",
-					startTime: 10,
-					endTime: 30,
-					isPublic: "true",
-				}),
-			).toBe(false);
+		it("should format Date object correctly", () => {
+			const date = new Date("2024-01-15T10:30:00Z");
+			const result = formatDate(date);
+
+			expect(result).toMatch(/2024/);
+			expect(result).toMatch(/01/);
+			expect(result).toMatch(/15/);
+		});
+
+		it("should handle null/undefined values", () => {
+			expect(formatDate(null)).toBe("不明");
+			expect(formatDate(undefined)).toBe("不明");
+		});
+
+		it("should handle invalid values", () => {
+			expect(formatDate("invalid")).toBe("不明");
+			expect(formatDate({})).toBe("不明");
 		});
 	});
 
-	describe("sanitizeString", () => {
-		const sanitizeString = (str: string): string => {
-			return str.trim().replace(/\s+/g, " ");
-		};
-
-		it("should sanitize strings correctly", () => {
-			expect(sanitizeString("  test  ")).toBe("test");
-			expect(sanitizeString("test   string")).toBe("test string");
-			expect(sanitizeString("  multiple   spaces   here  ")).toBe("multiple spaces here");
-			expect(sanitizeString("\ttest\nstring\r")).toBe("test string");
+	describe("formatRole", () => {
+		it("should format known roles", () => {
+			expect(formatRole("admin")).toBe("管理者");
+			expect(formatRole("moderator")).toBe("モデレーター");
+			expect(formatRole("member")).toBe("メンバー");
 		});
 
-		it("should handle empty strings", () => {
-			expect(sanitizeString("")).toBe("");
-			expect(sanitizeString("   ")).toBe("");
+		it("should return original value for unknown roles", () => {
+			expect(formatRole("unknown")).toBe("unknown");
+			expect(formatRole("custom")).toBe("custom");
 		});
 	});
 
-	describe("generateStats", () => {
-		// biome-ignore lint/suspicious/noExplicitAny: Test utility function needs flexible input
-		const generateStats = (items: any[]) => {
-			return {
-				total: items.length,
-				public: items.filter((item) => item.isPublic === true).length,
-				private: items.filter((item) => item.isPublic === false).length,
-				totalPlays: items.reduce((sum, item) => sum + (item.playCount || 0), 0),
-			};
-		};
+	describe("formatStatus", () => {
+		it("should format known statuses", () => {
+			expect(formatStatus("new")).toBe("新規");
+			expect(formatStatus("in_progress")).toBe("確認中");
+			expect(formatStatus("resolved")).toBe("対応済み");
+			expect(formatStatus("active")).toBe("アクティブ");
+			expect(formatStatus("inactive")).toBe("非アクティブ");
+		});
 
-		it("should generate correct statistics", () => {
-			const testItems = [
-				{ isPublic: true, playCount: 100 },
-				{ isPublic: false, playCount: 50 },
-				{ isPublic: true, playCount: 75 },
-				{ isPublic: true }, // No playCount
+		it("should return original value for unknown statuses", () => {
+			expect(formatStatus("unknown")).toBe("unknown");
+		});
+	});
+
+	describe("formatPriority", () => {
+		it("should format known priorities", () => {
+			expect(formatPriority("high")).toBe("高");
+			expect(formatPriority("medium")).toBe("中");
+			expect(formatPriority("low")).toBe("低");
+		});
+
+		it("should return original value for unknown priorities", () => {
+			expect(formatPriority("unknown")).toBe("unknown");
+		});
+	});
+
+	describe("formatCategory", () => {
+		it("should format known categories", () => {
+			expect(formatCategory("bug")).toBe("バグ報告");
+			expect(formatCategory("feature")).toBe("機能リクエスト");
+			expect(formatCategory("question")).toBe("質問");
+			expect(formatCategory("other")).toBe("その他");
+		});
+
+		it("should return original value for unknown categories", () => {
+			expect(formatCategory("unknown")).toBe("unknown");
+		});
+	});
+
+	describe("formatNumber", () => {
+		it("should format large numbers with M suffix", () => {
+			expect(formatNumber(1500000)).toBe("1.5M");
+			expect(formatNumber(2000000)).toBe("2.0M");
+		});
+
+		it("should format thousands with K suffix", () => {
+			expect(formatNumber(1500)).toBe("1.5K");
+			expect(formatNumber(2000)).toBe("2.0K");
+		});
+
+		it("should format small numbers with locale string", () => {
+			expect(formatNumber(123)).toBe("123");
+			expect(formatNumber(999)).toBe("999");
+		});
+
+		it("should handle zero and negative numbers", () => {
+			expect(formatNumber(0)).toBe("0");
+			expect(formatNumber(-100)).toBe("-100");
+		});
+	});
+
+	describe("filterBySearch", () => {
+		const testData = [
+			{ id: 1, name: "Alice", email: "alice@example.com", role: "admin" },
+			{ id: 2, name: "Bob", email: "bob@example.com", role: "member" },
+			{ id: 3, name: "Charlie", email: "charlie@test.com", role: "moderator" },
+		];
+
+		it("should filter by single field", () => {
+			const result = filterBySearch(testData, "alice", ["name"]);
+			expect(result).toHaveLength(1);
+			expect(result[0]?.name).toBe("Alice");
+		});
+
+		it("should filter by multiple fields", () => {
+			const result = filterBySearch(testData, "example", ["name", "email"]);
+			expect(result).toHaveLength(2);
+		});
+
+		it("should be case insensitive", () => {
+			const result = filterBySearch(testData, "ALICE", ["name"]);
+			expect(result).toHaveLength(1);
+			expect(result[0]?.name).toBe("Alice");
+		});
+
+		it("should return all items for empty search", () => {
+			const result = filterBySearch(testData, "", ["name"]);
+			expect(result).toHaveLength(testData.length);
+		});
+
+		it("should return empty array for no matches", () => {
+			const result = filterBySearch(testData, "nonexistent", ["name"]);
+			expect(result).toHaveLength(0);
+		});
+	});
+
+	describe("filterByStatus", () => {
+		const testData = [
+			{ id: 1, status: "active" },
+			{ id: 2, status: "inactive" },
+			{ id: 3, status: "active" },
+		];
+
+		it("should filter by specific status", () => {
+			const result = filterByStatus(testData, "active");
+			expect(result).toHaveLength(2);
+		});
+
+		it("should return all items for 'all' status", () => {
+			const result = filterByStatus(testData, "all");
+			expect(result).toHaveLength(testData.length);
+		});
+
+		it("should return all items for empty status", () => {
+			const result = filterByStatus(testData, "");
+			expect(result).toHaveLength(testData.length);
+		});
+	});
+
+	describe("sortByField", () => {
+		const testData = [
+			{ id: 1, name: "Charlie", count: 100 },
+			{ id: 2, name: "Alice", count: 300 },
+			{ id: 3, name: "Bob", count: 200 },
+		];
+
+		it("should sort by field in descending order by default", () => {
+			const result = sortByField(testData, "count");
+			expect(result[0]?.count).toBe(300);
+			expect(result[1]?.count).toBe(200);
+			expect(result[2]?.count).toBe(100);
+		});
+
+		it("should sort by field in ascending order", () => {
+			const result = sortByField(testData, "count", "asc");
+			expect(result[0]?.count).toBe(100);
+			expect(result[1]?.count).toBe(200);
+			expect(result[2]?.count).toBe(300);
+		});
+
+		it("should sort string fields alphabetically", () => {
+			const result = sortByField(testData, "name", "asc");
+			expect(result[0]?.name).toBe("Alice");
+			expect(result[1]?.name).toBe("Bob");
+			expect(result[2]?.name).toBe("Charlie");
+		});
+
+		it("should handle timestamp objects", () => {
+			const timestampData = [
+				{ id: 1, createdAt: { toDate: () => new Date("2024-01-01") } },
+				{ id: 2, createdAt: { toDate: () => new Date("2024-01-03") } },
+				{ id: 3, createdAt: { toDate: () => new Date("2024-01-02") } },
 			];
 
-			const stats = generateStats(testItems);
-
-			expect(stats.total).toBe(4);
-			expect(stats.public).toBe(3);
-			expect(stats.private).toBe(1);
-			expect(stats.totalPlays).toBe(225);
+			const result = sortByField(timestampData, "createdAt", "asc");
+			expect(result[0]?.id).toBe(1);
+			expect(result[1]?.id).toBe(3);
+			expect(result[2]?.id).toBe(2);
 		});
 
-		it("should handle empty arrays", () => {
-			const stats = generateStats([]);
-
-			expect(stats.total).toBe(0);
-			expect(stats.public).toBe(0);
-			expect(stats.private).toBe(0);
-			expect(stats.totalPlays).toBe(0);
+		it("should not mutate original array", () => {
+			const original = [...testData];
+			sortByField(testData, "count");
+			expect(testData).toEqual(original);
 		});
 	});
 });
