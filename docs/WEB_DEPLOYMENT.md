@@ -82,12 +82,11 @@ gcloud builds submit --config=apps/web/cloudbuild.yaml \
 ### 設定変更
 
 環境変数・設定変更はTerraformで管理されています。  
-詳細は `docs/TERRAFORM_GUIDE.md` を参照してください。
+詳細は `docs/INFRASTRUCTURE_ARCHITECTURE.md` を参照してください。
 
 ## 📚 関連ドキュメント
 
-- `docs/TERRAFORM_GUIDE.md` - インフラ設定・変更
-- `docs/AUTH_DEPLOYMENT_GUIDE.md` - Discord認証設定
+- `docs/INFRASTRUCTURE_ARCHITECTURE.md` - インフラ設定・変更・Discord認証設定
 - `docs/DEPLOYMENT_STRATEGY.md` - デプロイ戦略
 - GitHub Actions - `.github/workflows/` でCI/CD設定確認
 

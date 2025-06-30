@@ -84,7 +84,7 @@ packages/shared-types/src/*.test.ts     # 型・ユーティリティテスト
 
 # 🏗️ インフラ
 terraform/                              # Terraform定義
-terraform/AUTH_DEPLOYMENT_GUIDE.md      # Discord認証デプロイ
+docs/INFRASTRUCTURE_ARCHITECTURE.md     # インフラ・認証設定
 ```
 
 ## 🎯 開発フロー

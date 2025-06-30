@@ -257,4 +257,4 @@ suzumina.clickプロジェクトの変更履歴
 
 - [プロジェクト概要](../CLAUDE.md)
 - [タスク管理](./TODO.md)
-- [開発ポリシー](./POLICY.md)
+- [開発ガイドライン](./DEVELOPMENT.md)

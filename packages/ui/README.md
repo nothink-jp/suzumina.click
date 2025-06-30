@@ -191,6 +191,8 @@ pnpm dlx shadcn@latest add <component>
 
 ## 📚 関連ドキュメント
 
-- [プロジェクト概要](/CLAUDE.md)
-- [開発ガイド](/docs/DEVELOPMENT.md)
-- [クイックリファレンス](/docs/QUICK-REFERENCE.md)
+- **[プロジェクト概要](../../README.md)** - メインプロジェクト情報
+- **[詳細仕様](../../docs/README.md)** - 包括的プロジェクトドキュメント
+- **[開発ガイド](../../docs/DEVELOPMENT.md)** - 設計原則・コーディング規約
+- **[クイックリファレンス](../../docs/QUICK_REFERENCE.md)** - よく使うコマンド・即座参照
+- **[CLAUDE.md](../../CLAUDE.md)** - リポジトリ指示・開発状況

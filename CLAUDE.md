@@ -2,6 +2,9 @@
 
 声優「涼花みなせ」のファンサイト - ユーザーが作成する音声ボタンの共有とDLsite作品情報を表示
 
+> **📋 プロジェクト情報**: 基本情報・クイックスタートは [README.md](./README.md) をご覧ください。  
+> このファイルは開発者向けの詳細仕様・リポジトリ指示を含んでいます。
+
 ## 🎯 プロジェクト概要
 
 suzumina.clickは、声優「涼花みなせ」ファンコミュニティのためのWebプラットフォームです。YouTube動画の音声参照機能、DLsite作品情報閲覧、お気に入りシステム、そして包括的な管理者機能を提供します。
@@ -500,8 +503,7 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 
 - `docs/DEPLOYMENT_STRATEGY.md` - デプロイ戦略
 - `docs/WEB_DEPLOYMENT.md` - Web App デプロイ手順
-- `docs/AUTH_DEPLOYMENT_GUIDE.md` - Discord認証セットアップ
-- `docs/TERRAFORM_GUIDE.md` - インフラ構築ガイド
+- `docs/INFRASTRUCTURE_ARCHITECTURE.md` - 包括的インフラ構築・運用ガイド
 
 ### プロジェクト管理
 

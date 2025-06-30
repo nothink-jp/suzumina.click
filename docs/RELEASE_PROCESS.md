@@ -365,7 +365,7 @@ git push origin v1.1.1
 
 - [デプロイ戦略 (DEPLOYMENT_STRATEGY.md)](./DEPLOYMENT_STRATEGY.md)
 - [インフラアーキテクチャ (INFRASTRUCTURE_ARCHITECTURE.md)](./INFRASTRUCTURE_ARCHITECTURE.md)
-- [開発ポリシー (POLICY.md)](./POLICY.md)
+- [開発ガイドライン (DEVELOPMENT.md)](./DEVELOPMENT.md)
 - [変更履歴 (CHANGELOG.md)](./CHANGELOG.md)
 
 このリリースプロセスにより、個人開発でも企業レベルの品質担保と安全なリリース運用を実現します。

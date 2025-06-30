@@ -113,9 +113,9 @@ gcloud run services update-traffic suzumina-click-web \
 
 ## 📚 関連ドキュメント
 
-- `docs/WEB_DEPLOYMENT.md` - 運用コマンド
-- `docs/TERRAFORM_GUIDE.md` - インフラ管理
-- `docs/AUTH_DEPLOYMENT_GUIDE.md` - 認証設定
+- `docs/INFRASTRUCTURE_ARCHITECTURE.md` - 包括的インフラ管理・認証設定
+- `docs/WEB_DEPLOYMENT.md` - Cloud Run運用コマンド
+- `docs/GITHUB_ACTIONS_DEPLOYMENT.md` - CI/CDパイプライン詳細
 - `.github/workflows/` - CI/CD設定
 
 運用の詳細は各専門ドキュメントを参照してください。

@@ -292,6 +292,36 @@ production = {
 
 このインフラストラクチャは、**個人開発・個人運用に最適化**された、**コスト効率と運用性を両立**した設計となっています。純粋なGCPサービスで構成され、**自動化、品質担保、セキュリティ**を重視した堅牢な基盤を提供します。
 
+## ⚙️ 音声ボタン機能詳細設定
+
+### **Cloud Storage設定（音声ファイル）**
+
+| リソース | 説明 | 設定値 |
+|---------|------|--------|
+| **バケット名** | `${project_id}-audio-files` | `suzumina-click-audio-files` |
+| **ライフサイクル** | 1年後自動削除 | 365日 |
+| **ストレージクラス** | 30日→Nearline, 90日→Coldline | コスト最適化 |
+| **CORS** | Web再生用クロスオリジン設定 | `*.suzumina.click` |
+
+### **セキュリティ・権限設定**
+
+| サービスアカウント | 用途 | 権限 |
+|------------------|------|------|
+| **audio-processor** | Cloud Run Jobs実行 | Storage Admin, Firestore User |
+| **web-app-audio** | Web App音声アクセス | Storage Object Viewer |
+| **task-enqueuer** | タスク送信 | Cloud Tasks Enqueuer, Run Invoker |
+
+### **コスト最適化戦略**
+
+**Cloud Storage:**
+- **ライフサイクル管理**: 30日後Nearline（50%削減）→90日後Coldline（75%削減）
+- **自動削除**: 1年後完全削除
+- **リージョン**: us-central1（標準料金）
+
+**Next.js Server Actions:**
+- **ユーザーアップロード**: ブラウザ直接アップロード（サーバー処理最小化）
+- **ファイルサイズ制限**: 10MB（音声ファイル適正サイズ）
+
 ## 🔧 環境設定・認証ガイド
 
 ### **Application Default Credentials (ADC) 設定**
@@ -315,6 +345,68 @@ gcloud config get-value project
 **本番環境:**
 - Cloud Run/Cloud Functions: サービスアカウント自動認証
 - GitHub Actions: Workload Identity Federation による安全認証
+
+### **Discord OAuth設定**
+
+#### Discord OAuth Application作成
+
+1. [Discord Developer Portal](https://discord.com/developers/applications) にアクセス
+2. 「New Application」をクリックしてアプリケーション作成
+3. OAuth2 > General から以下を取得:
+   - **Client ID** (`discord_client_id`)
+   - **Client Secret** (`discord_client_secret`)
+
+#### Redirect URIs設定
+
+OAuth2 > General > Redirects で以下を追加:
+
+```
+# 開発環境
+http://localhost:3000/api/auth/callback/discord
+
+# 本番環境
+https://suzumina.click/api/auth/callback/discord
+```
+
+#### Discord Bot Token取得（オプション）
+
+高度なGuild管理機能を使用する場合:
+
+1. Discord Developer Portal > Bot
+2. 「Reset Token」で新しいトークンを生成
+3. 必要な権限を設定（Guild読み取り権限）
+
+#### NextAuth Secret生成
+
+```bash
+# ランダムなシークレット生成
+openssl rand -base64 32
+```
+
+### **terraform.tfvars設定**
+
+```bash
+# terraform.tfvarsファイル作成
+cp terraform.tfvars.example terraform.tfvars
+
+# セキュリティ設定
+chmod 600 terraform.tfvars
+
+# 基本設定
+echo 'gcp_project_id = "your-gcp-project-id"' >> terraform.tfvars
+echo 'project_number = "123456789012"' >> terraform.tfvars
+echo 'region = "asia-northeast1"' >> terraform.tfvars
+echo 'environment = "staging"' >> terraform.tfvars
+
+# Discord OAuth設定（必須）
+echo 'discord_client_id = "1357640432196255874"' >> terraform.tfvars      # あなたのClient ID
+echo 'discord_client_secret = "your-secret-here"' >> terraform.tfvars     # あなたのClient Secret
+echo 'nextauth_secret = "your-generated-secret"' >> terraform.tfvars      # 上記で生成したシークレット
+
+# オプション設定
+echo 'discord_bot_token = "MTxxxxx.xxxxx.xxxxxxxxxxxx"' >> terraform.tfvars  # Bot Token（オプション）
+echo 'suzumina_guild_id = "959095494456537158"' >> terraform.tfvars          # すずみなふぁみりー（通常変更不要）
+```
 
 ### **環境変数設定**
 
@@ -362,9 +454,20 @@ service cloud.firestore {
 **Cloud Storage IAM:**
 - Service Account: objectAdmin (デプロイ・アーティファクト管理用)
 
-### **本番環境確認コマンド**
+### **運用・監視コマンド**
 
 ```bash
+# 認証関連の確認
+# Secret Manager確認
+gcloud secrets versions access latest --secret="DISCORD_CLIENT_ID"
+gcloud secrets versions access latest --secret="NEXTAUTH_SECRET" | head -c 20  # 一部のみ表示
+
+# Cloud Runログ確認
+gcloud logging read "resource.type=cloud_run_revision" --limit=50
+
+# 認証エラー監視
+gcloud logging read 'severity="ERROR" AND textPayload=~"auth"' --limit=20
+
 # Cloud Run サービス確認
 gcloud run services list --region=asia-northeast1
 
@@ -376,4 +479,79 @@ gcloud firestore databases list
 
 # 予算アラート確認
 gcloud billing budgets list
+
+# 音声ファイル容量確認
+gsutil du -sh gs://suzumina-click-audio-files
+
+# 音声ファイルアップロード統計
+gcloud logging read 'protoPayload.methodName="storage.objects.insert" AND protoPayload.resourceName=~"audio-files"' --limit=20
 ```
+
+## 🛠️ トラブルシューティング
+
+### **認証関連の問題**
+
+1. **Redirect URI Mismatch**
+   - Discord Developer Portalの設定を確認
+   - 本番ドメインが正しく設定されているか確認
+
+2. **Secret Manager Access Error**
+   - Cloud RunサービスアカウントのIAM権限を確認
+   - Secret Managerでシークレットが作成されているか確認
+
+3. **Guild認証エラー**
+   - Guild ID (`959095494456537158`) が正しいか確認
+   - ユーザーがGuildのメンバーかDiscordで確認
+
+### **音声関連の問題**
+
+4. **音声ファイルアップロード権限エラー**
+   ```bash
+   # IAM権限確認
+   gcloud projects get-iam-policy suzumina-click
+   ```
+
+5. **Cloud Storage CORS設定**
+   ```bash
+   # CORS設定確認
+   gsutil cors get gs://suzumina-click-audio-files
+   ```
+
+### **緊急時手順**
+
+1. **音声アップロード一時停止**
+   ```bash
+   # メンテナンスモード設定
+   gcloud run services update suzumina-click-web --set-env-vars MAINTENANCE_MODE=true
+   ```
+
+2. **サービス復旧**
+   ```bash
+   # メンテナンスモード解除
+   gcloud run services update suzumina-click-web --remove-env-vars MAINTENANCE_MODE
+   ```
+
+## 📋 デプロイチェックリスト
+
+### **初回デプロイ前**
+- [ ] Discord OAuth Application作成完了
+- [ ] terraform.tfvars設定完了（認証情報含む）
+- [ ] terraform.tfvars権限設定（chmod 600）
+- [ ] GCP認証設定完了
+- [ ] 既存インフラへの影響確認
+
+### **デプロイ後確認**
+- [ ] Secret Manager シークレット作成確認
+- [ ] Discord OAuth Redirect URI設定確認
+- [ ] Cloud Run環境変数設定確認
+- [ ] 認証機能テスト（ログイン・ログアウト・Guild認証）
+- [ ] Cloud Storage バケット作成確認
+- [ ] IAM権限設定確認
+- [ ] Web App音声アップロード機能テスト
+
+### **本番移行**
+- [ ] 段階的デプロイ（開発→ステージング→本番）
+- [ ] 認証・セキュリティテスト
+- [ ] パフォーマンステスト
+- [ ] 監視・アラート設定
+- [ ] ドキュメント更新

@@ -70,71 +70,90 @@ YouTube/DLsite APIs         フロントエンド表示 + 管理画面
 
 ## 🚀 開発・デプロイメント
 
-### クイックスタート
+### 開発環境詳細
 
-```bash
-# リポジトリクローン・依存関係インストール
-git clone https://github.com/your-org/suzumina.click.git
-cd suzumina.click && pnpm install
+**基本セットアップ**: [メインREADME](../README.md#⚡-3分でクイックスタート)を参照
 
-# 共有型ビルド (必須)
-pnpm --filter @suzumina.click/shared-types build
-
-# 開発サーバー起動
-cd apps/web && pnpm dev
-
-# E2Eテスト実行
-cd apps/web && pnpm test:e2e
-```
-
-### 認証設定
-
-1. **Discord OAuth アプリ作成** ([Discord Developer Portal](https://discord.com/developers/applications))
-2. **環境変数設定**:
-   ```bash
-   DISCORD_CLIENT_ID="your-client-id"
-   DISCORD_CLIENT_SECRET="your-client-secret"
-   NEXTAUTH_SECRET="generated-secret"
-   NEXTAUTH_URL="https://suzumina.click"
+**Discord OAuth詳細設定**:
+1. [Discord Developer Portal](https://discord.com/developers/applications)でアプリケーション作成
+2. **Redirect URIs設定**:
    ```
-3. **Terraform デプロイ** (`terraform/AUTH_DEPLOYMENT_GUIDE.md` 参照)
+   # 開発環境
+   http://localhost:3000/api/auth/callback/discord
+   # 本番環境
+   https://suzumina.click/api/auth/callback/discord
+   ```
+3. **Guild ID**: `959095494456537158` (すずみなふぁみりー)
+4. **詳細なTerraformデプロイ**: [インフラアーキテクチャ](./INFRASTRUCTURE_ARCHITECTURE.md)参照
 
-### テスト・品質管理
-
+**包括的品質管理**:
 ```bash
-pnpm test              # 全テスト実行 (400+件)
-pnpm test:coverage     # カバレッジ付きテスト
-pnpm test:e2e          # E2Eテスト実行 (Playwright)
-pnpm check             # Lint + Format (Biome)
-pnpm build             # 全パッケージビルド
+# 開発ワークフロー
+pnpm check && pnpm test && pnpm build    # 品質ゲート
+pnpm test:coverage                        # カバレッジ分析
+pnpm test:e2e                            # エンドツーエンドテスト
+
+# パッケージ別テスト
+cd apps/admin && pnpm test               # Admin機能テスト (47件)
+cd packages/ui && pnpm test             # UIコンポーネントテスト
 ```
 
-## 📁 プロジェクト構造
+## 📁 詳細プロジェクト構造
+
+**概要**: [メインREADME](../README.md)で基本構造を確認
+
+### アプリケーション層詳細
 
 ```
-suzumina.click/
-├── apps/
-│   ├── web/                    # Next.js Webアプリ (認証+管理機能)
-│   │   ├── src/auth.ts         # NextAuth + Discord認証設定
-│   │   ├── src/app/auth/       # 認証関連ページ
-│   │   ├── src/app/admin/      # 管理者インターフェース
-│   │   ├── src/app/buttons/    # 音声ボタン機能
-│   │   ├── src/app/favorites/  # お気に入り機能
-│   │   ├── src/components/     # UIコンポーネント (認証・音声・お気に入り・管理)
-│   │   ├── src/actions/        # Server Actions (お気に入り操作等)
-│   │   ├── src/lib/favorites-firestore.ts # お気に入りFirestore操作
-│   │   ├── src/lib/user-firestore.ts # ユーザー管理
-│   │   ├── e2e/                # E2Eテスト (Playwright)
-│   │   └── playwright.config.ts # E2E設定
-│   └── functions/              # Cloud Functions (データ収集)
-├── packages/
-│   ├── shared-types/           # 共有型定義 (ユーザー・音声・YouTube・DLsite)
-│   │   ├── src/audio-button.ts # 音声ボタン型定義
-│   │   └── src/favorite.ts     # お気に入り型定義
-│   └── ui/                     # 共有UIコンポーネント
-├── terraform/                  # インフラ定義 (認証機能含む)
-│   └── AUTH_DEPLOYMENT_GUIDE.md # Discord認証デプロイガイド
-└── docs/                       # 統合ドキュメント
+apps/
+├── web/                        # Next.js 15 メインWebアプリ
+│   ├── src/auth.ts             # NextAuth.js + Discord OAuth設定
+│   ├── src/app/
+│   │   ├── auth/               # 認証関連ページ (login/callback/error)
+│   │   ├── buttons/            # 音声ボタン機能 (作成・一覧・詳細)
+│   │   ├── favorites/          # お気に入りシステム
+│   │   ├── users/              # ユーザープロフィール
+│   │   ├── about/privacy/terms/ # 静的ページ
+│   │   └── api/                # API Routes (auth/buttons/contact/health)
+│   ├── src/components/         # 25+ UIコンポーネント
+│   │   ├── AudioButtonCreator.tsx   # 音声ボタン作成UI
+│   │   ├── FavoriteButton.tsx       # お気に入り機能
+│   │   ├── SiteHeader.tsx          # サイトヘッダー・ナビゲーション
+│   │   └── UserMenu.tsx            # ユーザーメニュー・認証
+│   ├── src/actions/            # Server Actions
+│   │   └── favorites.ts        # お気に入り登録・削除
+│   ├── src/lib/                # ライブラリ・ユーティリティ
+│   │   ├── favorites-firestore.ts  # お気に入りFirestore操作
+│   │   ├── audio-buttons-firestore.ts # 音声ボタンCRUD
+│   │   ├── user-firestore.ts       # ユーザー管理
+│   │   └── security-logger.ts      # セキュリティログ
+│   └── e2e/                    # Playwright E2Eテスト
+├── admin/                      # 管理者専用アプリ (0インスタンス運用)
+│   ├── src/app/page.tsx        # 管理者ダッシュボード
+│   ├── src/components/         # 管理者UI (ユーザー・コンテンツ管理)
+│   ├── src/lib/auth-client.ts  # Firestore認証クライアント
+│   └── src/__tests__/          # 管理者機能テスト (47件)
+└── functions/                  # Cloud Functions v2 (Node.js 22)
+    ├── src/dlsite.ts          # DLsite作品自動収集
+    └── src/youtube.ts         # YouTube動画自動収集
+```
+
+### パッケージ層詳細
+
+```
+packages/
+├── shared-types/               # Zodスキーマ + TypeScript型定義
+│   ├── src/user.ts             # ユーザー・認証関連型
+│   ├── src/audio-button.ts     # 音声ボタン・YouTube参照型
+│   ├── src/favorite.ts         # お気に入りシステム型
+│   ├── src/video.ts            # YouTube動画データ型
+│   └── src/dlsite.ts           # DLsite作品データ型
+├── ui/                         # 共有UIコンポーネント + Storybook
+│   ├── components/ui/          # shadcn/ui (51個)
+│   ├── components/custom/      # 独自UI (audio-button等)
+│   ├── components/design-tokens/ # デザイントークン
+│   └── .storybook/             # UI開発環境
+└── typescript-config/          # 共有TypeScript設定
 ```
 
 ## 🔒 セキュリティ
@@ -161,23 +180,63 @@ suzumina.click/
 - プレイリスト機能
 - 音声ファイルアップロード機能
 
-## 📚 詳細ドキュメント
+## 📚 技術ドキュメント
 
-- **[FIRESTORE_STRUCTURE.md](./FIRESTORE_STRUCTURE.md)** - データベース詳細構造
-- **[POLICY.md](./POLICY.md)** - 開発ポリシー・コーディング規約
-- **[TODO.md](./TODO.md)** - 開発ロードマップ・タスク管理
-- **[CHANGELOG.md](./CHANGELOG.md)** - バージョン履歴
-- **[terraform/AUTH_DEPLOYMENT_GUIDE.md](../terraform/AUTH_DEPLOYMENT_GUIDE.md)** - Discord認証デプロイガイド
+### 🗺️ ドキュメントマップ
+```
+📋 このREADME (中央ハブ)
+├── 🚀 すぐ始める
+│   ├── メインREADME (3分スタート)
+│   └── QUICK_REFERENCE (コマンド集)
+├── 👨‍💻 開発者向け
+│   ├── DEVELOPMENT (設計原則・品質基準)
+│   ├── FIRESTORE_STRUCTURE (DB設計)
+│   └── パッケージREADME (UI/Admin/Terraform)
+├── ⚙️ インフラ・運用
+│   ├── INFRASTRUCTURE_ARCHITECTURE (全体設計)
+│   ├── DEPLOYMENT_STRATEGY (デプロイ戦略)
+│   ├── WEB_DEPLOYMENT (運用コマンド)
+│   └── GITHUB_ACTIONS_DEPLOYMENT (CI/CD)
+└── 📋 プロジェクト管理
+    ├── TODO (ロードマップ)
+    ├── CHANGELOG (変更履歴)
+    └── RELEASE_PROCESS (リリース管理)
+```
+
+### データベース・アーキテクチャ
+- **[FIRESTORE_STRUCTURE.md](./FIRESTORE_STRUCTURE.md)** - Firestoreスキーマ・インデックス・セキュリティルール
+- **[INFRASTRUCTURE_ARCHITECTURE.md](./INFRASTRUCTURE_ARCHITECTURE.md)** - GCPインフラ全体設計・認証設定
+
+### 開発・運用
+- **[DEVELOPMENT.md](./DEVELOPMENT.md)** - 設計原則・コーディング規約・品質基準
+- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - コマンド集・即座参照・トラブルシューティング
+- **[DEPLOYMENT_STRATEGY.md](./DEPLOYMENT_STRATEGY.md)** - デプロイ戦略・CI/CDパイプライン
+- **[RELEASE_PROCESS.md](./RELEASE_PROCESS.md)** - リリース管理・品質ゲート
+
+### プロジェクト管理
+- **[TODO.md](./TODO.md)** - 開発ロードマップ・今後の計画・タスク管理
+- **[CHANGELOG.md](./CHANGELOG.md)** - 詳細変更履歴・バージョン情報
 
 ## 🤝 コントリビューション
 
 1. Discord「すずみなふぁみりー」サーバーへの参加
-2. 開発ポリシー ([POLICY.md](./POLICY.md)) の確認
+2. [開発ガイドライン](./DEVELOPMENT.md)の確認
 3. `pnpm check` によるコード品質確認
 4. 包括的テストの実行・追加
+
+### 🎯 読者別学習パス
+
+#### **新規参加者**
+[メインREADME](../README.md) → **このページ** → [DEVELOPMENT.md](./DEVELOPMENT.md)
+
+#### **開発者**
+[DEVELOPMENT.md](./DEVELOPMENT.md) → [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) → [FIRESTORE_STRUCTURE.md](./FIRESTORE_STRUCTURE.md)
+
+#### **インフラ・運用**
+[INFRASTRUCTURE_ARCHITECTURE.md](./INFRASTRUCTURE_ARCHITECTURE.md) → [DEPLOYMENT_STRATEGY.md](./DEPLOYMENT_STRATEGY.md) → [WEB_DEPLOYMENT.md](./WEB_DEPLOYMENT.md)
 
 ---
 
 **作成者**: suzumina.click 開発チーム  
-**最終更新**: 2025年6月28日  
+**最終更新**: 2025年6月30日  
 **バージョン**: v0.2.2 (お気に入りシステム + 音声ボタンデザイン刷新 + Storybook一本化)

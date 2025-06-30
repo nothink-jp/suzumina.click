@@ -156,9 +156,11 @@ gsutil cat gs://suzumina-click-tfstate/terraform/state/production.tflock
 
 ## 📚 関連ドキュメント
 
-- [Terraform公式ドキュメント](https://www.terraform.io/docs)
-- [Google Cloud Provider](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
-- [プロジェクトのデプロイガイド](../docs/TERRAFORM_GUIDE.md)
+- **[プロジェクト概要](../README.md)** - メインプロジェクト情報
+- **[インフラアーキテクチャ](../docs/INFRASTRUCTURE_ARCHITECTURE.md)** - 全体設計・認証設定
+- **[デプロイ戦略](../docs/DEPLOYMENT_STRATEGY.md)** - デプロイ・運用方針
+- **[Terraform公式ドキュメント](https://www.terraform.io/docs)** - Terraformの基本情報
+- **[Google Cloud Provider](https://registry.terraform.io/providers/hashicorp/google/latest/docs)** - GCPプロバイダー情報
 
 ---
 

@@ -100,6 +100,53 @@ gcloud run deploy suzumina-admin \
 - Cloud Monitoring によるメトリクス監視
 - 0インスタンス運用時のコールドスタート対応
 
+## 🧪 テスト
+
+### テスト構成
+
+本アプリケーションには**Vitest** + **React Testing Library**による包括的テストスイートが含まれています。
+
+```
+src/__tests__/
+├── api/                    # API logic tests
+├── components/             # Component behavior tests  
+├── integration/            # Integration workflow tests
+└── utils/                  # Utility function tests
+```
+
+### テスト実行
+
+```bash
+# 全テスト実行
+pnpm test
+
+# ウォッチモード
+pnpm test:watch
+
+# カバレッジレポート
+pnpm test:coverage
+```
+
+### テストカバレッジ
+
+- **47 test cases** - コア機能の包括的テスト
+- **6 test files** - 機能エリア別構成
+- **Authentication logic** - 管理者・非管理者シナリオ
+- **Firestore operations** - CRUD操作・クエリロジック
+- **API logic** - データ処理・バリデーション
+- **Component behavior** - ユーザーインタラクション・データ変換
+- **Integration workflows** - エンドツーエンド管理者シナリオ
+- **Utility functions** - データフォーマット・バリデーションヘルパー
+
+### テスト戦略
+
+- **ビジネスロジックテスト** - コア管理者機能
+- **認証フローテスト** - 管理者アクセス制御
+- **エラーシナリオテスト** - 適切な失敗処理
+- **統合ワークフローテスト** - エンドツーエンド管理者タスク
+
+詳細なテスト情報は[Testing Guide](./README-TESTING.md)を参照してください。
+
 ## トラブルシューティング
 
 ### よくある問題
@@ -115,3 +162,15 @@ gcloud run deploy suzumina-admin \
 3. **環境変数が読み込まれない**
    - Secret Manager の設定を確認
    - Cloud Run の環境変数設定を確認
+
+4. **テスト失敗**
+   - モック設定の確認
+   - `pnpm test:watch` でデバッグモード実行
+
+## 📚 関連ドキュメント
+
+- **[プロジェクト概要](../../README.md)** - メインプロジェクト情報・アーキテクチャ
+- **[詳細仕様](../../docs/README.md)** - 包括的プロジェクトドキュメント
+- **[インフラアーキテクチャ](../../docs/INFRASTRUCTURE_ARCHITECTURE.md)** - 管理者アプリのデプロイ・運用
+- **[開発ガイド](../../docs/DEVELOPMENT.md)** - 設計原則・品質基準
+- **[Testing Guide](./README-TESTING.md)** - 詳細テスト情報
