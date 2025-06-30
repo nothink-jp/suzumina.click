@@ -26,7 +26,7 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
 	const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
-	const [categoryFilter, setCategoryFilter] = useState("all");
+	const [categoryFilter, setCategoryFilter] = useState(searchParams.get("category") || "all");
 	const [itemsPerPageValue, setItemsPerPageValue] = useState(searchParams.get("limit") || "12");
 
 	// URLパラメータ更新用ユーティリティ
@@ -95,7 +95,7 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 				onSearch={handleSearch}
 				onReset={handleReset}
 				searchPlaceholder="作品タイトルで検索..."
-				hasActiveFilters={searchQuery !== "" || categoryFilter !== "all"}
+				hasActiveFilters={searchQuery !== "" || (categoryFilter !== "all" && categoryFilter !== "")}
 				onSearchKeyDown={(e) => {
 					if (e.key === "Enter") {
 						handleSearch();

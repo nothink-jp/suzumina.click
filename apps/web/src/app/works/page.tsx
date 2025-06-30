@@ -17,11 +17,12 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const validPage = Math.max(1, pageNumber);
 	const sort = typeof params.sort === "string" ? params.sort : "newest";
 	const search = typeof params.search === "string" ? params.search : undefined;
+	const category = typeof params.category === "string" ? params.category : undefined;
 	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
 	const validLimit = [12, 24, 48, 96].includes(limitValue) ? limitValue : 12;
 
 	// 並行してデータを取得
-	const result = await getWorks({ page: validPage, limit: validLimit, sort, search });
+	const result = await getWorks({ page: validPage, limit: validLimit, sort, search, category });
 	const { works: initialData, totalCount } = result;
 
 	return (

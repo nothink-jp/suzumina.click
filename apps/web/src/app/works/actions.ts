@@ -58,11 +58,13 @@ export async function getWorks({
 	limit = 12,
 	sort = "newest",
 	search,
+	category,
 }: {
 	page?: number;
 	limit?: number;
 	sort?: string;
 	search?: string;
+	category?: string;
 } = {}): Promise<WorkListResult> {
 	try {
 		const firestore = getFirestore();
@@ -84,6 +86,11 @@ export async function getWorks({
 				const lowerTitle = work.title.toLowerCase();
 				return lowerTitle.includes(lowerSearch);
 			});
+		}
+
+		// カテゴリーフィルタリング
+		if (category && category !== "all") {
+			allWorks = allWorks.filter((work) => work.category === category);
 		}
 
 		// ソート処理
