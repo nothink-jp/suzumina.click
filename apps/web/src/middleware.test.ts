@@ -17,7 +17,20 @@ vi.mock("next/server", async () => {
 
 // NextResponseのstatic methodsを追加
 beforeEach(() => {
-	(NextResponse as any).next = vi.fn(() => ({ status: 200 }));
+	(NextResponse as any).next = vi.fn(() => ({
+		status: 200,
+		headers: {
+			set: vi.fn(),
+			get: vi.fn(),
+			has: vi.fn(),
+			delete: vi.fn(),
+			append: vi.fn(),
+			entries: vi.fn(),
+			forEach: vi.fn(),
+			keys: vi.fn(),
+			values: vi.fn(),
+		},
+	}));
 });
 
 // NextRequestのモック用ヘルパー
