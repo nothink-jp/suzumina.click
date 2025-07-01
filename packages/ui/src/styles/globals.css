@@ -536,6 +536,12 @@
 		font-size: 16px; /* iOS zoom回避 */
 	}
 
+	/* Mark element reset for custom highlighting */
+	.mark-reset {
+		background: unset;
+		color: unset;
+	}
+
 	/* Keyframe definitions for animations */
 	@keyframes accordion-down {
 		from {

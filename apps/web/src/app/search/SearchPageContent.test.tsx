@@ -100,6 +100,22 @@ vi.mock("@/components/ThumbnailImage", () => ({
 	default: ({ src, alt }: any) => <div data-testid="thumbnail" data-src={src} data-alt={alt} />,
 }));
 
+vi.mock("@/components/SearchInputWithAutocomplete", () => ({
+	SearchInputWithAutocomplete: ({ value, onChange, onClear }: any) => (
+		<div data-testid="search-input-with-autocomplete">
+			<input
+				data-testid="search-input"
+				value={value}
+				onChange={(e) => onChange?.(e.target.value)}
+				placeholder="音声ボタンや作品を検索..."
+			/>
+			<button type="button" data-testid="clear-button" onClick={onClear}>
+				クリア
+			</button>
+		</div>
+	),
+}));
+
 vi.mock("next/link", () => ({
 	default: ({ children, href }: any) => (
 		<a href={href} data-testid="link">
@@ -210,10 +226,7 @@ describe("SearchPageContent", () => {
 			render(<SearchPageContent />);
 
 			const searchInput = screen.getByTestId("search-input");
-			expect(searchInput).toHaveAttribute(
-				"placeholder",
-				"ボタンや作品を検索...（2文字以上で自動検索）",
-			);
+			expect(searchInput).toHaveAttribute("placeholder", "音声ボタンや作品を検索...");
 		});
 	});
 });

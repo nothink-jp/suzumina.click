@@ -204,5 +204,8 @@ vi.mock("lucide-react", () => {
 		Radio: createMockIcon("Radio"),
 		// Icons for UserMenu
 		LogOut: createMockIcon("LogOut"),
+		// Icons for AutocompleteDropdown and SearchInputWithAutocomplete
+		Tag: createMockIcon("Tag"),
+		FileText: createMockIcon("FileText"),
 	};
 });

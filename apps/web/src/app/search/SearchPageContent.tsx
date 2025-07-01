@@ -9,14 +9,15 @@ import type {
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
-import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
 import { BookOpen, ChevronRight, Filter, Loader2, Music, Search, Video, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
+import { HighlightText } from "@/components/HighlightText";
 import { SearchFilters } from "@/components/SearchFilters";
+import { SearchInputWithAutocomplete } from "@/components/SearchInputWithAutocomplete";
 import ThumbnailImage from "@/components/ThumbnailImage";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -158,11 +159,13 @@ function SearchResults({
 	activeTab,
 	onTabChange,
 	isAutoSearching,
+	searchQuery,
 }: {
 	searchResult: UnifiedSearchResult | null;
 	activeTab: ContentTab;
 	onTabChange: (value: string) => void;
 	isAutoSearching: boolean;
+	searchQuery: string;
 }) {
 	if (!searchResult) return null;
 
@@ -221,7 +224,12 @@ function SearchResults({
 							</div>
 							<div className="flex flex-wrap gap-3">
 								{searchResult.audioButtons.slice(0, 6).map((button) => (
-									<AudioButtonWithPlayCount key={button.id} audioButton={button} />
+									<AudioButtonWithPlayCount
+										key={button.id}
+										audioButton={button}
+										searchQuery={searchQuery}
+										highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+									/>
 								))}
 							</div>
 							{searchResult.hasMore.buttons && (
@@ -259,7 +267,11 @@ function SearchResults({
 											</div>
 											<CardContent className="p-4">
 												<h3 className="font-medium line-clamp-2 group-hover:text-suzuka-600 transition-colors">
-													{video.title}
+													<HighlightText
+														text={video.title}
+														searchQuery={searchQuery}
+														highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+													/>
 												</h3>
 												<p className="text-sm text-muted-foreground mt-1">
 													{new Date(video.publishedAt).toLocaleDateString("ja-JP")}
@@ -304,7 +316,11 @@ function SearchResults({
 											</div>
 											<CardContent className="p-4">
 												<h3 className="font-medium line-clamp-2 group-hover:text-suzuka-600 transition-colors">
-													{work.title}
+													<HighlightText
+														text={work.title}
+														searchQuery={searchQuery}
+														highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+													/>
 												</h3>
 												<p className="text-sm text-muted-foreground mt-1">
 													登録日:{" "}
@@ -332,7 +348,12 @@ function SearchResults({
 				<TabsContent value="buttons">
 					<div className="flex flex-wrap gap-3">
 						{searchResult.audioButtons.map((button) => (
-							<AudioButtonWithPlayCount key={button.id} audioButton={button} />
+							<AudioButtonWithPlayCount
+								key={button.id}
+								audioButton={button}
+								searchQuery={searchQuery}
+								highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+							/>
 						))}
 					</div>
 				</TabsContent>
@@ -355,7 +376,11 @@ function SearchResults({
 									</div>
 									<CardContent className="p-4">
 										<h3 className="font-medium line-clamp-2 group-hover:text-suzuka-600 transition-colors">
-											{video.title}
+											<HighlightText
+												text={video.title}
+												searchQuery={searchQuery}
+												highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+											/>
 										</h3>
 										<p className="text-sm text-muted-foreground mt-1">
 											{new Date(video.publishedAt).toLocaleDateString("ja-JP")}
@@ -385,7 +410,11 @@ function SearchResults({
 									</div>
 									<CardContent className="p-4">
 										<h3 className="font-medium line-clamp-2 group-hover:text-suzuka-600 transition-colors">
-											{work.title}
+											<HighlightText
+												text={work.title}
+												searchQuery={searchQuery}
+												highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+											/>
 										</h3>
 										<p className="text-sm text-muted-foreground mt-1">
 											登録日:{" "}
@@ -566,39 +595,22 @@ export default function SearchPageContent() {
 			<Card className="bg-suzuka-50 border-suzuka-200">
 				<CardContent className="p-6 space-y-4">
 					<form onSubmit={handleSearch} className="flex gap-2">
-						<div className="relative flex-1">
-							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-							<Input
-								type="text"
-								placeholder="ボタンや作品を検索...（2文字以上で自動検索）"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								className="pl-10 pr-12 h-12 text-base"
-								data-testid="search-input"
-								minLength={2}
-							/>
-							{/* クリアボタン */}
-							{searchQuery && (
-								<button
-									type="button"
-									onClick={() => {
-										setSearchQuery("");
-										setSearchResult(null);
-										updateURL("", activeTab);
-									}}
-									className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
-									aria-label="検索をクリア"
-								>
-									<X className="h-4 w-4 text-muted-foreground" />
-								</button>
-							)}
-							{/* 自動検索ローディングインジケーター */}
-							{isAutoSearching && (
-								<div className="absolute right-10 top-1/2 transform -translate-y-1/2">
-									<Loader2 className="h-4 w-4 animate-spin text-suzuka-500" />
-								</div>
-							)}
-						</div>
+						<SearchInputWithAutocomplete
+							value={searchQuery}
+							onChange={setSearchQuery}
+							onSubmit={() => {
+								if (searchQuery.trim()) {
+									updateURL(searchQuery, activeTab);
+									performSearch(searchQuery, activeTab);
+								}
+							}}
+							onClear={() => {
+								setSearchQuery("");
+								setSearchResult(null);
+								updateURL("", activeTab);
+							}}
+							isAutoSearching={isAutoSearching}
+						/>
 						<Button
 							type="submit"
 							size="lg"
@@ -659,28 +671,29 @@ export default function SearchPageContent() {
 				<div className="space-y-6">
 					{/* タブスケルトン */}
 					<div className="flex gap-2">
-						{Array.from({ length: 4 }, (_, i) => (
-							<div
-								key={`tab-loading-${i}`}
-								className="h-12 bg-muted rounded-lg w-32 animate-pulse"
-							/>
-						))}
+						{Array.from({ length: 4 }, (_, i) => {
+							const key = `tab-skeleton-${i}-${Math.random().toString(36).substr(2, 9)}`;
+							return <div key={key} className="h-12 bg-muted rounded-lg w-32 animate-pulse" />;
+						})}
 					</div>
 					{/* 結果スケルトン */}
 					<div className="space-y-6">
-						{Array.from({ length: 3 }, (_, i) => (
-							<div key={`result-loading-${i}`} className="space-y-4">
-								<div className="h-6 bg-muted rounded w-32 animate-pulse" />
-								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-									{Array.from({ length: 3 }, (_, j) => (
-										<div
-											key={`card-loading-${i}-${j}`}
-											className="h-40 bg-muted rounded-lg animate-pulse"
-										/>
-									))}
+						{Array.from({ length: 3 }, (_, i) => {
+							const sectionKey = `result-skeleton-${i}-${Math.random().toString(36).substr(2, 9)}`;
+							return (
+								<div key={sectionKey} className="space-y-4">
+									<div className="h-6 bg-muted rounded w-32 animate-pulse" />
+									<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+										{Array.from({ length: 3 }, (_, j) => {
+											const cardKey = `card-skeleton-${i}-${j}-${Math.random().toString(36).substr(2, 9)}`;
+											return (
+												<div key={cardKey} className="h-40 bg-muted rounded-lg animate-pulse" />
+											);
+										})}
+									</div>
 								</div>
-							</div>
-						))}
+							);
+						})}
 					</div>
 				</div>
 			)}
@@ -692,6 +705,7 @@ export default function SearchPageContent() {
 					activeTab={activeTab}
 					onTabChange={handleTabChange}
 					isAutoSearching={isAutoSearching}
+					searchQuery={searchQuery}
 				/>
 			)}
 

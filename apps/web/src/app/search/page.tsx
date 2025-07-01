@@ -59,12 +59,12 @@ function SearchPageSkeleton() {
 							{SKELETON_KEYS.cards[i]?.map((cardKey) => (
 								<div key={cardKey} className="h-32 bg-muted rounded-lg animate-pulse" />
 							)) ||
-								Array.from({ length: 3 }, (_, j) => (
-									<div
-										key={`fallback-card-${i}-${j}`}
-										className="h-32 bg-muted rounded-lg animate-pulse"
-									/>
-								))}
+								Array.from({ length: 3 }, (_, j) => {
+									const fallbackKey = `fallback-card-${i}-${j}-${Math.random().toString(36).substr(2, 9)}`;
+									return (
+										<div key={fallbackKey} className="h-32 bg-muted rounded-lg animate-pulse" />
+									);
+								})}
 						</div>
 					</div>
 				))}
