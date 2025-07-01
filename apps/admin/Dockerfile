@@ -1,4 +1,4 @@
-# Admin app Dockerfile
+# Admin app Dockerfile - Optimized with advanced caching
 FROM node:22-alpine AS base
 
 # pnpm インストール
@@ -14,8 +14,9 @@ COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
-# 依存関係インストール
-RUN pnpm install --frozen-lockfile
+# 依存関係インストール with cache
+RUN --mount=type=cache,target=/pnpm,sharing=locked \
+    pnpm install --frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
@@ -31,11 +32,14 @@ COPY --from=deps /app/apps ./apps
 # ソースコードをコピー
 COPY . .
 
-# 共有パッケージをビルド
-RUN cd packages/shared-types && pnpm build
+# 共有パッケージをビルド with cache
+RUN --mount=type=cache,target=/app/packages/shared-types/node_modules/.cache \
+    cd packages/shared-types && pnpm build
 
-# admin appをビルド
-RUN cd apps/admin && pnpm build
+# admin appをビルド with Next.js cache
+RUN --mount=type=cache,target=/app/apps/admin/.next/cache \
+    --mount=type=cache,target=/app/apps/admin/node_modules/.cache \
+    cd apps/admin && pnpm build
 
 FROM base AS runner
 WORKDIR /app

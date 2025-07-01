@@ -1,5 +1,5 @@
 # suzumina.click Web Application Dockerfile for Cloud Run
-# Optimized for Next.js 15 with standalone output and monorepo structure
+# Optimized for Next.js 15 with advanced caching and monorepo structure
 
 FROM node:22-alpine AS base
 RUN apk add --no-cache libc6-compat tini
@@ -23,8 +23,9 @@ COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/ui/package.json ./packages/ui/
 COPY apps/web/package.json ./apps/web/
 
-# Install all dependencies
-RUN pnpm install --frozen-lockfile
+# Install all dependencies with aggressive caching
+RUN --mount=type=cache,target=/pnpm,sharing=locked \
+    pnpm install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -42,21 +43,24 @@ COPY --from=deps /app/packages ./packages
 COPY --from=deps /app/apps ./apps
 COPY . .
 
-# Build shared-types first (dependency for web)
+# Build shared-types first (dependency for web) with cache mount
 WORKDIR /app/packages/shared-types
-RUN pnpm build
+RUN --mount=type=cache,target=/app/packages/shared-types/node_modules/.cache \
+    pnpm build
 
 # UI package doesn't need build - it exports TypeScript/React components directly
 
-# Build web application
+# Build web application with Next.js cache
 WORKDIR /app/apps/web
 
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Build the application
-RUN pnpm build
+# Build the application with cache mount for Next.js
+RUN --mount=type=cache,target=/app/apps/web/.next/cache \
+    --mount=type=cache,target=/app/apps/web/node_modules/.cache \
+    pnpm build
 
 # Production image, copy all the files and run next
 FROM base AS runner

@@ -59,23 +59,59 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies (with registry cache)
+        run: |
+          # Install with registry cache for faster dependency resolution
+          pnpm install --frozen-lockfile --registry-cache-dir=/tmp/pnpm-registry-cache
       
-      - name: Build shared types
-        run: pnpm --filter @suzumina.click/shared-types build
+      # Cache Next.js build cache for faster rebuilds
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'pnpm-lock.yaml') }}-${{ hashFiles('apps/web/**/*.ts', 'apps/web/**/*.tsx', 'apps/web/**/*.js', 'apps/web/**/*.jsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-
       
-      - name: Build UI components
-        run: pnpm --filter @suzumina.click/ui build
+      # Parallel build of shared packages
+      - name: Build shared packages (parallel)
+        run: |
+          # Build shared-types and UI in parallel when possible
+          pnpm --filter @suzumina.click/shared-types build &
+          SHARED_TYPES_PID=$!
+          
+          # UI doesn't need build, but we can prepare if needed
+          echo "UI package ready (no build needed)"
+          
+          # Wait for shared-types to complete
+          wait $SHARED_TYPES_PID
+          echo "✅ Shared packages built successfully"
       
-      - name: Run tests
-        run: pnpm --filter web test
-      
-      - name: Run linting
-        run: pnpm --filter web lint
-      
-      - name: Run type checking
-        run: pnpm --filter web typecheck
+      # Run quality checks in parallel for faster feedback
+      - name: Run quality checks (parallel)
+        run: |
+          echo "🧪 Running tests, linting, and type checking in parallel..."
+          
+          # Run tests in background
+          pnpm --filter web test &
+          TEST_PID=$!
+          
+          # Run linting in background  
+          pnpm --filter web lint &
+          LINT_PID=$!
+          
+          # Run type checking in background
+          pnpm --filter web typecheck &
+          TYPECHECK_PID=$!
+          
+          # Wait for all processes to complete
+          wait $TEST_PID && echo "✅ Tests passed" || { echo "❌ Tests failed"; exit 1; }
+          wait $LINT_PID && echo "✅ Linting passed" || { echo "❌ Linting failed"; exit 1; }
+          wait $TYPECHECK_PID && echo "✅ Type checking passed" || { echo "❌ Type checking failed"; exit 1; }
+          
+          echo "🎉 All quality checks completed successfully"
       
       # Google Cloud authentication
       - name: Authenticate to Google Cloud
@@ -93,24 +129,33 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
       
-      # Build and push Docker image
-      - name: Build and push Docker image
+      # Set up Docker Buildx for cache optimization
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+      
+      # Build and push Docker image with advanced caching
+      - name: Build and push Docker image (optimized)
         run: |
           # Generate image tag
           IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           LATEST_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest"
+          CACHE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:cache"
           
-          # Build Docker image from project root using web app's Dockerfile
-          docker build \
+          # Build with cache optimization and multi-platform support
+          docker buildx build \
             --platform linux/amd64 \
             --file apps/web/Dockerfile \
             --tag $IMAGE_TAG \
             --tag $LATEST_TAG \
+            --cache-from type=registry,ref=$CACHE_TAG \
+            --cache-to type=registry,ref=$CACHE_TAG,mode=max \
+            --push \
             .
           
-          # Push both tags
-          docker push $IMAGE_TAG
-          docker push $LATEST_TAG
+          echo "✅ Docker image built and pushed with optimized caching"
           
           # Save image tag for deployment
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
