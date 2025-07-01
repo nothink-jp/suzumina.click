@@ -83,6 +83,68 @@ components/
 - **Server Actions**: サーバーサイドデータ操作
 - **Firestore接続制限**: `@google-cloud/firestore` をサーバーサイドのみで使用
 
+### 6. Server Actions 最適化原則
+
+**原則**: ユーザーアクションの性質に応じて適切な処理パターンを選択する
+
+#### **統計・アナリティクス処理** (Fire-and-Forget パターン)
+- **対象**: 再生数・いいね数・お気に入り数などの統計情報
+- **方針**: `revalidatePath` を使用せず、バッチ処理でバックグラウンド更新
+- **利点**: UIブロッキングなし、連続リクエスト防止、サーバー負荷軽減
+
+```typescript
+// ✅ 良い例: 統計更新 (revalidatePath なし)
+export async function incrementPlayCount(audioButtonId: string) {
+  await firestore.collection('audioButtons').doc(audioButtonId).update({
+    playCount: FieldValue.increment(1),
+    updatedAt: new Date().toISOString(),
+  });
+  // revalidatePath は使用しない
+  return { success: true };
+}
+
+// ✅ クライアントサイド: バッチ処理
+const handlePlay = useCallback((audioButtonId: string) => {
+  // 即座にUI更新
+  setIsPlaying(true);
+  
+  // バッチに追加（1秒後まとめて処理）
+  pendingIncrements.current.add(audioButtonId);
+  batchTimeout.current = setTimeout(() => {
+    processBatch(); // Fire-and-Forget実行
+  }, 1000);
+}, []);
+```
+
+#### **重要データ操作** (同期処理 + revalidatePath)
+- **対象**: コンテンツ作成・編集・削除などの重要な操作
+- **方針**: `revalidatePath` でキャッシュ無効化、即座にUI反映
+- **利点**: データ整合性確保、即座のフィードバック
+
+```typescript
+// ✅ 良い例: 重要な操作 (revalidatePath 使用)
+export async function createAudioButton(input: CreateAudioButtonInput) {
+  const docRef = await firestore.collection('audioButtons').add(input);
+  
+  // 重要な操作なのでキャッシュ無効化
+  revalidatePath('/buttons');
+  revalidatePath(`/buttons/${docRef.id}`);
+  
+  return { success: true, data: { id: docRef.id } };
+}
+```
+
+#### **使い分けの判断基準**
+
+| 操作種別 | revalidatePath | 実行方式 | 例 |
+|---------|---------------|---------|-----|
+| **統計更新** | ❌ 使用しない | Fire-and-Forget | 再生数・いいね数・お気に入り数 |
+| **アナリティクス** | ❌ 使用しない | バッチ処理 | アクセス解析・ユーザー行動ログ |
+| **コンテンツ作成** | ✅ 必須 | 同期処理 | 音声ボタン作成・投稿作成 |
+| **コンテンツ編集** | ✅ 必須 | 同期処理 | タイトル変更・説明文更新 |
+| **コンテンツ削除** | ✅ 必須 | 同期処理 | 投稿削除・アカウント削除 |
+| **ユーザー設定** | ✅ 必須 | 同期処理 | プロフィール変更・設定変更 |
+
 ```typescript
 // ✅ 良い例: Server Action (ページと同じディレクトリに配置)
 // app/works/actions.ts
@@ -100,7 +162,7 @@ export async function getWorks() {
 // import { getFirestore } from 'firebase/firestore';
 ```
 
-### 6. コンポーネント設計原則
+### 7. コンポーネント設計原則
 
 **原則**: Server Component/Client Component を責任に応じて設計する
 

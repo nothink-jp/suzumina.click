@@ -48,14 +48,22 @@ export async function addFavorite(
 			.collection("favorites")
 			.add(favoriteData);
 
-		// 音声ボタンのお気に入り数を増加
-		await firestore
+		// 音声ボタンのお気に入り数を増加 (Fire-and-Forget パターン)
+		// revalidatePath を使用せず、バックグラウンドで非同期実行
+		firestore
 			.collection("audioButtons")
 			.doc(input.audioButtonId)
 			.update({
 				// biome-ignore lint/suspicious/noExplicitAny: Firestore FieldValue typing limitation
 				favoriteCount: (firestore as any).FieldValue.increment(1),
 				updatedAt: new Date().toISOString(),
+			})
+			.catch((error) => {
+				if (process.env.NODE_ENV === "development") {
+					// biome-ignore lint/suspicious/noConsole: Development debugging only
+					console.error("お気に入り数増加でエラー:", { audioButtonId: input.audioButtonId, error });
+				}
+				// エラーは無視（Fire-and-Forget）
 			});
 
 		return { success: true, favoriteId: docRef.id };
@@ -98,14 +106,22 @@ export async function removeFavorite(
 		}
 		await favoriteDoc.ref.delete();
 
-		// 音声ボタンのお気に入り数を減少
-		await firestore
+		// 音声ボタンのお気に入り数を減少 (Fire-and-Forget パターン)
+		// revalidatePath を使用せず、バックグラウンドで非同期実行
+		firestore
 			.collection("audioButtons")
 			.doc(input.audioButtonId)
 			.update({
 				// biome-ignore lint/suspicious/noExplicitAny: Firestore FieldValue typing limitation
 				favoriteCount: (firestore as any).FieldValue.increment(-1),
 				updatedAt: new Date().toISOString(),
+			})
+			.catch((error) => {
+				if (process.env.NODE_ENV === "development") {
+					// biome-ignore lint/suspicious/noConsole: Development debugging only
+					console.error("お気に入り数減少でエラー:", { audioButtonId: input.audioButtonId, error });
+				}
+				// エラーは無視（Fire-and-Forget）
 			});
 
 		return { success: true };

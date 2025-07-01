@@ -167,7 +167,8 @@ export async function updateLastLogin(discordId: string): Promise<void> {
 }
 
 /**
- * ユーザーの統計情報を更新
+ * ユーザーの統計情報を更新 (Fire-and-Forget パターン)
+ * revalidatePath を使用せず、バックグラウンドで非同期実行
  */
 export async function updateUserStats(
 	discordId: string,
@@ -180,19 +181,34 @@ export async function updateUserStats(
 		const firestore = getFirestore();
 		const now = new Date().toISOString();
 
-		const updateData: Partial<FirestoreUserData> = {
+		const updateData: Record<string, unknown> = {
 			updatedAt: now,
 		};
 
 		if (updates.incrementAudioButtons) {
-			updateData.audioButtonsCount = 1; // Firestore increment
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore FieldValue typing limitation
+			updateData.audioButtonsCount = (firestore as any).FieldValue.increment(1);
 		}
 
 		if (updates.incrementPlayCount && updates.incrementPlayCount > 0) {
-			updateData.totalPlayCount = updates.incrementPlayCount; // Firestore increment
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore FieldValue typing limitation
+			updateData.totalPlayCount = (firestore as any).FieldValue.increment(
+				updates.incrementPlayCount,
+			);
 		}
 
-		await firestore.collection("users").doc(discordId).update(updateData);
+		// Fire-and-Forget: 統計更新はバックグラウンドで実行
+		firestore
+			.collection("users")
+			.doc(discordId)
+			.update(updateData)
+			.catch((error) => {
+				if (process.env.NODE_ENV === "development") {
+					// biome-ignore lint/suspicious/noConsole: Development debugging only
+					console.error("ユーザー統計更新でエラー:", { discordId, updates, error });
+				}
+				// エラーは無視（Fire-and-Forget）
+			});
 	} catch (_error) {
 		// 統計更新の失敗は致命的ではないため、エラーを投げない
 	}
