@@ -431,9 +431,9 @@ export async function updateAudioButtonStats(
 			}
 		}
 
-		// キャッシュの無効化
-		revalidatePath("/buttons");
-		revalidatePath(`/buttons/${validatedUpdate.id}`);
+		// 統計情報更新時はページリロードを避けるため、revalidatePathを削除
+		// revalidatePath("/buttons");
+		// revalidatePath(`/buttons/${validatedUpdate.id}`);
 
 		return { success: true };
 	} catch (_error) {
