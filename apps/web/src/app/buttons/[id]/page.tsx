@@ -89,7 +89,6 @@ async function RelatedAudioButtons({
 										key={audioButton.id}
 										audioButton={audioButton}
 										showFavorite={true}
-										showDelete={false}
 										maxTitleLength={50}
 										className="shadow-sm hover:shadow-md transition-all duration-200"
 									/>
@@ -239,7 +238,6 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 							<AudioButtonWithPlayCount
 								audioButton={audioButton}
 								showFavorite={true}
-								showDelete={false}
 								className="border-2 border-suzuka-200 hover:border-suzuka-300"
 							/>
 						</div>

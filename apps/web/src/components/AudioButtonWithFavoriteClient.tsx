@@ -7,13 +7,11 @@ import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { getFavoritesStatusAction, toggleFavoriteAction } from "@/actions/favorites";
-import { deleteAudioButton } from "@/app/buttons/actions";
 
 interface AudioButtonWithFavoriteClientProps {
 	audioButton: FrontendAudioButtonData;
 	onPlay?: () => void;
 	showFavorite?: boolean;
-	showDelete?: boolean;
 	className?: string;
 	maxTitleLength?: number;
 	initialIsFavorited?: boolean;
@@ -25,7 +23,6 @@ export function AudioButtonWithFavoriteClient({
 	audioButton,
 	onPlay,
 	showFavorite = true,
-	showDelete = true,
 	className,
 	maxTitleLength,
 	initialIsFavorited = false,
@@ -37,10 +34,6 @@ export function AudioButtonWithFavoriteClient({
 	const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
 	const [_isPending, startTransition] = useTransition();
 	const isAuthenticated = !!session?.user;
-	const canDelete =
-		showDelete &&
-		session?.user &&
-		(session.user.discordId === audioButton.createdBy || session.user.role === "admin");
 
 	useEffect(() => {
 		if (showFavorite && session?.user && !initialIsFavorited) {
@@ -74,25 +67,6 @@ export function AudioButtonWithFavoriteClient({
 		});
 	}, [audioButton.id, isAuthenticated]);
 
-	const handleDelete = useCallback(() => {
-		if (!canDelete) return;
-
-		startTransition(async () => {
-			try {
-				const result = await deleteAudioButton(audioButton.id);
-				if (result.success) {
-					toast.success("音声ボタンを削除しました");
-					router.push("/buttons");
-					router.refresh();
-				} else {
-					toast.error(result.error || "削除に失敗しました");
-				}
-			} catch (_error) {
-				toast.error("削除中にエラーが発生しました");
-			}
-		});
-	}, [audioButton.id, canDelete, router]);
-
 	return (
 		<SimpleAudioButton
 			audioButton={audioButton}
@@ -103,8 +77,6 @@ export function AudioButtonWithFavoriteClient({
 			onDetailClick={() => router.push(`/buttons/${audioButton.id}`)}
 			isFavorite={isFavorited}
 			onFavoriteToggle={showFavorite && isAuthenticated ? handleFavoriteToggle : undefined}
-			canDelete={canDelete}
-			onDelete={canDelete ? handleDelete : undefined}
 			searchQuery={searchQuery}
 			highlightClassName={highlightClassName}
 		/>

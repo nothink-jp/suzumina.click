@@ -10,7 +10,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Plus, Search, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
 import Pagination from "@/components/Pagination";
 
@@ -117,6 +117,9 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
+	// デバウンス用のタイマー管理
+	const navigationTimerRef = useRef<NodeJS.Timeout | null>(null);
+
 	// フォームの状態
 	const [searchQuery, setSearchQuery] = useState(searchParams.q || "");
 	const [sortBy, setSortBy] = useState(searchParams.sort || "default");
@@ -186,25 +189,45 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		fetchData();
 	}, [buildQueryParams, handleApiResponse]);
 
-	// URLパラメータを更新
-	const updateSearchParams = (params: Record<string, string | undefined>) => {
-		const newParams = new URLSearchParams(urlSearchParams.toString());
-
-		Object.entries(params).forEach(([key, value]) => {
-			if (value) {
-				newParams.set(key, value);
-			} else {
-				newParams.delete(key);
+	// URLパラメータを更新（デバウンス機能付き）
+	const updateSearchParams = useCallback(
+		(params: Record<string, string | undefined>) => {
+			// 既存のタイマーをクリア
+			if (navigationTimerRef.current) {
+				clearTimeout(navigationTimerRef.current);
 			}
-		});
 
-		// ページ番号をリセット
-		if (!params.page) {
-			newParams.delete("page");
-		}
+			// デバウンス実行（300ms待機）
+			navigationTimerRef.current = setTimeout(() => {
+				const newParams = new URLSearchParams(urlSearchParams.toString());
 
-		router.push(`/buttons?${newParams.toString()}`);
-	};
+				Object.entries(params).forEach(([key, value]) => {
+					if (value) {
+						newParams.set(key, value);
+					} else {
+						newParams.delete(key);
+					}
+				});
+
+				// ページ番号をリセット
+				if (!params.page) {
+					newParams.delete("page");
+				}
+
+				router.push(`/buttons?${newParams.toString()}`);
+			}, 300);
+		},
+		[urlSearchParams, router],
+	);
+
+	// コンポーネントアンマウント時のクリーンアップ
+	useEffect(() => {
+		return () => {
+			if (navigationTimerRef.current) {
+				clearTimeout(navigationTimerRef.current);
+			}
+		};
+	}, []);
 
 	const handleSearch = () => {
 		startTransition(() => {

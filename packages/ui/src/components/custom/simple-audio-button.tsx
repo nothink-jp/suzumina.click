@@ -3,18 +3,7 @@
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { Popover, PopoverContent, PopoverTrigger } from "@suzumina.click/ui/components/ui/popover";
 import { cn } from "@suzumina.click/ui/lib/utils";
-import {
-	Clock,
-	ExternalLink,
-	Heart,
-	Info,
-	Loader2,
-	Pause,
-	Play,
-	Trash2,
-	User,
-	Video,
-} from "lucide-react";
+import { Clock, ExternalLink, Heart, Info, Loader2, Pause, Play, User, Video } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { AudioOnlyPlayer } from "./audio-only-player";
 import { HighlightText } from "./highlight-text";
@@ -29,9 +18,6 @@ interface SimpleAudioButtonProps {
 	// お気に入り関連
 	isFavorite?: boolean;
 	onFavoriteToggle?: () => void;
-	// 削除関連
-	canDelete?: boolean;
-	onDelete?: () => void;
 	// ハイライト関連
 	searchQuery?: string;
 	highlightClassName?: string;
@@ -45,8 +31,6 @@ interface AudioButtonPopoverContentProps {
 	onFavoriteToggle?: () => void;
 	showDetailLink: boolean;
 	onDetailClick?: () => void;
-	canDelete: boolean;
-	onDelete?: () => void;
 	onPopoverClose: () => void;
 	searchQuery?: string;
 	highlightClassName?: string;
@@ -60,8 +44,6 @@ function AudioButtonPopoverContent({
 	onFavoriteToggle,
 	showDetailLink,
 	onDetailClick,
-	canDelete,
-	onDelete,
 	onPopoverClose,
 	searchQuery,
 	highlightClassName,
@@ -204,26 +186,6 @@ function AudioButtonPopoverContent({
 						<ExternalLink className="h-3 w-3" />
 						<span>YouTubeで開く</span>
 					</a>
-
-					{/* 削除ボタン */}
-					{canDelete && onDelete && (
-						<>
-							<div className="my-1 h-px bg-border" />
-							<button
-								type="button"
-								onClick={() => {
-									if (window.confirm("この音声ボタンを削除しますか？")) {
-										onDelete();
-										onPopoverClose();
-									}
-								}}
-								className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
-							>
-								<Trash2 className="h-3 w-3" />
-								<span>削除</span>
-							</button>
-						</>
-					)}
 				</div>
 			</div>
 		</PopoverContent>
@@ -239,8 +201,6 @@ export function SimpleAudioButton({
 	onDetailClick,
 	isFavorite = false,
 	onFavoriteToggle,
-	canDelete = false,
-	onDelete,
 	searchQuery,
 	highlightClassName = "bg-suzuka-200 text-suzuka-900 px-0.5 rounded",
 }: SimpleAudioButtonProps) {
@@ -372,8 +332,6 @@ export function SimpleAudioButton({
 					onFavoriteToggle={onFavoriteToggle}
 					showDetailLink={showDetailLink}
 					onDetailClick={onDetailClick}
-					canDelete={canDelete}
-					onDelete={onDelete}
 					onPopoverClose={() => setShowInfo(false)}
 					searchQuery={searchQuery}
 					highlightClassName={highlightClassName}
