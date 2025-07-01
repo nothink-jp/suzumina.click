@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { AutocompleteSuggestion } from "@/app/api/autocomplete/route";
-import { AutocompleteDropdown } from "../AutocompleteDropdown";
+import { AutocompleteDropdown } from "./AutocompleteDropdown";
 
 const mockSuggestions: AutocompleteSuggestion[] = [
 	{

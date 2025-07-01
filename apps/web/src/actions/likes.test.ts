@@ -26,7 +26,7 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 // Import after mocking
-const { getLikesStatusAction, toggleLikeAction } = await import("../likes");
+const { getLikesStatusAction, toggleLikeAction } = await import("./likes");
 
 describe("likes actions", () => {
 	beforeEach(() => {

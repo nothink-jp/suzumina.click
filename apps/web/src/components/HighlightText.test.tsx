@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { HighlightText } from "../HighlightText";
+import { HighlightText } from "./HighlightText";
 
 describe("HighlightText", () => {
 	it("検索クエリが空の場合、元のテキストをそのまま表示する", () => {

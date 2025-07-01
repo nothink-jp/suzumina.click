@@ -2,13 +2,13 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutocomplete } from "@/hooks/useAutocomplete";
-import { SearchInputWithAutocomplete } from "../SearchInputWithAutocomplete";
+import { SearchInputWithAutocomplete } from "./SearchInputWithAutocomplete";
 
 // Mock the useAutocomplete hook
 vi.mock("@/hooks/useAutocomplete");
 
 // Mock the AutocompleteDropdown component
-vi.mock("../AutocompleteDropdown", () => ({
+vi.mock("./AutocompleteDropdown", () => ({
 	AutocompleteDropdown: ({ suggestions, isVisible, onSelect, onClose }: any) =>
 		isVisible && suggestions.length > 0 ? (
 			<div data-testid="autocomplete-dropdown">

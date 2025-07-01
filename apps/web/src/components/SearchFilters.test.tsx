@@ -1,7 +1,7 @@
 import type { UnifiedSearchFilters } from "@suzumina.click/shared-types";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { SearchFilters } from "../SearchFilters";
+import { SearchFilters } from "./SearchFilters";
 
 const mockFilters: UnifiedSearchFilters = {
 	query: "test",

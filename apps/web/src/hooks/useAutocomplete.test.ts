@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AutocompleteSuggestion } from "@/app/api/autocomplete/route";
-import { useAutocomplete } from "../useAutocomplete";
+import { useAutocomplete } from "./useAutocomplete";
 
 // Mock fetch
 const mockFetch = vi.fn();

@@ -174,18 +174,232 @@ describe('formatPrice', () => {
 });
 ```
 
+### テスト構造・配置戦略
+
+#### **ディレクトリ構造統一原則**
+
+**✅ 推奨: コロケーション方式**
+```
+src/
+├── components/
+│   ├── AudioButton.tsx
+│   ├── AudioButton.test.tsx         # ✅ 同一ディレクトリ
+│   ├── SearchForm.tsx
+│   └── SearchForm.test.tsx          # ✅ 同一ディレクトリ
+├── lib/
+│   ├── firestore.ts
+│   ├── firestore.test.ts            # ✅ 同一ディレクトリ
+│   ├── audio-helpers.ts
+│   └── audio-helpers.test.ts        # ✅ 同一ディレクトリ
+├── app/
+│   ├── buttons/
+│   │   ├── page.tsx
+│   │   ├── page.test.tsx            # ✅ 同一ディレクトリ
+│   │   ├── actions.ts
+│   │   └── actions.test.ts          # ✅ 同一ディレクトリ
+│   └── api/
+│       └── search/
+│           ├── route.ts
+│           └── route.test.ts        # ✅ 同一ディレクトリ
+└── e2e/                             # ✅ E2Eテスト専用ディレクトリ
+    ├── auth.spec.ts
+    └── buttons.spec.ts
+```
+
+**❌ 非推奨: __tests__ ディレクトリ方式**
+```
+src/
+├── components/
+│   ├── __tests__/                   # ❌ 分離されすぎ
+│   │   ├── Button.test.tsx          # ❌ 関連コードから離れている
+│   │   └── Form.test.tsx            # ❌ メンテナンス性低下
+│   ├── Button.tsx
+│   └── Form.tsx
+```
+
+#### **ファイル命名規約**
+
+```typescript
+// ✅ 正しい命名
+component.test.tsx        // React コンポーネント
+utility.test.ts          // TypeScript ユーティリティ
+page.spec.ts             // E2Eテスト（e2e/ディレクトリ内のみ）
+
+// ❌ 間違った命名
+component.spec.tsx       // SpecはE2Eテスト専用
+utility.test.js          // TypeScriptプロジェクトでJS使用
+test-component.tsx       // 接頭辞形式は非推奨
+```
+
+#### **テストファイル種別・配置ルール**
+
+| テスト種別 | ファイル拡張子 | 配置場所 | 例 |
+|-----------|---------------|----------|-----|
+| **React Component** | `.test.tsx` | コンポーネントと同一ディレクトリ | `AudioButton.test.tsx` |
+| **Custom Hook** | `.test.ts` | フックと同一ディレクトリ | `useDebounce.test.ts` |
+| **Server Action** | `.test.ts` | アクションと同一ディレクトリ | `actions.test.ts` |
+| **API Route** | `.test.ts` | ルートと同一ディレクトリ | `route.test.ts` |
+| **Utility/Library** | `.test.ts` | ソースファイルと同一ディレクトリ | `firestore.test.ts` |
+| **Page Component** | `.test.tsx` | ページと同一ディレクトリ | `page.test.tsx` |
+| **E2E Test** | `.spec.ts` | `e2e/` ディレクトリ内 | `auth.spec.ts` |
+| **Middleware** | `.test.ts` | ソースファイルと同一ディレクトリ | `middleware.test.ts` |
+
+### テスト粒度・内容ガイドライン
+
+#### **1. Component Tests (.test.tsx)**
+```typescript
+// ✅ 良い例: 完全なコンポーネントテスト
+describe('AudioButton', () => {
+  it('should render button with correct title', () => {
+    render(<AudioButton title="テスト音声" />);
+    expect(screen.getByText('テスト音声')).toBeInTheDocument();
+  });
+
+  it('should handle click events', async () => {
+    const handleClick = vi.fn();
+    render(<AudioButton onClick={handleClick} />);
+    
+    await user.click(screen.getByRole('button'));
+    expect(handleClick).toHaveBeenCalledOnce();
+  });
+
+  it('should be accessible on different viewports', () => {
+    render(<AudioButton />);
+    const button = screen.getByRole('button');
+    validateAccessibleTouchTarget(button); // 共有テストユーティリティ使用
+  });
+});
+```
+
+#### **2. Hook Tests (.test.ts)**
+```typescript
+// ✅ 良い例: カスタムフックテスト
+describe('useDebounce', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should debounce value updates', () => {
+    const { result, rerender } = renderHook((value) => useDebounce(value, 500), {
+      initialProps: 'initial',
+    });
+
+    expect(result.current).toBe('initial');
+
+    rerender('updated');
+    expect(result.current).toBe('initial'); // まだ変更されない
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(result.current).toBe('updated'); // デバウンス後に変更
+  });
+});
+```
+
+#### **3. Server Action Tests (.test.ts)**
+```typescript
+// ✅ 良い例: Server Actionテスト
+describe('Audio Button Actions', () => {
+  beforeEach(() => {
+    mockFirestore();
+  });
+
+  it('should create audio button successfully', async () => {
+    const mockUser = createMockUser();
+    const input = createValidAudioButtonInput();
+
+    const result = await createAudioButton(input, mockUser);
+
+    expect(result.success).toBe(true);
+    expect(mockFirestore.collection).toHaveBeenCalledWith('audioButtons');
+  });
+
+  it('should handle validation errors', async () => {
+    const invalidInput = { title: '' }; // 無効な入力
+
+    const result = await createAudioButton(invalidInput, mockUser);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('タイトルは必須です');
+  });
+});
+```
+
+#### **4. API Route Tests (.test.ts)**
+```typescript
+// ✅ 良い例: API Routeテスト
+describe('/api/search', () => {
+  it('should return search results', async () => {
+    const request = new NextRequest('http://localhost/api/search?q=test');
+    
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toHaveProperty('results');
+  });
+
+  it('should handle query parameter validation', async () => {
+    const request = new NextRequest('http://localhost/api/search?limit=invalid');
+    
+    const response = await GET(request);
+
+    expect(response.status).toBe(400);
+  });
+});
+```
+
+### 共有テストユーティリティの活用
+
+#### **レスポンシブテスト (@packages/ui/test-utils)**
+```typescript
+import { validateAccessibleTouchTarget, testAcrossViewports } from '@suzumina.click/ui/test-utils/responsive-testing';
+
+// ✅ 推奨: 共有ユーティリティの活用
+describe('Button Component', () => {
+  testAcrossViewports('should be accessible on all devices', (viewport) => {
+    render(<Button />);
+    const button = screen.getByRole('button');
+    validateAccessibleTouchTarget(button);
+  });
+});
+```
+
+#### **モック作成ヘルパー**
+```typescript
+// test-utils/mock-helpers.ts (作成推奨)
+export const createMockUser = (overrides = {}) => ({
+  id: 'user-123',
+  name: 'テストユーザー',
+  ...overrides,
+});
+
+export const createMockAudioButton = (overrides = {}) => ({
+  id: 'button-123',
+  title: 'テスト音声',
+  ...overrides,
+});
+```
+
 ### カバレッジ目標
 
 - **最小カバレッジ**: 80%
 - **重要な関数**: 100%カバレッジ
 - **エッジケース**: 必ずテストする
+- **セキュリティ関連**: middleware・認証系は100%カバレッジ
+- **データベース操作**: Firestore操作は完全モック・完全カバレッジ
 
 ### テスト種別
 
-- **Unit Tests**: 個別関数のテスト
-- **Storybook Tests**: UIコンポーネントの視覚的テスト
-- **Integration Tests**: API連携テスト
-- **E2E Tests**: ユーザーシナリオテスト (将来実装)
+- **Unit Tests**: 個別関数・コンポーネントのテスト (30+件 実装済み)
+- **Storybook Tests**: UIコンポーネントの視覚的テスト (UI Package管理)
+- **Integration Tests**: API連携・Server Actionテスト (実装済み)
+- **E2E Tests**: ユーザーシナリオテスト (6件 実装済み)
 
 ## 🔧 開発ワークフロー
 

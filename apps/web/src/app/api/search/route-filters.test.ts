@@ -23,7 +23,7 @@ vi.mock("@suzumina.click/shared-types", async (importOriginal) => {
 });
 
 // Import the route after mocks are set up
-const { GET } = await import("../route");
+const { GET } = await import("./route");
 
 // Mock NextRequest
 class MockRequest {
