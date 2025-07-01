@@ -14,7 +14,7 @@ cd apps/web && pnpm dev
 
 # ✅ 品質チェック (コミット前必須) - Git フック自動実行
 pnpm check         # Lint + フォーマット + 型チェック (0エラー・0警告達成済み)
-pnpm test          # 単体テスト (400+件)
+pnpm test          # 単体テスト (677+件) - 高度フィルタリング17件追加
 
 # 🏗️ 本番ビルド
 pnpm build
