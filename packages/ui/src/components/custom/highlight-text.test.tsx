@@ -9,12 +9,12 @@ describe("HighlightText", () => {
 	});
 
 	it("検索語がnullの場合、元のテキストをそのまま表示する", () => {
-		render(<HighlightText text="Hello World" searchQuery={null} />);
+		render(<HighlightText text="Hello World" searchQuery={null as unknown as string} />);
 		expect(screen.getByText("Hello World")).toBeInTheDocument();
 	});
 
 	it("検索語がundefinedの場合、元のテキストをそのまま表示する", () => {
-		render(<HighlightText text="Hello World" searchQuery={undefined} />);
+		render(<HighlightText text="Hello World" searchQuery={undefined as unknown as string} />);
 		expect(screen.getByText("Hello World")).toBeInTheDocument();
 	});
 
