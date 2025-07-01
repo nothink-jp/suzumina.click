@@ -7,7 +7,7 @@
 #### 1. セッション開始
 
 ```bash
-git claude-start
+./scripts/git-claude-start
 # → mainから最新取得 + session/YYYYMMDD-HHMM ブランチ作成・切り替え
 ```
 
@@ -31,7 +31,7 @@ pnpm build          # ビルド確認
 #### 4. セッション終了
 
 ```bash
-git claude-done
+./scripts/git-claude-done
 # → mainブランチに切り替え + マージ + セッションブランチ削除
 
 git push origin main
@@ -58,13 +58,13 @@ gh pr create --title "session/20250701-1430の変更" --body "Claude Codeセッ�
 #### コンフリクト発生時
 
 ```bash
-git claude-start
+./scripts/git-claude-start
 # 作業中にコンフリクト発生
 git checkout main && git pull
 git checkout session/20250701-1430
 git rebase main
 # コンフリクト解決後
-git claude-done
+./scripts/git-claude-done
 ```
 
 #### 緊急時の手動操作

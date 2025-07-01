@@ -230,30 +230,104 @@ jobs:
           fi
           exit 1
       
-      # Cleanup old images (safer approach)
-      - name: Cleanup old images
+      # Cleanup old Docker images and Cloud Run revisions
+      - name: Cleanup old images and revisions
         run: |
-          echo "Checking Docker images in repository (cleanup temporarily disabled due to deletion issues)"
+          echo "🧹 Starting cleanup of old Docker images and Cloud Run revisions..."
           
-          # Show current images for monitoring
-          echo "Current images in repository:"
-          gcloud artifacts docker images list \
-            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }} \
-            --include-tags \
-            --sort-by="~CREATE_TIME" \
-            --format="table(IMAGE,CREATE_TIME,TAGS)" || echo "No images found or error listing"
+          KEEP_IMAGES=10
+          KEEP_REVISIONS=5
+          REPOSITORY_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}"
           
-          # Count total images
-          IMAGE_COUNT=$(gcloud artifacts docker images list \
-            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }} \
-            --format="value(IMAGE)" 2>/dev/null | wc -l || echo "0")
+          # 1. Cloud Run revision cleanup
+          echo "🗂️  Cleaning up Cloud Run revisions (keeping latest $KEEP_REVISIONS)..."
           
-          echo "Total images in repository: $IMAGE_COUNT"
+          # Get all revisions sorted by creation time (newest first)
+          REVISIONS=$(gcloud run revisions list \
+            --service="${{ env.SERVICE_NAME }}" \
+            --region="${{ env.REGION }}" \
+            --sort-by="~metadata.creationTimestamp" \
+            --format="value(metadata.name)" \
+            --limit=50)
           
-          if [ "$IMAGE_COUNT" -gt 10 ]; then
-            echo "⚠️  Repository has $IMAGE_COUNT images. Consider manual cleanup or implementing lifecycle policies."
-            echo "💡 You can manually delete old images using:"
-            echo "   gcloud artifacts docker images delete IMAGE_PATH --delete-tags --quiet"
+          if [ -n "$REVISIONS" ]; then
+            REVISION_ARRAY=($REVISIONS)
+            TOTAL_REVISIONS=${#REVISION_ARRAY[@]}
+            echo "Found $TOTAL_REVISIONS revisions"
+            
+            if [ $TOTAL_REVISIONS -gt $KEEP_REVISIONS ]; then
+              DELETE_COUNT=$((TOTAL_REVISIONS - KEEP_REVISIONS))
+              echo "Deleting $DELETE_COUNT old revisions..."
+              
+              for ((i=KEEP_REVISIONS; i<TOTAL_REVISIONS; i++)); do
+                REVISION=${REVISION_ARRAY[$i]}
+                echo "  Deleting revision: $REVISION"
+                
+                if gcloud run revisions delete "$REVISION" \
+                  --region="${{ env.REGION }}" \
+                  --quiet 2>/dev/null; then
+                  echo "    ✅ Deleted successfully"
+                else
+                  echo "    ⚠️  Failed to delete (may be in use)"
+                fi
+              done
+            else
+              echo "✅ Revision count is within limit ($TOTAL_REVISIONS revisions)"
+            fi
           else
-            echo "✅ Repository size is manageable ($IMAGE_COUNT images)"
+            echo "No revisions found"
           fi
+          
+          # 2. Docker image cleanup
+          echo "🐳 Cleaning up Docker images (keeping latest $KEEP_IMAGES)..."
+          
+          # Get all image digests sorted by creation time (newest first)
+          IMAGES=$(gcloud artifacts docker images list "$REPOSITORY_PATH" \
+            --sort-by="~CREATE_TIME" \
+            --format="value(IMAGE)" \
+            --limit=100 2>/dev/null || echo "")
+          
+          if [ -n "$IMAGES" ]; then
+            IMAGE_ARRAY=($IMAGES)
+            TOTAL_IMAGES=${#IMAGE_ARRAY[@]}
+            echo "Found $TOTAL_IMAGES images"
+            
+            if [ $TOTAL_IMAGES -gt $KEEP_IMAGES ]; then
+              DELETE_COUNT=$((TOTAL_IMAGES - KEEP_IMAGES))
+              echo "Deleting $DELETE_COUNT old images..."
+              
+              for ((i=KEEP_IMAGES; i<TOTAL_IMAGES; i++)); do
+                IMAGE=${IMAGE_ARRAY[$i]}
+                echo "  Deleting image: $IMAGE"
+                
+                if gcloud artifacts docker images delete "$IMAGE" \
+                  --delete-tags \
+                  --quiet 2>/dev/null; then
+                  echo "    ✅ Deleted successfully"
+                else
+                  echo "    ⚠️  Failed to delete (may be in use)"
+                fi
+              done
+            else
+              echo "✅ Image count is within limit ($TOTAL_IMAGES images)"
+            fi
+          else
+            echo "No images found"
+          fi
+          
+          # 3. Final status
+          echo "📊 Cleanup summary:"
+          
+          # Count remaining images
+          REMAINING_IMAGES=$(gcloud artifacts docker images list "$REPOSITORY_PATH" \
+            --format="value(IMAGE)" 2>/dev/null | wc -l || echo "0")
+          echo "  Docker images: $REMAINING_IMAGES remaining"
+          
+          # Count remaining revisions
+          REMAINING_REVISIONS=$(gcloud run revisions list \
+            --service="${{ env.SERVICE_NAME }}" \
+            --region="${{ env.REGION }}" \
+            --format="value(metadata.name)" | wc -l || echo "0")
+          echo "  Cloud Run revisions: $REMAINING_REVISIONS remaining"
+          
+          echo "🎉 Cleanup completed!"

@@ -1,0 +1,41 @@
+#!/bin/bash
+# Claude Code Session Branch End Script
+
+set -e
+
+echo "🏁 Ending Claude Code session..."
+
+# Get current branch name
+BRANCH=$(git branch --show-current)
+
+# Ensure we're on a session branch
+if [[ ! "$BRANCH" =~ ^session/ ]]; then
+    echo "❌ Error: Not on a session branch. Current branch: $BRANCH"
+    echo "💡 Session branches should start with 'session/'"
+    exit 1
+fi
+
+# Check if there are uncommitted changes
+if ! git diff-index --quiet HEAD --; then
+    echo "⚠️  Warning: You have uncommitted changes"
+    echo "Please commit your changes before ending the session"
+    git status --short
+    exit 1
+fi
+
+echo "📋 Session branch: $BRANCH"
+
+# Switch to main and merge
+git checkout main
+git merge --no-ff "$BRANCH"
+
+# Delete session branch
+git branch -d "$BRANCH"
+
+echo "✅ Session completed successfully!"
+echo "📝 Changes merged to main branch"
+echo "🗑️  Session branch deleted: $BRANCH"
+echo ""
+echo "💡 Next steps:"
+echo "  - Run: git push origin main"
+echo "  - Start new session: ./scripts/git-claude-start"

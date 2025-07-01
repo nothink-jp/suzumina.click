@@ -166,28 +166,104 @@ jobs:
           echo "🎯 Admin service deployed to: $SERVICE_URL"
           echo "🔒 Access is restricted to authorized admin users only"
       
-      # Cleanup old images
-      - name: Cleanup old images
+      # Cleanup old Docker images and Cloud Run revisions
+      - name: Cleanup old images and revisions
         run: |
-          echo "Checking Docker images in repository..."
+          echo "🧹 Starting cleanup of old admin Docker images and Cloud Run revisions..."
           
-          # Show current images for monitoring
-          echo "Current admin images in repository:"
-          gcloud artifacts docker images list \
-            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }} \
-            --include-tags \
-            --sort-by="~CREATE_TIME" \
-            --format="table(IMAGE,CREATE_TIME,TAGS)" || echo "No images found or error listing"
+          KEEP_IMAGES=5
+          KEEP_REVISIONS=3
+          REPOSITORY_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}"
           
-          # Count total images
-          IMAGE_COUNT=$(gcloud artifacts docker images list \
-            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }} \
-            --format="value(IMAGE)" 2>/dev/null | wc -l || echo "0")
+          # 1. Cloud Run revision cleanup
+          echo "🗂️  Cleaning up admin Cloud Run revisions (keeping latest $KEEP_REVISIONS)..."
           
-          echo "Total admin images in repository: $IMAGE_COUNT"
+          # Get all revisions sorted by creation time (newest first)
+          REVISIONS=$(gcloud run revisions list \
+            --service="${{ env.SERVICE_NAME }}" \
+            --region="${{ env.REGION }}" \
+            --sort-by="~metadata.creationTimestamp" \
+            --format="value(metadata.name)" \
+            --limit=20)
           
-          if [ "$IMAGE_COUNT" -gt 5 ]; then
-            echo "⚠️  Admin repository has $IMAGE_COUNT images. Consider cleanup."
+          if [ -n "$REVISIONS" ]; then
+            REVISION_ARRAY=($REVISIONS)
+            TOTAL_REVISIONS=${#REVISION_ARRAY[@]}
+            echo "Found $TOTAL_REVISIONS admin revisions"
+            
+            if [ $TOTAL_REVISIONS -gt $KEEP_REVISIONS ]; then
+              DELETE_COUNT=$((TOTAL_REVISIONS - KEEP_REVISIONS))
+              echo "Deleting $DELETE_COUNT old admin revisions..."
+              
+              for ((i=KEEP_REVISIONS; i<TOTAL_REVISIONS; i++)); do
+                REVISION=${REVISION_ARRAY[$i]}
+                echo "  Deleting admin revision: $REVISION"
+                
+                if gcloud run revisions delete "$REVISION" \
+                  --region="${{ env.REGION }}" \
+                  --quiet 2>/dev/null; then
+                  echo "    ✅ Deleted successfully"
+                else
+                  echo "    ⚠️  Failed to delete (may be in use)"
+                fi
+              done
+            else
+              echo "✅ Admin revision count is within limit ($TOTAL_REVISIONS revisions)"
+            fi
           else
-            echo "✅ Admin repository size is manageable ($IMAGE_COUNT images)"
+            echo "No admin revisions found"
           fi
+          
+          # 2. Docker image cleanup
+          echo "🐳 Cleaning up admin Docker images (keeping latest $KEEP_IMAGES)..."
+          
+          # Get all image digests sorted by creation time (newest first)
+          IMAGES=$(gcloud artifacts docker images list "$REPOSITORY_PATH" \
+            --sort-by="~CREATE_TIME" \
+            --format="value(IMAGE)" \
+            --limit=50 2>/dev/null || echo "")
+          
+          if [ -n "$IMAGES" ]; then
+            IMAGE_ARRAY=($IMAGES)
+            TOTAL_IMAGES=${#IMAGE_ARRAY[@]}
+            echo "Found $TOTAL_IMAGES admin images"
+            
+            if [ $TOTAL_IMAGES -gt $KEEP_IMAGES ]; then
+              DELETE_COUNT=$((TOTAL_IMAGES - KEEP_IMAGES))
+              echo "Deleting $DELETE_COUNT old admin images..."
+              
+              for ((i=KEEP_IMAGES; i<TOTAL_IMAGES; i++)); do
+                IMAGE=${IMAGE_ARRAY[$i]}
+                echo "  Deleting admin image: $IMAGE"
+                
+                if gcloud artifacts docker images delete "$IMAGE" \
+                  --delete-tags \
+                  --quiet 2>/dev/null; then
+                  echo "    ✅ Deleted successfully"
+                else
+                  echo "    ⚠️  Failed to delete (may be in use)"
+                fi
+              done
+            else
+              echo "✅ Admin image count is within limit ($TOTAL_IMAGES images)"
+            fi
+          else
+            echo "No admin images found"
+          fi
+          
+          # 3. Final status
+          echo "📊 Admin cleanup summary:"
+          
+          # Count remaining images
+          REMAINING_IMAGES=$(gcloud artifacts docker images list "$REPOSITORY_PATH" \
+            --format="value(IMAGE)" 2>/dev/null | wc -l || echo "0")
+          echo "  Admin Docker images: $REMAINING_IMAGES remaining"
+          
+          # Count remaining revisions
+          REMAINING_REVISIONS=$(gcloud run revisions list \
+            --service="${{ env.SERVICE_NAME }}" \
+            --region="${{ env.REGION }}" \
+            --format="value(metadata.name)" | wc -l || echo "0")
+          echo "  Admin Cloud Run revisions: $REMAINING_REVISIONS remaining"
+          
+          echo "🎉 Admin cleanup completed!"

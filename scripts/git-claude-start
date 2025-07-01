@@ -1,0 +1,19 @@
+#!/bin/bash
+# Claude Code Session Branch Start Script
+
+set -e
+
+echo "🚀 Starting Claude Code session..."
+
+# Ensure we're on main and up to date
+git checkout main
+git pull origin main
+
+# Create session branch with timestamp
+SESSION_BRANCH="session/$(date +%Y%m%d-%H%M)"
+git checkout -b "$SESSION_BRANCH"
+
+echo "✅ Session branch created: $SESSION_BRANCH"
+echo "💡 Ready for Claude Code development!"
+echo ""
+echo "When finished, run: ./scripts/git-claude-done"
