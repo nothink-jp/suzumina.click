@@ -17,6 +17,8 @@ interface AudioButtonWithFavoriteClientProps {
 	className?: string;
 	maxTitleLength?: number;
 	initialIsFavorited?: boolean;
+	searchQuery?: string;
+	highlightClassName?: string;
 }
 
 export function AudioButtonWithFavoriteClient({
@@ -27,6 +29,8 @@ export function AudioButtonWithFavoriteClient({
 	className,
 	maxTitleLength,
 	initialIsFavorited = false,
+	searchQuery,
+	highlightClassName,
 }: AudioButtonWithFavoriteClientProps) {
 	const { data: session } = useSession();
 	const router = useRouter();
@@ -101,6 +105,8 @@ export function AudioButtonWithFavoriteClient({
 			onFavoriteToggle={showFavorite && isAuthenticated ? handleFavoriteToggle : undefined}
 			canDelete={canDelete}
 			onDelete={canDelete ? handleDelete : undefined}
+			searchQuery={searchQuery}
+			highlightClassName={highlightClassName}
 		/>
 	);
 }

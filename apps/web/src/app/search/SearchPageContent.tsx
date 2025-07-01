@@ -10,12 +10,13 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
-import { BookOpen, ChevronRight, Filter, Loader2, Music, Search, Video } from "lucide-react";
+import { BookOpen, ChevronRight, Filter, Loader2, Music, Search, Video, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
+import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
 import ThumbnailImage from "@/components/ThumbnailImage";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface UnifiedSearchResult {
 	audioButtons: FrontendAudioButtonData[];
@@ -51,39 +52,51 @@ export default function SearchPageContent() {
 	const [activeTab, setActiveTab] = useState<"all" | "buttons" | "videos" | "works">("all");
 	const [searchResult, setSearchResult] = useState<UnifiedSearchResult | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
+	const [isAutoSearching, setIsAutoSearching] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
+	// デバウンスされた検索クエリ（自動検索用）
+	const debouncedSearchQuery = useDebounce(searchQuery, 400);
+
 	// 検索実行
-	const performSearch = useCallback(async (query: string, type: typeof activeTab = "all") => {
-		if (!query.trim()) {
-			setSearchResult(null);
-			return;
-		}
-
-		setIsLoading(true);
-		setError(null);
-
-		try {
-			const params = new URLSearchParams({
-				q: query.trim(),
-				type,
-				limit: "12",
-			});
-
-			const response = await fetch(`/api/search?${params}`);
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || "検索に失敗しました");
+	const performSearch = useCallback(
+		async (query: string, type: typeof activeTab = "all", isAutoSearch = false) => {
+			if (!query.trim()) {
+				setSearchResult(null);
+				return;
 			}
 
-			const result = await response.json();
-			setSearchResult(result);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "検索中にエラーが発生しました");
-		} finally {
-			setIsLoading(false);
-		}
-	}, []);
+			if (isAutoSearch) {
+				setIsAutoSearching(true);
+			} else {
+				setIsLoading(true);
+			}
+			setError(null);
+
+			try {
+				const params = new URLSearchParams({
+					q: query.trim(),
+					type,
+					limit: "12",
+				});
+
+				const response = await fetch(`/api/search?${params}`);
+				if (!response.ok) {
+					const errorData = await response.json();
+					throw new Error(errorData.error || "検索に失敗しました");
+				}
+
+				const result = await response.json();
+				setSearchResult(result);
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "検索中にエラーが発生しました");
+			} finally {
+				setIsLoading(false);
+				setIsAutoSearching(false);
+			}
+		},
+		[],
+	);
 
 	// URLパラメータから初期状態を設定
 	useEffect(() => {
@@ -109,6 +122,23 @@ export default function SearchPageContent() {
 		},
 		[router],
 	);
+
+	// デバウンスされた自動検索
+	useEffect(() => {
+		// 初期ロードやURLパラメータからの設定時は自動検索しない
+		if (!debouncedSearchQuery || searchParams.get("q") === debouncedSearchQuery) {
+			return;
+		}
+
+		// 最小文字数チェック
+		if (debouncedSearchQuery.length >= 2) {
+			updateURL(debouncedSearchQuery, activeTab);
+			performSearch(debouncedSearchQuery, activeTab, true);
+		} else if (debouncedSearchQuery.length === 0) {
+			updateURL("", activeTab);
+			setSearchResult(null);
+		}
+	}, [debouncedSearchQuery, activeTab, updateURL, performSearch, searchParams]);
 
 	// 検索フォーム送信
 	const handleSearch = useCallback(
@@ -179,12 +209,34 @@ export default function SearchPageContent() {
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 							<Input
 								type="text"
-								placeholder="ボタンや作品を検索..."
+								placeholder="ボタンや作品を検索...（2文字以上で自動検索）"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="pl-10 h-12 text-base"
+								className="pl-10 pr-12 h-12 text-base"
 								data-testid="search-input"
+								minLength={2}
 							/>
+							{/* クリアボタン */}
+							{searchQuery && (
+								<button
+									type="button"
+									onClick={() => {
+										setSearchQuery("");
+										setSearchResult(null);
+										updateURL("", activeTab);
+									}}
+									className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+									aria-label="検索をクリア"
+								>
+									<X className="h-4 w-4 text-muted-foreground" />
+								</button>
+							)}
+							{/* 自動検索ローディングインジケーター */}
+							{isAutoSearching && (
+								<div className="absolute right-10 top-1/2 transform -translate-y-1/2">
+									<Loader2 className="h-4 w-4 animate-spin text-suzuka-500" />
+								</div>
+							)}
 						</div>
 						<Button
 							type="submit"
@@ -201,6 +253,13 @@ export default function SearchPageContent() {
 							検索
 						</Button>
 					</form>
+
+					{/* 検索ヒント */}
+					{searchQuery.length > 0 && searchQuery.length < 2 && (
+						<div className="text-sm text-muted-foreground bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+							💡 2文字以上入力すると自動検索が開始されます
+						</div>
+					)}
 
 					{/* 人気タグ */}
 					<div className="space-y-2">
@@ -229,13 +288,50 @@ export default function SearchPageContent() {
 			{error && (
 				<Card className="border-destructive">
 					<CardContent className="p-4">
-						<p className="text-destructive font-medium">エラー: {error}</p>
+						<div className="flex items-center gap-2">
+							<X className="h-5 w-5 text-destructive" />
+							<p className="text-destructive font-medium">エラー: {error}</p>
+						</div>
+						<p className="text-sm text-muted-foreground mt-2">
+							しばらく待ってから再度お試しください。
+						</p>
 					</CardContent>
 				</Card>
 			)}
 
+			{/* ローディング状態（メイン検索） */}
+			{isLoading && searchQuery && (
+				<div className="space-y-6">
+					{/* タブスケルトン */}
+					<div className="flex gap-2">
+						{Array.from({ length: 4 }, (_, i) => (
+							<div
+								key={`tab-loading-${i}`}
+								className="h-12 bg-muted rounded-lg w-32 animate-pulse"
+							/>
+						))}
+					</div>
+					{/* 結果スケルトン */}
+					<div className="space-y-6">
+						{Array.from({ length: 3 }, (_, i) => (
+							<div key={`result-loading-${i}`} className="space-y-4">
+								<div className="h-6 bg-muted rounded w-32 animate-pulse" />
+								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+									{Array.from({ length: 3 }, (_, j) => (
+										<div
+											key={`card-loading-${i}-${j}`}
+											className="h-40 bg-muted rounded-lg animate-pulse"
+										/>
+									))}
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			)}
+
 			{/* 検索結果 */}
-			{searchQuery && searchResult && !error && (
+			{searchQuery && searchResult && !error && !isLoading && (
 				<Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
 					<TabsList className="grid w-full grid-cols-4 h-12">
 						<TabsTrigger value="all" className="text-sm">
@@ -276,7 +372,7 @@ export default function SearchPageContent() {
 								</div>
 								<div className="flex flex-wrap gap-3">
 									{searchResult.audioButtons.map((audioButton) => (
-										<AudioButtonWithFavoriteClient
+										<AudioButtonWithPlayCount
 											key={audioButton.id}
 											audioButton={audioButton}
 											className="shadow-sm hover:shadow-md transition-all duration-200"
@@ -407,7 +503,7 @@ export default function SearchPageContent() {
 						{searchResult.audioButtons.length > 0 ? (
 							<div className="flex flex-wrap gap-3">
 								{searchResult.audioButtons.map((audioButton) => (
-									<AudioButtonWithFavoriteClient
+									<AudioButtonWithPlayCount
 										key={audioButton.id}
 										audioButton={audioButton}
 										className="shadow-sm hover:shadow-md transition-all duration-200"

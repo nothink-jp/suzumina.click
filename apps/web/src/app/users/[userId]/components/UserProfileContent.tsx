@@ -21,7 +21,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
+import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
 
 interface UserProfileContentProps {
 	user: FrontendUserData;
@@ -119,7 +119,7 @@ function AudioButtonsList({
 		<>
 			<div className="flex flex-wrap gap-3 items-start">
 				{audioButtons.map((button) => (
-					<AudioButtonWithFavoriteClient
+					<AudioButtonWithPlayCount
 						key={button.id}
 						audioButton={button}
 						showFavorite={true}

@@ -3,6 +3,16 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { FeaturedAudioButtonsCarousel } from "./FeaturedAudioButtonsCarousel";
 
+// AudioButtonWithPlayCount のモック
+vi.mock("./AudioButtonWithPlayCount", () => ({
+	AudioButtonWithPlayCount: ({ audioButton }: { audioButton: FrontendAudioButtonData }) => (
+		<div data-testid="audio-button-with-favorite">
+			<span data-testid="audio-button-title">{audioButton.title}</span>
+			<span data-testid="audio-button-id">{audioButton.id}</span>
+		</div>
+	),
+}));
+
 // AudioButtonWithFavoriteClient のモック
 vi.mock("./AudioButtonWithFavoriteClient", () => ({
 	AudioButtonWithFavoriteClient: ({ audioButton }: { audioButton: FrontendAudioButtonData }) => (
@@ -13,7 +23,10 @@ vi.mock("./AudioButtonWithFavoriteClient", () => ({
 	),
 }));
 
-// Carousel コンポーネントのモックは不要になったため削除
+// Mock auth.ts to avoid NextAuth module resolution issues
+vi.mock("@/auth", () => ({
+	auth: () => Promise.resolve(null),
+}));
 
 describe("FeaturedAudioButtonsCarousel", () => {
 	const mockAudioButtons: FrontendAudioButtonData[] = [

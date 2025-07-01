@@ -7,7 +7,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Heart, Music } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
+import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
 
 interface FavoritesListProps {
 	audioButtons: FrontendAudioButtonData[];
@@ -61,7 +61,7 @@ export default function FavoritesList({
 
 			<div className="flex flex-wrap gap-3 items-start">
 				{audioButtons.map((audioButton) => (
-					<AudioButtonWithFavoriteClient
+					<AudioButtonWithPlayCount
 						key={audioButton.id}
 						audioButton={audioButton}
 						showFavorite={true}

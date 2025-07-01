@@ -1,13 +1,17 @@
 "use client";
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import {
+	AdvancedFilterPanel,
+	type AdvancedFilters,
+} from "@suzumina.click/ui/components/custom/advanced-filter-panel";
 import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Plus, Search, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useCallback, useEffect, useState } from "react";
-import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
+import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
 import Pagination from "@/components/Pagination";
 
 interface SearchParams {
@@ -16,11 +20,94 @@ interface SearchParams {
 	sort?: string;
 	page?: string;
 	sourceVideoId?: string;
+	// 高度フィルタパラメータ
+	playCountMin?: string;
+	playCountMax?: string;
+	likeCountMin?: string;
+	likeCountMax?: string;
+	favoriteCountMin?: string;
+	favoriteCountMax?: string;
+	durationMin?: string;
+	durationMax?: string;
+	createdAfter?: string;
+	createdBefore?: string;
+	createdBy?: string;
 }
 
 interface AudioButtonsListProps {
 	searchParams: SearchParams;
 }
+
+// Helper function to add parameter if it exists
+const addParamIfExists = (params: URLSearchParams, key: string, value?: string) => {
+	if (value) {
+		params.set(key, value);
+	}
+};
+
+// Helper function to add basic search parameters
+const addBasicParams = (params: URLSearchParams, searchParams: SearchParams) => {
+	addParamIfExists(params, "q", searchParams.q);
+	addParamIfExists(params, "tags", searchParams.tags);
+	addParamIfExists(params, "sort", searchParams.sort);
+	addParamIfExists(params, "sourceVideoId", searchParams.sourceVideoId);
+};
+
+// Helper function to add numeric range parameters
+const addNumericRangeParams = (params: URLSearchParams, searchParams: SearchParams) => {
+	addParamIfExists(params, "playCountMin", searchParams.playCountMin);
+	addParamIfExists(params, "playCountMax", searchParams.playCountMax);
+	addParamIfExists(params, "likeCountMin", searchParams.likeCountMin);
+	addParamIfExists(params, "likeCountMax", searchParams.likeCountMax);
+	addParamIfExists(params, "favoriteCountMin", searchParams.favoriteCountMin);
+	addParamIfExists(params, "favoriteCountMax", searchParams.favoriteCountMax);
+	addParamIfExists(params, "durationMin", searchParams.durationMin);
+	addParamIfExists(params, "durationMax", searchParams.durationMax);
+};
+
+// Helper function to add date and user parameters
+const addDateAndUserParams = (params: URLSearchParams, searchParams: SearchParams) => {
+	addParamIfExists(params, "createdAfter", searchParams.createdAfter);
+	addParamIfExists(params, "createdBefore", searchParams.createdBefore);
+	addParamIfExists(params, "createdBy", searchParams.createdBy);
+};
+
+// Helper function to parse numeric range from search params
+const parseNumericRange = (minParam?: string, maxParam?: string) => ({
+	min: minParam ? Number(minParam) : undefined,
+	max: maxParam ? Number(maxParam) : undefined,
+});
+
+// Helper function to parse date range from search params
+const parseDateRange = (fromParam?: string, toParam?: string) => ({
+	from: fromParam ? new Date(fromParam) : undefined,
+	to: toParam ? new Date(toParam) : undefined,
+});
+
+// Helper function to initialize advanced filters from search params
+const createAdvancedFiltersFromParams = (params: SearchParams): AdvancedFilters => ({
+	playCount: parseNumericRange(params.playCountMin, params.playCountMax),
+	likeCount: parseNumericRange(params.likeCountMin, params.likeCountMax),
+	favoriteCount: parseNumericRange(params.favoriteCountMin, params.favoriteCountMax),
+	duration: parseNumericRange(params.durationMin, params.durationMax),
+	createdAt: parseDateRange(params.createdAfter, params.createdBefore),
+	createdBy: params.createdBy || undefined,
+});
+
+// Helper function to convert advanced filters to URL params
+const convertFiltersToParams = (filters: AdvancedFilters): Record<string, string | undefined> => ({
+	playCountMin: filters.playCount?.min?.toString(),
+	playCountMax: filters.playCount?.max?.toString(),
+	likeCountMin: filters.likeCount?.min?.toString(),
+	likeCountMax: filters.likeCount?.max?.toString(),
+	favoriteCountMin: filters.favoriteCount?.min?.toString(),
+	favoriteCountMax: filters.favoriteCount?.max?.toString(),
+	durationMin: filters.duration?.min?.toString(),
+	durationMax: filters.duration?.max?.toString(),
+	createdAfter: filters.createdAt?.from?.toISOString(),
+	createdBefore: filters.createdAt?.to?.toISOString(),
+	createdBy: filters.createdBy,
+});
 
 export default function AudioButtonsList({ searchParams }: AudioButtonsListProps) {
 	const router = useRouter();
@@ -35,6 +122,11 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	const [sortBy, setSortBy] = useState(searchParams.sort || "default");
 	const [itemsPerPageValue, setItemsPerPageValue] = useState("12");
 
+	// 高度フィルタの状態
+	const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>(() =>
+		createAdvancedFiltersFromParams(searchParams),
+	);
+
 	const currentPage = searchParams.page ? Number.parseInt(searchParams.page, 10) : 1;
 	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
 	const totalPages = Math.ceil(totalCount / itemsPerPageNum);
@@ -44,10 +136,9 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		const queryParams = new URLSearchParams();
 		queryParams.set("limit", itemsPerPageNum.toString());
 
-		if (searchParams.q) queryParams.set("q", searchParams.q);
-		if (searchParams.tags) queryParams.set("tags", searchParams.tags);
-		if (searchParams.sort) queryParams.set("sort", searchParams.sort);
-		if (searchParams.sourceVideoId) queryParams.set("sourceVideoId", searchParams.sourceVideoId);
+		addBasicParams(queryParams, searchParams);
+		addNumericRangeParams(queryParams, searchParams);
+		addDateAndUserParams(queryParams, searchParams);
 
 		return queryParams;
 	}, [searchParams, itemsPerPageNum]);
@@ -145,6 +236,18 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		});
 	};
 
+	// 高度フィルタ変更ハンドラー
+	const handleAdvancedFiltersChange = (filters: AdvancedFilters) => {
+		setAdvancedFilters(filters);
+	};
+
+	// 高度フィルタ適用ハンドラー
+	const handleApplyAdvancedFilters = () => {
+		startTransition(() => {
+			updateSearchParams(convertFiltersToParams(advancedFilters));
+		});
+	};
+
 	if (loading) {
 		return (
 			<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-12">
@@ -238,6 +341,13 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 							))}
 						</div>
 					</div>
+
+					{/* 高度フィルタ */}
+					<AdvancedFilterPanel
+						filters={advancedFilters}
+						onChange={handleAdvancedFiltersChange}
+						onApply={handleApplyAdvancedFilters}
+					/>
 				</div>
 			</div>
 
@@ -295,10 +405,12 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 				<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
 					<div className="flex flex-wrap gap-3 items-start">
 						{audioButtons.map((audioButton) => (
-							<AudioButtonWithFavoriteClient
+							<AudioButtonWithPlayCount
 								key={audioButton.id}
 								audioButton={audioButton}
 								className="shadow-sm hover:shadow-md transition-all duration-200"
+								searchQuery={searchParams.q}
+								highlightClassName="bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
 							/>
 						))}
 					</div>

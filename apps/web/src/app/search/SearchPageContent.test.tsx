@@ -79,6 +79,7 @@ vi.mock("lucide-react", () => ({
 	Video: ({ className }: any) => <div className={className} data-testid="video-icon" />,
 	BookOpen: ({ className }: any) => <div className={className} data-testid="book-icon" />,
 	ChevronRight: ({ className }: any) => <div className={className} data-testid="chevron-icon" />,
+	X: ({ className }: any) => <div className={className} data-testid="x-icon" />,
 }));
 
 vi.mock("@/components/AudioButtonWithFavoriteClient", () => ({
@@ -99,6 +100,16 @@ vi.mock("next/link", () => ({
 			{children}
 		</a>
 	),
+}));
+
+// Mock useDebounce hook
+vi.mock("@/hooks/useDebounce", () => ({
+	useDebounce: (value: any) => value, // Return value immediately for testing
+}));
+
+// Mock auth.ts to avoid NextAuth module resolution issues
+vi.mock("@/auth", () => ({
+	auth: () => Promise.resolve(null),
 }));
 
 describe("SearchPageContent", () => {
@@ -193,7 +204,10 @@ describe("SearchPageContent", () => {
 			render(<SearchPageContent />);
 
 			const searchInput = screen.getByTestId("search-input");
-			expect(searchInput).toHaveAttribute("placeholder", "ボタンや作品を検索...");
+			expect(searchInput).toHaveAttribute(
+				"placeholder",
+				"ボタンや作品を検索...（2文字以上で自動検索）",
+			);
 		});
 	});
 });

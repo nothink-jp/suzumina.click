@@ -1,6 +1,19 @@
 import { Suspense } from "react";
 import SearchPageContent from "./SearchPageContent";
 
+// Generate stable skeleton keys to avoid array index warning
+const SKELETON_KEYS = {
+	tags: Array.from({ length: 6 }, () => `tag-skeleton-${Math.random().toString(36).substr(2, 9)}`),
+	tabs: Array.from({ length: 4 }, () => `tab-skeleton-${Math.random().toString(36).substr(2, 9)}`),
+	sections: Array.from(
+		{ length: 3 },
+		() => `section-skeleton-${Math.random().toString(36).substr(2, 9)}`,
+	),
+	cards: Array.from({ length: 3 }, () =>
+		Array.from({ length: 3 }, () => `card-skeleton-${Math.random().toString(36).substr(2, 9)}`),
+	),
+};
+
 export default function SearchPage() {
 	return (
 		<div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -24,34 +37,34 @@ function SearchPageSkeleton() {
 			<div className="bg-suzuka-50 p-6 rounded-lg space-y-4">
 				<div className="h-12 bg-muted rounded-lg animate-pulse" />
 				<div className="flex flex-wrap gap-2">
-					{Array.from({ length: 6 }).map((_, i) => (
-						<div
-							key={`tag-skeleton-${i}`}
-							className="h-6 bg-muted rounded-full w-16 animate-pulse"
-						/>
+					{SKELETON_KEYS.tags.map((key) => (
+						<div key={key} className="h-6 bg-muted rounded-full w-16 animate-pulse" />
 					))}
 				</div>
 			</div>
 
 			{/* タブ */}
 			<div className="flex gap-2">
-				{Array.from({ length: 4 }).map((_, i) => (
-					<div key={`tab-skeleton-${i}`} className="h-10 bg-muted rounded-lg w-24 animate-pulse" />
+				{SKELETON_KEYS.tabs.map((key) => (
+					<div key={key} className="h-10 bg-muted rounded-lg w-24 animate-pulse" />
 				))}
 			</div>
 
 			{/* 結果 */}
 			<div className="space-y-6">
-				{Array.from({ length: 3 }).map((_, i) => (
-					<div key={`section-skeleton-${i}`} className="space-y-4">
+				{SKELETON_KEYS.sections.map((sectionKey, i) => (
+					<div key={sectionKey} className="space-y-4">
 						<div className="h-6 bg-muted rounded w-32 animate-pulse" />
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-							{Array.from({ length: 3 }).map((_, j) => (
-								<div
-									key={`card-skeleton-${i}-${j}`}
-									className="h-32 bg-muted rounded-lg animate-pulse"
-								/>
-							))}
+							{SKELETON_KEYS.cards[i]?.map((cardKey) => (
+								<div key={cardKey} className="h-32 bg-muted rounded-lg animate-pulse" />
+							)) ||
+								Array.from({ length: 3 }, (_, j) => (
+									<div
+										key={`fallback-card-${i}-${j}`}
+										className="h-32 bg-muted rounded-lg animate-pulse"
+									/>
+								))}
 						</div>
 					</div>
 				))}

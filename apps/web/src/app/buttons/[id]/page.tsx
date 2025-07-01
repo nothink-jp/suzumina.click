@@ -9,7 +9,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getAudioButtonById, getAudioButtons } from "@/app/buttons/actions";
 import { AudioButtonDeleteButton } from "@/components/AudioButtonDeleteButton";
-import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
+import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
 import { LikeButton } from "@/components/LikeButton";
 
 interface AudioButtonDetailPageProps {
@@ -85,7 +85,7 @@ async function RelatedAudioButtons({
 						<CardContent>
 							<div className="flex flex-wrap gap-3 items-start">
 								{relatedButtons.slice(0, 6).map((audioButton) => (
-									<AudioButtonWithFavoriteClient
+									<AudioButtonWithPlayCount
 										key={audioButton.id}
 										audioButton={audioButton}
 										showFavorite={true}
@@ -236,7 +236,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 						{/* 音声ボタン再生エリア */}
 						<div className="mb-6">
 							<h3 className="text-sm font-medium text-muted-foreground mb-3">音声ボタン</h3>
-							<AudioButtonWithFavoriteClient
+							<AudioButtonWithPlayCount
 								audioButton={audioButton}
 								showFavorite={true}
 								showDelete={false}

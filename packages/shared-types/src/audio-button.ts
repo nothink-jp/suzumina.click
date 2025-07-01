@@ -153,6 +153,23 @@ export const AudioButtonQuerySchema = z.object({
 	searchText: z.string().max(100).optional(),
 	sortBy: z.enum(["newest", "oldest", "popular", "mostPlayed"]).default("newest"),
 	onlyPublic: z.boolean().default(true),
+
+	// 数値範囲フィルタ
+	playCountMin: z.number().int().min(0).optional(),
+	playCountMax: z.number().int().min(0).optional(),
+	likeCountMin: z.number().int().min(0).optional(),
+	likeCountMax: z.number().int().min(0).optional(),
+	favoriteCountMin: z.number().int().min(0).optional(),
+	favoriteCountMax: z.number().int().min(0).optional(),
+	durationMin: z.number().int().min(0).optional(), // 秒単位
+	durationMax: z.number().int().min(0).optional(), // 秒単位
+
+	// 日付範囲フィルタ
+	createdAfter: z.string().datetime().optional(),
+	createdBefore: z.string().datetime().optional(),
+
+	// ユーザーフィルタ
+	createdBy: z.string().optional(),
 });
 
 /**
@@ -414,14 +431,41 @@ export function validateAudioButtonCreation(
 }
 
 /**
- * 音声ボタンのフィルタリング
+ * 音声ボタンのフィルタリング（高度フィルタリング対応）
  */
 export function filterAudioButtons(
 	buttons: FrontendAudioButtonData[],
-	filters: { tags?: string[]; searchText?: string },
+	filters: {
+		tags?: string[];
+		searchText?: string;
+		playCountMin?: number;
+		playCountMax?: number;
+		likeCountMin?: number;
+		likeCountMax?: number;
+		favoriteCountMin?: number;
+		favoriteCountMax?: number;
+		durationMin?: number;
+		durationMax?: number;
+		createdAfter?: string;
+		createdBefore?: string;
+		createdBy?: string;
+	},
 ): FrontendAudioButtonData[] {
 	return buttons.filter((button) => {
-		return matchesTags(button, filters.tags) && matchesSearchText(button, filters.searchText);
+		return (
+			matchesTags(button, filters.tags) &&
+			matchesSearchText(button, filters.searchText) &&
+			matchesNumericRange(button.playCount, filters.playCountMin, filters.playCountMax) &&
+			matchesNumericRange(button.likeCount, filters.likeCountMin, filters.likeCountMax) &&
+			matchesNumericRange(
+				button.favoriteCount,
+				filters.favoriteCountMin,
+				filters.favoriteCountMax,
+			) &&
+			matchesDurationRange(button, filters.durationMin, filters.durationMax) &&
+			matchesDateRange(button.createdAt, filters.createdAfter, filters.createdBefore) &&
+			matchesCreatedBy(button, filters.createdBy)
+		);
 	});
 }
 
@@ -447,6 +491,48 @@ const matchesSearchText = (button: FrontendAudioButtonData, searchText?: string)
 		.toLowerCase();
 
 	return searchableText.includes(searchLower);
+};
+
+// 数値範囲フィルタのヘルパー関数
+const matchesNumericRange = (value: number, min?: number, max?: number): boolean => {
+	if (min !== undefined && value < min) {
+		return false;
+	}
+	if (max !== undefined && value > max) {
+		return false;
+	}
+	return true;
+};
+
+// 音声長フィルタのヘルパー関数
+const matchesDurationRange = (
+	button: FrontendAudioButtonData,
+	min?: number,
+	max?: number,
+): boolean => {
+	const duration = button.endTime - button.startTime;
+	return matchesNumericRange(duration, min, max);
+};
+
+// 日付範囲フィルタのヘルパー関数
+const matchesDateRange = (createdAt: string, after?: string, before?: string): boolean => {
+	const buttonDate = new Date(createdAt);
+
+	if (after && buttonDate < new Date(after)) {
+		return false;
+	}
+	if (before && buttonDate > new Date(before)) {
+		return false;
+	}
+	return true;
+};
+
+// 作成者フィルタのヘルパー関数
+const matchesCreatedBy = (button: FrontendAudioButtonData, createdBy?: string): boolean => {
+	if (!createdBy) {
+		return true;
+	}
+	return button.createdBy === createdBy;
 };
 
 /**

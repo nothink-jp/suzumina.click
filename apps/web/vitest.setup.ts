@@ -102,6 +102,8 @@ vi.mock("next/navigation", () => ({
 	usePathname: () => "/",
 }));
 
+// NextAuth mocks are now handled by vitest.config.ts aliases
+
 // Mock for next/image - Enhanced for better test stability
 vi.mock("next/image", () => ({
 	default: ({

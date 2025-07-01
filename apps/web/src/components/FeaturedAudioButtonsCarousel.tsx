@@ -2,7 +2,7 @@
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { useEffect, useState } from "react";
-import { AudioButtonWithFavoriteClient } from "./AudioButtonWithFavoriteClient";
+import { AudioButtonWithPlayCount } from "./AudioButtonWithPlayCount";
 
 interface FeaturedAudioButtonsCarouselProps {
 	audioButtons: FrontendAudioButtonData[];
@@ -29,7 +29,7 @@ export function FeaturedAudioButtonsCarousel({ audioButtons }: FeaturedAudioButt
 	return (
 		<div className="flex flex-wrap gap-2 sm:gap-3 items-start justify-center sm:justify-start">
 			{audioButtons.map((audioButton) => (
-				<AudioButtonWithFavoriteClient
+				<AudioButtonWithPlayCount
 					key={audioButton.id}
 					audioButton={audioButton}
 					className="shadow-sm hover:shadow-md transition-all duration-200 min-w-0 flex-shrink-0"

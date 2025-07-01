@@ -144,6 +144,85 @@ function processUserVideoDocuments(
 }
 
 /**
+ * startAfter処理を実行するヘルパー関数
+ */
+async function applyStartAfterPagination(
+	videosRef: CollectionReference,
+	paginationConfig: ReturnType<typeof buildUserPaginationQuery>,
+) {
+	if (paginationConfig.useStartAfter && paginationConfig.docId) {
+		const startAfterDoc = await videosRef.doc(paginationConfig.docId).get();
+		if (startAfterDoc.exists) {
+			paginationConfig.query = paginationConfig.query.startAfter(startAfterDoc);
+		}
+	}
+}
+
+/**
+ * 検索用の全ドキュメントクエリを構築するヘルパー関数
+ */
+function buildSearchQuery(
+	videosRef: CollectionReference,
+	params: { year?: string; sort?: string },
+) {
+	let allDocsQuery = videosRef.orderBy("publishedAt", params?.sort === "oldest" ? "asc" : "desc");
+
+	// 年代フィルタリングがある場合は適用
+	if (params?.year) {
+		const year = Number.parseInt(params.year, 10);
+		if (!Number.isNaN(year)) {
+			const startOfYear = new Date(year, 0, 1);
+			const endOfYear = new Date(year + 1, 0, 1);
+			allDocsQuery = allDocsQuery
+				.where("publishedAt", ">=", Timestamp.fromDate(startOfYear))
+				.where("publishedAt", "<", Timestamp.fromDate(endOfYear));
+		}
+	}
+
+	return allDocsQuery;
+}
+
+/**
+ * 検索結果を処理してページネーションを適用するヘルパー関数
+ */
+function processSearchResults(
+	videosToProcess: DocumentSnapshot[],
+	params: { search: string; page?: number },
+	paginationConfig: { limit: number },
+) {
+	// 検索結果を取得してページネーション適用
+	const allFilteredVideos = processUserVideoDocuments(
+		videosToProcess,
+		videosToProcess.length, // 全件処理
+		params.search,
+	);
+
+	// ページネーション適用
+	const startIndex = ((params?.page || 1) - 1) * paginationConfig.limit;
+	const endIndex = startIndex + paginationConfig.limit;
+	const videos = allFilteredVideos.slice(startIndex, endIndex);
+
+	// 次のページがあるかどうかを判定
+	const currentPage = params?.page || 1;
+	const hasMore = currentPage * paginationConfig.limit < allFilteredVideos.length;
+
+	return { videos, hasMore };
+}
+
+/**
+ * 通常のページネーション結果を処理するヘルパー関数
+ */
+function processRegularResults(
+	videosToProcess: DocumentSnapshot[],
+	docs: DocumentSnapshot[],
+	paginationConfig: { limit: number },
+) {
+	const videos = processUserVideoDocuments(videosToProcess, paginationConfig.limit, undefined);
+	const hasMore = docs.length > paginationConfig.limit;
+	return { videos, hasMore };
+}
+
+/**
  * Firestoreからビデオタイトル一覧を取得するServer Action（ユーザー向けページネーション対応）
  */
 export async function getVideoTitles(params?: {
@@ -160,12 +239,7 @@ export async function getVideoTitles(params?: {
 		const paginationConfig = buildUserPaginationQuery(videosRef, params);
 
 		// startAfter処理
-		if (paginationConfig.useStartAfter && paginationConfig.docId) {
-			const startAfterDoc = await videosRef.doc(paginationConfig.docId).get();
-			if (startAfterDoc.exists) {
-				paginationConfig.query = paginationConfig.query.startAfter(startAfterDoc);
-			}
-		}
+		await applyStartAfterPagination(videosRef, paginationConfig);
 
 		// limit+1を取得して、次のページがあるかどうかを判定
 		const snapshot = await paginationConfig.query.limit(paginationConfig.limit + 1).get();
@@ -179,52 +253,20 @@ export async function getVideoTitles(params?: {
 		// 検索クエリがある場合、全ドキュメントを取得してフィルタリング
 		let videosToProcess = docs;
 		if (params?.search) {
-			// 検索時は全ドキュメントから検索するため、新しいクエリを作成
-			let allDocsQuery = videosRef.orderBy(
-				"publishedAt",
-				params?.sort === "oldest" ? "asc" : "desc",
-			);
-
-			// 年代フィルタリングがある場合は適用
-			if (params?.year) {
-				const year = Number.parseInt(params.year, 10);
-				if (!Number.isNaN(year)) {
-					const startOfYear = new Date(year, 0, 1);
-					const endOfYear = new Date(year + 1, 0, 1);
-					allDocsQuery = allDocsQuery
-						.where("publishedAt", ">=", Timestamp.fromDate(startOfYear))
-						.where("publishedAt", "<", Timestamp.fromDate(endOfYear));
-				}
-			}
-
+			const allDocsQuery = buildSearchQuery(videosRef, params);
 			const allDocsSnapshot = await allDocsQuery.limit(1000).get();
 			videosToProcess = allDocsSnapshot.docs;
 		}
 
 		// 検索時は異なる処理が必要
-		let videos: FrontendVideoData[];
-		let hasMore: boolean;
+		const { videos, hasMore } = params?.search
+			? processSearchResults(
+					videosToProcess,
+					{ search: params.search, page: params.page },
+					paginationConfig,
+				)
+			: processRegularResults(videosToProcess, docs, paginationConfig);
 
-		if (params?.search) {
-			// 検索結果を取得してページネーション適用
-			const allFilteredVideos = processUserVideoDocuments(
-				videosToProcess,
-				videosToProcess.length, // 全件処理
-				params.search,
-			);
-
-			// ページネーション適用
-			const startIndex = ((params?.page || 1) - 1) * paginationConfig.limit;
-			const endIndex = startIndex + paginationConfig.limit;
-			videos = allFilteredVideos.slice(startIndex, endIndex);
-
-			// 次のページがあるかどうかを判定
-			const currentPage = params?.page || 1;
-			hasMore = currentPage * paginationConfig.limit < allFilteredVideos.length;
-		} else {
-			videos = processUserVideoDocuments(videosToProcess, paginationConfig.limit, undefined);
-			hasMore = docs.length > paginationConfig.limit;
-		}
 		const lastVideo = videos.length > 0 ? videos[videos.length - 1] : undefined;
 
 		return {

@@ -24,6 +24,19 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "./src"),
+			// Direct module mapping to fix NextAuth issues
+			"next-auth": path.resolve(__dirname, "./vitest-mocks/next-auth.js"),
+			"next-auth/react": path.resolve(__dirname, "./vitest-mocks/next-auth-react.js"),
+			"next-auth/providers/discord": path.resolve(
+				__dirname,
+				"./vitest-mocks/next-auth-providers-discord.js",
+			),
+			"next/server": path.resolve(__dirname, "./vitest-mocks/next-server.js"),
 		},
+	},
+	define: {
+		// Fix for NextAuth module resolution issues
+		"process.env.NEXTAUTH_SECRET": '"test"',
+		"process.env.NEXTAUTH_URL": '"http://localhost:3000"',
 	},
 });

@@ -288,6 +288,17 @@ export async function getAudioButtons(
 		audioButtons = filterAudioButtons(audioButtons, {
 			searchText: validatedQuery.searchText,
 			tags: validatedQuery.tags,
+			playCountMin: validatedQuery.playCountMin,
+			playCountMax: validatedQuery.playCountMax,
+			likeCountMin: validatedQuery.likeCountMin,
+			likeCountMax: validatedQuery.likeCountMax,
+			favoriteCountMin: validatedQuery.favoriteCountMin,
+			favoriteCountMax: validatedQuery.favoriteCountMax,
+			durationMin: validatedQuery.durationMin,
+			durationMax: validatedQuery.durationMax,
+			createdAfter: validatedQuery.createdAfter,
+			createdBefore: validatedQuery.createdBefore,
+			createdBy: validatedQuery.createdBy,
 		});
 
 		// クライアントサイド並び替え（複合条件の場合）

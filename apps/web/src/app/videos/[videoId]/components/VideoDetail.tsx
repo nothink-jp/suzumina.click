@@ -10,7 +10,7 @@ import { Calendar, Clock, Eye, Hash, PlayCircle, Plus, Radio, Share2, Video } fr
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { getAudioButtons } from "@/app/buttons/actions";
-import { AudioButtonWithFavoriteClient } from "@/components/AudioButtonWithFavoriteClient";
+import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
 import ThumbnailImage from "@/components/ThumbnailImage";
 
 interface VideoDetailProps {
@@ -288,12 +288,9 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 								{/* 音声ボタン一覧 */}
 								<div className="flex flex-wrap gap-3 items-start">
 									{audioButtons.map((audioButton) => (
-										<AudioButtonWithFavoriteClient
+										<AudioButtonWithPlayCount
 											key={audioButton.id}
 											audioButton={audioButton}
-											onPlay={() => {
-												// TODO: アナリティクス・再生統計の更新
-											}}
 											maxTitleLength={50}
 											className="shadow-sm hover:shadow-md transition-all duration-200"
 										/>
