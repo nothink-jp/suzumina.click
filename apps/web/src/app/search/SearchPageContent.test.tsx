@@ -80,6 +80,12 @@ vi.mock("lucide-react", () => ({
 	BookOpen: ({ className }: any) => <div className={className} data-testid="book-icon" />,
 	ChevronRight: ({ className }: any) => <div className={className} data-testid="chevron-icon" />,
 	X: ({ className }: any) => <div className={className} data-testid="x-icon" />,
+	// Icons needed by SearchFilters component
+	SlidersHorizontal: ({ className }: any) => (
+		<div className={className} data-testid="sliders-horizontal-icon" />
+	),
+	RotateCcw: ({ className }: any) => <div className={className} data-testid="rotate-ccw-icon" />,
+	Calendar: ({ className }: any) => <div className={className} data-testid="calendar-icon" />,
 }));
 
 vi.mock("@/components/AudioButtonWithFavoriteClient", () => ({

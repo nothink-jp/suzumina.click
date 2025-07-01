@@ -13,6 +13,8 @@ export * from "./contact";
 export * from "./favorite";
 // Firestore関連のユーティリティ
 export * from "./firestore-utils";
+// 検索フィルター関連の型とスキーマのエクスポート
+export * from "./search-filters";
 // ユーザー認証関連の型とスキーマのエクスポート
 export * from "./user";
 // 動画関連の型とスキーマのエクスポート

@@ -148,3 +148,61 @@ vi.mock("next/image", () => ({
 		});
 	},
 }));
+
+// Mock for lucide-react icons
+vi.mock("lucide-react", () => {
+	const createMockIcon = (name: string) => {
+		return React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>((props, ref) =>
+			React.createElement("svg", {
+				...props,
+				ref,
+				"data-testid": `${name}-icon`,
+				"data-lucide": name.toLowerCase(),
+			}),
+		);
+	};
+
+	return {
+		// Existing icons
+		BookOpen: createMockIcon("BookOpen"),
+		ChevronRight: createMockIcon("ChevronRight"),
+		Filter: createMockIcon("Filter"),
+		Loader2: createMockIcon("Loader2"),
+		Music: createMockIcon("Music"),
+		Search: createMockIcon("Search"),
+		Video: createMockIcon("Video"),
+		X: createMockIcon("X"),
+		Play: createMockIcon("Play"),
+		Pause: createMockIcon("Pause"),
+		Heart: createMockIcon("Heart"),
+		Star: createMockIcon("Star"),
+		ExternalLink: createMockIcon("ExternalLink"),
+		Download: createMockIcon("Download"),
+		Share2: createMockIcon("Share2"),
+		MoreHorizontal: createMockIcon("MoreHorizontal"),
+		Edit: createMockIcon("Edit"),
+		Trash2: createMockIcon("Trash2"),
+		Check: createMockIcon("Check"),
+		Copy: createMockIcon("Copy"),
+		AlertCircle: createMockIcon("AlertCircle"),
+		Info: createMockIcon("Info"),
+		User: createMockIcon("User"),
+		Users: createMockIcon("Users"),
+		Calendar: createMockIcon("Calendar"),
+		Clock: createMockIcon("Clock"),
+		Settings: createMockIcon("Settings"),
+		Menu: createMockIcon("Menu"),
+		Home: createMockIcon("Home"),
+		Headphones: createMockIcon("Headphones"),
+		// New icons for SearchFilters
+		SlidersHorizontal: createMockIcon("SlidersHorizontal"),
+		RotateCcw: createMockIcon("RotateCcw"),
+		// Icons for AudioButtonCreator
+		Plus: createMockIcon("Plus"),
+		// Icons for VideoCard
+		Eye: createMockIcon("Eye"),
+		Radio: createMockIcon("Radio"),
+		// Icons for UserMenu
+		LogOut: createMockIcon("LogOut"),
+	};
+});

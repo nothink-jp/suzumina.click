@@ -151,7 +151,7 @@ export const AudioButtonQuerySchema = z.object({
 	tags: z.array(z.string()).optional(),
 	sourceVideoId: z.string().optional(),
 	searchText: z.string().max(100).optional(),
-	sortBy: z.enum(["newest", "oldest", "popular", "mostPlayed"]).default("newest"),
+	sortBy: z.enum(["newest", "oldest", "popular", "mostPlayed", "relevance"]).default("newest"),
 	onlyPublic: z.boolean().default(true),
 
 	// 数値範囲フィルタ
@@ -540,7 +540,7 @@ const matchesCreatedBy = (button: FrontendAudioButtonData, createdBy?: string): 
  */
 export function sortAudioButtons(
 	buttons: FrontendAudioButtonData[],
-	sortBy: "newest" | "oldest" | "popular" | "mostPlayed",
+	sortBy: "newest" | "oldest" | "popular" | "mostPlayed" | "relevance",
 ): FrontendAudioButtonData[] {
 	return [...buttons].sort((a, b) => {
 		switch (sortBy) {
@@ -552,6 +552,9 @@ export function sortAudioButtons(
 				return b.likeCount - a.likeCount;
 			case "mostPlayed":
 				return b.playCount - a.playCount;
+			case "relevance":
+				// 関連度順の場合は現在の順序を保持
+				return 0;
 			default:
 				return 0;
 		}

@@ -133,14 +133,41 @@ export async function searchAudioButtons(params: {
 	searchText: string;
 	limit: number;
 	onlyPublic: boolean;
-	sortBy: "newest" | "oldest" | "popular" | "mostPlayed";
+	sortBy: "newest" | "oldest" | "popular" | "mostPlayed" | "relevance";
+	// 追加のフィルターパラメータ
+	tags?: string[];
+	createdAfter?: string;
+	createdBefore?: string;
+	playCountMin?: number;
+	playCountMax?: number;
+	likeCountMin?: number;
+	likeCountMax?: number;
+	favoriteCountMin?: number;
+	favoriteCountMax?: number;
+	durationMin?: number;
+	durationMax?: number;
 }) {
 	try {
+		// relevanceの場合はnewestにマッピング（関連度順は検索結果の順序を保持するため）
+		const actualSortBy = params.sortBy === "relevance" ? "newest" : params.sortBy;
+
 		const result = await getAudioButtons({
 			searchText: params.searchText,
 			limit: params.limit,
 			onlyPublic: params.onlyPublic,
-			sortBy: params.sortBy,
+			sortBy: actualSortBy,
+			// フィルターパラメータを追加
+			tags: params.tags,
+			createdAfter: params.createdAfter,
+			createdBefore: params.createdBefore,
+			playCountMin: params.playCountMin,
+			playCountMax: params.playCountMax,
+			likeCountMin: params.likeCountMin,
+			likeCountMax: params.likeCountMax,
+			favoriteCountMin: params.favoriteCountMin,
+			favoriteCountMax: params.favoriteCountMax,
+			durationMin: params.durationMin,
+			durationMax: params.durationMax,
 		});
 
 		if (result.success) {
