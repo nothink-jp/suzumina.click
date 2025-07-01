@@ -122,3 +122,4 @@ jobs:
           path: |
             apps/web/test-results/
             apps/web/playwright-report/
+          retention-days: 7

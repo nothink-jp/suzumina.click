@@ -17,6 +17,28 @@ pre-commit:
 
 pre-push:
   commands:
+    # Session Branch戦略推奨警告
+    branch-strategy-warning:
+      run: |
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        if [ "$BRANCH" = "main" ]; then
+          echo ""
+          echo "⚠️  警告: mainブランチに直接pushしています"
+          echo ""
+          echo "🔄 Session Branch戦略の使用を推奨します:"
+          echo "  1. git claude-start    # セッション開始（ブランチ作成）"
+          echo "  2. (開発作業を実行)"
+          echo "  3. git claude-done     # セッション終了（マージ・削除）"
+          echo ""
+          echo "💡 メリット:"
+          echo "  - セッション単位の履歴管理"
+          echo "  - ロールバック容易"
+          echo "  - プレビュー環境連携（将来実装）"
+          echo ""
+          echo "⏱️  3秒後にpushを続行します..."
+          sleep 3
+        fi
+    
     # 1. 共有型のビルド確認（依存関係の整合性保証）
     build-shared-types:
       run: pnpm --filter @suzumina.click/shared-types build

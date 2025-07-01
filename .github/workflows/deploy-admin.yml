@@ -6,7 +6,8 @@ on:
       - main
     paths:
       - 'apps/admin/**'
-      - 'packages/**'
+      - 'packages/shared-types/**'
+      - 'packages/ui/**'
       - '.github/workflows/deploy-admin.yml'
   
   # Manual triggering

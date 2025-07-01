@@ -6,7 +6,8 @@ on:
       - main
     paths:
       - 'apps/web/**'
-      - 'packages/**'
+      - 'packages/shared-types/**'
+      - 'packages/ui/**'
       - '.github/workflows/deploy-cloud-run.yml'
   
   # Manual triggering

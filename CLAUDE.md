@@ -172,6 +172,35 @@ packages/ui/src/components/design-tokens/
 
 ## 🚀 開発コマンド
 
+### Session Branch戦略 (Claude Code専用)
+
+#### **タスク開始手順**
+```bash
+# 1. セッション開始（自動的にブランチ作成）
+git claude-start
+# → mainから最新取得 + session/YYYYMMDD-HHMM ブランチ作成
+
+# 2. 開発作業実行
+# ... (Claude Codeによる開発作業)
+
+# 3. セッション終了（自動的にマージ・削除）
+git claude-done
+# → mainへマージ + ブランチ削除 + pushは手動実行
+```
+
+#### **ブランチ命名規則**
+- **session/YYYYMMDD-HHMM**: Claude Codeセッション単位
+- **feature/[task]-YYYYMMDD-HHMM**: 新機能開発
+- **fix/[task]-YYYYMMDD-HHMM**: バグ修正
+- **docs/[task]-YYYYMMDD-HHMM**: ドキュメント更新
+- **chore/[task]-YYYYMMDD-HHMM**: その他（リファクタリング・設定変更）
+
+#### **利点**
+- 認知負荷最小（タイムスタンプ自動生成）
+- セッション単位の履歴管理
+- ロールバック容易
+- プレビュー環境連携（将来実装）
+
 ### セットアップ
 
 ```bash
