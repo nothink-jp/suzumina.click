@@ -44,7 +44,6 @@ export function FavoriteButton({
 					toast.success(
 						result.isFavorited ? "お気に入りに追加しました" : "お気に入りから削除しました",
 					);
-					router.refresh();
 				} else {
 					toast.error(result.error || "エラーが発生しました");
 				}
