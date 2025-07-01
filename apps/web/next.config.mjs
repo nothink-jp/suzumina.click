@@ -12,6 +12,8 @@ const nextConfig = {
 	experimental: {
 		// React Compiler（実験的）
 		reactCompiler: true,
+		// Service Worker navigation preload を無効化
+		swcPlugins: [],
 	},
 
 	// Turbopack設定
@@ -124,6 +126,10 @@ const nextConfig = {
 					{
 						key: "X-XSS-Protection",
 						value: "1; mode=block",
+					},
+					{
+						key: "Service-Worker-Allowed",
+						value: "/",
 					},
 				],
 			},

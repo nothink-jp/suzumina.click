@@ -30,7 +30,14 @@ export async function middleware(request: NextRequest) {
 		return hostResponse;
 	}
 
-	return NextResponse.next();
+	// Service Worker navigation preload エラーを回避するため、適切なヘッダーを設定
+	const response = NextResponse.next();
+
+	// Service Worker関連のヘッダーを追加
+	response.headers.set("Service-Worker-Allowed", "/");
+	response.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
+
+	return response;
 }
 
 export const config = {

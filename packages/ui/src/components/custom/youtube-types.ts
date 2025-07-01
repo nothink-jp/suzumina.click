@@ -17,7 +17,18 @@ declare global {
 			};
 			ready: (callback: () => void) => void;
 		};
-		onYouTubeIframeAPIReady: () => void;
+		onYouTubeIframeAPIReady: (() => void) | undefined;
+		// エラーハンドリング関連
+		onerror:
+			| ((
+					message: string | Event,
+					source?: string,
+					lineno?: number,
+					colno?: number,
+					error?: Error,
+			  ) => boolean | undefined)
+			| null;
+		onunhandledrejection: ((event: PromiseRejectionEvent) => void) | null;
 	}
 }
 

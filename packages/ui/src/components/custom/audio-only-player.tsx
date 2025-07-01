@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import { youTubeAPIManager } from "./youtube-api-manager";
 import type { YTPlayer } from "./youtube-types";
 
 export interface AudioOnlyPlayerProps {
@@ -63,40 +64,15 @@ export const AudioOnlyPlayer = forwardRef<HTMLDivElement, AudioOnlyPlayerProps>(
 			endTimeRef.current = endTime;
 		}, [endTime]);
 
-		// YouTube API の読み込み
+		// YouTube API の読み込み（グローバル管理使用）
 		useEffect(() => {
-			// すでにAPIが読み込まれている場合
-			if (window.YT?.Player) {
+			// postMessage エラー抑制のセットアップ
+			youTubeAPIManager.setupErrorSuppression();
+
+			// API準備完了の監視
+			youTubeAPIManager.onReady(() => {
 				setIsAPIReady(true);
-				return;
-			}
-
-			// API読み込み中の場合は待機
-			if (window.onYouTubeIframeAPIReady) {
-				const originalCallback = window.onYouTubeIframeAPIReady;
-				window.onYouTubeIframeAPIReady = () => {
-					originalCallback();
-					setIsAPIReady(true);
-				};
-				return;
-			}
-
-			// APIスクリプトの読み込み
-			const script = document.createElement("script");
-			script.src = "https://www.youtube.com/iframe_api";
-			script.async = true;
-
-			window.onYouTubeIframeAPIReady = () => {
-				setIsAPIReady(true);
-			};
-
-			document.body.appendChild(script);
-
-			return () => {
-				if (script.parentNode) {
-					script.parentNode.removeChild(script);
-				}
-			};
+			});
 		}, []);
 
 		// endTime監視用のインターバル
@@ -144,7 +120,7 @@ export const AudioOnlyPlayer = forwardRef<HTMLDivElement, AudioOnlyPlayerProps>(
 			}
 
 			// プレイヤー要素の作成（非表示）
-			const playerId = `audio-only-player-${Math.random().toString(36).substr(2, 9)}`;
+			const playerId = youTubeAPIManager.generateUniquePlayerId();
 			const playerElement = document.createElement("div");
 			playerElement.id = playerId;
 			// 完全に非表示にする
