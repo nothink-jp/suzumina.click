@@ -15,7 +15,7 @@ COPY packages/ui/package.json ./packages/ui/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
 # 依存関係インストール with cache
-RUN --mount=type=cache,target=/pnpm,sharing=locked \
+RUN --mount=type=cache,id=pnpm,target=/pnpm \
     pnpm install --frozen-lockfile
 
 FROM base AS builder
@@ -32,13 +32,11 @@ COPY --from=deps /app/apps ./apps
 # ソースコードをコピー
 COPY . .
 
-# 共有パッケージをビルド with cache
-RUN --mount=type=cache,target=/app/packages/shared-types/node_modules/.cache \
-    cd packages/shared-types && pnpm build
+# 共有パッケージをビルド
+RUN cd packages/shared-types && pnpm build
 
 # admin appをビルド with Next.js cache
-RUN --mount=type=cache,target=/app/apps/admin/.next/cache \
-    --mount=type=cache,target=/app/apps/admin/node_modules/.cache \
+RUN --mount=type=cache,id=nextjs-admin,target=/app/apps/admin/.next/cache \
     cd apps/admin && pnpm build
 
 FROM base AS runner

@@ -93,12 +93,9 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
       
-      # Set up Docker Buildx for cache optimization
+      # Set up Docker Buildx for advanced caching
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
       
       # Build and push Docker image with cache optimization
       - name: Build and push Docker image (optimized)

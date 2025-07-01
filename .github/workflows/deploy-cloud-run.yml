@@ -59,10 +59,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       
-      - name: Install dependencies (with registry cache)
+      - name: Install dependencies (optimized)
         run: |
-          # Install with registry cache for faster dependency resolution
-          pnpm install --frozen-lockfile --registry-cache-dir=/tmp/pnpm-registry-cache
+          # Install with optimized pnpm settings for CI
+          pnpm install --frozen-lockfile
       
       # Cache Next.js build cache for faster rebuilds
       - name: Cache Next.js build
@@ -129,12 +129,9 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
       
-      # Set up Docker Buildx for cache optimization
+      # Set up Docker Buildx for advanced caching
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
       
       # Build and push Docker image with advanced caching
       - name: Build and push Docker image (optimized)
