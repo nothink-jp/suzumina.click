@@ -38,7 +38,7 @@ export default async function Home() {
 							className="text-base sm:text-lg md:text-xl text-muted-foreground mb-6 sm:mb-8 px-4 sm:px-0"
 							style={{
 								// CLS防止: 明示的な高さ
-								minHeight: "1.5rem",
+								minHeight: "3rem",
 							}}
 						>
 							涼花みなせさんのYouTube配信を切り抜いてボタンを作ろう！

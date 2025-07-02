@@ -148,6 +148,33 @@ describe("AudioButtonCreator", () => {
 		expect(createButton).toBeInTheDocument();
 	});
 
+	it("説明文フィールドが正しく動作する", async () => {
+		const user = userEvent.setup();
+		render(<AudioButtonCreator {...defaultProps} />);
+
+		const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
+		expect(descriptionInput).toBeInTheDocument();
+
+		// 説明文を入力
+		await user.type(descriptionInput, "これはテスト用の説明文です。");
+		expect(descriptionInput).toHaveValue("これはテスト用の説明文です。");
+	});
+
+	it("タグ機能が正しく動作する", async () => {
+		const user = userEvent.setup();
+		render(<AudioButtonCreator {...defaultProps} />);
+
+		const tagInput = screen.getByPlaceholderText("タグを入力してEnter");
+		expect(tagInput).toBeInTheDocument();
+
+		// Enterキーでタグを追加
+		await user.type(tagInput, "テストタグ");
+		await user.keyboard("{Enter}");
+
+		// タグが追加されたことを確認
+		expect(screen.getByText("テストタグ")).toBeInTheDocument();
+	});
+
 	it("キャンセルボタンが存在する", () => {
 		render(<AudioButtonCreator {...defaultProps} />);
 
@@ -303,14 +330,20 @@ describe("AudioButtonCreator", () => {
 			render(<AudioButtonCreator {...defaultProps} />);
 
 			const titleInput = screen.getByPlaceholderText("例: おはようございます");
-			const startTimeButton = screen.getByRole("button", { name: /開始時間に設定/ });
+			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
+			const tagInput = screen.getByPlaceholderText("タグを入力してEnter");
 
-			// Tab navigation
+			// Tab navigation - 基本的なフィールドの確認のみ
 			await user.tab();
 			expect(titleInput).toHaveFocus();
 
 			await user.tab();
-			expect(startTimeButton).toHaveFocus();
+			expect(descriptionInput).toHaveFocus();
+
+			await user.tab();
+			expect(tagInput).toHaveFocus();
+
+			// 他のボタンはスキップして基本的なナビゲーションのみテスト
 		});
 
 		it("should provide appropriate error feedback", () => {

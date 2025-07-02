@@ -1,16 +1,33 @@
 import type { AudioButtonQuery } from "@suzumina.click/shared-types";
-import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { ArrowLeft, Calendar, Clock, Eye, Heart, Play, Tag, Youtube } from "lucide-react";
+import {
+	ArrowLeft,
+	Award,
+	Calendar,
+	Clock,
+	Eye,
+	Heart,
+	Play,
+	Tag,
+	ThumbsDown,
+	ThumbsUp,
+	TrendingUp,
+	User,
+	Youtube,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getAudioButtonById, getAudioButtons } from "@/app/buttons/actions";
+import { getVideoById } from "@/app/videos/actions";
+import VideoCard from "@/app/videos/components/VideoCard";
 import { AudioButtonDeleteButton } from "@/components/AudioButtonDeleteButton";
 import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { LikeButton } from "@/components/LikeButton";
+import { getUserByDiscordId } from "@/lib/user-firestore";
 
 interface AudioButtonDetailPageProps {
 	params: Promise<{
@@ -122,6 +139,251 @@ async function RelatedAudioButtons({
 	return null;
 }
 
+// VideoCardWrapperコンポーネント
+async function VideoCardWrapper({
+	videoId,
+	fallbackTitle,
+}: {
+	videoId: string;
+	fallbackTitle?: string;
+}) {
+	try {
+		const video = await getVideoById(videoId);
+
+		if (!video) {
+			return (
+				<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
+					<CardContent className="p-6">
+						<div className="space-y-4">
+							{/* サムネイル部分 */}
+							<div className="aspect-video bg-muted rounded-lg overflow-hidden">
+								<img
+									src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+									alt={fallbackTitle || "YouTube動画"}
+									className="w-full h-full object-cover"
+								/>
+							</div>
+
+							{/* 動画情報 */}
+							<div className="space-y-2">
+								{fallbackTitle && (
+									<h3 className="font-medium text-sm text-foreground line-clamp-2">
+										{fallbackTitle}
+									</h3>
+								)}
+								<p className="text-xs text-muted-foreground">涼花みなせ</p>
+							</div>
+
+							{/* アクションボタン */}
+							<div className="flex gap-2">
+								<Button variant="outline" size="sm" asChild className="flex-1">
+									<a
+										href={`https://www.youtube.com/watch?v=${videoId}`}
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										<Youtube className="h-4 w-4 mr-1" />
+										YouTube
+									</a>
+								</Button>
+								<Button variant="outline" size="sm" asChild className="flex-1">
+									<Link href={`/videos/${videoId}`}>詳細</Link>
+								</Button>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+			);
+		}
+
+		return <VideoCard video={video} variant="sidebar" priority={false} />;
+	} catch (_error) {
+		// エラー時もフォールバック表示を試行
+		return (
+			<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
+				<CardContent className="p-6">
+					<div className="space-y-4">
+						{/* サムネイル部分 */}
+						<div className="aspect-video bg-muted rounded-lg overflow-hidden">
+							<img
+								src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+								alt={fallbackTitle || "YouTube動画"}
+								className="w-full h-full object-cover"
+							/>
+						</div>
+
+						{/* エラー情報 */}
+						<div className="space-y-2">
+							{fallbackTitle && (
+								<h3 className="font-medium text-sm text-foreground line-clamp-2">
+									{fallbackTitle}
+								</h3>
+							)}
+							<p className="text-xs text-muted-foreground">涼花みなせ</p>
+							<p className="text-xs text-amber-600">※ 動画情報の取得に失敗しました</p>
+						</div>
+
+						{/* アクションボタン */}
+						<div className="flex gap-2">
+							<Button variant="outline" size="sm" asChild className="flex-1">
+								<a
+									href={`https://www.youtube.com/watch?v=${videoId}`}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									<Youtube className="h-4 w-4 mr-1" />
+									YouTube
+								</a>
+							</Button>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+		);
+	}
+}
+
+// UserCardWrapperコンポーネント
+async function UserCardWrapper({
+	createdBy,
+	createdByName,
+}: {
+	createdBy: string;
+	createdByName: string;
+}) {
+	try {
+		const user = await getUserByDiscordId(createdBy);
+
+		if (!user) {
+			return (
+				<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
+					<CardHeader className="pb-3">
+						<CardTitle className="text-lg flex items-center gap-2">
+							<User className="h-5 w-5 text-suzuka-600" />
+							作成者
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<div className="flex items-start gap-3">
+							{/* フォールバック アバター */}
+							<div className="w-12 h-12 rounded-full bg-suzuka-100 flex items-center justify-center shrink-0">
+								<User className="h-6 w-6 text-suzuka-600" />
+							</div>
+
+							{/* ユーザー情報 */}
+							<div className="space-y-1 flex-1">
+								<h3 className="font-medium text-foreground">{createdByName}</h3>
+								<p className="text-xs text-muted-foreground">ボタン作成者</p>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+			);
+		}
+
+		// 正常なユーザー情報表示
+		return (
+			<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
+				<CardHeader className="pb-3">
+					<CardTitle className="text-lg flex items-center gap-2">
+						<User className="h-5 w-5 text-suzuka-600" />
+						作成者
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="space-y-4">
+						{/* ユーザープロフィール */}
+						<div className="flex items-start gap-3">
+							{/* アバター */}
+							<div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
+								{user.avatarUrl ? (
+									<img
+										src={user.avatarUrl}
+										alt={user.displayName}
+										className="w-full h-full object-cover"
+									/>
+								) : (
+									<div className="w-full h-full bg-suzuka-100 flex items-center justify-center">
+										<User className="h-6 w-6 text-suzuka-600" />
+									</div>
+								)}
+							</div>
+
+							{/* ユーザー情報 */}
+							<div className="space-y-1 flex-1">
+								<h3 className="font-medium text-foreground">{user.displayName}</h3>
+								<p className="text-xs text-muted-foreground">{user.memberSince}</p>
+								{user.role && user.role !== "member" && (
+									<Badge variant="secondary" className="text-xs">
+										{user.role === "admin"
+											? "管理者"
+											: user.role === "moderator"
+												? "モデレーター"
+												: user.role}
+									</Badge>
+								)}
+							</div>
+						</div>
+
+						{/* 統計情報 */}
+						{user.showStatistics && (
+							<div className="grid grid-cols-2 gap-3">
+								<div className="text-center p-2 bg-suzuka-50 rounded-lg">
+									<div className="flex items-center justify-center mb-1">
+										<Award className="h-3 w-3 text-suzuka-600" />
+									</div>
+									<div className="text-sm font-bold text-suzuka-700">
+										{user.audioButtonsCount?.toLocaleString() || 0}
+									</div>
+									<div className="text-xs text-suzuka-600">ボタン</div>
+								</div>
+								<div className="text-center p-2 bg-minase-50 rounded-lg">
+									<div className="flex items-center justify-center mb-1">
+										<TrendingUp className="h-3 w-3 text-minase-600" />
+									</div>
+									<div className="text-sm font-bold text-minase-700">
+										{user.totalPlayCount?.toLocaleString() || 0}
+									</div>
+									<div className="text-xs text-minase-600">再生数</div>
+								</div>
+							</div>
+						)}
+
+						{/* プロフィールボタン */}
+						<Button variant="outline" size="sm" asChild className="w-full">
+							<Link href={`/users/${user.discordId}`}>プロフィールを見る</Link>
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+		);
+	} catch (_error) {
+		// エラー時もフォールバック表示
+		return (
+			<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
+				<CardHeader className="pb-3">
+					<CardTitle className="text-lg flex items-center gap-2">
+						<User className="h-5 w-5 text-suzuka-600" />
+						作成者
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="flex items-start gap-3">
+						<div className="w-12 h-12 rounded-full bg-suzuka-100 flex items-center justify-center shrink-0">
+							<User className="h-6 w-6 text-suzuka-600" />
+						</div>
+						<div className="space-y-1 flex-1">
+							<h3 className="font-medium text-foreground">{createdByName}</h3>
+							<p className="text-xs text-muted-foreground">ボタン作成者</p>
+							<p className="text-xs text-amber-600">※ ユーザー情報の取得に失敗しました</p>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+		);
+	}
+}
+
 export default async function AudioButtonDetailPage({ params }: AudioButtonDetailPageProps) {
 	const resolvedParams = await params;
 
@@ -145,159 +407,224 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 				</Button>
 			</div>
 
-			<div className="container mx-auto px-4 pb-8 max-w-4xl">
-				{/* メインカード */}
-				<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0 mb-8">
-					<CardContent className="p-8">
-						<div className="flex items-start justify-between mb-6">
-							<div className="space-y-3 flex-1">
-								<h1 className="text-3xl font-bold text-foreground leading-tight">
-									{audioButton.title}
-								</h1>
-								<div className="flex items-center gap-4 text-sm text-muted-foreground">
-									<span className="flex items-center gap-1">
-										<Calendar className="h-4 w-4" />
-										{formatRelativeTime(audioButton.createdAt)}
-									</span>
-									<span className="flex items-center gap-1">
-										<Clock className="h-4 w-4" />
-										{audioButton.endTime - audioButton.startTime}秒
-									</span>
-									<span className="text-xs text-muted-foreground">
-										by {audioButton.createdByName}
-									</span>
-								</div>
-							</div>
-							{/* 削除ボタン */}
-							<AudioButtonDeleteButton
-								audioButtonId={audioButton.id}
-								audioButtonTitle={audioButton.title}
-								createdBy={audioButton.createdBy}
-								variant="outline"
-								size="sm"
-								showLabel={true}
-							/>
-						</div>
-
-						{/* 統計情報 */}
-						<div className="grid grid-cols-3 gap-4 mb-6">
-							<div className="text-center p-3 bg-suzuka-50 rounded-lg border border-suzuka-100">
-								<div className="flex items-center justify-center mb-1">
-									<Play className="h-4 w-4 text-suzuka-600" />
-								</div>
-								<div className="text-lg font-bold text-suzuka-700">
-									{audioButton.playCount.toLocaleString()}
-								</div>
-								<div className="text-xs text-suzuka-600">再生</div>
-							</div>
-							<div className="text-center p-3 bg-rose-50 rounded-lg border border-rose-100">
-								<div className="flex items-center justify-center mb-1">
-									<Heart className="h-4 w-4 text-rose-600" />
-								</div>
-								<div className="text-lg font-bold text-rose-700">
-									{audioButton.favoriteCount.toLocaleString()}
-								</div>
-								<div className="text-xs text-rose-600">お気に入り</div>
-							</div>
-							<div className="text-center p-3 bg-amber-50 rounded-lg border border-amber-100">
-								<div className="flex items-center justify-center mb-2">
-									<LikeButton
+			<div className="container mx-auto px-4 pb-8 max-w-7xl">
+				{/* メインコンテンツ: グリッドレイアウト */}
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+					{/* 左側: 音声ボタン詳細 */}
+					<div className="lg:col-span-2">
+						<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
+							<CardContent className="p-8">
+								<div className="flex items-start justify-between mb-6">
+									<div className="space-y-3 flex-1">
+										<h1 className="text-3xl font-bold text-foreground leading-tight">
+											{audioButton.title}
+										</h1>
+										<div className="flex items-center gap-4 text-sm text-muted-foreground">
+											<span className="flex items-center gap-1">
+												<Calendar className="h-4 w-4" />
+												{formatRelativeTime(audioButton.createdAt)}
+											</span>
+											<span className="flex items-center gap-1">
+												<Clock className="h-4 w-4" />
+												{audioButton.endTime - audioButton.startTime}秒
+											</span>
+											<span className="text-xs text-muted-foreground">
+												by {audioButton.createdByName}
+											</span>
+										</div>
+									</div>
+									{/* 削除ボタン */}
+									<AudioButtonDeleteButton
 										audioButtonId={audioButton.id}
-										initialLikeCount={audioButton.likeCount}
-										variant="ghost"
+										audioButtonTitle={audioButton.title}
+										createdBy={audioButton.createdBy}
+										variant="outline"
 										size="sm"
-										className="text-amber-700 hover:text-amber-800"
+										showLabel={true}
 									/>
 								</div>
-								<div className="text-xs text-amber-600">いいね</div>
-							</div>
-						</div>
 
-						{/* タグ */}
-						{audioButton.tags && audioButton.tags.length > 0 && (
-							<div className="mb-6">
-								<h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-									<Tag className="h-4 w-4" />
-									タグ
-								</h3>
-								<div className="flex items-center gap-2 flex-wrap">
-									{audioButton.tags.map((tag) => (
-										<Badge
-											key={tag}
-											variant="secondary"
-											className="bg-suzuka-100 text-suzuka-700 hover:bg-suzuka-200"
-										>
-											{tag}
-										</Badge>
-									))}
+								{/* 統計情報 */}
+								<div className="grid grid-cols-3 gap-4 mb-6">
+									<div className="text-center p-3 bg-suzuka-50 rounded-lg border border-suzuka-100">
+										<div className="flex items-center justify-center mb-1">
+											<Play className="h-4 w-4 text-suzuka-600" />
+										</div>
+										<div className="text-lg font-bold text-suzuka-700">
+											{audioButton.playCount.toLocaleString()}
+										</div>
+										<div className="text-xs text-suzuka-600">再生回数</div>
+									</div>
+									<div className="text-center p-3 bg-rose-50 rounded-lg border border-rose-100">
+										<div className="flex items-center justify-center mb-1">
+											<Heart className="h-4 w-4 text-rose-600" />
+										</div>
+										<div className="text-lg font-bold text-rose-700">
+											{audioButton.favoriteCount.toLocaleString()}
+										</div>
+										<div className="text-xs text-rose-600">お気に入り</div>
+									</div>
+									<div className="text-center p-3 bg-amber-50 rounded-lg border border-amber-100">
+										<div className="flex items-center justify-center mb-1">
+											<ThumbsUp className="h-4 w-4 text-amber-600" />
+										</div>
+										<div className="text-lg font-bold text-amber-700">
+											{audioButton.likeCount.toLocaleString()}
+										</div>
+										<div className="text-xs text-amber-600">高評価</div>
+									</div>
 								</div>
-							</div>
-						)}
 
-						{/* 音声ボタン再生エリア */}
-						<div className="mb-6">
-							<h3 className="text-sm font-medium text-muted-foreground mb-3">音声ボタン</h3>
-							<AudioButtonWithPlayCount
-								audioButton={audioButton}
-								showFavorite={true}
-								className="border-2 border-suzuka-200 hover:border-suzuka-300"
-							/>
-						</div>
+								{/* 説明文 */}
+								{audioButton.description?.trim() && (
+									<div className="mb-6">
+										<div className="bg-gradient-to-r from-minase-50 to-suzuka-50 p-4 rounded-lg border border-minase-100">
+											<p className="text-foreground leading-relaxed whitespace-pre-wrap">
+												{audioButton.description}
+											</p>
+										</div>
+									</div>
+								)}
 
-						{/* YouTube動画情報 */}
-						<div className="bg-gradient-to-r from-suzuka-50 to-minase-50 p-6 rounded-lg border border-suzuka-100">
-							<h3 className="font-medium text-sm text-muted-foreground mb-3 flex items-center gap-2">
-								<Youtube className="h-4 w-4" />
-								元動画
-							</h3>
-							<div className="space-y-3">
-								<p className="font-medium text-foreground">{audioButton.sourceVideoTitle}</p>
-								<p className="text-sm text-muted-foreground">
-									再生時間: {formatTime(audioButton.startTime)} - {formatTime(audioButton.endTime)}{" "}
-									(切り抜き時間: {audioButton.endTime - audioButton.startTime}秒)
-								</p>
-								<div className="flex gap-2">
-									<Button variant="outline" size="sm" asChild>
-										<Link href={`/videos/${audioButton.sourceVideoId}`}>
-											<Youtube className="h-4 w-4 mr-2" />
-											動画詳細を見る
-										</Link>
-									</Button>
-									<Button variant="outline" size="sm" asChild>
-										<a
-											href={`https://www.youtube.com/watch?v=${audioButton.sourceVideoId}&t=${Math.floor(audioButton.startTime)}`}
-											target="_blank"
-											rel="noopener noreferrer"
-										>
-											<Youtube className="h-4 w-4 mr-2" />
-											YouTubeで開く
-										</a>
-									</Button>
+								{/* タグ */}
+								{audioButton.tags && audioButton.tags.length > 0 && (
+									<div className="mb-6">
+										<div className="flex items-center gap-2 flex-wrap">
+											{audioButton.tags.map((tag) => (
+												<Badge
+													key={tag}
+													variant="outline"
+													className="bg-background/80 text-suzuka-700 border-suzuka-300 hover:bg-suzuka-50 transition-colors"
+												>
+													<Tag className="h-3 w-3 mr-1" />
+													{tag}
+												</Badge>
+											))}
+										</div>
+									</div>
+								)}
+
+								{/* 音声ボタン再生エリア */}
+								<div className="mb-6">
+									<h3 className="text-sm font-medium text-muted-foreground mb-3">音声ボタン</h3>
+									<AudioButtonWithPlayCount
+										audioButton={audioButton}
+										showFavorite={true}
+										className="border-2 border-suzuka-200 hover:border-suzuka-300"
+									/>
 								</div>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
 
-				{/* YouTube Player */}
-				<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0 mb-8">
-					<CardHeader>
-						<CardTitle className="text-lg">YouTube動画プレイヤー</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="aspect-video bg-black rounded-lg overflow-hidden">
-							<YouTubePlayer
-								videoId={audioButton.sourceVideoId}
-								width="100%"
-								height="100%"
-								startTime={audioButton.startTime}
-								endTime={audioButton.endTime}
-								controls
-								autoplay={false}
-							/>
+								{/* アクションボタン */}
+								<div className="mb-6">
+									<div className="flex gap-2 flex-wrap">
+										{/* お気に入りボタン */}
+										<FavoriteButton
+											audioButtonId={audioButton.id}
+											isFavorited={false} // TODO: 実際のお気に入り状態を取得
+											favoriteCount={audioButton.favoriteCount}
+											showCount={false}
+											size="sm"
+											className="flex items-center gap-1"
+										/>
+
+										{/* 高評価・低評価ボタングループ */}
+										<div className="flex rounded-md border border-input">
+											{/* 高評価ボタン */}
+											<LikeButton
+												audioButtonId={audioButton.id}
+												initialLikeCount={audioButton.likeCount}
+												variant="outline"
+												size="sm"
+												className="flex items-center gap-1 border-0 rounded-l-md rounded-r-none border-r border-input"
+											/>
+
+											{/* 低評価ボタン */}
+											<Button
+												variant="outline"
+												size="sm"
+												className="flex items-center gap-1 border-0 rounded-r-md rounded-l-none"
+											>
+												<ThumbsDown className="h-4 w-4" />
+											</Button>
+										</div>
+									</div>
+								</div>
+
+								{/* YouTube動画情報 */}
+								<div className="bg-gradient-to-r from-suzuka-50 to-minase-50 p-6 rounded-lg border border-suzuka-100">
+									<h3 className="font-medium text-sm text-muted-foreground mb-3 flex items-center gap-2">
+										<Youtube className="h-4 w-4" />
+										切り抜き範囲
+									</h3>
+									<div className="space-y-3">
+										<p className="text-sm text-muted-foreground">
+											再生時間: {formatTime(audioButton.startTime)} -{" "}
+											{formatTime(audioButton.endTime)} (切り抜き時間:{" "}
+											{audioButton.endTime - audioButton.startTime}秒)
+										</p>
+										<Button variant="outline" size="sm" asChild>
+											<a
+												href={`https://www.youtube.com/watch?v=${audioButton.sourceVideoId}&t=${Math.floor(audioButton.startTime)}`}
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												<Youtube className="h-4 w-4 mr-2" />
+												YouTubeで開く
+											</a>
+										</Button>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					</div>
+
+					{/* 右側: 動画カード + ユーザーカード */}
+					<div className="lg:col-span-1">
+						<div className="space-y-6">
+							{/* 動画カード */}
+							<Suspense
+								fallback={
+									<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
+										<CardContent className="p-6">
+											<div className="flex items-center justify-center py-8">
+												<Eye className="h-8 w-8 animate-pulse text-muted-foreground" />
+											</div>
+										</CardContent>
+									</Card>
+								}
+							>
+								<VideoCardWrapper
+									videoId={audioButton.sourceVideoId}
+									fallbackTitle={audioButton.sourceVideoTitle}
+								/>
+							</Suspense>
+
+							{/* ユーザーカード */}
+							<Suspense
+								fallback={
+									<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
+										<CardHeader className="pb-3">
+											<CardTitle className="text-lg flex items-center gap-2">
+												<User className="h-5 w-5 text-suzuka-600" />
+												作成者
+											</CardTitle>
+										</CardHeader>
+										<CardContent>
+											<div className="flex items-center justify-center py-4">
+												<Eye className="h-6 w-6 animate-pulse text-muted-foreground" />
+											</div>
+										</CardContent>
+									</Card>
+								}
+							>
+								<UserCardWrapper
+									createdBy={audioButton.createdBy}
+									createdByName={audioButton.createdByName}
+								/>
+							</Suspense>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</div>
 
 				{/* 関連音声ボタン */}
 				<Suspense

@@ -373,11 +373,15 @@ export async function getVideoById(videoId: string): Promise<FrontendVideoData |
 		const firestore = getFirestore();
 		const doc = await firestore.collection("videos").doc(videoId).get();
 
-		if (!doc.exists) return null;
+		if (!doc.exists) {
+			return null;
+		}
 
 		const data = doc.data() as FirestoreServerVideoData;
 		const firestoreData = transformServerDataToFirestoreData(doc, data);
-		return convertToFrontendVideo(firestoreData);
+		const frontendData = convertToFrontendVideo(firestoreData);
+
+		return frontendData;
 	} catch (_error) {
 		return null;
 	}

@@ -2,9 +2,11 @@
 
 import { type CreateAudioButtonInput, formatTimestamp } from "@suzumina.click/shared-types";
 import { YouTubePlayer, type YTPlayer } from "@suzumina.click/ui/components/custom/youtube-player";
+import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Input } from "@suzumina.click/ui/components/ui/input";
-import { Clock, Loader2, Play, Plus } from "lucide-react";
+import { Textarea } from "@suzumina.click/ui/components/ui/textarea";
+import { Clock, Loader2, Play, Plus, Tag, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useRef, useState } from "react";
 import { createAudioButton } from "@/app/buttons/actions";
@@ -27,6 +29,9 @@ export function AudioButtonCreator({
 
 	// 必須の状態のみ
 	const [title, setTitle] = useState("");
+	const [description, setDescription] = useState("");
+	const [tags, setTags] = useState<string[]>([]);
+	const [tagInput, setTagInput] = useState("");
 	const [startTime, setStartTime] = useState(initialStartTime);
 	const [endTime, setEndTime] = useState(Math.min(initialStartTime + 5, videoDuration));
 	const [currentTime, setCurrentTime] = useState(initialStartTime);
@@ -118,6 +123,34 @@ export function AudioButtonCreator({
 		}
 	}, [startTime, endTime]);
 
+	// タグ追加処理
+	const addTag = useCallback(() => {
+		const trimmedTag = tagInput.trim();
+		if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 15 && trimmedTag.length <= 30) {
+			setTags([...tags, trimmedTag]);
+			setTagInput("");
+		}
+	}, [tagInput, tags]);
+
+	// タグ削除処理
+	const removeTag = useCallback(
+		(tagToRemove: string) => {
+			setTags(tags.filter((tag) => tag !== tagToRemove));
+		},
+		[tags],
+	);
+
+	// エンターキーでタグ追加
+	const handleTagInputKeyDown = useCallback(
+		(e: React.KeyboardEvent) => {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				addTag();
+			}
+		},
+		[addTag],
+	);
+
 	// バリデーション
 	const duration = endTime - startTime;
 	const isValid = title.trim().length > 0 && duration >= 1 && duration <= 60;
@@ -133,7 +166,8 @@ export function AudioButtonCreator({
 			const input: CreateAudioButtonInput = {
 				sourceVideoId: videoId,
 				title: title.trim(),
-				tags: [],
+				description: description.trim() || undefined,
+				tags,
 				startTime,
 				endTime,
 				isPublic: true,
@@ -151,7 +185,7 @@ export function AudioButtonCreator({
 		} finally {
 			setIsCreating(false);
 		}
-	}, [isValid, videoId, title, startTime, endTime, router]);
+	}, [isValid, videoId, title, description, tags, startTime, endTime, router]);
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -217,6 +251,91 @@ export function AudioButtonCreator({
 										className="text-base min-h-[44px]"
 									/>
 									<p className="text-xs sm:text-sm text-muted-foreground">{title.length}/100</p>
+								</div>
+
+								{/* 説明文入力 */}
+								<div className="space-y-2">
+									<label htmlFor="description-input" className="text-sm sm:text-base font-medium">
+										説明（任意）
+									</label>
+									<Textarea
+										id="description-input"
+										value={description}
+										onChange={(e) => setDescription(e.target.value)}
+										placeholder="音声ボタンの詳細説明を入力（任意）"
+										maxLength={500}
+										disabled={isCreating}
+										rows={3}
+										className="text-base resize-none"
+									/>
+									<p className="text-xs sm:text-sm text-muted-foreground">
+										{description.length}/500
+									</p>
+								</div>
+
+								{/* タグ入力 */}
+								<div className="space-y-2">
+									<label
+										htmlFor="tag-input"
+										className="text-sm sm:text-base font-medium flex items-center gap-2"
+									>
+										<Tag className="h-4 w-4" />
+										タグ（任意）
+									</label>
+									<div className="flex gap-2">
+										<Input
+											id="tag-input"
+											value={tagInput}
+											onChange={(e) => setTagInput(e.target.value)}
+											onKeyDown={handleTagInputKeyDown}
+											placeholder="タグを入力してEnter"
+											maxLength={30}
+											disabled={isCreating || tags.length >= 15}
+											className="text-base flex-1"
+										/>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={addTag}
+											disabled={
+												!tagInput.trim() ||
+												tags.includes(tagInput.trim()) ||
+												tags.length >= 15 ||
+												isCreating
+											}
+											className="shrink-0"
+										>
+											<Plus className="h-4 w-4" />
+										</Button>
+									</div>
+
+									{/* タグ表示 */}
+									{tags.length > 0 && (
+										<div className="flex flex-wrap gap-2">
+											{tags.map((tag) => (
+												<Badge
+													key={tag}
+													variant="secondary"
+													className="flex items-center gap-1 px-2 py-1"
+												>
+													{tag}
+													<button
+														type="button"
+														onClick={() => removeTag(tag)}
+														disabled={isCreating}
+														className="hover:bg-muted-foreground/20 rounded-full p-0.5 ml-1"
+													>
+														<X className="h-3 w-3" />
+													</button>
+												</Badge>
+											))}
+										</div>
+									)}
+
+									<p className="text-xs sm:text-sm text-muted-foreground">
+										{tags.length}/15個のタグ（各タグ最大30文字）
+									</p>
 								</div>
 
 								{/* 範囲選択 */}

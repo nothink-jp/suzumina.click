@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Heart } from "lucide-react";
+import { ThumbsUp } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -97,7 +97,7 @@ export function LikeButton({
 						: "いいねする"
 			}
 		>
-			<Heart
+			<ThumbsUp
 				className={`h-4 w-4 ${isLiked ? "fill-current" : ""} ${isPending ? "animate-pulse" : ""}`}
 			/>
 			<span className="text-sm font-medium">{likeCount.toLocaleString()}</span>
