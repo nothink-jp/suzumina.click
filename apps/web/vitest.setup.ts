@@ -207,5 +207,10 @@ vi.mock("lucide-react", () => {
 		// Icons for AutocompleteDropdown and SearchInputWithAutocomplete
 		Tag: createMockIcon("Tag"),
 		FileText: createMockIcon("FileText"),
+		// Icons for VideoDetail
+		Timer: createMockIcon("Timer"),
+		Youtube: createMockIcon("Youtube"),
+		ArrowLeft: createMockIcon("ArrowLeft"),
+		PlayCircle: createMockIcon("PlayCircle"),
 	};
 });

@@ -41,7 +41,9 @@ export default async function Home() {
 								minHeight: "1.5rem",
 							}}
 						>
-							お気に入りの音声ボタンを作成・共有し、最新の作品情報をチェックしよう
+							涼花みなせさんのYouTube配信を切り抜いてボタンを作ろう！
+							<br />
+							あーたたちのあーたたちによるあーたたちのためのサイトです
 						</p>
 						{/* 検索フォームをClient Componentに分離 */}
 						<SearchForm />

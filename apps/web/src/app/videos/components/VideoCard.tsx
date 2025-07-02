@@ -35,16 +35,21 @@ const VideoCard = memo(function VideoCard({
 		if (isLiveStream && streamStartTime) {
 			try {
 				const date = new Date(streamStartTime);
-				return {
-					formattedDate: date.toLocaleDateString("ja-JP", {
-						timeZone: "Asia/Tokyo",
-						year: "numeric",
-						month: "2-digit",
-						day: "2-digit",
-					}),
-					displayLabel: "配信開始",
-					dateTimeValue: streamStartTime,
-				};
+				// Invalid Dateチェックを追加
+				if (Number.isNaN(date.getTime())) {
+					// 配信開始時間が無効な場合は公開時間にフォールバック
+				} else {
+					return {
+						formattedDate: date.toLocaleDateString("ja-JP", {
+							timeZone: "Asia/Tokyo",
+							year: "numeric",
+							month: "2-digit",
+							day: "2-digit",
+						}),
+						displayLabel: "配信開始",
+						dateTimeValue: streamStartTime,
+					};
+				}
 			} catch {
 				// 配信開始時間の解析に失敗した場合は公開時間にフォールバック
 			}
@@ -53,6 +58,14 @@ const VideoCard = memo(function VideoCard({
 		// 通常動画または配信開始時間が無効な場合は公開時間を使用
 		try {
 			const date = new Date(video.publishedAt);
+			// Invalid Dateチェックを追加
+			if (Number.isNaN(date.getTime())) {
+				return {
+					formattedDate: video.publishedAt,
+					displayLabel: "公開日",
+					dateTimeValue: video.publishedAt,
+				};
+			}
 			return {
 				formattedDate: date.toLocaleDateString("ja-JP", {
 					timeZone: "Asia/Tokyo",
