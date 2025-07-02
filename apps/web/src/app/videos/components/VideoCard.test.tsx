@@ -165,4 +165,29 @@ describe("VideoCard", () => {
 		// ボタン作成ボタンは表示されない
 		expect(screen.queryByText("ボタン作成")).not.toBeInTheDocument();
 	});
+
+	it("通常動画で公開日が表示される", () => {
+		render(<VideoCard video={baseVideoData} />);
+
+		const timeElement = screen.getByRole("time");
+		expect(timeElement).toHaveAttribute("title", "公開日: 2024/01/01");
+		expect(timeElement).toHaveTextContent("2024/01/01");
+	});
+
+	it("ライブ配信アーカイブで配信開始日が表示される", () => {
+		const liveStreamArchive: FrontendVideoData = {
+			...baseVideoData,
+			liveStreamingDetails: {
+				actualStartTime: "2024-01-15T20:00:00Z",
+				actualEndTime: "2024-01-15T22:00:00Z",
+			},
+		};
+
+		render(<VideoCard video={liveStreamArchive} />);
+
+		const timeElement = screen.getByRole("time");
+		expect(timeElement).toHaveAttribute("title", "配信開始: 2024/01/16");
+		expect(timeElement).toHaveTextContent("2024/01/16");
+		expect(timeElement).toHaveAttribute("dateTime", "2024-01-15T20:00:00Z");
+	});
 });

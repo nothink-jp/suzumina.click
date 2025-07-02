@@ -6,37 +6,56 @@ import { canCreateAudioButton } from "@suzumina.click/shared-types/src/video";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card } from "@suzumina.click/ui/components/ui/card";
-import { Calendar, Clock, Eye, Hash, PlayCircle, Plus, Radio, Share2, Video } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
+import {
+	Calendar,
+	Clock,
+	ExternalLink,
+	Eye,
+	PlayCircle,
+	Plus,
+	Radio,
+	Timer,
+	Video,
+} from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
-import { getAudioButtons } from "@/app/buttons/actions";
+import { getAudioButtonCount, getAudioButtons } from "@/app/buttons/actions";
 import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
 import ThumbnailImage from "@/components/ThumbnailImage";
+import { formatDescriptionText } from "@/lib/text-utils";
 
 interface VideoDetailProps {
 	video: FrontendVideoData;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 動画詳細の複雑な表示ロジックのため許容
 export default function VideoDetail({ video }: VideoDetailProps) {
 	const [audioButtons, setAudioButtons] = useState<FrontendAudioButtonData[]>([]);
 	const [audioLoading, setAudioLoading] = useState(false);
-	const [audioCount, setAudioCount] = useState(0);
+	const [_audioCount, setAudioCount] = useState(0);
+	const [totalAudioCount, setTotalAudioCount] = useState(0);
 
 	// 音声ボタンを取得
 	useEffect(() => {
 		const fetchAudioButtons = async () => {
 			setAudioLoading(true);
 			try {
-				const result = await getAudioButtons({
-					sourceVideoId: video.videoId,
-					limit: 6,
-					sortBy: "newest",
-				});
+				// 音声ボタンと総件数を並列で取得
+				const [result, totalCount] = await Promise.all([
+					getAudioButtons({
+						sourceVideoId: video.videoId,
+						limit: 6,
+						sortBy: "newest",
+					}),
+					getAudioButtonCount(video.videoId),
+				]);
 
 				if (result.success) {
 					setAudioButtons(result.data.audioButtons);
 					setAudioCount(result.data.audioButtons.length);
 				}
+				setTotalAudioCount(totalCount);
 			} catch (_error) {
 				// 音声ボタン取得エラーは無視してページ表示を継続
 			} finally {
@@ -47,14 +66,19 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 		fetchAudioButtons();
 	}, [video.videoId]);
 
-	// ISO形式の日付を表示用にフォーマット
+	// ISO形式の日付を表示用にフォーマット（JST、秒単位まで）
 	const formatDate = (isoString: string) => {
 		try {
 			const date = new Date(isoString);
-			return date.toLocaleDateString("ja-JP", {
+			return date.toLocaleString("ja-JP", {
+				timeZone: "Asia/Tokyo",
 				year: "numeric",
-				month: "long",
-				day: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+				hour: "2-digit",
+				minute: "2-digit",
+				second: "2-digit",
+				hour12: false,
 			});
 		} catch {
 			return isoString;
@@ -63,6 +87,56 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 
 	// YouTube動画URLを生成
 	const youtubeUrl = `https://youtube.com/watch?v=${video.videoId}`;
+
+	// YouTubeカテゴリIDとカテゴリ名の対応表
+	const getYouTubeCategoryName = (categoryId?: string): string | null => {
+		if (!categoryId) return null;
+
+		const categories: Record<string, string> = {
+			"1": "映画とアニメ",
+			"2": "自動車と乗り物",
+			"10": "音楽",
+			"15": "ペットと動物",
+			"17": "スポーツ",
+			"19": "旅行とイベント",
+			"20": "ゲーム",
+			"22": "ブログ",
+			"23": "コメディ",
+			"24": "エンターテイメント",
+			"25": "ニュースと政治",
+			"26": "ハウツーとスタイル",
+			"27": "教育",
+			"28": "科学と技術",
+			"29": "非営利団体と社会活動",
+		};
+
+		return categories[categoryId] || null;
+	};
+
+	// URLかどうかを判定する関数
+	const isValidUrl = (text: string): boolean => {
+		try {
+			new URL(text);
+			return text.startsWith("http://") || text.startsWith("https://");
+		} catch {
+			return false;
+		}
+	};
+
+	// 動画時間をフォーマット（ISO 8601 duration → hh:mm:ss）
+	const formatDuration = (duration?: string) => {
+		if (!duration) return null;
+		// PT1H2M3S → hh:mm:ss の形式に変換
+		const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+		if (!match) return null;
+
+		const hours = match[1] ? Number.parseInt(match[1]) : 0;
+		const minutes = match[2] ? Number.parseInt(match[2]) : 0;
+		const seconds = match[3] ? Number.parseInt(match[3]) : 0;
+
+		// 常にhh:mm:ssフォーマットで表示
+		return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+	};
 
 	// メモ化: 動画タイプバッジの情報
 	const videoBadgeInfo = useMemo(() => {
@@ -118,7 +192,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 	// メモ化: 音声ボタン作成可能判定
 	const canCreateButton = useMemo(() => canCreateAudioButton(video), [video]);
 
-	const handleShare = () => {
+	const _handleShare = () => {
 		if (navigator.share) {
 			navigator.share({
 				title: video.title,
@@ -161,16 +235,51 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* 左側：メインコンテンツ（2/3幅） */}
 				<div className="lg:col-span-2 space-y-6">
-					{/* 動画カード */}
+					{/* 動画プレイヤーカード */}
 					<Card className="overflow-hidden border-suzuka-200 dark:border-suzuka-800">
-						{/* サムネイル */}
-						<div className="relative aspect-video bg-muted">
+						{/* サムネイル/プレイヤー */}
+						<div className="relative aspect-[16/9] bg-black overflow-hidden">
 							<ThumbnailImage
 								src={video.thumbnailUrl}
 								alt={video.title}
-								className="w-full h-full object-cover"
+								className="w-full h-full object-contain transition-transform duration-300 hover:scale-105"
+								priority={true}
+								width={1280}
+								height={720}
+								sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 50vw"
 							/>
-							{/* 動画時間バッジ（もしあれば） */}
+
+							{/* プレイボタン */}
+							<div className="absolute inset-0 flex items-center justify-center group/play">
+								<Button
+									size="lg"
+									variant="secondary"
+									className="bg-white/90 hover:bg-white text-black shadow-lg transition-all duration-300 group-hover/play:scale-110"
+									asChild
+								>
+									<a
+										href={youtubeUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label={`${video.title}をYouTubeで再生`}
+									>
+										<PlayCircle className="h-8 w-8" />
+									</a>
+								</Button>
+							</div>
+
+							{/* ホバー時のオーバーレイ */}
+							<div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+							{/* 動画時間とタイプバッジ */}
+							<div className="absolute bottom-4 left-4 flex items-center gap-2">
+								{formatDuration(video.duration) && (
+									<Badge className="bg-black/80 text-white border-none">
+										{formatDuration(video.duration)}
+									</Badge>
+								)}
+							</div>
+
 							<div className="absolute top-4 right-4">
 								<Badge className={videoBadgeInfo.className} aria-label={videoBadgeInfo.ariaLabel}>
 									{React.createElement(videoBadgeInfo.icon, {
@@ -183,25 +292,51 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 						</div>
 
 						{/* 動画情報 */}
-						<div className="p-6 space-y-4">
-							<div>
-								<h1 className="text-2xl font-bold text-foreground mb-3">{video.title}</h1>
+						<div className="p-6">
+							<h1 className="text-2xl font-bold text-foreground mb-4">{video.title}</h1>
 
-								{/* メタ情報 */}
-								<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+							{/* メタ情報 */}
+							<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
+								<div className="flex items-center gap-1">
+									<Calendar className="h-4 w-4" />
+									{(() => {
+										// ライブ配信の場合は配信開始時間を主として表示
+										const isLiveStream = video.liveStreamingDetails?.actualStartTime;
+										const streamStartTime = video.liveStreamingDetails?.actualStartTime;
+
+										if (isLiveStream && streamStartTime) {
+											return (
+												<div className="flex flex-col">
+													<span title="配信開始時間（JST）">
+														配信開始: {formatDate(streamStartTime)}
+													</span>
+													<span className="text-xs opacity-75" title="動画公開時間（JST）">
+														公開: {formatDate(video.publishedAt)}
+													</span>
+												</div>
+											);
+										}
+										return <span title="日本標準時間（JST）">{formatDate(video.publishedAt)}</span>;
+									})()}
+								</div>
+								{formatDuration(video.duration) && (
+									<div className="flex items-center gap-1">
+										<Timer className="h-4 w-4" />
+										<span title="動画の長さ">{formatDuration(video.duration)}</span>
+									</div>
+								)}
+								{video.statistics?.viewCount && (
 									<div className="flex items-center gap-1">
 										<Eye className="h-4 w-4" />
-										<span>15,420 回視聴</span>
+										<span title="視聴回数">
+											{video.statistics.viewCount.toLocaleString("ja-JP")}回視聴
+										</span>
 									</div>
-									<div className="flex items-center gap-1">
-										<Calendar className="h-4 w-4" />
-										<span>{formatDate(video.publishedAt)}</span>
-									</div>
-								</div>
+								)}
 							</div>
 
 							{/* アクションボタン */}
-							<div className="flex flex-wrap gap-2">
+							<div className="flex flex-wrap gap-2 mb-6">
 								<Button
 									size="lg"
 									className="bg-suzuka-500 hover:bg-suzuka-600 text-white"
@@ -214,12 +349,15 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 									}
 								>
 									{canCreateButton ? (
-										<Link href={`/buttons/create?video_id=${video.videoId}`}>
+										<Link
+											href={`/buttons/create?video_id=${video.videoId}`}
+											className="flex items-center whitespace-nowrap"
+										>
 											<Plus className="h-4 w-4 mr-2" />
 											ボタンを作成
 										</Link>
 									) : (
-										<span>
+										<span className="flex items-center whitespace-nowrap">
 											<Plus className="h-4 w-4 mr-2" />
 											ボタンを作成
 										</span>
@@ -231,75 +369,502 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 										YouTubeで見る
 									</a>
 								</Button>
-								<Button size="lg" variant="ghost" onClick={handleShare}>
-									<Share2 className="h-4 w-4" />
-								</Button>
 							</div>
 
-							{/* 説明文 */}
-							{video.description && (
-								<div className="pt-4 border-t">
-									<p className="text-muted-foreground whitespace-pre-wrap break-words">
-										{video.description}
-									</p>
-									{/* ハッシュタグ風の表示（説明文から抽出） */}
-									<div className="flex flex-wrap gap-2 mt-4">
-										{video.description
-											.match(/#\S+/g)
-											?.slice(0, 5)
-											.map((tag) => (
-												<Badge
-													key={tag}
-													variant="secondary"
-													className="bg-suzuka-100 text-suzuka-700 dark:bg-suzuka-900 dark:text-suzuka-300"
-												>
-													<Hash className="h-3 w-3 mr-1" />
-													{tag.slice(1)}
-												</Badge>
-											))}
+							{/* タブナビゲーション */}
+							<Tabs defaultValue="overview" className="w-full">
+								<TabsList className="grid w-full grid-cols-4 mb-6">
+									<TabsTrigger value="overview">概要</TabsTrigger>
+									<TabsTrigger value="statistics">統計情報</TabsTrigger>
+									<TabsTrigger value="details">詳細情報</TabsTrigger>
+									<TabsTrigger value="technical">技術仕様</TabsTrigger>
+								</TabsList>
+
+								{/* 概要タブ */}
+								<TabsContent value="overview" className="space-y-4">
+									<div>
+										<h3 className="text-lg font-semibold mb-3">動画の説明</h3>
+										{video.description ? (
+											<div className="text-muted-foreground break-words">
+												{formatDescriptionText(video.description)}
+											</div>
+										) : (
+											<p className="text-muted-foreground">説明文はありません</p>
+										)}
 									</div>
-								</div>
-							)}
+
+									{/* タグ */}
+									{video.tags && video.tags.length > 0 && (
+										<div>
+											<h4 className="font-medium mb-2">タグ</h4>
+											<div className="flex flex-wrap gap-2">
+												{video.tags.slice(0, 10).map((tag) => (
+													<Badge
+														key={tag}
+														variant="secondary"
+														className="bg-suzuka-100 text-suzuka-700 dark:bg-suzuka-900 dark:text-suzuka-300"
+													>
+														{tag}
+													</Badge>
+												))}
+											</div>
+										</div>
+									)}
+								</TabsContent>
+
+								{/* 統計情報タブ */}
+								<TabsContent value="statistics" className="space-y-4">
+									<div className="grid grid-cols-2 gap-4">
+										<div className="bg-muted/30 p-4 rounded-lg">
+											<h4 className="font-semibold mb-2">視聴回数</h4>
+											<p className="text-2xl font-bold text-suzuka-600">
+												{video.statistics?.viewCount?.toLocaleString("ja-JP") || "データなし"}
+											</p>
+											<p className="text-sm text-muted-foreground">回視聴</p>
+										</div>
+
+										<div className="bg-muted/30 p-4 rounded-lg">
+											<h4 className="font-semibold mb-2">高評価数</h4>
+											<p className="text-2xl font-bold text-suzuka-600">
+												{video.statistics?.likeCount?.toLocaleString("ja-JP") || "データなし"}
+											</p>
+											<p className="text-sm text-muted-foreground">いいね</p>
+										</div>
+
+										<div className="bg-muted/30 p-4 rounded-lg">
+											<h4 className="font-semibold mb-2">コメント数</h4>
+											<p className="text-2xl font-bold text-suzuka-600">
+												{video.statistics?.commentCount?.toLocaleString("ja-JP") || "データなし"}
+											</p>
+											<p className="text-sm text-muted-foreground">コメント</p>
+										</div>
+
+										<div className="bg-muted/30 p-4 rounded-lg">
+											<h4 className="font-semibold mb-2">音声ボタン数</h4>
+											<p className="text-2xl font-bold text-suzuka-600">
+												{video.audioButtonCount || 0}
+											</p>
+											<p className="text-sm text-muted-foreground">作成されたボタン</p>
+										</div>
+									</div>
+
+									{/* エンゲージメント率 */}
+									{video.statistics?.viewCount && video.statistics?.likeCount && (
+										<div className="bg-muted/30 p-4 rounded-lg">
+											<h4 className="font-semibold mb-2">エンゲージメント率</h4>
+											<p className="text-2xl font-bold text-suzuka-600">
+												{((video.statistics.likeCount / video.statistics.viewCount) * 100).toFixed(
+													2,
+												)}
+												%
+											</p>
+											<p className="text-sm text-muted-foreground">
+												高評価率（高評価数 ÷ 視聴回数）
+											</p>
+										</div>
+									)}
+								</TabsContent>
+
+								{/* 詳細情報タブ */}
+								<TabsContent value="details" className="space-y-4">
+									<div className="space-y-4">
+										<div>
+											<h4 className="font-semibold mb-2">チャンネル情報</h4>
+											<p className="text-muted-foreground">{video.channelTitle}</p>
+											<p className="text-sm text-muted-foreground">
+												チャンネルID: {video.channelId}
+											</p>
+										</div>
+
+										<div>
+											<h4 className="font-semibold mb-2">公開情報</h4>
+											<div className="space-y-2">
+												<div>
+													<span className="text-sm font-medium">公開日時:</span>
+													<p
+														className="text-muted-foreground font-mono text-sm"
+														title="日本標準時間（JST）"
+													>
+														{formatDate(video.publishedAt)}
+													</p>
+												</div>
+												<div>
+													<span className="text-sm font-medium">情報更新:</span>
+													<p
+														className="text-muted-foreground font-mono text-sm"
+														title="日本標準時間（JST）"
+													>
+														{formatDate(video.lastFetchedAt)}
+													</p>
+												</div>
+												<div className="text-xs text-muted-foreground">
+													※全ての日時は日本標準時間（JST）で表示
+												</div>
+											</div>
+										</div>
+
+										{/* カテゴリ情報 */}
+										{video.categoryId && (
+											<div>
+												<h4 className="font-semibold mb-2">カテゴリ情報</h4>
+												<div className="space-y-1">
+													{(() => {
+														const categoryName = getYouTubeCategoryName(video.categoryId);
+														return (
+															<>
+																{categoryName && (
+																	<p className="text-muted-foreground">
+																		<span className="text-sm font-medium">カテゴリ:</span>
+																		<span className="ml-2">{categoryName}</span>
+																	</p>
+																)}
+																<p className="text-muted-foreground">
+																	<span className="text-sm font-medium">カテゴリID:</span>
+																	<span className="ml-2 font-mono">{video.categoryId}</span>
+																	{!categoryName && (
+																		<span className="ml-2 text-xs text-orange-600 dark:text-orange-400">
+																			(未対応カテゴリ)
+																		</span>
+																	)}
+																</p>
+															</>
+														);
+													})()}
+												</div>
+											</div>
+										)}
+
+										{/* トピック詳細 */}
+										{video.topicDetails?.topicCategories &&
+											video.topicDetails.topicCategories.length > 0 && (
+												<div>
+													<h4 className="font-semibold mb-2">トピックカテゴリ</h4>
+													<div className="space-y-1">
+														{video.topicDetails.topicCategories.map((topic) => (
+															<div key={topic} className="text-sm text-muted-foreground break-all">
+																<span>• </span>
+																{isValidUrl(topic) ? (
+																	<a
+																		href={topic}
+																		target="_blank"
+																		rel="noopener noreferrer"
+																		className="inline-flex items-center gap-1 text-suzuka-600 hover:text-suzuka-700 underline underline-offset-4 decoration-suzuka-400 hover:decoration-suzuka-600 transition-colors"
+																	>
+																		{topic.length > 60 ? `${topic.substring(0, 57)}...` : topic}
+																		<ExternalLink className="h-3 w-3 flex-shrink-0" />
+																	</a>
+																) : (
+																	<span>{topic}</span>
+																)}
+															</div>
+														))}
+													</div>
+												</div>
+											)}
+
+										{/* 撮影詳細 */}
+										{video.recordingDetails && (
+											<div>
+												<h4 className="font-semibold mb-2">撮影詳細</h4>
+												<div className="space-y-2">
+													{video.recordingDetails.locationDescription && (
+														<div>
+															<span className="text-sm font-medium">撮影場所:</span>
+															<p className="text-muted-foreground">
+																{video.recordingDetails.locationDescription}
+															</p>
+														</div>
+													)}
+													{video.recordingDetails.recordingDate && (
+														<div>
+															<span className="text-sm font-medium">撮影日時:</span>
+															<p className="text-muted-foreground font-mono text-sm">
+																{formatDate(video.recordingDetails.recordingDate)}
+															</p>
+														</div>
+													)}
+												</div>
+											</div>
+										)}
+
+										{/* 地域制限情報 */}
+										{video.regionRestriction && (
+											<div>
+												<h4 className="font-semibold mb-2">地域制限</h4>
+												<div className="space-y-2">
+													{video.regionRestriction.allowed &&
+														video.regionRestriction.allowed.length > 0 && (
+															<div>
+																<span className="text-sm font-medium">視聴可能地域:</span>
+																<p className="text-muted-foreground text-sm">
+																	{video.regionRestriction.allowed.join(", ")}
+																</p>
+															</div>
+														)}
+													{video.regionRestriction.blocked &&
+														video.regionRestriction.blocked.length > 0 && (
+															<div>
+																<span className="text-sm font-medium">視聴制限地域:</span>
+																<p className="text-muted-foreground text-sm">
+																	{video.regionRestriction.blocked.join(", ")}
+																</p>
+															</div>
+														)}
+												</div>
+											</div>
+										)}
+
+										{video.liveStreamingDetails && (
+											<div>
+												<h4 className="font-semibold mb-2">ライブ配信詳細</h4>
+												<div className="space-y-2">
+													{video.liveStreamingDetails.scheduledStartTime && (
+														<div className="pl-4 border-l-2 border-muted">
+															<p className="text-sm font-medium">予定開始時刻</p>
+															<p className="text-muted-foreground font-mono text-sm">
+																{formatDate(video.liveStreamingDetails.scheduledStartTime)}
+															</p>
+														</div>
+													)}
+													{video.liveStreamingDetails.actualStartTime && (
+														<div className="pl-4 border-l-2 border-muted">
+															<p className="text-sm font-medium">実際の開始時刻</p>
+															<p className="text-muted-foreground font-mono text-sm">
+																{formatDate(video.liveStreamingDetails.actualStartTime)}
+															</p>
+														</div>
+													)}
+													{video.liveStreamingDetails.actualEndTime && (
+														<div className="pl-4 border-l-2 border-muted">
+															<p className="text-sm font-medium">実際の終了時刻</p>
+															<p className="text-muted-foreground font-mono text-sm">
+																{formatDate(video.liveStreamingDetails.actualEndTime)}
+															</p>
+														</div>
+													)}
+													{video.liveStreamingDetails.scheduledEndTime && (
+														<div className="pl-4 border-l-2 border-muted">
+															<p className="text-sm font-medium">予定終了時刻</p>
+															<p className="text-muted-foreground font-mono text-sm">
+																{formatDate(video.liveStreamingDetails.scheduledEndTime)}
+															</p>
+														</div>
+													)}
+													{video.liveStreamingDetails.concurrentViewers && (
+														<div className="pl-4 border-l-2 border-muted">
+															<p className="text-sm font-medium">最大同時視聴者数</p>
+															<p className="text-muted-foreground">
+																{video.liveStreamingDetails.concurrentViewers.toLocaleString(
+																	"ja-JP",
+																)}{" "}
+																人
+															</p>
+														</div>
+													)}
+													{/* 配信時間の計算 */}
+													{video.liveStreamingDetails.actualStartTime &&
+														video.liveStreamingDetails.actualEndTime && (
+															<div className="pl-4 border-l-2 border-muted">
+																<p className="text-sm font-medium">配信時間</p>
+																<p className="text-muted-foreground">
+																	{(() => {
+																		const start = new Date(
+																			video.liveStreamingDetails.actualStartTime,
+																		);
+																		const end = new Date(video.liveStreamingDetails.actualEndTime);
+																		const diff = end.getTime() - start.getTime();
+																		const hours = Math.floor(diff / (1000 * 60 * 60));
+																		const minutes = Math.floor(
+																			(diff % (1000 * 60 * 60)) / (1000 * 60),
+																		);
+																		return `${hours}時間${minutes}分`;
+																	})()}
+																</p>
+															</div>
+														)}
+												</div>
+											</div>
+										)}
+									</div>
+								</TabsContent>
+
+								{/* 技術仕様タブ */}
+								<TabsContent value="technical" className="space-y-4">
+									<div className="space-y-4">
+										<div>
+											<h4 className="font-semibold mb-2">動画詳細</h4>
+											<div className="grid grid-cols-2 gap-4 text-sm">
+												<div>
+													<span className="text-muted-foreground">動画ID:</span>
+													<span className="ml-2 font-mono">{video.videoId}</span>
+												</div>
+												{video.duration && (
+													<div>
+														<span className="text-muted-foreground">動画時間:</span>
+														<span className="ml-2">
+															{formatDuration(video.duration) || "データなし"}
+															<span className="text-xs text-muted-foreground ml-2">
+																({video.duration})
+															</span>
+														</span>
+													</div>
+												)}
+												{video.definition && (
+													<div>
+														<span className="text-muted-foreground">解像度:</span>
+														<span className="ml-2">
+															{video.definition === "hd" ? "高解像度 (HD)" : "標準解像度 (SD)"}
+														</span>
+													</div>
+												)}
+												<div>
+													<span className="text-muted-foreground">次元:</span>
+													<span className="ml-2">
+														{video.dimension === "2d"
+															? "2D"
+															: video.dimension === "3d"
+																? "3D"
+																: "データなし"}
+													</span>
+												</div>
+												<div>
+													<span className="text-muted-foreground">字幕:</span>
+													<span className="ml-2">{video.caption ? "対応" : "非対応"}</span>
+												</div>
+												<div>
+													<span className="text-muted-foreground">ライセンス:</span>
+													<span className="ml-2">
+														{video.licensedContent ? "ライセンス済み" : "標準"}
+													</span>
+												</div>
+											</div>
+										</div>
+
+										{video.status && (
+											<div>
+												<h4 className="font-semibold mb-2">公開設定</h4>
+												<div className="grid grid-cols-2 gap-4 text-sm">
+													<div>
+														<span className="text-muted-foreground">プライバシー:</span>
+														<span className="ml-2">
+															{video.status.privacyStatus === "public"
+																? "公開"
+																: video.status.privacyStatus === "unlisted"
+																	? "限定公開"
+																	: video.status.privacyStatus === "private"
+																		? "非公開"
+																		: "データなし"}
+														</span>
+													</div>
+													<div>
+														<span className="text-muted-foreground">コメント:</span>
+														<span className="ml-2">
+															{video.status.commentStatus || "データなし"}
+														</span>
+													</div>
+													{video.status.uploadStatus && (
+														<div>
+															<span className="text-muted-foreground">アップロード:</span>
+															<span className="ml-2">{video.status.uploadStatus}</span>
+														</div>
+													)}
+												</div>
+											</div>
+										)}
+
+										{/* コンテンツレーティング */}
+										{video.contentRating && Object.keys(video.contentRating).length > 0 && (
+											<div>
+												<h4 className="font-semibold mb-2">コンテンツレーティング</h4>
+												<div className="grid grid-cols-2 gap-4 text-sm">
+													{Object.entries(video.contentRating).map(([key, value]) => (
+														<div key={key}>
+															<span className="text-muted-foreground">{key}:</span>
+															<span className="ml-2">{value}</span>
+														</div>
+													))}
+												</div>
+											</div>
+										)}
+
+										{/* プレイヤー情報 */}
+										{video.player && (
+											<div>
+												<h4 className="font-semibold mb-2">プレイヤー情報</h4>
+												<div className="grid grid-cols-2 gap-4 text-sm">
+													{video.player.embedWidth && (
+														<div>
+															<span className="text-muted-foreground">埋め込み幅:</span>
+															<span className="ml-2">{video.player.embedWidth}px</span>
+														</div>
+													)}
+													{video.player.embedHeight && (
+														<div>
+															<span className="text-muted-foreground">埋め込み高さ:</span>
+															<span className="ml-2">{video.player.embedHeight}px</span>
+														</div>
+													)}
+												</div>
+												{video.player.embedHtml && (
+													<div className="mt-2">
+														<span className="text-sm font-medium text-muted-foreground">
+															埋め込みHTML:
+														</span>
+														<pre className="mt-1 text-xs bg-muted p-2 rounded overflow-x-auto max-h-32">
+															{video.player.embedHtml}
+														</pre>
+													</div>
+												)}
+											</div>
+										)}
+									</div>
+								</TabsContent>
+							</Tabs>
 						</div>
 					</Card>
+				</div>
 
-					{/* 音声ボタンセクション */}
+				{/* 右側：サイドバー（1/3幅） */}
+				<div className="space-y-6">
+					{/* この動画のボタン */}
 					<Card className="p-6 bg-suzuka-50 dark:bg-suzuka-950 border-suzuka-200 dark:border-suzuka-800">
 						<div className="flex items-center justify-between mb-4">
-							<h2 className="text-xl font-semibold text-foreground">
-								この動画から作成されたボタン
-							</h2>
-							{audioCount > 0 && (
-								<Badge
-									variant="secondary"
-									className="bg-suzuka-200 text-suzuka-700 dark:bg-suzuka-800 dark:text-suzuka-300"
+							<h3 className="text-lg font-semibold text-suzuka-700 dark:text-suzuka-300">
+								🔊 この動画のボタン ({totalAudioCount})
+							</h3>
+							{canCreateButton && (
+								<Button
+									size="sm"
+									variant="outline"
+									className="text-suzuka-600 border-suzuka-300 hover:bg-suzuka-100"
+									asChild
 								>
-									{audioCount}個
-								</Badge>
+									<Link href={`/buttons/create?video_id=${video.videoId}`}>新規作成</Link>
+								</Button>
 							)}
 						</div>
 
 						{audioLoading ? (
-							<div className="flex items-center justify-center py-12">
-								<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-suzuka-500" />
+							<div className="flex items-center justify-center py-8">
+								<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-suzuka-500" />
 							</div>
 						) : audioButtons.length > 0 ? (
 							<div className="space-y-4">
 								{/* 音声ボタン一覧 */}
-								<div className="flex flex-wrap gap-3 items-start">
+								<div className="flex flex-wrap gap-2">
 									{audioButtons.map((audioButton) => (
 										<AudioButtonWithPlayCount
 											key={audioButton.id}
 											audioButton={audioButton}
-											maxTitleLength={50}
+											maxTitleLength={15}
 											className="shadow-sm hover:shadow-md transition-all duration-200"
 										/>
 									))}
 								</div>
 
 								{/* もっと見るボタン */}
-								<div className="pt-4 border-t flex justify-center">
-									<Button variant="outline" asChild>
+								<div className="pt-3 border-t border-suzuka-200 dark:border-suzuka-800">
+									<Button variant="outline" size="sm" className="w-full" asChild>
 										<Link href={`/buttons?sourceVideoId=${video.videoId}`}>
 											すべてのボタンを見る
 										</Link>
@@ -307,31 +872,28 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 								</div>
 							</div>
 						) : (
-							<div className="text-center py-12">
-								<p className="text-muted-foreground mb-4">
+							<div className="text-center py-8">
+								<p className="text-sm text-muted-foreground mb-3">
 									{canCreateButton
 										? "まだボタンが作成されていません"
 										: "この動画からは音声ボタンを作成できません"}
 								</p>
-								{canCreateButton ? (
-									<Button className="bg-suzuka-500 hover:bg-suzuka-600 text-white" asChild>
+								{canCreateButton && (
+									<Button
+										size="sm"
+										className="bg-suzuka-500 hover:bg-suzuka-600 text-white"
+										asChild
+									>
 										<Link href={`/buttons/create?video_id=${video.videoId}`}>
-											<Plus className="h-4 w-4 mr-2" />
+											<Plus className="h-3 w-3 mr-1" />
 											最初のボタンを作成
 										</Link>
 									</Button>
-								) : (
-									<p className="text-sm text-muted-foreground">
-										許諾により音声ボタンを作成できるのは配信アーカイブのみです
-									</p>
 								)}
 							</div>
 						)}
 					</Card>
-				</div>
 
-				{/* 右側：サイドバー（1/3幅） */}
-				<div className="space-y-6">
 					{/* チャンネル情報 */}
 					<Card className="p-6">
 						<h3 className="font-semibold text-foreground mb-4">チャンネル情報</h3>
@@ -348,12 +910,6 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 								</div>
 							</div>
 						</div>
-					</Card>
-
-					{/* 関連動画（将来的に追加） */}
-					<Card className="p-6">
-						<h3 className="font-semibold text-foreground mb-4">関連動画</h3>
-						<p className="text-sm text-muted-foreground">関連動画はまだありません</p>
 					</Card>
 				</div>
 			</div>

@@ -26,19 +26,49 @@ const VideoCard = memo(function VideoCard({
 	// 音声ボタン数: video.audioButtonCountを優先し、なければbuttonCountを使用
 	const actualButtonCount = video.audioButtonCount ?? buttonCount ?? 0;
 
-	// メモ化: 日付フォーマットを最適化
-	const formattedDate = useMemo(() => {
+	// メモ化: 日付フォーマットを最適化（ライブ配信は配信開始時間を優先）
+	const { formattedDate, displayLabel, dateTimeValue } = useMemo(() => {
+		// ライブ配信アーカイブの場合は配信開始時間を使用
+		const isLiveStream = video.liveStreamingDetails?.actualStartTime;
+		const streamStartTime = video.liveStreamingDetails?.actualStartTime;
+
+		if (isLiveStream && streamStartTime) {
+			try {
+				const date = new Date(streamStartTime);
+				return {
+					formattedDate: date.toLocaleDateString("ja-JP", {
+						year: "numeric",
+						month: "2-digit",
+						day: "2-digit",
+					}),
+					displayLabel: "配信開始",
+					dateTimeValue: streamStartTime,
+				};
+			} catch {
+				// 配信開始時間の解析に失敗した場合は公開時間にフォールバック
+			}
+		}
+
+		// 通常動画または配信開始時間が無効な場合は公開時間を使用
 		try {
 			const date = new Date(video.publishedAt);
-			return date.toLocaleDateString("ja-JP", {
-				year: "numeric",
-				month: "2-digit",
-				day: "2-digit",
-			});
+			return {
+				formattedDate: date.toLocaleDateString("ja-JP", {
+					year: "numeric",
+					month: "2-digit",
+					day: "2-digit",
+				}),
+				displayLabel: "公開日",
+				dateTimeValue: video.publishedAt,
+			};
 		} catch {
-			return video.publishedAt;
+			return {
+				formattedDate: video.publishedAt,
+				displayLabel: "公開日",
+				dateTimeValue: video.publishedAt,
+			};
 		}
-	}, [video.publishedAt]);
+	}, [video.publishedAt, video.liveStreamingDetails?.actualStartTime]);
 
 	// メモ化: YouTube URLを最適化
 	const _youtubeUrl = useMemo(
@@ -112,36 +142,38 @@ const VideoCard = memo(function VideoCard({
 						className="block relative"
 						aria-describedby={`video-desc-${video.id}`}
 					>
-						<ThumbnailImage
-							src={video.thumbnailUrl}
-							alt={`${video.title}のサムネイル画像`}
-							className="w-full rounded-t-lg group-hover:scale-105 transition-transform duration-300"
-							priority={priority}
-							width={384}
-							height={216}
-							sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-						/>
-						<div className="absolute bottom-2 right-2">
-							<Badge className={videoBadgeInfo.className} aria-label={videoBadgeInfo.ariaLabel}>
-								{React.createElement(videoBadgeInfo.icon, {
-									className: "h-3 w-3 mr-1",
-									"aria-hidden": "true",
-								})}
-								{videoBadgeInfo.text}
+						<div className="relative aspect-[16/9] bg-black rounded-t-lg overflow-hidden">
+							<ThumbnailImage
+								src={video.thumbnailUrl}
+								alt={`${video.title}のサムネイル画像`}
+								className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+								priority={priority}
+								width={384}
+								height={216}
+								sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+							/>
+						</div>
+					</Link>
+					<div className="absolute bottom-2 right-2">
+						<Badge className={videoBadgeInfo.className} aria-label={videoBadgeInfo.ariaLabel}>
+							{React.createElement(videoBadgeInfo.icon, {
+								className: "h-3 w-3 mr-1",
+								"aria-hidden": "true",
+							})}
+							{videoBadgeInfo.text}
+						</Badge>
+					</div>
+					{actualButtonCount > 0 && (
+						<div className="absolute top-2 left-2">
+							<Badge
+								variant="secondary"
+								className="bg-white/90 text-foreground"
+								aria-label={`${actualButtonCount}個の音声ボタンが作成されています`}
+							>
+								{actualButtonCount} ボタン
 							</Badge>
 						</div>
-						{actualButtonCount > 0 && (
-							<div className="absolute top-2 left-2">
-								<Badge
-									variant="secondary"
-									className="bg-white/90 text-foreground"
-									aria-label={`${actualButtonCount}個の音声ボタンが作成されています`}
-								>
-									{actualButtonCount} ボタン
-								</Badge>
-							</div>
-						)}
-					</Link>
+					)}
 				</div>
 				<div className="p-4">
 					<Link href={`/videos/${video.id}`} className="block group">
@@ -160,7 +192,7 @@ const VideoCard = memo(function VideoCard({
 					</p>
 					<div className="flex items-center text-sm text-muted-foreground mb-3">
 						<Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
-						<time dateTime={video.publishedAt} title={`公開日: ${formattedDate}`}>
+						<time dateTime={dateTimeValue} title={`${displayLabel}: ${formattedDate}`}>
 							{formattedDate}
 						</time>
 					</div>

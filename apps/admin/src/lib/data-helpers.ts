@@ -4,8 +4,12 @@ export const formatDate = (timestamp: unknown): string => {
 	if (!timestamp) return "不明";
 
 	try {
-		const typedTimestamp = timestamp as any;
-		const date = typedTimestamp.toDate ? typedTimestamp.toDate() : new Date(typedTimestamp);
+		let date: Date;
+		if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
+			date = (timestamp as { toDate: () => Date }).toDate();
+		} else {
+			date = new Date(timestamp as string | number | Date);
+		}
 		if (Number.isNaN(date.getTime())) return "不明";
 
 		return date.toLocaleDateString("ja-JP", {
@@ -95,21 +99,45 @@ export const sortByField = <T extends Record<string, unknown>>(
 	field: keyof T,
 	direction: "asc" | "desc" = "desc",
 ): T[] => {
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 多様なデータ型の安全な比較処理のため許容
 	return [...items].sort((a, b) => {
-		let aValue: any = a[field];
-		let bValue: any = b[field];
+		let aValue: unknown = a[field];
+		let bValue: unknown = b[field];
 
 		// Handle timestamps
-		if (aValue?.toDate) aValue = aValue.toDate();
-		if (bValue?.toDate) bValue = bValue.toDate();
+		if (aValue && typeof aValue === "object" && "toDate" in aValue) {
+			aValue = (aValue as { toDate: () => Date }).toDate();
+		}
+		if (bValue && typeof bValue === "object" && "toDate" in bValue) {
+			bValue = (bValue as { toDate: () => Date }).toDate();
+		}
 
 		// Handle dates
 		if (aValue instanceof Date) aValue = aValue.getTime();
 		if (bValue instanceof Date) bValue = bValue.getTime();
 
-		if (direction === "asc") {
-			return aValue > bValue ? 1 : -1;
+		// Handle null/undefined values
+		if (aValue == null && bValue == null) return 0;
+		if (aValue == null) return direction === "asc" ? -1 : 1;
+		if (bValue == null) return direction === "asc" ? 1 : -1;
+
+		// Type-safe comparison for primitives
+		if (
+			typeof aValue === typeof bValue &&
+			(typeof aValue === "string" || typeof aValue === "number")
+		) {
+			if (direction === "asc") {
+				return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+			}
+			return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
 		}
-		return aValue < bValue ? 1 : -1;
+
+		// Fallback to string comparison
+		const aStr = String(aValue);
+		const bStr = String(bValue);
+		if (direction === "asc") {
+			return aStr > bStr ? 1 : aStr < bStr ? -1 : 0;
+		}
+		return aStr < bStr ? 1 : aStr > bStr ? -1 : 0;
 	});
 };

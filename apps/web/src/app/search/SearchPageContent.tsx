@@ -258,11 +258,11 @@ function SearchResults({
 										className="group block hover:shadow-lg transition-shadow"
 									>
 										<Card className="h-full">
-											<div className="aspect-video relative overflow-hidden rounded-t-lg">
+											<div className="aspect-[16/9] relative overflow-hidden rounded-t-lg bg-black">
 												<ThumbnailImage
 													src={video.thumbnailUrl}
 													alt={video.title}
-													className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+													className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
 												/>
 											</div>
 											<CardContent className="p-4">
@@ -367,11 +367,11 @@ function SearchResults({
 								className="group block hover:shadow-lg transition-shadow"
 							>
 								<Card className="h-full">
-									<div className="aspect-video relative overflow-hidden rounded-t-lg">
+									<div className="aspect-[16/9] relative overflow-hidden rounded-t-lg bg-black">
 										<ThumbnailImage
 											src={video.thumbnailUrl}
 											alt={video.title}
-											className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+											className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
 										/>
 									</div>
 									<CardContent className="p-4">

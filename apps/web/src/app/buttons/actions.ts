@@ -367,6 +367,24 @@ export async function getRecentAudioButtons(limit = 6): Promise<FrontendAudioBut
 }
 
 /**
+ * 特定の動画の音声ボタン総件数を取得するServer Action
+ */
+export async function getAudioButtonCount(sourceVideoId: string): Promise<number> {
+	try {
+		const firestore = getFirestore();
+		const snapshot = await firestore
+			.collection("audioButtons")
+			.where("isPublic", "==", true)
+			.where("sourceVideoId", "==", sourceVideoId)
+			.get();
+
+		return snapshot.size;
+	} catch (_error) {
+		return 0;
+	}
+}
+
+/**
  * カテゴリ別の音声ボタンを取得するServer Action
  */
 // カテゴリー別取得は削除（タグベースシステムに移行）

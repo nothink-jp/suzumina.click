@@ -112,6 +112,68 @@ export const FrontendVideoSchema = YouTubeVideoBaseSchema.extend({
 	// 音声ボタン関連情報
 	audioButtonCount: z.number().int().min(0).default(0),
 	hasAudioButtons: z.boolean().default(false),
+
+	// 統計情報 (statistics)
+	statistics: z
+		.object({
+			viewCount: z.number().optional(), // 視聴回数
+			likeCount: z.number().optional(), // 高評価数
+			dislikeCount: z.number().optional(), // 低評価数（現在APIからは非公開）
+			favoriteCount: z.number().optional(), // お気に入り数
+			commentCount: z.number().optional(), // コメント数
+		})
+		.optional(),
+
+	// コンテンツ詳細 (contentDetails)
+	duration: z.string().optional(), // ISO 8601形式の動画時間（例："PT1H2M3S"）
+	dimension: z.string().optional(), // "2d" または "3d"
+	definition: z.string().optional(), // "hd" または "sd"
+	caption: z.boolean().optional(), // キャプションの有無
+	licensedContent: z.boolean().optional(), // ライセンスコンテンツかどうか
+	contentRating: z.record(z.string()).optional(), // 年齢制限情報
+	regionRestriction: z
+		.object({
+			allowed: z.array(z.string()).optional(), // 視聴可能な国コード
+			blocked: z.array(z.string()).optional(), // 視聴できない国コード
+		})
+		.optional(),
+
+	// ステータス情報 (status)
+	status: z
+		.object({
+			uploadStatus: z.string().optional(), // アップロードステータス
+			privacyStatus: z.string().optional(), // プライバシーステータス (public/unlisted/private)
+			commentStatus: z.string().optional(), // コメント許可状態
+		})
+		.optional(),
+
+	// カテゴリ情報
+	categoryId: z.string().optional(), // 動画カテゴリID
+	tags: z.array(z.string()).optional(), // 動画タグ
+
+	// プレイヤー情報 (player)
+	player: z
+		.object({
+			embedHtml: z.string().optional(), // 埋め込み用HTML
+			embedHeight: z.number().optional(), // 埋め込み高さ
+			embedWidth: z.number().optional(), // 埋め込み幅
+		})
+		.optional(),
+
+	// 撮影詳細 (recordingDetails)
+	recordingDetails: z
+		.object({
+			locationDescription: z.string().optional(), // 撮影場所の説明
+			recordingDate: z.string().datetime().optional(), // 撮影日時（ISO文字列）
+		})
+		.optional(),
+
+	// トピック詳細 (topicDetails)
+	topicDetails: z
+		.object({
+			topicCategories: z.array(z.string()).optional(), // トピックカテゴリURL
+		})
+		.optional(),
 });
 
 /**

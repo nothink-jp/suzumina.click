@@ -73,6 +73,7 @@ function convertTimestampToISO(timestamp: unknown): string {
 /**
  * FirestoreサーバーデータをFirestoreデータ形式に変換する関数（ユーザー向け）
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 多数のフィールド変換が必要なため許容
 function transformServerDataToFirestoreData(doc: DocumentSnapshot, data: FirestoreServerVideoData) {
 	return {
 		id: doc.id,
@@ -86,6 +87,17 @@ function transformServerDataToFirestoreData(doc: DocumentSnapshot, data: Firesto
 		lastFetchedAt: convertTimestampToISO(data.lastFetchedAt),
 		videoType: data.videoType,
 		liveBroadcastContent: data.liveBroadcastContent,
+		// YouTube Content Details
+		duration: data.duration,
+		definition: data.definition,
+		dimension: data.dimension,
+		caption: data.caption,
+		licensedContent: data.licensedContent,
+		contentRating: data.contentRating,
+		regionRestriction: data.regionRestriction,
+		// YouTube Statistics
+		statistics: data.statistics,
+		// Live Streaming Details
 		liveStreamingDetails: data.liveStreamingDetails
 			? {
 					scheduledStartTime: data.liveStreamingDetails.scheduledStartTime
@@ -103,6 +115,25 @@ function transformServerDataToFirestoreData(doc: DocumentSnapshot, data: Firesto
 					concurrentViewers: data.liveStreamingDetails.concurrentViewers,
 				}
 			: undefined,
+		// Player Information
+		player: data.player,
+		// Recording Details
+		recordingDetails: data.recordingDetails
+			? {
+					locationDescription: data.recordingDetails.locationDescription,
+					recordingDate: data.recordingDetails.recordingDate
+						? convertTimestampToISO(data.recordingDetails.recordingDate)
+						: undefined,
+				}
+			: undefined,
+		// Topic Details
+		topicDetails: data.topicDetails,
+		// Status Information
+		status: data.status,
+		// Category and Tags
+		categoryId: data.categoryId,
+		tags: data.tags,
+		// Audio Button Information
 		audioButtonCount: data.audioButtonCount || 0,
 		hasAudioButtons: data.hasAudioButtons || false,
 	};
