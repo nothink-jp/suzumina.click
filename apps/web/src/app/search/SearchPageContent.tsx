@@ -312,6 +312,7 @@ function SearchResults({
 											<div className="aspect-[4/3] relative overflow-hidden rounded-t-lg">
 												<ThumbnailImage
 													src={work.highResImageUrl || work.thumbnailUrl || "/placeholder-work.png"}
+													fallbackSrc={work.thumbnailUrl}
 													alt={work.title}
 													className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
 												/>
@@ -410,6 +411,7 @@ function SearchResults({
 									<div className="aspect-[4/3] relative overflow-hidden rounded-t-lg">
 										<ThumbnailImage
 											src={work.highResImageUrl || work.thumbnailUrl || "/placeholder-work.png"}
+											fallbackSrc={work.thumbnailUrl}
 											alt={work.title}
 											className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
 										/>

@@ -78,11 +78,12 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
     service_account_email = google_service_account.fetch_youtube_videos_sa.email
   }
 
-  # GitHub Actions からのデプロイで関数コードのみの更新を許可するため、
-  # ソースコードの変更は無視する（関数の設定変更のみをTerraformで管理）
+  # GitHub Actions からのデプロイとの競合を避けるため、
+  # ソースコードと環境変数は GitHub Actions が管理し、Terraform は無視する
   lifecycle {
     ignore_changes = [
-      build_config # ビルド設定全体を無視（GitHub Actionsが管理）
+      build_config, # ビルド設定全体を無視（GitHub Actionsが管理）
+      service_config[0].environment_variables, # 環境変数もGitHub Actionsが管理
     ]
     # 既存のリソースとの競合を避けるため、作成失敗時は手動で解決する
     create_before_destroy = false

@@ -186,6 +186,14 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
 
+  # GitHub Actions からのデプロイとの競合を避けるため、
+  # 画像参照は GitHub Actions が管理し、Terraform は無視する
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+    ]
+  }
+
   depends_on = [
     google_artifact_registry_repository.docker_repo,
     google_service_account.cloud_run_service_account,

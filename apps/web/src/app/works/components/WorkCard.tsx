@@ -71,6 +71,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 						>
 							<ThumbnailImage
 								src={work.highResImageUrl || work.thumbnailUrl}
+								fallbackSrc={work.thumbnailUrl}
 								alt={`${work.title}のサムネイル画像`}
 								className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
 								priority={priority}

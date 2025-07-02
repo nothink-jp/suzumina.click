@@ -179,11 +179,13 @@ export function extractTrackInfo($: cheerio.CheerioAPI): TrackInfo[] {
 			const contentText = $section.find(".work_parts_area").text().trim();
 
 			// トラックリストセクションを特定
+			// 見出しにトラック関連のキーワードがある場合、または
+			// 内容に「◆トラック」「【トラック」「[時間]」のパターンがある場合
 			if (
 				/トラック|収録|リスト|track/i.test(headingText) ||
-				/\d+:.*\(\d+:\d+\)/.test(contentText)
+				/◆トラック|【トラック\d+|【本編総再生時間|\[\d+:\d+\]/i.test(contentText)
 			) {
-				logger.debug(`トラックリストセクションを発見: ${headingText}`);
+				logger.debug(`トラックリストセクションを発見: ${headingText || "(見出しなし)"}`);
 				const sectionTracks = extractTracksFromWorkPartsSection(contentText);
 				tracks.push(...sectionTracks);
 			}
@@ -254,11 +256,13 @@ function extractTracksFromWorkPartsSection(content: string): TrackInfo[] {
 
 	// DLsite特有のパターンに対応
 	const dlsitePatterns = [
-		// パターン1: "1:タイトル(30:48)"
+		// パターン1: "【トラック1:タイトル】[7:34]" 形式（最優先、スペース考慮）
+		/【トラック(\d+):([^】]+)】\s*\[(\d+:\d+)\]/g,
+		// パターン2: "1:タイトル(30:48)"
 		/(\d+):([^(]+)\((\d+:\d+)\)/g,
-		// パターン2: "1. タイトル (30分48秒)"
+		// パターン3: "1. タイトル (30分48秒)"
 		/(\d+)\.?\s*([^(]+)\s*\(([^)]*(?:\d+[分秒時間]+[^)]*)+)\)/g,
-		// パターン3: "Track 1: タイトル (30:48)"
+		// パターン4: "Track 1: タイトル (30:48)"
 		/Track\s*(\d+):\s*([^(]+)\s*\((\d+:\d+)\)/gi,
 	];
 

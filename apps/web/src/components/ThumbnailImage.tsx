@@ -11,6 +11,7 @@ interface ThumbnailImageProps {
 	width?: number;
 	height?: number;
 	sizes?: string;
+	fallbackSrc?: string; // フォールバック画像URL
 }
 
 const PLACEHOLDER_IMAGE =
@@ -25,20 +26,28 @@ const ThumbnailImage = memo(function ThumbnailImage({
 	width = 320,
 	height = 240,
 	sizes = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw",
+	fallbackSrc,
 }: ThumbnailImageProps) {
 	const [imageSrc, setImageSrc] = useState(src);
 	const [hasError, setHasError] = useState(false);
+	const [hasFallbackError, setHasFallbackError] = useState(false);
 
 	// srcプロップが変更された際に内部状態をリセット
 	useEffect(() => {
 		setImageSrc(src);
 		setHasError(false);
+		setHasFallbackError(false);
 	}, [src]);
 
 	const handleError = () => {
-		if (!hasError) {
-			setImageSrc(PLACEHOLDER_IMAGE);
+		if (!hasError && fallbackSrc && !hasFallbackError) {
+			// 最初にフォールバック画像を試行
+			setImageSrc(fallbackSrc);
 			setHasError(true);
+		} else if (!hasFallbackError) {
+			// フォールバック画像もエラーの場合、またはフォールバック画像がない場合
+			setImageSrc(PLACEHOLDER_IMAGE);
+			setHasFallbackError(true);
 		}
 	};
 

@@ -30,6 +30,10 @@ const nextConfig = {
 		// 画像サイズの最適化
 		deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
 		imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+		// 高解像度画像対応のため制限を緩和
+		unoptimized: false,
+		// 大きな画像に対応
+		maximumCacheSizeInMB: 32,
 		// 外部画像ドメインの許可（YouTubeサムネイル・DLsite画像・Discord CDN用）
 		remotePatterns: [
 			{
@@ -49,6 +53,12 @@ const nextConfig = {
 				hostname: "img.dlsite.jp",
 				port: "",
 				pathname: "/resize/images2/**",
+			},
+			{
+				protocol: "https",
+				hostname: "img.dlsite.jp",
+				port: "",
+				pathname: "/modpub/images2/**",
 			},
 			{
 				protocol: "https",

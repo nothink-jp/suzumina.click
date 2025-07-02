@@ -213,7 +213,7 @@ jobs:
               --trigger-topic youtube-video-fetch-trigger \
               --region asia-northeast1 \
               --project ${{ secrets.GCP_PROJECT_ID }} \
-              --set-env-vars NODE_ENV=production \
+              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchYouTubeVideos \
               --memory 512MB \
               --timeout 540s \
               --max-instances 10 \
@@ -246,7 +246,7 @@ jobs:
               --trigger-topic dlsite-works-fetch-trigger \
               --region asia-northeast1 \
               --project ${{ secrets.GCP_PROJECT_ID }} \
-              --set-env-vars NODE_ENV=production \
+              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteWorks,ENABLE_DETAILED_SCRAPING=true \
               --memory 512MB \
               --timeout 540s \
               --max-instances 10 \
