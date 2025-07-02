@@ -1,5 +1,6 @@
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import VideoDetail from "./VideoDetail";
 
@@ -245,8 +246,12 @@ describe("VideoDetail", () => {
 			render(<VideoDetail video={videoWithStats} />);
 
 			// 統計情報タブに切り替えて確認
+			const user = userEvent.setup();
 			const statsTab = await screen.findByRole("tab", { name: "統計情報" });
-			statsTab.click();
+			await user.click(statsTab);
+
+			// 統計情報タブのコンテンツが表示されるのを待つ
+			await screen.findByText("視聴回数");
 
 			// 視聴回数がカンマ区切りで表示されることを確認
 			expect(await screen.findByText("1,234,567")).toBeInTheDocument();
@@ -263,12 +268,16 @@ describe("VideoDetail", () => {
 			render(<VideoDetail video={videoWithoutStats} />);
 
 			// 統計情報タブに切り替えて確認
+			const user = userEvent.setup();
 			const statsTab = await screen.findByRole("tab", { name: "統計情報" });
-			statsTab.click();
+			await user.click(statsTab);
+
+			// 統計情報タブのコンテンツが表示されるのを待つ
+			await screen.findByText("視聴回数");
 
 			// データなしが表示されることを確認
-			const dataNashiElements = await screen.findAllByText("データなし");
-			expect(dataNashiElements.length).toBeGreaterThan(0);
+			const dataNotFoundElements = await screen.findAllByText("データなし");
+			expect(dataNotFoundElements.length).toBeGreaterThan(0);
 		});
 
 		it("エンゲージメント率が正しく計算される", async () => {
@@ -284,8 +293,12 @@ describe("VideoDetail", () => {
 			render(<VideoDetail video={videoWithEngagement} />);
 
 			// 統計情報タブに切り替えて確認
+			const user = userEvent.setup();
 			const statsTab = await screen.findByRole("tab", { name: "統計情報" });
-			statsTab.click();
+			await user.click(statsTab);
+
+			// 統計情報タブのコンテンツが表示されるのを待つ
+			await screen.findByText("視聴回数");
 
 			// エンゲージメント率が5.00%として表示されることを確認
 			expect(await screen.findByText("5.00%")).toBeInTheDocument();
