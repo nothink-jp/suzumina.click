@@ -37,6 +37,7 @@ const VideoCard = memo(function VideoCard({
 				const date = new Date(streamStartTime);
 				return {
 					formattedDate: date.toLocaleDateString("ja-JP", {
+						timeZone: "Asia/Tokyo",
 						year: "numeric",
 						month: "2-digit",
 						day: "2-digit",
@@ -54,6 +55,7 @@ const VideoCard = memo(function VideoCard({
 			const date = new Date(video.publishedAt);
 			return {
 				formattedDate: date.toLocaleDateString("ja-JP", {
+					timeZone: "Asia/Tokyo",
 					year: "numeric",
 					month: "2-digit",
 					day: "2-digit",

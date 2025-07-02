@@ -43,7 +43,9 @@ function formatRelativeTime(dateString: string): string {
 	if (diffDays < 7) {
 		return `${diffDays}日前`;
 	}
-	return date.toLocaleDateString("ja-JP");
+	return date.toLocaleDateString("ja-JP", {
+		timeZone: "Asia/Tokyo",
+	});
 }
 
 // 関連音声ボタンコンポーネント

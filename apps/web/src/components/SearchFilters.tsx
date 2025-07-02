@@ -90,7 +90,9 @@ function DateRangeFilter({
 								>
 									<CalendarIcon className="mr-2 h-4 w-4" />
 									{customDateFrom ? (
-										customDateFrom.toLocaleDateString("ja-JP")
+										customDateFrom.toLocaleDateString("ja-JP", {
+											timeZone: "Asia/Tokyo",
+										})
 									) : (
 										<span className="text-muted-foreground">開始日</span>
 									)}
@@ -115,7 +117,9 @@ function DateRangeFilter({
 								>
 									<CalendarIcon className="mr-2 h-4 w-4" />
 									{customDateTo ? (
-										customDateTo.toLocaleDateString("ja-JP")
+										customDateTo.toLocaleDateString("ja-JP", {
+											timeZone: "Asia/Tokyo",
+										})
 									) : (
 										<span className="text-muted-foreground">終了日</span>
 									)}

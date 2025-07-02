@@ -35,6 +35,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 		try {
 			const date = new Date(dateString);
 			return date.toLocaleDateString("ja-JP", {
+				timeZone: "Asia/Tokyo",
 				year: "numeric",
 				month: "long",
 				day: "numeric",

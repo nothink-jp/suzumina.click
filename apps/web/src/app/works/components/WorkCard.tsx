@@ -38,6 +38,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 		try {
 			const date = new Date(dateString);
 			return date.toLocaleDateString("ja-JP", {
+				timeZone: "Asia/Tokyo",
 				year: "numeric",
 				month: "2-digit",
 				day: "2-digit",

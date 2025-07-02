@@ -274,7 +274,9 @@ function SearchResults({
 													/>
 												</h3>
 												<p className="text-sm text-muted-foreground mt-1">
-													{new Date(video.publishedAt).toLocaleDateString("ja-JP")}
+													{new Date(video.publishedAt).toLocaleDateString("ja-JP", {
+														timeZone: "Asia/Tokyo",
+													})}
 												</p>
 											</CardContent>
 										</Card>
@@ -325,7 +327,9 @@ function SearchResults({
 												<p className="text-sm text-muted-foreground mt-1">
 													登録日:{" "}
 													{work.registDate
-														? new Date(work.registDate).toLocaleDateString("ja-JP")
+														? new Date(work.registDate).toLocaleDateString("ja-JP", {
+																timeZone: "Asia/Tokyo",
+															})
 														: "不明"}
 												</p>
 											</CardContent>
@@ -383,7 +387,9 @@ function SearchResults({
 											/>
 										</h3>
 										<p className="text-sm text-muted-foreground mt-1">
-											{new Date(video.publishedAt).toLocaleDateString("ja-JP")}
+											{new Date(video.publishedAt).toLocaleDateString("ja-JP", {
+												timeZone: "Asia/Tokyo",
+											})}
 										</p>
 									</CardContent>
 								</Card>
@@ -419,7 +425,9 @@ function SearchResults({
 										<p className="text-sm text-muted-foreground mt-1">
 											登録日:{" "}
 											{work.registDate
-												? new Date(work.registDate).toLocaleDateString("ja-JP")
+												? new Date(work.registDate).toLocaleDateString("ja-JP", {
+														timeZone: "Asia/Tokyo",
+													})
 												: "不明"}
 										</p>
 									</CardContent>
