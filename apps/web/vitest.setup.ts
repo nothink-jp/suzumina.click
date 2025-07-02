@@ -212,5 +212,15 @@ vi.mock("lucide-react", () => {
 		Youtube: createMockIcon("Youtube"),
 		ArrowLeft: createMockIcon("ArrowLeft"),
 		PlayCircle: createMockIcon("PlayCircle"),
+		// Icons for Pagination
+		ChevronLeftIcon: createMockIcon("ChevronLeftIcon"),
+		ChevronRightIcon: createMockIcon("ChevronRightIcon"),
+		MoreHorizontalIcon: createMockIcon("MoreHorizontalIcon"),
+		// Icons for RadioGroup
+		CircleIcon: createMockIcon("CircleIcon"),
+		// Icons for Select
+		ChevronDownIcon: createMockIcon("ChevronDownIcon"),
+		ChevronUpIcon: createMockIcon("ChevronUpIcon"),
+		CheckIcon: createMockIcon("CheckIcon"),
 	};
 });
