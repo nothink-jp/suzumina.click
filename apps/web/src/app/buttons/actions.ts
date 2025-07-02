@@ -40,7 +40,6 @@ export async function createAudioButton(
 
 		// 認証チェック
 		const user = await requireAuth();
-		logger.debug("認証チェック完了", { userId: user.discordId });
 
 		// 入力データのバリデーション
 		const validationResult = CreateAudioButtonInputSchema.safeParse(input);
@@ -56,10 +55,8 @@ export async function createAudioButton(
 		}
 
 		const validatedInput = validationResult.data;
-		logger.debug("入力データのバリデーション成功", { validatedInput });
 
 		// レート制限のためのユーザーベースチェック
-		logger.debug("レート制限チェック開始", { userId: user.discordId });
 		const firestore = getFirestore();
 		const recentCreationsSnapshot = await firestore
 			.collection("audioButtons")
@@ -71,10 +68,6 @@ export async function createAudioButton(
 			id: doc.id,
 			...doc.data(),
 		})) as FirestoreAudioButtonData[];
-
-		logger.debug("最近の作成済み音声ボタン取得完了", {
-			recentCreationsCount: recentCreations.length,
-		});
 
 		const rateLimitCheck = checkRateLimit(recentCreations, user.discordId);
 		if (!rateLimitCheck.allowed) {
@@ -89,7 +82,6 @@ export async function createAudioButton(
 			};
 		}
 
-		logger.debug("YouTube動画情報取得開始", { videoId: validatedInput.sourceVideoId });
 		const videoInfo = await fetchYouTubeVideoInfo(validatedInput.sourceVideoId);
 		if (!videoInfo) {
 			logger.warn("YouTube動画が見つかりません", {
@@ -100,16 +92,8 @@ export async function createAudioButton(
 				error: "指定されたYouTube動画が見つからないか、アクセスできません",
 			};
 		}
-		logger.debug("YouTube動画情報取得成功", {
-			videoId: validatedInput.sourceVideoId,
-			title: videoInfo.title,
-			duration: videoInfo.duration,
-		});
 
 		// 同じ動画の他の音声ボタンを取得して重複チェック
-		logger.debug("既存音声ボタンの重複チェック開始", {
-			videoId: validatedInput.sourceVideoId,
-		});
 		const existingAudioButtonsQuery = await firestore
 			.collection("audioButtons")
 			.where("sourceVideoId", "==", validatedInput.sourceVideoId)
@@ -119,10 +103,6 @@ export async function createAudioButton(
 			id: doc.id,
 			...doc.data(),
 		})) as FirestoreAudioButtonData[];
-
-		logger.debug("既存音声ボタン取得完了", {
-			existingButtonsCount: existingButtons.length,
-		});
 
 		// バリデーション
 		const validationError = validateAudioButtonCreation(
@@ -144,8 +124,6 @@ export async function createAudioButton(
 			};
 		}
 
-		logger.debug("バリデーション成功、Firestoreに保存開始");
-
 		// Firestoreデータの作成（ユーザー情報付き）
 		const firestoreData = convertCreateInputToFirestoreAudioButton(
 			validatedInput,
@@ -156,31 +134,20 @@ export async function createAudioButton(
 		// YouTube動画情報を追加
 		firestoreData.sourceVideoTitle = videoInfo.title;
 
-		logger.debug("Firestoreデータ作成完了", {
-			title: firestoreData.title,
-			tags: firestoreData.tags,
-		});
-
 		const docRef = await firestore.collection("audioButtons").add(firestoreData);
 
 		// ドキュメント作成後にIDフィールドを設定
 		await docRef.update({ id: docRef.id });
 
-		logger.debug("Firestore保存完了", { documentId: docRef.id });
-
-		logger.debug("統計情報更新開始");
 		await updateVideoAudioButtonStats(validatedInput.sourceVideoId, {
 			increment: true,
 		});
 		await updateUserStats(user.discordId, {
 			incrementAudioButtons: true,
 		});
-		logger.debug("統計情報更新完了");
 
-		logger.debug("キャッシュ無効化開始");
 		revalidatePath("/buttons");
 		revalidatePath(`/videos/${validatedInput.sourceVideoId}`);
-		logger.debug("キャッシュ無効化完了");
 
 		logger.info("音声ボタン作成が正常に完了", {
 			documentId: docRef.id,
@@ -658,7 +625,6 @@ export async function deleteAudioButton(
 
 		// 認証チェック
 		const user = await requireAuth();
-		logger.debug("認証チェック完了", { userId: user.discordId });
 
 		if (!audioButtonId || typeof audioButtonId !== "string") {
 			return {
@@ -698,21 +664,12 @@ export async function deleteAudioButton(
 			};
 		}
 
-		logger.debug("削除権限確認完了", {
-			audioButtonId,
-			createdBy: audioButtonData.createdBy,
-			userRole: user.role,
-		});
-
 		// 1. まずお気に入りから削除（トランザクション外）
-		logger.debug("お気に入りからの削除開始", { audioButtonId });
 		await deleteAudioButtonFromAllFavorites(audioButtonId);
-		logger.debug("お気に入りからの削除完了", { audioButtonId });
 
 		// 2. トランザクションで統計情報更新とメイン削除
 		await firestore.runTransaction(async (transaction) => {
 			// 統計情報の更新
-			logger.debug("統計情報の更新開始");
 
 			// 作成者の統計を更新
 			const userRef = firestore.collection("users").doc(audioButtonData.createdBy);
@@ -746,20 +703,15 @@ export async function deleteAudioButton(
 			}
 
 			// メインの音声ボタンドキュメントを削除
-			logger.debug("メインドキュメントの削除");
 			const audioButtonRef = firestore.collection("audioButtons").doc(audioButtonId);
 			transaction.delete(audioButtonRef);
 		});
 
-		logger.debug("トランザクション完了");
-
 		// キャッシュの無効化
-		logger.debug("キャッシュ無効化開始");
 		revalidatePath("/buttons");
 		revalidatePath(`/buttons/${audioButtonId}`);
 		revalidatePath(`/videos/${audioButtonData.sourceVideoId}`);
 		revalidatePath("/favorites");
-		logger.debug("キャッシュ無効化完了");
 
 		logger.info("音声ボタン削除が正常に完了", {
 			audioButtonId,
@@ -789,8 +741,6 @@ async function deleteAudioButtonFromAllFavorites(audioButtonId: string): Promise
 	try {
 		const firestore = getFirestore();
 
-		logger.debug("お気に入り削除: collection group query実行開始", { audioButtonId });
-
 		// 効率的な削除のため、collection group queryを使用
 		let favoritesSnapshot: FirebaseFirestore.QuerySnapshot;
 
@@ -800,38 +750,19 @@ async function deleteAudioButtonFromAllFavorites(audioButtonId: string): Promise
 				.where("audioButtonId", "==", audioButtonId);
 
 			favoritesSnapshot = await favoritesQuery.get();
-		} catch (collectionGroupError) {
-			logger.warn("collection group queryでエラー、スキップして続行", {
-				audioButtonId,
-				error:
-					collectionGroupError instanceof Error
-						? collectionGroupError.message
-						: String(collectionGroupError),
-			});
+		} catch (_collectionGroupError) {
 			// コレクショングループクエリが失敗した場合はスキップ
 			return;
 		}
 
-		logger.debug("お気に入り削除: クエリ実行完了", {
-			audioButtonId,
-			favoritesCount: favoritesSnapshot.docs.length,
-		});
-
 		// お気に入りが0件の場合は早期リターン
 		if (favoritesSnapshot.docs.length === 0) {
-			logger.debug("お気に入り削除: 削除対象なし", { audioButtonId });
 			return;
 		}
 
 		// バッチ処理で削除
 		const batchSize = 500; // Firestoreの制限
 		const batches = [];
-
-		logger.debug("お気に入り削除: バッチ作成開始", {
-			audioButtonId,
-			totalDocs: favoritesSnapshot.docs.length,
-			batchSize,
-		});
 
 		for (let i = 0; i < favoritesSnapshot.docs.length; i += batchSize) {
 			const batch = firestore.batch();
@@ -842,30 +773,10 @@ async function deleteAudioButtonFromAllFavorites(audioButtonId: string): Promise
 			});
 
 			batches.push(batch);
-			logger.debug("お気に入り削除: バッチ作成", {
-				audioButtonId,
-				batchIndex: Math.floor(i / batchSize),
-				batchDocsCount: batchDocs.length,
-			});
 		}
 
-		logger.debug("お気に入り削除: バッチ実行開始", {
-			audioButtonId,
-			batchCount: batches.length,
-		});
-
 		// 全バッチを実行
-		await Promise.all(
-			batches.map((batch, index) => {
-				logger.debug("お気に入り削除: バッチ実行", { audioButtonId, batchIndex: index });
-				return batch.commit();
-			}),
-		);
-
-		logger.debug("お気に入り削除: バッチ実行完了", {
-			audioButtonId,
-			deletedFavorites: favoritesSnapshot.docs.length,
-		});
+		await Promise.all(batches.map((batch) => batch.commit()));
 	} catch (error) {
 		logger.error("お気に入り削除でエラーが発生", {
 			audioButtonId,
