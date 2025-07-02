@@ -70,7 +70,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 							aria-label={`${work.title}をDLsiteで開く`}
 						>
 							<ThumbnailImage
-								src={work.thumbnailUrl}
+								src={work.highResImageUrl || work.thumbnailUrl}
 								alt={`${work.title}のサムネイル画像`}
 								className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
 								priority={priority}

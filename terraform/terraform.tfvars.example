@@ -15,6 +15,9 @@ youtube_api_key = "your-youtube-data-api-key"   # YouTubeデータAPI用のキ�
 # 環境設定（staging, production）  
 environment = "staging"
 
+# DLsite詳細データ取得設定
+enable_detailed_scraping = "true"      # 高解像度画像・トラック情報等の詳細データ取得を有効化
+
 # 監視・アラート設定
 admin_email = "your-email@example.com"           # 監視アラート通知先メールアドレス
 

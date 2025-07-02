@@ -311,7 +311,7 @@ function SearchResults({
 										<Card className="h-full">
 											<div className="aspect-[4/3] relative overflow-hidden rounded-t-lg">
 												<ThumbnailImage
-													src={work.thumbnailUrl || "/placeholder-work.png"}
+													src={work.highResImageUrl || work.thumbnailUrl || "/placeholder-work.png"}
 													alt={work.title}
 													className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
 												/>
@@ -409,7 +409,7 @@ function SearchResults({
 								<Card className="h-full">
 									<div className="aspect-[4/3] relative overflow-hidden rounded-t-lg">
 										<ThumbnailImage
-											src={work.thumbnailUrl || "/placeholder-work.png"}
+											src={work.highResImageUrl || work.thumbnailUrl || "/placeholder-work.png"}
 											alt={work.title}
 											className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
 										/>

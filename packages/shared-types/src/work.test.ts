@@ -72,6 +72,7 @@ const validFirestoreWork: FirestoreDLsiteWorkData = {
 	workUrl: "https://www.dlsite.com/maniax/work/=/product_id/RJ236867.html",
 	thumbnailUrl: "https://example.com/thumbnail.jpg",
 	price: validPriceInfo,
+	userEvaluationCount: 0,
 	rating: validRatingInfo,
 	salesCount: 5000,
 	ageRating: "R-18",

@@ -1,6 +1,6 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import { saveWorksToFirestore } from "./utils/dlsite-firestore";
-import { mapMultipleWorksWithInfo } from "./utils/dlsite-mapper";
+import { mapMultipleWorksWithDetailData, mapMultipleWorksWithInfo } from "./utils/dlsite-mapper";
 import { parseWorksFromHTML } from "./utils/dlsite-parser";
 import firestore, { Timestamp } from "./utils/firestore";
 import * as logger from "./utils/logger";
@@ -218,7 +218,13 @@ async function processSinglePage(
 	}
 
 	// Firestoreデータ形式に変換と保存
-	const firestoreWorks = await mapMultipleWorksWithInfo(parsedWorks);
+	// 環境変数で詳細データ取得を有効化可能
+	const enableDetailedData = process.env.ENABLE_DETAILED_SCRAPING === "true";
+
+	const firestoreWorks = enableDetailedData
+		? await mapMultipleWorksWithDetailData(parsedWorks)
+		: await mapMultipleWorksWithInfo(parsedWorks);
+
 	await saveWorksToFirestore(firestoreWorks);
 
 	const savedCount = firestoreWorks.length;

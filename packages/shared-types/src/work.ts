@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AggregatedCharacteristicsSchema } from "./user-evaluation";
 
 /**
  * DLsite作品カテゴリの型定義
@@ -77,6 +78,100 @@ export const SampleImageSchema = z.object({
 	width: z.number().int().positive().optional(),
 	/** 画像高さ */
 	height: z.number().int().positive().optional(),
+});
+
+/**
+ * 収録内容（トラック情報）のZodスキーマ定義
+ */
+export const TrackInfoSchema = z.object({
+	/** トラック番号 */
+	trackNumber: z.number().int().positive(),
+	/** トラック名 */
+	title: z.string(),
+	/** 再生時間（秒） */
+	duration: z.number().int().nonnegative().optional(),
+	/** 再生時間テキスト（例: "5分3秒"） */
+	durationText: z.string().optional(),
+	/** トラック説明 */
+	description: z.string().optional(),
+});
+
+/**
+ * ファイル情報のZodスキーマ定義
+ */
+export const FileInfoSchema = z.object({
+	/** 総ファイルサイズ（バイト） */
+	totalSizeBytes: z.number().int().nonnegative().optional(),
+	/** 総ファイルサイズテキスト（例: "3.71 GB"） */
+	totalSizeText: z.string().optional(),
+	/** ファイル形式一覧 */
+	formats: z.array(z.string()).default([]),
+	/** 総再生時間（秒） */
+	totalDuration: z.number().int().nonnegative().optional(),
+	/** 総再生時間テキスト（例: "約2時間4分"） */
+	totalDurationText: z.string().optional(),
+	/** その他ファイル情報 */
+	additionalFiles: z.array(z.string()).default([]),
+});
+
+/**
+ * 詳細クリエイター情報のZodスキーマ定義
+ */
+export const DetailedCreatorInfoSchema = z.object({
+	/** 声優（CV） */
+	voiceActors: z.array(z.string()).default([]),
+	/** シナリオ */
+	scenario: z.array(z.string()).default([]),
+	/** イラスト */
+	illustration: z.array(z.string()).default([]),
+	/** 音楽 */
+	music: z.array(z.string()).default([]),
+	/** デザイン */
+	design: z.array(z.string()).default([]),
+	/** その他のクリエイター情報 */
+	other: z.record(z.array(z.string())).default({}),
+});
+
+/**
+ * 特典情報のZodスキーマ定義
+ */
+export const BonusContentSchema = z.object({
+	/** 特典名 */
+	title: z.string(),
+	/** 特典説明 */
+	description: z.string().optional(),
+	/** 特典タイプ（画像、音声、テキストなど） */
+	type: z.string().optional(),
+});
+
+/**
+ * 時系列価格データのZodスキーマ定義
+ */
+export const PriceHistorySchema = z.object({
+	/** 日付 */
+	date: z.string().datetime(),
+	/** 価格 */
+	price: z.number().int().nonnegative(),
+	/** 元価格（セール時） */
+	originalPrice: z.number().int().nonnegative().optional(),
+	/** 割引率 */
+	discountRate: z.number().int().min(0).max(100).optional(),
+	/** セールタイプ */
+	saleType: z.string().optional(),
+});
+
+/**
+ * 時系列販売データのZodスキーマ定義
+ */
+export const SalesHistorySchema = z.object({
+	/** 日付 */
+	date: z.string().datetime(),
+	/** 販売数 */
+	salesCount: z.number().int().nonnegative(),
+	/** 日別平均 */
+	dailyAverage: z.number().int().nonnegative().optional(),
+	/** ランキング順位 */
+	rankingPosition: z.number().int().positive().optional(),
 });
 
 /**
@@ -243,6 +338,8 @@ export const DLsiteWorkBaseSchema = z.object({
 	thumbnailUrl: z.string().url({
 		message: "サムネイルURLは有効なURL形式である必要があります",
 	}),
+	/** 高解像度ジャケット画像URL（詳細ページから取得） */
+	highResImageUrl: z.string().url().optional(),
 	/** 価格情報 */
 	price: PriceInfoSchema,
 	/** 評価情報 */
@@ -273,6 +370,22 @@ export const DLsiteWorkBaseSchema = z.object({
 	totalDownloadCount: z.number().int().nonnegative().optional(),
 	/** ランキング履歴 */
 	rankingHistory: z.array(RankingInfoSchema).optional(),
+	/** 収録内容 */
+	trackInfo: z.array(TrackInfoSchema).optional(),
+	/** ファイル情報 */
+	fileInfo: FileInfoSchema.optional(),
+	/** 詳細クリエイター情報 */
+	detailedCreators: DetailedCreatorInfoSchema.optional(),
+	/** 特典情報 */
+	bonusContent: z.array(BonusContentSchema).optional(),
+	/** 価格履歴 */
+	priceHistory: z.array(PriceHistorySchema).optional(),
+	/** 販売履歴 */
+	salesHistory: z.array(SalesHistorySchema).optional(),
+	/** 集計された特性評価 */
+	aggregatedCharacteristics: AggregatedCharacteristicsSchema.optional(),
+	/** ユーザー評価数 */
+	userEvaluationCount: z.number().int().nonnegative().default(0),
 	/** 多通貨価格情報 */
 	localePrices: z.array(LocalePriceSchema).optional(),
 	/** キャンペーン情報 */
@@ -357,6 +470,12 @@ export type PriceInfo = z.infer<typeof PriceInfoSchema>;
 export type RatingInfo = z.infer<typeof RatingInfoSchema>;
 export type RatingDetail = z.infer<typeof RatingDetailSchema>;
 export type SampleImage = z.infer<typeof SampleImageSchema>;
+export type TrackInfo = z.infer<typeof TrackInfoSchema>;
+export type FileInfo = z.infer<typeof FileInfoSchema>;
+export type DetailedCreatorInfo = z.infer<typeof DetailedCreatorInfoSchema>;
+export type BonusContent = z.infer<typeof BonusContentSchema>;
+export type PriceHistory = z.infer<typeof PriceHistorySchema>;
+export type SalesHistory = z.infer<typeof SalesHistorySchema>;
 export type RankingInfo = z.infer<typeof RankingInfoSchema>;
 export type LocalePrice = z.infer<typeof LocalePriceSchema>;
 export type CampaignInfo = z.infer<typeof CampaignInfoSchema>;
@@ -445,6 +564,7 @@ export function convertToFrontendWork(data: FirestoreDLsiteWorkData): FrontendDL
 			category: data.category,
 			workUrl: data.workUrl,
 			thumbnailUrl: data.thumbnailUrl,
+			highResImageUrl: data.highResImageUrl,
 			price: data.price,
 			rating: data.rating,
 			salesCount: data.salesCount,
@@ -466,6 +586,7 @@ export function convertToFrontendWork(data: FirestoreDLsiteWorkData): FrontendDL
 			createdAtISO: data.createdAt,
 			lastFetchedAtISO: data.lastFetchedAt,
 			updatedAtISO: data.updatedAt,
+			userEvaluationCount: 0,
 		};
 	}
 }

@@ -28,6 +28,7 @@ interface WorkData {
 	saleDate: string;
 	description: string;
 	thumbnailUrl: string;
+	highResImageUrl?: string;
 	tags: string[];
 	rating: number;
 	reviewCount: number;
@@ -59,6 +60,7 @@ async function getWorks(): Promise<WorkData[]> {
 				saleDate: data.saleDate?.toDate?.()?.toISOString() || new Date().toISOString(),
 				description: data.description || "",
 				thumbnailUrl: data.thumbnailUrl || "",
+				highResImageUrl: data.highResImageUrl,
 				tags: data.tags || [],
 				rating: data.rating || 0,
 				reviewCount: data.reviewCount || 0,
@@ -194,9 +196,9 @@ export default async function WorksPage() {
 									<TableRow key={work.id}>
 										<TableCell className="font-medium">
 											<div className="flex items-start gap-3 max-w-md">
-												{work.thumbnailUrl && (
+												{(work.highResImageUrl || work.thumbnailUrl) && (
 													<Image
-														src={work.thumbnailUrl}
+														src={work.highResImageUrl || work.thumbnailUrl}
 														alt=""
 														width={64}
 														height={80}

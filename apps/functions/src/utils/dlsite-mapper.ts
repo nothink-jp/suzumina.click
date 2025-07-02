@@ -20,6 +20,8 @@ import {
 	type SeriesInfo,
 	type TranslationInfo,
 } from "@suzumina.click/shared-types";
+import type { ExtendedWorkData } from "./dlsite-detail-parser";
+import { fetchAndParseWorkDetail } from "./dlsite-detail-parser";
 import type { ParsedWorkData } from "./dlsite-parser";
 import * as logger from "./logger";
 
@@ -386,11 +388,12 @@ function normalizeUrl(url: string): string {
 }
 
 /**
- * パースされた作品データをDLsiteWorkBase形式に変換
+ * パースされた作品データをDLsiteWorkBase形式に変換（詳細データ統合対応）
  */
 export function mapToWorkBase(
 	parsed: ParsedWorkData,
 	infoData?: DLsiteInfoResponse,
+	extendedData?: ExtendedWorkData,
 ): DLsiteWorkBase {
 	try {
 		const price = mapToPriceInfo(parsed);
@@ -413,10 +416,11 @@ export function mapToWorkBase(
 			title: parsed.title,
 			circle: parsed.circle,
 			author,
-			description: "", // HTMLパーサーでは説明は抽出しないため空文字
+			description: extendedData?.detailedDescription || "", // 詳細ページから取得した説明文を使用
 			category: parsed.category,
 			workUrl: normalizeUrl(parsed.workUrl),
 			thumbnailUrl: normalizeUrl(parsed.thumbnailUrl),
+			highResImageUrl: extendedData?.highResImageUrl, // 詳細ページから取得した高解像度画像URL
 			price,
 			rating,
 			salesCount: parsed.salesCount || infoData?.dl_count,
@@ -424,6 +428,15 @@ export function mapToWorkBase(
 			tags: parsed.tags || [], // HTMLパーサーから抽出されたタグ情報を使用
 			sampleImages: normalizedSampleImages,
 			isExclusive: parsed.isExclusive,
+			userEvaluationCount: 0, // デフォルト値として0を設定
+
+			// 詳細ページから追加される拡張フィールド
+			...(extendedData && {
+				trackInfo: extendedData.trackInfo,
+				fileInfo: extendedData.fileInfo,
+				detailedCreators: extendedData.detailedCreators,
+				bonusContent: extendedData.bonusContent,
+			}),
 
 			// infoデータから追加される拡張フィールド
 			...(infoData && {
@@ -551,6 +564,58 @@ export async function mapMultipleWorksWithInfo(
 	}
 
 	logger.info(`作品データ変換完了: ${results.length}件成功, ${errors.length}件失敗`);
+	return results;
+}
+
+/**
+ * 複数の作品データを詳細データと合わせて一括変換
+ */
+export async function mapMultipleWorksWithDetailData(
+	parsedWorks: ParsedWorkData[],
+	existingDataMap?: Map<string, Partial<FirestoreDLsiteWorkData>>,
+): Promise<FirestoreDLsiteWorkData[]> {
+	const results: FirestoreDLsiteWorkData[] = [];
+	const errors: string[] = [];
+
+	for (const parsed of parsedWorks) {
+		try {
+			// 詳細情報を取得（エラーが発生してもnullが返される）
+			const infoData = await fetchWorkInfo(parsed.productId);
+
+			// 詳細ページデータを取得（レート制限考慮）
+			const extendedData = await fetchAndParseWorkDetail(parsed.productId);
+
+			// HTMLデータ、infoデータ、詳細データを組み合わせて変換
+			const workBase = mapToWorkBase(parsed, infoData || undefined, extendedData || undefined);
+			const existingData = existingDataMap?.get(parsed.productId);
+			const firestoreData = mapToFirestoreData(workBase, existingData);
+			results.push(firestoreData);
+
+			if (infoData) {
+				logger.debug(`作品${parsed.productId}: info APIデータを統合しました`);
+			}
+			if (extendedData) {
+				logger.debug(
+					`作品${parsed.productId}: 詳細ページデータを統合しました (トラック${extendedData.trackInfo.length}件)`,
+				);
+			}
+			if (!infoData && !extendedData) {
+				logger.debug(`作品${parsed.productId}: HTMLデータのみで処理しました`);
+			}
+		} catch (error) {
+			logger.warn(`作品${parsed.productId}の変換をスキップ:`, { error });
+			errors.push(parsed.productId);
+		}
+
+		// レート制限対応: 詳細ページ取得間に500ms遅延を入れる
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+
+	if (errors.length > 0) {
+		logger.warn(`${errors.length}件の作品変換に失敗:`, { errors });
+	}
+
+	logger.info(`詳細データ統合変換完了: ${results.length}件成功, ${errors.length}件失敗`);
 	return results;
 }
 

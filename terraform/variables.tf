@@ -42,6 +42,17 @@ variable "youtube_api_key" {
   sensitive   = true
 }
 
+variable "enable_detailed_scraping" {
+  description = "DLsite詳細データ取得の有効化（高解像度画像、トラック情報等）"
+  type        = string
+  default     = "true"
+  
+  validation {
+    condition = contains(["true", "false"], var.enable_detailed_scraping)
+    error_message = "enable_detailed_scraping は 'true' または 'false' である必要があります。"
+  }
+}
+
 variable "environment" {
   description = "環境名（staging, production）"
   type        = string

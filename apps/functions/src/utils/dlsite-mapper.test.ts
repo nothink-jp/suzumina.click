@@ -67,6 +67,7 @@ describe("DLsite Mapper", () => {
 				},
 				salesCount: 1000,
 				ageRating: "全年齢",
+				userEvaluationCount: 0,
 				tags: [],
 				sampleImages: [
 					{
