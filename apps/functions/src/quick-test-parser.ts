@@ -22,7 +22,7 @@ interface QuickTestResult {
 	productId: string;
 	success: boolean;
 	dataExtracted: {
-		trackCount: number;
+		hasBasicInfo: boolean;
 		hasFileInfo: boolean;
 		hasCreatorInfo: boolean;
 		hasBonusContent: boolean;
@@ -31,9 +31,9 @@ interface QuickTestResult {
 	};
 	sampleData: {
 		title?: string;
-		firstTrack?: string;
 		creator?: string;
 		fileSize?: string;
+		releaseDate?: string;
 	};
 	error?: string;
 	executionTime: number;
@@ -47,7 +47,7 @@ async function quickTestSingle(productId: string): Promise<QuickTestResult> {
 		productId,
 		success: false,
 		dataExtracted: {
-			trackCount: 0,
+			hasBasicInfo: false,
 			hasFileInfo: false,
 			hasCreatorInfo: false,
 			hasBonusContent: false,
@@ -69,7 +69,7 @@ async function quickTestSingle(productId: string): Promise<QuickTestResult> {
 
 		// 結果の分析
 		result.dataExtracted = {
-			trackCount: detailData.trackInfo?.length || 0,
+			hasBasicInfo: !!detailData.basicInfo,
 			hasFileInfo: !!detailData.fileInfo && Object.keys(detailData.fileInfo).length > 0,
 			hasCreatorInfo:
 				!!detailData.detailedCreators && Object.keys(detailData.detailedCreators).length > 0,
@@ -82,9 +82,9 @@ async function quickTestSingle(productId: string): Promise<QuickTestResult> {
 		// サンプルデータの抽出
 		result.sampleData = {
 			title: searchResults[0]?.title,
-			firstTrack: detailData.trackInfo?.[0]?.title,
 			creator: searchResults[0]?.circle || searchResults[0]?.author?.[0],
 			fileSize: detailData.fileInfo?.totalSizeText || detailData.basicInfo?.fileSize,
+			releaseDate: detailData.basicInfo?.releaseDate,
 		};
 
 		result.success = true;
@@ -93,8 +93,8 @@ async function quickTestSingle(productId: string): Promise<QuickTestResult> {
 		if (result.sampleData.title) {
 			// タイトル表示処理をここに実装可能
 		}
-		if (result.sampleData.firstTrack) {
-			// 最初のトラック表示処理をここに実装可能
+		if (result.sampleData.releaseDate) {
+			// 発売日表示処理をここに実装可能
 		}
 		if (result.sampleData.creator) {
 			// クリエイター表示処理をここに実装可能
@@ -184,7 +184,7 @@ async function quickTestAll(): Promise<void> {
 	let stats = null;
 	if (successful.length > 0) {
 		stats = {
-			withTracks: successful.filter((r) => r.dataExtracted.trackCount > 0).length,
+			withBasicInfo: successful.filter((r) => r.dataExtracted.hasBasicInfo).length,
 			withFileInfo: successful.filter((r) => r.dataExtracted.hasFileInfo).length,
 			withCreators: successful.filter((r) => r.dataExtracted.hasCreatorInfo).length,
 			withBonus: successful.filter((r) => r.dataExtracted.hasBonusContent).length,
@@ -213,8 +213,8 @@ async function quickTestAll(): Promise<void> {
 		// 失敗時の推奨アクション処理をここに実装可能
 	}
 
-	if (successful.length > 0 && stats && stats.withTracks / successful.length < 0.5) {
-		// トラック抽出成功率が低い場合の推奨アクション処理をここに実装可能
+	if (successful.length > 0 && stats && stats.withBasicInfo / successful.length < 0.5) {
+		// 基本情報抽出成功率が低い場合の推奨アクション処理をここに実装可能
 	}
 }
 

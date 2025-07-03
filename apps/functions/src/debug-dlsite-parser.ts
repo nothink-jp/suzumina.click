@@ -23,7 +23,7 @@ interface TestResult {
 		detail?: object;
 		search?: object;
 		stats: {
-			trackCount: number;
+			hasBasicInfo: boolean;
 			hasFileInfo: boolean;
 			hasCreatorInfo: boolean;
 			hasBonusContent: boolean;
@@ -100,7 +100,7 @@ class DLsiteParserDebugger {
 			success: false,
 			extractedData: {
 				stats: {
-					trackCount: 0,
+					hasBasicInfo: false,
 					hasFileInfo: false,
 					hasCreatorInfo: false,
 					hasBonusContent: false,
@@ -128,7 +128,7 @@ class DLsiteParserDebugger {
 				detail: detailData,
 				search: searchData,
 				stats: {
-					trackCount: detailData.trackInfo?.length || 0,
+					hasBasicInfo: !!detailData.basicInfo,
 					hasFileInfo: !!detailData.fileInfo,
 					hasCreatorInfo: !!detailData.detailedCreators,
 					hasBonusContent: (detailData.bonusContent?.length || 0) > 0,
@@ -187,7 +187,7 @@ class DLsiteParserDebugger {
 			// Stats calculation for success analysis
 			// @ts-ignore - Variable prepared for future use in debug tool
 			const _stats = {
-				withTracks: successes.filter((s) => s.extractedData.stats.trackCount > 0).length,
+				withBasicInfo: successes.filter((s) => s.extractedData.stats.hasBasicInfo).length,
 				withFileInfo: successes.filter((s) => s.extractedData.stats.hasFileInfo).length,
 				withCreators: successes.filter((s) => s.extractedData.stats.hasCreatorInfo).length,
 				withBonus: successes.filter((s) => s.extractedData.stats.hasBonusContent).length,

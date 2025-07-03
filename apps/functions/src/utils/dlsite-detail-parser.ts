@@ -4,12 +4,7 @@
  * 作品詳細ページから収録内容・ファイル情報・詳細クリエイター情報を抽出します。
  */
 
-import type {
-	BonusContent,
-	DetailedCreatorInfo,
-	FileInfo,
-	TrackInfo,
-} from "@suzumina.click/shared-types";
+import type { BonusContent, DetailedCreatorInfo, FileInfo } from "@suzumina.click/shared-types";
 import * as cheerio from "cheerio";
 import * as logger from "./logger";
 
@@ -51,8 +46,6 @@ export interface BasicWorkInfo {
 export interface ExtendedWorkData {
 	/** 基本作品情報 */
 	basicInfo: BasicWorkInfo;
-	/** 収録内容（トラック情報） */
-	trackInfo: TrackInfo[];
 	/** ファイル情報 */
 	fileInfo: FileInfo;
 	/** 詳細クリエイター情報 */
@@ -186,239 +179,6 @@ export function parseFileSizeToBytes(sizeText: string): number | undefined {
 	};
 
 	return Math.round(value * multipliers[unit as keyof typeof multipliers]);
-}
-
-/**
- * 収録内容（トラック情報）を抽出
- */
-export function extractTrackInfo($: cheerio.CheerioAPI): TrackInfo[] {
-	const tracks: TrackInfo[] = [];
-
-	// 収録内容セクションを探す
-	const trackSections = [
-		"table.work_parts_table tr", // 一般的なトラック表示
-		".work_outline_table tr", // 作品概要表の行
-		".track_list li", // リスト形式のトラック
-		'[class*="track"] tr', // トラックを含むクラス名のテーブル
-		".work_parts", // DLsiteの作品パーツ（新発見）
-	];
-
-	for (const selector of trackSections) {
-		$(selector).each((_index, element) => {
-			const $row = $(element);
-			const rowText = $row.text().trim();
-
-			// トラック情報らしき行を判定
-			if (
-				/^\d+\./.test(rowText) || // "1. タイトル" 形式
-				/^第?\d+話/.test(rowText) || // "第1話" 形式
-				/^track\s*\d+/i.test(rowText) || // "Track 1" 形式
-				/\(\d+[分秒]/i.test(rowText) // 時間情報を含む
-			) {
-				const track = parseTrackFromRow($row, tracks.length + 1);
-				if (track) {
-					tracks.push(track);
-				}
-			}
-		});
-
-		if (tracks.length > 0) {
-			break; // 最初に見つかったセクションでトラックが取得できれば終了
-		}
-	}
-
-	// 作品説明文からもトラック情報を抽出（フォールバック）
-	if (tracks.length === 0) {
-		// 特に「トラックリスト」セクションを探す
-		$(".work_parts").each((_index, element) => {
-			const $section = $(element);
-			const headingText = $section.find(".work_parts_heading").text().trim();
-			const contentText = $section.find(".work_parts_area").text().trim();
-
-			// トラックリストセクションを特定
-			// 見出しにトラック関連のキーワードがある場合、または
-			// 内容に「◆トラック」「【トラック」「[時間]」のパターンがある場合
-			if (
-				/トラック|収録|リスト|track/i.test(headingText) ||
-				/◆トラック|【トラック\d+|【本編総再生時間|\[\d+:\d+\]/i.test(contentText)
-			) {
-				logger.debug(`トラックリストセクションを発見: ${headingText || "(見出しなし)"}`);
-				const sectionTracks = extractTracksFromWorkPartsSection(contentText);
-				tracks.push(...sectionTracks);
-			}
-		});
-
-		// それでも見つからない場合は説明文全体から抽出
-		if (tracks.length === 0) {
-			const description = $(".work_parts_area .work_parts").text();
-			const extractedTracks = extractTracksFromDescription(description);
-			tracks.push(...extractedTracks);
-		}
-	}
-
-	logger.debug(`収録内容抽出完了: ${tracks.length}件のトラック`);
-	return tracks;
-}
-
-/**
- * テーブル行からトラック情報を解析
- */
-function parseTrackFromRow(
-	// biome-ignore lint/suspicious/noExplicitAny: Cheerio element type compatibility
-	$row: cheerio.Cheerio<any>,
-	defaultTrackNumber: number,
-): TrackInfo | null {
-	const rowText = $row.text().trim();
-
-	// トラック番号の抽出
-	let trackNumber = defaultTrackNumber;
-	const trackNumMatch = rowText.match(/(?:^|第?)(\d+)(?:話|\.|\s)/);
-	if (trackNumMatch?.[1]) {
-		trackNumber = Number.parseInt(trackNumMatch[1]);
-	}
-
-	// タイトルの抽出（括弧内時間情報を除く）
-	let title = rowText.replace(/\(\d+[分秒時間:：]+[^)]*\)/g, "").trim();
-
-	// 番号プレフィックスを除去
-	title = title.replace(/^(?:第?)?\d+(?:話|[.、。\s])\s*/, "").trim();
-
-	if (!title || title.length < 2) {
-		return null; // 有効なタイトルがない場合はスキップ
-	}
-
-	// 再生時間の抽出
-	const durationMatch = rowText.match(/\(([^)]*(?:\d+[分秒時間:：]+[^)]*)+)\)/);
-	const durationText = durationMatch ? durationMatch[1] : undefined;
-	const duration = durationText ? parseDurationToSeconds(durationText) : undefined;
-
-	// 説明文の抽出（次の行があれば）
-	const description = $row.next("tr").find("td").text().trim() || undefined;
-
-	return {
-		trackNumber,
-		title,
-		duration,
-		durationText,
-		description,
-	};
-}
-
-/**
- * work_partsセクションからトラック情報を抽出
- */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: DLsite parsing requires multiple patterns
-function extractTracksFromWorkPartsSection(content: string): TrackInfo[] {
-	const tracks: TrackInfo[] = [];
-
-	// DLsite特有のパターンに対応
-	const dlsitePatterns = [
-		// パターン1: "【トラック1:タイトル】[7:34]" 形式（最優先、スペース考慮）
-		/【トラック(\d+):([^】]+)】\s*\[(\d+:\d+)\]/g,
-		// パターン2: "1:タイトル(30:48)"
-		/(\d+):([^(]+)\((\d+:\d+)\)/g,
-		// パターン3: "1. タイトル (30分48秒)"
-		/(\d+)\.?\s*([^(]+)\s*\(([^)]*(?:\d+[分秒時間]+[^)]*)+)\)/g,
-		// パターン4: "Track 1: タイトル (30:48)"
-		/Track\s*(\d+):\s*([^(]+)\s*\((\d+:\d+)\)/gi,
-	];
-
-	for (const pattern of dlsitePatterns) {
-		let match: RegExpExecArray | null;
-		// biome-ignore lint/suspicious/noAssignInExpressions: needed for regex exec pattern
-		while ((match = pattern.exec(content)) !== null) {
-			if (!match[1] || !match[2] || !match[3]) continue;
-
-			const trackNumber = Number.parseInt(match[1]);
-			const title = match[2].trim();
-			const durationText = match[3].trim();
-
-			// 時間形式を秒数に変換
-			let duration: number | undefined;
-			if (/^\d+:\d+$/.test(durationText)) {
-				// "30:48" 形式
-				const timeParts = durationText.split(":");
-				if (timeParts.length === 2 && timeParts[0] && timeParts[1]) {
-					const minutes = Number.parseInt(timeParts[0]);
-					const seconds = Number.parseInt(timeParts[1]);
-					if (!Number.isNaN(minutes) && !Number.isNaN(seconds)) {
-						duration = minutes * 60 + seconds;
-					}
-				}
-			} else {
-				// "30分48秒" 形式
-				duration = parseDurationToSeconds(durationText);
-			}
-
-			if (title && title.length > 1) {
-				tracks.push({
-					trackNumber,
-					title: title.replace(/^[\s\u3000]*/, "").replace(/[\s\u3000]*$/, ""), // 全角・半角スペース除去
-					duration,
-					durationText,
-				});
-			}
-		}
-
-		// パターンにマッチした場合は他のパターンを試さない
-		if (tracks.length > 0) {
-			break;
-		}
-	}
-
-	// 重複除去（トラック番号でソート）
-	const uniqueTracks = tracks
-		.filter(
-			(track, index, self) => index === self.findIndex((t) => t.trackNumber === track.trackNumber),
-		)
-		.sort((a, b) => a.trackNumber - b.trackNumber);
-
-	return uniqueTracks;
-}
-
-/**
- * 作品説明文からトラック情報を抽出（正規表現ベース）
- */
-function extractTracksFromDescription(description: string): TrackInfo[] {
-	const tracks: TrackInfo[] = [];
-
-	// 複数パターンでトラック情報を検索
-	const trackPatterns = [
-		/(?:^|\n)\s*(\d+)\.?\s*([^\n]+?)\s*\(([^)]*(?:\d+[分秒時間]+[^)]*)+)\)/gm,
-		/(?:^|\n)\s*(?:第?)(\d+)話\s*([^\n]+?)\s*\(([^)]*(?:\d+[分秒時間]+[^)]*)+)\)/gm,
-		/(?:^|\n)\s*track\s*(\d+)\s*:?\s*([^\n]+?)\s*\(([^)]*(?:\d+[分秒時間]+[^)]*)+)\)/gim,
-	];
-
-	for (const pattern of trackPatterns) {
-		let match: RegExpExecArray | null;
-		// biome-ignore lint/suspicious/noAssignInExpressions: needed for regex exec pattern
-		while ((match = pattern.exec(description)) !== null) {
-			if (!match[1] || !match[2] || !match[3]) continue;
-
-			const trackNumber = Number.parseInt(match[1]);
-			const title = match[2].trim();
-			const durationText = match[3].trim();
-			const duration = parseDurationToSeconds(durationText);
-
-			if (title && title.length > 1) {
-				tracks.push({
-					trackNumber,
-					title,
-					duration,
-					durationText,
-				});
-			}
-		}
-	}
-
-	// 重複除去（トラック番号でソート）
-	const uniqueTracks = tracks
-		.filter(
-			(track, index, self) => index === self.findIndex((t) => t.trackNumber === track.trackNumber),
-		)
-		.sort((a, b) => a.trackNumber - b.trackNumber);
-
-	return uniqueTracks;
 }
 
 /**
@@ -1013,7 +773,6 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 	logger.debug("詳細ページHTMLパース開始");
 
 	const basicInfo = extractBasicWorkInfo($);
-	const trackInfo = extractTrackInfo($);
 	const fileInfo = extractFileInfo($);
 	const detailedCreators = extractDetailedCreatorInfo($);
 	const bonusContent = extractBonusContent($);
@@ -1024,7 +783,6 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 
 	return {
 		basicInfo,
-		trackInfo,
 		fileInfo,
 		detailedCreators,
 		bonusContent,
@@ -1041,7 +799,7 @@ export async function fetchAndParseWorkDetail(productId: string): Promise<Extend
 		const html = await fetchWorkDetailPage(productId);
 		const detailData = parseWorkDetailFromHTML(html);
 
-		logger.info(`作品${productId}の詳細データ取得完了: トラック${detailData.trackInfo.length}件`);
+		logger.info(`作品${productId}の詳細データ取得完了`);
 		return detailData;
 	} catch (error) {
 		logger.error(`作品${productId}の詳細データ取得に失敗:`, error);

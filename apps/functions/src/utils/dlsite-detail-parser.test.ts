@@ -153,8 +153,8 @@ describe("parseWorkDetailFromHTML（高解像度画像統合）", () => {
 			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01412000/RJ01411411_img_main.webp",
 		);
 		expect(result.detailedDescription).toBe("作品説明テキスト");
-		expect(result.trackInfo).toEqual([]);
 		expect(result.fileInfo).toBeDefined();
+		expect(result.basicInfo).toBeDefined();
 		expect(result.detailedCreators).toBeDefined();
 		expect(result.bonusContent).toEqual([]);
 	});

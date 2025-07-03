@@ -432,8 +432,8 @@ export function mapToWorkBase(
 
 			// 詳細ページから追加される拡張フィールド
 			...(extendedData && {
-				trackInfo: extendedData.trackInfo,
 				fileInfo: extendedData.fileInfo,
+				basicInfo: extendedData.basicInfo,
 				detailedCreators: extendedData.detailedCreators,
 				bonusContent: extendedData.bonusContent,
 			}),
@@ -595,9 +595,7 @@ export async function mapMultipleWorksWithDetailData(
 				logger.debug(`作品${parsed.productId}: info APIデータを統合しました`);
 			}
 			if (extendedData) {
-				logger.debug(
-					`作品${parsed.productId}: 詳細ページデータを統合しました (トラック${extendedData.trackInfo.length}件)`,
-				);
+				logger.debug(`作品${parsed.productId}: 詳細ページデータを統合しました`);
 			}
 			if (!infoData && !extendedData) {
 				logger.debug(`作品${parsed.productId}: HTMLデータのみで処理しました`);
