@@ -71,8 +71,14 @@ async function quickTestSingle(productId: string): Promise<QuickTestResult> {
 		result.dataExtracted = {
 			hasBasicInfo: !!detailData.basicInfo,
 			hasFileInfo: !!detailData.fileInfo && Object.keys(detailData.fileInfo).length > 0,
-			hasCreatorInfo:
-				!!detailData.detailedCreators && Object.keys(detailData.detailedCreators).length > 0,
+			hasCreatorInfo: !!(
+				(detailData.voiceActors?.length || 0) +
+				(detailData.scenario?.length || 0) +
+				(detailData.illustration?.length || 0) +
+				(detailData.music?.length || 0) +
+				(detailData.design?.length || 0) +
+				Object.keys(detailData.otherCreators || {}).length
+			),
 			hasBonusContent: (detailData.bonusContent?.length || 0) > 0,
 			hasHighResImage: !!detailData.highResImageUrl,
 			hasDetailedDescription:
@@ -144,21 +150,18 @@ async function quickTestSingle(productId: string): Promise<QuickTestResult> {
 			}
 		}
 
-		// 詳細データの深堀り
-		if (detailData.detailedCreators) {
-			const creators = detailData.detailedCreators;
-			if (creators.voiceActors?.length) {
-				// 詳細声優情報表示処理をここに実装可能
-			}
-			if (creators.scenario?.length) {
-				// 詳細シナリオ担当者情報表示処理をここに実装可能
-			}
-			if (creators.illustration?.length) {
-				// 詳細イラスト担当者情報表示処理をここに実装可能
-			}
-			if (creators.music?.length) {
-				// 詳細音楽担当者情報表示処理をここに実装可能
-			}
+		// 詳細データの深堀り（統合されたクリエイター情報は作品のメインフィールドに含まれている）
+		if (detailData.voiceActors?.length) {
+			// 詳細声優情報表示処理をここに実装可能
+		}
+		if (detailData.scenario?.length) {
+			// 詳細シナリオ担当者情報表示処理をここに実装可能
+		}
+		if (detailData.illustration?.length) {
+			// 詳細イラスト担当者情報表示処理をここに実装可能
+		}
+		if (detailData.music?.length) {
+			// 詳細音楽担当者情報表示処理をここに実装可能
 		}
 	} catch (error) {
 		result.error = error instanceof Error ? error.message : String(error);

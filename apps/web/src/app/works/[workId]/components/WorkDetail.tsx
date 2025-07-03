@@ -216,69 +216,42 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							</div>
 						)}
 
-						{/* タグ・ジャンル */}
+						{/* タグ・ジャンル（統合済み） */}
 						<div className="space-y-3">
-							{/* 基本情報のジャンル */}
-							{work.basicInfo?.genres && work.basicInfo.genres.length > 0 && (
+							{/* 統合されたタグ */}
+							{work.tags && work.tags.length > 0 && (
 								<div>
-									<div className="text-sm font-medium text-gray-700 mb-2">ジャンル</div>
+									<div className="text-sm font-medium text-gray-700 mb-2">タグ・ジャンル</div>
 									<div className="flex flex-wrap gap-2">
-										{work.basicInfo.genres.map((genre) => (
+										{work.tags.map((tag) => (
 											<Badge
-												key={genre}
+												key={tag}
 												variant="outline"
 												className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
 											>
 												<Tag className="h-3 w-3" />
-												{genre}
+												{tag}
 											</Badge>
 										))}
 									</div>
 								</div>
 							)}
 
-							{/* 既存のタグ（基本情報のジャンルと重複しない場合） */}
-							{work.tags && work.tags.length > 0 && (
-								<div>
-									<div className="text-sm font-medium text-gray-700 mb-2">タグ</div>
-									<div className="flex flex-wrap gap-2">
-										{work.tags
-											.filter((tag) => !work.basicInfo?.genres?.includes(tag))
-											.map((tag) => (
-												<Badge
-													key={tag}
-													variant="outline"
-													className="border text-foreground flex items-center gap-1"
-												>
-													<Tag className="h-3 w-3" />
-													{tag}
-												</Badge>
-											))}
-									</div>
-								</div>
-							)}
-
-							{/* 詳細タグ（ジャンルやタグと重複しない場合） */}
+							{/* 詳細タグ（メインタグと重複しない場合のみ） */}
 							{work.basicInfo?.detailTags && work.basicInfo.detailTags.length > 0 && (
 								<div>
 									<div className="text-sm font-medium text-gray-700 mb-2">詳細タグ</div>
 									<div className="flex flex-wrap gap-2">
-										{work.basicInfo.detailTags
-											.filter(
-												(detailTag) =>
-													!work.basicInfo?.genres?.includes(detailTag) &&
-													!work.tags?.includes(detailTag),
-											)
-											.map((detailTag) => (
-												<Badge
-													key={detailTag}
-													variant="outline"
-													className="border-secondary/20 text-secondary bg-secondary/5 flex items-center gap-1"
-												>
-													<Tag className="h-3 w-3" />
-													{detailTag}
-												</Badge>
-											))}
+										{work.basicInfo.detailTags.map((detailTag) => (
+											<Badge
+												key={detailTag}
+												variant="outline"
+												className="border-secondary/20 text-secondary bg-secondary/5 flex items-center gap-1"
+											>
+												<Tag className="h-3 w-3" />
+												{detailTag}
+											</Badge>
+										))}
 									</div>
 								</div>
 							)}
@@ -380,37 +353,32 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												</div>
 											</div>
-											{(work.basicInfo?.releaseDate || work.registDate) && (
+											{(work.releaseDate || work.registDate) && (
 												<div className="flex items-center gap-3">
 													<Calendar className="h-5 w-5 text-muted-foreground" />
 													<div>
 														<div className="text-sm text-gray-700">販売日</div>
 														<div className="font-semibold text-gray-900">
-															{work.basicInfo?.releaseDate ||
-																(work.registDate && formatDate(work.registDate))}
+															{work.releaseDate || (work.registDate && formatDate(work.registDate))}
 														</div>
 													</div>
 												</div>
 											)}
-											{work.basicInfo?.seriesName && (
+											{work.seriesName && (
 												<div className="flex items-center gap-3">
 													<FileText className="h-5 w-5 text-muted-foreground" />
 													<div>
 														<div className="text-sm text-gray-700">シリーズ名</div>
-														<div className="font-semibold text-gray-900">
-															{work.basicInfo.seriesName}
-														</div>
+														<div className="font-semibold text-gray-900">{work.seriesName}</div>
 													</div>
 												</div>
 											)}
-											{(work.basicInfo?.ageRating || work.ageRating) && (
+											{work.ageRating && (
 												<div className="flex items-center gap-3">
 													<FileText className="h-5 w-5 text-muted-foreground" />
 													<div>
 														<div className="text-sm text-gray-700">年齢指定</div>
-														<div className="font-semibold text-gray-900">
-															{work.basicInfo?.ageRating || work.ageRating}
-														</div>
+														<div className="font-semibold text-gray-900">{work.ageRating}</div>
 													</div>
 												</div>
 											)}
@@ -427,25 +395,13 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 											)}
 										</div>
 
-										{/* 制作陣情報 */}
+										{/* 制作陣情報（統合済み） */}
 										<div className="space-y-4">
-											{work.basicInfo?.author && work.basicInfo.author.length > 0 && (
-												<div>
-													<div className="text-sm text-gray-700 mb-2">作者</div>
-													<div className="flex flex-wrap gap-2">
-														{work.basicInfo.author.map((author) => (
-															<Badge key={author} variant="secondary" className="text-xs">
-																{author}
-															</Badge>
-														))}
-													</div>
-												</div>
-											)}
-											{work.basicInfo?.voiceActors && work.basicInfo.voiceActors.length > 0 && (
+											{work.voiceActors && work.voiceActors.length > 0 && (
 												<div>
 													<div className="text-sm text-gray-700 mb-2">声優</div>
 													<div className="flex flex-wrap gap-2">
-														{work.basicInfo.voiceActors.map((actor) => (
+														{work.voiceActors.map((actor) => (
 															<Badge key={actor} variant="secondary" className="text-xs">
 																{actor}
 															</Badge>
@@ -453,11 +409,11 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												</div>
 											)}
-											{work.basicInfo?.scenario && work.basicInfo.scenario.length > 0 && (
+											{work.scenario && work.scenario.length > 0 && (
 												<div>
 													<div className="text-sm text-gray-700 mb-2">シナリオ</div>
 													<div className="flex flex-wrap gap-2">
-														{work.basicInfo.scenario.map((scenario) => (
+														{work.scenario.map((scenario) => (
 															<Badge key={scenario} variant="secondary" className="text-xs">
 																{scenario}
 															</Badge>
@@ -465,11 +421,11 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												</div>
 											)}
-											{work.basicInfo?.illustration && work.basicInfo.illustration.length > 0 && (
+											{work.illustration && work.illustration.length > 0 && (
 												<div>
 													<div className="text-sm text-gray-700 mb-2">イラスト</div>
 													<div className="flex flex-wrap gap-2">
-														{work.basicInfo.illustration.map((artist) => (
+														{work.illustration.map((artist) => (
 															<Badge key={artist} variant="secondary" className="text-xs">
 																{artist}
 															</Badge>
@@ -477,13 +433,25 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												</div>
 											)}
-											{work.basicInfo?.music && work.basicInfo.music.length > 0 && (
+											{work.music && work.music.length > 0 && (
 												<div>
 													<div className="text-sm text-gray-700 mb-2">音楽</div>
 													<div className="flex flex-wrap gap-2">
-														{work.basicInfo.music.map((musician) => (
+														{work.music.map((musician) => (
 															<Badge key={musician} variant="secondary" className="text-xs">
 																{musician}
+															</Badge>
+														))}
+													</div>
+												</div>
+											)}
+											{work.design && work.design.length > 0 && (
+												<div>
+													<div className="text-sm text-gray-700 mb-2">デザイン</div>
+													<div className="flex flex-wrap gap-2">
+														{work.design.map((designer) => (
+															<Badge key={designer} variant="secondary" className="text-xs">
+																{designer}
 															</Badge>
 														))}
 													</div>
@@ -504,9 +472,9 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 										{/* ファイル基本情報 */}
 										<div className="space-y-4">
-											{(work.basicInfo?.workFormat ||
+											{(work.workFormat ||
 												(work.fileInfo?.formats && work.fileInfo.formats.length > 0) ||
-												work.basicInfo?.fileFormat) && (
+												work.fileFormat) && (
 												<div>
 													<div className="text-sm text-gray-700 mb-2">ファイル形式</div>
 													<div className="flex flex-wrap gap-2">
@@ -515,26 +483,26 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 																{format}
 															</Badge>
 														)) ||
-															(work.basicInfo?.fileFormat && (
+															(work.fileFormat && (
 																<Badge variant="secondary" className="text-xs">
-																	{work.basicInfo.fileFormat}
+																	{work.fileFormat}
 																</Badge>
 															)) ||
-															(work.basicInfo?.workFormat && (
+															(work.workFormat && (
 																<Badge variant="secondary" className="text-xs">
-																	{work.basicInfo.workFormat}
+																	{work.workFormat}
 																</Badge>
 															))}
 													</div>
 												</div>
 											)}
-											{(work.fileInfo?.totalSizeText || work.basicInfo?.fileSize) && (
+											{work.fileInfo?.totalSizeText && (
 												<div className="flex items-center gap-3">
 													<Clock className="h-5 w-5 text-muted-foreground" />
 													<div>
 														<div className="text-sm text-gray-700">総容量</div>
 														<div className="font-semibold text-gray-900 font-mono">
-															{work.fileInfo?.totalSizeText || work.basicInfo?.fileSize}
+															{work.fileInfo.totalSizeText}
 														</div>
 													</div>
 												</div>
@@ -743,20 +711,12 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 					</Card>
 
 					{/* クリエイター情報 */}
-					{((work.detailedCreators &&
-						((work.detailedCreators.voiceActors?.length ?? 0) > 0 ||
-							(work.detailedCreators.scenario?.length ?? 0) > 0 ||
-							(work.detailedCreators.illustration?.length ?? 0) > 0 ||
-							(work.detailedCreators.music?.length ?? 0) > 0 ||
-							(work.detailedCreators.design?.length ?? 0) > 0 ||
-							Object.keys(work.detailedCreators.other ?? {}).length > 0)) ||
-						(work.author && work.author.length > 0) ||
-						(work.basicInfo &&
-							((work.basicInfo.author?.length ?? 0) > 0 ||
-								(work.basicInfo.voiceActors?.length ?? 0) > 0 ||
-								(work.basicInfo.scenario?.length ?? 0) > 0 ||
-								(work.basicInfo.illustration?.length ?? 0) > 0 ||
-								(work.basicInfo.music?.length ?? 0) > 0))) && (
+					{((work.voiceActors && work.voiceActors.length > 0) ||
+						(work.scenario && work.scenario.length > 0) ||
+						(work.illustration && work.illustration.length > 0) ||
+						(work.music && work.music.length > 0) ||
+						(work.design && work.design.length > 0) ||
+						(work.otherCreators && Object.keys(work.otherCreators).length > 0)) && (
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
@@ -766,39 +726,12 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							</CardHeader>
 							<CardContent>
 								<div className="space-y-4">
-									{/* 作者 */}
-									{work.basicInfo?.author && work.basicInfo.author.length > 0 && (
-										<div>
-											<h5 className="text-sm font-medium text-gray-700 mb-2">作者</h5>
-											<div className="space-y-2">
-												{work.basicInfo.author.map((author) => (
-													<div key={author} className="flex items-center gap-3">
-														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-															<span className="text-foreground font-bold text-xs">
-																{author.charAt(0)}
-															</span>
-														</div>
-														<span className="text-gray-900 text-sm">{author}</span>
-													</div>
-												))}
-											</div>
-										</div>
-									)}
-
 									{/* 声優 */}
-									{((work.detailedCreators?.voiceActors?.length ?? 0) > 0 ||
-										(work.basicInfo?.voiceActors?.length ?? 0) > 0 ||
-										(work.author?.length ?? 0) > 0) && (
+									{work.voiceActors && work.voiceActors.length > 0 && (
 										<div>
 											<h5 className="text-sm font-medium text-gray-700 mb-2">声優（CV）</h5>
 											<div className="space-y-2">
-												{/* basicInfo.voiceActorsを優先、次にdetailedCreators、最後にauthor */}
-												{(
-													work.basicInfo?.voiceActors ||
-													work.detailedCreators?.voiceActors ||
-													work.author ||
-													[]
-												).map((actor) => (
+												{work.voiceActors.map((actor) => (
 													<div key={actor} className="flex items-center gap-3">
 														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
 															<span className="text-foreground font-bold text-xs">
@@ -813,38 +746,30 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									)}
 
 									{/* シナリオ */}
-									{((work.basicInfo?.scenario?.length ?? 0) > 0 ||
-										(work.detailedCreators?.scenario?.length ?? 0) > 0) && (
+									{work.scenario && work.scenario.length > 0 && (
 										<div>
 											<h5 className="text-sm font-medium text-gray-700 mb-2">シナリオ</h5>
 											<div className="space-y-2">
-												{(work.basicInfo?.scenario || work.detailedCreators?.scenario || []).map(
-													(creator) => (
-														<div key={creator} className="flex items-center gap-3">
-															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																<span className="text-foreground font-bold text-xs">
-																	{creator.charAt(0)}
-																</span>
-															</div>
-															<span className="text-gray-900 text-sm">{creator}</span>
+												{work.scenario.map((creator) => (
+													<div key={creator} className="flex items-center gap-3">
+														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+															<span className="text-foreground font-bold text-xs">
+																{creator.charAt(0)}
+															</span>
 														</div>
-													),
-												)}
+														<span className="text-gray-900 text-sm">{creator}</span>
+													</div>
+												))}
 											</div>
 										</div>
 									)}
 
 									{/* イラスト */}
-									{((work.basicInfo?.illustration?.length ?? 0) > 0 ||
-										(work.detailedCreators?.illustration?.length ?? 0) > 0) && (
+									{work.illustration && work.illustration.length > 0 && (
 										<div>
 											<h5 className="text-sm font-medium text-gray-700 mb-2">イラスト</h5>
 											<div className="space-y-2">
-												{(
-													work.basicInfo?.illustration ||
-													work.detailedCreators?.illustration ||
-													[]
-												).map((creator) => (
+												{work.illustration.map((creator) => (
 													<div key={creator} className="flex items-center gap-3">
 														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
 															<span className="text-foreground font-bold text-xs">
@@ -859,33 +784,30 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									)}
 
 									{/* 音楽 */}
-									{((work.basicInfo?.music?.length ?? 0) > 0 ||
-										(work.detailedCreators?.music?.length ?? 0) > 0) && (
+									{work.music && work.music.length > 0 && (
 										<div>
 											<h5 className="text-sm font-medium text-gray-700 mb-2">音楽</h5>
 											<div className="space-y-2">
-												{(work.basicInfo?.music || work.detailedCreators?.music || []).map(
-													(creator) => (
-														<div key={creator} className="flex items-center gap-3">
-															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																<span className="text-foreground font-bold text-xs">
-																	{creator.charAt(0)}
-																</span>
-															</div>
-															<span className="text-gray-900 text-sm">{creator}</span>
+												{work.music.map((creator) => (
+													<div key={creator} className="flex items-center gap-3">
+														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+															<span className="text-foreground font-bold text-xs">
+																{creator.charAt(0)}
+															</span>
 														</div>
-													),
-												)}
+														<span className="text-gray-900 text-sm">{creator}</span>
+													</div>
+												))}
 											</div>
 										</div>
 									)}
 
 									{/* デザイン */}
-									{(work.detailedCreators?.design?.length ?? 0) > 0 && (
+									{work.design && work.design.length > 0 && (
 										<div>
 											<h5 className="text-sm font-medium text-gray-700 mb-2">デザイン</h5>
 											<div className="space-y-2">
-												{work.detailedCreators?.design?.map((creator) => (
+												{work.design.map((creator) => (
 													<div key={creator} className="flex items-center gap-3">
 														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
 															<span className="text-foreground font-bold text-xs">
@@ -900,9 +822,9 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									)}
 
 									{/* その他のクリエイター */}
-									{work.detailedCreators && Object.keys(work.detailedCreators.other).length > 0 && (
+									{work.otherCreators && Object.keys(work.otherCreators).length > 0 && (
 										<div>
-											{Object.entries(work.detailedCreators.other).map(([role, creators]) => (
+											{Object.entries(work.otherCreators).map(([role, creators]) => (
 												<div key={role} className="mb-3">
 													<h5 className="text-sm font-medium text-gray-700 mb-2">{role}</h5>
 													<div className="space-y-2">

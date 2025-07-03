@@ -1,5 +1,5 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import { saveWorksToFirestore } from "./utils/dlsite-firestore";
+import { getExistingWorksMap, saveWorksToFirestore } from "./utils/dlsite-firestore";
 import { mapMultipleWorksWithDetailData, mapMultipleWorksWithInfo } from "./utils/dlsite-mapper";
 import { parseWorksFromHTML } from "./utils/dlsite-parser";
 import firestore, { Timestamp } from "./utils/firestore";
@@ -217,18 +217,41 @@ async function processSinglePage(
 		return { savedCount: 0, parsedCount: 0, isLastPage: true };
 	}
 
-	// Firestoreデータ形式に変換と保存
-	// 環境変数で詳細データ取得を有効化可能
-	const enableDetailedData = process.env.ENABLE_DETAILED_SCRAPING === "true";
+	// 効率的な処理: 新規作品と既存作品を分類して処理
+	const productIds = parsedWorks.map((w) => w.productId);
+	const existingWorksMap = await getExistingWorksMap(productIds);
 
-	const firestoreWorks = enableDetailedData
-		? await mapMultipleWorksWithDetailData(parsedWorks)
-		: await mapMultipleWorksWithInfo(parsedWorks);
+	// 新規作品と既存作品を分類
+	const newWorks = parsedWorks.filter((w) => !existingWorksMap.has(w.productId));
+	const existingWorks = parsedWorks.filter((w) => existingWorksMap.has(w.productId));
 
-	await saveWorksToFirestore(firestoreWorks);
+	logger.info(`ページ ${currentPage} の処理内訳:`, {
+		total: parsedWorks.length,
+		new: newWorks.length,
+		existing: existingWorks.length,
+	});
 
-	const savedCount = firestoreWorks.length;
-	logger.info(`ページ ${currentPage}: ${savedCount}件の作品を保存しました`);
+	// 並列処理で効率化
+	const [newWorksData, existingWorksData] = await Promise.all([
+		// 新規作品は詳細データを含めて取得
+		newWorks.length > 0
+			? mapMultipleWorksWithDetailData(newWorks, existingWorksMap)
+			: Promise.resolve([]),
+		// 既存作品は基本情報のみ更新
+		existingWorks.length > 0
+			? mapMultipleWorksWithInfo(existingWorks, existingWorksMap)
+			: Promise.resolve([]),
+	]);
+
+	// 統合して保存
+	const allWorksData = [...newWorksData, ...existingWorksData];
+	await saveWorksToFirestore(allWorksData);
+
+	const savedCount = allWorksData.length;
+	logger.info(`ページ ${currentPage}: ${savedCount}件の作品を保存しました`, {
+		newWorksSaved: newWorksData.length,
+		existingWorksUpdated: existingWorksData.length,
+	});
 
 	// 総作品数の更新処理
 	if (currentPage === 1 && searchResult.page_info) {

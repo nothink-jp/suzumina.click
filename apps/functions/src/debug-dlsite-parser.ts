@@ -130,7 +130,13 @@ class DLsiteParserDebugger {
 				stats: {
 					hasBasicInfo: !!detailData.basicInfo,
 					hasFileInfo: !!detailData.fileInfo,
-					hasCreatorInfo: !!detailData.detailedCreators,
+					hasCreatorInfo: !!(
+						detailData.voiceActors?.length ||
+						detailData.scenario?.length ||
+						detailData.illustration?.length ||
+						detailData.music?.length ||
+						detailData.design?.length
+					),
 					hasBonusContent: (detailData.bonusContent?.length || 0) > 0,
 					hasHighResImage: !!detailData.highResImageUrl,
 				},

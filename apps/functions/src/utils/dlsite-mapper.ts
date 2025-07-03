@@ -419,16 +419,71 @@ export function mapToWorkBase(
 			height: sample.height,
 		}));
 
-		// 声優名の処理（infoデータから複数対応）
-		const voiceActors = infoData ? extractVoiceActors(infoData) : [];
-		const author = voiceActors.length > 0 ? voiceActors : parsed.author || [];
+		// === 重複データ統合処理 ===
+
+		// 声優情報の統合（優先順: infoData > extendedData > extendedData.basicInfo > parsed.author）
+		const consolidatedVoiceActors = [
+			...new Set([
+				...(infoData ? extractVoiceActors(infoData) : []),
+				...(extendedData?.voiceActors || []),
+				...((extendedData?.basicInfo as any)?.voiceActors || []),
+				...(parsed.author || []),
+			]),
+		];
+
+		// シナリオ情報の統合
+		const consolidatedScenario = [
+			...new Set([
+				...(extendedData?.scenario || []),
+				...((extendedData?.basicInfo as any)?.scenario || []),
+			]),
+		];
+
+		// イラスト情報の統合
+		const consolidatedIllustration = [
+			...new Set([
+				...(extendedData?.illustration || []),
+				...((extendedData?.basicInfo as any)?.illustration || []),
+			]),
+		];
+
+		// 音楽情報の統合
+		const consolidatedMusic = [
+			...new Set([
+				...(extendedData?.music || []),
+				...((extendedData?.basicInfo as any)?.music || []),
+			]),
+		];
+
+		// デザイン情報の統合
+		const consolidatedDesign = [...new Set([...(extendedData?.design || [])])];
+
+		// タグ情報の統合（優先順: parsed.tags > extendedData.basicInfo.genres > infoData.genres）
+		const consolidatedTags = [
+			...new Set([
+				...(parsed.tags || []),
+				...((extendedData?.basicInfo as any)?.genres || []),
+				...(infoData?.genres || []),
+			]),
+		];
+
+		// その他のクリエイター情報の統合
+		const consolidatedOtherCreators = {
+			...(extendedData?.otherCreators || {}),
+		};
+
+		// 作品情報の統合
+		const consolidatedReleaseDate = (extendedData?.basicInfo as any)?.releaseDate;
+		const consolidatedSeriesName = (extendedData?.basicInfo as any)?.seriesName;
+		const consolidatedAgeRating = (extendedData?.basicInfo as any)?.ageRating || parsed.ageRating;
+		const consolidatedWorkFormat = (extendedData?.basicInfo as any)?.workFormat;
+		const consolidatedFileFormat = (extendedData?.basicInfo as any)?.fileFormat;
 
 		const workBase: DLsiteWorkBase = {
 			id: parsed.productId, // FirestoreドキュメントIDとして商品IDを使用
 			productId: parsed.productId,
 			title: parsed.title,
 			circle: parsed.circle,
-			author,
 			description: extendedData?.detailedDescription || "", // 詳細ページから取得した説明文を使用
 			category: parsed.category,
 			workUrl: normalizeUrl(parsed.workUrl),
@@ -437,17 +492,38 @@ export function mapToWorkBase(
 			price,
 			rating,
 			salesCount: parsed.salesCount || infoData?.dl_count,
-			ageRating: parsed.ageRating,
-			tags: parsed.tags || [], // HTMLパーサーから抽出されたタグ情報を使用
+
+			// === 統合されたクリエイター情報 ===
+			voiceActors: consolidatedVoiceActors,
+			scenario: consolidatedScenario,
+			illustration: consolidatedIllustration,
+			music: consolidatedMusic,
+			design: consolidatedDesign,
+			otherCreators: consolidatedOtherCreators,
+
+			// === 統合された作品情報 ===
+			releaseDate: consolidatedReleaseDate,
+			seriesName: consolidatedSeriesName,
+			ageRating: consolidatedAgeRating,
+			workFormat: consolidatedWorkFormat,
+			fileFormat: consolidatedFileFormat,
+			tags: consolidatedTags,
+
 			sampleImages: normalizedSampleImages,
 			isExclusive: parsed.isExclusive,
 			userEvaluationCount: 0, // デフォルト値として0を設定
 
-			// 詳細ページから追加される拡張フィールド
+			// === 最小限の基本情報（重複除去済み） ===
+			basicInfo: {
+				detailTags: ((extendedData?.basicInfo as any)?.detailTags || []).filter(
+					(tag: string) => !consolidatedTags.includes(tag),
+				), // タグと重複しない詳細タグのみ
+				other: {},
+			},
+
+			// その他の拡張フィールド
 			...(extendedData && {
 				fileInfo: extendedData.fileInfo,
-				basicInfo: extendedData.basicInfo,
-				detailedCreators: extendedData.detailedCreators,
 				bonusContent: extendedData.bonusContent,
 			}),
 

@@ -121,53 +121,23 @@ export const FileInfoSchema = z.object({
 });
 
 /**
- * 詳細クリエイター情報のZodスキーマ定義
+ * 詳細クリエイター情報のZodスキーマ定義（レガシー対応用）
+ * @deprecated メインフィールドに統合済み。移行期間中のみ使用
  */
 export const DetailedCreatorInfoSchema = z.object({
-	/** 声優（CV） */
-	voiceActors: z.array(z.string()).default([]),
-	/** シナリオ */
-	scenario: z.array(z.string()).default([]),
-	/** イラスト */
-	illustration: z.array(z.string()).default([]),
-	/** 音楽 */
-	music: z.array(z.string()).default([]),
-	/** デザイン */
-	design: z.array(z.string()).default([]),
-	/** その他のクリエイター情報 */
+	/** その他のクリエイター情報（標準フィールド以外） */
 	other: z.record(z.array(z.string())).default({}),
 });
 
 /**
- * 基本作品情報のZodスキーマ定義（work_outlineテーブルから抽出）
+ * 基本作品情報のZodスキーマ定義（最小限のメタデータのみ）
+ * 重複排除により、メインフィールドに昇格したデータは除外
  */
 export const BasicWorkInfoSchema = z.object({
-	/** 販売日 */
-	releaseDate: z.string().optional(),
-	/** シリーズ名 */
-	seriesName: z.string().optional(),
-	/** 作者（複数） */
-	author: z.array(z.string()).default([]),
-	/** シナリオ担当者（複数） */
-	scenario: z.array(z.string()).default([]),
-	/** イラスト担当者（複数） */
-	illustration: z.array(z.string()).default([]),
-	/** 声優（複数） */
-	voiceActors: z.array(z.string()).default([]),
-	/** 音楽担当者（複数） */
-	music: z.array(z.string()).default([]),
-	/** 年齢指定 */
-	ageRating: z.string().optional(),
-	/** 作品形式 */
-	workFormat: z.string().optional(),
-	/** ファイル形式 */
-	fileFormat: z.string().optional(),
-	/** ジャンル（複数） - work_outlineテーブルから取得 */
-	genres: z.array(z.string()).default([]),
-	/** タグ（複数） - 作品詳細ページから取得（ジャンルと同じ可能性あり） */
+	/** 詳細タグ（tagsと重複しない場合のみ） */
 	detailTags: z.array(z.string()).default([]),
-	/** ファイル容量 */
-	fileSize: z.string().optional(),
+	/** その他の基本情報（将来拡張用） */
+	other: z.record(z.any()).default({}),
 });
 
 /**
@@ -344,6 +314,7 @@ export const SalesStatusSchema = z.object({
 
 /**
  * 基本的なDLsite作品データのZodスキーマ定義
+ * 重複フィールドを排除し、統一されたデータ構造を定義
  */
 export const DLsiteWorkBaseSchema = z.object({
 	/** FirestoreドキュメントID */
@@ -362,8 +333,6 @@ export const DLsiteWorkBaseSchema = z.object({
 	circle: z.string().min(1, {
 		message: "サークル名は1文字以上である必要があります",
 	}),
-	/** 声優名（複数の場合あり） */
-	author: z.array(z.string()).default([]),
 	/** 作品説明 */
 	description: z.string().default(""),
 	/** 作品カテゴリ */
@@ -384,10 +353,33 @@ export const DLsiteWorkBaseSchema = z.object({
 	rating: RatingInfoSchema.optional(),
 	/** 販売数 */
 	salesCount: z.number().int().nonnegative().optional(),
-	/** 年齢制限（全年齢、R-15、R-18など） */
+
+	// === 統一されたクリエイター情報（detailedCreators から昇格） ===
+	/** 声優（CV）- 旧 author, detailedCreators.voiceActors, basicInfo.voiceActors を統合 */
+	voiceActors: z.array(z.string()).default([]),
+	/** シナリオ担当者 - detailedCreators.scenario, basicInfo.scenario を統合 */
+	scenario: z.array(z.string()).default([]),
+	/** イラスト担当者 - detailedCreators.illustration, basicInfo.illustration を統合 */
+	illustration: z.array(z.string()).default([]),
+	/** 音楽担当者 - detailedCreators.music, basicInfo.music を統合 */
+	music: z.array(z.string()).default([]),
+	/** デザイン担当者 */
+	design: z.array(z.string()).default([]),
+
+	// === 統一された作品情報（basicInfo から昇格） ===
+	/** 販売日 - basicInfo.releaseDate から昇格 */
+	releaseDate: z.string().optional(),
+	/** シリーズ名 - basicInfo.seriesName から昇格 */
+	seriesName: z.string().optional(),
+	/** 年齢制限 - basicInfo.ageRating を統合 */
 	ageRating: z.string().optional(),
-	/** 作品タグ */
+	/** 作品形式 - basicInfo.workFormat から昇格 */
+	workFormat: z.string().optional(),
+	/** ファイル形式 - basicInfo.fileFormat から昇格 */
+	fileFormat: z.string().optional(),
+	/** 作品タグ - 旧 tags, basicInfo.genres を統合 */
 	tags: z.array(z.string()).default([]),
+
 	/** サンプル画像 */
 	sampleImages: z.array(SampleImageSchema).default([]),
 	/** 独占配信フラグ */
@@ -410,10 +402,17 @@ export const DLsiteWorkBaseSchema = z.object({
 	rankingHistory: z.array(RankingInfoSchema).optional(),
 	/** ファイル情報 */
 	fileInfo: FileInfoSchema.optional(),
-	/** 基本作品情報（work_outlineテーブルから抽出） */
-	basicInfo: BasicWorkInfoSchema.optional(),
-	/** 詳細クリエイター情報 */
-	detailedCreators: DetailedCreatorInfoSchema.optional(),
+	/** 基本作品情報（最小限のメタデータのみ保持） */
+	basicInfo: z
+		.object({
+			/** 詳細タグ（tagsと重複しない場合のみ） */
+			detailTags: z.array(z.string()).default([]),
+			/** その他の基本情報（将来拡張用） */
+			other: z.record(z.any()).default({}),
+		})
+		.optional(),
+	/** その他のクリエイター情報（標準フィールド以外） */
+	otherCreators: z.record(z.array(z.string())).default({}),
 	/** 特典情報 */
 	bonusContent: z.array(BonusContentSchema).optional(),
 	/** 価格履歴 */
@@ -597,7 +596,6 @@ export function convertToFrontendWork(data: FirestoreDLsiteWorkData): FrontendDL
 			productId: data.productId,
 			title: data.title,
 			circle: data.circle,
-			author: data.author,
 			description: data.description || "",
 			category: data.category,
 			workUrl: data.workUrl,
@@ -606,10 +604,29 @@ export function convertToFrontendWork(data: FirestoreDLsiteWorkData): FrontendDL
 			price: data.price,
 			rating: data.rating,
 			salesCount: data.salesCount,
+
+			// 統一されたクリエイター情報
+			voiceActors: data.voiceActors || [],
+			scenario: data.scenario || [],
+			illustration: data.illustration || [],
+			music: data.music || [],
+			design: data.design || [],
+
+			// 統一された作品情報
+			releaseDate: data.releaseDate,
+			seriesName: data.seriesName,
 			ageRating: data.ageRating,
+			workFormat: data.workFormat,
+			fileFormat: data.fileFormat,
 			tags: data.tags || [],
+
 			sampleImages: data.sampleImages || [],
 			isExclusive: data.isExclusive || false,
+
+			// その他必須フィールド
+			otherCreators: data.otherCreators || {},
+			basicInfo: data.basicInfo,
+
 			lastFetchedAt: data.lastFetchedAt,
 			createdAt: data.createdAt,
 			updatedAt: data.updatedAt,

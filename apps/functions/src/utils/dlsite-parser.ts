@@ -264,6 +264,31 @@ function extractProductInfo($item: unknown, index: number): BasicProductInfo | n
 }
 
 /**
+ * DLsite画像ディレクトリパスを生成
+ * 新形式(8桁): RJ01413726 → RJ01414000 (下4桁を1000の倍数に切り上げ)
+ * 旧形式(6桁): RJ405712 → RJ406000 (下3桁を1000の倍数に切り上げ)
+ */
+export function generateDLsiteImageDirectory(productId: string): string {
+	// RJ プレフィックスを除去して数値部分を取得
+	const numericPart = productId.replace(/^RJ/, "");
+
+	if (numericPart.length === 8) {
+		// 新形式 (8桁): RJ01413726 → RJ01414000
+		const baseNumber = Number.parseInt(numericPart, 10);
+		const directoryNumber = Math.floor(baseNumber / 1000) * 1000 + 1000;
+		return `RJ${directoryNumber.toString().padStart(8, "0")}`;
+	}
+	if (numericPart.length === 6) {
+		// 旧形式 (6桁): RJ405712 → RJ406000
+		const baseNumber = Number.parseInt(numericPart, 10);
+		const directoryNumber = Math.floor(baseNumber / 1000) * 1000 + 1000;
+		return `RJ${directoryNumber.toString().padStart(6, "0")}`;
+	}
+	// フォールバック: 元のロジック
+	return `${productId.slice(0, 4)}000`;
+}
+
+/**
  * サムネイル画像URLを抽出
  */
 function extractThumbnailUrl($item: unknown, productId: string): string {
@@ -298,8 +323,12 @@ function extractThumbnailUrl($item: unknown, productId: string): string {
 
 	if (!thumbnailUrl) {
 		// サムネイル画像が見つからない場合はデフォルト画像を使用
-		thumbnailUrl = `https://img.dlsite.jp/modpub/images2/work/doujin/${productId.slice(0, 4)}000/${productId}/${productId}_img_main.jpg`;
-		logger.debug(`作品${productId}: サムネイル画像URLが見つからないため、デフォルトURLを使用`);
+		const directoryPath = generateDLsiteImageDirectory(productId);
+		// WebP形式を優先、フォールバックでJPG形式
+		thumbnailUrl = `https://img.dlsite.jp/modpub/images2/work/doujin/${directoryPath}/${productId}_img_main.webp`;
+		logger.debug(
+			`作品${productId}: サムネイル画像URLが見つからないため、デフォルトURLを使用 (${directoryPath}, WebP優先)`,
+		);
 	}
 
 	return thumbnailUrl.startsWith("//") ? `https:${thumbnailUrl}` : thumbnailUrl;

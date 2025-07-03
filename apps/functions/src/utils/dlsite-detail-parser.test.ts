@@ -4,7 +4,11 @@
 
 import * as cheerio from "cheerio";
 import { describe, expect, it } from "vitest";
-import { extractHighResImageUrl, parseWorkDetailFromHTML } from "./dlsite-detail-parser";
+import {
+	extractDetailedDescription,
+	extractHighResImageUrl,
+	parseWorkDetailFromHTML,
+} from "./dlsite-detail-parser";
 
 describe("extractHighResImageUrl", () => {
 	it("作品IDから構築されたWebP形式URLを優先する", () => {
@@ -124,8 +128,26 @@ describe("extractHighResImageUrl", () => {
 		const result = extractHighResImageUrl($);
 
 		expect(result).toBe(
-			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ00237000/RJ236867_img_main.webp",
+			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ237000/RJ236867_img_main.webp",
 		);
+	});
+});
+
+describe("extractDetailedDescription", () => {
+	it("work_parts_areaから作品説明を抽出する", () => {
+		const html = `
+			<html>
+				<body>
+					<div class="work_parts_area">
+						<div class="work_parts">これは詳細な作品説明です。物語の内容が記載されています。</div>
+					</div>
+				</body>
+			</html>
+		`;
+
+		const $ = cheerio.load(html);
+		const result = extractDetailedDescription($);
+		expect(result).toBe("これは詳細な作品説明です。物語の内容が記載されています。");
 	});
 });
 
@@ -141,7 +163,7 @@ describe("parseWorkDetailFromHTML（高解像度画像統合）", () => {
 						<img src="//img.dlsite.jp/resize/images2/work/doujin/RJ01412000/RJ01411411_img_main_240x240.jpg" alt="作品画像">
 					</div>
 					<div class="work_parts_area">
-						<div class="work_parts">作品説明テキスト</div>
+						<div class="work_parts">これは詳細な作品説明テキストです。内容についての説明が含まれています。</div>
 					</div>
 				</body>
 			</html>
@@ -152,10 +174,18 @@ describe("parseWorkDetailFromHTML（高解像度画像統合）", () => {
 		expect(result.highResImageUrl).toBe(
 			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01412000/RJ01411411_img_main.webp",
 		);
-		expect(result.detailedDescription).toBe("作品説明テキスト");
+		expect(result.detailedDescription).toBe(
+			"これは詳細な作品説明テキストです。内容についての説明が含まれています。",
+		);
 		expect(result.fileInfo).toBeDefined();
 		expect(result.basicInfo).toBeDefined();
-		expect(result.detailedCreators).toBeDefined();
+		// 統合されたクリエイター情報フィールドをチェック
+		expect(result.voiceActors).toBeDefined();
+		expect(result.scenario).toBeDefined();
+		expect(result.illustration).toBeDefined();
+		expect(result.music).toBeDefined();
+		expect(result.design).toBeDefined();
+		expect(result.otherCreators).toBeDefined();
 		expect(result.bonusContent).toEqual([]);
 	});
 
@@ -164,7 +194,7 @@ describe("parseWorkDetailFromHTML（高解像度画像統合）", () => {
 			<html>
 				<body>
 					<div class="work_parts_area">
-						<div class="work_parts">作品説明のみ</div>
+						<div class="work_parts">こちらは作品説明のみのテストケースです。詳細な内容が含まれています。</div>
 					</div>
 				</body>
 			</html>
@@ -173,6 +203,8 @@ describe("parseWorkDetailFromHTML（高解像度画像統合）", () => {
 		const result = parseWorkDetailFromHTML(html);
 
 		expect(result.highResImageUrl).toBeUndefined();
-		expect(result.detailedDescription).toBe("作品説明のみ");
+		expect(result.detailedDescription).toBe(
+			"こちらは作品説明のみのテストケースです。詳細な内容が含まれています。",
+		);
 	});
 });

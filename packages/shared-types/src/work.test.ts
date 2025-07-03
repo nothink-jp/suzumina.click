@@ -66,7 +66,12 @@ const validFirestoreWork: FirestoreDLsiteWorkData = {
 	productId: "RJ236867",
 	title: "夏の苦い思い出",
 	circle: "テストサークル",
-	author: ["涼花みなせ", "他の声優"],
+	voiceActors: ["涼花みなせ", "他の声優"],
+	scenario: ["テストシナリオライター"],
+	illustration: ["テストイラストレーター"],
+	music: ["テスト作曲家"],
+	design: ["テストデザイナー"],
+	otherCreators: {},
 	description: "テスト作品の説明文です。",
 	category: "SOU",
 	workUrl: "https://www.dlsite.com/maniax/work/=/product_id/RJ236867.html",
@@ -352,7 +357,7 @@ describe("FirestoreDLsiteWorkSchema", () => {
 		if (result.success) {
 			expect(result.data.productId).toBe("RJ236867");
 			expect(result.data.title).toBe("夏の苦い思い出");
-			expect(result.data.author).toContain("涼花みなせ");
+			expect(result.data.voiceActors).toContain("涼花みなせ");
 			expect(result.data.price.current).toBe(1100);
 		}
 	});

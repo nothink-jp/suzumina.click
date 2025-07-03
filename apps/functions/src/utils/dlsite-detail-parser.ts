@@ -4,8 +4,9 @@
  * 作品詳細ページから収録内容・ファイル情報・詳細クリエイター情報を抽出します。
  */
 
-import type { BonusContent, DetailedCreatorInfo, FileInfo } from "@suzumina.click/shared-types";
+import type { BonusContent, FileInfo } from "@suzumina.click/shared-types";
 import * as cheerio from "cheerio";
+import { generateDLsiteImageDirectory } from "./dlsite-parser";
 import * as logger from "./logger";
 
 /**
@@ -58,8 +59,18 @@ export interface ExtendedWorkData {
 	basicInfo: BasicWorkInfo;
 	/** ファイル情報 */
 	fileInfo: FileInfo;
-	/** 詳細クリエイター情報 */
-	detailedCreators: DetailedCreatorInfo;
+	/** 統合された声優情報 */
+	voiceActors: string[];
+	/** 統合されたシナリオ担当者情報 */
+	scenario: string[];
+	/** 統合されたイラスト担当者情報 */
+	illustration: string[];
+	/** 統合された音楽担当者情報 */
+	music: string[];
+	/** 統合されたデザイン担当者情報 */
+	design: string[];
+	/** その他のクリエイター情報 */
+	otherCreators: Record<string, string[]>;
 	/** 特典情報 */
 	bonusContent: BonusContent[];
 	/** 詳細説明文 */
@@ -293,15 +304,23 @@ export function extractFileInfo($: cheerio.CheerioAPI): FileInfo {
 
 /**
  * 詳細クリエイター情報を抽出
+ * @returns 統合されたクリエイター情報（メインフィールド用 + レガシーother）
  */
-export function extractDetailedCreatorInfo($: cheerio.CheerioAPI): DetailedCreatorInfo {
-	const creators: DetailedCreatorInfo = {
-		voiceActors: [],
-		scenario: [],
-		illustration: [],
-		music: [],
-		design: [],
-		other: {},
+export function extractDetailedCreatorInfo($: cheerio.CheerioAPI): {
+	voiceActors: string[];
+	scenario: string[];
+	illustration: string[];
+	music: string[];
+	design: string[];
+	otherCreators: Record<string, string[]>;
+} {
+	const creators = {
+		voiceActors: [] as string[],
+		scenario: [] as string[],
+		illustration: [] as string[],
+		music: [] as string[],
+		design: [] as string[],
+		otherCreators: {} as Record<string, string[]>,
 	};
 
 	// クリエイター情報テーブルを探す（#work_outlineを追加してbasicInfoと同じソースを参照）
@@ -339,7 +358,7 @@ export function extractDetailedCreatorInfo($: cheerio.CheerioAPI): DetailedCreat
 		}
 		// その他
 		else if (names.length > 0 && /制作|企画|プロデュース|編集|監修/.test(headerText)) {
-			creators.other[headerText] = names;
+			creators.otherCreators[headerText] = names;
 		}
 	});
 
@@ -356,7 +375,7 @@ export function extractDetailedCreatorInfo($: cheerio.CheerioAPI): DetailedCreat
 		creators.illustration.length +
 		creators.music.length +
 		creators.design.length +
-		Object.values(creators.other).flat().length;
+		Object.values(creators.otherCreators).flat().length;
 
 	logger.debug(`詳細クリエイター情報抽出完了: ${totalCreators}名`);
 	return creators;
@@ -508,18 +527,14 @@ function findModpubImage($: cheerio.CheerioAPI): string | undefined {
  * 作品IDから標準的な高解像度画像URLを構築
  */
 function constructHighResImageUrl(productId: string): string {
-	// 作品IDから範囲IDを計算（例: RJ01411411 → RJ01412000）
-	const numericPart = productId.replace(/^RJ0?/, "");
-	const productNumber = Number.parseInt(numericPart);
-	// 1000単位で切り上げ（例: 1411 → 1412, 236 → 237）
-	const rangeStart = Math.ceil(productNumber / 1000) * 1000;
-	const rangeId = `RJ${rangeStart.toString().padStart(8, "0")}`;
+	// 新しい画像ディレクトリパス生成アルゴリズムを使用
+	const directoryPath = generateDLsiteImageDirectory(productId);
 
 	// cSpell:disable-next-line
-	const baseUrl = `https://img.dlsite.jp/modpub/images2/work/doujin/${rangeId}/${productId}_img_main`;
+	const baseUrl = `https://img.dlsite.jp/modpub/images2/work/doujin/${directoryPath}/${productId}_img_main`;
 
 	// WebP形式を優先的に試す
-	logger.debug(`構築された高解像度画像URL: ${baseUrl}.webp`);
+	logger.debug(`構築された高解像度画像URL: ${baseUrl}.webp (directory: ${directoryPath})`);
 	return `${baseUrl}.webp`;
 }
 
@@ -605,60 +620,193 @@ export function extractHighResImageUrl($: cheerio.CheerioAPI): string | undefine
 }
 
 /**
+ * テキストが有効な作品説明かどうかを判定
+ */
+function isValidDescription(text: string): boolean {
+	if (!text || text.length < 10) {
+		return false;
+	}
+
+	// 除外すべきパターン
+	const invalidPatterns = [
+		/^[0-9,]+円/, // 価格情報
+		/^[0-9]+MB/, // ファイルサイズ
+		/^[0-9]+分/, // 時間情報
+		/^(MP3|WAV|FLAC|OGG)/, // ファイル形式
+		/^(CV|声優)[：:]/, // 声優情報
+		/^(シナリオ|原画|音楽)[：:]/, // スタッフ情報
+		/^(更新履歴|バージョン)/, // 更新情報
+		/^(注意|警告|免責)/, // 注意事項
+		/work_outlineテーブル/, // デバッグテキスト
+		/抽出された詳細情報/, // デバッグテキスト
+		/^(タグ|ジャンル)[：:]/, // タグ情報
+		/^[0-9]{4}年[0-9]{1,2}月/, // 日付
+		/^(ダウンロード|DL)数/, // DL数
+		/^★[0-9.]+/, // 評価
+		/^(対応OS|動作環境)/, // 動作環境
+		/^(同人サークル|サークル名)/, // サークル情報
+	];
+
+	// 無効パターンをチェック
+	for (const pattern of invalidPatterns) {
+		if (pattern.test(text)) {
+			return false;
+		}
+	}
+
+	// 有効な説明の特徴
+	const validFeatures = [
+		text.length >= 10, // 最低限の長さ（テスト対応で緩和）
+		text.length <= 5000, // 長すぎない
+		!/^[0-9\s,]+$/.test(text), // 数字だけではない
+	];
+
+	// より長いテキストに対してはより厳密な判定
+	if (text.length >= 30) {
+		validFeatures.push(/[。！？]/.test(text)); // 句読点がある
+	}
+
+	// すべての特徴を満たすかチェック
+	return validFeatures.every(Boolean);
+}
+
+/**
  * 詳細説明文を抽出
  */
 export function extractDetailedDescription($: cheerio.CheerioAPI): string {
-	// 複数のパターンで作品説明を抽出
+	// 複数のパターンで作品説明を抽出（DLsite構造変化対応）
 	const descriptionSelectors = [
-		// DLsiteの典型的な作品説明エリア
+		// DLsiteの典型的な作品説明エリア（従来）
 		".work_parts_area .work_parts",
 		".work_parts",
 		".product_summary",
 		".work_article",
 		"#work_outline_inner .work_article",
-		// より汎用的なパターン
+
+		// 新しいDLsite構造対応
+		".work_outline .work_parts",
+		".work_outline .description",
+		".work_outline .summary",
+		".work_outline .story",
+		".work_outline p",
+		".product_detail .description",
+		".product_detail .summary",
+		".product_detail p",
+		".main_content .description",
+		".main_content .summary",
+		".content_area .description",
+		".content_area .summary",
+
+		// より汎用的なパターン（拡張）
 		".story",
 		".description",
 		".summary",
-		// 作品説明を含むリンクや要素
+		".synopsis",
+		".outline",
+		".plot",
+		".intro",
+		".overview",
+
+		// クラス名の部分一致（新構造対応）
 		"[class*='description']",
 		"[class*='summary']",
 		"[class*='story']",
+		"[class*='synopsis']",
+		"[class*='outline']",
+		"[class*='work']",
+
+		// より広範囲な検索（フォールバック）
+		".work_outline p",
+		".work_outline div",
+		".main_content p",
+		".content p",
+		"#work_outline p",
+		"#main_content p",
+		"p",
 	];
 
 	// セレクターを順番に試す
 	for (const selector of descriptionSelectors) {
 		const $element = $(selector);
 		if ($element.length > 0) {
-			const text = $element.text().trim();
-			// デバッグテキストや短すぎるテキストは除外
-			if (
-				text &&
-				text !== "work_outlineテーブルから抽出された詳細情報" &&
-				text.length > 5 &&
-				!text.includes("抽出された詳細情報")
-			) {
-				logger.debug(`作品説明を抽出 (${selector}): ${text.substring(0, 50)}...`);
-				return text;
+			// 複数の要素がある場合は最も長いテキストを選ぶ
+			let bestText = "";
+
+			$element.each((_, el) => {
+				const text = $(el).text().trim();
+
+				// 品質チェック: 適切な作品説明かどうか判定
+				if (isValidDescription(text) && text.length > bestText.length) {
+					bestText = text;
+				}
+			});
+
+			if (bestText) {
+				logger.debug(`作品説明を抽出 (${selector}): ${bestText.substring(0, 50)}...`);
+				return bestText;
 			}
 		}
 	}
 
-	// 全体のページテキストから作品説明らしい部分を探す
+	// より高度なフォールバック戦略
+	logger.debug("基本セレクターで抽出できませんでした。フォールバック戦略を実行...");
+
+	// 1. 長いテキストを含むp要素を探す
+	const paragraphs = $("p");
+	let bestParagraph = "";
+
+	paragraphs.each((_, el) => {
+		const text = $(el).text().trim();
+		if (isValidDescription(text) && text.length > bestParagraph.length) {
+			bestParagraph = text;
+		}
+	});
+
+	if (bestParagraph) {
+		logger.debug(`p要素から作品説明を抽出: ${bestParagraph.substring(0, 50)}...`);
+		return bestParagraph;
+	}
+
+	// 2. div要素で長いテキストを探す
+	const divs = $("div");
+	let bestDiv = "";
+
+	divs.each((_, el) => {
+		const $el = $(el);
+		// 子要素が少ないdivを優先（純粋なテキストコンテナの可能性が高い）
+		if ($el.children().length <= 2) {
+			const text = $el.text().trim();
+			if (isValidDescription(text) && text.length > bestDiv.length) {
+				bestDiv = text;
+			}
+		}
+	});
+
+	if (bestDiv) {
+		logger.debug(`div要素から作品説明を抽出: ${bestDiv.substring(0, 50)}...`);
+		return bestDiv;
+	}
+
+	// 3. 全体のページテキストから作品説明らしい部分を探す
 	const pageText = $("body").text();
 
-	// ページ内で「あらすじ」「ストーリー」「内容」などのキーワード後の文章を探す
+	// 強化されたパターンマッチング
 	const storyPatterns = [
-		/あらすじ[:\s]*([^。]+。)/,
-		/ストーリー[:\s]*([^。]+。)/,
-		/内容[:\s]*([^。]+。)/,
-		/概要[:\s]*([^。]+。)/,
+		/あらすじ[:\s]*([^。]+。[^。]*。?[^。]*。?)/, // より長い文章を取得
+		/ストーリー[:\s]*([^。]+。[^。]*。?[^。]*。?)/,
+		/内容[:\s]*([^。]+。[^。]*。?[^。]*。?)/,
+		/概要[:\s]*([^。]+。[^。]*。?[^。]*。?)/,
+		/物語[:\s]*([^。]+。[^。]*。?[^。]*。?)/,
+		/シナリオ[:\s]*([^。]+。[^。]*。?[^。]*。?)/,
+		// より広範囲なパターン
+		/「([^」]{50,500})」/, // 引用符内の長いテキスト
+		/([^。]{100,500}。[^。]{30,200}。)/, // 長い文章パターン
 	];
 
 	for (const pattern of storyPatterns) {
 		const match = pageText.match(pattern);
-		if (match?.[1] && match[1].trim().length > 20) {
-			logger.debug(`作品説明をパターンマッチで抽出: ${match[1].substring(0, 50)}...`);
+		if (match?.[1] && isValidDescription(match[1].trim())) {
+			logger.debug(`パターンマッチで作品説明を抽出: ${match[1].substring(0, 50)}...`);
 			return match[1].trim();
 		}
 	}
@@ -978,7 +1126,7 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 
 	const basicInfo = extractBasicWorkInfo($);
 	const fileInfo = extractFileInfo($);
-	const detailedCreators = extractDetailedCreatorInfo($);
+	const creatorInfo = extractDetailedCreatorInfo($);
 	const bonusContent = extractBonusContent($);
 	const detailedDescription = extractDetailedDescription($);
 	const highResImageUrl = extractHighResImageUrl($);
@@ -989,7 +1137,12 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 	return {
 		basicInfo,
 		fileInfo,
-		detailedCreators,
+		voiceActors: creatorInfo.voiceActors,
+		scenario: creatorInfo.scenario,
+		illustration: creatorInfo.illustration,
+		music: creatorInfo.music,
+		design: creatorInfo.design,
+		otherCreators: creatorInfo.otherCreators,
 		bonusContent,
 		detailedDescription,
 		highResImageUrl,

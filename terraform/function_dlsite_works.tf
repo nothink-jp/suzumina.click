@@ -65,7 +65,6 @@ resource "google_cloudfunctions2_function" "fetch_dlsite_works" {
     environment_variables = {
       FUNCTION_SIGNATURE_TYPE = "cloudevent"  # CloudEvent形式であることを明示
       FUNCTION_TARGET        = local.dlsite_entry_point  # エントリポイント名を指定
-      ENABLE_DETAILED_SCRAPING = var.enable_detailed_scraping  # 詳細データ取得の有効化
     }
   }
 

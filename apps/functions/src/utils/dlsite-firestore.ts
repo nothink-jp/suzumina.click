@@ -156,7 +156,7 @@ export async function saveWorksToFirestore(works: DLsiteWorkBase[]): Promise<voi
 /**
  * 既存の作品データを取得
  */
-async function getExistingWorksMap(
+export async function getExistingWorksMap(
 	productIds: string[],
 ): Promise<Map<string, FirestoreDLsiteWorkData>> {
 	const existingWorksMap = new Map<string, FirestoreDLsiteWorkData>();

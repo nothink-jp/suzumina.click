@@ -48,11 +48,11 @@ describe("DLsite Mapper", () => {
 				productId: "RJ123456",
 				title: "テスト作品",
 				circle: "テストサークル",
-				author: ["テスト作者"],
 				description: "",
 				category: "SOU",
 				workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
 				thumbnailUrl: "https://www.dlsite.com/img_sam/RJ123456_sam.jpg",
+				highResImageUrl: undefined,
 				price: {
 					current: 1000,
 					original: 1500,
@@ -66,9 +66,21 @@ describe("DLsite Mapper", () => {
 					reviewCount: 50,
 				},
 				salesCount: 1000,
+				// 統合されたクリエイター情報
+				voiceActors: ["テスト作者"],
+				scenario: [],
+				illustration: [],
+				music: [],
+				design: [],
+				otherCreators: {},
+				// 統合された作品情報
+				releaseDate: undefined,
+				seriesName: undefined,
 				ageRating: "全年齢",
-				userEvaluationCount: 0,
+				workFormat: undefined,
+				fileFormat: undefined,
 				tags: [],
+				userEvaluationCount: 0,
 				sampleImages: [
 					{
 						thumb: "https://www.dlsite.com/sample1.jpg",
@@ -82,6 +94,11 @@ describe("DLsite Mapper", () => {
 					},
 				],
 				isExclusive: true,
+				// 最小限の基本情報（重複除去済み）
+				basicInfo: {
+					detailTags: [],
+					other: {},
+				},
 			});
 		});
 
@@ -109,6 +126,13 @@ describe("DLsite Mapper", () => {
 			const result = mapToWorkBase(parsedData);
 
 			expect(result.rating).toBeUndefined();
+			// 統合されたフィールドが正しく設定されていることを確認
+			expect(result.voiceActors).toEqual(["テスト作者"]);
+			expect(result.scenario).toEqual([]);
+			expect(result.illustration).toEqual([]);
+			expect(result.music).toEqual([]);
+			expect(result.design).toEqual([]);
+			expect(result.basicInfo).toEqual({ detailTags: [], other: {} });
 		});
 	});
 
@@ -119,7 +143,6 @@ describe("DLsite Mapper", () => {
 				productId: "RJ123456",
 				title: "テスト作品",
 				circle: "テストサークル",
-				author: ["テスト作者"],
 				description: "",
 				category: "SOU",
 				workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
@@ -137,8 +160,17 @@ describe("DLsite Mapper", () => {
 					reviewCount: 50,
 				},
 				salesCount: 1000,
+				// 統合されたクリエイター情報
+				voiceActors: ["テスト作者"],
+				scenario: [],
+				illustration: [],
+				music: [],
+				design: [],
+				otherCreators: {},
+				// 統合された作品情報
 				ageRating: "全年齢",
 				tags: [],
+				userEvaluationCount: 0,
 				sampleImages: [
 					{
 						thumb: "https://www.dlsite.com/sample1.jpg",
@@ -147,6 +179,11 @@ describe("DLsite Mapper", () => {
 					},
 				],
 				isExclusive: true,
+				// 最小限の基本情報
+				basicInfo: {
+					detailTags: [],
+					other: {},
+				},
 			};
 
 			const result = mapToFirestoreData(workBase);
@@ -167,7 +204,6 @@ describe("DLsite Mapper", () => {
 			productId: "RJ123456",
 			title: "テスト作品",
 			circle: "テストサークル",
-			author: ["テスト作者"],
 			description: "",
 			category: "SOU",
 			workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
@@ -185,10 +221,24 @@ describe("DLsite Mapper", () => {
 				reviewCount: 50,
 			},
 			salesCount: 1000,
+			// 統合されたクリエイター情報
+			voiceActors: ["テスト作者"],
+			scenario: [],
+			illustration: [],
+			music: [],
+			design: [],
+			otherCreators: {},
+			// 統合された作品情報
 			ageRating: "全年齢",
 			tags: [],
+			userEvaluationCount: 0,
 			sampleImages: [],
 			isExclusive: false,
+			// 最小限の基本情報
+			basicInfo: {
+				detailTags: [],
+				other: {},
+			},
 			lastFetchedAt: new Date().toISOString(),
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
@@ -222,7 +272,6 @@ describe("DLsite Mapper", () => {
 				productId: "RJ123456",
 				title: "テスト作品",
 				circle: "テストサークル",
-				author: ["テスト作者"],
 				description: "",
 				category: "SOU",
 				workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
@@ -240,10 +289,24 @@ describe("DLsite Mapper", () => {
 					reviewCount: 50,
 				},
 				salesCount: 1000,
+				// 統合されたクリエイター情報
+				voiceActors: ["テスト作者"],
+				scenario: [],
+				illustration: [],
+				music: [],
+				design: [],
+				otherCreators: {},
+				// 統合された作品情報
 				ageRating: "全年齢",
 				tags: [],
+				userEvaluationCount: 0,
 				sampleImages: [],
 				isExclusive: false,
+				// 最小限の基本情報
+				basicInfo: {
+					detailTags: [],
+					other: {},
+				},
 			};
 
 			const result = validateWorkData(validWork);
@@ -448,6 +511,9 @@ describe("DLsite Mapper", () => {
 
 			expect(result).toHaveLength(1);
 			expect(result[0].productId).toBe("RJ123456");
+			// 統合されたフィールドが正しく設定されていることを確認
+			expect(result[0].voiceActors).toEqual(["テスト作者"]);
+			expect(result[0].basicInfo).toEqual({ detailTags: [], other: {} });
 		});
 
 		it("info APIエラーでもHTMLデータで処理を継続できる", async () => {
@@ -474,6 +540,9 @@ describe("DLsite Mapper", () => {
 
 			expect(result).toHaveLength(1);
 			expect(result[0].productId).toBe("RJ123456");
+			// 統合されたフィールドが正しく設定されていることを確認
+			expect(result[0].voiceActors).toEqual(["テスト作者"]);
+			expect(result[0].basicInfo).toEqual({ detailTags: [], other: {} });
 		});
 	});
 });
