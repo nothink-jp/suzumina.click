@@ -72,13 +72,32 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 	// 日付フォーマット
 	const formatDate = (dateString: string) => {
 		try {
+			// 日本語形式の日付（例: "2024年04月27日"）をパース
+			const japaneseMatch = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+			if (japaneseMatch) {
+				const [, year, month, day] = japaneseMatch;
+				const date = new Date(Number(year), Number(month) - 1, Number(day));
+				return date.toLocaleDateString("ja-JP", {
+					timeZone: "Asia/Tokyo",
+					year: "numeric",
+					month: "long",
+					day: "numeric",
+				});
+			}
+
+			// ISO形式やその他の形式を試す
 			const date = new Date(dateString);
-			return date.toLocaleDateString("ja-JP", {
-				timeZone: "Asia/Tokyo",
-				year: "numeric",
-				month: "long",
-				day: "numeric",
-			});
+			if (!Number.isNaN(date.getTime())) {
+				return date.toLocaleDateString("ja-JP", {
+					timeZone: "Asia/Tokyo",
+					year: "numeric",
+					month: "long",
+					day: "numeric",
+				});
+			}
+
+			// パースできない場合は元の文字列を返す
+			return dateString;
 		} catch {
 			return dateString;
 		}
