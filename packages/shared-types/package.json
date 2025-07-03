@@ -18,8 +18,8 @@
 		"check": "biome check --write ./src",
 		"typecheck": "tsc --noEmit",
 		"clean": "rimraf dist *.tgz node_modules/.cache",
-		"test": "echo 'No tests configured for shared-types'",
-		"test:coverage": "echo 'No tests configured for shared-types' && exit 0"
+		"test": "vitest run",
+		"test:coverage": "vitest run --coverage"
 	},
 	"dependencies": {
 		"zod": "^3.25.67"
@@ -28,6 +28,7 @@
 		"@suzumina.click/typescript-config": "workspace:*",
 		"rimraf": "^6.0.1",
 		"tsup": "^8.5.0",
-		"typescript": "^5.8.3"
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.4"
 	}
 }
