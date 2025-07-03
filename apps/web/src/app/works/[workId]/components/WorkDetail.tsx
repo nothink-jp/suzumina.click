@@ -356,7 +356,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								<Card>
 									<CardHeader>
 										<CardTitle>詳細作品情報</CardTitle>
-										<CardDescription>work_outlineテーブルから抽出された詳細情報</CardDescription>
+										<CardDescription>作品の詳細情報・制作陣・ファイル仕様</CardDescription>
 									</CardHeader>
 									<CardContent>
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -413,6 +413,17 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 															<div className="text-sm text-gray-700">ファイル容量</div>
 															<div className="font-semibold text-gray-900">
 																{work.basicInfo.fileSize}
+															</div>
+														</div>
+													</div>
+												)}
+												{work.basicInfo.ageRating && (
+													<div className="flex items-center gap-3">
+														<FileText className="h-5 w-5 text-muted-foreground" />
+														<div>
+															<div className="text-sm text-gray-700">年齢指定</div>
+															<div className="font-semibold text-gray-900">
+																{work.basicInfo.ageRating}
 															</div>
 														</div>
 													</div>

@@ -608,9 +608,63 @@ export function extractHighResImageUrl($: cheerio.CheerioAPI): string | undefine
  * 詳細説明文を抽出
  */
 export function extractDetailedDescription($: cheerio.CheerioAPI): string {
-	// 作品説明の主要セクションを取得
-	const description = $(".work_parts_area .work_parts").text().trim();
-	return description || "";
+	// 複数のパターンで作品説明を抽出
+	const descriptionSelectors = [
+		// DLsiteの典型的な作品説明エリア
+		".work_parts_area .work_parts",
+		".work_parts",
+		".product_summary",
+		".work_article",
+		"#work_outline_inner .work_article",
+		// より汎用的なパターン
+		".story",
+		".description",
+		".summary",
+		// 作品説明を含むリンクや要素
+		"[class*='description']",
+		"[class*='summary']",
+		"[class*='story']",
+	];
+
+	// セレクターを順番に試す
+	for (const selector of descriptionSelectors) {
+		const $element = $(selector);
+		if ($element.length > 0) {
+			const text = $element.text().trim();
+			// デバッグテキストや短すぎるテキストは除外
+			if (
+				text &&
+				text !== "work_outlineテーブルから抽出された詳細情報" &&
+				text.length > 5 &&
+				!text.includes("抽出された詳細情報")
+			) {
+				logger.debug(`作品説明を抽出 (${selector}): ${text.substring(0, 50)}...`);
+				return text;
+			}
+		}
+	}
+
+	// 全体のページテキストから作品説明らしい部分を探す
+	const pageText = $("body").text();
+
+	// ページ内で「あらすじ」「ストーリー」「内容」などのキーワード後の文章を探す
+	const storyPatterns = [
+		/あらすじ[:\s]*([^。]+。)/,
+		/ストーリー[:\s]*([^。]+。)/,
+		/内容[:\s]*([^。]+。)/,
+		/概要[:\s]*([^。]+。)/,
+	];
+
+	for (const pattern of storyPatterns) {
+		const match = pageText.match(pattern);
+		if (match?.[1] && match[1].trim().length > 20) {
+			logger.debug(`作品説明をパターンマッチで抽出: ${match[1].substring(0, 50)}...`);
+			return match[1].trim();
+		}
+	}
+
+	logger.debug("作品説明を抽出できませんでした");
+	return "";
 }
 
 /**
@@ -866,10 +920,19 @@ export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
 				logger.debug(`音楽抽出: ${basicInfo.music.length}名`);
 				break;
 
-			case "年齢指定":
-				basicInfo.ageRating = $cell.find("span").attr("title") || $cell.text().trim();
-				logger.debug(`年齢指定抽出: ${basicInfo.ageRating}`);
+			case "年齢指定": {
+				// 複数の方法で年齢指定を抽出
+				const spanTitle = $cell.find("span").attr("title");
+				const spanText = $cell.find("span").text().trim();
+				const cellText = $cell.text().trim();
+				const imageAlt = $cell.find("img").attr("alt");
+
+				basicInfo.ageRating = spanTitle || spanText || imageAlt || cellText || "";
+				logger.debug(
+					`年齢指定抽出: ${basicInfo.ageRating} (span title: ${spanTitle}, span text: ${spanText}, img alt: ${imageAlt}, cell text: ${cellText})`,
+				);
 				break;
+			}
 
 			case "作品形式":
 				basicInfo.workFormat = $cell.find("span").attr("title") || $cell.text().trim();
