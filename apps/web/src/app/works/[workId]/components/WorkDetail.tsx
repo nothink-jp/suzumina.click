@@ -66,7 +66,12 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 
 	// 価格表示の計算
 	const currentPrice = work.price.current;
-	const originalPrice = work.price.original;
+	// 元の価格を取得、もしくは割引率から計算
+	const originalPrice =
+		work.price.original ||
+		(work.price.discount && work.price.discount > 0
+			? Math.round(currentPrice / (1 - work.price.discount / 100))
+			: undefined);
 	const isOnSale = work.price.discount && work.price.discount > 0;
 
 	// 日付フォーマット
