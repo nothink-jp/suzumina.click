@@ -81,22 +81,6 @@ export const SampleImageSchema = z.object({
 });
 
 /**
- * 収録内容（トラック情報）のZodスキーマ定義
- */
-export const TrackInfoSchema = z.object({
-	/** トラック番号 */
-	trackNumber: z.number().int().positive(),
-	/** トラック名 */
-	title: z.string(),
-	/** 再生時間（秒） */
-	duration: z.number().int().nonnegative().optional(),
-	/** 再生時間テキスト（例: "5分3秒"） */
-	durationText: z.string().optional(),
-	/** トラック説明 */
-	description: z.string().optional(),
-});
-
-/**
  * ファイル情報のZodスキーマ定義
  */
 export const FileInfoSchema = z.object({
@@ -402,8 +386,6 @@ export const DLsiteWorkBaseSchema = z.object({
 	totalDownloadCount: z.number().int().nonnegative().optional(),
 	/** ランキング履歴 */
 	rankingHistory: z.array(RankingInfoSchema).optional(),
-	/** 収録内容 */
-	trackInfo: z.array(TrackInfoSchema).optional(),
 	/** ファイル情報 */
 	fileInfo: FileInfoSchema.optional(),
 	/** 基本作品情報（work_outlineテーブルから抽出） */
@@ -504,7 +486,6 @@ export type PriceInfo = z.infer<typeof PriceInfoSchema>;
 export type RatingInfo = z.infer<typeof RatingInfoSchema>;
 export type RatingDetail = z.infer<typeof RatingDetailSchema>;
 export type SampleImage = z.infer<typeof SampleImageSchema>;
-export type TrackInfo = z.infer<typeof TrackInfoSchema>;
 export type FileInfo = z.infer<typeof FileInfoSchema>;
 export type BasicWorkInfo = z.infer<typeof BasicWorkInfoSchema>;
 export type DetailedCreatorInfo = z.infer<typeof DetailedCreatorInfoSchema>;

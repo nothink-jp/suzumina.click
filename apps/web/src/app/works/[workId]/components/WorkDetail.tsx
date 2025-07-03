@@ -607,8 +607,8 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 						<TabsContent value="specifications">
 							<Card>
 								<CardHeader>
-									<CardTitle>技術仕様・収録内容</CardTitle>
-									<CardDescription>ファイル情報・トラック詳細・技術仕様</CardDescription>
+									<CardTitle>技術仕様・ファイル情報</CardTitle>
+									<CardDescription>ファイル情報・技術仕様・特典内容</CardDescription>
 								</CardHeader>
 								<CardContent className="space-y-6">
 									{/* 基本技術仕様 */}
@@ -630,45 +630,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 												</div>
 											)}
 										</div>
-									</div>
-
-									{/* トラック情報 */}
-									<div className="space-y-4">
-										<h4 className="font-medium text-gray-900">収録内容</h4>
-										{work.trackInfo && work.trackInfo.length > 0 ? (
-											<div className="space-y-3">
-												{work.trackInfo.map((track) => (
-													<div key={track.trackNumber} className="bg-gray-50 rounded-lg p-4">
-														<div className="flex items-start justify-between">
-															<div className="flex-1">
-																<div className="flex items-center gap-2 mb-2">
-																	<span className="text-sm font-medium text-gray-700 bg-white px-2 py-1 rounded">
-																		トラック{track.trackNumber}
-																	</span>
-																	{track.durationText && (
-																		<span className="text-sm text-gray-600 flex items-center gap-1">
-																			<Clock className="h-3 w-3" />
-																			{track.durationText}
-																		</span>
-																	)}
-																</div>
-																<h5 className="font-medium text-gray-900 mb-1">{track.title}</h5>
-																{track.description && (
-																	<p className="text-sm text-gray-700 whitespace-pre-line">
-																		{track.description}
-																	</p>
-																)}
-															</div>
-														</div>
-													</div>
-												))}
-											</div>
-										) : (
-											<div className="text-center text-gray-500 py-6">
-												<Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-												<p className="text-sm">トラック情報が見つかりませんでした</p>
-											</div>
-										)}
 									</div>
 
 									{/* ファイル情報 */}
