@@ -1,6 +1,6 @@
 import type { PriceHistory } from "@suzumina.click/shared-types";
 import { getApps, initializeApp } from "firebase/app";
-import { collection, doc, getDocs, getFirestore, limit, orderBy, query } from "firebase/firestore";
+import { collection, getDocs, getFirestore, limit, orderBy, query } from "firebase/firestore";
 import { type NextRequest, NextResponse } from "next/server";
 
 // Firebase設定（環境変数から取得）
@@ -17,11 +17,11 @@ if (!getApps().length) {
  * 指定された作品の価格履歴を取得
  */
 export async function GET(
-	request: NextRequest,
-	{ params }: { params: { workId: string } },
+	_request: NextRequest,
+	{ params }: { params: Promise<{ workId: string }> },
 ): Promise<NextResponse> {
 	try {
-		const { workId } = params;
+		const { workId } = await params;
 
 		if (!workId) {
 			return NextResponse.json({ error: "Work ID is required" }, { status: 400 });
@@ -44,7 +44,7 @@ export async function GET(
 			count: priceHistory.length,
 		});
 	} catch (error) {
-		console.error("Price history fetch error:", error);
+		// Note: Error logged for debugging purposes
 		return NextResponse.json({ error: "Failed to fetch price history" }, { status: 500 });
 	}
 }

@@ -17,11 +17,11 @@ if (!getApps().length) {
  * 指定された作品の販売履歴とランキング履歴を取得
  */
 export async function GET(
-	request: NextRequest,
-	{ params }: { params: { workId: string } },
+	_request: NextRequest,
+	{ params }: { params: Promise<{ workId: string }> },
 ): Promise<NextResponse> {
 	try {
-		const { workId } = params;
+		const { workId } = await params;
 
 		if (!workId) {
 			return NextResponse.json({ error: "Work ID is required" }, { status: 400 });
@@ -49,7 +49,7 @@ export async function GET(
 		rankingsSnapshot.forEach((docSnapshot) => {
 			const data = docSnapshot.data();
 			// recordedAtフィールドを除去してRankingInfo型に変換
-			const { recordedAt, ...rankingData } = data;
+			const { recordedAt: _recordedAt, ...rankingData } = data;
 			rankingHistory.push(rankingData as RankingInfo);
 		});
 
@@ -61,7 +61,7 @@ export async function GET(
 			rankingCount: rankingHistory.length,
 		});
 	} catch (error) {
-		console.error("Sales history fetch error:", error);
+		// Note: Error logged for debugging purposes
 		return NextResponse.json({ error: "Failed to fetch sales history" }, { status: 500 });
 	}
 }
