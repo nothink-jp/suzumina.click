@@ -310,10 +310,10 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 				{/* 左側: タブコンテンツ */}
 				<div className="lg:col-span-2">
 					<Tabs defaultValue="overview" className="w-full">
-						<TabsList className="grid w-full grid-cols-5">
+						<TabsList className="grid w-full grid-cols-4">
 							<TabsTrigger value="overview" className="flex items-center gap-2">
 								<FileText className="h-4 w-4" />
-								<span className="hidden sm:inline">概要</span>
+								<span className="hidden sm:inline">詳細情報</span>
 							</TabsTrigger>
 							<TabsTrigger value="characteristics" className="flex items-center gap-2">
 								<Star className="h-4 w-4" />
@@ -327,13 +327,9 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								<BarChart3 className="h-4 w-4" />
 								<span className="hidden sm:inline">販売推移</span>
 							</TabsTrigger>
-							<TabsTrigger value="specifications" className="flex items-center gap-2">
-								<Clock className="h-4 w-4" />
-								<span className="hidden sm:inline">仕様</span>
-							</TabsTrigger>
 						</TabsList>
 
-						{/* 概要タブ */}
+						{/* 詳細情報タブ（概要＋仕様統合） */}
 						<TabsContent value="overview" className="space-y-6">
 							{/* 作品説明 */}
 							{work.description && (
@@ -498,37 +494,145 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								</Card>
 							)}
 
-							{/* 基本統計 */}
+							{/* 技術仕様・ファイル情報 */}
 							<Card>
 								<CardHeader>
-									<CardTitle>基本情報</CardTitle>
+									<CardTitle>技術仕様・ファイル情報</CardTitle>
+									<CardDescription>ファイル情報・技術仕様・特典内容</CardDescription>
 								</CardHeader>
-								<CardContent>
-									<div className="grid grid-cols-2 gap-4">
-										{work.salesCount && (
-											<div className="flex items-center gap-2">
-												<TrendingUp className="h-5 w-5 text-muted-foreground" />
-												<div>
-													<div className="text-sm text-gray-700">販売数</div>
-													<div className="font-semibold text-gray-900">
-														{work.salesCount.toLocaleString()}
-													</div>
-												</div>
+								<CardContent className="space-y-6">
+									{/* 基本技術仕様 */}
+									<div className="space-y-4">
+										<h4 className="font-medium text-gray-900">基本仕様</h4>
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+											<div className="flex justify-between">
+												<span className="text-gray-700">作品ID:</span>
+												<span className="text-gray-900 font-mono">{work.productId}</span>
 											</div>
-										)}
-										{(work.registDate || work.basicInfo?.releaseDate) && (
-											<div className="flex items-center gap-2">
-												<Calendar className="h-5 w-5 text-muted-foreground" />
-												<div>
-													<div className="text-sm text-gray-700">発売日</div>
-													<div className="font-semibold text-gray-900">
+											<div className="flex justify-between">
+												<span className="text-gray-700">カテゴリ:</span>
+												<span className="text-gray-900">
+													{getWorkCategoryDisplayName(work.category)}
+												</span>
+											</div>
+											{work.ageRating && (
+												<div className="flex justify-between">
+													<span className="text-gray-700">年齢制限:</span>
+													<span className="text-gray-900">{work.ageRating}</span>
+												</div>
+											)}
+											{work.salesCount && (
+												<div className="flex justify-between">
+													<span className="text-gray-700">販売数:</span>
+													<span className="text-gray-900">
+														{work.salesCount.toLocaleString()}本
+													</span>
+												</div>
+											)}
+											{(work.registDate || work.basicInfo?.releaseDate) && (
+												<div className="flex justify-between">
+													<span className="text-gray-700">発売日:</span>
+													<span className="text-gray-900">
 														{work.basicInfo?.releaseDate ||
 															(work.registDate && formatDate(work.registDate))}
-													</div>
+													</span>
 												</div>
-											</div>
-										)}
+											)}
+										</div>
 									</div>
+
+									{/* ファイル情報 */}
+									{work.fileInfo && (
+										<div className="space-y-4">
+											<h4 className="font-medium text-gray-900">ファイル情報</h4>
+											<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+												{work.fileInfo.totalSizeText && (
+													<div className="flex justify-between">
+														<span className="text-gray-700">総容量:</span>
+														<span className="text-gray-900 font-mono">
+															{work.fileInfo.totalSizeText}
+														</span>
+													</div>
+												)}
+												{work.fileInfo.totalDurationText && (
+													<div className="flex justify-between">
+														<span className="text-gray-700">総再生時間:</span>
+														<span className="text-gray-900">{work.fileInfo.totalDurationText}</span>
+													</div>
+												)}
+												{work.fileInfo.formats && work.fileInfo.formats.length > 0 && (
+													<div className="md:col-span-2">
+														<div className="mb-2">
+															<span className="text-gray-700">ファイル形式:</span>
+														</div>
+														<div className="flex flex-wrap gap-2">
+															{work.fileInfo.formats.map((format) => (
+																<span
+																	key={format}
+																	className="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-mono"
+																>
+																	{format}
+																</span>
+															))}
+														</div>
+													</div>
+												)}
+												{work.fileInfo.additionalFiles &&
+													work.fileInfo.additionalFiles.length > 0 && (
+														<div className="md:col-span-2">
+															<div className="mb-2">
+																<span className="text-gray-700">付属ファイル:</span>
+															</div>
+															<div className="space-y-1">
+																{work.fileInfo.additionalFiles.map((file) => (
+																	<div key={file} className="text-gray-900 text-xs">
+																		• {file}
+																	</div>
+																))}
+															</div>
+														</div>
+													)}
+											</div>
+										</div>
+									)}
+
+									{/* 特典・おまけ情報 */}
+									{work.bonusContent && work.bonusContent.length > 0 && (
+										<div className="space-y-4">
+											<h4 className="font-medium text-gray-900">特典・おまけ</h4>
+											<div className="space-y-3">
+												{work.bonusContent.map((bonus, index) => (
+													<div
+														key={`${bonus.title}-${index}`}
+														className="bg-gray-50 rounded-lg p-4"
+													>
+														<div className="flex items-start gap-3">
+															<div className="flex-shrink-0">
+																<div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+																	<span className="text-primary font-bold text-sm">特</span>
+																</div>
+															</div>
+															<div className="flex-1">
+																<div className="flex items-center gap-2 mb-1">
+																	<h5 className="font-medium text-gray-900">{bonus.title}</h5>
+																	{bonus.type && (
+																		<span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
+																			{bonus.type}
+																		</span>
+																	)}
+																</div>
+																{bonus.description && (
+																	<p className="text-sm text-gray-700 whitespace-pre-line">
+																		{bonus.description}
+																	</p>
+																)}
+															</div>
+														</div>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
 								</CardContent>
 							</Card>
 						</TabsContent>
@@ -630,133 +734,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 											</div>
 										)}
 									</div>
-								</CardContent>
-							</Card>
-						</TabsContent>
-
-						{/* 仕様タブ */}
-						<TabsContent value="specifications">
-							<Card>
-								<CardHeader>
-									<CardTitle>技術仕様・ファイル情報</CardTitle>
-									<CardDescription>ファイル情報・技術仕様・特典内容</CardDescription>
-								</CardHeader>
-								<CardContent className="space-y-6">
-									{/* 基本技術仕様 */}
-									<div className="space-y-4">
-										<h4 className="font-medium text-gray-900">基本仕様</h4>
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-											<div className="flex justify-between">
-												<span className="text-gray-700">作品ID:</span>
-												<span className="text-gray-900 font-mono">{work.productId}</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-gray-700">カテゴリ:</span>
-												<span className="text-gray-900">
-													{getWorkCategoryDisplayName(work.category)}
-												</span>
-											</div>
-											{work.ageRating && (
-												<div className="flex justify-between">
-													<span className="text-gray-700">年齢制限:</span>
-													<span className="text-gray-900">{work.ageRating}</span>
-												</div>
-											)}
-										</div>
-									</div>
-
-									{/* ファイル情報 */}
-									{work.fileInfo && (
-										<div className="space-y-4">
-											<h4 className="font-medium text-gray-900">ファイル情報</h4>
-											<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-												{work.fileInfo.totalSizeText && (
-													<div className="flex justify-between">
-														<span className="text-gray-700">総容量:</span>
-														<span className="text-gray-900 font-mono">
-															{work.fileInfo.totalSizeText}
-														</span>
-													</div>
-												)}
-												{work.fileInfo.totalDurationText && (
-													<div className="flex justify-between">
-														<span className="text-gray-700">総再生時間:</span>
-														<span className="text-gray-900">{work.fileInfo.totalDurationText}</span>
-													</div>
-												)}
-												{work.fileInfo.formats && work.fileInfo.formats.length > 0 && (
-													<div className="md:col-span-2">
-														<div className="mb-2">
-															<span className="text-gray-700">ファイル形式:</span>
-														</div>
-														<div className="flex flex-wrap gap-2">
-															{work.fileInfo.formats.map((format) => (
-																<span
-																	key={format}
-																	className="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-mono"
-																>
-																	{format}
-																</span>
-															))}
-														</div>
-													</div>
-												)}
-												{work.fileInfo.additionalFiles &&
-													work.fileInfo.additionalFiles.length > 0 && (
-														<div className="md:col-span-2">
-															<div className="mb-2">
-																<span className="text-gray-700">付属ファイル:</span>
-															</div>
-															<div className="space-y-1">
-																{work.fileInfo.additionalFiles.map((file) => (
-																	<div key={file} className="text-gray-900 text-xs">
-																		• {file}
-																	</div>
-																))}
-															</div>
-														</div>
-													)}
-											</div>
-										</div>
-									)}
-
-									{/* 特典・おまけ情報 */}
-									{work.bonusContent && work.bonusContent.length > 0 && (
-										<div className="space-y-4">
-											<h4 className="font-medium text-gray-900">特典・おまけ</h4>
-											<div className="space-y-3">
-												{work.bonusContent.map((bonus, index) => (
-													<div
-														key={`${bonus.title}-${index}`}
-														className="bg-gray-50 rounded-lg p-4"
-													>
-														<div className="flex items-start gap-3">
-															<div className="flex-shrink-0">
-																<div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-																	<span className="text-primary font-bold text-sm">特</span>
-																</div>
-															</div>
-															<div className="flex-1">
-																<div className="flex items-center gap-2 mb-1">
-																	<h5 className="font-medium text-gray-900">{bonus.title}</h5>
-																	{bonus.type && (
-																		<span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
-																			{bonus.type}
-																		</span>
-																	)}
-																</div>
-																{bonus.description && (
-																	<p className="text-sm text-gray-700 whitespace-pre-line">
-																		{bonus.description}
-																	</p>
-																)}
-															</div>
-														</div>
-													</div>
-												))}
-											</div>
-										</div>
-									)}
 								</CardContent>
 							</Card>
 						</TabsContent>
@@ -976,28 +953,30 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 						</Card>
 					)}
 
-					{/* クイック仕様 */}
+					{/* クイック情報 */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
 								<FileText className="h-5 w-5" />
-								クイック仕様
+								クイック情報
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<div className="space-y-3 text-sm">
 								<div className="flex justify-between items-center py-2 border-b border-gray-100">
-									<span className="text-gray-700">作品ID</span>
-									<span className="text-gray-900 font-mono text-xs">{work.productId}</span>
-								</div>
-								<div className="flex justify-between items-center py-2 border-b border-gray-100">
 									<span className="text-gray-700">カテゴリ</span>
 									<span className="text-gray-900">{getWorkCategoryDisplayName(work.category)}</span>
 								</div>
 								{work.ageRating && (
-									<div className="flex justify-between items-center py-2">
+									<div className="flex justify-between items-center py-2 border-b border-gray-100">
 										<span className="text-gray-700">年齢制限</span>
 										<Badge variant="secondary">{work.ageRating}</Badge>
+									</div>
+								)}
+								{work.salesCount && (
+									<div className="flex justify-between items-center py-2">
+										<span className="text-gray-700">販売数</span>
+										<span className="text-gray-900">{work.salesCount.toLocaleString()}本</span>
 									</div>
 								)}
 							</div>
