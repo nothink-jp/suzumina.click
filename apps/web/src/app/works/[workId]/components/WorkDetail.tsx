@@ -134,11 +134,11 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
 					{/* 作品サムネイル */}
 					<div className="space-y-4">
-						<div className="relative">
+						<div className="relative aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
 							<ThumbnailImage
 								src={work.highResImageUrl || work.thumbnailUrl}
 								alt={work.title}
-								className="w-full h-80 object-cover rounded-lg"
+								className="w-full h-full object-contain"
 							/>
 							{isOnSale && (
 								<div className="absolute top-2 left-2">
