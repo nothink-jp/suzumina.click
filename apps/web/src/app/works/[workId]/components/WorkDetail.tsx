@@ -347,162 +347,15 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								</Card>
 							)}
 
-							{/* 基本作品情報（詳細パーサーから取得） */}
-							{work.basicInfo && (
-								<Card>
-									<CardHeader>
-										<CardTitle>詳細作品情報</CardTitle>
-										<CardDescription>作品の詳細情報・制作陣・ファイル仕様</CardDescription>
-									</CardHeader>
-									<CardContent>
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-											{/* 発売・形式情報 */}
-											<div className="space-y-4">
-												{work.basicInfo.releaseDate && (
-													<div className="flex items-center gap-3">
-														<Calendar className="h-5 w-5 text-muted-foreground" />
-														<div>
-															<div className="text-sm text-gray-700">販売日</div>
-															<div className="font-semibold text-gray-900">
-																{work.basicInfo.releaseDate}
-															</div>
-														</div>
-													</div>
-												)}
-												{work.basicInfo.seriesName && (
-													<div className="flex items-center gap-3">
-														<FileText className="h-5 w-5 text-muted-foreground" />
-														<div>
-															<div className="text-sm text-gray-700">シリーズ名</div>
-															<div className="font-semibold text-gray-900">
-																{work.basicInfo.seriesName}
-															</div>
-														</div>
-													</div>
-												)}
-												{work.basicInfo.workFormat && (
-													<div className="flex items-center gap-3">
-														<FileText className="h-5 w-5 text-muted-foreground" />
-														<div>
-															<div className="text-sm text-gray-700">作品形式</div>
-															<div className="font-semibold text-gray-900">
-																{work.basicInfo.workFormat}
-															</div>
-														</div>
-													</div>
-												)}
-												{work.basicInfo.fileFormat && (
-													<div className="flex items-center gap-3">
-														<FileText className="h-5 w-5 text-muted-foreground" />
-														<div>
-															<div className="text-sm text-gray-700">ファイル形式</div>
-															<div className="font-semibold text-gray-900">
-																{work.basicInfo.fileFormat}
-															</div>
-														</div>
-													</div>
-												)}
-												{work.basicInfo.fileSize && (
-													<div className="flex items-center gap-3">
-														<Clock className="h-5 w-5 text-muted-foreground" />
-														<div>
-															<div className="text-sm text-gray-700">ファイル容量</div>
-															<div className="font-semibold text-gray-900">
-																{work.basicInfo.fileSize}
-															</div>
-														</div>
-													</div>
-												)}
-												{work.basicInfo.ageRating && (
-													<div className="flex items-center gap-3">
-														<FileText className="h-5 w-5 text-muted-foreground" />
-														<div>
-															<div className="text-sm text-gray-700">年齢指定</div>
-															<div className="font-semibold text-gray-900">
-																{work.basicInfo.ageRating}
-															</div>
-														</div>
-													</div>
-												)}
-											</div>
-
-											{/* クリエイター情報 */}
-											<div className="space-y-4">
-												{work.basicInfo.author && work.basicInfo.author.length > 0 && (
-													<div>
-														<div className="text-sm text-gray-700 mb-2">作者</div>
-														<div className="flex flex-wrap gap-2">
-															{work.basicInfo.author.map((author) => (
-																<Badge key={author} variant="secondary" className="text-xs">
-																	{author}
-																</Badge>
-															))}
-														</div>
-													</div>
-												)}
-												{work.basicInfo.voiceActors && work.basicInfo.voiceActors.length > 0 && (
-													<div>
-														<div className="text-sm text-gray-700 mb-2">声優</div>
-														<div className="flex flex-wrap gap-2">
-															{work.basicInfo.voiceActors.map((actor) => (
-																<Badge key={actor} variant="secondary" className="text-xs">
-																	{actor}
-																</Badge>
-															))}
-														</div>
-													</div>
-												)}
-												{work.basicInfo.scenario && work.basicInfo.scenario.length > 0 && (
-													<div>
-														<div className="text-sm text-gray-700 mb-2">シナリオ</div>
-														<div className="flex flex-wrap gap-2">
-															{work.basicInfo.scenario.map((scenario) => (
-																<Badge key={scenario} variant="secondary" className="text-xs">
-																	{scenario}
-																</Badge>
-															))}
-														</div>
-													</div>
-												)}
-												{work.basicInfo.illustration && work.basicInfo.illustration.length > 0 && (
-													<div>
-														<div className="text-sm text-gray-700 mb-2">イラスト</div>
-														<div className="flex flex-wrap gap-2">
-															{work.basicInfo.illustration.map((artist) => (
-																<Badge key={artist} variant="secondary" className="text-xs">
-																	{artist}
-																</Badge>
-															))}
-														</div>
-													</div>
-												)}
-												{work.basicInfo.music && work.basicInfo.music.length > 0 && (
-													<div>
-														<div className="text-sm text-gray-700 mb-2">音楽</div>
-														<div className="flex flex-wrap gap-2">
-															{work.basicInfo.music.map((musician) => (
-																<Badge key={musician} variant="secondary" className="text-xs">
-																	{musician}
-																</Badge>
-															))}
-														</div>
-													</div>
-												)}
-											</div>
-										</div>
-									</CardContent>
-								</Card>
-							)}
-
-							{/* 技術仕様・ファイル情報 */}
+							{/* 作品基本情報 */}
 							<Card>
 								<CardHeader>
-									<CardTitle>技術仕様・ファイル情報</CardTitle>
-									<CardDescription>ファイル情報・技術仕様・特典内容</CardDescription>
+									<CardTitle>作品基本情報</CardTitle>
+									<CardDescription>作品の基本情報・販売情報・制作陣</CardDescription>
 								</CardHeader>
 								<CardContent>
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-										{/* 基本技術仕様 */}
+										{/* 基本情報 */}
 										<div className="space-y-4">
 											<div className="flex items-center gap-3">
 												<FileText className="h-5 w-5 text-muted-foreground" />
@@ -522,12 +375,37 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												</div>
 											</div>
-											{work.ageRating && (
+											{(work.basicInfo?.releaseDate || work.registDate) && (
+												<div className="flex items-center gap-3">
+													<Calendar className="h-5 w-5 text-muted-foreground" />
+													<div>
+														<div className="text-sm text-gray-700">販売日</div>
+														<div className="font-semibold text-gray-900">
+															{work.basicInfo?.releaseDate ||
+																(work.registDate && formatDate(work.registDate))}
+														</div>
+													</div>
+												</div>
+											)}
+											{work.basicInfo?.seriesName && (
 												<div className="flex items-center gap-3">
 													<FileText className="h-5 w-5 text-muted-foreground" />
 													<div>
-														<div className="text-sm text-gray-700">年齢制限</div>
-														<div className="font-semibold text-gray-900">{work.ageRating}</div>
+														<div className="text-sm text-gray-700">シリーズ名</div>
+														<div className="font-semibold text-gray-900">
+															{work.basicInfo.seriesName}
+														</div>
+													</div>
+												</div>
+											)}
+											{(work.basicInfo?.ageRating || work.ageRating) && (
+												<div className="flex items-center gap-3">
+													<FileText className="h-5 w-5 text-muted-foreground" />
+													<div>
+														<div className="text-sm text-gray-700">年齢指定</div>
+														<div className="font-semibold text-gray-900">
+															{work.basicInfo?.ageRating || work.ageRating}
+														</div>
 													</div>
 												</div>
 											)}
@@ -542,70 +420,146 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												</div>
 											)}
-											{(work.registDate || work.basicInfo?.releaseDate) && (
+										</div>
+
+										{/* 制作陣情報 */}
+										<div className="space-y-4">
+											{work.basicInfo?.author && work.basicInfo.author.length > 0 && (
+												<div>
+													<div className="text-sm text-gray-700 mb-2">作者</div>
+													<div className="flex flex-wrap gap-2">
+														{work.basicInfo.author.map((author) => (
+															<Badge key={author} variant="secondary" className="text-xs">
+																{author}
+															</Badge>
+														))}
+													</div>
+												</div>
+											)}
+											{work.basicInfo?.voiceActors && work.basicInfo.voiceActors.length > 0 && (
+												<div>
+													<div className="text-sm text-gray-700 mb-2">声優</div>
+													<div className="flex flex-wrap gap-2">
+														{work.basicInfo.voiceActors.map((actor) => (
+															<Badge key={actor} variant="secondary" className="text-xs">
+																{actor}
+															</Badge>
+														))}
+													</div>
+												</div>
+											)}
+											{work.basicInfo?.scenario && work.basicInfo.scenario.length > 0 && (
+												<div>
+													<div className="text-sm text-gray-700 mb-2">シナリオ</div>
+													<div className="flex flex-wrap gap-2">
+														{work.basicInfo.scenario.map((scenario) => (
+															<Badge key={scenario} variant="secondary" className="text-xs">
+																{scenario}
+															</Badge>
+														))}
+													</div>
+												</div>
+											)}
+											{work.basicInfo?.illustration && work.basicInfo.illustration.length > 0 && (
+												<div>
+													<div className="text-sm text-gray-700 mb-2">イラスト</div>
+													<div className="flex flex-wrap gap-2">
+														{work.basicInfo.illustration.map((artist) => (
+															<Badge key={artist} variant="secondary" className="text-xs">
+																{artist}
+															</Badge>
+														))}
+													</div>
+												</div>
+											)}
+											{work.basicInfo?.music && work.basicInfo.music.length > 0 && (
+												<div>
+													<div className="text-sm text-gray-700 mb-2">音楽</div>
+													<div className="flex flex-wrap gap-2">
+														{work.basicInfo.music.map((musician) => (
+															<Badge key={musician} variant="secondary" className="text-xs">
+																{musician}
+															</Badge>
+														))}
+													</div>
+												</div>
+											)}
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* ファイル・技術仕様 */}
+							<Card>
+								<CardHeader>
+									<CardTitle>ファイル・技術仕様</CardTitle>
+									<CardDescription>ファイル形式・容量・技術的な詳細情報</CardDescription>
+								</CardHeader>
+								<CardContent>
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+										{/* ファイル基本情報 */}
+										<div className="space-y-4">
+											{(work.basicInfo?.workFormat ||
+												(work.fileInfo?.formats && work.fileInfo.formats.length > 0) ||
+												work.basicInfo?.fileFormat) && (
+												<div>
+													<div className="text-sm text-gray-700 mb-2">ファイル形式</div>
+													<div className="flex flex-wrap gap-2">
+														{work.fileInfo?.formats?.map((format) => (
+															<Badge key={format} variant="secondary" className="text-xs">
+																{format}
+															</Badge>
+														)) ||
+															(work.basicInfo?.fileFormat && (
+																<Badge variant="secondary" className="text-xs">
+																	{work.basicInfo.fileFormat}
+																</Badge>
+															)) ||
+															(work.basicInfo?.workFormat && (
+																<Badge variant="secondary" className="text-xs">
+																	{work.basicInfo.workFormat}
+																</Badge>
+															))}
+													</div>
+												</div>
+											)}
+											{(work.fileInfo?.totalSizeText || work.basicInfo?.fileSize) && (
 												<div className="flex items-center gap-3">
-													<Calendar className="h-5 w-5 text-muted-foreground" />
+													<Clock className="h-5 w-5 text-muted-foreground" />
 													<div>
-														<div className="text-sm text-gray-700">発売日</div>
+														<div className="text-sm text-gray-700">総容量</div>
+														<div className="font-semibold text-gray-900 font-mono">
+															{work.fileInfo?.totalSizeText || work.basicInfo?.fileSize}
+														</div>
+													</div>
+												</div>
+											)}
+											{work.fileInfo?.totalDurationText && (
+												<div className="flex items-center gap-3">
+													<Clock className="h-5 w-5 text-muted-foreground" />
+													<div>
+														<div className="text-sm text-gray-700">総再生時間</div>
 														<div className="font-semibold text-gray-900">
-															{work.basicInfo?.releaseDate ||
-																(work.registDate && formatDate(work.registDate))}
+															{work.fileInfo.totalDurationText}
 														</div>
 													</div>
 												</div>
 											)}
 										</div>
 
-										{/* ファイル情報 */}
-										{work.fileInfo && (
+										{/* 付属ファイル */}
+										{work.fileInfo?.additionalFiles && work.fileInfo.additionalFiles.length > 0 && (
 											<div className="space-y-4">
-												{work.fileInfo.totalSizeText && (
-													<div className="flex items-center gap-3">
-														<Clock className="h-5 w-5 text-muted-foreground" />
-														<div>
-															<div className="text-sm text-gray-700">総容量</div>
-															<div className="font-semibold text-gray-900 font-mono">
-																{work.fileInfo.totalSizeText}
+												<div>
+													<div className="text-sm text-gray-700 mb-2">付属ファイル</div>
+													<div className="space-y-1">
+														{work.fileInfo.additionalFiles.map((file) => (
+															<div key={file} className="text-gray-900 text-xs">
+																• {file}
 															</div>
-														</div>
+														))}
 													</div>
-												)}
-												{work.fileInfo.totalDurationText && (
-													<div className="flex items-center gap-3">
-														<Clock className="h-5 w-5 text-muted-foreground" />
-														<div>
-															<div className="text-sm text-gray-700">総再生時間</div>
-															<div className="font-semibold text-gray-900">
-																{work.fileInfo.totalDurationText}
-															</div>
-														</div>
-													</div>
-												)}
-												{work.fileInfo.formats && work.fileInfo.formats.length > 0 && (
-													<div>
-														<div className="text-sm text-gray-700 mb-2">ファイル形式</div>
-														<div className="flex flex-wrap gap-2">
-															{work.fileInfo.formats.map((format) => (
-																<Badge key={format} variant="secondary" className="text-xs">
-																	{format}
-																</Badge>
-															))}
-														</div>
-													</div>
-												)}
-												{work.fileInfo.additionalFiles &&
-													work.fileInfo.additionalFiles.length > 0 && (
-														<div>
-															<div className="text-sm text-gray-700 mb-2">付属ファイル</div>
-															<div className="space-y-1">
-																{work.fileInfo.additionalFiles.map((file) => (
-																	<div key={file} className="text-gray-900 text-xs">
-																		• {file}
-																	</div>
-																))}
-															</div>
-														</div>
-													)}
+												</div>
 											</div>
 										)}
 									</div>
