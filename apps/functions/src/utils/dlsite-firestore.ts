@@ -5,13 +5,21 @@
  */
 
 import type { CollectionReference, Query, WriteBatch } from "@google-cloud/firestore";
-import type { DLsiteWorkBase, FirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
+import type {
+	DLsiteWorkBase,
+	FirestoreDLsiteWorkData,
+	PriceHistory,
+	RankingInfo,
+	SalesHistory,
+} from "@suzumina.click/shared-types";
 import { filterWorksForUpdate, mapToFirestoreData, validateWorkData } from "./dlsite-mapper";
 import firestore from "./firestore";
 import * as logger from "./logger";
 
 // Firestore関連の定数
 const DLSITE_WORKS_COLLECTION = "dlsiteWorks";
+const PRICE_HISTORY_COLLECTION = "priceHistory";
+const SALES_HISTORY_COLLECTION = "salesHistory";
 
 /**
  * 新規作品をバッチに追加
@@ -346,5 +354,191 @@ export async function getWorksStatistics(): Promise<{
 	} catch (error) {
 		logger.error("作品統計情報の取得に失敗:", { error });
 		throw new Error("作品統計情報の取得に失敗");
+	}
+}
+
+/**
+ * 価格履歴を記録
+ */
+export async function savePriceHistory(
+	productId: string,
+	priceData: {
+		currentPrice: number;
+		originalPrice?: number;
+		discountRate?: number;
+		campaignEndDate?: string;
+	},
+): Promise<void> {
+	try {
+		const now = new Date();
+		const timestamp = now.toISOString();
+
+		const priceHistory: PriceHistory = {
+			date: timestamp,
+			price: priceData.currentPrice,
+			originalPrice: priceData.originalPrice,
+			discountRate: priceData.discountRate,
+			saleType:
+				priceData.originalPrice && priceData.originalPrice > priceData.currentPrice
+					? "discount"
+					: undefined,
+		};
+
+		// priceHistory/{productId}/snapshots/{timestamp} の構造で保存
+		const docRef = firestore
+			.collection(PRICE_HISTORY_COLLECTION)
+			.doc(productId)
+			.collection("snapshots")
+			.doc(timestamp.replace(/[:.]/g, "-")); // Firestoreに適したID形式
+
+		await docRef.set(priceHistory);
+
+		logger.debug(`価格履歴を記録: ${productId} - ¥${priceData.currentPrice}`);
+	} catch (error) {
+		logger.error(`価格履歴の記録に失敗 (${productId}):`, { error });
+		// 価格履歴の記録失敗は作品データ保存の妨げにしない
+	}
+}
+
+/**
+ * 作品の価格履歴を取得
+ */
+export async function getPriceHistory(productId: string): Promise<PriceHistory[]> {
+	try {
+		const snapshot = await firestore
+			.collection(PRICE_HISTORY_COLLECTION)
+			.doc(productId)
+			.collection("snapshots")
+			.orderBy("date", "desc")
+			.limit(100) // 最新100件まで
+			.get();
+
+		const history: PriceHistory[] = [];
+		for (const doc of snapshot.docs) {
+			const data = doc.data() as PriceHistory;
+			history.push(data);
+		}
+
+		logger.debug(`価格履歴を取得: ${productId} - ${history.length}件`);
+		return history;
+	} catch (error) {
+		logger.error(`価格履歴の取得に失敗 (${productId}):`, { error });
+		return [];
+	}
+}
+
+/**
+ * 販売履歴を記録
+ */
+export async function saveSalesHistory(
+	productId: string,
+	salesData: {
+		salesCount?: number;
+		totalDownloadCount?: number;
+		rankingHistory?: RankingInfo[];
+	},
+): Promise<void> {
+	try {
+		const now = new Date();
+		const timestamp = now.toISOString();
+
+		// 販売数が存在する場合のみ記録
+		if (salesData.salesCount !== undefined || salesData.totalDownloadCount !== undefined) {
+			const salesHistory: SalesHistory = {
+				date: timestamp,
+				salesCount: salesData.salesCount || salesData.totalDownloadCount || 0,
+				dailyAverage: undefined, // 後で計算可能
+				rankingPosition: salesData.rankingHistory?.[0]?.rank, // 最新のランキング
+			};
+
+			// salesHistory/{productId}/snapshots/{timestamp} の構造で保存
+			const docRef = firestore
+				.collection(SALES_HISTORY_COLLECTION)
+				.doc(productId)
+				.collection("snapshots")
+				.doc(timestamp.replace(/[:.]/g, "-"));
+
+			await docRef.set(salesHistory);
+
+			logger.debug(`販売履歴を記録: ${productId} - ${salesHistory.salesCount}本`);
+		}
+
+		// ランキング履歴も個別に記録
+		if (salesData.rankingHistory && salesData.rankingHistory.length > 0) {
+			const rankingPromises = salesData.rankingHistory.map(async (ranking) => {
+				const rankingRef = firestore
+					.collection(SALES_HISTORY_COLLECTION)
+					.doc(productId)
+					.collection("rankings")
+					.doc(`${ranking.term}-${ranking.category}-${timestamp.replace(/[:.]/g, "-")}`);
+
+				await rankingRef.set({
+					...ranking,
+					recordedAt: timestamp,
+				});
+			});
+
+			await Promise.allSettled(rankingPromises);
+			logger.debug(`ランキング履歴を記録: ${productId} - ${salesData.rankingHistory.length}件`);
+		}
+	} catch (error) {
+		logger.error(`販売履歴の記録に失敗 (${productId}):`, { error });
+		// 販売履歴の記録失敗は作品データ保存の妨げにしない
+	}
+}
+
+/**
+ * 作品の販売履歴を取得
+ */
+export async function getSalesHistory(productId: string): Promise<SalesHistory[]> {
+	try {
+		const snapshot = await firestore
+			.collection(SALES_HISTORY_COLLECTION)
+			.doc(productId)
+			.collection("snapshots")
+			.orderBy("date", "desc")
+			.limit(100) // 最新100件まで
+			.get();
+
+		const history: SalesHistory[] = [];
+		for (const doc of snapshot.docs) {
+			const data = doc.data() as SalesHistory;
+			history.push(data);
+		}
+
+		logger.debug(`販売履歴を取得: ${productId} - ${history.length}件`);
+		return history;
+	} catch (error) {
+		logger.error(`販売履歴の取得に失敗 (${productId}):`, { error });
+		return [];
+	}
+}
+
+/**
+ * 作品のランキング履歴を取得
+ */
+export async function getRankingHistory(productId: string): Promise<RankingInfo[]> {
+	try {
+		const snapshot = await firestore
+			.collection(SALES_HISTORY_COLLECTION)
+			.doc(productId)
+			.collection("rankings")
+			.orderBy("recordedAt", "desc")
+			.limit(50) // 最新50件まで
+			.get();
+
+		const history: RankingInfo[] = [];
+		for (const doc of snapshot.docs) {
+			const data = doc.data();
+			// recordedAtフィールドを除去してRankingInfo型に変換
+			const { recordedAt, ...rankingData } = data;
+			history.push(rankingData as RankingInfo);
+		}
+
+		logger.debug(`ランキング履歴を取得: ${productId} - ${history.length}件`);
+		return history;
+	} catch (error) {
+		logger.error(`ランキング履歴の取得に失敗 (${productId}):`, { error });
+		return [];
 	}
 }

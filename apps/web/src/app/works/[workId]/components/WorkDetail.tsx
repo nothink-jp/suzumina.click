@@ -27,10 +27,9 @@ import {
 import Link from "next/link";
 import { useMemo } from "react";
 import CharacteristicEvaluation from "@/components/CharacteristicEvaluation";
-import PriceHistoryChart from "@/components/charts/PriceHistoryChart";
-import SalesHistoryChart from "@/components/charts/SalesHistoryChart";
+import PriceHistoryChart from "@/components/PriceHistoryChart";
+import SalesHistoryChart from "@/components/SalesHistoryChart";
 import ThumbnailImage from "@/components/ThumbnailImage";
-import { generateMockTimeSeriesData } from "@/utils/mock-chart-data";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
 
 interface WorkDetailProps {
@@ -39,11 +38,7 @@ interface WorkDetailProps {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex UI component with multiple tabs and conditional rendering
 export default function WorkDetail({ work }: WorkDetailProps) {
-	// モックデータを生成（作品IDに基づいて一意）
-	const timeSeriesData = useMemo(
-		() => generateMockTimeSeriesData(work.productId),
-		[work.productId],
-	);
+	// 注意: 時系列データは新しいPriceHistoryChartコンポーネントが直接APIから取得
 
 	// モック特性評価データを生成（作品IDに基づいて一意）
 	const characteristicData = useMemo(
@@ -604,7 +599,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									<CardDescription>時系列での価格変動・セール履歴</CardDescription>
 								</CardHeader>
 								<CardContent>
-									<PriceHistoryChart data={timeSeriesData.priceHistory} />
+									<PriceHistoryChart workId={work.productId} />
 
 									{/* 価格統計情報 */}
 									<div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
@@ -643,11 +638,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									<CardDescription>時系列での販売数・ランキング推移</CardDescription>
 								</CardHeader>
 								<CardContent>
-									<SalesHistoryChart
-										salesData={timeSeriesData.salesHistory}
-										rankingData={timeSeriesData.rankingHistory}
-										type="combined"
-									/>
+									<SalesHistoryChart workId={work.productId} />
 
 									{/* 販売統計情報 */}
 									<div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
@@ -663,17 +654,12 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 												<div className="text-lg font-semibold text-primary">#{latestRank}位</div>
 											</div>
 										)}
-										{timeSeriesData.salesHistory.length > 0 && (
-											<div className="text-center">
-												<div className="text-sm text-gray-600">最新期間販売数</div>
-												<div className="text-lg font-semibold text-gray-900">
-													+
-													{timeSeriesData.salesHistory[timeSeriesData.salesHistory.length - 1]
-														?.periodSales || 0}
-													本
-												</div>
+										<div className="text-center">
+											<div className="text-sm text-gray-600">カテゴリ</div>
+											<div className="text-lg font-semibold text-gray-900">
+												{getWorkCategoryDisplayName(work.category)}
 											</div>
-										)}
+										</div>
 									</div>
 								</CardContent>
 							</Card>

@@ -303,6 +303,27 @@ export function extractFileInfo($: cheerio.CheerioAPI): FileInfo {
 }
 
 /**
+ * クリエイター名のテキストを正しく分割する
+ * DLsiteでは「柚木つばめ / 橘きの / おおきなこびと」のようにスラッシュ区切りで記載される
+ */
+export function parseCreatorNames(text: string): string[] {
+	if (!text || !text.trim()) return [];
+
+	// スラッシュ、カンマ、改行で分割
+	const names = text
+		.split(/[/、,\n]+/)
+		.map((name) => name.trim())
+		.filter((name) => name && name.length > 1 && name.length < 50); // 妥当な長さの名前のみ
+
+	// デバッグログで分割結果を確認
+	if (names.length > 1) {
+		logger.debug(`クリエイター名分割: "${text}" → [${names.join(", ")}]`);
+	}
+
+	return names;
+}
+
+/**
  * 詳細クリエイター情報を抽出
  * @returns 統合されたクリエイター情報（メインフィールド用 + レガシーother）
  */
@@ -331,10 +352,10 @@ export function extractDetailedCreatorInfo($: cheerio.CheerioAPI): {
 
 		if (!contentText) return;
 
-		const names = contentText
-			.split(/[、,\n]+/)
-			.map((name) => name.trim())
-			.filter((name) => name && name.length > 1);
+		// スラッシュ区切りのクリエイター名を正しく分割
+		const names = parseCreatorNames(contentText);
+
+		if (names.length === 0) return;
 
 		// 声優（CV）
 		if (/声優|CV|ボイス|出演/.test(headerText)) {
@@ -1028,45 +1049,72 @@ export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
 				logger.debug(`シリーズ名抽出: ${basicInfo.seriesName}`);
 				break;
 
-			case "作者":
+			case "作者": {
+				// リンクテキストとセル全体のテキストの両方をチェック
+				const linkNames: string[] = [];
 				$cell.find("a").each((_i, link) => {
 					const name = $(link).text().trim();
-					if (name) basicInfo.author.push(name);
+					if (name) linkNames.push(name);
 				});
+
+				// リンクが見つからない場合はセル全体のテキストを分割
+				const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
+				basicInfo.author.push(...names);
 				logger.debug(`作者抽出: ${basicInfo.author.length}名`);
 				break;
+			}
 
-			case "シナリオ":
+			case "シナリオ": {
+				const linkNames: string[] = [];
 				$cell.find("a").each((_i, link) => {
 					const name = $(link).text().trim();
-					if (name) basicInfo.scenario.push(name);
+					if (name) linkNames.push(name);
 				});
+
+				const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
+				basicInfo.scenario.push(...names);
 				logger.debug(`シナリオ抽出: ${basicInfo.scenario.length}名`);
 				break;
+			}
 
-			case "イラスト":
+			case "イラスト": {
+				const linkNames: string[] = [];
 				$cell.find("a").each((_i, link) => {
 					const name = $(link).text().trim();
-					if (name) basicInfo.illustration.push(name);
+					if (name) linkNames.push(name);
 				});
+
+				const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
+				basicInfo.illustration.push(...names);
 				logger.debug(`イラスト抽出: ${basicInfo.illustration.length}名`);
 				break;
+			}
 
-			case "声優":
+			case "声優": {
+				const linkNames: string[] = [];
 				$cell.find("a").each((_i, link) => {
 					const name = $(link).text().trim();
-					if (name) basicInfo.voiceActors.push(name);
+					if (name) linkNames.push(name);
 				});
+
+				const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
+				basicInfo.voiceActors.push(...names);
 				logger.debug(`声優抽出: ${basicInfo.voiceActors.length}名`);
 				break;
+			}
 
-			case "音楽":
+			case "音楽": {
+				const linkNames: string[] = [];
 				$cell.find("a").each((_i, link) => {
 					const name = $(link).text().trim();
-					if (name) basicInfo.music.push(name);
+					if (name) linkNames.push(name);
 				});
+
+				const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
+				basicInfo.music.push(...names);
 				logger.debug(`音楽抽出: ${basicInfo.music.length}名`);
 				break;
+			}
 
 			case "年齢指定": {
 				// 複数の方法で年齢指定を抽出

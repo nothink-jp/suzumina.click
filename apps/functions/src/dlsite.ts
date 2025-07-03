@@ -1,5 +1,10 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import { getExistingWorksMap, saveWorksToFirestore } from "./utils/dlsite-firestore";
+import {
+	getExistingWorksMap,
+	savePriceHistory,
+	saveSalesHistory,
+	saveWorksToFirestore,
+} from "./utils/dlsite-firestore";
 import { mapMultipleWorksWithDetailData, mapMultipleWorksWithInfo } from "./utils/dlsite-mapper";
 import { parseWorksFromHTML } from "./utils/dlsite-parser";
 import firestore, { Timestamp } from "./utils/firestore";
@@ -246,6 +251,42 @@ async function processSinglePage(
 	// 統合して保存
 	const allWorksData = [...newWorksData, ...existingWorksData];
 	await saveWorksToFirestore(allWorksData);
+
+	// 価格履歴を記録（並列実行）
+	const priceHistoryPromises = allWorksData.map(async (work) => {
+		if (work.price?.current !== undefined) {
+			await savePriceHistory(work.productId, {
+				currentPrice: work.price.current,
+				originalPrice: work.price.original,
+				discountRate: work.price.discount,
+			});
+		}
+	});
+
+	try {
+		await Promise.allSettled(priceHistoryPromises);
+		logger.info(`価格履歴記録完了: ${allWorksData.length}件`);
+	} catch (error) {
+		logger.warn("価格履歴記録で一部エラー:", { error });
+	}
+
+	// 販売履歴を記録（並列実行）
+	const salesHistoryPromises = allWorksData.map(async (work) => {
+		if (work.salesCount !== undefined || work.totalDownloadCount !== undefined) {
+			await saveSalesHistory(work.productId, {
+				salesCount: work.salesCount,
+				totalDownloadCount: work.totalDownloadCount,
+				rankingHistory: work.rankingHistory,
+			});
+		}
+	});
+
+	try {
+		await Promise.allSettled(salesHistoryPromises);
+		logger.info(`販売履歴記録完了: ${allWorksData.length}件`);
+	} catch (error) {
+		logger.warn("販売履歴記録で一部エラー:", { error });
+	}
 
 	const savedCount = allWorksData.length;
 	logger.info(`ページ ${currentPage}: ${savedCount}件の作品を保存しました`, {

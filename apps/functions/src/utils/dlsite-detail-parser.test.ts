@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import {
 	extractDetailedDescription,
 	extractHighResImageUrl,
+	parseCreatorNames,
 	parseWorkDetailFromHTML,
 } from "./dlsite-detail-parser";
 
@@ -206,5 +207,55 @@ describe("parseWorkDetailFromHTML（高解像度画像統合）", () => {
 		expect(result.detailedDescription).toBe(
 			"こちらは作品説明のみのテストケースです。詳細な内容が含まれています。",
 		);
+	});
+});
+
+describe("parseCreatorNames", () => {
+	it("スラッシュ区切りのクリエイター名を正しく分割する", () => {
+		const testCases = [
+			{
+				input: "柚木つばめ / 橘きの / おおきなこびと",
+				expected: ["柚木つばめ", "橘きの", "おおきなこびと"],
+			},
+			{
+				input: "陽向葵ゆか / 涼花みなせ / 来夢ふらん",
+				expected: ["陽向葵ゆか", "涼花みなせ", "来夢ふらん"],
+			},
+			{
+				input: "西矢沙広 / assault / 岸田ソラ",
+				expected: ["西矢沙広", "assault", "岸田ソラ"],
+			},
+		];
+
+		testCases.forEach(({ input, expected }) => {
+			const result = parseCreatorNames(input);
+			expect(result).toEqual(expected);
+		});
+	});
+
+	it("カンマ区切りのクリエイター名を正しく分割する", () => {
+		const result = parseCreatorNames("クリエイターA、クリエイターB、クリエイターC");
+		expect(result).toEqual(["クリエイターA", "クリエイターB", "クリエイターC"]);
+	});
+
+	it("単一のクリエイター名はそのまま返す", () => {
+		const result = parseCreatorNames("一真");
+		expect(result).toEqual(["一真"]);
+	});
+
+	it("空文字列や無効な文字列は空配列を返す", () => {
+		expect(parseCreatorNames("")).toEqual([]);
+		expect(parseCreatorNames("   ")).toEqual([]);
+		expect(parseCreatorNames("a")).toEqual([]); // 短すぎる名前
+	});
+
+	it("混合区切り文字（スラッシュとカンマ）を正しく処理する", () => {
+		const result = parseCreatorNames("柚木つばめ / 橘きの、おおきなこびと");
+		expect(result).toEqual(["柚木つばめ", "橘きの", "おおきなこびと"]);
+	});
+
+	it("前後の空白を正しく削除する", () => {
+		const result = parseCreatorNames("  柚木つばめ  /  橘きの  /  おおきなこびと  ");
+		expect(result).toEqual(["柚木つばめ", "橘きの", "おおきなこびと"]);
 	});
 });

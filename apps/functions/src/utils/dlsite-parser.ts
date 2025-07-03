@@ -238,14 +238,43 @@ function extractProductInfo($item: unknown, index: number): BasicProductInfo | n
 
 	// 声優名の抽出（author要素から）- 複数対応
 	const authorElements = $itemElement.find(".author a");
-	const author =
-		authorElements.length > 0
-			? authorElements
-					// biome-ignore lint/suspicious/noExplicitAny: cheerio element mapping
-					.map((_: any, el: any) => cheerio.load("")(el).text().trim())
-					.get()
-					.filter((name: string) => name)
-			: undefined;
+	let author: string[] | undefined;
+
+	if (authorElements.length > 0) {
+		// リンク要素から個別に抽出
+		const linkNames = authorElements
+			// biome-ignore lint/suspicious/noExplicitAny: cheerio element mapping
+			.map((_: any, el: any) => cheerio.load("")(el).text().trim())
+			.get()
+			.filter((name: string) => name);
+
+		// リンクテキストにスラッシュ区切りが含まれている場合は分割
+		const allNames: string[] = [];
+		for (const name of linkNames) {
+			if (name.includes("/")) {
+				// スラッシュ区切りの場合は分割
+				const splitNames = name
+					.split(/[/、,]+/)
+					.map((n: string) => n.trim())
+					.filter((n: string) => n && n.length > 1);
+				allNames.push(...splitNames);
+			} else {
+				allNames.push(name);
+			}
+		}
+
+		author = allNames.length > 0 ? allNames : undefined;
+	} else {
+		// リンク要素がない場合は.authorセクション全体のテキストをチェック
+		const authorSectionText = $itemElement.find(".author").text().trim();
+		if (authorSectionText) {
+			const splitNames = authorSectionText
+				.split(/[/、,]+/)
+				.map((n: string) => n.trim())
+				.filter((n: string) => n && n.length > 1 && n.length < 50);
+			author = splitNames.length > 0 ? splitNames : undefined;
+		}
+	}
 
 	// URLの抽出
 	const workUrl = href;
