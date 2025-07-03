@@ -229,7 +229,8 @@ export function convertToFrontendVideo(data: FirestoreVideoData): FrontendVideoD
 		lastFetchedAtISO: data.lastFetchedAt,
 		// publishedAtISO も必ず設定する（publishedAtから生成）
 		publishedAtISO: data.publishedAt,
-		liveBroadcastContent: data.videoType === "upcoming" ? "upcoming" : (data.liveBroadcastContent || "none"),
+		liveBroadcastContent:
+			data.videoType === "upcoming" ? "upcoming" : data.liveBroadcastContent || "none",
 		// 音声ボタン関連フィールドを追加（デフォルト値）
 		audioButtonCount: data.audioButtonCount || 0,
 		hasAudioButtons: data.hasAudioButtons || false,
@@ -257,7 +258,8 @@ export function convertToFrontendVideo(data: FirestoreVideoData): FrontendVideoD
 			},
 			lastFetchedAt: now,
 			lastFetchedAtISO: now,
-			liveBroadcastContent: data.videoType === "upcoming" ? "upcoming" : (data.liveBroadcastContent || "none"),
+			liveBroadcastContent:
+				data.videoType === "upcoming" ? "upcoming" : data.liveBroadcastContent || "none",
 			// 音声ボタン関連フィールドを追加
 			audioButtonCount: data.audioButtonCount || 0,
 			hasAudioButtons: data.hasAudioButtons || false,
