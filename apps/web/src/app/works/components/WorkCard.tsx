@@ -1,7 +1,7 @@
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Calendar, ExternalLink, Star, Tag, TrendingUp } from "lucide-react";
+import { Calendar, ExternalLink, Star, Tag, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import ThumbnailImage from "@/components/ThumbnailImage";
 
@@ -117,33 +117,74 @@ export default function WorkCard({ work, variant = "default", priority = false }
 					</a>
 					<p className="text-xs sm:text-sm text-muted-foreground mb-2">{work.circle}</p>
 
-					{/* タグ表示 */}
-					<ul className="flex flex-wrap gap-1 mb-2" aria-label="作品タグ">
-						{work.tags.slice(0, 3).map((tag) => (
-							<li key={tag}>
-								<Badge
-									variant="outline"
-									className="text-xs border text-muted-foreground flex items-center gap-1"
-								>
-									<Tag className="h-3 w-3" aria-hidden="true" />
-									{tag}
-								</Badge>
-							</li>
-						))}
+					{/* ジャンル・タグ表示 */}
+					<ul className="flex flex-wrap gap-1 mb-2" aria-label="作品ジャンル・タグ">
+						{(() => {
+							// 基本情報のジャンルを優先、次に既存のタグを表示（重複除去）
+							const genres = work.basicInfo?.genres || [];
+							const tags = work.tags || [];
+							const displayItems = [...genres];
+
+							// タグから重複しないものを追加
+							tags.forEach((tag) => {
+								if (!genres.includes(tag) && displayItems.length < 3) {
+									displayItems.push(tag);
+								}
+							});
+
+							return displayItems.slice(0, 3).map((item) => {
+								const isGenre = genres.includes(item);
+								return (
+									<li key={item}>
+										<Badge
+											variant="outline"
+											className={`text-xs border flex items-center gap-1 ${
+												isGenre
+													? "border-primary/20 text-primary bg-primary/5"
+													: "text-muted-foreground"
+											}`}
+										>
+											<Tag className="h-3 w-3" aria-hidden="true" />
+											{item}
+										</Badge>
+									</li>
+								);
+							});
+						})()}
 					</ul>
+
+					{/* 声優情報（簡潔表示） */}
+					{(() => {
+						const voiceActors = work.basicInfo?.voiceActors || work.author || [];
+						if (voiceActors.length === 0) return null;
+
+						return (
+							<div className="flex items-center gap-1 mb-2 text-xs">
+								<Users className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+								<span className="text-muted-foreground">CV:</span>
+								<span className="text-foreground font-medium line-clamp-1">
+									{voiceActors.slice(0, 2).join(", ")}
+									{voiceActors.length > 2 && " 他"}
+								</span>
+							</div>
+						);
+					})()}
 
 					{/* 発売日・販売数 */}
 					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-xs sm:text-sm mb-2">
 						<div className="flex items-center">
 							<Calendar className="h-4 w-4 text-muted-foreground mr-1" aria-hidden="true" />
-							<time
-								dateTime={work.registDate}
-								title={`発売日: ${work.registDate ? formatDate(work.registDate) : "不明"}`}
-							>
-								<span className="text-foreground">
-									{work.registDate ? formatDate(work.registDate) : "不明"}
-								</span>
-							</time>
+							{(() => {
+								// basicInfo.releaseDate を優先、次に registDate を使用
+								const releaseDate = work.basicInfo?.releaseDate || work.registDate;
+								const displayDate = releaseDate ? formatDate(releaseDate) : "不明";
+
+								return (
+									<time dateTime={releaseDate} title={`発売日: ${displayDate}`}>
+										<span className="text-foreground">{displayDate}</span>
+									</time>
+								);
+							})()}
 						</div>
 						{work.salesCount && (
 							<div className="flex items-center">

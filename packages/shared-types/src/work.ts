@@ -133,6 +133,38 @@ export const DetailedCreatorInfoSchema = z.object({
 });
 
 /**
+ * 基本作品情報のZodスキーマ定義（work_outlineテーブルから抽出）
+ */
+export const BasicWorkInfoSchema = z.object({
+	/** 販売日 */
+	releaseDate: z.string().optional(),
+	/** シリーズ名 */
+	seriesName: z.string().optional(),
+	/** 作者（複数） */
+	author: z.array(z.string()).default([]),
+	/** シナリオ担当者（複数） */
+	scenario: z.array(z.string()).default([]),
+	/** イラスト担当者（複数） */
+	illustration: z.array(z.string()).default([]),
+	/** 声優（複数） */
+	voiceActors: z.array(z.string()).default([]),
+	/** 音楽担当者（複数） */
+	music: z.array(z.string()).default([]),
+	/** 年齢指定 */
+	ageRating: z.string().optional(),
+	/** 作品形式 */
+	workFormat: z.string().optional(),
+	/** ファイル形式 */
+	fileFormat: z.string().optional(),
+	/** ジャンル（複数） - work_outlineテーブルから取得 */
+	genres: z.array(z.string()).default([]),
+	/** タグ（複数） - 作品詳細ページから取得（ジャンルと同じ可能性あり） */
+	detailTags: z.array(z.string()).default([]),
+	/** ファイル容量 */
+	fileSize: z.string().optional(),
+});
+
+/**
  * 特典情報のZodスキーマ定義
  */
 export const BonusContentSchema = z.object({
@@ -374,6 +406,8 @@ export const DLsiteWorkBaseSchema = z.object({
 	trackInfo: z.array(TrackInfoSchema).optional(),
 	/** ファイル情報 */
 	fileInfo: FileInfoSchema.optional(),
+	/** 基本作品情報（work_outlineテーブルから抽出） */
+	basicInfo: BasicWorkInfoSchema.optional(),
 	/** 詳細クリエイター情報 */
 	detailedCreators: DetailedCreatorInfoSchema.optional(),
 	/** 特典情報 */
@@ -472,6 +506,7 @@ export type RatingDetail = z.infer<typeof RatingDetailSchema>;
 export type SampleImage = z.infer<typeof SampleImageSchema>;
 export type TrackInfo = z.infer<typeof TrackInfoSchema>;
 export type FileInfo = z.infer<typeof FileInfoSchema>;
+export type BasicWorkInfo = z.infer<typeof BasicWorkInfoSchema>;
 export type DetailedCreatorInfo = z.infer<typeof DetailedCreatorInfoSchema>;
 export type BonusContent = z.infer<typeof BonusContentSchema>;
 export type PriceHistory = z.infer<typeof PriceHistorySchema>;

@@ -191,20 +191,72 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							</div>
 						)}
 
-						{/* タグ */}
-						<div className="space-y-2">
-							<div className="flex flex-wrap gap-2">
-								{work.tags.map((tag) => (
-									<Badge
-										key={tag}
-										variant="outline"
-										className="border text-foreground flex items-center gap-1"
-									>
-										<Tag className="h-3 w-3" />
-										{tag}
-									</Badge>
-								))}
-							</div>
+						{/* タグ・ジャンル */}
+						<div className="space-y-3">
+							{/* 基本情報のジャンル */}
+							{work.basicInfo?.genres && work.basicInfo.genres.length > 0 && (
+								<div>
+									<div className="text-sm font-medium text-gray-700 mb-2">ジャンル</div>
+									<div className="flex flex-wrap gap-2">
+										{work.basicInfo.genres.map((genre) => (
+											<Badge
+												key={genre}
+												variant="outline"
+												className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
+											>
+												<Tag className="h-3 w-3" />
+												{genre}
+											</Badge>
+										))}
+									</div>
+								</div>
+							)}
+
+							{/* 既存のタグ（基本情報のジャンルと重複しない場合） */}
+							{work.tags && work.tags.length > 0 && (
+								<div>
+									<div className="text-sm font-medium text-gray-700 mb-2">タグ</div>
+									<div className="flex flex-wrap gap-2">
+										{work.tags
+											.filter((tag) => !work.basicInfo?.genres?.includes(tag))
+											.map((tag) => (
+												<Badge
+													key={tag}
+													variant="outline"
+													className="border text-foreground flex items-center gap-1"
+												>
+													<Tag className="h-3 w-3" />
+													{tag}
+												</Badge>
+											))}
+									</div>
+								</div>
+							)}
+
+							{/* 詳細タグ（ジャンルやタグと重複しない場合） */}
+							{work.basicInfo?.detailTags && work.basicInfo.detailTags.length > 0 && (
+								<div>
+									<div className="text-sm font-medium text-gray-700 mb-2">詳細タグ</div>
+									<div className="flex flex-wrap gap-2">
+										{work.basicInfo.detailTags
+											.filter(
+												(detailTag) =>
+													!work.basicInfo?.genres?.includes(detailTag) &&
+													!work.tags?.includes(detailTag),
+											)
+											.map((detailTag) => (
+												<Badge
+													key={detailTag}
+													variant="outline"
+													className="border-secondary/20 text-secondary bg-secondary/5 flex items-center gap-1"
+												>
+													<Tag className="h-3 w-3" />
+													{detailTag}
+												</Badge>
+											))}
+									</div>
+								</div>
+							)}
 						</div>
 
 						{/* アクションボタン */}
@@ -279,6 +331,142 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								</Card>
 							)}
 
+							{/* 基本作品情報（詳細パーサーから取得） */}
+							{work.basicInfo && (
+								<Card>
+									<CardHeader>
+										<CardTitle>詳細作品情報</CardTitle>
+										<CardDescription>work_outlineテーブルから抽出された詳細情報</CardDescription>
+									</CardHeader>
+									<CardContent>
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+											{/* 発売・形式情報 */}
+											<div className="space-y-4">
+												{work.basicInfo.releaseDate && (
+													<div className="flex items-center gap-3">
+														<Calendar className="h-5 w-5 text-muted-foreground" />
+														<div>
+															<div className="text-sm text-gray-700">販売日</div>
+															<div className="font-semibold text-gray-900">
+																{work.basicInfo.releaseDate}
+															</div>
+														</div>
+													</div>
+												)}
+												{work.basicInfo.seriesName && (
+													<div className="flex items-center gap-3">
+														<FileText className="h-5 w-5 text-muted-foreground" />
+														<div>
+															<div className="text-sm text-gray-700">シリーズ名</div>
+															<div className="font-semibold text-gray-900">
+																{work.basicInfo.seriesName}
+															</div>
+														</div>
+													</div>
+												)}
+												{work.basicInfo.workFormat && (
+													<div className="flex items-center gap-3">
+														<FileText className="h-5 w-5 text-muted-foreground" />
+														<div>
+															<div className="text-sm text-gray-700">作品形式</div>
+															<div className="font-semibold text-gray-900">
+																{work.basicInfo.workFormat}
+															</div>
+														</div>
+													</div>
+												)}
+												{work.basicInfo.fileFormat && (
+													<div className="flex items-center gap-3">
+														<FileText className="h-5 w-5 text-muted-foreground" />
+														<div>
+															<div className="text-sm text-gray-700">ファイル形式</div>
+															<div className="font-semibold text-gray-900">
+																{work.basicInfo.fileFormat}
+															</div>
+														</div>
+													</div>
+												)}
+												{work.basicInfo.fileSize && (
+													<div className="flex items-center gap-3">
+														<Clock className="h-5 w-5 text-muted-foreground" />
+														<div>
+															<div className="text-sm text-gray-700">ファイル容量</div>
+															<div className="font-semibold text-gray-900">
+																{work.basicInfo.fileSize}
+															</div>
+														</div>
+													</div>
+												)}
+											</div>
+
+											{/* クリエイター情報 */}
+											<div className="space-y-4">
+												{work.basicInfo.author && work.basicInfo.author.length > 0 && (
+													<div>
+														<div className="text-sm text-gray-700 mb-2">作者</div>
+														<div className="flex flex-wrap gap-2">
+															{work.basicInfo.author.map((author) => (
+																<Badge key={author} variant="secondary" className="text-xs">
+																	{author}
+																</Badge>
+															))}
+														</div>
+													</div>
+												)}
+												{work.basicInfo.voiceActors && work.basicInfo.voiceActors.length > 0 && (
+													<div>
+														<div className="text-sm text-gray-700 mb-2">声優</div>
+														<div className="flex flex-wrap gap-2">
+															{work.basicInfo.voiceActors.map((actor) => (
+																<Badge key={actor} variant="secondary" className="text-xs">
+																	{actor}
+																</Badge>
+															))}
+														</div>
+													</div>
+												)}
+												{work.basicInfo.scenario && work.basicInfo.scenario.length > 0 && (
+													<div>
+														<div className="text-sm text-gray-700 mb-2">シナリオ</div>
+														<div className="flex flex-wrap gap-2">
+															{work.basicInfo.scenario.map((scenario) => (
+																<Badge key={scenario} variant="secondary" className="text-xs">
+																	{scenario}
+																</Badge>
+															))}
+														</div>
+													</div>
+												)}
+												{work.basicInfo.illustration && work.basicInfo.illustration.length > 0 && (
+													<div>
+														<div className="text-sm text-gray-700 mb-2">イラスト</div>
+														<div className="flex flex-wrap gap-2">
+															{work.basicInfo.illustration.map((artist) => (
+																<Badge key={artist} variant="secondary" className="text-xs">
+																	{artist}
+																</Badge>
+															))}
+														</div>
+													</div>
+												)}
+												{work.basicInfo.music && work.basicInfo.music.length > 0 && (
+													<div>
+														<div className="text-sm text-gray-700 mb-2">音楽</div>
+														<div className="flex flex-wrap gap-2">
+															{work.basicInfo.music.map((musician) => (
+																<Badge key={musician} variant="secondary" className="text-xs">
+																	{musician}
+																</Badge>
+															))}
+														</div>
+													</div>
+												)}
+											</div>
+										</div>
+									</CardContent>
+								</Card>
+							)}
+
 							{/* 基本統計 */}
 							<Card>
 								<CardHeader>
@@ -297,13 +485,14 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 												</div>
 											</div>
 										)}
-										{work.registDate && (
+										{(work.registDate || work.basicInfo?.releaseDate) && (
 											<div className="flex items-center gap-2">
 												<Calendar className="h-5 w-5 text-muted-foreground" />
 												<div>
 													<div className="text-sm text-gray-700">発売日</div>
 													<div className="font-semibold text-gray-900">
-														{formatDate(work.registDate)}
+														{work.basicInfo?.releaseDate ||
+															(work.registDate && formatDate(work.registDate))}
 													</div>
 												</div>
 											</div>
@@ -617,7 +806,13 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							(work.detailedCreators.music?.length ?? 0) > 0 ||
 							(work.detailedCreators.design?.length ?? 0) > 0 ||
 							Object.keys(work.detailedCreators.other ?? {}).length > 0)) ||
-						(work.author && work.author.length > 0)) && (
+						(work.author && work.author.length > 0) ||
+						(work.basicInfo &&
+							((work.basicInfo.author?.length ?? 0) > 0 ||
+								(work.basicInfo.voiceActors?.length ?? 0) > 0 ||
+								(work.basicInfo.scenario?.length ?? 0) > 0 ||
+								(work.basicInfo.illustration?.length ?? 0) > 0 ||
+								(work.basicInfo.music?.length ?? 0) > 0))) && (
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
@@ -627,13 +822,39 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							</CardHeader>
 							<CardContent>
 								<div className="space-y-4">
+									{/* 作者 */}
+									{work.basicInfo?.author && work.basicInfo.author.length > 0 && (
+										<div>
+											<h5 className="text-sm font-medium text-gray-700 mb-2">作者</h5>
+											<div className="space-y-2">
+												{work.basicInfo.author.map((author) => (
+													<div key={author} className="flex items-center gap-3">
+														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+															<span className="text-foreground font-bold text-xs">
+																{author.charAt(0)}
+															</span>
+														</div>
+														<span className="text-gray-900 text-sm">{author}</span>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+
 									{/* 声優 */}
 									{((work.detailedCreators?.voiceActors?.length ?? 0) > 0 ||
+										(work.basicInfo?.voiceActors?.length ?? 0) > 0 ||
 										(work.author?.length ?? 0) > 0) && (
 										<div>
 											<h5 className="text-sm font-medium text-gray-700 mb-2">声優（CV）</h5>
 											<div className="space-y-2">
-												{(work.detailedCreators?.voiceActors || work.author || []).map((actor) => (
+												{/* basicInfo.voiceActorsを優先、次にdetailedCreators、最後にauthor */}
+												{(
+													work.basicInfo?.voiceActors ||
+													work.detailedCreators?.voiceActors ||
+													work.author ||
+													[]
+												).map((actor) => (
 													<div key={actor} className="flex items-center gap-3">
 														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
 															<span className="text-foreground font-bold text-xs">
@@ -648,30 +869,38 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									)}
 
 									{/* シナリオ */}
-									{(work.detailedCreators?.scenario?.length ?? 0) > 0 && (
+									{((work.basicInfo?.scenario?.length ?? 0) > 0 ||
+										(work.detailedCreators?.scenario?.length ?? 0) > 0) && (
 										<div>
 											<h5 className="text-sm font-medium text-gray-700 mb-2">シナリオ</h5>
 											<div className="space-y-2">
-												{work.detailedCreators?.scenario?.map((creator) => (
-													<div key={creator} className="flex items-center gap-3">
-														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-															<span className="text-foreground font-bold text-xs">
-																{creator.charAt(0)}
-															</span>
+												{(work.basicInfo?.scenario || work.detailedCreators?.scenario || []).map(
+													(creator) => (
+														<div key={creator} className="flex items-center gap-3">
+															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																<span className="text-foreground font-bold text-xs">
+																	{creator.charAt(0)}
+																</span>
+															</div>
+															<span className="text-gray-900 text-sm">{creator}</span>
 														</div>
-														<span className="text-gray-900 text-sm">{creator}</span>
-													</div>
-												))}
+													),
+												)}
 											</div>
 										</div>
 									)}
 
 									{/* イラスト */}
-									{(work.detailedCreators?.illustration?.length ?? 0) > 0 && (
+									{((work.basicInfo?.illustration?.length ?? 0) > 0 ||
+										(work.detailedCreators?.illustration?.length ?? 0) > 0) && (
 										<div>
 											<h5 className="text-sm font-medium text-gray-700 mb-2">イラスト</h5>
 											<div className="space-y-2">
-												{work.detailedCreators?.illustration?.map((creator) => (
+												{(
+													work.basicInfo?.illustration ||
+													work.detailedCreators?.illustration ||
+													[]
+												).map((creator) => (
 													<div key={creator} className="flex items-center gap-3">
 														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
 															<span className="text-foreground font-bold text-xs">
@@ -686,20 +915,23 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									)}
 
 									{/* 音楽 */}
-									{(work.detailedCreators?.music?.length ?? 0) > 0 && (
+									{((work.basicInfo?.music?.length ?? 0) > 0 ||
+										(work.detailedCreators?.music?.length ?? 0) > 0) && (
 										<div>
 											<h5 className="text-sm font-medium text-gray-700 mb-2">音楽</h5>
 											<div className="space-y-2">
-												{work.detailedCreators?.music?.map((creator) => (
-													<div key={creator} className="flex items-center gap-3">
-														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-															<span className="text-foreground font-bold text-xs">
-																{creator.charAt(0)}
-															</span>
+												{(work.basicInfo?.music || work.detailedCreators?.music || []).map(
+													(creator) => (
+														<div key={creator} className="flex items-center gap-3">
+															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																<span className="text-foreground font-bold text-xs">
+																	{creator.charAt(0)}
+																</span>
+															</div>
+															<span className="text-gray-900 text-sm">{creator}</span>
 														</div>
-														<span className="text-gray-900 text-sm">{creator}</span>
-													</div>
-												))}
+													),
+												)}
 											</div>
 										</div>
 									)}

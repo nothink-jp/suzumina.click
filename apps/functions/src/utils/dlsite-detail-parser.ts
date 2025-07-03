@@ -14,9 +14,43 @@ import * as cheerio from "cheerio";
 import * as logger from "./logger";
 
 /**
+ * 基本作品情報（work_outlineテーブルから抽出）
+ */
+export interface BasicWorkInfo {
+	/** 販売日 */
+	releaseDate?: string;
+	/** シリーズ名 */
+	seriesName?: string;
+	/** 作者（複数） */
+	author: string[];
+	/** シナリオ担当者（複数） */
+	scenario: string[];
+	/** イラスト担当者（複数） */
+	illustration: string[];
+	/** 声優（複数） */
+	voiceActors: string[];
+	/** 音楽担当者（複数） */
+	music: string[];
+	/** 年齢指定 */
+	ageRating?: string;
+	/** 作品形式 */
+	workFormat?: string;
+	/** ファイル形式 */
+	fileFormat?: string;
+	/** ジャンル（複数） */
+	genres: string[];
+	/** 詳細タグ（複数） */
+	detailTags: string[];
+	/** ファイル容量 */
+	fileSize?: string;
+}
+
+/**
  * 詳細ページから抽出される拡張データ構造
  */
 export interface ExtendedWorkData {
+	/** 基本作品情報 */
+	basicInfo: BasicWorkInfo;
 	/** 収録内容（トラック情報） */
 	trackInfo: TrackInfo[];
 	/** ファイル情報 */
@@ -785,6 +819,169 @@ export function extractDetailedDescription($: cheerio.CheerioAPI): string {
 }
 
 /**
+ * 詳細ページからタグ情報を抽出
+ */
+function extractDetailTagsInfo($: cheerio.CheerioAPI, basicInfo: BasicWorkInfo): void {
+	// タグ情報を取得する可能性のあるセレクター
+	const tagSelectors = [
+		// DLsiteでよく使われるタグ表示エリア
+		".tag_list a",
+		".tag-list a",
+		"[data-tag] a",
+		".genre_list a",
+		".genre-list a",
+		// 作品詳細のタグエリア
+		".work_article .tag a",
+		".work_parts .tag a",
+		// より汎用的なパターン
+		"a[href*='/search/?keyword']",
+		"a[href*='tag=']",
+		"a[href*='genre=']",
+	];
+
+	for (const selector of tagSelectors) {
+		$(selector).each((_index, element) => {
+			const $tag = $(element);
+			const tagText = $tag.text().trim();
+
+			// 空でない、ある程度の文字数のタグのみ採用
+			if (tagText && tagText.length > 0 && tagText.length < 50) {
+				// 重複チェック（ジャンルと同じものは除外）
+				if (!basicInfo.genres.includes(tagText) && !basicInfo.detailTags.includes(tagText)) {
+					basicInfo.detailTags.push(tagText);
+				}
+			}
+		});
+	}
+
+	// より一般的なタグパターンも探す
+	$("*").each((_index, element) => {
+		const $el = $(element);
+		const className = $el.attr("class") || "";
+		const text = $el.text().trim();
+
+		// "tag"という文字列を含むクラス名で、短いテキストを持つ要素
+		if (/tag/i.test(className) && text.length > 0 && text.length < 30) {
+			if (!basicInfo.genres.includes(text) && !basicInfo.detailTags.includes(text)) {
+				basicInfo.detailTags.push(text);
+			}
+		}
+	});
+
+	logger.debug(`詳細タグ抽出: ${basicInfo.detailTags.length}件`);
+}
+
+/**
+ * 基本作品情報を抽出（work_outlineテーブルから）
+ */
+export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
+	const basicInfo: BasicWorkInfo = {
+		author: [],
+		scenario: [],
+		illustration: [],
+		voiceActors: [],
+		music: [],
+		genres: [],
+		detailTags: [],
+	};
+
+	// work_outlineテーブル内の情報を抽出
+	$("#work_outline tr").each((_index, element) => {
+		const $row = $(element);
+		const headerText = $row.find("th").text().trim();
+		const $cell = $row.find("td");
+
+		switch (headerText) {
+			case "販売日":
+				basicInfo.releaseDate = $cell.text().trim();
+				logger.debug(`販売日抽出: ${basicInfo.releaseDate}`);
+				break;
+
+			case "シリーズ名":
+				basicInfo.seriesName = $cell.find("a").text().trim() || $cell.text().trim();
+				logger.debug(`シリーズ名抽出: ${basicInfo.seriesName}`);
+				break;
+
+			case "作者":
+				$cell.find("a").each((_i, link) => {
+					const name = $(link).text().trim();
+					if (name) basicInfo.author.push(name);
+				});
+				logger.debug(`作者抽出: ${basicInfo.author.length}名`);
+				break;
+
+			case "シナリオ":
+				$cell.find("a").each((_i, link) => {
+					const name = $(link).text().trim();
+					if (name) basicInfo.scenario.push(name);
+				});
+				logger.debug(`シナリオ抽出: ${basicInfo.scenario.length}名`);
+				break;
+
+			case "イラスト":
+				$cell.find("a").each((_i, link) => {
+					const name = $(link).text().trim();
+					if (name) basicInfo.illustration.push(name);
+				});
+				logger.debug(`イラスト抽出: ${basicInfo.illustration.length}名`);
+				break;
+
+			case "声優":
+				$cell.find("a").each((_i, link) => {
+					const name = $(link).text().trim();
+					if (name) basicInfo.voiceActors.push(name);
+				});
+				logger.debug(`声優抽出: ${basicInfo.voiceActors.length}名`);
+				break;
+
+			case "音楽":
+				$cell.find("a").each((_i, link) => {
+					const name = $(link).text().trim();
+					if (name) basicInfo.music.push(name);
+				});
+				logger.debug(`音楽抽出: ${basicInfo.music.length}名`);
+				break;
+
+			case "年齢指定":
+				basicInfo.ageRating = $cell.find("span").attr("title") || $cell.text().trim();
+				logger.debug(`年齢指定抽出: ${basicInfo.ageRating}`);
+				break;
+
+			case "作品形式":
+				basicInfo.workFormat = $cell.find("span").attr("title") || $cell.text().trim();
+				logger.debug(`作品形式抽出: ${basicInfo.workFormat}`);
+				break;
+
+			case "ファイル形式": {
+				const mainFormat = $cell.find("span").attr("title") || "";
+				const additionalInfo = $cell.find(".additional_info").text().trim();
+				basicInfo.fileFormat = mainFormat + (additionalInfo ? ` ${additionalInfo}` : "");
+				logger.debug(`ファイル形式抽出: ${basicInfo.fileFormat}`);
+				break;
+			}
+
+			case "ジャンル":
+				$cell.find("a").each((_i, link) => {
+					const genre = $(link).text().trim();
+					if (genre) basicInfo.genres.push(genre);
+				});
+				logger.debug(`ジャンル抽出: ${basicInfo.genres.length}件`);
+				break;
+
+			case "ファイル容量":
+				basicInfo.fileSize = $cell.text().trim();
+				logger.debug(`ファイル容量抽出: ${basicInfo.fileSize}`);
+				break;
+		}
+	});
+
+	// 詳細ページからタグ情報も抽出（work_outline以外からも）
+	extractDetailTagsInfo($, basicInfo);
+
+	return basicInfo;
+}
+
+/**
  * メイン関数: 詳細ページHTMLから拡張データを抽出
  */
 export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
@@ -792,6 +989,7 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 
 	logger.debug("詳細ページHTMLパース開始");
 
+	const basicInfo = extractBasicWorkInfo($);
 	const trackInfo = extractTrackInfo($);
 	const fileInfo = extractFileInfo($);
 	const detailedCreators = extractDetailedCreatorInfo($);
@@ -802,6 +1000,7 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 	logger.debug("詳細ページHTMLパース完了");
 
 	return {
+		basicInfo,
 		trackInfo,
 		fileInfo,
 		detailedCreators,

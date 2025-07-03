@@ -17,6 +17,7 @@ import {
 	User,
 	Youtube,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -157,10 +158,13 @@ async function VideoCardWrapper({
 						<div className="space-y-4">
 							{/* サムネイル部分 */}
 							<div className="aspect-video bg-muted rounded-lg overflow-hidden">
-								<img
+								<Image
 									src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
 									alt={fallbackTitle || "YouTube動画"}
 									className="w-full h-full object-cover"
+									width={480}
+									height={360}
+									unoptimized
 								/>
 							</div>
 
@@ -205,10 +209,13 @@ async function VideoCardWrapper({
 					<div className="space-y-4">
 						{/* サムネイル部分 */}
 						<div className="aspect-video bg-muted rounded-lg overflow-hidden">
-							<img
+							<Image
 								src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
 								alt={fallbackTitle || "YouTube動画"}
 								className="w-full h-full object-cover"
+								width={480}
+								height={360}
+								unoptimized
 							/>
 						</div>
 
@@ -297,10 +304,13 @@ async function UserCardWrapper({
 							{/* アバター */}
 							<div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
 								{user.avatarUrl ? (
-									<img
+									<Image
 										src={user.avatarUrl}
 										alt={user.displayName}
 										className="w-full h-full object-cover"
+										width={48}
+										height={48}
+										unoptimized
 									/>
 								) : (
 									<div className="w-full h-full bg-suzuka-100 flex items-center justify-center">
