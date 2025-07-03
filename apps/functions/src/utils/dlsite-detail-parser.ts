@@ -93,10 +93,33 @@ export async function fetchWorkDetailPage(productId: string): Promise<string> {
 	});
 
 	if (!response.ok) {
+		// 404の場合は作品が存在しないことを明確に示す
+		if (response.status === 404) {
+			throw new Error(`作品ID ${productId} は存在しません (404 Not Found)`);
+		}
+		// その他のHTTPエラー
 		throw new Error(`DLsite詳細ページの取得に失敗: ${response.status} ${response.statusText}`);
 	}
 
 	const html = await response.text();
+
+	// HTMLの内容を検証
+	if (html.length < 1000) {
+		throw new Error(
+			`取得したHTMLが短すぎます (${html.length}文字) - エラーページまたはブロックの可能性`,
+		);
+	}
+
+	// DLsiteの典型的なエラーページを検出
+	if (html.includes("エラーが発生しました") || html.includes("ページが見つかりません")) {
+		throw new Error("DLsite側でエラーページが表示されました");
+	}
+
+	// 正常なDLsite作品ページの特徴的要素があることを確認
+	if (!html.includes("work_name") && !html.includes("work_outline")) {
+		throw new Error("有効なDLsite作品ページではありません - 作品情報要素が見つかりません");
+	}
+
 	logger.debug(`DLsite詳細ページ取得成功: ${productId}`);
 
 	return html;
@@ -407,8 +430,8 @@ export function extractFileInfo($: cheerio.CheerioAPI): FileInfo {
 		additionalFiles: [],
 	};
 
-	// ファイル情報テーブルを探す
-	$("table.work_parts_table tr, .work_outline_table tr").each((_, element) => {
+	// ファイル情報テーブルを探す（#work_outlineを追加してbasicInfoと同じソースを参照）
+	$("table.work_parts_table tr, .work_outline_table tr, #work_outline tr").each((_, element) => {
 		const $row = $(element);
 		const headerText = $row.find("th").text().trim();
 		const contentText = $row.find("td").text().trim();
@@ -509,8 +532,8 @@ export function extractDetailedCreatorInfo($: cheerio.CheerioAPI): DetailedCreat
 		other: {},
 	};
 
-	// クリエイター情報テーブルを探す
-	$("table.work_parts_table tr, .work_outline_table tr").each((_, element) => {
+	// クリエイター情報テーブルを探す（#work_outlineを追加してbasicInfoと同じソースを参照）
+	$("table.work_parts_table tr, .work_outline_table tr, #work_outline tr").each((_, element) => {
 		const $row = $(element);
 		const headerText = $row.find("th").text().trim();
 		const contentText = $row.find("td").text().trim();
@@ -573,8 +596,8 @@ export function extractDetailedCreatorInfo($: cheerio.CheerioAPI): DetailedCreat
 export function extractBonusContent($: cheerio.CheerioAPI): BonusContent[] {
 	const bonusContent: BonusContent[] = [];
 
-	// 特典情報を探す
-	$("table.work_parts_table tr, .work_outline_table tr").each((_, element) => {
+	// 特典情報を探す（#work_outlineを追加してbasicInfoと同じソースを参照）
+	$("table.work_parts_table tr, .work_outline_table tr, #work_outline tr").each((_, element) => {
 		const $row = $(element);
 		const headerText = $row.find("th").text().trim();
 		const contentText = $row.find("td").text().trim();

@@ -48,11 +48,11 @@ interface DebugConfig {
 
 const DEFAULT_CONFIG: DebugConfig = {
 	sampleProductIds: [
-		"RJ01000001", // 新しい作品ID
-		"RJ290000", // 中程度の作品ID
-		"RJ123456", // 古い作品ID
-		"RJ456789", // テスト用ID
-		"RJ01234567", // 新形式ID
+		"RJ01393393", // 確認済み：涼花みなせ作品（作者フィールドあり）
+		"RJ01052559", // 確認済み：人気作品
+		"RJ123456", // 確認済み：古い作品ID（マンガ）
+		"RJ01410567", // 確認済み：詳細トラック情報あり
+		"RJ01234567", // 確認済み：新形式ID（ボイス作品）
 	],
 	outputDir: "./debug-output",
 	saveHtmlSamples: true,
@@ -71,6 +71,23 @@ class DLsiteParserDebugger {
 	private ensureOutputDirectory(): void {
 		if (!existsSync(this.config.outputDir)) {
 			mkdirSync(this.config.outputDir, { recursive: true });
+		}
+	}
+
+	/**
+	 * エラーハンドリングのテスト（存在しない作品IDなど）
+	 */
+	async testErrorHandling(): Promise<void> {
+		const nonExistentIds = [
+			"RJ99999999", // 存在しない大きな番号
+			"RJ00000001", // 存在しない小さな番号
+			"RJ00000000", // 無効なID
+		];
+
+		for (const productId of nonExistentIds) {
+			await this.testSingleProduct(productId);
+			// レート制限対策
+			await this.sleep(2000);
 		}
 	}
 
@@ -258,6 +275,9 @@ async function main() {
 		}
 	} else if (args.includes("--analyze-failures")) {
 		await parserDebugger.analyzeFailures();
+	} else if (args.includes("--test-errors")) {
+		// エラーハンドリングのテスト
+		await parserDebugger.testErrorHandling();
 	} else {
 		// デフォルト: サンプルページテスト
 		await parserDebugger.testSamplePages();
