@@ -41,6 +41,16 @@ export interface BasicWorkInfo {
 }
 
 /**
+ * 詳細評価情報
+ */
+export interface DetailedRatingInfo {
+	/** 精密な星評価（小数点以下含む）例: 4.91 */
+	stars?: number;
+	/** 評価数 */
+	ratingCount?: number;
+}
+
+/**
  * 詳細ページから抽出される拡張データ構造
  */
 export interface ExtendedWorkData {
@@ -56,6 +66,8 @@ export interface ExtendedWorkData {
 	detailedDescription: string;
 	/** 高解像度ジャケット画像URL */
 	highResImageUrl?: string;
+	/** 詳細評価情報（小数点以下を含む精密な評価） */
+	detailedRating?: DetailedRatingInfo;
 }
 
 /**
@@ -602,6 +614,135 @@ export function extractDetailedDescription($: cheerio.CheerioAPI): string {
 }
 
 /**
+ * 詳細ページから精密な評価情報を抽出
+ * DLsite詳細ページでは小数点以下を含む正確な評価（例: 4.91）が表示される
+ */
+export function extractDetailedRating($: cheerio.CheerioAPI): DetailedRatingInfo {
+	const ratingInfo: DetailedRatingInfo = {};
+
+	// 評価スコアを複数のパターンで検索
+	const ratingSelectors = [
+		// 一般的な評価表示エリア
+		".work_rating .star_rating",
+		".star_rating",
+		".rating_area .star_rating",
+		".rating .star_rating",
+		// 評価数値を含む可能性があるエリア
+		".work_outline tr:contains('評価') td",
+		".evaluation_data",
+		// より汎用的なパターン
+		"*[data-rating]",
+		"*[data-score]",
+	];
+
+	// 評価数値のテキストパターンを探す
+	const textSelectors = [
+		".work_rating",
+		".rating_area",
+		".star_rating_text",
+		".evaluation_text",
+		".work_outline",
+	];
+
+	// セレクターベースの検索
+	for (const selector of ratingSelectors) {
+		const $element = $(selector);
+		if ($element.length > 0) {
+			// data-rating や data-score 属性から数値を取得
+			const dataRating = $element.attr("data-rating") || $element.attr("data-score");
+			if (dataRating) {
+				const rating = Number.parseFloat(dataRating);
+				if (!Number.isNaN(rating) && rating >= 0 && rating <= 5) {
+					ratingInfo.stars = rating;
+					logger.debug(`評価数値をdata属性から抽出: ${rating}`);
+					break;
+				}
+			}
+
+			// クラス名から評価を抽出（例: star_491 → 4.91）
+			const className = $element.attr("class") || "";
+			const match = className.match(/star_(\d+)/);
+			if (match?.[1]) {
+				const rating = Number.parseInt(match[1], 10) / 100; // star_491 -> 4.91
+				if (rating >= 0 && rating <= 5) {
+					ratingInfo.stars = rating;
+					logger.debug(`評価数値をクラス名から抽出: ${rating} (${className})`);
+					break;
+				}
+			}
+		}
+	}
+
+	// テキストベースの検索（例: "4.91" "評価: 4.9"）
+	if (!ratingInfo.stars) {
+		for (const selector of textSelectors) {
+			const $element = $(selector);
+			const text = $element.text();
+
+			// パターン1: 数値のみ（例: "4.91"）
+			const numericMatch = text.match(/\b([0-5](?:\.\d{1,2})?)\b/);
+			if (numericMatch?.[1]) {
+				const rating = Number.parseFloat(numericMatch[1]);
+				if (!Number.isNaN(rating) && rating >= 0 && rating <= 5) {
+					ratingInfo.stars = rating;
+					logger.debug(`評価数値をテキストから抽出: ${rating} (${numericMatch[1]})`);
+					break;
+				}
+			}
+
+			// パターン2: "評価: 4.91" のような形式
+			const ratingMatch = text.match(/評価[:\s]*([0-5](?:\.\d{1,2})?)/);
+			if (ratingMatch?.[1]) {
+				const rating = Number.parseFloat(ratingMatch[1]);
+				if (!Number.isNaN(rating) && rating >= 0 && rating <= 5) {
+					ratingInfo.stars = rating;
+					logger.debug(`評価数値を評価テキストから抽出: ${rating}`);
+					break;
+				}
+			}
+		}
+	}
+
+	// 評価数の抽出
+	const ratingCountSelectors = [
+		".work_rating .rating_count",
+		".star_rating + .count",
+		".evaluation_count",
+	];
+
+	for (const selector of ratingCountSelectors) {
+		const $element = $(selector);
+		const text = $element.text();
+		const countMatch = text.match(/\((\d+(?:,\d+)*)\)/);
+		if (countMatch?.[1]) {
+			ratingInfo.ratingCount = Number.parseInt(countMatch[1].replace(/,/g, ""), 10);
+			logger.debug(`評価数を抽出: ${ratingInfo.ratingCount}`);
+			break;
+		}
+	}
+
+	// 全体のテキストからも評価数を探す
+	if (!ratingInfo.ratingCount) {
+		const fullText = $("body").text();
+		const globalCountMatch = fullText.match(/(\d+(?:,\d+)*)\s*件?\s*の評価/);
+		if (globalCountMatch?.[1]) {
+			ratingInfo.ratingCount = Number.parseInt(globalCountMatch[1].replace(/,/g, ""), 10);
+			logger.debug(`評価数を全体テキストから抽出: ${ratingInfo.ratingCount}`);
+		}
+	}
+
+	if (ratingInfo.stars) {
+		logger.debug(
+			`詳細評価情報抽出完了: 評価=${ratingInfo.stars}, 評価数=${ratingInfo.ratingCount || "不明"}`,
+		);
+	} else {
+		logger.debug("詳細評価情報が見つかりませんでした");
+	}
+
+	return ratingInfo;
+}
+
+/**
  * 詳細ページからタグ情報を抽出
  */
 function extractDetailTagsInfo($: cheerio.CheerioAPI, basicInfo: BasicWorkInfo): void {
@@ -778,6 +919,7 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 	const bonusContent = extractBonusContent($);
 	const detailedDescription = extractDetailedDescription($);
 	const highResImageUrl = extractHighResImageUrl($);
+	const detailedRating = extractDetailedRating($);
 
 	logger.debug("詳細ページHTMLパース完了");
 
@@ -788,6 +930,7 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 		bonusContent,
 		detailedDescription,
 		highResImageUrl,
+		detailedRating,
 	};
 }
 

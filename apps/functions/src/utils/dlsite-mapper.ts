@@ -346,7 +346,20 @@ function mapToPriceInfo(parsed: ParsedWorkData): PriceInfo {
 function mapToRatingInfo(
 	parsed: ParsedWorkData,
 	infoData?: DLsiteInfoResponse,
+	extendedData?: ExtendedWorkData,
 ): RatingInfo | undefined {
+	// 詳細ページから精密な評価データが取得できた場合を最優先
+	if (extendedData?.detailedRating?.stars) {
+		return {
+			stars: extendedData.detailedRating.stars,
+			count:
+				extendedData.detailedRating.ratingCount || infoData?.rate_count || parsed.ratingCount || 0,
+			reviewCount: infoData?.review_count || parsed.reviewCount,
+			ratingDetail: infoData ? extractRatingDetails(infoData) : undefined,
+			averageDecimal: extendedData.detailedRating.stars, // 詳細ページの精密評価を使用
+		};
+	}
+
 	// info APIからより精密な評価データがある場合はそれを使用
 	if (infoData?.rate_average_2dp && infoData?.rate_count) {
 		return {
@@ -397,7 +410,7 @@ export function mapToWorkBase(
 ): DLsiteWorkBase {
 	try {
 		const price = mapToPriceInfo(parsed);
-		const rating = mapToRatingInfo(parsed, infoData);
+		const rating = mapToRatingInfo(parsed, infoData, extendedData);
 
 		// サンプル画像のURLを正規化
 		const normalizedSampleImages = parsed.sampleImages.map((sample) => ({
