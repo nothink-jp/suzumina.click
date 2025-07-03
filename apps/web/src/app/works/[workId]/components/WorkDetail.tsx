@@ -443,14 +443,137 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 										</div>
 									</div>
 
-									{/* トラック情報（準備中） */}
+									{/* トラック情報 */}
 									<div className="space-y-4">
 										<h4 className="font-medium text-gray-900">収録内容</h4>
-										<div className="text-center text-gray-500 py-6">
-											<Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-											<p className="text-sm">詳細なトラック情報は準備中です</p>
-										</div>
+										{work.trackInfo && work.trackInfo.length > 0 ? (
+											<div className="space-y-3">
+												{work.trackInfo.map((track) => (
+													<div key={track.trackNumber} className="bg-gray-50 rounded-lg p-4">
+														<div className="flex items-start justify-between">
+															<div className="flex-1">
+																<div className="flex items-center gap-2 mb-2">
+																	<span className="text-sm font-medium text-gray-700 bg-white px-2 py-1 rounded">
+																		トラック{track.trackNumber}
+																	</span>
+																	{track.durationText && (
+																		<span className="text-sm text-gray-600 flex items-center gap-1">
+																			<Clock className="h-3 w-3" />
+																			{track.durationText}
+																		</span>
+																	)}
+																</div>
+																<h5 className="font-medium text-gray-900 mb-1">{track.title}</h5>
+																{track.description && (
+																	<p className="text-sm text-gray-700 whitespace-pre-line">
+																		{track.description}
+																	</p>
+																)}
+															</div>
+														</div>
+													</div>
+												))}
+											</div>
+										) : (
+											<div className="text-center text-gray-500 py-6">
+												<Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+												<p className="text-sm">トラック情報が見つかりませんでした</p>
+											</div>
+										)}
 									</div>
+
+									{/* ファイル情報 */}
+									{work.fileInfo && (
+										<div className="space-y-4">
+											<h4 className="font-medium text-gray-900">ファイル情報</h4>
+											<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+												{work.fileInfo.totalSizeText && (
+													<div className="flex justify-between">
+														<span className="text-gray-700">総容量:</span>
+														<span className="text-gray-900 font-mono">
+															{work.fileInfo.totalSizeText}
+														</span>
+													</div>
+												)}
+												{work.fileInfo.totalDurationText && (
+													<div className="flex justify-between">
+														<span className="text-gray-700">総再生時間:</span>
+														<span className="text-gray-900">{work.fileInfo.totalDurationText}</span>
+													</div>
+												)}
+												{work.fileInfo.formats && work.fileInfo.formats.length > 0 && (
+													<div className="md:col-span-2">
+														<div className="mb-2">
+															<span className="text-gray-700">ファイル形式:</span>
+														</div>
+														<div className="flex flex-wrap gap-2">
+															{work.fileInfo.formats.map((format) => (
+																<span
+																	key={format}
+																	className="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-mono"
+																>
+																	{format}
+																</span>
+															))}
+														</div>
+													</div>
+												)}
+												{work.fileInfo.additionalFiles &&
+													work.fileInfo.additionalFiles.length > 0 && (
+														<div className="md:col-span-2">
+															<div className="mb-2">
+																<span className="text-gray-700">付属ファイル:</span>
+															</div>
+															<div className="space-y-1">
+																{work.fileInfo.additionalFiles.map((file) => (
+																	<div key={file} className="text-gray-900 text-xs">
+																		• {file}
+																	</div>
+																))}
+															</div>
+														</div>
+													)}
+											</div>
+										</div>
+									)}
+
+									{/* 特典・おまけ情報 */}
+									{work.bonusContent && work.bonusContent.length > 0 && (
+										<div className="space-y-4">
+											<h4 className="font-medium text-gray-900">特典・おまけ</h4>
+											<div className="space-y-3">
+												{work.bonusContent.map((bonus, index) => (
+													<div
+														key={`${bonus.title}-${index}`}
+														className="bg-gray-50 rounded-lg p-4"
+													>
+														<div className="flex items-start gap-3">
+															<div className="flex-shrink-0">
+																<div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+																	<span className="text-primary font-bold text-sm">特</span>
+																</div>
+															</div>
+															<div className="flex-1">
+																<div className="flex items-center gap-2 mb-1">
+																	<h5 className="font-medium text-gray-900">{bonus.title}</h5>
+																	{bonus.type && (
+																		<span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
+																			{bonus.type}
+																		</span>
+																	)}
+																</div>
+																{bonus.description && (
+																	<p className="text-sm text-gray-700 whitespace-pre-line">
+																		{bonus.description}
+																	</p>
+																)}
+															</div>
+														</div>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
 								</CardContent>
 							</Card>
 						</TabsContent>
@@ -486,25 +609,142 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 						</CardContent>
 					</Card>
 
-					{/* 声優情報 */}
-					{work.author && work.author.length > 0 && (
+					{/* クリエイター情報 */}
+					{((work.detailedCreators &&
+						((work.detailedCreators.voiceActors?.length ?? 0) > 0 ||
+							(work.detailedCreators.scenario?.length ?? 0) > 0 ||
+							(work.detailedCreators.illustration?.length ?? 0) > 0 ||
+							(work.detailedCreators.music?.length ?? 0) > 0 ||
+							(work.detailedCreators.design?.length ?? 0) > 0 ||
+							Object.keys(work.detailedCreators.other ?? {}).length > 0)) ||
+						(work.author && work.author.length > 0)) && (
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
 									<Users className="h-5 w-5" />
-									出演声優
+									クリエイター情報
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								<div className="space-y-3">
-									{work.author.map((actor) => (
-										<div key={actor} className="flex items-center gap-3">
-											<div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-												<span className="text-foreground font-bold text-sm">{actor.charAt(0)}</span>
+								<div className="space-y-4">
+									{/* 声優 */}
+									{((work.detailedCreators?.voiceActors?.length ?? 0) > 0 ||
+										(work.author?.length ?? 0) > 0) && (
+										<div>
+											<h5 className="text-sm font-medium text-gray-700 mb-2">声優（CV）</h5>
+											<div className="space-y-2">
+												{(work.detailedCreators?.voiceActors || work.author || []).map((actor) => (
+													<div key={actor} className="flex items-center gap-3">
+														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+															<span className="text-foreground font-bold text-xs">
+																{actor.charAt(0)}
+															</span>
+														</div>
+														<span className="text-gray-900 text-sm">{actor}</span>
+													</div>
+												))}
 											</div>
-											<span className="text-gray-900">{actor}</span>
 										</div>
-									))}
+									)}
+
+									{/* シナリオ */}
+									{(work.detailedCreators?.scenario?.length ?? 0) > 0 && (
+										<div>
+											<h5 className="text-sm font-medium text-gray-700 mb-2">シナリオ</h5>
+											<div className="space-y-2">
+												{work.detailedCreators?.scenario?.map((creator) => (
+													<div key={creator} className="flex items-center gap-3">
+														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+															<span className="text-foreground font-bold text-xs">
+																{creator.charAt(0)}
+															</span>
+														</div>
+														<span className="text-gray-900 text-sm">{creator}</span>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+
+									{/* イラスト */}
+									{(work.detailedCreators?.illustration?.length ?? 0) > 0 && (
+										<div>
+											<h5 className="text-sm font-medium text-gray-700 mb-2">イラスト</h5>
+											<div className="space-y-2">
+												{work.detailedCreators?.illustration?.map((creator) => (
+													<div key={creator} className="flex items-center gap-3">
+														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+															<span className="text-foreground font-bold text-xs">
+																{creator.charAt(0)}
+															</span>
+														</div>
+														<span className="text-gray-900 text-sm">{creator}</span>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+
+									{/* 音楽 */}
+									{(work.detailedCreators?.music?.length ?? 0) > 0 && (
+										<div>
+											<h5 className="text-sm font-medium text-gray-700 mb-2">音楽</h5>
+											<div className="space-y-2">
+												{work.detailedCreators?.music?.map((creator) => (
+													<div key={creator} className="flex items-center gap-3">
+														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+															<span className="text-foreground font-bold text-xs">
+																{creator.charAt(0)}
+															</span>
+														</div>
+														<span className="text-gray-900 text-sm">{creator}</span>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+
+									{/* デザイン */}
+									{(work.detailedCreators?.design?.length ?? 0) > 0 && (
+										<div>
+											<h5 className="text-sm font-medium text-gray-700 mb-2">デザイン</h5>
+											<div className="space-y-2">
+												{work.detailedCreators?.design?.map((creator) => (
+													<div key={creator} className="flex items-center gap-3">
+														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+															<span className="text-foreground font-bold text-xs">
+																{creator.charAt(0)}
+															</span>
+														</div>
+														<span className="text-gray-900 text-sm">{creator}</span>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+
+									{/* その他のクリエイター */}
+									{work.detailedCreators && Object.keys(work.detailedCreators.other).length > 0 && (
+										<div>
+											{Object.entries(work.detailedCreators.other).map(([role, creators]) => (
+												<div key={role} className="mb-3">
+													<h5 className="text-sm font-medium text-gray-700 mb-2">{role}</h5>
+													<div className="space-y-2">
+														{creators.map((creator) => (
+															<div key={creator} className="flex items-center gap-3">
+																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																	<span className="text-foreground font-bold text-xs">
+																		{creator.charAt(0)}
+																	</span>
+																</div>
+																<span className="text-gray-900 text-sm">{creator}</span>
+															</div>
+														))}
+													</div>
+												</div>
+											))}
+										</div>
+									)}
 								</div>
 							</CardContent>
 						</Card>

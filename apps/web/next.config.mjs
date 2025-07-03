@@ -32,8 +32,6 @@ const nextConfig = {
 		imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
 		// 高解像度画像対応のため制限を緩和
 		unoptimized: false,
-		// 大きな画像に対応
-		maximumCacheSizeInMB: 32,
 		// 外部画像ドメインの許可（YouTubeサムネイル・DLsite画像・Discord CDN用）
 		remotePatterns: [
 			{
