@@ -25,6 +25,28 @@ export const WorkCategorySchema = z.enum([
 ]);
 
 /**
+ * DLsite作品カテゴリコードから日本語表示名へのマッピング
+ */
+export const WORK_CATEGORY_DISPLAY_NAMES: Record<WorkCategory, string> = {
+	ADV: "アドベンチャー",
+	SOU: "ボイス・ASMR",
+	RPG: "ロールプレイング",
+	MOV: "動画",
+	MNG: "マンガ",
+	GAM: "ゲーム",
+	CG: "CG・イラスト",
+	TOL: "ツール・アクセサリ",
+	ET3: "その他・3D",
+	SLN: "シミュレーション",
+	ACN: "アクション",
+	PZL: "パズル",
+	QIZ: "クイズ",
+	TBL: "テーブル",
+	DGT: "デジタルノベル",
+	etc: "その他",
+} as const;
+
+/**
  * 価格情報のZodスキーマ定義
  */
 export const PriceInfoSchema = z.object({
@@ -730,4 +752,28 @@ export interface FirestoreServerDLsiteWorkData {
 	createdAt: unknown; // Firestore.Timestamp型
 	/** 更新日時（Firestore.Timestamp型） */
 	updatedAt: unknown; // Firestore.Timestamp型
+}
+
+/**
+ * 作品カテゴリコードから日本語表示名を取得
+ * @param category 作品カテゴリコード
+ * @returns 日本語表示名
+ */
+export function getWorkCategoryDisplayName(category: WorkCategory): string {
+	return WORK_CATEGORY_DISPLAY_NAMES[category];
+}
+
+/**
+ * 作品カテゴリコードから日本語表示名を安全に取得
+ * 不明なカテゴリの場合はカテゴリコードをそのまま返す
+ * @param category 作品カテゴリコード（不明な値の可能性あり）
+ * @returns 日本語表示名またはカテゴリコード
+ */
+export function getWorkCategoryDisplayNameSafe(category: string): string {
+	// WorkCategoryに含まれているかチェック
+	if (category in WORK_CATEGORY_DISPLAY_NAMES) {
+		return WORK_CATEGORY_DISPLAY_NAMES[category as WorkCategory];
+	}
+	// 不明なカテゴリの場合はそのまま返す
+	return category;
 }

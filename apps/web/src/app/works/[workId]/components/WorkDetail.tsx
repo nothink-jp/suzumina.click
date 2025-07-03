@@ -1,5 +1,6 @@
 "use client";
 
+import { getWorkCategoryDisplayName } from "@suzumina.click/shared-types";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -621,7 +622,9 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 											</div>
 											<div className="flex justify-between">
 												<span className="text-gray-700">カテゴリ:</span>
-												<span className="text-gray-900">{work.category}</span>
+												<span className="text-gray-900">
+													{getWorkCategoryDisplayName(work.category)}
+												</span>
 											</div>
 											{work.ageRating && (
 												<div className="flex justify-between">
@@ -959,7 +962,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								</div>
 								<div className="flex justify-between items-center py-2 border-b border-gray-100">
 									<span className="text-gray-700">カテゴリ</span>
-									<span className="text-gray-900">{work.category}</span>
+									<span className="text-gray-900">{getWorkCategoryDisplayName(work.category)}</span>
 								</div>
 								{work.ageRating && (
 									<div className="flex justify-between items-center py-2">

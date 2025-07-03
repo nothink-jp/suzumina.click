@@ -1,5 +1,6 @@
 "use client";
 
+import { WORK_CATEGORY_DISPLAY_NAMES } from "@suzumina.click/shared-types";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
 import {
@@ -108,10 +109,10 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 						placeholder="カテゴリ"
 						options={[
 							{ value: "all", label: "すべてのカテゴリ" },
-							{ value: "SOU", label: "ボイス・ASMR" },
-							{ value: "ADV", label: "アドベンチャー" },
-							{ value: "RPG", label: "ロールプレイング" },
-							{ value: "MOV", label: "動画" },
+							{ value: "SOU", label: WORK_CATEGORY_DISPLAY_NAMES.SOU },
+							{ value: "ADV", label: WORK_CATEGORY_DISPLAY_NAMES.ADV },
+							{ value: "RPG", label: WORK_CATEGORY_DISPLAY_NAMES.RPG },
+							{ value: "MOV", label: WORK_CATEGORY_DISPLAY_NAMES.MOV },
 						]}
 					/>
 				}
