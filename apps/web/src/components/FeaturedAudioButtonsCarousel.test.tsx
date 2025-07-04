@@ -102,7 +102,6 @@ describe("FeaturedAudioButtonsCarousel", () => {
 			"sm:gap-3",
 			"items-start",
 			"justify-center",
-			"sm:justify-start",
 		);
 	});
 
