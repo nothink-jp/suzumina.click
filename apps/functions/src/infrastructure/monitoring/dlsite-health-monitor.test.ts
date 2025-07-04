@@ -6,14 +6,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DLsiteHealthMonitor, getDLsiteHealthMonitor } from "./dlsite-health-monitor";
 
 // 依存関係のモック
-vi.mock("./logger", () => ({
+vi.mock("../../shared/logger", () => ({
 	info: vi.fn(),
 	warn: vi.fn(),
 	error: vi.fn(),
 	debug: vi.fn(),
 }));
 
-vi.mock("./parser-config", () => ({
+vi.mock("../management/parser-config", () => ({
 	getParserConfigManager: () => ({
 		getFieldConfig: (fieldName: string) => {
 			const configs: Record<string, any> = {
@@ -41,7 +41,7 @@ vi.mock("./parser-config", () => ({
 	}),
 }));
 
-vi.mock("./user-agent-manager", () => ({
+vi.mock("../management/user-agent-manager", () => ({
 	generateDLsiteHeaders: () => ({
 		"User-Agent": "Test User Agent",
 		Accept: "text/html",
@@ -73,7 +73,7 @@ describe("DLsiteHealthMonitor", () => {
 	});
 
 	describe("構造ヘルスチェック", () => {
-		it.skip("構造変更を検知する", async () => {
+		it("構造変更を検知する", async () => {
 			// 構造が変更されたページ（必要な要素が見つからない）
 			const mockHtml = `
 				<html>
@@ -95,7 +95,7 @@ describe("DLsiteHealthMonitor", () => {
 			expect(result.recommendations.length).toBeGreaterThan(0);
 		});
 
-		it.skip("ネットワークエラーを適切に処理する", async () => {
+		it("ネットワークエラーを適切に処理する", async () => {
 			mockFetch.mockRejectedValue(new Error("Network error"));
 
 			const result = await healthMonitor.checkStructureHealth(["https://www.dlsite.com/test1"]);
@@ -107,7 +107,7 @@ describe("DLsiteHealthMonitor", () => {
 	});
 
 	describe("フィールド別ヘルスチェック", () => {
-		it.skip("productIdフィールドの健全性をチェックする", async () => {
+		it("productIdフィールドの健全性をチェックする", async () => {
 			const mockHtml = `
 				<a href="/product_id/RJ123456.html">Valid Product Link</a>
 			`;
@@ -127,7 +127,7 @@ describe("DLsiteHealthMonitor", () => {
 			expect(result.workingSelectors.length).toBeGreaterThan(0);
 		});
 
-		it.skip("titleフィールドの健全性をチェックする", async () => {
+		it("titleフィールドの健全性をチェックする", async () => {
 			const mockHtml = `
 				<div class="work_name">
 					<a title="Test Title">Test Title</a>
@@ -147,7 +147,7 @@ describe("DLsiteHealthMonitor", () => {
 			expect(result.attempts).toBe(1);
 		});
 
-		it.skip("存在しないフィールドでエラーにならない", async () => {
+		it("存在しないフィールドでエラーにならない", async () => {
 			const result = await (healthMonitor as any).checkFieldHealth("nonExistentField", [
 				"https://www.dlsite.com/test1",
 			]);
@@ -158,7 +158,7 @@ describe("DLsiteHealthMonitor", () => {
 	});
 
 	describe("セレクター検証", () => {
-		it.skip("プライマリセレクターが機能する", async () => {
+		it("プライマリセレクターが機能する", async () => {
 			const mockHtml = `
 				<a href="/product_id/RJ123456.html">Primary Selector Match</a>
 			`;
@@ -178,7 +178,7 @@ describe("DLsiteHealthMonitor", () => {
 	});
 
 	describe("エラーハンドリング", () => {
-		it.skip("HTTPエラーレスポンスを適切に処理する", async () => {
+		it("HTTPエラーレスポンスを適切に処理する", async () => {
 			mockFetch.mockResolvedValue({
 				ok: false,
 				status: 404,
@@ -191,7 +191,7 @@ describe("DLsiteHealthMonitor", () => {
 			expect(result.successRate).toBe(0);
 		});
 
-		it.skip("無効なHTMLを適切に処理する", async () => {
+		it("無効なHTMLを適切に処理する", async () => {
 			mockFetch.mockResolvedValue({
 				ok: true,
 				text: () => Promise.resolve("Invalid HTML"),
@@ -203,11 +203,12 @@ describe("DLsiteHealthMonitor", () => {
 			}).not.toThrow();
 		});
 
-		it.skip("空のURLリストを適切に処理する", async () => {
+		it("空のURLリストを適切に処理する", async () => {
 			const result = await healthMonitor.checkStructureHealth([]);
 
 			expect(result.overallHealthy).toBe(false);
 			expect(result.successRate).toBe(0);
+			// 空のURLリストの場合、フィールドチェックは実行されない
 			expect(result.fieldsChecked).toBe(0);
 		});
 	});

@@ -12,7 +12,7 @@ import {
 } from "./youtube-quota-monitor";
 
 // loggerのモック
-vi.mock("./logger", () => ({
+vi.mock("../../shared/logger", () => ({
 	info: vi.fn(),
 	warn: vi.fn(),
 	error: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock("./logger", () => ({
 }));
 
 // config-managerのモック
-vi.mock("./config-manager", () => ({
+vi.mock("../management/config-manager", () => ({
 	getYouTubeConfig: () => ({
 		dailyQuotaLimit: 10000,
 		maxBatchSize: 50,
@@ -166,7 +166,7 @@ describe("YouTubeQuotaMonitor", () => {
 	});
 
 	describe("警告機能", () => {
-		it.skip("高使用率で警告を発行", async () => {
+		it("高使用率で警告を発行", async () => {
 			const { warn } = await import("../../shared/logger");
 
 			// 85%のクォータを使用（警告レベルを超える）
@@ -179,26 +179,23 @@ describe("YouTubeQuotaMonitor", () => {
 			expect(warn).toHaveBeenCalled();
 		});
 
-		it.skip("正常使用率では警告なし", async () => {
+		it("正常使用率では警告なし", async () => {
 			// 新しいインスタンスで50%のクォータを使用
 			(YouTubeQuotaMonitor as any).instance = undefined;
 			const newQuotaMonitor = YouTubeQuotaMonitor.getInstance();
-
-			const { warn } = await import("../../shared/logger");
 
 			for (let i = 0; i < 50; i++) {
 				newQuotaMonitor.recordQuotaUsage("search");
 			}
 
 			// 50%なので警告は出ない（警告閾値は80%）
-			// 新しいインスタンスなので警告モック呼び出しはない
 			const stats = newQuotaMonitor.getUsageStats();
 			expect(stats.dailyUsage).toBe(5000); // 50 * 100
 		});
 	});
 
 	describe("詳細ログ", () => {
-		it.skip("操作ログを記録する", async () => {
+		it("操作ログを記録する", async () => {
 			const { info } = await import("../../shared/logger");
 
 			quotaMonitor.logQuotaUsage("search", 100, {
@@ -231,7 +228,7 @@ describe("QUOTA_COSTS", () => {
 		expect(QUOTA_COSTS.videosFullDetails).toBe(8);
 
 		// すべてのコストが正の数
-		for (const [operation, cost] of Object.entries(QUOTA_COSTS)) {
+		for (const [, cost] of Object.entries(QUOTA_COSTS)) {
 			expect(cost).toBeGreaterThan(0);
 			expect(typeof cost).toBe("number");
 		}

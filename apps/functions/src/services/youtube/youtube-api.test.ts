@@ -161,7 +161,7 @@ describe("youtube-api", () => {
 			);
 		});
 
-		it.skip("その他のエラーが発生した場合、そのエラーがスローされること", async () => {
+		it("その他のエラーが発生した場合、そのエラーがスローされること", async () => {
 			// 一般的なエラーのモック
 			const generalError = new Error("一般的なAPIエラー");
 			mockYoutubeSearchList.mockRejectedValueOnce(generalError);
@@ -311,7 +311,7 @@ describe("youtube-api", () => {
 			expect(result[1].id).toBe("video2");
 		});
 
-		it.skip("その他のエラーが発生した場合、エラーがスローされること", async () => {
+		it("その他のエラーが発生した場合、エラーがスローされること", async () => {
 			// Vitestのモック関数リセット
 			vi.resetAllMocks();
 

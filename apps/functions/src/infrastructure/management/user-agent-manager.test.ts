@@ -51,7 +51,7 @@ describe("UserAgentManager", () => {
 
 		it("クールダウン期間を考慮する", () => {
 			// 複数回連続でUser-Agentを取得
-			const userAgents = [];
+			const userAgents: string[] = [];
 			for (let i = 0; i < 5; i++) {
 				userAgents.push(userAgentManager.getNextUserAgent());
 			}
@@ -138,11 +138,7 @@ describe("UserAgentManager", () => {
 
 	describe("クールダウン機能", () => {
 		it("最近使用されたUser-Agentを避ける", () => {
-			// 最初のUser-Agentを取得
-			const firstUA = userAgentManager.getNextUserAgent();
-
-			// 同じUser-Agentが連続で選ばれる確率は低い（必ずしも保証されないが）
-			// 複数回試行して多様性を確認
+			// 複数回試行してUser-Agentの多様性を確認
 			const userAgents = new Set();
 			for (let i = 0; i < 10; i++) {
 				userAgents.add(userAgentManager.getNextUserAgent());
@@ -182,7 +178,7 @@ describe("generateDLsiteHeaders", () => {
 		const headers = generateDLsiteHeaders();
 
 		expect(headers["User-Agent"]).toBeDefined();
-		expect(headers["Accept"]).toBeDefined();
+		expect(headers.Accept).toBeDefined();
 		expect(headers["Accept-Language"]).toBeDefined();
 		expect(headers["Accept-Encoding"]).toBeDefined();
 		expect(headers["Cache-Control"]).toBeDefined();
