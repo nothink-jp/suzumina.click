@@ -27,7 +27,7 @@ export function FeaturedAudioButtonsCarousel({ audioButtons }: FeaturedAudioButt
 	}
 
 	return (
-		<div className="flex flex-wrap gap-2 sm:gap-3 items-start justify-center sm:justify-start">
+		<div className="flex flex-wrap gap-2 sm:gap-3 items-start justify-center">
 			{audioButtons.map((audioButton) => (
 				<AudioButtonWithPlayCount
 					key={audioButton.id}
