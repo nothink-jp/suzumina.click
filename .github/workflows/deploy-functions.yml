@@ -99,7 +99,7 @@ jobs:
             
             // Cloud Functions v2ではFunctions Frameworkが自動的に起動するため、
             // startスクリプトは不要。mainエントリーポイントのみ設定
-            pkg.main = 'lib/index.js';
+            pkg.main = 'lib/endpoints/index.js';
             
             // enginesフィールドも確実に設定
             if (!pkg.engines) {
