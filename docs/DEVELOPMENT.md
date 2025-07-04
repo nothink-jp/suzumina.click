@@ -537,11 +537,21 @@ packages/ui/                  # 共有UIコンポーネント
 │   └── styles/              # Tailwind CSS v4設定
 └── .storybook/              # UI開発環境
 
-apps/functions/               # バックエンド
+apps/functions/               # バックエンド (エンタープライズ構造)
 ├── src/
-│   ├── dlsite.ts            # DLsite作品取得
-│   ├── youtube.ts           # YouTube動画取得
-│   └── utils/               # ドメインロジック
+│   ├── endpoints/           # Cloud Functions エンドポイント
+│   │   ├── dlsite.ts       # DLsite作品取得
+│   │   ├── youtube.ts      # YouTube動画取得
+│   │   └── index.ts        # Functions Framework エントリーポイント
+│   ├── services/           # ビジネスロジック・サービス層
+│   │   ├── dlsite/        # DLsite関連サービス (パーサー・Firestore・マッパー)
+│   │   └── youtube/       # YouTube関連サービス (API・Firestore)
+│   ├── infrastructure/     # インフラ・外部システム管理
+│   │   ├── monitoring/    # 監視・ヘルスチェック
+│   │   ├── management/    # システム管理 (設定・エラーハンドリング・User-Agent)
+│   │   └── database/      # データベース基盤
+│   ├── development/        # 開発・デバッグツール
+│   └── shared/             # 共通ユーティリティ (ログ・リトライ・共通定数)
 ```
 
 ### 2. 依存関係管理

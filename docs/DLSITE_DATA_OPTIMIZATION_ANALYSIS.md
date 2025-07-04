@@ -346,11 +346,12 @@ export const ENRICHMENT_QUEUE = {
 
 ## 📚 関連ファイル
 
-### **現在の実装**
-- `/apps/functions/src/dlsite.ts` - メインのDLsite取得処理
-- `/apps/functions/src/utils/dlsite-parser.ts` - 一覧ページパーサー
-- `/apps/functions/src/utils/dlsite-detail-parser.ts` - 詳細ページパーサー
-- `/apps/functions/src/utils/dlsite-mapper.ts` - データマッピング処理
+### **現在の実装（エンタープライズ構造）**
+- `/apps/functions/src/endpoints/dlsite.ts` - メインのDLsite取得処理
+- `/apps/functions/src/services/dlsite/dlsite-parser.ts` - 一覧ページパーサー
+- `/apps/functions/src/services/dlsite/dlsite-detail-parser.ts` - 詳細ページパーサー
+- `/apps/functions/src/services/dlsite/dlsite-mapper.ts` - データマッピング処理
+- `/apps/functions/src/services/dlsite/dlsite-firestore.ts` - Firestore操作
 
 ### **データ型定義**
 - `/packages/shared-types/src/work.ts` - 作品データスキーマ

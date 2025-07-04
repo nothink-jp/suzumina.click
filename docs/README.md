@@ -136,9 +136,20 @@ apps/
 │   ├── src/components/         # 管理者UI (ユーザー・コンテンツ管理)
 │   ├── src/lib/auth-client.ts  # Firestore認証クライアント
 │   └── src/__tests__/          # 管理者機能テスト (47件)
-└── functions/                  # Cloud Functions v2 (Node.js 22)
-    ├── src/dlsite.ts          # DLsite作品自動収集
-    └── src/youtube.ts         # YouTube動画自動収集
+└── functions/                  # Cloud Functions v2 (Node.js 22・エンタープライズ構造)
+    ├── src/endpoints/         # Cloud Functions エンドポイント
+    │   ├── dlsite.ts         # DLsite作品自動収集
+    │   ├── youtube.ts        # YouTube動画自動収集
+    │   └── index.ts          # Functions Framework エントリーポイント
+    ├── src/services/         # ビジネスロジック・サービス層
+    │   ├── dlsite/          # DLsite関連サービス (9ファイル)
+    │   └── youtube/         # YouTube関連サービス (4ファイル)
+    ├── src/infrastructure/   # インフラ・外部システム管理
+    │   ├── monitoring/      # 監視・ヘルスチェック (4ファイル)
+    │   ├── management/      # システム管理 (8ファイル)
+    │   └── database/        # データベース基盤 (2ファイル)
+    ├── src/development/     # 開発・デバッグツール (3ファイル)
+    └── src/shared/          # 共通ユーティリティ (6ファイル)
 ```
 
 ### パッケージ層詳細

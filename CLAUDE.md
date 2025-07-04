@@ -22,6 +22,7 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 - **管理者機能**: ユーザー・コンテンツ管理インターフェース
 - **インフラ**: Terraform + Google Cloud Platform (本番稼働)
 - **品質保証**: 703+件のテストスイート + E2Eテスト (WorkDetail強化完了)
+- **最新アーキテクチャ**: Cloud Functions エンタープライズレベルディレクトリ構造 (2025年7月4日完了)
 - **最新機能**: DLsite作品詳細情報表示強化 + 高解像度画像対応 (2025年7月実装)
 
 ## 🏗️ システム構成
@@ -63,9 +64,20 @@ DLsite      (本番環境)       (自動化)       ストレージ    (認証・
 ```text
 suzumina.click/ (v0.2.6)
 ├── apps/
-│   ├── functions/          # Cloud Functions (本番稼働)
-│   │   ├── src/dlsite.ts   # DLsite作品収集
-│   │   └── src/youtube.ts  # YouTube動画収集
+│   ├── functions/          # Cloud Functions (本番稼働・エンタープライズレベル構造)
+│   │   ├── src/endpoints/    # Cloud Functions エンドポイント
+│   │   │   ├── dlsite.ts     # DLsite作品収集
+│   │   │   ├── youtube.ts    # YouTube動画収集
+│   │   │   └── index.ts      # Functions Framework エントリーポイント
+│   │   ├── src/services/     # ビジネスロジック・サービス層
+│   │   │   ├── dlsite/       # DLsite関連サービス (9ファイル)
+│   │   │   └── youtube/      # YouTube関連サービス (4ファイル)
+│   │   ├── src/infrastructure/ # インフラ・外部システム管理
+│   │   │   ├── monitoring/   # 監視・ヘルスチェック (4ファイル)
+│   │   │   ├── management/   # システム管理 (8ファイル)
+│   │   │   └── database/     # データベース基盤 (2ファイル)
+│   │   ├── src/development/  # 開発・デバッグツール (3ファイル)
+│   │   └── src/shared/       # 共通ユーティリティ (6ファイル)
 │   ├── admin/              # 管理者専用アプリ (分離済み)
 │   │   ├── src/app/        # 管理者ダッシュボード・管理機能
 │   │   ├── src/components/ # 管理者UI (LoginButton等)
@@ -509,6 +521,27 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 
 ## 🆕 最新実装内容 (2025年7月)
 
+### Cloud Functions エンタープライズレベル構造再編成 (v0.2.7 - 2025年7月4日)
+
+#### **責任分離アーキテクチャの実現**
+- ✅ **エンドポイント層**: `src/endpoints/` - Cloud Functions外部インターフェース (3ファイル)
+- ✅ **サービス層**: `src/services/dlsite/` + `src/services/youtube/` - ビジネスロジック (13ファイル)
+- ✅ **インフラ層**: `src/infrastructure/` - 監視・管理・データベース基盤 (14ファイル)
+- ✅ **開発ツール**: `src/development/` - デバッグ・テストツール分離 (3ファイル)
+- ✅ **共通基盤**: `src/shared/` - 汎用ユーティリティ (6ファイル)
+
+#### **エンタープライズレベル品質管理**
+- ✅ **完全型安全性**: 42ファイル移行後もTypeScriptエラー0維持
+- ✅ **包括的テスト**: 267件テストスイート全成功・品質保証継続
+- ✅ **インポートパス完全更新**: 50+箇所の相互参照を新構造に適合
+- ✅ **ドキュメント同期**: 開発・運用ガイドのパスリファレンス更新
+
+#### **長期保守性・拡張性の確保**
+- ✅ **明確な責任分離**: 機能追加時の配置基準・影響範囲の最小化
+- ✅ **モジュール独立性**: DLsite/YouTube機能の完全分離・再利用性向上
+- ✅ **開発効率化**: 新規開発者の理解容易性・コード発見性向上
+- ✅ **運用監視強化**: infrastructure層による包括的システム管理統合
+
 ### DLsite作品詳細情報表示強化 (v0.2.6 - 2025年7月3日)
 
 #### **WorkDetailコンポーネント包括的機能実装**
@@ -687,7 +720,15 @@ pnpm update && pnpm audit --fix  # 安全な依存関係更新
 - **セキュリティ**: Discord OAuth + ロールベース + アクセスログ ✅
 - **パフォーマンス**: LCP最適化 + 画像最適化 + バンドル分割 ✅
 
-### 最新変更内容 (2025年7月3日)
+### 最新変更内容 (2025年7月4日)
+
+#### **Cloud Functions エンタープライズレベル構造再編成 (v0.2.7)**
+- **責任分離アーキテクチャ**: endpoints/services/infrastructure/development/shared 5層構造
+- **42ファイル完全移行**: TypeScriptエラー0・267テスト全成功維持
+- **包括的インポート更新**: 50+箇所の相互参照を新構造に適合
+- **エンタープライズ品質達成**: 長期保守性・拡張性・新規開発者対応力の大幅向上
+
+#### **以前の変更 (2025年7月3日)**
 
 #### **DLsite作品詳細情報表示強化 (v0.2.6)**
 - **WorkDetailコンポーネント全面リニューアル**: トラック・ファイル・クリエイター・特典情報の包括的表示
