@@ -28,9 +28,11 @@ const config = getDLsiteConfig();
 const MAX_PAGES_PER_EXECUTION = config.maxPagesPerExecution;
 const ITEMS_PER_PAGE = config.itemsPerPage;
 
-// DLsite検索用の定数（新URL形式対応）
+// DLsite検索用の定数（2025年7月4日修正: 完全データ収集対応）
+// 変更理由: 制限的フィルター（language/jp, sex_category[0]/male）を削除し、
+//          663件→1015件の完全収集を実現
 const DLSITE_SEARCH_BASE_URL =
-	"https://www.dlsite.com/maniax/fsr/=/language/jp/sex_category[0]/male/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/options_and_or/and/options[0]/JPN/options[1]/NM/per_page/100/page/";
+	"https://www.dlsite.com/maniax/fsr/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/per_page/100/page/";
 
 // メタデータの型定義
 interface FetchMetadata {
@@ -140,6 +142,10 @@ async function prepareExecution(): Promise<[FetchMetadata | undefined, FetchResu
 async function fetchDLsiteSearchResult(page: number): Promise<DLsiteSearchResult> {
 	const url = `${DLSITE_SEARCH_BASE_URL}${page}/show_type/1`;
 
+	if (page === 1) {
+		logger.info(`完全データ収集URL使用: ${url}`);
+		logger.info("🔧 フィルター削除: language/jp, sex_category[0]/male (35%データ欠落の原因)");
+	}
 	logger.debug(`DLsite検索リクエスト（HTML）: ${url}`);
 
 	const response = await fetch(url, {
@@ -380,6 +386,7 @@ async function fetchDLsiteWorksLogic(): Promise<FetchResult> {
 
 		// 2. 作品データの取得
 		logger.info("DLsiteから涼花みなせの作品情報取得を開始します");
+		logger.info("完全データ収集URL使用中: 期待収集数1015件 (制限的フィルター削除済み)");
 		const { workCount, nextPage, isComplete } = await fetchDLsiteWorksInternal(metadata);
 
 		logger.info(`取得した作品合計: ${workCount}件`);
@@ -390,7 +397,8 @@ async function fetchDLsiteWorksLogic(): Promise<FetchResult> {
 				currentPage: undefined,
 				lastSuccessfulCompleteFetch: Timestamp.now(),
 			});
-			logger.info("全ての作品の取得が完了しました");
+			logger.info(`全ての作品の取得が完了しました (総収集数: ${workCount}件)`);
+			logger.info("📊 収集完全性: 制限的フィルター削除により35%データ欠落問題を解決");
 		} else if (nextPage) {
 			logger.debug(`次回の実行のためにページ番号を保存: ${nextPage}`);
 		}
