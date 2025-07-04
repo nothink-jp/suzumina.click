@@ -142,8 +142,7 @@ export function parseSampleImages(
 	try {
 		const samples = JSON.parse(sampleData);
 		if (Array.isArray(samples)) {
-			// biome-ignore lint/suspicious/noExplicitAny: DLsite sample data structure varies
-			return samples.map((sample: any) => ({
+			return samples.map((sample: { thumb?: string; width?: string; height?: string }) => ({
 				thumb: sample.thumb || "",
 				width: sample.width ? Number.parseInt(sample.width, 10) : undefined,
 				height: sample.height ? Number.parseInt(sample.height, 10) : undefined,

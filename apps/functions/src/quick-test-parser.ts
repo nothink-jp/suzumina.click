@@ -39,7 +39,6 @@ interface QuickTestResult {
 	executionTime: number;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Debug tool with comprehensive testing logic
 async function quickTestSingle(productId: string): Promise<QuickTestResult> {
 	const startTime = Date.now();
 

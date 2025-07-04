@@ -242,7 +242,6 @@ class DLsiteChangeMonitor {
 	/**
 	 * 変化レポート生成
 	 */
-	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex HTML change detection logic
 	private generateChangeReport(
 		baseline: HtmlStructureSnapshot,
 		current: HtmlStructureSnapshot,

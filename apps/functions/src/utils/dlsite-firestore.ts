@@ -531,7 +531,7 @@ export async function getRankingHistory(productId: string): Promise<RankingInfo[
 		for (const doc of snapshot.docs) {
 			const data = doc.data();
 			// recordedAtフィールドを除去してRankingInfo型に変換
-			const { recordedAt, ...rankingData } = data;
+			const { recordedAt: _, ...rankingData } = data;
 			history.push(rankingData as RankingInfo);
 		}
 

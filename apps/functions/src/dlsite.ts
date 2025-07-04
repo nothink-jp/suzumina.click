@@ -1,4 +1,5 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
+import { getDLsiteConfig } from "./utils/config-manager";
 import {
 	getExistingWorksMap,
 	savePriceHistory,
@@ -9,6 +10,7 @@ import { mapMultipleWorksWithDetailData, mapMultipleWorksWithInfo } from "./util
 import { parseWorksFromHTML } from "./utils/dlsite-parser";
 import firestore, { Timestamp } from "./utils/firestore";
 import * as logger from "./utils/logger";
+import { generateDLsiteHeaders } from "./utils/user-agent-manager";
 
 // メタデータ保存用のドキュメントID
 const METADATA_DOC_ID = "fetch_metadata";
@@ -16,9 +18,12 @@ const METADATA_DOC_ID = "fetch_metadata";
 // Firestore関連の定数
 const METADATA_COLLECTION = "dlsiteMetadata";
 
-// 実行制限関連の定数
-const MAX_PAGES_PER_EXECUTION = 1; // 1回の実行での最大ページ数
-const ITEMS_PER_PAGE = 100; // DLsiteの1ページあたりの作品数
+// 設定を取得
+const config = getDLsiteConfig();
+
+// 実行制限関連の定数（設定から取得）
+const MAX_PAGES_PER_EXECUTION = config.maxPagesPerExecution;
+const ITEMS_PER_PAGE = config.itemsPerPage;
 
 // DLsite検索用の定数（新URL形式対応）
 const DLSITE_SEARCH_BASE_URL =
@@ -135,22 +140,8 @@ async function fetchDLsiteSearchResult(page: number): Promise<DLsiteSearchResult
 	logger.debug(`DLsite検索リクエスト（HTML）: ${url}`);
 
 	const response = await fetch(url, {
-		headers: {
-			"User-Agent":
-				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			Accept:
-				"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-			"Accept-Language": "ja-JP,ja;q=0.9,en;q=0.8",
-			"Accept-Encoding": "gzip, deflate, br",
-			"Cache-Control": "no-cache",
-			"Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-			"Sec-Ch-Ua-Mobile": "?0",
-			"Sec-Ch-Ua-Platform": '"Windows"',
-			"Sec-Fetch-Dest": "document",
-			"Sec-Fetch-Mode": "navigate",
-			"Sec-Fetch-Site": "none",
-			"Upgrade-Insecure-Requests": "1",
-		},
+		headers: generateDLsiteHeaders(),
+		signal: AbortSignal.timeout(config.timeoutMs),
 	});
 
 	logger.info(
@@ -348,8 +339,8 @@ async function fetchDLsiteWorksInternal(metadata: FetchMetadata): Promise<{
 			currentPage++;
 			pageCount++;
 
-			// レート制限対応
-			await new Promise((resolve) => setTimeout(resolve, 1000));
+			// レート制限対応（設定から取得）
+			await new Promise((resolve) => setTimeout(resolve, config.requestDelay));
 		} catch (error: unknown) {
 			logger.error(`ページ ${currentPage} の取得中にエラーが発生しました:`, error);
 			throw error;

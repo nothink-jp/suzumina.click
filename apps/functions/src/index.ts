@@ -39,10 +39,13 @@ export function initializeApplication(): boolean {
 initializeApplication();
 
 // GCFv2用のCloudEventハンドラーを登録（Pub/Subトリガー関数用）
-// biome-ignore lint/suspicious/noExplicitAny: Complexity type of cloudEvent
-functions.cloudEvent<any>("fetchYouTubeVideos", fetchYouTubeVideos);
-// biome-ignore lint/suspicious/noExplicitAny: Complexity type of cloudEvent
-functions.cloudEvent<any>("fetchDLsiteWorks", fetchDLsiteWorks);
+interface PubsubMessage {
+	data?: string;
+	attributes?: Record<string, string>;
+}
+
+functions.cloudEvent<PubsubMessage>("fetchYouTubeVideos", fetchYouTubeVideos);
+functions.cloudEvent<PubsubMessage>("fetchDLsiteWorks", fetchDLsiteWorks);
 
 // HTTPトリガー関数は独立したファイルで管理
 

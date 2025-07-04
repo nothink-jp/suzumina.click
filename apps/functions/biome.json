@@ -66,6 +66,15 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": ["**/coverage/**", "**/dist/**", "**/build/**", "**/.turbo/**", "**/.cache/**"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			}
 		}
 	]
 }

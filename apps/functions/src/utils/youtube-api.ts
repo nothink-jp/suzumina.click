@@ -1,13 +1,22 @@
 import type { youtube_v3 } from "googleapis";
 import { google } from "googleapis";
 import { SUZUKA_MINASE_CHANNEL_ID } from "./common";
+import { getYouTubeConfig } from "./config-manager";
 import * as logger from "./logger";
 import type { ApiError } from "./retry";
 import { retryApiCall } from "./retry";
+import {
+	canExecuteOperation,
+	getYouTubeQuotaMonitor,
+	recordQuotaUsage,
+} from "./youtube-quota-monitor";
 
 // YouTube API クォータ制限関連の定数
-export const MAX_VIDEOS_PER_BATCH = 50; // YouTube APIの最大結果数
 export const QUOTA_EXCEEDED_CODE = 403; // クォータ超過エラーコード
+
+// 設定を取得
+const config = getYouTubeConfig();
+export const MAX_VIDEOS_PER_BATCH = config.maxBatchSize; // YouTube APIの最大結果数（設定から取得）
 
 // YouTube APIの環境変数チェックはinitializeYouTubeClient()内で実行
 
@@ -50,6 +59,11 @@ export async function searchVideos(
 	items: youtube_v3.Schema$SearchResult[];
 	nextPageToken?: string;
 }> {
+	// クォータチェック
+	if (!canExecuteOperation("search")) {
+		throw new Error("YouTube APIクォータが不足しています");
+	}
+
 	try {
 		// YouTube API 呼び出し（リトライ機能付き）
 		const searchResponse: youtube_v3.Schema$SearchListResponse = await retryApiCall(async () => {
@@ -62,6 +76,15 @@ export async function searchVideos(
 				pageToken: pageToken,
 			});
 			return response.data;
+		});
+
+		// 成功時にクォータ使用量を記録
+		recordQuotaUsage("search");
+		getYouTubeQuotaMonitor().logQuotaUsage("search", 100, {
+			channelId: SUZUKA_MINASE_CHANNEL_ID,
+			maxResults: MAX_VIDEOS_PER_BATCH,
+			pageToken: pageToken || "none",
+			resultCount: searchResponse.items?.length || 0,
 		});
 
 		return {
@@ -94,6 +117,27 @@ export async function fetchVideoDetails(
 	logger.debug("動画の詳細情報を取得中...");
 	const videoDetails: youtube_v3.Schema$Video[] = [];
 
+	// 必要なクォータ量を事前計算
+	const requiredBatches = Math.ceil(videoIds.length / MAX_VIDEOS_PER_BATCH);
+	const totalQuotaCost = requiredBatches * 8; // videosFullDetails cost
+
+	// クォータチェック
+	if (!canExecuteOperation("videosFullDetails", requiredBatches)) {
+		logger.warn("YouTube APIクォータが不足しています", {
+			requiredBatches,
+			totalQuotaCost,
+			videoCount: videoIds.length,
+		});
+
+		// 部分的な取得を提案
+		const quotaMonitor = getYouTubeQuotaMonitor();
+		const suggestion = quotaMonitor.suggestOptimalOperations(videoIds.length);
+
+		if (!suggestion.feasible) {
+			throw new Error(`YouTube APIクォータが不足しています。${suggestion.alternatives.join(", ")}`);
+		}
+	}
+
 	// YouTube API の制限（最大50件）に合わせてバッチ処理
 	for (let i = 0; i < videoIds.length; i += MAX_VIDEOS_PER_BATCH) {
 		try {
@@ -116,6 +160,14 @@ export async function fetchVideoDetails(
 					maxResults: MAX_VIDEOS_PER_BATCH,
 				});
 				return response.data;
+			});
+
+			// 成功時にクォータ使用量を記録
+			recordQuotaUsage("videosFullDetails", batchIds.length);
+			getYouTubeQuotaMonitor().logQuotaUsage("videosFullDetails", 8 * batchIds.length, {
+				batchNumber: Math.floor(i / MAX_VIDEOS_PER_BATCH) + 1,
+				batchSize: batchIds.length,
+				resultCount: videoResponse.items?.length || 0,
 			});
 
 			if (videoResponse.items) {

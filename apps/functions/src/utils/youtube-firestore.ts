@@ -295,11 +295,10 @@ function createVideoData(
 ): FirestoreServerVideoData | null {
 	// 必須フィールドの検証
 	if (!video.id || !video.snippet) {
-		logger.warn(
-			"IDまたはスニペットが不足しているため動画をスキップします:",
-			// biome-ignore lint/suspicious/noExplicitAny: Complexity type of Youtube
-			video as any,
-		);
+		logger.warn("IDまたはスニペットが不足しているため動画をスキップします:", {
+			videoId: video.id,
+			hasSnippet: !!video.snippet,
+		});
 		return null;
 	}
 

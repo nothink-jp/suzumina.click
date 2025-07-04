@@ -6,6 +6,16 @@ DLsiteパーサーの開発・改善・デバッグのための包括的ツー�
 
 DLsiteのHTML構造変化によりパーサーが正常に動作しない場合の調査・修正を効率化するツール群です。
 
+### 🆕 自動監視システムとの連携
+
+リファクタリング（2025年7月4日）により、以下の自動システムが実装されています：
+
+- **`dlsite-health-monitor.ts`**: 構造健全性の自動監視
+- **`parser-config.ts`**: パーサー設定の外部管理
+- **`error-handler.ts`**: 包括的エラー処理
+
+これらのシステムと連携して、問題の早期発見と迅速な対応を実現します。
+
 ## 🛠️ 利用可能なツール
 
 ### 1. 🚀 クイックテスト（推奨・最初に使用）
@@ -135,7 +145,19 @@ open debug-output/RJ123456_raw.html
 
 ## 🔧 パーサー修正ワークフロー
 
-### 1. 問題の特定
+### 🆕 改善されたワークフロー（自動監視システム対応）
+
+#### 1. 自動監視アラートの確認
+
+```bash
+# ヘルスチェックの実行
+pnpm tsx src/utils/dlsite-health-monitor.ts
+
+# ログで問題を確認
+# "DLsite構造健全性チェック失敗" や "解析成功率が低下" などのメッセージ
+```
+
+#### 2. 問題の詳細調査
 
 ```bash
 # 現状の把握
@@ -145,7 +167,7 @@ pnpm debug:quick
 pnpm debug:parser --analyze-failures
 ```
 
-### 2. HTML構造の調査
+#### 3. HTML構造の調査
 
 ```bash
 # 最新HTMLの保存
@@ -155,13 +177,20 @@ pnpm debug:parser --product-id <問題のID>
 pnpm debug:compare
 ```
 
-### 3. パーサーコードの修正
+#### 4. パーサー設定の更新
 
-対象ファイル:
-- `src/utils/dlsite-parser.ts` - 基本情報抽出
-- `src/utils/dlsite-detail-parser.ts` - 詳細情報抽出
+```typescript
+// src/utils/parser-config.ts で設定を更新
+// 新しいセレクターを追加
+parserConfig.updateFieldConfig('title', {
+  selectors: {
+    primary: ['.new-title-class'], // 新しいセレクター
+    secondary: ['.work_name a'],    // 既存のフォールバック
+  }
+});
+```
 
-### 4. 修正の検証
+#### 5. 修正の検証
 
 ```bash
 # 修正後のテスト
@@ -230,9 +259,22 @@ logger.debug('HTML structure check', {
 
 ## 🚀 定期メンテナンス
 
-### 週次チェック
+### 🆕 自動監視による継続的チェック
+
+自動監視システムが定期的に健全性をチェックしています：
+
+- **`dlsite-health-monitor.ts`**: 1時間ごとに自動実行（Cloud Scheduler経由）
+- **成功率の自動追跡**: パーサー設定マネージャーが統計を記録
+- **アラート**: 成功率が閾値を下回ると自動通知
+
+### 手動チェック（推奨）
+
+#### 週次チェック
 
 ```bash
+# 自動監視レポートの確認
+pnpm tsx src/utils/dlsite-health-monitor.ts
+
 # パーサーの健全性確認
 pnpm debug:quick
 
@@ -240,7 +282,7 @@ pnpm debug:quick
 pnpm debug:compare
 ```
 
-### 月次チェック
+#### 月次チェック
 
 ```bash
 # ベースラインの更新
@@ -248,6 +290,9 @@ pnpm debug:baseline
 
 # 詳細な分析レポート
 pnpm debug:parser --analyze-failures
+
+# パーサー設定の最適化
+# 成功率の低いセレクターを特定して更新
 ```
 
 ## 🆘 サポート
@@ -262,6 +307,14 @@ pnpm debug:parser --analyze-failures
 
 ---
 
-**作成日**: 2025年7月3日  
+**初版作成**: 2025年7月3日  
+**最終更新**: 2025年7月4日（自動監視システム対応）  
 **対象バージョン**: v0.2.6+  
 **更新周期**: 必要に応じて
+
+### 関連ドキュメント
+
+- [Cloud Functions 技術評価・改善報告書](./CLOUD_FUNCTIONS_TECHNICAL_REPORT.md)
+- パーサー設定: `src/utils/parser-config.ts`
+- 健全性監視: `src/utils/dlsite-health-monitor.ts`
+- デバッグガイド: `PARSER_DEBUGGING_GUIDE.md` (このドキュメント)
