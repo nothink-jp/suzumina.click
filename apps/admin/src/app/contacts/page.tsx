@@ -68,13 +68,19 @@ async function getContacts(
 			const data = doc.data();
 			return {
 				id: doc.id,
-				name: data.name || "匿名",
+				name: "匿名ユーザー", // お問い合わせフォームでは名前フィールドなし
 				email: data.email || "",
 				subject: data.subject || "件名なし",
-				message: data.message || "",
+				message: data.content || "", // contentフィールドをmessageとして使用
 				status: data.status || "new",
-				createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-				updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+				createdAt:
+					typeof data.createdAt === "string"
+						? data.createdAt
+						: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+				updatedAt:
+					typeof data.updatedAt === "string"
+						? data.updatedAt
+						: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
 				priority: data.priority || "medium",
 			};
 		});

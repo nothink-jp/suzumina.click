@@ -86,15 +86,21 @@ async function getWorks(
 				workId: data.workId || doc.id,
 				title: data.title || "無題",
 				circle: data.circle || "不明",
-				price: data.price || 0,
-				saleDate: data.saleDate?.toDate?.()?.toISOString() || new Date().toISOString(),
+				price: typeof data.price === "number" ? data.price : 0,
+				saleDate:
+					typeof data.saleDate === "string"
+						? data.saleDate
+						: data.saleDate?.toDate?.()?.toISOString() || new Date().toISOString(),
 				description: data.description || "",
 				thumbnailUrl: data.thumbnailUrl || "",
 				highResImageUrl: data.highResImageUrl,
-				tags: data.tags || [],
-				rating: data.rating || 0,
-				reviewCount: data.reviewCount || 0,
-				lastUpdated: data.lastUpdated?.toDate?.()?.toISOString() || new Date().toISOString(),
+				tags: Array.isArray(data.tags) ? data.tags : [],
+				rating: typeof data.rating === "number" ? data.rating : 0,
+				reviewCount: typeof data.reviewCount === "number" ? data.reviewCount : 0,
+				lastUpdated:
+					typeof data.lastUpdated === "string"
+						? data.lastUpdated
+						: data.lastUpdated?.toDate?.()?.toISOString() || new Date().toISOString(),
 				isOnSale: data.isOnSale !== false,
 			};
 		});
@@ -121,7 +127,55 @@ async function getWorks(
 
 // 価格フォーマット
 function formatPrice(price: number): string {
+	if (typeof price !== "number" || isNaN(price)) {
+		return "¥0";
+	}
 	return `¥${price.toLocaleString()}`;
+}
+
+// 統計計算関数（全データを対象）
+async function calculateStats() {
+	try {
+		const firestore = getFirestore();
+		const allWorksSnap = await firestore.collection("dlsiteWorks").get();
+
+		const allWorks = allWorksSnap.docs.map((doc) => {
+			const data = doc.data();
+			return {
+				price: typeof data.price === "number" ? data.price : 0,
+				isOnSale: data.isOnSale !== false,
+				saleDate: data.saleDate?.toDate?.()?.toISOString() || new Date().toISOString(),
+			};
+		});
+
+		const total = allWorks.length;
+		const onSale = allWorks.filter((w) => w.isOnSale).length;
+		const totalValue = allWorks.reduce((sum, w) => sum + w.price, 0);
+		const averagePrice = total > 0 ? totalValue / total : 0;
+		const latestWork =
+			allWorks.length > 0
+				? allWorks.reduce((latest, work) =>
+						new Date(work.saleDate) > new Date(latest.saleDate) ? work : latest,
+					).saleDate
+				: null;
+
+		return {
+			total,
+			onSale,
+			totalValue,
+			averagePrice,
+			latestWork,
+		};
+	} catch (error) {
+		console.error("Stats calculation error:", error);
+		return {
+			total: 0,
+			onSale: 0,
+			totalValue: 0,
+			averagePrice: 0,
+			latestWork: null,
+		};
+	}
 }
 
 // 評価表示
@@ -149,14 +203,8 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const result = await getWorks(currentPage, 100);
 	const { works, totalCount, totalPages, hasNext, hasPrev } = result;
 
-	// 統計計算
-	const stats = {
-		total: totalCount,
-		onSale: works.filter((w) => w.isOnSale).length,
-		totalValue: works.reduce((sum, w) => sum + w.price, 0),
-		averagePrice: works.length > 0 ? works.reduce((sum, w) => sum + w.price, 0) / works.length : 0,
-		latestWork: works[0]?.saleDate,
-	};
+	// 統計計算（全データから計算）
+	const stats = await calculateStats();
 
 	return (
 		<div className="p-6 space-y-6">

@@ -109,10 +109,7 @@ export function ContactForm() {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({
-					...data,
-					timestamp: new Date().toISOString(),
-				}),
+				body: JSON.stringify(data),
 			});
 
 			if (response.ok) {
@@ -121,7 +118,8 @@ export function ContactForm() {
 			} else {
 				throw new Error("送信に失敗しました");
 			}
-		} catch (_error) {
+		} catch (error) {
+			console.error("Form submission error:", error);
 			alert("送信に失敗しました。しばらく時間をおいてから再度お試しください。");
 		} finally {
 			setIsSubmitting(false);
@@ -132,8 +130,13 @@ export function ContactForm() {
 		return <SuccessMessage onReset={() => setIsSubmitted(false)} />;
 	}
 
+	const handleFormSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		handleSubmit(onSubmit)(e);
+	};
+
 	return (
-		<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+		<form onSubmit={handleFormSubmit} className="space-y-6">
 			{/* お問い合わせ種別 */}
 			<div className="space-y-2">
 				<Label htmlFor="category">

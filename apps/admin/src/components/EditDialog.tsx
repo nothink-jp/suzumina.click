@@ -78,15 +78,15 @@ export function EditDialog({
 					{triggerText}
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[425px]">
+			<DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 					<DialogDescription>{description}</DialogDescription>
 				</DialogHeader>
-				<div className="grid gap-4 py-4">
+				<div className="grid gap-6 py-4">
 					{fields.map((field) => (
-						<div key={field.key} className="grid grid-cols-4 items-center gap-4">
-							<Label htmlFor={field.key} className="text-right">
+						<div key={field.key} className="space-y-2">
+							<Label htmlFor={field.key} className="text-sm font-medium">
 								{field.label}
 							</Label>
 							{field.type === "textarea" ? (
@@ -94,14 +94,15 @@ export function EditDialog({
 									id={field.key}
 									value={String(formData[field.key] || "")}
 									onChange={(e) => handleFieldChange(field.key, e.target.value)}
-									className="col-span-3"
+									className="min-h-[120px] w-full resize-y"
+									rows={6}
 								/>
 							) : field.type === "select" ? (
 								<select
 									id={field.key}
 									value={String(formData[field.key] || "")}
 									onChange={(e) => handleFieldChange(field.key, e.target.value)}
-									className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+									className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 								>
 									{field.options?.map((option) => (
 										<option key={option.value} value={option.value}>
@@ -118,7 +119,7 @@ export function EditDialog({
 										const value = field.type === "number" ? Number(e.target.value) : e.target.value;
 										handleFieldChange(field.key, value);
 									}}
-									className="col-span-3"
+									className="w-full"
 								/>
 							)}
 						</div>

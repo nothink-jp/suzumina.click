@@ -15,14 +15,17 @@ export async function POST(request: NextRequest) {
 		const clientIp = forwardedFor ? forwardedFor.split(",")[0] : "unknown";
 
 		// Firestoreに保存するデータ
+		const now = new Date().toISOString();
 		const contactData = {
 			...validatedData,
 			// 空文字の場合はundefinedに変換
 			email: validatedData.email || undefined,
 			ipAddress: clientIp,
 			userAgent: request.headers.get("user-agent") || "unknown",
-			createdAt: new Date().toISOString(),
+			timestamp: now,
+			createdAt: now,
 			status: "new" as const, // new, reviewing, resolved
+			priority: "medium" as const, // デフォルト優先度
 		};
 
 		// Firestoreに保存

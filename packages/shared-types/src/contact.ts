@@ -56,7 +56,6 @@ export const ContactFormDataSchema = z.object({
 	subject: z.string().min(1).max(100),
 	content: z.string().min(10).max(2000),
 	email: z.string().email().optional().or(z.literal("")),
-	timestamp: z.string(),
 });
 
 export type ContactFormData = z.infer<typeof ContactFormDataSchema>;
