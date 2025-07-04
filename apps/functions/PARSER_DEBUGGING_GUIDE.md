@@ -151,7 +151,7 @@ open debug-output/RJ123456_raw.html
 
 ```bash
 # ヘルスチェックの実行
-pnpm tsx src/utils/dlsite-health-monitor.ts
+pnpm tsx src/infrastructure/monitoring/dlsite-health-monitor.ts
 
 # ログで問題を確認
 # "DLsite構造健全性チェック失敗" や "解析成功率が低下" などのメッセージ
@@ -180,7 +180,7 @@ pnpm debug:compare
 #### 4. パーサー設定の更新
 
 ```typescript
-// src/utils/parser-config.ts で設定を更新
+// src/infrastructure/management/parser-config.ts で設定を更新
 // 新しいセレクターを追加
 parserConfig.updateFieldConfig('title', {
   selectors: {
@@ -315,6 +315,6 @@ pnpm debug:parser --analyze-failures
 ### 関連ドキュメント
 
 - [Cloud Functions 技術評価・改善報告書](./CLOUD_FUNCTIONS_TECHNICAL_REPORT.md)
-- パーサー設定: `src/utils/parser-config.ts`
-- 健全性監視: `src/utils/dlsite-health-monitor.ts`
+- パーサー設定: `src/infrastructure/management/parser-config.ts`
+- 健全性監視: `src/infrastructure/monitoring/dlsite-health-monitor.ts`
 - デバッグガイド: `PARSER_DEBUGGING_GUIDE.md` (このドキュメント)

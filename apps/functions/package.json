@@ -13,13 +13,13 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
-		"debug:parser": "tsx src/debug-dlsite-parser.ts",
-		"debug:quick": "tsx src/quick-test-parser.ts",
-		"debug:monitor": "tsx src/watch-dlsite-changes.ts",
-		"debug:baseline": "tsx src/watch-dlsite-changes.ts --create-baseline",
-		"debug:compare": "tsx src/watch-dlsite-changes.ts --compare-baseline"
+		"debug:parser": "tsx src/development/debug-dlsite-parser.ts",
+		"debug:quick": "tsx src/development/quick-test-parser.ts",
+		"debug:monitor": "tsx src/development/watch-dlsite-changes.ts",
+		"debug:baseline": "tsx src/development/watch-dlsite-changes.ts --create-baseline",
+		"debug:compare": "tsx src/development/watch-dlsite-changes.ts --compare-baseline"
 	},
-	"main": "lib/index.js",
+	"main": "lib/endpoints/index.js",
 	"engines": {
 		"node": "22"
 	},
