@@ -11,7 +11,7 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 
 ### 🚀 現在のステータス
 
-**本番稼働中の完成システム (v0.2.6)**
+**本番稼働中の完成システム (v0.3.0)**
 
 - **Webアプリケーション**: Next.js 15 + TypeScript + Tailwind CSS v4
 - **認証システム**: Discord OAuth + ギルドメンバーシップ確認
@@ -62,7 +62,7 @@ DLsite      (本番環境)       (自動化)       ストレージ    (認証・
 ## 📁 プロジェクト構造
 
 ```text
-suzumina.click/ (v0.2.6)
+suzumina.click/ (v0.3.0)
 ├── apps/
 │   ├── functions/          # Cloud Functions (本番稼働・エンタープライズレベル構造)
 │   │   ├── src/endpoints/    # Cloud Functions エンドポイント
@@ -521,6 +521,14 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 
 ## 🆕 最新実装内容 (2025年7月)
 
+### 新着音声ボタン中央揃え修正 (v0.3.0 - 2025年7月4日)
+
+#### **UI/UX改善・デザイン統一性向上**
+- ✅ **新着音声ボタンセクション中央揃え**: FeaturedAudioButtonsCarousel の配置修正
+- ✅ **デザイン一貫性確保**: 他のカルーセルセクションとの統一配置実現
+- ✅ **レスポンシブ対応維持**: 全画面サイズでの中央配置・ボタンデザイン保持
+- ✅ **品質保証**: 既存機能・テストスイートの完全維持
+
 ### Cloud Functions エンタープライズレベル構造再編成 (v0.2.7 - 2025年7月4日)
 
 #### **責任分離アーキテクチャの実現**
@@ -721,6 +729,11 @@ pnpm update && pnpm audit --fix  # 安全な依存関係更新
 - **パフォーマンス**: LCP最適化 + 画像最適化 + バンドル分割 ✅
 
 ### 最新変更内容 (2025年7月4日)
+
+#### **新着音声ボタン中央揃え修正 (v0.3.0)**
+- **デザイン統一性向上**: FeaturedAudioButtonsCarousel配置修正・他セクションとの一貫性確保
+- **レスポンシブ対応**: 全画面サイズでの適切な中央配置・ボタン機能維持
+- **品質保証**: 既存テストスイート・機能の完全保持
 
 #### **Cloud Functions エンタープライズレベル構造再編成 (v0.2.7)**
 - **責任分離アーキテクチャ**: endpoints/services/infrastructure/development/shared 5層構造

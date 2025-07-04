@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/your-org/suzumina.click/workflows/CI/badge.svg)](https://github.com/your-org/suzumina.click/actions)
 [![Test Coverage](https://img.shields.io/badge/coverage-80%2B%25-green)](https://github.com/your-org/suzumina.click)
 [![Security](https://img.shields.io/badge/security-0%20vulnerabilities-green)](https://github.com/your-org/suzumina.click)
-[![Version](https://img.shields.io/badge/version-v0.2.2-blue)](https://github.com/your-org/suzumina.click/releases)
+[![Version](https://img.shields.io/badge/version-v0.3.0-blue)](https://github.com/your-org/suzumina.click/releases)
 
 声優「涼花みなせ」ファンサイト - Discord認証ベースの音声ボタン共有プラットフォーム
 
@@ -99,4 +99,4 @@ cd packages/ui && pnpm storybook
 
 **開発者**: suzumina.click 開発チーム  
 **ライセンス**: MIT  
-**バージョン**: v0.2.2（お気に入りシステム + 音声ボタンデザイン刷新）
+**バージョン**: v0.3.0（UI/UX改善・デザイン統一性向上）
