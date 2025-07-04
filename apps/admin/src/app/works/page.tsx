@@ -65,17 +65,16 @@ async function getWorks(
 		const totalCount = totalSnap.size;
 
 		// ページング計算
-		const offset = (page - 1) * limit;
+		const _offset = (page - 1) * limit;
 		const totalPages = Math.ceil(totalCount / limit);
 
 		// ページ範囲チェック
 		const currentPage = Math.max(1, Math.min(page, totalPages));
 		const actualOffset = (currentPage - 1) * limit;
 
-		// データ取得（saleDateでソート）
+		// データ取得（ソートなしで安全に取得）
 		const worksSnap = await firestore
 			.collection("dlsiteWorks")
-			.orderBy("saleDate", "desc")
 			.offset(actualOffset)
 			.limit(limit)
 			.get();
