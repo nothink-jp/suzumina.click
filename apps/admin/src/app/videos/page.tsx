@@ -9,7 +9,16 @@ import {
 	TableHeader,
 	TableRow,
 } from "@suzumina.click/ui/components/ui/table";
-import { ArrowLeft, Calendar, Clock, Eye, Play, ThumbsUp } from "lucide-react";
+import {
+	ArrowLeft,
+	Calendar,
+	ChevronLeft,
+	ChevronRight,
+	Clock,
+	Eye,
+	Play,
+	ThumbsUp,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -34,20 +43,42 @@ interface VideoData {
 	lastUpdated: string;
 }
 
-// 動画一覧取得関数
-async function getVideos(): Promise<VideoData[]> {
+// 動画一覧取得関数（ページネーション対応）
+async function getVideos(
+	page = 1,
+	limit = 100,
+): Promise<{
+	videos: VideoData[];
+	totalCount: number;
+	currentPage: number;
+	totalPages: number;
+	hasNext: boolean;
+	hasPrev: boolean;
+}> {
 	try {
 		const firestore = getFirestore();
+
+		// 総件数を取得
+		const totalSnap = await firestore.collection("videos").get();
+		const totalCount = totalSnap.size;
+
+		// ページング計算
+		const offset = (page - 1) * limit;
+		const totalPages = Math.ceil(totalCount / limit);
+
+		// ページ範囲チェック
+		const currentPage = Math.max(1, Math.min(page, totalPages));
+		const actualOffset = (currentPage - 1) * limit;
+
+		// データ取得（publishedAtでソート）
 		const videosSnap = await firestore
 			.collection("videos")
 			.orderBy("publishedAt", "desc")
-			.limit(100)
+			.offset(actualOffset)
+			.limit(limit)
 			.get();
 
-		if (videosSnap.docs.length > 0) {
-		}
-
-		return videosSnap.docs.map((doc) => {
+		const videos = videosSnap.docs.map((doc) => {
 			const data = doc.data();
 			return {
 				id: doc.id,
@@ -64,8 +95,24 @@ async function getVideos(): Promise<VideoData[]> {
 				lastUpdated: data.lastUpdated?.toDate?.()?.toISOString() || new Date().toISOString(),
 			};
 		});
+
+		return {
+			videos,
+			totalCount,
+			currentPage,
+			totalPages,
+			hasNext: currentPage < totalPages,
+			hasPrev: currentPage > 1,
+		};
 	} catch (_error) {
-		return [];
+		return {
+			videos: [],
+			totalCount: 0,
+			currentPage: 1,
+			totalPages: 1,
+			hasNext: false,
+			hasPrev: false,
+		};
 	}
 }
 
@@ -96,18 +143,29 @@ function formatNumber(num: number): string {
 	return num.toString();
 }
 
-export default async function VideosPage() {
+interface VideosPageProps {
+	searchParams: Promise<{
+		page?: string;
+	}>;
+}
+
+export default async function VideosPage({ searchParams }: VideosPageProps) {
 	const session = await auth();
 
 	if (!session?.user?.isAdmin) {
 		redirect("/login");
 	}
 
-	const videos = await getVideos();
+	// ページ番号を取得
+	const params = await searchParams;
+	const currentPage = Math.max(1, Number.parseInt(params.page || "1", 10));
+
+	const result = await getVideos(currentPage, 100);
+	const { videos, totalCount, totalPages, hasNext, hasPrev } = result;
 
 	// 統計計算
 	const stats = {
-		total: videos.length,
+		total: totalCount,
 		totalViews: videos.reduce((sum, v) => sum + v.viewCount, 0),
 		totalLikes: videos.reduce((sum, v) => sum + v.likeCount, 0),
 		latestVideo: videos[0]?.publishedAt,
@@ -267,6 +325,57 @@ export default async function VideosPage() {
 
 					{videos.length === 0 && (
 						<div className="text-center py-8 text-muted-foreground">動画データが見つかりません</div>
+					)}
+
+					{/* ページネーション */}
+					{totalPages > 1 && (
+						<div className="flex items-center justify-between px-2 py-4">
+							<div className="flex items-center gap-2">
+								<p className="text-sm text-muted-foreground">
+									ページ {currentPage} / {totalPages} （総件数: {totalCount}件）
+								</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									asChild={hasPrev}
+									disabled={!hasPrev}
+									className="gap-1"
+								>
+									{hasPrev ? (
+										<Link href={`/videos?page=${currentPage - 1}`}>
+											<ChevronLeft className="h-4 w-4" />
+											前のページ
+										</Link>
+									) : (
+										<>
+											<ChevronLeft className="h-4 w-4" />
+											前のページ
+										</>
+									)}
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									asChild={hasNext}
+									disabled={!hasNext}
+									className="gap-1"
+								>
+									{hasNext ? (
+										<Link href={`/videos?page=${currentPage + 1}`}>
+											次のページ
+											<ChevronRight className="h-4 w-4" />
+										</Link>
+									) : (
+										<>
+											次のページ
+											<ChevronRight className="h-4 w-4" />
+										</>
+									)}
+								</Button>
+							</div>
+						</div>
 					)}
 				</CardContent>
 			</Card>

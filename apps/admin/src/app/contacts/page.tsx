@@ -1,7 +1,15 @@
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { AlertCircle, ArrowLeft, CheckCircle, Clock, MessageSquare } from "lucide-react";
+import {
+	AlertCircle,
+	ArrowLeft,
+	CheckCircle,
+	ChevronLeft,
+	ChevronRight,
+	Clock,
+	MessageSquare,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ContactManagementClient } from "@/components/ContactManagementClient";
@@ -21,17 +29,42 @@ interface ContactData {
 	priority: "low" | "medium" | "high";
 }
 
-// お問い合わせ一覧取得関数
-async function getContacts(): Promise<ContactData[]> {
+// お問い合わせ一覧取得関数（ページネーション対応）
+async function getContacts(
+	page = 1,
+	limit = 100,
+): Promise<{
+	contacts: ContactData[];
+	totalCount: number;
+	currentPage: number;
+	totalPages: number;
+	hasNext: boolean;
+	hasPrev: boolean;
+}> {
 	try {
 		const firestore = getFirestore();
+
+		// 総件数を取得
+		const totalSnap = await firestore.collection("contacts").get();
+		const totalCount = totalSnap.size;
+
+		// ページング計算
+		const offset = (page - 1) * limit;
+		const totalPages = Math.ceil(totalCount / limit);
+
+		// ページ範囲チェック
+		const currentPage = Math.max(1, Math.min(page, totalPages));
+		const actualOffset = (currentPage - 1) * limit;
+
+		// データ取得（createdAtでソート）
 		const contactsSnap = await firestore
 			.collection("contacts")
 			.orderBy("createdAt", "desc")
-			.limit(100)
+			.offset(actualOffset)
+			.limit(limit)
 			.get();
 
-		return contactsSnap.docs.map((doc) => {
+		const contacts = contactsSnap.docs.map((doc) => {
 			const data = doc.data();
 			return {
 				id: doc.id,
@@ -45,8 +78,24 @@ async function getContacts(): Promise<ContactData[]> {
 				priority: data.priority || "medium",
 			};
 		});
+
+		return {
+			contacts,
+			totalCount,
+			currentPage,
+			totalPages,
+			hasNext: currentPage < totalPages,
+			hasPrev: currentPage > 1,
+		};
 	} catch (_error) {
-		return [];
+		return {
+			contacts: [],
+			totalCount: 0,
+			currentPage: 1,
+			totalPages: 1,
+			hasNext: false,
+			hasPrev: false,
+		};
 	}
 }
 
@@ -93,18 +142,29 @@ function _getPriorityBadge(priority: string) {
 	}
 }
 
-export default async function ContactsPage() {
+interface ContactsPageProps {
+	searchParams: Promise<{
+		page?: string;
+	}>;
+}
+
+export default async function ContactsPage({ searchParams }: ContactsPageProps) {
 	const session = await auth();
 
 	if (!session?.user?.isAdmin) {
 		redirect("/login");
 	}
 
-	const contacts = await getContacts();
+	// ページ番号を取得
+	const params = await searchParams;
+	const currentPage = Math.max(1, Number.parseInt(params.page || "1", 10));
+
+	const result = await getContacts(currentPage, 100);
+	const { contacts, totalCount, totalPages, hasNext, hasPrev } = result;
 
 	// 統計計算
 	const stats = {
-		total: contacts.length,
+		total: totalCount,
 		new: contacts.filter((c) => c.status === "new").length,
 		reviewing: contacts.filter((c) => c.status === "reviewing").length,
 		resolved: contacts.filter((c) => c.status === "resolved").length,
@@ -189,6 +249,57 @@ export default async function ContactsPage() {
 					{contacts.length === 0 && (
 						<div className="text-center py-8 text-muted-foreground">
 							お問い合わせが見つかりません
+						</div>
+					)}
+
+					{/* ページネーション */}
+					{totalPages > 1 && (
+						<div className="flex items-center justify-between px-2 py-4 mt-4">
+							<div className="flex items-center gap-2">
+								<p className="text-sm text-muted-foreground">
+									ページ {currentPage} / {totalPages} （総件数: {totalCount}件）
+								</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									asChild={hasPrev}
+									disabled={!hasPrev}
+									className="gap-1"
+								>
+									{hasPrev ? (
+										<Link href={`/contacts?page=${currentPage - 1}`}>
+											<ChevronLeft className="h-4 w-4" />
+											前のページ
+										</Link>
+									) : (
+										<>
+											<ChevronLeft className="h-4 w-4" />
+											前のページ
+										</>
+									)}
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									asChild={hasNext}
+									disabled={!hasNext}
+									className="gap-1"
+								>
+									{hasNext ? (
+										<Link href={`/contacts?page=${currentPage + 1}`}>
+											次のページ
+											<ChevronRight className="h-4 w-4" />
+										</Link>
+									) : (
+										<>
+											次のページ
+											<ChevronRight className="h-4 w-4" />
+										</>
+									)}
+								</Button>
+							</div>
 						</div>
 					)}
 				</CardContent>

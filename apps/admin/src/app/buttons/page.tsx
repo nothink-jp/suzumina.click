@@ -9,7 +9,17 @@ import {
 	TableHeader,
 	TableRow,
 } from "@suzumina.click/ui/components/ui/table";
-import { ArrowLeft, ExternalLink, Heart, Music, Play, ThumbsUp, User } from "lucide-react";
+import {
+	ArrowLeft,
+	ChevronLeft,
+	ChevronRight,
+	ExternalLink,
+	Heart,
+	Music,
+	Play,
+	ThumbsUp,
+	User,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ButtonActionsCell } from "@/components/ButtonActionsCell";
@@ -73,14 +83,39 @@ function createAudioButtonData(
 	};
 }
 
-// 音声ボタン一覧取得関数
-async function getAudioButtons(): Promise<AudioButton[]> {
+// 音声ボタン一覧取得関数（ページネーション対応）
+async function getAudioButtons(
+	page = 1,
+	limit = 100,
+): Promise<{
+	buttons: AudioButton[];
+	totalCount: number;
+	currentPage: number;
+	totalPages: number;
+	hasNext: boolean;
+	hasPrev: boolean;
+}> {
 	try {
 		const firestore = getFirestore();
+
+		// 総件数を取得
+		const totalSnap = await firestore.collection("audioButtons").get();
+		const totalCount = totalSnap.size;
+
+		// ページング計算
+		const offset = (page - 1) * limit;
+		const totalPages = Math.ceil(totalCount / limit);
+
+		// ページ範囲チェック
+		const currentPage = Math.max(1, Math.min(page, totalPages));
+		const actualOffset = (currentPage - 1) * limit;
+
+		// データ取得（createdAtでソート）
 		const buttonsSnap = await firestore
 			.collection("audioButtons")
 			.orderBy("createdAt", "desc")
-			.limit(100)
+			.offset(actualOffset)
+			.limit(limit)
 			.get();
 
 		const buttons: AudioButton[] = [];
@@ -91,9 +126,23 @@ async function getAudioButtons(): Promise<AudioButton[]> {
 			buttons.push(createAudioButtonData(doc, creatorName));
 		}
 
-		return buttons;
+		return {
+			buttons,
+			totalCount,
+			currentPage,
+			totalPages,
+			hasNext: currentPage < totalPages,
+			hasPrev: currentPage > 1,
+		};
 	} catch (_error) {
-		return [];
+		return {
+			buttons: [],
+			totalCount: 0,
+			currentPage: 1,
+			totalPages: 1,
+			hasNext: false,
+			hasPrev: false,
+		};
 	}
 }
 
@@ -104,18 +153,29 @@ function formatTime(seconds: number): string {
 	return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-export default async function ButtonsPage() {
+interface ButtonsPageProps {
+	searchParams: Promise<{
+		page?: string;
+	}>;
+}
+
+export default async function ButtonsPage({ searchParams }: ButtonsPageProps) {
 	const session = await auth();
 
 	if (!session?.user?.isAdmin) {
 		redirect("/login");
 	}
 
-	const buttons = await getAudioButtons();
+	// ページ番号を取得
+	const params = await searchParams;
+	const currentPage = Math.max(1, Number.parseInt(params.page || "1", 10));
+
+	const result = await getAudioButtons(currentPage, 100);
+	const { buttons, totalCount, totalPages, hasNext, hasPrev } = result;
 
 	// 統計計算
 	const stats = {
-		total: buttons.length,
+		total: totalCount,
 		public: buttons.filter((b) => b.isPublic).length,
 		private: buttons.filter((b) => !b.isPublic).length,
 		totalPlays: buttons.reduce((sum, b) => sum + b.playCount, 0),
@@ -294,6 +354,57 @@ export default async function ButtonsPage() {
 
 					{buttons.length === 0 && (
 						<div className="text-center py-8 text-muted-foreground">音声ボタンが見つかりません</div>
+					)}
+
+					{/* ページネーション */}
+					{totalPages > 1 && (
+						<div className="flex items-center justify-between px-2 py-4 mt-4">
+							<div className="flex items-center gap-2">
+								<p className="text-sm text-muted-foreground">
+									ページ {currentPage} / {totalPages} （総件数: {totalCount}件）
+								</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									asChild={hasPrev}
+									disabled={!hasPrev}
+									className="gap-1"
+								>
+									{hasPrev ? (
+										<Link href={`/buttons?page=${currentPage - 1}`}>
+											<ChevronLeft className="h-4 w-4" />
+											前のページ
+										</Link>
+									) : (
+										<>
+											<ChevronLeft className="h-4 w-4" />
+											前のページ
+										</>
+									)}
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									asChild={hasNext}
+									disabled={!hasNext}
+									className="gap-1"
+								>
+									{hasNext ? (
+										<Link href={`/buttons?page=${currentPage + 1}`}>
+											次のページ
+											<ChevronRight className="h-4 w-4" />
+										</Link>
+									) : (
+										<>
+											次のページ
+											<ChevronRight className="h-4 w-4" />
+										</>
+									)}
+								</Button>
+							</div>
+						</div>
 					)}
 				</CardContent>
 			</Card>

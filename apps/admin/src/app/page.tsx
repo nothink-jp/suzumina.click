@@ -5,6 +5,7 @@ import {
 	AlertCircle,
 	BookOpen,
 	Clock,
+	Heart,
 	MessageSquare,
 	Music,
 	Play,
@@ -24,11 +25,22 @@ async function getAdminStats() {
 		// 並列でデータ取得
 		const [usersSnap, videosSnap, worksSnap, buttonsSnap, contactsSnap] = await Promise.all([
 			firestore.collection("users").get(),
-			firestore.collection("youtubeVideos").get(),
+			firestore.collection("videos").get(),
 			firestore.collection("dlsiteWorks").get(),
 			firestore.collection("audioButtons").get(),
 			firestore.collection("contacts").get(),
 		]);
+
+		// お気に入り総数を取得
+		let totalFavorites = 0;
+		for (const userDoc of usersSnap.docs) {
+			const favoritesSnap = await firestore
+				.collection("users")
+				.doc(userDoc.id)
+				.collection("favorites")
+				.get();
+			totalFavorites += favoritesSnap.size;
+		}
 
 		// お問い合わせのステータス別集計
 		const contactsByStatus = contactsSnap.docs.reduce(
@@ -59,6 +71,9 @@ async function getAdminStats() {
 				new: contactsByStatus.new || 0,
 				reviewing: contactsByStatus.reviewing || 0,
 				resolved: contactsByStatus.resolved || 0,
+			},
+			favorites: {
+				total: totalFavorites,
 			},
 		};
 	} catch {
@@ -199,6 +214,32 @@ export default async function AdminDashboard() {
 							</div>
 							<Button variant="outline" size="sm" asChild className="w-full mt-3">
 								<Link href="/buttons">音声ボタン管理を開く</Link>
+							</Button>
+						</div>
+					</CardContent>
+				</Card>
+
+				{/* お気に入り統計 */}
+				<Card className="hover:shadow-md transition-shadow">
+					<CardHeader className="pb-2">
+						<CardTitle className="flex items-center gap-2 text-sm font-medium">
+							<Heart className="h-4 w-4 text-red-500" />
+							お気に入り管理
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-2">
+							<div className="flex items-baseline gap-2">
+								<span className="text-2xl font-bold">{stats.favorites.total}</span>
+								<span className="text-sm text-muted-foreground">総お気に入り</span>
+							</div>
+							<div className="flex items-center gap-2">
+								<span className="text-xs text-muted-foreground">
+									ユーザーのお気に入り音声ボタン
+								</span>
+							</div>
+							<Button variant="outline" size="sm" asChild className="w-full mt-3">
+								<Link href="/favorites">お気に入り管理を開く</Link>
 							</Button>
 						</div>
 					</CardContent>

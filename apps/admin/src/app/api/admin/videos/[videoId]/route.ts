@@ -15,7 +15,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ vid
 		const body = await request.json();
 
 		const firestore = getFirestore();
-		const videoRef = firestore.collection("youtubeVideos").doc(videoId);
+		const videoRef = firestore.collection("videos").doc(videoId);
 
 		// 動画の存在確認
 		const videoDoc = await videoRef.get();
@@ -66,7 +66,7 @@ export async function DELETE(
 		const firestore = getFirestore();
 
 		// 動画の存在確認
-		const videoRef = firestore.collection("youtubeVideos").doc(videoId);
+		const videoRef = firestore.collection("videos").doc(videoId);
 		const videoDoc = await videoRef.get();
 		if (!videoDoc.exists) {
 			return NextResponse.json({ error: "Video not found" }, { status: 404 });

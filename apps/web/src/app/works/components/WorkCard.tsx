@@ -81,12 +81,10 @@ export default function WorkCard({ work, variant = "default", priority = false }
 			<div className="p-0">
 				<div className="relative">
 					<div className="aspect-[4/3] overflow-hidden rounded-t-lg">
-						<a
-							href={work.workUrl}
-							target="_blank"
-							rel="noopener noreferrer"
+						<Link
+							href={`/works/${work.id}`}
 							className="block w-full h-full group"
-							aria-label={`${work.title}をDLsiteで開く`}
+							aria-label={`${work.title}の詳細を見る`}
 						>
 							<ThumbnailImage
 								src={work.highResImageUrl || work.thumbnailUrl}
@@ -98,7 +96,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 								height={288}
 								sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
 							/>
-						</a>
+						</Link>
 					</div>
 					{/* セール中バッジ */}
 					{isOnSale && (
@@ -118,12 +116,10 @@ export default function WorkCard({ work, variant = "default", priority = false }
 					)}
 				</div>
 				<div className="p-3 sm:p-4">
-					<a
-						href={work.workUrl}
-						target="_blank"
-						rel="noopener noreferrer"
+					<Link
+						href={`/works/${work.id}`}
 						className="block group"
-						aria-label={`${work.title}をDLsiteで開く`}
+						aria-label={`${work.title}の詳細を見る`}
 					>
 						<h4
 							id={`work-title-${work.id}`}
@@ -133,12 +129,12 @@ export default function WorkCard({ work, variant = "default", priority = false }
 						>
 							{work.title}
 						</h4>
-					</a>
+					</Link>
 					<p className="text-xs sm:text-sm text-muted-foreground mb-2">{work.circle}</p>
 
 					{/* ジャンル・タグ表示 */}
 					<ul className="flex flex-wrap gap-1 mb-2" aria-label="作品ジャンル・タグ">
-						{(work.tags || []).slice(0, 3).map((tag) => (
+						{(work.tags || []).slice(0, 3).map((tag: string) => (
 							<li key={tag}>
 								<Badge
 									variant="outline"

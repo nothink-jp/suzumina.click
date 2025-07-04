@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { BookOpen, Home, LogOut, MessageSquare, Music, Play, Users } from "lucide-react";
+import { BookOpen, Heart, Home, LogOut, MessageSquare, Music, Play, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -39,6 +39,11 @@ export function AdminNavigation() {
 			href: "/contacts",
 			label: "お問い合わせ管理",
 			icon: MessageSquare,
+		},
+		{
+			href: "/favorites",
+			label: "お気に入り管理",
+			icon: Heart,
 		},
 	];
 

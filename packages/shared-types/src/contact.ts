@@ -13,6 +13,12 @@ export const ContactStatusSchema = z.enum(["new", "reviewing", "resolved"]);
 export type ContactStatus = z.infer<typeof ContactStatusSchema>;
 
 /**
+ * お問い合わせ優先度
+ */
+export const ContactPrioritySchema = z.enum(["low", "medium", "high"]);
+export type ContactPriority = z.infer<typeof ContactPrioritySchema>;
+
+/**
  * Firestoreに保存するお問い合わせデータ
  */
 export const FirestoreContactDataSchema = z.object({
@@ -23,8 +29,12 @@ export const FirestoreContactDataSchema = z.object({
 	ipAddress: z.string(),
 	userAgent: z.string(),
 	status: ContactStatusSchema,
+	priority: ContactPrioritySchema.default("medium"),
+	adminNote: z.string().optional(),
+	handledBy: z.string().optional(),
 	createdAt: z.string(),
 	timestamp: z.string(),
+	updatedAt: z.string().optional(),
 });
 
 export type FirestoreContactData = z.infer<typeof FirestoreContactDataSchema>;
@@ -74,4 +84,28 @@ export function getStatusDisplayName(status: ContactStatus): string {
 		resolved: "対応済み",
 	};
 	return statusNames[status];
+}
+
+/**
+ * 優先度表示名の取得
+ */
+export function getPriorityDisplayName(priority: ContactPriority): string {
+	const priorityNames: Record<ContactPriority, string> = {
+		low: "低",
+		medium: "中",
+		high: "高",
+	};
+	return priorityNames[priority];
+}
+
+/**
+ * 優先度の色を取得
+ */
+export function getPriorityColor(priority: ContactPriority): string {
+	const priorityColors: Record<ContactPriority, string> = {
+		low: "text-green-600",
+		medium: "text-yellow-600",
+		high: "text-red-600",
+	};
+	return priorityColors[priority];
 }

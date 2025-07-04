@@ -9,7 +9,16 @@ import {
 	TableHeader,
 	TableRow,
 } from "@suzumina.click/ui/components/ui/table";
-import { ArrowLeft, BookOpen, Calendar, DollarSign, Star, Tag } from "lucide-react";
+import {
+	ArrowLeft,
+	BookOpen,
+	Calendar,
+	ChevronLeft,
+	ChevronRight,
+	DollarSign,
+	Star,
+	Tag,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -36,20 +45,42 @@ interface WorkData {
 	isOnSale: boolean;
 }
 
-// 作品一覧取得関数
-async function getWorks(): Promise<WorkData[]> {
+// 作品一覧取得関数（ページネーション対応）
+async function getWorks(
+	page = 1,
+	limit = 100,
+): Promise<{
+	works: WorkData[];
+	totalCount: number;
+	currentPage: number;
+	totalPages: number;
+	hasNext: boolean;
+	hasPrev: boolean;
+}> {
 	try {
 		const firestore = getFirestore();
+
+		// 総件数を取得
+		const totalSnap = await firestore.collection("dlsiteWorks").get();
+		const totalCount = totalSnap.size;
+
+		// ページング計算
+		const offset = (page - 1) * limit;
+		const totalPages = Math.ceil(totalCount / limit);
+
+		// ページ範囲チェック
+		const currentPage = Math.max(1, Math.min(page, totalPages));
+		const actualOffset = (currentPage - 1) * limit;
+
+		// データ取得（saleDateでソート）
 		const worksSnap = await firestore
 			.collection("dlsiteWorks")
 			.orderBy("saleDate", "desc")
-			.limit(100)
+			.offset(actualOffset)
+			.limit(limit)
 			.get();
 
-		if (worksSnap.docs.length > 0) {
-		}
-
-		return worksSnap.docs.map((doc) => {
+		const works = worksSnap.docs.map((doc) => {
 			const data = doc.data();
 			return {
 				id: doc.id,
@@ -68,8 +99,24 @@ async function getWorks(): Promise<WorkData[]> {
 				isOnSale: data.isOnSale !== false,
 			};
 		});
+
+		return {
+			works,
+			totalCount,
+			currentPage,
+			totalPages,
+			hasNext: currentPage < totalPages,
+			hasPrev: currentPage > 1,
+		};
 	} catch (_error) {
-		return [];
+		return {
+			works: [],
+			totalCount: 0,
+			currentPage: 1,
+			totalPages: 1,
+			hasNext: false,
+			hasPrev: false,
+		};
 	}
 }
 
@@ -83,18 +130,29 @@ function formatRating(rating: number): string {
 	return rating > 0 ? rating.toFixed(1) : "未評価";
 }
 
-export default async function WorksPage() {
+interface WorksPageProps {
+	searchParams: Promise<{
+		page?: string;
+	}>;
+}
+
+export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const session = await auth();
 
 	if (!session?.user?.isAdmin) {
 		redirect("/login");
 	}
 
-	const works = await getWorks();
+	// ページ番号を取得
+	const params = await searchParams;
+	const currentPage = Math.max(1, Number.parseInt(params.page || "1", 10));
+
+	const result = await getWorks(currentPage, 100);
+	const { works, totalCount, totalPages, hasNext, hasPrev } = result;
 
 	// 統計計算
 	const stats = {
-		total: works.length,
+		total: totalCount,
 		onSale: works.filter((w) => w.isOnSale).length,
 		totalValue: works.reduce((sum, w) => sum + w.price, 0),
 		averagePrice: works.length > 0 ? works.reduce((sum, w) => sum + w.price, 0) / works.length : 0,
@@ -269,6 +327,57 @@ export default async function WorksPage() {
 
 					{works.length === 0 && (
 						<div className="text-center py-8 text-muted-foreground">作品データが見つかりません</div>
+					)}
+
+					{/* ページネーション */}
+					{totalPages > 1 && (
+						<div className="flex items-center justify-between px-2 py-4">
+							<div className="flex items-center gap-2">
+								<p className="text-sm text-muted-foreground">
+									ページ {currentPage} / {totalPages} （総件数: {totalCount}件）
+								</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									asChild={hasPrev}
+									disabled={!hasPrev}
+									className="gap-1"
+								>
+									{hasPrev ? (
+										<Link href={`/works?page=${currentPage - 1}`}>
+											<ChevronLeft className="h-4 w-4" />
+											前のページ
+										</Link>
+									) : (
+										<>
+											<ChevronLeft className="h-4 w-4" />
+											前のページ
+										</>
+									)}
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									asChild={hasNext}
+									disabled={!hasNext}
+									className="gap-1"
+								>
+									{hasNext ? (
+										<Link href={`/works?page=${currentPage + 1}`}>
+											次のページ
+											<ChevronRight className="h-4 w-4" />
+										</Link>
+									) : (
+										<>
+											次のページ
+											<ChevronRight className="h-4 w-4" />
+										</>
+									)}
+								</Button>
+							</div>
+						</div>
 					)}
 				</CardContent>
 			</Card>
