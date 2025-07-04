@@ -1,17 +1,6 @@
 import type { PriceHistory } from "@suzumina.click/shared-types";
-import { getApps, initializeApp } from "firebase/app";
-import { collection, getDocs, getFirestore, limit, orderBy, query } from "firebase/firestore";
 import { type NextRequest, NextResponse } from "next/server";
-
-// Firebase設定（環境変数から取得）
-const firebaseConfig = {
-	projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-};
-
-// Firebase初期化
-if (!getApps().length) {
-	initializeApp(firebaseConfig);
-}
+import { getFirestore } from "@/lib/firestore";
 
 /**
  * 指定された作品の価格履歴を取得
@@ -28,9 +17,8 @@ export async function GET(
 		}
 
 		const db = getFirestore();
-		const snapshotsRef = collection(db, "priceHistory", workId, "snapshots");
-		const q = query(snapshotsRef, orderBy("date", "desc"), limit(100));
-		const snapshot = await getDocs(q);
+		const snapshotsRef = db.collection("priceHistory").doc(workId).collection("snapshots");
+		const snapshot = await snapshotsRef.orderBy("date", "desc").limit(100).get();
 
 		const priceHistory: PriceHistory[] = [];
 		snapshot.forEach((docSnapshot) => {

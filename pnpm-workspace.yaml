@@ -1,11 +1,3 @@
 packages:
   - apps/*
   - packages/*
-onlyBuiltDependencies:
-  - '@biomejs/biome'
-  - '@firebase/util'
-  - '@tailwindcss/oxide'
-  - esbuild
-  - lefthook
-  - protobufjs
-  - sharp

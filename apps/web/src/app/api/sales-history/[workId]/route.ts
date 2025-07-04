@@ -1,17 +1,6 @@
 import type { RankingInfo, SalesHistory } from "@suzumina.click/shared-types";
-import { getApps, initializeApp } from "firebase/app";
-import { collection, getDocs, getFirestore, limit, orderBy, query } from "firebase/firestore";
 import { type NextRequest, NextResponse } from "next/server";
-
-// Firebase設定（環境変数から取得）
-const firebaseConfig = {
-	projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-};
-
-// Firebase初期化
-if (!getApps().length) {
-	initializeApp(firebaseConfig);
-}
+import { getFirestore } from "@/lib/firestore";
 
 /**
  * 指定された作品の販売履歴とランキング履歴を取得
@@ -30,9 +19,8 @@ export async function GET(
 		const db = getFirestore();
 
 		// 販売履歴を取得
-		const salesSnapshotsRef = collection(db, "salesHistory", workId, "snapshots");
-		const salesQuery = query(salesSnapshotsRef, orderBy("date", "desc"), limit(100));
-		const salesSnapshot = await getDocs(salesQuery);
+		const salesSnapshotsRef = db.collection("salesHistory").doc(workId).collection("snapshots");
+		const salesSnapshot = await salesSnapshotsRef.orderBy("date", "desc").limit(100).get();
 
 		const salesHistory: SalesHistory[] = [];
 		salesSnapshot.forEach((docSnapshot) => {
@@ -41,9 +29,8 @@ export async function GET(
 		});
 
 		// ランキング履歴を取得
-		const rankingsRef = collection(db, "salesHistory", workId, "rankings");
-		const rankingsQuery = query(rankingsRef, orderBy("recordedAt", "desc"), limit(50));
-		const rankingsSnapshot = await getDocs(rankingsQuery);
+		const rankingsRef = db.collection("salesHistory").doc(workId).collection("rankings");
+		const rankingsSnapshot = await rankingsRef.orderBy("recordedAt", "desc").limit(50).get();
 
 		const rankingHistory: RankingInfo[] = [];
 		rankingsSnapshot.forEach((docSnapshot) => {

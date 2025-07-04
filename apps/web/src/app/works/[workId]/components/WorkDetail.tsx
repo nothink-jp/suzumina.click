@@ -2,6 +2,7 @@
 
 import { getWorkCategoryDisplayName } from "@suzumina.click/shared-types";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
+import NotImplementedOverlay from "@suzumina.click/ui/components/custom/not-implemented-overlay";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import {
@@ -574,7 +575,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 						</TabsContent>
 
 						{/* 特性評価タブ */}
-						<TabsContent value="characteristics">
+						<TabsContent value="characteristics" className="relative">
 							<div className="space-y-4">
 								<div className="text-center mb-6">
 									<h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -589,6 +590,10 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									showOverallStats={true}
 								/>
 							</div>
+							<NotImplementedOverlay
+								title="特性評価機能は準備中です"
+								description="現在、ユーザー特性評価システムを開発中です。表示されているデータはモックデータです。"
+							/>
 						</TabsContent>
 
 						{/* 価格推移タブ */}
