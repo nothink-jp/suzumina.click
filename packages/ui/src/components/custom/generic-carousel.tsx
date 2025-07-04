@@ -13,6 +13,8 @@ interface GenericCarouselProps<T> {
 	emptyStateMessage: string;
 	getItemKey: (item: T) => string;
 	itemClassName?: string;
+	cardMinWidth?: number; // カードの最小幅（px）
+	cardMaxWidth?: number; // カードの最大幅（px）
 }
 
 export function GenericCarousel<T>({
@@ -21,6 +23,8 @@ export function GenericCarousel<T>({
 	emptyStateMessage,
 	getItemKey,
 	itemClassName,
+	cardMinWidth = 280,
+	cardMaxWidth = 320,
 }: GenericCarouselProps<T>) {
 	if (items.length === 0) {
 		return (
@@ -31,12 +35,25 @@ export function GenericCarousel<T>({
 	}
 
 	return (
-		<Carousel className="w-full">
-			<CarouselContent className="-ml-1 sm:-ml-2 md:-ml-4">
+		<Carousel
+			className="w-full"
+			opts={{
+				align: "start",
+				slidesToScroll: "auto",
+				containScroll: "trimSnaps",
+			}}
+		>
+			<CarouselContent className="-ml-2 md:-ml-4">
 				{items.map((item) => (
 					<CarouselItem
 						key={getItemKey(item)}
-						className={`pl-1 sm:pl-2 md:pl-4 basis-full xs:basis-1/2 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 ${itemClassName || ""}`}
+						className={`pl-2 md:pl-4 min-w-0 ${itemClassName || ""}`}
+						style={{
+							// カードの最小幅を指定し、画面幅に応じて柔軟に調整
+							// 小さな画面: 最小240px、中間: 画面幅の40-50%、大きな画面: 最大値まで
+							flexBasis: `clamp(240px, 45vw, ${cardMaxWidth}px)`,
+							maxWidth: `${cardMaxWidth}px`,
+						}}
 					>
 						{renderItem(item)}
 					</CarouselItem>

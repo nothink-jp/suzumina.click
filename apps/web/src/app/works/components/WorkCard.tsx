@@ -75,10 +75,10 @@ export default function WorkCard({ work, variant = "default", priority = false }
 
 	return (
 		<article
-			className="hover:shadow-lg transition-shadow border bg-card text-card-foreground rounded-lg shadow-sm"
+			className="hover:shadow-lg transition-shadow border bg-card text-card-foreground rounded-lg shadow-sm h-full flex flex-col"
 			aria-labelledby={`work-title-${work.id}`}
 		>
-			<div className="p-0">
+			<div className="flex flex-col h-full">
 				<div className="relative">
 					<div className="aspect-[4/3] overflow-hidden rounded-t-lg">
 						<Link
@@ -94,7 +94,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 								priority={priority}
 								width={384}
 								height={288}
-								sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+								sizes="(max-width: 400px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
 							/>
 						</Link>
 					</div>
@@ -115,7 +115,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 						</div>
 					)}
 				</div>
-				<div className="p-3 sm:p-4">
+				<div className="p-3 sm:p-4 flex flex-col flex-1">
 					<Link
 						href={`/works/${work.id}`}
 						className="block group"
@@ -232,11 +232,11 @@ export default function WorkCard({ work, variant = "default", priority = false }
 					</div>
 
 					{/* アクションボタン */}
-					<fieldset className="flex gap-2" aria-label="作品アクション">
+					<fieldset className="flex gap-1 sm:gap-2 mt-auto" aria-label="作品アクション">
 						<Button
 							size="sm"
 							variant="outline"
-							className="flex-1 border text-muted-foreground hover:bg-accent min-h-[44px] text-xs sm:text-sm"
+							className="flex-1 border text-muted-foreground hover:bg-accent min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
 							asChild
 						>
 							<Link href={`/works/${work.id}`} aria-describedby={`work-title-${work.id}`}>
@@ -245,7 +245,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 						</Button>
 						<Button
 							size="sm"
-							className="bg-destructive hover:bg-destructive/90 text-white min-h-[44px] min-w-[44px] px-3"
+							className="bg-destructive hover:bg-destructive/90 text-white min-h-[40px] sm:min-h-[44px] min-w-[40px] sm:min-w-[44px] px-2 sm:px-3"
 							asChild
 						>
 							<a
@@ -254,7 +254,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 								rel="noopener noreferrer"
 								aria-label={`${work.title}をDLsiteで購入`}
 							>
-								<ExternalLink className="h-4 w-4" aria-hidden="true" />
+								<ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
 							</a>
 						</Button>
 					</fieldset>
