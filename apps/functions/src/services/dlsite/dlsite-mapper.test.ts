@@ -1,7 +1,4 @@
-import type {
-	DLsiteWorkBase,
-	OptimizedFirestoreDLsiteWorkData,
-} from "@suzumina.click/shared-types";
+import type { DLsiteWorkBase } from "@suzumina.click/shared-types";
 import { describe, expect, it, vi } from "vitest";
 import {
 	extractCampaignInfo,
