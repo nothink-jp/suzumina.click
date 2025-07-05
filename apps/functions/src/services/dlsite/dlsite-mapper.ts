@@ -330,7 +330,7 @@ export function extractVoiceActors(infoData: DLsiteInfoResponse): string[] {
 /**
  * パースされたデータからPriceInfo構造に変換
  */
-function mapToPriceInfo(parsed: ParsedWorkData): PriceInfo {
+export function mapToPriceInfo(parsed: ParsedWorkData): PriceInfo {
 	return {
 		current: parsed.currentPrice,
 		original: parsed.originalPrice,
@@ -343,7 +343,7 @@ function mapToPriceInfo(parsed: ParsedWorkData): PriceInfo {
 /**
  * パースされたデータからRatingInfo構造に変換
  */
-function mapToRatingInfo(
+export function mapToRatingInfo(
 	parsed: ParsedWorkData,
 	infoData?: DLsiteInfoResponse,
 	extendedData?: ExtendedWorkData,
@@ -405,12 +405,13 @@ function normalizeUrl(url: string): string {
  */
 export function mapToWorkBase(
 	parsed: ParsedWorkData,
-	infoData?: DLsiteInfoResponse,
-	extendedData?: ExtendedWorkData,
+	infoData?: DLsiteInfoResponse | null,
+	extendedData?: ExtendedWorkData | null,
+	existingData?: FirestoreDLsiteWorkData | null,
 ): DLsiteWorkBase {
 	try {
 		const price = mapToPriceInfo(parsed);
-		const rating = mapToRatingInfo(parsed, infoData, extendedData);
+		const rating = mapToRatingInfo(parsed, infoData || undefined, extendedData || undefined);
 
 		// サンプル画像のURLを正規化
 		const normalizedSampleImages = parsed.sampleImages.map((sample) => ({
@@ -421,13 +422,14 @@ export function mapToWorkBase(
 
 		// === 重複データ統合処理 ===
 
-		// 声優情報の統合（優先順: infoData > extendedData > extendedData.basicInfo > parsed.author）
+		// 声優情報の統合（優先順: infoData > extendedData > extendedData.basicInfo > parsed.author > existingData）
 		const consolidatedVoiceActors = [
 			...new Set([
 				...(infoData ? extractVoiceActors(infoData) : []),
 				...(extendedData?.voiceActors || []),
 				...((extendedData?.basicInfo as any)?.voiceActors || []),
 				...(parsed.author || []),
+				...(existingData?.voiceActors || []), // 既存データ保持
 			]),
 		];
 
@@ -436,6 +438,7 @@ export function mapToWorkBase(
 			...new Set([
 				...(extendedData?.scenario || []),
 				...((extendedData?.basicInfo as any)?.scenario || []),
+				...(existingData?.scenario || []), // 既存データ保持
 			]),
 		];
 
@@ -444,6 +447,7 @@ export function mapToWorkBase(
 			...new Set([
 				...(extendedData?.illustration || []),
 				...((extendedData?.basicInfo as any)?.illustration || []),
+				...(existingData?.illustration || []), // 既存データ保持
 			]),
 		];
 
@@ -452,23 +456,31 @@ export function mapToWorkBase(
 			...new Set([
 				...(extendedData?.music || []),
 				...((extendedData?.basicInfo as any)?.music || []),
+				...(existingData?.music || []), // 既存データ保持
 			]),
 		];
 
 		// デザイン情報の統合
-		const consolidatedDesign = [...new Set([...(extendedData?.design || [])])];
+		const consolidatedDesign = [
+			...new Set([
+				...(extendedData?.design || []),
+				...(existingData?.design || []), // 既存データ保持
+			]),
+		];
 
-		// タグ情報の統合（優先順: parsed.tags > extendedData.basicInfo.genres > infoData.genres）
+		// タグ情報の統合（優先順: parsed.tags > extendedData.basicInfo.genres > infoData.genres > existingData）
 		const consolidatedTags = [
 			...new Set([
 				...(parsed.tags || []),
 				...((extendedData?.basicInfo as any)?.genres || []),
 				...(infoData?.genres || []),
+				...(existingData?.tags || []), // 既存データ保持
 			]),
 		];
 
 		// その他のクリエイター情報の統合
 		const consolidatedOtherCreators = {
+			...(existingData?.otherCreators || {}), // 既存データ保持
 			...(extendedData?.otherCreators || {}),
 		};
 
@@ -595,8 +607,8 @@ export function mapMultipleWorks(
 
 	for (const parsed of parsedWorks) {
 		try {
-			const workBase = mapToWorkBase(parsed);
 			const existingData = existingDataMap?.get(parsed.productId);
+			const workBase = mapToWorkBase(parsed, null, null, existingData as FirestoreDLsiteWorkData);
 			const firestoreData = mapToFirestoreData(workBase, existingData);
 			results.push(firestoreData);
 		} catch (error) {
@@ -629,8 +641,13 @@ export async function mapMultipleWorksWithInfo(
 			const infoData = await fetchWorkInfo(parsed.productId);
 
 			// HTMLデータとinfoデータを組み合わせて変換
-			const workBase = mapToWorkBase(parsed, infoData || undefined);
 			const existingData = existingDataMap?.get(parsed.productId);
+			const workBase = mapToWorkBase(
+				parsed,
+				infoData || undefined,
+				null,
+				existingData as FirestoreDLsiteWorkData,
+			);
 			const firestoreData = mapToFirestoreData(workBase, existingData);
 			results.push(firestoreData);
 
@@ -675,8 +692,13 @@ export async function mapMultipleWorksWithDetailData(
 			const extendedData = await fetchAndParseWorkDetail(parsed.productId);
 
 			// HTMLデータ、infoデータ、詳細データを組み合わせて変換
-			const workBase = mapToWorkBase(parsed, infoData || undefined, extendedData || undefined);
 			const existingData = existingDataMap?.get(parsed.productId);
+			const workBase = mapToWorkBase(
+				parsed,
+				infoData || undefined,
+				extendedData || undefined,
+				existingData as FirestoreDLsiteWorkData,
+			);
 			const firestoreData = mapToFirestoreData(workBase, existingData);
 			results.push(firestoreData);
 
