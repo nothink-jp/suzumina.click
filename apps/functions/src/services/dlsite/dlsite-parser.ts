@@ -600,7 +600,7 @@ export function parseWorksFromHTML(html: string): ParsedWorkData[] {
 
 	logger.debug("HTMLパース開始（新構造対応）");
 
-	// 新しい構造: table.work_1col_table の tr 要素から作品情報を取得
+	// 構造1: table.work_1col_table の tr 要素から作品情報を取得（通常のHTMLページ）
 	$("table.work_1col_table tr").each((index: number, element: unknown) => {
 		const work = processWorkTableRow($(element as never), index);
 		if (work) {
@@ -608,8 +608,185 @@ export function parseWorksFromHTML(html: string): ParsedWorkData[] {
 		}
 	});
 
+	// 構造2: ul#search_result_img_box の li 要素から作品情報を取得（AJAX APIレスポンス）
+	if (works.length === 0) {
+		logger.debug("table構造が見つからないため、AJAX構造（ul#search_result_img_box）を試行");
+		$("#search_result_img_box li[data-list_item_product_id]").each(
+			(index: number, element: unknown) => {
+				const work = processWorkListItem(element, index);
+				if (work) {
+					works.push(work);
+				}
+			},
+		);
+	}
+
 	logger.info(`HTMLパース完了: ${works.length}件の作品を抽出`);
 	return works;
+}
+
+/**
+ * カテゴリテキストをWorkCategory enumにマッピング
+ */
+function mapCategoryTextToWorkCategory(categoryText: string): WorkCategory {
+	// 日本語テキストからマッピング
+	switch (categoryText) {
+		case "アドベンチャー":
+			return "ADV" as WorkCategory;
+		case "ボイス・ASMR":
+		case "音声作品":
+			return "SOU" as WorkCategory;
+		case "アクション":
+			return "ACN" as WorkCategory;
+		case "シミュレーション":
+			return "SLN" as WorkCategory;
+		case "ロールプレイング":
+			return "RPG" as WorkCategory;
+		case "パズル":
+			return "PZL" as WorkCategory;
+		case "クイズ":
+			return "QIZ" as WorkCategory;
+		case "シューティング":
+			return "STG" as WorkCategory;
+		case "タイピング":
+			return "TYP" as WorkCategory;
+		case "テーブル":
+			return "TBL" as WorkCategory;
+		case "デジタルノベル":
+			return "DNV" as WorkCategory;
+		case "CG・イラスト":
+			return "ICG" as WorkCategory;
+		case "コミック":
+			return "COM" as WorkCategory;
+		case "動画":
+			return "MOV" as WorkCategory;
+		case "音楽":
+			return "MUS" as WorkCategory;
+		case "ツール/アクセサリ":
+			return "TOL" as WorkCategory;
+		case "その他ゲーム":
+			return "ETC" as WorkCategory;
+		default:
+			logger.warn(`未知のカテゴリテキスト: ${categoryText}`);
+			return "ETC" as WorkCategory;
+	}
+}
+
+/**
+ * AJAX APIレスポンスのli要素から作品データを処理
+ */
+function processWorkListItem(element: unknown, index: number): ParsedWorkData | null {
+	// biome-ignore lint/suspicious/noExplicitAny: cheerio element type is complex
+	const $item = cheerio.load("")(element as any);
+	try {
+		// 作品IDを取得
+		const productId = $item.attr("data-list_item_product_id");
+		if (!productId) {
+			logger.debug(`作品${index}: 作品IDが見つかりません`);
+			return null;
+		}
+
+		// 基本情報を抽出
+		const title =
+			$item.find(".work_name a").attr("title") || $item.find(".work_name a").text().trim();
+		if (!title) {
+			logger.debug(`作品${productId}: タイトルが見つかりません`);
+			return null;
+		}
+
+		const circle = $item.find(".maker_name a").first().text().trim();
+		const workUrl = $item.find(".work_name a").attr("href") || "";
+
+		// 画像URL
+		const thumbnailUrl = $item.find("img").attr("src") || "";
+
+		// カテゴリ情報
+		const categoryElement = $item.find(".work_category a");
+		const categoryText = categoryElement.text().trim();
+		const category = mapCategoryTextToWorkCategory(categoryText);
+
+		// 価格情報
+		const currentPriceText = $item.find(".work_price_base").first().text().trim();
+		const currentPrice = Number.parseInt(currentPriceText.replace(/[^\d]/g, ""), 10) || 0;
+
+		const originalPriceText = $item.find(".strike .work_price_base").text().trim();
+		const originalPrice = originalPriceText
+			? Number.parseInt(originalPriceText.replace(/[^\d]/g, ""), 10)
+			: undefined;
+
+		// 販売数
+		const salesText = $item.find(".work_dl span").text().trim();
+		const salesCount = salesText ? Number.parseInt(salesText.replace(/[^\d]/g, ""), 10) : undefined;
+
+		// 評価情報
+		const ratingElement = $item.find(".star_rating");
+		let stars: number | undefined;
+		let ratingCount: number | undefined;
+
+		if (ratingElement.length > 0) {
+			const ratingClass = ratingElement.attr("class") || "";
+			const starMatch = ratingClass?.match(/star_(\d+)/);
+			if (starMatch && starMatch[1]) {
+				stars = Number.parseInt(starMatch[1], 10) / 10; // star_45 -> 4.5
+			}
+
+			const ratingText = ratingElement.text().trim();
+			const ratingMatch = ratingText?.match(/\((\d+)\)/);
+			if (ratingMatch && ratingMatch[1]) {
+				ratingCount = Number.parseInt(ratingMatch[1], 10);
+			}
+		}
+
+		// 声優情報（涼花みなせの場合）
+		const authorElements = $item.find(".maker_name .author a");
+		const author: string[] = [];
+		authorElements.each((_: number, el: unknown) => {
+			const authorName = cheerio
+				.load("")(el as any)
+				.text()
+				.trim();
+			if (authorName) {
+				author.push(authorName);
+			}
+		});
+
+		// 割引率計算
+		let discount: number | undefined;
+		if (originalPrice && originalPrice > currentPrice) {
+			discount = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+		}
+
+		// 独占配信フラグ
+		const isExclusive = $item.hasClass("type_exclusive_01");
+
+		logger.debug(`作品${productId}の解析完了: ${title}, タグ数: 0`);
+
+		return {
+			productId,
+			title,
+			circle,
+			author: author.length > 0 ? author : undefined,
+			category,
+			workUrl: workUrl.startsWith("//")
+				? `https:${workUrl}`
+				: workUrl.startsWith("/")
+					? `https://www.dlsite.com${workUrl}`
+					: workUrl,
+			thumbnailUrl: thumbnailUrl.startsWith("//") ? `https:${thumbnailUrl}` : thumbnailUrl,
+			currentPrice,
+			originalPrice,
+			discount,
+			stars,
+			ratingCount,
+			salesCount,
+			isExclusive,
+			tags: [], // AJAX構造では詳細なタグ情報は取得困難
+			sampleImages: [], // AJAX構造ではサンプル画像は取得困難
+		};
+	} catch (error) {
+		logger.error(`作品${index}の処理中にエラー:`, error);
+		return null;
+	}
 }
 
 /**

@@ -1,7 +1,11 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { getDLsiteConfig } from "../infrastructure/management/config-manager";
-import { generateDLsiteHeaders } from "../infrastructure/management/user-agent-manager";
+import {
+	fetchDLsiteAjaxResult,
+	isLastPageFromPageInfo,
+	validateAjaxHtmlContent,
+} from "../services/dlsite/dlsite-ajax-fetcher";
 import {
 	getExistingWorksMap,
 	savePriceHistory,
@@ -26,13 +30,6 @@ const config = getDLsiteConfig();
 
 // 実行制限関連の定数（設定から取得）
 const MAX_PAGES_PER_EXECUTION = config.maxPagesPerExecution;
-const ITEMS_PER_PAGE = config.itemsPerPage;
-
-// DLsite検索用の定数（2025年7月4日修正: 完全データ収集対応）
-// 変更理由: 制限的フィルター（language/jp, sex_category[0]/male）を削除し、
-//          663件→1015件の完全収集を実現
-const DLSITE_SEARCH_BASE_URL =
-	"https://www.dlsite.com/maniax/fsr/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/per_page/100/page/";
 
 // メタデータの型定義
 interface FetchMetadata {
@@ -58,18 +55,6 @@ interface FetchResult {
 interface PubsubMessage {
 	data?: string;
 	attributes?: Record<string, string>;
-}
-
-/**
- * DLsite検索結果の型定義
- */
-interface DLsiteSearchResult {
-	search_result: string;
-	page_info: {
-		count: number;
-		first_indice: number;
-		last_indice: number;
-	};
 }
 
 /**
@@ -137,84 +122,25 @@ async function prepareExecution(): Promise<[FetchMetadata | undefined, FetchResu
 }
 
 /**
- * DLsiteから検索結果を取得（HTML形式）
- */
-async function fetchDLsiteSearchResult(page: number): Promise<DLsiteSearchResult> {
-	const url = `${DLSITE_SEARCH_BASE_URL}${page}/show_type/1`;
-
-	if (page === 1) {
-		logger.info(`完全データ収集URL使用: ${url}`);
-		logger.info("🔧 フィルター削除: language/jp, sex_category[0]/male (35%データ欠落の原因)");
-	}
-	logger.debug(`DLsite検索リクエスト（HTML）: ${url}`);
-
-	const response = await fetch(url, {
-		headers: generateDLsiteHeaders(),
-		signal: AbortSignal.timeout(config.timeoutMs),
-	});
-
-	logger.info(
-		`DLsiteレスポンス詳細: ステータス=${response.status}, Content-Type=${response.headers.get("Content-Type")}`,
-	);
-
-	if (!response.ok) {
-		const responseText = await response.text();
-		logger.error(`DLsite検索リクエストが失敗しました: ${response.status} ${response.statusText}`, {
-			responsePreview: responseText.substring(0, 500),
-		});
-		throw new Error(
-			`DLsite検索リクエストが失敗しました: ${response.status} ${response.statusText}`,
-		);
-	}
-
-	// HTMLレスポンステキストを取得
-	const htmlContent = await response.text();
-	logger.info(`DLsiteレスポンス内容プレビュー: ${htmlContent.substring(0, 300)}...`);
-
-	// Content-Typeをチェック（HTMLを期待）
-	const contentType = response.headers.get("Content-Type") || "";
-	if (!contentType.includes("text/html")) {
-		logger.warn(`予期しないContent-Type: ${contentType}`);
-	}
-
-	// HTMLが有効かチェック
-	if (!htmlContent.includes("<!DOCTYPE html") && !htmlContent.includes("<html")) {
-		logger.error("有効なHTMLページが返されませんでした");
-		throw new Error("DLsiteから無効なHTMLが返されました");
-	}
-
-	// DLsiteSearchResult形式で返す（search_resultにHTMLを格納）
-	const result: DLsiteSearchResult = {
-		search_result: htmlContent,
-		page_info: {
-			count: 0, // HTMLから抽出する必要がある場合は後で実装
-			first_indice: (page - 1) * 100 + 1,
-			last_indice: page * 100,
-		},
-	};
-
-	logger.info("HTMLページの取得が成功しました");
-	return result;
-}
-
-/**
  * 単一ページの作品データを処理
  */
 async function processSinglePage(
 	currentPage: number,
-): Promise<{ savedCount: number; parsedCount: number; isLastPage: boolean }> {
+): Promise<{ savedCount: number; parsedCount: number; isLastPage: boolean; totalWorks?: number }> {
 	logger.debug(`DLsite検索: ページ ${currentPage} を取得中...`);
 
 	try {
-		const searchResult = await fetchDLsiteSearchResult(currentPage);
+		// AJAX APIから検索結果を取得
+		const ajaxResult = await fetchDLsiteAjaxResult(currentPage);
 
-		if (!searchResult.search_result) {
-			logger.info(`ページ ${currentPage} は空です。全ての作品の取得が完了しました。`);
+		// HTMLコンテンツの妥当性検証
+		if (!validateAjaxHtmlContent(ajaxResult.search_result)) {
+			logger.error(`ページ ${currentPage}: 無効なHTMLコンテンツが返されました`);
 			return { savedCount: 0, parsedCount: 0, isLastPage: true };
 		}
 
 		// HTMLから作品データを解析
-		const parsedWorks = parseWorksFromHTML(searchResult.search_result);
+		const parsedWorks = parseWorksFromHTML(ajaxResult.search_result);
 
 		if (parsedWorks.length === 0) {
 			logger.info(
@@ -296,37 +222,30 @@ async function processSinglePage(
 		});
 
 		// 総作品数の更新処理
-		if (currentPage === 1 && searchResult.page_info) {
+		if (currentPage === 1) {
 			await updateMetadata({
-				totalWorks: searchResult.page_info.count,
+				totalWorks: ajaxResult.page_info.count,
 				currentPage: currentPage + 1,
 			});
 		} else {
 			await updateMetadata({ currentPage: currentPage + 1 });
 		}
 
-		// 最終ページ判定
-		// 方法1: 作品数が100件未満
-		// 方法2: HTMLに「次へ」リンクが存在しない
-		// 方法3: 総作品数に到達した（collection-monitorから取得）
-		let isLastPage = parsedWorks.length < ITEMS_PER_PAGE;
-
-		// より確実な判定: HTMLから次ページリンクを確認
-		if (!isLastPage && searchResult.search_result) {
-			const hasNextPage = searchResult.search_result.includes(`page/${currentPage + 1}"`);
-			if (!hasNextPage) {
-				isLastPage = true;
-				logger.info(
-					`ページ ${currentPage}: 次ページへのリンクが見つかりません。最終ページと判定します。`,
-				);
-			}
-		}
+		// AJAX APIのページング情報を使用した最終ページ判定
+		const isLastPage = isLastPageFromPageInfo(ajaxResult.page_info, currentPage);
 
 		if (isLastPage) {
-			logger.info(`ページ ${currentPage} が最終ページです。全ての作品の取得が完了しました。`);
+			logger.info(
+				`ページ ${currentPage} が最終ページです。` + `総作品数: ${ajaxResult.page_info.count}件`,
+			);
 		}
 
-		return { savedCount, parsedCount: parsedWorks.length, isLastPage };
+		return {
+			savedCount,
+			parsedCount: parsedWorks.length,
+			isLastPage,
+			totalWorks: ajaxResult.page_info.count,
+		};
 	} catch (error) {
 		logger.error(`ページ ${currentPage} の処理中にエラーが発生しました:`, error);
 		throw error;
@@ -340,11 +259,13 @@ async function fetchDLsiteWorksInternal(metadata: FetchMetadata): Promise<{
 	workCount: number;
 	nextPage: number | undefined;
 	isComplete: boolean;
+	totalWorks?: number;
 }> {
 	let allWorksCount = 0;
 	let currentPage = metadata.currentPage || 1;
 	let pageCount = 0;
 	let isComplete = false;
+	let totalWorks: number | undefined;
 
 	if (currentPage > 1) {
 		logger.info(`前回の続きから取得を再開します。ページ: ${currentPage}`);
@@ -355,10 +276,15 @@ async function fetchDLsiteWorksInternal(metadata: FetchMetadata): Promise<{
 	// ページネーションループ
 	while (pageCount < MAX_PAGES_PER_EXECUTION) {
 		try {
-			const { savedCount, isLastPage } = await processSinglePage(currentPage);
-			allWorksCount += savedCount;
+			const result = await processSinglePage(currentPage);
+			allWorksCount += result.savedCount;
 
-			if (isLastPage) {
+			// 総作品数を記録（最初のページで取得）
+			if (result.totalWorks && !totalWorks) {
+				totalWorks = result.totalWorks;
+			}
+
+			if (result.isLastPage) {
 				isComplete = true;
 				break;
 			}
@@ -385,6 +311,7 @@ async function fetchDLsiteWorksInternal(metadata: FetchMetadata): Promise<{
 		workCount: allWorksCount,
 		nextPage: isComplete ? undefined : currentPage,
 		isComplete,
+		totalWorks,
 	};
 }
 
@@ -404,10 +331,14 @@ async function fetchDLsiteWorksLogic(): Promise<FetchResult> {
 
 		// 2. 作品データの取得
 		logger.info("DLsiteから涼花みなせの作品情報取得を開始します");
-		logger.info("完全データ収集URL使用中: 期待収集数1015件 (制限的フィルター削除済み)");
-		const { workCount, nextPage, isComplete } = await fetchDLsiteWorksInternal(metadata);
+		logger.info("🚀 AJAX API使用: 構造化レスポンス・正確なページング情報による効率的収集");
+		const { workCount, nextPage, isComplete, totalWorks } =
+			await fetchDLsiteWorksInternal(metadata);
 
 		logger.info(`取得した作品合計: ${workCount}件`);
+		if (totalWorks) {
+			logger.info(`📊 総作品数: ${totalWorks}件`);
+		}
 
 		// 3. メタデータを更新
 		if (isComplete) {
@@ -416,7 +347,7 @@ async function fetchDLsiteWorksLogic(): Promise<FetchResult> {
 				lastSuccessfulCompleteFetch: Timestamp.now(),
 			});
 			logger.info(`全ての作品の取得が完了しました (総収集数: ${workCount}件)`);
-			logger.info("📊 収集完全性: 制限的フィルター削除により35%データ欠落問題を解決");
+			logger.info("✅ AJAX API移行完了: 安定性・パフォーマンスの向上を実現");
 		} else if (nextPage) {
 			logger.debug(`次回の実行のためにページ番号を保存: ${nextPage}`);
 		}

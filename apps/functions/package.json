@@ -17,7 +17,8 @@
 		"debug:quick": "tsx src/development/quick-test-parser.ts",
 		"debug:monitor": "tsx src/development/watch-dlsite-changes.ts",
 		"debug:baseline": "tsx src/development/watch-dlsite-changes.ts --create-baseline",
-		"debug:compare": "tsx src/development/watch-dlsite-changes.ts --compare-baseline"
+		"debug:compare": "tsx src/development/watch-dlsite-changes.ts --compare-baseline",
+		"debug:ajax": "tsx src/development/test-ajax-implementation.ts"
 	},
 	"main": "lib/endpoints/index.js",
 	"engines": {
