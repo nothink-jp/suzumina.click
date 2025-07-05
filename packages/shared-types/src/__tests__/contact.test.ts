@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
 	ContactCategorySchema,
+	type ContactPriority,
 	ContactPrioritySchema,
+	type ContactStatus,
 	ContactStatusSchema,
 	FirestoreContactDataSchema,
 	FrontendContactDataSchema,
+	getPriorityColor,
+	getPriorityDisplayName,
+	getStatusDisplayName,
 } from "../contact";
 
 describe("Contact Schemas", () => {
@@ -47,6 +52,32 @@ describe("Contact Schemas", () => {
 		it("should validate basic structure", () => {
 			// Test that schema exists and can be used
 			expect(typeof FrontendContactDataSchema.parse).toBe("function");
+		});
+	});
+});
+
+describe("Contact Utility Functions", () => {
+	describe("getStatusDisplayName", () => {
+		it("should return correct Japanese status names", () => {
+			expect(getStatusDisplayName("new" as ContactStatus)).toBe("新規");
+			expect(getStatusDisplayName("reviewing" as ContactStatus)).toBe("確認中");
+			expect(getStatusDisplayName("resolved" as ContactStatus)).toBe("対応済み");
+		});
+	});
+
+	describe("getPriorityDisplayName", () => {
+		it("should return correct Japanese priority names", () => {
+			expect(getPriorityDisplayName("low" as ContactPriority)).toBe("低");
+			expect(getPriorityDisplayName("medium" as ContactPriority)).toBe("中");
+			expect(getPriorityDisplayName("high" as ContactPriority)).toBe("高");
+		});
+	});
+
+	describe("getPriorityColor", () => {
+		it("should return correct CSS color classes", () => {
+			expect(getPriorityColor("low" as ContactPriority)).toBe("text-green-600");
+			expect(getPriorityColor("medium" as ContactPriority)).toBe("text-yellow-600");
+			expect(getPriorityColor("high" as ContactPriority)).toBe("text-red-600");
 		});
 	});
 });
