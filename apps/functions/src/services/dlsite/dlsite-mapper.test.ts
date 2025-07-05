@@ -69,8 +69,6 @@ describe("DLsite Mapper", () => {
 				scenario: [],
 				illustration: [],
 				music: [],
-				design: [],
-				otherCreators: {},
 				// 統合された作品情報
 				releaseDate: undefined,
 				seriesName: undefined,
@@ -78,7 +76,6 @@ describe("DLsite Mapper", () => {
 				workFormat: undefined,
 				fileFormat: undefined,
 				tags: [],
-				userEvaluationCount: 0,
 				sampleImages: [
 					{
 						thumb: "https://www.dlsite.com/sample1.jpg",
@@ -129,8 +126,6 @@ describe("DLsite Mapper", () => {
 			expect(result.scenario).toEqual([]);
 			expect(result.illustration).toEqual([]);
 			expect(result.music).toEqual([]);
-			expect(result.design).toEqual([]);
-			expect(result.basicInfo).toEqual({ detailTags: [], other: {} });
 		});
 	});
 
@@ -167,12 +162,9 @@ describe("DLsite Mapper", () => {
 				scenario: [],
 				illustration: [],
 				music: [],
-				design: [],
-				otherCreators: {},
 				// 統合された作品情報
 				ageRating: "全年齢",
 				tags: [],
-				userEvaluationCount: 0,
 				sampleImages: [],
 				isExclusive: false,
 				// 最小限の基本情報
