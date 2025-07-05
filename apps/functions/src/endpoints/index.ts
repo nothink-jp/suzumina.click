@@ -12,6 +12,7 @@ import * as functions from "@google-cloud/functions-framework";
 import * as logger from "../shared/logger";
 // 各モジュールから関数をインポート
 import { fetchDLsiteWorks } from "./dlsite";
+import { investigateAccess } from "./investigate-access";
 import { fetchYouTubeVideos } from "./youtube";
 
 /**
@@ -46,6 +47,7 @@ interface PubsubMessage {
 
 functions.cloudEvent<PubsubMessage>("fetchYouTubeVideos", fetchYouTubeVideos);
 functions.cloudEvent<PubsubMessage>("fetchDLsiteWorks", fetchDLsiteWorks);
+functions.cloudEvent<PubsubMessage>("investigateAccess", investigateAccess);
 
 // HTTPトリガー関数は独立したファイルで管理
 

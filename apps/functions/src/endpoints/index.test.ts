@@ -10,12 +10,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockLoggerInfo = vi.fn();
 const mockLoggerWarn = vi.fn();
 const mockLoggerError = vi.fn();
+const mockLoggerDebug = vi.fn();
 
 // ロガーモジュールのモック
 vi.mock("../shared/logger", () => ({
 	info: mockLoggerInfo,
 	warn: mockLoggerWarn,
 	error: mockLoggerError,
+	debug: mockLoggerDebug,
 }));
 
 // YouTubeモジュールのモック
@@ -26,6 +28,11 @@ vi.mock("./youtube", () => ({
 // DLsiteモジュールのモック
 vi.mock("./dlsite", () => ({
 	fetchDLsiteWorks: vi.fn(),
+}));
+
+// 調査エンドポイントのモック
+vi.mock("./investigate-access", () => ({
+	investigateAccess: vi.fn(),
 }));
 
 // Functions Frameworkのモック
@@ -104,6 +111,14 @@ describe("初期化機能テスト", () => {
 
 		// cloudEvent関数が正しく呼ばれたことを確認
 		expect(mockCloudEvent).toHaveBeenCalledWith("fetchDLsiteWorks", expect.any(Function));
+	});
+
+	it("調査エンドポイントの関数が正しく登録されること", async () => {
+		// index.tsをインポート
+		await import("./index");
+
+		// cloudEvent関数が正しく呼ばれたことを確認
+		expect(mockCloudEvent).toHaveBeenCalledWith("investigateAccess", expect.any(Function));
 	});
 });
 

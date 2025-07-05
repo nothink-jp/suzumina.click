@@ -1,0 +1,32 @@
+{
+	"environment": "local",
+	"ipAddress": "90.149.56.234",
+	"userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+	"totalWorksFromAPI": 1471,
+	"totalWorksFromDirectHTML": 30,
+	"parsedWorksFromAPI": 30,
+	"parsedWorksFromHTML": 30,
+	"sampleWorkIds": ["RJ236867", "RJ239336", "RJ238915", "RJ243507", "RJ245527"],
+	"responseHeaders": {
+		"age": "87",
+		"cache-control": "max-age=60",
+		"cdn-cache-control": "max-age=7200, stale-while-revalidate=3600",
+		"cf-cache-status": "HIT",
+		"cf-ray": "95a84f3ebb20264e-NRT",
+		"connection": "keep-alive",
+		"content-encoding": "br",
+		"content-security-policy": "frame-ancestors 'self'",
+		"content-type": "text/html; charset=UTF-8",
+		"date": "Sat, 05 Jul 2025 16:41:23 GMT",
+		"expires": "Sat, 05 Jul 2025 16:40:55 GMT",
+		"last-modified": "Sat, 05 Jul 2025 16:39:55 GMT",
+		"p3p": "CP=\"CAO CUR ADM DEV PSA PSD IVAi IVDi OUR\"",
+		"server": "cloudflare",
+		"strict-transport-security": "max-age=31536000; preload",
+		"transfer-encoding": "chunked",
+		"vary": "Accept-Encoding,User-Agent",
+		"x-frame-options": "SAMEORIGIN",
+		"x-xrds-location": "https://www.dlsite.com/eisys/blog/server.xrds"
+	},
+	"possibleRestrictions": ["総作品数に98.0%の差異 (AJAX: 1471, HTML: 30)"]
+}
