@@ -67,11 +67,8 @@ export default function WorkCard({ work, variant = "default", priority = false }
 		}
 	};
 
-	// ランキング情報を取得（最新のランキング）
-	const latestRank =
-		work.rankingHistory && work.rankingHistory.length > 0
-			? work.rankingHistory[0]?.rank
-			: undefined;
+	// ランキング情報は現在利用できません
+	const latestRank = undefined;
 
 	return (
 		<article
@@ -165,7 +162,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 							<Calendar className="h-4 w-4 text-muted-foreground mr-1" aria-hidden="true" />
 							{(() => {
 								// 統合された releaseDate を優先、次に registDate を使用
-								const releaseDate = work.releaseDate || work.registDate;
+								const releaseDate = work.releaseDate;
 								const displayDate = releaseDate ? formatDate(releaseDate) : "不明";
 
 								return (

@@ -1,4 +1,7 @@
-import type { DLsiteWorkBase, FirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
+import type {
+	DLsiteWorkBase,
+	OptimizedFirestoreDLsiteWorkData,
+} from "@suzumina.click/shared-types";
 import { describe, expect, it, vi } from "vitest";
 import {
 	extractCampaignInfo,
@@ -7,9 +10,7 @@ import {
 	extractVoiceActors,
 	fetchWorkInfo,
 	mapMultipleWorksWithInfo,
-	mapToFirestoreData,
 	mapToWorkBase,
-	shouldUpdateWork,
 	validateWorkData,
 } from "./dlsite-mapper";
 import type { ParsedWorkData } from "./dlsite-parser";
@@ -136,134 +137,9 @@ describe("DLsite Mapper", () => {
 		});
 	});
 
-	describe("mapToFirestoreData", () => {
-		it("DLsiteWorkBaseをFirestore用データに変換できる", () => {
-			const workBase: DLsiteWorkBase = {
-				id: "RJ123456",
-				productId: "RJ123456",
-				title: "テスト作品",
-				circle: "テストサークル",
-				description: "",
-				category: "SOU",
-				workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
-				thumbnailUrl: "https://www.dlsite.com/img_sam/RJ123456_sam.jpg",
-				price: {
-					current: 1000,
-					original: 1500,
-					currency: "JPY",
-					discount: 33,
-					point: 50,
-				},
-				rating: {
-					stars: 4.5,
-					count: 100,
-					reviewCount: 50,
-				},
-				salesCount: 1000,
-				// 統合されたクリエイター情報
-				voiceActors: ["テスト作者"],
-				scenario: [],
-				illustration: [],
-				music: [],
-				design: [],
-				otherCreators: {},
-				// 統合された作品情報
-				ageRating: "全年齢",
-				tags: [],
-				userEvaluationCount: 0,
-				sampleImages: [
-					{
-						thumb: "https://www.dlsite.com/sample1.jpg",
-						width: 560,
-						height: 420,
-					},
-				],
-				isExclusive: true,
-				// 最小限の基本情報
-				basicInfo: {
-					detailTags: [],
-					other: {},
-				},
-			};
+	// mapToFirestoreData関数は削除 - OptimizedFirestoreDLsiteWorkDataのみ使用
 
-			const result = mapToFirestoreData(workBase);
-
-			expect(result).toMatchObject(workBase);
-			expect(result.lastFetchedAt).toBeDefined();
-			expect(result.createdAt).toBeDefined();
-			expect(result.updatedAt).toBeDefined();
-			expect(typeof result.lastFetchedAt).toBe("string");
-			expect(typeof result.createdAt).toBe("string");
-			expect(typeof result.updatedAt).toBe("string");
-		});
-	});
-
-	describe("shouldUpdateWork", () => {
-		const baseExisting: FirestoreDLsiteWorkData = {
-			id: "RJ123456",
-			productId: "RJ123456",
-			title: "テスト作品",
-			circle: "テストサークル",
-			description: "",
-			category: "SOU",
-			workUrl: "https://www.dlsite.com/work/=/product_id/RJ123456.html",
-			thumbnailUrl: "https://www.dlsite.com/img_sam/RJ123456_sam.jpg",
-			price: {
-				current: 1000,
-				original: 1500,
-				currency: "JPY",
-				discount: 33,
-				point: 50,
-			},
-			rating: {
-				stars: 4.5,
-				count: 100,
-				reviewCount: 50,
-			},
-			salesCount: 1000,
-			// 統合されたクリエイター情報
-			voiceActors: ["テスト作者"],
-			scenario: [],
-			illustration: [],
-			music: [],
-			design: [],
-			otherCreators: {},
-			// 統合された作品情報
-			ageRating: "全年齢",
-			tags: [],
-			userEvaluationCount: 0,
-			sampleImages: [],
-			isExclusive: false,
-			// 最小限の基本情報
-			basicInfo: {
-				detailTags: [],
-				other: {},
-			},
-			lastFetchedAt: new Date().toISOString(),
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString(),
-		};
-
-		it("価格が変更された場合はtrueを返す", () => {
-			const newData: DLsiteWorkBase = {
-				...baseExisting,
-				price: {
-					...baseExisting.price,
-					current: 800,
-				},
-			};
-
-			const result = shouldUpdateWork(newData, baseExisting);
-			expect(result).toBe(true);
-		});
-
-		it("変更がない場合はfalseを返す", () => {
-			const newData: DLsiteWorkBase = { ...baseExisting };
-
-			const result = shouldUpdateWork(newData, baseExisting);
-			expect(result).toBe(false);
-		});
-	});
+	// shouldUpdateWork関数は削除 - OptimizedFirestoreDLsiteWorkDataでは不要
 
 	describe("validateWorkData", () => {
 		it("有効なデータに対してisValid=trueを返す", () => {

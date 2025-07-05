@@ -8,8 +8,6 @@ import {
 	type CampaignInfo,
 	type DLsiteWorkBase,
 	DLsiteWorkBaseSchema,
-	type FirestoreDLsiteWorkData,
-	FirestoreDLsiteWorkSchema,
 	type LanguageDownload,
 	type LocalePrice,
 	type OptimizedFirestoreDLsiteWorkData,
@@ -409,7 +407,7 @@ export function mapToWorkBase(
 	parsed: ParsedWorkData,
 	infoData?: DLsiteInfoResponse | null,
 	extendedData?: ExtendedWorkData | null,
-	existingData?: FirestoreDLsiteWorkData | null,
+	existingData?: OptimizedFirestoreDLsiteWorkData | null,
 ): DLsiteWorkBase {
 	try {
 		const price = mapToPriceInfo(parsed);
@@ -462,14 +460,6 @@ export function mapToWorkBase(
 			]),
 		];
 
-		// デザイン情報の統合
-		const consolidatedDesign = [
-			...new Set([
-				...(extendedData?.design || []),
-				...(existingData?.design || []), // 既存データ保持
-			]),
-		];
-
 		// タグ情報の統合（優先順: parsed.tags > extendedData.basicInfo.genres > infoData.genres > existingData）
 		const consolidatedTags = [
 			...new Set([
@@ -479,12 +469,6 @@ export function mapToWorkBase(
 				...(existingData?.tags || []), // 既存データ保持
 			]),
 		];
-
-		// その他のクリエイター情報の統合
-		const consolidatedOtherCreators = {
-			...(existingData?.otherCreators || {}), // 既存データ保持
-			...(extendedData?.otherCreators || {}),
-		};
 
 		// 作品情報の統合
 		const consolidatedReleaseDate = (extendedData?.basicInfo as any)?.releaseDate;
@@ -512,8 +496,6 @@ export function mapToWorkBase(
 			scenario: consolidatedScenario,
 			illustration: consolidatedIllustration,
 			music: consolidatedMusic,
-			design: consolidatedDesign,
-			otherCreators: consolidatedOtherCreators,
 
 			// === 統合された作品情報 ===
 			releaseDate: consolidatedReleaseDate,
@@ -525,7 +507,6 @@ export function mapToWorkBase(
 
 			sampleImages: normalizedSampleImages,
 			isExclusive: parsed.isExclusive,
-			userEvaluationCount: 0, // デフォルト値として0を設定
 
 			// === 最小限の基本情報（重複除去済み） ===
 			basicInfo: {
@@ -538,7 +519,7 @@ export function mapToWorkBase(
 			// その他の拡張フィールド
 			...(extendedData && {
 				fileInfo: extendedData.fileInfo,
-				bonusContent: extendedData.bonusContent,
+				bonusContent: extendedData.bonusContent || [],
 			}),
 
 			// infoデータから追加される拡張フィールド
@@ -575,29 +556,7 @@ export function mapToWorkBase(
 /**
  * DLsiteWorkBaseをFirestore保存用のデータに変換
  */
-export function mapToFirestoreData(
-	base: DLsiteWorkBase,
-	existingData?: Partial<FirestoreDLsiteWorkData>,
-): FirestoreDLsiteWorkData {
-	try {
-		const now = new Date().toISOString();
-
-		const firestoreData: FirestoreDLsiteWorkData = {
-			...base,
-			lastFetchedAt: now,
-			createdAt: existingData?.createdAt || now, // 既存データがあれば作成日時を保持
-			updatedAt: now,
-		};
-
-		// Zodスキーマで検証
-		return FirestoreDLsiteWorkSchema.parse(firestoreData);
-	} catch (error) {
-		logger.error(`Firestoreデータの変換に失敗: ${base.id}`, { error, base });
-		throw new Error(`Firestoreデータの変換に失敗: ${base.id}`);
-	}
-}
-
-// mapMultipleWorks関数は最適化構造では未使用のため削除
+// mapToFirestoreData関数は削除 - OptimizedFirestoreDLsiteWorkDataのみ使用
 
 /**
  * 複数の作品データをinfoデータと合わせて一括変換 (最適化構造)
@@ -703,78 +662,7 @@ export async function mapMultipleWorksWithDetailData(
 /**
  * 作品データの更新が必要かどうかを判定
  */
-export function shouldUpdateWork(
-	newData: DLsiteWorkBase,
-	existingData: FirestoreDLsiteWorkData,
-): boolean {
-	// 価格が変更された場合
-	if (newData.price.current !== existingData.price.current) {
-		return true;
-	}
-
-	// 評価が変更された場合
-	if (newData.rating?.count !== existingData.rating?.count) {
-		return true;
-	}
-
-	// 販売数が変更された場合
-	if (newData.salesCount !== existingData.salesCount) {
-		return true;
-	}
-
-	// タイトルが変更された場合
-	if (newData.title !== existingData.title) {
-		return true;
-	}
-
-	// 24時間以上更新されていない場合
-	const lastUpdated = new Date(existingData.updatedAt);
-	const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-	if (lastUpdated < twentyFourHoursAgo) {
-		return true;
-	}
-
-	return false;
-}
-
-/**
- * 更新が必要な作品のみをフィルタリング
- */
-export function filterWorksForUpdate(
-	newWorks: DLsiteWorkBase[],
-	existingWorksMap: Map<string, FirestoreDLsiteWorkData>,
-): {
-	toCreate: DLsiteWorkBase[];
-	toUpdate: Array<{ new: DLsiteWorkBase; existing: FirestoreDLsiteWorkData }>;
-	unchanged: DLsiteWorkBase[];
-} {
-	const toCreate: DLsiteWorkBase[] = [];
-	const toUpdate: Array<{
-		new: DLsiteWorkBase;
-		existing: FirestoreDLsiteWorkData;
-	}> = [];
-	const unchanged: DLsiteWorkBase[] = [];
-
-	for (const newWork of newWorks) {
-		const existing = existingWorksMap.get(newWork.productId);
-
-		if (!existing) {
-			toCreate.push(newWork);
-		} else if (shouldUpdateWork(newWork, existing)) {
-			toUpdate.push({ new: newWork, existing });
-		} else {
-			unchanged.push(newWork);
-		}
-	}
-
-	logger.info("作品更新判定完了:", {
-		toCreate: toCreate.length,
-		toUpdate: toUpdate.length,
-		unchanged: unchanged.length,
-	});
-
-	return { toCreate, toUpdate, unchanged };
-}
+// shouldUpdateWork, filterWorksForUpdate関数は削除 - OptimizedFirestoreDLsiteWorkDataでは不要
 
 /**
  * 必須フィールドの検証

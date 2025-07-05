@@ -6,7 +6,6 @@
 
 import type { Query } from "@google-cloud/firestore";
 import type {
-	FirestoreDLsiteWorkData,
 	OptimizedFirestoreDLsiteWorkData,
 	PriceHistory,
 	RankingInfo,
@@ -128,11 +127,11 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 }
 
 /**
- * 特定の作品データを取得
+ * 特定の作品データを取得 (最適化構造対応)
  */
 export async function getWorkFromFirestore(
 	productId: string,
-): Promise<FirestoreDLsiteWorkData | null> {
+): Promise<OptimizedFirestoreDLsiteWorkData | null> {
 	try {
 		const doc = await firestore.collection(DLSITE_WORKS_COLLECTION).doc(productId).get();
 
@@ -140,7 +139,7 @@ export async function getWorkFromFirestore(
 			return null;
 		}
 
-		return doc.data() as FirestoreDLsiteWorkData;
+		return doc.data() as OptimizedFirestoreDLsiteWorkData;
 	} catch (error) {
 		logger.error(`作品データの取得に失敗: ${productId}`, { error });
 		throw new Error(`作品データの取得に失敗: ${productId}`);
@@ -148,7 +147,7 @@ export async function getWorkFromFirestore(
 }
 
 /**
- * 作品データの検索
+ * 作品データの検索 (最適化構造対応)
  */
 export async function searchWorksFromFirestore(options: {
 	circle?: string;
@@ -156,7 +155,7 @@ export async function searchWorksFromFirestore(options: {
 	limit?: number;
 	orderBy?: "createdAt" | "updatedAt" | "price.current";
 	orderDirection?: "asc" | "desc";
-}): Promise<FirestoreDLsiteWorkData[]> {
+}): Promise<OptimizedFirestoreDLsiteWorkData[]> {
 	try {
 		let query: Query = firestore.collection(DLSITE_WORKS_COLLECTION);
 
@@ -181,9 +180,9 @@ export async function searchWorksFromFirestore(options: {
 
 		const snapshot = await query.get();
 
-		const works: FirestoreDLsiteWorkData[] = [];
+		const works: OptimizedFirestoreDLsiteWorkData[] = [];
 		for (const doc of snapshot.docs) {
-			works.push(doc.data() as FirestoreDLsiteWorkData);
+			works.push(doc.data() as OptimizedFirestoreDLsiteWorkData);
 		}
 
 		logger.info(`作品検索完了: ${works.length}件取得`);
@@ -209,7 +208,7 @@ export async function getWorksStatistics(): Promise<{
 		const categoryCounts: Record<string, number> = {};
 
 		for (const doc of snapshot.docs) {
-			const data = doc.data() as FirestoreDLsiteWorkData;
+			const data = doc.data() as OptimizedFirestoreDLsiteWorkData;
 
 			// 最終更新日時を追跡
 			if (!lastUpdated || data.updatedAt > lastUpdated) {

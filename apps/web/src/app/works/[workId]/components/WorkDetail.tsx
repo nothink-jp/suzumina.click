@@ -104,11 +104,8 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 		}
 	};
 
-	// ランキング情報を取得（最新のランキング）
-	const latestRank =
-		work.rankingHistory && work.rankingHistory.length > 0
-			? work.rankingHistory[0]?.rank
-			: undefined;
+	// ランキング情報は現在利用できません
+	const latestRank = undefined;
 
 	const handleShare = () => {
 		if (navigator.share) {
@@ -232,25 +229,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									</div>
 								</div>
 							)}
-
-							{/* 詳細タグ（メインタグと重複しない場合のみ） */}
-							{work.basicInfo?.detailTags && work.basicInfo.detailTags.length > 0 && (
-								<div>
-									<div className="text-sm font-medium text-gray-700 mb-2">詳細タグ</div>
-									<div className="flex flex-wrap gap-2">
-										{work.basicInfo.detailTags.map((detailTag) => (
-											<Badge
-												key={detailTag}
-												variant="outline"
-												className="border-secondary/20 text-secondary bg-secondary/5 flex items-center gap-1"
-											>
-												<Tag className="h-3 w-3" />
-												{detailTag}
-											</Badge>
-										))}
-									</div>
-								</div>
-							)}
 						</div>
 
 						{/* アクションボタン */}
@@ -349,14 +327,12 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												</div>
 											</div>
-											{(work.releaseDate || work.registDate) && (
+											{work.releaseDate && (
 												<div className="flex items-center gap-3">
 													<Calendar className="h-5 w-5 text-muted-foreground" />
 													<div>
 														<div className="text-sm text-gray-700">販売日</div>
-														<div className="font-semibold text-gray-900">
-															{work.releaseDate || (work.registDate && formatDate(work.registDate))}
-														</div>
+														<div className="font-semibold text-gray-900">{work.releaseDate}</div>
 													</div>
 												</div>
 											)}
@@ -441,18 +417,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												</div>
 											)}
-											{work.design && work.design.length > 0 && (
-												<div>
-													<div className="text-sm text-gray-700 mb-2">デザイン</div>
-													<div className="flex flex-wrap gap-2">
-														{work.design.map((designer) => (
-															<Badge key={designer} variant="secondary" className="text-xs">
-																{designer}
-															</Badge>
-														))}
-													</div>
-												</div>
-											)}
 										</div>
 									</div>
 								</CardContent>
@@ -503,13 +467,13 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												</div>
 											)}
-											{work.fileInfo?.totalDurationText && (
+											{work.fileInfo?.totalDuration && (
 												<div className="flex items-center gap-3">
 													<Clock className="h-5 w-5 text-muted-foreground" />
 													<div>
 														<div className="text-sm text-gray-700">総再生時間</div>
 														<div className="font-semibold text-gray-900">
-															{work.fileInfo.totalDurationText}
+															{work.fileInfo.totalDuration}
 														</div>
 													</div>
 												</div>
@@ -586,7 +550,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									</p>
 								</div>
 								<CharacteristicEvaluation
-									characteristics={work.aggregatedCharacteristics || characteristicData}
+									characteristics={characteristicData}
 									showOverallStats={true}
 								/>
 							</div>
@@ -705,9 +669,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 					{((work.voiceActors && work.voiceActors.length > 0) ||
 						(work.scenario && work.scenario.length > 0) ||
 						(work.illustration && work.illustration.length > 0) ||
-						(work.music && work.music.length > 0) ||
-						(work.design && work.design.length > 0) ||
-						(work.otherCreators && Object.keys(work.otherCreators).length > 0)) && (
+						(work.music && work.music.length > 0)) && (
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
@@ -790,48 +752,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												))}
 											</div>
-										</div>
-									)}
-
-									{/* デザイン */}
-									{work.design && work.design.length > 0 && (
-										<div>
-											<h5 className="text-sm font-medium text-gray-700 mb-2">デザイン</h5>
-											<div className="space-y-2">
-												{work.design.map((creator) => (
-													<div key={creator} className="flex items-center gap-3">
-														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-															<span className="text-foreground font-bold text-xs">
-																{creator.charAt(0)}
-															</span>
-														</div>
-														<span className="text-gray-900 text-sm">{creator}</span>
-													</div>
-												))}
-											</div>
-										</div>
-									)}
-
-									{/* その他のクリエイター */}
-									{work.otherCreators && Object.keys(work.otherCreators).length > 0 && (
-										<div>
-											{Object.entries(work.otherCreators).map(([role, creators]) => (
-												<div key={role} className="mb-3">
-													<h5 className="text-sm font-medium text-gray-700 mb-2">{role}</h5>
-													<div className="space-y-2">
-														{creators.map((creator) => (
-															<div key={creator} className="flex items-center gap-3">
-																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																	<span className="text-foreground font-bold text-xs">
-																		{creator.charAt(0)}
-																	</span>
-																</div>
-																<span className="text-gray-900 text-sm">{creator}</span>
-															</div>
-														))}
-													</div>
-												</div>
-											))}
 										</div>
 									)}
 								</div>

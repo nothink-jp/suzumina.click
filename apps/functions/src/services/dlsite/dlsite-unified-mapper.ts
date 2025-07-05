@@ -11,7 +11,6 @@ import {
 	type DataSourceTracking,
 	type DLsiteWorkBase,
 	DLsiteWorkBaseSchema,
-	type FirestoreDLsiteWorkData,
 	type OptimizedFirestoreDLsiteWorkData,
 	optimizeDateFormats,
 	type PriceInfo,
@@ -321,7 +320,7 @@ export function mergeWorkDataSources(
 	searchData?: ParsedWorkData,
 	infoData?: DLsiteInfoResponse,
 	detailData?: ExtendedWorkData,
-	existingData?: FirestoreDLsiteWorkData,
+	existingData?: OptimizedFirestoreDLsiteWorkData,
 ): UnifiedDLsiteWorkData {
 	if (!searchData) {
 		throw new Error("検索結果データ (searchData) は必須です");
@@ -416,10 +415,6 @@ export function mergeWorkDataSources(
 		scenario: unifiedScenario,
 		illustration: unifiedIllustration,
 		music: unifiedMusic,
-		design: mergeAndDeduplicate([
-			detailData?.design || [],
-			existingData?.design || [], // 既存データ保持
-		]),
 
 		// === 統一作品メタデータ（重複排除済み） ===
 		releaseDate: isoReleaseDate,
@@ -449,16 +444,7 @@ export function mergeWorkDataSources(
 
 		// === 詳細情報（階層化 - 低頻度アクセス） ===
 		fileInfo: detailData?.fileInfo,
-		bonusContent: detailData?.bonusContent,
-
-		// === 評価関連 ===
-		userEvaluationCount: existingData?.userEvaluationCount || 0,
-
-		// === その他のクリエイター情報 ===
-		otherCreators: {
-			...(detailData?.otherCreators || {}),
-			...(existingData?.otherCreators || {}),
-		},
+		bonusContent: detailData?.bonusContent || [],
 
 		// === 詳細API情報 ===
 		localePrices: infoData?.prices?.map((p) => ({
@@ -563,40 +549,9 @@ export function mergeWorkDataSources(
  */
 export type DataFetchStrategy = "minimal" | "standard" | "comprehensive";
 
-/**
- * Firestoreに保存する形式に変換
- */
-export function convertToFirestoreFormat(
-	unifiedData: UnifiedDLsiteWorkData,
-): FirestoreDLsiteWorkData {
-	const now = new Date().toISOString();
+// convertToFirestoreFormat関数は削除 - OptimizedFirestoreDLsiteWorkDataのみ使用
 
-	return {
-		...unifiedData,
-		// システム管理情報
-		lastFetchedAt: now,
-		createdAt: now,
-		updatedAt: now,
-	} as FirestoreDLsiteWorkData;
-}
-
-/**
- * 既存データとの統合マッピング
- */
-export function mapToWorkBaseWithExistingData(
-	parsed: ParsedWorkData,
-	infoData?: DLsiteInfoResponse,
-	extendedData?: ExtendedWorkData,
-	existingData?: FirestoreDLsiteWorkData,
-): DLsiteWorkBase {
-	const unifiedData = mergeWorkDataSources(parsed, infoData, extendedData, existingData);
-
-	// UnifiedDLsiteWorkDataからDLsiteWorkBaseに変換
-	// （dataSourcesフィールドを除去）
-	const { dataSources, releaseDateDisplay, ...workBase } = unifiedData;
-
-	return workBase;
-}
+// mapToWorkBaseWithExistingData関数は削除 - OptimizedFirestoreDLsiteWorkDataのみ使用
 
 /**
  * データ品質レポート生成

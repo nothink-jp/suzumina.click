@@ -1,4 +1,4 @@
-import type { FirestoreDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
+import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getWorkById, getWorks } from "./actions";
 
@@ -31,7 +31,10 @@ vi.mock("@suzumina.click/shared-types/src/work", () => ({
 }));
 
 // テスト用のサンプルデータ
-const createMockWorkData = (productId: string, title: string): FirestoreDLsiteWorkData => ({
+const createMockWorkData = (
+	productId: string,
+	title: string,
+): OptimizedFirestoreDLsiteWorkData => ({
 	id: productId,
 	productId,
 	title,
@@ -41,8 +44,8 @@ const createMockWorkData = (productId: string, title: string): FirestoreDLsiteWo
 	scenario: [],
 	illustration: [],
 	music: [],
-	design: [],
-	otherCreators: {},
+	author: [],
+	genres: ["テストジャンル"],
 	category: "SOU",
 	workUrl: `https://www.dlsite.com/maniax/work/=/product_id/${productId}.html`,
 	price: {
@@ -58,7 +61,16 @@ const createMockWorkData = (productId: string, title: string): FirestoreDLsiteWo
 	thumbnailUrl: `https://img.dlsite.jp/modpub/images2/work/doujin/${productId}/${productId}_img_main.jpg`,
 	sampleImages: [],
 	isExclusive: false,
-	userEvaluationCount: 0,
+	// 追加の必須フィールド
+	releaseDateISO: "2023-01-01",
+	releaseDateDisplay: "2023年01月01日",
+	dataSources: {
+		searchResult: {
+			lastFetched: "2023-01-01T00:00:00.000Z",
+			genres: ["テストジャンル"],
+			basicInfo: {} as any,
+		},
+	},
 	createdAt: "2023-01-01T00:00:00.000Z",
 	updatedAt: "2023-01-01T00:00:00.000Z",
 	lastFetchedAt: "2023-01-01T00:00:00.000Z",
@@ -328,7 +340,7 @@ describe("works actions", () => {
 
 		it("should handle missing ID in document data", async () => {
 			const mockWork = createMockWorkData("RJ123456", "テスト作品");
-			mockWork.id = undefined; // IDフィールドを削除
+			delete (mockWork as any).id; // IDフィールドを削除
 
 			const mockDocInstance = {
 				get: mockDocGet,

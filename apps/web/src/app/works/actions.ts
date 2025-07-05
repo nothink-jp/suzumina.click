@@ -1,8 +1,8 @@
 "use server";
 
 import type {
-	FirestoreDLsiteWorkData,
 	FrontendDLsiteWorkData,
+	OptimizedFirestoreDLsiteWorkData,
 	WorkCategory,
 	WorkListResult,
 } from "@suzumina.click/shared-types/src/work";
@@ -46,9 +46,9 @@ interface EnhancedSearchParams {
  * 統合データ構造による拡張検索フィルタリング
  */
 function filterWorksByUnifiedData(
-	works: FirestoreDLsiteWorkData[],
+	works: OptimizedFirestoreDLsiteWorkData[],
 	params: EnhancedSearchParams,
-): FirestoreDLsiteWorkData[] {
+): OptimizedFirestoreDLsiteWorkData[] {
 	let filteredWorks = [...works];
 
 	// 基本検索（タイトル・サークル・説明文・統合クリエイター情報）
@@ -127,8 +127,8 @@ function filterWorksByUnifiedData(
  * ID順ソート処理
  */
 function sortById(
-	a: FirestoreDLsiteWorkData,
-	b: FirestoreDLsiteWorkData,
+	a: OptimizedFirestoreDLsiteWorkData,
+	b: OptimizedFirestoreDLsiteWorkData,
 	isOldest: boolean,
 ): number {
 	if (a.productId.length !== b.productId.length) {
@@ -142,7 +142,10 @@ function sortById(
 /**
  * 作品ソート処理
  */
-function sortWorks(works: FirestoreDLsiteWorkData[], sort: SortOption): FirestoreDLsiteWorkData[] {
+function sortWorks(
+	works: OptimizedFirestoreDLsiteWorkData[],
+	sort: SortOption,
+): OptimizedFirestoreDLsiteWorkData[] {
 	return works.sort((a, b) => {
 		switch (sort) {
 			case "oldest":
@@ -191,7 +194,7 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 		let allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as FirestoreDLsiteWorkData[];
+		})) as OptimizedFirestoreDLsiteWorkData[];
 
 		// 統合データ構造による拡張検索フィルタリング
 		allWorks = filterWorksByUnifiedData(allWorks, {
@@ -225,8 +228,8 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 					data.id = data.productId; // productIdをフォールバック
 				}
 
-				// フロントエンド形式に変換
-				const frontendData = convertToFrontendWork(data);
+				// フロントエンド形式に変換（OptimizedFirestoreDLsiteWorkDataは上位互換）
+				const frontendData = convertToFrontendWork(data as any);
 				works.push(frontendData);
 			} catch (_error) {
 				// エラーがあっても他のデータの処理は続行
@@ -267,15 +270,15 @@ export async function getWorkById(workId: string): Promise<FrontendDLsiteWorkDat
 			return null;
 		}
 
-		const data = doc.data() as FirestoreDLsiteWorkData;
+		const data = doc.data() as OptimizedFirestoreDLsiteWorkData;
 
 		// データにIDが設定されていない場合、ドキュメントIDを使用
 		if (!data.id) {
 			data.id = doc.id;
 		}
 
-		// フロントエンド形式に変換
-		const frontendData = convertToFrontendWork(data);
+		// フロントエンド形式に変換（OptimizedFirestoreDLsiteWorkDataは上位互換）
+		const frontendData = convertToFrontendWork(data as any);
 
 		return frontendData;
 	} catch (_error) {
@@ -311,7 +314,7 @@ export async function getRelatedWorks(
 		let allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as FirestoreDLsiteWorkData[];
+		})) as OptimizedFirestoreDLsiteWorkData[];
 
 		// 自身を除外
 		allWorks = allWorks.filter((work) => work.id !== workId);
@@ -334,8 +337,8 @@ export async function getRelatedWorks(
 			}
 
 			// ジャンル一致（統合データ活用）
-			if (byGenres && baseWork.genres && work.genres) {
-				const commonGenres = baseWork.genres.filter((genre) => work.genres!.includes(genre));
+			if (byGenres && baseWork.tags && work.genres) {
+				const commonGenres = baseWork.tags.filter((tag: string) => work.genres!.includes(tag));
 				score += commonGenres.length * 2;
 			}
 
@@ -365,7 +368,7 @@ export async function getRelatedWorks(
 		for (const work of topRelated) {
 			try {
 				if (!work.id) work.id = work.productId;
-				const frontendData = convertToFrontendWork(work);
+				const frontendData = convertToFrontendWork(work as any);
 				relatedWorks.push(frontendData);
 			} catch (_error) {
 				// エラーがあっても他のデータの処理は続行
@@ -393,7 +396,7 @@ export async function getWorksStats(
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as FirestoreDLsiteWorkData[];
+		})) as OptimizedFirestoreDLsiteWorkData[];
 
 		// 基本統計
 		const totalWorks = allWorks.length;
@@ -508,7 +511,7 @@ export async function getDataQualityReport() {
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as FirestoreDLsiteWorkData[];
+		})) as OptimizedFirestoreDLsiteWorkData[];
 
 		const qualityStats = {
 			total: allWorks.length,
@@ -641,7 +644,7 @@ export async function getPopularVoiceActors(limit = 20): Promise<
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as FirestoreDLsiteWorkData[];
+		})) as OptimizedFirestoreDLsiteWorkData[];
 
 		const voiceActorMap = new Map<
 			string,
@@ -695,7 +698,7 @@ export async function getPopularGenres(limit = 30): Promise<
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as FirestoreDLsiteWorkData[];
+		})) as OptimizedFirestoreDLsiteWorkData[];
 
 		const genreCounts = new Map<string, number>();
 

@@ -363,8 +363,6 @@ export const DLsiteWorkBaseSchema = z.object({
 	illustration: z.array(z.string()).default([]),
 	/** 音楽担当者 - detailedCreators.music, basicInfo.music を統合 */
 	music: z.array(z.string()).default([]),
-	/** デザイン担当者 */
-	design: z.array(z.string()).default([]),
 
 	// === 統一された作品情報（basicInfo から昇格） ===
 	/** 販売日 - basicInfo.releaseDate から昇格 */
@@ -411,8 +409,6 @@ export const DLsiteWorkBaseSchema = z.object({
 			other: z.record(z.any()).default({}),
 		})
 		.optional(),
-	/** その他のクリエイター情報（標準フィールド以外） */
-	otherCreators: z.record(z.array(z.string())).default({}),
 	/** 特典情報 */
 	bonusContent: z.array(BonusContentSchema).optional(),
 	/** 価格履歴 */
@@ -421,8 +417,6 @@ export const DLsiteWorkBaseSchema = z.object({
 	salesHistory: z.array(SalesHistorySchema).optional(),
 	/** 集計された特性評価 */
 	aggregatedCharacteristics: AggregatedCharacteristicsSchema.optional(),
-	/** ユーザー評価数 */
-	userEvaluationCount: z.number().int().nonnegative().default(0),
 	/** 多通貨価格情報 */
 	localePrices: z.array(LocalePriceSchema).optional(),
 	/** キャンペーン情報 */
@@ -486,9 +480,9 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 
 	// === 基本作品情報 ===
 	/** 作品タイトル */
-	title: z.string(),
+	title: z.string().min(1),
 	/** サークル名 */
-	circle: z.string(),
+	circle: z.string().min(1),
 	/** 作品説明 */
 	description: z.string(),
 	/** 作品カテゴリ */
@@ -592,28 +586,12 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	updatedAt: z.string().datetime(),
 });
 
-/**
- * 既存のFirestoreスキーマ（下位互換性のため保持）
- */
-export const FirestoreDLsiteWorkSchema = DLsiteWorkBaseSchema.extend({
-	/** 最終取得日時 */
-	lastFetchedAt: z.string().datetime({
-		message: "最終取得日時はISO形式の日時である必要があります",
-	}),
-	/** 作成日時 */
-	createdAt: z.string().datetime({
-		message: "作成日時はISO形式の日時である必要があります",
-	}),
-	/** 更新日時 */
-	updatedAt: z.string().datetime({
-		message: "更新日時はISO形式の日時である必要があります",
-	}),
-});
+// FirestoreDLsiteWorkSchemaは削除 - OptimizedFirestoreDLsiteWorkSchemaのみ使用
 
 /**
  * フロントエンド表示用のDLsite作品データのZodスキーマ定義
  */
-export const FrontendDLsiteWorkSchema = FirestoreDLsiteWorkSchema.extend({
+export const FrontendDLsiteWorkSchema = OptimizedFirestoreDLsiteWorkSchema.extend({
 	/** 表示用価格文字列 */
 	displayPrice: z.string(),
 	/** 割引表示テキスト */
@@ -672,7 +650,7 @@ export type TranslationInfo = z.infer<typeof TranslationInfoSchema>;
 export type LanguageDownload = z.infer<typeof LanguageDownloadSchema>;
 export type SalesStatus = z.infer<typeof SalesStatusSchema>;
 export type DLsiteWorkBase = z.infer<typeof DLsiteWorkBaseSchema>;
-export type FirestoreDLsiteWorkData = z.infer<typeof FirestoreDLsiteWorkSchema>;
+// FirestoreDLsiteWorkData型は削除 - OptimizedFirestoreDLsiteWorkDataのみ使用
 export type OptimizedFirestoreDLsiteWorkData = z.infer<typeof OptimizedFirestoreDLsiteWorkSchema>;
 export type DataSourceTracking = z.infer<typeof DataSourceTrackingSchema>;
 export type FrontendDLsiteWorkData = z.infer<typeof FrontendDLsiteWorkSchema>;
@@ -740,100 +718,9 @@ export function parseSizeToBytes(sizeText?: string): number | undefined {
 	}
 }
 
-/**
- * ファイル情報を最適化形式に変換
- */
-function migrateFileInfo(
-	fileInfo: FirestoreDLsiteWorkData["fileInfo"],
-): OptimizedFirestoreDLsiteWorkData["fileInfo"] {
-	if (!fileInfo?.totalSizeText) {
-		return undefined;
-	}
+// migrateFileInfo関数は削除 - OptimizedFirestoreDLsiteWorkDataのみ使用
 
-	return {
-		totalSizeText: fileInfo.totalSizeText,
-		totalSizeBytes: parseSizeToBytes(fileInfo.totalSizeText),
-		totalDuration: typeof fileInfo.totalDuration === "string" ? fileInfo.totalDuration : undefined,
-		fileCount: fileInfo.formats?.length || 0,
-		formats: fileInfo.formats || [],
-		additionalFiles: fileInfo.additionalFiles || [],
-	};
-}
-
-/**
- * 既存データから最適化データへの変換関数
- */
-export function migrateToOptimizedStructure(
-	existingData: FirestoreDLsiteWorkData,
-): OptimizedFirestoreDLsiteWorkData {
-	const dateInfo = optimizeDateFormats(existingData.releaseDate || "");
-
-	return {
-		// 基本識別情報
-		id: existingData.id,
-		productId: existingData.productId,
-
-		// 基本作品情報
-		title: existingData.title,
-		circle: existingData.circle,
-		description: existingData.description,
-		category: existingData.category,
-		workUrl: existingData.workUrl,
-		thumbnailUrl: existingData.thumbnailUrl,
-		highResImageUrl: existingData.highResImageUrl,
-
-		// 価格・評価情報
-		price: existingData.price,
-		rating: existingData.rating,
-		salesCount: existingData.salesCount,
-		wishlistCount: existingData.wishlistCount,
-		totalDownloadCount: existingData.totalDownloadCount,
-
-		// クリエイター情報（5種対応）
-		voiceActors: existingData.voiceActors || [],
-		scenario: existingData.scenario || [],
-		illustration: existingData.illustration || [],
-		music: existingData.music || [],
-		author: [],
-
-		// ジャンル・タグ分離
-		genres: existingData.tags || [],
-		tags: existingData.tags || [],
-		customTags: existingData.customGenres,
-
-		// 日付最適化
-		releaseDate: existingData.releaseDate,
-		releaseDateISO: dateInfo.iso,
-		releaseDateDisplay: dateInfo.display,
-
-		// 拡張メタデータ
-		seriesName: existingData.seriesInfo?.titleName,
-		ageRating: existingData.ageRating,
-		workFormat: existingData.workFormat,
-		fileFormat: existingData.fileFormat,
-
-		// ファイル情報拡張
-		fileInfo: migrateFileInfo(existingData.fileInfo),
-
-		// 詳細情報
-		bonusContent: existingData.bonusContent || [],
-		sampleImages: existingData.sampleImages || [],
-		isExclusive: existingData.isExclusive || false,
-
-		// データソース追跡初期化
-		dataSources: {
-			searchResult: {
-				lastFetched: existingData.lastFetchedAt,
-				genres: existingData.tags || [],
-			},
-		},
-
-		// システム管理情報
-		lastFetchedAt: existingData.lastFetchedAt,
-		createdAt: existingData.createdAt,
-		updatedAt: existingData.updatedAt,
-	};
-}
+// migrateToOptimizedStructure関数は削除 - OptimizedFirestoreDLsiteWorkDataのみ使用
 
 /**
  * Firestoreデータをフロントエンド表示用に変換するヘルパー関数
@@ -843,7 +730,7 @@ export function migrateToOptimizedStructure(
 /**
  * 表示用価格テキストを生成
  */
-function generateDisplayPrice(price: FirestoreDLsiteWorkData["price"]): string {
+function generateDisplayPrice(price: OptimizedFirestoreDLsiteWorkData["price"]): string {
 	return price.discount && price.original
 		? `${price.current}円（元：${price.original}円）`
 		: `${price.current}円`;
@@ -852,7 +739,9 @@ function generateDisplayPrice(price: FirestoreDLsiteWorkData["price"]): string {
 /**
  * 評価テキストを生成
  */
-function generateRatingText(rating?: FirestoreDLsiteWorkData["rating"]): string | undefined {
+function generateRatingText(
+	rating?: OptimizedFirestoreDLsiteWorkData["rating"],
+): string | undefined {
 	return rating ? `★${rating.stars.toFixed(1)} (${rating.count}件)` : undefined;
 }
 
@@ -860,7 +749,7 @@ function generateRatingText(rating?: FirestoreDLsiteWorkData["rating"]): string 
  * ダウンロード数テキストを生成
  */
 function generateDownloadText(
-	data: Pick<FirestoreDLsiteWorkData, "totalDownloadCount" | "salesCount">,
+	data: Pick<OptimizedFirestoreDLsiteWorkData, "totalDownloadCount" | "salesCount">,
 ): string | undefined {
 	if (data.totalDownloadCount) {
 		return `DL${data.totalDownloadCount.toLocaleString()}`;
@@ -871,7 +760,9 @@ function generateDownloadText(
 	return undefined;
 }
 
-export function convertToFrontendWork(data: FirestoreDLsiteWorkData): FrontendDLsiteWorkData {
+export function convertToFrontendWork(
+	data: OptimizedFirestoreDLsiteWorkData,
+): FrontendDLsiteWorkData {
 	// 表示用テキストの生成
 	const displayPrice = generateDisplayPrice(data.price);
 	const discountText = data.price.discount ? `${data.price.discount}%OFF` : undefined;
@@ -919,7 +810,7 @@ export function convertToFrontendWork(data: FirestoreDLsiteWorkData): FrontendDL
 			scenario: data.scenario || [],
 			illustration: data.illustration || [],
 			music: data.music || [],
-			design: data.design || [],
+			author: data.author || [],
 
 			// 統一された作品情報
 			releaseDate: data.releaseDate,
@@ -932,14 +823,16 @@ export function convertToFrontendWork(data: FirestoreDLsiteWorkData): FrontendDL
 			sampleImages: data.sampleImages || [],
 			isExclusive: data.isExclusive || false,
 
-			// その他必須フィールド
-			otherCreators: data.otherCreators || {},
-			basicInfo: data.basicInfo,
+			// 拡張情報（OptimizedFirestoreDLsiteWorkDataから取得）
+			genres: data.genres || [],
+			dataSources: data.dataSources,
+			fileInfo: data.fileInfo,
+			bonusContent: data.bonusContent || [],
 
 			lastFetchedAt: data.lastFetchedAt,
 			createdAt: data.createdAt,
 			updatedAt: data.updatedAt,
-			displayPrice: `${data.price.current}円`,
+			displayPrice: generateDisplayPrice(data.price),
 			discountText,
 			ratingText,
 			wishlistText: data.wishlistCount ? `♡${data.wishlistCount.toLocaleString()}` : undefined,
@@ -950,7 +843,6 @@ export function convertToFrontendWork(data: FirestoreDLsiteWorkData): FrontendDL
 			createdAtISO: data.createdAt,
 			lastFetchedAtISO: data.lastFetchedAt,
 			updatedAtISO: data.updatedAt,
-			userEvaluationCount: 0,
 		};
 	}
 }
