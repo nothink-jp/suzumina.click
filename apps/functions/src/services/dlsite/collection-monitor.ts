@@ -227,7 +227,18 @@ export async function fetchTotalWorksCount(): Promise<number> {
 		const html = await response.text();
 
 		// HTMLから総件数を抽出（DLsiteの検索結果ページから）
-		// パターン1: "1,015件中1～30件目" 形式
+
+		// パターン1: APIレスポンス形式 "count":1015
+		const apiCountMatch = html.match(/"count"\s*:\s*(\d+)/);
+		if (apiCountMatch?.[1]) {
+			const totalCount = Number.parseInt(apiCountMatch[1], 10);
+			if (totalCount > 0) {
+				logger.info(`DLsiteから総作品数を取得（APIパターン）: ${totalCount}件`);
+				return totalCount;
+			}
+		}
+
+		// パターン2: "1,015件中1～30件目" 形式
 		const paginationMatch = html.match(/([0-9,]+)\s*件\s*中\s*(\d+)\s*～\s*(\d+)\s*件\s*目/);
 		if (paginationMatch?.[1] && paginationMatch[2] && paginationMatch[3]) {
 			const totalStr = paginationMatch[1].replace(/,/g, "");
@@ -243,7 +254,7 @@ export async function fetchTotalWorksCount(): Promise<number> {
 			}
 		}
 
-		// パターン2: "1,015件の作品が見つかりました" 形式（フォールバック）
+		// パターン3: "1,015件の作品が見つかりました" 形式（フォールバック）
 		const countMatch = html.match(/([0-9,]+)\s*件\s*の\s*作品/);
 		if (countMatch?.[1]) {
 			const countStr = countMatch[1].replace(/,/g, "");

@@ -72,6 +72,40 @@ vi.mock("../shared/logger", () => ({
 	debug: vi.fn(),
 }));
 
+// collection-monitorのモック
+vi.mock("../services/dlsite/collection-monitor", () => ({
+	checkCollectionCompleteness: vi.fn().mockResolvedValue({
+		isComplete: true,
+		progress: {
+			totalExpected: 1015,
+			totalCollected: 1015,
+			completeness: 100.0,
+		},
+		issues: [],
+	}),
+	generateQualityReport: vi.fn().mockResolvedValue({
+		progress: {
+			totalExpected: 1015,
+			totalCollected: 1015,
+			completeness: 100.0,
+		},
+		qualityScore: 95,
+		recommendations: ["データ収集は良好な状態です"],
+	}),
+	getCurrentProgress: vi.fn().mockResolvedValue(null),
+	getFailedPagesForRetry: vi.fn().mockResolvedValue([]),
+	initializeCollectionProgress: vi.fn().mockResolvedValue({
+		totalExpected: 1015,
+		totalCollected: 0,
+		lastPage: 0,
+		failedPages: [],
+		completeness: 0,
+		lastUpdated: new Date().toISOString(),
+	}),
+	recordPageFailure: vi.fn().mockResolvedValue(undefined),
+	recordPageSuccess: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Firestoreのモック
 vi.mock("../infrastructure/database/firestore", () => {
 	// メタデータドキュメントのモック
@@ -112,6 +146,9 @@ vi.mock("../infrastructure/database/firestore", () => {
 					size: 0,
 				}),
 			};
+		}
+		if (collectionName === "dlsiteCollectionProgress") {
+			return { doc: mockMetadataDoc }; // 同じモックドキュメントを使用
 		}
 		return { doc: vi.fn() };
 	});

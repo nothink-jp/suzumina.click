@@ -3,6 +3,15 @@ import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { getDLsiteConfig } from "../infrastructure/management/config-manager";
 import { generateDLsiteHeaders } from "../infrastructure/management/user-agent-manager";
 import {
+	checkCollectionCompleteness,
+	generateQualityReport,
+	getCurrentProgress,
+	getFailedPagesForRetry,
+	initializeCollectionProgress,
+	recordPageFailure,
+	recordPageSuccess,
+} from "../services/dlsite/collection-monitor";
+import {
 	getExistingWorksMap,
 	savePriceHistory,
 	saveSalesHistory,
@@ -127,6 +136,18 @@ async function prepareExecution(): Promise<[FetchMetadata | undefined, FetchResu
 			return [undefined, { workCount: 0, error: "前回の処理が完了していません" }];
 		}
 
+		// collection-monitor システムの初期化
+		logger.info("🎯 収集監視システムを初期化中...");
+		const currentProgress = await getCurrentProgress();
+		if (!currentProgress) {
+			logger.info("新規収集セッションを開始します");
+			await initializeCollectionProgress();
+		} else {
+			logger.info(
+				`既存の進捗を検出: ${currentProgress.totalCollected}/${currentProgress.totalExpected}件 (${currentProgress.completeness.toFixed(1)}%)`,
+			);
+		}
+
 		// 処理開始を記録
 		await updateMetadata({ isInProgress: true });
 		return [metadata, undefined];
@@ -205,114 +226,152 @@ async function processSinglePage(
 ): Promise<{ savedCount: number; parsedCount: number; isLastPage: boolean }> {
 	logger.debug(`DLsite検索: ページ ${currentPage} を取得中...`);
 
-	const searchResult = await fetchDLsiteSearchResult(currentPage);
-
-	if (!searchResult.search_result) {
-		logger.info(`ページ ${currentPage} は空です。全ての作品の取得が完了しました。`);
-		return { savedCount: 0, parsedCount: 0, isLastPage: true };
-	}
-
-	// HTMLから作品データを解析
-	const parsedWorks = parseWorksFromHTML(searchResult.search_result);
-
-	if (parsedWorks.length === 0) {
-		logger.info(
-			`ページ ${currentPage} に作品が見つかりませんでした。全ての作品の取得が完了しました。`,
-		);
-		return { savedCount: 0, parsedCount: 0, isLastPage: true };
-	}
-
-	// 効率的な処理: 新規作品と既存作品を分類して処理
-	const productIds = parsedWorks.map((w) => w.productId);
-	const existingWorksMap = await getExistingWorksMap(productIds);
-
-	// 新規作品と既存作品を分類
-	const newWorks = parsedWorks.filter((w) => !existingWorksMap.has(w.productId));
-	const existingWorks = parsedWorks.filter((w) => existingWorksMap.has(w.productId));
-
-	logger.info(`ページ ${currentPage} の処理内訳:`, {
-		total: parsedWorks.length,
-		new: newWorks.length,
-		existing: existingWorks.length,
-	});
-
-	// 並列処理で効率化
-	const [newWorksData, existingWorksData] = await Promise.all([
-		// 新規作品は詳細データを含めて取得
-		newWorks.length > 0
-			? mapMultipleWorksWithDetailData(newWorks, existingWorksMap)
-			: Promise.resolve([]),
-		// 既存作品は基本情報のみ更新
-		existingWorks.length > 0
-			? mapMultipleWorksWithInfo(existingWorks, existingWorksMap)
-			: Promise.resolve([]),
-	]);
-
-	// 統合して保存
-	const allWorksData = [...newWorksData, ...existingWorksData];
-	await saveWorksToFirestore(allWorksData);
-
-	// 価格履歴を記録（並列実行）
-	const priceHistoryPromises = allWorksData.map(async (work) => {
-		if (work.price?.current !== undefined) {
-			await savePriceHistory(work.productId, {
-				currentPrice: work.price.current,
-				originalPrice: work.price.original,
-				discountRate: work.price.discount,
-			});
-		}
-	});
-
 	try {
-		await Promise.allSettled(priceHistoryPromises);
-		logger.info(`価格履歴記録完了: ${allWorksData.length}件`);
-	} catch (error) {
-		logger.warn("価格履歴記録で一部エラー:", { error });
-	}
+		const searchResult = await fetchDLsiteSearchResult(currentPage);
 
-	// 販売履歴を記録（並列実行）
-	const salesHistoryPromises = allWorksData.map(async (work) => {
-		if (work.salesCount !== undefined || work.totalDownloadCount !== undefined) {
-			await saveSalesHistory(work.productId, {
-				salesCount: work.salesCount,
-				totalDownloadCount: work.totalDownloadCount,
-				rankingHistory: work.rankingHistory,
-			});
+		if (!searchResult.search_result) {
+			logger.info(`ページ ${currentPage} は空です。全ての作品の取得が完了しました。`);
+			// 空ページも成功として記録
+			await recordPageSuccess(currentPage, 0);
+			return { savedCount: 0, parsedCount: 0, isLastPage: true };
 		}
-	});
 
-	try {
-		await Promise.allSettled(salesHistoryPromises);
-		logger.info(`販売履歴記録完了: ${allWorksData.length}件`);
-	} catch (error) {
-		logger.warn("販売履歴記録で一部エラー:", { error });
-	}
+		// HTMLから作品データを解析
+		const parsedWorks = parseWorksFromHTML(searchResult.search_result);
 
-	const savedCount = allWorksData.length;
-	logger.info(`ページ ${currentPage}: ${savedCount}件の作品を保存しました`, {
-		newWorksSaved: newWorksData.length,
-		existingWorksUpdated: existingWorksData.length,
-	});
+		if (parsedWorks.length === 0) {
+			logger.info(
+				`ページ ${currentPage} に作品が見つかりませんでした。全ての作品の取得が完了しました。`,
+			);
+			// パース結果が空の場合も成功として記録
+			await recordPageSuccess(currentPage, 0);
+			return { savedCount: 0, parsedCount: 0, isLastPage: true };
+		}
 
-	// 総作品数の更新処理
-	if (currentPage === 1 && searchResult.page_info) {
-		await updateMetadata({
-			totalWorks: searchResult.page_info.count,
-			currentPage: currentPage + 1,
+		// 効率的な処理: 新規作品と既存作品を分類して処理
+		const productIds = parsedWorks.map((w) => w.productId);
+		const existingWorksMap = await getExistingWorksMap(productIds);
+
+		// 新規作品と既存作品を分類
+		const newWorks = parsedWorks.filter((w) => !existingWorksMap.has(w.productId));
+		const existingWorks = parsedWorks.filter((w) => existingWorksMap.has(w.productId));
+
+		logger.info(`ページ ${currentPage} の処理内訳:`, {
+			total: parsedWorks.length,
+			new: newWorks.length,
+			existing: existingWorks.length,
 		});
-	} else {
-		await updateMetadata({ currentPage: currentPage + 1 });
-	}
 
-	// 最終ページ判定
-	const isLastPage = parsedWorks.length < ITEMS_PER_PAGE;
-	if (isLastPage) {
-		logger.info(
-			`ページ ${currentPage} の作品数が${ITEMS_PER_PAGE}件未満です。全ての作品の取得が完了しました。`,
-		);
-	}
+		// 並列処理で効率化
+		const [newWorksData, existingWorksData] = await Promise.all([
+			// 新規作品は詳細データを含めて取得
+			newWorks.length > 0
+				? mapMultipleWorksWithDetailData(newWorks, existingWorksMap)
+				: Promise.resolve([]),
+			// 既存作品は基本情報のみ更新
+			existingWorks.length > 0
+				? mapMultipleWorksWithInfo(existingWorks, existingWorksMap)
+				: Promise.resolve([]),
+		]);
 
-	return { savedCount, parsedCount: parsedWorks.length, isLastPage };
+		// 統合して保存
+		const allWorksData = [...newWorksData, ...existingWorksData];
+		await saveWorksToFirestore(allWorksData);
+
+		// 価格履歴を記録（並列実行）
+		const priceHistoryPromises = allWorksData.map(async (work) => {
+			if (work.price?.current !== undefined) {
+				await savePriceHistory(work.productId, {
+					currentPrice: work.price.current,
+					originalPrice: work.price.original,
+					discountRate: work.price.discount,
+				});
+			}
+		});
+
+		try {
+			await Promise.allSettled(priceHistoryPromises);
+			logger.info(`価格履歴記録完了: ${allWorksData.length}件`);
+		} catch (error) {
+			logger.warn("価格履歴記録で一部エラー:", { error });
+		}
+
+		// 販売履歴を記録（並列実行）
+		const salesHistoryPromises = allWorksData.map(async (work) => {
+			if (work.salesCount !== undefined || work.totalDownloadCount !== undefined) {
+				await saveSalesHistory(work.productId, {
+					salesCount: work.salesCount,
+					totalDownloadCount: work.totalDownloadCount,
+					rankingHistory: work.rankingHistory,
+				});
+			}
+		});
+
+		try {
+			await Promise.allSettled(salesHistoryPromises);
+			logger.info(`販売履歴記録完了: ${allWorksData.length}件`);
+		} catch (error) {
+			logger.warn("販売履歴記録で一部エラー:", { error });
+		}
+
+		const savedCount = allWorksData.length;
+		logger.info(`ページ ${currentPage}: ${savedCount}件の作品を保存しました`, {
+			newWorksSaved: newWorksData.length,
+			existingWorksUpdated: existingWorksData.length,
+		});
+
+		// collection-monitor に成功を記録
+		await recordPageSuccess(currentPage, savedCount);
+
+		// 総作品数の更新処理
+		if (currentPage === 1 && searchResult.page_info) {
+			await updateMetadata({
+				totalWorks: searchResult.page_info.count,
+				currentPage: currentPage + 1,
+			});
+		} else {
+			await updateMetadata({ currentPage: currentPage + 1 });
+		}
+
+		// 最終ページ判定
+		// 方法1: 作品数が100件未満
+		// 方法2: HTMLに「次へ」リンクが存在しない
+		// 方法3: 総作品数に到達した（collection-monitorから取得）
+		let isLastPage = parsedWorks.length < ITEMS_PER_PAGE;
+
+		// より確実な判定: HTMLから次ページリンクを確認
+		if (!isLastPage && searchResult.search_result) {
+			const hasNextPage = searchResult.search_result.includes(`page/${currentPage + 1}"`);
+			if (!hasNextPage) {
+				isLastPage = true;
+				logger.info(
+					`ページ ${currentPage}: 次ページへのリンクが見つかりません。最終ページと判定します。`,
+				);
+			}
+		}
+
+		// collection-monitorの進捗と照合
+		const progress = await getCurrentProgress();
+		if (progress && progress.totalExpected > 0) {
+			const totalCollectedSoFar = (currentPage - 1) * ITEMS_PER_PAGE + parsedWorks.length;
+			if (totalCollectedSoFar >= progress.totalExpected) {
+				isLastPage = true;
+				logger.info(`ページ ${currentPage}: 総作品数 ${progress.totalExpected} に到達しました。`);
+			}
+		}
+
+		if (isLastPage) {
+			logger.info(`ページ ${currentPage} が最終ページです。全ての作品の取得が完了しました。`);
+		}
+
+		return { savedCount, parsedCount: parsedWorks.length, isLastPage };
+	} catch (error) {
+		// collection-monitor に失敗を記録
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		await recordPageFailure(currentPage, errorMessage);
+		logger.error(`ページ ${currentPage} の処理中にエラーが発生しました:`, error);
+		throw error;
+	}
 }
 
 /**
@@ -371,6 +430,52 @@ async function fetchDLsiteWorksInternal(metadata: FetchMetadata): Promise<{
 }
 
 /**
+ * 失敗ページの再実行処理
+ */
+async function retryFailedPages(isComplete: boolean): Promise<void> {
+	const failedPages = await getFailedPagesForRetry();
+	if (failedPages.length > 0 && !isComplete) {
+		logger.info(`🔄 失敗ページの再実行: ${failedPages.length}ページ`);
+		for (const pageNum of failedPages.slice(0, 3)) {
+			// 最大3ページまで再実行
+			try {
+				logger.info(`再実行中: ページ ${pageNum}`);
+				await processSinglePage(pageNum);
+				logger.info(`✅ ページ ${pageNum} の再実行に成功しました`);
+			} catch (error) {
+				logger.warn(`❌ ページ ${pageNum} の再実行に失敗しました:`, { error });
+			}
+		}
+	}
+}
+
+/**
+ * 収集完了時の品質レポート生成
+ */
+async function generateCompletionReport(): Promise<void> {
+	logger.info("🔍 収集完全性チェックを実行中...");
+	const completenessResult = await checkCollectionCompleteness();
+	const qualityReport = await generateQualityReport();
+
+	logger.info("📊 === 収集完全性レポート ===");
+	logger.info(`完全性: ${completenessResult.progress.completeness.toFixed(1)}%`);
+	logger.info(
+		`収集済み: ${completenessResult.progress.totalCollected}/${completenessResult.progress.totalExpected}件`,
+	);
+	logger.info(`品質スコア: ${qualityReport.qualityScore}/100`);
+
+	if (completenessResult.isComplete) {
+		logger.info("✅ データ収集が完全に完了しました！");
+	} else {
+		logger.warn("⚠️ データ収集に問題があります:");
+		completenessResult.issues.forEach((issue) => logger.warn(`  - ${issue}`));
+	}
+
+	// 推奨アクション
+	qualityReport.recommendations.forEach((rec) => logger.info(`💡 推奨: ${rec}`));
+}
+
+/**
  * DLsite作品情報取得の共通処理
  */
 async function fetchDLsiteWorksLogic(): Promise<FetchResult> {
@@ -391,8 +496,12 @@ async function fetchDLsiteWorksLogic(): Promise<FetchResult> {
 
 		logger.info(`取得した作品合計: ${workCount}件`);
 
-		// 3. メタデータを更新
+		// 3. 失敗ページの再実行チェック
+		await retryFailedPages(isComplete);
+
+		// 4. メタデータを更新
 		if (isComplete) {
+			await generateCompletionReport();
 			await updateMetadata({
 				currentPage: undefined,
 				lastSuccessfulCompleteFetch: Timestamp.now(),
@@ -403,7 +512,7 @@ async function fetchDLsiteWorksLogic(): Promise<FetchResult> {
 			logger.debug(`次回の実行のためにページ番号を保存: ${nextPage}`);
 		}
 
-		// 4. 処理完了を記録
+		// 5. 処理完了を記録
 		await updateMetadata({
 			isInProgress: false,
 			lastError: undefined,
