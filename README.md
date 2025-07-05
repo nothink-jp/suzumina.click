@@ -68,8 +68,9 @@ cd apps/web && pnpm dev
 |-------------|-------------|
 | **🚀 開発を始める** | [開発ガイド](docs/DEVELOPMENT.md) → [コマンド集](docs/QUICK_REFERENCE.md) |
 | **🏗️ アーキテクチャを理解** | [詳細仕様](docs/README.md) → [インフラ構成](docs/INFRASTRUCTURE_ARCHITECTURE.md) |
-| **⚙️ インフラを管理** | [デプロイ戦略](docs/DEPLOYMENT_STRATEGY.md) → [Terraform](terraform/README.md) |
-| **🧪 テストを実行** | [Admin Testing](apps/admin/README-TESTING.md) → E2E Guide |
+| **⚙️ デプロイ・運用** | [デプロイガイド](docs/DEPLOYMENT_GUIDE.md) → [Terraform](terraform/README.md) |
+| **🔧 Git運用** | [Git ワークフロー](docs/GIT_WORKFLOW.md) → Session Branch戦略 |
+| **🧪 テスト実行** | [Admin Testing](apps/admin/README.md#テスト) → E2E Guide |
 
 ## 📚 詳細ドキュメント
 

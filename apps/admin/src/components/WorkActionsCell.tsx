@@ -10,7 +10,12 @@ interface WorkData {
 	workId: string;
 	title: string;
 	description: string;
-	price: number;
+	price: {
+		current: number;
+		currency: string;
+		original?: number;
+		discount?: number;
+	};
 	tags: string[];
 	isOnSale: boolean;
 }
@@ -91,7 +96,7 @@ export function WorkActionsCell({ work }: WorkActionsCellProps) {
 			key: "price",
 			label: "価格",
 			type: "number" as const,
-			value: work.price,
+			value: work.price.current,
 		},
 		{
 			key: "tags",

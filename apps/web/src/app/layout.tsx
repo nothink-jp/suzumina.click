@@ -19,7 +19,7 @@ const mPlusRounded = M_PLUS_Rounded_1c({
 
 export const metadata: Metadata = {
 	title: "すずみなくりっく！ - 涼花みなせファンサイト",
-	description: "涼花みなせさんの音声作品やボタンを楽しめるファンコミュニティサイトです。",
+	description: "涼花みなせさんの音声ボタンを楽しめる非公式ファンサイトです。",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

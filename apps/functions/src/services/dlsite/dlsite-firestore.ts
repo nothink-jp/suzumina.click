@@ -4,122 +4,32 @@
  * YouTube実装パターンに従い、DLsite作品データのFirestore保存・取得・更新を行います。
  */
 
-import type { CollectionReference, Query, WriteBatch } from "@google-cloud/firestore";
+import type { Query } from "@google-cloud/firestore";
 import type {
-	DLsiteWorkBase,
 	FirestoreDLsiteWorkData,
+	OptimizedFirestoreDLsiteWorkData,
 	PriceHistory,
 	RankingInfo,
 	SalesHistory,
 } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
-import { filterWorksForUpdate, mapToFirestoreData, validateWorkData } from "./dlsite-mapper";
+
+// Note: 最適化構造では mapToFirestoreData, filterWorksForUpdate, validateWorkData は不要
 
 // Firestore関連の定数
 const DLSITE_WORKS_COLLECTION = "dlsiteWorks";
 const PRICE_HISTORY_COLLECTION = "priceHistory";
 const SALES_HISTORY_COLLECTION = "salesHistory";
 
-/**
- * 新規作品をバッチに追加
- */
-function addCreateOperationsToBatch(
-	batch: WriteBatch,
-	collection: CollectionReference,
-	toCreate: DLsiteWorkBase[],
-): number {
-	let operationCount = 0;
-
-	for (const work of toCreate) {
-		const { isValid, warnings } = validateWorkData(work);
-
-		if (!isValid) {
-			logger.warn(`作品${work.productId}はデータ品質チェックに失敗したためスキップ:`, { warnings });
-			continue;
-		}
-
-		if (warnings.length > 0) {
-			logger.warn(`作品${work.productId}にデータ品質の警告:`, { warnings });
-		}
-
-		const firestoreData = mapToFirestoreData(work);
-		const docRef = collection.doc(work.productId);
-		batch.set(docRef, firestoreData);
-		operationCount++;
-	}
-
-	return operationCount;
-}
+// 最適化構造では未使用の関数を削除
 
 /**
- * 更新作品をバッチに追加
+ * 作品データをFirestoreに保存 (最適化構造対応)
  */
-function addUpdateOperationsToBatch(
-	batch: WriteBatch,
-	collection: CollectionReference,
-	toUpdate: Array<{ new: DLsiteWorkBase; existing: FirestoreDLsiteWorkData }>,
-): number {
-	let operationCount = 0;
-
-	for (const { new: newWork, existing } of toUpdate) {
-		const { isValid, warnings } = validateWorkData(newWork);
-
-		if (!isValid) {
-			logger.warn(`作品${newWork.productId}はデータ品質チェックに失敗したためスキップ:`, {
-				warnings,
-			});
-			continue;
-		}
-
-		if (warnings.length > 0) {
-			logger.warn(`作品${newWork.productId}にデータ品質の警告:`, { warnings });
-		}
-
-		const firestoreData = mapToFirestoreData(newWork, existing);
-		const docRef = collection.doc(newWork.productId);
-		batch.update(docRef, firestoreData);
-		operationCount++;
-	}
-
-	return operationCount;
-}
-
-/**
- * バッチ操作を実行
- */
-async function executeBatchOperations(
-	batch: WriteBatch,
-	operationCount: number,
-	toCreate: DLsiteWorkBase[],
-	toUpdate: Array<{ new: DLsiteWorkBase; existing: FirestoreDLsiteWorkData }>,
-	collection: CollectionReference,
-	unchanged: DLsiteWorkBase[],
+export async function saveWorksToFirestore(
+	works: OptimizedFirestoreDLsiteWorkData[],
 ): Promise<void> {
-	if (operationCount === 0) {
-		logger.info("Firestoreに保存すべき変更がありません");
-		return;
-	}
-
-	if (operationCount > 500) {
-		// 500件を超える場合は分割して実行
-		await executeBatchInChunks(toCreate, toUpdate, collection);
-	} else {
-		await batch.commit();
-	}
-
-	logger.info("Firestore保存完了:", {
-		created: toCreate.length,
-		updated: toUpdate.length,
-		unchanged: unchanged.length,
-		totalOperations: operationCount,
-	});
-}
-
-/**
- * 作品データをFirestoreに保存
- */
-export async function saveWorksToFirestore(works: DLsiteWorkBase[]): Promise<void> {
 	if (works.length === 0) {
 		logger.info("保存する作品データがありません");
 		return;
@@ -128,30 +38,37 @@ export async function saveWorksToFirestore(works: DLsiteWorkBase[]): Promise<voi
 	logger.info(`${works.length}件の作品データをFirestoreに保存開始`);
 
 	try {
-		// 既存データを取得
-		const existingWorksMap = await getExistingWorksMap(works.map((w) => w.productId));
-
-		// 更新が必要な作品を判定
-		const { toCreate, toUpdate, unchanged } = filterWorksForUpdate(works, existingWorksMap);
-
 		// バッチ処理の準備
 		const batch = firestore.batch();
 		const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
 
-		// バッチ操作を追加
-		const createCount = addCreateOperationsToBatch(batch, collection, toCreate);
-		const updateCount = addUpdateOperationsToBatch(batch, collection, toUpdate);
-		const totalOperationCount = createCount + updateCount;
+		// 最適化構造データは既にFirestore形式なので直接保存
+		let operationCount = 0;
+		for (const work of works) {
+			const docRef = collection.doc(work.productId);
+			batch.set(docRef, work, { merge: true }); // マージオプションで部分更新対応
+			operationCount++;
+		}
 
 		// バッチ実行
-		await executeBatchOperations(
-			batch,
-			totalOperationCount,
-			toCreate,
-			toUpdate,
-			collection,
-			unchanged,
-		);
+		if (operationCount > 0) {
+			if (operationCount > 500) {
+				// 500件を超える場合は分割処理
+				const chunks = chunkArray(works, 500);
+				for (const chunk of chunks) {
+					const chunkBatch = firestore.batch();
+					for (const work of chunk) {
+						const docRef = collection.doc(work.productId);
+						chunkBatch.set(docRef, work, { merge: true });
+					}
+					await chunkBatch.commit();
+				}
+			} else {
+				await batch.commit();
+			}
+		}
+
+		logger.info(`Firestore保存完了: ${operationCount}件`);
 	} catch (error) {
 		logger.error("Firestore保存中にエラーが発生:", {
 			error,
@@ -162,12 +79,12 @@ export async function saveWorksToFirestore(works: DLsiteWorkBase[]): Promise<voi
 }
 
 /**
- * 既存の作品データを取得
+ * 既存の作品データを取得 (最適化構造対応)
  */
 export async function getExistingWorksMap(
 	productIds: string[],
-): Promise<Map<string, FirestoreDLsiteWorkData>> {
-	const existingWorksMap = new Map<string, FirestoreDLsiteWorkData>();
+): Promise<Map<string, OptimizedFirestoreDLsiteWorkData>> {
+	const existingWorksMap = new Map<string, OptimizedFirestoreDLsiteWorkData>();
 
 	if (productIds.length === 0) {
 		return existingWorksMap;
@@ -183,7 +100,7 @@ export async function getExistingWorksMap(
 			const snapshot = await collection.where("productId", "in", chunk).get();
 
 			for (const doc of snapshot.docs) {
-				const data = doc.data() as FirestoreDLsiteWorkData;
+				const data = doc.data() as OptimizedFirestoreDLsiteWorkData;
 				existingWorksMap.set(data.productId, data);
 			}
 		}
@@ -197,46 +114,7 @@ export async function getExistingWorksMap(
 	return existingWorksMap;
 }
 
-/**
- * 大量のバッチ操作を分割して実行
- */
-async function executeBatchInChunks(
-	toCreate: DLsiteWorkBase[],
-	toUpdate: Array<{ new: DLsiteWorkBase; existing: FirestoreDLsiteWorkData }>,
-	collection: CollectionReference,
-): Promise<void> {
-	const BATCH_SIZE = 500;
-
-	// 作成操作
-	const createChunks = chunkArray(toCreate, BATCH_SIZE);
-	for (const chunk of createChunks) {
-		const batch = firestore.batch();
-
-		for (const work of chunk) {
-			const firestoreData = mapToFirestoreData(work);
-			const docRef = collection.doc(work.productId);
-			batch.set(docRef, firestoreData);
-		}
-
-		await batch.commit();
-		logger.info(`作成バッチ実行完了: ${chunk.length}件`);
-	}
-
-	// 更新操作
-	const updateChunks = chunkArray(toUpdate, BATCH_SIZE);
-	for (const chunk of updateChunks) {
-		const batch = firestore.batch();
-
-		for (const { new: newWork, existing } of chunk) {
-			const firestoreData = mapToFirestoreData(newWork, existing);
-			const docRef = collection.doc(newWork.productId);
-			batch.update(docRef, firestoreData);
-		}
-
-		await batch.commit();
-		logger.info(`更新バッチ実行完了: ${chunk.length}件`);
-	}
-}
+// executeBatchInChunks関数は最適化構造では未使用のため削除
 
 /**
  * 配列を指定されたサイズのチャンクに分割

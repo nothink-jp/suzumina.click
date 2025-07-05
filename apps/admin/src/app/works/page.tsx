@@ -33,14 +33,21 @@ interface WorkData {
 	workId: string;
 	title: string;
 	circle: string;
-	price: number;
+	price: {
+		current: number;
+		currency: string;
+		original?: number;
+		discount?: number;
+	};
 	saleDate: string;
 	description: string;
 	thumbnailUrl: string;
 	highResImageUrl?: string;
 	tags: string[];
-	rating: number;
-	reviewCount: number;
+	rating: {
+		stars: number;
+		count: number;
+	};
 	lastUpdated: string;
 	isOnSale: boolean;
 }
@@ -86,7 +93,12 @@ async function getWorks(
 				workId: data.workId || doc.id,
 				title: data.title || "無題",
 				circle: data.circle || "不明",
-				price: typeof data.price === "number" ? data.price : 0,
+				price: {
+					current: data.price?.current || 0,
+					currency: data.price?.currency || "JPY",
+					original: data.price?.original,
+					discount: data.price?.discount,
+				},
 				saleDate:
 					typeof data.saleDate === "string"
 						? data.saleDate
@@ -95,8 +107,10 @@ async function getWorks(
 				thumbnailUrl: data.thumbnailUrl || "",
 				highResImageUrl: data.highResImageUrl,
 				tags: Array.isArray(data.tags) ? data.tags : [],
-				rating: typeof data.rating === "number" ? data.rating : 0,
-				reviewCount: typeof data.reviewCount === "number" ? data.reviewCount : 0,
+				rating: {
+					stars: data.rating?.stars || 0,
+					count: data.rating?.count || 0,
+				},
 				lastUpdated:
 					typeof data.lastUpdated === "string"
 						? data.lastUpdated
@@ -126,11 +140,16 @@ async function getWorks(
 }
 
 // 価格フォーマット
-function formatPrice(price: number): string {
-	if (typeof price !== "number" || isNaN(price)) {
+function formatPrice(price: {
+	current: number;
+	currency: string;
+	original?: number;
+	discount?: number;
+}): string {
+	if (!price || typeof price.current !== "number" || isNaN(price.current)) {
 		return "¥0";
 	}
-	return `¥${price.toLocaleString()}`;
+	return `¥${price.current.toLocaleString()}`;
 }
 
 // 統計計算関数（全データを対象）
@@ -179,8 +198,8 @@ async function calculateStats() {
 }
 
 // 評価表示
-function formatRating(rating: number): string {
-	return rating > 0 ? rating.toFixed(1) : "未評価";
+function formatRating(rating: { stars: number; count: number }): string {
+	return rating.stars > 0 ? rating.stars.toFixed(1) : "未評価";
 }
 
 interface WorksPageProps {
@@ -251,7 +270,9 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 						<CardTitle className="text-sm font-medium">総額</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-lg font-bold text-blue-600">{formatPrice(stats.totalValue)}</div>
+						<div className="text-lg font-bold text-blue-600">
+							¥{stats.totalValue.toLocaleString()}
+						</div>
 					</CardContent>
 				</Card>
 
@@ -260,7 +281,9 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 						<CardTitle className="text-sm font-medium">平均価格</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-lg font-bold">{formatPrice(Math.round(stats.averagePrice))}</div>
+						<div className="text-lg font-bold">
+							¥{Math.round(stats.averagePrice).toLocaleString()}
+						</div>
 					</CardContent>
 				</Card>
 
@@ -330,7 +353,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 											<div className="flex items-center gap-1 text-sm">
 												<Star className="h-3 w-3 text-yellow-500" />
 												{formatRating(work.rating)}
-												<span className="text-muted-foreground">({work.reviewCount})</span>
+												<span className="text-muted-foreground">({work.rating.count})</span>
 											</div>
 										</TableCell>
 										<TableCell>

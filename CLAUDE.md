@@ -678,15 +678,19 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 
 ### 運用・デプロイ
 
-- `docs/DEPLOYMENT_STRATEGY.md` - デプロイ戦略
-- `docs/WEB_DEPLOYMENT.md` - Web App デプロイ手順
+- `docs/DEPLOYMENT_GUIDE.md` - 統合デプロイメントガイド
 - `docs/INFRASTRUCTURE_ARCHITECTURE.md` - 包括的インフラ構築・運用ガイド
 
-### プロジェクト管理
+### Git・プロジェクト管理
 
+- `docs/GIT_WORKFLOW.md` - Git運用・Session Branch戦略
 - `docs/README.md` - 詳細プロジェクト仕様
 - `docs/CHANGELOG.md` - 変更履歴
 - `docs/TODO.md` - 開発ロードマップ
+
+### アーカイブ
+
+- `docs/archive/` - 完了済み実装仕様・分析レポート
 
 ## 🚨 重要コマンド
 
@@ -778,3 +782,39 @@ pnpm update && pnpm audit --fix  # 安全な依存関係更新
 
 このプロジェクトは、型安全なフルスタック開発を重視したファンコミュニティプラットフォームです。
 データ収集インフラとユーザー作成コンテンツ機能を組み合わせ、高品質な開発体験を提供します。
+
+## 📚 ドキュメントナビゲーション
+
+### 🔧 開発・運用ドキュメント
+- **[DEVELOPMENT.md](./docs/DEVELOPMENT.md)** - 開発環境・設計原則・品質基準
+- **[DEPLOYMENT_GUIDE.md](./docs/DEPLOYMENT_GUIDE.md)** - デプロイ・運用・トラブルシューティング
+- **[GIT_WORKFLOW.md](./docs/GIT_WORKFLOW.md)** - Git運用・Session Branch戦略
+- **[QUICK_REFERENCE.md](./docs/QUICK_REFERENCE.md)** - 日常的なコマンド・リファレンス
+
+### 📊 仕様・構造ドキュメント
+- **[FIRESTORE_STRUCTURE.md](./docs/FIRESTORE_STRUCTURE.md)** - データベース構造（v0.3.0統合データ対応）
+- **[INFRASTRUCTURE_ARCHITECTURE.md](./docs/INFRASTRUCTURE_ARCHITECTURE.md)** - インフラ構成・設計思想
+- **[TODO.md](./docs/TODO.md)** - 開発ロードマップ・現在の優先度
+- **[CHANGELOG.md](./docs/CHANGELOG.md)** - 変更履歴・バージョン情報
+
+### 🏗️ アプリケーション固有
+- **[Web App](./apps/web/README.md)** - Next.js Webアプリケーション
+- **[Admin App](./apps/admin/README.md)** - 管理者ダッシュボード（テスト情報含む）
+- **[Cloud Functions](./apps/functions/README.md)** - データ収集・処理システム
+- **[Terraform](./terraform/README.md)** - インフラ構成管理
+
+### 📦 パッケージ・ライブラリ
+- **[UI Package](./packages/ui/README.md)** - 共有UIコンポーネント・Storybook
+- **[Shared Types](./packages/shared-types/README.md)** - 型定義・Zodスキーマ
+- **[TypeScript Config](./packages/typescript-config/README.md)** - TypeScript設定共有
+
+### 📁 アーカイブ
+- **[アーカイブ](./docs/archive/README.md)** - 完了した実装仕様・分析レポート・プロセス文書
+
+---
+
+**💡 開発時のヒント**: 
+- **日常の開発**: [QUICK_REFERENCE.md](./docs/QUICK_REFERENCE.md) を参照
+- **新機能開発**: [DEVELOPMENT.md](./docs/DEVELOPMENT.md) → [GIT_WORKFLOW.md](./docs/GIT_WORKFLOW.md)
+- **デプロイ・運用**: [DEPLOYMENT_GUIDE.md](./docs/DEPLOYMENT_GUIDE.md)
+- **データ構造確認**: [FIRESTORE_STRUCTURE.md](./docs/FIRESTORE_STRUCTURE.md)

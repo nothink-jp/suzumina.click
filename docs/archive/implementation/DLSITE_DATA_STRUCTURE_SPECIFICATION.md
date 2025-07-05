@@ -1,12 +1,14 @@
 # DLsite データ構造仕様書
 
-> **📅 作成日**: 2025年7月4日  
-> **📝 ステータス**: 仕様策定・設計検討段階  
-> **🔧 対象バージョン**: v0.3.0+  
+> **📅 作成日**: 2025年7月4日 | **📅 最終更新**: 2025年7月5日  
+> **📝 ステータス**: 実装完了・運用中  
+> **🔧 対象バージョン**: v0.3.0 (統合データ構造実装済み)  
 
 ## 📋 概要
 
-DLsiteから取得される3種類のデータソースを統合し、Cloud Firestoreに効率的に格納するためのデータ構造仕様を定義します。
+**✅ 実装完了**: DLsiteから取得される3種類のデータソースの統合データ構造がCloud Firestoreで稼働中です。  
+**🔗 実装ファイル**: `apps/functions/src/services/dlsite/dlsite-unified-mapper.ts`  
+**📊 収集状況**: 1015件の完全データ収集を達成 (35%データ欠損問題解決済み)
 
 ## 🎯 DLsite固有の制約・仕様
 
@@ -118,12 +120,12 @@ interface DetailPageData {
 
 ## 🏗️ 統合データ構造設計
 
-### 統合戦略: **ハイブリッドアプローチ**
+### 統合戦略: **実装済みハイブリッドアプローチ**
 
-頻繁にアクセスされるデータは**トップレベル**に配置し、ソース固有データは**階層化**して保持
+**✅ 実装完了**: 頻繁にアクセスされるデータは**トップレベル**に配置し、ソース固有データは**階層化**して保持
 
 ```typescript
-// 統合されたFirestore作品データ構造
+// ✅ 実装済み: 統合されたFirestore作品データ構造 (FirestoreDLsiteWorkData)
 export interface UnifiedDLsiteWorkData {
   // === 基本識別情報 ===
   id: string;                 // FirestoreドキュメントID
@@ -192,10 +194,10 @@ export interface UnifiedDLsiteWorkData {
 
 ## 🔄 データ統合ロジック
 
-### 優先度ベース統合戦略
+### 優先度ベース統合戦略 (✅ 実装完了)
 
 ```typescript
-// データソース優先度マッピング
+// ✅ 実装済み: データソース優先度マッピング (dlsite-unified-mapper.ts)
 export const DATA_MERGE_PRIORITY = {
   // 価格情報: infoAPI > detailPage > searchHTML
   price: ['infoAPI', 'detailPage', 'searchHTML'],
@@ -225,9 +227,10 @@ export const DATA_MERGE_PRIORITY = {
 };
 ```
 
-### 統合マッパー関数
+### 統合マッパー関数 (✅ 実装完了)
 
 ```typescript
+// ✅ 実装済み: dlsite-unified-mapper.ts
 export function mergeWorkDataSources(
   searchData?: SearchResultData,
   infoData?: InfoAPIData, 
@@ -438,43 +441,54 @@ const cacheStrategy = {
 };
 ```
 
-## 🚀 実装ロードマップ
+## ✅ 実装完了状況
 
-### Phase 1: 統合データ構造実装 (1-2週間)
-- [ ] UnifiedDLsiteWorkData スキーマ定義
-- [ ] データ統合マッパー関数実装
-- [ ] 優先度ベース統合ロジック実装
-- [ ] 重複除去アルゴリズム実装
+### Phase 1: 統合データ構造実装 ✅ 完了
+- ✅ UnifiedDLsiteWorkData スキーマ定義完了
+- ✅ データ統合マッパー関数実装完了 (`dlsite-unified-mapper.ts`)
+- ✅ 優先度ベース統合ロジック実装完了 (`DATA_MERGE_PRIORITY`)
+- ✅ 重複除去アルゴリズム実装完了 (`mergeAndDeduplicate`)
 
-### Phase 2: 条件付き取得システム (2-3週間)
-- [ ] 環境変数ベース戦略選択実装
-- [ ] 段階的データ取得関数実装
-- [ ] キャッシュ戦略実装
-- [ ] エラーハンドリング強化
+### Phase 2: データ収集システム ✅ 完了
+- ✅ 35%データ欠損問題解決完了 (663件→1015件)
+- ✅ URL最適化実装完了 (フィルター削除)
+- ✅ 3段階最終ページ判定実装完了
+- ✅ エラーハンドリング強化完了
 
-### Phase 3: フロントエンド統合 (1-2週間)
-- [ ] WorkCard コンポーネント更新
-- [ ] WorkDetail コンポーネント更新
-- [ ] 検索・フィルタリング機能対応
-- [ ] パフォーマンス最適化
+### Phase 3: フロントエンド統合 🔄 進行中
+- ✅ WorkCard コンポーネント統合データ対応済み
+- ✅ WorkDetail コンポーネント統合データ対応済み  
+- 🔄 Server Actions統合データ最適化 (進行中)
+- 📋 検索・フィルタリング機能強化 (予定)
 
 ## 📚 関連ファイル
 
-### 実装対象ファイル
-- `/apps/functions/src/services/dlsite/dlsite-unified-mapper.ts` (新規作成)
-- `/apps/functions/src/services/dlsite/dlsite-mapper.ts` (リファクタリング)
-- `/packages/shared-types/src/work.ts` (スキーマ更新)
-- `/apps/web/src/app/works/components/WorkCard.tsx` (統合対応)
-- `/apps/web/src/app/works/[workId]/components/WorkDetail.tsx` (統合対応)
+### ✅ 実装済みファイル
+- ✅ `/apps/functions/src/services/dlsite/dlsite-unified-mapper.ts` - 統合データマッパー
+- ✅ `/apps/functions/src/services/dlsite/dlsite-mapper.ts` - 基本マッパー (既存データ保持対応)
+- ✅ `/packages/shared-types/src/work.ts` - 統合型定義 (FirestoreDLsiteWorkData)
+- ✅ `/apps/web/src/app/works/components/WorkCard.tsx` - 統合データ表示対応
+- ✅ `/apps/web/src/app/works/[workId]/components/WorkDetail.tsx` - 統合データ表示対応
+
+### 🔄 進行中ファイル
+- 🔄 `/apps/web/src/app/works/actions.ts` - Server Actions統合データ最適化
+
+### 📋 次期対象ファイル
+- 📋 `/apps/web/src/app/search/actions.ts` - 統合検索強化
+- 📋 `/apps/web/src/lib/work-transformers.ts` - データ変換ユーティリティ
 
 ### 設定ファイル
-- `/apps/functions/.env` (取得戦略環境変数)
-- `/terraform/` (Cloud Functions環境変数)
+- ✅ `/apps/functions/.env` - 本番環境設定済み
+- ✅ `/terraform/` - Cloud Functions環境変数設定済み
 
 ---
 
-**📝 次のアクション**: この仕様書を基にPhase 1の実装を開始し、統合データ構造の実装とテストを実行する。
+**📝 現在のアクション**: Server Actions統合データ最適化とフロントエンド連携強化
 
-**🔄 更新頻度**: 実装進捗に応じて週次更新
+**🔄 更新頻度**: 実装進捗に応じて更新
 
-**👥 関係者**: バックエンド開発者、フロントエンド開発者、データ設計者
+**👥 関係者**: フルスタック開発者、UI/UXデザイナー
+
+**🔗 関連ドキュメント**: 
+- [`BACKEND_FRONTEND_INTEGRATION.md`](./BACKEND_FRONTEND_INTEGRATION.md) - Server Actions設計
+- [`FIRESTORE_STRUCTURE.md`](./FIRESTORE_STRUCTURE.md) - データベース構造

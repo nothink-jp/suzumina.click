@@ -302,7 +302,7 @@ async function processSinglePage(
 				await saveSalesHistory(work.productId, {
 					salesCount: work.salesCount,
 					totalDownloadCount: work.totalDownloadCount,
-					rankingHistory: work.rankingHistory,
+					rankingHistory: undefined, // 最適化構造では別途管理
 				});
 			}
 		});

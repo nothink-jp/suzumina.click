@@ -145,7 +145,31 @@ pnpm test:coverage
 - **エラーシナリオテスト** - 適切な失敗処理
 - **統合ワークフローテスト** - エンドツーエンド管理者タスク
 
-詳細なテスト情報は[Testing Guide](./README-TESTING.md)を参照してください。
+### テスト設定
+
+**環境**: jsdom + Vitest + React Testing Library  
+**実行速度**: ~650ms（高速実行）  
+**カバレッジ**: v8 provider（HTML/JSON/textレポート）
+
+### テスト項目詳細
+
+1. **認証テスト** (`auth.test.ts`)
+   - 管理者ユーザー認証・非管理者拒否・未認証処理
+
+2. **Firestoreテスト** (`firestore.test.ts`)  
+   - インスタンス作成・CRUD操作・クエリ操作
+
+3. **APIロジックテスト** (`api-logic.test.ts`)
+   - 認証ロジック・ボタン更新削除・環境変数検証
+
+4. **コンポーネントテスト** (`simple-components.test.tsx`)
+   - LoginButton・RefreshButton・EditDialog・DeleteDialog
+
+5. **データヘルパーテスト** (`data-helpers.test.ts`)
+   - フォーマット・バリデーション・統計生成
+
+6. **統合テスト** (`admin-workflow.test.ts`)
+   - 完全な管理者ワークフロー・エラーハンドリング
 
 ## トラブルシューティング
 
@@ -173,4 +197,3 @@ pnpm test:coverage
 - **[詳細仕様](../../docs/README.md)** - 包括的プロジェクトドキュメント
 - **[インフラアーキテクチャ](../../docs/INFRASTRUCTURE_ARCHITECTURE.md)** - 管理者アプリのデプロイ・運用
 - **[開発ガイド](../../docs/DEVELOPMENT.md)** - 設計原則・品質基準
-- **[Testing Guide](./README-TESTING.md)** - 詳細テスト情報

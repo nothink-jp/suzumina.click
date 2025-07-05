@@ -8,10 +8,14 @@
  */
 
 import {
+	type DataSourceTracking,
 	type DLsiteWorkBase,
 	DLsiteWorkBaseSchema,
 	type FirestoreDLsiteWorkData,
+	type OptimizedFirestoreDLsiteWorkData,
+	optimizeDateFormats,
 	type PriceInfo,
+	parseSizeToBytes,
 	type RatingInfo,
 } from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
@@ -52,7 +56,141 @@ export const DATA_MERGE_PRIORITY = {
 } as const;
 
 /**
- * 統合データ構造の型定義
+ * 最適化された統合マッパー
+ * OptimizedFirestoreDLsiteWorkData構造を生成
+ */
+export function mapToOptimizedStructure(
+	parsed: ParsedWorkData,
+	infoData?: DLsiteInfoResponse | null,
+	extendedData?: ExtendedWorkData | null,
+	existingData?: OptimizedFirestoreDLsiteWorkData | null,
+): OptimizedFirestoreDLsiteWorkData {
+	const now = new Date().toISOString();
+
+	// 日付情報の最適化
+	const rawReleaseDate = extendedData?.basicInfo?.releaseDate || infoData?.regist_date;
+	const dateInfo = rawReleaseDate ? optimizeDateFormats(rawReleaseDate) : null;
+
+	// データソース追跡情報の構築
+	const dataSources: DataSourceTracking = {
+		searchResult: {
+			lastFetched: now,
+			genres: parsed.tags || [],
+			basicInfo: parsed,
+		},
+		...(infoData && {
+			infoAPI: {
+				lastFetched: now,
+				salesCount: infoData.dl_count,
+				wishlistCount: infoData.wishlist_count,
+				customGenres: infoData.genres || [],
+			},
+		}),
+		...(extendedData && {
+			detailPage: {
+				lastFetched: now,
+				basicInfo: {
+					...extendedData.basicInfo,
+					other: {},
+					detailTags: extendedData.basicInfo?.detailTags || [],
+				},
+				fileInfo: extendedData.fileInfo,
+				bonusContent: extendedData.bonusContent || [],
+			},
+		}),
+	};
+
+	// 5種クリエイター情報の統合
+	const voiceActors = mergeAndDeduplicate([extendedData?.basicInfo?.voiceActors, parsed.author]);
+	const scenario = extendedData?.basicInfo?.scenario || [];
+	const illustration = extendedData?.basicInfo?.illustration || [];
+	const music = extendedData?.basicInfo?.music || [];
+	const author = extendedData?.basicInfo?.author || [];
+
+	// ジャンル・タグの明確分離
+	const genres = mergeAndDeduplicate([
+		extendedData?.basicInfo?.genres,
+		infoData?.genres,
+		parsed.tags,
+	]);
+	const tags = mergeAndDeduplicate([extendedData?.basicInfo?.detailTags, parsed.tags]);
+
+	// ファイル情報の拡張
+	const fileInfo = extendedData?.fileInfo
+		? {
+				totalSizeText: extendedData.fileInfo.totalSizeText || "不明",
+				totalSizeBytes: parseSizeToBytes(extendedData.fileInfo.totalSizeText),
+				totalDuration: extendedData.fileInfo.totalDurationText,
+				fileCount: extendedData.fileInfo.formats?.length || 0,
+				formats: extendedData.fileInfo.formats || [],
+				additionalFiles: extendedData.fileInfo.additionalFiles || [],
+			}
+		: undefined;
+
+	return {
+		// 基本識別情報
+		id: parsed.productId,
+		productId: parsed.productId,
+
+		// 基本作品情報
+		title: parsed.title,
+		circle: parsed.circle,
+		description: parsed.title || "",
+		category: parsed.category,
+		workUrl: parsed.workUrl,
+		thumbnailUrl: parsed.thumbnailUrl,
+		highResImageUrl: extendedData?.highResImageUrl,
+
+		// 価格・評価情報（統合済み）
+		price: selectBestPrice(infoData?.prices?.[0], undefined, mapToPriceInfo(parsed)),
+		rating: selectBestRating(mapToRatingInfo(parsed, infoData || undefined), undefined),
+		salesCount: infoData?.dl_count,
+		wishlistCount: infoData?.wishlist_count,
+		totalDownloadCount: infoData?.dl_count,
+
+		// 統一クリエイター情報（5種類のみ）
+		voiceActors,
+		scenario,
+		illustration,
+		music,
+		author,
+
+		// ジャンル・タグ明確分離
+		genres,
+		tags,
+		customTags: infoData?.genres,
+
+		// 日付情報完全対応
+		releaseDate: dateInfo?.original,
+		releaseDateISO: dateInfo?.iso,
+		releaseDateDisplay: dateInfo?.display,
+
+		// 拡張メタデータ
+		seriesName: extendedData?.basicInfo?.seriesName,
+		ageRating: parsed.ageRating,
+		workFormat: undefined,
+		fileFormat: undefined,
+
+		// 拡張ファイル情報
+		fileInfo,
+
+		// 詳細情報
+		bonusContent: extendedData?.bonusContent || [],
+		sampleImages: parsed.sampleImages || [],
+		isExclusive: parsed.isExclusive || false,
+
+		// 統合データソース追跡
+		dataSources,
+
+		// システム管理情報
+		lastFetchedAt: now,
+		createdAt: existingData?.createdAt || now,
+		updatedAt: now,
+	};
+}
+
+/**
+ * 統合データ構造の型定義（既存・下位互換性用）
  */
 export interface UnifiedDLsiteWorkData extends DLsiteWorkBase {
 	// === ソース別データ（デバッグ・品質管理用） ===

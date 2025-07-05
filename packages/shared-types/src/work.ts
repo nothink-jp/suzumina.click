@@ -442,7 +442,158 @@ export const DLsiteWorkBaseSchema = z.object({
 });
 
 /**
- * Firestoreに保存するDLsite作品データのZodスキーマ定義
+ * データソース追跡情報のZodスキーマ定義
+ */
+export const DataSourceTrackingSchema = z.object({
+	/** 検索結果データ */
+	searchResult: z
+		.object({
+			lastFetched: z.string().datetime(),
+			genres: z.array(z.string()).default([]),
+			basicInfo: z.any().optional(),
+		})
+		.optional(),
+	/** InfoAPIデータ */
+	infoAPI: z
+		.object({
+			lastFetched: z.string().datetime(),
+			salesCount: z.number().optional(),
+			wishlistCount: z.number().optional(),
+			customGenres: z.array(z.string()).default([]),
+		})
+		.optional(),
+	/** 詳細ページデータ */
+	detailPage: z
+		.object({
+			lastFetched: z.string().datetime(),
+			basicInfo: BasicWorkInfoSchema,
+			fileInfo: FileInfoSchema.optional(),
+			bonusContent: z.array(BonusContentSchema).default([]),
+		})
+		.optional(),
+});
+
+/**
+ * 最適化されたFirestore DLsite作品データのZodスキーマ定義
+ * FIRESTORE_STRUCTURE.md準拠の構造
+ */
+export const OptimizedFirestoreDLsiteWorkSchema = z.object({
+	// === 基本識別情報 ===
+	/** FirestoreドキュメントID */
+	id: z.string(),
+	/** DLsite商品ID */
+	productId: z.string(),
+
+	// === 基本作品情報 ===
+	/** 作品タイトル */
+	title: z.string(),
+	/** サークル名 */
+	circle: z.string(),
+	/** 作品説明 */
+	description: z.string(),
+	/** 作品カテゴリ */
+	category: WorkCategorySchema,
+	/** DLsite作品ページURL */
+	workUrl: z.string(),
+	/** サムネイル画像 */
+	thumbnailUrl: z.string(),
+	/** 高解像度画像（詳細ページから取得） */
+	highResImageUrl: z.string().optional(),
+
+	// === 価格・評価情報（統合済み） ===
+	/** 統合価格情報 */
+	price: PriceInfoSchema,
+	/** 統合評価情報 */
+	rating: RatingInfoSchema.optional(),
+	/** 販売数（infoAPIから） */
+	salesCount: z.number().optional(),
+	/** ウィッシュリスト数（infoAPIから） */
+	wishlistCount: z.number().optional(),
+	/** 総DL数（infoAPIから） */
+	totalDownloadCount: z.number().optional(),
+
+	// === 統一クリエイター情報（5種類のみ） ===
+	/** 声優（最優先データ） */
+	voiceActors: z.array(z.string()).default([]),
+	/** シナリオ */
+	scenario: z.array(z.string()).default([]),
+	/** イラスト */
+	illustration: z.array(z.string()).default([]),
+	/** 音楽 */
+	music: z.array(z.string()).default([]),
+	/** 作者（その他・声優と重複しない場合のみ） */
+	author: z.array(z.string()).default([]),
+
+	// === ジャンル・タグ明確分離 ===
+	/** DLsite公式ジャンル（統合） */
+	genres: z.array(z.string()).default([]),
+	/** DLsite検索タグ */
+	tags: z.array(z.string()).default([]),
+	/** 独自タグ（将来拡張用） */
+	customTags: z.array(z.string()).optional(),
+
+	// === 日付情報完全対応 ===
+	/** 販売日（元の文字列） */
+	releaseDate: z.string().optional(),
+	/** ソート用ISO日付（YYYY-MM-DD） */
+	releaseDateISO: z.string().optional(),
+	/** 表示用日本語日付（2023年03月05日） */
+	releaseDateDisplay: z.string().optional(),
+
+	// === 拡張メタデータ ===
+	/** シリーズ名 */
+	seriesName: z.string().optional(),
+	/** 年齢制限 */
+	ageRating: z.string().optional(),
+	/** 作品形式 */
+	workFormat: z.string().optional(),
+	/** ファイル形式 */
+	fileFormat: z.string().optional(),
+
+	// === 拡張ファイル情報 ===
+	/** ファイル詳細情報 */
+	fileInfo: z
+		.object({
+			totalSizeText: z.string(),
+			totalSizeBytes: z.number().optional(),
+			totalDuration: z.string().optional(),
+			fileCount: z.number().optional(),
+			formats: z.array(z.string()).default([]),
+			additionalFiles: z.array(z.string()).default([]),
+		})
+		.optional(),
+
+	// === 詳細情報 ===
+	/** 特典情報 */
+	bonusContent: z.array(BonusContentSchema).default([]),
+	/** サンプル画像 */
+	sampleImages: z
+		.array(
+			z.object({
+				thumb: z.string(),
+				width: z.number().optional(),
+				height: z.number().optional(),
+			}),
+		)
+		.default([]),
+	/** 独占配信フラグ */
+	isExclusive: z.boolean().default(false),
+
+	// === 統合データソース追跡 ===
+	/** データソース別追跡情報 */
+	dataSources: DataSourceTrackingSchema.optional(),
+
+	// === システム管理情報 ===
+	/** 最終取得日時 */
+	lastFetchedAt: z.string().datetime(),
+	/** 作成日時 */
+	createdAt: z.string().datetime(),
+	/** 更新日時 */
+	updatedAt: z.string().datetime(),
+});
+
+/**
+ * 既存のFirestoreスキーマ（下位互換性のため保持）
  */
 export const FirestoreDLsiteWorkSchema = DLsiteWorkBaseSchema.extend({
 	/** 最終取得日時 */
@@ -522,9 +673,167 @@ export type LanguageDownload = z.infer<typeof LanguageDownloadSchema>;
 export type SalesStatus = z.infer<typeof SalesStatusSchema>;
 export type DLsiteWorkBase = z.infer<typeof DLsiteWorkBaseSchema>;
 export type FirestoreDLsiteWorkData = z.infer<typeof FirestoreDLsiteWorkSchema>;
+export type OptimizedFirestoreDLsiteWorkData = z.infer<typeof OptimizedFirestoreDLsiteWorkSchema>;
+export type DataSourceTracking = z.infer<typeof DataSourceTrackingSchema>;
 export type FrontendDLsiteWorkData = z.infer<typeof FrontendDLsiteWorkSchema>;
 export type WorkListResult = z.infer<typeof WorkListResultSchema>;
 export type WorkPaginationParams = z.infer<typeof WorkPaginationParamsSchema>;
+
+/**
+ * 日付最適化ユーティリティ関数
+ * 日本語日付文字列をISO形式と表示形式に変換
+ */
+export function optimizeDateFormats(dateString: string): {
+	original: string;
+	iso?: string;
+	display: string;
+} {
+	// "2023年03月05日" → { iso: "2023-03-05", display: "2023年03月05日" }
+	const match = dateString.match(/(\d{4})年(\d{2})月(\d{2})日/);
+	if (match) {
+		const [, year, month, day] = match;
+		return {
+			original: dateString,
+			iso: `${year}-${month}-${day}`,
+			display: dateString,
+		};
+	}
+
+	// ISO形式の場合 "2023-03-05" → 日本語形式に変換
+	const isoMatch = dateString.match(/(\d{4})-(\d{2})-(\d{2})/);
+	if (isoMatch) {
+		const [, year, month, day] = isoMatch;
+		return {
+			original: dateString,
+			iso: dateString,
+			display: `${year}年${month}月${day}日`,
+		};
+	}
+
+	return {
+		original: dateString,
+		display: dateString,
+	};
+}
+
+/**
+ * ファイルサイズ文字列をバイト数に変換
+ */
+export function parseSizeToBytes(sizeText?: string): number | undefined {
+	if (!sizeText) return undefined;
+	const match = sizeText.match(/([\d.]+)\s*(MB|GB|KB)/i);
+	if (!match) return undefined;
+
+	const [, num, unit] = match;
+	if (!unit || !num) return undefined;
+	const size = Number.parseFloat(num);
+
+	switch (unit.toUpperCase()) {
+		case "KB":
+			return Math.round(size * 1024);
+		case "MB":
+			return Math.round(size * 1024 * 1024);
+		case "GB":
+			return Math.round(size * 1024 * 1024 * 1024);
+		default:
+			return undefined;
+	}
+}
+
+/**
+ * ファイル情報を最適化形式に変換
+ */
+function migrateFileInfo(
+	fileInfo: FirestoreDLsiteWorkData["fileInfo"],
+): OptimizedFirestoreDLsiteWorkData["fileInfo"] {
+	if (!fileInfo?.totalSizeText) {
+		return undefined;
+	}
+
+	return {
+		totalSizeText: fileInfo.totalSizeText,
+		totalSizeBytes: parseSizeToBytes(fileInfo.totalSizeText),
+		totalDuration: typeof fileInfo.totalDuration === "string" ? fileInfo.totalDuration : undefined,
+		fileCount: fileInfo.formats?.length || 0,
+		formats: fileInfo.formats || [],
+		additionalFiles: fileInfo.additionalFiles || [],
+	};
+}
+
+/**
+ * 既存データから最適化データへの変換関数
+ */
+export function migrateToOptimizedStructure(
+	existingData: FirestoreDLsiteWorkData,
+): OptimizedFirestoreDLsiteWorkData {
+	const dateInfo = optimizeDateFormats(existingData.releaseDate || "");
+
+	return {
+		// 基本識別情報
+		id: existingData.id,
+		productId: existingData.productId,
+
+		// 基本作品情報
+		title: existingData.title,
+		circle: existingData.circle,
+		description: existingData.description,
+		category: existingData.category,
+		workUrl: existingData.workUrl,
+		thumbnailUrl: existingData.thumbnailUrl,
+		highResImageUrl: existingData.highResImageUrl,
+
+		// 価格・評価情報
+		price: existingData.price,
+		rating: existingData.rating,
+		salesCount: existingData.salesCount,
+		wishlistCount: existingData.wishlistCount,
+		totalDownloadCount: existingData.totalDownloadCount,
+
+		// クリエイター情報（5種対応）
+		voiceActors: existingData.voiceActors || [],
+		scenario: existingData.scenario || [],
+		illustration: existingData.illustration || [],
+		music: existingData.music || [],
+		author: [],
+
+		// ジャンル・タグ分離
+		genres: existingData.tags || [],
+		tags: existingData.tags || [],
+		customTags: existingData.customGenres,
+
+		// 日付最適化
+		releaseDate: existingData.releaseDate,
+		releaseDateISO: dateInfo.iso,
+		releaseDateDisplay: dateInfo.display,
+
+		// 拡張メタデータ
+		seriesName: existingData.seriesInfo?.titleName,
+		ageRating: existingData.ageRating,
+		workFormat: existingData.workFormat,
+		fileFormat: existingData.fileFormat,
+
+		// ファイル情報拡張
+		fileInfo: migrateFileInfo(existingData.fileInfo),
+
+		// 詳細情報
+		bonusContent: existingData.bonusContent || [],
+		sampleImages: existingData.sampleImages || [],
+		isExclusive: existingData.isExclusive || false,
+
+		// データソース追跡初期化
+		dataSources: {
+			searchResult: {
+				lastFetched: existingData.lastFetchedAt,
+				genres: existingData.tags || [],
+			},
+		},
+
+		// システム管理情報
+		lastFetchedAt: existingData.lastFetchedAt,
+		createdAt: existingData.createdAt,
+		updatedAt: existingData.updatedAt,
+	};
+}
 
 /**
  * Firestoreデータをフロントエンド表示用に変換するヘルパー関数

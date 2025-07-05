@@ -513,7 +513,8 @@ describe("DLsite Mapper", () => {
 			expect(result[0].productId).toBe("RJ123456");
 			// 統合されたフィールドが正しく設定されていることを確認
 			expect(result[0].voiceActors).toEqual(["テスト作者"]);
-			expect(result[0].basicInfo).toEqual({ detailTags: [], other: {} });
+			// 最適化構造ではbasicInfoは詳細データがある場合のみ設定される
+			expect(result[0].basicInfo).toBeUndefined();
 		});
 
 		it("info APIエラーでもHTMLデータで処理を継続できる", async () => {
@@ -542,7 +543,8 @@ describe("DLsite Mapper", () => {
 			expect(result[0].productId).toBe("RJ123456");
 			// 統合されたフィールドが正しく設定されていることを確認
 			expect(result[0].voiceActors).toEqual(["テスト作者"]);
-			expect(result[0].basicInfo).toEqual({ detailTags: [], other: {} });
+			// 最適化構造ではbasicInfoは詳細データがある場合のみ設定される
+			expect(result[0].basicInfo).toBeUndefined();
 		});
 	});
 });

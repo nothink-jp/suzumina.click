@@ -19,7 +19,12 @@ interface Work {
 	workId: string;
 	title: string;
 	description: string;
-	price: number;
+	price: {
+		current: number;
+		currency: string;
+		original?: number;
+		discount?: number;
+	};
 	tags: string[];
 	isOnSale: boolean;
 }
@@ -35,7 +40,7 @@ export function WorkEditDialog({ work, onUpdate }: WorkEditDialogProps) {
 	const [formData, setFormData] = useState({
 		title: work.title,
 		description: work.description,
-		price: work.price.toString(),
+		price: work.price.current.toString(),
 		tags: work.tags.join(", "),
 		isOnSale: work.isOnSale,
 	});
@@ -52,7 +57,10 @@ export function WorkEditDialog({ work, onUpdate }: WorkEditDialogProps) {
 				},
 				body: JSON.stringify({
 					...formData,
-					price: Number(formData.price),
+					price: {
+						...work.price,
+						current: Number(formData.price),
+					},
 					tags: formData.tags
 						.split(",")
 						.map((tag) => tag.trim())

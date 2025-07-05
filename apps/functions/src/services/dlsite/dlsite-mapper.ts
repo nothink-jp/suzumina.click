@@ -12,6 +12,7 @@ import {
 	FirestoreDLsiteWorkSchema,
 	type LanguageDownload,
 	type LocalePrice,
+	type OptimizedFirestoreDLsiteWorkData,
 	type PriceInfo,
 	type RankingInfo,
 	type RatingDetail,
@@ -24,6 +25,7 @@ import * as logger from "../../shared/logger";
 import type { ExtendedWorkData } from "./dlsite-detail-parser";
 import { fetchAndParseWorkDetail } from "./dlsite-detail-parser";
 import type { ParsedWorkData } from "./dlsite-parser";
+import { mapToOptimizedStructure } from "./dlsite-unified-mapper";
 
 /**
  * DLsite info エンドポイントのレスポンス型定義
@@ -595,44 +597,16 @@ export function mapToFirestoreData(
 	}
 }
 
-/**
- * 複数の作品データを一括変換
- */
-export function mapMultipleWorks(
-	parsedWorks: ParsedWorkData[],
-	existingDataMap?: Map<string, Partial<FirestoreDLsiteWorkData>>,
-): FirestoreDLsiteWorkData[] {
-	const results: FirestoreDLsiteWorkData[] = [];
-	const errors: string[] = [];
-
-	for (const parsed of parsedWorks) {
-		try {
-			const existingData = existingDataMap?.get(parsed.productId);
-			const workBase = mapToWorkBase(parsed, null, null, existingData as FirestoreDLsiteWorkData);
-			const firestoreData = mapToFirestoreData(workBase, existingData);
-			results.push(firestoreData);
-		} catch (error) {
-			logger.warn(`作品${parsed.productId}の変換をスキップ:`, { error });
-			errors.push(parsed.productId);
-		}
-	}
-
-	if (errors.length > 0) {
-		logger.warn(`${errors.length}件の作品変換に失敗:`, { errors });
-	}
-
-	logger.info(`作品データ変換完了: ${results.length}件成功, ${errors.length}件失敗`);
-	return results;
-}
+// mapMultipleWorks関数は最適化構造では未使用のため削除
 
 /**
- * 複数の作品データをinfoデータと合わせて一括変換
+ * 複数の作品データをinfoデータと合わせて一括変換 (最適化構造)
  */
 export async function mapMultipleWorksWithInfo(
 	parsedWorks: ParsedWorkData[],
-	existingDataMap?: Map<string, Partial<FirestoreDLsiteWorkData>>,
-): Promise<FirestoreDLsiteWorkData[]> {
-	const results: FirestoreDLsiteWorkData[] = [];
+	existingDataMap?: Map<string, Partial<OptimizedFirestoreDLsiteWorkData>>,
+): Promise<OptimizedFirestoreDLsiteWorkData[]> {
+	const results: OptimizedFirestoreDLsiteWorkData[] = [];
 	const errors: string[] = [];
 
 	for (const parsed of parsedWorks) {
@@ -640,16 +614,15 @@ export async function mapMultipleWorksWithInfo(
 			// 詳細情報を取得（エラーが発生してもnullが返される）
 			const infoData = await fetchWorkInfo(parsed.productId);
 
-			// HTMLデータとinfoデータを組み合わせて変換
+			// 最適化された統合マッピングを使用（詳細ページデータなし）
 			const existingData = existingDataMap?.get(parsed.productId);
-			const workBase = mapToWorkBase(
+			const optimizedData = mapToOptimizedStructure(
 				parsed,
 				infoData || undefined,
 				null,
-				existingData as FirestoreDLsiteWorkData,
+				existingData as OptimizedFirestoreDLsiteWorkData,
 			);
-			const firestoreData = mapToFirestoreData(workBase, existingData);
-			results.push(firestoreData);
+			results.push(optimizedData);
 
 			if (infoData) {
 				logger.debug(`作品${parsed.productId}: info APIデータを統合しました`);
@@ -674,13 +647,13 @@ export async function mapMultipleWorksWithInfo(
 }
 
 /**
- * 複数の作品データを詳細データと合わせて一括変換
+ * 複数の作品データを詳細データと合わせて一括変換 (最適化構造)
  */
 export async function mapMultipleWorksWithDetailData(
 	parsedWorks: ParsedWorkData[],
-	existingDataMap?: Map<string, Partial<FirestoreDLsiteWorkData>>,
-): Promise<FirestoreDLsiteWorkData[]> {
-	const results: FirestoreDLsiteWorkData[] = [];
+	existingDataMap?: Map<string, Partial<OptimizedFirestoreDLsiteWorkData>>,
+): Promise<OptimizedFirestoreDLsiteWorkData[]> {
+	const results: OptimizedFirestoreDLsiteWorkData[] = [];
 	const errors: string[] = [];
 
 	for (const parsed of parsedWorks) {
@@ -691,16 +664,15 @@ export async function mapMultipleWorksWithDetailData(
 			// 詳細ページデータを取得（レート制限考慮）
 			const extendedData = await fetchAndParseWorkDetail(parsed.productId);
 
-			// HTMLデータ、infoデータ、詳細データを組み合わせて変換
+			// 最適化された統合マッピングを使用
 			const existingData = existingDataMap?.get(parsed.productId);
-			const workBase = mapToWorkBase(
+			const optimizedData = mapToOptimizedStructure(
 				parsed,
 				infoData || undefined,
 				extendedData || undefined,
-				existingData as FirestoreDLsiteWorkData,
+				existingData as OptimizedFirestoreDLsiteWorkData,
 			);
-			const firestoreData = mapToFirestoreData(workBase, existingData);
-			results.push(firestoreData);
+			results.push(optimizedData);
 
 			if (infoData) {
 				logger.debug(`作品${parsed.productId}: info APIデータを統合しました`);

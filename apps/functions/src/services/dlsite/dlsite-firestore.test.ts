@@ -3,7 +3,7 @@
  * 重要な機能に絞った簡潔なテスト
  */
 
-import type { FirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Firestoreのモック
@@ -55,28 +55,46 @@ const mockDoc = (firestoreMock as any).__mockDoc;
 const mockBatch = (firestoreMock as any).__mockBatch;
 
 // テスト用のサンプルデータ
-const sampleWork: FirestoreDLsiteWorkData = {
+const sampleWork: OptimizedFirestoreDLsiteWorkData = {
 	id: "RJ12345",
 	productId: "RJ12345",
 	title: "テスト作品",
 	circle: "テストサークル",
-	price: 1100,
-	rating: 4.5,
-	category: "ボイス・ASMR",
-	dlCount: 1000,
+	price: {
+		current: 1100,
+		currency: "JPY",
+	},
+	rating: {
+		stars: 4.5,
+		count: 100,
+	},
+	category: "SOU",
 	workUrl: "https://www.dlsite.com/maniax/work/=/product_id/RJ12345.html",
 	thumbnailUrl: "https://img.dlsite.jp/thumbnail.jpg",
 	sampleImages: [],
 	tags: ["ASMR", "癒し"],
 	description: "テスト用の作品説明",
 	releaseDate: "2024-01-01",
-	fileSize: "100MB",
+	releaseDateISO: "2024-01-01",
+	releaseDateDisplay: "2024年01月01日",
 	ageRating: "全年齢",
-	voiceActor: "涼花みなせ",
-	playTime: "30分",
+	voiceActors: ["涼花みなせ"],
+	scenario: [],
+	illustration: [],
+	music: [],
+	author: [],
+	genres: ["ASMR", "癒し"],
 	isExclusive: false,
-	createdAt: { seconds: 1640995200, nanoseconds: 0 } as any,
-	updatedAt: { seconds: 1640995200, nanoseconds: 0 } as any,
+	dataSources: {
+		searchResult: {
+			lastFetched: "2024-01-01T00:00:00Z",
+			genres: ["ASMR", "癒し"],
+			basicInfo: {} as any,
+		},
+	},
+	lastFetchedAt: "2024-01-01T00:00:00Z",
+	createdAt: "2024-01-01T00:00:00Z",
+	updatedAt: "2024-01-01T00:00:00Z",
 };
 
 describe("dlsite-firestore", () => {
@@ -98,13 +116,15 @@ describe("dlsite-firestore", () => {
 			expect(mockBatch.commit).not.toHaveBeenCalled();
 		});
 
-		it("データ品質チェックで無効な作品をスキップする", async () => {
-			const invalidWork = { ...sampleWork, title: "" }; // 必須フィールドが空
+		it("最適化構造では全データを保存する（バリデーションはマッパー段階で実行）", async () => {
+			const workWithEmptyTitle = { ...sampleWork, title: "" }; // 空のタイトル
 			mockQuery.get.mockResolvedValue({ empty: true, docs: [] });
 
-			await saveWorksToFirestore([invalidWork]);
+			await saveWorksToFirestore([workWithEmptyTitle]);
 
-			expect(mockBatch.set).not.toHaveBeenCalled();
+			// 最適化構造では全データを保存（バリデーションは事前に実行済み）
+			expect(mockBatch.set).toHaveBeenCalledTimes(1);
+			expect(mockBatch.commit).toHaveBeenCalledTimes(1);
 		});
 	});
 
@@ -145,12 +165,12 @@ describe("dlsite-firestore", () => {
 			mockQuery.get.mockResolvedValue({ docs: mockDocs });
 
 			const result = await searchWorksFromFirestore({
-				category: "ボイス・ASMR",
+				category: "SOU",
 				limit: 10,
 			});
 
 			expect(result).toHaveLength(2);
-			expect(mockQuery.where).toHaveBeenCalledWith("category", "==", "ボイス・ASMR");
+			expect(mockQuery.where).toHaveBeenCalledWith("category", "==", "SOU");
 			expect(mockQuery.limit).toHaveBeenCalledWith(10);
 		});
 
@@ -170,16 +190,16 @@ describe("dlsite-firestore", () => {
 				{
 					data: () => ({
 						...sampleWork,
-						price: 1000,
-						category: "ボイス・ASMR",
+						price: { current: 1000, currency: "JPY" },
+						category: "SOU",
 						updatedAt: "2024-01-01T00:00:00Z",
 					}),
 				},
 				{
 					data: () => ({
 						...sampleWork,
-						price: 2000,
-						category: "音声作品",
+						price: { current: 2000, currency: "JPY" },
+						category: "MOV",
 						updatedAt: "2024-01-02T00:00:00Z",
 					}),
 				},
