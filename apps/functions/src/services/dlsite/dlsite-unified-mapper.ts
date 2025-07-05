@@ -99,12 +99,19 @@ export function mapToOptimizedStructure(
 		}),
 	};
 
-	// 5種クリエイター情報の統合
-	const voiceActors = mergeAndDeduplicate([extendedData?.basicInfo?.voiceActors, parsed.author]);
-	const scenario = extendedData?.basicInfo?.scenario || [];
-	const illustration = extendedData?.basicInfo?.illustration || [];
-	const music = extendedData?.basicInfo?.music || [];
-	const author = extendedData?.basicInfo?.author || [];
+	// 5種クリエイター情報の統合（既存データ保護）
+	const voiceActors = mergeAndDeduplicate([
+		extendedData?.basicInfo?.voiceActors,
+		parsed.author,
+		existingData?.voiceActors,
+	]);
+	const scenario = mergeAndDeduplicate([extendedData?.basicInfo?.scenario, existingData?.scenario]);
+	const illustration = mergeAndDeduplicate([
+		extendedData?.basicInfo?.illustration,
+		existingData?.illustration,
+	]);
+	const music = mergeAndDeduplicate([extendedData?.basicInfo?.music, existingData?.music]);
+	const author = mergeAndDeduplicate([extendedData?.basicInfo?.author, existingData?.author]);
 
 	// ジャンル・タグの明確分離
 	const genres = mergeAndDeduplicate([
