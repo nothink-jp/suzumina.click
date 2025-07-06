@@ -1,6 +1,7 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { getDLsiteConfig } from "../infrastructure/management/config-manager";
+import { generateDLsiteHeaders } from "../infrastructure/management/user-agent-manager";
 import {
 	fetchDLsiteAjaxResult,
 	isLastPageFromPageInfo,
@@ -380,10 +381,116 @@ async function fetchDLsiteWorksLogic(): Promise<FetchResult> {
 }
 
 /**
+ * Cloud Functions環境での調査情報をログ出力
+ */
+async function logCloudFunctionsInvestigation(): Promise<void> {
+	try {
+		logger.info("🔍 === Cloud Functions環境調査開始 ===");
+
+		// 環境情報取得
+		const isCloudFunctions = !!(
+			process.env.FUNCTION_NAME ||
+			process.env.K_SERVICE ||
+			process.env.GOOGLE_CLOUD_PROJECT
+		);
+		const region = process.env.FUNCTION_REGION || process.env.GOOGLE_CLOUD_REGION || "unknown";
+
+		// IPアドレス取得
+		let ipAddress = "unknown";
+		try {
+			const ipResponse = await fetch("https://api.ipify.org?format=json");
+			const ipData = (await ipResponse.json()) as { ip: string };
+			ipAddress = ipData.ip;
+		} catch (error) {
+			logger.warn("IP取得エラー", { error });
+		}
+
+		// User-Agent情報
+		const headers = generateDLsiteHeaders();
+
+		// DLsite AJAX API調査
+		let totalWorks = 0;
+		let ajaxSuccess = false;
+		let errorMessage = "";
+
+		try {
+			const ajaxResult = await fetchDLsiteAjaxResult(1);
+			totalWorks = ajaxResult.page_info.count;
+			ajaxSuccess = true;
+			logger.info("📊 AJAX API調査成功");
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : "Unknown error";
+			logger.warn("❌ AJAX API調査エラー", { error });
+		}
+
+		// 調査結果ログ出力
+		logger.info("🌍 === Cloud Functions環境情報 ===");
+		logger.info(`環境: ${isCloudFunctions ? "cloud-functions" : "local"}`);
+		logger.info(`IPアドレス: ${ipAddress}`);
+		logger.info(`リージョン: ${region}`);
+		logger.info(`User-Agent: ${headers["User-Agent"]}`);
+
+		logger.info("📊 === DLsiteアクセス調査結果 ===");
+		logger.info(`AJAX API成功: ${ajaxSuccess}`);
+		logger.info(`総作品数: ${totalWorks}件`);
+
+		if (errorMessage) {
+			logger.info(`エラー詳細: ${errorMessage}`);
+		}
+
+		// ローカル環境との比較
+		const expectedLocalCount = 1471;
+		if (ajaxSuccess && totalWorks > 0) {
+			const difference = Math.abs(expectedLocalCount - totalWorks);
+			const reductionPercentage = (
+				((expectedLocalCount - totalWorks) / expectedLocalCount) *
+				100
+			).toFixed(1);
+
+			logger.info("🔢 === ローカル環境との比較 ===");
+			logger.info(`ローカル推定値: ${expectedLocalCount}件`);
+			logger.info(`Cloud Functions: ${totalWorks}件`);
+			logger.info(`差異: ${difference}件 (${reductionPercentage}%減少)`);
+
+			// 制限分析
+			const restrictions: string[] = [];
+			if (Math.abs(Number(reductionPercentage)) > 10) {
+				restrictions.push(`作品数に${Math.abs(Number(reductionPercentage))}%の差異`);
+			}
+			if (isCloudFunctions) {
+				restrictions.push("Cloud Functions環境からのアクセス");
+				if (!region.startsWith("asia")) {
+					restrictions.push(`非アジアリージョン: ${region}`);
+				}
+			}
+			if (ipAddress.startsWith("35.") || ipAddress.startsWith("34.")) {
+				restrictions.push("Google Cloud IPレンジからのアクセス");
+			}
+
+			if (restrictions.length > 0) {
+				logger.info("⚠️ === 検出された制限の可能性 ===");
+				restrictions.forEach((restriction, index) => {
+					logger.info(`${index + 1}. ${restriction}`);
+				});
+			} else {
+				logger.info("✅ 明確な制限は検出されませんでした");
+			}
+		}
+
+		logger.info("🔍 === Cloud Functions環境調査完了 ===");
+	} catch (error) {
+		logger.error("Cloud Functions環境調査エラー:", error);
+	}
+}
+
+/**
  * DLsiteから涼花みなせの作品情報を取得し、Firestoreに保存する関数（Pub/Sub向け）
  */
 export const fetchDLsiteWorks = async (event: CloudEvent<PubsubMessage>): Promise<void> => {
 	logger.info("fetchDLsiteWorks 関数を開始しました (GCFv2 CloudEvent Handler)");
+
+	// 🔍 Cloud Functions環境調査ログ出力
+	await logCloudFunctionsInvestigation();
 
 	try {
 		logger.info("Pub/Subトリガーからの実行を検出しました");

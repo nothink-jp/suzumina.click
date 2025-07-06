@@ -1,5 +1,11 @@
-import type { youtube_v3 } from "googleapis";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// googleapis型の独自定義（テスト用）
+interface youtube_v3 {
+	Schema$SearchListResponse: any;
+	Schema$VideoListResponse: any;
+}
+
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";
 import * as youtubeApi from "./youtube-api";
 

@@ -60,6 +60,12 @@ terraform/terraform.tfvars
 # temporary deploy packages
 tmp/
 
+# investigation and debug files
+debug-output/
+*investigation*.json
+*investigation*.ts
+*test-ajax*.ts
+
 service-account-key.json
 firebase-debug.log
 firestore-debug.log

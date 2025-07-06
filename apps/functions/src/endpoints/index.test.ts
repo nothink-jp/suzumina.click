@@ -30,10 +30,7 @@ vi.mock("./dlsite", () => ({
 	fetchDLsiteWorks: vi.fn(),
 }));
 
-// 調査エンドポイントのモック
-vi.mock("./investigate-access", () => ({
-	investigateAccess: vi.fn(),
-}));
+// 調査エンドポイントは fetchDLsiteWorks に統合済みのため削除
 
 // Functions Frameworkのモック
 const mockCloudEvent = vi.fn();
@@ -113,13 +110,7 @@ describe("初期化機能テスト", () => {
 		expect(mockCloudEvent).toHaveBeenCalledWith("fetchDLsiteWorks", expect.any(Function));
 	});
 
-	it("調査エンドポイントの関数が正しく登録されること", async () => {
-		// index.tsをインポート
-		await import("./index");
-
-		// cloudEvent関数が正しく呼ばれたことを確認
-		expect(mockCloudEvent).toHaveBeenCalledWith("investigateAccess", expect.any(Function));
-	});
+	// 調査エンドポイントは fetchDLsiteWorks に統合済みのため削除
 });
 
 describe("安全なプロセス終了関数（safeExit）テスト", () => {

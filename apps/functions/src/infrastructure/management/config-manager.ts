@@ -276,7 +276,7 @@ const ENVIRONMENT_OVERRIDES: Record<string, Partial<CloudFunctionConfig>> = {
 			},
 		},
 		dlsite: {
-			maxPagesPerExecution: 3,
+			maxPagesPerExecution: 5,
 			requestDelay: 500,
 			itemsPerPage: 100,
 			userAgentRotationEnabled: true,

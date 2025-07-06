@@ -1,6 +1,11 @@
-import type { youtube_v3 } from "googleapis";
 // functions/src/youtube.test.ts
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// googleapis型の独自定義（テスト用）
+interface youtube_v3 {
+	Schema$SearchListResponse: any;
+	Schema$VideoListResponse: any;
+}
 
 // モックオブジェクトを事前に定義
 interface SearchListParams {
@@ -49,9 +54,10 @@ vi.mock("../shared/logger", () => ({
 	debug: vi.fn(),
 }));
 
+// googleapis全体をモック
 vi.mock("googleapis", () => ({
 	google: {
-		youtube: vi.fn().mockImplementation(() => ({
+		youtube: vi.fn(() => ({
 			search: {
 				list: mockYoutubeSearchList,
 			},
