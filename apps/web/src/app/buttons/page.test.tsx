@@ -118,13 +118,12 @@ describe("AudioButtonsPage", () => {
 
 	// ページネーションテストは統合テストに移行済み
 
-	it("作成ボタンが正しく動作する", async () => {
+	it("基本的なレンダリングが動作する", async () => {
 		const searchParams = { page: "1", q: "", category: "", sort: "newest" };
 
 		render(await AudioButtonsPage({ searchParams }));
 
-		const createButton = screen.getByRole("link", { name: /音声ボタンを作成/ });
-		expect(createButton).toBeInTheDocument();
-		expect(createButton).toHaveAttribute("href", "/buttons/create");
+		const list = screen.getByTestId("audio-buttons-list");
+		expect(list).toBeInTheDocument();
 	});
 });

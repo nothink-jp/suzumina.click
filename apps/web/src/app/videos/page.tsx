@@ -32,7 +32,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 		<ListPageLayout>
 			<ListPageHeader
 				title="動画一覧"
-				description="涼花みなせさんのYouTube動画から音声ボタンを作成できます"
+				description="涼花みなせさんのYouTube動画から、あなただけの音声ボタンを作成しよう"
 			/>
 
 			<ListPageContent>
@@ -58,6 +58,17 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 
 // メタデータ設定
 export const metadata = {
-	title: "動画一覧 | suzumina.click",
-	description: "涼花みなせさんのYouTube動画一覧。お気に入りの動画から音声ボタンを作成できます。",
+	title: "動画一覧",
+	description:
+		"涼花みなせさんのYouTube動画から、あなただけの音声ボタンを作成しよう。配信アーカイブからお気に入りの動画を見つけて、特別な瞬間を音声ボタンにして保存しよう。",
+	keywords: ["涼花みなせ", "YouTube", "動画", "音声ボタン作成", "配信", "アーカイブ", "切り抜き"],
+	openGraph: {
+		title: "動画一覧 | suzumina.click",
+		description:
+			"涼花みなせさんのYouTube動画から、あなただけの音声ボタンを作成しよう。配信アーカイブからお気に入りの動画を見つけて、特別な瞬間を音声ボタンにして保存しよう。",
+		url: "https://suzumina.click/videos",
+	},
+	alternates: {
+		canonical: "/videos",
+	},
 };

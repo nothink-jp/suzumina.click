@@ -1,7 +1,31 @@
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { Heart, Music, Play, Shield } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+	title: "サイトについて",
+	description:
+		"suzumina.clickは涼花みなせさんのファンコミュニティによる非公式ファンサイトです。YouTube動画の特定場面を再生できるボタン作成・DLsite作品情報のご紹介・ファン同士の交流を目的としています。",
+	keywords: [
+		"涼花みなせ",
+		"ファンサイト",
+		"非公式",
+		"コミュニティ",
+		"YouTube再生",
+		"DLsite作品紹介",
+	],
+	openGraph: {
+		title: "サイトについて | suzumina.click",
+		description:
+			"suzumina.clickは涼花みなせさんのファンコミュニティによる非公式ファンサイトです。YouTube動画の特定場面を再生できるボタン作成・DLsite作品情報のご紹介・ファン同士の交流を目的としています。",
+		url: "https://suzumina.click/about",
+	},
+	alternates: {
+		canonical: "/about",
+	},
+};
 
 export default function AboutPage() {
 	return (
@@ -32,7 +56,7 @@ export default function AboutPage() {
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
 								<Music className="h-5 w-5 text-suzuka-500" />
-								<span className="text-sm">音声ボタンの作成・共有</span>
+								<span className="text-sm">YouTube再生ボタンの作成・共有</span>
 							</div>
 							<div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
 								<Play className="h-5 w-5 text-minase-500" />
@@ -40,7 +64,7 @@ export default function AboutPage() {
 							</div>
 							<div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
 								<Play className="h-5 w-5 text-suzuka-500" />
-								<span className="text-sm">DLsite作品情報の閲覧</span>
+								<span className="text-sm">DLsite作品情報の参照・表示</span>
 							</div>
 						</div>
 					</CardContent>
@@ -66,9 +90,9 @@ export default function AboutPage() {
 							<p className="text-sm text-muted-foreground">個人が趣味で運営しています</p>
 						</div>
 						<div className="bg-blue-50 p-4 rounded-lg">
-							<h4 className="font-semibold text-blue-700 mb-2">著作権</h4>
+							<h4 className="font-semibold text-blue-700 mb-2">著作権・コンテンツ利用方針</h4>
 							<p className="text-sm text-muted-foreground">
-								すべての音声・画像の著作権は原著作者に帰属します
+								すべての音声・画像の著作権は原著作者に帰属します。本サイトは公開されているコンテンツへの参照・リンクのみを行い、音声・画像データの複製・転載・再配布は一切行いません
 							</p>
 						</div>
 					</CardContent>
@@ -82,9 +106,11 @@ export default function AboutPage() {
 					<CardContent>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<h4 className="font-semibold flex items-center gap-2">🎵 音声ボタン作成・再生</h4>
+								<h4 className="font-semibold flex items-center gap-2">
+									🎵 YouTube再生ボタン作成・再生
+								</h4>
 								<p className="text-sm text-muted-foreground">
-									YouTube動画から音声ボタンを作成して共有できます
+									YouTube動画の特定場面を参照・再生できるボタンを作成・共有できます（音声ファイルの保存・ダウンロードは一切行いません。YouTube埋め込みプレイヤーを使用）
 								</p>
 							</div>
 							<div className="space-y-2">
@@ -94,8 +120,12 @@ export default function AboutPage() {
 								</p>
 							</div>
 							<div className="space-y-2">
-								<h4 className="font-semibold flex items-center gap-2">🛒 DLsite作品情報表示</h4>
-								<p className="text-sm text-muted-foreground">音声作品の情報を確認できます</p>
+								<h4 className="font-semibold flex items-center gap-2">
+									🛒 DLsite作品情報の参照・表示
+								</h4>
+								<p className="text-sm text-muted-foreground">
+									涼花みなせさんの音声作品情報を参照・表示。DLsite公式サイトでご購入いただけます
+								</p>
 							</div>
 							<div className="space-y-2">
 								<h4 className="font-semibold flex items-center gap-2">

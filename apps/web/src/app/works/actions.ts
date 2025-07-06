@@ -4,9 +4,14 @@ import type {
 	FrontendDLsiteWorkData,
 	OptimizedFirestoreDLsiteWorkData,
 	WorkCategory,
+	WorkLanguage,
 	WorkListResult,
 } from "@suzumina.click/shared-types/src/work";
-import { convertToFrontendWork } from "@suzumina.click/shared-types/src/work";
+import {
+	convertToFrontendWork,
+	filterWorksByLanguage,
+	getWorkPrimaryLanguage,
+} from "@suzumina.click/shared-types/src/work";
 import { getFirestore } from "@/lib/firestore";
 
 type SortOption = "newest" | "oldest" | "price_low" | "price_high" | "rating" | "popular";
@@ -25,6 +30,7 @@ interface EnhancedSearchParams {
 	sort?: string;
 	search?: string;
 	category?: string;
+	language?: string; // 言語フィルター
 	// 統合データ構造による新機能
 	voiceActors?: string[]; // 声優検索
 	genres?: string[]; // ジャンル検索
@@ -78,6 +84,11 @@ function filterWorksByUnifiedData(
 		filteredWorks = filteredWorks.filter((work) => work.category === params.category);
 	}
 
+	// 言語フィルタリング
+	if (params.language && params.language !== "all") {
+		filteredWorks = filterWorksByLanguage(filteredWorks, params.language);
+	}
+
 	// 声優フィルタリング（統合データ活用）
 	if (params.voiceActors && params.voiceActors.length > 0) {
 		filteredWorks = filteredWorks.filter((work) => {
@@ -124,19 +135,26 @@ function filterWorksByUnifiedData(
 }
 
 /**
- * ID順ソート処理
+ * 販売日順ソート処理
  */
-function sortById(
+function sortByReleaseDate(
 	a: OptimizedFirestoreDLsiteWorkData,
 	b: OptimizedFirestoreDLsiteWorkData,
 	isOldest: boolean,
 ): number {
-	if (a.productId.length !== b.productId.length) {
+	// 販売日のISO形式でソート（存在しない場合は末尾に配置）
+	const dateA = a.releaseDateISO || "1900-01-01";
+	const dateB = b.releaseDateISO || "1900-01-01";
+
+	// 日付が同じ場合は作品IDでセカンダリソート（一意性保証）
+	if (dateA === dateB) {
 		return isOldest
-			? a.productId.length - b.productId.length
-			: b.productId.length - a.productId.length;
+			? a.productId.localeCompare(b.productId)
+			: b.productId.localeCompare(a.productId);
 	}
-	return isOldest ? a.productId.localeCompare(b.productId) : b.productId.localeCompare(a.productId);
+
+	// 販売日でプライマリソート
+	return isOldest ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
 }
 
 /**
@@ -149,7 +167,7 @@ function sortWorks(
 	return works.sort((a, b) => {
 		switch (sort) {
 			case "oldest":
-				return sortById(a, b, true);
+				return sortByReleaseDate(a, b, true);
 			case "price_low":
 				return (a.price?.current || 0) - (b.price?.current || 0);
 			case "price_high":
@@ -158,8 +176,8 @@ function sortWorks(
 				return (b.rating?.stars || 0) - (a.rating?.stars || 0);
 			case "popular":
 				return (b.rating?.count || 0) - (a.rating?.count || 0);
-			default:
-				return sortById(a, b, false);
+			default: // "newest"
+				return sortByReleaseDate(a, b, false);
 		}
 	});
 }
@@ -176,6 +194,7 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 		sort = "newest",
 		search,
 		category,
+		language,
 		voiceActors,
 		genres,
 		priceRange,
@@ -200,6 +219,7 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 		allWorks = filterWorksByUnifiedData(allWorks, {
 			search,
 			category,
+			language,
 			voiceActors,
 			genres,
 			priceRange,

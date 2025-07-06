@@ -1,6 +1,9 @@
 "use client";
 
-import { WORK_CATEGORY_DISPLAY_NAMES } from "@suzumina.click/shared-types";
+import {
+	WORK_CATEGORY_DISPLAY_NAMES,
+	WORK_LANGUAGE_DISPLAY_NAMES,
+} from "@suzumina.click/shared-types";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
 import {
@@ -28,6 +31,7 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 	const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
 	const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 	const [categoryFilter, setCategoryFilter] = useState(searchParams.get("category") || "all");
+	const [languageFilter, setLanguageFilter] = useState(searchParams.get("language") || "all");
 	const [itemsPerPageValue, setItemsPerPageValue] = useState(searchParams.get("limit") || "12");
 
 	// URLパラメータ更新用ユーティリティ
@@ -71,10 +75,16 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 		updateUrlParam("category", value, "all");
 	};
 
+	const handleLanguageChange = (value: string) => {
+		setLanguageFilter(value);
+		updateUrlParam("language", value, "all");
+	};
+
 	// 検索・フィルターリセット
 	const handleReset = () => {
 		setSearchQuery("");
 		setCategoryFilter("all");
+		setLanguageFilter("all");
 		setSortBy("newest");
 		setItemsPerPageValue("12");
 		const params = new URLSearchParams();
@@ -96,25 +106,48 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 				onSearch={handleSearch}
 				onReset={handleReset}
 				searchPlaceholder="作品タイトルで検索..."
-				hasActiveFilters={searchQuery !== "" || (categoryFilter !== "all" && categoryFilter !== "")}
+				hasActiveFilters={
+					searchQuery !== "" ||
+					(categoryFilter !== "all" && categoryFilter !== "") ||
+					(languageFilter !== "all" && languageFilter !== "")
+				}
 				onSearchKeyDown={(e) => {
 					if (e.key === "Enter") {
 						handleSearch();
 					}
 				}}
 				filters={
-					<FilterSelect
-						value={categoryFilter}
-						onValueChange={handleCategoryChange}
-						placeholder="カテゴリ"
-						options={[
-							{ value: "all", label: "すべてのカテゴリ" },
-							{ value: "SOU", label: WORK_CATEGORY_DISPLAY_NAMES.SOU },
-							{ value: "ADV", label: WORK_CATEGORY_DISPLAY_NAMES.ADV },
-							{ value: "RPG", label: WORK_CATEGORY_DISPLAY_NAMES.RPG },
-							{ value: "MOV", label: WORK_CATEGORY_DISPLAY_NAMES.MOV },
-						]}
-					/>
+					<>
+						<FilterSelect
+							value={categoryFilter}
+							onValueChange={handleCategoryChange}
+							placeholder="カテゴリ"
+							options={[
+								{ value: "all", label: "すべてのカテゴリ" },
+								{ value: "SOU", label: WORK_CATEGORY_DISPLAY_NAMES.SOU },
+								{ value: "ADV", label: WORK_CATEGORY_DISPLAY_NAMES.ADV },
+								{ value: "RPG", label: WORK_CATEGORY_DISPLAY_NAMES.RPG },
+								{ value: "MOV", label: WORK_CATEGORY_DISPLAY_NAMES.MOV },
+							]}
+						/>
+						<FilterSelect
+							value={languageFilter}
+							onValueChange={handleLanguageChange}
+							placeholder="言語"
+							options={[
+								{ value: "all", label: "すべての言語" },
+								{ value: "ja", label: WORK_LANGUAGE_DISPLAY_NAMES.ja },
+								{ value: "en", label: WORK_LANGUAGE_DISPLAY_NAMES.en },
+								{ value: "zh-cn", label: WORK_LANGUAGE_DISPLAY_NAMES["zh-cn"] },
+								{ value: "zh-tw", label: WORK_LANGUAGE_DISPLAY_NAMES["zh-tw"] },
+								{ value: "ko", label: WORK_LANGUAGE_DISPLAY_NAMES.ko },
+								{ value: "es", label: WORK_LANGUAGE_DISPLAY_NAMES.es },
+								{ value: "not-required", label: WORK_LANGUAGE_DISPLAY_NAMES["not-required"] },
+								{ value: "dlsite-official", label: WORK_LANGUAGE_DISPLAY_NAMES["dlsite-official"] },
+								{ value: "other", label: WORK_LANGUAGE_DISPLAY_NAMES.other },
+							]}
+						/>
+					</>
 				}
 			/>
 

@@ -118,7 +118,7 @@ export function ListDisplayControls({
 					{/* 件数/ページ */}
 					{onItemsPerPageChange && (
 						<Select value={itemsPerPageValue} onValueChange={onItemsPerPageChange}>
-							<SelectTrigger className="w-[120px] h-9">
+							<SelectTrigger className="w-[140px] h-9">
 								<SelectValue placeholder="件数" />
 							</SelectTrigger>
 							<SelectContent>

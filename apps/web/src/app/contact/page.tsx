@@ -1,6 +1,23 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { AlertTriangle, Bug, HelpCircle, Lightbulb, MessageSquare } from "lucide-react";
+import type { Metadata } from "next";
 import { ContactForm } from "./components/ContactForm";
+
+export const metadata: Metadata = {
+	title: "お問い合わせ",
+	description:
+		"suzumina.clickに関するご質問、バグ報告、機能要望などをお寄せください。涼花みなせファンサイトの改善にご協力をお願いします。",
+	keywords: ["お問い合わせ", "バグ報告", "機能要望", "ヘルプ", "FAQ", "ファンサイト"],
+	openGraph: {
+		title: "お問い合わせ | suzumina.click",
+		description:
+			"suzumina.clickに関するご質問、バグ報告、機能要望などをお寄せください。涼花みなせファンサイトの改善にご協力をお願いします。",
+		url: "https://suzumina.click/contact",
+	},
+	alternates: {
+		canonical: "/contact",
+	},
+};
 
 export default function ContactPage() {
 	return (
@@ -100,7 +117,7 @@ export default function ContactPage() {
 								<h4 className="font-semibold text-foreground">Q: 作成したボタンが表示されません</h4>
 								<p className="text-sm text-muted-foreground mt-1">
 									A:
-									著作権を考慮して、切り抜き許諾のある配信アーカイブ以外からはボタンを作成できません。また、作成後しばらくお待ちいただく場合があります。
+									著作権を考慮して、利用許諾のある配信アーカイブ動画以外からはボタンを作成できません。また、作成後しばらくお待ちいただく場合があります。
 								</p>
 							</div>
 						</div>

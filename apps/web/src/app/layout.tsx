@@ -18,8 +18,65 @@ const mPlusRounded = M_PLUS_Rounded_1c({
 });
 
 export const metadata: Metadata = {
-	title: "すずみなくりっく！ - 涼花みなせファンサイト",
-	description: "涼花みなせさんの音声ボタンを楽しめる非公式ファンサイトです。",
+	title: {
+		default: "すずみなくりっく！ - 涼花みなせファンサイト",
+		template: "%s | suzumina.click",
+	},
+	description:
+		"涼花みなせさんの音声ボタンを楽しめる非公式ファンサイトです。YouTube動画から音声ボタンを作成・共有し、DLsite作品情報も閲覧できます。あーたたちが集まる、あーたたちのためのファンサイトです。",
+	keywords: [
+		"涼花みなせ",
+		"音声ボタン",
+		"ファンサイト",
+		"声優",
+		"ASMR",
+		"YouTube",
+		"DLsite",
+		"あーたたち",
+		"タイムスタンプ再生",
+	],
+	authors: [{ name: "suzumina.click" }],
+	creator: "suzumina.click",
+	metadataBase: new URL("https://suzumina.click"),
+	alternates: {
+		canonical: "/",
+	},
+	openGraph: {
+		type: "website",
+		locale: "ja_JP",
+		url: "https://suzumina.click",
+		title: "すずみなくりっく！ - 涼花みなせファンサイト",
+		description:
+			"涼花みなせさんの音声ボタンを楽しめる非公式ファンサイトです。YouTube動画から音声ボタンを作成・共有し、DLsite作品情報も閲覧できます。",
+		siteName: "suzumina.click",
+		images: [
+			{
+				url: "/opengraph-image.png",
+				width: 1200,
+				height: 630,
+				alt: "suzumina.click - 涼花みなせファンサイト",
+			},
+		],
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "すずみなくりっく！ - 涼花みなせファンサイト",
+		description:
+			"涼花みなせさんの音声ボタンを楽しめる非公式ファンサイトです。YouTube動画から音声ボタンを作成・共有し、DLsite作品情報も閲覧できます。",
+		images: ["/twitter-image.png"],
+	},
+	robots: {
+		index: true,
+		follow: true,
+		googleBot: {
+			index: true,
+			follow: true,
+			"max-video-preview": -1,
+			"max-image-preview": "large",
+			"max-snippet": -1,
+		},
+	},
+	category: "entertainment",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

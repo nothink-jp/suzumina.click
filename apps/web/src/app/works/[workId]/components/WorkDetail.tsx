@@ -154,6 +154,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 						<div className="relative aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
 							<ThumbnailImage
 								src={work.highResImageUrl || work.thumbnailUrl}
+								fallbackSrc={work.thumbnailUrl}
 								alt={work.title}
 								className="w-full h-full object-contain"
 							/>

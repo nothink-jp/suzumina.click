@@ -17,6 +17,7 @@ import {
 	User,
 	Youtube,
 } from "lucide-react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -392,6 +393,63 @@ async function UserCardWrapper({
 			</Card>
 		);
 	}
+}
+
+// 動的metadata生成
+export async function generateMetadata({ params }: AudioButtonDetailPageProps): Promise<Metadata> {
+	const resolvedParams = await params;
+	const result = await getAudioButtonById(resolvedParams.id);
+
+	if (!result.success) {
+		return {
+			title: "音声ボタンが見つかりません",
+			description: "指定された音声ボタンは存在しないか、削除された可能性があります。",
+		};
+	}
+
+	const audioButton = result.data;
+	const duration = audioButton.endTime - audioButton.startTime;
+	const description =
+		audioButton.description ||
+		`涼花みなせさんの音声ボタン「${audioButton.title}」。${duration}秒の音声をお楽しみください。${audioButton.createdByName}さんが作成しました。`;
+
+	return {
+		title: `${audioButton.title}`,
+		description: description,
+		keywords: [
+			"涼花みなせ",
+			"音声ボタン",
+			audioButton.title,
+			...(audioButton.tags || []),
+			"YouTube",
+			"音声切り抜き",
+		],
+		openGraph: {
+			title: `${audioButton.title} | suzumina.click`,
+			description: description,
+			type: "article",
+			url: `https://suzumina.click/buttons/${audioButton.id}`,
+			images: [
+				{
+					url: `https://img.youtube.com/vi/${audioButton.sourceVideoId}/maxresdefault.jpg`,
+					width: 1280,
+					height: 720,
+					alt: `${audioButton.title} - 涼花みなせ音声ボタン`,
+				},
+			],
+			publishedTime: audioButton.createdAt,
+			authors: [audioButton.createdByName],
+		},
+		twitter: {
+			card: "summary_large_image",
+			title: `${audioButton.title} | suzumina.click`,
+			description: description,
+			images: [`https://img.youtube.com/vi/${audioButton.sourceVideoId}/maxresdefault.jpg`],
+		},
+		alternates: {
+			canonical: `/buttons/${audioButton.id}`,
+		},
+	};
 }
 
 export default async function AudioButtonDetailPage({ params }: AudioButtonDetailPageProps) {

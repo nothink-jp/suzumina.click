@@ -47,6 +47,37 @@ export const WORK_CATEGORY_DISPLAY_NAMES: Record<WorkCategory, string> = {
 } as const;
 
 /**
+ * DLsite作品言語の型定義
+ * DLsiteで対応されている言語コードに対応
+ */
+export const WorkLanguageSchema = z.enum([
+	"ja", // 日本語
+	"en", // 英語
+	"zh-cn", // 簡体中文
+	"zh-tw", // 繁體中文
+	"ko", // 한국어
+	"es", // スペイン語
+	"not-required", // 言語不要
+	"dlsite-official", // DLsite公式
+	"other", // その他言語
+]);
+
+/**
+ * DLsite作品言語コードから日本語表示名へのマッピング
+ */
+export const WORK_LANGUAGE_DISPLAY_NAMES: Record<WorkLanguage, string> = {
+	ja: "日本語",
+	en: "英語",
+	"zh-cn": "简体中文",
+	"zh-tw": "繁體中文",
+	ko: "한국어",
+	es: "Español",
+	"not-required": "言語不要",
+	"dlsite-official": "DLsite公式",
+	other: "その他言語",
+} as const;
+
+/**
  * 価格情報のZodスキーマ定義
  */
 export const PriceInfoSchema = z.object({
@@ -573,6 +604,12 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	/** 独占配信フラグ */
 	isExclusive: z.boolean().default(false),
 
+	// === 言語・翻訳情報 ===
+	/** 翻訳情報 */
+	translationInfo: TranslationInfoSchema.optional(),
+	/** 言語別ダウンロード情報 */
+	languageDownloads: z.array(LanguageDownloadSchema).optional(),
+
 	// === 統合データソース追跡 ===
 	/** データソース別追跡情報 */
 	dataSources: DataSourceTrackingSchema.optional(),
@@ -632,6 +669,7 @@ export const WorkPaginationParamsSchema = z.object({
 
 // Zodスキーマから型を抽出
 export type WorkCategory = z.infer<typeof WorkCategorySchema>;
+export type WorkLanguage = z.infer<typeof WorkLanguageSchema>;
 export type PriceInfo = z.infer<typeof PriceInfoSchema>;
 export type RatingInfo = z.infer<typeof RatingInfoSchema>;
 export type RatingDetail = z.infer<typeof RatingDetailSchema>;
@@ -994,4 +1032,242 @@ export function getWorkCategoryDisplayNameSafe(category: string): string {
 	}
 	// 不明なカテゴリの場合はそのまま返す
 	return category;
+}
+
+/**
+ * 作品言語コードから日本語表示名を取得
+ * @param language 作品言語コード
+ * @returns 日本語表示名
+ */
+export function getWorkLanguageDisplayName(language: WorkLanguage): string {
+	return WORK_LANGUAGE_DISPLAY_NAMES[language];
+}
+
+/**
+ * 作品言語コードから日本語表示名を安全に取得
+ * 不明な言語の場合は言語コードをそのまま返す
+ * @param language 作品言語コード（不明な値の可能性あり）
+ * @returns 日本語表示名または言語コード
+ */
+export function getWorkLanguageDisplayNameSafe(language: string): string {
+	// WorkLanguageに含まれているかチェック
+	if (language in WORK_LANGUAGE_DISPLAY_NAMES) {
+		return WORK_LANGUAGE_DISPLAY_NAMES[language as WorkLanguage];
+	}
+	// 不明な言語の場合はそのまま返す
+	return language;
+}
+
+/**
+ * 作品のプライマリ言語を取得
+ * @param work 作品データ
+ * @returns プライマリ言語コード
+ */
+export function getWorkPrimaryLanguage(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage {
+	const title = work.title || "";
+
+	// 1. タイトルから言語判定（最優先・DLsiteの実際のデータ構造に基づく）
+	// 繁体中文版の判定
+	if (title.includes("繁体中文版") || title.includes("繁體中文版")) {
+		return "zh-tw";
+	}
+
+	// 簡体中文版の判定
+	if (title.includes("簡体中文版") || title.includes("简体中文版")) {
+		return "zh-cn";
+	}
+
+	// 英語版の判定
+	if (title.includes("English") || title.includes("英語版") || title.includes("English Version")) {
+		return "en";
+	}
+
+	// 韓国語版の判定
+	if (title.includes("한국어") || title.includes("韓国語版") || title.includes("Korean")) {
+		return "ko";
+	}
+
+	// スペイン語版の判定
+	if (title.includes("Español") || title.includes("Spanish") || title.includes("スペイン語版")) {
+		return "es";
+	}
+
+	// 2. languageDownloads から言語を取得（2番目の優先度）
+	if (work.languageDownloads && work.languageDownloads.length > 0) {
+		const firstLanguage = work.languageDownloads[0];
+		if (firstLanguage) {
+			const primaryLangCode = firstLanguage.lang.toLowerCase();
+
+			// DLsiteの言語コードをWorkLanguageに変換
+			switch (primaryLangCode) {
+				case "ja":
+				case "japanese":
+					return "ja";
+				case "en":
+				case "english":
+					return "en";
+				case "zh-cn":
+				case "zh_cn":
+				case "chinese_simplified":
+					return "zh-cn";
+				case "zh-tw":
+				case "zh_tw":
+				case "chinese_traditional":
+					return "zh-tw";
+				case "ko":
+				case "korean":
+					return "ko";
+				case "es":
+				case "spanish":
+					return "es";
+				default:
+					// 認識できない言語の場合はotherとして扱う
+					return "other";
+			}
+		}
+	}
+
+	// 3. translationInfo から言語を推定（3番目の優先度）
+	if (work.translationInfo) {
+		// オリジナル作品であれば通常は日本語
+		if (work.translationInfo.isOriginal) {
+			return "ja";
+		}
+		// 翻訳作品の場合の言語判定はここに追加可能
+	}
+
+	// 4. フォールバック: タグ・ジャンルから言語を推定
+	const allTags = [...(work.genres || []), ...(work.tags || [])];
+
+	// 英語作品の判定
+	if (
+		allTags.some(
+			(tag) => tag.includes("英語") || tag.includes("english") || tag.toLowerCase().includes("en"),
+		)
+	) {
+		return "en";
+	}
+
+	// 中国語作品の判定
+	if (
+		allTags.some(
+			(tag) =>
+				tag.includes("中文") ||
+				tag.includes("繁體") ||
+				tag.includes("簡體") ||
+				tag.includes("chinese") ||
+				tag.toLowerCase().includes("zh"),
+		)
+	) {
+		// 繁体字・簡体字の区別
+		if (allTags.some((tag) => tag.includes("繁體") || tag.includes("traditional"))) {
+			return "zh-tw";
+		}
+		return "zh-cn";
+	}
+
+	// 韓国語作品の判定
+	if (
+		allTags.some(
+			(tag) => tag.includes("한국어") || tag.includes("korean") || tag.toLowerCase().includes("ko"),
+		)
+	) {
+		return "ko";
+	}
+
+	// スペイン語作品の判定
+	if (
+		allTags.some(
+			(tag) =>
+				tag.includes("spanish") || tag.includes("español") || tag.toLowerCase().includes("es"),
+		)
+	) {
+		return "es";
+	}
+
+	// 5. 最終フォールバック: 日本語（デフォルト）
+	return "ja";
+}
+
+/**
+ * 作品で利用可能な全言語を取得
+ * @param work 作品データ
+ * @returns 利用可能な言語コードの配列
+ */
+export function getWorkAvailableLanguages(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage[] {
+	const languages: Set<WorkLanguage> = new Set();
+
+	// プライマリ言語を追加
+	const primaryLang = getWorkPrimaryLanguage(work);
+	languages.add(primaryLang);
+
+	// languageDownloads から利用可能な言語を追加
+	if (work.languageDownloads && work.languageDownloads.length > 0) {
+		for (const langDownload of work.languageDownloads) {
+			const langCode = langDownload.lang.toLowerCase();
+
+			switch (langCode) {
+				case "ja":
+				case "japanese":
+					languages.add("ja");
+					break;
+				case "en":
+				case "english":
+					languages.add("en");
+					break;
+				case "zh-cn":
+				case "zh_cn":
+				case "chinese_simplified":
+					languages.add("zh-cn");
+					break;
+				case "zh-tw":
+				case "zh_tw":
+				case "chinese_traditional":
+					languages.add("zh-tw");
+					break;
+				case "ko":
+				case "korean":
+					languages.add("ko");
+					break;
+				case "es":
+				case "spanish":
+					languages.add("es");
+					break;
+				default:
+					languages.add("other");
+					break;
+			}
+		}
+	}
+
+	return Array.from(languages);
+}
+
+/**
+ * 作品を言語でフィルタリング
+ * @param works 作品配列
+ * @param language フィルタリング対象言語
+ * @returns フィルタリングされた作品配列
+ */
+export function filterWorksByLanguage(
+	works: OptimizedFirestoreDLsiteWorkData[],
+	language: string,
+): OptimizedFirestoreDLsiteWorkData[] {
+	if (!language || language === "all") {
+		return works;
+	}
+
+	const targetLang = language.toLowerCase();
+
+	return works.filter((work) => {
+		// プライマリ言語をチェック
+		const primaryLang = getWorkPrimaryLanguage(work);
+		if (primaryLang === targetLang) {
+			return true;
+		}
+
+		// 利用可能な言語もチェック（多言語対応作品用）
+		const availableLanguages = getWorkAvailableLanguages(work);
+		return availableLanguages.includes(targetLang as WorkLanguage);
+	});
 }

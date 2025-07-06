@@ -41,9 +41,9 @@ export default async function Home() {
 								minHeight: "3rem",
 							}}
 						>
-							涼花みなせさんのYouTube配信を切り抜いてボタンを作ろう！
+							涼花みなせさんのYouTube動画から、好きな場面を再生できるボタンを作ろう！
 							<br />
-							あーたたちのあーたたちによるあーたたちのためのサイトです
+							あーたたちが集まる、あーたたちのためのファンサイトです
 						</p>
 						{/* 検索フォームをClient Componentに分離 */}
 						<SearchForm />

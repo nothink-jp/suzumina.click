@@ -364,5 +364,109 @@ resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" 
 #   }
 # }
 
+# dlsiteWorks コレクションのインデックス - releaseDateISO（降順）
+# 作品一覧での販売日ソート用
+resource "google_firestore_index" "dlsiteworks_releasedateiso_desc" {
+  project    = var.gcp_project_id
+  collection = "dlsiteWorks"
+  
+  fields {
+    field_path = "releaseDateISO"
+    order      = "DESCENDING"
+  }
+}
+
+# dlsiteWorks コレクションのインデックス - releaseDateISO（昇順）
+# 作品一覧での販売日ソート用（古い順）
+resource "google_firestore_index" "dlsiteworks_releasedateiso_asc" {
+  project    = var.gcp_project_id
+  collection = "dlsiteWorks"
+  
+  fields {
+    field_path = "releaseDateISO"
+    order      = "ASCENDING"
+  }
+}
+
+# dlsiteWorks コレクションのインデックス - category（昇順）、releaseDateISO（降順）
+# カテゴリフィルタリング＋販売日ソート用
+resource "google_firestore_index" "dlsiteworks_category_releasedateiso_desc" {
+  project    = var.gcp_project_id
+  collection = "dlsiteWorks"
+  
+  fields {
+    field_path = "category"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "releaseDateISO"
+    order      = "DESCENDING"
+  }
+}
+
+# dlsiteWorks コレクションのインデックス - category（昇順）、releaseDateISO（昇順）
+# カテゴリフィルタリング＋販売日ソート用（古い順）
+resource "google_firestore_index" "dlsiteworks_category_releasedateiso_asc" {
+  project    = var.gcp_project_id
+  collection = "dlsiteWorks"
+  
+  fields {
+    field_path = "category"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "releaseDateISO"
+    order      = "ASCENDING"
+  }
+}
+
+# Note: 価格順・評価順ソート用のインデックス
+# dlsiteWorks コレクションのインデックス - price.current（昇順/降順）
+resource "google_firestore_index" "dlsiteworks_price_current_asc" {
+  project    = var.gcp_project_id
+  collection = "dlsiteWorks"
+  
+  fields {
+    field_path = "price.current"
+    order      = "ASCENDING"
+  }
+}
+
+resource "google_firestore_index" "dlsiteworks_price_current_desc" {
+  project    = var.gcp_project_id
+  collection = "dlsiteWorks"
+  
+  fields {
+    field_path = "price.current"
+    order      = "DESCENDING"
+  }
+}
+
+# dlsiteWorks コレクションのインデックス - rating.stars（降順）
+# 評価順ソート用
+resource "google_firestore_index" "dlsiteworks_rating_stars_desc" {
+  project    = var.gcp_project_id
+  collection = "dlsiteWorks"
+  
+  fields {
+    field_path = "rating.stars"
+    order      = "DESCENDING"
+  }
+}
+
+# dlsiteWorks コレクションのインデックス - rating.count（降順）
+# 人気順ソート用
+resource "google_firestore_index" "dlsiteworks_rating_count_desc" {
+  project    = var.gcp_project_id
+  collection = "dlsiteWorks"
+  
+  fields {
+    field_path = "rating.count"
+    order      = "DESCENDING"
+  }
+}
+
 # Note: Single-field indexes for favorites collection are created automatically by Firestore
 # Complex queries requiring composite indexes would be added here if needed

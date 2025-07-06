@@ -17,6 +17,17 @@ interface ThumbnailImageProps {
 const PLACEHOLDER_IMAGE =
 	"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9Ijk2IiB2aWV3Qm94PSIwIDAgMTI4IDk2IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9Ijk2IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik02NCAzMkM1Ni4yNjggMzIgNTAgMzguMjY4IDUwIDQ2VjUwQzUwIDU3LjczMiA1Ni4yNjggNjQgNjQgNjRINjhDNzUuNzMyIDY0IDgyIDU3LjczMiA4MiA1MFY0NkM4MiAzOC4yNjggNzUuNzMyIDMyIDY4IDMySDY0WiIgZmlsbD0iIzkxQTNCMyIvPgo8L3N2Zz4K";
 
+/**
+ * DLsite画像URLをプロキシ経由のURLに変換
+ * DLsite画像の403エラーを回避するためのプロキシ機能
+ */
+function getDLsiteProxyUrl(url: string): string {
+	if (url.includes("img.dlsite.jp")) {
+		return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+	}
+	return url;
+}
+
 // パフォーマンス向上: 画像コンポーネントをメモ化してプロップの変更時のみ再レンダリング
 const ThumbnailImage = memo(function ThumbnailImage({
 	src,
@@ -28,21 +39,24 @@ const ThumbnailImage = memo(function ThumbnailImage({
 	sizes = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw",
 	fallbackSrc,
 }: ThumbnailImageProps) {
-	const [imageSrc, setImageSrc] = useState(src);
+	const [imageSrc, setImageSrc] = useState(() => getDLsiteProxyUrl(src));
 	const [hasError, setHasError] = useState(false);
 	const [hasFallbackError, setHasFallbackError] = useState(false);
 
 	// srcプロップが変更された際に内部状態をリセット
 	useEffect(() => {
-		setImageSrc(src);
+		// DLsite画像の場合はプロキシ経由でアクセス
+		const proxiedSrc = getDLsiteProxyUrl(src);
+		setImageSrc(proxiedSrc);
 		setHasError(false);
 		setHasFallbackError(false);
 	}, [src]);
 
 	const handleError = () => {
 		if (!hasError && fallbackSrc && !hasFallbackError) {
-			// 最初にフォールバック画像を試行
-			setImageSrc(fallbackSrc);
+			// 最初にフォールバック画像を試行（こちらもプロキシ経由）
+			const proxiedFallbackSrc = getDLsiteProxyUrl(fallbackSrc);
+			setImageSrc(proxiedFallbackSrc);
 			setHasError(true);
 		} else if (!hasFallbackError) {
 			// フォールバック画像もエラーの場合、またはフォールバック画像がない場合
