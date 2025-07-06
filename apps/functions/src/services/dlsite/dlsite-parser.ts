@@ -647,28 +647,29 @@ function mapCategoryTextToWorkCategory(categoryText: string): WorkCategory {
 		case "クイズ":
 			return "QIZ" as WorkCategory;
 		case "シューティング":
-			return "STG" as WorkCategory;
+			return "GAM" as WorkCategory; // シューティングはゲームカテゴリに統合
 		case "タイピング":
-			return "TYP" as WorkCategory;
+			return "GAM" as WorkCategory; // タイピングはゲームカテゴリに統合
 		case "テーブル":
 			return "TBL" as WorkCategory;
 		case "デジタルノベル":
-			return "DNV" as WorkCategory;
+			return "DGT" as WorkCategory; // 正しいコードはDGT
 		case "CG・イラスト":
-			return "ICG" as WorkCategory;
+			return "CG" as WorkCategory; // 正しいコードはCG
 		case "コミック":
-			return "COM" as WorkCategory;
+		case "マンガ":
+			return "MNG" as WorkCategory; // コミックとマンガは両方MNG
 		case "動画":
 			return "MOV" as WorkCategory;
 		case "音楽":
-			return "MUS" as WorkCategory;
+			return "SOU" as WorkCategory; // 音楽は音声カテゴリに統合
 		case "ツール/アクセサリ":
 			return "TOL" as WorkCategory;
 		case "その他ゲーム":
-			return "ETC" as WorkCategory;
+			return "etc" as WorkCategory; // 正しいコードはetc
 		default:
 			logger.warn(`未知のカテゴリテキスト: ${categoryText}`);
-			return "ETC" as WorkCategory;
+			return "etc" as WorkCategory;
 	}
 }
 
