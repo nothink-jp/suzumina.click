@@ -19,6 +19,7 @@ import {
 	Video,
 } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import React, { useEffect, useMemo, useState } from "react";
 import { getAudioButtonCount, getAudioButtons } from "@/app/buttons/actions";
 import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
@@ -31,6 +32,7 @@ interface VideoDetailProps {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 動画詳細の複雑な表示ロジックのため許容
 export default function VideoDetail({ video }: VideoDetailProps) {
+	const { data: session } = useSession();
 	const [audioButtons, setAudioButtons] = useState<FrontendAudioButtonData[]>([]);
 	const [audioLoading, setAudioLoading] = useState(false);
 	const [_audioCount, setAudioCount] = useState(0);
@@ -189,8 +191,29 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 		video.liveStreamingDetails?.actualEndTime,
 	]);
 
-	// メモ化: 音声ボタン作成可能判定
-	const canCreateButton = useMemo(() => canCreateAudioButton(video), [video]);
+	// メモ化: 音声ボタン作成可能判定（認証状態も考慮）
+	const canCreateButtonData = useMemo(() => {
+		// ログインしていない場合
+		if (!session?.user) {
+			return {
+				canCreate: false,
+				reason: "音声ボタンを作成するにはすずみなふぁみりーメンバーとしてログインが必要です",
+			};
+		}
+
+		// 動画の条件をチェック
+		const videoCanCreate = canCreateAudioButton(video);
+		if (!videoCanCreate) {
+			return {
+				canCreate: false,
+				reason: "許諾により音声ボタンを作成できるのは配信アーカイブのみです",
+			};
+		}
+
+		return { canCreate: true, reason: undefined };
+	}, [video, session?.user]);
+
+	const canCreateButton = canCreateButtonData.canCreate;
 
 	const _handleShare = () => {
 		if (navigator.share) {
@@ -342,11 +365,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 									className="bg-suzuka-500 hover:bg-suzuka-600 text-white"
 									disabled={!canCreateButton}
 									asChild={canCreateButton}
-									title={
-										canCreateButton
-											? undefined
-											: "許諾により音声ボタンを作成できるのは配信アーカイブのみです"
-									}
+									title={canCreateButton ? undefined : canCreateButtonData.reason}
 								>
 									{canCreateButton ? (
 										<Link

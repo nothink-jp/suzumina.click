@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getVideoById } from "@/app/videos/actions";
 import { AudioButtonCreator } from "@/components/AudioButtonCreator";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface CreateAudioButtonPageProps {
 	searchParams: Promise<{
@@ -61,11 +62,13 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	}
 
 	return (
-		<AudioButtonCreator
-			videoId={videoId}
-			videoTitle={videoResult.title}
-			videoDuration={600} // デフォルト10分、実際の動画長は別途API取得が必要
-			initialStartTime={startTime}
-		/>
+		<ProtectedRoute requireRole="member">
+			<AudioButtonCreator
+				videoId={videoId}
+				videoTitle={videoResult.title}
+				videoDuration={600} // デフォルト10分、実際の動画長は別途API取得が必要
+				initialStartTime={startTime}
+			/>
+		</ProtectedRoute>
 	);
 }

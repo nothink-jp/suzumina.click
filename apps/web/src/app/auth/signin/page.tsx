@@ -55,12 +55,39 @@ function SignInForm({ callbackUrl, error }: { callbackUrl?: string; error?: stri
 					</button>
 				</form>
 
-				<div className="text-center text-sm text-gray-500">
+				<div className="text-center text-sm text-gray-500 space-y-3">
 					<p>
 						ログインすることで、あなたが「すずみなふぁみりー」Discord
 						サーバーのメンバーであることを確認します。
 					</p>
-					<p className="mt-2">まだメンバーでない方は、先にDiscordサーバーにご参加ください。</p>
+
+					{/* プレビューリリース案内 */}
+					<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+						<div className="flex items-start gap-2">
+							<span className="text-lg">🚀</span>
+							<div className="space-y-2">
+								<h4 className="font-semibold text-blue-900 text-sm">プレビューリリース中</h4>
+								<p className="text-blue-800 text-xs leading-relaxed">
+									現在、すずみなくりっく！はプレビューリリース段階です。
+									音声ボタンの作成機能は「すずみなふぁみりー」メンバー限定となっております。
+								</p>
+								<div className="pt-2">
+									<a
+										href="https://ci-en.dlsite.com/creator/9805"
+										target="_blank"
+										rel="noopener noreferrer"
+										className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-xs font-medium underline"
+									>
+										<span>💝</span>
+										涼花みなせさんのci-enで支援者になる
+									</a>
+									<p className="text-blue-700 text-xs mt-1">
+										※ ci-en支援者はすずみなふぁみりーDiscordサーバーに参加できます
+									</p>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>

@@ -13,10 +13,12 @@ import {
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { SearchAndFilterPanel } from "@suzumina.click/ui/components/custom/search-and-filter-panel";
 import { FilterSelect } from "@suzumina.click/ui/components/custom/search-filter-panel";
-import { FileText } from "lucide-react";
+import { Switch } from "@suzumina.click/ui/components/ui/switch";
+import { FileText, Shield } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import Pagination from "@/components/Pagination";
+import { useAgeVerification } from "@/contexts/AgeVerificationContext";
 import WorkCard from "./WorkCard";
 
 interface WorkListProps {
@@ -28,11 +30,40 @@ interface WorkListProps {
 export default function WorkList({ data, totalCount, currentPage }: WorkListProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const { isAdult, isLoading: ageVerificationLoading } = useAgeVerification();
 	const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
 	const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 	const [categoryFilter, setCategoryFilter] = useState(searchParams.get("category") || "all");
 	const [languageFilter, setLanguageFilter] = useState(searchParams.get("language") || "all");
 	const [itemsPerPageValue, setItemsPerPageValue] = useState(searchParams.get("limit") || "12");
+
+	// R18フィルターの状態（成人向けサイトのため、デフォルトでR18表示）
+	const [showR18, setShowR18] = useState(() => {
+		const excludeR18Param = searchParams.get("excludeR18");
+		// URLパラメータがある場合はそれに従う
+		if (excludeR18Param !== null) {
+			return excludeR18Param === "false";
+		}
+		// URLパラメータがない場合は成人向けサイトとしてR18を表示（excludeR18=false）
+		return true;
+	});
+
+	// URLパラメータが変更された時にSwitchの状態を同期
+	useEffect(() => {
+		// 年齢確認ローディング中は何もしない
+		if (ageVerificationLoading) {
+			return;
+		}
+
+		const excludeR18Param = searchParams.get("excludeR18");
+		// URLパラメータがない場合は成人向けサイトとしてR18表示（excludeR18=false）
+		const newShowR18 = excludeR18Param !== null ? excludeR18Param === "false" : true;
+
+		// 状態が変更される場合のみ更新
+		if (newShowR18 !== showR18) {
+			setShowR18(newShowR18);
+		}
+	}, [searchParams, ageVerificationLoading, showR18]);
 
 	// URLパラメータ更新用ユーティリティ
 	const updateUrlParam = useMemo(
@@ -80,14 +111,46 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 		updateUrlParam("language", value, "all");
 	};
 
+	const handleR18Toggle = (checked: boolean) => {
+		// まず状態を更新
+		setShowR18(checked);
+
+		// URLパラメータを更新（デフォルトはR18表示、除外は明示的に設定）
+		const params = new URLSearchParams(searchParams.toString());
+
+		if (isAdult) {
+			// 成人ユーザー：デフォルトはR18表示、除外がオプション
+			if (checked) {
+				// R18表示時はパラメータを削除（デフォルト=excludeR18=false）
+				params.delete("excludeR18");
+			} else {
+				// R18除外時はパラメータ設定（除外=excludeR18=true）
+				params.set("excludeR18", "true");
+			}
+		} else {
+			// 未成年ユーザー：常にR18除外
+			params.set("excludeR18", "true");
+		}
+
+		params.delete("page"); // ページ番号をリセット
+
+		// 即座にナビゲート
+		startTransition(() => {
+			router.push(`/works?${params.toString()}`);
+		});
+	};
+
 	// 検索・フィルターリセット
 	const handleReset = () => {
 		setSearchQuery("");
 		setCategoryFilter("all");
 		setLanguageFilter("all");
+		setShowR18(true); // デフォルトはR18表示（成人向けサイト）
 		setSortBy("newest");
 		setItemsPerPageValue("12");
 		const params = new URLSearchParams();
+		// デフォルトはR18表示なのでパラメータは削除（excludeR18=false）
+		// params.delete("excludeR18"); // 既に空なので何もしない
 		router.push(`/works?${params.toString()}`);
 	};
 
@@ -109,7 +172,8 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 				hasActiveFilters={
 					searchQuery !== "" ||
 					(categoryFilter !== "all" && categoryFilter !== "") ||
-					(languageFilter !== "all" && languageFilter !== "")
+					(languageFilter !== "all" && languageFilter !== "") ||
+					(isAdult && !showR18) // 成人ユーザーがR18を除外している場合（デフォルトは表示）
 				}
 				onSearchKeyDown={(e) => {
 					if (e.key === "Enter") {
@@ -147,6 +211,26 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 								{ value: "other", label: WORK_LANGUAGE_DISPLAY_NAMES.other },
 							]}
 						/>
+
+						{/* R18レーティングフィルター */}
+						{isAdult ? (
+							<div className="flex items-center gap-3 px-3 py-2 border border-border rounded-md bg-background">
+								<Shield className="h-4 w-4 text-muted-foreground" />
+								<div className="flex items-center gap-2">
+									<span className="text-sm font-medium">R18作品表示</span>
+									<Switch
+										checked={showR18}
+										onCheckedChange={handleR18Toggle}
+										aria-label="R18作品の表示を切り替え"
+									/>
+								</div>
+							</div>
+						) : (
+							<div className="flex items-center gap-3 px-3 py-2 border border-blue-200 rounded-md bg-blue-50">
+								<Shield className="h-4 w-4 text-blue-600" />
+								<span className="text-sm text-blue-700 font-medium">全年齢対象作品のみ表示中</span>
+							</div>
+						)}
 					</>
 				}
 			/>

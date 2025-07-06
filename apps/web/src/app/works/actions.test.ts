@@ -84,6 +84,7 @@ describe("works actions", () => {
 	});
 
 	describe("getWorks", () => {
+		// biome-ignore lint/suspicious/noSkippedTests: Legacy test skipped due to business logic change
 		it.skip("should sort works by DLsite ID format correctly (旧仕様・現在は販売日順)", async () => {
 			// Note: ソート機能が販売日順に変更されたため、このテストはスキップ
 		});
@@ -197,6 +198,7 @@ describe("works actions", () => {
 			expect(result.totalCount).toBe(20);
 		});
 
+		// biome-ignore lint/suspicious/noSkippedTests: Legacy test skipped due to business logic change
 		it.skip("should sort works by oldest when sort=oldest (旧仕様・現在は販売日順)", async () => {
 			// Note: ソート機能が販売日順に変更されたため、このテストはスキップ
 		});

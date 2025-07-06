@@ -72,7 +72,7 @@ export default function UserMenu({ user }: UserMenuProps) {
 					</Link>
 				</DropdownMenuItem>
 				<DropdownMenuItem asChild>
-					<Link href="/settings/profile" className="flex items-center gap-2 cursor-pointer">
+					<Link href="/settings" className="flex items-center gap-2 cursor-pointer">
 						<Settings className="h-4 w-4" />
 						<span>設定</span>
 					</Link>

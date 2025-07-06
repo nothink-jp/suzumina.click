@@ -7,7 +7,7 @@
 import type { BonusContent, FileInfo } from "@suzumina.click/shared-types";
 import * as cheerio from "cheerio";
 import * as logger from "../../shared/logger";
-import { generateDLsiteImageDirectory } from "./dlsite-parser";
+import { type ImageVerificationResult, verifyTranslationWorkImage } from "./image-verification";
 
 /**
  * 基本作品情報（work_outlineテーブルから抽出）
@@ -77,6 +77,8 @@ export interface ExtendedWorkData {
 	detailedDescription: string;
 	/** 高解像度ジャケット画像URL */
 	highResImageUrl?: string;
+	/** 画像検証結果 */
+	imageVerification?: ImageVerificationResult & { originalProductId?: string };
 	/** 詳細評価情報（小数点以下を含む精密な評価） */
 	detailedRating?: DetailedRatingInfo;
 }
@@ -545,89 +547,17 @@ function findModpubImage($: cheerio.CheerioAPI): string | undefined {
 }
 
 /**
- * 作品IDから標準的な高解像度画像URLを構築
- */
-function constructHighResImageUrl(productId: string): string {
-	// 新しい画像ディレクトリパス生成アルゴリズムを使用
-	const directoryPath = generateDLsiteImageDirectory(productId);
-
-	// cSpell:disable-next-line
-	const baseUrl = `https://img.dlsite.jp/modpub/images2/work/doujin/${directoryPath}/${productId}_img_main`;
-
-	// WebP形式を優先的に試す
-	logger.debug(`構築された高解像度画像URL: ${baseUrl}.webp (directory: ${directoryPath})`);
-	return `${baseUrl}.webp`;
-}
-
-/**
- * HTMLから作品IDを抽出
- */
-function extractProductId($: cheerio.CheerioAPI): string | undefined {
-	// より確実な作品ID抽出のための複数のパターンを試す
-	const patterns = [
-		// URLからの作品ID抽出 (最も確実)
-		() => {
-			const url =
-				$("link[rel='canonical']").attr("href") ||
-				$("meta[property='og:url']").attr("content") ||
-				$("base").attr("href");
-			return url?.match(/\/product_id\/([A-Z]{2}\d{6,8})/)?.[1];
-		},
-		// 作品情報テーブルからの抽出
-		() => {
-			const workTable = $(".work_outline_table, .product_outline_table");
-			const productIdText = workTable
-				.find("th:contains('作品番号'), th:contains('商品ID')")
-				.next("td")
-				.text();
-			return productIdText.match(/([A-Z]{2}\d{6,8})/)?.[1];
-		},
-		// ページタイトルからの抽出
-		() => {
-			const title = $("title").text();
-			return title.match(/\[([A-Z]{2}\d{6,8})\]/)?.[1];
-		},
-		// より広範囲でのHTML検索（最後の手段）
-		() => {
-			const bodyText = $("body").text();
-			const matches = bodyText.match(/[A-Z]{2}\d{6,8}/g);
-			// 最も短い番号を選択（RJ01411411よりRJ01412000のような範囲IDは除外）
-			return matches?.sort((a, b) => a.length - b.length || a.localeCompare(b))?.[0];
-		},
-	];
-
-	for (const pattern of patterns) {
-		const productId = pattern();
-		if (productId) {
-			logger.debug(`作品ID抽出成功: ${productId}`);
-			return productId;
-		}
-	}
-
-	logger.debug("作品IDを抽出できませんでした");
-	return undefined;
-}
-
-/**
  * 高解像度ジャケット画像URLを抽出
  */
 export function extractHighResImageUrl($: cheerio.CheerioAPI): string | undefined {
-	// まず作品IDを取得してWebPフォーマットのURLを構築
-	const productId = extractProductId($);
-	if (productId) {
-		const constructedUrl = constructHighResImageUrl(productId);
-		logger.debug(`作品ID ${productId} から構築されたURL: ${constructedUrl}`);
-		// 構築されたURLを最優先で返す
-		return constructedUrl;
-	}
-
-	// メインジャケット画像を次に検索
+	// HTMLからの画像URL抽出のみを行う（検証は後で別途実行）
+	// メインジャケット画像を検索
 	const mainImage = findMainJacketImage($);
 	if (mainImage) {
 		return mainImage;
 	}
 
-	// modpub形式の画像を最後に検索
+	// modpub形式の画像を検索
 	// cSpell:disable-next-line modpub
 	const modpubImage = findModpubImage($);
 	// cSpell:disable-next-line
@@ -1199,12 +1129,41 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 }
 
 /**
- * 作品IDから詳細データを取得して解析
+ * 作品IDから詳細データを取得して解析（画像検証含む）
  */
 export async function fetchAndParseWorkDetail(productId: string): Promise<ExtendedWorkData | null> {
 	try {
 		const html = await fetchWorkDetailPage(productId);
 		const detailData = parseWorkDetailFromHTML(html);
+
+		// 画像検証を実行
+		try {
+			const imageVerification = await verifyTranslationWorkImage(
+				productId,
+				detailData.highResImageUrl,
+			);
+
+			// 検証済みURLが存在する場合は更新
+			if (imageVerification.verifiedUrl) {
+				detailData.highResImageUrl = imageVerification.verifiedUrl;
+				detailData.imageVerification = imageVerification;
+
+				logger.info(`作品${productId}の画像検証成功`, {
+					method: imageVerification.method,
+					verifiedUrl: imageVerification.verifiedUrl,
+					originalProductId: imageVerification.originalProductId,
+				});
+			} else {
+				detailData.imageVerification = imageVerification;
+				logger.warn(`作品${productId}の画像検証失敗`, {
+					attemptedUrls: imageVerification.attemptedUrls,
+				});
+			}
+		} catch (imageError) {
+			logger.warn(`作品${productId}の画像検証中にエラー`, {
+				error: imageError instanceof Error ? imageError.message : String(imageError),
+			});
+		}
 
 		logger.info(`作品${productId}の詳細データ取得完了`);
 		return detailData;

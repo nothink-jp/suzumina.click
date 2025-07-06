@@ -39,6 +39,10 @@ export const UnifiedSearchFiltersSchema = z.object({
 	tags: z.array(z.string()).optional(),
 	tagMode: z.enum(["any", "all"]).default("any"), // any: いずれか含む, all: すべて含む
 
+	// レーティング・年齢制限フィルター（作品用）
+	ageRating: z.array(z.string()).optional(), // ["全年齢", "R18"] 等
+	excludeR18: z.boolean().optional(), // R18作品を除外
+
 	// ソート
 	sortBy: z.enum(["relevance", "newest", "oldest", "popular", "mostPlayed"]).default("relevance"),
 });

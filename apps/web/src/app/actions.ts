@@ -7,20 +7,42 @@ import { getWorks } from "./works/actions";
 
 /**
  * トップページ用の新着作品を取得するServer Action
+ * @param limit 取得件数
+ * @param excludeR18 R18作品を除外するかどうか
  */
-export async function getLatestWorks(limit = 10) {
+export async function getLatestWorks(limit = 10, excludeR18 = false) {
 	try {
-		const result = await getWorks({ page: 1, limit });
+		// R18除外の場合、より多く取得してフィルタリング後に調整
+		// 全年齢作品が少ない可能性があるため、より大きな数を取得
+		const fetchLimit = excludeR18 ? Math.max(limit * 5, 50) : limit;
+		const result = await getWorks({
+			page: 1,
+			limit: fetchLimit,
+			excludeR18: excludeR18, // excludeR18パラメータを渡す
+		});
 
-		if (result.works.length === 0) {
-			logger.warn("新着作品取得で0件返却", { action: "getLatestWorks", limit });
+		let works = result.works;
+
+		// 指定された件数にトリム（getWorksでフィルタリング済みなので再度フィルタリングは不要）
+		if (excludeR18 && works.length > limit) {
+			works = works.slice(0, limit);
 		}
 
-		return result.works;
+		if (works.length === 0) {
+			logger.warn("新着作品取得で0件返却", {
+				action: "getLatestWorks",
+				limit,
+				excludeR18,
+				originalCount: result.works.length,
+			});
+		}
+
+		return works;
 	} catch (error) {
 		logger.error("新着作品取得でエラーが発生", {
 			action: "getLatestWorks",
 			limit,
+			excludeR18,
 			error: error instanceof Error ? error.message : String(error),
 			stack: error instanceof Error ? error.stack : undefined,
 		});

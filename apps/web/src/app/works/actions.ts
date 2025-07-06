@@ -1,16 +1,14 @@
 "use server";
 
+import { filterR18Content } from "@suzumina.click/shared-types/src/age-rating";
 import type {
 	FrontendDLsiteWorkData,
 	OptimizedFirestoreDLsiteWorkData,
-	WorkCategory,
-	WorkLanguage,
 	WorkListResult,
 } from "@suzumina.click/shared-types/src/work";
 import {
 	convertToFrontendWork,
 	filterWorksByLanguage,
-	getWorkPrimaryLanguage,
 } from "@suzumina.click/shared-types/src/work";
 import { getFirestore } from "@/lib/firestore";
 
@@ -45,7 +43,10 @@ interface EnhancedSearchParams {
 		max?: number;
 	};
 	hasHighResImage?: boolean; // 高解像度画像有無
-	strategy?: DataFetchStrategy; // データ取得戦略
+	_strategy?: DataFetchStrategy; // データ取得戦略（未使用）
+	// 年齢制限フィルター
+	ageRating?: string[]; // 特定のレーティングのみ
+	excludeR18?: boolean; // R18作品を除外
 }
 
 /**
@@ -93,7 +94,7 @@ function filterWorksByUnifiedData(
 	if (params.voiceActors && params.voiceActors.length > 0) {
 		filteredWorks = filteredWorks.filter((work) => {
 			const workVoiceActors = work.voiceActors || [];
-			return params.voiceActors!.some((va) => workVoiceActors.some((wva) => wva.includes(va)));
+			return params.voiceActors?.some((va) => workVoiceActors.some((wva) => wva.includes(va)));
 		});
 	}
 
@@ -101,7 +102,7 @@ function filterWorksByUnifiedData(
 	if (params.genres && params.genres.length > 0) {
 		filteredWorks = filteredWorks.filter((work) => {
 			const workGenres = work.genres || [];
-			return params.genres!.some((genre) => workGenres.some((wg) => wg.includes(genre)));
+			return params.genres?.some((genre) => workGenres.some((wg) => wg.includes(genre)));
 		});
 	}
 
@@ -109,7 +110,7 @@ function filterWorksByUnifiedData(
 	if (params.priceRange) {
 		filteredWorks = filteredWorks.filter((work) => {
 			const price = work.price?.current || 0;
-			const { min = 0, max = Number.MAX_SAFE_INTEGER } = params.priceRange!;
+			const { min = 0, max = Number.MAX_SAFE_INTEGER } = params.priceRange || {};
 			return price >= min && price <= max;
 		});
 	}
@@ -118,7 +119,7 @@ function filterWorksByUnifiedData(
 	if (params.ratingRange) {
 		filteredWorks = filteredWorks.filter((work) => {
 			const rating = work.rating?.stars || 0;
-			const { min = 0, max = 5 } = params.ratingRange!;
+			const { min = 0, max = 5 } = params.ratingRange || {};
 			return rating >= min && rating <= max;
 		});
 	}
@@ -128,6 +129,26 @@ function filterWorksByUnifiedData(
 		filteredWorks = filteredWorks.filter((work) => {
 			const hasHighRes = !!work.highResImageUrl;
 			return hasHighRes === params.hasHighResImage;
+		});
+	}
+
+	// 年齢制限フィルタリング
+	if (params.excludeR18) {
+		// 年齢制限を取得する関数（データソースから優先的に取得）
+		const getAgeRatingFromWork = (work: OptimizedFirestoreDLsiteWorkData): string | undefined => {
+			return work.ageRating || undefined;
+		};
+
+		filteredWorks = filterR18Content(filteredWorks, getAgeRatingFromWork);
+	}
+
+	// 特定の年齢制限でフィルタリング
+	if (params.ageRating && params.ageRating.length > 0) {
+		filteredWorks = filteredWorks.filter((work) => {
+			const workAgeRating = work.ageRating || "";
+			return params.ageRating?.some(
+				(rating) => workAgeRating.includes(rating) || rating === workAgeRating,
+			);
 		});
 	}
 
@@ -200,7 +221,9 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 		priceRange,
 		ratingRange,
 		hasHighResImage,
-		strategy = "standard",
+		_strategy = "standard",
+		ageRating,
+		excludeR18 = false,
 	} = params;
 	try {
 		const firestore = getFirestore();
@@ -225,6 +248,8 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 			priceRange,
 			ratingRange,
 			hasHighResImage,
+			ageRating,
+			excludeR18,
 		});
 
 		// ソート処理
@@ -249,7 +274,7 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 				}
 
 				// フロントエンド形式に変換（OptimizedFirestoreDLsiteWorkDataは上位互換）
-				const frontendData = convertToFrontendWork(data as any);
+				const frontendData = convertToFrontendWork(data);
 				works.push(frontendData);
 			} catch (_error) {
 				// エラーがあっても他のデータの処理は続行
@@ -298,7 +323,7 @@ export async function getWorkById(workId: string): Promise<FrontendDLsiteWorkDat
 		}
 
 		// フロントエンド形式に変換（OptimizedFirestoreDLsiteWorkDataは上位互換）
-		const frontendData = convertToFrontendWork(data as any);
+		const frontendData = convertToFrontendWork(data);
 
 		return frontendData;
 	} catch (_error) {
@@ -350,15 +375,17 @@ export async function getRelatedWorks(
 
 			// 声優一致（統合データ活用）
 			if (byVoiceActors && baseWork.voiceActors && work.voiceActors) {
-				const commonVoiceActors = baseWork.voiceActors.filter((va) =>
-					work.voiceActors!.some((wva) => wva.includes(va) || va.includes(wva)),
+				const commonVoiceActors = baseWork.voiceActors.filter(
+					(va) => work.voiceActors?.some((wva) => wva.includes(va) || va.includes(wva)) ?? false,
 				);
 				score += commonVoiceActors.length * 3;
 			}
 
 			// ジャンル一致（統合データ活用）
 			if (byGenres && baseWork.tags && work.genres) {
-				const commonGenres = baseWork.tags.filter((tag: string) => work.genres!.includes(tag));
+				const commonGenres = baseWork.tags.filter(
+					(tag: string) => work.genres?.includes(tag) ?? false,
+				);
 				score += commonGenres.length * 2;
 			}
 
@@ -388,7 +415,7 @@ export async function getRelatedWorks(
 		for (const work of topRelated) {
 			try {
 				if (!work.id) work.id = work.productId;
-				const frontendData = convertToFrontendWork(work as any);
+				const frontendData = convertToFrontendWork(work);
 				relatedWorks.push(frontendData);
 			} catch (_error) {
 				// エラーがあっても他のデータの処理は続行
@@ -407,7 +434,10 @@ export async function getRelatedWorks(
  * @returns 統計情報
  */
 export async function getWorksStats(
-	options: { period?: "7d" | "30d" | "90d" | "1y"; groupBy?: "category" | "circle" | "price" } = {},
+	_options: {
+		period?: "7d" | "30d" | "90d" | "1y";
+		groupBy?: "category" | "circle" | "price";
+	} = {},
 ) {
 	try {
 		const firestore = getFirestore();
@@ -424,7 +454,7 @@ export async function getWorksStats(
 		const averagePrice = totalValue / totalWorks;
 		const averageRating = allWorks
 			.filter((work) => work.rating?.stars)
-			.reduce((sum, work, _, array) => sum + work.rating!.stars / array.length, 0);
+			.reduce((sum, work, _, array) => sum + (work.rating?.stars ?? 0) / array.length, 0);
 
 		// カテゴリ別統計
 		const byCategory = allWorks.reduce(
@@ -449,14 +479,26 @@ export async function getWorksStats(
 
 				return acc;
 			},
-			{} as Record<string, any>,
+			{} as Record<
+				string,
+				{
+					count: number;
+					totalValue: number;
+					totalRating: number;
+					ratingCount: number;
+					averagePrice?: number;
+					averageRating?: number;
+				}
+			>,
 		);
 
 		// カテゴリ別平均値を計算
 		Object.keys(byCategory).forEach((category) => {
 			const stats = byCategory[category];
-			stats.averagePrice = stats.totalValue / stats.count;
-			stats.averageRating = stats.ratingCount > 0 ? stats.totalRating / stats.ratingCount : 0;
+			if (stats) {
+				stats.averagePrice = stats.totalValue / stats.count;
+				stats.averageRating = stats.ratingCount > 0 ? stats.totalRating / stats.ratingCount : 0;
+			}
 		});
 
 		// 人気タグ（統合ジャンル活用）
@@ -680,9 +722,11 @@ export async function getPopularVoiceActors(limit = 20): Promise<
 					if (!voiceActorMap.has(va)) {
 						voiceActorMap.set(va, { count: 0, works: [] });
 					}
-					const entry = voiceActorMap.get(va)!;
-					entry.count++;
-					entry.works.push(work.title);
+					const entry = voiceActorMap.get(va);
+					if (entry) {
+						entry.count++;
+						entry.works.push(work.title);
+					}
 				});
 			}
 		});

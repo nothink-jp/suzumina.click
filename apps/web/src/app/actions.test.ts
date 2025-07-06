@@ -122,7 +122,7 @@ describe("Homepage Actions", () => {
 
 			const result = await getLatestWorks(10);
 
-			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 10 });
+			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 10, excludeR18: false });
 			expect(result).toEqual(mockWorks);
 			expect(result).toHaveLength(2);
 			expect(result[0].title).toBe("テスト作品1");
@@ -140,7 +140,7 @@ describe("Homepage Actions", () => {
 
 			await getLatestWorks();
 
-			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 10 });
+			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 10, excludeR18: false });
 		});
 
 		it("カスタムlimit値で動作する", async () => {
@@ -154,7 +154,7 @@ describe("Homepage Actions", () => {
 
 			await getLatestWorks(5);
 
-			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 5 });
+			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 5, excludeR18: false });
 		});
 
 		it("作品が0件の場合でも正常に動作する", async () => {
@@ -244,7 +244,7 @@ describe("Homepage Actions", () => {
 
 			// ログ出力は削除されたので、結果のみ確認
 			expect(result).toEqual(mockWorks);
-			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 15 });
+			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 15, excludeR18: false });
 		});
 	});
 
@@ -670,7 +670,7 @@ describe("Homepage Actions", () => {
 			expect(worksResult).toEqual(mockWorks);
 			expect(videosResult).toEqual(mockVideos);
 			expect(audioButtonsResult).toEqual(mockAudioButtons);
-			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 5 });
+			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 5, excludeR18: false });
 			expect(getVideoTitles).toHaveBeenCalledWith({ page: 1, limit: 5 });
 			expect(getRecentAudioButtons).toHaveBeenCalledWith(5);
 		});

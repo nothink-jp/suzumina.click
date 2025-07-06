@@ -1,6 +1,10 @@
 "use client";
 
-import { getWorkCategoryDisplayName } from "@suzumina.click/shared-types";
+import {
+	checkAgeRating,
+	getAgeRatingDisplayName,
+	getWorkCategoryDisplayName,
+} from "@suzumina.click/shared-types";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import NotImplementedOverlay from "@suzumina.click/ui/components/custom/not-implemented-overlay";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
@@ -19,6 +23,7 @@ import {
 	Clock,
 	FileText,
 	Share2,
+	Shield,
 	ShoppingCart,
 	Star,
 	Tag,
@@ -47,6 +52,9 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 		[work.productId],
 	);
 
+	// 年齢制限の判定
+	const ageRatingCheck = useMemo(() => checkAgeRating(work.ageRating), [work.ageRating]);
+
 	const renderStars = (rating: number) => {
 		return (
 			<div className="flex items-center">
@@ -71,7 +79,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 	const isOnSale = work.price.discount && work.price.discount > 0;
 
 	// 日付フォーマット
-	const formatDate = (dateString: string) => {
+	const _formatDate = (dateString: string) => {
 		try {
 			// 日本語形式の日付（例: "2024年04月27日"）をパース
 			const japaneseMatch = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
@@ -207,6 +215,43 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									{work.rating.stars.toFixed(1)}
 								</span>
 								<span className="text-base text-gray-600">({work.rating.count}件の評価)</span>
+							</div>
+						)}
+
+						{/* 年齢レーティング表示 */}
+						{work.ageRating && (
+							<div className="space-y-2">
+								<div className="text-sm font-medium text-gray-700">年齢指定</div>
+								<div className="flex items-center gap-2">
+									<Shield className="h-4 w-4 text-muted-foreground" />
+									{ageRatingCheck.isR18 ? (
+										<Badge
+											variant="destructive"
+											className="bg-red-600 text-white font-bold text-base px-4 py-2"
+										>
+											{getAgeRatingDisplayName(work.ageRating)}
+										</Badge>
+									) : ageRatingCheck.isAllAges ? (
+										<Badge
+											variant="outline"
+											className="border-green-500 text-green-700 bg-green-50 font-medium text-base px-4 py-2"
+										>
+											{getAgeRatingDisplayName(work.ageRating)}
+										</Badge>
+									) : (
+										<Badge
+											variant="secondary"
+											className="text-gray-700 bg-gray-100 font-medium text-base px-4 py-2"
+										>
+											{getAgeRatingDisplayName(work.ageRating)}
+										</Badge>
+									)}
+								</div>
+								{ageRatingCheck.isR18 && (
+									<p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
+										この作品は18歳以上の方を対象とした内容を含みます。
+									</p>
+								)}
 							</div>
 						)}
 
@@ -348,10 +393,33 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 											)}
 											{work.ageRating && (
 												<div className="flex items-center gap-3">
-													<FileText className="h-5 w-5 text-muted-foreground" />
+													<Shield className="h-5 w-5 text-muted-foreground" />
 													<div>
 														<div className="text-sm text-gray-700">年齢指定</div>
-														<div className="font-semibold text-gray-900">{work.ageRating}</div>
+														<div className="flex items-center gap-2">
+															{ageRatingCheck.isR18 ? (
+																<Badge
+																	variant="destructive"
+																	className="bg-red-600 text-white font-bold text-sm px-3 py-1"
+																>
+																	{getAgeRatingDisplayName(work.ageRating)}
+																</Badge>
+															) : ageRatingCheck.isAllAges ? (
+																<Badge
+																	variant="outline"
+																	className="border-green-500 text-green-700 bg-green-50 font-medium text-sm px-3 py-1"
+																>
+																	{getAgeRatingDisplayName(work.ageRating)}
+																</Badge>
+															) : (
+																<Badge
+																	variant="secondary"
+																	className="text-gray-700 bg-gray-100 font-medium text-sm px-3 py-1"
+																>
+																	{getAgeRatingDisplayName(work.ageRating)}
+																</Badge>
+															)}
+														</div>
 													</div>
 												</div>
 											)}

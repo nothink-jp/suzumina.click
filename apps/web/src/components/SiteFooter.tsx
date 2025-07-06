@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CookieSettingsLink } from "./consent/CookieSettingsLink";
 
 export default function SiteFooter() {
 	return (
@@ -33,12 +34,21 @@ export default function SiteFooter() {
 						</Link>
 					</div>
 
+					{/* クッキー設定リンク */}
+					<div className="text-center">
+						<CookieSettingsLink />
+					</div>
+
 					{/* 下段：サイト名と説明文 */}
 					<div className="text-center space-y-4">
 						<div>
 							<h4 className="font-bold text-lg mb-2 text-minase-50">suzumina.click</h4>
 							<p className="text-minase-200 text-sm">
 								ファンによる、ファンのためのコミュニティサイト
+							</p>
+							<p className="text-minase-300 text-xs mt-1 flex items-center justify-center gap-1">
+								<span>🚀</span>
+								現在プレビューリリース中 - すずみなふぁみりー限定
 							</p>
 						</div>
 						<div className="border-t border-minase-600 pt-4 text-sm text-minase-200">

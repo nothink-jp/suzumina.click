@@ -4,6 +4,7 @@ import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Calendar, Clock, ExternalLink, Eye, Plus, Radio, Video } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import React, { memo, useMemo } from "react";
 import ThumbnailImage from "@/components/ThumbnailImage";
 
@@ -21,6 +22,7 @@ const VideoCard = memo(function VideoCard({
 	variant = "grid",
 	priority = false,
 }: VideoCardProps) {
+	const { data: session } = useSession();
 	const isGrid = variant === "grid";
 
 	// 音声ボタン数: video.audioButtonCountを優先し、なければbuttonCountを使用
@@ -91,8 +93,29 @@ const VideoCard = memo(function VideoCard({
 		[video.videoId],
 	);
 
-	// メモ化: 音声ボタン作成可能判定
-	const canCreateButton = useMemo(() => canCreateAudioButton(video), [video]);
+	// メモ化: 音声ボタン作成可能判定（認証状態も考慮）
+	const canCreateButtonData = useMemo(() => {
+		// ログインしていない場合
+		if (!session?.user) {
+			return {
+				canCreate: false,
+				reason: "音声ボタンを作成するにはすずみなふぁみりーメンバーとしてログインが必要です",
+			};
+		}
+
+		// 動画の条件をチェック
+		const videoCanCreate = canCreateAudioButton(video);
+		if (!videoCanCreate) {
+			return {
+				canCreate: false,
+				reason: "音声ボタンを作成できるのは配信アーカイブのみです",
+			};
+		}
+
+		return { canCreate: true, reason: undefined };
+	}, [video, session?.user]);
+
+	const canCreateButton = canCreateButtonData.canCreate;
 
 	// メモ化: 動画タイプバッジの情報
 	const videoBadgeInfo = useMemo(() => {
@@ -232,9 +255,7 @@ const VideoCard = memo(function VideoCard({
 								className="flex-1 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
 								disabled={!canCreateButton}
 								asChild={canCreateButton}
-								title={
-									canCreateButton ? undefined : "音声ボタンを作成できるのは配信アーカイブのみです"
-								}
+								title={canCreateButton ? undefined : canCreateButtonData.reason}
 							>
 								{canCreateButton ? (
 									<Link

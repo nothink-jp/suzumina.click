@@ -167,6 +167,28 @@ export const DetailedCreatorInfoSchema = z.object({
 export const BasicWorkInfoSchema = z.object({
 	/** 詳細タグ（tagsと重複しない場合のみ） */
 	detailTags: z.array(z.string()).default([]),
+	/** 年齢制限（詳細ページから取得） */
+	ageRating: z.string().optional(),
+	/** 声優情報（詳細ページから取得） */
+	voiceActors: z.array(z.string()).optional(),
+	/** シナリオ担当者（詳細ページから取得） */
+	scenario: z.array(z.string()).optional(),
+	/** イラスト担当者（詳細ページから取得） */
+	illustration: z.array(z.string()).optional(),
+	/** 音楽担当者（詳細ページから取得） */
+	music: z.array(z.string()).optional(),
+	/** 販売日（詳細ページから取得） */
+	releaseDate: z.string().optional(),
+	/** シリーズ名（詳細ページから取得） */
+	seriesName: z.string().optional(),
+	/** 作品形式（詳細ページから取得） */
+	workFormat: z.string().optional(),
+	/** ファイル形式（詳細ページから取得） */
+	fileFormat: z.string().optional(),
+	/** ファイルサイズ（詳細ページから取得） */
+	fileSize: z.string().optional(),
+	/** ジャンル（詳細ページから取得） */
+	genres: z.array(z.string()).optional(),
 	/** その他の基本情報（将来拡張用） */
 	other: z.record(z.any()).default({}),
 });
@@ -798,6 +820,74 @@ function generateDownloadText(
 	return undefined;
 }
 
+/**
+ * エラー時のフォールバック用フロントエンドデータを生成
+ */
+function createFallbackFrontendWork(
+	data: OptimizedFirestoreDLsiteWorkData,
+): FrontendDLsiteWorkData {
+	const displayPrice = generateDisplayPrice(data.price);
+	const discountText = data.price.discount ? `${data.price.discount}%OFF` : undefined;
+	const ratingText = generateRatingText(data.rating);
+	const relativeUrl = `/maniax/work/=/product_id/${data.productId}.html`;
+	const ageRating =
+		data.ageRating || data.dataSources?.detailPage?.basicInfo?.ageRating || undefined;
+
+	return {
+		id: data.id,
+		productId: data.productId,
+		title: data.title,
+		circle: data.circle,
+		description: data.description || "",
+		category: data.category,
+		workUrl: data.workUrl,
+		thumbnailUrl: data.thumbnailUrl,
+		highResImageUrl: data.highResImageUrl,
+		price: data.price,
+		rating: data.rating,
+		salesCount: data.salesCount,
+
+		// 統一されたクリエイター情報
+		voiceActors: data.voiceActors || [],
+		scenario: data.scenario || [],
+		illustration: data.illustration || [],
+		music: data.music || [],
+		author: data.author || [],
+
+		// 統一された作品情報
+		releaseDate: data.releaseDate,
+		seriesName: data.seriesName,
+		ageRating,
+		workFormat: data.workFormat,
+		fileFormat: data.fileFormat,
+		tags: data.tags || [],
+
+		sampleImages: data.sampleImages || [],
+		isExclusive: data.isExclusive || false,
+
+		// 拡張情報
+		genres: data.genres || [],
+		dataSources: data.dataSources,
+		fileInfo: data.fileInfo,
+		bonusContent: data.bonusContent || [],
+
+		lastFetchedAt: data.lastFetchedAt,
+		createdAt: data.createdAt,
+		updatedAt: data.updatedAt,
+		displayPrice,
+		discountText,
+		ratingText,
+		wishlistText: data.wishlistCount ? `♡${data.wishlistCount.toLocaleString()}` : undefined,
+		downloadText: data.totalDownloadCount
+			? `DL${data.totalDownloadCount.toLocaleString()}`
+			: undefined,
+		relativeUrl,
+		createdAtISO: data.createdAt,
+		lastFetchedAtISO: data.lastFetchedAt,
+		updatedAtISO: data.updatedAt,
+	};
+}
+
 export function convertToFrontendWork(
 	data: OptimizedFirestoreDLsiteWorkData,
 ): FrontendDLsiteWorkData {
@@ -809,9 +899,14 @@ export function convertToFrontendWork(
 	const downloadText = generateDownloadText(data);
 	const relativeUrl = `/maniax/work/=/product_id/${data.productId}.html`;
 
+	// 年齢レーティングの取得（データソースから優先的に取得）
+	const ageRating =
+		data.ageRating || data.dataSources?.detailPage?.basicInfo?.ageRating || undefined;
+
 	// FrontendDLsiteWorkSchema形式のデータを生成
 	const frontendData: FrontendDLsiteWorkData = {
 		...data,
+		ageRating, // 修正: データソースから取得した年齢レーティングを使用
 		displayPrice,
 		discountText,
 		ratingText,
@@ -828,60 +923,7 @@ export function convertToFrontendWork(
 		return FrontendDLsiteWorkSchema.parse(frontendData);
 	} catch (_error) {
 		// エラー時でも最低限のデータを返す
-		const _now = new Date().toISOString();
-		return {
-			id: data.id,
-			productId: data.productId,
-			title: data.title,
-			circle: data.circle,
-			description: data.description || "",
-			category: data.category,
-			workUrl: data.workUrl,
-			thumbnailUrl: data.thumbnailUrl,
-			highResImageUrl: data.highResImageUrl,
-			price: data.price,
-			rating: data.rating,
-			salesCount: data.salesCount,
-
-			// 統一されたクリエイター情報
-			voiceActors: data.voiceActors || [],
-			scenario: data.scenario || [],
-			illustration: data.illustration || [],
-			music: data.music || [],
-			author: data.author || [],
-
-			// 統一された作品情報
-			releaseDate: data.releaseDate,
-			seriesName: data.seriesName,
-			ageRating: data.ageRating,
-			workFormat: data.workFormat,
-			fileFormat: data.fileFormat,
-			tags: data.tags || [],
-
-			sampleImages: data.sampleImages || [],
-			isExclusive: data.isExclusive || false,
-
-			// 拡張情報（OptimizedFirestoreDLsiteWorkDataから取得）
-			genres: data.genres || [],
-			dataSources: data.dataSources,
-			fileInfo: data.fileInfo,
-			bonusContent: data.bonusContent || [],
-
-			lastFetchedAt: data.lastFetchedAt,
-			createdAt: data.createdAt,
-			updatedAt: data.updatedAt,
-			displayPrice: generateDisplayPrice(data.price),
-			discountText,
-			ratingText,
-			wishlistText: data.wishlistCount ? `♡${data.wishlistCount.toLocaleString()}` : undefined,
-			downloadText: data.totalDownloadCount
-				? `DL${data.totalDownloadCount.toLocaleString()}`
-				: undefined,
-			relativeUrl,
-			createdAtISO: data.createdAt,
-			lastFetchedAtISO: data.lastFetchedAt,
-			updatedAtISO: data.updatedAt,
-		};
+		return createFallbackFrontendWork(data);
 	}
 }
 
@@ -1059,14 +1101,9 @@ export function getWorkLanguageDisplayNameSafe(language: string): string {
 }
 
 /**
- * 作品のプライマリ言語を取得
- * @param work 作品データ
- * @returns プライマリ言語コード
+ * タイトルから言語を判定
  */
-export function getWorkPrimaryLanguage(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage {
-	const title = work.title || "";
-
-	// 1. タイトルから言語判定（最優先・DLsiteの実際のデータ構造に基づく）
+function detectLanguageFromTitle(title: string): WorkLanguage | null {
 	// 繁体中文版の判定
 	if (title.includes("繁体中文版") || title.includes("繁體中文版")) {
 		return "zh-tw";
@@ -1092,51 +1129,74 @@ export function getWorkPrimaryLanguage(work: OptimizedFirestoreDLsiteWorkData): 
 		return "es";
 	}
 
-	// 2. languageDownloads から言語を取得（2番目の優先度）
-	if (work.languageDownloads && work.languageDownloads.length > 0) {
-		const firstLanguage = work.languageDownloads[0];
-		if (firstLanguage) {
-			const primaryLangCode = firstLanguage.lang.toLowerCase();
+	return null;
+}
 
-			// DLsiteの言語コードをWorkLanguageに変換
-			switch (primaryLangCode) {
-				case "ja":
-				case "japanese":
-					return "ja";
-				case "en":
-				case "english":
-					return "en";
-				case "zh-cn":
-				case "zh_cn":
-				case "chinese_simplified":
-					return "zh-cn";
-				case "zh-tw":
-				case "zh_tw":
-				case "chinese_traditional":
-					return "zh-tw";
-				case "ko":
-				case "korean":
-					return "ko";
-				case "es":
-				case "spanish":
-					return "es";
-				default:
-					// 認識できない言語の場合はotherとして扱う
-					return "other";
-			}
-		}
+/**
+ * languageDownloadsから言語を判定
+ */
+function detectLanguageFromDownloads(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage | null {
+	if (!work.languageDownloads || work.languageDownloads.length === 0) {
+		return null;
 	}
 
-	// 3. translationInfo から言語を推定（3番目の優先度）
-	if (work.translationInfo) {
-		// オリジナル作品であれば通常は日本語
-		if (work.translationInfo.isOriginal) {
+	const firstLanguage = work.languageDownloads[0];
+	if (!firstLanguage) {
+		return null;
+	}
+
+	const primaryLangCode = firstLanguage.lang.toLowerCase();
+
+	// DLsiteの言語コードをWorkLanguageに変換
+	switch (primaryLangCode) {
+		case "ja":
+		case "japanese":
 			return "ja";
-		}
-		// 翻訳作品の場合の言語判定はここに追加可能
+		case "en":
+		case "english":
+			return "en";
+		case "zh-cn":
+		case "zh_cn":
+		case "chinese_simplified":
+			return "zh-cn";
+		case "zh-tw":
+		case "zh_tw":
+		case "chinese_traditional":
+			return "zh-tw";
+		case "ko":
+		case "korean":
+			return "ko";
+		case "es":
+		case "spanish":
+			return "es";
+		default:
+			// 認識できない言語の場合はotherとして扱う
+			return "other";
+	}
+}
+
+/**
+ * translationInfoから言語を判定
+ */
+function detectLanguageFromTranslation(
+	work: OptimizedFirestoreDLsiteWorkData,
+): WorkLanguage | null {
+	if (!work.translationInfo) {
+		return null;
 	}
 
-	// 4. フォールバック: タグ・ジャンルから言語を推定
+	// オリジナル作品であれば通常は日本語
+	if (work.translationInfo.isOriginal) {
+		return "ja";
+	}
+	// 翻訳作品の場合の言語判定はここに追加可能
+	return null;
+}
+
+/**
+ * タグ・ジャンルから言語を判定
+ */
+function detectLanguageFromTags(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage | null {
 	const allTags = [...(work.genres || []), ...(work.tags || [])];
 
 	// 英語作品の判定
@@ -1183,6 +1243,41 @@ export function getWorkPrimaryLanguage(work: OptimizedFirestoreDLsiteWorkData): 
 		)
 	) {
 		return "es";
+	}
+
+	return null;
+}
+
+/**
+ * 作品のプライマリ言語を取得
+ * @param work 作品データ
+ * @returns プライマリ言語コード
+ */
+export function getWorkPrimaryLanguage(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage {
+	const title = work.title || "";
+
+	// 1. タイトルから言語判定（最優先）
+	const titleLanguage = detectLanguageFromTitle(title);
+	if (titleLanguage) {
+		return titleLanguage;
+	}
+
+	// 2. languageDownloads から言語を取得（2番目の優先度）
+	const downloadLanguage = detectLanguageFromDownloads(work);
+	if (downloadLanguage) {
+		return downloadLanguage;
+	}
+
+	// 3. translationInfo から言語を推定（3番目の優先度）
+	const translationLanguage = detectLanguageFromTranslation(work);
+	if (translationLanguage) {
+		return translationLanguage;
+	}
+
+	// 4. フォールバック: タグ・ジャンルから言語を推定
+	const tagLanguage = detectLanguageFromTags(work);
+	if (tagLanguage) {
+		return tagLanguage;
 	}
 
 	// 5. 最終フォールバック: 日本語（デフォルト）

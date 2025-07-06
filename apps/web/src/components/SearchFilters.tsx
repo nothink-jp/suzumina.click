@@ -18,9 +18,18 @@ import {
 	SelectValue,
 } from "@suzumina.click/ui/components/ui/select";
 import { Separator } from "@suzumina.click/ui/components/ui/separator";
+import { Switch } from "@suzumina.click/ui/components/ui/switch";
 import { cn } from "@suzumina.click/ui/lib/utils";
-import { Calendar as CalendarIcon, Filter, RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import {
+	Calendar as CalendarIcon,
+	Filter,
+	RotateCcw,
+	Shield,
+	SlidersHorizontal,
+	X,
+} from "lucide-react";
 import { useCallback, useState } from "react";
+import { useAgeVerification } from "@/contexts/AgeVerificationContext";
 
 // Date range filter component
 function DateRangeFilter({
@@ -305,6 +314,7 @@ export function SearchFilters({
 	onApply,
 	contentType,
 }: SearchFiltersProps) {
+	const { isAdult } = useAgeVerification();
 	const [isOpen, setIsOpen] = useState(false);
 	const [localFilters, setLocalFilters] = useState<UnifiedSearchFilters>(filters);
 	const [customDateFrom, setCustomDateFrom] = useState<Date | undefined>();
@@ -321,13 +331,21 @@ export function SearchFilters({
 			limit: localFilters.limit,
 			sortBy: "relevance",
 			tagMode: "any",
+			excludeR18: !isAdult, // 18歳未満は強制的にR18除外、18歳以上はデフォルトで除外
 		};
 		setLocalFilters(resetFilters);
 		setCustomDateFrom(undefined);
 		setCustomDateTo(undefined);
 		onFiltersChange(resetFilters);
 		onApply();
-	}, [localFilters.query, localFilters.type, localFilters.limit, onFiltersChange, onApply]);
+	}, [
+		localFilters.query,
+		localFilters.type,
+		localFilters.limit,
+		onFiltersChange,
+		onApply,
+		isAdult,
+	]);
 
 	// フィルターを適用
 	const handleApply = useCallback(() => {
@@ -417,6 +435,56 @@ export function SearchFilters({
 												localFilters={localFilters}
 												setLocalFilters={setLocalFilters}
 											/>
+											<Separator />
+										</>
+									)}
+
+									{/* R18フィルター（作品用・18歳以上のみ切り替え可能） */}
+									{contentType === "works" && (
+										<>
+											<div className="space-y-3">
+												<div className="flex items-center justify-between">
+													<Label className="text-sm font-semibold flex items-center gap-2">
+														<Shield className="h-4 w-4" />
+														年齢制限フィルター
+													</Label>
+													{!isAdult && (
+														<span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+															全年齢のみ
+														</span>
+													)}
+												</div>
+
+												{isAdult ? (
+													<div className="flex items-center justify-between">
+														<div className="space-y-1">
+															<div className="text-sm">R18作品を表示</div>
+															<div className="text-xs text-muted-foreground">
+																18歳以上の内容を含む作品を表示します
+															</div>
+														</div>
+														<Switch
+															checked={!localFilters.excludeR18}
+															onCheckedChange={(checked) =>
+																setLocalFilters((prev) => ({
+																	...prev,
+																	excludeR18: !checked,
+																}))
+															}
+														/>
+													</div>
+												) : (
+													<div className="text-sm text-muted-foreground p-3 bg-blue-50 rounded-lg border border-blue-200">
+														<div className="flex items-center gap-2 text-blue-700">
+															<Shield className="h-4 w-4" />
+															<span className="font-medium">全年齢対象作品のみ表示中</span>
+														</div>
+														<div className="mt-1 text-xs text-blue-600">
+															年齢制限のない作品のみが表示されます
+														</div>
+													</div>
+												)}
+											</div>
 											<Separator />
 										</>
 									)}

@@ -1,6 +1,7 @@
 import type { UnifiedSearchFilters } from "@suzumina.click/shared-types";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { AgeVerificationProvider } from "../contexts/AgeVerificationContext";
 import { SearchFilters } from "./SearchFilters";
 
 const mockFilters: UnifiedSearchFilters = {
@@ -14,6 +15,11 @@ const mockFilters: UnifiedSearchFilters = {
 const mockOnFiltersChange = vi.fn();
 const mockOnApply = vi.fn();
 
+// Test wrapper component
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+	<AgeVerificationProvider>{children}</AgeVerificationProvider>
+);
+
 describe("SearchFilters", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -21,12 +27,14 @@ describe("SearchFilters", () => {
 
 	it("should render filter button", () => {
 		render(
-			<SearchFilters
-				filters={mockFilters}
-				onFiltersChange={mockOnFiltersChange}
-				onApply={mockOnApply}
-				contentType="all"
-			/>,
+			<TestWrapper>
+				<SearchFilters
+					filters={mockFilters}
+					onFiltersChange={mockOnFiltersChange}
+					onApply={mockOnApply}
+					contentType="all"
+				/>
+			</TestWrapper>,
 		);
 
 		expect(screen.getByRole("button", { name: /フィルター/i })).toBeInTheDocument();
@@ -40,12 +48,14 @@ describe("SearchFilters", () => {
 		};
 
 		render(
-			<SearchFilters
-				filters={filtersWithActive}
-				onFiltersChange={mockOnFiltersChange}
-				onApply={mockOnApply}
-				contentType="all"
-			/>,
+			<TestWrapper>
+				<SearchFilters
+					filters={filtersWithActive}
+					onFiltersChange={mockOnFiltersChange}
+					onApply={mockOnApply}
+					contentType="all"
+				/>
+			</TestWrapper>,
 		);
 
 		// フィルターボタンにアクティブなフィルター数が表示されることを確認
@@ -54,12 +64,14 @@ describe("SearchFilters", () => {
 
 	it("should display date range filter options", async () => {
 		render(
-			<SearchFilters
-				filters={mockFilters}
-				onFiltersChange={mockOnFiltersChange}
-				onApply={mockOnApply}
-				contentType="all"
-			/>,
+			<TestWrapper>
+				<SearchFilters
+					filters={mockFilters}
+					onFiltersChange={mockOnFiltersChange}
+					onApply={mockOnApply}
+					contentType="all"
+				/>
+			</TestWrapper>,
 		);
 
 		// フィルターボタンをクリックして開く
@@ -82,12 +94,14 @@ describe("SearchFilters", () => {
 
 	it("should display numeric range filters for audio buttons", async () => {
 		render(
-			<SearchFilters
-				filters={mockFilters}
-				onFiltersChange={mockOnFiltersChange}
-				onApply={mockOnApply}
-				contentType="buttons"
-			/>,
+			<TestWrapper>
+				<SearchFilters
+					filters={mockFilters}
+					onFiltersChange={mockOnFiltersChange}
+					onApply={mockOnApply}
+					contentType="buttons"
+				/>
+			</TestWrapper>,
 		);
 
 		// フィルターボタンをクリックして開く
@@ -109,12 +123,14 @@ describe("SearchFilters", () => {
 
 	it("should not display audio button filters for non-button content types", async () => {
 		render(
-			<SearchFilters
-				filters={mockFilters}
-				onFiltersChange={mockOnFiltersChange}
-				onApply={mockOnApply}
-				contentType="videos"
-			/>,
+			<TestWrapper>
+				<SearchFilters
+					filters={mockFilters}
+					onFiltersChange={mockOnFiltersChange}
+					onApply={mockOnApply}
+					contentType="videos"
+				/>
+			</TestWrapper>,
 		);
 
 		// フィルターボタンをクリックして開く
@@ -134,12 +150,14 @@ describe("SearchFilters", () => {
 
 	it("should handle filter application", async () => {
 		render(
-			<SearchFilters
-				filters={mockFilters}
-				onFiltersChange={mockOnFiltersChange}
-				onApply={mockOnApply}
-				contentType="all"
-			/>,
+			<TestWrapper>
+				<SearchFilters
+					filters={mockFilters}
+					onFiltersChange={mockOnFiltersChange}
+					onApply={mockOnApply}
+					contentType="all"
+				/>
+			</TestWrapper>,
 		);
 
 		// フィルターボタンをクリックして開く
@@ -167,12 +185,14 @@ describe("SearchFilters", () => {
 		};
 
 		render(
-			<SearchFilters
-				filters={filtersWithValues}
-				onFiltersChange={mockOnFiltersChange}
-				onApply={mockOnApply}
-				contentType="all"
-			/>,
+			<TestWrapper>
+				<SearchFilters
+					filters={filtersWithValues}
+					onFiltersChange={mockOnFiltersChange}
+					onApply={mockOnApply}
+					contentType="all"
+				/>
+			</TestWrapper>,
 		);
 
 		// フィルターボタンをクリックして開く
@@ -194,6 +214,7 @@ describe("SearchFilters", () => {
 				limit: mockFilters.limit,
 				sortBy: "relevance",
 				tagMode: "any",
+				excludeR18: true,
 			});
 			expect(mockOnApply).toHaveBeenCalledTimes(1);
 		});
@@ -201,12 +222,14 @@ describe("SearchFilters", () => {
 
 	it("should update numeric filters", async () => {
 		render(
-			<SearchFilters
-				filters={mockFilters}
-				onFiltersChange={mockOnFiltersChange}
-				onApply={mockOnApply}
-				contentType="buttons"
-			/>,
+			<TestWrapper>
+				<SearchFilters
+					filters={mockFilters}
+					onFiltersChange={mockOnFiltersChange}
+					onApply={mockOnApply}
+					contentType="buttons"
+				/>
+			</TestWrapper>,
 		);
 
 		// フィルターボタンをクリックして開く
@@ -233,12 +256,14 @@ describe("SearchFilters", () => {
 
 	it("should handle sort order change", async () => {
 		render(
-			<SearchFilters
-				filters={mockFilters}
-				onFiltersChange={mockOnFiltersChange}
-				onApply={mockOnApply}
-				contentType="buttons"
-			/>,
+			<TestWrapper>
+				<SearchFilters
+					filters={mockFilters}
+					onFiltersChange={mockOnFiltersChange}
+					onApply={mockOnApply}
+					contentType="buttons"
+				/>
+			</TestWrapper>,
 		);
 
 		// フィルターボタンをクリックして開く

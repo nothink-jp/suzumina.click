@@ -1,8 +1,23 @@
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import VideoCard from "./VideoCard";
+
+// next-auth/react uses alias from vitest.config.ts
+// Mock the useSession hook directly in tests
+vi.mock("next-auth/react", () => ({
+	useSession: vi.fn(() => ({
+		data: {
+			user: {
+				id: "test-user",
+				name: "Test User",
+				email: "test@example.com",
+			},
+		},
+		status: "authenticated",
+	})),
+}));
 
 // テストデータの準備
 const baseVideoData: FrontendVideoData = {
@@ -98,7 +113,7 @@ describe("VideoCard", () => {
 		);
 	});
 
-	it("配信アーカイブでボタン作成が有効になる", () => {
+	it("ログイン状態で配信アーカイブでボタン作成が有効になる", () => {
 		const archivedVideo: FrontendVideoData = {
 			...baseVideoData,
 			videoType: "archived",
@@ -369,6 +384,21 @@ describe("VideoCard", () => {
 			expect(timeElement).toHaveAttribute("title", "公開日: 2024/01/01");
 			expect(timeElement).toHaveTextContent("2024/01/01");
 			expect(timeElement).toHaveAttribute("dateTime", "2023-12-31T15:30:00Z");
+		});
+	});
+
+	describe("認証状態でのボタン作成制御", () => {
+		it("ログイン状態で配信アーカイブでボタン作成が有効になる（デフォルトモック）", () => {
+			const archivedVideo: FrontendVideoData = {
+				...baseVideoData,
+				videoType: "archived",
+			};
+
+			render(<VideoCard video={archivedVideo} />);
+
+			const createButton = screen.getByRole("link", { name: /テスト動画の音声ボタンを作成/ });
+			expect(createButton).toBeInTheDocument();
+			expect(createButton).toHaveAttribute("href", "/buttons/create?video_id=test-video-1");
 		});
 	});
 });

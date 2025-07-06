@@ -45,8 +45,8 @@
 		--muted: 60 5% 96%;
 		--muted-foreground: 25 5% 45%; /* Darkened for WCAG AA: 4.60:1 contrast ratio */
 
-		--accent: 60 5% 96%;
-		--accent-foreground: 28 25% 8%;
+		--accent: 210 40% 98%;
+		--accent-foreground: 222.2 84% 4.9%;
 
 		--destructive: 0 75% 50%; /* Updated for WCAG AA: 4.60:1 contrast ratio */
 		--destructive-foreground: 60 9% 98%;
@@ -340,6 +340,28 @@
 	.hover\:bg-secondary\/80:hover { background-color: hsl(var(--secondary) / 0.8); }
 	.hover\:bg-accent:hover { background-color: hsl(var(--accent)); }
 	.hover\:text-accent-foreground:hover { color: hsl(var(--accent-foreground)); }
+	
+	/* Select component override - ensure accent colors for select items */
+	[data-slot="select-item"]:focus,
+	[data-slot="select-item"][data-highlighted] {
+		background-color: hsl(210 40% 98%) !important; /* Use neutral accent instead of CSS variable */
+		color: hsl(222.2 84% 4.9%) !important; /* Use neutral foreground instead of CSS variable */
+	}
+	
+	/* Switch data-state styles for Tailwind CSS v4 compatibility */
+	[data-slot="switch"][data-state="checked"] { background-color: hsl(340 75% 55%) !important; } /* suzuka-500 - デフォルト */
+	[data-slot="switch"][data-state="unchecked"] { background-color: hsl(0 0% 80%) !important; } /* gray-300 */
+	
+	/* Switch thumb visibility improvement */
+	[data-slot="switch-thumb"] { 
+		background-color: hsl(0 0% 25%) !important; /* ダークグレーで視認性向上 */
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+		border: 1px solid rgba(255, 255, 255, 0.3) !important;
+	}
+	
+	/* Subdued color variants for specific use cases */
+	[data-slot="switch"].switch-subtle[data-state="checked"] { background-color: hsl(340 60% 65%) !important; } /* suzuka-400 - より控えめ */
+	[data-slot="switch"].switch-minase[data-state="checked"] { background-color: hsl(23 75% 50%) !important; } /* 控えめなオレンジ */
 }
 
 @layer base {

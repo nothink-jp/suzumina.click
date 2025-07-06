@@ -31,7 +31,7 @@ interface ChartDataPoint {
 
 export default function SalesHistoryChart({ workId, className }: SalesHistoryChartProps) {
 	const [salesHistory, setSalesHistory] = useState<SalesHistory[]>([]);
-	const [rankingHistory, setRankingHistory] = useState<RankingInfo[]>([]);
+	const [_rankingHistory, setRankingHistory] = useState<RankingInfo[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +50,6 @@ export default function SalesHistoryChart({ workId, className }: SalesHistoryCha
 				setSalesHistory(data.salesHistory || []);
 				setRankingHistory(data.rankingHistory || []);
 			} catch (err) {
-				console.error("Sales history fetch error:", err);
 				setError(err instanceof Error ? err.message : "エラーが発生しました");
 			} finally {
 				setLoading(false);
@@ -82,7 +81,7 @@ export default function SalesHistoryChart({ workId, className }: SalesHistoryCha
 		.reverse(); // 古い順に並び替え
 
 	// カスタムツールチップ
-	const CustomTooltip = ({ active, payload, label }: any) => {
+	const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
 		if (active && payload && payload.length) {
 			const data = payload[0].payload as ChartDataPoint;
 			const date = new Date(data.date);

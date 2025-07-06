@@ -6,7 +6,16 @@ import VideoDetail from "./VideoDetail";
 
 // NextAuth.jsのモック
 vi.mock("next-auth/react", () => ({
-	useSession: () => ({ data: null, status: "unauthenticated" }),
+	useSession: vi.fn(() => ({
+		data: {
+			user: {
+				id: "test-user",
+				name: "Test User",
+				email: "test@example.com",
+			},
+		},
+		status: "authenticated",
+	})),
 }));
 
 // Next.js routerのモック

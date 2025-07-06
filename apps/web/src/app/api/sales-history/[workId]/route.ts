@@ -47,7 +47,7 @@ export async function GET(
 			salesCount: salesHistory.length,
 			rankingCount: rankingHistory.length,
 		});
-	} catch (error) {
+	} catch (_error) {
 		// Note: Error logged for debugging purposes
 		return NextResponse.json({ error: "Failed to fetch sales history" }, { status: 500 });
 	}

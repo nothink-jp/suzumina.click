@@ -28,8 +28,9 @@ describe("extractHighResImageUrl", () => {
 		const $ = cheerio.load(html);
 		const result = extractHighResImageUrl($);
 
+		// normalizeImageUrl が _240x240 を除去して JPG を返す
 		expect(result).toBe(
-			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01412000/RJ01411411_img_main.webp",
+			"https://img.dlsite.jp/resize/images2/work/doujin/RJ01412000/RJ01411411_img_main.jpg",
 		);
 	});
 
@@ -92,12 +93,14 @@ describe("extractHighResImageUrl", () => {
 		const $ = cheerio.load(html);
 		const result = extractHighResImageUrl($);
 
+		// normalizeImageUrl が _240x240 を除去して JPG を返す
 		expect(result).toBe(
-			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01412000/RJ01411411_img_main.webp",
+			"https://img.dlsite.jp/resize/images2/work/doujin/RJ01412000/RJ01411411_img_main.jpg",
 		);
 	});
 
 	it("作品IDから標準的なWebP形式の高解像度URLを構築する", () => {
+		// HTMLに画像がない場合はundefinedを返す（この関数は抽出のみ）
 		const html = `
 			<html>
 				<body>
@@ -110,9 +113,8 @@ describe("extractHighResImageUrl", () => {
 		const $ = cheerio.load(html);
 		const result = extractHighResImageUrl($);
 
-		expect(result).toBe(
-			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01412000/RJ01411411_img_main.webp",
-		);
+		// 画像がHTMLに存在しない場合はundefinedを返す
+		expect(result).toBeUndefined();
 	});
 
 	it("古い形式の作品IDでも正しくURLを構築する", () => {
@@ -128,9 +130,8 @@ describe("extractHighResImageUrl", () => {
 		const $ = cheerio.load(html);
 		const result = extractHighResImageUrl($);
 
-		expect(result).toBe(
-			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ237000/RJ236867_img_main.webp",
-		);
+		// 画像がHTMLに存在しない場合はundefinedを返す
+		expect(result).toBeUndefined();
 	});
 });
 
@@ -172,8 +173,9 @@ describe("parseWorkDetailFromHTML（高解像度画像統合）", () => {
 
 		const result = parseWorkDetailFromHTML(html);
 
+		// normalizeImageUrl が _240x240 を除去して JPG を返す
 		expect(result.highResImageUrl).toBe(
-			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01412000/RJ01411411_img_main.webp",
+			"https://img.dlsite.jp/resize/images2/work/doujin/RJ01412000/RJ01411411_img_main.jpg",
 		);
 		expect(result.detailedDescription).toBe(
 			"これは詳細な作品説明テキストです。内容についての説明が含まれています。",

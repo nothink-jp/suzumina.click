@@ -35,13 +35,8 @@ export async function GET(request: NextRequest) {
 		});
 
 		if (!response.ok) {
-			console.warn(`Failed to fetch DLsite image: ${imageUrl} - Status: ${response.status}`);
-
 			// 403エラーの場合は特別なメッセージ
 			if (response.status === 403) {
-				console.warn(
-					`DLsite image access forbidden: ${imageUrl}. This may be due to referrer restrictions.`,
-				);
 				return NextResponse.json(
 					{ error: "Image access forbidden", status: 403, hint: "Referrer restriction" },
 					{ status: 403 },
@@ -70,8 +65,7 @@ export async function GET(request: NextRequest) {
 			status: 200,
 			headers,
 		});
-	} catch (error) {
-		console.error("Error in image proxy:", error);
+	} catch (_error) {
 		return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 	}
 }
@@ -102,8 +96,7 @@ export async function HEAD(request: NextRequest) {
 				"Cache-Control": "public, max-age=3600", // 1時間キャッシュ
 			},
 		});
-	} catch (error) {
-		console.error("Error in image proxy HEAD:", error);
+	} catch (_error) {
 		return new NextResponse(null, { status: 500 });
 	}
 }

@@ -47,12 +47,10 @@ export async function GET(request: NextRequest) {
 		};
 
 		if (!response.ok) {
-			console.warn(`DLsite image test failed: ${testUrl} - Status: ${response.status}`);
 		}
 
 		return NextResponse.json(result, { status: 200 });
 	} catch (error) {
-		console.error("Error in image proxy test:", error);
 		return NextResponse.json(
 			{
 				error: "Test request failed",

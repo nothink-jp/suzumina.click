@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
 import "@suzumina.click/ui/globals.css";
 import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
+import { AgeVerificationWrapper } from "@/components/consent/AgeVerificationWrapper";
+import { ConsentModeScript } from "@/components/consent/ConsentModeScript";
+import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { SessionProvider } from "@/components/SessionProvider";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import { AgeVerificationProvider } from "@/contexts/AgeVerificationContext";
 
 // フォント最適化: 必要な重みのみを読み込み、LCP改善
 const mPlusRounded = M_PLUS_Rounded_1c({
@@ -82,18 +86,26 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="ja" className="scroll-smooth">
+			<head>
+				<ConsentModeScript />
+			</head>
 			<body
 				className={`${mPlusRounded.className} min-h-screen flex flex-col antialiased gradient-bg`}
 			>
-				<SessionProvider>
-					<PerformanceMonitor />
-					<SiteHeader />
-					<main id="main-content" className="flex-1">
-						{children}
-					</main>
-					<SiteFooter />
-					<Toaster />
-				</SessionProvider>
+				<AgeVerificationProvider>
+					<AgeVerificationWrapper>
+						<SessionProvider>
+							<PerformanceMonitor />
+							<SiteHeader />
+							<main id="main-content" className="flex-1">
+								{children}
+							</main>
+							<SiteFooter />
+							<Toaster />
+							<CookieConsentBanner />
+						</SessionProvider>
+					</AgeVerificationWrapper>
+				</AgeVerificationProvider>
 			</body>
 		</html>
 	);

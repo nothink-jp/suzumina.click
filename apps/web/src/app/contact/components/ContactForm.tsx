@@ -118,8 +118,7 @@ export function ContactForm() {
 			} else {
 				throw new Error("送信に失敗しました");
 			}
-		} catch (error) {
-			console.error("Form submission error:", error);
+		} catch (_error) {
 			alert("送信に失敗しました。しばらく時間をおいてから再度お試しください。");
 		} finally {
 			setIsSubmitting(false);

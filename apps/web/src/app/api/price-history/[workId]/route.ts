@@ -31,7 +31,7 @@ export async function GET(
 			priceHistory,
 			count: priceHistory.length,
 		});
-	} catch (error) {
+	} catch (_error) {
 		// Note: Error logged for debugging purposes
 		return NextResponse.json({ error: "Failed to fetch price history" }, { status: 500 });
 	}

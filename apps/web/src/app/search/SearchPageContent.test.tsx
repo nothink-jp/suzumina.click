@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AgeVerificationProvider } from "../../contexts/AgeVerificationContext";
 import SearchPageContent from "./SearchPageContent";
 
 // Mock dependencies
@@ -134,6 +135,11 @@ vi.mock("@/auth", () => ({
 	auth: () => Promise.resolve(null),
 }));
 
+// Test wrapper component
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+	<AgeVerificationProvider>{children}</AgeVerificationProvider>
+);
+
 describe("SearchPageContent", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -153,7 +159,11 @@ describe("SearchPageContent", () => {
 
 	describe("初期状態", () => {
 		it("検索前の状態が正しく表示される", () => {
-			render(<SearchPageContent />);
+			render(
+				<TestWrapper>
+					<SearchPageContent />
+				</TestWrapper>,
+			);
 
 			expect(screen.getByText("検索結果")).toBeInTheDocument();
 			expect(screen.getByText("音声ボタンや作品を検索")).toBeInTheDocument();
@@ -163,7 +173,11 @@ describe("SearchPageContent", () => {
 		});
 
 		it("人気タグが表示される", () => {
-			render(<SearchPageContent />);
+			render(
+				<TestWrapper>
+					<SearchPageContent />
+				</TestWrapper>,
+			);
 
 			expect(screen.getByText("人気タグ")).toBeInTheDocument();
 			expect(screen.getAllByText("挨拶")).toHaveLength(2); // 検索フォーム内とメイン部分で2回表示
@@ -172,7 +186,11 @@ describe("SearchPageContent", () => {
 		});
 
 		it("検索フォームが表示される", () => {
-			render(<SearchPageContent />);
+			render(
+				<TestWrapper>
+					<SearchPageContent />
+				</TestWrapper>,
+			);
 
 			expect(screen.getByTestId("search-input")).toBeInTheDocument();
 			expect(screen.getByTestId("search-button")).toBeInTheDocument();
@@ -182,7 +200,11 @@ describe("SearchPageContent", () => {
 	describe("検索機能", () => {
 		it("人気タグクリックで検索が実行される", async () => {
 			const user = userEvent.setup();
-			render(<SearchPageContent />);
+			render(
+				<TestWrapper>
+					<SearchPageContent />
+				</TestWrapper>,
+			);
 
 			// 最初の挨拶タグをクリック
 			const greetingTags = screen.getAllByText("挨拶");
@@ -198,7 +220,11 @@ describe("SearchPageContent", () => {
 
 		it("空の検索が防止される", async () => {
 			const user = userEvent.setup();
-			render(<SearchPageContent />);
+			render(
+				<TestWrapper>
+					<SearchPageContent />
+				</TestWrapper>,
+			);
 
 			const searchButton = screen.getByTestId("search-button");
 			await user.click(searchButton);
@@ -211,7 +237,11 @@ describe("SearchPageContent", () => {
 	describe("URL更新", () => {
 		it("検索クエリが空の場合URLがクリアされる", async () => {
 			const user = userEvent.setup();
-			render(<SearchPageContent />);
+			render(
+				<TestWrapper>
+					<SearchPageContent />
+				</TestWrapper>,
+			);
 
 			// 空の検索でformを送信
 			await user.click(screen.getByTestId("search-button"));
@@ -223,7 +253,11 @@ describe("SearchPageContent", () => {
 
 	describe("アクセシビリティ", () => {
 		it("検索フォームにプロパーなラベルが設定されている", () => {
-			render(<SearchPageContent />);
+			render(
+				<TestWrapper>
+					<SearchPageContent />
+				</TestWrapper>,
+			);
 
 			const searchInput = screen.getByTestId("search-input");
 			expect(searchInput).toHaveAttribute("placeholder", "音声ボタンや作品を検索...");

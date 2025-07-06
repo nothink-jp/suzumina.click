@@ -4,7 +4,6 @@ import type { PriceHistory } from "@suzumina.click/shared-types";
 import { useEffect, useState } from "react";
 import {
 	CartesianGrid,
-	Legend,
 	Line,
 	LineChart,
 	ResponsiveContainer,
@@ -45,7 +44,6 @@ export default function PriceHistoryChart({ workId, className }: PriceHistoryCha
 				const data = await response.json();
 				setPriceHistory(data.priceHistory || []);
 			} catch (err) {
-				console.error("Price history fetch error:", err);
 				setError(err instanceof Error ? err.message : "エラーが発生しました");
 			} finally {
 				setLoading(false);
@@ -75,7 +73,7 @@ export default function PriceHistoryChart({ workId, className }: PriceHistoryCha
 		.reverse(); // 古い順に並び替え
 
 	// カスタムツールチップ
-	const CustomTooltip = ({ active, payload, label }: any) => {
+	const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
 		if (active && payload && payload.length) {
 			const data = payload[0].payload as ChartDataPoint;
 			const date = new Date(data.date);
