@@ -50,7 +50,9 @@ async function verifyImageExists(imageUrl: string, timeoutMs = 5000): Promise<bo
 				imageUrl,
 				status: response.status,
 			});
-			return true; // 画像は存在するものとして扱う
+			// 403エラーの場合は画像が使用できないため、falseを返す
+			// これにより、アクセス制限された画像URLは使用されなくなる
+			return false;
 		}
 		return response.ok && response.status === 200;
 	} catch (error) {
