@@ -58,6 +58,7 @@ function logMessage(level: LogLevel, message: string, optionsOrError?: LogOption
 	}
 
 	// 標準出力に構造化ログを出力（Cloud Run Functionsが自動的にCloud Loggingに転送）
+	// biome-ignore lint/suspicious/noConsole: Cloud Loggingへの転送にconsole.logが必要
 	console.log(JSON.stringify(logEntry));
 }
 

@@ -18,7 +18,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 		// 全ユーザーを取得
 		const usersSnapshot = await db.collection("users").get();
-		const allFavorites: any[] = [];
+		interface FavoriteWithUser {
+			id: string;
+			userId: string;
+			userName: string;
+			audioButtonId: string;
+			audioButtonTitle: string;
+			addedAt: string;
+		}
+		const allFavorites: FavoriteWithUser[] = [];
 
 		// 各ユーザーのお気に入りを取得
 		for (const userDoc of usersSnapshot.docs) {
@@ -46,8 +54,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 					if (audioButtonDoc.exists) {
 						audioButtonTitle = audioButtonDoc.data()?.title || audioButtonTitle;
 					}
-				} catch (error) {
-					console.warn(`Failed to fetch audio button ${favoriteData.audioButtonId}:`, error);
+				} catch (_error) {
+					// Failed to fetch audio button
 				}
 
 				allFavorites.push({
@@ -84,8 +92,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 				hasPrev: currentPage > 1,
 			},
 		});
-	} catch (error) {
-		console.error("Error fetching favorites:", error);
+	} catch (_error) {
+		// Error fetching favorites
 		return NextResponse.json({ error: "お気に入りの取得に失敗しました" }, { status: 500 });
 	}
 }

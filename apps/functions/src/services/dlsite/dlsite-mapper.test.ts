@@ -65,10 +65,11 @@ describe("DLsite Mapper", () => {
 				},
 				salesCount: 1000,
 				// 統合されたクリエイター情報
-				voiceActors: ["テスト作者"],
+				voiceActors: [],
 				scenario: [],
 				illustration: [],
 				music: [],
+				author: [],
 				// 統合された作品情報
 				releaseDate: undefined,
 				seriesName: undefined,
@@ -122,10 +123,11 @@ describe("DLsite Mapper", () => {
 
 			expect(result.rating).toBeUndefined();
 			// 統合されたフィールドが正しく設定されていることを確認
-			expect(result.voiceActors).toEqual(["テスト作者"]);
+			expect(result.voiceActors).toEqual([]);
 			expect(result.scenario).toEqual([]);
 			expect(result.illustration).toEqual([]);
 			expect(result.music).toEqual([]);
+			expect(result.author).toEqual([]);
 		});
 	});
 
@@ -158,10 +160,11 @@ describe("DLsite Mapper", () => {
 				},
 				salesCount: 1000,
 				// 統合されたクリエイター情報
-				voiceActors: ["テスト作者"],
+				voiceActors: [],
 				scenario: [],
 				illustration: [],
 				music: [],
+				author: [],
 				// 統合された作品情報
 				ageRating: "全年齢",
 				tags: [],
@@ -377,7 +380,7 @@ describe("DLsite Mapper", () => {
 			expect(result).toHaveLength(1);
 			expect(result[0].productId).toBe("RJ123456");
 			// 統合されたフィールドが正しく設定されていることを確認
-			expect(result[0].voiceActors).toEqual(["テスト作者"]);
+			expect(result[0].voiceActors).toEqual([]);
 			// 最適化構造ではbasicInfoは詳細データがある場合のみ設定される
 			expect(result[0].basicInfo).toBeUndefined();
 		});
@@ -407,7 +410,7 @@ describe("DLsite Mapper", () => {
 			expect(result).toHaveLength(1);
 			expect(result[0].productId).toBe("RJ123456");
 			// 統合されたフィールドが正しく設定されていることを確認
-			expect(result[0].voiceActors).toEqual(["テスト作者"]);
+			expect(result[0].voiceActors).toEqual([]);
 			// 最適化構造ではbasicInfoは詳細データがある場合のみ設定される
 			expect(result[0].basicInfo).toBeUndefined();
 		});

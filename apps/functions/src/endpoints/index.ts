@@ -12,6 +12,7 @@ import * as functions from "@google-cloud/functions-framework";
 import * as logger from "../shared/logger";
 // 各モジュールから関数をインポート
 import { fetchDLsiteWorks } from "./dlsite";
+import { collectDLsiteTimeseries } from "./dlsite-timeseries";
 // investigateAccess は fetchDLsiteWorks に統合済みのため不要
 // import { investigateAccess } from "./investigate-access";
 import { fetchYouTubeVideos } from "./youtube";
@@ -48,6 +49,7 @@ interface PubsubMessage {
 
 functions.cloudEvent<PubsubMessage>("fetchYouTubeVideos", fetchYouTubeVideos);
 functions.cloudEvent<PubsubMessage>("fetchDLsiteWorks", fetchDLsiteWorks);
+functions.cloudEvent<PubsubMessage>("collectDLsiteTimeseries", collectDLsiteTimeseries);
 // investigateAccess は fetchDLsiteWorks に統合済みのため登録不要
 // functions.cloudEvent<PubsubMessage>("investigateAccess", investigateAccess);
 

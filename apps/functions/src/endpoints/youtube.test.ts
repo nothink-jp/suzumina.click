@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // googleapis型の独自定義（テスト用）
+// biome-ignore lint/correctness/noUnusedVariables: テスト用の型定義
 interface youtube_v3 {
 	Schema$SearchListResponse: any;
 	Schema$VideoListResponse: any;

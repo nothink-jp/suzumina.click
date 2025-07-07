@@ -43,10 +43,6 @@ export default function FavoritesList() {
 	});
 	const [isLoading, setIsLoading] = useState(true);
 
-	useEffect(() => {
-		fetchFavorites(1);
-	}, []);
-
 	const fetchFavorites = async (page = 1) => {
 		try {
 			setIsLoading(true);
@@ -66,13 +62,16 @@ export default function FavoritesList() {
 					hasPrev: false,
 				},
 			);
-		} catch (error) {
-			console.error("Error fetching favorites:", error);
+		} catch (_error) {
 			toast.error("お気に入りの読み込みに失敗しました");
 		} finally {
 			setIsLoading(false);
 		}
 	};
+
+	useEffect(() => {
+		fetchFavorites(1);
+	}, []);
 
 	const handleDeleteFavorite = async (userId: string, audioButtonId: string) => {
 		if (!confirm("このお気に入りを削除しますか？")) {
@@ -90,8 +89,7 @@ export default function FavoritesList() {
 
 			toast.success("お気に入りを削除しました");
 			await fetchFavorites(pagination.currentPage);
-		} catch (error) {
-			console.error("Error deleting favorite:", error);
+		} catch (_error) {
 			toast.error("削除に失敗しました");
 		}
 	};

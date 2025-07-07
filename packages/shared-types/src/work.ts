@@ -135,19 +135,21 @@ export const SampleImageSchema = z.object({
 
 /**
  * ファイル情報のZodスキーマ定義
+ * @deprecated API-only実装により不要となったファイル詳細情報
+ * Individual Info APIで取得可能な基本ファイル情報のみ使用
  */
 export const FileInfoSchema = z.object({
 	/** 総ファイルサイズ（バイト） */
 	totalSizeBytes: z.number().int().nonnegative().optional(),
-	/** 総ファイルサイズテキスト（例: "3.71 GB"） */
+	/** 総ファイルサイズテキスト（例: "3.71 GB"） - 詳細ページスクレイピング由来 */
 	totalSizeText: z.string().optional(),
-	/** ファイル形式一覧 */
+	/** ファイル形式一覧 - 詳細ページスクレイピング由来 */
 	formats: z.array(z.string()).default([]),
-	/** 総再生時間（秒） */
+	/** 総再生時間（秒） - 詳細ページスクレイピング由来 */
 	totalDuration: z.number().int().nonnegative().optional(),
-	/** 総再生時間テキスト（例: "約2時間4分"） */
+	/** 総再生時間テキスト（例: "約2時間4分"） - 詳細ページスクレイピング由来 */
 	totalDurationText: z.string().optional(),
-	/** その他ファイル情報 */
+	/** その他ファイル情報 - 詳細ページスクレイピング由来 */
 	additionalFiles: z.array(z.string()).default([]),
 });
 
@@ -162,32 +164,33 @@ export const DetailedCreatorInfoSchema = z.object({
 
 /**
  * 基本作品情報のZodスキーマ定義（最小限のメタデータのみ）
+ * @deprecated Individual Info APIにより大部分のフィールドが不要
  * 重複排除により、メインフィールドに昇格したデータは除外
  */
 export const BasicWorkInfoSchema = z.object({
 	/** 詳細タグ（tagsと重複しない場合のみ） */
 	detailTags: z.array(z.string()).default([]),
-	/** 年齢制限（詳細ページから取得） */
+	/** 年齢制限（詳細ページから取得） - Individual Info APIで代替可能 */
 	ageRating: z.string().optional(),
-	/** 声優情報（詳細ページから取得） */
+	/** 声優情報（詳細ページから取得） - Individual Info APIで代替可能 */
 	voiceActors: z.array(z.string()).optional(),
-	/** シナリオ担当者（詳細ページから取得） */
+	/** シナリオ担当者（詳細ページから取得） - Individual Info APIで代替可能 */
 	scenario: z.array(z.string()).optional(),
-	/** イラスト担当者（詳細ページから取得） */
+	/** イラスト担当者（詳細ページから取得） - Individual Info APIで代替可能 */
 	illustration: z.array(z.string()).optional(),
-	/** 音楽担当者（詳細ページから取得） */
+	/** 音楽担当者（詳細ページから取得） - Individual Info APIで代替可能 */
 	music: z.array(z.string()).optional(),
-	/** 販売日（詳細ページから取得） */
+	/** 販売日（詳細ページから取得） - Individual Info APIのregist_dateで代替可能 */
 	releaseDate: z.string().optional(),
-	/** シリーズ名（詳細ページから取得） */
+	/** シリーズ名（詳細ページから取得） - Individual Info APIで代替可能 */
 	seriesName: z.string().optional(),
-	/** 作品形式（詳細ページから取得） */
+	/** 作品形式（詳細ページから取得） - Individual Info APIで代替可能 */
 	workFormat: z.string().optional(),
-	/** ファイル形式（詳細ページから取得） */
+	/** ファイル形式（詳細ページから取得） - Individual Info APIで代替可能 */
 	fileFormat: z.string().optional(),
-	/** ファイルサイズ（詳細ページから取得） */
+	/** ファイルサイズ（詳細ページから取得） - 詳細表示廃止により不要 */
 	fileSize: z.string().optional(),
-	/** ジャンル（詳細ページから取得） */
+	/** ジャンル（詳細ページから取得） - Individual Info APIで代替可能 */
 	genres: z.array(z.string()).optional(),
 	/** その他の基本情報（将来拡張用） */
 	other: z.record(z.any()).default({}),
@@ -195,13 +198,15 @@ export const BasicWorkInfoSchema = z.object({
 
 /**
  * 特典情報のZodスキーマ定義
+ * @deprecated API-only実装により不要となった特典詳細情報
+ * 詳細ページスクレイピングでのみ取得可能な情報のため廃止
  */
 export const BonusContentSchema = z.object({
-	/** 特典名 */
+	/** 特典名 - 詳細ページスクレイピング由来 */
 	title: z.string(),
-	/** 特典説明 */
+	/** 特典説明 - 詳細ページスクレイピング由来 */
 	description: z.string().optional(),
-	/** 特典タイプ（画像、音声、テキストなど） */
+	/** 特典タイプ（画像、音声、テキストなど） - 詳細ページスクレイピング由来 */
 	type: z.string().optional(),
 });
 
@@ -418,6 +423,8 @@ export const DLsiteWorkBaseSchema = z.object({
 	illustration: z.array(z.string()).default([]),
 	/** 音楽担当者 - detailedCreators.music, basicInfo.music を統合 */
 	music: z.array(z.string()).default([]),
+	/** その他作者 - 声優と重複しない場合のみ */
+	author: z.array(z.string()).default([]),
 
 	// === 統一された作品情報（basicInfo から昇格） ===
 	/** 販売日 - basicInfo.releaseDate から昇格 */
@@ -453,9 +460,9 @@ export const DLsiteWorkBaseSchema = z.object({
 	totalDownloadCount: z.number().int().nonnegative().optional(),
 	/** ランキング履歴 */
 	rankingHistory: z.array(RankingInfoSchema).optional(),
-	/** ファイル情報 */
+	/** ファイル情報 - @deprecated API-only実装により詳細ファイル情報は不要 */
 	fileInfo: FileInfoSchema.optional(),
-	/** 基本作品情報（最小限のメタデータのみ保持） */
+	/** 基本作品情報（最小限のメタデータのみ保持） - @deprecated Individual Info APIで代替 */
 	basicInfo: z
 		.object({
 			/** 詳細タグ（tagsと重複しない場合のみ） */
@@ -464,7 +471,7 @@ export const DLsiteWorkBaseSchema = z.object({
 			other: z.record(z.any()).default({}),
 		})
 		.optional(),
-	/** 特典情報 */
+	/** 特典情報 - @deprecated API-only実装により特典詳細情報は不要 */
 	bonusContent: z.array(BonusContentSchema).optional(),
 	/** 価格履歴 */
 	priceHistory: z.array(PriceHistorySchema).optional(),
@@ -516,8 +523,8 @@ export const DataSourceTrackingSchema = z.object({
 		.object({
 			lastFetched: z.string().datetime(),
 			basicInfo: BasicWorkInfoSchema,
-			fileInfo: FileInfoSchema.optional(),
-			bonusContent: z.array(BonusContentSchema).default([]),
+			fileInfo: FileInfoSchema.optional(), // @deprecated 詳細ファイル情報は不要
+			bonusContent: z.array(BonusContentSchema).default([]), // @deprecated 特典情報は不要
 		})
 		.optional(),
 });
@@ -602,7 +609,7 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	fileFormat: z.string().optional(),
 
 	// === 拡張ファイル情報 ===
-	/** ファイル詳細情報 */
+	/** ファイル詳細情報 - @deprecated API-only実装により詳細ファイル情報は不要 */
 	fileInfo: z
 		.object({
 			totalSizeText: z.string(),
@@ -615,7 +622,7 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 		.optional(),
 
 	// === 詳細情報 ===
-	/** 特典情報 */
+	/** 特典情報 - @deprecated API-only実装により特典詳細情報は不要 */
 	bonusContent: z.array(BonusContentSchema).default([]),
 	/** サンプル画像 */
 	sampleImages: z
@@ -872,8 +879,8 @@ function createFallbackFrontendWork(
 		// 拡張情報
 		genres: data.genres || [],
 		dataSources: data.dataSources,
-		fileInfo: data.fileInfo,
-		bonusContent: data.bonusContent || [],
+		fileInfo: data.fileInfo, // @deprecated API-only実装により不要
+		bonusContent: data.bonusContent || [], // @deprecated API-only実装により不要
 
 		lastFetchedAt: data.lastFetchedAt,
 		createdAt: data.createdAt,
@@ -1388,4 +1395,238 @@ export function filterWorksByLanguage(
 		const availableLanguages = getWorkAvailableLanguages(work);
 		return availableLanguages.includes(targetLang as WorkLanguage);
 	});
+}
+
+// ===================================================================
+// 時系列データ型定義 (Time-series Data Types)
+// ===================================================================
+
+/**
+ * 6地域通貨価格情報のZodスキーマ定義
+ */
+export const RegionalPriceSchema = z.object({
+	/** 日本円 */
+	JP: z.number().nonnegative(),
+	/** 米ドル */
+	US: z.number().nonnegative(),
+	/** ユーロ */
+	EU: z.number().nonnegative(),
+	/** 中国元 */
+	CN: z.number().nonnegative(),
+	/** 台湾ドル */
+	TW: z.number().nonnegative(),
+	/** 韓国ウォン */
+	KR: z.number().nonnegative(),
+});
+
+/**
+ * 時系列生データのZodスキーマ定義
+ * 7日間保持される高頻度データ
+ */
+export const TimeSeriesRawDataSchema = z.object({
+	/** 作品ID */
+	workId: z.string(),
+	/** 取得日時（ISO文字列） */
+	timestamp: z.string().datetime(),
+	/** 取得日（YYYY-MM-DD形式） */
+	date: z.string(),
+	/** 取得時刻（HH:mm:ss形式） */
+	time: z.string(),
+
+	// === 価格情報 ===
+	/** 6地域価格情報 */
+	regionalPrices: RegionalPriceSchema,
+	/** 割引率（0-100） */
+	discountRate: z.number().int().min(0).max(100),
+	/** キャンペーンID */
+	campaignId: z.number().int().optional(),
+
+	// === 販売・ランキング情報 ===
+	/** 販売数 */
+	salesCount: z.number().int().nonnegative().optional(),
+	/** ウィッシュリスト数 */
+	wishlistCount: z.number().int().nonnegative().optional(),
+	/** 日別ランキング */
+	rankDay: z.number().int().positive().optional(),
+	/** 週別ランキング */
+	rankWeek: z.number().int().positive().optional(),
+	/** 月別ランキング */
+	rankMonth: z.number().int().positive().optional(),
+
+	// === 評価情報 ===
+	/** 平均評価（0-5） */
+	ratingAverage: z.number().min(0).max(5).optional(),
+	/** 評価数 */
+	ratingCount: z.number().int().nonnegative().optional(),
+});
+
+/**
+ * 日次集計データのZodスキーマ定義
+ * 永続保存される低頻度データ
+ */
+export const TimeSeriesDailyAggregateSchema = z.object({
+	/** 作品ID */
+	workId: z.string(),
+	/** 集計日（YYYY-MM-DD形式） */
+	date: z.string(),
+
+	// === 価格情報（最低価格のみ） ===
+	/** 6地域最低価格 */
+	lowestPrices: RegionalPriceSchema,
+	/** 最大割引率 */
+	maxDiscountRate: z.number().int().min(0).max(100),
+	/** アクティブなキャンペーンID */
+	activeCampaignIds: z.array(z.number().int()).default([]),
+
+	// === 販売・ランキング情報（最高値のみ） ===
+	/** 最高販売数 */
+	maxSalesCount: z.number().int().nonnegative().optional(),
+	/** 最高ウィッシュリスト数 */
+	maxWishlistCount: z.number().int().nonnegative().optional(),
+	/** 最高ランキング（数値が小さいほど上位） */
+	bestRankDay: z.number().int().positive().optional(),
+	bestRankWeek: z.number().int().positive().optional(),
+	bestRankMonth: z.number().int().positive().optional(),
+
+	// === 評価情報（最高値のみ） ===
+	/** 最高平均評価 */
+	maxRatingAverage: z.number().min(0).max(5).optional(),
+	/** 最高評価数 */
+	maxRatingCount: z.number().int().nonnegative().optional(),
+
+	// === 集計メタ情報 ===
+	/** 当日の取得回数 */
+	dataPointCount: z.number().int().positive(),
+	/** 最初の取得時刻 */
+	firstCaptureTime: z.string(),
+	/** 最後の取得時刻 */
+	lastCaptureTime: z.string(),
+});
+
+/**
+ * 価格履歴チャート用データのZodスキーマ定義
+ */
+export const PriceChartDataSchema = z.object({
+	/** 作品ID */
+	workId: z.string(),
+	/** チャート表示期間（7d/30d/90d/365d） */
+	period: z.enum(["7d", "30d", "90d", "365d"]),
+	/** 通貨（JP/US/EU/CN/TW/KR） */
+	currency: z.enum(["JP", "US", "EU", "CN", "TW", "KR"]),
+	/** データポイント */
+	dataPoints: z.array(
+		z.object({
+			date: z.string(),
+			price: z.number().nonnegative(),
+			discountRate: z.number().int().min(0).max(100),
+			campaignActive: z.boolean(),
+		}),
+	),
+	/** 生成日時 */
+	generatedAt: z.string().datetime(),
+});
+
+/**
+ * ランキング履歴チャート用データのZodスキーマ定義
+ */
+export const RankingChartDataSchema = z.object({
+	/** 作品ID */
+	workId: z.string(),
+	/** チャート表示期間 */
+	period: z.enum(["7d", "30d", "90d", "365d"]),
+	/** ランキングタイプ（day/week/month） */
+	rankType: z.enum(["day", "week", "month"]),
+	/** データポイント */
+	dataPoints: z.array(
+		z.object({
+			date: z.string(),
+			rank: z.number().int().positive(),
+			salesCount: z.number().int().nonnegative().optional(),
+		}),
+	),
+	/** 生成日時 */
+	generatedAt: z.string().datetime(),
+});
+
+/**
+ * 評価履歴チャート用データのZodスキーマ定義
+ */
+export const RatingChartDataSchema = z.object({
+	/** 作品ID */
+	workId: z.string(),
+	/** チャート表示期間 */
+	period: z.enum(["7d", "30d", "90d", "365d"]),
+	/** データポイント */
+	dataPoints: z.array(
+		z.object({
+			date: z.string(),
+			averageRating: z.number().min(0).max(5),
+			ratingCount: z.number().int().nonnegative(),
+		}),
+	),
+	/** 生成日時 */
+	generatedAt: z.string().datetime(),
+});
+
+// 型エクスポート
+export type RegionalPrice = z.infer<typeof RegionalPriceSchema>;
+export type TimeSeriesRawData = z.infer<typeof TimeSeriesRawDataSchema>;
+export type TimeSeriesDailyAggregate = z.infer<typeof TimeSeriesDailyAggregateSchema>;
+export type PriceChartData = z.infer<typeof PriceChartDataSchema>;
+export type RankingChartData = z.infer<typeof RankingChartDataSchema>;
+export type RatingChartData = z.infer<typeof RatingChartDataSchema>;
+
+/**
+ * 通貨コードから通貨シンボルを取得
+ */
+export function getCurrencySymbol(currency: keyof RegionalPrice): string {
+	const symbols = {
+		JP: "¥",
+		US: "$",
+		EU: "€",
+		CN: "¥",
+		TW: "NT$",
+		KR: "₩",
+	};
+	return symbols[currency];
+}
+
+/**
+ * 通貨コードから通貨名を取得
+ */
+export function getCurrencyName(currency: keyof RegionalPrice): string {
+	const names = {
+		JP: "日本円",
+		US: "米ドル",
+		EU: "ユーロ",
+		CN: "中国元",
+		TW: "台湾ドル",
+		KR: "韓国ウォン",
+	};
+	return names[currency];
+}
+
+/**
+ * 日次集計データから価格チャート用データを生成
+ */
+export function generatePriceChartData(
+	workId: string,
+	aggregates: TimeSeriesDailyAggregate[],
+	currency: keyof RegionalPrice,
+	period: "7d" | "30d" | "90d" | "365d",
+): PriceChartData {
+	const dataPoints = aggregates.map((aggregate) => ({
+		date: aggregate.date,
+		price: aggregate.lowestPrices[currency],
+		discountRate: aggregate.maxDiscountRate,
+		campaignActive: aggregate.activeCampaignIds.length > 0,
+	}));
+
+	return {
+		workId,
+		period,
+		currency,
+		dataPoints,
+		generatedAt: new Date().toISOString(),
+	};
 }

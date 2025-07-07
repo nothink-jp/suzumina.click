@@ -4,42 +4,10 @@
  * 作品詳細ページから収録内容・ファイル情報・詳細クリエイター情報を抽出します。
  */
 
-import type { BonusContent, FileInfo } from "@suzumina.click/shared-types";
+import type { BasicWorkInfo, BonusContent, FileInfo } from "@suzumina.click/shared-types";
 import * as cheerio from "cheerio";
 import * as logger from "../../shared/logger";
 import { type ImageVerificationResult, verifyTranslationWorkImage } from "./image-verification";
-
-/**
- * 基本作品情報（work_outlineテーブルから抽出）
- */
-export interface BasicWorkInfo {
-	/** 販売日 */
-	releaseDate?: string;
-	/** シリーズ名 */
-	seriesName?: string;
-	/** 作者（複数） */
-	author: string[];
-	/** シナリオ担当者（複数） */
-	scenario: string[];
-	/** イラスト担当者（複数） */
-	illustration: string[];
-	/** 声優（複数） */
-	voiceActors: string[];
-	/** 音楽担当者（複数） */
-	music: string[];
-	/** 年齢指定 */
-	ageRating?: string;
-	/** 作品形式 */
-	workFormat?: string;
-	/** ファイル形式 */
-	fileFormat?: string;
-	/** ジャンル（複数） */
-	genres: string[];
-	/** 詳細タグ（複数） */
-	detailTags: string[];
-	/** ファイル容量 */
-	fileSize?: string;
-}
 
 /**
  * 詳細評価情報
@@ -52,25 +20,14 @@ export interface DetailedRatingInfo {
 }
 
 /**
- * 詳細ページから抽出される拡張データ構造
+ * 詳細ページから抽出されるデータ構造
+ * OptimizedFirestoreDLsiteWorkData.dataSources.detailPage に格納される形式
  */
-export interface ExtendedWorkData {
+export interface DetailPageData {
 	/** 基本作品情報 */
 	basicInfo: BasicWorkInfo;
 	/** ファイル情報 */
 	fileInfo: FileInfo;
-	/** 統合された声優情報 */
-	voiceActors: string[];
-	/** 統合されたシナリオ担当者情報 */
-	scenario: string[];
-	/** 統合されたイラスト担当者情報 */
-	illustration: string[];
-	/** 統合された音楽担当者情報 */
-	music: string[];
-	/** 統合されたデザイン担当者情報 */
-	design: string[];
-	/** その他のクリエイター情報 */
-	otherCreators: Record<string, string[]>;
 	/** 特典情報 */
 	bonusContent: BonusContent[];
 	/** 詳細説明文 */
@@ -81,6 +38,12 @@ export interface ExtendedWorkData {
 	imageVerification?: ImageVerificationResult & { originalProductId?: string };
 	/** 詳細評価情報（小数点以下を含む精密な評価） */
 	detailedRating?: DetailedRatingInfo;
+	/** 5種類の統一クリエイター情報 */
+	voiceActors: string[];
+	scenario: string[];
+	illustration: string[];
+	music: string[];
+	author: string[];
 }
 
 /**
@@ -924,7 +887,11 @@ function extractDetailTagsInfo($: cheerio.CheerioAPI, basicInfo: BasicWorkInfo):
 			// 空でない、ある程度の文字数のタグのみ採用
 			if (tagText && tagText.length > 0 && tagText.length < 50) {
 				// 重複チェック（ジャンルと同じものは除外）
-				if (!basicInfo.genres.includes(tagText) && !basicInfo.detailTags.includes(tagText)) {
+				if (
+					basicInfo.genres &&
+					!basicInfo.genres.includes(tagText) &&
+					!basicInfo.detailTags.includes(tagText)
+				) {
 					basicInfo.detailTags.push(tagText);
 				}
 			}
@@ -939,7 +906,11 @@ function extractDetailTagsInfo($: cheerio.CheerioAPI, basicInfo: BasicWorkInfo):
 
 		// "tag"という文字列を含むクラス名で、短いテキストを持つ要素
 		if (/tag/i.test(className) && text.length > 0 && text.length < 30) {
-			if (!basicInfo.genres.includes(text) && !basicInfo.detailTags.includes(text)) {
+			if (
+				basicInfo.genres &&
+				!basicInfo.genres.includes(text) &&
+				!basicInfo.detailTags.includes(text)
+			) {
 				basicInfo.detailTags.push(text);
 			}
 		}
@@ -953,13 +924,13 @@ function extractDetailTagsInfo($: cheerio.CheerioAPI, basicInfo: BasicWorkInfo):
  */
 export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
 	const basicInfo: BasicWorkInfo = {
-		author: [],
 		scenario: [],
 		illustration: [],
 		voiceActors: [],
 		music: [],
 		genres: [],
 		detailTags: [],
+		other: {},
 	};
 
 	// work_outlineテーブル内の情報を抽出
@@ -988,9 +959,8 @@ export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
 				});
 
 				// リンクが見つからない場合はセル全体のテキストを分割
-				const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
-				basicInfo.author.push(...names);
-				logger.debug(`作者抽出: ${basicInfo.author.length}名`);
+				// 作者情報は extractDetailedCreatorInfo で処理
+				// const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
 				break;
 			}
 
@@ -1002,8 +972,10 @@ export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
 				});
 
 				const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
-				basicInfo.scenario.push(...names);
-				logger.debug(`シナリオ抽出: ${basicInfo.scenario.length}名`);
+				if (basicInfo.scenario) {
+					basicInfo.scenario.push(...names);
+					logger.debug(`シナリオ抽出: ${basicInfo.scenario.length}名`);
+				}
 				break;
 			}
 
@@ -1015,8 +987,10 @@ export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
 				});
 
 				const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
-				basicInfo.illustration.push(...names);
-				logger.debug(`イラスト抽出: ${basicInfo.illustration.length}名`);
+				if (basicInfo.illustration) {
+					basicInfo.illustration.push(...names);
+					logger.debug(`イラスト抽出: ${basicInfo.illustration.length}名`);
+				}
 				break;
 			}
 
@@ -1028,8 +1002,10 @@ export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
 				});
 
 				const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
-				basicInfo.voiceActors.push(...names);
-				logger.debug(`声優抽出: ${basicInfo.voiceActors.length}名`);
+				if (basicInfo.voiceActors) {
+					basicInfo.voiceActors.push(...names);
+					logger.debug(`声優抽出: ${basicInfo.voiceActors.length}名`);
+				}
 				break;
 			}
 
@@ -1041,8 +1017,10 @@ export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
 				});
 
 				const names = linkNames.length > 0 ? linkNames : parseCreatorNames($cell.text().trim());
-				basicInfo.music.push(...names);
-				logger.debug(`音楽抽出: ${basicInfo.music.length}名`);
+				if (basicInfo.music) {
+					basicInfo.music.push(...names);
+					logger.debug(`音楽抽出: ${basicInfo.music.length}名`);
+				}
 				break;
 			}
 
@@ -1076,9 +1054,11 @@ export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
 			case "ジャンル":
 				$cell.find("a").each((_i, link) => {
 					const genre = $(link).text().trim();
-					if (genre) basicInfo.genres.push(genre);
+					if (genre && basicInfo.genres) basicInfo.genres.push(genre);
 				});
-				logger.debug(`ジャンル抽出: ${basicInfo.genres.length}件`);
+				if (basicInfo.genres) {
+					logger.debug(`ジャンル抽出: ${basicInfo.genres.length}件`);
+				}
 				break;
 
 			case "ファイル容量":
@@ -1097,7 +1077,7 @@ export function extractBasicWorkInfo($: cheerio.CheerioAPI): BasicWorkInfo {
 /**
  * メイン関数: 詳細ページHTMLから拡張データを抽出
  */
-export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
+export function parseWorkDetailFromHTML(html: string): DetailPageData {
 	const $ = cheerio.load(html);
 
 	logger.debug("詳細ページHTMLパース開始");
@@ -1119,8 +1099,7 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 		scenario: creatorInfo.scenario,
 		illustration: creatorInfo.illustration,
 		music: creatorInfo.music,
-		design: creatorInfo.design,
-		otherCreators: creatorInfo.otherCreators,
+		author: [], // 作者情報は詳細ページには通常含まれない
 		bonusContent,
 		detailedDescription,
 		highResImageUrl,
@@ -1131,7 +1110,7 @@ export function parseWorkDetailFromHTML(html: string): ExtendedWorkData {
 /**
  * 作品IDから詳細データを取得して解析（画像検証含む）
  */
-export async function fetchAndParseWorkDetail(productId: string): Promise<ExtendedWorkData | null> {
+export async function fetchAndParseWorkDetail(productId: string): Promise<DetailPageData | null> {
 	try {
 		const html = await fetchWorkDetailPage(productId);
 		const detailData = parseWorkDetailFromHTML(html);

@@ -63,7 +63,7 @@ async function getVideos(
 		const totalCount = totalSnap.size;
 
 		// ページング計算
-		const offset = (page - 1) * limit;
+		const _offset = (page - 1) * limit;
 		const totalPages = Math.ceil(totalCount / limit);
 
 		// ページ範囲チェック

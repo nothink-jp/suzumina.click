@@ -327,24 +327,8 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							</TabsTrigger>
 						</TabsList>
 
-						{/* 詳細情報タブ（概要＋仕様統合） */}
+						{/* 詳細情報タブ（基本情報・制作陣） */}
 						<TabsContent value="overview" className="space-y-6">
-							{/* 作品説明 */}
-							{work.description && (
-								<Card>
-									<CardHeader>
-										<CardTitle>作品説明</CardTitle>
-									</CardHeader>
-									<CardContent>
-										<div className="bg-gray-50 rounded-lg p-4">
-											<p className="text-gray-700 whitespace-pre-line leading-relaxed">
-												{work.description}
-											</p>
-										</div>
-									</CardContent>
-								</Card>
-							)}
-
 							{/* 作品基本情報 */}
 							<Card>
 								<CardHeader>
@@ -488,121 +472,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 											)}
 										</div>
 									</div>
-								</CardContent>
-							</Card>
-
-							{/* ファイル・技術仕様 */}
-							<Card>
-								<CardHeader>
-									<CardTitle>ファイル・技術仕様</CardTitle>
-									<CardDescription>ファイル形式・容量・技術的な詳細情報</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-										{/* ファイル基本情報 */}
-										<div className="space-y-4">
-											{(work.workFormat ||
-												(work.fileInfo?.formats && work.fileInfo.formats.length > 0) ||
-												work.fileFormat) && (
-												<div>
-													<div className="text-sm text-gray-700 mb-2">ファイル形式</div>
-													<div className="flex flex-wrap gap-2">
-														{work.fileInfo?.formats?.map((format) => (
-															<Badge key={format} variant="secondary" className="text-xs">
-																{format}
-															</Badge>
-														)) ||
-															(work.fileFormat && (
-																<Badge variant="secondary" className="text-xs">
-																	{work.fileFormat}
-																</Badge>
-															)) ||
-															(work.workFormat && (
-																<Badge variant="secondary" className="text-xs">
-																	{work.workFormat}
-																</Badge>
-															))}
-													</div>
-												</div>
-											)}
-											{work.fileInfo?.totalSizeText && (
-												<div className="flex items-center gap-3">
-													<Clock className="h-5 w-5 text-muted-foreground" />
-													<div>
-														<div className="text-sm text-gray-700">総容量</div>
-														<div className="font-semibold text-gray-900 font-mono">
-															{work.fileInfo.totalSizeText}
-														</div>
-													</div>
-												</div>
-											)}
-											{work.fileInfo?.totalDuration && (
-												<div className="flex items-center gap-3">
-													<Clock className="h-5 w-5 text-muted-foreground" />
-													<div>
-														<div className="text-sm text-gray-700">総再生時間</div>
-														<div className="font-semibold text-gray-900">
-															{work.fileInfo.totalDuration}
-														</div>
-													</div>
-												</div>
-											)}
-										</div>
-
-										{/* 付属ファイル */}
-										{work.fileInfo?.additionalFiles && work.fileInfo.additionalFiles.length > 0 && (
-											<div className="space-y-4">
-												<div>
-													<div className="text-sm text-gray-700 mb-2">付属ファイル</div>
-													<div className="space-y-1">
-														{work.fileInfo.additionalFiles.map((file) => (
-															<div key={file} className="text-gray-900 text-xs">
-																• {file}
-															</div>
-														))}
-													</div>
-												</div>
-											</div>
-										)}
-									</div>
-
-									{/* 特典・おまけ情報 */}
-									{work.bonusContent && work.bonusContent.length > 0 && (
-										<div className="mt-6 space-y-4">
-											<h4 className="font-medium text-gray-900">特典・おまけ</h4>
-											<div className="space-y-3">
-												{work.bonusContent.map((bonus, index) => (
-													<div
-														key={`${bonus.title}-${index}`}
-														className="bg-gray-50 rounded-lg p-4"
-													>
-														<div className="flex items-start gap-3">
-															<div className="flex-shrink-0">
-																<div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-																	<span className="text-primary font-bold text-sm">特</span>
-																</div>
-															</div>
-															<div className="flex-1">
-																<div className="flex items-center gap-2 mb-1">
-																	<h5 className="font-medium text-gray-900">{bonus.title}</h5>
-																	{bonus.type && (
-																		<span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
-																			{bonus.type}
-																		</span>
-																	)}
-																</div>
-																{bonus.description && (
-																	<p className="text-sm text-gray-700 whitespace-pre-line">
-																		{bonus.description}
-																	</p>
-																)}
-															</div>
-														</div>
-													</div>
-												))}
-											</div>
-										</div>
-									)}
 								</CardContent>
 							</Card>
 						</TabsContent>

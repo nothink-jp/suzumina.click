@@ -53,8 +53,8 @@ export async function DELETE(
 					updatedAt: new Date().toISOString(),
 				});
 			}
-		} catch (error) {
-			console.warn("Failed to update audio button statistics:", error);
+		} catch (_error) {
+			// Failed to update audio button statistics
 		}
 
 		return NextResponse.json({
@@ -62,8 +62,8 @@ export async function DELETE(
 			userId,
 			audioButtonId,
 		});
-	} catch (error) {
-		console.error("Error deleting favorite:", error);
+	} catch (_error) {
+		// Error deleting favorite
 		return NextResponse.json({ error: "お気に入りの削除に失敗しました" }, { status: 500 });
 	}
 }

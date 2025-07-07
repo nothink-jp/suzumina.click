@@ -560,7 +560,7 @@ describe("fetchDLsiteWorks", () => {
 	describe("HTTPレスポンスエラー処理", () => {
 		it("HTTPステータスコードが200以外の場合のエラー処理", async () => {
 			// ipify.orgは成功、DLsiteに対してはHTTPエラー
-			const callCount = 0;
+			const _callCount = 0;
 			mockFetch.mockImplementation((url: string) => {
 				if (url.includes("ipify.org")) {
 					return Promise.resolve({

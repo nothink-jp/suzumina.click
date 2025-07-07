@@ -7,7 +7,7 @@
 
 import type { WorkCategory } from "@suzumina.click/shared-types";
 import * as cheerio from "cheerio";
-import * as logger from "../../shared/logger";
+import * as logger from "../../shared/logger.js";
 
 /**
  * HTMLから抽出される生のデータ構造
@@ -19,8 +19,6 @@ export interface ParsedWorkData {
 	title: string;
 	/** サークル名 */
 	circle: string;
-	/** 声優名（複数の場合あり） */
-	author?: string[];
 	/** 作品カテゴリ（フィルタリング用） */
 	category: WorkCategory;
 	/** 元のカテゴリテキスト（表示用） */
@@ -237,46 +235,6 @@ function extractProductInfo($item: unknown, index: number): BasicProductInfo | n
 		return null;
 	}
 
-	// 声優名の抽出（author要素から）- 複数対応
-	const authorElements = $itemElement.find(".author a");
-	let author: string[] | undefined;
-
-	if (authorElements.length > 0) {
-		// リンク要素から個別に抽出
-		const linkNames = authorElements
-			// biome-ignore lint/suspicious/noExplicitAny: cheerio element mapping
-			.map((_: any, el: any) => cheerio.load("")(el).text().trim())
-			.get()
-			.filter((name: string) => name);
-
-		// リンクテキストにスラッシュ区切りが含まれている場合は分割
-		const allNames: string[] = [];
-		for (const name of linkNames) {
-			if (name.includes("/")) {
-				// スラッシュ区切りの場合は分割
-				const splitNames = name
-					.split(/[/、,]+/)
-					.map((n: string) => n.trim())
-					.filter((n: string) => n && n.length > 1);
-				allNames.push(...splitNames);
-			} else {
-				allNames.push(name);
-			}
-		}
-
-		author = allNames.length > 0 ? allNames : undefined;
-	} else {
-		// リンク要素がない場合は.authorセクション全体のテキストをチェック
-		const authorSectionText = $itemElement.find(".author").text().trim();
-		if (authorSectionText) {
-			const splitNames = authorSectionText
-				.split(/[/、,]+/)
-				.map((n: string) => n.trim())
-				.filter((n: string) => n && n.length > 1 && n.length < 50);
-			author = splitNames.length > 0 ? splitNames : undefined;
-		}
-	}
-
 	// URLの抽出
 	const workUrl = href;
 	if (!workUrl) {
@@ -288,7 +246,6 @@ function extractProductInfo($item: unknown, index: number): BasicProductInfo | n
 		productId,
 		title,
 		circle,
-		author,
 		workUrl,
 	};
 }
@@ -505,7 +462,6 @@ function createWorkObject(
 		productId: basicInfo.productId,
 		title: basicInfo.title,
 		circle: basicInfo.circle,
-		author: basicInfo.author,
 		category,
 		originalCategoryText,
 		workUrl: basicInfo.workUrl.startsWith("https://")
@@ -751,19 +707,6 @@ function processWorkListItem(element: unknown, index: number): ParsedWorkData | 
 			}
 		}
 
-		// 声優情報（涼花みなせの場合）
-		const authorElements = $item.find(".maker_name .author a");
-		const author: string[] = [];
-		authorElements.each((_: number, el: unknown) => {
-			const authorName = cheerio
-				.load("")(el as any)
-				.text()
-				.trim();
-			if (authorName) {
-				author.push(authorName);
-			}
-		});
-
 		// 割引率計算
 		let discount: number | undefined;
 		if (originalPrice && originalPrice > currentPrice) {
@@ -779,7 +722,6 @@ function processWorkListItem(element: unknown, index: number): ParsedWorkData | 
 			productId,
 			title,
 			circle,
-			author: author.length > 0 ? author : undefined,
 			category,
 			originalCategoryText,
 			workUrl: workUrl.startsWith("//")

@@ -146,7 +146,7 @@ function formatPrice(price: {
 	original?: number;
 	discount?: number;
 }): string {
-	if (!price || typeof price.current !== "number" || isNaN(price.current)) {
+	if (!price || typeof price.current !== "number" || Number.isNaN(price.current)) {
 		return "¥0";
 	}
 	return `¥${price.current.toLocaleString()}`;
@@ -185,8 +185,7 @@ async function calculateStats() {
 			averagePrice,
 			latestWork,
 		};
-	} catch (error) {
-		console.error("Stats calculation error:", error);
+	} catch (_error) {
 		return {
 			total: 0,
 			onSale: 0,

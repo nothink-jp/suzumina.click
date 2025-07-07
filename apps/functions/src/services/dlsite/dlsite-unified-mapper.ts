@@ -18,9 +18,14 @@ import {
 	type RatingInfo,
 } from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
-import type { ExtendedWorkData } from "./dlsite-detail-parser";
+import type { DetailPageData } from "./dlsite-detail-parser";
 import type { DLsiteInfoResponse } from "./dlsite-mapper";
-import { extractRankingInfo, mapToPriceInfo, mapToRatingInfo } from "./dlsite-mapper";
+import {
+	extractGenres,
+	extractRankingInfo,
+	mapToPriceInfo,
+	mapToRatingInfo,
+} from "./dlsite-mapper";
 import type { ParsedWorkData } from "./dlsite-parser";
 
 /**
@@ -61,7 +66,7 @@ export const DATA_MERGE_PRIORITY = {
 export function mapToOptimizedStructure(
 	parsed: ParsedWorkData,
 	infoData?: DLsiteInfoResponse | null,
-	extendedData?: ExtendedWorkData | null,
+	extendedData?: DetailPageData | null,
 	existingData?: OptimizedFirestoreDLsiteWorkData | null,
 ): OptimizedFirestoreDLsiteWorkData {
 	const now = new Date().toISOString();
@@ -82,7 +87,7 @@ export function mapToOptimizedStructure(
 				lastFetched: now,
 				salesCount: infoData.dl_count,
 				wishlistCount: infoData.wishlist_count,
-				customGenres: infoData.genres || [],
+				customGenres: extractGenres(infoData),
 			},
 		}),
 		...(extendedData && {
@@ -99,24 +104,20 @@ export function mapToOptimizedStructure(
 		}),
 	};
 
-	// 5種クリエイター情報の統合（既存データ保護）
-	const voiceActors = mergeAndDeduplicate([
-		extendedData?.basicInfo?.voiceActors,
-		parsed.author,
-		existingData?.voiceActors,
-	]);
-	const scenario = mergeAndDeduplicate([extendedData?.basicInfo?.scenario, existingData?.scenario]);
+	// 5種クリエイター情報の統合（詳細ページのみ - APIのauthorは声優なので除外）
+	const voiceActors = mergeAndDeduplicate([extendedData?.voiceActors, existingData?.voiceActors]);
+	const scenario = mergeAndDeduplicate([extendedData?.scenario, existingData?.scenario]);
 	const illustration = mergeAndDeduplicate([
-		extendedData?.basicInfo?.illustration,
+		extendedData?.illustration,
 		existingData?.illustration,
 	]);
-	const music = mergeAndDeduplicate([extendedData?.basicInfo?.music, existingData?.music]);
-	const author = mergeAndDeduplicate([extendedData?.basicInfo?.author, existingData?.author]);
+	const music = mergeAndDeduplicate([extendedData?.music, existingData?.music]);
+	const author = mergeAndDeduplicate([extendedData?.author, existingData?.author]);
 
 	// ジャンル・タグの明確分離
 	const genres = mergeAndDeduplicate([
 		extendedData?.basicInfo?.genres,
-		infoData?.genres,
+		extractGenres(infoData || {}), // extractGenres関数を使用してstring[]に変換
 		parsed.tags,
 	]);
 	const tags = mergeAndDeduplicate([extendedData?.basicInfo?.detailTags, parsed.tags]);
@@ -165,7 +166,7 @@ export function mapToOptimizedStructure(
 		// ジャンル・タグ明確分離
 		genres,
 		tags,
-		customTags: infoData?.genres,
+		customTags: extractGenres(infoData || {}),
 
 		// 日付情報完全対応
 		releaseDate: dateInfo?.original,
@@ -200,6 +201,8 @@ export function mapToOptimizedStructure(
  * 統合データ構造の型定義（既存・下位互換性用）
  */
 export interface UnifiedDLsiteWorkData extends DLsiteWorkBase {
+	// === 5種類の統一クリエイター情報 ===
+	author: string[];
 	// === ソース別データ（デバッグ・品質管理用） ===
 	dataSources: {
 		searchResult?: {
@@ -327,7 +330,7 @@ function normalizeUrl(url: string): string {
 export function mergeWorkDataSources(
 	searchData?: ParsedWorkData,
 	infoData?: DLsiteInfoResponse,
-	detailData?: ExtendedWorkData,
+	detailData?: DetailPageData,
 	existingData?: OptimizedFirestoreDLsiteWorkData,
 ): UnifiedDLsiteWorkData {
 	if (!searchData) {
@@ -349,12 +352,10 @@ export function mergeWorkDataSources(
 
 	const unifiedRating = selectBestRating(infoRating, searchRating);
 
-	// 統合クリエイター情報（重複除去済み）
+	// 統合クリエイター情報（重複除去済み）- APIのauthorは声優なので除外
 	const unifiedVoiceActors = mergeAndDeduplicate([
 		detailData?.voiceActors || [],
 		(detailData?.basicInfo as any)?.voiceActors || [],
-		infoData?.voice_actors || [],
-		searchData.author || [],
 		existingData?.voiceActors || [], // 既存データ保持
 	]);
 
@@ -376,14 +377,11 @@ export function mergeWorkDataSources(
 		existingData?.music || [], // 既存データ保持
 	]);
 
-	// 作者情報から声優情報を除外（将来使用予定）
-	// const unifiedAuthor = filterAuthorFromVoiceActors(
-	// 	mergeAndDeduplicate([
-	// 		(detailData?.basicInfo as any)?.author,
-	// 		existingData?.voiceActors || []
-	// 	]),
-	// 	unifiedVoiceActors
-	// );
+	// 作者情報（5種類目のクリエイター情報）
+	const unifiedAuthor = mergeAndDeduplicate([
+		detailData?.author || [],
+		existingData?.author || [], // 既存データ保持
+	]);
 
 	// 統合ジャンル情報（全ソースマージ + 重複除去）
 	const unifiedGenres = mergeAndDeduplicate([
@@ -423,14 +421,15 @@ export function mergeWorkDataSources(
 		scenario: unifiedScenario,
 		illustration: unifiedIllustration,
 		music: unifiedMusic,
+		author: unifiedAuthor,
 
 		// === 統一作品メタデータ（重複排除済み） ===
 		releaseDate: isoReleaseDate,
 		releaseDateDisplay: japaneseReleaseDate,
-		seriesName: (detailData?.basicInfo as any)?.seriesName,
-		ageRating: (detailData?.basicInfo as any)?.ageRating || searchData.ageRating,
-		workFormat: (detailData?.basicInfo as any)?.workFormat,
-		fileFormat: (detailData?.basicInfo as any)?.fileFormat,
+		seriesName: detailData?.basicInfo?.seriesName,
+		ageRating: detailData?.basicInfo?.ageRating || searchData.ageRating,
+		workFormat: detailData?.basicInfo?.workFormat,
+		fileFormat: detailData?.basicInfo?.fileFormat,
 		tags: unifiedGenres,
 
 		// === その他基本情報 ===
@@ -497,8 +496,8 @@ export function mergeWorkDataSources(
 			displayOrder: le.display_order,
 			label: le.label,
 			lang: le.lang,
-			dlCount: le.dl_count,
-			displayLabel: le.display_label,
+			dlCount: le.dl_count || "0", // undefinedの場合はデフォルト値を設定
+			displayLabel: le.display_label || le.label, // undefinedの場合はlabelを使用
 		})),
 		salesStatus: infoData?.sales_status
 			? {
@@ -516,7 +515,7 @@ export function mergeWorkDataSources(
 				}
 			: undefined,
 		defaultPointRate: infoData?.default_point_rate,
-		customGenres: infoData?.genres,
+		customGenres: extractGenres(infoData || {}),
 
 		// === ソース別データ（デバッグ・品質管理用） ===
 		dataSources: {
@@ -529,7 +528,7 @@ export function mergeWorkDataSources(
 						lastFetched: now,
 						salesCount: infoData.dl_count,
 						wishlistCount: infoData.wishlist_count,
-						customGenres: infoData.genres,
+						customGenres: extractGenres(infoData),
 					}
 				: undefined,
 			detailPage: detailData

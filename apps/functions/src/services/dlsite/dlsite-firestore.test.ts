@@ -103,8 +103,8 @@ describe("dlsite-firestore", () => {
 	});
 
 	describe("saveWorksToFirestore", () => {
+		// biome-ignore lint/suspicious/noSkippedTests: この関数は複数の内部関数に依存しており、単体テストでは複雑すぎる
 		it.skip("複雑な内部依存のため正常ケースのテストはE2Eテストに委ねる", () => {
-			// この関数は複数の内部関数に依存しており、単体テストでは複雑すぎる
 			// 代わりに空配列での早期returnとエラーケースのみテスト
 			expect(true).toBe(true);
 		});

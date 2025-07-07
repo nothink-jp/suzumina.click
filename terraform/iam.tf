@@ -370,6 +370,19 @@ resource "google_pubsub_topic_iam_member" "scheduler_dlsite_pubsub_publisher" {
   ]
 }
 
+# Cloud Schedulerが時系列データ収集トピックにメッセージを発行する権限
+resource "google_pubsub_topic_iam_member" "scheduler_timeseries_pubsub_publisher" {
+  project = google_pubsub_topic.dlsite_timeseries_collect_trigger.project
+  topic   = google_pubsub_topic.dlsite_timeseries_collect_trigger.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
+
+  depends_on = [
+    google_pubsub_topic.dlsite_timeseries_collect_trigger,
+    data.google_project.project,
+  ]
+}
+
 # Pub/Sub Service AgentにYouTube関数のサービスアカウントのToken Creatorロールを付与
 # Pub/SubがEventarc経由で認証された関数呼び出しのためにOIDCトークンを作成できるようにする
 resource "google_service_account_iam_member" "pubsub_token_creator" {

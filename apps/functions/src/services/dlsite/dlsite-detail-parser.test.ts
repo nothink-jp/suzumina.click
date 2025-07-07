@@ -182,13 +182,12 @@ describe("parseWorkDetailFromHTML（高解像度画像統合）", () => {
 		);
 		expect(result.fileInfo).toBeDefined();
 		expect(result.basicInfo).toBeDefined();
-		// 統合されたクリエイター情報フィールドをチェック
+		// 5種類の統一クリエイター情報フィールドをチェック
 		expect(result.voiceActors).toBeDefined();
 		expect(result.scenario).toBeDefined();
 		expect(result.illustration).toBeDefined();
 		expect(result.music).toBeDefined();
-		expect(result.design).toBeDefined();
-		expect(result.otherCreators).toBeDefined();
+		expect(result.author).toBeDefined();
 		expect(result.bonusContent).toEqual([]);
 	});
 
