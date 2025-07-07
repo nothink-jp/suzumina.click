@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
 	getWorkCategoryDisplayName,
 	getWorkCategoryDisplayNameSafe,
+	getWorkCategoryDisplayText,
 	WORK_CATEGORY_DISPLAY_NAMES,
 	type WorkCategory,
 } from "../work";
@@ -124,6 +125,52 @@ describe("Work Category Mapping", () => {
 		it("特殊文字を含むカテゴリコードでも安全に処理する", () => {
 			expect(getWorkCategoryDisplayNameSafe("SOU-V2")).toBe("SOU-V2");
 			expect(getWorkCategoryDisplayNameSafe("SOU_TEST")).toBe("SOU_TEST");
+		});
+	});
+
+	describe("getWorkCategoryDisplayText", () => {
+		it("元のカテゴリテキストが存在する場合はそれを優先する", () => {
+			const work = {
+				category: "SOU" as WorkCategory,
+				originalCategoryText: "音声作品",
+			};
+			expect(getWorkCategoryDisplayText(work)).toBe("音声作品");
+		});
+
+		it("元のカテゴリテキストが空文字の場合はマッピングを使用する", () => {
+			const work = {
+				category: "SOU" as WorkCategory,
+				originalCategoryText: "",
+			};
+			expect(getWorkCategoryDisplayText(work)).toBe("ボイス・ASMR");
+		});
+
+		it("元のカテゴリテキストが未定義の場合はマッピングを使用する", () => {
+			const work = {
+				category: "SOU" as WorkCategory,
+			};
+			expect(getWorkCategoryDisplayText(work)).toBe("ボイス・ASMR");
+		});
+
+		it("DLsiteから新しいカテゴリが取得された場合はその名前を保持する", () => {
+			const work = {
+				category: "etc" as WorkCategory,
+				originalCategoryText: "新しいカテゴリ",
+			};
+			expect(getWorkCategoryDisplayText(work)).toBe("新しいカテゴリ");
+		});
+
+		it("マンガカテゴリで元のテキストが異なる表記の場合", () => {
+			const work1 = {
+				category: "MNG" as WorkCategory,
+				originalCategoryText: "マンガ",
+			};
+			const work2 = {
+				category: "MNG" as WorkCategory,
+				originalCategoryText: "コミック",
+			};
+			expect(getWorkCategoryDisplayText(work1)).toBe("マンガ");
+			expect(getWorkCategoryDisplayText(work2)).toBe("コミック");
 		});
 	});
 });

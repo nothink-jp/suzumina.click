@@ -143,6 +143,7 @@ export function mapToOptimizedStructure(
 		circle: parsed.circle,
 		description: parsed.title || "",
 		category: parsed.category,
+		originalCategoryText: parsed.originalCategoryText,
 		workUrl: parsed.workUrl,
 		thumbnailUrl: parsed.thumbnailUrl,
 		highResImageUrl: extendedData?.highResImageUrl,

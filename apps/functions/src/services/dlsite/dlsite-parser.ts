@@ -21,8 +21,10 @@ export interface ParsedWorkData {
 	circle: string;
 	/** 声優名（複数の場合あり） */
 	author?: string[];
-	/** 作品カテゴリ */
+	/** 作品カテゴリ（フィルタリング用） */
 	category: WorkCategory;
+	/** 元のカテゴリテキスト（表示用） */
+	originalCategoryText?: string;
 	/** 作品ページURL */
 	workUrl: string;
 	/** サムネイル画像URL */
@@ -491,6 +493,7 @@ function extractSalesAndMetadata($item: unknown, productId: string): SalesAndMet
 function createWorkObject(
 	basicInfo: BasicProductInfo,
 	category: WorkCategory,
+	originalCategoryText: string | undefined,
 	thumbnailUrl: string,
 	priceInfo: PriceInfo,
 	ratingInfo: RatingInfo,
@@ -504,6 +507,7 @@ function createWorkObject(
 		circle: basicInfo.circle,
 		author: basicInfo.author,
 		category,
+		originalCategoryText,
 		workUrl: basicInfo.workUrl.startsWith("https://")
 			? basicInfo.workUrl
 			: `https://www.dlsite.com${basicInfo.workUrl}`,
@@ -540,6 +544,9 @@ function processWorkTableRow($item: unknown, index: number): ParsedWorkData | nu
 		const categoryElement = $itemElement.find(".work_category");
 		const category = extractCategoryFromClass(categoryElement);
 
+		// 元のカテゴリテキストも保存（表示用）
+		const originalCategoryText = categoryElement.text().trim() || undefined;
+
 		// サムネイルURLを抽出
 		const thumbnailUrl = extractThumbnailUrl($item, basicInfo.productId);
 
@@ -573,6 +580,7 @@ function processWorkTableRow($item: unknown, index: number): ParsedWorkData | nu
 		const work = createWorkObject(
 			basicInfo,
 			category,
+			originalCategoryText,
 			thumbnailUrl,
 			priceInfo,
 			ratingInfo,
@@ -626,7 +634,8 @@ export function parseWorksFromHTML(html: string): ParsedWorkData[] {
 }
 
 /**
- * カテゴリテキストをWorkCategory enumにマッピング
+ * カテゴリテキストをWorkCategory enumにマッピング（フィルタリング用）
+ * 既存のマッピングを維持しつつ、不明なカテゴリは"etc"として扱う
  */
 function mapCategoryTextToWorkCategory(categoryText: string): WorkCategory {
 	// 日本語テキストからマッピング
@@ -668,7 +677,8 @@ function mapCategoryTextToWorkCategory(categoryText: string): WorkCategory {
 		case "その他ゲーム":
 			return "etc" as WorkCategory; // 正しいコードはetc
 		default:
-			logger.warn(`未知のカテゴリテキスト: ${categoryText}`);
+			// 未知のカテゴリの場合は警告レベルを下げ、"etc"として処理
+			logger.debug(`未知のカテゴリテキスト: ${categoryText} (etcとして分類)`);
 			return "etc" as WorkCategory;
 	}
 }
@@ -705,6 +715,9 @@ function processWorkListItem(element: unknown, index: number): ParsedWorkData | 
 		const categoryElement = $item.find(".work_category a");
 		const categoryText = categoryElement.text().trim();
 		const category = mapCategoryTextToWorkCategory(categoryText);
+
+		// 元のカテゴリテキストも保存（表示用）
+		const originalCategoryText = categoryText || undefined;
 
 		// 価格情報
 		const currentPriceText = $item.find(".work_price_base").first().text().trim();
@@ -768,6 +781,7 @@ function processWorkListItem(element: unknown, index: number): ParsedWorkData | 
 			circle,
 			author: author.length > 0 ? author : undefined,
 			category,
+			originalCategoryText,
 			workUrl: workUrl.startsWith("//")
 				? `https:${workUrl}`
 				: workUrl.startsWith("/")

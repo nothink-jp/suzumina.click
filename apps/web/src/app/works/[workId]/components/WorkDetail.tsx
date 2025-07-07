@@ -3,7 +3,7 @@
 import {
 	checkAgeRating,
 	getAgeRatingDisplayName,
-	getWorkCategoryDisplayName,
+	getWorkCategoryDisplayText,
 } from "@suzumina.click/shared-types";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import NotImplementedOverlay from "@suzumina.click/ui/components/custom/not-implemented-overlay";
@@ -369,7 +369,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 												<div>
 													<div className="text-sm text-gray-700">カテゴリ</div>
 													<div className="font-semibold text-gray-900">
-														{getWorkCategoryDisplayName(work.category)}
+														{getWorkCategoryDisplayText(work)}
 													</div>
 												</div>
 											</div>
@@ -695,7 +695,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 										<div className="text-center">
 											<div className="text-sm text-gray-600">カテゴリ</div>
 											<div className="text-lg font-semibold text-gray-900">
-												{getWorkCategoryDisplayName(work.category)}
+												{getWorkCategoryDisplayText(work)}
 											</div>
 										</div>
 									</div>

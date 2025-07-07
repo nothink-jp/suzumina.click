@@ -388,8 +388,10 @@ export const DLsiteWorkBaseSchema = z.object({
 	}),
 	/** 作品説明 */
 	description: z.string().default(""),
-	/** 作品カテゴリ */
+	/** 作品カテゴリ（フィルタリング用） */
 	category: WorkCategorySchema,
+	/** 元のカテゴリテキスト（表示用） */
+	originalCategoryText: z.string().optional(),
 	/** DLsite作品ページURL */
 	workUrl: z.string().url({
 		message: "作品URLは有効なURL形式である必要があります",
@@ -538,8 +540,10 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	circle: z.string().min(1),
 	/** 作品説明 */
 	description: z.string(),
-	/** 作品カテゴリ */
+	/** 作品カテゴリ（フィルタリング用） */
 	category: WorkCategorySchema,
+	/** 元のカテゴリテキスト（表示用） */
+	originalCategoryText: z.string().optional(),
 	/** DLsite作品ページURL */
 	workUrl: z.string(),
 	/** サムネイル画像 */
@@ -1074,6 +1078,25 @@ export function getWorkCategoryDisplayNameSafe(category: string): string {
 	}
 	// 不明なカテゴリの場合はそのまま返す
 	return category;
+}
+
+/**
+ * 作品データから表示用カテゴリ名を取得
+ * 元のカテゴリテキストが利用可能な場合はそれを優先し、なければマッピングを使用
+ * @param work 作品データ
+ * @returns 表示用カテゴリ名
+ */
+export function getWorkCategoryDisplayText(work: {
+	category: WorkCategory;
+	originalCategoryText?: string;
+}): string {
+	// 元のカテゴリテキストが存在する場合はそれを使用（表示優先）
+	if (work.originalCategoryText && work.originalCategoryText.trim() !== "") {
+		return work.originalCategoryText;
+	}
+
+	// フォールバック: マッピングテーブルから取得
+	return getWorkCategoryDisplayName(work.category);
 }
 
 /**
