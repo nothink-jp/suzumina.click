@@ -421,8 +421,8 @@ function extractGenresAndTags(apiData: IndividualInfoAPIResponse): {
 	}
 
 	// デバッグ：抽出した結果をログ出力
-	logger.debug(`Extracted genres: ${genres.length} items`, genres);
-	logger.debug(`Extracted tags: ${tags.length} items`, tags);
+	logger.debug(`Extracted genres: ${genres.length} items`, { genres });
+	logger.debug(`Extracted tags: ${tags.length} items`, { tags });
 
 	return { genres, tags };
 }
