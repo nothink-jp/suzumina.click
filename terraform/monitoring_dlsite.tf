@@ -47,15 +47,15 @@ resource "google_monitoring_alert_policy" "dlsite_function_error" {
   
   documentation {
     content = <<-EOT
-    # DLsite作品データ取得エラー
+    # DLsite Individual Info API データ取得エラー
     
-    DLsite作品データの取得でエラーが発生しました。
-    スクレイピング処理の失敗またはDLsiteの仕様変更の可能性があります。
+    DLsite Individual Info APIからのデータ取得でエラーが発生しました。
+    API接続の失敗またはAPIレート制限の可能性があります。
     
     ## 確認事項
     1. Cloud Loggingでエラー詳細を確認
-    2. DLsiteのWebサイト構造変更を確認
-    3. dlsite-parser.ts と dlsite-mapper.ts の更新が必要か確認
+    2. DLsite APIのステータスを確認
+    3. APIレート制限の状況を確認
     
     ## ログ確認コマンド
     ```bash
