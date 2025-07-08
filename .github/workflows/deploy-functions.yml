@@ -264,6 +264,72 @@ jobs:
             fi
           done
 
+      - name: Deploy fetchDLsiteWorksIndividualAPI function
+        run: |
+          echo "🚀 Deploying fetchDLsiteWorksIndividualAPI function..."
+          
+          # リトライロジック付きでデプロイ
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt/3..."
+            
+            if gcloud functions deploy fetchDLsiteWorksIndividualAPI \
+              --source ${{ env.DEPLOYMENT_SOURCE }} \
+              --runtime nodejs22 \
+              --entry-point fetchDLsiteWorksIndividualAPI \
+              --trigger-topic dlsite-individual-api-trigger \
+              --region asia-northeast1 \
+              --project ${{ secrets.GCP_PROJECT_ID }} \
+              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteWorksIndividualAPI,INDIVIDUAL_INFO_API_ENABLED=true,API_ONLY_MODE=true,MAX_CONCURRENT_API_REQUESTS=5,API_REQUEST_DELAY_MS=500,ENABLE_DATA_VALIDATION=true,MINIMUM_QUALITY_SCORE=80,ENABLE_TIMESERIES_INTEGRATION=true,LOG_LEVEL=info \
+              --memory 2Gi \
+              --timeout 540s \
+              --max-instances 2 \
+              --quiet; then
+              echo "✅ fetchDLsiteWorksIndividualAPI deployed successfully"
+              break
+            else
+              echo "❌ Deploy failed on attempt $attempt"
+              if [ $attempt -eq 3 ]; then
+                echo "🚨 All retry attempts failed"
+                exit 1
+              fi
+              echo "⏳ Waiting 30 seconds before retry..."
+              sleep 30
+            fi
+          done
+
+      - name: Deploy collectDLsiteTimeseries function
+        run: |
+          echo "🚀 Deploying collectDLsiteTimeseries function..."
+          
+          # リトライロジック付きでデプロイ
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt/3..."
+            
+            if gcloud functions deploy collectDLsiteTimeseries \
+              --source ${{ env.DEPLOYMENT_SOURCE }} \
+              --runtime nodejs22 \
+              --entry-point collectDLsiteTimeseries \
+              --trigger-topic dlsite-timeseries-collect-trigger \
+              --region asia-northeast1 \
+              --project ${{ secrets.GCP_PROJECT_ID }} \
+              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=collectDLsiteTimeseries,DLSITE_MAX_CONCURRENT_REQUESTS=5,DLSITE_MAX_PAGES_PER_EXECUTION=50,DLSITE_REQUEST_DELAY_MS=2000,TIMESERIES_BATCH_SIZE=50,TIMESERIES_RETENTION_DAYS=7,LOG_LEVEL=info \
+              --memory 1Gi \
+              --timeout 540s \
+              --max-instances 3 \
+              --quiet; then
+              echo "✅ collectDLsiteTimeseries deployed successfully"
+              break
+            else
+              echo "❌ Deploy failed on attempt $attempt"
+              if [ $attempt -eq 3 ]; then
+                echo "🚨 All retry attempts failed"
+                exit 1
+              fi
+              echo "⏳ Waiting 30 seconds before retry..."
+              sleep 30
+            fi
+          done
+
       - name: Cleanup deployment artifacts
         if: always()
         run: |
