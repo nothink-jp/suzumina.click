@@ -109,10 +109,10 @@ export default function GlobalError({
 							<div className="pt-4 border-t space-y-2">
 								<div className="flex items-center justify-center gap-2">
 									<Badge variant="outline" className="text-xs">
-										涼花みなせ
+										涼花みなせ様ファンサイト
 									</Badge>
 									<Badge variant="outline" className="text-xs">
-										個人運営サイト
+										非公式
 									</Badge>
 								</div>
 								<p className="text-xs text-muted-foreground">

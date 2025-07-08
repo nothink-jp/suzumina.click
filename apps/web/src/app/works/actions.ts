@@ -66,12 +66,16 @@ function filterWorksByUnifiedData(
 				work.title,
 				work.circle,
 				work.description,
-				...(work.voiceActors || []).filter((va) => typeof va === "string"),
-				...(work.scenario || []).filter((s) => typeof s === "string"),
-				...(work.illustration || []).filter((i) => typeof i === "string"),
-				...(work.music || []).filter((m) => typeof m === "string"),
-				...(work.author || []).filter((a) => typeof a === "string"),
-				...(work.genres || []).filter((g) => typeof g === "string"),
+				...(Array.isArray(work.voiceActors)
+					? work.voiceActors.filter((va) => typeof va === "string")
+					: []),
+				...(Array.isArray(work.scenario) ? work.scenario.filter((s) => typeof s === "string") : []),
+				...(Array.isArray(work.illustration)
+					? work.illustration.filter((i) => typeof i === "string")
+					: []),
+				...(Array.isArray(work.music) ? work.music.filter((m) => typeof m === "string") : []),
+				...(Array.isArray(work.author) ? work.author.filter((a) => typeof a === "string") : []),
+				...(Array.isArray(work.genres) ? work.genres.filter((g) => typeof g === "string") : []),
 			]
 				.filter((text) => typeof text === "string")
 				.join(" ")
@@ -94,7 +98,7 @@ function filterWorksByUnifiedData(
 	// 声優フィルタリング（統合データ活用）
 	if (params.voiceActors && params.voiceActors.length > 0) {
 		filteredWorks = filteredWorks.filter((work) => {
-			const workVoiceActors = work.voiceActors || [];
+			const workVoiceActors = Array.isArray(work.voiceActors) ? work.voiceActors : [];
 			return params.voiceActors?.some((va) =>
 				workVoiceActors.some(
 					(wva) => typeof wva === "string" && typeof va === "string" && wva.includes(va),
@@ -106,7 +110,7 @@ function filterWorksByUnifiedData(
 	// ジャンルフィルタリング（統合ジャンル活用）
 	if (params.genres && params.genres.length > 0) {
 		filteredWorks = filteredWorks.filter((work) => {
-			const workGenres = work.genres || [];
+			const workGenres = Array.isArray(work.genres) ? work.genres : [];
 			return params.genres?.some((genre) =>
 				workGenres.some(
 					(wg) => typeof wg === "string" && typeof genre === "string" && wg.includes(genre),
@@ -386,7 +390,7 @@ export async function getRelatedWorks(
 			}
 
 			// 声優一致（統合データ活用）
-			if (byVoiceActors && baseWork.voiceActors && work.voiceActors) {
+			if (byVoiceActors && Array.isArray(baseWork.voiceActors) && Array.isArray(work.voiceActors)) {
 				const commonVoiceActors = baseWork.voiceActors.filter(
 					(va) =>
 						typeof va === "string" &&
@@ -399,7 +403,7 @@ export async function getRelatedWorks(
 			}
 
 			// ジャンル一致（統合データ活用）
-			if (byGenres && baseWork.tags && work.genres) {
+			if (byGenres && Array.isArray(baseWork.tags) && Array.isArray(work.genres)) {
 				const commonGenres = baseWork.tags.filter(
 					(tag: string) =>
 						typeof tag === "string" &&
@@ -524,7 +528,7 @@ export async function getWorksStats(
 		// 人気タグ（統合ジャンル活用）
 		const tagCounts = new Map<string, number>();
 		allWorks.forEach((work) => {
-			if (work.genres) {
+			if (Array.isArray(work.genres)) {
 				work.genres.forEach((genre) => {
 					if (typeof genre === "string" && genre.trim() !== "") {
 						tagCounts.set(genre, (tagCounts.get(genre) || 0) + 1);
@@ -541,7 +545,7 @@ export async function getWorksStats(
 		// 人気声優（統合データ活用）
 		const voiceActorCounts = new Map<string, number>();
 		allWorks.forEach((work) => {
-			if (work.voiceActors) {
+			if (Array.isArray(work.voiceActors)) {
 				work.voiceActors.forEach((va) => {
 					if (typeof va === "string" && va.trim() !== "") {
 						voiceActorCounts.set(va, (voiceActorCounts.get(va) || 0) + 1);
@@ -617,13 +621,14 @@ export async function getDataQualityReport() {
 
 		allWorks.forEach((work) => {
 			if (work.highResImageUrl) qualityStats.hasHighResImage++;
-			if (work.voiceActors && work.voiceActors.length > 0) qualityStats.hasVoiceActors++;
+			if (Array.isArray(work.voiceActors) && work.voiceActors.length > 0)
+				qualityStats.hasVoiceActors++;
 			if (work.rating) qualityStats.hasRating++;
-			if (work.genres && work.genres.length > 0) qualityStats.hasGenres++;
+			if (Array.isArray(work.genres) && work.genres.length > 0) qualityStats.hasGenres++;
 
 			// 詳細クリエイター情報
 			const hasDetailedCreators = [work.scenario, work.illustration, work.music].some(
-				(creators) => creators && creators.length > 0,
+				(creators) => Array.isArray(creators) && creators.length > 0,
 			);
 			if (hasDetailedCreators) qualityStats.hasDetailedCreators++;
 
@@ -741,7 +746,7 @@ export async function getPopularVoiceActors(limit = 20): Promise<
 		>();
 
 		allWorks.forEach((work) => {
-			if (work.voiceActors) {
+			if (Array.isArray(work.voiceActors)) {
 				work.voiceActors.forEach((va) => {
 					if (typeof va === "string" && va.trim() !== "") {
 						if (!voiceActorMap.has(va)) {
@@ -793,7 +798,7 @@ export async function getPopularGenres(limit = 30): Promise<
 		const genreCounts = new Map<string, number>();
 
 		allWorks.forEach((work) => {
-			if (work.genres) {
+			if (Array.isArray(work.genres)) {
 				work.genres.forEach((genre) => {
 					if (typeof genre === "string" && genre.trim() !== "") {
 						genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1);

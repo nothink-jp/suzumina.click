@@ -126,7 +126,13 @@ export function AudioButtonCreator({
 	// タグ追加処理
 	const addTag = useCallback(() => {
 		const trimmedTag = tagInput.trim();
-		if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 15 && trimmedTag.length <= 30) {
+		if (
+			trimmedTag &&
+			Array.isArray(tags) &&
+			!tags.includes(trimmedTag) &&
+			tags.length < 15 &&
+			trimmedTag.length <= 30
+		) {
 			setTags([...tags, trimmedTag]);
 			setTagInput("");
 		}
@@ -135,7 +141,9 @@ export function AudioButtonCreator({
 	// タグ削除処理
 	const removeTag = useCallback(
 		(tagToRemove: string) => {
-			setTags(tags.filter((tag) => tag !== tagToRemove));
+			if (Array.isArray(tags)) {
+				setTags(tags.filter((tag) => tag !== tagToRemove));
+			}
 		},
 		[tags],
 	);

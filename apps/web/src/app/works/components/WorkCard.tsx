@@ -84,8 +84,8 @@ export default function WorkCard({ work, variant = "default", priority = false }
 							aria-label={`${work.title}の詳細を見る`}
 						>
 							<ThumbnailImage
-								src={work.highResImageUrl || work.thumbnailUrl}
-								fallbackSrc={work.thumbnailUrl}
+								src={work.highResImageUrl || work.thumbnailUrl || "/placeholder.svg"}
+								fallbackSrc={work.thumbnailUrl || "/placeholder.svg"}
 								alt={`${work.title}のサムネイル画像`}
 								className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
 								priority={priority}
@@ -131,21 +131,22 @@ export default function WorkCard({ work, variant = "default", priority = false }
 
 					{/* ジャンル・タグ表示 */}
 					<ul className="flex flex-wrap gap-1 mb-2" aria-label="作品ジャンル・タグ">
-						{(work.tags || []).slice(0, 3).map((tag: string) => (
-							<li key={tag}>
-								<Badge
-									variant="outline"
-									className="text-xs border border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
-								>
-									<Tag className="h-3 w-3" aria-hidden="true" />
-									{tag}
-								</Badge>
-							</li>
-						))}
+						{Array.isArray(work.tags) &&
+							work.tags.slice(0, 3).map((tag: string) => (
+								<li key={tag}>
+									<Badge
+										variant="outline"
+										className="text-xs border border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
+									>
+										<Tag className="h-3 w-3" aria-hidden="true" />
+										{tag}
+									</Badge>
+								</li>
+							))}
 					</ul>
 
 					{/* 声優情報（簡潔表示） */}
-					{work.voiceActors && work.voiceActors.length > 0 && (
+					{Array.isArray(work.voiceActors) && work.voiceActors.length > 0 && (
 						<div className="flex items-center gap-1 mb-2 text-xs">
 							<Users className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
 							<span className="text-muted-foreground">CV:</span>

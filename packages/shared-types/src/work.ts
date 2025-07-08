@@ -837,6 +837,17 @@ function generateDownloadText(
 function createFallbackFrontendWork(
 	data: OptimizedFirestoreDLsiteWorkData,
 ): FrontendDLsiteWorkData {
+	// 安全なデータ抽出
+	const thumbnailUrl = extractImageUrl(data.thumbnailUrl);
+	const highResImageUrl = extractImageUrl(data.highResImageUrl);
+	const voiceActors = extractArrayField(data.voiceActors);
+	const scenario = extractArrayField(data.scenario);
+	const illustration = extractArrayField(data.illustration);
+	const music = extractArrayField(data.music);
+	const author = extractArrayField(data.author);
+	const tags = extractArrayField(data.tags);
+	const genres = extractArrayField(data.genres);
+
 	const displayPrice = generateDisplayPrice(data.price);
 	const discountText = data.price.discount ? `${data.price.discount}%OFF` : undefined;
 	const ratingText = generateRatingText(data.rating);
@@ -852,18 +863,18 @@ function createFallbackFrontendWork(
 		description: data.description || "",
 		category: data.category,
 		workUrl: data.workUrl,
-		thumbnailUrl: data.thumbnailUrl,
-		highResImageUrl: data.highResImageUrl,
+		thumbnailUrl, // 修正: 安全に抽出
+		highResImageUrl, // 修正: 安全に抽出
 		price: data.price,
 		rating: data.rating,
 		salesCount: data.salesCount,
 
 		// 統一されたクリエイター情報
-		voiceActors: data.voiceActors || [],
-		scenario: data.scenario || [],
-		illustration: data.illustration || [],
-		music: data.music || [],
-		author: data.author || [],
+		voiceActors, // 修正: 安全に抽出
+		scenario, // 修正: 安全に抽出
+		illustration, // 修正: 安全に抽出
+		music, // 修正: 安全に抽出
+		author, // 修正: 安全に抽出
 
 		// 統一された作品情報
 		releaseDate: data.releaseDate,
@@ -871,13 +882,13 @@ function createFallbackFrontendWork(
 		ageRating,
 		workFormat: data.workFormat,
 		fileFormat: data.fileFormat,
-		tags: data.tags || [],
+		tags, // 修正: 安全に抽出
 
 		sampleImages: data.sampleImages || [],
 		isExclusive: data.isExclusive || false,
 
 		// 拡張情報
-		genres: data.genres || [],
+		genres, // 修正: 安全に抽出
 		dataSources: data.dataSources,
 		fileInfo: data.fileInfo, // @deprecated API-only実装により不要
 		bonusContent: data.bonusContent || [], // @deprecated API-only実装により不要
@@ -899,9 +910,48 @@ function createFallbackFrontendWork(
 	};
 }
 
+/**
+ * Firestoreの画像URLフィールドから文字列を安全に抽出
+ */
+function extractImageUrl(imageField: unknown): string {
+	if (typeof imageField === "string") {
+		return imageField;
+	}
+	if (imageField && typeof imageField === "object" && "url" in imageField) {
+		const obj = imageField as { url: unknown };
+		if (typeof obj.url === "string") {
+			return obj.url;
+		}
+	}
+	return "";
+}
+
+/**
+ * Firestoreの配列フィールドから安全に配列を抽出
+ */
+function extractArrayField(arrayField: unknown): string[] {
+	if (Array.isArray(arrayField)) {
+		return arrayField.filter((item) => typeof item === "string");
+	}
+	return [];
+}
+
 export function convertToFrontendWork(
 	data: OptimizedFirestoreDLsiteWorkData,
 ): FrontendDLsiteWorkData {
+	// 画像URLの安全な抽出
+	const thumbnailUrl = extractImageUrl(data.thumbnailUrl);
+	const highResImageUrl = extractImageUrl(data.highResImageUrl);
+
+	// 配列フィールドの安全な抽出
+	const voiceActors = extractArrayField(data.voiceActors);
+	const scenario = extractArrayField(data.scenario);
+	const illustration = extractArrayField(data.illustration);
+	const music = extractArrayField(data.music);
+	const author = extractArrayField(data.author);
+	const tags = extractArrayField(data.tags);
+	const genres = extractArrayField(data.genres);
+
 	// 表示用テキストの生成
 	const displayPrice = generateDisplayPrice(data.price);
 	const discountText = data.price.discount ? `${data.price.discount}%OFF` : undefined;
@@ -917,6 +967,16 @@ export function convertToFrontendWork(
 	// FrontendDLsiteWorkSchema形式のデータを生成
 	const frontendData: FrontendDLsiteWorkData = {
 		...data,
+		// 修正されたフィールド
+		thumbnailUrl,
+		highResImageUrl,
+		voiceActors,
+		scenario,
+		illustration,
+		music,
+		author,
+		tags,
+		genres,
 		ageRating, // 修正: データソースから取得した年齢レーティングを使用
 		displayPrice,
 		discountText,

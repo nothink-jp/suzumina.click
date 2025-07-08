@@ -3,7 +3,12 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { handleNoWorkIdsError, validateWorkIds, warnPartialSuccess } from "./work-id-validator";
+import {
+	createUnionWorkIds,
+	handleNoWorkIdsError,
+	validateWorkIds,
+	warnPartialSuccess,
+} from "./work-id-validator";
 
 // ログのモック
 vi.mock("../../shared/logger", () => ({
@@ -102,6 +107,57 @@ describe("Work ID Validator", () => {
 			};
 
 			expect(() => warnPartialSuccess(result)).not.toThrow();
+		});
+	});
+
+	describe("createUnionWorkIds", () => {
+		// ファイルシステムのモック
+		vi.mock("node:fs", () => ({
+			readFileSync: vi.fn().mockReturnValue(
+				JSON.stringify({
+					workIds: ["RJ123456", "RJ789012", "RJ111111", "RJ222222"],
+				}),
+			),
+		}));
+
+		it("和集合が正しく作成される", () => {
+			const currentRegionIds = ["RJ123456", "RJ333333"];
+			const result = createUnionWorkIds(currentRegionIds);
+
+			expect(result.currentRegionIds).toEqual(currentRegionIds);
+			expect(result.unionIds).toContain("RJ123456");
+			expect(result.unionIds).toContain("RJ333333");
+			expect(result.unionIds.length).toBeGreaterThan(currentRegionIds.length);
+		});
+
+		it("重複が正しく計算される", () => {
+			const currentRegionIds = ["RJ123456", "RJ789012"];
+			const result = createUnionWorkIds(currentRegionIds);
+
+			expect(result.overlapCount).toBe(2); // 全て重複
+			expect(result.regionOnlyCount).toBe(0);
+			expect(result.assetOnlyCount).toBeGreaterThan(0);
+		});
+
+		it("リージョン差異が正しく検出される", () => {
+			// リージョンで取得できるIDが少ない場合
+			const currentRegionIds = ["RJ123456"];
+			const result = createUnionWorkIds(currentRegionIds);
+
+			expect(result.regionDifferenceDetected).toBe(true);
+		});
+
+		it("結果の構造が正しい", () => {
+			const currentRegionIds = ["RJ123456"];
+			const result = createUnionWorkIds(currentRegionIds);
+
+			expect(result).toHaveProperty("currentRegionIds");
+			expect(result).toHaveProperty("assetFileIds");
+			expect(result).toHaveProperty("unionIds");
+			expect(result).toHaveProperty("regionOnlyCount");
+			expect(result).toHaveProperty("assetOnlyCount");
+			expect(result).toHaveProperty("overlapCount");
+			expect(result).toHaveProperty("regionDifferenceDetected");
 		});
 	});
 });

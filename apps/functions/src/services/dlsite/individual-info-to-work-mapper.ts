@@ -84,9 +84,42 @@ export interface IndividualInfoAPIResponse {
 	author: string;
 	author_en?: string;
 
+	// === クリエイター情報 ===
+	creaters?: {
+		voice_by?: Array<{
+			id: string;
+			name: string;
+		}>;
+		scenario_by?: Array<{
+			id: string;
+			name: string;
+		}>;
+		illust_by?: Array<{
+			id: string;
+			name: string;
+		}>;
+		music_by?: Array<{
+			id: string;
+			name: string;
+		}>;
+		directed_by?: Array<{
+			id: string;
+			name: string;
+		}>;
+		others_by?: Array<{
+			id: string;
+			name: string;
+		}>;
+	};
+
 	// === ジャンル・タグ ===
-	genre?: Array<{
+	genres?: Array<{
 		id: string;
+		name: string;
+		search_val?: string;
+	}>;
+	custom_genres?: Array<{
+		genre_key: string;
 		name: string;
 	}>;
 	keyword?: string[];
@@ -107,6 +140,8 @@ export interface IndividualInfoAPIResponse {
 	image_thum?: string;
 	image_samples?: string[];
 	srcset?: string;
+	image_thumb?: string;
+	image_thumb_touch?: string;
 
 	// === キャンペーン情報 ===
 	campaign?: {
@@ -278,11 +313,18 @@ function extractRatingInfo(apiData: IndividualInfoAPIResponse): RatingInfo | und
 	const stars = apiData.rate_average_star || apiData.rate_average;
 	const count = apiData.rate_count;
 
+	logger.debug("Extracting rating info:", {
+		rate_average: apiData.rate_average,
+		rate_average_star: apiData.rate_average_star,
+		rate_count: apiData.rate_count,
+	});
+
 	if (!stars || !count || count === 0) {
+		logger.debug("No rating data available");
 		return undefined;
 	}
 
-	return {
+	const ratingInfo = {
 		stars,
 		count,
 		reviewCount: count,
@@ -293,25 +335,46 @@ function extractRatingInfo(apiData: IndividualInfoAPIResponse): RatingInfo | und
 		})),
 		averageDecimal: stars,
 	};
+
+	logger.debug("Rating info extracted:", ratingInfo);
+	return ratingInfo;
 }
 
 /**
- * 声優情報の抽出（authorフィールドから）
+ * 声優情報の抽出（creatorsフィールドから優先、authorフィールドからフォールバック）
  */
 function extractVoiceActors(apiData: IndividualInfoAPIResponse): string[] {
+	logger.debug("Extracting voice actors from:", {
+		creaters: apiData.creaters,
+		author: apiData.author,
+	});
+
+	// 新しいcreatorsフィールドから抽出（優先）
+	if (apiData.creaters?.voice_by && Array.isArray(apiData.creaters.voice_by)) {
+		const voiceActors = apiData.creaters.voice_by.map((creator) => creator.name).filter(Boolean);
+		if (voiceActors.length > 0) {
+			logger.debug(`Found creators voice actors: ${voiceActors}`);
+			return voiceActors;
+		}
+	}
+
+	// フォールバック：authorフィールドから抽出
 	if (!apiData.author) return [];
 
 	// "CV:田中涼子,山田花子" のような形式から声優名を抽出
 	const cvMatch = apiData.author?.match(/CV:([^,]+(?:,[^,]+)*)/);
 	if (cvMatch?.[1]) {
-		return cvMatch[1]
+		const voiceActors = cvMatch[1]
 			.split(",")
 			.map((name) => name.trim())
 			.filter(Boolean);
+		logger.debug(`Found CV voice actors from author: ${voiceActors}`);
+		return voiceActors;
 	}
 
-	// 単一の作者名の場合
+	// "みずのちょう" のような単一の作者名の場合（CV:なし）
 	if (apiData.author && !apiData.author.includes("CV:")) {
+		logger.debug(`Found single author: ${apiData.author}`);
 		return [apiData.author.trim()];
 	}
 
@@ -328,9 +391,24 @@ function extractGenresAndTags(apiData: IndividualInfoAPIResponse): {
 	const genres: string[] = [];
 	const tags: string[] = [];
 
-	// genre配列から抽出
-	if (apiData.genre && Array.isArray(apiData.genre)) {
-		for (const genreItem of apiData.genre) {
+	logger.debug("Extracting genres and tags from API data:", {
+		genres: apiData.genres,
+		custom_genres: apiData.custom_genres,
+		keyword: apiData.keyword,
+	});
+
+	// genres配列から抽出
+	if (apiData.genres && Array.isArray(apiData.genres)) {
+		for (const genreItem of apiData.genres) {
+			if (genreItem.name) {
+				genres.push(genreItem.name);
+			}
+		}
+	}
+
+	// custom_genres配列から抽出
+	if (apiData.custom_genres && Array.isArray(apiData.custom_genres)) {
+		for (const genreItem of apiData.custom_genres) {
 			if (genreItem.name) {
 				genres.push(genreItem.name);
 			}
@@ -342,7 +420,59 @@ function extractGenresAndTags(apiData: IndividualInfoAPIResponse): {
 		tags.push(...apiData.keyword.filter(Boolean));
 	}
 
+	// デバッグ：抽出した結果をログ出力
+	logger.debug(`Extracted genres: ${genres.length} items`, genres);
+	logger.debug(`Extracted tags: ${tags.length} items`, tags);
+
 	return { genres, tags };
+}
+
+/**
+ * 各種クリエイター情報の抽出
+ */
+function extractCreators(apiData: IndividualInfoAPIResponse): {
+	scenario: string[];
+	illustration: string[];
+	music: string[];
+	author: string[];
+} {
+	const scenario: string[] = [];
+	const illustration: string[] = [];
+	const music: string[] = [];
+	const author: string[] = [];
+
+	if (apiData.creaters) {
+		// シナリオ作者
+		if (apiData.creaters.scenario_by && Array.isArray(apiData.creaters.scenario_by)) {
+			scenario.push(...apiData.creaters.scenario_by.map((creator) => creator.name).filter(Boolean));
+		}
+
+		// イラスト作者
+		if (apiData.creaters.illust_by && Array.isArray(apiData.creaters.illust_by)) {
+			illustration.push(
+				...apiData.creaters.illust_by.map((creator) => creator.name).filter(Boolean),
+			);
+		}
+
+		// 音楽作者
+		if (apiData.creaters.music_by && Array.isArray(apiData.creaters.music_by)) {
+			music.push(...apiData.creaters.music_by.map((creator) => creator.name).filter(Boolean));
+		}
+
+		// その他の作者
+		if (apiData.creaters.others_by && Array.isArray(apiData.creaters.others_by)) {
+			author.push(...apiData.creaters.others_by.map((creator) => creator.name).filter(Boolean));
+		}
+	}
+
+	logger.debug("Extracted creators:", {
+		scenario: scenario.length,
+		illustration: illustration.length,
+		music: music.length,
+		author: author.length,
+	});
+
+	return { scenario, illustration, music, author };
 }
 
 /**
@@ -444,11 +574,28 @@ export function mapIndividualInfoAPIToWorkData(
 	logger.info(`Individual Info API -> Work data mapping: ${productId}`);
 
 	// 基本情報の変換
+	logger.debug(`Starting data extraction for: ${productId}`);
 	const category = extractWorkCategory(apiData);
 	const price = extractPriceInfo(apiData);
 	const rating = extractRatingInfo(apiData);
 	const voiceActors = extractVoiceActors(apiData);
 	const { genres, tags } = extractGenresAndTags(apiData);
+	const creators = extractCreators(apiData);
+
+	logger.debug("Extracted data summary:", {
+		category,
+		price,
+		rating: rating ? `${rating.stars} stars (${rating.count} reviews)` : "No rating",
+		voiceActors: voiceActors.length,
+		genres: genres.length,
+		tags: tags.length,
+		creators: {
+			scenario: creators.scenario.length,
+			illustration: creators.illustration.length,
+			music: creators.music.length,
+			author: creators.author.length,
+		},
+	});
 
 	// キャンペーン情報（一時的に未使用）
 	// const campaignInfo: CampaignInfo | undefined = apiData.campaign ? {
@@ -511,18 +658,42 @@ export function mapIndividualInfoAPIToWorkData(
 	const workUrl = `https://www.dlsite.com/maniax/work/=/product_id/${productId}.html`;
 
 	// 画像URL生成（高解像度対応）
+	logger.debug("Extracting image URLs:", {
+		image_thum: apiData.image_thum,
+		image_main: apiData.image_main,
+		image_thumb: apiData.image_thumb,
+		image_thumb_touch: apiData.image_thumb_touch,
+		srcset: apiData.srcset,
+	});
+
 	const thumbnailUrl =
+		apiData.image_thumb ||
+		apiData.image_thumb_touch ||
 		apiData.image_thum ||
 		apiData.image_main ||
 		`https://img.dlsite.jp/modpub/images2/work/doujin/${productId}_img_main.jpg`;
 	const highResImageUrl =
-		apiData.image_main || (apiData.srcset ? extractHighResFromSrcset(apiData.srcset) : undefined);
+		apiData.image_main ||
+		apiData.image_thumb_touch ||
+		(apiData.srcset ? extractHighResFromSrcset(apiData.srcset) : undefined);
+
+	logger.debug("Image URLs extracted:", {
+		thumbnailUrl,
+		highResImageUrl,
+	});
 
 	// 販売数の正規化
+	logger.debug("Extracting sales count:", {
+		dl_count: apiData.dl_count,
+		type: typeof apiData.dl_count,
+	});
+
 	const salesCount =
 		typeof apiData.dl_count === "string"
 			? Number.parseInt(apiData.dl_count.replace(/,/g, ""), 10) || 0
 			: apiData.dl_count || 0;
+
+	logger.debug(`Sales count normalized: ${salesCount}`);
 
 	return {
 		// === 基本識別情報 ===
@@ -548,10 +719,17 @@ export function mapIndividualInfoAPIToWorkData(
 
 		// === クリエイター情報（Individual Info APIで取得可能な範囲） ===
 		voiceActors,
-		scenario: [], // Individual Info APIには詳細クリエイター情報なし
-		illustration: [],
-		music: [],
-		author: voiceActors.length > 0 ? [] : apiData.author ? [apiData.author] : [],
+		scenario: creators.scenario,
+		illustration: creators.illustration,
+		music: creators.music,
+		author:
+			creators.author.length > 0
+				? creators.author
+				: voiceActors.length > 0
+					? []
+					: apiData.author
+						? [apiData.author]
+						: [],
 
 		// === ジャンル・タグ ===
 		genres,

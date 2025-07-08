@@ -24,6 +24,7 @@ import {
 } from "../services/dlsite/individual-info-to-work-mapper";
 import { saveMultipleTimeSeriesRawData } from "../services/dlsite/timeseries-firestore";
 import {
+	createUnionWorkIds,
 	handleNoWorkIdsError,
 	validateWorkIds,
 	warnPartialSuccess,
@@ -54,6 +55,10 @@ interface UnifiedDataCollectionMetadata {
 	basicDataUpdated?: number;
 	timeSeriesCollected?: number;
 	unifiedSystemStarted?: Timestamp;
+	regionOnlyIds?: number;
+	assetOnlyIds?: number;
+	unionTotalIds?: number;
+	regionDifferenceDetected?: boolean;
 }
 
 /**
@@ -336,15 +341,23 @@ async function getAllWorkIds(): Promise<string[]> {
 /**
  * 統合データ収集処理の実行
  * 基本データ更新 + 時系列データ収集を同一APIレスポンスから並列実行
+ * リージョン差異対応: 和集合によるID収集
  */
 async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 	logger.info("🚀 DLsite統合データ収集システム開始");
 	logger.info("📋 Individual Info API統合アーキテクチャ - 重複API呼び出し完全排除");
+	logger.info("🌏 リージョン差異対応 - 和集合による完全データ収集");
 
 	try {
-		// 1. 全作品IDを取得
-		const allWorkIds = await getAllWorkIds();
-		logger.info(`🔍 対象作品数: ${allWorkIds.length}件`);
+		// 1. 現在のリージョンで作品IDを取得
+		const currentRegionIds = await getAllWorkIds();
+		logger.info(`🔍 現在のリージョン取得数: ${currentRegionIds.length}件`);
+
+		// 2. 和集合による完全なIDリストを作成
+		const unionResult = createUnionWorkIds(currentRegionIds);
+		const allWorkIds = unionResult.unionIds;
+
+		logger.info(`🎯 和集合後の対象作品数: ${allWorkIds.length}件`);
 
 		if (allWorkIds.length === 0) {
 			// 作品IDが0件の場合、リージョン差異を考慮したエラーハンドリング
@@ -358,11 +371,11 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			};
 		}
 
-		// 2. 既存データの確認
+		// 3. 既存データの確認
 		const existingWorksMap = await getExistingWorksMap(allWorkIds);
 		logger.info(`既存作品データ: ${existingWorksMap.size}件`);
 
-		// 3. Individual Info APIでデータを取得（統合処理の核心）
+		// 4. Individual Info APIでデータを取得（統合処理の核心）
 		const apiDataMap = await batchFetchIndividualInfo(allWorkIds);
 
 		if (apiDataMap.size === 0) {
@@ -385,7 +398,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			errors: [] as string[],
 		};
 
-		// 4A. 基本データ変換・保存処理
+		// 5A. 基本データ変換・保存処理
 		const basicDataProcessing = async () => {
 			try {
 				// APIデータを作品データに変換
@@ -421,7 +434,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			}
 		};
 
-		// 4B. 時系列データ変換・保存処理
+		// 5B. 時系列データ変換・保存処理
 		const timeSeriesProcessing = async () => {
 			try {
 				// 時系列データに変換
@@ -443,11 +456,11 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			}
 		};
 
-		// 5. 並列処理実行（統合アーキテクチャの効率化）
+		// 6. 並列処理実行（統合アーキテクチャの効率化）
 		logger.info("🔄 統合並列処理開始: 基本データ + 時系列データ");
 		await Promise.all([basicDataProcessing(), timeSeriesProcessing()]);
 
-		// 6. 統計情報・品質分析
+		// 7. 統計情報・品質分析
 		const apiSuccessRate = (apiDataMap.size / allWorkIds.length) * 100;
 		const dataIntegrityRate =
 			((results.basicDataUpdated + results.timeSeriesCollected) / (apiResponses.length * 2)) * 100;
@@ -460,6 +473,13 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		logger.info(`時系列データ収集: ${results.timeSeriesCollected}件`);
 		logger.info(`データ整合性: ${dataIntegrityRate.toFixed(1)}%`);
 		logger.info("⚡ 重複API呼び出し: 0回 (100%排除達成)");
+		logger.info("🌏 === リージョン差異対応統計 ===");
+		logger.info(`現在リージョン取得: ${unionResult.currentRegionIds.length}件`);
+		logger.info(`アセットファイル: ${unionResult.assetFileIds.length}件`);
+		logger.info(`和集合総数: ${unionResult.unionIds.length}件`);
+		logger.info(`リージョン専用: ${unionResult.regionOnlyCount}件`);
+		logger.info(`アセット専用: ${unionResult.assetOnlyCount}件`);
+		logger.info(`重複: ${unionResult.overlapCount}件`);
 
 		if (results.errors.length > 0) {
 			logger.warn(`⚠️ 処理エラー: ${results.errors.length}件`, { errors: results.errors });
@@ -509,8 +529,12 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 		// 3. 統合データ収集実行
 		const result = await executeUnifiedDataCollection();
 
-		// 4. 成功時のメタデータ更新
+		// 4. 成功時のメタデータ更新（和集合統計情報を含む）
 		if (!result.error) {
+			// 和集合情報を取得するため、再度実行（最適化の余地あり）
+			const currentRegionIds = await getAllWorkIds();
+			const unionInfo = createUnionWorkIds(currentRegionIds);
+
 			await updateUnifiedMetadata({
 				isInProgress: false,
 				lastError: undefined,
@@ -519,6 +543,10 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 				processedWorks: result.workCount,
 				basicDataUpdated: result.basicDataUpdated,
 				timeSeriesCollected: result.timeSeriesCollected,
+				regionOnlyIds: unionInfo.regionOnlyCount,
+				assetOnlyIds: unionInfo.assetOnlyCount,
+				unionTotalIds: unionInfo.unionIds.length,
+				regionDifferenceDetected: unionInfo.regionDifferenceDetected,
 			});
 
 			logger.info("✅ === DLsite統合データ収集完了 ===");

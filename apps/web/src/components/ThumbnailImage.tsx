@@ -22,10 +22,10 @@ const PLACEHOLDER_IMAGE =
  * DLsite画像の403エラーを回避するためのプロキシ機能
  */
 function getDLsiteProxyUrl(url: string): string {
-	if (url.includes("img.dlsite.jp")) {
+	if (typeof url === "string" && url.trim() !== "" && url.includes("img.dlsite.jp")) {
 		return `/api/image-proxy?url=${encodeURIComponent(url)}`;
 	}
-	return url;
+	return typeof url === "string" && url.trim() !== "" ? url : PLACEHOLDER_IMAGE;
 }
 
 // パフォーマンス向上: 画像コンポーネントをメモ化してプロップの変更時のみ再レンダリング
@@ -39,21 +39,30 @@ const ThumbnailImage = memo(function ThumbnailImage({
 	sizes = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw",
 	fallbackSrc,
 }: ThumbnailImageProps) {
-	const [imageSrc, setImageSrc] = useState(() => getDLsiteProxyUrl(src));
+	const [imageSrc, setImageSrc] = useState(() => {
+		const safeSrc = typeof src === "string" && src.trim() !== "" ? src : PLACEHOLDER_IMAGE;
+		return getDLsiteProxyUrl(safeSrc);
+	});
 	const [hasError, setHasError] = useState(false);
 	const [hasFallbackError, setHasFallbackError] = useState(false);
 
 	// srcプロップが変更された際に内部状態をリセット
 	useEffect(() => {
 		// DLsite画像の場合はプロキシ経由でアクセス
-		const proxiedSrc = getDLsiteProxyUrl(src);
+		const safeSrc = typeof src === "string" && src.trim() !== "" ? src : PLACEHOLDER_IMAGE;
+		const proxiedSrc = getDLsiteProxyUrl(safeSrc);
 		setImageSrc(proxiedSrc);
 		setHasError(false);
 		setHasFallbackError(false);
 	}, [src]);
 
 	const handleError = () => {
-		if (!hasError && fallbackSrc && !hasFallbackError) {
+		if (
+			!hasError &&
+			typeof fallbackSrc === "string" &&
+			fallbackSrc.trim() !== "" &&
+			!hasFallbackError
+		) {
 			// 最初にフォールバック画像を試行（こちらもプロキシ経由）
 			const proxiedFallbackSrc = getDLsiteProxyUrl(fallbackSrc);
 			setImageSrc(proxiedFallbackSrc);

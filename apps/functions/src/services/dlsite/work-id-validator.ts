@@ -21,6 +21,16 @@ interface WorkIdValidationResult {
 	};
 }
 
+interface UnionWorkIdResult {
+	currentRegionIds: string[];
+	assetFileIds: string[];
+	unionIds: string[];
+	regionOnlyCount: number;
+	assetOnlyCount: number;
+	overlapCount: number;
+	regionDifferenceDetected: boolean;
+}
+
 /**
  * 開発環境で収集した作品IDリストを読み込む
  */
@@ -192,4 +202,67 @@ export function warnPartialSuccess(result: WorkIdValidationResult): void {
 			extraCount: result.extraCount,
 		});
 	}
+}
+
+/**
+ * 現在のリージョンで取得可能なIDと保存済みIDリストの和集合を作成
+ * @param currentRegionIds 現在のリージョンで取得されたID
+ * @returns 和集合の結果
+ */
+export function createUnionWorkIds(currentRegionIds: string[]): UnionWorkIdResult {
+	logger.info("🔄 作品ID和集合処理開始");
+
+	// アセットファイルからIDを読み込み
+	const assetFileIds = Array.from(loadExpectedWorkIds());
+
+	// 重複除去
+	const currentRegionSet = new Set(currentRegionIds);
+	const assetFileSet = new Set(assetFileIds);
+
+	// 和集合を作成
+	const unionSet = new Set([...currentRegionIds, ...assetFileIds]);
+	const unionIds = Array.from(unionSet).sort();
+
+	// 集合演算
+	const regionOnlyIds = currentRegionIds.filter((id) => !assetFileSet.has(id));
+	const assetOnlyIds = assetFileIds.filter((id) => !currentRegionSet.has(id));
+	const overlapIds = currentRegionIds.filter((id) => assetFileSet.has(id));
+
+	// リージョン差異の検出
+	const regionDifferenceDetected =
+		assetOnlyIds.length > 10 ||
+		regionOnlyIds.length > 10 ||
+		currentRegionIds.length / assetFileIds.length < 0.8;
+
+	const result: UnionWorkIdResult = {
+		currentRegionIds,
+		assetFileIds,
+		unionIds,
+		regionOnlyCount: regionOnlyIds.length,
+		assetOnlyCount: assetOnlyIds.length,
+		overlapCount: overlapIds.length,
+		regionDifferenceDetected,
+	};
+
+	// ログ出力
+	logger.info("📊 作品ID和集合結果", {
+		currentRegion: currentRegionIds.length,
+		assetFile: assetFileIds.length,
+		union: unionIds.length,
+		regionOnly: result.regionOnlyCount,
+		assetOnly: result.assetOnlyCount,
+		overlap: result.overlapCount,
+		regionDifference: result.regionDifferenceDetected,
+	});
+
+	if (result.regionDifferenceDetected) {
+		logger.warn("🌏 リージョン差異を検出しました", {
+			suggestion: "和集合により不可視作品も取得を試行します",
+			assetOnlyIds: assetOnlyIds
+				.slice(0, 5)
+				.concat(assetOnlyIds.length > 5 ? [`...他${assetOnlyIds.length - 5}件`] : []),
+		});
+	}
+
+	return result;
 }
