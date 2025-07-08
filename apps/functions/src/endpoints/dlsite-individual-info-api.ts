@@ -23,6 +23,11 @@ import {
 	validateAPIOnlyWorkData,
 } from "../services/dlsite/individual-info-to-work-mapper";
 import { saveMultipleTimeSeriesRawData } from "../services/dlsite/timeseries-firestore";
+import {
+	handleNoWorkIdsError,
+	validateWorkIds,
+	warnPartialSuccess,
+} from "../services/dlsite/work-id-validator";
 import * as logger from "../shared/logger";
 
 // 統合メタデータ保存用の定数
@@ -245,15 +250,48 @@ async function getAllWorkIds(): Promise<string[]> {
 				break;
 			}
 
-			// AJAX結果から直接作品IDを抽出（HTMLパース不要）
-			const workIdMatches = ajaxResult.search_result.match(/product_id=([^"\\s&]+)/g);
+			// デバッグ: HTMLの一部を出力して構造を確認
+			logger.debug(`ページ ${currentPage} HTMLサンプル (最初の500文字):`, {
+				html: ajaxResult.search_result.substring(0, 500),
+			});
 
-			if (!workIdMatches || workIdMatches.length === 0) {
+			// メイン検索結果のみを抽出（サイドバーや関連作品を除外）
+			// より厳密なパターンでメイン結果のみを抽出
+			const strictPatterns = [
+				/href="\/maniax\/work\/[^"]*product_id\/([^"/]+)/g,
+				/"product_id":"([^"]+)"/g,
+				/data-list_item_product_id="([^"]+)"/g, // 新しいデータ属性パターン
+			];
+
+			const allMatches = new Set<string>();
+			for (const pattern of strictPatterns) {
+				const matches = [...ajaxResult.search_result.matchAll(pattern)];
+				if (matches.length > 0) {
+					logger.debug(`パターン ${pattern.source} で ${matches.length} 件マッチ`);
+					matches.forEach((match) => {
+						const workId = match[1];
+						if (workId && /^RJ\d{6,8}$/.test(workId)) {
+							allMatches.add(workId);
+						}
+					});
+				}
+			}
+
+			if (allMatches.size === 0) {
 				logger.info(`ページ ${currentPage}: 作品が見つかりません。収集完了`);
+
+				// デバッグ情報: HTMLの内容を確認
+				if (currentPage === 1) {
+					logger.debug("ページ1でのHTML解析失敗 - RJ番号パターンをチェック:", {
+						rjMatches: ajaxResult.search_result.match(/RJ\d{6,8}/g)?.length || 0,
+						htmlLength: ajaxResult.search_result.length,
+						containsRJ: ajaxResult.search_result.includes("RJ"),
+					});
+				}
 				break;
 			}
 
-			const pageWorkIds = workIdMatches.map((match) => match.replace("product_id=", ""));
+			const pageWorkIds = Array.from(allMatches);
 			allWorkIds.push(...pageWorkIds);
 
 			logger.debug(
@@ -277,8 +315,22 @@ async function getAllWorkIds(): Promise<string[]> {
 		}
 	}
 
-	logger.info(`✅ 作品ID収集完了: ${allWorkIds.length}件`);
-	return [...new Set(allWorkIds)]; // 重複除去
+	const uniqueWorkIds = [...new Set(allWorkIds)]; // 重複除去
+	logger.info(`✅ 作品ID収集完了: ${uniqueWorkIds.length}件`);
+
+	// 作品IDリストの検証（リージョン差異を考慮）
+	const validationResult = validateWorkIds(uniqueWorkIds, {
+		minCoveragePercentage: 70, // リージョン差異を考慮して70%に設定
+		maxExtraPercentage: 30, // 新作品の可能性を考慮して30%に設定
+		logDetails: true,
+	});
+
+	// 検証結果に基づく警告
+	if (validationResult.regionWarning) {
+		warnPartialSuccess(validationResult);
+	}
+
+	return uniqueWorkIds;
 }
 
 /**
@@ -295,6 +347,8 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		logger.info(`🔍 対象作品数: ${allWorkIds.length}件`);
 
 		if (allWorkIds.length === 0) {
+			// 作品IDが0件の場合、リージョン差異を考慮したエラーハンドリング
+			handleNoWorkIdsError();
 			return {
 				workCount: 0,
 				apiCallCount: 0,

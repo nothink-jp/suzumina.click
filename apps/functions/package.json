@@ -3,7 +3,7 @@
 	"version": "0.3.0",
 	"private": true,
 	"scripts": {
-		"build": "tsc",
+		"build": "tsc && cp -r src/assets lib/assets",
 		"build:watch": "tsc --watch",
 		"lint": "biome check ./src",
 		"format": "biome format --write ./src",
@@ -17,7 +17,8 @@
 		"debug:quick": "tsx src/development/quick-test-parser.ts",
 		"debug:monitor": "tsx src/development/watch-dlsite-changes.ts",
 		"debug:baseline": "tsx src/development/watch-dlsite-changes.ts --create-baseline",
-		"debug:compare": "tsx src/development/watch-dlsite-changes.ts --compare-baseline"
+		"debug:compare": "tsx src/development/watch-dlsite-changes.ts --compare-baseline",
+		"collect:work-ids": "tsx src/development/collect-work-ids.ts"
 	},
 	"main": "lib/endpoints/index.js",
 	"engines": {
