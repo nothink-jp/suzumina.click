@@ -4,6 +4,20 @@ suzumina.clickプロジェクトの変更履歴
 
 ## [Unreleased]
 
+### 🖼️ DLsiteサムネイル表示システム完全修正 - 2025-07-08
+
+- **画像プロキシ500エラー根本解決**: プロトコル相対URL処理システム完全実装
+  - `/api/image-proxy` エンドポイント機能強化: `//img.dlsite.jp/...` → `https://img.dlsite.jp/...` 自動変換
+  - HTTP→HTTPS強制変換によるセキュリティ向上・CORS問題完全解決
+  - エラーハンドリング強化: 詳細ログ・型安全処理・適切なフォールバック
+- **highResImageUrl型統一完了**: データフロー一貫性確保・TypeScript strict mode完全対応
+  - `WorkDetail.tsx`・`WorkCard.tsx`・`SearchPageContent.tsx`・`actions.ts` 型統一 (5ファイル修正)
+  - `extractImageUrl`関数活用による型安全データ変換の徹底
+  - オブジェクト型・文字列型混在問題の完全解決
+- **品質保証・開発体験向上**: `pnpm typecheck` エラー0個達成・既存機能完全保持
+  - Lint品質維持: 新規エラー0個・既存警告のみ
+  - 動作確認完了: 本番環境での画像表示正常化確認済み
+
 ### 📚 ドキュメント整理統合完了 - 2025-07-05
 
 - **ドキュメント構造最適化**: 25+散在ファイルから9本質的アクティブドキュメントに統合

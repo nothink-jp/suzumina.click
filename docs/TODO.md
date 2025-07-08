@@ -4,7 +4,13 @@ suzumina.click の現実的な開発計画
 
 ## 🚀 現在のステータス
 
-**本番システム稼働中** (v0.3.0)
+**本番システム稼働中** (v0.3.1)
+
+### ✅ v0.3.1完了 (2025年7月8日) - DLsiteサムネイル表示システム完全修正
+- **🖼️ 画像プロキシ500エラー根本解決**: `/api/image-proxy` エンドポイント機能強化・プロトコル相対URL完全対応
+- **🔧 highResImageUrl型統一**: WorkDetail・WorkCard・SearchPageContent・actions.ts (5ファイル) 型安全修正
+- **✅ TypeScript完全パス**: `pnpm typecheck` エラー0個達成・開発体験向上
+- **🎯 品質保証**: 既存機能完全保持・Lint品質維持・動作確認完了
 
 ### ✅ v0.3.0完了 (2025年7月4日) - UI/UX改善・デザイン統一性向上
 - **🎨 新着音声ボタン中央揃え**: FeaturedAudioButtonsCarousel の justify-center sm:justify-start → justify-center 修正

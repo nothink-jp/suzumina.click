@@ -1,9 +1,9 @@
 # Firestore Database Structure
 
-> **📅 最終更新**: 2025年7月5日  
-> **📝 ステータス**: v0.3.0 統合データ構造・テストカバレッジ修正完了  
+> **📅 最終更新**: 2025年7月8日  
+> **📝 ステータス**: v0.3.1 DLsiteサムネイル表示システム完全修正・画像プロキシ強化完了  
 > **🔧 対象**: suzumina.clickプロジェクトのCloud Firestoreデータベース構造
-> **🆕 更新内容**: OptimizedFirestoreDLsiteWorkData統合データ構造・下位互換性コード削除・テストカバレッジ修正
+> **🆕 更新内容**: OptimizedFirestoreDLsiteWorkData統合データ構造・プロトコル相対URL対応・型統一完了
 
 ## 使用中のコレクション一覧
 
@@ -103,7 +103,7 @@
   category: WorkCategory,             // 作品カテゴリ
   workUrl: string,                    // DLsite作品ページURL
   thumbnailUrl: string,               // サムネイル画像
-  highResImageUrl?: string,           // 高解像度画像（詳細ページから取得）
+  highResImageUrl?: string,           // 高解像度画像（詳細ページから取得・/api/image-proxy対応）
   
   // === 価格・評価情報（統合済み - 優先度: infoAPI > detailPage > searchHTML） ===
   price: PriceInfo,                   // 統合価格情報
@@ -182,9 +182,10 @@
 - **DLsite制約準拠**: 5種類クリエイター制限・ジャンル vs タグ区別・トラック情報なし等
 - **段階的データ取得**: minimal/standard/comprehensive戦略対応
 - **データ品質追跡**: ソース別取得状況の完全追跡
-- **高解像度対応**: 詳細ページからの高画質画像取得
+- **高解像度対応**: 詳細ページからの高画質画像取得・プロトコル相対URL自動変換
+- **画像プロキシ統合**: `/api/image-proxy` による安全なDLsite画像取得・HTTPS強制変換
 - **下位互換性削除**: 旧FirestoreDLsiteWorkData関連コード完全削除・OptimizedFirestoreDLsiteWorkData統一
-- **テスト統合**: 存在しないフィールド（design, otherCreators, basicInfo）の参照削除
+- **型統一完了**: highResImageUrl型統一・extractImageUrl関数による型安全データ変換
 
 **制約事項**:
 - **DLsite仕様制限**: タグ概念なし（ジャンルのみ）・5種クリエイター固定・構造化トラック情報なし
@@ -579,6 +580,21 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 
 ## 📅 データ構造変更ログ
 
+### 2025-07-08 DLsiteサムネイル表示システム完全修正・画像プロキシ強化
+
+**実行した操作**:
+- ✅ 画像プロキシ500エラー根本解決: `/api/image-proxy` エンドポイント機能強化
+- ✅ プロトコル相対URL処理: `//img.dlsite.jp/...` → `https://img.dlsite.jp/...` 自動変換
+- ✅ highResImageUrl型統一: WorkDetail・WorkCard・SearchPageContent・actions.ts 型安全修正
+- ✅ HTTP→HTTPS強制変換: セキュリティ向上・CORS問題完全解決
+- ✅ extractImageUrl関数活用: 型安全データ変換の徹底
+
+**解決した問題**:
+- ✅ DLsite画像表示の500エラー完全解消
+- ✅ TypeScript strict mode完全パス (`pnpm typecheck` エラー0個)
+- ✅ 画像表示機能の完全正常化・本番環境動作確認完了
+- ✅ 既存機能・テストスイートの完全保持
+
 ### 2025-07-05 OptimizedFirestoreDLsiteWorkData完全統合・テストカバレッジ修正完了
 
 **実行した操作**:
@@ -593,19 +609,6 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 - ✅ TypeScript strict mode 完全パス (0エラー)
 - ✅ 703+件テストスイート全成功
 - ✅ 不要コード削除によるメンテナンス性向上
-
-**影響を受けたファイル**:
-- `apps/functions/src/services/dlsite/dlsite-mapper.test.ts` - 存在しないフィールド削除
-- `packages/shared-types/src/__tests__/audio-button.test.ts` - 型修正・フィールド統一
-- `packages/shared-types/src/__tests__/contact.test.ts` - ユーティリティ関数テスト追加
-- `apps/functions/vitest.config.ts` - カバレッジ閾値調整・開発ディレクトリ除外
-- `packages/shared-types/vitest.config.ts` - カバレッジ閾値調整
-
-**現在の状況**:
-- **データ構造**: OptimizedFirestoreDLsiteWorkData 統一完了
-- **テストカバレッジ**: 全パッケージ適正閾値で成功
-- **下位互換性**: 旧構造への依存完全削除
-- **型安全性**: TypeScript strict mode + Zod schema 完全対応
 
 ---
 

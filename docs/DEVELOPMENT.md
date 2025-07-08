@@ -6,8 +6,8 @@
 
 **技術スタック**: Next.js 15 App Router、TypeScript 5.8、Tailwind CSS v4、Storybook (UI Package一本化)  
 **開発体制**: 個人開発・個人運用（2環境構成: Staging + Production）  
-**バージョン**: v0.2.6 (DLsite作品詳細表示強化 + 高解像度画像対応)  
-**更新日**: 2025年7月3日
+**バージョン**: v0.3.1 (DLsiteサムネイル表示システム完全修正 + 画像プロキシ強化)  
+**更新日**: 2025年7月8日
 
 ## 🎯 設計原則
 
@@ -162,7 +162,38 @@ export async function getWorks() {
 // import { getFirestore } from 'firebase/firestore';
 ```
 
-### 7. コンポーネント設計原則
+### 7. 画像プロキシシステム設計
+
+**原則**: DLsite画像を安全かつ効率的に表示する
+
+#### **プロトコル相対URL処理**
+- **自動変換**: `//img.dlsite.jp/...` → `https://img.dlsite.jp/...`
+- **セキュリティ強化**: HTTP→HTTPS強制変換・CORS問題解決
+- **型安全処理**: URL検証・エラーハンドリングの完全実装
+
+```typescript
+// ✅ 良い例: 画像プロキシ使用
+<ThumbnailImage
+  src={work.highResImageUrl || work.thumbnailUrl}
+  fallbackSrc={work.thumbnailUrl}
+  alt={work.title}
+/>
+
+// ❌ 悪い例: 直接DLsite画像参照
+<img src="//img.dlsite.jp/..." alt="..." />
+```
+
+#### **highResImageUrl型統一**
+- **データフロー**: Firestore(Object/String) → extractImageUrl() → Frontend(String)
+- **コンポーネント対応**: WorkDetail・WorkCard・SearchPageContent等での統一処理
+- **フォールバック機能**: 画像取得失敗時の適切な代替表示
+
+#### **API エンドポイント (/api/image-proxy)**
+- **URL検証**: DLsite画像のみ許可・セキュリティ強化
+- **Refererヘッダー**: DLsite要求仕様への適合
+- **エラーハンドリング**: 詳細ログ・型安全なレスポンス処理
+
+### 8. コンポーネント設計原則
 
 **原則**: Server Component/Client Component を責任に応じて設計する
 

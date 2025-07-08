@@ -25,6 +25,7 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 - **最新アーキテクチャ**: Cloud Functions エンタープライズレベルディレクトリ構造 (2025年7月4日完了)
 - **最新機能**: DLsite作品詳細情報表示強化 + 高解像度画像対応 (2025年7月実装)
 - **アーキテクチャ革新**: 100% API-Only アーキテクチャ実現・旧HTMLスクレイピングシステム完全廃止 (2025年7月8日完了)
+- **画像システム強化**: DLsiteサムネイル表示システム完全修正・プロトコル相対URL対応 (2025年7月8日完了)
 
 ## 🏗️ システム構成
 
@@ -99,7 +100,7 @@ suzumina.click/ (v0.3.0)
 │       │   ├── privacy/    # プライバシーポリシー
 │       │   ├── terms/      # 利用規約
 │       │   ├── auth/       # 認証関連ページ
-│       │   └── api/        # API Routes (auth/audio-buttons/contact/health/metrics/search)
+│       │   └── api/        # API Routes (auth/audio-buttons/contact/health/metrics/search/image-proxy)
 │       ├── src/components/ # UIコンポーネント (25+個)
 │       │   ├── SearchFilters.tsx # 高度検索フィルターUI
 │       ├── src/components/ # UIコンポーネント (25+個)
@@ -508,6 +509,11 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 - **お問い合わせ投稿**: フォーム送信データの処理・Firestore保存
 - **スパム防止**: レート制限・入力検証
 
+### 画像プロキシ (`/api/image-proxy`) 🆕
+- **DLsite画像プロキシ**: プロトコル相対URL対応・CORS回避機能
+- **セキュリティ強化**: Refererヘッダー設定・URL検証・型安全処理
+- **エラーハンドリング**: 詳細ログ・フォールバック対応
+
 ### 監視・運用
 - **ヘルスチェック**: `/api/health` - アプリケーション稼働状況確認
 - **メトリクス**: `/api/metrics` - パフォーマンス・利用統計データ
@@ -521,6 +527,23 @@ cd packages/ui && pnpm dlx shadcn@latest add <component>
 5. **お気に入り機能拡張**: カテゴリ分類・共有機能
 
 ## 🆕 最新実装内容 (2025年7月)
+
+### DLsiteサムネイル表示システム完全修正 (v0.3.1 - 2025年7月8日)
+
+#### **画像プロキシ500エラー根本解決**
+- ✅ **プロトコル相対URL対応**: `//img.dlsite.jp/...` → `https://img.dlsite.jp/...` 自動変換
+- ✅ **URL正規化処理**: HTTP→HTTPS変換・セキュリティ強化
+- ✅ **型安全エラーハンドリング**: TypeScript strict mode完全対応・エラー詳細ログ
+
+#### **highResImageUrl型統一完了**
+- ✅ **データフロー最適化**: Firestore(Object/String) → extractImageUrl() → Frontend(String)
+- ✅ **コンポーネント修正**: WorkDetail・WorkCard・SearchPageContent・actions.ts (5ファイル)
+- ✅ **フォールバック強化**: 画像取得失敗時の適切なフォールバック処理
+
+#### **品質保証・開発体験向上**
+- ✅ **TypeScript完全パス**: `pnpm typecheck` エラー0個達成
+- ✅ **Lint品質維持**: 既存警告のみ・新規エラー0個
+- ✅ **動作確認完了**: 本番環境での画像表示正常化確認済み
 
 ### 新着音声ボタン中央揃え修正 (v0.3.0 - 2025年7月4日)
 

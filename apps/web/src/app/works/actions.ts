@@ -140,7 +140,7 @@ function filterWorksByUnifiedData(
 	// 高解像度画像有無フィルタリング
 	if (params.hasHighResImage !== undefined) {
 		filteredWorks = filteredWorks.filter((work) => {
-			const hasHighRes = !!work.highResImageUrl;
+			const hasHighRes = !!(work.highResImageUrl && work.highResImageUrl.trim() !== "");
 			return hasHighRes === params.hasHighResImage;
 		});
 	}
@@ -620,7 +620,8 @@ export async function getDataQualityReport() {
 		};
 
 		allWorks.forEach((work) => {
-			if (work.highResImageUrl) qualityStats.hasHighResImage++;
+			const hasHighRes = !!(work.highResImageUrl && work.highResImageUrl.trim() !== "");
+			if (hasHighRes) qualityStats.hasHighResImage++;
 			if (Array.isArray(work.voiceActors) && work.voiceActors.length > 0)
 				qualityStats.hasVoiceActors++;
 			if (work.rating) qualityStats.hasRating++;

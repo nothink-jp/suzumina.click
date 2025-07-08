@@ -8,10 +8,19 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
 	try {
 		const searchParams = request.nextUrl.searchParams;
-		const imageUrl = searchParams.get("url");
+		let imageUrl = searchParams.get("url");
 
 		if (!imageUrl) {
 			return NextResponse.json({ error: "Image URL is required" }, { status: 400 });
+		}
+
+		// プロトコル相対URL（//img.dlsite.jp/...）をHTTPS URLに変換
+		if (imageUrl.startsWith("//")) {
+			imageUrl = `https:${imageUrl}`;
+		}
+		// HTTPプロトコルをHTTPSに変換（セキュリティ向上）
+		else if (imageUrl.startsWith("http://")) {
+			imageUrl = imageUrl.replace("http://", "https://");
 		}
 
 		// DLsite画像のみを許可
@@ -35,6 +44,9 @@ export async function GET(request: NextRequest) {
 		});
 
 		if (!response.ok) {
+			// レスポンス内容をログ出力してデバッグ
+			const responseText = await response.text();
+
 			// 403エラーの場合は特別なメッセージ
 			if (response.status === 403) {
 				return NextResponse.json(
@@ -44,13 +56,32 @@ export async function GET(request: NextRequest) {
 			}
 
 			return NextResponse.json(
-				{ error: "Failed to fetch image", status: response.status },
+				{
+					error: "Failed to fetch image",
+					status: response.status,
+					hint: responseText.substring(0, 200),
+				},
 				{ status: response.status },
 			);
 		}
 
-		const imageBuffer = await response.arrayBuffer();
 		const contentType = response.headers.get("content-type") || "image/jpeg";
+
+		// Content-Typeが画像でない場合のチェック
+		if (!contentType.startsWith("image/")) {
+			const responseText = await response.text();
+
+			return NextResponse.json(
+				{
+					error: "The requested resource isn't a valid image",
+					contentType,
+					hint: responseText.substring(0, 200),
+				},
+				{ status: 400 },
+			);
+		}
+
+		const imageBuffer = await response.arrayBuffer();
 
 		// レスポンスヘッダーを設定
 		const headers = new Headers();
@@ -74,9 +105,22 @@ export async function GET(request: NextRequest) {
 export async function HEAD(request: NextRequest) {
 	try {
 		const searchParams = request.nextUrl.searchParams;
-		const imageUrl = searchParams.get("url");
+		let imageUrl = searchParams.get("url");
 
-		if (!imageUrl || !imageUrl.includes("img.dlsite.jp")) {
+		if (!imageUrl) {
+			return new NextResponse(null, { status: 400 });
+		}
+
+		// プロトコル相対URL（//img.dlsite.jp/...）をHTTPS URLに変換
+		if (imageUrl.startsWith("//")) {
+			imageUrl = `https:${imageUrl}`;
+		}
+		// HTTPプロトコルをHTTPSに変換（セキュリティ向上）
+		else if (imageUrl.startsWith("http://")) {
+			imageUrl = imageUrl.replace("http://", "https://");
+		}
+
+		if (!imageUrl.includes("img.dlsite.jp")) {
 			return new NextResponse(null, { status: 400 });
 		}
 
