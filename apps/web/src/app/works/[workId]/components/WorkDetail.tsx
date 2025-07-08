@@ -52,7 +52,9 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 	);
 
 	// 年齢制限の判定
-	const ageRatingCheck = useMemo(() => checkAgeRating(work.ageRating), [work.ageRating]);
+	const ageRatingCheck = useMemo(() => {
+		return checkAgeRating(work.ageRating);
+	}, [work.ageRating]);
 
 	const renderStars = (rating: number) => {
 		return (

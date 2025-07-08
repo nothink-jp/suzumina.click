@@ -582,6 +582,17 @@ export function mapIndividualInfoAPIToWorkData(
 	const { genres, tags } = extractGenresAndTags(apiData);
 	const creators = extractCreators(apiData);
 
+	// age_category の実際の値をログ出力
+	logger.debug(`age_category value for ${productId}: ${apiData.age_category}`);
+
+	// 年齢指定のマッピングを詳細ログ
+	const mappedAgeRating = mapAgeCategory(apiData.age_category);
+	logger.debug(`Age rating mapping for ${productId}:`, {
+		originalAgeCategory: apiData.age_category,
+		mappedAgeRating: mappedAgeRating,
+		ageCategoryType: typeof apiData.age_category,
+	});
+
 	logger.debug("Extracted data summary:", {
 		category,
 		price,
@@ -595,6 +606,8 @@ export function mapIndividualInfoAPIToWorkData(
 			music: creators.music.length,
 			author: creators.author.length,
 		},
+		ageCategory: apiData.age_category,
+		mappedAgeRating: mappedAgeRating,
 	});
 
 	// キャンペーン情報（一時的に未使用）
@@ -743,7 +756,7 @@ export function mapIndividualInfoAPIToWorkData(
 
 		// === 拡張メタデータ ===
 		seriesName: apiData.title?.title_name,
-		ageRating: apiData.age_category?.toString(),
+		ageRating: mapAgeCategory(apiData.age_category),
 		workFormat: apiData.work_type_string,
 		fileFormat: apiData.file_type_string,
 
@@ -782,6 +795,34 @@ export function mapIndividualInfoAPIToWorkData(
 		createdAt: existingData?.createdAt || now,
 		updatedAt: now,
 	};
+}
+
+/**
+ * DLsite age_category 数値を年齢制限文字列にマッピング
+ * @param ageCategory - DLsiteのage_categoryフィールド（数値）
+ * @returns 年齢制限文字列
+ */
+function mapAgeCategory(ageCategory?: number): string | undefined {
+	if (ageCategory === undefined || ageCategory === null) {
+		return undefined;
+	}
+
+	// DLsite API の age_category 値のマッピング
+	// 1: 全年齢
+	// 2: R15 (15歳以上推奨)
+	// 3: R18 (18歳以上推奨/成人向け)
+	switch (ageCategory) {
+		case 1:
+			return "全年齢";
+		case 2:
+			return "R15";
+		case 3:
+			return "R18";
+		default:
+			// 不明な値の場合はログに記録して返す
+			logger.warn(`Unknown age_category value: ${ageCategory}`);
+			return "未設定";
+	}
 }
 
 /**

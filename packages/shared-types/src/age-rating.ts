@@ -22,6 +22,24 @@ export const AgeRatingSchema = z.enum([
 export type AgeRating = z.infer<typeof AgeRatingSchema>;
 
 /**
+ * DLsite APIの数値形式の年齢カテゴリを文字列にマッピング
+ * @param numericCategory DLsite APIの数値形式の年齢カテゴリ
+ * @returns 対応する年齢制限文字列
+ */
+export function mapNumericAgeCategory(numericCategory: number): AgeRating {
+	switch (numericCategory) {
+		case 1:
+			return "全年齢";
+		case 2:
+			return "R15";
+		case 3:
+			return "R18";
+		default:
+			return "未設定";
+	}
+}
+
+/**
  * 年齢制限判定の結果
  */
 export interface AgeRatingCheck {
@@ -59,6 +77,9 @@ export function isR18Content(ageRating?: string): boolean {
 	// 空文字の場合も全年齢として扱う
 	if (normalizedRating === "") return false;
 
+	// DLsite API の数値形式の age_category への対応
+	if (normalizedRating === "3") return true;
+
 	return R18_KEYWORDS.some((keyword) => normalizedRating.includes(keyword));
 }
 
@@ -72,6 +93,9 @@ export function isAllAgesContent(ageRating?: string): boolean {
 
 	const normalizedRating = ageRating.trim();
 
+	// DLsite API の数値形式の age_category への対応
+	if (normalizedRating === "1") return true;
+
 	return ALL_AGES_KEYWORDS.some((keyword) => normalizedRating.includes(keyword));
 }
 
@@ -82,6 +106,34 @@ export function isAllAgesContent(ageRating?: string): boolean {
  */
 export function checkAgeRating(ageRating?: string): AgeRatingCheck {
 	const originalRating = ageRating || "";
+
+	// DLsite API の数値形式の age_category への対応
+	// "3" -> "R18", "1" -> "全年齢", "2" -> "R15"
+	if (ageRating === "3") {
+		return {
+			isR18: true,
+			isAllAges: false,
+			originalRating,
+			normalizedRating: "R18",
+		};
+	}
+	if (ageRating === "1") {
+		return {
+			isR18: false,
+			isAllAges: true,
+			originalRating,
+			normalizedRating: "全年齢",
+		};
+	}
+	if (ageRating === "2") {
+		return {
+			isR18: false,
+			isAllAges: false,
+			originalRating,
+			normalizedRating: "R15",
+		};
+	}
+
 	const isR18 = isR18Content(ageRating);
 	const isAllAges = isAllAgesContent(ageRating);
 
