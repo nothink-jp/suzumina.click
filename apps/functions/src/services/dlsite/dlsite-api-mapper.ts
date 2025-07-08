@@ -196,7 +196,7 @@ export function mapApiToOptimizedStructure(
 		title: infoData.work_name || "",
 		circle: infoData.maker_name || "",
 		description: infoData.work_name || "",
-		category: infoData.age_category?.toString() || "",
+		category: "etc" as const, // API age_categoryをWorkCategory enumに適切にマッピング要
 		originalCategoryText: infoData.site_id || "",
 		workUrl: `https://www.dlsite.com/maniax/work/=/product_id/${infoData.workno}.html`,
 		thumbnailUrl: infoData.thumb_url || "",
@@ -217,9 +217,9 @@ export function mapApiToOptimizedStructure(
 				},
 		rating: infoData?.rate_average_2dp
 			? {
-					average: infoData.rate_average_2dp,
+					stars: infoData.rate_average_2dp / 10, // API評価は10-50の範囲なので1-5に変換
 					count: infoData.rate_count || 0,
-					starCounts: infoData.rate_count_detail,
+					averageDecimal: infoData.rate_average_2dp / 10,
 				}
 			: undefined,
 		salesCount: infoData?.dl_count,
@@ -307,7 +307,7 @@ export async function fetchWorkInfoFromAPI(
 			throw new Error(`API request failed: ${response.status}`);
 		}
 
-		const apiData: DLsiteInfoResponse = await response.json();
+		const apiData = (await response.json()) as DLsiteInfoResponse;
 
 		if (!apiData.workno) {
 			return null;

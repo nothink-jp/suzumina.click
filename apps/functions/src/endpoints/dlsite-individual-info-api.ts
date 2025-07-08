@@ -14,10 +14,7 @@ import {
 	isLastPageFromPageInfo,
 	validateAjaxHtmlContent,
 } from "../services/dlsite/dlsite-ajax-fetcher";
-import {
-	type DLsiteInfoResponse,
-	mapApiToOptimizedStructure,
-} from "../services/dlsite/dlsite-api-mapper";
+// DLsiteInfoResponse, mapApiToOptimizedStructure は使用しない - 100% API-Only アーキテクチャで別システム
 import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
 // parseWorksFromHTMLは廃止 - HTMLスクレイピング完全廃止
 import { mapIndividualInfoToTimeSeriesData } from "../services/dlsite/individual-info-mapper";
@@ -243,14 +240,15 @@ async function getAllWorkIds(): Promise<string[]> {
 				break;
 			}
 
-			const parsedWorks = parseWorksFromHTML(ajaxResult.search_result);
+			// AJAX結果から直接作品IDを抽出（HTMLパース不要）
+			const workIdMatches = ajaxResult.search_result.match(/product_id=([^"\\s&]+)/g);
 
-			if (parsedWorks.length === 0) {
+			if (!workIdMatches || workIdMatches.length === 0) {
 				logger.info(`ページ ${currentPage}: 作品が見つかりません。収集完了`);
 				break;
 			}
 
-			const pageWorkIds = parsedWorks.map((w) => w.productId);
+			const pageWorkIds = workIdMatches.map((match) => match.replace("product_id=", ""));
 			allWorkIds.push(...pageWorkIds);
 
 			logger.debug(
