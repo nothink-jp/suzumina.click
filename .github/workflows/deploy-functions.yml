@@ -231,38 +231,6 @@ jobs:
             fi
           done
 
-      - name: Deploy fetchDLsiteWorks function
-        run: |
-          echo "🚀 Deploying fetchDLsiteWorks function..."
-          
-          # リトライロジック付きでデプロイ
-          for attempt in 1 2 3; do
-            echo "Attempt $attempt/3..."
-            
-            if gcloud functions deploy fetchDLsiteWorks \
-              --source ${{ env.DEPLOYMENT_SOURCE }} \
-              --runtime nodejs22 \
-              --entry-point fetchDLsiteWorks \
-              --trigger-topic dlsite-works-fetch-trigger \
-              --region asia-northeast1 \
-              --project ${{ secrets.GCP_PROJECT_ID }} \
-              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteWorks \
-              --memory 512MB \
-              --timeout 540s \
-              --max-instances 10 \
-              --quiet; then
-              echo "✅ fetchDLsiteWorks deployed successfully"
-              break
-            else
-              echo "❌ Deploy failed on attempt $attempt"
-              if [ $attempt -eq 3 ]; then
-                echo "🚨 All retry attempts failed"
-                exit 1
-              fi
-              echo "⏳ Waiting 30 seconds before retry..."
-              sleep 30
-            fi
-          done
 
       - name: Deploy fetchDLsiteWorksIndividualAPI function
         run: |
@@ -353,8 +321,10 @@ jobs:
           echo "### 📦 デプロイされた関数" >> $GITHUB_STEP_SUMMARY
           echo "- **fetchYouTubeVideos**: ✅ デプロイ完了 (リトライロジック付き)" >> $GITHUB_STEP_SUMMARY
           echo "  - トリガー: \`youtube-video-fetch-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
-          echo "- **fetchDLsiteWorks**: ✅ デプロイ完了 (リトライロジック付き)" >> $GITHUB_STEP_SUMMARY
-          echo "  - トリガー: \`dlsite-works-fetch-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
+          echo "- **fetchDLsiteWorksIndividualAPI**: ✅ デプロイ完了 (Individual Info API専用)" >> $GITHUB_STEP_SUMMARY
+          echo "  - トリガー: \`dlsite-individual-api-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
+          echo "- **collectDLsiteTimeseries**: ✅ デプロイ完了 (時系列データ収集)" >> $GITHUB_STEP_SUMMARY
+          echo "  - トリガー: \`dlsite-timeseries-collect-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔧 設定情報" >> $GITHUB_STEP_SUMMARY
           echo "- **プロジェクト**: \`${{ secrets.GCP_PROJECT_ID }}\`" >> $GITHUB_STEP_SUMMARY
@@ -376,7 +346,7 @@ jobs:
           echo "🧹 Cleaning up old Cloud Functions revisions (keeping last 5 versions)"
           
           # Function names
-          FUNCTIONS=("fetchyoutubevideos" "fetchdlsiteworks")
+          FUNCTIONS=("fetchyoutubevideos" "fetchdlsiteworksindividualapi" "collectdlsitetimeseries")
           KEEP_COUNT=5
           
           for function_name in "${FUNCTIONS[@]}"; do

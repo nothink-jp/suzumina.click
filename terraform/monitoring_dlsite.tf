@@ -7,7 +7,7 @@ resource "google_logging_metric" "dlsite_error_count" {
   
   filter = <<-EOT
     resource.type="cloud_function"
-    resource.labels.function_name="fetchdlsiteworks"
+    resource.labels.function_name="fetchDLsiteWorksIndividualAPI"
     severity >= "ERROR"
   EOT
   
@@ -59,7 +59,7 @@ resource "google_monitoring_alert_policy" "dlsite_function_error" {
     
     ## ログ確認コマンド
     ```bash
-    gcloud logging read 'resource.type="cloud_function" AND resource.labels.function_name="fetchdlsiteworks" AND severity >= "ERROR"' --limit=20 --format=json
+    gcloud logging read 'resource.type="cloud_function" AND resource.labels.function_name="fetchDLsiteWorksIndividualAPI" AND severity >= "ERROR"' --limit=20 --format=json
     ```
     EOT
     mime_type = "text/markdown"
@@ -78,7 +78,7 @@ resource "google_logging_metric" "dlsite_no_data" {
   
   filter = <<-EOT
     resource.type="cloud_function"
-    resource.labels.function_name="fetchdlsiteworks"
+    resource.labels.function_name="fetchDLsiteWorksIndividualAPI"
     jsonPayload.message:"取得した作品数: 0件"
   EOT
   
@@ -152,7 +152,7 @@ resource "google_monitoring_alert_policy" "dlsite_function_failure" {
     condition_threshold {
       filter = <<-EOT
         resource.type="cloud_function"
-        resource.labels.function_name="fetchdlsiteworks"
+        resource.labels.function_name="fetchDLsiteWorksIndividualAPI"
         metric.type="cloudfunctions.googleapis.com/function/execution_count"
         metric.labels.status!="ok"
       EOT
@@ -176,12 +176,13 @@ resource "google_monitoring_alert_policy" "dlsite_function_failure" {
     content = <<-EOT
     # DLsite関数の実行失敗
     
-    fetchDLsiteWorks関数の実行が失敗しました。
+    fetchDLsiteWorksIndividualAPI関数の実行が失敗しました。
     
     ## 確認事項
     1. Cloud Functions のエラーログを確認
-    2. メモリ不足やタイムアウトの可能性
-    3. 権限エラーの確認
+    2. Individual Info API の応答確認
+    3. メモリ不足やタイムアウトの可能性
+    4. 権限エラーの確認
     EOT
     mime_type = "text/markdown"
   }

@@ -469,7 +469,7 @@ export class ConfigManager {
 		section: T,
 		updates: Partial<CloudFunctionConfig[T]>,
 	): void {
-		const currentSection = (this.config[section] as Record<string, any>) || {};
+		const currentSection = (this.config[section] as Record<string, unknown>) || {};
 		this.config[section] = Object.assign({}, currentSection, updates) as CloudFunctionConfig[T];
 
 		this.config.lastUpdated = new Date().toISOString();
@@ -560,7 +560,7 @@ export class ConfigManager {
 	/**
 	 * オブジェクトの深いマージ
 	 */
-	private deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+	private deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
 		const result = { ...target };
 
 		for (const key in source) {

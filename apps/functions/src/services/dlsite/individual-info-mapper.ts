@@ -163,13 +163,13 @@ function extractRegionalPrices(apiResponse: IndividualInfoAPIResponse): Regional
  */
 function safeParseNumber(value: string | number | undefined): number | undefined {
 	if (typeof value === "number") {
-		return isNaN(value) ? undefined : value;
+		return Number.isNaN(value) ? undefined : value;
 	}
 	if (typeof value === "string") {
 		// カンマ区切りの数値文字列に対応（例: "1,234" → 1234）
 		const cleanValue = value.replace(/,/g, "");
 		const parsed = Number.parseFloat(cleanValue);
-		return isNaN(parsed) ? undefined : parsed;
+		return Number.isNaN(parsed) ? undefined : parsed;
 	}
 	return undefined;
 }
@@ -327,7 +327,9 @@ export function detectPriceChanges(
 /**
  * デバッグ用：Individual Info API レスポンスの価格関連フィールドを抽出
  */
-export function debugExtractPriceFields(apiResponse: any): Record<string, any> {
+export function debugExtractPriceFields(
+	apiResponse: Record<string, unknown>,
+): Record<string, unknown> {
 	const priceFields = [
 		"price",
 		"price_without_tax",
@@ -342,7 +344,7 @@ export function debugExtractPriceFields(apiResponse: any): Record<string, any> {
 		"locale_price",
 	];
 
-	const extracted: Record<string, any> = {};
+	const extracted: Record<string, unknown> = {};
 	for (const field of priceFields) {
 		if (field in apiResponse) {
 			extracted[field] = apiResponse[field];

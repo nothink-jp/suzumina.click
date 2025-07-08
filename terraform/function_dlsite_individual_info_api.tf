@@ -45,7 +45,7 @@ resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
     timeout_seconds    = local.dlsite_individual_api_timeout
     
     # 専用のサービスアカウントを使用
-    service_account_email = google_service_account.fetch_dlsite_works_sa.email
+    service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
 
     # Individual Info API処理用環境変数
     environment_variables = {
@@ -76,7 +76,7 @@ resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic   = google_pubsub_topic.dlsite_individual_api_trigger.id
     retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
-    service_account_email = google_service_account.fetch_dlsite_works_sa.email
+    service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
   }
 
   # GitHub Actions からのデプロイとの競合を避けるため、
@@ -92,9 +92,9 @@ resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
   depends_on = [
     google_firestore_database.database,
     google_pubsub_topic.dlsite_individual_api_trigger,
-    google_project_iam_member.fetch_dlsite_works_firestore_user,
-    google_project_iam_member.fetch_dlsite_works_log_writer,
-    google_service_account.fetch_dlsite_works_sa,
+    google_project_iam_member.fetch_dlsite_individual_api_firestore_user,
+    google_project_iam_member.fetch_dlsite_individual_api_log_writer,
+    google_service_account.fetch_dlsite_individual_api_sa,
   ]
 }
 

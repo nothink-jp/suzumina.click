@@ -118,6 +118,55 @@ function generateImageUrlCandidates(productId: string, extractedUrl?: string): s
 }
 
 /**
+ * 成功した手法を判定するヘルパー関数
+ */
+function determineVerificationMethod(
+	candidateIndex: number,
+	extractedUrl: string | undefined,
+	candidateUrl: string,
+): ImageVerificationResult["method"] {
+	if (candidateIndex === 0 && extractedUrl) {
+		return "extracted";
+	}
+	if (candidateUrl.includes("_img_main.webp") && !candidateUrl.includes("resize")) {
+		return "constructed";
+	}
+	return "fallback";
+}
+
+/**
+ * 成功時の結果を作成するヘルパー関数
+ */
+function createSuccessResult(
+	candidate: string,
+	method: ImageVerificationResult["method"],
+	startTime: number,
+	candidates: string[],
+	attemptIndex: number,
+): ImageVerificationResult {
+	const verificationTimeMs = Date.now() - startTime;
+	return {
+		verifiedUrl: candidate,
+		method,
+		verificationTimeMs,
+		attemptedUrls: candidates.slice(0, attemptIndex + 1),
+	};
+}
+
+/**
+ * 失敗時の結果を作成するヘルパー関数
+ */
+function createFailureResult(startTime: number, candidates: string[]): ImageVerificationResult {
+	const verificationTimeMs = Date.now() - startTime;
+	return {
+		verifiedUrl: undefined,
+		method: "failed",
+		verificationTimeMs,
+		attemptedUrls: candidates,
+	};
+}
+
+/**
  * 高解像度画像URLの検証とフォールバック処理
  * @param productId 作品ID
  * @param extractedUrl HTMLから抽出されたURL（オプション）
@@ -144,32 +193,17 @@ export async function verifyAndGetHighResImageUrl(
 		try {
 			const exists = await verifyImageExists(candidate);
 			if (exists) {
-				const verificationTimeMs = Date.now() - startTime;
-
-				// 成功した手法を判定
-				let method: ImageVerificationResult["method"];
-				if (i === 0 && extractedUrl) {
-					method = "extracted";
-				} else if (candidate.includes("_img_main.webp") && !candidate.includes("resize")) {
-					method = "constructed";
-				} else {
-					method = "fallback";
-				}
+				const method = determineVerificationMethod(i, extractedUrl, candidate);
 
 				logger.info("高解像度画像URL検証成功", {
 					productId,
 					verifiedUrl: candidate,
 					method,
-					verificationTimeMs,
+					verificationTimeMs: Date.now() - startTime,
 					attemptIndex: i,
 				});
 
-				return {
-					verifiedUrl: candidate,
-					method,
-					verificationTimeMs,
-					attemptedUrls: candidates.slice(0, i + 1),
-				};
+				return createSuccessResult(candidate, method, startTime, candidates, i);
 			}
 		} catch (error) {
 			logger.warn("画像URL検証中にエラー", {
@@ -181,21 +215,14 @@ export async function verifyAndGetHighResImageUrl(
 	}
 
 	// すべての候補が失敗した場合
-	const verificationTimeMs = Date.now() - startTime;
-
 	logger.warn("高解像度画像URL検証失敗", {
 		productId,
 		extractedUrl,
-		verificationTimeMs,
+		verificationTimeMs: Date.now() - startTime,
 		attemptedUrls: candidates,
 	});
 
-	return {
-		verifiedUrl: undefined,
-		method: "failed",
-		verificationTimeMs,
-		attemptedUrls: candidates,
-	};
+	return createFailureResult(startTime, candidates);
 }
 
 /**

@@ -166,7 +166,7 @@ resource "google_monitoring_dashboard" "service_overview" {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_RATE"
                     },
-                    "filter": "resource.type=\"cloud_function\" AND resource.labels.function_name=\"fetchDLsiteWorks\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\"",
+                    "filter": "resource.type=\"cloud_function\" AND resource.labels.function_name=\"fetchDLsiteWorksIndividualAPI\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\"",
                     "secondaryAggregation": {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_SUM"
@@ -223,7 +223,7 @@ resource "google_monitoring_dashboard" "service_overview" {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_RATE"
                     },
-                    "filter": "resource.type=\"cloud_function\" AND resource.labels.function_name=\"fetchDLsiteWorks\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\" AND metric.labels.status=\"error\"",
+                    "filter": "resource.type=\"cloud_function\" AND resource.labels.function_name=\"fetchDLsiteWorksIndividualAPI\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\" AND metric.labels.status=\"error\"",
                     "secondaryAggregation": {
                       "alignmentPeriod": "60s",
                       "perSeriesAligner": "ALIGN_COUNT"

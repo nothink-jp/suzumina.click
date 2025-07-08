@@ -14,10 +14,7 @@ import {
 	isLastPageFromPageInfo,
 	validateAjaxHtmlContent,
 } from "../services/dlsite/dlsite-ajax-fetcher";
-import {
-	getExistingWorksMap,
-	saveWorksToFirestore,
-} from "../services/dlsite/dlsite-firestore";
+import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
 import { parseWorksFromHTML } from "../services/dlsite/dlsite-parser";
 import { mapIndividualInfoToTimeSeriesData } from "../services/dlsite/individual-info-mapper";
 import {
@@ -36,8 +33,7 @@ const METADATA_COLLECTION = "dlsiteMetadata";
 const config = getDLsiteConfig();
 
 // Individual Info API設定
-const INDIVIDUAL_INFO_API_BASE_URL =
-	"https://www.dlsite.com/maniax/api/=/product.json";
+const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
 const MAX_CONCURRENT_API_REQUESTS = 5;
 const API_REQUEST_DELAY = 500; // ms
 
@@ -74,9 +70,7 @@ interface PubsubMessage {
 /**
  * Individual Info APIから作品詳細データを取得
  */
-async function fetchIndividualWorkInfo(
-	workId: string,
-): Promise<IndividualInfoAPIResponse | null> {
+async function fetchIndividualWorkInfo(workId: string): Promise<IndividualInfoAPIResponse | null> {
 	try {
 		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
 		const headers = generateDLsiteHeaders();
@@ -95,24 +89,18 @@ async function fetchIndividualWorkInfo(
 			}
 
 			if (response.status === 403) {
-				logger.error(
-					`Individual Info API アクセス拒否: ${workId} (Status: ${response.status})`,
-				);
+				logger.error(`Individual Info API アクセス拒否: ${workId} (Status: ${response.status})`);
 				throw new Error(`API access denied for ${workId}`);
 			}
 
-			throw new Error(
-				`API request failed: ${response.status} ${response.statusText}`,
-			);
+			throw new Error(`API request failed: ${response.status} ${response.statusText}`);
 		}
 
 		const responseData = await response.json();
 
 		// Individual Info APIは配列形式でレスポンスを返す
 		if (!Array.isArray(responseData) || responseData.length === 0) {
-			logger.warn(
-				`Invalid API response for ${workId}: empty or non-array response`,
-			);
+			logger.warn(`Invalid API response for ${workId}: empty or non-array response`);
 			return null;
 		}
 
@@ -120,9 +108,7 @@ async function fetchIndividualWorkInfo(
 
 		// 基本的なデータ検証
 		if (!data.workno && !data.product_id) {
-			logger.warn(
-				`Invalid API response for ${workId}: missing workno/product_id`,
-			);
+			logger.warn(`Invalid API response for ${workId}: missing workno/product_id`);
 			return null;
 		}
 
@@ -148,14 +134,10 @@ async function batchFetchIndividualInfo(
 		batches.push(workIds.slice(i, i + MAX_CONCURRENT_API_REQUESTS));
 	}
 
-	logger.info(
-		`Individual Info API バッチ処理開始: ${workIds.length}件 (${batches.length}バッチ)`,
-	);
+	logger.info(`Individual Info API バッチ処理開始: ${workIds.length}件 (${batches.length}バッチ)`);
 
 	for (const [batchIndex, batch] of batches.entries()) {
-		logger.debug(
-			`バッチ ${batchIndex + 1}/${batches.length} 処理中: ${batch.length}件`,
-		);
+		logger.debug(`バッチ ${batchIndex + 1}/${batches.length} 処理中: ${batch.length}件`);
 
 		try {
 			// 並列でAPIを呼び出し
@@ -191,9 +173,7 @@ async function batchFetchIndividualInfo(
 		}
 	}
 
-	logger.info(
-		`Individual Info API バッチ処理完了: ${results.size}/${workIds.length}件取得`,
-	);
+	logger.info(`Individual Info API バッチ処理完了: ${results.size}/${workIds.length}件取得`);
 	return results;
 }
 
@@ -201,9 +181,7 @@ async function batchFetchIndividualInfo(
  * メタデータの取得または初期化
  */
 async function getOrCreateAPIMetadata(): Promise<IndividualInfoAPIMetadata> {
-	const metadataRef = firestore
-		.collection(METADATA_COLLECTION)
-		.doc(METADATA_DOC_ID);
+	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(METADATA_DOC_ID);
 	const doc = await metadataRef.get();
 
 	if (doc.exists) {
@@ -224,17 +202,10 @@ async function getOrCreateAPIMetadata(): Promise<IndividualInfoAPIMetadata> {
 /**
  * メタデータの更新
  */
-async function updateAPIMetadata(
-	updates: Partial<IndividualInfoAPIMetadata>,
-): Promise<void> {
-	const metadataRef = firestore
-		.collection(METADATA_COLLECTION)
-		.doc(METADATA_DOC_ID);
+async function updateAPIMetadata(updates: Partial<IndividualInfoAPIMetadata>): Promise<void> {
+	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(METADATA_DOC_ID);
 
-	const sanitizedUpdates: Record<
-		string,
-		Timestamp | boolean | string | number | null
-	> = {
+	const sanitizedUpdates: Record<string, Timestamp | boolean | string | number | null> = {
 		lastFetchedAt: Timestamp.now(),
 	};
 
@@ -283,10 +254,7 @@ async function getAllWorkIds(): Promise<string[]> {
 			);
 
 			// 最終ページ判定
-			const isLastPage = isLastPageFromPageInfo(
-				ajaxResult.page_info,
-				currentPage,
-			);
+			const isLastPage = isLastPageFromPageInfo(ajaxResult.page_info, currentPage);
 			if (isLastPage) {
 				logger.info(`ページ ${currentPage} が最終ページです`);
 				break;
@@ -342,10 +310,7 @@ async function executeIndividualInfoAPIUpdate(): Promise<APIFetchResult> {
 
 		// 4. APIデータを作品データに変換
 		const apiResponses = Array.from(apiDataMap.values());
-		const workDataList = batchMapIndividualInfoAPIToWorkData(
-			apiResponses,
-			existingWorksMap,
-		);
+		const workDataList = batchMapIndividualInfoAPIToWorkData(apiResponses, existingWorksMap);
 
 		// 5. データ品質検証
 		const validWorkData = workDataList.filter((work) => {
@@ -359,9 +324,7 @@ async function executeIndividualInfoAPIUpdate(): Promise<APIFetchResult> {
 			return true;
 		});
 
-		logger.info(
-			`データ品質検証: ${validWorkData.length}/${workDataList.length}件が有効`,
-		);
+		logger.info(`データ品質検証: ${validWorkData.length}/${workDataList.length}件が有効`);
 
 		// 6. Firestoreに保存
 		if (validWorkData.length > 0) {
@@ -383,18 +346,12 @@ async function executeIndividualInfoAPIUpdate(): Promise<APIFetchResult> {
 		logger.info(`📊 時系列データ保存完了: ${apiResponses.length}件`);
 
 		// 8. 統計情報をログ出力
-		const qualityScores = validWorkData.map(
-			(work) => validateAPIOnlyWorkData(work).quality,
-		);
-		const avgQuality =
-			qualityScores.reduce((sum, score) => sum + score, 0) /
-			qualityScores.length;
+		const qualityScores = validWorkData.map((work) => validateAPIOnlyWorkData(work).quality);
+		const avgQuality = qualityScores.reduce((sum, score) => sum + score, 0) / qualityScores.length;
 
 		logger.info("📈 === 100% API-Only データ品質統計 ===");
 		logger.info(`平均品質スコア: ${avgQuality.toFixed(1)}%`);
-		logger.info(
-			`API呼び出し成功率: ${((apiDataMap.size / allWorkIds.length) * 100).toFixed(1)}%`,
-		);
+		logger.info(`API呼び出し成功率: ${((apiDataMap.size / allWorkIds.length) * 100).toFixed(1)}%`);
 		logger.info(
 			`データ有効率: ${((validWorkData.length / workDataList.length) * 100).toFixed(1)}%`,
 		);
@@ -485,12 +442,8 @@ async function fetchIndividualInfoAPILogic(): Promise<APIFetchResult> {
 export const fetchDLsiteWorksIndividualAPI = async (
 	event: CloudEvent<PubsubMessage>,
 ): Promise<void> => {
-	logger.info(
-		"🚀 Individual Info API専用エンドポイント開始 (GCFv2 CloudEvent Handler)",
-	);
-	logger.info(
-		"📋 100% API-Only アーキテクチャ - HTMLスクレイピング完全廃止システム",
-	);
+	logger.info("🚀 Individual Info API専用エンドポイント開始 (GCFv2 CloudEvent Handler)");
+	logger.info("📋 100% API-Only アーキテクチャ - HTMLスクレイピング完全廃止システム");
 
 	try {
 		const message = event.data;
@@ -508,9 +461,7 @@ export const fetchDLsiteWorksIndividualAPI = async (
 		// デコード処理
 		if (message.data) {
 			try {
-				const decodedData = Buffer.from(message.data, "base64").toString(
-					"utf-8",
-				);
+				const decodedData = Buffer.from(message.data, "base64").toString("utf-8");
 				logger.info("メッセージデータ:", { message: decodedData });
 			} catch (err) {
 				logger.error("Base64デコードエラー:", err);

@@ -8,6 +8,7 @@
  */
 
 import {
+	type BasicWorkInfo,
 	type DataSourceTracking,
 	type DLsiteWorkBase,
 	DLsiteWorkBaseSchema,
@@ -217,7 +218,7 @@ export interface UnifiedDLsiteWorkData extends DLsiteWorkBase {
 		};
 		detailPage?: {
 			lastFetched: string;
-			basicInfo: any; // ExtendedWorkData.basicInfo
+			basicInfo: BasicWorkInfo; // ExtendedWorkData.basicInfo
 			detailedDescription: string;
 		};
 	};
@@ -238,7 +239,11 @@ function mergeAndDeduplicate(arrays: (string[] | undefined)[]): string[] {
 /**
  * 最適な価格情報を選択
  */
-function selectBestPrice(infoPrice?: any, detailPrice?: any, searchPrice?: PriceInfo): PriceInfo {
+function selectBestPrice(
+	infoPrice?: PriceInfo,
+	detailPrice?: PriceInfo,
+	searchPrice?: PriceInfo,
+): PriceInfo {
 	// 優先順: infoAPI > detailPage > searchHTML
 	if (infoPrice && typeof infoPrice === "object") {
 		return infoPrice;
@@ -355,25 +360,25 @@ export function mergeWorkDataSources(
 	// 統合クリエイター情報（重複除去済み）- APIのauthorは声優なので除外
 	const unifiedVoiceActors = mergeAndDeduplicate([
 		detailData?.voiceActors || [],
-		(detailData?.basicInfo as any)?.voiceActors || [],
+		(detailData?.basicInfo as BasicWorkInfo)?.voiceActors || [],
 		existingData?.voiceActors || [], // 既存データ保持
 	]);
 
 	const unifiedScenario = mergeAndDeduplicate([
 		detailData?.scenario || [],
-		(detailData?.basicInfo as any)?.scenario || [],
+		(detailData?.basicInfo as BasicWorkInfo)?.scenario || [],
 		existingData?.scenario || [], // 既存データ保持
 	]);
 
 	const unifiedIllustration = mergeAndDeduplicate([
 		detailData?.illustration || [],
-		(detailData?.basicInfo as any)?.illustration || [],
+		(detailData?.basicInfo as BasicWorkInfo)?.illustration || [],
 		existingData?.illustration || [], // 既存データ保持
 	]);
 
 	const unifiedMusic = mergeAndDeduplicate([
 		detailData?.music || [],
-		(detailData?.basicInfo as any)?.music || [],
+		(detailData?.basicInfo as BasicWorkInfo)?.music || [],
 		existingData?.music || [], // 既存データ保持
 	]);
 
@@ -385,15 +390,15 @@ export function mergeWorkDataSources(
 
 	// 統合ジャンル情報（全ソースマージ + 重複除去）
 	const unifiedGenres = mergeAndDeduplicate([
-		(detailData?.basicInfo as any)?.genres || [],
-		(detailData?.basicInfo as any)?.detailTags || [],
+		(detailData?.basicInfo as BasicWorkInfo)?.genres || [],
+		(detailData?.basicInfo as BasicWorkInfo)?.detailTags || [],
 		searchData.tags || [],
 		infoData?.genres || [],
 		existingData?.tags || [], // 既存データ保持
 	]);
 
 	// 販売日（両形式保持）
-	const japaneseReleaseDate = (detailData?.basicInfo as any)?.releaseDate;
+	const japaneseReleaseDate = (detailData?.basicInfo as BasicWorkInfo)?.releaseDate;
 	const isoReleaseDate = parseToISODate(japaneseReleaseDate) || infoData?.regist_date;
 
 	// 統合作品データ

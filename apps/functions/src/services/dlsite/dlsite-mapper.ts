@@ -383,11 +383,13 @@ export function extractRatingDetails(infoData: DLsiteInfoResponse): RatingDetail
 
 	// 下位互換性: 旧配列形式
 	if (infoData.rate_count_detail && Array.isArray(infoData.rate_count_detail)) {
-		return infoData.rate_count_detail.map((detail: any) => ({
-			review_point: detail.review_point,
-			count: detail.count,
-			ratio: detail.ratio,
-		}));
+		return infoData.rate_count_detail.map(
+			(detail: { review_point: number; count: number; ratio: number }) => ({
+				review_point: detail.review_point,
+				count: detail.count,
+				ratio: detail.ratio,
+			}),
+		);
 	}
 
 	return [];

@@ -25,9 +25,14 @@ vi.mock("./youtube", () => ({
 	fetchYouTubeVideos: vi.fn(),
 }));
 
-// DLsiteモジュールのモック
-vi.mock("./dlsite", () => ({
-	fetchDLsiteWorks: vi.fn(),
+// DLsite Individual Info APIモジュールのモック
+vi.mock("./dlsite-individual-info-api", () => ({
+	fetchDLsiteWorksIndividualAPI: vi.fn(),
+}));
+
+// DLsite時系列データ収集モジュールのモック
+vi.mock("./dlsite-timeseries", () => ({
+	collectDLsiteTimeseries: vi.fn(),
 }));
 
 // 調査エンドポイントは fetchDLsiteWorks に統合済みのため削除
@@ -102,12 +107,20 @@ describe("初期化機能テスト", () => {
 		expect(mockCloudEvent).toHaveBeenCalledWith("fetchYouTubeVideos", expect.any(Function));
 	});
 
-	it("DLsiteモジュールの関数が正しく登録されること", async () => {
+	it("DLsite Individual Info APIモジュールの関数が正しく登録されること", async () => {
 		// index.tsをインポート
 		await import("./index");
 
 		// cloudEvent関数が正しく呼ばれたことを確認
-		expect(mockCloudEvent).toHaveBeenCalledWith("fetchDLsiteWorks", expect.any(Function));
+		expect(mockCloudEvent).toHaveBeenCalledWith("fetchDLsiteWorksIndividualAPI", expect.any(Function));
+	});
+
+	it("DLsite時系列データ収集モジュールの関数が正しく登録されること", async () => {
+		// index.tsをインポート
+		await import("./index");
+
+		// cloudEvent関数が正しく呼ばれたことを確認
+		expect(mockCloudEvent).toHaveBeenCalledWith("collectDLsiteTimeseries", expect.any(Function));
 	});
 
 	// 調査エンドポイントは fetchDLsiteWorks に統合済みのため削除
