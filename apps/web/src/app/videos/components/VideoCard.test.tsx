@@ -1,6 +1,6 @@
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import VideoCard from "./VideoCard";
 

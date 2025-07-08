@@ -25,34 +25,7 @@ export function CookieConsentBanner() {
 	const [showPreferences, setShowPreferences] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 
-	useEffect(() => {
-		// Check if user has already made consent choices
-		const savedConsent = localStorage.getItem("cookie-consent");
-		const consentDate = localStorage.getItem("cookie-consent-date");
-
-		if (savedConsent && consentDate) {
-			const consentDateObj = new Date(consentDate);
-			const oneYearAgo = new Date();
-			oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-			// Re-ask for consent every year (GDPR requirement)
-			if (consentDateObj > oneYearAgo) {
-				const choices = JSON.parse(savedConsent);
-				applyConsentChoices(choices);
-				setShowBanner(false);
-			} else {
-				// Clear expired consent
-				localStorage.removeItem("cookie-consent");
-				localStorage.removeItem("cookie-consent-date");
-				setShowBanner(true);
-			}
-		} else {
-			setShowBanner(true);
-		}
-
-		setIsLoading(false);
-	}, []);
-
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex consent logic required for GDPR compliance
 	const applyConsentChoices = (choices: ConsentChoices) => {
 		// Apply Google Consent Mode v2
 		if (typeof window !== "undefined" && window.gtag) {
@@ -98,6 +71,34 @@ export function CookieConsentBanner() {
 	const handleCustomConsent = (choices: ConsentChoices) => {
 		saveConsent(choices);
 	};
+
+	useEffect(() => {
+		// Check if user has already made consent choices
+		const savedConsent = localStorage.getItem("cookie-consent");
+		const consentDate = localStorage.getItem("cookie-consent-date");
+
+		if (savedConsent && consentDate) {
+			const consentDateObj = new Date(consentDate);
+			const oneYearAgo = new Date();
+			oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+			// Re-ask for consent every year (GDPR requirement)
+			if (consentDateObj > oneYearAgo) {
+				const choices = JSON.parse(savedConsent);
+				applyConsentChoices(choices);
+				setShowBanner(false);
+			} else {
+				// Clear expired consent
+				localStorage.removeItem("cookie-consent");
+				localStorage.removeItem("cookie-consent-date");
+				setShowBanner(true);
+			}
+		} else {
+			setShowBanner(true);
+		}
+
+		setIsLoading(false);
+	}, []);
 
 	if (isLoading || !showBanner) {
 		return null;
@@ -189,6 +190,7 @@ export function CookieConsentBanner() {
 // Extend Window interface for TypeScript
 declare global {
 	interface Window {
+		// biome-ignore lint/suspicious/noExplicitAny: Google Analytics gtag function requires any
 		gtag: (...args: any[]) => void;
 	}
 }

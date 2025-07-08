@@ -1,6 +1,10 @@
 /**
  * DLsite時系列データ収集エンドポイント
  * Individual Info APIによる6地域価格・販売・評価データの収集と日次集計処理
+ *
+ * ⚠️ **非推奨 (Deprecated)**: このFunctionは統合アーキテクチャにより廃止予定です
+ * 新しい統合システムでは `fetchDLsiteWorksIndividualAPI` が基本データ更新と時系列データ収集を同時実行します
+ * 重複API呼び出しを完全排除し、効率化を実現した統合システムをご利用ください
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
@@ -379,7 +383,11 @@ async function executeDataCleanup(): Promise<{
 
 /**
  * DLsite時系列データ収集 Cloud Function エントリーポイント
+ *
+ * @deprecated このFunctionは統合アーキテクチャにより廃止予定です
+ * 新システムでは fetchDLsiteWorksIndividualAPI が統合処理を実行します
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Deprecated function, complexity acceptable for legacy code
 export const collectDLsiteTimeseries = async (event: CloudEvent<PubsubMessage>): Promise<void> => {
 	logger.info("DLsite時系列データ収集開始", {
 		operation: "collectDLsiteTimeseries",

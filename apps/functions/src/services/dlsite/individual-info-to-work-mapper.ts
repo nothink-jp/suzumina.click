@@ -303,7 +303,7 @@ function extractVoiceActors(apiData: IndividualInfoAPIResponse): string[] {
 
 	// "CV:田中涼子,山田花子" のような形式から声優名を抽出
 	const cvMatch = apiData.author?.match(/CV:([^,]+(?:,[^,]+)*)/);
-	if (cvMatch && cvMatch[1]) {
+	if (cvMatch?.[1]) {
 		return cvMatch[1]
 			.split(",")
 			.map((name) => name.trim())
@@ -433,6 +433,7 @@ function extractGenresAndTags(apiData: IndividualInfoAPIResponse): {
  * Individual Info APIレスポンスから OptimizedFirestoreDLsiteWorkData への変換
  * 100% API-Only アーキテクチャの核となる変換関数
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Core data transformation logic requires complex mapping
 export function mapIndividualInfoAPIToWorkData(
 	apiData: IndividualInfoAPIResponse,
 	existingData?: OptimizedFirestoreDLsiteWorkData,
@@ -581,7 +582,7 @@ export function mapIndividualInfoAPIToWorkData(
 			: undefined,
 		bonusContent: [], // Individual Info APIには特典情報なし
 		sampleImages:
-			apiData.image_samples?.map((url, index) => ({
+			apiData.image_samples?.map((url, _index) => ({
 				thumb: url,
 				width: undefined,
 				height: undefined,
@@ -616,7 +617,7 @@ function extractHighResFromSrcset(srcset: string): string | undefined {
 
 	for (const entry of entries) {
 		const match = entry.match(/^(.+)\s+(\d+(?:\.\d+)?)x$/);
-		if (match && match[1]) {
+		if (match?.[1]) {
 			const url = match[1];
 			const resolution = Number.parseFloat(match[2] || "0");
 			if (resolution > maxRes) {
@@ -635,7 +636,7 @@ function extractHighResFromSrcset(srcset: string): string | undefined {
 function convertToISODate(dateString: string): string | undefined {
 	try {
 		const date = new Date(dateString);
-		if (isNaN(date.getTime())) return undefined;
+		if (Number.isNaN(date.getTime())) return undefined;
 
 		return date.toISOString().split("T")[0]; // YYYY-MM-DD
 	} catch (error) {
@@ -650,7 +651,7 @@ function convertToISODate(dateString: string): string | undefined {
 function formatDateForDisplay(dateString: string): string | undefined {
 	try {
 		const date = new Date(dateString);
-		if (isNaN(date.getTime())) return undefined;
+		if (Number.isNaN(date.getTime())) return undefined;
 
 		return date.toLocaleDateString("ja-JP", {
 			year: "numeric",

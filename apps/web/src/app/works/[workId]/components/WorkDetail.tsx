@@ -20,7 +20,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/com
 import {
 	BarChart3,
 	Calendar,
-	Clock,
 	FileText,
 	Share2,
 	Shield,

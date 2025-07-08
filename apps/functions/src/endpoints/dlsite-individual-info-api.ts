@@ -1,8 +1,9 @@
 /**
- * DLsite Individual Info API専用エンドポイント
+ * DLsite 統合データ収集エンドポイント
  *
- * 100% API-Only アーキテクチャによる革新的データ更新システム
- * HTMLスクレイピング完全廃止・Individual Info API（254フィールド）による包括的データ取得
+ * 100% API-Only アーキテクチャによる統合データ収集システム
+ * Individual Info API（254フィールド）による基本データ更新 + 時系列データ収集の統合実行
+ * HTMLスクレイピング完全廃止・重複API呼び出し排除による効率化実現
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
@@ -14,20 +15,18 @@ import {
 	isLastPageFromPageInfo,
 	validateAjaxHtmlContent,
 } from "../services/dlsite/dlsite-ajax-fetcher";
-// DLsiteInfoResponse, mapApiToOptimizedStructure は使用しない - 100% API-Only アーキテクチャで別システム
 import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
-// parseWorksFromHTMLは廃止 - HTMLスクレイピング完全廃止
-import { mapIndividualInfoToTimeSeriesData } from "../services/dlsite/individual-info-mapper";
+import { mapMultipleIndividualInfoToTimeSeries } from "../services/dlsite/individual-info-mapper";
 import {
 	batchMapIndividualInfoAPIToWorkData,
 	type IndividualInfoAPIResponse,
 	validateAPIOnlyWorkData,
 } from "../services/dlsite/individual-info-to-work-mapper";
-import { saveTimeSeriesRawData } from "../services/dlsite/timeseries-firestore";
+import { saveMultipleTimeSeriesRawData } from "../services/dlsite/timeseries-firestore";
 import * as logger from "../shared/logger";
 
-// メタデータ保存用の定数
-const METADATA_DOC_ID = "individual_info_api_metadata";
+// 統合メタデータ保存用の定数
+const UNIFIED_METADATA_DOC_ID = "unified_data_collection_metadata";
 const METADATA_COLLECTION = "dlsiteMetadata";
 
 // 設定を取得
@@ -38,8 +37,8 @@ const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/produc
 const MAX_CONCURRENT_API_REQUESTS = 5;
 const API_REQUEST_DELAY = 500; // ms
 
-// メタデータの型定義
-interface IndividualInfoAPIMetadata {
+// 統合データ収集メタデータの型定義
+interface UnifiedDataCollectionMetadata {
 	lastFetchedAt: Timestamp;
 	currentBatch?: number;
 	isInProgress: boolean;
@@ -47,17 +46,21 @@ interface IndividualInfoAPIMetadata {
 	lastSuccessfulCompleteFetch?: Timestamp;
 	totalWorks?: number;
 	processedWorks?: number;
-	apiOnlyMigrationStarted?: Timestamp;
+	basicDataUpdated?: number;
+	timeSeriesCollected?: number;
+	unifiedSystemStarted?: Timestamp;
 }
 
 /**
- * 処理結果の型定義
+ * 統合処理結果の型定義
  */
-interface APIFetchResult {
+interface UnifiedFetchResult {
 	workCount: number;
 	apiCallCount: number;
+	basicDataUpdated: number;
+	timeSeriesCollected: number;
 	error?: string;
-	migrationComplete?: boolean;
+	unificationComplete?: boolean;
 }
 
 /**
@@ -179,32 +182,34 @@ async function batchFetchIndividualInfo(
 }
 
 /**
- * メタデータの取得または初期化
+ * 統合データ収集メタデータの取得または初期化
  */
-async function getOrCreateAPIMetadata(): Promise<IndividualInfoAPIMetadata> {
-	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(METADATA_DOC_ID);
+async function getOrCreateUnifiedMetadata(): Promise<UnifiedDataCollectionMetadata> {
+	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
 	const doc = await metadataRef.get();
 
 	if (doc.exists) {
-		return doc.data() as IndividualInfoAPIMetadata;
+		return doc.data() as UnifiedDataCollectionMetadata;
 	}
 
 	// 初期メタデータの作成
-	const initialMetadata: IndividualInfoAPIMetadata = {
+	const initialMetadata: UnifiedDataCollectionMetadata = {
 		lastFetchedAt: Timestamp.now(),
 		isInProgress: false,
 		currentBatch: 0,
-		apiOnlyMigrationStarted: Timestamp.now(),
+		unifiedSystemStarted: Timestamp.now(),
 	};
 	await metadataRef.set(initialMetadata);
 	return initialMetadata;
 }
 
 /**
- * メタデータの更新
+ * 統合メタデータの更新
  */
-async function updateAPIMetadata(updates: Partial<IndividualInfoAPIMetadata>): Promise<void> {
-	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(METADATA_DOC_ID);
+async function updateUnifiedMetadata(
+	updates: Partial<UnifiedDataCollectionMetadata>,
+): Promise<void> {
+	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
 
 	const sanitizedUpdates: Record<string, Timestamp | boolean | string | number | null> = {
 		lastFetchedAt: Timestamp.now(),
@@ -277,20 +282,24 @@ async function getAllWorkIds(): Promise<string[]> {
 }
 
 /**
- * Individual Info API専用作品データ更新の実行
+ * 統合データ収集処理の実行
+ * 基本データ更新 + 時系列データ収集を同一APIレスポンスから並列実行
  */
-async function executeIndividualInfoAPIUpdate(): Promise<APIFetchResult> {
-	logger.info("🚀 Individual Info API専用更新システム開始");
-	logger.info("📋 100% API-Only アーキテクチャ - HTMLスクレイピング完全廃止");
+async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
+	logger.info("🚀 DLsite統合データ収集システム開始");
+	logger.info("📋 Individual Info API統合アーキテクチャ - 重複API呼び出し完全排除");
 
 	try {
 		// 1. 全作品IDを取得
 		const allWorkIds = await getAllWorkIds();
+		logger.info(`🔍 対象作品数: ${allWorkIds.length}件`);
 
 		if (allWorkIds.length === 0) {
 			return {
 				workCount: 0,
 				apiCallCount: 0,
+				basicDataUpdated: 0,
+				timeSeriesCollected: 0,
 				error: "作品IDが取得できませんでした",
 			};
 		}
@@ -299,119 +308,172 @@ async function executeIndividualInfoAPIUpdate(): Promise<APIFetchResult> {
 		const existingWorksMap = await getExistingWorksMap(allWorkIds);
 		logger.info(`既存作品データ: ${existingWorksMap.size}件`);
 
-		// 3. Individual Info APIでデータを取得
+		// 3. Individual Info APIでデータを取得（統合処理の核心）
 		const apiDataMap = await batchFetchIndividualInfo(allWorkIds);
 
 		if (apiDataMap.size === 0) {
 			return {
 				workCount: 0,
 				apiCallCount: allWorkIds.length,
+				basicDataUpdated: 0,
+				timeSeriesCollected: 0,
 				error: "Individual Info APIからデータを取得できませんでした",
 			};
 		}
 
-		// 4. APIデータを作品データに変換
 		const apiResponses = Array.from(apiDataMap.values());
-		const workDataList = batchMapIndividualInfoAPIToWorkData(apiResponses, existingWorksMap);
+		logger.info(`📊 API取得成功: ${apiResponses.length}/${allWorkIds.length}件`);
 
-		// 5. データ品質検証
-		const validWorkData = workDataList.filter((work) => {
-			const validation = validateAPIOnlyWorkData(work);
-			if (!validation.isValid) {
-				logger.warn(`データ品質エラー: ${work.productId}`, {
-					errors: validation.errors,
+		// === 統合データ処理: 同一APIレスポンスから並列変換 ===
+		const results = {
+			basicDataUpdated: 0,
+			timeSeriesCollected: 0,
+			errors: [] as string[],
+		};
+
+		// 4A. 基本データ変換・保存処理
+		const basicDataProcessing = async () => {
+			try {
+				// APIデータを作品データに変換
+				const workDataList = batchMapIndividualInfoAPIToWorkData(apiResponses, existingWorksMap);
+
+				// データ品質検証
+				const validWorkData = workDataList.filter((work) => {
+					const validation = validateAPIOnlyWorkData(work);
+					if (!validation.isValid) {
+						logger.warn(`データ品質エラー: ${work.productId}`, {
+							errors: validation.errors,
+						});
+						return false;
+					}
+					return true;
 				});
-				return false;
+
+				logger.info(`データ品質検証: ${validWorkData.length}/${workDataList.length}件が有効`);
+
+				// Firestoreに保存
+				if (validWorkData.length > 0) {
+					await saveWorksToFirestore(validWorkData);
+					results.basicDataUpdated = validWorkData.length;
+					logger.info(`✅ 基本データ保存完了: ${validWorkData.length}件`);
+				}
+
+				return validWorkData.length;
+			} catch (error) {
+				const errorMsg = `基本データ処理エラー: ${error instanceof Error ? error.message : String(error)}`;
+				logger.error(errorMsg);
+				results.errors.push(errorMsg);
+				return 0;
 			}
-			return true;
-		});
+		};
 
-		logger.info(`データ品質検証: ${validWorkData.length}/${workDataList.length}件が有効`);
+		// 4B. 時系列データ変換・保存処理
+		const timeSeriesProcessing = async () => {
+			try {
+				// 時系列データに変換
+				const timeSeriesData = mapMultipleIndividualInfoToTimeSeries(apiResponses);
 
-		// 6. Firestoreに保存
-		if (validWorkData.length > 0) {
-			await saveWorksToFirestore(validWorkData);
-			logger.info(`✅ Firestore保存完了: ${validWorkData.length}件`);
+				if (timeSeriesData.length > 0) {
+					// 一括保存
+					await saveMultipleTimeSeriesRawData(timeSeriesData);
+					results.timeSeriesCollected = timeSeriesData.length;
+					logger.info(`📊 時系列データ保存完了: ${timeSeriesData.length}件`);
+				}
+
+				return timeSeriesData.length;
+			} catch (error) {
+				const errorMsg = `時系列データ処理エラー: ${error instanceof Error ? error.message : String(error)}`;
+				logger.error(errorMsg);
+				results.errors.push(errorMsg);
+				return 0;
+			}
+		};
+
+		// 5. 並列処理実行（統合アーキテクチャの効率化）
+		logger.info("🔄 統合並列処理開始: 基本データ + 時系列データ");
+		await Promise.all([basicDataProcessing(), timeSeriesProcessing()]);
+
+		// 6. 統計情報・品質分析
+		const apiSuccessRate = (apiDataMap.size / allWorkIds.length) * 100;
+		const dataIntegrityRate =
+			((results.basicDataUpdated + results.timeSeriesCollected) / (apiResponses.length * 2)) * 100;
+
+		logger.info("📈 === 統合データ収集品質統計 ===");
+		logger.info(
+			`API呼び出し成功率: ${apiSuccessRate.toFixed(1)}% (${apiDataMap.size}/${allWorkIds.length})`,
+		);
+		logger.info(`基本データ更新: ${results.basicDataUpdated}件`);
+		logger.info(`時系列データ収集: ${results.timeSeriesCollected}件`);
+		logger.info(`データ整合性: ${dataIntegrityRate.toFixed(1)}%`);
+		logger.info("⚡ 重複API呼び出し: 0回 (100%排除達成)");
+
+		if (results.errors.length > 0) {
+			logger.warn(`⚠️ 処理エラー: ${results.errors.length}件`, { errors: results.errors });
 		}
 
-		// 7. 時系列データも並行して保存
-		const timeSeriesPromises = apiResponses.map(async (apiData) => {
-			try {
-				const timeSeriesData = mapIndividualInfoToTimeSeriesData(apiData);
-				await saveTimeSeriesRawData(timeSeriesData);
-			} catch (error) {
-				logger.warn(`時系列データ保存エラー: ${apiData.workno}`, { error });
-			}
-		});
-
-		await Promise.allSettled(timeSeriesPromises);
-		logger.info(`📊 時系列データ保存完了: ${apiResponses.length}件`);
-
-		// 8. 統計情報をログ出力
-		const qualityScores = validWorkData.map((work) => validateAPIOnlyWorkData(work).quality);
-		const avgQuality = qualityScores.reduce((sum, score) => sum + score, 0) / qualityScores.length;
-
-		logger.info("📈 === 100% API-Only データ品質統計 ===");
-		logger.info(`平均品質スコア: ${avgQuality.toFixed(1)}%`);
-		logger.info(`API呼び出し成功率: ${((apiDataMap.size / allWorkIds.length) * 100).toFixed(1)}%`);
-		logger.info(
-			`データ有効率: ${((validWorkData.length / workDataList.length) * 100).toFixed(1)}%`,
-		);
-
 		return {
-			workCount: validWorkData.length,
+			workCount: Math.max(results.basicDataUpdated, results.timeSeriesCollected),
 			apiCallCount: allWorkIds.length,
-			migrationComplete: true,
+			basicDataUpdated: results.basicDataUpdated,
+			timeSeriesCollected: results.timeSeriesCollected,
+			unificationComplete: results.errors.length === 0,
 		};
 	} catch (error) {
-		logger.error("Individual Info API更新システムエラー:", { error });
+		logger.error("統合データ収集システムエラー:", { error });
 		return {
 			workCount: 0,
 			apiCallCount: 0,
+			basicDataUpdated: 0,
+			timeSeriesCollected: 0,
 			error: error instanceof Error ? error.message : "不明なエラー",
 		};
 	}
 }
 
 /**
- * Individual Info API処理の共通ロジック
+ * 統合データ収集の共通ロジック
  */
-async function fetchIndividualInfoAPILogic(): Promise<APIFetchResult> {
+async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 	try {
 		// 1. メタデータ確認
-		const metadata = await getOrCreateAPIMetadata();
+		const metadata = await getOrCreateUnifiedMetadata();
 
 		if (metadata.isInProgress) {
-			logger.warn("前回のIndividual Info API処理が完了していません");
+			logger.warn("前回の統合データ収集処理が完了していません");
 			return {
 				workCount: 0,
 				apiCallCount: 0,
+				basicDataUpdated: 0,
+				timeSeriesCollected: 0,
 				error: "前回の処理が完了していません",
 			};
 		}
 
 		// 2. 処理開始を記録
-		await updateAPIMetadata({ isInProgress: true });
+		await updateUnifiedMetadata({ isInProgress: true });
 
-		// 3. Individual Info API更新実行
-		const result = await executeIndividualInfoAPIUpdate();
+		// 3. 統合データ収集実行
+		const result = await executeUnifiedDataCollection();
 
 		// 4. 成功時のメタデータ更新
 		if (!result.error) {
-			await updateAPIMetadata({
+			await updateUnifiedMetadata({
 				isInProgress: false,
 				lastError: undefined,
 				lastSuccessfulCompleteFetch: Timestamp.now(),
 				totalWorks: result.workCount,
 				processedWorks: result.workCount,
+				basicDataUpdated: result.basicDataUpdated,
+				timeSeriesCollected: result.timeSeriesCollected,
 			});
 
-			logger.info("✅ === Individual Info API移行完了 ===");
-			logger.info(`処理済み作品数: ${result.workCount}件`);
+			logger.info("✅ === DLsite統合データ収集完了 ===");
+			logger.info(`基本データ更新: ${result.basicDataUpdated}件`);
+			logger.info(`時系列データ収集: ${result.timeSeriesCollected}件`);
 			logger.info(`API呼び出し数: ${result.apiCallCount}件`);
-			logger.info("🎯 100% API-Only アーキテクチャ実現完了");
+			logger.info("🎯 統合アーキテクチャ実現完了 - 重複API呼び出し100%排除");
 		} else {
-			await updateAPIMetadata({
+			await updateUnifiedMetadata({
 				isInProgress: false,
 				lastError: result.error,
 			});
@@ -419,10 +481,10 @@ async function fetchIndividualInfoAPILogic(): Promise<APIFetchResult> {
 
 		return result;
 	} catch (error) {
-		logger.error("Individual Info API処理中にエラー:", { error });
+		logger.error("統合データ収集処理中にエラー:", { error });
 
 		try {
-			await updateAPIMetadata({
+			await updateUnifiedMetadata({
 				isInProgress: false,
 				lastError: error instanceof Error ? error.message : String(error),
 			});
@@ -433,19 +495,22 @@ async function fetchIndividualInfoAPILogic(): Promise<APIFetchResult> {
 		return {
 			workCount: 0,
 			apiCallCount: 0,
+			basicDataUpdated: 0,
+			timeSeriesCollected: 0,
 			error: error instanceof Error ? error.message : "不明なエラー",
 		};
 	}
 }
 
 /**
- * DLsite Individual Info API専用処理の Cloud Functions エントリーポイント
+ * DLsite統合データ収集処理の Cloud Functions エントリーポイント
+ * 基本データ更新 + 時系列データ収集を統合実行（重複API呼び出し完全排除）
  */
 export const fetchDLsiteWorksIndividualAPI = async (
 	event: CloudEvent<PubsubMessage>,
 ): Promise<void> => {
-	logger.info("🚀 Individual Info API専用エンドポイント開始 (GCFv2 CloudEvent Handler)");
-	logger.info("📋 100% API-Only アーキテクチャ - HTMLスクレイピング完全廃止システム");
+	logger.info("🚀 DLsite統合データ収集エンドポイント開始 (GCFv2 CloudEvent Handler)");
+	logger.info("📋 Individual Info API統合アーキテクチャ - 基本データ+時系列データ同時収集");
 
 	try {
 		const message = event.data;
@@ -471,28 +536,29 @@ export const fetchDLsiteWorksIndividualAPI = async (
 			}
 		}
 
-		// Individual Info API処理実行
-		const result = await fetchIndividualInfoAPILogic();
+		// 統合データ収集処理実行
+		const result = await fetchUnifiedDataCollectionLogic();
 
 		if (result.error) {
-			logger.warn(`Individual Info API処理エラー: ${result.error}`);
+			logger.warn(`統合データ収集処理エラー: ${result.error}`);
 		} else {
-			logger.info("✅ Individual Info API処理完了");
-			logger.info(`作品データ更新: ${result.workCount}件`);
-			logger.info(`API呼び出し: ${result.apiCallCount}件`);
+			logger.info("✅ 統合データ収集処理完了");
+			logger.info(`基本データ更新: ${result.basicDataUpdated}件`);
+			logger.info(`時系列データ収集: ${result.timeSeriesCollected}件`);
+			logger.info(`API呼び出し総数: ${result.apiCallCount}件`);
 
-			if (result.migrationComplete) {
-				logger.info("🎯 100% API-Only アーキテクチャ移行完了");
+			if (result.unificationComplete) {
+				logger.info("🎯 統合アーキテクチャ完全実現 - 重複API呼び出し100%排除");
 			}
 		}
 
-		logger.info("Individual Info API専用処理終了");
+		logger.info("DLsite統合データ収集処理終了");
 		return;
 	} catch (error) {
-		logger.error("Individual Info API専用処理で例外:", { error });
+		logger.error("統合データ収集処理で例外:", { error });
 
 		try {
-			await updateAPIMetadata({
+			await updateUnifiedMetadata({
 				isInProgress: false,
 				lastError: error instanceof Error ? error.message : String(error),
 			});

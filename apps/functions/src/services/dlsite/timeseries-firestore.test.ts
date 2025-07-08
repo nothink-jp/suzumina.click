@@ -151,7 +151,7 @@ describe("時系列データFirestore操作", () => {
 
 	describe("生データから日次集計への変換ロジック", () => {
 		it("複数の生データから正しく最低価格を計算する", () => {
-			const rawDataArray: TimeSeriesRawData[] = [
+			const _rawDataArray: TimeSeriesRawData[] = [
 				{
 					...mockTimeseriesRawData,
 					regionalPrices: { JP: 1320, US: 9.13, EU: 7.76, CN: 63.84, TW: 277.2, KR: 11748 },
@@ -190,7 +190,7 @@ describe("時系列データFirestore操作", () => {
 		});
 
 		it("複数の生データから正しく最大値を計算する", () => {
-			const rawDataArray: TimeSeriesRawData[] = [
+			const _rawDataArray: TimeSeriesRawData[] = [
 				{
 					...mockTimeseriesRawData,
 					discountRate: 0,
@@ -256,7 +256,7 @@ describe("時系列データFirestore操作", () => {
 
 	describe("期間指定での日次集計データ取得", () => {
 		it("正しい期間フィルターが適用される", () => {
-			const workId = "RJ01037463";
+			const _workId = "RJ01037463";
 			const startDate = "2025-07-01";
 			const endDate = "2025-07-07";
 

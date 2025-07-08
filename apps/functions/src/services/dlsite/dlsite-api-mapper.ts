@@ -138,6 +138,7 @@ export interface DLsiteInfoResponse {
 /**
  * Individual Info API データを OptimizedFirestoreDLsiteWorkData 形式に変換
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex data mapping logic required for API integration
 export function mapApiToOptimizedStructure(
 	infoData: DLsiteInfoResponse,
 	existingData?: OptimizedFirestoreDLsiteWorkData | null,
@@ -178,7 +179,7 @@ export function mapApiToOptimizedStructure(
 	// APIからのファイル情報
 	const fileInfo = infoData?.file_size
 		? {
-				totalSizeText: infoData.file_size.toString() + "MB",
+				totalSizeText: `${infoData.file_size.toString()}MB`,
 				totalSizeBytes: (infoData.file_size || 0) * 1024 * 1024,
 				totalDuration: undefined,
 				fileCount: 1,

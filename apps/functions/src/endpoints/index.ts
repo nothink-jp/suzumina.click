@@ -10,9 +10,9 @@
 import * as functions from "@google-cloud/functions-framework";
 // 適切なロギング
 import * as logger from "../shared/logger";
-// 各モジュールから関数をインポート
+// 各モジュールから関数をインポート（統合アーキテクチャ）
 import { fetchDLsiteWorksIndividualAPI } from "./dlsite-individual-info-api";
-import { collectDLsiteTimeseries } from "./dlsite-timeseries";
+// collectDLsiteTimeseries は統合アーキテクチャにより fetchDLsiteWorksIndividualAPI に統合
 import { fetchYouTubeVideos } from "./youtube";
 
 /**
@@ -45,9 +45,10 @@ interface PubsubMessage {
 	attributes?: Record<string, string>;
 }
 
+// 統合アーキテクチャによる Cloud Functions 登録（2関数のみ）
 functions.cloudEvent<PubsubMessage>("fetchYouTubeVideos", fetchYouTubeVideos);
 functions.cloudEvent<PubsubMessage>("fetchDLsiteWorksIndividualAPI", fetchDLsiteWorksIndividualAPI);
-functions.cloudEvent<PubsubMessage>("collectDLsiteTimeseries", collectDLsiteTimeseries);
+// collectDLsiteTimeseries は統合アーキテクチャにより廃止
 
 // HTTPトリガー関数は独立したファイルで管理
 

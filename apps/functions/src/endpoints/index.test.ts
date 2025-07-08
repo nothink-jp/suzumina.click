@@ -118,13 +118,7 @@ describe("初期化機能テスト", () => {
 		);
 	});
 
-	it("DLsite時系列データ収集モジュールの関数が正しく登録されること", async () => {
-		// index.tsをインポート
-		await import("./index");
-
-		// cloudEvent関数が正しく呼ばれたことを確認
-		expect(mockCloudEvent).toHaveBeenCalledWith("collectDLsiteTimeseries", expect.any(Function));
-	});
+	// collectDLsiteTimeseries は統合アーキテクチャにより廃止済み
 
 	// 旧 fetchDLsiteWorks は Individual Info API に移行済みのため削除
 });

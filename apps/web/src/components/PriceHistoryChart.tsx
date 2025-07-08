@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { useEffect, useState } from "react";
 import {
@@ -117,6 +116,7 @@ export default function PriceHistoryChart({ workId, className }: PriceHistoryCha
 		: [];
 
 	// カスタムツールチップ
+	// biome-ignore lint/suspicious/noExplicitAny: Recharts payload type requires any
 	const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
 		if (active && payload && payload.length) {
 			const data = payload[0].payload as ChartDataPoint;
