@@ -364,139 +364,59 @@ resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" 
 #   }
 # }
 
-# dlsiteWorks コレクションのインデックス - releaseDateISO（降順）
-# 作品一覧での販売日ソート用
-resource "google_firestore_index" "dlsiteworks_releasedateiso_desc" {
-  project    = var.gcp_project_id
-  collection = "dlsiteWorks"
-  
-  fields {
-    field_path = "releaseDateISO"
-    order      = "DESCENDING"
-  }
-  
-  fields {
-    field_path = "__name__"
-    order      = "DESCENDING"
-  }
-}
+# Note: Single-field index for releaseDateISO is automatically created by Firestore
+# Removed dlsiteworks_releasedateiso_desc - use single field index controls instead
 
-# dlsiteWorks コレクションのインデックス - releaseDateISO（昇順）
-# 作品一覧での販売日ソート用（古い順）
-resource "google_firestore_index" "dlsiteworks_releasedateiso_asc" {
-  project    = var.gcp_project_id
-  collection = "dlsiteWorks"
-  
-  fields {
-    field_path = "releaseDateISO"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "__name__"
-    order      = "ASCENDING"
-  }
-}
+# Note: Single-field index for releaseDateISO is automatically created by Firestore
+# Removed dlsiteworks_releasedateiso_asc - use single field index controls instead
 
+# Note: カテゴリ×販売日の複合インデックスは既に存在するため、Terraformでは管理しない
 # dlsiteWorks コレクションのインデックス - category（昇順）、releaseDateISO（降順）
-# カテゴリフィルタリング＋販売日ソート用
-resource "google_firestore_index" "dlsiteworks_category_releasedateiso_desc" {
-  project    = var.gcp_project_id
-  collection = "dlsiteWorks"
-  
-  fields {
-    field_path = "category"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "releaseDateISO"
-    order      = "DESCENDING"
-  }
-}
+# カテゴリフィルタリング＋販売日ソート用 - 既存のインデックスを使用
+# resource "google_firestore_index" "dlsiteworks_category_releasedateiso_desc" {
+#   project    = var.gcp_project_id
+#   collection = "dlsiteWorks"
+#   
+#   fields {
+#     field_path = "category"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "releaseDateISO"
+#     order      = "DESCENDING"
+#   }
+# }
 
 # dlsiteWorks コレクションのインデックス - category（昇順）、releaseDateISO（昇順）
-# カテゴリフィルタリング＋販売日ソート用（古い順）
-resource "google_firestore_index" "dlsiteworks_category_releasedateiso_asc" {
-  project    = var.gcp_project_id
-  collection = "dlsiteWorks"
-  
-  fields {
-    field_path = "category"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "releaseDateISO"
-    order      = "ASCENDING"
-  }
-}
+# カテゴリフィルタリング＋販売日ソート用（古い順） - 既存のインデックスを使用
+# resource "google_firestore_index" "dlsiteworks_category_releasedateiso_asc" {
+#   project    = var.gcp_project_id
+#   collection = "dlsiteWorks"
+#   
+#   fields {
+#     field_path = "category"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "releaseDateISO"
+#     order      = "ASCENDING"
+#   }
+# }
 
 # Note: 価格順・評価順ソート用のインデックス
-# dlsiteWorks コレクションのインデックス - price.current（昇順/降順）
-resource "google_firestore_index" "dlsiteworks_price_current_asc" {
-  project    = var.gcp_project_id
-  collection = "dlsiteWorks"
-  
-  fields {
-    field_path = "price.current"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "__name__"
-    order      = "ASCENDING"
-  }
-}
+# Single-field index for price.current is automatically created by Firestore
+# Removed dlsiteworks_price_current_asc - use single field index controls instead
 
-resource "google_firestore_index" "dlsiteworks_price_current_desc" {
-  project    = var.gcp_project_id
-  collection = "dlsiteWorks"
-  
-  fields {
-    field_path = "price.current"
-    order      = "DESCENDING"
-  }
-  
-  fields {
-    field_path = "__name__"
-    order      = "DESCENDING"
-  }
-}
+# Single-field index for price.current is automatically created by Firestore
+# Removed dlsiteworks_price_current_desc - use single field index controls instead
 
-# dlsiteWorks コレクションのインデックス - rating.stars（降順）
-# 評価順ソート用
-resource "google_firestore_index" "dlsiteworks_rating_stars_desc" {
-  project    = var.gcp_project_id
-  collection = "dlsiteWorks"
-  
-  fields {
-    field_path = "rating.stars"
-    order      = "DESCENDING"
-  }
-  
-  fields {
-    field_path = "__name__"
-    order      = "DESCENDING"
-  }
-}
+# Single-field index for rating.stars is automatically created by Firestore
+# Removed dlsiteworks_rating_stars_desc - use single field index controls instead
 
-# dlsiteWorks コレクションのインデックス - rating.count（降順）
-# 人気順ソート用
-resource "google_firestore_index" "dlsiteworks_rating_count_desc" {
-  project    = var.gcp_project_id
-  collection = "dlsiteWorks"
-  
-  fields {
-    field_path = "rating.count"
-    order      = "DESCENDING"
-  }
-  
-  fields {
-    field_path = "__name__"
-    order      = "DESCENDING"
-  }
-}
+# Single-field index for rating.count is automatically created by Firestore
+# Removed dlsiteworks_rating_count_desc - use single field index controls instead
 
 # Note: Single-field indexes for favorites collection are created automatically by Firestore
 # Complex queries requiring composite indexes would be added here if needed

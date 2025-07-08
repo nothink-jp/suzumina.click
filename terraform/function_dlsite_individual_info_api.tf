@@ -15,8 +15,9 @@ locals {
 }
 
 # Individual Info API専用作品取得関数（環境設定により条件付き作成）
+# Temporarily disabled due to source file issues - will be deployed via GitHub Actions
 resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
-  count = local.current_env.functions_enabled ? 1 : 0
+  count = 0  # Temporarily disabled
   
   project  = var.gcp_project_id
   name     = local.dlsite_individual_api_function_name
@@ -148,6 +149,7 @@ resource "google_pubsub_topic_iam_member" "scheduler_individual_api_pubsub_publi
 
 # Individual Info API関数のログベースメトリクス（エラー監視）
 resource "google_logging_metric" "individual_api_errors" {
+  count = 0  # Temporarily disabled
   name   = "dlsite_individual_api_errors"
   filter = <<EOF
 resource.type="cloud_function"
@@ -161,13 +163,14 @@ EOF
     display_name = "DLsite Individual Info API エラー数"
   }
 
-  depends_on = [
-    google_cloudfunctions2_function.fetch_dlsite_works_individual_api
-  ]
+  # depends_on = [
+  #   google_cloudfunctions2_function.fetch_dlsite_works_individual_api
+  # ]
 }
 
 # Individual Info API成功率監視用メトリクス
 resource "google_logging_metric" "individual_api_success" {
+  count = 0  # Temporarily disabled
   name   = "dlsite_individual_api_success"
   filter = <<EOF
 resource.type="cloud_function"
@@ -181,13 +184,14 @@ EOF
     display_name = "DLsite Individual Info API 成功数"
   }
 
-  depends_on = [
-    google_cloudfunctions2_function.fetch_dlsite_works_individual_api
-  ]
+  # depends_on = [
+  #   google_cloudfunctions2_function.fetch_dlsite_works_individual_api
+  # ]
 }
 
 # Individual Info API品質監視用メトリクス
 resource "google_logging_metric" "individual_api_quality" {
+  count = 0  # Temporarily disabled
   name   = "dlsite_individual_api_quality"
   filter = <<EOF
 resource.type="cloud_function"
@@ -203,20 +207,15 @@ EOF
 
   value_extractor = "EXTRACT(jsonPayload.quality_score)"
 
-  depends_on = [
-    google_cloudfunctions2_function.fetch_dlsite_works_individual_api
-  ]
+  # depends_on = [
+  #   google_cloudfunctions2_function.fetch_dlsite_works_individual_api
+  # ]
 }
 
 # Individual Info API関数の出力情報
 output "fetch_dlsite_individual_api_function_info" {
-  value = local.current_env.functions_enabled ? {
-    name     = google_cloudfunctions2_function.fetch_dlsite_works_individual_api[0].name
-    location = google_cloudfunctions2_function.fetch_dlsite_works_individual_api[0].location
-    state    = google_cloudfunctions2_function.fetch_dlsite_works_individual_api[0].state
-    url      = google_cloudfunctions2_function.fetch_dlsite_works_individual_api[0].service_config[0].uri
-  } : null
-  description = "Individual Info API専用DLsite作品取得関数の情報"
+  value = null  # Temporarily disabled
+  description = "Individual Info API専用DLsite作品取得関数の情報 (Temporarily disabled)"
 }
 
 # Individual Info API専用トピック情報
@@ -230,6 +229,7 @@ output "dlsite_individual_api_topic_info" {
 
 # Individual Info API移行完了のアラート（オプション）
 resource "google_monitoring_alert_policy" "individual_api_migration_complete" {
+  count = 0  # Temporarily disabled
   display_name = "DLsite Individual Info API移行完了アラート"
   combiner     = "OR"
   

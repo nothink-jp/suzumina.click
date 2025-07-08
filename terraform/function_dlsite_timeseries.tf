@@ -45,12 +45,28 @@ resource "google_project_iam_member" "collect_dlsite_timeseries_monitoring_write
 
 # DLsite時系列データ収集Cloud Function
 # Pub/Subトリガーで時系列データ収集・日次集計・データクリーンアップを実行
+# Temporarily disabled due to source file issues - will be deployed via GitHub Actions
 resource "google_cloudfunctions2_function" "collect_dlsite_timeseries" {
+  count = 0  # Temporarily disabled
   project  = var.gcp_project_id
   location = var.region
   name     = "collectDLsiteTimeseries"
 
   description = "DLsite時系列データ収集・日次集計・データクリーンアップ機能"
+
+  # ビルド設定
+  build_config {
+    runtime     = "nodejs22"
+    entry_point = "collectDLsiteTimeseries"
+    # 初回デプロイ用にダミーのソースコードを設定
+    # GitHub Actionsによる実際のデプロイでは上書きされる
+    source {
+      storage_source {
+        bucket = google_storage_bucket.functions_deployment.name
+        object = "function-source-dummy.zip"
+      }
+    }
+  }
 
   # GitHub Actions からのデプロイとの競合を避けるため、
   # ソースコードと環境変数は GitHub Actions が管理し、Terraform は無視する
@@ -141,18 +157,22 @@ resource "google_cloudfunctions2_function" "collect_dlsite_timeseries" {
 
 # Cloud Scheduler から関数を呼び出すための権限
 resource "google_cloudfunctions2_function_iam_member" "collect_dlsite_timeseries_invoker" {
+  count = 0  # Temporarily disabled
+  
   project        = var.gcp_project_id
   location       = var.region
-  cloud_function = google_cloudfunctions2_function.collect_dlsite_timeseries.name
+  cloud_function = google_cloudfunctions2_function.collect_dlsite_timeseries[0].name
   role           = "roles/cloudfunctions.invoker"
   member         = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
 }
 
 # Pub/Sub サービスアカウントからの関数呼び出し権限
 resource "google_cloudfunctions2_function_iam_member" "collect_dlsite_timeseries_pubsub_invoker" {
+  count = 0  # Temporarily disabled
+  
   project        = var.gcp_project_id
   location       = var.region
-  cloud_function = google_cloudfunctions2_function.collect_dlsite_timeseries.name
+  cloud_function = google_cloudfunctions2_function.collect_dlsite_timeseries[0].name
   role           = "roles/cloudfunctions.invoker"
   member         = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
@@ -163,6 +183,7 @@ resource "google_cloudfunctions2_function_iam_member" "collect_dlsite_timeseries
 
 # 時系列データ収集関数のログベースメトリクス（エラー率監視）
 resource "google_logging_metric" "collect_dlsite_timeseries_errors" {
+  count = 0  # Temporarily disabled
   name   = "dlsite_timeseries_collection_errors"
   filter = <<EOF
 resource.type="cloud_function"
@@ -183,6 +204,7 @@ EOF
 
 # 時系列データ収集成功率監視用メトリクス
 resource "google_logging_metric" "collect_dlsite_timeseries_success" {
+  count = 0  # Temporarily disabled
   name   = "dlsite_timeseries_collection_success"
   filter = <<EOF
 resource.type="cloud_function"
