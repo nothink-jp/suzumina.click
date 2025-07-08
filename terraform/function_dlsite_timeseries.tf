@@ -47,7 +47,7 @@ resource "google_project_iam_member" "collect_dlsite_timeseries_monitoring_write
 # Pub/Subトリガーで時系列データ収集・日次集計・データクリーンアップを実行
 # Temporarily disabled due to source file issues - will be deployed via GitHub Actions
 resource "google_cloudfunctions2_function" "collect_dlsite_timeseries" {
-  count = 0  # Temporarily disabled
+  # 100% API-Only アーキテクチャの一部として有効化
   project  = var.gcp_project_id
   location = var.region
   name     = "collectDLsiteTimeseries"
@@ -157,22 +157,22 @@ resource "google_cloudfunctions2_function" "collect_dlsite_timeseries" {
 
 # Cloud Scheduler から関数を呼び出すための権限
 resource "google_cloudfunctions2_function_iam_member" "collect_dlsite_timeseries_invoker" {
-  count = 0  # Temporarily disabled
+  # 権限を有効化
   
   project        = var.gcp_project_id
   location       = var.region
-  cloud_function = google_cloudfunctions2_function.collect_dlsite_timeseries[0].name
+  cloud_function = google_cloudfunctions2_function.collect_dlsite_timeseries.name
   role           = "roles/cloudfunctions.invoker"
   member         = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
 }
 
 # Pub/Sub サービスアカウントからの関数呼び出し権限
 resource "google_cloudfunctions2_function_iam_member" "collect_dlsite_timeseries_pubsub_invoker" {
-  count = 0  # Temporarily disabled
+  # Pub/Sub権限を有効化
   
   project        = var.gcp_project_id
   location       = var.region
-  cloud_function = google_cloudfunctions2_function.collect_dlsite_timeseries[0].name
+  cloud_function = google_cloudfunctions2_function.collect_dlsite_timeseries.name
   role           = "roles/cloudfunctions.invoker"
   member         = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
@@ -183,7 +183,7 @@ resource "google_cloudfunctions2_function_iam_member" "collect_dlsite_timeseries
 
 # 時系列データ収集関数のログベースメトリクス（エラー率監視）
 resource "google_logging_metric" "collect_dlsite_timeseries_errors" {
-  count = 0  # Temporarily disabled
+  # メトリクスを有効化
   name   = "dlsite_timeseries_collection_errors"
   filter = <<EOF
 resource.type="cloud_function"
@@ -204,7 +204,7 @@ EOF
 
 # 時系列データ収集成功率監視用メトリクス
 resource "google_logging_metric" "collect_dlsite_timeseries_success" {
-  count = 0  # Temporarily disabled
+  # 成功メトリクスを有効化
   name   = "dlsite_timeseries_collection_success"
   filter = <<EOF
 resource.type="cloud_function"

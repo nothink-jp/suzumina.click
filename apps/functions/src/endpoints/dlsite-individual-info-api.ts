@@ -14,8 +14,12 @@ import {
 	isLastPageFromPageInfo,
 	validateAjaxHtmlContent,
 } from "../services/dlsite/dlsite-ajax-fetcher";
+import {
+	type DLsiteInfoResponse,
+	mapApiToOptimizedStructure,
+} from "../services/dlsite/dlsite-api-mapper";
 import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
-import { parseWorksFromHTML } from "../services/dlsite/dlsite-parser";
+// parseWorksFromHTMLは廃止 - HTMLスクレイピング完全廃止
 import { mapIndividualInfoToTimeSeriesData } from "../services/dlsite/individual-info-mapper";
 import {
 	batchMapIndividualInfoAPIToWorkData,
