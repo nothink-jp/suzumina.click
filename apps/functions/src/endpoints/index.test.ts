@@ -35,7 +35,7 @@ vi.mock("./dlsite-timeseries", () => ({
 	collectDLsiteTimeseries: vi.fn(),
 }));
 
-// 調査エンドポイントは fetchDLsiteWorks に統合済みのため削除
+// 旧 fetchDLsiteWorks は Individual Info API に移行済みのため削除
 
 // Functions Frameworkのモック
 const mockCloudEvent = vi.fn();
@@ -112,7 +112,10 @@ describe("初期化機能テスト", () => {
 		await import("./index");
 
 		// cloudEvent関数が正しく呼ばれたことを確認
-		expect(mockCloudEvent).toHaveBeenCalledWith("fetchDLsiteWorksIndividualAPI", expect.any(Function));
+		expect(mockCloudEvent).toHaveBeenCalledWith(
+			"fetchDLsiteWorksIndividualAPI",
+			expect.any(Function),
+		);
 	});
 
 	it("DLsite時系列データ収集モジュールの関数が正しく登録されること", async () => {
@@ -123,7 +126,7 @@ describe("初期化機能テスト", () => {
 		expect(mockCloudEvent).toHaveBeenCalledWith("collectDLsiteTimeseries", expect.any(Function));
 	});
 
-	// 調査エンドポイントは fetchDLsiteWorks に統合済みのため削除
+	// 旧 fetchDLsiteWorks は Individual Info API に移行済みのため削除
 });
 
 describe("安全なプロセス終了関数（safeExit）テスト", () => {

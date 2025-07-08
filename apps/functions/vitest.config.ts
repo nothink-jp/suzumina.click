@@ -44,7 +44,6 @@ export default defineConfig({
 				"src/development/**", // Development tools and debug scripts
 				"src/endpoints/youtube.ts", // YouTube endpoint excluded from tests
 				"src/services/youtube/**", // YouTube services excluded from tests
-				"src/endpoints/investigate-access.ts", // Investigation endpoint (standalone tool)
 				"src/endpoints/dlsite-individual-info-api.ts", // New Individual Info API endpoint - needs tests
 				"src/services/dlsite/individual-info-to-work-mapper.ts", // New Individual Info mapper - needs tests
 				"src/services/dlsite/timeseries-firestore.ts", // Timeseries storage - needs tests

@@ -151,7 +151,19 @@ export function mapToOptimizedStructure(
 		highResImageUrl: extendedData?.highResImageUrl,
 
 		// 価格・評価情報（統合済み）
-		price: selectBestPrice(infoData?.prices?.[0], undefined, mapToPriceInfo(parsed)),
+		price: selectBestPrice(
+			infoData?.prices?.[0]
+				? {
+						current: infoData.prices[0].price,
+						currency: infoData.prices[0].currency,
+						original: undefined,
+						discount: undefined,
+						point: undefined,
+					}
+				: undefined,
+			undefined,
+			mapToPriceInfo(parsed),
+		),
 		rating: selectBestRating(mapToRatingInfo(parsed, infoData || undefined), undefined),
 		salesCount: infoData?.dl_count,
 		wishlistCount: infoData?.wishlist_count,
@@ -350,7 +362,15 @@ export function mergeWorkDataSources(
 	const infoRating = infoData ? mapToRatingInfo(searchData, infoData) : undefined;
 
 	const unifiedPrice = selectBestPrice(
-		infoData?.prices?.[0], // Info APIの価格
+		infoData?.prices?.[0]
+			? {
+					current: infoData.prices[0].price,
+					currency: infoData.prices[0].currency,
+					original: undefined,
+					discount: undefined,
+					point: undefined,
+				}
+			: undefined, // Info APIの価格
 		undefined, // 詳細ページには価格情報なし
 		searchPrice,
 	);
@@ -393,7 +413,7 @@ export function mergeWorkDataSources(
 		(detailData?.basicInfo as BasicWorkInfo)?.genres || [],
 		(detailData?.basicInfo as BasicWorkInfo)?.detailTags || [],
 		searchData.tags || [],
-		infoData?.genres || [],
+		(infoData?.genres || []).map((g) => (typeof g === "string" ? g : g.name || "")).filter(Boolean),
 		existingData?.tags || [], // 既存データ保持
 	]);
 

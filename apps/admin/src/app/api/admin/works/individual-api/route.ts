@@ -13,10 +13,7 @@ export async function POST() {
 		// Pub/Sub経由でIndividual Info API Function をトリガー
 		const projectId = process.env.GCP_PROJECT_ID;
 		if (!projectId) {
-			return NextResponse.json(
-				{ error: "GCP Project ID not configured" },
-				{ status: 500 },
-			);
+			return NextResponse.json({ error: "GCP Project ID not configured" }, { status: 500 });
 		}
 
 		const pubsub = new PubSub({ projectId });
