@@ -28,10 +28,4 @@ resource "google_cloud_scheduler_job" "fetch_youtube_videos_hourly" {
 }
 
 
-# ===================================================================
-# DLsite時系列データ収集スケジューラー (非推奨・統合アーキテクチャにより廃止)
-# ===================================================================
-# 
-# ⚠️ 削除済み: collectDLsiteTimeseries関連スケジューラー
-# 新システムでは fetchDLsiteWorksIndividualAPI が時系列データ収集も統合実行します
-# 時系列データの日次集計・クリーンアップ機能は別途実装予定
+# 旧 collectDLsiteTimeseries 関連スケジューラーは統合アーキテクチャにより削除済み

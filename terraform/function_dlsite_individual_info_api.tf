@@ -114,23 +114,23 @@ resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
   depends_on = [google_project_service.pubsub]
 }
 
-# Individual Info API専用のCloud Scheduler（日次実行）
-resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_daily" {
+# Individual Info API専用のCloud Scheduler（毎時実行）
+resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
   project  = var.gcp_project_id
   region   = var.region
-  name     = "fetch-dlsite-individual-api-daily"
+  name     = "fetch-dlsite-individual-api-hourly"
   
-  description = "Individual Info API専用データ更新（日次実行・100% API-Only）"
-  schedule    = "0 1 * * *"  # 毎日午前1時（JST）
+  description = "Individual Info API専用データ更新（毎時実行・統合アーキテクチャ）"
+  schedule    = "0 * * * *"  # 毎時0分実行（統合アーキテクチャ準拠）
   time_zone   = "Asia/Tokyo"
   paused      = false
 
   pubsub_target {
     topic_name = google_pubsub_topic.dlsite_individual_api_trigger.id
     data       = base64encode(jsonencode({
-      type = "daily_update"
-      mode = "individual_info_api_only"
-      description = "100% API-Only アーキテクチャ日次更新"
+      type = "unified_update"
+      mode = "individual_info_api_unified"
+      description = "統合アーキテクチャによる基本データ+時系列データ収集"
     }))
   }
 

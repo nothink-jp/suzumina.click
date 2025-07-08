@@ -30,10 +30,7 @@ vi.mock("./dlsite-individual-info-api", () => ({
 	fetchDLsiteWorksIndividualAPI: vi.fn(),
 }));
 
-// DLsite時系列データ収集モジュールのモック
-vi.mock("./dlsite-timeseries", () => ({
-	collectDLsiteTimeseries: vi.fn(),
-}));
+// collectDLsiteTimeseries は統合アーキテクチャにより廃止済み
 
 // 旧 fetchDLsiteWorks は Individual Info API に移行済みのため削除
 
@@ -119,8 +116,6 @@ describe("初期化機能テスト", () => {
 	});
 
 	// collectDLsiteTimeseries は統合アーキテクチャにより廃止済み
-
-	// 旧 fetchDLsiteWorks は Individual Info API に移行済みのため削除
 });
 
 describe("安全なプロセス終了関数（safeExit）テスト", () => {
