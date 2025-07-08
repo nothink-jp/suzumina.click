@@ -349,7 +349,10 @@ export class ConfigManager {
 		// 環境別オーバーライドを適用
 		const envOverrides = ENVIRONMENT_OVERRIDES[environment];
 		if (envOverrides) {
-			config = this.deepMerge(config, envOverrides);
+			config = this.deepMerge(
+				config as unknown as Record<string, unknown>,
+				envOverrides as Record<string, unknown>,
+			) as unknown as CloudFunctionConfig;
 		}
 
 		return config;
@@ -453,7 +456,10 @@ export class ConfigManager {
 	 * 設定を動的に更新
 	 */
 	public updateConfig(updates: Partial<CloudFunctionConfig>): void {
-		this.config = this.deepMerge(this.config, updates);
+		this.config = this.deepMerge(
+			this.config as unknown as Record<string, unknown>,
+			updates as Record<string, unknown>,
+		) as unknown as CloudFunctionConfig;
 		this.config.lastUpdated = new Date().toISOString();
 
 		logger.info("設定を更新しました", {
@@ -470,12 +476,16 @@ export class ConfigManager {
 		updates: Partial<CloudFunctionConfig[T]>,
 	): void {
 		const currentSection = (this.config[section] as Record<string, unknown>) || {};
-		this.config[section] = Object.assign({}, currentSection, updates) as CloudFunctionConfig[T];
+		this.config[section] = Object.assign(
+			{},
+			currentSection,
+			updates as Record<string, unknown>,
+		) as CloudFunctionConfig[T];
 
 		this.config.lastUpdated = new Date().toISOString();
 
 		logger.info(`${section}設定を更新しました`, {
-			updatedFields: Object.keys(updates),
+			updatedFields: Object.keys(updates as Record<string, unknown>),
 			timestamp: this.config.lastUpdated,
 		});
 	}
@@ -560,18 +570,21 @@ export class ConfigManager {
 	/**
 	 * オブジェクトの深いマージ
 	 */
-	private deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
+	private deepMerge(
+		target: Record<string, unknown>,
+		source: Record<string, unknown>,
+	): Record<string, unknown> {
 		const result = { ...target };
 
 		for (const key in source) {
 			const sourceValue = source[key];
 			if (sourceValue && typeof sourceValue === "object" && !Array.isArray(sourceValue)) {
 				result[key] = this.deepMerge(
-					result[key] || ({} as T[Extract<keyof T, string>]),
-					sourceValue as Partial<T[Extract<keyof T, string>]>,
+					(result[key] as Record<string, unknown>) || {},
+					sourceValue as Record<string, unknown>,
 				);
 			} else if (sourceValue !== undefined) {
-				result[key] = sourceValue as T[Extract<keyof T, string>];
+				result[key] = sourceValue;
 			}
 		}
 
