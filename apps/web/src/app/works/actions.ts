@@ -66,13 +66,14 @@ function filterWorksByUnifiedData(
 				work.title,
 				work.circle,
 				work.description,
-				...(work.voiceActors || []),
-				...(work.scenario || []),
-				...(work.illustration || []),
-				...(work.music || []),
-				...(work.author || []),
-				...(work.genres || []),
+				...(work.voiceActors || []).filter((va) => typeof va === "string"),
+				...(work.scenario || []).filter((s) => typeof s === "string"),
+				...(work.illustration || []).filter((i) => typeof i === "string"),
+				...(work.music || []).filter((m) => typeof m === "string"),
+				...(work.author || []).filter((a) => typeof a === "string"),
+				...(work.genres || []).filter((g) => typeof g === "string"),
 			]
+				.filter((text) => typeof text === "string")
 				.join(" ")
 				.toLowerCase();
 
@@ -94,7 +95,11 @@ function filterWorksByUnifiedData(
 	if (params.voiceActors && params.voiceActors.length > 0) {
 		filteredWorks = filteredWorks.filter((work) => {
 			const workVoiceActors = work.voiceActors || [];
-			return params.voiceActors?.some((va) => workVoiceActors.some((wva) => wva.includes(va)));
+			return params.voiceActors?.some((va) =>
+				workVoiceActors.some(
+					(wva) => typeof wva === "string" && typeof va === "string" && wva.includes(va),
+				),
+			);
 		});
 	}
 
@@ -102,7 +107,11 @@ function filterWorksByUnifiedData(
 	if (params.genres && params.genres.length > 0) {
 		filteredWorks = filteredWorks.filter((work) => {
 			const workGenres = work.genres || [];
-			return params.genres?.some((genre) => workGenres.some((wg) => wg.includes(genre)));
+			return params.genres?.some((genre) =>
+				workGenres.some(
+					(wg) => typeof wg === "string" && typeof genre === "string" && wg.includes(genre),
+				),
+			);
 		});
 	}
 
@@ -147,7 +156,10 @@ function filterWorksByUnifiedData(
 		filteredWorks = filteredWorks.filter((work) => {
 			const workAgeRating = work.ageRating || "";
 			return params.ageRating?.some(
-				(rating) => workAgeRating.includes(rating) || rating === workAgeRating,
+				(rating) =>
+					typeof workAgeRating === "string" &&
+					typeof rating === "string" &&
+					(workAgeRating.includes(rating) || rating === workAgeRating),
 			);
 		});
 	}
@@ -376,7 +388,12 @@ export async function getRelatedWorks(
 			// 声優一致（統合データ活用）
 			if (byVoiceActors && baseWork.voiceActors && work.voiceActors) {
 				const commonVoiceActors = baseWork.voiceActors.filter(
-					(va) => work.voiceActors?.some((wva) => wva.includes(va) || va.includes(wva)) ?? false,
+					(va) =>
+						typeof va === "string" &&
+						(work.voiceActors?.some(
+							(wva) => typeof wva === "string" && (wva.includes(va) || va.includes(wva)),
+						) ??
+							false),
 				);
 				score += commonVoiceActors.length * 3;
 			}
@@ -384,7 +401,10 @@ export async function getRelatedWorks(
 			// ジャンル一致（統合データ活用）
 			if (byGenres && baseWork.tags && work.genres) {
 				const commonGenres = baseWork.tags.filter(
-					(tag: string) => work.genres?.includes(tag) ?? false,
+					(tag: string) =>
+						typeof tag === "string" &&
+						(work.genres?.some((genre) => typeof genre === "string" && genre.includes(tag)) ??
+							false),
 				);
 				score += commonGenres.length * 2;
 			}
@@ -506,7 +526,9 @@ export async function getWorksStats(
 		allWorks.forEach((work) => {
 			if (work.genres) {
 				work.genres.forEach((genre) => {
-					tagCounts.set(genre, (tagCounts.get(genre) || 0) + 1);
+					if (typeof genre === "string" && genre.trim() !== "") {
+						tagCounts.set(genre, (tagCounts.get(genre) || 0) + 1);
+					}
 				});
 			}
 		});
@@ -521,7 +543,9 @@ export async function getWorksStats(
 		allWorks.forEach((work) => {
 			if (work.voiceActors) {
 				work.voiceActors.forEach((va) => {
-					voiceActorCounts.set(va, (voiceActorCounts.get(va) || 0) + 1);
+					if (typeof va === "string" && va.trim() !== "") {
+						voiceActorCounts.set(va, (voiceActorCounts.get(va) || 0) + 1);
+					}
 				});
 			}
 		});
@@ -719,13 +743,15 @@ export async function getPopularVoiceActors(limit = 20): Promise<
 		allWorks.forEach((work) => {
 			if (work.voiceActors) {
 				work.voiceActors.forEach((va) => {
-					if (!voiceActorMap.has(va)) {
-						voiceActorMap.set(va, { count: 0, works: [] });
-					}
-					const entry = voiceActorMap.get(va);
-					if (entry) {
-						entry.count++;
-						entry.works.push(work.title);
+					if (typeof va === "string" && va.trim() !== "") {
+						if (!voiceActorMap.has(va)) {
+							voiceActorMap.set(va, { count: 0, works: [] });
+						}
+						const entry = voiceActorMap.get(va);
+						if (entry) {
+							entry.count++;
+							entry.works.push(work.title);
+						}
 					}
 				});
 			}
@@ -769,7 +795,9 @@ export async function getPopularGenres(limit = 30): Promise<
 		allWorks.forEach((work) => {
 			if (work.genres) {
 				work.genres.forEach((genre) => {
-					genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1);
+					if (typeof genre === "string" && genre.trim() !== "") {
+						genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1);
+					}
 				});
 			}
 		});
