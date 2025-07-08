@@ -52,20 +52,14 @@ resource "google_cloudfunctions2_function" "collect_dlsite_timeseries" {
 
   description = "DLsite時系列データ収集・日次集計・データクリーンアップ機能"
 
-  build_config {
-    runtime     = "nodejs22"
-    entry_point = "collectDLsiteTimeseries"
-
-    source {
-      storage_source {
-        bucket = google_storage_bucket.functions_source_bucket.name
-        object = google_storage_bucket_object.functions_source_zip.name
-      }
-    }
-
-    environment_variables = {
-      GOOGLE_NODE_RUN_SCRIPTS = ""
-    }
+  # GitHub Actions からのデプロイとの競合を避けるため、
+  # ソースコードと環境変数は GitHub Actions が管理し、Terraform は無視する
+  lifecycle {
+    ignore_changes = [
+      build_config,
+      service_config[0].environment_variables,
+      service_config[0].secret_environment_variables
+    ]
   }
 
   service_config {
@@ -107,7 +101,7 @@ resource "google_cloudfunctions2_function" "collect_dlsite_timeseries" {
     secret_environment_variables {
       key        = "DISCORD_CLIENT_SECRET"
       project_id = var.gcp_project_id
-      secret     = google_secret_manager_secret.discord_client_secret.secret_id
+      secret     = google_secret_manager_secret.secrets["DISCORD_CLIENT_SECRET"].secret_id
       version    = "latest"
     }
   }
@@ -127,10 +121,6 @@ resource "google_cloudfunctions2_function" "collect_dlsite_timeseries" {
     google_project_service.run,
     google_project_service.eventarc,
     
-    # ストレージ依存
-    google_storage_bucket.functions_source_bucket,
-    google_storage_bucket_object.functions_source_zip,
-    
     # IAM権限依存
     google_service_account.collect_dlsite_timeseries_sa,
     google_project_iam_member.collect_dlsite_timeseries_firestore_user,
@@ -141,7 +131,7 @@ resource "google_cloudfunctions2_function" "collect_dlsite_timeseries" {
     google_pubsub_topic.dlsite_timeseries_collect_trigger,
     
     # 秘密情報依存
-    google_secret_manager_secret.discord_client_secret,
+    google_secret_manager_secret.secrets,
   ]
 }
 
@@ -181,7 +171,7 @@ severity>=ERROR
 EOF
 
   metric_descriptor {
-    metric_kind = "COUNTER"
+    metric_kind = "CUMULATIVE"
     value_type  = "INT64"
     display_name = "DLsite時系列データ収集エラー数"
   }
@@ -202,7 +192,7 @@ jsonPayload.success=true
 EOF
 
   metric_descriptor {
-    metric_kind = "COUNTER"
+    metric_kind = "CUMULATIVE"
     value_type  = "INT64"
     display_name = "DLsite時系列データ収集成功数"
   }

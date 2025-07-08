@@ -374,6 +374,11 @@ resource "google_firestore_index" "dlsiteworks_releasedateiso_desc" {
     field_path = "releaseDateISO"
     order      = "DESCENDING"
   }
+  
+  fields {
+    field_path = "__name__"
+    order      = "DESCENDING"
+  }
 }
 
 # dlsiteWorks コレクションのインデックス - releaseDateISO（昇順）
@@ -384,6 +389,11 @@ resource "google_firestore_index" "dlsiteworks_releasedateiso_asc" {
   
   fields {
     field_path = "releaseDateISO"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "__name__"
     order      = "ASCENDING"
   }
 }
@@ -432,6 +442,11 @@ resource "google_firestore_index" "dlsiteworks_price_current_asc" {
     field_path = "price.current"
     order      = "ASCENDING"
   }
+  
+  fields {
+    field_path = "__name__"
+    order      = "ASCENDING"
+  }
 }
 
 resource "google_firestore_index" "dlsiteworks_price_current_desc" {
@@ -440,6 +455,11 @@ resource "google_firestore_index" "dlsiteworks_price_current_desc" {
   
   fields {
     field_path = "price.current"
+    order      = "DESCENDING"
+  }
+  
+  fields {
+    field_path = "__name__"
     order      = "DESCENDING"
   }
 }
@@ -454,6 +474,11 @@ resource "google_firestore_index" "dlsiteworks_rating_stars_desc" {
     field_path = "rating.stars"
     order      = "DESCENDING"
   }
+  
+  fields {
+    field_path = "__name__"
+    order      = "DESCENDING"
+  }
 }
 
 # dlsiteWorks コレクションのインデックス - rating.count（降順）
@@ -464,6 +489,11 @@ resource "google_firestore_index" "dlsiteworks_rating_count_desc" {
   
   fields {
     field_path = "rating.count"
+    order      = "DESCENDING"
+  }
+  
+  fields {
+    field_path = "__name__"
     order      = "DESCENDING"
   }
 }
