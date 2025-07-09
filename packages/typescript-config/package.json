@@ -1,6 +1,6 @@
 {
 	"name": "@suzumina.click/typescript-config",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"private": true,
 	"license": "PROPRIETARY",
 	"publishConfig": {
