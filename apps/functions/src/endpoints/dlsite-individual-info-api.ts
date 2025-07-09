@@ -202,10 +202,20 @@ async function batchFetchIndividualInfo(
 
 	// 失敗した作品IDをログ出力
 	if (failedWorkIds.length > 0) {
+		const sortedFailedIds = failedWorkIds.sort();
 		logger.warn(`❌ API取得失敗作品ID一覧 (${failedWorkIds.length}件):`, {
-			failedWorkIds: failedWorkIds.sort(),
+			failedWorkIds: sortedFailedIds,
 			failureRate: `${((failedWorkIds.length / workIds.length) * 100).toFixed(1)}%`,
 		});
+
+		// 失敗IDリストを分割して表示（Cloud Loggingの制限対応）
+		const chunkSize = 50;
+		for (let i = 0; i < sortedFailedIds.length; i += chunkSize) {
+			const chunk = sortedFailedIds.slice(i, i + chunkSize);
+			logger.warn(
+				`失敗作品ID ${i + 1}-${Math.min(i + chunkSize, sortedFailedIds.length)}: [${chunk.join(", ")}]`,
+			);
+		}
 	}
 
 	return { results, failedWorkIds };
@@ -586,10 +596,19 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 
 		// 失敗作品ID最終サマリー
 		if (failedWorkIds.length > 0) {
+			const sortedFailedIds = failedWorkIds.sort();
 			logger.warn("📋 === API取得失敗作品ID 最終サマリー ===");
 			logger.warn(`失敗件数: ${failedWorkIds.length}/${allWorkIds.length}件`);
 			logger.warn(`失敗率: ${((failedWorkIds.length / allWorkIds.length) * 100).toFixed(1)}%`);
-			logger.warn(`失敗作品ID一覧: [${failedWorkIds.sort().join(", ")}]`);
+
+			// 失敗IDの詳細表示（50件ずつ分割）
+			const chunkSize = 50;
+			for (let i = 0; i < sortedFailedIds.length; i += chunkSize) {
+				const chunk = sortedFailedIds.slice(i, i + chunkSize);
+				logger.warn(
+					`最終失敗ID ${i + 1}-${Math.min(i + chunkSize, sortedFailedIds.length)}: [${chunk.join(", ")}]`,
+				);
+			}
 		} else {
 			logger.info("✅ API取得: 全作品成功");
 		}
