@@ -101,6 +101,7 @@ export async function GET(
 		});
 	} catch (error) {
 		// 時系列データ取得エラー
+		console.error("時系列データ取得エラー:", error);
 
 		if (error instanceof z.ZodError) {
 			return NextResponse.json(
@@ -109,7 +110,13 @@ export async function GET(
 			);
 		}
 
-		return NextResponse.json({ error: "時系列データの取得に失敗しました" }, { status: 500 });
+		return NextResponse.json(
+			{
+				error: "時系列データの取得に失敗しました",
+				details: error instanceof Error ? error.message : "Unknown error",
+			},
+			{ status: 500 },
+		);
 	}
 }
 
