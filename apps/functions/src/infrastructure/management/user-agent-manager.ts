@@ -37,8 +37,8 @@ export class UserAgentManager {
 	private static instance: UserAgentManager;
 	private stats: UserAgentStats;
 	private readonly configs: UserAgentConfig[];
-	private readonly rotationThreshold = 5; // 同一User-Agentの連続使用制限
-	private readonly cooldownPeriod = 60000; // クールダウン期間（1分）
+	private readonly rotationThreshold = 3; // 同一User-Agentの連続使用制限を削減
+	private readonly cooldownPeriod = 30000; // クールダウン期間を30秒に短縮
 
 	private constructor() {
 		this.configs = this.initializeUserAgents();
@@ -66,16 +66,26 @@ export class UserAgentManager {
 	}
 
 	/**
-	 * User-Agent設定を初期化
+	 * User-Agent設定を初期化（拡張版）
 	 */
 	private initializeUserAgents(): UserAgentConfig[] {
 		return [
+			// Chrome バリエーション
 			{
 				agent:
 					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 				platform: "Windows",
 				browser: "Chrome",
 				version: "120",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			{
+				agent:
+					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+				platform: "Windows",
+				browser: "Chrome",
+				version: "119",
 				lastUsed: 0,
 				useCount: 0,
 			},
@@ -90,6 +100,15 @@ export class UserAgentManager {
 			},
 			{
 				agent:
+					"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+				platform: "macOS",
+				browser: "Chrome",
+				version: "119",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			{
+				agent:
 					"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 				platform: "Linux",
 				browser: "Chrome",
@@ -98,10 +117,28 @@ export class UserAgentManager {
 				useCount: 0,
 			},
 			{
+				agent:
+					"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+				platform: "Linux",
+				browser: "Chrome",
+				version: "119",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			// Firefox バリエーション
+			{
 				agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
 				platform: "Windows",
 				browser: "Firefox",
 				version: "121",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			{
+				agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+				platform: "Windows",
+				browser: "Firefox",
+				version: "120",
 				lastUsed: 0,
 				useCount: 0,
 			},
@@ -116,6 +153,32 @@ export class UserAgentManager {
 			},
 			{
 				agent:
+					"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0",
+				platform: "macOS",
+				browser: "Firefox",
+				version: "120",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			{
+				agent: "Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0",
+				platform: "Linux",
+				browser: "Firefox",
+				version: "121",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			{
+				agent: "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0",
+				platform: "Linux",
+				browser: "Firefox",
+				version: "120",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			// Safari バリエーション
+			{
+				agent:
 					"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
 				platform: "macOS",
 				browser: "Safari",
@@ -125,9 +188,47 @@ export class UserAgentManager {
 			},
 			{
 				agent:
+					"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+				platform: "macOS",
+				browser: "Safari",
+				version: "17.1",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			// Edge バリエーション
+			{
+				agent:
 					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
 				platform: "Windows",
 				browser: "Edge",
+				version: "120",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			{
+				agent:
+					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
+				platform: "Windows",
+				browser: "Edge",
+				version: "119",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			// モバイルUser-Agent（参考）
+			{
+				agent:
+					"Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1",
+				platform: "iOS",
+				browser: "Safari",
+				version: "17.2",
+				lastUsed: 0,
+				useCount: 0,
+			},
+			{
+				agent:
+					"Mozilla/5.0 (Linux; Android 14; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+				platform: "Android",
+				browser: "Chrome",
 				version: "120",
 				lastUsed: 0,
 				useCount: 0,
@@ -158,7 +259,7 @@ export class UserAgentManager {
 	}
 
 	/**
-	 * 最適なUser-Agentを選択
+	 * 最適なUser-Agentを選択（改良版）
 	 */
 	private selectOptimalUserAgent(): UserAgentConfig {
 		const now = Date.now();
@@ -169,13 +270,20 @@ export class UserAgentManager {
 		);
 
 		if (availableConfigs.length === 0) {
-			// 全てクールダウン中の場合は最も古いものを使用
+			// 全てクールダウン中の場合は最も古いものを使用（緊急時）
 			const oldestConfig = this.configs.reduce((oldest, current) =>
 				current.lastUsed < oldest.lastUsed ? current : oldest,
 			);
-			logger.warn("全User-Agentがクールダウン中", {
-				selectedBrowser: oldestConfig.browser,
-			});
+
+			// 緊急時は警告レベルを下げてログの頻度を削減
+			if (this.stats.totalRequests % 50 === 0) {
+				// 50リクエストごとに1回だけログ
+				logger.info(`緊急時User-Agent使用 (${this.stats.totalRequests}回目)`, {
+					selectedBrowser: oldestConfig.browser,
+					availableAgents: this.configs.length,
+					totalRequests: this.stats.totalRequests,
+				});
+			}
 			return oldestConfig;
 		}
 
@@ -212,29 +320,30 @@ export class UserAgentManager {
 	}
 
 	/**
-	 * 検出リスクを評価
+	 * 検出リスクを評価（改良版）
 	 */
 	private evaluateDetectionRisk(): void {
 		const maxUseCount = Math.max(...this.configs.map((c) => c.useCount));
 		const minUseCount = Math.min(...this.configs.map((c) => c.useCount));
 		const usageVariance = maxUseCount - minUseCount;
 
-		// リスク評価ロジック
-		if (usageVariance > 10) {
+		// より緩やかなリスク評価ロジック（User-Agent数が増えたため）
+		if (usageVariance > 20) {
 			this.stats.detectionRisk = "high";
-		} else if (usageVariance > 5) {
+		} else if (usageVariance > 10) {
 			this.stats.detectionRisk = "medium";
 		} else {
 			this.stats.detectionRisk = "low";
 		}
 
-		// 高リスク時は警告
-		if (this.stats.detectionRisk === "high") {
-			logger.warn("User-Agent検出リスクが高です", {
+		// 高リスク時のみ警告（頻度を削減）
+		if (this.stats.detectionRisk === "high" && this.stats.totalRequests % 100 === 0) {
+			logger.warn(`User-Agent検出リスク高 (${this.stats.totalRequests}回目)`, {
 				maxUseCount,
 				minUseCount,
 				usageVariance,
-				recommendation: "User-Agentの追加またはリセットを検討してください",
+				totalAgents: this.configs.length,
+				recommendation: "大量処理中につき継続監視",
 			});
 		}
 	}
@@ -338,4 +447,19 @@ export function getNextUserAgent(): string {
  */
 export function generateDLsiteHeaders(referer?: string): Record<string, string> {
 	return getUserAgentManager().generateHeaders(referer);
+}
+
+/**
+ * User-Agent使用統計のサマリーを出力（大量処理完了時用）
+ */
+export function logUserAgentSummary(): void {
+	const manager = getUserAgentManager();
+	const stats = manager.getStats();
+
+	logger.info("📊 User-Agent使用統計サマリー", {
+		totalRequests: stats.totalRequests,
+		detectionRisk: stats.detectionRisk,
+		distribution: stats.agentDistribution,
+		recommendation: stats.detectionRisk === "high" ? "次回実行前にリセット推奨" : "継続利用可能",
+	});
 }

@@ -9,7 +9,10 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { getDLsiteConfig } from "../infrastructure/management/config-manager";
-import { generateDLsiteHeaders } from "../infrastructure/management/user-agent-manager";
+import {
+	generateDLsiteHeaders,
+	logUserAgentSummary,
+} from "../infrastructure/management/user-agent-manager";
 import {
 	fetchDLsiteAjaxResult,
 	isLastPageFromPageInfo,
@@ -41,10 +44,10 @@ const METADATA_COLLECTION = "dlsiteMetadata";
 // 設定を取得
 const config = getDLsiteConfig();
 
-// Individual Info API設定
+// Individual Info API設定（User-Agent枯渇対策）
 const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
-const MAX_CONCURRENT_API_REQUESTS = 5;
-const API_REQUEST_DELAY = 500; // ms
+const MAX_CONCURRENT_API_REQUESTS = 3; // 並列数を削減してUser-Agent枯渇を防止
+const API_REQUEST_DELAY = 1000; // 1秒に増加して負荷軽減
 
 // 統合データ収集メタデータの型定義
 interface UnifiedDataCollectionMetadata {
@@ -563,6 +566,9 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		logger.info(`リージョン専用: ${unionResult.regionOnlyCount}件`);
 		logger.info(`アセット専用: ${unionResult.assetOnlyCount}件`);
 		logger.info(`重複: ${unionResult.overlapCount}件`);
+
+		// User-Agent使用統計サマリーを出力
+		logUserAgentSummary();
 
 		if (results.errors.length > 0) {
 			logger.warn(`⚠️ 処理エラー: ${results.errors.length}件`, { errors: results.errors });
