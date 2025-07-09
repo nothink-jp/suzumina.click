@@ -8,7 +8,7 @@ const ParamsSchema = z.object({
 });
 
 const QuerySchema = z.object({
-	type: z.enum(["price", "sales", "ranking"]).default("price"),
+	type: z.enum(["price", "ranking"]).default("price"),
 	period: z.enum(["7d", "30d", "90d", "1y", "all"]).default("30d"),
 	region: z.enum(["JP", "US", "EU", "CN", "TW", "KR"]).default("JP"),
 });
@@ -68,13 +68,6 @@ export async function GET(
 							originalValue: null, // 日次集計には元価格情報がないため
 							discount: data.maxDiscountRate || 0,
 							isOnSale: (data.maxDiscountRate || 0) > 0,
-						};
-
-					case "sales":
-						return {
-							date: data.date,
-							value: data.maxSalesCount || 0,
-							change: null, // 日次集計では変化量は計算が必要
 						};
 
 					case "ranking":

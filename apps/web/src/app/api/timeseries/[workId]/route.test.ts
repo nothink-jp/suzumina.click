@@ -40,7 +40,6 @@ const mockSnapshot = {
 					KR: 8811,
 				},
 				maxDiscountRate: 25,
-				maxSalesCount: 1234,
 				bestRankDay: 15,
 				bestRankWeek: 45,
 				bestRankMonth: 120,
@@ -60,7 +59,6 @@ const mockSnapshot = {
 					KR: 9779,
 				},
 				maxDiscountRate: 10,
-				maxSalesCount: 1300,
 				bestRankDay: 12,
 				bestRankWeek: 40,
 				bestRankMonth: 115,
@@ -80,7 +78,6 @@ const mockSnapshot = {
 					KR: 11748,
 				},
 				maxDiscountRate: 0,
-				maxSalesCount: 1500,
 				bestRankDay: 10,
 				bestRankWeek: 35,
 				bestRankMonth: 110,
@@ -115,7 +112,6 @@ beforeEach(() => {
 					KR: 8811,
 				},
 				maxDiscountRate: 25,
-				maxSalesCount: 1234,
 				bestRankDay: 15,
 				bestRankWeek: 45,
 				bestRankMonth: 120,
@@ -135,7 +131,6 @@ beforeEach(() => {
 					KR: 9779,
 				},
 				maxDiscountRate: 10,
-				maxSalesCount: 1300,
 				bestRankDay: 12,
 				bestRankWeek: 40,
 				bestRankMonth: 115,
@@ -155,7 +150,6 @@ beforeEach(() => {
 					KR: 11748,
 				},
 				maxDiscountRate: 0,
-				maxSalesCount: 1500,
 				bestRankDay: 10,
 				bestRankWeek: 35,
 				bestRankMonth: 110,
@@ -203,26 +197,15 @@ describe("時系列データAPI Route", () => {
 			});
 		});
 
-		it("販売データを正しく取得・変換する", async () => {
-			const request = new NextRequest(
-				"http://localhost:3000/api/timeseries/RJ01037463?type=sales&period=30d",
-			);
+		it("無効なtypeパラメータ（salesは削除済み）でバリデーションエラーが発生する", async () => {
+			const request = new NextRequest("http://localhost:3000/api/timeseries/RJ01037463?type=sales");
 			const params = { workId: "RJ01037463" };
 
 			const response = await GET(request, { params });
 			const data = await response.json();
 
-			expect(response.status).toBe(200);
-			expect(data.type).toBe("sales");
-			expect(data.data).toHaveLength(3);
-
-			// 販売データの構造確認
-			const firstDataPoint = data.data[0];
-			expect(firstDataPoint).toEqual({
-				date: "2025-07-05",
-				value: 1234,
-				change: null,
-			});
+			expect(response.status).toBe(400);
+			expect(data.error).toBe("無効なパラメータです");
 		});
 
 		it("ランキングデータを正しく取得・変換する", async () => {
