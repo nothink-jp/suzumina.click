@@ -215,7 +215,7 @@ export function calculatePriceStats(
 
 	const prices = priceHistory.map((p) => p.currentPrice);
 	const discounts = priceHistory.filter((p) => p.discountRate).map((p) => p.discountRate || 0);
-	const salesCount = priceHistory.filter((p) => p.discountRate && p.discountRate > 0).length;
+	const salePeriods = priceHistory.filter((p) => p.discountRate && p.discountRate > 0).length;
 
 	return {
 		current: prices[prices.length - 1] || 0,
@@ -223,7 +223,7 @@ export function calculatePriceStats(
 		lowest: Math.min(...prices),
 		averageDiscount:
 			discounts.length > 0 ? discounts.reduce((a, b) => a + b) / discounts.length : undefined,
-		saleFrequency: salesCount / priceHistory.length,
+		saleFrequency: salePeriods / priceHistory.length,
 	};
 }
 

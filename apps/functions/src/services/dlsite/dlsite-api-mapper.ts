@@ -153,7 +153,6 @@ export function mapApiToOptimizedStructure(
 	const dataSources: DataSourceTracking = {
 		infoAPI: {
 			lastFetched: now,
-			salesCount: infoData.dl_count,
 			wishlistCount: infoData.wishlist_count,
 			customGenres: extractGenres(infoData),
 		},
@@ -222,7 +221,6 @@ export function mapApiToOptimizedStructure(
 					averageDecimal: infoData.rate_average_2dp / 10,
 				}
 			: undefined,
-		salesCount: infoData?.dl_count,
 		wishlistCount: infoData?.wishlist_count,
 		totalDownloadCount: infoData?.dl_count,
 

@@ -33,7 +33,6 @@ const mockApiResponse: IndividualInfoAPIResponse = {
 	rank_day: 15,
 	rank_week: 45,
 	rank_month: 120,
-	sales_count: 1234,
 	wishlist_count: 567,
 	regist_date: "2023-05-06 16:00:00",
 	update_date: "2023-05-25 19:20:48",
@@ -87,7 +86,6 @@ describe("Individual Info API マッピング", () => {
 			expect(result.campaignId).toBeUndefined();
 
 			// 販売・評価情報の確認
-			expect(result.salesCount).toBe(1234);
 			expect(result.wishlistCount).toBe(567);
 			expect(result.rankDay).toBe(15);
 			expect(result.rankWeek).toBe(45);
@@ -210,7 +208,6 @@ describe("Individual Info API マッピング", () => {
 			},
 			discountRate: 25,
 			campaignId: 241,
-			salesCount: 1234,
 			wishlistCount: 567,
 			rankDay: 15,
 			ratingAverage: 4.5,
@@ -422,12 +419,10 @@ describe("Individual Info API マッピング", () => {
 				...mockApiResponse,
 				dl_count: "12,345", // カンマ区切り文字列
 				rate_count: "1,000", // カンマ区切り文字列
-				sales_count: undefined, // 未定義
 			};
 
 			const result = mapIndividualInfoToTimeSeriesData(responseWithStringNumbers);
 
-			expect(result.salesCount).toBe(12345); // dl_countで代替
 			expect(result.ratingCount).toBe(1000);
 		});
 
@@ -436,12 +431,10 @@ describe("Individual Info API マッピング", () => {
 				...mockApiResponse,
 				dl_count: "invalid_number",
 				rate_count: "abc123",
-				sales_count: undefined, // explicitly set to undefined to test the fallback
 			};
 
 			const result = mapIndividualInfoToTimeSeriesData(responseWithInvalidNumbers);
 
-			expect(result.salesCount).toBeUndefined();
 			expect(result.ratingCount).toBeUndefined();
 		});
 
@@ -449,14 +442,12 @@ describe("Individual Info API マッピング", () => {
 			const responseWithNaN: IndividualInfoAPIResponse = {
 				...mockApiResponse,
 				rate_average_star: Number.NaN,
-				sales_count: Number.NaN,
-				dl_count: undefined, // make sure dl_count fallback is also undefined
+				dl_count: undefined,
 			};
 
 			const result = mapIndividualInfoToTimeSeriesData(responseWithNaN);
 
 			expect(result.ratingAverage).toBeUndefined();
-			expect(result.salesCount).toBeUndefined();
 		});
 	});
 
@@ -588,7 +579,6 @@ describe("Individual Info API マッピング", () => {
 
 			expect(result.workId).toBe("RJ01234567");
 			expect(result.campaignId).toBeUndefined();
-			expect(result.salesCount).toBeUndefined();
 			expect(result.wishlistCount).toBeUndefined();
 			expect(result.rankDay).toBeUndefined();
 			expect(result.rankWeek).toBeUndefined();

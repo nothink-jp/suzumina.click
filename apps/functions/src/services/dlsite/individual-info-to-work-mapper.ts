@@ -694,19 +694,6 @@ export function mapIndividualInfoAPIToWorkData(
 		highResImageUrl,
 	});
 
-	// 販売数の正規化
-	logger.debug("Extracting sales count:", {
-		dl_count: apiData.dl_count,
-		type: typeof apiData.dl_count,
-	});
-
-	const salesCount =
-		typeof apiData.dl_count === "string"
-			? Number.parseInt(apiData.dl_count.replace(/,/g, ""), 10) || 0
-			: apiData.dl_count || 0;
-
-	logger.debug(`Sales count normalized: ${salesCount}`);
-
 	return {
 		// === 基本識別情報 ===
 		id: productId,
@@ -725,9 +712,7 @@ export function mapIndividualInfoAPIToWorkData(
 		// === 価格・評価情報 ===
 		price,
 		rating,
-		salesCount,
 		wishlistCount: apiData.wishlist_count,
-		totalDownloadCount: salesCount,
 
 		// === クリエイター情報（Individual Info APIで取得可能な範囲） ===
 		voiceActors,
@@ -781,7 +766,6 @@ export function mapIndividualInfoAPIToWorkData(
 		dataSources: {
 			infoAPI: {
 				lastFetched: now,
-				salesCount,
 				wishlistCount: apiData.wishlist_count,
 				customGenres: genres,
 			},
@@ -908,7 +892,6 @@ export function validateAPIOnlyWorkData(data: OptimizedFirestoreDLsiteWorkData):
 	if (data.rating) quality += 10;
 	if (data.voiceActors.length > 0) quality += 10;
 	if (data.genres.length > 0) quality += 5;
-	if (data.salesCount && data.salesCount > 0) quality += 5;
 
 	return {
 		isValid: errors.length === 0,

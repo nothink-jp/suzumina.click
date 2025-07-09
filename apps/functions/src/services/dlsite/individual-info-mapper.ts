@@ -189,9 +189,7 @@ export function mapIndividualInfoToTimeSeriesData(
 	const regionalPrices = extractRegionalPrices(apiResponse);
 
 	// 数値データの安全な抽出
-	const salesCount = safeParseNumber(apiResponse.sales_count);
 	const wishlistCount = safeParseNumber(apiResponse.wishlist_count);
-	const dlCount = safeParseNumber(apiResponse.dl_count);
 	const ratingAverage = apiResponse.rate_average_star;
 	const ratingCount = safeParseNumber(apiResponse.rate_count);
 
@@ -207,7 +205,6 @@ export function mapIndividualInfoToTimeSeriesData(
 		campaignId: apiResponse.campaign_id,
 
 		// 販売・ランキング情報
-		salesCount: salesCount || dlCount, // salesCountがない場合はdlCountで代替
 		wishlistCount,
 		rankDay: apiResponse.rank_day,
 		rankWeek: apiResponse.rank_week,

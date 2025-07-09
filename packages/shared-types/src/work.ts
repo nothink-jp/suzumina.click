@@ -227,20 +227,6 @@ export const PriceHistorySchema = z.object({
 });
 
 /**
- * 時系列販売データのZodスキーマ定義
- */
-export const SalesHistorySchema = z.object({
-	/** 日付 */
-	date: z.string().datetime(),
-	/** 販売数 */
-	salesCount: z.number().int().nonnegative(),
-	/** 日別平均 */
-	dailyAverage: z.number().int().nonnegative().optional(),
-	/** ランキング順位 */
-	rankingPosition: z.number().int().positive().optional(),
-});
-
-/**
  * ランキング情報のZodスキーマ定義
  */
 export const RankingInfoSchema = z.object({
@@ -411,8 +397,6 @@ export const DLsiteWorkBaseSchema = z.object({
 	price: PriceInfoSchema,
 	/** 評価情報 */
 	rating: RatingInfoSchema.optional(),
-	/** 販売数 */
-	salesCount: z.number().int().nonnegative().optional(),
 
 	// === 統一されたクリエイター情報（detailedCreators から昇格） ===
 	/** 声優（CV）- 旧 author, detailedCreators.voiceActors, basicInfo.voiceActors を統合 */
@@ -475,8 +459,6 @@ export const DLsiteWorkBaseSchema = z.object({
 	bonusContent: z.array(BonusContentSchema).optional(),
 	/** 価格履歴 */
 	priceHistory: z.array(PriceHistorySchema).optional(),
-	/** 販売履歴 */
-	salesHistory: z.array(SalesHistorySchema).optional(),
 	/** 集計された特性評価 */
 	aggregatedCharacteristics: AggregatedCharacteristicsSchema.optional(),
 	/** 多通貨価格情報 */
@@ -513,7 +495,6 @@ export const DataSourceTrackingSchema = z.object({
 	infoAPI: z
 		.object({
 			lastFetched: z.string().datetime(),
-			salesCount: z.number().optional(),
 			wishlistCount: z.number().optional(),
 			customGenres: z.array(z.string()).default([]),
 		})
@@ -563,8 +544,6 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	price: PriceInfoSchema,
 	/** 統合評価情報 */
 	rating: RatingInfoSchema.optional(),
-	/** 販売数（infoAPIから） */
-	salesCount: z.number().optional(),
 	/** ウィッシュリスト数（infoAPIから） */
 	wishlistCount: z.number().optional(),
 	/** 総DL数（infoAPIから） */
@@ -708,7 +687,6 @@ export type BasicWorkInfo = z.infer<typeof BasicWorkInfoSchema>;
 export type DetailedCreatorInfo = z.infer<typeof DetailedCreatorInfoSchema>;
 export type BonusContent = z.infer<typeof BonusContentSchema>;
 export type PriceHistory = z.infer<typeof PriceHistorySchema>;
-export type SalesHistory = z.infer<typeof SalesHistorySchema>;
 export type RankingInfo = z.infer<typeof RankingInfoSchema>;
 export type LocalePrice = z.infer<typeof LocalePriceSchema>;
 export type CampaignInfo = z.infer<typeof CampaignInfoSchema>;
@@ -816,13 +794,10 @@ function generateRatingText(
  * ダウンロード数テキストを生成
  */
 function generateDownloadText(
-	data: Pick<OptimizedFirestoreDLsiteWorkData, "totalDownloadCount" | "salesCount">,
+	data: Pick<OptimizedFirestoreDLsiteWorkData, "totalDownloadCount">,
 ): string | undefined {
 	if (data.totalDownloadCount) {
 		return `DL${data.totalDownloadCount.toLocaleString()}`;
-	}
-	if (data.salesCount) {
-		return `DL${data.salesCount.toLocaleString()}`;
 	}
 	return undefined;
 }
@@ -862,7 +837,6 @@ function createFallbackFrontendWork(
 		highResImageUrl, // 修正: 安全に抽出
 		price: data.price,
 		rating: data.rating,
-		salesCount: data.salesCount,
 
 		// 統一されたクリエイター情報
 		voiceActors, // 修正: 安全に抽出
@@ -1061,8 +1035,6 @@ export interface FirestoreServerDLsiteWorkData {
 	price: PriceInfo;
 	/** 評価情報 */
 	rating?: RatingInfo;
-	/** 販売数 */
-	salesCount?: number;
 	/** 年齢制限 */
 	ageRating?: string;
 	/** 作品タグ */
@@ -1496,8 +1468,6 @@ export const TimeSeriesRawDataSchema = z.object({
 	campaignId: z.number().int().optional(),
 
 	// === 販売・ランキング情報 ===
-	/** 販売数 */
-	salesCount: z.number().int().nonnegative().optional(),
 	/** ウィッシュリスト数 */
 	wishlistCount: z.number().int().nonnegative().optional(),
 	/** 日別ランキング */
@@ -1595,7 +1565,6 @@ export const RankingChartDataSchema = z.object({
 		z.object({
 			date: z.string(),
 			rank: z.number().int().positive(),
-			salesCount: z.number().int().nonnegative().optional(),
 		}),
 	),
 	/** 生成日時 */

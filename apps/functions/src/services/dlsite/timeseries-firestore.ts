@@ -178,9 +178,10 @@ function aggregateRawDataToDaily(
 		),
 	];
 
-	const salesCounts = rawDataArray
-		.map((d) => d.salesCount)
-		.filter((c): c is number => c !== undefined);
+	// salesCount フィールドは削除されたため、コメントアウト
+	// const salesCounts = rawDataArray
+	// 	.map((d) => d.salesCount)
+	// 	.filter((c): c is number => c !== undefined);
 	const wishlistCounts = rawDataArray
 		.map((d) => d.wishlistCount)
 		.filter((c): c is number => c !== undefined);
@@ -207,7 +208,7 @@ function aggregateRawDataToDaily(
 		lowestPrices,
 		maxDiscountRate,
 		activeCampaignIds,
-		maxSalesCount: salesCounts.length > 0 ? Math.max(...salesCounts) : undefined,
+		// maxSalesCount: salesCounts.length > 0 ? Math.max(...salesCounts) : undefined,
 		maxWishlistCount: wishlistCounts.length > 0 ? Math.max(...wishlistCounts) : undefined,
 		bestRankDay: rankDays.length > 0 ? Math.min(...rankDays) : undefined,
 		bestRankWeek: rankWeeks.length > 0 ? Math.min(...rankWeeks) : undefined,

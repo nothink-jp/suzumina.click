@@ -56,7 +56,6 @@ const createMockWorkData = (
 		stars: 4.5,
 		count: 100,
 	},
-	salesCount: 100,
 	tags: ["テストタグ"],
 	thumbnailUrl: `https://img.dlsite.jp/modpub/images2/work/doujin/${productId}/${productId}_img_main.jpg`,
 	sampleImages: [],

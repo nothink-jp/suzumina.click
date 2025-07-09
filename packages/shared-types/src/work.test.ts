@@ -78,7 +78,6 @@ const validFirestoreWork: OptimizedFirestoreDLsiteWorkData = {
 	price: validPriceInfo,
 	// userEvaluationCountは削除 - OptimizedFirestoreDLsiteWorkDataに存在しない
 	rating: validRatingInfo,
-	salesCount: 5000,
 	ageRating: "R-18",
 	genres: ["耳舐め", "バイノーラル", "癒し"],
 	sampleImages: validSampleImages,
@@ -521,26 +520,15 @@ describe("convertToFrontendWork", () => {
 		const workWithTotal = {
 			...validFirestoreWork,
 			totalDownloadCount: 10000,
-			salesCount: 5000,
 		};
 		const result1 = convertToFrontendWork(workWithTotal);
 		expect(result1.downloadText).toBe("DL10,000");
 
-		// totalDownloadCountがない場合はsalesCount使用
-		const workWithSales = {
-			...validFirestoreWork,
-			salesCount: 3000,
-		};
-		(workWithSales as any).totalDownloadCount = undefined;
-		const result2 = convertToFrontendWork(workWithSales);
-		expect(result2.downloadText).toBe("DL3,000");
-
-		// どちらもない場合はundefined
+		// totalDownloadCountがない場合はundefined
 		const workWithoutCounts = { ...validFirestoreWork };
 		(workWithoutCounts as any).totalDownloadCount = undefined;
-		(workWithoutCounts as any).salesCount = undefined;
-		const result3 = convertToFrontendWork(workWithoutCounts);
-		expect(result3.downloadText).toBeUndefined();
+		const result2 = convertToFrontendWork(workWithoutCounts);
+		expect(result2.downloadText).toBeUndefined();
 	});
 
 	it("数値のフォーマットが正しく適用される", () => {

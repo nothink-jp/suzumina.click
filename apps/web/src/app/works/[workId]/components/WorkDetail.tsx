@@ -18,7 +18,6 @@ import {
 } from "@suzumina.click/ui/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
 import {
-	BarChart3,
 	Calendar,
 	FileText,
 	Share2,
@@ -33,7 +32,6 @@ import Link from "next/link";
 import { useMemo } from "react";
 import CharacteristicEvaluation from "@/components/CharacteristicEvaluation";
 import PriceHistoryChart from "@/components/PriceHistoryChart";
-import SalesHistoryChart from "@/components/SalesHistoryChart";
 import ThumbnailImage from "@/components/ThumbnailImage";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
 
@@ -322,10 +320,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								<TrendingUp className="h-4 w-4" />
 								<span className="hidden sm:inline">価格推移</span>
 							</TabsTrigger>
-							<TabsTrigger value="sales-history" className="flex items-center gap-2">
-								<BarChart3 className="h-4 w-4" />
-								<span className="hidden sm:inline">販売推移</span>
-							</TabsTrigger>
 						</TabsList>
 
 						{/* 詳細情報タブ（基本情報・制作陣） */}
@@ -404,17 +398,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 																	{getAgeRatingDisplayName(work.ageRating)}
 																</Badge>
 															)}
-														</div>
-													</div>
-												</div>
-											)}
-											{work.salesCount && (
-												<div className="flex items-center gap-3">
-													<TrendingUp className="h-5 w-5 text-muted-foreground" />
-													<div>
-														<div className="text-sm text-gray-700">販売数</div>
-														<div className="font-semibold text-gray-900">
-															{work.salesCount.toLocaleString()}本
 														</div>
 													</div>
 												</div>
@@ -533,41 +516,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 												</div>
 											</div>
 										)}
-									</div>
-								</CardContent>
-							</Card>
-						</TabsContent>
-
-						{/* 販売推移タブ */}
-						<TabsContent value="sales-history">
-							<Card>
-								<CardHeader>
-									<CardTitle>販売推移</CardTitle>
-									<CardDescription>時系列での販売数・ランキング推移</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<SalesHistoryChart workId={work.productId} />
-
-									{/* 販売統計情報 */}
-									<div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-										<div className="text-center">
-											<div className="text-sm text-gray-600">総販売数</div>
-											<div className="text-lg font-semibold text-gray-900">
-												{work.salesCount ? work.salesCount.toLocaleString() : "不明"}本
-											</div>
-										</div>
-										{latestRank && (
-											<div className="text-center">
-												<div className="text-sm text-gray-600">最新ランキング</div>
-												<div className="text-lg font-semibold text-primary">#{latestRank}位</div>
-											</div>
-										)}
-										<div className="text-center">
-											<div className="text-sm text-gray-600">カテゴリ</div>
-											<div className="text-lg font-semibold text-gray-900">
-												{getWorkCategoryDisplayText(work)}
-											</div>
-										</div>
 									</div>
 								</CardContent>
 							</Card>
