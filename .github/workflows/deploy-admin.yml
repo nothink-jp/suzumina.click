@@ -118,6 +118,28 @@ jobs:
           
           echo "✅ Admin Docker image built and pushed with optimized caching"
           
+          # Immediate cache cleanup after build
+          echo "🧹 Cleaning up admin build cache tags..."
+          
+          # Check if there are multiple cache tags and delete older ones
+          CACHE_IMAGES=$(gcloud artifacts docker images list \
+            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }} \
+            --filter="tags:cache" \
+            --format="value(IMAGE@DIGEST,createTime)" \
+            --sort-by="~createTime" | tail -n +2)
+          
+          if [ -n "$CACHE_IMAGES" ]; then
+            echo "Found old admin cache images to clean up"
+            echo "$CACHE_IMAGES" | while IFS=$'\t' read -r digest createTime; do
+              if [ -n "$digest" ]; then
+                echo "Removing old admin cache image: $digest (created: $createTime)"
+                gcloud artifacts docker images delete "$digest" --quiet || echo "Failed to delete $digest"
+              fi
+            done
+          else
+            echo "No old admin cache images to clean up"
+          fi
+          
           # Save image tag for deployment
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
       

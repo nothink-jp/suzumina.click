@@ -1,0 +1,156 @@
+name: Artifact Registry Cleanup
+
+on:
+  # 毎日午前2時（UTC）に実行（JST 11時）
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # Manual triggering
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (true/false)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: asia-northeast1
+  REPOSITORY: suzumina-click-web
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: latest
+      
+      - name: Verify authentication
+        run: gcloud auth list
+      
+      - name: Clean up old images
+        run: |
+          echo "🧹 Starting Artifact Registry cleanup..."
+          
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+          REPOSITORY_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}"
+          
+          # 関数: イメージのクリーンアップ
+          cleanup_images() {
+            local image_name=$1
+            local keep_count=$2
+            
+            echo "📦 Processing ${image_name} (keeping ${keep_count} recent images)..."
+            
+            # タグ付きイメージの一覧を取得（作成日時の降順）
+            local tagged_images=$(gcloud artifacts docker images list \
+              ${REPOSITORY_PATH}/${image_name} \
+              --include-tags \
+              --filter="tags:*" \
+              --format="value(IMAGE@DIGEST,createTime)" \
+              --sort-by="~createTime" | head -n ${keep_count})
+            
+            if [ -z "$tagged_images" ]; then
+              echo "ℹ️  No tagged images found for ${image_name}"
+              return
+            fi
+            
+            echo "✅ Keeping ${keep_count} most recent tagged images for ${image_name}"
+            
+            # 古いタグなしイメージを削除
+            local untagged_images=$(gcloud artifacts docker images list \
+              ${REPOSITORY_PATH}/${image_name} \
+              --filter="NOT tags:* AND createTime < '$(date -d '7 days ago' -u +%Y-%m-%dT%H:%M:%SZ)'" \
+              --format="value(IMAGE@DIGEST)")
+            
+            if [ -n "$untagged_images" ]; then
+              echo "🗑️  Found $(echo "$untagged_images" | wc -l) old untagged images to delete"
+              
+              if [ "$DRY_RUN" = "true" ]; then
+                echo "🔍 DRY RUN: Would delete the following untagged images:"
+                echo "$untagged_images"
+              else
+                echo "Deleting old untagged images..."
+                echo "$untagged_images" | while read -r image_digest; do
+                  if [ -n "$image_digest" ]; then
+                    echo "Deleting: $image_digest"
+                    gcloud artifacts docker images delete "$image_digest" --quiet || echo "Failed to delete $image_digest"
+                  fi
+                done
+              fi
+            else
+              echo "✨ No old untagged images to delete for ${image_name}"
+            fi
+            
+            # cache タグの付いたイメージを削除
+            local cache_images=$(gcloud artifacts docker tags list \
+              ${REPOSITORY_PATH}/${image_name} \
+              --filter="tag:cache" \
+              --format="value(name)")
+            
+            if [ -n "$cache_images" ]; then
+              echo "🧹 Found cache tagged images to clean up"
+              
+              if [ "$DRY_RUN" = "true" ]; then
+                echo "🔍 DRY RUN: Would delete cache tags:"
+                echo "$cache_images"
+              else
+                echo "Deleting cache tags..."
+                echo "$cache_images" | while read -r cache_tag; do
+                  if [ -n "$cache_tag" ]; then
+                    echo "Deleting cache tag: $cache_tag"
+                    gcloud artifacts docker tags delete "$cache_tag" --quiet || echo "Failed to delete cache tag $cache_tag"
+                  fi
+                done
+              fi
+            fi
+          }
+          
+          echo "🏁 Starting cleanup process..."
+          
+          # メインWebアプリケーションイメージのクリーンアップ（最新5つを保持）
+          cleanup_images "web" 5
+          
+          # Admin アプリケーションイメージのクリーンアップ（最新3つを保持）
+          cleanup_images "suzumina-admin" 3
+          
+          echo "✅ Artifact Registry cleanup completed!"
+          
+      - name: Report cleanup results
+        run: |
+          echo "📊 Post-cleanup repository status:"
+          gcloud artifacts repositories list --project=${{ env.PROJECT_ID }} --location=${{ env.REGION }}
+          
+          echo ""
+          echo "📦 Current images in repository:"
+          gcloud artifacts docker images list \
+            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }} \
+            --include-tags \
+            --limit=20
+          
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Artifact Registry cleanup failed!"
+          echo "Please check the workflow logs for details."
