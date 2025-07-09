@@ -247,7 +247,6 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 					{ value: "newest", label: "新しい順" },
 					{ value: "oldest", label: "古い順" },
 					{ value: "popular", label: "人気順" },
-					{ value: "rating", label: "評価順" },
 					{ value: "price_low", label: "価格安い順" },
 					{ value: "price_high", label: "価格高い順" },
 				]}

@@ -258,19 +258,19 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 
 						{/* タグ・ジャンル（統合済み） */}
 						<div className="space-y-3">
-							{/* 統合されたタグ */}
-							{work.tags && work.tags.length > 0 && (
+							{/* ジャンル */}
+							{work.genres && work.genres.length > 0 && (
 								<div>
-									<div className="text-sm font-medium text-gray-700 mb-2">タグ・ジャンル</div>
+									<div className="text-sm font-medium text-gray-700 mb-2">ジャンル</div>
 									<div className="flex flex-wrap gap-2">
-										{work.tags.map((tag) => (
+										{work.genres.map((genre) => (
 											<Badge
-												key={tag}
+												key={genre}
 												variant="outline"
 												className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
 											>
 												<Tag className="h-3 w-3" />
-												{tag}
+												{genre}
 											</Badge>
 										))}
 									</div>

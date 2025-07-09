@@ -403,11 +403,13 @@ export async function getRelatedWorks(
 			}
 
 			// ジャンル一致（統合データ活用）
-			if (byGenres && Array.isArray(baseWork.tags) && Array.isArray(work.genres)) {
-				const commonGenres = baseWork.tags.filter(
-					(tag: string) =>
-						typeof tag === "string" &&
-						(work.genres?.some((genre) => typeof genre === "string" && genre.includes(tag)) ??
+			if (byGenres && Array.isArray(baseWork.genres) && Array.isArray(work.genres)) {
+				const commonGenres = baseWork.genres.filter(
+					(genre: string) =>
+						typeof genre === "string" &&
+						(work.genres?.some(
+							(workGenre) => typeof workGenre === "string" && workGenre.includes(genre),
+						) ??
 							false),
 				);
 				score += commonGenres.length * 2;
