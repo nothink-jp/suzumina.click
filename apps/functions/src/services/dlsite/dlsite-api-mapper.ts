@@ -172,9 +172,8 @@ export function mapApiToOptimizedStructure(
 		existingData?.author,
 	]);
 
-	// APIからのジャンル・タグ情報
+	// APIからのジャンル情報
 	const genres = mergeAndDeduplicate([extractGenres(infoData), existingData?.genres]);
-	const tags = mergeAndDeduplicate([extractGenres(infoData), existingData?.tags]);
 
 	// APIからのファイル情報
 	const fileInfo = infoData?.file_size
@@ -234,10 +233,8 @@ export function mapApiToOptimizedStructure(
 		music,
 		author,
 
-		// ジャンル・タグ明確分離
+		// DLsite公式ジャンル
 		genres,
-		tags,
-		customTags: extractGenres(infoData),
 
 		// 日付情報完全対応
 		releaseDate: dateInfo?.original,

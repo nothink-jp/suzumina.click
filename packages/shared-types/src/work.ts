@@ -437,8 +437,8 @@ export const DLsiteWorkBaseSchema = z.object({
 	workFormat: z.string().optional(),
 	/** ファイル形式 - basicInfo.fileFormat から昇格 */
 	fileFormat: z.string().optional(),
-	/** 作品タグ - 旧 tags, basicInfo.genres を統合 */
-	tags: z.array(z.string()).default([]),
+	/** 作品ジャンル - 旧 tags, basicInfo.genres を統合 */
+	genres: z.array(z.string()).default([]),
 
 	/** サンプル画像 */
 	sampleImages: z.array(SampleImageSchema).default([]),
@@ -582,13 +582,9 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	/** 作者（その他・声優と重複しない場合のみ） */
 	author: z.array(z.string()).default([]),
 
-	// === ジャンル・タグ明確分離 ===
-	/** DLsite公式ジャンル（統合） */
+	// === DLsite公式ジャンル ===
+	/** DLsite公式ジャンル（Individual Info APIから取得） */
 	genres: z.array(z.string()).default([]),
-	/** DLsite検索タグ */
-	tags: z.array(z.string()).default([]),
-	/** 独自タグ（将来拡張用） */
-	customTags: z.array(z.string()).optional(),
 
 	// === 日付情報完全対応 ===
 	/** 販売日（元の文字列） */
@@ -845,7 +841,6 @@ function createFallbackFrontendWork(
 	const illustration = extractArrayField(data.illustration);
 	const music = extractArrayField(data.music);
 	const author = extractArrayField(data.author);
-	const tags = extractArrayField(data.tags);
 	const genres = extractArrayField(data.genres);
 
 	const displayPrice = generateDisplayPrice(data.price);
@@ -882,13 +877,10 @@ function createFallbackFrontendWork(
 		ageRating,
 		workFormat: data.workFormat,
 		fileFormat: data.fileFormat,
-		tags, // 修正: 安全に抽出
+		genres, // 修正: 安全に抽出
 
 		sampleImages: data.sampleImages || [],
 		isExclusive: data.isExclusive || false,
-
-		// 拡張情報
-		genres, // 修正: 安全に抽出
 		dataSources: data.dataSources,
 		fileInfo: data.fileInfo, // @deprecated API-only実装により不要
 		bonusContent: data.bonusContent || [], // @deprecated API-only実装により不要
@@ -949,7 +941,6 @@ export function convertToFrontendWork(
 	const illustration = extractArrayField(data.illustration);
 	const music = extractArrayField(data.music);
 	const author = extractArrayField(data.author);
-	const tags = extractArrayField(data.tags);
 	const genres = extractArrayField(data.genres);
 
 	// 表示用テキストの生成
@@ -975,7 +966,6 @@ export function convertToFrontendWork(
 		illustration,
 		music,
 		author,
-		tags,
 		genres,
 		ageRating, // 修正: データソースから取得した年齢レーティングを使用
 		displayPrice,
@@ -1284,15 +1274,16 @@ function detectLanguageFromTranslation(
 }
 
 /**
- * タグ・ジャンルから言語を判定
+ * ジャンルから言語を判定
  */
-function detectLanguageFromTags(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage | null {
-	const allTags = [...(work.genres || []), ...(work.tags || [])];
+function detectLanguageFromGenres(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage | null {
+	const allGenres = [...(work.genres || [])];
 
 	// 英語作品の判定
 	if (
-		allTags.some(
-			(tag) => tag.includes("英語") || tag.includes("english") || tag.toLowerCase().includes("en"),
+		allGenres.some(
+			(genre) =>
+				genre.includes("英語") || genre.includes("english") || genre.toLowerCase().includes("en"),
 		)
 	) {
 		return "en";
@@ -1300,17 +1291,17 @@ function detectLanguageFromTags(work: OptimizedFirestoreDLsiteWorkData): WorkLan
 
 	// 中国語作品の判定
 	if (
-		allTags.some(
-			(tag) =>
-				tag.includes("中文") ||
-				tag.includes("繁體") ||
-				tag.includes("簡體") ||
-				tag.includes("chinese") ||
-				tag.toLowerCase().includes("zh"),
+		allGenres.some(
+			(genre) =>
+				genre.includes("中文") ||
+				genre.includes("繁體") ||
+				genre.includes("簡體") ||
+				genre.includes("chinese") ||
+				genre.toLowerCase().includes("zh"),
 		)
 	) {
 		// 繁体字・簡体字の区別
-		if (allTags.some((tag) => tag.includes("繁體") || tag.includes("traditional"))) {
+		if (allGenres.some((genre) => genre.includes("繁體") || genre.includes("traditional"))) {
 			return "zh-tw";
 		}
 		return "zh-cn";
@@ -1318,8 +1309,9 @@ function detectLanguageFromTags(work: OptimizedFirestoreDLsiteWorkData): WorkLan
 
 	// 韓国語作品の判定
 	if (
-		allTags.some(
-			(tag) => tag.includes("한국어") || tag.includes("korean") || tag.toLowerCase().includes("ko"),
+		allGenres.some(
+			(genre) =>
+				genre.includes("한국어") || genre.includes("korean") || genre.toLowerCase().includes("ko"),
 		)
 	) {
 		return "ko";
@@ -1327,9 +1319,11 @@ function detectLanguageFromTags(work: OptimizedFirestoreDLsiteWorkData): WorkLan
 
 	// スペイン語作品の判定
 	if (
-		allTags.some(
-			(tag) =>
-				tag.includes("spanish") || tag.includes("español") || tag.toLowerCase().includes("es"),
+		allGenres.some(
+			(genre) =>
+				genre.includes("spanish") ||
+				genre.includes("español") ||
+				genre.toLowerCase().includes("es"),
 		)
 	) {
 		return "es";
@@ -1364,10 +1358,10 @@ export function getWorkPrimaryLanguage(work: OptimizedFirestoreDLsiteWorkData): 
 		return translationLanguage;
 	}
 
-	// 4. フォールバック: タグ・ジャンルから言語を推定
-	const tagLanguage = detectLanguageFromTags(work);
-	if (tagLanguage) {
-		return tagLanguage;
+	// 4. フォールバック: ジャンルから言語を推定
+	const genreLanguage = detectLanguageFromGenres(work);
+	if (genreLanguage) {
+		return genreLanguage;
 	}
 
 	// 5. 最終フォールバック: 日本語（デフォルト）

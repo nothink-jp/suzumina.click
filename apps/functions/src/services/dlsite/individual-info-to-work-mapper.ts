@@ -382,49 +382,49 @@ function extractVoiceActors(apiData: IndividualInfoAPIResponse): string[] {
 }
 
 /**
- * ジャンル・タグの抽出
+ * DLsite公式ジャンル情報の抽出
+ * プロモーション情報を除外したクリーンなジャンルのみを取得
  */
-function extractGenresAndTags(apiData: IndividualInfoAPIResponse): {
-	genres: string[];
-	tags: string[];
-} {
+function extractGenres(apiData: IndividualInfoAPIResponse): string[] {
 	const genres: string[] = [];
-	const tags: string[] = [];
 
-	logger.debug("Extracting genres and tags from API data:", {
+	logger.debug("Extracting genres from API data:", {
 		genres: apiData.genres,
-		custom_genres: apiData.custom_genres,
-		keyword: apiData.keyword,
 	});
 
-	// genres配列から抽出
+	// genres配列から抽出（公式ジャンルのみ）
 	if (apiData.genres && Array.isArray(apiData.genres)) {
 		for (const genreItem of apiData.genres) {
-			if (genreItem.name) {
+			if (genreItem.name && isValidGenre(genreItem.name)) {
 				genres.push(genreItem.name);
 			}
 		}
-	}
-
-	// custom_genres配列から抽出
-	if (apiData.custom_genres && Array.isArray(apiData.custom_genres)) {
-		for (const genreItem of apiData.custom_genres) {
-			if (genreItem.name) {
-				genres.push(genreItem.name);
-			}
-		}
-	}
-
-	// keyword配列から抽出
-	if (apiData.keyword && Array.isArray(apiData.keyword)) {
-		tags.push(...apiData.keyword.filter(Boolean));
 	}
 
 	// デバッグ：抽出した結果をログ出力
 	logger.debug(`Extracted genres: ${genres.length} items`, { genres });
-	logger.debug(`Extracted tags: ${tags.length} items`, { tags });
 
-	return { genres, tags };
+	return genres;
+}
+
+/**
+ * プロモーション情報かどうかを判定
+ * クーポン、キャンペーン、特集などの販促情報を除外
+ */
+function isValidGenre(genreName: string): boolean {
+	const promotionalPatterns = [
+		/\d+%OFF/, // 30%OFF等
+		/クーポン/,
+		/対象作品/,
+		/特集/,
+		/キャンペーン/,
+		/アワード/,
+		/投票/,
+		/過去最安値/,
+		/新作ピックアップ/,
+	];
+
+	return !promotionalPatterns.some((pattern) => pattern.test(genreName));
 }
 
 /**
@@ -579,7 +579,7 @@ export function mapIndividualInfoAPIToWorkData(
 	const price = extractPriceInfo(apiData);
 	const rating = extractRatingInfo(apiData);
 	const voiceActors = extractVoiceActors(apiData);
-	const { genres, tags } = extractGenresAndTags(apiData);
+	const genres = extractGenres(apiData);
 	const creators = extractCreators(apiData);
 
 	// age_category の実際の値をログ出力
@@ -599,7 +599,6 @@ export function mapIndividualInfoAPIToWorkData(
 		rating: rating ? `${rating.stars} stars (${rating.count} reviews)` : "No rating",
 		voiceActors: voiceActors.length,
 		genres: genres.length,
-		tags: tags.length,
 		creators: {
 			scenario: creators.scenario.length,
 			illustration: creators.illustration.length,
@@ -744,10 +743,8 @@ export function mapIndividualInfoAPIToWorkData(
 						? [apiData.author]
 						: [],
 
-		// === ジャンル・タグ ===
+		// === DLsite公式ジャンル ===
 		genres,
-		tags,
-		customTags: genres.length > 0 ? genres : undefined,
 
 		// === 日付情報 ===
 		releaseDate: apiData.regist_date,
