@@ -22,7 +22,10 @@ import {
 	type IndividualInfoAPIResponse,
 	validateAPIOnlyWorkData,
 } from "../services/dlsite/individual-info-to-work-mapper";
-import { saveMultipleTimeSeriesRawData } from "../services/dlsite/timeseries-firestore";
+import {
+	batchProcessDailyAggregates,
+	saveMultipleTimeSeriesRawData,
+} from "../services/dlsite/timeseries-firestore";
 import {
 	createUnionWorkIds,
 	handleNoWorkIdsError,
@@ -445,6 +448,16 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 					await saveMultipleTimeSeriesRawData(timeSeriesData);
 					results.timeSeriesCollected = timeSeriesData.length;
 					logger.info(`📊 時系列データ保存完了: ${timeSeriesData.length}件`);
+
+					// 日次集計処理を実行（過去1日分）
+					try {
+						logger.info("🔄 時系列データ日次集計処理開始");
+						await batchProcessDailyAggregates(1);
+						logger.info("✅ 時系列データ日次集計処理完了");
+					} catch (aggregateError) {
+						logger.error("日次集計処理エラー:", { error: aggregateError });
+						// エラーが発生しても全体処理は継続
+					}
 				}
 
 				return timeSeriesData.length;
