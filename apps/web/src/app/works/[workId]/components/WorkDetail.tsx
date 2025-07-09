@@ -307,7 +307,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 				{/* 左側: タブコンテンツ */}
 				<div className="lg:col-span-2">
 					<Tabs defaultValue="overview" className="w-full">
-						<TabsList className="grid w-full grid-cols-4">
+						<TabsList className="grid w-full grid-cols-3">
 							<TabsTrigger value="overview" className="flex items-center gap-2">
 								<FileText className="h-4 w-4" />
 								<span className="hidden sm:inline">詳細情報</span>
