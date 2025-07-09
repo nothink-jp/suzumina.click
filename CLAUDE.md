@@ -229,6 +229,7 @@ pnpm --filter @suzumina.click/functions dev
 3. **型安全性**: TypeScript strict mode準拠
 4. **品質管理**: ESLint/Prettier設定に従う
 5. **セキュリティ**: 機密情報の露出防止
+6. **Firebaseコマンド禁止**: Firebaseは有効化されていないため、firebaseコマンドの使用は厳禁
 
 ### 開発コマンド
 

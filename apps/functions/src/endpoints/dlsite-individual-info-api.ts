@@ -394,6 +394,17 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		const apiResponses = Array.from(apiDataMap.values());
 		logger.info(`📊 API取得成功: ${apiResponses.length}/${allWorkIds.length}件`);
 
+		// デバッグ: 特定作品IDの取得状況をログ出力
+		const debugWorkIds = ["RJ01037463", "RJ01415251", "RJ01020479"];
+		debugWorkIds.forEach((workId) => {
+			const hasData = apiDataMap.has(workId);
+			logger.info(`🔍 デバッグ確認 ${workId}: ${hasData ? "✅ API取得成功" : "❌ API取得失敗"}`, {
+				workId,
+				hasData,
+				dataAvailable: hasData ? !!apiDataMap.get(workId) : false,
+			});
+		});
+
 		// === 統合データ処理: 同一APIレスポンスから並列変換 ===
 		const results = {
 			basicDataUpdated: 0,
@@ -406,6 +417,17 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			try {
 				// APIデータを作品データに変換
 				const workDataList = batchMapIndividualInfoAPIToWorkData(apiResponses, existingWorksMap);
+				logger.info(`🔄 作品データ変換完了: ${workDataList.length}件`);
+
+				// デバッグ: 特定作品IDの変換状況をログ出力
+				debugWorkIds.forEach((workId) => {
+					const work = workDataList.find((w) => w.productId === workId);
+					logger.info(`🔍 変換確認 ${workId}: ${work ? "✅ 変換成功" : "❌ 変換失敗"}`, {
+						workId,
+						hasWork: !!work,
+						title: work?.title,
+					});
+				});
 
 				// データ品質検証
 				const validWorkData = workDataList.filter((work) => {
@@ -414,18 +436,66 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 						logger.warn(`データ品質エラー: ${work.productId}`, {
 							errors: validation.errors,
 						});
+
+						// デバッグ: 特定作品IDの品質検証詳細
+						if (debugWorkIds.includes(work.productId)) {
+							logger.error(`🔍 品質検証詳細 ${work.productId}:`, {
+								workId: work.productId,
+								title: work.title,
+								validationErrors: validation.errors,
+								hasTitle: !!work.title,
+								hasCircle: !!work.circle,
+								hasPrice: !!work.price?.current,
+								priceValue: work.price?.current,
+							});
+						}
 						return false;
+					}
+
+					// デバッグ: 特定作品IDの品質検証成功
+					if (debugWorkIds.includes(work.productId)) {
+						logger.info(`🔍 品質検証成功 ${work.productId}:`, {
+							workId: work.productId,
+							title: work.title,
+							circle: work.circle,
+							price: work.price?.current,
+						});
 					}
 					return true;
 				});
 
 				logger.info(`データ品質検証: ${validWorkData.length}/${workDataList.length}件が有効`);
 
+				// デバッグ: 特定作品IDの品質検証結果をログ出力
+				debugWorkIds.forEach((workId) => {
+					const work = validWorkData.find((w) => w.productId === workId);
+					logger.info(`🔍 品質検証後 ${workId}: ${work ? "✅ 有効" : "❌ 無効"}`, {
+						workId,
+						isValid: !!work,
+					});
+				});
+
 				// Firestoreに保存
 				if (validWorkData.length > 0) {
 					await saveWorksToFirestore(validWorkData);
 					results.basicDataUpdated = validWorkData.length;
 					logger.info(`✅ 基本データ保存完了: ${validWorkData.length}件`);
+
+					// デバッグ: 保存後の確認（特定作品ID）
+					debugWorkIds.forEach((workId) => {
+						const savedWork = validWorkData.find((w) => w.productId === workId);
+						if (savedWork) {
+							logger.info(`🔍 保存確認 ${workId}: ✅ Firestore保存済み`, {
+								workId,
+								title: savedWork.title,
+								circle: savedWork.circle,
+								price: savedWork.price?.current,
+								timestamp: new Date().toISOString(),
+							});
+						}
+					});
+				} else {
+					logger.warn("⚠️ 有効な作品データが0件のため、Firestore保存をスキップ");
 				}
 
 				return validWorkData.length;

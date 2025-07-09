@@ -30,6 +30,18 @@ export async function saveWorksToFirestore(
 
 	logger.info(`${works.length}件の作品データをFirestoreに保存開始`);
 
+	// デバッグ: 特定作品IDの保存対象確認
+	const debugWorkIds = ["RJ01037463", "RJ01415251", "RJ01020479"];
+	debugWorkIds.forEach((workId) => {
+		const work = works.find((w) => w.productId === workId);
+		logger.info(`🔍 Firestore保存対象 ${workId}: ${work ? "✅ 含まれる" : "❌ 含まれない"}`, {
+			workId,
+			isIncluded: !!work,
+			title: work?.title,
+			circle: work?.circle,
+		});
+	});
+
 	try {
 		// バッチ処理の準備
 		const batch = firestore.batch();
@@ -41,24 +53,51 @@ export async function saveWorksToFirestore(
 			const docRef = collection.doc(work.productId);
 			batch.set(docRef, work, { merge: true }); // マージオプションで部分更新対応
 			operationCount++;
+
+			// デバッグ: 特定作品IDの保存操作確認
+			if (debugWorkIds.includes(work.productId)) {
+				logger.info(`🔍 Firestore操作追加 ${work.productId}:`, {
+					workId: work.productId,
+					title: work.title,
+					docPath: `${DLSITE_WORKS_COLLECTION}/${work.productId}`,
+					operationCount,
+				});
+			}
 		}
 
 		// バッチ実行
 		if (operationCount > 0) {
+			logger.info(`🔄 Firestoreバッチ実行開始: ${operationCount}件`);
+
 			if (operationCount > 500) {
 				// 500件を超える場合は分割処理
 				const chunks = chunkArray(works, 500);
-				for (const chunk of chunks) {
+				logger.info(`📦 大量データ分割処理: ${chunks.length}チャンク`);
+
+				for (const [chunkIndex, chunk] of chunks.entries()) {
 					const chunkBatch = firestore.batch();
 					for (const work of chunk) {
 						const docRef = collection.doc(work.productId);
 						chunkBatch.set(docRef, work, { merge: true });
 					}
 					await chunkBatch.commit();
+					logger.info(`✅ チャンク ${chunkIndex + 1}/${chunks.length} 完了: ${chunk.length}件`);
 				}
 			} else {
 				await batch.commit();
+				logger.info(`✅ 単一バッチ実行完了: ${operationCount}件`);
 			}
+
+			// デバッグ: 特定作品IDの保存完了確認
+			debugWorkIds.forEach((workId) => {
+				const work = works.find((w) => w.productId === workId);
+				if (work) {
+					logger.info(`🔍 Firestore保存完了 ${workId}: ✅ 成功`, {
+						workId,
+						title: work.title,
+					});
+				}
+			});
 		}
 
 		logger.info(`Firestore保存完了: ${operationCount}件`);

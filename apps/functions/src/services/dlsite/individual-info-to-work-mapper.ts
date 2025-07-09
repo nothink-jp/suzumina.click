@@ -877,27 +877,58 @@ export function validateAPIOnlyWorkData(data: OptimizedFirestoreDLsiteWorkData):
 	// 必須フィールドチェック
 	if (!data.title) errors.push("タイトルが不足");
 	if (!data.circle) errors.push("サークル名が不足");
-	if (!data.price.current) errors.push("価格情報が不足");
+	if (!data.price?.current) errors.push("価格情報が不足");
 	if (!data.productId) errors.push("作品IDが不足");
 
 	// Individual Info API特有の品質チェック
 	if (!data.dataSources?.infoAPI) errors.push("Individual Info APIデータが不足");
-	if (!data.circle) errors.push("メーカー情報が不足");
 	if (!data.createdAt) errors.push("作成日が不足");
+
+	// デバッグ用ログ（特定のworkIdのみ）
+	const debugWorkIds = ["RJ01037463", "RJ01415251", "RJ01020479"];
+	if (debugWorkIds.includes(data.productId)) {
+		logger.info(`🔍 品質検証詳細 ${data.productId}:`, {
+			workId: data.productId,
+			hasTitle: !!data.title,
+			hasCircle: !!data.circle,
+			hasPrice: !!data.price?.current,
+			priceValue: data.price?.current,
+			hasProductId: !!data.productId,
+			hasInfoAPIData: !!data.dataSources?.infoAPI,
+			hasCreatedAt: !!data.createdAt,
+			errorCount: errors.length,
+			errors: errors,
+			rating: data.rating,
+			voiceActorsCount: data.voiceActors?.length || 0,
+			genresCount: data.genres?.length || 0,
+		});
+	}
 
 	// 品質スコア計算
 	let quality = 100;
 	quality -= errors.length * 10;
 
 	if (data.rating) quality += 10;
-	if (data.voiceActors.length > 0) quality += 10;
-	if (data.genres.length > 0) quality += 5;
+	if (data.voiceActors?.length > 0) quality += 10;
+	if (data.genres?.length > 0) quality += 5;
 
-	return {
+	const result = {
 		isValid: errors.length === 0,
 		errors,
 		quality: Math.max(0, Math.min(100, quality)),
 	};
+
+	// デバッグ用ログ（特定のworkIdのみ）
+	if (debugWorkIds.includes(data.productId)) {
+		logger.info(`🔍 品質検証結果 ${data.productId}:`, {
+			workId: data.productId,
+			isValid: result.isValid,
+			quality: result.quality,
+			finalErrors: result.errors,
+		});
+	}
+
+	return result;
 }
 
 /**
