@@ -118,10 +118,10 @@ resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
 resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
   project  = var.gcp_project_id
   region   = var.region
-  name     = "fetch-dlsite-individual-api-hourly"
+  name     = "fetch-dlsite-individual-api-15min"
   
-  description = "Individual Info API専用データ更新（毎時実行・統合アーキテクチャ）"
-  schedule    = "0 * * * *"  # 毎時0分実行（統合アーキテクチャ準拠）
+  description = "Individual Info API専用データ更新（15分間隔・バッチ処理アーキテクチャ）"
+  schedule    = "*/15 * * * *"  # 15分間隔実行（バッチ処理アーキテクチャ準拠）
   time_zone   = "Asia/Tokyo"
   paused      = false
 
