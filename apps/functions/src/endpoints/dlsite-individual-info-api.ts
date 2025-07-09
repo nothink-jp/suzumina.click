@@ -46,8 +46,8 @@ const config = getDLsiteConfig();
 
 // Individual Info API設定（User-Agent枯渇対策）
 const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
-const MAX_CONCURRENT_API_REQUESTS = 4; // タイムアウト対策: 3→4 並列数増加
-const API_REQUEST_DELAY = 800; // タイムアウト対策: 1000ms→800ms 間隔短縮
+const MAX_CONCURRENT_API_REQUESTS = 5; // タイムアウト対策: 3→4→5 並列数増加
+const API_REQUEST_DELAY = 600; // タイムアウト対策: 1000ms→800ms→600ms 間隔短縮
 
 // 統合データ収集メタデータの型定義
 interface UnifiedDataCollectionMetadata {
