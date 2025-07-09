@@ -103,10 +103,20 @@ export async function saveWorksToFirestore(
 		logger.info(`Firestore保存完了: ${operationCount}件`);
 	} catch (error) {
 		logger.error("Firestore保存中にエラーが発生:", {
-			error,
+			error:
+				error instanceof Error
+					? {
+							message: error.message,
+							stack: error.stack,
+							name: error.name,
+						}
+					: String(error),
 			workCount: works.length,
+			sampleWorkIds: works.slice(0, 3).map((w) => w.productId),
 		});
-		throw new Error("作品データのFirestore保存に失敗");
+		throw new Error(
+			`作品データのFirestore保存に失敗: ${error instanceof Error ? error.message : String(error)}`,
+		);
 	}
 }
 
@@ -139,7 +149,18 @@ export async function getExistingWorksMap(
 
 		logger.info(`既存作品データを取得: ${existingWorksMap.size}件`);
 	} catch (error) {
-		logger.error("既存作品データの取得に失敗:", { error, productIds });
+		logger.error("既存作品データの取得に失敗:", {
+			error:
+				error instanceof Error
+					? {
+							message: error.message,
+							stack: error.stack,
+							name: error.name,
+						}
+					: String(error),
+			productIds: productIds.slice(0, 5),
+			productIdCount: productIds.length,
+		});
 		// エラーが発生しても処理は継続（全て新規作成として扱う）
 	}
 
