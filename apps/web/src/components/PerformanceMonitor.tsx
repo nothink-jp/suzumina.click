@@ -14,11 +14,17 @@ interface MemoryInfo {
 	jsHeapSizeLimit: number;
 }
 
+// サンプリングレート（10%のユーザーのみメトリクス送信）
+const SAMPLING_RATE = 0.1;
+
 // メトリクス送信関数
 function createMetricReporter() {
+	// ユーザーセッション毎のサンプリング判定（一度決まったら継続）
+	const shouldSample = Math.random() < SAMPLING_RATE;
+
 	return (name: string, value: number, labels?: Record<string, string>) => {
-		if (process.env.NODE_ENV === "production") {
-			// 本番環境: カスタムメトリクスとしてサーバーに送信
+		if (process.env.NODE_ENV === "production" && shouldSample) {
+			// 本番環境かつサンプリング対象の場合のみ送信
 			fetch("/api/metrics", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -29,13 +35,14 @@ function createMetricReporter() {
 						...labels,
 						userAgent: navigator.userAgent,
 						url: window.location.pathname,
+						sampled: "true",
 					},
 				}),
 			}).catch(() => {
 				// エラーは無視（監視システムの障害がアプリに影響しないように）
 			});
 		}
-		// 開発環境では何もしない
+		// 開発環境またはサンプリング対象外では何もしない
 	};
 }
 
@@ -169,8 +176,11 @@ function setupResourceObserver(
 				const resource = entry as PerformanceResourceTiming;
 				const loadTime = resource.responseEnd - resource.startTime;
 
-				// 画像とスクリプトのロード時間を特に監視
-				if (resource.initiatorType === "img" || resource.initiatorType === "script") {
+				// 画像とスクリプトのロード時間を特に監視（遅いもののみ）
+				if (
+					(resource.initiatorType === "img" || resource.initiatorType === "script") &&
+					loadTime > 1000
+				) {
 					reportMetric("resource_load_time", loadTime, {
 						metric_type: "resource_load",
 						resource_type: resource.initiatorType,
@@ -204,7 +214,7 @@ function setupMemoryMonitoring(reportMetric: ReturnType<typeof createMetricRepor
 
 	// 初回測定とその後定期測定
 	reportMemoryUsage();
-	const interval = setInterval(reportMemoryUsage, 30000); // 30秒ごと
+	const interval = setInterval(reportMemoryUsage, 300000); // 5分ごとに変更
 
 	return () => clearInterval(interval);
 }
