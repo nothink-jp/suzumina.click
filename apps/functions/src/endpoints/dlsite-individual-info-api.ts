@@ -145,8 +145,9 @@ async function fetchIndividualWorkInfo(workId: string): Promise<IndividualInfoAP
  */
 async function batchFetchIndividualInfo(
 	workIds: string[],
-): Promise<Map<string, IndividualInfoAPIResponse>> {
+): Promise<{ results: Map<string, IndividualInfoAPIResponse>; failedWorkIds: string[] }> {
 	const results = new Map<string, IndividualInfoAPIResponse>();
+	const failedWorkIds: string[] = [];
 	const batches: string[][] = [];
 
 	// バッチに分割
@@ -173,10 +174,12 @@ async function batchFetchIndividualInfo(
 
 			const batchResults = await Promise.all(promises);
 
-			// 成功したデータのみを保存
+			// 成功・失敗を分類
 			for (const { workId, data } of batchResults) {
 				if (data) {
 					results.set(workId, data);
+				} else {
+					failedWorkIds.push(workId);
 				}
 			}
 
@@ -190,11 +193,22 @@ async function batchFetchIndividualInfo(
 			}
 		} catch (error) {
 			logger.error(`バッチ ${batchIndex + 1} でエラー:`, { error });
+			// バッチ全体が失敗した場合、そのバッチの全作品IDを失敗として記録
+			failedWorkIds.push(...batch);
 		}
 	}
 
 	logger.info(`Individual Info API バッチ処理完了: ${results.size}/${workIds.length}件取得`);
-	return results;
+
+	// 失敗した作品IDをログ出力
+	if (failedWorkIds.length > 0) {
+		logger.warn(`❌ API取得失敗作品ID一覧 (${failedWorkIds.length}件):`, {
+			failedWorkIds: failedWorkIds.sort(),
+			failureRate: `${((failedWorkIds.length / workIds.length) * 100).toFixed(1)}%`,
+		});
+	}
+
+	return { results, failedWorkIds };
 }
 
 /**
@@ -382,7 +396,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		logger.info(`既存作品データ: ${existingWorksMap.size}件`);
 
 		// 4. Individual Info APIでデータを取得（統合処理の核心）
-		const apiDataMap = await batchFetchIndividualInfo(allWorkIds);
+		const { results: apiDataMap, failedWorkIds } = await batchFetchIndividualInfo(allWorkIds);
 
 		if (apiDataMap.size === 0) {
 			return {
@@ -569,6 +583,16 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 
 		// User-Agent使用統計サマリーを出力
 		logUserAgentSummary();
+
+		// 失敗作品ID最終サマリー
+		if (failedWorkIds.length > 0) {
+			logger.warn("📋 === API取得失敗作品ID 最終サマリー ===");
+			logger.warn(`失敗件数: ${failedWorkIds.length}/${allWorkIds.length}件`);
+			logger.warn(`失敗率: ${((failedWorkIds.length / allWorkIds.length) * 100).toFixed(1)}%`);
+			logger.warn(`失敗作品ID一覧: [${failedWorkIds.sort().join(", ")}]`);
+		} else {
+			logger.info("✅ API取得: 全作品成功");
+		}
 
 		if (results.errors.length > 0) {
 			logger.warn(`⚠️ 処理エラー: ${results.errors.length}件`, { errors: results.errors });
