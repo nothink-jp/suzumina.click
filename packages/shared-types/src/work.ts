@@ -91,6 +91,8 @@ export const PriceInfoSchema = z.object({
 	discount: z.number().int().min(0).max(100).optional(),
 	/** ポイント */
 	point: z.number().int().nonnegative().optional(),
+	/** 販売終了フラグ */
+	isDiscontinued: z.boolean().optional(),
 });
 
 /**

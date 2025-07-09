@@ -297,12 +297,14 @@ function extractPriceInfo(apiData: IndividualInfoAPIResponse): PriceInfo {
 	const originalPrice = apiData.official_price;
 	const discountRate = apiData.discount_rate || 0;
 
+	// 販売終了作品対応: 価格が0でも有効な価格情報として扱う
 	return {
 		current: currentPrice,
 		original: originalPrice && originalPrice !== currentPrice ? originalPrice : undefined,
 		currency: "JPY",
 		discount: discountRate > 0 ? discountRate : undefined,
 		point: apiData.point,
+		isDiscontinued: currentPrice === 0 && !apiData.on_sale, // 販売終了フラグ
 	};
 }
 
@@ -593,6 +595,21 @@ export function mapIndividualInfoAPIToWorkData(
 		ageCategoryType: typeof apiData.age_category,
 	});
 
+	// 販売終了作品の詳細情報をログ出力
+	const isDiscontinued = price.isDiscontinued;
+	if (isDiscontinued) {
+		logger.info(`🔍 販売終了作品検出 ${productId}:`, {
+			workId: productId,
+			title: apiData.work_name,
+			circle: apiData.maker_name,
+			price: apiData.price,
+			official_price: apiData.official_price,
+			on_sale: apiData.on_sale,
+			sales_status: apiData.sales_status,
+			isDiscontinued: true,
+		});
+	}
+
 	logger.debug("Extracted data summary:", {
 		category,
 		price,
@@ -877,7 +894,7 @@ export function validateAPIOnlyWorkData(data: OptimizedFirestoreDLsiteWorkData):
 	// 必須フィールドチェック
 	if (!data.title) errors.push("タイトルが不足");
 	if (!data.circle) errors.push("サークル名が不足");
-	if (!data.price?.current) errors.push("価格情報が不足");
+	if (data.price?.current === undefined) errors.push("価格情報が不足");
 	if (!data.productId) errors.push("作品IDが不足");
 
 	// Individual Info API特有の品質チェック
@@ -885,7 +902,19 @@ export function validateAPIOnlyWorkData(data: OptimizedFirestoreDLsiteWorkData):
 	if (!data.createdAt) errors.push("作成日が不足");
 
 	// デバッグ用ログ（特定のworkIdのみ）
-	const debugWorkIds = ["RJ01037463", "RJ01415251", "RJ01020479"];
+	const debugWorkIds = [
+		"RJ01037463",
+		"RJ01415251",
+		"RJ01020479",
+		"RJ01145117",
+		"RJ01133519",
+		"RJ01125601",
+		"RJ01047404",
+		"RJ01041035",
+		"RJ01024723",
+		"RJ01022017",
+		"RJ01008336",
+	];
 	if (debugWorkIds.includes(data.productId)) {
 		logger.info(`🔍 品質検証詳細 ${data.productId}:`, {
 			workId: data.productId,
@@ -925,6 +954,8 @@ export function validateAPIOnlyWorkData(data: OptimizedFirestoreDLsiteWorkData):
 			isValid: result.isValid,
 			quality: result.quality,
 			finalErrors: result.errors,
+			isDiscontinued: data.price?.isDiscontinued,
+			priceInfo: data.price,
 		});
 	}
 
