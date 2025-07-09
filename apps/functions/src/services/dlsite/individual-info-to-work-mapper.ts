@@ -297,14 +297,15 @@ function extractPriceInfo(apiData: IndividualInfoAPIResponse): PriceInfo {
 	const originalPrice = apiData.official_price;
 	const discountRate = apiData.discount_rate || 0;
 
-	// 販売終了作品対応: 価格が0でも有効な価格情報として扱う
+	// 無料作品・価格取得失敗対応: 価格が0でも有効な価格情報として扱う
 	return {
 		current: currentPrice,
 		original: originalPrice && originalPrice !== currentPrice ? originalPrice : undefined,
 		currency: "JPY",
 		discount: discountRate > 0 ? discountRate : undefined,
 		point: apiData.point,
-		isDiscontinued: currentPrice === 0 && !apiData.on_sale, // 販売終了フラグ
+		isFreeOrMissingPrice:
+			currentPrice === 0 || apiData.price === undefined || apiData.price === null, // 無料作品または価格取得失敗フラグ
 	};
 }
 
@@ -595,10 +596,10 @@ export function mapIndividualInfoAPIToWorkData(
 		ageCategoryType: typeof apiData.age_category,
 	});
 
-	// 販売終了作品の詳細情報をログ出力
-	const isDiscontinued = price.isDiscontinued;
-	if (isDiscontinued) {
-		logger.info(`🔍 販売終了作品検出 ${productId}:`, {
+	// 無料作品・価格取得失敗の詳細情報をログ出力
+	const isFreeOrMissingPrice = price.isFreeOrMissingPrice;
+	if (isFreeOrMissingPrice) {
+		logger.info(`🔍 価格情報確認 ${productId}:`, {
 			workId: productId,
 			title: apiData.work_name,
 			circle: apiData.maker_name,
@@ -606,7 +607,8 @@ export function mapIndividualInfoAPIToWorkData(
 			official_price: apiData.official_price,
 			on_sale: apiData.on_sale,
 			sales_status: apiData.sales_status,
-			isDiscontinued: true,
+			isFreeOrMissingPrice: true,
+			priceStatus: apiData.price === 0 ? "無料作品または価格取得失敗" : "価格取得失敗",
 		});
 	}
 
@@ -954,7 +956,7 @@ export function validateAPIOnlyWorkData(data: OptimizedFirestoreDLsiteWorkData):
 			isValid: result.isValid,
 			quality: result.quality,
 			finalErrors: result.errors,
-			isDiscontinued: data.price?.isDiscontinued,
+			isFreeOrMissingPrice: data.price?.isFreeOrMissingPrice,
 			priceInfo: data.price,
 		});
 	}
