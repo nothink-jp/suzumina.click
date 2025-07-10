@@ -29,9 +29,9 @@ export interface DLsiteAjaxResponse {
 // 設定を取得
 const config = getDLsiteConfig();
 
-// DLsite AJAX エンドポイントのベースURL
+// DLsite AJAX エンドポイントのベースURL（100件/ページで効率化）
 const DLSITE_AJAX_BASE_URL =
-	"https://www.dlsite.com/maniax/fsr/ajax/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/";
+	"https://www.dlsite.com/maniax/fsr/ajax/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/per_page/100/";
 
 /**
  * DLsiteのAJAXエンドポイントから検索結果を取得
@@ -55,6 +55,7 @@ export async function fetchDLsiteAjaxResult(page: number): Promise<DLsiteAjaxRes
 	if (page === 1) {
 		logger.info("🔧 AJAX エンドポイント使用: HTML直接取得からの移行");
 		logger.info("📊 期待される利点: 構造化レスポンス、正確なページング情報、総作品数の取得");
+		logger.info("⚡ 100件/ページ設定で効率向上: 従来の3.3倍高速化");
 	}
 
 	try {
@@ -212,8 +213,8 @@ export function isLastPageFromPageInfo(
 	pageInfo: DLsiteAjaxResponse["page_info"],
 	currentPage: number,
 ): boolean {
-	// 1ページあたりの作品数（通常は30件）
-	const itemsPerPage = 30;
+	// 1ページあたりの作品数（100件/ページで効率化）
+	const itemsPerPage = 100;
 
 	// 総ページ数の計算
 	const totalPages = Math.ceil(pageInfo.count / itemsPerPage);
@@ -234,10 +235,10 @@ export function isLastPageFromPageInfo(
  * AJAX レスポンスから実際の作品数を推定
  *
  * @param html - search_result のHTMLコンテンツ
- * @returns 推定される作品数
+ * @returns 推定される作品数（最大100件/ページ）
  */
 export function estimateItemCountFromHtml(html: string): number {
-	// data-list_item_product_id属性を持つli要素の数をカウント
+	// data-list_item_product_id属性を持つli要素の数をカウント（100件/ページ対応）
 	const matches = html.match(/data-list_item_product_id="RJ\d+"/g);
 	return matches ? matches.length : 0;
 }

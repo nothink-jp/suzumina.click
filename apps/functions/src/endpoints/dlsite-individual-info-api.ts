@@ -8,36 +8,23 @@
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
-import { getDLsiteConfig } from "../infrastructure/management/config-manager";
 import {
 	generateDLsiteHeaders,
 	logUserAgentSummary,
 } from "../infrastructure/management/user-agent-manager";
-import {
-	fetchDLsiteAjaxResult,
-	isLastPageFromPageInfo,
-	validateAjaxHtmlContent,
-} from "../services/dlsite/dlsite-ajax-fetcher";
 import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
 import {
 	batchMapIndividualInfoAPIToWorkData,
 	type IndividualInfoAPIResponse,
 	validateAPIOnlyWorkData,
 } from "../services/dlsite/individual-info-to-work-mapper";
-import {
-	createUnionWorkIds,
-	handleNoWorkIdsError,
-	validateWorkIds,
-	warnPartialSuccess,
-} from "../services/dlsite/work-id-validator";
+import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collector";
+import { createUnionWorkIds, handleNoWorkIdsError } from "../services/dlsite/work-id-validator";
 import * as logger from "../shared/logger";
 
 // 統合メタデータ保存用の定数
 const UNIFIED_METADATA_DOC_ID = "unified_data_collection_metadata";
 const METADATA_COLLECTION = "dlsiteMetadata";
-
-// 設定を取得
-const config = getDLsiteConfig();
 
 // Individual Info API設定（User-Agent枯渇対策）
 const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
@@ -126,10 +113,6 @@ async function fetchIndividualWorkInfo(
 		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
 		const headers = generateDLsiteHeaders();
 
-		logger.debug(
-			`Individual Info API取得: ${workId}${retryCount > 0 ? ` (retry ${retryCount})` : ""}`,
-		);
-
 		const response = await fetch(url, {
 			method: "GET",
 			headers,
@@ -160,9 +143,7 @@ async function fetchIndividualWorkInfo(
 				logger.warn(`Service temporarily unavailable: ${workId} (Status: ${response.status})`);
 				// 503エラーの場合はリトライする
 				if (retryCount < MAX_RETRIES) {
-					logger.info(
-						`Retrying ${workId} due to 503 error (attempt ${retryCount + 1}/${MAX_RETRIES})`,
-					);
+					logger.warn(`Retry ${workId}: 503 error (${retryCount + 1}/${MAX_RETRIES})`);
 					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
 					return fetchIndividualWorkInfo(workId, retryCount + 1);
 				}
@@ -173,9 +154,7 @@ async function fetchIndividualWorkInfo(
 				logger.warn(`Rate limit exceeded: ${workId} (Status: ${response.status})`);
 				// 429エラーの場合もリトライする
 				if (retryCount < MAX_RETRIES) {
-					logger.info(
-						`Retrying ${workId} due to rate limit (attempt ${retryCount + 1}/${MAX_RETRIES})`,
-					);
+					logger.warn(`Retry ${workId}: rate limit (${retryCount + 1}/${MAX_RETRIES})`);
 					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
 					return fetchIndividualWorkInfo(workId, retryCount + 1);
 				}
@@ -201,9 +180,7 @@ async function fetchIndividualWorkInfo(
 
 			// JSONパースエラーの場合もリトライする
 			if (retryCount < MAX_RETRIES) {
-				logger.info(
-					`Retrying ${workId} due to JSON parse error (attempt ${retryCount + 1}/${MAX_RETRIES})`,
-				);
+				logger.warn(`Retry ${workId}: JSON parse error (${retryCount + 1}/${MAX_RETRIES})`);
 				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
 				return fetchIndividualWorkInfo(workId, retryCount + 1);
 			}
@@ -225,9 +202,7 @@ async function fetchIndividualWorkInfo(
 
 			// 空レスポンスの場合もリトライする
 			if (retryCount < MAX_RETRIES) {
-				logger.info(
-					`Retrying ${workId} due to empty response (attempt ${retryCount + 1}/${MAX_RETRIES})`,
-				);
+				logger.warn(`Retry ${workId}: empty response (${retryCount + 1}/${MAX_RETRIES})`);
 				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
 				return fetchIndividualWorkInfo(workId, retryCount + 1);
 			}
@@ -242,9 +217,6 @@ async function fetchIndividualWorkInfo(
 			return null;
 		}
 
-		logger.debug(
-			`Individual Info API取得成功: ${workId} (${data.work_name})${retryCount > 0 ? ` after ${retryCount} retries` : ""}`,
-		);
 		return data;
 	} catch (error) {
 		logger.error(`Individual Info API取得エラー: ${workId}`, { error, retryCount });
@@ -257,9 +229,7 @@ async function fetchIndividualWorkInfo(
 				error.message.includes("fetch") ||
 				error.message.includes("network")
 			) {
-				logger.info(
-					`Retrying ${workId} due to network error (attempt ${retryCount + 1}/${MAX_RETRIES})`,
-				);
+				logger.warn(`Retry ${workId}: network error (${retryCount + 1}/${MAX_RETRIES})`);
 				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
 				return fetchIndividualWorkInfo(workId, retryCount + 1);
 			}
@@ -284,11 +254,7 @@ async function batchFetchIndividualInfo(
 		batches.push(workIds.slice(i, i + MAX_CONCURRENT_API_REQUESTS));
 	}
 
-	logger.info(`Individual Info API バッチ処理開始: ${workIds.length}件 (${batches.length}バッチ)`);
-
 	for (const [batchIndex, batch] of batches.entries()) {
-		logger.debug(`バッチ ${batchIndex + 1}/${batches.length} 処理中: ${batch.length}件`);
-
 		try {
 			// 並列でAPIを呼び出し
 			const promises = batch.map(async (workId) => {
@@ -312,10 +278,6 @@ async function batchFetchIndividualInfo(
 				}
 			}
 
-			logger.info(
-				`バッチ ${batchIndex + 1} 完了: ${batchResults.filter((r) => r.data).length}/${batch.length}件成功`,
-			);
-
 			// レート制限対応
 			if (batchIndex < batches.length - 1) {
 				await new Promise((resolve) => setTimeout(resolve, API_REQUEST_DELAY));
@@ -327,23 +289,15 @@ async function batchFetchIndividualInfo(
 		}
 	}
 
-	logger.info(`Individual Info API バッチ処理完了: ${results.size}/${workIds.length}件取得`);
-
-	// 失敗した作品IDをログ出力
+	// 失敗した作品IDをログ出力（件数制限付き）
 	if (failedWorkIds.length > 0) {
-		const sortedFailedIds = failedWorkIds.sort();
-		logger.warn(`❌ API取得失敗作品ID一覧 (${failedWorkIds.length}件):`, {
-			failedWorkIds: sortedFailedIds,
-			failureRate: `${((failedWorkIds.length / workIds.length) * 100).toFixed(1)}%`,
-		});
+		logger.warn(
+			`❌ API取得失敗: ${failedWorkIds.length}件 (失敗率${((failedWorkIds.length / workIds.length) * 100).toFixed(1)}%)`,
+		);
 
-		// 失敗IDリストを分割して表示（Cloud Loggingの制限対応）
-		const chunkSize = 50;
-		for (let i = 0; i < sortedFailedIds.length; i += chunkSize) {
-			const chunk = sortedFailedIds.slice(i, i + chunkSize);
-			logger.warn(
-				`失敗作品ID ${i + 1}-${Math.min(i + chunkSize, sortedFailedIds.length)}: [${chunk.join(", ")}]`,
-			);
+		// 失敗ID詳細は10件未満の場合のみ出力
+		if (failedWorkIds.length < 10) {
+			logger.warn(`失敗作品ID: [${failedWorkIds.sort().join(", ")}]`);
 		}
 	}
 
@@ -397,122 +351,14 @@ async function updateUnifiedMetadata(
 }
 
 /**
- * 作品IDリストの取得（AJAX APIから）
- */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: AJAX処理のため複雑度が高い
-async function getAllWorkIds(): Promise<string[]> {
-	logger.info("🔍 AJAX APIから全作品IDを収集中...");
-
-	const allWorkIds: string[] = [];
-	let currentPage = 1;
-	const maxPages = 50; // 安全のための上限
-
-	while (currentPage <= maxPages) {
-		try {
-			logger.debug(`作品ID収集: ページ ${currentPage}`);
-
-			const ajaxResult = await fetchDLsiteAjaxResult(currentPage);
-
-			if (!validateAjaxHtmlContent(ajaxResult.search_result)) {
-				logger.warn(`ページ ${currentPage}: 無効なHTMLコンテンツ`);
-				break;
-			}
-
-			// デバッグ: HTMLの一部を出力して構造を確認
-			logger.debug(`ページ ${currentPage} HTMLサンプル (最初の500文字):`, {
-				html: ajaxResult.search_result.substring(0, 500),
-			});
-
-			// メイン検索結果のみを抽出（サイドバーや関連作品を除外）
-			// より厳密なパターンでメイン結果のみを抽出
-			const strictPatterns = [
-				/href="\/maniax\/work\/[^"]*product_id\/([^"/]+)/g,
-				/"product_id":"([^"]+)"/g,
-				/data-list_item_product_id="([^"]+)"/g, // 新しいデータ属性パターン
-			];
-
-			const allMatches = new Set<string>();
-			for (const pattern of strictPatterns) {
-				const matches = [...ajaxResult.search_result.matchAll(pattern)];
-				if (matches.length > 0) {
-					logger.debug(`パターン ${pattern.source} で ${matches.length} 件マッチ`);
-					matches.forEach((match) => {
-						const workId = match[1];
-						if (workId && /^RJ\d{6,8}$/.test(workId)) {
-							allMatches.add(workId);
-						}
-					});
-				}
-			}
-
-			if (allMatches.size === 0) {
-				logger.info(`ページ ${currentPage}: 作品が見つかりません。収集完了`);
-
-				// デバッグ情報: HTMLの内容を確認
-				if (currentPage === 1) {
-					logger.debug("ページ1でのHTML解析失敗 - RJ番号パターンをチェック:", {
-						rjMatches: ajaxResult.search_result.match(/RJ\d{6,8}/g)?.length || 0,
-						htmlLength: ajaxResult.search_result.length,
-						containsRJ: ajaxResult.search_result.includes("RJ"),
-					});
-				}
-				break;
-			}
-
-			const pageWorkIds = Array.from(allMatches);
-			allWorkIds.push(...pageWorkIds);
-
-			logger.debug(
-				`ページ ${currentPage}: ${pageWorkIds.length}件の作品ID取得 (累計: ${allWorkIds.length}件)`,
-			);
-
-			// 最終ページ判定
-			const isLastPage = isLastPageFromPageInfo(ajaxResult.page_info, currentPage);
-			if (isLastPage) {
-				logger.info(`ページ ${currentPage} が最終ページです`);
-				break;
-			}
-
-			currentPage++;
-
-			// レート制限対応
-			await new Promise((resolve) => setTimeout(resolve, config.requestDelay));
-		} catch (error) {
-			logger.error(`作品ID収集エラー (ページ ${currentPage}):`, { error });
-			break;
-		}
-	}
-
-	const uniqueWorkIds = [...new Set(allWorkIds)]; // 重複除去
-	logger.info(`✅ 作品ID収集完了: ${uniqueWorkIds.length}件`);
-
-	// 作品IDリストの検証（リージョン差異を考慮）
-	const validationResult = validateWorkIds(uniqueWorkIds, {
-		minCoveragePercentage: 70, // リージョン差異を考慮して70%に設定
-		maxExtraPercentage: 30, // 新作品の可能性を考慮して30%に設定
-		logDetails: true,
-	});
-
-	// 検証結果に基づく警告
-	if (validationResult.regionWarning) {
-		warnPartialSuccess(validationResult);
-	}
-
-	return uniqueWorkIds;
-}
-
-/**
  * 単一バッチの処理
  */
 async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetchResult> {
-	const { batchNumber, totalBatches, workIds, startTime } = batchInfo;
-
-	logger.info(`🔄 バッチ ${batchNumber}/${totalBatches} 処理開始: ${workIds.length}件`);
+	const { batchNumber, workIds, startTime } = batchInfo;
 
 	try {
 		// 既存データの確認
 		const existingWorksMap = await getExistingWorksMap(workIds);
-		logger.info(`既存作品データ: ${existingWorksMap.size}件`);
 
 		// Individual Info APIでデータを取得
 		const { results: apiDataMap, failedWorkIds } = await batchFetchIndividualInfo(workIds);
@@ -527,7 +373,6 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 		}
 
 		const apiResponses = Array.from(apiDataMap.values());
-		logger.info(`📊 バッチ ${batchNumber} API取得成功: ${apiResponses.length}/${workIds.length}件`);
 
 		// 統合データ処理: 同一APIレスポンスから並列変換
 		const results = {
@@ -552,7 +397,6 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 				if (validWorkData.length > 0) {
 					await saveWorksToFirestore(validWorkData);
 					results.basicDataUpdated = validWorkData.length;
-					logger.info(`✅ バッチ ${batchNumber} 基本データ保存完了: ${validWorkData.length}件`);
 				}
 
 				return validWorkData.length;
@@ -569,21 +413,13 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 
 		// バッチ統計情報
 		const processingTime = Date.now() - startTime.toMillis();
-		logger.info(`📈 バッチ ${batchNumber} 完了統計:`);
-		logger.info(`  処理時間: ${(processingTime / 1000).toFixed(1)}秒`);
-		logger.info(`  API成功率: ${((apiDataMap.size / workIds.length) * 100).toFixed(1)}%`);
-		logger.info(`  基本データ更新: ${results.basicDataUpdated}件`);
+		logger.info(
+			`✅ バッチ ${batchNumber} 完了: ${results.basicDataUpdated}件更新 (${(processingTime / 1000).toFixed(1)}s, 成功率${((apiDataMap.size / workIds.length) * 100).toFixed(1)}%)`,
+		);
 
-		// 失敗作品IDログ
+		// 失敗作品IDログ（簡素化）
 		if (failedWorkIds.length > 0) {
-			logger.warn(`バッチ ${batchNumber} 失敗作品ID: ${failedWorkIds.length}件`);
-			const chunkSize = 20;
-			for (let i = 0; i < failedWorkIds.length; i += chunkSize) {
-				const chunk = failedWorkIds.slice(i, i + chunkSize);
-				logger.warn(
-					`  失敗ID ${i + 1}-${Math.min(i + chunkSize, failedWorkIds.length)}: [${chunk.join(", ")}]`,
-				);
-			}
+			logger.warn(`バッチ ${batchNumber} 失敗: ${failedWorkIds.length}件`);
 		}
 
 		return {
@@ -640,7 +476,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			logger.info("🔍 新規バッチ処理開始: 作品ID収集中...");
 
 			// 現在のリージョンで作品IDを取得
-			const currentRegionIds = await getAllWorkIds();
+			const currentRegionIds = await collectWorkIdsForProduction();
 			logger.info(`🔍 現在のリージョン取得数: ${currentRegionIds.length}件`);
 
 			// 和集合による完全なIDリストを作成
@@ -661,7 +497,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 
 			// バッチに分割
 			batches = chunkArray(allWorkIds, BATCH_SIZE);
-			logger.info(`📦 バッチ分割完了: ${batches.length}バッチ（${BATCH_SIZE}件/バッチ）`);
 
 			// メタデータを更新してバッチ処理開始
 			await updateUnifiedMetadata({
@@ -675,13 +510,9 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 				basicDataUpdated: 0,
 			});
 
-			logger.info("🌏 === リージョン差異対応統計 ===");
-			logger.info(`現在リージョン取得: ${unionResult.currentRegionIds.length}件`);
-			logger.info(`アセットファイル: ${unionResult.assetFileIds.length}件`);
-			logger.info(`和集合総数: ${unionResult.unionIds.length}件`);
-			logger.info(`リージョン専用: ${unionResult.regionOnlyCount}件`);
-			logger.info(`アセット専用: ${unionResult.assetOnlyCount}件`);
-			logger.info(`重複: ${unionResult.overlapCount}件`);
+			logger.info(
+				`🌏 リージョン差異対応: 和集合${unionResult.unionIds.length}件 (現在${unionResult.currentRegionIds.length}/アセット${unionResult.assetFileIds.length}/重複${unionResult.overlapCount})`,
+			);
 		}
 
 		// 3. バッチ処理実行
@@ -755,18 +586,13 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 				basicDataUpdated: totalResults.totalBasicDataUpdated,
 				completedBatches,
 			});
-
-			logger.info(`✅ バッチ ${i + 1}/${batches.length} 完了`);
 		}
 
 		// 4. 全バッチ処理完了
 		const processingTime = Date.now() - startTime;
-		logger.info("🎉 === 全バッチ処理完了 ===");
-		logger.info(`総処理時間: ${(processingTime / 1000).toFixed(1)}秒`);
-		logger.info(`処理済み作品数: ${totalResults.totalWorkCount}件`);
-		logger.info(`API呼び出し総数: ${totalResults.totalApiCallCount}件`);
-		logger.info(`基本データ更新: ${totalResults.totalBasicDataUpdated}件`);
-		logger.info(`処理エラー: ${totalResults.totalErrors.length}件`);
+		logger.info(
+			`🎉 全バッチ完了: ${totalResults.totalBasicDataUpdated}件更新 (${(processingTime / 1000).toFixed(1)}s, エラー${totalResults.totalErrors.length}件)`,
+		);
 
 		// User-Agent使用統計サマリーを出力
 		logUserAgentSummary();
@@ -824,7 +650,7 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 		// 4. 成功時のメタデータ更新（和集合統計情報を含む）
 		if (!result.error) {
 			// 和集合情報を取得するため、再度実行（最適化の余地あり）
-			const currentRegionIds = await getAllWorkIds();
+			const currentRegionIds = await collectWorkIdsForProduction();
 			const unionInfo = createUnionWorkIds(currentRegionIds);
 
 			await updateUnifiedMetadata({
@@ -840,10 +666,10 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 				regionDifferenceDetected: unionInfo.regionDifferenceDetected,
 			});
 
-			logger.info("✅ === DLsite統合データ収集完了 ===");
-			logger.info(`基本データ更新: ${result.basicDataUpdated}件`);
-			logger.info(`API呼び出し数: ${result.apiCallCount}件`);
-			logger.info("🎯 統合アーキテクチャ実現完了 - 重複API呼び出し100%排除");
+			logger.info(
+				`✅ DLsite統合データ収集完了: ${result.basicDataUpdated}件更新 (API${result.apiCallCount}件)`,
+			);
+			logger.info("🎯 統合アーキテクチャ実現 - 重複API呼び出し100%排除");
 		} else {
 			// エラーが発生した場合でも isInProgress を false にリセット
 			await updateUnifiedMetadata({

@@ -5,8 +5,8 @@
  * 実際にデータが取得できるかどうかテストする
  */
 
-import { generateDLsiteHeaders } from "../infrastructure/management/user-agent-manager";
-import * as logger from "../shared/logger";
+import { generateDLsiteHeaders } from "../../infrastructure/management/user-agent-manager";
+import * as logger from "../../shared/logger";
 
 // 失敗した作品IDのサンプル
 const FAILED_WORK_IDS = [

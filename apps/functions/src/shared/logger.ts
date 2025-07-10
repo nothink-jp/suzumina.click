@@ -20,7 +20,8 @@ interface LogOptions {
 }
 
 /**
- * 構造化ログを標準出力に送信する基本関数
+ * ログを標準出力に送信する基本関数
+ * 環境変数 LOG_FORMAT=console でコンソール用の読みやすい形式に変更可能
  * Cloud Run Functionsでは標準出力が自動的にCloud Loggingに転送される
  *
  * @param level - ログレベル（Cloud Logging標準）
@@ -28,38 +29,84 @@ interface LogOptions {
  * @param optionsOrError - 追加のメタデータまたはエラーオブジェクト
  */
 function logMessage(level: LogLevel, message: string, optionsOrError?: LogOptions | unknown): void {
-	// Cloud Run Functions用の構造化ログ
-	const logEntry: Record<string, unknown> = {
-		severity: level,
-		message,
-		// Cloud Functions v2の実行情報
-		...(process.env.K_SERVICE && {
-			"logging.googleapis.com/labels": {
-				service: process.env.K_SERVICE,
-				...(process.env.K_REVISION && { revision: process.env.K_REVISION }),
-				...(process.env.K_CONFIGURATION && { configuration: process.env.K_CONFIGURATION }),
-			},
-		}),
-	};
+	// 環境変数でコンソール形式を選択可能
+	const useConsoleFormat = process.env.LOG_FORMAT === "console";
 
-	// オプションまたはエラーの処理
-	if (optionsOrError) {
-		if (optionsOrError instanceof Error) {
-			// エラーオブジェクトの場合
-			logEntry.error = {
-				message: optionsOrError.message,
-				name: optionsOrError.name,
-				stack: optionsOrError.stack,
-			};
-		} else {
-			// その他のオプションの場合は直接マージ
-			Object.assign(logEntry, optionsOrError);
+	if (useConsoleFormat) {
+		// コンソール用の読みやすい形式
+		const timestamp = new Date().toISOString();
+		const levelIcon = getLevelIcon(level);
+
+		let logLine = `${timestamp} ${levelIcon} ${level} ${message}`;
+
+		// 追加情報の処理
+		if (optionsOrError) {
+			if (optionsOrError instanceof Error) {
+				logLine += `\n  Error: ${optionsOrError.message}`;
+				if (optionsOrError.stack) {
+					logLine += `\n  Stack: ${optionsOrError.stack}`;
+				}
+			} else if (typeof optionsOrError === "object" && optionsOrError !== null) {
+				// オブジェクトの場合は整形して表示
+				const formatted = JSON.stringify(optionsOrError, null, 2);
+				logLine += `\n  Data: ${formatted}`;
+			}
 		}
-	}
 
-	// 標準出力に構造化ログを出力（Cloud Run Functionsが自動的にCloud Loggingに転送）
-	// biome-ignore lint/suspicious/noConsole: Cloud Loggingへの転送にconsole.logが必要
-	console.log(JSON.stringify(logEntry));
+		// biome-ignore lint/suspicious/noConsole: コンソール形式ログ出力
+		console.log(logLine);
+	} else {
+		// Cloud Run Functions用の構造化ログ（既存の実装）
+		const logEntry: Record<string, unknown> = {
+			severity: level,
+			message,
+			// Cloud Functions v2の実行情報
+			...(process.env.K_SERVICE && {
+				"logging.googleapis.com/labels": {
+					service: process.env.K_SERVICE,
+					...(process.env.K_REVISION && { revision: process.env.K_REVISION }),
+					...(process.env.K_CONFIGURATION && { configuration: process.env.K_CONFIGURATION }),
+				},
+			}),
+		};
+
+		// オプションまたはエラーの処理
+		if (optionsOrError) {
+			if (optionsOrError instanceof Error) {
+				// エラーオブジェクトの場合
+				logEntry.error = {
+					message: optionsOrError.message,
+					name: optionsOrError.name,
+					stack: optionsOrError.stack,
+				};
+			} else {
+				// その他のオプションの場合は直接マージ
+				Object.assign(logEntry, optionsOrError);
+			}
+		}
+
+		// 標準出力に構造化ログを出力（Cloud Run Functionsが自動的にCloud Loggingに転送）
+		// biome-ignore lint/suspicious/noConsole: Cloud Loggingへの転送にconsole.logが必要
+		console.log(JSON.stringify(logEntry));
+	}
+}
+
+/**
+ * ログレベルに対応するアイコンを取得
+ */
+function getLevelIcon(level: LogLevel): string {
+	switch (level) {
+		case LogLevel.DEBUG:
+			return "🔍";
+		case LogLevel.INFO:
+			return "ℹ️";
+		case LogLevel.WARN:
+			return "⚠️";
+		case LogLevel.ERROR:
+			return "❌";
+		default:
+			return "📝";
+	}
 }
 
 /**

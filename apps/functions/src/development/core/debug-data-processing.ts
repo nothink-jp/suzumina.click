@@ -4,13 +4,13 @@
  * Individual Info APIレスポンスから作品データへの変換過程をデバッグ
  */
 
-import { generateDLsiteHeaders } from "../infrastructure/management/user-agent-manager";
+import { generateDLsiteHeaders } from "../../infrastructure/management/user-agent-manager";
 import {
 	type IndividualInfoAPIResponse,
 	mapIndividualInfoAPIToWorkData,
 	validateAPIOnlyWorkData,
-} from "../services/dlsite/individual-info-to-work-mapper";
-import * as logger from "../shared/logger";
+} from "../../services/dlsite/individual-info-to-work-mapper";
+import * as logger from "../../shared/logger";
 
 const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
 

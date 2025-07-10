@@ -57,9 +57,9 @@ describe("DLsite AJAX Fetcher", () => {
 				search_result:
 					'<div id="search_result_list"><ul class="n_worklist"><li data-list_item_product_id="RJ123456"></li></ul></div>',
 				page_info: {
-					count: 1471,
+					count: 1487,
 					first_indice: 1,
-					last_indice: 30,
+					last_indice: 100,
 				},
 			};
 
@@ -77,7 +77,7 @@ describe("DLsite AJAX Fetcher", () => {
 
 			expect(result).toEqual(mockResponse);
 			expect(mockFetch).toHaveBeenCalledWith(
-				"https://www.dlsite.com/maniax/fsr/ajax/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/",
+				"https://www.dlsite.com/maniax/fsr/ajax/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/per_page/100/",
 				expect.objectContaining({
 					headers: expect.objectContaining({
 						accept: "application/json",
@@ -92,9 +92,9 @@ describe("DLsite AJAX Fetcher", () => {
 			const mockResponse: DLsiteAjaxResponse = {
 				search_result: '<div id="search_result_list"></div>',
 				page_info: {
-					count: 1471,
-					first_indice: 31,
-					last_indice: 60,
+					count: 1487,
+					first_indice: 101,
+					last_indice: 200,
 				},
 			};
 
@@ -110,7 +110,7 @@ describe("DLsite AJAX Fetcher", () => {
 			await fetchDLsiteAjaxResult(2);
 
 			expect(mockFetch).toHaveBeenCalledWith(
-				"https://www.dlsite.com/maniax/fsr/ajax/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/page/2",
+				"https://www.dlsite.com/maniax/fsr/ajax/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/per_page/100/page/2",
 				expect.any(Object),
 			);
 		});
@@ -225,21 +225,21 @@ describe("DLsite AJAX Fetcher", () => {
 	describe("isLastPageFromPageInfo", () => {
 		it("最終ページを正しく判定できる", () => {
 			const pageInfo = {
-				count: 100,
-				first_indice: 91,
-				last_indice: 100,
+				count: 150,
+				first_indice: 101,
+				last_indice: 150,
 			};
 
-			// 100件で30件/ページの場合、4ページ目が最終
-			expect(isLastPageFromPageInfo(pageInfo, 4)).toBe(true);
-			expect(isLastPageFromPageInfo(pageInfo, 3)).toBe(false);
+			// 150件で100件/ページの場合、2ページ目が最終
+			expect(isLastPageFromPageInfo(pageInfo, 2)).toBe(true);
+			expect(isLastPageFromPageInfo(pageInfo, 1)).toBe(false);
 		});
 
 		it("1ページしかない場合も正しく判定できる", () => {
 			const pageInfo = {
-				count: 25,
+				count: 50,
 				first_indice: 1,
-				last_indice: 25,
+				last_indice: 50,
 			};
 
 			expect(isLastPageFromPageInfo(pageInfo, 1)).toBe(true);

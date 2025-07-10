@@ -5,25 +5,25 @@
  * 成功したデータをCloud Firestoreに保存する
  */
 
-import { getDLsiteConfig } from "../infrastructure/management/config-manager";
+import { getDLsiteConfig } from "../../infrastructure/management/config-manager";
 import {
 	generateDLsiteHeaders,
 	logUserAgentSummary,
-} from "../infrastructure/management/user-agent-manager";
-import { saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
+} from "../../infrastructure/management/user-agent-manager";
+import { saveWorksToFirestore } from "../../services/dlsite/dlsite-firestore";
 import {
 	FAILURE_REASONS,
 	getFailedWorkIds,
 	getFailureStatistics,
 	trackFailedWork,
 	trackWorkRecovery,
-} from "../services/dlsite/failure-tracker";
+} from "../../services/dlsite/failure-tracker";
 import {
 	batchMapIndividualInfoAPIToWorkData,
 	type IndividualInfoAPIResponse,
 	validateAPIOnlyWorkData,
-} from "../services/dlsite/individual-info-to-work-mapper";
-import * as logger from "../shared/logger";
+} from "../../services/dlsite/individual-info-to-work-mapper";
+import * as logger from "../../shared/logger";
 
 // Individual Info API設定
 const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
