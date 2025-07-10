@@ -3,13 +3,14 @@
  */
 
 import { Firestore } from "@google-cloud/firestore";
+import * as logger from "../shared/logger";
 
 const firestore = new Firestore({
 	projectId: process.env.GOOGLE_CLOUD_PROJECT || "suzumina-click",
 });
 
 async function checkAgeCategories() {
-	console.log("Checking age categories in dlsiteWorks collection...\n");
+	logger.info("年齢カテゴリ確認開始", { operation: "checkAgeCategories" });
 
 	try {
 		// 最初の10件を取得
@@ -21,20 +22,25 @@ async function checkAgeCategories() {
 			const data = doc.data();
 			const ageRating = data.ageRating;
 
-			console.log(`Work ID: ${doc.id}`);
-			console.log(`Title: ${data.title}`);
-			console.log(`Age Rating: ${ageRating}`);
-			console.log("Data Sources:", data.dataSources ? Object.keys(data.dataSources) : "none");
-			console.log("---");
+			logger.info("作品情報", {
+				workId: doc.id,
+				title: data.title,
+				ageRating,
+				dataSources: data.dataSources ? Object.keys(data.dataSources) : "none",
+			});
 
 			// 統計を集計
 			const key = ageRating || "undefined";
 			ageCategoryStats.set(key, (ageCategoryStats.get(key) || 0) + 1);
 		});
 
-		console.log("\nAge Category Statistics:");
-		ageCategoryStats.forEach((count, ageRating) => {
-			console.log(`${ageRating}: ${count} works`);
+		const statsArray = Array.from(ageCategoryStats.entries()).map(([ageRating, count]) => ({
+			ageRating,
+			count,
+		}));
+		logger.info("年齢カテゴリ統計（サンプル10件）", {
+			operation: "checkAgeCategories",
+			stats: statsArray,
 		});
 
 		// 全体の統計も取得
@@ -47,22 +53,33 @@ async function checkAgeCategories() {
 			totalStats.set(ageRating, (totalStats.get(ageRating) || 0) + 1);
 		});
 
-		console.log("\nTotal Age Category Statistics (All Works):");
-		totalStats.forEach((count, ageRating) => {
-			console.log(`${ageRating}: ${count} works`);
+		const totalStatsArray = Array.from(totalStats.entries()).map(([ageRating, count]) => ({
+			ageRating,
+			count,
+		}));
+		logger.info("年齢カテゴリ統計（全作品）", {
+			operation: "checkAgeCategories",
+			totalStats: totalStatsArray,
+			totalWorks: allSnapshot.size,
 		});
 	} catch (error) {
-		console.error("Error checking age categories:", error);
+		logger.error("年齢カテゴリ確認エラー", {
+			operation: "checkAgeCategories",
+			error: error instanceof Error ? error.message : String(error),
+		});
 	}
 }
 
 // 実行
 checkAgeCategories()
 	.then(() => {
-		console.log("\nCheck completed.");
+		logger.info("年齢カテゴリ確認完了", { operation: "checkAgeCategories" });
 		process.exit(0);
 	})
 	.catch((error) => {
-		console.error("Script failed:", error);
+		logger.error("スクリプト実行失敗", {
+			operation: "checkAgeCategories",
+			error: error instanceof Error ? error.message : String(error),
+		});
 		process.exit(1);
 	});

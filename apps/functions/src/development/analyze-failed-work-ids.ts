@@ -109,23 +109,23 @@ async function getAllWorkIdsFromAjax(): Promise<string[]> {
  */
 async function analyzeFailedWorkIds(): Promise<FailureAnalysisResult> {
 	try {
-		console.log("🔍 失敗作品ID分析開始...");
+		logger.info("🔍 失敗作品ID分析開始");
 
 		// 1. 全作品IDを取得（dlsite-individual-info-api.tsのgetAllWorkIds関数と同じロジック）
 		const allWorkIds = await getAllWorkIdsFromAjax();
-		console.log(`📊 対象作品数: ${allWorkIds.length}件`);
+		logger.info("📊 対象作品数", { count: allWorkIds.length });
 
 		// 2. 既存データを確認
 		const existingWorksMap = await getExistingWorksMap(allWorkIds);
-		console.log(`✅ 既存データ: ${existingWorksMap.size}件`);
+		logger.info("✅ 既存データ", { count: existingWorksMap.size });
 
 		// 3. 失敗した作品IDを特定
 		const failedWorkIds = allWorkIds.filter((workId) => !existingWorksMap.has(workId));
-		console.log(`❌ 失敗作品ID: ${failedWorkIds.length}件`);
+		logger.info("❌ 失敗作品ID", { count: failedWorkIds.length });
 
 		// 4. 成功率計算
 		const successRate = (existingWorksMap.size / allWorkIds.length) * 100;
-		console.log(`📈 成功率: ${successRate.toFixed(1)}%`);
+		logger.info("📈 成功率", { rate: Number(successRate.toFixed(1)) });
 
 		// 5. 最近更新された作品を特定
 		const now = new Date();
@@ -143,23 +143,19 @@ async function analyzeFailedWorkIds(): Promise<FailureAnalysisResult> {
 			}
 		});
 
-		console.log(`🕐 最近更新: ${recentlyUpdated.length}件`);
-		console.log(`📰 古いデータ: ${oldDataWorks.length}件`);
-
-		// 6. 失敗した作品IDを詳細表示
-		console.log("\n❌ 失敗した作品ID一覧:");
-		failedWorkIds.slice(0, 50).forEach((workId, index) => {
-			console.log(`${index + 1}. ${workId}`);
+		logger.info("🕐 最近更新データ", {
+			recentlyUpdated: recentlyUpdated.length,
+			oldDataWorks: oldDataWorks.length,
 		});
 
-		if (failedWorkIds.length > 50) {
-			console.log(`... 他 ${failedWorkIds.length - 50}件`);
-		}
+		// 6. 失敗した作品IDを詳細表示
+		logger.info("❌ 失敗した作品ID一覧", {
+			sample: failedWorkIds.slice(0, 50),
+			totalCount: failedWorkIds.length,
+			remaining: failedWorkIds.length > 50 ? failedWorkIds.length - 50 : 0,
+		});
 
 		// 7. 失敗パターンを分析
-		console.log("\n📊 失敗パターン分析:");
-
-		// RJ番号の年度別分析
 		const yearPattern = /^RJ(\d{2})/;
 		const failuresByYear = new Map<string, number>();
 
@@ -171,15 +167,12 @@ async function analyzeFailedWorkIds(): Promise<FailureAnalysisResult> {
 			}
 		});
 
-		console.log("年度別失敗数:");
-		Array.from(failuresByYear.entries())
-			.sort((a, b) => b[1] - a[1])
-			.forEach(([year, count]) => {
-				console.log(`  ${year}: ${count}件`);
-			});
+		const failuresByYearArray = Array.from(failuresByYear.entries()).sort((a, b) => b[1] - a[1]);
+		logger.info("📊 失敗パターン分析", {
+			failuresByYear: Object.fromEntries(failuresByYearArray),
+		});
 
 		// 8. 連続性分析
-		console.log("\n🔗 連続性分析:");
 		const sortedFailedIds = failedWorkIds.sort();
 		let consecutiveGroups = 0;
 		let currentGroup = 1;
@@ -202,7 +195,7 @@ async function analyzeFailedWorkIds(): Promise<FailureAnalysisResult> {
 			consecutiveGroups++;
 		}
 
-		console.log(`連続する失敗グループ数: ${consecutiveGroups}`);
+		logger.info("🔗 連続性分析", { consecutiveGroups });
 
 		return {
 			totalWorkIds: allWorkIds.length,
@@ -224,28 +217,28 @@ async function analyzeFailedWorkIds(): Promise<FailureAnalysisResult> {
  */
 async function analyzeSpecificWorkId(workId: string): Promise<void> {
 	try {
-		console.log(`\n🔍 ${workId} 詳細分析:`);
+		logger.info("🔍 詳細分析", { workId });
 
 		// Individual Info API直接呼び出し
 		const response = await fetch(
 			`https://www.dlsite.com/maniax/api/=/product.json?workno=${workId}`,
 		);
-		console.log(`API応答ステータス: ${response.status}`);
+		logger.info("API応答ステータス", { workId, status: response.status });
 
 		if (response.ok) {
 			const data = await response.json();
-			console.log("API応答データ:", JSON.stringify(data, null, 2));
+			logger.info("API応答データ", { workId, data });
 		} else {
-			console.log("API応答エラー:", response.statusText);
+			logger.error("API応答エラー", { workId, statusText: response.statusText });
 		}
 
 		// 作品ページのアクセス確認
 		const workPageResponse = await fetch(
 			`https://www.dlsite.com/maniax/work/=/product_id/${workId}.html`,
 		);
-		console.log(`作品ページステータス: ${workPageResponse.status}`);
+		logger.info("作品ページステータス", { workId, status: workPageResponse.status });
 	} catch (error) {
-		console.error(`${workId} 分析エラー:`, error);
+		logger.error("分析エラー", { workId, error: error instanceof Error ? error.message : error });
 	}
 }
 
@@ -256,25 +249,31 @@ async function main(): Promise<void> {
 	try {
 		const result = await analyzeFailedWorkIds();
 
-		console.log("\n📋 === 分析結果サマリー ===");
-		console.log(`対象作品数: ${result.totalWorkIds}件`);
-		console.log(`成功: ${result.existingWorks}件`);
-		console.log(`失敗: ${result.missingWorks}件`);
-		console.log(`成功率: ${result.successRate.toFixed(1)}%`);
-		console.log(`最近更新: ${result.recentlyUpdated.length}件`);
+		logger.info("📋 === 分析結果サマリー ===", {
+			totalWorkIds: result.totalWorkIds,
+			existingWorks: result.existingWorks,
+			missingWorks: result.missingWorks,
+			successRate: Number(result.successRate.toFixed(1)),
+			recentlyUpdated: result.recentlyUpdated.length,
+		});
 
 		// 失敗作品の詳細分析（最初の3件）
-		console.log("\n🔍 失敗作品詳細分析 (最初の3件):");
+		logger.info("🔍 失敗作品詳細分析 (最初の3件)");
 		for (let i = 0; i < Math.min(3, result.failedWorkIds.length); i++) {
 			await analyzeSpecificWorkId(result.failedWorkIds[i]);
 		}
 	} catch (error) {
-		console.error("メイン処理エラー:", error);
+		logger.error("メイン処理エラー", { error: error instanceof Error ? error.message : error });
 		process.exit(1);
 	}
 }
 
 // スクリプト実行
 if (require.main === module) {
-	main().catch(console.error);
+	main().catch((error) => {
+		logger.error("Script execution error", {
+			error: error instanceof Error ? error.message : error,
+		});
+		process.exit(1);
+	});
 }

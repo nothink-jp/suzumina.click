@@ -32,53 +32,62 @@ async function testIndividualAPI(workId: string): Promise<void> {
 		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
 		const headers = generateDLsiteHeaders();
 
-		console.log(`\n🔍 Testing ${workId}...`);
-		console.log(`URL: ${url}`);
+		logger.info("🔍 Testing workId", { workId, url });
 
 		const response = await fetch(url, {
 			method: "GET",
 			headers,
 		});
 
-		console.log(`ステータス: ${response.status} ${response.statusText}`);
-		console.log(`Content-Type: ${response.headers.get("content-type")}`);
+		logger.info("API response status", {
+			status: response.status,
+			statusText: response.statusText,
+			contentType: response.headers.get("content-type"),
+		});
 
 		if (!response.ok) {
-			console.log(`❌ APIエラー: ${response.status}`);
+			logger.error("❌ APIエラー", { workId, status: response.status });
 			return;
 		}
 
 		const responseData = await response.json();
-		console.log(`レスポンス型: ${Array.isArray(responseData) ? "array" : typeof responseData}`);
-		console.log(`データ件数: ${Array.isArray(responseData) ? responseData.length : "N/A"}`);
+		logger.info("Response data info", {
+			workId,
+			type: Array.isArray(responseData) ? "array" : typeof responseData,
+			count: Array.isArray(responseData) ? responseData.length : "N/A",
+		});
 
 		if (Array.isArray(responseData) && responseData.length > 0) {
 			const data = responseData[0];
-			console.log("✅ 取得成功");
-			console.log(`  workno: ${data.workno || "N/A"}`);
-			console.log(`  product_id: ${data.product_id || "N/A"}`);
-			console.log(`  work_name: ${data.work_name || "N/A"}`);
-			console.log(`  maker_name: ${data.maker_name || "N/A"}`);
-			console.log(`  price: ${data.price || "N/A"}`);
-			console.log(`  on_sale: ${data.on_sale || "N/A"}`);
-			console.log(`  age_category: ${data.age_category || "N/A"}`);
-			console.log(`  regist_date: ${data.regist_date || "N/A"}`);
+			logger.info("✅ 取得成功", {
+				workno: data.workno || "N/A",
+				product_id: data.product_id || "N/A",
+				work_name: data.work_name || "N/A",
+				maker_name: data.maker_name || "N/A",
+				price: data.price || "N/A",
+				on_sale: data.on_sale || "N/A",
+				age_category: data.age_category || "N/A",
+				regist_date: data.regist_date || "N/A",
+			});
 
 			// 価格関連の詳細
 			if (data.price === 0 || data.price === null || data.price === undefined) {
-				console.log("  🔍 価格詳細分析:");
-				console.log(`    price: ${data.price} (${typeof data.price})`);
-				console.log(`    official_price: ${data.official_price} (${typeof data.official_price})`);
-				console.log(`    sales_status: ${JSON.stringify(data.sales_status)}`);
-				console.log(`    is_free: ${data.sales_status?.is_free || "N/A"}`);
-				console.log(`    is_sold_out: ${data.sales_status?.is_sold_out || "N/A"}`);
-				console.log(`    on_sale: ${data.on_sale}`);
+				logger.info("🔍 価格詳細分析", {
+					price: data.price,
+					priceType: typeof data.price,
+					official_price: data.official_price,
+					official_priceType: typeof data.official_price,
+					sales_status: data.sales_status,
+					is_free: data.sales_status?.is_free || "N/A",
+					is_sold_out: data.sales_status?.is_sold_out || "N/A",
+					on_sale: data.on_sale,
+				});
 			}
 		} else {
-			console.log(`❌ 無効なレスポンス: ${JSON.stringify(responseData)}`);
+			logger.error("❌ 無効なレスポンス", { workId, responseData });
 		}
 	} catch (error) {
-		console.log(`❌ 例外発生: ${error instanceof Error ? error.message : error}`);
+		logger.error("❌ 例外発生", { workId, error: error instanceof Error ? error.message : error });
 	}
 }
 
@@ -95,7 +104,7 @@ async function testSuccessfulWorkIds(): Promise<void> {
 		"RJ01418751",
 	];
 
-	console.log("\n🟢 成功作品IDのテスト（比較用）:");
+	logger.info("🟢 成功作品IDのテスト（比較用）");
 	for (const workId of successfulWorkIds) {
 		await testIndividualAPI(workId);
 		await new Promise((resolve) => setTimeout(resolve, 1000)); // 1秒待機
@@ -107,11 +116,12 @@ async function testSuccessfulWorkIds(): Promise<void> {
  */
 async function main(): Promise<void> {
 	try {
-		console.log("🧪 Individual Info API 直接テスト開始");
-		console.log(`対象作品数: ${FAILED_WORK_IDS.length}件`);
+		logger.info("🧪 Individual Info API 直接テスト開始", {
+			targetCount: FAILED_WORK_IDS.length,
+		});
 
 		// 失敗作品IDのテスト
-		console.log("\n🔴 失敗作品IDのテスト:");
+		logger.info("🔴 失敗作品IDのテスト");
 		for (const workId of FAILED_WORK_IDS) {
 			await testIndividualAPI(workId);
 			await new Promise((resolve) => setTimeout(resolve, 1000)); // 1秒待機
@@ -120,16 +130,20 @@ async function main(): Promise<void> {
 		// 成功作品IDのテスト（比較用）
 		await testSuccessfulWorkIds();
 
-		console.log("\n📋 === テスト完了 ===");
-		console.log("結果: 失敗作品IDでもAPIは正常に動作している");
-		console.log("推定原因: fetchdlsiteworksindividualapi内のデータ処理・保存ロジックの問題");
+		logger.info("📋 === テスト完了 ===", {
+			result: "失敗作品IDでもAPIは正常に動作している",
+			estimatedCause: "fetchdlsiteworksindividualapi内のデータ処理・保存ロジックの問題",
+		});
 	} catch (error) {
-		console.error("テストエラー:", error);
+		logger.error("テストエラー", { error: error instanceof Error ? error.message : error });
 		process.exit(1);
 	}
 }
 
 // スクリプト実行
 if (require.main === module) {
-	main().catch(console.error);
+	main().catch((error) => {
+		logger.error("Main execution error", { error: error instanceof Error ? error.message : error });
+		process.exit(1);
+	});
 }

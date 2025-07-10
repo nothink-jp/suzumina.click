@@ -28,7 +28,7 @@ const TEST_WORK_IDS = [
  */
 async function testCompleteWorkflow(workId: string): Promise<boolean> {
 	try {
-		console.log(`\n🔍 ${workId} 完全ワークフローテスト開始`);
+		logger.info("完全ワークフローテスト開始", { workId, operation: "testCompleteWorkflow" });
 
 		// 1. Individual Info API からデータ取得
 		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
@@ -36,59 +36,91 @@ async function testCompleteWorkflow(workId: string): Promise<boolean> {
 		const response = await fetch(url, { method: "GET", headers });
 
 		if (!response.ok) {
-			console.log(`❌ API取得失敗: ${response.status}`);
+			logger.warn("API取得失敗", {
+				workId,
+				status: response.status,
+				operation: "testCompleteWorkflow",
+			});
 			return false;
 		}
 
 		const responseData = await response.json();
 		if (!Array.isArray(responseData) || responseData.length === 0) {
-			console.log("❌ 無効なAPIレスポンス");
+			logger.warn("無効なAPIレスポンス", { workId, operation: "testCompleteWorkflow" });
 			return false;
 		}
 
 		const apiData = responseData[0] as IndividualInfoAPIResponse;
-		console.log(`✅ API取得成功: ${apiData.work_name}`);
+		logger.info("API取得成功", {
+			workId,
+			title: apiData.work_name,
+			operation: "testCompleteWorkflow",
+		});
 
 		// 2. データ変換
 		const workData = mapIndividualInfoAPIToWorkData(apiData);
-		console.log("✅ データ変換成功");
+		logger.info("データ変換成功", { workId, operation: "testCompleteWorkflow" });
 
 		// 3. 既存データ確認テスト
-		console.log("🔍 既存データ確認テスト:");
+		logger.info("既存データ確認テスト開始", { workId, operation: "testCompleteWorkflow" });
 		try {
 			const existingWorksMap = await getExistingWorksMap([workId]);
-			console.log(`✅ 既存データ確認成功: ${existingWorksMap.size}件`);
+			logger.info("既存データ確認成功", {
+				workId,
+				count: existingWorksMap.size,
+				operation: "testCompleteWorkflow",
+			});
 		} catch (error) {
-			console.log(`❌ 既存データ確認失敗: ${error instanceof Error ? error.message : error}`);
+			logger.warn("既存データ確認失敗", {
+				workId,
+				error: error instanceof Error ? error.message : String(error),
+				operation: "testCompleteWorkflow",
+			});
 			// エラーが発生しても処理は継続
 		}
 
 		// 4. Firestore保存テスト
-		console.log("💾 Firestore保存テスト:");
+		logger.info("Firestore保存テスト開始", { workId, operation: "testCompleteWorkflow" });
 		try {
 			await saveWorksToFirestore([workData]);
-			console.log("✅ Firestore保存成功");
+			logger.info("Firestore保存成功", { workId, operation: "testCompleteWorkflow" });
 		} catch (error) {
-			console.log(`❌ Firestore保存失敗: ${error instanceof Error ? error.message : error}`);
+			logger.error("Firestore保存失敗", {
+				workId,
+				error: error instanceof Error ? error.message : String(error),
+				operation: "testCompleteWorkflow",
+			});
 			return false;
 		}
 
 		// 5. 保存確認
-		console.log("🔍 保存確認テスト:");
+		logger.info("保存確認テスト開始", { workId, operation: "testCompleteWorkflow" });
 		try {
 			const savedWorksMap = await getExistingWorksMap([workId]);
 			if (savedWorksMap.has(workId)) {
-				console.log("✅ 保存確認成功: データが正常に保存されました");
+				logger.info("保存確認成功", { workId, operation: "testCompleteWorkflow" });
 				return true;
 			}
-			console.log("❌ 保存確認失敗: データが見つかりません");
+			logger.warn("保存確認失敗", {
+				workId,
+				reason: "データが見つかりません",
+				operation: "testCompleteWorkflow",
+			});
 			return false;
 		} catch (error) {
-			console.log(`❌ 保存確認失敗: ${error instanceof Error ? error.message : error}`);
+			logger.error("保存確認失敗", {
+				workId,
+				error: error instanceof Error ? error.message : String(error),
+				operation: "testCompleteWorkflow",
+			});
 			return false;
 		}
 	} catch (error) {
-		console.log(`❌ 処理中にエラー: ${error instanceof Error ? error.message : error}`);
+		logger.error("処理中にエラー", {
+			workId,
+			error: error instanceof Error ? error.message : String(error),
+			operation: "testCompleteWorkflow",
+		});
 		return false;
 	}
 }
@@ -97,11 +129,11 @@ async function testCompleteWorkflow(workId: string): Promise<boolean> {
  * 既存データ確認の詳細テスト
  */
 async function testExistingDataRetrieval(): Promise<void> {
-	console.log("\n🔍 既存データ確認詳細テスト");
+	logger.info("既存データ確認詳細テスト開始", { operation: "testExistingDataRetrieval" });
 
 	try {
 		// 1. 全作品IDリストでテスト（分割処理の確認）
-		console.log("📋 全作品IDリストでテスト:");
+		logger.info("全作品IDリストテスト開始", { operation: "testExistingDataRetrieval" });
 		const allWorkIds = TEST_WORK_IDS.concat([
 			"RJ01000639",
 			"RJ01000963",
@@ -116,26 +148,46 @@ async function testExistingDataRetrieval(): Promise<void> {
 		]);
 
 		const existingWorksMap = await getExistingWorksMap(allWorkIds);
-		console.log(`結果: ${existingWorksMap.size}/${allWorkIds.length}件取得`);
+		logger.info("全作品IDリストテスト結果", {
+			found: existingWorksMap.size,
+			total: allWorkIds.length,
+			operation: "testExistingDataRetrieval",
+		});
 
 		// 2. 各作品の詳細確認
-		for (const workId of TEST_WORK_IDS) {
-			const exists = existingWorksMap.has(workId);
-			console.log(`  ${workId}: ${exists ? "✅ 存在" : "❌ 不在"}`);
-		}
+		const detailResults = TEST_WORK_IDS.map((workId) => ({
+			workId,
+			exists: existingWorksMap.has(workId),
+		}));
+		logger.info("作品詳細確認結果", {
+			results: detailResults,
+			operation: "testExistingDataRetrieval",
+		});
 
 		// 3. 個別取得テスト
-		console.log("\n📋 個別取得テスト:");
+		logger.info("個別取得テスト開始", { operation: "testExistingDataRetrieval" });
+		const individualResults: Array<{ workId: string; exists: boolean; error: string | null }> = [];
 		for (const workId of TEST_WORK_IDS) {
 			try {
 				const singleWorkMap = await getExistingWorksMap([workId]);
-				console.log(`  ${workId}: ${singleWorkMap.has(workId) ? "✅ 存在" : "❌ 不在"}`);
+				individualResults.push({ workId, exists: singleWorkMap.has(workId), error: null });
 			} catch (error) {
-				console.log(`  ${workId}: ❌ エラー (${error instanceof Error ? error.message : error})`);
+				individualResults.push({
+					workId,
+					exists: false,
+					error: error instanceof Error ? error.message : String(error),
+				});
 			}
 		}
+		logger.info("個別取得テスト結果", {
+			results: individualResults,
+			operation: "testExistingDataRetrieval",
+		});
 	} catch (error) {
-		console.log(`❌ 既存データ確認テストエラー: ${error instanceof Error ? error.message : error}`);
+		logger.error("既存データ確認テストエラー", {
+			error: error instanceof Error ? error.message : String(error),
+			operation: "testExistingDataRetrieval",
+		});
 	}
 }
 
@@ -144,13 +196,13 @@ async function testExistingDataRetrieval(): Promise<void> {
  */
 async function main(): Promise<void> {
 	try {
-		console.log("🧪 Firestore保存処理テストツール開始");
+		logger.info("Firestore保存処理テストツール開始", { operation: "main" });
 
 		// 1. 既存データ確認テスト
 		await testExistingDataRetrieval();
 
 		// 2. 完全ワークフローテスト
-		console.log("\n🔄 完全ワークフローテスト:");
+		logger.info("完全ワークフローテスト開始", { operation: "main" });
 		let successCount = 0;
 
 		for (const workId of TEST_WORK_IDS) {
@@ -162,26 +214,41 @@ async function main(): Promise<void> {
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 		}
 
-		console.log("\n📋 === テスト結果 ===");
-		console.log(`成功: ${successCount}/${TEST_WORK_IDS.length}件`);
-		console.log(`成功率: ${((successCount / TEST_WORK_IDS.length) * 100).toFixed(1)}%`);
+		const successRate = ((successCount / TEST_WORK_IDS.length) * 100).toFixed(1);
+		logger.info("テスト結果", {
+			successCount,
+			total: TEST_WORK_IDS.length,
+			successRate: `${successRate}%`,
+			operation: "main",
+		});
 
 		if (successCount === TEST_WORK_IDS.length) {
-			console.log("✅ すべてのテストが成功しました");
-			console.log(
-				"推定：実際のfetchdlsiteworksindividualapi実行時に別の問題が発生している可能性があります",
-			);
+			logger.info("全テスト成功", {
+				conclusion: "実際のfetchdlsiteworksindividualapi実行時に別の問題が発生している可能性",
+				operation: "main",
+			});
 		} else {
-			console.log("❌ 一部のテストが失敗しました");
-			console.log("推定：Firestore保存処理に問題があります");
+			logger.warn("一部テスト失敗", {
+				conclusion: "Firestore保存処理に問題がある可能性",
+				operation: "main",
+			});
 		}
 	} catch (error) {
-		console.error("テストエラー:", error);
+		logger.error("テストエラー", {
+			error: error instanceof Error ? error.message : String(error),
+			operation: "main",
+		});
 		process.exit(1);
 	}
 }
 
 // スクリプト実行
 if (require.main === module) {
-	main().catch(console.error);
+	main().catch((error) => {
+		logger.error("スクリプト実行エラー", {
+			error: error instanceof Error ? error.message : String(error),
+			operation: "script",
+		});
+		process.exit(1);
+	});
 }

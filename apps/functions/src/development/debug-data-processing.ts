@@ -30,7 +30,7 @@ const PROBLEM_WORK_IDS = [
  */
 async function debugDataProcessing(workId: string): Promise<void> {
 	try {
-		console.log(`\n🔍 ${workId} データ処理デバッグ開始`);
+		logger.info("🔍 データ処理デバッグ開始", { workId });
 
 		// 1. Individual Info APIからデータ取得
 		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
@@ -38,100 +38,110 @@ async function debugDataProcessing(workId: string): Promise<void> {
 		const response = await fetch(url, { method: "GET", headers });
 
 		if (!response.ok) {
-			console.log(`❌ API取得失敗: ${response.status}`);
+			logger.error("❌ API取得失敗", { workId, status: response.status });
 			return;
 		}
 
 		const responseData = await response.json();
 		if (!Array.isArray(responseData) || responseData.length === 0) {
-			console.log("❌ 無効なAPIレスポンス");
+			logger.error("❌ 無効なAPIレスポンス", { workId });
 			return;
 		}
 
 		const apiData = responseData[0] as IndividualInfoAPIResponse;
-		console.log(`✅ API取得成功: ${apiData.work_name}`);
+		logger.info("✅ API取得成功", { workId, workName: apiData.work_name });
 
 		// 2. 重要なフィールドをチェック
-		console.log("📊 重要フィールド確認:");
-		console.log(`  workno: ${apiData.workno}`);
-		console.log(`  product_id: ${apiData.product_id}`);
-		console.log(`  work_name: ${apiData.work_name}`);
-		console.log(`  maker_name: ${apiData.maker_name}`);
-		console.log(`  price: ${apiData.price} (${typeof apiData.price})`);
-		console.log(`  official_price: ${apiData.official_price} (${typeof apiData.official_price})`);
-		console.log(`  on_sale: ${apiData.on_sale}`);
-		console.log(`  age_category: ${apiData.age_category}`);
-		console.log(`  regist_date: ${apiData.regist_date}`);
+		logger.info("📊 重要フィールド確認", {
+			workno: apiData.workno,
+			product_id: apiData.product_id,
+			work_name: apiData.work_name,
+			maker_name: apiData.maker_name,
+			price: apiData.price,
+			priceType: typeof apiData.price,
+			official_price: apiData.official_price,
+			official_priceType: typeof apiData.official_price,
+			on_sale: apiData.on_sale,
+			age_category: apiData.age_category,
+			regist_date: apiData.regist_date,
+		});
 
 		// 3. データ変換処理
-		console.log("🔄 データ変換処理:");
-		let workData;
+		logger.info("🔄 データ変換処理");
+		let workData: ReturnType<typeof mapIndividualInfoAPIToWorkData>;
 		try {
 			workData = mapIndividualInfoAPIToWorkData(apiData);
-			console.log("✅ 変換成功");
+			logger.info("✅ 変換成功", { workId });
 		} catch (error) {
-			console.log(`❌ 変換失敗: ${error instanceof Error ? error.message : error}`);
+			logger.error("❌ 変換失敗", {
+				workId,
+				error: error instanceof Error ? error.message : error,
+			});
 			return;
 		}
 
 		// 4. 変換後のデータ確認
-		console.log("📋 変換後データ:");
-		console.log(`  id: ${workData.id}`);
-		console.log(`  productId: ${workData.productId}`);
-		console.log(`  title: ${workData.title}`);
-		console.log(`  circle: ${workData.circle}`);
-		console.log(`  price.current: ${workData.price?.current} (${typeof workData.price?.current})`);
-		console.log(`  price.isFreeOrMissingPrice: ${workData.price?.isFreeOrMissingPrice}`);
-		console.log(`  category: ${workData.category}`);
-		console.log(`  ageRating: ${workData.ageRating}`);
-		console.log(`  voiceActors: ${workData.voiceActors?.length || 0}件`);
-		console.log(`  genres: ${workData.genres?.length || 0}件`);
-		console.log(`  dataSources.infoAPI: ${!!workData.dataSources?.infoAPI}`);
-		console.log(`  createdAt: ${workData.createdAt}`);
-		console.log(`  updatedAt: ${workData.updatedAt}`);
+		logger.info("📋 変換後データ", {
+			id: workData.id,
+			productId: workData.productId,
+			title: workData.title,
+			circle: workData.circle,
+			priceCurrent: workData.price?.current,
+			priceCurrentType: typeof workData.price?.current,
+			isFreeOrMissingPrice: workData.price?.isFreeOrMissingPrice,
+			category: workData.category,
+			ageRating: workData.ageRating,
+			voiceActorsCount: workData.voiceActors?.length || 0,
+			genresCount: workData.genres?.length || 0,
+			dataSourcesInfoAPI: !!workData.dataSources?.infoAPI,
+			createdAt: workData.createdAt,
+			updatedAt: workData.updatedAt,
+		});
 
 		// 5. データ品質検証
-		console.log("🔍 データ品質検証:");
 		const validation = validateAPIOnlyWorkData(workData);
-		console.log(`  isValid: ${validation.isValid}`);
-		console.log(`  quality: ${validation.quality}`);
-		console.log(`  errors: ${validation.errors.length}件`);
-		if (validation.errors.length > 0) {
-			validation.errors.forEach((error, index) => {
-				console.log(`    ${index + 1}. ${error}`);
-			});
-		}
+		logger.info("🔍 データ品質検証", {
+			workId,
+			isValid: validation.isValid,
+			quality: validation.quality,
+			errorsCount: validation.errors.length,
+			errors: validation.errors,
+		});
 
 		// 6. Firestore保存シミュレーション
-		console.log("💾 Firestore保存シミュレーション:");
 		try {
 			// 実際の保存は行わず、シリアライズ可能かチェック
 			const serialized = JSON.stringify(workData);
 			const deserialized = JSON.parse(serialized);
-			console.log(`✅ シリアライズ成功 (${serialized.length} characters)`);
+			const hasImportantFields = !!(deserialized.id && deserialized.title && deserialized.circle);
 
-			// 重要なフィールドが保持されているかチェック
-			if (deserialized.id && deserialized.title && deserialized.circle) {
-				console.log("✅ 重要フィールド保持OK");
-			} else {
-				console.log("❌ 重要フィールド欠損");
-			}
+			logger.info("💾 Firestore保存シミュレーション", {
+				workId,
+				serializationSuccess: true,
+				serializedLength: serialized.length,
+				importantFieldsPresent: hasImportantFields,
+			});
 		} catch (error) {
-			console.log(`❌ シリアライズ失敗: ${error instanceof Error ? error.message : error}`);
+			logger.error("💾 Firestoreシリアライズ失敗", {
+				workId,
+				error: error instanceof Error ? error.message : error,
+			});
 		}
 
 		// 7. 結果サマリー
-		console.log("📋 結果サマリー:");
-		console.log("  API取得: ✅");
-		console.log("  データ変換: ✅");
-		console.log(`  品質検証: ${validation.isValid ? "✅" : "❌"}`);
-		console.log("  Firestore準備: ✅");
-
-		if (!validation.isValid) {
-			console.log("⚠️  品質検証エラーが処理失敗の原因の可能性があります");
-		}
+		logger.info("📋 結果サマリー", {
+			workId,
+			apiSuccess: true,
+			dataConversionSuccess: true,
+			qualityValidation: validation.isValid,
+			firestoreReady: true,
+			potentialIssue: !validation.isValid ? "品質検証エラーが処理失敗の原因の可能性" : null,
+		});
 	} catch (error) {
-		console.log(`❌ 処理中にエラー: ${error instanceof Error ? error.message : error}`);
+		logger.error("❌ 処理中にエラー", {
+			workId,
+			error: error instanceof Error ? error.message : error,
+		});
 	}
 }
 
@@ -140,23 +150,28 @@ async function debugDataProcessing(workId: string): Promise<void> {
  */
 async function main(): Promise<void> {
 	try {
-		console.log("🔍 データ処理デバッグツール開始");
-		console.log(`対象作品数: ${PROBLEM_WORK_IDS.length}件`);
+		logger.info("🔍 データ処理デバッグツール開始", {
+			targetCount: PROBLEM_WORK_IDS.length,
+		});
 
 		for (const workId of PROBLEM_WORK_IDS) {
 			await debugDataProcessing(workId);
 			await new Promise((resolve) => setTimeout(resolve, 1000)); // 1秒待機
 		}
 
-		console.log("\n📋 === デバッグ完了 ===");
-		console.log("各作品の処理状況を確認してください");
+		logger.info("📋 === デバッグ完了 ===", {
+			message: "各作品の処理状況を確認してください",
+		});
 	} catch (error) {
-		console.error("デバッグエラー:", error);
+		logger.error("デバッグエラー", { error: error instanceof Error ? error.message : error });
 		process.exit(1);
 	}
 }
 
 // スクリプト実行
 if (require.main === module) {
-	main().catch(console.error);
+	main().catch((error) => {
+		logger.error("Main execution error", { error: error instanceof Error ? error.message : error });
+		process.exit(1);
+	});
 }

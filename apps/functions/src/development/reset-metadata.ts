@@ -16,19 +16,20 @@ const METADATA_COLLECTION = "dlsiteMetadata";
  */
 async function resetMetadataState(): Promise<void> {
 	try {
-		console.log("🔄 メタデータ状態リセット開始...");
+		logger.info("メタデータ状態リセット開始", { operation: "resetMetadataState" });
 
 		// 現在の状態を確認
 		const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
 		const metadataDoc = await metadataRef.get();
 
 		if (!metadataDoc.exists) {
-			console.log("❌ メタデータドキュメントが存在しません");
+			logger.warn("メタデータドキュメントが存在しません", { operation: "resetMetadataState" });
 			return;
 		}
 
 		const currentMetadata = metadataDoc.data();
-		console.log("📋 現在のメタデータ状態:", {
+		logger.info("現在のメタデータ状態", {
+			operation: "resetMetadataState",
 			isInProgress: currentMetadata?.isInProgress,
 			lastFetchedAt: currentMetadata?.lastFetchedAt?.toDate(),
 			lastError: currentMetadata?.lastError,
@@ -43,10 +44,15 @@ async function resetMetadataState(): Promise<void> {
 			currentBatch: null,
 		});
 
-		console.log("✅ メタデータ状態リセット完了");
-		console.log("🚀 次回の統合データ収集処理が実行可能になりました");
+		logger.info("メタデータ状態リセット完了", {
+			operation: "resetMetadataState",
+			message: "次回の統合データ収集処理が実行可能になりました",
+		});
 	} catch (error) {
-		console.error("❌ メタデータリセットエラー:", error);
+		logger.error("メタデータリセットエラー", {
+			operation: "resetMetadataState",
+			error: error instanceof Error ? error.message : String(error),
+		});
 		throw error;
 	}
 }
@@ -56,35 +62,38 @@ async function resetMetadataState(): Promise<void> {
  */
 async function showMetadataDetails(): Promise<void> {
 	try {
-		console.log("\n📊 メタデータ詳細情報:");
+		logger.info("メタデータ詳細情報表示開始", { operation: "showMetadataDetails" });
 
 		const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
 		const metadataDoc = await metadataRef.get();
 
 		if (!metadataDoc.exists) {
-			console.log("❌ メタデータドキュメントが存在しません");
+			logger.warn("メタデータドキュメントが存在しません", { operation: "showMetadataDetails" });
 			return;
 		}
 
 		const metadata = metadataDoc.data();
-		console.log("📋 統合データ収集メタデータ:");
-		console.log(`  isInProgress: ${metadata?.isInProgress}`);
-		console.log(`  lastFetchedAt: ${metadata?.lastFetchedAt?.toDate() || "N/A"}`);
-		console.log(
-			`  lastSuccessfulCompleteFetch: ${metadata?.lastSuccessfulCompleteFetch?.toDate() || "N/A"}`,
-		);
-		console.log(`  totalWorks: ${metadata?.totalWorks || "N/A"}`);
-		console.log(`  processedWorks: ${metadata?.processedWorks || "N/A"}`);
-		console.log(`  basicDataUpdated: ${metadata?.basicDataUpdated || "N/A"}`);
-		console.log(`  timeSeriesCollected: ${metadata?.timeSeriesCollected || "N/A"}`);
-		console.log(`  unionTotalIds: ${metadata?.unionTotalIds || "N/A"}`);
-		console.log(`  regionOnlyIds: ${metadata?.regionOnlyIds || "N/A"}`);
-		console.log(`  assetOnlyIds: ${metadata?.assetOnlyIds || "N/A"}`);
-		console.log(`  regionDifferenceDetected: ${metadata?.regionDifferenceDetected || "N/A"}`);
-		console.log(`  lastError: ${metadata?.lastError || "N/A"}`);
-		console.log(`  unifiedSystemStarted: ${metadata?.unifiedSystemStarted?.toDate() || "N/A"}`);
+		logger.info("統合データ収集メタデータ", {
+			operation: "showMetadataDetails",
+			isInProgress: metadata?.isInProgress,
+			lastFetchedAt: metadata?.lastFetchedAt?.toDate() || "N/A",
+			lastSuccessfulCompleteFetch: metadata?.lastSuccessfulCompleteFetch?.toDate() || "N/A",
+			totalWorks: metadata?.totalWorks || "N/A",
+			processedWorks: metadata?.processedWorks || "N/A",
+			basicDataUpdated: metadata?.basicDataUpdated || "N/A",
+			timeSeriesCollected: metadata?.timeSeriesCollected || "N/A",
+			unionTotalIds: metadata?.unionTotalIds || "N/A",
+			regionOnlyIds: metadata?.regionOnlyIds || "N/A",
+			assetOnlyIds: metadata?.assetOnlyIds || "N/A",
+			regionDifferenceDetected: metadata?.regionDifferenceDetected || "N/A",
+			lastError: metadata?.lastError || "N/A",
+			unifiedSystemStarted: metadata?.unifiedSystemStarted?.toDate() || "N/A",
+		});
 	} catch (error) {
-		console.error("❌ メタデータ詳細表示エラー:", error);
+		logger.error("メタデータ詳細表示エラー", {
+			operation: "showMetadataDetails",
+			error: error instanceof Error ? error.message : String(error),
+		});
 	}
 }
 
@@ -93,7 +102,7 @@ async function showMetadataDetails(): Promise<void> {
  */
 async function main(): Promise<void> {
 	try {
-		console.log("🛠️  DLsite統合データ収集メタデータリセットツール");
+		logger.info("DLsite統合データ収集メタデータリセットツール開始", { operation: "main" });
 
 		// 現在の状態を表示
 		await showMetadataDetails();
@@ -104,12 +113,20 @@ async function main(): Promise<void> {
 		// リセット後の状態を確認
 		await showMetadataDetails();
 	} catch (error) {
-		console.error("❌ メイン処理エラー:", error);
+		logger.error("メイン処理エラー", {
+			operation: "main",
+			error: error instanceof Error ? error.message : String(error),
+		});
 		process.exit(1);
 	}
 }
 
 // スクリプト実行
 if (require.main === module) {
-	main().catch(console.error);
+	main().catch((error) => {
+		logger.error("スクリプト実行エラー", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+		process.exit(1);
+	});
 }
