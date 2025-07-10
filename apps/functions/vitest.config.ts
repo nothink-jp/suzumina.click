@@ -11,12 +11,7 @@ export default defineConfig({
 		globals: true,
 		testTimeout: 5000,
 		include: ["src/**/*.{test,spec}.{ts,js}"],
-		exclude: [
-			"node_modules/**",
-			"lib/**",
-			"src/endpoints/youtube.test.ts",
-			"src/services/youtube/youtube-api.test.ts",
-		],
+		exclude: ["node_modules/**", "lib/**"],
 		server: {
 			deps: {
 				external: ["googleapis"],
@@ -42,15 +37,13 @@ export default defineConfig({
 				"**/*.d.ts",
 				"**/*.config.{js,ts,mjs,cjs,mts,cts}",
 				"src/development/**", // Development tools and debug scripts
-				"src/endpoints/youtube.ts", // YouTube endpoint excluded from tests
-				"src/services/youtube/**", // YouTube services excluded from tests
-				"src/endpoints/dlsite-individual-info-api.ts", // New Individual Info API endpoint - needs tests
+				"scripts/**", // Build scripts
 			],
 			thresholds: {
-				statements: 50, // Appropriate for current codebase complexity
-				branches: 65,
-				functions: 69, // Adjusted to current coverage level (69.06%)
-				lines: 50, // Appropriate for current codebase complexity
+				statements: 50,
+				branches: 75,
+				functions: 70,
+				lines: 50,
 			},
 		},
 	},

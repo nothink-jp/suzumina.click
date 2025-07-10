@@ -82,6 +82,12 @@
 				"rules": {
 					"complexity": {
 						"noExcessiveCognitiveComplexity": "off"
+					},
+					"suspicious": {
+						"noConsole": "off"
+					},
+					"correctness": {
+						"noUnusedVariables": "off"
 					}
 				}
 			}

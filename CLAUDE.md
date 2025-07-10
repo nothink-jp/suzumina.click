@@ -117,7 +117,6 @@ DISCORD_CLIENT_SECRET=your-client-secret
 
 # Cloud Functions (.env)
 GOOGLE_CLOUD_PROJECT=your-project-id
-DLSITE_API_KEY=your-api-key
 ```
 
 ### 開発サーバー起動
@@ -125,9 +124,6 @@ DLSITE_API_KEY=your-api-key
 ```bash
 # Web開発サーバー
 pnpm --filter @suzumina.click/web dev
-
-# Functions エミュレーター
-pnpm --filter @suzumina.click/functions dev
 ```
 
 ## 📋 重要な実装指示
@@ -160,7 +156,7 @@ pnpm --filter @suzumina.click/functions dev
 
 - **Terraform**: `terraform/` ディレクトリ
 - **Cloud Functions**: 自動デプロイ（GitHub Actions）
-- **Web App**: Vercel/Cloud Run
+- **Web App**: Cloud Run
 
 ### 本番環境
 
@@ -197,7 +193,7 @@ pnpm --filter @suzumina.click/functions dev
 1. **ファイル編集優先**: 新規ファイル作成は最小限に抑え、既存ファイルの編集を優先
 2. **テスト実行**: コード変更後は必ずテストを実行（lint/typecheck含む）
 3. **型安全性**: TypeScript strict mode準拠
-4. **品質管理**: ESLint/Prettier設定に従う
+4. **品質管理**: Biome設定に従う
 5. **セキュリティ**: 機密情報の露出防止
 6. **Firebaseコマンド禁止**: Firebaseは有効化されていないため、firebaseコマンドの使用は厳禁
 
