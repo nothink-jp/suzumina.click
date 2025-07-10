@@ -420,3 +420,30 @@ resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" 
 
 # Note: Single-field indexes for favorites collection are created automatically by Firestore
 # Complex queries requiring composite indexes would be added here if needed
+
+# dlsite_timeseries_raw コレクションのインデックス - 時系列データ取得用
+# date（昇順）、workId（昇順）、timestamp（昇順）、__name__（昇順）
+resource "google_firestore_index" "dlsite_timeseries_raw_date_workid_timestamp" {
+  project    = var.gcp_project_id
+  collection = "dlsite_timeseries_raw"
+  
+  fields {
+    field_path = "date"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "workId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "timestamp"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "__name__"
+    order      = "ASCENDING"
+  }
+}

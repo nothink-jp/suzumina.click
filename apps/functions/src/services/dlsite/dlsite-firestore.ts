@@ -65,14 +65,14 @@ export async function saveWorksToFirestore(
 			}
 		}
 
-		// バッチ実行
+		// バッチ実行 - タイムアウト対策でバッチサイズを削減
 		if (operationCount > 0) {
 			logger.info(`🔄 Firestoreバッチ実行開始: ${operationCount}件`);
 
-			if (operationCount > 500) {
-				// 500件を超える場合は分割処理
-				const chunks = chunkArray(works, 500);
-				logger.info(`📦 大量データ分割処理: ${chunks.length}チャンク`);
+			if (operationCount > 100) {
+				// 100件を超える場合は分割処理（タイムアウト対策: 500→100に変更）
+				const chunks = chunkArray(works, 100);
+				logger.info(`📦 分割バッチ処理: ${chunks.length}チャンク (100件/チャンク)`);
 
 				for (const [chunkIndex, chunk] of chunks.entries()) {
 					const chunkBatch = firestore.batch();
@@ -80,12 +80,25 @@ export async function saveWorksToFirestore(
 						const docRef = collection.doc(work.productId);
 						chunkBatch.set(docRef, work, { merge: true });
 					}
+
+					const startTime = Date.now();
 					await chunkBatch.commit();
-					logger.info(`✅ チャンク ${chunkIndex + 1}/${chunks.length} 完了: ${chunk.length}件`);
+					const duration = Date.now() - startTime;
+
+					logger.info(
+						`✅ チャンク ${chunkIndex + 1}/${chunks.length} 完了: ${chunk.length}件 (${duration}ms)`,
+					);
+
+					// チャンク間で少し待機（負荷分散）
+					if (chunkIndex < chunks.length - 1) {
+						await new Promise((resolve) => setTimeout(resolve, 100));
+					}
 				}
 			} else {
+				const startTime = Date.now();
 				await batch.commit();
-				logger.info(`✅ 単一バッチ実行完了: ${operationCount}件`);
+				const duration = Date.now() - startTime;
+				logger.info(`✅ 単一バッチ実行完了: ${operationCount}件 (${duration}ms)`);
 			}
 
 			// デバッグ: 特定作品IDの保存完了確認
