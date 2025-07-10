@@ -50,8 +50,8 @@ const MAX_CONCURRENT_API_REQUESTS = 5; // バッチ処理対応: 並列数を5�
 const API_REQUEST_DELAY = 800; // バッチ処理対応: 間隔を800msに設定
 
 // バッチ処理設定
-const BATCH_SIZE = 300; // 1バッチあたりの作品数（約2-3分で処理）
-const MAX_EXECUTION_TIME = 480000; // 8分（480秒）の実行時間制限
+const BATCH_SIZE = 200; // 1バッチあたりの作品数（約2-3分で処理）
+const MAX_EXECUTION_TIME = 420000; // 7分（420秒）の実行時間制限
 
 // 統合データ収集メタデータの型定義
 interface UnifiedDataCollectionMetadata {
@@ -745,7 +745,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 				logger.warn(`⏰ 実行時間制限に達しました: ${(elapsedTime / 1000).toFixed(1)}秒`);
 				logger.info(`📊 中断時点の進捗: ${i}/${batches.length}バッチ完了`);
 
-				// 継続処理のためのメタデータ更新
+				// 継続処理のためのメタデータ更新（次のバッチから再開）
 				await updateUnifiedMetadata({
 					currentBatch: i,
 					processedWorks: totalResults.totalWorkCount,
@@ -898,6 +898,7 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 			logger.info(`API呼び出し数: ${result.apiCallCount}件`);
 			logger.info("🎯 統合アーキテクチャ実現完了 - 重複API呼び出し100%排除");
 		} else {
+			// エラーが発生した場合でも isInProgress を false にリセット
 			await updateUnifiedMetadata({
 				isInProgress: false,
 				lastError: result.error,

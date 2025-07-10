@@ -11,7 +11,7 @@ locals {
   dlsite_individual_api_runtime       = "nodejs22"
   dlsite_individual_api_entry_point   = "fetchDLsiteWorksIndividualAPI"
   dlsite_individual_api_memory        = "2Gi"  # Individual Info API処理用大容量メモリ
-  dlsite_individual_api_timeout       = 540    # 9分タイムアウト（API集約処理）
+  dlsite_individual_api_timeout       = 480    # 8分タイムアウト（API集約処理）
 }
 
 # Individual Info API専用作品取得関数（手動デプロイ済みのためコメントアウト）
