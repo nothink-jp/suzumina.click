@@ -8,6 +8,7 @@ import type { Query } from "@google-cloud/firestore";
 import type { OptimizedFirestoreDLsiteWorkData, PriceHistory } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
+import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
 
 // Note: 最適化構造では mapToFirestoreData, filterWorksForUpdate, validateWorkData は不要
 
@@ -69,30 +70,74 @@ export async function saveWorksToFirestore(
 		if (operationCount > 0) {
 			logger.info(`🔄 Firestoreバッチ実行開始: ${operationCount}件`);
 
-			if (operationCount > 100) {
-				// 100件を超える場合は分割処理（タイムアウト対策: 500→100に変更）
-				const chunks = chunkArray(works, 100);
-				logger.info(`📦 分割バッチ処理: ${chunks.length}チャンク (100件/チャンク)`);
+			if (operationCount > 50) {
+				// 50件を超える場合は分割処理（タイムアウト対策: 100→50に変更）
+				const chunks = chunkArray(works, 50);
+				logger.info(`📦 分割バッチ処理: ${chunks.length}チャンク (50件/チャンク)`);
+
+				let successfulChunks = 0;
+				let failedChunks = 0;
 
 				for (const [chunkIndex, chunk] of chunks.entries()) {
-					const chunkBatch = firestore.batch();
-					for (const work of chunk) {
-						const docRef = collection.doc(work.productId);
-						chunkBatch.set(docRef, work, { merge: true });
+					try {
+						const chunkBatch = firestore.batch();
+						for (const work of chunk) {
+							const docRef = collection.doc(work.productId);
+							chunkBatch.set(docRef, work, { merge: true });
+						}
+
+						const startTime = Date.now();
+						await chunkBatch.commit();
+						const duration = Date.now() - startTime;
+
+						successfulChunks++;
+						logger.info(
+							`✅ チャンク ${chunkIndex + 1}/${chunks.length} 完了: ${chunk.length}件 (${duration}ms)`,
+						);
+
+						// チャンク間で負荷分散待機（200msに増加）
+						if (chunkIndex < chunks.length - 1) {
+							await new Promise((resolve) => setTimeout(resolve, 200));
+						}
+					} catch (chunkError) {
+						failedChunks++;
+						logger.error(`❌ チャンク ${chunkIndex + 1} 失敗:`, {
+							chunkIndex: chunkIndex + 1,
+							chunkSize: chunk.length,
+							sampleWorkIds: chunk.slice(0, 3).map((w) => w.productId),
+							error:
+								chunkError instanceof Error
+									? {
+											message: chunkError.message,
+											name: chunkError.name,
+										}
+									: String(chunkError),
+						});
+
+						// 失敗した作品IDを追跡システムに記録
+						try {
+							const failures = chunk.map((work) => ({
+								workId: work.productId,
+								reason:
+									chunkError instanceof Error && chunkError.message.includes("DEADLINE_EXCEEDED")
+										? FAILURE_REASONS.TIMEOUT
+										: FAILURE_REASONS.UNKNOWN,
+								errorDetails: chunkError instanceof Error ? chunkError.message : String(chunkError),
+							}));
+							await trackMultipleFailedWorks(failures);
+						} catch (trackError) {
+							logger.warn("失敗追跡記録エラー:", { trackError });
+						}
+
+						// 失敗したチャンクでも処理を継続（何もしない）
 					}
+				}
 
-					const startTime = Date.now();
-					await chunkBatch.commit();
-					const duration = Date.now() - startTime;
+				logger.info(`📊 分割バッチ処理完了: 成功${successfulChunks}件, 失敗${failedChunks}件`);
 
-					logger.info(
-						`✅ チャンク ${chunkIndex + 1}/${chunks.length} 完了: ${chunk.length}件 (${duration}ms)`,
-					);
-
-					// チャンク間で少し待機（負荷分散）
-					if (chunkIndex < chunks.length - 1) {
-						await new Promise((resolve) => setTimeout(resolve, 100));
-					}
+				// 全チャンクが失敗した場合のみエラーを投げる
+				if (failedChunks > 0 && successfulChunks === 0) {
+					throw new Error(`全${failedChunks}チャンクが失敗しました`);
 				}
 			} else {
 				const startTime = Date.now();

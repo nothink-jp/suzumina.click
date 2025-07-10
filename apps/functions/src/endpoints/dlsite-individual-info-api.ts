@@ -589,6 +589,10 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 						logger.info(`✅ バッチ ${batchNumber} 日次集計処理完了`);
 					} catch (aggregateError) {
 						logger.error(`バッチ ${batchNumber} 日次集計処理エラー:`, { error: aggregateError });
+						// 日次集計処理のエラーは警告として扱い、処理を継続
+						results.errors.push(
+							`バッチ ${batchNumber} 日次集計処理エラー: ${aggregateError instanceof Error ? aggregateError.message : String(aggregateError)}`,
+						);
 					}
 				}
 

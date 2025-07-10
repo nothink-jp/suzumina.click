@@ -150,27 +150,30 @@ export async function getTimeSeriesRawDataByDate(
 }
 
 /**
- * 生データから日次集計データを生成
+ * 地域別価格の最低価格を計算
  */
-function aggregateRawDataToDaily(
-	rawDataArray: TimeSeriesRawData[],
-): TimeSeriesDailyAggregate | null {
-	if (rawDataArray.length === 0) return null;
+function calculateLowestPrices(rawDataArray: TimeSeriesRawData[]): RegionalPrice {
+	const jpPrices = rawDataArray.map((d) => d.regionalPrices.JP).filter((p) => p > 0);
+	const usPrices = rawDataArray.map((d) => d.regionalPrices.US).filter((p) => p > 0);
+	const euPrices = rawDataArray.map((d) => d.regionalPrices.EU).filter((p) => p > 0);
+	const cnPrices = rawDataArray.map((d) => d.regionalPrices.CN).filter((p) => p > 0);
+	const twPrices = rawDataArray.map((d) => d.regionalPrices.TW).filter((p) => p > 0);
+	const krPrices = rawDataArray.map((d) => d.regionalPrices.KR).filter((p) => p > 0);
 
-	const firstData = rawDataArray[0];
-	if (!firstData) return null;
-
-	// 最低価格を取得（各通貨別）
-	const lowestPrices: RegionalPrice = {
-		JP: Math.min(...rawDataArray.map((d) => d.regionalPrices.JP).filter((p) => p > 0)),
-		US: Math.min(...rawDataArray.map((d) => d.regionalPrices.US).filter((p) => p > 0)),
-		EU: Math.min(...rawDataArray.map((d) => d.regionalPrices.EU).filter((p) => p > 0)),
-		CN: Math.min(...rawDataArray.map((d) => d.regionalPrices.CN).filter((p) => p > 0)),
-		TW: Math.min(...rawDataArray.map((d) => d.regionalPrices.TW).filter((p) => p > 0)),
-		KR: Math.min(...rawDataArray.map((d) => d.regionalPrices.KR).filter((p) => p > 0)),
+	return {
+		JP: jpPrices.length > 0 ? Math.min(...jpPrices) : 0,
+		US: usPrices.length > 0 ? Math.min(...usPrices) : 0,
+		EU: euPrices.length > 0 ? Math.min(...euPrices) : 0,
+		CN: cnPrices.length > 0 ? Math.min(...cnPrices) : 0,
+		TW: twPrices.length > 0 ? Math.min(...twPrices) : 0,
+		KR: krPrices.length > 0 ? Math.min(...krPrices) : 0,
 	};
+}
 
-	// 各フィールドの最大値を取得
+/**
+ * 統計データを計算
+ */
+function calculateStatistics(rawDataArray: TimeSeriesRawData[]) {
 	const maxDiscountRate = Math.max(...rawDataArray.map((d) => d.discountRate));
 	const activeCampaignIds = [
 		...new Set(
@@ -178,10 +181,7 @@ function aggregateRawDataToDaily(
 		),
 	];
 
-	// salesCount フィールドは削除されたため、コメントアウト
-	// const salesCounts = rawDataArray
-	// 	.map((d) => d.salesCount)
-	// 	.filter((c): c is number => c !== undefined);
+	// 各種カウント値
 	const wishlistCounts = rawDataArray
 		.map((d) => d.wishlistCount)
 		.filter((c): c is number => c !== undefined);
@@ -199,32 +199,55 @@ function aggregateRawDataToDaily(
 		.map((d) => d.rankMonth)
 		.filter((r): r is number => r !== undefined);
 
-	// タイムスタンプの最初と最後
 	const timestamps = rawDataArray.map((d) => d.time).sort();
 
 	return {
-		workId: firstData.workId,
-		date: firstData.date,
-		lowestPrices,
 		maxDiscountRate,
 		activeCampaignIds,
-		// maxSalesCount: salesCounts.length > 0 ? Math.max(...salesCounts) : undefined,
 		maxWishlistCount: wishlistCounts.length > 0 ? Math.max(...wishlistCounts) : undefined,
 		bestRankDay: rankDays.length > 0 ? Math.min(...rankDays) : undefined,
 		bestRankWeek: rankWeeks.length > 0 ? Math.min(...rankWeeks) : undefined,
 		bestRankMonth: rankMonths.length > 0 ? Math.min(...rankMonths) : undefined,
 		maxRatingAverage: ratingsAverage.length > 0 ? Math.max(...ratingsAverage) : undefined,
 		maxRatingCount: ratingsCounts.length > 0 ? Math.max(...ratingsCounts) : undefined,
-		dataPointCount: rawDataArray.length,
 		firstCaptureTime: timestamps[0] || "",
 		lastCaptureTime: timestamps[timestamps.length - 1] || "",
 	};
 }
 
 /**
- * 指定日の生データから日次集計データを生成・保存
+ * 生データから日次集計データを生成
  */
-export async function generateAndSaveDailyAggregate(workId: string, date: string): Promise<void> {
+function aggregateRawDataToDaily(
+	rawDataArray: TimeSeriesRawData[],
+): TimeSeriesDailyAggregate | null {
+	if (rawDataArray.length === 0) return null;
+
+	const firstData = rawDataArray[0];
+	if (!firstData) return null;
+
+	const lowestPrices = calculateLowestPrices(rawDataArray);
+	const statistics = calculateStatistics(rawDataArray);
+
+	return {
+		workId: firstData.workId,
+		date: firstData.date,
+		lowestPrices,
+		dataPointCount: rawDataArray.length,
+		...statistics,
+	};
+}
+
+/**
+ * 指定日の生データから日次集計データを生成・保存
+ * @param workId 作品ID
+ * @param date 対象日（YYYY-MM-DD形式）
+ * @returns 成功した場合true、失敗した場合false
+ */
+export async function generateAndSaveDailyAggregate(
+	workId: string,
+	date: string,
+): Promise<boolean> {
 	try {
 		// 1. 生データを取得
 		const rawData = await getTimeSeriesRawDataByDate(workId, date);
@@ -234,7 +257,7 @@ export async function generateAndSaveDailyAggregate(workId: string, date: string
 				workId,
 				date,
 			});
-			return;
+			return false;
 		}
 
 		// 2. 日次集計データを生成
@@ -245,7 +268,7 @@ export async function generateAndSaveDailyAggregate(workId: string, date: string
 				workId,
 				date,
 			});
-			return;
+			return false;
 		}
 
 		// 3. Firestoreに保存
@@ -260,21 +283,24 @@ export async function generateAndSaveDailyAggregate(workId: string, date: string
 
 		await collection.doc(docId).set(firestoreData, { merge: true });
 
-		logger.info("日次集計データ保存完了", {
+		logger.debug("日次集計データ保存完了", {
 			operation: "generateAndSaveDailyAggregate",
 			workId,
 			date,
 			dataPointCount: aggregate.dataPointCount,
 			docId,
 		});
+
+		return true;
 	} catch (error) {
 		logger.error("日次集計データ生成・保存エラー", {
 			operation: "generateAndSaveDailyAggregate",
 			workId,
 			date,
 			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
 		});
-		throw error;
+		return false;
 	}
 }
 
@@ -360,9 +386,12 @@ export async function getDailyAggregates(
 }
 
 /**
- * 全作品の過去N日分の日次集計データを一括処理
+ * 全作品の過去N日分の日次集計データを一括処理（並列処理版）
  */
 export async function batchProcessDailyAggregates(days = 1): Promise<void> {
+	const BATCH_SIZE = 10; // 並列処理のバッチサイズ
+	const MAX_CONCURRENT_OPERATIONS = 5; // 最大同時実行数
+
 	try {
 		const rawCollection = firestore.collection(TIMESERIES_COLLECTIONS.RAW_DATA);
 
@@ -393,12 +422,66 @@ export async function batchProcessDailyAggregates(days = 1): Promise<void> {
 			workIdsByDate.set(date, workIds);
 		}
 
-		// 各作品・日付の組み合わせで日次集計を実行
-		let processedCount = 0;
+		// 全ての作品・日付の組み合わせを収集
+		const allTasks: { workId: string; date: string }[] = [];
 		for (const [date, workIds] of workIdsByDate.entries()) {
 			for (const workId of workIds) {
-				await generateAndSaveDailyAggregate(workId, date);
-				processedCount++;
+				allTasks.push({ workId, date });
+			}
+		}
+
+		logger.info("日次集計一括処理開始", {
+			operation: "batchProcessDailyAggregates",
+			days,
+			targetDates,
+			totalTasks: allTasks.length,
+		});
+
+		// バッチ処理で並列実行
+		let processedCount = 0;
+		let successCount = 0;
+		let errorCount = 0;
+
+		for (let i = 0; i < allTasks.length; i += BATCH_SIZE) {
+			const batch = allTasks.slice(i, i + BATCH_SIZE);
+			const batchPromises = batch.map(async ({ workId, date }) => {
+				const success = await generateAndSaveDailyAggregate(workId, date);
+				if (!success) {
+					logger.warn("日次集計処理失敗（個別）", { workId, date });
+				}
+				return { success, workId, date };
+			});
+
+			// 制限された数の並列処理を実行
+			const concurrentBatches: Promise<{
+				success: boolean;
+				workId: string;
+				date: string;
+			}>[][] = [];
+			for (let j = 0; j < batchPromises.length; j += MAX_CONCURRENT_OPERATIONS) {
+				concurrentBatches.push(batchPromises.slice(j, j + MAX_CONCURRENT_OPERATIONS));
+			}
+
+			for (const concurrentBatch of concurrentBatches) {
+				const results = await Promise.all(concurrentBatch);
+
+				for (const result of results) {
+					processedCount++;
+					if (result.success) {
+						successCount++;
+					} else {
+						errorCount++;
+					}
+				}
+			}
+
+			logger.info(
+				`日次集計進捗: ${processedCount}/${allTasks.length} (成功: ${successCount}, エラー: ${errorCount})`,
+			);
+
+			// 処理間隔を設ける（Firestore書き込み制限対策）
+			if (i + BATCH_SIZE < allTasks.length) {
+				await new Promise((resolve) => setTimeout(resolve, 100));
 			}
 		}
 
@@ -407,6 +490,9 @@ export async function batchProcessDailyAggregates(days = 1): Promise<void> {
 			days,
 			targetDates,
 			processedCount,
+			successCount,
+			errorCount,
+			successRate: `${((successCount / processedCount) * 100).toFixed(1)}%`,
 		});
 	} catch (error) {
 		logger.error("日次集計一括処理エラー", {

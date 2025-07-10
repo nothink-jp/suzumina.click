@@ -12,6 +12,9 @@ import * as functions from "@google-cloud/functions-framework";
 import * as logger from "../shared/logger";
 // 各モジュールから関数をインポート（統合アーキテクチャ）
 import { fetchDLsiteWorksIndividualAPI } from "./dlsite-individual-info-api";
+// Phase 3: 監視・通知システム
+import { monitoringAlerts } from "./monitoring-alerts";
+import { supplementNotification, weeklyHealthReport } from "./supplement-notification";
 // collectDLsiteTimeseries は統合アーキテクチャにより fetchDLsiteWorksIndividualAPI に統合
 import { fetchYouTubeVideos } from "./youtube";
 
@@ -45,12 +48,17 @@ interface PubsubMessage {
 	attributes?: Record<string, string>;
 }
 
-// 統合アーキテクチャによる Cloud Functions 登録（2関数のみ）
+// 統合アーキテクチャによる Cloud Functions 登録
 functions.cloudEvent<PubsubMessage>("fetchYouTubeVideos", fetchYouTubeVideos);
 functions.cloudEvent<PubsubMessage>("fetchDLsiteWorksIndividualAPI", fetchDLsiteWorksIndividualAPI);
 // collectDLsiteTimeseries は統合アーキテクチャにより廃止
 
-// HTTPトリガー関数は独立したファイルで管理
+// Phase 3: 監視・通知システム
+functions.cloudEvent<PubsubMessage>("monitoringAlerts", monitoringAlerts);
+
+// HTTPトリガー関数（監視・通知システム）
+functions.http("supplementNotification", supplementNotification);
+functions.http("weeklyHealthReport", weeklyHealthReport);
 
 /**
  * プロセス終了処理
