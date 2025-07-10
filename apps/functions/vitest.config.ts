@@ -45,8 +45,6 @@ export default defineConfig({
 				"src/endpoints/youtube.ts", // YouTube endpoint excluded from tests
 				"src/services/youtube/**", // YouTube services excluded from tests
 				"src/endpoints/dlsite-individual-info-api.ts", // New Individual Info API endpoint - needs tests
-				"src/services/dlsite/individual-info-to-work-mapper.ts", // New Individual Info mapper - needs tests
-				"src/services/dlsite/timeseries-firestore.ts", // Timeseries storage - needs tests
 			],
 			thresholds: {
 				statements: 50, // Appropriate for current codebase complexity

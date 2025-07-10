@@ -19,16 +19,11 @@ import {
 	validateAjaxHtmlContent,
 } from "../services/dlsite/dlsite-ajax-fetcher";
 import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
-import { mapMultipleIndividualInfoToTimeSeries } from "../services/dlsite/individual-info-mapper";
 import {
 	batchMapIndividualInfoAPIToWorkData,
 	type IndividualInfoAPIResponse,
 	validateAPIOnlyWorkData,
 } from "../services/dlsite/individual-info-to-work-mapper";
-import {
-	batchProcessDailyAggregates,
-	saveMultipleTimeSeriesRawData,
-} from "../services/dlsite/timeseries-firestore";
 import {
 	createUnionWorkIds,
 	handleNoWorkIdsError,
@@ -65,7 +60,6 @@ interface UnifiedDataCollectionMetadata {
 	totalWorks?: number;
 	processedWorks?: number;
 	basicDataUpdated?: number;
-	timeSeriesCollected?: number;
 	unifiedSystemStarted?: Timestamp;
 	regionOnlyIds?: number;
 	assetOnlyIds?: number;
@@ -84,7 +78,6 @@ interface UnifiedFetchResult {
 	workCount: number;
 	apiCallCount: number;
 	basicDataUpdated: number;
-	timeSeriesCollected: number;
 	error?: string;
 	unificationComplete?: boolean;
 }
@@ -529,7 +522,6 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 				workCount: 0,
 				apiCallCount: workIds.length,
 				basicDataUpdated: 0,
-				timeSeriesCollected: 0,
 				error: "Individual Info APIからデータを取得できませんでした",
 			};
 		}
@@ -540,7 +532,6 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 		// 統合データ処理: 同一APIレスポンスから並列変換
 		const results = {
 			basicDataUpdated: 0,
-			timeSeriesCollected: 0,
 			errors: [] as string[],
 		};
 
@@ -573,40 +564,8 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 			}
 		};
 
-		// 時系列データ変換・保存処理
-		const timeSeriesProcessing = async () => {
-			try {
-				const timeSeriesData = mapMultipleIndividualInfoToTimeSeries(apiResponses);
-
-				if (timeSeriesData.length > 0) {
-					await saveMultipleTimeSeriesRawData(timeSeriesData);
-					results.timeSeriesCollected = timeSeriesData.length;
-					logger.info(`📊 バッチ ${batchNumber} 時系列データ保存完了: ${timeSeriesData.length}件`);
-
-					// 日次集計処理を実行（過去1日分）
-					try {
-						await batchProcessDailyAggregates(1);
-						logger.info(`✅ バッチ ${batchNumber} 日次集計処理完了`);
-					} catch (aggregateError) {
-						logger.error(`バッチ ${batchNumber} 日次集計処理エラー:`, { error: aggregateError });
-						// 日次集計処理のエラーは警告として扱い、処理を継続
-						results.errors.push(
-							`バッチ ${batchNumber} 日次集計処理エラー: ${aggregateError instanceof Error ? aggregateError.message : String(aggregateError)}`,
-						);
-					}
-				}
-
-				return timeSeriesData.length;
-			} catch (error) {
-				const errorMsg = `バッチ ${batchNumber} 時系列データ処理エラー: ${error instanceof Error ? error.message : String(error)}`;
-				logger.error(errorMsg);
-				results.errors.push(errorMsg);
-				return 0;
-			}
-		};
-
-		// 並列処理実行
-		await Promise.all([basicDataProcessing(), timeSeriesProcessing()]);
+		// 基本データ処理実行
+		await basicDataProcessing();
 
 		// バッチ統計情報
 		const processingTime = Date.now() - startTime.toMillis();
@@ -614,7 +573,6 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 		logger.info(`  処理時間: ${(processingTime / 1000).toFixed(1)}秒`);
 		logger.info(`  API成功率: ${((apiDataMap.size / workIds.length) * 100).toFixed(1)}%`);
 		logger.info(`  基本データ更新: ${results.basicDataUpdated}件`);
-		logger.info(`  時系列データ収集: ${results.timeSeriesCollected}件`);
 
 		// 失敗作品IDログ
 		if (failedWorkIds.length > 0) {
@@ -629,10 +587,9 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 		}
 
 		return {
-			workCount: Math.max(results.basicDataUpdated, results.timeSeriesCollected),
+			workCount: results.basicDataUpdated,
 			apiCallCount: workIds.length,
 			basicDataUpdated: results.basicDataUpdated,
-			timeSeriesCollected: results.timeSeriesCollected,
 			unificationComplete: results.errors.length === 0,
 		};
 	} catch (error) {
@@ -641,7 +598,6 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 			workCount: 0,
 			apiCallCount: workIds.length,
 			basicDataUpdated: 0,
-			timeSeriesCollected: 0,
 			error: error instanceof Error ? error.message : "不明なエラー",
 		};
 	}
@@ -699,7 +655,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 					workCount: 0,
 					apiCallCount: 0,
 					basicDataUpdated: 0,
-					timeSeriesCollected: 0,
 					error: "作品IDが取得できませんでした",
 				};
 			}
@@ -718,7 +673,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 				totalWorks: allWorkIds.length,
 				processedWorks: 0,
 				basicDataUpdated: 0,
-				timeSeriesCollected: 0,
 			});
 
 			logger.info("🌏 === リージョン差異対応統計 ===");
@@ -735,7 +689,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			totalWorkCount: 0,
 			totalApiCallCount: 0,
 			totalBasicDataUpdated: 0,
-			totalTimeSeriesCollected: 0,
 			totalErrors: [] as string[],
 		};
 
@@ -754,14 +707,12 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 					currentBatch: i,
 					processedWorks: totalResults.totalWorkCount,
 					basicDataUpdated: totalResults.totalBasicDataUpdated,
-					timeSeriesCollected: totalResults.totalTimeSeriesCollected,
 				});
 
 				return {
 					workCount: totalResults.totalWorkCount,
 					apiCallCount: totalResults.totalApiCallCount,
 					basicDataUpdated: totalResults.totalBasicDataUpdated,
-					timeSeriesCollected: totalResults.totalTimeSeriesCollected,
 					error: `実行時間制限により中断 (${i}/${batches.length}バッチ完了)`,
 				};
 			}
@@ -792,7 +743,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			totalResults.totalWorkCount += batchResult.workCount;
 			totalResults.totalApiCallCount += batchResult.apiCallCount;
 			totalResults.totalBasicDataUpdated += batchResult.basicDataUpdated;
-			totalResults.totalTimeSeriesCollected += batchResult.timeSeriesCollected;
 
 			if (batchResult.error) {
 				totalResults.totalErrors.push(`バッチ${i + 1}: ${batchResult.error}`);
@@ -803,7 +753,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			await updateUnifiedMetadata({
 				processedWorks: totalResults.totalWorkCount,
 				basicDataUpdated: totalResults.totalBasicDataUpdated,
-				timeSeriesCollected: totalResults.totalTimeSeriesCollected,
 				completedBatches,
 			});
 
@@ -817,7 +766,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		logger.info(`処理済み作品数: ${totalResults.totalWorkCount}件`);
 		logger.info(`API呼び出し総数: ${totalResults.totalApiCallCount}件`);
 		logger.info(`基本データ更新: ${totalResults.totalBasicDataUpdated}件`);
-		logger.info(`時系列データ収集: ${totalResults.totalTimeSeriesCollected}件`);
 		logger.info(`処理エラー: ${totalResults.totalErrors.length}件`);
 
 		// User-Agent使用統計サマリーを出力
@@ -836,7 +784,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			workCount: totalResults.totalWorkCount,
 			apiCallCount: totalResults.totalApiCallCount,
 			basicDataUpdated: totalResults.totalBasicDataUpdated,
-			timeSeriesCollected: totalResults.totalTimeSeriesCollected,
 			unificationComplete: totalResults.totalErrors.length === 0,
 		};
 	} catch (error) {
@@ -845,7 +792,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			workCount: 0,
 			apiCallCount: 0,
 			basicDataUpdated: 0,
-			timeSeriesCollected: 0,
 			error: error instanceof Error ? error.message : "不明なエラー",
 		};
 	}
@@ -865,7 +811,6 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 				workCount: 0,
 				apiCallCount: 0,
 				basicDataUpdated: 0,
-				timeSeriesCollected: 0,
 				error: "前回の処理が完了していません",
 			};
 		}
@@ -889,7 +834,6 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 				totalWorks: result.workCount,
 				processedWorks: result.workCount,
 				basicDataUpdated: result.basicDataUpdated,
-				timeSeriesCollected: result.timeSeriesCollected,
 				regionOnlyIds: unionInfo.regionOnlyCount,
 				assetOnlyIds: unionInfo.assetOnlyCount,
 				unionTotalIds: unionInfo.unionIds.length,
@@ -898,7 +842,6 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 
 			logger.info("✅ === DLsite統合データ収集完了 ===");
 			logger.info(`基本データ更新: ${result.basicDataUpdated}件`);
-			logger.info(`時系列データ収集: ${result.timeSeriesCollected}件`);
 			logger.info(`API呼び出し数: ${result.apiCallCount}件`);
 			logger.info("🎯 統合アーキテクチャ実現完了 - 重複API呼び出し100%排除");
 		} else {
@@ -926,7 +869,6 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 			workCount: 0,
 			apiCallCount: 0,
 			basicDataUpdated: 0,
-			timeSeriesCollected: 0,
 			error: error instanceof Error ? error.message : "不明なエラー",
 		};
 	}
@@ -974,7 +916,6 @@ export const fetchDLsiteWorksIndividualAPI = async (
 		} else {
 			logger.info("✅ 統合データ収集処理完了");
 			logger.info(`基本データ更新: ${result.basicDataUpdated}件`);
-			logger.info(`時系列データ収集: ${result.timeSeriesCollected}件`);
 			logger.info(`API呼び出し総数: ${result.apiCallCount}件`);
 
 			if (result.unificationComplete) {

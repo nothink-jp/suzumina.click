@@ -92,7 +92,7 @@ export const supplementNotification = async (req: Request, res: Response) => {
  * GET /weekly-health-report
  * 週次でシステム健全性レポートを生成・送信
  */
-export const weeklyHealthReport = async (req: Request, res: Response) => {
+export const weeklyHealthReport = async (_req: Request, res: Response) => {
 	try {
 		logger.info("週次健全性レポート実行開始", {
 			operation: "weeklyHealthReport",

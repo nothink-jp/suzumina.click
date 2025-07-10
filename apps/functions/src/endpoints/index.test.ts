@@ -36,9 +36,11 @@ vi.mock("./dlsite-individual-info-api", () => ({
 
 // Functions Frameworkのモック
 const mockCloudEvent = vi.fn();
+const mockHttp = vi.fn();
 
 vi.mock("@google-cloud/functions-framework", () => ({
 	cloudEvent: mockCloudEvent,
+	http: mockHttp,
 }));
 
 // process.exitのモック

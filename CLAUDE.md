@@ -26,7 +26,6 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 - **最新機能**: DLsite作品詳細情報表示強化 + 高解像度画像対応 (2025年7月実装)
 - **アーキテクチャ革新**: 100% API-Only アーキテクチャ実現・旧HTMLスクレイピングシステム完全廃止 (2025年7月8日完了)
 - **画像システム強化**: DLsiteサムネイル表示システム完全修正・プロトコル相対URL対応 (2025年7月8日完了)
-- **時系列データ基盤**: 日次集計処理による価格推移・ランキング分析システム (2025年7月9日完了)
 
 ## 🏗️ システム構成
 
@@ -60,35 +59,16 @@ Monorepo構成 (pnpm workspace)
 - **テスト**: Vitest + Playwright E2E
 - **インフラ**: Terraform + Google Cloud Platform
 
-## 📊 データ処理システム
+## 📊 データ収集システム
 
 ### DLsite統合データ収集
 
 **実装場所**: `apps/functions/src/endpoints/dlsite-individual-info-api.ts`
 
 - **実行頻度**: 毎時0分（Cloud Scheduler）
-- **処理内容**: Individual Info API による基本データ更新 + 時系列データ収集
+- **処理内容**: Individual Info API による基本データ更新
 - **特徴**: 重複API呼び出し完全排除・リージョン差異対応
 
-### 時系列データ基盤
-
-**実装場所**: `apps/functions/src/services/dlsite/timeseries-firestore.ts`
-
-```typescript
-// 生データ → 日次集計 → API提供の流れ
-生データ収集 (dlsite_timeseries_raw)
-     ↓ 7日間保持
-日次集計処理 (dlsite_timeseries_daily)
-     ↓ 永続保存
-価格推移API (/api/timeseries/[workId])
-```
-
-### 主要API
-
-- **時系列データAPI**: `/api/timeseries/[workId]`
-  - 価格推移（price）・ランキング推移（ranking）
-  - 期間指定（7d, 30d, 90d, 1y, all）
-  - 地域別データ（JP, US, EU, CN, TW, KR）
 
 ## 🗄️ データベース構造
 
@@ -98,17 +78,7 @@ Monorepo構成 (pnpm workspace)
    - 型: `OptimizedFirestoreDLsiteWorkData`
    - 内容: 作品情報・価格・評価・詳細情報
 
-2. **`dlsite_timeseries_raw`**: 時系列生データ
-   - 型: `TimeSeriesRawData`
-   - 保持期間: 7日間
-   - 内容: 高頻度データ収集
-
-3. **`dlsite_timeseries_daily`**: 日次集計データ
-   - 型: `TimeSeriesDailyAggregate`
-   - 保持期間: 永続保存
-   - 内容: 価格推移・ランキング分析用
-
-4. **`dlsiteMetadata`**: 統合メタデータ
+2. **`dlsiteMetadata`**: 統合メタデータ
    - 型: `UnifiedDataCollectionMetadata`
    - 内容: データ収集状態管理
 
@@ -245,18 +215,10 @@ pnpm typecheck
 pnpm dev
 ```
 
-### 時系列データ関連の重要ファイル
-
-- `apps/web/src/app/api/timeseries/[workId]/route.ts` - 価格推移・ランキング推移API
-- `apps/functions/src/endpoints/dlsite-individual-info-api.ts` - 統合データ収集Function
-- `apps/functions/src/services/dlsite/timeseries-firestore.ts` - 時系列データ処理基盤
-- `docs/DLSITE_INCREMENTAL_UPDATE_DESIGN.md` - 設計ドキュメント
 
 ### 既知の問題・制約
 
 - salesCount機能は完全廃止済み（2025年7月）
-- 時系列データは日次集計処理により永続化
-- 価格推移APIは集計済みデータから高速応答
 - リージョン差異対応により和集合による完全データ収集を実現
 
 ---
@@ -264,7 +226,5 @@ pnpm dev
 ## 📝 変更ログ
 
 ### v0.3.1 (2025-07-09)
-- 時系列データ日次集計システム実装完了
-- 価格推移・ランキング推移API高速化
 - DLsite統合データ収集システム最適化
 - salesCount機能完全廃止

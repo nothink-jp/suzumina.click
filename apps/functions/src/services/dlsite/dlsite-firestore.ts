@@ -5,7 +5,7 @@
  */
 
 import type { Query } from "@google-cloud/firestore";
-import type { OptimizedFirestoreDLsiteWorkData, PriceHistory } from "@suzumina.click/shared-types";
+import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
 import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
@@ -14,7 +14,6 @@ import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
 
 // Firestore関連の定数
 const DLSITE_WORKS_COLLECTION = "dlsiteWorks";
-const PRICE_HISTORY_COLLECTION = "priceHistory";
 
 // 最適化構造では未使用の関数を削除
 
@@ -343,75 +342,5 @@ export async function getWorksStatistics(): Promise<{
 	} catch (error) {
 		logger.error("作品統計情報の取得に失敗:", { error });
 		throw new Error("作品統計情報の取得に失敗");
-	}
-}
-
-/**
- * 価格履歴を記録
- */
-export async function savePriceHistory(
-	productId: string,
-	priceData: {
-		currentPrice: number;
-		originalPrice?: number;
-		discountRate?: number;
-		campaignEndDate?: string;
-	},
-): Promise<void> {
-	try {
-		const now = new Date();
-		const timestamp = now.toISOString();
-
-		const priceHistory: PriceHistory = {
-			date: timestamp,
-			price: priceData.currentPrice,
-			originalPrice: priceData.originalPrice,
-			discountRate: priceData.discountRate,
-			saleType:
-				priceData.originalPrice && priceData.originalPrice > priceData.currentPrice
-					? "discount"
-					: undefined,
-		};
-
-		// priceHistory/{productId}/snapshots/{timestamp} の構造で保存
-		const docRef = firestore
-			.collection(PRICE_HISTORY_COLLECTION)
-			.doc(productId)
-			.collection("snapshots")
-			.doc(timestamp.replace(/[:.]/g, "-")); // Firestoreに適したID形式
-
-		await docRef.set(priceHistory);
-
-		logger.debug(`価格履歴を記録: ${productId} - ¥${priceData.currentPrice}`);
-	} catch (error) {
-		logger.error(`価格履歴の記録に失敗 (${productId}):`, { error });
-		// 価格履歴の記録失敗は作品データ保存の妨げにしない
-	}
-}
-
-/**
- * 作品の価格履歴を取得
- */
-export async function getPriceHistory(productId: string): Promise<PriceHistory[]> {
-	try {
-		const snapshot = await firestore
-			.collection(PRICE_HISTORY_COLLECTION)
-			.doc(productId)
-			.collection("snapshots")
-			.orderBy("date", "desc")
-			.limit(100) // 最新100件まで
-			.get();
-
-		const history: PriceHistory[] = [];
-		for (const doc of snapshot.docs) {
-			const data = doc.data() as PriceHistory;
-			history.push(data);
-		}
-
-		logger.debug(`価格履歴を取得: ${productId} - ${history.length}件`);
-		return history;
-	} catch (error) {
-		logger.error(`価格履歴の取得に失敗 (${productId}):`, { error });
-		return [];
 	}
 }

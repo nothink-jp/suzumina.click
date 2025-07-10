@@ -17,8 +17,6 @@ export * from "./favorite";
 export * from "./firestore-utils";
 // 検索フィルター関連の型とスキーマのエクスポート
 export * from "./search-filters";
-// 時系列データ関連の型とスキーマのエクスポート
-export * from "./time-series-data";
 // ユーザー認証関連の型とスキーマのエクスポート
 export * from "./user";
 // ユーザー評価関連の型とスキーマのエクスポート

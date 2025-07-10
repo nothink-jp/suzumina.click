@@ -17,21 +17,10 @@ import {
 	CardTitle,
 } from "@suzumina.click/ui/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
-import {
-	Calendar,
-	FileText,
-	Share2,
-	Shield,
-	ShoppingCart,
-	Star,
-	Tag,
-	TrendingUp,
-	Users,
-} from "lucide-react";
+import { Calendar, FileText, Share2, Shield, ShoppingCart, Star, Tag, Users } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 import CharacteristicEvaluation from "@/components/CharacteristicEvaluation";
-import PriceHistoryChart from "@/components/PriceHistoryChart";
 import ThumbnailImage from "@/components/ThumbnailImage";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
 
@@ -41,8 +30,6 @@ interface WorkDetailProps {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex UI component with multiple tabs and conditional rendering
 export default function WorkDetail({ work }: WorkDetailProps) {
-	// 注意: 時系列データは新しいPriceHistoryChartコンポーネントが直接APIから取得
-
 	// モック特性評価データを生成（作品IDに基づいて一意）
 	const characteristicData = useMemo(
 		() => generateMockCharacteristicData(work.productId),
@@ -317,7 +304,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								<span className="hidden sm:inline">特性評価</span>
 							</TabsTrigger>
 							<TabsTrigger value="price-history" className="flex items-center gap-2">
-								<TrendingUp className="h-4 w-4" />
 								<span className="hidden sm:inline">価格推移</span>
 							</TabsTrigger>
 						</TabsList>
@@ -483,42 +469,13 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 						</TabsContent>
 
 						{/* 価格推移タブ */}
-						<TabsContent value="price-history">
-							<Card>
-								<CardHeader>
-									<CardTitle>価格推移</CardTitle>
-									<CardDescription>時系列での価格変動・セール履歴</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<PriceHistoryChart workId={work.productId} />
-
-									{/* 価格統計情報 */}
-									<div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-										<div className="text-center">
-											<div className="text-sm text-gray-600">現在価格</div>
-											<div className="text-lg font-semibold text-gray-900">
-												¥{currentPrice.toLocaleString()}
-											</div>
-										</div>
-										{originalPrice && originalPrice !== currentPrice && (
-											<div className="text-center">
-												<div className="text-sm text-gray-600">定価</div>
-												<div className="text-lg font-semibold text-gray-900">
-													¥{originalPrice.toLocaleString()}
-												</div>
-											</div>
-										)}
-										{work.price.discount && work.price.discount > 0 && (
-											<div className="text-center">
-												<div className="text-sm text-gray-600">割引率</div>
-												<div className="text-lg font-semibold text-destructive">
-													{work.price.discount}% OFF
-												</div>
-											</div>
-										)}
-									</div>
-								</CardContent>
-							</Card>
+						<TabsContent value="price-history" className="relative min-h-[400px]">
+							<div className="w-full h-full flex items-center justify-center">
+								<NotImplementedOverlay
+									title="価格推移機能は準備中です"
+									description="現在、価格推移システムは実装を保留しています。"
+								/>
+							</div>
 						</TabsContent>
 					</Tabs>
 				</div>
