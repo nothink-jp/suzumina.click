@@ -76,7 +76,7 @@ describe("Individual Info API マッピング", () => {
 			expect(result.workId).toBe("RJ01037463");
 			expect(result.timestamp).toBe("2025-07-07T12:00:00.000Z");
 			expect(result.date).toBe("2025-07-07");
-			expect(result.time).toBe("12:00:00");
+			expect(result.time).toBe("21:00:00"); // JST (UTC+9): 12:00 UTC → 21:00 JST
 
 			// 価格情報の確認
 			expect(result.regionalPrices.JP).toBe(1320);
@@ -92,6 +92,16 @@ describe("Individual Info API マッピング", () => {
 			expect(result.rankMonth).toBe(120);
 			expect(result.ratingAverage).toBe(4.5);
 			expect(result.ratingCount).toBe(89);
+		});
+
+		it("JST日付境界を正しく処理できる", () => {
+			// UTC 23:30 = JST 08:30 (翌日)
+			const utcTimestamp = new Date("2025-07-07T23:30:00Z");
+			const result = mapIndividualInfoToTimeSeriesData(mockApiResponse, utcTimestamp);
+
+			expect(result.timestamp).toBe("2025-07-07T23:30:00.000Z"); // UTC時刻は保持
+			expect(result.date).toBe("2025-07-08"); // JST日付（翌日）
+			expect(result.time).toBe("08:30:00"); // JST時刻
 		});
 
 		it("割引情報を含むAPIレスポンスを正しく処理できる", () => {

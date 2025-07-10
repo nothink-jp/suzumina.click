@@ -366,12 +366,14 @@ export async function batchProcessDailyAggregates(days = 1): Promise<void> {
 	try {
 		const rawCollection = firestore.collection(TIMESERIES_COLLECTIONS.RAW_DATA);
 
-		// 処理対象の日付を生成
+		// 処理対象の日付を生成（JST基準）
 		const targetDates: string[] = [];
 		for (let i = 0; i < days; i++) {
-			const date = new Date();
-			date.setDate(date.getDate() - i);
-			targetDates.push(date.toISOString().split("T")[0] || "");
+			const utcDate = new Date();
+			utcDate.setDate(utcDate.getDate() - i);
+			// JST (UTC+9) での日付を計算
+			const jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
+			targetDates.push(jstDate.toISOString().split("T")[0] || "");
 		}
 
 		// 各日付の作品IDを取得

@@ -181,9 +181,11 @@ export function mapIndividualInfoToTimeSeriesData(
 	apiResponse: IndividualInfoAPIResponse,
 	timestamp: Date = new Date(),
 ): TimeSeriesRawData {
-	const isoTimestamp = timestamp.toISOString();
-	const date = isoTimestamp.split("T")[0] || ""; // YYYY-MM-DD
-	const time = isoTimestamp.split("T")[1]?.split(".")[0] || ""; // HH:mm:ss
+	// JST (UTC+9) での日時を計算
+	const jstTimestamp = new Date(timestamp.getTime() + 9 * 60 * 60 * 1000);
+	const isoTimestamp = timestamp.toISOString(); // 元のUTC時間は保持
+	const date = jstTimestamp.toISOString().split("T")[0] || ""; // JST日付 (YYYY-MM-DD)
+	const time = jstTimestamp.toISOString().split("T")[1]?.split(".")[0] || ""; // JST時刻 (HH:mm:ss)
 
 	// 地域別価格情報の抽出
 	const regionalPrices = extractRegionalPrices(apiResponse);
