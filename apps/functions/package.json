@@ -14,6 +14,8 @@
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
 		"collect:work-ids": "dotenv -e .env -- tsx src/development/core/collect-work-ids.ts",
+		"collect:complete-local": "dotenv -e .env -- tsx src/development/core/local-complete-collector.ts",
+		"detect:region-restrictions": "dotenv -e .env -- tsx src/development/core/region-restriction-detector.ts",
 		"tools:stats": "dotenv -e .env -- tsx src/development/run-tools.ts stats",
 		"tools:supplement": "dotenv -e .env -- tsx src/development/run-tools.ts supplement",
 		"tools:report": "dotenv -e .env -- tsx src/development/run-tools.ts report",
