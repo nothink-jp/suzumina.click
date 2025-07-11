@@ -248,13 +248,6 @@ export class UserAgentManager {
 		// 検出リスクを評価
 		this.evaluateDetectionRisk();
 
-		logger.debug("User-Agent選択", {
-			browser: selectedConfig.browser,
-			platform: selectedConfig.platform,
-			useCount: selectedConfig.useCount,
-			detectionRisk: this.stats.detectionRisk,
-		});
-
 		return selectedConfig.agent;
 	}
 

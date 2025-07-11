@@ -55,9 +55,9 @@ export class DLsiteHealthMonitor {
 	private readonly configManager = getParserConfigManager();
 	private readonly testUrls = [
 		// テスト用のDLsite作品URL（実際のRJ番号を使用）
-		"https://www.dlsite.com/maniax/work/=/product_id/RJ01082746.html",
-		"https://www.dlsite.com/maniax/work/=/product_id/RJ01041411.html",
-		"https://www.dlsite.com/maniax/work/=/product_id/RJ413726.html",
+		"https://www.dlsite.com/maniax/work/=/product_id/RJ256468.html",
+		"https://www.dlsite.com/maniax/work/=/product_id/RJ432317.html",
+		"https://www.dlsite.com/maniax/work/=/product_id/RJ01037463.html",
 	];
 
 	private constructor() {
@@ -81,36 +81,65 @@ export class DLsiteHealthMonitor {
 		logger.info("DLsite構造ヘルスチェック開始", { sampleSize });
 
 		const testUrls = this.testUrls.slice(0, sampleSize);
+		const fieldResults = await this.checkAllFields(testUrls);
+		const overallHealth = this.calculateOverallHealth(fieldResults);
+
+		const result = this.buildHealthCheckResult(testUrls, fieldResults, overallHealth);
+
+		logger.info("DLsite構造ヘルスチェック完了", {
+			overallHealth: Math.round(overallHealth * 100),
+			riskLevel: result.riskLevel,
+			failingSelectorCount: result.failingSelectors.length,
+		});
+
+		return result;
+	}
+
+	/**
+	 * 全フィールドをチェック
+	 */
+	private async checkAllFields(testUrls: string[]): Promise<Record<string, FieldHealthResult>> {
 		const fieldResults: Record<string, FieldHealthResult> = {};
 		const config = this.configManager.getConfig();
 
-		let totalSuccessCount = 0;
-		let totalFieldCount = 0;
-
-		// 各フィールドの検証
 		for (const fieldName of Object.keys(config.fields)) {
 			const fieldResult = await this.checkFieldHealth(fieldName, testUrls);
 			fieldResults[fieldName] = fieldResult;
-
-			totalSuccessCount += fieldResult.successRate * fieldResult.attempts;
-			totalFieldCount += fieldResult.attempts;
 		}
 
-		// 全体スコア計算
-		const overallHealth = totalFieldCount > 0 ? totalSuccessCount / totalFieldCount : 0;
+		return fieldResults;
+	}
 
-		// リスクレベル判定
+	/**
+	 * 全体健康度を計算
+	 */
+	private calculateOverallHealth(fieldResults: Record<string, FieldHealthResult>): number {
+		let totalSuccessCount = 0;
+		let totalFieldCount = 0;
+
+		for (const result of Object.values(fieldResults)) {
+			totalSuccessCount += result.successRate * result.attempts;
+			totalFieldCount += result.attempts;
+		}
+
+		return totalFieldCount > 0 ? totalSuccessCount / totalFieldCount : 0;
+	}
+
+	/**
+	 * ヘルスチェック結果を構築
+	 */
+	private buildHealthCheckResult(
+		testUrls: string[],
+		fieldResults: Record<string, FieldHealthResult>,
+		overallHealth: number,
+	): StructureHealthCheck {
 		const riskLevel = this.determineRiskLevel(overallHealth);
-
-		// 失敗セレクターの集計
 		const failingSelectors = Object.values(fieldResults).flatMap(
 			(result) => result.failedSelectors,
 		);
-
-		// 推奨アクションの生成
 		const recommendedActions = this.generateRecommendations(overallHealth, fieldResults);
 
-		const result: StructureHealthCheck = {
+		return {
 			overallHealth,
 			lastStructureChange: this.detectStructureChange(fieldResults),
 			failingSelectors,
@@ -119,14 +148,6 @@ export class DLsiteHealthMonitor {
 			riskLevel,
 			sampleCount: testUrls.length,
 		};
-
-		logger.info("DLsite構造ヘルスチェック完了", {
-			overallHealth: Math.round(overallHealth * 100),
-			riskLevel,
-			failingSelectorCount: failingSelectors.length,
-		});
-
-		return result;
 	}
 
 	/**
@@ -140,80 +161,165 @@ export class DLsiteHealthMonitor {
 			fieldName as keyof ParserConfig["fields"],
 		);
 		if (!fieldConfig) {
-			return {
-				successRate: 0,
-				attempts: 0,
-				workingSelectors: [],
-				failedSelectors: [],
-				recommendations: [`フィールド ${fieldName} の設定が見つかりません`],
-			};
+			return this.createFieldNotFoundResult(fieldName);
 		}
 
+		const result = await this.testSelectorsOnUrls(fieldConfig, testUrls);
+		const recommendations = this.generateFieldRecommendations(
+			fieldName,
+			result.successRate,
+			fieldConfig.selectors.minSuccessRate,
+		);
+
+		return {
+			...result,
+			recommendations,
+		};
+	}
+
+	/**
+	 * フィールド設定が見つからない場合の結果を作成
+	 */
+	private createFieldNotFoundResult(fieldName: string): FieldHealthResult {
+		return {
+			successRate: 0,
+			attempts: 0,
+			workingSelectors: [],
+			failedSelectors: [],
+			recommendations: [`フィールド ${fieldName} の設定が見つかりません`],
+		};
+	}
+
+	/**
+	 * 複数URLでセレクターをテスト
+	 */
+	private async testSelectorsOnUrls(
+		fieldConfig: { selectors: { primary: string[]; secondary: string[]; minSuccessRate: number } },
+		testUrls: string[],
+	): Promise<{
+		successRate: number;
+		attempts: number;
+		workingSelectors: string[];
+		failedSelectors: string[];
+	}> {
 		const workingSelectors: string[] = [];
 		const failedSelectors: string[] = [];
 		let successCount = 0;
 		let totalAttempts = 0;
 
-		// 各テストURLで検証
 		for (const url of testUrls) {
 			try {
 				const html = await this.fetchTestPage(url);
 				const $ = cheerio.load(html);
 
-				// プライマリセレクターのテスト
-				for (const selector of fieldConfig.selectors.primary) {
-					totalAttempts++;
-					const elements = $(selector);
+				const urlResult = this.testSelectorsOnPage($, fieldConfig);
+				successCount += urlResult.successCount;
+				totalAttempts += urlResult.totalAttempts;
 
-					if (elements.length > 0 && elements.text().trim()) {
-						successCount++;
-						if (!workingSelectors.includes(selector)) {
-							workingSelectors.push(selector);
-						}
-					} else {
-						if (!failedSelectors.includes(selector)) {
-							failedSelectors.push(selector);
-						}
-					}
-				}
-
-				// セカンダリセレクターのテスト（プライマリが失敗した場合）
-				if (successCount === 0) {
-					for (const selector of fieldConfig.selectors.secondary) {
-						totalAttempts++;
-						const elements = $(selector);
-
-						if (elements.length > 0 && elements.text().trim()) {
-							successCount++;
-							if (!workingSelectors.includes(selector)) {
-								workingSelectors.push(selector);
-							}
-						} else {
-							if (!failedSelectors.includes(selector)) {
-								failedSelectors.push(selector);
-							}
-						}
-					}
-				}
+				this.updateSelectorLists(
+					urlResult.workingSelectors,
+					urlResult.failedSelectors,
+					workingSelectors,
+					failedSelectors,
+				);
 			} catch (error) {
 				logger.warn(`テストURL取得失敗: ${url}`, { error });
 			}
 		}
 
 		const successRate = totalAttempts > 0 ? successCount / totalAttempts : 0;
-		const recommendations = this.generateFieldRecommendations(
-			fieldName,
-			successRate,
-			fieldConfig.selectors.minSuccessRate,
-		);
+		return { successRate, attempts: totalAttempts, workingSelectors, failedSelectors };
+	}
+
+	/**
+	 * 単一ページでセレクターをテスト
+	 */
+	private testSelectorsOnPage(
+		$: cheerio.CheerioAPI,
+		fieldConfig: { selectors: { primary: string[]; secondary: string[] } },
+	): {
+		successCount: number;
+		totalAttempts: number;
+		workingSelectors: string[];
+		failedSelectors: string[];
+	} {
+		const workingSelectors: string[] = [];
+		const failedSelectors: string[] = [];
+		let successCount = 0;
+		let totalAttempts = 0;
+
+		// プライマリセレクターのテスト
+		const primaryResult = this.testSelectors($, fieldConfig.selectors.primary);
+		successCount += primaryResult.successCount;
+		totalAttempts += primaryResult.totalAttempts;
+		workingSelectors.push(...primaryResult.workingSelectors);
+		failedSelectors.push(...primaryResult.failedSelectors);
+
+		// セカンダリセレクターのテスト（プライマリが失敗した場合）
+		if (successCount === 0) {
+			const secondaryResult = this.testSelectors($, fieldConfig.selectors.secondary);
+			successCount += secondaryResult.successCount;
+			totalAttempts += secondaryResult.totalAttempts;
+			workingSelectors.push(...secondaryResult.workingSelectors);
+			failedSelectors.push(...secondaryResult.failedSelectors);
+		}
+
+		return { successCount, totalAttempts, workingSelectors, failedSelectors };
+	}
+
+	/**
+	 * セレクター配列をテスト
+	 */
+	private testSelectors(
+		$: cheerio.CheerioAPI,
+		selectors: string[],
+	): {
+		successCount: number;
+		totalAttempts: number;
+		workingSelectors: string[];
+		failedSelectors: string[];
+	} {
+		const workingSelectors: string[] = [];
+		const failedSelectors: string[] = [];
+		let successCount = 0;
+
+		for (const selector of selectors) {
+			const elements = $(selector);
+			if (elements.length > 0 && elements.text().trim()) {
+				successCount++;
+				workingSelectors.push(selector);
+			} else {
+				failedSelectors.push(selector);
+			}
+		}
 
 		return {
-			successRate,
-			attempts: totalAttempts,
+			successCount,
+			totalAttempts: selectors.length,
 			workingSelectors,
 			failedSelectors,
-			recommendations,
 		};
+	}
+
+	/**
+	 * セレクターリストを更新（重複排除）
+	 */
+	private updateSelectorLists(
+		newWorking: string[],
+		newFailed: string[],
+		workingSelectors: string[],
+		failedSelectors: string[],
+	): void {
+		for (const selector of newWorking) {
+			if (!workingSelectors.includes(selector)) {
+				workingSelectors.push(selector);
+			}
+		}
+		for (const selector of newFailed) {
+			if (!failedSelectors.includes(selector)) {
+				failedSelectors.push(selector);
+			}
+		}
 	}
 
 	/**
@@ -374,31 +480,9 @@ export class DLsiteHealthMonitor {
 	}> {
 		try {
 			const healthCheck = await this.performHealthCheck(urls.length);
-
-			return {
-				overallHealthy: healthCheck.overallHealth > 0.8,
-				successRate: healthCheck.overallHealth,
-				fieldsChecked: Object.keys(healthCheck.fieldResults).length,
-				fieldResults: Object.entries(healthCheck.fieldResults).map(([fieldName, result]) => ({
-					fieldName,
-					successRate: result.successRate,
-					attempts: result.attempts,
-					workingSelectors: result.workingSelectors,
-				})),
-				recommendations: healthCheck.recommendedActions,
-				timestamp: new Date(),
-			};
+			return this.formatHealthCheckForTest(healthCheck);
 		} catch (error) {
-			// エラー時のフォールバック応答
-			logger.error("構造ヘルスチェックでエラーが発生", { error });
-			return {
-				overallHealthy: false,
-				successRate: 0,
-				fieldsChecked: 0,
-				fieldResults: [],
-				recommendations: ["ネットワーク接続の確認", "DLsiteサイトの可用性確認"],
-				timestamp: new Date(),
-			};
+			return this.createErrorResponse(error);
 		}
 	}
 
@@ -410,34 +494,83 @@ export class DLsiteHealthMonitor {
 
 		try {
 			const healthCheck = await this.performHealthCheck(1);
-
-			if (healthCheck.riskLevel === "critical") {
-				// 動作中のセレクターのみを使用する緊急設定に切り替え
-				const workingSelectors: Record<string, string[]> = {};
-
-				for (const [fieldName, result] of Object.entries(healthCheck.fieldResults)) {
-					if (result.workingSelectors.length > 0) {
-						workingSelectors[fieldName] = result.workingSelectors;
-					}
-				}
-
-				if (Object.keys(workingSelectors).length > 5) {
-					logger.info("緊急設定への切り替えを実行", {
-						workingFields: Object.keys(workingSelectors).length,
-					});
-
-					// ここで実際の設定更新を行う
-					// this.configManager.updateConfig({ ... });
-
-					return true;
-				}
-			}
-
-			return false;
+			return this.executeEmergencyRepair(healthCheck);
 		} catch (error) {
 			logger.error("自動修復中にエラーが発生", { error });
 			return false;
 		}
+	}
+
+	/**
+	 * テスト用レスポンスをフォーマット
+	 */
+	private formatHealthCheckForTest(healthCheck: StructureHealthCheck) {
+		return {
+			overallHealthy: healthCheck.overallHealth > 0.8,
+			successRate: healthCheck.overallHealth,
+			fieldsChecked: Object.keys(healthCheck.fieldResults).length,
+			fieldResults: Object.entries(healthCheck.fieldResults).map(([fieldName, result]) => ({
+				fieldName,
+				successRate: result.successRate,
+				attempts: result.attempts,
+				workingSelectors: result.workingSelectors,
+			})),
+			recommendations: healthCheck.recommendedActions,
+			timestamp: new Date(),
+		};
+	}
+
+	/**
+	 * エラー時のフォールバック応答を作成
+	 */
+	private createErrorResponse(error: unknown) {
+		logger.error("構造ヘルスチェックでエラーが発生", { error });
+		return {
+			overallHealthy: false,
+			successRate: 0,
+			fieldsChecked: 0,
+			fieldResults: [],
+			recommendations: ["ネットワーク接続の確認", "DLsiteサイトの可用性確認"],
+			timestamp: new Date(),
+		};
+	}
+
+	/**
+	 * 緊急修復を実行
+	 */
+	private executeEmergencyRepair(healthCheck: StructureHealthCheck): boolean {
+		if (healthCheck.riskLevel !== "critical") {
+			return false;
+		}
+
+		const workingSelectors = this.extractWorkingSelectors(healthCheck.fieldResults);
+
+		if (Object.keys(workingSelectors).length > 5) {
+			logger.info("緊急設定への切り替えを実行", {
+				workingFields: Object.keys(workingSelectors).length,
+			});
+			// this.configManager.updateConfig({ ... });
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * 動作中のセレクターを抽出
+	 */
+	private extractWorkingSelectors(
+		fieldResults: Record<string, FieldHealthResult>,
+	): Record<string, string[]> {
+		const workingSelectors: Record<string, string[]> = {};
+
+		for (const [fieldName, result] of Object.entries(fieldResults)) {
+			if (result.workingSelectors.length > 0) {
+				workingSelectors[fieldName] = result.workingSelectors;
+			}
+		}
+
+		return workingSelectors;
 	}
 }
 

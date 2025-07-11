@@ -316,14 +316,7 @@ function extractRatingInfo(apiData: IndividualInfoAPIResponse): RatingInfo | und
 	const stars = apiData.rate_average_star || apiData.rate_average;
 	const count = apiData.rate_count;
 
-	logger.debug("Extracting rating info:", {
-		rate_average: apiData.rate_average,
-		rate_average_star: apiData.rate_average_star,
-		rate_count: apiData.rate_count,
-	});
-
 	if (!stars || !count || count === 0) {
-		logger.debug("No rating data available");
 		return undefined;
 	}
 
@@ -339,7 +332,6 @@ function extractRatingInfo(apiData: IndividualInfoAPIResponse): RatingInfo | und
 		averageDecimal: stars,
 	};
 
-	logger.debug("Rating info extracted:", ratingInfo);
 	return ratingInfo;
 }
 
@@ -347,16 +339,10 @@ function extractRatingInfo(apiData: IndividualInfoAPIResponse): RatingInfo | und
  * 声優情報の抽出（creatorsフィールドから優先、authorフィールドからフォールバック）
  */
 function extractVoiceActors(apiData: IndividualInfoAPIResponse): string[] {
-	logger.debug("Extracting voice actors from:", {
-		creaters: apiData.creaters,
-		author: apiData.author,
-	});
-
 	// 新しいcreatorsフィールドから抽出（優先）
 	if (apiData.creaters?.voice_by && Array.isArray(apiData.creaters.voice_by)) {
 		const voiceActors = apiData.creaters.voice_by.map((creator) => creator.name).filter(Boolean);
 		if (voiceActors.length > 0) {
-			logger.debug(`Found creators voice actors: ${voiceActors}`);
 			return voiceActors;
 		}
 	}
@@ -371,13 +357,11 @@ function extractVoiceActors(apiData: IndividualInfoAPIResponse): string[] {
 			.split(",")
 			.map((name) => name.trim())
 			.filter(Boolean);
-		logger.debug(`Found CV voice actors from author: ${voiceActors}`);
 		return voiceActors;
 	}
 
 	// "みずのちょう" のような単一の作者名の場合（CV:なし）
 	if (apiData.author && !apiData.author.includes("CV:")) {
-		logger.debug(`Found single author: ${apiData.author}`);
 		return [apiData.author.trim()];
 	}
 
@@ -391,10 +375,6 @@ function extractVoiceActors(apiData: IndividualInfoAPIResponse): string[] {
 function extractGenres(apiData: IndividualInfoAPIResponse): string[] {
 	const genres: string[] = [];
 
-	logger.debug("Extracting genres from API data:", {
-		genres: apiData.genres,
-	});
-
 	// genres配列から抽出（公式ジャンルのみ）
 	if (apiData.genres && Array.isArray(apiData.genres)) {
 		for (const genreItem of apiData.genres) {
@@ -403,9 +383,6 @@ function extractGenres(apiData: IndividualInfoAPIResponse): string[] {
 			}
 		}
 	}
-
-	// デバッグ：抽出した結果をログ出力
-	logger.debug(`Extracted genres: ${genres.length} items`, { genres });
 
 	return genres;
 }
@@ -467,13 +444,6 @@ function extractCreators(apiData: IndividualInfoAPIResponse): {
 			author.push(...apiData.creaters.others_by.map((creator) => creator.name).filter(Boolean));
 		}
 	}
-
-	logger.debug("Extracted creators:", {
-		scenario: scenario.length,
-		illustration: illustration.length,
-		music: music.length,
-		author: author.length,
-	});
 
 	return { scenario, illustration, music, author };
 }
@@ -577,24 +547,12 @@ export function mapIndividualInfoAPIToWorkData(
 	logger.info(`Individual Info API -> Work data mapping: ${productId}`);
 
 	// 基本情報の変換
-	logger.debug(`Starting data extraction for: ${productId}`);
 	const category = extractWorkCategory(apiData);
 	const price = extractPriceInfo(apiData);
 	const rating = extractRatingInfo(apiData);
 	const voiceActors = extractVoiceActors(apiData);
 	const genres = extractGenres(apiData);
 	const creators = extractCreators(apiData);
-
-	// age_category の実際の値をログ出力
-	logger.debug(`age_category value for ${productId}: ${apiData.age_category}`);
-
-	// 年齢指定のマッピングを詳細ログ
-	const mappedAgeRating = mapAgeCategory(apiData.age_category);
-	logger.debug(`Age rating mapping for ${productId}:`, {
-		originalAgeCategory: apiData.age_category,
-		mappedAgeRating: mappedAgeRating,
-		ageCategoryType: typeof apiData.age_category,
-	});
 
 	// 無料作品・価格取得失敗の詳細情報をログ出力
 	const isFreeOrMissingPrice = price.isFreeOrMissingPrice;
@@ -611,22 +569,6 @@ export function mapIndividualInfoAPIToWorkData(
 			priceStatus: apiData.price === 0 ? "無料作品または価格取得失敗" : "価格取得失敗",
 		});
 	}
-
-	logger.debug("Extracted data summary:", {
-		category,
-		price,
-		rating: rating ? `${rating.stars} stars (${rating.count} reviews)` : "No rating",
-		voiceActors: voiceActors.length,
-		genres: genres.length,
-		creators: {
-			scenario: creators.scenario.length,
-			illustration: creators.illustration.length,
-			music: creators.music.length,
-			author: creators.author.length,
-		},
-		ageCategory: apiData.age_category,
-		mappedAgeRating: mappedAgeRating,
-	});
 
 	// キャンペーン情報（一時的に未使用）
 	// const campaignInfo: CampaignInfo | undefined = apiData.campaign ? {
@@ -689,13 +631,6 @@ export function mapIndividualInfoAPIToWorkData(
 	const workUrl = `https://www.dlsite.com/maniax/work/=/product_id/${productId}.html`;
 
 	// 画像URL生成（高解像度対応）
-	logger.debug("Extracting image URLs:", {
-		image_thum: apiData.image_thum,
-		image_main: apiData.image_main,
-		image_thumb: apiData.image_thumb,
-		image_thumb_touch: apiData.image_thumb_touch,
-		srcset: apiData.srcset,
-	});
 
 	const thumbnailUrl =
 		apiData.image_thumb ||
@@ -707,11 +642,6 @@ export function mapIndividualInfoAPIToWorkData(
 		apiData.image_main ||
 		apiData.image_thumb_touch ||
 		(apiData.srcset ? extractHighResFromSrcset(apiData.srcset) : undefined);
-
-	logger.debug("Image URLs extracted:", {
-		thumbnailUrl,
-		highResImageUrl,
-	});
 
 	return {
 		// === 基本識別情報 ===

@@ -42,6 +42,7 @@ vi.mock("../../shared/logger", () => ({
 }));
 
 import {
+	getExistingWorksMap,
 	getWorkFromFirestore,
 	getWorksStatistics,
 	saveWorksToFirestore,
@@ -228,6 +229,123 @@ describe("dlsite-firestore", () => {
 		});
 	});
 
+	describe("getExistingWorksMap", () => {
+		it("既存作品データのマップを正常に取得できる", async () => {
+			const productIds = ["RJ12345", "RJ54321"];
+			const existingWork1 = { ...sampleWork, productId: "RJ12345" };
+			const existingWork2 = { ...sampleWork, productId: "RJ54321" };
+
+			const mockDocs = [{ data: () => existingWork1 }, { data: () => existingWork2 }];
+			mockQuery.get.mockResolvedValue({ docs: mockDocs });
+
+			const result = await getExistingWorksMap(productIds);
+
+			expect(result.size).toBe(2);
+			expect(result.get("RJ12345")).toEqual(existingWork1);
+			expect(result.get("RJ54321")).toEqual(existingWork2);
+			expect(mockQuery.where).toHaveBeenCalledWith("productId", "in", productIds);
+		});
+
+		it("空の配列を渡した場合は空のマップを返す", async () => {
+			const result = await getExistingWorksMap([]);
+
+			expect(result.size).toBe(0);
+			expect(mockQuery.get).not.toHaveBeenCalled();
+		});
+
+		it("10件以上のIDがある場合はチャンクに分割して取得する", async () => {
+			const productIds = Array.from(
+				{ length: 25 },
+				(_, i) => `RJ${String(i + 1).padStart(5, "0")}`,
+			);
+
+			// 最初のチャンク（10件）
+			const mockDocs1 = productIds.slice(0, 10).map((id) => ({
+				data: () => ({ ...sampleWork, productId: id }),
+			}));
+			// 2番目のチャンク（10件）
+			const mockDocs2 = productIds.slice(10, 20).map((id) => ({
+				data: () => ({ ...sampleWork, productId: id }),
+			}));
+			// 3番目のチャンク（5件）
+			const mockDocs3 = productIds.slice(20, 25).map((id) => ({
+				data: () => ({ ...sampleWork, productId: id }),
+			}));
+
+			mockQuery.get
+				.mockResolvedValueOnce({ docs: mockDocs1 })
+				.mockResolvedValueOnce({ docs: mockDocs2 })
+				.mockResolvedValueOnce({ docs: mockDocs3 });
+
+			const result = await getExistingWorksMap(productIds);
+
+			expect(result.size).toBe(25);
+			expect(mockQuery.get).toHaveBeenCalledTimes(3);
+		});
+
+		it("Firestoreエラーが発生しても処理を継続する", async () => {
+			const productIds = ["RJ12345"];
+			mockQuery.get.mockRejectedValue(new Error("Firestore error"));
+
+			const result = await getExistingWorksMap(productIds);
+
+			expect(result.size).toBe(0); // エラーでも空のマップを返す
+		});
+	});
+
+	describe("saveWorksToFirestore - 詳細テスト", () => {
+		it("50件以下の場合は単一バッチで処理する", async () => {
+			const works = Array.from({ length: 30 }, (_, i) => ({
+				...sampleWork,
+				productId: `RJ${String(i + 1).padStart(5, "0")}`,
+			}));
+
+			await saveWorksToFirestore(works);
+
+			expect(mockBatch.set).toHaveBeenCalledTimes(30);
+			expect(mockBatch.commit).toHaveBeenCalledTimes(1);
+		});
+
+		it("50件超の場合は分割バッチで処理する", async () => {
+			const works = Array.from({ length: 120 }, (_, i) => ({
+				...sampleWork,
+				productId: `RJ${String(i + 1).padStart(5, "0")}`,
+			}));
+
+			await saveWorksToFirestore(works);
+
+			// 120件 = 3チャンク (50 + 50 + 20)
+			expect(mockBatch.commit).toHaveBeenCalledTimes(3);
+		});
+
+		it("一部のチャンクが失敗しても処理を継続する", async () => {
+			const works = Array.from({ length: 120 }, (_, i) => ({
+				...sampleWork,
+				productId: `RJ${String(i + 1).padStart(5, "0")}`,
+			}));
+
+			// 2番目のチャンクだけ失敗
+			mockBatch.commit
+				.mockResolvedValueOnce(undefined) // 1番目成功
+				.mockRejectedValueOnce(new Error("Batch failed")) // 2番目失敗
+				.mockResolvedValueOnce(undefined); // 3番目成功
+
+			// エラーは投げられない（一部成功のため）
+			await expect(saveWorksToFirestore(works)).resolves.not.toThrow();
+		});
+
+		it("全チャンクが失敗した場合はエラーを投げる", async () => {
+			const works = Array.from({ length: 100 }, (_, i) => ({
+				...sampleWork,
+				productId: `RJ${String(i + 1).padStart(5, "0")}`,
+			}));
+
+			mockBatch.commit.mockRejectedValue(new Error("All batches failed"));
+
+			await expect(saveWorksToFirestore(works)).rejects.toThrow("全2チャンクが失敗しました");
+		});
+	});
+
 	describe("エラーハンドリング", () => {
 		it("Firestore操作でエラーが発生した場合に適切に処理する", async () => {
 			const mockDocRef = {
@@ -243,6 +361,18 @@ describe("dlsite-firestore", () => {
 			mockBatch.commit.mockRejectedValue(new Error("Batch commit failed"));
 
 			await expect(saveWorksToFirestore([sampleWork])).rejects.toThrow();
+		});
+
+		it("searchWorksFromFirestoreでエラーが発生した場合", async () => {
+			mockQuery.get.mockRejectedValue(new Error("Search failed"));
+
+			await expect(searchWorksFromFirestore({ category: "SOU" })).rejects.toThrow("作品検索に失敗");
+		});
+
+		it("getWorksStatisticsでエラーが発生した場合", async () => {
+			mockQuery.get.mockRejectedValue(new Error("Statistics failed"));
+
+			await expect(getWorksStatistics()).rejects.toThrow("作品統計情報の取得に失敗");
 		});
 	});
 });
