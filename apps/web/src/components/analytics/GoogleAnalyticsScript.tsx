@@ -7,8 +7,8 @@ import Script from "next/script";
 export function GoogleAnalyticsScript() {
 	const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
-	// Don't render in development or if measurement ID is not configured
-	if (process.env.NODE_ENV === "development" || !measurementId) {
+	// Don't render if measurement ID is not configured
+	if (!measurementId) {
 		return null;
 	}
 

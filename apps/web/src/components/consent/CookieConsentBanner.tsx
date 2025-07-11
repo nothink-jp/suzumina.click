@@ -98,7 +98,7 @@ export function CookieConsentBanner() {
 		}
 
 		setIsLoading(false);
-	}, [applyConsentChoices]);
+	}, []);
 
 	if (isLoading || !showBanner) {
 		return null;

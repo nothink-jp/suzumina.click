@@ -62,7 +62,7 @@ export function ConsentModeScript() {
               }
             }
           } catch (error) {
-            console.warn('Failed to load saved consent:', error);
+            // Silent fail - don't show console warnings for normal operation
           }
         `,
 			}}
