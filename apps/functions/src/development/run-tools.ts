@@ -1,26 +1,23 @@
 /**
  * 実行ツール統合版
  *
- * 元ファイル: run-failure-rate-monitor.ts, run-local-supplement.ts, run-weekly-report.ts
- * 各種運用ツールの実行インターフェースを統合
+ * 運用に必要な基本ツールのみを提供
  */
 
 import { getFailureStatistics } from "../services/dlsite/failure-tracker";
-import { failureRateMonitor } from "../services/monitoring/failure-rate-monitor";
-import { emailService } from "../services/notification/email-service";
 import * as logger from "../shared/logger";
 import { collectFailedWorksLocally } from "./core/local-supplement-collector";
 
 /**
- * 失敗率監視の実行
+ * 失敗統計の表示（簡素化版）
  */
-export async function runFailureRateMonitor(): Promise<void> {
+export async function showFailureStats(): Promise<void> {
 	try {
-		logger.info("🔍 失敗率監視スクリプト開始");
+		logger.info("📊 失敗統計表示開始");
 
-		console.log("\n=== 失敗率監視システム実行 ===");
+		console.log("\n=== DLsite失敗統計表示 ===");
 
-		// 1. 現在の失敗統計を表示
+		// 現在の失敗統計を表示
 		const failureStats = await getFailureStatistics();
 		const totalWorks = failureStats.totalFailedWorks + failureStats.recoveredWorks;
 		const currentFailureRate =
@@ -29,50 +26,26 @@ export async function runFailureRateMonitor(): Promise<void> {
 		console.log("\n📊 現在の統計:");
 		console.log(`総作品数: ${totalWorks}件`);
 		console.log(`未回復失敗数: ${failureStats.unrecoveredWorks}件`);
+		console.log(`回復済み: ${failureStats.recoveredWorks}件`);
 		console.log(`現在の失敗率: ${currentFailureRate.toFixed(1)}%`);
 
-		// 2. 監視システムの設定を表示
-		const monitoringStats = await failureRateMonitor.getMonitoringStats();
-		console.log("\n⚙️ 監視設定:");
-		console.log(`失敗率閾値: ${monitoringStats.config.failureRateThreshold}%`);
-		console.log(`チェック間隔: ${monitoringStats.config.checkIntervalMinutes}分`);
-		console.log(`アラートクールダウン: ${monitoringStats.config.alertCooldownHours}時間`);
+		console.log("\n🔍 失敗理由別:");
+		Object.entries(failureStats.failureReasons).forEach(([reason, count]) => {
+			console.log(`  ${reason}: ${count}件`);
+		});
 
-		if (monitoringStats.lastAlert) {
-			console.log(`前回アラート: ${monitoringStats.lastAlert.sentAt.toDate().toLocaleString()}`);
-			console.log(`前回失敗率: ${monitoringStats.lastAlert.failureRate.toFixed(1)}%`);
-		}
-
-		// 3. 失敗率チェック実行
-		console.log("\n🔍 失敗率チェック実行中...");
-		const result = await failureRateMonitor.checkAndAlert();
-
-		console.log("\n📋 チェック結果:");
-		console.log(`失敗率: ${result.currentFailureRate.toFixed(1)}%`);
-		console.log(`アラート必要: ${result.shouldAlert ? "はい" : "いいえ"}`);
-		console.log(`アラート送信: ${result.alertSent ? "はい" : "いいえ"}`);
-
-		if (result.shouldAlert && !result.alertSent) {
-			console.log("⚠️ アラートが必要ですが、クールダウン期間中のため送信されませんでした");
-		}
-
-		if (result.alertSent) {
-			console.log("📧 失敗率アラートメールを送信しました");
-		}
-
-		// 4. 推奨対応
-		if (result.shouldAlert) {
-			console.log("\n💡 推奨対応:");
-			console.log("1. ローカル補完収集の実行: pnpm local:supplement");
-			console.log("2. 失敗作品の詳細分析: pnpm analyze:failures");
-			console.log("3. システム状況の確認");
+		// 単純な状況評価
+		if (currentFailureRate > 50) {
+			console.log("\n🔴 失敗率が高いです。補完収集の実行を推奨します。");
+		} else if (currentFailureRate > 20) {
+			console.log("\n🟡 失敗率がやや高めです。状況を確認してください。");
 		} else {
-			console.log("\n✅ 現在の失敗率は正常範囲内です");
+			console.log("\n✅ 失敗率は正常範囲内です。");
 		}
 
-		console.log("\n✅ 失敗率監視スクリプト完了");
+		console.log("\n✅ 失敗統計表示完了");
 	} catch (error) {
-		logger.error("失敗率監視スクリプトエラー:", {
+		logger.error("失敗統計表示エラー:", {
 			error: error instanceof Error ? error.message : String(error),
 		});
 		console.error("❌ 実行エラー:", error instanceof Error ? error.message : String(error));
@@ -201,10 +174,23 @@ export async function runWeeklyReport(): Promise<void> {
 			topFailureReasons,
 		};
 
-		// 6. メール送信
-		console.log("\n📧 週次健全性レポートメール送信中...");
-		await emailService.sendWeeklyHealthReport(weeklyStats);
-		console.log("✅ 週次健全性レポートメールを送信しました");
+		// 6. レポート記録（ログ出力）
+		console.log("\n📊 週次健全性レポート記録中...");
+		logger.info("📈 週次健全性レポート", {
+			operation: "runWeeklyReport",
+			reportPeriod: `${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString()} - ${new Date().toLocaleDateString()}`,
+			totalWorks: weeklyStats.totalWorks,
+			successRate: Number(weeklyStats.successRate.toFixed(1)),
+			stillFailingCount: weeklyStats.stillFailingCount,
+			topFailureReasons: weeklyStats.topFailureReasons,
+			systemStatus:
+				weeklyStats.successRate >= 95
+					? "🟢 良好"
+					: weeklyStats.successRate >= 90
+						? "🟡 注意"
+						: "🔴 要対応",
+		});
+		console.log("✅ 週次健全性レポートを記録しました");
 
 		// 7. 改善提案
 		if (successRate < 95) {
@@ -251,14 +237,14 @@ export async function resetMetadata(): Promise<void> {
 }
 
 /**
- * 統合運用ツールのヘルプ表示
+ * 運用ツールのヘルプ表示
  */
 export function showHelp(): void {
-	console.log("\n=== 統合運用ツール ===");
+	console.log("\n=== suzumina.click 運用ツール ===");
 	console.log("利用可能なコマンド:");
 	console.log("");
-	console.log("📊 監視・分析:");
-	console.log("  monitor        - 失敗率監視の実行");
+	console.log("📊 監視・レポート:");
+	console.log("  stats          - 失敗統計表示");
 	console.log("  report         - 週次健全性レポート生成");
 	console.log("");
 	console.log("🔧 補完・復旧:");
@@ -266,7 +252,7 @@ export function showHelp(): void {
 	console.log("  reset          - メタデータリセット");
 	console.log("");
 	console.log("💡 使用例:");
-	console.log("  node run-tools.js monitor");
+	console.log("  node run-tools.js stats");
 	console.log("  node run-tools.js supplement");
 	console.log("  node run-tools.js report");
 	console.log("");
@@ -278,8 +264,8 @@ if (require.main === module) {
 
 	const runCommand = async () => {
 		switch (command) {
-			case "monitor":
-				await runFailureRateMonitor();
+			case "stats":
+				await showFailureStats();
 				break;
 			case "supplement":
 				await runLocalSupplement();

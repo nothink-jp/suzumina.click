@@ -1,5 +1,5 @@
 /**
- * ローカル補完実行結果通知エンドポイントのテストスイート
+ * ローカル補完実行結果レポートエンドポイントのテストスイート
  */
 
 import type { Request, Response } from "@google-cloud/functions-framework";
@@ -20,16 +20,13 @@ vi.mock("../services/dlsite/failure-tracker", () => ({
 	getFailureStatistics: mockGetFailureStatistics,
 }));
 
-// メール送信サービスモック
-const mockEmailService = {
-	sendSupplementResult: vi.fn(),
-	sendWeeklyHealthReport: vi.fn(),
-};
-vi.mock("../services/notification/email-service", () => ({
-	emailService: mockEmailService,
-}));
+// 以前のメール送信サービス（現在は不要）
+// const mockEmailService = {
+//   sendSupplementResult: vi.fn(),
+//   sendWeeklyHealthReport: vi.fn(),
+// };
 
-describe("ローカル補完実行結果通知エンドポイント", () => {
+describe("ローカル補完実行結果レポートエンドポイント", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 
@@ -40,9 +37,6 @@ describe("ローカル補完実行結果通知エンドポイント", () => {
 			unrecoveredWorks: 25,
 			failureReasons: {},
 		});
-
-		mockEmailService.sendSupplementResult.mockResolvedValue(undefined);
-		mockEmailService.sendWeeklyHealthReport.mockResolvedValue(undefined);
 	});
 
 	describe("supplementNotification", () => {
@@ -72,25 +66,16 @@ describe("ローカル補完実行結果通知エンドポイント", () => {
 				failureReasons: {},
 			});
 
-			mockEmailService.sendSupplementResult.mockResolvedValue(undefined);
-
 			const { supplementNotification } = await import("./supplement-notification");
 
 			await supplementNotification(mockRequest, mockResponse);
 
-			expect(mockEmailService.sendSupplementResult).toHaveBeenCalledWith({
-				executedAt: "2023-01-15T10:00:00Z",
-				totalProcessed: 100,
-				successfulRecoveries: 85,
-				recoveryRate: 85.0,
-			});
-
 			expect(mockResponse.status).toHaveBeenCalledWith(200);
 			expect(mockResponse.json).toHaveBeenCalledWith({
 				success: true,
-				message: "Supplement result notification sent successfully",
+				message: "Supplement result logged successfully",
 				data: {
-					notificationSent: true,
+					logged: true,
 					executedAt: "2023-01-15T10:00:00Z",
 					recoveryRate: 85.0,
 				},
@@ -146,7 +131,7 @@ describe("ローカル補完実行結果通知エンドポイント", () => {
 	});
 
 	describe("weeklyHealthReport", () => {
-		it("週次健全性レポートを正常に送信する", async () => {
+		it("週次健全性レポートを正常に記録する", async () => {
 			const mockRequest = {} as Request;
 
 			const mockResponse = {
@@ -165,28 +150,14 @@ describe("ローカル補完実行結果通知エンドポイント", () => {
 				},
 			});
 
-			mockEmailService.sendWeeklyHealthReport.mockResolvedValue(undefined);
-
 			const { weeklyHealthReport } = await import("./supplement-notification");
 
 			await weeklyHealthReport(mockRequest, mockResponse);
 
-			expect(mockEmailService.sendWeeklyHealthReport).toHaveBeenCalledWith({
-				totalWorks: 175,
-				successRate: 85.71428571428571,
-				recoveredThisWeek: 0,
-				stillFailingCount: 25,
-				topFailureReasons: [
-					{ reason: "timeout", count: 15 },
-					{ reason: "api_error", count: 8 },
-					{ reason: "network_error", count: 2 },
-				],
-			});
-
 			expect(mockResponse.status).toHaveBeenCalledWith(200);
 			expect(mockResponse.json).toHaveBeenCalledWith({
 				success: true,
-				message: "Weekly health report sent successfully",
+				message: "Weekly health report logged successfully",
 				data: expect.objectContaining({
 					totalWorks: 175,
 					successRate: expect.any(Number),
@@ -212,11 +183,11 @@ describe("ローカル補完実行結果通知エンドポイント", () => {
 			expect(mockResponse.status).toHaveBeenCalledWith(500);
 			expect(mockResponse.json).toHaveBeenCalledWith({
 				error: "Internal server error",
-				message: "Failed to send weekly health report",
+				message: "Failed to log weekly health report",
 			});
 
 			expect(mockLoggerError).toHaveBeenCalledWith(
-				"週次健全性レポート送信エラー:",
+				"週次健全性レポート記録エラー:",
 				expect.objectContaining({
 					operation: "weeklyHealthReport",
 					error: "統計取得エラー",
