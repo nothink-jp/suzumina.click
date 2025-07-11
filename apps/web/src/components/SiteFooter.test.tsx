@@ -69,7 +69,8 @@ describe("SiteFooter", () => {
 		);
 
 		// コピーライト情報が含まれていることを確認
-		expect(footer).toContainElement(screen.getByText(/© 2025 nothink.jp/));
+		expect(footer).toContainElement(screen.getByText(/© 2025/));
+		expect(footer).toContainElement(screen.getByText("nothink.jp"));
 	});
 
 	it("フッターが全体レイアウトの最下部に配置される", () => {
@@ -95,7 +96,9 @@ describe("SiteFooter", () => {
 		expect(aboutLink).toBeInTheDocument();
 
 		// コピーライト
-		const copyright = screen.getByText(/© 2025 nothink.jp/);
-		expect(copyright).toBeInTheDocument();
+		const copyrightYear = screen.getByText(/© 2025/);
+		const nothinkLink = screen.getByText("nothink.jp");
+		expect(copyrightYear).toBeInTheDocument();
+		expect(nothinkLink).toBeInTheDocument();
 	});
 });
