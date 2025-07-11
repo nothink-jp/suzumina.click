@@ -19,11 +19,10 @@ export function ConsentDebugger() {
 	const [gtag, setGtag] = useState<boolean>(false);
 
 	useEffect(() => {
-		// Check if gtag is available
-		setGtag(typeof window !== "undefined" && "gtag" in window);
-
 		// Load consent state from localStorage
 		const updateConsentState = () => {
+			// Check if gtag is available
+			setGtag(typeof window !== "undefined" && "gtag" in window);
 			try {
 				const savedConsent = localStorage.getItem("cookie-consent");
 				const savedDate = localStorage.getItem("cookie-consent-date");
@@ -48,10 +47,23 @@ export function ConsentDebugger() {
 			setConsentDate(new Date().toISOString());
 		};
 
+		// Listen for storage changes (in case consent is saved in another tab)
+		const handleStorageChange = (event: StorageEvent) => {
+			if (event.key === "cookie-consent") {
+				updateConsentState();
+			}
+		};
+
 		window.addEventListener("consentUpdate", handleConsentUpdate as EventListener);
+		window.addEventListener("storage", handleStorageChange);
+
+		// Also listen for any changes in localStorage with a periodic check
+		const checkInterval = setInterval(updateConsentState, 1000);
 
 		return () => {
 			window.removeEventListener("consentUpdate", handleConsentUpdate as EventListener);
+			window.removeEventListener("storage", handleStorageChange);
+			clearInterval(checkInterval);
 		};
 	}, []);
 
