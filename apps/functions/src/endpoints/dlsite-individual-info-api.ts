@@ -8,26 +8,23 @@
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
-import {
-	generateDLsiteHeaders,
-	logUserAgentSummary,
-} from "../infrastructure/management/user-agent-manager";
+import { logUserAgentSummary } from "../infrastructure/management/user-agent-manager";
 import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
+import { batchFetchIndividualInfo } from "../services/dlsite/individual-info-api-client";
 import {
 	batchMapIndividualInfoAPIToWorkData,
-	type IndividualInfoAPIResponse,
 	validateAPIOnlyWorkData,
 } from "../services/dlsite/individual-info-to-work-mapper";
 import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collector";
 import { createUnionWorkIds, handleNoWorkIdsError } from "../services/dlsite/work-id-validator";
+import { chunkArray } from "../shared/array-utils";
 import * as logger from "../shared/logger";
 
 // 統合メタデータ保存用の定数
 const UNIFIED_METADATA_DOC_ID = "unified_data_collection_metadata";
 const METADATA_COLLECTION = "dlsiteMetadata";
 
-// Individual Info API設定（User-Agent枯渇対策）
-const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
+// バッチ処理設定（統合APIクライアント利用）
 const MAX_CONCURRENT_API_REQUESTS = 5; // バッチ処理対応: 並列数を5に設定
 const API_REQUEST_DELAY = 800; // バッチ処理対応: 間隔を800msに設定
 
@@ -87,222 +84,11 @@ interface BatchProcessingInfo {
 	startTime: Timestamp;
 }
 
-/**
- * 配列をバッチサイズに分割する
- */
-function chunkArray<T>(array: T[], chunkSize: number): T[][] {
-	const chunks: T[][] = [];
-	for (let i = 0; i < array.length; i += chunkSize) {
-		chunks.push(array.slice(i, i + chunkSize));
-	}
-	return chunks;
-}
+// 配列分割ユーティリティは shared/array-utils.ts から import
 
-/**
- * Individual Info APIから作品詳細データを取得（リトライ機能付き）
- */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: リトライ機能のため複雑度が高い
-async function fetchIndividualWorkInfo(
-	workId: string,
-	retryCount = 0,
-): Promise<IndividualInfoAPIResponse | null> {
-	const MAX_RETRIES = 2;
-	const RETRY_DELAY = 2000; // 2秒
-
-	try {
-		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
-		const headers = generateDLsiteHeaders();
-
-		const response = await fetch(url, {
-			method: "GET",
-			headers,
-		});
-
-		if (!response.ok) {
-			const responseText = await response.text();
-			logger.warn(`API request failed for ${workId}`, {
-				workId,
-				status: response.status,
-				statusText: response.statusText,
-				headers: Object.fromEntries(response.headers.entries()),
-				responseText: responseText.substring(0, 500), // 最初の500文字のみ
-				url: `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`,
-			});
-
-			if (response.status === 404) {
-				logger.warn(`作品が見つかりません: ${workId}`);
-				return null;
-			}
-
-			if (response.status === 403) {
-				logger.error(`Individual Info API アクセス拒否: ${workId} (Status: ${response.status})`);
-				throw new Error(`API access denied for ${workId}`);
-			}
-
-			if (response.status === 503) {
-				logger.warn(`Service temporarily unavailable: ${workId} (Status: ${response.status})`);
-				// 503エラーの場合はリトライする
-				if (retryCount < MAX_RETRIES) {
-					logger.warn(`Retry ${workId}: 503 error (${retryCount + 1}/${MAX_RETRIES})`);
-					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-					return fetchIndividualWorkInfo(workId, retryCount + 1);
-				}
-				return null; // 最大リトライ回数に達した場合はnullを返す
-			}
-
-			if (response.status === 429) {
-				logger.warn(`Rate limit exceeded: ${workId} (Status: ${response.status})`);
-				// 429エラーの場合もリトライする
-				if (retryCount < MAX_RETRIES) {
-					logger.warn(`Retry ${workId}: rate limit (${retryCount + 1}/${MAX_RETRIES})`);
-					await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-					return fetchIndividualWorkInfo(workId, retryCount + 1);
-				}
-				return null; // 最大リトライ回数に達した場合はnullを返す
-			}
-
-			throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-		}
-
-		const responseText = await response.text();
-		let responseData: unknown;
-
-		try {
-			responseData = JSON.parse(responseText);
-		} catch (jsonError) {
-			logger.error(`JSON parse error for ${workId}`, {
-				workId,
-				responseText: responseText.substring(0, 1000), // 最初の1000文字
-				jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError),
-				url: `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`,
-				retryCount,
-			});
-
-			// JSONパースエラーの場合もリトライする
-			if (retryCount < MAX_RETRIES) {
-				logger.warn(`Retry ${workId}: JSON parse error (${retryCount + 1}/${MAX_RETRIES})`);
-				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-				return fetchIndividualWorkInfo(workId, retryCount + 1);
-			}
-			return null;
-		}
-
-		// Individual Info APIは配列形式でレスポンスを返す
-		if (!Array.isArray(responseData) || responseData.length === 0) {
-			logger.warn(`Invalid API response for ${workId}: empty or non-array response`, {
-				workId,
-				responseType: typeof responseData,
-				isArray: Array.isArray(responseData),
-				responseLength: Array.isArray(responseData) ? responseData.length : "N/A",
-				responseData: responseData,
-				responseText: responseText.substring(0, 1000), // 生テキストも含める
-				url: `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`,
-				retryCount,
-			});
-
-			// 空レスポンスの場合もリトライする
-			if (retryCount < MAX_RETRIES) {
-				logger.warn(`Retry ${workId}: empty response (${retryCount + 1}/${MAX_RETRIES})`);
-				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-				return fetchIndividualWorkInfo(workId, retryCount + 1);
-			}
-			return null;
-		}
-
-		const data = responseData[0] as IndividualInfoAPIResponse;
-
-		// 基本的なデータ検証
-		if (!data.workno && !data.product_id) {
-			logger.warn(`Invalid API response for ${workId}: missing workno/product_id`);
-			return null;
-		}
-
-		return data;
-	} catch (error) {
-		logger.error(`Individual Info API取得エラー: ${workId}`, { error, retryCount });
-
-		// ネットワークエラーの場合もリトライする
-		if (retryCount < MAX_RETRIES && error instanceof Error) {
-			// タイムアウトエラーやネットワークエラーの場合
-			if (
-				error.name === "TimeoutError" ||
-				error.message.includes("fetch") ||
-				error.message.includes("network")
-			) {
-				logger.warn(`Retry ${workId}: network error (${retryCount + 1}/${MAX_RETRIES})`);
-				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-				return fetchIndividualWorkInfo(workId, retryCount + 1);
-			}
-		}
-
-		throw error;
-	}
-}
-
-/**
- * バッチでIndividual Info APIを呼び出し
- */
-async function batchFetchIndividualInfo(
-	workIds: string[],
-): Promise<{ results: Map<string, IndividualInfoAPIResponse>; failedWorkIds: string[] }> {
-	const results = new Map<string, IndividualInfoAPIResponse>();
-	const failedWorkIds: string[] = [];
-	const batches: string[][] = [];
-
-	// バッチに分割
-	for (let i = 0; i < workIds.length; i += MAX_CONCURRENT_API_REQUESTS) {
-		batches.push(workIds.slice(i, i + MAX_CONCURRENT_API_REQUESTS));
-	}
-
-	for (const [batchIndex, batch] of batches.entries()) {
-		try {
-			// 並列でAPIを呼び出し
-			const promises = batch.map(async (workId) => {
-				try {
-					const data = await fetchIndividualWorkInfo(workId);
-					return { workId, data };
-				} catch (error) {
-					logger.warn(`Individual Info API取得失敗: ${workId}`, { error });
-					return { workId, data: null };
-				}
-			});
-
-			const batchResults = await Promise.all(promises);
-
-			// 成功・失敗を分類
-			for (const { workId, data } of batchResults) {
-				if (data) {
-					results.set(workId, data);
-				} else {
-					failedWorkIds.push(workId);
-				}
-			}
-
-			// レート制限対応
-			if (batchIndex < batches.length - 1) {
-				await new Promise((resolve) => setTimeout(resolve, API_REQUEST_DELAY));
-			}
-		} catch (error) {
-			logger.error(`バッチ ${batchIndex + 1} でエラー:`, { error });
-			// バッチ全体が失敗した場合、そのバッチの全作品IDを失敗として記録
-			failedWorkIds.push(...batch);
-		}
-	}
-
-	// 失敗した作品IDをログ出力（件数制限付き）
-	if (failedWorkIds.length > 0) {
-		logger.warn(
-			`❌ API取得失敗: ${failedWorkIds.length}件 (失敗率${((failedWorkIds.length / workIds.length) * 100).toFixed(1)}%)`,
-		);
-
-		// 失敗ID詳細は10件未満の場合のみ出力
-		if (failedWorkIds.length < 10) {
-			logger.warn(`失敗作品ID: [${failedWorkIds.sort().join(", ")}]`);
-		}
-	}
-
-	return { results, failedWorkIds };
-}
+// 重複実装を削除済み - 統合APIクライアントを使用
+// fetchIndividualWorkInfo と batchFetchIndividualInfo は
+// services/dlsite/individual-info-api-client.ts に統合されました
 
 /**
  * 統合データ収集メタデータの取得または初期化
@@ -360,8 +146,11 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 		// 既存データの確認
 		const existingWorksMap = await getExistingWorksMap(workIds);
 
-		// Individual Info APIでデータを取得
-		const { results: apiDataMap, failedWorkIds } = await batchFetchIndividualInfo(workIds);
+		// Individual Info APIでデータを取得（統合APIクライアント使用）
+		const { results: apiDataMap, failedWorkIds } = await batchFetchIndividualInfo(workIds, {
+			maxConcurrent: MAX_CONCURRENT_API_REQUESTS,
+			batchDelay: API_REQUEST_DELAY,
+		});
 
 		if (apiDataMap.size === 0) {
 			return {

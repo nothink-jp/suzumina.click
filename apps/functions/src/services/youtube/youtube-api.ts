@@ -8,8 +8,6 @@ import {
 } from "../../infrastructure/monitoring/youtube-quota-monitor";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";
 import * as logger from "../../shared/logger";
-import type { ApiError } from "../../shared/retry";
-import { retryApiCall } from "../../shared/retry";
 
 // YouTube API クォータ制限関連の定数
 export const QUOTA_EXCEEDED_CODE = 403; // クォータ超過エラーコード
@@ -65,18 +63,16 @@ export async function searchVideos(
 	}
 
 	try {
-		// YouTube API 呼び出し（リトライ機能付き）
-		const searchResponse: youtube_v3.Schema$SearchListResponse = await retryApiCall(async () => {
-			const response = await youtube.search.list({
-				part: ["id", "snippet"], // snippetも取得して配信状態を確認できるようにする
-				channelId: SUZUKA_MINASE_CHANNEL_ID,
-				maxResults: MAX_VIDEOS_PER_BATCH,
-				type: ["video"],
-				order: "date",
-				pageToken: pageToken,
-			});
-			return response.data;
+		// YouTube API 呼び出し
+		const response = await youtube.search.list({
+			part: ["id", "snippet"], // snippetも取得して配信状態を確認できるようにする
+			channelId: SUZUKA_MINASE_CHANNEL_ID,
+			maxResults: MAX_VIDEOS_PER_BATCH,
+			type: ["video"],
+			order: "date",
+			pageToken: pageToken,
 		});
+		const searchResponse: youtube_v3.Schema$SearchListResponse = response.data;
 
 		// 成功時にクォータ使用量を記録
 		recordQuotaUsage("search");
@@ -92,13 +88,8 @@ export async function searchVideos(
 			nextPageToken: searchResponse.nextPageToken ?? undefined,
 		};
 	} catch (error: unknown) {
-		const apiError = error as ApiError;
-		if (apiError.code === QUOTA_EXCEEDED_CODE) {
-			// クォータ超過の場合
-			logger.error("YouTube API クォータを超過しました。処理を中断します:", error);
-			throw new Error("YouTube APIクォータを超過しました");
-		}
-		// その他のエラー
+		// エラーログ出力
+		logger.error("YouTube API 呼び出しエラー:", error);
 		throw error;
 	}
 }
@@ -143,24 +134,22 @@ export async function fetchVideoDetails(
 		try {
 			const batchIds = videoIds.slice(i, i + MAX_VIDEOS_PER_BATCH);
 
-			// YouTube API 呼び出し（リトライ機能付き）
-			const videoResponse: youtube_v3.Schema$VideoListResponse = await retryApiCall(async () => {
-				const response = await youtube.videos.list({
-					part: [
-						"snippet",
-						"contentDetails",
-						"statistics",
-						"liveStreamingDetails",
-						"topicDetails",
-						"status",
-						"recordingDetails",
-						"player",
-					],
-					id: batchIds,
-					maxResults: MAX_VIDEOS_PER_BATCH,
-				});
-				return response.data;
+			// YouTube API 呼び出し
+			const response = await youtube.videos.list({
+				part: [
+					"snippet",
+					"contentDetails",
+					"statistics",
+					"liveStreamingDetails",
+					"topicDetails",
+					"status",
+					"recordingDetails",
+					"player",
+				],
+				id: batchIds,
+				maxResults: MAX_VIDEOS_PER_BATCH,
 			});
+			const videoResponse: youtube_v3.Schema$VideoListResponse = response.data;
 
 			// 成功時にクォータ使用量を記録
 			recordQuotaUsage("videosFullDetails", batchIds.length);
@@ -177,16 +166,8 @@ export async function fetchVideoDetails(
 				`${videoResponse.items?.length ?? 0}件の動画詳細を取得しました（バッチ ${Math.floor(i / MAX_VIDEOS_PER_BATCH) + 1}）`,
 			);
 		} catch (error: unknown) {
-			const apiError = error as ApiError;
-			if (apiError.code === QUOTA_EXCEEDED_CODE) {
-				// クォータ超過の場合
-				logger.error(
-					"YouTube API クォータを超過しました。ここまで取得した情報を保存します:",
-					error,
-				);
-				break; // ループを抜けて、ここまで取得したデータだけを保存
-			}
-			// その他のエラー
+			// エラーログ出力
+			logger.error("YouTube API 呼び出しエラー:", error);
 			throw error;
 		}
 	}

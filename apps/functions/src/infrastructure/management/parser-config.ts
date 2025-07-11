@@ -102,10 +102,6 @@ export interface ParserConfig {
 	performance: {
 		/** タイムアウト時間（ミリ秒） */
 		timeout: number;
-		/** 最大リトライ回数 */
-		maxRetries: number;
-		/** リトライ間隔（ミリ秒） */
-		retryDelay: number;
 	};
 }
 
@@ -392,8 +388,6 @@ export const DEFAULT_PARSER_CONFIG: ParserConfig = {
 
 	performance: {
 		timeout: 30000,
-		maxRetries: 3,
-		retryDelay: 1000,
 	},
 };
 

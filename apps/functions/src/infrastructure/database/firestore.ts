@@ -6,7 +6,7 @@
  */
 
 import { Firestore, Timestamp } from "@google-cloud/firestore";
-import * as logger from "../../shared/logger.js";
+import * as logger from "../../shared/logger";
 
 // シングルトンパターンで一度だけFirestoreインスタンスを作成
 let firestoreInstance: Firestore | null = null;

@@ -5,11 +5,8 @@
  * 成功したデータをCloud Firestoreに保存する
  */
 
-import { getDLsiteConfig } from "../../infrastructure/management/config-manager";
-import {
-	generateDLsiteHeaders,
-	logUserAgentSummary,
-} from "../../infrastructure/management/user-agent-manager";
+// import { getDLsiteConfig } from "../../infrastructure/management/config-manager";
+import { logUserAgentSummary } from "../../infrastructure/management/user-agent-manager";
 import { saveWorksToFirestore } from "../../services/dlsite/dlsite-firestore";
 import {
 	FAILURE_REASONS,
@@ -18,6 +15,7 @@ import {
 	trackFailedWork,
 	trackWorkRecovery,
 } from "../../services/dlsite/failure-tracker";
+import { fetchIndividualWorkInfo } from "../../services/dlsite/individual-info-api-client";
 import {
 	batchMapIndividualInfoAPIToWorkData,
 	type IndividualInfoAPIResponse,
@@ -25,13 +23,12 @@ import {
 } from "../../services/dlsite/individual-info-to-work-mapper";
 import * as logger from "../../shared/logger";
 
-// Individual Info API設定
-const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
+// バッチ処理設定（統合APIクライアント利用）
 const MAX_CONCURRENT_REQUESTS = 3; // ローカル環境では控えめに設定
 const REQUEST_DELAY = 1000; // 1秒間隔
 
-// 設定を取得
-const config = getDLsiteConfig();
+// 設定を取得 (現在未使用だが将来的に使用可能性あり)
+// const config = getDLsiteConfig();
 
 /**
  * 補完収集結果の型定義
@@ -46,108 +43,9 @@ interface SupplementCollectionResult {
 	errors: string[];
 }
 
-/**
- * Individual Info APIから単一作品データを取得（ローカル環境用）
- */
-async function fetchIndividualWorkInfoLocal(
-	workId: string,
-	retryCount = 0,
-): Promise<IndividualInfoAPIResponse | null> {
-	const MAX_RETRIES = 2;
-	const RETRY_DELAY = 2000;
-
-	try {
-		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
-		const headers = generateDLsiteHeaders();
-
-		logger.info(
-			`🔄 ローカル環境でAPI取得: ${workId}${retryCount > 0 ? ` (retry ${retryCount})` : ""}`,
-		);
-
-		const response = await fetch(url, {
-			method: "GET",
-			headers,
-		});
-
-		if (!response.ok) {
-			const responseText = await response.text();
-			logger.warn(`❌ API取得失敗: ${workId}`, {
-				workId,
-				status: response.status,
-				statusText: response.statusText,
-				responseText: responseText.substring(0, 500),
-			});
-
-			// 404, 403は諦める
-			if (response.status === 404 || response.status === 403) {
-				return null;
-			}
-
-			// その他のエラーはリトライ
-			if (retryCount < MAX_RETRIES) {
-				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-				return fetchIndividualWorkInfoLocal(workId, retryCount + 1);
-			}
-			return null;
-		}
-
-		const responseText = await response.text();
-		let responseData: unknown;
-
-		try {
-			responseData = JSON.parse(responseText);
-		} catch (jsonError) {
-			logger.error(`JSON parse error: ${workId}`, {
-				workId,
-				responseText: responseText.substring(0, 1000),
-				jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError),
-			});
-
-			if (retryCount < MAX_RETRIES) {
-				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-				return fetchIndividualWorkInfoLocal(workId, retryCount + 1);
-			}
-			return null;
-		}
-
-		if (!Array.isArray(responseData) || responseData.length === 0) {
-			logger.warn(`Invalid response: ${workId}`, {
-				workId,
-				responseType: typeof responseData,
-				isArray: Array.isArray(responseData),
-				responseLength: Array.isArray(responseData) ? responseData.length : "N/A",
-			});
-
-			if (retryCount < MAX_RETRIES) {
-				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-				return fetchIndividualWorkInfoLocal(workId, retryCount + 1);
-			}
-			return null;
-		}
-
-		const data = responseData[0] as IndividualInfoAPIResponse;
-
-		if (!data.workno && !data.product_id) {
-			logger.warn(`Invalid data: ${workId} - missing workno/product_id`);
-			return null;
-		}
-
-		logger.info(`✅ ローカル環境で取得成功: ${workId} (${data.work_name})`);
-		return data;
-	} catch (error) {
-		logger.error(`ローカル環境API取得エラー: ${workId}`, {
-			error: error instanceof Error ? error.message : String(error),
-			retryCount,
-		});
-
-		if (retryCount < MAX_RETRIES) {
-			await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-			return fetchIndividualWorkInfoLocal(workId, retryCount + 1);
-		}
-
-		throw error;
-	}
-}
+// 重複実装を削除済み - 統合APIクライアントを使用
+// fetchIndividualWorkInfoLocal は services/dlsite/individual-info-api-client.ts の
+// fetchIndividualWorkInfo に統合されました
 
 /**
  * 複数作品のバッチ処理（ローカル環境用）
@@ -173,7 +71,10 @@ async function batchFetchLocalSupplement(
 			// 並列でAPIを呼び出し
 			const promises = batch.map(async (workId) => {
 				try {
-					const data = await fetchIndividualWorkInfoLocal(workId);
+					// 統合APIクライアントを使用（ローカル環境用設定）
+					const data = await fetchIndividualWorkInfo(workId, {
+						enableDetailedLogging: true, // ローカル環境は詳細ログを有効化
+					});
 					return { workId, data };
 				} catch (error) {
 					logger.warn(`個別取得失敗: ${workId}`, { error });
@@ -396,12 +297,7 @@ async function main(): Promise<void> {
 }
 
 // 名前付きエクスポート
-export {
-	collectFailedWorksLocally,
-	fetchIndividualWorkInfoLocal,
-	batchFetchLocalSupplement,
-	type SupplementCollectionResult,
-};
+export { collectFailedWorksLocally, batchFetchLocalSupplement, type SupplementCollectionResult };
 
 // スクリプト実行
 if (require.main === module) {

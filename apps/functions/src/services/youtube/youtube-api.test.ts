@@ -45,11 +45,6 @@ vi.mock("../../shared/logger", () => ({
 	debug: vi.fn(),
 }));
 
-// retryApiCallのモック
-vi.mock("../../shared/retry", () => ({
-	retryApiCall: vi.fn().mockImplementation(async (fn) => fn()),
-}));
-
 describe("youtube-api", () => {
 	let originalEnv: NodeJS.ProcessEnv;
 
@@ -162,10 +157,8 @@ describe("youtube-api", () => {
 			};
 			mockYoutubeSearchList.mockRejectedValueOnce(quotaError);
 
-			// 関数の実行と検証
-			await expect(youtubeApi.searchVideos(youtubeClient)).rejects.toThrow(
-				"YouTube APIクォータを超過しました",
-			);
+			// 関数の実行と検証（元のエラーがそのまま投げられる）
+			await expect(youtubeApi.searchVideos(youtubeClient)).rejects.toThrow("Quota exceeded");
 		});
 
 		it("その他のエラーが発生した場合、そのエラーがスローされること", async () => {
@@ -322,10 +315,9 @@ describe("youtube-api", () => {
 			// Vitestのモック関数リセット
 			vi.resetAllMocks();
 
-			// retryApiCallのモックを上書き
+			// APIエラーをシミュレート
 			const generalError = new Error("一般的なAPIエラー");
-			const mockRetryApiCall = await import("../../shared/retry");
-			mockRetryApiCall.retryApiCall = vi.fn().mockRejectedValueOnce(generalError);
+			mockYoutubeVideosList.mockRejectedValueOnce(generalError);
 
 			// 動画IDは空でない配列であることを確認
 			const videoIds = ["video1"];

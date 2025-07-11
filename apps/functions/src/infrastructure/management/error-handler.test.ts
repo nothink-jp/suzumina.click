@@ -55,7 +55,9 @@ describe("ErrorHandler", () => {
 				operation: "dlsite-scraping",
 			});
 
-			expect(result.canContinue).toBe(true);
+			// リトライ機能が無効化されているため canContinue は false
+			expect(result.canContinue).toBe(false);
+			expect(result.category).toBe("retry_disabled");
 		});
 
 		it("Firestoreエラーを正しく分類する", async () => {
@@ -65,7 +67,9 @@ describe("ErrorHandler", () => {
 				operation: "firestore-write",
 			});
 
-			expect(result.canContinue).toBe(true);
+			// リトライ機能が無効化されているため canContinue は false
+			expect(result.canContinue).toBe(false);
+			expect(result.category).toBe("retry_disabled");
 		});
 
 		it("ネットワークエラーを正しく分類する", async () => {
@@ -75,7 +79,9 @@ describe("ErrorHandler", () => {
 				operation: "network-request",
 			});
 
-			expect(result.canContinue).toBe(true); // リトライ戦略で true になる
+			// リトライ機能が無効化されているため canContinue は false
+			expect(result.canContinue).toBe(false);
+			expect(result.category).toBe("retry_disabled");
 		});
 	});
 
@@ -87,8 +93,9 @@ describe("ErrorHandler", () => {
 				operation: "retry-test",
 			});
 
-			expect(result.recoverySuccessful).toBe(true);
-			expect(result.category).toBe("retry_success");
+			// リトライ機能が無効化されているため失敗
+			expect(result.recoverySuccessful).toBe(false);
+			expect(result.category).toBe("retry_disabled");
 		});
 
 		it("フォールバック戦略を実行する", async () => {
@@ -98,6 +105,7 @@ describe("ErrorHandler", () => {
 				operation: "structure-test",
 			});
 
+			// フォールバック戦略は実行されるため canContinue は true
 			expect(result.canContinue).toBe(true);
 			expect(result.category).toBe("fallback_success");
 		});
@@ -109,6 +117,7 @@ describe("ErrorHandler", () => {
 				operation: "parse-test",
 			});
 
+			// 部分スキップ戦略は実行されるため canContinue は true
 			expect(result.canContinue).toBe(true);
 			expect(result.category).toBe("partial_skip");
 		});

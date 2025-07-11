@@ -404,51 +404,16 @@ export class ErrorHandler {
 	 * リトライ戦略
 	 */
 	private async executeRetryStrategy(error: StructuredError): Promise<ErrorHandlingResult> {
-		const maxRetries = 3;
-		const baseDelay = 1000;
-
-		for (let attempt = 1; attempt <= maxRetries; attempt++) {
-			try {
-				// 指数バックオフによる待機
-				const delay = baseDelay * 2 ** (attempt - 1);
-				await new Promise((resolve) => setTimeout(resolve, delay));
-
-				logger.info(`復旧リトライ実行中: ${attempt}/${maxRetries}`, {
-					errorId: error.errorId,
-					errorType: error.type,
-					delay,
-				});
-
-				// 実際のリトライロジックはここに実装
-				// （この例では成功したと仮定）
-				return {
-					canContinue: true,
-					recoverySuccessful: true,
-					recommendedActions: [`リトライ${attempt}回目で復旧成功`],
-					category: "retry_success",
-				};
-			} catch (retryError) {
-				logger.warn(`リトライ${attempt}回目失敗`, {
-					errorId: error.errorId,
-					retryError: retryError instanceof Error ? retryError.message : String(retryError),
-				});
-
-				if (attempt === maxRetries) {
-					return {
-						canContinue: false,
-						recoverySuccessful: false,
-						recommendedActions: ["最大リトライ回数に達しました", "手動での対応が必要です"],
-						category: "retry_exhausted",
-					};
-				}
-			}
-		}
+		logger.warn("リトライ機能は無効化されています", {
+			errorId: error.errorId,
+			errorType: error.type,
+		});
 
 		return {
 			canContinue: false,
 			recoverySuccessful: false,
-			recommendedActions: ["リトライ処理で予期しないエラー"],
-			category: "retry_error",
+			recommendedActions: ["リトライ機能は無効化されています", "手動介入が必要です"],
+			category: "retry_disabled",
 		};
 	}
 

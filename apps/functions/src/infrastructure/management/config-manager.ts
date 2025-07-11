@@ -21,10 +21,6 @@ export interface DLsiteConfig {
 	userAgentRotationEnabled: boolean;
 	/** タイムアウト時間（ミリ秒） */
 	timeoutMs: number;
-	/** リトライ回数 */
-	maxRetries: number;
-	/** リトライ間隔（ミリ秒） */
-	retryDelay: number;
 	/** 解析健全性チェック有効化 */
 	healthCheckEnabled: boolean;
 	/** 健全性チェック間隔（分） */
@@ -59,8 +55,6 @@ export interface FirestoreConfig {
 	largeBatchThreshold: number;
 	/** タイムアウト時間（ミリ秒） */
 	timeoutMs: number;
-	/** リトライ回数 */
-	maxRetries: number;
 	/** 接続プールサイズ */
 	connectionPoolSize: number;
 }
@@ -145,8 +139,6 @@ const DEFAULT_CONFIG: CloudFunctionConfig = {
 		requestDelay: 1000,
 		userAgentRotationEnabled: true,
 		timeoutMs: 30000,
-		maxRetries: 3,
-		retryDelay: 1000,
 		healthCheckEnabled: true,
 		healthCheckIntervalMinutes: 60,
 	},
@@ -164,7 +156,6 @@ const DEFAULT_CONFIG: CloudFunctionConfig = {
 		batchSize: 500,
 		largeBatchThreshold: 500,
 		timeoutMs: 60000,
-		maxRetries: 3,
 		connectionPoolSize: 10,
 	},
 
@@ -217,8 +208,6 @@ const ENVIRONMENT_OVERRIDES: Record<string, Partial<CloudFunctionConfig>> = {
 			itemsPerPage: 100,
 			userAgentRotationEnabled: true,
 			timeoutMs: 30000,
-			maxRetries: 3,
-			retryDelay: 1000,
 			healthCheckEnabled: true,
 			healthCheckIntervalMinutes: 60,
 		},
@@ -249,8 +238,6 @@ const ENVIRONMENT_OVERRIDES: Record<string, Partial<CloudFunctionConfig>> = {
 			itemsPerPage: 100,
 			userAgentRotationEnabled: true,
 			timeoutMs: 30000,
-			maxRetries: 3,
-			retryDelay: 1000,
 			healthCheckEnabled: true,
 			healthCheckIntervalMinutes: 60,
 		},
@@ -281,8 +268,6 @@ const ENVIRONMENT_OVERRIDES: Record<string, Partial<CloudFunctionConfig>> = {
 			itemsPerPage: 100,
 			userAgentRotationEnabled: true,
 			timeoutMs: 30000,
-			maxRetries: 3,
-			retryDelay: 1000,
 			healthCheckEnabled: true,
 			healthCheckIntervalMinutes: 60,
 		},

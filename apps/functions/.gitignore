@@ -2,3 +2,7 @@
 lib/**/*.js
 lib/**/*.js.map
 lib/
+
+# Environment variables
+.env
+.env.local

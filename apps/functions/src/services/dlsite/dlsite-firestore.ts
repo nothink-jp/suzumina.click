@@ -7,6 +7,7 @@
 import type { Query } from "@google-cloud/firestore";
 import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
+import { chunkArray } from "../../shared/array-utils";
 import * as logger from "../../shared/logger";
 import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
 
@@ -226,16 +227,7 @@ export async function getExistingWorksMap(
 
 // executeBatchInChunks関数は最適化構造では未使用のため削除
 
-/**
- * 配列を指定されたサイズのチャンクに分割
- */
-function chunkArray<T>(array: T[], size: number): T[][] {
-	const chunks: T[][] = [];
-	for (let i = 0; i < array.length; i += size) {
-		chunks.push(array.slice(i, i + size));
-	}
-	return chunks;
-}
+// 配列分割ユーティリティは shared/array-utils.ts から import
 
 /**
  * 特定の作品データを取得 (最適化構造対応)
