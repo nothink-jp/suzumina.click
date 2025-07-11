@@ -63,7 +63,7 @@ export const metadata = {
 		"涼花みなせさんのYouTube動画から、あなただけの音声ボタンを作成しよう。配信アーカイブからお気に入りの動画を見つけて、特別な瞬間を音声ボタンにして保存しよう。",
 	keywords: ["涼花みなせ", "YouTube", "動画", "音声ボタン作成", "配信", "アーカイブ", "切り抜き"],
 	openGraph: {
-		title: "動画一覧 | suzumina.click",
+		title: "動画一覧 | すずみなくりっく！",
 		description:
 			"涼花みなせさんのYouTube動画から、あなただけの音声ボタンを作成しよう。配信アーカイブからお気に入りの動画を見つけて、特別な瞬間を音声ボタンにして保存しよう。",
 		url: "https://suzumina.click/videos",

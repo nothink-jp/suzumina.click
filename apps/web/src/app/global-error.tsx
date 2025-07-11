@@ -18,7 +18,7 @@ export default function GlobalError({
 	return (
 		<html lang="ja">
 			<head>
-				<title>エラーが発生しました | suzumina.click</title>
+				<title>エラーが発生しました | すずみなくりっく！</title>
 			</head>
 			<body>
 				<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-suzuka-50 via-red-50 to-minase-50 px-4">

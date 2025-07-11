@@ -199,8 +199,9 @@ export async function getAudioButtons(
 		// Firestoreクエリの構築
 		const firestoreQuery = buildFirestoreQuery(firestore, validatedQuery);
 
-		// 総件数の取得
-		const totalCount = await getTotalCount(firestore, validatedQuery);
+		// 総件数の取得（フィルタあり・なしの両方）
+		const _filteredCount = await getTotalCount(firestore, validatedQuery);
+		const totalCount = await getAllCount(firestore); // フィルタなしの全件数
 
 		// ページネーション設定
 		const queryWithPagination = await applyPagination(firestoreQuery, validatedQuery, firestore);
@@ -215,8 +216,17 @@ export async function getAudioButtons(
 		// データ変換とフィルタリング
 		const audioButtons = processAudioButtons(audioButtonDocs, validatedQuery);
 
+		// 実際のフィルタリング後の件数を取得（クライアントサイドフィルタリング考慮）
+		const actualFilteredCount = await getActualFilteredCount(firestore, validatedQuery);
+
 		// 結果の構築
-		const result = buildResult(audioButtons, hasMore, validatedQuery, totalCount);
+		const result = buildResult(
+			audioButtons,
+			hasMore,
+			validatedQuery,
+			actualFilteredCount,
+			totalCount,
+		);
 
 		return {
 			success: true,
@@ -278,6 +288,55 @@ async function getTotalCount(
 	}
 	const countSnapshot = await countQuery.get();
 	return countSnapshot.size;
+}
+
+// ヘルパー関数: 全件数取得（フィルタなし）
+async function getAllCount(firestore: ReturnType<typeof getFirestore>): Promise<number> {
+	const countQuery = firestore.collection("audioButtons").where("isPublic", "==", true);
+	const countSnapshot = await countQuery.get();
+	return countSnapshot.size;
+}
+
+// ヘルパー関数: 実際のフィルタリング後の件数を取得
+async function getActualFilteredCount(
+	firestore: ReturnType<typeof getFirestore>,
+	validatedQuery: AudioButtonQuery,
+): Promise<number> {
+	if (!validatedQuery.includeTotalCount) {
+		return 0;
+	}
+
+	// Firestoreクエリを構築（基本的なフィルタのみ）
+	const firestoreQuery = buildFirestoreQuery(firestore, validatedQuery);
+
+	// 全データを取得
+	const snapshot = await firestoreQuery.get();
+	const docs = snapshot.docs;
+
+	// Firestoreデータをフロントエンド用に変換
+	const allAudioButtons = docs.map((doc) => {
+		const data = { id: doc.id, ...doc.data() } as FirestoreAudioButtonData;
+		return convertToFrontendAudioButton(data);
+	});
+
+	// クライアントサイドフィルタリングを適用
+	const filteredAudioButtons = filterAudioButtons(allAudioButtons, {
+		searchText: validatedQuery.searchText,
+		tags: validatedQuery.tags,
+		playCountMin: validatedQuery.playCountMin,
+		playCountMax: validatedQuery.playCountMax,
+		likeCountMin: validatedQuery.likeCountMin,
+		likeCountMax: validatedQuery.likeCountMax,
+		favoriteCountMin: validatedQuery.favoriteCountMin,
+		favoriteCountMax: validatedQuery.favoriteCountMax,
+		durationMin: validatedQuery.durationMin,
+		durationMax: validatedQuery.durationMax,
+		createdAfter: validatedQuery.createdAfter,
+		createdBefore: validatedQuery.createdBefore,
+		createdBy: validatedQuery.createdBy,
+	});
+
+	return filteredAudioButtons.length;
 }
 
 // ヘルパー関数: ページネーション適用
@@ -369,16 +428,18 @@ function buildResult(
 	audioButtons: FrontendAudioButtonData[],
 	hasMore: boolean,
 	validatedQuery: AudioButtonQuery,
+	filteredCount?: number,
 	totalCount?: number,
 ): AudioButtonListResult {
 	const currentPage = validatedQuery.page || 1;
-	const totalPages = totalCount ? Math.ceil(totalCount / validatedQuery.limit) : undefined;
+	const totalPages = filteredCount ? Math.ceil(filteredCount / validatedQuery.limit) : undefined;
 
 	return {
 		audioButtons,
 		hasMore,
 		lastAudioButton: audioButtons.length > 0 ? audioButtons[audioButtons.length - 1] : undefined,
 		totalCount,
+		filteredCount,
 		currentPage,
 		totalPages,
 	};

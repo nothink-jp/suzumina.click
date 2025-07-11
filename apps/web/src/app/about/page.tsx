@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 		"DLsite作品紹介",
 	],
 	openGraph: {
-		title: "サイトについて | suzumina.click",
+		title: "サイトについて | すずみなくりっく！",
 		description:
 			"suzumina.clickは涼花みなせさんのファンコミュニティによる非公式ファンサイトです。YouTube動画の特定場面を再生できるボタン作成・DLsite作品情報のご紹介・ファン同士の交流を目的としています。",
 		url: "https://suzumina.click/about",

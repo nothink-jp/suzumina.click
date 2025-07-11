@@ -24,10 +24,11 @@ import WorkCard from "./WorkCard";
 interface WorkListProps {
 	data: FrontendDLsiteWorkData[];
 	totalCount: number;
+	filteredCount?: number;
 	currentPage: number;
 }
 
-export default function WorkList({ data, totalCount, currentPage }: WorkListProps) {
+export default function WorkList({ data, totalCount, filteredCount, currentPage }: WorkListProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { isAdult, isLoading: ageVerificationLoading } = useAgeVerification();
@@ -64,6 +65,21 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 			setShowR18(newShowR18);
 		}
 	}, [searchParams, ageVerificationLoading, showR18]);
+
+	// フィルタが適用されているかどうかを判定
+	const hasFilters = useMemo(() => {
+		const search = searchParams.get("search");
+		const category = searchParams.get("category");
+		const language = searchParams.get("language");
+		const excludeR18 = searchParams.get("excludeR18");
+
+		return !!(
+			search ||
+			(category && category !== "all") ||
+			(language && language !== "all") ||
+			excludeR18
+		);
+	}, [searchParams]);
 
 	// URLパラメータ更新用ユーティリティ
 	const updateUrlParam = useMemo(
@@ -239,6 +255,7 @@ export default function WorkList({ data, totalCount, currentPage }: WorkListProp
 			<ListDisplayControls
 				title="作品一覧"
 				totalCount={totalCount}
+				filteredCount={hasFilters ? filteredCount : undefined}
 				currentPage={currentPage}
 				totalPages={totalPages}
 				sortValue={sortBy}

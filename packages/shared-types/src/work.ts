@@ -647,6 +647,7 @@ export const WorkListResultSchema = z.object({
 	hasMore: z.boolean(),
 	lastWork: FrontendDLsiteWorkSchema.optional(),
 	totalCount: z.number().int().nonnegative().optional(),
+	filteredCount: z.number().int().nonnegative().optional(),
 });
 
 /**

@@ -254,6 +254,9 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 			id: doc.id,
 		})) as OptimizedFirestoreDLsiteWorkData[];
 
+		// 全件数（フィルタなし）
+		const totalCount = allWorks.length;
+
 		// 統合データ構造による拡張検索フィルタリング
 		allWorks = filterWorksByUnifiedData(allWorks, {
 			search,
@@ -268,6 +271,9 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 			excludeR18,
 		});
 
+		// フィルタリング後の件数
+		const filteredCount = allWorks.length;
+
 		// ソート処理
 		const sortedWorks = sortWorks(allWorks, sort as SortOption);
 
@@ -275,9 +281,6 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 		const startIndex = (page - 1) * limit;
 		const endIndex = startIndex + limit;
 		const paginatedWorks = sortedWorks.slice(startIndex, endIndex);
-
-		// 総数は全取得データから算出
-		const totalCount = allWorks.length;
 
 		// FirestoreデータをFrontend用に変換
 		const works: FrontendDLsiteWorkData[] = [];
@@ -297,13 +300,14 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 			}
 		}
 
-		const hasMore = page * limit < totalCount;
+		const hasMore = page * limit < filteredCount;
 
 		const result: WorkListResult = {
 			works,
 			hasMore,
 			lastWork: works[works.length - 1],
 			totalCount,
+			filteredCount,
 		};
 
 		return result;

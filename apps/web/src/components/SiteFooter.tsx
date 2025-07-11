@@ -52,7 +52,13 @@ export default function SiteFooter() {
 							</p>
 						</div>
 						<div className="border-t border-minase-600 pt-4 text-sm text-minase-200">
-							<p>&copy; 2025 nothink.jp. このサイトは非公式のファンサイトです。</p>
+							<p>
+								&copy; 2025{" "}
+								<Link href={"https://www.nothink.jp"} target="_blank">
+									nothink.jp
+								</Link>
+								. このサイトは非公式のファンサイトです。
+							</p>
 						</div>
 					</div>
 				</div>

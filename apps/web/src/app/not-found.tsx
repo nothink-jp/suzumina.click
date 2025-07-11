@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-	title: "404 - ページが見つかりません | suzumina.click",
+	title: "404 - ページが見つかりません | すずみなくりっく！",
 	description: "お探しのページは見つかりませんでした。涼花みなせファンコミュニティサイト",
 };
 

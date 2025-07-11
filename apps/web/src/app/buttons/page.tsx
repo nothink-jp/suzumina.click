@@ -61,7 +61,7 @@ export const metadata = {
 		"あーたたち",
 	],
 	openGraph: {
-		title: "音声ボタン一覧 | suzumina.click",
+		title: "音声ボタン一覧 | すずみなくりっく！",
 		description:
 			"涼花みなせさんの音声ボタンで、好きな声をいつでも楽しもう。YouTube動画の特定場面を再生する音声ボタンを検索・再生・お気に入り登録できます。",
 		url: "https://suzumina.click/buttons",

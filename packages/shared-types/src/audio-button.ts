@@ -182,6 +182,7 @@ export const AudioButtonListResultSchema = z.object({
 	hasMore: z.boolean(),
 	lastAudioButton: FrontendAudioButtonSchema.optional(),
 	totalCount: z.number().int().min(0).optional(),
+	filteredCount: z.number().int().min(0).optional(), // フィルタリング後の件数
 	currentPage: z.number().int().positive().optional(), // 現在のページ番号
 	totalPages: z.number().int().min(0).optional(), // 総ページ数
 });

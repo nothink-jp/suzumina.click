@@ -114,6 +114,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	const urlSearchParams = useSearchParams();
 	const [audioButtons, setAudioButtons] = useState<FrontendAudioButtonData[]>([]);
 	const [totalCount, setTotalCount] = useState(0);
+	const [filteredCount, setFilteredCount] = useState<number | undefined>(undefined);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -130,14 +131,39 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		createAdvancedFiltersFromParams(searchParams),
 	);
 
+	// フィルタが適用されているかどうかを判定
+	const hasFilters = useCallback(() => {
+		return !!(
+			searchParams.q ||
+			searchParams.tags ||
+			searchParams.sourceVideoId ||
+			searchParams.playCountMin ||
+			searchParams.playCountMax ||
+			searchParams.likeCountMin ||
+			searchParams.likeCountMax ||
+			searchParams.favoriteCountMin ||
+			searchParams.favoriteCountMax ||
+			searchParams.durationMin ||
+			searchParams.durationMax ||
+			searchParams.createdAfter ||
+			searchParams.createdBefore ||
+			searchParams.createdBy
+		);
+	}, [searchParams]);
+
 	const currentPage = searchParams.page ? Number.parseInt(searchParams.page, 10) : 1;
 	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
-	const totalPages = Math.ceil(totalCount / itemsPerPageNum);
+
+	// ページネーションの計算：フィルタが適用されている場合はfilteredCountを使用
+	const isFiltered = hasFilters();
+	const effectiveCount = isFiltered && filteredCount !== undefined ? filteredCount : totalCount;
+	const totalPages = Math.ceil(effectiveCount / itemsPerPageNum);
 
 	// URLパラメータからクエリパラメータを構築
 	const buildQueryParams = useCallback((): URLSearchParams => {
 		const queryParams = new URLSearchParams();
 		queryParams.set("limit", itemsPerPageNum.toString());
+		queryParams.set("includeTotalCount", "true"); // 総件数を含める
 
 		// ページ番号を追加
 		if (currentPage > 1) {
@@ -158,6 +184,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 			data?: {
 				audioButtons?: FrontendAudioButtonData[];
 				totalCount?: number;
+				filteredCount?: number;
 				currentPage?: number;
 				totalPages?: number;
 			};
@@ -171,6 +198,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 			if (result.success && result.data) {
 				setAudioButtons(result.data.audioButtons || []);
 				setTotalCount(result.data.totalCount || 0);
+				setFilteredCount(result.data.filteredCount);
 			} else {
 				setError(result.error || "エラーが発生しました");
 			}
@@ -355,28 +383,6 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 						</div>
 					</div>
 
-					{/* 人気タグ */}
-					<div className="space-y-2">
-						<p className="text-sm font-medium text-muted-foreground">人気タグ</p>
-						<div className="flex flex-wrap gap-2">
-							{["挨拶", "応援", "おやすみ", "ありがとう", "お疲れ様"].map((tag) => (
-								<button
-									key={tag}
-									type="button"
-									onClick={() => {
-										setSearchQuery(tag);
-										startTransition(() => {
-											updateSearchParams({ q: tag });
-										});
-									}}
-									className="px-3 py-1.5 text-sm rounded-full bg-suzuka-100 text-suzuka-700 hover:bg-suzuka-200 transition-colors"
-								>
-									{tag}
-								</button>
-							))}
-						</div>
-					</div>
-
 					{/* 高度フィルタ */}
 					<AdvancedFilterPanel
 						filters={advancedFilters}
@@ -391,6 +397,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 				<ListDisplayControls
 					title={searchParams.sourceVideoId ? "この動画の音声ボタン" : "音声ボタン一覧"}
 					totalCount={totalCount}
+					filteredCount={isFiltered ? filteredCount : undefined}
 					currentPage={currentPage}
 					totalPages={totalPages}
 					sortValue={sortBy}
@@ -463,9 +470,9 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 			{audioButtons.length > 0 && (
 				<div className="text-center">
 					<div className="inline-block bg-white/60 backdrop-blur-sm rounded-full px-6 py-2 text-sm text-muted-foreground border border-suzuka-100">
-						{totalCount.toLocaleString()}件中{" "}
+						{effectiveCount.toLocaleString()}件中{" "}
 						{((currentPage - 1) * itemsPerPageNum + 1).toLocaleString()}〜
-						{Math.min(currentPage * itemsPerPageNum, totalCount).toLocaleString()}件を表示
+						{Math.min(currentPage * itemsPerPageNum, effectiveCount).toLocaleString()}件を表示
 					</div>
 				</div>
 			)}

@@ -50,7 +50,7 @@ export const metadata = {
 		"涼花みなせさんの音声作品情報を参照・表示。DLsite公式サイトであなたにぴったりの作品を見つけよう。癒し系作品からASMRまで、幅広いジャンルの音声作品情報を確認できます。",
 	keywords: ["涼花みなせ", "DLsite", "音声作品", "ASMR", "癒し", "作品紹介", "ファンサイト"],
 	openGraph: {
-		title: "作品一覧 | suzumina.click",
+		title: "作品一覧 | すずみなくりっく！",
 		description:
 			"涼花みなせさんの音声作品情報を参照・表示。DLsite公式サイトであなたにぴったりの作品を見つけよう。癒し系作品からASMRまで、幅広いジャンルの音声作品情報を確認できます。",
 		url: "https://suzumina.click/works",

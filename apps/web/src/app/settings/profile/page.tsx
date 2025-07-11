@@ -4,7 +4,7 @@ import { getUserByDiscordId } from "@/lib/user-firestore";
 import { ProfileSettingsForm } from "./components/ProfileSettingsForm";
 
 export const metadata = {
-	title: "プロフィール設定 | suzumina.click",
+	title: "プロフィール設定 | すずみなくりっく！",
 	description: "プロフィール情報の編集",
 };
 

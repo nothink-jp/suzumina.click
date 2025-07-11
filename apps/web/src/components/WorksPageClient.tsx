@@ -27,6 +27,7 @@ export function WorksPageClient({
 	const { showR18Content, isLoading: ageVerificationLoading } = useAgeVerification();
 	const [data, setData] = useState(initialData);
 	const [totalCount, setTotalCount] = useState(initialTotalCount);
+	const [filteredCount, setFilteredCount] = useState<number | undefined>(undefined);
 	const [isLoading, setIsLoading] = useState(false);
 
 	// 年齢確認状態が変更された時にデータを再取得
@@ -64,6 +65,7 @@ export function WorksPageClient({
 
 				setData(result.works);
 				setTotalCount(result.totalCount || 0);
+				setFilteredCount(result.filteredCount);
 			} catch (_error) {
 				// Error handling - silent fail to prevent console noise
 			} finally {
@@ -117,7 +119,12 @@ export function WorksPageClient({
 							<p className="mt-2 text-muted-foreground">フィルタリング中...</p>
 						</div>
 					) : (
-						<WorkList data={data} totalCount={totalCount} currentPage={initialPage} />
+						<WorkList
+							data={data}
+							totalCount={totalCount}
+							filteredCount={filteredCount}
+							currentPage={initialPage}
+						/>
 					)}
 				</Suspense>
 			</ListPageContent>

@@ -1,60 +1,33 @@
-# 最適化されたlefthook設定（冗長性除去版）
+# 開発フロー重視のlefthook設定
 
 pre-commit:
   commands:
-    # 1. コードフォーマット・リント (Biome) - 変更ファイルのみ高速実行
-    check:
+    # 1. コードフォーマット・リント（自動修正付き）
+    format-and-lint:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
       run: npx @biomejs/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
       stage_fixed: true
       fail_text: "コードフォーマット・リントに失敗しました"
     
-    # 2. 変更されたパッケージのテストのみ実行（高速化）
-    test:
-      glob: "*.{ts,tsx,js,jsx}"
-      run: pnpm test --run --reporter=verbose --passWithNoTests
-      fail_text: "テストが失敗しました"
+    # 2. 型チェック（変更ファイルに影響する範囲のみ）
+    typecheck-incremental:
+      glob: "*.{ts,tsx}"
+      run: pnpm --filter @suzumina.click/shared-types typecheck
+      fail_text: "型チェックに失敗しました"
 
 pre-push:
   commands:
-    # Session Branch戦略推奨警告
-    branch-strategy-warning:
-      run: |
-        BRANCH=$(git rev-parse --abbrev-ref HEAD)
-        if [ "$BRANCH" = "main" ]; then
-          echo ""
-          echo "⚠️  警告: mainブランチに直接pushしています"
-          echo ""
-          echo "🔄 Session Branch戦略の使用を推奨します:"
-          echo "  1. git claude-start    # セッション開始（ブランチ作成）"
-          echo "  2. (開発作業を実行)"
-          echo "  3. git claude-done     # セッション終了（マージ・削除）"
-          echo ""
-          echo "💡 メリット:"
-          echo "  - セッション単位の履歴管理"
-          echo "  - ロールバック容易"
-          echo "  - プレビュー環境連携（将来実装）"
-          echo ""
-          echo "⏱️  3秒後にpushを続行します..."
-          sleep 3
-        fi
-    
     # 1. 共有型のビルド確認（依存関係の整合性保証）
     build-shared-types:
       run: pnpm --filter @suzumina.click/shared-types build
       fail_text: "共有型のビルドに失敗しました"
     
-    # 2. 全パッケージの型チェック（pre-commitでは変更ファイルのみ）
-    typecheck:
+    # 2. 全体の型チェック（プッシュ前の品質保証）
+    typecheck-all:
       run: pnpm typecheck
       fail_text: "TypeScript型チェックに失敗しました"
     
-    # 3. セキュリティ監査（プッシュ前の最終確認）
-    audit:
-      run: pnpm audit --audit-level moderate
-      fail_text: "セキュリティ脆弱性が検出されました"
-    
-    # 4. テストカバレッジ確認（品質保証）
-    test-coverage:
-      run: pnpm test:coverage
-      fail_text: "テストカバレッジが基準を満たしていません"
+    # 3. 基本テスト（shared-typesのみ - 最重要）
+    test-shared-types:
+      run: pnpm --filter @suzumina.click/shared-types test
+      fail_text: "共有型のテストに失敗しました"

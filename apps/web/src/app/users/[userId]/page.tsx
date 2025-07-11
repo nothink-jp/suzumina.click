@@ -18,13 +18,13 @@ export async function generateMetadata({ params }: UserProfilePageProps): Promis
 		const user = await getUserByDiscordId(resolvedParams.userId);
 		if (!user) {
 			return {
-				title: "ユーザーが見つかりません | suzumina.click",
+				title: "ユーザーが見つかりません | すずみなくりっく！",
 				description: "指定されたユーザーが見つかりません。",
 			};
 		}
 
 		return {
-			title: `${user.displayName}のプロフィール | suzumina.click`,
+			title: `${user.displayName}のプロフィール | すずみなくりっく！`,
 			description: `${user.displayName}さんの作成した音声ボタン${user.audioButtonsCount}個をチェック。涼花みなせファンコミュニティ suzumina.click`,
 			openGraph: {
 				title: `${user.displayName}のプロフィール`,
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: UserProfilePageProps): Promis
 		};
 	} catch {
 		return {
-			title: "プロフィール | suzumina.click",
+			title: "プロフィール | すずみなくりっく！",
 			description: "ユーザープロフィールページ",
 		};
 	}

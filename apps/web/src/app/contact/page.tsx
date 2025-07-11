@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 		"suzumina.clickに関するご質問、バグ報告、機能要望などをお寄せください。涼花みなせファンサイトの改善にご協力をお願いします。",
 	keywords: ["お問い合わせ", "バグ報告", "機能要望", "ヘルプ", "FAQ", "ファンサイト"],
 	openGraph: {
-		title: "お問い合わせ | suzumina.click",
+		title: "お問い合わせ | すずみなくりっく！",
 		description:
 			"suzumina.clickに関するご質問、バグ報告、機能要望などをお寄せください。涼花みなせファンサイトの改善にご協力をお願いします。",
 		url: "https://suzumina.click/contact",

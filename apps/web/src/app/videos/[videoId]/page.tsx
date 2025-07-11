@@ -36,12 +36,12 @@ export async function generateMetadata({ params }: VideoDetailPageProps) {
 
 	if (!video) {
 		return {
-			title: "動画が見つかりません | suzumina.click",
+			title: "動画が見つかりません | すずみなくりっく！",
 		};
 	}
 
 	return {
-		title: `${video.title} | suzumina.click`,
+		title: `${video.title} | すずみなくりっく！`,
 		description: video.description || `涼花みなせさんの動画「${video.title}」の詳細ページです。`,
 	};
 }

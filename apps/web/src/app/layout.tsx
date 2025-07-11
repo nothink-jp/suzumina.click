@@ -24,7 +24,7 @@ const mPlusRounded = M_PLUS_Rounded_1c({
 export const metadata: Metadata = {
 	title: {
 		default: "すずみなくりっく！ - 涼花みなせファンサイト",
-		template: "%s | suzumina.click",
+		template: "%s | すずみなくりっく！",
 	},
 	description:
 		"涼花みなせさんの音声ボタンを楽しめる非公式ファンサイトです。YouTube動画から音声ボタンを作成・共有し、DLsite作品情報も閲覧できます。あーたたちが集まる、あーたたちのためのファンサイトです。",

@@ -36,12 +36,12 @@ export async function generateMetadata({ params }: WorkDetailPageProps) {
 
 	if (!work) {
 		return {
-			title: "作品が見つかりません | suzumina.click",
+			title: "作品が見つかりません | すずみなくりっく！",
 		};
 	}
 
 	return {
-		title: `${work.title} | suzumina.click`,
+		title: `${work.title} | すずみなくりっく！`,
 		description:
 			work.description || `涼花みなせさんが出演する音声作品「${work.title}」の詳細ページです。`,
 	};

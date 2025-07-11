@@ -233,24 +233,26 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 		<div className="max-w-7xl mx-auto space-y-6">
 			{/* パンくずリスト */}
 			<nav aria-label="パンくずリスト" className="text-sm">
-				<ol className="flex items-center space-x-2 text-muted-foreground">
-					<li>
+				<ol className="flex items-center space-x-2 text-muted-foreground min-w-0">
+					<li className="shrink-0">
 						<Link href="/" className="hover:text-foreground transition-colors">
 							ホーム
 						</Link>
 					</li>
-					<li>
+					<li className="shrink-0">
 						<span className="mx-1">/</span>
 					</li>
-					<li>
+					<li className="shrink-0">
 						<Link href="/videos" className="hover:text-foreground transition-colors">
 							動画一覧
 						</Link>
 					</li>
-					<li>
+					<li className="shrink-0">
 						<span className="mx-1">/</span>
 					</li>
-					<li className="text-foreground font-medium truncate max-w-xs">{video.title}</li>
+					<li className="text-foreground font-medium truncate min-w-0 max-w-[200px] sm:max-w-[300px] md:max-w-[400px] lg:max-w-[500px]">
+						{video.title}
+					</li>
 				</ol>
 			</nav>
 

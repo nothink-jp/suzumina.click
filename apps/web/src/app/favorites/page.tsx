@@ -7,7 +7,7 @@ import { getAudioButtonsFromFavorites, getUserFavorites } from "@/lib/favorites-
 import FavoritesList from "./components/FavoritesList";
 
 export const metadata: Metadata = {
-	title: "お気に入り | suzumina.click",
+	title: "お気に入り | すずみなくりっく！",
 	description: "お気に入り登録した音声ボタン一覧",
 };
 

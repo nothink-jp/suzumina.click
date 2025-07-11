@@ -119,24 +119,26 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 		<div className="max-w-6xl mx-auto">
 			{/* パンくずリスト */}
 			<nav className="mb-6 text-sm">
-				<ol className="flex items-center space-x-2 text-gray-600">
-					<li>
+				<ol className="flex items-center space-x-2 text-gray-600 min-w-0">
+					<li className="shrink-0">
 						<Link href="/" className="hover:text-foreground/80">
 							ホーム
 						</Link>
 					</li>
-					<li>
+					<li className="shrink-0">
 						<span className="mx-2">/</span>
 					</li>
-					<li>
+					<li className="shrink-0">
 						<Link href="/works" className="hover:text-foreground/80">
 							作品一覧
 						</Link>
 					</li>
-					<li>
+					<li className="shrink-0">
 						<span className="mx-2">/</span>
 					</li>
-					<li className="text-gray-800 font-medium truncate">{work.title}</li>
+					<li className="text-gray-800 font-medium truncate min-w-0 max-w-[200px] sm:max-w-[300px] md:max-w-[400px] lg:max-w-[500px]">
+						{work.title}
+					</li>
 				</ol>
 			</nav>
 
