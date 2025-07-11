@@ -5,7 +5,8 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { CardContent } from "@suzumina.click/ui/components/ui/card";
 import { Switch } from "@suzumina.click/ui/components/ui/switch";
 import { BarChart3, Shield, Target, User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useIsClient } from "@/hooks/useIsClient";
 
 interface ConsentChoices {
 	necessary: boolean;
@@ -69,26 +70,28 @@ interface CookiePreferencesPanelProps {
 }
 
 export function CookiePreferencesPanel({ onSave, onCancel }: CookiePreferencesPanelProps) {
-	const [preferences, setPreferences] = useState<ConsentChoices>(() => {
-		// Load existing preferences or use defaults
-		if (typeof window !== "undefined") {
+	const isClient = useIsClient();
+	const [preferences, setPreferences] = useState<ConsentChoices>({
+		necessary: true,
+		analytics: false,
+		advertising: false,
+		personalization: false,
+	});
+
+	useEffect(() => {
+		// Load existing preferences when client-side
+		if (isClient) {
 			const saved = localStorage.getItem("cookie-consent");
 			if (saved) {
 				try {
-					return JSON.parse(saved);
+					const parsed = JSON.parse(saved);
+					setPreferences(parsed);
 				} catch {
-					// Fallback to defaults if parsing fails
+					// Keep defaults if parsing fails
 				}
 			}
 		}
-
-		return {
-			necessary: true,
-			analytics: false,
-			advertising: false,
-			personalization: false,
-		};
-	});
+	}, [isClient]);
 
 	const handleToggle = (categoryId: keyof ConsentChoices, enabled: boolean) => {
 		setPreferences((prev) => ({

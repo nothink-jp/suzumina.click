@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useIsClient } from "@/hooks/useIsClient";
 
 interface ConsentState {
 	necessary: boolean;
@@ -14,6 +15,7 @@ interface ConsentState {
  * Only shows in development mode
  */
 export function ConsentDebugger() {
+	const isClient = useIsClient();
 	const [consentState, setConsentState] = useState<ConsentState | null>(null);
 	const [consentDate, setConsentDate] = useState<string | null>(null);
 	const [gtag, setGtag] = useState<boolean>(false);
@@ -67,8 +69,8 @@ export function ConsentDebugger() {
 		};
 	}, []);
 
-	// Only show in development
-	if (process.env.NODE_ENV !== "development") {
+	// Only show in development and after client-side hydration
+	if (process.env.NODE_ENV !== "development" || !isClient) {
 		return null;
 	}
 

@@ -4,6 +4,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
 import { Cookie, Settings, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useIsClient } from "@/hooks/useIsClient";
 import { CookiePreferencesPanel } from "./CookiePreferencesPanel";
 
 interface ConsentChoices {
@@ -21,6 +22,7 @@ const DEFAULT_CONSENT: ConsentChoices = {
 };
 
 export function CookieConsentBanner() {
+	const isClient = useIsClient();
 	const [showBanner, setShowBanner] = useState(false);
 	const [showPreferences, setShowPreferences] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
@@ -73,6 +75,9 @@ export function CookieConsentBanner() {
 	};
 
 	useEffect(() => {
+		// Only run on client side
+		if (!isClient) return;
+
 		// Check if user has already made consent choices
 		const savedConsent = localStorage.getItem("cookie-consent");
 		const consentDate = localStorage.getItem("cookie-consent-date");
@@ -98,7 +103,7 @@ export function CookieConsentBanner() {
 		}
 
 		setIsLoading(false);
-	}, []);
+	}, [isClient]);
 
 	if (isLoading || !showBanner) {
 		return null;
