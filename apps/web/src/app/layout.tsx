@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
 import "@suzumina.click/ui/globals.css";
 import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
+import { GoogleAnalyticsScript } from "@/components/analytics/GoogleAnalyticsScript";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { AgeVerificationWrapper } from "@/components/consent/AgeVerificationWrapper";
 import { ConsentModeScript } from "@/components/consent/ConsentModeScript";
 import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
@@ -88,6 +90,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 		<html lang="ja" className="scroll-smooth">
 			<head>
 				<ConsentModeScript />
+				<GoogleAnalyticsScript />
 			</head>
 			<body
 				className={`${mPlusRounded.className} min-h-screen flex flex-col antialiased gradient-bg`}
@@ -96,6 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 					<AgeVerificationWrapper>
 						<SessionProvider>
 							<PerformanceMonitor />
+							<PageViewTracker />
 							<SiteHeader />
 							<main id="main-content" className="flex-1">
 								{children}

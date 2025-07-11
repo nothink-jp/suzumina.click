@@ -48,7 +48,7 @@ export default function SiteFooter() {
 							</p>
 							<p className="text-minase-300 text-xs mt-1 flex items-center justify-center gap-1">
 								<span>🚀</span>
-								現在プレビューリリース中 - すずみなふぁみりー限定
+								現在プレビューリリース中 - 閲覧・利用は誰でも、作成はすずみなふぁみりー限定
 							</p>
 						</div>
 						<div className="border-t border-minase-600 pt-4 text-sm text-minase-200">

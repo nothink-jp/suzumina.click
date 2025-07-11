@@ -423,6 +423,9 @@ resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" 
 
 # dlsite_timeseries_raw コレクションのインデックス - 時系列データ取得用
 # date（昇順）、workId（昇順）、timestamp（昇順）、__name__（昇順）
+# NOTE: このインデックスは既に存在するため、terraform importが必要
+#       一時的にコメントアウトして terraform apply を実行してください
+/*
 resource "google_firestore_index" "dlsite_timeseries_raw_date_workid_timestamp" {
   project    = var.gcp_project_id
   collection = "dlsite_timeseries_raw"
@@ -447,3 +450,4 @@ resource "google_firestore_index" "dlsite_timeseries_raw_date_workid_timestamp" 
     order      = "ASCENDING"
   }
 }
+*/

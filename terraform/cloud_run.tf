@@ -139,6 +139,12 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = var.suzumina_guild_id
       }
 
+      # Google Analytics Measurement ID
+      env {
+        name  = "NEXT_PUBLIC_GA_MEASUREMENT_ID"
+        value = var.google_analytics_measurement_id
+      }
+
 
       # 許可されたホスト名（デフォルトURL制御用）
       env {

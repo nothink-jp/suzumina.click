@@ -151,3 +151,14 @@ variable "suzumina_guild_id" {
   sensitive   = false  # Guild IDは公開情報
 }
 
+# ==========================================================
+# Google Analytics 設定変数
+# ==========================================================
+
+variable "google_analytics_measurement_id" {
+  description = "Google Analytics 4 Measurement ID"
+  type        = string
+  default     = "G-9SYZ48LBPH"
+  sensitive   = false  # Measurement IDは公開情報
+}
+

@@ -80,7 +80,8 @@ export function HomePage({
 											<p className="text-sm text-blue-800 leading-relaxed">
 												現在、すずみなくりっく！はプレビューリリース段階です。
 												<br />
-												音声ボタンの作成は、
+												<strong className="font-semibold">音声ボタンの閲覧・利用は誰でも</strong>
+												できますが、音声ボタンの作成は
 												<strong className="font-semibold">すずみなふぁみりー</strong>
 												のDiscordメンバーの皆さまに限定させていただいております。
 											</p>

@@ -237,6 +237,29 @@ export function resetAllConsent() {
 }
 
 /**
+ * Send a page view to Google Analytics
+ * Only works if analytics consent is granted
+ */
+export function sendGoogleAnalyticsPageView(url?: string) {
+	if (typeof window === "undefined" || !window.gtag) return;
+
+	const consentState = getCurrentConsentState();
+	if (!consentState?.analytics) {
+		// Page view blocked - no consent
+		return;
+	}
+
+	const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+	if (!measurementId) return;
+
+	window.gtag("config", measurementId, {
+		page_path: url || window.location.pathname,
+		page_title: document.title,
+		page_location: window.location.href,
+	});
+}
+
+/**
  * Utility to send custom events to Google Analytics
  * Only works if analytics consent is granted
  */
