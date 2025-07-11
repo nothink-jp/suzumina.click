@@ -174,12 +174,12 @@ export async function saveWorksToFirestore(
 }
 
 /**
- * 既存の作品データを取得 (最適化構造対応)
+ * 既存の作品データを効率的に取得 (読み取り最適化対応)
  */
 export async function getExistingWorksMap(
 	productIds: string[],
 ): Promise<Map<string, OptimizedFirestoreDLsiteWorkData>> {
-	const existingWorksMap = new Map<string, OptimizedFirestoreDLsiteWorkData>();
+	const existingWorksMap = new Map();
 
 	if (productIds.length === 0) {
 		return existingWorksMap;
@@ -188,19 +188,40 @@ export async function getExistingWorksMap(
 	try {
 		const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
 
-		// Firestoreのin句制限（10件）を考慮して分割取得
-		const chunks = chunkArray(productIds, 10);
+		// 読み取り最適化: バッチサイズを30に増加（Firestore in句限界内で最大効率）
+		const chunks = chunkArray(productIds, 30);
 
-		for (const chunk of chunks) {
+		logger.info(`既存作品データ取得開始: ${productIds.length}件を${chunks.length}チャンクで処理`);
+
+		// 並列処理で読み取り時間を短縮
+		const chunkPromises = chunks.map(async (chunk, index) => {
 			const snapshot = await collection.where("productId", "in", chunk).get();
 
+			const chunkResults = new Map<string, OptimizedFirestoreDLsiteWorkData>();
 			for (const doc of snapshot.docs) {
 				const data = doc.data() as OptimizedFirestoreDLsiteWorkData;
-				existingWorksMap.set(data.productId, data);
+				chunkResults.set(data.productId, data);
+			}
+
+			logger.debug(
+				`チャンク ${index + 1}/${chunks.length}: ${chunkResults.size}/${chunk.length}件が既存`,
+			);
+			return chunkResults;
+		});
+
+		// 全チャンクの結果を並列実行で取得
+		const chunkResults = await Promise.all(chunkPromises);
+
+		// 結果をマージ
+		for (const chunkResult of chunkResults) {
+			for (const [productId, data] of chunkResult) {
+				existingWorksMap.set(productId, data);
 			}
 		}
 
-		logger.info(`既存作品データを取得: ${existingWorksMap.size}件`);
+		logger.info(
+			`既存作品データ取得完了: ${existingWorksMap.size}/${productIds.length}件が既存 (読み取り数: ${chunks.length}クエリ)`,
+		);
 	} catch (error) {
 		logger.error("既存作品データの取得に失敗:", {
 			error:
@@ -218,6 +239,78 @@ export async function getExistingWorksMap(
 	}
 
 	return existingWorksMap;
+}
+
+/**
+ * 特定の作品IDが存在するかを効率的にチェック (存在確認のみ)
+ */
+export async function checkWorkExists(productId: string): Promise<boolean> {
+	try {
+		const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
+		const docRef = collection.doc(productId);
+		const docSnapshot = await docRef.get();
+
+		return docSnapshot.exists;
+	} catch (error) {
+		logger.error(`作品存在確認エラー: ${productId}`, { error });
+		return false;
+	}
+}
+
+/**
+ * 複数の作品IDの存在確認を効率的に実行
+ */
+export async function checkMultipleWorksExist(productIds: string[]): Promise<Map<string, boolean>> {
+	const existenceMap = new Map();
+
+	if (productIds.length === 0) {
+		return existenceMap;
+	}
+
+	try {
+		const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
+
+		// バッチサイズ30で存在確認（データ取得なし）
+		const chunks = chunkArray(productIds, 30);
+
+		const chunkPromises = chunks.map(async (chunk) => {
+			const snapshot = await collection.where("productId", "in", chunk).get();
+
+			const chunkResults = new Map();
+			// 全IDをfalseで初期化
+			for (const id of chunk) {
+				chunkResults.set(id, false);
+			}
+			// 存在するIDをtrueに更新
+			for (const doc of snapshot.docs) {
+				const data = doc.data() as OptimizedFirestoreDLsiteWorkData;
+				chunkResults.set(data.productId, true);
+			}
+
+			return chunkResults;
+		});
+
+		const chunkResults = await Promise.all(chunkPromises);
+
+		// 結果をマージ
+		for (const chunkResult of chunkResults) {
+			for (const [productId, exists] of chunkResult) {
+				existenceMap.set(productId, exists);
+			}
+		}
+
+		logger.info(
+			`作品存在確認完了: ${productIds.length}件中${Array.from(existenceMap.values()).filter(Boolean).length}件が既存`,
+		);
+	} catch (error) {
+		logger.error("作品存在確認エラー:", { error, productIdCount: productIds.length });
+		// エラー時は全てfalse（新規として扱う）
+		for (const id of productIds) {
+			existenceMap.set(id, false);
+		}
+	}
+
+	return existenceMap;
 }
 
 // executeBatchInChunks関数は最適化構造では未使用のため削除

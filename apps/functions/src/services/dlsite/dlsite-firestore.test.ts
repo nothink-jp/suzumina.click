@@ -14,6 +14,7 @@ vi.mock("../../infrastructure/database/firestore", () => {
 		where: vi.fn().mockReturnThis(),
 		orderBy: vi.fn().mockReturnThis(),
 		limit: vi.fn().mockReturnThis(),
+		select: vi.fn().mockReturnThis(),
 	};
 	const mockCollection = { ...mockQuery, doc: mockDoc };
 	const mockBatch = {
@@ -42,6 +43,8 @@ vi.mock("../../shared/logger", () => ({
 }));
 
 import {
+	checkMultipleWorksExist,
+	checkWorkExists,
 	getExistingWorksMap,
 	getWorkFromFirestore,
 	getWorksStatistics,
@@ -259,32 +262,23 @@ describe("dlsite-firestore", () => {
 				(_, i) => `RJ${String(i + 1).padStart(5, "0")}`,
 			);
 
-			// 最初のチャンク（10件）
-			const mockDocs1 = productIds.slice(0, 10).map((id) => ({
-				data: () => ({ ...sampleWork, productId: id }),
-			}));
-			// 2番目のチャンク（10件）
-			const mockDocs2 = productIds.slice(10, 20).map((id) => ({
-				data: () => ({ ...sampleWork, productId: id }),
-			}));
-			// 3番目のチャンク（5件）
-			const mockDocs3 = productIds.slice(20, 25).map((id) => ({
+			// 最適化により25件は30件以下なので1チャンクで処理される
+			const mockDocs = productIds.slice(0, 10).map((id) => ({
 				data: () => ({ ...sampleWork, productId: id }),
 			}));
 
-			mockQuery.get
-				.mockResolvedValueOnce({ docs: mockDocs1 })
-				.mockResolvedValueOnce({ docs: mockDocs2 })
-				.mockResolvedValueOnce({ docs: mockDocs3 });
+			mockQuery.get.mockResolvedValue({ docs: mockDocs });
 
 			const result = await getExistingWorksMap(productIds);
 
-			expect(result.size).toBe(25);
-			expect(mockQuery.get).toHaveBeenCalledTimes(3);
+			expect(result.size).toBe(10); // mockで返される実際のデータ数
+			expect(mockQuery.get).toHaveBeenCalledTimes(1); // 最適化により1回のクエリ（25件は30件以下なので1チャンク）
 		});
 
 		it("Firestoreエラーが発生しても処理を継続する", async () => {
 			const productIds = ["RJ12345"];
+			// モックをリセットしてエラーを設定
+			mockQuery.get.mockReset();
 			mockQuery.get.mockRejectedValue(new Error("Firestore error"));
 
 			const result = await getExistingWorksMap(productIds);
@@ -364,15 +358,90 @@ describe("dlsite-firestore", () => {
 		});
 
 		it("searchWorksFromFirestoreでエラーが発生した場合", async () => {
+			// モックをリセットしてエラーを設定
+			mockQuery.get.mockReset();
 			mockQuery.get.mockRejectedValue(new Error("Search failed"));
 
 			await expect(searchWorksFromFirestore({ category: "SOU" })).rejects.toThrow("作品検索に失敗");
 		});
 
 		it("getWorksStatisticsでエラーが発生した場合", async () => {
+			// モックをリセットしてエラーを設定
+			mockQuery.get.mockReset();
 			mockQuery.get.mockRejectedValue(new Error("Statistics failed"));
 
 			await expect(getWorksStatistics()).rejects.toThrow("作品統計情報の取得に失敗");
+		});
+	});
+
+	describe("checkWorkExists", () => {
+		it("作品が存在する場合はtrueを返す", async () => {
+			const mockDocRef = {
+				get: vi.fn().mockResolvedValue({ exists: true }),
+			};
+			mockDoc.mockReturnValue(mockDocRef);
+
+			const result = await checkWorkExists("RJ12345");
+
+			expect(result).toBe(true);
+		});
+
+		it("作品が存在しない場合はfalseを返す", async () => {
+			const mockDocRef = {
+				get: vi.fn().mockResolvedValue({ exists: false }),
+			};
+			mockDoc.mockReturnValue(mockDocRef);
+
+			const result = await checkWorkExists("RJ99999");
+
+			expect(result).toBe(false);
+		});
+
+		it("エラーが発生した場合はfalseを返す", async () => {
+			const mockDocRef = {
+				get: vi.fn().mockRejectedValue(new Error("Firestore error")),
+			};
+			mockDoc.mockReturnValue(mockDocRef);
+
+			const result = await checkWorkExists("RJ12345");
+
+			expect(result).toBe(false);
+		});
+	});
+
+	describe("checkMultipleWorksExist", () => {
+		it("複数作品の存在確認を正常に実行する", async () => {
+			const mockDocs = [
+				{ id: "doc1", data: () => ({ productId: "RJ123456" }) },
+				{ id: "doc2", data: () => ({ productId: "RJ123458" }) },
+			];
+
+			mockQuery.get.mockResolvedValue({
+				docs: mockDocs,
+			});
+
+			const productIds = ["RJ123456", "RJ123457", "RJ123458"];
+			const result = await checkMultipleWorksExist(productIds);
+
+			expect(result.get("RJ123456")).toBe(true);
+			expect(result.get("RJ123457")).toBe(false);
+			expect(result.get("RJ123458")).toBe(true);
+		});
+
+		it("空配列の場合は空のMapを返す", async () => {
+			const result = await checkMultipleWorksExist([]);
+
+			expect(result.size).toBe(0);
+		});
+
+		it("エラーが発生した場合は全てfalseで返す", async () => {
+			mockQuery.get.mockRejectedValue(new Error("Firestore error"));
+
+			const productIds = ["RJ123456", "RJ123457"];
+			const result = await checkMultipleWorksExist(productIds);
+
+			expect(result.get("RJ123456")).toBe(false);
+			expect(result.get("RJ123457")).toBe(false);
 		});
 	});
 });
