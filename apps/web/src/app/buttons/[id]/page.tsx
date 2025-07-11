@@ -85,6 +85,7 @@ async function RelatedAudioButtons({
 			limit: 6,
 			sortBy: "newest",
 			onlyPublic: true,
+			includeTotalCount: false, // 関連音声ボタンでは総数は不要
 		};
 
 		const sameVideoResult = await getAudioButtons(sameVideoQuery);
@@ -398,7 +399,16 @@ async function UserCardWrapper({
 // 動的metadata生成
 export async function generateMetadata({ params }: AudioButtonDetailPageProps): Promise<Metadata> {
 	const resolvedParams = await params;
-	const result = await getAudioButtonById(resolvedParams.id);
+
+	let result: Awaited<ReturnType<typeof getAudioButtonById>>;
+	try {
+		result = await getAudioButtonById(resolvedParams.id);
+	} catch (_error) {
+		return {
+			title: "音声ボタンが見つかりません",
+			description: "指定された音声ボタンは存在しないか、削除された可能性があります。",
+		};
+	}
 
 	if (!result.success) {
 		return {
@@ -455,7 +465,12 @@ export async function generateMetadata({ params }: AudioButtonDetailPageProps): 
 export default async function AudioButtonDetailPage({ params }: AudioButtonDetailPageProps) {
 	const resolvedParams = await params;
 
-	const result = await getAudioButtonById(resolvedParams.id);
+	let result: Awaited<ReturnType<typeof getAudioButtonById>>;
+	try {
+		result = await getAudioButtonById(resolvedParams.id);
+	} catch (_error) {
+		notFound();
+	}
 
 	if (!result.success) {
 		notFound();

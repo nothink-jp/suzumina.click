@@ -71,7 +71,7 @@ export default function FavoritesList() {
 
 	useEffect(() => {
 		fetchFavorites(1);
-	}, []);
+	}, [fetchFavorites]);
 
 	const handleDeleteFavorite = async (userId: string, audioButtonId: string) => {
 		if (!confirm("このお気に入りを削除しますか？")) {

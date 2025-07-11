@@ -1,6 +1,4 @@
-export class NextRequest {
-	constructor() {}
-}
+export class NextRequest {}
 
 export const NextResponse = {
 	json: (data, options = {}) => {

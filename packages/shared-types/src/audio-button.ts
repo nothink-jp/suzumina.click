@@ -148,11 +148,13 @@ export const UpdateAudioButtonInputSchema = z.object({
 export const AudioButtonQuerySchema = z.object({
 	limit: z.number().int().positive().max(50).default(20),
 	startAfter: z.string().optional(),
+	page: z.number().int().positive().optional(), // ページベースのページネーション
 	tags: z.array(z.string()).optional(),
 	sourceVideoId: z.string().optional(),
 	searchText: z.string().max(100).optional(),
 	sortBy: z.enum(["newest", "oldest", "popular", "mostPlayed", "relevance"]).default("newest"),
 	onlyPublic: z.boolean().default(true),
+	includeTotalCount: z.boolean().default(false).optional(), // 総件数を含めるかどうか
 
 	// 数値範囲フィルタ
 	playCountMin: z.number().int().min(0).optional(),
@@ -180,6 +182,8 @@ export const AudioButtonListResultSchema = z.object({
 	hasMore: z.boolean(),
 	lastAudioButton: FrontendAudioButtonSchema.optional(),
 	totalCount: z.number().int().min(0).optional(),
+	currentPage: z.number().int().positive().optional(), // 現在のページ番号
+	totalPages: z.number().int().min(0).optional(), // 総ページ数
 });
 
 /**

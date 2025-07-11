@@ -139,18 +139,28 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		const queryParams = new URLSearchParams();
 		queryParams.set("limit", itemsPerPageNum.toString());
 
+		// ページ番号を追加
+		if (currentPage > 1) {
+			queryParams.set("page", currentPage.toString());
+		}
+
 		addBasicParams(queryParams, searchParams);
 		addNumericRangeParams(queryParams, searchParams);
 		addDateAndUserParams(queryParams, searchParams);
 
 		return queryParams;
-	}, [searchParams, itemsPerPageNum]);
+	}, [searchParams, itemsPerPageNum, currentPage]);
 
 	// APIレスポンスの処理
 	const handleApiResponse = useCallback(
 		(result: {
 			success: boolean;
-			data?: { audioButtons?: FrontendAudioButtonData[] };
+			data?: {
+				audioButtons?: FrontendAudioButtonData[];
+				totalCount?: number;
+				currentPage?: number;
+				totalPages?: number;
+			};
 			error?: string;
 		}) => {
 			if (!result) {
@@ -160,7 +170,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 
 			if (result.success && result.data) {
 				setAudioButtons(result.data.audioButtons || []);
-				setTotalCount(result.data.audioButtons?.length || 0);
+				setTotalCount(result.data.totalCount || 0);
 			} else {
 				setError(result.error || "エラーが発生しました");
 			}
@@ -256,6 +266,8 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	const handleItemsPerPageChange = (value: string) => {
 		startTransition(() => {
 			setItemsPerPageValue(value);
+			// ページサイズを変更した場合、ページを1にリセット
+			updateSearchParams({ page: undefined });
 		});
 	};
 

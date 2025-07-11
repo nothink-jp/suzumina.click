@@ -147,6 +147,7 @@ export async function createAudioButton(
 		});
 
 		revalidatePath("/buttons");
+		revalidatePath(`/buttons/${docRef.id}`); // 作成された音声ボタンの詳細ページもrevalidate
 		revalidatePath(`/videos/${validatedInput.sourceVideoId}`);
 
 		logger.info("音声ボタン作成が正常に完了", {
@@ -196,89 +197,27 @@ export async function getAudioButtons(
 		const firestore = getFirestore();
 
 		// Firestoreクエリの構築
-		let firestoreQuery = firestore.collection("audioButtons").where("isPublic", "==", true);
+		const firestoreQuery = buildFirestoreQuery(firestore, validatedQuery);
 
-		// カテゴリフィルターは削除（タグベースシステムに移行）
+		// 総件数の取得
+		const totalCount = await getTotalCount(firestore, validatedQuery);
 
-		// 動画IDフィルター
-		if (validatedQuery.sourceVideoId) {
-			firestoreQuery = firestoreQuery.where("sourceVideoId", "==", validatedQuery.sourceVideoId);
-		}
-
-		// 並び順の設定
-		switch (validatedQuery.sortBy) {
-			case "newest":
-				firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
-				break;
-			case "oldest":
-				firestoreQuery = firestoreQuery.orderBy("createdAt", "asc");
-				break;
-			case "popular":
-				firestoreQuery = firestoreQuery.orderBy("likeCount", "desc");
-				break;
-			case "mostPlayed":
-				firestoreQuery = firestoreQuery.orderBy("playCount", "desc");
-				break;
-			default:
-				firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
-		}
-
-		// ページネーション
-		if (validatedQuery.startAfter) {
-			const startAfterDoc = await firestore
-				.collection("audioButtons")
-				.doc(validatedQuery.startAfter)
-				.get();
-			if (startAfterDoc.exists) {
-				firestoreQuery = firestoreQuery.startAfter(startAfterDoc);
-			}
-		}
-
-		// 制限数 + 1 (hasMoreの判定用)
-		firestoreQuery = firestoreQuery.limit(validatedQuery.limit + 1);
+		// ページネーション設定
+		const queryWithPagination = await applyPagination(firestoreQuery, validatedQuery, firestore);
 
 		// データ取得
-		const snapshot = await firestoreQuery.get();
+		const snapshot = await queryWithPagination.get();
 		const docs = snapshot.docs;
 
-		// hasMoreの判定
-		const hasMore = docs.length > validatedQuery.limit;
-		const audioButtonDocs = hasMore ? docs.slice(0, -1) : docs;
+		// hasMoreの判定とドキュメントの調整
+		const { hasMore, audioButtonDocs } = determineHasMore(docs, validatedQuery);
 
-		// Firestore データをフロントエンド用に変換
-		let audioButtons = audioButtonDocs.map((doc) => {
-			const data = { id: doc.id, ...doc.data() } as FirestoreAudioButtonData;
-			return convertToFrontendAudioButton(data);
-		});
+		// データ変換とフィルタリング
+		const audioButtons = processAudioButtons(audioButtonDocs, validatedQuery);
 
-		// クライアントサイドフィルタリング（Firestoreでは対応できない条件）
-		audioButtons = filterAudioButtons(audioButtons, {
-			searchText: validatedQuery.searchText,
-			tags: validatedQuery.tags,
-			playCountMin: validatedQuery.playCountMin,
-			playCountMax: validatedQuery.playCountMax,
-			likeCountMin: validatedQuery.likeCountMin,
-			likeCountMax: validatedQuery.likeCountMax,
-			favoriteCountMin: validatedQuery.favoriteCountMin,
-			favoriteCountMax: validatedQuery.favoriteCountMax,
-			durationMin: validatedQuery.durationMin,
-			durationMax: validatedQuery.durationMax,
-			createdAfter: validatedQuery.createdAfter,
-			createdBefore: validatedQuery.createdBefore,
-			createdBy: validatedQuery.createdBy,
-		});
+		// 結果の構築
+		const result = buildResult(audioButtons, hasMore, validatedQuery, totalCount);
 
-		// クライアントサイド並び替え（複合条件の場合）
-		if (validatedQuery.sortBy === "popular") {
-			audioButtons = sortAudioButtons(audioButtons, "popular");
-		}
-
-		const result: AudioButtonListResult = {
-			audioButtons,
-			hasMore,
-			lastAudioButton: audioButtons.length > 0 ? audioButtons[audioButtons.length - 1] : undefined,
-			totalCount: undefined, // 高コストなため省略
-		};
 		return {
 			success: true,
 			data: result,
@@ -289,6 +228,160 @@ export async function getAudioButtons(
 			error: "音声ボタンの取得に失敗しました。",
 		};
 	}
+}
+
+// ヘルパー関数: Firestoreクエリ構築
+function buildFirestoreQuery(
+	firestore: ReturnType<typeof getFirestore>,
+	validatedQuery: AudioButtonQuery,
+) {
+	let firestoreQuery = firestore.collection("audioButtons").where("isPublic", "==", true);
+
+	// 動画IDフィルター
+	if (validatedQuery.sourceVideoId) {
+		firestoreQuery = firestoreQuery.where("sourceVideoId", "==", validatedQuery.sourceVideoId);
+	}
+
+	// 並び順の設定
+	switch (validatedQuery.sortBy) {
+		case "newest":
+			firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
+			break;
+		case "oldest":
+			firestoreQuery = firestoreQuery.orderBy("createdAt", "asc");
+			break;
+		case "popular":
+			firestoreQuery = firestoreQuery.orderBy("likeCount", "desc");
+			break;
+		case "mostPlayed":
+			firestoreQuery = firestoreQuery.orderBy("playCount", "desc");
+			break;
+		default:
+			firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
+	}
+
+	return firestoreQuery;
+}
+
+// ヘルパー関数: 総件数取得
+async function getTotalCount(
+	firestore: ReturnType<typeof getFirestore>,
+	validatedQuery: AudioButtonQuery,
+): Promise<number | undefined> {
+	if (!validatedQuery.includeTotalCount) {
+		return undefined;
+	}
+
+	let countQuery = firestore.collection("audioButtons").where("isPublic", "==", true);
+	if (validatedQuery.sourceVideoId) {
+		countQuery = countQuery.where("sourceVideoId", "==", validatedQuery.sourceVideoId);
+	}
+	const countSnapshot = await countQuery.get();
+	return countSnapshot.size;
+}
+
+// ヘルパー関数: ページネーション適用
+async function applyPagination(
+	firestoreQuery: FirebaseFirestore.Query,
+	validatedQuery: AudioButtonQuery,
+	firestore: ReturnType<typeof getFirestore>,
+) {
+	let query = firestoreQuery;
+
+	if (validatedQuery.page) {
+		// ページベースのページネーション
+		const offset = (validatedQuery.page - 1) * validatedQuery.limit;
+		query = query.offset(offset);
+	} else if (validatedQuery.startAfter) {
+		// カーソルベースのページネーション
+		const startAfterDoc = await firestore
+			.collection("audioButtons")
+			.doc(validatedQuery.startAfter)
+			.get();
+		if (startAfterDoc.exists) {
+			query = query.startAfter(startAfterDoc);
+		}
+	}
+
+	// ページベースの場合はlimitのみ、カーソルベースの場合はlimit + 1
+	const limitSize = validatedQuery.page ? validatedQuery.limit : validatedQuery.limit + 1;
+	return query.limit(limitSize);
+}
+
+// ヘルパー関数: hasMoreの判定
+function determineHasMore(
+	docs: FirebaseFirestore.QueryDocumentSnapshot[],
+	validatedQuery: AudioButtonQuery,
+) {
+	let hasMore = false;
+	let audioButtonDocs = docs;
+
+	if (validatedQuery.page) {
+		// ページベースの場合
+		hasMore = docs.length === validatedQuery.limit;
+	} else {
+		// カーソルベースの場合
+		hasMore = docs.length > validatedQuery.limit;
+		audioButtonDocs = hasMore ? docs.slice(0, -1) : docs;
+	}
+
+	return { hasMore, audioButtonDocs };
+}
+
+// ヘルパー関数: データ処理
+function processAudioButtons(
+	audioButtonDocs: FirebaseFirestore.QueryDocumentSnapshot[],
+	validatedQuery: AudioButtonQuery,
+) {
+	// Firestore データをフロントエンド用に変換
+	let audioButtons = audioButtonDocs.map((doc) => {
+		const data = { id: doc.id, ...doc.data() } as FirestoreAudioButtonData;
+		return convertToFrontendAudioButton(data);
+	});
+
+	// クライアントサイドフィルタリング（Firestoreでは対応できない条件）
+	audioButtons = filterAudioButtons(audioButtons, {
+		searchText: validatedQuery.searchText,
+		tags: validatedQuery.tags,
+		playCountMin: validatedQuery.playCountMin,
+		playCountMax: validatedQuery.playCountMax,
+		likeCountMin: validatedQuery.likeCountMin,
+		likeCountMax: validatedQuery.likeCountMax,
+		favoriteCountMin: validatedQuery.favoriteCountMin,
+		favoriteCountMax: validatedQuery.favoriteCountMax,
+		durationMin: validatedQuery.durationMin,
+		durationMax: validatedQuery.durationMax,
+		createdAfter: validatedQuery.createdAfter,
+		createdBefore: validatedQuery.createdBefore,
+		createdBy: validatedQuery.createdBy,
+	});
+
+	// クライアントサイド並び替え（複合条件の場合）
+	if (validatedQuery.sortBy === "popular") {
+		audioButtons = sortAudioButtons(audioButtons, "popular");
+	}
+
+	return audioButtons;
+}
+
+// ヘルパー関数: 結果構築
+function buildResult(
+	audioButtons: FrontendAudioButtonData[],
+	hasMore: boolean,
+	validatedQuery: AudioButtonQuery,
+	totalCount?: number,
+): AudioButtonListResult {
+	const currentPage = validatedQuery.page || 1;
+	const totalPages = totalCount ? Math.ceil(totalCount / validatedQuery.limit) : undefined;
+
+	return {
+		audioButtons,
+		hasMore,
+		lastAudioButton: audioButtons.length > 0 ? audioButtons[audioButtons.length - 1] : undefined,
+		totalCount,
+		currentPage,
+		totalPages,
+	};
 }
 
 /**
@@ -509,7 +602,12 @@ export async function getAudioButtonById(
 			success: true,
 			data: frontendData,
 		};
-	} catch (_error) {
+	} catch (error) {
+		logger.error("getAudioButtonById failed", {
+			id,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
 		return {
 			success: false,
 			error: "音声ボタンの取得に失敗しました",

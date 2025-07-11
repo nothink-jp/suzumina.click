@@ -30,12 +30,14 @@ function parseNumericRangeFilters(searchParams: URLSearchParams) {
 function parseBasicFilters(searchParams: URLSearchParams) {
 	return {
 		limit: Number(searchParams.get("limit")) || 12,
+		page: parseNumericParam(searchParams.get("page")),
 		searchText: parseStringParam(searchParams.get("q")),
 		tags: searchParams.get("tags")?.split(",") || undefined,
 		sortBy:
 			(searchParams.get("sort") as "newest" | "oldest" | "popular" | "mostPlayed") || "newest",
 		sourceVideoId: parseStringParam(searchParams.get("sourceVideoId")),
 		onlyPublic: true,
+		includeTotalCount: true, // フロントエンドでは常に総数が必要
 	};
 }
 
