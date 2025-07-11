@@ -16,6 +16,135 @@ import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
 // Firestore関連の定数
 const DLSITE_WORKS_COLLECTION = "dlsiteWorks";
 
+/**
+ * デバッグ用作品IDログ出力
+ */
+function logDebugWorkIds(works: OptimizedFirestoreDLsiteWorkData[], phase: string): void {
+	const debugWorkIds = ["RJ01037463", "RJ01415251", "RJ01020479"];
+	debugWorkIds.forEach((workId) => {
+		const work = works.find((w) => w.productId === workId);
+		logger.info(`🔍 ${phase} ${workId}: ${work ? "✅ 含まれる" : "❌ 含まれない"}`, {
+			workId,
+			isIncluded: !!work,
+			title: work?.title,
+			circle: work?.circle,
+		});
+	});
+}
+
+/**
+ * 単一チャンクのバッチ処理
+ */
+async function processChunk(
+	chunk: OptimizedFirestoreDLsiteWorkData[],
+	chunkIndex: number,
+	totalChunks: number,
+): Promise<void> {
+	const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
+	const chunkBatch = firestore.batch();
+
+	for (const work of chunk) {
+		const docRef = collection.doc(work.productId);
+		chunkBatch.set(docRef, work, { merge: true });
+	}
+
+	const startTime = Date.now();
+	await chunkBatch.commit();
+	const duration = Date.now() - startTime;
+
+	logger.info(
+		`✅ チャンク ${chunkIndex + 1}/${totalChunks} 完了: ${chunk.length}件 (${duration}ms)`,
+	);
+}
+
+/**
+ * チャンク処理失敗をハンドリング
+ */
+async function handleChunkFailure(
+	chunk: OptimizedFirestoreDLsiteWorkData[],
+	chunkIndex: number,
+	chunkError: unknown,
+): Promise<void> {
+	logger.error(`❌ チャンク ${chunkIndex + 1} 失敗:`, {
+		chunkIndex: chunkIndex + 1,
+		chunkSize: chunk.length,
+		sampleWorkIds: chunk.slice(0, 3).map((w) => w.productId),
+		error:
+			chunkError instanceof Error
+				? {
+						message: chunkError.message,
+						name: chunkError.name,
+					}
+				: String(chunkError),
+	});
+
+	// 失敗した作品IDを追跡システムに記録
+	try {
+		const failures = chunk.map((work) => ({
+			workId: work.productId,
+			reason:
+				chunkError instanceof Error && chunkError.message.includes("DEADLINE_EXCEEDED")
+					? FAILURE_REASONS.TIMEOUT
+					: FAILURE_REASONS.UNKNOWN,
+			errorDetails: chunkError instanceof Error ? chunkError.message : String(chunkError),
+		}));
+		await trackMultipleFailedWorks(failures);
+	} catch (trackError) {
+		logger.warn("失敗追跡記録エラー:", { trackError });
+	}
+}
+
+/**
+ * 分割バッチ処理
+ */
+async function processChunkedBatch(works: OptimizedFirestoreDLsiteWorkData[]): Promise<void> {
+	const chunks = chunkArray(works, 50);
+	logger.info(`📦 分割バッチ処理: ${chunks.length}チャンク (50件/チャンク)`);
+
+	let successfulChunks = 0;
+	let failedChunks = 0;
+
+	for (const [chunkIndex, chunk] of chunks.entries()) {
+		try {
+			await processChunk(chunk, chunkIndex, chunks.length);
+			successfulChunks++;
+
+			// チャンク間で負荷分散待機（200ms）
+			if (chunkIndex < chunks.length - 1) {
+				await new Promise((resolve) => setTimeout(resolve, 200));
+			}
+		} catch (chunkError) {
+			failedChunks++;
+			await handleChunkFailure(chunk, chunkIndex, chunkError);
+		}
+	}
+
+	logger.info(`📊 分割バッチ処理完了: 成功${successfulChunks}件, 失敗${failedChunks}件`);
+
+	// 全チャンクが失敗した場合のみエラーを投げる
+	if (failedChunks > 0 && successfulChunks === 0) {
+		throw new Error(`全${failedChunks}チャンクが失敗しました`);
+	}
+}
+
+/**
+ * 単一バッチ処理
+ */
+async function processSingleBatch(works: OptimizedFirestoreDLsiteWorkData[]): Promise<void> {
+	const batch = firestore.batch();
+	const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
+
+	for (const work of works) {
+		const docRef = collection.doc(work.productId);
+		batch.set(docRef, work, { merge: true });
+	}
+
+	const startTime = Date.now();
+	await batch.commit();
+	const duration = Date.now() - startTime;
+	logger.info(`✅ 単一バッチ実行完了: ${works.length}件 (${duration}ms)`);
+}
+
 // 最適化構造では未使用の関数を削除
 
 /**
@@ -30,135 +159,19 @@ export async function saveWorksToFirestore(
 	}
 
 	logger.info(`${works.length}件の作品データをFirestoreに保存開始`);
-
-	// デバッグ: 特定作品IDの保存対象確認
-	const debugWorkIds = ["RJ01037463", "RJ01415251", "RJ01020479"];
-	debugWorkIds.forEach((workId) => {
-		const work = works.find((w) => w.productId === workId);
-		logger.info(`🔍 Firestore保存対象 ${workId}: ${work ? "✅ 含まれる" : "❌ 含まれない"}`, {
-			workId,
-			isIncluded: !!work,
-			title: work?.title,
-			circle: work?.circle,
-		});
-	});
+	logDebugWorkIds(works, "Firestore保存対象");
 
 	try {
-		// バッチ処理の準備
-		const batch = firestore.batch();
-		const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
+		logger.info(`🔄 Firestoreバッチ実行開始: ${works.length}件`);
 
-		// 最適化構造データは既にFirestore形式なので直接保存
-		let operationCount = 0;
-		for (const work of works) {
-			const docRef = collection.doc(work.productId);
-			batch.set(docRef, work, { merge: true }); // マージオプションで部分更新対応
-			operationCount++;
-
-			// デバッグ: 特定作品IDの保存操作確認
-			if (debugWorkIds.includes(work.productId)) {
-				logger.info(`🔍 Firestore操作追加 ${work.productId}:`, {
-					workId: work.productId,
-					title: work.title,
-					docPath: `${DLSITE_WORKS_COLLECTION}/${work.productId}`,
-					operationCount,
-				});
-			}
+		if (works.length > 50) {
+			await processChunkedBatch(works);
+		} else {
+			await processSingleBatch(works);
 		}
 
-		// バッチ実行 - タイムアウト対策でバッチサイズを削減
-		if (operationCount > 0) {
-			logger.info(`🔄 Firestoreバッチ実行開始: ${operationCount}件`);
-
-			if (operationCount > 50) {
-				// 50件を超える場合は分割処理（タイムアウト対策: 100→50に変更）
-				const chunks = chunkArray(works, 50);
-				logger.info(`📦 分割バッチ処理: ${chunks.length}チャンク (50件/チャンク)`);
-
-				let successfulChunks = 0;
-				let failedChunks = 0;
-
-				for (const [chunkIndex, chunk] of chunks.entries()) {
-					try {
-						const chunkBatch = firestore.batch();
-						for (const work of chunk) {
-							const docRef = collection.doc(work.productId);
-							chunkBatch.set(docRef, work, { merge: true });
-						}
-
-						const startTime = Date.now();
-						await chunkBatch.commit();
-						const duration = Date.now() - startTime;
-
-						successfulChunks++;
-						logger.info(
-							`✅ チャンク ${chunkIndex + 1}/${chunks.length} 完了: ${chunk.length}件 (${duration}ms)`,
-						);
-
-						// チャンク間で負荷分散待機（200msに増加）
-						if (chunkIndex < chunks.length - 1) {
-							await new Promise((resolve) => setTimeout(resolve, 200));
-						}
-					} catch (chunkError) {
-						failedChunks++;
-						logger.error(`❌ チャンク ${chunkIndex + 1} 失敗:`, {
-							chunkIndex: chunkIndex + 1,
-							chunkSize: chunk.length,
-							sampleWorkIds: chunk.slice(0, 3).map((w) => w.productId),
-							error:
-								chunkError instanceof Error
-									? {
-											message: chunkError.message,
-											name: chunkError.name,
-										}
-									: String(chunkError),
-						});
-
-						// 失敗した作品IDを追跡システムに記録
-						try {
-							const failures = chunk.map((work) => ({
-								workId: work.productId,
-								reason:
-									chunkError instanceof Error && chunkError.message.includes("DEADLINE_EXCEEDED")
-										? FAILURE_REASONS.TIMEOUT
-										: FAILURE_REASONS.UNKNOWN,
-								errorDetails: chunkError instanceof Error ? chunkError.message : String(chunkError),
-							}));
-							await trackMultipleFailedWorks(failures);
-						} catch (trackError) {
-							logger.warn("失敗追跡記録エラー:", { trackError });
-						}
-
-						// 失敗したチャンクでも処理を継続（何もしない）
-					}
-				}
-
-				logger.info(`📊 分割バッチ処理完了: 成功${successfulChunks}件, 失敗${failedChunks}件`);
-
-				// 全チャンクが失敗した場合のみエラーを投げる
-				if (failedChunks > 0 && successfulChunks === 0) {
-					throw new Error(`全${failedChunks}チャンクが失敗しました`);
-				}
-			} else {
-				const startTime = Date.now();
-				await batch.commit();
-				const duration = Date.now() - startTime;
-				logger.info(`✅ 単一バッチ実行完了: ${operationCount}件 (${duration}ms)`);
-			}
-
-			// デバッグ: 特定作品IDの保存完了確認
-			debugWorkIds.forEach((workId) => {
-				const work = works.find((w) => w.productId === workId);
-				if (work) {
-					logger.info(`🔍 Firestore保存完了 ${workId}: ✅ 成功`, {
-						workId,
-						title: work.title,
-					});
-				}
-			});
-		}
-
-		logger.info(`Firestore保存完了: ${operationCount}件`);
+		logDebugWorkIds(works, "Firestore保存完了");
+		logger.info(`Firestore保存完了: ${works.length}件`);
 	} catch (error) {
 		logger.error("Firestore保存中にエラーが発生:", {
 			error:

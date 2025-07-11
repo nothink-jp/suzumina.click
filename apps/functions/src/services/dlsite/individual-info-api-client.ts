@@ -21,6 +21,122 @@ export interface IndividualInfoAPIOptions {
 }
 
 /**
+ * HTTPレスポンスエラーを処理
+ */
+function handleHttpError(
+	response: Response,
+	workId: string,
+	url: string,
+	responseText: string,
+	enableDetailedLogging: boolean,
+): IndividualInfoAPIResponse | null {
+	const logContext = {
+		workId,
+		status: response.status,
+		statusText: response.statusText,
+		responseText: responseText.substring(0, 500),
+		url,
+	};
+
+	if (enableDetailedLogging) {
+		logger.warn(`❌ API取得失敗: ${workId}`, logContext);
+	} else {
+		logger.warn(`API request failed for ${workId}`, {
+			...logContext,
+			headers: Object.fromEntries(response.headers.entries()),
+		});
+	}
+
+	// 404: 作品が見つからない
+	if (response.status === 404) {
+		logger.warn(`作品が見つかりません: ${workId}`);
+		return null;
+	}
+
+	// 403: アクセス拒否
+	if (response.status === 403) {
+		logger.error(`Individual Info API アクセス拒否: ${workId} (Status: ${response.status})`);
+		throw new Error(`API access denied for ${workId}`);
+	}
+
+	// その他のエラー
+	throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+}
+
+/**
+ * JSONレスポンスを解析
+ */
+function parseJsonResponse(
+	responseText: string,
+	workId: string,
+	url: string,
+	enableDetailedLogging: boolean,
+): unknown | null {
+	try {
+		return JSON.parse(responseText);
+	} catch (jsonError) {
+		const errorContext = {
+			workId,
+			responseText: responseText.substring(0, 1000),
+			jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError),
+			url,
+		};
+
+		if (enableDetailedLogging) {
+			logger.error(`JSON parse error: ${workId}`, errorContext);
+		} else {
+			logger.error(`JSON parse error for ${workId}`, errorContext);
+		}
+
+		return null;
+	}
+}
+
+/**
+ * レスポンスデータの形式を検証
+ */
+function validateResponseFormat(
+	responseData: unknown,
+	workId: string,
+	url: string,
+	responseText: string,
+	enableDetailedLogging: boolean,
+): IndividualInfoAPIResponse | null {
+	// Individual Info APIは配列形式でレスポンスを返す
+	if (!Array.isArray(responseData) || responseData.length === 0) {
+		const invalidContext = {
+			workId,
+			responseType: typeof responseData,
+			isArray: Array.isArray(responseData),
+			responseLength: Array.isArray(responseData) ? responseData.length : "N/A",
+			url,
+		};
+
+		if (enableDetailedLogging) {
+			logger.warn(`Invalid response: ${workId}`, invalidContext);
+		} else {
+			logger.warn(`Invalid API response for ${workId}: empty or non-array response`, {
+				...invalidContext,
+				responseData: responseData,
+				responseText: responseText.substring(0, 1000),
+			});
+		}
+
+		return null;
+	}
+
+	const data = responseData[0] as IndividualInfoAPIResponse;
+
+	// 基本的なデータ検証
+	if (!data.workno && !data.product_id) {
+		logger.warn(`Invalid data: ${workId} - missing workno/product_id`);
+		return null;
+	}
+
+	return data;
+}
+
+/**
  * Individual Info APIから単一作品データを取得
  * 詳細エラーハンドリング付き
  *
@@ -49,97 +165,29 @@ export async function fetchIndividualWorkInfo(
 
 		if (!response.ok) {
 			const responseText = await response.text();
-			const logContext = {
-				workId,
-				status: response.status,
-				statusText: response.statusText,
-				responseText: responseText.substring(0, 500),
-				url,
-			};
-
-			if (enableDetailedLogging) {
-				logger.warn(`❌ API取得失敗: ${workId}`, logContext);
-			} else {
-				logger.warn(`API request failed for ${workId}`, {
-					...logContext,
-					headers: Object.fromEntries(response.headers.entries()),
-				});
-			}
-
-			// 404: 作品が見つからない
-			if (response.status === 404) {
-				logger.warn(`作品が見つかりません: ${workId}`);
-				return null;
-			}
-
-			// 403: アクセス拒否
-			if (response.status === 403) {
-				logger.error(`Individual Info API アクセス拒否: ${workId} (Status: ${response.status})`);
-				throw new Error(`API access denied for ${workId}`);
-			}
-
-			// その他のエラー
-			throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+			return handleHttpError(response, workId, url, responseText, enableDetailedLogging);
 		}
 
 		const responseText = await response.text();
-		let responseData: unknown;
+		const responseData = parseJsonResponse(responseText, workId, url, enableDetailedLogging);
 
-		try {
-			responseData = JSON.parse(responseText);
-		} catch (jsonError) {
-			const errorContext = {
-				workId,
-				responseText: responseText.substring(0, 1000),
-				jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError),
-				url,
-			};
-
-			if (enableDetailedLogging) {
-				logger.error(`JSON parse error: ${workId}`, errorContext);
-			} else {
-				logger.error(`JSON parse error for ${workId}`, errorContext);
-			}
-
+		if (responseData === null) {
 			return null;
 		}
 
-		// Individual Info APIは配列形式でレスポンスを返す
-		if (!Array.isArray(responseData) || responseData.length === 0) {
-			const invalidContext = {
-				workId,
-				responseType: typeof responseData,
-				isArray: Array.isArray(responseData),
-				responseLength: Array.isArray(responseData) ? responseData.length : "N/A",
-				url,
-			};
+		const validatedData = validateResponseFormat(
+			responseData,
+			workId,
+			url,
+			responseText,
+			enableDetailedLogging,
+		);
 
-			if (enableDetailedLogging) {
-				logger.warn(`Invalid response: ${workId}`, invalidContext);
-			} else {
-				logger.warn(`Invalid API response for ${workId}: empty or non-array response`, {
-					...invalidContext,
-					responseData: responseData,
-					responseText: responseText.substring(0, 1000),
-				});
-			}
-
-			return null;
+		if (validatedData && enableDetailedLogging) {
+			logger.info(`✅ API取得成功: ${workId} (${validatedData.work_name || "名前不明"})`);
 		}
 
-		const data = responseData[0] as IndividualInfoAPIResponse;
-
-		// 基本的なデータ検証
-		if (!data.workno && !data.product_id) {
-			logger.warn(`Invalid data: ${workId} - missing workno/product_id`);
-			return null;
-		}
-
-		if (enableDetailedLogging) {
-			logger.info(`✅ API取得成功: ${workId} (${data.work_name || "名前不明"})`);
-		}
-
-		return data;
+		return validatedData;
 	} catch (error) {
 		if (enableDetailedLogging) {
 			logger.error(`API取得エラー: ${workId}`, {

@@ -28,7 +28,7 @@ export interface HttpRequestOptions {
 /**
  * HTTPレスポンス型
  */
-export interface HttpResponse<T = any> {
+export interface HttpResponse<T = unknown> {
 	data: T;
 	status: number;
 	statusText: string;
@@ -59,13 +59,64 @@ export class HttpRequestError extends Error {
 }
 
 /**
+ * レスポンスデータを解析
+ */
+async function parseResponseData<T>(response: Response, responseType: string): Promise<T> {
+	switch (responseType) {
+		case "json":
+			return (await response.json()) as T;
+		case "text":
+			return (await response.text()) as T;
+		case "blob":
+			return (await response.blob()) as T;
+		case "arrayBuffer":
+			return (await response.arrayBuffer()) as T;
+		default:
+			throw new Error(`Unsupported response type: ${responseType}`);
+	}
+}
+
+/**
+ * HTTPエラーをハンドリング
+ */
+function handleHttpError(response: Response, url: string, enableDetailedLogging: boolean): never {
+	const errorMessage = `HTTP ${response.status} ${response.statusText}`;
+
+	if (enableDetailedLogging) {
+		logger.warn(`❌ HTTPリクエスト失敗: ${url}`, {
+			status: response.status,
+			statusText: response.statusText,
+		});
+	}
+
+	throw new HttpRequestError(errorMessage, response.status, response);
+}
+
+/**
+ * ネットワークエラーをハンドリング
+ */
+function handleNetworkError(error: unknown, url: string, enableDetailedLogging: boolean): never {
+	if (error instanceof HttpRequestError) {
+		throw error;
+	}
+
+	if (error instanceof Error && enableDetailedLogging) {
+		logger.error(`HTTPリクエストエラー: ${url}`, {
+			error: error.message,
+		});
+	}
+
+	throw new HttpRequestError(error instanceof Error ? error.message : String(error));
+}
+
+/**
  * 汎用HTTPリクエスト関数
  *
  * @param url - リクエストURL
  * @param options - リクエストオプション
  * @returns HTTPレスポンス
  */
-export async function makeRequest<T = any>(
+export async function makeRequest<T = unknown>(
 	url: string,
 	options: HttpRequestOptions = {},
 ): Promise<HttpResponse<T>> {
@@ -96,36 +147,10 @@ export async function makeRequest<T = any>(
 		clearTimeout(timeoutId);
 
 		if (!response.ok) {
-			const errorMessage = `HTTP ${response.status} ${response.statusText}`;
-
-			if (enableDetailedLogging) {
-				logger.warn(`❌ HTTPリクエスト失敗: ${url}`, {
-					status: response.status,
-					statusText: response.statusText,
-				});
-			}
-
-			throw new HttpRequestError(errorMessage, response.status, response);
+			handleHttpError(response, url, enableDetailedLogging);
 		}
 
-		// レスポンスデータを取得
-		let data: T;
-		switch (responseType) {
-			case "json":
-				data = (await response.json()) as T;
-				break;
-			case "text":
-				data = (await response.text()) as T;
-				break;
-			case "blob":
-				data = (await response.blob()) as T;
-				break;
-			case "arrayBuffer":
-				data = (await response.arrayBuffer()) as T;
-				break;
-			default:
-				throw new Error(`Unsupported response type: ${responseType}`);
-		}
+		const data = await parseResponseData<T>(response, responseType);
 
 		if (enableDetailedLogging) {
 			logger.debug(`✅ HTTPリクエスト成功: ${url}`);
@@ -140,21 +165,7 @@ export async function makeRequest<T = any>(
 		};
 	} catch (error) {
 		clearTimeout(timeoutId);
-
-		if (error instanceof HttpRequestError) {
-			throw error;
-		}
-
-		// ネットワークエラー・タイムアウトエラーの処理
-		if (error instanceof Error) {
-			if (enableDetailedLogging) {
-				logger.error(`HTTPリクエストエラー: ${url}`, {
-					error: error.message,
-				});
-			}
-		}
-
-		throw new HttpRequestError(error instanceof Error ? error.message : String(error));
+		handleNetworkError(error, url, enableDetailedLogging);
 	}
 }
 
@@ -165,7 +176,7 @@ export async function makeRequest<T = any>(
  * @param options - DLsite用リクエストオプション
  * @returns HTTPレスポンス
  */
-export async function makeDLsiteRequest<T = any>(
+export async function makeDLsiteRequest<T = unknown>(
 	url: string,
 	options: DLsiteRequestOptions = {},
 ): Promise<HttpResponse<T>> {
@@ -192,9 +203,9 @@ export async function makeDLsiteRequest<T = any>(
  * @param options - リクエストオプション
  * @returns HTTPレスポンス
  */
-export async function postJson<T = any>(
+export async function postJson<T = unknown>(
 	url: string,
-	data: any,
+	data: unknown,
 	options: HttpRequestOptions = {},
 ): Promise<HttpResponse<T>> {
 	return makeRequest<T>(url, {
@@ -214,7 +225,7 @@ export async function postJson<T = any>(
  * @param params - パラメータオブジェクト
  * @returns URLSearchParams文字列
  */
-export function buildQueryParams(params: Record<string, any>): string {
+export function buildQueryParams(params: Record<string, unknown>): string {
 	const searchParams = new URLSearchParams();
 
 	for (const [key, value] of Object.entries(params)) {
@@ -233,7 +244,7 @@ export function buildQueryParams(params: Record<string, any>): string {
  * @param params - クエリパラメータ
  * @returns 完全なURL
  */
-export function buildUrl(baseUrl: string, params?: Record<string, any>): string {
+export function buildUrl(baseUrl: string, params?: Record<string, unknown>): string {
 	if (!params || Object.keys(params).length === 0) {
 		return baseUrl;
 	}
