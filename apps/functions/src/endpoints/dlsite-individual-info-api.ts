@@ -16,7 +16,7 @@ import {
 	validateAPIOnlyWorkData,
 } from "../services/dlsite/individual-info-to-work-mapper";
 import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collector";
-import { createUnionWorkIds, handleNoWorkIdsError } from "../services/dlsite/work-id-validator";
+import { handleNoWorkIdsError } from "../services/dlsite/work-id-validator";
 import { chunkArray } from "../shared/array-utils";
 import * as logger from "../shared/logger";
 
@@ -45,10 +45,6 @@ interface UnifiedDataCollectionMetadata {
 	processedWorks?: number;
 	basicDataUpdated?: number;
 	unifiedSystemStarted?: Timestamp;
-	regionOnlyIds?: number;
-	assetOnlyIds?: number;
-	unionTotalIds?: number;
-	regionDifferenceDetected?: boolean;
 	// バッチ処理関連
 	batchProcessingMode?: boolean;
 	allWorkIds?: string[];
@@ -231,13 +227,13 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 /**
  * 統合データ収集処理の実行（バッチ処理版）
  * 基本データ更新 + 時系列データ収集を同一APIレスポンスから並列実行
- * リージョン差異対応: 和集合によるID収集
+ * 現在リージョンで取得可能な作品のみ処理（効率化済み）
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: バッチ処理のため複雑度が高い
 async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 	logger.info("🚀 DLsite統合データ収集システム開始（バッチ処理版）");
 	logger.info("📋 Individual Info API統合アーキテクチャ - 重複API呼び出し完全排除");
-	logger.info("🌏 リージョン差異対応 - 和集合による完全データ収集");
+	logger.info("⚡ 効率化済み - 現在リージョンで取得可能な作品のみ処理");
 
 	const startTime = Date.now();
 
@@ -264,15 +260,9 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			// 新規処理の場合
 			logger.info("🔍 新規バッチ処理開始: 作品ID収集中...");
 
-			// 現在のリージョンで作品IDを取得
-			const currentRegionIds = await collectWorkIdsForProduction();
-			logger.info(`🔍 現在のリージョン取得数: ${currentRegionIds.length}件`);
-
-			// 和集合による完全なIDリストを作成
-			const unionResult = createUnionWorkIds(currentRegionIds);
-			allWorkIds = unionResult.unionIds;
-
-			logger.info(`🎯 和集合後の対象作品数: ${allWorkIds.length}件`);
+			// 現在のリージョンで作品IDを取得（簡素化済み）
+			allWorkIds = await collectWorkIdsForProduction();
+			logger.info(`✅ 作品ID収集完了: ${allWorkIds.length}件`);
 
 			if (allWorkIds.length === 0) {
 				handleNoWorkIdsError();
@@ -299,9 +289,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 				basicDataUpdated: 0,
 			});
 
-			logger.info(
-				`🌏 リージョン差異対応: 和集合${unionResult.unionIds.length}件 (現在${unionResult.currentRegionIds.length}/アセット${unionResult.assetFileIds.length}/重複${unionResult.overlapCount})`,
-			);
+			logger.info(`🎯 バッチ処理対象: ${allWorkIds.length}件を${batches.length}バッチで処理`);
 		}
 
 		// 3. バッチ処理実行
@@ -436,12 +424,8 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 		// 3. 統合データ収集実行
 		const result = await executeUnifiedDataCollection();
 
-		// 4. 成功時のメタデータ更新（和集合統計情報を含む）
+		// 4. 成功時のメタデータ更新（簡素化済み）
 		if (!result.error) {
-			// 和集合情報を取得するため、再度実行（最適化の余地あり）
-			const currentRegionIds = await collectWorkIdsForProduction();
-			const unionInfo = createUnionWorkIds(currentRegionIds);
-
 			await updateUnifiedMetadata({
 				isInProgress: false,
 				lastError: undefined,
@@ -449,10 +433,6 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 				totalWorks: result.workCount,
 				processedWorks: result.workCount,
 				basicDataUpdated: result.basicDataUpdated,
-				regionOnlyIds: unionInfo.regionOnlyCount,
-				assetOnlyIds: unionInfo.assetOnlyCount,
-				unionTotalIds: unionInfo.unionIds.length,
-				regionDifferenceDetected: unionInfo.regionDifferenceDetected,
 			});
 
 			logger.info(

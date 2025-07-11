@@ -206,10 +206,12 @@ export function warnPartialSuccess(result: WorkIdValidationResult): void {
 
 /**
  * 現在のリージョンで取得可能なIDと保存済みIDリストの和集合を作成
+ * @deprecated Cloud Functions では使用不要 - ローカルツール用に保持
  * @param currentRegionIds 現在のリージョンで取得されたID
  * @returns 和集合の結果
  */
 export function createUnionWorkIds(currentRegionIds: string[]): UnionWorkIdResult {
+	logger.warn("⚠️ createUnionWorkIds は非推奨です - ローカルツール用の機能");
 	logger.info("🔄 作品ID和集合処理開始");
 
 	// アセットファイルからIDを読み込み
