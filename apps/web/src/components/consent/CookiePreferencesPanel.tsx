@@ -7,13 +7,13 @@ import { Switch } from "@suzumina.click/ui/components/ui/switch";
 import { BarChart3, Shield, Target, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useIsClient } from "@/hooks/useIsClient";
+import { type ConsentState, getCurrentConsentState } from "@/lib/consent/google-consent-mode";
 
-interface ConsentChoices {
+// Map old ConsentChoices to new ConsentState format
+type ConsentChoices = ConsentState & {
 	necessary: boolean;
-	analytics: boolean;
-	advertising: boolean;
 	personalization: boolean;
-}
+};
 
 interface CookieCategory {
 	id: keyof ConsentChoices;
@@ -65,7 +65,7 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 ];
 
 interface CookiePreferencesPanelProps {
-	onSave: (choices: ConsentChoices) => void;
+	onSave: (choices: ConsentState) => void;
 	onCancel: () => void;
 }
 
@@ -73,25 +73,30 @@ export function CookiePreferencesPanel({ onSave, onCancel }: CookiePreferencesPa
 	const isClient = useIsClient();
 	const [preferences, setPreferences] = useState<ConsentChoices>({
 		necessary: true,
+		functional: true,
 		analytics: false,
 		advertising: false,
 		personalization: false,
 	});
+	const [isLoaded, setIsLoaded] = useState(false);
 
 	useEffect(() => {
-		// Load existing preferences when client-side
-		if (isClient) {
-			const saved = localStorage.getItem("cookie-consent");
+		// Load existing preferences when client-side using unified system
+		if (isClient && !isLoaded) {
+			const saved = getCurrentConsentState();
 			if (saved) {
-				try {
-					const parsed = JSON.parse(saved);
-					setPreferences(parsed);
-				} catch {
-					// Keep defaults if parsing fails
-				}
+				setPreferences({
+					necessary: true, // Always true
+					functional: saved.functional,
+					analytics: saved.analytics,
+					advertising: saved.advertising,
+					personalization: false, // Map to false for now
+				});
+				console.log("Loaded preferences:", saved);
 			}
+			setIsLoaded(true);
 		}
-	}, [isClient]);
+	}, [isClient, isLoaded]);
 
 	const handleToggle = (categoryId: keyof ConsentChoices, enabled: boolean) => {
 		setPreferences((prev) => ({
@@ -101,29 +106,45 @@ export function CookiePreferencesPanel({ onSave, onCancel }: CookiePreferencesPa
 	};
 
 	const handleAcceptAll = () => {
-		const allAccepted: ConsentChoices = {
+		const allAccepted: ConsentState = {
+			functional: true,
+			analytics: true,
+			advertising: true,
+		};
+		setPreferences({
 			necessary: true,
+			functional: true,
 			analytics: true,
 			advertising: true,
 			personalization: true,
-		};
-		setPreferences(allAccepted);
+		});
 		onSave(allAccepted);
 	};
 
 	const handleRejectOptional = () => {
-		const minimal: ConsentChoices = {
+		const minimal: ConsentState = {
+			functional: true,
+			analytics: false,
+			advertising: false,
+		};
+		setPreferences({
 			necessary: true,
+			functional: true,
 			analytics: false,
 			advertising: false,
 			personalization: false,
-		};
-		setPreferences(minimal);
+		});
 		onSave(minimal);
 	};
 
 	const handleSaveCustom = () => {
-		onSave(preferences);
+		const consentState: ConsentState = {
+			functional: preferences.functional,
+			analytics: preferences.analytics,
+			advertising: preferences.advertising,
+		};
+		console.log("Saving custom preferences:", consentState);
+		onSave(consentState);
 	};
 
 	return (

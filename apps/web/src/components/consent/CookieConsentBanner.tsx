@@ -5,20 +5,18 @@ import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
 import { Cookie, Settings, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useIsClient } from "@/hooks/useIsClient";
+import {
+	type ConsentState,
+	getCurrentConsentState,
+	updateConsent,
+} from "@/lib/consent/google-consent-mode";
 import { CookiePreferencesPanel } from "./CookiePreferencesPanel";
 
-interface ConsentChoices {
-	necessary: boolean;
-	analytics: boolean;
-	advertising: boolean;
-	personalization: boolean;
-}
-
-const DEFAULT_CONSENT: ConsentChoices = {
-	necessary: true, // Always required
+// ConsentStateを使用してgoogle-consent-mode.tsと統一
+const DEFAULT_CONSENT: ConsentState = {
+	functional: true, // Always required
 	analytics: false,
 	advertising: false,
-	personalization: false,
 };
 
 export function CookieConsentBanner() {
@@ -27,19 +25,9 @@ export function CookieConsentBanner() {
 	const [showPreferences, setShowPreferences] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 
-	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex consent logic required for GDPR compliance
-	const applyConsentChoices = (choices: ConsentChoices) => {
-		// Apply Google Consent Mode v2
-		if (typeof window !== "undefined" && window.gtag) {
-			window.gtag("consent", "update", {
-				ad_storage: choices.advertising ? "granted" : "denied",
-				ad_user_data: choices.advertising ? "granted" : "denied",
-				ad_personalization: choices.personalization ? "granted" : "denied",
-				analytics_storage: choices.analytics ? "granted" : "denied",
-				functionality_storage: "granted",
-				personalization_storage: choices.personalization ? "granted" : "denied",
-			});
-		}
+	// Apply consent choices using unified system
+	const applyConsentChoices = (choices: ConsentState) => {
+		updateConsent(choices);
 
 		// Trigger custom event for other services to listen
 		window.dispatchEvent(
@@ -49,20 +37,19 @@ export function CookieConsentBanner() {
 		);
 	};
 
-	const saveConsent = (choices: ConsentChoices) => {
-		localStorage.setItem("cookie-consent", JSON.stringify(choices));
-		localStorage.setItem("cookie-consent-date", new Date().toISOString());
+	const saveConsent = (choices: ConsentState) => {
+		console.log("Saving consent:", choices);
 		applyConsentChoices(choices);
 		setShowBanner(false);
 		setShowPreferences(false);
+		console.log("Consent saved to localStorage:", localStorage.getItem("consent-state"));
 	};
 
 	const handleAcceptAll = () => {
 		saveConsent({
-			necessary: true,
+			functional: true,
 			analytics: true,
 			advertising: true,
-			personalization: true,
 		});
 	};
 
@@ -70,7 +57,7 @@ export function CookieConsentBanner() {
 		saveConsent(DEFAULT_CONSENT);
 	};
 
-	const handleCustomConsent = (choices: ConsentChoices) => {
+	const handleCustomConsent = (choices: ConsentState) => {
 		saveConsent(choices);
 	};
 
@@ -78,27 +65,15 @@ export function CookieConsentBanner() {
 		// Only run on client side
 		if (!isClient) return;
 
-		// Check if user has already made consent choices
-		const savedConsent = localStorage.getItem("cookie-consent");
-		const consentDate = localStorage.getItem("cookie-consent-date");
+		// Check if user has already made consent choices using unified system
+		const savedConsent = getCurrentConsentState();
 
-		if (savedConsent && consentDate) {
-			const consentDateObj = new Date(consentDate);
-			const oneYearAgo = new Date();
-			oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-			// Re-ask for consent every year (GDPR requirement)
-			if (consentDateObj > oneYearAgo) {
-				const choices = JSON.parse(savedConsent);
-				applyConsentChoices(choices);
-				setShowBanner(false);
-			} else {
-				// Clear expired consent
-				localStorage.removeItem("cookie-consent");
-				localStorage.removeItem("cookie-consent-date");
-				setShowBanner(true);
-			}
+		if (savedConsent) {
+			// User has already made consent choices
+			applyConsentChoices(savedConsent);
+			setShowBanner(false);
 		} else {
+			// No consent yet, show banner
 			setShowBanner(true);
 		}
 
