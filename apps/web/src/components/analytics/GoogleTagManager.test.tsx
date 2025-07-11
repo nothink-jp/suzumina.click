@@ -4,7 +4,7 @@ import { GoogleTagManager, GoogleTagManagerNoscript } from "./GoogleTagManager";
 
 // Next.js Script をモック
 vi.mock("next/script", () => ({
-	Script: ({ children, dangerouslySetInnerHTML, ...props }: any) => {
+	default: ({ children, dangerouslySetInnerHTML, ...props }: any) => {
 		if (dangerouslySetInnerHTML) {
 			return <script {...props} dangerouslySetInnerHTML={dangerouslySetInnerHTML} />;
 		}
