@@ -17,22 +17,6 @@ import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
 const DLSITE_WORKS_COLLECTION = "dlsiteWorks";
 
 /**
- * デバッグ用作品IDログ出力
- */
-function logDebugWorkIds(works: OptimizedFirestoreDLsiteWorkData[], phase: string): void {
-	const debugWorkIds = ["RJ01037463", "RJ01415251", "RJ01020479"];
-	debugWorkIds.forEach((workId) => {
-		const work = works.find((w) => w.productId === workId);
-		logger.info(`🔍 ${phase} ${workId}: ${work ? "✅ 含まれる" : "❌ 含まれない"}`, {
-			workId,
-			isIncluded: !!work,
-			title: work?.title,
-			circle: work?.circle,
-		});
-	});
-}
-
-/**
  * 単一チャンクのバッチ処理
  */
 async function processChunk(
@@ -159,7 +143,6 @@ export async function saveWorksToFirestore(
 	}
 
 	logger.info(`${works.length}件の作品データをFirestoreに保存開始`);
-	logDebugWorkIds(works, "Firestore保存対象");
 
 	try {
 		logger.info(`🔄 Firestoreバッチ実行開始: ${works.length}件`);
@@ -170,7 +153,6 @@ export async function saveWorksToFirestore(
 			await processSingleBatch(works);
 		}
 
-		logDebugWorkIds(works, "Firestore保存完了");
 		logger.info(`Firestore保存完了: ${works.length}件`);
 	} catch (error) {
 		logger.error("Firestore保存中にエラーが発生:", {

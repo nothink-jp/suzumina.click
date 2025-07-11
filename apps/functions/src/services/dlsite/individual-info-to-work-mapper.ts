@@ -544,7 +544,7 @@ export function mapIndividualInfoAPIToWorkData(
 	const now = new Date().toISOString();
 	const productId = apiData.workno || apiData.product_id;
 
-	logger.info(`Individual Info API -> Work data mapping: ${productId}`);
+	logger.debug(`Individual Info API -> Work data mapping: ${productId}`);
 
 	// 基本情報の変換
 	const category = extractWorkCategory(apiData);
@@ -833,38 +833,6 @@ export function validateAPIOnlyWorkData(data: OptimizedFirestoreDLsiteWorkData):
 	if (!data.dataSources?.infoAPI) errors.push("Individual Info APIデータが不足");
 	if (!data.createdAt) errors.push("作成日が不足");
 
-	// デバッグ用ログ（特定のworkIdのみ）
-	const debugWorkIds = [
-		"RJ01037463",
-		"RJ01415251",
-		"RJ01020479",
-		"RJ01145117",
-		"RJ01133519",
-		"RJ01125601",
-		"RJ01047404",
-		"RJ01041035",
-		"RJ01024723",
-		"RJ01022017",
-		"RJ01008336",
-	];
-	if (debugWorkIds.includes(data.productId)) {
-		logger.info(`🔍 品質検証詳細 ${data.productId}:`, {
-			workId: data.productId,
-			hasTitle: !!data.title,
-			hasCircle: !!data.circle,
-			hasPrice: !!data.price?.current,
-			priceValue: data.price?.current,
-			hasProductId: !!data.productId,
-			hasInfoAPIData: !!data.dataSources?.infoAPI,
-			hasCreatedAt: !!data.createdAt,
-			errorCount: errors.length,
-			errors: errors,
-			rating: data.rating,
-			voiceActorsCount: data.voiceActors?.length || 0,
-			genresCount: data.genres?.length || 0,
-		});
-	}
-
 	// 品質スコア計算
 	let quality = 100;
 	quality -= errors.length * 10;
@@ -878,18 +846,6 @@ export function validateAPIOnlyWorkData(data: OptimizedFirestoreDLsiteWorkData):
 		errors,
 		quality: Math.max(0, Math.min(100, quality)),
 	};
-
-	// デバッグ用ログ（特定のworkIdのみ）
-	if (debugWorkIds.includes(data.productId)) {
-		logger.info(`🔍 品質検証結果 ${data.productId}:`, {
-			workId: data.productId,
-			isValid: result.isValid,
-			quality: result.quality,
-			finalErrors: result.errors,
-			isFreeOrMissingPrice: data.price?.isFreeOrMissingPrice,
-			priceInfo: data.price,
-		});
-	}
 
 	return result;
 }
