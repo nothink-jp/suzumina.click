@@ -162,3 +162,10 @@ variable "google_analytics_measurement_id" {
   sensitive   = false  # Measurement IDは公開情報
 }
 
+variable "google_tag_manager_id" {
+  description = "Google Tag Manager Container ID"
+  type        = string
+  default     = "GTM-W7QT5PCR"
+  sensitive   = false  # GTM IDは公開情報
+}
+

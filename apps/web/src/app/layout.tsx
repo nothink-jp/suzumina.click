@@ -3,6 +3,10 @@ import { M_PLUS_Rounded_1c } from "next/font/google";
 import "@suzumina.click/ui/globals.css";
 import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
 import { GoogleAnalyticsScript } from "@/components/analytics/GoogleAnalyticsScript";
+import {
+	GoogleTagManager,
+	GoogleTagManagerNoscript,
+} from "@/components/analytics/GoogleTagManager";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { AgeVerificationWrapper } from "@/components/consent/AgeVerificationWrapper";
 import { ConsentModeScript } from "@/components/consent/ConsentModeScript";
@@ -91,10 +95,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			<head>
 				<ConsentModeScript />
 				<GoogleAnalyticsScript />
+				<GoogleTagManager />
 			</head>
 			<body
 				className={`${mPlusRounded.className} min-h-screen flex flex-col antialiased gradient-bg`}
 			>
+				<GoogleTagManagerNoscript />
 				<AgeVerificationProvider>
 					<AgeVerificationWrapper>
 						<SessionProvider>

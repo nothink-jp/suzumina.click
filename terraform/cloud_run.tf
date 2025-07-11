@@ -145,6 +145,12 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = var.google_analytics_measurement_id
       }
 
+      # Google Tag Manager ID
+      env {
+        name  = "NEXT_PUBLIC_GTM_ID"
+        value = var.google_tag_manager_id
+      }
+
 
       # 許可されたホスト名（デフォルトURL制御用）
       env {
