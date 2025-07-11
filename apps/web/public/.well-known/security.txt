@@ -1,0 +1,3 @@
+Contact: https://suzumina.click/contact
+Preferred-Languages: ja, en
+Canonical: https://suzumina.click/.well-known/security.txt

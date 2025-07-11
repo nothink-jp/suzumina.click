@@ -136,6 +136,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 	// 本番環境でのリバースプロキシ対応
 	trustHost: true,
 
+	// セキュリティ強化: CSRF攻撃対策
+	useSecureCookies: process.env.NODE_ENV === "production",
+
 	providers: [
 		Discord({
 			clientId: process.env.DISCORD_CLIENT_ID || "",
@@ -150,9 +153,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 	],
 
 	callbacks: {
-		async signIn({ user, account }) {
+		async signIn({ user, account, profile }) {
 			// Discord認証の場合のみGuild確認を実行
 			if (account?.provider === "discord" && account.access_token && account.providerAccountId) {
+				// 追加セキュリティ検証
+				if (!profile?.id || profile.id !== account.providerAccountId) {
+					return false; // プロフィール不一致
+				}
+
 				const guildMembership = await fetchDiscordGuildMembership(
 					account.access_token,
 					account.providerAccountId,
