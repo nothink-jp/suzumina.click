@@ -2,13 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useIsClient } from "@/hooks/useIsClient";
-
-interface ConsentState {
-	necessary: boolean;
-	analytics: boolean;
-	advertising: boolean;
-	personalization: boolean;
-}
+import type { ConsentState } from "@/lib/consent/google-consent-mode";
 
 /**
  * Development helper to debug consent state
@@ -26,8 +20,8 @@ export function ConsentDebugger() {
 			// Check if gtag is available
 			setGtag(typeof window !== "undefined" && "gtag" in window);
 			try {
-				const savedConsent = localStorage.getItem("cookie-consent");
-				const savedDate = localStorage.getItem("cookie-consent-date");
+				const savedConsent = localStorage.getItem("consent-state");
+				const savedDate = localStorage.getItem("consent-state-date");
 
 				if (savedConsent) {
 					setConsentState(JSON.parse(savedConsent));
@@ -51,7 +45,7 @@ export function ConsentDebugger() {
 
 		// Listen for storage changes (in case consent is saved in another tab)
 		const handleStorageChange = (event: StorageEvent) => {
-			if (event.key === "cookie-consent") {
+			if (event.key === "consent-state") {
 				updateConsentState();
 			}
 		};
@@ -83,9 +77,12 @@ export function ConsentDebugger() {
 				<div>GTM ID: {process.env.NEXT_PUBLIC_GTM_ID || "❌"}</div>
 				{consentState ? (
 					<div>
+						<div>Functional: {consentState.functional ? "✅" : "❌"}</div>
 						<div>Analytics: {consentState.analytics ? "✅" : "❌"}</div>
 						<div>Advertising: {consentState.advertising ? "✅" : "❌"}</div>
-						<div>Personalization: {consentState.personalization ? "✅" : "❌"}</div>
+						{consentState.personalization !== undefined && (
+							<div>Personalization: {consentState.personalization ? "✅" : "❌"}</div>
+						)}
 					</div>
 				) : (
 					<div>No consent given</div>

@@ -223,7 +223,6 @@ export function YouTubePlayer({
 				hl: "ja",
 				iv_load_policy: 3,
 				modestbranding: modestBranding ? 1 : 0,
-				origin: window.location.origin,
 				playsinline: 1,
 				rel: rel ? 1 : 0,
 				start: startTime,

@@ -38,10 +38,10 @@ export function ConsentModeScript() {
           
           // Check if user has existing consent and apply it immediately
           try {
-            const savedConsent = localStorage.getItem('cookie-consent');
+            const savedConsent = localStorage.getItem('consent-state');
             if (savedConsent) {
               const consentData = JSON.parse(savedConsent);
-              const consentDate = localStorage.getItem('cookie-consent-date');
+              const consentDate = localStorage.getItem('consent-state-date');
               
               if (consentDate) {
                 const consentDateObj = new Date(consentDate);

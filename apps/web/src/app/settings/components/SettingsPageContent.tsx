@@ -33,11 +33,19 @@ export function SettingsPageContent() {
 	// 現在の同意状態を読み込み
 	useEffect(() => {
 		const currentState = getCurrentConsentState();
+
 		if (currentState) {
 			setConsentState({
 				analytics: currentState.analytics || false,
 				advertising: currentState.advertising || false,
 				functional: currentState.functional !== false, // デフォルトでtrue
+			});
+		} else {
+			// デフォルト値を設定（同意状態が存在しない場合）
+			setConsentState({
+				analytics: false,
+				advertising: false,
+				functional: true,
 			});
 		}
 		setIsLoading(false);

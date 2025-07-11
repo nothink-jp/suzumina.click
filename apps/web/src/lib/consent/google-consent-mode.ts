@@ -155,10 +155,9 @@ export function getCurrentConsentState(): ConsentState | null {
 			const parsed = JSON.parse(saved);
 			// Ensure functional property exists with default value
 			return {
-				analytics: parsed.analytics || false,
-				advertising: parsed.advertising || false,
-				functional: parsed.functional !== undefined ? parsed.functional : true,
-				...parsed,
+				analytics: parsed.analytics === true,
+				advertising: parsed.advertising === true,
+				functional: parsed.functional !== false,
 			};
 		}
 	} catch (_error) {
@@ -207,6 +206,7 @@ export function updateConsent(consentState: ConsentState) {
 	// Save to localStorage
 	try {
 		localStorage.setItem("consent-state", JSON.stringify(consentState));
+		localStorage.setItem("consent-state-date", new Date().toISOString());
 	} catch (_error) {
 		// Silently handle localStorage errors for consent state
 	}
@@ -230,6 +230,7 @@ export function resetAllConsent() {
 	// Clear any existing consent cookies/data
 	try {
 		localStorage.removeItem("consent-state");
+		localStorage.removeItem("consent-state-date");
 		localStorage.removeItem("age-verification");
 	} catch (_error) {
 		// Silently handle localStorage clear errors

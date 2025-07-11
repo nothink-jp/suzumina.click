@@ -13,10 +13,11 @@ export function CookieSettingsLink() {
 
 	const handleOpenSettings = () => {
 		// Temporarily remove existing consent to show the banner again
-		const currentConsent = localStorage.getItem("cookie-consent");
+		const currentConsent = localStorage.getItem("consent-state");
 		if (currentConsent) {
-			localStorage.setItem("cookie-consent-backup", currentConsent);
-			localStorage.removeItem("cookie-consent");
+			localStorage.setItem("consent-state-backup", currentConsent);
+			localStorage.removeItem("consent-state");
+			localStorage.removeItem("consent-state-date");
 		}
 
 		setShowSettings(true);
