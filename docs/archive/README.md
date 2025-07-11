@@ -1,7 +1,7 @@
 # suzumina.click ドキュメントアーカイブ
 
-> **📅 アーカイブ日**: 2025年7月5日  
-> **📝 理由**: v0.3.0実装完了に伴うドキュメント整理統合
+> **📅 アーカイブ日**: 2025年7月11日  
+> **📝 理由**: Phase 0-2 実装完了に伴うドキュメント整理統合
 
 ## 📂 アーカイブ構造
 
@@ -12,6 +12,12 @@
 - **BACKEND_FRONTEND_INTEGRATION.md** - Server Actions統合設計（実装完了）
 - **WORK_DETAIL_ENHANCEMENT.md** - 作品詳細ページ強化仕様（実装完了）
 - **WORK_DETAIL_PAGE_ENHANCEMENT.md** - WorkDetailコンポーネント拡張（実装完了）
+
+### `/architecture/` - 完了した設計ドキュメント
+システム簡素化・リージョン制限対応完了に伴いアーカイブ
+
+- **FUNCTIONS_ARCHITECTURE_CURRENT_ARCHIVED.md** - Cloud Functions アーキテクチャ解説（システム簡素化完了時点）
+- **DLSITE_REGION_RESTRICTION_DESIGN_ARCHIVED.md** - DLsite リージョン制限対応設計書（Phase 0-2 実装完了）
 
 ### `/analysis/` - 完了した分析レポート
 技術分析・パフォーマンス分析・システム評価ドキュメント
