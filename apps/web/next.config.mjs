@@ -8,18 +8,18 @@ const nextConfig = {
 	// Server ComponentsでのみGoogle Cloud SDKを使用するための設定
 	serverExternalPackages: ["@google-cloud/firestore", "@google-cloud/storage"],
 
-	// Core Web Vitals最適化
+	// 実験的機能・パフォーマンス最適化
 	experimental: {
-		// React Compiler（実験的）
+		// React Compiler（Next.js 15.3対応）
 		reactCompiler: true,
-		// Service Worker navigation preload を無効化
-		swcPlugins: [],
-	},
-
-	// Turbopack設定
-	turbopack: {
-		rules: {
-			"*.svg": ["@svgr/webpack"],
+		// Turbopack永続キャッシュ（ビルド時間短縮）
+		turbo: {
+			rules: {
+				"*.svg": {
+					loaders: ["@svgr/webpack"],
+					as: "*.js",
+				},
+			},
 		},
 	},
 
@@ -114,8 +114,9 @@ const nextConfig = {
 
 	// SWCコンパイラーはNext.js 15でデフォルト有効
 
-	// 静的ファイルの最適化
-	assetPrefix: process.env.NODE_ENV === "production" ? undefined : undefined,
+	// 静的最適化・プリロード設定
+	optimizeFonts: true,
+	poweredByHeader: false,
 
 	// ヘッダー最適化
 	headers() {

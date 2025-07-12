@@ -14,8 +14,8 @@ interface MemoryInfo {
 	jsHeapSizeLimit: number;
 }
 
-// サンプリングレート（10%のユーザーのみメトリクス送信）
-const SAMPLING_RATE = 0.1;
+// サンプリングレート（パフォーマンス問題検知のため20%に増加）
+const SAMPLING_RATE = 0.2;
 
 // メトリクス送信関数
 function createMetricReporter() {

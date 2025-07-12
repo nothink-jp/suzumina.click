@@ -203,11 +203,35 @@ export async function GET(request: NextRequest) {
 		const filters = parseSearchFilters(searchParams, type, limit);
 		filters.q = searchQuery;
 
-		// 並列実行で検索を実行
-		const [audioButtonResult, videos, works] = await Promise.all([
+		// タイムアウト付き並列実行で検索を実行（レイテンシ改善）
+		const SEARCH_TIMEOUT = 3000; // 3秒タイムアウト
+
+		// 各検索を個別に実行してタイムアウト処理
+		const audioButtonPromise = Promise.race([
 			executeAudioButtonSearch(searchQuery, type, limit, filters),
+			new Promise<{ audioButtons: FrontendAudioButtonData[]; total: number; hasMore: boolean }>(
+				(_, reject) => setTimeout(() => reject(new Error("timeout")), SEARCH_TIMEOUT),
+			),
+		]).catch(() => ({ audioButtons: [], total: 0, hasMore: false }));
+
+		const videosPromise = Promise.race([
 			executeVideoSearch(searchQuery, type, limit),
+			new Promise<FrontendVideoData[]>((_, reject) =>
+				setTimeout(() => reject(new Error("timeout")), SEARCH_TIMEOUT),
+			),
+		]).catch(() => []);
+
+		const worksPromise = Promise.race([
 			executeWorkSearch(searchQuery, type, limit),
+			new Promise<FrontendDLsiteWorkData[]>((_, reject) =>
+				setTimeout(() => reject(new Error("timeout")), SEARCH_TIMEOUT),
+			),
+		]).catch(() => []);
+
+		const [audioButtonResult, videos, works] = await Promise.all([
+			audioButtonPromise,
+			videosPromise,
+			worksPromise,
 		]);
 
 		const result: UnifiedSearchResult = {
