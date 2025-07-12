@@ -138,11 +138,12 @@ pnpm --filter @suzumina.click/web dev
 
 ### Claude AI向けの指示
 
-1. **ファイル操作**: ALWAYS prefer editing existing files over creating new ones
-2. **テスト実行**: 変更後は必ずテストを実行（lint/typecheck含む）
-3. **型安全性**: TypeScript strict mode準拠
-4. **コード品質**: Biome設定に従う
-5. **セキュリティ**: 秘密情報の露出防止
+1. **パッケージマネージャー**: **pnpm必須・npm禁止** - 全コマンドは`pnpm`で実行する
+2. **ファイル操作**: ALWAYS prefer editing existing files over creating new ones
+3. **テスト実行**: 変更後は必ずテストを実行（lint/typecheck含む）
+4. **型安全性**: TypeScript strict mode準拠
+5. **コード品質**: Biome設定に従う
+6. **セキュリティ**: 秘密情報の露出防止
 
 ### 主要な実装パターン
 
@@ -199,13 +200,14 @@ pnpm --filter @suzumina.click/web dev
 
 ### Claude AI向け重要指示
 
-1. **ファイル編集優先**: 新規ファイル作成は最小限に抑え、既存ファイルの編集を優先
-2. **テスト実行**: コード変更後は必ずテストを実行（lint/typecheck含む）
-3. **型安全性**: TypeScript strict mode準拠
-4. **品質管理**: Biome設定に従う
-5. **セキュリティ**: 機密情報の露出防止
-6. **Firebaseコマンド禁止**: Firebaseは有効化されていないため、firebaseコマンドの使用は厳禁
-7. **ユビキタス言語準拠**: `docs/UBIQUITOUS_LANGUAGE.md` の定義に従った一貫した用語使用
+1. **pnpm必須**: **npmコマンド絶対禁止** - 全操作は`pnpm`で実行する（例: `pnpm test`, `pnpm dev`）
+2. **ファイル編集優先**: 新規ファイル作成は最小限に抑え、既存ファイルの編集を優先
+3. **テスト実行**: コード変更後は必ずテストを実行（lint/typecheck含む）
+4. **型安全性**: TypeScript strict mode準拠
+5. **品質管理**: Biome設定に従う
+6. **セキュリティ**: 機密情報の露出防止
+7. **Firebaseコマンド禁止**: Firebaseは有効化されていないため、firebaseコマンドの使用は厳禁
+8. **ユビキタス言語準拠**: `docs/UBIQUITOUS_LANGUAGE.md` の定義に従った一貫した用語使用
 
 ### 開発コマンド
 
