@@ -223,7 +223,7 @@ export async function recalculateUserStats(discordId: string): Promise<void> {
 	// ユーザーの全音声ボタンを取得（公開・非公開含む）
 	const audioButtonsSnapshot = await firestore
 		.collection("audioButtons")
-		.where("createdBy.discordId", "==", discordId)
+		.where("createdBy", "==", discordId)
 		.get();
 
 	const audioButtons = audioButtonsSnapshot.docs.map((doc) => doc.data());

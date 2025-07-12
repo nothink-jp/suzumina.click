@@ -472,43 +472,41 @@
 
 ## Firestore 複合インデックス
 
-> **最終更新**: 2025-07-10 | **インデックス総数**: 13個（全て READY 状態）+ 時系列データ最適化
+> **最終更新**: 2025-07-12 | **インデックス総数**: 13個（全て READY 状態）+ ユーザー統計再計算最適化
 > 
-> **分析対象**: `apps/web/src/` のFirestoreクエリパターンを網羅的に調査 + 時系列データアクセス最適化
+> **分析対象**: `apps/web/src/` 全体 + `apps/functions/src/` + `apps/admin/src/` のFirestoreクエリパターンを網羅的に調査
 
 ### 📊 現在のインデックス状況（Google Cloud Firestore）
 
-#### ✅ **audioButtons コレクション** (8個)
+#### ✅ **audioButtons コレクション** (11個 - 一部無効化中)
 
 | インデックス | フィールド | 使用状況 | 使用箇所 |
 |-------------|------------|----------|----------|
-| `createdBy + createdAt (DESC)` | [`createdBy`, `createdAt`, `__name__`] | ✅ **使用中** | レート制限チェック（音声ボタン作成時） |
-| `createdBy + createdAt (ASC)` | [`createdBy`, `createdAt`, `__name__`] | ✅ **使用中** | レート制限チェック（範囲クエリ用） |
-| `isPublic + createdAt (DESC)` | [`isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | `getAudioButtons()` - 基本一覧 |
-| `isPublic + likeCount (DESC)` | [`isPublic`, `likeCount`, `__name__`] | ✅ **使用中** | 人気順ソート (`sortBy: "popular"`) |
-| `isPublic + playCount (DESC)` | [`isPublic`, `playCount`, `__name__`] | ✅ **使用中** | 再生数順ソート (`sortBy: "mostPlayed"`) |
-| `isPublic + category + createdAt (DESC)` | [`isPublic`, `category`, `createdAt`, `__name__`] | ✅ **使用中** | カテゴリフィルター |
-| `isPublic + sourceVideoId + startTime (ASC)` | [`isPublic`, `sourceVideoId`, `startTime`, `__name__`] | 🔴 **未使用** | `startTime` での並び替えなし |
-| `tags (CONTAINS) + isPublic + createdAt (DESC)` | [`tags`, `isPublic`, `createdAt`, `__name__`] | 🔴 **未使用** | タグフィルターはクライアントサイド |
+| `isPublic + createdAt (DESC)` | [`isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | 基本一覧取得・検索結果 |
+| `isPublic + playCount (DESC)` | [`isPublic`, `playCount`, `__name__`] | ✅ **使用中** | 再生数順ソート |
+| `isPublic + likeCount (DESC)` | [`isPublic`, `likeCount`, `__name__`] | ✅ **使用中** | 人気順ソート |
+| `sourceVideoId + isPublic + createdAt (DESC)` | [`sourceVideoId`, `isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | 動画別音声ボタン（新着順） |
+| `sourceVideoId + isPublic + likeCount (DESC)` | [`sourceVideoId`, `isPublic`, `likeCount`, `__name__`] | ✅ **使用中** | 動画別音声ボタン（人気順） |
+| `sourceVideoId + isPublic + playCount (DESC)` | [`sourceVideoId`, `isPublic`, `playCount`, `__name__`] | ✅ **使用中** | 動画別音声ボタン（再生数順） |
+| `tags (CONTAINS) + isPublic + createdAt (DESC)` | [`tags`, `isPublic`, `createdAt`, `__name__`] | ✅ **使用中** | タグフィルター検索 |
+| `createdBy + createdAt (DESC)` | [`createdBy`, `createdAt`, `__name__`] | ✅ **使用中** | ユーザー作成音声ボタン・統計再計算 |
+| `isPublic + sourceVideoId + startTime (ASC)` | [`isPublic`, `sourceVideoId`, `startTime`, `__name__`] | 🔴 **未使用** | 時間順並び替えなし |
+| `createdBy + createdAt (ASC)` | [`createdBy`, `createdAt`, `__name__`] | 🔶 **無効化中** | レート制限チェック（範囲クエリ） |
+| `createdBy + isPublic + createdAt (DESC)` | [`createdBy`, `isPublic`, `createdAt`, `__name__`] | 🔶 **無効化中** | ユーザープロフィール（新着順） |
+| `createdBy + isPublic + playCount (DESC)` | [`createdBy`, `isPublic`, `playCount`, `__name__`] | 🔶 **無効化中** | ユーザープロフィール（再生数順） |
 
-**✅ 作成済みインデックス**:
-- `createdBy + createdAt (DESC/ASC)` - レート制限用
+**✅ 活発に使用されているインデックス (8個)**:
+- 基本一覧・検索: `isPublic + createdAt/playCount/likeCount` 
+- 動画別表示: `sourceVideoId + isPublic + createdAt/likeCount/playCount`
+- タグ検索: `tags (CONTAINS) + isPublic + createdAt`
+- ユーザー統計: `createdBy + createdAt`
 
-**⚠️ 必要なインデックス（未作成）**:
-```hcl
-# 動画別音声ボタン一覧用
-resource "google_firestore_index" "audiobuttons_sourcevideoid_createdat_desc" {
-  collection = "audioButtons"
-  fields {
-    field_path = "sourceVideoId"
-    order      = "ASCENDING"
-  }
-  fields {
-    field_path = "createdAt"
-    order      = "DESCENDING"
-  }
-}
-```
+**🔶 一時無効化中のインデックス (3個)**:
+- レート制限チェック: `createdBy + createdAt (ASC)`
+- ユーザープロフィール: `createdBy + isPublic + createdAt/playCount`
+
+**🔴 削除推奨インデックス (1個)**:
+- 時間順ソート未使用: `isPublic + sourceVideoId + startTime`
 
 #### ✅ **videos コレクション** (3個)
 
@@ -534,75 +532,121 @@ resource "google_firestore_index" "audiobuttons_sourcevideoid_createdat_desc" {
 |-------------|------------|----------|----------|
 | `date + workId + timestamp (ASC)` | [`date`, `workId`, `timestamp`, `__name__`] | ✅ **使用中** | 日次集計処理・時系列データ取得 |
 
+#### ✅ **favorites サブコレクション** (Collection Group) - 新規必要
+
+| インデックス | フィールド | 使用状況 | 使用箇所 |
+|-------------|------------|----------|----------|
+| `audioButtonId + addedAt (DESC)` | [`audioButtonId`, `addedAt`, `__name__`] | ⚠️ **未作成** | お気に入り一括確認・管理者機能 |
+
+#### 🔄 **新しく発見されたクエリパターン** (2025年7月12日調査)
+
+**高優先度:**
+1. **ユーザー統計再計算**: `audioButtons.where("createdBy", "==", discordId)` ✅ 既存インデックス使用可能
+2. **お気に入り一括確認**: Collection Group Query on `favorites` ⚠️ インデックス追加必要
+3. **動画年代フィルター**: `videos.where("publishedAt", ">=", startYear).orderBy("publishedAt")` ⚠️ インデックス追加検討
+
 **用途**: 
 - 日次集計バッチ処理での効率的な生データ取得
 - 特定作品・期間の時系列データ高速検索
 - `/api/timeseries/[workId]` APIでの価格履歴取得最適化
 
-### 🔍 実際のクエリパターン分析
+### 🔍 実際のクエリパターン分析 (2025年7月12日更新)
 
-#### **audioButtons コレクション**
+#### **audioButtons コレクション** - 最も複雑・高頻度
 ```typescript
-// ✅ 使用中のクエリ
-.where("isPublic", "==", true).orderBy("createdAt", "desc")  // 基本一覧
-.where("isPublic", "==", true).where("category", "==", category).orderBy("createdAt", "desc")  // カテゴリフィルター
-.where("isPublic", "==", true).orderBy("likeCount", "desc")  // 人気順
+// ✅ 基本一覧・検索（高頻度）
+.where("isPublic", "==", true).orderBy("createdAt", "desc")  // 新着順
 .where("isPublic", "==", true).orderBy("playCount", "desc")  // 再生数順
-.where("isPublic", "==", true).where("sourceVideoId", "==", videoId)  // 動画別（ソートなし）
+.where("isPublic", "==", true).orderBy("likeCount", "desc")  // 人気順
 
-// ✅ インデックス対応済み
-.where("createdBy", "==", userId).where("createdAt", ">", date)  // レート制限チェック
+// ✅ 動画別音声ボタン（中頻度）
+.where("sourceVideoId", "==", videoId).where("isPublic", "==", true).orderBy("createdAt", "desc")
+.where("sourceVideoId", "==", videoId).where("isPublic", "==", true).orderBy("playCount", "desc")
+.where("sourceVideoId", "==", videoId).where("isPublic", "==", true).orderBy("likeCount", "desc")
 
-// ⚠️ インデックス不足のクエリ  
-.where("sourceVideoId", "==", videoId)  // 重複チェック
+// ✅ タグ検索（中頻度）
+.where("tags", "array-contains", tag).where("isPublic", "==", true).orderBy("createdAt", "desc")
+
+// ✅ ユーザー作成ボタン・統計再計算（重要）
+.where("createdBy", "==", discordId)  // 全ボタン取得（統計再計算用）
+.where("createdBy", "==", discordId).where("isPublic", "==", true)  // 公開のみ
+
+// 🔶 レート制限（現在無効化）
+.where("createdBy", "==", discordId).where("createdAt", ">", timestamp)
 ```
 
-#### **videos コレクション**
+#### **users コレクション** - 管理者機能
 ```typescript
-// ✅ 使用中のクエリ（シンプルクエリのみ）
-.doc(videoId).get()  // ID による取得
-.collection("videos").get()  // 全件取得（少数のため）
+// ✅ 管理者画面
+.where("isPublicProfile", "==", true).orderBy("createdAt", "desc")
+.where("isPublicProfile", "==", true).where("role", "==", role).orderBy("lastLoginAt", "desc")
+
+// ✅ 統計再計算対象ユーザー特定
+.doc(discordId).get()  // 個別ユーザー情報取得
 ```
 
-#### **users コレクション**
+#### **favorites サブコレクション** - Collection Group
 ```typescript
-// ✅ 使用中のクエリ
-.where("isPublicProfile", "==", true).orderBy("createdAt", "desc")  // 公開ユーザー一覧
-.where("isPublicProfile", "==", true).where("role", "==", role).orderBy("lastLoginAt", "desc")  // 管理者フィルター
+// ✅ 個別ユーザーのお気に入り
+users/{userId}/favorites.orderBy("addedAt", "desc")
+
+// ⚠️ Collection Group（インデックス不足）
+.collectionGroup("favorites").where("audioButtonId", "==", buttonId)  // 一括確認
+.collectionGroup("favorites").where("audioButtonId", "in", buttonIds)  // 複数確認
+```
+
+#### **videos コレクション** - 基本データ取得
+```typescript
+// ✅ シンプルクエリ
+.doc(videoId).get()  // 個別動画取得
+.orderBy("publishedAt", "desc").limit(100)  // 最新動画一覧
+
+// 🔄 新規パターン（年代フィルター）
+.where("publishedAt", ">=", startOfYear).where("publishedAt", "<", endOfYear).orderBy("publishedAt", "desc")
 ```
 
 ### 🚨 最適化推奨事項
 
-#### **🗑️ 削除推奨インデックス**（コスト最適化）
+#### **🔴 削除推奨インデックス** (コスト最適化)
+
+**高優先度削除対象:**
+
+1. **videos コレクション (3個)** - 全て未使用
+   - `liveBroadcastContent + publishedAt (ASC/DESC)`
+   - `videoType + publishedAt (DESC)`
+   
+2. **audioButtons コレクション (1個)** - 未使用
+   - `isPublic + sourceVideoId + startTime (ASC)` - 時間順ソートなし
+
+**予想コスト削減: 月額約$8 (4インデックス削除)**
+
+#### **🔶 再有効化検討インデックス** (機能要件次第)
+
+**中優先度:**
+
+1. **レート制限機能復活時**
+   - `createdBy + createdAt (ASC)` - 範囲クエリ用
+
+2. **ユーザープロフィール機能拡張時**
+   - `createdBy + isPublic + createdAt (DESC/ASC)`
+   - `createdBy + isPublic + playCount (DESC)`
+
+#### **➕ 新規追加推奨インデックス**
+
+**高優先度 (Terraform設定済み):**
 
 ```bash
-# 1. audioButtons - createdBy フィールド使用のため適切
-gcloud firestore indexes composite delete \
-  projects/suzumina-click/databases/\(default\)/collectionGroups/audioButtons/indexes/CICAgOi3voUJ
+# Collection Group favoritesインデックス
+terraform apply -target=google_firestore_index.favorites_audiobuttonid_addedat_desc
 
-# 2. audioButtons - startTime 並び替えなしのため不要  
-gcloud firestore indexes composite delete \
-  projects/suzumina-click/databases/\(default\)/collectionGroups/audioButtons/indexes/CICAgJjmiJEK
-
-# 3. audioButtons - クライアントサイドフィルターのため不要
-gcloud firestore indexes composite delete \
-  projects/suzumina-click/databases/\(default\)/collectionGroups/audioButtons/indexes/CICAgOi3kJAK
-
-# 4-6. videos - コード内でクエリなしのため全て不要
-gcloud firestore indexes composite delete \
-  projects/suzumina-click/databases/\(default\)/collectionGroups/videos/indexes/CICAgNi47oMK
-gcloud firestore indexes composite delete \
-  projects/suzumina-click/databases/\(default\)/collectionGroups/videos/indexes/CICAgJiUsZIK  
-gcloud firestore indexes composite delete \
-  projects/suzumina-click/databases/\(default\)/collectionGroups/videos/indexes/CICAgJiH2JAK
+# 動画年代フィルター用
+terraform apply -target=google_firestore_index.videos_publishedat_range_desc
 ```
 
-#### **➕ 追加推奨インデックス**
-```bash
-# 高頻度クエリ用インデックスをTerraformで追加
-# ✅ 完了: terraform apply -target=google_firestore_index.audiobuttons_uploadedby_createdat_desc (2025-06-26)
-terraform apply -target=google_firestore_index.audiobuttons_sourcevideoid_createdat_desc  
-```
+**中優先度 (将来機能用):**
+
+- DLsite作品の複合フィルター
+- Cloud Functions専用の失敗分析インデックス
 
 #### **📊 コスト影響試算**
 - **削除済み**: 旧 audioReferences インデックス 2個
@@ -729,6 +773,22 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 - **メンテナンス性**: Server Actions統一による一貫性
 
 ## 📅 データ構造変更ログ
+
+### 2025-07-12 v11.2 ユーザー統計再計算機能・Firestoreインデックス最適化完了
+
+**実行した操作**:
+- ✅ ユーザー統計再計算機能実装: 管理者向け統計修正・集計バグ解決
+- ✅ Firestoreクエリパターン全調査: apps/web・apps/functions・apps/admin全域分析
+- ✅ インデックス使用状況最新化: 11個audioButtonsインデックス・3個無効化中特定
+- ✅ 新規クエリパターン対応: Collection Group favorites・動画年代フィルター分析
+- ✅ コスト最適化計画更新: 未使用インデックス4個削除で月額$8削減見込み
+- ✅ FIRESTORE_STRUCTURE.md大幅更新: 最新クエリパターン・インデックス状況反映
+
+**解決した問題**:
+- ✅ ユーザー統計不整合: 17個ボタン→「1個」表示バグを管理者機能で修正可能に
+- ✅ `recalculateUserStats`実装: 実際のFirestoreデータから正確な統計再計算
+- ✅ インデックス監視精度向上: 使用中8個・無効化3個・未使用1個の詳細分析
+- ✅ 将来機能対応: Collection Group・年代フィルター用インデックス要件特定
 
 ### 2025-07-12 v11.1 パフォーマンス最適化・Server Actions統合・P99レイテンシ改善完了
 
