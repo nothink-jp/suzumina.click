@@ -21,7 +21,7 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 - **お気に入りシステム**: 音声ボタンのお気に入り登録・管理機能
 - **管理者機能**: ユーザー・コンテンツ管理インターフェース
 - **インフラ**: Terraform + Google Cloud Platform (本番稼働)
-- **品質保証**: 703+件のテストスイート + E2Eテスト (WorkDetail強化完了)
+- **品質保証**: 410+件のテストスイート + E2Eテスト (Server Actions移行完了)
 - **最新アーキテクチャ**: Cloud Functions エンタープライズレベルディレクトリ構造 (2025年7月4日完了)
 - **最新機能**: DLsite作品詳細情報表示強化 + 高解像度画像対応 (2025年7月実装)
 - **アーキテクチャ革新**: 100% API-Only アーキテクチャ実現・旧HTMLスクレイピングシステム完全廃止 (2025年7月8日完了)
@@ -45,8 +45,8 @@ Monorepo構成 (pnpm workspace)
 │       └── src/infrastructure/ # インフラ層
 ├── packages/
 │   ├── shared-types/           # 型定義共有
-│   ├── eslint-config/          # ESLint設定
-│   └── typescript-config/      # TypeScript設定
+│   ├── typescript-config/      # TypeScript設定
+│   └── ui/                     # UI コンポーネントライブラリ
 └── docs/                       # ドキュメント
 ```
 
@@ -58,6 +58,7 @@ Monorepo構成 (pnpm workspace)
 - **認証**: NextAuth.js + Discord OAuth
 - **API**: YouTube Data API v3 + DLsite Individual Info API
 - **テスト**: Vitest + Playwright E2E
+- **Linter/Formatter**: Biome
 - **インフラ**: Terraform + Google Cloud Platform
 
 ## 📊 データ収集システム
@@ -87,7 +88,7 @@ Monorepo構成 (pnpm workspace)
 
 ### テストスイート構成
 
-- **単体テスト**: 703+件（Vitest）
+- **単体テスト**: 410+件（Vitest）
 - **E2Eテスト**: Playwright
 - **API テスト**: Next.js API Routes
 - **統合テスト**: Cloud Functions
@@ -112,12 +113,17 @@ pnpm --filter @suzumina.click/web test:e2e
 ```bash
 # Web アプリケーション (.env.local)
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret
-DISCORD_CLIENT_ID=your-client-id
-DISCORD_CLIENT_SECRET=your-client-secret
+NEXTAUTH_SECRET=your-nextauth-secret
+DISCORD_CLIENT_ID=your-discord-client-id
+DISCORD_CLIENT_SECRET=your-discord-client-secret
+DISCORD_BOT_TOKEN=your-discord-bot-token
+GOOGLE_CLOUD_PROJECT=suzumina-click
+YOUTUBE_API_KEY=your-youtube-api-key
 
-# Cloud Functions (.env)
-GOOGLE_CLOUD_PROJECT=your-project-id
+# Public環境変数 (Next.js)
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
+NEXT_PUBLIC_AMAZON_ASSOCIATE_ID=your-associate-id
 ```
 
 ### 開発サーバー起動
@@ -134,7 +140,7 @@ pnpm --filter @suzumina.click/web dev
 1. **ファイル操作**: ALWAYS prefer editing existing files over creating new ones
 2. **テスト実行**: 変更後は必ずテストを実行（lint/typecheck含む）
 3. **型安全性**: TypeScript strict mode準拠
-4. **コード品質**: ESLint/Prettier設定に従う
+4. **コード品質**: Biome設定に従う
 5. **セキュリティ**: 秘密情報の露出防止
 
 ### 主要な実装パターン
@@ -172,12 +178,11 @@ pnpm --filter @suzumina.click/web dev
 
 - `package.json`: Monorepo workspace設定
 - `tsconfig.json`: TypeScript設定
-- `eslint.config.js`: ESLint設定
-- `tailwind.config.ts`: Tailwind CSS設定
+- `biome.json`: Biome (Linter/Formatter) 設定
+- `vitest.config.ts`: テスト設定
 
 ### ドキュメント
 
-- `docs/DLSITE_INCREMENTAL_UPDATE_DESIGN.md`: DLsite統合システム設計
 - `docs/FIRESTORE_STRUCTURE.md`: データベース構造
 - `docs/DEVELOPMENT.md`: 開発環境・原則
 
@@ -213,7 +218,6 @@ pnpm typecheck
 pnpm dev
 ```
 
-
 ### 既知の問題・制約
 
 - salesCount機能は完全廃止済み（2025年7月）
@@ -224,10 +228,12 @@ pnpm dev
 ## 📝 変更ログ
 
 ### v0.3.2 (2025-07-12)
+
 - Server Actions優先アーキテクチャ移行完了
 - API Routes 33%削減・410件全テスト通過
 - パフォーマンス最適化・Progressive Enhancement実現
 
 ### v0.3.1 (2025-07-09)
+
 - DLsite統合データ収集システム最適化
 - salesCount機能完全廃止
