@@ -15,7 +15,7 @@ describe("GoogleAdSenseScript", () => {
 
 		const { container } = render(<GoogleAdSenseScript />);
 
-		// Next.jsのScriptコンポーネントはDOMに直接レンダリングされないため、
+		// Next.jsのScriptコンポーネントは本番環境でのみ正常に動作するため、
 		// コンポーネントが正常にレンダリングされることのみ確認
 		expect(container).toBeTruthy();
 	});
