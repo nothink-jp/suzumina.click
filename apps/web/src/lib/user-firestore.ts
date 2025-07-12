@@ -215,6 +215,32 @@ export async function updateUserStats(
 }
 
 /**
+ * ユーザーの統計情報を再計算（実際のデータから）
+ */
+export async function recalculateUserStats(discordId: string): Promise<void> {
+	const firestore = getFirestore();
+
+	// ユーザーの全音声ボタンを取得（公開・非公開含む）
+	const audioButtonsSnapshot = await firestore
+		.collection("audioButtons")
+		.where("createdBy.discordId", "==", discordId)
+		.get();
+
+	const audioButtons = audioButtonsSnapshot.docs.map((doc) => doc.data());
+
+	// 統計を計算
+	const audioButtonsCount = audioButtons.length;
+	const totalPlayCount = audioButtons.reduce((sum, button) => sum + (button.playCount || 0), 0);
+
+	// ユーザー情報を更新
+	await firestore.collection("users").doc(discordId).update({
+		audioButtonsCount,
+		totalPlayCount,
+		updatedAt: new Date().toISOString(),
+	});
+}
+
+/**
  * ユーザー一覧を取得（管理者用）
  */
 export async function getUserList(query: UserQuery): Promise<UserListResult> {

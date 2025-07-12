@@ -56,6 +56,13 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 		notFound();
 	}
 
+	// 現在のユーザーの情報を取得（管理者権限確認用）
+	let currentUser = null;
+	if (session?.user?.discordId) {
+		currentUser = await getUserByDiscordId(session.user.discordId);
+	}
+	const isAdmin = currentUser?.role === "admin";
+
 	// ユーザーが作成した音声ボタンを取得
 	const audioButtons = await getAudioButtonsByUser(resolvedParams.userId);
 
@@ -71,6 +78,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 			audioButtons={audioButtons}
 			isOwnProfile={isOwnProfile}
 			favoritesCount={favoritesCount}
+			isAdmin={isAdmin}
 		/>
 	);
 }
