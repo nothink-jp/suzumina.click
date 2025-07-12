@@ -21,10 +21,10 @@ import {
 import { chunkArray } from "../../shared/array-utils";
 import * as logger from "../../shared/logger";
 
-// ローカル環境用設定（控えめに設定してDLsiteに優しく）
-const MAX_CONCURRENT_REQUESTS = 2; // 同時実行数を控えめに
-const REQUEST_DELAY = 1500; // 1.5秒間隔
-const BATCH_SIZE = 50; // バッチサイズを小さめに設定
+// ローカル環境用設定（高速化版: DLsiteへの負荷を考慮しつつ高速実行）
+const MAX_CONCURRENT_REQUESTS = 5; // 同時実行数を増加（推奨値）
+const REQUEST_DELAY = 800; // 0.8秒間隔（安全な範囲で短縮）
+const BATCH_SIZE = 50; // バッチサイズは維持
 
 // メタデータ保存用
 const LOCAL_COLLECTION_METADATA_DOC_ID = "local_complete_collection_metadata";

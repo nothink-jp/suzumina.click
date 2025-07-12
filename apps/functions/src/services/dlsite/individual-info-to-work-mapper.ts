@@ -136,12 +136,12 @@ export interface IndividualInfoAPIResponse {
 	file_size_string?: string;
 
 	// === 画像情報 ===
-	image_main?: string;
-	image_thum?: string;
-	image_samples?: string[];
-	srcset?: string;
-	image_thumb?: string;
-	image_thumb_touch?: string;
+	image_main?: string | number | object;
+	image_thum?: string | number | object;
+	image_samples?: (string | number | object)[];
+	srcset?: string | number | object;
+	image_thumb?: string | number | object;
+	image_thumb_touch?: string | number | object;
 
 	// === キャンペーン情報 ===
 	campaign?: {
@@ -351,7 +351,9 @@ function extractRatingInfo(apiData: IndividualInfoAPIResponse): RatingInfo | und
 function extractVoiceActors(apiData: IndividualInfoAPIResponse): string[] {
 	// 新しいcreatorsフィールドから抽出（優先）
 	if (apiData.creaters?.voice_by && Array.isArray(apiData.creaters.voice_by)) {
-		const voiceActors = apiData.creaters.voice_by.map((creator) => creator.name).filter(Boolean);
+		const voiceActors = apiData.creaters.voice_by
+			.map((creator) => creator.name)
+			.filter((name) => name && typeof name === "string" && name.trim() !== "");
 		if (voiceActors.length > 0) {
 			return voiceActors;
 		}
@@ -366,7 +368,7 @@ function extractVoiceActors(apiData: IndividualInfoAPIResponse): string[] {
 		const voiceActors = cvMatch[1]
 			.split(",")
 			.map((name) => name.trim())
-			.filter(Boolean);
+			.filter((name) => name && name.trim() !== "");
 		return voiceActors;
 	}
 
@@ -434,24 +436,38 @@ function extractCreators(apiData: IndividualInfoAPIResponse): {
 	if (apiData.creaters) {
 		// シナリオ作者
 		if (apiData.creaters.scenario_by && Array.isArray(apiData.creaters.scenario_by)) {
-			scenario.push(...apiData.creaters.scenario_by.map((creator) => creator.name).filter(Boolean));
+			scenario.push(
+				...apiData.creaters.scenario_by
+					.map((creator) => creator.name)
+					.filter((name) => name && typeof name === "string" && name.trim() !== ""),
+			);
 		}
 
 		// イラスト作者
 		if (apiData.creaters.illust_by && Array.isArray(apiData.creaters.illust_by)) {
 			illustration.push(
-				...apiData.creaters.illust_by.map((creator) => creator.name).filter(Boolean),
+				...apiData.creaters.illust_by
+					.map((creator) => creator.name)
+					.filter((name) => name && typeof name === "string" && name.trim() !== ""),
 			);
 		}
 
 		// 音楽作者
 		if (apiData.creaters.music_by && Array.isArray(apiData.creaters.music_by)) {
-			music.push(...apiData.creaters.music_by.map((creator) => creator.name).filter(Boolean));
+			music.push(
+				...apiData.creaters.music_by
+					.map((creator) => creator.name)
+					.filter((name) => name && typeof name === "string" && name.trim() !== ""),
+			);
 		}
 
 		// その他の作者
 		if (apiData.creaters.others_by && Array.isArray(apiData.creaters.others_by)) {
-			author.push(...apiData.creaters.others_by.map((creator) => creator.name).filter(Boolean));
+			author.push(
+				...apiData.creaters.others_by
+					.map((creator) => creator.name)
+					.filter((name) => name && typeof name === "string" && name.trim() !== ""),
+			);
 		}
 	}
 
@@ -562,8 +578,8 @@ export function mapIndividualInfoAPIToWorkData(
 	}
 
 	// 基本フィールドのフォールバック値設定
-	const workName = apiData.work_name || `Unknown Work ${productId}`;
-	const makerName = apiData.maker_name || "Unknown Maker";
+	const workName: string = apiData.work_name || `Unknown Work ${productId}`;
+	const makerName: string = apiData.maker_name || "Unknown Maker";
 
 	// 重要なフィールドが不足している場合はワーニングログ
 	if (!apiData.work_name) {
@@ -672,7 +688,11 @@ export function mapIndividualInfoAPIToWorkData(
 	const thumbnailUrl = normalizeImageUrl(rawThumbnailUrl);
 	const highResImageUrl = normalizeImageUrl(rawHighResImageUrl);
 
-	return {
+	// thumbnailUrlは必須フィールドなので、デフォルト画像URLを保証
+	const defaultThumbnailUrl = `https://img.dlsite.jp/modpub/images2/work/doujin/${productId}_img_main.jpg`;
+	const finalThumbnailUrl = thumbnailUrl || defaultThumbnailUrl;
+
+	const result = {
 		// === 基本識別情報 ===
 		id: productId,
 		productId,
@@ -680,11 +700,11 @@ export function mapIndividualInfoAPIToWorkData(
 		// === 基本作品情報 ===
 		title: workName,
 		circle: makerName,
-		description: "", // Individual Info APIには詳細説明なし
+		description: "Individual Info APIより取得", // Individual Info APIには詳細説明なし
 		category,
 		originalCategoryText: apiData.work_type_string || apiData.work_type,
 		workUrl,
-		thumbnailUrl: thumbnailUrl || "",
+		thumbnailUrl: finalThumbnailUrl,
 		highResImageUrl,
 
 		// === 価格・評価情報 ===
@@ -693,29 +713,29 @@ export function mapIndividualInfoAPIToWorkData(
 		wishlistCount: apiData.wishlist_count,
 
 		// === クリエイター情報（Individual Info APIで取得可能な範囲） ===
-		voiceActors,
-		scenario: creators.scenario,
-		illustration: creators.illustration,
-		music: creators.music,
+		voiceActors: voiceActors.filter((name) => name && name.trim() !== ""),
+		scenario: creators.scenario.filter((name) => name && name.trim() !== ""),
+		illustration: creators.illustration.filter((name) => name && name.trim() !== ""),
+		music: creators.music.filter((name) => name && name.trim() !== ""),
 		author:
 			creators.author.length > 0
-				? creators.author
+				? creators.author.filter((name) => name && name.trim() !== "")
 				: voiceActors.length > 0
 					? []
-					: apiData.author
-						? [apiData.author]
+					: apiData.author && apiData.author.trim() !== ""
+						? [apiData.author.trim()]
 						: [],
 
 		// === DLsite公式ジャンル ===
-		genres,
+		genres: genres.filter((genre) => genre && genre.trim() !== ""),
 
 		// === 日付情報 ===
 		releaseDate: typeof apiData.regist_date === "string" ? apiData.regist_date : undefined,
 		releaseDateISO:
-			typeof apiData.regist_date === "string" ? convertToISODate(apiData.regist_date) : undefined,
+			typeof apiData.regist_date === "string" ? convertToISODate(apiData.regist_date!) : undefined,
 		releaseDateDisplay:
 			typeof apiData.regist_date === "string"
-				? formatDateForDisplay(apiData.regist_date)
+				? formatDateForDisplay(apiData.regist_date!)
 				: undefined,
 
 		// === 拡張メタデータ ===
@@ -733,27 +753,40 @@ export function mapIndividualInfoAPIToWorkData(
 					id: g.id ? Number(g.id) : undefined,
 					search_val: g.search_val,
 				}))
-				.filter((g) => g.name) || [],
+				.filter((g) => g.name && g.name.trim() !== "") || [],
 		apiCustomGenres:
 			apiData.custom_genres
 				?.map((g) => ({
 					genre_key: g.genre_key,
 					name: g.name,
 				}))
-				.filter((g) => g.name) || [],
-		apiWorkOptions: apiData.work_options
-			? { [apiData.work_options]: { name: apiData.work_options } }
-			: {},
+				.filter((g) => g.name && g.name.trim() !== "") || [],
+		apiWorkOptions:
+			apiData.work_options && typeof apiData.work_options === "string"
+				? { [apiData.work_options]: { name: apiData.work_options } }
+				: {},
 
 		// === Individual Info API特有データ ===
 		creaters: apiData.creaters
 			? {
-					voice_by: apiData.creaters.voice_by || [],
-					scenario_by: apiData.creaters.scenario_by || [],
-					illust_by: apiData.creaters.illust_by || [],
-					music_by: apiData.creaters.music_by || [],
-					others_by: apiData.creaters.others_by || [],
-					created_by: apiData.creaters.directed_by || [], // directed_by を created_by にマッピング
+					voice_by: (apiData.creaters?.voice_by || []).filter(
+						(creator) => creator.name && creator.name.trim() !== "",
+					),
+					scenario_by: (apiData.creaters?.scenario_by || []).filter(
+						(creator) => creator.name && creator.name.trim() !== "",
+					),
+					illust_by: (apiData.creaters?.illust_by || []).filter(
+						(creator) => creator.name && creator.name.trim() !== "",
+					),
+					music_by: (apiData.creaters?.music_by || []).filter(
+						(creator) => creator.name && creator.name.trim() !== "",
+					),
+					others_by: (apiData.creaters?.others_by || []).filter(
+						(creator) => creator.name && creator.name.trim() !== "",
+					),
+					created_by: (apiData.creaters?.directed_by || []).filter(
+						(creator) => creator.name && creator.name.trim() !== "",
+					), // directed_by を created_by にマッピング
 				}
 			: undefined,
 
@@ -769,11 +802,23 @@ export function mapIndividualInfoAPIToWorkData(
 		// 	: undefined,
 		// bonusContent: [], // Individual Info APIには特典情報なし（廃止済み）
 		sampleImages:
-			apiData.image_samples?.map((url, _index) => ({
-				thumb: normalizeImageUrl(url) || url,
-				width: undefined,
-				height: undefined,
-			})) || [],
+			apiData.image_samples
+				?.map((url, _index) => {
+					const normalizedUrl = normalizeImageUrl(url);
+					const urlString = normalizedUrl || (url ? String(url) : "");
+					return {
+						thumb: urlString,
+						width: undefined,
+						height: undefined,
+					};
+				})
+				.filter(
+					(img) =>
+						img.thumb &&
+						img.thumb !== "[object Object]" &&
+						img.thumb !== "" &&
+						img.thumb.trim() !== "",
+				) || [],
 		isExclusive: apiData.exclusive || false,
 
 		// === データソース追跡（Individual Info API単一ソース） ===
@@ -790,6 +835,11 @@ export function mapIndividualInfoAPIToWorkData(
 		createdAt: existingData?.createdAt || now,
 		updatedAt: now,
 	};
+
+	// 最終的な空文字列除去（再帰的）
+	const cleanedResult = removeEmptyStringsRecursively(result);
+
+	return cleanedResult as OptimizedFirestoreDLsiteWorkData;
 }
 
 /**
@@ -823,9 +873,26 @@ function mapAgeCategory(ageCategory?: number): string | undefined {
 /**
  * srcset文字列から最高解像度の画像URLを抽出（URL正規化対応）
  */
-function extractHighResFromSrcset(srcset: string): string | undefined {
+function extractHighResFromSrcset(
+	srcset: string | number | object | undefined,
+): string | undefined {
+	if (!srcset) return undefined;
+
+	// オブジェクトの場合は処理をスキップ（srcsetは通常文字列）
+	if (typeof srcset === "object") {
+		logger.warn("srcsetにオブジェクトが渡されました", { srcset });
+		return undefined;
+	}
+
+	// 文字列以外の値が来た場合は文字列に変換
+	const srcsetString = typeof srcset === "string" ? srcset : String(srcset);
+
+	// 空文字列の場合はundefinedを返す
+	if (!srcsetString || srcsetString.trim() === "" || srcsetString === "[object Object]")
+		return undefined;
+
 	// "url1 1x, url2 2x, url3 3x" 形式から最大解像度を選択
-	const entries = srcset.split(",").map((entry) => entry.trim());
+	const entries = srcsetString.split(",").map((entry) => entry.trim());
 	let maxRes = 0;
 	let bestUrl = "";
 
@@ -882,16 +949,72 @@ function formatDateForDisplay(dateString: string): string | undefined {
  * プロトコル相対URLを絶対URLに正規化
  * "//img.dlsite.jp/..." -> "https://img.dlsite.jp/..."
  */
-function normalizeImageUrl(url: string | undefined): string | undefined {
+function normalizeImageUrl(url: string | undefined | number | null | object): string | undefined {
 	if (!url) return undefined;
 
+	// オブジェクトの場合は適切なプロパティを探す、または文字列化を試行
+	if (typeof url === "object" && url !== null) {
+		// オブジェクトの場合、よくあるプロパティ名を探す
+		const obj = url as any;
+		const candidateUrl = obj.url || obj.src || obj.href || obj.path;
+		if (candidateUrl && typeof candidateUrl === "string") {
+			return normalizeImageUrl(candidateUrl);
+		}
+		// 適切なプロパティが見つからない場合はundefinedを返す
+		logger.warn("画像URLオブジェクトに有効なプロパティが見つかりません", { url });
+		return undefined;
+	}
+
+	// 文字列以外の値が来た場合は文字列に変換（数値やその他の型に対応）
+	const urlString = typeof url === "string" ? url : String(url);
+
+	// 空文字列や無効な文字列の場合はundefinedを返す
+	if (!urlString || urlString.trim() === "" || urlString === "[object Object]") {
+		return undefined;
+	}
+
 	// プロトコル相対URLを検出して正規化
-	if (url.startsWith("//")) {
-		return `https:${url}`;
+	if (urlString.startsWith("//")) {
+		return `https:${urlString}`;
 	}
 
 	// 既に正しい形式の場合はそのまま返す
-	return url;
+	return urlString;
+}
+
+/**
+ * データ内の全ての空文字列を再帰的に除去する
+ */
+function removeEmptyStringsRecursively(obj: any): any {
+	if (Array.isArray(obj)) {
+		return obj
+			.map((item) => removeEmptyStringsRecursively(item))
+			.filter((item) => {
+				if (typeof item === "string") {
+					return item.trim() !== "";
+				}
+				return item != null;
+			});
+	}
+
+	if (obj && typeof obj === "object") {
+		const result: any = {};
+		for (const [key, value] of Object.entries(obj)) {
+			if (typeof value === "string") {
+				if (value.trim() !== "") {
+					result[key] = value;
+				}
+			} else {
+				const cleaned = removeEmptyStringsRecursively(value);
+				if (cleaned != null) {
+					result[key] = cleaned;
+				}
+			}
+		}
+		return result;
+	}
+
+	return obj;
 }
 
 /**

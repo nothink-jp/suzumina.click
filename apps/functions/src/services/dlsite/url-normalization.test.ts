@@ -196,4 +196,57 @@ describe("URL正規化機能", () => {
 		expect(result.price.current).toBe(0);
 		expect(result.price.isFreeOrMissingPrice).toBe(true);
 	});
+
+	it("画像URLが数値型でも正しく処理される", () => {
+		const mockApiData: IndividualInfoAPIResponse = {
+			workno: "RJ01037463",
+			work_name: "テスト作品",
+			maker_name: "テストサークル",
+			age_category: 1,
+			price: 1000,
+			// 画像URLが数値として来るケース（API仕様によってはありうる）
+			image_thumb: 123456 as any,
+			image_main: 789012 as any,
+			srcset: 345678 as any,
+			image_samples: [111, 222, 333] as any,
+		};
+
+		const result = mapIndividualInfoAPIToWorkData(mockApiData);
+
+		// 数値が文字列に変換されて処理されることを確認
+		expect(result.thumbnailUrl).toBe("123456");
+		expect(result.highResImageUrl).toBe("789012");
+		expect(result.sampleImages).toHaveLength(3);
+		expect(result.sampleImages[0].thumb).toBe("111");
+		expect(result.sampleImages[1].thumb).toBe("222");
+		expect(result.sampleImages[2].thumb).toBe("333");
+	});
+
+	it("画像URLがオブジェクト型でも正しく処理される", () => {
+		const mockApiData: IndividualInfoAPIResponse = {
+			workno: "RJ01037463",
+			work_name: "テスト作品",
+			maker_name: "テストサークル",
+			age_category: 1,
+			price: 1000,
+			// 画像URLがオブジェクトとして来るケース
+			image_thumb: { url: "//img.dlsite.jp/test_thumb.jpg" } as any,
+			image_main: { src: "//img.dlsite.jp/test_main.jpg" } as any,
+			srcset: { invalid: "object" } as any, // 無効なオブジェクト
+			image_samples: [
+				{ url: "//img.dlsite.jp/sample1.jpg" },
+				{ invalid: "object" }, // 無効なオブジェクト
+				"//img.dlsite.jp/sample3.jpg",
+			] as any,
+		};
+
+		const result = mapIndividualInfoAPIToWorkData(mockApiData);
+
+		// オブジェクトから適切なプロパティが抽出されて正規化されることを確認
+		expect(result.thumbnailUrl).toBe("https://img.dlsite.jp/test_thumb.jpg");
+		expect(result.highResImageUrl).toBe("https://img.dlsite.jp/test_main.jpg");
+		expect(result.sampleImages).toHaveLength(2); // 無効なオブジェクトはフィルタされる
+		expect(result.sampleImages[0].thumb).toBe("https://img.dlsite.jp/sample1.jpg");
+		expect(result.sampleImages[1].thumb).toBe("https://img.dlsite.jp/sample3.jpg");
+	});
 });
