@@ -91,7 +91,10 @@ const validFirestoreWork: OptimizedFirestoreDLsiteWorkData = {
 	releaseDate: "2023-01-01",
 	releaseDateISO: "2023-01-01",
 	releaseDateDisplay: "2023年01月01日",
-	bonusContent: [], // OptimizedFirestoreDLsiteWorkDataに必要
+	// Individual Info API準拠フィールド
+	apiGenres: [],
+	apiCustomGenres: [],
+	apiWorkOptions: {},
 	dataSources: {
 		searchResult: {
 			lastFetched: "2023-01-02T12:00:00Z",
@@ -113,8 +116,6 @@ const validFrontendWork: FrontendDLsiteWorkData = {
 	lastFetchedAtISO: "2023-01-02T12:00:00Z",
 	updatedAtISO: "2023-01-02T12:00:00Z",
 	// convertToFrontendWorkで追加されるフィールド
-	fileInfo: undefined,
-	bonusContent: [],
 };
 
 describe("WorkCategorySchema", () => {
@@ -580,8 +581,6 @@ describe("serializeWorkForRSC/deserializeWorkForRCC", () => {
 		expect(deserialized.ratingText).toBe(validFrontendWork.ratingText);
 		expect(deserialized.relativeUrl).toBe(validFrontendWork.relativeUrl);
 		// OptimizedFirestoreDLsiteWorkDataから継承されたフィールドも含まれる
-		expect(deserialized.bonusContent).toEqual(validFrontendWork.bonusContent);
-		expect(deserialized.fileInfo).toEqual(validFrontendWork.fileInfo);
 		expect(deserialized.dataSources).toEqual(validFrontendWork.dataSources);
 	});
 

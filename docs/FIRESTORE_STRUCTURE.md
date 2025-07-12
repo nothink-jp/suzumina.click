@@ -88,7 +88,7 @@
 
 **データ収集状況**: 1015件完全収集済み (35%データ欠損問題解決完了)
 
-**データ構造** (`OptimizedFirestoreDLsiteWorkData` - 2025年7月5日統合構造最適化完了):
+**データ構造** (`OptimizedFirestoreDLsiteWorkData` - 2025年7月12日Individual Info API Phase 2統合完了):
 
 ```typescript
 {
@@ -103,7 +103,7 @@
   category: WorkCategory,             // 作品カテゴリ
   workUrl: string,                    // DLsite作品ページURL
   thumbnailUrl: string,               // サムネイル画像
-  highResImageUrl?: string,           // 高解像度画像（詳細ページから取得・/api/image-proxy対応）
+  highResImageUrl?: string,           // 高解像度画像（Individual Info APIから取得・/api/image-proxy対応）
   
   // === 価格・評価情報（統合済み - 優先度: infoAPI > detailPage > searchHTML） ===
   price: PriceInfo,                   // 統合価格情報
@@ -112,21 +112,63 @@
   wishlistCount?: number,             // ウィッシュリスト数（infoAPIから）
   totalDownloadCount?: number,        // 総DL数（infoAPIから）
   
-  // === 統一クリエイター情報（5種類のみ - 重複排除済み・DLsite仕様準拠） ===
-  voiceActors: string[],              // 声優（最優先データ・詳細ページ＞一覧HTML）
-  scenario: string[],                 // シナリオ（詳細ページのみ）
-  illustration: string[],             // イラスト（詳細ページのみ）
-  music: string[],                    // 音楽（詳細ページのみ）
+  // === 統一クリエイター情報（5種類のみ - Individual Info API取得・DLsite仕様準拠） ===
+  voiceActors: string[],              // 声優（Individual Info APIから取得）
+  scenario: string[],                 // シナリオ（Individual Info APIから取得）
+  illustration: string[],             // イラスト（Individual Info APIから取得）
+  music: string[],                    // 音楽（Individual Info APIから取得）
   author: string[],                   // 作者（声優と異なる場合のみ）
   
   // === 統一作品メタデータ（重複排除済み） ===
   releaseDate?: string,               // 販売日（ISO形式 - ソート用）
+  releaseDateISO?: string,            // 販売日（ISO標準形式 - YYYY-MM-DD）
   releaseDateDisplay?: string,        // 販売日（日本語形式 - 表示用）
   seriesName?: string,                // シリーズ名
   ageRating?: string,                 // 年齢制限
   workFormat?: string,                // 作品形式
   fileFormat?: string,                // ファイル形式
   genres: string[],                   // 統合ジャンル（全ソースマージ + 重複除去）
+  
+  // === Individual Info API準拠フィールド（Phase 2: 段階的活用 - 2025年7月12日実装） ===
+  apiGenres?: Array<{                 // API標準ジャンル情報（ID付き）
+    name: string,                     // ジャンル名
+    id?: number,                      // ジャンルID
+    search_val?: string               // 検索値
+  }>,
+  apiCustomGenres?: Array<{           // APIカスタムジャンル情報
+    genre_key: string,                // ジャンルキー
+    name: string                      // ジャンル名
+  }>,
+  apiWorkOptions?: Record<string, {   // API作品オプション情報
+    name: string,                     // オプション名
+    name_en?: string                  // 英語オプション名
+  }>,
+  creaters?: {                        // Individual Info API制作者情報（ID付き）
+    voice_by?: Array<{                // 声優情報
+      id: string,                     // 声優ID
+      name: string                    // 声優名
+    }>,
+    scenario_by?: Array<{             // シナリオ制作者情報
+      id: string,                     // 制作者ID
+      name: string                    // 制作者名
+    }>,
+    illust_by?: Array<{               // イラスト制作者情報
+      id: string,                     // 制作者ID
+      name: string                    // 制作者名
+    }>,
+    music_by?: Array<{                // 音楽制作者情報
+      id: string,                     // 制作者ID
+      name: string                    // 制作者名
+    }>,
+    others_by?: Array<{               // その他制作者情報
+      id: string,                     // 制作者ID
+      name: string                    // 制作者名
+    }>,
+    created_by?: Array<{              // 制作者情報（directed_byから）
+      id: string,                     // 制作者ID
+      name: string                    // 制作者名
+    }>
+  },
   
   // === 詳細情報（階層化 - 低頻度アクセス） ===
   fileInfo?: FileInfo,                // ファイル詳細情報（詳細ページのみ）
@@ -177,20 +219,20 @@
 
 **✅ v0.3.0統合データ構造の特徴** (2025年7月5日完全最適化):
 
-- **3ソース統合**: 検索HTML・infoAPI・詳細ページからの最適統合
-- **重複除去**: 同一データの重複を排除し、優先度ベースで最高品質データを採用
+- **100% API-Only**: Individual Info API専用データ取得・スクレイピング完全廃止
+- **重複除去**: API内データの重複を排除し、最高品質データを採用
 - **DLsite制約準拠**: 5種類クリエイター制限・ジャンル vs タグ区別・トラック情報なし等
 - **段階的データ取得**: minimal/standard/comprehensive戦略対応
-- **データ品質追跡**: ソース別取得状況の完全追跡
-- **高解像度対応**: 詳細ページからの高画質画像取得・プロトコル相対URL自動変換
+- **データ品質追跡**: API取得状況の完全追跡
+- **高解像度対応**: Individual Info APIからの高画質画像取得・プロトコル相対URL自動変換
 - **画像プロキシ統合**: `/api/image-proxy` による安全なDLsite画像取得・HTTPS強制変換
 - **下位互換性削除**: 旧FirestoreDLsiteWorkData関連コード完全削除・OptimizedFirestoreDLsiteWorkData統一
 - **型統一完了**: highResImageUrl型統一・extractImageUrl関数による型安全データ変換
 
 **制約事項**:
 - **DLsite仕様制限**: タグ概念なし（ジャンルのみ）・5種クリエイター固定・構造化トラック情報なし
-- **API制限**: infoAPI は厳しいレート制限・詳細ページは処理時間長
-- **データ整合性**: 部分取得時の一時的不整合の可能性
+- **API制限**: Individual Info API は厳しいレート制限・大量データ処理時間要
+- **データ整合性**: API更新タイミングによる一時的不整合の可能性
 
 **アクセスパターン**:
 - **読み取り**: 公開作品は誰でも読み取り可能

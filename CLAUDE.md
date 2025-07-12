@@ -25,8 +25,9 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 - **最新アーキテクチャ**: Cloud Functions エンタープライズレベルディレクトリ構造 (2025年7月4日完了)
 - **最新機能**: DLsite作品詳細情報表示強化 + 高解像度画像対応 (2025年7月実装)
 - **アーキテクチャ革新**: 100% API-Only アーキテクチャ実現・旧HTMLスクレイピングシステム完全廃止 (2025年7月8日完了)
-- **画像システム強化**: DLsiteサムネイル表示システム完全修正・プロトコル相対URL対応 (2025年7月8日完了)
+- **画像システム強化**: DLsiteサムネイル表示システム完全修正・プロトコル相対URL正規化完了 (2025年7月12日完了)
 - **パフォーマンス最適化**: P99レイテンシ改善・Next.js最適化・検索API高速化 (2025年7月12日完了)
+- **Individual Info API統合完了**: Phase 2段階的活用・ID付きクリエイター情報・URL正規化・型安全性向上 (2025年7月12日完了)
 
 ## 🏗️ システム構成
 
@@ -185,6 +186,7 @@ pnpm --filter @suzumina.click/web dev
 
 - `docs/FIRESTORE_STRUCTURE.md`: データベース構造
 - `docs/DEVELOPMENT.md`: 開発環境・原則
+- `docs/UBIQUITOUS_LANGUAGE.md`: ユビキタス言語定義・ドメイン用語集
 
 ## 開発指針と設計原則
 
@@ -203,6 +205,7 @@ pnpm --filter @suzumina.click/web dev
 4. **品質管理**: Biome設定に従う
 5. **セキュリティ**: 機密情報の露出防止
 6. **Firebaseコマンド禁止**: Firebaseは有効化されていないため、firebaseコマンドの使用は厳禁
+7. **ユビキタス言語準拠**: `docs/UBIQUITOUS_LANGUAGE.md` の定義に従った一貫した用語使用
 
 ### 開発コマンド
 
@@ -229,9 +232,10 @@ pnpm dev
 
 ### v0.3.2 (2025-07-12)
 
-- Server Actions優先アーキテクチャ移行完了
-- API Routes 33%削減・410件全テスト通過
-- パフォーマンス最適化・Progressive Enhancement実現
+- Individual Info API Phase 2統合完了：ID付きクリエイター情報・API準拠ジャンル情報・高解像度画像対応
+- プロトコル相対URL正規化機能実装：`"//img.dlsite.jp/..."` → `"https://img.dlsite.jp/..."` 自動変換
+- Server Actions優先アーキテクチャ移行完了・API Routes 33%削減・410件全テスト通過
+- パフォーマンス最適化・Progressive Enhancement実現・型安全性向上
 
 ### v0.3.1 (2025-07-09)
 

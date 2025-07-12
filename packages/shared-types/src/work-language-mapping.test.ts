@@ -62,8 +62,8 @@ describe("Work Language Mapping", () => {
 
 	describe("getWorkPrimaryLanguage", () => {
 		// テスト用の最小限のwork objectを作成するヘルパー
-		const createMockWork = (overrides: Partial<any> = {}) => ({
-			id: "test-id",
+		const createMockWork = (id?: string, overrides: Partial<any> = {}) => ({
+			id: id || "test-id",
 			productId: "RJ123456",
 			title: "Test Work",
 			circle: "Test Circle",
@@ -78,10 +78,12 @@ describe("Work Language Mapping", () => {
 			music: [],
 			author: [],
 			genres: [],
-			tags: [],
-			bonusContent: [],
 			sampleImages: [],
 			isExclusive: false,
+			// Individual Info API準拠フィールド
+			apiGenres: [],
+			apiCustomGenres: [],
+			apiWorkOptions: {},
 			lastFetchedAt: "2023-01-01T00:00:00Z",
 			createdAt: "2023-01-01T00:00:00Z",
 			updatedAt: "2023-01-01T00:00:00Z",
@@ -89,37 +91,37 @@ describe("Work Language Mapping", () => {
 		});
 
 		it("日本語作品を正しく判定する", () => {
-			const work = createMockWork({ genres: ["日本語"], tags: ["voice", "asmr"] });
+			const work = createMockWork(undefined, { genres: ["日本語"] });
 			expect(getWorkPrimaryLanguage(work)).toBe("ja");
 		});
 
 		it("英語作品を正しく判定する", () => {
-			const work = createMockWork({ genres: ["english"], tags: ["voice"] });
+			const work = createMockWork(undefined, { genres: ["english"] });
 			expect(getWorkPrimaryLanguage(work)).toBe("en");
 		});
 
 		it("中国語作品を正しく判定する", () => {
-			const work = createMockWork({ genres: ["中文"], tags: ["voice"] });
+			const work = createMockWork(undefined, { genres: ["中文"] });
 			expect(getWorkPrimaryLanguage(work)).toBe("zh-cn");
 		});
 
 		it("韓国語作品を正しく判定する", () => {
-			const work = createMockWork({ genres: ["한국어"], tags: ["voice"] });
+			const work = createMockWork(undefined, { genres: ["한국어"] });
 			expect(getWorkPrimaryLanguage(work)).toBe("ko");
 		});
 
 		it("言語情報がない場合はデフォルトで日本語を返す", () => {
-			const work = createMockWork({ genres: ["voice", "asmr"], tags: ["fantasy"] });
+			const work = createMockWork(undefined, { genres: ["voice", "asmr"] });
 			expect(getWorkPrimaryLanguage(work)).toBe("ja");
 		});
 
 		it("genresがundefinedでもエラーにならない", () => {
-			const work = createMockWork({ genres: undefined, tags: ["voice"] });
+			const work = createMockWork(undefined, { genres: undefined });
 			expect(getWorkPrimaryLanguage(work)).toBe("ja");
 		});
 
 		it("tagsがundefinedでもエラーにならない", () => {
-			const work = createMockWork({ genres: ["voice"], tags: undefined });
+			const work = createMockWork(undefined, { genres: ["voice"] });
 			expect(getWorkPrimaryLanguage(work)).toBe("ja");
 		});
 	});
@@ -146,6 +148,10 @@ describe("Work Language Mapping", () => {
 			bonusContent: [],
 			sampleImages: [],
 			isExclusive: false,
+			// Individual Info API準拠フィールド
+			apiGenres: [],
+			apiCustomGenres: [],
+			apiWorkOptions: {},
 			lastFetchedAt: "2023-01-01T00:00:00Z",
 			createdAt: "2023-01-01T00:00:00Z",
 			updatedAt: "2023-01-01T00:00:00Z",

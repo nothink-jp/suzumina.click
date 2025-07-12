@@ -243,26 +243,73 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							</div>
 						)}
 
-						{/* タグ・ジャンル（統合済み） */}
+						{/* タグ・ジャンル（Individual Info API準拠・段階的活用） */}
 						<div className="space-y-3">
-							{/* ジャンル */}
-							{work.genres && work.genres.length > 0 && (
-								<div>
-									<div className="text-sm font-medium text-gray-700 mb-2">ジャンル</div>
-									<div className="flex flex-wrap gap-2">
-										{work.genres.map((genre) => (
-											<Badge
-												key={genre}
-												variant="outline"
-												className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
-											>
-												<Tag className="h-3 w-3" />
-												{genre}
-											</Badge>
-										))}
+							{/* ジャンル（Individual Info API準拠・段階的活用） */}
+							{(() => {
+								// Individual Info API準拠のジャンル情報を優先使用
+								const apiGenres = work.apiGenres || [];
+								const apiCustomGenres = work.apiCustomGenres || [];
+								const legacyGenres = work.genres || [];
+
+								// API準拠ジャンル情報がある場合はそれを使用、なければレガシー情報
+								const displayGenres =
+									apiGenres.length > 0 || apiCustomGenres.length > 0
+										? [...apiGenres, ...apiCustomGenres]
+										: legacyGenres;
+
+								if (displayGenres.length === 0) return null;
+
+								return (
+									<div>
+										<div className="text-sm font-medium text-gray-700 mb-2">
+											ジャンル
+											{(apiGenres.length > 0 || apiCustomGenres.length > 0) && (
+												<span className="text-xs text-gray-500 ml-1">(API準拠)</span>
+											)}
+										</div>
+										<div className="flex flex-wrap gap-2">
+											{/* 標準ジャンル */}
+											{apiGenres.map((genre, index) => (
+												<Badge
+													key={`api-${typeof genre === "string" ? genre : genre.name || index}`}
+													variant="outline"
+													className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
+													title="Individual Info API標準ジャンル"
+												>
+													<Tag className="h-3 w-3" />
+													{typeof genre === "string" ? genre : genre.name}
+												</Badge>
+											))}
+											{/* カスタムジャンル */}
+											{apiCustomGenres.map((genre, index) => (
+												<Badge
+													key={`custom-${typeof genre === "string" ? genre : genre.name || index}`}
+													variant="outline"
+													className="border-secondary/30 text-secondary-foreground bg-secondary/10 flex items-center gap-1"
+													title="Individual Info APIカスタムジャンル"
+												>
+													<Tag className="h-3 w-3" />
+													{typeof genre === "string" ? genre : genre.name}
+												</Badge>
+											))}
+											{/* レガシージャンル（API情報がない場合のみ表示） */}
+											{apiGenres.length === 0 &&
+												apiCustomGenres.length === 0 &&
+												legacyGenres.map((genre) => (
+													<Badge
+														key={`legacy-${genre}`}
+														variant="outline"
+														className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
+													>
+														<Tag className="h-3 w-3" />
+														{genre}
+													</Badge>
+												))}
+										</div>
 									</div>
-								</div>
-							)}
+								);
+							})()}
 						</div>
 
 						{/* アクションボタン */}
@@ -392,51 +439,164 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 											)}
 										</div>
 
-										{/* 制作陣情報（統合済み） */}
+										{/* 制作陣情報（Individual Info API準拠・段階的活用） */}
 										<div className="space-y-4">
-											{work.voiceActors && work.voiceActors.length > 0 && (
+											{/* 声優（Individual Info API優先） */}
+											{(() => {
+												const apiVoiceActors = work.creaters?.voice_by || [];
+												const legacyVoiceActors = work.voiceActors || [];
+
+												const displayVoiceActors =
+													apiVoiceActors.length > 0
+														? apiVoiceActors
+														: legacyVoiceActors.map((name) => ({ name, id: undefined }));
+
+												if (displayVoiceActors.length === 0) return null;
+
+												return (
+													<div>
+														<div className="text-sm text-gray-700 mb-2">声優</div>
+														<div className="flex flex-wrap gap-2">
+															{displayVoiceActors.map((actor, index) => (
+																<Badge
+																	key={actor.id || actor.name || index}
+																	variant="secondary"
+																	className="text-xs"
+																	title={actor.id ? `ID: ${actor.id}` : undefined}
+																>
+																	{actor.name}
+																</Badge>
+															))}
+														</div>
+													</div>
+												);
+											})()}
+
+											{/* シナリオ（Individual Info API優先） */}
+											{(() => {
+												const apiScenarioWriters = work.creaters?.scenario_by || [];
+												const legacyScenarioWriters = work.scenario || [];
+
+												const displayScenarioWriters =
+													apiScenarioWriters.length > 0
+														? apiScenarioWriters
+														: legacyScenarioWriters.map((name) => ({ name, id: undefined }));
+
+												if (displayScenarioWriters.length === 0) return null;
+
+												return (
+													<div>
+														<div className="text-sm text-gray-700 mb-2">シナリオ</div>
+														<div className="flex flex-wrap gap-2">
+															{displayScenarioWriters.map((writer, index) => (
+																<Badge
+																	key={writer.id || writer.name || index}
+																	variant="secondary"
+																	className="text-xs"
+																	title={writer.id ? `ID: ${writer.id}` : undefined}
+																>
+																	{writer.name}
+																</Badge>
+															))}
+														</div>
+													</div>
+												);
+											})()}
+
+											{/* イラスト（Individual Info API優先） */}
+											{(() => {
+												const apiIllustrators = work.creaters?.illust_by || [];
+												const legacyIllustrators = work.illustration || [];
+
+												const displayIllustrators =
+													apiIllustrators.length > 0
+														? apiIllustrators
+														: legacyIllustrators.map((name) => ({ name, id: undefined }));
+
+												if (displayIllustrators.length === 0) return null;
+
+												return (
+													<div>
+														<div className="text-sm text-gray-700 mb-2">イラスト</div>
+														<div className="flex flex-wrap gap-2">
+															{displayIllustrators.map((illustrator, index) => (
+																<Badge
+																	key={illustrator.id || illustrator.name || index}
+																	variant="secondary"
+																	className="text-xs"
+																	title={illustrator.id ? `ID: ${illustrator.id}` : undefined}
+																>
+																	{illustrator.name}
+																</Badge>
+															))}
+														</div>
+													</div>
+												);
+											})()}
+
+											{/* 音楽（Individual Info API優先） */}
+											{(() => {
+												const apiMusicians = work.creaters?.music_by || [];
+												const legacyMusicians = work.music || [];
+
+												const displayMusicians =
+													apiMusicians.length > 0
+														? apiMusicians
+														: legacyMusicians.map((name) => ({ name, id: undefined }));
+
+												if (displayMusicians.length === 0) return null;
+
+												return (
+													<div>
+														<div className="text-sm text-gray-700 mb-2">音楽</div>
+														<div className="flex flex-wrap gap-2">
+															{displayMusicians.map((musician, index) => (
+																<Badge
+																	key={musician.id || musician.name || index}
+																	variant="secondary"
+																	className="text-xs"
+																	title={musician.id ? `ID: ${musician.id}` : undefined}
+																>
+																	{musician.name}
+																</Badge>
+															))}
+														</div>
+													</div>
+												);
+											})()}
+
+											{/* その他制作者（Individual Info API専用） */}
+											{work.creaters?.others_by && work.creaters.others_by.length > 0 && (
 												<div>
-													<div className="text-sm text-gray-700 mb-2">声優</div>
+													<div className="text-sm text-gray-700 mb-2">その他</div>
 													<div className="flex flex-wrap gap-2">
-														{work.voiceActors.map((actor) => (
-															<Badge key={actor} variant="secondary" className="text-xs">
-																{actor}
+														{work.creaters.others_by.map((creator, index) => (
+															<Badge
+																key={creator.id || creator.name || index}
+																variant="secondary"
+																className="text-xs"
+																title={creator.id ? `ID: ${creator.id}` : undefined}
+															>
+																{creator.name}
 															</Badge>
 														))}
 													</div>
 												</div>
 											)}
-											{work.scenario && work.scenario.length > 0 && (
+
+											{/* 制作者（Individual Info API専用） */}
+											{work.creaters?.created_by && work.creaters.created_by.length > 0 && (
 												<div>
-													<div className="text-sm text-gray-700 mb-2">シナリオ</div>
+													<div className="text-sm text-gray-700 mb-2">制作者</div>
 													<div className="flex flex-wrap gap-2">
-														{work.scenario.map((scenario) => (
-															<Badge key={scenario} variant="secondary" className="text-xs">
-																{scenario}
-															</Badge>
-														))}
-													</div>
-												</div>
-											)}
-											{work.illustration && work.illustration.length > 0 && (
-												<div>
-													<div className="text-sm text-gray-700 mb-2">イラスト</div>
-													<div className="flex flex-wrap gap-2">
-														{work.illustration.map((artist) => (
-															<Badge key={artist} variant="secondary" className="text-xs">
-																{artist}
-															</Badge>
-														))}
-													</div>
-												</div>
-											)}
-											{work.music && work.music.length > 0 && (
-												<div>
-													<div className="text-sm text-gray-700 mb-2">音楽</div>
-													<div className="flex flex-wrap gap-2">
-														{work.music.map((musician) => (
-															<Badge key={musician} variant="secondary" className="text-xs">
-																{musician}
+														{work.creaters.created_by.map((creator, index) => (
+															<Badge
+																key={creator.id || creator.name || index}
+																variant="secondary"
+																className="text-xs"
+																title={creator.id ? `ID: ${creator.id}` : undefined}
+															>
+																{creator.name}
 															</Badge>
 														))}
 													</div>
@@ -525,76 +685,210 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							</CardHeader>
 							<CardContent>
 								<div className="space-y-4">
-									{/* 声優 */}
-									{work.voiceActors && work.voiceActors.length > 0 && (
-										<div>
-											<h5 className="text-sm font-medium text-gray-700 mb-2">声優（CV）</h5>
-											<div className="space-y-2">
-												{work.voiceActors.map((actor) => (
-													<div key={actor} className="flex items-center gap-3">
-														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-															<span className="text-foreground font-bold text-xs">
-																{actor.charAt(0)}
+									{/* 声優（Individual Info API優先） */}
+									{(() => {
+										const apiVoiceActors = work.creaters?.voice_by || [];
+										const legacyVoiceActors = work.voiceActors || [];
+
+										const displayVoiceActors =
+											apiVoiceActors.length > 0
+												? apiVoiceActors
+												: legacyVoiceActors.map((name) => ({ name, id: undefined }));
+
+										if (displayVoiceActors.length === 0) return null;
+
+										return (
+											<div>
+												<h5 className="text-sm font-medium text-gray-700 mb-2">声優（CV）</h5>
+												<div className="space-y-2">
+													{displayVoiceActors.map((actor, index) => (
+														<div
+															key={actor.id || actor.name || index}
+															className="flex items-center gap-3"
+														>
+															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																<span className="text-foreground font-bold text-xs">
+																	{actor.name.charAt(0)}
+																</span>
+															</div>
+															<span
+																className="text-gray-900 text-sm"
+																title={actor.id ? `ID: ${actor.id}` : undefined}
+															>
+																{actor.name}
 															</span>
 														</div>
-														<span className="text-gray-900 text-sm">{actor}</span>
+													))}
+												</div>
+											</div>
+										);
+									})()}
+
+									{/* シナリオ（Individual Info API優先） */}
+									{(() => {
+										const apiScenarioWriters = work.creaters?.scenario_by || [];
+										const legacyScenarioWriters = work.scenario || [];
+
+										const displayScenarioWriters =
+											apiScenarioWriters.length > 0
+												? apiScenarioWriters
+												: legacyScenarioWriters.map((name) => ({ name, id: undefined }));
+
+										if (displayScenarioWriters.length === 0) return null;
+
+										return (
+											<div>
+												<h5 className="text-sm font-medium text-gray-700 mb-2">シナリオ</h5>
+												<div className="space-y-2">
+													{displayScenarioWriters.map((writer, index) => (
+														<div
+															key={writer.id || writer.name || index}
+															className="flex items-center gap-3"
+														>
+															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																<span className="text-foreground font-bold text-xs">
+																	{writer.name.charAt(0)}
+																</span>
+															</div>
+															<span
+																className="text-gray-900 text-sm"
+																title={writer.id ? `ID: ${writer.id}` : undefined}
+															>
+																{writer.name}
+															</span>
+														</div>
+													))}
+												</div>
+											</div>
+										);
+									})()}
+
+									{/* イラスト（Individual Info API優先） */}
+									{(() => {
+										const apiIllustrators = work.creaters?.illust_by || [];
+										const legacyIllustrators = work.illustration || [];
+
+										const displayIllustrators =
+											apiIllustrators.length > 0
+												? apiIllustrators
+												: legacyIllustrators.map((name) => ({ name, id: undefined }));
+
+										if (displayIllustrators.length === 0) return null;
+
+										return (
+											<div>
+												<h5 className="text-sm font-medium text-gray-700 mb-2">イラスト</h5>
+												<div className="space-y-2">
+													{displayIllustrators.map((illustrator, index) => (
+														<div
+															key={illustrator.id || illustrator.name || index}
+															className="flex items-center gap-3"
+														>
+															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																<span className="text-foreground font-bold text-xs">
+																	{illustrator.name.charAt(0)}
+																</span>
+															</div>
+															<span
+																className="text-gray-900 text-sm"
+																title={illustrator.id ? `ID: ${illustrator.id}` : undefined}
+															>
+																{illustrator.name}
+															</span>
+														</div>
+													))}
+												</div>
+											</div>
+										);
+									})()}
+
+									{/* 音楽（Individual Info API優先） */}
+									{(() => {
+										const apiMusicians = work.creaters?.music_by || [];
+										const legacyMusicians = work.music || [];
+
+										const displayMusicians =
+											apiMusicians.length > 0
+												? apiMusicians
+												: legacyMusicians.map((name) => ({ name, id: undefined }));
+
+										if (displayMusicians.length === 0) return null;
+
+										return (
+											<div>
+												<h5 className="text-sm font-medium text-gray-700 mb-2">音楽</h5>
+												<div className="space-y-2">
+													{displayMusicians.map((musician, index) => (
+														<div
+															key={musician.id || musician.name || index}
+															className="flex items-center gap-3"
+														>
+															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																<span className="text-foreground font-bold text-xs">
+																	{musician.name.charAt(0)}
+																</span>
+															</div>
+															<span
+																className="text-gray-900 text-sm"
+																title={musician.id ? `ID: ${musician.id}` : undefined}
+															>
+																{musician.name}
+															</span>
+														</div>
+													))}
+												</div>
+											</div>
+										);
+									})()}
+
+									{/* その他制作者（Individual Info API専用） */}
+									{work.creaters?.others_by && work.creaters.others_by.length > 0 && (
+										<div>
+											<h5 className="text-sm font-medium text-gray-700 mb-2">その他</h5>
+											<div className="space-y-2">
+												{work.creaters.others_by.map((creator, index) => (
+													<div
+														key={creator.id || creator.name || index}
+														className="flex items-center gap-3"
+													>
+														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+															<span className="text-foreground font-bold text-xs">
+																{creator.name.charAt(0)}
+															</span>
+														</div>
+														<span
+															className="text-gray-900 text-sm"
+															title={creator.id ? `ID: ${creator.id}` : undefined}
+														>
+															{creator.name}
+														</span>
 													</div>
 												))}
 											</div>
 										</div>
 									)}
 
-									{/* シナリオ */}
-									{work.scenario && work.scenario.length > 0 && (
+									{/* 制作者（Individual Info API専用） */}
+									{work.creaters?.created_by && work.creaters.created_by.length > 0 && (
 										<div>
-											<h5 className="text-sm font-medium text-gray-700 mb-2">シナリオ</h5>
+											<h5 className="text-sm font-medium text-gray-700 mb-2">制作者</h5>
 											<div className="space-y-2">
-												{work.scenario.map((creator) => (
-													<div key={creator} className="flex items-center gap-3">
+												{work.creaters.created_by.map((creator, index) => (
+													<div
+														key={creator.id || creator.name || index}
+														className="flex items-center gap-3"
+													>
 														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
 															<span className="text-foreground font-bold text-xs">
-																{creator.charAt(0)}
+																{creator.name.charAt(0)}
 															</span>
 														</div>
-														<span className="text-gray-900 text-sm">{creator}</span>
-													</div>
-												))}
-											</div>
-										</div>
-									)}
-
-									{/* イラスト */}
-									{work.illustration && work.illustration.length > 0 && (
-										<div>
-											<h5 className="text-sm font-medium text-gray-700 mb-2">イラスト</h5>
-											<div className="space-y-2">
-												{work.illustration.map((creator) => (
-													<div key={creator} className="flex items-center gap-3">
-														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-															<span className="text-foreground font-bold text-xs">
-																{creator.charAt(0)}
-															</span>
-														</div>
-														<span className="text-gray-900 text-sm">{creator}</span>
-													</div>
-												))}
-											</div>
-										</div>
-									)}
-
-									{/* 音楽 */}
-									{work.music && work.music.length > 0 && (
-										<div>
-											<h5 className="text-sm font-medium text-gray-700 mb-2">音楽</h5>
-											<div className="space-y-2">
-												{work.music.map((creator) => (
-													<div key={creator} className="flex items-center gap-3">
-														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-															<span className="text-foreground font-bold text-xs">
-																{creator.charAt(0)}
-															</span>
-														</div>
-														<span className="text-gray-900 text-sm">{creator}</span>
+														<span
+															className="text-gray-900 text-sm"
+															title={creator.id ? `ID: ${creator.id}` : undefined}
+														>
+															{creator.name}
+														</span>
 													</div>
 												))}
 											</div>

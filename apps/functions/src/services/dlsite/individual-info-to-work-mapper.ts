@@ -630,18 +630,20 @@ export function mapIndividualInfoAPIToWorkData(
 	// DLsite作品URL生成
 	const workUrl = `https://www.dlsite.com/maniax/work/=/product_id/${productId}.html`;
 
-	// 画像URL生成（高解像度対応）
-
-	const thumbnailUrl =
+	// 画像URL生成（高解像度対応・プロトコル相対URL正規化）
+	const rawThumbnailUrl =
 		apiData.image_thumb ||
 		apiData.image_thumb_touch ||
 		apiData.image_thum ||
 		apiData.image_main ||
 		`https://img.dlsite.jp/modpub/images2/work/doujin/${productId}_img_main.jpg`;
-	const highResImageUrl =
+	const rawHighResImageUrl =
 		apiData.image_main ||
 		apiData.image_thumb_touch ||
 		(apiData.srcset ? extractHighResFromSrcset(apiData.srcset) : undefined);
+
+	const thumbnailUrl = normalizeImageUrl(rawThumbnailUrl);
+	const highResImageUrl = normalizeImageUrl(rawHighResImageUrl);
 
 	return {
 		// === 基本識別情報 ===
@@ -655,7 +657,7 @@ export function mapIndividualInfoAPIToWorkData(
 		category,
 		originalCategoryText: apiData.work_type_string || apiData.work_type,
 		workUrl,
-		thumbnailUrl,
+		thumbnailUrl: thumbnailUrl || "",
 		highResImageUrl,
 
 		// === 価格・評価情報 ===
@@ -691,21 +693,52 @@ export function mapIndividualInfoAPIToWorkData(
 		workFormat: apiData.work_type_string,
 		fileFormat: apiData.file_type_string,
 
-		// === Individual Info API特有データ ===
+		// === Individual Info API準拠フィールド ===
+		apiGenres:
+			apiData.genres
+				?.map((g) => ({
+					name: g.name,
+					id: g.id ? Number(g.id) : undefined,
+					search_val: g.search_val,
+				}))
+				.filter((g) => g.name) || [],
+		apiCustomGenres:
+			apiData.custom_genres
+				?.map((g) => ({
+					genre_key: g.genre_key,
+					name: g.name,
+				}))
+				.filter((g) => g.name) || [],
+		apiWorkOptions: apiData.work_options
+			? { [apiData.work_options]: { name: apiData.work_options } }
+			: {},
 
-		// === ファイル・サンプル情報（制限あり） ===
-		fileInfo: apiData.file_size_string
+		// === Individual Info API特有データ ===
+		creaters: apiData.creaters
 			? {
-					totalSizeText: apiData.file_size_string,
-					totalSizeBytes: apiData.file_size,
-					formats: apiData.file_type_string ? [apiData.file_type_string] : [],
-					additionalFiles: [], // Individual Info APIには詳細ファイル情報なし
+					voice_by: apiData.creaters.voice_by || [],
+					scenario_by: apiData.creaters.scenario_by || [],
+					illust_by: apiData.creaters.illust_by || [],
+					music_by: apiData.creaters.music_by || [],
+					others_by: apiData.creaters.others_by || [],
+					created_by: apiData.creaters.directed_by || [], // directed_by を created_by にマッピング
 				}
 			: undefined,
-		bonusContent: [], // Individual Info APIには特典情報なし
+
+		// === ファイル・サンプル情報（制限あり） ===
+		// fileInfo は廃止済み
+		// fileInfo: apiData.file_size_string
+		// 	? {
+		// 			totalSizeText: apiData.file_size_string,
+		// 			totalSizeBytes: apiData.file_size,
+		// 			formats: apiData.file_type_string ? [apiData.file_type_string] : [],
+		// 			additionalFiles: [], // Individual Info APIには詳細ファイル情報なし
+		// 		}
+		// 	: undefined,
+		// bonusContent: [], // Individual Info APIには特典情報なし（廃止済み）
 		sampleImages:
 			apiData.image_samples?.map((url, _index) => ({
-				thumb: url,
+				thumb: normalizeImageUrl(url) || url,
 				width: undefined,
 				height: undefined,
 			})) || [],
@@ -756,7 +789,7 @@ function mapAgeCategory(ageCategory?: number): string | undefined {
 }
 
 /**
- * srcset文字列から最高解像度の画像URLを抽出
+ * srcset文字列から最高解像度の画像URLを抽出（URL正規化対応）
  */
 function extractHighResFromSrcset(srcset: string): string | undefined {
 	// "url1 1x, url2 2x, url3 3x" 形式から最大解像度を選択
@@ -776,7 +809,7 @@ function extractHighResFromSrcset(srcset: string): string | undefined {
 		}
 	}
 
-	return bestUrl || undefined;
+	return bestUrl ? normalizeImageUrl(bestUrl) : undefined;
 }
 
 /**
@@ -811,6 +844,22 @@ function formatDateForDisplay(dateString: string): string | undefined {
 		logger.warn(`Date formatting failed: ${dateString}`, { error });
 		return undefined;
 	}
+}
+
+/**
+ * プロトコル相対URLを絶対URLに正規化
+ * "//img.dlsite.jp/..." -> "https://img.dlsite.jp/..."
+ */
+function normalizeImageUrl(url: string | undefined): string | undefined {
+	if (!url) return undefined;
+
+	// プロトコル相対URLを検出して正規化
+	if (url.startsWith("//")) {
+		return `https:${url}`;
+	}
+
+	// 既に正しい形式の場合はそのまま返す
+	return url;
 }
 
 /**

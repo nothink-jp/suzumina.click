@@ -131,17 +131,29 @@ export default function WorkCard({ work, variant = "default", priority = false }
 							))}
 					</ul>
 
-					{/* 声優情報（簡潔表示） */}
-					{Array.isArray(work.voiceActors) && work.voiceActors.length > 0 && (
-						<div className="flex items-center gap-1 mb-2 text-xs">
-							<Users className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
-							<span className="text-muted-foreground">CV:</span>
-							<span className="text-foreground font-medium line-clamp-1">
-								{work.voiceActors.slice(0, 2).join(", ")}
-								{work.voiceActors.length > 2 && " 他"}
-							</span>
-						</div>
-					)}
+					{/* 声優情報（ID付き対応） */}
+					{(() => {
+						// Individual Info API準拠のクリエイター情報を優先使用
+						const voiceActors = work.creaters?.voice_by || [];
+						const legacyVoiceActors = work.voiceActors || [];
+
+						// ID付き情報がある場合はそれを使用、なければレガシー情報
+						const displayVoiceActors =
+							voiceActors.length > 0 ? voiceActors.map((actor) => actor.name) : legacyVoiceActors;
+
+						if (displayVoiceActors.length === 0) return null;
+
+						return (
+							<div className="flex items-center gap-1 mb-2 text-xs">
+								<Users className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+								<span className="text-muted-foreground">CV:</span>
+								<span className="text-foreground font-medium line-clamp-1">
+									{displayVoiceActors.slice(0, 2).join(", ")}
+									{displayVoiceActors.length > 2 && " 他"}
+								</span>
+							</div>
+						);
+					})()}
 
 					{/* 発売日 */}
 					<div className="flex items-center text-xs sm:text-sm mb-2">

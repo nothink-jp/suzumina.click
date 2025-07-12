@@ -1,0 +1,182 @@
+/**
+ * URL正規化機能のテスト
+ * プロトコル相対URLの正規化が正しく動作することを検証
+ */
+
+import { describe, expect, it } from "vitest";
+import {
+	type IndividualInfoAPIResponse,
+	mapIndividualInfoAPIToWorkData,
+} from "./individual-info-to-work-mapper";
+
+describe("URL正規化機能", () => {
+	it("プロトコル相対URLを正しく正規化する", () => {
+		const mockApiData: IndividualInfoAPIResponse = {
+			workno: "RJ01037463",
+			product_id: "RJ01037463",
+			work_name: "テスト作品",
+			maker_name: "テストサークル",
+			maker_id: "TEST123",
+			age_category: 1,
+			regist_date: "2024-01-01",
+			on_sale: 1,
+			work_type: "SOU",
+			work_type_string: "音声作品",
+			site_id: "maniax",
+			author: "テスト声優",
+			price: 1000,
+			price_without_tax: 909,
+			official_price: 1000,
+			official_price_without_tax: 909,
+			discount_rate: 0,
+			is_discount_work: false,
+			rate_average: 4.5,
+			rate_average_star: 45,
+			rate_count: 100,
+			dl_count: 500,
+			// プロトコル相対URLのテストケース
+			image_thumb: "//img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_sam.jpg",
+			image_main: "//img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main.jpg",
+			image_samples: [
+				"//img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_sample1.jpg",
+				"//img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_sample2.jpg",
+			],
+		};
+
+		const result = mapIndividualInfoAPIToWorkData(mockApiData);
+
+		// メイン画像URLの正規化確認
+		expect(result.thumbnailUrl).toBe(
+			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_sam.jpg",
+		);
+		expect(result.highResImageUrl).toBe(
+			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main.jpg",
+		);
+
+		// サンプル画像URLの正規化確認
+		expect(result.sampleImages).toHaveLength(2);
+		expect(result.sampleImages[0].thumb).toBe(
+			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_sample1.jpg",
+		);
+		expect(result.sampleImages[1].thumb).toBe(
+			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_sample2.jpg",
+		);
+	});
+
+	it("既に正しい形式のURLはそのまま維持する", () => {
+		const mockApiData: IndividualInfoAPIResponse = {
+			workno: "RJ01037463",
+			product_id: "RJ01037463",
+			work_name: "テスト作品",
+			maker_name: "テストサークル",
+			maker_id: "TEST123",
+			age_category: 1,
+			regist_date: "2024-01-01",
+			on_sale: 1,
+			work_type: "SOU",
+			work_type_string: "音声作品",
+			site_id: "maniax",
+			author: "テスト声優",
+			price: 1000,
+			price_without_tax: 909,
+			official_price: 1000,
+			official_price_without_tax: 909,
+			discount_rate: 0,
+			is_discount_work: false,
+			rate_average: 4.5,
+			rate_average_star: 45,
+			rate_count: 100,
+			dl_count: 500,
+			// 既に正しい形式のURLのテストケース
+			image_thumb:
+				"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_sam.jpg",
+			image_main:
+				"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main.jpg",
+		};
+
+		const result = mapIndividualInfoAPIToWorkData(mockApiData);
+
+		// 正しい形式のURLは変更されないことを確認
+		expect(result.thumbnailUrl).toBe(
+			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_sam.jpg",
+		);
+		expect(result.highResImageUrl).toBe(
+			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main.jpg",
+		);
+	});
+
+	it("srcsetから抽出した高解像度URLも正規化される", () => {
+		const mockApiData: IndividualInfoAPIResponse = {
+			workno: "RJ01037463",
+			product_id: "RJ01037463",
+			work_name: "テスト作品",
+			maker_name: "テストサークル",
+			maker_id: "TEST123",
+			age_category: 1,
+			regist_date: "2024-01-01",
+			on_sale: 1,
+			work_type: "SOU",
+			work_type_string: "音声作品",
+			site_id: "maniax",
+			author: "テスト声優",
+			price: 1000,
+			price_without_tax: 909,
+			official_price: 1000,
+			official_price_without_tax: 909,
+			discount_rate: 0,
+			is_discount_work: false,
+			rate_average: 4.5,
+			rate_average_star: 45,
+			rate_count: 100,
+			dl_count: 500,
+			// srcsetでプロトコル相対URLを含むテストケース
+			srcset:
+				"//img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main.jpg 1x, //img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main_2x.jpg 2x",
+		};
+
+		const result = mapIndividualInfoAPIToWorkData(mockApiData);
+
+		// srcsetから抽出した高解像度URLの正規化確認
+		expect(result.highResImageUrl).toBe(
+			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01038000/RJ01037463_img_main_2x.jpg",
+		);
+	});
+
+	it("undefinedやnullのURLは適切に処理される", () => {
+		const mockApiData: IndividualInfoAPIResponse = {
+			workno: "RJ01037463",
+			product_id: "RJ01037463",
+			work_name: "テスト作品",
+			maker_name: "テストサークル",
+			maker_id: "TEST123",
+			age_category: 1,
+			regist_date: "2024-01-01",
+			on_sale: 1,
+			work_type: "SOU",
+			work_type_string: "音声作品",
+			site_id: "maniax",
+			author: "テスト声優",
+			price: 1000,
+			price_without_tax: 909,
+			official_price: 1000,
+			official_price_without_tax: 909,
+			discount_rate: 0,
+			is_discount_work: false,
+			rate_average: 4.5,
+			rate_average_star: 45,
+			rate_count: 100,
+			dl_count: 500,
+			// URLが存在しないケース
+			image_thumb: undefined,
+			image_main: undefined,
+		};
+
+		const result = mapIndividualInfoAPIToWorkData(mockApiData);
+
+		// デフォルトURLが設定されることを確認
+		expect(result.thumbnailUrl).toBe(
+			"https://img.dlsite.jp/modpub/images2/work/doujin/RJ01037463_img_main.jpg",
+		);
+		expect(result.highResImageUrl).toBeUndefined();
+	});
+});

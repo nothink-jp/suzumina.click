@@ -174,17 +174,17 @@ export function mapApiToOptimizedStructure(
 	// APIからのジャンル情報
 	const genres = mergeAndDeduplicate([extractGenres(infoData), existingData?.genres]);
 
-	// APIからのファイル情報
-	const fileInfo = infoData?.file_size
-		? {
-				totalSizeText: `${infoData.file_size.toString()}MB`,
-				totalSizeBytes: (infoData.file_size || 0) * 1024 * 1024,
-				totalDuration: undefined,
-				fileCount: 1,
-				formats: infoData.file_type ? [infoData.file_type] : [],
-				additionalFiles: [],
-			}
-		: undefined;
+	// APIからのファイル情報（廃止済み）
+	// const fileInfo = infoData?.file_size
+	// 	? {
+	// 			totalSizeText: `${infoData.file_size.toString()}MB`,
+	// 			totalSizeBytes: (infoData.file_size || 0) * 1024 * 1024,
+	// 			totalDuration: undefined,
+	// 			fileCount: 1,
+	// 			formats: infoData.file_type ? [infoData.file_type] : [],
+	// 			additionalFiles: [],
+	// 		}
+	// 	: undefined;
 
 	return {
 		// 基本識別情報
@@ -198,8 +198,8 @@ export function mapApiToOptimizedStructure(
 		category: "etc" as const, // API age_categoryをWorkCategory enumに適切にマッピング要
 		originalCategoryText: infoData.site_id || "",
 		workUrl: `https://www.dlsite.com/maniax/work/=/product_id/${infoData.workno}.html`,
-		thumbnailUrl: infoData.thumb_url || "",
-		highResImageUrl: infoData.thumb_url,
+		thumbnailUrl: normalizeImageUrl(infoData.thumb_url) || "",
+		highResImageUrl: normalizeImageUrl(infoData.thumb_url),
 
 		// APIからの価格・評価情報
 		price: infoData?.prices?.[0]
@@ -245,13 +245,28 @@ export function mapApiToOptimizedStructure(
 		workFormat: infoData?.work_options,
 		fileFormat: infoData?.file_type,
 
-		// 拡張ファイル情報
-		fileInfo,
+		// 拡張ファイル情報は廃止済み
+		// fileInfo,
 
-		// APIからの詳細情報
-		bonusContent: [],
+		// APIからの詳細情報（廃止済み）
+		// bonusContent: [],
 		sampleImages: [],
 		isExclusive: false,
+
+		// Individual Info API特有データ
+		creaters: undefined, // このAPIでは利用不可
+
+		// Individual Info API準拠フィールド
+		apiGenres:
+			infoData.genres?.map((genre) => ({
+				name: genre.name,
+				id: genre.id,
+				search_val: genre.search_val,
+			})) || [],
+		apiCustomGenres: [], // このAPIでは利用不可
+		apiWorkOptions: infoData.work_options
+			? { [infoData.work_options]: { name: infoData.work_options } }
+			: {},
 
 		// 統合データソース追跡
 		dataSources,
@@ -280,6 +295,22 @@ export function extractGenres(infoData: DLsiteInfoResponse): string[] {
 function mergeAndDeduplicate(arrays: (string[] | undefined)[]): string[] {
 	const merged = arrays.filter(Boolean).flat() as string[];
 	return [...new Set(merged)];
+}
+
+/**
+ * プロトコル相対URLを絶対URLに正規化
+ * "//img.dlsite.jp/..." -> "https://img.dlsite.jp/..."
+ */
+function normalizeImageUrl(url: string | undefined): string | undefined {
+	if (!url) return undefined;
+
+	// プロトコル相対URLを検出して正規化
+	if (url.startsWith("//")) {
+		return `https:${url}`;
+	}
+
+	// 既に正しい形式の場合はそのまま返す
+	return url;
 }
 
 /**

@@ -136,83 +136,6 @@ export const SampleImageSchema = z.object({
 });
 
 /**
- * ファイル情報のZodスキーマ定義
- * @deprecated API-only実装により不要となったファイル詳細情報
- * Individual Info APIで取得可能な基本ファイル情報のみ使用
- */
-export const FileInfoSchema = z.object({
-	/** 総ファイルサイズ（バイト） */
-	totalSizeBytes: z.number().int().nonnegative().optional(),
-	/** 総ファイルサイズテキスト（例: "3.71 GB"） - 詳細ページスクレイピング由来 */
-	totalSizeText: z.string().optional(),
-	/** ファイル形式一覧 - 詳細ページスクレイピング由来 */
-	formats: z.array(z.string()).default([]),
-	/** 総再生時間（秒） - 詳細ページスクレイピング由来 */
-	totalDuration: z.number().int().nonnegative().optional(),
-	/** 総再生時間テキスト（例: "約2時間4分"） - 詳細ページスクレイピング由来 */
-	totalDurationText: z.string().optional(),
-	/** その他ファイル情報 - 詳細ページスクレイピング由来 */
-	additionalFiles: z.array(z.string()).default([]),
-});
-
-/**
- * 詳細クリエイター情報のZodスキーマ定義（レガシー対応用）
- * @deprecated メインフィールドに統合済み。移行期間中のみ使用
- */
-export const DetailedCreatorInfoSchema = z.object({
-	/** その他のクリエイター情報（標準フィールド以外） */
-	other: z.record(z.array(z.string())).default({}),
-});
-
-/**
- * 基本作品情報のZodスキーマ定義（最小限のメタデータのみ）
- * @deprecated Individual Info APIにより大部分のフィールドが不要
- * 重複排除により、メインフィールドに昇格したデータは除外
- */
-export const BasicWorkInfoSchema = z.object({
-	/** 詳細タグ（tagsと重複しない場合のみ） */
-	detailTags: z.array(z.string()).default([]),
-	/** 年齢制限（詳細ページから取得） - Individual Info APIで代替可能 */
-	ageRating: z.string().optional(),
-	/** 声優情報（詳細ページから取得） - Individual Info APIで代替可能 */
-	voiceActors: z.array(z.string()).optional(),
-	/** シナリオ担当者（詳細ページから取得） - Individual Info APIで代替可能 */
-	scenario: z.array(z.string()).optional(),
-	/** イラスト担当者（詳細ページから取得） - Individual Info APIで代替可能 */
-	illustration: z.array(z.string()).optional(),
-	/** 音楽担当者（詳細ページから取得） - Individual Info APIで代替可能 */
-	music: z.array(z.string()).optional(),
-	/** 販売日（詳細ページから取得） - Individual Info APIのregist_dateで代替可能 */
-	releaseDate: z.string().optional(),
-	/** シリーズ名（詳細ページから取得） - Individual Info APIで代替可能 */
-	seriesName: z.string().optional(),
-	/** 作品形式（詳細ページから取得） - Individual Info APIで代替可能 */
-	workFormat: z.string().optional(),
-	/** ファイル形式（詳細ページから取得） - Individual Info APIで代替可能 */
-	fileFormat: z.string().optional(),
-	/** ファイルサイズ（詳細ページから取得） - 詳細表示廃止により不要 */
-	fileSize: z.string().optional(),
-	/** ジャンル（詳細ページから取得） - Individual Info APIで代替可能 */
-	genres: z.array(z.string()).optional(),
-	/** その他の基本情報（将来拡張用） */
-	other: z.record(z.any()).default({}),
-});
-
-/**
- * 特典情報のZodスキーマ定義
- * @deprecated API-only実装により不要となった特典詳細情報
- * 詳細ページスクレイピングでのみ取得可能な情報のため廃止
- */
-export const BonusContentSchema = z.object({
-	/** 特典名 - 詳細ページスクレイピング由来 */
-	title: z.string(),
-	/** 特典説明 - 詳細ページスクレイピング由来 */
-	description: z.string().optional(),
-	/** 特典タイプ（画像、音声、テキストなど） - 詳細ページスクレイピング由来 */
-	type: z.string().optional(),
-});
-
-/**
  * ランキング情報のZodスキーマ定義
  */
 export const RankingInfoSchema = z.object({
@@ -343,26 +266,124 @@ export const SalesStatusSchema = z.object({
 });
 
 /**
+ * Individual Info API準拠のクリエイター情報スキーマ定義
+ */
+export const IndividualAPICreatorSchema = z.object({
+	/** ID付きクリエイター情報 */
+	id: z.string().optional(),
+	/** クリエイター名 */
+	name: z.string(),
+});
+
+/**
+ * Individual Info API準拠のクリエイター情報オブジェクト
+ */
+export const CreatorsSchema = z.object({
+	/** 声優（CV）- Individual Info API `creaters.voice_by` */
+	voice_by: z.array(IndividualAPICreatorSchema).default([]),
+	/** シナリオ担当者 - Individual Info API `creaters.scenario_by` */
+	scenario_by: z.array(IndividualAPICreatorSchema).default([]),
+	/** イラスト担当者 - Individual Info API `creaters.illust_by` */
+	illust_by: z.array(IndividualAPICreatorSchema).default([]),
+	/** 音楽担当者 - Individual Info API `creaters.music_by` */
+	music_by: z.array(IndividualAPICreatorSchema).default([]),
+	/** その他制作者 - Individual Info API `creaters.others_by` */
+	others_by: z.array(IndividualAPICreatorSchema).default([]),
+	/** 制作担当者 - Individual Info API `creaters.created_by` */
+	created_by: z.array(IndividualAPICreatorSchema).default([]),
+});
+
+/**
+ * Individual Info API準拠の画像情報スキーマ定義
+ */
+export const IndividualAPIImageSchema = z.object({
+	/** 作品番号 */
+	workno: z.string().optional(),
+	/** ファイルタイプ */
+	type: z.string().optional(),
+	/** ファイル名 */
+	file_name: z.string().optional(),
+	/** 画像URL */
+	url: z.string().url().optional(),
+	/** 画像幅 */
+	width: z.number().int().positive().optional(),
+	/** 画像高さ */
+	height: z.number().int().positive().optional(),
+});
+
+/**
+ * Individual Info API準拠のジャンル情報スキーマ定義
+ */
+export const IndividualAPIGenreSchema = z.object({
+	/** ジャンル名 */
+	name: z.string(),
+	/** ジャンルID */
+	id: z.number().int().optional(),
+	/** 検索値 */
+	search_val: z.string().optional(),
+});
+
+/**
+ * Individual Info API準拠のカスタムジャンル情報スキーマ定義
+ */
+export const IndividualAPICustomGenreSchema = z.object({
+	/** ジャンルキー */
+	genre_key: z.string(),
+	/** ジャンル名 */
+	name: z.string(),
+	/** 多言語名 */
+	name_en: z.string().optional(),
+	/** 表示順 */
+	display_order: z.number().int().optional(),
+});
+
+/**
+ * Individual Info API準拠の作品オプション情報スキーマ定義
+ */
+export const IndividualAPIWorkOptionSchema = z.object({
+	/** オプション名 */
+	name: z.string(),
+	/** 英語オプション名 */
+	name_en: z.string().optional(),
+});
+
+/**
+ * Individual Info API準拠のエディション情報スキーマ定義
+ */
+export const IndividualAPIEditionSchema = z.object({
+	/** 作品番号 */
+	workno: z.string(),
+	/** エディションID */
+	edition_id: z.number().int().optional(),
+	/** ラベル */
+	label: z.string(),
+	/** 表示順 */
+	display_order: z.number().int().optional(),
+});
+
+/**
  * 基本的なDLsite作品データのZodスキーマ定義
- * 重複フィールドを排除し、統一されたデータ構造を定義
+ * Individual Info API準拠フィールド重視の統一されたデータ構造
  */
 export const DLsiteWorkBaseSchema = z.object({
 	/** FirestoreドキュメントID */
 	id: z.string().min(1, {
 		message: "作品IDは1文字以上である必要があります",
 	}),
-	/** DLsite商品ID（RJ236867など） */
+	/** DLsite商品ID（RJ236867など） - Individual Info API `workno` */
 	productId: z.string().min(1, {
 		message: "商品IDは1文字以上である必要があります",
 	}),
-	/** 作品タイトル */
+	/** 作品タイトル - Individual Info API `work_name` */
 	title: z.string().min(1, {
 		message: "作品タイトルは1文字以上である必要があります",
 	}),
-	/** サークル名 */
+	/** サークル名 - Individual Info API `maker_name` */
 	circle: z.string().min(1, {
 		message: "サークル名は1文字以上である必要があります",
 	}),
+	/** サークルID - Individual Info API `circle_id` (例: "RG23954") */
+	circleId: z.string().optional(),
 	/** 作品説明 */
 	description: z.string().default(""),
 	/** 作品カテゴリ（フィルタリング用） */
@@ -384,65 +405,138 @@ export const DLsiteWorkBaseSchema = z.object({
 	/** 評価情報 */
 	rating: RatingInfoSchema.optional(),
 
-	// === 統一されたクリエイター情報（detailedCreators から昇格） ===
-	/** 声優（CV）- 旧 author, detailedCreators.voiceActors, basicInfo.voiceActors を統合 */
-	voiceActors: z.array(z.string()).default([]),
-	/** シナリオ担当者 - detailedCreators.scenario, basicInfo.scenario を統合 */
-	scenario: z.array(z.string()).default([]),
-	/** イラスト担当者 - detailedCreators.illustration, basicInfo.illustration を統合 */
-	illustration: z.array(z.string()).default([]),
-	/** 音楽担当者 - detailedCreators.music, basicInfo.music を統合 */
-	music: z.array(z.string()).default([]),
-	/** その他作者 - 声優と重複しない場合のみ */
-	author: z.array(z.string()).default([]),
+	// === Individual Info API準拠クリエイター情報 ===
+	/** クリエイター情報 - Individual Info API `creaters` オブジェクト */
+	creaters: CreatorsSchema.optional(),
 
-	// === 統一された作品情報（basicInfo から昇格） ===
-	/** 販売日 - basicInfo.releaseDate から昇格 */
-	releaseDate: z.string().optional(),
-	/** シリーズ名 - basicInfo.seriesName から昇格 */
+	// === Individual Info API準拠日付・メタデータ ===
+	/** 登録日時 - Individual Info API `regist_date` */
+	registDate: z.string().optional(),
+	/** 更新日時 - Individual Info API `update_date` */
+	updateDate: z.string().optional(),
+
+	// === Individual Info API準拠評価・ランキング ===
+	/** 平均評価 - Individual Info API `rate_average_star` (10-50スケール) */
+	rateAverageStar: z.number().optional(),
+	/** 評価詳細分布 - Individual Info API `rate_count_detail` */
+	rateCountDetail: z.record(z.number()).optional(),
+
+	// === Individual Info API準拠ジャンル・タグ ===
+	/** 公式ジャンル - Individual Info API `genres` 配列 */
+	apiGenres: z.array(IndividualAPIGenreSchema).default([]),
+	/** カスタムジャンル - Individual Info API `custom_genres` 配列 */
+	customGenres: z.array(IndividualAPICustomGenreSchema).default([]),
+	/** 作品オプション - Individual Info API `work_options` オブジェクト */
+	workOptions: z.record(IndividualAPIWorkOptionSchema).default({}),
+
+	// === Individual Info API準拠シリーズ・翻訳情報 ===
+	/** シリーズID - Individual Info API `series_id` */
+	seriesId: z.string().optional(),
+	/** シリーズ名 - Individual Info API `series_name` */
 	seriesName: z.string().optional(),
-	/** 年齢制限 - basicInfo.ageRating を統合 */
-	ageRating: z.string().optional(),
-	/** 作品形式 - basicInfo.workFormat から昇格 */
-	workFormat: z.string().optional(),
-	/** ファイル形式 - basicInfo.fileFormat から昇格 */
-	fileFormat: z.string().optional(),
-	/** 作品ジャンル - 旧 tags, basicInfo.genres を統合 */
-	genres: z.array(z.string()).default([]),
+	/** 翻訳情報 - Individual Info API `translation_info` */
+	translationInfo: TranslationInfoSchema.optional(),
 
+	// === Individual Info API準拠ファイル・技術情報 ===
+	/** ファイル形式 - Individual Info API `file_type` */
+	fileType: z.string().optional(),
+	/** ファイル形式表示名 - Individual Info API `file_type_string` */
+	fileTypeString: z.string().optional(),
+	/** 特殊ファイル形式 - Individual Info API `file_type_special` */
+	fileTypeSpecial: z.string().optional(),
+	/** 作品オプション - Individual Info API `options` */
+	options: z.string().optional(),
+	/** 作品属性 - Individual Info API `work_attributes` */
+	workAttributes: z.string().optional(),
+	/** ファイル日付 - Individual Info API `file_date` */
+	fileDate: z.string().optional(),
+	/** ファイルサイズ - Individual Info API `file_size` */
+	fileSize: z.number().optional(),
+
+	// === Individual Info API準拠画像情報 ===
+	/** メイン画像 - Individual Info API `image_main` */
+	imageMain: IndividualAPIImageSchema.optional(),
+	/** サムネイル画像 - Individual Info API `image_thum` */
+	imageThumb: IndividualAPIImageSchema.optional(),
+	/** ミニサムネイル - Individual Info API `image_thum_mini` */
+	imageThumbMini: IndividualAPIImageSchema.optional(),
+	/** サンプル画像群 - Individual Info API `image_samples` */
+	imageSamples: z.array(IndividualAPIImageSchema).default([]),
 	/** サンプル画像 */
 	sampleImages: z.array(SampleImageSchema).default([]),
 	/** 独占配信フラグ */
 	isExclusive: z.boolean().default(false),
 
-	// DLsite infoエンドポイントから取得される追加データ
-	/** メーカーID */
-	makerId: z.string().optional(),
-	/** 年齢カテゴリ（数値） */
+	// === Individual Info API準拠販売・価格情報 ===
+	/** 販売状態 - Individual Info API `on_sale` */
+	onSale: z.number().int().min(0).max(1).optional(),
+	/** 割引対象 - Individual Info API `is_discount_work` */
+	isDiscountWork: z.boolean().optional(),
+	/** キャンペーンID - Individual Info API `campaign_id` */
+	campaignId: z.number().int().optional(),
+	/** キャンペーン開始日 - Individual Info API `campaign_start_date` */
+	campaignStartDate: z.string().optional(),
+	/** キャンペーン終了日 - Individual Info API `campaign_end_date` */
+	campaignEndDate: z.string().optional(),
+	/** ポイント - Individual Info API `point` */
+	point: z.number().int().nonnegative().optional(),
+	/** 基本ポイント率 - Individual Info API `default_point` */
+	defaultPoint: z.number().int().min(0).max(100).optional(),
+
+	// === Individual Info API準拠年齢制限情報 ===
+	/** 年齢カテゴリ（数値） - Individual Info API `age_category` */
 	ageCategory: z.number().int().optional(),
-	/** 作品登録日 */
-	registDate: z.string().datetime().optional(),
-	/** 作品オプション（音声/トライアル等） */
-	options: z.string().optional(),
+	/** 年齢カテゴリ名 - Individual Info API `age_category_string` */
+	ageCategoryString: z.string().optional(),
+
+	// DLsite infoエンドポイントから取得される追加データ
+	/** メーカーID - Individual Info API `maker_id` */
+	makerId: z.string().optional(),
 	/** ウィッシュリスト数 */
 	wishlistCount: z.number().int().nonnegative().optional(),
 	/** 総ダウンロード数 */
 	totalDownloadCount: z.number().int().nonnegative().optional(),
-	/** ランキング履歴 */
-	rankingHistory: z.array(RankingInfoSchema).optional(),
-	/** ファイル情報 - @deprecated API-only実装により詳細ファイル情報は不要 */
-	fileInfo: FileInfoSchema.optional(),
-	/** 基本作品情報（最小限のメタデータのみ保持） - @deprecated Individual Info APIで代替 */
-	basicInfo: z
-		.object({
-			/** 詳細タグ（tagsと重複しない場合のみ） */
-			detailTags: z.array(z.string()).default([]),
-			/** その他の基本情報（将来拡張用） */
-			other: z.record(z.any()).default({}),
-		})
-		.optional(),
-	/** 特典情報 - @deprecated API-only実装により特典詳細情報は不要 */
-	bonusContent: z.array(BonusContentSchema).optional(),
+	// === Individual Info API準拠ランキング情報 ===
+	/** 日間ランキング - Individual Info API `rank_day` */
+	rankDay: z.number().optional(),
+	/** 日間ランキング日付 - Individual Info API `rank_day_date` */
+	rankDayDate: z.string().optional(),
+	/** 週間ランキング - Individual Info API `rank_week` */
+	rankWeek: z.number().optional(),
+	/** 週間ランキング日付 - Individual Info API `rank_week_date` */
+	rankWeekDate: z.string().optional(),
+	/** 月間ランキング - Individual Info API `rank_month` */
+	rankMonth: z.number().optional(),
+	/** 月間ランキング日付 - Individual Info API `rank_month_date` */
+	rankMonthDate: z.string().optional(),
+	/** 年間ランキング - Individual Info API `rank_year` */
+	rankYear: z.number().optional(),
+	/** 年間ランキング日付 - Individual Info API `rank_year_date` */
+	rankYearDate: z.string().optional(),
+	/** 総合ランキング - Individual Info API `rank_total` */
+	rankTotal: z.number().optional(),
+	/** 総合ランキング日付 - Individual Info API `rank_total_date` */
+	rankTotalDate: z.string().optional(),
+
+	// === Individual Info API準拠プラットフォーム情報 ===
+	/** 対応プラットフォーム - Individual Info API `platform` */
+	platform: z.array(z.string()).default([]),
+	/** PC対応 - Individual Info API `is_pc_work` */
+	isPcWork: z.boolean().optional(),
+	/** スマートフォン対応 - Individual Info API `is_smartphone_work` */
+	isSmartphoneWork: z.boolean().optional(),
+	/** Android専用 - Individual Info API `is_android_only_work` */
+	isAndroidOnlyWork: z.boolean().optional(),
+	/** iOS専用 - Individual Info API `is_ios_only_work` */
+	isIosOnlyWork: z.boolean().optional(),
+	/** DLsitePlay対応 - Individual Info API `is_dlsiteplay_work` */
+	isDlsiteplayWork: z.boolean().optional(),
+	/** DLsitePlay専用 - Individual Info API `is_dlsiteplay_only_work` */
+	isDlsiteplayOnlyWork: z.boolean().optional(),
+
+	// === Individual Info API準拠エディション情報 ===
+	/** エディション情報 - Individual Info API `editions` */
+	editions: z.array(IndividualAPIEditionSchema).default([]),
 	/** 集計された特性評価 */
 	aggregatedCharacteristics: AggregatedCharacteristicsSchema.optional(),
 	/** 多通貨価格情報 */
@@ -451,16 +545,12 @@ export const DLsiteWorkBaseSchema = z.object({
 	campaignInfo: CampaignInfoSchema.optional(),
 	/** シリーズ情報 */
 	seriesInfo: SeriesInfoSchema.optional(),
-	/** 翻訳情報 */
-	translationInfo: TranslationInfoSchema.optional(),
 	/** 言語別ダウンロード情報 */
 	languageDownloads: z.array(LanguageDownloadSchema).optional(),
 	/** 販売状態フラグ */
 	salesStatus: SalesStatusSchema.optional(),
 	/** ポイント還元率 */
 	defaultPointRate: z.number().int().min(0).max(100).optional(),
-	/** カスタムジャンル */
-	customGenres: z.array(z.string()).optional(),
 });
 
 /**
@@ -483,15 +573,6 @@ export const DataSourceTrackingSchema = z.object({
 			customGenres: z.array(z.string()).default([]),
 		})
 		.optional(),
-	/** 詳細ページデータ */
-	detailPage: z
-		.object({
-			lastFetched: z.string().datetime(),
-			basicInfo: BasicWorkInfoSchema,
-			fileInfo: FileInfoSchema.optional(), // @deprecated 詳細ファイル情報は不要
-			bonusContent: z.array(BonusContentSchema).default([]), // @deprecated 特典情報は不要
-		})
-		.optional(),
 });
 
 /**
@@ -502,16 +583,32 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	// === 基本識別情報 ===
 	/** FirestoreドキュメントID */
 	id: z.string(),
-	/** DLsite商品ID */
+	/** DLsite商品ID - Individual Info API `workno` / `product_id` */
 	productId: z.string(),
+	/** 基本商品ID - Individual Info API `base_product_id` */
+	baseProductId: z.string().optional(),
 
 	// === 基本作品情報 ===
-	/** 作品タイトル */
+	/** 作品タイトル - Individual Info API `work_name` */
 	title: z.string().min(1),
-	/** サークル名 */
+	/** マスク済みタイトル - Individual Info API `work_name_masked` */
+	titleMasked: z.string().optional(),
+	/** タイトル読み - Individual Info API `work_name_kana` */
+	titleKana: z.string().optional(),
+	/** 代替名 - Individual Info API `alt_name` */
+	altName: z.string().optional(),
+	/** サークル名 - Individual Info API `maker_name` */
 	circle: z.string().min(1),
-	/** 作品説明 */
+	/** 英語サークル名 - Individual Info API `maker_name_en` */
+	circleEn: z.string().optional(),
+	/** 作品説明 - Individual Info API `intro_s` */
 	description: z.string(),
+	/** 作品タイプ - Individual Info API `work_type` */
+	workType: z.string().optional(),
+	/** 作品タイプ名 - Individual Info API `work_type_string` */
+	workTypeString: z.string().optional(),
+	/** 作品カテゴリ - Individual Info API `work_category` */
+	workCategory: z.string().optional(),
 	/** 作品カテゴリ（フィルタリング用） */
 	category: WorkCategorySchema,
 	/** 元のカテゴリテキスト（表示用） */
@@ -533,7 +630,11 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	/** 総DL数（infoAPIから） */
 	totalDownloadCount: z.number().optional(),
 
-	// === 統一クリエイター情報（5種類のみ） ===
+	// === Individual Info API準拠クリエイター情報 ===
+	/** クリエイター情報 - Individual Info API `creaters` オブジェクト */
+	creaters: CreatorsSchema.optional(),
+
+	// === 下位互換用統一クリエイター情報（レガシー） ===
 	/** 声優（最優先データ） */
 	voiceActors: z.array(z.string()).default([]),
 	/** シナリオ */
@@ -545,11 +646,27 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	/** 作者（その他・声優と重複しない場合のみ） */
 	author: z.array(z.string()).default([]),
 
-	// === DLsite公式ジャンル ===
+	// === Individual Info API準拠ジャンル・タグ情報 ===
+	/** 公式ジャンル - Individual Info API `genres` 配列 */
+	apiGenres: z.array(IndividualAPIGenreSchema).default([]),
+	/** カスタムジャンル - Individual Info API `custom_genres` 配列 */
+	apiCustomGenres: z.array(IndividualAPICustomGenreSchema).default([]),
+	/** 作品オプション - Individual Info API `work_options` オブジェクト */
+	apiWorkOptions: z.record(IndividualAPIWorkOptionSchema).default({}),
+
+	// === 下位互換用ジャンル情報（レガシー） ===
 	/** DLsite公式ジャンル（Individual Info APIから取得） */
 	genres: z.array(z.string()).default([]),
 
-	// === 日付情報完全対応 ===
+	// === Individual Info API準拠日付情報 ===
+	/** 登録日時 - Individual Info API `regist_date` */
+	registDate: z.string().optional(),
+	/** 更新日時 - Individual Info API `update_date` */
+	updateDate: z.string().optional(),
+	/** 変更フラグ - Individual Info API `modify_flg` */
+	modifyFlag: z.number().int().optional(),
+
+	// === 下位互換用日付情報（レガシー） ===
 	/** 販売日（元の文字列） */
 	releaseDate: z.string().optional(),
 	/** ソート用ISO日付（YYYY-MM-DD） */
@@ -567,22 +684,6 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	/** ファイル形式 */
 	fileFormat: z.string().optional(),
 
-	// === 拡張ファイル情報 ===
-	/** ファイル詳細情報 - @deprecated API-only実装により詳細ファイル情報は不要 */
-	fileInfo: z
-		.object({
-			totalSizeText: z.string(),
-			totalSizeBytes: z.number().optional(),
-			totalDuration: z.string().optional(),
-			fileCount: z.number().optional(),
-			formats: z.array(z.string()).default([]),
-			additionalFiles: z.array(z.string()).default([]),
-		})
-		.optional(),
-
-	// === 詳細情報 ===
-	/** 特典情報 - @deprecated API-only実装により特典詳細情報は不要 */
-	bonusContent: z.array(BonusContentSchema).default([]),
 	/** サンプル画像 */
 	sampleImages: z
 		.array(
@@ -667,10 +768,13 @@ export type PriceInfo = z.infer<typeof PriceInfoSchema>;
 export type RatingInfo = z.infer<typeof RatingInfoSchema>;
 export type RatingDetail = z.infer<typeof RatingDetailSchema>;
 export type SampleImage = z.infer<typeof SampleImageSchema>;
-export type FileInfo = z.infer<typeof FileInfoSchema>;
-export type BasicWorkInfo = z.infer<typeof BasicWorkInfoSchema>;
-export type DetailedCreatorInfo = z.infer<typeof DetailedCreatorInfoSchema>;
-export type BonusContent = z.infer<typeof BonusContentSchema>;
+export type IndividualAPICreator = z.infer<typeof IndividualAPICreatorSchema>;
+export type Creators = z.infer<typeof CreatorsSchema>;
+export type IndividualAPIImage = z.infer<typeof IndividualAPIImageSchema>;
+export type IndividualAPIGenre = z.infer<typeof IndividualAPIGenreSchema>;
+export type IndividualAPICustomGenre = z.infer<typeof IndividualAPICustomGenreSchema>;
+export type IndividualAPIWorkOption = z.infer<typeof IndividualAPIWorkOptionSchema>;
+export type IndividualAPIEdition = z.infer<typeof IndividualAPIEditionSchema>;
 export type RankingInfo = z.infer<typeof RankingInfoSchema>;
 export type LocalePrice = z.infer<typeof LocalePriceSchema>;
 export type CampaignInfo = z.infer<typeof CampaignInfoSchema>;
@@ -806,8 +910,7 @@ function createFallbackFrontendWork(
 	const discountText = data.price.discount ? `${data.price.discount}%OFF` : undefined;
 	const ratingText = generateRatingText(data.rating);
 	const relativeUrl = `/maniax/work/=/product_id/${data.productId}.html`;
-	const ageRating =
-		data.ageRating || data.dataSources?.detailPage?.basicInfo?.ageRating || undefined;
+	const ageRating = data.ageRating || undefined;
 
 	return {
 		id: data.id,
@@ -837,11 +940,14 @@ function createFallbackFrontendWork(
 		fileFormat: data.fileFormat,
 		genres, // 修正: 安全に抽出
 
+		// Individual Info API準拠フィールド
+		apiGenres: data.apiGenres || [],
+		apiCustomGenres: data.apiCustomGenres || [],
+		apiWorkOptions: data.apiWorkOptions || {},
+
 		sampleImages: data.sampleImages || [],
 		isExclusive: data.isExclusive || false,
 		dataSources: data.dataSources,
-		fileInfo: data.fileInfo, // @deprecated API-only実装により不要
-		bonusContent: data.bonusContent || [], // @deprecated API-only実装により不要
 
 		lastFetchedAt: data.lastFetchedAt,
 		createdAt: data.createdAt,
@@ -909,9 +1015,8 @@ export function convertToFrontendWork(
 	const downloadText = generateDownloadText(data);
 	const relativeUrl = `/maniax/work/=/product_id/${data.productId}.html`;
 
-	// 年齢レーティングの取得（データソースから優先的に取得）
-	const ageRating =
-		data.ageRating || data.dataSources?.detailPage?.basicInfo?.ageRating || undefined;
+	// 年齢レーティングの取得
+	const ageRating = data.ageRating || undefined;
 
 	// FrontendDLsiteWorkSchema形式のデータを生成
 	const frontendData: FrontendDLsiteWorkData = {
@@ -1134,6 +1239,34 @@ export function getWorkLanguageDisplayNameSafe(language: string): string {
 	}
 	// 不明な言語の場合はそのまま返す
 	return language;
+}
+
+/**
+ * Individual Info API年齢カテゴリから日本語表示名を取得
+ * @param ageCategory Individual Info API `age_category` (1=全年齢, 2=R-15, 3=成人向け)
+ * @returns 日本語表示名
+ */
+export function getAgeCategoryDisplayName(ageCategory: number): string {
+	const labels: Record<number, string> = {
+		1: "全年齢",
+		2: "R-15",
+		3: "18禁",
+	};
+	return labels[ageCategory] || "不明";
+}
+
+/**
+ * Individual Info API年齢カテゴリ文字列から日本語表示名を取得
+ * @param ageCategoryString Individual Info API `age_category_string` ("general", "r15", "adult")
+ * @returns 日本語表示名
+ */
+export function getAgeCategoryStringDisplayName(ageCategoryString: string): string {
+	const labels: Record<string, string> = {
+		general: "全年齢",
+		r15: "R-15",
+		adult: "18禁",
+	};
+	return labels[ageCategoryString] || "不明";
 }
 
 /**

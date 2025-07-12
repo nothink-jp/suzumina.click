@@ -646,9 +646,8 @@ export async function getDataQualityReport() {
 
 				if (sources.searchResult) qualityStats.dataSourceCoverage.searchResult++;
 				if (sources.infoAPI) qualityStats.dataSourceCoverage.infoAPI++;
-				if (sources.detailPage) qualityStats.dataSourceCoverage.detailPage++;
 
-				if (sources.searchResult && sources.infoAPI && sources.detailPage) {
+				if (sources.searchResult && sources.infoAPI) {
 					qualityStats.dataSourceCoverage.allThree++;
 				}
 			}
