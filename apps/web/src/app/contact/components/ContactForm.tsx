@@ -14,9 +14,10 @@ import {
 } from "@suzumina.click/ui/components/ui/select";
 import { Textarea } from "@suzumina.click/ui/components/ui/textarea";
 import { CheckCircle, Send } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { submitContactForm } from "../actions";
 
 // フォームスキーマ（エラーメッセージ付き）
 const contactFormSchema = ContactFormDataSchema.extend({
@@ -80,7 +81,8 @@ function getPlaceholder(category: string): string {
 
 export function ContactForm() {
 	const [isSubmitted, setIsSubmitted] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isPending, startTransition] = useTransition();
+	const [submitError, setSubmitError] = useState<string | null>(null);
 
 	// 一意なIDを生成
 	const subjectId = useId();
@@ -102,27 +104,22 @@ export function ContactForm() {
 	const content = watch("content");
 
 	const onSubmit = async (data: z.infer<typeof contactFormSchema>) => {
-		setIsSubmitting(true);
-		try {
-			const response = await fetch("/api/contact", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(data),
-			});
+		setSubmitError(null);
 
-			if (response.ok) {
-				setIsSubmitted(true);
-				reset();
-			} else {
-				throw new Error("送信に失敗しました");
+		startTransition(async () => {
+			try {
+				const result = await submitContactForm(data);
+
+				if (result.success) {
+					setIsSubmitted(true);
+					reset();
+				} else {
+					setSubmitError(result.message);
+				}
+			} catch (_error) {
+				setSubmitError("送信に失敗しました。しばらく時間をおいてから再度お試しください。");
 			}
-		} catch (_error) {
-			alert("送信に失敗しました。しばらく時間をおいてから再度お試しください。");
-		} finally {
-			setIsSubmitting(false);
-		}
+		});
 	};
 
 	if (isSubmitted) {
@@ -213,10 +210,17 @@ export function ContactForm() {
 				</p>
 			</div>
 
+			{/* エラーメッセージ */}
+			{submitError && (
+				<div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+					<p className="text-sm text-destructive">{submitError}</p>
+				</div>
+			)}
+
 			{/* 送信ボタン */}
 			<div className="pt-4">
-				<Button type="submit" disabled={isSubmitting} className="w-full flex items-center gap-2">
-					{isSubmitting ? (
+				<Button type="submit" disabled={isPending} className="w-full flex items-center gap-2">
+					{isPending ? (
 						<>
 							<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
 							送信中...

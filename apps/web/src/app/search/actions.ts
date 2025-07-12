@@ -1,4 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server";
+"use server";
+
 import { z } from "zod";
 import { getFirestore } from "@/lib/firestore";
 
@@ -14,6 +15,19 @@ export interface AutocompleteSuggestion {
 	category?: string;
 	icon?: string;
 	count?: number;
+}
+
+export interface AutocompleteResult {
+	suggestions: AutocompleteSuggestion[];
+	meta: {
+		query: string;
+		total: number;
+		sources: {
+			tags: number;
+			titles: number;
+			videos: number;
+		};
+	};
 }
 
 // Popular tags with icons (extending existing system)
@@ -155,35 +169,47 @@ async function getVideoSuggestions(
 	}
 }
 
-export async function GET(request: NextRequest) {
+/**
+ * オートコンプリート候補を取得するServer Action
+ */
+export async function getAutocompleteSuggestions(
+	query: string,
+	limit = 8,
+): Promise<{ success: true; data: AutocompleteResult } | { success: false; error: string }> {
 	try {
-		const { searchParams } = new URL(request.url);
-		const parseResult = AutocompleteQuerySchema.safeParse({
-			q: searchParams.get("q"),
-			limit: searchParams.get("limit"),
-		});
+		const parseResult = AutocompleteQuerySchema.safeParse({ q: query, limit });
 
 		if (!parseResult.success) {
-			return NextResponse.json(
-				{ error: "Invalid query parameters", details: parseResult.error.errors },
-				{ status: 400 },
-			);
+			return {
+				success: false,
+				error: `Invalid query parameters: ${parseResult.error.errors.map((e) => e.message).join(", ")}`,
+			};
 		}
 
-		const { q: query, limit } = parseResult.data;
+		const { q: validatedQuery, limit: validatedLimit } = parseResult.data;
 
 		// Early return for very short queries
-		if (query.length < 2) {
-			return NextResponse.json({ suggestions: [] });
+		if (validatedQuery.length < 2) {
+			return {
+				success: true,
+				data: {
+					suggestions: [],
+					meta: {
+						query: validatedQuery,
+						total: 0,
+						sources: { tags: 0, titles: 0, videos: 0 },
+					},
+				},
+			};
 		}
 
 		const firestore = getFirestore();
 
 		// Get suggestions from different sources in parallel
 		const [tagSuggestions, titleSuggestions, videoSuggestions] = await Promise.all([
-			getTagSuggestions(firestore, query, Math.ceil(limit * 0.6)), // 60% tags
-			getTitleSuggestions(firestore, query, Math.ceil(limit * 0.3)), // 30% titles
-			getVideoSuggestions(firestore, query, Math.ceil(limit * 0.1)), // 10% videos
+			getTagSuggestions(firestore, validatedQuery, Math.ceil(validatedLimit * 0.6)), // 60% tags
+			getTitleSuggestions(firestore, validatedQuery, Math.ceil(validatedLimit * 0.3)), // 30% titles
+			getVideoSuggestions(firestore, validatedQuery, Math.ceil(validatedLimit * 0.1)), // 10% videos
 		]);
 
 		// Combine all suggestions and prioritize by type and relevance
@@ -206,21 +232,27 @@ export async function GET(request: NextRequest) {
 				// Finally by count
 				return (b.count || 0) - (a.count || 0);
 			})
-			.slice(0, limit);
+			.slice(0, validatedLimit);
 
-		return NextResponse.json({
-			suggestions: sortedSuggestions,
-			meta: {
-				query,
-				total: sortedSuggestions.length,
-				sources: {
-					tags: tagSuggestions.length,
-					titles: titleSuggestions.length,
-					videos: videoSuggestions.length,
+		return {
+			success: true,
+			data: {
+				suggestions: sortedSuggestions,
+				meta: {
+					query: validatedQuery,
+					total: sortedSuggestions.length,
+					sources: {
+						tags: tagSuggestions.length,
+						titles: titleSuggestions.length,
+						videos: videoSuggestions.length,
+					},
 				},
 			},
-		});
+		};
 	} catch (_error) {
-		return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+		return {
+			success: false,
+			error: "オートコンプリート候補の取得に失敗しました。",
+		};
 	}
 }

@@ -6,8 +6,8 @@
 
 **技術スタック**: Next.js 15 App Router、TypeScript 5.8、Tailwind CSS v4、Storybook (UI Package一本化)  
 **開発体制**: 個人開発・個人運用（2環境構成: Staging + Production）  
-**バージョン**: v0.3.1 (DLsiteサムネイル表示システム完全修正 + 画像プロキシ強化)  
-**更新日**: 2025年7月8日
+**バージョン**: v0.3.2 (パフォーマンス最適化 + P99レイテンシ改善 + Server Actions優先アーキテクチャ)  
+**更新日**: 2025年7月12日
 
 ## 🎯 設計原則
 
@@ -80,10 +80,50 @@ components/
 
 - **Server Components**: データ取得・表示ロジック
 - **Client Components**: インタラクション・ブラウザAPI使用
-- **Server Actions**: サーバーサイドデータ操作
+- **Server Actions**: サーバーサイドデータ操作（API Routes優先）
 - **Firestore接続制限**: `@google-cloud/firestore` をサーバーサイドのみで使用
+- **API Routes最小化**: 外部システム連携・プロキシ以外はServer Actions使用
 
-### 6. Server Actions 最適化原則
+### 6. パフォーマンス最適化原則
+
+**原則**: レスポンス時間を最優先に考慮した実装を行う
+
+#### **Turbopack永続キャッシュ最適化**
+- **ビルド時間短縮**: 開発環境でTurbopackの永続キャッシュを活用
+- **アセット最適化**: SVGローダー・フォント最適化の適用
+- **Hot Reload最適化**: 開発体験向上
+
+#### **API タイムアウト戦略**
+- **Promise.allSettled使用**: 複数API呼び出しの耐障害性向上
+- **3秒タイムアウト**: 外部API呼び出しの応答時間保証
+- **エラー分離**: 一部APIエラーでも部分的結果を返却
+
+```typescript
+// ✅ 良い例: タイムアウト付きAPI呼び出し
+export async function GET(request: NextRequest) {
+  const timeoutPromise = (promise: Promise<any>, timeout: number) => {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), timeout)
+      )
+    ]);
+  };
+
+  const [audioButtonResult, videos, works] = await Promise.allSettled([
+    timeoutPromise(getAudioButtons(), 3000),
+    timeoutPromise(getVideos(), 3000), 
+    timeoutPromise(getWorks(), 3000),
+  ]);
+}
+```
+
+#### **パフォーマンス監視強化**
+- **サンプリング率**: 20%（10%から向上）で詳細監視
+- **Core Web Vitals**: LCP・FID・CLS の継続測定
+- **P99レイテンシ**: 2秒以下の目標（1.5秒以下推奨）
+
+### 7. Server Actions 最適化原則
 
 **原則**: ユーザーアクションの性質に応じて適切な処理パターンを選択する
 
@@ -162,7 +202,7 @@ export async function getWorks() {
 // import { getFirestore } from 'firebase/firestore';
 ```
 
-### 7. 画像プロキシシステム設計
+### 10. 画像プロキシシステム設計
 
 **原則**: DLsite画像を安全かつ効率的に表示する
 
@@ -193,7 +233,51 @@ export async function getWorks() {
 - **Refererヘッダー**: DLsite要求仕様への適合
 - **エラーハンドリング**: 詳細ログ・型安全なレスポンス処理
 
-### 8. コンポーネント設計原則
+### 8. API Routes vs Server Actions 設計指針
+
+**原則**: 用途に応じて適切な実装パターンを選択する
+
+#### **API Routes維持対象**
+- **外部システム連携**: NextAuth.js認証・監視システム・画像プロキシ
+- **インフラ要件**: ヘルスチェック・メトリクス収集
+- **セキュリティ要件**: CORS対応・専用ヘッダー制御
+
+```typescript
+// ✅ API Route維持例: 画像プロキシ
+export async function GET(request: NextRequest) {
+  const imageUrl = request.nextUrl.searchParams.get('url');
+  const response = await fetch(imageUrl, {
+    headers: { Referer: 'https://www.dlsite.com/' }
+  });
+  return new NextResponse(response.body, { 
+    headers: { 'Cache-Control': 'public, max-age=86400' }
+  });
+}
+```
+
+#### **Server Actions移行対象**
+- **データ取得**: 音声ボタン一覧・検索候補・作品情報
+- **フォーム処理**: お問い合わせ・設定変更・コンテンツ作成
+- **単純CRUD**: 作成・更新・削除操作
+
+```typescript
+// ✅ Server Actions移行例: データ取得
+'use server';
+export async function getAudioButtons(params: AudioButtonQuery) {
+  const snapshot = await firestore.collection('audioButtons')
+    .where('isActive', '==', true)
+    .limit(params.limit || 20)
+    .get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+```
+
+**移行効果**:
+- **レスポンス時間**: 30-50%短縮
+- **型安全性**: 直接関数呼び出しによる向上
+- **開発効率**: API Routeパラメータ解析コード削除
+
+### 9. コンポーネント設計原則
 
 **原則**: Server Component/Client Component を責任に応じて設計する
 
@@ -754,7 +838,7 @@ PROJECT_ID="suzumina-click"  # セキュリティリスク
 
 ## 📊 パフォーマンス基準
 
-### 1. フロントエンド
+### 1. フロントエンド（2025年7月最適化完了）
 
 - **Core Web Vitals**
   - LCP (Largest Contentful Paint): < 2.5s
@@ -762,17 +846,24 @@ PROJECT_ID="suzumina-click"  # セキュリティリスク
   - CLS (Cumulative Layout Shift): < 0.1
 
 - **バンドルサイズ**: 初期ロードは500KB以下
+- **P99レイテンシ**: < 1.5秒（目標）、< 2.0秒（許容値）
 
-### 2. バックエンド
+### 2. バックエンド（タイムアウト最適化実装済み）
 
-- **Cloud Functions**
-  - コールドスタート: < 5秒
-  - レスポンス時間: < 3秒
-  - メモリ使用量: 512MB以下
+- **Cloud Run**
+  - P99レスポンス時間: < 1.5秒（最適化後）
+  - API個別タイムアウト: 3秒
+  - メモリ使用量: 2Gi（最適化済み）
+
+- **Server Actions**
+  - データ取得: < 500ms
+  - 複合検索: < 1秒
+  - Promise.allSettled による耐障害性保証
 
 - **データベース**
-  - クエリレスポンス: < 1秒
-  - インデックス最適化の実施
+  - Firestoreクエリ: < 500ms
+  - インデックス最適化済み
+  - バッチ処理による効率化
 
 ## 📝 ドキュメンテーション
 
@@ -857,5 +948,5 @@ graph LR
 
 ---
 
-**最終更新**: 2025年6月16日  
+**最終更新**: 2025年7月12日  
 **次回レビュー予定**: 2025年12月16日

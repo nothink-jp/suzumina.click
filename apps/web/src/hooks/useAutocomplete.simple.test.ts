@@ -1,5 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getAutocompleteSuggestions } from "@/app/search/actions";
 import { useAutocomplete } from "./useAutocomplete";
 
 // Mock useDebounce hook to return value immediately
@@ -7,9 +8,12 @@ vi.mock("./useDebounce", () => ({
 	useDebounce: vi.fn((value: string) => value),
 }));
 
-// Mock fetch
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+// Mock Server Actions
+vi.mock("@/app/search/actions", () => ({
+	getAutocompleteSuggestions: vi.fn(),
+}));
+
+const mockGetAutocompleteSuggestions = vi.mocked(getAutocompleteSuggestions);
 
 describe("useAutocomplete - Core Functionality", () => {
 	beforeEach(() => {
@@ -28,7 +32,7 @@ describe("useAutocomplete - Core Functionality", () => {
 		const { result } = renderHook(() => useAutocomplete("a"));
 
 		expect(result.current.suggestions).toEqual([]);
-		expect(mockFetch).not.toHaveBeenCalled();
+		expect(mockGetAutocompleteSuggestions).not.toHaveBeenCalled();
 	});
 
 	it("clearSuggestions関数が正常に動作する", () => {
@@ -45,20 +49,27 @@ describe("useAutocomplete - Core Functionality", () => {
 
 		expect(result.current.suggestions).toEqual([]);
 		expect(result.current.isLoading).toBe(false);
-		expect(mockFetch).not.toHaveBeenCalled();
+		expect(mockGetAutocompleteSuggestions).not.toHaveBeenCalled();
 	});
 
 	it("2文字以上の検索クエリで適切なAPIパラメータを生成する", () => {
-		mockFetch.mockResolvedValueOnce({
-			ok: true,
-			json: async () => ({ suggestions: [] }),
+		mockGetAutocompleteSuggestions.mockResolvedValueOnce({
+			success: true,
+			data: {
+				suggestions: [],
+				meta: {
+					query: "テスト",
+					total: 0,
+					sources: { tags: 0, titles: 0, videos: 0 },
+				},
+			},
 		});
 
 		renderHook(() => useAutocomplete("テスト"));
 
-		// API callは非同期で実行されるため、具体的な呼び出しではなく
+		// Server Action は非同期で実行されるため、具体的な呼び出しではなく
 		// hookの基本的な設定が正しいかのみ確認
-		expect(mockFetch).toHaveBeenCalled();
+		expect(mockGetAutocompleteSuggestions).toHaveBeenCalled();
 	});
 
 	it("カスタムオプションが適用される", () => {
@@ -71,6 +82,6 @@ describe("useAutocomplete - Core Functionality", () => {
 
 		// 3文字未満なので検索は実行されない
 		expect(result.current.suggestions).toEqual([]);
-		expect(mockFetch).not.toHaveBeenCalled();
+		expect(mockGetAutocompleteSuggestions).not.toHaveBeenCalled();
 	});
 });

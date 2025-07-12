@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AutocompleteSuggestion } from "@/app/api/autocomplete/route";
+import type { AutocompleteSuggestion } from "@/app/search/actions";
+import { getAutocompleteSuggestions } from "@/app/search/actions";
 import { useDebounce } from "./useDebounce";
 
 interface UseAutocompleteOptions {
@@ -71,31 +72,15 @@ export function useAutocomplete(
 		[maxSuggestions],
 	);
 
-	const fetchFromAPI = useCallback(
+	const fetchFromServerAction = useCallback(
 		async (searchQuery: string) => {
-			const params = new URLSearchParams({
-				q: searchQuery,
-				limit: maxSuggestions.toString(),
-			});
+			const result = await getAutocompleteSuggestions(searchQuery, maxSuggestions);
 
-			const response = await fetch(`/api/autocomplete?${params}`, {
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			});
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
+			if (!result.success) {
+				throw new Error(result.error);
 			}
 
-			const data = await response.json();
-
-			if (data.error) {
-				throw new Error(data.error);
-			}
-
-			return data.suggestions || [];
+			return result.data.suggestions || [];
 		},
 		[maxSuggestions],
 	);
@@ -120,7 +105,7 @@ export function useAutocomplete(
 			setError(null);
 
 			try {
-				const newSuggestions = await fetchFromAPI(searchQuery);
+				const newSuggestions = await fetchFromServerAction(searchQuery);
 				updateCache(searchQuery, newSuggestions);
 				setSuggestions(newSuggestions);
 			} catch (err) {
@@ -130,7 +115,7 @@ export function useAutocomplete(
 				setIsLoading(false);
 			}
 		},
-		[enabled, minLength, getCachedSuggestions, updateCache, fetchFromAPI],
+		[enabled, minLength, getCachedSuggestions, updateCache, fetchFromServerAction],
 	);
 
 	useEffect(() => {

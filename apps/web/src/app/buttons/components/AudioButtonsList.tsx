@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonQuery, FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import {
 	AdvancedFilterPanel,
 	type AdvancedFilters,
@@ -11,6 +11,7 @@ import { Plus, Search, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
+import { getAudioButtons } from "@/app/buttons/actions";
 import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
 import Pagination from "@/components/Pagination";
 
@@ -37,40 +38,6 @@ interface SearchParams {
 interface AudioButtonsListProps {
 	searchParams: SearchParams;
 }
-
-// Helper function to add parameter if it exists
-const addParamIfExists = (params: URLSearchParams, key: string, value?: string) => {
-	if (value) {
-		params.set(key, value);
-	}
-};
-
-// Helper function to add basic search parameters
-const addBasicParams = (params: URLSearchParams, searchParams: SearchParams) => {
-	addParamIfExists(params, "q", searchParams.q);
-	addParamIfExists(params, "tags", searchParams.tags);
-	addParamIfExists(params, "sort", searchParams.sort);
-	addParamIfExists(params, "sourceVideoId", searchParams.sourceVideoId);
-};
-
-// Helper function to add numeric range parameters
-const addNumericRangeParams = (params: URLSearchParams, searchParams: SearchParams) => {
-	addParamIfExists(params, "playCountMin", searchParams.playCountMin);
-	addParamIfExists(params, "playCountMax", searchParams.playCountMax);
-	addParamIfExists(params, "likeCountMin", searchParams.likeCountMin);
-	addParamIfExists(params, "likeCountMax", searchParams.likeCountMax);
-	addParamIfExists(params, "favoriteCountMin", searchParams.favoriteCountMin);
-	addParamIfExists(params, "favoriteCountMax", searchParams.favoriteCountMax);
-	addParamIfExists(params, "durationMin", searchParams.durationMin);
-	addParamIfExists(params, "durationMax", searchParams.durationMax);
-};
-
-// Helper function to add date and user parameters
-const addDateAndUserParams = (params: URLSearchParams, searchParams: SearchParams) => {
-	addParamIfExists(params, "createdAfter", searchParams.createdAfter);
-	addParamIfExists(params, "createdBefore", searchParams.createdBefore);
-	addParamIfExists(params, "createdBy", searchParams.createdBy);
-};
 
 // Helper function to parse numeric range from search params
 const parseNumericRange = (minParam?: string, maxParam?: string) => ({
@@ -159,22 +126,44 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	const effectiveCount = isFiltered && filteredCount !== undefined ? filteredCount : totalCount;
 	const totalPages = Math.ceil(effectiveCount / itemsPerPageNum);
 
-	// URLパラメータからクエリパラメータを構築
-	const buildQueryParams = useCallback((): URLSearchParams => {
-		const queryParams = new URLSearchParams();
-		queryParams.set("limit", itemsPerPageNum.toString());
-		queryParams.set("includeTotalCount", "true"); // 総件数を含める
+	// URLパラメータからAudioButtonQueryを構築
+	const buildAudioButtonQuery = useCallback((): Partial<AudioButtonQuery> => {
+		const query: Partial<AudioButtonQuery> = {
+			limit: itemsPerPageNum,
+			includeTotalCount: true,
+			onlyPublic: true,
+		};
 
 		// ページ番号を追加
 		if (currentPage > 1) {
-			queryParams.set("page", currentPage.toString());
+			query.page = currentPage;
 		}
 
-		addBasicParams(queryParams, searchParams);
-		addNumericRangeParams(queryParams, searchParams);
-		addDateAndUserParams(queryParams, searchParams);
+		// 基本パラメータ
+		if (searchParams.q) query.searchText = searchParams.q;
+		if (searchParams.tags) query.tags = searchParams.tags.split(",");
+		if (searchParams.sort)
+			query.sortBy = searchParams.sort as "newest" | "oldest" | "popular" | "mostPlayed";
+		if (searchParams.sourceVideoId) query.sourceVideoId = searchParams.sourceVideoId;
 
-		return queryParams;
+		// 数値範囲パラメータ
+		if (searchParams.playCountMin) query.playCountMin = Number(searchParams.playCountMin);
+		if (searchParams.playCountMax) query.playCountMax = Number(searchParams.playCountMax);
+		if (searchParams.likeCountMin) query.likeCountMin = Number(searchParams.likeCountMin);
+		if (searchParams.likeCountMax) query.likeCountMax = Number(searchParams.likeCountMax);
+		if (searchParams.favoriteCountMin)
+			query.favoriteCountMin = Number(searchParams.favoriteCountMin);
+		if (searchParams.favoriteCountMax)
+			query.favoriteCountMax = Number(searchParams.favoriteCountMax);
+		if (searchParams.durationMin) query.durationMin = Number(searchParams.durationMin);
+		if (searchParams.durationMax) query.durationMax = Number(searchParams.durationMax);
+
+		// 日付・ユーザーパラメータ
+		if (searchParams.createdAfter) query.createdAfter = searchParams.createdAfter;
+		if (searchParams.createdBefore) query.createdBefore = searchParams.createdBefore;
+		if (searchParams.createdBy) query.createdBy = searchParams.createdBy;
+
+		return query;
 	}, [searchParams, itemsPerPageNum, currentPage]);
 
 	// APIレスポンスの処理
@@ -213,9 +202,8 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 			setError(null);
 
 			try {
-				const queryParams = buildQueryParams();
-				const response = await fetch(`/api/audio-buttons?${queryParams.toString()}`);
-				const result = await response.json();
+				const query = buildAudioButtonQuery();
+				const result = await getAudioButtons(query);
 				handleApiResponse(result);
 			} catch (_err) {
 				setError("データの取得に失敗しました");
@@ -225,7 +213,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		};
 
 		fetchData();
-	}, [buildQueryParams, handleApiResponse]);
+	}, [buildAudioButtonQuery, handleApiResponse]);
 
 	// URLパラメータを更新（デバウンス機能付き）
 	const updateSearchParams = useCallback(

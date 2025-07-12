@@ -3,7 +3,7 @@ import { Card } from "@suzumina.click/ui/components/ui/card";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { FileText, Loader2, Search, Tag, Video } from "lucide-react";
 import { useEffect, useRef } from "react";
-import type { AutocompleteSuggestion } from "@/app/api/autocomplete/route";
+import type { AutocompleteSuggestion } from "@/app/search/actions";
 
 interface AutocompleteDropdownProps {
 	suggestions: AutocompleteSuggestion[];

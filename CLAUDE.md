@@ -11,7 +11,7 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 
 ### 🚀 現在のステータス
 
-**本番稼働中の完成システム (v0.3.1)**
+**本番稼働中の完成システム (v0.3.2)**
 
 - **Webアプリケーション**: Next.js 15 + TypeScript + Tailwind CSS v4
 - **認証システム**: Discord OAuth + ギルドメンバーシップ確認
@@ -26,6 +26,7 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 - **最新機能**: DLsite作品詳細情報表示強化 + 高解像度画像対応 (2025年7月実装)
 - **アーキテクチャ革新**: 100% API-Only アーキテクチャ実現・旧HTMLスクレイピングシステム完全廃止 (2025年7月8日完了)
 - **画像システム強化**: DLsiteサムネイル表示システム完全修正・プロトコル相対URL対応 (2025年7月8日完了)
+- **パフォーマンス最適化**: P99レイテンシ改善・Next.js最適化・検索API高速化 (2025年7月12日完了)
 
 ## 🏗️ システム構成
 
@@ -138,7 +139,8 @@ pnpm --filter @suzumina.click/web dev
 
 ### 主要な実装パターン
 
-- **API Route**: Next.js App Router パターン
+- **Server Actions**: データ操作・フォーム処理の優先パターン
+- **API Route**: 外部システム連携・統合処理のみ使用
 - **Cloud Function**: GCF v2 CloudEvent Handler
 - **Firestore操作**: バッチ処理・エラーハンドリング必須
 - **型定義**: shared-types パッケージ利用
@@ -175,6 +177,7 @@ pnpm --filter @suzumina.click/web dev
 
 ### ドキュメント
 
+- `docs/API_ROUTES_ANALYSIS_AND_MIGRATION_PLAN.md`: API Routes分析・Server Actions移行計画
 - `docs/DLSITE_INCREMENTAL_UPDATE_DESIGN.md`: DLsite統合システム設計
 - `docs/FIRESTORE_STRUCTURE.md`: データベース構造
 - `docs/DEVELOPMENT.md`: 開発環境・原則
