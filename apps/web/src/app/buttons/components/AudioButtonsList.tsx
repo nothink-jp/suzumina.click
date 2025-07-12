@@ -12,8 +12,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { getAudioButtons } from "@/app/buttons/actions";
-import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
-import Pagination from "@/components/Pagination";
+import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import Pagination from "@/components/ui/pagination";
 
 interface SearchParams {
 	q?: string;

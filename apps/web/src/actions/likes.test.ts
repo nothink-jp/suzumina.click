@@ -6,7 +6,7 @@ const mockGetFirestore = vi.fn();
 const mockIncrementLikeCount = vi.fn();
 const mockDecrementLikeCount = vi.fn();
 
-vi.mock("@/components/ProtectedRoute", () => ({
+vi.mock("@/components/system/protected-route", () => ({
 	requireAuth: mockRequireAuth,
 }));
 

@@ -12,7 +12,7 @@ import { FilterSelect } from "@suzumina.click/ui/components/custom/search-filter
 import { PlayCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useMemo, useState } from "react";
-import Pagination from "@/components/Pagination";
+import Pagination from "@/components/ui/pagination";
 import VideoCard from "./VideoCard";
 
 interface VideoListProps {

@@ -25,10 +25,10 @@ import { Suspense } from "react";
 import { getAudioButtonById, getAudioButtons } from "@/app/buttons/actions";
 import { getVideoById } from "@/app/videos/actions";
 import VideoCard from "@/app/videos/components/VideoCard";
-import { AudioButtonDeleteButton } from "@/components/AudioButtonDeleteButton";
-import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
-import { FavoriteButton } from "@/components/FavoriteButton";
-import { LikeButton } from "@/components/LikeButton";
+import { AudioButtonDeleteButton } from "@/components/audio/audio-button-delete-button";
+import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import { FavoriteButton } from "@/components/audio/favorite-button";
+import { LikeButton } from "@/components/audio/like-button";
 import { getUserByDiscordId } from "@/lib/user-firestore";
 
 interface AudioButtonDetailPageProps {

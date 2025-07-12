@@ -1,4 +1,4 @@
-import { HomePage } from "@/components/HomePage";
+import { HomePage } from "@/components/layout/home-page";
 import { getLatestAudioButtons, getLatestVideos, getLatestWorks } from "./actions";
 
 // Force dynamic rendering to ensure Server Actions are called on each request

@@ -3,8 +3,8 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getVideoById } from "@/app/videos/actions";
-import { AudioButtonCreator } from "@/components/AudioButtonCreator";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { AudioButtonCreator } from "@/components/audio/audio-button-creator";
+import ProtectedRoute from "@/components/system/protected-route";
 
 interface CreateAudioButtonPageProps {
 	searchParams: Promise<{

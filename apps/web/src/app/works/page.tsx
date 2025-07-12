@@ -1,4 +1,4 @@
-import { WorksPageClient } from "@/components/WorksPageClient";
+import { WorksPageClient } from "@/components/content/works-page-client";
 import { getWorks } from "./actions";
 
 interface WorksPageProps {

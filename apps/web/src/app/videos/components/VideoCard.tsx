@@ -8,7 +8,7 @@ import { Calendar, Clock, ExternalLink, Eye, Plus, Radio, Video } from "lucide-r
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import React, { memo, useMemo } from "react";
-import ThumbnailImage from "@/components/ThumbnailImage";
+import ThumbnailImage from "@/components/ui/thumbnail-image";
 
 interface VideoCardProps {
 	video: FrontendVideoData;

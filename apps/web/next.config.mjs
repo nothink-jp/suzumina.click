@@ -12,13 +12,14 @@ const nextConfig = {
 	experimental: {
 		// React Compiler（Next.js 15.3対応）
 		reactCompiler: true,
-		// Turbopack永続キャッシュ（ビルド時間短縮）
-		turbo: {
-			rules: {
-				"*.svg": {
-					loaders: ["@svgr/webpack"],
-					as: "*.js",
-				},
+	},
+
+	// Turbopack設定（安定版）
+	turbopack: {
+		rules: {
+			"*.svg": {
+				loaders: ["@svgr/webpack"],
+				as: "*.js",
 			},
 		},
 	},
@@ -115,7 +116,6 @@ const nextConfig = {
 	// SWCコンパイラーはNext.js 15でデフォルト有効
 
 	// 静的最適化・プリロード設定
-	optimizeFonts: true,
 	poweredByHeader: false,
 
 	// ヘッダー最適化

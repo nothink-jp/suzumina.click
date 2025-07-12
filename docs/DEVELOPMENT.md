@@ -1,19 +1,114 @@
-# 開発ガイド
+# suzumina.click 開発ガイド
 
 ## 📋 概要
 
-本ドキュメントでは、suzumina.clickプロジェクトの開発ガイド、設計原則、コーディング規約、および品質基準を定義します。
+suzumina.clickプロジェクトの開発ガイドライン、設計原則、コーディング規約、品質基準を定義します。  
+**Claude Code での開発作業における必須参照ドキュメント**
 
-**技術スタック**: Next.js 15 App Router、TypeScript 5.8、Tailwind CSS v4、Storybook (UI Package一本化)  
-**開発体制**: 個人開発・個人運用（2環境構成: Staging + Production）  
-**バージョン**: v0.3.2 (パフォーマンス最適化 + P99レイテンシ改善 + Server Actions優先アーキテクチャ)  
+**技術スタック**: Next.js 15 App Router + TypeScript + Tailwind CSS v4 + Biome  
+**開発体制**: 個人開発・個人運用（本番環境のみ）  
+**バージョン**: v0.3.2 (Server Actions優先アーキテクチャ・API Routes 33%削減)  
+**テスト成果**: 410件全通過・移行完了アーカイブ済み  
 **更新日**: 2025年7月12日
 
-## 🎯 設計原則
+## 🎯 核心設計原則 (優先度順)
 
-### 1. 型安全性の確保
+> **Claude Code開発指針**: これらの原則を優先度順に適用し、一貫性のある高品質な実装を実現する
 
-**原則**: すべてのデータ構造は型安全であること
+### 🥇 **第1優先: ソフトウェア工学の基本原則**
+**適用範囲**: 全ての実装・リファクタリング・機能追加
+
+#### **1. YAGNI原則 (You Aren't Gonna Need It)**
+**原則**: 必要になるまで機能を実装しない
+
+```typescript
+// ✅ 良い例: 必要な機能のみ実装
+export function formatPrice(price: number): string {
+  return `${price.toLocaleString()}円`;
+}
+
+// ❌ 悪い例: 不要な将来対応
+export function formatPrice(
+  price: number, 
+  currency?: 'JPY' | 'USD' | 'EUR',  // 未使用
+  locale?: string,                   // 未使用
+  precision?: number                 // 未使用
+): string {
+  return `${price.toLocaleString()}円`; // 実際は円のみ使用
+}
+```
+
+#### **2. DRY原則 (Don't Repeat Yourself)**
+**原則**: 同じコードを繰り返さない
+
+```typescript
+// ✅ 良い例: 共通ロジックの抽出
+const handleApiError = (error: unknown, context: string) => {
+  const message = error instanceof Error ? error.message : 'Unknown error';
+  logger.error(`${context}: ${message}`);
+  return { success: false, error: message };
+};
+
+export async function createAudioButton(input: AudioButtonInput) {
+  try {
+    const result = await firestore.collection('audioButtons').add(input);
+    return { success: true, data: result };
+  } catch (error) {
+    return handleApiError(error, 'createAudioButton');
+  }
+}
+
+// ❌ 悪い例: 重複したエラーハンドリング
+export async function createAudioButton(input: AudioButtonInput) {
+  try {
+    // 実装...
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error(`createAudioButton: ${message}`);
+    return { success: false, error: message };
+  }
+}
+
+export async function updateAudioButton(input: AudioButtonInput) {
+  try {
+    // 実装...
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error(`updateAudioButton: ${message}`);
+    return { success: false, error: message };
+  }
+}
+```
+
+#### **3. KISS原則 (Keep It Simple, Stupid)**
+**原則**: 可能な限りシンプルに保つ
+
+```typescript
+// ✅ 良い例: シンプルな実装
+export function isValidVideoId(id: string): boolean {
+  return id.length === 11 && /^[a-zA-Z0-9_-]+$/.test(id);
+}
+
+// ❌ 悪い例: 過度に複雑な実装
+export function isValidVideoId(id: string): boolean {
+  const patterns = [
+    { regex: /^[a-zA-Z0-9_-]{11}$/, weight: 1 },
+    { regex: /^[A-Za-z0-9_-]+$/, weight: 0.8 },
+  ];
+  
+  const score = patterns.reduce((acc, pattern) => {
+    return acc + (pattern.regex.test(id) ? pattern.weight : 0);
+  }, 0);
+  
+  return score >= 1.0 && id.length === 11;
+}
+```
+
+### 🥈 **第2優先: 型安全性・品質原則**
+**適用範囲**: TypeScript実装・API設計・データ構造定義
+
+#### **4. 型安全性の確保**
+**原則**: TypeScript strict mode + Zod による実行時検証
 
 - **TypeScript**: strict モードを使用し、`any` 型の使用を原則禁止
 - **Zod Schema**: 実行時の型検証を実装
@@ -31,7 +126,7 @@ export const VideoSchema = z.object({
 function processData(data: any) { ... }
 ```
 
-### 2. 関数設計原則
+#### **5. 関数設計原則**
 
 **原則**: 純粋関数を優先し、副作用を最小化する
 
@@ -53,8 +148,7 @@ function updateAndLog(data: any) {
 }
 ```
 
-### 3. コードコロケーション
-
+#### **6. コードコロケーション**
 **原則**: 関連するコードは近接して配置する
 
 ```
@@ -66,16 +160,17 @@ components/
 │   └── index.ts              # エクスポート
 ```
 
-### 4. 可読性優先
+### 🥉 **第3優先: 実装品質原則**
+**適用範囲**: コード構造・アーキテクチャ・ユーザー体験
 
+#### **7. 可読性優先**
 **原則**: パフォーマンスよりも可読性を優先する
 
 - 明確な変数名・関数名を使用
 - 適切なコメントの追加
 - 複雑なロジックの分割
 
-### 5. Next.js 15準拠設計
-
+#### **8. Next.js 15準拠設計**
 **原則**: Server Component/Client Component を適切に分離する
 
 - **Server Components**: データ取得・表示ロジック
@@ -84,8 +179,7 @@ components/
 - **Firestore接続制限**: `@google-cloud/firestore` をサーバーサイドのみで使用
 - **API Routes最小化**: 外部システム連携・プロキシ以外はServer Actions使用
 
-### 6. パフォーマンス最適化原則
-
+#### **9. パフォーマンス最適化原則**
 **原則**: レスポンス時間を最優先に考慮した実装を行う
 
 #### **Turbopack永続キャッシュ最適化**
@@ -123,8 +217,7 @@ export async function GET(request: NextRequest) {
 - **Core Web Vitals**: LCP・FID・CLS の継続測定
 - **P99レイテンシ**: 2秒以下の目標（1.5秒以下推奨）
 
-### 7. Server Actions 最適化原則
-
+#### **10. Server Actions 最適化原則**
 **原則**: ユーザーアクションの性質に応じて適切な処理パターンを選択する
 
 #### **統計・アナリティクス処理** (Fire-and-Forget パターン)
@@ -202,7 +295,7 @@ export async function getWorks() {
 // import { getFirestore } from 'firebase/firestore';
 ```
 
-### 10. 画像プロキシシステム設計
+#### **11. 画像プロキシシステム設計**
 
 **原則**: DLsite画像を安全かつ効率的に表示する
 
@@ -233,8 +326,7 @@ export async function getWorks() {
 - **Refererヘッダー**: DLsite要求仕様への適合
 - **エラーハンドリング**: 詳細ログ・型安全なレスポンス処理
 
-### 8. API Routes vs Server Actions 設計指針
-
+#### **12. API Routes vs Server Actions 設計指針**
 **原則**: 用途に応じて適切な実装パターンを選択する
 
 #### **API Routes維持対象**
@@ -277,8 +369,7 @@ export async function getAudioButtons(params: AudioButtonQuery) {
 - **型安全性**: 直接関数呼び出しによる向上
 - **開発効率**: API Routeパラメータ解析コード削除
 
-### 9. コンポーネント設計原則
-
+#### **13. コンポーネント設計原則**
 **原則**: Server Component/Client Component を責任に応じて設計する
 
 - **Server Component**: データ表示、SEO、静的UI部分
@@ -356,7 +447,8 @@ describe('formatPrice', () => {
 #### **ディレクトリ構造統一原則**
 
 **✅ 推奨: コロケーション方式**
-```
+
+```text
 src/
 ├── components/
 │   ├── AudioButton.tsx
@@ -384,7 +476,8 @@ src/
 ```
 
 **❌ 非推奨: __tests__ ディレクトリ方式**
-```
+
+```text
 src/
 ├── components/
 │   ├── __tests__/                   # ❌ 分離されすぎ
@@ -394,10 +487,191 @@ src/
 │   └── Form.tsx
 ```
 
-#### **ファイル命名規約**
+## 📁 ファイル・ディレクトリ命名規則
 
+### ファイル命名の基本原則
+
+**統一規則**: 全プロジェクトでkebab-case（ケバブケース）を使用
+
+#### **TypeScriptファイル (.ts)**
 ```typescript
 // ✅ 正しい命名
+user-profile.ts           // ユーティリティ・ヘルパー関数
+audio-helpers.ts          // 音声関連ヘルパー
+firestore-utils.ts        // Firestore操作
+auth-middleware.ts        // ミドルウェア
+
+// ❌ 間違った命名
+UserProfile.ts           // PascalCase（TypeScriptファイルでは不適切）
+audioHelpers.ts          // camelCase（一貫性がない）
+user_profile.ts          // snake_case（プロジェクト規約外）
+```
+
+#### **Reactコンポーネント (.tsx)**
+```typescript
+// ✅ 正しい命名（ファイル名: kebab-case）
+user-profile.tsx         // ファイル名
+export default function UserProfile() { }  // export名: PascalCase
+
+audio-button-creator.tsx // ファイル名
+export default function AudioButtonCreator() { }  // export名: PascalCase
+
+// ❌ 間違った命名
+UserProfile.tsx          // ファイル名がPascalCase
+audioButtonCreator.tsx   // ファイル名がcamelCase
+user_profile.tsx         // ファイル名がsnake_case
+```
+
+#### **テストファイル (.test.ts/.test.tsx)**
+```typescript
+// ✅ 正しい命名（co-location方式）
+user-profile.tsx         // ソースファイル
+user-profile.test.tsx    // テストファイル（同一ディレクトリ）
+
+audio-helpers.ts         // ソースファイル  
+audio-helpers.test.ts    // テストファイル（同一ディレクトリ）
+
+// ❌ 間違った命名
+__tests__/UserProfile.test.tsx     // __tests__ディレクトリ（非推奨）
+UserProfile.spec.tsx               // .specはE2E専用
+test-user-profile.tsx              // 接頭辞形式（非推奨）
+```
+
+#### **E2Eテストファイル (.spec.ts)**
+```typescript
+// ✅ 正しい命名（e2e/ディレクトリ内のみ）
+e2e/auth.spec.ts         // 認証フロー
+e2e/audio-buttons.spec.ts // 音声ボタン機能
+e2e/search.spec.ts       // 検索機能
+
+// ❌ 間違った配置
+src/components/auth.spec.ts    // E2E以外での.spec使用
+```
+
+### ディレクトリ構造・命名規則
+
+#### **コンポーネントディレクトリ構造**
+```text
+src/components/
+├── 🎵 audio/                    # 音声・音声ボタン関連
+│   ├── audio-button-creator.tsx
+│   ├── audio-button-creator.test.tsx
+│   ├── favorite-button.tsx
+│   ├── favorite-button.test.tsx
+│   └── index.ts                 # バレルエクスポート
+├── 🔍 search/                   # 検索・フィルタ関連
+│   ├── search-form.tsx
+│   ├── search-filters.tsx
+│   ├── autocomplete-dropdown.tsx
+│   └── index.ts
+├── 👤 user/                     # ユーザー・認証関連
+│   ├── auth-button.tsx
+│   ├── user-menu.tsx
+│   ├── user-avatar.tsx
+│   └── index.ts
+├── 🎨 layout/                   # レイアウト・ページ構造
+│   ├── site-header.tsx
+│   ├── site-footer.tsx
+│   ├── home-page.tsx
+│   └── index.ts
+├── 🎛️  ui/                      # 共通UIコンポーネント
+│   ├── pagination.tsx
+│   ├── highlight-text.tsx
+│   ├── thumbnail-image.tsx
+│   └── index.ts
+├── 📚 content/                  # コンテンツ表示・評価
+│   ├── featured-videos-carousel.tsx
+│   ├── characteristic-evaluation.tsx
+│   └── index.ts
+├── ⚙️  system/                  # システム機能
+│   ├── performance-monitor.tsx
+│   ├── protected-route.tsx
+│   └── index.ts
+├── 📊 analytics/                # Google Analytics関連
+│   ├── google-analytics-script.tsx
+│   └── google-tag-manager.tsx
+└── 🍪 consent/                  # Cookie・年齢認証
+    ├── cookie-consent-banner.tsx
+    ├── age-verification-gate.tsx
+    └── cookie-settings-link.tsx
+```
+
+#### **ドメイン分類基準**
+
+| ドメイン | 配置基準 | 例 |
+|---------|---------|----|
+| **audio/** | 音声ボタン・お気に入り・再生関連 | `audio-button-creator.tsx` |
+| **search/** | 検索・フィルタ・オートコンプリート | `search-filters.tsx` |
+| **user/** | 認証・ユーザープロフィール・セッション | `auth-button.tsx` |
+| **layout/** | ヘッダー・フッター・ページレイアウト | `site-header.tsx` |
+| **ui/** | 再利用可能なUIコンポーネント | `pagination.tsx` |
+| **content/** | コンテンツ表示・評価・カルーセル | `featured-videos-carousel.tsx` |
+| **system/** | パフォーマンス・ルート保護・システム機能 | `performance-monitor.tsx` |
+| **analytics/** | Google Analytics・タグマネージャー | `google-analytics-script.tsx` |
+| **consent/** | Cookie同意・年齢認証・プライバシー | `cookie-consent-banner.tsx` |
+
+#### **バレルエクスポート (index.ts)**
+```typescript
+// ✅ 各ドメインディレクトリにindex.tsを配置
+// audio/index.ts
+export { default as AudioButtonCreator } from './audio-button-creator';
+export { FavoriteButton } from './favorite-button';
+export { LikeButton } from './like-button';
+
+// 使用例
+import { AudioButtonCreator, FavoriteButton } from '@/components/audio';
+```
+
+### モノレポ全体での命名一貫性
+
+#### **packages/ ディレクトリ**
+```text
+packages/
+├── shared-types/src/
+│   ├── audio-button.ts          # kebab-case統一
+│   ├── audio-button.test.ts     # co-location
+│   ├── search-filters.ts
+│   └── search-filters.test.ts
+├── ui/src/components/
+│   ├── alert-dialog.tsx         # kebab-case統一
+│   └── dropdown-menu.tsx
+└── eslint-config/               # パッケージ名もkebab-case
+```
+
+#### **apps/ ディレクトリ**
+```text
+apps/
+├── web/src/
+│   ├── components/              # 上記ドメイン構造
+│   ├── app/                     # Next.js App Router
+│   └── lib/
+│       ├── firestore-utils.ts   # kebab-case統一
+│       └── auth-helpers.ts
+└── functions/src/
+    ├── endpoints/
+    │   ├── dlsite-data-fetcher.ts   # kebab-case統一
+    │   └── youtube-api-client.ts
+    └── services/
+        ├── dlsite/
+        └── youtube/
+```
+
+### 命名規則チェックリスト
+
+#### **新規ファイル作成時**
+- [ ] ファイル名がkebab-caseになっている
+- [ ] 適切なドメインディレクトリに配置されている
+- [ ] テストファイルがco-locationになっている
+- [ ] exportされるコンポーネント名がPascalCaseになっている
+
+#### **既存ファイル変更時**
+- [ ] import文が新しいパス構造に対応している
+- [ ] 相対import（./、../）が正しく更新されている
+- [ ] バレルエクスポートが必要に応じて更新されている
+
+#### **レガシーファイル命名規約 (移行対象)**
+```typescript
+// ❌ レガシー（段階的に修正）
 component.test.tsx        // React コンポーネント
 utility.test.ts          // TypeScript ユーティリティ
 page.spec.ts             // E2Eテスト（e2e/ディレクトリ内のみ）
@@ -584,7 +858,7 @@ export const createMockAudioButton = (overrides = {}) => ({
 
 **Trunk-based Development + GitHub Flow**
 
-```
+```text
 main (production)
 ├── feature/add-voice-button-filter
 ├── feature/improve-dlsite-parser
@@ -637,7 +911,7 @@ docs: update api documentation
 
 **実装済みレイヤー構造**
 
-```
+```text
 apps/web/                     # 本番Webアプリ
 ├── src/
 │   ├── app/                 # Next.js App Router (Server Components)
@@ -673,7 +947,7 @@ apps/functions/               # バックエンド (エンタープライズ構�
 
 **依存関係の方向**
 
-```
+```text
 UI層 → ビジネスロジック層 → データアクセス層
 ```
 
@@ -945,6 +1219,8 @@ graph LR
 - [Google Cloud Functions Best Practices](https://cloud.google.com/functions/docs/bestpractices)
 - [Conventional Commits](https://www.conventionalcommits.org/)
 - [Clean Code](https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350884)
+
+---
 
 ---
 

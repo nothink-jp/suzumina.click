@@ -18,12 +18,60 @@ vi.mock("next-auth/react", () => ({
 	})),
 }));
 
+// NextAuthサーバーサイドのモック
+vi.mock("next-auth", () => ({
+	default: vi.fn(),
+}));
+
+// NextAuth providersのモック
+vi.mock("next-auth/providers/discord", () => ({
+	default: vi.fn(),
+}));
+
+// auth.tsのモック
+vi.mock("@/auth", () => ({
+	auth: vi.fn().mockResolvedValue({
+		user: {
+			id: "test-user",
+			name: "Test User",
+			email: "test@example.com",
+			role: "member",
+			isActive: true,
+		},
+	}),
+}));
+
 // Next.js routerのモック
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: vi.fn(),
 		replace: vi.fn(),
 		prefetch: vi.fn(),
+	}),
+}));
+
+// protected-routeのモック
+vi.mock("@/components/system/protected-route", () => ({
+	requireAuth: vi.fn().mockResolvedValue({
+		id: "test-user",
+		name: "Test User",
+		email: "test@example.com",
+		role: "member",
+		isActive: true,
+	}),
+	requireAdmin: vi.fn().mockResolvedValue({
+		id: "test-user",
+		name: "Test User",
+		email: "test@example.com",
+		role: "admin",
+		isActive: true,
+	}),
+	requireModerator: vi.fn().mockResolvedValue({
+		id: "test-user",
+		name: "Test User",
+		email: "test@example.com",
+		role: "moderator",
+		isActive: true,
 	}),
 }));
 
@@ -37,7 +85,7 @@ vi.mock("@/app/buttons/actions", () => ({
 }));
 
 // AudioButtonWithFavoriteClientのモック（NextAuth依存回避）
-vi.mock("@/components/AudioButtonWithFavoriteClient", () => ({
+vi.mock("@/components/audio/audio-button-with-favorite-client", () => ({
 	AudioButtonWithFavoriteClient: ({ audioButton }: { audioButton: any }) => {
 		return <div data-testid="audio-button-mock">{audioButton.title}</div>;
 	},

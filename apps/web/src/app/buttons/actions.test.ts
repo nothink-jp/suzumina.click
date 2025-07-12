@@ -50,7 +50,7 @@ vi.mock("next/cache", () => ({
 }));
 
 // Mock auth
-vi.mock("@/components/ProtectedRoute", () => ({
+vi.mock("@/components/system/protected-route", () => ({
 	requireAuth: vi.fn().mockResolvedValue({
 		discordId: "123456789012345678",
 		username: "testuser",

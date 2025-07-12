@@ -3,7 +3,7 @@ import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Calendar, ExternalLink, Tag, Users } from "lucide-react";
 import Link from "next/link";
-import ThumbnailImage from "@/components/ThumbnailImage";
+import ThumbnailImage from "@/components/ui/thumbnail-image";
 
 interface WorkCardProps {
 	work: FrontendDLsiteWorkData;

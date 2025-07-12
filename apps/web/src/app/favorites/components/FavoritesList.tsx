@@ -7,7 +7,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Heart, Music } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
+import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 
 interface FavoritesListProps {
 	audioButtons: FrontendAudioButtonData[];

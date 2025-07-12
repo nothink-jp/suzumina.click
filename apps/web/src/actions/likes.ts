@@ -1,7 +1,7 @@
 "use server";
 
 import { decrementLikeCount, incrementLikeCount } from "@/app/buttons/actions";
-import { requireAuth } from "@/components/ProtectedRoute";
+import { requireAuth } from "@/components/system/protected-route";
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 

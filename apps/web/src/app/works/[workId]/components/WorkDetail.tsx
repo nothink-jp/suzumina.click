@@ -20,8 +20,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/com
 import { Calendar, FileText, Share2, Shield, ShoppingCart, Star, Tag, Users } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
-import CharacteristicEvaluation from "@/components/CharacteristicEvaluation";
-import ThumbnailImage from "@/components/ThumbnailImage";
+import CharacteristicEvaluation from "@/components/content/characteristic-evaluation";
+import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
 
 interface WorkDetailProps {

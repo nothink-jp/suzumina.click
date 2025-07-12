@@ -22,8 +22,8 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import React, { useEffect, useMemo, useState } from "react";
 import { getAudioButtonCount, getAudioButtons } from "@/app/buttons/actions";
-import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
-import ThumbnailImage from "@/components/ThumbnailImage";
+import { AudioButtonWithPlayCount } from "@/components/audio";
+import { ThumbnailImage } from "@/components/ui";
 import { formatDescriptionText } from "@/lib/text-utils";
 
 interface VideoDetailProps {

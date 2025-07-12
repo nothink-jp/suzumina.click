@@ -2,20 +2,20 @@ import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
 import "@suzumina.click/ui/globals.css";
 import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
-import { GoogleAnalyticsScript } from "@/components/analytics/GoogleAnalyticsScript";
+import { GoogleAnalyticsScript } from "@/components/analytics/google-analytics-script";
 import {
 	GoogleTagManager,
 	GoogleTagManagerNoscript,
-} from "@/components/analytics/GoogleTagManager";
-import { PageViewTracker } from "@/components/analytics/PageViewTracker";
-import { AgeVerificationWrapper } from "@/components/consent/AgeVerificationWrapper";
-import { ConsentDebugger } from "@/components/consent/ConsentDebugger";
-import { ConsentModeScript } from "@/components/consent/ConsentModeScript";
-import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
-import PerformanceMonitor from "@/components/PerformanceMonitor";
-import { SessionProvider } from "@/components/SessionProvider";
-import SiteFooter from "@/components/SiteFooter";
-import SiteHeader from "@/components/SiteHeader";
+} from "@/components/analytics/google-tag-manager";
+import { PageViewTracker } from "@/components/analytics/page-view-tracker";
+import { AgeVerificationWrapper } from "@/components/consent/age-verification-wrapper";
+import { ConsentDebugger } from "@/components/consent/consent-debugger";
+import { ConsentModeScript } from "@/components/consent/consent-mode-script";
+import { CookieConsentBanner } from "@/components/consent/cookie-consent-banner";
+import SiteFooter from "@/components/layout/site-footer";
+import SiteHeader from "@/components/layout/site-header";
+import PerformanceMonitor from "@/components/system/performance-monitor";
+import { SessionProvider } from "@/components/user/session-provider";
 import { AgeVerificationProvider } from "@/contexts/AgeVerificationContext";
 
 // フォント最適化: 必要な重みのみを読み込み、LCP改善

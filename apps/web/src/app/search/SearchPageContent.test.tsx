@@ -89,7 +89,7 @@ vi.mock("lucide-react", () => ({
 	Calendar: ({ className }: any) => <div className={className} data-testid="calendar-icon" />,
 }));
 
-vi.mock("@/components/AudioButtonWithFavoriteClient", () => ({
+vi.mock("@/components/audio/audio-button-with-favorite-client", () => ({
 	AudioButtonWithFavoriteClient: ({ audioButton }: any) => (
 		<div data-testid="audio-button" data-id={audioButton.id}>
 			{audioButton.title}
@@ -97,11 +97,11 @@ vi.mock("@/components/AudioButtonWithFavoriteClient", () => ({
 	),
 }));
 
-vi.mock("@/components/ThumbnailImage", () => ({
+vi.mock("@/components/ui/thumbnail-image", () => ({
 	default: ({ src, alt }: any) => <div data-testid="thumbnail" data-src={src} data-alt={alt} />,
 }));
 
-vi.mock("@/components/SearchInputWithAutocomplete", () => ({
+vi.mock("@/components/search/search-input-with-autocomplete", () => ({
 	SearchInputWithAutocomplete: ({ value, onChange, onClear }: any) => (
 		<div data-testid="search-input-with-autocomplete">
 			<input

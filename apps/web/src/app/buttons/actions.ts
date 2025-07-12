@@ -20,7 +20,7 @@ import {
 	type YouTubeVideoInfo,
 } from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
-import { requireAuth } from "@/components/ProtectedRoute";
+import { requireAuth } from "@/components/system/protected-route";
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 import { updateUserStats } from "@/lib/user-firestore";

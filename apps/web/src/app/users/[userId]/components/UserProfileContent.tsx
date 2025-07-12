@@ -21,7 +21,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
+import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 
 interface UserProfileContentProps {
 	user: FrontendUserData;

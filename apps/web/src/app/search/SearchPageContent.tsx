@@ -14,11 +14,11 @@ import { BookOpen, ChevronRight, Filter, Loader2, Music, Search, Video, X } from
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AudioButtonWithPlayCount } from "@/components/AudioButtonWithPlayCount";
-import { HighlightText } from "@/components/HighlightText";
-import { SearchFilters } from "@/components/SearchFilters";
-import { SearchInputWithAutocomplete } from "@/components/SearchInputWithAutocomplete";
-import ThumbnailImage from "@/components/ThumbnailImage";
+import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import { SearchFilters } from "@/components/search/search-filters";
+import { SearchInputWithAutocomplete } from "@/components/search/search-input-with-autocomplete";
+import { HighlightText } from "@/components/ui/highlight-text";
+import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { useDebounce } from "@/hooks/useDebounce";
 
 interface UnifiedSearchResult {
