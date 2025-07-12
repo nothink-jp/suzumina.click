@@ -367,81 +367,6 @@ describe("Videos Actions", () => {
 			// 年代フィルタが適用されないことを確認
 			expect(mockCollection.where).not.toHaveBeenCalled();
 		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Test requires console.log mock which conflicts with logger changes
-		it.skip("個別ドキュメントの処理エラーでも他のドキュメントは処理される", async () => {
-			const { mockFirestore, mockCollection } = createMockFirestore();
-			(getFirestore as Mock).mockReturnValue(mockFirestore);
-
-			const mockDocs = [
-				{
-					id: "video-1",
-					data: () => createMockVideoData({ title: "Valid Video" }),
-				},
-				{
-					id: "video-2",
-					data: () => {
-						throw new Error("Data processing error");
-					},
-				},
-				{
-					id: "video-3",
-					data: () => createMockVideoData({ title: "Another Valid Video" }),
-				},
-			];
-
-			mockCollection.get.mockResolvedValue({
-				empty: false,
-				docs: mockDocs,
-			});
-
-			(convertToFrontendVideo as Mock)
-				.mockReturnValueOnce(createMockFrontendVideo({ title: "Valid Video" }))
-				.mockReturnValueOnce(createMockFrontendVideo({ title: "Another Valid Video" }));
-
-			const result = await getVideoTitles({ limit: 3 });
-
-			expect(result.videos).toHaveLength(2); // エラーの1件を除く
-			expect(result.videos[0].title).toBe("Valid Video");
-			expect(result.videos[1].title).toBe("Another Valid Video");
-			expect(mockConsole.error).toHaveBeenCalledWith(
-				"Error processing video video-2:",
-				expect.any(Error),
-			);
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Test requires console.log mock which conflicts with logger changes
-		it.skip("全体的なエラーが発生した場合は空の結果を返す", async () => {
-			(getFirestore as Mock).mockImplementation(() => {
-				throw new Error("Firestore connection error");
-			});
-
-			const result = await getVideoTitles();
-
-			expect(result.videos).toEqual([]);
-			expect(result.hasMore).toBe(false);
-			expect(mockConsole.error).toHaveBeenCalledWith(
-				"📹 [Videos] Error fetching video titles:",
-				expect.any(Error),
-			);
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Test requires console.log mock which conflicts with logger changes
-		it.skip("空のコレクションの場合は適切な結果を返す", async () => {
-			const { mockFirestore, mockCollection } = createMockFirestore();
-			(getFirestore as Mock).mockReturnValue(mockFirestore);
-
-			mockCollection.get.mockResolvedValue({
-				empty: true,
-				docs: [],
-			});
-
-			const result = await getVideoTitles();
-
-			expect(result.videos).toEqual([]);
-			expect(result.hasMore).toBe(false);
-			expect(mockConsole.log).toHaveBeenCalledWith("📹 [Videos] No videos found in Firestore");
-		});
 	});
 
 	describe("getTotalVideoCount", () => {
@@ -457,21 +382,6 @@ describe("Videos Actions", () => {
 
 			expect(result).toBe(42);
 			expect(mockCollection.select).toHaveBeenCalled(); // IDのみ取得で効率化
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Test requires console.log mock which conflicts with logger changes
-		it.skip("エラーが発生した場合は0を返す", async () => {
-			(getFirestore as Mock).mockImplementation(() => {
-				throw new Error("Firestore connection error");
-			});
-
-			const result = await getTotalVideoCount();
-
-			expect(result).toBe(0);
-			expect(mockConsole.error).toHaveBeenCalledWith(
-				"Error fetching total video count:",
-				expect.any(Error),
-			);
 		});
 
 		it("空のコレクションの場合は0を返す", async () => {
@@ -557,21 +467,6 @@ describe("Videos Actions", () => {
 			);
 		});
 
-		// biome-ignore lint/suspicious/noSkippedTests: Test requires console.log mock which conflicts with logger changes
-		it.skip("動画が存在しない場合はnullを返す", async () => {
-			const { mockFirestore, mockCollection } = createMockFirestore();
-			(getFirestore as Mock).mockReturnValue(mockFirestore);
-
-			mockCollection.doc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({ exists: false }),
-			});
-
-			const result = await getVideoById("non-existent-id");
-
-			expect(result).toBeNull();
-			expect(mockConsole.log).toHaveBeenCalledWith("動画が見つかりません: videoId=non-existent-id");
-		});
-
 		it("videoIdがない場合はドキュメントIDを使用する", async () => {
 			const { mockFirestore, mockCollection } = createMockFirestore();
 			(getFirestore as Mock).mockReturnValue(mockFirestore);
@@ -609,21 +504,6 @@ describe("Videos Actions", () => {
 			);
 		});
 
-		// biome-ignore lint/suspicious/noSkippedTests: Test requires console.log mock which conflicts with logger changes
-		it.skip("エラーが発生した場合はnullを返す", async () => {
-			(getFirestore as Mock).mockImplementation(() => {
-				throw new Error("Firestore connection error");
-			});
-
-			const result = await getVideoById("error-video-id");
-
-			expect(result).toBeNull();
-			expect(mockConsole.error).toHaveBeenCalledWith(
-				"動画詳細データ取得エラー (error-video-id):",
-				expect.any(Error),
-			);
-		});
-
 		it("デフォルト値が正しく設定される", async () => {
 			const { mockFirestore, mockCollection } = createMockFirestore();
 			(getFirestore as Mock).mockReturnValue(mockFirestore);
@@ -656,33 +536,6 @@ describe("Videos Actions", () => {
 			});
 
 			await getVideoById("minimal-video");
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Test requires console.log mock which conflicts with logger changes
-		it.skip("成功時に適切なログが出力される", async () => {
-			const { mockFirestore, mockCollection } = createMockFirestore();
-			(getFirestore as Mock).mockReturnValue(mockFirestore);
-
-			const mockDoc = {
-				exists: true,
-				data: () => createMockVideoData({ title: "Log Test Video" }),
-				id: "log-test-video",
-			};
-
-			mockCollection.doc.mockReturnValue({
-				get: vi.fn().mockResolvedValue(mockDoc),
-			});
-
-			(convertToFrontendVideo as Mock).mockReturnValue(
-				createMockFrontendVideo({ title: "Log Test Video" }),
-			);
-
-			await getVideoById("log-test-video");
-
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				"動画詳細データ取得開始: videoId=log-test-video",
-			);
-			expect(mockConsole.log).toHaveBeenCalledWith("動画詳細データ取得完了: Log Test Video");
 		});
 	});
 });

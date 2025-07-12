@@ -83,11 +83,6 @@ describe("works actions", () => {
 	});
 
 	describe("getWorks", () => {
-		// biome-ignore lint/suspicious/noSkippedTests: Legacy test skipped due to business logic change
-		it.skip("should sort works by DLsite ID format correctly (旧仕様・現在は販売日順)", async () => {
-			// Note: ソート機能が販売日順に変更されたため、このテストはスキップ
-		});
-
 		it("should handle pagination correctly", async () => {
 			const mockWorks = Array.from({ length: 15 }, (_, i) =>
 				createMockWorkData(`RJ${String(123456 + i).padStart(6, "0")}`, `作品${i + 1}`),
@@ -195,11 +190,6 @@ describe("works actions", () => {
 			expect(result.works).toHaveLength(12);
 			expect(result.hasMore).toBe(true);
 			expect(result.totalCount).toBe(20);
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Legacy test skipped due to business logic change
-		it.skip("should sort works by oldest when sort=oldest (旧仕様・現在は販売日順)", async () => {
-			// Note: ソート機能が販売日順に変更されたため、このテストはスキップ
 		});
 
 		it("should sort works by price when sort=price_low", async () => {

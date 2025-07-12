@@ -222,5 +222,11 @@ vi.mock("lucide-react", () => {
 		ChevronDownIcon: createMockIcon("ChevronDownIcon"),
 		ChevronUpIcon: createMockIcon("ChevronUpIcon"),
 		CheckIcon: createMockIcon("CheckIcon"),
+		// Icons for Cookie Settings
+		Shield: createMockIcon("Shield"),
+		BarChart3: createMockIcon("BarChart3"),
+		Target: createMockIcon("Target"),
+		// Icons for Dialog
+		XIcon: createMockIcon("XIcon"),
 	};
 });

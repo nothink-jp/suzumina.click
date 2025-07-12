@@ -454,36 +454,6 @@ describe("Audio Button Server Actions", () => {
 			expect(mockRunTransaction).toHaveBeenCalled();
 		});
 
-		// biome-ignore lint/suspicious/noSkippedTests: Admin functionality removed from web app
-		it.skip("管理者が他人の音声ボタンを削除できる", async () => {
-			// NOTE: Admin functionality has been moved to dedicated admin app
-			// This test is kept for historical reference but is no longer relevant
-
-			mockGet.mockResolvedValue({
-				exists: true,
-				id: "test-button-id",
-				data: () => ({
-					title: "他人の音声ボタン",
-					tags: ["他人"],
-					createdBy: "other-user-id",
-					createdByName: "Other User",
-					sourceVideoId: "test-video",
-					startTime: 0,
-					endTime: 10,
-					playCount: 5,
-					likeCount: 2,
-					favoriteCount: 1,
-					isPublic: true,
-					createdAt: "2024-01-01T00:00:00Z",
-					updatedAt: "2024-01-01T00:00:00Z",
-				}),
-			});
-
-			const result = await deleteAudioButton("test-button-id");
-
-			expect(result.success).toBe(true);
-		});
-
 		it("権限がないユーザーは削除できない", async () => {
 			mockGet.mockResolvedValue({
 				exists: true,
