@@ -546,6 +546,17 @@ export function mapIndividualInfoAPIToWorkData(
 
 	logger.debug(`Individual Info API -> Work data mapping: ${productId}`);
 
+	// 基本フィールドの存在確認
+	if (!productId) {
+		throw new Error("Missing required field: workno or product_id");
+	}
+	if (!apiData.work_name) {
+		throw new Error(`Missing required field: work_name for ${productId}`);
+	}
+	if (!apiData.maker_name) {
+		throw new Error(`Missing required field: maker_name for ${productId}`);
+	}
+
 	// 基本情報の変換
 	const category = extractWorkCategory(apiData);
 	const price = extractPriceInfo(apiData);
@@ -916,8 +927,18 @@ export function batchMapIndividualInfoAPIToWorkData(
 			const workData = mapIndividualInfoAPIToWorkData(apiData, existingData);
 			results.push(workData);
 		} catch (error) {
-			logger.error(`Failed to map work data for ${apiData.workno || apiData.product_id}`, {
-				error,
+			const productId = apiData?.workno || apiData?.product_id || "unknown";
+			logger.error(`Failed to map work data for ${productId}`, {
+				error: error instanceof Error ? error.message : String(error),
+				stack: error instanceof Error ? error.stack : undefined,
+				apiDataKeys: apiData ? Object.keys(apiData) : "apiData is null/undefined",
+				hasRequiredFields: {
+					workno: !!apiData?.workno,
+					work_name: !!apiData?.work_name,
+					maker_name: !!apiData?.maker_name,
+					price: apiData?.price !== undefined,
+					age_category: apiData?.age_category !== undefined,
+				},
 			});
 		}
 	}

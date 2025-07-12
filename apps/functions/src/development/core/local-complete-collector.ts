@@ -270,7 +270,20 @@ class LocalDataCollector {
 			const apiResponses = batch.map((item) => item.basicInfo);
 			const existingWorksMap = await getExistingWorksMap(batch.map((item) => item.workId));
 
+			logger.debug(`バッチ変換開始: ${apiResponses.length}件のAPIレスポンス`);
+
+			// APIレスポンスの基本フィールド確認
+			const responseStatistics = {
+				total: apiResponses.length,
+				hasWorkno: apiResponses.filter((r) => r.workno).length,
+				hasWorkName: apiResponses.filter((r) => r.work_name).length,
+				hasMakerName: apiResponses.filter((r) => r.maker_name).length,
+				hasPriceInfo: apiResponses.filter((r) => r.price !== undefined).length,
+			};
+			logger.debug("APIレスポンス統計:", responseStatistics);
+
 			const workDataList = batchMapIndividualInfoAPIToWorkData(apiResponses, existingWorksMap);
+			logger.debug(`バッチ変換完了: ${workDataList.length}件のワークデータ`);
 			const validWorkData = workDataList.filter((work) => {
 				const validation = validateAPIOnlyWorkData(work);
 				if (!validation.isValid) {
