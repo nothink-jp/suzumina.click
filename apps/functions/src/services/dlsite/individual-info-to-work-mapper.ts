@@ -943,8 +943,12 @@ export function batchMapIndividualInfoAPIToWorkData(
 	for (const apiData of apiResponses) {
 		try {
 			const productId = apiData.workno || apiData.product_id;
-			const existingData = existingDataMap?.get(productId);
+			if (!productId) {
+				logger.warn("Skipping work data mapping: missing productId");
+				continue;
+			}
 
+			const existingData = existingDataMap?.get(productId);
 			const workData = mapIndividualInfoAPIToWorkData(apiData, existingData);
 			results.push(workData);
 		} catch (error) {
