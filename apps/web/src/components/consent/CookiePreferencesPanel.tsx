@@ -3,8 +3,14 @@
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { CardContent } from "@suzumina.click/ui/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@suzumina.click/ui/components/ui/dialog";
 import { Switch } from "@suzumina.click/ui/components/ui/switch";
-import { BarChart3, Shield, Target, User } from "lucide-react";
+import { BarChart3, Shield, Target, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useIsClient } from "@/hooks/useIsClient";
 import { type ConsentState, getCurrentConsentState } from "@/lib/consent/google-consent-mode";
@@ -67,9 +73,14 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 interface CookiePreferencesPanelProps {
 	onSave: (choices: ConsentState) => void;
 	onCancel: () => void;
+	open?: boolean;
 }
 
-export function CookiePreferencesPanel({ onSave, onCancel }: CookiePreferencesPanelProps) {
+export function CookiePreferencesPanel({
+	onSave,
+	onCancel,
+	open = true,
+}: CookiePreferencesPanelProps) {
 	const isClient = useIsClient();
 	const [preferences, setPreferences] = useState<ConsentChoices>({
 		necessary: true,
@@ -155,102 +166,108 @@ export function CookiePreferencesPanel({ onSave, onCancel }: CookiePreferencesPa
 	};
 
 	return (
-		<CardContent className="p-0">
-			{/* ヘッダー（固定） */}
-			<div className="p-6 pb-4 border-b border-border bg-background/50">
-				<div className="space-y-2">
+		<Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+			<DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+				<DialogHeader>
+					<DialogTitle className="flex items-center gap-2">
+						<Shield className="h-5 w-5" />
+						クッキー設定
+					</DialogTitle>
+				</DialogHeader>
+
+				<div className="space-y-2 pb-4">
 					<p className="text-sm text-gray-600 leading-relaxed">
 						各カテゴリのクッキーについて、個別に許可・拒否を選択できます。
 						設定はいつでも変更可能です。
 					</p>
 				</div>
-			</div>
 
-			{/* スクロール可能なコンテンツエリア */}
-			<div className="max-h-[60vh] overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-				{COOKIE_CATEGORIES.map((category) => (
-					<div key={category.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
-						{/* Category header */}
-						<div className="flex items-center justify-between">
-							<div className="flex items-center gap-3">
-								<div className="p-1 bg-gray-100 rounded">{category.icon}</div>
-								<div>
-									<div className="flex items-center gap-2">
-										<h4 className="font-medium text-gray-900">{category.name}</h4>
-										{category.required && (
-											<Badge variant="secondary" className="text-xs">
-												必須
-											</Badge>
-										)}
+				{/* スクロール可能なコンテンツエリア */}
+				<div className="max-h-[50vh] overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+					{COOKIE_CATEGORIES.map((category) => (
+						<div key={category.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+							{/* Category header */}
+							<div className="flex items-center justify-between">
+								<div className="flex items-center gap-3">
+									<div className="p-1 bg-gray-100 rounded">{category.icon}</div>
+									<div>
+										<div className="flex items-center gap-2">
+											<h4 className="font-medium text-gray-900">{category.name}</h4>
+											{category.required && (
+												<Badge variant="secondary" className="text-xs">
+													必須
+												</Badge>
+											)}
+										</div>
+										<p className="text-sm text-gray-600">{category.description}</p>
 									</div>
-									<p className="text-sm text-gray-600">{category.description}</p>
+								</div>
+
+								<Switch
+									checked={preferences[category.id]}
+									onCheckedChange={(checked) => handleToggle(category.id, checked)}
+									disabled={category.required}
+								/>
+							</div>
+
+							{/* Category details */}
+							<div className="ml-8">
+								<p className="text-xs text-gray-500 mb-2">{category.details}</p>
+								<div className="flex flex-wrap gap-1">
+									{category.examples.map((example) => (
+										<Badge key={example} variant="outline" className="text-xs">
+											{example}
+										</Badge>
+									))}
 								</div>
 							</div>
-
-							<Switch
-								checked={preferences[category.id]}
-								onCheckedChange={(checked) => handleToggle(category.id, checked)}
-								disabled={category.required}
-							/>
 						</div>
+					))}
 
-						{/* Category details */}
-						<div className="ml-8">
-							<p className="text-xs text-gray-500 mb-2">{category.details}</p>
-							<div className="flex flex-wrap gap-1">
-								{category.examples.map((example) => (
-									<Badge key={example} variant="outline" className="text-xs">
-										{example}
-									</Badge>
-								))}
-							</div>
-						</div>
-					</div>
-				))}
-
-				{/* 重要な情報 */}
-				<div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-600 space-y-2">
-					<h5 className="font-medium text-gray-900">重要な情報</h5>
-					<ul className="space-y-1 ml-4 list-disc">
-						<li>設定は1年間保存され、期限後に再確認をお願いします</li>
-						<li>必須クッキーはサイト機能のため無効化できません</li>
-						<li>設定の変更は、サイト下部の「クッキー設定」からいつでも可能です</li>
-						<li>
-							詳細は
-							<a href="/privacy" className="text-suzuka-600 hover:underline ml-1">
-								プライバシーポリシー
-							</a>
-							をご確認ください
-						</li>
-					</ul>
-				</div>
-			</div>
-
-			{/* 固定フッター（アクションボタン） */}
-			<div className="p-6 pt-4 border-t border-border bg-background/50">
-				<div className="flex flex-col sm:flex-row gap-3">
-					<div className="flex flex-1 gap-2">
-						<Button variant="outline" size="sm" onClick={handleRejectOptional} className="flex-1">
-							必須のみ
-						</Button>
-						<Button variant="outline" size="sm" onClick={handleAcceptAll} className="flex-1">
-							すべて許可
-						</Button>
-					</div>
-					<div className="flex gap-2">
-						<Button variant="ghost" size="sm" onClick={onCancel}>
-							キャンセル
-						</Button>
-						<Button
-							size="sm"
-							onClick={handleSaveCustom}
-							className="bg-suzuka-600 hover:bg-suzuka-700 text-white"
-						>
-							設定を保存
-						</Button>
+					{/* 重要な情報 */}
+					<div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-600 space-y-2">
+						<h5 className="font-medium text-gray-900">重要な情報</h5>
+						<ul className="space-y-1 ml-4 list-disc">
+							<li>設定は1年間保存され、期限後に再確認をお願いします</li>
+							<li>必須クッキーはサイト機能のため無効化できません</li>
+							<li>設定の変更は、サイト下部の「クッキー設定」からいつでも可能です</li>
+							<li>
+								詳細は
+								<a href="/privacy" className="text-suzuka-600 hover:underline ml-1">
+									プライバシーポリシー
+								</a>
+								をご確認ください
+							</li>
+						</ul>
 					</div>
 				</div>
-			</div>
-		</CardContent>
+
+				{/* 固定フッター（アクションボタン） */}
+				<div className="pt-4 border-t border-border">
+					<div className="flex flex-col sm:flex-row gap-3">
+						<div className="flex flex-1 gap-2">
+							<Button variant="outline" size="sm" onClick={handleRejectOptional} className="flex-1">
+								必須のみ
+							</Button>
+							<Button variant="outline" size="sm" onClick={handleAcceptAll} className="flex-1">
+								すべて許可
+							</Button>
+						</div>
+						<div className="flex gap-2">
+							<Button variant="ghost" size="sm" onClick={onCancel}>
+								キャンセル
+							</Button>
+							<Button
+								size="sm"
+								onClick={handleSaveCustom}
+								className="bg-suzuka-600 hover:bg-suzuka-700 text-white"
+							>
+								設定を保存
+							</Button>
+						</div>
+					</div>
+				</div>
+			</DialogContent>
+		</Dialog>
 	);
 }

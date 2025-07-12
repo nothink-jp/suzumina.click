@@ -42,9 +42,11 @@ export function CookieSettingsLink() {
 				クッキー設定
 			</Button>
 
-			{showSettings && (
-				<CookiePreferencesPanel onSave={handleSaveSettings} onCancel={handleCloseSettings} />
-			)}
+			<CookiePreferencesPanel
+				open={showSettings}
+				onSave={handleSaveSettings}
+				onCancel={handleCloseSettings}
+			/>
 		</>
 	);
 }
