@@ -31,7 +31,7 @@ export function ConsentDebugger() {
 
 				setConsentDate(savedDate);
 			} catch (error) {
-				console.error("Failed to load consent state:", error);
+				// Silent fail for consent state loading
 			}
 		};
 

@@ -9,11 +9,15 @@ export function GoogleAnalyticsScript() {
 
 	// Don't render if measurement ID is not configured
 	if (!measurementId) {
-		console.warn("Google Analytics Measurement ID not configured");
+		if (process.env.NODE_ENV === "development") {
+			console.warn("Google Analytics Measurement ID not configured");
+		}
 		return null;
 	}
 
-	console.log("Google Analytics Script loading with ID:", measurementId);
+	if (process.env.NODE_ENV === "development") {
+		console.log("Google Analytics Script loading with ID:", measurementId);
+	}
 
 	return (
 		<>
@@ -35,8 +39,10 @@ export function GoogleAnalyticsScript() {
 							page_location: window.location.href,
 							send_page_view: false  // We'll manually control page views based on consent
 						});
-						// Debug: Log GA initialization
-						console.log('Google Analytics initialized with ID:', '${measurementId}');
+						// Debug: Log GA initialization in development only
+						if (window.location.hostname === 'localhost') {
+							console.log('Google Analytics initialized with ID:', '${measurementId}');
+						}
 					`,
 				}}
 			/>

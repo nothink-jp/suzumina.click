@@ -87,12 +87,20 @@ export function CookiePreferencesPanel({ onSave, onCancel }: CookiePreferencesPa
 			if (saved) {
 				setPreferences({
 					necessary: true, // Always true
-					functional: saved.functional,
-					analytics: saved.analytics,
-					advertising: saved.advertising,
+					functional: saved.functional !== false, // Default to true if undefined
+					analytics: saved.analytics === true,
+					advertising: saved.advertising === true,
 					personalization: false, // Map to false for now
 				});
-				console.log("Loaded preferences:", saved);
+			} else {
+				// Set default values if no saved consent
+				setPreferences({
+					necessary: true,
+					functional: true, // Default to true
+					analytics: false,
+					advertising: false,
+					personalization: false,
+				});
 			}
 			setIsLoaded(true);
 		}
@@ -143,7 +151,6 @@ export function CookiePreferencesPanel({ onSave, onCancel }: CookiePreferencesPa
 			analytics: preferences.analytics,
 			advertising: preferences.advertising,
 		};
-		console.log("Saving custom preferences:", consentState);
 		onSave(consentState);
 	};
 

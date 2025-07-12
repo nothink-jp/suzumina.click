@@ -58,8 +58,10 @@ export function ConsentModeScript() {
                     functionality_storage: 'granted',
                     personalization_storage: consentData.personalization ? 'granted' : 'denied'
                   });
-                  // Debug: Log consent application
-                  console.log('Applied saved consent:', consentData);
+                  // Debug: Log consent application in development only
+                  if (window.location.hostname === 'localhost') {
+                    console.log('Applied saved consent:', consentData);
+                  }
                 }
               }
             }

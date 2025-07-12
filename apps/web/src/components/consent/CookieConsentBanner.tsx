@@ -38,11 +38,9 @@ export function CookieConsentBanner() {
 	};
 
 	const saveConsent = (choices: ConsentState) => {
-		console.log("Saving consent:", choices);
 		applyConsentChoices(choices);
 		setShowBanner(false);
 		setShowPreferences(false);
-		console.log("Consent saved to localStorage:", localStorage.getItem("consent-state"));
 	};
 
 	const handleAcceptAll = () => {
