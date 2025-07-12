@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
 import "@suzumina.click/ui/globals.css";
 import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
+import { GoogleAdSenseScript } from "@/components/analytics/google-adsense-script";
 import { GoogleAnalyticsScript } from "@/components/analytics/google-analytics-script";
 import {
 	GoogleTagManager,
@@ -96,6 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			<head>
 				<ConsentModeScript />
 				<GoogleAnalyticsScript />
+				<GoogleAdSenseScript />
 				<GoogleTagManager />
 			</head>
 			<body
