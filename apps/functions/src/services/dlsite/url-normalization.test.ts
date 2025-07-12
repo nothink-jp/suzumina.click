@@ -179,4 +179,21 @@ describe("URL正規化機能", () => {
 		);
 		expect(result.highResImageUrl).toBeUndefined();
 	});
+
+	it("必須フィールドが欠損していても処理される", () => {
+		const mockApiData: IndividualInfoAPIResponse = {
+			workno: "RJ01037463",
+			// work_name と maker_name が欠損
+			// price 情報も欠損
+		};
+
+		const result = mapIndividualInfoAPIToWorkData(mockApiData);
+
+		// フォールバック値が設定されることを確認
+		expect(result.id).toBe("RJ01037463");
+		expect(result.title).toBe("Unknown Work RJ01037463");
+		expect(result.circle).toBe("Unknown Maker");
+		expect(result.price.current).toBe(0);
+		expect(result.price.isFreeOrMissingPrice).toBe(true);
+	});
 });

@@ -22,21 +22,21 @@ import * as logger from "../../shared/logger";
  */
 export interface IndividualInfoAPIResponse {
 	// === 基本作品情報 ===
-	workno: string;
-	product_id: string;
-	work_name: string;
-	maker_name: string;
-	maker_id: string;
+	workno?: string;
+	product_id?: string;
+	work_name?: string;
+	maker_name?: string;
+	maker_id?: string;
 
 	// === 価格・販売情報 ===
-	price: number;
-	price_without_tax: number;
-	official_price: number;
-	official_price_without_tax: number;
-	price_en: number;
-	price_eur: number;
-	discount_rate: number;
-	is_discount_work: boolean;
+	price?: number;
+	price_without_tax?: number;
+	official_price?: number;
+	official_price_without_tax?: number;
+	price_en?: number;
+	price_eur?: number;
+	discount_rate?: number;
+	is_discount_work?: boolean;
 
 	// === 多通貨・地域対応 ===
 	currency_price?: Record<string, number>;
@@ -47,9 +47,9 @@ export interface IndividualInfoAPIResponse {
 	}>;
 
 	// === 評価・統計情報 ===
-	rate_average: number;
-	rate_average_star: number;
-	rate_count: number;
+	rate_average?: number;
+	rate_average_star?: number;
+	rate_count?: number;
 	rate_count_detail?: Array<{
 		review_point: number;
 		count: number;
@@ -57,7 +57,7 @@ export interface IndividualInfoAPIResponse {
 	}>;
 
 	// === ダウンロード・販売統計 ===
-	dl_count: number | string;
+	dl_count?: number | string;
 	sales_count?: number;
 	wishlist_count?: number;
 	point?: number;
@@ -72,16 +72,16 @@ export interface IndividualInfoAPIResponse {
 	};
 
 	// === 作品メタデータ ===
-	age_category: number;
-	regist_date: string;
+	age_category?: number;
+	regist_date?: string;
 	update_date?: string;
-	on_sale: number;
+	on_sale?: number;
 
 	// === 作品分類 ===
-	work_type: string;
-	work_type_string: string;
-	site_id: string;
-	author: string;
+	work_type?: string;
+	work_type_string?: string;
+	site_id?: string;
+	author?: string;
 	author_en?: string;
 
 	// === クリエイター情報 ===
@@ -293,9 +293,11 @@ function extractWorkCategory(apiData: IndividualInfoAPIResponse): WorkCategory {
  * 価格情報の変換
  */
 function extractPriceInfo(apiData: IndividualInfoAPIResponse): PriceInfo {
-	const currentPrice = apiData.price || 0;
-	const originalPrice = apiData.official_price;
-	const discountRate = apiData.discount_rate || 0;
+	// 価格情報の安全な取得（undefinedやnullに対応）
+	const currentPrice = typeof apiData.price === "number" ? apiData.price : 0;
+	const originalPrice =
+		typeof apiData.official_price === "number" ? apiData.official_price : undefined;
+	const discountRate = typeof apiData.discount_rate === "number" ? apiData.discount_rate : 0;
 
 	// 無料作品・価格取得失敗対応: 価格が0でも有効な価格情報として扱う
 	return {
@@ -303,7 +305,7 @@ function extractPriceInfo(apiData: IndividualInfoAPIResponse): PriceInfo {
 		original: originalPrice && originalPrice !== currentPrice ? originalPrice : undefined,
 		currency: "JPY",
 		discount: discountRate > 0 ? discountRate : undefined,
-		point: apiData.point,
+		point: typeof apiData.point === "number" ? apiData.point : undefined,
 		isFreeOrMissingPrice:
 			currentPrice === 0 || apiData.price === undefined || apiData.price === null, // 無料作品または価格取得失敗フラグ
 	};
@@ -313,8 +315,14 @@ function extractPriceInfo(apiData: IndividualInfoAPIResponse): PriceInfo {
  * 評価情報の変換
  */
 function extractRatingInfo(apiData: IndividualInfoAPIResponse): RatingInfo | undefined {
-	const stars = apiData.rate_average_star || apiData.rate_average;
-	const count = apiData.rate_count;
+	// 評価情報の安全な取得
+	const stars =
+		typeof apiData.rate_average_star === "number"
+			? apiData.rate_average_star
+			: typeof apiData.rate_average === "number"
+				? apiData.rate_average
+				: 0;
+	const count = typeof apiData.rate_count === "number" ? apiData.rate_count : 0;
 
 	if (!stars || !count || count === 0) {
 		return undefined;
@@ -324,11 +332,13 @@ function extractRatingInfo(apiData: IndividualInfoAPIResponse): RatingInfo | und
 		stars,
 		count,
 		reviewCount: count,
-		ratingDetail: apiData.rate_count_detail?.map((detail) => ({
-			review_point: detail.review_point,
-			count: detail.count,
-			ratio: detail.ratio,
-		})),
+		ratingDetail: Array.isArray(apiData.rate_count_detail)
+			? apiData.rate_count_detail.map((detail) => ({
+					review_point: detail.review_point || 0,
+					count: detail.count || 0,
+					ratio: detail.ratio || 0,
+				}))
+			: undefined,
 		averageDecimal: stars,
 	};
 
@@ -546,15 +556,21 @@ export function mapIndividualInfoAPIToWorkData(
 
 	logger.debug(`Individual Info API -> Work data mapping: ${productId}`);
 
-	// 基本フィールドの存在確認
+	// 基本フィールドの存在確認（寛容な処理）
 	if (!productId) {
 		throw new Error("Missing required field: workno or product_id");
 	}
+
+	// 基本フィールドのフォールバック値設定
+	const workName = apiData.work_name || `Unknown Work ${productId}`;
+	const makerName = apiData.maker_name || "Unknown Maker";
+
+	// 重要なフィールドが不足している場合はワーニングログ
 	if (!apiData.work_name) {
-		throw new Error(`Missing required field: work_name for ${productId}`);
+		logger.warn(`Missing work_name for ${productId}, using fallback`);
 	}
 	if (!apiData.maker_name) {
-		throw new Error(`Missing required field: maker_name for ${productId}`);
+		logger.warn(`Missing maker_name for ${productId}, using fallback`);
 	}
 
 	// 基本情報の変換
@@ -662,8 +678,8 @@ export function mapIndividualInfoAPIToWorkData(
 		productId,
 
 		// === 基本作品情報 ===
-		title: apiData.work_name || "",
-		circle: apiData.maker_name || "",
+		title: workName,
+		circle: makerName,
 		description: "", // Individual Info APIには詳細説明なし
 		category,
 		originalCategoryText: apiData.work_type_string || apiData.work_type,
@@ -694,13 +710,18 @@ export function mapIndividualInfoAPIToWorkData(
 		genres,
 
 		// === 日付情報 ===
-		releaseDate: apiData.regist_date,
-		releaseDateISO: apiData.regist_date ? convertToISODate(apiData.regist_date) : undefined,
-		releaseDateDisplay: apiData.regist_date ? formatDateForDisplay(apiData.regist_date) : undefined,
+		releaseDate: typeof apiData.regist_date === "string" ? apiData.regist_date : undefined,
+		releaseDateISO:
+			typeof apiData.regist_date === "string" ? convertToISODate(apiData.regist_date) : undefined,
+		releaseDateDisplay:
+			typeof apiData.regist_date === "string"
+				? formatDateForDisplay(apiData.regist_date)
+				: undefined,
 
 		// === 拡張メタデータ ===
 		seriesName: apiData.title?.title_name,
-		ageRating: mapAgeCategory(apiData.age_category),
+		ageRating:
+			typeof apiData.age_category === "number" ? mapAgeCategory(apiData.age_category) : undefined,
 		workFormat: apiData.work_type_string,
 		fileFormat: apiData.file_type_string,
 
