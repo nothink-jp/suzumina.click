@@ -177,7 +177,6 @@ pnpm --filter @suzumina.click/web dev
 
 ### ドキュメント
 
-- `docs/API_ROUTES_ANALYSIS_AND_MIGRATION_PLAN.md`: API Routes分析・Server Actions移行計画
 - `docs/DLSITE_INCREMENTAL_UPDATE_DESIGN.md`: DLsite統合システム設計
 - `docs/FIRESTORE_STRUCTURE.md`: データベース構造
 - `docs/DEVELOPMENT.md`: 開発環境・原則
@@ -223,6 +222,11 @@ pnpm dev
 ---
 
 ## 📝 変更ログ
+
+### v0.3.2 (2025-07-12)
+- Server Actions優先アーキテクチャ移行完了
+- API Routes 33%削減・410件全テスト通過
+- パフォーマンス最適化・Progressive Enhancement実現
 
 ### v0.3.1 (2025-07-09)
 - DLsite統合データ収集システム最適化
