@@ -15,11 +15,7 @@ import { ChevronRight, Cookie, RotateCcw, Shield, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAgeVerification } from "@/contexts/AgeVerificationContext";
-import {
-	getCurrentConsentState,
-	resetAllConsent,
-	updateConsent,
-} from "@/lib/consent/google-consent-mode";
+import { getCurrentConsentState, resetAllConsent } from "@/lib/consent/google-consent-mode";
 
 export function SettingsPageContent() {
 	const { isAdult, updateAgeVerification } = useAgeVerification();

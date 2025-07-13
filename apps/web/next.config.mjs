@@ -152,7 +152,7 @@ const nextConfig = {
 						key: "Content-Security-Policy",
 						value: [
 							"default-src 'self'",
-							"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://tagmanager.google.com https://ssl.google-analytics.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://www.youtube.com https://s.ytimg.com https://discord.com",
+							"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://tagmanager.google.com https://ssl.google-analytics.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://ep2.adtrafficquality.google https://www.youtube.com https://s.ytimg.com https://discord.com",
 							"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://tagmanager.google.com",
 							"font-src 'self' https://fonts.gstatic.com",
 							"img-src 'self' data: https: blob:",
