@@ -27,6 +27,7 @@ export function SettingsPageContent() {
 		analytics: false,
 		advertising: false,
 		functional: true, // 機能的なCookieは通常必須
+		personalization: false,
 	});
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -39,6 +40,7 @@ export function SettingsPageContent() {
 				analytics: currentState.analytics || false,
 				advertising: currentState.advertising || false,
 				functional: currentState.functional !== false, // デフォルトでtrue
+				personalization: currentState.personalization || false,
 			});
 		} else {
 			// デフォルト値を設定（同意状態が存在しない場合）
@@ -46,6 +48,7 @@ export function SettingsPageContent() {
 				analytics: false,
 				advertising: false,
 				functional: true,
+				personalization: false,
 			});
 		}
 		setIsLoading(false);
@@ -58,7 +61,7 @@ export function SettingsPageContent() {
 
 	// Cookie同意の変更
 	const handleConsentChange = (
-		type: "analytics" | "advertising" | "functional",
+		type: "analytics" | "advertising" | "functional" | "personalization",
 		granted: boolean,
 	) => {
 		const newState = { ...consentState, [type]: granted };
@@ -77,6 +80,7 @@ export function SettingsPageContent() {
 				analytics: false,
 				advertising: false,
 				functional: true,
+				personalization: false,
 			});
 		}
 	};

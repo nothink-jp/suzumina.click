@@ -128,6 +128,7 @@ export function CookiePreferencesPanel({
 			functional: true,
 			analytics: true,
 			advertising: true,
+			personalization: true,
 		};
 		setPreferences({
 			necessary: true,
@@ -144,6 +145,7 @@ export function CookiePreferencesPanel({
 			functional: true,
 			analytics: false,
 			advertising: false,
+			personalization: false,
 		};
 		setPreferences({
 			necessary: true,
@@ -160,6 +162,7 @@ export function CookiePreferencesPanel({
 			functional: preferences.functional,
 			analytics: preferences.analytics,
 			advertising: preferences.advertising,
+			personalization: preferences.personalization,
 		};
 		onSave(consentState);
 	};

@@ -15,7 +15,7 @@ export interface ConsentState {
 	analytics: boolean;
 	advertising: boolean;
 	functional: boolean;
-	personalization?: boolean;
+	personalization: boolean;
 }
 
 /**
@@ -158,6 +158,7 @@ export function getCurrentConsentState(): ConsentState | null {
 				analytics: parsed.analytics === true,
 				advertising: parsed.advertising === true,
 				functional: parsed.functional !== false,
+				personalization: parsed.personalization === true,
 			};
 		}
 	} catch (_error) {
@@ -201,6 +202,7 @@ export function updateConsent(consentState: ConsentState) {
 		analytics_storage: consentState.analytics ? "granted" : "denied",
 		ad_storage: consentState.advertising ? "granted" : "denied",
 		functionality_storage: consentState.functional ? "granted" : "denied",
+		personalization_storage: consentState.personalization ? "granted" : "denied",
 	});
 
 	// Save to localStorage
@@ -223,6 +225,7 @@ export function resetAllConsent() {
 		analytics: false,
 		advertising: false,
 		functional: true,
+		personalization: false,
 	};
 
 	updateConsent(defaultState);

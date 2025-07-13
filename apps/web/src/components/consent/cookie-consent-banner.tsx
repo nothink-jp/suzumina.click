@@ -17,6 +17,7 @@ const DEFAULT_CONSENT: ConsentState = {
 	functional: true, // Always required
 	analytics: false,
 	advertising: false,
+	personalization: false,
 };
 
 export function CookieConsentBanner() {
@@ -48,6 +49,7 @@ export function CookieConsentBanner() {
 			functional: true,
 			analytics: true,
 			advertising: true,
+			personalization: true,
 		});
 	};
 
