@@ -621,14 +621,21 @@ export interface YouTubeVideoInfo {
  * 秒数を時:分:秒形式にフォーマット
  */
 export function formatTimestamp(seconds: number): string {
-	const hours = Math.floor(seconds / 3600);
-	const minutes = Math.floor((seconds % 3600) / 60);
-	const secs = Math.floor(seconds % 60);
+	// 強制的に0.1秒精度でフォーマット
+	const preciseSeconds = Math.round(seconds * 10) / 10;
+
+	const hours = Math.floor(preciseSeconds / 3600);
+	const minutes = Math.floor((preciseSeconds % 3600) / 60);
+	const wholeSecs = Math.floor(preciseSeconds % 60);
+	const decimal = Math.round((preciseSeconds % 1) * 10);
+
+	const secsFormatted = wholeSecs.toString().padStart(2, "0");
+	const secsWithDecimal = `${secsFormatted}.${decimal}`;
 
 	if (hours > 0) {
-		return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+		return `${hours}:${minutes.toString().padStart(2, "0")}:${secsWithDecimal}`;
 	}
-	return `${minutes}:${secs.toString().padStart(2, "0")}`;
+	return `${minutes}:${secsWithDecimal}`;
 }
 
 /**

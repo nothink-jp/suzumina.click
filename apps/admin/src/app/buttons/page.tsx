@@ -148,9 +148,16 @@ async function getAudioButtons(
 
 // 時間フォーマット関数
 function formatTime(seconds: number): string {
-	const mins = Math.floor(seconds / 60);
-	const secs = Math.floor(seconds % 60);
-	return `${mins}:${secs.toString().padStart(2, "0")}`;
+	// 強制的に0.1秒精度でフォーマット
+	const preciseSeconds = Math.round(seconds * 10) / 10;
+
+	const mins = Math.floor(preciseSeconds / 60);
+	const remainingSeconds = Math.floor(preciseSeconds % 60);
+	const decimal = Math.round((preciseSeconds % 1) * 10);
+
+	const secsFormatted = remainingSeconds.toString().padStart(2, "0");
+	const secsWithDecimal = `${secsFormatted}.${decimal}`;
+	return `${mins}:${secsWithDecimal}`;
 }
 
 interface ButtonsPageProps {

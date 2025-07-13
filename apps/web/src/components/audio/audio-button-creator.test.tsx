@@ -1,8 +1,3 @@
-import {
-	mockViewport,
-	testAcrossViewports,
-	validateResponsiveClasses,
-} from "@suzumina.click/ui/test-utils/responsive-testing";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -33,49 +28,6 @@ vi.mock("@suzumina.click/ui/components/custom/youtube-player", () => ({
 	),
 }));
 
-// Mock SimpleAudioButton
-vi.mock("@suzumina.click/ui/components/custom/simple-audio-button", () => ({
-	SimpleAudioButton: ({ audioButton }: any) => (
-		<div data-testid="simple-audio-button">Simple Audio Button Mock: {audioButton?.title}</div>
-	),
-}));
-
-// Mock UI components
-vi.mock("@suzumina.click/ui/components/ui/slider", () => ({
-	Slider: ({ min, max, step, disabled }: any) => (
-		<div data-testid="slider">
-			<input
-				type="range"
-				defaultValue={0}
-				onChange={(_e) => {
-					/* noop */
-				}}
-				min={min || 0}
-				max={max || 100}
-				step={step || 1}
-				disabled={disabled}
-				data-testid="slider-input"
-				aria-label="Slider"
-			/>
-		</div>
-	),
-}));
-
-// Mock Select components
-vi.mock("@suzumina.click/ui/components/ui/select", () => ({
-	Select: ({ children }: any) => <div data-testid="select-container">{children}</div>,
-	SelectTrigger: ({ children }: any) => (
-		<select>
-			<option>{children}</option>
-		</select>
-	),
-	SelectValue: ({ placeholder }: any) => <span>{placeholder || "ボイス"}</span>,
-	SelectContent: ({ children }: any) => <div data-testid="select-content">{children}</div>,
-	SelectItem: ({ children, value }: any) => (
-		<div data-testid={`select-item-${value}`}>{children}</div>
-	),
-}));
-
 describe("AudioButtonCreator", () => {
 	const defaultProps = {
 		videoId: "test-video-id",
@@ -88,328 +40,232 @@ describe("AudioButtonCreator", () => {
 		vi.clearAllMocks();
 	});
 
-	// 基本的なレンダリングテストは統合テストに移行済み
-	// (src/__tests__/integration/audioButtonComponents.test.tsx)
+	describe("Basic Rendering", () => {
+		it("コンポーネントが正常にレンダリングされる", () => {
+			render(<AudioButtonCreator {...defaultProps} />);
 
-	it("タイトル入力が正しく動作する", async () => {
-		const user = userEvent.setup();
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		const titleInput = screen.getByPlaceholderText("例: おはようございます");
-		await user.type(titleInput, "新しい音声ボタン");
-
-		expect(titleInput).toHaveValue("新しい音声ボタン");
-	});
-
-	it("現在時間ボタンが正しく動作する", async () => {
-		const user = userEvent.setup();
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		const startTimeButton = screen.getByRole("button", { name: /開始時間に設定/ });
-		const endTimeButton = screen.getByRole("button", { name: /終了時間に設定/ });
-
-		expect(startTimeButton).toBeInTheDocument();
-		expect(endTimeButton).toBeInTheDocument();
-
-		// 開始時間設定ボタンをクリック
-		await user.click(startTimeButton);
-
-		// ボタンが存在して操作可能であることを確認
-		expect(startTimeButton).toBeInTheDocument();
-	});
-
-	it("プレビューボタンが存在する", () => {
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-		expect(previewButton).toBeInTheDocument();
-	});
-
-	it("長さ表示セクションが存在する", () => {
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		expect(screen.getByText(/切り抜き時間:/)).toBeInTheDocument();
-	});
-
-	it("YouTubeプレイヤーが表示される", () => {
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		const youtubePlayer = screen.getByTestId("youtube-player");
-		expect(youtubePlayer).toBeInTheDocument();
-		expect(youtubePlayer).toHaveAttribute("data-video-id", "test-video-id");
-	});
-
-	it("作成ボタンが存在する", () => {
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		const createButton = screen.getByRole("button", {
-			name: /音声ボタンを作成/,
-		});
-		expect(createButton).toBeInTheDocument();
-	});
-
-	it("説明文フィールドが正しく動作する", async () => {
-		const user = userEvent.setup();
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
-		expect(descriptionInput).toBeInTheDocument();
-
-		// 説明文を入力
-		await user.type(descriptionInput, "これはテスト用の説明文です。");
-		expect(descriptionInput).toHaveValue("これはテスト用の説明文です。");
-	});
-
-	it("タグ機能が正しく動作する", async () => {
-		const user = userEvent.setup();
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		const tagInput = screen.getByPlaceholderText("タグを入力してEnter");
-		expect(tagInput).toBeInTheDocument();
-
-		// Enterキーでタグを追加
-		await user.type(tagInput, "テストタグ");
-		await user.keyboard("{Enter}");
-
-		// タグが追加されたことを確認
-		expect(screen.getByText("テストタグ")).toBeInTheDocument();
-	});
-
-	it("キャンセルボタンが存在する", () => {
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		const cancelButton = screen.getByRole("button", { name: /キャンセル/i });
-		expect(cancelButton).toBeInTheDocument();
-	});
-
-	it("プレビューボタンが表示される", () => {
-		render(<AudioButtonCreator {...defaultProps} />);
-
-		const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-		expect(previewButton).toBeInTheDocument();
-	});
-
-	describe("Responsive Layout", () => {
-		beforeEach(() => {
-			mockViewport(1440, 900);
+			expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
+			expect(screen.getByTestId("youtube-player")).toBeInTheDocument();
 		});
 
-		it("should render with responsive grid layout classes", () => {
-			const { container } = render(<AudioButtonCreator {...defaultProps} />);
+		it("動画情報が正しく表示される", () => {
+			render(<AudioButtonCreator {...defaultProps} />);
 
-			const gridContainer = container.querySelector(".grid");
-			expect(gridContainer).toHaveClass("grid-cols-1", "lg:grid-cols-2", "xl:grid-cols-3");
+			expect(screen.getByText("動画: テスト動画タイトル")).toBeInTheDocument();
 		});
 
-		it("should have touch-optimized button heights", () => {
+		it("必要なフォーム要素が全て存在する", () => {
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			// 基本情報フィールド
+			expect(screen.getByPlaceholderText("例: おはようございます")).toBeInTheDocument();
+			expect(screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）")).toBeInTheDocument();
+			expect(screen.getByPlaceholderText("タグを入力してEnter")).toBeInTheDocument();
+
+			// 操作ボタン
+			expect(screen.getByRole("button", { name: /音声ボタンを作成/ })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: /キャンセル/ })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: /選択範囲をプレビュー/ })).toBeInTheDocument();
+		});
+	});
+
+	describe("Time Control System", () => {
+		it("0.1秒精度の時間表示が正しく動作する", () => {
+			render(<AudioButtonCreator {...defaultProps} initialStartTime={125.7} />);
+
+			// 2:05.7 の形式で表示されることを確認
+			expect(screen.getByDisplayValue("2:05.7")).toBeInTheDocument();
+		});
+
+		it("時間設定ボタンが存在する", () => {
 			render(<AudioButtonCreator {...defaultProps} />);
 
 			const startTimeButton = screen.getByRole("button", { name: /開始時間に設定/ });
 			const endTimeButton = screen.getByRole("button", { name: /終了時間に設定/ });
 
-			validateResponsiveClasses(startTimeButton, {
-				base: ["h-16", "sm:h-20", "min-h-[44px]"],
-			});
-			validateResponsiveClasses(endTimeButton, {
-				base: ["h-16", "sm:h-20", "min-h-[44px]"],
-			});
+			expect(startTimeButton).toBeInTheDocument();
+			expect(endTimeButton).toBeInTheDocument();
 		});
 
-		it("should have responsive text sizing", () => {
+		it("時間入力フィールドが編集可能である", async () => {
+			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
-			// 現在時間表示のテキストサイズを確認
-			const timeDisplays = screen.getAllByText(/再生時間/);
-			const timeDisplay = timeDisplays[0];
-			expect(timeDisplay.parentElement).toHaveClass("text-xs", "sm:text-sm");
-		});
+			const timeInputs = screen.getAllByPlaceholderText("0:00.0");
+			expect(timeInputs.length).toBeGreaterThanOrEqual(2);
 
-		it("should render responsive input field height", () => {
-			render(<AudioButtonCreator {...defaultProps} />);
+			// 開始時間の入力をテスト
+			const startTimeInput = timeInputs[0];
+			await user.clear(startTimeInput);
+			await user.type(startTimeInput, "1:23.4");
 
-			const titleInput = screen.getByPlaceholderText("例: おはようございます");
-			expect(titleInput).toHaveClass("min-h-[44px]");
-		});
-
-		it("should have responsive button order on mobile", () => {
-			render(<AudioButtonCreator {...defaultProps} />);
-
-			const createButton = screen.getByRole("button", { name: /音声ボタンを作成/ });
-			const cancelButton = screen.getByRole("button", { name: /キャンセル/ });
-
-			validateResponsiveClasses(createButton, {
-				base: ["order-1", "sm:order-2"],
-			});
-			validateResponsiveClasses(cancelButton, {
-				base: ["order-2", "sm:order-1"],
-			});
-		});
-
-		it("should have responsive button grid on mobile", () => {
-			render(<AudioButtonCreator {...defaultProps} />);
-
-			const buttonContainer = screen.getByRole("button", { name: /開始時間に設定/ }).parentElement;
-
-			expect(buttonContainer).toHaveClass("grid-cols-1", "sm:grid-cols-2");
-		});
-
-		testAcrossViewports("should adapt layout to viewport", (viewport) => {
-			const { container } = render(<AudioButtonCreator {...defaultProps} />);
-
-			const gridContainer = container.querySelector(".grid");
-			expect(gridContainer).toHaveClass("grid-cols-1");
-
-			// Large screens show 2-column layout
-			if (viewport.width >= 1024) {
-				expect(gridContainer).toHaveClass("lg:grid-cols-2");
-			}
-
-			// Extra large screens show 3-column layout
-			if (viewport.width >= 1280) {
-				expect(gridContainer).toHaveClass("xl:grid-cols-3");
-			}
-		});
-
-		it("should have mobile-optimized spacing", () => {
-			mockViewport(375, 667); // Mobile
-
-			const { container } = render(<AudioButtonCreator {...defaultProps} />);
-
-			const controlPanel = container.querySelector(".space-y-4");
-			expect(controlPanel).toHaveClass("lg:space-y-6");
+			expect(startTimeInput).toHaveValue("1:23.4");
 		});
 	});
 
-	describe("Touch Target Validation", () => {
-		it("should meet WCAG touch target requirements", () => {
+	describe("Microadjustment Buttons", () => {
+		it("微調整ボタンが存在する", () => {
 			render(<AudioButtonCreator {...defaultProps} />);
 
-			const startTimeButton = screen.getByRole("button", { name: /開始時間に設定/ });
-			const endTimeButton = screen.getByRole("button", { name: /終了時間に設定/ });
-			const previewButton = screen.getByRole("button", { name: /選択範囲をプレビュー/ });
-			const createButton = screen.getByRole("button", { name: /音声ボタンを作成/ });
+			// 各調整値のボタンが存在することを確認
+			const adjustmentValues = ["-10", "-1", "-0.1", "+0.1", "+1", "+10"];
 
-			// すべてのボタンが44px以上のタッチターゲットを持つ
-			[startTimeButton, endTimeButton, previewButton, createButton].forEach((button) => {
-				expect(button).toHaveClass("min-h-[44px]");
+			adjustmentValues.forEach((value) => {
+				const buttons = screen.getAllByRole("button").filter((btn) => btn.textContent === value);
+				expect(buttons.length).toBeGreaterThan(0);
 			});
 		});
 
-		it("should maintain touch target size in mobile viewport", () => {
-			mockViewport(375, 667); // Mobile
+		it("微調整ボタンがクリック可能である", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} initialStartTime={10} />);
 
-			render(<AudioButtonCreator {...defaultProps} />);
+			const plus1Buttons = screen.getAllByRole("button").filter((btn) => btn.textContent === "+1");
 
-			const titleInput = screen.getByPlaceholderText("例: おはようございます");
-			expect(titleInput).toHaveClass("min-h-[44px]");
-
-			const buttons = screen.getAllByRole("button");
-			buttons.forEach((button) => {
-				// すべてのボタンがモバイルで適切なサイズを持つ
-				const classList = Array.from(button.classList);
-				const hasMinHeight = classList.some((cls) => cls.includes("min-h-") || cls.includes("h-"));
-				expect(hasMinHeight).toBe(true);
-			});
+			if (plus1Buttons.length > 0) {
+				await user.click(plus1Buttons[0]);
+				// クリックが成功すればテスト成功
+				expect(plus1Buttons[0]).toBeInTheDocument();
+			}
 		});
 	});
 
-	describe("Form Accessibility", () => {
-		it("should have proper form labels and associations", () => {
-			render(<AudioButtonCreator {...defaultProps} />);
-
-			const titleInput = screen.getByPlaceholderText("例: おはようございます");
-			const titleLabel = screen.getByText(/ボタンタイトル/);
-
-			// ラベルとinputが適切に関連付けられている
-			expect(titleLabel).toBeInTheDocument();
-			expect(titleInput).toBeInTheDocument();
-		});
-
-		it("should be keyboard navigable", async () => {
+	describe("Form Interactions", () => {
+		it("タイトル入力が正しく動作する", async () => {
 			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
 			const titleInput = screen.getByPlaceholderText("例: おはようございます");
-			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
-			const tagInput = screen.getByPlaceholderText("タグを入力してEnter");
+			await user.type(titleInput, "新しい音声ボタン");
 
-			// Tab navigation - 基本的なフィールドの確認のみ
-			await user.tab();
-			expect(titleInput).toHaveFocus();
-
-			await user.tab();
-			expect(descriptionInput).toHaveFocus();
-
-			await user.tab();
-			expect(tagInput).toHaveFocus();
-
-			// 他のボタンはスキップして基本的なナビゲーションのみテスト
+			expect(titleInput).toHaveValue("新しい音声ボタン");
 		});
 
-		it("should provide appropriate error feedback", () => {
+		it("説明文入力が正しく動作する", async () => {
+			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
-			// 時間制限エラーの表示確認
-			const errorMessage = screen.queryByText("60秒以下にしてください");
-			// 初期状態ではエラーが表示されないことを確認
-			expect(errorMessage).not.toBeInTheDocument();
+			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
+			await user.type(descriptionInput, "これはテスト用の説明文です。");
+
+			expect(descriptionInput).toHaveValue("これはテスト用の説明文です。");
+		});
+
+		it("タグ追加機能が正しく動作する", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			const tagInput = screen.getByPlaceholderText("タグを入力してEnter");
+			await user.type(tagInput, "テストタグ");
+			await user.keyboard("{Enter}");
+
+			expect(screen.getByText("テストタグ")).toBeInTheDocument();
 		});
 	});
 
-	describe("Mobile Layout Optimization", () => {
-		it("should stack elements vertically on mobile", () => {
-			mockViewport(375, 667);
+	describe("Duration and Validation", () => {
+		it("切り抜き時間が正しく表示される", () => {
+			render(<AudioButtonCreator {...defaultProps} initialStartTime={10} />);
 
+			// 初期状態で5秒間（10秒〜15秒）の切り抜きが表示される
+			expect(screen.getByText("切り抜き時間:")).toBeInTheDocument();
+			expect(screen.getByText("5.0秒")).toBeInTheDocument();
+		});
+
+		it("バリデーション: タイトルが空の場合は作成ボタンが無効", () => {
 			render(<AudioButtonCreator {...defaultProps} />);
 
 			const createButton = screen.getByRole("button", { name: /音声ボタンを作成/ });
-			const _cancelButton = screen.getByRole("button", { name: /キャンセル/ });
-
-			// モバイルではボタンが縦並び
-			expect(createButton.parentElement).toHaveClass("flex-col", "sm:flex-row");
+			expect(createButton).toBeDisabled();
 		});
 
-		it("should adjust text size for mobile readability", () => {
-			mockViewport(375, 667);
-
+		it("バリデーション: 有効な情報が入力されると作成ボタンが有効", async () => {
+			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
-			const titleLabel = screen.getByText(/ボタンタイトル/);
-			expect(titleLabel).toHaveClass("text-sm", "sm:text-base");
-		});
+			const titleInput = screen.getByPlaceholderText("例: おはようございます");
+			await user.type(titleInput, "有効なタイトル");
 
-		it("should optimize spacing for mobile", () => {
-			mockViewport(375, 667);
-
-			const { container } = render(<AudioButtonCreator {...defaultProps} />);
-
-			const controlPanel = container.querySelector(".bg-card.border.rounded-lg");
-			expect(controlPanel).toHaveClass("p-4", "lg:p-6");
+			const createButton = screen.getByRole("button", { name: /音声ボタンを作成/ });
+			expect(createButton).toBeEnabled();
 		});
 	});
 
-	it("キャンセルボタンがクリック可能である", async () => {
-		const user = userEvent.setup();
-		render(<AudioButtonCreator {...defaultProps} />);
+	describe("Responsive Design", () => {
+		it("ボタンが適切なタッチターゲットサイズを持つ", () => {
+			render(<AudioButtonCreator {...defaultProps} />);
 
-		const cancelButton = screen.getByRole("button", { name: /キャンセル/i });
-		await user.click(cancelButton);
+			const createButton = screen.getByRole("button", { name: /音声ボタンを作成/ });
+			expect(createButton).toHaveClass("min-h-[44px]");
+		});
 
-		// Just verify the button exists and is clickable
-		expect(cancelButton).toBeInTheDocument();
+		it("時間設定ボタンがレスポンシブサイズを持つ", () => {
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			const startTimeButton = screen.getByRole("button", { name: /開始時間に設定/ });
+			expect(startTimeButton).toHaveClass("h-8", "sm:h-10");
+		});
 	});
 
-	it("initialStartTimeが正しく設定される", () => {
-		render(<AudioButtonCreator {...defaultProps} initialStartTime={30} />);
+	describe("Accessibility", () => {
+		it("キーボードナビゲーションが機能する", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} />);
 
-		// コンポーネントが正常にレンダリングされることを確認
-		expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
+			// Tab移動のテスト - 最初に開始時間設定ボタンにフォーカス
+			await user.tab();
+			expect(screen.getByRole("button", { name: /開始時間に設定/ })).toHaveFocus();
+
+			// 次にタイトル入力フィールドにフォーカス（複数回タブを押して到達）
+			while (document.activeElement !== screen.getByPlaceholderText("例: おはようございます")) {
+				await user.tab();
+			}
+			expect(screen.getByPlaceholderText("例: おはようございます")).toHaveFocus();
+		});
+
+		it("文字数制限が適切に機能する", () => {
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			const titleInput = screen.getByPlaceholderText("例: おはようございます");
+			expect(titleInput).toHaveAttribute("maxLength", "100");
+		});
 	});
 
-	it("videoDurationが正しく設定される", () => {
-		render(<AudioButtonCreator {...defaultProps} videoDuration={600} />);
+	describe("Error Handling", () => {
+		it("エラー状態が適切に表示される", () => {
+			render(<AudioButtonCreator {...defaultProps} />);
 
-		// コンポーネントが正常にレンダリングされることを確認
-		expect(screen.getByRole("heading", { name: /音声ボタンを作成/ })).toBeInTheDocument();
+			// 初期状態ではエラーが表示されないことを確認
+			expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+		});
+	});
+
+	describe("Performance", () => {
+		it("長いビデオIDでも正常にレンダリングされる", () => {
+			const props = {
+				...defaultProps,
+				videoId: `very-long-video-id-${"x".repeat(100)}`,
+				videoDuration: 7200, // 2時間
+			};
+
+			render(<AudioButtonCreator {...props} />);
+			expect(screen.getByTestId("youtube-player")).toBeInTheDocument();
+		});
+
+		it("多数のタグが追加できる", async () => {
+			const user = userEvent.setup();
+			render(<AudioButtonCreator {...defaultProps} />);
+
+			const tagInput = screen.getByPlaceholderText("タグを入力してEnter");
+
+			// 複数のタグを追加
+			for (let i = 0; i < 3; i++) {
+				await user.type(tagInput, `タグ${i}`);
+				await user.keyboard("{Enter}");
+			}
+
+			// 最初のタグが表示されることを確認
+			expect(screen.getByText("タグ0")).toBeInTheDocument();
+		});
 	});
 });

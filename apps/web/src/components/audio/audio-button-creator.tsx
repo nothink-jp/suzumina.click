@@ -6,7 +6,7 @@ import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Textarea } from "@suzumina.click/ui/components/ui/textarea";
-import { Clock, Loader2, Play, Plus, Tag, X } from "lucide-react";
+import { Clock, Loader2, MousePointer, Play, Plus, Tag, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useRef, useState } from "react";
 import { createAudioButton } from "@/app/buttons/actions";
@@ -40,8 +40,73 @@ export function AudioButtonCreator({
 	const [isCreating, setIsCreating] = useState(false);
 	const [error, setError] = useState("");
 
+	// 編集中の時間文字列を管理
+	const [startTimeInput, setStartTimeInput] = useState(
+		formatTimestamp(Math.round(initialStartTime * 10) / 10),
+	);
+	const [endTimeInput, setEndTimeInput] = useState(
+		formatTimestamp(Math.round(Math.min(initialStartTime + 5, videoDuration) * 10) / 10),
+	);
+	const [isEditingStartTime, setIsEditingStartTime] = useState(false);
+	const [isEditingEndTime, setIsEditingEndTime] = useState(false);
+
 	const youtubePlayerRef = useRef<YTPlayer | null>(null);
 	const lastTimeRef = useRef<number>(Math.round(initialStartTime * 10) / 10);
+
+	// 時間文字列をパースする関数
+	const parseTimeString = useCallback((timeStr: string): number | null => {
+		// 時:分:秒.小数 形式 (例: 1:23:45.6)
+		const hourMatch = timeStr.match(/^(\d+):(\d{2}):(\d{2})\.(\d)$/);
+		if (hourMatch && hourMatch[1] && hourMatch[2] && hourMatch[3] && hourMatch[4]) {
+			const hours = Number.parseInt(hourMatch[1], 10);
+			const minutes = Number.parseInt(hourMatch[2], 10);
+			const seconds = Number.parseInt(hourMatch[3], 10);
+			const decimal = Number.parseInt(hourMatch[4], 10);
+			return hours * 3600 + minutes * 60 + seconds + decimal / 10;
+		}
+
+		// 分:秒.小数 形式 (例: 50:12.3)
+		const minuteMatch = timeStr.match(/^(\d+):(\d{2})\.(\d)$/);
+		if (minuteMatch && minuteMatch[1] && minuteMatch[2] && minuteMatch[3]) {
+			const minutes = Number.parseInt(minuteMatch[1], 10);
+			const seconds = Number.parseInt(minuteMatch[2], 10);
+			const decimal = Number.parseInt(minuteMatch[3], 10);
+			return minutes * 60 + seconds + decimal / 10;
+		}
+
+		return null;
+	}, []);
+
+	// 時間調整関数
+	const adjustStartTime = useCallback(
+		(deltaSeconds: number) => {
+			const newTime = Math.round((startTime + deltaSeconds) * 10) / 10;
+			const clampedTime = Math.max(0, Math.min(newTime, videoDuration - 0.1));
+			setStartTime(clampedTime);
+			setStartTimeInput(formatTimestamp(clampedTime));
+
+			// 終了時間が開始時間以下になる場合は調整
+			if (endTime <= clampedTime) {
+				const newEndTime = Math.round(Math.min(clampedTime + 5, videoDuration) * 10) / 10;
+				setEndTime(newEndTime);
+				setEndTimeInput(formatTimestamp(newEndTime));
+			}
+		},
+		[startTime, endTime, videoDuration],
+	);
+
+	const adjustEndTime = useCallback(
+		(deltaSeconds: number) => {
+			const newTime = Math.round((endTime + deltaSeconds) * 10) / 10;
+			const clampedTime = Math.max(
+				startTime + 0.1,
+				Math.min(newTime, Math.min(startTime + 60, videoDuration)),
+			);
+			setEndTime(clampedTime);
+			setEndTimeInput(formatTimestamp(clampedTime));
+		},
+		[endTime, startTime, videoDuration],
+	);
 
 	// YouTube Player handlers
 	const handlePlayerReady = useCallback((player: YTPlayer) => {
@@ -79,8 +144,11 @@ export function AudioButtonCreator({
 			} catch (_error) {}
 		}
 		setStartTime(time);
+		setStartTimeInput(formatTimestamp(time));
 		if (endTime <= time) {
-			setEndTime(Math.round(Math.min(time + 5, videoDuration) * 10) / 10);
+			const newEndTime = Math.round(Math.min(time + 5, videoDuration) * 10) / 10;
+			setEndTime(newEndTime);
+			setEndTimeInput(formatTimestamp(newEndTime));
 		}
 	}, [currentTime, endTime, videoDuration]);
 
@@ -104,6 +172,7 @@ export function AudioButtonCreator({
 		if (time > startTime) {
 			const newEndTime = Math.round(Math.min(time, startTime + 60) * 10) / 10;
 			setEndTime(newEndTime);
+			setEndTimeInput(formatTimestamp(newEndTime));
 		}
 	}, [currentTime, startTime]);
 
@@ -270,29 +339,226 @@ export function AudioButtonCreator({
 
 										{/* 時間設定ボタン: モバイル対応 */}
 										<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-											<Button
-												variant="outline"
-												onClick={setCurrentAsStart}
-												disabled={isCreating}
-												className="h-16 sm:h-20 flex flex-col items-center justify-center min-h-[44px]"
-											>
-												<div className="font-medium text-sm sm:text-base">開始時間に設定</div>
-												<div className="text-xs sm:text-sm text-muted-foreground">
-													{formatTimestamp(startTime)}
+											{/* 開始時間設定 */}
+											<div className="relative border rounded-lg overflow-hidden">
+												{/* 上半分: クリックボタン */}
+												<Button
+													variant="ghost"
+													onClick={setCurrentAsStart}
+													disabled={isCreating}
+													className="w-full h-8 sm:h-10 rounded-none border-b hover:bg-primary/10 hover:text-primary transition-colors"
+												>
+													<MousePointer className="h-3 w-3 mr-1" />
+													<div className="font-medium text-sm sm:text-base">開始時間に設定</div>
+												</Button>
+												{/* 中央: テキスト入力 */}
+												<div className="p-2 sm:p-3 bg-muted/20 border-b">
+													<Input
+														type="text"
+														value={isEditingStartTime ? startTimeInput : formatTimestamp(startTime)}
+														onChange={(e) => {
+															const value = e.target.value;
+															setStartTimeInput(value);
+															setIsEditingStartTime(true);
+														}}
+														onBlur={() => {
+															// フォーカスを失ったときに値を確定
+															const timeInSeconds = parseTimeString(startTimeInput);
+															if (timeInSeconds !== null) {
+																setStartTime(Math.round(timeInSeconds * 10) / 10);
+																if (endTime <= timeInSeconds) {
+																	const newEndTime =
+																		Math.round(Math.min(timeInSeconds + 5, videoDuration) * 10) /
+																		10;
+																	setEndTime(newEndTime);
+																	setEndTimeInput(formatTimestamp(newEndTime));
+																}
+																setStartTimeInput(
+																	formatTimestamp(Math.round(timeInSeconds * 10) / 10),
+																);
+															} else {
+																// 無効な値の場合は元に戻す
+																setStartTimeInput(formatTimestamp(startTime));
+															}
+															setIsEditingStartTime(false);
+														}}
+														onKeyDown={(e) => {
+															if (e.key === "Enter") {
+																e.currentTarget.blur();
+															}
+														}}
+														disabled={isCreating}
+														className="text-center text-base sm:text-lg font-mono font-semibold text-primary h-8 border-0 bg-transparent focus:bg-background"
+														placeholder="0:00.0"
+													/>
 												</div>
-											</Button>
+												{/* 下半分: 微調整ボタン */}
+												<div className="p-1 bg-muted/10">
+													<div className="flex">
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustStartTime(-10)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none border-r border-slate-200 transition-colors"
+														>
+															-10
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustStartTime(-1)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none border-r border-slate-200 transition-colors"
+														>
+															-1
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustStartTime(-0.1)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none border-r border-slate-200 transition-colors"
+														>
+															-0.1
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustStartTime(0.1)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none border-r border-slate-200 transition-colors"
+														>
+															+0.1
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustStartTime(1)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none border-r border-slate-200 transition-colors"
+														>
+															+1
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustStartTime(10)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none transition-colors"
+														>
+															+10
+														</Button>
+													</div>
+												</div>
+											</div>
 
-											<Button
-												variant="outline"
-												onClick={setCurrentAsEnd}
-												disabled={isCreating || currentTime <= startTime}
-												className="h-16 sm:h-20 flex flex-col items-center justify-center min-h-[44px]"
-											>
-												<div className="font-medium text-sm sm:text-base">終了時間に設定</div>
-												<div className="text-xs sm:text-sm text-muted-foreground">
-													{formatTimestamp(endTime)}
+											{/* 終了時間設定 */}
+											<div className="relative border rounded-lg overflow-hidden">
+												{/* 上半分: クリックボタン */}
+												<Button
+													variant="ghost"
+													onClick={setCurrentAsEnd}
+													disabled={isCreating || currentTime <= startTime}
+													className="w-full h-8 sm:h-10 rounded-none border-b hover:bg-primary/10 hover:text-primary transition-colors"
+												>
+													<MousePointer className="h-3 w-3 mr-1" />
+													<div className="font-medium text-sm sm:text-base">終了時間に設定</div>
+												</Button>
+												{/* 中央: テキスト入力 */}
+												<div className="p-2 sm:p-3 bg-muted/20 border-b">
+													<Input
+														type="text"
+														value={isEditingEndTime ? endTimeInput : formatTimestamp(endTime)}
+														onChange={(e) => {
+															const value = e.target.value;
+															setEndTimeInput(value);
+															setIsEditingEndTime(true);
+														}}
+														onBlur={() => {
+															// フォーカスを失ったときに値を確定
+															const timeInSeconds = parseTimeString(endTimeInput);
+															if (timeInSeconds !== null && timeInSeconds > startTime) {
+																const newEndTime =
+																	Math.round(Math.min(timeInSeconds, startTime + 60) * 10) / 10;
+																setEndTime(newEndTime);
+																setEndTimeInput(formatTimestamp(newEndTime));
+															} else {
+																// 無効な値の場合は元に戻す
+																setEndTimeInput(formatTimestamp(endTime));
+															}
+															setIsEditingEndTime(false);
+														}}
+														onKeyDown={(e) => {
+															if (e.key === "Enter") {
+																e.currentTarget.blur();
+															}
+														}}
+														disabled={isCreating}
+														className="text-center text-base sm:text-lg font-mono font-semibold text-primary h-8 border-0 bg-transparent focus:bg-background"
+														placeholder="0:00.0"
+													/>
 												</div>
-											</Button>
+												{/* 下半分: 微調整ボタン */}
+												<div className="p-1 bg-muted/10">
+													<div className="flex">
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustEndTime(-10)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none border-r border-slate-200 transition-colors"
+														>
+															-10
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustEndTime(-1)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none border-r border-slate-200 transition-colors"
+														>
+															-1
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustEndTime(-0.1)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none border-r border-slate-200 transition-colors"
+														>
+															-0.1
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustEndTime(0.1)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none border-r border-slate-200 transition-colors"
+														>
+															+0.1
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustEndTime(1)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none border-r border-slate-200 transition-colors"
+														>
+															+1
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => adjustEndTime(10)}
+															disabled={isCreating}
+															className="flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none transition-colors"
+														>
+															+10
+														</Button>
+													</div>
+												</div>
+											</div>
 										</div>
 
 										{/* 長さ表示: モバイル対応 */}

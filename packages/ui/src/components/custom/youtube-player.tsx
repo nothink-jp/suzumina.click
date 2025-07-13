@@ -161,7 +161,7 @@ export function YouTubePlayer({
 			return;
 		}
 
-		timeUpdateIntervalRef.current = setInterval(handleTimeUpdate, 1000); // 1秒間隔で更新
+		timeUpdateIntervalRef.current = setInterval(handleTimeUpdate, 100); // 100ms間隔で更新
 	}, [handleTimeUpdate]);
 
 	// 時間更新インターバルの停止
