@@ -156,7 +156,7 @@ const nextConfig = {
 							"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://tagmanager.google.com",
 							"font-src 'self' https://fonts.gstatic.com",
 							"img-src 'self' data: https: blob:",
-							"connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://api.github.com https://discord.com https://fonts.googleapis.com https://fonts.gstatic.com",
+							"connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://ep1.adtrafficquality.google https://api.github.com https://discord.com https://fonts.googleapis.com https://fonts.gstatic.com",
 							"frame-src 'self' https://www.youtube.com https://discord.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
 							"object-src 'none'",
 							"base-uri 'self'",
