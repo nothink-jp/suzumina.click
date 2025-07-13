@@ -24,8 +24,8 @@ locals {
       # 本番環境（個人利用レベル・安定性重視）
       cloud_run_min_instances = 1     # コールドスタート回避・レイテンシ改善
       cloud_run_max_instances = 3     # トラフィック急増対応
-      cloud_run_cpu          = "1000m"
-      cloud_run_memory       = "1Gi"
+      cloud_run_cpu          = "2000m" # Next.js SSR+Tailwind CSS v4最適化
+      cloud_run_memory       = "2Gi"   # Node.jsヒープ+同時接続対応
       functions_memory        = "512Mi" 
       functions_timeout       = 300
       functions_enabled       = true   # 本番では有効

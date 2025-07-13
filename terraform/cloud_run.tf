@@ -26,8 +26,8 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       max_instance_count = local.current_env.cloud_run_max_instances
     }
 
-    # コンテナ同時実行数（Next.jsアプリに最適化）
-    max_instance_request_concurrency = 80
+    # コンテナ同時実行数（2vCPU/2Gi環境に最適化）
+    max_instance_request_concurrency = 100
 
     # コンテナ設定
     containers {
@@ -40,7 +40,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
           cpu    = local.current_env.cloud_run_cpu
           memory = local.current_env.cloud_run_memory
         }
-        cpu_idle = true      # アイドル時のCPU制限
+        cpu_idle = var.environment == "production" ? false : true  # 本番:常時CPU割当/開発:コスト重視
         startup_cpu_boost = var.environment == "production" # 本番のみCPUブースト
       }
 
