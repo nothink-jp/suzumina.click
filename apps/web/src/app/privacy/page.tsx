@@ -9,7 +9,7 @@ export default function PrivacyPage() {
 			<div className="text-center mb-8">
 				<h1 className="text-3xl font-bold text-foreground mb-4">プライバシーポリシー</h1>
 				<p className="text-lg text-muted-foreground">個人情報の取扱いに関する方針</p>
-				<p className="text-sm text-muted-foreground mt-2">最終更新: 2025年6月27日</p>
+				<p className="text-sm text-muted-foreground mt-2">最終更新: 2025年7月13日</p>
 			</div>
 
 			<div className="space-y-8">
@@ -205,6 +205,63 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
+								<div className="border p-4 rounded-lg">
+									<h4 className="font-semibold text-foreground flex items-center gap-2">
+										<Badge variant="outline">Google Analytics 4</Badge>
+									</h4>
+									<div className="text-sm text-muted-foreground mt-2 space-y-1">
+										<p>
+											<strong>目的:</strong> サイト利用状況の分析・改善
+										</p>
+										<p>
+											<strong>データ:</strong> 匿名化されたアクセス情報
+										</p>
+										<p>
+											<strong>Cookie:</strong> 分析用Cookie使用
+										</p>
+										<p>
+											<strong>制御:</strong> ユーザー同意管理で制御可能
+										</p>
+									</div>
+								</div>
+								<div className="border p-4 rounded-lg">
+									<h4 className="font-semibold text-foreground flex items-center gap-2">
+										<Badge variant="outline">Google Tag Manager</Badge>
+									</h4>
+									<div className="text-sm text-muted-foreground mt-2 space-y-1">
+										<p>
+											<strong>目的:</strong> タグ・分析ツールの管理
+										</p>
+										<p>
+											<strong>データ:</strong> タグ実行に必要な情報のみ
+										</p>
+										<p>
+											<strong>機能:</strong> 他の分析ツールの統合管理
+										</p>
+										<p>
+											<strong>プライバシー:</strong> 単体では個人情報収集なし
+										</p>
+									</div>
+								</div>
+								<div className="border p-4 rounded-lg">
+									<h4 className="font-semibold text-foreground flex items-center gap-2">
+										<Badge variant="outline">Google AdSense</Badge>
+									</h4>
+									<div className="text-sm text-muted-foreground mt-2 space-y-1">
+										<p>
+											<strong>目的:</strong> 適切な広告の配信・サイト運営費用
+										</p>
+										<p>
+											<strong>データ:</strong> 広告表示に必要な匿名化情報
+										</p>
+										<p>
+											<strong>Cookie:</strong> 広告配信最適化用Cookie使用
+										</p>
+										<p>
+											<strong>制御:</strong> ユーザー同意管理・Googleアカウント設定
+										</p>
+									</div>
+								</div>
 							</div>
 						</div>
 					</CardContent>
@@ -235,17 +292,59 @@ export default function PrivacyPage() {
 								</ul>
 							</div>
 							<div>
-								<h4 className="font-semibold text-foreground">分析ツール</h4>
+								<h4 className="font-semibold text-foreground">分析・広告Cookie</h4>
+								<div className="bg-blue-50 p-3 rounded-lg mt-2">
+									<h5 className="font-semibold text-blue-800 text-sm mb-2">Google Analytics 4</h5>
+									<ul className="text-xs text-blue-700 space-y-1">
+										<li>• サイト利用状況の匿名化分析</li>
+										<li>• ユーザー体験の改善目的</li>
+										<li>• 同意管理により制御可能</li>
+									</ul>
+								</div>
+								<div className="bg-green-50 p-3 rounded-lg mt-2">
+									<h5 className="font-semibold text-green-800 text-sm mb-2">Google AdSense</h5>
+									<ul className="text-xs text-green-700 space-y-1">
+										<li>• 適切な広告配信のため</li>
+										<li>• サイト運営費用の確保</li>
+										<li>• ユーザー同意に基づく使用</li>
+										<li>• Googleアカウントで個別制御可能</li>
+									</ul>
+								</div>
 								<p className="text-sm text-muted-foreground mt-2">
-									現在、外部の分析ツール（Google Analytics等）は使用していません。
-									将来的に導入する場合は、事前にポリシーを更新し、オプトアウト手段を提供します。
+									これらのツールは、ユーザーの明示的な同意がある場合のみ使用されます。
+									同意はいつでも撤回可能です。
 								</p>
 							</div>
 							<div>
-								<h4 className="font-semibold text-foreground">広告・追跡</h4>
-								<p className="text-sm text-muted-foreground mt-2">
-									広告の配信や行動追跡は一切行いません。
-								</p>
+								<h4 className="font-semibold text-foreground">Cookieの制御</h4>
+								<ul className="text-sm text-muted-foreground mt-2 space-y-1">
+									<li>
+										• <strong>サイト内設定:</strong> Cookie同意バナーで制御
+									</li>
+									<li>
+										• <strong>ブラウザ設定:</strong> Cookie無効化・削除
+									</li>
+									<li>
+										• <strong>Google設定:</strong>
+										<a
+											href="https://adssettings.google.com/"
+											className="text-suzuka-500 hover:underline"
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											広告設定
+										</a>
+										・
+										<a
+											href="https://myaccount.google.com/data-and-privacy"
+											className="text-suzuka-500 hover:underline"
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											データとプライバシー
+										</a>
+									</li>
+								</ul>
 							</div>
 						</div>
 					</CardContent>

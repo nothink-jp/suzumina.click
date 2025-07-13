@@ -9,7 +9,7 @@ export default function TermsPage() {
 			<div className="text-center mb-8">
 				<h1 className="text-3xl font-bold text-foreground mb-4">利用規約</h1>
 				<p className="text-lg text-muted-foreground">suzumina.clickサービス利用に関する規約</p>
-				<p className="text-sm text-muted-foreground mt-2">最終更新: 2025年6月27日</p>
+				<p className="text-sm text-muted-foreground mt-2">最終更新: 2025年7月13日</p>
 			</div>
 
 			<div className="space-y-8">
@@ -29,8 +29,9 @@ export default function TermsPage() {
 							<h4 className="font-semibold text-blue-800 mb-2">重要事項</h4>
 							<ul className="text-sm text-blue-700 space-y-1">
 								<li>• 涼花みなせさんや関係者様とは一切関係のない非公式サイトです</li>
-								<li>• 非営利のファン活動として運営されています</li>
+								<li>• ファン活動として運営されています（一部広告による収益化あり）</li>
 								<li>• 個人運営のため、サービスの継続性は保証されません</li>
+								<li>• サイト運営費用確保のため、適切な広告を表示する場合があります</li>
 							</ul>
 						</div>
 					</CardContent>
@@ -195,10 +196,57 @@ export default function TermsPage() {
 					</CardContent>
 				</Card>
 
+				{/* 収益化・広告配信 */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<Badge variant="outline" className="text-xs">
+								NEW
+							</Badge>
+							7. 収益化・広告配信
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="space-y-3">
+							<div>
+								<h4 className="font-semibold text-foreground">広告配信について</h4>
+								<p className="text-sm text-muted-foreground">
+									サイトの運営費用（サーバー代、ドメイン代等）確保のため、Google
+									AdSenseによる適切な広告を配信する場合があります。
+								</p>
+								<ul className="text-sm text-muted-foreground mt-2 space-y-1">
+									<li>• 広告内容はGoogleのポリシーに準拠</li>
+									<li>• ユーザーに不適切な広告の表示制御</li>
+									<li>• 広告収益は全てサイト運営費に充当</li>
+								</ul>
+							</div>
+							<div>
+								<h4 className="font-semibold text-foreground">収益の利用</h4>
+								<p className="text-sm text-muted-foreground">
+									広告による収益は以下の目的にのみ使用されます：
+								</p>
+								<ul className="text-sm text-muted-foreground mt-2 space-y-1">
+									<li>• サーバー・インフラ費用</li>
+									<li>• ドメイン・SSL証明書費用</li>
+									<li>• サイト機能改善・開発費用</li>
+									<li>• その他サイト運営に必要な経費</li>
+								</ul>
+							</div>
+							<div className="bg-green-50 p-3 rounded-lg">
+								<h4 className="font-semibold text-green-800 mb-2">透明性について</h4>
+								<p className="text-sm text-green-700">
+									広告収益や運営費用に関する詳細は、ユーザーからのお問い合わせに可能な範囲で回答いたします。
+									ファンコミュニティの健全な運営を最優先に考えています。
+								</p>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+
 				{/* 準拠法・管轄 */}
 				<Card>
 					<CardHeader>
-						<CardTitle>7. 準拠法・管轄裁判所</CardTitle>
+						<CardTitle>8. 準拠法・管轄裁判所</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<p className="text-sm text-muted-foreground">
