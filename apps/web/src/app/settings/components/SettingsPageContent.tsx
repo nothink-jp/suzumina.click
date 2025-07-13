@@ -59,16 +59,6 @@ export function SettingsPageContent() {
 		updateAgeVerification(isAdult);
 	};
 
-	// Cookie同意の変更
-	const handleConsentChange = (
-		type: "analytics" | "advertising" | "functional" | "personalization",
-		granted: boolean,
-	) => {
-		const newState = { ...consentState, [type]: granted };
-		setConsentState(newState);
-		updateConsent(newState);
-	};
-
 	// 全設定をリセット
 	const handleResetAll = () => {
 		if (confirm("全ての設定をリセットしますか？この操作は元に戻せません。")) {
@@ -170,72 +160,76 @@ export function SettingsPageContent() {
 								</div>
 							</div>
 						</CardHeader>
-						<CardContent className="space-y-6">
-							{/* 必須Cookie */}
-							<div className="flex items-center justify-between">
-								<div className="space-y-1">
-									<div className="flex items-center gap-2">
-										<span className="font-medium">必須Cookie</span>
-										<Badge variant="outline" className="bg-gray-50">
-											必須
-										</Badge>
-									</div>
-									<p className="text-sm text-muted-foreground">
-										サイトの基本機能（ログイン状態、設定保存など）に必要です
-									</p>
+						<CardContent className="space-y-4">
+							{/* 現在の設定状態の概要表示 */}
+							<div className="space-y-3">
+								<div className="flex items-center justify-between">
+									<span className="text-sm font-medium">必須Cookie</span>
+									<Badge variant="default" className="bg-green-100 text-green-800">
+										有効
+									</Badge>
 								</div>
-								<Switch
-									checked={consentState.functional}
-									onCheckedChange={(checked) => handleConsentChange("functional", checked)}
-									disabled={true} // 必須なので無効化
-									aria-label="必須Cookieの設定"
-								/>
+								<div className="flex items-center justify-between">
+									<span className="text-sm font-medium">分析Cookie</span>
+									<Badge
+										variant={consentState.analytics ? "default" : "secondary"}
+										className={consentState.analytics ? "bg-green-100 text-green-800" : ""}
+									>
+										{consentState.analytics ? "有効" : "無効"}
+									</Badge>
+								</div>
+								<div className="flex items-center justify-between">
+									<span className="text-sm font-medium">広告Cookie</span>
+									<Badge
+										variant={consentState.advertising ? "default" : "secondary"}
+										className={consentState.advertising ? "bg-green-100 text-green-800" : ""}
+									>
+										{consentState.advertising ? "有効" : "無効"}
+									</Badge>
+								</div>
+								<div className="flex items-center justify-between">
+									<span className="text-sm font-medium">パーソナライゼーション</span>
+									<Badge
+										variant={consentState.personalization ? "default" : "secondary"}
+										className={consentState.personalization ? "bg-green-100 text-green-800" : ""}
+									>
+										{consentState.personalization ? "有効" : "無効"}
+									</Badge>
+								</div>
 							</div>
 
 							<Separator />
 
-							{/* 分析Cookie */}
 							<div className="flex items-center justify-between">
 								<div className="space-y-1">
-									<div className="flex items-center gap-2">
-										<span className="font-medium">分析Cookie</span>
-										<Badge variant="secondary">任意</Badge>
-									</div>
+									<p className="font-medium">詳細設定</p>
 									<p className="text-sm text-muted-foreground">
-										Google Analyticsによるサイト利用状況の分析に使用されます
+										各カテゴリの詳細設定や個別の制御を行えます
 									</p>
 								</div>
-								<Switch
-									checked={consentState.analytics}
-									onCheckedChange={(checked) => handleConsentChange("analytics", checked)}
-									aria-label="分析Cookieの設定"
-								/>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										// フッターのクッキー設定ボタンをクリックするのと同じ効果
+										const event = new CustomEvent("openCookieSettings");
+										window.dispatchEvent(event);
+									}}
+									className="flex items-center gap-2"
+								>
+									<ChevronRight className="h-4 w-4" />
+									設定画面を開く
+								</Button>
 							</div>
 
-							<Separator />
-
-							{/* 広告Cookie */}
-							<div className="flex items-center justify-between">
-								<div className="space-y-1">
-									<div className="flex items-center gap-2">
-										<span className="font-medium">広告Cookie</span>
-										<Badge variant="secondary">任意</Badge>
-									</div>
-									<p className="text-sm text-muted-foreground">
-										パーソナライズされた広告の表示に使用されます
-									</p>
-								</div>
-								<Switch
-									checked={consentState.advertising}
-									onCheckedChange={(checked) => handleConsentChange("advertising", checked)}
-									aria-label="広告Cookieの設定"
-								/>
-							</div>
-
-							<div className="mt-4 p-4 bg-gray-50 rounded-lg">
-								<p className="text-sm text-muted-foreground">
-									💡 Cookie設定は後からいつでも変更できます。 詳細については
-									<Link href="/privacy" className="text-primary hover:underline">
+							<div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+								<p className="text-sm text-blue-800">
+									💡 詳細なCookie設定は画面下部のフッター「クッキー設定」からもアクセスできます。
+									詳細については
+									<Link
+										href="/privacy"
+										className="text-blue-600 hover:text-blue-800 underline mx-1"
+									>
 										プライバシーポリシー
 									</Link>
 									をご確認ください。

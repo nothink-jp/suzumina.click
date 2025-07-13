@@ -2,7 +2,7 @@
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Settings } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ConsentState } from "@/lib/consent/google-consent-mode";
 import { updateConsent } from "@/lib/consent/google-consent-mode";
 import { CookiePreferencesPanel } from "./cookie-preferences-panel";
@@ -17,6 +17,19 @@ export function CookieSettingsLink() {
 	const handleOpenSettings = () => {
 		setShowSettings(true);
 	};
+
+	// 設定ページなど他の場所からのクッキー設定開きイベントをリッスン
+	useEffect(() => {
+		const handleOpenCookieSettings = () => {
+			setShowSettings(true);
+		};
+
+		window.addEventListener("openCookieSettings", handleOpenCookieSettings);
+
+		return () => {
+			window.removeEventListener("openCookieSettings", handleOpenCookieSettings);
+		};
+	}, []);
 
 	const handleSaveSettings = (consentState: ConsentState) => {
 		updateConsent(consentState);
