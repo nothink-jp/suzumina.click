@@ -1,3 +1,9 @@
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = bundleAnalyzer({
+	enabled: process.env.ANALYZE === "true",
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	transpilePackages: ["@suzumina.click/ui"],
@@ -12,6 +18,12 @@ const nextConfig = {
 	experimental: {
 		// React Compiler（Next.js 15.3対応）
 		reactCompiler: true,
+		// App Router最適化
+		optimizePackageImports: ["lucide-react", "date-fns"],
+		// 並列レンダリング最適化
+		ppr: false, // Partial Prerendering（実験的）
+		// ダイナミックインポート最適化
+		optimizeServerReact: true,
 	},
 
 	// Turbopack設定（安定版）
@@ -193,4 +205,4 @@ const nextConfig = {
 	},
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

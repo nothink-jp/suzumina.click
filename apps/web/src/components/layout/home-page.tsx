@@ -9,10 +9,14 @@ import type {
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { FeaturedAudioButtonsCarousel } from "@/components/audio/featured-audio-buttons-carousel";
-import { FeaturedVideosCarousel } from "@/components/content/featured-videos-carousel";
-import { FeaturedWorksCarousel } from "@/components/content/featured-works-carousel";
-import SearchForm from "@/components/search/search-form";
+import { Suspense } from "react";
+import {
+	LazyFeaturedAudioButtonsCarousel,
+	LazyFeaturedVideosCarousel,
+	LazyFeaturedWorksCarousel,
+	LazySearchForm,
+} from "@/components/optimization/lazy-components";
+import { LoadingSkeleton } from "@/components/optimization/loading-fallback";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface HomePageProps {
@@ -62,8 +66,10 @@ export function HomePage({
 							<br />
 							あーたたちが集まる、あーたたちのためのファンサイトです
 						</p>
-						{/* 検索フォームをClient Componentに分離 */}
-						<SearchForm />
+						{/* 検索フォームをClient Componentに分離 - 遅延読み込み対応 */}
+						<Suspense fallback={<LoadingSkeleton variant="form" />}>
+							<LazySearchForm />
+						</Suspense>
 
 						{/* プレビューリリース案内バナー */}
 						<div className="mt-6 sm:mt-8 mx-auto max-w-3xl">
@@ -126,7 +132,9 @@ export function HomePage({
 							</Link>
 						</Button>
 					</div>
-					<FeaturedAudioButtonsCarousel audioButtons={initialAudioButtons} />
+					<Suspense fallback={<LoadingSkeleton variant="carousel" height={280} />}>
+						<LazyFeaturedAudioButtonsCarousel audioButtons={initialAudioButtons} />
+					</Suspense>
 				</div>
 			</section>
 
@@ -148,7 +156,9 @@ export function HomePage({
 							</Link>
 						</Button>
 					</div>
-					<FeaturedVideosCarousel videos={initialVideos} />
+					<Suspense fallback={<LoadingSkeleton variant="carousel" height={300} />}>
+						<LazyFeaturedVideosCarousel videos={initialVideos} />
+					</Suspense>
 				</div>
 			</section>
 
@@ -177,7 +187,9 @@ export function HomePage({
 							</Link>
 						</Button>
 					</div>
-					<FeaturedWorksCarousel works={worksToShow} />
+					<Suspense fallback={<LoadingSkeleton variant="carousel" height={350} />}>
+						<LazyFeaturedWorksCarousel works={worksToShow} />
+					</Suspense>
 				</div>
 			</section>
 

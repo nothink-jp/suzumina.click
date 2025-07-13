@@ -95,6 +95,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 	return (
 		<html lang="ja" className="scroll-smooth">
 			<head>
+				{/* DNS prefetch for external domains */}
+				<link rel="dns-prefetch" href="//fonts.googleapis.com" />
+				<link rel="dns-prefetch" href="//www.google-analytics.com" />
+				<link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
+				<link rel="dns-prefetch" href="//img.dlsite.jp" />
+				<link rel="dns-prefetch" href="//i.ytimg.com" />
+
+				{/* Preconnect for critical domains */}
+				<link rel="preconnect" href="https://fonts.googleapis.com" />
+				<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
+				{/* Resource hints for performance */}
+				<link rel="prefetch" href="/api/health" />
+
 				<ConsentModeScript />
 				<GoogleAnalyticsScript />
 				<GoogleAdSenseScript />

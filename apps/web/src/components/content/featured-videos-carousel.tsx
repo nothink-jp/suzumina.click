@@ -10,7 +10,7 @@ export function FeaturedVideosCarousel({ videos }: FeaturedVideosCarouselProps) 
 	return (
 		<GenericCarousel
 			items={videos}
-			renderItem={(video) => <VideoCard video={video} />}
+			renderItem={(video, index) => <VideoCard video={video} priority={index < 3} />}
 			emptyStateMessage="新着動画を読み込み中..."
 			getItemKey={(video) => video.id}
 		/>

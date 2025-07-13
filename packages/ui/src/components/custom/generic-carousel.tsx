@@ -9,7 +9,7 @@ import {
 
 interface GenericCarouselProps<T> {
 	items: T[];
-	renderItem: (item: T) => ReactNode;
+	renderItem: (item: T, index: number) => ReactNode;
 	emptyStateMessage: string;
 	getItemKey: (item: T) => string;
 	itemClassName?: string;
@@ -44,7 +44,7 @@ export function GenericCarousel<T>({
 			}}
 		>
 			<CarouselContent className="-ml-2 md:-ml-4">
-				{items.map((item) => (
+				{items.map((item, index) => (
 					<CarouselItem
 						key={getItemKey(item)}
 						className={`pl-2 md:pl-4 min-w-0 ${itemClassName || ""}`}
@@ -55,7 +55,7 @@ export function GenericCarousel<T>({
 							maxWidth: `${cardMaxWidth}px`,
 						}}
 					>
-						{renderItem(item)}
+						{renderItem(item, index)}
 					</CarouselItem>
 				))}
 			</CarouselContent>

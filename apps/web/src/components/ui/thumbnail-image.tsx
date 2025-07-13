@@ -12,6 +12,8 @@ interface ThumbnailImageProps {
 	height?: number;
 	sizes?: string;
 	fallbackSrc?: string; // フォールバック画像URL
+	loading?: "lazy" | "eager"; // 遅延読み込み制御
+	quality?: number; // 画像品質（1-100）
 }
 
 const PLACEHOLDER_IMAGE =
@@ -38,6 +40,8 @@ const ThumbnailImage = memo(function ThumbnailImage({
 	height = 240,
 	sizes = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw",
 	fallbackSrc,
+	loading = "lazy",
+	quality = 85,
 }: ThumbnailImageProps) {
 	const [imageSrc, setImageSrc] = useState(() => {
 		const safeSrc = typeof src === "string" && src.trim() !== "" ? src : PLACEHOLDER_IMAGE;
@@ -90,6 +94,8 @@ const ThumbnailImage = memo(function ThumbnailImage({
 				fill
 				priority={priority}
 				sizes={sizes}
+				loading={priority ? "eager" : loading}
+				quality={quality}
 				onError={handleError}
 				placeholder="blur"
 				blurDataURL={PLACEHOLDER_IMAGE}

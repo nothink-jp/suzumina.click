@@ -10,7 +10,12 @@ export function FeaturedWorksCarousel({ works }: FeaturedWorksCarouselProps) {
 	return (
 		<GenericCarousel
 			items={works}
-			renderItem={(work) => <WorkCard work={work} />}
+			renderItem={(work, index) => (
+				<WorkCard
+					work={work}
+					priority={index < 3} // 最初の3つの画像のみプリロード
+				/>
+			)}
 			emptyStateMessage="新着作品を読み込み中..."
 			getItemKey={(work) => work.id}
 		/>
