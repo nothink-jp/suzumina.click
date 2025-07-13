@@ -103,16 +103,6 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         }
       }
 
-      # Discord Bot Token (Secret Managerから取得)
-      env {
-        name = "DISCORD_BOT_TOKEN"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.secrets["DISCORD_BOT_TOKEN"].secret_id
-            version = "latest"
-          }
-        }
-      }
 
       # NextAuth Secret (Secret Managerから取得)
       env {

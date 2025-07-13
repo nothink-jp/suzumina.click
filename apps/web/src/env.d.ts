@@ -5,7 +5,6 @@ declare namespace NodeJS {
 		// Discord OAuth
 		readonly DISCORD_CLIENT_ID: string;
 		readonly DISCORD_CLIENT_SECRET: string;
-		readonly DISCORD_BOT_TOKEN?: string;
 
 		// NextAuth
 		readonly NEXTAUTH_SECRET: string;

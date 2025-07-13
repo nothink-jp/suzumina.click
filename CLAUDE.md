@@ -118,7 +118,6 @@ NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-nextauth-secret
 DISCORD_CLIENT_ID=your-discord-client-id
 DISCORD_CLIENT_SECRET=your-discord-client-secret
-DISCORD_BOT_TOKEN=your-discord-bot-token
 GOOGLE_CLOUD_PROJECT=suzumina-click
 YOUTUBE_API_KEY=your-youtube-api-key
 

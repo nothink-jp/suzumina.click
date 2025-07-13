@@ -35,10 +35,6 @@ locals {
       description = "Discord OAuth Client Secret"
     },
     {
-      id          = "DISCORD_BOT_TOKEN"
-      description = "Discord Bot Token"
-    },
-    {
       id          = "NEXTAUTH_SECRET"
       description = "NextAuth.js encryption secret"
     }
@@ -93,7 +89,6 @@ resource "google_secret_manager_secret_version" "secret_versions" {
   for_each = {
     "DISCORD_CLIENT_ID"     = var.discord_client_id
     "DISCORD_CLIENT_SECRET" = var.discord_client_secret
-    "DISCORD_BOT_TOKEN"     = var.discord_bot_token
     "NEXTAUTH_SECRET"       = var.nextauth_secret
     "YOUTUBE_API_KEY"       = var.youtube_api_key
   }

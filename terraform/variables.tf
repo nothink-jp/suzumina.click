@@ -131,12 +131,6 @@ variable "discord_client_secret" {
   sensitive   = true
 }
 
-variable "discord_bot_token" {
-  description = "Discord Bot Token for guild member verification (optional)"
-  type        = string
-  sensitive   = true
-  default     = ""  # オプション
-}
 
 variable "nextauth_secret" {
   description = "NextAuth.js secret for JWT encryption (generate with: openssl rand -base64 32)"
