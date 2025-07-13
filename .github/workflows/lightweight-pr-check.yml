@@ -18,6 +18,8 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       web: ${{ steps.changes.outputs.web }}
       admin: ${{ steps.changes.outputs.admin }}
@@ -54,6 +56,8 @@ jobs:
   quick-check:
     name: Quick Quality Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: changes
     if: needs.changes.outputs.web == 'true' || needs.changes.outputs.admin == 'true' || needs.changes.outputs.shared-types == 'true' || needs.changes.outputs.ui == 'true'
     timeout-minutes: 10
@@ -118,6 +122,8 @@ jobs:
   functions-check:
     name: Functions Quality Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: changes
     if: needs.changes.outputs.functions == 'true'
     timeout-minutes: 8
@@ -155,6 +161,8 @@ jobs:
   security-check:
     name: Security Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: contains(github.event.pull_request.title, 'deps') || contains(github.event.pull_request.title, 'security') || contains(github.event.pull_request.labels.*.name, 'security')
     timeout-minutes: 5
     
@@ -182,6 +190,8 @@ jobs:
   pr-summary:
     name: PR Summary
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [changes, quick-check, functions-check, security-check]
     if: always()
     
