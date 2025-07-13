@@ -9,7 +9,7 @@ import {
 	DialogTitle,
 } from "@suzumina.click/ui/components/ui/dialog";
 import { Switch } from "@suzumina.click/ui/components/ui/switch";
-import { BarChart3, Shield, Target, User, X } from "lucide-react";
+import { BarChart3, Shield, Target, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useIsClient } from "@/hooks/useIsClient";
 import { type ConsentState, getCurrentConsentState } from "@/lib/consent/google-consent-mode";
@@ -88,11 +88,11 @@ export function CookiePreferencesPanel({
 		advertising: false,
 		personalization: false,
 	});
-	const [isLoaded, setIsLoaded] = useState(false);
 
 	useEffect(() => {
 		// Load existing preferences when client-side using unified system
-		if (isClient && !isLoaded) {
+		if (isClient && open) {
+			// パネルが開かれた時に最新の設定を読み込む
 			const saved = getCurrentConsentState();
 			if (saved) {
 				setPreferences({
@@ -100,7 +100,7 @@ export function CookiePreferencesPanel({
 					functional: saved.functional !== false, // Default to true if undefined
 					analytics: saved.analytics === true,
 					advertising: saved.advertising === true,
-					personalization: false, // Map to false for now
+					personalization: saved.personalization === true,
 				});
 			} else {
 				// Set default values if no saved consent
@@ -112,9 +112,8 @@ export function CookiePreferencesPanel({
 					personalization: false,
 				});
 			}
-			setIsLoaded(true);
 		}
-	}, [isClient, isLoaded]);
+	}, [isClient, open]); // openに依存するように変更
 
 	const handleToggle = (categoryId: keyof ConsentChoices, enabled: boolean) => {
 		setPreferences((prev) => ({
