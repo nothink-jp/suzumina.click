@@ -47,10 +47,6 @@ const nextConfig = {
 		imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
 		// 高解像度画像対応のため制限を緩和
 		unoptimized: false,
-		// 画像品質最適化
-		quality: 85, // デフォルト品質
-		// プログレッシブJPEG有効化
-		progressive: true,
 		// 外部画像ドメインの許可（YouTubeサムネイル・DLsite画像・Discord CDN用）
 		remotePatterns: [
 			{
