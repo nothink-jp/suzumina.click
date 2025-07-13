@@ -26,6 +26,9 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       max_instance_count = local.current_env.cloud_run_max_instances
     }
 
+    # コンテナ同時実行数（Next.jsアプリに最適化）
+    max_instance_request_concurrency = 80
+
     # コンテナ設定
     containers {
       # Artifact Registryのイメージを参照

@@ -22,8 +22,8 @@ locals {
     }
     production = {
       # 本番環境（個人利用レベル・安定性重視）
-      cloud_run_min_instances = 0     # コールドスタート許可
-      cloud_run_max_instances = 2     # 個人利用レベル
+      cloud_run_min_instances = 1     # コールドスタート回避・レイテンシ改善
+      cloud_run_max_instances = 3     # トラフィック急増対応
       cloud_run_cpu          = "1000m"
       cloud_run_memory       = "1Gi"
       functions_memory        = "512Mi" 
