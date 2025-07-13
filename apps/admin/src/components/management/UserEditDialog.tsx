@@ -20,7 +20,8 @@ import {
 import { Switch } from "@suzumina.click/ui/components/ui/switch";
 import { Edit } from "lucide-react";
 import { useState } from "react";
-import { showToast } from "@/lib/toast";
+import { toast } from "sonner";
+import { updateUser } from "@/app/actions/user-actions";
 
 interface User {
 	id: string;
@@ -50,25 +51,17 @@ export function UserEditDialog({ user, onUpdate }: UserEditDialogProps) {
 		setLoading(true);
 
 		try {
-			const response = await fetch(`/api/admin/users/${user.id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(formData),
-			});
-
-			const result = await response.json();
+			const result = await updateUser(user.id, formData);
 
 			if (result.success) {
-				showToast.success("ユーザー情報を更新しました");
+				toast.success(result.message);
 				setOpen(false);
 				onUpdate();
 			} else {
-				showToast.error(`エラー: ${result.error}`);
+				toast.error(result.message);
 			}
 		} catch (_error) {
-			showToast.error("更新に失敗しました");
+			toast.error("更新に失敗しました");
 		} finally {
 			setLoading(false);
 		}

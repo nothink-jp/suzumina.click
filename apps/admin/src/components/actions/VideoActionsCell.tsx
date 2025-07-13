@@ -2,8 +2,10 @@
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ExternalLink } from "lucide-react";
-import { DeleteDialog } from "./DeleteDialog";
-import { EditDialog } from "./EditDialog";
+import { toast } from "sonner";
+import { deleteVideo, updateVideo } from "@/app/actions/video-actions";
+import { ConfirmDialog } from "../common/confirm-dialog";
+import { FormDialog } from "../common/form-dialog";
 
 interface VideoData {
 	id: string;
@@ -19,45 +21,29 @@ interface VideoActionsCellProps {
 
 export function VideoActionsCell({ video }: VideoActionsCellProps) {
 	const handleEdit = async (data: Record<string, unknown>) => {
-		try {
-			const response = await fetch(`/api/admin/videos/${video.videoId}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(data),
-			});
+		const result = await updateVideo(video.videoId, {
+			title: data.title as string,
+			description: data.description as string,
+			tags: data.tags as string[],
+		});
 
-			const result = await response.json();
-			if (result.success) {
-				alert(result.message);
-				return true;
-			}
-			alert(`エラー: ${result.error}`);
-			return false;
-		} catch (_error) {
-			alert("更新に失敗しました");
-			return false;
+		if (result.success) {
+			toast.success(result.message);
+			return true;
 		}
+		toast.error(result.message);
+		return false;
 	};
 
 	const handleDelete = async () => {
-		try {
-			const response = await fetch(`/api/admin/videos/${video.videoId}`, {
-				method: "DELETE",
-			});
+		const result = await deleteVideo(video.videoId);
 
-			const result = await response.json();
-			if (result.success) {
-				alert(result.message);
-				return true;
-			}
-			alert(`エラー: ${result.error}`);
-			return false;
-		} catch (_error) {
-			alert("削除に失敗しました");
-			return false;
+		if (result.success) {
+			toast.success(result.message);
+			return true;
 		}
+		toast.error(result.message);
+		return false;
 	};
 
 	const editFields = [
@@ -95,18 +81,18 @@ export function VideoActionsCell({ video }: VideoActionsCellProps) {
 				</a>
 			</Button>
 
-			<EditDialog
+			<FormDialog
 				title="動画情報編集"
 				description="動画の情報を編集します。"
 				fields={editFields}
 				onSave={handleEdit}
 			/>
 
-			<DeleteDialog
+			<ConfirmDialog
 				title="動画削除"
 				description="この動画を削除しますか？"
 				warningText="関連する音声ボタンがある場合は削除できません。"
-				onDelete={handleDelete}
+				onConfirm={handleDelete}
 			/>
 		</div>
 	);

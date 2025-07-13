@@ -2,8 +2,10 @@
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ExternalLink } from "lucide-react";
-import { DeleteDialog } from "./DeleteDialog";
-import { EditDialog } from "./EditDialog";
+import { toast } from "sonner";
+import { deleteWork, updateWork } from "@/app/actions/work-actions";
+import { ConfirmDialog } from "../common/confirm-dialog";
+import { FormDialog } from "../common/form-dialog";
 
 interface WorkData {
 	id: string;
@@ -26,57 +28,40 @@ interface WorkActionsCellProps {
 
 export function WorkActionsCell({ work }: WorkActionsCellProps) {
 	const handleEdit = async (data: Record<string, unknown>) => {
-		try {
-			// タグを配列に変換
-			const processedData = {
-				...data,
-				tags:
-					typeof data.tags === "string"
-						? data.tags
-								.split(",")
-								.map((tag) => tag.trim())
-								.filter(Boolean)
-						: data.tags,
-			};
+		// タグを配列に変換
+		const tags =
+			typeof data.tags === "string"
+				? data.tags
+						.split(",")
+						.map((tag) => tag.trim())
+						.filter(Boolean)
+				: (data.tags as string[]);
 
-			const response = await fetch(`/api/admin/works/${work.workId}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(processedData),
-			});
+		const result = await updateWork(work.workId, {
+			title: data.title as string,
+			description: data.description as string,
+			price: data.price as number,
+			tags,
+			isOnSale: data.isOnSale === "true",
+		});
 
-			const result = await response.json();
-			if (result.success) {
-				alert(result.message);
-				return true;
-			}
-			alert(`エラー: ${result.error}`);
-			return false;
-		} catch (_error) {
-			alert("更新に失敗しました");
-			return false;
+		if (result.success) {
+			toast.success(result.message);
+			return true;
 		}
+		toast.error(result.message);
+		return false;
 	};
 
 	const handleDelete = async () => {
-		try {
-			const response = await fetch(`/api/admin/works/${work.workId}`, {
-				method: "DELETE",
-			});
+		const result = await deleteWork(work.workId);
 
-			const result = await response.json();
-			if (result.success) {
-				alert(result.message);
-				return true;
-			}
-			alert(`エラー: ${result.error}`);
-			return false;
-		} catch (_error) {
-			alert("削除に失敗しました");
-			return false;
+		if (result.success) {
+			toast.success(result.message);
+			return true;
 		}
+		toast.error(result.message);
+		return false;
 	};
 
 	const editFields = [
@@ -130,18 +115,18 @@ export function WorkActionsCell({ work }: WorkActionsCellProps) {
 				</a>
 			</Button>
 
-			<EditDialog
+			<FormDialog
 				title="作品情報編集"
 				description="作品の情報を編集します。"
 				fields={editFields}
 				onSave={handleEdit}
 			/>
 
-			<DeleteDialog
+			<ConfirmDialog
 				title="作品削除"
 				description="この作品を削除しますか？"
 				warningText="削除すると元に戻すことはできません。"
-				onDelete={handleDelete}
+				onConfirm={handleDelete}
 			/>
 		</div>
 	);

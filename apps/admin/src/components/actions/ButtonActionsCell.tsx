@@ -2,8 +2,10 @@
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ExternalLink } from "lucide-react";
-import { DeleteDialog } from "./DeleteDialog";
-import { EditDialog } from "./EditDialog";
+import { toast } from "sonner";
+import { deleteAudioButton, updateAudioButton } from "@/app/actions/button-actions";
+import { ConfirmDialog } from "../common/confirm-dialog";
+import { FormDialog } from "../common/form-dialog";
 
 interface AudioButton {
 	id: string;
@@ -20,45 +22,30 @@ interface ButtonActionsCellProps {
 
 export function ButtonActionsCell({ button }: ButtonActionsCellProps) {
 	const handleEdit = async (data: Record<string, unknown>) => {
-		try {
-			const response = await fetch(`/api/admin/buttons/${button.id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(data),
-			});
+		const result = await updateAudioButton(button.id, {
+			title: data.title as string,
+			startTime: data.startTime as number,
+			endTime: data.endTime as number,
+			isPublic: data.isPublic === "true",
+		});
 
-			const result = await response.json();
-			if (result.success) {
-				alert(result.message);
-				return true;
-			}
-			alert(`エラー: ${result.error}`);
-			return false;
-		} catch (_error) {
-			alert("更新に失敗しました");
-			return false;
+		if (result.success) {
+			toast.success(result.message);
+			return true;
 		}
+		toast.error(result.message);
+		return false;
 	};
 
 	const handleDelete = async () => {
-		try {
-			const response = await fetch(`/api/admin/buttons/${button.id}`, {
-				method: "DELETE",
-			});
+		const result = await deleteAudioButton(button.id);
 
-			const result = await response.json();
-			if (result.success) {
-				alert(result.message);
-				return true;
-			}
-			alert(`エラー: ${result.error}`);
-			return false;
-		} catch (_error) {
-			alert("削除に失敗しました");
-			return false;
+		if (result.success) {
+			toast.success(result.message);
+			return true;
 		}
+		toast.error(result.message);
+		return false;
 	};
 
 	const editFields = [
@@ -106,18 +93,18 @@ export function ButtonActionsCell({ button }: ButtonActionsCellProps) {
 				</a>
 			</Button>
 
-			<EditDialog
+			<FormDialog
 				title="音声ボタン編集"
 				description="音声ボタンの情報を編集します。"
 				fields={editFields}
 				onSave={handleEdit}
 			/>
 
-			<DeleteDialog
+			<ConfirmDialog
 				title="音声ボタン削除"
 				description="この音声ボタンを削除しますか？"
 				warningText="関連するお気に入りも一緒に削除されます。削除すると元に戻すことはできません。"
-				onDelete={handleDelete}
+				onConfirm={handleDelete}
 			/>
 		</div>
 	);

@@ -11,8 +11,8 @@ import {
 } from "@suzumina.click/ui/components/ui/table";
 import { Shield, ShieldCheck, User } from "lucide-react";
 import { useState } from "react";
-import { UserDeleteDialog } from "@/components/UserDeleteDialog";
-import { UserEditDialog } from "@/components/UserEditDialog";
+import { UserDeleteDialog } from "@/components/management/UserDeleteDialog";
+import { UserEditDialog } from "@/components/management/UserEditDialog";
 
 interface AdminUser {
 	id: string;

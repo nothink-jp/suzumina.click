@@ -10,20 +10,21 @@ import {
 } from "@suzumina.click/ui/components/ui/dialog";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { deleteUser } from "@/app/actions/user-actions";
 
-interface Contact {
+interface User {
 	id: string;
-	name: string;
-	email: string;
-	subject: string;
+	username: string;
+	displayName: string;
 }
 
-interface ContactDeleteDialogProps {
-	contact: Contact;
+interface UserDeleteDialogProps {
+	user: User;
 	onDelete: () => void;
 }
 
-export function ContactDeleteDialog({ contact, onDelete }: ContactDeleteDialogProps) {
+export function UserDeleteDialog({ user, onDelete }: UserDeleteDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
 
@@ -31,21 +32,17 @@ export function ContactDeleteDialog({ contact, onDelete }: ContactDeleteDialogPr
 		setLoading(true);
 
 		try {
-			const response = await fetch(`/api/admin/contacts/${contact.id}`, {
-				method: "DELETE",
-			});
-
-			const result = await response.json();
+			const result = await deleteUser(user.id);
 
 			if (result.success) {
-				alert("お問い合わせを削除しました");
+				toast.success(result.message);
 				setOpen(false);
 				onDelete();
 			} else {
-				alert(`エラー: ${result.error}`);
+				toast.error(result.message);
 			}
 		} catch (_error) {
-			alert("削除に失敗しました");
+			toast.error("削除に失敗しました");
 		} finally {
 			setLoading(false);
 		}
@@ -61,17 +58,17 @@ export function ContactDeleteDialog({ contact, onDelete }: ContactDeleteDialogPr
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
-					<DialogTitle>お問い合わせ削除確認</DialogTitle>
+					<DialogTitle>ユーザー削除確認</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-4">
-					<p className="text-sm text-gray-600">以下のお問い合わせを削除しますか？</p>
+					<p className="text-sm text-gray-600">以下のユーザーを非アクティブ化しますか？</p>
 					<div className="bg-gray-50 p-3 rounded-md">
-						<p className="font-medium">{contact.subject}</p>
-						<p className="text-sm text-gray-600">
-							差出人: {contact.name} ({contact.email})
-						</p>
+						<p className="font-medium">{user.displayName}</p>
+						<p className="text-sm text-gray-600">@{user.username}</p>
 					</div>
-					<p className="text-sm text-red-600">※ この操作は元に戻せません。</p>
+					<p className="text-sm text-red-600">
+						※ この操作により、ユーザーは非アクティブ状態になります。完全な削除は行われません。
+					</p>
 					<div className="flex justify-end space-x-2 pt-4">
 						<Button
 							type="button"

@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { AdminNavigation } from "./AdminNavigation";
+import { AdminNavigation } from "./navigation/AdminNavigation";
 
 interface AdminLayoutWrapperProps {
 	children: React.ReactNode;

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ContactManagementClient } from "@/components/ContactManagementClient";
+import { ContactManagementClient } from "@/components/management/ContactManagementClient";
 import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 

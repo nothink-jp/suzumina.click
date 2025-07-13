@@ -20,7 +20,8 @@ import {
 import { Textarea } from "@suzumina.click/ui/components/ui/textarea";
 import { Eye, MessageSquare } from "lucide-react";
 import { useState } from "react";
-import { showToast } from "@/lib/toast";
+import { toast } from "sonner";
+import { updateContact } from "@/app/actions/contact-actions";
 
 interface Contact {
 	id: string;
@@ -58,25 +59,17 @@ export function ContactDetailDialog({
 		setLoading(true);
 
 		try {
-			const response = await fetch(`/api/admin/contacts/${contact.id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(formData),
-			});
-
-			const result = await response.json();
+			const result = await updateContact(contact.id, formData);
 
 			if (result.success) {
-				showToast.success("お問い合わせ情報を更新しました");
+				toast.success(result.message);
 				setOpen(false);
 				onUpdate();
 			} else {
-				showToast.error(`エラー: ${result.error}`);
+				toast.error(result.message);
 			}
 		} catch (_error) {
-			showToast.error("更新に失敗しました");
+			toast.error("更新に失敗しました");
 		} finally {
 			setLoading(false);
 		}

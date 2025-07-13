@@ -7,7 +7,7 @@ import {
 } from "@suzumina.click/ui/components/ui/card";
 import { AlertTriangle, Shield } from "lucide-react";
 import { redirect } from "next/navigation";
-import { LoginButton } from "@/components/LoginButton";
+import { LoginButton } from "@/components/auth/LoginButton";
 import { auth } from "@/lib/auth";
 
 export default async function LoginPage() {

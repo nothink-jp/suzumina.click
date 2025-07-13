@@ -4,6 +4,9 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
+import { refreshVideoData } from "@/app/actions/video-actions";
+import { refreshAllWorksData } from "@/app/actions/work-actions";
 
 interface RefreshButtonProps {
 	type?: "videos" | "works";
@@ -20,28 +23,17 @@ export function RefreshButton({ type }: RefreshButtonProps = {}) {
 	const handleRefresh = async () => {
 		setIsLoading(true);
 		try {
-			const endpoint =
-				refreshType === "videos" ? "/api/admin/videos/refresh" : "/api/admin/works/refresh";
-
-			const response = await fetch(endpoint, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			});
-
-			const result = await response.json();
+			const result =
+				refreshType === "videos" ? await refreshVideoData() : await refreshAllWorksData();
 
 			if (result.success) {
-				// 成功メッセージを表示（簡単な実装）
-				alert(result.message);
-				// ページをリロードして最新データを表示
+				toast.success(result.message);
 				router.refresh();
 			} else {
-				alert(`エラー: ${result.error}`);
+				toast.error(result.message);
 			}
 		} catch (_error) {
-			alert("更新に失敗しました");
+			toast.error("更新に失敗しました");
 		} finally {
 			setIsLoading(false);
 		}

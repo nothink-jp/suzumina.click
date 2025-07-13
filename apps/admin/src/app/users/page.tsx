@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { UserManagementClient } from "@/components/UserManagementClient";
+import { UserManagementClient } from "@/components/management/UserManagementClient";
 import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 

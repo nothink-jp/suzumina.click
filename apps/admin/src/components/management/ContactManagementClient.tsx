@@ -10,8 +10,8 @@ import {
 	TableRow,
 } from "@suzumina.click/ui/components/ui/table";
 import { useState } from "react";
-import { ContactDeleteDialog } from "@/components/ContactDeleteDialog";
-import { ContactDetailDialog } from "@/components/ContactDetailDialog";
+import { ContactDeleteDialog } from "@/components/management/ContactDeleteDialog";
+import { ContactDetailDialog } from "@/components/management/ContactDetailDialog";
 
 interface Contact {
 	id: string;

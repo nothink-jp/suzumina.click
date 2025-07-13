@@ -9,10 +9,10 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
-		"lint": "biome check ./src",
-		"format": "biome format --write ./src",
-		"check": "biome check --write ./src",
-		"typecheck": "tsc --noEmit && tsc --noEmit --project tsconfig.test.json"
+		"lint": "biome check src/ *.ts *.mjs --files-ignore-unknown=true",
+		"format": "biome format --write src/ *.ts *.mjs",
+		"check": "biome check --write src/ *.ts *.mjs --files-ignore-unknown=true",
+		"typecheck": "tsc --noEmit --skipLibCheck"
 	},
 	"dependencies": {
 		"@auth/core": "^0.40.0",

@@ -17,7 +17,7 @@ import { Edit, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-interface EditField {
+interface FormField {
 	key: string;
 	label: string;
 	type: "text" | "textarea" | "number" | "select";
@@ -25,23 +25,27 @@ interface EditField {
 	options?: { value: string; label: string }[];
 }
 
-interface EditDialogProps {
+interface FormDialogProps {
 	title: string;
 	description: string;
-	fields: EditField[];
+	fields: FormField[];
 	onSave: (data: Record<string, unknown>) => Promise<boolean>;
 	triggerText?: string;
 	triggerVariant?: "default" | "outline" | "ghost";
+	saveText?: string;
+	cancelText?: string;
 }
 
-export function EditDialog({
+export function FormDialog({
 	title,
 	description,
 	fields,
 	onSave,
 	triggerText = "編集",
 	triggerVariant = "outline",
-}: EditDialogProps) {
+	saveText = "保存",
+	cancelText = "キャンセル",
+}: FormDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [formData, setFormData] = useState<Record<string, unknown>>(() => {
@@ -126,12 +130,12 @@ export function EditDialog({
 					))}
 				</div>
 				<DialogFooter>
-					<Button variant="outline" onClick={() => setOpen(false)}>
-						キャンセル
+					<Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+						{cancelText}
 					</Button>
 					<Button onClick={handleSave} disabled={isLoading}>
 						{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-						保存
+						{saveText}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ButtonActionsCell } from "@/components/ButtonActionsCell";
+import { ButtonActionsCell } from "@/components/actions/ButtonActionsCell";
 import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 

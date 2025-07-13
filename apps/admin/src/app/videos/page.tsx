@@ -22,8 +22,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { RefreshButton } from "@/components/RefreshButton";
-import { VideoActionsCell } from "@/components/VideoActionsCell";
+import { RefreshButton } from "@/components/actions/RefreshButton";
+import { VideoActionsCell } from "@/components/actions/VideoActionsCell";
 import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
