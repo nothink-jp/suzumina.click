@@ -29,7 +29,7 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { useAgeVerification } from "@/contexts/AgeVerificationContext";
+import { useAgeVerification } from "@/contexts/age-verification-context";
 
 // Date range filter component
 function DateRangeFilter({

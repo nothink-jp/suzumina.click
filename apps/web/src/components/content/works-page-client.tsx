@@ -9,7 +9,7 @@ import {
 import { Suspense, useEffect, useState } from "react";
 import { getWorks } from "@/app/works/actions";
 import WorkList from "@/app/works/components/WorkList";
-import { useAgeVerification } from "@/contexts/AgeVerificationContext";
+import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface WorksPageClientProps {
 	searchParams: { [key: string]: string | string[] | undefined };

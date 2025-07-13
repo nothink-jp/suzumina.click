@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AgeVerificationProvider } from "../../contexts/AgeVerificationContext";
-import SearchPageContent from "./SearchPageContent";
+import { AgeVerificationProvider } from "../../contexts/age-verification-context";
+import SearchPageContent from "./search-page-content";
 
 // Mock dependencies
 const mockPush = vi.fn();
@@ -126,7 +126,7 @@ vi.mock("next/link", () => ({
 }));
 
 // Mock useDebounce hook
-vi.mock("@/hooks/useDebounce", () => ({
+vi.mock("@/hooks/use-debounce", () => ({
 	useDebounce: (value: any) => value, // Return value immediately for testing
 }));
 

@@ -18,7 +18,7 @@ import { FileText, Shield } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import Pagination from "@/components/ui/pagination";
-import { useAgeVerification } from "@/contexts/AgeVerificationContext";
+import { useAgeVerification } from "@/contexts/age-verification-context";
 import WorkCard from "./WorkCard";
 
 interface WorkListProps {

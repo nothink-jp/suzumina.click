@@ -4,7 +4,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { AlertTriangle, Calendar, Heart, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAgeVerification } from "@/contexts/AgeVerificationContext";
+import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface AgeVerificationGateProps {
 	children: React.ReactNode;

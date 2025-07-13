@@ -14,7 +14,7 @@ import { Switch } from "@suzumina.click/ui/components/ui/switch";
 import { ChevronRight, Cookie, RotateCcw, Shield, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useAgeVerification } from "@/contexts/AgeVerificationContext";
+import { useAgeVerification } from "@/contexts/age-verification-context";
 import { getCurrentConsentState, resetAllConsent } from "@/lib/consent/google-consent-mode";
 
 export function SettingsPageContent() {

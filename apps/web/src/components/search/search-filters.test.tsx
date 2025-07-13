@@ -1,7 +1,7 @@
 import type { UnifiedSearchFilters } from "@suzumina.click/shared-types";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { AgeVerificationProvider } from "../../contexts/AgeVerificationContext";
+import { AgeVerificationProvider } from "../../contexts/age-verification-context";
 import { SearchFilters } from "./search-filters";
 
 const mockFilters: UnifiedSearchFilters = {

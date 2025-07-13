@@ -1,5 +1,6 @@
 "use server";
 
+import { type DateRangePreset, getDateRangeFromPreset } from "@suzumina.click/shared-types";
 import * as logger from "@/lib/logger";
 import { getAudioButtons, getRecentAudioButtons } from "./buttons/actions";
 import { getVideoTitles } from "./videos/actions";
@@ -151,6 +152,143 @@ export async function searchWorks(query: string, limit = 6) {
 /**
  * 音声ボタン検索を行うServer Action（統合検索API用）
  */
+/**
+ * 統合検索Server Action
+ * 音声ボタン、動画、作品を横断検索する
+ */
+export async function searchUnified(filters: {
+	query: string;
+	type: "all" | "buttons" | "videos" | "works";
+	limit: number;
+	sortBy?: string;
+	dateRange?: string;
+	dateFrom?: string;
+	dateTo?: string;
+	tags?: string[];
+	tagMode?: "any" | "all";
+	playCountMin?: number;
+	playCountMax?: number;
+	likeCountMin?: number;
+	likeCountMax?: number;
+	favoriteCountMin?: number;
+	favoriteCountMax?: number;
+	durationMin?: number;
+	durationMax?: number;
+}) {
+	try {
+		const searchQuery = filters.query?.trim() || "";
+		const { type, limit } = filters;
+
+		if (!searchQuery) {
+			return {
+				audioButtons: [],
+				videos: [],
+				works: [],
+				totalCount: { buttons: 0, videos: 0, works: 0 },
+				hasMore: { buttons: false, videos: false, works: false },
+			};
+		}
+
+		// 日付範囲処理
+		let createdAfter: string | undefined;
+		let createdBefore: string | undefined;
+
+		if (filters.dateRange) {
+			const { from, to } = getDateRangeFromPreset(filters.dateRange as DateRangePreset);
+			createdAfter = from.toISOString();
+			createdBefore = to.toISOString();
+		} else if (filters.dateFrom || filters.dateTo) {
+			createdAfter = filters.dateFrom;
+			createdBefore = filters.dateTo;
+		}
+
+		// 並行実行で検索
+		const [audioButtonsResult, videosResult, worksResult] = await Promise.all([
+			// 音声ボタン検索
+			(async () => {
+				if (type !== "all" && type !== "buttons") {
+					return { audioButtons: [], total: 0, hasMore: false };
+				}
+				try {
+					const result = await searchAudioButtons({
+						searchText: searchQuery,
+						limit: type === "buttons" ? limit : Math.min(limit, 6),
+						onlyPublic: true,
+						sortBy:
+							(filters.sortBy as "newest" | "oldest" | "popular" | "mostPlayed" | "relevance") ||
+							"newest",
+						tags: filters.tags,
+						createdAfter,
+						createdBefore,
+						playCountMin: filters.playCountMin,
+						playCountMax: filters.playCountMax,
+						likeCountMin: filters.likeCountMin,
+						likeCountMax: filters.likeCountMax,
+						favoriteCountMin: filters.favoriteCountMin,
+						favoriteCountMax: filters.favoriteCountMax,
+						durationMin: filters.durationMin,
+						durationMax: filters.durationMax,
+					});
+					return {
+						audioButtons: result.audioButtons,
+						total: result.totalCount,
+						hasMore: result.hasMore,
+					};
+				} catch {
+					return { audioButtons: [], total: 0, hasMore: false };
+				}
+			})(),
+			// 動画検索
+			(async () => {
+				if (type !== "all" && type !== "videos") {
+					return [];
+				}
+				try {
+					return await searchVideos(searchQuery, type === "videos" ? limit : Math.min(limit, 6));
+				} catch {
+					return [];
+				}
+			})(),
+			// 作品検索
+			(async () => {
+				if (type !== "all" && type !== "works") {
+					return [];
+				}
+				try {
+					return await searchWorks(searchQuery, type === "works" ? limit : Math.min(limit, 6));
+				} catch {
+					return [];
+				}
+			})(),
+		]);
+
+		return {
+			audioButtons: audioButtonsResult.audioButtons,
+			videos: videosResult,
+			works: worksResult,
+			totalCount: {
+				buttons: audioButtonsResult.total,
+				videos: videosResult.length,
+				works: worksResult.length,
+			},
+			hasMore: {
+				buttons: audioButtonsResult.hasMore,
+				videos: videosResult.length >= (type === "videos" ? limit : Math.min(limit, 6)),
+				works: worksResult.length >= (type === "works" ? limit : Math.min(limit, 6)),
+			},
+		};
+	} catch (error) {
+		logger.error("Unified search error", { filters, error });
+		return {
+			audioButtons: [],
+			videos: [],
+			works: [],
+			totalCount: { buttons: 0, videos: 0, works: 0 },
+			hasMore: { buttons: false, videos: false, works: false },
+		};
+	}
+}
+
 export async function searchAudioButtons(params: {
 	searchText: string;
 	limit: number;

@@ -3,7 +3,7 @@ import { cn } from "@suzumina.click/ui/lib/utils";
 import { Loader2, Search, X } from "lucide-react";
 import { type KeyboardEvent, useCallback, useRef, useState } from "react";
 import type { AutocompleteSuggestion } from "@/app/search/actions";
-import { useAutocomplete } from "@/hooks/useAutocomplete";
+import { useAutocomplete } from "@/hooks/use-autocomplete";
 import { AutocompleteDropdown } from "./autocomplete-dropdown";
 
 interface SearchInputWithAutocompleteProps {

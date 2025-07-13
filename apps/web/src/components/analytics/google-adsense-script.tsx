@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { info as logInfo, warn as logWarn } from "@/lib/logger";
 
 /**
  * Google AdSense Script Component
@@ -10,15 +11,13 @@ export function GoogleAdSenseScript() {
 	// Don't render if client ID is not configured
 	if (!clientId) {
 		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development logging is intentional
-			console.warn("Google AdSense Client ID not configured");
+			logWarn("Google AdSense Client ID not configured");
 		}
 		return null;
 	}
 
 	if (process.env.NODE_ENV === "development") {
-		// biome-ignore lint/suspicious/noConsole: Development logging is intentional
-		console.log("Google AdSense Script loading with Client ID:", clientId);
+		logInfo("Google AdSense Script loading with Client ID:", { clientId });
 	}
 
 	return (

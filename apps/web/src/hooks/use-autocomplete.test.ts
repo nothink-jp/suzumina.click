@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AutocompleteSuggestion } from "@/app/search/actions";
 import { getAutocompleteSuggestions } from "@/app/search/actions";
-import { useAutocomplete } from "./useAutocomplete";
+import { useAutocomplete } from "./use-autocomplete";
 
 // Mock Server Actions
 vi.mock("@/app/search/actions", () => ({
@@ -10,7 +10,7 @@ vi.mock("@/app/search/actions", () => ({
 }));
 
 // Mock useDebounce hook to return value immediately
-vi.mock("./useDebounce", () => ({
+vi.mock("./use-debounce", () => ({
 	useDebounce: vi.fn((value: string, _delay: number) => value),
 }));
 

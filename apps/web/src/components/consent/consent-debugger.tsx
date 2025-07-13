@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useIsClient } from "@/hooks/useIsClient";
+import { useIsClient } from "@/hooks/use-is-client";
 import type { ConsentState } from "@/lib/consent/google-consent-mode";
 
 /**

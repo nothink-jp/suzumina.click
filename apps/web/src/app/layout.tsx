@@ -17,7 +17,7 @@ import SiteFooter from "@/components/layout/site-footer";
 import SiteHeader from "@/components/layout/site-header";
 import PerformanceMonitor from "@/components/system/performance-monitor";
 import { SessionProvider } from "@/components/user/session-provider";
-import { AgeVerificationProvider } from "@/contexts/AgeVerificationContext";
+import { AgeVerificationProvider } from "@/contexts/age-verification-context";
 
 // フォント最適化: 必要な重みのみを読み込み、LCP改善
 const mPlusRounded = M_PLUS_Rounded_1c({

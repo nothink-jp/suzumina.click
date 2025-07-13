@@ -3,8 +3,8 @@
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
 import { Cookie, Settings, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useIsClient } from "@/hooks/useIsClient";
+import { useCallback, useEffect, useState } from "react";
+import { useIsClient } from "@/hooks/use-is-client";
 import {
 	type ConsentState,
 	getCurrentConsentState,
@@ -27,7 +27,7 @@ export function CookieConsentBanner() {
 	const [isLoading, setIsLoading] = useState(true);
 
 	// Apply consent choices using unified system
-	const applyConsentChoices = (choices: ConsentState) => {
+	const applyConsentChoices = useCallback((choices: ConsentState) => {
 		updateConsent(choices);
 
 		// Trigger custom event for other services to listen
@@ -36,7 +36,7 @@ export function CookieConsentBanner() {
 				detail: choices,
 			}),
 		);
-	};
+	}, []);
 
 	const saveConsent = (choices: ConsentState) => {
 		applyConsentChoices(choices);

@@ -18,6 +18,7 @@ import {
 	type UserQuery,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
+import { error as logError } from "./logger";
 
 /**
  * Firestoreユーザーデータをフロントエンド表示用に変換
@@ -68,8 +69,7 @@ export async function getUserByDiscordId(discordId: string): Promise<FrontendUse
 	} catch (error) {
 		// 開発環境でのみエラーログを出力
 		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("getUserByDiscordId error:", { discordId, error });
+			logError("getUserByDiscordId error:", { discordId, error });
 		}
 		throw new Error("ユーザー情報の取得に失敗しました");
 	}
@@ -204,8 +204,7 @@ export async function updateUserStats(
 			.update(updateData)
 			.catch((error) => {
 				if (process.env.NODE_ENV === "development") {
-					// biome-ignore lint/suspicious/noConsole: Development debugging only
-					console.error("ユーザー統計更新でエラー:", { discordId, updates, error });
+					logError("ユーザー統計更新でエラー:", { discordId, updates, error });
 				}
 				// エラーは無視（Fire-and-Forget）
 			});

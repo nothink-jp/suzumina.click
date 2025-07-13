@@ -10,6 +10,7 @@ import {
 	formatRelativeTime,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
+import { error as logError } from "./logger";
 
 /**
  * Firestore音声ボタンデータをフロントエンド表示用に変換
@@ -104,8 +105,7 @@ export async function getAudioButtonsByUser(
 	} catch (error) {
 		// 開発環境でのみエラーログを出力
 		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("getAudioButtonsByUser error:", { discordId, error });
+			logError("getAudioButtonsByUser error:", { discordId, error });
 		}
 		throw new Error("音声ボタン一覧の取得に失敗しました");
 	}

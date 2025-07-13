@@ -10,6 +10,7 @@ import {
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { getFirestore } from "@/lib/firestore";
+import { error as logError } from "@/lib/logger";
 import { createUser, updateLastLogin, userExists } from "@/lib/user-firestore";
 
 /**
@@ -254,8 +255,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 					const validatedUserSession = UserSessionSchema.parse(userSession);
 
 					// ログイン時刻を更新（非同期、エラーは無視）
-					// biome-ignore lint/suspicious/noConsole: NextAuth requires async error logging for user login tracking
-					updateLastLogin(user.discordId).catch(console.error);
+					updateLastLogin(user.discordId).catch((error) => {
+						if (process.env.NODE_ENV === "development") {
+							logError("updateLastLogin error:", error);
+						}
+					});
 
 					return { ...session, user: validatedUserSession };
 				} catch (_error) {

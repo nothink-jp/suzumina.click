@@ -28,6 +28,7 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 - **画像システム強化**: DLsiteサムネイル表示システム完全修正・プロトコル相対URL正規化完了 (2025年7月12日完了)
 - **パフォーマンス最適化**: P99レイテンシ改善・Next.js最適化・検索API高速化 (2025年7月12日完了)
 - **Individual Info API統合完了**: Phase 2段階的活用・ID付きクリエイター情報・URL正規化・型安全性向上 (2025年7月12日完了)
+- **収益化システム**: Google AdSense統合・CSP対応・Cookie同意システム強化 (2025年7月13日完了)
 
 ## 🏗️ システム構成
 
@@ -123,8 +124,8 @@ YOUTUBE_API_KEY=your-youtube-api-key
 
 # Public環境変数 (Next.js)
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
-NEXT_PUBLIC_AMAZON_ASSOCIATE_ID=your-associate-id
 ```
 
 ### 開発サーバー起動
@@ -227,17 +228,20 @@ pnpm dev
 
 - salesCount機能は完全廃止済み（2025年7月）
 - リージョン差異対応により和集合による完全データ収集を実現
+- YouTube Player API のpostMessage警告は機能に影響しない（Google側の内部通信）
+- AdSense統合により一部ブラウザでCSP警告が表示される場合があるが動作に問題なし
 
 ---
 
 ## 📝 変更ログ
 
-### v0.3.2 (2025-07-12)
+### v0.3.2 (2025-07-13)
 
-- Individual Info API Phase 2統合完了：ID付きクリエイター情報・API準拠ジャンル情報・高解像度画像対応
-- プロトコル相対URL正規化機能実装：`"//img.dlsite.jp/..."` → `"https://img.dlsite.jp/..."` 自動変換
-- Server Actions優先アーキテクチャ移行完了・API Routes 33%削減・410件全テスト通過
-- パフォーマンス最適化・Progressive Enhancement実現・型安全性向上
+- **Google AdSense統合完了**: GoogleAdSenseScriptコンポーネント・CSP対応・収益化機能実装
+- **セキュリティ強化**: Content Security Policy包括的更新・YouTube API連携最適化
+- **パフォーマンス最適化**: Cloud Run設定最適化（CPU 2vCPU・メモリ 2Gi・最小インスタンス 1）
+- **Cookie同意システム強化**: パーソナライゼーション対応・GDPR準拠・設定ページリファクタリング
+- **プライバシーポリシー・利用規約更新**: 広告配信・データ利用条項追加
 
 ### v0.3.1 (2025-07-09)
 

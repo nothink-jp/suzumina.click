@@ -14,12 +14,13 @@ import { BookOpen, ChevronRight, Filter, Loader2, Music, Search, Video, X } from
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { searchUnified } from "@/app/actions";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import { SearchFilters } from "@/components/search/search-filters";
 import { SearchInputWithAutocomplete } from "@/components/search/search-input-with-autocomplete";
 import { HighlightText } from "@/components/ui/highlight-text";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface UnifiedSearchResult {
 	audioButtons: FrontendAudioButtonData[];
@@ -118,14 +119,49 @@ function buildSearchParams(
 	return params;
 }
 
-// Helper function to perform the API call
+// Helper function to perform search using Server Action
 async function fetchSearchResults(params: URLSearchParams): Promise<UnifiedSearchResult> {
-	const response = await fetch(`/api/search?${params}`);
-	if (!response.ok) {
-		const errorData = await response.json();
-		throw new Error(errorData.error || "検索に失敗しました");
+	const filters = {
+		query: params.get("q") || "",
+		type: (params.get("type") as "all" | "buttons" | "videos" | "works") || "all",
+		limit: Number.parseInt(params.get("limit") || "12"),
+		sortBy: params.get("sortBy") || undefined,
+		dateRange: params.get("dateRange") || undefined,
+		dateFrom: params.get("dateFrom") || undefined,
+		dateTo: params.get("dateTo") || undefined,
+		tags: params.get("tags")?.split(",").filter(Boolean) || undefined,
+		tagMode: (params.get("tagMode") as "any" | "all") || undefined,
+		playCountMin: params.get("playCountMin")
+			? Number.parseInt(params.get("playCountMin") || "0")
+			: undefined,
+		playCountMax: params.get("playCountMax")
+			? Number.parseInt(params.get("playCountMax") || "0")
+			: undefined,
+		likeCountMin: params.get("likeCountMin")
+			? Number.parseInt(params.get("likeCountMin") || "0")
+			: undefined,
+		likeCountMax: params.get("likeCountMax")
+			? Number.parseInt(params.get("likeCountMax") || "0")
+			: undefined,
+		favoriteCountMin: params.get("favoriteCountMin")
+			? Number.parseInt(params.get("favoriteCountMin") || "0")
+			: undefined,
+		favoriteCountMax: params.get("favoriteCountMax")
+			? Number.parseInt(params.get("favoriteCountMax") || "0")
+			: undefined,
+		durationMin: params.get("durationMin")
+			? Number.parseInt(params.get("durationMin") || "0")
+			: undefined,
+		durationMax: params.get("durationMax")
+			? Number.parseInt(params.get("durationMax") || "0")
+			: undefined,
+	};
+
+	try {
+		return await searchUnified(filters);
+	} catch (error) {
+		throw new Error(error instanceof Error ? error.message : "検索に失敗しました");
 	}
-	return response.json();
 }
 
 // PopularTags component

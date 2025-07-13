@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { info as logInfo, warn as logWarn } from "@/lib/logger";
 
 /**
  * Google Analytics 4 Script Component
@@ -10,15 +11,13 @@ export function GoogleAnalyticsScript() {
 	// Don't render if measurement ID is not configured
 	if (!measurementId) {
 		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development logging is intentional
-			console.warn("Google Analytics Measurement ID not configured");
+			logWarn("Google Analytics Measurement ID not configured");
 		}
 		return null;
 	}
 
 	if (process.env.NODE_ENV === "development") {
-		// biome-ignore lint/suspicious/noConsole: Development logging is intentional
-		console.log("Google Analytics Script loading with ID:", measurementId);
+		logInfo("Google Analytics Script loading with ID:", { measurementId });
 	}
 
 	return (

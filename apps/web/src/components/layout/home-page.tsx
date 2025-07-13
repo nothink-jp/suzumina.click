@@ -13,7 +13,7 @@ import { FeaturedAudioButtonsCarousel } from "@/components/audio/featured-audio-
 import { FeaturedVideosCarousel } from "@/components/content/featured-videos-carousel";
 import { FeaturedWorksCarousel } from "@/components/content/featured-works-carousel";
 import SearchForm from "@/components/search/search-form";
-import { useAgeVerification } from "@/contexts/AgeVerificationContext";
+import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface HomePageProps {
 	initialWorks: FrontendDLsiteWorkData[];

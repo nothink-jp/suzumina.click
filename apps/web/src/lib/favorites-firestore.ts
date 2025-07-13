@@ -12,6 +12,34 @@ import type {
 	RemoveFavoriteInput,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
+import { error as logError } from "./logger";
+
+/**
+ * Firestore操作のエラーハンドリング共通関数
+ */
+function handleFirestoreError(
+	operation: string,
+	context: Record<string, unknown>,
+	error: unknown,
+): void {
+	if (process.env.NODE_ENV === "development") {
+		logError(`${operation} error:`, { ...context, error });
+	}
+}
+
+/**
+ * Fire-and-Forget操作用のエラーハンドラー
+ */
+function handleFireAndForgetError(
+	operation: string,
+	context: Record<string, unknown>,
+	error: unknown,
+): void {
+	if (process.env.NODE_ENV === "development") {
+		logError(`${operation}でエラー:`, { ...context, error });
+	}
+	// エラーは無視（Fire-and-Forget）
+}
 
 /**
  * 音声ボタンをお気に入りに追加
@@ -59,19 +87,12 @@ export async function addFavorite(
 				updatedAt: new Date().toISOString(),
 			})
 			.catch((error) => {
-				if (process.env.NODE_ENV === "development") {
-					// biome-ignore lint/suspicious/noConsole: Development debugging only
-					console.error("お気に入り数増加でエラー:", { audioButtonId: input.audioButtonId, error });
-				}
-				// エラーは無視（Fire-and-Forget）
+				handleFireAndForgetError("お気に入り数増加", { audioButtonId: input.audioButtonId }, error);
 			});
 
 		return { success: true, favoriteId: docRef.id };
 	} catch (error) {
-		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("addFavorite error:", { userId, input, error });
-		}
+		handleFirestoreError("addFavorite", { userId, input }, error);
 		throw new Error("お気に入りの追加に失敗しました");
 	}
 }
@@ -117,19 +138,12 @@ export async function removeFavorite(
 				updatedAt: new Date().toISOString(),
 			})
 			.catch((error) => {
-				if (process.env.NODE_ENV === "development") {
-					// biome-ignore lint/suspicious/noConsole: Development debugging only
-					console.error("お気に入り数減少でエラー:", { audioButtonId: input.audioButtonId, error });
-				}
-				// エラーは無視（Fire-and-Forget）
+				handleFireAndForgetError("お気に入り数減少", { audioButtonId: input.audioButtonId }, error);
 			});
 
 		return { success: true };
 	} catch (error) {
-		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("removeFavorite error:", { userId, input, error });
-		}
+		handleFirestoreError("removeFavorite", { userId, input }, error);
 		throw new Error("お気に入りの削除に失敗しました");
 	}
 }
@@ -151,10 +165,7 @@ export async function toggleFavorite(
 		await addFavorite(userId, { audioButtonId });
 		return { isFavorited: true };
 	} catch (error) {
-		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("toggleFavorite error:", { userId, audioButtonId, error });
-		}
+		handleFirestoreError("toggleFavorite", { userId, audioButtonId }, error);
 		throw new Error("お気に入りの切り替えに失敗しました");
 	}
 }
@@ -187,10 +198,7 @@ export async function getFavoriteStatus(
 			favoriteId: favoriteDoc?.id,
 		};
 	} catch (error) {
-		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("getFavoriteStatus error:", { userId, audioButtonId, error });
-		}
+		handleFirestoreError("getFavoriteStatus", { userId, audioButtonId }, error);
 		return { isFavorited: false };
 	}
 }
@@ -238,10 +246,7 @@ export async function getFavoritesStatus(
 
 		return statusMap;
 	} catch (error) {
-		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("getFavoritesStatus error:", { userId, audioButtonIds, error });
-		}
+		handleFirestoreError("getFavoritesStatus", { userId, audioButtonIds }, error);
 		// エラー時は全てfalseを返す
 		const statusMap = new Map<string, boolean>();
 		audioButtonIds.forEach((id) => statusMap.set(id, false));
@@ -302,10 +307,7 @@ export async function getUserFavorites(
 			lastFavorite: favorites.length > 0 ? favorites[favorites.length - 1] : undefined,
 		};
 	} catch (error) {
-		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("getUserFavorites error:", { userId, query, error });
-		}
+		handleFirestoreError("getUserFavorites", { userId, query }, error);
 		throw new Error("お気に入り一覧の取得に失敗しました");
 	}
 }
@@ -326,10 +328,7 @@ export async function getUserFavoritesCount(userId: string): Promise<number> {
 
 		return favoritesQuery.data().count;
 	} catch (error) {
-		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("getUserFavoritesCount error:", { userId, error });
-		}
+		handleFirestoreError("getUserFavoritesCount", { userId }, error);
 		return 0;
 	}
 }
@@ -373,10 +372,7 @@ export async function getAudioButtonsFromFavorites(
 
 		return audioButtonsMap;
 	} catch (error) {
-		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("getAudioButtonsFromFavorites error:", { favoriteData, error });
-		}
+		handleFirestoreError("getAudioButtonsFromFavorites", { favoriteData }, error);
 		return new Map();
 	}
 }

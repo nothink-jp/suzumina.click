@@ -11,7 +11,7 @@ import {
 import { Switch } from "@suzumina.click/ui/components/ui/switch";
 import { BarChart3, Shield, Target, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useIsClient } from "@/hooks/useIsClient";
+import { useIsClient } from "@/hooks/use-is-client";
 import { type ConsentState, getCurrentConsentState } from "@/lib/consent/google-consent-mode";
 
 // Map old ConsentChoices to new ConsentState format

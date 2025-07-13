@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/com
 import { AlertTriangle, Home, RefreshCw, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
+import { error as logError } from "@/lib/logger";
 
 export default function UserProfileError({
 	error,
@@ -16,8 +17,7 @@ export default function UserProfileError({
 	useEffect(() => {
 		// ログエラー（開発環境のみ）
 		if (process.env.NODE_ENV === "development") {
-			// biome-ignore lint/suspicious/noConsole: Development debugging only
-			console.error("User profile error:", error);
+			logError("User profile error:", error);
 		}
 	}, [error]);
 

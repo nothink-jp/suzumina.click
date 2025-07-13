@@ -1,11 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useAutocomplete } from "@/hooks/useAutocomplete";
+import { useAutocomplete } from "@/hooks/use-autocomplete";
 import { SearchInputWithAutocomplete } from "./search-input-with-autocomplete";
 
 // Mock the useAutocomplete hook
-vi.mock("@/hooks/useAutocomplete");
+vi.mock("@/hooks/use-autocomplete");
 
 // Mock the AutocompleteDropdown component
 vi.mock("./autocomplete-dropdown", () => ({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDescriptionText, linkifyText } from "../text-utils";
+import { formatDescriptionText, linkifyText } from "./text-utils";
 
 describe("text-utils", () => {
 	describe("linkifyText", () => {

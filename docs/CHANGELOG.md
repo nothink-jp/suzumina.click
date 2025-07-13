@@ -2,6 +2,43 @@
 
 suzumina.clickプロジェクトの変更履歴
 
+## [v0.3.2] - 2025-07-13
+
+### 💰 Google AdSense統合・収益化機能実装完了
+
+- **AdSense統合システム完了**: 規約準拠・CSP対応・パフォーマンス最適化
+  - `GoogleAdSenseScript`コンポーネント実装・Next.js 15最適化
+  - CSP (Content Security Policy) 完全対応: AdSense・YouTube・Analytics全ドメイン許可
+  - プライバシーポリシー・利用規約更新: 広告配信・データ利用条項追加
+- **Cookie同意システム強化**: パーソナライゼーション対応・GDPR準拠
+  - `ConsentState`型定義修正・`CookiePreferencesPanel`最適化
+  - 「すべて許可」ボタン動作修正・設定保存機能強化
+  - 設定ページリファクタリング: フッター連携・重複機能統一
+- **環境変数管理統合**: Terraform・GitHub Actions連携
+  - `NEXT_PUBLIC_ADSENSE_CLIENT_ID` 全環境対応
+  - 本番デプロイ自動化・設定値同期完了
+
+### ⚡ パフォーマンス最適化・Cloud Run設定最適化
+
+- **Cloud Run性能向上**: P99レイテンシ2000ms閾値対応
+  - 最小インスタンス数: 0→1 (コールドスタート回避)
+  - 最大インスタンス数: 2→3 (トラフィック急増対応)
+  - CPU・メモリ増強: 2vCPU・2Gi (Next.js SSR最適化)
+  - 同時実行数: 80→100 (接続処理能力向上)
+- **Terraform設定最適化**: 本番環境パフォーマンス重視設定
+  - `locals.tf` production環境設定更新
+  - CPU Always Allocated設定・起動CPUブースト有効化
+
+### 🛡️ セキュリティ・品質向上
+
+- **CSPセキュリティ強化**: Content Security Policy包括的更新
+  - AdSense関連ドメイン許可: `pagead2.googlesyndication.com`等
+  - YouTube API連携最適化: postMessage通信エラー対応
+  - クロスオリジン通信セキュリティ向上
+- **品質管理**: lint・typecheck・テスト全通過維持
+  - Biome設定準拠・TypeScript strict mode対応
+  - 410+件テストスイート継続通過
+
 ## [Unreleased]
 
 ### 🖼️ DLsiteサムネイル表示システム完全修正 - 2025-07-08

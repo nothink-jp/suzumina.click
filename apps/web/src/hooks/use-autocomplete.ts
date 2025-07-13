@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AutocompleteSuggestion } from "@/app/search/actions";
 import { getAutocompleteSuggestions } from "@/app/search/actions";
-import { useDebounce } from "./useDebounce";
+import { useDebounce } from "./use-debounce";
 
 interface UseAutocompleteOptions {
 	minLength?: number;

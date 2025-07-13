@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import SearchPageContent from "./SearchPageContent";
+import SearchPageContent from "./search-page-content";
 
 // Generate stable skeleton keys to avoid array index warning
 const SKELETON_KEYS = {

@@ -2,7 +2,7 @@
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { useEffect } from "react";
-import { usePlayCount } from "@/hooks/usePlayCount";
+import { usePlayCount } from "@/hooks/use-play-count";
 import { AudioButtonWithFavoriteClient } from "./audio-button-with-favorite-client";
 
 interface AudioButtonWithPlayCountProps {

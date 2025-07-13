@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getFirestore } from "@/lib/firestore";
+import { warn as logWarn } from "@/lib/logger";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://suzumina.click";
@@ -66,8 +67,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 				});
 			}
 		} catch (error) {
-			// biome-ignore lint/suspicious/noConsole: Debug logging for sitemap generation errors
-			console.warn("Failed to fetch videos for sitemap:", error);
+			logWarn("Failed to fetch videos for sitemap:", { error });
 		}
 
 		// 作品ページを追加
@@ -88,8 +88,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 				});
 			}
 		} catch (error) {
-			// biome-ignore lint/suspicious/noConsole: Debug logging for sitemap generation errors
-			console.warn("Failed to fetch works for sitemap:", error);
+			logWarn("Failed to fetch works for sitemap:", { error });
 		}
 
 		// 音声ボタンページを追加
@@ -110,15 +109,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 				});
 			}
 		} catch (error) {
-			// biome-ignore lint/suspicious/noConsole: Debug logging for sitemap generation errors
-			console.warn("Failed to fetch audio buttons for sitemap:", error);
+			logWarn("Failed to fetch audio buttons for sitemap:", { error });
 		}
 
 		return [...staticPages, ...dynamicPages];
 	} catch (error) {
 		// Firestoreが利用できない場合は静的ページのみ返す
-		// biome-ignore lint/suspicious/noConsole: Debug logging for sitemap generation errors
-		console.warn("Failed to fetch dynamic content for sitemap:", error);
+		logWarn("Failed to fetch dynamic content for sitemap:", { error });
 		return staticPages;
 	}
 }
