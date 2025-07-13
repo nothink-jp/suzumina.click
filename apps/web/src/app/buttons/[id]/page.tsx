@@ -39,9 +39,16 @@ interface AudioButtonDetailPageProps {
 
 // 時間フォーマット関数
 function formatTime(seconds: number): string {
-	const minutes = Math.floor(seconds / 60);
-	const remainingSeconds = seconds % 60;
-	return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+	// 強制的に0.1秒精度でフォーマット
+	const preciseSeconds = Math.round(seconds * 10) / 10;
+
+	const minutes = Math.floor(preciseSeconds / 60);
+	const remainingSeconds = Math.floor(preciseSeconds % 60);
+	const decimal = Math.round((preciseSeconds % 1) * 10);
+
+	const secsFormatted = remainingSeconds.toString().padStart(2, "0");
+	const secsWithDecimal = `${secsFormatted}.${decimal}`;
+	return `${minutes}:${secsWithDecimal}`;
 }
 
 // 相対時間表示
@@ -421,7 +428,7 @@ export async function generateMetadata({ params }: AudioButtonDetailPageProps): 
 	const duration = audioButton.endTime - audioButton.startTime;
 	const description =
 		audioButton.description ||
-		`涼花みなせさんの音声ボタン「${audioButton.title}」。${duration}秒の音声をお楽しみください。${audioButton.createdByName}さんが作成しました。`;
+		`涼花みなせさんの音声ボタン「${audioButton.title}」。${duration.toFixed(1)}秒の音声をお楽しみください。${audioButton.createdByName}さんが作成しました。`;
 
 	return {
 		title: `${audioButton.title}`,
@@ -666,7 +673,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 										<p className="text-sm text-muted-foreground">
 											再生時間: {formatTime(audioButton.startTime)} -{" "}
 											{formatTime(audioButton.endTime)} (切り抜き時間:{" "}
-											{audioButton.endTime - audioButton.startTime}秒)
+											{(audioButton.endTime - audioButton.startTime).toFixed(1)}秒)
 										</p>
 										<Button variant="outline" size="sm" asChild>
 											<a
