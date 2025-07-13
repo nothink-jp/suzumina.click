@@ -541,6 +541,25 @@
 		contain-intrinsic-size: 1px 1000px;
 	}
 
+	/* Above-the-fold Critical CSS最適化 */
+	.critical-above-fold {
+		/* ヒーローセクション・検索フォーム用の重要スタイル */
+		content-visibility: visible;
+		contain: none;
+	}
+
+	.critical-hero {
+		/* LCP要素の最適化 */
+		contain-intrinsic-size: auto 400px;
+		view-transition-name: hero;
+	}
+
+	.critical-nav {
+		/* ナビゲーション要素の最適化 */
+		contain-intrinsic-size: auto 80px;
+		view-transition-name: navigation;
+	}
+
 	/* 動的コンテンツの高さ予約 */
 	.min-h-card {
 		min-height: 320px;

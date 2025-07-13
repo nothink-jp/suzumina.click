@@ -21,12 +21,14 @@ import { AgeVerificationProvider } from "@/contexts/age-verification-context";
 
 // フォント最適化: 必要な重みのみを読み込み、LCP改善
 const mPlusRounded = M_PLUS_Rounded_1c({
-	subsets: ["latin"],
+	subsets: ["latin", "latin-ext"], // 拡張ラテン文字対応
 	weight: ["400", "500", "700"], // 必要な重みのみ読み込み
 	display: "swap", // FOUT回避
 	preload: true, // LCP改善
 	fallback: ["Hiragino Kaku Gothic ProN", "Hiragino Sans", "Meiryo", "sans-serif"], // 日本語フォールバック
 	adjustFontFallback: true, // CLS改善
+	// 日本語サブセット追加検討（ファイルサイズとのトレードオフ）
+	// subsets: ["latin", "latin-ext"], // 現在はlatin-extで十分
 });
 
 export const metadata: Metadata = {

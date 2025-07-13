@@ -24,6 +24,8 @@ const nextConfig = {
 		ppr: false, // Partial Prerendering（実験的）
 		// ダイナミックインポート最適化
 		optimizeServerReact: true,
+		// Critical CSS自動抽出（LCP改善）- 実験的機能
+		// optimizeCss: true, // critters依存関係の問題で一時的に無効化
 	},
 
 	// Turbopack設定（安定版）
@@ -38,13 +40,17 @@ const nextConfig = {
 
 	// 画像最適化
 	images: {
-		// 画像形式の最適化
-		formats: ["image/webp", "image/avif"],
+		// 画像形式の最適化（AVIF優先でWebPフォールバック）
+		formats: ["image/avif", "image/webp"],
 		// 画像サイズの最適化
 		deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
 		imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
 		// 高解像度画像対応のため制限を緩和
 		unoptimized: false,
+		// 画像品質最適化
+		quality: 85, // デフォルト品質
+		// プログレッシブJPEG有効化
+		progressive: true,
 		// 外部画像ドメインの許可（YouTubeサムネイル・DLsite画像・Discord CDN用）
 		remotePatterns: [
 			{
@@ -124,6 +130,12 @@ const nextConfig = {
 
 	// パフォーマンス最適化
 	compress: true,
+	// 静的最適化強化
+	modularizeImports: {
+		"lucide-react": {
+			transform: "lucide-react/dist/esm/icons/{{member}}",
+		},
+	},
 
 	// SWCコンパイラーはNext.js 15でデフォルト有効
 
