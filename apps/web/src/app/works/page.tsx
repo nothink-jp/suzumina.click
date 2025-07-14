@@ -14,7 +14,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const category = typeof params.category === "string" ? params.category : undefined;
 	const language = typeof params.language === "string" ? params.language : undefined;
 	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
-	const validLimit = [12, 24, 48, 96].includes(limitValue) ? limitValue : 12;
+	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
 	// excludeR18パラメータの処理（成人向けサイトのため、デフォルトでR18表示）
 	const excludeR18FromParams = params.excludeR18;

@@ -10,10 +10,11 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Plus, Search, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useCallback, useEffect, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAudioButtons } from "@/app/buttons/actions";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import Pagination from "@/components/ui/pagination";
+import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 
 interface SearchParams {
 	q?: string;
@@ -97,6 +98,10 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>(() =>
 		createAdvancedFiltersFromParams(searchParams),
 	);
+
+	// お気に入り状態一括取得（メモ化してre-renderを防ぐ）
+	const audioButtonIds = useMemo(() => audioButtons.map((button) => button.id), [audioButtons]);
+	const { favoriteStates } = useFavoriteStatusBulk(audioButtonIds);
 
 	// フィルタが適用されているかどうかを判定
 	const hasFilters = useCallback(() => {
@@ -441,6 +446,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 								className="shadow-sm hover:shadow-md transition-all duration-200"
 								searchQuery={searchParams.q}
 								highlightClassName="bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
+								initialIsFavorited={favoriteStates.get(audioButton.id) || false}
 							/>
 						))}
 					</div>

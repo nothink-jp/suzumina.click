@@ -1,12 +1,12 @@
 "use client";
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
-import { SimpleAudioButton } from "@suzumina.click/ui/components/custom/simple-audio-button";
+import { AudioButton } from "@suzumina.click/ui/components/custom/audio-button";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { getFavoritesStatusAction, toggleFavoriteAction } from "@/actions/favorites";
+import { toggleFavoriteAction } from "@/actions/favorites";
 
 interface AudioButtonWithFavoriteClientProps {
 	audioButton: FrontendAudioButtonData;
@@ -36,13 +36,9 @@ export function AudioButtonWithFavoriteClient({
 	const isAuthenticated = !!session?.user;
 
 	useEffect(() => {
-		if (showFavorite && session?.user && !initialIsFavorited) {
-			// Fetch favorite status if not provided
-			getFavoritesStatusAction([audioButton.id]).then((statusMap) => {
-				setIsFavorited(statusMap.get(audioButton.id) || false);
-			});
-		}
-	}, [audioButton.id, session?.user, showFavorite, initialIsFavorited]);
+		// initialIsFavoritedが提供されている場合はそれを使用（一括取得済み）
+		setIsFavorited(initialIsFavorited);
+	}, [initialIsFavorited]);
 
 	const handleFavoriteToggle = useCallback(() => {
 		if (!isAuthenticated) {
@@ -68,7 +64,7 @@ export function AudioButtonWithFavoriteClient({
 	}, [audioButton.id, isAuthenticated]);
 
 	return (
-		<SimpleAudioButton
+		<AudioButton
 			audioButton={audioButton}
 			onPlay={onPlay}
 			className={className}

@@ -62,7 +62,6 @@ export function ListDisplayControls({
 		{ value: "12", label: "12件/ページ" },
 		{ value: "24", label: "24件/ページ" },
 		{ value: "48", label: "48件/ページ" },
-		{ value: "96", label: "96件/ページ" },
 	],
 	viewMode,
 	onViewModeChange,

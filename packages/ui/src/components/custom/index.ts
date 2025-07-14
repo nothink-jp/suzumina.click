@@ -2,7 +2,9 @@
 
 // Filter components
 export { AdvancedFilterPanel } from "./advanced-filter-panel";
+export { AudioButton } from "./audio-button";
 export { AudioOnlyPlayer } from "./audio-only-player";
+export { AudioPlayer } from "./audio-player";
 // Types
 export type { AutocompleteSuggestionItem } from "./autocomplete-dropdown";
 export { AutocompleteDropdown } from "./autocomplete-dropdown";

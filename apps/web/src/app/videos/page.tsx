@@ -19,7 +19,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 	const sort = typeof params.sort === "string" ? params.sort : "newest";
 	const search = typeof params.search === "string" ? params.search : undefined;
 	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
-	const validLimit = [12, 24, 48, 96].includes(limitValue) ? limitValue : 12;
+	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
 	// 並行してデータを取得
 	const [initialData, filteredCount, totalCount] = await Promise.all([

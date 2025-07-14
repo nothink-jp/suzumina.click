@@ -46,7 +46,7 @@ export function WorksPageClient({
 				const language =
 					typeof searchParams.language === "string" ? searchParams.language : undefined;
 				const limitValue = Number.parseInt(searchParams.limit as string, 10) || 12;
-				const validLimit = [12, 24, 48, 96].includes(limitValue) ? limitValue : 12;
+				const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
 				// URLパラメータからexcludeR18を取得、年齢確認状況に基づいてデフォルト値を決定
 				const excludeR18FromParams = searchParams.excludeR18;
