@@ -1,6 +1,6 @@
 # suzumina.click - 技術ドキュメント
 
-声優「涼花みなせ」ファンサイト（v0.3.2）
+声優「涼花みなせ」ファンサイト（v0.3.3）
 
 ## 概要
 
@@ -14,7 +14,7 @@
 - **検索機能**: 全コンテンツ横断検索・高度フィルタ
 - **DLsite連携**: 作品情報・高解像度画像対応
 - **管理機能**: ユーザー・コンテンツ管理UI
-- **収益化**: Google AdSense統合（v0.3.2）
+- **収益化**: Google AdSense統合・packages/ui統合（v0.3.3）
 
 ## 技術スタック
 
@@ -71,9 +71,10 @@ suzumina.click/
 │   └── functions/              # Cloud Functions バックエンド
 ├── packages/
 │   ├── shared-types/           # 共有型定義
-│   └── ui/                     # UIコンポーネント
+│   ├── ui/                     # UIコンポーネント（v0.3.3統合）
+│   └── typescript-config/      # TypeScript設定
 ```
 
 ## ライセンス
 
-MIT License - 個人運営の非公式ファンサイト（v0.3.2）
+MIT License - 個人運営の非公式ファンサイト（v0.3.3）

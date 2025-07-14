@@ -1,6 +1,6 @@
-# suzumina.click Admin App
+# suzumina.click Admin App v0.3.3
 
-管理者専用のNext.jsアプリケーション（0インスタンス運用）
+管理者専用のNext.jsアプリケーション（0インスタンス運用・UIシステム完全リニューアル実装）
 
 ## 概要
 

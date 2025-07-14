@@ -1,6 +1,6 @@
 # suzumina.click
 
-[![Version](https://img.shields.io/badge/version-v0.3.2-blue)](https://suzumina.click)
+[![Version](https://img.shields.io/badge/version-v0.3.3-blue)](https://suzumina.click)
 [![Status](https://img.shields.io/badge/status-production-green)](https://suzumina.click)
 
 声優「涼花みなせ」ファンコミュニティの非公式ファンサイト
@@ -63,4 +63,4 @@ pnpm build
 
 ## ライセンス
 
-MIT License - 個人運営の非公式ファンサイト（v0.3.2）
+MIT License - 個人運営の非公式ファンサイト（v0.3.3）

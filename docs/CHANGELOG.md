@@ -2,6 +2,42 @@
 
 suzumina.clickプロジェクトの変更履歴
 
+## [v0.3.3] - 2025-07-14
+
+### 🎨 管理者UIシステム完全リニューアル
+
+- **モダンNext.js 15アーキテクチャ実装**: apps/admin UI完全刷新
+  - レスポンシブデザイン実装・統計ダッシュボード最適化
+  - 音声ボタン・ユーザー・お問い合わせ管理機能強化
+  - FormDialog・StatCard・ユーザーテーブル包括的リファクタリング
+- **packages/ui統合実装**: UIコンポーネントライブラリ完全移行
+  - Storybook統合・包括的テストスイート実装
+  - 全UIコンポーネントのStories・テスト追加（40+ファイル）
+  - AutocompleteDropdown・LoadingSkeleton・NotImplementedOverlay等新規コンポーネント
+
+### 🎵 音声ボタンシステム高精度化
+
+- **0.1秒精度システム完全実装**: 音声ボタン作成機能の精密度向上
+  - リアルタイムプレビュー機能・視覚的タイムスタンプ編集
+  - AudioButtonCreator包括的リファクタリング・UI/UX改善
+  - HighlightText・GenericCarousel等コンポーネント高度化
+- **包括的テスト追加**: 音声ボタン関連機能のテストカバレッジ強化
+  - AudioButtonCreator・AutocompleteDropdown・HighlightText等テスト実装
+  - 型安全性強化・shared-typesパッケージ更新
+
+### ⚡ パフォーマンス最適化強化
+
+- **Image & Font最適化システム**: Critical CSS実装・ページパフォーマンス向上
+  - Next.js画像設定最適化・重複プロパティ削除
+  - ホームページパフォーマンス大幅最適化実装
+  - Docker buildエラー解決・デプロイ最適化
+
+### 🛡️ セキュリティ・品質向上
+
+- **未使用設定完全削除**: 未使用Discord BOTトークン関連設定削除
+- **GitHub Actions権限最適化**: CodeQLアラート対応・セキュリティ強化
+- **Biome・lint設定最適化**: 全パッケージでのlint品質向上
+
 ## [v0.3.2] - 2025-07-13
 
 ### 💰 Google AdSense統合・収益化機能実装完了

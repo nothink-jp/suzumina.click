@@ -1,6 +1,6 @@
-# @suzumina.click/ui
+# @suzumina.click/ui v0.3.3
 
-涼花みなせファンサイト用 UI コンポーネントライブラリ
+涼花みなせファンサイト用 UI コンポーネントライブラリ（Storybook統合・包括的テストスイート実装完了）
 
 ## 🎯 概要
 
