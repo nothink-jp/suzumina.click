@@ -104,3 +104,8 @@ export interface YTPlayer {
 	loadVideoById(videoId: string, startSeconds?: number, suggestedQuality?: string): void;
 	cueVideoById(videoId: string, startSeconds?: number, suggestedQuality?: string): void;
 }
+
+// エクスポート用の型エイリアス
+export type YTPlayerState = Window["YT"]["PlayerState"];
+export type YTPlayerQuality = string;
+export type YTPlayerOptions = YTPlayerConfig;

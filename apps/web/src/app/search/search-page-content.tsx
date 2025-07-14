@@ -6,6 +6,7 @@ import type {
 	FrontendVideoData,
 	UnifiedSearchFilters,
 } from "@suzumina.click/shared-types";
+import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-text";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
@@ -18,7 +19,6 @@ import { searchUnified } from "@/app/actions";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import { SearchFilters } from "@/components/search/search-filters";
 import { SearchInputWithAutocomplete } from "@/components/search/search-input-with-autocomplete";
-import { HighlightText } from "@/components/ui/highlight-text";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { useDebounce } from "@/hooks/use-debounce";
 

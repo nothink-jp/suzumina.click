@@ -90,7 +90,7 @@ describe("AutocompleteDropdown", () => {
 
 		// Find the suggestion item wrapper div that should have the highlight style
 		const highlightedItem = screen.getByText("サンプル音声").closest("[role='option']");
-		expect(highlightedItem).toHaveClass("bg-suzuka-50");
+		expect(highlightedItem).toHaveClass("bg-gray-50");
 	});
 
 	it("提案の種類に応じた適切なバッジを表示する", () => {

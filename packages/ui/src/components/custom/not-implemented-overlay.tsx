@@ -6,7 +6,7 @@ interface NotImplementedOverlayProps {
 	className?: string;
 }
 
-export default function NotImplementedOverlay({
+export function NotImplementedOverlay({
 	title = "この機能は準備中です",
 	description = "現在開発中のため、もうしばらくお待ちください。",
 	className = "",
@@ -30,3 +30,5 @@ export default function NotImplementedOverlay({
 		</div>
 	);
 }
+
+export default NotImplementedOverlay;

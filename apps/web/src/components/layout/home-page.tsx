@@ -6,6 +6,7 @@ import type {
 	FrontendDLsiteWorkData,
 	FrontendVideoData,
 } from "@suzumina.click/shared-types";
+import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -16,7 +17,6 @@ import {
 	LazyFeaturedWorksCarousel,
 	LazySearchForm,
 } from "@/components/optimization/lazy-components";
-import { LoadingSkeleton } from "@/components/optimization/loading-fallback";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface HomePageProps {

@@ -1,8 +1,7 @@
+import { AutocompleteDropdown as GenericAutocompleteDropdown } from "@suzumina.click/ui/components/custom/autocomplete-dropdown";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
-import { Card } from "@suzumina.click/ui/components/ui/card";
 import { cn } from "@suzumina.click/ui/lib/utils";
-import { FileText, Loader2, Search, Tag, Video } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { FileText, Tag, Video } from "lucide-react";
 import type { AutocompleteSuggestion } from "@/app/search/actions";
 
 interface AutocompleteDropdownProps {
@@ -33,30 +32,20 @@ const SUGGESTION_LABELS = {
 function SuggestionItem({
 	suggestion,
 	isHighlighted,
-	onClick,
-	onMouseEnter,
 }: {
 	suggestion: AutocompleteSuggestion;
 	isHighlighted: boolean;
-	onClick: () => void;
-	onMouseEnter: () => void;
+	onClick?: () => void;
+	onMouseEnter?: () => void;
 }) {
 	const IconComponent = SUGGESTION_ICONS[suggestion.type];
 
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents: Keyboard navigation is handled by the parent component
-		// biome-ignore lint/a11y/useSemanticElements: This is a valid ARIA pattern for autocomplete
 		<div
 			className={cn(
-				"flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors",
-				"hover:bg-suzuka-50 focus:bg-suzuka-50",
+				"flex items-center gap-3 px-3 py-2 transition-colors",
 				isHighlighted && "bg-suzuka-50",
 			)}
-			onClick={onClick}
-			onMouseEnter={onMouseEnter}
-			role="option"
-			aria-selected={isHighlighted}
-			tabIndex={-1}
 		>
 			<div className="flex items-center gap-2 min-w-0 flex-1">
 				<div className="flex items-center gap-1.5 text-suzuka-600">
@@ -101,81 +90,39 @@ export function AutocompleteDropdown({
 	onHighlightChange,
 	className,
 }: AutocompleteDropdownProps) {
-	const dropdownRef = useRef<HTMLDivElement>(null);
+	const renderSuggestionItem = (
+		item: { id: string; value: AutocompleteSuggestion },
+		isHighlighted: boolean,
+	) => {
+		return (
+			<SuggestionItem
+				suggestion={item.value}
+				isHighlighted={isHighlighted}
+				onClick={() => {}} // クリックハンドリングは親コンポーネントで行う
+				onMouseEnter={() => {}} // マウスエンターハンドリングは親コンポーネントで行う
+			/>
+		);
+	};
 
-	// Handle clicks outside the dropdown
-	useEffect(() => {
-		function handleClickOutside(event: MouseEvent) {
-			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-				onClose();
-			}
-		}
-
-		if (isVisible) {
-			document.addEventListener("mousedown", handleClickOutside);
-			return () => document.removeEventListener("mousedown", handleClickOutside);
-		}
-	}, [isVisible, onClose]);
-
-	// Scroll highlighted item into view
-	useEffect(() => {
-		if (highlightedIndex >= 0 && dropdownRef.current) {
-			const highlightedElement = dropdownRef.current.querySelector(
-				`[data-index="${highlightedIndex}"]`,
-			);
-			if (highlightedElement) {
-				highlightedElement.scrollIntoView({
-					block: "nearest",
-					behavior: "smooth",
-				});
-			}
-		}
-	}, [highlightedIndex]);
-
-	if (!isVisible) {
-		return null;
-	}
+	// AutocompleteSuggestionを汎用的な形式に変換
+	const items = suggestions.map((suggestion) => ({
+		id: suggestion.id,
+		value: suggestion,
+	}));
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: This is a valid ARIA pattern for autocomplete dropdown
-		<Card
-			ref={dropdownRef}
-			className={cn(
-				"absolute top-full left-0 right-0 mt-1 z-50",
-				"max-h-80 overflow-y-auto shadow-lg border border-gray-200",
-				"bg-white rounded-lg",
-				className,
-			)}
-			role="listbox"
-		>
-			{isLoading && (
-				<div className="flex items-center justify-center py-4 text-gray-500">
-					<Loader2 className="w-4 h-4 animate-spin mr-2" />
-					<span className="text-sm">検索中...</span>
-				</div>
-			)}
-
-			{!isLoading && suggestions.length === 0 && (
-				<div className="flex items-center justify-center py-4 text-gray-500">
-					<Search className="w-4 h-4 mr-2" />
-					<span className="text-sm">候補が見つかりませんでした</span>
-				</div>
-			)}
-
-			{!isLoading && suggestions.length > 0 && (
-				<div className="py-1">
-					{suggestions.map((suggestion, index) => (
-						<div key={suggestion.id} data-index={index}>
-							<SuggestionItem
-								suggestion={suggestion}
-								isHighlighted={index === highlightedIndex}
-								onClick={() => onSelect(suggestion)}
-								onMouseEnter={() => onHighlightChange(index)}
-							/>
-						</div>
-					))}
-				</div>
-			)}
-		</Card>
+		<GenericAutocompleteDropdown
+			items={items}
+			isLoading={isLoading}
+			isVisible={isVisible}
+			onSelect={(item) => onSelect(item.value)}
+			onClose={onClose}
+			highlightedIndex={highlightedIndex}
+			onHighlightChange={onHighlightChange}
+			renderItem={renderSuggestionItem}
+			className={className}
+			emptyMessage="候補が見つかりませんでした"
+			loadingMessage="検索中..."
+		/>
 	);
 }

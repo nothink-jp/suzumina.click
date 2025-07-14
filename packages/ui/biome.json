@@ -15,10 +15,14 @@
 			"a11y": {
 				"useButtonType": "off",
 				"useValidAnchor": "off",
-				"noLabelWithoutControl": "off"
+				"noLabelWithoutControl": "off",
+				"useSemanticElements": "off"
 			},
 			"correctness": {
 				"noUnusedFunctionParameters": "off"
+			},
+			"complexity": {
+				"noExcessiveCognitiveComplexity": "off"
 			},
 			"style": {
 				"noParameterAssign": "error",
@@ -39,6 +43,16 @@
 			"includes": ["**/*.stories.tsx"],
 			"linter": {
 				"enabled": false
+			}
+		},
+		{
+			"includes": ["**/*.test.tsx", "**/*.test.ts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off"
+					}
+				}
 			}
 		}
 	]

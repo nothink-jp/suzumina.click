@@ -17,7 +17,7 @@ export function LoadingSkeleton({
 	switch (variant) {
 		case "carousel":
 			return (
-				<div className={`animate-pulse ${className}`}>
+				<div className={`animate-pulse ${className}`} data-testid="loading-skeleton-carousel">
 					<div className="flex gap-4 overflow-hidden">
 						{Array.from({ length: 4 }).map((_, i) => (
 							<div
@@ -31,7 +31,7 @@ export function LoadingSkeleton({
 			);
 		case "form":
 			return (
-				<div className={`animate-pulse ${className}`}>
+				<div className={`animate-pulse ${className}`} data-testid="loading-skeleton-form">
 					<div className="max-w-2xl mx-auto">
 						<div className="h-12 bg-gray-200 rounded-lg mb-4" />
 						<div className="h-10 bg-gray-200 rounded-lg" />
@@ -40,13 +40,13 @@ export function LoadingSkeleton({
 			);
 		case "menu":
 			return (
-				<div className="animate-pulse">
+				<div className="animate-pulse" data-testid="loading-skeleton-menu">
 					<div className="h-10 w-32 bg-gray-200 rounded" />
 				</div>
 			);
 		case "card":
 			return (
-				<div className={`animate-pulse ${className}`}>
+				<div className={`animate-pulse ${className}`} data-testid="loading-skeleton-card">
 					<div className="bg-gray-200 rounded-lg p-4" style={{ height: `${height}px` }}>
 						<div className="h-4 bg-gray-300 rounded mb-2" />
 						<div className="h-4 bg-gray-300 rounded w-3/4 mb-2" />
