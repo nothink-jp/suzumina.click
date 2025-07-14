@@ -419,7 +419,7 @@ export const DLsiteWorkBaseSchema = z.object({
 	/** 平均評価 - Individual Info API `rate_average_star` (10-50スケール) */
 	rateAverageStar: z.number().optional(),
 	/** 評価詳細分布 - Individual Info API `rate_count_detail` */
-	rateCountDetail: z.record(z.number()).optional(),
+	rateCountDetail: z.record(z.string(), z.number()).optional(),
 
 	// === Individual Info API準拠ジャンル・タグ ===
 	/** 公式ジャンル - Individual Info API `genres` 配列 */
@@ -427,7 +427,7 @@ export const DLsiteWorkBaseSchema = z.object({
 	/** カスタムジャンル - Individual Info API `custom_genres` 配列 */
 	customGenres: z.array(IndividualAPICustomGenreSchema).default([]),
 	/** 作品オプション - Individual Info API `work_options` オブジェクト */
-	workOptions: z.record(IndividualAPIWorkOptionSchema).default({}),
+	workOptions: z.record(z.string(), IndividualAPIWorkOptionSchema).default({}),
 
 	// === Individual Info API準拠シリーズ・翻訳情報 ===
 	/** シリーズID - Individual Info API `series_id` */
@@ -652,7 +652,7 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	/** カスタムジャンル - Individual Info API `custom_genres` 配列 */
 	apiCustomGenres: z.array(IndividualAPICustomGenreSchema).default([]),
 	/** 作品オプション - Individual Info API `work_options` オブジェクト */
-	apiWorkOptions: z.record(IndividualAPIWorkOptionSchema).default({}),
+	apiWorkOptions: z.record(z.string(), IndividualAPIWorkOptionSchema).default({}),
 
 	// === 下位互換用ジャンル情報（レガシー） ===
 	/** DLsite公式ジャンル（Individual Info APIから取得） */
