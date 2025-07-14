@@ -130,7 +130,7 @@ export const FrontendVideoSchema = YouTubeVideoBaseSchema.extend({
 	definition: z.string().optional(), // "hd" または "sd"
 	caption: z.boolean().optional(), // キャプションの有無
 	licensedContent: z.boolean().optional(), // ライセンスコンテンツかどうか
-	contentRating: z.record(z.string()).optional(), // 年齢制限情報
+	contentRating: z.record(z.string(), z.string()).optional(), // 年齢制限情報
 	regionRestriction: z
 		.object({
 			allowed: z.array(z.string()).optional(), // 視聴可能な国コード
