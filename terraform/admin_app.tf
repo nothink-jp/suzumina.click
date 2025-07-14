@@ -1,10 +1,6 @@
 # 管理者専用アプリケーション設定
-# 
-# NOTE: 現在admin appのDockerイメージが存在しないため、一時的に無効化
-#       必要に応じて後で有効化し、イメージをbuild/pushしてください
 
 # Cloud Run サービス（管理者アプリ）
-/*
 resource "google_cloud_run_v2_service" "admin_app" {
   name     = "suzumina-admin"
   location = var.region
@@ -169,4 +165,3 @@ output "admin_app_service_account_email" {
   description = "Admin app service account email"
   value       = google_service_account.admin_app_service_account.email
 }
-*/
