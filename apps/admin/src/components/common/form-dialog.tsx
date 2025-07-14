@@ -12,6 +12,13 @@ import {
 } from "@suzumina.click/ui/components/ui/dialog";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Label } from "@suzumina.click/ui/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@suzumina.click/ui/components/ui/select";
 import { Textarea } from "@suzumina.click/ui/components/ui/textarea";
 import { Edit, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -102,18 +109,21 @@ export function FormDialog({
 									rows={6}
 								/>
 							) : field.type === "select" ? (
-								<select
-									id={field.key}
+								<Select
 									value={String(formData[field.key] || "")}
-									onChange={(e) => handleFieldChange(field.key, e.target.value)}
-									className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+									onValueChange={(value) => handleFieldChange(field.key, value)}
 								>
-									{field.options?.map((option) => (
-										<option key={option.value} value={option.value}>
-											{option.label}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id={field.key}>
+										<SelectValue placeholder="選択してください" />
+									</SelectTrigger>
+									<SelectContent>
+										{field.options?.map((option) => (
+											<SelectItem key={option.value} value={option.value}>
+												{option.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							) : (
 								<Input
 									id={field.key}

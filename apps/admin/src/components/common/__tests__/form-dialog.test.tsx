@@ -9,6 +9,12 @@ vi.mock("next/navigation", () => ({
 	}),
 }));
 
+// Mock scrollIntoView for Radix UI components
+Object.defineProperty(window.HTMLElement.prototype, "scrollIntoView", {
+	value: vi.fn(),
+	writable: true,
+});
+
 describe("FormDialog", () => {
 	const mockOnSave = vi.fn();
 	const mockFields = [
@@ -113,9 +119,9 @@ describe("FormDialog", () => {
 			expect(screen.getByDisplayValue("初期値")).toBeInTheDocument();
 			expect(screen.getByDisplayValue("初期説明")).toBeInTheDocument();
 			expect(screen.getByDisplayValue("10")).toBeInTheDocument();
-			// Select field value check
-			const selectElement = screen.getByLabelText("状態") as HTMLSelectElement;
-			expect(selectElement.value).toBe("active");
+			// Select field value check - for packages/ui Select component
+			const selectTrigger = screen.getByRole("combobox", { name: "状態" });
+			expect(selectTrigger).toHaveTextContent("アクティブ");
 		});
 	});
 
@@ -271,9 +277,11 @@ describe("FormDialog", () => {
 			expect(screen.getByLabelText("状態")).toBeInTheDocument();
 		});
 
-		const selectElement = screen.getByLabelText("状態");
-		expect(selectElement).toBeInTheDocument();
-		expect(screen.getByText("アクティブ")).toBeInTheDocument();
-		expect(screen.getByText("非アクティブ")).toBeInTheDocument();
+		// For packages/ui Select component, verify the select trigger exists
+		const selectTrigger = screen.getByRole("combobox", { name: "状態" });
+		expect(selectTrigger).toBeInTheDocument();
+
+		// Check that the current value is displayed in the trigger
+		expect(selectTrigger).toHaveTextContent("アクティブ");
 	});
 });

@@ -1,15 +1,22 @@
+import {
+	ListPageContent,
+	ListPageGrid,
+	ListPageHeader,
+	ListPageLayout,
+	ListPageStats,
+} from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import {
-	ArrowLeft,
-	ChevronLeft,
-	ChevronRight,
-	Shield,
-	ShieldCheck,
-	User,
-	Users,
-} from "lucide-react";
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "@suzumina.click/ui/components/ui/pagination";
+import { ArrowLeft, Shield, ShieldCheck, User, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { UserManagementClient } from "@/components/management/UserManagementClient";
@@ -163,136 +170,131 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
 	};
 
 	return (
-		<div className="p-6 space-y-6">
-			{/* ページヘッダー */}
-			<div className="flex items-center gap-4">
+		<ListPageLayout>
+			<ListPageHeader title="ユーザー管理" description="登録ユーザーの管理・ロール設定">
 				<Button variant="outline" size="sm" asChild>
 					<Link href="/" className="gap-2">
 						<ArrowLeft className="h-4 w-4" />
 						ダッシュボードに戻る
 					</Link>
 				</Button>
-				<div>
-					<h1 className="text-3xl font-bold text-foreground">ユーザー管理</h1>
-					<p className="text-muted-foreground mt-1">登録ユーザーの管理・ロール設定</p>
-				</div>
-			</div>
+			</ListPageHeader>
 
-			{/* 統計カード */}
-			<div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+			<ListPageContent>
+				{/* 統計カード */}
+				<ListPageGrid columns={{ default: 2, md: 3, lg: 5 }}>
+					<Card>
+						<CardHeader className="pb-2">
+							<CardTitle className="text-sm font-medium flex items-center gap-2">
+								<Users className="h-4 w-4" />
+								総ユーザー
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold">{stats.total}</div>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader className="pb-2">
+							<CardTitle className="text-sm font-medium">アクティブ</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold text-green-600">{stats.active}</div>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader className="pb-2">
+							<CardTitle className="text-sm font-medium">管理者</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold text-destructive">{stats.admin}</div>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader className="pb-2">
+							<CardTitle className="text-sm font-medium">モデレーター</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold text-secondary">{stats.moderator}</div>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader className="pb-2">
+							<CardTitle className="text-sm font-medium">メンバー</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold text-muted-foreground">{stats.member}</div>
+						</CardContent>
+					</Card>
+				</ListPageGrid>
+
+				{/* ユーザーテーブル */}
 				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium flex items-center gap-2">
-							<Users className="h-4 w-4" />
-							総ユーザー
-						</CardTitle>
+					<CardHeader>
+						<CardTitle>ユーザー一覧</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">{stats.total}</div>
-					</CardContent>
-				</Card>
+						<UserManagementClient initialUsers={users} currentUserId={session.user.id} />
 
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium">アクティブ</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold text-green-600">{stats.active}</div>
-					</CardContent>
-				</Card>
+						{users.length === 0 && (
+							<div className="text-center py-8 text-muted-foreground">ユーザーが見つかりません</div>
+						)}
 
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium">管理者</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold text-destructive">{stats.admin}</div>
-					</CardContent>
-				</Card>
+						{/* ページネーション */}
+						{totalPages > 1 && (
+							<div className="mt-4">
+								<Pagination>
+									<PaginationContent>
+										<PaginationItem>
+											{hasPrev ? (
+												<PaginationPrevious href={`/users?page=${currentPage - 1}`} />
+											) : (
+												<PaginationPrevious className="pointer-events-none opacity-50" />
+											)}
+										</PaginationItem>
 
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium">モデレーター</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold text-secondary">{stats.moderator}</div>
-					</CardContent>
-				</Card>
+										{/* 現在のページ番号表示 */}
+										{Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+											const pageNum = Math.max(1, currentPage - 2) + i;
+											if (pageNum > totalPages) return null;
+											return (
+												<PaginationItem key={pageNum}>
+													<PaginationLink
+														href={`/users?page=${pageNum}`}
+														isActive={pageNum === currentPage}
+													>
+														{pageNum}
+													</PaginationLink>
+												</PaginationItem>
+											);
+										})}
 
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium">メンバー</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold text-muted-foreground">{stats.member}</div>
-					</CardContent>
-				</Card>
-			</div>
+										<PaginationItem>
+											{hasNext ? (
+												<PaginationNext href={`/users?page=${currentPage + 1}`} />
+											) : (
+												<PaginationNext className="pointer-events-none opacity-50" />
+											)}
+										</PaginationItem>
+									</PaginationContent>
+								</Pagination>
 
-			{/* ユーザーテーブル */}
-			<Card>
-				<CardHeader>
-					<CardTitle>ユーザー一覧</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<UserManagementClient initialUsers={users} currentUserId={session.user.id} />
-
-					{users.length === 0 && (
-						<div className="text-center py-8 text-muted-foreground">ユーザーが見つかりません</div>
-					)}
-
-					{/* ページネーション */}
-					{totalPages > 1 && (
-						<div className="flex items-center justify-between px-2 py-4 mt-4">
-							<div className="flex items-center gap-2">
-								<p className="text-sm text-muted-foreground">
-									ページ {currentPage} / {totalPages} （総件数: {totalCount}件）
-								</p>
+								<ListPageStats
+									currentPage={currentPage}
+									totalPages={totalPages}
+									totalCount={totalCount}
+									itemsPerPage={100}
+									className="mt-4"
+								/>
 							</div>
-							<div className="flex items-center gap-2">
-								<Button
-									variant="outline"
-									size="sm"
-									asChild={hasPrev}
-									disabled={!hasPrev}
-									className="gap-1"
-								>
-									{hasPrev ? (
-										<Link href={`/users?page=${currentPage - 1}`}>
-											<ChevronLeft className="h-4 w-4" />
-											前のページ
-										</Link>
-									) : (
-										<>
-											<ChevronLeft className="h-4 w-4" />
-											前のページ
-										</>
-									)}
-								</Button>
-								<Button
-									variant="outline"
-									size="sm"
-									asChild={hasNext}
-									disabled={!hasNext}
-									className="gap-1"
-								>
-									{hasNext ? (
-										<Link href={`/users?page=${currentPage + 1}`}>
-											次のページ
-											<ChevronRight className="h-4 w-4" />
-										</Link>
-									) : (
-										<>
-											次のページ
-											<ChevronRight className="h-4 w-4" />
-										</>
-									)}
-								</Button>
-							</div>
-						</div>
-					)}
-				</CardContent>
-			</Card>
-		</div>
+						)}
+					</CardContent>
+				</Card>
+			</ListPageContent>
+		</ListPageLayout>
 	);
 }
