@@ -92,7 +92,7 @@ describe("AudioButton", () => {
 
 		// ポップオーバーのトリガー要素を取得（最初に見つかるもの）
 		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement.closest("[data-slot='popover-trigger']");
+		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
 
 		if (triggerElement) {
 			await user.click(triggerElement);
@@ -109,7 +109,7 @@ describe("AudioButton", () => {
 
 		// ポップオーバーを開く
 		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement.closest("[data-slot='popover-trigger']");
+		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
 		if (triggerElement) {
 			await user.click(triggerElement);
 		}
@@ -127,7 +127,7 @@ describe("AudioButton", () => {
 
 		// ポップオーバーを開く
 		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement.closest("[data-slot='popover-trigger']");
+		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
 		if (triggerElement) {
 			await user.click(triggerElement);
 		}
@@ -151,7 +151,7 @@ describe("AudioButton", () => {
 
 		// ポップオーバーを開く
 		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement.closest("[data-slot='popover-trigger']");
+		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
 		if (triggerElement) {
 			await user.click(triggerElement);
 		}
@@ -172,7 +172,7 @@ describe("AudioButton", () => {
 
 		// ポップオーバーを開く
 		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement.closest("[data-slot='popover-trigger']");
+		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
 		if (triggerElement) {
 			await user.click(triggerElement);
 		}
@@ -194,7 +194,7 @@ describe("AudioButton", () => {
 
 		// ポップオーバーを開く
 		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement.closest("[data-slot='popover-trigger']");
+		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
 		if (triggerElement) {
 			await user.click(triggerElement);
 		}
@@ -227,7 +227,7 @@ describe("AudioButton", () => {
 
 		// ポップオーバーを開く
 		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement.closest("[data-slot='popover-trigger']");
+		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
 		if (triggerElement) {
 			await user.click(triggerElement);
 		}
