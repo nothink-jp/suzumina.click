@@ -316,13 +316,13 @@ resource "google_monitoring_alert_policy" "high_latency" {
   combiner     = "OR"
   
   conditions {
-    display_name = "P99レイテンシが閾値超過 (> 2000ms)"
+    display_name = "P99レイテンシが閾値超過 (> 8000ms)"
     
     condition_threshold {
       filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_latencies\""
-      duration        = "300s"  # 5分間継続
+      duration        = "600s"  # 10分間継続（個人開発・誤報削減）
       comparison      = "COMPARISON_GT"
-      threshold_value = 2000   # 2秒
+      threshold_value = 8000   # 8秒（個人開発・最適化途上考慮）
       
       aggregations {
         alignment_period   = "60s"
@@ -341,10 +341,10 @@ resource "google_monitoring_alert_policy" "high_latency" {
   
   documentation {
     content = <<-EOT
-    # 高レイテンシ検知アラート
+    # 高レイテンシ検知アラート（個人開発版）
     
-    Next.jsアプリケーションのP99レスポンス時間が2秒を超えました。
-    ユーザーエクスペリエンスに影響があります。
+    Next.jsアプリケーションのP99レスポンス時間が8秒を超えました。
+    最適化途上のため、8秒超過時のみアラート。
     
     ## 対応アクション
     1. Cloud Loggingで遅いクエリを特定
@@ -365,13 +365,13 @@ resource "google_monitoring_alert_policy" "high_cpu" {
   combiner     = "OR"
   
   conditions {
-    display_name = "CPU使用率が持続的に高い (> 80%)"
+    display_name = "CPU使用率が持続的に高い (> 95%)"
     
     condition_threshold {
       filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/container/cpu/utilizations\""
       duration        = "600s"  # 10分間継続
       comparison      = "COMPARISON_GT"
-      threshold_value = 0.8     # 80%
+      threshold_value = 0.95    # 95%（個人開発・余裕持った設定）
       
       aggregations {
         alignment_period   = "60s"
@@ -390,9 +390,9 @@ resource "google_monitoring_alert_policy" "high_cpu" {
   
   documentation {
     content = <<-EOT
-    # CPU使用率高アラート
+    # CPU使用率高アラート（個人開発版）
     
-    Cloud RunでCPU使用率が80%を10分間継続しています。
+    Cloud RunでCPU使用率が95%を10分間継続しています。
     パフォーマンス低下やコスト増加の可能性があります。
     
     ## 対応アクション
@@ -408,19 +408,19 @@ resource "google_monitoring_alert_policy" "high_cpu" {
   depends_on = [google_monitoring_notification_channel.email]
 }
 
-# メモリ使用率高アラート
+# メモリ使用率高アラート（簡素化版・95%閾値）
 resource "google_monitoring_alert_policy" "high_memory" {
   display_name = "メモリ使用率高アラート"
   combiner     = "OR"
   
   conditions {
-    display_name = "メモリ使用率が危険レベル (> 90%)"
+    display_name = "メモリ使用率が危険レベル (> 95%)"
     
     condition_threshold {
       filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/container/memory/utilizations\""
-      duration        = "300s"  # 5分間継続
+      duration        = "600s"  # 10分間継続（誤報削減）
       comparison      = "COMPARISON_GT"
-      threshold_value = 0.9     # 90%
+      threshold_value = 0.95    # 95%（より厳しい閾値）
       
       aggregations {
         alignment_period   = "60s"
@@ -438,18 +438,7 @@ resource "google_monitoring_alert_policy" "high_memory" {
   ]
   
   documentation {
-    content = <<-EOT
-    # メモリ使用率高アラート
-    
-    Cloud Runでメモリ使用率が90%に達しています。
-    OOMエラーの可能性があります。
-    
-    ## 対応アクション
-    1. メモリリークの確認
-    2. 大量データ処理の最適化
-    3. メモリ制限値の見直し
-    4. 緊急時は手動スケーリング
-    EOT
+    content = "メモリ使用率95%超過。緊急対応が必要です。"
     mime_type = "text/markdown"
   }
   

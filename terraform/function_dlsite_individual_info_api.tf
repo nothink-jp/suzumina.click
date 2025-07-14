@@ -10,8 +10,8 @@ locals {
   dlsite_individual_api_function_name = "fetchDLsiteWorksIndividualAPI"
   dlsite_individual_api_runtime       = "nodejs22"
   dlsite_individual_api_entry_point   = "fetchDLsiteWorksIndividualAPI"
-  dlsite_individual_api_memory        = "2Gi"  # Individual Info API処理用大容量メモリ
-  dlsite_individual_api_timeout       = 480    # 8分タイムアウト（API集約処理）
+  dlsite_individual_api_memory        = "512Mi"  # 使用率15%分析による最適化（2Gi→1Gi→512Mi）
+  dlsite_individual_api_timeout       = 300    # 5分タイムアウト（API集約処理最適化）
 }
 
 # Individual Info API専用作品取得関数（手動デプロイ済みのためコメントアウト）
@@ -118,10 +118,10 @@ resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
 resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
   project  = var.gcp_project_id
   region   = var.region
-  name     = "fetch-dlsite-individual-api-30min"
+  name     = "fetch-dlsite-individual-api-hourly"
   
-  description = "Individual Info API専用データ更新（30分間隔・Firestore読み取り最適化対応）"
-  schedule    = "*/30 * * * *"  # 30分間隔実行（読み取りコスト最適化）
+  description = "Individual Info API専用データ更新（1時間間隔・レイテンシ最適化対応）"
+  schedule    = "0 * * * *"  # 毎時0分実行（レイテンシ最適化）
   time_zone   = "Asia/Tokyo"
   paused      = false
 

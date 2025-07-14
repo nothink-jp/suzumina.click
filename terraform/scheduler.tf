@@ -6,7 +6,7 @@ resource "google_cloud_scheduler_job" "fetch_youtube_videos_hourly" {
   project  = var.gcp_project_id
   region   = var.region # 他のリソースと同じリージョンを使用
   name     = "fetch-youtube-videos-hourly"
-  schedule = "19 * * * *" # 毎時19分に実行（cronフォーマット）
+  schedule = "30 * * * *" # 毎時30分に実行（DLsite処理との重複回避）
   time_zone = "Asia/Tokyo" # タイムゾーンを東京に設定
   description = "YouTube動画を毎時間取得するためのPub/Subトピックをトリガーします"
 

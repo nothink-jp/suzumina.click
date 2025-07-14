@@ -29,6 +29,7 @@ suzumina.clickは、声優「涼花みなせ」ファンコミュニティのた
 - **パフォーマンス最適化**: P99レイテンシ改善・Next.js最適化・検索API高速化 (2025年7月12日完了)
 - **Individual Info API統合完了**: Phase 2段階的活用・ID付きクリエイター情報・URL正規化・型安全性向上 (2025年7月12日完了)
 - **収益化システム**: Google AdSense統合・CSP対応・Cookie同意システム強化 (2025年7月13日完了)
+- **レイテンシ最適化**: DLsite・YouTube定期処理スケジュール最適化・実行時間分散 (2025年7月14日完了)
 
 ## 🏗️ システム構成
 
@@ -69,7 +70,7 @@ Monorepo構成 (pnpm workspace)
 
 **実装場所**: `apps/functions/src/endpoints/dlsite-individual-info-api.ts`
 
-- **実行頻度**: 毎時0分（Cloud Scheduler）
+- **実行頻度**: 毎時0分（Cloud Scheduler・レイテンシ最適化対応）
 - **処理内容**: Individual Info API による基本データ更新
 - **特徴**: 重複API呼び出し完全排除・リージョン差異対応
 
@@ -241,6 +242,10 @@ pnpm dev
 - **音声ボタンシステム高精度化**: 0.1秒精度対応・リアルタイムプレビュー・包括的テスト追加
 - **パフォーマンス最適化強化**: Image & Font最適化・Critical CSS実装・Next.js画像設定最適化
 - **セキュリティ強化**: 未使用設定削除・GitHub Actions権限最適化・CodeQLアラート対応
+- **レイテンシ最適化**: 定期処理スケジュール最適化（DLsite:毎時0分・YouTube:毎時30分）
+- **監視ポリシー最適化**: 個人開発・最適化途上を考慮したアラート閾値調整（8秒・95%CPU・1時間制限）
+- **Cloud Functions最適化**: リソース使用率分析によるコスト最適化（YouTube: 512Mi→256Mi, DLsite: 2Gi→512Mi）
+- **Cloud Run最適化**: プレリリース向けコスト最適化（2vCPU/2Gi→1vCPU/1Gi・最小インスタンス0・予算50%削減）
 
 ### v0.3.2 (2025-07-13)
 

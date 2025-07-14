@@ -26,8 +26,8 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
       max_instance_count = local.current_env.cloud_run_max_instances
     }
 
-    # コンテナ同時実行数（2vCPU/2Gi環境に最適化）
-    max_instance_request_concurrency = 100
+    # コンテナ同時実行数（1vCPU/1Gi環境に最適化）
+    max_instance_request_concurrency = 50
 
     # コンテナ設定
     containers {
