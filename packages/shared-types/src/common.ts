@@ -18,7 +18,9 @@ export type ValidationError = z.infer<typeof ValidationErrorSchema>;
  */
 export function formatZodError(error: z.ZodError): ValidationError[] {
 	return error.issues.map((err) => ({
-		path: err.path,
+		path: err.path.filter(
+			(item): item is string | number => typeof item === "string" || typeof item === "number",
+		),
 		message: err.message,
 	}));
 }
