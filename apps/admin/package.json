@@ -28,7 +28,7 @@
 		"sonner": "^2.0.6"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.0.6",
+		"@biomejs/biome": "2.1.1",
 		"@suzumina.click/typescript-config": "workspace:*",
 		"@tailwindcss/postcss": "^4.1.11",
 		"@testing-library/jest-dom": "^6.6.3",
