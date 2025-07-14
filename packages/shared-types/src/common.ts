@@ -17,7 +17,7 @@ export type ValidationError = z.infer<typeof ValidationErrorSchema>;
  * @returns 整形されたバリデーションエラーの配列
  */
 export function formatZodError(error: z.ZodError): ValidationError[] {
-	return error.errors.map((err) => ({
+	return error.issues.map((err) => ({
 		path: err.path,
 		message: err.message,
 	}));

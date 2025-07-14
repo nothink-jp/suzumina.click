@@ -182,7 +182,7 @@ export async function getAutocompleteSuggestions(
 		if (!parseResult.success) {
 			return {
 				success: false,
-				error: `Invalid query parameters: ${parseResult.error.errors.map((e) => e.message).join(", ")}`,
+				error: `Invalid query parameters: ${parseResult.error.issues.map((e) => e.message).join(", ")}`,
 			};
 		}
 

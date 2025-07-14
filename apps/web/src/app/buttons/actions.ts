@@ -45,12 +45,12 @@ export async function createAudioButton(
 		const validationResult = CreateAudioButtonInputSchema.safeParse(input);
 		if (!validationResult.success) {
 			logger.warn("入力データのバリデーション失敗", {
-				errors: validationResult.error.errors,
+				errors: validationResult.error.issues,
 				input,
 			});
 			return {
 				success: false,
-				error: `入力データが無効です: ${validationResult.error.errors.map((e) => e.message).join(", ")}`,
+				error: `入力データが無効です: ${validationResult.error.issues.map((e) => e.message).join(", ")}`,
 			};
 		}
 
@@ -189,7 +189,7 @@ export async function getAudioButtons(
 		if (!validationResult.success) {
 			return {
 				success: false,
-				error: `検索条件が無効です: ${validationResult.error.errors.map((e) => e.message).join(", ")}`,
+				error: `検索条件が無効です: ${validationResult.error.issues.map((e) => e.message).join(", ")}`,
 			};
 		}
 
@@ -525,7 +525,7 @@ export async function updateAudioButtonStats(
 		if (!validationResult.success) {
 			return {
 				success: false,
-				error: `統計更新データが無効です: ${validationResult.error.errors.map((e) => e.message).join(", ")}`,
+				error: `統計更新データが無効です: ${validationResult.error.issues.map((e) => e.message).join(", ")}`,
 			};
 		}
 

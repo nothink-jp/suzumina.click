@@ -200,7 +200,7 @@ export async function getWorksForAdmin(
 		if (!validationResult.success) {
 			return {
 				success: false,
-				error: `検索条件が無効です: ${validationResult.error.errors.map((e) => e.message).join(", ")}`,
+				error: `検索条件が無効です: ${validationResult.error.issues.map((e) => e.message).join(", ")}`,
 			};
 		}
 

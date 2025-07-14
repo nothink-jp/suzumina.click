@@ -26,12 +26,12 @@ export async function submitContactForm(
 		const validationResult = ContactFormDataSchema.safeParse(data);
 		if (!validationResult.success) {
 			logger.warn("お問い合わせフォームのバリデーション失敗", {
-				errors: validationResult.error.errors,
+				errors: validationResult.error.issues,
 				data,
 			});
 			return {
 				success: false,
-				error: `入力データが無効です: ${validationResult.error.errors.map((e) => e.message).join(", ")}`,
+				error: `入力データが無効です: ${validationResult.error.issues.map((e) => e.message).join(", ")}`,
 			};
 		}
 
