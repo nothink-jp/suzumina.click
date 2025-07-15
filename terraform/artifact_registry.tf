@@ -55,3 +55,41 @@ resource "google_artifact_registry_repository" "docker_repo" {
 
   # 必要に応じて、VPCネットワーク設定等を追加
 }
+
+# Cloud Functions用のArtifact Registryリポジトリ
+# Google Cloudが自動作成したものをimportして管理
+resource "google_artifact_registry_repository" "gcf_artifacts" {
+  provider = google
+
+  location      = var.region
+  repository_id = "gcf-artifacts"
+  description   = "This repository is created and used by Cloud Functions for storing function docker images."
+  format        = "DOCKER"
+
+  # Cloud Functions用のクリーンアップポリシー
+  cleanup_policy_dry_run = false
+  
+  # 古いタグなしイメージを7日後に削除
+  cleanup_policies {
+    id     = "delete-old-untagged"
+    action = "DELETE"
+    condition {
+      older_than = "604800s" # 7日 (7 * 24 * 60 * 60秒)
+      tag_state  = "UNTAGGED"
+    }
+  }
+  
+  # 最新5バージョンを保持（Function毎）
+  cleanup_policies {
+    id     = "keep-recent-function-versions"
+    action = "KEEP"
+    most_recent_versions {
+      keep_count = 5
+    }
+  }
+
+  # ラベルを維持（Google Cloudが設定）
+  labels = {
+    goog-managed-by = "cloudfunctions"
+  }
+}
