@@ -28,14 +28,14 @@ test.describe("Responsive Design Validation", () => {
 				}
 			});
 
-			test("SimpleAudioButton accessibility", async ({ page }) => {
+			test("AudioButton accessibility", async ({ page }) => {
 				await page.goto("/buttons");
 
-				await page.waitForSelector("[data-testid='simple-audio-button']", {
+				await page.waitForSelector("[data-testid='audio-button']", {
 					timeout: 10000,
 				});
 
-				const audioButtons = page.locator("[data-testid='simple-audio-button']");
+				const audioButtons = page.locator("[data-testid='audio-button']");
 				const count = await audioButtons.count();
 
 				if (count > 0) {

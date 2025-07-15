@@ -10,7 +10,6 @@ export {
 	calculateSkeletonHeight,
 	generateSkeletonList,
 } from "./audio-button-skeleton";
-export { AudioOnlyPlayer } from "./audio-only-player";
 export { AudioPlayer } from "./audio-player";
 // Types
 export type { AutocompleteSuggestionItem } from "./autocomplete-dropdown";
@@ -32,7 +31,6 @@ export {
 } from "./progressive-audio-button-list";
 export { SearchAndFilterPanel } from "./search-and-filter-panel";
 export { SearchFilterPanel } from "./search-filter-panel";
-export { SimpleAudioButton } from "./simple-audio-button";
 export {
 	calculateResponsiveItemSize,
 	calculateVirtualListLayout,

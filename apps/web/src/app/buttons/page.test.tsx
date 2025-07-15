@@ -55,10 +55,10 @@ vi.mock("./actions", () => ({
 	}),
 }));
 
-// Mock SimpleAudioButton component
-vi.mock("@suzumina.click/ui/components/custom/simple-audio-button", () => ({
-	SimpleAudioButton: ({ audioButton }: any) => (
-		<div data-testid="simple-audio-button">
+// Mock AudioButton component
+vi.mock("@suzumina.click/ui/components/custom/audio-button", () => ({
+	AudioButton: ({ audioButton }: any) => (
+		<div data-testid="audio-button">
 			<h3>{audioButton.title}</h3>
 			<p>{audioButton.description}</p>
 			<span>Category: {audioButton.category}</span>
