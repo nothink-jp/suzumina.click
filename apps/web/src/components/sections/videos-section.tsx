@@ -28,14 +28,32 @@ export function VideosSection() {
 	}, []);
 
 	if (loading) {
-		return <LoadingSkeleton variant="carousel" height={300} />;
+		return (
+			<section className="py-8 sm:py-12 bg-suzuka-100">
+				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="flex items-center justify-between mb-6 sm:mb-8">
+						<div>
+							<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
+								📹 新着動画
+							</h2>
+							<p className="text-sm sm:text-base text-muted-foreground">
+								涼花みなせさんの最新動画をチェック！
+							</p>
+						</div>
+						<Button asChild variant="outline">
+							<Link href="/videos" className="font-medium">
+								すべて見る
+							</Link>
+						</Button>
+					</div>
+					<LoadingSkeleton variant="carousel" height={300} />
+				</div>
+			</section>
+		);
 	}
 
 	return (
-		<section
-			className="py-8 sm:py-12 bg-suzuka-100"
-			style={{ contentVisibility: "auto", containIntrinsicSize: "340px" }}
-		>
+		<section className="py-8 sm:py-12 bg-suzuka-100">
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex items-center justify-between mb-6 sm:mb-8">
 					<div>

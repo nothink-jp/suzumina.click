@@ -1,11 +1,7 @@
 "use client";
 
 // Video型を別途import
-import type {
-	FrontendAudioButtonData,
-	FrontendDLsiteWorkData,
-	FrontendVideoData,
-} from "@suzumina.click/shared-types";
+import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
@@ -16,15 +12,12 @@ import {
 	LazyVideosSection,
 	LazyWorksSection,
 } from "@/components/optimization/lazy-components";
-import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface HomePageProps {
 	initialAudioButtons: FrontendAudioButtonData[];
 }
 
 export function HomePage({ initialAudioButtons }: HomePageProps) {
-	const { showR18Content } = useAgeVerification();
-
 	return (
 		<div>
 			{/* メインビジュアル - LCP最適化済み + suzukaブランドカラー背景 */}
@@ -129,12 +122,12 @@ export function HomePage({ initialAudioButtons }: HomePageProps) {
 			</section>
 
 			{/* 新着動画セクション - クライアントサイドで遅延読み込み */}
-			<Suspense fallback={<LoadingSkeleton variant="carousel" height={300} />}>
+			<Suspense fallback={<div />}>
 				<LazyVideosSection />
 			</Suspense>
 
 			{/* 新着作品セクション - クライアントサイドで遅延読み込み */}
-			<Suspense fallback={<LoadingSkeleton variant="carousel" height={350} />}>
+			<Suspense fallback={<div />}>
 				<LazyWorksSection />
 			</Suspense>
 
