@@ -81,6 +81,9 @@ const ThumbnailImage = memo(function ThumbnailImage({
 		}
 	};
 
+	// プレースホルダー画像の場合はblur効果を無効化
+	const isPlaceholderImage = imageSrc === PLACEHOLDER_IMAGE;
+
 	return (
 		<div
 			style={{
@@ -100,8 +103,8 @@ const ThumbnailImage = memo(function ThumbnailImage({
 				loading={priority ? "eager" : loading}
 				quality={quality}
 				onError={handleError}
-				placeholder="blur"
-				blurDataURL={PLACEHOLDER_IMAGE}
+				placeholder={isPlaceholderImage ? "empty" : "blur"}
+				blurDataURL={isPlaceholderImage ? undefined : PLACEHOLDER_IMAGE}
 				unoptimized={optimized ? undefined : true}
 				style={{
 					// CLS削減: object-fitでレイアウト安定化
