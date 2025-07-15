@@ -77,7 +77,7 @@ User Agent: ${data.userAgent}
 			: ["nothink@nothink.jp"];
 
 		await resend.emails.send({
-			from: "suzumina.click <no-reply@send.suzumina.click>",
+			from: "suzumina.click <no-reply@suzumina.click>",
 			to: recipients,
 			subject: `[suzumina.click] ${categoryLabel} - ${data.subject}`,
 			html: emailHtml,
