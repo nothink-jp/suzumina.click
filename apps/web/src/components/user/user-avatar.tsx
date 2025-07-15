@@ -28,6 +28,9 @@ export default function UserAvatar({
 			width={size}
 			height={size}
 			className={`rounded-full ${className}`}
+			quality={size > 64 ? 85 : 75}
+			loading="lazy"
+			sizes={`${size}px`}
 			onError={(e) => {
 				// フォールバック画像
 				e.currentTarget.src = fallbackUrl;

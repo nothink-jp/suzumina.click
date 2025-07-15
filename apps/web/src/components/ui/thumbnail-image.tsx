@@ -14,6 +14,7 @@ interface ThumbnailImageProps {
 	fallbackSrc?: string; // フォールバック画像URL
 	loading?: "lazy" | "eager"; // 遅延読み込み制御
 	quality?: number; // 画像品質（1-100）
+	optimized?: boolean; // Next.js画像最適化の有効/無効
 }
 
 const PLACEHOLDER_IMAGE =
@@ -42,6 +43,7 @@ const ThumbnailImage = memo(function ThumbnailImage({
 	fallbackSrc,
 	loading = "lazy",
 	quality = 85,
+	optimized = true,
 }: ThumbnailImageProps) {
 	const [imageSrc, setImageSrc] = useState(() => {
 		const safeSrc = typeof src === "string" && src.trim() !== "" ? src : PLACEHOLDER_IMAGE;
@@ -99,6 +101,7 @@ const ThumbnailImage = memo(function ThumbnailImage({
 				onError={handleError}
 				placeholder="blur"
 				blurDataURL={PLACEHOLDER_IMAGE}
+				unoptimized={!optimized}
 				style={{
 					// CLS削減: object-fitでレイアウト安定化
 					objectFit: "cover",

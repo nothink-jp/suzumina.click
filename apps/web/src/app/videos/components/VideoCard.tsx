@@ -190,7 +190,9 @@ const VideoCard = memo(function VideoCard({
 								priority={priority}
 								width={384}
 								height={216}
-								sizes="(max-width: 400px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+								sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+								quality={priority ? 90 : 80}
+								loading={priority ? "eager" : "lazy"}
 							/>
 						</div>
 					</Link>
