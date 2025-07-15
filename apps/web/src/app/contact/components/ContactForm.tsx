@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ContactFormDataSchema } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Label } from "@suzumina.click/ui/components/ui/label";
@@ -20,7 +19,7 @@ import { z } from "zod";
 import { submitContactForm } from "../actions";
 
 // フォームスキーマ（エラーメッセージ付き）
-const contactFormSchema = ContactFormDataSchema.extend({
+const contactFormSchema = z.object({
 	category: z.enum(["bug", "feature", "usage", "other"], {
 		required_error: "お問い合わせ種別を選択してください",
 	}),

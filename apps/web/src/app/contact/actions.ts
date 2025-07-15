@@ -58,7 +58,7 @@ export async function submitContactForm(data: ContactFormData): Promise<ContactS
 			return {
 				success: false,
 				message: "入力内容に不備があります",
-				errors: error.errors,
+				errors: error.issues,
 			};
 		}
 
