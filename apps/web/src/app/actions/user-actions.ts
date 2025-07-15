@@ -18,6 +18,58 @@ import { requireAuth } from "@/components/system/protected-route";
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 
+// ヘルパー関数：ユーザー更新の認証チェック
+async function validateUserUpdateAuth(
+	userId: string,
+	currentUser: { role: string; discordId: string },
+) {
+	if (currentUser.role !== "admin") {
+		logger.warn("管理者権限が必要", { userId: currentUser.discordId, targetUserId: userId });
+		return { success: false, error: "この操作には管理者権限が必要です" };
+	}
+
+	if (userId === currentUser.discordId) {
+		return { success: false, error: "自分自身のロールや状態は変更できません" };
+	}
+
+	return { success: true };
+}
+
+// ヘルパー関数：更新データの構築
+function buildUpdateData(
+	input: UpdateUserInput & { role?: "member" | "moderator" | "admin"; isActive?: boolean },
+) {
+	const updateData: Record<string, unknown> = {
+		updatedAt: new Date().toISOString(),
+	};
+
+	// 基本フィールドの更新
+	if (input.displayName !== undefined) {
+		updateData.displayName = input.displayName;
+	}
+	if (input.isPublicProfile !== undefined) {
+		updateData.isPublicProfile = input.isPublicProfile;
+	}
+	if (input.showStatistics !== undefined) {
+		updateData.showStatistics = input.showStatistics;
+	}
+
+	// 管理者専用フィールドの更新
+	if ("role" in input && input.role !== undefined) {
+		const validRoles = ["member", "moderator", "admin"];
+		if (!validRoles.includes(input.role)) {
+			return { success: false, error: "無効なロールが指定されました", data: null };
+		}
+		updateData.role = input.role;
+	}
+
+	if ("isActive" in input && input.isActive !== undefined) {
+		updateData.isActive = input.isActive;
+	}
+
+	return { success: true, data: updateData };
+}
+
 /**
  * 管理者用：ユーザー情報を更新するServer Action
  */
@@ -30,20 +82,9 @@ export async function updateUser(
 
 		// 認証チェック（管理者権限必須）
 		const user = await requireAuth();
-		if (user.role !== "admin") {
-			logger.warn("管理者権限が必要", { userId: user.discordId, targetUserId: userId });
-			return {
-				success: false,
-				error: "この操作には管理者権限が必要です",
-			};
-		}
-
-		// 自分自身の権限変更を防止
-		if (userId === user.discordId) {
-			return {
-				success: false,
-				error: "自分自身のロールや状態は変更できません",
-			};
+		const authResult = await validateUserUpdateAuth(userId, user);
+		if (!authResult.success) {
+			return authResult;
 		}
 
 		// 入力データのバリデーション
@@ -72,39 +113,13 @@ export async function updateUser(
 		}
 
 		// 更新データの構築
-		const updateData: Record<string, unknown> = {
-			updatedAt: new Date().toISOString(),
-		};
-
-		// 基本フィールドの更新
-		if (input.displayName !== undefined) {
-			updateData.displayName = input.displayName;
-		}
-		if (input.isPublicProfile !== undefined) {
-			updateData.isPublicProfile = input.isPublicProfile;
-		}
-		if (input.showStatistics !== undefined) {
-			updateData.showStatistics = input.showStatistics;
-		}
-
-		// 管理者専用フィールドの更新
-		if ("role" in input && input.role !== undefined) {
-			const validRoles = ["member", "moderator", "admin"];
-			if (!validRoles.includes(input.role)) {
-				return {
-					success: false,
-					error: "無効なロールが指定されました",
-				};
-			}
-			updateData.role = input.role;
-		}
-
-		if ("isActive" in input && input.isActive !== undefined) {
-			updateData.isActive = input.isActive;
+		const updateResult = buildUpdateData(input);
+		if (!updateResult.success) {
+			return { success: false, error: updateResult.error };
 		}
 
 		// Firestoreを更新
-		await userRef.update(updateData);
+		await userRef.update(updateResult.data);
 
 		// キャッシュの無効化
 		revalidatePath("/admin/users");
@@ -113,7 +128,7 @@ export async function updateUser(
 		logger.info("ユーザー情報更新が正常に完了", {
 			userId,
 			updatedBy: user.discordId,
-			updatedFields: Object.keys(updateData),
+			updatedFields: Object.keys(updateResult.data),
 		});
 
 		return {
@@ -207,6 +222,58 @@ export async function deactivateUser(
 	}
 }
 
+// ヘルパー関数：Firestoreクエリの構築
+function buildUsersQuery(
+	firestore: FirebaseFirestore.Firestore,
+	validatedQuery: UserQuery,
+	isAdmin: boolean,
+) {
+	let firestoreQuery = firestore.collection("users").where("isActive", "==", true);
+
+	// 管理者以外は公開プロフィールのみ
+	if (!isAdmin && validatedQuery.onlyPublic !== false) {
+		firestoreQuery = firestoreQuery.where("isPublicProfile", "==", true);
+	}
+
+	// ロールフィルター
+	if (validatedQuery.role) {
+		firestoreQuery = firestoreQuery.where("role", "==", validatedQuery.role);
+	}
+
+	// 並び順の設定
+	switch (validatedQuery.sortBy) {
+		case "newest":
+			firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
+			break;
+		case "oldest":
+			firestoreQuery = firestoreQuery.orderBy("createdAt", "asc");
+			break;
+		case "mostActive":
+			firestoreQuery = firestoreQuery.orderBy("totalPlayCount", "desc");
+			break;
+		case "alphabetical":
+			firestoreQuery = firestoreQuery.orderBy("displayName", "asc");
+			break;
+		default:
+			firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
+	}
+
+	return firestoreQuery;
+}
+
+// ヘルパー関数：クライアントサイドフィルタリング
+function applyClientSideFiltering(users: FrontendUserData[], searchText?: string) {
+	if (!searchText) return users;
+
+	const searchLower = searchText.toLowerCase();
+	return users.filter(
+		(user) =>
+			user.username.toLowerCase().includes(searchLower) ||
+			user.displayName.toLowerCase().includes(searchLower) ||
+			user.globalName?.toLowerCase().includes(searchLower),
+	);
+}
+
 /**
  * ユーザー一覧を取得するServer Action
  */
@@ -216,8 +283,6 @@ export async function getUsers(
 	try {
 		// 認証チェック（認証ユーザーのみ）
 		const currentUser = await requireAuth();
-
-		// 管理者以外は公開プロフィールのみ表示
 		const isAdmin = currentUser.role === "admin";
 
 		// クエリのバリデーション
@@ -233,35 +298,7 @@ export async function getUsers(
 		const firestore = getFirestore();
 
 		// Firestoreクエリの構築
-		let firestoreQuery = firestore.collection("users").where("isActive", "==", true);
-
-		// 管理者以外は公開プロフィールのみ
-		if (!isAdmin && validatedQuery.onlyPublic !== false) {
-			firestoreQuery = firestoreQuery.where("isPublicProfile", "==", true);
-		}
-
-		// ロールフィルター
-		if (validatedQuery.role) {
-			firestoreQuery = firestoreQuery.where("role", "==", validatedQuery.role);
-		}
-
-		// 並び順の設定
-		switch (validatedQuery.sortBy) {
-			case "newest":
-				firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
-				break;
-			case "oldest":
-				firestoreQuery = firestoreQuery.orderBy("createdAt", "asc");
-				break;
-			case "mostActive":
-				firestoreQuery = firestoreQuery.orderBy("totalPlayCount", "desc");
-				break;
-			case "alphabetical":
-				firestoreQuery = firestoreQuery.orderBy("displayName", "asc");
-				break;
-			default:
-				firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
-		}
+		let firestoreQuery = buildUsersQuery(firestore, validatedQuery, isAdmin);
 
 		// ページネーション適用
 		if (validatedQuery.startAfter) {
@@ -295,15 +332,7 @@ export async function getUsers(
 		});
 
 		// クライアントサイドフィルタリング（Firestoreでは対応できない条件）
-		if (validatedQuery.searchText) {
-			const searchLower = validatedQuery.searchText.toLowerCase();
-			users = users.filter(
-				(user) =>
-					user.username.toLowerCase().includes(searchLower) ||
-					user.displayName.toLowerCase().includes(searchLower) ||
-					user.globalName?.toLowerCase().includes(searchLower),
-			);
-		}
+		users = applyClientSideFiltering(users, validatedQuery.searchText);
 
 		const lastUser = users.length > 0 ? users[users.length - 1] : undefined;
 
