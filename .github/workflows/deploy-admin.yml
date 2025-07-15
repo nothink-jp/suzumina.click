@@ -245,9 +245,9 @@ jobs:
           # 2. Docker image cleanup
           echo "🐳 Cleaning up admin Docker images (keeping latest $KEEP_IMAGES)..."
           
-          # Get all image digests sorted by creation time (newest first)
+          # Get all image digests sorted by creation time (oldest first for deletion)
           IMAGES=$(gcloud artifacts docker images list "$REPOSITORY_PATH" \
-            --sort-by="~CREATE_TIME" \
+            --sort-by="CREATE_TIME" \
             --format="value(IMAGE)" \
             --limit=50 2>/dev/null || echo "")
           
@@ -260,7 +260,8 @@ jobs:
               DELETE_COUNT=$((TOTAL_IMAGES - KEEP_IMAGES))
               echo "Deleting $DELETE_COUNT old admin images..."
               
-              for ((i=KEEP_IMAGES; i<TOTAL_IMAGES; i++)); do
+              # Delete from beginning (oldest images) when sorted by CREATE_TIME ascending
+              for ((i=0; i<DELETE_COUNT; i++)); do
                 IMAGE=${IMAGE_ARRAY[$i]}
                 echo "  Deleting admin image: $IMAGE"
                 
