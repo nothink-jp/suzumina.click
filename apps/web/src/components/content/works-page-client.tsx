@@ -6,10 +6,40 @@ import {
 	ListPageHeader,
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { getWorks } from "@/app/works/actions";
 import WorkList from "@/app/works/components/WorkList";
 import { useAgeVerification } from "@/contexts/age-verification-context";
+
+// ヘルパー関数：検索パラメータを解析
+function parseSearchParams(
+	searchParams: { [key: string]: string | string[] | undefined },
+	showR18Content: boolean,
+) {
+	const pageNumber = Number.parseInt(searchParams.page as string, 10) || 1;
+	const validPage = Math.max(1, pageNumber);
+	const sort = typeof searchParams.sort === "string" ? searchParams.sort : "newest";
+	const search = typeof searchParams.search === "string" ? searchParams.search : undefined;
+	const category = typeof searchParams.category === "string" ? searchParams.category : undefined;
+	const language = typeof searchParams.language === "string" ? searchParams.language : undefined;
+	const limitValue = Number.parseInt(searchParams.limit as string, 10) || 12;
+	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
+
+	// URLパラメータからexcludeR18を取得、年齢確認状況に基づいてデフォルト値を決定
+	const excludeR18FromParams = searchParams.excludeR18;
+	const shouldExcludeR18 =
+		excludeR18FromParams !== undefined ? excludeR18FromParams === "true" : !showR18Content;
+
+	return {
+		page: validPage,
+		limit: validLimit,
+		sort,
+		search,
+		category,
+		language,
+		excludeR18: shouldExcludeR18,
+	};
+}
 
 interface WorksPageClientProps {
 	searchParams: { [key: string]: string | string[] | undefined };
@@ -30,6 +60,13 @@ export function WorksPageClient({
 	const [filteredCount, setFilteredCount] = useState<number | undefined>(undefined);
 	const [isLoading, setIsLoading] = useState(false);
 
+	// ヘルパー関数：状態を更新
+	const updateState = useCallback((result: Awaited<ReturnType<typeof getWorks>>) => {
+		setData(result.works);
+		setTotalCount(result.totalCount || 0);
+		setFilteredCount(result.filteredCount);
+	}, []);
+
 	// 年齢確認状態が変更された時にデータを再取得
 	useEffect(() => {
 		if (ageVerificationLoading) return;
@@ -37,35 +74,9 @@ export function WorksPageClient({
 		const fetchData = async () => {
 			setIsLoading(true);
 			try {
-				const pageNumber = Number.parseInt(searchParams.page as string, 10) || 1;
-				const validPage = Math.max(1, pageNumber);
-				const sort = typeof searchParams.sort === "string" ? searchParams.sort : "newest";
-				const search = typeof searchParams.search === "string" ? searchParams.search : undefined;
-				const category =
-					typeof searchParams.category === "string" ? searchParams.category : undefined;
-				const language =
-					typeof searchParams.language === "string" ? searchParams.language : undefined;
-				const limitValue = Number.parseInt(searchParams.limit as string, 10) || 12;
-				const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
-
-				// URLパラメータからexcludeR18を取得、年齢確認状況に基づいてデフォルト値を決定
-				const excludeR18FromParams = searchParams.excludeR18;
-				const shouldExcludeR18 =
-					excludeR18FromParams !== undefined ? excludeR18FromParams === "true" : !showR18Content; // 年齢確認状況に基づくデフォルト値（未成年またはR18を見ない設定の場合は除外）
-
-				const result = await getWorks({
-					page: validPage,
-					limit: validLimit,
-					sort,
-					search,
-					category,
-					language,
-					excludeR18: shouldExcludeR18,
-				});
-
-				setData(result.works);
-				setTotalCount(result.totalCount || 0);
-				setFilteredCount(result.filteredCount);
+				const params = parseSearchParams(searchParams, showR18Content);
+				const result = await getWorks(params);
+				updateState(result);
 			} catch (_error) {
 				// Error handling - silent fail to prevent console noise
 			} finally {
@@ -74,7 +85,7 @@ export function WorksPageClient({
 		};
 
 		fetchData();
-	}, [showR18Content, ageVerificationLoading, searchParams]);
+	}, [showR18Content, ageVerificationLoading, searchParams, updateState]);
 
 	if (ageVerificationLoading) {
 		return (

@@ -49,6 +49,88 @@ interface EnhancedSearchParams {
 	excludeR18?: boolean; // R18作品を除外
 }
 
+// ヘルパー関数：2つの作品間の類似スコアを計算
+function calculateSimilarityScore(
+	work: OptimizedFirestoreDLsiteWorkData,
+	baseWork: OptimizedFirestoreDLsiteWorkData,
+	byCircle: boolean,
+	byVoiceActors: boolean,
+	byGenres: boolean,
+): number {
+	let score = 0;
+
+	// サークル一致（高優先度）
+	if (byCircle && work.circle === baseWork.circle) {
+		score += 10;
+	}
+
+	// 声優一致（統合データ活用）
+	if (byVoiceActors && Array.isArray(baseWork.voiceActors) && Array.isArray(work.voiceActors)) {
+		const commonVoiceActors = baseWork.voiceActors.filter(
+			(va) =>
+				typeof va === "string" &&
+				(work.voiceActors?.some(
+					(wva) => typeof wva === "string" && (wva.includes(va) || va.includes(wva)),
+				) ??
+					false),
+		);
+		score += commonVoiceActors.length * 3;
+	}
+
+	// ジャンル一致（統合データ活用）
+	if (byGenres && Array.isArray(baseWork.genres) && Array.isArray(work.genres)) {
+		const commonGenres = baseWork.genres.filter(
+			(genre: string) =>
+				typeof genre === "string" &&
+				(work.genres?.some(
+					(workGenre) => typeof workGenre === "string" && workGenre.includes(genre),
+				) ??
+					false),
+		);
+		score += commonGenres.length * 2;
+	}
+
+	// カテゴリ一致
+	if (work.category === baseWork.category) {
+		score += 1;
+	}
+
+	// 価格帯類似性
+	if (work.price?.current && baseWork.price?.current) {
+		const priceDiff = Math.abs(work.price.current - baseWork.price.current);
+		if (priceDiff < 500) score += 1;
+	}
+
+	return score;
+}
+
+// ヘルパー関数：検索テキストで作品をフィルタリング
+function filterWorksBySearchText(works: OptimizedFirestoreDLsiteWorkData[], searchText: string) {
+	const lowerSearch = searchText.toLowerCase();
+	return works.filter((work) => {
+		const searchableText = [
+			work.title,
+			work.circle,
+			work.description,
+			...(Array.isArray(work.voiceActors)
+				? work.voiceActors.filter((va) => typeof va === "string")
+				: []),
+			...(Array.isArray(work.scenario) ? work.scenario.filter((s) => typeof s === "string") : []),
+			...(Array.isArray(work.illustration)
+				? work.illustration.filter((i) => typeof i === "string")
+				: []),
+			...(Array.isArray(work.music) ? work.music.filter((m) => typeof m === "string") : []),
+			...(Array.isArray(work.author) ? work.author.filter((a) => typeof a === "string") : []),
+			...(Array.isArray(work.genres) ? work.genres.filter((g) => typeof g === "string") : []),
+		]
+			.filter((text) => typeof text === "string")
+			.join(" ")
+			.toLowerCase();
+
+		return searchableText.includes(lowerSearch);
+	});
+}
+
 /**
  * 統合データ構造による拡張検索フィルタリング
  */
@@ -60,29 +142,7 @@ function filterWorksByUnifiedData(
 
 	// 基本検索（タイトル・サークル・説明文・統合クリエイター情報）
 	if (params.search) {
-		const lowerSearch = params.search.toLowerCase();
-		filteredWorks = filteredWorks.filter((work) => {
-			const searchableText = [
-				work.title,
-				work.circle,
-				work.description,
-				...(Array.isArray(work.voiceActors)
-					? work.voiceActors.filter((va) => typeof va === "string")
-					: []),
-				...(Array.isArray(work.scenario) ? work.scenario.filter((s) => typeof s === "string") : []),
-				...(Array.isArray(work.illustration)
-					? work.illustration.filter((i) => typeof i === "string")
-					: []),
-				...(Array.isArray(work.music) ? work.music.filter((m) => typeof m === "string") : []),
-				...(Array.isArray(work.author) ? work.author.filter((a) => typeof a === "string") : []),
-				...(Array.isArray(work.genres) ? work.genres.filter((g) => typeof g === "string") : []),
-			]
-				.filter((text) => typeof text === "string")
-				.join(" ")
-				.toLowerCase();
-
-			return searchableText.includes(lowerSearch);
-		});
+		filteredWorks = filterWorksBySearchText(filteredWorks, params.search);
 	}
 
 	// カテゴリーフィルタリング
@@ -385,53 +445,10 @@ export async function getRelatedWorks(
 		allWorks = allWorks.filter((work) => work.id !== workId);
 
 		// 関連度スコア計算
-		const scoredWorks = allWorks.map((work) => {
-			let score = 0;
-
-			// サークル一致（高優先度）
-			if (byCircle && work.circle === baseWork.circle) {
-				score += 10;
-			}
-
-			// 声優一致（統合データ活用）
-			if (byVoiceActors && Array.isArray(baseWork.voiceActors) && Array.isArray(work.voiceActors)) {
-				const commonVoiceActors = baseWork.voiceActors.filter(
-					(va) =>
-						typeof va === "string" &&
-						(work.voiceActors?.some(
-							(wva) => typeof wva === "string" && (wva.includes(va) || va.includes(wva)),
-						) ??
-							false),
-				);
-				score += commonVoiceActors.length * 3;
-			}
-
-			// ジャンル一致（統合データ活用）
-			if (byGenres && Array.isArray(baseWork.genres) && Array.isArray(work.genres)) {
-				const commonGenres = baseWork.genres.filter(
-					(genre: string) =>
-						typeof genre === "string" &&
-						(work.genres?.some(
-							(workGenre) => typeof workGenre === "string" && workGenre.includes(genre),
-						) ??
-							false),
-				);
-				score += commonGenres.length * 2;
-			}
-
-			// カテゴリ一致
-			if (work.category === baseWork.category) {
-				score += 1;
-			}
-
-			// 価格帯類似性
-			if (work.price?.current && baseWork.price?.current) {
-				const priceDiff = Math.abs(work.price.current - baseWork.price.current);
-				if (priceDiff < 500) score += 1;
-			}
-
-			return { work, score };
-		});
+		const scoredWorks = allWorks.map((work) => ({
+			work,
+			score: calculateSimilarityScore(work, baseWork, byCircle, byVoiceActors, byGenres),
+		}));
 
 		// スコア順でソート、上位を取得
 		const topRelated = scoredWorks
@@ -595,6 +612,68 @@ export async function getWorksStats(
 	}
 }
 
+// データ品質統計の型定義
+interface QualityStats {
+	total: number;
+	hasHighResImage: number;
+	hasVoiceActors: number;
+	hasDetailedCreators: number;
+	hasRating: number;
+	hasGenres: number;
+	hasDataSources: number;
+	dataSourceCoverage: {
+		searchResult: number;
+		infoAPI: number;
+		detailPage: number;
+		allThree: number;
+	};
+}
+
+// ヘルパー関数：基本的な品質統計を更新
+function updateBasicQualityStats(work: OptimizedFirestoreDLsiteWorkData, stats: QualityStats) {
+	const hasHighRes = !!(work.highResImageUrl && work.highResImageUrl.trim() !== "");
+	if (hasHighRes) stats.hasHighResImage++;
+	if (Array.isArray(work.voiceActors) && work.voiceActors.length > 0) stats.hasVoiceActors++;
+	if (work.rating) stats.hasRating++;
+	if (Array.isArray(work.genres) && work.genres.length > 0) stats.hasGenres++;
+}
+
+// ヘルパー関数：クリエイター統計を更新
+function updateCreatorStats(work: OptimizedFirestoreDLsiteWorkData, stats: QualityStats) {
+	const hasDetailedCreators = [work.scenario, work.illustration, work.music].some(
+		(creators) => Array.isArray(creators) && creators.length > 0,
+	);
+	if (hasDetailedCreators) stats.hasDetailedCreators++;
+}
+
+// ヘルパー関数：データソース統計を更新
+function updateDataSourceStats(work: OptimizedFirestoreDLsiteWorkData, stats: QualityStats) {
+	if (work.dataSources) {
+		stats.hasDataSources++;
+		const sources = work.dataSources;
+
+		if (sources.searchResult) stats.dataSourceCoverage.searchResult++;
+		if (sources.infoAPI) stats.dataSourceCoverage.infoAPI++;
+
+		if (sources.searchResult && sources.infoAPI) {
+			stats.dataSourceCoverage.allThree++;
+		}
+	}
+}
+
+// ヘルパー関数：パーセンテージ計算
+function calculateQualityPercentages(stats: QualityStats) {
+	const total = stats.total;
+	return {
+		hasHighResImage: Math.round((stats.hasHighResImage / total) * 100),
+		hasVoiceActors: Math.round((stats.hasVoiceActors / total) * 100),
+		hasDetailedCreators: Math.round((stats.hasDetailedCreators / total) * 100),
+		hasRating: Math.round((stats.hasRating / total) * 100),
+		hasGenres: Math.round((stats.hasGenres / total) * 100),
+		dataSourceCoverage: Math.round((stats.dataSourceCoverage.allThree / total) * 100),
+	};
+}
+
 /**
  * 統合データ品質レポートを取得するServer Action
  * @returns データ品質レポート
@@ -626,45 +705,14 @@ export async function getDataQualityReport() {
 		};
 
 		allWorks.forEach((work) => {
-			const hasHighRes = !!(work.highResImageUrl && work.highResImageUrl.trim() !== "");
-			if (hasHighRes) qualityStats.hasHighResImage++;
-			if (Array.isArray(work.voiceActors) && work.voiceActors.length > 0)
-				qualityStats.hasVoiceActors++;
-			if (work.rating) qualityStats.hasRating++;
-			if (Array.isArray(work.genres) && work.genres.length > 0) qualityStats.hasGenres++;
-
-			// 詳細クリエイター情報
-			const hasDetailedCreators = [work.scenario, work.illustration, work.music].some(
-				(creators) => Array.isArray(creators) && creators.length > 0,
-			);
-			if (hasDetailedCreators) qualityStats.hasDetailedCreators++;
-
-			// データソース情報
-			if (work.dataSources) {
-				qualityStats.hasDataSources++;
-				const sources = work.dataSources;
-
-				if (sources.searchResult) qualityStats.dataSourceCoverage.searchResult++;
-				if (sources.infoAPI) qualityStats.dataSourceCoverage.infoAPI++;
-
-				if (sources.searchResult && sources.infoAPI) {
-					qualityStats.dataSourceCoverage.allThree++;
-				}
-			}
+			updateBasicQualityStats(work, qualityStats);
+			updateCreatorStats(work, qualityStats);
+			updateDataSourceStats(work, qualityStats);
 		});
 
-		// パーセンテージ計算
-		const total = qualityStats.total;
 		return {
 			...qualityStats,
-			percentages: {
-				hasHighResImage: Math.round((qualityStats.hasHighResImage / total) * 100),
-				hasVoiceActors: Math.round((qualityStats.hasVoiceActors / total) * 100),
-				hasDetailedCreators: Math.round((qualityStats.hasDetailedCreators / total) * 100),
-				hasRating: Math.round((qualityStats.hasRating / total) * 100),
-				hasGenres: Math.round((qualityStats.hasGenres / total) * 100),
-				dataSourceCoverage: Math.round((qualityStats.dataSourceCoverage.allThree / total) * 100),
-			},
+			percentages: calculateQualityPercentages(qualityStats),
 		};
 	} catch (_error) {
 		return null;
