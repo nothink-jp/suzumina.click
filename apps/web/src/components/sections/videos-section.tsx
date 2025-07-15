@@ -4,29 +4,15 @@ import type { FrontendVideoData } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { getLatestVideos } from "@/app/actions";
 import { FeaturedVideosCarousel } from "@/components/content/featured-videos-carousel";
 
-export function VideosSection() {
-	const [videos, setVideos] = useState<FrontendVideoData[]>([]);
-	const [loading, setLoading] = useState(true);
+interface VideosSectionProps {
+	videos?: FrontendVideoData[];
+	loading?: boolean;
+	error?: string | null;
+}
 
-	useEffect(() => {
-		const loadVideos = async () => {
-			try {
-				const data = await getLatestVideos(10);
-				setVideos(data);
-			} catch (error) {
-				console.error("Failed to load videos:", error);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		loadVideos();
-	}, []);
-
+export function VideosSection({ videos = [], loading = true, error = null }: VideosSectionProps) {
 	if (loading) {
 		return (
 			<section className="py-8 sm:py-12 bg-suzuka-100">
@@ -47,6 +33,19 @@ export function VideosSection() {
 						</Button>
 					</div>
 					<LoadingSkeleton variant="carousel" height={300} />
+				</div>
+			</section>
+		);
+	}
+
+	if (error) {
+		return (
+			<section className="py-8 sm:py-12 bg-suzuka-100">
+				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="text-center py-12 text-muted-foreground">
+						<div className="text-lg">動画の読み込みに失敗しました</div>
+						<p className="text-sm mt-2">{error}</p>
+					</div>
 				</div>
 			</section>
 		);

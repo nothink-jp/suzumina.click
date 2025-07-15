@@ -2,6 +2,7 @@
 
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { useEffect, useState } from "react";
+import { UI_MESSAGES } from "@/constants/ui-messages";
 import { AudioButtonWithPlayCount } from "./audio-button-with-play-count";
 
 interface FeaturedAudioButtonsCarouselProps {
@@ -21,7 +22,7 @@ export function FeaturedAudioButtonsCarousel({ audioButtons }: FeaturedAudioButt
 	if (audioButtons.length === 0) {
 		return (
 			<div className="text-center py-12 sm:py-16 text-muted-foreground">
-				<div className="text-lg sm:text-xl">新着音声ボタンを読み込み中...</div>
+				<div className="text-lg sm:text-xl">{UI_MESSAGES.LOADING.GENERAL}</div>
 			</div>
 		);
 	}

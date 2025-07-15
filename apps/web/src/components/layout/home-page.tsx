@@ -9,9 +9,8 @@ import { Suspense } from "react";
 import {
 	LazyFeaturedAudioButtonsCarousel,
 	LazySearchForm,
-	LazyVideosSection,
-	LazyWorksSection,
 } from "@/components/optimization/lazy-components";
+import { ParallelSectionsContainer } from "@/components/sections/parallel-sections-container";
 
 interface HomePageProps {
 	initialAudioButtons: FrontendAudioButtonData[];
@@ -121,15 +120,8 @@ export function HomePage({ initialAudioButtons }: HomePageProps) {
 				</div>
 			</section>
 
-			{/* 新着動画セクション - クライアントサイドで遅延読み込み */}
-			<Suspense fallback={<div />}>
-				<LazyVideosSection />
-			</Suspense>
-
-			{/* 新着作品セクション - クライアントサイドで遅延読み込み */}
-			<Suspense fallback={<div />}>
-				<LazyWorksSection />
-			</Suspense>
+			{/* 新着動画・作品セクション - 真の並列読み込み */}
+			<ParallelSectionsContainer />
 
 			{/* コミュニティセクション - 遅延読み込み最適化 */}
 			<section

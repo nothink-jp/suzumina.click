@@ -1,6 +1,7 @@
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { UI_MESSAGES } from "@/constants/ui-messages";
 import { FeaturedAudioButtonsCarousel } from "./featured-audio-buttons-carousel";
 
 // AudioButtonWithPlayCount のモック
@@ -108,7 +109,7 @@ describe("FeaturedAudioButtonsCarousel", () => {
 	it("音声ボタンが空の場合にローディング状態を表示する", () => {
 		render(<FeaturedAudioButtonsCarousel audioButtons={[]} />);
 
-		expect(screen.getByText("新着音声ボタンを読み込み中...")).toBeInTheDocument();
+		expect(screen.getByText(UI_MESSAGES.LOADING.GENERAL)).toBeInTheDocument();
 		expect(screen.queryByTestId("audio-button-with-favorite")).not.toBeInTheDocument();
 	});
 

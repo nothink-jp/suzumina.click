@@ -4,35 +4,23 @@ import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { getLatestWorks } from "@/app/actions";
 import { FeaturedWorksCarousel } from "@/components/content/featured-works-carousel";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
-export function WorksSection() {
-	const [works, setWorks] = useState<FrontendDLsiteWorkData[]>([]);
-	const [allAgesWorks, setAllAgesWorks] = useState<FrontendDLsiteWorkData[]>([]);
-	const [loading, setLoading] = useState(true);
+interface WorksSectionProps {
+	works?: FrontendDLsiteWorkData[];
+	allAgesWorks?: FrontendDLsiteWorkData[];
+	loading?: boolean;
+	error?: string | null;
+}
+
+export function WorksSection({
+	works = [],
+	allAgesWorks = [],
+	loading = true,
+	error = null,
+}: WorksSectionProps) {
 	const { showR18Content } = useAgeVerification();
-
-	useEffect(() => {
-		const loadWorks = async () => {
-			try {
-				const [regularWorks, ageRestrictedWorks] = await Promise.all([
-					getLatestWorks(10, false), // 通常版（R18含む）
-					getLatestWorks(10, true), // 全年齢版（R18除外）
-				]);
-				setWorks(regularWorks);
-				setAllAgesWorks(ageRestrictedWorks);
-			} catch (error) {
-				console.error("Failed to load works:", error);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		loadWorks();
-	}, []);
 
 	if (loading) {
 		return (
@@ -54,6 +42,19 @@ export function WorksSection() {
 						</Button>
 					</div>
 					<LoadingSkeleton variant="carousel" height={350} />
+				</div>
+			</section>
+		);
+	}
+
+	if (error) {
+		return (
+			<section className="py-8 sm:py-12 bg-background">
+				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="text-center py-12 text-muted-foreground">
+						<div className="text-lg">作品の読み込みに失敗しました</div>
+						<p className="text-sm mt-2">{error}</p>
+					</div>
 				</div>
 			</section>
 		);

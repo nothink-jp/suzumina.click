@@ -17,8 +17,9 @@ interface ThumbnailImageProps {
 	optimized?: boolean; // Next.js画像最適化の有効/無効
 }
 
+// lucide-react の Image アイコンを使用したプレースホルダー
 const PLACEHOLDER_IMAGE =
-	"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9Ijk2IiB2aWV3Qm94PSIwIDAgMTI4IDk2IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9Ijk2IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik02NCAzMkM1Ni4yNjggMzIgNTAgMzguMjY4IDUwIDQ2VjUwQzUwIDU3LjczMiA1Ni4yNjggNjQgNjQgNjRINjhDNzUuNzMyIDY0IDgyIDU3LjczMiA4MiA1MFY0NkM4MiAzOC4yNjggNzUuNzMyIDMyIDY4IDMySDY0WiIgZmlsbD0iIzkxQTNCMyIvPgo8L3N2Zz4K";
+	"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9Ijk2IiB2aWV3Qm94PSIwIDAgMTI4IDk2IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9Ijk2IiBmaWxsPSIjRjNGNEY2Ii8+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQwLCAyNCkiPgo8cmVjdCB4PSIzIiB5PSI0IiB3aWR0aD0iNDIiIGhlaWdodD0iNDAiIHJ4PSIyIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPgo8Y2lyY2xlIGN4PSIxNS41IiBjeT0iMTUuNSIgcj0iMy41IiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPgo8cGF0aCBkPSJtOSAzNiA5LTkgNSA1IDEyLTEyIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjwvZz4KPC9zdmc+Cg==";
 
 /**
  * DLsite画像URLをプロキシ経由のURLに変換
@@ -101,7 +102,7 @@ const ThumbnailImage = memo(function ThumbnailImage({
 				onError={handleError}
 				placeholder="blur"
 				blurDataURL={PLACEHOLDER_IMAGE}
-				unoptimized={!optimized}
+				unoptimized={optimized ? undefined : true}
 				style={{
 					// CLS削減: object-fitでレイアウト安定化
 					objectFit: "cover",

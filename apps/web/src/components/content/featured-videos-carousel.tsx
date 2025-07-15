@@ -1,6 +1,7 @@
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { GenericCarousel } from "@suzumina.click/ui/components/custom/generic-carousel";
 import VideoCard from "@/app/videos/components/VideoCard";
+import { UI_MESSAGES } from "@/constants/ui-messages";
 
 interface FeaturedVideosCarouselProps {
 	videos: FrontendVideoData[];
@@ -11,7 +12,7 @@ export function FeaturedVideosCarousel({ videos }: FeaturedVideosCarouselProps) 
 		<GenericCarousel
 			items={videos}
 			renderItem={(video, index) => <VideoCard video={video} priority={index < 3} />}
-			emptyStateMessage="新着動画を読み込み中..."
+			emptyStateMessage={UI_MESSAGES.LOADING.GENERAL}
 			getItemKey={(video) => video.id}
 		/>
 	);

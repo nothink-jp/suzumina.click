@@ -12,14 +12,20 @@ const nextConfig = {
 	output: "standalone",
 
 	// Server ComponentsでのみGoogle Cloud SDKを使用するための設定
-	serverExternalPackages: ["@google-cloud/firestore", "@google-cloud/storage"],
+	serverExternalPackages: ["@google-cloud/firestore", "@google-cloud/storage", "resend"],
+
+	// コンパイラー最適化
+	compiler: {
+		// 本番環境でのコンソール除去
+		removeConsole: process.env.NODE_ENV === "production",
+	},
 
 	// 実験的機能・パフォーマンス最適化
 	experimental: {
 		// React Compiler（Next.js 15.3対応）
 		reactCompiler: true,
 		// App Router最適化
-		optimizePackageImports: ["lucide-react", "date-fns"],
+		optimizePackageImports: ["lucide-react", "date-fns", "zod", "react-hook-form", "sonner"],
 		// 並列レンダリング最適化
 		ppr: false, // Partial Prerendering（実験的）
 		// ダイナミックインポート最適化
@@ -116,6 +122,20 @@ const nextConfig = {
 				react: {
 					name: "react",
 					test: /[\\/]node_modules[\\/](react|react-dom)/,
+					chunks: "all",
+					priority: 10,
+				},
+				// date-fns を別チャンクに分離
+				dateFns: {
+					name: "date-fns",
+					test: /[\\/]node_modules[\\/]date-fns/,
+					chunks: "all",
+					priority: 10,
+				},
+				// Form関連ライブラリを別チャンクに分離
+				forms: {
+					name: "forms",
+					test: /[\\/]node_modules[\\/](react-hook-form|zod)/,
 					chunks: "all",
 					priority: 10,
 				},
