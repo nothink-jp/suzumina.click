@@ -21,6 +21,7 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: asia-northeast1
   REPOSITORY: suzumina-click-web
+  GCF_REPOSITORY: gcf-artifacts
 
 jobs:
   cleanup:
@@ -125,6 +126,142 @@ jobs:
               fi
             fi
           }
+
+          # 関数: Cloud Functions用イメージのクリーンアップ
+          cleanup_cloud_functions() {
+            local repository_path=$1
+            echo "🔧 Processing Cloud Functions repository: ${repository_path}"
+            
+            # Cloud Functions パッケージ一覧を取得
+            local packages=$(gcloud artifacts packages list \
+              --repository=$(basename ${repository_path}) \
+              --location=${{ env.REGION }} \
+              --format="value(name)" | grep -v "/cache$" || true)
+            
+            if [ -z "$packages" ]; then
+              echo "ℹ️  No Cloud Functions packages found"
+              return
+            fi
+            
+            echo "📋 Found Cloud Functions packages:"
+            echo "$packages"
+            
+            # 各パッケージ（Function）について処理
+            echo "$packages" | while read -r package_name; do
+              if [ -n "$package_name" ]; then
+                local package_basename=$(basename "$package_name")
+                echo "🔍 Processing function package: ${package_basename}"
+                
+                # パッケージ内の古いイメージを削除（最新5つを保持）
+                local all_versions=$(gcloud artifacts docker images list \
+                  ${repository_path}/${package_basename} \
+                  --format="value(IMAGE@DIGEST,createTime)" \
+                  --sort-by="~createTime" | head -n 20)
+                
+                if [ -n "$all_versions" ]; then
+                  local versions_count=$(echo "$all_versions" | wc -l)
+                  echo "  📊 Found ${versions_count} versions for ${package_basename}"
+                  
+                  # 最新5つを除いた古いバージョンを削除
+                  local old_versions=$(gcloud artifacts docker images list \
+                    ${repository_path}/${package_basename} \
+                    --format="value(IMAGE@DIGEST)" \
+                    --sort-by="~createTime" | tail -n +6)
+                  
+                  if [ -n "$old_versions" ]; then
+                    local old_count=$(echo "$old_versions" | wc -l)
+                    echo "  🗑️  Found ${old_count} old versions to delete"
+                    
+                    if [ "$DRY_RUN" = "true" ]; then
+                      echo "  🔍 DRY RUN: Would delete the following old versions:"
+                      echo "$old_versions" | sed 's/^/    /'
+                    else
+                      echo "  ⚡ Deleting old versions..."
+                      echo "$old_versions" | while read -r old_version; do
+                        if [ -n "$old_version" ]; then
+                          echo "    Deleting: $old_version"
+                          gcloud artifacts docker images delete "$old_version" --quiet || echo "    Failed to delete $old_version"
+                        fi
+                      done
+                    fi
+                  else
+                    echo "  ✨ No old versions to delete (≤5 versions total)"
+                  fi
+                else
+                  echo "  ℹ️  No versions found for ${package_basename}"
+                fi
+                
+                # 古いタグなしイメージを削除（7日以上前）
+                local old_untagged=$(gcloud artifacts docker images list \
+                  ${repository_path}/${package_basename} \
+                  --filter="NOT tags:* AND createTime < '$(date -d '7 days ago' -u +%Y-%m-%dT%H:%M:%SZ)'" \
+                  --format="value(IMAGE@DIGEST)")
+                
+                if [ -n "$old_untagged" ]; then
+                  local untagged_count=$(echo "$old_untagged" | wc -l)
+                  echo "  🧹 Found ${untagged_count} old untagged images to delete"
+                  
+                  if [ "$DRY_RUN" = "true" ]; then
+                    echo "  🔍 DRY RUN: Would delete the following untagged images:"
+                    echo "$old_untagged" | sed 's/^/    /'
+                  else
+                    echo "  ⚡ Deleting old untagged images..."
+                    echo "$old_untagged" | while read -r untagged_image; do
+                      if [ -n "$untagged_image" ]; then
+                        echo "    Deleting untagged: $untagged_image"
+                        gcloud artifacts docker images delete "$untagged_image" --quiet || echo "    Failed to delete $untagged_image"
+                      fi
+                    done
+                  fi
+                else
+                  echo "  ✨ No old untagged images to delete"
+                fi
+              fi
+            done
+            
+            # Cache イメージの削除
+            echo "🧹 Cleaning up cache images..."
+            local cache_packages=$(gcloud artifacts packages list \
+              --repository=$(basename ${repository_path}) \
+              --location=${{ env.REGION }} \
+              --format="value(name)" | grep "/cache$" || true)
+            
+            if [ -n "$cache_packages" ]; then
+              echo "🗑️  Found cache packages to clean up"
+              echo "$cache_packages" | while read -r cache_package; do
+                if [ -n "$cache_package" ]; then
+                  local cache_basename=$(basename "$cache_package")
+                  local parent_package=$(dirname "$cache_package" | xargs basename)
+                  echo "  🧽 Processing cache for ${parent_package}"
+                  
+                  # Cache内の古いイメージを削除（1つだけ保持）
+                  local cache_images=$(gcloud artifacts docker images list \
+                    ${repository_path}/${parent_package}/cache \
+                    --format="value(IMAGE@DIGEST)" \
+                    --sort-by="~createTime" | tail -n +2)
+                  
+                  if [ -n "$cache_images" ]; then
+                    if [ "$DRY_RUN" = "true" ]; then
+                      echo "    🔍 DRY RUN: Would delete cache images:"
+                      echo "$cache_images" | sed 's/^/      /'
+                    else
+                      echo "    ⚡ Deleting old cache images..."
+                      echo "$cache_images" | while read -r cache_image; do
+                        if [ -n "$cache_image" ]; then
+                          echo "      Deleting cache: $cache_image"
+                          gcloud artifacts docker images delete "$cache_image" --quiet || echo "      Failed to delete cache $cache_image"
+                        fi
+                      done
+                    fi
+                  else
+                    echo "    ✨ No old cache images to delete"
+                  fi
+                fi
+              done
+            else
+              echo "ℹ️  No cache packages found"
+            fi
+          }
           
           echo "🏁 Starting cleanup process..."
           
@@ -134,7 +271,14 @@ jobs:
           # Admin アプリケーションイメージのクリーンアップ（最新3つを保持）
           cleanup_images "suzumina-admin" 3
           
-          echo "✅ Artifact Registry cleanup completed!"
+          echo ""
+          echo "🔧 Starting Cloud Functions cleanup..."
+          
+          # Cloud Functions用リポジトリのクリーンアップ
+          GCF_REPOSITORY_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GCF_REPOSITORY }}"
+          cleanup_cloud_functions "$GCF_REPOSITORY_PATH"
+          
+          echo "✅ All Artifact Registry cleanup completed!"
           
       - name: Report cleanup results
         run: |
@@ -142,11 +286,25 @@ jobs:
           gcloud artifacts repositories list --project=${{ env.PROJECT_ID }} --location=${{ env.REGION }}
           
           echo ""
-          echo "📦 Current images in repository:"
+          echo "📦 Current images in Web repository:"
           gcloud artifacts docker images list \
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }} \
             --include-tags \
-            --limit=20
+            --limit=10
+          
+          echo ""
+          echo "🔧 Current images in Cloud Functions repository:"
+          gcloud artifacts docker images list \
+            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GCF_REPOSITORY }} \
+            --include-tags \
+            --limit=10
+          
+          echo ""
+          echo "📋 Cloud Functions packages summary:"
+          gcloud artifacts packages list \
+            --repository=${{ env.GCF_REPOSITORY }} \
+            --location=${{ env.REGION }} \
+            --format="table(name,createTime,updateTime)"
           
       - name: Notify on failure
         if: failure()
