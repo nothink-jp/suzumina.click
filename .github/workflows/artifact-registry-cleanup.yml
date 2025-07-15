@@ -152,11 +152,11 @@ jobs:
                 local package_basename=$(basename "$package_name")
                 echo "🔍 Processing function package: ${package_basename}"
                 
-                # パッケージ内の古いイメージを削除（最新5つを保持）
+                # パッケージ内の全イメージを取得（制限なし）
                 local all_versions=$(gcloud artifacts docker images list \
                   ${repository_path}/${package_basename} \
                   --format="value(IMAGE@DIGEST,createTime)" \
-                  --sort-by="~createTime" | head -n 20)
+                  --sort-by="~createTime")
                 
                 if [ -n "$all_versions" ]; then
                   local versions_count=$(echo "$all_versions" | wc -l)
