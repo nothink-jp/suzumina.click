@@ -1,8 +1,9 @@
 import { HomePage } from "@/components/layout/home-page";
 import { getLatestAudioButtons, getLatestVideos, getLatestWorks } from "./actions";
 
-// Force dynamic rendering to ensure Server Actions are called on each request
-export const dynamic = "force-dynamic";
+// Static generation with ISR for better performance
+// Start with 1 minute cache, gradually increase after testing
+export const revalidate = 60;
 
 // Server Component として実装し、LCPを改善
 export default async function Home() {

@@ -9,7 +9,6 @@ import type {
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { Suspense } from "react";
 import {
 	LazyFeaturedAudioButtonsCarousel,
@@ -32,7 +31,6 @@ export function HomePage({
 	initialAudioButtons,
 	allAgesWorks,
 }: HomePageProps) {
-	const { data: session } = useSession();
 	const { showR18Content } = useAgeVerification();
 
 	// 年齢確認状態に基づいて適切な作品データを選択
@@ -114,8 +112,11 @@ export function HomePage({
 				</div>
 			</section>
 
-			{/* 新着音声ボタンセクション */}
-			<section className="py-8 sm:py-12 bg-background">
+			{/* 新着音声ボタンセクション - 遅延読み込み最適化 */}
+			<section
+				className="py-8 sm:py-12 bg-background"
+				style={{ contentVisibility: "auto", containIntrinsicSize: "320px" }}
+			>
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between mb-6 sm:mb-8">
 						<div>
@@ -138,8 +139,11 @@ export function HomePage({
 				</div>
 			</section>
 
-			{/* 新着動画セクション */}
-			<section className="py-8 sm:py-12 bg-suzuka-100">
+			{/* 新着動画セクション - 遅延読み込み最適化 */}
+			<section
+				className="py-8 sm:py-12 bg-suzuka-100"
+				style={{ contentVisibility: "auto", containIntrinsicSize: "340px" }}
+			>
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between mb-6 sm:mb-8">
 						<div>
@@ -162,8 +166,11 @@ export function HomePage({
 				</div>
 			</section>
 
-			{/* 新着作品セクション - R18フィルタリング対応 */}
-			<section className="py-8 sm:py-12 bg-background">
+			{/* 新着作品セクション - R18フィルタリング対応・遅延読み込み最適化 */}
+			<section
+				className="py-8 sm:py-12 bg-background"
+				style={{ contentVisibility: "auto", containIntrinsicSize: "380px" }}
+			>
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between mb-6 sm:mb-8">
 						<div>
@@ -193,8 +200,11 @@ export function HomePage({
 				</div>
 			</section>
 
-			{/* コミュニティセクション */}
-			<section className="py-8 sm:py-12 bg-suzuka-100">
+			{/* コミュニティセクション - 遅延読み込み最適化 */}
+			<section
+				className="py-8 sm:py-12 bg-suzuka-100"
+				style={{ contentVisibility: "auto", containIntrinsicSize: "260px" }}
+			>
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="text-center mb-6 sm:mb-8">
 						<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 sm:mb-4">
@@ -204,19 +214,11 @@ export function HomePage({
 							音声ボタンを作成・共有して、ファンコミュニティを盛り上げよう！
 						</p>
 						<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-							{session?.user ? (
-								<Button asChild size="lg">
-									<Link href="/buttons/create" className="font-medium">
-										音声ボタンを作る
-									</Link>
-								</Button>
-							) : (
-								<Button asChild size="lg" variant="outline">
-									<Link href="/auth/signin" className="font-medium">
-										ログインして音声ボタンを作る
-									</Link>
-								</Button>
-							)}
+							<Button asChild size="lg">
+								<Link href="/buttons/create" className="font-medium">
+									音声ボタンを作る
+								</Link>
+							</Button>
 							<Button asChild size="lg" variant="outline">
 								<Link href="/about" className="font-medium">
 									サイトについて

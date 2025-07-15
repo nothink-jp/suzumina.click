@@ -1,4 +1,5 @@
 import type { UserSession } from "@suzumina.click/shared-types";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { auth } from "@/auth";
@@ -23,7 +24,10 @@ export default async function ProtectedRoute({
 
 	// 未認証の場合
 	if (!session?.user) {
-		redirect(fallbackUrl);
+		// 現在のURLをコールバックURLとして保存
+		const headersList = await headers();
+		const currentUrl = headersList.get("x-url") || "/buttons/create";
+		redirect(`${fallbackUrl}?callbackUrl=${encodeURIComponent(currentUrl)}`);
 	}
 
 	const user = session.user;
