@@ -150,6 +150,27 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = var.google_adsense_client_id
       }
 
+      # Resend API Key (Secret Managerから取得)
+      env {
+        name = "RESEND_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["RESEND_API_KEY"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      # Contact Email Recipients (Secret Managerから取得)
+      env {
+        name = "CONTACT_EMAIL_RECIPIENTS"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["CONTACT_EMAIL_RECIPIENTS"].secret_id
+            version = "latest"
+          }
+        }
+      }
 
       # 許可されたホスト名（デフォルトURL制御用）
       env {

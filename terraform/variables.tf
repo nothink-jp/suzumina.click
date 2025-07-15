@@ -146,6 +146,22 @@ variable "suzumina_guild_id" {
 }
 
 # ==========================================================
+# メール設定用変数
+# ==========================================================
+
+variable "resend_api_key" {
+  description = "Resend API key for email sending"
+  type        = string
+  sensitive   = true
+}
+
+variable "contact_email_recipients" {
+  description = "Email recipients for contact form notifications (comma-separated)"
+  type        = string
+  sensitive   = true
+}
+
+# ==========================================================
 # Google Analytics 設定変数
 # ==========================================================
 

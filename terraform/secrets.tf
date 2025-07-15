@@ -40,8 +40,20 @@ locals {
     }
   ]
 
+  # メール関連シークレット
+  email_secrets = [
+    {
+      id          = "RESEND_API_KEY"
+      description = "Resend API key for email sending"
+    },
+    {
+      id          = "CONTACT_EMAIL_RECIPIENTS"
+      description = "Email recipients for contact form notifications"
+    }
+  ]
+
   # すべてのシークレットをまとめる
-  all_secrets = concat(local.api_secrets, local.auth_secrets)
+  all_secrets = concat(local.api_secrets, local.auth_secrets, local.email_secrets)
 }
 
 # シークレットの作成
@@ -55,7 +67,7 @@ resource "google_secret_manager_secret" "secrets" {
   
   # メタデータとしてシークレットの説明を追加
   labels = merge(local.common_secret_settings.labels, {
-    "category" = contains(["YOUTUBE_API_KEY"], each.key) ? "api" : "auth"
+    "category" = contains(["YOUTUBE_API_KEY"], each.key) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], each.key) ? "email" : "auth"
   })
   
   annotations = {
@@ -87,10 +99,12 @@ resource "google_secret_manager_secret" "secrets" {
 # シークレットバージョンの作成
 resource "google_secret_manager_secret_version" "secret_versions" {
   for_each = {
-    "DISCORD_CLIENT_ID"     = var.discord_client_id
-    "DISCORD_CLIENT_SECRET" = var.discord_client_secret
-    "NEXTAUTH_SECRET"       = var.nextauth_secret
-    "YOUTUBE_API_KEY"       = var.youtube_api_key
+    "DISCORD_CLIENT_ID"         = var.discord_client_id
+    "DISCORD_CLIENT_SECRET"     = var.discord_client_secret
+    "NEXTAUTH_SECRET"           = var.nextauth_secret
+    "YOUTUBE_API_KEY"           = var.youtube_api_key
+    "RESEND_API_KEY"            = var.resend_api_key
+    "CONTACT_EMAIL_RECIPIENTS"  = var.contact_email_recipients
   }
 
   secret      = google_secret_manager_secret.secrets[each.key].id
@@ -118,7 +132,7 @@ output "secrets_info" {
     for id, secret in google_secret_manager_secret.secrets :
     id => {
       name = secret.name
-      category = contains(["YOUTUBE_API_KEY"], id) ? "api" : "auth"
+      category = contains(["YOUTUBE_API_KEY"], id) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], id) ? "email" : "auth"
     }
   }
   description = "作成されたシークレットの一覧"
