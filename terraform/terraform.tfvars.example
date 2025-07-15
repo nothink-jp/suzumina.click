@@ -45,3 +45,15 @@ nextauth_secret = "your-nextauth-secret-base64-encoded"
 # デフォルト値が設定されているため、通常は変更不要
 suzumina_guild_id = "959095494456537158"        # すずみなふぁみりーのGuild ID
 
+# ===========================================
+# メール設定（Resend）
+# ===========================================
+
+# Resend API キー
+# https://resend.com/api-keys から取得
+resend_api_key = "re_your_resend_api_key_here"
+
+# お問い合わせフォーム通知先メールアドレス
+# カンマ区切りで複数指定可能
+contact_email_recipients = "your-email@example.com,another-email@example.com"
+
