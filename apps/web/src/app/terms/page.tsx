@@ -211,11 +211,10 @@ export default function TermsPage() {
 							<div>
 								<h4 className="font-semibold text-foreground">広告配信について</h4>
 								<p className="text-sm text-muted-foreground">
-									サイトの運営費用（サーバー代、ドメイン代等）確保のため、Google
-									AdSenseによる適切な広告を配信する場合があります。
+									サイトの運営費用（サーバー代、ドメイン代等）確保のため、適切な広告を配信する場合があります。
 								</p>
 								<ul className="text-sm text-muted-foreground mt-2 space-y-1">
-									<li>• 広告内容はGoogleのポリシーに準拠</li>
+									<li>• 広告内容は適切なポリシーに準拠</li>
 									<li>• ユーザーに不適切な広告の表示制御</li>
 									<li>• 広告収益は全てサイト運営費に充当</li>
 								</ul>

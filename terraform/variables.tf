@@ -179,10 +179,4 @@ variable "google_tag_manager_id" {
   sensitive   = false  # GTM IDは公開情報
 }
 
-variable "google_adsense_client_id" {
-  description = "Google AdSense Publisher Client ID"
-  type        = string
-  default     = "ca-pub-8077945848616354"
-  sensitive   = false  # AdSense Client IDは公開情報
-}
 

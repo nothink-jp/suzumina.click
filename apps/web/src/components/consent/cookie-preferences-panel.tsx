@@ -53,10 +53,10 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 		id: "advertising",
 		name: "広告クッキー",
 		description: "関連広告の表示",
-		details: "Google AdSense、Amazonアソシエイトによる広告配信。",
+		details: "Amazonアソシエイトによる広告配信。",
 		icon: <Target className="h-4 w-4 text-orange-600" />,
 		required: false,
-		examples: ["Google AdSense", "Amazonアソシエイト", "パーソナライズ広告"],
+		examples: ["Amazonアソシエイト", "商品推薦"],
 	},
 	{
 		id: "personalization",

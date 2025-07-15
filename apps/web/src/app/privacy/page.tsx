@@ -243,25 +243,6 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border p-4 rounded-lg">
-									<h4 className="font-semibold text-foreground flex items-center gap-2">
-										<Badge variant="outline">Google AdSense</Badge>
-									</h4>
-									<div className="text-sm text-muted-foreground mt-2 space-y-1">
-										<p>
-											<strong>目的:</strong> 適切な広告の配信・サイト運営費用
-										</p>
-										<p>
-											<strong>データ:</strong> 広告表示に必要な匿名化情報
-										</p>
-										<p>
-											<strong>Cookie:</strong> 広告配信最適化用Cookie使用
-										</p>
-										<p>
-											<strong>制御:</strong> ユーザー同意管理・Googleアカウント設定
-										</p>
-									</div>
-								</div>
 							</div>
 						</div>
 					</CardContent>
@@ -299,15 +280,6 @@ export default function PrivacyPage() {
 										<li>• サイト利用状況の匿名化分析</li>
 										<li>• ユーザー体験の改善目的</li>
 										<li>• 同意管理により制御可能</li>
-									</ul>
-								</div>
-								<div className="bg-green-50 p-3 rounded-lg mt-2">
-									<h5 className="font-semibold text-green-800 text-sm mb-2">Google AdSense</h5>
-									<ul className="text-xs text-green-700 space-y-1">
-										<li>• 適切な広告配信のため</li>
-										<li>• サイト運営費用の確保</li>
-										<li>• ユーザー同意に基づく使用</li>
-										<li>• Googleアカウントで個別制御可能</li>
 									</ul>
 								</div>
 								<p className="text-sm text-muted-foreground mt-2">

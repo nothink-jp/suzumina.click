@@ -151,20 +151,6 @@ export function loadGoogleAnalytics(measurementId: string) {
 }
 
 /**
- * Load Google AdSense with consent mode
- */
-export function loadGoogleAdSense(adClientId: string) {
-	if (typeof window === "undefined") return;
-
-	// Load AdSense script only after consent
-	const script = document.createElement("script");
-	script.async = true;
-	script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adClientId}`;
-	script.crossOrigin = "anonymous";
-	document.head.appendChild(script);
-}
-
-/**
  * Check current consent state from localStorage
  */
 export function getCurrentConsentState(): ConsentState | null {
@@ -200,14 +186,9 @@ export function applySavedConsentState() {
 
 		// Load appropriate services based on consent
 		const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-		const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 
 		if (consentState.analytics && GA_MEASUREMENT_ID) {
 			loadGoogleAnalytics(GA_MEASUREMENT_ID);
-		}
-
-		if (consentState.advertising && ADSENSE_CLIENT_ID) {
-			loadGoogleAdSense(ADSENSE_CLIENT_ID);
 		}
 	}
 }
