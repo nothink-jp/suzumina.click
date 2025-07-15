@@ -63,13 +63,12 @@ const buttonVariants = cva(/* 大幅なカスタマイズ */)
 
 ## 🧪 テスト戦略
 
-### **🥇 選択的テスト戦略 (推奨)**
+### **🎯 個人開発向け最小限戦略**
 
-#### **High Priority** (必須テスト)
+#### **✅ 実装するテスト (2コンポーネントのみ)**
 
-##### 1. 大幅カスタマイズコンポーネント
+##### 1. button.test.tsx - 大幅カスタマイズ ✅ (完了済み)
 ```typescript
-// button.test.tsx ✅ (完了済み)
 describe('Button - Custom Features', () => {
   test('should have responsive sizing', () => {
     render(<Button size="default">Test</Button>);
@@ -94,9 +93,8 @@ describe('Button - Custom Features', () => {
 });
 ```
 
-##### 2. 独自機能追加コンポーネント
+##### 2. dialog.test.tsx - 独自プロパティ (実装推奨)
 ```typescript
-// dialog.test.tsx (実装予定)
 describe('Dialog - Custom Props', () => {
   test('should show close button by default', () => {
     render(<DialogContent>Content</DialogContent>);
@@ -115,61 +113,50 @@ describe('Dialog - Custom Props', () => {
 });
 ```
 
-#### **Medium Priority** (選択的テスト)
+#### **❌ 実装しないテスト (半年更新サイクル)**
 
-##### 3. 頻繁に使用される基本コンポーネント
+##### 3. 基本コンポーネント (手動確認で十分)
 ```typescript
-// input.test.tsx (実装予定)
-describe('Input - Basic Customizations', () => {
-  test('should have data-slot attribute', () => {
-    render(<Input />);
-    expect(screen.getByRole('textbox')).toHaveAttribute('data-slot', 'input');
-  });
-  
-  test('should apply custom styling', () => {
-    render(<Input className="custom-class" />);
-    expect(screen.getByRole('textbox')).toHaveClass('custom-class');
-  });
-  
-  test('should handle validation states', () => {
-    render(<Input aria-invalid="true" />);
-    expect(screen.getByRole('textbox')).toHaveClass('aria-invalid:border-destructive');
-  });
-});
+// ❌ input.test.tsx - data-slot属性のみ
+// ❌ select.test.tsx - data-slot属性のみ
+// ❌ checkbox.test.tsx - data-slot属性のみ
+// → 軽微カスタマイゼーションのため手動確認で十分
 
-// select.test.tsx (実装予定)
-describe('Select - Custom Features', () => {
-  test('should have data-slot attributes', () => {
-    render(
-      <Select>
-        <SelectTrigger>
-          <SelectValue placeholder="Select" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="option1">Option 1</SelectItem>
-        </SelectContent>
-      </Select>
-    );
-    
-    expect(screen.getByRole('combobox')).toHaveAttribute('data-slot', 'select-trigger');
-  });
-});
-
-// checkbox.test.tsx (実装予定)
-describe('Checkbox - Custom Features', () => {
-  test('should have data-slot attribute', () => {
-    render(<Checkbox />);
-    expect(screen.getByRole('checkbox')).toHaveAttribute('data-slot', 'checkbox');
-  });
-});
+// 理由:
+// - 単純なdata-slot属性追加のみ
+// - 半年更新サイクルなら手動確認で十分
+// - テスト実装・維持コストが効果を上回る
 ```
 
-#### **Low Priority** (Storybookのみ)
-
-##### 4. 基本的なスタイリングのみ
+##### 4. 基本的なスタイリングのみ (Storybook Visual Tests)
 ```typescript
-// badge, card, separator, skeleton など
+// ❌ badge, card, separator, skeleton など
 // → Visual Regression Tests (Storybook) で十分
+```
+
+### **🔄 半年更新時のテスト戦略**
+
+#### 更新前テスト (30分)
+```bash
+# 重要カスタマイゼーションのみテスト
+pnpm test -- button.test.tsx
+pnpm test -- dialog.test.tsx
+
+# 手動確認（軽微カスタマイゼーション）
+# - 数個のコンポーネントでdata-slot属性を目視確認
+# - 主要ページの表示確認
+```
+
+#### 更新後テスト (30分)
+```bash
+# 同様のテスト + 新機能確認
+pnpm test -- button.test.tsx
+pnpm test -- dialog.test.tsx
+
+# 本番環境での動作確認
+# - 音声ボタン機能
+# - フォーム機能
+# - 管理者機能
 ```
 
 ### **🛠️ テスト方針**
@@ -215,90 +202,62 @@ test('should adapt to mobile viewport', () => {
 });
 ```
 
-## 📋 実装計画
+## 📋 実装計画 (個人開発向け)
 
-### **Phase 1: 必須テスト実装** (Week 1-2)
+### **推奨実装 (1時間の最小投資)**
 
-#### 1.1 独自機能追加コンポーネント
+#### dialog.test.tsx 実装 (1時間)
 ```typescript
-// 実装予定: dialog.test.tsx
+// packages/ui/src/components/ui/dialog.test.tsx
+import { render, screen } from '@testing-library/react';
+import { Dialog, DialogContent, DialogTrigger } from './dialog';
+
 describe('Dialog - Custom Props', () => {
-  // showCloseButton プロパティのテスト
-  // data-slot 属性のテスト
-  // アクセシビリティテスト
-});
-```
-
-#### 1.2 使用頻度の高いコンポーネント
-```typescript
-// 実装予定: input.test.tsx
-describe('Input - Basic Customizations', () => {
-  // data-slot 属性のテスト
-  // カスタムスタイリングのテスト
-  // バリデーション状態のテスト
-});
-
-// 実装予定: select.test.tsx
-describe('Select - Custom Features', () => {
-  // data-slot 属性のテスト
-  // キーボード操作のテスト
-  // 選択状態のテスト
-});
-```
-
-### **Phase 2: 基本テスト拡張** (Week 3-4)
-
-#### 2.1 追加の基本コンポーネント
-```typescript
-// checkbox.test.tsx
-// radio-group.test.tsx
-// tabs.test.tsx
-// accordion.test.tsx
-```
-
-#### 2.2 統合テストケース
-```typescript
-// form-integration.test.tsx
-describe('Form Integration Tests', () => {
-  test('should handle form validation with custom components', () => {
-    // 複数のカスタムコンポーネントとフォームの統合テスト
+  test('should show close button by default', () => {
+    render(
+      <Dialog open>
+        <DialogContent>Content</DialogContent>
+      </Dialog>
+    );
+    expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument();
+  });
+  
+  test('should hide close button when showCloseButton is false', () => {
+    render(
+      <Dialog open>
+        <DialogContent showCloseButton={false}>Content</DialogContent>
+      </Dialog>
+    );
+    expect(screen.queryByRole('button', { name: /close/i })).not.toBeInTheDocument();
+  });
+  
+  test('should apply custom data-slot attribute', () => {
+    render(
+      <Dialog open>
+        <DialogContent data-testid="dialog">Content</DialogContent>
+      </Dialog>
+    );
+    expect(screen.getByTestId('dialog')).toHaveAttribute('data-slot', 'dialog-content');
   });
 });
 ```
 
-### **Phase 3: 自動テスト生成** (Week 5-6)
+### **実装しない理由**
 
-#### 3.1 自動テスト生成システム
-```typescript
-// test-generator.ts
-import { UI_CUSTOMIZATIONS } from '../components/ui/_custom/customizations';
+#### ❌ 基本コンポーネントテスト
+- **input.test.tsx**: data-slot属性のみ → 手動確認で十分
+- **select.test.tsx**: data-slot属性のみ → 手動確認で十分
+- **checkbox.test.tsx**: data-slot属性のみ → 手動確認で十分
 
-// data-slot 属性のテスト自動生成
-UI_CUSTOMIZATIONS.dataSlot.components.forEach(componentName => {
-  generateDataSlotTest(componentName);
-});
+#### ❌ 自動テスト生成システム
+- **開発コスト**: 数週間の実装時間
+- **保守コスト**: 複雑システムの継続的メンテナンス
+- **費用対効果**: 個人開発には過度に複雑
 
-// カスタムプロパティのテスト自動生成
-Object.entries(UI_CUSTOMIZATIONS.customProps).forEach(([componentName, props]) => {
-  generateCustomPropsTest(componentName, props);
-});
-```
-
-#### 3.2 継続的テスト実行
-```bash
-# packages/ui/scripts/test-ui-components.sh
-#!/bin/bash
-echo "🧪 Running UI component tests..."
-
-# カスタマイゼーション部分のテスト
-pnpm test -- --testPathPattern="ui.*\.test\.tsx"
-
-# 自動生成テストの実行
-pnpm test -- --testPathPattern="auto-generated"
-
-# Storybook の視覚的テスト
-pnpm test:storybook
-```
+#### ❌ 包括的テストスイート
+- **45コンポーネント**: 軽微カスタマイゼーションのみ
+- **半年更新**: 頻繁なテスト実行が不要
+- **品質確保**: 手動確認で十分な品質を確保可能
 
 ## 🔧 テストユーティリティ
 
@@ -460,43 +419,44 @@ jobs:
           file: ./packages/ui/coverage/coverage-final.json
 ```
 
-## 🎯 品質指標
+## 🎯 品質指標 (個人開発向け)
 
-### テストカバレッジ目標
+### **現実的なテストカバレッジ目標**
 
-| カテゴリ | 現在 | 目標 | 期限 |
+| カテゴリ | 現在 | 目標 | 理由 |
 |---------|------|------|------|
-| **Custom Components** | 100% | 100% | 維持 |
-| **UI Components** | 2.2% | 80% | 6週間 |
-| **Customization Tests** | 0% | 100% | 4週間 |
-| **Integration Tests** | 0% | 60% | 8週間 |
+| **Custom Components** | 100% | 100% | 維持 ✅ |
+| **UI Components (Critical)** | 50% | 100% | button.tsx + dialog.tsx のみ |
+| **UI Components (Others)** | 2.2% | 2.2% | 手動確認で十分 |
+| **Integration Tests** | 0% | 0% | 個人開発には不要 |
 
-### 品質指標
+### **簡素化した品質指標**
 
 ```typescript
-// packages/ui/src/test-utils/quality-metrics.ts
-export const QUALITY_THRESHOLDS = {
-  // カバレッジ目標
-  coverage: {
-    statements: 80,
-    branches: 75,
-    functions: 80,
-    lines: 80,
-  },
+// 個人開発向けの最小限品質指標
+export const MINIMAL_QUALITY_THRESHOLDS = {
+  // 重要コンポーネントのみ
+  criticalComponents: ['button', 'dialog'],
   
-  // テスト実行時間
-  performance: {
-    maxDuration: 30000, // 30秒以内
-    avgDuration: 5000,  // 平均5秒以内
-  },
+  // テスト実行時間 (2コンポーネントのみ)
+  maxDuration: 10000, // 10秒以内
   
-  // テストの安定性
-  stability: {
-    flakyTestThreshold: 0.01, // 1%以下
-    successRate: 0.99,        // 99%以上
-  },
+  // 成功率
+  successRate: 1.0, // 100% (少数テストのため)
 } as const;
 ```
+
+### **半年更新での品質確保**
+
+#### 更新前チェック
+- [ ] button.test.tsx: 3テスト実行 (レスポンシブ・アクセシビリティ・タッチ最適化)
+- [ ] dialog.test.tsx: 3テスト実行 (デフォルト表示・非表示・data-slot)
+- [ ] 手動確認: 5-10コンポーネントでdata-slot属性確認
+
+#### 更新後検証
+- [ ] 同様のテスト実行
+- [ ] 本番環境でのスモークテスト
+- [ ] 主要機能の動作確認
 
 ## 📚 関連ドキュメント
 
@@ -505,37 +465,42 @@ export const QUALITY_THRESHOLDS = {
 - [UI コンポーネントライブラリ](../packages/ui/README.md)
 - [テストユーティリティ](../packages/ui/src/test-utils/README.md)
 
-## 🤝 チーム運用
+## 🚀 個人開発での実装判断
 
-### テスト記述ガイドライン
+### **テスト実装の判断基準**
 
-1. **カスタマイゼーション部分のみテスト**
-   - shadcn/ui の基本機能は上流でテスト済み
-   - 独自追加部分に集中
+#### ✅ 実装する
+- **大幅カスタマイゼーション**: button.tsx (レスポンシブ・アクセシビリティ)
+- **独自機能**: dialog.tsx (showCloseButton prop)
+- **理由**: 複雑性が高く、手動確認では見落としリスクが高い
 
-2. **テスト命名規則**
-   - `should + 動作 + 条件`
-   - 例: `should have data-slot attribute`
+#### ❌ 実装しない
+- **軽微カスタマイゼーション**: 45コンポーネント (data-slot属性のみ)
+- **基本スタイリング**: badge, card, skeleton等
+- **理由**: 半年更新サイクルでは手動確認で十分
 
-3. **テスト構造**
-   - `describe` でコンポーネント別に分類
-   - `test` で機能別に分類
+### **費用対効果分析**
 
-### 引き継ぎ・教育
+#### 最小限実装 (推奨)
+- **開発コスト**: 1時間 (dialog.test.tsx)
+- **維持コスト**: 1時間/年 (テスト更新)
+- **品質向上**: 重要機能の確実な動作保証
 
-1. **新規参加者向け**
-   - テスト戦略の理解
-   - カスタマイゼーション箇所の把握
-   - テストユーティリティの使用方法
+#### 包括的実装 (非推奨)
+- **開発コスト**: 8週間 (全コンポーネント)
+- **維持コスト**: 16時間/年 (テスト維持)
+- **品質向上**: 軽微改善のみ
 
-2. **継続的改善**
-   - テストカバレッジの監視
-   - 品質指標の定期確認
-   - テスト戦略の見直し
+### **実装ガイドライン**
+
+1. **最小限実装**: 重要な2コンポーネントのみテスト
+2. **手動確認**: 軽微カスタマイゼーションは目視確認
+3. **半年更新**: 更新前後のテスト実行で品質確保
+4. **継続的改善**: 問題発生時にテスト追加を検討
 
 ---
 
 **最終更新**: 2025年7月15日  
-**バージョン**: v1.0.0  
+**バージョン**: v2.0.0 (個人開発最適化版)  
 **作成者**: Claude Code Assistant  
-**レビュー**: プロジェクトチーム
+**適用範囲**: 個人開発・半年更新サイクル
