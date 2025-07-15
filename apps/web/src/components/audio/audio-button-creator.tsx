@@ -57,7 +57,7 @@ export function AudioButtonCreator({
 	const parseTimeString = useCallback((timeStr: string): number | null => {
 		// 時:分:秒.小数 形式 (例: 1:23:45.6)
 		const hourMatch = timeStr.match(/^(\d+):(\d{2}):(\d{2})\.(\d)$/);
-		if (hourMatch && hourMatch[1] && hourMatch[2] && hourMatch[3] && hourMatch[4]) {
+		if (hourMatch?.[1] && hourMatch[2] && hourMatch[3] && hourMatch[4]) {
 			const hours = Number.parseInt(hourMatch[1], 10);
 			const minutes = Number.parseInt(hourMatch[2], 10);
 			const seconds = Number.parseInt(hourMatch[3], 10);
@@ -67,7 +67,7 @@ export function AudioButtonCreator({
 
 		// 分:秒.小数 形式 (例: 50:12.3)
 		const minuteMatch = timeStr.match(/^(\d+):(\d{2})\.(\d)$/);
-		if (minuteMatch && minuteMatch[1] && minuteMatch[2] && minuteMatch[3]) {
+		if (minuteMatch?.[1] && minuteMatch[2] && minuteMatch[3]) {
 			const minutes = Number.parseInt(minuteMatch[1], 10);
 			const seconds = Number.parseInt(minuteMatch[2], 10);
 			const decimal = Number.parseInt(minuteMatch[3], 10);

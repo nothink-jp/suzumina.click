@@ -180,6 +180,103 @@ export async function deleteWork(
 }
 
 /**
+ * 管理者権限チェックヘルパー関数
+ */
+async function checkAdminPermissionForWorks(): Promise<
+	{ success: true } | { success: false; error: string }
+> {
+	const user = await requireAuth();
+	if (user.role !== "admin") {
+		return {
+			success: false,
+			error: "この操作には管理者権限が必要です",
+		};
+	}
+	return { success: true };
+}
+
+/**
+ * 作品検索用クエリ構築ヘルパー関数
+ */
+function buildWorksQuery(
+	worksRef: FirebaseFirestore.CollectionReference,
+	params: WorkPaginationParams,
+) {
+	let query = worksRef.orderBy("createdAt", "desc");
+
+	// 声優フィルター
+	if (params.author) {
+		query = query.where("voiceActors", "array-contains", params.author);
+	}
+
+	// カテゴリフィルター
+	if (params.category) {
+		query = query.where("category", "==", params.category);
+	}
+
+	return query;
+}
+
+/**
+ * ページネーション設定ヘルパー関数
+ */
+async function applyPagination(
+	query: FirebaseFirestore.Query,
+	firestore: FirebaseFirestore.Firestore,
+	params: WorkPaginationParams,
+) {
+	if (params.startAfter) {
+		const startAfterDoc = await firestore.collection("dlsiteWorks").doc(params.startAfter).get();
+		if (startAfterDoc.exists) {
+			return query.startAfter(startAfterDoc);
+		}
+	}
+	return query;
+}
+
+/**
+ * 作品ドキュメントを変換するヘルパー関数
+ */
+function processWorkDocuments(
+	workDocs: FirebaseFirestore.QueryDocumentSnapshot[],
+): FrontendDLsiteWorkData[] {
+	const works: FrontendDLsiteWorkData[] = [];
+
+	for (const doc of workDocs) {
+		try {
+			const data = { id: doc.id, ...doc.data() } as OptimizedFirestoreDLsiteWorkData;
+			const frontendWork = convertToFrontendWork(data);
+			works.push(frontendWork);
+		} catch (conversionError) {
+			logger.warn("作品データ変換エラー", {
+				docId: doc.id,
+				error: conversionError instanceof Error ? conversionError.message : String(conversionError),
+			});
+			// 変換エラーは無視して次の作品を処理
+		}
+	}
+
+	return works;
+}
+
+/**
+ * 総件数取得ヘルパー関数
+ */
+async function getTotalWorksCount(
+	firestore: FirebaseFirestore.Firestore,
+): Promise<number | undefined> {
+	try {
+		const countSnapshot = await firestore.collection("dlsiteWorks").get();
+		return countSnapshot.size;
+	} catch (countError) {
+		logger.warn("総件数取得エラー", {
+			error: countError instanceof Error ? countError.message : String(countError),
+		});
+		return undefined;
+	}
+}
+
+/**
  * 管理者用：作品一覧を取得するServer Action
  */
 export async function getWorksForAdmin(
@@ -187,12 +284,9 @@ export async function getWorksForAdmin(
 ): Promise<{ success: true; data: WorkListResult } | { success: false; error: string }> {
 	try {
 		// 認証チェック（管理者権限必須）
-		const user = await requireAuth();
-		if (user.role !== "admin") {
-			return {
-				success: false,
-				error: "この操作には管理者権限が必要です",
-			};
+		const authCheck = await checkAdminPermissionForWorks();
+		if (!authCheck.success) {
+			return authCheck;
 		}
 
 		// パラメータのバリデーション
@@ -209,28 +303,8 @@ export async function getWorksForAdmin(
 		const worksRef = firestore.collection("dlsiteWorks");
 
 		// クエリ構築
-		let query = worksRef.orderBy("createdAt", "desc");
-
-		// 声優フィルター
-		if (validatedParams.author) {
-			query = query.where("voiceActors", "array-contains", validatedParams.author);
-		}
-
-		// カテゴリフィルター
-		if (validatedParams.category) {
-			query = query.where("category", "==", validatedParams.category);
-		}
-
-		// ページネーション
-		if (validatedParams.startAfter) {
-			const startAfterDoc = await firestore
-				.collection("dlsiteWorks")
-				.doc(validatedParams.startAfter)
-				.get();
-			if (startAfterDoc.exists) {
-				query = query.startAfter(startAfterDoc);
-			}
-		}
+		let query = buildWorksQuery(worksRef, validatedParams);
+		query = await applyPagination(query, firestore, validatedParams);
 
 		// limit+1を取得して、次のページがあるかどうかを判定
 		const snapshot = await query.limit(validatedParams.limit + 1).get();
@@ -247,35 +321,11 @@ export async function getWorksForAdmin(
 		const workDocs = hasMore ? docs.slice(0, -1) : docs;
 
 		// データ変換
-		const works: FrontendDLsiteWorkData[] = [];
-
-		for (const doc of workDocs) {
-			try {
-				const data = { id: doc.id, ...doc.data() } as OptimizedFirestoreDLsiteWorkData;
-				const frontendWork = convertToFrontendWork(data);
-				works.push(frontendWork);
-			} catch (conversionError) {
-				logger.warn("作品データ変換エラー", {
-					docId: doc.id,
-					error:
-						conversionError instanceof Error ? conversionError.message : String(conversionError),
-				});
-				// 変換エラーは無視して次の作品を処理
-			}
-		}
-
+		const works = processWorkDocuments(workDocs);
 		const lastWork = works.length > 0 ? works[works.length - 1] : undefined;
 
 		// 総件数の取得
-		let totalCount: number | undefined;
-		try {
-			const countSnapshot = await firestore.collection("dlsiteWorks").get();
-			totalCount = countSnapshot.size;
-		} catch (countError) {
-			logger.warn("総件数取得エラー", {
-				error: countError instanceof Error ? countError.message : String(countError),
-			});
-		}
+		const totalCount = await getTotalWorksCount(firestore);
 
 		return {
 			success: true,

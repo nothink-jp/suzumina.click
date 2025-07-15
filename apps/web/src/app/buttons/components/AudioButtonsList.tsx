@@ -131,45 +131,91 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 	const effectiveCount = isFiltered && filteredCount !== undefined ? filteredCount : totalCount;
 	const totalPages = Math.ceil(effectiveCount / itemsPerPageNum);
 
-	// URLパラメータからAudioButtonQueryを構築
-	const buildAudioButtonQuery = useCallback((): Partial<AudioButtonQuery> => {
+	// 基本クエリパラメータを構築するヘルパー
+	const buildBaseQuery = useCallback((): Partial<AudioButtonQuery> => {
 		const query: Partial<AudioButtonQuery> = {
 			limit: itemsPerPageNum,
 			includeTotalCount: true,
 			onlyPublic: true,
 		};
 
-		// ページ番号を追加
 		if (currentPage > 1) {
 			query.page = currentPage;
 		}
 
-		// 基本パラメータ
-		if (searchParams.q) query.searchText = searchParams.q;
-		if (searchParams.tags) query.tags = searchParams.tags.split(",");
-		if (searchParams.sort)
-			query.sortBy = searchParams.sort as "newest" | "oldest" | "popular" | "mostPlayed";
-		if (searchParams.sourceVideoId) query.sourceVideoId = searchParams.sourceVideoId;
+		return query;
+	}, [itemsPerPageNum, currentPage]);
 
-		// 数値範囲パラメータ
-		if (searchParams.playCountMin) query.playCountMin = Number(searchParams.playCountMin);
-		if (searchParams.playCountMax) query.playCountMax = Number(searchParams.playCountMax);
-		if (searchParams.likeCountMin) query.likeCountMin = Number(searchParams.likeCountMin);
-		if (searchParams.likeCountMax) query.likeCountMax = Number(searchParams.likeCountMax);
-		if (searchParams.favoriteCountMin)
-			query.favoriteCountMin = Number(searchParams.favoriteCountMin);
-		if (searchParams.favoriteCountMax)
-			query.favoriteCountMax = Number(searchParams.favoriteCountMax);
-		if (searchParams.durationMin) query.durationMin = Number(searchParams.durationMin);
-		if (searchParams.durationMax) query.durationMax = Number(searchParams.durationMax);
+	// 基本検索パラメータを追加するヘルパー
+	const addBasicSearchParams = useCallback(
+		(query: Partial<AudioButtonQuery>, params: typeof searchParams) => {
+			if (params.q) query.searchText = params.q;
+			if (params.tags) query.tags = params.tags.split(",");
+			if (params.sort) query.sortBy = params.sort as "newest" | "oldest" | "popular" | "mostPlayed";
+			if (params.sourceVideoId) query.sourceVideoId = params.sourceVideoId;
+		},
+		[],
+	);
 
-		// 日付・ユーザーパラメータ
-		if (searchParams.createdAfter) query.createdAfter = searchParams.createdAfter;
-		if (searchParams.createdBefore) query.createdBefore = searchParams.createdBefore;
-		if (searchParams.createdBy) query.createdBy = searchParams.createdBy;
+	// 再生回数・いいね数パラメータを追加するヘルパー
+	const addPlayAndLikeParams = useCallback(
+		(query: Partial<AudioButtonQuery>, params: typeof searchParams) => {
+			if (params.playCountMin) query.playCountMin = Number(params.playCountMin);
+			if (params.playCountMax) query.playCountMax = Number(params.playCountMax);
+			if (params.likeCountMin) query.likeCountMin = Number(params.likeCountMin);
+			if (params.likeCountMax) query.likeCountMax = Number(params.likeCountMax);
+		},
+		[],
+	);
+
+	// お気に入り数パラメータを追加するヘルパー
+	const addFavoriteParams = useCallback(
+		(query: Partial<AudioButtonQuery>, params: typeof searchParams) => {
+			if (params.favoriteCountMin) query.favoriteCountMin = Number(params.favoriteCountMin);
+			if (params.favoriteCountMax) query.favoriteCountMax = Number(params.favoriteCountMax);
+		},
+		[],
+	);
+
+	// 時間関連パラメータを追加するヘルパー
+	const addDurationParams = useCallback(
+		(query: Partial<AudioButtonQuery>, params: typeof searchParams) => {
+			if (params.durationMin) query.durationMin = Number(params.durationMin);
+			if (params.durationMax) query.durationMax = Number(params.durationMax);
+		},
+		[],
+	);
+
+	// 日付・ユーザーパラメータを追加するヘルパー
+	const addDateAndUserParams = useCallback(
+		(query: Partial<AudioButtonQuery>, params: typeof searchParams) => {
+			if (params.createdAfter) query.createdAfter = params.createdAfter;
+			if (params.createdBefore) query.createdBefore = params.createdBefore;
+			if (params.createdBy) query.createdBy = params.createdBy;
+		},
+		[],
+	);
+
+	// URLパラメータからAudioButtonQueryを構築
+	const buildAudioButtonQuery = useCallback((): Partial<AudioButtonQuery> => {
+		const query = buildBaseQuery();
+
+		addBasicSearchParams(query, searchParams);
+		addPlayAndLikeParams(query, searchParams);
+		addFavoriteParams(query, searchParams);
+		addDurationParams(query, searchParams);
+		addDateAndUserParams(query, searchParams);
 
 		return query;
-	}, [searchParams, itemsPerPageNum, currentPage]);
+	}, [
+		searchParams,
+		buildBaseQuery,
+		addBasicSearchParams,
+		addPlayAndLikeParams,
+		addFavoriteParams,
+		addDurationParams,
+		addDateAndUserParams,
+	]);
 
 	// APIレスポンスの処理
 	const handleApiResponse = useCallback(

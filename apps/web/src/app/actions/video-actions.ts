@@ -4,6 +4,7 @@ import { FieldValue } from "@google-cloud/firestore";
 import {
 	convertToFrontendVideo,
 	type FirestoreServerVideoData,
+	type FirestoreVideoData,
 	type FrontendVideoData,
 	type VideoListResult,
 } from "@suzumina.click/shared-types/src/video";
@@ -11,6 +12,138 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/components/system/protected-route";
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
+
+/**
+ * Firestore Timestampを安全にISO文字列に変換するヘルパー関数
+ */
+function convertTimestampToISO(timestamp: unknown): string {
+	if (timestamp instanceof Date) {
+		return timestamp.toISOString();
+	}
+	if (typeof timestamp === "object" && timestamp && "toDate" in timestamp) {
+		return (timestamp as { toDate(): Date }).toDate().toISOString();
+	}
+	return new Date().toISOString();
+}
+
+/**
+ * FirestoreServerVideoDataをFirestoreVideoDataに変換するヘルパー関数
+ */
+function convertFirestoreServerData(
+	doc: { id: string },
+	docData: FirestoreServerVideoData,
+): FirestoreVideoData {
+	return {
+		id: doc.id,
+		videoId: docData.videoId || doc.id,
+		title: docData.title,
+		description: docData.description || "",
+		channelId: docData.channelId,
+		channelTitle: docData.channelTitle,
+		publishedAt: convertTimestampToISO(docData.publishedAt),
+		thumbnailUrl: docData.thumbnailUrl || "",
+		lastFetchedAt: convertTimestampToISO(docData.lastFetchedAt),
+		videoType: docData.videoType,
+		liveBroadcastContent: docData.liveBroadcastContent,
+		audioButtonCount: docData.audioButtonCount || 0,
+		hasAudioButtons: docData.hasAudioButtons || false,
+	};
+}
+
+/**
+ * 管理者用動画一覧取得のクエリ構築ヘルパー関数
+ */
+function buildVideoQuery(
+	videosRef: FirebaseFirestore.CollectionReference,
+	params?: { year?: string; sort?: string },
+) {
+	let query = videosRef.orderBy("publishedAt", params?.sort === "oldest" ? "asc" : "desc");
+
+	// 年代フィルタリング
+	if (params?.year) {
+		const year = Number.parseInt(params.year, 10);
+		if (!Number.isNaN(year)) {
+			const startOfYear = new Date(year, 0, 1);
+			const endOfYear = new Date(year + 1, 0, 1);
+			query = query.where("publishedAt", ">=", startOfYear).where("publishedAt", "<", endOfYear);
+		}
+	}
+
+	return query;
+}
+
+/**
+ * 検索フィルタリングヘルパー関数
+ */
+function matchesSearchFilter(title: string, search?: string): boolean {
+	if (!search) return true;
+
+	const searchLower = search.toLowerCase();
+	const titleLower = title.toLowerCase();
+	return titleLower.includes(searchLower);
+}
+
+/**
+ * 管理者権限チェックヘルパー関数
+ */
+async function checkAdminPermission(): Promise<
+	{ success: true } | { success: false; error: string }
+> {
+	const user = await requireAuth();
+	if (user.role !== "admin") {
+		return {
+			success: false,
+			error: "この操作には管理者権限が必要です",
+		};
+	}
+	return { success: true };
+}
+
+/**
+ * 空のビデオリスト結果を返すヘルパー関数
+ */
+function createEmptyVideoListResult(): { success: true; data: VideoListResult } {
+	return {
+		success: true,
+		data: { videos: [], hasMore: false },
+	};
+}
+
+/**
+ * 動画ドキュメントをフロントエンド用データに変換するヘルパー関数
+ */
+function processVideoDocuments(
+	videoDocs: FirebaseFirestore.QueryDocumentSnapshot[],
+	searchFilter?: string,
+): FrontendVideoData[] {
+	const videos: FrontendVideoData[] = [];
+
+	for (const doc of videoDocs) {
+		try {
+			const data = doc.data() as FirestoreServerVideoData;
+
+			// 検索フィルタリング
+			if (!matchesSearchFilter(data.title, searchFilter)) {
+				continue;
+			}
+
+			// Firestore server data を標準的な形式に変換
+			const firestoreData = convertFirestoreServerData(doc, data);
+
+			// フロントエンド表示用データに変換
+			const frontendVideo = convertToFrontendVideo(firestoreData);
+			videos.push(frontendVideo);
+		} catch (conversionError) {
+			logger.warn("動画データ変換エラー", {
+				docId: doc.id,
+				error: conversionError instanceof Error ? conversionError.message : String(conversionError),
+			});
+			// 変換エラーは無視して次の動画を処理
+		}
+	}
+
+	return videos;
+}
 
 /**
  * 管理者用：動画情報を更新するServer Action
@@ -262,29 +395,16 @@ export async function getVideosForAdmin(params?: {
 }): Promise<{ success: true; data: VideoListResult } | { success: false; error: string }> {
 	try {
 		// 認証チェック（管理者権限必須）
-		const user = await requireAuth();
-		if (user.role !== "admin") {
-			return {
-				success: false,
-				error: "この操作には管理者権限が必要です",
-			};
+		const authCheck = await checkAdminPermission();
+		if (!authCheck.success) {
+			return authCheck;
 		}
 
 		const firestore = getFirestore();
 		const videosRef = firestore.collection("videos");
 
 		// クエリ構築
-		let query = videosRef.orderBy("publishedAt", params?.sort === "oldest" ? "asc" : "desc");
-
-		// 年代フィルタリング
-		if (params?.year) {
-			const year = Number.parseInt(params.year, 10);
-			if (!Number.isNaN(year)) {
-				const startOfYear = new Date(year, 0, 1);
-				const endOfYear = new Date(year + 1, 0, 1);
-				query = query.where("publishedAt", ">=", startOfYear).where("publishedAt", "<", endOfYear);
-			}
-		}
+		let query = buildVideoQuery(videosRef, params);
 
 		// ページネーション
 		const limit = params?.limit || 20;
@@ -299,10 +419,7 @@ export async function getVideosForAdmin(params?: {
 		const snapshot = await query.limit(limit + 1).get();
 
 		if (snapshot.empty) {
-			return {
-				success: true,
-				data: { videos: [], hasMore: false },
-			};
+			return createEmptyVideoListResult();
 		}
 
 		const docs = snapshot.docs;
@@ -310,63 +427,7 @@ export async function getVideosForAdmin(params?: {
 		const videoDocs = hasMore ? docs.slice(0, -1) : docs;
 
 		// データ変換とフィルタリング
-		const videos: FrontendVideoData[] = [];
-
-		for (const doc of videoDocs) {
-			try {
-				const data = doc.data() as FirestoreServerVideoData;
-
-				// 検索フィルタリング
-				if (params?.search) {
-					const searchLower = params.search.toLowerCase();
-					const titleLower = data.title.toLowerCase();
-					if (!titleLower.includes(searchLower)) {
-						continue;
-					}
-				}
-
-				// Timestampをiso文字列に変換して、フロントエンドデータに変換
-				const firestoreData = {
-					id: doc.id,
-					videoId: data.videoId || doc.id,
-					title: data.title,
-					description: data.description || "",
-					channelId: data.channelId,
-					channelTitle: data.channelTitle,
-					publishedAt:
-						data.publishedAt instanceof Date
-							? data.publishedAt.toISOString()
-							: typeof data.publishedAt === "object" &&
-									data.publishedAt &&
-									"toDate" in data.publishedAt
-								? (data.publishedAt as { toDate(): Date }).toDate().toISOString()
-								: new Date().toISOString(),
-					thumbnailUrl: data.thumbnailUrl || "",
-					lastFetchedAt:
-						data.lastFetchedAt instanceof Date
-							? data.lastFetchedAt.toISOString()
-							: typeof data.lastFetchedAt === "object" &&
-									data.lastFetchedAt &&
-									"toDate" in data.lastFetchedAt
-								? (data.lastFetchedAt as { toDate(): Date }).toDate().toISOString()
-								: new Date().toISOString(),
-					videoType: data.videoType,
-					liveBroadcastContent: data.liveBroadcastContent,
-					audioButtonCount: data.audioButtonCount || 0,
-					hasAudioButtons: data.hasAudioButtons || false,
-				};
-
-				const frontendVideo = convertToFrontendVideo(firestoreData);
-				videos.push(frontendVideo);
-			} catch (conversionError) {
-				logger.warn("動画データ変換エラー", {
-					docId: doc.id,
-					error:
-						conversionError instanceof Error ? conversionError.message : String(conversionError),
-				});
-				// 変換エラーは無視して次の動画を処理
-			}
-		}
+		const videos = processVideoDocuments(videoDocs, params?.search);
 
 		const lastVideo = videos.length > 0 ? videos[videos.length - 1] : undefined;
 

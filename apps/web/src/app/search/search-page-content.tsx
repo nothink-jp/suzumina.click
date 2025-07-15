@@ -119,42 +119,52 @@ function buildSearchParams(
 	return params;
 }
 
-// Helper function to perform search using Server Action
-async function fetchSearchResults(params: URLSearchParams): Promise<UnifiedSearchResult> {
-	const filters = {
+// Helper function to parse optional integer parameter
+function parseOptionalInt(value: string | null): number | undefined {
+	return value ? Number.parseInt(value, 10) : undefined;
+}
+
+// Helper function to parse basic search parameters
+function parseBasicSearchParams(params: URLSearchParams) {
+	return {
 		query: params.get("q") || "",
 		type: (params.get("type") as "all" | "buttons" | "videos" | "works") || "all",
 		limit: Number.parseInt(params.get("limit") || "12"),
 		sortBy: params.get("sortBy") || undefined,
+	};
+}
+
+// Helper function to parse date and tag parameters
+function parseDateAndTagParams(params: URLSearchParams) {
+	return {
 		dateRange: params.get("dateRange") || undefined,
 		dateFrom: params.get("dateFrom") || undefined,
 		dateTo: params.get("dateTo") || undefined,
 		tags: params.get("tags")?.split(",").filter(Boolean) || undefined,
 		tagMode: (params.get("tagMode") as "any" | "all") || undefined,
-		playCountMin: params.get("playCountMin")
-			? Number.parseInt(params.get("playCountMin") || "0")
-			: undefined,
-		playCountMax: params.get("playCountMax")
-			? Number.parseInt(params.get("playCountMax") || "0")
-			: undefined,
-		likeCountMin: params.get("likeCountMin")
-			? Number.parseInt(params.get("likeCountMin") || "0")
-			: undefined,
-		likeCountMax: params.get("likeCountMax")
-			? Number.parseInt(params.get("likeCountMax") || "0")
-			: undefined,
-		favoriteCountMin: params.get("favoriteCountMin")
-			? Number.parseInt(params.get("favoriteCountMin") || "0")
-			: undefined,
-		favoriteCountMax: params.get("favoriteCountMax")
-			? Number.parseInt(params.get("favoriteCountMax") || "0")
-			: undefined,
-		durationMin: params.get("durationMin")
-			? Number.parseInt(params.get("durationMin") || "0")
-			: undefined,
-		durationMax: params.get("durationMax")
-			? Number.parseInt(params.get("durationMax") || "0")
-			: undefined,
+	};
+}
+
+// Helper function to parse count range parameters
+function parseCountRangeParams(params: URLSearchParams) {
+	return {
+		playCountMin: parseOptionalInt(params.get("playCountMin")),
+		playCountMax: parseOptionalInt(params.get("playCountMax")),
+		likeCountMin: parseOptionalInt(params.get("likeCountMin")),
+		likeCountMax: parseOptionalInt(params.get("likeCountMax")),
+		favoriteCountMin: parseOptionalInt(params.get("favoriteCountMin")),
+		favoriteCountMax: parseOptionalInt(params.get("favoriteCountMax")),
+		durationMin: parseOptionalInt(params.get("durationMin")),
+		durationMax: parseOptionalInt(params.get("durationMax")),
+	};
+}
+
+// Helper function to perform search using Server Action
+async function fetchSearchResults(params: URLSearchParams): Promise<UnifiedSearchResult> {
+	const filters = {
+		...parseBasicSearchParams(params),
+		...parseDateAndTagParams(params),
+		...parseCountRangeParams(params),
 	};
 
 	try {
