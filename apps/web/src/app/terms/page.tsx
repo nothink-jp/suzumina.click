@@ -209,32 +209,20 @@ export default function TermsPage() {
 					<CardContent className="space-y-4">
 						<div className="space-y-3">
 							<div>
-								<h4 className="font-semibold text-foreground">広告配信について</h4>
+								<h4 className="font-semibold text-foreground">サイト運営について</h4>
 								<p className="text-sm text-muted-foreground">
-									サイトの運営費用（サーバー代、ドメイン代等）確保のため、適切な広告を配信する場合があります。
+									本サイトは非営利目的で運営されており、サイト運営費用（サーバー代、ドメイン代等）は運営者が負担しています。
 								</p>
 								<ul className="text-sm text-muted-foreground mt-2 space-y-1">
-									<li>• 広告内容は適切なポリシーに準拠</li>
-									<li>• ユーザーに不適切な広告の表示制御</li>
-									<li>• 広告収益は全てサイト運営費に充当</li>
-								</ul>
-							</div>
-							<div>
-								<h4 className="font-semibold text-foreground">収益の利用</h4>
-								<p className="text-sm text-muted-foreground">
-									広告による収益は以下の目的にのみ使用されます：
-								</p>
-								<ul className="text-sm text-muted-foreground mt-2 space-y-1">
-									<li>• サーバー・インフラ費用</li>
-									<li>• ドメイン・SSL証明書費用</li>
-									<li>• サイト機能改善・開発費用</li>
-									<li>• その他サイト運営に必要な経費</li>
+									<li>• 非営利での運営を基本とする</li>
+									<li>• ユーザーに対する課金は一切行わない</li>
+									<li>• ファンコミュニティの健全な運営を最優先</li>
 								</ul>
 							</div>
 							<div className="bg-green-50 p-3 rounded-lg">
 								<h4 className="font-semibold text-green-800 mb-2">透明性について</h4>
 								<p className="text-sm text-green-700">
-									広告収益や運営費用に関する詳細は、ユーザーからのお問い合わせに可能な範囲で回答いたします。
+									運営費用に関する詳細は、ユーザーからのお問い合わせに可能な範囲で回答いたします。
 									ファンコミュニティの健全な運営を最優先に考えています。
 								</p>
 							</div>

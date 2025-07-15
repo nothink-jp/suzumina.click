@@ -9,14 +9,16 @@ import {
 	DialogTitle,
 } from "@suzumina.click/ui/components/ui/dialog";
 import { Switch } from "@suzumina.click/ui/components/ui/switch";
-import { BarChart3, Shield, Target, User } from "lucide-react";
+import { BarChart3, Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useIsClient } from "@/hooks/use-is-client";
 import { type ConsentState, getCurrentConsentState } from "@/lib/consent/google-consent-mode";
 
-// Map old ConsentChoices to new ConsentState format
-type ConsentChoices = ConsentState & {
+// Map old ConsentChoices to new ConsentState format (without advertising)
+type ConsentChoices = {
 	necessary: boolean;
+	functional: boolean;
+	analytics: boolean;
 	personalization: boolean;
 };
 
@@ -50,15 +52,6 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 		examples: ["Google Analytics", "ページビュー分析", "ユーザー行動分析"],
 	},
 	{
-		id: "advertising",
-		name: "広告クッキー",
-		description: "関連広告の表示",
-		details: "Amazonアソシエイトによる広告配信。",
-		icon: <Target className="h-4 w-4 text-orange-600" />,
-		required: false,
-		examples: ["Amazonアソシエイト", "商品推薦"],
-	},
-	{
 		id: "personalization",
 		name: "パーソナライゼーション",
 		description: "カスタマイズ体験",
@@ -85,7 +78,6 @@ export function CookiePreferencesPanel({
 		necessary: true,
 		functional: true,
 		analytics: false,
-		advertising: false,
 		personalization: false,
 	});
 
@@ -99,7 +91,6 @@ export function CookiePreferencesPanel({
 					necessary: true, // Always true
 					functional: saved.functional !== false, // Default to true if undefined
 					analytics: saved.analytics === true,
-					advertising: saved.advertising === true,
 					personalization: saved.personalization === true,
 				});
 			} else {
@@ -108,7 +99,6 @@ export function CookiePreferencesPanel({
 					necessary: true,
 					functional: true, // Default to true
 					analytics: false,
-					advertising: false,
 					personalization: false,
 				});
 			}
@@ -126,14 +116,13 @@ export function CookiePreferencesPanel({
 		const allAccepted: ConsentState = {
 			functional: true,
 			analytics: true,
-			advertising: true,
+			advertising: false, // No advertising services
 			personalization: true,
 		};
 		setPreferences({
 			necessary: true,
 			functional: true,
 			analytics: true,
-			advertising: true,
 			personalization: true,
 		});
 		onSave(allAccepted);
@@ -143,14 +132,13 @@ export function CookiePreferencesPanel({
 		const minimal: ConsentState = {
 			functional: true,
 			analytics: false,
-			advertising: false,
+			advertising: false, // No advertising services
 			personalization: false,
 		};
 		setPreferences({
 			necessary: true,
 			functional: true,
 			analytics: false,
-			advertising: false,
 			personalization: false,
 		});
 		onSave(minimal);
@@ -160,7 +148,7 @@ export function CookiePreferencesPanel({
 		const consentState: ConsentState = {
 			functional: preferences.functional,
 			analytics: preferences.analytics,
-			advertising: preferences.advertising,
+			advertising: false, // No advertising services
 			personalization: preferences.personalization,
 		};
 		onSave(consentState);
