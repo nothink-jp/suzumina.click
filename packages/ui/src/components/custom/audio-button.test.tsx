@@ -90,13 +90,9 @@ describe("AudioButton", () => {
 
 		render(<AudioButton audioButton={mockAudioButton} />);
 
-		// ポップオーバーのトリガー要素を取得（最初に見つかるもの）
-		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
-
-		if (triggerElement) {
-			await user.click(triggerElement);
-		}
+		// 詳細表示ボタン（iアイコン）をクリック
+		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
+		await user.click(infoButton);
 
 		// ポップオーバーの内容が表示されることを確認
 		expect(screen.getAllByText("テスト音声ボタン")).toHaveLength(2); // トリガーとポップオーバー内
@@ -107,12 +103,9 @@ describe("AudioButton", () => {
 
 		render(<AudioButton audioButton={mockAudioButton} />);
 
-		// ポップオーバーを開く
-		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
-		if (triggerElement) {
-			await user.click(triggerElement);
-		}
+		// 詳細表示ボタン（iアイコン）をクリック
+		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
+		await user.click(infoButton);
 
 		// メタデータが表示されることを確認
 		expect(screen.getByText("10秒")).toBeInTheDocument();
@@ -125,12 +118,9 @@ describe("AudioButton", () => {
 
 		render(<AudioButton audioButton={mockAudioButton} />);
 
-		// ポップオーバーを開く
-		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
-		if (triggerElement) {
-			await user.click(triggerElement);
-		}
+		// 詳細表示ボタン（iアイコン）をクリック
+		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
+		await user.click(infoButton);
 
 		// タグが表示されることを確認
 		expect(screen.getByText("テスト")).toBeInTheDocument();
@@ -149,12 +139,9 @@ describe("AudioButton", () => {
 			/>,
 		);
 
-		// ポップオーバーを開く
-		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
-		if (triggerElement) {
-			await user.click(triggerElement);
-		}
+		// 詳細表示ボタン（iアイコン）をクリック
+		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
+		await user.click(infoButton);
 
 		// お気に入りボタンをクリック
 		const favoriteButton = screen.getByText("お気に入り");
@@ -170,12 +157,9 @@ describe("AudioButton", () => {
 			<AudioButton audioButton={mockAudioButton} isFavorite={true} onFavoriteToggle={vi.fn()} />,
 		);
 
-		// ポップオーバーを開く
-		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
-		if (triggerElement) {
-			await user.click(triggerElement);
-		}
+		// 詳細表示ボタン（iアイコン）をクリック
+		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
+		await user.click(infoButton);
 
 		expect(screen.getByText("お気に入り解除")).toBeInTheDocument();
 	});
@@ -192,12 +176,9 @@ describe("AudioButton", () => {
 			/>,
 		);
 
-		// ポップオーバーを開く
-		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
-		if (triggerElement) {
-			await user.click(triggerElement);
-		}
+		// 詳細表示ボタン（iアイコン）をクリック
+		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
+		await user.click(infoButton);
 
 		// 詳細ボタンをクリック
 		const detailButton = screen.getByText("詳細");
@@ -225,12 +206,9 @@ describe("AudioButton", () => {
 
 		render(<AudioButton audioButton={mockAudioButton} />);
 
-		// ポップオーバーを開く
-		const titleElement = screen.getAllByText("テスト音声ボタン")[0];
-		const triggerElement = titleElement?.closest("[data-slot='popover-trigger']");
-		if (triggerElement) {
-			await user.click(triggerElement);
-		}
+		// 詳細表示ボタン（iアイコン）をクリック
+		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
+		await user.click(infoButton);
 
 		const youtubeLink = screen.getByText("YouTube");
 		expect(youtubeLink).toBeInTheDocument();

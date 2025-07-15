@@ -257,56 +257,60 @@ export function AudioButton({
 
 			{/* UI要素 */}
 			<Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-				<PopoverTrigger asChild>
-					<div
-						className={cn(
-							"group relative inline-flex items-stretch rounded-lg overflow-hidden shadow-sm",
-							"bg-gradient-to-r from-minase-400 to-minase-500 hover:from-minase-500 hover:to-minase-600",
-							"transition-all duration-200 cursor-pointer",
-							className,
-						)}
+				<div
+					className={cn(
+						"group relative inline-flex items-stretch rounded-lg overflow-hidden shadow-sm",
+						"bg-gradient-to-r from-minase-400 to-minase-500 hover:from-minase-500 hover:to-minase-600",
+						"transition-all duration-200",
+						className,
+					)}
+				>
+					{/* メイン部分 - 再生専用エリア */}
+					<button
+						type="button"
+						onClick={handlePlayClick}
+						disabled={isLoading}
+						className="flex items-center gap-2 px-3 py-2 text-white min-h-[44px] flex-1 min-w-0 cursor-pointer hover:bg-black/10 transition-colors"
+						aria-label={isPlaying ? "一時停止" : "再生"}
 					>
-						{/* メイン部分 */}
-						<div className="flex items-center gap-2 px-3 py-2 text-white min-h-[44px] flex-1 min-w-0">
-							{/* 再生ボタン */}
-							<button
-								type="button"
-								onClick={handlePlayClick}
-								disabled={isLoading}
-								className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-50"
-								aria-label={isPlaying ? "一時停止" : "再生"}
-							>
-								{isLoading ? (
-									<Loader2 className="h-4 w-4 animate-spin" />
-								) : isPlaying ? (
-									<Pause className="h-4 w-4" />
-								) : (
-									<Play className="h-4 w-4 translate-x-0.5" />
-								)}
-							</button>
-
-							{/* タイトル */}
-							<span className="font-medium text-sm truncate" title={audioButton.title}>
-								{searchQuery ? (
-									<HighlightText
-										text={displayTitle}
-										searchQuery={searchQuery}
-										highlightClassName={
-											highlightClassName || "bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
-										}
-									/>
-								) : (
-									displayTitle
-								)}
-							</span>
+						{/* 再生アイコン */}
+						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors">
+							{isLoading ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : isPlaying ? (
+								<Pause className="h-4 w-4" />
+							) : (
+								<Play className="h-4 w-4 translate-x-0.5" />
+							)}
 						</div>
 
-						{/* 詳細表示ボタン */}
-						<div className="flex items-center justify-center px-3 py-2 min-h-[44px] min-w-[44px] bg-white/10 text-white group-hover:bg-white/20 transition-colors">
+						{/* タイトル */}
+						<span className="font-medium text-sm truncate" title={audioButton.title}>
+							{searchQuery ? (
+								<HighlightText
+									text={displayTitle}
+									searchQuery={searchQuery}
+									highlightClassName={
+										highlightClassName || "bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
+									}
+								/>
+							) : (
+								displayTitle
+							)}
+						</span>
+					</button>
+
+					{/* 詳細表示ボタン - Popover専用エリア */}
+					<PopoverTrigger asChild>
+						<button
+							type="button"
+							className="flex items-center justify-center px-3 py-2 min-h-[44px] min-w-[44px] bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
+							aria-label="詳細を表示"
+						>
 							<Info className="h-4 w-4" />
-						</div>
-					</div>
-				</PopoverTrigger>
+						</button>
+					</PopoverTrigger>
+				</div>
 
 				<PopoverContent className="w-80 p-0 border-suzuka-200" align="start">
 					<AudioButtonPopoverContent

@@ -12,9 +12,17 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
+		"test:critical": "vitest run --reporter=verbose button.test.tsx dialog.test.tsx",
 		"clean": "rimraf coverage storybook-static node_modules/.cache .vitest",
 		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build"
+		"build-storybook": "storybook build",
+		"shadcn:check": "bash ./check-shadcn-updates.sh",
+		"shadcn:updates": "pnpm dlx shadcn@canary diff --list",
+		"shadcn:diff": "pnpm dlx shadcn@canary diff",
+		"shadcn:diff-button": "pnpm dlx shadcn@canary diff button",
+		"shadcn:diff-dialog": "pnpm dlx shadcn@canary diff dialog",
+		"shadcn:backup": "cp src/components/ui/button.tsx src/components/ui/button.backup.tsx && cp src/components/ui/dialog.tsx src/components/ui/dialog.backup.tsx && echo 'Backup created at:' $(date) > backup-info.txt",
+		"shadcn:restore": "cp src/components/ui/button.backup.tsx src/components/ui/button.tsx && cp src/components/ui/dialog.backup.tsx src/components/ui/dialog.tsx && echo 'Restored from backup at:' $(date)"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.1.1",
