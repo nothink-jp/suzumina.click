@@ -155,7 +155,7 @@ jobs:
                 # パッケージ内の全イメージを取得（制限なし）
                 local all_versions=$(gcloud artifacts docker images list \
                   ${repository_path}/${package_basename} \
-                  --format="value(IMAGE@DIGEST,createTime)" \
+                  --format="value(IMAGE,DIGEST,createTime)" \
                   --sort-by="~createTime")
                 
                 if [ -n "$all_versions" ]; then
@@ -165,8 +165,8 @@ jobs:
                   # 最新5つを除いた古いバージョンを削除
                   local old_versions=$(gcloud artifacts docker images list \
                     ${repository_path}/${package_basename} \
-                    --format="value(IMAGE@DIGEST)" \
-                    --sort-by="~createTime" | tail -n +6)
+                    --format="csv[no-heading](IMAGE,DIGEST)" \
+                    --sort-by="~createTime" | tail -n +6 | sed 's/,/@/')
                   
                   if [ -n "$old_versions" ]; then
                     local old_count=$(echo "$old_versions" | wc -l)
@@ -195,7 +195,7 @@ jobs:
                 local old_untagged=$(gcloud artifacts docker images list \
                   ${repository_path}/${package_basename} \
                   --filter="NOT tags:* AND createTime < '$(date -d '7 days ago' -u +%Y-%m-%dT%H:%M:%SZ)'" \
-                  --format="value(IMAGE@DIGEST)")
+                  --format="csv[no-heading](IMAGE,DIGEST)" | sed 's/,/@/')
                 
                 if [ -n "$old_untagged" ]; then
                   local untagged_count=$(echo "$old_untagged" | wc -l)
@@ -237,8 +237,8 @@ jobs:
                   # Cache内の古いイメージを削除（1つだけ保持）
                   local cache_images=$(gcloud artifacts docker images list \
                     ${repository_path}/${parent_package}/cache \
-                    --format="value(IMAGE@DIGEST)" \
-                    --sort-by="~createTime" | tail -n +2)
+                    --format="csv[no-heading](IMAGE,DIGEST)" \
+                    --sort-by="~createTime" | tail -n +2 | sed 's/,/@/')
                   
                   if [ -n "$cache_images" ]; then
                     if [ "$DRY_RUN" = "true" ]; then
