@@ -167,10 +167,4 @@ export function CookieConsentBanner() {
 	);
 }
 
-// Extend Window interface for TypeScript
-declare global {
-	interface Window {
-		// biome-ignore lint/suspicious/noExplicitAny: Google Analytics gtag function requires any
-		gtag: (...args: any[]) => void;
-	}
-}
+// Types are imported from google-consent-mode.ts
