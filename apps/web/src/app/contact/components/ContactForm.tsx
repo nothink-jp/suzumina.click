@@ -21,7 +21,7 @@ import { submitContactForm } from "../actions";
 // フォームスキーマ（エラーメッセージ付き）
 const contactFormSchema = z.object({
 	category: z.enum(["bug", "feature", "usage", "other"], {
-		required_error: "お問い合わせ種別を選択してください",
+		message: "お問い合わせ種別を選択してください",
 	}),
 	subject: z
 		.string()
