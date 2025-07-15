@@ -3,10 +3,31 @@
  * Manages consent state for Google Analytics and Google AdSense
  */
 
+// Google Analytics gtag types
+type GtagCommand = "config" | "consent" | "event" | "set";
+type GtagConfigParams = Record<string, string | number | boolean>;
+type ConsentParams = {
+	ad_storage?: "granted" | "denied";
+	ad_user_data?: "granted" | "denied";
+	ad_personalization?: "granted" | "denied";
+	analytics_storage?: "granted" | "denied";
+	functionality_storage?: "granted" | "denied";
+	personalization_storage?: "granted" | "denied";
+	security_storage?: "granted" | "denied";
+	wait_for_update?: number;
+};
+
+type DataLayerEvent =
+	| [GtagCommand, "default", ConsentParams]
+	| [GtagCommand, "update", ConsentParams]
+	| [GtagCommand, string, GtagConfigParams?]
+	| [GtagCommand, string, string, GtagConfigParams?]
+	| unknown[];
+
 declare global {
 	interface Window {
-		gtag: (...args: any[]) => void;
-		dataLayer: any[];
+		gtag: (command: GtagCommand, ...args: unknown[]) => void;
+		dataLayer: DataLayerEvent[];
 	}
 }
 
@@ -29,8 +50,8 @@ export function initializeGoogleConsentMode() {
 	window.dataLayer = window.dataLayer || [];
 	window.gtag =
 		window.gtag ||
-		(() => {
-			window.dataLayer.push(arguments);
+		((command: GtagCommand, ...args: unknown[]) => {
+			window.dataLayer.push([command, ...args] as DataLayerEvent);
 		});
 
 	// Set default consent state (deny all until user chooses)
@@ -267,7 +288,10 @@ export function sendGoogleAnalyticsPageView(url?: string) {
  * Utility to send custom events to Google Analytics
  * Only works if analytics consent is granted
  */
-export function sendGoogleAnalyticsEvent(eventName: string, parameters: Record<string, any> = {}) {
+export function sendGoogleAnalyticsEvent(
+	eventName: string,
+	parameters: Record<string, string | number | boolean> = {},
+) {
 	if (typeof window === "undefined" || !window.gtag) return;
 
 	const consentState = getCurrentConsentState();
