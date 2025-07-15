@@ -40,3 +40,16 @@ export const LazyAudioButtonCreator = lazy(() =>
 		default: module.AudioButtonCreator,
 	})),
 );
+
+// データ取得付きセクションの遅延読み込み
+export const LazyVideosSection = lazy(() =>
+	import("@/components/sections/videos-section").then((module) => ({
+		default: module.VideosSection,
+	})),
+);
+
+export const LazyWorksSection = lazy(() =>
+	import("@/components/sections/works-section").then((module) => ({
+		default: module.WorksSection,
+	})),
+);

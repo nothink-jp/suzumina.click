@@ -12,29 +12,18 @@ import Link from "next/link";
 import { Suspense } from "react";
 import {
 	LazyFeaturedAudioButtonsCarousel,
-	LazyFeaturedVideosCarousel,
-	LazyFeaturedWorksCarousel,
 	LazySearchForm,
+	LazyVideosSection,
+	LazyWorksSection,
 } from "@/components/optimization/lazy-components";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface HomePageProps {
-	initialWorks: FrontendDLsiteWorkData[];
-	initialVideos: FrontendVideoData[];
 	initialAudioButtons: FrontendAudioButtonData[];
-	allAgesWorks: FrontendDLsiteWorkData[];
 }
 
-export function HomePage({
-	initialWorks,
-	initialVideos,
-	initialAudioButtons,
-	allAgesWorks,
-}: HomePageProps) {
+export function HomePage({ initialAudioButtons }: HomePageProps) {
 	const { showR18Content } = useAgeVerification();
-
-	// 年齢確認状態に基づいて適切な作品データを選択
-	const worksToShow = showR18Content ? initialWorks : allAgesWorks;
 
 	return (
 		<div>
@@ -139,66 +128,15 @@ export function HomePage({
 				</div>
 			</section>
 
-			{/* 新着動画セクション - 遅延読み込み最適化 */}
-			<section
-				className="py-8 sm:py-12 bg-suzuka-100"
-				style={{ contentVisibility: "auto", containIntrinsicSize: "340px" }}
-			>
-				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex items-center justify-between mb-6 sm:mb-8">
-						<div>
-							<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
-								📹 新着動画
-							</h2>
-							<p className="text-sm sm:text-base text-muted-foreground">
-								涼花みなせさんの最新動画をチェック！
-							</p>
-						</div>
-						<Button asChild variant="outline">
-							<Link href="/videos" className="font-medium">
-								すべて見る
-							</Link>
-						</Button>
-					</div>
-					<Suspense fallback={<LoadingSkeleton variant="carousel" height={300} />}>
-						<LazyFeaturedVideosCarousel videos={initialVideos} />
-					</Suspense>
-				</div>
-			</section>
+			{/* 新着動画セクション - クライアントサイドで遅延読み込み */}
+			<Suspense fallback={<LoadingSkeleton variant="carousel" height={300} />}>
+				<LazyVideosSection />
+			</Suspense>
 
-			{/* 新着作品セクション - R18フィルタリング対応・遅延読み込み最適化 */}
-			<section
-				className="py-8 sm:py-12 bg-background"
-				style={{ contentVisibility: "auto", containIntrinsicSize: "380px" }}
-			>
-				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex items-center justify-between mb-6 sm:mb-8">
-						<div>
-							<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
-								🎭 新着作品
-								{!showR18Content && (
-									<span className="ml-2 text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-										全年齢対象
-									</span>
-								)}
-							</h2>
-							<p className="text-sm sm:text-base text-muted-foreground">
-								{showR18Content
-									? "涼花みなせさんの最新作品をチェック！"
-									: "年齢制限のない作品をお楽しみください"}
-							</p>
-						</div>
-						<Button asChild variant="outline">
-							<Link href="/works" className="font-medium">
-								すべて見る
-							</Link>
-						</Button>
-					</div>
-					<Suspense fallback={<LoadingSkeleton variant="carousel" height={350} />}>
-						<LazyFeaturedWorksCarousel works={worksToShow} />
-					</Suspense>
-				</div>
-			</section>
+			{/* 新着作品セクション - クライアントサイドで遅延読み込み */}
+			<Suspense fallback={<LoadingSkeleton variant="carousel" height={350} />}>
+				<LazyWorksSection />
+			</Suspense>
 
 			{/* コミュニティセクション - 遅延読み込み最適化 */}
 			<section
