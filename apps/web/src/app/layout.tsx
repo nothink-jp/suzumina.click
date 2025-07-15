@@ -9,7 +9,6 @@ import {
 } from "@/components/analytics/google-tag-manager";
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import { AgeVerificationWrapper } from "@/components/consent/age-verification-wrapper";
-import { ConsentDebugger } from "@/components/consent/consent-debugger";
 import { ConsentModeScript } from "@/components/consent/consent-mode-script";
 import { CookieConsentBanner } from "@/components/consent/cookie-consent-banner";
 import SiteFooter from "@/components/layout/site-footer";
@@ -129,7 +128,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 							<SiteFooter />
 							<Toaster />
 							<CookieConsentBanner />
-							<ConsentDebugger />
 						</SessionProvider>
 					</AgeVerificationWrapper>
 				</AgeVerificationProvider>
