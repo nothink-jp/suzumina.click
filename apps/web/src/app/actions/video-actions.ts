@@ -452,6 +452,98 @@ export async function getVideosForAdmin(params?: {
 	}
 }
 
+// ヘルパー関数：動画リフレッシュの認証チェック
+async function validateVideoRefreshAuth(
+	videoId: string,
+): Promise<{ success: true; user: { discordId: string } } | { success: false; error: string }> {
+	const user = await requireAuth();
+	if (user.role !== "admin") {
+		logger.warn("管理者権限が必要", { userId: user.discordId, videoId });
+		return {
+			success: false,
+			error: "この操作には管理者権限が必要です",
+		};
+	}
+
+	if (!videoId || typeof videoId !== "string") {
+		return {
+			success: false,
+			error: "動画IDが指定されていません",
+		};
+	}
+
+	return { success: true, user };
+}
+
+// ヘルパー関数：YouTube APIから動画データを取得
+async function fetchYouTubeVideoData(
+	videoId: string,
+): Promise<{ success: true; data: unknown } | { success: false; error: string }> {
+	const API_KEY = process.env.YOUTUBE_API_KEY;
+	if (!API_KEY) {
+		return {
+			success: false,
+			error: "YouTube API設定が見つかりません",
+		};
+	}
+
+	const response = await fetch(
+		`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,contentDetails,statistics&key=${API_KEY}`,
+	);
+
+	if (!response.ok) {
+		return {
+			success: false,
+			error: "YouTube APIからのデータ取得に失敗しました",
+		};
+	}
+
+	const data = await response.json();
+	if (!data.items || data.items.length === 0) {
+		return {
+			success: false,
+			error: "指定された動画がYouTubeで見つかりません",
+		};
+	}
+
+	return { success: true, data };
+}
+
+// ヘルパー関数：YouTube APIレスポンスから更新データを構築
+function buildVideoUpdateData(apiData: unknown): Record<string, unknown> {
+	const data = apiData as { items: unknown[] };
+	const video = data.items[0] as {
+		snippet: {
+			title: string;
+			description?: string;
+			thumbnails?: {
+				maxresdefault?: { url: string };
+				high?: { url: string };
+			};
+		};
+		contentDetails?: { duration?: string };
+		statistics?: { viewCount?: string; likeCount?: string; commentCount?: string };
+	};
+	const snippet = video.snippet;
+	const contentDetails = video.contentDetails;
+	const statistics = video.statistics;
+
+	return {
+		title: snippet.title,
+		description: snippet.description || "",
+		thumbnailUrl: snippet.thumbnails?.maxresdefault?.url || snippet.thumbnails?.high?.url || "",
+		duration: contentDetails?.duration,
+		statistics: {
+			viewCount: statistics?.viewCount ? Number.parseInt(statistics.viewCount, 10) : undefined,
+			likeCount: statistics?.likeCount ? Number.parseInt(statistics.likeCount, 10) : undefined,
+			commentCount: statistics?.commentCount
+				? Number.parseInt(statistics.commentCount, 10)
+				: undefined,
+		},
+		lastFetchedAt: new Date().toISOString(),
+	};
+}
+
 /**
  * 管理者用：動画データをリフレッシュするServer Action
  */
@@ -461,75 +553,24 @@ export async function refreshVideoData(
 	try {
 		logger.info("動画データリフレッシュを開始", { videoId });
 
-		// 認証チェック（管理者権限必須）
-		const user = await requireAuth();
-		if (user.role !== "admin") {
-			logger.warn("管理者権限が必要", { userId: user.discordId, videoId });
-			return {
-				success: false,
-				error: "この操作には管理者権限が必要です",
-			};
+		// 認証チェック
+		const authResult = await validateVideoRefreshAuth(videoId);
+		if (!authResult.success) {
+			return authResult;
 		}
 
-		if (!videoId || typeof videoId !== "string") {
-			return {
-				success: false,
-				error: "動画IDが指定されていません",
-			};
+		// YouTube APIからデータ取得
+		const apiResult = await fetchYouTubeVideoData(videoId);
+		if (!apiResult.success) {
+			return apiResult;
 		}
 
-		// YouTube Data APIから最新情報を取得（実装は省略、実際はYouTube APIを呼び出し）
-		const API_KEY = process.env.YOUTUBE_API_KEY;
-		if (!API_KEY) {
-			return {
-				success: false,
-				error: "YouTube API設定が見つかりません",
-			};
-		}
-
-		const response = await fetch(
-			`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,contentDetails,statistics&key=${API_KEY}`,
-		);
-
-		if (!response.ok) {
-			return {
-				success: false,
-				error: "YouTube APIからのデータ取得に失敗しました",
-			};
-		}
-
-		const data = await response.json();
-		if (!data.items || data.items.length === 0) {
-			return {
-				success: false,
-				error: "指定された動画がYouTubeで見つかりません",
-			};
-		}
-
-		const video = data.items[0];
-		const snippet = video.snippet;
-		const contentDetails = video.contentDetails;
-		const statistics = video.statistics;
+		// 更新データの構築
+		const updateData = buildVideoUpdateData(apiResult.data);
 
 		// Firestoreを更新
 		const firestore = getFirestore();
 		const videoRef = firestore.collection("videos").doc(videoId);
-
-		const updateData = {
-			title: snippet.title,
-			description: snippet.description || "",
-			thumbnailUrl: snippet.thumbnails?.maxresdefault?.url || snippet.thumbnails?.high?.url || "",
-			duration: contentDetails?.duration,
-			statistics: {
-				viewCount: statistics?.viewCount ? Number.parseInt(statistics.viewCount, 10) : undefined,
-				likeCount: statistics?.likeCount ? Number.parseInt(statistics.likeCount, 10) : undefined,
-				commentCount: statistics?.commentCount
-					? Number.parseInt(statistics.commentCount, 10)
-					: undefined,
-			},
-			lastFetchedAt: new Date().toISOString(),
-		};
-
 		await videoRef.update(updateData);
 
 		// キャッシュの無効化
@@ -538,7 +579,7 @@ export async function refreshVideoData(
 
 		logger.info("動画データリフレッシュが正常に完了", {
 			videoId,
-			refreshedBy: user.discordId,
+			refreshedBy: authResult.user.discordId,
 		});
 
 		return {

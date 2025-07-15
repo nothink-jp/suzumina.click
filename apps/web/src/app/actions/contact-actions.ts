@@ -93,6 +93,93 @@ export async function submitContactForm(
 	}
 }
 
+// ヘルパー関数：お問い合わせ更新の認証チェック
+async function validateContactUpdateAuth(
+	contactId: string,
+): Promise<{ success: true; user: { discordId: string } } | { success: false; error: string }> {
+	const user = await requireAuth();
+	if (user.role !== "admin") {
+		logger.warn("管理者権限が必要", { userId: user.discordId, contactId });
+		return {
+			success: false,
+			error: "この操作には管理者権限が必要です",
+		};
+	}
+
+	if (!contactId || typeof contactId !== "string") {
+		return {
+			success: false,
+			error: "お問い合わせIDが指定されていません",
+		};
+	}
+
+	return { success: true, user };
+}
+
+// ヘルパー関数：お問い合わせの存在確認
+async function validateContactExists(
+	contactId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+	const firestore = getFirestore();
+	const contactRef = firestore.collection("contacts").doc(contactId);
+	const contactDoc = await contactRef.get();
+
+	if (!contactDoc.exists) {
+		return {
+			success: false,
+			error: "指定されたお問い合わせが見つかりません",
+		};
+	}
+
+	return { success: true };
+}
+
+// ヘルパー関数：入力データのバリデーションと更新データ構築
+function validateAndBuildContactUpdateData(
+	input: {
+		status?: ContactStatus;
+		priority?: ContactPriority;
+		adminNote?: string;
+	},
+	userId: string,
+): { success: true; data: Record<string, unknown> } | { success: false; error: string } {
+	const updateData: Record<string, unknown> = {
+		updatedAt: new Date().toISOString(),
+		handledBy: userId,
+	};
+
+	// ステータスのバリデーション
+	if (input.status !== undefined) {
+		const validStatuses: ContactStatus[] = ["new", "reviewing", "resolved"];
+		if (!validStatuses.includes(input.status)) {
+			return {
+				success: false,
+				error: "無効なステータスが指定されました",
+			};
+		}
+		updateData.status = input.status;
+	}
+
+	// 優先度のバリデーション
+	if (input.priority !== undefined) {
+		const validPriorities: ContactPriority[] = ["low", "medium", "high"];
+		if (!validPriorities.includes(input.priority)) {
+			return {
+				success: false,
+				error: "無効な優先度が指定されました",
+			};
+		}
+		updateData.priority = input.priority;
+	}
+
+	// 管理者メモの設定
+	if (input.adminNote !== undefined) {
+		updateData.adminNote = input.adminNote;
+	}
+
+	return { success: true, data: updateData };
+}
+
 /**
  * 管理者用：お問い合わせ状態を更新するServer Action
  */
@@ -107,77 +194,36 @@ export async function updateContactStatus(
 	try {
 		logger.info("お問い合わせ状態更新を開始", { contactId });
 
-		// 認証チェック（管理者権限必須）
-		const user = await requireAuth();
-		if (user.role !== "admin") {
-			logger.warn("管理者権限が必要", { userId: user.discordId, contactId });
-			return {
-				success: false,
-				error: "この操作には管理者権限が必要です",
-			};
+		// 認証チェック
+		const authResult = await validateContactUpdateAuth(contactId);
+		if (!authResult.success) {
+			return authResult;
 		}
 
-		if (!contactId || typeof contactId !== "string") {
-			return {
-				success: false,
-				error: "お問い合わせIDが指定されていません",
-			};
-		}
-
-		const firestore = getFirestore();
-		const contactRef = firestore.collection("contacts").doc(contactId);
-
-		// お問い合わせの存在確認
-		const contactDoc = await contactRef.get();
-		if (!contactDoc.exists) {
-			return {
-				success: false,
-				error: "指定されたお問い合わせが見つかりません",
-			};
+		// お問い合わせ存在確認
+		const existsResult = await validateContactExists(contactId);
+		if (!existsResult.success) {
+			return existsResult;
 		}
 
 		// 更新データの構築
-		const updateData: Record<string, unknown> = {
-			updatedAt: new Date().toISOString(),
-			handledBy: user.discordId,
-		};
-
-		if (input.status !== undefined) {
-			const validStatuses: ContactStatus[] = ["new", "reviewing", "resolved"];
-			if (!validStatuses.includes(input.status)) {
-				return {
-					success: false,
-					error: "無効なステータスが指定されました",
-				};
-			}
-			updateData.status = input.status;
-		}
-
-		if (input.priority !== undefined) {
-			const validPriorities: ContactPriority[] = ["low", "medium", "high"];
-			if (!validPriorities.includes(input.priority)) {
-				return {
-					success: false,
-					error: "無効な優先度が指定されました",
-				};
-			}
-			updateData.priority = input.priority;
-		}
-
-		if (input.adminNote !== undefined) {
-			updateData.adminNote = input.adminNote;
+		const dataResult = validateAndBuildContactUpdateData(input, authResult.user.discordId);
+		if (!dataResult.success) {
+			return dataResult;
 		}
 
 		// Firestoreを更新
-		await contactRef.update(updateData);
+		const firestore = getFirestore();
+		const contactRef = firestore.collection("contacts").doc(contactId);
+		await contactRef.update(dataResult.data);
 
 		// キャッシュの無効化
 		revalidatePath("/admin/contacts");
 
 		logger.info("お問い合わせ状態更新が正常に完了", {
 			contactId,
-			updatedBy: user.discordId,
-			updatedFields: Object.keys(updateData),
+			updatedBy: authResult.user.discordId,
+			updatedFields: Object.keys(dataResult.data),
 		});
 
 		return {

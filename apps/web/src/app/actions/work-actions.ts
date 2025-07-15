@@ -13,6 +13,78 @@ import { requireAuth } from "@/components/system/protected-route";
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 
+// ヘルパー関数：作品更新の認証チェック
+async function validateWorkUpdateAuth(
+	workId: string,
+): Promise<{ success: true; user: { discordId: string } } | { success: false; error: string }> {
+	const user = await requireAuth();
+	if (user.role !== "admin") {
+		logger.warn("管理者権限が必要", { userId: user.discordId, workId });
+		return {
+			success: false,
+			error: "この操作には管理者権限が必要です",
+		};
+	}
+
+	if (!workId || typeof workId !== "string") {
+		return {
+			success: false,
+			error: "作品IDが指定されていません",
+		};
+	}
+
+	return { success: true, user };
+}
+
+// ヘルパー関数：作品の存在確認
+async function validateWorkExists(
+	workId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+	const firestore = getFirestore();
+	const workRef = firestore.collection("dlsiteWorks").doc(workId);
+	const workDoc = await workRef.get();
+
+	if (!workDoc.exists) {
+		return {
+			success: false,
+			error: "指定された作品が見つかりません",
+		};
+	}
+
+	return { success: true };
+}
+
+// ヘルパー関数：作品更新データの構築
+function buildWorkUpdateData(input: {
+	title?: string;
+	description?: string;
+	price?: { current: number; original?: number; discount?: number };
+	tags?: string[];
+	isOnSale?: boolean;
+}): Record<string, unknown> {
+	const updateData: Record<string, unknown> = {
+		updatedAt: new Date().toISOString(),
+	};
+
+	if (input.title !== undefined) {
+		updateData.title = input.title;
+	}
+	if (input.description !== undefined) {
+		updateData.description = input.description;
+	}
+	if (input.price !== undefined) {
+		updateData.price = input.price;
+	}
+	if (input.tags !== undefined) {
+		updateData.genres = input.tags; // DLsite作品のタグはgenresフィールド
+	}
+	if (input.isOnSale !== undefined) {
+		updateData.onSale = input.isOnSale ? 1 : 0; // DLsiteのonSaleは数値
+	}
+
+	return updateData;
+}
+
 /**
  * 管理者用：作品情報を更新するServer Action
  */
@@ -29,57 +101,24 @@ export async function updateWork(
 	try {
 		logger.info("作品情報更新を開始", { workId });
 
-		// 認証チェック（管理者権限必須）
-		const user = await requireAuth();
-		if (user.role !== "admin") {
-			logger.warn("管理者権限が必要", { userId: user.discordId, workId });
-			return {
-				success: false,
-				error: "この操作には管理者権限が必要です",
-			};
+		// 認証チェック
+		const authResult = await validateWorkUpdateAuth(workId);
+		if (!authResult.success) {
+			return authResult;
 		}
 
-		if (!workId || typeof workId !== "string") {
-			return {
-				success: false,
-				error: "作品IDが指定されていません",
-			};
-		}
-
-		const firestore = getFirestore();
-		const workRef = firestore.collection("dlsiteWorks").doc(workId);
-
-		// 作品の存在確認
-		const workDoc = await workRef.get();
-		if (!workDoc.exists) {
-			return {
-				success: false,
-				error: "指定された作品が見つかりません",
-			};
+		// 作品存在確認
+		const existsResult = await validateWorkExists(workId);
+		if (!existsResult.success) {
+			return existsResult;
 		}
 
 		// 更新データの構築
-		const updateData: Record<string, unknown> = {
-			updatedAt: new Date().toISOString(),
-		};
-
-		if (input.title !== undefined) {
-			updateData.title = input.title;
-		}
-		if (input.description !== undefined) {
-			updateData.description = input.description;
-		}
-		if (input.price !== undefined) {
-			updateData.price = input.price;
-		}
-		if (input.tags !== undefined) {
-			updateData.genres = input.tags; // DLsite作品のタグはgenresフィールド
-		}
-		if (input.isOnSale !== undefined) {
-			updateData.onSale = input.isOnSale ? 1 : 0; // DLsiteのonSaleは数値
-		}
+		const updateData = buildWorkUpdateData(input);
 
 		// Firestoreを更新
+		const firestore = getFirestore();
+		const workRef = firestore.collection("dlsiteWorks").doc(workId);
 		await workRef.update(updateData);
 
 		// キャッシュの無効化
@@ -88,7 +127,7 @@ export async function updateWork(
 
 		logger.info("作品情報更新が正常に完了", {
 			workId,
-			updatedBy: user.discordId,
+			updatedBy: authResult.user.discordId,
 			updatedFields: Object.keys(updateData),
 		});
 

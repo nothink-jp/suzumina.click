@@ -22,23 +22,23 @@ import * as logger from "@/lib/logger";
 async function validateUserUpdateAuth(
 	userId: string,
 	currentUser: { role: string; discordId: string },
-) {
+): Promise<{ success: true } | { success: false; error: string }> {
 	if (currentUser.role !== "admin") {
 		logger.warn("管理者権限が必要", { userId: currentUser.discordId, targetUserId: userId });
-		return { success: false, error: "この操作には管理者権限が必要です" };
+		return { success: false as const, error: "この操作には管理者権限が必要です" };
 	}
 
 	if (userId === currentUser.discordId) {
-		return { success: false, error: "自分自身のロールや状態は変更できません" };
+		return { success: false as const, error: "自分自身のロールや状態は変更できません" };
 	}
 
-	return { success: true };
+	return { success: true as const };
 }
 
 // ヘルパー関数：更新データの構築
 function buildUpdateData(
 	input: UpdateUserInput & { role?: "member" | "moderator" | "admin"; isActive?: boolean },
-) {
+): { success: true; data: Record<string, unknown> } | { success: false; error: string } {
 	const updateData: Record<string, unknown> = {
 		updatedAt: new Date().toISOString(),
 	};
@@ -58,7 +58,7 @@ function buildUpdateData(
 	if ("role" in input && input.role !== undefined) {
 		const validRoles = ["member", "moderator", "admin"];
 		if (!validRoles.includes(input.role)) {
-			return { success: false, error: "無効なロールが指定されました", data: null };
+			return { success: false as const, error: "無効なロールが指定されました" };
 		}
 		updateData.role = input.role;
 	}
@@ -67,7 +67,7 @@ function buildUpdateData(
 		updateData.isActive = input.isActive;
 	}
 
-	return { success: true, data: updateData };
+	return { success: true as const, data: updateData };
 }
 
 /**
