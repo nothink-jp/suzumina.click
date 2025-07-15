@@ -63,6 +63,12 @@
 				"useNumberNamespace": "error",
 				"noInferrableTypes": "error",
 				"noUselessElse": "error"
+			},
+			"complexity": {
+				"noExcessiveCognitiveComplexity": "warn"
+			},
+			"suspicious": {
+				"noExplicitAny": "warn"
 			}
 		}
 	}
