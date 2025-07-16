@@ -17,15 +17,32 @@ export function LoadingSkeleton({
 	switch (variant) {
 		case "carousel":
 			return (
-				<div className={`animate-pulse ${className}`} data-testid="loading-skeleton-carousel">
-					<div className="flex gap-4 overflow-hidden">
-						{Array.from({ length: 4 }).map((_, i) => (
-							<div
-								key={i}
-								className="flex-shrink-0 w-64 bg-gray-200 rounded-lg"
-								style={{ height: `${height}px` }}
-							/>
-						))}
+				<div
+					className={`animate-pulse w-full ${className}`}
+					data-testid="loading-skeleton-carousel"
+				>
+					{/* GenericCarouselのCarousel構造を模倣 */}
+					<div className="relative">
+						{/* CarouselContentと同じマージン設定 */}
+						<div className="flex -ml-2 md:-ml-4 overflow-hidden">
+							{Array.from({ length: 4 }).map((_, i) => (
+								<div
+									key={i}
+									className="pl-2 md:pl-4 min-w-0"
+									style={{
+										// GenericCarouselのCarouselItemと同じサイズ設定
+										flexBasis: "clamp(240px, 45vw, 320px)",
+										maxWidth: "320px",
+									}}
+								>
+									{/* 実際のカード構造を模倣 */}
+									<div
+										className="bg-gray-200 rounded-lg w-full"
+										style={{ height: `${height}px` }}
+									/>
+								</div>
+							))}
+						</div>
 					</div>
 				</div>
 			);

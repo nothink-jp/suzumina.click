@@ -1,6 +1,6 @@
 # クイックリファレンス
 
-suzumina.click 開発者向け即座参照ドキュメント（v0.3.3）
+suzumina.click 開発者向け即座参照ドキュメント（v0.3.4）
 
 ## ⚡ 緊急コマンド
 
@@ -45,10 +45,9 @@ NEXTAUTH_URL="https://suzumina.click"
 # Google Cloud (開発時)
 GOOGLE_CLOUD_PROJECT="suzumina-click"
 
-# Google Analytics・AdSense (本番)
+# Google Analytics (本番) - 非営利運営v0.3.4+
 NEXT_PUBLIC_GA_MEASUREMENT_ID="G-9SYZ48LBPH"
 NEXT_PUBLIC_GTM_ID="GTM-W7QT5PCR"
-NEXT_PUBLIC_ADSENSE_CLIENT_ID="ca-pub-8077945848616354"
 
 # 管理者権限は Firestore で管理 (環境変数使用なし)
 # role="admin" かつ isActive=true のユーザーが管理者権限を持つ

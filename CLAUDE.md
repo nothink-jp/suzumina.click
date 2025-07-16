@@ -15,11 +15,12 @@
 - **検索システム**: 全コンテンツ横断検索・高度フィルタリング
 - **管理者機能**: 完全なコンテンツ・ユーザー管理インターフェース
 
-### Current Status: **PRODUCTION READY v0.3.3**
+### Current Status: **PRODUCTION READY v0.3.4**
 - 本番稼働中: https://suzumina.click
-- 559+件テストスイート全合格
+- 960+件テストスイート全合格
 - TypeScript strict mode完全準拠
 - パフォーマンス最適化完了（音声ボタン96件表示・87%メモリ削減）
+- UI/UX最適化完了（非営利運営への移行・ローディング体験向上）
 
 ---
 
@@ -145,7 +146,6 @@ YOUTUBE_API_KEY=your-youtube-api-key
 # Public variables
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
-NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
 ```
 
 ---
@@ -188,7 +188,8 @@ NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
 - **salesCount feature**: Completely discontinued (July 2025)
 - **Regional differences**: Handled by union-based data collection
 - **YouTube Player API**: postMessage warnings are harmless (Google internal)
-- **AdSense integration**: Some CSP warnings in browsers are normal
+- **AdSense integration**: REMOVED - Non-profit operation since v0.3.4
+- **Amazon Associates**: REMOVED - Non-profit operation since v0.3.4
 - **Firebase commands**: NOT available - use Firestore admin SDK only
 
 ---
@@ -205,6 +206,18 @@ NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
 ---
 
 ## 📝 RECENT UPDATES
+
+### v0.3.4 (2025-07-16)
+- **Non-profit Operation Transition COMPLETED**
+  - Complete Google AdSense integration removal (ASMR content policy rejection)
+  - Amazon Associates integration removal
+  - Cookie consent system simplification (3 categories: necessary, analytics, personalization)
+  - Site operation model updated to non-profit status
+- **UI/UX Enhancement COMPLETED**
+  - Fixed placeholder image blur effect issue
+  - Carousel loading skeleton alignment optimization  
+  - LoadingSkeleton component structure redesign for GenericCarousel compatibility
+  - Cookie consent debugger component removal (GA4 stable)
 
 ### v0.3.3 (2025-07-15)
 - **Audio Button Performance Optimization COMPLETED**
@@ -226,5 +239,5 @@ NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
 
 ---
 
-**Last Updated**: 2025-07-15  
-**Document Version**: 3.0 (Optimized for AI Processing)
+**Last Updated**: 2025-07-16  
+**Document Version**: 3.1 (Non-profit Operation & UI Optimization)

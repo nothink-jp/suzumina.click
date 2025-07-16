@@ -7,7 +7,7 @@ describe("LoadingSkeleton", () => {
 		render(<LoadingSkeleton variant="carousel" />);
 		const skeleton = screen.getByTestId("loading-skeleton-carousel");
 		expect(skeleton).toHaveClass("animate-pulse");
-		expect(skeleton.querySelectorAll(".flex-shrink-0")).toHaveLength(4);
+		expect(skeleton.querySelectorAll(".bg-gray-200")).toHaveLength(4);
 	});
 
 	it("フォームバリアントが正しくレンダリングされる", () => {

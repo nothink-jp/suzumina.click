@@ -2,6 +2,39 @@
 
 suzumina.clickプロジェクトの変更履歴
 
+## [v0.3.4] - 2025-07-16
+
+### 🚫 非営利運営への移行完了
+
+- **Google AdSense統合完全削除**: ASMR内容ポリシー審査不通過による全面撤退
+  - AdSenseスクリプト・環境変数・CSP設定完全削除
+  - GoogleAdSenseScript・テストファイル等関連コンポーネント除去
+  - next.config.mjs CSP設定からAdSense関連ドメイン削除
+- **Amazon Associates統合削除**: 非営利運営方針による収益化機能撤退
+  - 環境変数・アフィリエイト関連設定完全削除
+  - サイト利用規約・Cookie同意システム更新
+- **Cookie同意システム簡素化**: 広告カテゴリ完全削除
+  - 4カテゴリ（必須・機能・分析・広告）→ 3カテゴリ（必須・分析・個人化）
+  - CookiePreferencesPanel・ConsentDebugger包括的リファクタリング
+
+### 🎨 UI/UX最適化完了
+
+- **プレースホルダー画像ブラー効果修正**: ThumbnailImageコンポーネント最適化
+  - Next.js Image placeholder="blur"をプレースホルダー画像に誤適用修正
+  - 条件分岐実装: 実画像のみblur効果・SVGプレースホルダーは"empty"
+- **カルーセルローディングスケルトン完全再設計**: LoadingSkeleton構造最適化
+  - GenericCarousel構造との完全一致実装
+  - レスポンシブサイズ設定統合: clamp(240px, 45vw, 320px)
+  - CarouselContent・CarouselItem階層構造正確模倣
+  - 右側余白問題・レイアウトシフト問題根本解決
+- **ConsentDebuggerコンポーネント削除**: Google Analytics 4安定化による不要機能除去
+
+### 🛡️ 品質保証強化
+
+- **960+件テストスイート全合格**: UI/UX変更に伴うテスト更新・検証完了
+- **TypeScript strict mode完全準拠**: 型安全性維持・コード品質向上
+- **Biomeフォーマット準拠**: LoadingSkeletonテスト更新・コード一貫性確保
+
 ## [v0.3.3] - 2025-07-15
 
 ### 🎵 音声ボタンパフォーマンス最適化完了
