@@ -66,6 +66,7 @@ export const FirestoreAudioButtonSchema = AudioButtonBaseSchema.extend({
 	// 統計情報
 	playCount: z.number().int().min(0).default(0),
 	likeCount: z.number().int().min(0).default(0),
+	dislikeCount: z.number().int().min(0).default(0),
 	favoriteCount: z.number().int().min(0).default(0),
 
 	// 管理情報
@@ -96,6 +97,7 @@ export const FrontendAudioButtonSchema = AudioButtonBaseSchema.extend({
 	// 統計情報
 	playCount: z.number().int().min(0),
 	likeCount: z.number().int().min(0),
+	dislikeCount: z.number().int().min(0),
 	favoriteCount: z.number().int().min(0),
 
 	// 管理情報
@@ -161,6 +163,8 @@ export const AudioButtonQuerySchema = z.object({
 	playCountMax: z.number().int().min(0).optional(),
 	likeCountMin: z.number().int().min(0).optional(),
 	likeCountMax: z.number().int().min(0).optional(),
+	dislikeCountMin: z.number().int().min(0).optional(),
+	dislikeCountMax: z.number().int().min(0).optional(),
 	favoriteCountMin: z.number().int().min(0).optional(),
 	favoriteCountMax: z.number().int().min(0).optional(),
 	durationMin: z.number().int().min(0).optional(), // 秒単位
@@ -292,7 +296,8 @@ export function convertToFrontendAudioButton(
 		// YouTubeのサムネイル情報を生成
 		sourceVideoThumbnailUrl: `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
 
-		// お気に入り数のデフォルト値
+		// 統計情報のデフォルト値
+		dislikeCount: data.dislikeCount || 0,
 		favoriteCount: data.favoriteCount || 0,
 	};
 
@@ -316,6 +321,7 @@ export function convertToFrontendAudioButton(
 			isPublic: data.isPublic,
 			playCount: data.playCount,
 			likeCount: data.likeCount,
+			dislikeCount: data.dislikeCount || 0,
 			favoriteCount: data.favoriteCount || 0,
 			createdAt: data.createdAt,
 			updatedAt: data.updatedAt,
@@ -370,9 +376,12 @@ export const UpdateAudioButtonStatsSchema = z.object({
 	id: z.string().min(1),
 	playCount: z.number().int().min(0).optional(),
 	likeCount: z.number().int().min(0).optional(),
+	dislikeCount: z.number().int().min(0).optional(),
 	incrementPlayCount: z.boolean().optional(),
 	incrementLikeCount: z.boolean().optional(),
 	decrementLikeCount: z.boolean().optional(),
+	incrementDislikeCount: z.boolean().optional(),
+	decrementDislikeCount: z.boolean().optional(),
 });
 
 export type UpdateAudioButtonStats = z.infer<typeof UpdateAudioButtonStatsSchema>;
@@ -400,6 +409,7 @@ export function convertCreateInputToFirestoreAudioButton(
 		isPublic: input.isPublic,
 		playCount: 0,
 		likeCount: 0,
+		dislikeCount: 0,
 		favoriteCount: 0,
 		createdAt: now,
 		updatedAt: now,
@@ -447,6 +457,8 @@ export function filterAudioButtons(
 		playCountMax?: number;
 		likeCountMin?: number;
 		likeCountMax?: number;
+		dislikeCountMin?: number;
+		dislikeCountMax?: number;
 		favoriteCountMin?: number;
 		favoriteCountMax?: number;
 		durationMin?: number;
@@ -462,6 +474,7 @@ export function filterAudioButtons(
 			matchesSearchText(button, filters.searchText) &&
 			matchesNumericRange(button.playCount, filters.playCountMin, filters.playCountMax) &&
 			matchesNumericRange(button.likeCount, filters.likeCountMin, filters.likeCountMax) &&
+			matchesNumericRange(button.dislikeCount, filters.dislikeCountMin, filters.dislikeCountMax) &&
 			matchesNumericRange(
 				button.favoriteCount,
 				filters.favoriteCountMin,
@@ -553,8 +566,12 @@ export function sortAudioButtons(
 				return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 			case "oldest":
 				return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-			case "popular":
-				return b.likeCount - a.likeCount;
+			case "popular": {
+				// ネットスコア（高評価 - 低評価）で判定
+				const aNetScore = a.likeCount - a.dislikeCount;
+				const bNetScore = b.likeCount - b.dislikeCount;
+				return bNetScore - aNetScore;
+			}
 			case "mostPlayed":
 				return b.playCount - a.playCount;
 			case "relevance":

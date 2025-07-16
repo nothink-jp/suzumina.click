@@ -549,6 +549,14 @@ export async function updateAudioButtonStats(
 			updateData.likeCount = FieldValue.increment(-1);
 		}
 
+		if (validatedUpdate.incrementDislikeCount) {
+			updateData.dislikeCount = FieldValue.increment(1);
+		}
+
+		if (validatedUpdate.decrementDislikeCount) {
+			updateData.dislikeCount = FieldValue.increment(-1);
+		}
+
 		// Firestoreを更新
 		await firestore.collection("audioButtons").doc(validatedUpdate.id).update(updateData);
 
@@ -616,6 +624,30 @@ export async function decrementLikeCount(
 	return await updateAudioButtonStats({
 		id,
 		decrementLikeCount: true,
+	});
+}
+
+/**
+ * 低評価数を増加させるServer Action
+ */
+export async function incrementDislikeCount(
+	id: string,
+): Promise<{ success: boolean; error?: string }> {
+	return await updateAudioButtonStats({
+		id,
+		incrementDislikeCount: true,
+	});
+}
+
+/**
+ * 低評価数を減少させるServer Action
+ */
+export async function decrementDislikeCount(
+	id: string,
+): Promise<{ success: boolean; error?: string }> {
+	return await updateAudioButtonStats({
+		id,
+		decrementDislikeCount: true,
 	});
 }
 

@@ -3,6 +3,7 @@
  */
 
 import type { Query } from "@google-cloud/firestore";
+import { FieldValue } from "@google-cloud/firestore";
 import type {
 	AddFavoriteInput,
 	FavoriteListResult,
@@ -82,8 +83,7 @@ export async function addFavorite(
 			.collection("audioButtons")
 			.doc(input.audioButtonId)
 			.update({
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore FieldValue typing limitation
-				favoriteCount: (firestore as any).FieldValue.increment(1),
+				favoriteCount: FieldValue.increment(1),
 				updatedAt: new Date().toISOString(),
 			})
 			.catch((error) => {
@@ -133,8 +133,7 @@ export async function removeFavorite(
 			.collection("audioButtons")
 			.doc(input.audioButtonId)
 			.update({
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore FieldValue typing limitation
-				favoriteCount: (firestore as any).FieldValue.increment(-1),
+				favoriteCount: FieldValue.increment(-1),
 				updatedAt: new Date().toISOString(),
 			})
 			.catch((error) => {

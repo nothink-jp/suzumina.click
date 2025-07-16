@@ -39,6 +39,7 @@ const mockAudioButton: FrontendAudioButtonData = {
 	isPublic: true,
 	playCount: 5,
 	likeCount: 2,
+	dislikeCount: 0,
 	favoriteCount: 1,
 	createdAt: "2025-01-01T00:00:00.000Z",
 	updatedAt: "2025-01-01T00:00:00.000Z",

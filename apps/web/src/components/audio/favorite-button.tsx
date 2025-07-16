@@ -4,7 +4,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { toggleFavoriteAction } from "@/actions/favorites";
 
@@ -29,6 +29,12 @@ export function FavoriteButton({
 }: FavoriteButtonProps) {
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
+	const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
+
+	// Sync internal state when prop changes (important for testing)
+	useEffect(() => {
+		setIsFavorited(initialIsFavorited);
+	}, [initialIsFavorited]);
 
 	const handleToggle = () => {
 		if (!isAuthenticated) {
@@ -38,16 +44,26 @@ export function FavoriteButton({
 		}
 
 		startTransition(async () => {
+			const previousIsFavorited = isFavorited;
+
+			// 楽観的UI更新
+			setIsFavorited(!isFavorited);
+
 			try {
 				const result = await toggleFavoriteAction(audioButtonId);
 				if (result.success && result.isFavorited !== undefined) {
+					setIsFavorited(result.isFavorited);
 					toast.success(
 						result.isFavorited ? "お気に入りに追加しました" : "お気に入りから削除しました",
 					);
 				} else {
+					// エラー時は楽観的更新をロールバック
+					setIsFavorited(previousIsFavorited);
 					toast.error(result.error || "エラーが発生しました");
 				}
 			} catch (_error) {
+				// エラー時は楽観的更新をロールバック
+				setIsFavorited(previousIsFavorited);
 				toast.error("エラーが発生しました");
 			}
 		});
@@ -68,21 +84,21 @@ export function FavoriteButton({
 	return (
 		<div className={cn("flex items-center gap-2", className)}>
 			<Button
-				variant={initialIsFavorited ? "default" : "outline"}
+				variant={isFavorited ? "default" : "outline"}
 				size="icon"
 				className={cn(
 					sizeClasses[size],
-					initialIsFavorited && "bg-suzuka-500 hover:bg-suzuka-600",
+					isFavorited && "bg-suzuka-500 hover:bg-suzuka-600",
 					"transition-all duration-200",
 				)}
 				onClick={handleToggle}
 				disabled={isPending}
-				aria-label={initialIsFavorited ? "お気に入りから削除" : "お気に入りに追加"}
+				aria-label={isFavorited ? "お気に入りから削除" : "お気に入りに追加"}
 			>
 				<Heart
 					className={cn(
 						iconSizes[size],
-						initialIsFavorited ? "fill-current" : "",
+						isFavorited ? "fill-current" : "",
 						isPending && "animate-pulse",
 					)}
 				/>

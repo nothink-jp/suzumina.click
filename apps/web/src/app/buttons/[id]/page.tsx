@@ -11,7 +11,6 @@ import {
 	Heart,
 	Play,
 	Tag,
-	ThumbsDown,
 	ThumbsUp,
 	TrendingUp,
 	User,
@@ -22,13 +21,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { getFavoritesStatusAction } from "@/actions/favorites";
 import { getAudioButtonById, getAudioButtons } from "@/app/buttons/actions";
 import { getVideoById } from "@/app/videos/actions";
 import VideoCard from "@/app/videos/components/VideoCard";
+import { auth } from "@/auth";
 import { AudioButtonDeleteButton } from "@/components/audio/audio-button-delete-button";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import { FavoriteButton } from "@/components/audio/favorite-button";
-import { LikeButton } from "@/components/audio/like-button";
+import { LikeDislikeButtons } from "@/components/audio/like-dislike-buttons";
 import { getUserByDiscordId } from "@/lib/user-firestore";
 
 interface AudioButtonDetailPageProps {
@@ -485,6 +486,41 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 
 	const audioButton = result.data;
 
+	// ユーザーのセッションを取得
+	const session = await auth();
+	const isAuthenticated = !!session?.user;
+
+	// お気に入り状態を取得（認証済みの場合のみ）
+	let isFavorited = false;
+	let isLiked = false;
+	let isDisliked = false;
+
+	if (isAuthenticated && session?.user?.discordId) {
+		try {
+			const favoritesStatusMap = await getFavoritesStatusAction([audioButton.id]);
+			isFavorited = favoritesStatusMap.get(audioButton.id) || false;
+		} catch (_error) {
+			// お気に入り状態の取得に失敗した場合はfalse
+			isFavorited = false;
+		}
+
+		// 高評価・低評価状態を取得
+		try {
+			const { getLikeDislikeStatusAction } = await import("@/actions/dislikes");
+			const likeDislikeStatusMap = await getLikeDislikeStatusAction([audioButton.id]);
+			const status = likeDislikeStatusMap.get(audioButton.id) || {
+				isLiked: false,
+				isDisliked: false,
+			};
+			isLiked = status.isLiked;
+			isDisliked = status.isDisliked;
+		} catch (_error) {
+			// 高評価・低評価状態の取得に失敗した場合はfalse
+			isLiked = false;
+			isDisliked = false;
+		}
+	}
+
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-suzuka-50 via-background to-minase-50">
 			{/* パンくずナビゲーション */}
@@ -539,7 +575,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 											</span>
 											<span className="flex items-center gap-1">
 												<Clock className="h-4 w-4" />
-												{audioButton.endTime - audioButton.startTime}秒
+												{(audioButton.endTime - audioButton.startTime).toFixed(1)}秒
 											</span>
 											<span className="text-xs text-muted-foreground">
 												by {audioButton.createdByName}
@@ -633,33 +669,23 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 										{/* お気に入りボタン */}
 										<FavoriteButton
 											audioButtonId={audioButton.id}
-											isFavorited={false} // TODO: 実際のお気に入り状態を取得
+											isFavorited={isFavorited}
 											favoriteCount={audioButton.favoriteCount}
 											showCount={false}
 											size="sm"
 											className="flex items-center gap-1"
+											isAuthenticated={isAuthenticated}
 										/>
 
 										{/* 高評価・低評価ボタングループ */}
-										<div className="flex rounded-md border border-input">
-											{/* 高評価ボタン */}
-											<LikeButton
-												audioButtonId={audioButton.id}
-												initialLikeCount={audioButton.likeCount}
-												variant="outline"
-												size="sm"
-												className="flex items-center gap-1 border-0 rounded-l-md rounded-r-none border-r border-input"
-											/>
-
-											{/* 低評価ボタン */}
-											<Button
-												variant="outline"
-												size="sm"
-												className="flex items-center gap-1 border-0 rounded-r-md rounded-l-none"
-											>
-												<ThumbsDown className="h-4 w-4" />
-											</Button>
-										</div>
+										<LikeDislikeButtons
+											audioButtonId={audioButton.id}
+											initialLikeCount={audioButton.likeCount}
+											initialIsLiked={isLiked}
+											initialIsDisliked={isDisliked}
+											variant="outline"
+											size="sm"
+										/>
 									</div>
 								</div>
 

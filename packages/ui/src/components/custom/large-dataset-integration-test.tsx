@@ -70,6 +70,7 @@ const generateRealisticDataset = (size: number): FrontendAudioButtonData[] => {
 			isPublic: Math.random() > 0.1, // 90%が公開
 			playCount: Math.floor(Math.random() * 10000),
 			likeCount: Math.floor(Math.random() * 500),
+			dislikeCount: 0,
 			favoriteCount: Math.floor(Math.random() * 200),
 			createdAt: new Date(Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000).toISOString(),
 			updatedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),

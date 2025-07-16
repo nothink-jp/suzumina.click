@@ -70,6 +70,7 @@ const generateLargeDataset = (count: number): FrontendAudioButtonData[] => {
 		isPublic: true,
 		playCount: Math.floor(Math.random() * 1000),
 		likeCount: Math.floor(Math.random() * 100),
+		dislikeCount: 0,
 		favoriteCount: Math.floor(Math.random() * 50),
 		createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
 		updatedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),

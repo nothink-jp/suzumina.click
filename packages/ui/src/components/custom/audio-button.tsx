@@ -12,7 +12,20 @@
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { Popover, PopoverContent, PopoverTrigger } from "@suzumina.click/ui/components/ui/popover";
 import { cn } from "@suzumina.click/ui/lib/utils";
-import { Clock, ExternalLink, Heart, Info, Loader2, Pause, Play, User, Video } from "lucide-react";
+import {
+	Clock,
+	ExternalLink,
+	Heart,
+	Info,
+	Loader2,
+	Pause,
+	Play,
+	ThumbsDown,
+	ThumbsUp,
+	User,
+	Video,
+	Youtube,
+} from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { type AudioControls, AudioPlayer } from "./audio-player";
 import { HighlightText } from "./highlight-text";
@@ -27,6 +40,12 @@ interface AudioButtonProps {
 	// お気に入り関連
 	isFavorite?: boolean;
 	onFavoriteToggle?: () => void;
+	// いいね関連
+	isLiked?: boolean;
+	onLikeToggle?: () => void;
+	// 低評価関連
+	isDisliked?: boolean;
+	onDislikeToggle?: () => void;
 	// ハイライト関連
 	searchQuery?: string;
 	highlightClassName?: string;
@@ -38,6 +57,10 @@ interface AudioButtonPopoverContentProps {
 	youtubeUrl: string;
 	isFavorite: boolean;
 	onFavoriteToggle?: () => void;
+	isLiked: boolean;
+	onLikeToggle?: () => void;
+	isDisliked: boolean;
+	onDislikeToggle?: () => void;
 	showDetailLink: boolean;
 	onDetailClick?: () => void;
 	onPopoverClose: () => void;
@@ -51,6 +74,10 @@ function AudioButtonPopoverContent({
 	youtubeUrl,
 	isFavorite,
 	onFavoriteToggle,
+	isLiked,
+	onLikeToggle,
+	isDisliked,
+	onDislikeToggle,
 	showDetailLink,
 	onDetailClick,
 	onPopoverClose,
@@ -95,16 +122,35 @@ function AudioButtonPopoverContent({
 			<div className="space-y-2 text-sm text-muted-foreground">
 				<div className="flex items-center gap-2">
 					<Clock className="h-4 w-4" />
-					<span>{duration}秒</span>
+					<span>{duration.toFixed(1)}秒</span>
 				</div>
 				<div className="flex items-center gap-2">
 					<User className="h-4 w-4" />
-					<span>{audioButton.createdByName}</span>
+					<a
+						href={`/users/${audioButton.createdBy}`}
+						className="text-suzuka-600 hover:text-suzuka-700 hover:underline transition-colors"
+						onClick={(e) => e.stopPropagation()}
+					>
+						{audioButton.createdByName}
+					</a>
 				</div>
 				<div className="flex items-center gap-2">
 					<Video className="h-4 w-4" />
 					<span className="text-xs">再生: {audioButton.playCount}回</span>
 				</div>
+				{audioButton.sourceVideoTitle && (
+					<div className="flex items-center gap-2">
+						<Video className="h-4 w-4" />
+						<a
+							href={`/videos/${audioButton.sourceVideoId}`}
+							className="text-suzuka-600 hover:text-suzuka-700 hover:underline transition-colors text-xs truncate"
+							onClick={(e: React.MouseEvent) => e.stopPropagation()}
+							title={audioButton.sourceVideoTitle}
+						>
+							{audioButton.sourceVideoTitle}
+						</a>
+					</div>
+				)}
 			</div>
 
 			{/* タグ */}
@@ -135,7 +181,8 @@ function AudioButtonPopoverContent({
 			)}
 
 			{/* アクションボタン */}
-			<div className="flex gap-2 pt-2">
+			<div className="flex gap-2 pt-2 items-center">
+				{/* お気に入りボタン */}
 				{onFavoriteToggle && (
 					<button
 						type="button"
@@ -143,18 +190,66 @@ function AudioButtonPopoverContent({
 							e.stopPropagation();
 							onFavoriteToggle();
 						}}
+						aria-label={isFavorite ? "お気に入りを解除" : "お気に入りに追加"}
 						className={cn(
-							"flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex-1",
-							isFavorite
-								? "bg-red-100 text-red-700 hover:bg-red-200"
-								: "bg-gray-100 text-gray-700 hover:bg-gray-200",
+							"flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
+							isFavorite && "text-red-600",
 						)}
 					>
 						<Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
-						{isFavorite ? "お気に入り解除" : "お気に入り"}
 					</button>
 				)}
 
+				{/* 高評価・低評価ボタングループ */}
+				{onLikeToggle && (
+					<div className="flex rounded-md border border-input">
+						{/* 高評価ボタン */}
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onLikeToggle();
+							}}
+							className={cn(
+								"flex items-center gap-1 px-3 py-2 text-sm font-medium border-0 rounded-l-md rounded-r-none border-r border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
+								isLiked && "text-red-600",
+							)}
+						>
+							<ThumbsUp className={cn("h-4 w-4", isLiked && "fill-current")} />
+							<span>{audioButton.likeCount}</span>
+						</button>
+
+						{/* 低評価ボタン（YouTube方式：集計数は非表示） */}
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onDislikeToggle?.();
+							}}
+							className={cn(
+								"flex items-center justify-center w-10 h-10 border-0 rounded-r-md rounded-l-none bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
+								isDisliked && "text-blue-600",
+							)}
+							title={isDisliked ? "低評価を取り消す" : "低評価する"}
+						>
+							<ThumbsDown className={cn("h-4 w-4", isDisliked && "fill-current")} />
+						</button>
+					</div>
+				)}
+
+				{/* YouTubeボタン */}
+				<a
+					href={youtubeUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+					onClick={(e) => e.stopPropagation()}
+				>
+					<Youtube className="h-4 w-4" />
+					YouTube
+				</a>
+
+				{/* 詳細ページへのアイコンボタン */}
 				{showDetailLink && onDetailClick && (
 					<button
 						type="button"
@@ -163,23 +258,12 @@ function AudioButtonPopoverContent({
 							onDetailClick();
 							onPopoverClose();
 						}}
-						className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-suzuka-100 text-suzuka-700 hover:bg-suzuka-200 transition-colors flex-1"
+						aria-label="詳細ページを開く"
+						className="flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
 					>
 						<ExternalLink className="h-4 w-4" />
-						詳細
 					</button>
 				)}
-
-				<a
-					href={youtubeUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-					onClick={(e) => e.stopPropagation()}
-				>
-					<Video className="h-4 w-4" />
-					YouTube
-				</a>
 			</div>
 		</div>
 	);
@@ -197,6 +281,10 @@ export function AudioButton({
 	onDetailClick,
 	isFavorite = false,
 	onFavoriteToggle,
+	isLiked = false,
+	onLikeToggle,
+	isDisliked = false,
+	onDislikeToggle,
 	searchQuery,
 	highlightClassName,
 }: AudioButtonProps) {
@@ -319,6 +407,10 @@ export function AudioButton({
 						youtubeUrl={youtubeUrl}
 						isFavorite={isFavorite}
 						onFavoriteToggle={onFavoriteToggle}
+						isLiked={isLiked}
+						onLikeToggle={onLikeToggle}
+						isDisliked={isDisliked}
+						onDislikeToggle={onDislikeToggle}
 						showDetailLink={showDetailLink}
 						onDetailClick={onDetailClick}
 						onPopoverClose={() => setIsPopoverOpen(false)}

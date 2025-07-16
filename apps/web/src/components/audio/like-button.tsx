@@ -5,7 +5,8 @@ import { ThumbsUp } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { getLikesStatusAction, toggleLikeAction } from "@/actions/likes";
+import { getLikeDislikeStatusAction } from "@/actions/dislikes";
+import { toggleLikeAction } from "@/actions/likes";
 
 interface LikeButtonProps {
 	audioButtonId: string;
@@ -30,11 +31,12 @@ export function LikeButton({
 	const [isPending, startTransition] = useTransition();
 	const isAuthenticated = !!session?.user;
 
-	// ユーザーのいいね状態を取得
+	// ユーザーの高評価・低評価状態を取得
 	useEffect(() => {
 		if (isAuthenticated && !initialIsLiked) {
-			getLikesStatusAction([audioButtonId]).then((statusMap) => {
-				setIsLiked(statusMap.get(audioButtonId) || false);
+			getLikeDislikeStatusAction([audioButtonId]).then((statusMap) => {
+				const status = statusMap.get(audioButtonId) || { isLiked: false, isDisliked: false };
+				setIsLiked(status.isLiked);
 			});
 		}
 	}, [audioButtonId, isAuthenticated, initialIsLiked]);

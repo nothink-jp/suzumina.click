@@ -63,8 +63,16 @@ export async function toggleLikeAction(audioButtonId: string): Promise<{
 			.collection("likes")
 			.doc(audioButtonId);
 
-		const likeDoc = await userLikeRef.get();
+		const userDislikeRef = firestore
+			.collection("users")
+			.doc(user.discordId)
+			.collection("dislikes")
+			.doc(audioButtonId);
+
+		const [likeDoc, dislikeDoc] = await Promise.all([userLikeRef.get(), userDislikeRef.get()]);
+
 		const isCurrentlyLiked = likeDoc.exists;
+		const isCurrentlyDisliked = dislikeDoc.exists;
 
 		// トランザクションで整合性を保つ
 		await firestore.runTransaction(async (transaction) => {
@@ -77,6 +85,11 @@ export async function toggleLikeAction(audioButtonId: string): Promise<{
 					audioButtonId,
 					createdAt: new Date().toISOString(),
 				});
+
+				// 既に低評価が付いている場合は削除（相互排他）
+				if (isCurrentlyDisliked) {
+					transaction.delete(userDislikeRef);
+				}
 			}
 		});
 
@@ -94,11 +107,26 @@ export async function toggleLikeAction(audioButtonId: string): Promise<{
 			});
 		}
 
+		// 低評価が付いていた場合は、低評価数も減少
+		if (!isCurrentlyLiked && isCurrentlyDisliked) {
+			const { decrementDislikeCount } = await import("@/app/buttons/actions");
+			const dislikeUpdateResult = await decrementDislikeCount(audioButtonId);
+
+			if (!dislikeUpdateResult.success) {
+				logger.warn("低評価数の減少に失敗", {
+					audioButtonId,
+					userId: user.discordId,
+					error: dislikeUpdateResult.error,
+				});
+			}
+		}
+
 		logger.info("いいね状態を更新", {
 			audioButtonId,
 			userId: user.discordId,
 			wasLiked: isCurrentlyLiked,
 			nowLiked: !isCurrentlyLiked,
+			hadDislike: isCurrentlyDisliked,
 		});
 
 		return {

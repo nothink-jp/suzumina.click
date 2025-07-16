@@ -18,6 +18,84 @@ interface LogOptions {
 	[key: string]: unknown;
 }
 
+// エラーオブジェクトの型定義
+interface SerializableError {
+	message: string;
+	name?: string;
+	stack?: string;
+	code?: string;
+	details?: Record<string, unknown>;
+}
+
+// 未知のエラーオブジェクトの型定義
+interface UnknownErrorObject {
+	message?: unknown;
+	code?: unknown;
+	details?: unknown;
+}
+
+/**
+ * Errorオブジェクトをシリアライズ可能な形式に変換
+ */
+function serializeError(error: Error): SerializableError {
+	return {
+		message: error.message,
+		name: error.name,
+		stack: error.stack,
+	};
+}
+
+/**
+ * 未知のエラーオブジェクトをシリアライズ可能な形式に変換
+ */
+function serializeUnknownError(errorObj: UnknownErrorObject): SerializableError {
+	try {
+		const result: SerializableError = {
+			message: typeof errorObj.message === "string" ? errorObj.message : "Unknown error",
+			code: typeof errorObj.code === "string" ? errorObj.code : "UNKNOWN",
+		};
+
+		// details フィールドを安全に追加
+		if (errorObj.details && typeof errorObj.details === "object") {
+			result.details = errorObj.details as Record<string, unknown>;
+		}
+
+		return result;
+	} catch {
+		return {
+			message: "Error serialization failed",
+		};
+	}
+}
+
+/**
+ * エラーが含まれるオブジェクトを処理
+ */
+function processErrorObject(optionsOrError: Record<string, unknown>): Record<string, unknown> {
+	const errorObj = optionsOrError.error;
+
+	if (errorObj instanceof Error) {
+		optionsOrError.error = serializeError(errorObj);
+	} else if (errorObj && typeof errorObj === "object") {
+		optionsOrError.error = serializeUnknownError(errorObj as UnknownErrorObject);
+	}
+
+	return optionsOrError;
+}
+
+/**
+ * 基本的なログエントリを作成
+ */
+function createBaseLogEntry(level: LogLevel, message: string): Record<string, unknown> {
+	return {
+		severity: level,
+		message,
+		timestamp: new Date().toISOString(),
+		environment: process.env.NODE_ENV,
+		...(process.env.VERCEL_URL && { vercelUrl: process.env.VERCEL_URL }),
+	};
+}
+
 /**
  * 構造化ログを標準出力に送信する基本関数
  * Cloud Runでは標準出力が自動的にCloud Loggingに転送される
@@ -27,27 +105,15 @@ interface LogOptions {
  * @param optionsOrError - 追加のメタデータまたはエラーオブジェクト
  */
 function logMessage(level: LogLevel, message: string, optionsOrError?: LogOptions | unknown): void {
-	// Next.js/Cloud Run用の構造化ログ
-	const logEntry: Record<string, unknown> = {
-		severity: level,
-		message,
-		timestamp: new Date().toISOString(),
-		// Next.js環境情報
-		environment: process.env.NODE_ENV,
-		...(process.env.VERCEL_URL && { vercelUrl: process.env.VERCEL_URL }),
-	};
+	const logEntry = createBaseLogEntry(level, message);
 
-	// オプションまたはエラーの処理
 	if (optionsOrError) {
 		if (optionsOrError instanceof Error) {
-			// エラーオブジェクトの場合
-			logEntry.error = {
-				message: optionsOrError.message,
-				name: optionsOrError.name,
-				stack: optionsOrError.stack,
-			};
+			logEntry.error = serializeError(optionsOrError);
+		} else if (optionsOrError && typeof optionsOrError === "object" && "error" in optionsOrError) {
+			const processedOptions = processErrorObject(optionsOrError as Record<string, unknown>);
+			Object.assign(logEntry, processedOptions);
 		} else {
-			// その他のオプションの場合は直接マージ
 			Object.assign(logEntry, optionsOrError);
 		}
 	}

@@ -34,6 +34,7 @@ const createMockAudioButton = (id: string, title: string): FrontendAudioButtonDa
 	isPublic: true,
 	playCount: 1,
 	likeCount: 0,
+	dislikeCount: 0,
 	favoriteCount: 0,
 	createdAt: "2025-01-01T00:00:00.000Z",
 	updatedAt: "2025-01-01T00:00:00.000Z",
