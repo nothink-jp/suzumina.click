@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	canCreateAudioButton,
 	convertToFrontendVideo,
 	deserializeForRCC,
 	deserializeListResult,
@@ -7,8 +8,10 @@ import {
 	FirestoreVideoSchema,
 	type FrontendVideoData,
 	FrontendVideoSchema,
+	getAudioButtonCreationErrorMessage,
 	LiveBroadcastContentSchema,
 	PaginationParamsSchema,
+	parseDurationToSeconds,
 	serializeForRSC,
 	serializeListResult,
 	type ThumbnailInfo,
@@ -471,5 +474,159 @@ describe("serializeListResult/deserializeListResult", () => {
 		const deserialized = deserializeListResult(serialized);
 		expect(deserialized.videos.length).toBe(100);
 		expect(deserialized.hasMore).toBe(true);
+	});
+});
+
+describe("parseDurationToSeconds", () => {
+	it("分と秒の形式を正しく解析する", () => {
+		expect(parseDurationToSeconds("PT3M3S")).toBe(183); // 3分3秒 = 183秒
+		expect(parseDurationToSeconds("PT5M")).toBe(300); // 5分 = 300秒
+		expect(parseDurationToSeconds("PT30S")).toBe(30); // 30秒 = 30秒
+	});
+
+	it("時間を含む形式を正しく解析する", () => {
+		expect(parseDurationToSeconds("PT1H2M3S")).toBe(3723); // 1時間2分3秒 = 3723秒
+		expect(parseDurationToSeconds("PT2H")).toBe(7200); // 2時間 = 7200秒
+		expect(parseDurationToSeconds("PT1H30M")).toBe(5400); // 1時間30分 = 5400秒
+	});
+
+	it("無効な形式の場合は0を返す", () => {
+		expect(parseDurationToSeconds("")).toBe(0);
+		expect(parseDurationToSeconds("invalid")).toBe(0);
+		expect(parseDurationToSeconds(undefined)).toBe(0);
+	});
+
+	it("15分境界値のテスト", () => {
+		expect(parseDurationToSeconds("PT15M")).toBe(900); // 15分 = 900秒
+		expect(parseDurationToSeconds("PT14M59S")).toBe(899); // 14分59秒 = 899秒
+		expect(parseDurationToSeconds("PT15M1S")).toBe(901); // 15分1秒 = 901秒
+	});
+});
+
+describe("canCreateAudioButton with duration logic", () => {
+	const baseVideo: FrontendVideoData = {
+		id: "test-video",
+		videoId: "test123",
+		title: "Test Video",
+		description: "Test Description",
+		publishedAt: "2024-01-01T00:00:00Z",
+		publishedAtISO: "2024-01-01T00:00:00Z",
+		thumbnailUrl: "https://example.com/thumb.jpg",
+		thumbnails: {
+			default: { url: "https://example.com/default.jpg", width: 120, height: 90 },
+			medium: { url: "https://example.com/medium.jpg", width: 320, height: 180 },
+			high: { url: "https://example.com/high.jpg", width: 480, height: 360 },
+		},
+		channelId: "test-channel",
+		channelTitle: "Test Channel",
+		lastFetchedAt: "2024-01-01T00:00:00Z",
+		lastFetchedAtISO: "2024-01-01T00:00:00Z",
+		liveBroadcastContent: "none",
+		audioButtonCount: 0,
+		hasAudioButtons: false,
+		playlistTags: [],
+		userTags: [],
+	};
+
+	it("15分以下のプレミア公開動画は作成不可", () => {
+		const premiereVideo: FrontendVideoData = {
+			...baseVideo,
+			duration: "PT3M3S", // 3分3秒（15分以下）
+			liveStreamingDetails: {
+				actualStartTime: "2024-01-01T10:00:00Z",
+				actualEndTime: "2024-01-01T10:03:03Z",
+			},
+		};
+
+		expect(canCreateAudioButton(premiereVideo)).toBe(false);
+		expect(getAudioButtonCreationErrorMessage(premiereVideo)).toBe(
+			"プレミア公開動画は著作権の関係上、音声ボタンの作成はできません",
+		);
+	});
+
+	it("15分超過のライブアーカイブは作成可能", () => {
+		const liveArchive: FrontendVideoData = {
+			...baseVideo,
+			duration: "PT20M30S", // 20分30秒（15分超過）
+			liveStreamingDetails: {
+				actualStartTime: "2024-01-01T10:00:00Z",
+				actualEndTime: "2024-01-01T10:20:30Z",
+			},
+		};
+
+		expect(canCreateAudioButton(liveArchive)).toBe(true);
+		expect(getAudioButtonCreationErrorMessage(liveArchive)).toBe(null);
+	});
+
+	it("15分ちょうどの動画はプレミア公開扱い", () => {
+		const fifteenMinuteVideo: FrontendVideoData = {
+			...baseVideo,
+			duration: "PT15M", // 15分ちょうど
+			liveStreamingDetails: {
+				actualStartTime: "2024-01-01T10:00:00Z",
+				actualEndTime: "2024-01-01T10:15:00Z",
+			},
+		};
+
+		expect(canCreateAudioButton(fifteenMinuteVideo)).toBe(false);
+		expect(getAudioButtonCreationErrorMessage(fifteenMinuteVideo)).toBe(
+			"プレミア公開動画は著作権の関係上、音声ボタンの作成はできません",
+		);
+	});
+
+	it("14分59秒の動画はプレミア公開扱い", () => {
+		const underFifteenVideo: FrontendVideoData = {
+			...baseVideo,
+			duration: "PT14M59S", // 14分59秒（15分以下）
+			liveStreamingDetails: {
+				actualStartTime: "2024-01-01T10:00:00Z",
+				actualEndTime: "2024-01-01T10:14:59Z",
+			},
+		};
+
+		expect(canCreateAudioButton(underFifteenVideo)).toBe(false);
+	});
+
+	it("15分1秒の動画はライブアーカイブ扱い", () => {
+		const overFifteenVideo: FrontendVideoData = {
+			...baseVideo,
+			duration: "PT15M1S", // 15分1秒（15分超過）
+			liveStreamingDetails: {
+				actualStartTime: "2024-01-01T10:00:00Z",
+				actualEndTime: "2024-01-01T10:15:01Z",
+			},
+		};
+
+		expect(canCreateAudioButton(overFifteenVideo)).toBe(true);
+	});
+
+	it("通常動画（liveStreamingDetailsなし）は作成不可", () => {
+		const regularVideo: FrontendVideoData = {
+			...baseVideo,
+			duration: "PT5M",
+			// liveStreamingDetails なし
+		};
+
+		expect(canCreateAudioButton(regularVideo)).toBe(false);
+		expect(getAudioButtonCreationErrorMessage(regularVideo)).toBe(
+			"通常動画は著作権の関係上、音声ボタンの作成はできません",
+		);
+	});
+
+	it("配信中の動画は作成不可", () => {
+		const liveVideo: FrontendVideoData = {
+			...baseVideo,
+			liveBroadcastContent: "live",
+			duration: "PT30M",
+			liveStreamingDetails: {
+				actualStartTime: "2024-01-01T10:00:00Z",
+				// actualEndTime なし（配信中）
+			},
+		};
+
+		expect(canCreateAudioButton(liveVideo)).toBe(false);
+		expect(getAudioButtonCreationErrorMessage(liveVideo)).toBe(
+			"配信中は音声ボタンを作成できません",
+		);
 	});
 });

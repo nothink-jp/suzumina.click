@@ -203,6 +203,7 @@ async function applyStartAfterPagination(
 /**
  * カテゴリ名からカテゴリIDに変換するマッピング
  */
+// biome-ignore format: 日本語キーの引用符は YouTube API との一貫性のため保持
 const CATEGORY_NAME_TO_ID: Record<string, string> = {
 	"映画・アニメ": "1",
 	"自動車・乗り物": "2",

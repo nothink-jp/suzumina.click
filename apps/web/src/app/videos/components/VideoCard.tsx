@@ -4,6 +4,7 @@ import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import {
 	canCreateAudioButton,
 	getAudioButtonCreationErrorMessage,
+	parseDurationToSeconds,
 } from "@suzumina.click/shared-types/src/video";
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
@@ -177,8 +178,8 @@ const VideoCard = memo(function VideoCard({
 					ariaLabel: "配信予定のライブ配信",
 				};
 			case "none":
-				// 配信アーカイブの判定
-				if (video.videoType === "archived" || video.liveStreamingDetails?.actualEndTime) {
+				// 明示的にアーカイブと設定されている場合
+				if (video.videoType === "archived") {
 					return {
 						text: "配信アーカイブ",
 						icon: Radio,
@@ -186,6 +187,30 @@ const VideoCard = memo(function VideoCard({
 						ariaLabel: "ライブ配信のアーカイブ",
 					};
 				}
+
+				// liveStreamingDetails が存在する場合の詳細判定
+				if (video.liveStreamingDetails?.actualEndTime) {
+					// 15分以下はプレミア公開、超過はライブアーカイブ
+					const durationSeconds = parseDurationToSeconds(video.duration);
+					const fifteenMinutes = 15 * 60; // 900秒
+
+					if (durationSeconds > 0 && durationSeconds <= fifteenMinutes) {
+						return {
+							text: "プレミア公開",
+							icon: Video,
+							className: "bg-purple-600/90 text-white",
+							ariaLabel: "プレミア公開動画",
+						};
+					}
+
+					return {
+						text: "配信アーカイブ",
+						icon: Radio,
+						className: "bg-gray-600/90 text-white",
+						ariaLabel: "ライブ配信のアーカイブ",
+					};
+				}
+
 				// プレミア公開動画の判定（liveStreamingDetails は存在するが actualEndTime がない）
 				if (video.liveStreamingDetails && !video.liveStreamingDetails.actualEndTime) {
 					return {
@@ -195,6 +220,7 @@ const VideoCard = memo(function VideoCard({
 						ariaLabel: "プレミア公開動画",
 					};
 				}
+
 				// 通常動画
 				return {
 					text: "通常動画",
@@ -210,7 +236,7 @@ const VideoCard = memo(function VideoCard({
 					ariaLabel: "動画コンテンツ",
 				};
 		}
-	}, [video.liveBroadcastContent, video.videoType, video.liveStreamingDetails]);
+	}, [video.liveBroadcastContent, video.videoType, video.liveStreamingDetails, video.duration]);
 
 	return (
 		<article

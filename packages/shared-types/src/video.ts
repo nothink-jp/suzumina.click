@@ -463,14 +463,42 @@ export function canCreateAudioButton(video: FrontendVideoData): boolean {
 		return false;
 	}
 
-	// ライブアーカイブの判定: actualEndTime が存在する場合のみ許可
-	// これにより通常動画とプレミア公開動画は自動的に除外される
+	// ライブアーカイブの判定: actualEndTime が存在する場合
 	if (video.liveStreamingDetails?.actualEndTime) {
+		// 暫定ロジック: 15分以下の動画はプレミア公開として扱う
+		const durationSeconds = parseDurationToSeconds(video.duration);
+		const fifteenMinutes = 15 * 60; // 900秒
+
+		if (durationSeconds > 0 && durationSeconds <= fifteenMinutes) {
+			// 15分以下はプレミア公開と判定 → 作成不可
+			return false;
+		}
+
+		// 15分超過はライブアーカイブと判定 → 作成可能
 		return true;
 	}
 
 	// その他のケース（通常動画、プレミア公開動画など）は作成不可
 	return false;
+}
+
+/**
+ * ISO 8601 duration (PT3M3S) を秒数に変換
+ * @param duration ISO 8601 duration文字列
+ * @returns 秒数（解析失敗時は0）
+ */
+export function parseDurationToSeconds(duration?: string): number {
+	if (!duration) return 0;
+
+	// PT3M3S, PT1H2M3S などの形式をパース
+	const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+	if (!match) return 0;
+
+	const hours = Number.parseInt(match[1] || "0", 10);
+	const minutes = Number.parseInt(match[2] || "0", 10);
+	const seconds = Number.parseInt(match[3] || "0", 10);
+
+	return hours * 3600 + minutes * 60 + seconds;
 }
 
 /**
@@ -492,9 +520,20 @@ export function getAudioButtonCreationErrorMessage(video: FrontendVideoData): st
 		return "配信開始前は音声ボタンを作成できません";
 	}
 
-	// プレミア公開動画の判定（liveStreamingDetails は存在するが actualEndTime がない）
-	if (video.liveStreamingDetails && !video.liveStreamingDetails.actualEndTime) {
-		return "プレミア公開動画は著作権の関係上、音声ボタンの作成はできません";
+	// liveStreamingDetails が存在する場合の詳細判定
+	if (video.liveStreamingDetails) {
+		// actualEndTime がない場合はプレミア公開
+		if (!video.liveStreamingDetails.actualEndTime) {
+			return "プレミア公開動画は著作権の関係上、音声ボタンの作成はできません";
+		}
+
+		// actualEndTime がある場合は15分以下かチェック
+		const durationSeconds = parseDurationToSeconds(video.duration);
+		const fifteenMinutes = 15 * 60; // 900秒
+
+		if (durationSeconds > 0 && durationSeconds <= fifteenMinutes) {
+			return "プレミア公開動画は著作権の関係上、音声ボタンの作成はできません";
+		}
 	}
 
 	// 通常動画（liveStreamingDetails が存在しない）
