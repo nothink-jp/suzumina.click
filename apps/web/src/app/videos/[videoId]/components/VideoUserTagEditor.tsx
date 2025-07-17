@@ -89,7 +89,7 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 
 	return (
 		<div className="space-y-6">
-			{/* 3層タグ表示 */}
+			{/* 動画タグ表示 */}
 			<ThreeLayerTagDisplay
 				playlistTags={video.playlistTags || []}
 				userTags={video.userTags || []}
@@ -102,11 +102,11 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 				onTagClick={handleTagClick}
 			/>
 
-			{/* ユーザータグ編集セクション */}
+			{/* みんなのタグ編集セクション */}
 			{canEdit && (
 				<div className="border-t pt-6">
 					<div className="flex items-center justify-between mb-4">
-						<h4 className="text-lg font-semibold">ユーザータグ編集</h4>
+						<h4 className="text-lg font-semibold">みんなのタグ編集</h4>
 						{!isEditingUserTags && (
 							<Button variant="outline" size="sm" onClick={() => setIsEditingUserTags(true)}>
 								<Edit className="h-4 w-4 mr-2" />
@@ -126,7 +126,7 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 						/>
 					) : (
 						<p className="text-sm text-muted-foreground">
-							「編集」ボタンをクリックしてユーザータグを編集できます。
+							「編集」ボタンをクリックしてみんなのタグを編集できます。
 						</p>
 					)}
 				</div>
@@ -135,7 +135,7 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 			{!canEdit && (
 				<div className="border-t pt-6">
 					<p className="text-sm text-muted-foreground">
-						ユーザータグを編集するには、すずみなふぁみりーメンバーとしてログインしてください。
+						みんなのタグを編集するには、すずみなふぁみりーメンバーとしてログインしてください。
 					</p>
 				</div>
 			)}

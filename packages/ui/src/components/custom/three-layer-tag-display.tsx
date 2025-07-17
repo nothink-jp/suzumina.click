@@ -1,24 +1,25 @@
 /**
- * ThreeLayerTagDisplay - 3層タグシステム表示コンポーネント
- * VIDEO_TAGS_DESIGN.md Phase 3準拠
+ * VideoTagDisplay - 動画タグ表示コンポーネント
+ * 配信タイプ、みんなのタグ、ジャンルを統合表示
+ * 旧名: ThreeLayerTagDisplay（後方互換性のため名前は残す）
  */
 
 "use client";
 
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { cn } from "@suzumina.click/ui/lib/utils";
-import { FolderOpen, Play, Tag } from "lucide-react";
+import { FolderOpen, Play, Users } from "lucide-react";
 import type { MouseEvent } from "react";
 import { HighlightText } from "./highlight-text";
 
-export interface ThreeLayerTagDisplayProps {
-	/** プレイリストタグ（1層目・最優先） */
+export interface VideoTagDisplayProps {
+	/** 配信タイプタグ（自動分類） */
 	playlistTags?: string[];
-	/** ユーザータグ（2層目・メイン） */
+	/** みんなのタグ（ユーザー投稿） */
 	userTags?: string[];
-	/** カテゴリID（3層目・フィルター用） */
+	/** ジャンルID（YouTube分類） */
 	categoryId?: string;
-	/** カテゴリ表示名 */
+	/** ジャンル表示名 */
 	categoryName?: string;
 	/** 検索クエリ（ハイライト機能用） */
 	searchQuery?: string;
@@ -34,11 +35,11 @@ export interface ThreeLayerTagDisplayProps {
 	maxTagsPerLayer?: number;
 	/** 空の層を表示するかどうか */
 	showEmptyLayers?: boolean;
-	/** カテゴリを表示するかどうか */
+	/** ジャンルを表示するかどうか */
 	showCategory?: boolean;
 }
 
-export function ThreeLayerTagDisplay({
+export function VideoTagDisplay({
 	playlistTags = [],
 	userTags = [],
 	categoryId,
@@ -51,7 +52,7 @@ export function ThreeLayerTagDisplay({
 	maxTagsPerLayer = 0,
 	showEmptyLayers = false,
 	showCategory = true,
-}: ThreeLayerTagDisplayProps) {
+}: VideoTagDisplayProps) {
 	// サイズに応じたクラス名
 	const getSizeClasses = () => {
 		switch (size) {
@@ -137,6 +138,13 @@ export function ThreeLayerTagDisplay({
 				>
 					<IconComponent className={sizeClasses.icon} />
 					{title}
+					{/* ユーザー向け説明テキスト */}
+					{layer === "playlist" && (
+						<span className="text-xs text-muted-foreground ml-2">(録画時間による自動分類)</span>
+					)}
+					{layer === "user" && (
+						<span className="text-xs text-muted-foreground ml-2">(ユーザーが自由に追加)</span>
+					)}
 				</h4>
 				<div className={cn("flex flex-wrap", sizeClasses.layerContainer)}>
 					{displayData.displayed.map((tag, index) => (
@@ -186,9 +194,9 @@ export function ThreeLayerTagDisplay({
 
 	return (
 		<div className={cn("space-y-4", className)}>
-			{/* 1. プレイリストタグ（最優先・自動） */}
+			{/* 1. 配信タイプタグ（自動分類） */}
 			{renderTagLayer(
-				"プレイリスト",
+				"配信タイプ",
 				Play,
 				playlistTags,
 				"playlist",
@@ -196,24 +204,26 @@ export function ThreeLayerTagDisplay({
 				playlistDisplay,
 			)}
 
-			{/* 2. ユーザータグ（メイン・編集可能） */}
+			{/* 2. みんなのタグ（ユーザー投稿） */}
 			{renderTagLayer(
-				"ユーザータグ",
-				Tag,
+				"みんなのタグ",
+				Users,
 				userTags,
 				"user",
 				"bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
 				userDisplay,
 			)}
 
-			{/* 3. YouTubeカテゴリ（フィルター用・自動） */}
+			{/* 3. ジャンル（YouTube分類） */}
 			{showCategory && categoryId && categoryName && (
 				<div className="space-y-2">
 					<h4
 						className={cn("font-medium text-muted-foreground flex items-center", sizeClasses.title)}
 					>
 						<FolderOpen className={sizeClasses.icon} />
-						カテゴリ
+						ジャンル
+						{/* ユーザー向け説明テキスト */}
+						<span className="text-xs text-muted-foreground ml-2">(YouTube分類)</span>
 					</h4>
 					<div className={cn("flex flex-wrap", sizeClasses.layerContainer)}>
 						<Badge
@@ -243,3 +253,7 @@ export function ThreeLayerTagDisplay({
 		</div>
 	);
 }
+
+// 後方互換性のため旧名も残す
+export const ThreeLayerTagDisplay = VideoTagDisplay;
+export type ThreeLayerTagDisplayProps = VideoTagDisplayProps;

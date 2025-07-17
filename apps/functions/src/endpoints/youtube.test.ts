@@ -96,12 +96,29 @@ vi.mock("../infrastructure/database/firestore", () => {
 	};
 	const mockDocGet = vi.fn().mockResolvedValue(mockMetadataDoc);
 
+	// 動画ドキュメントのモック（videoRef.get()用）
+	const mockVideoDoc = {
+		exists: false,
+		data: vi.fn(() => ({})),
+	};
+	const mockVideoDocGet = vi.fn().mockResolvedValue(mockVideoDoc);
+
 	// コレクションのドキュメント参照を取得するモック
-	const mockDoc = vi.fn(() => ({
-		get: mockDocGet,
-		update: vi.fn().mockResolvedValue({}),
-		set: vi.fn().mockResolvedValue({}),
-	}));
+	const mockDoc = vi.fn((docId: string) => {
+		if (docId === "fetch_metadata") {
+			return {
+				get: mockDocGet,
+				update: vi.fn().mockResolvedValue({}),
+				set: vi.fn().mockResolvedValue({}),
+			};
+		}
+		// 動画ドキュメントの場合
+		return {
+			get: mockVideoDocGet,
+			update: vi.fn().mockResolvedValue({}),
+			set: vi.fn().mockResolvedValue({}),
+		};
+	});
 
 	// コレクション参照を取得するモック
 	const mockCollection = vi.fn(() => ({ doc: mockDoc }));
@@ -166,6 +183,15 @@ describe("fetchYouTubeVideos", () => {
 	let mockMetadataDocUpdate: Mock;
 	let mockMetadataDocSet: Mock;
 
+	// バッチ関連のモック
+	let mockBatchInstance: {
+		set: Mock;
+		commit: Mock;
+	};
+
+	// 動画ドキュメント関連のモック
+	let mockVideoDocGet: Mock;
+
 	beforeEach(() => {
 		vi.clearAllMocks(); // すべてのモックをクリア
 
@@ -187,6 +213,13 @@ describe("fetchYouTubeVideos", () => {
 		mockMetadataDocUpdate = vi.fn().mockResolvedValue({});
 		mockMetadataDocSet = vi.fn().mockResolvedValue({});
 
+		// 動画ドキュメントのモック設定
+		const mockVideoDoc = {
+			exists: false,
+			data: vi.fn(() => ({})),
+		};
+		mockVideoDocGet = vi.fn().mockResolvedValue(mockVideoDoc);
+
 		// コレクションとドキュメントのモックを再設定
 		vi.mocked(firestore.collection).mockImplementation((collectionName) => {
 			if (collectionName === "youtubeMetadata") {
@@ -201,17 +234,22 @@ describe("fetchYouTubeVideos", () => {
 
 			// videosコレクションの場合
 			return {
-				doc: vi.fn(() => ({})),
+				doc: vi.fn(() => ({
+					get: mockVideoDocGet,
+					update: vi.fn().mockResolvedValue({}),
+					set: vi.fn().mockResolvedValue({}),
+				})),
 			} as unknown as ReturnType<typeof firestore.collection>;
 		});
 
 		// batch() が呼ばれるたびに新しいモック batch を返す
 		const newMockBatchSet = vi.fn();
 		const newMockBatchCommit = vi.fn().mockResolvedValue([]);
-		vi.mocked(firestore.batch).mockReturnValue({
+		mockBatchInstance = {
 			set: newMockBatchSet,
 			commit: newMockBatchCommit,
-		} as any);
+		};
+		vi.mocked(firestore.batch).mockReturnValue(mockBatchInstance as any);
 
 		// 環境変数を設定
 		originalEnv = { ...process.env };
@@ -343,24 +381,23 @@ describe("fetchYouTubeVideos", () => {
 		expect(mockedBatch).toHaveBeenCalledTimes(1);
 
 		// バッチ処理の確認
-		const batchInstance = vi.mocked(firestore.batch).mock.results[0].value;
-		expect(batchInstance.set).toHaveBeenCalledTimes(3);
-		expect(batchInstance.set).toHaveBeenCalledWith(
+		expect(mockBatchInstance.set).toHaveBeenCalledTimes(3);
+		expect(mockBatchInstance.set).toHaveBeenCalledWith(
 			expect.anything(),
 			expect.objectContaining({ videoId: "vid1" }),
 			{ merge: true },
 		);
-		expect(batchInstance.set).toHaveBeenCalledWith(
+		expect(mockBatchInstance.set).toHaveBeenCalledWith(
 			expect.anything(),
 			expect.objectContaining({ videoId: "vid2" }),
 			{ merge: true },
 		);
-		expect(batchInstance.set).toHaveBeenCalledWith(
+		expect(mockBatchInstance.set).toHaveBeenCalledWith(
 			expect.anything(),
 			expect.objectContaining({ videoId: "vid3" }),
 			{ merge: true },
 		);
-		expect(batchInstance.commit).toHaveBeenCalledTimes(1);
+		expect(mockBatchInstance.commit).toHaveBeenCalledTimes(1);
 
 		// 処理完了のフラグ設定チェック
 		expect(mockMetadataDocUpdate).toHaveBeenCalledWith(
@@ -418,9 +455,8 @@ describe("fetchYouTubeVideos", () => {
 
 		// Firestoreの操作が実行されるはず
 		expect(mockedBatch).toHaveBeenCalledTimes(1);
-		const batchInstance = vi.mocked(firestore.batch).mock.results[0].value;
-		expect(batchInstance.set).toHaveBeenCalledTimes(3); // 3つの動画が書き込まれるはず
-		expect(batchInstance.commit).toHaveBeenCalledTimes(1);
+		expect(mockBatchInstance.set).toHaveBeenCalledTimes(3); // 3つの動画が書き込まれるはず
+		expect(mockBatchInstance.commit).toHaveBeenCalledTimes(1);
 
 		expect(mockedLoggerInfo).toHaveBeenCalledWith("fetchYouTubeVideos 関数の処理を完了しました");
 	});
@@ -595,8 +631,7 @@ describe("fetchYouTubeVideos", () => {
 		);
 
 		// 3動画が保存されること
-		const batchInstance = vi.mocked(firestore.batch).mock.results[0].value;
-		expect(batchInstance.set).toHaveBeenCalledTimes(3);
+		expect(mockBatchInstance.set).toHaveBeenCalledTimes(3);
 	});
 
 	it("全ての動画を取得し終えた場合、完了フラグを設定すること", async () => {
@@ -680,9 +715,8 @@ describe("fetchYouTubeVideos", () => {
 		);
 
 		// 正常な動画だけ保存されること
-		const batchInstance = vi.mocked(firestore.batch).mock.results[0].value;
-		expect(batchInstance.set).toHaveBeenCalledTimes(1);
-		expect(batchInstance.set).toHaveBeenCalledWith(
+		expect(mockBatchInstance.set).toHaveBeenCalledTimes(1);
+		expect(mockBatchInstance.set).toHaveBeenCalledWith(
 			expect.anything(),
 			expect.objectContaining({ videoId: "goodVid" }),
 			{ merge: true },
