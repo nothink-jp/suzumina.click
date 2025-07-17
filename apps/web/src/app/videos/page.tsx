@@ -38,6 +38,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 		: typeof params.categoryNames === "string"
 			? [params.categoryNames]
 			: undefined;
+	const videoType = typeof params.videoType === "string" ? params.videoType : undefined;
 
 	// 並行してデータを取得
 	const [initialData, filteredCount, totalCount] = await Promise.all([
@@ -49,14 +50,16 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 			search,
 			playlistTags,
 			userTags,
-			categoryNames,
+			categoryNames, // 複合インデックス作成後に有効化
+			videoType,
 		}),
 		getTotalVideoCount({
 			year,
 			search,
 			playlistTags,
 			userTags,
-			categoryNames,
+			categoryNames, // 複合インデックス作成後に有効化
+			videoType,
 		}),
 		getTotalVideoCount({}), // フィルタなしの総件数
 	]);
@@ -81,7 +84,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						data={initialData}
 						totalCount={totalCount}
 						filteredCount={
-							year || search || playlistTags || userTags || categoryNames
+							year || search || playlistTags || userTags || categoryNames || videoType
 								? filteredCount
 								: undefined
 						}

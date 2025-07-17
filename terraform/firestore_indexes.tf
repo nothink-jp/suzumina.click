@@ -404,6 +404,108 @@ resource "google_firestore_index" "videos_categoryid_publishedat_asc" {
   }
 }
 
+# videos コレクションのインデックス - liveStreamingDetails.actualEndTime（昇順）、publishedAt（降順）
+# 配信アーカイブフィルタリング用（新しい順）
+resource "google_firestore_index" "videos_livestreamingdetails_actualendtime_publishedat_desc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+  
+  fields {
+    field_path = "liveStreamingDetails.actualEndTime"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "publishedAt"
+    order      = "DESCENDING"
+  }
+}
+
+# videos コレクションのインデックス - liveStreamingDetails.actualEndTime（昇順）、publishedAt（昇順）
+# 配信アーカイブフィルタリング用（古い順）
+resource "google_firestore_index" "videos_livestreamingdetails_actualendtime_publishedat_asc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+  
+  fields {
+    field_path = "liveStreamingDetails.actualEndTime"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "publishedAt"
+    order      = "ASCENDING"
+  }
+}
+
+# videos コレクションのインデックス - liveStreamingDetails.scheduledStartTime（昇順）、publishedAt（降順）
+# プレミア公開フィルタリング用（新しい順）
+resource "google_firestore_index" "videos_livestreamingdetails_scheduledstarttime_publishedat_desc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+  
+  fields {
+    field_path = "liveStreamingDetails.scheduledStartTime"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "publishedAt"
+    order      = "DESCENDING"
+  }
+}
+
+# videos コレクションのインデックス - liveStreamingDetails.scheduledStartTime（昇順）、publishedAt（昇順）
+# プレミア公開フィルタリング用（古い順）
+resource "google_firestore_index" "videos_livestreamingdetails_scheduledstarttime_publishedat_asc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+  
+  fields {
+    field_path = "liveStreamingDetails.scheduledStartTime"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "publishedAt"
+    order      = "ASCENDING"
+  }
+}
+
+# videos コレクションのインデックス - liveStreamingDetails（昇順）、publishedAt（降順）
+# 通常動画フィルタリング用（新しい順）
+resource "google_firestore_index" "videos_livestreamingdetails_null_publishedat_desc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+  
+  fields {
+    field_path = "liveStreamingDetails"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "publishedAt"
+    order      = "DESCENDING"
+  }
+}
+
+# videos コレクションのインデックス - liveStreamingDetails（昇順）、publishedAt（昇順）
+# 通常動画フィルタリング用（古い順）
+resource "google_firestore_index" "videos_livestreamingdetails_null_publishedat_asc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+  
+  fields {
+    field_path = "liveStreamingDetails"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "publishedAt"
+    order      = "ASCENDING"
+  }
+}
+
 # Note: カテゴリ×販売日の複合インデックスは既に存在するため、Terraformでは管理しない
 # dlsiteWorks コレクションのインデックス - category（昇順）、releaseDateISO（降順）
 # カテゴリフィルタリング＋販売日ソート用 - 既存のインデックスを使用

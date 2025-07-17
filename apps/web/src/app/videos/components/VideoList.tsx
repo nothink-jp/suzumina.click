@@ -34,6 +34,7 @@ export default function VideoList({
 	const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 	const [yearFilter, setYearFilter] = useState(searchParams.get("year") || "all");
 	const [categoryFilter, setCategoryFilter] = useState(searchParams.get("categoryNames") || "all");
+	const [videoTypeFilter, setVideoTypeFilter] = useState(searchParams.get("videoType") || "all");
 	const [itemsPerPageValue, setItemsPerPageValue] = useState(searchParams.get("limit") || "12");
 
 	// URLパラメータ更新用ユーティリティ
@@ -54,13 +55,6 @@ export default function VideoList({
 	);
 
 	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
-	// 検索結果がある場合は実際の結果数を使用、それ以外はフィルタリング結果を使用
-	const displayCount = searchQuery
-		? data.videos.length
-		: filteredCount !== undefined
-			? filteredCount
-			: totalCount;
-	const totalPages = Math.ceil(displayCount / itemsPerPageNum);
 
 	// 年代選択肢を動的に生成（2018年から現在年まで）
 	const currentYear = new Date().getFullYear();
@@ -72,25 +66,27 @@ export default function VideoList({
 		return years;
 	}, [currentYear]);
 
-	// カテゴリー選択肢の定義
-	const categoryOptions = useMemo(() => [
-		{ value: "all", label: "すべてのカテゴリ" },
-		{ value: "音楽", label: "音楽" },
-		{ value: "ゲーム", label: "ゲーム" },
-		{ value: "エンターテインメント", label: "エンターテインメント" },
-		{ value: "ブログ・人物", label: "ブログ・人物" },
-		{ value: "コメディー", label: "コメディー" },
-		{ value: "教育", label: "教育" },
-		{ value: "科学技術", label: "科学技術" },
-		{ value: "ニュース・政治", label: "ニュース・政治" },
-		{ value: "ハウツー・スタイル", label: "ハウツー・スタイル" },
-		{ value: "旅行・イベント", label: "旅行・イベント" },
-		{ value: "スポーツ", label: "スポーツ" },
-		{ value: "ペット・動物", label: "ペット・動物" },
-		{ value: "自動車・乗り物", label: "自動車・乗り物" },
-		{ value: "映画・アニメ", label: "映画・アニメ" },
-		{ value: "非営利団体・社会活動", label: "非営利団体・社会活動" },
-	], []);
+	// カテゴリー選択肢の定義（涼花みなせ様が実際に配信しているカテゴリのみ）
+	const categoryOptions = useMemo(
+		() => [
+			{ value: "all", label: "すべてのカテゴリ" },
+			{ value: "ゲーム", label: "ゲーム" },
+			{ value: "エンターテインメント", label: "エンターテインメント" },
+		],
+		[],
+	);
+
+	// 動画種別選択肢の定義
+	const videoTypeOptions = useMemo(
+		() => [
+			{ value: "all", label: "すべての動画" },
+			{ value: "live_archive", label: "配信アーカイブ" },
+			{ value: "premiere", label: "プレミア公開" },
+			{ value: "regular", label: "通常動画" },
+			{ value: "live_upcoming", label: "配信中・配信予定" },
+		],
+		[],
+	);
 
 	// 年代フィルターの変更をURLに反映
 	const handleYearChange = (year: string) => {
@@ -102,6 +98,12 @@ export default function VideoList({
 	const handleCategoryChange = (category: string) => {
 		setCategoryFilter(category);
 		updateUrlParam("categoryNames", category, "all");
+	};
+
+	// 動画種別フィルターの変更をURLに反映
+	const handleVideoTypeChange = (videoType: string) => {
+		setVideoTypeFilter(videoType);
+		updateUrlParam("videoType", videoType, "all");
 	};
 
 	// FID改善: startTransition で非緊急更新を遅延
@@ -121,6 +123,7 @@ export default function VideoList({
 		setSearchQuery("");
 		setYearFilter("all");
 		setCategoryFilter("all");
+		setVideoTypeFilter("all");
 		setSortBy("newest");
 		setItemsPerPageValue("12");
 		const params = new URLSearchParams();
@@ -141,9 +144,17 @@ export default function VideoList({
 
 	// FID改善: 検索・フィルタリング結果をメモ化
 	const filteredVideos = useMemo(() => {
-		// 現在は全て表示、将来的にフィルタリングロジックを追加
+		// サーバーサイドで既にフィルタリングされているため、クライアントサイドでは追加フィルタリングしない
 		return data.videos;
 	}, [data.videos]);
+
+	// 表示数計算: サーバーサイドフィルタリング結果を使用
+	const displayCount = searchQuery
+		? filteredVideos.length
+		: filteredCount !== undefined
+			? filteredCount
+			: totalCount;
+	const totalPages = Math.ceil(displayCount / itemsPerPageNum);
 
 	return (
 		<div>
@@ -154,7 +165,13 @@ export default function VideoList({
 				onSearch={handleSearch}
 				onReset={handleReset}
 				searchPlaceholder="動画タイトルで検索..."
-				hasActiveFilters={searchQuery !== "" || yearFilter !== "all" || categoryFilter !== "all" || sortBy !== "newest"}
+				hasActiveFilters={
+					searchQuery !== "" ||
+					yearFilter !== "all" ||
+					categoryFilter !== "all" ||
+					videoTypeFilter !== "all" ||
+					sortBy !== "newest"
+				}
 				onSearchKeyDown={(e) => {
 					if (e.key === "Enter") {
 						handleSearch();
@@ -180,6 +197,12 @@ export default function VideoList({
 							placeholder="すべてのカテゴリ"
 							options={categoryOptions}
 						/>
+						<FilterSelect
+							value={videoTypeFilter}
+							onValueChange={handleVideoTypeChange}
+							placeholder="すべての動画"
+							options={videoTypeOptions}
+						/>
 					</>
 				}
 			/>
@@ -188,7 +211,14 @@ export default function VideoList({
 			<ListDisplayControls
 				title="動画一覧"
 				totalCount={totalCount}
-				filteredCount={searchQuery || yearFilter !== "all" || categoryFilter !== "all" ? displayCount : undefined}
+				filteredCount={
+					searchQuery ||
+					yearFilter !== "all" ||
+					categoryFilter !== "all" ||
+					videoTypeFilter !== "all"
+						? displayCount
+						: undefined
+				}
 				currentPage={currentPage}
 				totalPages={totalPages}
 				sortValue={sortBy}

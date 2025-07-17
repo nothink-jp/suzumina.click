@@ -13,6 +13,7 @@ import {
 	convertToFrontendVideo,
 	type FirestoreServerVideoData,
 	type FrontendVideoData,
+	parseDurationToSeconds,
 	type VideoListResult,
 } from "@suzumina.click/shared-types/src/video";
 import { getFirestore } from "@/lib/firestore";
@@ -31,14 +32,14 @@ function buildUserPaginationQuery(
 		playlistTags?: string[];
 		userTags?: string[];
 		categoryNames?: string[];
+		videoType?: string;
 	},
-) {
+): { query: FirebaseFirestore.Query; limit: number; useStartAfter?: boolean; docId?: string } {
 	const limit = params?.limit || 12;
 	const page = params?.page || 1;
 
-	// ソート順の設定（デフォルトは新しい順）
-	const sortOrder = params?.sort === "oldest" ? "asc" : "desc";
-	let query = videosRef.orderBy("publishedAt", sortOrder);
+	// まずフィルタリングを適用
+	let query: FirebaseFirestore.Query = videosRef;
 
 	// 年代フィルタリング
 	if (params?.year) {
@@ -56,6 +57,15 @@ function buildUserPaginationQuery(
 	if (params) {
 		query = buildThreeLayerTagQuery(query, params);
 	}
+
+	// 動画種別フィルタリング
+	if (params?.videoType && params.videoType !== "all") {
+		query = buildVideoTypeQuery(query, params.videoType);
+	}
+
+	// 最後にソート順を設定（フィルタリング後）
+	const sortOrder = params?.sort === "oldest" ? "asc" : "desc";
+	query = query.orderBy("publishedAt", sortOrder);
 
 	if (params?.startAfterDocId) {
 		return { query, limit, useStartAfter: true, docId: params.startAfterDocId };
@@ -151,12 +161,59 @@ function transformServerDataToFirestoreData(doc: DocumentSnapshot, data: Firesto
 }
 
 /**
+ * 動画種別を判定するヘルパー関数
+ */
+function getVideoType(data: FirestoreServerVideoData): string {
+	const liveBroadcastContent = data.liveBroadcastContent;
+	const liveStreamingDetails = data.liveStreamingDetails;
+	const duration = data.duration || "";
+
+	// 配信中・配信予定
+	if (liveBroadcastContent === "live" || liveBroadcastContent === "upcoming") {
+		return "live_upcoming";
+	}
+
+	// liveBroadcastContent === "none" の場合の詳細判定
+	if (liveBroadcastContent === "none") {
+		// liveStreamingDetailsが存在しない場合 = 通常動画
+		if (!liveStreamingDetails) {
+			return "regular";
+		}
+
+		// liveStreamingDetailsが存在する場合の詳細判定
+		const hasActualEndTime = !!liveStreamingDetails.actualEndTime;
+		const hasScheduledStartTime = !!liveStreamingDetails.scheduledStartTime;
+
+		// プレミア公開の判定: scheduledStartTimeがあってactualEndTimeがない場合
+		if (hasScheduledStartTime && !hasActualEndTime) {
+			return "premiere";
+		}
+		if (hasActualEndTime) {
+			// actualEndTimeが存在する場合、15分以下はプレミア公開、超過は配信アーカイブ
+			const durationSeconds = parseDurationToSeconds(duration);
+			const fifteenMinutes = 15 * 60; // 900秒
+
+			if (durationSeconds > 0 && durationSeconds <= fifteenMinutes) {
+				return "premiere"; // 15分以下はプレミア公開
+			}
+			return "live_archive"; // 15分超過は配信アーカイブ
+		}
+		// どちらも存在しない場合は通常動画として扱う
+		return "regular";
+	}
+
+	// その他の場合は通常動画として扱う
+	return "regular";
+}
+
+/**
  * ドキュメントリストを処理してフロントエンド用動画データに変換する関数（ユーザー向け）
  */
 function processUserVideoDocuments(
 	docs: DocumentSnapshot[],
 	limit: number,
 	searchQuery?: string,
+	videoTypeFilter?: string,
 ): FrontendVideoData[] {
 	const videos: FrontendVideoData[] = [];
 	const videosToProcess = docs.slice(0, limit);
@@ -170,6 +227,14 @@ function processUserVideoDocuments(
 				const lowerQuery = searchQuery.toLowerCase();
 				const lowerTitle = data.title.toLowerCase();
 				if (!lowerTitle.includes(lowerQuery)) {
+					continue;
+				}
+			}
+
+			// 動画種別フィルタリング
+			if (videoTypeFilter && videoTypeFilter !== "all") {
+				const actualVideoType = getVideoType(data);
+				if (actualVideoType !== videoTypeFilter) {
 					continue;
 				}
 			}
@@ -221,6 +286,25 @@ const CATEGORY_NAME_TO_ID: Record<string, string> = {
 	"科学技術": "28",
 	"非営利団体・社会活動": "29",
 };
+
+/**
+ * 動画種別クエリを構築するヘルパー関数
+ */
+function buildVideoTypeQuery(query: FirebaseFirestore.Query, videoType: string) {
+	switch (videoType) {
+		case "live_archive":
+		case "premiere":
+		case "regular":
+			// これらの種別はすべてliveBroadcastContent === "none"に含まれる
+			// 詳細な判定はサーバーサイドで実施
+			return query.where("liveBroadcastContent", "==", "none");
+		case "live_upcoming":
+			// 配信中・配信予定: liveBroadcastContent === "live" OR "upcoming"
+			return query.where("liveBroadcastContent", "in", ["live", "upcoming"]);
+		default:
+			return query;
+	}
+}
 
 /**
  * 3層タグクエリを構築するヘルパー関数
@@ -279,6 +363,7 @@ function buildSearchQuery(
 		playlistTags?: string[];
 		userTags?: string[];
 		categoryNames?: string[];
+		videoType?: string;
 	},
 ) {
 	let allDocsQuery = videosRef.orderBy("publishedAt", params?.sort === "oldest" ? "asc" : "desc");
@@ -298,6 +383,11 @@ function buildSearchQuery(
 	// 3層タグクエリを適用
 	allDocsQuery = buildThreeLayerTagQuery(allDocsQuery, params);
 
+	// 動画種別フィルタリング
+	if (params?.videoType && params.videoType !== "all") {
+		allDocsQuery = buildVideoTypeQuery(allDocsQuery, params.videoType);
+	}
+
 	return allDocsQuery;
 }
 
@@ -306,7 +396,7 @@ function buildSearchQuery(
  */
 function processSearchResults(
 	videosToProcess: DocumentSnapshot[],
-	params: { search: string; page?: number },
+	params: { search: string; page?: number; videoType?: string },
 	paginationConfig: { limit: number },
 ) {
 	// 検索結果を取得してページネーション適用
@@ -314,6 +404,7 @@ function processSearchResults(
 		videosToProcess,
 		videosToProcess.length, // 全件処理
 		params.search,
+		params.videoType,
 	);
 
 	// ページネーション適用
@@ -335,8 +426,28 @@ function processRegularResults(
 	videosToProcess: DocumentSnapshot[],
 	docs: DocumentSnapshot[],
 	paginationConfig: { limit: number },
+	videoTypeFilter?: string,
 ) {
-	const videos = processUserVideoDocuments(videosToProcess, paginationConfig.limit, undefined);
+	// サーバーサイドフィルタリングが必要な場合の処理
+	if (videoTypeFilter && videoTypeFilter !== "all") {
+		const allFilteredVideos = processUserVideoDocuments(
+			videosToProcess,
+			videosToProcess.length,
+			undefined,
+			videoTypeFilter,
+		);
+		const videos = allFilteredVideos.slice(0, paginationConfig.limit);
+		const hasMore = allFilteredVideos.length > paginationConfig.limit;
+		return { videos, hasMore };
+	}
+
+	// 通常の処理
+	const videos = processUserVideoDocuments(
+		videosToProcess,
+		paginationConfig.limit,
+		undefined,
+		videoTypeFilter,
+	);
 	const hasMore = docs.length > paginationConfig.limit;
 	return { videos, hasMore };
 }
@@ -355,6 +466,7 @@ export async function getVideoTitles(params?: {
 	playlistTags?: string[];
 	userTags?: string[];
 	categoryNames?: string[];
+	videoType?: string;
 }): Promise<VideoListResult> {
 	try {
 		const firestore = getFirestore();
@@ -373,22 +485,24 @@ export async function getVideoTitles(params?: {
 
 		const docs = snapshot.docs;
 
-		// 検索クエリがある場合、全ドキュメントを取得してフィルタリング
+		// 検索クエリまたは動画種別フィルタがある場合、全ドキュメントを取得してフィルタリング
 		let videosToProcess = docs;
-		if (params?.search) {
+		const needsServerSideFiltering =
+			params?.search || (params?.videoType && params.videoType !== "all");
+		if (needsServerSideFiltering) {
 			const allDocsQuery = buildSearchQuery(videosRef, params);
 			const allDocsSnapshot = await allDocsQuery.limit(1000).get();
 			videosToProcess = allDocsSnapshot.docs;
 		}
 
-		// 検索時は異なる処理が必要
-		const { videos, hasMore } = params?.search
+		// 検索時・動画種別フィルタ時は異なる処理が必要
+		const { videos, hasMore } = needsServerSideFiltering
 			? processSearchResults(
 					videosToProcess,
-					{ search: params.search, page: params.page },
+					{ search: params.search || "", page: params.page, videoType: params.videoType },
 					paginationConfig,
 				)
-			: processRegularResults(videosToProcess, docs, paginationConfig);
+			: processRegularResults(videosToProcess, docs, paginationConfig, params?.videoType);
 
 		const lastVideo = videos.length > 0 ? videos[videos.length - 1] : undefined;
 
@@ -413,12 +527,16 @@ export async function getTotalVideoCount(params?: {
 	playlistTags?: string[];
 	userTags?: string[];
 	categoryNames?: string[];
+	videoType?: string;
 }): Promise<number> {
 	try {
 		const firestore = getFirestore();
 		const videosRef = firestore.collection("videos");
-		// 検索時はタイトルも必要なので、select()は使わない
-		let query = params?.search ? videosRef : videosRef.select(); // IDのみ取得で効率化
+		// 検索時はタイトルも必要、動画種別フィルタリング時は追加フィールドが必要なので、select()は使わない
+		let query =
+			params?.search || (params?.videoType && params.videoType !== "all")
+				? videosRef
+				: videosRef.select(); // IDのみ取得で効率化
 
 		// 年代フィルタリング
 		if (params?.year) {
@@ -437,20 +555,42 @@ export async function getTotalVideoCount(params?: {
 			query = buildThreeLayerTagQuery(query, params);
 		}
 
-		// 検索時は多くのドキュメントが必要になる可能性があるため、制限を設ける
-		const snapshot = await query.limit(params?.search ? 1000 : 500).get();
+		// 動画種別フィルタリング
+		if (params?.videoType && params.videoType !== "all") {
+			query = buildVideoTypeQuery(query, params.videoType);
+		}
 
-		// 検索フィルタリング
-		if (params?.search) {
-			const lowerSearch = params.search.toLowerCase();
+		// 検索時や動画種別フィルタリング時は多くのドキュメントが必要になる可能性があるため、制限を設ける
+		const needsServerSideFiltering =
+			params?.search || (params?.videoType && params.videoType !== "all");
+		const snapshot = await query.limit(needsServerSideFiltering ? 1000 : 500).get();
+
+		// 検索・動画種別フィルタリング
+		if (needsServerSideFiltering) {
+			const lowerSearch = params.search?.toLowerCase();
 			let count = 0;
+
 			for (const doc of snapshot.docs) {
 				try {
 					const data = doc.data() as FirestoreServerVideoData;
-					const lowerTitle = data.title.toLowerCase();
-					if (lowerTitle.includes(lowerSearch)) {
-						count++;
+
+					// 検索フィルタリング
+					if (lowerSearch) {
+						const lowerTitle = data.title.toLowerCase();
+						if (!lowerTitle.includes(lowerSearch)) {
+							continue;
+						}
 					}
+
+					// 動画種別フィルタリング
+					if (params.videoType && params.videoType !== "all") {
+						const actualVideoType = getVideoType(data);
+						if (actualVideoType !== params.videoType) {
+							continue;
+						}
+					}
+
+					count++;
 				} catch (_error) {
 					// エラーは無視
 				}

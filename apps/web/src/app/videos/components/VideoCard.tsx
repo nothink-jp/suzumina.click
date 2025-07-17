@@ -17,6 +17,94 @@ import { useSession } from "next-auth/react";
 import React, { memo, useCallback, useMemo } from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 
+// Helper function to get video badge information
+function getVideoBadgeInfo(video: FrontendVideoData) {
+	switch (video.liveBroadcastContent) {
+		case "live":
+			return {
+				text: "配信中",
+				icon: Radio,
+				className: "bg-red-600/90 text-white",
+				ariaLabel: "現在配信中のライブ配信",
+			};
+		case "upcoming":
+			return {
+				text: "配信予告",
+				icon: Clock,
+				className: "bg-blue-600/90 text-white",
+				ariaLabel: "配信予定のライブ配信",
+			};
+		case "none":
+			return getVideoBadgeInfoForNone(video);
+		default:
+			return {
+				text: "動画",
+				icon: Video,
+				className: "bg-black/70 text-white",
+				ariaLabel: "動画コンテンツ",
+			};
+	}
+}
+
+// Helper function for liveBroadcastContent === "none" cases
+function getVideoBadgeInfoForNone(video: FrontendVideoData) {
+	// 明示的にアーカイブと設定されている場合
+	if (video.videoType === "archived") {
+		return {
+			text: "配信アーカイブ",
+			icon: Radio,
+			className: "bg-gray-600/90 text-white",
+			ariaLabel: "ライブ配信のアーカイブ",
+		};
+	}
+
+	// liveStreamingDetails が存在する場合の詳細判定
+	if (video.liveStreamingDetails?.actualEndTime) {
+		return getVideoBadgeInfoForLiveDetails(video);
+	}
+
+	// プレミア公開動画の判定（liveStreamingDetails は存在するが actualEndTime がない）
+	if (video.liveStreamingDetails && !video.liveStreamingDetails.actualEndTime) {
+		return {
+			text: "プレミア公開",
+			icon: Video,
+			className: "bg-purple-600/90 text-white",
+			ariaLabel: "プレミア公開動画",
+		};
+	}
+
+	// 通常動画
+	return {
+		text: "通常動画",
+		icon: Video,
+		className: "bg-black/70 text-white",
+		ariaLabel: "通常動画コンテンツ",
+	};
+}
+
+// Helper function for live streaming details classification
+function getVideoBadgeInfoForLiveDetails(video: FrontendVideoData) {
+	// 15分以下はプレミア公開、超過はライブアーカイブ
+	const durationSeconds = parseDurationToSeconds(video.duration);
+	const fifteenMinutes = 15 * 60; // 900秒
+
+	if (durationSeconds > 0 && durationSeconds <= fifteenMinutes) {
+		return {
+			text: "プレミア公開",
+			icon: Video,
+			className: "bg-purple-600/90 text-white",
+			ariaLabel: "プレミア公開動画",
+		};
+	}
+
+	return {
+		text: "配信アーカイブ",
+		icon: Radio,
+		className: "bg-gray-600/90 text-white",
+		ariaLabel: "ライブ配信のアーカイブ",
+	};
+}
+
 interface VideoCardProps {
 	video: FrontendVideoData;
 	buttonCount?: number; // 従来の互換性のため残すが、video.audioButtonCountを優先
@@ -162,81 +250,8 @@ const VideoCard = memo(function VideoCard({
 
 	// メモ化: 動画タイプバッジの情報
 	const videoBadgeInfo = useMemo(() => {
-		switch (video.liveBroadcastContent) {
-			case "live":
-				return {
-					text: "配信中",
-					icon: Radio,
-					className: "bg-red-600/90 text-white",
-					ariaLabel: "現在配信中のライブ配信",
-				};
-			case "upcoming":
-				return {
-					text: "配信予告",
-					icon: Clock,
-					className: "bg-blue-600/90 text-white",
-					ariaLabel: "配信予定のライブ配信",
-				};
-			case "none":
-				// 明示的にアーカイブと設定されている場合
-				if (video.videoType === "archived") {
-					return {
-						text: "配信アーカイブ",
-						icon: Radio,
-						className: "bg-gray-600/90 text-white",
-						ariaLabel: "ライブ配信のアーカイブ",
-					};
-				}
-
-				// liveStreamingDetails が存在する場合の詳細判定
-				if (video.liveStreamingDetails?.actualEndTime) {
-					// 15分以下はプレミア公開、超過はライブアーカイブ
-					const durationSeconds = parseDurationToSeconds(video.duration);
-					const fifteenMinutes = 15 * 60; // 900秒
-
-					if (durationSeconds > 0 && durationSeconds <= fifteenMinutes) {
-						return {
-							text: "プレミア公開",
-							icon: Video,
-							className: "bg-purple-600/90 text-white",
-							ariaLabel: "プレミア公開動画",
-						};
-					}
-
-					return {
-						text: "配信アーカイブ",
-						icon: Radio,
-						className: "bg-gray-600/90 text-white",
-						ariaLabel: "ライブ配信のアーカイブ",
-					};
-				}
-
-				// プレミア公開動画の判定（liveStreamingDetails は存在するが actualEndTime がない）
-				if (video.liveStreamingDetails && !video.liveStreamingDetails.actualEndTime) {
-					return {
-						text: "プレミア公開",
-						icon: Video,
-						className: "bg-purple-600/90 text-white",
-						ariaLabel: "プレミア公開動画",
-					};
-				}
-
-				// 通常動画
-				return {
-					text: "通常動画",
-					icon: Video,
-					className: "bg-black/70 text-white",
-					ariaLabel: "通常動画コンテンツ",
-				};
-			default:
-				return {
-					text: "動画",
-					icon: Video,
-					className: "bg-black/70 text-white",
-					ariaLabel: "動画コンテンツ",
-				};
-		}
-	}, [video.liveBroadcastContent, video.videoType, video.liveStreamingDetails, video.duration]);
+		return getVideoBadgeInfo(video);
+	}, [video]);
 
 	return (
 		<article

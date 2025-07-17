@@ -51,45 +51,27 @@ describe("VideoList", () => {
 		vi.mocked(useRouter).mockReturnValue({
 			push: mockPush,
 		} as any);
-		
+
 		vi.mocked(useSearchParams).mockReturnValue(mockSearchParams);
 		mockPush.mockClear();
 	});
 
 	it("カテゴリーフィルタが正しく表示される", () => {
-		render(
-			<VideoList
-				data={mockVideoListData}
-				totalCount={1}
-				currentPage={1}
-			/>
-		);
+		render(<VideoList data={mockVideoListData} totalCount={1} currentPage={1} />);
 
 		// カテゴリーフィルタのトリガーボタンが存在することを確認
 		expect(screen.getByText("すべてのカテゴリ")).toBeInTheDocument();
 	});
 
 	it("年代フィルタが正しく表示される", () => {
-		render(
-			<VideoList
-				data={mockVideoListData}
-				totalCount={1}
-				currentPage={1}
-			/>
-		);
+		render(<VideoList data={mockVideoListData} totalCount={1} currentPage={1} />);
 
 		// 年代フィルタのトリガーボタンが存在することを確認
 		expect(screen.getByText("すべての年代")).toBeInTheDocument();
 	});
 
 	it("動画が正しく表示される", () => {
-		render(
-			<VideoList
-				data={mockVideoListData}
-				totalCount={1}
-				currentPage={1}
-			/>
-		);
+		render(<VideoList data={mockVideoListData} totalCount={1} currentPage={1} />);
 
 		// モックされたVideoCardが表示されることを確認
 		expect(screen.getByTestId("video-video1")).toBeInTheDocument();
@@ -102,14 +84,21 @@ describe("VideoList", () => {
 			hasMore: false,
 		};
 
-		render(
-			<VideoList
-				data={emptyData}
-				totalCount={0}
-				currentPage={1}
-			/>
-		);
+		render(<VideoList data={emptyData} totalCount={0} currentPage={1} />);
 
 		expect(screen.getByText("動画が見つかりませんでした")).toBeInTheDocument();
+	});
+
+	it("カテゴリーフィルタが設定されている場合のURLパラメータが正しく表示される", () => {
+		// categoryNames URLパラメータを設定
+		const mockSearchParamsWithCategory = new URLSearchParams();
+		mockSearchParamsWithCategory.set("categoryNames", "エンターテインメント");
+
+		vi.mocked(useSearchParams).mockReturnValue(mockSearchParamsWithCategory);
+
+		render(<VideoList data={mockVideoListData} totalCount={1} currentPage={1} />);
+
+		// カテゴリーフィルタのトリガーボタンでエンターテインメントが選択されていることを確認
+		expect(screen.getByText("エンターテインメント")).toBeInTheDocument();
 	});
 });
