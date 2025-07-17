@@ -15,6 +15,14 @@ vi.mock("../../infrastructure/database/firestore", () => {
 		commit: vi.fn().mockResolvedValue(undefined),
 	};
 
+	// デフォルトのmockDocumentReference
+	const defaultMockDocRef = {
+		id: "default-video-id",
+		get: vi.fn().mockResolvedValue({ exists: false }),
+	};
+
+	mockDoc.mockReturnValue(defaultMockDocRef);
+
 	return {
 		default: {
 			collection: vi.fn().mockReturnValue(mockCollection),
@@ -161,7 +169,10 @@ describe("youtube-firestore", () => {
 
 	describe("saveVideosToFirestore", () => {
 		it("動画データを正常に保存できる", async () => {
-			mockDoc.mockReturnValue({ id: "test-video-123" });
+			mockDoc.mockReturnValue({
+				id: "test-video-123",
+				get: vi.fn().mockResolvedValue({ exists: false }),
+			});
 
 			const result = await saveVideosToFirestore([mockYouTubeVideo]);
 
@@ -184,7 +195,10 @@ describe("youtube-firestore", () => {
 				...mockYouTubeVideo,
 				id: `video-${i}`,
 			}));
-			mockDoc.mockImplementation((id) => ({ id }));
+			mockDoc.mockImplementation((id) => ({
+				id,
+				get: vi.fn().mockResolvedValue({ exists: false }),
+			}));
 
 			const result = await saveVideosToFirestore(manyVideos);
 
@@ -199,12 +213,56 @@ describe("youtube-firestore", () => {
 				{ id: "invalid" } as youtube_v3.Schema$Video, // 無効なデータ
 				{ ...mockYouTubeVideo, id: "valid-2" },
 			];
-			mockDoc.mockImplementation((id) => ({ id }));
+			mockDoc.mockImplementation((id) => ({
+				id,
+				get: vi.fn().mockResolvedValue({ exists: false }),
+			}));
 
 			const result = await saveVideosToFirestore(mixedVideos);
 
 			expect(result).toBe(2); // 有効なデータのみカウント
 			expect(mockBatch.set).toHaveBeenCalledTimes(2);
+		});
+	});
+
+	describe("userTags保持機能", () => {
+		it("新しい動画にはuserTagsが初期化される", async () => {
+			// 新しい動画（存在しない）
+			const mockNewDoc = { exists: false };
+			mockDoc.mockReturnValue({
+				id: "new-video-123",
+				get: vi.fn().mockResolvedValue(mockNewDoc),
+			});
+
+			await saveVideosToFirestore([mockYouTubeVideo]);
+
+			// userTagsが初期化されることを確認
+			expect(mockBatch.set).toHaveBeenCalledWith(
+				expect.objectContaining({ id: "new-video-123" }),
+				expect.objectContaining({ userTags: [] }),
+				{ merge: true },
+			);
+		});
+
+		it("既存の動画のuserTagsは保持される", async () => {
+			// 既存の動画（存在する）
+			const mockExistingDoc = {
+				exists: true,
+				data: vi.fn().mockReturnValue({ userTags: ["existing-tag"] }),
+			};
+			mockDoc.mockReturnValue({
+				id: "existing-video-123",
+				get: vi.fn().mockResolvedValue(mockExistingDoc),
+			});
+
+			await saveVideosToFirestore([mockYouTubeVideo]);
+
+			// userTagsが含まれていないことを確認（既存値を保持）
+			expect(mockBatch.set).toHaveBeenCalledWith(
+				expect.objectContaining({ id: "existing-video-123" }),
+				expect.not.objectContaining({ userTags: expect.anything() }),
+				{ merge: true },
+			);
 		});
 	});
 

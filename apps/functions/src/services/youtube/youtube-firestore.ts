@@ -310,8 +310,7 @@ function createVideoData(
 		...extractSnippetExtras(video.snippet),
 		// 3層タグシステム: プレイリストタグを追加
 		playlistTags: playlistTags || [],
-		// ユーザータグは初期値として空配列を設定
-		userTags: [],
+		// userTags フィールドを削除（既存値を保持するため）
 	};
 
 	// 各パートからのデータを追加
@@ -383,6 +382,16 @@ export async function saveVideosToFirestore(
 
 		validVideoCount++;
 		const videoRef = videosCollection.doc(video.id);
+
+		// 既存ドキュメントかチェック
+		const existingDoc = await videoRef.get();
+		const isNewVideo = !existingDoc.exists;
+
+		// 新しい動画の場合のみuserTagsを初期化
+		if (isNewVideo) {
+			(videoData as any).userTags = [];
+		}
+
 		batch.set(videoRef, videoData, { merge: true });
 		batchCounter++;
 
