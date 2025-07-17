@@ -443,25 +443,60 @@ export interface FirestoreServerVideoData {
  * @returns 音声ボタン作成可能かどうか
  */
 export function canCreateAudioButton(video: FrontendVideoData): boolean {
-	// 許諾により音声ボタンを作成できるのは配信アーカイブのみ
-	// 以下の条件を満たす場合に音声ボタン作成を許可:
+	// 著作権とライブ配信ポリシーに基づき、音声ボタンを作成できるのは配信アーカイブのみ
+	// 作成可能な条件:
 	// 1. 明示的に videoType が "archived" の場合
-	// 2. または、liveStreamingDetails が存在し、actualStartTime と actualEndTime がある場合
+	// 2. ライブ配信アーカイブ（liveStreamingDetails.actualEndTime が存在）
+	//
+	// 作成不可な条件:
+	// - 配信中・配信予定（liveBroadcastContent が "live" または "upcoming"）
+	// - 通常動画（liveStreamingDetails が存在しない）
+	// - プレミア公開動画（liveStreamingDetails は存在するが actualEndTime がない）
 
 	// 明示的にアーカイブと設定されている場合
 	if (video.videoType === "archived") {
 		return true;
 	}
 
-	// liveBroadcastContent が "none" でない場合は作成不可
+	// 配信中・配信予定は作成不可
 	if (video.liveBroadcastContent !== "none") {
 		return false;
 	}
 
-	// liveStreamingDetails が存在し、actualStartTime と actualEndTime がある場合は配信アーカイブとして判定
-	if (video.liveStreamingDetails?.actualStartTime && video.liveStreamingDetails?.actualEndTime) {
+	// ライブアーカイブの判定: actualEndTime が存在する場合のみ許可
+	// これにより通常動画とプレミア公開動画は自動的に除外される
+	if (video.liveStreamingDetails?.actualEndTime) {
 		return true;
 	}
 
+	// その他のケース（通常動画、プレミア公開動画など）は作成不可
 	return false;
+}
+
+/**
+ * 音声ボタン作成不可の理由を取得する
+ * @param video 動画データ
+ * @returns エラーメッセージ（作成可能な場合は null）
+ */
+export function getAudioButtonCreationErrorMessage(video: FrontendVideoData): string | null {
+	// 作成可能な場合は null を返す
+	if (canCreateAudioButton(video)) {
+		return null;
+	}
+
+	// 配信中・配信予定の場合
+	if (video.liveBroadcastContent === "live") {
+		return "配信中は音声ボタンを作成できません";
+	}
+	if (video.liveBroadcastContent === "upcoming") {
+		return "配信開始前は音声ボタンを作成できません";
+	}
+
+	// プレミア公開動画の判定（liveStreamingDetails は存在するが actualEndTime がない）
+	if (video.liveStreamingDetails && !video.liveStreamingDetails.actualEndTime) {
+		return "プレミア公開動画は著作権の関係上、音声ボタンの作成はできません";
+	}
+
+	// 通常動画（liveStreamingDetails が存在しない）
+	return "通常動画は著作権の関係上、音声ボタンの作成はできません";
 }

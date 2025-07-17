@@ -43,11 +43,11 @@ const baseVideoData: FrontendVideoData = {
 };
 
 describe("VideoCard", () => {
-	it("通常の動画でVideoアイコンと「動画」テキストが表示される", () => {
+	it("通常の動画でVideoアイコンと「通常動画」テキストが表示される", () => {
 		render(<VideoCard video={baseVideoData} />);
 
-		expect(screen.getByLabelText("動画コンテンツ")).toBeInTheDocument();
-		expect(screen.getByText("動画")).toBeInTheDocument();
+		expect(screen.getByLabelText("通常動画コンテンツ")).toBeInTheDocument();
+		expect(screen.getByText("通常動画")).toBeInTheDocument();
 	});
 
 	it("アーカイブ動画でRadioアイコンと「配信アーカイブ」テキストが表示される", () => {
@@ -86,7 +86,7 @@ describe("VideoCard", () => {
 		expect(screen.getByText("配信予告")).toBeInTheDocument();
 	});
 
-	it("配信アーカイブ以外の動画でボタン作成が無効になる", () => {
+	it("配信中の動画でボタン作成が無効になる", () => {
 		const liveVideo: FrontendVideoData = {
 			...baseVideoData,
 			liveBroadcastContent: "live",
@@ -96,10 +96,7 @@ describe("VideoCard", () => {
 
 		const createButton = screen.getByRole("button", { name: /ボタン作成/ });
 		expect(createButton).toBeDisabled();
-		expect(createButton).toHaveAttribute(
-			"title",
-			"音声ボタンを作成できるのは配信アーカイブのみです",
-		);
+		expect(createButton).toHaveAttribute("title", "配信中は音声ボタンを作成できません");
 	});
 
 	it("通常の動画でボタン作成が無効になる", () => {
@@ -109,7 +106,7 @@ describe("VideoCard", () => {
 		expect(createButton).toBeDisabled();
 		expect(createButton).toHaveAttribute(
 			"title",
-			"音声ボタンを作成できるのは配信アーカイブのみです",
+			"通常動画は著作権の関係上、音声ボタンの作成はできません",
 		);
 	});
 
@@ -399,6 +396,40 @@ describe("VideoCard", () => {
 			const createButton = screen.getByRole("link", { name: /テスト動画の音声ボタンを作成/ });
 			expect(createButton).toBeInTheDocument();
 			expect(createButton).toHaveAttribute("href", "/buttons/create?video_id=test-video-1");
+		});
+
+		it("プレミア公開動画でプレミアバッジが表示される", () => {
+			const premiereVideo: FrontendVideoData = {
+				...baseVideoData,
+				liveStreamingDetails: {
+					actualStartTime: "2024-01-01T19:00:00Z",
+					// actualEndTimeがない = プレミア公開
+				},
+			};
+
+			render(<VideoCard video={premiereVideo} />);
+
+			expect(screen.getByLabelText("プレミア公開動画")).toBeInTheDocument();
+			expect(screen.getByText("プレミア公開")).toBeInTheDocument();
+		});
+
+		it("プレミア公開動画でボタン作成が無効になる", () => {
+			const premiereVideo: FrontendVideoData = {
+				...baseVideoData,
+				liveStreamingDetails: {
+					actualStartTime: "2024-01-01T19:00:00Z",
+					// actualEndTimeがない = プレミア公開
+				},
+			};
+
+			render(<VideoCard video={premiereVideo} />);
+
+			const createButton = screen.getByRole("button", { name: /ボタン作成/ });
+			expect(createButton).toBeDisabled();
+			expect(createButton).toHaveAttribute(
+				"title",
+				"プレミア公開動画は著作権の関係上、音声ボタンの作成はできません",
+			);
 		});
 	});
 });

@@ -1,7 +1,10 @@
 "use client";
 
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
-import { canCreateAudioButton } from "@suzumina.click/shared-types/src/video";
+import {
+	canCreateAudioButton,
+	getAudioButtonCreationErrorMessage,
+} from "@suzumina.click/shared-types/src/video";
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -142,9 +145,12 @@ const VideoCard = memo(function VideoCard({
 		// 動画の条件をチェック
 		const videoCanCreate = canCreateAudioButton(video);
 		if (!videoCanCreate) {
+			const reason =
+				getAudioButtonCreationErrorMessage(video) ||
+				"音声ボタンを作成できるのは配信アーカイブのみです";
 			return {
 				canCreate: false,
-				reason: "音声ボタンを作成できるのは配信アーカイブのみです",
+				reason,
 			};
 		}
 
@@ -171,11 +177,8 @@ const VideoCard = memo(function VideoCard({
 					ariaLabel: "配信予定のライブ配信",
 				};
 			case "none":
-				// videoType が"archived"の場合、または liveStreamingDetails に actualStartTime と actualEndTime がある場合は配信アーカイブ
-				if (
-					video.videoType === "archived" ||
-					(video.liveStreamingDetails?.actualStartTime && video.liveStreamingDetails?.actualEndTime)
-				) {
+				// 配信アーカイブの判定
+				if (video.videoType === "archived" || video.liveStreamingDetails?.actualEndTime) {
 					return {
 						text: "配信アーカイブ",
 						icon: Radio,
@@ -183,11 +186,21 @@ const VideoCard = memo(function VideoCard({
 						ariaLabel: "ライブ配信のアーカイブ",
 					};
 				}
+				// プレミア公開動画の判定（liveStreamingDetails は存在するが actualEndTime がない）
+				if (video.liveStreamingDetails && !video.liveStreamingDetails.actualEndTime) {
+					return {
+						text: "プレミア公開",
+						icon: Video,
+						className: "bg-purple-600/90 text-white",
+						ariaLabel: "プレミア公開動画",
+					};
+				}
+				// 通常動画
 				return {
-					text: "動画",
+					text: "通常動画",
 					icon: Video,
 					className: "bg-black/70 text-white",
-					ariaLabel: "動画コンテンツ",
+					ariaLabel: "通常動画コンテンツ",
 				};
 			default:
 				return {
@@ -197,12 +210,7 @@ const VideoCard = memo(function VideoCard({
 					ariaLabel: "動画コンテンツ",
 				};
 		}
-	}, [
-		video.liveBroadcastContent,
-		video.videoType,
-		video.liveStreamingDetails?.actualStartTime,
-		video.liveStreamingDetails?.actualEndTime,
-	]);
+	}, [video.liveBroadcastContent, video.videoType, video.liveStreamingDetails]);
 
 	return (
 		<article
