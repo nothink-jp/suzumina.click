@@ -324,27 +324,25 @@ const VideoCard = memo(function VideoCard({
 
 					{/* アクションボタン */}
 					{isGrid ? (
-						<fieldset className="flex gap-1 sm:gap-2" aria-label="動画アクション">
-							<Button
-								size="sm"
-								variant="outline"
-								className="flex-1 border text-muted-foreground hover:bg-accent min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
-								asChild
-							>
-								<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-									<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
-									詳細を見る
-								</Link>
-							</Button>
-							<Button
-								size="sm"
-								variant="default"
-								className="flex-1 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
-								disabled={!canCreateButton}
-								asChild={canCreateButton}
-								title={canCreateButton ? undefined : canCreateButtonData.reason}
-							>
-								{canCreateButton ? (
+						canCreateButton ? (
+							<fieldset className="flex gap-1 sm:gap-2" aria-label="動画アクション">
+								<Button
+									size="sm"
+									variant="outline"
+									className="flex-1 border text-muted-foreground hover:bg-accent min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
+									asChild
+								>
+									<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
+										<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
+										詳細を見る
+									</Link>
+								</Button>
+								<Button
+									size="sm"
+									variant="default"
+									className="flex-1 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
+									asChild
+								>
 									<Link
 										href={`/buttons/create?video_id=${video.id}`}
 										aria-label={`${video.title}の音声ボタンを作成`}
@@ -353,14 +351,21 @@ const VideoCard = memo(function VideoCard({
 										<Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
 										ボタン作成
 									</Link>
-								) : (
-									<span className="flex items-center whitespace-nowrap">
-										<Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
-										ボタン作成
-									</span>
-								)}
+								</Button>
+							</fieldset>
+						) : (
+							<Button
+								size="sm"
+								variant="outline"
+								className="w-full border text-muted-foreground hover:bg-accent min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
+								asChild
+							>
+								<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
+									<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
+									詳細を見る
+								</Link>
 							</Button>
-						</fieldset>
+						)
 					) : (
 						<Button
 							variant="outline"

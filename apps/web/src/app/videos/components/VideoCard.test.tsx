@@ -86,7 +86,7 @@ describe("VideoCard", () => {
 		expect(screen.getByText("配信予告")).toBeInTheDocument();
 	});
 
-	it("配信中の動画でボタン作成が無効になる", () => {
+	it("配信中の動画でボタン作成ボタンが表示されない", () => {
 		const liveVideo: FrontendVideoData = {
 			...baseVideoData,
 			liveBroadcastContent: "live",
@@ -94,20 +94,27 @@ describe("VideoCard", () => {
 
 		render(<VideoCard video={liveVideo} />);
 
-		const createButton = screen.getByRole("button", { name: /ボタン作成/ });
-		expect(createButton).toBeDisabled();
-		expect(createButton).toHaveAttribute("title", "配信中は音声ボタンを作成できません");
+		// ボタン作成ボタンが表示されていないことを確認
+		expect(screen.queryByRole("button", { name: /ボタン作成/ })).not.toBeInTheDocument();
+		expect(screen.queryByRole("link", { name: /ボタン作成/ })).not.toBeInTheDocument();
+
+		// 詳細を見るボタンが全幅で表示されていることを確認
+		const detailButton = screen.getByRole("link", { name: /詳細を見る/ });
+		expect(detailButton).toBeInTheDocument();
+		expect(detailButton).toHaveAttribute("href", "/videos/test-video-1");
 	});
 
-	it("通常の動画でボタン作成が無効になる", () => {
+	it("通常の動画でボタン作成ボタンが表示されない", () => {
 		render(<VideoCard video={baseVideoData} />);
 
-		const createButton = screen.getByRole("button", { name: /ボタン作成/ });
-		expect(createButton).toBeDisabled();
-		expect(createButton).toHaveAttribute(
-			"title",
-			"通常動画は著作権の関係上、音声ボタンの作成はできません",
-		);
+		// ボタン作成ボタンが表示されていないことを確認
+		expect(screen.queryByRole("button", { name: /ボタン作成/ })).not.toBeInTheDocument();
+		expect(screen.queryByRole("link", { name: /ボタン作成/ })).not.toBeInTheDocument();
+
+		// 詳細を見るボタンが全幅で表示されていることを確認
+		const detailButton = screen.getByRole("link", { name: /詳細を見る/ });
+		expect(detailButton).toBeInTheDocument();
+		expect(detailButton).toHaveAttribute("href", "/videos/test-video-1");
 	});
 
 	it("ログイン状態で配信アーカイブでボタン作成が有効になる", () => {
@@ -413,7 +420,7 @@ describe("VideoCard", () => {
 			expect(screen.getByText("プレミア公開")).toBeInTheDocument();
 		});
 
-		it("プレミア公開動画でボタン作成が無効になる", () => {
+		it("プレミア公開動画でボタン作成ボタンが表示されない", () => {
 			const premiereVideo: FrontendVideoData = {
 				...baseVideoData,
 				liveStreamingDetails: {
@@ -424,12 +431,36 @@ describe("VideoCard", () => {
 
 			render(<VideoCard video={premiereVideo} />);
 
-			const createButton = screen.getByRole("button", { name: /ボタン作成/ });
-			expect(createButton).toBeDisabled();
-			expect(createButton).toHaveAttribute(
-				"title",
-				"プレミア公開動画は著作権の関係上、音声ボタンの作成はできません",
-			);
+			// ボタン作成ボタンが表示されていないことを確認
+			expect(screen.queryByRole("button", { name: /ボタン作成/ })).not.toBeInTheDocument();
+			expect(screen.queryByRole("link", { name: /ボタン作成/ })).not.toBeInTheDocument();
+
+			// 詳細を見るボタンが全幅で表示されていることを確認
+			const detailButton = screen.getByRole("link", { name: /詳細を見る/ });
+			expect(detailButton).toBeInTheDocument();
+			expect(detailButton).toHaveAttribute("href", "/videos/test-video-1");
+		});
+
+		it("15分以下の動画でボタン作成ボタンが表示されない（プレミア公開判定）", () => {
+			const shortPremiereVideo: FrontendVideoData = {
+				...baseVideoData,
+				duration: "PT3M3S", // 3分3秒
+				liveStreamingDetails: {
+					actualStartTime: "2024-01-01T19:00:00Z",
+					actualEndTime: "2024-01-01T19:03:03Z",
+				},
+			};
+
+			render(<VideoCard video={shortPremiereVideo} />);
+
+			// ボタン作成ボタンが表示されていないことを確認
+			expect(screen.queryByRole("button", { name: /ボタン作成/ })).not.toBeInTheDocument();
+			expect(screen.queryByRole("link", { name: /ボタン作成/ })).not.toBeInTheDocument();
+
+			// 詳細を見るボタンが全幅で表示されていることを確認
+			const detailButton = screen.getByRole("link", { name: /詳細を見る/ });
+			expect(detailButton).toBeInTheDocument();
+			expect(detailButton).toHaveAttribute("href", "/videos/test-video-1");
 		});
 	});
 });
