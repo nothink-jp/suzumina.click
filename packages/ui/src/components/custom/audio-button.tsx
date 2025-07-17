@@ -29,6 +29,7 @@ import {
 import { useCallback, useRef, useState } from "react";
 import { type AudioControls, AudioPlayer } from "./audio-player";
 import { HighlightText } from "./highlight-text";
+import { TagList } from "./tag-list";
 
 interface AudioButtonProps {
 	audioButton: FrontendAudioButtonData;
@@ -157,26 +158,16 @@ function AudioButtonPopoverContent({
 			{audioButton.tags && audioButton.tags.length > 0 && (
 				<div>
 					<p className="text-xs text-muted-foreground mb-2">タグ</p>
-					<div className="flex flex-wrap gap-1">
-						{audioButton.tags.map((tag, index) => (
-							<span
-								key={index}
-								className="inline-block bg-suzuka-100 text-suzuka-700 text-xs px-2 py-1 rounded-full"
-							>
-								{searchQuery ? (
-									<HighlightText
-										text={tag}
-										searchQuery={searchQuery}
-										highlightClassName={
-											highlightClassName || "bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
-										}
-									/>
-								) : (
-									tag
-								)}
-							</span>
-						))}
-					</div>
+					<TagList
+						tags={audioButton.tags}
+						variant="outline"
+						showIcon={true}
+						searchQuery={searchQuery}
+						highlightClassName={
+							highlightClassName || "bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
+						}
+						size="default"
+					/>
 				</div>
 			)}
 

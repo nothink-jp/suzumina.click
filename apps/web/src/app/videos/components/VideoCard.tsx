@@ -2,8 +2,10 @@
 
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { canCreateAudioButton } from "@suzumina.click/shared-types/src/video";
+import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
+import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { Calendar, Clock, ExternalLink, Eye, Plus, Radio, Video } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -94,6 +96,11 @@ const VideoCard = memo(function VideoCard({
 		() => `https://youtube.com/watch?v=${video.videoId}`,
 		[video.videoId],
 	);
+
+	// メモ化: YouTubeカテゴリ名取得
+	const categoryName = useMemo(() => {
+		return getYouTubeCategoryName(video.categoryId);
+	}, [video.categoryId]);
 
 	// メモ化: 音声ボタン作成可能判定（認証状態も考慮）
 	const canCreateButtonData = useMemo(() => {
@@ -237,6 +244,20 @@ const VideoCard = memo(function VideoCard({
 						<time dateTime={dateTimeValue} title={`${displayLabel}: ${formattedDate}`}>
 							{formattedDate}
 						</time>
+					</div>
+
+					{/* 3層タグ表示 */}
+					<div className="mb-4">
+						<ThreeLayerTagDisplay
+							playlistTags={video.playlistTags || []}
+							userTags={video.userTags || []}
+							categoryId={video.categoryId}
+							categoryName={categoryName || undefined}
+							size="sm"
+							maxTagsPerLayer={4}
+							showEmptyLayers={false}
+							showCategory={true}
+						/>
 					</div>
 
 					{/* アクションボタン */}

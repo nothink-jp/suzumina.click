@@ -3,6 +3,8 @@ import type { youtube_v3 } from "googleapis";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import {
 	extractVideoIds,
+	fetchChannelPlaylists,
+	fetchPlaylistItems,
 	fetchVideoDetails,
 	initializeYouTubeClient,
 	searchVideos,
@@ -206,6 +208,58 @@ async function fetchVideoIds(
 	return { videoIds: allVideoIds, nextPageToken, isComplete };
 }
 
+/**
+ * プレイリスト情報を取得し、動画IDとプレイリストのマッピングを作成
+ *
+ * @param youtube - YouTube APIクライアント
+ * @param channelId - チャンネルID
+ * @returns Promise<Map<string, string[]>> - 動画ID → プレイリストタイトル配列のマップ
+ */
+async function fetchPlaylistMappings(
+	youtube: youtube_v3.Youtube,
+	channelId: string,
+): Promise<Map<string, string[]>> {
+	try {
+		logger.info("プレイリストマッピング作成開始");
+
+		// 1. チャンネルのプレイリスト一覧を取得
+		const playlists = await fetchChannelPlaylists(youtube, channelId);
+		logger.info(`プレイリスト取得完了: ${playlists.length}件`);
+
+		// 2. 各プレイリストの動画一覧を取得
+		const videoToPlaylistsMap = new Map<string, string[]>();
+
+		for (const playlist of playlists) {
+			try {
+				logger.debug(`プレイリスト "${playlist.title}" の動画取得中`);
+				const videoIds = await fetchPlaylistItems(youtube, playlist.id);
+
+				// 各動画IDにプレイリストタイトルを追加
+				for (const videoId of videoIds) {
+					const existing = videoToPlaylistsMap.get(videoId) || [];
+					existing.push(playlist.title);
+					videoToPlaylistsMap.set(videoId, existing);
+				}
+
+				logger.debug(`プレイリスト "${playlist.title}": ${videoIds.length}件の動画を処理`);
+			} catch (error: unknown) {
+				logger.warn(`プレイリスト "${playlist.title}" の処理中にエラーが発生しました`, {
+					playlistId: playlist.id,
+					playlistTitle: playlist.title,
+					error: error instanceof Error ? error.message : String(error),
+				});
+			}
+		}
+
+		logger.info(`プレイリストマッピング作成完了: ${videoToPlaylistsMap.size}件の動画に対応`);
+		return videoToPlaylistsMap;
+	} catch (error: unknown) {
+		logger.error("プレイリストマッピング作成中にエラー:", error);
+		// エラーが発生した場合は空のマップを返す（処理を継続）
+		return new Map<string, string[]>();
+	}
+}
+
 // 注：動画詳細取得機能はutils/youtube-apiから利用
 // 注：動画データ保存機能はutils/youtube-firestoreから利用
 
@@ -248,13 +302,17 @@ async function fetchYouTubeVideosLogic(): Promise<FetchResult> {
 			return { videoCount: 0 };
 		}
 
-		// 4. 動画の詳細情報取得
+		// 4. プレイリストマッピングの取得（新機能）
+		logger.info("プレイリスト情報の取得を開始します");
+		const playlistMappings = await fetchPlaylistMappings(youtube, SUZUKA_MINASE_CHANNEL_ID);
+
+		// 5. 動画の詳細情報取得
 		const videoDetails = await fetchVideoDetails(youtube, videoIds);
 
-		// 5. Firestoreにデータ保存
-		const savedCount = await saveVideosToFirestore(videoDetails);
+		// 6. Firestoreにデータ保存（プレイリストマッピング付き）
+		const savedCount = await saveVideosToFirestore(videoDetails, playlistMappings);
 
-		// 6. メタデータを更新
+		// 7. メタデータを更新
 		if (isComplete) {
 			await updateMetadata({
 				nextPageToken: undefined,
@@ -265,7 +323,7 @@ async function fetchYouTubeVideosLogic(): Promise<FetchResult> {
 			logger.debug(`次回の実行のためにページトークンを保存: ${nextPageToken}`);
 		}
 
-		// 7. 処理完了を記録
+		// 8. 処理完了を記録
 		await updateMetadata({
 			isInProgress: false,
 			lastError: undefined,

@@ -47,6 +47,8 @@ function convertFirestoreServerData(
 		liveBroadcastContent: docData.liveBroadcastContent,
 		audioButtonCount: docData.audioButtonCount || 0,
 		hasAudioButtons: docData.hasAudioButtons || false,
+		playlistTags: docData.playlistTags || [],
+		userTags: docData.userTags || [],
 	};
 }
 

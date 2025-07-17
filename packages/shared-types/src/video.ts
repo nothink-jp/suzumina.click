@@ -81,6 +81,20 @@ export const FirestoreVideoSchema = YouTubeVideoBaseSchema.extend({
 	// 音声ボタン関連情報
 	audioButtonCount: z.number().int().min(0).default(0),
 	hasAudioButtons: z.boolean().default(false),
+	// 3層タグシステム (VIDEO_TAGS_DESIGN.md準拠)
+	playlistTags: z
+		.array(z.string().min(1).max(50)) // プレイリスト名は長い場合があるため50文字
+		.max(20, {
+			message: "プレイリストタグは最大20個まで",
+		})
+		.optional()
+		.default([]),
+	userTags: z
+		.array(z.string().min(1).max(30))
+		.max(15, {
+			message: "ユーザータグは最大15個まで設定できます",
+		})
+		.default([]),
 });
 
 /**
@@ -150,6 +164,21 @@ export const FrontendVideoSchema = YouTubeVideoBaseSchema.extend({
 	// カテゴリ情報
 	categoryId: z.string().optional(), // 動画カテゴリID
 	tags: z.array(z.string()).optional(), // 動画タグ
+
+	// 3層タグシステム (VIDEO_TAGS_DESIGN.md準拠)
+	playlistTags: z
+		.array(z.string().min(1).max(50)) // プレイリスト名は長い場合があるため50文字
+		.max(20, {
+			message: "プレイリストタグは最大20個まで",
+		})
+		.optional()
+		.default([]),
+	userTags: z
+		.array(z.string().min(1).max(30))
+		.max(15, {
+			message: "ユーザータグは最大15個まで設定できます",
+		})
+		.default([]),
 
 	// プレイヤー情報 (player)
 	player: z
@@ -234,6 +263,9 @@ export function convertToFrontendVideo(data: FirestoreVideoData): FrontendVideoD
 		// 音声ボタン関連フィールドを追加（デフォルト値）
 		audioButtonCount: data.audioButtonCount || 0,
 		hasAudioButtons: data.hasAudioButtons || false,
+		// 3層タグシステムフィールドを追加（デフォルト値）
+		playlistTags: data.playlistTags || [],
+		userTags: data.userTags || [],
 	};
 
 	// データの検証
@@ -263,6 +295,9 @@ export function convertToFrontendVideo(data: FirestoreVideoData): FrontendVideoD
 			// 音声ボタン関連フィールドを追加
 			audioButtonCount: data.audioButtonCount || 0,
 			hasAudioButtons: data.hasAudioButtons || false,
+			// 3層タグシステムフィールドを追加
+			playlistTags: data.playlistTags || [],
+			userTags: data.userTags || [],
 		};
 	}
 }
@@ -395,6 +430,10 @@ export interface FirestoreServerVideoData {
 	// カテゴリ情報
 	categoryId?: string; // 動画カテゴリID
 	tags?: string[]; // 動画タグ
+
+	// 3層タグシステム (VIDEO_TAGS_DESIGN.md準拠)
+	playlistTags?: string[]; // YouTubeプレイリスト名から自動生成
+	userTags?: string[]; // 登録ユーザーが編集可能なタグ配列
 }
 
 /**

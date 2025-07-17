@@ -47,6 +47,15 @@ const mockYoutubeVideosList = vi
 		return Promise.resolve({ data: { items: [] } });
 	});
 
+// プレイリスト関連のモック
+const mockYoutubePlaylistsList = vi.fn().mockImplementation((): Promise<any> => {
+	return Promise.resolve({ data: { items: [] } });
+});
+
+const mockYoutubePlaylistItemsList = vi.fn().mockImplementation((): Promise<any> => {
+	return Promise.resolve({ data: { items: [] } });
+});
+
 // モジュールをインポートする前に vi.mock を記述
 vi.mock("../shared/logger", () => ({
 	info: vi.fn(),
@@ -64,6 +73,12 @@ vi.mock("googleapis", () => ({
 			},
 			videos: {
 				list: mockYoutubeVideosList,
+			},
+			playlists: {
+				list: mockYoutubePlaylistsList,
+			},
+			playlistItems: {
+				list: mockYoutubePlaylistItemsList,
 			},
 		})),
 	},

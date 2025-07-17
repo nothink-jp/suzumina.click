@@ -287,11 +287,13 @@ function extractRecordingDetails(
  *
  * @param video - YouTube APIから返される動画データ
  * @param now - 現在のタイムスタンプ
+ * @param playlistTags - 該当動画のプレイリストタグ（オプション）
  * @returns Firestore用の動画データ、または無効なデータの場合はnull
  */
 function createVideoData(
 	video: youtube_v3.Schema$Video,
 	now: Timestamp,
+	playlistTags?: string[],
 ): FirestoreServerVideoData | null {
 	// 必須フィールドの検証
 	if (!video.id || !video.snippet) {
@@ -306,6 +308,10 @@ function createVideoData(
 	const videoData: FirestoreServerVideoData = {
 		...createBasicVideoData(video, now),
 		...extractSnippetExtras(video.snippet),
+		// 3層タグシステム: プレイリストタグを追加
+		playlistTags: playlistTags || [],
+		// ユーザータグは初期値として空配列を設定
+		userTags: [],
 	};
 
 	// 各パートからのデータを追加
@@ -340,10 +346,12 @@ function createVideoData(
  * Firestoreに動画データを保存
  *
  * @param videoDetails - 保存する動画詳細情報
+ * @param playlistMappings - 動画ID → プレイリストタイトル配列のマップ（オプション）
  * @returns Promise<number> - 保存した動画数
  */
 export async function saveVideosToFirestore(
 	videoDetails: youtube_v3.Schema$Video[],
+	playlistMappings?: Map<string, string[]>,
 ): Promise<number> {
 	if (videoDetails.length === 0) {
 		logger.debug("保存する動画情報がありません");
@@ -359,10 +367,18 @@ export async function saveVideosToFirestore(
 
 	// 動画データをFirestoreにバッチ書き込み
 	for (const video of videoDetails) {
-		// 動画データを変換
-		const videoData = createVideoData(video, now);
+		// プレイリストタグを取得
+		const playlistTags = playlistMappings?.get(video.id || "") || [];
+
+		// 動画データを変換（プレイリストタグ付き）
+		const videoData = createVideoData(video, now, playlistTags);
 		if (!videoData || !video.id) {
 			continue;
+		}
+
+		// プレイリストタグが付与された場合はログ出力
+		if (playlistTags.length > 0) {
+			logger.debug(`動画 ${video.id} にプレイリストタグを追加: ${playlistTags.join(", ")}`);
 		}
 
 		validVideoCount++;
@@ -406,10 +422,12 @@ export async function saveVideosToFirestore(
  * 単一の動画データをFirestore用のデータ形式に変換（外部公開用）
  *
  * @param videoData - YouTube APIから返される動画データ
+ * @param playlistTags - 該当動画のプレイリストタグ（オプション）
  * @returns Firestore用の動画データ
  */
 export function convertVideoDataForFirestore(
 	videoData: youtube_v3.Schema$Video,
+	playlistTags?: string[],
 ): FirestoreServerVideoData | null {
-	return createVideoData(videoData, Timestamp.now());
+	return createVideoData(videoData, Timestamp.now(), playlistTags);
 }

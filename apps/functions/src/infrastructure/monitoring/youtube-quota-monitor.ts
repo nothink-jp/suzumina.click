@@ -28,6 +28,10 @@ export const QUOTA_COSTS = {
 
 	// 複合操作（複数partを含む）
 	videosFullDetails: 8, // snippet, statistics, contentDetails等の合計
+
+	// プレイリスト関連（3層タグシステム用）
+	playlists: 1, // playlists.list API
+	playlistItems: 1, // playlistItems.list API
 } as const;
 
 /**

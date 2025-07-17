@@ -1,4 +1,5 @@
 import type { AudioButtonQuery } from "@suzumina.click/shared-types";
+import { TagList } from "@suzumina.click/ui/components/custom/tag-list";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
@@ -10,7 +11,6 @@ import {
 	Eye,
 	Heart,
 	Play,
-	Tag,
 	ThumbsUp,
 	TrendingUp,
 	User,
@@ -638,18 +638,12 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 								{/* タグ */}
 								{audioButton.tags && audioButton.tags.length > 0 && (
 									<div className="mb-6">
-										<div className="flex items-center gap-2 flex-wrap">
-											{audioButton.tags.map((tag) => (
-												<Badge
-													key={tag}
-													variant="outline"
-													className="bg-background/80 text-suzuka-700 border-suzuka-300 hover:bg-suzuka-50 transition-colors"
-												>
-													<Tag className="h-3 w-3 mr-1" />
-													{tag}
-												</Badge>
-											))}
-										</div>
+										<TagList
+											tags={audioButton.tags}
+											variant="outline"
+											showIcon={true}
+											size="default"
+										/>
 									</div>
 								)}
 

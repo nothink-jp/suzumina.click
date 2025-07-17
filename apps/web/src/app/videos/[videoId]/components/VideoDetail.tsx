@@ -25,6 +25,7 @@ import { getAudioButtonCount, getAudioButtons } from "@/app/buttons/actions";
 import { AudioButtonWithPlayCount } from "@/components/audio";
 import { ThumbnailImage } from "@/components/ui";
 import { formatDescriptionText } from "@/lib/text-utils";
+import { VideoUserTagEditor } from "./VideoUserTagEditor";
 
 interface VideoDetailProps {
 	video: FrontendVideoData;
@@ -394,8 +395,9 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 
 							{/* タブナビゲーション */}
 							<Tabs defaultValue="overview" className="w-full">
-								<TabsList className="grid w-full grid-cols-4 mb-6">
+								<TabsList className="grid w-full grid-cols-5 mb-6">
 									<TabsTrigger value="overview">概要</TabsTrigger>
+									<TabsTrigger value="tags">タグ</TabsTrigger>
 									<TabsTrigger value="statistics">統計情報</TabsTrigger>
 									<TabsTrigger value="details">詳細情報</TabsTrigger>
 									<TabsTrigger value="technical">技術仕様</TabsTrigger>
@@ -431,6 +433,18 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 											</div>
 										</div>
 									)}
+								</TabsContent>
+
+								{/* タグタブ */}
+								<TabsContent value="tags" className="space-y-4">
+									<div>
+										<h3 className="text-lg font-semibold mb-4">3層タグシステム</h3>
+										<p className="text-sm text-muted-foreground mb-6">
+											動画には3種類のタグが設定されています。プレイリストタグとカテゴリは自動で付与され、
+											ユーザータグは登録ユーザーが編集できます。
+										</p>
+										<VideoUserTagEditor video={video} />
+									</div>
 								</TabsContent>
 
 								{/* 統計情報タブ */}

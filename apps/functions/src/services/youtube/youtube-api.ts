@@ -185,3 +185,137 @@ export async function fetchVideoDetails(
 export function extractVideoIds(searchItems: youtube_v3.Schema$SearchResult[]): string[] {
 	return searchItems.map((item) => item.id?.videoId).filter((id): id is string => !!id);
 }
+
+/**
+ * プレイリスト情報の型定義
+ */
+export interface PlaylistInfo {
+	id: string;
+	title: string;
+	videoCount: number;
+	description: string;
+	publishedAt: string;
+}
+
+/**
+ * プレイリスト→動画マッピングの型定義
+ */
+export interface PlaylistVideoMapping {
+	videoId: string;
+	playlistTitles: string[];
+}
+
+/**
+ * チャンネルのプレイリスト一覧を取得
+ * 既存のクォータ管理システムを活用
+ *
+ * @param youtube - YouTube APIクライアント
+ * @param channelId - チャンネルID
+ * @returns Promise<PlaylistInfo[]> - プレイリスト情報の配列
+ */
+export async function fetchChannelPlaylists(
+	youtube: youtube_v3.Youtube,
+	channelId: string,
+): Promise<PlaylistInfo[]> {
+	// クォータチェック
+	if (!canExecuteOperation("playlists")) {
+		throw new Error("YouTube APIクォータが不足しています");
+	}
+
+	try {
+		logger.debug("チャンネルプレイリスト取得開始", { channelId });
+
+		const response = await youtube.playlists.list({
+			part: ["snippet", "contentDetails"],
+			channelId: channelId,
+			maxResults: 50,
+		});
+
+		// 成功時にクォータ使用量を記録
+		recordQuotaUsage("playlists");
+		getYouTubeQuotaMonitor().logQuotaUsage("playlists", 1, {
+			channelId,
+			resultCount: response.data.items?.length || 0,
+		});
+
+		const playlists =
+			response.data.items?.map((playlist) => ({
+				id: playlist.id || "",
+				title: playlist.snippet?.title || "",
+				videoCount: playlist.contentDetails?.itemCount || 0,
+				description: playlist.snippet?.description || "",
+				publishedAt: playlist.snippet?.publishedAt || "",
+			})) || [];
+
+		logger.info(`チャンネル ${channelId} のプレイリスト取得完了: ${playlists.length}件`);
+		return playlists;
+	} catch (error: unknown) {
+		logger.error("プレイリスト取得エラー:", error);
+		throw error;
+	}
+}
+
+/**
+ * プレイリストの動画一覧を取得
+ * 既存のページネーション処理パターンを活用
+ *
+ * @param youtube - YouTube APIクライアント
+ * @param playlistId - プレイリストID
+ * @returns Promise<string[]> - 動画IDの配列
+ */
+export async function fetchPlaylistItems(
+	youtube: youtube_v3.Youtube,
+	playlistId: string,
+): Promise<string[]> {
+	const videoIds: string[] = [];
+	let nextPageToken: string | undefined;
+	let pageCount = 0;
+
+	logger.debug("プレイリストアイテム取得開始", { playlistId });
+
+	do {
+		// クォータチェック
+		if (!canExecuteOperation("playlistItems")) {
+			logger.warn("プレイリストアイテム取得でクォータ不足", {
+				playlistId,
+				pageCount,
+				currentVideoIds: videoIds.length,
+			});
+			break;
+		}
+
+		try {
+			const response = await youtube.playlistItems.list({
+				part: ["contentDetails"],
+				playlistId: playlistId,
+				maxResults: MAX_VIDEOS_PER_BATCH, // 既存の定数を活用
+				pageToken: nextPageToken,
+			});
+
+			// 成功時にクォータ使用量を記録
+			recordQuotaUsage("playlistItems");
+			getYouTubeQuotaMonitor().logQuotaUsage("playlistItems", 1, {
+				playlistId,
+				pageNumber: pageCount + 1,
+				resultCount: response.data.items?.length || 0,
+			});
+
+			const items = response.data.items || [];
+			const batchVideoIds = items
+				.map((item) => item.contentDetails?.videoId)
+				.filter((id): id is string => typeof id === "string" && id.length > 0);
+
+			videoIds.push(...batchVideoIds);
+			nextPageToken = response.data.nextPageToken || undefined;
+			pageCount++;
+
+			logger.debug(`プレイリスト ${playlistId} ページ ${pageCount}: ${batchVideoIds.length}件取得`);
+		} catch (error: unknown) {
+			logger.error("プレイリストアイテム取得エラー:", error);
+			break;
+		}
+	} while (nextPageToken);
+
+	logger.info(`プレイリスト ${playlistId} 総取得動画数: ${videoIds.length}件`);
+	return videoIds;
+}

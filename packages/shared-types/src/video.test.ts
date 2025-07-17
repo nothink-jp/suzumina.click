@@ -46,6 +46,8 @@ const validFirestoreVideo: FirestoreVideoData = {
 	liveBroadcastContent: "none",
 	audioButtonCount: 5,
 	hasAudioButtons: true,
+	playlistTags: ["歌ってみた", "ASMR"],
+	userTags: ["癒し", "囁き"],
 };
 
 const validFrontendVideo: FrontendVideoData = {

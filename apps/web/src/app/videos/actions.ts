@@ -136,6 +136,9 @@ function transformServerDataToFirestoreData(doc: DocumentSnapshot, data: Firesto
 		// Audio Button Information
 		audioButtonCount: data.audioButtonCount || 0,
 		hasAudioButtons: data.hasAudioButtons || false,
+		// 3層タグシステム
+		playlistTags: data.playlistTags || [],
+		userTags: data.userTags || [],
 	};
 }
 
