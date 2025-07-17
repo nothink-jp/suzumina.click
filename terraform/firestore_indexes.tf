@@ -370,6 +370,40 @@ resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" 
 # Note: Single-field index for releaseDateISO is automatically created by Firestore
 # Removed dlsiteworks_releasedateiso_asc - use single field index controls instead
 
+# videos コレクションのインデックス - categoryId（昇順）、publishedAt（降順）
+# カテゴリフィルタリング＋公開日ソート用（新しい順）
+resource "google_firestore_index" "videos_categoryid_publishedat_desc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+  
+  fields {
+    field_path = "categoryId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "publishedAt"
+    order      = "DESCENDING"
+  }
+}
+
+# videos コレクションのインデックス - categoryId（昇順）、publishedAt（昇順）
+# カテゴリフィルタリング＋公開日ソート用（古い順）
+resource "google_firestore_index" "videos_categoryid_publishedat_asc" {
+  project    = var.gcp_project_id
+  collection = "videos"
+  
+  fields {
+    field_path = "categoryId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "publishedAt"
+    order      = "ASCENDING"
+  }
+}
+
 # Note: カテゴリ×販売日の複合インデックスは既に存在するため、Terraformでは管理しない
 # dlsiteWorks コレクションのインデックス - category（昇順）、releaseDateISO（降順）
 # カテゴリフィルタリング＋販売日ソート用 - 既存のインデックスを使用
