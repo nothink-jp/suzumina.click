@@ -102,13 +102,22 @@ export async function getLatestAudioButtons(limit = 10) {
 /**
  * 動画検索を行うServer Action（統合検索API用）
  */
-export async function searchVideos(query: string, limit = 6) {
+export async function searchVideos(
+	query: string,
+	limit = 6,
+	threeLayerTags?: {
+		playlistTags?: string[];
+		userTags?: string[];
+		categoryNames?: string[];
+	},
+) {
 	try {
 		const result = await getVideoTitles({
 			page: 1,
 			limit,
 			search: query,
 			sort: "newest",
+			...threeLayerTags,
 		});
 
 		return result.videos;
@@ -174,6 +183,11 @@ export async function searchUnified(filters: {
 	favoriteCountMax?: number;
 	durationMin?: number;
 	durationMax?: number;
+	// 3層タグフィルター
+	playlistTags?: string[];
+	userTags?: string[];
+	categoryNames?: string[];
+	layerSearchMode?: "any_layer" | "all_layers" | "specific_layer";
 }) {
 	try {
 		const searchQuery = filters.query?.trim() || "";
@@ -244,7 +258,11 @@ export async function searchUnified(filters: {
 					return [];
 				}
 				try {
-					return await searchVideos(searchQuery, type === "videos" ? limit : Math.min(limit, 6));
+					return await searchVideos(searchQuery, type === "videos" ? limit : Math.min(limit, 6), {
+						playlistTags: filters.playlistTags,
+						userTags: filters.userTags,
+						categoryNames: filters.categoryNames,
+					});
 				} catch {
 					return [];
 				}

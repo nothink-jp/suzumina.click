@@ -8,8 +8,9 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { Calendar, Clock, ExternalLink, Eye, Plus, Radio, Video } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import React, { memo, useMemo } from "react";
+import React, { memo, useCallback, useMemo } from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 
 interface VideoCardProps {
@@ -27,6 +28,7 @@ const VideoCard = memo(function VideoCard({
 	priority = false,
 }: VideoCardProps) {
 	const { data: session } = useSession();
+	const router = useRouter();
 	const isGrid = variant === "grid";
 
 	// 音声ボタン数: video.audioButtonCountを優先し、なければbuttonCountを使用
@@ -101,6 +103,31 @@ const VideoCard = memo(function VideoCard({
 	const categoryName = useMemo(() => {
 		return getYouTubeCategoryName(video.categoryId);
 	}, [video.categoryId]);
+
+	// タグクリック時の検索ページ遷移
+	const handleTagClick = useCallback(
+		(tag: string, layer: "playlist" | "user" | "category") => {
+			const params = new URLSearchParams();
+			params.set("q", tag);
+			params.set("type", "videos");
+
+			// 層に応じたフィルターパラメータを設定
+			switch (layer) {
+				case "playlist":
+					params.set("playlistTags", tag);
+					break;
+				case "user":
+					params.set("userTags", tag);
+					break;
+				case "category":
+					params.set("categoryNames", tag);
+					break;
+			}
+
+			router.push(`/search?${params.toString()}`);
+		},
+		[router],
+	);
 
 	// メモ化: 音声ボタン作成可能判定（認証状態も考慮）
 	const canCreateButtonData = useMemo(() => {
@@ -257,6 +284,7 @@ const VideoCard = memo(function VideoCard({
 							maxTagsPerLayer={4}
 							showEmptyLayers={false}
 							showCategory={true}
+							onTagClick={handleTagClick}
 						/>
 					</div>
 

@@ -11,6 +11,7 @@ interface VideosPageProps {
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 3層タグパラメータ解析と検索条件処理が必要
 export default async function VideosPage({ searchParams }: VideosPageProps) {
 	const params = await searchParams;
 	const pageNumber = Number.parseInt(params.page as string, 10) || 1;
@@ -21,10 +22,42 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
 	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
+	// 3層タグフィルターパラメータの抽出
+	const playlistTags = Array.isArray(params.playlistTags)
+		? params.playlistTags
+		: typeof params.playlistTags === "string"
+			? [params.playlistTags]
+			: undefined;
+	const userTags = Array.isArray(params.userTags)
+		? params.userTags
+		: typeof params.userTags === "string"
+			? [params.userTags]
+			: undefined;
+	const categoryNames = Array.isArray(params.categoryNames)
+		? params.categoryNames
+		: typeof params.categoryNames === "string"
+			? [params.categoryNames]
+			: undefined;
+
 	// 並行してデータを取得
 	const [initialData, filteredCount, totalCount] = await Promise.all([
-		getVideoTitles({ page: validPage, limit: validLimit, year, sort, search }),
-		getTotalVideoCount({ year, search }),
+		getVideoTitles({
+			page: validPage,
+			limit: validLimit,
+			year,
+			sort,
+			search,
+			playlistTags,
+			userTags,
+			categoryNames,
+		}),
+		getTotalVideoCount({
+			year,
+			search,
+			playlistTags,
+			userTags,
+			categoryNames,
+		}),
 		getTotalVideoCount({}), // フィルタなしの総件数
 	]);
 
@@ -47,7 +80,11 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 					<VideoList
 						data={initialData}
 						totalCount={totalCount}
-						filteredCount={year || search ? filteredCount : undefined}
+						filteredCount={
+							year || search || playlistTags || userTags || categoryNames
+								? filteredCount
+								: undefined
+						}
 						currentPage={validPage}
 					/>
 				</Suspense>

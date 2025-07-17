@@ -331,6 +331,7 @@ export function SearchFilters({
 			limit: localFilters.limit,
 			sortBy: "relevance",
 			tagMode: "any",
+			layerSearchMode: "any_layer",
 			excludeR18: !isAdult, // 18歳未満は強制的にR18除外、18歳以上はデフォルトで除外
 		};
 		setLocalFilters(resetFilters);

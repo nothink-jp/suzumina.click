@@ -7,10 +7,12 @@ import type {
 	UnifiedSearchFilters,
 } from "@suzumina.click/shared-types";
 import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-text";
+import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
+import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { BookOpen, ChevronRight, Filter, Loader2, Music, Search, Video, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -80,6 +82,7 @@ function addNumericParams(params: URLSearchParams, filters: UnifiedSearchFilters
 }
 
 // Helper function to add date and other filter parameters
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 3層タグフィルター対応で複数パラメータ処理が必要
 function addFilterParams(params: URLSearchParams, filters: UnifiedSearchFilters) {
 	if (filters.sortBy && filters.sortBy !== "relevance") {
 		params.set("sortBy", filters.sortBy);
@@ -98,6 +101,19 @@ function addFilterParams(params: URLSearchParams, filters: UnifiedSearchFilters)
 	}
 	if (filters.tagMode && filters.tagMode !== "any") {
 		params.set("tagMode", filters.tagMode);
+	}
+	// 3層タグフィルターパラメータ
+	if (filters.playlistTags && filters.playlistTags.length > 0) {
+		params.set("playlistTags", filters.playlistTags.join(","));
+	}
+	if (filters.userTags && filters.userTags.length > 0) {
+		params.set("userTags", filters.userTags.join(","));
+	}
+	if (filters.categoryNames && filters.categoryNames.length > 0) {
+		params.set("categoryNames", filters.categoryNames.join(","));
+	}
+	if (filters.layerSearchMode && filters.layerSearchMode !== "any_layer") {
+		params.set("layerSearchMode", filters.layerSearchMode);
 	}
 }
 
@@ -142,6 +158,12 @@ function parseDateAndTagParams(params: URLSearchParams) {
 		dateTo: params.get("dateTo") || undefined,
 		tags: params.get("tags")?.split(",").filter(Boolean) || undefined,
 		tagMode: (params.get("tagMode") as "any" | "all") || undefined,
+		// 3層タグパラメータの解析
+		playlistTags: params.get("playlistTags")?.split(",").filter(Boolean) || undefined,
+		userTags: params.get("userTags")?.split(",").filter(Boolean) || undefined,
+		categoryNames: params.get("categoryNames")?.split(",").filter(Boolean) || undefined,
+		layerSearchMode:
+			(params.get("layerSearchMode") as "any_layer" | "all_layers" | "specific_layer") || undefined,
 	};
 }
 
@@ -324,6 +346,21 @@ function SearchResults({
 														timeZone: "Asia/Tokyo",
 													})}
 												</p>
+												{/* 3層タグハイライト表示 */}
+												<div className="mt-2">
+													<ThreeLayerTagDisplay
+														playlistTags={video.playlistTags || []}
+														userTags={video.userTags || []}
+														categoryId={video.categoryId}
+														categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
+														searchQuery={searchQuery}
+														highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+														size="sm"
+														maxTagsPerLayer={3}
+														showEmptyLayers={false}
+														showCategory={true}
+													/>
+												</div>
 											</CardContent>
 										</Card>
 									</Link>
@@ -438,6 +475,21 @@ function SearchResults({
 												timeZone: "Asia/Tokyo",
 											})}
 										</p>
+										{/* 3層タグハイライト表示 */}
+										<div className="mt-2">
+											<ThreeLayerTagDisplay
+												playlistTags={video.playlistTags || []}
+												userTags={video.userTags || []}
+												categoryId={video.categoryId}
+												categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
+												searchQuery={searchQuery}
+												highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+												size="sm"
+												maxTagsPerLayer={3}
+												showEmptyLayers={false}
+												showCategory={true}
+											/>
+										</div>
 									</CardContent>
 								</Card>
 							</Link>
@@ -504,6 +556,7 @@ export default function SearchPageContent() {
 		limit: 12,
 		sortBy: "relevance",
 		tagMode: "any",
+		layerSearchMode: "any_layer",
 	});
 
 	// デバウンスされた検索クエリ（自動検索用）

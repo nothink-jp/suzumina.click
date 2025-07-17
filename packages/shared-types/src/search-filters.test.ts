@@ -16,6 +16,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance" as const,
 				tagMode: "any" as const,
+				layerSearchMode: "any_layer" as const,
 			};
 
 			const result = UnifiedSearchFiltersSchema.parse(validFilters);
@@ -107,6 +108,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 			};
 
 			expect(hasActiveFilters(defaultFilters)).toBe(false);
@@ -118,6 +120,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 				dateRange: "today",
 			};
 
@@ -130,6 +133,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 				playCountMin: 10,
 			};
 
@@ -142,6 +146,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 				tags: ["test"],
 			};
 
@@ -154,6 +159,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "newest",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 			};
 
 			expect(hasActiveFilters(filtersWithSort)).toBe(true);
@@ -167,6 +173,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 			};
 
 			const descriptions = getActiveFilterDescriptions(defaultFilters);
@@ -179,6 +186,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 				dateRange: "today",
 			};
 
@@ -192,6 +200,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 				playCountMin: 10,
 				playCountMax: 100,
 			};
@@ -206,6 +215,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 				likeCountMin: 5,
 			};
 
@@ -219,6 +229,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 				favoriteCountMax: 50,
 			};
 
@@ -232,6 +243,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "relevance",
 				tagMode: "all",
+				layerSearchMode: "any_layer",
 				tags: ["挨拶", "応援"],
 			};
 
@@ -245,6 +257,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "newest",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 			};
 
 			const descriptions = getActiveFilterDescriptions(filtersWithSort);
@@ -257,6 +270,7 @@ describe("search-filters", () => {
 				limit: 12,
 				sortBy: "popular",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 				dateRange: "this_week",
 				playCountMin: 10,
 				tags: ["テスト"],

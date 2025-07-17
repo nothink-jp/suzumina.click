@@ -35,9 +35,15 @@ export const UnifiedSearchFiltersSchema = z.object({
 	durationMin: z.number().int().min(0).optional(), // 秒単位
 	durationMax: z.number().int().min(0).optional(), // 秒単位
 
-	// タグフィルター
+	// タグフィルター（従来）
 	tags: z.array(z.string()).optional(),
 	tagMode: z.enum(["any", "all"]).default("any"), // any: いずれか含む, all: すべて含む
+
+	// 3層タグフィルター（動画検索用）
+	playlistTags: z.array(z.string()).optional(), // プレイリストタグ
+	userTags: z.array(z.string()).optional(), // ユーザータグ
+	categoryNames: z.array(z.string()).optional(), // YouTubeカテゴリ名
+	layerSearchMode: z.enum(["any_layer", "all_layers", "specific_layer"]).default("any_layer"),
 
 	// レーティング・年齢制限フィルター（作品用）
 	ageRating: z.array(z.string()).optional(), // ["全年齢", "R18"] 等
@@ -130,6 +136,9 @@ export function hasActiveFilters(filters: UnifiedSearchFilters): boolean {
 		filters.durationMin !== undefined ||
 		filters.durationMax !== undefined ||
 		(filters.tags?.length ?? 0) > 0 ||
+		(filters.playlistTags?.length ?? 0) > 0 ||
+		(filters.userTags?.length ?? 0) > 0 ||
+		(filters.categoryNames?.length ?? 0) > 0 ||
 		filters.sortBy !== "relevance"
 	);
 }
@@ -187,6 +196,27 @@ function getTagDescription(filters: UnifiedSearchFilters): string | null {
 }
 
 /**
+ * 3層タグフィルターの説明を生成
+ */
+function getThreeLayerTagDescription(filters: UnifiedSearchFilters): string[] {
+	const descriptions: string[] = [];
+
+	if (filters.playlistTags && filters.playlistTags.length > 0) {
+		descriptions.push(`プレイリスト: ${filters.playlistTags.join(", ")}`);
+	}
+
+	if (filters.userTags && filters.userTags.length > 0) {
+		descriptions.push(`ユーザータグ: ${filters.userTags.join(", ")}`);
+	}
+
+	if (filters.categoryNames && filters.categoryNames.length > 0) {
+		descriptions.push(`カテゴリ: ${filters.categoryNames.join(", ")}`);
+	}
+
+	return descriptions;
+}
+
+/**
  * ソートフィルターの説明を生成
  */
 function getSortDescription(filters: UnifiedSearchFilters): string | null {
@@ -231,6 +261,10 @@ export function getActiveFilterDescriptions(filters: UnifiedSearchFilters): stri
 
 	const tag = getTagDescription(filters);
 	if (tag) descriptions.push(tag);
+
+	// 3層タグフィルターの説明を追加
+	const threeLayerTags = getThreeLayerTagDescription(filters);
+	descriptions.push(...threeLayerTags);
 
 	const sort = getSortDescription(filters);
 	if (sort) descriptions.push(sort);

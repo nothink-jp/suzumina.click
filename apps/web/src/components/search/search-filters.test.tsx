@@ -214,6 +214,7 @@ describe("SearchFilters", () => {
 				limit: mockFilters.limit,
 				sortBy: "relevance",
 				tagMode: "any",
+				layerSearchMode: "any_layer",
 				excludeR18: true,
 			});
 			expect(mockOnApply).toHaveBeenCalledTimes(1);

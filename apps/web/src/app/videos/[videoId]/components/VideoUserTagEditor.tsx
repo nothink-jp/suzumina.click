@@ -62,6 +62,31 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 	// カテゴリ名取得
 	const categoryName = getYouTubeCategoryName(video.categoryId);
 
+	// タグクリック時の検索ページ遷移
+	const handleTagClick = useCallback(
+		(tag: string, layer: "playlist" | "user" | "category") => {
+			const params = new URLSearchParams();
+			params.set("q", tag);
+			params.set("type", "videos");
+
+			// 層に応じたフィルターパラメータを設定
+			switch (layer) {
+				case "playlist":
+					params.set("playlistTags", tag);
+					break;
+				case "user":
+					params.set("userTags", tag);
+					break;
+				case "category":
+					params.set("categoryNames", tag);
+					break;
+			}
+
+			router.push(`/search?${params.toString()}`);
+		},
+		[router],
+	);
+
 	return (
 		<div className="space-y-6">
 			{/* 3層タグ表示 */}
@@ -74,6 +99,7 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 				maxTagsPerLayer={10}
 				showEmptyLayers={true}
 				showCategory={true}
+				onTagClick={handleTagClick}
 			/>
 
 			{/* ユーザータグ編集セクション */}

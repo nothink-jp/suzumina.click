@@ -28,6 +28,9 @@ function buildUserPaginationQuery(
 		startAfterDocId?: string;
 		year?: string;
 		sort?: string;
+		playlistTags?: string[];
+		userTags?: string[];
+		categoryNames?: string[];
 	},
 ) {
 	const limit = params?.limit || 12;
@@ -47,6 +50,11 @@ function buildUserPaginationQuery(
 				.where("publishedAt", ">=", Timestamp.fromDate(startOfYear))
 				.where("publishedAt", "<", Timestamp.fromDate(endOfYear));
 		}
+	}
+
+	// 3層タグクエリを適用
+	if (params) {
+		query = buildThreeLayerTagQuery(query, params);
 	}
 
 	if (params?.startAfterDocId) {
@@ -193,11 +201,84 @@ async function applyStartAfterPagination(
 }
 
 /**
+ * カテゴリ名からカテゴリIDに変換するマッピング
+ */
+const CATEGORY_NAME_TO_ID: Record<string, string> = {
+	映画・アニメ: "1",
+	自動車・乗り物: "2",
+	音楽: "10",
+	ペット・動物: "15",
+	スポーツ: "17",
+	旅行・イベント: "19",
+	ゲーム: "20",
+	ブログ・人物: "22",
+	コメディー: "23",
+	エンターテインメント: "24",
+	ニュース・政治: "25",
+	ハウツー・スタイル: "26",
+	教育: "27",
+	科学技術: "28",
+	非営利団体・社会活動: "29",
+};
+
+/**
+ * 3層タグクエリを構築するヘルパー関数
+ */
+function buildThreeLayerTagQuery(
+	query: FirebaseFirestore.Query,
+	params: {
+		playlistTags?: string[];
+		userTags?: string[];
+		categoryNames?: string[];
+	},
+) {
+	// Firestoreの制限: 1つのクエリで使用できるarray-contains-anyは1つまで
+	// 優先順位: playlistTags > userTags > categoryNames
+
+	if (params.playlistTags && params.playlistTags.length > 0) {
+		// array-contains-anyは最大10個まで
+		const tags = params.playlistTags.slice(0, 10);
+		return query.where("playlistTags", "array-contains-any", tags);
+	}
+
+	if (params.userTags && params.userTags.length > 0) {
+		// array-contains-anyは最大10個まで
+		const tags = params.userTags.slice(0, 10);
+		return query.where("userTags", "array-contains-any", tags);
+	}
+
+	if (params.categoryNames && params.categoryNames.length > 0) {
+		// カテゴリ名をIDに変換
+		const categoryIds = params.categoryNames
+			.map((name) => CATEGORY_NAME_TO_ID[name])
+			.filter(Boolean)
+			.slice(0, 10);
+
+		if (categoryIds.length === 1) {
+			// 単一カテゴリの場合は等価比較
+			return query.where("categoryId", "==", categoryIds[0]);
+		}
+		if (categoryIds.length > 1) {
+			// 複数カテゴリの場合はinクエリ（最大10個）
+			return query.where("categoryId", "in", categoryIds);
+		}
+	}
+
+	return query;
+}
+
+/**
  * 検索用の全ドキュメントクエリを構築するヘルパー関数
  */
 function buildSearchQuery(
 	videosRef: CollectionReference,
-	params: { year?: string; sort?: string },
+	params: {
+		year?: string;
+		sort?: string;
+		playlistTags?: string[];
+		userTags?: string[];
+		categoryNames?: string[];
+	},
 ) {
 	let allDocsQuery = videosRef.orderBy("publishedAt", params?.sort === "oldest" ? "asc" : "desc");
 
@@ -212,6 +293,9 @@ function buildSearchQuery(
 				.where("publishedAt", "<", Timestamp.fromDate(endOfYear));
 		}
 	}
+
+	// 3層タグクエリを適用
+	allDocsQuery = buildThreeLayerTagQuery(allDocsQuery, params);
 
 	return allDocsQuery;
 }
@@ -266,6 +350,10 @@ export async function getVideoTitles(params?: {
 	year?: string;
 	sort?: string;
 	search?: string;
+	// 3層タグ検索パラメータ
+	playlistTags?: string[];
+	userTags?: string[];
+	categoryNames?: string[];
 }): Promise<VideoListResult> {
 	try {
 		const firestore = getFirestore();
@@ -317,9 +405,13 @@ export async function getVideoTitles(params?: {
  * 総動画数を取得するServer Action
  * Note: count()クエリは権限問題があるため、通常のクエリで代替
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 3層タグ検索条件の複合処理が必要
 export async function getTotalVideoCount(params?: {
 	year?: string;
 	search?: string;
+	playlistTags?: string[];
+	userTags?: string[];
+	categoryNames?: string[];
 }): Promise<number> {
 	try {
 		const firestore = getFirestore();
@@ -337,6 +429,11 @@ export async function getTotalVideoCount(params?: {
 					.where("publishedAt", ">=", Timestamp.fromDate(startOfYear))
 					.where("publishedAt", "<", Timestamp.fromDate(endOfYear));
 			}
+		}
+
+		// 3層タグクエリを適用
+		if (params) {
+			query = buildThreeLayerTagQuery(query, params);
 		}
 
 		// 検索時は多くのドキュメントが必要になる可能性があるため、制限を設ける

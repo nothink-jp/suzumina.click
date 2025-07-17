@@ -22,8 +22,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getThreeLayerTagStats } from "@/app/actions/video-actions";
 import { RefreshButton } from "@/components/actions/RefreshButton";
 import { VideoActionsCell } from "@/components/actions/VideoActionsCell";
+import { ThreeLayerTagStatsDisplay } from "@/components/management/ThreeLayerTagStatsDisplay";
 import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
@@ -163,6 +165,9 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 	const result = await getVideos(currentPage, 100);
 	const { videos, totalCount, totalPages, hasNext, hasPrev } = result;
 
+	// 3層タグ統計を取得
+	const tagStats = await getThreeLayerTagStats();
+
 	// 統計計算
 	const stats = {
 		total: totalCount,
@@ -243,6 +248,22 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 					</CardContent>
 				</Card>
 			</div>
+
+			{/* 3層タグ統計 */}
+			{tagStats && (
+				<div className="space-y-4">
+					<div className="flex items-center justify-between">
+						<h2 className="text-2xl font-bold text-foreground">3層タグシステム統計</h2>
+						<Button variant="outline" size="sm" asChild>
+							<Link href="/playlist-tags" className="gap-2">
+								<Play className="h-4 w-4" />
+								プレイリストタグ管理
+							</Link>
+						</Button>
+					</div>
+					<ThreeLayerTagStatsDisplay stats={tagStats} />
+				</div>
+			)}
 
 			{/* 動画テーブル */}
 			<Card>
