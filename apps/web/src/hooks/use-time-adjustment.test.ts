@@ -39,7 +39,7 @@ describe("useTimeAdjustment", () => {
 
 		it("外部のcurrentTimeが正しく参照される", () => {
 			const props = { ...defaultProps, currentTime: 10.5 };
-			const { result } = renderHook(() => useTimeAdjustment(props));
+			renderHook(() => useTimeAdjustment(props));
 
 			// hookは外部のcurrentTimeを参照するため、テストではpropsを確認
 			expect(props.currentTime).toBe(10.5);
@@ -306,7 +306,7 @@ describe("useTimeAdjustment", () => {
 
 		it("現在時間は外部で管理される", () => {
 			const props = { ...defaultProps, currentTime: 42.7 };
-			const { result } = renderHook(() => useTimeAdjustment(props));
+			renderHook(() => useTimeAdjustment(props));
 
 			// hookは外部のcurrentTimeを参照するため、propsを確認
 			expect(props.currentTime).toBe(42.7);
@@ -435,7 +435,7 @@ describe("useTimeAdjustment", () => {
 			// 無効な時間値は外部の責任で管理されるため、
 			// hookの内部ロジックでは検証しない
 			const props = { ...defaultProps, currentTime: Number.NaN };
-			const { result } = renderHook(() => useTimeAdjustment(props));
+			renderHook(() => useTimeAdjustment(props));
 
 			// hookは外部のcurrentTimeをそのまま参照
 			expect(props.currentTime).toBeNaN();
