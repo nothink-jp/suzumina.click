@@ -1,3 +1,4 @@
+import { parseDurationToSeconds } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -61,12 +62,17 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 		notFound();
 	}
 
+	// 動画の長さを取得（秒数に変換）
+	const videoDurationSeconds = parseDurationToSeconds(videoResult.duration);
+	// フォールバック: 取得失敗時は10分
+	const videoDuration = videoDurationSeconds > 0 ? videoDurationSeconds : 600;
+
 	return (
 		<ProtectedRoute requireRole="member">
 			<AudioButtonCreator
 				videoId={videoId}
 				videoTitle={videoResult.title}
-				videoDuration={600} // デフォルト10分、実際の動画長は別途API取得が必要
+				videoDuration={videoDuration}
 				initialStartTime={startTime}
 			/>
 		</ProtectedRoute>
