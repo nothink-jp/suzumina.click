@@ -137,6 +137,7 @@ describe("AudioButton", () => {
 				audioButton={mockAudioButton}
 				isFavorite={false}
 				onFavoriteToggle={onFavoriteToggleMock}
+				isAuthenticated={true}
 			/>,
 		);
 
@@ -155,7 +156,12 @@ describe("AudioButton", () => {
 		const user = userEvent.setup();
 
 		render(
-			<AudioButton audioButton={mockAudioButton} isFavorite={true} onFavoriteToggle={vi.fn()} />,
+			<AudioButton
+				audioButton={mockAudioButton}
+				isFavorite={true}
+				onFavoriteToggle={vi.fn()}
+				isAuthenticated={true}
+			/>,
 		);
 
 		// 詳細表示ボタン（iアイコン）をクリック
@@ -170,7 +176,12 @@ describe("AudioButton", () => {
 		const onLikeToggleMock = vi.fn();
 
 		render(
-			<AudioButton audioButton={mockAudioButton} isLiked={false} onLikeToggle={onLikeToggleMock} />,
+			<AudioButton
+				audioButton={mockAudioButton}
+				isLiked={false}
+				onLikeToggle={onLikeToggleMock}
+				isAuthenticated={true}
+			/>,
 		);
 
 		// 詳細表示ボタン（iアイコン）をクリック
@@ -190,7 +201,14 @@ describe("AudioButton", () => {
 	it("should show liked state", async () => {
 		const user = userEvent.setup();
 
-		render(<AudioButton audioButton={mockAudioButton} isLiked={true} onLikeToggle={vi.fn()} />);
+		render(
+			<AudioButton
+				audioButton={mockAudioButton}
+				isLiked={true}
+				onLikeToggle={vi.fn()}
+				isAuthenticated={true}
+			/>,
+		);
 
 		// 詳細表示ボタン（iアイコン）をクリック
 		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
@@ -256,5 +274,98 @@ describe("AudioButton", () => {
 			"href",
 			"https://www.youtube.com/watch?v=test-video-id&t=10s",
 		);
+	});
+
+	it("should disable favorite button when not authenticated", async () => {
+		const user = userEvent.setup();
+		const onFavoriteToggleMock = vi.fn();
+
+		render(
+			<AudioButton
+				audioButton={mockAudioButton}
+				isFavorite={false}
+				onFavoriteToggle={onFavoriteToggleMock}
+				isAuthenticated={false}
+			/>,
+		);
+
+		// 詳細表示ボタン（iアイコン）をクリック
+		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
+		await user.click(infoButton);
+
+		// お気に入りボタンを確認
+		const favoriteButton = screen.getByRole("button", { name: "お気に入りに追加" });
+		expect(favoriteButton).toBeDisabled();
+		expect(favoriteButton).toHaveClass("opacity-50", "cursor-not-allowed");
+
+		// クリックしても何も起こらない
+		await user.click(favoriteButton);
+		expect(onFavoriteToggleMock).not.toHaveBeenCalled();
+	});
+
+	it("should disable like buttons when not authenticated", async () => {
+		const user = userEvent.setup();
+		const onLikeToggleMock = vi.fn();
+		const onDislikeToggleMock = vi.fn();
+
+		render(
+			<AudioButton
+				audioButton={mockAudioButton}
+				isLiked={false}
+				onLikeToggle={onLikeToggleMock}
+				isDisliked={false}
+				onDislikeToggle={onDislikeToggleMock}
+				isAuthenticated={false}
+			/>,
+		);
+
+		// 詳細表示ボタン（iアイコン）をクリック
+		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
+		await user.click(infoButton);
+
+		// 高評価ボタンを確認
+		const likeButton = screen.getByText("2").closest("button");
+		expect(likeButton).toBeDisabled();
+		expect(likeButton).toHaveClass("opacity-50", "cursor-not-allowed");
+
+		// 低評価ボタンを確認
+		const dislikeButton = screen.getByTitle("低評価するにはログインが必要です");
+		expect(dislikeButton).toBeDisabled();
+		expect(dislikeButton).toHaveClass("opacity-50", "cursor-not-allowed");
+
+		// クリックしても何も起こらない
+		if (likeButton) {
+			await user.click(likeButton);
+		}
+		await user.click(dislikeButton);
+
+		expect(onLikeToggleMock).not.toHaveBeenCalled();
+		expect(onDislikeToggleMock).not.toHaveBeenCalled();
+	});
+
+	it("should show authentication required tooltips", async () => {
+		const user = userEvent.setup();
+
+		render(
+			<AudioButton
+				audioButton={mockAudioButton}
+				isFavorite={false}
+				onFavoriteToggle={vi.fn()}
+				isLiked={false}
+				onLikeToggle={vi.fn()}
+				isDisliked={false}
+				onDislikeToggle={vi.fn()}
+				isAuthenticated={false}
+			/>,
+		);
+
+		// 詳細表示ボタン（iアイコン）をクリック
+		const infoButton = screen.getByRole("button", { name: "詳細を表示" });
+		await user.click(infoButton);
+
+		// ツールチップメッセージを確認
+		expect(screen.getByTitle("お気に入りするにはログインが必要です")).toBeInTheDocument();
+		expect(screen.getByTitle("高評価するにはログインが必要です")).toBeInTheDocument();
+		expect(screen.getByTitle("低評価するにはログインが必要です")).toBeInTheDocument();
 	});
 });

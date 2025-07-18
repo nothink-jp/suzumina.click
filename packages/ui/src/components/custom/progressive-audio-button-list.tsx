@@ -49,6 +49,9 @@ export interface ProgressiveAudioButtonListProps {
 	/** 詳細リンク表示 */
 	showDetailLink?: boolean;
 
+	/** 認証状態 */
+	isAuthenticated?: boolean;
+
 	/** 空状態メッセージ */
 	emptyMessage?: string;
 
@@ -120,6 +123,7 @@ const ProgressiveListItem = memo<{
 		currentPlayingId?: string;
 		onItemClick?: (audioButton: FrontendAudioButtonData, index: number) => void;
 		showDetailLink?: boolean;
+		isAuthenticated?: boolean;
 		visibleRange: { start: number; end: number };
 		upgradedItems: Set<string>;
 		upgradeItem: (id: string) => void;
@@ -136,6 +140,7 @@ const ProgressiveListItem = memo<{
 		currentPlayingId,
 		onItemClick,
 		showDetailLink,
+		isAuthenticated,
 		visibleRange,
 		upgradedItems,
 		upgradeItem,
@@ -225,6 +230,7 @@ const ProgressiveListItem = memo<{
 					isFavorite={favoriteStates?.get(audioButton.id) || false}
 					onFavoriteToggle={() => onFavoriteToggle?.(audioButton.id)}
 					showDetailLink={showDetailLink}
+					isAuthenticated={isAuthenticated}
 					className={cn(
 						"shadow-sm hover:shadow-md transition-all duration-200",
 						isCurrentlyPlaying && "ring-2 ring-minase-300",
@@ -259,6 +265,7 @@ export const ProgressiveAudioButtonList = memo<ProgressiveAudioButtonListProps>(
 		itemSize = 140,
 		className,
 		showDetailLink = true,
+		isAuthenticated,
 		emptyMessage = "音声ボタンが見つかりませんでした",
 		onItemClick,
 		overscanCount = 5,
@@ -304,6 +311,7 @@ export const ProgressiveAudioButtonList = memo<ProgressiveAudioButtonListProps>(
 				currentPlayingId,
 				onItemClick,
 				showDetailLink,
+				isAuthenticated,
 				visibleRange,
 				upgradedItems: new Set(
 					audioButtons.filter((button) => isUpgraded(button.id)).map((button) => button.id),
@@ -321,6 +329,7 @@ export const ProgressiveAudioButtonList = memo<ProgressiveAudioButtonListProps>(
 				currentPlayingId,
 				onItemClick,
 				showDetailLink,
+				isAuthenticated,
 				visibleRange,
 				isUpgraded,
 				upgradeItem,

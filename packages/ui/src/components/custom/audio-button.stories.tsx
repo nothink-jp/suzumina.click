@@ -51,6 +51,7 @@ export const WithFavorite: Story = {
 		onPlay: fn(),
 		isFavorite: true,
 		onFavoriteToggle: fn(),
+		isAuthenticated: true,
 	},
 };
 
@@ -60,6 +61,7 @@ export const WithDetailLink: Story = {
 		onPlay: fn(),
 		showDetailLink: true,
 		onDetailClick: fn(),
+		isAuthenticated: true,
 	},
 };
 
@@ -73,6 +75,7 @@ export const WithSearchHighlight: Story = {
 		},
 		onPlay: fn(),
 		searchQuery: "がんばって",
+		isAuthenticated: true,
 	},
 };
 
@@ -83,5 +86,34 @@ export const LongTitle: Story = {
 			title: "これはとても長いタイトルのボタンです。レイアウトがどうなるか確認しています。",
 		},
 		onPlay: fn(),
+		isAuthenticated: true,
+	},
+};
+
+export const NotAuthenticated: Story = {
+	args: {
+		audioButton: mockAudioButton,
+		onPlay: fn(),
+		isFavorite: false,
+		onFavoriteToggle: fn(),
+		isLiked: false,
+		onLikeToggle: fn(),
+		isDisliked: false,
+		onDislikeToggle: fn(),
+		isAuthenticated: false,
+	},
+};
+
+export const AuthenticatedWithLikes: Story = {
+	args: {
+		audioButton: mockAudioButton,
+		onPlay: fn(),
+		isFavorite: true,
+		onFavoriteToggle: fn(),
+		isLiked: true,
+		onLikeToggle: fn(),
+		isDisliked: false,
+		onDislikeToggle: fn(),
+		isAuthenticated: true,
 	},
 };

@@ -214,6 +214,7 @@ export function AudioButtonWithFavoriteClient({
 			onDislikeToggle={handleDislikeToggle}
 			searchQuery={searchQuery}
 			highlightClassName={highlightClassName}
+			isAuthenticated={isAuthenticated}
 		/>
 	);
 }

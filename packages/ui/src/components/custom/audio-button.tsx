@@ -50,6 +50,8 @@ interface AudioButtonProps {
 	// ハイライト関連
 	searchQuery?: string;
 	highlightClassName?: string;
+	// 認証関連
+	isAuthenticated?: boolean;
 }
 
 interface AudioButtonPopoverContentProps {
@@ -67,6 +69,7 @@ interface AudioButtonPopoverContentProps {
 	onPopoverClose: () => void;
 	searchQuery?: string;
 	highlightClassName?: string;
+	isAuthenticated: boolean;
 }
 
 function AudioButtonPopoverContent({
@@ -84,6 +87,7 @@ function AudioButtonPopoverContent({
 	onPopoverClose,
 	searchQuery,
 	highlightClassName,
+	isAuthenticated,
 }: AudioButtonPopoverContentProps) {
 	return (
 		<div className="w-80 p-4 space-y-4">
@@ -179,12 +183,17 @@ function AudioButtonPopoverContent({
 						type="button"
 						onClick={(e) => {
 							e.stopPropagation();
-							onFavoriteToggle();
+							if (isAuthenticated) {
+								onFavoriteToggle();
+							}
 						}}
 						aria-label={isFavorite ? "お気に入りを解除" : "お気に入りに追加"}
+						disabled={!isAuthenticated}
+						title={!isAuthenticated ? "お気に入りするにはログインが必要です" : undefined}
 						className={cn(
 							"flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
 							isFavorite && "text-red-600",
+							!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
 						)}
 					>
 						<Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
@@ -199,11 +208,16 @@ function AudioButtonPopoverContent({
 							type="button"
 							onClick={(e) => {
 								e.stopPropagation();
-								onLikeToggle();
+								if (isAuthenticated) {
+									onLikeToggle();
+								}
 							}}
+							disabled={!isAuthenticated}
+							title={!isAuthenticated ? "高評価するにはログインが必要です" : undefined}
 							className={cn(
 								"flex items-center gap-1 px-3 py-2 text-sm font-medium border-0 rounded-l-md rounded-r-none border-r border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
 								isLiked && "text-red-600",
+								!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
 							)}
 						>
 							<ThumbsUp className={cn("h-4 w-4", isLiked && "fill-current")} />
@@ -215,13 +229,23 @@ function AudioButtonPopoverContent({
 							type="button"
 							onClick={(e) => {
 								e.stopPropagation();
-								onDislikeToggle?.();
+								if (isAuthenticated) {
+									onDislikeToggle?.();
+								}
 							}}
+							disabled={!isAuthenticated}
+							title={
+								!isAuthenticated
+									? "低評価するにはログインが必要です"
+									: isDisliked
+										? "低評価を取り消す"
+										: "低評価する"
+							}
 							className={cn(
 								"flex items-center justify-center w-10 h-10 border-0 rounded-r-md rounded-l-none bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
 								isDisliked && "text-blue-600",
+								!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
 							)}
-							title={isDisliked ? "低評価を取り消す" : "低評価する"}
 						>
 							<ThumbsDown className={cn("h-4 w-4", isDisliked && "fill-current")} />
 						</button>
@@ -278,6 +302,7 @@ export function AudioButton({
 	onDislikeToggle,
 	searchQuery,
 	highlightClassName,
+	isAuthenticated = false,
 }: AudioButtonProps) {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
@@ -407,6 +432,7 @@ export function AudioButton({
 						onPopoverClose={() => setIsPopoverOpen(false)}
 						searchQuery={searchQuery}
 						highlightClassName={highlightClassName}
+						isAuthenticated={isAuthenticated}
 					/>
 				</PopoverContent>
 			</Popover>

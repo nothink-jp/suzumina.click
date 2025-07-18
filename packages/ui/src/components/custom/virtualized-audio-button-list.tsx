@@ -58,6 +58,9 @@ export interface VirtualizedAudioButtonListProps {
 
 	/** オーバースキャン数（パフォーマンス調整用） */
 	overscanCount?: number;
+
+	/** 認証状態 */
+	isAuthenticated?: boolean;
 }
 
 /**
@@ -75,6 +78,7 @@ const VirtualizedListItem = memo<{
 		currentPlayingId?: string;
 		onItemClick?: (audioButton: FrontendAudioButtonData, index: number) => void;
 		showDetailLink?: boolean;
+		isAuthenticated?: boolean;
 	};
 }>(({ index, style, data }) => {
 	const {
@@ -86,6 +90,7 @@ const VirtualizedListItem = memo<{
 		currentPlayingId,
 		onItemClick,
 		showDetailLink,
+		isAuthenticated,
 	} = data;
 
 	const audioButton = audioButtons[index];
@@ -115,6 +120,7 @@ const VirtualizedListItem = memo<{
 				isFavorite={favoriteStates?.get(audioButton.id) || false}
 				onFavoriteToggle={() => onFavoriteToggle?.(audioButton.id)}
 				showDetailLink={showDetailLink}
+				isAuthenticated={isAuthenticated}
 				className={cn(
 					"shadow-sm hover:shadow-md transition-all duration-200",
 					isCurrentlyPlaying && "ring-2 ring-minase-300",
@@ -153,6 +159,7 @@ export const VirtualizedAudioButtonList = memo<VirtualizedAudioButtonListProps>(
 		emptyMessage = "音声ボタンが見つかりませんでした",
 		onItemClick,
 		overscanCount = 5,
+		isAuthenticated,
 	}) => {
 		// リストデータのメモ化（パフォーマンス最適化）
 		const itemData = useMemo(
@@ -165,6 +172,7 @@ export const VirtualizedAudioButtonList = memo<VirtualizedAudioButtonListProps>(
 				currentPlayingId,
 				onItemClick,
 				showDetailLink,
+				isAuthenticated,
 			}),
 			[
 				audioButtons,
@@ -175,6 +183,7 @@ export const VirtualizedAudioButtonList = memo<VirtualizedAudioButtonListProps>(
 				currentPlayingId,
 				onItemClick,
 				showDetailLink,
+				isAuthenticated,
 			],
 		);
 
