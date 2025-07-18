@@ -5,7 +5,7 @@
 
 "use client";
 
-import { TagInput } from "@suzumina.click/ui/components/custom/tag-input";
+import { TagInput, type TagSuggestion } from "@suzumina.click/ui/components/custom/tag-input";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { cn } from "@suzumina.click/ui/lib/utils";
@@ -13,6 +13,7 @@ import { Edit, Save, Tag, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { updateAudioButtonTags } from "@/app/buttons/actions";
+import { type AutocompleteSuggestion, getAutocompleteSuggestions } from "@/app/search/actions";
 
 export interface AudioButtonTagEditorDetailProps {
 	/** 音声ボタンID */
@@ -45,6 +46,46 @@ export function AudioButtonTagEditorDetail({
 
 	// 編集権限チェック
 	const canEdit = currentUserId && (currentUserId === createdBy || currentUserRole === "admin");
+
+	/**
+	 * AutocompleteSuggestion を TagSuggestion に変換
+	 */
+	const convertToTagSuggestion = useCallback(
+		(suggestion: AutocompleteSuggestion): TagSuggestion => {
+			return {
+				id: suggestion.id,
+				text: suggestion.text,
+				type: suggestion.type === "tag" ? "tag" : "custom",
+				category: suggestion.category,
+				icon: suggestion.icon,
+				count: suggestion.count,
+				description: suggestion.type === "tag" ? undefined : `${suggestion.type}から候補`,
+			};
+		},
+		[],
+	);
+
+	/**
+	 * タグ候補を取得する
+	 */
+	const handleSuggestionsFetch = useCallback(
+		async (query: string): Promise<TagSuggestion[]> => {
+			try {
+				const result = await getAutocompleteSuggestions(query);
+				if (result.success) {
+					// タグタイプの候補のみを抽出して変換
+					const tagSuggestions = result.data.suggestions
+						.filter((suggestion) => suggestion.type === "tag")
+						.map(convertToTagSuggestion);
+					return tagSuggestions;
+				}
+				return [];
+			} catch (_error) {
+				return [];
+			}
+		},
+		[convertToTagSuggestion],
+	);
 
 	/**
 	 * 編集開始
@@ -112,8 +153,13 @@ export function AudioButtonTagEditorDetail({
 							onTagsChange={setEditingTags}
 							maxTags={10}
 							maxTagLength={30}
-							placeholder="タグを入力..."
+							placeholder="タグを入力してEnter (2文字以上で候補表示)"
 							disabled={isLoading}
+							enableAutocompletion={true}
+							onSuggestionsFetch={handleSuggestionsFetch}
+							debounceMs={300}
+							minSearchLength={2}
+							maxSuggestions={8}
 						/>
 
 						{/* 編集ボタン */}

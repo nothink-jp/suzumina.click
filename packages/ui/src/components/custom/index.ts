@@ -31,6 +31,7 @@ export {
 } from "./progressive-audio-button-list";
 export { SearchAndFilterPanel } from "./search-and-filter-panel";
 export { SearchFilterPanel } from "./search-filter-panel";
+export type { TagSuggestion } from "./tag-input";
 export { TagInput } from "./tag-input";
 export { TagList } from "./tag-list";
 export { ThreeLayerTagDisplay } from "./three-layer-tag-display";

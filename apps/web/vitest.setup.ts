@@ -233,5 +233,6 @@ vi.mock("lucide-react", () => {
 		ChevronLeft: createMockIcon("ChevronLeft"),
 		// Icons for tag editing
 		Save: createMockIcon("Save"),
+		Hash: createMockIcon("Hash"),
 	};
 });

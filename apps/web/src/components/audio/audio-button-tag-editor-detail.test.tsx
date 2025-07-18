@@ -120,7 +120,9 @@ describe("AudioButtonTagEditorDetail", () => {
 			const editButton = screen.getByText("編集");
 			await user.click(editButton);
 
-			expect(screen.getByPlaceholderText("タグを入力...")).toBeInTheDocument();
+			expect(
+				screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)"),
+			).toBeInTheDocument();
 			expect(screen.getByText("保存")).toBeInTheDocument();
 			expect(screen.getByText("キャンセル")).toBeInTheDocument();
 			expect(screen.queryByText("編集")).not.toBeInTheDocument();
@@ -141,7 +143,7 @@ describe("AudioButtonTagEditorDetail", () => {
 			await user.click(editButton);
 
 			// タグを変更
-			const input = screen.getByPlaceholderText("タグを入力...");
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 			await user.type(input, "新しいタグ");
 
 			// キャンセル
@@ -176,7 +178,7 @@ describe("AudioButtonTagEditorDetail", () => {
 			await user.click(editButton);
 
 			// タグを追加
-			const input = screen.getByPlaceholderText("タグを入力...");
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 			await user.type(input, "新しいタグ");
 			await user.keyboard("{Enter}");
 
@@ -213,7 +215,7 @@ describe("AudioButtonTagEditorDetail", () => {
 			await user.click(editButton);
 
 			// タグを追加
-			const input = screen.getByPlaceholderText("タグを入力...");
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 			await user.type(input, "新しいタグ");
 			await user.keyboard("{Enter}");
 
@@ -248,7 +250,7 @@ describe("AudioButtonTagEditorDetail", () => {
 			await user.click(editButton);
 
 			// タグを追加
-			const input = screen.getByPlaceholderText("タグを入力...");
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 			await user.type(input, "新しいタグ");
 			await user.keyboard("{Enter}");
 

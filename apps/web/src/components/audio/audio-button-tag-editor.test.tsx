@@ -17,7 +17,9 @@ describe("AudioButtonTagEditor", () => {
 		it("初期状態で正しくレンダリングされる", () => {
 			render(<AudioButtonTagEditor {...defaultProps} />);
 
-			expect(screen.getByPlaceholderText("タグを入力してEnter")).toBeInTheDocument();
+			expect(
+				screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)"),
+			).toBeInTheDocument();
 			expect(screen.getByRole("button", { name: "タグを追加" })).toBeInTheDocument();
 		});
 
@@ -31,7 +33,7 @@ describe("AudioButtonTagEditor", () => {
 		it("TagInputの設定が正しく適用される", () => {
 			render(<AudioButtonTagEditor {...defaultProps} />);
 
-			const input = screen.getByPlaceholderText("タグを入力してEnter");
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 			expect(input).toHaveAttribute("maxlength", "30");
 			expect(screen.getByText("0/10 タグ (各タグ最大30文字)")).toBeInTheDocument();
 		});
@@ -43,7 +45,7 @@ describe("AudioButtonTagEditor", () => {
 			const onTagsChange = vi.fn();
 			render(<AudioButtonTagEditor {...defaultProps} onTagsChange={onTagsChange} />);
 
-			const input = screen.getByPlaceholderText("タグを入力してEnter");
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 			await user.type(input, "新しいタグ");
 			await user.keyboard("{Enter}");
 
@@ -71,7 +73,7 @@ describe("AudioButtonTagEditor", () => {
 			const onTagsChange = vi.fn();
 			render(<AudioButtonTagEditor {...defaultProps} onTagsChange={onTagsChange} />);
 
-			const input = screen.getByPlaceholderText("タグを入力してEnter");
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 
 			// IME変換中をシミュレート
 			fireEvent.change(input, { target: { value: "にほんご" } });
@@ -101,7 +103,7 @@ describe("AudioButtonTagEditor", () => {
 		it("30文字の最大長が設定される", () => {
 			render(<AudioButtonTagEditor {...defaultProps} />);
 
-			const input = screen.getByPlaceholderText("タグを入力してEnter");
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 			expect(input).toHaveAttribute("maxlength", "30");
 		});
 	});
@@ -110,7 +112,7 @@ describe("AudioButtonTagEditor", () => {
 		it("disabledプロパティが正しく渡される", () => {
 			render(<AudioButtonTagEditor {...defaultProps} disabled={true} />);
 
-			const input = screen.getByPlaceholderText("タグを入力してEnter");
+			const input = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 			const addButton = screen.getByRole("button", { name: "タグを追加" });
 
 			expect(input).toBeDisabled();

@@ -60,7 +60,9 @@ describe("AudioButtonCreator", () => {
 			// 基本情報フィールド
 			expect(screen.getByPlaceholderText("例: おはようございます")).toBeInTheDocument();
 			expect(screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）")).toBeInTheDocument();
-			expect(screen.getByPlaceholderText("タグを入力してEnter")).toBeInTheDocument();
+			expect(
+				screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)"),
+			).toBeInTheDocument();
 
 			// 操作ボタン
 			expect(screen.getByRole("button", { name: /音声ボタンを作成/ })).toBeInTheDocument();
@@ -155,7 +157,7 @@ describe("AudioButtonCreator", () => {
 			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
-			const tagInput = screen.getByPlaceholderText("タグを入力してEnter");
+			const tagInput = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 			await user.type(tagInput, "テストタグ");
 			await user.keyboard("{Enter}");
 
@@ -256,7 +258,7 @@ describe("AudioButtonCreator", () => {
 			const user = userEvent.setup();
 			render(<AudioButtonCreator {...defaultProps} />);
 
-			const tagInput = screen.getByPlaceholderText("タグを入力してEnter");
+			const tagInput = screen.getByPlaceholderText("タグを入力してEnter (2文字以上で候補表示)");
 
 			// 複数のタグを追加
 			for (let i = 0; i < 3; i++) {
