@@ -202,7 +202,7 @@ export const LargeDatasetIntegrationTest = memo<LargeDatasetIntegrationTestProps
 		const handlePlay = useCallback(
 			(audioButton: FrontendAudioButtonData, index: number) => {
 				setCurrentPlayingId(audioButton.id);
-				console.log(`再生開始: ${audioButton.title} (${index + 1}/${filteredData.length})`);
+				// Play simulation for large dataset testing
 			},
 			[filteredData.length],
 		);

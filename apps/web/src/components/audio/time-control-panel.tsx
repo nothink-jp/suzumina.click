@@ -1,6 +1,7 @@
 "use client";
 
-import { formatTimestamp } from "@suzumina.click/shared-types";
+import { TimeDisplay } from "@suzumina.click/ui/components/custom/time-display";
+import { ValidationMessages } from "@suzumina.click/ui/components/custom/validation-message";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Clock, Play } from "lucide-react";
 import { TimeInputField } from "./time-input-field";
@@ -66,9 +67,11 @@ export function TimeControlPanel({
 						<span className="hidden sm:inline">動画再生時間</span>
 						<span className="sm:hidden">再生時間</span>
 					</div>
-					<div className="text-base sm:text-lg font-mono font-semibold text-primary">
-						{formatTimestamp(currentTime)}
-					</div>
+					<TimeDisplay
+						time={currentTime}
+						format="auto"
+						className="text-base sm:text-lg font-mono font-semibold text-primary"
+					/>
 				</div>
 			</div>
 
@@ -133,17 +136,19 @@ export function TimeControlPanel({
 							{startTime >= endTime ? "無効" : `${duration.toFixed(1)}秒`}
 						</strong>
 					</p>
-					{startTime >= endTime && (
-						<p className="text-xs sm:text-sm text-destructive mt-1">
-							開始時間は終了時間より前にしてください
-						</p>
-					)}
-					{startTime < endTime && duration > 60 && (
-						<p className="text-xs sm:text-sm text-destructive mt-1">60秒以下にしてください</p>
-					)}
-					{startTime < endTime && duration < 1 && (
-						<p className="text-xs sm:text-sm text-destructive mt-1">1秒以上にしてください</p>
-					)}
+					<div className="space-y-1 mt-2">
+						<ValidationMessages.TimeRange isVisible={startTime >= endTime} compact />
+						<ValidationMessages.MaxDuration
+							maxSeconds={60}
+							isVisible={startTime < endTime && duration > 60}
+							compact
+						/>
+						<ValidationMessages.MinDuration
+							minSeconds={1}
+							isVisible={startTime < endTime && duration < 1}
+							compact
+						/>
+					</div>
 				</div>
 
 				{/* プレビューボタン: モバイル対応 */}

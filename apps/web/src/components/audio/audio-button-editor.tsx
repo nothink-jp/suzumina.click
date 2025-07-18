@@ -1,86 +1,78 @@
 "use client";
 
-import type { CreateAudioButtonInput } from "@suzumina.click/shared-types";
+import type { FrontendAudioButtonData, UpdateAudioButtonInput } from "@suzumina.click/shared-types";
 import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
-import { createAudioButton } from "@/app/buttons/actions";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { updateAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { TimeControlPanel } from "./time-control-panel";
 import { UsageGuide } from "./usage-guide";
 
-interface AudioButtonCreatorProps {
-	videoId: string;
-	videoTitle: string;
+interface AudioButtonEditorProps {
+	audioButton: FrontendAudioButtonData;
 	videoDuration?: number;
-	initialStartTime?: number;
 }
 
-export function AudioButtonCreator({
-	videoId,
-	videoTitle,
-	videoDuration = 600,
-	initialStartTime = 0,
-}: AudioButtonCreatorProps) {
+export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioButtonEditorProps) {
 	const router = useRouter();
 
-	// 共通の音声ボタン編集ロジック
+	// 共通の音声ボタン編集ロジック（編集モード）
 	const editor = useAudioButtonEditor({
-		videoId,
-		videoTitle,
+		videoId: audioButton.sourceVideoId,
+		videoTitle: audioButton.sourceVideoTitle,
 		videoDuration,
-		initialStartTime,
+		audioButton,
 	});
 
-	const { state, setState, youtubeManager, timeAdjustment, timeHandlers, validation } = editor;
-	const { title, description, tags, isProcessing: isCreating, error } = state;
-	const { setTitle, setDescription, setTags, setIsProcessing: setIsCreating, setError } = setState;
+	const { state, setState, youtubeManager, timeAdjustment, timeHandlers, validation, hasChanges } =
+		editor;
+	const { title, description, tags, isProcessing: isUpdating, error } = state;
+	const { setTitle, setDescription, setTags, setIsProcessing: setIsUpdating, setError } = setState;
 	const isValid = validation.isValid;
 
-	// 作成処理
-	const handleCreate = useCallback(async () => {
-		if (!isValid) return;
+	// 更新処理
+	const handleUpdate = useCallback(async () => {
+		if (!isValid || !hasChanges) return;
 
-		setIsCreating(true);
+		setIsUpdating(true);
 		setError("");
 
 		try {
-			const input: CreateAudioButtonInput = {
-				sourceVideoId: videoId,
+			const input: UpdateAudioButtonInput = {
+				id: audioButton.id,
 				title: title.trim(),
 				description: description.trim() || undefined,
 				tags,
 				startTime: timeAdjustment.startTime,
 				endTime: timeAdjustment.endTime,
-				isPublic: true,
 			};
 
-			const result = await createAudioButton(input);
+			const result = await updateAudioButton(input);
 
 			if (result.success) {
-				router.push(`/buttons/${result.data.id}`);
+				router.push(`/buttons/${audioButton.id}`);
 			} else {
-				setError(result.error || "作成に失敗しました");
+				setError(result.error || "更新に失敗しました");
 			}
 		} catch (_error) {
 			setError("予期しないエラーが発生しました");
 		} finally {
-			setIsCreating(false);
+			setIsUpdating(false);
 		}
 	}, [
 		isValid,
-		videoId,
+		hasChanges,
+		audioButton.id,
 		title,
 		description,
 		tags,
+		router,
 		timeAdjustment.startTime,
 		timeAdjustment.endTime,
-		router,
-		setIsCreating,
-		setError,
 	]);
 
 	// 時間調整用のハンドラーは共通フックから取得
@@ -89,8 +81,8 @@ export function AudioButtonCreator({
 		<div className="min-h-screen bg-background">
 			<div className="container mx-auto px-4 py-6">
 				<div className="mb-6">
-					<h1 className="text-2xl font-bold mb-2">音声ボタンを作成</h1>
-					<p className="text-muted-foreground text-sm">動画: {videoTitle}</p>
+					<h1 className="text-2xl font-bold mb-2">音声ボタンを編集</h1>
+					<p className="text-muted-foreground text-sm">動画: {audioButton.sourceVideoTitle}</p>
 				</div>
 
 				{error && (
@@ -110,7 +102,7 @@ export function AudioButtonCreator({
 										youtubeManager.onPlayerReady();
 									}}
 									onStateChange={youtubeManager.onPlayerStateChange}
-									startTime={initialStartTime}
+									startTime={audioButton.startTime}
 									controls={true}
 								/>
 							</div>
@@ -134,7 +126,7 @@ export function AudioButtonCreator({
 									isEditingEndTime={timeAdjustment.isEditingEndTime}
 									isAdjusting={timeAdjustment.isAdjusting}
 									{...timeHandlers}
-									isCreating={isCreating}
+									isCreating={isUpdating}
 								/>
 							</div>
 
@@ -145,7 +137,7 @@ export function AudioButtonCreator({
 								onTitleChange={setTitle}
 								onDescriptionChange={setDescription}
 								onTagsChange={setTags}
-								disabled={isCreating}
+								disabled={isUpdating}
 							/>
 						</div>
 
@@ -154,30 +146,33 @@ export function AudioButtonCreator({
 								<Button
 									variant="outline"
 									onClick={() => router.back()}
-									disabled={isCreating}
+									disabled={isUpdating}
 									className="w-full sm:w-auto min-h-[44px] order-2 sm:order-1"
 								>
 									キャンセル
 								</Button>
 								<Button
-									onClick={handleCreate}
-									disabled={!isValid || isCreating}
+									onClick={handleUpdate}
+									disabled={!isValid || !hasChanges || isUpdating}
 									className="w-full sm:w-auto min-h-[44px] h-11 sm:h-12 px-6 sm:px-8 order-1 sm:order-2"
 									size="lg"
 								>
-									{isCreating ? (
+									{isUpdating ? (
 										<>
 											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-											作成中...
+											更新中...
 										</>
 									) : (
 										<>
-											<Plus className="h-4 w-4 mr-2" />
-											音声ボタンを作成
+											<Save className="h-4 w-4 mr-2" />
+											変更を保存
 										</>
 									)}
 								</Button>
 							</div>
+							{!hasChanges && (
+								<p className="text-sm text-muted-foreground text-center">変更がありません</p>
+							)}
 						</div>
 					</div>
 				</div>

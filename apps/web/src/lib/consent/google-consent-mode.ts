@@ -1,6 +1,6 @@
 /**
  * Google Consent Mode v2 implementation
- * Manages consent state for Google Analytics and Google AdSense
+ * Manages consent state for Google Analytics
  */
 
 // Google Analytics gtag types

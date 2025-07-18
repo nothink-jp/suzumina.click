@@ -15,8 +15,6 @@ describe("useTimeAdjustment", () => {
 		videoDuration: 300,
 		currentTime: 0,
 		youtubePlayerRef: { current: mockYouTubePlayer },
-		debugMode: false,
-		onDebugLog: vi.fn(),
 	};
 
 	beforeEach(() => {
@@ -104,11 +102,11 @@ describe("useTimeAdjustment", () => {
 
 			// 0.1秒を10回調整、デバウンスを避けるため間隔をあける
 			for (let i = 0; i < 10; i++) {
-				act(() => {
+				await act(async () => {
 					result.current.adjustStartTime(0.1);
+					// デバウンスを避けるため少し待つ
+					await new Promise((resolve) => setTimeout(resolve, 120));
 				});
-				// デバウンスを避けるため少し待つ
-				await new Promise((resolve) => setTimeout(resolve, 120));
 			}
 
 			await waitFor(() => {
@@ -138,14 +136,21 @@ describe("useTimeAdjustment", () => {
 		it("デバウンス期間後は正常に実行される", async () => {
 			const { result } = renderHook(() => useTimeAdjustment(defaultProps));
 
-			act(() => {
+			// 最初の調整
+			await act(async () => {
 				result.current.adjustStartTime(1);
+			});
+
+			// 初回の調整が完了するまで待つ
+			await waitFor(() => {
+				expect(result.current.startTime).toBe(1);
 			});
 
 			// デバウンス期間を経過するまで待つ
 			await new Promise((resolve) => setTimeout(resolve, 150));
 
-			act(() => {
+			// 2回目の調整
+			await act(async () => {
 				result.current.adjustStartTime(1);
 			});
 
@@ -157,7 +162,7 @@ describe("useTimeAdjustment", () => {
 		it("調整中フラグが適切に制御される", async () => {
 			const { result } = renderHook(() => useTimeAdjustment(defaultProps));
 
-			act(() => {
+			await act(async () => {
 				result.current.adjustStartTime(1);
 			});
 
@@ -313,98 +318,6 @@ describe("useTimeAdjustment", () => {
 		});
 	});
 
-	describe("Debug Mode", () => {
-		it("デバッグモードでログが記録される", async () => {
-			const onDebugLog = vi.fn();
-			const props = { ...defaultProps, debugMode: true, onDebugLog };
-			const { result } = renderHook(() => useTimeAdjustment(props));
-
-			act(() => {
-				result.current.adjustStartTime(1.5);
-			});
-
-			await waitFor(() => {
-				expect(onDebugLog).toHaveBeenCalledWith(
-					expect.objectContaining({
-						action: "adjustStartTime(1.5)",
-						before: { start: 0, end: 0 },
-						after: { start: 1.5, end: 0 },
-						delta: 1.5,
-						expected: 1.5,
-						actual: 1.5,
-						isValid: true,
-						videoDuration: 300,
-						clampDetails: expect.any(Object),
-					}),
-				);
-			});
-		});
-
-		it("デバッグモードOFFではログが記録されない", async () => {
-			const onDebugLog = vi.fn();
-			const props = { ...defaultProps, debugMode: false, onDebugLog };
-			const { result } = renderHook(() => useTimeAdjustment(props));
-
-			act(() => {
-				result.current.adjustStartTime(1);
-			});
-
-			await waitFor(() => {
-				expect(onDebugLog).not.toHaveBeenCalled();
-			});
-		});
-
-		it("クランプ詳細情報が正しく記録される", async () => {
-			const onDebugLog = vi.fn();
-			const props = { ...defaultProps, debugMode: true, onDebugLog, videoDuration: 10 };
-			const { result } = renderHook(() => useTimeAdjustment(props));
-
-			act(() => {
-				result.current.adjustStartTime(15); // Over video duration
-			});
-
-			await waitFor(() => {
-				expect(onDebugLog).toHaveBeenCalledWith(
-					expect.objectContaining({
-						clampDetails: expect.objectContaining({
-							newTime: 15,
-							videoDuration: 10,
-							clampedResult: 10,
-							floatingPointCheck: expect.objectContaining({
-								rawCalculation: 15,
-								roundedCalculation: 15,
-								difference: 0,
-							}),
-						}),
-					}),
-				);
-			});
-		});
-
-		it("浮動小数点精度の問題が検出される", async () => {
-			const onDebugLog = vi.fn();
-			const props = { ...defaultProps, debugMode: true, onDebugLog };
-			const { result } = renderHook(() => useTimeAdjustment(props));
-
-			// 0.1 * 3 = 0.30000000000000004 のような問題をテスト
-			act(() => {
-				result.current.adjustStartTime(0.1);
-			});
-			act(() => {
-				result.current.adjustStartTime(0.1);
-			});
-			act(() => {
-				result.current.adjustStartTime(0.1);
-			});
-
-			await waitFor(() => {
-				expect(onDebugLog).toHaveBeenCalled();
-				const lastCall = onDebugLog.mock.calls[onDebugLog.mock.calls.length - 1][0];
-				expect(lastCall.clampDetails.floatingPointCheck.difference).toBeDefined();
-			});
-		});
-	});
-
 	describe("Error Handling", () => {
 		it("null YouTube Player でもエラーにならない", () => {
 			const props = { ...defaultProps, youtubePlayerRef: { current: null } };
@@ -478,6 +391,7 @@ describe("useTimeAdjustment", () => {
 			});
 
 			await waitFor(() => {
+				// 0.01秒は0.1秒単位で丸められるため、0になる
 				expect(result.current.startTime).toBe(0);
 			});
 		});

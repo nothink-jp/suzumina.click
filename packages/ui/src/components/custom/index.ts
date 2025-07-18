@@ -35,6 +35,11 @@ export type { TagSuggestion } from "./tag-input";
 export { TagInput } from "./tag-input";
 export { TagList } from "./tag-list";
 export { ThreeLayerTagDisplay } from "./three-layer-tag-display";
+export type { TimeDisplayProps } from "./time-display";
+// Time and validation components
+export { TimeDisplay } from "./time-display";
+export type { ValidationMessageProps } from "./validation-message";
+export { ValidationMessage, ValidationMessages } from "./validation-message";
 export {
 	calculateResponsiveItemSize,
 	calculateVirtualListLayout,

@@ -196,13 +196,13 @@ export const AudioButtonPerformanceTest = memo<AudioButtonPerformanceTestProps>(
 
 		const handleFavoriteToggle = useCallback((audioButtonId: string) => {
 			// パフォーマンステスト用のダミー処理
-			console.log(`お気に入り切り替え: ${audioButtonId}`);
+			// Favorite toggle simulation
 		}, []);
 
 		const handlePlay = useCallback(
 			(audioButton: FrontendAudioButtonData, index: number) => {
 				// パフォーマンステスト用のダミー処理
-				console.log(`再生: ${audioButton.title} (index: ${index})`);
+				// Play simulation for performance testing
 
 				// プログレッシブモードの場合、アップグレードをシミュレート
 				if (testMode === "progressive") {

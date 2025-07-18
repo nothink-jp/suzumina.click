@@ -142,6 +142,8 @@ export const UpdateAudioButtonInputSchema = z.object({
 	description: z.string().max(500).optional(),
 	tags: z.array(z.string().min(1).max(30)).max(10).optional(),
 	isPublic: z.boolean().optional(),
+	startTime: z.number().min(0).optional(),
+	endTime: z.number().min(0).optional(),
 });
 
 /**
@@ -635,6 +637,7 @@ export interface YouTubeVideoInfo {
 // カテゴリー関連の関数は削除（タグベースシステムに移行）
 
 /**
+ * @deprecated TimeDisplayコンポーネントを使用してください
  * 秒数を時:分:秒形式にフォーマット
  */
 export function formatTimestamp(seconds: number): string {

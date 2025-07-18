@@ -14,6 +14,8 @@ import {
 	type FrontendAudioButtonData,
 	filterAudioButtons,
 	sortAudioButtons,
+	type UpdateAudioButtonInput,
+	UpdateAudioButtonInputSchema,
 	type UpdateAudioButtonStats,
 	UpdateAudioButtonStatsSchema,
 	type UserSession,
@@ -804,6 +806,126 @@ function parseDuration(duration: string): number {
 	const seconds = Number.parseInt(match[3] || "0", 10);
 
 	return (hours * 3600 + minutes * 60 + seconds) * 1000; // ミリ秒で返す
+}
+
+/**
+ * 音声ボタンを更新するServer Action
+ */
+export async function updateAudioButton(
+	input: UpdateAudioButtonInput,
+): Promise<{ success: true; data: { id: string } } | { success: false; error: string }> {
+	try {
+		logger.info("音声ボタン更新を開始", {
+			id: input.id,
+			title: input.title,
+		});
+
+		// 認証チェック
+		const user = await requireAuth();
+
+		// 入力データのバリデーション
+		const validationResult = UpdateAudioButtonInputSchema.safeParse(input);
+		if (!validationResult.success) {
+			logger.warn("入力データのバリデーション失敗", {
+				errors: validationResult.error.issues,
+				input,
+			});
+			return {
+				success: false,
+				error: `入力データが無効です: ${validationResult.error.issues.map((e) => e.message).join(", ")}`,
+			};
+		}
+
+		const validatedInput = validationResult.data;
+		const firestore = getFirestore();
+
+		// 音声ボタンの存在確認と権限チェック
+		const audioButtonDoc = await firestore.collection("audioButtons").doc(validatedInput.id).get();
+
+		if (!audioButtonDoc.exists) {
+			return {
+				success: false,
+				error: "指定された音声ボタンが見つかりません",
+			};
+		}
+
+		const audioButtonData = {
+			id: audioButtonDoc.id,
+			...audioButtonDoc.data(),
+		} as FirestoreAudioButtonData;
+
+		// 作成者または管理者のみ更新可能
+		if (audioButtonData.createdBy !== user.discordId && user.role !== "admin") {
+			logger.warn("更新権限なし", {
+				audioButtonId: validatedInput.id,
+				createdBy: audioButtonData.createdBy,
+				requestUserId: user.discordId,
+				userRole: user.role,
+			});
+			return {
+				success: false,
+				error: "この音声ボタンを更新する権限がありません",
+			};
+		}
+
+		// 更新データの作成
+		const updateData: Partial<FirestoreAudioButtonData> = {
+			updatedAt: new Date().toISOString(),
+		};
+
+		if (validatedInput.title !== undefined) {
+			updateData.title = validatedInput.title;
+		}
+
+		if (validatedInput.description !== undefined) {
+			updateData.description = validatedInput.description;
+		}
+
+		if (validatedInput.tags !== undefined) {
+			updateData.tags = validatedInput.tags;
+		}
+
+		if (validatedInput.isPublic !== undefined) {
+			updateData.isPublic = validatedInput.isPublic;
+		}
+
+		if (validatedInput.startTime !== undefined) {
+			updateData.startTime = validatedInput.startTime;
+		}
+
+		if (validatedInput.endTime !== undefined) {
+			updateData.endTime = validatedInput.endTime;
+		}
+
+		// Firestoreを更新
+		await firestore.collection("audioButtons").doc(validatedInput.id).update(updateData);
+
+		// キャッシュの無効化
+		revalidatePath("/buttons");
+		revalidatePath(`/buttons/${validatedInput.id}`);
+
+		logger.info("音声ボタン更新が正常に完了", {
+			audioButtonId: validatedInput.id,
+			updatedBy: user.discordId,
+			updates: updateData,
+		});
+
+		return {
+			success: true,
+			data: { id: validatedInput.id },
+		};
+	} catch (error) {
+		logger.error("音声ボタン更新でエラーが発生しました", {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+			audioButtonId: input.id,
+		});
+
+		return {
+			success: false,
+			error: "音声ボタンの更新に失敗しました。しばらく時間をおいてから再度お試しください。",
+		};
+	}
 }
 
 /**

@@ -70,6 +70,16 @@ export function YouTubePlayer({
 	const [playerReady, setPlayerReady] = useState(false);
 	const timeUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+	// Store callback refs to avoid re-initialization
+	const onReadyRef = useRef(onReady);
+	const onStateChangeRef = useRef(onStateChange);
+	const onErrorRef = useRef(onError);
+
+	// Update refs when props change
+	onReadyRef.current = onReady;
+	onStateChangeRef.current = onStateChange;
+	onErrorRef.current = onError;
+
 	// YouTube API の読み込み
 	useEffect(() => {
 		// すでにAPIが読み込まれている場合
@@ -111,29 +121,6 @@ export function YouTubePlayer({
 		return typeof time === "number" && !Number.isNaN(time) && Number.isFinite(time);
 	}, []);
 
-	// デバッグログ出力（開発環境のみ）
-	const logTimeUpdate = useCallback((_currentTime: number) => {
-		if (process.env.NODE_ENV === "development") {
-			// console.log("YouTube Player time update:", currentTime);
-		}
-	}, []);
-
-	const logInvalidTime = useCallback((_currentTime: number) => {
-		if (process.env.NODE_ENV === "development") {
-			// console.warn("YouTube Player invalid time:", currentTime, typeof currentTime);
-		}
-	}, []);
-
-	const logError = useCallback((error: unknown) => {
-		if (
-			error instanceof Error &&
-			!error.message.includes("Maximum call stack") &&
-			process.env.NODE_ENV === "development"
-		) {
-			// console.warn("YouTube API time update failed:", error.message);
-		}
-	}, []);
-
 	// 時間更新処理
 	const handleTimeUpdate = useCallback(() => {
 		if (!playerRef.current || !onTimeUpdate) {
@@ -146,14 +133,11 @@ export function YouTubePlayer({
 
 			if (isValidTime(currentTime)) {
 				onTimeUpdate(currentTime, duration || 0);
-				logTimeUpdate(currentTime);
-			} else {
-				logInvalidTime(currentTime);
 			}
 		} catch (error) {
-			logError(error);
+			// Ignore errors during time updates
 		}
-	}, [onTimeUpdate, isValidTime, logTimeUpdate, logInvalidTime, logError]);
+	}, [onTimeUpdate, isValidTime]);
 
 	// 時間更新インターバルの開始
 	const startTimeUpdateInterval = useCallback(() => {
@@ -232,10 +216,10 @@ export function YouTubePlayer({
 				onReady: (event) => {
 					playerRef.current = event.target;
 					setPlayerReady(true);
-					onReady?.(event.target);
+					onReadyRef.current?.(event.target);
 				},
 				onStateChange: (event) => {
-					onStateChange?.(event.data, event.target);
+					onStateChangeRef.current?.(event.data, event.target);
 
 					// 再生中の場合、時間更新のインターバルを開始
 					if (event.data === window.YT.PlayerState.PLAYING) {
@@ -245,15 +229,7 @@ export function YouTubePlayer({
 					}
 				},
 				onError: (event) => {
-					if (process.env.NODE_ENV === "development") {
-						// console.error("YouTube Player Error:", {
-						// 	errorCode: event.data,
-						// 	videoId,
-						// 	startTime,
-						// 	endTime,
-						// });
-					}
-					onError?.(event.data);
+					onErrorRef.current?.(event.data);
 				},
 			},
 		});
@@ -276,9 +252,7 @@ export function YouTubePlayer({
 		rel,
 		startTimeUpdateInterval,
 		stopTimeUpdateInterval,
-		onReady,
-		onStateChange,
-		onError,
+		// Note: onReady, onStateChange, onError are not included in deps to prevent re-initialization
 	]);
 
 	// 親コンポーネントに制御メソッドを公開

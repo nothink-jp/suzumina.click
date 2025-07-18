@@ -1,5 +1,6 @@
 "use client";
 
+import { TimeDisplay } from "@suzumina.click/ui/components/custom/time-display";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { MousePointer } from "lucide-react";
@@ -32,12 +33,7 @@ export function TimeInputField({
 	onSetTime,
 	onAdjust,
 }: TimeInputFieldProps) {
-	const formatTime = (time: number) => {
-		const minutes = Math.floor(time / 60);
-		const seconds = Math.floor(time % 60);
-		const decimal = Math.floor((time % 1) * 10);
-		return `${minutes}:${String(seconds).padStart(2, "0")}.${decimal}`;
-	};
+	// formatTime 関数は削除（TimeDisplayコンポーネントを使用）
 
 	return (
 		<div className="relative border rounded-lg overflow-hidden">
@@ -55,13 +51,32 @@ export function TimeInputField({
 			<div className="p-2 sm:p-3 bg-muted/20 border-b">
 				<Input
 					type="text"
-					value={isEditing ? timeInput : formatTime(timeValue)}
+					value={
+						isEditing
+							? timeInput
+							: (() => {
+									// TimeDisplayコンポーネントと同じロジックを使用
+									if (timeValue >= 3600) {
+										// 1時間以上の場合: h:mm:ss.s フォーマット
+										const hours = Math.floor(timeValue / 3600);
+										const minutes = Math.floor((timeValue % 3600) / 60);
+										const seconds = Math.floor(timeValue % 60);
+										const decimal = Math.floor((timeValue % 1) * 10);
+										return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${decimal}`;
+									}
+									// 1時間未満の場合: mm:ss.s フォーマット
+									const minutes = Math.floor(timeValue / 60);
+									const seconds = Math.floor(timeValue % 60);
+									const decimal = Math.floor((timeValue % 1) * 10);
+									return `${minutes}:${String(seconds).padStart(2, "0")}.${decimal}`;
+								})()
+					}
 					onChange={(e) => onInputChange(e.target.value)}
 					onBlur={onBlur}
 					onKeyDown={onKeyDown}
 					disabled={isCreating}
 					className="text-center text-base sm:text-lg font-mono font-semibold text-primary h-8 border-0 bg-transparent focus:bg-background"
-					placeholder="0:00.0"
+					placeholder={timeValue >= 3600 ? "0:00:00.0" : "0:00.0"}
 				/>
 			</div>
 			{/* 下半分: 微調整ボタン */}

@@ -304,6 +304,7 @@ describe("TimeControlPanel", () => {
 			};
 			render(<TimeControlPanel {...props} />);
 
+			// format="auto"では1時間超過のh:mm:ss.sフォーマットになる
 			expect(screen.getByText("2:00:00.0")).toBeInTheDocument();
 		});
 

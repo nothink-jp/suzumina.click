@@ -185,6 +185,7 @@ vi.mock("lucide-react", () => {
 		Check: createMockIcon("Check"),
 		Copy: createMockIcon("Copy"),
 		AlertCircle: createMockIcon("AlertCircle"),
+		AlertTriangle: createMockIcon("AlertTriangle"),
 		Info: createMockIcon("Info"),
 		User: createMockIcon("User"),
 		Users: createMockIcon("Users"),
