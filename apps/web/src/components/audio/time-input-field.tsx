@@ -1,6 +1,5 @@
 "use client";
 
-import { TimeDisplay } from "@suzumina.click/ui/components/custom/time-display";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { MousePointer } from "lucide-react";

@@ -63,7 +63,7 @@ export function useYouTubePlayerManager({
 						setCurrentTime(playerTime);
 						timeUpdateCallbackRef.current?.(playerTime);
 					}
-				} catch (error) {
+				} catch (_error) {
 					// Ignore player errors during time updates
 				}
 			}
@@ -89,8 +89,7 @@ export function useYouTubePlayerManager({
 					setIsLoading(false);
 					startTimeUpdate();
 				}
-			} catch (error) {
-				console.error("Failed to get video duration:", error);
+			} catch (_error) {
 				setIsLoading(false);
 			}
 		}
@@ -121,7 +120,7 @@ export function useYouTubePlayerManager({
 								setIsPlayerReady(true);
 								setIsLoading(false);
 							}
-						} catch (error) {
+						} catch (_error) {
 							// Ignore errors
 						}
 					}
@@ -173,19 +172,15 @@ export function useYouTubePlayerManager({
 								if (youtubePlayerRef.current) {
 									try {
 										youtubePlayerRef.current.pauseVideo();
-									} catch (error) {
+									} catch (_error) {
 										// Ignore errors
 									}
 								}
 							}, duration);
-						} catch (error) {
-							console.error("Failed to play video:", error);
-						}
+						} catch (_error) {}
 					}
 				}, 300);
-			} catch (error) {
-				console.error("Failed to play range:", error);
-			}
+			} catch (_error) {}
 		},
 		[isPlayerReady],
 	);
@@ -197,9 +192,7 @@ export function useYouTubePlayerManager({
 		try {
 			youtubePlayerRef.current.seekTo(time, true);
 			setCurrentTime(time);
-		} catch (error) {
-			console.error("Failed to seek to time:", error);
-		}
+		} catch (_error) {}
 	}, []);
 
 	// Get current player time
@@ -215,7 +208,7 @@ export function useYouTubePlayerManager({
 			) {
 				return playerTime;
 			}
-		} catch (error) {
+		} catch (_error) {
 			// Ignore errors
 		}
 

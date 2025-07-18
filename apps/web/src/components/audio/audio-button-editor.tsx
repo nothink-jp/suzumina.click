@@ -5,7 +5,7 @@ import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-play
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback } from "react";
 import { updateAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
 import { BasicInfoPanel } from "./basic-info-panel";
@@ -73,6 +73,8 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 		router,
 		timeAdjustment.startTime,
 		timeAdjustment.endTime,
+		setError,
+		setIsUpdating,
 	]);
 
 	// 時間調整用のハンドラーは共通フックから取得

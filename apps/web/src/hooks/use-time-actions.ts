@@ -71,7 +71,7 @@ export function useTimeActions({
 			timeoutRef.current = setTimeout(() => actions.setIsAdjusting(false), 100);
 
 			const currentStartTime = startTimeRef.current;
-			const currentEndTime = endTimeRef.current;
+			const _currentEndTime = endTimeRef.current;
 			const expectedTime = currentStartTime + deltaSeconds;
 			const clampedTime = validation.clampTime(expectedTime, videoDuration);
 
@@ -94,7 +94,7 @@ export function useTimeActions({
 			}
 			timeoutRef.current = setTimeout(() => actions.setIsAdjusting(false), 100);
 
-			const currentStartTime = startTimeRef.current;
+			const _currentStartTime = startTimeRef.current;
 			const currentEndTime = endTimeRef.current;
 			const expectedTime = currentEndTime + deltaSeconds;
 			const clampedTime = validation.clampTime(expectedTime, videoDuration);

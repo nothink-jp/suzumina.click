@@ -169,8 +169,7 @@ function updateConsent(consentData: ConsentData) {
 /**
  * Log consent application in development environment
  */
-function logConsentInDevelopment(consentData: ConsentData) {
+function logConsentInDevelopment(_consentData: ConsentData) {
 	if (window.location.hostname === "localhost") {
-		console.log("Applied saved consent:", consentData);
 	}
 }

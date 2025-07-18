@@ -55,7 +55,7 @@ export interface AudioButtonEditorResult {
 export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButtonEditorResult {
 	const {
 		videoId,
-		videoTitle,
+		videoTitle: _videoTitle,
 		videoDuration = 600,
 		initialStartTime = 0,
 		initialEndTime,
@@ -86,8 +86,11 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 			youtubeManager.videoDuration,
 			videoDuration,
 			youtubeManager.youtubePlayerRef,
-			audioButton?.startTime ?? initialStartTime,
-			audioButton?.endTime ?? initialEndTime ?? initialStartTime + 10,
+			audioButton?.endTime,
+			audioButton?.startTime,
+			initialEndTime,
+			initialStartTime,
+			youtubeManager.currentTime,
 		],
 	);
 

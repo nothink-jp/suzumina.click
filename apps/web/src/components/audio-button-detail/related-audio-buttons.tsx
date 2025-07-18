@@ -9,11 +9,14 @@ import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-p
 interface RelatedAudioButtonsProps {
 	currentId: string;
 	videoId: string;
-	// biome-ignore lint/correctness/noUnusedFunctionParameters: tags will be used for related audio recommendation in future
 	tags: string[];
 }
 
-export async function RelatedAudioButtons({ currentId, videoId, tags }: RelatedAudioButtonsProps) {
+export async function RelatedAudioButtons({
+	currentId,
+	videoId,
+	tags: _tags,
+}: RelatedAudioButtonsProps) {
 	try {
 		// 同じ動画の音声ボタンを取得
 		const sameVideoQuery: AudioButtonQuery = {
