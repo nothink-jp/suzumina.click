@@ -18,6 +18,7 @@
 
 - **FUNCTIONS_ARCHITECTURE_CURRENT_ARCHIVED.md** - Cloud Functions アーキテクチャ解説（システム簡素化完了時点）
 - **DLSITE_REGION_RESTRICTION_DESIGN_ARCHIVED.md** - DLsite リージョン制限対応設計書（Phase 0-2 実装完了）
+- **YOUTUBE_VIDEO_CLASSIFICATION_ARCHIVED.md** - YouTube動画種別判定ルール（未実装のため設計書としてアーカイブ）
 
 ### `/analysis/` - 完了した分析レポート
 技術分析・パフォーマンス分析・システム評価ドキュメント

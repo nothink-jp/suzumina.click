@@ -207,7 +207,7 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 
 ## 📝 RECENT UPDATES
 
-### v0.3.4 (2025-07-16)
+### v0.3.4 (2025-07-19)
 - **Non-profit Operation Transition COMPLETED**
   - Complete Google AdSense integration removal (ASMR content policy rejection)
   - Amazon Associates integration removal
@@ -218,6 +218,12 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
   - Carousel loading skeleton alignment optimization  
   - LoadingSkeleton component structure redesign for GenericCarousel compatibility
   - Cookie consent debugger component removal (GA4 stable)
+- **Authentication-based UX Improvements COMPLETED**
+  - Disabled favorite/like/dislike buttons for non-authenticated users
+  - Added visual feedback (opacity, cursor changes) for disabled buttons
+  - Implemented login requirement tooltips for better user guidance
+  - Enhanced accessibility with proper disabled states and ARIA labels
+  - Added comprehensive test coverage for authentication scenarios
 
 ### v0.3.3 (2025-07-15)
 - **Audio Button Performance Optimization COMPLETED**
@@ -239,5 +245,5 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 
 ---
 
-**Last Updated**: 2025-07-16  
-**Document Version**: 3.1 (Non-profit Operation & UI Optimization)
+**Last Updated**: 2025-07-19  
+**Document Version**: 3.2 (Authentication-based UX Improvements)
