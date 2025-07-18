@@ -18,7 +18,7 @@ export interface TagInputProps {
 	tags: string[];
 	/** タグ変更時のコールバック */
 	onTagsChange: (tags: string[]) => void;
-	/** 最大タグ数 (デフォルト: 15) */
+	/** 最大タグ数 (デフォルト: 10) */
 	maxTags?: number;
 	/** 各タグの最大文字数 (デフォルト: 30) */
 	maxTagLength?: number;
@@ -33,7 +33,7 @@ export interface TagInputProps {
 export function TagInput({
 	tags,
 	onTagsChange,
-	maxTags = 15,
+	maxTags = 10,
 	maxTagLength = 30,
 	placeholder = "タグを入力...",
 	disabled = false,
@@ -41,6 +41,7 @@ export function TagInput({
 }: TagInputProps) {
 	const [inputValue, setInputValue] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const [isComposing, setIsComposing] = useState(false);
 
 	/**
 	 * タグを追加する
@@ -88,12 +89,27 @@ export function TagInput({
 
 	/**
 	 * Enter キー押下時の処理
+	 * 日本語入力（IME）変換中は無視
 	 */
 	const handleKeyDown = (e: React.KeyboardEvent) => {
-		if (e.key === "Enter") {
+		if (e.key === "Enter" && !isComposing) {
 			e.preventDefault();
 			addTag();
 		}
+	};
+
+	/**
+	 * IME変換開始時の処理
+	 */
+	const handleCompositionStart = () => {
+		setIsComposing(true);
+	};
+
+	/**
+	 * IME変換終了時の処理
+	 */
+	const handleCompositionEnd = () => {
+		setIsComposing(false);
 	};
 
 	/**
@@ -138,6 +154,8 @@ export function TagInput({
 					value={inputValue}
 					onChange={handleInputChange}
 					onKeyDown={handleKeyDown}
+					onCompositionStart={handleCompositionStart}
+					onCompositionEnd={handleCompositionEnd}
 					placeholder={placeholder}
 					disabled={disabled || tags.length >= maxTags}
 					className={cn("flex-1", error && "border-destructive focus-visible:ring-destructive/20")}

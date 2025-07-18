@@ -16,6 +16,7 @@ import {
 	sortAudioButtons,
 	type UpdateAudioButtonStats,
 	UpdateAudioButtonStatsSchema,
+	type UserSession,
 	validateAudioButtonCreation,
 	type YouTubeVideoInfo,
 } from "@suzumina.click/shared-types";
@@ -921,6 +922,170 @@ export async function deleteAudioButton(
 		return {
 			success: false,
 			error: "音声ボタンの削除に失敗しました。しばらく時間をおいてから再度お試しください。",
+		};
+	}
+}
+
+/**
+ * 音声ボタンのタグ更新入力パラメータのバリデーション
+ */
+function validateTagUpdateInput(
+	audioButtonId: string,
+	tags: string[],
+): { success: boolean; error?: string } {
+	if (!audioButtonId || typeof audioButtonId !== "string") {
+		return {
+			success: false,
+			error: "音声ボタンIDが指定されていません",
+		};
+	}
+
+	if (!Array.isArray(tags)) {
+		return {
+			success: false,
+			error: "タグは配列である必要があります",
+		};
+	}
+
+	if (tags.length > 10) {
+		return {
+			success: false,
+			error: "タグは最大10個まで設定できます",
+		};
+	}
+
+	return { success: true };
+}
+
+/**
+ * 個別タグの内容バリデーション
+ */
+function validateTagContents(tags: string[]): { success: boolean; error?: string } {
+	for (const tag of tags) {
+		if (typeof tag !== "string" || tag.trim().length === 0) {
+			return {
+				success: false,
+				error: "無効なタグが含まれています",
+			};
+		}
+		if (tag.length > 30) {
+			return {
+				success: false,
+				error: "各タグは30文字以内である必要があります",
+			};
+		}
+	}
+	return { success: true };
+}
+
+/**
+ * 音声ボタンの存在確認と権限チェック
+ */
+async function validateAudioButtonPermission(
+	audioButtonId: string,
+	user: UserSession,
+): Promise<{ success: boolean; error?: string; audioButtonData?: FirestoreAudioButtonData }> {
+	const firestore = getFirestore();
+	const audioButtonDoc = await firestore.collection("audioButtons").doc(audioButtonId).get();
+
+	if (!audioButtonDoc.exists) {
+		return {
+			success: false,
+			error: "指定された音声ボタンが見つかりません",
+		};
+	}
+
+	const audioButtonData = {
+		id: audioButtonDoc.id,
+		...audioButtonDoc.data(),
+	} as FirestoreAudioButtonData;
+
+	// 作成者または管理者のみ編集可能
+	if (audioButtonData.createdBy !== user.discordId && user.role !== "admin") {
+		logger.warn("タグ編集権限なし", {
+			audioButtonId,
+			createdBy: audioButtonData.createdBy,
+			requestUserId: user.discordId,
+			userRole: user.role,
+		});
+		return {
+			success: false,
+			error: "この音声ボタンのタグを編集する権限がありません",
+		};
+	}
+
+	return { success: true, audioButtonData };
+}
+
+/**
+ * タグの正規化処理
+ */
+function normalizeTags(tags: string[]): string[] {
+	return [...new Set(tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0))];
+}
+
+/**
+ * 音声ボタンのタグを更新するServer Action
+ */
+export async function updateAudioButtonTags(
+	audioButtonId: string,
+	tags: string[],
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		logger.info("音声ボタンタグ更新を開始", { audioButtonId, tags });
+
+		// 認証チェック
+		const user = await requireAuth();
+
+		// 入力パラメータの基本バリデーション
+		const inputValidation = validateTagUpdateInput(audioButtonId, tags);
+		if (!inputValidation.success) {
+			return inputValidation;
+		}
+
+		// タグ内容のバリデーション
+		const contentValidation = validateTagContents(tags);
+		if (!contentValidation.success) {
+			return contentValidation;
+		}
+
+		// 音声ボタンの存在確認と権限チェック
+		const permissionCheck = await validateAudioButtonPermission(audioButtonId, user);
+		if (!permissionCheck.success) {
+			return permissionCheck;
+		}
+
+		// タグを正規化して更新
+		const uniqueTags = normalizeTags(tags);
+		const firestore = getFirestore();
+
+		await firestore.collection("audioButtons").doc(audioButtonId).update({
+			tags: uniqueTags,
+			updatedAt: new Date().toISOString(),
+		});
+
+		// キャッシュの無効化
+		revalidatePath("/buttons");
+		revalidatePath(`/buttons/${audioButtonId}`);
+
+		logger.info("音声ボタンタグ更新が正常に完了", {
+			audioButtonId,
+			updatedBy: user.discordId,
+			newTags: uniqueTags,
+		});
+
+		return { success: true };
+	} catch (error) {
+		logger.error("音声ボタンタグ更新でエラーが発生しました", {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+			audioButtonId,
+			tags,
+		});
+
+		return {
+			success: false,
+			error: "タグの更新に失敗しました。しばらく時間をおいてから再度お試しください。",
 		};
 	}
 }

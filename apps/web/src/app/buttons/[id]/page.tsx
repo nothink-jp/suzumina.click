@@ -1,5 +1,4 @@
 import type { AudioButtonQuery } from "@suzumina.click/shared-types";
-import { TagList } from "@suzumina.click/ui/components/custom/tag-list";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
@@ -27,6 +26,7 @@ import { getVideoById } from "@/app/videos/actions";
 import VideoCard from "@/app/videos/components/VideoCard";
 import { auth } from "@/auth";
 import { AudioButtonDeleteButton } from "@/components/audio/audio-button-delete-button";
+import { AudioButtonTagEditorDetail } from "@/components/audio/audio-button-tag-editor-detail";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import { FavoriteButton } from "@/components/audio/favorite-button";
 import { LikeDislikeButtons } from "@/components/audio/like-dislike-buttons";
@@ -635,17 +635,16 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 									</div>
 								)}
 
-								{/* タグ */}
-								{audioButton.tags && audioButton.tags.length > 0 && (
-									<div className="mb-6">
-										<TagList
-											tags={audioButton.tags}
-											variant="outline"
-											showIcon={true}
-											size="default"
-										/>
-									</div>
-								)}
+								{/* タグ編集 */}
+								<div className="mb-6">
+									<AudioButtonTagEditorDetail
+										audioButtonId={audioButton.id}
+										tags={audioButton.tags || []}
+										createdBy={audioButton.createdBy}
+										currentUserId={session?.user?.discordId}
+										currentUserRole={session?.user?.role}
+									/>
+								</div>
 
 								{/* 音声ボタン再生エリア */}
 								<div className="mb-6">

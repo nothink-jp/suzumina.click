@@ -2,14 +2,14 @@
 
 import { type CreateAudioButtonInput, formatTimestamp } from "@suzumina.click/shared-types";
 import { YouTubePlayer, type YTPlayer } from "@suzumina.click/ui/components/custom/youtube-player";
-import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Input } from "@suzumina.click/ui/components/ui/input";
 import { Textarea } from "@suzumina.click/ui/components/ui/textarea";
-import { Clock, Loader2, MousePointer, Play, Plus, Tag, X } from "lucide-react";
+import { Clock, Loader2, MousePointer, Play, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useRef, useState } from "react";
 import { createAudioButton } from "@/app/buttons/actions";
+import { AudioButtonTagEditor } from "./audio-button-tag-editor";
 
 interface AudioButtonCreatorProps {
 	videoId: string;
@@ -31,7 +31,6 @@ export function AudioButtonCreator({
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [tags, setTags] = useState<string[]>([]);
-	const [tagInput, setTagInput] = useState("");
 	const [startTime, setStartTime] = useState(Math.round(initialStartTime * 10) / 10);
 	const [endTime, setEndTime] = useState(
 		Math.round(Math.min(initialStartTime + 5, videoDuration) * 10) / 10,
@@ -192,42 +191,6 @@ export function AudioButtonCreator({
 			);
 		}
 	}, [startTime, endTime]);
-
-	// タグ追加処理
-	const addTag = useCallback(() => {
-		const trimmedTag = tagInput.trim();
-		if (
-			trimmedTag &&
-			Array.isArray(tags) &&
-			!tags.includes(trimmedTag) &&
-			tags.length < 15 &&
-			trimmedTag.length <= 30
-		) {
-			setTags([...tags, trimmedTag]);
-			setTagInput("");
-		}
-	}, [tagInput, tags]);
-
-	// タグ削除処理
-	const removeTag = useCallback(
-		(tagToRemove: string) => {
-			if (Array.isArray(tags)) {
-				setTags(tags.filter((tag) => tag !== tagToRemove));
-			}
-		},
-		[tags],
-	);
-
-	// エンターキーでタグ追加
-	const handleTagInputKeyDown = useCallback(
-		(e: React.KeyboardEvent) => {
-			if (e.key === "Enter") {
-				e.preventDefault();
-				addTag();
-			}
-		},
-		[addTag],
-	);
 
 	// バリデーション
 	const duration = Math.round((endTime - startTime) * 10) / 10;
@@ -639,69 +602,7 @@ export function AudioButtonCreator({
 									</div>
 
 									{/* タグ入力 */}
-									<div className="space-y-2">
-										<label
-											htmlFor="tag-input"
-											className="text-sm sm:text-base font-medium flex items-center gap-2"
-										>
-											<Tag className="h-4 w-4" />
-											タグ（任意）
-										</label>
-										<div className="flex gap-2">
-											<Input
-												id="tag-input"
-												value={tagInput}
-												onChange={(e) => setTagInput(e.target.value)}
-												onKeyDown={handleTagInputKeyDown}
-												placeholder="タグを入力してEnter"
-												maxLength={30}
-												disabled={isCreating || tags.length >= 15}
-												className="text-base flex-1"
-											/>
-											<Button
-												type="button"
-												variant="outline"
-												size="sm"
-												onClick={addTag}
-												disabled={
-													!tagInput.trim() ||
-													tags.includes(tagInput.trim()) ||
-													tags.length >= 15 ||
-													isCreating
-												}
-												className="shrink-0"
-											>
-												<Plus className="h-4 w-4" />
-											</Button>
-										</div>
-
-										{/* タグ表示 */}
-										{tags.length > 0 && (
-											<div className="flex flex-wrap gap-2">
-												{tags.map((tag) => (
-													<Badge
-														key={tag}
-														variant="secondary"
-														className="flex items-center gap-1 px-2 py-1"
-													>
-														{tag}
-														<button
-															type="button"
-															onClick={() => removeTag(tag)}
-															disabled={isCreating}
-															className="hover:bg-muted-foreground/20 rounded-full p-0.5 ml-1"
-														>
-															<X className="h-3 w-3" />
-														</button>
-													</Badge>
-												))}
-											</div>
-										)}
-
-										<p className="text-xs sm:text-sm text-muted-foreground">
-											{tags.length}/15個のタグ（各タグ最大30文字）
-										</p>
-									</div>
+									<AudioButtonTagEditor tags={tags} onTagsChange={setTags} disabled={isCreating} />
 								</div>
 							</div>
 						</div>

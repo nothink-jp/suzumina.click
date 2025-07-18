@@ -7,7 +7,6 @@
 
 import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
-import { UserTagEditor } from "@suzumina.click/ui/components/custom/user-tag-editor";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { Edit } from "lucide-react";
@@ -15,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { updateUserTagsAction } from "@/actions/user-tags";
+import { VideoTagEditor } from "@/components/video/video-tag-editor";
 
 interface VideoUserTagEditorProps {
 	video: FrontendVideoData;
@@ -117,7 +117,7 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 					</div>
 
 					{isEditingUserTags ? (
-						<UserTagEditor
+						<VideoTagEditor
 							videoId={video.videoId}
 							userTags={video.userTags || []}
 							playlistTags={video.playlistTags || []}

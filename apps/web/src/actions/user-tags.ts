@@ -47,9 +47,9 @@ export async function updateUserTagsAction(
 			return { success: false, error: "動画IDが必要です" };
 		}
 
-		// タグ数制限チェック（最大15個）
-		if (input.userTags.length > 15) {
-			return { success: false, error: "ユーザータグは最大15個まで設定できます" };
+		// タグ数制限チェック（最大10個）
+		if (input.userTags.length > 10) {
+			return { success: false, error: "ユーザータグは最大10個まで設定できます" };
 		}
 
 		// タグ文字数制限チェック（各タグ30文字以内）

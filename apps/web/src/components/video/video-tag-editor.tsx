@@ -1,18 +1,18 @@
 /**
  * ユーザータグ編集コンポーネント
- * VIDEO_TAGS_DESIGN.md Phase 2準拠
+ * 動画専用のタグ編集インターフェース
  */
 
 "use client";
 
+import { TagInput } from "@suzumina.click/ui/components/custom/tag-input";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Edit, Save, X } from "lucide-react";
 import { useState } from "react";
-import { TagInput } from "./tag-input";
 
-export interface UserTagEditorProps {
+export interface VideoTagEditorProps {
 	/** 動画ID */
 	videoId: string;
 	/** 現在のユーザータグ */
@@ -29,7 +29,7 @@ export interface UserTagEditorProps {
 	className?: string;
 }
 
-export function UserTagEditor({
+export function VideoTagEditor({
 	videoId,
 	userTags,
 	playlistTags = [],
@@ -37,7 +37,7 @@ export function UserTagEditor({
 	canEdit,
 	onUpdateTags,
 	className,
-}: UserTagEditorProps) {
+}: VideoTagEditorProps) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editingTags, setEditingTags] = useState<string[]>(userTags);
 	const [isLoading, setIsLoading] = useState(false);
@@ -123,8 +123,8 @@ export function UserTagEditor({
 					<div>
 						<h4 className="text-sm font-medium text-muted-foreground mb-2">配信タイプ</h4>
 						<div className="flex flex-wrap gap-2">
-							{playlistTags.map((tag, index) => (
-								<Badge key={index} variant="default" className="bg-blue-600">
+							{playlistTags.map((tag) => (
+								<Badge key={tag} variant="default" className="bg-blue-600">
 									{tag}
 								</Badge>
 							))}
@@ -160,7 +160,7 @@ export function UserTagEditor({
 							<TagInput
 								tags={editingTags}
 								onTagsChange={setEditingTags}
-								maxTags={15}
+								maxTags={10}
 								maxTagLength={30}
 								placeholder="ユーザータグを入力..."
 								disabled={isLoading}
@@ -198,8 +198,8 @@ export function UserTagEditor({
 						<div>
 							{userTags.length > 0 ? (
 								<div className="flex flex-wrap gap-2">
-									{userTags.map((tag, index) => (
-										<Badge key={index} variant="outline" className="bg-purple-50 border-purple-200">
+									{userTags.map((tag) => (
+										<Badge key={tag} variant="outline" className="bg-purple-50 border-purple-200">
 											{tag}
 										</Badge>
 									))}

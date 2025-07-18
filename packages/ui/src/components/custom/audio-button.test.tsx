@@ -180,7 +180,9 @@ describe("AudioButton", () => {
 		// 高評価ボタンをクリック
 		const likeButton = screen.getByText("2").closest("button");
 		expect(likeButton).toBeInTheDocument();
-		await user.click(likeButton!);
+		if (likeButton) {
+			await user.click(likeButton);
+		}
 
 		expect(onLikeToggleMock).toHaveBeenCalledTimes(1);
 	});

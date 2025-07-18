@@ -36,8 +36,8 @@ export const AudioButtonBaseSchema = z.object({
 		.optional(),
 	tags: z
 		.array(z.string().min(1).max(30))
-		.max(15, {
-			message: "タグは最大15個まで設定できます",
+		.max(10, {
+			message: "タグは最大10個まで設定できます",
 		})
 		.default([]),
 });
@@ -116,7 +116,7 @@ export const CreateAudioButtonInputSchema = z
 	.object({
 		title: z.string().min(1).max(100),
 		description: z.string().max(500).optional(),
-		tags: z.array(z.string().min(1).max(30)).max(15).default([]),
+		tags: z.array(z.string().min(1).max(30)).max(10).default([]),
 
 		// YouTube動画情報（必須）
 		sourceVideoId: z.string().min(1, {
@@ -140,7 +140,7 @@ export const UpdateAudioButtonInputSchema = z.object({
 	id: z.string().min(1),
 	title: z.string().min(1).max(100).optional(),
 	description: z.string().max(500).optional(),
-	tags: z.array(z.string().min(1).max(30)).max(15).optional(),
+	tags: z.array(z.string().min(1).max(30)).max(10).optional(),
 	isPublic: z.boolean().optional(),
 });
 

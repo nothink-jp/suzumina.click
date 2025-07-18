@@ -231,5 +231,7 @@ vi.mock("lucide-react", () => {
 		// Icons for AudioButtonCreator microadjustment
 		MousePointer: createMockIcon("MousePointer"),
 		ChevronLeft: createMockIcon("ChevronLeft"),
+		// Icons for tag editing
+		Save: createMockIcon("Save"),
 	};
 });

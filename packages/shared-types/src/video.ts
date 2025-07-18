@@ -91,8 +91,8 @@ export const FirestoreVideoSchema = YouTubeVideoBaseSchema.extend({
 		.default([]),
 	userTags: z
 		.array(z.string().min(1).max(30))
-		.max(15, {
-			message: "ユーザータグは最大15個まで設定できます",
+		.max(10, {
+			message: "ユーザータグは最大10個まで設定できます",
 		})
 		.default([]),
 });
@@ -175,8 +175,8 @@ export const FrontendVideoSchema = YouTubeVideoBaseSchema.extend({
 		.default([]),
 	userTags: z
 		.array(z.string().min(1).max(30))
-		.max(15, {
-			message: "ユーザータグは最大15個まで設定できます",
+		.max(10, {
+			message: "ユーザータグは最大10個まで設定できます",
 		})
 		.default([]),
 
