@@ -37,6 +37,10 @@ export interface VideoTagDisplayProps {
 	showEmptyLayers?: boolean;
 	/** ジャンルを表示するかどうか */
 	showCategory?: boolean;
+	/** 一列表示モード（コンパクト表示） */
+	compact?: boolean;
+	/** 表示順序（通常: playlist→user→category, 詳細: category→playlist→user） */
+	order?: "default" | "detail";
 }
 
 export function VideoTagDisplay({
@@ -52,6 +56,8 @@ export function VideoTagDisplay({
 	maxTagsPerLayer = 0,
 	showEmptyLayers = false,
 	showCategory = true,
+	compact = false,
+	order = "default",
 }: VideoTagDisplayProps) {
 	// サイズに応じたクラス名
 	const getSizeClasses = () => {
@@ -192,6 +198,195 @@ export function VideoTagDisplay({
 		return null;
 	}
 
+	// コンパクト表示の場合
+	if (compact) {
+		const allTags: Array<{
+			text: string;
+			type: "category" | "playlist" | "user";
+			className: string;
+		}> = [];
+
+		if (order === "detail") {
+			// 詳細ページ用順序: ジャンル→配信タイプ→みんなのタグ
+
+			// 1. ジャンル（優先度1）
+			if (showCategory && categoryId && categoryName) {
+				allTags.push({
+					text: categoryName,
+					type: "category",
+					className: "bg-green-600 text-white border-green-600 hover:bg-green-700",
+				});
+			}
+
+			// 2. 配信タイプ（優先度2）
+			const displayPlaylistTags =
+				maxTagsPerLayer > 0 ? playlistTags.slice(0, maxTagsPerLayer) : playlistTags;
+			for (const tag of displayPlaylistTags) {
+				allTags.push({
+					text: tag,
+					type: "playlist",
+					className: "bg-blue-600 text-white border-blue-600 hover:bg-blue-700",
+				});
+			}
+
+			// 3. みんなのタグ（優先度3）
+			const remainingSpace =
+				maxTagsPerLayer > 0 ? Math.max(0, maxTagsPerLayer - allTags.length) : userTags.length;
+			const displayUserTags = userTags.slice(0, remainingSpace);
+			for (const tag of displayUserTags) {
+				allTags.push({
+					text: tag,
+					type: "user",
+					className: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+				});
+			}
+		} else {
+			// 通常ページ用順序: カテゴリ→配信タイプ→みんなのタグ
+
+			// 1. カテゴリ（優先度1）
+			if (showCategory && categoryId && categoryName) {
+				allTags.push({
+					text: categoryName,
+					type: "category",
+					className: "bg-green-600 text-white border-green-600 hover:bg-green-700",
+				});
+			}
+
+			// 2. 配信タイプ（優先度2）
+			const displayPlaylistTags =
+				maxTagsPerLayer > 0 ? playlistTags.slice(0, maxTagsPerLayer) : playlistTags;
+			for (const tag of displayPlaylistTags) {
+				allTags.push({
+					text: tag,
+					type: "playlist",
+					className: "bg-blue-600 text-white border-blue-600 hover:bg-blue-700",
+				});
+			}
+
+			// 3. みんなのタグ（優先度3）
+			const remainingSpace =
+				maxTagsPerLayer > 0 ? Math.max(0, maxTagsPerLayer - allTags.length) : userTags.length;
+			const displayUserTags = userTags.slice(0, remainingSpace);
+			for (const tag of displayUserTags) {
+				allTags.push({
+					text: tag,
+					type: "user",
+					className: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+				});
+			}
+		}
+
+		return (
+			<div className={cn("flex flex-wrap", sizeClasses.layerContainer, className)}>
+				{allTags.map((tag, index) => (
+					<Badge
+						key={`${tag.type}-${tag.text}-${index}`}
+						className={cn(
+							sizeClasses.badge,
+							tag.className,
+							onTagClick && "cursor-pointer",
+							"transition-all duration-200",
+						)}
+						onClick={onTagClick ? (e) => handleTagClick(tag.text, tag.type, e) : undefined}
+					>
+						{searchQuery ? (
+							<HighlightText
+								text={tag.text}
+								searchQuery={searchQuery}
+								highlightClassName={
+									highlightClassName || "bg-yellow-200 text-yellow-900 px-0.5 rounded"
+								}
+							/>
+						) : (
+							tag.text
+						)}
+					</Badge>
+				))}
+				{/* 残りのタグ数表示 */}
+				{maxTagsPerLayer > 0 &&
+					playlistTags.length + userTags.length + (categoryName ? 1 : 0) > allTags.length && (
+						<Badge
+							variant="outline"
+							className={cn(sizeClasses.badge, "text-muted-foreground bg-muted/30")}
+						>
+							+{playlistTags.length + userTags.length + (categoryName ? 1 : 0) - allTags.length}個
+						</Badge>
+					)}
+			</div>
+		);
+	}
+
+	// 通常表示（従来の表示）
+	if (order === "detail") {
+		// 詳細ページ用順序: ジャンル→配信タイプ→みんなのタグ
+		return (
+			<div className={cn("space-y-4", className)}>
+				{/* 1. ジャンル（YouTube分類） */}
+				{showCategory && categoryId && categoryName && (
+					<div className="space-y-2">
+						<h4
+							className={cn(
+								"font-medium text-muted-foreground flex items-center",
+								sizeClasses.title,
+							)}
+						>
+							<FolderOpen className={sizeClasses.icon} />
+							ジャンル
+							{/* ユーザー向け説明テキスト */}
+							<span className="text-xs text-muted-foreground ml-2">(YouTube分類)</span>
+						</h4>
+						<div className={cn("flex flex-wrap", sizeClasses.layerContainer)}>
+							<Badge
+								className={cn(
+									sizeClasses.badge,
+									"bg-green-600 text-white border-green-600 hover:bg-green-700",
+									onTagClick && "cursor-pointer",
+									"transition-all duration-200",
+								)}
+								onClick={
+									onTagClick ? (e) => handleTagClick(categoryName, "category", e) : undefined
+								}
+							>
+								{searchQuery ? (
+									<HighlightText
+										text={categoryName}
+										searchQuery={searchQuery}
+										highlightClassName={
+											highlightClassName || "bg-yellow-200 text-yellow-900 px-0.5 rounded"
+										}
+									/>
+								) : (
+									categoryName
+								)}
+							</Badge>
+						</div>
+					</div>
+				)}
+
+				{/* 2. 配信タイプタグ（自動分類） */}
+				{renderTagLayer(
+					"配信タイプ",
+					Play,
+					playlistTags,
+					"playlist",
+					"bg-blue-600 text-white border-blue-600 hover:bg-blue-700",
+					playlistDisplay,
+				)}
+
+				{/* 3. みんなのタグ（ユーザー投稿） */}
+				{renderTagLayer(
+					"みんなのタグ",
+					Users,
+					userTags,
+					"user",
+					"bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+					userDisplay,
+				)}
+			</div>
+		);
+	}
+
+	// 通常表示（一覧ページ用順序）
 	return (
 		<div className={cn("space-y-4", className)}>
 			{/* 1. 配信タイプタグ（自動分類） */}

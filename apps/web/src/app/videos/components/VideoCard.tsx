@@ -322,7 +322,7 @@ const VideoCard = memo(function VideoCard({
 						</time>
 					</div>
 
-					{/* 3層タグ表示 */}
+					{/* タグ表示（一列・コンパクト） */}
 					<div className="mb-4">
 						<ThreeLayerTagDisplay
 							playlistTags={video.playlistTags || []}
@@ -330,9 +330,10 @@ const VideoCard = memo(function VideoCard({
 							categoryId={video.categoryId}
 							categoryName={categoryName || undefined}
 							size="sm"
-							maxTagsPerLayer={4}
+							maxTagsPerLayer={5}
 							showEmptyLayers={false}
 							showCategory={true}
+							compact={true}
 							onTagClick={handleTagClick}
 						/>
 					</div>

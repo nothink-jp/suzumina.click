@@ -1,6 +1,6 @@
 /**
- * 動画詳細ページ用ユーザータグ編集コンポーネント
- * VIDEO_TAGS_DESIGN.md Phase 2準拠
+ * 動画詳細ページ用タグ表示・編集コンポーネント
+ * ジャンル・配信タイプ・みんなのタグを統合表示
  */
 
 "use client";
@@ -99,6 +99,7 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 				maxTagsPerLayer={10}
 				showEmptyLayers={true}
 				showCategory={true}
+				order="detail"
 				onTagClick={handleTagClick}
 			/>
 

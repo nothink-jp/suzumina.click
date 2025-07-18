@@ -116,12 +116,12 @@ export function UserTagEditor({
 
 	return (
 		<div className={cn("space-y-4", className)}>
-			{/* 3層タグシステム表示 */}
+			{/* 動画タグ表示 */}
 			<div className="space-y-3">
-				{/* プレイリストタグ */}
+				{/* 配信タイプ */}
 				{playlistTags.length > 0 && (
 					<div>
-						<h4 className="text-sm font-medium text-muted-foreground mb-2">プレイリストタグ</h4>
+						<h4 className="text-sm font-medium text-muted-foreground mb-2">配信タイプ</h4>
 						<div className="flex flex-wrap gap-2">
 							{playlistTags.map((tag, index) => (
 								<Badge key={index} variant="default" className="bg-blue-600">
@@ -132,20 +132,20 @@ export function UserTagEditor({
 					</div>
 				)}
 
-				{/* カテゴリIDタグ */}
+				{/* ジャンル */}
 				{categoryId && (
 					<div>
-						<h4 className="text-sm font-medium text-muted-foreground mb-2">カテゴリ</h4>
+						<h4 className="text-sm font-medium text-muted-foreground mb-2">ジャンル</h4>
 						<Badge variant="secondary" className="bg-green-600 text-white">
 							{getCategoryLabel(categoryId)}
 						</Badge>
 					</div>
 				)}
 
-				{/* ユーザータグ */}
+				{/* みんなのタグ */}
 				<div>
 					<div className="flex items-center justify-between mb-2">
-						<h4 className="text-sm font-medium text-muted-foreground">ユーザータグ</h4>
+						<h4 className="text-sm font-medium text-muted-foreground">みんなのタグ</h4>
 						{canEdit && !isEditing && (
 							<Button variant="ghost" size="sm" onClick={startEditing} className="h-6 px-2 text-xs">
 								<Edit className="h-3 w-3 mr-1" />
