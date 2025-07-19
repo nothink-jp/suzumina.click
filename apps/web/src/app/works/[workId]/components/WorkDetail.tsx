@@ -24,6 +24,7 @@ import {
 	Calendar,
 	FileText,
 	Globe,
+	Image,
 	Share2,
 	Shield,
 	ShoppingCart,
@@ -36,6 +37,7 @@ import { useMemo } from "react";
 import CharacteristicEvaluation from "@/components/content/characteristic-evaluation";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
+import SampleImageGallery from "./SampleImageGallery";
 
 interface WorkDetailProps {
 	work: FrontendDLsiteWorkData;
@@ -338,10 +340,14 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 				{/* 左側: タブコンテンツ */}
 				<div className="lg:col-span-2">
 					<Tabs defaultValue="overview" className="w-full">
-						<TabsList className="grid w-full grid-cols-3">
+						<TabsList className="grid w-full grid-cols-4">
 							<TabsTrigger value="overview" className="flex items-center gap-2">
 								<FileText className="h-4 w-4" />
 								<span className="hidden sm:inline">詳細情報</span>
+							</TabsTrigger>
+							<TabsTrigger value="samples" className="flex items-center gap-2">
+								<Image className="h-4 w-4" />
+								<span className="hidden sm:inline">サンプル画像</span>
 							</TabsTrigger>
 							<TabsTrigger value="characteristics" className="flex items-center gap-2">
 								<Star className="h-4 w-4" />
@@ -720,6 +726,11 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 									</div>
 								</CardContent>
 							</Card>
+						</TabsContent>
+
+						{/* サンプル画像タブ */}
+						<TabsContent value="samples" className="space-y-6">
+							<SampleImageGallery sampleImages={work.sampleImages} workTitle={work.title} />
 						</TabsContent>
 
 						{/* 特性評価タブ */}
