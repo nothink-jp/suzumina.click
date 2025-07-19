@@ -7,28 +7,29 @@ describe("LoadingSkeleton", () => {
 		render(<LoadingSkeleton variant="carousel" />);
 		const skeleton = screen.getByTestId("loading-skeleton-carousel");
 		expect(skeleton).toHaveClass("animate-pulse");
-		expect(skeleton.querySelectorAll(".bg-gray-200")).toHaveLength(4);
+		expect(skeleton.querySelectorAll(".bg-muted")).toHaveLength(4);
 	});
 
 	it("フォームバリアントが正しくレンダリングされる", () => {
 		render(<LoadingSkeleton variant="form" />);
 		const skeleton = screen.getByTestId("loading-skeleton-form");
 		expect(skeleton).toHaveClass("animate-pulse");
-		expect(skeleton.querySelectorAll(".bg-gray-200")).toHaveLength(2);
+		expect(skeleton.querySelectorAll(".bg-muted")).toHaveLength(2);
 	});
 
 	it("メニューバリアントが正しくレンダリングされる", () => {
 		render(<LoadingSkeleton variant="menu" />);
 		const skeleton = screen.getByTestId("loading-skeleton-menu");
 		expect(skeleton).toHaveClass("animate-pulse");
-		expect(skeleton.querySelector(".bg-gray-200")).toBeInTheDocument();
+		expect(skeleton.querySelector(".bg-muted")).toBeInTheDocument();
 	});
 
 	it("カードバリアントが正しくレンダリングされる", () => {
 		render(<LoadingSkeleton variant="card" />);
 		const skeleton = screen.getByTestId("loading-skeleton-card");
 		expect(skeleton).toHaveClass("animate-pulse");
-		expect(skeleton.querySelectorAll(".bg-gray-300")).toHaveLength(3);
+		expect(skeleton.querySelectorAll(".bg-muted")).toHaveLength(1);
+		expect(skeleton.querySelectorAll(".bg-muted-foreground\\/20")).toHaveLength(3);
 	});
 
 	it("カスタムの高さが適用される", () => {

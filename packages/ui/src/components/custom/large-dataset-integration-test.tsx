@@ -199,13 +199,10 @@ export const LargeDatasetIntegrationTest = memo<LargeDatasetIntegrationTestProps
 		);
 
 		// 再生処理
-		const handlePlay = useCallback(
-			(audioButton: FrontendAudioButtonData, index: number) => {
-				setCurrentPlayingId(audioButton.id);
-				// Play simulation for large dataset testing
-			},
-			[filteredData.length],
-		);
+		const handlePlay = useCallback((audioButton: FrontendAudioButtonData, index: number) => {
+			setCurrentPlayingId(audioButton.id);
+			// Play simulation for large dataset testing
+		}, []);
 
 		// お気に入り処理
 		const handleFavoriteToggle = useCallback((audioButtonId: string) => {

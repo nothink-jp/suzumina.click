@@ -75,11 +75,11 @@ export function ValidationMessage({
 			icon: AlertCircle,
 		},
 		warning: {
-			container: "text-orange-600 dark:text-orange-400",
+			container: "text-minase-600",
 			icon: AlertTriangle,
 		},
 		info: {
-			container: "text-blue-600 dark:text-blue-400",
+			container: "text-suzuka-600",
 			icon: Info,
 		},
 	};
@@ -90,7 +90,7 @@ export function ValidationMessage({
 	return (
 		<div
 			className={cn(
-				"flex items-start gap-1.5",
+				"flex items-start gap-2",
 				currentVariant.container,
 				compact ? "text-xs" : "text-xs sm:text-sm",
 				animated && "animate-in fade-in-0 slide-in-from-top-1 duration-200",
@@ -100,9 +100,9 @@ export function ValidationMessage({
 			aria-live="polite"
 		>
 			{showIcon && (
-				<IconComponent className={cn("flex-shrink-0 mt-0.5", compact ? "h-3 w-3" : "h-4 w-4")} />
+				<IconComponent className={cn("flex-shrink-0 mt-1", compact ? "h-3 w-3" : "h-4 w-4")} />
 			)}
-			<span className={cn("leading-tight", compact ? "mt-0" : "mt-0.5")}>{message}</span>
+			<span className={cn("leading-tight", compact ? "mt-0" : "mt-1")}>{message}</span>
 		</div>
 	);
 }

@@ -247,17 +247,17 @@ describe("VideoTagDisplay", () => {
 				/>,
 			);
 
-			// カテゴリは緑色
+			// カテゴリはsuzuka-700色
 			const categoryBadge = screen.getByText("エンターテイメント");
-			expect(categoryBadge).toHaveClass("bg-green-600", "text-white");
+			expect(categoryBadge).toHaveClass("bg-suzuka-700", "text-white");
 
-			// 配信タイプは青色
+			// 配信タイプはsuzuka-500色
 			const playlistBadge = screen.getByText("配信");
-			expect(playlistBadge).toHaveClass("bg-blue-600", "text-white");
+			expect(playlistBadge).toHaveClass("bg-suzuka-500", "text-white");
 
-			// ユーザータグは紫色
+			// ユーザータグはsuzuka-50色
 			const userBadge = screen.getByText("可愛い");
-			expect(userBadge).toHaveClass("bg-purple-50", "text-purple-700");
+			expect(userBadge).toHaveClass("bg-suzuka-50", "text-suzuka-700");
 		});
 	});
 
@@ -326,17 +326,17 @@ describe("VideoTagDisplay", () => {
 				/>,
 			);
 
-			// 配信タイプは青色
+			// 配信タイプはsuzuka-500色
 			const playlistBadge = screen.getByText("配信");
-			expect(playlistBadge).toHaveClass("bg-blue-600", "text-white");
+			expect(playlistBadge).toHaveClass("bg-suzuka-500", "text-white");
 
-			// ユーザータグは紫色
+			// ユーザータグはsuzuka-50色
 			const userBadge = screen.getByText("可愛い");
-			expect(userBadge).toHaveClass("bg-purple-50", "text-purple-700");
+			expect(userBadge).toHaveClass("bg-suzuka-50", "text-suzuka-700");
 
-			// カテゴリは緑色
+			// カテゴリはsuzuka-700色
 			const categoryBadge = screen.getByText("エンターテイメント");
-			expect(categoryBadge).toHaveClass("bg-green-600", "text-white");
+			expect(categoryBadge).toHaveClass("bg-suzuka-700", "text-white");
 		});
 	});
 

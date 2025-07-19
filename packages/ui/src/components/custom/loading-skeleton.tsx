@@ -36,10 +36,7 @@ export function LoadingSkeleton({
 									}}
 								>
 									{/* 実際のカード構造を模倣 */}
-									<div
-										className="bg-gray-200 rounded-lg w-full"
-										style={{ height: `${height}px` }}
-									/>
+									<div className="bg-muted rounded-lg w-full" style={{ height: `${height}px` }} />
 								</div>
 							))}
 						</div>
@@ -50,31 +47,31 @@ export function LoadingSkeleton({
 			return (
 				<div className={`animate-pulse ${className}`} data-testid="loading-skeleton-form">
 					<div className="max-w-2xl mx-auto">
-						<div className="h-12 bg-gray-200 rounded-lg mb-4" />
-						<div className="h-10 bg-gray-200 rounded-lg" />
+						<div className="h-12 bg-muted rounded-lg mb-4" />
+						<div className="h-10 bg-muted rounded-lg" />
 					</div>
 				</div>
 			);
 		case "menu":
 			return (
 				<div className="animate-pulse" data-testid="loading-skeleton-menu">
-					<div className="h-10 w-32 bg-gray-200 rounded" />
+					<div className="h-10 w-32 bg-muted rounded" />
 				</div>
 			);
 		case "card":
 			return (
 				<div className={`animate-pulse ${className}`} data-testid="loading-skeleton-card">
-					<div className="bg-gray-200 rounded-lg p-4" style={{ height: `${height}px` }}>
-						<div className="h-4 bg-gray-300 rounded mb-2" />
-						<div className="h-4 bg-gray-300 rounded w-3/4 mb-2" />
-						<div className="h-3 bg-gray-300 rounded w-1/2" />
+					<div className="bg-muted rounded-lg p-4" style={{ height: `${height}px` }}>
+						<div className="h-4 bg-muted-foreground/20 rounded mb-2" />
+						<div className="h-4 bg-muted-foreground/20 rounded w-3/4 mb-2" />
+						<div className="h-3 bg-muted-foreground/20 rounded w-1/2" />
 					</div>
 				</div>
 			);
 		default:
 			return (
 				<div
-					className={`animate-pulse bg-gray-200 rounded-lg ${className}`}
+					className={`animate-pulse bg-muted rounded-lg ${className}`}
 					style={{ height: `${height}px` }}
 				/>
 			);

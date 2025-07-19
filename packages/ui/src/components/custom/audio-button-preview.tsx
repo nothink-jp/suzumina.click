@@ -59,7 +59,7 @@ export const AudioButtonPreview = memo<AudioButtonPreviewProps>(
 		onFavoriteToggle,
 		onUpgrade,
 		className,
-		highlightClassName = "bg-suzuka-200 text-suzuka-900 px-0.5 rounded",
+		highlightClassName = "bg-suzuka-200 text-suzuka-900 px-1 rounded",
 		showDetailLink = true,
 	}) => {
 		const [isFavorited, setIsFavorited] = useState(initialIsFavorited);

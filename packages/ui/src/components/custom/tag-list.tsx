@@ -128,7 +128,7 @@ export function TagList({
 							text={tag}
 							searchQuery={searchQuery}
 							highlightClassName={
-								highlightClassName || "bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
+								highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"
 							}
 						/>
 					) : (

@@ -44,7 +44,7 @@ export function SearchFilterPanel({
 									onSearch?.();
 								}
 							}}
-							className="pr-10 h-11"
+							className="pr-10 h-10"
 						/>
 						<button
 							type="button"
@@ -89,7 +89,7 @@ export function FilterSelect({
 }: FilterSelectProps) {
 	return (
 		<Select value={value} onValueChange={onValueChange}>
-			<SelectTrigger className={cn("h-11 min-w-[140px]", className)}>
+			<SelectTrigger className={cn("h-10 min-w-[140px]", className)}>
 				<SelectValue placeholder={placeholder} />
 			</SelectTrigger>
 			<SelectContent>

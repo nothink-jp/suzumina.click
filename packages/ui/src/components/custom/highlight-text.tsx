@@ -16,7 +16,7 @@ export function HighlightText({
 	text,
 	searchQuery,
 	className = "",
-	highlightClassName = "bg-yellow-200 text-yellow-900 px-0.5 rounded",
+	highlightClassName = "bg-yellow-200 text-yellow-900 px-1 rounded",
 }: HighlightTextProps) {
 	const highlightedText = useMemo(() => {
 		if (!searchQuery || !text) {
@@ -131,7 +131,7 @@ export function HighlightTags({
 	tags,
 	searchQuery,
 	className = "flex flex-wrap gap-1",
-	tagClassName = "inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full",
+	tagClassName = "inline-block px-2 py-1 text-xs bg-muted text-muted-foreground rounded-full",
 	highlightClassName = "bg-yellow-200 text-yellow-900",
 }: HighlightTagsProps) {
 	return (

@@ -125,7 +125,7 @@ const VirtualizedListItem = memo<{
 					"shadow-sm hover:shadow-md transition-all duration-200",
 					isCurrentlyPlaying && "ring-2 ring-minase-300",
 				)}
-				highlightClassName="bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
+				highlightClassName="bg-suzuka-200 text-suzuka-900 px-1 rounded"
 			/>
 		</div>
 	);

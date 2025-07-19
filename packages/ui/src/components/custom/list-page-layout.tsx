@@ -8,12 +8,12 @@ interface ListPageLayoutProps {
 
 /**
  * リストページ用の共通レイアウトコンポーネント
- * - 背景色を統一（bg-gray-50）
+ * - 背景色を統一（bg-background）
  * - コンテナサイズを統一（max-w-7xl）
  * - 余白を統一
  */
 export function ListPageLayout({ children, className }: ListPageLayoutProps) {
-	return <div className={cn("min-h-screen bg-gray-50", className)}>{children}</div>;
+	return <div className={cn("min-h-screen bg-background", className)}>{children}</div>;
 }
 
 interface ListPageHeaderProps {

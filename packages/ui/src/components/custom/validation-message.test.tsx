@@ -46,14 +46,14 @@ describe("ValidationMessage", () => {
 			const { container } = render(
 				<ValidationMessage variant="warning" message="Warning message" isVisible={true} />,
 			);
-			expect(container.firstChild).toHaveClass("text-orange-600");
+			expect(container.firstChild).toHaveClass("text-minase-600");
 		});
 
 		it("applies info variant styles", () => {
 			const { container } = render(
 				<ValidationMessage variant="info" message="Info message" isVisible={true} />,
 			);
-			expect(container.firstChild).toHaveClass("text-blue-600");
+			expect(container.firstChild).toHaveClass("text-suzuka-600");
 		});
 	});
 

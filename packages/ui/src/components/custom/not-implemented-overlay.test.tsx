@@ -35,12 +35,12 @@ describe("NotImplementedOverlay", () => {
 	it("オーバーレイスタイルが適用される", () => {
 		render(<NotImplementedOverlay />);
 		const overlay = screen.getByText("この機能は準備中です").closest(".absolute");
-		expect(overlay).toHaveClass("inset-0", "bg-gray-500/50", "backdrop-blur-sm", "z-10");
+		expect(overlay).toHaveClass("inset-0", "bg-background/80", "backdrop-blur-sm", "z-10");
 	});
 
 	it("コンテンツボックスのスタイルが適用される", () => {
 		render(<NotImplementedOverlay />);
-		const contentBox = screen.getByText("この機能は準備中です").closest(".bg-white");
+		const contentBox = screen.getByText("この機能は準備中です").closest(".bg-card");
 		expect(contentBox).toHaveClass(
 			"rounded-lg",
 			"p-6",

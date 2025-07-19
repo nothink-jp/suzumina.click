@@ -99,7 +99,7 @@ function AudioButtonPopoverContent({
 							text={audioButton.title}
 							searchQuery={searchQuery}
 							highlightClassName={
-								highlightClassName || "bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
+								highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"
 							}
 						/>
 					) : (
@@ -113,7 +113,7 @@ function AudioButtonPopoverContent({
 								text={audioButton.description}
 								searchQuery={searchQuery}
 								highlightClassName={
-									highlightClassName || "bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
+									highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"
 								}
 							/>
 						) : (
@@ -167,9 +167,7 @@ function AudioButtonPopoverContent({
 						variant="outline"
 						showIcon={true}
 						searchQuery={searchQuery}
-						highlightClassName={
-							highlightClassName || "bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
-						}
+						highlightClassName={highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"}
 						size="default"
 					/>
 				</div>
@@ -395,7 +393,7 @@ export function AudioButton({
 									text={displayTitle}
 									searchQuery={searchQuery}
 									highlightClassName={
-										highlightClassName || "bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
+										highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"
 									}
 								/>
 							) : (

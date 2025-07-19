@@ -134,7 +134,7 @@ export function YouTubePlayer({
 			if (isValidTime(currentTime)) {
 				onTimeUpdate(currentTime, duration || 0);
 			}
-		} catch (error) {
+		} catch (_error) {
 			// Ignore errors during time updates
 		}
 	}, [onTimeUpdate, isValidTime]);
@@ -274,10 +274,10 @@ export function YouTubePlayer({
 	if (!videoId) {
 		return (
 			<div
-				className={`flex items-center justify-center bg-gray-100 ${className}`}
+				className={`flex items-center justify-center bg-muted ${className}`}
 				style={{ width, height }}
 			>
-				<p className="text-gray-500">動画IDが指定されていません</p>
+				<p className="text-muted-foreground">動画IDが指定されていません</p>
 			</div>
 		);
 	}
@@ -289,10 +289,10 @@ export function YouTubePlayer({
 			style={{ width, height }}
 		>
 			{!isAPIReady && (
-				<div className="flex items-center justify-center w-full h-full bg-gray-100">
+				<div className="flex items-center justify-center w-full h-full bg-muted">
 					<div className="text-center">
 						<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-						<p className="mt-2 text-gray-500">YouTube Player を読み込み中...</p>
+						<p className="mt-2 text-muted-foreground">YouTube Player を読み込み中...</p>
 					</div>
 				</div>
 			)}

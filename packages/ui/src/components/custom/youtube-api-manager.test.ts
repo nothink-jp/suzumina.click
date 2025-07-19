@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { YouTubeAPIManager } from "./youtube-api-manager";
 
 // Mock DOM environment
-const mockWindow = vi.fn();
+const _mockWindow = vi.fn();
 const mockDocument = {
 	querySelector: vi.fn(),
 	createElement: vi.fn(),

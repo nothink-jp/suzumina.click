@@ -295,6 +295,32 @@
 	.text-suzuka-900 { color: hsl(340 55% 23%); }
 	.text-suzuka-950 { color: hsl(340 50% 15%); }
 	
+	/* Suzuka border colors */
+	.border-suzuka-50 { border-color: hsl(340 100% 98%); }
+	.border-suzuka-100 { border-color: hsl(340 95% 95%); }
+	.border-suzuka-200 { border-color: hsl(340 90% 88%); }
+	.border-suzuka-300 { border-color: hsl(340 85% 78%); }
+	.border-suzuka-400 { border-color: hsl(340 80% 65%); }
+	.border-suzuka-500 { border-color: hsl(340 75% 55%); }
+	.border-suzuka-600 { border-color: hsl(340 70% 45%); }
+	.border-suzuka-700 { border-color: hsl(340 65% 38%); }
+	.border-suzuka-800 { border-color: hsl(340 60% 30%); }
+	.border-suzuka-900 { border-color: hsl(340 55% 23%); }
+	.border-suzuka-950 { border-color: hsl(340 50% 15%); }
+	
+	/* Minase border colors */
+	.border-minase-50 { border-color: hsl(33 100% 97%); }
+	.border-minase-100 { border-color: hsl(31 90% 91%); }
+	.border-minase-200 { border-color: hsl(30 85% 82%); }
+	.border-minase-300 { border-color: hsl(29 80% 73%); }
+	.border-minase-400 { border-color: hsl(28 75% 62%); }
+	.border-minase-500 { border-color: hsl(27 100% 59%); }
+	.border-minase-600 { border-color: hsl(23 89% 49%); }
+	.border-minase-700 { border-color: hsl(23 78% 40%); }
+	.border-minase-800 { border-color: hsl(23 75% 34%); }
+	.border-minase-900 { border-color: hsl(23 71% 27%); }
+	.border-minase-950 { border-color: hsl(23 69% 16%); }
+	
 	/* Gradient from/to utilities */
 	.from-minase-400 { --tw-gradient-from: hsl(28 75% 62%); --tw-gradient-to: hsl(28 75% 62% / 0); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
 	.to-minase-500 { --tw-gradient-to: hsl(27 100% 59%); }
@@ -341,6 +367,10 @@
 	.hover\:bg-accent:hover { background-color: hsl(var(--accent)); }
 	.hover\:text-accent-foreground:hover { color: hsl(var(--accent-foreground)); }
 	
+	/* Tabs specific hover states */
+	.hover\:bg-suzuka-600:hover { background-color: hsl(340 70% 45%); }
+	.hover\:bg-suzuka-700:hover { background-color: hsl(340 65% 38%); }
+	
 	/* Select component override - ensure accent colors for select items */
 	[data-slot="select-item"]:focus,
 	[data-slot="select-item"][data-highlighted] {
@@ -362,6 +392,19 @@
 	/* Subdued color variants for specific use cases */
 	[data-slot="switch"].switch-subtle[data-state="checked"] { background-color: hsl(340 60% 65%) !important; } /* suzuka-400 - より控えめ */
 	[data-slot="switch"].switch-minase[data-state="checked"] { background-color: hsl(23 75% 50%) !important; } /* 控えめなオレンジ */
+	
+	/* Tabs component specific styling for better visibility */
+	[data-slot="tabs-trigger"][data-state="active"] {
+		background-color: hsl(340 70% 45%) !important; /* suzuka-600 */
+		color: white !important;
+		border-color: hsl(340 65% 38%) !important; /* suzuka-700 */
+		box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important; /* shadow-md */
+	}
+	
+	[data-slot="tabs-trigger"]:not([data-state="active"]):hover {
+		background-color: hsl(var(--accent)) !important;
+		color: hsl(var(--accent-foreground)) !important;
+	}
 }
 
 @layer base {

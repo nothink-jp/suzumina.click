@@ -29,7 +29,7 @@ describe("ListPageLayout", () => {
 
 		expect(container.firstChild).toHaveClass("custom-layout");
 		expect(container.firstChild).toHaveClass("min-h-screen");
-		expect(container.firstChild).toHaveClass("bg-gray-50");
+		expect(container.firstChild).toHaveClass("bg-background");
 	});
 });
 

@@ -82,21 +82,21 @@ export function AutocompleteDropdown<T>({
 			ref={dropdownRef}
 			className={cn(
 				"absolute top-full left-0 right-0 mt-1 z-50",
-				"max-h-80 overflow-y-auto shadow-lg border border-gray-200",
+				"max-h-80 overflow-y-auto shadow-lg border border-border",
 				"bg-white rounded-lg",
 				className,
 			)}
 			role="listbox"
 		>
 			{isLoading && (
-				<div className="flex items-center justify-center py-4 text-gray-500">
+				<div className="flex items-center justify-center py-4 text-muted-foreground">
 					<Loader2 className="w-4 h-4 animate-spin mr-2" />
 					<span className="text-sm">{loadingMessage}</span>
 				</div>
 			)}
 
 			{!isLoading && items.length === 0 && (
-				<div className="flex items-center justify-center py-4 text-gray-500">
+				<div className="flex items-center justify-center py-4 text-muted-foreground">
 					<Search className="w-4 h-4 mr-2" />
 					<span className="text-sm">{emptyMessage}</span>
 				</div>
@@ -110,8 +110,8 @@ export function AutocompleteDropdown<T>({
 							data-index={index}
 							className={cn(
 								"cursor-pointer transition-colors",
-								"hover:bg-gray-50 focus:bg-gray-50",
-								highlightedIndex === index && "bg-gray-50",
+								"hover:bg-accent focus:bg-accent",
+								highlightedIndex === index && "bg-accent",
 							)}
 							onClick={() => onSelect(item)}
 							onMouseEnter={() => onHighlightChange(index)}

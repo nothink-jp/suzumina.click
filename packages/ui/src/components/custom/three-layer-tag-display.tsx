@@ -169,7 +169,7 @@ export function VideoTagDisplay({
 									text={tag}
 									searchQuery={searchQuery}
 									highlightClassName={
-										highlightClassName || "bg-yellow-200 text-yellow-900 px-0.5 rounded"
+										highlightClassName || "bg-yellow-200 text-yellow-900 px-1 rounded"
 									}
 								/>
 							) : (
@@ -214,7 +214,7 @@ export function VideoTagDisplay({
 				allTags.push({
 					text: categoryName,
 					type: "category",
-					className: "bg-green-600 text-white border-green-600 hover:bg-green-700",
+					className: "bg-suzuka-700 text-white border-suzuka-700 hover:bg-suzuka-800",
 				});
 			}
 
@@ -225,7 +225,7 @@ export function VideoTagDisplay({
 				allTags.push({
 					text: tag,
 					type: "playlist",
-					className: "bg-blue-600 text-white border-blue-600 hover:bg-blue-700",
+					className: "bg-suzuka-500 text-white border-suzuka-500 hover:bg-suzuka-600",
 				});
 			}
 
@@ -237,7 +237,7 @@ export function VideoTagDisplay({
 				allTags.push({
 					text: tag,
 					type: "user",
-					className: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+					className: "bg-suzuka-50 text-suzuka-700 border-suzuka-200 hover:bg-suzuka-100",
 				});
 			}
 		} else {
@@ -248,7 +248,7 @@ export function VideoTagDisplay({
 				allTags.push({
 					text: categoryName,
 					type: "category",
-					className: "bg-green-600 text-white border-green-600 hover:bg-green-700",
+					className: "bg-suzuka-700 text-white border-suzuka-700 hover:bg-suzuka-800",
 				});
 			}
 
@@ -259,7 +259,7 @@ export function VideoTagDisplay({
 				allTags.push({
 					text: tag,
 					type: "playlist",
-					className: "bg-blue-600 text-white border-blue-600 hover:bg-blue-700",
+					className: "bg-suzuka-500 text-white border-suzuka-500 hover:bg-suzuka-600",
 				});
 			}
 
@@ -271,7 +271,7 @@ export function VideoTagDisplay({
 				allTags.push({
 					text: tag,
 					type: "user",
-					className: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+					className: "bg-suzuka-50 text-suzuka-700 border-suzuka-200 hover:bg-suzuka-100",
 				});
 			}
 		}
@@ -294,7 +294,7 @@ export function VideoTagDisplay({
 								text={tag.text}
 								searchQuery={searchQuery}
 								highlightClassName={
-									highlightClassName || "bg-yellow-200 text-yellow-900 px-0.5 rounded"
+									highlightClassName || "bg-yellow-200 text-yellow-900 px-1 rounded"
 								}
 							/>
 						) : (
@@ -339,7 +339,7 @@ export function VideoTagDisplay({
 							<Badge
 								className={cn(
 									sizeClasses.badge,
-									"bg-green-600 text-white border-green-600 hover:bg-green-700",
+									"bg-suzuka-700 text-white border-suzuka-700 hover:bg-suzuka-800",
 									onTagClick && "cursor-pointer",
 									"transition-all duration-200",
 								)}
@@ -352,7 +352,7 @@ export function VideoTagDisplay({
 										text={categoryName}
 										searchQuery={searchQuery}
 										highlightClassName={
-											highlightClassName || "bg-yellow-200 text-yellow-900 px-0.5 rounded"
+											highlightClassName || "bg-yellow-200 text-yellow-900 px-1 rounded"
 										}
 									/>
 								) : (
@@ -369,7 +369,7 @@ export function VideoTagDisplay({
 					Play,
 					playlistTags,
 					"playlist",
-					"bg-blue-600 text-white border-blue-600 hover:bg-blue-700",
+					"bg-suzuka-500 text-white border-suzuka-500 hover:bg-suzuka-600",
 					playlistDisplay,
 				)}
 
@@ -379,7 +379,7 @@ export function VideoTagDisplay({
 					Users,
 					userTags,
 					"user",
-					"bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+					"bg-suzuka-50 text-suzuka-700 border-suzuka-200 hover:bg-suzuka-100",
 					userDisplay,
 				)}
 			</div>
@@ -395,7 +395,7 @@ export function VideoTagDisplay({
 				Play,
 				playlistTags,
 				"playlist",
-				"bg-blue-600 text-white border-blue-600 hover:bg-blue-700",
+				"bg-suzuka-500 text-white border-suzuka-500 hover:bg-suzuka-600",
 				playlistDisplay,
 			)}
 
@@ -405,7 +405,7 @@ export function VideoTagDisplay({
 				Users,
 				userTags,
 				"user",
-				"bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+				"bg-suzuka-50 text-suzuka-700 border-suzuka-200 hover:bg-suzuka-100",
 				userDisplay,
 			)}
 
@@ -424,7 +424,7 @@ export function VideoTagDisplay({
 						<Badge
 							className={cn(
 								sizeClasses.badge,
-								"bg-green-600 text-white border-green-600 hover:bg-green-700",
+								"bg-suzuka-700 text-white border-suzuka-700 hover:bg-suzuka-800",
 								onTagClick && "cursor-pointer",
 								"transition-all duration-200",
 							)}
@@ -435,7 +435,7 @@ export function VideoTagDisplay({
 									text={categoryName}
 									searchQuery={searchQuery}
 									highlightClassName={
-										highlightClassName || "bg-yellow-200 text-yellow-900 px-0.5 rounded"
+										highlightClassName || "bg-yellow-200 text-yellow-900 px-1 rounded"
 									}
 								/>
 							) : (
