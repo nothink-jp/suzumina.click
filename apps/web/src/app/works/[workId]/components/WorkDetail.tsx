@@ -3,7 +3,10 @@
 import {
 	checkAgeRating,
 	getAgeRatingDisplayName,
+	getWorkAvailableLanguages,
 	getWorkCategoryDisplayText,
+	getWorkLanguageDisplayName,
+	getWorkPrimaryLanguage,
 } from "@suzumina.click/shared-types";
 import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import NotImplementedOverlay from "@suzumina.click/ui/components/custom/not-implemented-overlay";
@@ -17,7 +20,17 @@ import {
 	CardTitle,
 } from "@suzumina.click/ui/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
-import { Calendar, FileText, Share2, Shield, ShoppingCart, Star, Tag, Users } from "lucide-react";
+import {
+	Calendar,
+	FileText,
+	Globe,
+	Share2,
+	Shield,
+	ShoppingCart,
+	Star,
+	Tag,
+	Users,
+} from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 import CharacteristicEvaluation from "@/components/content/characteristic-evaluation";
@@ -243,6 +256,29 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							</div>
 						)}
 
+						{/* 言語情報表示（シンプル版） */}
+						<div className="space-y-2">
+							<div className="text-sm font-medium text-gray-700">対応言語</div>
+							<div className="flex items-center gap-2">
+								<Globe className="h-4 w-4 text-muted-foreground" />
+								<Badge
+									variant="default"
+									className="bg-blue-600 text-white font-medium text-base px-3 py-1"
+								>
+									{getWorkLanguageDisplayName(getWorkPrimaryLanguage(work))}
+								</Badge>
+								{(() => {
+									const availableLanguages = getWorkAvailableLanguages(work);
+									const additionalCount = availableLanguages.length - 1;
+
+									if (additionalCount > 0) {
+										return <span className="text-sm text-gray-600">+{additionalCount}言語</span>;
+									}
+									return null;
+								})()}
+							</div>
+						</div>
+
 						{/* タグ・ジャンル（Individual Info API準拠・段階的活用） */}
 						<div className="space-y-3">
 							{/* ジャンル（Individual Info API準拠・段階的活用） */}
@@ -437,6 +473,125 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													</div>
 												</div>
 											)}
+
+											{/* 詳細言語・翻訳情報 */}
+											<div className="flex items-start gap-3">
+												<Globe className="h-5 w-5 text-muted-foreground mt-0.5" />
+												<div className="space-y-3 flex-1">
+													<div className="text-sm text-gray-700">言語・翻訳情報</div>
+
+													{/* 対応言語一覧 */}
+													<div className="space-y-2">
+														<div className="text-xs text-gray-600">対応言語</div>
+														<div className="flex flex-wrap gap-1">
+															{(() => {
+																const primaryLanguage = getWorkPrimaryLanguage(work);
+																const availableLanguages = getWorkAvailableLanguages(work);
+
+																return availableLanguages.map((lang) => (
+																	<Badge
+																		key={lang}
+																		variant={lang === primaryLanguage ? "default" : "secondary"}
+																		className={
+																			lang === primaryLanguage
+																				? "bg-blue-600 text-white text-xs px-2 py-1"
+																				: "text-gray-700 bg-gray-100 text-xs px-2 py-1"
+																		}
+																		title={lang === primaryLanguage ? "主要言語" : undefined}
+																	>
+																		{getWorkLanguageDisplayName(lang)}
+																	</Badge>
+																));
+															})()}
+														</div>
+													</div>
+
+													{/* 翻訳関係情報 */}
+													{(() => {
+														const translationInfo = work.translationInfo;
+														if (!translationInfo) return null;
+
+														const isTranslation =
+															translationInfo.isChild || translationInfo.originalWorkno;
+														const isOriginalWithTranslations =
+															translationInfo.isParent ||
+															(translationInfo.childWorknos &&
+																translationInfo.childWorknos.length > 0);
+
+														if (!isTranslation && !isOriginalWithTranslations) return null;
+
+														return (
+															<div className="space-y-2">
+																{/* 翻訳作品の場合 */}
+																{isTranslation && translationInfo.originalWorkno && (
+																	<div className="space-y-1">
+																		<div className="text-xs text-gray-600">翻訳情報</div>
+																		<div className="flex items-center gap-2 text-sm">
+																			<div className="w-2 h-2 bg-amber-500 rounded-full" />
+																			<span className="text-gray-700">この作品は翻訳版です</span>
+																		</div>
+																		<div className="text-xs text-gray-600 ml-4">
+																			原作:
+																			<Link
+																				href={`/works/${translationInfo.originalWorkno}`}
+																				className="text-blue-600 hover:text-blue-800 underline ml-1"
+																			>
+																				{translationInfo.originalWorkno}
+																			</Link>
+																		</div>
+																	</div>
+																)}
+
+																{/* 翻訳版がある原作の場合 */}
+																{isOriginalWithTranslations &&
+																	translationInfo.childWorknos &&
+																	translationInfo.childWorknos.length > 0 && (
+																		<div className="space-y-1">
+																			<div className="text-xs text-gray-600">翻訳版</div>
+																			<div className="flex items-center gap-2 text-sm">
+																				<div className="w-2 h-2 bg-green-500 rounded-full" />
+																				<span className="text-gray-700">
+																					{translationInfo.childWorknos.length}件の翻訳版があります
+																				</span>
+																			</div>
+																			<div className="flex flex-wrap gap-1 ml-4">
+																				{translationInfo.childWorknos.map((childWorkno: string) => (
+																					<Link
+																						key={childWorkno}
+																						href={`/works/${childWorkno}`}
+																						className="text-xs text-blue-600 hover:text-blue-800 underline"
+																					>
+																						{childWorkno}
+																					</Link>
+																				))}
+																			</div>
+																		</div>
+																	)}
+
+																{/* 言語版一覧（Individual Info API）*/}
+																{work.languageDownloads && work.languageDownloads.length > 1 && (
+																	<div className="space-y-1">
+																		<div className="text-xs text-gray-600">他言語版</div>
+																		<div className="space-y-1 ml-4">
+																			{work.languageDownloads.map((download) => (
+																				<div
+																					key={download.workno}
+																					className="flex items-center gap-2 text-xs"
+																				>
+																					<span className="text-gray-700">{download.lang}</span>
+																					<span className="text-gray-500">
+																						({download.label || "言語不明"})
+																					</span>
+																				</div>
+																			))}
+																		</div>
+																	</div>
+																)}
+															</div>
+														);
+													})()}
+												</div>
+											</div>
 										</div>
 
 										{/* 制作陣情報（Individual Info API準拠・段階的活用） */}
