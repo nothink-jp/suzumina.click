@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { TimeDisplay } from "./time-display";
 
 const meta: Meta<typeof TimeDisplay> = {
-	title: "Custom/TimeDisplay",
+	title: "Custom/Utility/TimeDisplay",
 	component: TimeDisplay,
 	parameters: {
 		layout: "centered",

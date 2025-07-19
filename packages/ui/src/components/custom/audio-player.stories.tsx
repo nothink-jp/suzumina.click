@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { type AudioControls, AudioPlayer } from "./audio-player";
 
 const meta = {
-	title: "Custom/AudioPlayer",
+	title: "Custom/Audio/AudioPlayer",
 	component: AudioPlayer,
 	parameters: {
 		layout: "padded",

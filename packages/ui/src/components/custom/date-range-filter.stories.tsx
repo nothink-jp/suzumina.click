@@ -3,7 +3,7 @@ import { useState } from "react";
 import { DateRangeFilter } from "./date-range-filter";
 
 const meta = {
-	title: "Custom/DateRangeFilter",
+	title: "Custom/Filter/DateRangeFilter",
 	component: DateRangeFilter,
 	parameters: {
 		layout: "centered",

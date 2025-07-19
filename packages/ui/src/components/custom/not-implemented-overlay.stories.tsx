@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import NotImplementedOverlay from "./not-implemented-overlay";
 
 const meta = {
-	title: "Custom/NotImplementedOverlay",
+	title: "Custom/Utility/NotImplementedOverlay",
 	component: NotImplementedOverlay,
 	parameters: {
 		layout: "centered",

@@ -4,7 +4,7 @@ import { Badge } from "../ui/badge";
 import { AutocompleteDropdown, type AutocompleteSuggestionItem } from "./autocomplete-dropdown";
 
 const meta = {
-	title: "Custom/AutocompleteDropdown",
+	title: "Custom/Filter/AutocompleteDropdown",
 	component: AutocompleteDropdown,
 	parameters: {
 		layout: "padded",

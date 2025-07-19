@@ -3,7 +3,7 @@ import { fn } from "@storybook/test";
 import { YouTubePlayer } from "./youtube-player";
 
 const meta = {
-	title: "Custom/YouTubePlayer",
+	title: "Custom/Audio/YouTubePlayer",
 	component: YouTubePlayer,
 	parameters: {
 		layout: "padded",

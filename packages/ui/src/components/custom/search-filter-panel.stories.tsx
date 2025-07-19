@@ -3,7 +3,7 @@ import { fn } from "@storybook/test";
 import { FilterSelect, SearchFilterPanel, SortSelect } from "./search-filter-panel";
 
 const meta: Meta<typeof SearchFilterPanel> = {
-	title: "Custom/SearchFilterPanel",
+	title: "Custom/Filter/SearchFilterPanel",
 	component: SearchFilterPanel,
 	parameters: {
 		layout: "padded",
@@ -163,7 +163,7 @@ export const WorkSearch: Story = {
 
 // FilterSelect のストーリー
 const filterMeta: Meta<typeof FilterSelect> = {
-	title: "Custom/FilterSelect",
+	title: "Custom/Filter/FilterSelect",
 	component: FilterSelect,
 	parameters: {
 		layout: "centered",
@@ -215,7 +215,7 @@ export const FilterSelected: FilterStory = {
 
 // SortSelect のストーリー
 const sortMeta: Meta<typeof SortSelect> = {
-	title: "Custom/SortSelect",
+	title: "Custom/Filter/SortSelect",
 	component: SortSelect,
 	parameters: {
 		layout: "centered",

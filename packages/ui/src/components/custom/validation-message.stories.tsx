@@ -5,7 +5,7 @@ import { Input } from "../ui/input";
 import { ValidationMessage, ValidationMessages } from "./validation-message";
 
 const meta: Meta<typeof ValidationMessage> = {
-	title: "Custom/ValidationMessage",
+	title: "Custom/Form/ValidationMessage",
 	component: ValidationMessage,
 	parameters: {
 		layout: "centered",

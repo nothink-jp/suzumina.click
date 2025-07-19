@@ -19,7 +19,7 @@ const sampleItems: SampleItem[] = [
 ];
 
 const meta: Meta<typeof GenericCarousel> = {
-	title: "Custom/GenericCarousel",
+	title: "Custom/Layout/GenericCarousel",
 	component: GenericCarousel,
 	parameters: {
 		layout: "centered",

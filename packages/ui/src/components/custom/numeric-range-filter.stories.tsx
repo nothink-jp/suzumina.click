@@ -3,7 +3,7 @@ import { useState } from "react";
 import { NumericRangeFilter } from "./numeric-range-filter";
 
 const meta = {
-	title: "Custom/NumericRangeFilter",
+	title: "Custom/Filter/NumericRangeFilter",
 	component: NumericRangeFilter,
 	parameters: {
 		layout: "centered",

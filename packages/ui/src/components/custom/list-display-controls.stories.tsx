@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import { ListDisplayControls } from "./list-display-controls";
 
 const meta = {
-	title: "Custom/ListDisplayControls",
+	title: "Custom/Layout/ListDisplayControls",
 	component: ListDisplayControls,
 	parameters: {
 		layout: "padded",

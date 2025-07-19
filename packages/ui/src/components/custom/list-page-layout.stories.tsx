@@ -13,7 +13,7 @@ import {
 } from "./list-page-layout";
 
 const meta: Meta<typeof ListPageLayout> = {
-	title: "Custom/ListPageLayout",
+	title: "Custom/Layout/ListPageLayout",
 	component: ListPageLayout,
 	parameters: {
 		layout: "fullscreen",
@@ -413,7 +413,7 @@ export const ComponentsShowcase: Story = {
 
 // 個別コンポーネントのストーリー
 const headerMeta: Meta<typeof ListPageHeader> = {
-	title: "Custom/ListPageHeader",
+	title: "Custom/Layout/ListPageHeader",
 	component: ListPageHeader,
 	parameters: {
 		layout: "padded",
@@ -445,7 +445,7 @@ export const HeaderWithActions: HeaderStory = {
 };
 
 const gridMeta: Meta<typeof ListPageGrid> = {
-	title: "Custom/ListPageGrid",
+	title: "Custom/Layout/ListPageGrid",
 	component: ListPageGrid,
 	parameters: {
 		layout: "padded",

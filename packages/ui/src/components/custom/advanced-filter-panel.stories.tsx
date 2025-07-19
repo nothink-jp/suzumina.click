@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AdvancedFilterPanel, type AdvancedFilters } from "./advanced-filter-panel";
 
 const meta = {
-	title: "Custom/AdvancedFilterPanel",
+	title: "Custom/Filter/AdvancedFilterPanel",
 	component: AdvancedFilterPanel,
 	parameters: {
 		layout: "centered",

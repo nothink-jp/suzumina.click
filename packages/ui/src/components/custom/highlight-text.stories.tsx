@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { HighlightTags, HighlightText, MultiFieldHighlight } from "./highlight-text";
 
 const meta = {
-	title: "Custom/HighlightText",
+	title: "Custom/Utility/HighlightText",
 	component: HighlightText,
 	parameters: {
 		layout: "centered",

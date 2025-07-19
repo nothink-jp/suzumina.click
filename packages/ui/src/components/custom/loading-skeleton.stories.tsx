@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { LoadingSkeleton } from "./loading-skeleton";
 
 const meta = {
-	title: "Custom/LoadingSkeleton",
+	title: "Custom/Utility/LoadingSkeleton",
 	component: LoadingSkeleton,
 	parameters: {
 		layout: "centered",

@@ -4,7 +4,7 @@ import { SearchAndFilterPanel } from "./search-and-filter-panel";
 import { FilterSelect } from "./search-filter-panel";
 
 const meta: Meta<typeof SearchAndFilterPanel> = {
-	title: "Custom/SearchAndFilterPanel",
+	title: "Custom/Filter/SearchAndFilterPanel",
 	component: SearchAndFilterPanel,
 	parameters: {
 		layout: "padded",

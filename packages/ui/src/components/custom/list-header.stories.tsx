@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import { ListHeader } from "./list-header";
 
 const meta: Meta<typeof ListHeader> = {
-	title: "Custom/ListHeader",
+	title: "Custom/Layout/ListHeader",
 	component: ListHeader,
 	parameters: {
 		layout: "padded",

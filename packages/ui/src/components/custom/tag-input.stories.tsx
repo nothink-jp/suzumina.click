@@ -2,8 +2,34 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 import { TagInput, type TagSuggestion } from "./tag-input";
 
+// オートコンプリート用のモック関数
+const mockFetchSuggestions = async (query: string): Promise<TagSuggestion[]> => {
+	// 500ms のディレイをシミュレート
+	await new Promise((resolve) => setTimeout(resolve, 300));
+
+	const allSuggestions: TagSuggestion[] = [
+		{ id: "1", text: "挨拶", type: "popular", category: "基本", count: 150 },
+		{ id: "2", text: "応援", type: "popular", category: "基本", count: 120 },
+		{ id: "3", text: "日常", type: "tag", category: "ライフ", count: 80 },
+		{ id: "4", text: "音楽", type: "tag", category: "エンタメ", count: 200 },
+		{ id: "5", text: "音声", type: "recent", category: "メディア", count: 95 },
+		{ id: "6", text: "配信", type: "popular", category: "放送", count: 180 },
+		{ id: "7", text: "歌声", type: "tag", category: "音楽", count: 60 },
+		{ id: "8", text: "朗読", type: "tag", category: "読み物", count: 40 },
+		{ id: "9", text: "ASMR", type: "popular", category: "音声", count: 300 },
+		{ id: "10", text: "癒し", type: "tag", category: "リラックス", count: 85 },
+		{ id: "11", text: "睡眠", type: "tag", category: "リラックス", count: 75 },
+		{ id: "12", text: "バイノーラル", type: "tag", category: "音声技術", count: 45 },
+	];
+
+	// クエリに一致する候補をフィルタリング
+	return allSuggestions
+		.filter((suggestion) => suggestion.text.toLowerCase().includes(query.toLowerCase()))
+		.slice(0, 8); // 最大8件
+};
+
 const meta: Meta<typeof TagInput> = {
-	title: "Custom/TagInput",
+	title: "Custom/Form/TagInput",
 	component: TagInput,
 	parameters: {
 		layout: "centered",

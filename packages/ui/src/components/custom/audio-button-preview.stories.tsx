@@ -4,7 +4,7 @@ import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { AudioButtonPreview } from "./audio-button-preview";
 
 const meta = {
-	title: "Custom/AudioButtonPreview",
+	title: "Custom/Audio/AudioButtonPreview",
 	component: AudioButtonPreview,
 	parameters: {
 		layout: "padded",

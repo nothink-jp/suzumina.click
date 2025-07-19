@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { AudioButtonSkeleton, generateSkeletonList } from "./audio-button-skeleton";
 
 const meta = {
-	title: "Custom/AudioButtonSkeleton",
+	title: "Custom/Audio/AudioButtonSkeleton",
 	component: AudioButtonSkeleton,
 	parameters: {
 		layout: "padded",
