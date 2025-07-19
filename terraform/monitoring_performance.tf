@@ -316,17 +316,17 @@ resource "google_monitoring_alert_policy" "high_latency" {
   combiner     = "OR"
   
   conditions {
-    display_name = "P99レイテンシが閾値超過 (> 8000ms)"
+    display_name = "P95レイテンシが閾値超過 (> 5000ms)"
     
     condition_threshold {
       filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_latencies\""
-      duration        = "600s"  # 10分間継続（個人開発・誤報削減）
+      duration        = "300s"  # 5分間継続（データ不足対応）
       comparison      = "COMPARISON_GT"
-      threshold_value = 8000   # 8秒（個人開発・最適化途上考慮）
+      threshold_value = 5000   # 5秒（P95用調整）
       
       aggregations {
         alignment_period   = "60s"
-        per_series_aligner = "ALIGN_PERCENTILE_99"
+        per_series_aligner = "ALIGN_PERCENTILE_95"
       }
       
       trigger {
@@ -341,10 +341,10 @@ resource "google_monitoring_alert_policy" "high_latency" {
   
   documentation {
     content = <<-EOT
-    # 高レイテンシ検知アラート（個人開発版）
+    # 高レイテンシ検知アラート（個人開発版・P95）
     
-    Next.jsアプリケーションのP99レスポンス時間が8秒を超えました。
-    最適化途上のため、8秒超過時のみアラート。
+    Next.jsアプリケーションのP95レスポンス時間が5秒を超えました。
+    P99からP95に変更し、データ不足問題を解決。
     
     ## 対応アクション
     1. Cloud Loggingで遅いクエリを特定
