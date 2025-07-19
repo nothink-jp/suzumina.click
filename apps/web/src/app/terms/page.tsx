@@ -29,9 +29,9 @@ export default function TermsPage() {
 							<h4 className="font-semibold text-suzuka-800 mb-2">重要事項</h4>
 							<ul className="text-sm text-suzuka-700 space-y-1">
 								<li>• 涼花みなせさんや関係者様とは一切関係のない非公式サイトです</li>
-								<li>• ファン活動として運営されています（一部広告による収益化あり）</li>
+								<li>• ファン活動として非営利で運営されています</li>
 								<li>• 個人運営のため、サービスの継続性は保証されません</li>
-								<li>• サイト運営費用確保のため、適切な広告を表示する場合があります</li>
+								<li>• 完全な無料サービスとして提供されています</li>
 							</ul>
 						</div>
 					</CardContent>
@@ -196,14 +196,14 @@ export default function TermsPage() {
 					</CardContent>
 				</Card>
 
-				{/* 収益化・広告配信 */}
+				{/* サイト運営方針 */}
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
 							<Badge variant="outline" className="text-xs">
 								NEW
 							</Badge>
-							7. 収益化・広告配信
+							7. サイト運営方針
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">

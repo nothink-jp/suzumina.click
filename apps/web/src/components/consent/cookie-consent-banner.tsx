@@ -2,7 +2,7 @@
 
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
-import { Cookie, Settings, X } from "lucide-react";
+import { Cookie, Settings } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useIsClient } from "@/hooks/use-is-client";
 import {
@@ -48,7 +48,7 @@ export function CookieConsentBanner() {
 		saveConsent({
 			functional: true,
 			analytics: true,
-			advertising: true,
+			advertising: false,
 			personalization: true,
 		});
 	};
@@ -99,7 +99,7 @@ export function CookieConsentBanner() {
 								<div className="space-y-1">
 									<h3 className="font-semibold text-foreground text-sm">クッキーの使用について</h3>
 									<p className="text-sm text-muted-foreground leading-relaxed">
-										サイト改善・広告配信・分析のためクッキーを使用します。
+										サイト改善・分析のためクッキーを使用します。
 										<button
 											type="button"
 											onClick={() => setShowPreferences(true)}
@@ -143,26 +143,12 @@ export function CookieConsentBanner() {
 				</Card>
 			</div>
 
-			{/* Preferences panel overlay */}
-			{showPreferences && (
-				<div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm">
-					<div className="flex items-center justify-center min-h-screen p-4">
-						<Card className="w-full max-w-4xl max-h-[90vh] bg-white shadow-2xl overflow-hidden">
-							<div className="flex items-center justify-between p-6 border-b border-suzuka-200">
-								<h2 className="text-lg font-semibold text-foreground">クッキー設定</h2>
-								<Button variant="ghost" size="sm" onClick={() => setShowPreferences(false)}>
-									<X className="h-4 w-4" />
-								</Button>
-							</div>
-
-							<CookiePreferencesPanel
-								onSave={handleCustomConsent}
-								onCancel={() => setShowPreferences(false)}
-							/>
-						</Card>
-					</div>
-				</div>
-			)}
+			{/* Preferences panel - use Dialog component directly */}
+			<CookiePreferencesPanel
+				open={showPreferences}
+				onSave={handleCustomConsent}
+				onCancel={() => setShowPreferences(false)}
+			/>
 		</>
 	);
 }

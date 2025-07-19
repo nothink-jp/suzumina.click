@@ -21,7 +21,6 @@ export function SettingsPageContent() {
 	const { isAdult, updateAgeVerification } = useAgeVerification();
 	const [consentState, setConsentState] = useState({
 		analytics: false,
-		advertising: false,
 		functional: true, // 機能的なCookieは通常必須
 		personalization: false,
 	});
@@ -34,7 +33,6 @@ export function SettingsPageContent() {
 		if (currentState) {
 			setConsentState({
 				analytics: currentState.analytics || false,
-				advertising: currentState.advertising || false,
 				functional: currentState.functional !== false, // デフォルトでtrue
 				personalization: currentState.personalization || false,
 			});
@@ -42,7 +40,6 @@ export function SettingsPageContent() {
 			// デフォルト値を設定（同意状態が存在しない場合）
 			setConsentState({
 				analytics: false,
-				advertising: false,
 				functional: true,
 				personalization: false,
 			});
@@ -64,7 +61,6 @@ export function SettingsPageContent() {
 			resetAllConsent();
 			setConsentState({
 				analytics: false,
-				advertising: false,
 				functional: true,
 				personalization: false,
 			});
@@ -172,15 +168,6 @@ export function SettingsPageContent() {
 										className={consentState.analytics ? "bg-green-100 text-green-800" : ""}
 									>
 										{consentState.analytics ? "有効" : "無効"}
-									</Badge>
-								</div>
-								<div className="flex items-center justify-between">
-									<span className="text-sm font-medium">広告Cookie</span>
-									<Badge
-										variant={consentState.advertising ? "default" : "secondary"}
-										className={consentState.advertising ? "bg-green-100 text-green-800" : ""}
-									>
-										{consentState.advertising ? "有効" : "無効"}
 									</Badge>
 								</div>
 								<div className="flex items-center justify-between">

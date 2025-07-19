@@ -275,7 +275,7 @@ export default function PrivacyPage() {
 								</ul>
 							</div>
 							<div>
-								<h4 className="font-semibold text-foreground">分析・広告Cookie</h4>
+								<h4 className="font-semibold text-foreground">分析Cookie</h4>
 								<div className="bg-suzuka-50 p-3 rounded-lg mt-2">
 									<h5 className="font-semibold text-suzuka-800 text-sm mb-2">Google Analytics 4</h5>
 									<ul className="text-xs text-suzuka-700 space-y-1">
@@ -300,15 +300,6 @@ export default function PrivacyPage() {
 									</li>
 									<li>
 										• <strong>Google設定:</strong>
-										<a
-											href="https://adssettings.google.com/"
-											className="text-suzuka-500 hover:underline"
-											target="_blank"
-											rel="noopener noreferrer"
-										>
-											広告設定
-										</a>
-										・
 										<a
 											href="https://myaccount.google.com/data-and-privacy"
 											className="text-suzuka-500 hover:underline"
