@@ -110,6 +110,72 @@ describe("Work Language Mapping", () => {
 			expect(getWorkPrimaryLanguage(work)).toBe("ko");
 		});
 
+		it("languageDownloadsのJPNコードを正しく判定する", () => {
+			const work = createMockWork(undefined, {
+				languageDownloads: [{ lang: "JPN", label: "日本語" }],
+			});
+			expect(getWorkPrimaryLanguage(work)).toBe("ja");
+		});
+
+		it("languageDownloadsのENGコードを正しく判定する", () => {
+			const work = createMockWork(undefined, {
+				languageDownloads: [{ lang: "ENG", label: "English" }],
+			});
+			expect(getWorkPrimaryLanguage(work)).toBe("en");
+		});
+
+		it("languageDownloadsのCHI_HANSコードを正しく判定する", () => {
+			const work = createMockWork(undefined, {
+				languageDownloads: [{ lang: "CHI_HANS", label: "簡体中文" }],
+			});
+			expect(getWorkPrimaryLanguage(work)).toBe("zh-cn");
+		});
+
+		it("languageDownloadsのCHI_HANTコードを正しく判定する", () => {
+			const work = createMockWork(undefined, {
+				languageDownloads: [{ lang: "CHI_HANT", label: "繁体中文" }],
+			});
+			expect(getWorkPrimaryLanguage(work)).toBe("zh-tw");
+		});
+
+		it("languageDownloadsのKO_KRコードを正しく判定する", () => {
+			const work = createMockWork(undefined, {
+				languageDownloads: [{ lang: "KO_KR", label: "한국어" }],
+			});
+			expect(getWorkPrimaryLanguage(work)).toBe("ko");
+		});
+
+		it("複数のlanguageDownloadsから現在の作品に対応する言語を正しく判定する", () => {
+			const work = createMockWork(undefined, {
+				productId: "RJ01424302",
+				languageDownloads: [
+					{ workno: "RJ01424729", lang: "CHI_HANS", label: "簡体中文" },
+					{ workno: "RJ01424764", lang: "CHI_HANT", label: "繁体中文" },
+					{ workno: "RJ01424302", lang: "ENG", label: "英語" },
+					{ workno: "RJ01209126", lang: "JPN", label: "日本語" },
+				],
+			});
+			expect(getWorkPrimaryLanguage(work)).toBe("en");
+		});
+
+		it("対応するworknoが見つからない場合は最初の要素を使用する", () => {
+			const work = createMockWork(undefined, {
+				productId: "RJ99999999",
+				languageDownloads: [
+					{ workno: "RJ01424729", lang: "CHI_HANS", label: "簡体中文" },
+					{ workno: "RJ01424302", lang: "ENG", label: "英語" },
+				],
+			});
+			expect(getWorkPrimaryLanguage(work)).toBe("zh-cn");
+		});
+
+		it("languageDownloadsの未対応言語コードをotherとして判定する", () => {
+			const work = createMockWork(undefined, {
+				languageDownloads: [{ lang: "FR", label: "French" }],
+			});
+			expect(getWorkPrimaryLanguage(work)).toBe("other");
+		});
+
 		it("言語情報がない場合はデフォルトで日本語を返す", () => {
 			const work = createMockWork(undefined, { genres: ["voice", "asmr"] });
 			expect(getWorkPrimaryLanguage(work)).toBe("ja");
@@ -196,6 +262,53 @@ describe("Work Language Mapping", () => {
 		it("大文字小文字を区別しない", () => {
 			const filtered = filterWorksByLanguage(mockWorks, "JA");
 			expect(filtered).toHaveLength(2);
+		});
+
+		it("翻訳シリーズでは個別作品の言語のみでフィルタリングする", () => {
+			const seriesWorks = [
+				createMockWork("original", {
+					productId: "RJ01424302",
+					languageDownloads: [
+						{ workno: "RJ01424729", lang: "CHI_HANS", label: "簡体中文" },
+						{ workno: "RJ01424764", lang: "CHI_HANT", label: "繁体中文" },
+						{ workno: "RJ01424302", lang: "ENG", label: "英語" },
+						{ workno: "RJ01209126", lang: "JPN", label: "日本語" },
+					],
+				}),
+				createMockWork("chinese", {
+					productId: "RJ01424729",
+					languageDownloads: [
+						{ workno: "RJ01424729", lang: "CHI_HANS", label: "簡体中文" },
+						{ workno: "RJ01424764", lang: "CHI_HANT", label: "繁体中文" },
+						{ workno: "RJ01424302", lang: "ENG", label: "英語" },
+						{ workno: "RJ01209126", lang: "JPN", label: "日本語" },
+					],
+				}),
+				createMockWork("japanese", {
+					productId: "RJ01209126",
+					languageDownloads: [
+						{ workno: "RJ01424729", lang: "CHI_HANS", label: "簡体中文" },
+						{ workno: "RJ01424764", lang: "CHI_HANT", label: "繁体中文" },
+						{ workno: "RJ01424302", lang: "ENG", label: "英語" },
+						{ workno: "RJ01209126", lang: "JPN", label: "日本語" },
+					],
+				}),
+			];
+
+			// 英語フィルタで英語版のみが表示される
+			const englishFiltered = filterWorksByLanguage(seriesWorks, "en");
+			expect(englishFiltered).toHaveLength(1);
+			expect(englishFiltered[0]?.productId).toBe("RJ01424302");
+
+			// 中国語フィルタで中国語版のみが表示される
+			const chineseFiltered = filterWorksByLanguage(seriesWorks, "zh-cn");
+			expect(chineseFiltered).toHaveLength(1);
+			expect(chineseFiltered[0]?.productId).toBe("RJ01424729");
+
+			// 日本語フィルタで日本語版のみが表示される
+			const japaneseFiltered = filterWorksByLanguage(seriesWorks, "ja");
+			expect(japaneseFiltered).toHaveLength(1);
+			expect(japaneseFiltered[0]?.productId).toBe("RJ01209126");
 		});
 	});
 });

@@ -1309,34 +1309,50 @@ function detectLanguageFromDownloads(work: OptimizedFirestoreDLsiteWorkData): Wo
 		return null;
 	}
 
-	const firstLanguage = work.languageDownloads[0];
-	if (!firstLanguage) {
+	// 現在の作品のworknoまたはproductIdに対応する言語情報を探す
+	const currentWorkId = work.productId || work.id;
+	const matchingLanguage = work.languageDownloads.find(
+		(langDownload) => langDownload.workno === currentWorkId,
+	);
+
+	// 対応する言語が見つからない場合は最初の要素を使用（後方互換性）
+	const targetLanguage = matchingLanguage || work.languageDownloads[0];
+	if (!targetLanguage) {
 		return null;
 	}
 
-	const primaryLangCode = firstLanguage.lang.toLowerCase();
+	const primaryLangCode = targetLanguage.lang.toLowerCase();
 
 	// DLsiteの言語コードをWorkLanguageに変換
 	switch (primaryLangCode) {
 		case "ja":
 		case "japanese":
+		case "jpn":
 			return "ja";
 		case "en":
 		case "english":
+		case "eng":
 			return "en";
 		case "zh-cn":
 		case "zh_cn":
 		case "chinese_simplified":
+		case "chs":
+		case "chi_hans":
 			return "zh-cn";
 		case "zh-tw":
 		case "zh_tw":
 		case "chinese_traditional":
+		case "cht":
+		case "chi_hant":
 			return "zh-tw";
 		case "ko":
 		case "korean":
+		case "kor":
+		case "ko_kr":
 			return "ko";
 		case "es":
 		case "spanish":
+		case "spa":
 			return "es";
 		default:
 			// 認識できない言語の場合はotherとして扱う
@@ -1477,28 +1493,36 @@ export function getWorkAvailableLanguages(work: OptimizedFirestoreDLsiteWorkData
 			switch (langCode) {
 				case "ja":
 				case "japanese":
+				case "jpn":
 					languages.add("ja");
 					break;
 				case "en":
 				case "english":
+				case "eng":
 					languages.add("en");
 					break;
 				case "zh-cn":
 				case "zh_cn":
 				case "chinese_simplified":
+				case "chs":
+				case "chi_hans":
 					languages.add("zh-cn");
 					break;
 				case "zh-tw":
 				case "zh_tw":
 				case "chinese_traditional":
+				case "cht":
+				case "chi_hant":
 					languages.add("zh-tw");
 					break;
 				case "ko":
 				case "korean":
+				case "kor":
 					languages.add("ko");
 					break;
 				case "es":
 				case "spanish":
+				case "spa":
 					languages.add("es");
 					break;
 				default:
@@ -1528,15 +1552,10 @@ export function filterWorksByLanguage(
 	const targetLang = language.toLowerCase();
 
 	return works.filter((work) => {
-		// プライマリ言語をチェック
+		// その作品自体のプライマリ言語のみをチェック
+		// 翻訳シリーズ全体ではなく、個別作品の言語で判定
 		const primaryLang = getWorkPrimaryLanguage(work);
-		if (primaryLang === targetLang) {
-			return true;
-		}
-
-		// 利用可能な言語もチェック（多言語対応作品用）
-		const availableLanguages = getWorkAvailableLanguages(work);
-		return availableLanguages.includes(targetLang as WorkLanguage);
+		return primaryLang === targetLang;
 	});
 }
 

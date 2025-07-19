@@ -9,9 +9,11 @@
  */
 
 import type {
+	LanguageDownload,
 	OptimizedFirestoreDLsiteWorkData,
 	PriceInfo,
 	RatingInfo,
+	TranslationInfo,
 	WorkCategory,
 } from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
@@ -629,31 +631,35 @@ export function mapIndividualInfoAPIToWorkData(
 	// 	isTitleCompleted: apiData.title.is_title_completed,
 	// } : undefined;
 
-	// 翻訳情報（一時的に未使用）
-	// const translationInfo: TranslationInfo | undefined = apiData.translation ? {
-	// 	isTranslationAgree: apiData.translation.is_translation_agree,
-	// 	isVolunteer: apiData.translation.is_volunteer,
-	// 	isOriginal: apiData.translation.is_original,
-	// 	isParent: apiData.translation.is_parent,
-	// 	isChild: apiData.translation.is_child,
-	// 	originalWorkno: apiData.translation.original_workno,
-	// 	parentWorkno: apiData.translation.parent_workno,
-	// 	childWorknos: apiData.translation.child_worknos,
-	// 	lang: apiData.translation.lang,
-	// 	productionTradePriceRate: apiData.translation.production_trade_price_rate,
-	// } : undefined;
+	// 翻訳情報
+	const translationInfo: TranslationInfo | undefined = apiData.translation
+		? {
+				isTranslationAgree: apiData.translation.is_translation_agree,
+				isVolunteer: apiData.translation.is_volunteer,
+				isOriginal: apiData.translation.is_original,
+				isParent: apiData.translation.is_parent,
+				isChild: apiData.translation.is_child,
+				originalWorkno: apiData.translation.original_workno,
+				parentWorkno: apiData.translation.parent_workno,
+				childWorknos: apiData.translation.child_worknos,
+				lang: apiData.translation.lang,
+				productionTradePriceRate: apiData.translation.production_trade_price_rate,
+			}
+		: undefined;
 
-	// 言語版情報（一時的に未使用）
-	// const languageDownloads: LanguageDownload[] | undefined = apiData.language_editions?.map(le => ({
-	// 	workno: le.workno,
-	// 	editionId: le.edition_id,
-	// 	editionType: le.edition_type,
-	// 	displayOrder: le.display_order,
-	// 	label: le.label,
-	// 	lang: le.lang,
-	// 	dlCount: le.dl_count || "0",
-	// 	displayLabel: le.display_label || le.label,
-	// }));
+	// 言語版情報
+	const languageDownloads: LanguageDownload[] | undefined = apiData.language_editions?.map(
+		(le) => ({
+			workno: le.workno,
+			editionId: le.edition_id,
+			editionType: le.edition_type,
+			displayOrder: le.display_order,
+			label: le.label,
+			lang: le.lang,
+			dlCount: le.dl_count || "0",
+			displayLabel: le.display_label || le.label,
+		}),
+	);
 
 	// 販売状態（一時的に未使用）
 	// const salesStatus: SalesStatus | undefined = apiData.sales_status ? {
@@ -820,6 +826,10 @@ export function mapIndividualInfoAPIToWorkData(
 						img.thumb.trim() !== "",
 				) || [],
 		isExclusive: apiData.exclusive || false,
+
+		// === 翻訳・言語情報 ===
+		translationInfo,
+		languageDownloads,
 
 		// === データソース追跡（Individual Info API単一ソース） ===
 		dataSources: {
