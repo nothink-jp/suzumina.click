@@ -99,7 +99,9 @@ export default function WorkList({ data, totalCount, filteredCount, currentPage 
 	);
 
 	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
-	const totalPages = Math.ceil(totalCount / itemsPerPageNum);
+	const totalPages = Math.ceil(
+		(hasFilters && filteredCount !== undefined ? filteredCount : totalCount) / itemsPerPageNum,
+	);
 
 	const handleSearch = () => {
 		if (searchQuery.trim()) {
