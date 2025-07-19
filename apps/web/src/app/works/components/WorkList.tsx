@@ -15,10 +15,9 @@ import { SearchAndFilterPanel } from "@suzumina.click/ui/components/custom/searc
 import { FilterSelect } from "@suzumina.click/ui/components/custom/search-filter-panel";
 import { Switch } from "@suzumina.click/ui/components/ui/switch";
 import { FileText, Shield } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useEffect, useMemo, useState } from "react";
 import Pagination from "@/components/ui/pagination";
-import { useAgeVerification } from "@/contexts/age-verification-context";
+import { useR18Filter } from "@/hooks/use-r18-filter";
+import { useWorkListFilters } from "@/hooks/use-work-list-filters";
 import WorkCard from "./WorkCard";
 
 interface WorkListProps {
@@ -29,180 +28,48 @@ interface WorkListProps {
 }
 
 export default function WorkList({ data, totalCount, filteredCount, currentPage }: WorkListProps) {
-	const router = useRouter();
-	const searchParams = useSearchParams();
-	const { isAdult, isLoading: ageVerificationLoading } = useAgeVerification();
-	const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
-	const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
-	const [categoryFilter, setCategoryFilter] = useState(searchParams.get("category") || "all");
-	const [languageFilter, setLanguageFilter] = useState(searchParams.get("language") || "all");
-	const [itemsPerPageValue, setItemsPerPageValue] = useState(searchParams.get("limit") || "12");
+	// カスタムフックによる状態管理の分離
+	const filters = useWorkListFilters();
+	const r18Filter = useR18Filter();
 
-	// R18フィルターの状態（成人向けサイトのため、デフォルトでR18表示）
-	const [showR18, setShowR18] = useState(() => {
-		const excludeR18Param = searchParams.get("excludeR18");
-		// URLパラメータがある場合はそれに従う
-		if (excludeR18Param !== null) {
-			return excludeR18Param === "false";
-		}
-		// URLパラメータがない場合は成人向けサイトとしてR18を表示（excludeR18=false）
-		return true;
-	});
-
-	// URLパラメータが変更された時にSwitchの状態を同期
-	useEffect(() => {
-		// 年齢確認ローディング中は何もしない
-		if (ageVerificationLoading) {
-			return;
-		}
-
-		const excludeR18Param = searchParams.get("excludeR18");
-		// URLパラメータがない場合は成人向けサイトとしてR18表示（excludeR18=false）
-		const newShowR18 = excludeR18Param !== null ? excludeR18Param === "false" : true;
-
-		// 状態が変更される場合のみ更新
-		if (newShowR18 !== showR18) {
-			setShowR18(newShowR18);
-		}
-	}, [searchParams, ageVerificationLoading, showR18]);
-
-	// フィルタが適用されているかどうかを判定
-	const hasFilters = useMemo(() => {
-		const search = searchParams.get("search");
-		const category = searchParams.get("category");
-		const language = searchParams.get("language");
-		const excludeR18 = searchParams.get("excludeR18");
-
-		return !!(
-			search ||
-			(category && category !== "all") ||
-			(language && language !== "all") ||
-			excludeR18
-		);
-	}, [searchParams]);
-
-	// URLパラメータ更新用ユーティリティ
-	const updateUrlParam = useMemo(
-		() => (key: string, value: string, defaultValue: string) => {
-			const params = new URLSearchParams(searchParams.toString());
-
-			if (value && value !== defaultValue) {
-				params.set(key, value);
-			} else {
-				params.delete(key);
-			}
-
-			params.delete("page"); // ページ番号をリセット
-			router.push(`/works?${params.toString()}`);
-		},
-		[searchParams, router],
-	);
-
-	const itemsPerPageNum = Number.parseInt(itemsPerPageValue, 10);
+	// 計算値
+	const itemsPerPageNum = Number.parseInt(filters.itemsPerPageValue, 10);
 	const totalPages = Math.ceil(
-		(hasFilters && filteredCount !== undefined ? filteredCount : totalCount) / itemsPerPageNum,
+		(filters.hasFilters && filteredCount !== undefined ? filteredCount : totalCount) /
+			itemsPerPageNum,
 	);
 
-	const handleSearch = () => {
-		if (searchQuery.trim()) {
-			startTransition(() => {
-				updateUrlParam("search", searchQuery.trim(), "");
-			});
-		} else {
-			// 検索クエリが空の場合はパラメータを削除
-			updateUrlParam("search", "", "");
-		}
-	};
-
-	const handleSortChange = (value: string) => {
-		setSortBy(value);
-		updateUrlParam("sort", value, "newest");
-	};
-
-	const handleCategoryChange = (value: string) => {
-		setCategoryFilter(value);
-		updateUrlParam("category", value, "all");
-	};
-
-	const handleLanguageChange = (value: string) => {
-		setLanguageFilter(value);
-		updateUrlParam("language", value, "all");
-	};
-
-	const handleR18Toggle = (checked: boolean) => {
-		// まず状態を更新
-		setShowR18(checked);
-
-		// URLパラメータを更新（デフォルトはR18表示、除外は明示的に設定）
-		const params = new URLSearchParams(searchParams.toString());
-
-		if (isAdult) {
-			// 成人ユーザー：デフォルトはR18表示、除外がオプション
-			if (checked) {
-				// R18表示時はパラメータを削除（デフォルト=excludeR18=false）
-				params.delete("excludeR18");
-			} else {
-				// R18除外時はパラメータ設定（除外=excludeR18=true）
-				params.set("excludeR18", "true");
-			}
-		} else {
-			// 未成年ユーザー：常にR18除外
-			params.set("excludeR18", "true");
-		}
-
-		params.delete("page"); // ページ番号をリセット
-
-		// 即座にナビゲート
-		startTransition(() => {
-			router.push(`/works?${params.toString()}`);
-		});
-	};
-
-	// 検索・フィルターリセット
+	// 統合リセット関数
 	const handleReset = () => {
-		setSearchQuery("");
-		setCategoryFilter("all");
-		setLanguageFilter("all");
-		setShowR18(true); // デフォルトはR18表示（成人向けサイト）
-		setSortBy("newest");
-		setItemsPerPageValue("12");
-		const params = new URLSearchParams();
-		// デフォルトはR18表示なのでパラメータは削除（excludeR18=false）
-		// params.delete("excludeR18"); // 既に空なので何もしない
-		router.push(`/works?${params.toString()}`);
-	};
-
-	// 件数/ページ変更
-	const handleItemsPerPageChange = (value: string) => {
-		setItemsPerPageValue(value);
-		updateUrlParam("limit", value, "12");
+		filters.handleReset();
+		r18Filter.resetR18Filter();
 	};
 
 	return (
 		<div>
 			{/* 1. 検索・フィルターエリア */}
 			<SearchAndFilterPanel
-				searchValue={searchQuery}
-				onSearchChange={setSearchQuery}
-				onSearch={handleSearch}
+				searchValue={filters.searchQuery}
+				onSearchChange={filters.setSearchQuery}
+				onSearch={filters.handleSearch}
 				onReset={handleReset}
 				searchPlaceholder="作品タイトルで検索..."
 				hasActiveFilters={
-					searchQuery !== "" ||
-					(categoryFilter !== "all" && categoryFilter !== "") ||
-					(languageFilter !== "all" && languageFilter !== "") ||
-					(isAdult && !showR18) // 成人ユーザーがR18を除外している場合（デフォルトは表示）
+					filters.searchQuery !== "" ||
+					(filters.categoryFilter !== "all" && filters.categoryFilter !== "") ||
+					(filters.languageFilter !== "all" && filters.languageFilter !== "") ||
+					(r18Filter.isAdult && !r18Filter.showR18) // 成人ユーザーがR18を除外している場合（デフォルトは表示）
 				}
 				onSearchKeyDown={(e) => {
 					if (e.key === "Enter") {
-						handleSearch();
+						filters.handleSearch();
 					}
 				}}
 				filters={
 					<>
 						<FilterSelect
-							value={categoryFilter}
-							onValueChange={handleCategoryChange}
+							value={filters.categoryFilter}
+							onValueChange={filters.handleCategoryChange}
 							placeholder="カテゴリ"
 							options={[
 								{ value: "all", label: "すべてのカテゴリ" },
@@ -213,8 +80,8 @@ export default function WorkList({ data, totalCount, filteredCount, currentPage 
 							]}
 						/>
 						<FilterSelect
-							value={languageFilter}
-							onValueChange={handleLanguageChange}
+							value={filters.languageFilter}
+							onValueChange={filters.handleLanguageChange}
 							placeholder="言語"
 							options={[
 								{ value: "all", label: "すべての言語" },
@@ -231,14 +98,14 @@ export default function WorkList({ data, totalCount, filteredCount, currentPage 
 						/>
 
 						{/* R18レーティングフィルター */}
-						{isAdult ? (
+						{r18Filter.isAdult ? (
 							<div className="flex items-center gap-3 px-3 py-2 border border-border rounded-md bg-background">
 								<Shield className="h-4 w-4 text-muted-foreground" />
 								<div className="flex items-center gap-2">
 									<span className="text-sm font-medium">R18作品表示</span>
 									<Switch
-										checked={showR18}
-										onCheckedChange={handleR18Toggle}
+										checked={r18Filter.showR18}
+										onCheckedChange={r18Filter.handleR18Toggle}
 										aria-label="R18作品の表示を切り替え"
 									/>
 								</div>
@@ -257,11 +124,11 @@ export default function WorkList({ data, totalCount, filteredCount, currentPage 
 			<ListDisplayControls
 				title="作品一覧"
 				totalCount={totalCount}
-				filteredCount={hasFilters ? filteredCount : undefined}
+				filteredCount={filters.hasFilters ? filteredCount : undefined}
 				currentPage={currentPage}
 				totalPages={totalPages}
-				sortValue={sortBy}
-				onSortChange={handleSortChange}
+				sortValue={filters.sortBy}
+				onSortChange={filters.handleSortChange}
 				sortOptions={[
 					{ value: "newest", label: "新しい順" },
 					{ value: "oldest", label: "古い順" },
@@ -269,8 +136,8 @@ export default function WorkList({ data, totalCount, filteredCount, currentPage 
 					{ value: "price_low", label: "価格安い順" },
 					{ value: "price_high", label: "価格高い順" },
 				]}
-				itemsPerPageValue={itemsPerPageValue}
-				onItemsPerPageChange={handleItemsPerPageChange}
+				itemsPerPageValue={filters.itemsPerPageValue}
+				onItemsPerPageChange={filters.handleItemsPerPageChange}
 			/>
 
 			{/* 作品一覧 */}

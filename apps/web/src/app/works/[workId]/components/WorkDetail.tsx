@@ -77,40 +77,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 			: undefined);
 	const isOnSale = work.price.discount && work.price.discount > 0;
 
-	// 日付フォーマット
-	const _formatDate = (dateString: string) => {
-		try {
-			// 日本語形式の日付（例: "2024年04月27日"）をパース
-			const japaneseMatch = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-			if (japaneseMatch) {
-				const [, year, month, day] = japaneseMatch;
-				const date = new Date(Number(year), Number(month) - 1, Number(day));
-				return date.toLocaleDateString("ja-JP", {
-					timeZone: "Asia/Tokyo",
-					year: "numeric",
-					month: "long",
-					day: "numeric",
-				});
-			}
-
-			// ISO形式やその他の形式を試す
-			const date = new Date(dateString);
-			if (!Number.isNaN(date.getTime())) {
-				return date.toLocaleDateString("ja-JP", {
-					timeZone: "Asia/Tokyo",
-					year: "numeric",
-					month: "long",
-					day: "numeric",
-				});
-			}
-
-			// パースできない場合は元の文字列を返す
-			return dateString;
-		} catch {
-			return dateString;
-		}
-	};
-
 	// ランキング情報は現在利用できません
 	const latestRank = undefined;
 
@@ -298,12 +264,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 
 								return (
 									<div>
-										<div className="text-sm font-medium text-gray-700 mb-2">
-											ジャンル
-											{(apiGenres.length > 0 || apiCustomGenres.length > 0) && (
-												<span className="text-xs text-gray-500 ml-1">(API準拠)</span>
-											)}
-										</div>
+										<div className="text-sm font-medium text-gray-700 mb-2">ジャンル</div>
 										<div className="flex flex-wrap gap-2">
 											{/* 標準ジャンル */}
 											{apiGenres.map((genre, index) => (
@@ -311,7 +272,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													key={`api-${typeof genre === "string" ? genre : genre.name || index}`}
 													variant="outline"
 													className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
-													title="Individual Info API標準ジャンル"
 												>
 													<Tag className="h-3 w-3" />
 													{typeof genre === "string" ? genre : genre.name}
@@ -323,7 +283,6 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 													key={`custom-${typeof genre === "string" ? genre : genre.name || index}`}
 													variant="outline"
 													className="border-secondary/30 text-secondary-foreground bg-secondary/10 flex items-center gap-1"
-													title="Individual Info APIカスタムジャンル"
 												>
 													<Tag className="h-3 w-3" />
 													{typeof genre === "string" ? genre : genre.name}
