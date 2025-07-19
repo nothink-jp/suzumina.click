@@ -216,7 +216,7 @@ describe("AudioButton", () => {
 
 		// 高評価ボタンが liked 状態になっていることを確認
 		const likeButton = screen.getByText("2").closest("button");
-		expect(likeButton).toHaveClass("text-red-600");
+		expect(likeButton).toHaveClass("text-suzuka-600");
 	});
 
 	it("should handle detail click", async () => {

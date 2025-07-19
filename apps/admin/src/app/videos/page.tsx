@@ -213,7 +213,9 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						<CardTitle className="text-sm font-medium">総再生数</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold text-blue-600">{formatNumber(stats.totalViews)}</div>
+						<div className="text-2xl font-bold text-suzuka-600">
+							{formatNumber(stats.totalViews)}
+						</div>
 					</CardContent>
 				</Card>
 
@@ -222,7 +224,9 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						<CardTitle className="text-sm font-medium">総いいね数</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold text-pink-600">{formatNumber(stats.totalLikes)}</div>
+						<div className="text-2xl font-bold text-suzuka-600">
+							{formatNumber(stats.totalLikes)}
+						</div>
 					</CardContent>
 				</Card>
 
@@ -242,7 +246,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						<CardTitle className="text-sm font-medium">データ同期</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<Badge variant="outline" className="text-green-600 border-green-600">
+						<Badge variant="outline" className="text-minase-600 border-minase-600">
 							自動実行中
 						</Badge>
 					</CardContent>

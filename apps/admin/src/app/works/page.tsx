@@ -260,7 +260,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 						<CardTitle className="text-sm font-medium">販売中</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold text-green-600">{stats.onSale}</div>
+						<div className="text-2xl font-bold text-minase-600">{stats.onSale}</div>
 					</CardContent>
 				</Card>
 
@@ -269,7 +269,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 						<CardTitle className="text-sm font-medium">総額</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-lg font-bold text-blue-600">
+						<div className="text-lg font-bold text-suzuka-600">
 							¥{stats.totalValue.toLocaleString()}
 						</div>
 					</CardContent>
@@ -350,7 +350,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 										</TableCell>
 										<TableCell>
 											<div className="flex items-center gap-1 text-sm">
-												<Star className="h-3 w-3 text-yellow-500" />
+												<Star className="h-3 w-3 text-minase-500" />
 												{formatRating(work.rating)}
 												<span className="text-muted-foreground">({work.rating.count})</span>
 											</div>
@@ -378,7 +378,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 										</TableCell>
 										<TableCell>
 											{work.isOnSale ? (
-												<Badge variant="outline" className="text-green-600 border-green-600">
+												<Badge variant="outline" className="text-minase-600 border-minase-600">
 													販売中
 												</Badge>
 											) : (

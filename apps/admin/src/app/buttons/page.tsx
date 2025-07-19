@@ -225,7 +225,7 @@ export default async function ButtonsPage({ searchParams }: ButtonsPageProps) {
 						<CardTitle className="text-sm font-medium">公開</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold text-green-600">{stats.public}</div>
+						<div className="text-2xl font-bold text-minase-600">{stats.public}</div>
 					</CardContent>
 				</Card>
 
@@ -243,7 +243,7 @@ export default async function ButtonsPage({ searchParams }: ButtonsPageProps) {
 						<CardTitle className="text-sm font-medium">総再生数</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold text-blue-600">{stats.totalPlays}</div>
+						<div className="text-2xl font-bold text-suzuka-600">{stats.totalPlays}</div>
 					</CardContent>
 				</Card>
 
@@ -252,7 +252,7 @@ export default async function ButtonsPage({ searchParams }: ButtonsPageProps) {
 						<CardTitle className="text-sm font-medium">総いいね</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold text-pink-600">{stats.totalLikes}</div>
+						<div className="text-2xl font-bold text-suzuka-600">{stats.totalLikes}</div>
 					</CardContent>
 				</Card>
 
@@ -261,7 +261,7 @@ export default async function ButtonsPage({ searchParams }: ButtonsPageProps) {
 						<CardTitle className="text-sm font-medium">お気に入り</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold text-yellow-600">{stats.totalFavorites}</div>
+						<div className="text-2xl font-bold text-minase-600">{stats.totalFavorites}</div>
 					</CardContent>
 				</Card>
 			</div>
@@ -340,7 +340,7 @@ export default async function ButtonsPage({ searchParams }: ButtonsPageProps) {
 										</TableCell>
 										<TableCell>
 											{button.isPublic ? (
-												<Badge variant="outline" className="text-green-600 border-green-600">
+												<Badge variant="outline" className="text-minase-600 border-minase-600">
 													公開
 												</Badge>
 											) : (

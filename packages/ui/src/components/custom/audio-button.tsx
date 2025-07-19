@@ -190,7 +190,9 @@ function AudioButtonPopoverContent({
 						title={!isAuthenticated ? "お気に入りするにはログインが必要です" : undefined}
 						className={cn(
 							"flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
-							isFavorite && "text-red-600",
+							isFavorite
+								? "text-suzuka-600 hover:text-suzuka-700"
+								: "text-muted-foreground hover:text-suzuka-600",
 							!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
 						)}
 					>
@@ -214,7 +216,9 @@ function AudioButtonPopoverContent({
 							title={!isAuthenticated ? "高評価するにはログインが必要です" : undefined}
 							className={cn(
 								"flex items-center gap-1 px-3 py-2 text-sm font-medium border-0 rounded-l-md rounded-r-none border-r border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
-								isLiked && "text-red-600",
+								isLiked
+									? "text-suzuka-600 hover:text-suzuka-700"
+									: "text-muted-foreground hover:text-suzuka-600",
 								!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
 							)}
 						>
@@ -241,7 +245,9 @@ function AudioButtonPopoverContent({
 							}
 							className={cn(
 								"flex items-center justify-center w-10 h-10 border-0 rounded-r-md rounded-l-none bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
-								isDisliked && "text-blue-600",
+								isDisliked
+									? "text-gray-600 hover:text-gray-700"
+									: "text-muted-foreground hover:text-gray-600",
 								!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
 							)}
 						>

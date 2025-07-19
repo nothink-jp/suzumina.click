@@ -629,4 +629,33 @@ describe("canCreateAudioButton with duration logic", () => {
 			"配信中は音声ボタンを作成できません",
 		);
 	});
+
+	it("配信予定の動画は作成不可", () => {
+		const upcomingVideo: FrontendVideoData = {
+			...baseVideo,
+			liveBroadcastContent: "upcoming",
+			duration: "PT30M",
+		};
+
+		expect(canCreateAudioButton(upcomingVideo)).toBe(false);
+		expect(getAudioButtonCreationErrorMessage(upcomingVideo)).toBe(
+			"配信開始前は音声ボタンを作成できません",
+		);
+	});
+
+	it("プレミア公開動画（actualEndTimeなし）は作成不可", () => {
+		const premiereVideo: FrontendVideoData = {
+			...baseVideo,
+			duration: "PT30M",
+			liveStreamingDetails: {
+				actualStartTime: "2024-01-01T10:00:00Z",
+				// actualEndTime なし（プレミア公開）
+			},
+		};
+
+		expect(canCreateAudioButton(premiereVideo)).toBe(false);
+		expect(getAudioButtonCreationErrorMessage(premiereVideo)).toBe(
+			"プレミア公開動画は著作権の関係上、音声ボタンの作成はできません",
+		);
+	});
 });

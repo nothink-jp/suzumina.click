@@ -141,7 +141,7 @@ export default async function AdminDashboard() {
 						mainLabel="YouTube動画"
 						additionalInfo={
 							<>
-								<TrendingUp className="h-3 w-3 text-green-500" />
+								<TrendingUp className="h-3 w-3 text-minase-600" />
 								<span className="text-xs text-muted-foreground">自動収集中</span>
 							</>
 						}
@@ -159,7 +159,7 @@ export default async function AdminDashboard() {
 						mainLabel="DLsite作品"
 						additionalInfo={
 							<>
-								<TrendingUp className="h-3 w-3 text-green-500" />
+								<TrendingUp className="h-3 w-3 text-minase-600" />
 								<span className="text-xs text-muted-foreground">自動収集中</span>
 							</>
 						}
@@ -188,7 +188,7 @@ export default async function AdminDashboard() {
 					<StatCard
 						title="お気に入り管理"
 						icon={Heart}
-						iconColor="text-red-500"
+						iconColor="text-suzuka-600"
 						mainValue={stats.favorites.total}
 						mainLabel="総お気に入り"
 						additionalInfo={

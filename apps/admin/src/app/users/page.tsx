@@ -200,7 +200,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
 							<CardTitle className="text-sm font-medium">アクティブ</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="text-2xl font-bold text-green-600">{stats.active}</div>
+							<div className="text-2xl font-bold text-minase-600">{stats.active}</div>
 						</CardContent>
 					</Card>
 
