@@ -450,7 +450,7 @@ export function SearchFilters({
 														年齢制限フィルター
 													</Label>
 													{!isAdult && (
-														<span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+														<span className="text-xs text-suzuka-600 bg-suzuka-50 px-2 py-1 rounded-full">
 															全年齢のみ
 														</span>
 													)}
@@ -475,12 +475,12 @@ export function SearchFilters({
 														/>
 													</div>
 												) : (
-													<div className="text-sm text-muted-foreground p-3 bg-blue-50 rounded-lg border border-blue-200">
-														<div className="flex items-center gap-2 text-blue-700">
+													<div className="text-sm text-muted-foreground p-3 bg-suzuka-50 rounded-lg border border-suzuka-200">
+														<div className="flex items-center gap-2 text-suzuka-700">
 															<Shield className="h-4 w-4" />
 															<span className="font-medium">全年齢対象作品のみ表示中</span>
 														</div>
-														<div className="mt-1 text-xs text-blue-600">
+														<div className="mt-1 text-xs text-suzuka-600">
 															年齢制限のない作品のみが表示されます
 														</div>
 													</div>

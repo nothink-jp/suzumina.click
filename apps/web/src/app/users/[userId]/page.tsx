@@ -1,3 +1,4 @@
+import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
@@ -64,7 +65,12 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 	const isAdmin = currentUser?.role === "admin";
 
 	// ユーザーが作成した音声ボタンを取得
-	const audioButtons = await getAudioButtonsByUser(resolvedParams.userId);
+	let audioButtons: FrontendAudioButtonData[] = [];
+	try {
+		audioButtons = await getAudioButtonsByUser(resolvedParams.userId);
+	} catch (_error) {
+		// エラーが発生しても空の配列で続行
+	}
 
 	// お気に入り数を取得（自分のプロフィールの場合のみ）
 	let favoritesCount = 0;

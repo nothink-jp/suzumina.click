@@ -300,23 +300,23 @@ const VideoCard = memo(function VideoCard({
 						</div>
 					)}
 				</div>
-				<div className="p-3 sm:p-4 flex flex-col flex-1">
+				<div className="p-4 flex flex-col flex-1">
 					<Link href={`/videos/${video.id}`} className="block group">
 						<h3
 							id={`video-title-${video.id}`}
-							className="font-semibold text-base sm:text-lg mb-2 line-clamp-2 group-hover:text-foreground/80 transition-colors text-foreground"
+							className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-foreground/80 transition-colors text-foreground"
 						>
 							{video.title}
 						</h3>
 					</Link>
 					<p
 						id={`video-desc-${video.id}`}
-						className="text-xs sm:text-sm text-muted-foreground mb-3 line-clamp-2 flex-1"
+						className="text-sm text-muted-foreground mb-3 line-clamp-2 flex-1"
 					>
 						{video.description}
 					</p>
-					<div className="flex items-center text-xs sm:text-sm text-muted-foreground mb-3">
-						<Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
+					<div className="flex items-center text-sm text-muted-foreground mb-3">
+						<Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
 						<time dateTime={dateTimeValue} title={`${displayLabel}: ${formattedDate}`}>
 							{formattedDate}
 						</time>
@@ -341,30 +341,25 @@ const VideoCard = memo(function VideoCard({
 					{/* アクションボタン */}
 					{isGrid ? (
 						canCreateButton ? (
-							<fieldset className="flex gap-1 sm:gap-2" aria-label="動画アクション">
+							<fieldset className="flex gap-2" aria-label="動画アクション">
 								<Button
 									size="sm"
 									variant="outline"
-									className="flex-1 border text-muted-foreground hover:bg-accent min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
+									className="flex-1 border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
 									asChild
 								>
 									<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-										<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
+										<Eye className="h-4 w-4 mr-1" aria-hidden="true" />
 										詳細を見る
 									</Link>
 								</Button>
-								<Button
-									size="sm"
-									variant="default"
-									className="flex-1 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
-									asChild
-								>
+								<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
 									<Link
 										href={`/buttons/create?video_id=${video.id}`}
 										aria-label={`${video.title}の音声ボタンを作成`}
 										className="flex items-center whitespace-nowrap"
 									>
-										<Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
+										<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
 										ボタン作成
 									</Link>
 								</Button>
@@ -373,11 +368,11 @@ const VideoCard = memo(function VideoCard({
 							<Button
 								size="sm"
 								variant="outline"
-								className="w-full border text-muted-foreground hover:bg-accent min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
+								className="w-full border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
 								asChild
 							>
 								<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-									<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
+									<Eye className="h-4 w-4 mr-1" aria-hidden="true" />
 									詳細を見る
 								</Link>
 							</Button>

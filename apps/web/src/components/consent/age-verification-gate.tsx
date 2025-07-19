@@ -59,26 +59,28 @@ export function AgeVerificationGate({ children }: AgeVerificationGateProps) {
 	if (showMinorMessage) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-suzuka-50 via-background to-minase-50 p-4">
-				<Card className="w-full max-w-md mx-auto bg-white/95 backdrop-blur-sm shadow-xl">
+				<Card className="w-full max-w-md mx-auto bg-card/95 backdrop-blur-sm shadow-xl">
 					<CardHeader className="text-center pb-4">
-						<div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-							<Shield className="h-8 w-8 text-blue-600" />
+						<div className="mx-auto w-16 h-16 bg-suzuka-100 rounded-full flex items-center justify-center mb-4">
+							<Shield className="h-8 w-8 text-suzuka-600" />
 						</div>
-						<CardTitle className="text-xl font-bold text-gray-900">ありがとうございます</CardTitle>
+						<CardTitle className="text-xl font-bold text-foreground">
+							ありがとうございます
+						</CardTitle>
 					</CardHeader>
 
 					<CardContent className="space-y-6">
 						<div className="text-center space-y-4">
-							<p className="text-sm text-gray-600 leading-relaxed">
+							<p className="text-sm text-muted-foreground leading-relaxed">
 								安全なご利用のため、年齢制限のない
 								<br />
 								コンテンツのみご利用いただけます。
 							</p>
-							<div className="flex items-center justify-center gap-2 text-xs text-blue-600">
+							<div className="flex items-center justify-center gap-2 text-xs text-suzuka-600">
 								<Heart className="h-3 w-3" />
 								<span>全年齢対象のコンテンツをお楽しみください</span>
 							</div>
-							<div className="text-xs text-gray-400 text-center">
+							<div className="text-xs text-muted-foreground/70 text-center">
 								3秒後にトップページに移動します...
 							</div>
 						</div>
@@ -92,22 +94,22 @@ export function AgeVerificationGate({ children }: AgeVerificationGateProps) {
 	if (!isAgeVerified) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-suzuka-50 via-background to-minase-50 p-4">
-				<Card className="w-full max-w-md mx-auto bg-white/95 backdrop-blur-sm shadow-xl">
+				<Card className="w-full max-w-md mx-auto bg-card/95 backdrop-blur-sm shadow-xl">
 					<CardHeader className="text-center pb-4">
 						<div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
 							<AlertTriangle className="h-8 w-8 text-amber-600" />
 						</div>
-						<CardTitle className="text-xl font-bold text-gray-900">年齢確認</CardTitle>
+						<CardTitle className="text-xl font-bold text-foreground">年齢確認</CardTitle>
 					</CardHeader>
 
 					<CardContent className="space-y-6">
 						<div className="text-center space-y-3">
-							<p className="text-sm text-gray-600 leading-relaxed">
+							<p className="text-sm text-muted-foreground leading-relaxed">
 								このサイトには18歳未満の方には適さない
 								<br />
 								コンテンツが含まれています。
 							</p>
-							<div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+							<div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
 								<Calendar className="h-3 w-3" />
 								<span>あなたは18歳以上ですか？</span>
 							</div>
@@ -117,7 +119,7 @@ export function AgeVerificationGate({ children }: AgeVerificationGateProps) {
 							<Button
 								variant="outline"
 								onClick={() => handleAgeConfirmation(false)}
-								className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+								className="w-full border-suzuka-200 text-suzuka-700 hover:bg-suzuka-50"
 							>
 								18歳未満
 							</Button>
@@ -129,7 +131,7 @@ export function AgeVerificationGate({ children }: AgeVerificationGateProps) {
 							</Button>
 						</div>
 
-						<div className="text-xs text-gray-400 text-center leading-relaxed">
+						<div className="text-xs text-muted-foreground text-center leading-relaxed">
 							この確認は法的要件に基づくものです。
 							<br />
 							30日間記憶され、期限後に再確認が必要です。

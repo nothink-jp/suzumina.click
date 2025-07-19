@@ -73,7 +73,7 @@ function CharacteristicAxisDisplay({ label, leftLabel, rightLabel, value }: Axis
 		<div className="space-y-2">
 			{/* 軸ラベル */}
 			<div className="flex justify-between items-center">
-				<h4 className="text-sm font-medium text-gray-700">{label}</h4>
+				<h4 className="text-sm font-medium text-foreground">{label}</h4>
 				{evaluatorCount > 0 && (
 					<Badge variant="secondary" className="text-xs">
 						{evaluatorCount}件の評価
@@ -82,7 +82,7 @@ function CharacteristicAxisDisplay({ label, leftLabel, rightLabel, value }: Axis
 			</div>
 
 			{/* 軸の範囲ラベル */}
-			<div className="flex justify-between text-xs text-gray-500 mb-1">
+			<div className="flex justify-between text-xs text-muted-foreground mb-1">
 				<span>{leftLabel}</span>
 				<span>{rightLabel}</span>
 			</div>
@@ -91,17 +91,17 @@ function CharacteristicAxisDisplay({ label, leftLabel, rightLabel, value }: Axis
 			<div className="relative">
 				<Progress value={percentage} className="h-3" style={{ opacity }} />
 				{/* 中央線 */}
-				<div className="absolute top-0 left-1/2 transform -translate-x-px h-3 w-0.5 bg-gray-400 opacity-50" />
+				<div className="absolute top-0 left-1/2 transform -translate-x-px h-3 w-0.5 bg-border opacity-50" />
 				{/* 値のインジケーター */}
 				<div
-					className="absolute top-0 h-3 w-1 bg-gray-800 transform -translate-x-0.5"
+					className="absolute top-0 h-3 w-1 bg-foreground transform -translate-x-0.5"
 					style={{ left: `${percentage}%` }}
 				/>
 			</div>
 
 			{/* 数値表示 */}
 			<div className="flex justify-center">
-				<span className="text-xs text-gray-600">
+				<span className="text-xs text-muted-foreground">
 					{evaluatorCount > 0 ? axisValue.toFixed(1) : "未評価"}
 				</span>
 			</div>
@@ -159,7 +159,7 @@ export default function CharacteristicEvaluation({
 							<CardTitle>総合評価統計</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div className="text-center text-gray-500 py-4">
+							<div className="text-center text-muted-foreground py-4">
 								<p>まだ評価データがありません</p>
 								<p className="text-sm mt-1">
 									ユーザーが評価を投稿すると、ここに統計情報が表示されます
@@ -191,22 +191,22 @@ export default function CharacteristicEvaluation({
 					<CardContent>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="text-center">
-								<div className="text-2xl font-bold text-primary">
+								<div className="text-2xl font-bold text-suzuka-600">
 									{characteristics.overall.averageRating.toFixed(1)}
 								</div>
-								<div className="text-sm text-gray-600">平均評価</div>
+								<div className="text-sm text-muted-foreground">平均評価</div>
 							</div>
 							<div className="text-center">
-								<div className="text-2xl font-bold text-gray-900">
+								<div className="text-2xl font-bold text-foreground">
 									{characteristics.overall.totalEvaluations}
 								</div>
-								<div className="text-sm text-gray-600">総評価数</div>
+								<div className="text-sm text-muted-foreground">総評価数</div>
 							</div>
 							<div className="text-center">
-								<div className="text-2xl font-bold text-green-600">
+								<div className="text-2xl font-bold text-minase-600">
 									{(characteristics.overall.recommendationRate * 100).toFixed(0)}%
 								</div>
-								<div className="text-sm text-gray-600">推奨率</div>
+								<div className="text-sm text-muted-foreground">推奨率</div>
 							</div>
 						</div>
 					</CardContent>
@@ -239,7 +239,7 @@ export default function CharacteristicEvaluation({
 
 			{/* 最終更新情報 */}
 			{characteristics.lastUpdated && (
-				<div className="text-center text-sm text-gray-500 mt-4">
+				<div className="text-center text-sm text-muted-foreground mt-4">
 					最終更新: {new Date(characteristics.lastUpdated).toLocaleDateString("ja-JP")}
 				</div>
 			)}

@@ -152,7 +152,9 @@ export function LikeDislikeButtons({
 				onClick={handleLikeToggle}
 				disabled={isPending || !isAuthenticated}
 				className={`flex items-center gap-1 border-0 rounded-l-md rounded-r-none border-r border-input ${
-					isLiked ? "text-red-600 hover:text-red-700" : "text-muted-foreground hover:text-red-600"
+					isLiked
+						? "text-suzuka-600 hover:text-suzuka-700"
+						: "text-muted-foreground hover:text-suzuka-600"
 				}`}
 				title={
 					!isAuthenticated
@@ -176,8 +178,8 @@ export function LikeDislikeButtons({
 				disabled={isPending || !isAuthenticated}
 				className={`flex items-center justify-center border-0 rounded-r-md rounded-l-none ${
 					isDisliked
-						? "text-blue-600 hover:text-blue-700"
-						: "text-muted-foreground hover:text-blue-600"
+						? "text-gray-600 hover:text-gray-700"
+						: "text-muted-foreground hover:text-gray-600"
 				}`}
 				title={
 					!isAuthenticated

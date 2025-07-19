@@ -57,9 +57,9 @@ function SuggestionItem({
 				</div>
 
 				<div className="min-w-0 flex-1">
-					<div className="text-sm font-medium text-gray-900 truncate">{suggestion.text}</div>
+					<div className="text-sm font-medium text-foreground truncate">{suggestion.text}</div>
 					{suggestion.category && (
-						<div className="text-xs text-gray-500">{suggestion.category}</div>
+						<div className="text-xs text-muted-foreground">{suggestion.category}</div>
 					)}
 				</div>
 			</div>
@@ -73,7 +73,7 @@ function SuggestionItem({
 				</Badge>
 
 				{suggestion.count !== undefined && suggestion.count > 0 && suggestion.count !== 999 && (
-					<span className="text-xs text-gray-400">{suggestion.count}</span>
+					<span className="text-xs text-muted-foreground/70">{suggestion.count}</span>
 				)}
 			</div>
 		</div>

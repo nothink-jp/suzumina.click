@@ -100,7 +100,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 						</div>
 					)}
 				</div>
-				<div className="p-3 sm:p-4 flex flex-col flex-1">
+				<div className="p-4 flex flex-col flex-1">
 					<Link
 						href={`/works/${work.id}`}
 						className="block group"
@@ -109,13 +109,13 @@ export default function WorkCard({ work, variant = "default", priority = false }
 						<h4
 							id={`work-title-${work.id}`}
 							className={`font-semibold mb-1 line-clamp-2 group-hover:text-foreground/80 transition-colors text-foreground ${
-								isCompact ? "text-sm sm:text-base" : "text-xs sm:text-sm"
+								isCompact ? "text-base" : "text-sm"
 							}`}
 						>
 							{work.title}
 						</h4>
 					</Link>
-					<p className="text-xs sm:text-sm text-muted-foreground mb-2">{work.circle}</p>
+					<p className="text-sm text-muted-foreground mb-2">{work.circle}</p>
 
 					{/* ジャンル表示 */}
 					<ul className="flex flex-wrap gap-1 mb-2" aria-label="作品ジャンル">
@@ -158,7 +158,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 					})()}
 
 					{/* 発売日 */}
-					<div className="flex items-center text-xs sm:text-sm mb-2">
+					<div className="flex items-center text-sm mb-2">
 						<Calendar className="h-4 w-4 text-muted-foreground mr-1" aria-hidden="true" />
 						{(() => {
 							// 統合された releaseDate を優先、次に registDate を使用
@@ -180,10 +180,10 @@ export default function WorkCard({ work, variant = "default", priority = false }
 								<div>
 									{isOnSale && originalPrice ? (
 										<div className="flex items-center gap-2">
-											<span className="text-base sm:text-lg font-bold text-destructive">
+											<span className="text-lg font-bold text-destructive">
 												¥{currentPrice.toLocaleString()}
 											</span>
-											<span className="text-xs sm:text-sm text-muted-foreground line-through">
+											<span className="text-sm text-muted-foreground line-through">
 												¥{originalPrice.toLocaleString()}
 											</span>
 											<Badge className="bg-destructive/10 text-destructive text-xs">
@@ -191,7 +191,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 											</Badge>
 										</div>
 									) : (
-										<span className="text-base sm:text-lg font-bold text-foreground">
+										<span className="text-lg font-bold text-foreground">
 											¥{currentPrice.toLocaleString()}
 										</span>
 									)}
@@ -201,11 +201,11 @@ export default function WorkCard({ work, variant = "default", priority = false }
 					)}
 
 					{/* アクションボタン */}
-					<fieldset className="flex gap-1 sm:gap-2 mt-auto" aria-label="作品アクション">
+					<fieldset className="flex gap-2 mt-auto" aria-label="作品アクション">
 						<Button
 							size="sm"
 							variant="outline"
-							className="flex-1 border text-muted-foreground hover:bg-accent min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
+							className="flex-1 border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
 							asChild
 						>
 							<Link href={`/works/${work.id}`} aria-describedby={`work-title-${work.id}`}>
@@ -214,7 +214,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 						</Button>
 						<Button
 							size="sm"
-							className="bg-destructive hover:bg-destructive/90 text-white min-h-[40px] sm:min-h-[44px] min-w-[40px] sm:min-w-[44px] px-2 sm:px-3"
+							className="bg-destructive hover:bg-destructive/90 text-white min-h-[44px] min-w-[44px] px-3"
 							asChild
 						>
 							<a
@@ -223,7 +223,7 @@ export default function WorkCard({ work, variant = "default", priority = false }
 								rel="noopener noreferrer"
 								aria-label={`${work.title}をDLsiteで購入`}
 							>
-								<ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+								<ExternalLink className="h-4 w-4" aria-hidden="true" />
 							</a>
 						</Button>
 					</fieldset>

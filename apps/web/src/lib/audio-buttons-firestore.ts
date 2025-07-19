@@ -74,40 +74,84 @@ export async function getAudioButtonsByUser(
 		const firestore = getFirestore();
 		const { limit = 20, onlyPublic = true, orderBy = "newest" } = options;
 
-		let query: Query = firestore.collection("audioButtons").where("createdBy", "==", discordId);
+		let snapshot: FirebaseFirestore.QuerySnapshot;
 
-		// 公開のみのフィルター
-		if (onlyPublic) {
-			query = query.where("isPublic", "==", true);
+		try {
+			// まず最適化されたクエリを試行
+			let query: Query = firestore.collection("audioButtons").where("createdBy", "==", discordId);
+
+			// デフォルトは作成日順のソートのみ（最もシンプルなインデックス）
+			if (orderBy === "newest" || orderBy === "oldest") {
+				const direction = orderBy === "newest" ? "desc" : "asc";
+				query = query.orderBy("createdAt", direction);
+			}
+
+			// 制限を大きめに設定して、後でフィルタリング
+			query = query.limit(limit * 2);
+
+			snapshot = await query.get();
+		} catch (indexError) {
+			// インデックスエラーの場合、最もシンプルなクエリにフォールバック
+			logError("Index error, falling back to simple query:", {
+				discordId,
+				indexError: indexError instanceof Error ? indexError.message : String(indexError),
+			});
+
+			const simpleQuery = firestore.collection("audioButtons").where("createdBy", "==", discordId);
+			snapshot = await simpleQuery.get();
 		}
+		let audioButtons = snapshot.docs
+			.map((doc) => {
+				try {
+					const data = doc.data() as FirestoreAudioButtonData;
+					return convertToFrontendAudioButton({ ...data, id: doc.id });
+				} catch (conversionError) {
+					logError("Failed to convert audio button data:", {
+						docId: doc.id,
+						error:
+							conversionError instanceof Error ? conversionError.message : String(conversionError),
+					});
+					return null;
+				}
+			})
+			.filter((button): button is FrontendAudioButtonData => button !== null)
+			.filter((button) => {
+				// 公開のみのフィルター（クライアント側で適用）
+				if (onlyPublic && !button.isPublic) {
+					return false;
+				}
+				return true;
+			});
 
-		// ソート設定（Firestoreインデックスが必要）
+		// クライアント側でソート（フォールバック時や再生数順の場合）
 		switch (orderBy) {
 			case "newest":
-				query = query.orderBy("createdAt", "desc");
+				audioButtons.sort(
+					(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+				);
 				break;
 			case "oldest":
-				query = query.orderBy("createdAt", "asc");
+				audioButtons.sort(
+					(a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+				);
 				break;
 			case "mostPlayed":
-				query = query.orderBy("playCount", "desc");
+				audioButtons.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
 				break;
 		}
 
-		query = query.limit(limit);
-
-		const snapshot = await query.get();
-		const audioButtons = snapshot.docs.map((doc) => {
-			const data = doc.data() as FirestoreAudioButtonData;
-			return convertToFrontendAudioButton({ ...data, id: doc.id });
-		});
+		// 最終的な制限を適用
+		audioButtons = audioButtons.slice(0, limit);
 
 		return audioButtons;
 	} catch (error) {
-		// 開発環境でのみエラーログを出力
-		if (process.env.NODE_ENV === "development") {
-			logError("getAudioButtonsByUser error:", { discordId, error });
-		}
+		// エラーログを詳細に出力
+		logError("getAudioButtonsByUser error:", {
+			discordId,
+			options,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
 		throw new Error("音声ボタン一覧の取得に失敗しました");
 	}
 }

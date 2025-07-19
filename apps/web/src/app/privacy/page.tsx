@@ -26,9 +26,9 @@ export default function PrivacyPage() {
 							suzumina.clickは、ユーザーの皆様の個人情報保護を重要と考え、
 							個人情報保護法およびその他関連法令を遵守し、適切な取扱いに努めます。
 						</p>
-						<div className="bg-orange-50 p-4 rounded-lg">
-							<h4 className="font-semibold text-orange-800 mb-2">重要なお知らせ</h4>
-							<p className="text-sm text-orange-700">
+						<div className="bg-minase-50 p-4 rounded-lg">
+							<h4 className="font-semibold text-minase-800 mb-2">重要なお知らせ</h4>
+							<p className="text-sm text-minase-700">
 								個人運営のため、企業レベルの完全な保護は保証できません。
 								最小限の情報収集に留め、可能な限り安全な管理に努めています。
 							</p>
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
 						<div className="space-y-4">
 							<div>
 								<h4 className="font-semibold text-foreground">自動収集情報</h4>
-								<div className="bg-gray-50 p-3 rounded-lg mt-2">
+								<div className="bg-muted/50 p-3 rounded-lg mt-2">
 									<ul className="text-sm text-muted-foreground space-y-1">
 										<li>• IPアドレス</li>
 										<li>• ブラウザ情報（User Agent）</li>
@@ -61,17 +61,19 @@ export default function PrivacyPage() {
 							<div>
 								<h4 className="font-semibold text-foreground">ユーザー提供情報</h4>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-									<div className="bg-blue-50 p-3 rounded-lg">
-										<h5 className="font-semibold text-blue-800 text-sm">Discord認証情報</h5>
-										<ul className="text-xs text-blue-700 mt-1 space-y-1">
+									<div className="bg-suzuka-50 p-3 rounded-lg">
+										<h5 className="font-semibold text-suzuka-800 text-sm">Discord認証情報</h5>
+										<ul className="text-xs text-suzuka-700 mt-1 space-y-1">
 											<li>• DiscordユーザーID</li>
 											<li>• ユーザー名</li>
 											<li>• ギルドメンバーシップ状況</li>
 										</ul>
 									</div>
-									<div className="bg-green-50 p-3 rounded-lg">
-										<h5 className="font-semibold text-green-800 text-sm">ユーザー作成コンテンツ</h5>
-										<ul className="text-xs text-green-700 mt-1 space-y-1">
+									<div className="bg-minase-50 p-3 rounded-lg">
+										<h5 className="font-semibold text-minase-800 text-sm">
+											ユーザー作成コンテンツ
+										</h5>
+										<ul className="text-xs text-minase-700 mt-1 space-y-1">
 											<li>• 作成した音声ボタンデータ</li>
 											<li>• お問い合わせ内容（任意）</li>
 											<li>• メールアドレス（任意）</li>
@@ -129,7 +131,7 @@ export default function PrivacyPage() {
 						<p className="text-foreground">以下の第三者サービスを利用しています：</p>
 						<div className="space-y-4">
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div className="border p-4 rounded-lg">
+								<div className="border border-suzuka-200 p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">Google Cloud Platform</Badge>
 									</h4>
@@ -148,7 +150,7 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border p-4 rounded-lg">
+								<div className="border border-suzuka-200 p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">Discord OAuth</Badge>
 									</h4>
@@ -167,7 +169,7 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border p-4 rounded-lg">
+								<div className="border border-suzuka-200 p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">YouTube Data API</Badge>
 									</h4>
@@ -186,7 +188,7 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border p-4 rounded-lg">
+								<div className="border border-suzuka-200 p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">DLsite</Badge>
 									</h4>
@@ -205,7 +207,7 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border p-4 rounded-lg">
+								<div className="border border-suzuka-200 p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">Google Analytics 4</Badge>
 									</h4>
@@ -224,7 +226,7 @@ export default function PrivacyPage() {
 										</p>
 									</div>
 								</div>
-								<div className="border p-4 rounded-lg">
+								<div className="border border-suzuka-200 p-4 rounded-lg">
 									<h4 className="font-semibold text-foreground flex items-center gap-2">
 										<Badge variant="outline">Google Tag Manager</Badge>
 									</h4>
@@ -274,9 +276,9 @@ export default function PrivacyPage() {
 							</div>
 							<div>
 								<h4 className="font-semibold text-foreground">分析・広告Cookie</h4>
-								<div className="bg-blue-50 p-3 rounded-lg mt-2">
-									<h5 className="font-semibold text-blue-800 text-sm mb-2">Google Analytics 4</h5>
-									<ul className="text-xs text-blue-700 space-y-1">
+								<div className="bg-suzuka-50 p-3 rounded-lg mt-2">
+									<h5 className="font-semibold text-suzuka-800 text-sm mb-2">Google Analytics 4</h5>
+									<ul className="text-xs text-suzuka-700 space-y-1">
 										<li>• サイト利用状況の匿名化分析</li>
 										<li>• ユーザー体験の改善目的</li>
 										<li>• 同意管理により制御可能</li>
@@ -343,8 +345,8 @@ export default function PrivacyPage() {
 							</div>
 							<div>
 								<h4 className="font-semibold text-foreground">保存期間</h4>
-								<div className="bg-yellow-50 p-3 rounded-lg mt-2">
-									<ul className="text-sm text-yellow-800 space-y-1">
+								<div className="bg-minase-50 p-3 rounded-lg mt-2">
+									<ul className="text-sm text-minase-800 space-y-1">
 										<li>
 											• <strong>アカウント情報:</strong> アカウント削除まで
 										</li>
@@ -360,9 +362,9 @@ export default function PrivacyPage() {
 									</ul>
 								</div>
 							</div>
-							<div className="bg-red-50 p-4 rounded-lg">
-								<h4 className="font-semibold text-red-800 mb-2">個人運営の制約</h4>
-								<p className="text-sm text-red-700">
+							<div className="bg-destructive/10 p-4 rounded-lg">
+								<h4 className="font-semibold text-destructive mb-2">個人運営の制約</h4>
+								<p className="text-sm text-destructive/80">
 									個人運営のため、企業レベルの完全なデータ保護は保証できません。
 									技術的・物理的制約があることをご理解ください。
 								</p>

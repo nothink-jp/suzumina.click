@@ -32,21 +32,21 @@ export default function ContactPage() {
 
 			<div className="space-y-8">
 				{/* 重要なお知らせ */}
-				<Card className="border-orange-200 bg-orange-50">
+				<Card className="border-minase-200 bg-minase-50">
 					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-orange-700">
+						<CardTitle className="flex items-center gap-2 text-minase-700">
 							<AlertTriangle className="h-5 w-5" />
 							重要なお知らせ
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3 text-sm">
 						<div className="space-y-2">
-							<p className="text-orange-800">
+							<p className="text-minase-800">
 								• 個人が趣味で運営しているため、
 								<b>返信をお約束できません</b>
 							</p>
-							<p className="text-orange-800">• 緊急性のあるお問い合わせには対応できません</p>
-							<p className="text-orange-800">
+							<p className="text-minase-800">• 緊急性のあるお問い合わせには対応できません</p>
+							<p className="text-minase-800">
 								• 涼花みなせさんご本人や関係者様への連絡手段ではありません
 							</p>
 						</div>
@@ -60,32 +60,34 @@ export default function ContactPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="flex items-start gap-3 p-3 rounded-lg bg-red-50">
-								<Bug className="h-5 w-5 text-red-600 mt-0.5" />
+							<div className="flex items-start gap-3 p-3 rounded-lg bg-destructive/10">
+								<Bug className="h-5 w-5 text-destructive mt-0.5" />
 								<div>
-									<h4 className="font-semibold text-red-800">バグ報告</h4>
-									<p className="text-sm text-red-700">サイトの不具合や正常に動作しない機能</p>
+									<h4 className="font-semibold text-destructive">バグ報告</h4>
+									<p className="text-sm text-destructive/80">
+										サイトの不具合や正常に動作しない機能
+									</p>
 								</div>
 							</div>
-							<div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50">
-								<Lightbulb className="h-5 w-5 text-blue-600 mt-0.5" />
+							<div className="flex items-start gap-3 p-3 rounded-lg bg-suzuka-50">
+								<Lightbulb className="h-5 w-5 text-suzuka-600 mt-0.5" />
 								<div>
-									<h4 className="font-semibold text-blue-800">機能要望</h4>
-									<p className="text-sm text-blue-700">新機能の提案やサイト改善のご提案</p>
+									<h4 className="font-semibold text-suzuka-800">機能要望</h4>
+									<p className="text-sm text-suzuka-700">新機能の提案やサイト改善のご提案</p>
 								</div>
 							</div>
-							<div className="flex items-start gap-3 p-3 rounded-lg bg-green-50">
-								<HelpCircle className="h-5 w-5 text-green-600 mt-0.5" />
+							<div className="flex items-start gap-3 p-3 rounded-lg bg-minase-50">
+								<HelpCircle className="h-5 w-5 text-minase-600 mt-0.5" />
 								<div>
-									<h4 className="font-semibold text-green-800">使い方</h4>
-									<p className="text-sm text-green-700">サイトの使用方法に関するご質問</p>
+									<h4 className="font-semibold text-minase-800">使い方</h4>
+									<p className="text-sm text-minase-700">サイトの使用方法に関するご質問</p>
 								</div>
 							</div>
-							<div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
-								<MessageSquare className="h-5 w-5 text-gray-600 mt-0.5" />
+							<div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+								<MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5" />
 								<div>
-									<h4 className="font-semibold text-gray-800">その他</h4>
-									<p className="text-sm text-gray-700">上記以外のご意見・ご感想</p>
+									<h4 className="font-semibold text-foreground">その他</h4>
+									<p className="text-sm text-muted-foreground">上記以外のご意見・ご感想</p>
 								</div>
 							</div>
 						</div>

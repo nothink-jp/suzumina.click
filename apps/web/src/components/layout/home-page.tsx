@@ -52,17 +52,17 @@ export function HomePage({ initialAudioButtons }: HomePageProps) {
 
 						{/* プレビューリリース案内バナー */}
 						<div className="mt-6 sm:mt-8 mx-auto max-w-3xl">
-							<div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 sm:p-6">
+							<div className="bg-gradient-to-r from-suzuka-50 to-suzuka-100 border border-suzuka-200 rounded-lg p-4 sm:p-6">
 								<div className="flex items-start gap-3">
 									<div className="flex-shrink-0 mt-1">
 										<span className="text-2xl">🚀</span>
 									</div>
 									<div className="flex-1 space-y-3">
 										<div>
-											<h3 className="text-sm sm:text-base font-semibold text-blue-900 mb-2">
+											<h3 className="text-sm sm:text-base font-semibold text-suzuka-900 mb-2">
 												🎉 プレビューリリース中！
 											</h3>
-											<p className="text-sm text-blue-800 leading-relaxed">
+											<p className="text-sm text-suzuka-800 leading-relaxed">
 												現在、すずみなくりっく！はプレビューリリース段階です。
 												<br />
 												<strong className="font-semibold">音声ボタンの閲覧・利用は誰でも</strong>
@@ -76,12 +76,12 @@ export function HomePage({ initialAudioButtons }: HomePageProps) {
 												href="https://ci-en.dlsite.com/creator/9805"
 												target="_blank"
 												rel="noopener noreferrer"
-												className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+												className="inline-flex items-center gap-2 bg-suzuka-600 hover:bg-suzuka-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
 											>
 												<span>💝</span>
 												すずみなふぁみりーに参加する
 											</a>
-											<p className="text-xs text-blue-700">
+											<p className="text-xs text-suzuka-700">
 												※ 涼花みなせさんのci-en支援者向けDiscordサーバーです
 											</p>
 										</div>

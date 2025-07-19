@@ -20,8 +20,8 @@ export function MicroAdjustmentButtons({ onAdjust, isDisabled }: MicroAdjustment
 						size="sm"
 						onClick={() => onAdjust(value)}
 						disabled={isDisabled}
-						className={`flex-1 h-6 px-0.5 text-[10px] hover:bg-primary/10 hover:text-primary rounded-none ${
-							index < ADJUSTMENT_VALUES.length - 1 ? "border-r border-slate-200" : ""
+						className={`flex-1 h-6 px-0.5 text-xs hover:bg-primary/10 hover:text-primary rounded-none ${
+							index < ADJUSTMENT_VALUES.length - 1 ? "border-r border-border" : ""
 						} transition-colors`}
 					>
 						{value > 0 ? `+${value}` : value}

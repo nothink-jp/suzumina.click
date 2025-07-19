@@ -38,7 +38,7 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 		name: "必須クッキー",
 		description: "サイトの基本機能に必要",
 		details: "ログイン状態の維持、セキュリティ機能の提供に使用。",
-		icon: <Shield className="h-4 w-4 text-green-600" />,
+		icon: <Shield className="h-4 w-4 text-minase-600" />,
 		required: true,
 		examples: ["セッション管理", "セキュリティ", "設定の保存"],
 	},
@@ -47,7 +47,7 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 		name: "分析クッキー",
 		description: "サイト改善のための分析",
 		details: "Google Analyticsによるサイト利用状況の分析。",
-		icon: <BarChart3 className="h-4 w-4 text-blue-600" />,
+		icon: <BarChart3 className="h-4 w-4 text-suzuka-600" />,
 		required: false,
 		examples: ["Google Analytics", "ページビュー分析", "ユーザー行動分析"],
 	},
@@ -56,7 +56,7 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
 		name: "パーソナライゼーション",
 		description: "カスタマイズ体験",
 		details: "お気に入りやテーマ設定などの個人化機能。",
-		icon: <User className="h-4 w-4 text-purple-600" />,
+		icon: <User className="h-4 w-4 text-suzuka-700" />,
 		required: false,
 		examples: ["テーマ設定", "言語設定", "カスタム表示"],
 	},
@@ -165,30 +165,30 @@ export function CookiePreferencesPanel({
 				</DialogHeader>
 
 				<div className="space-y-2 pb-4">
-					<p className="text-sm text-gray-600 leading-relaxed">
+					<p className="text-sm text-muted-foreground leading-relaxed">
 						各カテゴリのクッキーについて、個別に許可・拒否を選択できます。
 						設定はいつでも変更可能です。
 					</p>
 				</div>
 
 				{/* スクロール可能なコンテンツエリア */}
-				<div className="max-h-[50vh] overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+				<div className="max-h-[50vh] overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-muted">
 					{COOKIE_CATEGORIES.map((category) => (
-						<div key={category.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+						<div key={category.id} className="border border-border rounded-lg p-4 space-y-3">
 							{/* Category header */}
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-3">
-									<div className="p-1 bg-gray-100 rounded">{category.icon}</div>
+									<div className="p-1 bg-muted rounded">{category.icon}</div>
 									<div>
 										<div className="flex items-center gap-2">
-											<h4 className="font-medium text-gray-900">{category.name}</h4>
+											<h4 className="font-medium text-foreground">{category.name}</h4>
 											{category.required && (
 												<Badge variant="secondary" className="text-xs">
 													必須
 												</Badge>
 											)}
 										</div>
-										<p className="text-sm text-gray-600">{category.description}</p>
+										<p className="text-sm text-muted-foreground">{category.description}</p>
 									</div>
 								</div>
 
@@ -201,7 +201,7 @@ export function CookiePreferencesPanel({
 
 							{/* Category details */}
 							<div className="ml-8">
-								<p className="text-xs text-gray-500 mb-2">{category.details}</p>
+								<p className="text-xs text-muted-foreground/70 mb-2">{category.details}</p>
 								<div className="flex flex-wrap gap-1">
 									{category.examples.map((example) => (
 										<Badge key={example} variant="outline" className="text-xs">
@@ -214,8 +214,8 @@ export function CookiePreferencesPanel({
 					))}
 
 					{/* 重要な情報 */}
-					<div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-600 space-y-2">
-						<h5 className="font-medium text-gray-900">重要な情報</h5>
+					<div className="bg-muted/50 rounded-lg p-4 text-xs text-muted-foreground space-y-2">
+						<h5 className="font-medium text-foreground">重要な情報</h5>
 						<ul className="space-y-1 ml-4 list-disc">
 							<li>設定は1年間保存され、期限後に再確認をお願いします</li>
 							<li>必須クッキーはサイト機能のため無効化できません</li>

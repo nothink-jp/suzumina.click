@@ -25,9 +25,9 @@ export default function TermsPage() {
 						<p className="text-foreground">
 							本サイト「suzumina.click」は、声優「涼花みなせ」さんのファンコミュニティサイトとして、個人が趣味で運営しています。
 						</p>
-						<div className="bg-blue-50 p-4 rounded-lg">
-							<h4 className="font-semibold text-blue-800 mb-2">重要事項</h4>
-							<ul className="text-sm text-blue-700 space-y-1">
+						<div className="bg-suzuka-50 p-4 rounded-lg">
+							<h4 className="font-semibold text-suzuka-800 mb-2">重要事項</h4>
+							<ul className="text-sm text-suzuka-700 space-y-1">
 								<li>• 涼花みなせさんや関係者様とは一切関係のない非公式サイトです</li>
 								<li>• ファン活動として運営されています（一部広告による収益化あり）</li>
 								<li>• 個人運営のため、サービスの継続性は保証されません</li>
@@ -129,9 +129,9 @@ export default function TermsPage() {
 									<li>• 涼花みなせさんおよび関係者様の二次創作ガイドラインに従います</li>
 								</ul>
 							</div>
-							<div className="bg-green-50 p-4 rounded-lg">
-								<h4 className="font-semibold text-green-800 mb-2">権利者の皆様へ</h4>
-								<p className="text-sm text-green-700">
+							<div className="bg-minase-50 p-4 rounded-lg">
+								<h4 className="font-semibold text-minase-800 mb-2">権利者の皆様へ</h4>
+								<p className="text-sm text-minase-700">
 									著作権者様からの削除要請には速やかに対応いたします。
 									<br />
 									お問い合わせページからご連絡ください。
@@ -219,9 +219,9 @@ export default function TermsPage() {
 									<li>• ファンコミュニティの健全な運営を最優先</li>
 								</ul>
 							</div>
-							<div className="bg-green-50 p-3 rounded-lg">
-								<h4 className="font-semibold text-green-800 mb-2">透明性について</h4>
-								<p className="text-sm text-green-700">
+							<div className="bg-minase-50 p-3 rounded-lg">
+								<h4 className="font-semibold text-minase-800 mb-2">透明性について</h4>
+								<p className="text-sm text-minase-700">
 									運営費用に関する詳細は、ユーザーからのお問い合わせに可能な範囲で回答いたします。
 									ファンコミュニティの健全な運営を最優先に考えています。
 								</p>

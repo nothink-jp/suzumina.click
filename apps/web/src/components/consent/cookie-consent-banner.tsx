@@ -88,7 +88,7 @@ export function CookieConsentBanner() {
 		<>
 			{/* Main consent banner */}
 			<div className="fixed bottom-0 left-0 right-0 z-50 p-4">
-				<Card className="max-w-4xl mx-auto bg-white/95 backdrop-blur-sm shadow-xl border border-gray-200">
+				<Card className="max-w-4xl mx-auto bg-white/95 backdrop-blur-sm shadow-xl border border-suzuka-200">
 					<CardContent className="p-4">
 						<div className="flex flex-col sm:flex-row items-start gap-4">
 							{/* Icon and message */}
@@ -97,8 +97,8 @@ export function CookieConsentBanner() {
 									<Cookie className="h-5 w-5 text-suzuka-600" />
 								</div>
 								<div className="space-y-1">
-									<h3 className="font-semibold text-gray-900 text-sm">クッキーの使用について</h3>
-									<p className="text-sm text-gray-600 leading-relaxed">
+									<h3 className="font-semibold text-foreground text-sm">クッキーの使用について</h3>
+									<p className="text-sm text-muted-foreground leading-relaxed">
 										サイト改善・広告配信・分析のためクッキーを使用します。
 										<button
 											type="button"
@@ -117,7 +117,7 @@ export function CookieConsentBanner() {
 									variant="outline"
 									size="sm"
 									onClick={handleRejectAll}
-									className="border-gray-300 text-gray-700 hover:bg-gray-50 text-xs px-3 py-2"
+									className="border-suzuka-200 text-suzuka-700 hover:bg-suzuka-50 text-xs px-3 py-2"
 								>
 									拒否
 								</Button>
@@ -125,7 +125,7 @@ export function CookieConsentBanner() {
 									variant="outline"
 									size="sm"
 									onClick={() => setShowPreferences(true)}
-									className="border-gray-300 text-gray-700 hover:bg-gray-50 text-xs px-3 py-2"
+									className="border-suzuka-200 text-suzuka-700 hover:bg-suzuka-50 text-xs px-3 py-2"
 								>
 									<Settings className="h-3 w-3 mr-1" />
 									設定
@@ -148,8 +148,8 @@ export function CookieConsentBanner() {
 				<div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm">
 					<div className="flex items-center justify-center min-h-screen p-4">
 						<Card className="w-full max-w-4xl max-h-[90vh] bg-white shadow-2xl overflow-hidden">
-							<div className="flex items-center justify-between p-6 border-b">
-								<h2 className="text-lg font-semibold text-gray-900">クッキー設定</h2>
+							<div className="flex items-center justify-between p-6 border-b border-suzuka-200">
+								<h2 className="text-lg font-semibold text-foreground">クッキー設定</h2>
 								<Button variant="ghost" size="sm" onClick={() => setShowPreferences(false)}>
 									<X className="h-4 w-4" />
 								</Button>

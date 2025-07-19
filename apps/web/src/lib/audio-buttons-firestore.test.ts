@@ -205,9 +205,9 @@ describe("audio-buttons-firestore", () => {
 
 			expect(mockCollection).toHaveBeenCalledWith("audioButtons");
 			expect(mockWhere).toHaveBeenCalledWith("createdBy", "==", "user-123");
-			expect(mockWhere).toHaveBeenCalledWith("isPublic", "==", true);
+			// isPublic フィルタはクライアント側で適用される
 			expect(mockOrderBy).toHaveBeenCalledWith("createdAt", "desc");
-			expect(mockLimit).toHaveBeenCalledWith(20);
+			expect(mockLimit).toHaveBeenCalledWith(40); // limit * 2
 
 			expect(result).toHaveLength(1);
 			expect(result[0].title).toBe("音声ボタン1");
@@ -222,8 +222,8 @@ describe("audio-buttons-firestore", () => {
 				orderBy: "mostPlayed",
 			});
 
-			expect(mockOrderBy).toHaveBeenCalledWith("playCount", "desc");
-			expect(mockLimit).toHaveBeenCalledWith(5);
+			// mostPlayed はクライアント側でソートされる
+			expect(mockLimit).toHaveBeenCalledWith(10); // limit * 2
 			// onlyPublic: false の場合、isPublic フィルターは追加されない
 		});
 
@@ -251,9 +251,9 @@ describe("audio-buttons-firestore", () => {
 			});
 			mockLimit.mockReturnValue({ get: mockGet });
 
-			// Test most played
+			// Test most played - クライアント側でソートされるため、orderByは呼び出されない
 			await getAudioButtonsByUser("user-123", { orderBy: "mostPlayed" });
-			expect(mockOrderBy).toHaveBeenCalledWith("playCount", "desc");
+			expect(mockOrderBy).not.toHaveBeenCalledWith("playCount", "desc");
 		});
 
 		it("should handle Firestore errors", async () => {

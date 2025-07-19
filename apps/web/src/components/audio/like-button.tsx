@@ -89,7 +89,9 @@ export function LikeButton({
 			onClick={handleLikeToggle}
 			disabled={isPending || !isAuthenticated}
 			className={`flex items-center gap-1.5 ${
-				isLiked ? "text-red-600 hover:text-red-700" : "text-muted-foreground hover:text-red-600"
+				isLiked
+					? "text-suzuka-600 hover:text-suzuka-700"
+					: "text-muted-foreground hover:text-suzuka-600"
 			} ${className || ""}`}
 			title={
 				!isAuthenticated
