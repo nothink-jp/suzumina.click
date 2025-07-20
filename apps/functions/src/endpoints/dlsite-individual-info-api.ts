@@ -17,6 +17,7 @@ import {
 } from "../services/dlsite/individual-info-to-work-mapper";
 import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collector";
 import { handleNoWorkIdsError } from "../services/dlsite/work-id-validator";
+import { savePriceHistory } from "../services/price-history";
 import { chunkArray } from "../shared/array-utils";
 import * as logger from "../shared/logger";
 
@@ -162,6 +163,7 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 		// 統合データ処理: 同一APIレスポンスから並列変換
 		const results = {
 			basicDataUpdated: 0,
+			priceHistorySaved: 0,
 			errors: [] as string[],
 		};
 
@@ -183,6 +185,32 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 					await saveWorksToFirestore(validWorkData);
 					results.basicDataUpdated = validWorkData.length;
 				}
+
+				// 🆕 価格履歴データ保存（Promise.allSettled で並列実行・エラー耐性）
+				const priceHistoryResults = await Promise.allSettled(
+					apiResponses
+						.filter((apiResponse) => apiResponse.workno) // worknoが存在するもののみ
+						.map((apiResponse) => savePriceHistory(apiResponse.workno!, apiResponse)),
+				);
+
+				// 結果集計（失敗のみログ出力）
+				let successCount = 0;
+				priceHistoryResults.forEach((result, index) => {
+					if (result.status === "fulfilled") {
+						if (result.value) {
+							successCount++;
+						} else {
+							logger.warn(`価格履歴保存失敗（データ無効）: ${apiResponses[index]?.workno}`);
+						}
+					} else {
+						logger.warn(`価格履歴保存失敗（例外）: ${apiResponses[index]?.workno}`, {
+							error: result.reason,
+						});
+					}
+				});
+
+				// 価格履歴保存成功件数を記録
+				results.priceHistorySaved = successCount;
 
 				return validWorkData.length;
 			} catch (error) {

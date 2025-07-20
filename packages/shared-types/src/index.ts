@@ -15,6 +15,8 @@ export * from "./contact";
 export * from "./favorite";
 // Firestore関連のユーティリティ
 export * from "./firestore-utils";
+// 価格履歴関連の型とスキーマのエクスポート
+export * from "./price-history";
 // 検索フィルター関連の型とスキーマのエクスポート
 export * from "./search-filters";
 // ユーザー認証関連の型とスキーマのエクスポート

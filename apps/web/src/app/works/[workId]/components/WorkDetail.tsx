@@ -35,6 +35,7 @@ import {
 import Link from "next/link";
 import { useMemo } from "react";
 import CharacteristicEvaluation from "@/components/content/characteristic-evaluation";
+import { PriceHistory } from "@/components/price-history/price-history";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
 import SampleImageGallery from "./SampleImageGallery";
@@ -354,6 +355,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 								<span className="hidden sm:inline">特性評価</span>
 							</TabsTrigger>
 							<TabsTrigger value="price-history" className="flex items-center gap-2">
+								<Tag className="h-4 w-4" />
 								<span className="hidden sm:inline">価格推移</span>
 							</TabsTrigger>
 						</TabsList>
@@ -756,12 +758,15 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 						</TabsContent>
 
 						{/* 価格推移タブ */}
-						<TabsContent value="price-history" className="relative min-h-[400px]">
-							<div className="w-full h-full flex items-center justify-center">
-								<NotImplementedOverlay
-									title="価格推移機能は準備中です"
-									description="現在、価格推移システムは実装を保留しています。"
-								/>
+						<TabsContent value="price-history" className="space-y-6">
+							<div className="space-y-4">
+								<div className="text-center mb-6">
+									<h3 className="text-xl font-semibold text-gray-900 mb-2">価格推移チャート</h3>
+									<p className="text-gray-600">
+										DLsite Individual Info APIによる日次価格履歴データ
+									</p>
+								</div>
+								<PriceHistory workId={work.productId} />
 							</div>
 						</TabsContent>
 					</Tabs>

@@ -18,6 +18,7 @@ import {
 	type IndividualInfoAPIResponse,
 	validateAPIOnlyWorkData,
 } from "../../services/dlsite/individual-info-to-work-mapper";
+import { savePriceHistory } from "../../services/price-history";
 import { chunkArray } from "../../shared/array-utils";
 import * as logger from "../../shared/logger";
 
@@ -201,6 +202,36 @@ class LocalDataCollector {
 						});
 					}
 				}
+
+				// 🆕 価格履歴保存処理（バッチ単位で実行）
+				logger.info(`🔍 価格履歴保存開始: バッチ ${batchIndex + 1}/${batches.length}`);
+				const priceHistoryResults = await Promise.allSettled(
+					Array.from(batchResults.entries())
+						.filter(([, apiData]) => apiData.workno) // worknoが存在するもののみ
+						.map(([workId, apiData]) => savePriceHistory(workId, apiData)),
+				);
+
+				// 価格履歴保存結果の集計
+				let priceHistorySuccess = 0;
+				let priceHistoryFailure = 0;
+				priceHistoryResults.forEach((result, index) => {
+					if (result.status === "fulfilled") {
+						if (result.value) {
+							priceHistorySuccess++;
+						} else {
+							priceHistoryFailure++;
+						}
+					} else {
+						priceHistoryFailure++;
+						logger.warn(`価格履歴保存失敗（例外）: ${batch[index]}`, {
+							error: result.reason,
+						});
+					}
+				});
+
+				logger.info(
+					`🔍 価格履歴保存完了: 成功 ${priceHistorySuccess}件, 失敗 ${priceHistoryFailure}件`,
+				);
 
 				// 失敗データの処理
 				const failedIds = batch.filter((id) => !batchResults.has(id));

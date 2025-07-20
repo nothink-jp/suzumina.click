@@ -60,7 +60,7 @@ function SampleThumbnail({
 }
 
 export default function SampleImageGallery({ sampleImages, workTitle }: SampleImageGalleryProps) {
-	const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+	const [_selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
 	if (!sampleImages || sampleImages.length === 0) {
 		return (
