@@ -762,9 +762,7 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 							<div className="space-y-4">
 								<div className="text-center mb-6">
 									<h3 className="text-xl font-semibold text-gray-900 mb-2">価格推移チャート</h3>
-									<p className="text-gray-600">
-										DLsite Individual Info APIによる日次価格履歴データ
-									</p>
+									<p className="text-gray-600">この作品の価格変動やセール情報を確認できます</p>
 								</div>
 								<PriceHistory workId={work.productId} />
 							</div>

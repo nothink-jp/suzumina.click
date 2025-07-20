@@ -1,7 +1,7 @@
 # ユビキタス言語定義
 
 > **📋 目的**: suzumina.clickプロジェクトのドメイン専門用語とビジネス概念の統一定義  
-> **📅 最終更新**: 2025年7月17日  
+> **📅 最終更新**: 2025年7月20日  
 > **🎯 適用範囲**: 開発チーム・ドキュメント・コード・ユーザーインターフェース  
 > **🔗 参照**: CLAUDE.md から常時参照・Claude AI の用語統一指針
 
@@ -125,6 +125,21 @@
 | **ランキング** | DLsite公式ランキング順位 | Ranking | 日間・週間・月間・年間・総合 |
 | **ウィッシュリスト数** | ユーザーのお気に入り登録数 | Wishlist Count | 数値 |
 
+### 価格履歴システム
+
+| 用語 | 定義 | 英語表記 | 技術的詳細 |
+|------|------|----------|----------|
+| **価格履歴** | 作品価格の日別変動記録 | Price History | `dlsiteWorks/{workId}/priceHistory` サブコレクション |
+| **価格推移チャート** | 価格変動をグラフィカルに表示する機能 | Price Trend Chart | Recharts統合・インタラクティブ表示 |
+| **定価** | 作品の通常販売価格 | Regular Price | キャンペーン適用前価格 |
+| **セール価格** | 割引キャンペーン適用後の価格 | Discount Price | `discount_rate` 適用後価格 |
+| **公式価格** | DLsite API `official_price` フィールド値 | Official Price | セール中の元価格参照用 |
+| **価格変動検出** | 前日比での価格変更自動検出 | Price Change Detection | `priceChanged` フラグ |
+| **キャンペーン検出** | 新しい割引キャンペーンの開始検出 | Campaign Detection | `newCampaign` フラグ |
+| **多通貨対応** | JPY/USD/EUR/CNY/TWD/KRW価格表示 | Multi-currency Support | `LocalePrice[]` 形式 |
+| **価格統計** | 期間内最安値・最高値・平均価格等の統計情報 | Price Statistics | 最安値・最高値・平均・変動率 |
+| **二重割引問題** | Individual Info APIでの割引率重複適用バグ | Double Discount Issue | RJ01414353で発見・修正済み |
+
 ## 👥 クリエイター・制作情報
 
 | 用語 | 定義 | 英語表記 | データソース |
@@ -183,6 +198,16 @@
 | **データ変換** | APIレスポンスからFirestore保存形式への変換 | Data Transformation | individual-info-to-work-mapper |
 | **バッチ処理** | 大量データの効率的な一括処理 | Batch Processing | Firestore 500件制限対応 |
 | **リアルタイム性** | データの即座反映・最新状態維持 | Real-time Updates | API優先・キャッシュ無効化 |
+
+### データ品質管理
+
+| 用語 | 定義 | 英語表記 | 実装詳細 |
+|------|------|----------|----------|
+| **データ品質検証** | 価格データの整合性・妥当性チェック | Data Quality Validation | `price-data-quality-checker.ts` |
+| **自動修正** | 検出された問題データの自動修正処理 | Auto-fix | `price-data-fixer.ts` |
+| **品質問題分類** | データ品質問題の種別分類システム | Quality Issue Classification | double_discount, price_inconsistency等 |
+| **重要度評価** | 品質問題の影響度評価システム | Severity Assessment | low, medium, high, critical |
+| **DRY RUN** | 実データ変更なしでの修正シミュレーション | Dry Run | データ修正前の安全確認 |
 
 ## 🎨 UI/UX概念
 

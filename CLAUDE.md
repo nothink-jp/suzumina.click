@@ -10,17 +10,19 @@
 
 ### Core Features
 - **音声ボタンシステム**: YouTube動画タイムスタンプ参照・96件表示対応・プール化最適化
-- **DLsite統合**: Individual Info API・高解像度画像・詳細情報表示
+- **DLsite統合**: Individual Info API・高解像度画像・詳細情報表示・価格履歴追跡
+- **価格履歴システム**: 日別価格推移チャート・多通貨対応・統計表示・全期間保存
 - **認証・管理**: Discord OAuth・ユーザー管理・お気に入りシステム
 - **検索システム**: 全コンテンツ横断検索・高度フィルタリング
 - **管理者機能**: 完全なコンテンツ・ユーザー管理インターフェース
 
-### Current Status: **PRODUCTION READY v0.3.4**
+### Current Status: **PRODUCTION READY v0.3.5**
 - 本番稼働中: https://suzumina.click
-- 960+件テストスイート全合格
+- 970+件テストスイート全合格
 - TypeScript strict mode完全準拠
 - パフォーマンス最適化完了（音声ボタン96件表示・87%メモリ削減）
 - UI/UX最適化完了（非営利運営への移行・ローディング体験向上）
+- 価格履歴機能完全実装（全Phase完了・品質保証済み）
 
 ---
 
@@ -97,14 +99,16 @@ suzumina.click/
 
 ### Database (Firestore)
 - **dlsiteWorks**: `OptimizedFirestoreDLsiteWorkData`
+- **dlsiteWorks/{workId}/priceHistory**: Daily price tracking subcollection
 - **dlsiteMetadata**: `UnifiedDataCollectionMetadata`
 - **audioButtons**: Audio button data with YouTube references
 - **favorites**: User favorite tracking
 - **users**: User profile and authentication data
 
 ### Data Collection Systems
-- **DLsite**: Individual Info API every hour at :00 minutes
+- **DLsite**: Individual Info API every hour at :00 minutes + price history tracking
 - **YouTube**: Data API for video information
+- **Price History**: Daily price collection with multi-currency support
 - **Optimization**: 重複API呼び出し完全排除・リージョン差異対応
 
 ### Performance Optimizations (2025-07-15 COMPLETED)
@@ -207,6 +211,17 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 
 ## 📝 RECENT UPDATES
 
+### v0.3.5 (2025-07-20)
+- **Price History System COMPLETED**
+  - Complete price tracking system for DLsite works (全Phase実装完了)
+  - Daily price history collection with multi-currency support (JPY/USD/EUR/CNY/TWD/KRW)
+  - Interactive price charts with Recharts integration
+  - Price statistics and trend analysis
+  - Critical bug fix: Individual Info API double discount issue (RJ01414353)
+  - Comprehensive E2E testing (11 test scenarios)
+  - Data quality management tools (quality checker + auto-fixer)
+  - Subcollection-based data architecture (dlsiteWorks/{workId}/priceHistory)
+
 ### v0.3.4 (2025-07-19)
 - **Non-profit Operation Transition COMPLETED**
   - Complete Google AdSense integration removal (ASMR content policy rejection)
@@ -245,5 +260,5 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 
 ---
 
-**Last Updated**: 2025-07-19  
-**Document Version**: 3.2 (Authentication-based UX Improvements)
+**Last Updated**: 2025-07-20  
+**Document Version**: 3.3 (Price History System Implementation)

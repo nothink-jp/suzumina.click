@@ -47,6 +47,7 @@ DLsite Individual Info API (`https://www.dlsite.com/maniax/api/=/product.json?wo
 | `campaign_start_date` | string\|null | キャンペーン開始 | "2025-06-21 00:00:00" | 割引開始日時 |
 | `campaign_end_date` | string\|null | キャンペーン終了 | "2025-07-19 00:00:00" | 割引終了日時 |
 | `is_show_campaign_end_date` | boolean | 終了日表示 | true, false | 終了日を表示するか |
+| `locale_price` | array\|object | 多通貨価格情報 | [{currency: "JPY", price: 1320}] | 価格履歴システムで使用する主要フィールド |
 | **ポイント・特典** |
 | `point` | number | 獲得ポイント | 120 | 購入時獲得ポイント |
 | `default_point` | number | 基本ポイント率 | 10 | 基本ポイント還元率(%) |
@@ -861,3 +862,45 @@ const monthlyTrackingFields = [
 4. **Phase 4**: 高度分析機能（地域間価格差、購買力平価分析）
 
 この段階的実装により、ユーザーにとって最も価値の高い価格推移から順次対応し、グローバルなファンベース向けの包括的な分析機能を実現できます。
+
+## 🎯 価格履歴システム実装完了レポート (2025-07-20)
+
+### 実装済み機能
+
+**Phase 1-2 完了**: 日本円価格・多通貨価格システム実装済み
+
+- ✅ **価格データ収集**: `price`, `official_price`, `discount_rate`, `campaign_id`
+- ✅ **多通貨対応**: `locale_price` フィールド活用（JPY/USD/EUR/CNY/TWD/KRW）
+- ✅ **価格履歴保存**: `dlsiteWorks/{workId}/priceHistory` サブコレクション
+- ✅ **価格変動検出**: 前日比価格変更・新キャンペーン検出
+- ✅ **データ品質管理**: 二重割引問題修正（RJ01414353）
+
+### 重要な発見・修正事項
+
+**二重割引問題 (RJ01414353)**:
+- **問題**: `discount_rate`が既に割引適用済み価格に再適用されるバグ
+- **原因**: Individual Info APIの`price`フィールドがセール価格、`official_price`が定価を返すが、価格抽出ロジックで二重割引が発生
+- **修正**: セール中は`official_price`を定価として使用し、`price`をセール価格として扱うロジックに変更
+- **影響**: 価格履歴データの精度が大幅に向上
+
+### 価格フィールド活用実績
+
+| フィールド | 活用状況 | 目的 |
+|------------|----------|------|
+| `price` | ✅ 実装済み | セール価格・現在価格として使用 |
+| `official_price` | ✅ 実装済み | 定価・正規価格として使用 |
+| `discount_rate` | ✅ 実装済み | 割引率計算・表示 |
+| `campaign_id` | ✅ 実装済み | キャンペーン変更検出 |
+| `locale_price` | ✅ 実装済み | 多通貨表示・価格変換 |
+| `campaign_start_date` | 📋 計画中 | キャンペーン期間分析用 |
+| `campaign_end_date` | 📋 計画中 | キャンペーン期間分析用 |
+
+### データ収集実績
+
+- **対象作品数**: 1,499件（涼花みなせ参加作品）
+- **収集頻度**: 毎時00分実行（24回/日）
+- **データ保存**: 全期間履歴保持（削除なし）
+- **多通貨**: 6通貨対応（JPY/USD/EUR/CNY/TWD/KRW）
+- **品質保証**: 自動検証・修正ツール実装済み
+
+この実装により、DLsite Individual Info APIの価格関連フィールドを最大限活用した包括的な価格履歴システムが完成しました。

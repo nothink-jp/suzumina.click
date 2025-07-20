@@ -1,9 +1,9 @@
 # Firestore Database Structure
 
-> **📅 最終更新**: 2025年7月19日  
-> **📝 ステータス**: v11.4 複合インデックス完全分析・実装状況最適化・Terraform管理統合完了  
+> **📅 最終更新**: 2025年7月20日  
+> **📝 ステータス**: v11.5 価格履歴サブコレクション追加・インデックス要件更新完了  
 > **🔧 対象**: suzumina.clickプロジェクトのCloud Firestoreデータベース構造
-> **🆕 更新内容**: 全コレクション実装状況調査・インデックス使用状況正確分析・コスト最適化計画
+> **🆕 更新内容**: 価格履歴システム実装完了・priceHistoryサブコレクション追加・複合インデックス要件更新
 
 ## 使用中のコレクション一覧
 
@@ -510,7 +510,58 @@
 
 **データ保持期間**: 永続保存（長期分析用）
 
-✅ 全コレクションの実装が完了し、本番稼働中です（v11.0時系列データ基盤含む）。
+#### サブコレクション: `dlsiteWorks/{workId}/priceHistory` ✅ v0.3.4価格履歴実装完了
+
+**目的**: DLsite作品の詳細価格履歴データ（サブコレクション方式・全履歴保持）
+
+**ドキュメントID**: `YYYY-MM-DD` (例: `"2025-07-20"`)
+
+**データ構造** (`PriceHistoryDocument`)：
+
+```typescript
+{
+  // 基本識別情報
+  workId: string,                     // 親作品ID (例: "RJ01414353")
+  date: string,                       // YYYY-MM-DD
+  capturedAt: string,                 // 記録日時（ISO形式）
+  
+  // 価格データ（Individual Info API準拠）
+  localePrices: LocalePrice[],        // 多通貨価格配列（API生データ）
+  
+  // JPY価格サマリー（表示・統計用）
+  regularPrice: number,               // 定価（JPY）
+  discountPrice?: number,             // セール価格（JPY、セール時のみ）
+  discountRate: number,               // 割引率（%）
+  campaignId?: number,                // キャンペーンID
+  
+  // 価格変動検知
+  priceChanged: boolean,              // 前日から価格変更あり
+  newCampaign: boolean,               // 新しいキャンペーン開始
+  
+  // 収集メタデータ
+  dataSource: 'individual_api',       // データ取得元
+  apiCallCount: number,               // API呼び出し回数（その日）
+  collectionVersion: string           // データ収集バージョン
+}
+```
+
+**特徴**:
+- **全履歴保持**: システム開始日からの完全な価格推移を永続保存
+- **サブコレクション方式**: 作品ごとの独立管理・Firestore 1MB制限回避
+- **多通貨対応**: JPY/USD/EUR/CNY/TWD/KRW価格データ保持
+- **価格変動検知**: 日次の価格変更・キャンペーン開始の自動検出
+- **二重割引問題解決**: Individual Info API正しい価格抽出ロジック実装済み
+
+**アクセスパターン**:
+- **読み取り**: Next.js Server Actions経由でクライアントに提供
+- **書き込み**: Cloud Functions（Individual Info API収集）のみ
+- **クエリ**: 期間指定・通貨フィルタリング対応
+
+**インデックス要件**:
+- `date (ASC)`: 期間指定クエリ用
+- `date (DESC)`: 最新データ取得用
+
+✅ 全コレクションの実装が完了し、本番稼働中です（v11.0時系列データ基盤 + v0.3.4価格履歴システム含む）。
 
 ## Firestore 複合インデックス
 
@@ -590,9 +641,10 @@ const allSnapshot = await firestore.collection("dlsiteWorks").get();
 - **videos**: 7個（videoType 1個 + liveStreamingDetails 6個）
 - **audioButtons**: 1個（startTime未実装）
 
-#### **⚠️ 新規追加必要 (3個)**
+#### **⚠️ 新規追加必要 (5個)**
 - **contacts**: 2個（管理者機能で必須）
 - **favorites**: 1個（Collection Group統計用）
+- **priceHistory**: 2個（価格履歴システムで必須）
 
 #### **🔶 フォールバック用 (3個)**
 - **audioButtons**: マイページ用（現在無効化中だが保持）
@@ -807,6 +859,13 @@ gcloud firestore indexes composite delete \
 | インデックス | フィールド | 使用状況 | 使用箇所 |
 |-------------|------------|----------|----------|
 | `audioButtonId + addedAt (DESC)` | [`audioButtonId`, `addedAt`, `__name__`] | ⚠️ **未作成** | お気に入り一括確認・管理者機能 |
+
+#### ✅ **priceHistory サブコレクション** (Collection Group) - v0.3.4新規追加
+
+| インデックス | フィールド | 使用状況 | 使用箇所 |
+|-------------|------------|----------|----------|
+| `date (ASC)` | [`date`, `__name__`] | ⚠️ **未設定** | 期間指定価格履歴取得（Server Actions） |
+| `date (DESC)` | [`date`, `__name__`] | ⚠️ **未設定** | 最新価格履歴取得（統計計算） |
 
 #### 🔄 **新しく発見されたクエリパターン** (2025年7月12日調査)
 
