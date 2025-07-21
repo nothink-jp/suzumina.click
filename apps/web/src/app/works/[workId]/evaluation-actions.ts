@@ -104,13 +104,16 @@ function insertWorkToTop10(
 	workId: string,
 	workTitle: string,
 	targetRank: number,
-): { rankings: UserTop10List["rankings"]; removedWork: string | null } {
+): {
+	rankings: UserTop10List["rankings"];
+	removedWork: { workId: string; workTitle: string } | null;
+} {
 	// 既存の同じ作品を削除
 	const cleanedRankings = removeWorkFromTop10(currentRankings, workId);
 
 	// 新しいランキング配列を作成
 	const tempRankings: UserTop10List["rankings"] = {};
-	let removedWork: string | null = null;
+	let removedWork: { workId: string; workTitle: string } | null = null;
 
 	// 指定位置に新作品を挿入
 	tempRankings[targetRank] = {
@@ -127,7 +130,7 @@ function insertWorkToTop10(
 		if (newRank <= 10) {
 			tempRankings[newRank] = item;
 		} else if (item) {
-			removedWork = item.workId;
+			removedWork = { workId: item.workId, workTitle: item.workTitle || "" };
 		}
 	}
 
@@ -185,6 +188,7 @@ async function handleTop10Update(
 	targetRank: number,
 	userId: string,
 	firestore: FirebaseFirestore.Firestore,
+	removedWorkEvalData?: FirebaseFirestore.DocumentSnapshot,
 ) {
 	const currentData = top10Doc.exists
 		? (top10Doc.data() as UserTop10List)
@@ -205,11 +209,89 @@ async function handleTop10Update(
 		lastUpdatedAt: FieldValue.serverTimestamp() as unknown as { toDate(): Date },
 	});
 
-	// 押し出された作品の評価を削除
-	if (removedWork && removedWork !== workId) {
-		const removedEvalId = `${userId}_${removedWork}`;
-		transaction.delete(firestore.collection("evaluations").doc(removedEvalId));
+	// 押し出された作品を星3つ評価に変換
+	if (removedWork && removedWork.workId !== workId && removedWorkEvalData) {
+		const removedEvalId = `${userId}_${removedWork.workId}`;
+		const removedEvalRef = firestore.collection("evaluations").doc(removedEvalId);
+
+		const evaluationData: FirestoreWorkEvaluation = {
+			id: removedEvalId,
+			workId: removedWork.workId,
+			userId,
+			evaluationType: "star" as const,
+			starRating: 3,
+			updatedAt: FieldValue.serverTimestamp() as unknown as { toDate(): Date },
+			createdAt: removedWorkEvalData.exists
+				? (removedWorkEvalData.data() as FirestoreWorkEvaluation).createdAt
+				: (FieldValue.serverTimestamp() as unknown as { toDate(): Date }),
+		};
+
+		transaction.set(removedEvalRef, evaluationData);
 	}
+}
+
+/**
+ * 評価タイプ変更時の10選データクリーンアップ処理
+ */
+async function handleEvaluationTypeChange(
+	transaction: FirebaseFirestore.Transaction,
+	userTop10Ref: FirebaseFirestore.DocumentReference,
+	existingEval: FirebaseFirestore.DocumentSnapshot,
+	top10Doc: FirebaseFirestore.DocumentSnapshot,
+	evaluation: EvaluationInput,
+	workId: string,
+	userId: string,
+) {
+	if (!existingEval.exists) return;
+
+	const existingData = existingEval.data() as FirestoreWorkEvaluation;
+
+	// 既存が10選で、新しい評価が10選以外の場合は10選から削除
+	if (existingData.evaluationType === "top10" && evaluation.type !== "top10") {
+		const top10Data = top10Doc.exists ? (top10Doc.data() as UserTop10List) : null;
+		if (top10Data) {
+			const newRankings = removeWorkFromTop10(top10Data.rankings, workId);
+			transaction.set(userTop10Ref, {
+				userId,
+				rankings: newRankings,
+				totalCount: Object.keys(newRankings).length,
+				lastUpdatedAt: FieldValue.serverTimestamp() as unknown as { toDate(): Date },
+			});
+		}
+	}
+}
+
+/**
+ * 削除される可能性のある作品の評価データを事前読み取り
+ */
+async function getRemovedWorkEvalData(
+	transaction: FirebaseFirestore.Transaction,
+	firestore: FirebaseFirestore.Firestore,
+	evaluation: EvaluationInput,
+	top10Doc: FirebaseFirestore.DocumentSnapshot,
+	workId: string,
+	userId: string,
+): Promise<FirebaseFirestore.DocumentSnapshot | undefined> {
+	if (evaluation.type !== "top10" || !evaluation.top10Rank) return undefined;
+
+	const currentData = top10Doc.exists
+		? (top10Doc.data() as UserTop10List)
+		: { userId, rankings: {}, totalCount: 0 };
+
+	const { removedWork } = insertWorkToTop10(
+		currentData.rankings,
+		workId,
+		evaluation.workTitle || "",
+		evaluation.top10Rank,
+	);
+
+	if (removedWork && removedWork.workId !== workId) {
+		const removedEvalId = `${userId}_${removedWork.workId}`;
+		const removedEvalRef = firestore.collection("evaluations").doc(removedEvalId);
+		return await transaction.get(removedEvalRef);
+	}
+
+	return undefined;
 }
 
 /**
@@ -234,6 +316,16 @@ async function performEvaluationUpdate(
 		const existingEval = await transaction.get(evaluationRef);
 		const top10Doc = await transaction.get(userTop10Ref);
 
+		// 10選更新時に削除される可能性のある作品の評価データを事前読み取り
+		const removedWorkEvalData = await getRemovedWorkEvalData(
+			transaction,
+			firestore,
+			evaluation,
+			top10Doc,
+			workId,
+			userId,
+		);
+
 		// 削除の場合
 		if (evaluation.type === "remove") {
 			await handleEvaluationRemove(
@@ -247,6 +339,17 @@ async function performEvaluationUpdate(
 			return null;
 		}
 
+		// 既存の評価があり、評価タイプが変わる場合の処理
+		await handleEvaluationTypeChange(
+			transaction,
+			userTop10Ref,
+			existingEval,
+			top10Doc,
+			evaluation,
+			workId,
+			userId,
+		);
+
 		// 評価の作成・更新
 		if (evaluation.type === "top10" && evaluation.top10Rank) {
 			await handleTop10Update(
@@ -258,6 +361,7 @@ async function performEvaluationUpdate(
 				evaluation.top10Rank,
 				userId,
 				firestore,
+				removedWorkEvalData,
 			);
 		}
 

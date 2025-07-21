@@ -255,16 +255,35 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 						<div className="space-y-3">
 							{/* ジャンル（Individual Info API準拠・段階的活用） */}
 							{(() => {
-								// Individual Info API準拠のジャンル情報を優先使用
-								const apiGenres = work.apiGenres || [];
-								const apiCustomGenres = work.apiCustomGenres || [];
+								// Individual Info API準拠のジャンル情報を優先使用（基本ジャンルのみ）
+								const rawApiGenres = work.apiGenres || [];
 								const legacyGenres = work.genres || [];
 
+								// 標準ジャンルの重複を除去（id または name で判定）
+								const apiGenres = rawApiGenres.reduce(
+									(unique, genre) => {
+										const key =
+											typeof genre === "string" ? genre : genre.id?.toString() || genre.name;
+										if (
+											!key ||
+											unique.some((existing) => {
+												const existingKey =
+													typeof existing === "string"
+														? existing
+														: existing.id?.toString() || existing.name;
+												return existingKey === key;
+											})
+										) {
+											return unique;
+										}
+										unique.push(genre);
+										return unique;
+									},
+									[] as typeof rawApiGenres,
+								);
+
 								// API準拠ジャンル情報がある場合はそれを使用、なければレガシー情報
-								const displayGenres =
-									apiGenres.length > 0 || apiCustomGenres.length > 0
-										? [...apiGenres, ...apiCustomGenres]
-										: legacyGenres;
+								const displayGenres = apiGenres.length > 0 ? apiGenres : legacyGenres;
 
 								if (displayGenres.length === 0) return null;
 
@@ -272,41 +291,30 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									<div>
 										<div className="text-sm font-medium text-gray-700 mb-2">ジャンル</div>
 										<div className="flex flex-wrap gap-2">
-											{/* 標準ジャンル */}
-											{apiGenres.map((genre, index) => (
-												<Badge
-													key={`api-${typeof genre === "string" ? genre : genre.name || index}`}
-													variant="outline"
-													className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
-												>
-													<Tag className="h-3 w-3" />
-													{typeof genre === "string" ? genre : genre.name}
-												</Badge>
-											))}
-											{/* カスタムジャンル */}
-											{apiCustomGenres.map((genre, index) => (
-												<Badge
-													key={`custom-${typeof genre === "string" ? genre : genre.name || index}`}
-													variant="outline"
-													className="border-secondary/30 text-secondary-foreground bg-secondary/10 flex items-center gap-1"
-												>
-													<Tag className="h-3 w-3" />
-													{typeof genre === "string" ? genre : genre.name}
-												</Badge>
-											))}
-											{/* レガシージャンル（API情報がない場合のみ表示） */}
-											{apiGenres.length === 0 &&
-												apiCustomGenres.length === 0 &&
-												legacyGenres.map((genre) => (
-													<Badge
-														key={`legacy-${genre}`}
-														variant="outline"
-														className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
-													>
-														<Tag className="h-3 w-3" />
-														{genre}
-													</Badge>
-												))}
+											{/* APIジャンルまたはレガシージャンル */}
+											{apiGenres.length > 0
+												? /* 標準ジャンル */
+													apiGenres.map((genre, index) => (
+														<Badge
+															key={`api-${typeof genre === "string" ? genre : genre.id || genre.name || `fallback-${index}`}`}
+															variant="outline"
+															className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
+														>
+															<Tag className="h-3 w-3" />
+															{typeof genre === "string" ? genre : genre.name}
+														</Badge>
+													))
+												: /* レガシージャンル（API情報がない場合のみ表示） */
+													legacyGenres.map((genre) => (
+														<Badge
+															key={`legacy-${genre}`}
+															variant="outline"
+															className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
+														>
+															<Tag className="h-3 w-3" />
+															{genre}
+														</Badge>
+													))}
 										</div>
 									</div>
 								);
@@ -731,6 +739,59 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									</div>
 								</CardContent>
 							</Card>
+
+							{/* カスタムジャンル情報（Individual Info API準拠） */}
+							{(() => {
+								const rawApiCustomGenres = work.apiCustomGenres || [];
+
+								// カスタムジャンルの重複を除去（genre_key または name で判定）
+								const apiCustomGenres = rawApiCustomGenres.reduce(
+									(unique, genre) => {
+										const key = typeof genre === "string" ? genre : genre.genre_key || genre.name;
+										if (
+											!key ||
+											unique.some((existing) => {
+												const existingKey =
+													typeof existing === "string"
+														? existing
+														: existing.genre_key || existing.name;
+												return existingKey === key;
+											})
+										) {
+											return unique;
+										}
+										unique.push(genre);
+										return unique;
+									},
+									[] as typeof rawApiCustomGenres,
+								);
+
+								if (apiCustomGenres.length === 0) return null;
+
+								return (
+									<Card>
+										<CardHeader>
+											<CardTitle>カスタムジャンル</CardTitle>
+											<CardDescription>ユーザータグ・特別カテゴリー情報</CardDescription>
+										</CardHeader>
+										<CardContent>
+											<div className="flex flex-wrap gap-2">
+												{/* カスタムジャンル */}
+												{apiCustomGenres.map((genre, index) => (
+													<Badge
+														key={`custom-${typeof genre === "string" ? genre : genre.genre_key || genre.name || `fallback-${index}`}`}
+														variant="outline"
+														className="border-orange-400 text-orange-700 bg-orange-50 flex items-center gap-1"
+													>
+														<Tag className="h-3 w-3" />
+														{typeof genre === "string" ? genre : genre.name}
+													</Badge>
+												))}
+											</div>
+										</CardContent>
+									</Card>
+								);
+							})()}
 						</TabsContent>
 
 						{/* サンプル画像タブ */}

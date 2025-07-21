@@ -355,8 +355,11 @@ describe("evaluation-actions", () => {
 					evaluationData: savedEvaluation,
 					top10Data: fullTop10,
 					transactionCallback: (transaction) => {
-						// Verify that the 10th work was removed
-						expect(transaction.delete).toHaveBeenCalled();
+						// Verify that the removed work was converted to 3-star rating (not deleted)
+						const starRatingSetCalls = transaction.set.mock.calls.filter(
+							(call: any) => call[1].starRating === 3 && call[1].evaluationType === "star",
+						);
+						expect(starRatingSetCalls.length).toBeGreaterThan(0);
 
 						// Check final rankings
 						const setCall = transaction.set.mock.calls.find(

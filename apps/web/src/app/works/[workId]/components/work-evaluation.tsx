@@ -72,6 +72,10 @@ export function WorkEvaluation({ workId, workTitle, initialEvaluation }: WorkEva
 	const handleRemove = () => {
 		setError(null);
 
+		// モーダルを閉じる
+		setShowTop10Modal(false);
+		setPendingRank(null);
+
 		startTransition(async () => {
 			const result = await removeWorkEvaluation(workId);
 
@@ -183,6 +187,7 @@ export function WorkEvaluation({ workId, workTitle, initialEvaluation }: WorkEva
 				onSelect={handleTop10RankSelect}
 				currentRank={evaluation?.evaluationType === "top10" ? evaluation.top10Rank : undefined}
 				workTitle={workTitle}
+				workId={workId}
 			/>
 		</div>
 	);
