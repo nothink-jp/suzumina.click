@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getWorkById } from "../actions";
 import WorkDetail from "./components/WorkDetail";
+import { getWorkEvaluation } from "./evaluation-actions";
 
 interface WorkDetailPageProps {
 	params: Promise<{
@@ -18,10 +19,13 @@ export default async function WorkDetailPage({ params }: WorkDetailPageProps) {
 		notFound();
 	}
 
+	// 現在のユーザーの評価を取得（認証されていない場合はnull）
+	const initialEvaluation = await getWorkEvaluation(workId);
+
 	return (
 		<div className="min-h-screen bg-gray-50">
 			<main className="max-w-7xl mx-auto px-4 py-8">
-				<WorkDetail work={work} />
+				<WorkDetail work={work} initialEvaluation={initialEvaluation} />
 			</main>
 		</div>
 	);

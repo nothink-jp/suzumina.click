@@ -36,6 +36,7 @@ function SampleThumbnail({
 	className?: string;
 }) {
 	return (
+		// biome-ignore lint/performance/noImgElement: サンプル画像は外部URLのため、next/imageの最適化が適用されない
 		<img
 			src={getDLsiteProxyUrl(src)}
 			alt={alt}
@@ -132,6 +133,7 @@ export default function SampleImageGallery({ sampleImages, workTitle }: SampleIm
 									{workTitle}の{index + 1}番目のサンプル画像を拡大表示しています
 								</DialogDescription>
 								<div className="flex flex-col">
+									{/* biome-ignore lint/performance/noImgElement: サンプル画像は外部URLのため、next/imageの最適化が適用されない */}
 									<img
 										src={getDLsiteProxyUrl(image.thumb)}
 										alt={`${workTitle} サンプル画像 ${index + 1}`}

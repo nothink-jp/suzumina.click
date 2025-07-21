@@ -2,6 +2,7 @@
 
 import {
 	checkAgeRating,
+	type FrontendWorkEvaluation,
 	getAgeRatingDisplayName,
 	getWorkAvailableLanguages,
 	getWorkCategoryDisplayText,
@@ -39,13 +40,15 @@ import { PriceHistory } from "@/components/price-history/price-history";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
 import SampleImageGallery from "./SampleImageGallery";
+import { WorkEvaluation } from "./work-evaluation";
 
 interface WorkDetailProps {
 	work: FrontendDLsiteWorkData;
+	initialEvaluation?: FrontendWorkEvaluation | null;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex UI component with multiple tabs and conditional rendering
-export default function WorkDetail({ work }: WorkDetailProps) {
+export default function WorkDetail({ work, initialEvaluation = null }: WorkDetailProps) {
 	// モック特性評価データを生成（作品IDに基づいて一意）
 	const characteristicData = useMemo(
 		() => generateMockCharacteristicData(work.productId),
@@ -772,6 +775,13 @@ export default function WorkDetail({ work }: WorkDetailProps) {
 
 				{/* 右側: サイドバー */}
 				<div className="space-y-6">
+					{/* 評価システム */}
+					<WorkEvaluation
+						workId={work.productId}
+						workTitle={work.title}
+						initialEvaluation={initialEvaluation}
+					/>
+
 					{/* サークル情報 */}
 					<Card>
 						<CardHeader>
