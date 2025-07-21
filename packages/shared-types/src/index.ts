@@ -27,3 +27,5 @@ export * from "./user-evaluation";
 export * from "./video";
 // DLsite作品関連の型とスキーマのエクスポート
 export * from "./work";
+// 作品評価関連の型とスキーマのエクスポート
+export * from "./work-evaluation";

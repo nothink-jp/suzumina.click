@@ -416,6 +416,77 @@
 - **書き込み**: Server Actions経由のみで操作
 - **削除**: 音声ボタン削除時に関連お気に入りも自動削除
 
+#### サブコレクション: `users/{userId}/top10` ✅ 実装中
+
+**目的**: ユーザーの10選ランキング管理
+
+**ドキュメントID**: "ranking"
+
+**データ構造** (`UserTop10List`):
+
+```typescript
+{
+  userId: string,                      // ユーザーID
+  rankings: {
+    [rank: number]: {                  // キー: 1-10の順位
+      workId: string,                  // 作品ID
+      workTitle?: string,              // 作品タイトル（表示用キャッシュ）
+      updatedAt: Timestamp,            // この順位に設定された日時
+    } | null,                          // null = その順位は空き
+  },
+  lastUpdatedAt: Timestamp,            // 最終更新日時
+  totalCount: number,                  // 現在の10選登録数（0-10）
+}
+```
+
+**制約事項**:
+- ユーザーあたり1つの10選リストのみ
+- 最大10作品まで
+- 順位の重複不可
+
+**アクセスパターン**:
+- **読み取り**: ユーザー本人のみ可能
+- **書き込み**: Server Actions経由のみで操作
+- **トランザクション**: 順位変更時は評価データと同期
+
+### 7. `evaluations` コレクション ✅ 実装中
+
+**目的**: DLsite作品に対するユーザー評価を保存
+
+**ドキュメントID**: `{userId}_{workId}` (例: `"123456789_RJ01414353"`)
+
+**データ構造** (`FirestoreWorkEvaluation`):
+
+```typescript
+{
+  // 基本識別情報
+  id: string,                          // ドキュメントID（複合キー）
+  workId: string,                      // DLsite作品ID (例: "RJ01414353")
+  userId: string,                      // Discord ユーザーID
+  
+  // 評価タイプ（排他的）
+  evaluationType: 'top10' | 'star' | 'ng',
+  
+  // 評価詳細（条件付きフィールド）
+  top10Rank?: number,                  // 1-10 (evaluationType === 'top10'の時のみ)
+  starRating?: 1 | 2 | 3,              // 星評価 (evaluationType === 'star'の時のみ)
+  
+  // メタデータ
+  createdAt: Timestamp,                // 初回評価日時
+  updatedAt: Timestamp                 // 最終更新日時
+}
+```
+
+**制約事項**:
+- 1作品につき1ユーザー1評価のみ
+- 評価タイプは排他的（同時に複数の評価タイプは設定不可）
+- 10選評価は最大10作品まで
+
+**アクセスパターン**:
+- **読み取り**: ユーザー本人のみ可能（将来的に公開設定を追加予定）
+- **書き込み**: Server Actions経由のみで操作
+- **削除**: 評価の削除時、10選からも自動削除
+
 ### 8. `dlsite_timeseries_raw` コレクション ✅ v11.0時系列データ基盤実装完了
 
 **目的**: DLsite作品の時系列生データを保存（高頻度データ収集・日次集計の元データ）
@@ -1027,6 +1098,14 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 - **バッチ操作**: ユーザー統計更新で `FieldValue.increment()` 使用
 - **キャッシュ戦略**: `revalidatePath()` でISRキャッシュ無効化
 - **レート制限**: 24時間でユーザーあたり20回作成制限
+
+#### ✅ **evaluations コレクション** (3個 - 新規追加必要)
+
+| インデックス | フィールド | 使用状況 | 使用箇所 |
+|-------------|------------|----------|----------|
+| `userId + evaluationType + updatedAt (DESC)` | [`userId`, `evaluationType`, `updatedAt`, `__name__`] | ⚠️ **未設定** | ユーザー別評価一覧 |
+| `workId + evaluationType` | [`workId`, `evaluationType`, `__name__`] | ⚠️ **未設定** | 作品別評価集計（将来） |
+| `evaluationType + updatedAt (DESC)` | [`evaluationType`, `updatedAt`, `__name__`] | ⚠️ **未設定** | 全体評価一覧（将来） |
 
 ### 📋 定期メンテナンスタスク
 
