@@ -416,7 +416,7 @@
 - **書き込み**: Server Actions経由のみで操作
 - **削除**: 音声ボタン削除時に関連お気に入りも自動削除
 
-#### サブコレクション: `users/{userId}/top10` ✅ 実装中
+#### サブコレクション: `users/{userId}/top10` ✅ 実装完了
 
 **目的**: ユーザーの10選ランキング管理
 
@@ -449,7 +449,12 @@
 - **書き込み**: Server Actions経由のみで操作
 - **トランザクション**: 順位変更時は評価データと同期
 
-### 7. `evaluations` コレクション ✅ 実装中
+**実装状況**: ✅ 完全実装済み
+- スタック型挿入アルゴリズム実装完了
+- Top10RankModalコンポーネント実装完了
+- 順位入れ替え・押し出し処理実装完了
+
+### 7. `evaluations` コレクション ✅ 実装完了
 
 **目的**: DLsite作品に対するユーザー評価を保存
 
@@ -486,6 +491,11 @@
 - **読み取り**: ユーザー本人のみ可能（将来的に公開設定を追加予定）
 - **書き込み**: Server Actions経由のみで操作
 - **削除**: 評価の削除時、10選からも自動削除
+
+**実装状況**: ✅ 完全実装済み
+- WorkEvaluationコンポーネント統合完了
+- Server Actions実装完了
+- トランザクション処理実装完了
 
 ### 8. `dlsite_timeseries_raw` コレクション ✅ v11.0時系列データ基盤実装完了
 
@@ -1099,13 +1109,25 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 - **キャッシュ戦略**: `revalidatePath()` でISRキャッシュ無効化
 - **レート制限**: 24時間でユーザーあたり20回作成制限
 
-#### ✅ **evaluations コレクション** (3個 - 新規追加必要)
+#### ✅ **evaluations コレクション** (3個 - 実装完了対応)
 
 | インデックス | フィールド | 使用状況 | 使用箇所 |
 |-------------|------------|----------|----------|
-| `userId + evaluationType + updatedAt (DESC)` | [`userId`, `evaluationType`, `updatedAt`, `__name__`] | ⚠️ **未設定** | ユーザー別評価一覧 |
-| `workId + evaluationType` | [`workId`, `evaluationType`, `__name__`] | ⚠️ **未設定** | 作品別評価集計（将来） |
-| `evaluationType + updatedAt (DESC)` | [`evaluationType`, `updatedAt`, `__name__`] | ⚠️ **未設定** | 全体評価一覧（将来） |
+| `userId + evaluationType + updatedAt (DESC)` | [`userId`, `evaluationType`, `updatedAt`, `__name__`] | ✅ **使用中** | ユーザー別評価一覧・マイページ |
+| `workId + evaluationType` | [`workId`, `evaluationType`, `__name__`] | ✅ **使用中** | 作品別評価集計（統計用） |
+| `evaluationType + updatedAt (DESC)` | [`evaluationType`, `updatedAt`, `__name__`] | ✅ **使用中** | 評価タイプ別一覧（管理者機能） |
+
+**クエリパターン**:
+```typescript
+// ユーザーの全評価取得
+.where("userId", "==", userId).orderBy("updatedAt", "desc")
+
+// 作品の評価統計
+.where("workId", "==", workId).where("evaluationType", "==", type)
+
+// 10選評価のみ取得
+.where("userId", "==", userId).where("evaluationType", "==", "top10")
+```
 
 ### 📋 定期メンテナンスタスク
 

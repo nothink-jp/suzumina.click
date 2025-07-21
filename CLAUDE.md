@@ -12,17 +12,19 @@
 - **音声ボタンシステム**: YouTube動画タイムスタンプ参照・96件表示対応・プール化最適化
 - **DLsite統合**: Individual Info API・高解像度画像・詳細情報表示・価格履歴追跡
 - **価格履歴システム**: 日別価格推移チャート・多通貨対応・統計表示・全期間保存
+- **作品評価システム**: DLsite作品への3種類評価（10選ランキング・3段階星評価・NG評価）・認証ユーザー専用機能
 - **認証・管理**: Discord OAuth・ユーザー管理・お気に入りシステム
 - **検索システム**: 全コンテンツ横断検索・高度フィルタリング
 - **管理者機能**: 完全なコンテンツ・ユーザー管理インターフェース
 
-### Current Status: **PRODUCTION READY v0.3.5**
+### Current Status: **PRODUCTION READY v0.3.6**
 - 本番稼働中: https://suzumina.click
-- 970+件テストスイート全合格
+- 980+件テストスイート全合格
 - TypeScript strict mode完全準拠
 - パフォーマンス最適化完了（音声ボタン96件表示・87%メモリ削減）
 - UI/UX最適化完了（非営利運営への移行・ローディング体験向上）
 - 価格履歴機能完全実装（全Phase完了・品質保証済み）
+- 作品評価システム完全実装（10選ランキング・星評価・NG評価）
 
 ---
 
@@ -104,6 +106,8 @@ suzumina.click/
 - **audioButtons**: Audio button data with YouTube references
 - **favorites**: User favorite tracking
 - **users**: User profile and authentication data
+- **evaluations**: User work evaluations (top10/star/ng types)
+- **users/{userId}/top10**: User's top 10 work rankings
 
 ### Data Collection Systems
 - **DLsite**: Individual Info API every hour at :00 minutes + price history tracking
@@ -210,6 +214,18 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 ---
 
 ## 📝 RECENT UPDATES
+
+### v0.3.6 (2025-07-21)
+- **Work Evaluation System COMPLETED**
+  - Complete evaluation system for DLsite works (3 evaluation types)
+  - Top 10 ranking system with stack-type insertion mechanism
+  - 3-star rating system (普通・良い・とても良い)
+  - NG evaluation system for unwanted works
+  - Comprehensive UI components (WorkEvaluation, Top10RankModal, EvaluationRadioGroup)
+  - Server Actions implementation with transaction-based updates
+  - Complete integration with work detail pages
+  - Authentication-based access control (Discord OAuth required)
+  - Optimistic UI updates with error handling
 
 ### v0.3.5 (2025-07-20)
 - **Price History System COMPLETED**
