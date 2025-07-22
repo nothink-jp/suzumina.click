@@ -599,6 +599,8 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	altName: z.string().optional(),
 	/** サークル名 - Individual Info API `maker_name` */
 	circle: z.string().min(1),
+	/** サークルID - Individual Info API `maker_id` */
+	circleId: z.string().optional(),
 	/** 英語サークル名 - Individual Info API `maker_name_en` */
 	circleEn: z.string().optional(),
 	/** 作品説明 - Individual Info API `intro_s` */

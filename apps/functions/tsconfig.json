@@ -7,10 +7,7 @@
 		"sourceMap": true,
 		"lib": ["ES2022"],
 		"allowSyntheticDefaultImports": true,
-		"baseUrl": ".",
-		"paths": {
-			"@suzumina.click/shared-types": ["../../packages/shared-types/dist/index.d.ts"]
-		}
+		"baseUrl": "."
 	},
 	"compileOnSave": true,
 	"include": ["src"],

@@ -569,25 +569,97 @@ resource "google_firestore_index" "favorites_collection_group_audiobuttonid_crea
 # - 複数フィールドでのソートが必要な時
 
 # ===================================================================
-# 📊 SUMMARY - Terraform管理インデックス状況 (2025-07-20更新)
+# 🆕 CIRCLE & CREATOR INDEXES - サークル・クリエイター機能用 (2025-07-21追加)
+# ===================================================================
+
+# circles コレクション - サークル一覧ページ用（将来実装）
+# 名前順、作品数順でのソート用
+resource "google_firestore_index" "circles_name_workcount_desc" {
+  project    = var.gcp_project_id
+  collection = "circles"
+  
+  fields {
+    field_path = "name"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "workCount"
+    order      = "DESCENDING"
+  }
+}
+
+# creatorWorkMappings コレクション - クリエイター検索用
+# クリエイターIDと作品IDの複合インデックス
+resource "google_firestore_index" "creatormappings_creatorid_workid" {
+  project    = var.gcp_project_id
+  collection = "creatorWorkMappings"
+  
+  fields {
+    field_path = "creatorId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "workId"
+    order      = "ASCENDING"
+  }
+}
+
+# creatorWorkMappings コレクション - クリエイタータイプ検索用
+# クリエイターIDとタイプ（配列）の複合インデックス
+resource "google_firestore_index" "creatormappings_creatorid_types" {
+  project    = var.gcp_project_id
+  collection = "creatorWorkMappings"
+  
+  fields {
+    field_path = "creatorId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path   = "types"
+    array_config = "CONTAINS"
+  }
+}
+
+# dlsiteWorks コレクション - サークル別作品一覧用
+# サークルIDと登録日の複合インデックス
+resource "google_firestore_index" "dlsiteworks_circleid_registdate_desc" {
+  project    = var.gcp_project_id
+  collection = "dlsiteWorks"
+  
+  fields {
+    field_path = "circleId"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "registDate"
+    order      = "DESCENDING"
+  }
+}
+
+# ===================================================================
+# 📊 SUMMARY - Terraform管理インデックス状況 (2025-07-21更新)
 # ===================================================================
 # 
 # 【現在の構成】
-# ✅ 実装済み (使用中):          11個 (audioButtons: 8, users: 2, contacts: 2, favorites: 1)
+# ✅ 実装済み (使用中):          15個 (audioButtons: 8, users: 2, contacts: 2, favorites: 1, circles: 1, creatorMappings: 2, dlsiteWorks: 1)
 # 🔴 削除推奨 (未使用):          10個 (videos関連、audioButtons startTime 1個)
 # 🔶 無効化中 (フォールバック):   4個 (createdBy関連、マイページ用)
 # ℹ️ 自動インデックス対応:        priceHistory (single-fieldで十分)
 # 
 # 【コスト影響】
 # - 削除による削減: 月額 -$20 (年間 -$240)
-# - 新規追加コスト: 月額 +$6  (年間 +$72) ※contacts/favorites追加のみ
-# - 純削減効果:     月額 -$14 (年間 -$168)
+# - 新規追加コスト: 月額 +$10 (年間 +$120) ※contacts/favorites/circles/creators追加
+# - 純削減効果:     月額 -$10 (年間 -$120)
 # 
 # 【実装アクション】
-# 1. 即座実装: terraform apply (contacts, favorites インデックス)
+# 1. 即座実装: terraform apply (contacts, favorites, circles, creators インデックス)
 # 2. 削除実行: terraform destroy -target (videos 未使用10個)
 # 3. priceHistory: Firestore自動インデックスで対応済み
-# 3. 監視継続: 新機能実装時のインデックス要件チェック
+# 4. 監視継続: 新機能実装時のインデックス要件チェック
 # 
 # 【管理方針】
 # - 全複合インデックスをTerraformで一元管理

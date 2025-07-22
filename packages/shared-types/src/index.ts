@@ -7,6 +7,8 @@
 export * from "./age-rating";
 // 音声ボタン関連の型とスキーマのエクスポート（統一）
 export * from "./audio-button";
+// サークル・クリエイター関連の型とスキーマのエクスポート
+export * from "./circle-creator";
 // 共通ユーティリティと型のエクスポート
 export * from "./common";
 // お問い合わせ関連の型とスキーマのエクスポート

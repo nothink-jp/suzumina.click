@@ -9,8 +9,10 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { CircleData, CreatorType, CreatorWorkMapping } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../../infrastructure/management/user-agent-manager";
+import { batchCollectCircleAndCreatorInfo } from "../../services/dlsite/collect-circle-creator-info";
 import { getExistingWorksMap, saveWorksToFirestore } from "../../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../../services/dlsite/individual-info-api-client";
 import {
@@ -112,6 +114,22 @@ interface LocalCollectionMetadata {
 class LocalDataCollector {
 	private readonly collectorVersion = "1.0.0";
 	private readonly collectionEnvironment = "local-japan";
+
+	// サークル・クリエイター収集統計
+	private circleStats = {
+		totalCircles: 0,
+		newCircles: 0,
+		updatedCircles: 0,
+	};
+
+	private creatorStats = {
+		totalMappings: 0,
+		uniqueCreators: new Set<string>(),
+	};
+
+	// APIレスポンスとワークデータの保存用（サークル・クリエイター収集のため）
+	private apiResponses = new Map<string, IndividualInfoAPIResponse>();
+	private workDataMap = new Map<string, OptimizedFirestoreDLsiteWorkData>();
 
 	/**
 	 * アセットファイルから作品IDリストを読み込み
@@ -315,6 +333,15 @@ class LocalDataCollector {
 
 			const workDataList = batchMapIndividualInfoAPIToWorkData(apiResponses, existingWorksMap);
 			logger.debug(`バッチ変換完了: ${workDataList.length}件のワークデータ`);
+
+			// APIレスポンスとワークデータを保存（後でサークル・クリエイター収集に使用）
+			batch.forEach((item, index) => {
+				this.apiResponses.set(item.workId, item.basicInfo);
+				if (workDataList[index]) {
+					this.workDataMap.set(item.workId, workDataList[index]);
+				}
+			});
+
 			const validWorkData = workDataList.filter((work) => {
 				const validation = validateAPIOnlyWorkData(work);
 				if (!validation.isValid) {
@@ -399,6 +426,88 @@ class LocalDataCollector {
 	}
 
 	/**
+	 * サークル・クリエイター情報の収集
+	 */
+	async collectCirclesAndCreators(): Promise<void> {
+		const startTime = Date.now();
+
+		logger.info("🔄 サークル・クリエイター情報の収集を開始...");
+		logger.info(`📊 対象作品数: ${this.apiResponses.size}件`);
+
+		// バッチ処理用のデータを準備
+		const worksForCollection: Array<{
+			workData: any;
+			apiData: IndividualInfoAPIResponse;
+			isNewWork: boolean;
+		}> = [];
+
+		for (const [workId, apiData] of this.apiResponses) {
+			const workData = this.workDataMap.get(workId);
+			if (!workData || !apiData) continue;
+
+			worksForCollection.push({
+				workData,
+				apiData,
+				isNewWork: true, // ローカル収集では全て新規扱い
+			});
+		}
+
+		// バッチ処理でサークル・クリエイター情報を収集
+		const result = await batchCollectCircleAndCreatorInfo(worksForCollection);
+
+		if (result.success) {
+			logger.info(`✅ サークル・クリエイター情報収集完了: ${result.processed}件処理`);
+		} else {
+			logger.warn(`⚠️ サークル・クリエイター情報収集一部失敗: ${result.errors.length}件のエラー`);
+			result.errors.slice(0, 10).forEach((error) => {
+				logger.error(`エラー: ${error.workId} - ${error.error}`);
+			});
+		}
+
+		// 統計情報を収集
+		await this.collectStatistics();
+
+		const duration = Date.now() - startTime;
+		logger.info(`✅ サークル・クリエイター情報収集完了: ${duration}ms`);
+
+		// 統計情報の表示
+		this.displayCircleCreatorStats();
+	}
+
+	/**
+	 * 統計情報の収集
+	 */
+	private async collectStatistics(): Promise<void> {
+		// サークル数を取得
+		const circlesSnapshot = await firestore.collection("circles").get();
+		this.circleStats.totalCircles = circlesSnapshot.size;
+
+		// クリエイターマッピング数を取得
+		const mappingsSnapshot = await firestore.collection("creatorWorkMappings").get();
+		this.creatorStats.totalMappings = mappingsSnapshot.size;
+
+		// ユニーククリエイター数を計算
+		const uniqueCreatorIds = new Set<string>();
+		mappingsSnapshot.forEach((doc) => {
+			const data = doc.data();
+			if (data.creatorId) {
+				uniqueCreatorIds.add(data.creatorId);
+			}
+		});
+		this.creatorStats.uniqueCreators = uniqueCreatorIds;
+	}
+
+	/**
+	 * サークル・クリエイター収集統計の表示
+	 */
+	private displayCircleCreatorStats(): void {
+		console.log("\n=== サークル・クリエイター収集統計 ===");
+		console.log(`🏢 サークル数: ${this.circleStats.totalCircles}`);
+		console.log(`👥 ユニーククリエイター数: ${this.creatorStats.uniqueCreators.size}`);
+		console.log(`🔗 マッピング数: ${this.creatorStats.totalMappings}`);
+	}
+
+	/**
 	 * メタデータの保存
 	 */
 	private async saveCollectionMetadata(
@@ -454,9 +563,13 @@ async function executeCompleteLocalCollection(options?: {
 			logger.info("✅ Firestore投入完了");
 			logger.info(`📊 投入成功: ${uploadResult.totalUploaded}件`);
 			logger.info(`❌ 投入失敗: ${uploadResult.totalErrors}件`);
+
+			// Step 3: サークル・クリエイター情報収集（作品データ投入後に実行）
+			logger.info("🎯 Step 3: サークル・クリエイター情報収集");
+			await collector.collectCirclesAndCreators();
 		}
 
-		// Step 3: メタデータ保存
+		// Step 4: メタデータ保存
 		await collector.saveCollectionMetadata(collectionResult, uploadResult);
 
 		// User-Agent使用統計

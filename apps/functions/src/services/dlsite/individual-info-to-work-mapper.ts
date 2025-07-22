@@ -702,6 +702,7 @@ export function mapIndividualInfoAPIToWorkData(
 		// === 基本識別情報 ===
 		id: productId,
 		productId,
+		circleId: apiData.maker_id || undefined, // サークルID追加
 
 		// === 基本作品情報 ===
 		title: workName,
