@@ -1,4 +1,4 @@
-import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
+import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Calendar, ExternalLink, Tag, Users } from "lucide-react";
@@ -115,7 +115,16 @@ export default function WorkCard({ work, variant = "default", priority = false }
 							{work.title}
 						</h4>
 					</Link>
-					<p className="text-sm text-muted-foreground mb-2">{work.circle}</p>
+					{work.circleId ? (
+						<Link
+							href={`/circles/${work.circleId}`}
+							className="text-sm text-muted-foreground hover:text-primary transition-colors mb-2 block"
+						>
+							{work.circle}
+						</Link>
+					) : (
+						<p className="text-sm text-muted-foreground mb-2">{work.circle}</p>
+					)}
 
 					{/* ジャンル表示 */}
 					<ul className="flex flex-wrap gap-1 mb-2" aria-label="作品ジャンル">

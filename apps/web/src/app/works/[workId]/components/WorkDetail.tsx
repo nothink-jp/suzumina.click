@@ -1,5 +1,6 @@
 "use client";
 
+import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types";
 import {
 	checkAgeRating,
 	type FrontendWorkEvaluation,
@@ -9,7 +10,6 @@ import {
 	getWorkLanguageDisplayName,
 	getWorkPrimaryLanguage,
 } from "@suzumina.click/shared-types";
-import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import NotImplementedOverlay from "@suzumina.click/ui/components/custom/not-implemented-overlay";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -156,7 +156,23 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 					<div className="space-y-4">
 						<div>
 							<h1 className="text-3xl font-bold text-gray-900 mb-2">{work.title}</h1>
-							<p className="text-lg text-gray-700">サークル: {work.circle}</p>
+							<p className="text-lg text-gray-700">
+								サークル:{" "}
+								{work.circleId ? (
+									<Link href={`/circles/${work.circleId}`} className="text-primary hover:underline">
+										{work.circle}
+									</Link>
+								) : (
+									<>
+										{work.circle}
+										{process.env.NODE_ENV === "development" && (
+											<span className="text-xs text-red-500 ml-2">
+												[DEBUG: circleId={JSON.stringify(work.circleId)}]
+											</span>
+										)}
+									</>
+								)}
+							</p>
 						</div>
 
 						{/* 価格 */}
@@ -590,16 +606,31 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 													<div>
 														<div className="text-sm text-gray-700 mb-2">声優</div>
 														<div className="flex flex-wrap gap-2">
-															{displayVoiceActors.map((actor, index) => (
-																<Badge
-																	key={actor.id || actor.name || index}
-																	variant="secondary"
-																	className="text-xs"
-																	title={actor.id ? `ID: ${actor.id}` : undefined}
-																>
-																	{actor.name}
-																</Badge>
-															))}
+															{displayVoiceActors.map((actor, index) =>
+																actor.id ? (
+																	<Link
+																		key={actor.id}
+																		href={`/creators/${actor.id}`}
+																		className="inline-block"
+																	>
+																		<Badge
+																			variant="secondary"
+																			className="text-xs hover:bg-secondary/80 cursor-pointer"
+																			title={`ID: ${actor.id}`}
+																		>
+																			{actor.name}
+																		</Badge>
+																	</Link>
+																) : (
+																	<Badge
+																		key={actor.name || index}
+																		variant="secondary"
+																		className="text-xs"
+																	>
+																		{actor.name}
+																	</Badge>
+																),
+															)}
 														</div>
 													</div>
 												);
@@ -860,13 +891,26 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									<p className="font-semibold text-gray-900">{work.circle}</p>
 								</div>
 							</div>
-							<Button
-								variant="outline"
-								className="w-full border text-foreground hover:bg-accent"
-								disabled
-							>
-								他の作品を見る（準備中）
-							</Button>
+							{work.circleId ? (
+								<Button
+									variant="outline"
+									className="w-full border text-foreground hover:bg-accent"
+									asChild
+								>
+									<Link href={`/circles/${work.circleId}`}>他の作品を見る</Link>
+								</Button>
+							) : (
+								<Button
+									variant="outline"
+									className="w-full border text-foreground hover:bg-accent"
+									disabled
+								>
+									他の作品を見る（準備中）
+									{process.env.NODE_ENV === "development" && (
+										<span className="text-xs text-red-500 ml-2">[DEBUG: No circleId]</span>
+									)}
+								</Button>
+							)}
 						</CardContent>
 					</Card>
 
@@ -910,12 +954,17 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																	{actor.name.charAt(0)}
 																</span>
 															</div>
-															<span
-																className="text-gray-900 text-sm"
-																title={actor.id ? `ID: ${actor.id}` : undefined}
-															>
-																{actor.name}
-															</span>
+															{actor.id ? (
+																<Link
+																	href={`/creators/${actor.id}`}
+																	className="text-gray-900 text-sm hover:text-primary hover:underline"
+																	title={`ID: ${actor.id}`}
+																>
+																	{actor.name}
+																</Link>
+															) : (
+																<span className="text-gray-900 text-sm">{actor.name}</span>
+															)}
 														</div>
 													))}
 												</div>
@@ -949,12 +998,17 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																	{writer.name.charAt(0)}
 																</span>
 															</div>
-															<span
-																className="text-gray-900 text-sm"
-																title={writer.id ? `ID: ${writer.id}` : undefined}
-															>
-																{writer.name}
-															</span>
+															{writer.id ? (
+																<Link
+																	href={`/creators/${writer.id}`}
+																	className="text-gray-900 text-sm hover:text-primary hover:underline"
+																	title={`ID: ${writer.id}`}
+																>
+																	{writer.name}
+																</Link>
+															) : (
+																<span className="text-gray-900 text-sm">{writer.name}</span>
+															)}
 														</div>
 													))}
 												</div>
@@ -988,12 +1042,17 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																	{illustrator.name.charAt(0)}
 																</span>
 															</div>
-															<span
-																className="text-gray-900 text-sm"
-																title={illustrator.id ? `ID: ${illustrator.id}` : undefined}
-															>
-																{illustrator.name}
-															</span>
+															{illustrator.id ? (
+																<Link
+																	href={`/creators/${illustrator.id}`}
+																	className="text-gray-900 text-sm hover:text-primary hover:underline"
+																	title={`ID: ${illustrator.id}`}
+																>
+																	{illustrator.name}
+																</Link>
+															) : (
+																<span className="text-gray-900 text-sm">{illustrator.name}</span>
+															)}
 														</div>
 													))}
 												</div>
@@ -1027,12 +1086,17 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																	{musician.name.charAt(0)}
 																</span>
 															</div>
-															<span
-																className="text-gray-900 text-sm"
-																title={musician.id ? `ID: ${musician.id}` : undefined}
-															>
-																{musician.name}
-															</span>
+															{musician.id ? (
+																<Link
+																	href={`/creators/${musician.id}`}
+																	className="text-gray-900 text-sm hover:text-primary hover:underline"
+																	title={`ID: ${musician.id}`}
+																>
+																	{musician.name}
+																</Link>
+															) : (
+																<span className="text-gray-900 text-sm">{musician.name}</span>
+															)}
 														</div>
 													))}
 												</div>
@@ -1055,12 +1119,17 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																{creator.name.charAt(0)}
 															</span>
 														</div>
-														<span
-															className="text-gray-900 text-sm"
-															title={creator.id ? `ID: ${creator.id}` : undefined}
-														>
-															{creator.name}
-														</span>
+														{creator.id ? (
+															<Link
+																href={`/creators/${creator.id}`}
+																className="text-gray-900 text-sm hover:text-primary hover:underline"
+																title={`ID: ${creator.id}`}
+															>
+																{creator.name}
+															</Link>
+														) : (
+															<span className="text-gray-900 text-sm">{creator.name}</span>
+														)}
 													</div>
 												))}
 											</div>
@@ -1082,12 +1151,17 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																{creator.name.charAt(0)}
 															</span>
 														</div>
-														<span
-															className="text-gray-900 text-sm"
-															title={creator.id ? `ID: ${creator.id}` : undefined}
-														>
-															{creator.name}
-														</span>
+														{creator.id ? (
+															<Link
+																href={`/creators/${creator.id}`}
+																className="text-gray-900 text-sm hover:text-primary hover:underline"
+																title={`ID: ${creator.id}`}
+															>
+																{creator.name}
+															</Link>
+														) : (
+															<span className="text-gray-900 text-sm">{creator.name}</span>
+														)}
 													</div>
 												))}
 											</div>

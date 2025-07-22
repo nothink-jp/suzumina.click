@@ -15,10 +15,11 @@ import { useCallback } from "react";
 interface PaginationProps {
 	currentPage: number;
 	totalPages: number;
+	baseUrl?: string;
 }
 
 // Client Component版のPagination（URLベースのナビゲーション）
-export default function Pagination({ currentPage, totalPages }: PaginationProps) {
+export default function Pagination({ currentPage, totalPages, baseUrl }: PaginationProps) {
 	const router = useRouter();
 
 	// FID改善: ページ変更をメモ化して再レンダリングを減らす
@@ -29,11 +30,25 @@ export default function Pagination({ currentPage, totalPages }: PaginationProps)
 			}
 
 			// URLを更新してServer Componentでのデータ再取得をトリガー
-			const url = new URL(window.location.href);
-			url.searchParams.set("page", page.toString());
-			router.push(url.pathname + url.search);
+			if (baseUrl) {
+				// 指定されたbaseUrlを使用
+				const url = new URL(baseUrl, window.location.origin);
+				url.searchParams.set("page", page.toString());
+				// 現在のlimitパラメータを保持
+				const currentUrl = new URL(window.location.href);
+				const limit = currentUrl.searchParams.get("limit");
+				if (limit) {
+					url.searchParams.set("limit", limit);
+				}
+				router.push(url.pathname + url.search);
+			} else {
+				// 現在のURLを使用
+				const url = new URL(window.location.href);
+				url.searchParams.set("page", page.toString());
+				router.push(url.pathname + url.search);
+			}
 		},
-		[currentPage, router],
+		[currentPage, router, baseUrl],
 	);
 
 	return (
