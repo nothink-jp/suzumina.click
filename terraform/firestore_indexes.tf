@@ -54,29 +54,9 @@ resource "google_firestore_index" "videos_liveBroadcast_publishedAt_asc" {
 }
 
 # ===================================================================
-# 🔴 DEPRECATED INDEX - 削除推奨 (videoType機能未実装)
+# 🔴 DELETED INDEX - videoType機能未実装により削除済み
 # ===================================================================
-#
-# 🔴 未使用 - videoType フィルター機能が実装されていない
-resource "google_firestore_index" "videos_videoType_publishedAt_desc" {
-  project    = var.gcp_project_id
-  collection = "videos"
-  
-  fields {
-    field_path = "videoType"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "publishedAt"
-    order      = "DESCENDING"
-  }
-
-  fields {
-    field_path = "__name__"
-    order      = "DESCENDING"
-  }
-}
+# videos_videoType_publishedAt_desc: 削除完了
 
 # audioButtons コレクションのインデックス - isPublic（昇順）、createdAt（降順）
 resource "google_firestore_index" "audiobuttons_ispublic_createdat_desc" {
@@ -128,27 +108,7 @@ resource "google_firestore_index" "audiobuttons_ispublic_likecount_desc" {
 
 # Note: category フィールドはタグベースシステムに移行したため、インデックスを削除
 
-# 🔴 未使用 - startTime ソート機能が実装されていない
-# audioButtons コレクションのインデックス - isPublic（昇順）、sourceVideoId（昇順）、startTime（昇順）
-resource "google_firestore_index" "audiobuttons_ispublic_sourcevideoid_starttime_asc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "sourceVideoId"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "startTime"
-    order      = "ASCENDING"
-  }
-}
+# audiobuttons_ispublic_sourcevideoid_starttime_asc: 削除完了 (startTime ソート機能未実装)
 
 # audioButtons コレクションのインデックス - sourceVideoId（昇順）、isPublic（昇順）、createdAt（降順）
 # 動画詳細ページでの音声ボタン取得用
@@ -255,21 +215,8 @@ resource "google_firestore_index" "audiobuttons_createdby_createdat_desc" {
 
 # audioButtons コレクションのインデックス - createdBy（昇順）、createdAt（昇順）
 # レート制限チェッククエリで使用（範囲クエリ対応）
-# ⚠️ フォールバック機能で利用される可能性があるため保持
-# 現在は無効化中だが、将来のレート制限機能復活時に必要
-# 実装時は以下をアンコメント:
-# resource "google_firestore_index" "audiobuttons_createdby_createdat_asc" {
-#   project    = var.gcp_project_id
-#   collection = "audioButtons"
-#   fields {
-#     field_path = "createdBy"
-#     order      = "ASCENDING"
-#   }
-#   fields {
-#     field_path = "createdAt"
-#     order      = "ASCENDING"
-#   }
-# }
+# 🟡 FUTURE FEATURE - レート制限機能用
+# audiobuttons_createdby_createdat_asc: レート制限機能復活時に追加
 
 # users コレクションのインデックス - isPublicProfile（昇順）、createdAt（降順）
 resource "google_firestore_index" "users_ispublicprofile_createdat_desc" {
@@ -316,11 +263,8 @@ resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" 
 # フォールバック戦略により、複合クエリ失敗時はクライアントサイドフィルタリングを使用
 # 将来的に必要な場合のみアンコメント
 
-# ユーザープロフィールページ用インデックス (3個) - 現在はフォールバック対応により不要
-# 実装時は以下をアンコメント:
-# resource "google_firestore_index" "audiobuttons_createdby_ispublic_createdat_desc" { ... }
-# resource "google_firestore_index" "audiobuttons_createdby_ispublic_createdat_asc" { ... }  
-# resource "google_firestore_index" "audiobuttons_createdby_ispublic_playcount_desc" { ... }
+# 🟡 FUTURE FEATURE - ユーザープロフィールページ用
+# フォールバック戦略により現在不要、必要時に3個のインデックスを追加
 
 # Note: Single-field index for releaseDateISO is automatically created by Firestore
 # Removed dlsiteworks_releasedateiso_desc - use single field index controls instead
@@ -328,8 +272,8 @@ resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" 
 # Note: Single-field index for releaseDateISO is automatically created by Firestore
 # Removed dlsiteworks_releasedateiso_asc - use single field index controls instead
 
-# ✅ 使用中 - カテゴリフィルター機能で実装済み
-# videos コレクションのインデックス - categoryId（昇順）、publishedAt（降順）
+# ✅ IMPORT REQUIRED - カテゴリフィルター機能で使用中
+# videos_categoryid_publishedat_desc: 既存インデックス（要インポート）
 resource "google_firestore_index" "videos_categoryid_publishedat_desc" {
   project    = var.gcp_project_id
   collection = "videos"
@@ -345,7 +289,7 @@ resource "google_firestore_index" "videos_categoryid_publishedat_desc" {
   }
 }
 
-# ✅ 使用中 - カテゴリフィルター機能（古い順ソート）
+# ✅ IMPORT REQUIRED - カテゴリフィルター機能（古い順ソート）
 resource "google_firestore_index" "videos_categoryid_publishedat_asc" {
   project    = var.gcp_project_id
   collection = "videos"
@@ -362,102 +306,17 @@ resource "google_firestore_index" "videos_categoryid_publishedat_asc" {
 }
 
 # ===================================================================
-# 🔴 DEPRECATED INDEXES - 削除推奨 (配信詳細フィルター未実装)
+# 🔴 DELETED INDEXES - 配信詳細フィルター機能未実装により削除済み
 # ===================================================================
 # 
-# 以下のインデックスは未使用 - 配信詳細フィルター機能が実装されていない
-# 削除により月額約$12のコスト削減が可能
-
-# 🔴 未使用 - 配信アーカイブフィルター機能が実装されていない (6個のインデックス)
-resource "google_firestore_index" "videos_livestreamingdetails_actualendtime_publishedat_desc" {
-  project    = var.gcp_project_id
-  collection = "videos"
-  
-  fields {
-    field_path = "liveStreamingDetails.actualEndTime"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "publishedAt"
-    order      = "DESCENDING"
-  }
-}
-
-resource "google_firestore_index" "videos_livestreamingdetails_actualendtime_publishedat_asc" {
-  project    = var.gcp_project_id
-  collection = "videos"
-  
-  fields {
-    field_path = "liveStreamingDetails.actualEndTime"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "publishedAt"
-    order      = "ASCENDING"
-  }
-}
-
-resource "google_firestore_index" "videos_livestreamingdetails_scheduledstarttime_publishedat_desc" {
-  project    = var.gcp_project_id
-  collection = "videos"
-  
-  fields {
-    field_path = "liveStreamingDetails.scheduledStartTime"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "publishedAt"
-    order      = "DESCENDING"
-  }
-}
-
-resource "google_firestore_index" "videos_livestreamingdetails_scheduledstarttime_publishedat_asc" {
-  project    = var.gcp_project_id
-  collection = "videos"
-  
-  fields {
-    field_path = "liveStreamingDetails.scheduledStartTime"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "publishedAt"
-    order      = "ASCENDING"
-  }
-}
-
-resource "google_firestore_index" "videos_livestreamingdetails_null_publishedat_desc" {
-  project    = var.gcp_project_id
-  collection = "videos"
-  
-  fields {
-    field_path = "liveStreamingDetails"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "publishedAt"
-    order      = "DESCENDING"
-  }
-}
-
-resource "google_firestore_index" "videos_livestreamingdetails_null_publishedat_asc" {
-  project    = var.gcp_project_id
-  collection = "videos"
-  
-  fields {
-    field_path = "liveStreamingDetails"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "publishedAt"
-    order      = "ASCENDING"
-  }
-}
+# 以下6個のインデックスを削除して月額$12のコスト削減を実現
+# 
+# videos_livestreamingdetails_actualendtime_publishedat_desc: 削除完了
+# videos_livestreamingdetails_actualendtime_publishedat_asc: 削除完了
+# videos_livestreamingdetails_scheduledstarttime_publishedat_desc: 削除完了
+# videos_livestreamingdetails_scheduledstarttime_publishedat_asc: 削除完了
+# videos_livestreamingdetails_null_publishedat_desc: 削除完了
+# videos_livestreamingdetails_null_publishedat_asc: 削除完了
 
 # ===================================================================
 # ℹ️  NOTES - 自動作成・外部管理インデックス
@@ -477,8 +336,8 @@ resource "google_firestore_index" "videos_livestreamingdetails_null_publishedat_
 # 🔴 CRITICAL MISSING INDEXES - 即座に実装必要
 # ===================================================================
 
-# contacts コレクション - 管理者お問い合わせ管理機能で必須
-# contact-actions.ts の getContactsForAdmin() で使用
+# ✅ IMPORT REQUIRED - 管理者お問い合わせ管理機能で使用中
+# contacts_status_createdat_desc: 既存インデックス（要インポート）
 resource "google_firestore_index" "contacts_status_createdat_desc" {
   project    = var.gcp_project_id
   collection = "contacts"
@@ -499,8 +358,7 @@ resource "google_firestore_index" "contacts_status_createdat_desc" {
   }
 }
 
-# contacts コレクション - 優先度別お問い合わせフィルター用
-# contact-actions.ts の getContactsForAdmin() で使用
+# ✅ IMPORT REQUIRED - 優先度別お問い合わせフィルター用
 resource "google_firestore_index" "contacts_priority_createdat_desc" {
   project    = var.gcp_project_id
   collection = "contacts"
@@ -525,28 +383,8 @@ resource "google_firestore_index" "contacts_priority_createdat_desc" {
 # 🟡 PLANNED INDEXES - 将来機能強化用
 # ===================================================================
 
-# Collection Group favorites - お気に入り統計・管理者機能用
-# 将来的にお気に入り機能拡張時に必要
-resource "google_firestore_index" "favorites_collection_group_audiobuttonid_createdat" {
-  project     = var.gcp_project_id
-  collection  = "favorites"
-  query_scope = "COLLECTION_GROUP"
-  
-  fields {
-    field_path = "audioButtonId"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "createdAt"
-    order      = "DESCENDING"
-  }
-  
-  fields {
-    field_path = "__name__"
-    order      = "DESCENDING"
-  }
-}
+# 🟡 FUTURE FEATURE - Collection Group favorites (将来拡張用)
+# favorites_collection_group_audiobuttonid_createdat: 将来実装時に管理者用インデックスとして追加
 
 # ===================================================================
 # 📈 PRICE HISTORY INDEXES - 価格履歴サブコレクション用
@@ -641,7 +479,7 @@ resource "google_firestore_index" "dlsiteworks_circleid_registdate_desc" {
 }
 
 # ===================================================================
-# 📊 SUMMARY - Terraform管理インデックス状況 (2025-07-21更新)
+# 📊 SUMMARY - Terraform管理インデックス状況 (2025-07-22更新 - クリーンアップ完了)
 # ===================================================================
 # 
 # 【現在の構成】
