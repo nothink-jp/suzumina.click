@@ -123,10 +123,8 @@ async function processSingleBatch(works: OptimizedFirestoreDLsiteWorkData[]): Pr
 		batch.set(docRef, work, { merge: true });
 	}
 
-	const startTime = Date.now();
 	await batch.commit();
-	const duration = Date.now() - startTime;
-	logger.info(`✅ 単一バッチ実行完了: ${works.length}件 (${duration}ms)`);
+	// 単一バッチ実行完了ログは省略（ログ削減）
 }
 
 // 最適化構造では未使用の関数を削除
@@ -153,7 +151,7 @@ export async function saveWorksToFirestore(
 			await processSingleBatch(works);
 		}
 
-		logger.info(`Firestore保存完了: ${works.length}件`);
+		// Firestore保存完了ログは省略（ログ削減）
 	} catch (error) {
 		logger.error("Firestore保存中にエラーが発生:", {
 			error:

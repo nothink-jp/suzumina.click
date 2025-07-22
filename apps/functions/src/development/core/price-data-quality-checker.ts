@@ -70,7 +70,7 @@ class PriceDataQualityChecker {
 			}
 		}
 
-		console.log(`✅ 全作品チェック完了: ${this.checkedWorks}件`);
+		// 全作品チェック完了ログは省略（成功時ログ削減）
 	}
 
 	/**
@@ -330,7 +330,7 @@ class PriceDataQualityChecker {
 		);
 
 		if (highPriorityIssues.length === 0) {
-			console.log("  重要度の高い問題は見つかりませんでした ✅");
+			// 問題なし確認ログは省略（成功時ログ削減）
 		} else {
 			highPriorityIssues.slice(0, 10).forEach((issue, index) => {
 				console.log(`\n  ${index + 1}. [${issue.severity.toUpperCase()}] ${issue.workId}`);

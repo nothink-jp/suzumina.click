@@ -83,14 +83,14 @@ function extractWorkIdsFromHtml(
 	enableDetailedLogging = false,
 ): Set<string> {
 	const allMatches = new Set<string>();
-	let patternUsed = "fallback";
+	// let patternUsed = "fallback"; // 未使用変数（ログ削減により不要）
 
 	// メインパターンの試行
 	if (useMainPattern) {
 		const searchResultSections = [...html.matchAll(WORK_ID_EXTRACTION_PATTERNS.main[0])];
 
 		if (searchResultSections.length > 0) {
-			patternUsed = "main";
+			// patternUsed = "main"; // 未使用（ログ削減により不要）
 
 			for (const section of searchResultSections) {
 				const sectionHtml = section[0];
@@ -115,7 +115,7 @@ function extractWorkIdsFromHtml(
 			logger.debug("検索結果コンテナが見つからないため、代替パターンを使用");
 		}
 
-		patternUsed = "fallback";
+		// patternUsed = "fallback"; // 未使用（ログ削減により不要）
 
 		for (const pattern of WORK_ID_EXTRACTION_PATTERNS.fallback) {
 			const matches = [...html.matchAll(pattern)];
@@ -129,7 +129,7 @@ function extractWorkIdsFromHtml(
 	}
 
 	if (enableDetailedLogging && allMatches.size > 0) {
-		logger.debug(`パターン ${patternUsed} で ${allMatches.size}件の作品IDを抽出`);
+		// パターン抽出ログは省略（ログ削減）
 	}
 
 	return allMatches;
@@ -196,8 +196,7 @@ export async function collectAllWorkIds(
 			allWorkIds.push(...pageWorkIdsArray);
 
 			if (enableDetailedLogging) {
-				logger.info(`ページ ${currentPage}: ${pageWorkIds.size}件の作品IDを取得`);
-				logger.debug(`取得したID例: ${pageWorkIdsArray.slice(0, 3).join(", ")}`);
+				// ページごとの作品ID取得ログは省略（ログ削減）
 			}
 
 			// 最終ページ判定

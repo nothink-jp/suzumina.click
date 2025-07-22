@@ -22,6 +22,21 @@ import * as logger from "../../shared/logger";
  * Individual Info API レスポンスの完全型定義（254フィールド）
  * DLsite API仕様に基づく包括的データ構造
  */
+/**
+ * LanguageEditionItem interface
+ * 言語版アイテムの型定義
+ */
+interface LanguageEditionItem {
+	workno: string;
+	edition_id?: number;
+	edition_type?: string;
+	display_order?: number;
+	label: string;
+	lang: string;
+	dl_count?: string;
+	display_label?: string;
+}
+
 export interface IndividualInfoAPIResponse {
 	// === 基本作品情報 ===
 	workno?: string;
@@ -176,17 +191,8 @@ export interface IndividualInfoAPIResponse {
 		production_trade_price_rate?: number;
 	};
 
-	// === 言語版情報 ===
-	language_editions?: Array<{
-		workno: string;
-		edition_id?: number;
-		edition_type?: string;
-		display_order?: number;
-		label: string;
-		lang: string;
-		dl_count?: string;
-		display_label?: string;
-	}>;
+	// === 言語版情報 (配列・オブジェクト両対応) ===
+	language_editions?: Array<LanguageEditionItem> | Record<string, LanguageEditionItem>;
 
 	// === 販売状態 ===
 	sales_status?: {
@@ -572,7 +578,7 @@ export function mapIndividualInfoAPIToWorkData(
 	const now = new Date().toISOString();
 	const productId = apiData.workno || apiData.product_id;
 
-	logger.debug(`Individual Info API -> Work data mapping: ${productId}`);
+	// Individual Info API -> Work data mappingは省略
 
 	// 基本フィールドの存在確認（寛容な処理）
 	if (!productId) {
@@ -584,12 +590,7 @@ export function mapIndividualInfoAPIToWorkData(
 	const makerName: string = apiData.maker_name || "Unknown Maker";
 
 	// 重要なフィールドが不足している場合はワーニングログ
-	if (!apiData.work_name) {
-		logger.warn(`Missing work_name for ${productId}, using fallback`);
-	}
-	if (!apiData.maker_name) {
-		logger.warn(`Missing maker_name for ${productId}, using fallback`);
-	}
+	// Missing fieldログは省略
 
 	// 基本情報の変換
 	const category = extractWorkCategory(apiData);
@@ -602,17 +603,7 @@ export function mapIndividualInfoAPIToWorkData(
 	// 無料作品・価格取得失敗の詳細情報をログ出力
 	const isFreeOrMissingPrice = price.isFreeOrMissingPrice;
 	if (isFreeOrMissingPrice) {
-		logger.info(`🔍 価格情報確認 ${productId}:`, {
-			workId: productId,
-			title: apiData.work_name,
-			circle: apiData.maker_name,
-			price: apiData.price,
-			official_price: apiData.official_price,
-			on_sale: apiData.on_sale,
-			sales_status: apiData.sales_status,
-			isFreeOrMissingPrice: true,
-			priceStatus: apiData.price === 0 ? "無料作品または価格取得失敗" : "価格取得失敗",
-		});
+		// 価格情報確認ログは省略
 	}
 
 	// キャンペーン情報（一時的に未使用）
@@ -647,19 +638,32 @@ export function mapIndividualInfoAPIToWorkData(
 			}
 		: undefined;
 
-	// 言語版情報
-	const languageDownloads: LanguageDownload[] | undefined = apiData.language_editions?.map(
-		(le) => ({
-			workno: le.workno,
-			editionId: le.edition_id,
-			editionType: le.edition_type,
-			displayOrder: le.display_order,
-			label: le.label,
-			lang: le.lang,
-			dlCount: le.dl_count || "0",
-			displayLabel: le.display_label || le.label,
-		}),
-	);
+	// 言語版情報 (配列・オブジェクト両対応)
+	const languageDownloads: LanguageDownload[] | undefined = apiData.language_editions
+		? Array.isArray(apiData.language_editions)
+			? apiData.language_editions.map((le) => ({
+					workno: le.workno,
+					editionId: le.edition_id,
+					editionType: le.edition_type,
+					displayOrder: le.display_order,
+					label: le.label,
+					lang: le.lang,
+					dlCount: le.dl_count || "0",
+					displayLabel: le.display_label || le.label,
+				}))
+			: Object.values(apiData.language_editions as Record<string, LanguageEditionItem>).map(
+					(le) => ({
+						workno: le.workno,
+						editionId: le.edition_id,
+						editionType: le.edition_type,
+						displayOrder: le.display_order,
+						label: le.label,
+						lang: le.lang,
+						dlCount: le.dl_count || "0",
+						displayLabel: le.display_label || le.label,
+					}),
+				)
+		: undefined;
 
 	// 販売状態（一時的に未使用）
 	// const salesStatus: SalesStatus | undefined = apiData.sales_status ? {
@@ -876,7 +880,7 @@ function mapAgeCategory(ageCategory?: number): string | undefined {
 			return "R18";
 		default:
 			// 不明な値の場合はログに記録して返す
-			logger.warn(`Unknown age_category value: ${ageCategory}`);
+			// Unknown age_categoryログは省略
 			return "未設定";
 	}
 }
@@ -891,7 +895,7 @@ function extractHighResFromSrcset(
 
 	// オブジェクトの場合は処理をスキップ（srcsetは通常文字列）
 	if (typeof srcset === "object") {
-		logger.warn("srcsetにオブジェクトが渡されました", { srcset });
+		// srcsetオブジェクトログは省略
 		return undefined;
 	}
 
@@ -932,7 +936,7 @@ function convertToISODate(dateString: string): string | undefined {
 
 		return date.toISOString().split("T")[0]; // YYYY-MM-DD
 	} catch (error) {
-		logger.warn(`Date conversion failed: ${dateString}`, { error });
+		// Date conversion failedログは省略
 		return undefined;
 	}
 }
@@ -951,7 +955,7 @@ function formatDateForDisplay(dateString: string): string | undefined {
 			day: "numeric",
 		});
 	} catch (error) {
-		logger.warn(`Date formatting failed: ${dateString}`, { error });
+		// Date formatting failedログは省略
 		return undefined;
 	}
 }
@@ -972,7 +976,7 @@ function normalizeImageUrl(url: string | undefined | number | null | object): st
 			return normalizeImageUrl(candidateUrl);
 		}
 		// 適切なプロパティが見つからない場合はundefinedを返す
-		logger.warn("画像URLオブジェクトに有効なプロパティが見つかりません", { url });
+		// 画像URLオブジェクトログは省略
 		return undefined;
 	}
 
@@ -1078,7 +1082,7 @@ export function batchMapIndividualInfoAPIToWorkData(
 		try {
 			const productId = apiData.workno || apiData.product_id;
 			if (!productId) {
-				logger.warn("Skipping work data mapping: missing productId");
+				// Skipping work data mappingログは省略
 				continue;
 			}
 
@@ -1102,6 +1106,6 @@ export function batchMapIndividualInfoAPIToWorkData(
 		}
 	}
 
-	logger.info(`Batch mapping completed: ${results.length}/${apiResponses.length} works`);
+	// Batch mapping completedログは省略
 	return results;
 }

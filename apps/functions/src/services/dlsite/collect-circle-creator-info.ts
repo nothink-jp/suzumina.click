@@ -41,7 +41,7 @@ export async function collectCircleAndCreatorInfo(
 		// バッチコミット（最大500操作）
 		await batch.commit();
 
-		logger.info(`サークル・クリエイター情報収集完了: ${workData.id} (${workData.title})`);
+		// 個別作品の収集完了ログは省略（ログ削減）
 
 		return { success: true };
 	} catch (error) {
@@ -86,7 +86,7 @@ async function updateCircleInfo(
 			createdAt: FieldValue.serverTimestamp() as any,
 		};
 		batch.set(circleRef, newCircle);
-		logger.info(`新規サークル登録: ${circleId} - ${apiData.maker_name}`);
+		// 新規サークル登録ログは省略（ログ削減）
 	} else if (isNewWork) {
 		// 既存サークルの新作品追加時のみworkCountを増加
 		const updateData = {
@@ -95,7 +95,7 @@ async function updateCircleInfo(
 			lastUpdated: FieldValue.serverTimestamp(),
 		};
 		batch.update(circleRef, updateData);
-		logger.debug(`サークル更新（新作品）: ${circleId} - ${apiData.maker_name}`);
+		// サークル更新ログは省略（ログ削減）
 	} else {
 		// 既存作品の更新時は名前のみ更新
 		const updateData = {
@@ -165,7 +165,7 @@ async function updateCreatorMappings(
 	}
 
 	if (processedCreators.size > 0) {
-		logger.debug(`クリエイターマッピング更新: ${workId} - ${processedCreators.size}名`);
+		// クリエイターマッピング更新ログは省略（ログ削減）
 	}
 }
 

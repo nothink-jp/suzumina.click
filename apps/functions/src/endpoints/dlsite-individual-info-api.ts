@@ -138,7 +138,7 @@ async function updateUnifiedMetadata(
  * 単一バッチの処理
  */
 async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetchResult> {
-	const { batchNumber, workIds, startTime } = batchInfo;
+	const { batchNumber, workIds } = batchInfo;
 
 	try {
 		// 既存データの確認
@@ -176,9 +176,7 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 				const validWorkData = workDataList.filter((work) => {
 					const validation = validateAPIOnlyWorkData(work);
 					if (!validation.isValid) {
-						logger.warn(`データ品質エラー: ${work.productId}`, {
-							errors: validation.errors,
-						});
+						// データ品質エラーは詳細ログとして省略
 					}
 					return validation.isValid;
 				});
@@ -197,17 +195,11 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 
 				// 結果集計（失敗のみログ出力）
 				let successCount = 0;
-				priceHistoryResults.forEach((result, index) => {
+				priceHistoryResults.forEach((result) => {
 					if (result.status === "fulfilled") {
 						if (result.value) {
 							successCount++;
-						} else {
-							logger.warn(`価格履歴保存失敗（データ無効）: ${apiResponses[index]?.workno}`);
 						}
-					} else {
-						logger.warn(`価格履歴保存失敗（例外）: ${apiResponses[index]?.workno}`, {
-							error: result.reason,
-						});
 					}
 				});
 
@@ -231,23 +223,15 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 						.filter((item) => item.apiData.workno); // API データがあるもののみ
 
 					if (circleCreatorWorkData.length > 0) {
-						logger.info(`🎯 サークル・クリエイター情報収集開始: ${circleCreatorWorkData.length}件`);
 						const circleCreatorResult =
 							await batchCollectCircleAndCreatorInfo(circleCreatorWorkData);
 
 						results.circleCreatorUpdated = circleCreatorResult.processed;
 
-						if (circleCreatorResult.success) {
-							logger.info(
-								`✅ サークル・クリエイター情報収集完了: ${circleCreatorResult.processed}件`,
-							);
-						} else {
+						if (!circleCreatorResult.success && circleCreatorResult.errors.length > 0) {
 							logger.warn(
-								`⚠️ サークル・クリエイター情報収集エラー: ${circleCreatorResult.errors.length}件`,
+								`サークル・クリエイター情報収集エラー: ${circleCreatorResult.errors.length}件`,
 							);
-							circleCreatorResult.errors.forEach((error) => {
-								logger.warn(`サークル・クリエイター処理エラー: ${error.workId} - ${error.error}`);
-							});
 						}
 					}
 				} catch (error) {
@@ -268,13 +252,7 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 		// 基本データ処理実行
 		await basicDataProcessing();
 
-		// バッチ統計情報
-		const processingTime = Date.now() - startTime.toMillis();
-		logger.info(
-			`✅ バッチ ${batchNumber} 完了: ${results.basicDataUpdated}件更新, ${results.circleCreatorUpdated}件サークル・クリエイター更新 (${(processingTime / 1000).toFixed(1)}s, 成功率${((apiDataMap.size / workIds.length) * 100).toFixed(1)}%)`,
-		);
-
-		// 失敗作品IDログ（簡素化）
+		// 失敗作品がある場合のみログ出力
 		if (failedWorkIds.length > 0) {
 			logger.warn(`バッチ ${batchNumber} 失敗: ${failedWorkIds.length}件`);
 		}
@@ -303,9 +281,7 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: バッチ処理のため複雑度が高い
 async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
-	logger.info("🚀 DLsite統合データ収集システム開始（バッチ処理版）");
-	logger.info("📋 Individual Info API統合アーキテクチャ - 重複API呼び出し完全排除");
-	logger.info("⚡ 効率化済み - 現在リージョンで取得可能な作品のみ処理");
+	// 統合データ収集システム開始
 
 	const startTime = Date.now();
 
@@ -327,14 +303,10 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			allWorkIds = metadata.allWorkIds;
 			batches = chunkArray(allWorkIds, BATCH_SIZE);
 			startBatch = metadata.currentBatch;
-			logger.info(`🔄 バッチ処理継続: バッチ ${startBatch + 1}/${batches.length}から再開`);
 		} else {
 			// 新規処理の場合
-			logger.info("🔍 新規バッチ処理開始: 作品ID収集中...");
-
-			// 現在のリージョンで作品IDを取得（簡素化済み）
+			// 現在のリージョンで作品IDを取得
 			allWorkIds = await collectWorkIdsForProduction();
-			logger.info(`✅ 作品ID収集完了: ${allWorkIds.length}件`);
 
 			if (allWorkIds.length === 0) {
 				handleNoWorkIdsError();
@@ -361,7 +333,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 				basicDataUpdated: 0,
 			});
 
-			logger.info(`🎯 バッチ処理対象: ${allWorkIds.length}件を${batches.length}バッチで処理`);
+			// バッチ処理対象設定完了
 		}
 
 		// 3. バッチ処理実行
@@ -379,8 +351,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 
 			// 実行時間制限チェック
 			if (elapsedTime > MAX_EXECUTION_TIME) {
-				logger.warn(`⏰ 実行時間制限に達しました: ${(elapsedTime / 1000).toFixed(1)}秒`);
-				logger.info(`📊 中断時点の進捗: ${i}/${batches.length}バッチ完了`);
+				logger.warn(`実行時間制限により処理中断: ${i}/${batches.length}バッチ完了`);
 
 				// 継続処理のためのメタデータ更新（次のバッチから再開）
 				await updateUnifiedMetadata({
@@ -438,9 +409,8 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		}
 
 		// 4. 全バッチ処理完了
-		const processingTime = Date.now() - startTime;
 		logger.info(
-			`🎉 全バッチ完了: ${totalResults.totalBasicDataUpdated}件更新, サークル・クリエイター情報収集完了 (${(processingTime / 1000).toFixed(1)}s, エラー${totalResults.totalErrors.length}件)`,
+			`全バッチ完了: ${totalResults.totalBasicDataUpdated}件更新, エラー${totalResults.totalErrors.length}件`,
 		);
 
 		// User-Agent使用統計サマリーを出力
@@ -481,7 +451,7 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 		const metadata = await getOrCreateUnifiedMetadata();
 
 		if (metadata.isInProgress) {
-			logger.warn("前回の統合データ収集処理が完了していません");
+			logger.warn("前回の処理が未完了のため中断");
 			return {
 				workCount: 0,
 				apiCallCount: 0,
@@ -508,9 +478,8 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 			});
 
 			logger.info(
-				`✅ DLsite統合データ収集完了: ${result.basicDataUpdated}件更新 (API${result.apiCallCount}件)`,
+				`統合データ収集完了: ${result.basicDataUpdated}件更新, API${result.apiCallCount}件`,
 			);
-			logger.info("🎯 統合アーキテクチャ実現 - 重複API呼び出し100%排除");
 		} else {
 			// エラーが発生した場合でも isInProgress を false にリセット
 			await updateUnifiedMetadata({
@@ -548,8 +517,7 @@ async function fetchUnifiedDataCollectionLogic(): Promise<UnifiedFetchResult> {
 export const fetchDLsiteWorksIndividualAPI = async (
 	event: CloudEvent<PubsubMessage>,
 ): Promise<void> => {
-	logger.info("🚀 DLsite統合データ収集エンドポイント開始 (GCFv2 CloudEvent Handler)");
-	logger.info("📋 Individual Info API統合アーキテクチャ - 基本データ+時系列データ同時収集");
+	// DLsite統合データ収集エンドポイント開始
 
 	try {
 		const message = event.data;
@@ -559,16 +527,10 @@ export const fetchDLsiteWorksIndividualAPI = async (
 			return;
 		}
 
-		// 属性情報の処理
-		if (message.attributes) {
-			logger.info("受信した属性情報:", message.attributes);
-		}
-
-		// デコード処理
+		// メッセージデコード処理
 		if (message.data) {
 			try {
-				const decodedData = Buffer.from(message.data, "base64").toString("utf-8");
-				logger.info("メッセージデータ:", { message: decodedData });
+				Buffer.from(message.data, "base64").toString("utf-8");
 			} catch (err) {
 				logger.error("Base64デコードエラー:", err);
 				return;
@@ -581,16 +543,10 @@ export const fetchDLsiteWorksIndividualAPI = async (
 		if (result.error) {
 			logger.warn(`統合データ収集処理エラー: ${result.error}`);
 		} else {
-			logger.info("✅ 統合データ収集処理完了");
-			logger.info(`基本データ更新: ${result.basicDataUpdated}件`);
-			logger.info(`API呼び出し総数: ${result.apiCallCount}件`);
-
-			if (result.unificationComplete) {
-				logger.info("🎯 統合アーキテクチャ完全実現 - 重複API呼び出し100%排除");
-			}
+			logger.info(
+				`統合データ収集完了: ${result.basicDataUpdated}件更新, API${result.apiCallCount}件`,
+			);
 		}
-
-		logger.info("DLsite統合データ収集処理終了");
 		return;
 	} catch (error) {
 		logger.error("統合データ収集処理で例外:", { error });

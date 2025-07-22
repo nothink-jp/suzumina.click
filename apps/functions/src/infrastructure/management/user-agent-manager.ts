@@ -6,8 +6,6 @@
  * アクセスパターンの検出を回避します。
  */
 
-import * as logger from "../../shared/logger";
-
 /**
  * User-Agent設定
  */
@@ -37,7 +35,7 @@ export class UserAgentManager {
 	private static instance: UserAgentManager;
 	private stats: UserAgentStats;
 	private readonly configs: UserAgentConfig[];
-	private readonly rotationThreshold = 3; // 同一User-Agentの連続使用制限を削減
+	// private readonly rotationThreshold = 3; // 同一User-Agentの連続使用制限（現在未使用）
 	private readonly cooldownPeriod = 30000; // クールダウン期間を30秒に短縮
 
 	private constructor() {
@@ -49,10 +47,7 @@ export class UserAgentManager {
 			detectionRisk: "low",
 		};
 
-		logger.debug("UserAgentManager初期化完了", {
-			agentCount: this.configs.length,
-			rotationThreshold: this.rotationThreshold,
-		});
+		// UserAgentManager初期化ログは省略
 	}
 
 	/**
@@ -268,15 +263,7 @@ export class UserAgentManager {
 				current.lastUsed < oldest.lastUsed ? current : oldest,
 			);
 
-			// 緊急時は警告レベルを下げてログの頻度を削減
-			if (this.stats.totalRequests % 50 === 0) {
-				// 50リクエストごとに1回だけログ
-				logger.info(`緊急時User-Agent使用 (${this.stats.totalRequests}回目)`, {
-					selectedBrowser: oldestConfig.browser,
-					availableAgents: this.configs.length,
-					totalRequests: this.stats.totalRequests,
-				});
-			}
+			// 緊急時ログは省略（開発時の詳細ログが不要）
 			return oldestConfig;
 		}
 
@@ -329,16 +316,7 @@ export class UserAgentManager {
 			this.stats.detectionRisk = "low";
 		}
 
-		// 高リスク時のみ警告（頻度を削減）
-		if (this.stats.detectionRisk === "high" && this.stats.totalRequests % 100 === 0) {
-			logger.warn(`User-Agent検出リスク高 (${this.stats.totalRequests}回目)`, {
-				maxUseCount,
-				minUseCount,
-				usageVariance,
-				totalAgents: this.configs.length,
-				recommendation: "大量処理中につき継続監視",
-			});
-		}
+		// 検出リスク警告は省略（運用上のログ削減）
 	}
 
 	/**
@@ -364,7 +342,7 @@ export class UserAgentManager {
 			detectionRisk: "low",
 		};
 
-		logger.info("User-Agent使用統計をリセットしました");
+		// User-Agent統計リセットログは省略
 	}
 
 	/**
@@ -444,15 +422,8 @@ export function generateDLsiteHeaders(referer?: string): Record<string, string> 
 
 /**
  * User-Agent使用統計のサマリーを出力（大量処理完了時用）
+ * 注: ログ削減のため出力を省略
  */
 export function logUserAgentSummary(): void {
-	const manager = getUserAgentManager();
-	const stats = manager.getStats();
-
-	logger.info("📊 User-Agent使用統計サマリー", {
-		totalRequests: stats.totalRequests,
-		detectionRisk: stats.detectionRisk,
-		distribution: stats.agentDistribution,
-		recommendation: stats.detectionRisk === "high" ? "次回実行前にリセット推奨" : "継続利用可能",
-	});
+	// User-Agent統計サマリーログは省略（ログ削減）
 }

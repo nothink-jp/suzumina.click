@@ -9,7 +9,6 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { CircleData, CreatorType, CreatorWorkMapping } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../../infrastructure/management/user-agent-manager";
 import { batchCollectCircleAndCreatorInfo } from "../../services/dlsite/collect-circle-creator-info";
@@ -170,21 +169,26 @@ class LocalDataCollector {
 	 * ローカル環境での完全データ収集
 	 */
 	async collectCompleteLocalData(): Promise<LocalCollectionResult> {
-		logger.info("🏠 ローカル完全データ収集開始");
+		// ローカル完全データ収集開始
 		const startTime = Date.now();
 
 		const assetWorkIds = this.loadAssetFileWorkIds();
 		const results: LocalCollectedWorkData[] = [];
 		const errors: CollectionError[] = [];
 
-		logger.info(`🎯 収集対象: ${assetWorkIds.length}件の作品`);
+		logger.info(`収集対象: ${assetWorkIds.length}件`);
 
 		// バッチ処理で実行
 		const batches = chunkArray(assetWorkIds, BATCH_SIZE);
-		logger.info(`📦 ${batches.length}バッチで処理実行`);
+		// バッチ処理設定完了
 
 		for (const [batchIndex, batch] of batches.entries()) {
-			logger.info(`🔄 バッチ ${batchIndex + 1}/${batches.length} 処理中: ${batch.length}件`);
+			// 進捗ログは10バッチ毎に表示
+			if (batchIndex % 10 === 0 || batchIndex === batches.length - 1) {
+				logger.info(
+					`バッチ進捗: ${batchIndex + 1}/${batches.length} (${Math.round(((batchIndex + 1) / batches.length) * 100)}%)`,
+				);
+			}
 
 			try {
 				// バッチでデータ取得
@@ -210,7 +214,7 @@ class LocalDataCollector {
 						};
 
 						results.push(localData);
-						logger.debug(`✅ ローカル収集成功: ${workId}`);
+						// 個別成功ログは省略
 					} catch (error) {
 						errors.push({
 							workId,
@@ -222,7 +226,7 @@ class LocalDataCollector {
 				}
 
 				// 🆕 価格履歴保存処理（バッチ単位で実行）
-				logger.info(`🔍 価格履歴保存開始: バッチ ${batchIndex + 1}/${batches.length}`);
+				// 価格履歴保存処理
 				const priceHistoryResults = await Promise.allSettled(
 					Array.from(batchResults.entries())
 						.filter(([, apiData]) => apiData.workno) // worknoが存在するもののみ
@@ -241,15 +245,12 @@ class LocalDataCollector {
 						}
 					} else {
 						priceHistoryFailure++;
-						logger.warn(`価格履歴保存失敗（例外）: ${batch[index]}`, {
-							error: result.reason,
-						});
+						const workIds = Array.from(batchResults.keys());
+						logger.warn(`価格履歴保存失敗: ${workIds[index]} - ${result.reason}`);
 					}
 				});
 
-				logger.info(
-					`🔍 価格履歴保存完了: 成功 ${priceHistorySuccess}件, 失敗 ${priceHistoryFailure}件`,
-				);
+				// 価格履歴結果ログは省略
 
 				// 失敗データの処理
 				const failedIds = batch.filter((id) => !batchResults.has(id));
@@ -260,10 +261,10 @@ class LocalDataCollector {
 						timestamp: new Date().toISOString(),
 						errorType: "LOCAL_COLLECTION_FAILED",
 					});
-					logger.warn(`⚠️ ローカル収集失敗: ${workId}`);
+					logger.warn(`API取得失敗: ${workId}`);
 				}
 
-				logger.info(`✅ バッチ ${batchIndex + 1} 完了: ${batchResults.size}/${batch.length}件成功`);
+				// バッチ完了ログは省略（ログ削減）
 
 				// バッチ間の待機
 				if (batchIndex < batches.length - 1) {
@@ -285,13 +286,12 @@ class LocalDataCollector {
 
 		const processingTime = Date.now() - startTime;
 
-		logger.info("🎉 ローカル完全データ収集完了");
-		logger.info(`📊 総作品数: ${assetWorkIds.length}件`);
 		logger.info(
-			`✅ 成功: ${results.length}件 (${((results.length / assetWorkIds.length) * 100).toFixed(1)}%)`,
+			`ローカル収集完了: ${results.length}/${assetWorkIds.length}件成功 (成功率${((results.length / assetWorkIds.length) * 100).toFixed(1)}%, ${(processingTime / 1000).toFixed(1)}s)`,
 		);
-		logger.info(`❌ 失敗: ${errors.length}件`);
-		logger.info(`⏱️ 処理時間: ${(processingTime / 1000).toFixed(1)}秒`);
+		if (errors.length > 0) {
+			logger.warn(`収集失敗: ${errors.length}件`);
+		}
 
 		return {
 			totalAttempted: assetWorkIds.length,
@@ -319,7 +319,7 @@ class LocalDataCollector {
 			const apiResponses = batch.map((item) => item.basicInfo);
 			const existingWorksMap = await getExistingWorksMap(batch.map((item) => item.workId));
 
-			logger.debug(`バッチ変換開始: ${apiResponses.length}件のAPIレスポンス`);
+			// バッチ変換開始
 
 			// APIレスポンスの基本フィールド確認
 			const responseStatistics = {
@@ -329,10 +329,10 @@ class LocalDataCollector {
 				hasMakerName: apiResponses.filter((r) => r.maker_name).length,
 				hasPriceInfo: apiResponses.filter((r) => r.price !== undefined).length,
 			};
-			logger.debug("APIレスポンス統計:", responseStatistics);
+			// APIレスポンス統計は省略
 
 			const workDataList = batchMapIndividualInfoAPIToWorkData(apiResponses, existingWorksMap);
-			logger.debug(`バッチ変換完了: ${workDataList.length}件のワークデータ`);
+			// バッチ変換完了
 
 			// APIレスポンスとワークデータを保存（後でサークル・クリエイター収集に使用）
 			batch.forEach((item, index) => {
@@ -363,7 +363,7 @@ class LocalDataCollector {
 
 				await saveWorksToFirestore(enhancedWorkData);
 				batchResult.successCount = enhancedWorkData.length;
-				logger.info(`✅ バッチアップロード成功: ${enhancedWorkData.length}件`);
+				// バッチアップロード成功ログは省略（ログ削減）
 			}
 
 			batchResult.errorCount = batch.length - batchResult.successCount;
@@ -392,7 +392,7 @@ class LocalDataCollector {
 				batchResult.batchIndex = index;
 				results.push(batchResult);
 
-				logger.info(`✅ バッチ${index + 1}/${batches.length}完了: ${batchResult.successCount}件`);
+				// バッチ完了ログは省略（ログ削減）
 
 				// バッチ間の待機
 				if (index < batches.length - 1) {
@@ -557,15 +557,15 @@ async function executeCompleteLocalCollection(options?: {
 
 		// Step 2: Firestoreアップロード（オプション）
 		if (options?.uploadToFirestore && collectionResult.collectedData.length > 0) {
-			logger.info("🎯 Step 2: Firestore投入");
 			uploadResult = await collector.uploadToFirestore(collectionResult.collectedData);
+			logger.info(
+				`Firestore投入完了: ${uploadResult.totalUploaded}/${collectionResult.collectedData.length}件成功`,
+			);
+			if (uploadResult.totalErrors > 0) {
+				logger.warn(`投入失敗: ${uploadResult.totalErrors}件`);
+			}
 
-			logger.info("✅ Firestore投入完了");
-			logger.info(`📊 投入成功: ${uploadResult.totalUploaded}件`);
-			logger.info(`❌ 投入失敗: ${uploadResult.totalErrors}件`);
-
-			// Step 3: サークル・クリエイター情報収集（作品データ投入後に実行）
-			logger.info("🎯 Step 3: サークル・クリエイター情報収集");
+			// サークル・クリエイター情報収集
 			await collector.collectCirclesAndCreators();
 		}
 
@@ -587,7 +587,7 @@ async function executeCompleteLocalCollection(options?: {
  */
 async function main(): Promise<void> {
 	try {
-		logger.info("🚀 DLsite完全データローカル収集ツール開始");
+		// DLsite完全データローカル収集ツール開始
 
 		const options = {
 			uploadToFirestore: true, // Firestoreへの投入を有効化
@@ -596,33 +596,28 @@ async function main(): Promise<void> {
 
 		const result = await executeCompleteLocalCollection(options);
 
-		console.log("\n=== 完全収集結果サマリー ===");
-		console.log(`総作品数: ${result.collection.totalAttempted}件`);
-		console.log(`収集成功: ${result.collection.successfulCollections}件`);
-		console.log(`収集失敗: ${result.collection.failedCollections}件`);
+		console.log("\n=== 完全収集結果 ===");
 		console.log(
-			`成功率: ${((result.collection.successfulCollections / result.collection.totalAttempted) * 100).toFixed(1)}%`,
+			`成功: ${result.collection.successfulCollections}/${result.collection.totalAttempted}件 (${((result.collection.successfulCollections / result.collection.totalAttempted) * 100).toFixed(1)}%, ${(result.collection.processingTimeMs / 1000).toFixed(1)}s)`,
 		);
-		console.log(`処理時間: ${(result.collection.processingTimeMs / 1000).toFixed(1)}秒`);
 
 		if (result.upload) {
-			console.log("\n=== Firestore投入結果 ===");
-			console.log(`投入成功: ${result.upload.totalUploaded}件`);
-			console.log(`投入失敗: ${result.upload.totalErrors}件`);
-			console.log(`成功バッチ: ${result.upload.successfulBatches}/${result.upload.totalBatches}`);
+			console.log(
+				`Firestore投入: ${result.upload.totalUploaded}件成功, ${result.upload.totalErrors}件失敗`,
+			);
 		}
 
 		if (result.collection.errors.length > 0) {
-			console.log("\n=== 収集エラー（上位10件） ===");
-			result.collection.errors.slice(0, 10).forEach((error, index) => {
-				console.log(`${index + 1}. ${error.workId}: ${error.error}`);
+			console.log(`\n収集エラー (${result.collection.errors.length}件):`);
+			result.collection.errors.slice(0, 5).forEach((error, index) => {
+				console.log(`  ${index + 1}. ${error.workId}: ${error.error}`);
 			});
-			if (result.collection.errors.length > 10) {
-				console.log(`... 他${result.collection.errors.length - 10}件`);
+			if (result.collection.errors.length > 5) {
+				console.log(`  ... 他${result.collection.errors.length - 5}件`);
 			}
 		}
 
-		logger.info("🎉 完全収集ツール実行完了");
+		// 完全収集ツール実行完了
 	} catch (error) {
 		logger.error("メイン処理エラー:", {
 			error: error instanceof Error ? error.message : String(error),

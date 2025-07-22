@@ -129,7 +129,7 @@ class RegionRestrictionDetector {
 			};
 
 			await docRef.set(restrictedWork, { merge: true });
-			logger.debug(`🔍 リージョン制限記録: ${workId}`, { detectionMethod, attemptCount });
+			// リージョン制限記録ログは省略（ログ削減）
 		} catch (error) {
 			logger.error(`リージョン制限記録エラー: ${workId}`, { error });
 		}
@@ -150,11 +150,11 @@ class RegionRestrictionDetector {
 		try {
 			const workRef = firestore.collection("dlsiteWorks").doc(workId);
 			await workRef.update(restrictionData);
-			logger.debug(`🏷️ 作品フラグ更新: ${workId}`);
+			// 作品フラグ更新ログは省略（ログ削減）
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("No document to update")) {
 				// ドキュメントが存在しない場合は作成
-				logger.info(`📝 作品ドキュメント作成: ${workId}`);
+				// 作品ドキュメント作成ログは省略（ログ削減）
 				await firestore
 					.collection("dlsiteWorks")
 					.doc(workId)

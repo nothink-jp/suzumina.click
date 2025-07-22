@@ -51,7 +51,7 @@ export async function savePriceHistory(
 			return false;
 		}
 
-		console.log(`✅ Price data is valid for work ${workId}`);
+		// 価格データ有効性確認ログは省略（成功時ログ削減）
 
 		// JST（日本標準時）での日付を取得
 		const today = getJSTDate();
@@ -181,12 +181,7 @@ export async function saveBulkPriceHistory(
 
 	const failed = total - success;
 
-	console.log("Price history bulk save completed:", {
-		total,
-		success,
-		failed,
-		successRate: `${((success / total) * 100).toFixed(1)}%`,
-	});
+	// 価格履歴一括保存完了ログは省略（成功時ログ削減）
 
 	return {
 		total,

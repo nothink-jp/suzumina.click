@@ -125,15 +125,15 @@ export function validateWorkIds(
 	}
 
 	if (logDetails && expectedButNotFound.length > 0) {
-		logger.debug("期待されたが見つからなかった作品ID（最初の10件）:", {
-			ids: expectedButNotFound.slice(0, 10),
+		logger.warn("❌ 期待されたが見つからなかった作品ID（全件）:", {
+			ids: expectedButNotFound,
 			total: expectedButNotFound.length,
 		});
 	}
 
 	if (logDetails && foundButNotExpected.length > 0) {
-		logger.debug("予期しない作品ID（最初の10件）:", {
-			ids: foundButNotExpected.slice(0, 10),
+		logger.warn("⚠️ 予期しない作品ID（全件）:", {
+			ids: foundButNotExpected,
 			total: foundButNotExpected.length,
 		});
 	}

@@ -30,26 +30,10 @@ function handleHttpError(
 	responseText: string,
 	enableDetailedLogging: boolean,
 ): IndividualInfoAPIResponse | null {
-	const logContext = {
-		workId,
-		status: response.status,
-		statusText: response.statusText,
-		responseText: responseText.substring(0, 500),
-		url,
-	};
+	// 詳細ログは環境に関係なく省略
 
-	if (enableDetailedLogging) {
-		logger.warn(`❌ API取得失敗: ${workId}`, logContext);
-	} else {
-		logger.warn(`API request failed for ${workId}`, {
-			...logContext,
-			headers: Object.fromEntries(response.headers.entries()),
-		});
-	}
-
-	// 404: 作品が見つからない
+	// 404: 作品が見つからない（ログ省略）
 	if (response.status === 404) {
-		logger.warn(`作品が見つかりません: ${workId}`);
 		return null;
 	}
 
@@ -82,11 +66,8 @@ function parseJsonResponse(
 			url,
 		};
 
-		if (enableDetailedLogging) {
-			logger.error(`JSON parse error: ${workId}`, errorContext);
-		} else {
-			logger.error(`JSON parse error for ${workId}`, errorContext);
-		}
+		// JSON parse errorは重要なため保持
+		logger.error(`JSON parse error for ${workId}`, errorContext);
 
 		return null;
 	}
@@ -112,24 +93,20 @@ function validateResponseFormat(
 			url,
 		};
 
-		if (enableDetailedLogging) {
-			logger.warn(`Invalid response: ${workId}`, invalidContext);
-		} else {
-			logger.warn(`Invalid API response for ${workId}: empty or non-array response`, {
-				...invalidContext,
-				responseData: responseData,
-				responseText: responseText.substring(0, 1000),
-			});
-		}
+		// Invalid responseは重要なため保持
+		logger.warn(`Invalid API response for ${workId}: empty or non-array response`, {
+			...invalidContext,
+			responseData: responseData,
+			responseText: responseText.substring(0, 1000),
+		});
 
 		return null;
 	}
 
 	const data = responseData[0] as IndividualInfoAPIResponse;
 
-	// 基本的なデータ検証
+	// 基本的なデータ検証（ログ省略）
 	if (!data.workno && !data.product_id) {
-		logger.warn(`Invalid data: ${workId} - missing workno/product_id`);
 		return null;
 	}
 
@@ -154,9 +131,7 @@ export async function fetchIndividualWorkInfo(
 		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
 		const headers = generateDLsiteHeaders();
 
-		if (enableDetailedLogging) {
-			logger.info(`🔄 API取得開始: ${workId}`);
-		}
+		// API取得開始ログは省略
 
 		const response = await fetch(url, {
 			method: "GET",
@@ -183,19 +158,12 @@ export async function fetchIndividualWorkInfo(
 			enableDetailedLogging,
 		);
 
-		if (validatedData && enableDetailedLogging) {
-			logger.info(`✅ API取得成功: ${workId} (${validatedData.work_name || "名前不明"})`);
-		}
+		// API取得成功ログは省略
 
 		return validatedData;
 	} catch (error) {
-		if (enableDetailedLogging) {
-			logger.error(`API取得エラー: ${workId}`, {
-				error: error instanceof Error ? error.message : String(error),
-			});
-		} else {
-			logger.error(`Individual Info API取得エラー: ${workId}`, { error });
-		}
+		// API取得エラーは重要なため保持
+		logger.error(`Individual Info API取得エラー: ${workId}`, { error });
 
 		throw error;
 	}
@@ -238,7 +206,7 @@ export async function batchFetchIndividualInfo(
 					const data = await fetchIndividualWorkInfo(workId, apiOptions);
 					return { workId, data };
 				} catch (error) {
-					logger.warn(`Individual Info API取得失敗: ${workId}`, { error });
+					// 個別失敗ログは省略（バッチ単位で記録）
 					return { workId, data: null };
 				}
 			});
@@ -265,16 +233,11 @@ export async function batchFetchIndividualInfo(
 		}
 	}
 
-	// 失敗した作品IDをログ出力（件数制限付き）
-	if (failedWorkIds.length > 0) {
+	// 失敗が多い場合のみログ出力
+	if (failedWorkIds.length > workIds.length * 0.1) {
 		logger.warn(
-			`❌ API取得失敗: ${failedWorkIds.length}件 (失敗率${((failedWorkIds.length / workIds.length) * 100).toFixed(1)}%)`,
+			`API取得失敗が多数: ${failedWorkIds.length}件 (失敗率${((failedWorkIds.length / workIds.length) * 100).toFixed(1)}%)`,
 		);
-
-		// 失敗ID詳細は10件未満の場合のみ出力
-		if (failedWorkIds.length < 10) {
-			logger.warn(`失敗作品ID: [${failedWorkIds.sort().join(", ")}]`);
-		}
 	}
 
 	return { results, failedWorkIds };
