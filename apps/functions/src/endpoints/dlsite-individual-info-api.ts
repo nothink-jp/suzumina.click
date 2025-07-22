@@ -9,6 +9,7 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../infrastructure/management/user-agent-manager";
+import { batchCollectCircleAndCreatorInfo } from "../services/dlsite/collect-circle-creator-info";
 import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../services/dlsite/individual-info-api-client";
 import {
@@ -164,6 +165,7 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 		const results = {
 			basicDataUpdated: 0,
 			priceHistorySaved: 0,
+			circleCreatorUpdated: 0,
 			errors: [] as string[],
 		};
 
@@ -190,7 +192,7 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 				const priceHistoryResults = await Promise.allSettled(
 					apiResponses
 						.filter((apiResponse) => apiResponse.workno) // worknoが存在するもののみ
-						.map((apiResponse) => savePriceHistory(apiResponse.workno!, apiResponse)),
+						.map((apiResponse) => savePriceHistory(apiResponse.workno || "", apiResponse)),
 				);
 
 				// 結果集計（失敗のみログ出力）
@@ -212,6 +214,48 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 				// 価格履歴保存成功件数を記録
 				results.priceHistorySaved = successCount;
 
+				// 🆕 サークル・クリエイター情報の収集（バッチ処理）
+				try {
+					// APIレスポンスと作品データのペアを作成
+					const circleCreatorWorkData = validWorkData
+						.map((workData) => {
+							const matchingApiData = apiResponses.find(
+								(apiResponse) => apiResponse.workno === workData.id,
+							);
+							return {
+								workData,
+								apiData: matchingApiData || ({} as Record<string, unknown>), // fallback for safety
+								isNewWork: !existingWorksMap.has(workData.id),
+							};
+						})
+						.filter((item) => item.apiData.workno); // API データがあるもののみ
+
+					if (circleCreatorWorkData.length > 0) {
+						logger.info(`🎯 サークル・クリエイター情報収集開始: ${circleCreatorWorkData.length}件`);
+						const circleCreatorResult =
+							await batchCollectCircleAndCreatorInfo(circleCreatorWorkData);
+
+						results.circleCreatorUpdated = circleCreatorResult.processed;
+
+						if (circleCreatorResult.success) {
+							logger.info(
+								`✅ サークル・クリエイター情報収集完了: ${circleCreatorResult.processed}件`,
+							);
+						} else {
+							logger.warn(
+								`⚠️ サークル・クリエイター情報収集エラー: ${circleCreatorResult.errors.length}件`,
+							);
+							circleCreatorResult.errors.forEach((error) => {
+								logger.warn(`サークル・クリエイター処理エラー: ${error.workId} - ${error.error}`);
+							});
+						}
+					}
+				} catch (error) {
+					const errorMsg = `サークル・クリエイター情報収集エラー: ${error instanceof Error ? error.message : String(error)}`;
+					logger.error(errorMsg);
+					results.errors.push(errorMsg);
+				}
+
 				return validWorkData.length;
 			} catch (error) {
 				const errorMsg = `バッチ ${batchNumber} 基本データ処理エラー: ${error instanceof Error ? error.message : String(error)}`;
@@ -227,7 +271,7 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 		// バッチ統計情報
 		const processingTime = Date.now() - startTime.toMillis();
 		logger.info(
-			`✅ バッチ ${batchNumber} 完了: ${results.basicDataUpdated}件更新 (${(processingTime / 1000).toFixed(1)}s, 成功率${((apiDataMap.size / workIds.length) * 100).toFixed(1)}%)`,
+			`✅ バッチ ${batchNumber} 完了: ${results.basicDataUpdated}件更新, ${results.circleCreatorUpdated}件サークル・クリエイター更新 (${(processingTime / 1000).toFixed(1)}s, 成功率${((apiDataMap.size / workIds.length) * 100).toFixed(1)}%)`,
 		);
 
 		// 失敗作品IDログ（簡素化）
@@ -396,7 +440,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		// 4. 全バッチ処理完了
 		const processingTime = Date.now() - startTime;
 		logger.info(
-			`🎉 全バッチ完了: ${totalResults.totalBasicDataUpdated}件更新 (${(processingTime / 1000).toFixed(1)}s, エラー${totalResults.totalErrors.length}件)`,
+			`🎉 全バッチ完了: ${totalResults.totalBasicDataUpdated}件更新, サークル・クリエイター情報収集完了 (${(processingTime / 1000).toFixed(1)}s, エラー${totalResults.totalErrors.length}件)`,
 		);
 
 		// User-Agent使用統計サマリーを出力

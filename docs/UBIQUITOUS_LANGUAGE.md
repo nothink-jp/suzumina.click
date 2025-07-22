@@ -1,7 +1,7 @@
 # ユビキタス言語定義
 
 > **📋 目的**: suzumina.clickプロジェクトのドメイン専門用語とビジネス概念の統一定義  
-> **📅 最終更新**: 2025年7月20日  
+> **📅 最終更新**: 2025年7月22日  
 > **🎯 適用範囲**: 開発チーム・ドキュメント・コード・ユーザーインターフェース  
 > **🔗 参照**: CLAUDE.md から常時参照・Claude AI の用語統一指針
 
@@ -140,16 +140,52 @@
 | **価格統計** | 期間内最安値・最高値・平均価格等の統計情報 | Price Statistics | 最安値・最高値・平均・変動率 |
 | **二重割引問題** | Individual Info APIでの割引率重複適用バグ | Double Discount Issue | RJ01414353で発見・修正済み |
 
-## 👥 クリエイター・制作情報
+## 👥 サークル・クリエイターシステム
+
+### サークル基本情報
+
+| 用語 | 定義 | 英語表記 | データソース |
+|------|------|----------|-------------|
+| **サークル** | DLsite作品を制作・販売する同人サークル | Circle | Individual Info API `maker_id`/`maker_name` |
+| **サークルID** | DLsiteサークルの一意識別子 | Circle ID | \"RG\" + 5桁数字 (例: RG23954) |
+| **サークル名** | サークルの正式名称 | Circle Name | `maker_name` フィールド |
+| **サークル名（英語）** | サークルの英語名称 | Circle Name (English) | `maker_name_en` フィールド |
+| **関連作品数** | サークルが制作した作品の総数 | Work Count | 統計情報・非正規化データ |
+
+### クリエイター基本情報
 
 | 用語 | 定義 | 英語表記 | データソース |
 |------|------|----------|-------------|
 | **クリエイター** | 作品制作に関わった人物 | Creator | Individual Info API `creaters` オブジェクト |
-| **声優(CV)** | 作品で声を担当した声優 | Voice Actor | `voice_by` フィールド・ID付き |
-| **シナリオ** | 作品のシナリオを執筆した人物 | Scenario Writer | `scenario_by` フィールド・ID付き |
-| **イラスト** | 作品のイラストを担当した人物 | Illustrator | `illust_by` フィールド・ID付き |
-| **音楽** | 作品の音楽を担当した人物 | Music Composer | `music_by` フィールド・ID付き |
 | **クリエイターID** | DLsiteクリエイターの一意識別子 | Creator ID | 数字ID・個別ページ作成用 |
+| **クリエイター名** | クリエイターの表示名 | Creator Name | `creater.name` フィールド |
+| **声優(CV)** | 作品で声を担当した声優 | Voice Actor | `voice_by` フィールド・ID付き |
+| **シナリオライター** | 作品のシナリオを執筆した人物 | Scenario Writer | `scenario_by` フィールド・ID付き |
+| **イラストレーター** | 作品のイラストを担当した人物 | Illustrator | `illust_by` フィールド・ID付き |
+| **音楽制作者** | 作品の音楽を担当した人物 | Music Composer | `music_by` フィールド・ID付き |
+| **その他クリエイター** | 上記以外の役割を担当した人物 | Other Creator | `others_by`, `directed_by` フィールド |
+
+### クリエイタータイプ・役割
+
+| 用語 | 定義 | 英語表記 | 技術的詳細 |
+|------|------|----------|------------|
+| **クリエイタータイプ** | クリエイターの作品における役割分類 | Creator Type | voice/illustration/scenario/music/other |
+| **voice** | 声優・ボイス担当 | Voice | `CreatorType` enum値 |
+| **illustration** | イラスト・グラフィック担当 | Illustration | `CreatorType` enum値 |
+| **scenario** | シナリオ・脚本担当 | Scenario | `CreatorType` enum値 |
+| **music** | 音楽・サウンド担当 | Music | `CreatorType` enum値 |
+| **other** | その他・監督等 | Other | `CreatorType` enum値 |
+| **複数役割** | 一人のクリエイターが複数の役割を担当 | Multiple Roles | types配列で管理 |
+
+### データ管理・マッピング
+
+| 用語 | 定義 | 英語表記 | 実装詳細 |
+|------|------|----------|------------|
+| **クリエイターワークマッピング** | クリエイターと作品の関連情報を効率的にクエリするための非正規化データ | Creator Work Mapping | `creatorWorkMappings` コレクション |
+| **マッピングID** | クリエイター-作品マッピングの一意識別子 | Mapping ID | `{creatorId}_{workId}` 形式 |
+| **バッチ収集** | 複数の作品からサークル・クリエイター情報を一括収集する処理 | Batch Collection | `batchCollectCircleAndCreatorInfo` 関数 |
+| **Fire-and-Forget更新** | メイン処理に影響しない非同期でのサークル・クリエイター情報更新 | Fire-and-Forget Update | エラー発生時もメイン処理継続 |
+| **非正規化データ** | クエリ効率化のための重複データ保存 | Denormalized Data | circleId, creatorName等の複製保存 |
 
 ## 🔄 シリーズ・翻訳・エディション
 

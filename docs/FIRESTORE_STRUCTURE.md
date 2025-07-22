@@ -1,9 +1,9 @@
 # Firestore Database Structure
 
-> **📅 最終更新**: 2025年7月20日  
-> **📝 ステータス**: v11.5 価格履歴サブコレクション追加・インデックス要件更新完了  
+> **📅 最終更新**: 2025年7月22日  
+> **📝 ステータス**: v11.6 サークル・クリエイターシステム追加・データ収集基盤実装完了  
 > **🔧 対象**: suzumina.clickプロジェクトのCloud Firestoreデータベース構造
-> **🆕 更新内容**: 価格履歴システム実装完了・priceHistoryサブコレクション追加・複合インデックス要件更新
+> **🆕 更新内容**: サークル・クリエイター情報収集システム実装完了・circles/creatorWorkMappingsコレクション追加・dlsiteWorks circleId統合
 
 ## 使用中のコレクション一覧
 
@@ -111,6 +111,9 @@
   salesCount?: number,                // 販売数（infoAPIから）
   wishlistCount?: number,             // ウィッシュリスト数（infoAPIから）
   totalDownloadCount?: number,        // 総DL数（infoAPIから）
+  
+  // === サークル情報（v11.6追加 - サークル・クリエイターシステム対応） ===
+  circleId: string,                   // サークルID（例: "RG23954", circlesコレクション参照用）
   
   // === 統一クリエイター情報（5種類のみ - Individual Info API取得・DLsite仕様準拠） ===
   voiceActors: string[],              // 声優（Individual Info APIから取得）
@@ -642,7 +645,81 @@
 - `date (ASC)`: 期間指定クエリ用
 - `date (DESC)`: 最新データ取得用
 
-✅ 全コレクションの実装が完了し、本番稼働中です（v11.0時系列データ基盤 + v0.3.4価格履歴システム含む）。
+### 10. `circles` コレクション ✅ v11.6新規実装完了
+
+**目的**: DLsiteサークル（制作グループ）情報を保存
+
+**ドキュメントID**: サークルID (例: `"RG23954"`)
+
+**データ構造** (`CircleData`):
+
+```typescript
+{
+  // 基本識別情報
+  circleId: string,                   // サークルID（DLsiteのmaker_id）
+  name: string,                       // サークル名（日本語）
+  nameEn?: string,                    // サークル名（英語、オプション）
+  
+  // 統計情報
+  workCount: number,                  // 関連作品数（統計情報・非正規化）
+  
+  // メタデータ
+  lastUpdated: Timestamp,             // 最終更新日時
+  createdAt: Timestamp,               // 初回登録日時
+}
+```
+
+**特徴**:
+- **Fire-and-Forget更新**: メイン処理に影響しない非同期更新
+- **統計情報管理**: workCountによる作品数追跡
+- **Individual Info API連携**: maker_id/maker_name自動抽出
+
+**アクセスパターン**:
+- **読み取り**: 公開サークルページ・作品詳細ページのサークルリンク
+- **書き込み**: Cloud Functions（Individual Info API収集）のみ
+- **クエリ**: サークルID直接アクセス・作品数順ソート
+
+### 11. `creatorWorkMappings` コレクション ✅ v11.6新規実装完了
+
+**目的**: クリエイターと作品の関連情報を効率的にクエリするための非正規化データ
+
+**ドキュメントID**: `{creatorId}_{workId}` (例: `"28165_RJ01414353"`)
+
+**データ構造** (`CreatorWorkMapping`):
+
+```typescript
+{
+  // 基本識別情報
+  creatorId: string,                  // クリエイターID（Individual Info APIのcreater.id）
+  workId: string,                     // 作品ID（DLsiteのproduct_id）
+  creatorName: string,                // クリエイター名（表示用）
+  
+  // 役割情報
+  types: CreatorType[],               // クリエイタータイプ配列（複数役割対応）
+  
+  // 関連情報
+  circleId: string,                   // 所属サークルID
+  
+  // メタデータ
+  createdAt: Timestamp,               // マッピング作成日時
+}
+
+// クリエイタータイプ定義
+type CreatorType = "voice" | "illustration" | "scenario" | "music" | "other";
+```
+
+**特徴**:
+- **非正規化設計**: クエリ効率化のためのデータ重複
+- **複数役割対応**: 1人のクリエイターが複数の役割を担当可能
+- **バッチ処理対応**: 大量データの効率的処理
+- **重複処理防止**: 同一クリエイター・作品ペアの統合管理
+
+**アクセスパターン**:
+- **読み取り**: クリエイターページ・作品検索・統計分析
+- **書き込み**: Cloud Functions（Individual Info API収集）のみ
+- **クエリ**: creatorId検索・workId逆引き・types配列検索
+
+✅ 全コレクションの実装が完了し、本番稼働中です（v11.6サークル・クリエイターシステム + v11.0時系列データ基盤 + v0.3.4価格履歴システム含む）。
 
 ## Firestore 複合インデックス
 
@@ -910,19 +987,22 @@ gcloud firestore indexes composite delete \
 | **削除**: audioButtons 未使用 | -1個 | -$2 | **-$10** |
 | **合計** | **-5個** | **純減 -$10/月** | **年間 -$120 削減** |
 
-**📊 詳細内訳**:
+**📊 詳細内訳** (2025-07-22更新):
 - **videos 削除対象**: videoType(1個) + liveStreamingDetails関連(6個) = 7個
 - **audioButtons 削除対象**: startTime未使用(1個) = 1個  
 - **videos 保持**: liveBroadcastContent(2個) + categoryId(2個) = 4個 ✅ **実際に使用中**
+- **サークル・クリエイター新規追加**: circles(2個) + creatorWorkMappings(3個) + dlsiteWorks(1個) = 6個
 
 ### 🎯 **実装優先度マトリックス**
 
 #### **🔴 即座に実装 (今週中)**
+- サークル・クリエイターシステムインデックス（機能要件）
 - `contacts` コレクション管理者インデックス（機能要件）
 - 未使用インデックス削除（コスト最適化）
 
 #### **🟡 1ヶ月以内に実装**
 - Collection Group `favorites` インデックス（統計機能強化）
+- `priceHistory` サブコレクションインデックス（価格履歴機能強化）
 - 将来機能用カテゴリフィルターインデックス
 
 #### **🟢 将来検討**
@@ -947,6 +1027,27 @@ gcloud firestore indexes composite delete \
 |-------------|------------|----------|----------|
 | `date (ASC)` | [`date`, `__name__`] | ⚠️ **未設定** | 期間指定価格履歴取得（Server Actions） |
 | `date (DESC)` | [`date`, `__name__`] | ⚠️ **未設定** | 最新価格履歴取得（統計計算） |
+
+#### ✅ **circles コレクション** (2個) - v11.6新規追加必要
+
+| インデックス | フィールド | 使用状況 | 使用箇所 |
+|-------------|------------|----------|----------|
+| `name + workCount (DESC)` | [`name`, `workCount`, `__name__`] | ⚠️ **未設定** | サークル一覧ページ（作品数順） |
+| `workCount (DESC)` | [`workCount`, `__name__`] | ⚠️ **未設定** | サークルランキング（将来機能） |
+
+#### ✅ **creatorWorkMappings コレクション** (3個) - v11.6新規追加必要
+
+| インデックス | フィールド | 使用状況 | 使用箇所 |
+|-------------|------------|----------|----------|
+| `creatorId + workId (ASC)` | [`creatorId`, `workId`, `__name__`] | ⚠️ **未設定** | クリエイター作品検索 |
+| `creatorId + types (ARRAY_CONTAINS)` | [`creatorId`, `types`, `__name__`] | ⚠️ **未設定** | クリエイタータイプ別検索 |
+| `workId + types (ARRAY_CONTAINS)` | [`workId`, `types`, `__name__`] | ⚠️ **未設定** | 作品からクリエイター検索 |
+
+#### ✅ **dlsiteWorks コレクション** (1個) - v11.6新規追加必要
+
+| インデックス | フィールド | 使用状況 | 使用箇所 |
+|-------------|------------|----------|----------|
+| `circleId + registDate (DESC)` | [`circleId`, `registDate`, `__name__`] | ⚠️ **未設定** | サークル別作品一覧（新着順） |
 
 #### 🔄 **新しく発見されたクエリパターン** (2025年7月12日調査)
 
@@ -1203,6 +1304,30 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 - **メンテナンス性**: Server Actions統一による一貫性
 
 ## 📅 データ構造変更ログ
+
+### 2025-07-22 v11.6 サークル・クリエイターシステム実装完了・データ収集基盤統合完了
+
+**実行した操作**:
+- ✅ **サークル・クリエイター情報収集**: `circles`・`creatorWorkMappings`コレクション新規追加
+- ✅ **dlsiteWorks拡張**: `circleId`フィールド統合・サークル情報参照対応
+- ✅ **Individual Info API統合**: maker_id/maker_name/creaters自動抽出・バッチ処理対応
+- ✅ **Fire-and-Forget実装**: メイン処理に影響しないサークル・クリエイター情報更新
+- ✅ **非正規化データ設計**: 効率的クエリのためのcreatorWorkMappings最適化
+- ✅ **shared-types拡張**: CircleData・CreatorWorkMapping・CreatorType型定義完備
+
+**実装された機能**:
+- ✅ **fetchDLsiteWorksIndividualAPI統合**: サークル・クリエイター収集の本番環境適用
+- ✅ **バッチ収集処理**: `batchCollectCircleAndCreatorInfo`による効率的大量データ処理
+- ✅ **複数役割対応**: 1クリエイターが複数role（voice/illustration/scenario/music/other）担当可能
+- ✅ **重複処理防止**: 同一クリエイター・作品ペアの統合管理・types配列統合
+- ✅ **統計情報管理**: workCountによるサークル作品数追跡・自動更新
+
+**技術的特徴**:
+- ✅ **100% API-Only**: Individual Info API専用・スクレイピング不使用
+- ✅ **エラー耐性**: サークル・クリエイター収集エラー時もメイン処理継続
+- ✅ **型安全性**: Zodスキーマによる入力検証・shared-types活用
+- ✅ **バッチ最適化**: Firestore 500操作制限対応・100作品ずつ処理
+- ✅ **ログ統合**: 構造化ログによる収集状況追跡・統計情報表示
 
 ### 2025-07-19 v11.4 完全実装状況調査・Terraformインデックス管理統合・正確なコスト最適化完了
 
