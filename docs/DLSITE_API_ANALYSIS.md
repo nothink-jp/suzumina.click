@@ -171,7 +171,7 @@ DLsite Individual Info API (`https://www.dlsite.com/maniax/api/=/product.json?wo
 | `child_worknos` | array | 子作品番号群 | ["RJ01415252"], [] | 翻訳版作品ID一覧 |
 | `lang` | string | 言語コード | "JPN", "CHI_HANT" | 作品言語 |
 | `translation_bonus_langs` | array | 翻訳特典言語 | [] | 翻訳特典対象言語 |
-| `language_editions` | array | 言語版一覧 | [{workno, edition_id, lang...}] | 利用可能言語版 |
+| `language_editions` | array\|object | 言語版一覧 | [{workno, edition_id, lang...}] または {"2": {workno, edition_id, lang...}} | 利用可能言語版（配列・オブジェクト両対応） |
 | `editions` | array | エディション | [{"workno": "RJ258608", "label": "PC版"}, {"workno": "RJ01020479", "label": "APK版"}], [] | その他エディション |
 | **パック・セット情報** |
 | `is_pack_child` | boolean | パック子作品 | false | パックに含まれるか |
@@ -904,3 +904,76 @@ const monthlyTrackingFields = [
 - **品質保証**: 自動検証・修正ツール実装済み
 
 この実装により、DLsite Individual Info APIの価格関連フィールドを最大限活用した包括的な価格履歴システムが完成しました。
+
+## 🔧 API データ構造の変動対応 (2025-07-22)
+
+### language_editions フィールドの形式変動
+
+**発見された問題**: `language_editions` フィールドが配列とオブジェクトの両方の形式で返される場合がある
+
+#### 配列形式の例（一般的）
+
+```json
+"language_editions": [
+  {
+    "workno": "RJ01129635",
+    "edition_id": 20866,
+    "label": "日本語",
+    "lang": "JPN"
+  }
+]
+```
+
+#### オブジェクト形式の例（一部作品）
+
+```json
+"language_editions": {
+  "2": {
+    "workno": "RJ01129635", 
+    "edition_id": 20866,
+    "label": "日本語",
+    "lang": "JPN"
+  },
+  "3": {
+    "workno": "RJ01164706",
+    "label": "簡体中文", 
+    "lang": "CHI_HANS"
+  }
+}
+```
+
+#### 対応実装
+
+```typescript
+const languageDownloads: LanguageDownload[] | undefined = apiData.language_editions
+  ? Array.isArray(apiData.language_editions)
+    ? apiData.language_editions.map((le) => ({ /* 配列処理 */ }))
+    : Object.values(apiData.language_editions as Record<string, LanguageEditionItem>).map((le) => ({ /* オブジェクト処理 */ }))
+  : undefined;
+```
+
+#### 修正結果
+
+- ✅ **両形式完全対応**: 配列・オブジェクト形式どちらでも正常処理
+- ✅ **型安全性確保**: TypeScript型定義でunion型による安全な型チェック
+- ✅ **テスト済み**: RJ01129635（オブジェクト形式）での動作確認完了
+- ✅ **エラー解消**: "apiData.language_editions?.map is not a function" エラーを完全解決
+
+### API設計の考察
+
+DLsite Individual Info APIは、作品によって異なるデータ構造を返すことがある。これは以下の理由による可能性がある：
+
+1. **APIバージョン間の非互換**: 新旧API実装の混在
+2. **作品属性による分岐**: 翻訳作品・エディション作品での特殊処理
+3. **データベース構造の違い**: バックエンドシステムの変更による影響
+
+### 実装指針
+
+DLsite APIを利用する際は、以下の防御的プログラミングが重要：
+
+- **型チェック**: `Array.isArray()` による動的型判定
+- **フィールド存在確認**: Optional chaining (`?.`) の活用
+- **型アサーション**: TypeScriptでのunion型による安全な型変換
+- **包括的テスト**: 複数作品での実データテスト実施
+
+この対応により、DLsite APIの予期しないデータ構造変更に対しても安定したサービス運用が可能となっています。
