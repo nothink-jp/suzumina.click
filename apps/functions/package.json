@@ -31,7 +31,7 @@
 		"@google-cloud/functions-framework": "^4.0.0",
 		"@suzumina.click/shared-types": "workspace:*",
 		"cheerio": "^1.1.0",
-		"googleapis": "^152.0.0"
+		"googleapis": "^153.0.0"
 	},
 	"devDependencies": {
 		"@suzumina.click/typescript-config": "workspace:*",
