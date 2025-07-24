@@ -16,6 +16,7 @@ import {
 	LikeCount,
 	type PrivacyStatus,
 	PublishedAt,
+	parseDate,
 	type UploadStatus,
 	Video,
 	VideoContent,
@@ -36,7 +37,7 @@ import {
  * compatibility with existing systems while the codebase transitions to
  * the new Video Entity V2 domain model.
  *
- * @deprecated Will be removed in v3.0.0 (target: December 31, 2026, reviewed July 2025). Migrate to Video Entity V2
+ * @deprecated Will be removed in v3.0.0 (target: October 31, 2025, reviewed July 2025). Migrate to Video Entity V2
  */
 interface LegacyVideoData {
 	// Core fields
@@ -219,7 +220,15 @@ function createVideoContentFromYouTube(video: youtube_v3.Schema$Video): VideoCon
 
 	try {
 		const videoId = new VideoId(video.id);
-		const publishedAt = new PublishedAt(video.snippet.publishedAt);
+
+		// Validate publishedAt date
+		const publishedDate = parseDate(video.snippet.publishedAt);
+		if (!publishedDate) {
+			logger.warn("Invalid publishedAt date", { publishedAt: video.snippet.publishedAt });
+			return null;
+		}
+
+		const publishedAt = new PublishedAt(publishedDate);
 		const privacyStatus = (video.status?.privacyStatus || "public") as PrivacyStatus;
 		const uploadStatus = (video.status?.uploadStatus || "processed") as UploadStatus;
 
@@ -314,12 +323,6 @@ function createVideoStatisticsFromYouTube(
 function mapLiveStreamingDetails(
 	details: YouTubeLiveStreamingDetails,
 ): NonNullable<Video["liveStreamingDetails"]> {
-	const parseDate = (dateString: string | null | undefined): Date | undefined => {
-		if (!dateString) return undefined;
-		const parsed = Date.parse(dateString);
-		return !Number.isNaN(parsed) ? new Date(dateString) : undefined;
-	};
-
 	return {
 		scheduledStartTime: parseDate(details.scheduledStartTime),
 		scheduledEndTime: parseDate(details.scheduledEndTime),

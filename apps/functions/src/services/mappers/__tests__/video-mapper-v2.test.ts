@@ -318,9 +318,8 @@ describe("Video Mapper V2", () => {
 			});
 
 			const video = mapYouTubeToVideoEntity(invalidVideo);
-			// The Video entity is created, but with an invalid date (NaN)
-			expect(video).toBeDefined();
-			expect(video?.content.publishedAt.value.toString()).toBe("Invalid Date");
+			// With the new parseDate utility, invalid dates are handled gracefully
+			expect(video).toBeNull(); // Video creation fails due to invalid publishedAt
 		});
 
 		it("should handle invalid duration format", () => {
@@ -332,7 +331,7 @@ describe("Video Mapper V2", () => {
 			});
 
 			const result = mapYouTubeToVideoEntity(video);
-			// Video is created, but duration will contain the invalid string
+			// Video is still created with invalid duration string (duration validation is lenient)
 			expect(result).toBeDefined();
 			expect(result?.metadata.duration?.toString()).toBe("invalid-duration");
 		});
@@ -361,19 +360,11 @@ describe("Video Mapper V2", () => {
 		});
 
 		it("should handle invalid concurrentViewers values", () => {
-			const youtubeVideo: youtube_v3.Schema$Video = {
-				id: "test123",
-				snippet: {
-					title: "Test Video",
-					description: "Test Description",
-					channelId: "UCxxxxxxxxxxxxxxxxxxxxxx",
-					channelTitle: "Test Channel",
-					publishedAt: "2024-01-01T00:00:00Z",
-				},
+			const youtubeVideo = createYouTubeVideo({
 				liveStreamingDetails: {
 					concurrentViewers: "not-a-number", // Invalid number string
 				},
-			};
+			});
 
 			const video = mapYouTubeToVideoEntity(youtubeVideo);
 			expect(video).not.toBeNull();
@@ -381,22 +372,14 @@ describe("Video Mapper V2", () => {
 		});
 
 		it("should handle invalid date values in liveStreamingDetails", () => {
-			const youtubeVideo: youtube_v3.Schema$Video = {
-				id: "test123",
-				snippet: {
-					title: "Test Video",
-					description: "Test Description",
-					channelId: "UCxxxxxxxxxxxxxxxxxxxxxx",
-					channelTitle: "Test Channel",
-					publishedAt: "2024-01-01T00:00:00Z",
-				},
+			const youtubeVideo = createYouTubeVideo({
 				liveStreamingDetails: {
 					scheduledStartTime: "invalid-date",
 					actualStartTime: "2024-99-99T99:99:99Z", // Invalid date format
 					actualEndTime: "not a date",
 					concurrentViewers: "1000",
 				},
-			};
+			});
 
 			const video = mapYouTubeToVideoEntity(youtubeVideo);
 			expect(video).not.toBeNull();

@@ -144,6 +144,11 @@ describe("LikeCount", () => {
 			const likes = new LikeCount(50);
 			expect(likes.calculateRatio(0)).toBe(0);
 		});
+
+		it("should handle negative total", () => {
+			const likes = new LikeCount(50);
+			expect(likes.calculateRatio(-100)).toBe(0);
+		});
 	});
 
 	describe("toPercentage", () => {
@@ -215,6 +220,11 @@ describe("DislikeCount", () => {
 		it("should handle zero total", () => {
 			const count = new DislikeCount(20);
 			expect(count.calculateRatio(0)).toBe(0);
+		});
+
+		it("should handle negative total", () => {
+			const count = new DislikeCount(20);
+			expect(count.calculateRatio(-100)).toBe(0);
 		});
 	});
 

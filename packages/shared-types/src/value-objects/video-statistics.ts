@@ -102,7 +102,7 @@ export class LikeCount extends BaseValueObject<LikeCount> {
 	 * Calculates like ratio
 	 */
 	calculateRatio(totalInteractions: number): number {
-		if (totalInteractions === 0) {
+		if (totalInteractions <= 0) {
 			return 0;
 		}
 		return this.value / totalInteractions;
@@ -151,7 +151,7 @@ export class DislikeCount extends BaseValueObject<DislikeCount> {
 	 * Calculates dislike ratio
 	 */
 	calculateRatio(totalInteractions: number): number {
-		if (totalInteractions === 0) {
+		if (totalInteractions <= 0) {
 			return 0;
 		}
 		return this.value / totalInteractions;
