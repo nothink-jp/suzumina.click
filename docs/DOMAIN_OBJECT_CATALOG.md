@@ -127,36 +127,84 @@ formatTimestamp(): string
 getDuration(): number
 ```
 
-### Video（動画）エンティティ
+### Video（動画）エンティティ V2
 
 #### 概要
-YouTube動画の情報を管理するエンティティ。
+YouTube動画の情報を管理するエンティティ。Entity/Value Objectアーキテクチャに基づく新しい実装。
 
-#### プロパティ
+#### 構成要素
 
-| プロパティ | 型 | 説明 | 必須 |
-|----------|---|------|-----|
-| id | string | YouTube動画ID | ✓ |
-| title | string | 動画タイトル | ✓ |
-| description | string | 説明文 | |
-| channelId | string | チャンネルID | ✓ |
-| channelTitle | string | チャンネル名 | ✓ |
-| publishedAt | Date | 公開日時 | ✓ |
-| duration | string | 動画時間 | |
-| viewCount | number | 視聴回数 | |
-| likeCount | number | 高評価数 | |
-| type | VideoType | 動画種別 | ✓ |
-| workIds | string[] | 関連作品ID | |
-| tags | string[] | タグ | |
+| コンポーネント | 型 | 説明 |
+|----------|---|------|
+| content | VideoContent | 動画の基本コンテンツ情報 |
+| metadata | VideoMetadata | 動画のメタデータ |
+| channel | Channel | チャンネル情報 |
+| statistics | VideoStatistics? | 統計情報 |
+| tags | Tags | タグ情報（プレイリスト、ユーザー、コンテンツ） |
+| audioButtonInfo | AudioButtonInfo | 音声ボタン関連情報 |
+| liveStreamingDetails | LiveStreamingDetails? | ライブ配信詳細 |
 
-#### VideoType列挙型
+#### 主要メソッド
 
 ```typescript
-enum VideoType {
-  REGULAR = "regular",        // 通常動画
-  LIVESTREAM = "livestream",  // ライブ配信
-  SHORT = "short",           // ショート動画
-  PREMIERE = "premiere"      // プレミア公開
+// プレーンオブジェクトへの変換
+toPlainObject(): object
+
+// レガシー形式への変換
+toLegacyFormat(): LegacyVideoData
+
+// レガシー形式からの生成
+static fromLegacyFormat(data: LegacyVideoData): Video
+```
+
+#### VideoContent（動画コンテンツ）値オブジェクト
+
+| プロパティ | 型 | 説明 |
+|----------|---|------|
+| id | VideoId | YouTube動画ID |
+| publishedAt | PublishedAt | 公開日時 |
+| privacyStatus | PrivacyStatus | プライバシー設定（public/private/unlisted） |
+| uploadStatus | UploadStatus | アップロード状態 |
+| contentDetails | ContentDetails? | コンテンツ詳細 |
+| embedHtml | string? | 埋め込みHTML |
+| tags | string[]? | タグリスト |
+
+#### VideoMetadata（動画メタデータ）値オブジェクト
+
+| プロパティ | 型 | 説明 |
+|----------|---|------|
+| title | VideoTitle | 動画タイトル |
+| description | VideoDescription | 動画説明 |
+| duration | VideoDuration? | 動画時間（ISO 8601形式） |
+| dimension | string? | 動画の次元（2d/3d） |
+| definition | string? | 解像度（hd/sd） |
+| hasCaption | boolean? | 字幕の有無 |
+| isLicensedContent | boolean? | ライセンスコンテンツかどうか |
+
+#### VideoStatistics（動画統計）値オブジェクト
+
+| プロパティ | 型 | 説明 |
+|----------|---|------|
+| viewCount | ViewCount | 視聴回数 |
+| likeCount | LikeCount? | 高評価数 |
+| dislikeCount | DislikeCount? | 低評価数 |
+| favoriteCount | number? | お気に入り数 |
+| commentCount | CommentCount? | コメント数 |
+
+**統計メソッド:**
+```typescript
+// 総インタラクション数（高評価＋低評価）
+getTotalInteractions(): number
+
+// 高評価率
+getLikePercentage(): number
+
+// エンゲージメント指標
+getEngagementMetrics(): {
+  viewCount: number
+  likeRatio: number
+  commentRatio: number
+  engagementRate: number
 }
 ```
 
@@ -371,6 +419,83 @@ const CreatorType = {
     };
   }
 };
+```
+
+## ユーティリティ関数
+
+### 日付解析ユーティリティ
+
+#### parseDate
+日付文字列を安全にDate型に変換します。
+
+```typescript
+// packages/shared-types/src/utils/date-parser.ts
+function parseDate(dateString: string | null | undefined): Date | undefined
+```
+
+**使用例:**
+```typescript
+parseDate("2024-01-01T00:00:00Z")  // new Date("2024-01-01T00:00:00Z")
+parseDate("invalid-date")           // undefined
+parseDate(null)                     // undefined
+parseDate("")                       // undefined
+```
+
+#### isValidDateString
+有効な日付文字列かを判定します。
+
+```typescript
+function isValidDateString(dateString: string): boolean
+```
+
+### 数値解析ユーティリティ
+
+#### safeParseNumber
+文字列を安全に数値に変換します。
+
+```typescript
+// packages/shared-types/src/utils/number-parser.ts
+function safeParseNumber(value: string | null | undefined): number | undefined
+```
+
+**使用例:**
+```typescript
+safeParseNumber("123")        // 123
+safeParseNumber("123.45")     // 123.45
+safeParseNumber("invalid")    // undefined
+safeParseNumber(null)         // undefined
+```
+
+#### calculateRatio
+比率を計算します。分母が0以下の場合は0を返します。
+
+```typescript
+function calculateRatio(numerator: number, denominator: number): number
+```
+
+**使用例:**
+```typescript
+calculateRatio(50, 100)    // 0.5
+calculateRatio(50, 0)      // 0
+calculateRatio(50, -100)   // 0
+```
+
+#### formatPercentage
+パーセンテージ表示文字列を生成します。
+
+```typescript
+function formatPercentage(
+  numerator: number, 
+  denominator: number, 
+  decimals = 1
+): string
+```
+
+**使用例:**
+```typescript
+formatPercentage(50, 100)       // "50.0%"
+formatPercentage(33.333, 100, 2) // "33.33%"
+formatPercentage(50, 0)         // "0.0%"
 ```
 
 ## ユーティリティ型

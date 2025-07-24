@@ -12,7 +12,7 @@ graph TB
     Work[Work<br/>作品エンティティ]
     User[User<br/>ユーザーエンティティ]
     AudioButton[AudioButton<br/>音声ボタンエンティティ]
-    Video[Video<br/>動画エンティティ]
+    Video[Video V2<br/>動画エンティティ]
     
     %% 値オブジェクト
     Price[Price<br/>価格値オブジェクト]
@@ -107,30 +107,64 @@ classDiagram
 
 ### 3. Video（動画）
 
-YouTube動画情報を管理するエンティティです。
+YouTube動画情報を管理するエンティティです。Entity/Value Objectアーキテクチャに基づく新しい実装（V2）が利用可能です。
 
 ```mermaid
 classDiagram
     class Video {
-        +string id
-        +string title
-        +string channelId
-        +string channelTitle
-        +VideoType type
-        +Date publishedAt
-        +number viewCount
-        +string[] workIds
-        +isLiveStream() boolean
-        +isShort() boolean
-        +getDuration() string
+        +VideoContent content
+        +VideoMetadata metadata
+        +Channel channel
+        +VideoStatistics statistics
+        +Tags tags
+        +AudioButtonInfo audioButtonInfo
+        +LiveStreamingDetails liveStreamingDetails
+        +toPlainObject() object
+        +toLegacyFormat() LegacyVideoData
+        +static fromLegacyFormat() Video
     }
     
-    Video --> VideoType
+    class VideoContent {
+        +VideoId id
+        +PublishedAt publishedAt
+        +PrivacyStatus privacyStatus
+        +UploadStatus uploadStatus
+        +ContentDetails contentDetails
+        +string embedHtml
+        +string[] tags
+    }
+    
+    class VideoMetadata {
+        +VideoTitle title
+        +VideoDescription description
+        +VideoDuration duration
+        +string dimension
+        +string definition
+        +boolean hasCaption
+        +boolean isLicensedContent
+    }
+    
+    class VideoStatistics {
+        +ViewCount viewCount
+        +LikeCount likeCount
+        +DislikeCount dislikeCount
+        +number favoriteCount
+        +CommentCount commentCount
+        +getTotalInteractions() number
+        +getLikePercentage() number
+        +getEngagementMetrics() object
+    }
+    
+    Video --> VideoContent
+    Video --> VideoMetadata
+    Video --> Channel
+    Video --> VideoStatistics
 ```
 
 **責務:**
-- YouTube動画メタデータの保持
-- 動画種別の判定（ライブ配信、ショート動画など）
+- YouTube動画メタデータの保持（値オブジェクトによる構造化）
+- 統計情報の計算とエンゲージメント分析
+- レガシー形式との相互変換
 - 関連作品との紐付け
 
 ### 4. User（ユーザー）
@@ -250,6 +284,42 @@ classDiagram
 - 表示用情報の提供
 - 種別判定メソッド
 
+## ユーティリティ関数
+
+ドメインオブジェクト全体で使用される共通のユーティリティ関数です。
+
+### 日付解析ユーティリティ
+
+```typescript
+// packages/shared-types/src/utils/date-parser.ts
+
+// 文字列を安全にDate型に変換
+parseDate(dateString: string | null | undefined): Date | undefined
+
+// 有効な日付文字列かを判定
+isValidDateString(dateString: string): boolean
+```
+
+### 数値解析ユーティリティ
+
+```typescript
+// packages/shared-types/src/utils/number-parser.ts
+
+// 文字列を安全に数値に変換（NaNの場合はundefined）
+safeParseNumber(value: string | null | undefined): number | undefined
+
+// 比率を計算（分母が0以下の場合は0を返す）
+calculateRatio(numerator: number, denominator: number): number
+
+// パーセンテージ表示文字列を生成
+formatPercentage(numerator: number, denominator: number, decimals = 1): string
+```
+
+**特性:**
+- 安全な型変換（エラーを投げずにundefinedを返す）
+- 境界値の適切な処理（0除算、負の値など）
+- 一貫性のある数値フォーマット
+
 ## ドメインサービス
 
 ### WorkAggregator
@@ -349,7 +419,57 @@ interface UserRepository {
   findByEmail(email: string): Promise<User | null>
   save(user: User): Promise<void>
 }
+
+// Video集約のリポジトリ
+interface VideoRepository {
+  findById(id: string): Promise<Video | null>
+  findByIds(ids: string[]): Promise<Video[]>
+  findByChannelId(channelId: string): Promise<Video[]>
+  save(video: Video): Promise<void>
+  saveMany(videos: Video[]): Promise<void>
+}
 ```
+
+## インフラストラクチャ層マッパー
+
+### Video Mapper V2
+
+YouTube API レスポンスをVideo Entity V2に変換するマッパーです。
+
+```typescript
+// apps/functions/src/services/mappers/video-mapper-v2.ts
+
+// YouTube API → Video Entity V2
+mapYouTubeToVideoEntity(
+  youtubeVideo: youtube_v3.Schema$Video,
+  playlistTags?: string[],
+  userTags?: string[]
+): Video | null
+
+// 複数動画の一括マッピング
+mapYouTubeVideosToEntities(
+  youtubeVideos: youtube_v3.Schema$Video[],
+  playlistTagsMap?: Map<string, string[]>,
+  userTagsMap?: Map<string, string[]>
+): Video[]
+
+// エラー詳細付きマッピング
+mapYouTubeVideosWithErrors(
+  youtubeVideos: youtube_v3.Schema$Video[],
+  playlistTagsMap?: Map<string, string[]>,
+  userTagsMap?: Map<string, string[]>
+): BatchMappingResult
+
+// レガシー形式との相互変換
+mapVideoEntityToLegacy(video: Video): LegacyVideoData
+mapLegacyToVideoEntity(legacyData: LegacyVideoData): Video
+```
+
+**特性:**
+- 外部API形式からドメインモデルへの変換
+- エラーハンドリングと詳細なロギング
+- レガシーシステムとの互換性維持
+- 非推奨予定：2026年4月30日（Entity/Value Object移行完了後）
 
 ## ドメインイベント
 
