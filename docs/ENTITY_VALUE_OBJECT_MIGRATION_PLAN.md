@@ -14,7 +14,7 @@ suzumina.clickプロジェクトにおけるEntity・Value Objectアーキテク
 
 | 旧フィールド | 新フィールド | 変更内容 |
 |------------|------------|---------|
-| `aggregatedInfo.dlCount` | `wishlistCount` | フィールド名変更 |
+| `aggregatedInfo.dlCount` | 廃止 | DLsite API提供終了のため削除 |
 | `aggregatedInfo.reviewCount` | `rating.count` | ネスト構造変更 |
 | `aggregatedInfo.reviewAverage` | `rating.stars` | 0-5スケール→0-50スケール |
 | `prices.JPY` | `price.amount` | オブジェクト構造化 |

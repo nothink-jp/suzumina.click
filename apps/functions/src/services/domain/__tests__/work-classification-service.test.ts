@@ -16,7 +16,6 @@ describe("WorkClassificationService", () => {
 			price: { current: 1000, currency: "JPY" },
 			releaseDateISO: "2024-01-01T00:00:00Z",
 			rating: { stars: 45, count: 100 },
-			wishlistCount: 500,
 			...overrides,
 		}) as OptimizedFirestoreDLsiteWorkData;
 
@@ -99,32 +98,28 @@ describe("WorkClassificationService", () => {
 		it("should calculate high score for popular work", () => {
 			const work = createMockWork({
 				rating: { stars: 50, count: 1000 },
-				wishlistCount: 5000,
 				releaseDateISO: new Date().toISOString(),
 			});
 			const score = WorkClassificationService.calculatePopularityScore(work);
-			expect(score).toBeGreaterThan(80);
+			expect(score).toBeGreaterThan(70); // Max ~80 without wishlist
 		});
 
 		it("should calculate low score for unpopular work", () => {
 			const work = createMockWork({
 				rating: { stars: 20, count: 5 },
-				wishlistCount: 10,
 				releaseDateISO: "2020-01-01T00:00:00Z",
 			});
 			const score = WorkClassificationService.calculatePopularityScore(work);
-			expect(score).toBeLessThan(30);
+			expect(score).toBeLessThan(25); // Lower without wishlist bonus
 		});
 
 		it("should give bonus for new releases", () => {
 			const newWork = createMockWork({
 				rating: { stars: 40, count: 50 },
-				wishlistCount: 100,
 				releaseDateISO: new Date().toISOString(),
 			});
 			const oldWork = createMockWork({
 				rating: { stars: 40, count: 50 },
-				wishlistCount: 100,
 				releaseDateISO: "2020-01-01T00:00:00Z",
 			});
 
@@ -136,7 +131,6 @@ describe("WorkClassificationService", () => {
 		it("should handle missing data", () => {
 			const work = createMockWork({
 				rating: undefined,
-				wishlistCount: undefined,
 			});
 			const score = WorkClassificationService.calculatePopularityScore(work);
 			expect(score).toBeGreaterThanOrEqual(0);

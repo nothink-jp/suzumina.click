@@ -144,7 +144,6 @@ describe("Circle page server actions", () => {
 					options: { genre: ["ボイス・ASMR"], aiUsed: false },
 					tags: ["tag1", "tag2"],
 					rating: { stars: 45, count: 5 },
-					wishlistCount: 100,
 				},
 				{
 					id: "RJ222222",
@@ -159,7 +158,6 @@ describe("Circle page server actions", () => {
 					options: { genre: ["音声作品"], aiUsed: true },
 					tags: ["tag3"],
 					rating: { stars: 40, count: 3 },
-					wishlistCount: 50,
 				},
 				{
 					id: "RJ333333",

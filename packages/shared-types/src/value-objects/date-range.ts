@@ -63,52 +63,16 @@ export const DateFormatter = {
 	 */
 	optimizeDateFormats: (rawDate: string): DateRange | null => {
 		try {
-			// DLsite APIの日付形式をパース
-			const patterns = [
-				/^(\d{4})年(\d{1,2})月(\d{1,2})日$/,
-				/^(\d{4})-(\d{2})-(\d{2})$/,
-				/^(\d{4})\/(\d{2})\/(\d{2})$/,
-			];
-
-			let year: number | undefined;
-			let month: number | undefined;
-			let day: number | undefined;
-			let matched = false;
-
-			for (const pattern of patterns) {
-				const match = rawDate.match(pattern);
-				if (match?.[1] && match[2] && match[3]) {
-					year = Number.parseInt(match[1], 10);
-					month = Number.parseInt(match[2], 10);
-					day = Number.parseInt(match[3], 10);
-					matched = true;
-					break;
-				}
-			}
-
-			if (!matched) {
-				// ISO形式として直接パース
-				const date = new Date(rawDate);
-				if (!Number.isNaN(date.getTime())) {
-					year = date.getFullYear();
-					month = date.getMonth() + 1;
-					day = date.getDate();
-				} else {
-					return null;
-				}
-			}
-
-			// 値が設定されているか確認
-			if (year === undefined || month === undefined || day === undefined) {
-				return null;
-			}
+			// 日付パースを別関数に委譲
+			const parsed = DateFormatter.parseDate(rawDate);
+			if (!parsed) return null;
 
 			// ISO形式に変換
-			const isoDate = new Date(year, month - 1, day);
+			const isoDate = new Date(parsed.year, parsed.month - 1, parsed.day);
 			const iso = isoDate.toISOString();
 
 			// 表示用フォーマット
-			const display = `${year}年${month}月${day}日`;
+			const display = `${parsed.year}年${parsed.month}月${parsed.day}日`;
 
 			return DateRange.parse({
 				original: rawDate,
@@ -118,6 +82,42 @@ export const DateFormatter = {
 		} catch {
 			return null;
 		}
+	},
+
+	/**
+	 * 日付文字列をパース
+	 */
+	parseDate: (rawDate: string): { year: number; month: number; day: number } | null => {
+		// 日付パターンを定義
+		const patterns = [
+			{ regex: /^(\d{4})年(\d{1,2})月(\d{1,2})日$/, type: "japanese" },
+			{ regex: /^(\d{4})-(\d{2})-(\d{2})$/, type: "iso" },
+			{ regex: /^(\d{4})\/(\d{2})\/(\d{2})$/, type: "slash" },
+		];
+
+		// パターンマッチング
+		for (const { regex } of patterns) {
+			const match = rawDate.match(regex);
+			if (match?.[1] && match[2] && match[3]) {
+				return {
+					year: Number.parseInt(match[1], 10),
+					month: Number.parseInt(match[2], 10),
+					day: Number.parseInt(match[3], 10),
+				};
+			}
+		}
+
+		// ISO形式として直接パース
+		const date = new Date(rawDate);
+		if (!Number.isNaN(date.getTime())) {
+			return {
+				year: date.getFullYear(),
+				month: date.getMonth() + 1,
+				day: date.getDate(),
+			};
+		}
+
+		return null;
 	},
 
 	/**

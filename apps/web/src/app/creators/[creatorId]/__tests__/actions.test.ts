@@ -154,7 +154,6 @@ describe("Creator page server actions", () => {
 					options: { genre: ["ボイス・ASMR"], aiUsed: false },
 					tags: ["tag1"],
 					rating: { stars: 45, count: 5 },
-					wishlistCount: 100,
 				},
 				{
 					id: "RJ222222",
@@ -169,7 +168,6 @@ describe("Creator page server actions", () => {
 					options: { genre: ["音声作品"], aiUsed: true },
 					tags: ["tag2"],
 					rating: { stars: 40, count: 3 },
-					wishlistCount: 50,
 				},
 			];
 
@@ -291,7 +289,6 @@ describe("Creator page server actions", () => {
 				options: { genre: ["ボイス・ASMR"], aiUsed: false },
 				tags: [`tag${i}`],
 				rating: { stars: 45, count: 5 },
-				wishlistCount: 100 + i,
 			}));
 
 			mockGet.mockResolvedValueOnce({

@@ -84,7 +84,6 @@ const validFirestoreWork: OptimizedFirestoreDLsiteWorkData = {
 	lastFetchedAt: "2023-01-02T12:00:00Z",
 	createdAt: "2023-01-01T10:00:00Z",
 	updatedAt: "2023-01-02T12:00:00Z",
-	wishlistCount: 1500,
 	// OptimizedFirestoreDLsiteWorkDataの必須フィールド
 	releaseDate: "2023-01-01",
 	releaseDateISO: "2023-01-01",
@@ -103,7 +102,6 @@ const validFrontendWork: FrontendDLsiteWorkData = {
 	displayPrice: "1,100円（元：1,320円）",
 	discountText: "20%OFF",
 	ratingText: "★4.5 (125件)",
-	wishlistText: "♡1,500",
 	relativeUrl: "/maniax/work/=/product_id/RJ236867.html",
 	createdAtISO: "2023-01-01T10:00:00Z",
 	lastFetchedAtISO: "2023-01-02T12:00:00Z",
@@ -474,7 +472,6 @@ describe("convertToFrontendWork", () => {
 		expect(result.displayPrice).toBe("1100円（元：1320円）");
 		expect(result.discountText).toBe("20%OFF");
 		expect(result.ratingText).toBe("★4.5 (125件)");
-		expect(result.wishlistText).toBe("♡1,500");
 		expect(result.relativeUrl).toBe("/maniax/work/=/product_id/RJ236867.html");
 	});
 
@@ -498,24 +495,6 @@ describe("convertToFrontendWork", () => {
 
 		const result = convertToFrontendWork(workWithoutRating);
 		expect(result.ratingText).toBeUndefined();
-	});
-
-	it("ウィッシュリスト数なしの作品も正しく処理できる", () => {
-		const workWithoutWishlist = { ...validFirestoreWork };
-		(workWithoutWishlist as any).wishlistCount = undefined;
-
-		const result = convertToFrontendWork(workWithoutWishlist);
-		expect(result.wishlistText).toBeUndefined();
-	});
-
-	it("数値のフォーマットが正しく適用される", () => {
-		const workWithLargeNumbers = {
-			...validFirestoreWork,
-			wishlistCount: 123456,
-		};
-
-		const result = convertToFrontendWork(workWithLargeNumbers);
-		expect(result.wishlistText).toBe("♡123,456");
 	});
 
 	it("スキーマ検証エラー時にフォールバックデータを返す", () => {

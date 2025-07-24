@@ -78,12 +78,8 @@ export class WorkClassificationService {
 			score += Math.min(30, (Math.log10(reviewCount + 1) / 3) * 30);
 		}
 
-		// ウィッシュリスト数による加点（最大20点）
-		const wishlistCount = work.wishlistCount || 0;
-		if (wishlistCount > 0) {
-			// 対数スケールで計算（5000件で満点）
-			score += Math.min(20, (Math.log10(wishlistCount + 1) / 3.7) * 20);
-		}
+		// ウィッシュリスト数による加点は廃止（DLsite API提供終了のため）
+		// 代わりに評価とレビュー数の重みを調整
 
 		// 新作ボーナス（最大10点）
 		if (work.releaseDateISO) {

@@ -43,8 +43,26 @@ export const Rating = z
 		/** パーセンテージ表現（0-100） */
 		percentage: () => (data.average / 5) * 100,
 		/** 他のRatingと等価か判定 */
-		equals: (other: Rating) =>
-			data.stars === other.stars && data.count === other.count && data.average === other.average,
+		equals: (other: unknown): boolean => {
+			// 入力検証: null/undefined チェック
+			if (!other) return false;
+
+			// 型ガード: Rating型かチェック
+			if (typeof other !== "object") return false;
+			const o = other as Record<string, unknown>;
+
+			// 必須プロパティの存在確認
+			if (
+				typeof o.stars !== "number" ||
+				typeof o.count !== "number" ||
+				typeof o.average !== "number"
+			) {
+				return false;
+			}
+
+			// 安全な比較
+			return data.stars === o.stars && data.count === o.count && data.average === o.average;
+		},
 		/** フォーマット済み文字列 */
 		format: () => `★${data.average.toFixed(1)} (${data.count}件)`,
 	}));

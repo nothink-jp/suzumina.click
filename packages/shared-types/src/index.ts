@@ -35,8 +35,10 @@ export * from "./utilities/firestore-utils";
 export * from "./utilities/price-history";
 // 検索フィルター関連の型とスキーマのエクスポート
 export * from "./utilities/search-filters";
+// === Value Objects ===
 export * from "./value-objects/creator-type";
 export * from "./value-objects/date-range";
-// === Value Objects ===
+// DateFormatterをvalue-objectsから再エクスポート（互換性のため）
+export { DateFormatter } from "./value-objects/date-range";
 export * from "./value-objects/price";
 export * from "./value-objects/rating";

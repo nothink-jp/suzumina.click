@@ -488,8 +488,6 @@ export const DLsiteWorkBaseSchema = z.object({
 	// DLsite infoエンドポイントから取得される追加データ
 	/** メーカーID - Individual Info API `maker_id` */
 	makerId: z.string().optional(),
-	/** ウィッシュリスト数 */
-	wishlistCount: z.number().int().nonnegative().optional(),
 	// === Individual Info API準拠ランキング情報 ===
 	/** 日間ランキング - Individual Info API `rank_day` */
 	rankDay: z.number().optional(),
@@ -563,7 +561,6 @@ export const DataSourceTrackingSchema = z.object({
 	infoAPI: z
 		.object({
 			lastFetched: z.string().datetime(),
-			wishlistCount: z.number().optional(),
 			customGenres: z.array(z.string()).default([]),
 		})
 		.optional(),
@@ -621,8 +618,6 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	price: PriceInfoSchema,
 	/** 統合評価情報 */
 	rating: RatingInfoSchema.optional(),
-	/** ウィッシュリスト数（infoAPIから） */
-	wishlistCount: z.number().optional(),
 
 	// === Individual Info API準拠クリエイター情報 ===
 	/** クリエイター情報 - Individual Info API `creaters` オブジェクト */
@@ -931,7 +926,7 @@ function createFallbackFrontendWork(
 		displayPrice,
 		discountText,
 		ratingText,
-		wishlistText: data.wishlistCount ? `♡${data.wishlistCount.toLocaleString()}` : undefined,
+		wishlistText: undefined,
 		relativeUrl,
 		createdAtISO: data.createdAt,
 		lastFetchedAtISO: data.lastFetchedAt,
@@ -984,7 +979,6 @@ export function convertToFrontendWork(
 	const displayPrice = generateDisplayPrice(data.price);
 	const discountText = data.price.discount ? `${data.price.discount}%OFF` : undefined;
 	const ratingText = generateRatingText(data.rating);
-	const wishlistText = data.wishlistCount ? `♡${data.wishlistCount.toLocaleString()}` : undefined;
 	const relativeUrl = `/maniax/work/=/product_id/${data.productId}.html`;
 
 	// 年齢レーティングの取得
@@ -1010,7 +1004,6 @@ export function convertToFrontendWork(
 		createdAtISO: data.createdAt,
 		lastFetchedAtISO: data.lastFetchedAt,
 		updatedAtISO: data.updatedAt,
-		wishlistText,
 	};
 
 	// データの検証
@@ -1111,8 +1104,6 @@ export interface FirestoreServerDLsiteWorkData {
 	registDate?: string;
 	/** 作品オプション（音声/トライアル等） */
 	options?: string;
-	/** ウィッシュリスト数 */
-	wishlistCount?: number;
 	/** ランキング履歴 */
 	rankingHistory?: RankingInfo[];
 	/** 多通貨価格情報 */

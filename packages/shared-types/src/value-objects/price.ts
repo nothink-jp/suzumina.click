@@ -36,12 +36,20 @@ export const Price = z
 			return Math.round(((data.original - data.amount) / data.original) * 100);
 		},
 		/** 他のPriceと等価か判定 */
-		equals: (other: Price) =>
-			data.amount === other.amount &&
-			data.currency === other.currency &&
-			data.original === other.original &&
-			data.discount === other.discount &&
-			data.point === other.point,
+		equals: (other: unknown): boolean => {
+			// Price型のガードチェックを専用関数に委譲
+			if (!isPriceType(other)) return false;
+			const o = other as Record<string, unknown>;
+
+			// 安全な比較
+			return (
+				data.amount === o.amount &&
+				data.currency === o.currency &&
+				data.original === o.original &&
+				data.discount === o.discount &&
+				data.point === o.point
+			);
+		},
 		/** 価格を文字列形式で取得 */
 		format: () => {
 			const formatter = new Intl.NumberFormat("ja-JP", {
@@ -55,6 +63,30 @@ export const Price = z
 	}));
 
 export type Price = z.infer<typeof Price>;
+
+/**
+ * Price型かどうかを判定するヘルパー関数
+ */
+function isPriceType(value: unknown): boolean {
+	// null/undefined チェック
+	if (!value) return false;
+
+	// オブジェクト型チェック
+	if (typeof value !== "object") return false;
+	const o = value as Record<string, unknown>;
+
+	// 必須プロパティの型チェック
+	if (typeof o.amount !== "number" || typeof o.currency !== "string") {
+		return false;
+	}
+
+	// オプショナルプロパティの型チェック
+	if (o.original !== undefined && typeof o.original !== "number") return false;
+	if (o.discount !== undefined && typeof o.discount !== "number") return false;
+	if (o.point !== undefined && typeof o.point !== "number") return false;
+
+	return true;
+}
 
 /**
  * 通貨コードの検証

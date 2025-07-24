@@ -61,7 +61,6 @@ export class WorkMapper {
 			// === 価格・評価情報 ===
 			price: WorkMapper.toPrice(raw) || { current: 0, currency: "JPY" },
 			rating: WorkMapper.toRating(raw),
-			wishlistCount: raw.wishlist_count,
 
 			// === クリエイター情報 ===
 			voiceActors: WorkMapper.extractVoiceActors(raw),
@@ -106,7 +105,6 @@ export class WorkMapper {
 			dataSources: {
 				infoAPI: {
 					lastFetched: new Date().toISOString(),
-					wishlistCount: raw.wishlist_count,
 					customGenres: [],
 				},
 			},
