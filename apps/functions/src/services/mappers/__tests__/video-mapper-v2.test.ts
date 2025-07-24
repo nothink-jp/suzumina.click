@@ -337,4 +337,47 @@ describe("Video Mapper V2", () => {
 			expect(result?.metadata.duration?.toString()).toBe("invalid-duration");
 		});
 	});
+
+	describe("NaN validation", () => {
+		it("should handle invalid favoriteCount values", () => {
+			const youtubeVideo: youtube_v3.Schema$Video = {
+				id: "test123",
+				snippet: {
+					title: "Test Video",
+					description: "Test Description",
+					channelId: "UCxxxxxxxxxxxxxxxxxxxxxx",
+					channelTitle: "Test Channel",
+					publishedAt: "2024-01-01T00:00:00Z",
+				},
+				statistics: {
+					viewCount: "1000",
+					favoriteCount: "invalid", // Invalid number string
+				},
+			};
+
+			const video = mapYouTubeToVideoEntity(youtubeVideo);
+			expect(video).not.toBeNull();
+			expect(video?.statistics?.favoriteCount).toBeUndefined();
+		});
+
+		it("should handle invalid concurrentViewers values", () => {
+			const youtubeVideo: youtube_v3.Schema$Video = {
+				id: "test123",
+				snippet: {
+					title: "Test Video",
+					description: "Test Description",
+					channelId: "UCxxxxxxxxxxxxxxxxxxxxxx",
+					channelTitle: "Test Channel",
+					publishedAt: "2024-01-01T00:00:00Z",
+				},
+				liveStreamingDetails: {
+					concurrentViewers: "not-a-number", // Invalid number string
+				},
+			};
+
+			const video = mapYouTubeToVideoEntity(youtubeVideo);
+			expect(video).not.toBeNull();
+			expect(video?.liveStreamingDetails?.concurrentViewers).toBeUndefined();
+		});
+	});
 });
