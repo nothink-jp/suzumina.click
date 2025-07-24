@@ -1,4 +1,4 @@
-import { parseDurationToSeconds } from "@suzumina.click/shared-types/src/video";
+import { parseDurationToSeconds } from "@suzumina.click/shared-types";
 import { notFound, redirect } from "next/navigation";
 import { getAudioButtonById } from "@/app/buttons/actions";
 import { getVideoById } from "@/app/videos/actions";

@@ -17,8 +17,6 @@ export interface FailedWorkTracker {
 	firstFailedAt: Timestamp;
 	failureReason: string;
 	lastSuccessfulAt?: Timestamp;
-	isLocalSuccessful?: boolean;
-	localCollectionAttempts?: number;
 	createdAt: Timestamp;
 	updatedAt: Timestamp;
 }
@@ -148,83 +146,6 @@ export async function trackMultipleFailedWorks(
 }
 
 /**
- * 作品の成功を記録（失敗から回復した場合）
- */
-export async function trackWorkRecovery(workId: string): Promise<void> {
-	try {
-		const collection = firestore.collection(FAILED_WORKS_COLLECTION);
-		const docRef = collection.doc(workId);
-
-		await docRef.update({
-			lastSuccessfulAt: FieldValue.serverTimestamp(),
-			isLocalSuccessful: true,
-			updatedAt: FieldValue.serverTimestamp(),
-		});
-
-		logger.info("作品回復記録完了", {
-			operation: "trackWorkRecovery",
-			workId,
-		});
-	} catch (error) {
-		logger.warn("作品回復記録エラー", {
-			operation: "trackWorkRecovery",
-			workId,
-			error: error instanceof Error ? error.message : String(error),
-		});
-	}
-}
-
-/**
- * 失敗作品ID一覧を取得
- */
-export async function getFailedWorkIds(options?: {
-	minFailureCount?: number;
-	maxFailureCount?: number;
-	onlyUnrecovered?: boolean;
-	limit?: number;
-}): Promise<string[]> {
-	try {
-		const collection = firestore.collection(FAILED_WORKS_COLLECTION);
-		let query = collection.orderBy("lastFailedAt", "desc");
-
-		// 失敗回数フィルタ
-		if (options?.minFailureCount) {
-			query = query.where("failureCount", ">=", options.minFailureCount);
-		}
-		if (options?.maxFailureCount) {
-			query = query.where("failureCount", "<=", options.maxFailureCount);
-		}
-
-		// 未回復のみフィルタ
-		if (options?.onlyUnrecovered) {
-			query = query.where("isLocalSuccessful", "!=", true);
-		}
-
-		// 件数制限
-		if (options?.limit) {
-			query = query.limit(options.limit);
-		}
-
-		const snapshot = await query.get();
-		const workIds = snapshot.docs.map((doc) => doc.data().workId as string);
-
-		logger.info("失敗作品ID一覧取得完了", {
-			operation: "getFailedWorkIds",
-			count: workIds.length,
-			options,
-		});
-
-		return workIds;
-	} catch (error) {
-		logger.error("失敗作品ID一覧取得エラー", {
-			operation: "getFailedWorkIds",
-			error: error instanceof Error ? error.message : String(error),
-		});
-		throw error;
-	}
-}
-
-/**
  * 失敗統計情報を取得
  */
 export async function getFailureStatistics(): Promise<{
@@ -238,7 +159,7 @@ export async function getFailureStatistics(): Promise<{
 		const snapshot = await collection.get();
 
 		let totalFailedWorks = 0;
-		let recoveredWorks = 0;
+		const recoveredWorks = 0;
 		let unrecoveredWorks = 0;
 		const failureReasons: Record<string, number> = {};
 
@@ -246,11 +167,8 @@ export async function getFailureStatistics(): Promise<{
 			const data = doc.data() as FailedWorkTracker;
 			totalFailedWorks++;
 
-			if (data.isLocalSuccessful) {
-				recoveredWorks++;
-			} else {
-				unrecoveredWorks++;
-			}
+			// 全て未回復として扱う（supplementツール削除により）
+			unrecoveredWorks++;
 
 			const reason = data.failureReason || "unknown";
 			failureReasons[reason] = (failureReasons[reason] || 0) + 1;
@@ -290,7 +208,8 @@ export async function cleanupOldFailureRecords(daysToKeep = 30): Promise<number>
 
 		const snapshot = await collection
 			.where("lastFailedAt", "<", cutoffTimestamp)
-			.where("isLocalSuccessful", "==", true)
+			// isLocalSuccessfulフィールドは削除済み
+			.where("lastFailedAt", "<", cutoffTimestamp)
 			.limit(500)
 			.get();
 

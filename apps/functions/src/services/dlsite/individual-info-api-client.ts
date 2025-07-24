@@ -5,9 +5,9 @@
  * DLsite固有のドメインロジックを含むため services/dlsite に配置
  */
 
+import type { DLsiteRawApiResponse } from "@suzumina.click/shared-types";
 import { generateDLsiteHeaders } from "../../infrastructure/management/user-agent-manager";
 import * as logger from "../../shared/logger";
-import type { IndividualInfoAPIResponse } from "./individual-info-to-work-mapper";
 
 // API設定
 const INDIVIDUAL_INFO_API_BASE_URL = "https://www.dlsite.com/maniax/api/=/product.json";
@@ -26,10 +26,10 @@ export interface IndividualInfoAPIOptions {
 function handleHttpError(
 	response: Response,
 	workId: string,
-	url: string,
-	responseText: string,
-	enableDetailedLogging: boolean,
-): IndividualInfoAPIResponse | null {
+	_url: string,
+	_responseText: string,
+	_enableDetailedLogging: boolean,
+): DLsiteRawApiResponse | null {
 	// 詳細ログは環境に関係なく省略
 
 	// 404: 作品が見つからない（ログ省略）
@@ -54,7 +54,7 @@ function parseJsonResponse(
 	responseText: string,
 	workId: string,
 	url: string,
-	enableDetailedLogging: boolean,
+	_enableDetailedLogging: boolean,
 ): unknown | null {
 	try {
 		return JSON.parse(responseText);
@@ -81,8 +81,8 @@ function validateResponseFormat(
 	workId: string,
 	url: string,
 	responseText: string,
-	enableDetailedLogging: boolean,
-): IndividualInfoAPIResponse | null {
+	_enableDetailedLogging: boolean,
+): DLsiteRawApiResponse | null {
 	// Individual Info APIは配列形式でレスポンスを返す
 	if (!Array.isArray(responseData) || responseData.length === 0) {
 		const invalidContext = {
@@ -103,7 +103,7 @@ function validateResponseFormat(
 		return null;
 	}
 
-	const data = responseData[0] as IndividualInfoAPIResponse;
+	const data = responseData[0] as DLsiteRawApiResponse;
 
 	// 基本的なデータ検証（ログ省略）
 	if (!data.workno && !data.product_id) {
@@ -124,7 +124,7 @@ function validateResponseFormat(
 export async function fetchIndividualWorkInfo(
 	workId: string,
 	options: IndividualInfoAPIOptions = {},
-): Promise<IndividualInfoAPIResponse | null> {
+): Promise<DLsiteRawApiResponse | null> {
 	const { enableDetailedLogging = false } = options;
 
 	try {
@@ -136,10 +136,22 @@ export async function fetchIndividualWorkInfo(
 		const response = await fetch(url, {
 			method: "GET",
 			headers,
+			signal: AbortSignal.timeout(30000), // 30秒タイムアウト
 		});
 
 		if (!response.ok) {
 			const responseText = await response.text();
+
+			// エラーレスポンスの詳細をログ
+			if (response.status !== 404) {
+				logger.error(`API HTTP Error for ${workId}`, {
+					status: response.status,
+					statusText: response.statusText,
+					responseText: responseText.substring(0, 200),
+					url,
+				});
+			}
+
 			return handleHttpError(response, workId, url, responseText, enableDetailedLogging);
 		}
 
@@ -163,7 +175,10 @@ export async function fetchIndividualWorkInfo(
 		return validatedData;
 	} catch (error) {
 		// API取得エラーは重要なため保持
-		logger.error(`Individual Info API取得エラー: ${workId}`, { error });
+		logger.error(`Individual Info API取得エラー: ${workId}`, {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
 
 		throw error;
 	}
@@ -185,11 +200,11 @@ export async function batchFetchIndividualInfo(
 		batchDelay?: number;
 	} = {},
 ): Promise<{
-	results: Map<string, IndividualInfoAPIResponse>;
+	results: Map<string, DLsiteRawApiResponse>;
 	failedWorkIds: string[];
 }> {
 	const { maxConcurrent = 5, batchDelay = 800, ...apiOptions } = options;
-	const results = new Map<string, IndividualInfoAPIResponse>();
+	const results = new Map<string, DLsiteRawApiResponse>();
 	const failedWorkIds: string[] = [];
 
 	// バッチに分割
@@ -205,7 +220,7 @@ export async function batchFetchIndividualInfo(
 				try {
 					const data = await fetchIndividualWorkInfo(workId, apiOptions);
 					return { workId, data };
-				} catch (error) {
+				} catch (_error) {
 					// 個別失敗ログは省略（バッチ単位で記録）
 					return { workId, data: null };
 				}
@@ -227,7 +242,10 @@ export async function batchFetchIndividualInfo(
 				await new Promise((resolve) => setTimeout(resolve, batchDelay));
 			}
 		} catch (error) {
-			logger.error(`バッチ ${batchIndex + 1} でエラー:`, { error });
+			logger.error(`バッチ ${batchIndex + 1} でエラー:`, {
+				error: error instanceof Error ? error.message : String(error),
+				stack: error instanceof Error ? error.stack : undefined,
+			});
 			// バッチ全体が失敗した場合、そのバッチの全作品IDを失敗として記録
 			failedWorkIds.push(...batch);
 		}

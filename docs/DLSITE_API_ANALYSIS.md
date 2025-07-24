@@ -24,8 +24,8 @@ DLsite Individual Info API (`https://www.dlsite.com/maniax/api/=/product.json?wo
 | `maker_name` | string | サークル名 | "チームランドセル" | 日本語サークル名 |
 | `maker_name_en` | string\|null | 英語サークル名 | "Team Landsel" | 英語表記（任意） |
 | **カテゴリ・分類** |
-| `work_type` | string | 作品タイプコード | "SOU", "RPG", "MOV", "MNG" | SOU=ボイス・ASMR, RPG=ロールプレイング, MOV=動画, MNG=マンガ |
-| `work_type_string` | string | 作品タイプ名 | "ボイス・ASMR", "ロールプレイング", "動画", "マンガ" | 表示用タイプ名 |
+| `work_type` | string | 作品タイプコード | "ADV", "SOU", "RPG", "MOV", "MNG", "GAM", "CG", "TOL", "ET3", "SLN", "ACN", "PZL", "QIZ", "TBL", "DGT", "etc" | ADV=アドベンチャー, SOU=ボイス・ASMR, RPG=ロールプレイング, MOV=動画, MNG=マンガ, GAM=ゲーム, CG=CG・イラスト, TOL=ツール・アクセサリ, ET3=その他・3D, SLN=シミュレーション, ACN=アクション, PZL=パズル, QIZ=クイズ, TBL=テーブル, DGT=デジタルノベル, etc=その他 |
+| `work_type_string` | string | 作品タイプ名 | "アドベンチャー", "ボイス・ASMR", "ロールプレイング", "動画", "マンガ", "ゲーム", "CG・イラスト", "ツール・アクセサリ", "その他・3D", "シミュレーション", "アクション", "パズル", "クイズ", "テーブル", "デジタルノベル", "その他" | 表示用タイプ名 |
 | `work_type_special` | string\|null | 特殊タイプ | null | 特別なタイプ分類 |
 | `work_type_special_masked` | string\|null | マスク済み特殊タイプ | null | 特殊タイプのマスク版 |
 | `work_category` | string | 作品カテゴリ | "doujin" | doujin=同人, commercial=商業 |
@@ -311,6 +311,29 @@ DLsite Individual Info API (`https://www.dlsite.com/maniax/api/=/product.json?wo
 3. **販売戦略支援**: 割引、セット販売、期間限定販売の詳細管理
 4. **プラットフォーム横断**: PC、モバイル、専用プレイヤー対応情報
 5. **メディア最適化**: 多解像度画像、レスポンシブ対応
+
+### 作品タイプ（work_type）完全一覧
+
+DLsiteでは以下の16種類の作品タイプコードが定義されています：
+
+| コード | 日本語名 | 説明 |
+|--------|----------|------|
+| `ADV` | アドベンチャー | アドベンチャーゲーム・ビジュアルノベル |
+| `SOU` | ボイス・ASMR | 音声作品・ASMR・バイノーラル音声 |
+| `RPG` | ロールプレイング | RPG・SRPG・ARPG作品 |
+| `MOV` | 動画 | 動画作品・アニメーション作品 |
+| `MNG` | マンガ | 漫画・同人誌・CG集（マンガ形式） |
+| `GAM` | ゲーム | その他のゲーム作品（分類外） |
+| `CG` | CG・イラスト | CG集・イラスト集・画集 |
+| `TOL` | ツール・アクセサリ | ツール類・素材集・アクセサリ |
+| `ET3` | その他・3D | 3Dモデル・その他3D関連作品 |
+| `SLN` | シミュレーション | シミュレーションゲーム |
+| `ACN` | アクション | アクションゲーム |
+| `PZL` | パズル | パズルゲーム |
+| `QIZ` | クイズ | クイズゲーム |
+| `TBL` | テーブル | テーブルゲーム・カードゲーム |
+| `DGT` | デジタルノベル | デジタルノベル・電子書籍 |
+| `etc` | その他 | 上記に分類されないその他の作品 |
 
 ### 主要な活用用途
 

@@ -1,4 +1,4 @@
-import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
+import type { FrontendVideoData } from "@suzumina.click/shared-types";
 import { GenericCarousel } from "@suzumina.click/ui/components/custom/generic-carousel";
 import VideoCard from "@/app/videos/components/VideoCard";
 import { UI_MESSAGES } from "@/constants/ui-messages";

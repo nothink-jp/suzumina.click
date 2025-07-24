@@ -9,16 +9,16 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type {
+	DLsiteRawApiResponse,
+	OptimizedFirestoreDLsiteWorkData,
+} from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../../infrastructure/management/user-agent-manager";
 import { batchCollectCircleAndCreatorInfo } from "../../services/dlsite/collect-circle-creator-info";
 import { getExistingWorksMap, saveWorksToFirestore } from "../../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../../services/dlsite/individual-info-api-client";
-import {
-	batchMapIndividualInfoAPIToWorkData,
-	type IndividualInfoAPIResponse,
-	validateAPIOnlyWorkData,
-} from "../../services/dlsite/individual-info-to-work-mapper";
+import { WorkMapper } from "../../services/mappers/work-mapper";
 import { savePriceHistory } from "../../services/price-history";
 import { chunkArray } from "../../shared/array-utils";
 import * as logger from "../../shared/logger";
@@ -39,7 +39,7 @@ interface LocalCollectedWorkData {
 	workId: string;
 	collectedAt: string;
 	collectionMethod: "INDIVIDUAL_API" | "MANUAL_ENTRY" | "HYBRID";
-	basicInfo: IndividualInfoAPIResponse;
+	basicInfo: DLsiteRawApiResponse;
 	metadata: {
 		collectorVersion: string;
 		collectionEnvironment: string;
@@ -127,7 +127,7 @@ class LocalDataCollector {
 	};
 
 	// APIレスポンスとワークデータの保存用（サークル・クリエイター収集のため）
-	private apiResponses = new Map<string, IndividualInfoAPIResponse>();
+	private apiResponses = new Map<string, DLsiteRawApiResponse>();
 	private workDataMap = new Map<string, OptimizedFirestoreDLsiteWorkData>();
 
 	/**
@@ -147,7 +147,7 @@ class LocalDataCollector {
 	/**
 	 * 単一作品のローカルデータ取得
 	 */
-	private async fetchLocalWorkData(workId: string): Promise<IndividualInfoAPIResponse | null> {
+	private async fetchLocalWorkData(workId: string): Promise<DLsiteRawApiResponse | null> {
 		try {
 			const data = await batchFetchIndividualInfo([workId], {
 				maxConcurrent: 1,
@@ -331,7 +331,7 @@ class LocalDataCollector {
 			};
 			// APIレスポンス統計は省略
 
-			const workDataList = batchMapIndividualInfoAPIToWorkData(apiResponses, existingWorksMap);
+			const workDataList = apiResponses.map((apiData) => WorkMapper.toWork(apiData));
 			// バッチ変換完了
 
 			// APIレスポンスとワークデータを保存（後でサークル・クリエイター収集に使用）
@@ -343,14 +343,15 @@ class LocalDataCollector {
 			});
 
 			const validWorkData = workDataList.filter((work) => {
-				const validation = validateAPIOnlyWorkData(work);
-				if (!validation.isValid) {
+				// Basic validation - ensure required fields exist
+				if (!work.id || !work.title || !work.circle) {
 					logger.warn(`データ品質エラー: ${work.productId}`, {
-						errors: validation.errors,
+						reason: "必須フィールドが欠落",
 					});
 					batchResult.errors.push(`品質エラー: ${work.productId}`);
+					return false;
 				}
-				return validation.isValid;
+				return true;
 			});
 
 			if (validWorkData.length > 0) {
@@ -437,7 +438,7 @@ class LocalDataCollector {
 		// バッチ処理用のデータを準備
 		const worksForCollection: Array<{
 			workData: any;
-			apiData: IndividualInfoAPIResponse;
+			apiData: DLsiteRawApiResponse;
 			isNewWork: boolean;
 		}> = [];
 

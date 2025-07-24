@@ -1,6 +1,5 @@
-import type { PriceHistoryDocument } from "@suzumina.click/shared-types";
+import type { DLsiteRawApiResponse, PriceHistoryDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
-import type { IndividualInfoAPIResponse } from "../dlsite/individual-info-to-work-mapper";
 import { extractJPYPrice } from "./price-extractor";
 
 /**
@@ -13,7 +12,7 @@ import { extractJPYPrice } from "./price-extractor";
 export async function detectPriceChange(
 	workId: string,
 	currentDate: string,
-	currentData: IndividualInfoAPIResponse,
+	currentData: DLsiteRawApiResponse,
 ): Promise<boolean> {
 	// worknoが存在しない場合は変更なしとする
 	if (!currentData.workno) {
@@ -44,8 +43,7 @@ export async function detectPriceChange(
 
 		// 価格差が1円以上の場合は変更ありとする
 		return Math.abs(yesterdayData.regularPrice - currentPrice) >= 1;
-	} catch (error) {
-		console.warn(`Price change detection failed for ${workId}:`, error);
+	} catch (_error) {
 		// エラー時は変更なしとして扱う
 		return false;
 	}
@@ -61,7 +59,7 @@ export async function detectPriceChange(
 export async function detectNewCampaign(
 	workId: string,
 	currentDate: string,
-	currentData: IndividualInfoAPIResponse,
+	currentData: DLsiteRawApiResponse,
 ): Promise<boolean> {
 	// worknoが存在しない場合は新しいキャンペーンなしとする
 	if (!currentData.workno) {
@@ -92,9 +90,8 @@ export async function detectNewCampaign(
 		const currentCampaignId = currentData.campaign?.campaign_id;
 
 		// キャンペーンIDが変更され、かつ現在キャンペーン中の場合は新しいキャンペーン開始
-		return currentCampaignId != null && currentCampaignId !== yesterdayData.campaignId;
-	} catch (error) {
-		console.warn(`New campaign detection failed for ${workId}:`, error);
+		return currentCampaignId != null && Number(currentCampaignId) !== yesterdayData.campaignId;
+	} catch (_error) {
 		// エラー時は新しいキャンペーンなしとして扱う
 		return false;
 	}
@@ -110,7 +107,7 @@ export async function detectNewCampaign(
 export async function analyzePriceChanges(
 	workId: string,
 	currentDate: string,
-	currentData: IndividualInfoAPIResponse,
+	currentData: DLsiteRawApiResponse,
 ): Promise<{
 	priceChanged: boolean;
 	newCampaign: boolean;
@@ -171,8 +168,7 @@ export async function analyzePriceChanges(
 			previousPrice,
 			priceDirection,
 		};
-	} catch (error) {
-		console.warn(`Price change analysis failed for ${workId}:`, error);
+	} catch (_error) {
 		return {
 			priceChanged: false,
 			newCampaign: false,

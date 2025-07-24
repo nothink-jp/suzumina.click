@@ -79,6 +79,7 @@ suzumina.click/
 - **ALWAYS run tests after code changes**: `pnpm test`
 - **ALWAYS run linting**: `pnpm lint`
 - **ALWAYS run typecheck**: `pnpm typecheck`
+- **ALWAYS place test files in `__tests__` directories** - not co-located with source files
 
 ### 4. CODE QUALITY STANDARDS
 - **TypeScript strict mode** - no compromises
@@ -95,6 +96,19 @@ suzumina.click/
 - **NO firebase commands** - Firebase is not enabled
 - **NO npm commands** - pnpm only
 - **NO creating documentation files** unless explicitly requested
+
+### 7. TESTING STRUCTURE
+- **Use `__tests__` directories** for all test files
+- **Example structure**:
+  ```
+  src/components/audio/
+  ├── __tests__/
+  │   ├── audio-button.test.tsx
+  │   └── favorite-button.test.tsx
+  ├── audio-button.tsx
+  └── favorite-button.tsx
+  ```
+- **NO co-location** - do not place test files next to source files
 
 ---
 

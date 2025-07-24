@@ -6,7 +6,7 @@ import {
 	type ContactPriority,
 	type ContactStatus,
 	type FrontendContactData,
-} from "@suzumina.click/shared-types/src/contact";
+} from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { requireAuth } from "@/components/system/protected-route";

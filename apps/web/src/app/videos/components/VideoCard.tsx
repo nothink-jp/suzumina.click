@@ -1,11 +1,11 @@
 "use client";
 
-import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
+import type { FrontendVideoData } from "@suzumina.click/shared-types";
 import {
 	canCreateAudioButton,
 	getAudioButtonCreationErrorMessage,
 	parseDurationToSeconds,
-} from "@suzumina.click/shared-types/src/video";
+} from "@suzumina.click/shared-types";
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";

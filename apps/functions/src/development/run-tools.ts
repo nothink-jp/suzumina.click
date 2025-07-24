@@ -6,7 +6,6 @@
 
 import { getFailureStatistics } from "../services/dlsite/failure-tracker";
 import * as logger from "../shared/logger";
-import { collectFailedWorksLocally } from "./core/local-supplement-collector";
 
 /**
  * 失敗統計の表示（簡素化版）
@@ -46,81 +45,6 @@ export async function showFailureStats(): Promise<void> {
 		console.log("\n✅ 失敗統計表示完了");
 	} catch (error) {
 		logger.error("失敗統計表示エラー:", {
-			error: error instanceof Error ? error.message : String(error),
-		});
-		console.error("❌ 実行エラー:", error instanceof Error ? error.message : String(error));
-		throw error;
-	}
-}
-
-/**
- * ローカル補完収集の実行
- */
-export async function runLocalSupplement(options?: {
-	maxWorks?: number;
-	onlyUnrecovered?: boolean;
-	minFailureCount?: number;
-}): Promise<void> {
-	try {
-		logger.info("🚀 ローカル補完収集スクリプト開始");
-
-		// 実行前の統計を表示
-		console.log("\n=== 実行前の失敗統計 ===");
-		const preStats = await getFailureStatistics();
-		console.log(`総失敗作品数: ${preStats.totalFailedWorks}件`);
-		console.log(`回復済み: ${preStats.recoveredWorks}件`);
-		console.log(`未回復: ${preStats.unrecoveredWorks}件`);
-		console.log("失敗理由別:");
-		Object.entries(preStats.failureReasons).forEach(([reason, count]) => {
-			console.log(`  ${reason}: ${count}件`);
-		});
-
-		// 補完収集実行
-		const defaultOptions = {
-			maxWorks: 30, // 一度に30件まで処理
-			onlyUnrecovered: true,
-			minFailureCount: 1,
-		};
-		const collectOptions = { ...defaultOptions, ...options };
-
-		const result = await collectFailedWorksLocally(collectOptions);
-
-		// 実行後の統計を表示
-		console.log("\n=== 実行後の失敗統計 ===");
-		const postStats = await getFailureStatistics();
-		console.log(`総失敗作品数: ${postStats.totalFailedWorks}件`);
-		console.log(
-			`回復済み: ${postStats.recoveredWorks}件 (${postStats.recoveredWorks - preStats.recoveredWorks > 0 ? "+" : ""}${postStats.recoveredWorks - preStats.recoveredWorks})`,
-		);
-		console.log(
-			`未回復: ${postStats.unrecoveredWorks}件 (${postStats.unrecoveredWorks - preStats.unrecoveredWorks > 0 ? "+" : ""}${postStats.unrecoveredWorks - preStats.unrecoveredWorks})`,
-		);
-
-		// 回復率の計算
-		const recoveryRate =
-			result.totalFailedWorks > 0
-				? ((result.successfulWorks / result.totalFailedWorks) * 100).toFixed(1)
-				: "0";
-
-		console.log("\n📈 補完収集結果:");
-		console.log(`対象失敗作品: ${result.totalFailedWorks}件`);
-		console.log(`回復成功: ${result.successfulWorks}件`);
-		console.log(`回復失敗: ${result.failedWorks}件`);
-		console.log(`回復率: ${recoveryRate}%`);
-
-		// 結果に応じた次のアクション提案
-		const recoveryRateNum = Number(recoveryRate);
-		if (recoveryRateNum >= 80) {
-			console.log("\n✅ 補完収集は成功です！");
-		} else if (recoveryRateNum >= 50) {
-			console.log("\n🟡 部分的な成功です。再実行を検討してください。");
-		} else {
-			console.log("\n🔴 回復率が低いです。システム状況を確認してください。");
-		}
-
-		console.log("\n✅ ローカル補完収集スクリプト完了");
-	} catch (error) {
-		logger.error("ローカル補完収集スクリプトエラー:", {
 			error: error instanceof Error ? error.message : String(error),
 		});
 		console.error("❌ 実行エラー:", error instanceof Error ? error.message : String(error));
@@ -247,13 +171,11 @@ export function showHelp(): void {
 	console.log("  stats          - 失敗統計表示");
 	console.log("  report         - 週次健全性レポート生成");
 	console.log("");
-	console.log("🔧 補完・復旧:");
-	console.log("  supplement     - ローカル補完収集実行");
+	console.log("🔧 管理:");
 	console.log("  reset          - メタデータリセット");
 	console.log("");
 	console.log("💡 使用例:");
 	console.log("  node run-tools.js stats");
-	console.log("  node run-tools.js supplement");
 	console.log("  node run-tools.js report");
 	console.log("");
 }
@@ -266,9 +188,6 @@ if (require.main === module) {
 		switch (command) {
 			case "stats":
 				await showFailureStats();
-				break;
-			case "supplement":
-				await runLocalSupplement();
 				break;
 			case "report":
 				await runWeeklyReport();

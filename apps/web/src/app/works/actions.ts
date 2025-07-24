@@ -1,15 +1,15 @@
 "use server";
 
-import { filterR18Content } from "@suzumina.click/shared-types/src/age-rating";
 import type {
 	FrontendDLsiteWorkData,
 	OptimizedFirestoreDLsiteWorkData,
 	WorkListResult,
-} from "@suzumina.click/shared-types/src/work";
+} from "@suzumina.click/shared-types";
 import {
 	convertToFrontendWork,
+	filterR18Content,
 	filterWorksByLanguage,
-} from "@suzumina.click/shared-types/src/work";
+} from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 
 type SortOption = "newest" | "oldest" | "price_low" | "price_high" | "rating" | "popular";

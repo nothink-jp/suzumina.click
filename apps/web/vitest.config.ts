@@ -12,6 +12,11 @@ export default defineConfig({
 		typecheck: {
 			tsconfig: "tsconfig.test.json",
 		},
+		server: {
+			deps: {
+				external: ["next/server"],
+			},
+		},
 		exclude: [
 			"**/node_modules/**",
 			"**/dist/**",

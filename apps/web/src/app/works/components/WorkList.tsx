@@ -1,10 +1,10 @@
 "use client";
 
+import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types";
 import {
 	WORK_CATEGORY_DISPLAY_NAMES,
 	WORK_LANGUAGE_DISPLAY_NAMES,
 } from "@suzumina.click/shared-types";
-import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types/src/work";
 import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
 import {
 	ListPageEmptyState,

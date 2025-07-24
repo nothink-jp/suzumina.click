@@ -9,11 +9,11 @@ import { FieldValue, Firestore } from "@google-cloud/firestore";
 import type {
 	CreatorType,
 	CreatorWorkMapping,
+	DLsiteRawApiResponse,
 	OptimizedFirestoreDLsiteWorkData,
 } from "@suzumina.click/shared-types";
 import { isValidCircleId, isValidCreatorId } from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
-import type { IndividualInfoAPIResponse } from "./individual-info-to-work-mapper";
 
 const adminDb = new Firestore();
 
@@ -26,7 +26,7 @@ const adminDb = new Firestore();
  */
 export async function collectCircleAndCreatorInfo(
 	workData: OptimizedFirestoreDLsiteWorkData,
-	apiData: IndividualInfoAPIResponse,
+	apiData: DLsiteRawApiResponse,
 	isNewWork: boolean,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
@@ -61,7 +61,7 @@ export async function collectCircleAndCreatorInfo(
  */
 async function updateCircleInfo(
 	batch: FirebaseFirestore.WriteBatch,
-	apiData: IndividualInfoAPIResponse,
+	apiData: DLsiteRawApiResponse,
 	isNewWork: boolean,
 ): Promise<void> {
 	const circleId = apiData.maker_id;
@@ -82,8 +82,8 @@ async function updateCircleInfo(
 			circleId,
 			name: apiData.maker_name || "",
 			workCount: 1,
-			lastUpdated: FieldValue.serverTimestamp() as any,
-			createdAt: FieldValue.serverTimestamp() as any,
+			lastUpdated: FieldValue.serverTimestamp(),
+			createdAt: FieldValue.serverTimestamp(),
 		};
 		batch.set(circleRef, newCircle);
 		// 新規サークル登録ログは省略（ログ削減）
@@ -111,10 +111,10 @@ async function updateCircleInfo(
  */
 async function updateCreatorMappings(
 	batch: FirebaseFirestore.WriteBatch,
-	apiData: IndividualInfoAPIResponse,
+	apiData: DLsiteRawApiResponse,
 	workId: string,
 ): Promise<void> {
-	const creatorTypeMap: Array<[keyof NonNullable<typeof apiData.creaters>, CreatorType]> = [
+	const creatorTypeMap: Array<[string, CreatorType]> = [
 		["voice_by", "voice"],
 		["illust_by", "illustration"],
 		["scenario_by", "scenario"],
@@ -126,8 +126,13 @@ async function updateCreatorMappings(
 	const circleId = apiData.maker_id || "UNKNOWN";
 	const processedCreators = new Set<string>(); // 重複処理防止
 
+	// Check if creaters is an object with fields, not an array
+	if (!apiData.creaters || Array.isArray(apiData.creaters)) {
+		return;
+	}
+
 	for (const [field, type] of creatorTypeMap) {
-		const creators = apiData.creaters?.[field] || [];
+		const creators = (apiData.creaters as any)?.[field] || [];
 
 		for (const creator of creators) {
 			if (!creator.id || processedCreators.has(creator.id)) continue;
@@ -155,7 +160,7 @@ async function updateCreatorMappings(
 				creatorName: creator.name,
 				types: updatedTypes,
 				circleId,
-				createdAt: FieldValue.serverTimestamp() as any,
+				createdAt: FieldValue.serverTimestamp(),
 			};
 
 			batch.set(mappingRef, mappingData, { merge: true });
@@ -176,7 +181,7 @@ async function updateCreatorMappings(
 export async function batchCollectCircleAndCreatorInfo(
 	works: Array<{
 		workData: OptimizedFirestoreDLsiteWorkData;
-		apiData: IndividualInfoAPIResponse;
+		apiData: DLsiteRawApiResponse;
 		isNewWork: boolean;
 	}>,
 ): Promise<{

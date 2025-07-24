@@ -397,7 +397,7 @@ class PriceDataFixer {
 	 * 修正結果レポートを生成
 	 */
 	generateReport(): void {
-		console.log("\n" + "=".repeat(80));
+		console.log(`\n${"=".repeat(80)}`);
 		console.log("🔧 価格データ修正結果レポート");
 		console.log("=".repeat(80));
 
@@ -436,7 +436,7 @@ class PriceDataFixer {
 			}
 		}
 
-		console.log("\n" + "=".repeat(80));
+		console.log(`\n${"=".repeat(80)}`);
 	}
 }
 

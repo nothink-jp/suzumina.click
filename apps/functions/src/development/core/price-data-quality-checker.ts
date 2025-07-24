@@ -292,7 +292,7 @@ class PriceDataQualityChecker {
 	 * 結果をレポート
 	 */
 	generateReport(): void {
-		console.log("\n" + "=".repeat(80));
+		console.log(`\n${"=".repeat(80)}`);
 		console.log("📋 価格データ品質チェック結果レポート");
 		console.log("=".repeat(80));
 
@@ -348,7 +348,7 @@ class PriceDataQualityChecker {
 			}
 		}
 
-		console.log("\n" + "=".repeat(80));
+		console.log(`\n${"=".repeat(80)}`);
 	}
 
 	/**
