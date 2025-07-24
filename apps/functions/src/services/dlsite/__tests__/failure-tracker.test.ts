@@ -62,11 +62,9 @@ vi.mock("../../shared/logger", () => ({
 import {
 	cleanupOldFailureRecords,
 	FAILURE_REASONS,
-	getFailedWorkIds,
 	getFailureStatistics,
 	trackFailedWork,
 	trackMultipleFailedWorks,
-	trackWorkRecovery,
 } from "../failure-tracker";
 
 // サンプルデータ
@@ -76,7 +74,6 @@ const sampleFailedWork = {
 	lastFailedAt: { toDate: () => new Date("2024-01-01") },
 	firstFailedAt: { toDate: () => new Date("2023-12-01") },
 	failureReason: FAILURE_REASONS.TIMEOUT,
-	isLocalSuccessful: false,
 	createdAt: { toDate: () => new Date("2023-12-01") },
 	updatedAt: { toDate: () => new Date("2024-01-01") },
 };
@@ -84,7 +81,6 @@ const sampleFailedWork = {
 const sampleRecoveredWork = {
 	...sampleFailedWork,
 	workId: "RJ54321",
-	isLocalSuccessful: true,
 	lastSuccessfulAt: { toDate: () => new Date("2024-01-02") },
 };
 
@@ -214,74 +210,11 @@ describe("failure-tracker", () => {
 		});
 	});
 
-	describe("trackWorkRecovery", () => {
-		it("作品の回復を正常に記録できる", async () => {
-			const mockDocRef = {
-				update: vi.fn().mockResolvedValue(undefined),
-			};
-			mockDoc.mockReturnValue(mockDocRef);
-
-			await trackWorkRecovery("RJ12345");
-
-			expect(mockDocRef.update).toHaveBeenCalledWith({
-				lastSuccessfulAt: expect.objectContaining({ _serverTimestamp: true }),
-				isLocalSuccessful: true,
-				updatedAt: expect.objectContaining({ _serverTimestamp: true }),
-			});
-		});
-
-		it("エラーが発生してもログ出力のみで例外は投げない", async () => {
-			const mockDocRef = {
-				update: vi.fn().mockRejectedValue(new Error("Update failed")),
-			};
-			mockDoc.mockReturnValue(mockDocRef);
-
-			// エラーが発生しても例外は投げられない
-			await expect(trackWorkRecovery("RJ12345")).resolves.not.toThrow();
-		});
-	});
-
-	describe("getFailedWorkIds", () => {
-		it("失敗作品ID一覧を取得できる", async () => {
-			const mockDocs = [
-				{ data: () => ({ workId: "RJ12345" }) },
-				{ data: () => ({ workId: "RJ54321" }) },
-			];
-			mockQuery.get.mockResolvedValue({ docs: mockDocs });
-
-			const result = await getFailedWorkIds();
-
-			expect(result).toEqual(["RJ12345", "RJ54321"]);
-		});
-
-		it("フィルター条件を適用できる", async () => {
-			mockQuery.get.mockResolvedValue({ docs: [] });
-
-			await getFailedWorkIds({
-				minFailureCount: 3,
-				maxFailureCount: 10,
-				onlyUnrecovered: true,
-				limit: 50,
-			});
-
-			expect(mockQuery.where).toHaveBeenCalledWith("failureCount", ">=", 3);
-			expect(mockQuery.where).toHaveBeenCalledWith("failureCount", "<=", 10);
-			expect(mockQuery.where).toHaveBeenCalledWith("isLocalSuccessful", "!=", true);
-			expect(mockQuery.limit).toHaveBeenCalledWith(50);
-		});
-
-		it("エラーが発生した場合は例外を投げる", async () => {
-			mockQuery.get.mockRejectedValue(new Error("Query failed"));
-
-			await expect(getFailedWorkIds()).rejects.toThrow("Query failed");
-		});
-	});
-
 	describe("getFailureStatistics", () => {
 		it("失敗統計情報を正常に計算できる", async () => {
 			const mockDocs = [
-				{ data: () => sampleFailedWork }, // 未回復
-				{ data: () => sampleRecoveredWork }, // 回復済み
+				{ data: () => sampleFailedWork }, // 失敗作品1
+				{ data: () => sampleRecoveredWork }, // 失敗作品2
 				{
 					data: () => ({
 						...sampleFailedWork,
@@ -296,8 +229,8 @@ describe("failure-tracker", () => {
 
 			expect(result).toEqual({
 				totalFailedWorks: 3,
-				recoveredWorks: 1,
-				unrecoveredWorks: 2,
+				recoveredWorks: 0,
+				unrecoveredWorks: 3,
 				failureReasons: {
 					[FAILURE_REASONS.TIMEOUT]: 2,
 					[FAILURE_REASONS.API_ERROR]: 1,
