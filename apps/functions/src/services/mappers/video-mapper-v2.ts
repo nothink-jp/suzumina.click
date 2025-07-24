@@ -36,7 +36,7 @@ import {
  * compatibility with existing systems while the codebase transitions to
  * the new Video Entity V2 domain model.
  *
- * @deprecated Will be removed once all systems migrate to Video Entity V2
+ * @deprecated Will be removed in v3.0.0 (target: December 31, 2024). Migrate to Video Entity V2
  */
 interface LegacyVideoData {
 	// Core fields
@@ -292,16 +292,14 @@ function createVideoMetadataFromYouTube(video: youtube_v3.Schema$Video): VideoMe
 function createVideoStatisticsFromYouTube(
 	stats: youtube_v3.Schema$VideoStatistics,
 ): VideoStatistics {
-	const viewCount = new ViewCount(Number.parseInt(stats.viewCount || "0", 10));
-	const likeCount = stats.likeCount
-		? new LikeCount(Number.parseInt(stats.likeCount, 10))
-		: undefined;
+	const viewCount = new ViewCount(Number(stats.viewCount || "0"));
+	const likeCount = stats.likeCount ? new LikeCount(Number(stats.likeCount)) : undefined;
 	const dislikeCount = stats.dislikeCount
-		? new DislikeCount(Number.parseInt(stats.dislikeCount, 10))
+		? new DislikeCount(Number(stats.dislikeCount))
 		: undefined;
-	const favoriteCount = stats.favoriteCount ? Number.parseInt(stats.favoriteCount, 10) : undefined;
+	const favoriteCount = stats.favoriteCount ? Number(stats.favoriteCount) : undefined;
 	const commentCount = stats.commentCount
-		? new CommentCount(Number.parseInt(stats.commentCount, 10))
+		? new CommentCount(Number(stats.commentCount))
 		: undefined;
 
 	return new VideoStatistics(viewCount, likeCount, dislikeCount, favoriteCount, commentCount);
@@ -320,9 +318,7 @@ function mapLiveStreamingDetails(
 		scheduledEndTime: details.scheduledEndTime ? new Date(details.scheduledEndTime) : undefined,
 		actualStartTime: details.actualStartTime ? new Date(details.actualStartTime) : undefined,
 		actualEndTime: details.actualEndTime ? new Date(details.actualEndTime) : undefined,
-		concurrentViewers: details.concurrentViewers
-			? Number.parseInt(details.concurrentViewers, 10)
-			: undefined,
+		concurrentViewers: details.concurrentViewers ? Number(details.concurrentViewers) : undefined,
 	};
 }
 
