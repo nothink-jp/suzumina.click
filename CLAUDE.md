@@ -110,6 +110,20 @@ suzumina.click/
   ```
 - **NO co-location** - do not place test files next to source files
 
+### 8. DOMAIN MODEL DOCUMENTATION
+- **ALWAYS update domain documentation** when modifying entities or value objects
+- **Update `DOMAIN_MODEL.md`** when:
+  - Adding/removing entities or value objects
+  - Changing relationships between domain objects
+  - Modifying aggregate boundaries
+  - Adding domain services
+- **Update `DOMAIN_OBJECT_CATALOG.md`** when:
+  - Adding/removing properties from entities/value objects
+  - Adding/modifying methods
+  - Changing validation rules
+  - Adding new type guards or utility functions
+- **Include Mermaid diagrams** for visual clarity when appropriate
+
 ---
 
 ## 📊 KEY TECHNICAL DETAILS
@@ -198,6 +212,8 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 - `docs/DEVELOPMENT.md`: Development environment setup
 - `docs/UBIQUITOUS_LANGUAGE.md`: Domain terminology (MUST follow)
 - `docs/INFRASTRUCTURE_ARCHITECTURE.md`: Infrastructure details
+- `docs/DOMAIN_MODEL.md`: Domain model architecture (MUST keep updated)
+- `docs/DOMAIN_OBJECT_CATALOG.md`: Domain object specifications (MUST keep updated)
 
 ### Archived Projects
 - `docs/archive/2025-07-audio-button-optimization/`: Completed optimization project
@@ -291,5 +307,5 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 
 ---
 
-**Last Updated**: 2025-07-20  
-**Document Version**: 3.3 (Price History System Implementation)
+**Last Updated**: 2025-07-24  
+**Document Version**: 3.4 (Domain Model Documentation Requirements)
