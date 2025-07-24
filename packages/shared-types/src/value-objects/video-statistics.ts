@@ -5,6 +5,7 @@
  * view count, like count, dislike count, comment count, and other metrics.
  */
 
+import { calculateRatio, formatPercentage } from "../utils/number-parser";
 import { BaseValueObject, type ValidatableValueObject } from "./base/value-object";
 
 /**
@@ -102,18 +103,14 @@ export class LikeCount extends BaseValueObject<LikeCount> {
 	 * Calculates like ratio
 	 */
 	calculateRatio(totalInteractions: number): number {
-		if (totalInteractions <= 0) {
-			return 0;
-		}
-		return this.value / totalInteractions;
+		return calculateRatio(this.value, totalInteractions);
 	}
 
 	/**
 	 * Returns percentage of likes
 	 */
 	toPercentage(totalInteractions: number): string {
-		const ratio = this.calculateRatio(totalInteractions);
-		return `${(ratio * 100).toFixed(1)}%`;
+		return formatPercentage(this.value, totalInteractions);
 	}
 
 	toNumber(): number {
@@ -151,18 +148,14 @@ export class DislikeCount extends BaseValueObject<DislikeCount> {
 	 * Calculates dislike ratio
 	 */
 	calculateRatio(totalInteractions: number): number {
-		if (totalInteractions <= 0) {
-			return 0;
-		}
-		return this.value / totalInteractions;
+		return calculateRatio(this.value, totalInteractions);
 	}
 
 	/**
 	 * Returns percentage of dislikes
 	 */
 	toPercentage(totalInteractions: number): string {
-		const ratio = this.calculateRatio(totalInteractions);
-		return `${(ratio * 100).toFixed(1)}%`;
+		return formatPercentage(this.value, totalInteractions);
 	}
 
 	toNumber(): number {

@@ -4,3 +4,4 @@
 
 // Re-export utilities
 export * from "./date-parser";
+export * from "./number-parser";

@@ -17,6 +17,7 @@ import {
 	type PrivacyStatus,
 	PublishedAt,
 	parseDate,
+	safeParseNumber,
 	type UploadStatus,
 	Video,
 	VideoContent,
@@ -306,10 +307,7 @@ function createVideoStatisticsFromYouTube(
 	const dislikeCount = stats.dislikeCount
 		? new DislikeCount(Number(stats.dislikeCount))
 		: undefined;
-	const favoriteCount =
-		stats.favoriteCount && !Number.isNaN(Number(stats.favoriteCount))
-			? Number(stats.favoriteCount)
-			: undefined;
+	const favoriteCount = safeParseNumber(stats.favoriteCount);
 	const commentCount = stats.commentCount
 		? new CommentCount(Number(stats.commentCount))
 		: undefined;
@@ -328,10 +326,7 @@ function mapLiveStreamingDetails(
 		scheduledEndTime: parseDate(details.scheduledEndTime),
 		actualStartTime: parseDate(details.actualStartTime),
 		actualEndTime: parseDate(details.actualEndTime),
-		concurrentViewers:
-			details.concurrentViewers && !Number.isNaN(Number(details.concurrentViewers))
-				? Number(details.concurrentViewers)
-				: undefined,
+		concurrentViewers: safeParseNumber(details.concurrentViewers),
 	};
 }
 
