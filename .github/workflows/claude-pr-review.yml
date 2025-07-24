@@ -22,6 +22,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       # Note: Anthropic API Key will be added when the official action is available
       # Currently, this is a placeholder workflow
       - name: Placeholder for Claude Code Review
