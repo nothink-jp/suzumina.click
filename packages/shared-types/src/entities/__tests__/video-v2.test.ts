@@ -16,6 +16,7 @@ import {
 } from "../../value-objects/video-metadata";
 import {
 	CommentCount,
+	DislikeCount,
 	LikeCount,
 	VideoStatistics,
 	ViewCount,
@@ -67,7 +68,7 @@ describe("Video Entity", () => {
 		const defaultStatistics = new VideoStatistics(
 			new ViewCount(1500000000),
 			new LikeCount(14000000),
-			new LikeCount(500000),
+			new DislikeCount(500000),
 			0,
 			new CommentCount(2000000),
 		);

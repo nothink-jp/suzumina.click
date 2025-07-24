@@ -12,8 +12,11 @@ import {
 	ChannelTitle,
 	CommentCount,
 	ContentDetails,
+	DislikeCount,
 	LikeCount,
+	type PrivacyStatus,
 	PublishedAt,
+	type UploadStatus,
 	Video,
 	VideoContent,
 	VideoDescription,
@@ -202,8 +205,8 @@ function createVideoContentFromYouTube(video: youtube_v3.Schema$Video): VideoCon
 	try {
 		const videoId = new VideoId(video.id);
 		const publishedAt = new PublishedAt(video.snippet.publishedAt);
-		const privacyStatus = (video.status?.privacyStatus || "public") as any;
-		const uploadStatus = (video.status?.uploadStatus || "processed") as any;
+		const privacyStatus = (video.status?.privacyStatus || "public") as PrivacyStatus;
+		const uploadStatus = (video.status?.uploadStatus || "processed") as UploadStatus;
 
 		// Create ContentDetails if available
 		const contentDetails = video.contentDetails
@@ -279,7 +282,7 @@ function createVideoStatisticsFromYouTube(
 		? new LikeCount(Number.parseInt(stats.likeCount, 10))
 		: undefined;
 	const dislikeCount = stats.dislikeCount
-		? new LikeCount(Number.parseInt(stats.dislikeCount, 10))
+		? new DislikeCount(Number.parseInt(stats.dislikeCount, 10))
 		: undefined;
 	const favoriteCount = stats.favoriteCount ? Number.parseInt(stats.favoriteCount, 10) : 0;
 	const commentCount = stats.commentCount

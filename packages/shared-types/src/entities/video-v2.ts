@@ -23,6 +23,7 @@ import {
 } from "../value-objects/video-metadata";
 import {
 	CommentCount,
+	DislikeCount,
 	LikeCount,
 	VideoStatistics,
 	ViewCount,
@@ -402,7 +403,7 @@ export class Video {
 				? new LikeCount(data.statistics.likeCount)
 				: undefined,
 			data.statistics.dislikeCount !== undefined
-				? new LikeCount(data.statistics.dislikeCount)
+				? new DislikeCount(data.statistics.dislikeCount)
 				: undefined,
 			data.statistics.favoriteCount,
 			data.statistics.commentCount !== undefined

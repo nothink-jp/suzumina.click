@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { CommentCount, LikeCount, VideoStatistics, ViewCount } from "../video-statistics";
+import {
+	CommentCount,
+	DislikeCount,
+	LikeCount,
+	VideoStatistics,
+	ViewCount,
+} from "../video-statistics";
 
 describe("ViewCount", () => {
 	describe("constructor", () => {
@@ -182,6 +188,73 @@ describe("LikeCount", () => {
 	});
 });
 
+describe("DislikeCount", () => {
+	describe("constructor", () => {
+		it("should create valid dislike count", () => {
+			const count = new DislikeCount(50);
+			expect(count.toNumber()).toBe(50);
+		});
+
+		it("should floor decimal values", () => {
+			const count = new DislikeCount(50.7);
+			expect(count.toNumber()).toBe(50);
+		});
+
+		it("should handle negative values", () => {
+			const count = new DislikeCount(-10);
+			expect(count.toNumber()).toBe(0);
+		});
+	});
+
+	describe("calculateRatio", () => {
+		it("should calculate correct ratio", () => {
+			const count = new DislikeCount(20);
+			expect(count.calculateRatio(100)).toBeCloseTo(0.2);
+		});
+
+		it("should handle zero total", () => {
+			const count = new DislikeCount(20);
+			expect(count.calculateRatio(0)).toBe(0);
+		});
+	});
+
+	describe("toPercentage", () => {
+		it("should format as percentage", () => {
+			const count = new DislikeCount(25);
+			expect(count.toPercentage(100)).toBe("25.0%");
+		});
+
+		it("should handle decimal percentages", () => {
+			const count = new DislikeCount(333);
+			expect(count.toPercentage(1000)).toBe("33.3%");
+		});
+	});
+
+	describe("equals", () => {
+		it("should equal same count", () => {
+			const count1 = new DislikeCount(100);
+			const count2 = new DislikeCount(100);
+			expect(count1.equals(count2)).toBe(true);
+		});
+
+		it("should not equal different counts", () => {
+			const count1 = new DislikeCount(100);
+			const count2 = new DislikeCount(200);
+			expect(count1.equals(count2)).toBe(false);
+		});
+	});
+
+	describe("clone", () => {
+		it("should create independent copy", () => {
+			const original = new DislikeCount(100);
+			const cloned = original.clone();
+
+			expect(cloned).not.toBe(original);
+			expect(cloned.equals(original)).toBe(true);
+		});
+	});
+});
+
 describe("CommentCount", () => {
 	describe("isDisabled", () => {
 		it("should return true for zero comments", () => {
@@ -215,7 +288,7 @@ describe("VideoStatistics", () => {
 		return new VideoStatistics(
 			new ViewCount(100000),
 			new LikeCount(5000),
-			new LikeCount(100), // dislike
+			new DislikeCount(100), // dislike
 			200, // favorite
 			new CommentCount(500),
 		);
@@ -301,7 +374,7 @@ describe("VideoStatistics", () => {
 			const stats = new VideoStatistics(
 				new ViewCount(0),
 				new LikeCount(0),
-				new LikeCount(0),
+				new DislikeCount(0),
 				0,
 				new CommentCount(0),
 			);
