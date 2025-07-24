@@ -34,7 +34,7 @@ export type User = any; // TODO: Replace with FirestoreUserDocument when availab
  * @alias FirestoreVideoDocument (to be implemented)
  */
 // biome-ignore lint/suspicious/noExplicitAny: Placeholder type - will be replaced with FirestoreVideoDocument in future PR
-export type Video = any; // TODO: Replace with FirestoreVideoDocument when available
+export type VideoDoc = any; // TODO: Replace with FirestoreVideoDocument when available
 
 /**
  * Simplified alias for audio button data
@@ -123,9 +123,9 @@ export function isUser(value: unknown): value is User {
 }
 
 /**
- * Type guard to check if a value is a Video
+ * Type guard to check if a value is a VideoDoc
  */
-export function isVideo(value: unknown): value is Video {
+export function isVideoDoc(value: unknown): value is VideoDoc {
 	return (
 		typeof value === "object" &&
 		value !== null &&
