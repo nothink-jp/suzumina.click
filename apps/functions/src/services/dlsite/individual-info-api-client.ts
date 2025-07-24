@@ -136,10 +136,22 @@ export async function fetchIndividualWorkInfo(
 		const response = await fetch(url, {
 			method: "GET",
 			headers,
+			signal: AbortSignal.timeout(30000), // 30秒タイムアウト
 		});
 
 		if (!response.ok) {
 			const responseText = await response.text();
+
+			// エラーレスポンスの詳細をログ
+			if (response.status !== 404) {
+				logger.error(`API HTTP Error for ${workId}`, {
+					status: response.status,
+					statusText: response.statusText,
+					responseText: responseText.substring(0, 200),
+					url,
+				});
+			}
+
 			return handleHttpError(response, workId, url, responseText, enableDetailedLogging);
 		}
 
@@ -163,7 +175,10 @@ export async function fetchIndividualWorkInfo(
 		return validatedData;
 	} catch (error) {
 		// API取得エラーは重要なため保持
-		logger.error(`Individual Info API取得エラー: ${workId}`, { error });
+		logger.error(`Individual Info API取得エラー: ${workId}`, {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
 
 		throw error;
 	}
@@ -227,7 +242,10 @@ export async function batchFetchIndividualInfo(
 				await new Promise((resolve) => setTimeout(resolve, batchDelay));
 			}
 		} catch (error) {
-			logger.error(`バッチ ${batchIndex + 1} でエラー:`, { error });
+			logger.error(`バッチ ${batchIndex + 1} でエラー:`, {
+				error: error instanceof Error ? error.message : String(error),
+				stack: error instanceof Error ? error.stack : undefined,
+			});
 			// バッチ全体が失敗した場合、そのバッチの全作品IDを失敗として記録
 			failedWorkIds.push(...batch);
 		}
