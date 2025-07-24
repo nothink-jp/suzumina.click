@@ -3,6 +3,9 @@
  * 涼花みなせウェブサイト用の共有型定義パッケージ
  */
 
+// === Type Aliases ===
+// Export type aliases for cleaner naming conventions
+export * from "./aliases";
 // === API Schemas ===
 export * from "./api-schemas/dlsite-raw";
 // === Entities ===
