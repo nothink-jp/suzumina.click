@@ -7,9 +7,9 @@ suzumina.clickプロジェクトの開発ガイドライン、設計原則、コ
 
 **技術スタック**: Next.js 15 App Router + TypeScript + Tailwind CSS v4 + Biome  
 **開発体制**: 個人開発・個人運用（本番環境のみ）  
-**バージョン**: v0.3.4 (非営利運営移行・UI/UX最適化完了)  
-**テスト成果**: 960+件全通過・AdSense/Amazon Associates削除・ローディング体験向上  
-**更新日**: 2025年7月16日
+**バージョン**: v0.3.6 (Entity/Value Object移行完了・作品評価システム実装)  
+**テスト成果**: 980+件全通過・Entity/Value Objectアーキテクチャ移行・作品評価システム実装  
+**更新日**: 2025年7月24日
 
 ## 🎯 核心設計原則 (優先度順)
 
@@ -110,44 +110,44 @@ export function isValidVideoId(id: string): boolean {
 **Entity（エンティティ）**: 識別可能でライフサイクルを持つオブジェクト
 - IDによって一意に識別される
 - 時間の経過とともに状態が変化する
-- 例: Work, User, AudioButton
+- 例: Work, User, AudioButton, Video, Contact
 
 **Value Object（値オブジェクト）**: 不変で識別子を持たないオブジェクト
 - 値によってのみ識別される
 - 一度作成されたら変更されない
 - ビジネスロジックをカプセル化
-- 例: Price, Rating, DateRange
+- 例: Price, Rating, DateRange, CreatorType
 
 ```typescript
-// ✅ 良い例: Value Object
-export const Price = z.object({
-  amount: z.number().int().min(0),
-  currency: z.string().length(3),
-}).transform(data => ({
-  ...data,
-  isFree: () => data.amount === 0,
-  isDiscounted: () => data.original > data.amount,
-  format: () => new Intl.NumberFormat('ja-JP', { 
-    style: 'currency', 
-    currency: data.currency 
-  }).format(data.amount),
-}));
+// ✅ 良い例: Value Object with ビジネスロジック
+import { Price, Rating } from '@suzumina.click/shared-types';
+
+// Priceの使用例
+const price: Price = {
+  amount: 1980,
+  currency: 'JPY'
+};
+
+console.log(price.format()); // ¥1,980
+console.log(price.isFree()); // false
 
 // ✅ 良い例: Entity
-export const Work = z.object({
-  id: z.string(),
-  title: z.string(),
-  price: Price,
-  rating: Rating,
+import { Work } from '@suzumina.click/shared-types';
+
+const work: Work = {
+  id: 'RJ01234567',
+  title: 'サンプル作品',
+  price: { amount: 1980, currency: 'JPY' },
+  rating: { value: 4.5, count: 100 },
   // その他のプロパティ
-});
+};
 
 // ❌ 悪い例: ビジネスロジックが散在
 function formatPrice(work: Work) {
-  return `${work.price.toLocaleString()}円`;
+  return `${work.price.toLocaleString()}円`; // Priceオブジェクトのformat()を使うべき
 }
 function isDiscounted(work: Work) {
-  return work.originalPrice > work.price;
+  return work.originalPrice > work.price; // Priceオブジェクトのメソッドを使うべき
 }
 ```
 
@@ -162,11 +162,14 @@ function isDiscounted(work: Work) {
 - **共有型定義**: packages/shared-types による一元管理
 
 ```typescript
-// ✅ 良い例: Zodスキーマによる型定義
-export const VideoSchema = z.object({
-  id: z.string().min(1),
-  title: z.string().min(1),
-  publishedAt: z.string().datetime()
+// ✅ 良い例: Zodスキーマによる型定義（shared-typesから）
+import { VideoSchema } from '@suzumina.click/shared-types';
+
+// 使用例
+const video = VideoSchema.parse({
+  id: 'abc123',
+  title: 'サンプル動画',
+  publishedAt: '2025-07-24T10:00:00Z'
 });
 
 // ❌ 悪い例: any型の使用
@@ -182,10 +185,16 @@ function processData(data: any) { ... }
 - **単一責任原則**: 明確で理解しやすい関数名
 
 ```typescript
-// ✅ 良い例: 純粋関数
-export function formatPrice(price: number, currency = 'JPY'): string {
-  return `${price.toLocaleString()}円`;
+// ✅ 良い例: 純粋関数（Value Objectの活用）
+import { Price } from '@suzumina.click/shared-types';
+
+export function createPrice(amount: number, currency = 'JPY'): Price {
+  return { amount, currency };
 }
+
+// Value Objectメソッドの活用
+const price = createPrice(1980);
+console.log(price.format()); // ¥1,980（純粋関数）
 
 // ❌ 悪い例: 副作用のある関数
 function updateAndLog(data: any) {
@@ -402,12 +411,19 @@ export async function GET(request: NextRequest) {
 ```typescript
 // ✅ Server Actions移行例: データ取得
 'use server';
+import { AudioButtonSchema } from '@suzumina.click/shared-types';
+
 export async function getAudioButtons(params: AudioButtonQuery) {
   const snapshot = await firestore.collection('audioButtons')
     .where('isActive', '==', true)
     .limit(params.limit || 20)
     .get();
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // 型安全な変換
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return AudioButtonSchema.parse({ id: doc.id, ...data });
+  });
 }
 ```
 
@@ -706,7 +722,12 @@ packages/
 │   │   ├── work.ts             # DLsite作品エンティティ
 │   │   ├── user.ts             # ユーザーエンティティ
 │   │   ├── audio-button.ts     # 音声ボタンエンティティ
-│   │   └── video.ts            # 動画エンティティ
+│   │   ├── video.ts            # 動画エンティティ
+│   │   ├── circle-creator.ts   # サークル・クリエイターエンティティ
+│   │   ├── contact.ts          # お問い合わせエンティティ
+│   │   ├── favorite.ts         # お気に入りエンティティ
+│   │   ├── user-evaluation.ts  # ユーザー評価エンティティ
+│   │   └── work-evaluation.ts  # 作品評価エンティティ
 │   ├── value-objects/          # 値オブジェクト（不変・ビジネスロジック）
 │   │   ├── price.ts            # 価格（通貨・割引計算）
 │   │   ├── rating.ts           # 評価（星・信頼度）
@@ -717,8 +738,10 @@ packages/
 │   ├── utilities/              # 共通ユーティリティ
 │   │   ├── common.ts           # 汎用関数
 │   │   ├── firestore-utils.ts  # Firestore変換
+│   │   ├── age-rating.ts       # 年齢制限ユーティリティ
+│   │   ├── price-history.ts    # 価格履歴ユーティリティ
 │   │   └── search-filters.ts   # 検索フィルタ
-│   └── index.ts                # 統一エクスポート
+│   └── index.ts                # 統一エクスポート（すべてをルートから）
 ├── ui/src/components/
 │   ├── alert-dialog.tsx         # kebab-case統一
 │   └── dropdown-menu.tsx
@@ -1003,11 +1026,15 @@ packages/shared-types/src/
 ├── entities/                    # エンティティ層
 │   ├── work.ts                 # ID管理・状態変化
 │   ├── user.ts                 # ライフサイクル管理
-│   └── audio-button.ts         # 永続化対象
+│   ├── audio-button.ts         # 永続化対象
+│   ├── video.ts                # 動画エンティティ
+│   ├── circle-creator.ts       # サークル・クリエイター
+│   └── ...(その他のエンティティ)
 ├── value-objects/              # 値オブジェクト層
 │   ├── price.ts               # 不変・ビジネスロジック
 │   ├── rating.ts              # 計算・検証ロジック
-│   └── date-range.ts          # ドメイン固有処理
+│   ├── date-range.ts          # ドメイン固有処理
+│   └── creator-type.ts        # クリエイタータイプ
 ├── api-schemas/               # API抽象化層
 │   └── dlsite-raw.ts         # 薄い型定義のみ
 └── utilities/                 # インフラ層
@@ -1020,22 +1047,45 @@ packages/shared-types/src/
 - **API Schema**: 外部APIの薄い抽象化、変換ロジックなし
 - **Domain Service**: 複数エンティティにまたがるロジック
 
+**インポート方法**:
+```typescript
+// ✅ 推奨: ルートからの統一インポート
+import { 
+  Work, 
+  Price, 
+  Rating, 
+  AudioButton,
+  VideoSchema 
+} from '@suzumina.click/shared-types';
+
+// ❌ 非推奨: サブディレクトリからの直接インポート
+import { Work } from '@suzumina.click/shared-types/entities/work';
+import { Price } from '@suzumina.click/shared-types/value-objects/price';
+```
+
+**Value Object使用例**:
 ```typescript
 // ✅ 良い例: Value Object with ビジネスロジック
-export const Price = z.object({
-  amount: z.number(),
-  currency: z.string(),
-}).transform(data => ({
-  ...data,
-  // ビジネスロジックをカプセル化
-  isFree: () => data.amount === 0,
-  format: () => new Intl.NumberFormat('ja-JP', {
-    style: 'currency',
-    currency: data.currency
-  }).format(data.amount),
-}));
+import { Price, Rating } from '@suzumina.click/shared-types';
 
-// ✅ 良い例: Thin Mapper
+// Priceの活用
+const price: Price = { amount: 1980, currency: 'JPY' };
+console.log(price.format());     // ¥1,980
+console.log(price.isFree());     // false
+console.log(price.isDiscounted()); // 割引判定
+
+// Ratingの活用
+const rating: Rating = { value: 4.5, count: 100 };
+console.log(rating.getStarRating());  // 5つ星評価
+console.log(rating.isHighlyRated());  // 高評価判定
+```
+
+**Mapper実装例**:
+```typescript
+// ✅ 良い例: Thin Mapper (functions/src/services/mappers/work-mapper.ts)
+import { Work, Price, Rating } from '@suzumina.click/shared-types';
+import type { DLsiteRawApiResponse } from '@suzumina.click/shared-types';
+
 export class WorkMapper {
   static toWork(raw: DLsiteRawApiResponse): Work {
     return {
@@ -1043,12 +1093,80 @@ export class WorkMapper {
       title: raw.work_name,
       price: this.toPrice(raw),
       rating: this.toRating(raw),
+      // 薄い変換のみ、ビジネスロジックはValue Objectに
+    };
+  }
+  
+  private static toPrice(raw: DLsiteRawApiResponse): Price {
+    return {
+      amount: raw.price,
+      currency: 'JPY',
+      originalAmount: raw.price_without_campaign
     };
   }
 }
 ```
 
-### 2. 責任分離
+### 2. Value Object活用のベストプラクティス
+
+**Value Objectの設計指針**:
+
+1. **不変性の保証**
+   ```typescript
+   // ✅ 良い例: 不変のValue Object
+   const price1: Price = { amount: 1000, currency: 'JPY' };
+   const price2 = { ...price1, amount: 2000 }; // 新しいオブジェクトを作成
+   
+   // ❌ 悪い例: 直接変更
+   price1.amount = 2000; // Value Objectは変更不可
+   ```
+
+2. **ビジネスロジックのカプセル化**
+   ```typescript
+   // ✅ 良い例: ロジックをValue Object内に
+   const price: Price = { amount: 1980, currency: 'JPY' };
+   if (price.isFree()) {
+     // 無料作品の処理
+   }
+   
+   // ❌ 悪い例: 外部でロジックを実装
+   if (work.price === 0) { // Value Objectのメソッドを使うべき
+     // 無料作品の処理
+   }
+   ```
+
+3. **適切な粒度の維持**
+   ```typescript
+   // ✅ 良い例: 関連する概念をまとめる
+   const dateRange: DateRange = {
+     start: '2025-07-01',
+     end: '2025-07-31'
+   };
+   console.log(dateRange.getDays()); // 期間の日数
+   console.log(dateRange.includes('2025-07-15')); // 日付の包含判定
+   
+   // ❌ 悪い例: 過度に細分化
+   const startDate: Date = new Date('2025-07-01');
+   const endDate: Date = new Date('2025-07-31');
+   // ロジックが散在してしまう
+   ```
+
+4. **Domain Serviceとの使い分け**
+   ```typescript
+   // ✅ 良い例: 複数エンティティにまたがる処理はDomain Service
+   import { PriceCalculationService } from './domain/price-calculation-service';
+   
+   const finalPrice = PriceCalculationService.calculateWithCampaign(
+     work.price,
+     campaign,
+     user.membershipLevel
+   );
+   
+   // ❌ 悪い例: Value Object内で他のエンティティを参照
+   // Price Value Object内でユーザー情報を参照するのは不適切
+   ```
+
+### 3. 責任分離
 
 **実装済みレイヤー構造**
 
@@ -1305,6 +1423,55 @@ export async function fetchDLsiteWorks(page: number): Promise<WorkData[]> {
 - 破壊的変更は移行ガイドを作成
 - API変更はCHANGELOG.mdに記録
 
+## 🔄 Entity/Value Object移行完了に関する重要事項
+
+### 移行の成果
+- **全569テスト合格**: Entity/Value Object構造への完全移行
+- **レガシーフィールド削除**: 下位互換性のための冗長フィールドを完全削除
+- **統一インポートパス**: `@suzumina.click/shared-types`からの一元化
+
+### 移行後の型構造
+```typescript
+// Entities（識別可能・状態変化あり）
+import { 
+  Work,                // DLsite作品
+  User,                // ユーザー
+  AudioButton,         // 音声ボタン
+  Video,               // YouTube動画
+  CircleData,          // サークル情報
+  CreatorData,         // クリエイター情報
+  Contact,             // お問い合わせ
+  Favorite,            // お気に入り
+  UserEvaluation,      // ユーザー評価
+  WorkEvaluation       // 作品評価
+} from '@suzumina.click/shared-types';
+
+// Value Objects（不変・ビジネスロジック内包）
+import {
+  Price,               // 価格（通貨・フォーマット・割引判定）
+  Rating,              // 評価（星数・信頼度計算）
+  DateRange,           // 日付範囲（期間計算・包含判定）
+  CreatorType          // クリエイターの種別
+} from '@suzumina.click/shared-types';
+
+// API Schemas（外部API用の薄い抽象化）
+import {
+  DLsiteRawApiResponse // DLsite Individual Info APIレスポンス
+} from '@suzumina.click/shared-types';
+```
+
+### 削除されたレガシーフィールド
+以下のフィールドはコードベースから完全に削除されました：
+- `salesCount` - 販売数（2025年7月に廃止）
+- `reviewCount` - レビュー数（rating.countに統合）
+- `ratingAverage` - 平均評価（rating.valueに統合）
+- その他の重複フィールド
+
+### マッパーの統合
+- `work-mapper.ts`に全機能を統合（323行の薄いマッパー）
+- レガシーマッパーファイルは全て削除
+- エラー処理とフォールバック処理を含む堅牢な実装
+
 ## 🚀 デプロイメント原則
 
 ### 1. 環境分離
@@ -1365,5 +1532,5 @@ graph LR
 
 ---
 
-**最終更新**: 2025年7月22日 (Entity/Value Object アーキテクチャ追加・テスト構造を__tests__ディレクトリ方式に変更)  
-**次回レビュー予定**: 2026年1月22日
+**最終更新**: 2025年7月24日 (Entity/Value Object移行完了・インポートパス統一・Value Object活用例追加)  
+**次回レビュー予定**: 2026年1月24日

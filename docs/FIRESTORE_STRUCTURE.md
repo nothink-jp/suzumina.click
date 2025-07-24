@@ -1,9 +1,9 @@
 # Firestore Database Structure
 
-> **📅 最終更新**: 2025年7月22日  
-> **📝 ステータス**: v11.6 サークル・クリエイターシステム追加・データ収集基盤実装完了  
+> **📅 最終更新**: 2025年7月24日  
+> **📝 ステータス**: v11.7 Entity/Value Object移行完了・レガシーフィールド削除  
 > **🔧 対象**: suzumina.clickプロジェクトのCloud Firestoreデータベース構造
-> **🆕 更新内容**: サークル・クリエイター情報収集システム実装完了・circles/creatorWorkMappingsコレクション追加・dlsiteWorks circleId統合
+> **🆕 更新内容**: Entity/Value Objectアーキテクチャ移行完了・レガシーフィールド削除 (totalDownloadCount, bonusContent, isExclusive, apiGenres, apiCustomGenres, apiWorkOptions, wishlistCount)
 
 ## 使用中のコレクション一覧
 
@@ -88,9 +88,31 @@
 
 **データ収集状況**: 1015件完全収集済み (35%データ欠損問題解決完了)
 
-**データ構造** (`OptimizedFirestoreDLsiteWorkData` - 2025年7月12日Individual Info API Phase 2統合完了):
+**データ構造** (`OptimizedFirestoreDLsiteWorkData` - 2025年7月24日Entity/Value Object移行完了):
 
 ```typescript
+// Value Objects構造:
+// PriceInfo: {
+//   regular: number,            // 定価
+//   discount?: number,          // セール価格
+//   rate?: number,              // 割引率
+//   campaignId?: number,        // キャンペーンID
+//   locale: 'JP' | 'JP-P' | 'US' | ...
+// }
+//
+// RatingInfo: {
+//   value?: number,             // 評価値
+//   count?: number,             // 評価数
+//   average?: number            // 平均評価
+// }
+//
+// FileInfo: {
+//   size?: string,              // ファイルサイズ
+//   duration?: string,          // 再生時間
+//   format?: string,            // ファイル形式
+//   tracks?: Track[]            // トラック情報
+// }
+
 {
   // === 基本識別情報 ===
   id: string,                         // FirestoreドキュメントID
@@ -106,11 +128,9 @@
   highResImageUrl?: string,           // 高解像度画像（Individual Info APIから取得・/api/image-proxy対応）
   
   // === 価格・評価情報（統合済み - 優先度: infoAPI > detailPage > searchHTML） ===
-  price: PriceInfo,                   // 統合価格情報
-  rating?: RatingInfo,                // 統合評価情報
+  price: PriceInfo,                   // 統合価格情報（Value Object）
+  rating?: RatingInfo,                // 統合評価情報（Value Object）
   salesCount?: number,                // 販売数（infoAPIから）
-  wishlistCount?: number,             // ウィッシュリスト数（infoAPIから）
-  totalDownloadCount?: number,        // 総DL数（infoAPIから）
   
   // === サークル情報（v11.6追加 - サークル・クリエイターシステム対応） ===
   circleId: string,                   // サークルID（例: "RG23954", circlesコレクション参照用）
@@ -133,19 +153,6 @@
   genres: string[],                   // 統合ジャンル（全ソースマージ + 重複除去）
   
   // === Individual Info API準拠フィールド（Phase 2: 段階的活用 - 2025年7月12日実装） ===
-  apiGenres?: Array<{                 // API標準ジャンル情報（ID付き）
-    name: string,                     // ジャンル名
-    id?: number,                      // ジャンルID
-    search_val?: string               // 検索値
-  }>,
-  apiCustomGenres?: Array<{           // APIカスタムジャンル情報
-    genre_key: string,                // ジャンルキー
-    name: string                      // ジャンル名
-  }>,
-  apiWorkOptions?: Record<string, {   // API作品オプション情報
-    name: string,                     // オプション名
-    name_en?: string                  // 英語オプション名
-  }>,
   creaters?: {                        // Individual Info API制作者情報（ID付き）
     voice_by?: Array<{                // 声優情報
       id: string,                     // 声優ID
@@ -174,14 +181,12 @@
   },
   
   // === 詳細情報（階層化 - 低頻度アクセス） ===
-  fileInfo?: FileInfo,                // ファイル詳細情報（詳細ページのみ）
-  bonusContent?: BonusContent[],      // 特典情報（詳細ページのみ）
+  fileInfo?: FileInfo,                // ファイル詳細情報（Value Object）
   sampleImages: Array<{
     thumb: string,                    // サムネイルURL
     width?: number,                   // 幅
     height?: number                   // 高さ
   }>,
-  isExclusive: boolean,               // 独占配信フラグ
   
   // === ソース別データ（デバッグ・品質管理用） ===
   dataSources?: {
@@ -220,8 +225,11 @@
 }
 ```
 
-**✅ v0.3.0統合データ構造の特徴** (2025年7月5日完全最適化):
+**✅ v11.7 Entity/Value Object構造の特徴** (2025年7月24日完全移行):
 
+- **Entity/Value Objectアーキテクチャ**: ドメイン駆動設計に基づくValue Object分離
+- **レガシーフィールド削除**: totalDownloadCount, bonusContent, isExclusive, apiGenres, apiCustomGenres, apiWorkOptions, wishlistCountを完全削除
+- **Value Object統合**: PriceInfo, RatingInfo, FileInfoをValue Objectとして明確化
 - **100% API-Only**: Individual Info API専用データ取得・スクレイピング完全廃止
 - **重複除去**: API内データの重複を排除し、最高品質データを採用
 - **DLsite制約準拠**: 5種類クリエイター制限・ジャンル vs タグ区別・トラック情報なし等
@@ -229,7 +237,6 @@
 - **データ品質追跡**: API取得状況の完全追跡
 - **高解像度対応**: Individual Info APIからの高画質画像取得・プロトコル相対URL自動変換
 - **画像プロキシ統合**: `/api/image-proxy` による安全なDLsite画像取得・HTTPS強制変換
-- **下位互換性削除**: 旧FirestoreDLsiteWorkData関連コード完全削除・OptimizedFirestoreDLsiteWorkData統一
 - **型統一完了**: highResImageUrl型統一・extractImageUrl関数による型安全データ変換
 
 **制約事項**:
@@ -1216,8 +1223,13 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 ## 型定義の場所
 
 - **共有型定義**: `packages/shared-types/src/`
-- **Firestore変換ユーティリティ**: `packages/shared-types/src/firestore-utils.ts`
-- **Zodスキーマ**: 各型定義ファイル内で定義（video.ts, work.ts, audio-button.ts）
+  - **エンティティ**: `packages/shared-types/src/entities/` (DLsiteWork, Circle, Creator等)
+  - **Value Objects**: `packages/shared-types/src/value-objects/` (PriceInfo, RatingInfo, FileInfo等)
+  - **APIスキーマ**: `packages/shared-types/src/api-schemas/` (DLsite APIレスポンス型)
+  - **ユーティリティ**: `packages/shared-types/src/utilities/` (Firestore変換関数等)
+- **マッパー**: `apps/functions/src/services/mappers/` (APIレスポンス→エンティティ変換)
+- **Firestore変換ユーティリティ**: `packages/shared-types/src/utilities/firestore-utils.ts`
+- **Zodスキーマ**: 各型定義ファイル内で定義
 
 ### 音声ボタン関連型定義 (2025年7月5日テストカバレッジ修正対応):
 - **`audio-button.ts`**: 音声ボタンの全型定義とZodスキーマ
@@ -1260,6 +1272,28 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 - **メンテナンス性**: Server Actions統一による一貫性
 
 ## 📅 データ構造変更ログ
+
+### 2025-07-24 v11.7 Entity/Value Object移行完了・レガシーフィールド削除
+
+**実行した操作**:
+- ✅ **Entity/Value Objectアーキテクチャ移行**: DLsiteWorkエンティティとValue Object分離完了
+- ✅ **レガシーフィールド削除**: 以下のフィールドをdlsiteWorksコレクションから完全削除:
+  - `totalDownloadCount`: 総DL数（未使用）
+  - `bonusContent`: 特典情報（低頻度アクセス）
+  - `isExclusive`: 独占配信フラグ（未使用）
+  - `apiGenres`: API標準ジャンル情報（未使用）
+  - `apiCustomGenres`: APIカスタムジャンル情報（未使用）
+  - `apiWorkOptions`: API作品オプション情報（未使用）
+  - `wishlistCount`: ウィッシュリスト数（未使用）
+- ✅ **Value Object型定義**: PriceInfo, RatingInfo, FileInfoをValue Objectとして明確化
+- ✅ **shared-types更新**: エンティティ/Value Object構造に対応した型定義整理
+- ✅ **マッパー実装**: DLsite APIレスポンスからエンティティへの変換ロジック分離
+
+**技術的特徴**:
+- ✅ **ドメイン駆動設計**: ビジネスロジックをエンティティに集約
+- ✅ **不変性保証**: Value Objectによる安全なデータ操作
+- ✅ **メンテナンス性向上**: 未使用フィールド削除によるコードベース簡素化
+- ✅ **パフォーマンス最適化**: 不要データ削除によるFirestoreストレージ削減
 
 ### 2025-07-22 v11.6 サークル・クリエイターシステム実装完了・データ収集基盤統合完了
 

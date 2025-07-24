@@ -239,7 +239,7 @@ pnpm cleanup:analyze
 
 - [x] FIRESTORE_STRUCTURE.mdの更新（v11.7：Entity/Value Object移行完了）
 - [x] UBIQUITOUS_LANGUAGE.mdの確認（wishlistCount削除済み）
-- [x] DEVELOPMENT.mdの更新（Entity/Value Objectアーキテクチャ追加）
+- [x] DEVELOPMENT.mdの更新（Entity/Value Objectアーキテクチャセクション追加）
 
 ## 緊急時対応
 
