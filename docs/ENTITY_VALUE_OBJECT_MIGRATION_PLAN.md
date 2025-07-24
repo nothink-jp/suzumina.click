@@ -6,19 +6,39 @@ suzumina.clickプロジェクトにおけるEntity・Value Objectアーキテク
 
 **移行期間**: 2025年7月24日〜2025年7月31日（1週間）  
 **影響範囲**: Firestore旧フィールドのクリーンアップ、型定義の統合  
-**リスクレベル**: 低（コードは既に新構造対応済み）
+**リスクレベル**: 低（コードは既に新構造対応済み）  
+**PR**: https://github.com/nothink-jp/suzumina.click/pull/95  
+**ステータス**: **Phase 3まで完了** 🎉
+
+## 現在の状況
+
+### 完了したフェーズ
+- **Phase 0**: 準備 ✅ (7/24)
+- **Phase 1**: 現状確認 ✅ (7/24)
+- **Phase 2**: コードデプロイ ✅ (7/24)
+- **Phase 3**: レガシーフィールドクリーンアップ ✅ (7/24)
+
+### 主要な成果
+- Entity/Value Objectアーキテクチャへの完全移行
+- 585テスト全合格
+- 本番環境へのデプロイ成功
+- 6,012個のレガシーフィールド削除完了
 
 ## 移行による主要な変更点
 
 ### 1. Firestoreデータ構造の変更
 
-| 旧フィールド | 新フィールド | 変更内容 |
-|------------|------------|---------|
-| `aggregatedInfo.dlCount` | 廃止 | DLsite API提供終了のため削除 |
-| `aggregatedInfo.reviewCount` | `rating.count` | ネスト構造変更 |
-| `aggregatedInfo.reviewAverage` | `rating.stars` | 0-5スケール→0-50スケール |
-| `prices.JPY` | `price.amount` | オブジェクト構造化 |
-| `dates.releaseDate` | `releaseDateISO` | ISO8601形式統一 |
+| 旧フィールド | 新フィールド | 変更内容 | ステータス |
+|------------|------------|---------|-----------|
+| `aggregatedInfo.dlCount` | 廃止 | DLsite API提供終了のため削除 | ✅ 削除済み |
+| `aggregatedInfo.reviewCount` | `rating.count` | ネスト構造変更 | ✅ 移行済み |
+| `aggregatedInfo.reviewAverage` | `rating.stars` | 0-5スケール→0-50スケール | ✅ 移行済み |
+| `prices.JPY` | `price.amount` | オブジェクト構造化 | ✅ 移行済み |
+| `dates.releaseDate` | `releaseDateISO` | ISO8601形式統一 | ✅ 移行済み |
+| `isExclusive` | 廃止 | 使用されていない | ✅ 削除済み |
+| `apiGenres` | 廃止 | 重複データ | ✅ 削除済み |
+| `apiCustomGenres` | 廃止 | 重複データ | ✅ 削除済み |
+| `apiWorkOptions` | 廃止 | 重複データ | ✅ 削除済み |
 
 ### 2. 削除されたファイル
 
@@ -109,41 +129,50 @@ gcloud run services describe suzumina-click-web \
 gcloud functions list --filter="name:fetchDLsiteWorks"
 ```
 
-### Phase 3: 旧フィールドクリーンアップ（7/27-7/29）
+### Phase 3: 旧フィールドクリーンアップ（7/24 完了）✅
 
-#### 1. ドライラン実行
+#### 1. ドライラン実行 ✅
 
 ```bash
-# 旧フィールドの使用状況を確認
-pnpm --filter @suzumina.click/functions run cleanup:analyze
-
-# ドライランで削除対象を確認
-pnpm --filter @suzumina.click/functions run cleanup:dry-run
+pnpm cleanup:dry-run
 ```
 
-#### 2. 本番実行
+**ドライラン結果（2025-07-24T03:54実施）:**
+- 削除対象ドキュメント数: 1,503件
+- 削除対象フィールド数: 6,012件
+
+#### 2. 本番実行 ✅
 
 ```bash
-# バックアップ作成
-gcloud firestore export gs://suzumina-click-backup/pre-cleanup-$(date +%Y%m%d-%H%M%S) \
+# バックアップ作成（2025-07-24T12:55）
+gcloud firestore export gs://suzumina-click-backup/pre-cleanup-20250724-125506 \
   --project=suzumina-click
 
-# クリーンアップ実行
-pnpm --filter @suzumina.click/functions run cleanup:execute
+# クリーンアップ実行（2025-07-24T03:55）
+pnpm cleanup:execute
 ```
 
-削除対象フィールド:
-- `aggregatedInfo` (既に新フィールドに移行済み)
-- `prices` (price構造に移行済み)
-- `dates` (releaseDateISOに移行済み)
-- `totalDownloadCount`
-- `bonusContent`
-- `isExclusive`
-- `apiGenres`
-- `apiCustomGenres`
-- `apiWorkOptions`
+**クリーンアップ結果:**
+- 処理ドキュメント数: 1,503件
+- 成功: 1,503件
+- 失敗: 0件
+- 削除完了フィールド:
+  - `isExclusive`: 1,503件 ✅
+  - `apiGenres`: 1,503件 ✅
+  - `apiCustomGenres`: 1,503件 ✅
+  - `apiWorkOptions`: 1,503件 ✅
 
-### Phase 4: 監視とフォローアップ（7/30-7/31）
+#### 3. 検証 ✅
+
+```bash
+pnpm cleanup:analyze
+```
+
+**検証結果（2025-07-24T03:56）:**
+- すべてのレガシーフィールドが削除済み
+- エラーなし
+
+### Phase 4: 監視とフォローアップ（7/24-7/25）
 
 #### 1. システム監視
 
@@ -163,19 +192,19 @@ gcloud monitoring dashboards list
 - Discord通知の確認
 - パフォーマンスレポートの確認
 
-### Phase 5: 完了と文書化（8/1）
+### Phase 5: 完了と文書化（7/25）
 
 #### 1. 移行完了の確認
 
-- [ ] 全テストの合格確認
-- [ ] 本番環境の正常動作確認
+- [x] 全テストの合格確認（585テスト合格）
+- [x] 本番環境の正常動作確認（Phase 2で確認済み）
 - [ ] パフォーマンスメトリクスの確認
-- [ ] 旧フィールドの完全削除確認
+- [x] 旧フィールドの完全削除確認（Phase 3で完了）
 
 #### 2. ドキュメント更新
 
 - [ ] FIRESTORE_STRUCTURE.mdの更新
-- [ ] UBIQUITOUS_LANGUAGE.mdの確認
+- [x] UBIQUITOUS_LANGUAGE.mdの確認（wishlistCount削除済み）
 - [ ] 開発ガイドの更新
 
 ## 緊急時対応
@@ -259,3 +288,6 @@ gcloud firestore import gs://suzumina-click-backup/pre-migration-20250724
 
 - 2025年7月24日: 初版作成
 - 2025年7月24日: 現状分析により互換性レイヤー不要と判断、計画を簡略化
+- 2025年7月24日: Phase 0完了、Phase 1実施結果を反映、PR番号を95に更新
+- 2025年7月24日: Phase 2完了、本番環境へのデプロイ成功
+- 2025年7月24日: Phase 3完了、全レガシーフィールド削除成功（6,012フィールド）
