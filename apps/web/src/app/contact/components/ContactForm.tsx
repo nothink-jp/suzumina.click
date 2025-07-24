@@ -180,7 +180,7 @@ export function ContactForm() {
 				</Label>
 				<Textarea
 					id={contentId}
-					placeholder={getPlaceholder(selectedCategory)}
+					placeholder={getPlaceholder(selectedCategory || "")}
 					rows={8}
 					{...register("content")}
 					className={errors.content ? "border-destructive" : ""}
