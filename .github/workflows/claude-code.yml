@@ -18,12 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          # PRの場合は該当ブランチをチェックアウト
-          ref: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref }}
-          fetch-depth: 0
+      # Note: We intentionally do NOT checkout PR code for security reasons
+      # issue_comment events run with elevated permissions
           
       - name: Setup Node.js
         uses: actions/setup-node@v4
