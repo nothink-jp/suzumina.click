@@ -6,17 +6,17 @@
 
 ## 実装内容
 
-### 1. カスタムGitHub Action
-`/.github/actions/claude-review/action.yml`
-- 再利用可能なComposite Action
-- PR情報の取得とClaude APIの呼び出しを統合
-- エラーハンドリング付き
-
-### 2. 新しいワークフロー
-`/.github/workflows/claude-pr-review-api.yml`
+### 1. セキュアなワークフロー実装
+`/.github/workflows/claude-pr-review-secure.yml`
 - `@claude`メンションで起動
-- 実際のClaude APIを呼び出し
-- レビュー結果をPRコメントとして投稿
+- PRコードのチェックアウトなし（セキュリティ対策）
+- GitHub Script内で直接API呼び出し
+- エラーハンドリング実装
+
+### 2. セキュリティ考慮事項
+- `issue_comment`イベントでのコードチェックアウトを回避
+- 信頼できないコードの実行を防止
+- API呼び出しはGitHub Script内で完結
 
 ### 3. 無効化されたワークフロー
 - `claude-pr-assistant.yml` → `claude-pr-assistant.yml.disabled`
