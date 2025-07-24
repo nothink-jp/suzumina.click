@@ -1,0 +1,109 @@
+name: 'Claude Code Review'
+description: 'Perform code review using Claude AI'
+inputs:
+  anthropic-api-key:
+    description: 'Anthropic API Key'
+    required: true
+  github-token:
+    description: 'GitHub Token'
+    required: true
+  pr-number:
+    description: 'Pull Request Number'
+    required: true
+  comment:
+    description: 'User comment that triggered the review'
+    required: true
+  comment-author:
+    description: 'Author of the triggering comment'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Get PR Details
+      id: pr-details
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: parseInt('${{ inputs.pr-number }}')
+          });
+          
+          const { data: files } = await github.rest.pulls.listFiles({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: parseInt('${{ inputs.pr-number }}')
+          });
+          
+          // コンテキストサイズを管理するため、最大10ファイルまで
+          const limitedFiles = files.slice(0, 10).map(file => ({
+            filename: file.filename,
+            status: file.status,
+            additions: file.additions,
+            deletions: file.deletions,
+            patch: file.patch ? file.patch.substring(0, 2000) : ''
+          }));
+          
+          core.setOutput('title', pr.title);
+          core.setOutput('body', pr.body || 'No description provided');
+          core.setOutput('files', JSON.stringify(limitedFiles));
+          core.setOutput('total_files', files.length);
+
+    - name: Call Claude API
+      id: claude
+      shell: bash
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+      run: |
+        # Claude API呼び出し用のペイロードを作成
+        PAYLOAD=$(cat <<'EOF'
+        {
+          "model": "claude-3-opus-20240229",
+          "max_tokens": 2048,
+          "temperature": 0,
+          "system": "You are Claude, an AI assistant specialized in code review. Provide constructive, helpful feedback on GitHub pull requests. Focus on code quality, potential bugs, performance, and security. Format responses in GitHub-flavored Markdown. Be concise but thorough.",
+          "messages": [{
+            "role": "user",
+            "content": "Review this PR and respond to the comment.\n\nComment: ${{ inputs.comment }}\nAuthor: ${{ inputs.comment-author }}\n\nPR Title: ${{ steps.pr-details.outputs.title }}\nPR Description: ${{ steps.pr-details.outputs.body }}\nTotal Files: ${{ steps.pr-details.outputs.total_files }}\n\nFile Changes:\n${{ steps.pr-details.outputs.files }}"
+          }]
+        }
+        EOF
+        )
+        
+        # API呼び出し
+        RESPONSE=$(curl -s -X POST https://api.anthropic.com/v1/messages \
+          -H "Content-Type: application/json" \
+          -H "x-api-key: $ANTHROPIC_API_KEY" \
+          -H "anthropic-version: 2023-06-01" \
+          -d "$PAYLOAD")
+        
+        # エラーチェック
+        if echo "$RESPONSE" | jq -e '.error' > /dev/null; then
+          ERROR_MSG=$(echo "$RESPONSE" | jq -r '.error.message // "Unknown error"')
+          echo "error=true" >> $GITHUB_OUTPUT
+          echo "message=API Error: $ERROR_MSG" >> $GITHUB_OUTPUT
+        else
+          # 成功時はレスポンスを抽出
+          CONTENT=$(echo "$RESPONSE" | jq -r '.content[0].text // "No response generated"')
+          echo "error=false" >> $GITHUB_OUTPUT
+          # GitHubの出力用にエスケープ
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo "$CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+
+outputs:
+  error:
+    description: 'Whether an error occurred'
+    value: ${{ steps.claude.outputs.error }}
+  message:
+    description: 'Claude response or error message'
+    value: ${{ steps.claude.outputs.message }}
