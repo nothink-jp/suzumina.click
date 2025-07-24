@@ -39,6 +39,11 @@ jobs:
           echo "🔍 Checking for dependency conflicts..."
           pnpm ls --depth=0 || echo "Dependencies installed with warnings"
 
+      - name: Build shared-types package
+        run: |
+          echo "📦 Building shared-types package..."
+          pnpm --filter @suzumina.click/shared-types build
+
       - name: Run TypeScript check
         run: |
           echo "📝 Running TypeScript check..."
