@@ -39,6 +39,9 @@ export * from "./utilities/price-history";
 // 検索フィルター関連の型とスキーマのエクスポート
 export * from "./utilities/search-filters";
 // === Value Objects ===
+// Export base Value Object utilities and interfaces
+export * from "./value-objects";
+// === Value Objects ===
 export * from "./value-objects/creator-type";
 export * from "./value-objects/date-range";
 // DateFormatterをvalue-objectsから再エクスポート（互換性のため）
