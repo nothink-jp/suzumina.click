@@ -102,12 +102,6 @@ import type { youtube_v3 } from "googleapis";
 import * as logger from "../../shared/logger";
 
 /**
- * Type alias for YouTube Live Streaming Details
- * Provides better readability when working with YouTube API responses
- */
-type YouTubeLiveStreamingDetails = youtube_v3.Schema$VideoLiveStreamingDetails;
-
-/**
  * Maps YouTube API video data to Video Entity V2
  *
  * @param youtubeVideo - Video data from YouTube API
@@ -321,7 +315,7 @@ function createVideoStatisticsFromYouTube(
  * Maps live streaming details from YouTube API
  */
 function mapLiveStreamingDetails(
-	details: YouTubeLiveStreamingDetails,
+	details: youtube_v3.Schema$VideoLiveStreamingDetails,
 ): NonNullable<Video["liveStreamingDetails"]> {
 	return {
 		scheduledStartTime: parseDate(details.scheduledStartTime),
