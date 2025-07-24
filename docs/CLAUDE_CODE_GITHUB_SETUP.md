@@ -13,10 +13,10 @@
 
 ### ⏳ 必要な設定
 
-#### 1. Anthropic API Keyの設定
-以下のURLでリポジトリシークレットを追加してください：
-https://github.com/nothink-jp/suzumina.click/settings/secrets/actions/new
+#### 1. Anthropic API Keyの設定（将来的に必要）
+**注**: 現在のワークフローはプレースホルダー実装です。実際のClaude統合が利用可能になった際に、以下の設定が必要になります：
 
+- **URL**: https://github.com/nothink-jp/suzumina.click/settings/secrets/actions/new
 - **Name**: `ANTHROPIC_API_KEY`
 - **Value**: あなたのAnthropic API Key
 

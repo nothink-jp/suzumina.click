@@ -23,12 +23,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Claude Code
-        uses: anthropics/claude-code-action@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
-
-      - name: Run Claude Code Review
+      # Note: Anthropic API Key will be added when the official action is available
+      # Currently, this is a placeholder workflow
+      - name: Placeholder for Claude Code Review
         run: |
-          echo "Claude Code will analyze the PR based on the comment"
+          echo "Claude Code integration placeholder - API key will be added when needed"
