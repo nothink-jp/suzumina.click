@@ -356,7 +356,7 @@ describe("Video Mapper V2", () => {
 
 			const video = mapYouTubeToVideoEntity(youtubeVideo);
 			expect(video).not.toBeNull();
-			expect(video?.statistics?.favoriteCount).toBeUndefined();
+			expect(video?.statistics?.favoriteCount).toBe(0); // Invalid values are converted to 0
 		});
 
 		it("should handle invalid concurrentViewers values", () => {

@@ -91,5 +91,15 @@ describe("Number Parser Utils", () => {
 			expect(formatPercentage(-50, 100)).toBe("-50.0%");
 			expect(formatPercentage(50, -100)).toBe("0.0%"); // Negative denominator returns 0
 		});
+
+		it("should validate decimals parameter", () => {
+			// Negative decimals should be treated as 0
+			expect(formatPercentage(33.333, 100, -1)).toBe("33%");
+			expect(formatPercentage(33.333, 100, -10)).toBe("33%");
+
+			// Fractional decimals should be floored
+			expect(formatPercentage(33.333, 100, 2.7)).toBe("33.33%");
+			expect(formatPercentage(33.333, 100, 1.1)).toBe("33.3%");
+		});
 	});
 });

@@ -39,6 +39,8 @@ export function calculateRatio(numerator: number, denominator: number): number {
  * @returns Formatted percentage string (e.g., "75.0%")
  */
 export function formatPercentage(numerator: number, denominator: number, decimals = 1): string {
+	// Ensure decimals is a non-negative integer
+	const validDecimals = Math.max(0, Math.floor(decimals));
 	const ratio = calculateRatio(numerator, denominator);
-	return `${(ratio * 100).toFixed(decimals)}%`;
+	return `${(ratio * 100).toFixed(validDecimals)}%`;
 }

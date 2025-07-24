@@ -38,7 +38,7 @@ import {
  * compatibility with existing systems while the codebase transitions to
  * the new Video Entity V2 domain model.
  *
- * @deprecated Will be removed in v3.0.0 (target: October 31, 2025, reviewed July 2025). Migrate to Video Entity V2
+ * @deprecated Will be removed in v3.0.0 (target: April 30, 2026, reviewed July 2025). Migrate to Video Entity V2
  */
 interface LegacyVideoData {
 	// Core fields
@@ -307,7 +307,9 @@ function createVideoStatisticsFromYouTube(
 	const dislikeCount = stats.dislikeCount
 		? new DislikeCount(Number(stats.dislikeCount))
 		: undefined;
-	const favoriteCount = safeParseNumber(stats.favoriteCount);
+	const favoriteCount = stats.favoriteCount
+		? Math.max(0, safeParseNumber(stats.favoriteCount) ?? 0)
+		: undefined;
 	const commentCount = stats.commentCount
 		? new CommentCount(Number(stats.commentCount))
 		: undefined;
