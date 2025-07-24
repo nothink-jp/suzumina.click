@@ -26,7 +26,63 @@ import {
 } from "@suzumina.click/shared-types";
 
 // Legacy format type from the Video Entity
-type LegacyVideoData = Record<string, any>;
+interface LegacyVideoData {
+	// Core fields
+	id?: string;
+	videoId?: string;
+	title: string;
+	description?: string;
+	channelId: string;
+	channelTitle: string;
+	publishedAt: string;
+	lastFetchedAt?: string;
+
+	// Content details
+	duration?: string;
+	dimension?: string;
+	definition?: string;
+	caption?: boolean;
+	licensedContent?: boolean;
+	projection?: string;
+
+	// Statistics
+	statistics?: {
+		viewCount?: number;
+		likeCount?: number;
+		dislikeCount?: number;
+		favoriteCount?: number;
+		commentCount?: number;
+	};
+
+	// Status
+	status?: {
+		privacyStatus?: string;
+		uploadStatus?: string;
+	};
+
+	// Player
+	player?: {
+		embedHtml?: string;
+	};
+
+	// Tags
+	tags?: string[];
+	playlistTags?: string[];
+	userTags?: string[];
+
+	// Audio button info
+	audioButtonCount?: number;
+	hasAudioButtons?: boolean;
+
+	// Live streaming
+	liveStreamingDetails?: {
+		scheduledStartTime?: string;
+		scheduledEndTime?: string;
+		actualStartTime?: string;
+		actualEndTime?: string;
+		concurrentViewers?: number;
+	};
+}
 
 import type { youtube_v3 } from "googleapis";
 import * as logger from "../../shared/logger";
@@ -81,7 +137,7 @@ export function mapYouTubeToVideoEntity(
 		const tags = {
 			playlistTags,
 			userTags,
-			contentTags: youtubeVideo.snippet.tags,
+			contentTags: youtubeVideo.snippet.tags || undefined,
 		};
 
 		// Create audio button info (default values, will be updated by audio button service)
@@ -166,8 +222,8 @@ function createVideoContentFromYouTube(video: youtube_v3.Schema$Video): VideoCon
 			privacyStatus,
 			uploadStatus,
 			contentDetails,
-			video.player?.embedHtml,
-			video.snippet.tags,
+			video.player?.embedHtml || undefined,
+			video.snippet.tags || undefined,
 		);
 	} catch (error) {
 		logger.error("Failed to create VideoContent", {
@@ -201,7 +257,7 @@ function createVideoMetadataFromYouTube(video: youtube_v3.Schema$Video): VideoMe
 			video.contentDetails?.dimension as "2d" | "3d" | undefined,
 			video.contentDetails?.definition as "hd" | "sd" | undefined,
 			video.contentDetails?.caption === "true",
-			video.contentDetails?.licensedContent,
+			video.contentDetails?.licensedContent || undefined,
 		);
 	} catch (error) {
 		logger.error("Failed to create VideoMetadata", {
@@ -382,7 +438,7 @@ export function mapYouTubeVideosWithErrors(
 			}
 		} catch (error) {
 			errors.push({
-				videoId: youtubeVideo.id,
+				videoId: youtubeVideo.id || undefined,
 				field: "unknown",
 				reason: error instanceof Error ? error.message : "Unknown error",
 			});
