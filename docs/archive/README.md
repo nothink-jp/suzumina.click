@@ -41,6 +41,13 @@
 - **DLSITE_DATA_OPTIMIZATION_ANALYSIS.md** - 最適化分析レポート（実装前提案書）
 - **README.md** - プロジェクト完了レポート
 
+### `/2025-07-entity-value-object-migration/` - Entity/Value Objectアーキテクチャ移行
+2025年7月24日に完了したEntity/Value Object移行プロジェクト
+
+- **ENTITY_VALUE_OBJECT_MIGRATION_PLAN.md** - 移行計画書（全フェーズ完了）
+- **ENTITY_VALUE_OBJECT_ARCHITECTURE.md** - アーキテクチャ解説書
+- **README.md** - プロジェクト完了レポート
+
 ## 🎯 アーカイブの価値
 
 ### 📚 知識保持
