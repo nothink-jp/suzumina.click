@@ -7,7 +7,7 @@ import {
 	type WorkListResult,
 	type WorkPaginationParams,
 	WorkPaginationParamsSchema,
-} from "@suzumina.click/shared-types/src/work";
+} from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/components/system/protected-route";
 import { getFirestore } from "@/lib/firestore";

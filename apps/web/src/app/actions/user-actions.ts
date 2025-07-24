@@ -12,7 +12,7 @@ import {
 	type UserListResult,
 	type UserQuery,
 	UserQuerySchema,
-} from "@suzumina.click/shared-types/src/user";
+} from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/components/system/protected-route";
 import { getFirestore } from "@/lib/firestore";

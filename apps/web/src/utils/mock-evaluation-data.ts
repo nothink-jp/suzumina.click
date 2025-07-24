@@ -1,7 +1,4 @@
-import type {
-	AggregatedCharacteristics,
-	CharacteristicAxis,
-} from "@suzumina.click/shared-types/src/user-evaluation";
+import type { AggregatedCharacteristics, CharacteristicAxis } from "@suzumina.click/shared-types";
 
 /**
  * モック特性評価データを生成

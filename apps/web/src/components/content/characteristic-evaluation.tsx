@@ -1,10 +1,7 @@
 "use client";
 
-import type {
-	AggregatedCharacteristics,
-	CharacteristicAxis,
-} from "@suzumina.click/shared-types/src/user-evaluation";
-import { CHARACTERISTIC_AXES } from "@suzumina.click/shared-types/src/user-evaluation";
+import type { AggregatedCharacteristics, CharacteristicAxis } from "@suzumina.click/shared-types";
+import { CHARACTERISTIC_AXES } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { Progress } from "@suzumina.click/ui/components/ui/progress";

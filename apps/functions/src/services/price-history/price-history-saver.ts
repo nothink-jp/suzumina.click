@@ -1,6 +1,5 @@
-import type { PriceHistoryDocument } from "@suzumina.click/shared-types";
+import type { DLsiteRawApiResponse, PriceHistoryDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
-import type { IndividualInfoAPIResponse } from "../dlsite/individual-info-to-work-mapper";
 import { analyzePriceChanges } from "./price-change-detector";
 import { extractJPYPrice, isValidPriceData } from "./price-extractor";
 
@@ -9,7 +8,7 @@ import { extractJPYPrice, isValidPriceData } from "./price-extractor";
  * @returns JST日付文字列
  */
 function getJSTDate(): string {
-	const jstDate = new Date(new Date().getTime() + 9 * 60 * 60 * 1000); // UTC + 9時間
+	const jstDate = new Date(Date.now() + 9 * 60 * 60 * 1000); // UTC + 9時間
 	return jstDate.toISOString().split("T")[0] as string;
 }
 
@@ -18,7 +17,7 @@ function getJSTDate(): string {
  * @returns JST日時のISO文字列
  */
 function getJSTDateTime(): string {
-	const jstDate = new Date(new Date().getTime() + 9 * 60 * 60 * 1000); // UTC + 9時間
+	const jstDate = new Date(Date.now() + 9 * 60 * 60 * 1000); // UTC + 9時間
 	return jstDate.toISOString();
 }
 
@@ -30,24 +29,16 @@ function getJSTDateTime(): string {
  */
 export async function savePriceHistory(
 	workId: string,
-	apiResponse: IndividualInfoAPIResponse,
+	apiResponse: DLsiteRawApiResponse,
 ): Promise<boolean> {
 	try {
 		// worknoが存在しない場合は保存しない
 		if (!apiResponse.workno) {
-			console.warn(`Missing workno for work ${workId}`);
 			return false;
 		}
 
 		// データ検証
 		if (!isValidPriceData(apiResponse)) {
-			console.warn(`Invalid price data for work ${workId}:`, {
-				workno: apiResponse.workno,
-				hasPrice: !!apiResponse.price,
-				hasLocalePrices: !!apiResponse.locale_price?.length,
-				priceValue: apiResponse.price,
-				localePricesCount: apiResponse.locale_price?.length || 0,
-			});
 			return false;
 		}
 
@@ -82,8 +73,12 @@ export async function savePriceHistory(
 		let localePrices: Array<{ currency: string; price: number; priceString: string }> = [];
 
 		if (Array.isArray(apiResponse.locale_price)) {
-			// 配列の場合はそのまま使用
-			localePrices = apiResponse.locale_price;
+			// 配列の場合はpriceStringを追加
+			localePrices = apiResponse.locale_price.map((item) => ({
+				currency: item.currency,
+				price: item.price,
+				priceString: `${item.price} ${item.currency}`,
+			}));
 		} else if (typeof apiResponse.locale_price === "object" && apiResponse.locale_price !== null) {
 			// オブジェクトの場合は配列に変換
 			const localePriceObj = apiResponse.locale_price as Record<string, number>;
@@ -106,7 +101,9 @@ export async function savePriceHistory(
 			regularPrice,
 			discountPrice: discountRate > 0 ? discountPrice : undefined,
 			discountRate,
-			campaignId: apiResponse.campaign?.campaign_id,
+			campaignId: apiResponse.campaign?.campaign_id
+				? Number(apiResponse.campaign.campaign_id)
+				: undefined,
 
 			// 価格変動検出結果
 			priceChanged: priceAnalysis.priceChanged,
@@ -123,18 +120,10 @@ export async function savePriceHistory(
 
 		// 価格変動・新キャンペーンの場合のみログ出力
 		if (priceAnalysis.priceChanged || priceAnalysis.newCampaign) {
-			console.log(`Price event detected for ${workId}:`, {
-				date: today,
-				priceChanged: priceAnalysis.priceChanged,
-				newCampaign: priceAnalysis.newCampaign,
-				regularPrice,
-				discountRate,
-			});
 		}
 
 		return true;
-	} catch (error) {
-		console.error(`Failed to save price history for work ${workId}:`, error);
+	} catch (_error) {
 		return false;
 	}
 }
@@ -145,7 +134,7 @@ export async function savePriceHistory(
  * @returns 保存結果の統計情報
  */
 export async function saveBulkPriceHistory(
-	workPriceMap: Map<string, IndividualInfoAPIResponse>,
+	workPriceMap: Map<string, DLsiteRawApiResponse>,
 ): Promise<{
 	total: number;
 	success: number;
@@ -173,8 +162,6 @@ export async function saveBulkPriceHistory(
 				failedWorkIds.push(result.value.workId);
 			}
 		} else {
-			// Promise自体が失敗した場合
-			console.error("Price history save promise failed:", result.reason);
 			failedWorkIds.push("unknown");
 		}
 	}
@@ -196,9 +183,10 @@ export async function saveBulkPriceHistory(
  * この関数は後方互換性のため残していますが、実際には呼び出されません
  * 将来的に保持期間ポリシーが変更された場合に備えて実装を保持
  */
-export async function cleanupOldPriceHistory(workId: string, retentionDays: number): Promise<void> {
-	// 全履歴保持のため、実際の削除処理はスキップ
-	console.log(`Price history cleanup skipped: preserving all historical data for ${workId}`);
+export async function cleanupOldPriceHistory(
+	_workId: string,
+	_retentionDays: number,
+): Promise<void> {
 	return;
 
 	/* 元の実装（参考のため保持）

@@ -10,7 +10,6 @@ import { getFirestore } from "@/lib/firestore";
 
 type ExtendedWorkData = OptimizedFirestoreDLsiteWorkData & {
 	releaseDateISO?: string;
-	aggregatedInfo?: { reviewAverage?: number };
 	priceInJPY?: number;
 };
 
@@ -32,8 +31,8 @@ function compareByDate(a: ExtendedWorkData, b: ExtendedWorkData, isOldest = fals
  * Compare works by rating (popular)
  */
 function compareByRating(a: ExtendedWorkData, b: ExtendedWorkData): number {
-	const ratingA = a.rating?.stars || a.aggregatedInfo?.reviewAverage || 0;
-	const ratingB = b.rating?.stars || b.aggregatedInfo?.reviewAverage || 0;
+	const ratingA = a.rating?.stars || 0;
+	const ratingB = b.rating?.stars || 0;
 	return ratingB - ratingA;
 }
 

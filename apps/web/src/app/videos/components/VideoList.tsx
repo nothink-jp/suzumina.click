@@ -1,6 +1,6 @@
 "use client";
 
-import type { VideoListResult } from "@suzumina.click/shared-types/src/video";
+import type { VideoListResult } from "@suzumina.click/shared-types";
 import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
 import {
 	ListPageEmptyState,

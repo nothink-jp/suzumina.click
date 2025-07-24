@@ -1,9 +1,9 @@
-import type { IndividualInfoAPIResponse } from "../dlsite/individual-info-to-work-mapper";
+import type { DLsiteRawApiResponse } from "@suzumina.click/shared-types";
 
 /**
  * locale_priceからJPY価格を抽出
  */
-function extractJPYFromLocalePrice(apiResponse: IndividualInfoAPIResponse): number | undefined {
+function extractJPYFromLocalePrice(apiResponse: DLsiteRawApiResponse): number | undefined {
 	if (Array.isArray(apiResponse.locale_price)) {
 		// 配列の場合（型定義に従う）
 		const jpyEntry = apiResponse.locale_price.find(
@@ -27,7 +27,7 @@ function extractJPYFromLocalePrice(apiResponse: IndividualInfoAPIResponse): numb
 function getPriceByType(
 	price: number,
 	priceType: "regular" | "discount",
-	apiResponse: IndividualInfoAPIResponse,
+	apiResponse: DLsiteRawApiResponse,
 ): number {
 	if (priceType === "discount") {
 		// セール価格の場合は、既にセール適用済みの価格をそのまま返す
@@ -49,7 +49,7 @@ function getPriceByType(
  * @returns JPY価格
  */
 export function extractJPYPrice(
-	apiResponse: IndividualInfoAPIResponse,
+	apiResponse: DLsiteRawApiResponse,
 	priceType: "regular" | "discount",
 ): number {
 	// locale_priceからJPY価格を抽出
@@ -68,7 +68,7 @@ export function extractJPYPrice(
  * @param apiResponse Individual Info APIレスポンス
  * @returns 有効な価格データが存在するかどうか
  */
-export function isValidPriceData(apiResponse: IndividualInfoAPIResponse): boolean {
+export function isValidPriceData(apiResponse: DLsiteRawApiResponse): boolean {
 	// 直接価格フィールドをチェック
 	const hasDirectPrice = typeof apiResponse.price === "number" && apiResponse.price >= 0;
 
@@ -87,7 +87,7 @@ export function isValidPriceData(apiResponse: IndividualInfoAPIResponse): boolea
  * @param apiResponse Individual Info APIレスポンス
  * @returns セール中かどうか
  */
-export function isOnSale(apiResponse: IndividualInfoAPIResponse): boolean {
+export function isOnSale(apiResponse: DLsiteRawApiResponse): boolean {
 	const discountRate = apiResponse.discount_rate || 0;
 	return discountRate > 0;
 }
@@ -97,7 +97,7 @@ export function isOnSale(apiResponse: IndividualInfoAPIResponse): boolean {
  * @param apiResponse Individual Info APIレスポンス
  * @returns 最安価格（セール中の場合はセール価格、そうでなければ定価）
  */
-export function calculateLowestPrice(apiResponse: IndividualInfoAPIResponse): number {
+export function calculateLowestPrice(apiResponse: DLsiteRawApiResponse): number {
 	const regularPrice = extractJPYPrice(apiResponse, "regular");
 	if (isOnSale(apiResponse)) {
 		return extractJPYPrice(apiResponse, "discount");

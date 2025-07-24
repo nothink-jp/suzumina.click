@@ -5,7 +5,7 @@
 
 "use client";
 
-import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
+import type { FrontendVideoData } from "@suzumina.click/shared-types";
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";

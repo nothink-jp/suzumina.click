@@ -104,6 +104,53 @@ export function isValidVideoId(id: string): boolean {
 }
 ```
 
+#### **4. DDD (Domain-Driven Design) 原則**
+**原則**: ドメインモデルを中心に設計し、エンティティと値オブジェクトを明確に分離する
+
+**Entity（エンティティ）**: 識別可能でライフサイクルを持つオブジェクト
+- IDによって一意に識別される
+- 時間の経過とともに状態が変化する
+- 例: Work, User, AudioButton
+
+**Value Object（値オブジェクト）**: 不変で識別子を持たないオブジェクト
+- 値によってのみ識別される
+- 一度作成されたら変更されない
+- ビジネスロジックをカプセル化
+- 例: Price, Rating, DateRange
+
+```typescript
+// ✅ 良い例: Value Object
+export const Price = z.object({
+  amount: z.number().int().min(0),
+  currency: z.string().length(3),
+}).transform(data => ({
+  ...data,
+  isFree: () => data.amount === 0,
+  isDiscounted: () => data.original > data.amount,
+  format: () => new Intl.NumberFormat('ja-JP', { 
+    style: 'currency', 
+    currency: data.currency 
+  }).format(data.amount),
+}));
+
+// ✅ 良い例: Entity
+export const Work = z.object({
+  id: z.string(),
+  title: z.string(),
+  price: Price,
+  rating: Rating,
+  // その他のプロパティ
+});
+
+// ❌ 悪い例: ビジネスロジックが散在
+function formatPrice(work: Work) {
+  return `${work.price.toLocaleString()}円`;
+}
+function isDiscounted(work: Work) {
+  return work.originalPrice > work.price;
+}
+```
+
 ### 🥈 **第2優先: 型安全性・品質原則**
 **適用範囲**: TypeScript実装・API設計・データ構造定義
 
@@ -446,45 +493,51 @@ describe('formatPrice', () => {
 
 #### **ディレクトリ構造統一原則**
 
-**✅ 推奨: コロケーション方式**
+**✅ 推奨: __tests__ ディレクトリ方式**
 
 ```text
 src/
 ├── components/
+│   ├── __tests__/                   # ✅ テスト専用ディレクトリ
+│   │   ├── AudioButton.test.tsx     # ✅ 関連テストを集約
+│   │   └── SearchForm.test.tsx      # ✅ 整理された構造
 │   ├── AudioButton.tsx
-│   ├── AudioButton.test.tsx         # ✅ 同一ディレクトリ
-│   ├── SearchForm.tsx
-│   └── SearchForm.test.tsx          # ✅ 同一ディレクトリ
+│   └── SearchForm.tsx
 ├── lib/
+│   ├── __tests__/                   # ✅ テスト専用ディレクトリ
+│   │   ├── firestore.test.ts        # ✅ ライブラリテスト
+│   │   └── audio-helpers.test.ts    # ✅ ヘルパーテスト
 │   ├── firestore.ts
-│   ├── firestore.test.ts            # ✅ 同一ディレクトリ
-│   ├── audio-helpers.ts
-│   └── audio-helpers.test.ts        # ✅ 同一ディレクトリ
+│   └── audio-helpers.ts
 ├── app/
 │   ├── buttons/
+│   │   ├── __tests__/               # ✅ ページテスト専用
+│   │   │   ├── page.test.tsx        # ✅ ページコンポーネントテスト
+│   │   │   └── actions.test.ts      # ✅ Server Actionsテスト
 │   │   ├── page.tsx
-│   │   ├── page.test.tsx            # ✅ 同一ディレクトリ
-│   │   ├── actions.ts
-│   │   └── actions.test.ts          # ✅ 同一ディレクトリ
+│   │   └── actions.ts
 │   └── api/
 │       └── search/
-│           ├── route.ts
-│           └── route.test.ts        # ✅ 同一ディレクトリ
+│           ├── __tests__/           # ✅ APIルートテスト
+│           │   └── route.test.ts    # ✅ エンドポイントテスト
+│           └── route.ts
 └── e2e/                             # ✅ E2Eテスト専用ディレクトリ
     ├── auth.spec.ts
     └── buttons.spec.ts
 ```
 
-**❌ 非推奨: __tests__ ディレクトリ方式**
+**❌ 非推奨: コロケーション方式**
 
 ```text
 src/
 ├── components/
-│   ├── __tests__/                   # ❌ 分離されすぎ
-│   │   ├── Button.test.tsx          # ❌ 関連コードから離れている
-│   │   └── Form.test.tsx            # ❌ メンテナンス性低下
-│   ├── Button.tsx
-│   └── Form.tsx
+│   ├── AudioButton.tsx
+│   ├── AudioButton.test.tsx         # ❌ ソースと混在
+│   ├── SearchForm.tsx
+│   └── SearchForm.test.tsx          # ❌ ディレクトリが散らかる
+└── lib/
+    ├── firestore.ts
+    └── firestore.test.ts            # ❌ テストとソースが混在
 ```
 
 ## 📁 ファイル・ディレクトリ命名規則
@@ -524,15 +577,15 @@ user_profile.tsx         // ファイル名がsnake_case
 
 #### **テストファイル (.test.ts/.test.tsx)**
 ```typescript
-// ✅ 正しい命名（co-location方式）
-user-profile.tsx         // ソースファイル
-user-profile.test.tsx    // テストファイル（同一ディレクトリ）
+// ✅ 正しい命名（__tests__ディレクトリ方式）
+components/user-profile.tsx              // ソースファイル
+components/__tests__/user-profile.test.tsx    // テストファイル（__tests__内）
 
-audio-helpers.ts         // ソースファイル  
-audio-helpers.test.ts    // テストファイル（同一ディレクトリ）
+lib/audio-helpers.ts                     // ソースファイル  
+lib/__tests__/audio-helpers.test.ts      // テストファイル（__tests__内）
 
 // ❌ 間違った命名
-__tests__/UserProfile.test.tsx     // __tests__ディレクトリ（非推奨）
+user-profile.test.tsx              // ソースと同一ディレクトリ（非推奨）
 UserProfile.spec.tsx               // .specはE2E専用
 test-user-profile.tsx              // 接頭辞形式（非推奨）
 ```
@@ -554,43 +607,64 @@ src/components/auth.spec.ts    // E2E以外での.spec使用
 ```text
 src/components/
 ├── 🎵 audio/                    # 音声・音声ボタン関連
+│   ├── __tests__/               # テスト専用ディレクトリ
+│   │   ├── audio-button-creator.test.tsx
+│   │   └── favorite-button.test.tsx
 │   ├── audio-button-creator.tsx
-│   ├── audio-button-creator.test.tsx
 │   ├── favorite-button.tsx
-│   ├── favorite-button.test.tsx
 │   └── index.ts                 # バレルエクスポート
 ├── 🔍 search/                   # 検索・フィルタ関連
+│   ├── __tests__/               # テスト専用ディレクトリ
+│   │   ├── search-form.test.tsx
+│   │   └── search-filters.test.tsx
 │   ├── search-form.tsx
 │   ├── search-filters.tsx
 │   ├── autocomplete-dropdown.tsx
 │   └── index.ts
 ├── 👤 user/                     # ユーザー・認証関連
+│   ├── __tests__/               # テスト専用ディレクトリ
+│   │   ├── auth-button.test.tsx
+│   │   └── user-menu.test.tsx
 │   ├── auth-button.tsx
 │   ├── user-menu.tsx
 │   ├── user-avatar.tsx
 │   └── index.ts
 ├── 🎨 layout/                   # レイアウト・ページ構造
+│   ├── __tests__/               # テスト専用ディレクトリ
+│   │   ├── site-header.test.tsx
+│   │   └── site-footer.test.tsx
 │   ├── site-header.tsx
 │   ├── site-footer.tsx
 │   ├── home-page.tsx
 │   └── index.ts
 ├── 🎛️  ui/                      # 共通UIコンポーネント
+│   ├── __tests__/               # テスト専用ディレクトリ
+│   │   ├── pagination.test.tsx
+│   │   └── thumbnail-image.test.tsx
 │   ├── pagination.tsx
 │   ├── highlight-text.tsx
 │   ├── thumbnail-image.tsx
 │   └── index.ts
 ├── 📚 content/                  # コンテンツ表示・評価
+│   ├── __tests__/               # テスト専用ディレクトリ
+│   │   └── featured-videos-carousel.test.tsx
 │   ├── featured-videos-carousel.tsx
 │   ├── characteristic-evaluation.tsx
 │   └── index.ts
 ├── ⚙️  system/                  # システム機能
+│   ├── __tests__/               # テスト専用ディレクトリ
+│   │   └── protected-route.test.tsx
 │   ├── performance-monitor.tsx
 │   ├── protected-route.tsx
 │   └── index.ts
 ├── 📊 analytics/                # Google Analytics関連
+│   ├── __tests__/               # テスト専用ディレクトリ
+│   │   └── google-analytics-script.test.tsx
 │   ├── google-analytics-script.tsx
 │   └── google-tag-manager.tsx
 └── 🍪 consent/                  # Cookie・年齢認証
+    ├── __tests__/               # テスト専用ディレクトリ
+    │   └── cookie-consent-banner.test.tsx
     ├── cookie-consent-banner.tsx
     ├── age-verification-gate.tsx
     └── cookie-settings-link.tsx
@@ -628,10 +702,23 @@ import { AudioButtonCreator, FavoriteButton } from '@/components/audio';
 ```text
 packages/
 ├── shared-types/src/
-│   ├── audio-button.ts          # kebab-case統一
-│   ├── audio-button.test.ts     # co-location
-│   ├── search-filters.ts
-│   └── search-filters.test.ts
+│   ├── entities/                # エンティティ（識別可能・状態変化）
+│   │   ├── work.ts             # DLsite作品エンティティ
+│   │   ├── user.ts             # ユーザーエンティティ
+│   │   ├── audio-button.ts     # 音声ボタンエンティティ
+│   │   └── video.ts            # 動画エンティティ
+│   ├── value-objects/          # 値オブジェクト（不変・ビジネスロジック）
+│   │   ├── price.ts            # 価格（通貨・割引計算）
+│   │   ├── rating.ts           # 評価（星・信頼度）
+│   │   ├── date-range.ts       # 日付範囲
+│   │   └── creator-type.ts     # クリエイタータイプ
+│   ├── api-schemas/            # 外部APIスキーマ（薄い抽象化）
+│   │   └── dlsite-raw.ts       # DLsite Individual Info API
+│   ├── utilities/              # 共通ユーティリティ
+│   │   ├── common.ts           # 汎用関数
+│   │   ├── firestore-utils.ts  # Firestore変換
+│   │   └── search-filters.ts   # 検索フィルタ
+│   └── index.ts                # 統一エクスポート
 ├── ui/src/components/
 │   ├── alert-dialog.tsx         # kebab-case統一
 │   └── dropdown-menu.tsx
@@ -661,7 +748,7 @@ apps/
 #### **新規ファイル作成時**
 - [ ] ファイル名がkebab-caseになっている
 - [ ] 適切なドメインディレクトリに配置されている
-- [ ] テストファイルがco-locationになっている
+- [ ] テストファイルが__tests__ディレクトリに配置されている
 - [ ] exportされるコンポーネント名がPascalCaseになっている
 
 #### **既存ファイル変更時**
@@ -686,14 +773,14 @@ test-component.tsx       // 接頭辞形式は非推奨
 
 | テスト種別 | ファイル拡張子 | 配置場所 | 例 |
 |-----------|---------------|----------|-----|
-| **React Component** | `.test.tsx` | コンポーネントと同一ディレクトリ | `AudioButton.test.tsx` |
-| **Custom Hook** | `.test.ts` | フックと同一ディレクトリ | `useDebounce.test.ts` |
-| **Server Action** | `.test.ts` | アクションと同一ディレクトリ | `actions.test.ts` |
-| **API Route** | `.test.ts` | ルートと同一ディレクトリ | `route.test.ts` |
-| **Utility/Library** | `.test.ts` | ソースファイルと同一ディレクトリ | `firestore.test.ts` |
-| **Page Component** | `.test.tsx` | ページと同一ディレクトリ | `page.test.tsx` |
+| **React Component** | `.test.tsx` | `__tests__/` ディレクトリ内 | `__tests__/audio-button.test.tsx` |
+| **Custom Hook** | `.test.ts` | `__tests__/` ディレクトリ内 | `__tests__/use-debounce.test.ts` |
+| **Server Action** | `.test.ts` | `__tests__/` ディレクトリ内 | `__tests__/actions.test.ts` |
+| **API Route** | `.test.ts` | `__tests__/` ディレクトリ内 | `__tests__/route.test.ts` |
+| **Utility/Library** | `.test.ts` | `__tests__/` ディレクトリ内 | `__tests__/firestore.test.ts` |
+| **Page Component** | `.test.tsx` | `__tests__/` ディレクトリ内 | `__tests__/page.test.tsx` |
 | **E2E Test** | `.spec.ts` | `e2e/` ディレクトリ内 | `auth.spec.ts` |
-| **Middleware** | `.test.ts` | ソースファイルと同一ディレクトリ | `middleware.test.ts` |
+| **Middleware** | `.test.ts` | `__tests__/` ディレクトリ内 | `__tests__/middleware.test.ts` |
 
 ### テスト粒度・内容ガイドライン
 
@@ -907,7 +994,61 @@ docs: update api documentation
 
 ## 🏗️ アーキテクチャ原則
 
-### 1. 責任分離
+### 1. Entity/Value Object アーキテクチャ
+
+**ドメインモデル設計原則**
+
+```text
+packages/shared-types/src/
+├── entities/                    # エンティティ層
+│   ├── work.ts                 # ID管理・状態変化
+│   ├── user.ts                 # ライフサイクル管理
+│   └── audio-button.ts         # 永続化対象
+├── value-objects/              # 値オブジェクト層
+│   ├── price.ts               # 不変・ビジネスロジック
+│   ├── rating.ts              # 計算・検証ロジック
+│   └── date-range.ts          # ドメイン固有処理
+├── api-schemas/               # API抽象化層
+│   └── dlsite-raw.ts         # 薄い型定義のみ
+└── utilities/                 # インフラ層
+    └── firestore-utils.ts    # 永続化変換
+```
+
+**設計原則**:
+- **Entity**: IDで識別、状態変化、永続化対象
+- **Value Object**: 不変、値で比較、ビジネスロジック内包
+- **API Schema**: 外部APIの薄い抽象化、変換ロジックなし
+- **Domain Service**: 複数エンティティにまたがるロジック
+
+```typescript
+// ✅ 良い例: Value Object with ビジネスロジック
+export const Price = z.object({
+  amount: z.number(),
+  currency: z.string(),
+}).transform(data => ({
+  ...data,
+  // ビジネスロジックをカプセル化
+  isFree: () => data.amount === 0,
+  format: () => new Intl.NumberFormat('ja-JP', {
+    style: 'currency',
+    currency: data.currency
+  }).format(data.amount),
+}));
+
+// ✅ 良い例: Thin Mapper
+export class WorkMapper {
+  static toWork(raw: DLsiteRawApiResponse): Work {
+    return {
+      id: raw.id,
+      title: raw.work_name,
+      price: this.toPrice(raw),
+      rating: this.toRating(raw),
+    };
+  }
+}
+```
+
+### 2. 責任分離
 
 **実装済みレイヤー構造**
 
@@ -1224,5 +1365,5 @@ graph LR
 
 ---
 
-**最終更新**: 2025年7月14日  
-**次回レビュー予定**: 2026年1月14日
+**最終更新**: 2025年7月22日 (Entity/Value Object アーキテクチャ追加・テスト構造を__tests__ディレクトリ方式に変更)  
+**次回レビュー予定**: 2026年1月22日

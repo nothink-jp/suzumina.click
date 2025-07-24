@@ -17,10 +17,10 @@ export default defineConfig({
 				"dist/**", // compiled output
 			],
 			thresholds: {
-				statements: 50,
-				branches: 74, // Temporarily adjusted for authentication control push
-				functions: 50, // Reduced to match current coverage level
-				lines: 50,
+				statements: 80,
+				branches: 80,
+				functions: 80,
+				lines: 80,
 			},
 		},
 	},

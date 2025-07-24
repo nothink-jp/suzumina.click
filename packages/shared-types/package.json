@@ -17,7 +17,7 @@
 		"format": "biome format --write ./src",
 		"check": "biome check --write ./src",
 		"typecheck": "tsc --noEmit",
-		"clean": "rimraf dist *.tgz node_modules/.cache",
+		"clean": "rimraf dist *.tgz node_modules/.cache coverage",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage"
 	},

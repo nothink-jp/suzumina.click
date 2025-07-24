@@ -15,7 +15,7 @@ import {
 	type FrontendVideoData,
 	parseDurationToSeconds,
 	type VideoListResult,
-} from "@suzumina.click/shared-types/src/video";
+} from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 
 /**

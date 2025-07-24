@@ -1,8 +1,7 @@
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types/src/audio-button";
-import type { FrontendVideoData } from "@suzumina.click/shared-types/src/video";
-import { canCreateAudioButton } from "@suzumina.click/shared-types/src/video";
+import type { FrontendAudioButtonData, FrontendVideoData } from "@suzumina.click/shared-types";
+import { canCreateAudioButton } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card } from "@suzumina.click/ui/components/ui/card";

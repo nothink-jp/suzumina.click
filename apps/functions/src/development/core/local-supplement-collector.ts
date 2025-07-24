@@ -5,6 +5,7 @@
  * 成功したデータをCloud Firestoreに保存する
  */
 
+import type { DLsiteRawApiResponse } from "@suzumina.click/shared-types";
 // import { getDLsiteConfig } from "../../infrastructure/management/config-manager";
 import { logUserAgentSummary } from "../../infrastructure/management/user-agent-manager";
 import { saveWorksToFirestore } from "../../services/dlsite/dlsite-firestore";
@@ -16,11 +17,7 @@ import {
 	trackWorkRecovery,
 } from "../../services/dlsite/failure-tracker";
 import { fetchIndividualWorkInfo } from "../../services/dlsite/individual-info-api-client";
-import {
-	batchMapIndividualInfoAPIToWorkData,
-	type IndividualInfoAPIResponse,
-	validateAPIOnlyWorkData,
-} from "../../services/dlsite/individual-info-to-work-mapper";
+import { WorkMapper } from "../../services/mappers/work-mapper";
 import * as logger from "../../shared/logger";
 
 // バッチ処理設定（統合APIクライアント利用）
@@ -52,8 +49,8 @@ interface SupplementCollectionResult {
  */
 async function batchFetchLocalSupplement(
 	workIds: string[],
-): Promise<{ successful: IndividualInfoAPIResponse[]; failed: string[] }> {
-	const successful: IndividualInfoAPIResponse[] = [];
+): Promise<{ successful: DLsiteRawApiResponse[]; failed: string[] }> {
+	const successful: DLsiteRawApiResponse[] = [];
 	const failed: string[] = [];
 
 	logger.info(`🔄 ローカル補完バッチ処理開始: ${workIds.length}件`);
@@ -166,15 +163,16 @@ async function collectFailedWorksLocally(options?: {
 		// 成功したデータをFirestoreに保存
 		if (successful.length > 0) {
 			try {
-				const workDataList = batchMapIndividualInfoAPIToWorkData(successful, new Map());
+				const workDataList = successful.map((apiData) => WorkMapper.toWork(apiData));
 				const validWorkData = workDataList.filter((work) => {
-					const validation = validateAPIOnlyWorkData(work);
-					if (!validation.isValid) {
+					// Basic validation - ensure required fields exist
+					if (!work.id || !work.title || !work.circle) {
 						logger.warn(`データ品質エラー: ${work.productId}`, {
-							errors: validation.errors,
+							reason: "必須フィールドが欠落",
 						});
+						return false;
 					}
-					return validation.isValid;
+					return true;
 				});
 
 				if (validWorkData.length > 0) {

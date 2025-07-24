@@ -12,12 +12,9 @@ import { logUserAgentSummary } from "../infrastructure/management/user-agent-man
 import { batchCollectCircleAndCreatorInfo } from "../services/dlsite/collect-circle-creator-info";
 import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../services/dlsite/individual-info-api-client";
-import {
-	batchMapIndividualInfoAPIToWorkData,
-	validateAPIOnlyWorkData,
-} from "../services/dlsite/individual-info-to-work-mapper";
 import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collector";
 import { handleNoWorkIdsError } from "../services/dlsite/work-id-validator";
+import { WorkMapper } from "../services/mappers/work-mapper";
 import { savePriceHistory } from "../services/price-history";
 import { chunkArray } from "../shared/array-utils";
 import * as logger from "../shared/logger";
@@ -172,13 +169,13 @@ async function processSingleBatch(batchInfo: BatchProcessingInfo): Promise<Unifi
 		// 基本データ変換・保存処理
 		const basicDataProcessing = async () => {
 			try {
-				const workDataList = batchMapIndividualInfoAPIToWorkData(apiResponses, existingWorksMap);
+				const workDataList = apiResponses.map((apiData) => WorkMapper.toWork(apiData));
 				const validWorkData = workDataList.filter((work) => {
-					const validation = validateAPIOnlyWorkData(work);
-					if (!validation.isValid) {
-						// データ品質エラーは詳細ログとして省略
+					// Basic validation - ensure required fields exist
+					if (!work.id || !work.title || !work.circle) {
+						return false;
 					}
-					return validation.isValid;
+					return true;
 				});
 
 				if (validWorkData.length > 0) {

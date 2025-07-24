@@ -61,12 +61,14 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 	}, [work.ageRating]);
 
 	const renderStars = (rating: number) => {
+		// Convert 0-50 scale to 0-5 scale for display
+		const displayRating = Math.round(rating / 10);
 		return (
 			<div className="flex items-center">
 				{[1, 2, 3, 4, 5].map((star) => (
 					<Star
 						key={star}
-						className={`h-5 w-5 ${star <= rating ? "text-foreground fill-current" : "text-gray-300"}`}
+						className={`h-5 w-5 ${star <= displayRating ? "text-foreground fill-current" : "text-gray-300"}`}
 					/>
 				))}
 			</div>
@@ -201,7 +203,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 							<div className="flex items-center gap-3">
 								{renderStars(work.rating.stars)}
 								<span className="text-xl font-semibold text-gray-900">
-									{work.rating.stars.toFixed(1)}
+									{(work.rating.stars / 10).toFixed(1)}
 								</span>
 								<span className="text-base text-gray-600">({work.rating.count}件の評価)</span>
 							</div>
@@ -269,68 +271,26 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 
 						{/* タグ・ジャンル（Individual Info API準拠・段階的活用） */}
 						<div className="space-y-3">
-							{/* ジャンル（Individual Info API準拠・段階的活用） */}
+							{/* ジャンル */}
 							{(() => {
-								// Individual Info API準拠のジャンル情報を優先使用（基本ジャンルのみ）
-								const rawApiGenres = work.apiGenres || [];
-								const legacyGenres = work.genres || [];
+								const genres = work.genres || [];
 
-								// 標準ジャンルの重複を除去（id または name で判定）
-								const apiGenres = rawApiGenres.reduce(
-									(unique, genre) => {
-										const key =
-											typeof genre === "string" ? genre : genre.id?.toString() || genre.name;
-										if (
-											!key ||
-											unique.some((existing) => {
-												const existingKey =
-													typeof existing === "string"
-														? existing
-														: existing.id?.toString() || existing.name;
-												return existingKey === key;
-											})
-										) {
-											return unique;
-										}
-										unique.push(genre);
-										return unique;
-									},
-									[] as typeof rawApiGenres,
-								);
-
-								// API準拠ジャンル情報がある場合はそれを使用、なければレガシー情報
-								const displayGenres = apiGenres.length > 0 ? apiGenres : legacyGenres;
-
-								if (displayGenres.length === 0) return null;
+								if (genres.length === 0) return null;
 
 								return (
 									<div>
 										<div className="text-sm font-medium text-gray-700 mb-2">ジャンル</div>
 										<div className="flex flex-wrap gap-2">
-											{/* APIジャンルまたはレガシージャンル */}
-											{apiGenres.length > 0
-												? /* 標準ジャンル */
-													apiGenres.map((genre, index) => (
-														<Badge
-															key={`api-${typeof genre === "string" ? genre : genre.id || genre.name || `fallback-${index}`}`}
-															variant="outline"
-															className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
-														>
-															<Tag className="h-3 w-3" />
-															{typeof genre === "string" ? genre : genre.name}
-														</Badge>
-													))
-												: /* レガシージャンル（API情報がない場合のみ表示） */
-													legacyGenres.map((genre) => (
-														<Badge
-															key={`legacy-${genre}`}
-															variant="outline"
-															className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
-														>
-															<Tag className="h-3 w-3" />
-															{genre}
-														</Badge>
-													))}
+											{genres.map((genre) => (
+												<Badge
+													key={`genre-${genre}`}
+													variant="outline"
+													className="border-primary/20 text-primary bg-primary/5 flex items-center gap-1"
+												>
+													<Tag className="h-3 w-3" />
+													{genre}
+												</Badge>
+											))}
 										</div>
 									</div>
 								);
@@ -770,59 +730,6 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									</div>
 								</CardContent>
 							</Card>
-
-							{/* カスタムジャンル情報（Individual Info API準拠） */}
-							{(() => {
-								const rawApiCustomGenres = work.apiCustomGenres || [];
-
-								// カスタムジャンルの重複を除去（genre_key または name で判定）
-								const apiCustomGenres = rawApiCustomGenres.reduce(
-									(unique, genre) => {
-										const key = typeof genre === "string" ? genre : genre.genre_key || genre.name;
-										if (
-											!key ||
-											unique.some((existing) => {
-												const existingKey =
-													typeof existing === "string"
-														? existing
-														: existing.genre_key || existing.name;
-												return existingKey === key;
-											})
-										) {
-											return unique;
-										}
-										unique.push(genre);
-										return unique;
-									},
-									[] as typeof rawApiCustomGenres,
-								);
-
-								if (apiCustomGenres.length === 0) return null;
-
-								return (
-									<Card>
-										<CardHeader>
-											<CardTitle>カスタムジャンル</CardTitle>
-											<CardDescription>ユーザータグ・特別カテゴリー情報</CardDescription>
-										</CardHeader>
-										<CardContent>
-											<div className="flex flex-wrap gap-2">
-												{/* カスタムジャンル */}
-												{apiCustomGenres.map((genre, index) => (
-													<Badge
-														key={`custom-${typeof genre === "string" ? genre : genre.genre_key || genre.name || `fallback-${index}`}`}
-														variant="outline"
-														className="border-orange-400 text-orange-700 bg-orange-50 flex items-center gap-1"
-													>
-														<Tag className="h-3 w-3" />
-														{typeof genre === "string" ? genre : genre.name}
-													</Badge>
-												))}
-											</div>
-										</CardContent>
-									</Card>
-								);
-							})()}
 						</TabsContent>
 
 						{/* サンプル画像タブ */}
