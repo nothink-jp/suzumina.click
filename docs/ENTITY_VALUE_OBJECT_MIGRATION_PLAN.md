@@ -4,9 +4,9 @@
 
 suzumina.clickプロジェクトにおけるEntity・Value Objectアーキテクチャへの移行を安全に実施するための段階的な移行計画書。
 
-**移行期間**: 2025年7月24日〜2025年8月7日（2週間）  
-**影響範囲**: Firestore全データ、Web/Admin/Functions全アプリケーション  
-**リスクレベル**: 高（データ構造の根本的変更）
+**移行期間**: 2025年7月24日〜2025年7月31日（1週間）  
+**影響範囲**: Firestore旧フィールドのクリーンアップ、型定義の統合  
+**リスクレベル**: 低（コードは既に新構造対応済み）
 
 ## 移行による主要な変更点
 
@@ -39,14 +39,14 @@ import { Work } from '@suzumina.click/shared-types';
 
 ## 移行フェーズ
 
-### Phase 0: 準備（7/24 実施）
+### Phase 0: 準備（7/24 完了）
 
 #### チェックリスト
 - [x] 完全なコードベースのバックアップ
 - [x] Firestoreの完全バックアップ取得
 - [x] 移行専用ブランチの作成（`feature/entity-value-object-migration`）
-- [ ] 移行スクリプトの作成とテスト
-- [ ] 互換性レイヤーの実装
+- [x] コード修正とテスト（586テスト全合格）
+- [x] 現状分析の実施（互換性レイヤー不要と判断）
 
 #### バックアップコマンド
 ```bash
@@ -59,182 +59,124 @@ git tag -a pre-entity-migration -m "Backup before Entity/Value Object migration"
 git push origin pre-entity-migration
 ```
 
-### Phase 1: 互換性レイヤーの実装（7/25-7/26）
+### Phase 1: 現状確認（7/25 実施予定）
 
-#### 1. フロントエンド互換性レイヤー
-
-```typescript
-// apps/web/src/lib/work-data-normalizer.ts
-export function normalizeWorkData(work: any): NormalizedWork {
-  // 新旧両方のデータ構造に対応
-  return {
-    ...work,
-    // 評価情報の正規化
-    rating: work.rating || {
-      stars: work.aggregatedInfo?.reviewAverage 
-        ? Math.round(work.aggregatedInfo.reviewAverage * 10) 
-        : 0,
-      count: work.aggregatedInfo?.reviewCount || 0
-    },
-    
-    // ウィッシュリスト数の正規化
-    wishlistCount: work.wishlistCount ?? work.aggregatedInfo?.dlCount ?? 0,
-    
-    // 価格情報の正規化
-    price: work.price || (work.prices?.JPY ? {
-      amount: work.prices.JPY,
-      currency: 'JPY'
-    } : null),
-    
-    // 日付の正規化
-    releaseDateISO: work.releaseDateISO || work.dates?.releaseDate
-  };
-}
-```
-
-#### 2. Server Actions/API Routes更新
-
-各データ取得箇所に正規化処理を追加：
-```typescript
-export async function getWorks() {
-  const snapshot = await firestore.collection('dlsiteWorks').get();
-  return snapshot.docs.map(doc => normalizeWorkData(doc.data()));
-}
-```
-
-### Phase 2: Cloud Functions更新（7/27-7/28）
-
-#### 1. 新データ構造での書き込み開始
-
-work-mapper.tsは既に新構造で実装済みのため、デプロイのみ必要。
-
-#### 2. デプロイ手順
+#### 1. Firestoreデータ構造の確認
 
 ```bash
-# Cloud Functionsのデプロイ
-cd apps/functions
-pnpm deploy
+# 本番環境のデータ構造を確認
+gcloud firestore operations list \
+  --database='(default)' \
+  --project=suzumina-click
 
-# 動作確認
-gcloud functions logs read fetchDLsiteWorks --limit=50
+# サンプルデータの確認
+node -e "require('./scripts/check-data-structure.js')"
 ```
 
-### Phase 3: データ移行（7/29-7/31）
-
-#### 1. 移行スクリプトの実行
+#### 2. 旧フィールドの使用状況分析
 
 ```typescript
-// scripts/migrate-to-entity-architecture.ts
-import { FieldValue } from '@google-cloud/firestore';
+// 既存のanalyzeLegacyFieldUsage関数を使用
+import { analyzeLegacyFieldUsage } from './apps/functions/src/services/migration/cleanup-legacy-fields';
 
-export async function migrateWorkData() {
-  const batch = firestore.batch();
-  const snapshot = await firestore.collection('dlsiteWorks').get();
-  
-  snapshot.docs.forEach(doc => {
-    const data = doc.data();
-    const updates: any = {};
-    
-    // 新フィールドが存在しない場合のみ移行
-    if (!data.rating && data.aggregatedInfo) {
-      updates.rating = {
-        stars: Math.round((data.aggregatedInfo.reviewAverage || 0) * 10),
-        count: data.aggregatedInfo.reviewCount || 0
-      };
-    }
-    
-    if (data.wishlistCount === undefined && data.aggregatedInfo?.dlCount) {
-      updates.wishlistCount = data.aggregatedInfo.dlCount;
-    }
-    
-    if (!data.price && data.prices?.JPY) {
-      updates.price = {
-        amount: data.prices.JPY,
-        currency: 'JPY'
-      };
-    }
-    
-    if (!data.releaseDateISO && data.dates?.releaseDate) {
-      updates.releaseDateISO = data.dates.releaseDate;
-    }
-    
-    if (Object.keys(updates).length > 0) {
-      batch.update(doc.ref, updates);
-    }
-  });
-  
-  await batch.commit();
-}
+const analysis = await analyzeLegacyFieldUsage();
+console.log('旧フィールド使用状況:', analysis);
 ```
 
-#### 2. 検証クエリ
+**注**: 現状分析により、Webアプリケーションは既に新構造に完全対応しており、互換性レイヤーは不要と判断されました。
 
-```typescript
-// 移行状況の確認
-const checkMigrationStatus = async () => {
-  const snapshot = await firestore.collection('dlsiteWorks').limit(10).get();
-  
-  snapshot.docs.forEach(doc => {
-    const data = doc.data();
-    console.log({
-      id: doc.id,
-      hasNewRating: !!data.rating,
-      hasOldAggregated: !!data.aggregatedInfo,
-      hasNewPrice: !!data.price,
-      hasOldPrices: !!data.prices
-    });
-  });
-};
-```
+### Phase 2: コードデプロイ（7/26 実施予定）
 
-### Phase 4: フロントエンドデプロイ（8/1-8/2）
-
-#### 1. Web App デプロイ
+#### 1. プルリクエストのマージ
 
 ```bash
-# 手動デプロイ（テスト用）
-cd apps/web
-pnpm build
-gcloud run deploy suzumina-click-web-test \
-  --source . \
+# CIチェックの確認
+gh pr checks 61
+
+# レビュー承認後マージ
+gh pr merge 61 --squash
+```
+
+#### 2. 自動デプロイの監視
+
+```bash
+# Cloud Runのデプロイ状況確認
+gcloud run services describe suzumina-click-web \
   --region=asia-northeast1 \
-  --no-traffic
+  --format="value(status.latestReadyRevisionName)"
 
-# トラフィック切り替え（段階的）
-gcloud run services update-traffic suzumina-click-web \
-  --to-revisions=NEW_REVISION=10 \
-  --region=asia-northeast1
+# Cloud Functionsのデプロイ確認
+gcloud functions list --filter="name:fetchDLsiteWorks"
 ```
 
-#### 2. 監視強化
+### Phase 3: 旧フィールドクリーンアップ（7/27-7/29）
 
-- エラー率の監視
-- レスポンスタイムの監視
-- ユーザーレポートの収集
+#### 1. ドライラン実行
 
-### Phase 5: クリーンアップ（8/3-8/7）
+```bash
+# 旧フィールドの使用状況を確認
+pnpm --filter @suzumina.click/functions run cleanup:analyze
 
-#### 1. 旧フィールドの削除
-
-```typescript
-// 既存のcleanup-legacy-fields.tsを拡張
-const MIGRATION_LEGACY_FIELDS = [
-  'aggregatedInfo',
-  'prices',
-  'dates'
-];
-
-// 削除実行（DRY RUN後に本実行）
-await cleanupLegacyFields({
-  dryRun: false,
-  fieldsToDelete: MIGRATION_LEGACY_FIELDS
-});
+# ドライランで削除対象を確認
+pnpm --filter @suzumina.click/functions run cleanup:dry-run
 ```
 
-#### 2. 互換性レイヤーの削除
+#### 2. 本番実行
 
-- normalizeWorkData関数の削除
-- 直接新フィールドを参照するよう修正
+```bash
+# バックアップ作成
+gcloud firestore export gs://suzumina-click-backup/pre-cleanup-$(date +%Y%m%d-%H%M%S) \
+  --project=suzumina-click
+
+# クリーンアップ実行
+pnpm --filter @suzumina.click/functions run cleanup:execute
+```
+
+削除対象フィールド:
+- `aggregatedInfo` (既に新フィールドに移行済み)
+- `prices` (price構造に移行済み)
+- `dates` (releaseDateISOに移行済み)
+- `totalDownloadCount`
+- `bonusContent`
+- `isExclusive`
+- `apiGenres`
+- `apiCustomGenres`
+- `apiWorkOptions`
+
+### Phase 4: 監視とフォローアップ（7/30-7/31）
+
+#### 1. システム監視
+
+```bash
+# エラー率の確認
+gcloud logging read "severity>=ERROR AND resource.type=cloud_run_revision" \
+  --limit=50 \
+  --format=json
+
+# パフォーマンスメトリクス
+gcloud monitoring dashboards list
+```
+
+#### 2. ユーザーフィードバック収集
+
+- GitHubイシューの監視
+- Discord通知の確認
+- パフォーマンスレポートの確認
+
+### Phase 5: 完了と文書化（8/1）
+
+#### 1. 移行完了の確認
+
+- [ ] 全テストの合格確認
+- [ ] 本番環境の正常動作確認
+- [ ] パフォーマンスメトリクスの確認
+- [ ] 旧フィールドの完全削除確認
+
+#### 2. ドキュメント更新
+
+- [ ] FIRESTORE_STRUCTURE.mdの更新
+- [ ] UBIQUITOUS_LANGUAGE.mdの確認
+- [ ] 開発ガイドの更新
 
 ## 緊急時対応
 
@@ -312,3 +254,8 @@ gcloud firestore import gs://suzumina-click-backup/pre-migration-20250724
 **作成者**: Claude AI Assistant  
 **承認者**: [承認者名]  
 **最終更新**: 2025年7月24日
+
+## 変更履歴
+
+- 2025年7月24日: 初版作成
+- 2025年7月24日: 現状分析により互換性レイヤー不要と判断、計画を簡略化

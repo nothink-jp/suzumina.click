@@ -19,7 +19,10 @@
 		"tools:stats": "dotenv -e .env -- tsx src/development/run-tools.ts stats",
 		"tools:report": "dotenv -e .env -- tsx src/development/run-tools.ts report",
 		"tools:reset": "dotenv -e .env -- tsx src/development/run-tools.ts reset",
-		"tools:help": "dotenv -e .env -- tsx src/development/run-tools.ts help"
+		"tools:help": "dotenv -e .env -- tsx src/development/run-tools.ts help",
+		"cleanup:analyze": "dotenv -e .env -- tsx src/development/cleanup-legacy-fields.ts analyze",
+		"cleanup:dry-run": "dotenv -e .env -- tsx src/development/cleanup-legacy-fields.ts dry-run",
+		"cleanup:execute": "dotenv -e .env -- tsx src/development/cleanup-legacy-fields.ts execute"
 	},
 	"main": "lib/endpoints/index.js",
 	"engines": {
