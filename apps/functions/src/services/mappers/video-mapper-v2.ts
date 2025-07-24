@@ -36,7 +36,7 @@ import {
  * compatibility with existing systems while the codebase transitions to
  * the new Video Entity V2 domain model.
  *
- * @deprecated Will be removed in v3.0.0 (target: December 31, 2024). Migrate to Video Entity V2
+ * @deprecated Will be removed in v3.0.0 (target: December 31, 2025). Migrate to Video Entity V2
  */
 interface LegacyVideoData {
 	// Core fields
