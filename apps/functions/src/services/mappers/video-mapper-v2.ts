@@ -28,7 +28,16 @@ import {
 	ViewCount,
 } from "@suzumina.click/shared-types";
 
-// Legacy format type from the Video Entity
+/**
+ * Legacy format type from the Video Entity
+ *
+ * This interface represents the original video data structure used before
+ * the Entity/Value Object architecture migration. It maintains backward
+ * compatibility with existing systems while the codebase transitions to
+ * the new Video Entity V2 domain model.
+ *
+ * @deprecated Will be removed once all systems migrate to Video Entity V2
+ */
 interface LegacyVideoData {
 	// Core fields
 	id?: string;
@@ -89,6 +98,12 @@ interface LegacyVideoData {
 
 import type { youtube_v3 } from "googleapis";
 import * as logger from "../../shared/logger";
+
+/**
+ * Type alias for YouTube Live Streaming Details
+ * Provides better readability when working with YouTube API responses
+ */
+type YouTubeLiveStreamingDetails = youtube_v3.Schema$VideoLiveStreamingDetails;
 
 /**
  * Maps YouTube API video data to Video Entity V2
@@ -284,7 +299,7 @@ function createVideoStatisticsFromYouTube(
 	const dislikeCount = stats.dislikeCount
 		? new DislikeCount(Number.parseInt(stats.dislikeCount, 10))
 		: undefined;
-	const favoriteCount = stats.favoriteCount ? Number.parseInt(stats.favoriteCount, 10) : 0;
+	const favoriteCount = stats.favoriteCount ? Number.parseInt(stats.favoriteCount, 10) : undefined;
 	const commentCount = stats.commentCount
 		? new CommentCount(Number.parseInt(stats.commentCount, 10))
 		: undefined;
@@ -296,7 +311,7 @@ function createVideoStatisticsFromYouTube(
  * Maps live streaming details from YouTube API
  */
 function mapLiveStreamingDetails(
-	details: youtube_v3.Schema$VideoLiveStreamingDetails,
+	details: YouTubeLiveStreamingDetails,
 ): NonNullable<Video["liveStreamingDetails"]> {
 	return {
 		scheduledStartTime: details.scheduledStartTime
