@@ -36,7 +36,7 @@ import {
  * compatibility with existing systems while the codebase transitions to
  * the new Video Entity V2 domain model.
  *
- * @deprecated Will be removed in v3.0.0 (target: December 31, 2026). Migrate to Video Entity V2
+ * @deprecated Will be removed in v3.0.0 (target: December 31, 2026, reviewed July 2025). Migrate to Video Entity V2
  */
 interface LegacyVideoData {
 	// Core fields
@@ -314,13 +314,17 @@ function createVideoStatisticsFromYouTube(
 function mapLiveStreamingDetails(
 	details: YouTubeLiveStreamingDetails,
 ): NonNullable<Video["liveStreamingDetails"]> {
+	const parseDate = (dateString: string | null | undefined): Date | undefined => {
+		if (!dateString) return undefined;
+		const parsed = Date.parse(dateString);
+		return !Number.isNaN(parsed) ? new Date(dateString) : undefined;
+	};
+
 	return {
-		scheduledStartTime: details.scheduledStartTime
-			? new Date(details.scheduledStartTime)
-			: undefined,
-		scheduledEndTime: details.scheduledEndTime ? new Date(details.scheduledEndTime) : undefined,
-		actualStartTime: details.actualStartTime ? new Date(details.actualStartTime) : undefined,
-		actualEndTime: details.actualEndTime ? new Date(details.actualEndTime) : undefined,
+		scheduledStartTime: parseDate(details.scheduledStartTime),
+		scheduledEndTime: parseDate(details.scheduledEndTime),
+		actualStartTime: parseDate(details.actualStartTime),
+		actualEndTime: parseDate(details.actualEndTime),
 		concurrentViewers:
 			details.concurrentViewers && !Number.isNaN(Number(details.concurrentViewers))
 				? Number(details.concurrentViewers)

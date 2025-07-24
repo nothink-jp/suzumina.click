@@ -379,5 +379,31 @@ describe("Video Mapper V2", () => {
 			expect(video).not.toBeNull();
 			expect(video?.liveStreamingDetails?.concurrentViewers).toBeUndefined();
 		});
+
+		it("should handle invalid date values in liveStreamingDetails", () => {
+			const youtubeVideo: youtube_v3.Schema$Video = {
+				id: "test123",
+				snippet: {
+					title: "Test Video",
+					description: "Test Description",
+					channelId: "UCxxxxxxxxxxxxxxxxxxxxxx",
+					channelTitle: "Test Channel",
+					publishedAt: "2024-01-01T00:00:00Z",
+				},
+				liveStreamingDetails: {
+					scheduledStartTime: "invalid-date",
+					actualStartTime: "2024-99-99T99:99:99Z", // Invalid date format
+					actualEndTime: "not a date",
+					concurrentViewers: "1000",
+				},
+			};
+
+			const video = mapYouTubeToVideoEntity(youtubeVideo);
+			expect(video).not.toBeNull();
+			expect(video?.liveStreamingDetails?.scheduledStartTime).toBeUndefined();
+			expect(video?.liveStreamingDetails?.actualStartTime).toBeUndefined();
+			expect(video?.liveStreamingDetails?.actualEndTime).toBeUndefined();
+			expect(video?.liveStreamingDetails?.concurrentViewers).toBe(1000); // Valid number
+		});
 	});
 });
