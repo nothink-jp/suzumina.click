@@ -9,4 +9,6 @@
 export * from "./base";
 export * from "./channel";
 // Export Video-related Value Objects
+export * from "./video-content";
 export * from "./video-metadata";
+export * from "./video-statistics";
