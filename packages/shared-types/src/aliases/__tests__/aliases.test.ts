@@ -8,7 +8,7 @@ import type { DLsiteApiResponse, Work, WorkEvaluation } from "../index";
 // Note: These types will be imported once they are defined
 // For now, we'll use placeholders for testing the aliasing system
 
-import { isAudioButton, isUser, isVideo, isWork } from "../index";
+import { isAudioButton, isUser, isVideoDoc, isWork } from "../index";
 
 // Type-level tests to ensure aliases are correctly mapped
 type AssertEqual<T, U> = T extends U ? (U extends T ? true : false) : false;
@@ -151,23 +151,23 @@ describe("Type Aliases", () => {
 			});
 		});
 
-		describe("isVideo", () => {
-			it("should return true for valid Video objects", () => {
+		describe("isVideoDoc", () => {
+			it("should return true for valid VideoDoc objects", () => {
 				const validVideo = {
 					id: "video123",
 					title: "Test Video",
 					channelId: "channel123",
 					// ... other required fields
 				};
-				expect(isVideo(validVideo)).toBe(true);
+				expect(isVideoDoc(validVideo)).toBe(true);
 			});
 
 			it("should return false for invalid objects", () => {
-				expect(isVideo(null)).toBe(false);
-				expect(isVideo(undefined)).toBe(false);
-				expect(isVideo({})).toBe(false);
-				expect(isVideo({ id: "test" })).toBe(false);
-				expect(isVideo({ id: "test", title: "test" })).toBe(false);
+				expect(isVideoDoc(null)).toBe(false);
+				expect(isVideoDoc(undefined)).toBe(false);
+				expect(isVideoDoc({})).toBe(false);
+				expect(isVideoDoc({ id: "test" })).toBe(false);
+				expect(isVideoDoc({ id: "test", title: "test" })).toBe(false);
 			});
 		});
 

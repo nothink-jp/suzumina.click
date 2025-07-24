@@ -23,6 +23,8 @@ export * from "./entities/user";
 export * from "./entities/user-evaluation";
 // 動画関連の型とスキーマのエクスポート
 export * from "./entities/video";
+// 新しいVideo Entity (V2) - Entity/Value Objectアーキテクチャ
+export * from "./entities/video-v2";
 // DLsite作品関連の型とスキーマのエクスポート
 export * from "./entities/work";
 // 作品評価関連の型とスキーマのエクスポート
