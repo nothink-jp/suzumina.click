@@ -58,7 +58,6 @@ export async function getVideoV2Action(videoId: string): Promise<GetVideoV2Respo
 			video: legacyVideo as unknown as VideoV2, // 一時的なキャスト
 		};
 	} catch (error) {
-		console.error("Error in getVideoV2Action:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "動画の取得に失敗しました",
@@ -103,7 +102,6 @@ export async function getVideosV2Action(videoIds: string[]): Promise<GetVideosV2
 			videos: videosV2,
 		};
 	} catch (error) {
-		console.error("Error in getVideosV2Action:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "動画の取得に失敗しました",
@@ -117,7 +115,7 @@ export async function getVideosV2Action(videoIds: string[]): Promise<GetVideosV2
  * ここでは将来的な拡張のための枠組みのみ提供
  */
 export async function updateVideoV2Action(
-	videoId: string,
+	_videoId: string,
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	_updates: Partial<VideoV2>,
 ): Promise<{ success: boolean; error?: string }> {
@@ -138,7 +136,6 @@ export async function updateVideoV2Action(
 
 		return { success: true };
 	} catch (error) {
-		console.error("Error in updateVideoV2Action:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "動画の更新に失敗しました",

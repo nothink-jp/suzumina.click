@@ -9,11 +9,11 @@
 
 import {
 	AudioButtonV2,
-	type FirestoreAudioButtonSchema,
-	type FrontendAudioButtonData,
+	convertToFrontendAudioButton,
+	type FirestoreAudioButtonData,
 } from "@suzumina.click/shared-types";
 import { auth } from "@/auth";
-import { db } from "@/lib/firebase-admin";
+import { getFirestore } from "@/lib/firestore";
 
 /**
  * 単一AudioButton取得のレスポンス型
@@ -49,20 +49,26 @@ export async function getAudioButtonV2Action(
 		}
 
 		// Firestoreから音声ボタンデータを取得
-		const doc = await db.collection("audioButtons").doc(audioButtonId).get();
+		const firestore = getFirestore();
+		const doc = await firestore.collection("audioButtons").doc(audioButtonId).get();
 		if (!doc.exists) {
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreAudioButtonSchema;
+		const data = doc.data() as FirestoreAudioButtonData;
+
+		// FirestoreデータをISO文字列に変換
+		const firestoreDataWithISODates = {
+			...data,
+			id: doc.id,
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
+			createdAt: (data.createdAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
+			updatedAt: (data.updatedAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
+		};
 
 		// FrontendAudioButtonDataに変換
-		const frontendData: FrontendAudioButtonData = {
-			id: doc.id,
-			...data,
-			createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-			updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-		};
+		const frontendData = convertToFrontendAudioButton(firestoreDataWithISODates);
 
 		// AudioButtonV2エンティティに変換
 		const audioButtonV2 = AudioButtonV2.fromLegacy(frontendData);
@@ -72,7 +78,6 @@ export async function getAudioButtonV2Action(
 			audioButton: audioButtonV2,
 		};
 	} catch (error) {
-		console.error("Error in getAudioButtonV2Action:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "音声ボタンの取得に失敗しました",
@@ -108,17 +113,22 @@ export async function getAudioButtonsV2Action(
 		}
 
 		// Firestoreから音声ボタンデータを取得
+		const firestore = getFirestore();
 		const audioButtonsPromises = uniqueIds.map(async (id) => {
-			const doc = await db.collection("audioButtons").doc(id).get();
+			const doc = await firestore.collection("audioButtons").doc(id).get();
 			if (!doc.exists) return null;
 
-			const data = doc.data() as FirestoreAudioButtonSchema;
-			const frontendData: FrontendAudioButtonData = {
-				id: doc.id,
+			const data = doc.data() as FirestoreAudioButtonData;
+			const firestoreDataWithISODates = {
 				...data,
-				createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-				updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+				id: doc.id,
+				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
+				createdAt: (data.createdAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
+				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
+				updatedAt: (data.updatedAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
 			};
+
+			const frontendData = convertToFrontendAudioButton(firestoreDataWithISODates);
 
 			return AudioButtonV2.fromLegacy(frontendData);
 		});
@@ -131,7 +141,6 @@ export async function getAudioButtonsV2Action(
 			audioButtons,
 		};
 	} catch (error) {
-		console.error("Error in getAudioButtonsV2Action:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "音声ボタンの取得に失敗しました",
@@ -155,7 +164,8 @@ export async function getPublicAudioButtonsV2Action(
 		}
 
 		// 公開音声ボタンを取得
-		const snapshot = await db
+		const firestore = getFirestore();
+		const snapshot = await firestore
 			.collection("audioButtons")
 			.where("isPublic", "==", true)
 			.orderBy("createdAt", "desc")
@@ -164,14 +174,19 @@ export async function getPublicAudioButtonsV2Action(
 
 		const audioButtons: AudioButtonV2[] = [];
 
-		snapshot.forEach((doc) => {
-			const data = doc.data() as FirestoreAudioButtonSchema;
-			const frontendData: FrontendAudioButtonData = {
-				id: doc.id,
+		// biome-ignore lint/suspicious/noExplicitAny: Firestore QueryDocumentSnapshot type
+		snapshot.forEach((doc: any) => {
+			const data = doc.data() as FirestoreAudioButtonData;
+			const firestoreDataWithISODates = {
 				...data,
-				createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-				updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+				id: doc.id,
+				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
+				createdAt: (data.createdAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
+				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
+				updatedAt: (data.updatedAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
 			};
+
+			const frontendData = convertToFrontendAudioButton(firestoreDataWithISODates);
 
 			audioButtons.push(AudioButtonV2.fromLegacy(frontendData));
 		});
@@ -181,7 +196,6 @@ export async function getPublicAudioButtonsV2Action(
 			audioButtons,
 		};
 	} catch (error) {
-		console.error("Error in getPublicAudioButtonsV2Action:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "音声ボタンの取得に失敗しました",
@@ -205,15 +219,17 @@ export async function recordAudioButtonPlayV2Action(
 		}
 
 		// Firestoreのトランザクションで再生回数を更新
-		await db.runTransaction(async (transaction) => {
-			const docRef = db.collection("audioButtons").doc(audioButtonId);
+		const firestore = getFirestore();
+		// biome-ignore lint/suspicious/noExplicitAny: Firestore Transaction type
+		await firestore.runTransaction(async (transaction: any) => {
+			const docRef = firestore.collection("audioButtons").doc(audioButtonId);
 			const doc = await transaction.get(docRef);
 
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
 
-			const currentData = doc.data() as FirestoreAudioButtonSchema;
+			const currentData = doc.data() as FirestoreAudioButtonData;
 			const currentPlayCount = currentData.playCount || 0;
 
 			transaction.update(docRef, {
@@ -224,7 +240,6 @@ export async function recordAudioButtonPlayV2Action(
 
 		return { success: true };
 	} catch (error) {
-		console.error("Error in recordAudioButtonPlayV2Action:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "再生回数の記録に失敗しました",
@@ -238,7 +253,7 @@ export async function recordAudioButtonPlayV2Action(
  * ここでは将来的な拡張のための枠組みのみ提供
  */
 export async function updateAudioButtonV2Action(
-	audioButtonId: string,
+	_audioButtonId: string,
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	_updates: Partial<AudioButtonV2>,
 ): Promise<{ success: boolean; error?: string }> {
@@ -259,7 +274,6 @@ export async function updateAudioButtonV2Action(
 
 		return { success: true };
 	} catch (error) {
-		console.error("Error in updateAudioButtonV2Action:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "音声ボタンの更新に失敗しました",
