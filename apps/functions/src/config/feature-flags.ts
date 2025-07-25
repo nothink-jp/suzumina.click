@@ -2,6 +2,8 @@
  * Cloud Functions用フィーチャーフラグ設定
  */
 
+import * as logger from "../shared/logger";
+
 /**
  * Entity V2が有効かどうかを判定
  *
@@ -13,7 +15,7 @@ export function isEntityV2Enabled(): boolean {
 
 	// Cloud Functionsのログに出力
 	if (enabled) {
-		console.info("Entity V2 is enabled in Cloud Functions");
+		logger.info("Entity V2 is enabled in Cloud Functions");
 	}
 
 	return enabled;

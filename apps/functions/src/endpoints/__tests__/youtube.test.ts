@@ -1,6 +1,5 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import { describe, expect, it, vi } from "vitest";
-import type { SimplePubSubData } from "../../../shared/common";
 
 // Mocks
 vi.mock("../../../shared/logger", () => ({
@@ -46,7 +45,6 @@ vi.mock("googleapis", () => ({
 	},
 }));
 
-import * as logger from "../../../shared/logger";
 import { fetchYouTubeVideos } from "../youtube";
 
 describe("fetchYouTubeVideos", () => {

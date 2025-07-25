@@ -35,10 +35,9 @@ export async function saveVideosToFirestoreV2(videos: youtube_v3.Schema$Video[])
 			continue;
 		}
 
-		if (!videosByChannel.has(channelId)) {
-			videosByChannel.set(channelId, []);
-		}
-		videosByChannel.get(channelId)!.push(video);
+		const channelVideos = videosByChannel.get(channelId) || [];
+		channelVideos.push(video);
+		videosByChannel.set(channelId, channelVideos);
 	}
 
 	logger.info("Entity V2形式で動画を保存開始", {
