@@ -155,20 +155,45 @@ function hashString(str: string): number {
 /**
  * エラーメトリクスの報告
  */
-export function reportFeatureFlagError(_feature: "video" | "audioButton", _error: Error): void {}
+export function reportFeatureFlagError(feature: "video" | "audioButton", error: Error): void {
+	// エラーログを出力
+	console.error(`Feature flag error for ${feature}:`, error);
+
+	// Google Analyticsに送信
+	if (typeof window !== "undefined" && window.gtag) {
+		window.gtag("event", "feature_flag_error", {
+			feature_name: feature,
+			error_message: error.message,
+			error_stack: error.stack?.slice(0, 500), // スタックトレースは最初の500文字まで
+			entity_v2_enabled: true,
+		});
+	}
+}
 
 /**
  * パフォーマンスメトリクスの報告
  */
 export function reportFeatureFlagMetrics(
-	_feature: "video" | "audioButton",
-	_metrics: {
+	feature: "video" | "audioButton",
+	metrics: {
 		loadTime?: number;
 		renderTime?: number;
 		errorCount?: number;
 	},
 ): void {
-	// TODO: 実際の実装では分析サービスに送信
+	// 開発環境ではコンソールに出力
 	if (process.env.NODE_ENV === "development") {
+		console.log(`Feature flag metrics for ${feature}:`, metrics);
+	}
+
+	// Google Analyticsに送信
+	if (typeof window !== "undefined" && window.gtag) {
+		window.gtag("event", "feature_flag_performance", {
+			feature_name: feature,
+			load_time_ms: metrics.loadTime,
+			render_time_ms: metrics.renderTime,
+			error_count: metrics.errorCount || 0,
+			entity_v2_enabled: true,
+		});
 	}
 }
