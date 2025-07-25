@@ -1,6 +1,4 @@
-import type { CloudEvent } from "@google-cloud/functions-framework";
 import { describe, expect, it, vi } from "vitest";
-import type { SimplePubSubData } from "../../../shared/common";
 
 // Mocks
 vi.mock("../../../shared/logger", () => ({
@@ -8,6 +6,10 @@ vi.mock("../../../shared/logger", () => ({
 	warn: vi.fn(),
 	error: vi.fn(),
 	debug: vi.fn(),
+}));
+
+vi.mock("../../config/feature-flags", () => ({
+	isEntityV2Enabled: vi.fn(() => false), // デフォルトは無効
 }));
 
 vi.mock("../../../infrastructure/database/firestore", () => ({
@@ -42,7 +44,6 @@ vi.mock("googleapis", () => ({
 	},
 }));
 
-import * as logger from "../../../shared/logger";
 import { fetchYouTubeVideos } from "../youtube";
 
 describe("fetchYouTubeVideos", () => {

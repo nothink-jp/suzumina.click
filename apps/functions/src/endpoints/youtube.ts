@@ -1,5 +1,6 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import type { youtube_v3 } from "googleapis";
+import { isEntityV2Enabled } from "../config/feature-flags";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import {
 	extractVideoIds,
@@ -10,6 +11,7 @@ import {
 	searchVideos,
 } from "../services/youtube/youtube-api";
 import { saveVideosToFirestore } from "../services/youtube/youtube-firestore";
+import { saveVideosToFirestoreV2 } from "../services/youtube/youtube-firestore-v2";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../shared/common";
 import * as logger from "../shared/logger";
 
@@ -310,7 +312,10 @@ async function fetchYouTubeVideosLogic(): Promise<FetchResult> {
 		const videoDetails = await fetchVideoDetails(youtube, videoIds);
 
 		// 6. Firestoreにデータ保存（プレイリストマッピング付き）
-		const savedCount = await saveVideosToFirestore(videoDetails, playlistMappings);
+		// Entity V2が有効な場合は新しい保存処理を使用
+		const savedCount = isEntityV2Enabled()
+			? await saveVideosToFirestoreV2(videoDetails)
+			: await saveVideosToFirestore(videoDetails, playlistMappings);
 
 		// 7. メタデータを更新
 		if (isComplete) {
