@@ -1,3 +1,17 @@
+/**
+ * YouTube Firestore Service V1
+ *
+ * @deprecated Will be removed in v3.0.0 (target: August 31, 2025). Use ./youtube-firestore-v2.ts instead.
+ *
+ * Migration guide:
+ * 1. Import from './youtube-firestore-v2' instead of './youtube-firestore'
+ * 2. Use saveVideosToFirestoreV2() instead of saveVideosToFirestore()
+ * 3. Use updateVideoWithV2() instead of updateVideoWithDetails()
+ * 4. Entity V2 is already enabled in production with feature flags
+ *
+ * Note: The V2 service automatically adds _v2Migration flag to all new data
+ */
+
 import type { FirestoreServerVideoData, LiveBroadcastContent } from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
@@ -344,6 +358,7 @@ function createVideoData(
 /**
  * Firestoreに動画データを保存
  *
+ * @deprecated Will be removed in v3.0.0 (target: August 31, 2025). Use saveVideosToFirestoreV2() from './youtube-firestore-v2' instead.
  * @param videoDetails - 保存する動画詳細情報
  * @param playlistMappings - 動画ID → プレイリストタイトル配列のマップ（オプション）
  * @returns Promise<number> - 保存した動画数
@@ -430,6 +445,7 @@ export async function saveVideosToFirestore(
 /**
  * 単一の動画データをFirestore用のデータ形式に変換（外部公開用）
  *
+ * @deprecated Will be removed in v3.0.0 (target: August 31, 2025). Use VideoMapperV2.fromYouTubeAPI() from '../mappers/video-mapper-v2' instead.
  * @param videoData - YouTube APIから返される動画データ
  * @param playlistTags - 該当動画のプレイリストタグ（オプション）
  * @returns Firestore用の動画データ

@@ -2,6 +2,22 @@
 
 /**
  * Server Actions for fetching video data from Firestore (ユーザー向け)
+ *
+ * @deprecated Will be removed in v3.0.0 (target: August 31, 2025). Use ./actions-v2.ts instead.
+ *
+ * Migration guide:
+ * 1. Import from './actions-v2' instead of './actions'
+ * 2. The API is identical, just the import path changes
+ * 3. Entity V2 is already enabled in production, so the data format is compatible
+ *
+ * Example:
+ * ```typescript
+ * // Before:
+ * import { fetchVideos } from './actions';
+ *
+ * // After:
+ * import { fetchVideos } from './actions-v2';
+ * ```
  */
 
 import {
@@ -454,6 +470,8 @@ function processRegularResults(
 
 /**
  * Firestoreからビデオタイトル一覧を取得するServer Action（ユーザー向けページネーション対応）
+ *
+ * @deprecated Will be removed in v3.0.0 (target: August 31, 2025). Use getVideoTitles from './actions-v2' instead.
  */
 export async function getVideoTitles(params?: {
 	page?: number;
@@ -519,6 +537,8 @@ export async function getVideoTitles(params?: {
 /**
  * 総動画数を取得するServer Action
  * Note: count()クエリは権限問題があるため、通常のクエリで代替
+ *
+ * @deprecated Will be removed in v3.0.0 (target: August 31, 2025). Use getTotalVideoCount from './actions-v2' instead.
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 3層タグ検索条件の複合処理が必要
 export async function getTotalVideoCount(params?: {
@@ -606,6 +626,8 @@ export async function getTotalVideoCount(params?: {
 
 /**
  * 特定の動画IDで動画データを取得するServer Action
+ *
+ * @deprecated Will be removed in v3.0.0 (target: August 31, 2025). Use getVideoById from './actions-v2' instead.
  * @param videoId - 動画ID
  * @returns 動画データまたはnull
  */
