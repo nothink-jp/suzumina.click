@@ -3,7 +3,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getVideoById } from "@/app/videos/actions";
+import { getVideoByIdV2 } from "@/app/videos/actions-v2";
 import { AudioButtonCreator } from "@/components/audio/audio-button-creator";
 import ProtectedRoute from "@/components/system/protected-route";
 
@@ -56,7 +56,7 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 	}
 
 	// 動画情報を取得
-	const videoResult = await getVideoById(videoId);
+	const videoResult = await getVideoByIdV2(videoId);
 
 	if (!videoResult) {
 		notFound();

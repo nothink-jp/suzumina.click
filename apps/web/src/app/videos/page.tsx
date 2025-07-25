@@ -4,7 +4,7 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
-import { getTotalVideoCount, getVideoTitles } from "./actions-v2";
+import { getTotalVideoCountV2, getVideoTitlesV2 } from "./actions-v2";
 import VideoList from "./components/VideoList";
 
 interface VideosPageProps {
@@ -42,7 +42,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 
 	// 並行してデータを取得
 	const [initialData, filteredCount, totalCount] = await Promise.all([
-		getVideoTitles({
+		getVideoTitlesV2({
 			page: validPage,
 			limit: validLimit,
 			year,
@@ -53,7 +53,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 			categoryNames, // 複合インデックス作成後に有効化
 			videoType,
 		}),
-		getTotalVideoCount({
+		getTotalVideoCountV2({
 			year,
 			search,
 			playlistTags,
@@ -61,7 +61,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 			categoryNames, // 複合インデックス作成後に有効化
 			videoType,
 		}),
-		getTotalVideoCount({}), // フィルタなしの総件数
+		getTotalVideoCountV2({}), // フィルタなしの総件数
 	]);
 
 	return (
