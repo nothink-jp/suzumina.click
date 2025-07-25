@@ -9,20 +9,6 @@ import firestore from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
 import { youtubeSyncV2 } from "../youtube-sync-v2";
 
-// Mock dependencies
-vi.mock("../../infrastructure/database/firestore");
-vi.mock("../../shared/logger");
-vi.mock("../../services/youtube/youtube-service-v2", () => ({
-	createVideoV2Service: vi.fn(() => mockYouTubeService),
-}));
-
-// Mock YouTube service
-const mockYouTubeService = {
-	fetchChannelVideos: vi.fn(),
-	fetchVideoById: vi.fn(),
-	fetchVideosByIds: vi.fn(),
-};
-
 // Mock Firestore
 const mockFirestore = {
 	collection: vi.fn(() => ({
@@ -35,6 +21,45 @@ const mockFirestore = {
 		set: vi.fn(),
 		commit: vi.fn(),
 	})),
+};
+
+// Mock dependencies
+vi.mock("../../infrastructure/database/firestore", () => ({
+	getFirestore: vi.fn(() => mockFirestore),
+	Timestamp: {
+		now: vi.fn().mockReturnValue({
+			seconds: 1234567890,
+			nanoseconds: 0,
+			toDate: () => new Date(1234567890 * 1000),
+		}),
+		fromDate: vi.fn().mockImplementation((date) => ({
+			seconds: Math.floor(date.getTime() / 1000),
+			nanoseconds: 0,
+			toDate: () => date,
+		})),
+	},
+	default: {
+		get collection() {
+			return mockFirestore.collection;
+		},
+		get batch() {
+			return mockFirestore.batch;
+		},
+		get runTransaction() {
+			return mockFirestore.runTransaction;
+		},
+	},
+}));
+vi.mock("../../shared/logger");
+vi.mock("../../services/youtube/youtube-service-v2", () => ({
+	createVideoV2Service: vi.fn(() => mockYouTubeService),
+}));
+
+// Mock YouTube service
+const mockYouTubeService = {
+	fetchChannelVideos: vi.fn(),
+	fetchVideoById: vi.fn(),
+	fetchVideosByIds: vi.fn(),
 };
 
 // Mock CloudEvent
@@ -51,10 +76,6 @@ const createMockCloudEvent = (): CloudEvent<unknown> => ({
 describe("YouTube Sync V2 Endpoint", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// @ts-expect-error - Mocking Firestore
-		firestore.collection = mockFirestore.collection;
-		// @ts-expect-error - Mocking Firestore
-		firestore.batch = mockFirestore.batch;
 		process.env.SUZUKA_MINASE_CHANNEL_ID = "test-channel-id";
 	});
 
