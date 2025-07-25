@@ -8,9 +8,13 @@
 export * from "./aliases";
 // === API Schemas ===
 export * from "./api-schemas/dlsite-raw";
-// === Entities ===
 // 音声ボタン関連の型とスキーマのエクスポート
 export * from "./entities/audio-button";
+// 新しいAudioButton Entity (V2) - Entity/Value Objectアーキテクチャ
+export * from "./entities/audio-button-v2";
+// === Entities ===
+// Base entity infrastructure
+export * from "./entities/base/entity";
 // サークル・クリエイター関連の型とスキーマのエクスポート
 export * from "./entities/circle-creator";
 // お問い合わせ関連の型とスキーマのエクスポート
