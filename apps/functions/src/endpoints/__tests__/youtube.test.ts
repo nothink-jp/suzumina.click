@@ -10,6 +10,10 @@ vi.mock("../../../shared/logger", () => ({
 	debug: vi.fn(),
 }));
 
+vi.mock("../../config/feature-flags", () => ({
+	isEntityV2Enabled: vi.fn(() => false), // デフォルトは無効
+}));
+
 vi.mock("../../../infrastructure/database/firestore", () => ({
 	default: {
 		collection: vi.fn(() => ({
