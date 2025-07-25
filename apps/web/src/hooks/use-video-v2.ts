@@ -49,7 +49,7 @@ export function useVideoV2(video: VideoV2) {
 
 	// メモ化: 視聴回数のフォーマット済み文字列
 	const formattedViewCount = useMemo(() => {
-		return video.statistics?.viewCount.format() || "0";
+		return video.statistics?.viewCount.toLocaleString() || "0";
 	}, [video]);
 
 	// メモ化: 再生時間のフォーマット済み文字列
@@ -100,7 +100,7 @@ export function useVideoV2(video: VideoV2) {
 
 	// メモ化: カテゴリ名
 	const categoryName = useMemo(() => {
-		return video.channel.category.toString();
+		return video.channel.category?.toString() || "";
 	}, [video]);
 
 	// コールバック: タグの検索URLを生成

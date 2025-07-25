@@ -142,7 +142,7 @@ describe("useVideoV2", () => {
 		const video = createMockVideoV2({ categoryId: "22" });
 		const { result } = renderHook(() => useVideoV2(video));
 
-		expect(result.current.categoryName).toBe("People & Blogs");
+		expect(result.current.categoryName).toBe("ブログ");
 	});
 
 	it("タグ検索URLを生成する", () => {
