@@ -362,7 +362,7 @@ describe("AudioButtonV2", () => {
 				dislikeCount: 50,
 			});
 			// Formula: (likes + dislikes) / views * 100 = 100 / 1000 * 100 = 10%
-			expect(button.calculateEngagementRate()).toBe(10);
+			expect(button.getEngagementRatePercentage()).toBe(10);
 		});
 
 		it("should return 0 engagement rate for zero views", () => {
@@ -371,7 +371,7 @@ describe("AudioButtonV2", () => {
 				likeCount: 0,
 				dislikeCount: 0,
 			});
-			expect(button.calculateEngagementRate()).toBe(0);
+			expect(button.getEngagementRatePercentage()).toBe(0);
 		});
 
 		it("should check creator ownership", () => {

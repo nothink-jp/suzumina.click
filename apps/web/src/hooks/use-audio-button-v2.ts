@@ -72,7 +72,7 @@ export function useAudioButtonV2(audioButton: AudioButtonV2) {
 
 	// メモ化: エンゲージメント率（Entity内のビジネスロジックを使用）
 	const engagementRate = useMemo(() => {
-		return audioButton.calculateEngagementRate();
+		return audioButton.getEngagementRatePercentage();
 	}, [audioButton]);
 
 	return {

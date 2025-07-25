@@ -360,10 +360,10 @@ export class AudioButtonV2
 	}
 
 	/**
-	 * Calculates engagement rate percentage
+	 * Gets engagement rate as percentage
 	 * Formula: (likes + dislikes) / views * 100
 	 */
-	calculateEngagementRate(): number {
+	getEngagementRatePercentage(): number {
 		const views = this.statistics.viewCount.toNumber();
 		const likes = this.statistics.likeCount.toNumber();
 		const dislikes = this.statistics.dislikeCount.toNumber();

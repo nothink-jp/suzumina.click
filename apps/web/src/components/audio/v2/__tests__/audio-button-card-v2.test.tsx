@@ -60,8 +60,29 @@ vi.mock("@suzumina.click/ui/components/ui/button", () => ({
 	),
 }));
 
+// AudioButtonV2のレガシーデータ型定義
+interface MockAudioButtonLegacyData {
+	id?: string;
+	title?: string;
+	description?: string;
+	tags?: string[];
+	sourceVideoId?: string;
+	sourceVideoTitle?: string;
+	startTime?: number;
+	endTime?: number;
+	createdBy?: string;
+	createdByName?: string;
+	isPublic?: boolean;
+	playCount?: number;
+	likeCount?: number;
+	dislikeCount?: number;
+	favoriteCount?: number;
+	createdAt?: string;
+	updatedAt?: string;
+}
+
 // テスト用のAudioButtonV2エンティティを作成するヘルパー
-function createMockAudioButtonV2(overrides?: Partial<any>): AudioButtonV2 {
+function createMockAudioButtonV2(overrides?: MockAudioButtonLegacyData): AudioButtonV2 {
 	const defaultData = {
 		id: "test-button-123",
 		title: "テスト音声ボタン",
