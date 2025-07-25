@@ -308,17 +308,34 @@ apps/web/src/hooks/
 
 ## Phase 6: バックエンド統合（3 PRs）
 
-### PR #14: Server Actions更新
-**サイズ**: ~300行  
+### PR #14: Server Actions更新 ✅
+**実際のPR**: [#110](https://github.com/nothink-jp/suzumina.click/pull/110)  
+**サイズ**: ~1,400行（テスト含む）  
 **リスク**: 中  
-**依存**: PR #12, #13
+**依存**: PR #12, #13  
+**ステータス**: 完了（2025-01-25）
 
 ```
 apps/web/src/actions/
 ├── video-actions-v2.ts
 ├── audio-button-actions-v2.ts
 └── __tests__/
+    ├── video-actions-v2.test.ts
+    └── audio-button-actions-v2.test.ts
+
+apps/web/src/lib/
+└── video-firestore.ts  # ヘルパー関数追加
+
+apps/web/
+├── vitest.server.config.ts  # サーバーサイドテスト用設定
+└── package.json  # test:serverスクリプト追加
 ```
+
+**内容**:
+- Video/AudioButton Entity V2用のサーバーアクション実装
+- 既存のFirestore操作関数を再利用
+- サーバーサイドテスト環境の整備
+- 35のテストケース（2つはトランザクションモック改善待ち）
 
 ### PR #15: Cloud Functions更新 (Video)
 **サイズ**: ~400行  
