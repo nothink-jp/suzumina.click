@@ -1,13 +1,13 @@
 "use server";
 
 import { type DateRangePreset, getDateRangeFromPreset } from "@suzumina.click/shared-types";
+import { getFeatureFlags } from "@/lib/feature-flags";
 import * as logger from "@/lib/logger";
 import { getAudioButtons, getRecentAudioButtons } from "./buttons/actions";
 import { getRecentAudioButtonsV2 } from "./buttons/actions-v2";
 import { getVideoTitles } from "./videos/actions";
 import { getVideoTitlesV2 } from "./videos/actions-v2";
 import { getWorks } from "./works/actions";
-import { getFeatureFlags } from "@/lib/feature-flags";
 
 /**
  * トップページ用の新着作品を取得するServer Action
@@ -68,10 +68,10 @@ export async function getLatestVideos(limit = 10) {
 			: await getVideoTitles({ page: 1, limit });
 
 		if (result.videos.length === 0) {
-			logger.warn("新着動画取得で0件返却", { 
-				action: "getLatestVideos", 
+			logger.warn("新着動画取得で0件返却", {
+				action: "getLatestVideos",
 				limit,
-				useV2 
+				useV2,
 			});
 		}
 
@@ -103,10 +103,10 @@ export async function getLatestAudioButtons(limit = 10) {
 			: await getRecentAudioButtons(limit);
 
 		if (audioButtons.length === 0) {
-			logger.warn("新着音声ボタン取得で0件返却", { 
-				action: "getLatestAudioButtons", 
+			logger.warn("新着音声ボタン取得で0件返却", {
+				action: "getLatestAudioButtons",
 				limit,
-				useV2 
+				useV2,
 			});
 		}
 

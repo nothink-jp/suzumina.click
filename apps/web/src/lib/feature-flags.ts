@@ -42,7 +42,7 @@ function getLocalFeatureFlags(): FeatureFlags | null {
 	// サーバーサイドでは環境変数から読み込む
 	if (typeof window === "undefined") {
 		const isEnabled = process.env.ENABLE_ENTITY_V2 === "true";
-		
+
 		// シンプルな設定：有効ならすべてON
 		return {
 			entityV2: {
@@ -65,9 +65,7 @@ function getLocalFeatureFlags(): FeatureFlags | null {
 		if (stored) {
 			return JSON.parse(stored) as FeatureFlags;
 		}
-	} catch (error) {
-		console.error("Failed to load local feature flags:", error);
-	}
+	} catch (_error) {}
 
 	return null;
 }
@@ -168,8 +166,7 @@ export function useFeatureFlag(feature: "video" | "audioButton"): {
 	useEffect(() => {
 		getFeatureFlags()
 			.then(setFlags)
-			.catch((error) => {
-				console.error("Failed to load feature flags:", error);
+			.catch((_error) => {
 				// エラー時はデフォルト値を使用
 				setFlags(defaultFeatureFlags);
 			})
@@ -211,23 +208,20 @@ function getSessionId(): string {
 		}
 		return sessionId;
 	}
-	return "server-" + Math.random().toString(36).substring(2);
+	return `server-${Math.random().toString(36).substring(2)}`;
 }
 
 /**
  * エラーメトリクスの報告
  */
-export function reportFeatureFlagError(feature: "video" | "audioButton", error: Error): void {
-	// TODO: 実際の実装ではモニタリングサービスに送信
-	console.error(`Feature flag error for ${feature}:`, error);
-}
+export function reportFeatureFlagError(_feature: "video" | "audioButton", _error: Error): void {}
 
 /**
  * パフォーマンスメトリクスの報告
  */
 export function reportFeatureFlagMetrics(
-	feature: "video" | "audioButton",
-	metrics: {
+	_feature: "video" | "audioButton",
+	_metrics: {
 		loadTime?: number;
 		renderTime?: number;
 		errorCount?: number;
@@ -235,6 +229,5 @@ export function reportFeatureFlagMetrics(
 ): void {
 	// TODO: 実際の実装では分析サービスに送信
 	if (process.env.NODE_ENV === "development") {
-		console.log(`Feature flag metrics for ${feature}:`, metrics);
 	}
 }
