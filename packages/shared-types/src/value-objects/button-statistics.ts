@@ -27,10 +27,10 @@ export class ButtonViewCount
 	 */
 	toAbbreviated(): string {
 		if (this.value >= 1_000_000) {
-			return (this.value / 1_000_000).toFixed(1) + "M";
+			return `${(this.value / 1_000_000).toFixed(1)}M`;
 		}
 		if (this.value >= 1_000) {
-			return (this.value / 1_000).toFixed(1) + "K";
+			return `${(this.value / 1_000).toFixed(1)}K`;
 		}
 		return this.value.toString();
 	}
@@ -323,7 +323,7 @@ export class ButtonStatistics
 
 		// Validate view count
 		if (!this.viewCount.isValid()) {
-			errors.push(...this.viewCount.getValidationErrors().map((e) => "ViewCount: " + e));
+			errors.push(...this.viewCount.getValidationErrors().map((e) => `ViewCount: ${e}`));
 		}
 
 		// Validate logical constraints
