@@ -22,7 +22,10 @@
 		"tools:help": "dotenv -e .env -- tsx src/development/run-tools.ts help",
 		"cleanup:analyze": "dotenv -e .env -- tsx src/development/cleanup-legacy-fields.ts analyze",
 		"cleanup:dry-run": "dotenv -e .env -- tsx src/development/cleanup-legacy-fields.ts dry-run",
-		"cleanup:execute": "dotenv -e .env -- tsx src/development/cleanup-legacy-fields.ts execute"
+		"cleanup:execute": "dotenv -e .env -- tsx src/development/cleanup-legacy-fields.ts execute",
+		"migrate:v2": "dotenv -e .env -- tsx src/scripts/migrate-to-v2.ts",
+		"migrate:v2:dry": "dotenv -e .env -- tsx src/scripts/migrate-to-v2.ts --dry-run",
+		"migrate:v2:prod": "dotenv -e .env -- tsx src/scripts/migrate-to-v2.ts --no-dry-run"
 	},
 	"main": "lib/endpoints/index.js",
 	"engines": {
