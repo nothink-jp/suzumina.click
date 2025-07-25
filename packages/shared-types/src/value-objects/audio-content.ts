@@ -39,7 +39,7 @@ export class ButtonText
 		if (this.value.length <= maxLength) {
 			return this.value;
 		}
-		return this.value.slice(0, maxLength) + "...";
+		return `${this.value.slice(0, maxLength)}...`;
 	}
 
 	/**
@@ -111,7 +111,7 @@ export class ButtonCategory extends BaseValueObject<ButtonCategory> {
 	constructor(value: string) {
 		super();
 		if (!ButtonCategory.isValidCategory(value)) {
-			throw new Error("Invalid category: " + value);
+			throw new Error(`Invalid category: ${value}`);
 		}
 		this.value = value;
 	}
@@ -254,7 +254,7 @@ export class ButtonTags
 		}
 		for (const tag of this.tags) {
 			if (tag.length > 30) {
-				errors.push('Tag "' + tag + '" exceeds 30 characters');
+				errors.push(`Tag "${tag}" exceeds 30 characters`);
 			}
 		}
 		return errors;
@@ -365,12 +365,12 @@ export class AudioContent
 
 		// Validate text
 		if (!this.text.isValid()) {
-			errors.push(...this.text.getValidationErrors().map((e) => "Text: " + e));
+			errors.push(...this.text.getValidationErrors().map((e) => `Text: ${e}`));
 		}
 
 		// Validate tags
 		if (!this.tags.isValid()) {
-			errors.push(...this.tags.getValidationErrors().map((e) => "Tags: " + e));
+			errors.push(...this.tags.getValidationErrors().map((e) => `Tags: ${e}`));
 		}
 
 		// Validate language code

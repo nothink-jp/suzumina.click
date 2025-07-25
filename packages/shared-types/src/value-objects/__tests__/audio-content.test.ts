@@ -38,7 +38,7 @@ describe("ButtonText", () => {
 		it("should use default max length of 50", () => {
 			const longText = "A".repeat(60);
 			const text = new ButtonText(longText);
-			expect(text.toDisplayString()).toBe("A".repeat(50) + "...");
+			expect(text.toDisplayString()).toBe(`${"A".repeat(50)}...`);
 		});
 	});
 

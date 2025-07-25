@@ -31,11 +31,11 @@ export class AudioVideoId extends BaseValueObject<AudioVideoId> {
 	}
 
 	toYouTubeUrl(): string {
-		return "https://youtube.com/watch?v=" + this.value;
+		return `https://youtube.com/watch?v=${this.value}`;
 	}
 
 	toEmbedUrl(): string {
-		return "https://youtube.com/embed/" + this.value;
+		return `https://youtube.com/embed/${this.value}`;
 	}
 
 	clone(): AudioVideoId {
@@ -75,7 +75,7 @@ export class AudioVideoTitle extends BaseValueObject<AudioVideoTitle> {
 		if (this.value.length <= maxLength) {
 			return this.value;
 		}
-		return this.value.slice(0, maxLength) + "...";
+		return `${this.value.slice(0, maxLength)}...`;
 	}
 
 	clone(): AudioVideoTitle {
@@ -121,7 +121,7 @@ export class Timestamp
 				seconds.toString().padStart(2, "0")
 			);
 		}
-		return minutes + ":" + seconds.toString().padStart(2, "0");
+		return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 	}
 
 	/**
@@ -215,16 +215,16 @@ export class AudioReference
 	 * Gets YouTube URL with timestamp
 	 */
 	getYouTubeUrl(): string {
-		return this.videoId.toYouTubeUrl() + "&t=" + this.startTimestamp.toSeconds();
+		return `${this.videoId.toYouTubeUrl()}&t=${this.startTimestamp.toSeconds()}`;
 	}
 
 	/**
 	 * Gets embed URL with start and end times
 	 */
 	getEmbedUrl(): string {
-		let url = this.videoId.toEmbedUrl() + "?start=" + this.startTimestamp.toSeconds();
+		let url = `${this.videoId.toEmbedUrl()}?start=${this.startTimestamp.toSeconds()}`;
 		if (this.endTimestamp) {
-			url += "&end=" + this.endTimestamp.toSeconds();
+			url += `&end=${this.endTimestamp.toSeconds()}`;
 		}
 		return url;
 	}
@@ -250,7 +250,7 @@ export class AudioReference
 
 		const minutes = Math.floor(duration / 60);
 		const seconds = duration % 60;
-		return minutes + ":" + seconds.toString().padStart(2, "0");
+		return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 	}
 
 	/**
@@ -269,11 +269,11 @@ export class AudioReference
 
 		// Validate timestamps
 		if (!this.startTimestamp.isValid()) {
-			errors.push(...this.startTimestamp.getValidationErrors().map((e) => "Start timestamp: " + e));
+			errors.push(...this.startTimestamp.getValidationErrors().map((e) => `Start timestamp: ${e}`));
 		}
 
 		if (this.endTimestamp && !this.endTimestamp.isValid()) {
-			errors.push(...this.endTimestamp.getValidationErrors().map((e) => "End timestamp: " + e));
+			errors.push(...this.endTimestamp.getValidationErrors().map((e) => `End timestamp: ${e}`));
 		}
 
 		// Validate timestamp order

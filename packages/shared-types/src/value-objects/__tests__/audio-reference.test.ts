@@ -77,7 +77,7 @@ describe("AudioVideoTitle", () => {
 		it("should use default max length of 50", () => {
 			const longTitle = "A".repeat(60);
 			const title = new AudioVideoTitle(longTitle);
-			expect(title.toDisplayString()).toBe("A".repeat(50) + "...");
+			expect(title.toDisplayString()).toBe(`${"A".repeat(50)}...`);
 		});
 	});
 });
