@@ -1,5 +1,6 @@
 import type { Video as VideoV2 } from "@suzumina.click/shared-types";
 import { useCallback, useMemo } from "react";
+import { DEFAULT_THUMBNAIL_PATH } from "@/lib/constants";
 
 /**
  * Video V2 Entity用のカスタムフック
@@ -23,10 +24,10 @@ export function useVideoV2(video: VideoV2) {
 				return legacy.thumbnailUrl;
 			}
 			// それでも無効な場合はデフォルト画像
-			return "/images/no-thumbnail.svg";
+			return DEFAULT_THUMBNAIL_PATH;
 		} catch {
 			// エラーの場合もデフォルト画像
-			return "/images/no-thumbnail.svg";
+			return DEFAULT_THUMBNAIL_PATH;
 		}
 	}, [video]);
 
