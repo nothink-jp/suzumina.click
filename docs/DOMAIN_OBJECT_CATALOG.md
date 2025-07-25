@@ -90,41 +90,121 @@ if (work.hasCategory("ASMR")) {
 }
 ```
 
-### AudioButton（音声ボタン）エンティティ
+### AudioButton（音声ボタン）エンティティ V2
 
 #### 概要
-YouTube動画の特定のタイムスタンプを参照し、音声クリップとして機能するエンティティ。
+YouTube動画の特定のタイムスタンプを参照し、音声クリップとして機能するエンティティ。Entity/Value Objectアーキテクチャに基づく新しい実装。
 
-#### プロパティ
+#### 構成要素
 
-| プロパティ | 型 | 説明 | 必須 |
-|----------|---|------|-----|
-| id | string | ボタンID | ✓ |
-| videoId | string | YouTube動画ID | ✓ |
-| videoTitle | string | 動画タイトル | ✓ |
-| timestamp | number | 開始時刻（秒） | ✓ |
-| endTimestamp | number | 終了時刻（秒） | |
-| text | string | ボタンテキスト | ✓ |
-| category | string | カテゴリ | |
-| dlsiteWorkId | string | 関連作品ID | |
-| tags | string[] | タグ一覧 | |
-| createdAt | Date | 作成日時 | ✓ |
-| updatedAt | Date | 更新日時 | ✓ |
+| コンポーネント | 型 | 説明 |
+|----------|---|------|
+| id | AudioButtonId | ボタンの一意識別子 |
+| content | AudioContent | ボタンのコンテンツ情報（テキスト、タグ等） |
+| reference | AudioReference | YouTube動画への参照情報 |
+| statistics | ButtonStatistics | 統計情報（再生回数、いいね等） |
+| createdBy | AudioButtonCreatorInfo | 作成者情報 |
+| isPublic | boolean | 公開状態 |
+| createdAt | Date | 作成日時 |
+| updatedAt | Date | 更新日時 |
+| favoriteCount | number | お気に入り数 |
 
-#### メソッド
+#### 主要メソッド
 
 ```typescript
+// コンテンツ更新（新しいインスタンスを返す）
+updateContent(content: AudioContent): AudioButtonV2
+
+// 公開状態更新（新しいインスタンスを返す）
+updateVisibility(isPublic: boolean): AudioButtonV2
+
+// 統計記録メソッド（新しいインスタンスを返す）
+recordPlay(): AudioButtonV2
+recordLike(): AudioButtonV2
+recordDislike(): AudioButtonV2
+incrementFavorite(): AudioButtonV2
+decrementFavorite(): AudioButtonV2
+
+// 分析メソッド
+isPopular(): boolean
+getEngagementRate(): number
+getPopularityScore(): number
+getEngagementRatePercentage(): number
+
+// ユーティリティメソッド
+belongsTo(creatorId: string): boolean
+getSearchableText(): string
+toLegacy(): LegacyAudioButtonData
+static fromLegacy(data: LegacyAudioButtonData): AudioButtonV2
+```
+
+#### AudioContent（音声コンテンツ）値オブジェクト
+
+| プロパティ | 型 | 説明 |
+|----------|---|------|
+| text | ButtonText | ボタンの表示テキスト |
+| category | ButtonCategory? | カテゴリ（greeting, emotion等） |
+| tags | ButtonTags | タグのコレクション |
+
+**主要メソッド:**
+```typescript
+// 検索用テキスト生成
+getSearchableText(): string
+
+// カテゴリ自動推論
+extractCategory(): ButtonCategory | undefined
+```
+
+#### AudioReference（音声参照）値オブジェクト
+
+| プロパティ | 型 | 説明 |
+|----------|---|------|
+| videoId | AudioVideoId | YouTube動画ID |
+| videoTitle | AudioVideoTitle | 動画タイトル |
+| startTimestamp | Timestamp | 開始時刻 |
+| endTimestamp | Timestamp? | 終了時刻（オプション） |
+
+**主要メソッド:**
+```typescript
+// 再生時間（秒）取得
+getDuration(): number
+
 // YouTube URL生成
 getYouTubeUrl(): string
 
 // 埋め込みURL生成
-getEmbedUrl(): string
+getYouTubeEmbedUrl(): string
 
-// タイムスタンプフォーマット
-formatTimestamp(): string
+// プレーンオブジェクトへの変換
+toPlainObject(): {
+  videoId: string
+  videoTitle: string
+  timestamp: number
+  endTimestamp?: number
+}
+```
 
-// 再生時間取得
-getDuration(): number
+#### ButtonStatistics（ボタン統計）値オブジェクト
+
+| プロパティ | 型 | 説明 |
+|----------|---|------|
+| viewCount | ButtonViewCount | 再生回数 |
+| likeCount | ButtonLikeCount | いいね数 |
+| dislikeCount | ButtonDislikeCount | 低評価数 |
+| lastUsedAt | Date? | 最終使用日時 |
+
+**統計メソッド:**
+```typescript
+// 統計更新（新しいインスタンスを返す）
+incrementView(): ButtonStatistics
+addLike(): ButtonStatistics
+addDislike(): ButtonStatistics
+removeLike(): ButtonStatistics
+removeDislike(): ButtonStatistics
+
+// 分析メソッド
+isPopular(): boolean  // 再生回数100以上
+getEngagementRate(): number  // (いいね + 低評価) / 再生回数
 ```
 
 ### Video（動画）エンティティ V2
@@ -584,5 +664,5 @@ function isWorkType(value: unknown): value is Work {
 
 ---
 
-**最終更新**: 2025年7月24日  
-**バージョン**: 1.0
+**最終更新**: 2025年1月25日  
+**バージョン**: 1.1
