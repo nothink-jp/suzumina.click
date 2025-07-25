@@ -25,7 +25,13 @@
 		"cleanup:execute": "dotenv -e .env -- tsx src/development/cleanup-legacy-fields.ts execute",
 		"migrate:v2": "dotenv -e .env -- tsx src/scripts/migrate-to-v2.ts",
 		"migrate:v2:dry": "dotenv -e .env -- tsx src/scripts/migrate-to-v2.ts --dry-run",
-		"migrate:v2:prod": "dotenv -e .env -- tsx src/scripts/migrate-to-v2.ts --no-dry-run"
+		"migrate:v2:prod": "dotenv -e .env -- tsx src/scripts/migrate-to-v2.ts --no-dry-run",
+		"migration:prepare": "dotenv -e .env -- tsx src/services/migration/execute-v2-migration.ts prepare",
+		"migration:dry-run": "dotenv -e .env -- tsx src/services/migration/execute-v2-migration.ts dry-run",
+		"migration:backup": "dotenv -e .env -- tsx src/services/migration/execute-v2-migration.ts backup",
+		"migration:execute": "dotenv -e .env -- tsx src/services/migration/execute-v2-migration.ts migrate",
+		"migration:validate": "dotenv -e .env -- tsx src/services/migration/execute-v2-migration.ts validate",
+		"migration:rollback": "dotenv -e .env -- tsx src/services/migration/execute-v2-migration.ts rollback"
 	},
 	"main": "lib/endpoints/index.js",
 	"engines": {
