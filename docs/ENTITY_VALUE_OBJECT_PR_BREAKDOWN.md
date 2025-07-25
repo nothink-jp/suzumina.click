@@ -420,17 +420,32 @@ apps/web/src/lib/
 - A/Bテスト準備
 - ロールバック機能（モニタリング設定）
 
-### PR #19: 本番データ移行
+### PR #19: 本番データ移行 ✅
 
-**サイズ**: ~100行（スクリプト実行）  
+**実際のPR**: [#113](https://github.com/nothink-jp/suzumina.click/pull/113)  
+**サイズ**: ~1,100行（スクリプト含む）  
 **リスク**: 最高  
-**依存**: PR #17, #18
+**依存**: PR #17, #18  
+**ステータス**: 完了（2025-01-25）
+
+```text
+apps/functions/src/services/migration/
+├── backup-firestore.ts          # Firestoreバックアップスクリプト
+├── rollback-v2-migration.ts     # ロールバックスクリプト
+├── execute-v2-migration.ts      # 統合移行実行ツール
+└── validate-v2-migration.ts     # 検証スクリプト（スタブ）
+
+docs/
+└── ENTITY_V2_MIGRATION_GUIDE.md # 詳細な移行手順書
+```
 
 **内容**:
 
-- バックアップ作成
-- 移行スクリプト実行
-- 検証とロールバック準備
+- Firestoreバックアップ/リストア機能
+- フィールドレベル/フルリストアのロールバック
+- フェーズベースの移行実行ツール
+- 詳細な移行手順ドキュメント
+- NPMスクリプトの追加（migration:*）
 
 ### PR #20: 旧コード非推奨化
 
