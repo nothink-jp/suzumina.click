@@ -5,7 +5,6 @@ import { getFeatureFlags } from "@/lib/feature-flags";
 import * as logger from "@/lib/logger";
 import { getAudioButtons, getRecentAudioButtons } from "./buttons/actions";
 import { getRecentAudioButtonsV2 } from "./buttons/actions-v2";
-import { getVideoTitles } from "./videos/actions";
 import { getVideoTitlesV2 } from "./videos/actions-v2";
 import { getWorks } from "./works/actions";
 
@@ -65,7 +64,7 @@ export async function getLatestVideos(limit = 10) {
 
 		const result = useV2
 			? await getVideoTitlesV2({ page: 1, limit })
-			: await getVideoTitles({ page: 1, limit });
+			: await getVideoTitlesV2({ page: 1, limit });
 
 		if (result.videos.length === 0) {
 			logger.warn("新着動画取得で0件返却", {
@@ -135,7 +134,7 @@ export async function searchVideos(
 	},
 ) {
 	try {
-		const result = await getVideoTitles({
+		const result = await getVideoTitlesV2({
 			page: 1,
 			limit,
 			search: query,

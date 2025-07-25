@@ -166,6 +166,11 @@ export async function getVideoTitlesV2(params?: {
 	limit?: number;
 	sort?: string;
 	search?: string;
+	year?: string;
+	playlistTags?: string[];
+	userTags?: string[];
+	categoryNames?: string[];
+	videoType?: string;
 }): Promise<VideoListResult> {
 	try {
 		const { page = 1, limit = 20, sort = "newest" } = params || {};
@@ -285,9 +290,47 @@ export async function getVideoTitlesV2(params?: {
 }
 
 /**
+ * Entity V2を使用した特定の動画IDで動画データを取得するServer Action
+ * @param videoId - 動画ID
+ * @returns 動画データまたはnull
+ */
+export async function getVideoByIdV2(videoId: string) {
+	try {
+		const firestore = getFirestore();
+		const doc = await firestore.collection("videos").doc(videoId).get();
+
+		if (!doc.exists) {
+			return null;
+		}
+
+		const v2Video = convertToVideoV2(doc);
+		if (!v2Video) {
+			return null;
+		}
+
+		return convertToFrontendVideo(v2Video.toLegacyFormat());
+	} catch (error) {
+		logger.error("動画詳細V2取得でエラーが発生", {
+			action: "getVideoByIdV2",
+			videoId,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
+		return null;
+	}
+}
+
+/**
  * Entity V2を使用した動画総数の取得
  */
-export async function getTotalVideoCountV2() {
+export async function getTotalVideoCountV2(params?: {
+	year?: string;
+	search?: string;
+	playlistTags?: string[];
+	userTags?: string[];
+	categoryNames?: string[];
+	videoType?: string;
+}) {
 	try {
 		const firestore = getFirestore();
 		const snapshot = await firestore
