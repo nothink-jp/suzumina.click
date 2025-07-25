@@ -17,13 +17,28 @@ import * as logger from "@/lib/logger";
  * Firestore Timestampを安全にISO文字列に変換するヘルパー関数
  */
 function convertTimestampToISO(timestamp: unknown): string {
+	// すでにISO文字列の場合（Firestoreでは文字列として保存されている）
+	if (typeof timestamp === "string") {
+		return timestamp;
+	}
+	// Dateオブジェクトの場合
 	if (timestamp instanceof Date) {
 		return timestamp.toISOString();
 	}
+	// Firestore Timestampオブジェクトの場合
 	if (typeof timestamp === "object" && timestamp && "toDate" in timestamp) {
 		return (timestamp as { toDate(): Date }).toDate().toISOString();
 	}
-	return new Date().toISOString();
+	// Firestore Timestampのプレーンオブジェクト形式（_secondsプロパティを持つ）
+	if (timestamp && typeof timestamp === "object" && "_seconds" in timestamp) {
+		const seconds = (timestamp as { _seconds: number })._seconds;
+		return new Date(seconds * 1000).toISOString();
+	}
+	// それ以外の場合はエラーログを出してデフォルト値を返す
+	logger.error("Invalid timestamp format", { timestamp, type: typeof timestamp });
+	// publishedAtとlastFetchedAtで異なるデフォルト値が必要だが、ここでは判断できないので
+	// 明らかに間違っているが害の少ない過去の日付を返す
+	return "1970-01-01T00:00:00.000Z";
 }
 
 /**

@@ -42,7 +42,7 @@ jobs:
         run: pnpm --filter=@suzumina.click/functions build
 
       - name: Run tests
-        run: pnpm --filter=@suzumina.click/functions test
+        run: NODE_ENV=test pnpm --filter=@suzumina.click/functions test
 
       - name: Authenticate to GCP
         id: 'auth'

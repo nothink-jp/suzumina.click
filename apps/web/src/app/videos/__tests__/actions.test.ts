@@ -408,7 +408,7 @@ describe("Videos Actions", () => {
 			const result = await getTotalVideoCount({ year: "2023" });
 
 			expect(result).toBe(15);
-			expect(mockCollection.select).toHaveBeenCalled();
+			expect(mockCollection.select).toHaveBeenCalled(); // IDのみ取得で効率化
 			expect(mockCollection.where).toHaveBeenCalledTimes(2);
 		});
 
