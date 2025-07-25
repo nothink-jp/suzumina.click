@@ -38,6 +38,13 @@ export class VideoDuration
 	}
 
 	/**
+	 * Parses ISO 8601 duration and returns total milliseconds
+	 */
+	toMilliseconds(): number {
+		return this.toSeconds() * 1000;
+	}
+
+	/**
 	 * Returns human-readable format
 	 */
 	toHumanReadable(): string {
@@ -52,6 +59,21 @@ export class VideoDuration
 		if (secs > 0 || parts.length === 0) parts.push(`${secs}秒`);
 
 		return parts.join("");
+	}
+
+	/**
+	 * Returns formatted duration string (e.g., "10:30" or "1:02:30")
+	 */
+	format(): string {
+		const seconds = this.toSeconds();
+		const hours = Math.floor(seconds / 3600);
+		const minutes = Math.floor((seconds % 3600) / 60);
+		const secs = seconds % 60;
+
+		if (hours > 0) {
+			return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+		}
+		return `${minutes}:${secs.toString().padStart(2, "0")}`;
 	}
 
 	isValid(): boolean {
