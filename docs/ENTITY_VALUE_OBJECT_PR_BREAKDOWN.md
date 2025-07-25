@@ -1,8 +1,19 @@
 # Entity/Value Object拡張 PR分割計画
 
+**最終更新**: 2025-01-25 15:00
+
 ## 概要
 
 Entity/Value Objectアーキテクチャ拡張を、管理可能な単位のPRに分割し、リスクを最小化しながら段階的に実装します。
+
+## 進捗状況
+
+- ✅ **Phase 1**: 基盤整備 - 完了
+- 🚧 **Phase 2**: Video Entity実装 - 進行中  
+- ✅ **Phase 3**: AudioButton Entity実装 - 完了
+- 🚧 **Phase 4**: フロントエンド統合 - 進行中
+- ⏳ **Phase 5**: バックエンド統合
+- ⏳ **Phase 6**: 移行作業
 
 ## PR分割の原則
 
@@ -12,12 +23,14 @@ Entity/Value Objectアーキテクチャ拡張を、管理可能な単位のPR�
 4. **後方互換性**: 各PRは既存機能を破壊しない
 5. **テスト必須**: 各PRには対応するテストを含む
 
-## Phase 1: 基盤整備（2 PRs）
+## Phase 1: 基盤整備（2 PRs） ✅
 
-### PR #1: エイリアスシステムの導入
+### PR #1: エイリアスシステムの導入 ✅
+**実際のPR**: [#98](https://github.com/nothink-jp/suzumina.click/pull/98)  
 **サイズ**: ~100行  
 **リスク**: 低  
-**依存**: なし
+**依存**: なし  
+**ステータス**: 完了（2025-01-21）
 
 ```
 packages/shared-types/src/
@@ -33,10 +46,12 @@ packages/shared-types/src/
 - 型の等価性を保証するテスト
 - ドキュメント更新
 
-### PR #2: Value Object基盤クラスの導入
+### PR #2: Value Object基盤クラスの導入 ✅
+**実際のPR**: [#99](https://github.com/nothink-jp/suzumina.click/pull/99)  
 **サイズ**: ~200行  
 **リスク**: 低  
-**依存**: PR #1
+**依存**: PR #1  
+**ステータス**: 完了（2025-01-24）
 
 ```
 packages/shared-types/src/
@@ -54,12 +69,14 @@ packages/shared-types/src/
 - equals(), clone()等の共通メソッド
 - 共通バリデーション関数
 
-## Phase 2: Video Entity実装（5 PRs）
+## Phase 2: Video Entity実装（5 PRs） 🚧
 
-### PR #3: Video Value Objects (Part 1)
+### PR #3: Video Value Objects (Part 1) ✅
+**実際のPR**: [#100](https://github.com/nothink-jp/suzumina.click/pull/100)  
 **サイズ**: ~300行  
 **リスク**: 低  
-**依存**: PR #2
+**依存**: PR #2  
+**ステータス**: 完了（2025-01-24）
 
 ```
 packages/shared-types/src/value-objects/
@@ -76,10 +93,12 @@ packages/shared-types/src/value-objects/
 - ビジネスロジック実装
 - 単体テスト
 
-### PR #4: Video Value Objects (Part 2)
+### PR #4: Video Value Objects (Part 2) ✅
+**実際のPR**: [#101](https://github.com/nothink-jp/suzumina.click/pull/101)  
 **サイズ**: ~300行  
 **リスク**: 低  
-**依存**: PR #2
+**依存**: PR #2  
+**ステータス**: 完了（2025-01-24）
 
 ```
 packages/shared-types/src/value-objects/
@@ -96,10 +115,12 @@ packages/shared-types/src/value-objects/
 - 統計計算ロジック
 - フォーマット関数
 
-### PR #5: Video Entity定義
+### PR #5: Video Entity定義 ✅
+**実際のPR**: [#102](https://github.com/nothink-jp/suzumina.click/pull/102)  
 **サイズ**: ~200行  
 **リスク**: 中  
-**依存**: PR #3, #4
+**依存**: PR #3, #4  
+**ステータス**: 完了（2025-01-24）
 
 ```
 packages/shared-types/src/entities/
@@ -113,10 +134,12 @@ packages/shared-types/src/entities/
 - 既存Videoとの互換性維持
 - 統合テスト
 
-### PR #6: Video Mapper実装
+### PR #6: Video Mapper実装 ✅
+**実際のPR**: [#103](https://github.com/nothink-jp/suzumina.click/pull/103)  
 **サイズ**: ~400行  
 **リスク**: 中  
-**依存**: PR #5
+**依存**: PR #5  
+**ステータス**: 完了（2025-01-24）
 
 ```
 apps/functions/src/services/mappers/
@@ -133,7 +156,8 @@ apps/functions/src/services/mappers/
 ### PR #7: Video移行ヘルパー
 **サイズ**: ~200行  
 **リスク**: 低  
-**依存**: PR #5, #6
+**依存**: PR #5, #6  
+**ステータス**: 未実装
 
 ```
 packages/shared-types/src/migrations/
@@ -147,12 +171,14 @@ packages/shared-types/src/migrations/
 - 新Video → 旧Video変換
 - バッチ移行関数
 
-## Phase 3: AudioButton Entity実装（4 PRs）
+## Phase 3: AudioButton Entity実装（4 PRs） ✅
 
-### PR #8: AudioButton Value Objects
+### PR #8: AudioButton Value Objects ✅
+**実際のPR**: [#104](https://github.com/nothink-jp/suzumina.click/pull/104)  
 **サイズ**: ~400行  
 **リスク**: 低  
-**依存**: PR #2
+**依存**: PR #2  
+**ステータス**: 完了（2025-01-24）
 
 ```
 packages/shared-types/src/value-objects/
@@ -170,10 +196,12 @@ packages/shared-types/src/value-objects/
 - タイムスタンプ処理ロジック
 - 人気度スコア計算
 
-### PR #9: AudioButton Entity定義
+### PR #9: AudioButton Entity定義 ✅
+**実際のPR**: [#105](https://github.com/nothink-jp/suzumina.click/pull/105)  
 **サイズ**: ~200行  
 **リスク**: 中  
-**依存**: PR #8
+**依存**: PR #8  
+**ステータス**: 完了（2025-01-24）
 
 ```
 packages/shared-types/src/entities/
@@ -187,10 +215,12 @@ packages/shared-types/src/entities/
 - 既存との互換性
 - バリデーション
 
-### PR #10: AudioButton Mapper実装
+### PR #10: AudioButton Mapper実装 ✅
+**実際のPR**: [#106](https://github.com/nothink-jp/suzumina.click/pull/106)  
 **サイズ**: ~300行  
 **リスク**: 中  
-**依存**: PR #9
+**依存**: PR #9  
+**ステータス**: 完了（2025-01-25）
 
 ```
 apps/functions/src/services/mappers/
@@ -204,10 +234,12 @@ apps/functions/src/services/mappers/
 - YouTube統合
 - エラーハンドリング
 
-### PR #11: AudioButton移行ヘルパー
+### PR #11: AudioButton移行ヘルパー ✅
+**実際のPR**: [#107](https://github.com/nothink-jp/suzumina.click/pull/107)  
 **サイズ**: ~200行  
 **リスク**: 低  
-**依存**: PR #9, #10
+**依存**: PR #9, #10  
+**ステータス**: 完了（2025-01-25）
 
 ```
 packages/shared-types/src/migrations/
@@ -372,37 +404,37 @@ gantt
     title Entity/Value Object拡張 実装タイムライン
     dateFormat YYYY-MM-DD
     section Phase 1
-    PR#1 エイリアス     :2025-08-01, 2d
-    PR#2 基盤クラス     :2025-08-03, 3d
+    PR#1 エイリアス     :done, 2025-01-21, 1d
+    PR#2 基盤クラス     :done, 2025-01-24, 1d
     
     section Phase 2
-    PR#3 Video VO 1     :2025-08-06, 3d
-    PR#4 Video VO 2     :2025-08-09, 3d
-    PR#5 Video Entity   :2025-08-12, 2d
-    PR#6 Video Mapper   :2025-08-14, 4d
-    PR#7 Video移行      :2025-08-18, 2d
+    PR#3 Video VO 1     :done, 2025-01-24, 1d
+    PR#4 Video VO 2     :done, 2025-01-24, 1d
+    PR#5 Video Entity   :done, 2025-01-24, 1d
+    PR#6 Video Mapper   :done, 2025-01-24, 1d
+    PR#7 Video移行      :2025-01-26, 2d
     
     section Phase 3
-    PR#8 Audio VO       :2025-08-20, 4d
-    PR#9 Audio Entity   :2025-08-24, 2d
-    PR#10 Audio Mapper  :2025-08-26, 3d
-    PR#11 Audio移行     :2025-08-29, 2d
+    PR#8 Audio VO       :done, 2025-01-25, 1d
+    PR#9 Audio Entity   :done, 2025-01-25, 1d
+    PR#10 Audio Mapper  :done, 2025-01-25, 1d
+    PR#11 Audio移行     :done, 2025-01-25, 1d
     
     section Phase 4
-    PR#12 UI Video      :2025-09-01, 3d
-    PR#13 UI Audio      :2025-09-04, 4d
-    PR#14 Actions       :2025-09-08, 3d
+    PR#12 UI Video      :active, 2025-01-25, 3d
+    PR#13 UI Audio      :2025-01-28, 4d
+    PR#14 Actions       :2025-02-01, 3d
     
     section Phase 5
-    PR#15 CF Video      :2025-09-11, 4d
-    PR#16 CF Audio      :2025-09-15, 3d
-    PR#17 バッチ移行    :2025-09-18, 4d
+    PR#15 CF Video      :2025-02-04, 4d
+    PR#16 CF Audio      :2025-02-08, 3d
+    PR#17 バッチ移行    :2025-02-11, 4d
     
     section Phase 6
-    PR#18 フラグ        :2025-09-22, 2d
-    PR#19 本番移行      :2025-09-24, 1d
-    PR#20 非推奨化      :2025-09-25, 3d
-    PR#21 削除          :2025-10-25, 3d
+    PR#18 フラグ        :2025-02-15, 2d
+    PR#19 本番移行      :2025-02-17, 1d
+    PR#20 非推奨化      :2025-02-18, 3d
+    PR#21 削除          :2025-03-18, 3d
 ```
 
 ## PR レビューチェックリスト
@@ -451,7 +483,7 @@ gantt
 
 ---
 
-**作成日**: 2025年7月24日  
-**バージョン**: 1.0  
+**作成日**: 2025年1月24日  
+**バージョン**: 1.1  
 **総PR数**: 21  
-**推定期間**: 8-10週間
+**推定期間**: 8週間（Phase 3まで完了済み）
