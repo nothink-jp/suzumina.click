@@ -81,29 +81,82 @@ classDiagram
 
 ### 2. AudioButton（音声ボタン）
 
-YouTube動画の特定タイムスタンプを参照する音声ボタンエンティティです。
+YouTube動画の特定タイムスタンプを参照する音声ボタンエンティティです。Entity/Value Objectアーキテクチャに基づく新しい実装（V2）が利用可能です。
 
 ```mermaid
 classDiagram
-    class AudioButton {
-        +string id
-        +string videoId
-        +string videoTitle
-        +number timestamp
-        +string text
-        +string dlsiteWorkId
+    class AudioButtonV2 {
+        +AudioButtonId id
+        +AudioContent content
+        +AudioReference reference
+        +ButtonStatistics statistics
+        +AudioButtonCreatorInfo createdBy
+        +boolean isPublic
         +Date createdAt
         +Date updatedAt
-        +getYouTubeUrl() string
-        +getEmbedUrl() string
-        +formatTimestamp() string
+        +number favoriteCount
+        +updateContent(content) AudioButtonV2
+        +updateVisibility(isPublic) AudioButtonV2
+        +recordPlay() AudioButtonV2
+        +recordLike() AudioButtonV2
+        +recordDislike() AudioButtonV2
+        +incrementFavorite() AudioButtonV2
+        +decrementFavorite() AudioButtonV2
+        +isPopular() boolean
+        +getEngagementRate() number
+        +getPopularityScore() number
+        +getEngagementRatePercentage() number
+        +belongsTo(creatorId) boolean
+        +getSearchableText() string
+        +toLegacy() LegacyAudioButtonData
+        +static fromLegacy(data) AudioButtonV2
     }
+    
+    class AudioContent {
+        +ButtonText text
+        +ButtonCategory category
+        +ButtonTags tags
+        +getSearchableText() string
+        +extractCategory() ButtonCategory
+    }
+    
+    class AudioReference {
+        +AudioVideoId videoId
+        +AudioVideoTitle videoTitle
+        +Timestamp startTimestamp
+        +Timestamp endTimestamp
+        +getDuration() number
+        +getYouTubeUrl() string
+        +getYouTubeEmbedUrl() string
+        +toPlainObject() object
+    }
+    
+    class ButtonStatistics {
+        +ButtonViewCount viewCount
+        +ButtonLikeCount likeCount
+        +ButtonDislikeCount dislikeCount
+        +Date lastUsedAt
+        +incrementView() ButtonStatistics
+        +addLike() ButtonStatistics
+        +addDislike() ButtonStatistics
+        +removeLike() ButtonStatistics
+        +removeDislike() ButtonStatistics
+        +isPopular() boolean
+        +getEngagementRate() number
+    }
+    
+    AudioButtonV2 --> AudioContent
+    AudioButtonV2 --> AudioReference
+    AudioButtonV2 --> ButtonStatistics
 ```
 
 **責務:**
-- YouTube動画の特定位置への参照管理
-- 再生用URLの生成
-- タイムスタンプのフォーマット
+- YouTube動画の特定位置への参照管理（値オブジェクトによる構造化）
+- 再生用URLの生成と埋め込みURL生成
+- 統計情報の管理とエンゲージメント分析
+- お気に入り機能のサポート
+- ビジネスロジック（人気度スコア、エンゲージメント率）の計算
+- レガシー形式との相互変換
 
 ### 3. Video（動画）
 
@@ -471,6 +524,49 @@ mapLegacyToVideoEntity(legacyData: LegacyVideoData): Video
 - レガシーシステムとの互換性維持
 - 非推奨予定：2026年4月30日（Entity/Value Object移行完了後）
 
+### AudioButton Mapper V2
+
+Firestore形式のデータをAudioButton Entity V2に変換するマッパーです。
+
+```typescript
+// apps/functions/src/services/mappers/audio-button-mapper-v2.ts
+
+// Firestore → AudioButton Entity V2
+mapFirestoreToAudioButtonV2(
+  data: FirestoreAudioButtonData
+): AudioButtonV2
+
+// 複数ボタンの一括マッピング
+mapFirestoreToAudioButtonsV2(
+  documents: FirestoreAudioButtonData[]
+): AudioButtonV2[]
+
+// AudioButton Entity V2 → Firestore
+mapAudioButtonV2ToFirestore(
+  audioButton: AudioButtonV2
+): FirestoreAudioButtonData
+
+// エラー詳細付きマッピング
+mapFirestoreToAudioButtonsWithErrors(
+  documents: FirestoreAudioButtonData[]
+): BatchMappingResult<AudioButtonV2>
+
+// レガシー形式との相互変換
+mapLegacyToAudioButtonV2(
+  legacyData: LegacyAudioButtonData
+): AudioButtonV2
+
+mapAudioButtonV2ToLegacy(
+  audioButton: AudioButtonV2
+): LegacyAudioButtonData
+```
+
+**特性:**
+- Firestoreデータ形式からドメインモデルへの変換
+- YouTube参照情報の検証
+- 統計情報の正規化
+- レガシーシステムとの互換性維持
+
 ## ドメインイベント
 
 ```mermaid
@@ -526,5 +622,5 @@ packages/shared-types/src/
 
 ---
 
-**最終更新**: 2025年7月24日  
-**バージョン**: 1.0
+**最終更新**: 2025年1月25日  
+**バージョン**: 1.1
