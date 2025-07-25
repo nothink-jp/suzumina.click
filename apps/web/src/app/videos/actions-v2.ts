@@ -120,7 +120,9 @@ export async function getVideoTitlesV2(params?: {
 		const videosRef = firestore.collection("videos");
 
 		// クエリを構築
-		let query = videosRef.where("isPrivate", "==", false).where("isDeleted", "==", false);
+		// 注意: isPrivateとisDeletedのフィルタリングは複合インデックスが必要なため、
+		// 現時点では省略し、後でクライアントサイドでフィルタリングする
+		let query = videosRef;
 
 		// ソート順を設定
 		const sortOrder = sort === "oldest" ? "asc" : "desc";
@@ -147,7 +149,12 @@ export async function getVideoTitlesV2(params?: {
 		// Entity V2に変換
 		const v2Videos = videoDocs
 			.map((doc) => convertToVideoV2(doc))
-			.filter((video): video is VideoV2 => video !== null);
+			.filter((video): video is VideoV2 => video !== null)
+			// クライアントサイドでプライベート動画と削除済み動画をフィルタリング
+			.filter((video) => {
+				const legacy = video.toLegacyFormat();
+				return legacy.status?.privacyStatus === "public";
+			});
 
 		// レガシー形式に変換してフロントエンド形式に
 		const frontendVideos = v2Videos.map((video) => {
