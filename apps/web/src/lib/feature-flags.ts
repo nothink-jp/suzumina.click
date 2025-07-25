@@ -4,12 +4,13 @@
  * フロントエンドにおけるフィーチャーフラグの管理と評価
  */
 
-import type {
+import {
 	defaultFeatureFlags,
-	FeatureFlagContext,
-	FeatureFlagEvaluation,
-	FeatureFlags,
+	type FeatureFlagContext,
+	type FeatureFlagEvaluation,
+	type FeatureFlags,
 } from "@suzumina.click/shared-types";
+import { useEffect, useMemo, useState } from "react";
 
 /**
  * フィーチャーフラグの設定を取得
@@ -31,7 +32,6 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
 	// const flags = await fetchFeatureFlagsFromAPI();
 
 	// 現時点ではデフォルト値を返す
-	const { defaultFeatureFlags } = await import("@suzumina.click/shared-types");
 	return defaultFeatureFlags;
 }
 
@@ -121,6 +121,10 @@ function createEvaluation(
 
 /**
  * 文字列のハッシュ値を計算（安定したバケット分割用）
+ *
+ * djb2ライクなハッシュアルゴリズムを使用。
+ * 同じ入力に対して常に同じハッシュ値を生成することで、
+ * ユーザーのバケット割り当てを安定させる。
  */
 function hashString(str: string): number {
 	let hash = 0;
@@ -148,9 +152,7 @@ export function useFeatureFlag(feature: "video" | "audioButton"): {
 			.catch((error) => {
 				console.error("Failed to load feature flags:", error);
 				// エラー時はデフォルト値を使用
-				import("@suzumina.click/shared-types").then(({ defaultFeatureFlags }) => {
-					setFlags(defaultFeatureFlags);
-				});
+				setFlags(defaultFeatureFlags);
 			})
 			.finally(() => setLoading(false));
 	}, []);
@@ -173,9 +175,6 @@ export function useFeatureFlag(feature: "video" | "audioButton"): {
 
 	return { enabled, loading };
 }
-
-// React import（実際の実装時に必要）
-import { useEffect, useMemo, useState } from "react";
 
 // ヘルパー関数（実際の実装では別ファイルから取得）
 function getCurrentUserId(): string | undefined {
