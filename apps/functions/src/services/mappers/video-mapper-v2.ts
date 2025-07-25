@@ -387,6 +387,32 @@ export function mapLegacyToVideoEntity(legacyData: LegacyVideoData): Video {
 }
 
 /**
+ * VideoMapperV2 - Provides mapping functions for Video Entity V2
+ */
+export const VideoMapperV2 = {
+	/**
+	 * Maps YouTube API video data to Video Entity V2
+	 */
+	fromYouTubeAPI: (youtubeVideo: youtube_v3.Schema$Video): Video | null => {
+		return mapYouTubeToVideoEntity(youtubeVideo);
+	},
+
+	/**
+	 * Maps Video Entity to legacy format
+	 */
+	toLegacy: (video: Video): LegacyVideoData => {
+		return mapVideoEntityToLegacy(video);
+	},
+
+	/**
+	 * Maps legacy format to Video Entity
+	 */
+	fromLegacy: (legacyData: LegacyVideoData): Video => {
+		return mapLegacyToVideoEntity(legacyData);
+	},
+};
+
+/**
  * Error information for mapping failures
  */
 export interface VideoMappingError {

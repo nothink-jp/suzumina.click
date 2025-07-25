@@ -5,11 +5,7 @@
  * 新規データには_v2Migrationフラグを自動付与
  */
 
-import {
-	type FirestoreServerVideoData,
-	type LiveBroadcastContent,
-	Video as VideoV2,
-} from "@suzumina.click/shared-types";
+import type { FirestoreServerVideoData } from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";

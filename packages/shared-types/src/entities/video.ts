@@ -455,6 +455,16 @@ export interface FirestoreServerVideoData {
 	// 3層タグシステム (VIDEO_TAGS_DESIGN.md準拠)
 	playlistTags?: string[]; // YouTubeプレイリスト名から自動生成
 	userTags?: string[]; // 登録ユーザーが編集可能なタグ配列
+
+	// Entity V2移行フラグ
+	_v2Migration?: {
+		migratedAt: unknown; // Firestore.Timestamp型
+		source: string;
+		version: string;
+	};
+
+	// 更新日時
+	updatedAt?: unknown; // Firestore.Timestamp型
 }
 
 /**
