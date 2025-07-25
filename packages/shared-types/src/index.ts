@@ -33,6 +33,8 @@ export * from "./entities/video-v2";
 export * from "./entities/work";
 // 作品評価関連の型とスキーマのエクスポート
 export * from "./entities/work-evaluation";
+// === Migration Utilities ===
+export * from "./migrations";
 // === Utilities ===
 // 年齢制限・レーティング関連の型とユーティリティのエクスポート
 export * from "./utilities/age-rating";
