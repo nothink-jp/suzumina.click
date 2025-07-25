@@ -10,7 +10,6 @@ import {
 	type FeatureFlagEvaluation,
 	type FeatureFlags,
 } from "@suzumina.click/shared-types";
-import { useEffect, useMemo, useState } from "react";
 
 /**
  * フィーチャーフラグの設定を取得
@@ -39,16 +38,33 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
  * ローカル開発用のフィーチャーフラグを取得
  */
 function getLocalFeatureFlags(): FeatureFlags | null {
-	if (typeof window === "undefined") return null;
+	// サーバーサイドでは環境変数から読み込む
+	if (typeof window === "undefined") {
+		const isEnabled = process.env.ENABLE_ENTITY_V2 === "true";
 
+		// シンプルな設定：有効ならすべてON
+		return {
+			entityV2: {
+				video: isEnabled,
+				audioButton: isEnabled,
+				mode: isEnabled ? "enabled" : "disabled",
+				rollout: {
+					percentage: isEnabled ? 100 : 0,
+					whitelist: [],
+					blacklist: [],
+				},
+			},
+			monitoring: defaultFeatureFlags.monitoring,
+		};
+	}
+
+	// クライアントサイドではLocalStorageから読み込む
 	try {
 		const stored = localStorage.getItem("featureFlags");
 		if (stored) {
 			return JSON.parse(stored) as FeatureFlags;
 		}
-	} catch (error) {
-		console.error("Failed to load local feature flags:", error);
-	}
+	} catch (_error) {}
 
 	return null;
 }
@@ -137,70 +153,21 @@ function hashString(str: string): number {
 }
 
 /**
- * React Hook: フィーチャーフラグの使用
- */
-export function useFeatureFlag(feature: "video" | "audioButton"): {
-	enabled: boolean;
-	loading: boolean;
-} {
-	const [flags, setFlags] = useState<FeatureFlags | null>(null);
-	const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		getFeatureFlags()
-			.then(setFlags)
-			.catch((error) => {
-				console.error("Failed to load feature flags:", error);
-				// エラー時はデフォルト値を使用
-				setFlags(defaultFeatureFlags);
-			})
-			.finally(() => setLoading(false));
-	}, []);
-
-	const context = useMemo<FeatureFlagContext>(
-		() => ({
-			userId: getCurrentUserId(), // 実装は別途必要
-			sessionId: getSessionId(), // 実装は別途必要
-			environment: process.env.NODE_ENV === "production" ? "production" : "development",
-			debug: process.env.NODE_ENV === "development",
-		}),
-		[],
-	);
-
-	const enabled = useMemo(() => {
-		if (!flags) return false;
-		const evaluation = evaluateFeatureFlag(flags, feature, context);
-		return evaluation.enabled;
-	}, [flags, feature, context]);
-
-	return { enabled, loading };
-}
-
-// ヘルパー関数（実際の実装では別ファイルから取得）
-function getCurrentUserId(): string | undefined {
-	// TODO: 実際の実装では認証情報から取得
-	return undefined;
-}
-
-function getSessionId(): string {
-	// TODO: 実際の実装ではセッションIDを管理
-	if (typeof window !== "undefined") {
-		let sessionId = sessionStorage.getItem("sessionId");
-		if (!sessionId) {
-			sessionId = Math.random().toString(36).substring(2);
-			sessionStorage.setItem("sessionId", sessionId);
-		}
-		return sessionId;
-	}
-	return "server-" + Math.random().toString(36).substring(2);
-}
-
-/**
  * エラーメトリクスの報告
  */
 export function reportFeatureFlagError(feature: "video" | "audioButton", error: Error): void {
-	// TODO: 実際の実装ではモニタリングサービスに送信
+	// エラーログを出力
 	console.error(`Feature flag error for ${feature}:`, error);
+
+	// Google Analyticsに送信
+	if (typeof window !== "undefined" && window.gtag) {
+		window.gtag("event", "feature_flag_error", {
+			feature_name: feature,
+			error_message: error.message,
+			error_stack: error.stack?.slice(0, 500), // スタックトレースは最初の500文字まで
+			entity_v2_enabled: true,
+		});
+	}
 }
 
 /**
@@ -214,8 +181,19 @@ export function reportFeatureFlagMetrics(
 		errorCount?: number;
 	},
 ): void {
-	// TODO: 実際の実装では分析サービスに送信
+	// 開発環境ではコンソールに出力
 	if (process.env.NODE_ENV === "development") {
 		console.log(`Feature flag metrics for ${feature}:`, metrics);
+	}
+
+	// Google Analyticsに送信
+	if (typeof window !== "undefined" && window.gtag) {
+		window.gtag("event", "feature_flag_performance", {
+			feature_name: feature,
+			load_time_ms: metrics.loadTime,
+			render_time_ms: metrics.renderTime,
+			error_count: metrics.errorCount || 0,
+			entity_v2_enabled: true,
+		});
 	}
 }

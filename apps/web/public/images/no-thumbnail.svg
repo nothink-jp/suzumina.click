@@ -1,0 +1,6 @@
+<svg width="384" height="216" viewBox="0 0 384 216" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="384" height="216" fill="#1F2937"/>
+  <path d="M192 68C180.954 68 172 76.9543 172 88V128C172 139.046 180.954 148 192 148C203.046 148 212 139.046 212 128V88C212 76.9543 203.046 68 192 68Z" stroke="#6B7280" stroke-width="4"/>
+  <path d="M212 88L232 78V138L212 128" stroke="#6B7280" stroke-width="4" stroke-linejoin="round"/>
+  <text x="192" y="170" font-family="Arial, sans-serif" font-size="14" fill="#9CA3AF" text-anchor="middle">No Thumbnail</text>
+</svg>
