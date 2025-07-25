@@ -3,8 +3,11 @@
 import { type DateRangePreset, getDateRangeFromPreset } from "@suzumina.click/shared-types";
 import * as logger from "@/lib/logger";
 import { getAudioButtons, getRecentAudioButtons } from "./buttons/actions";
+import { getRecentAudioButtonsV2 } from "./buttons/actions-v2";
 import { getVideoTitles } from "./videos/actions";
+import { getVideoTitlesV2 } from "./videos/actions-v2";
 import { getWorks } from "./works/actions";
+import { getFeatureFlags } from "@/lib/feature-flags";
 
 /**
  * トップページ用の新着作品を取得するServer Action
@@ -56,10 +59,20 @@ export async function getLatestWorks(limit = 10, excludeR18 = false) {
  */
 export async function getLatestVideos(limit = 10) {
 	try {
-		const result = await getVideoTitles({ page: 1, limit });
+		// フィーチャーフラグをチェック
+		const featureFlags = await getFeatureFlags();
+		const useV2 = featureFlags.entityV2.video && featureFlags.entityV2.mode !== "disabled";
+
+		const result = useV2
+			? await getVideoTitlesV2({ page: 1, limit })
+			: await getVideoTitles({ page: 1, limit });
 
 		if (result.videos.length === 0) {
-			logger.warn("新着動画取得で0件返却", { action: "getLatestVideos", limit });
+			logger.warn("新着動画取得で0件返却", { 
+				action: "getLatestVideos", 
+				limit,
+				useV2 
+			});
 		}
 
 		return result.videos;
@@ -81,10 +94,20 @@ export async function getLatestAudioButtons(limit = 10) {
 	// getRecentAudioButtonsはarrayを直接返すので特別な処理が必要
 
 	try {
-		const audioButtons = await getRecentAudioButtons(limit);
+		// フィーチャーフラグをチェック
+		const featureFlags = await getFeatureFlags();
+		const useV2 = featureFlags.entityV2.audioButton && featureFlags.entityV2.mode !== "disabled";
+
+		const audioButtons = useV2
+			? await getRecentAudioButtonsV2(limit)
+			: await getRecentAudioButtons(limit);
 
 		if (audioButtons.length === 0) {
-			logger.warn("新着音声ボタン取得で0件返却", { action: "getLatestAudioButtons", limit });
+			logger.warn("新着音声ボタン取得で0件返却", { 
+				action: "getLatestAudioButtons", 
+				limit,
+				useV2 
+			});
 		}
 
 		return audioButtons;

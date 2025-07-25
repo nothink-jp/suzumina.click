@@ -39,8 +39,27 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
  * ローカル開発用のフィーチャーフラグを取得
  */
 function getLocalFeatureFlags(): FeatureFlags | null {
-	if (typeof window === "undefined") return null;
+	// サーバーサイドでは環境変数から読み込む
+	if (typeof window === "undefined") {
+		const isEnabled = process.env.ENABLE_ENTITY_V2 === "true";
+		
+		// シンプルな設定：有効ならすべてON
+		return {
+			entityV2: {
+				video: isEnabled,
+				audioButton: isEnabled,
+				mode: isEnabled ? "enabled" : "disabled",
+				rollout: {
+					percentage: isEnabled ? 100 : 0,
+					whitelist: [],
+					blacklist: [],
+				},
+			},
+			monitoring: defaultFeatureFlags.monitoring,
+		};
+	}
 
+	// クライアントサイドではLocalStorageから読み込む
 	try {
 		const stored = localStorage.getItem("featureFlags");
 		if (stored) {
