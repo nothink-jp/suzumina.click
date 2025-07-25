@@ -168,7 +168,19 @@ export async function getVideoTitlesV2(params?: {
 				channelId: legacy.channelId,
 				channelTitle: legacy.channelTitle,
 				publishedAt: legacy.publishedAt,
-				thumbnailUrl: legacy.thumbnailUrl || "",
+				thumbnailUrl: (() => {
+					// サムネイルURLの検証
+					const url = legacy.thumbnailUrl || "";
+					// 有効なURLかチェック
+					if (url.startsWith("http://") || url.startsWith("https://")) {
+						return url;
+					}
+					// 無効な場合はYouTubeのデフォルトサムネイルURLを生成
+					if (legacy.videoId) {
+						return `https://img.youtube.com/vi/${legacy.videoId}/hqdefault.jpg`;
+					}
+					return "/images/no-thumbnail.svg";
+				})(),
 				lastFetchedAt: legacy.lastFetchedAt || new Date().toISOString(),
 				videoType: undefined,
 				liveBroadcastContent: "none" as const,
