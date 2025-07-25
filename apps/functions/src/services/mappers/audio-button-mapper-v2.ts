@@ -6,22 +6,7 @@
  * while maintaining backward compatibility with the existing system.
  */
 
-import {
-	AudioButtonId,
-	AudioButtonV2,
-	AudioContent,
-	AudioReference,
-	AudioVideoId,
-	AudioVideoTitle,
-	ButtonDislikeCount,
-	ButtonLikeCount,
-	ButtonStatistics,
-	ButtonTags,
-	ButtonText,
-	ButtonViewCount,
-	Timestamp,
-} from "@suzumina.click/shared-types";
-import type { FirestoreDataConverter } from "firebase-admin/firestore";
+import { AudioButtonV2 } from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
 
 /**
@@ -203,13 +188,14 @@ export function mapAudioButtonEntityToFirestore(entity: AudioButtonV2): Firestor
  * Firestore converter for AudioButton Entity V2
  *
  * Provides type-safe conversion between Firestore documents and AudioButton entities
+ * Note: Using inline type to avoid firebase-admin dependency
  */
-export const audioButtonV2Converter: FirestoreDataConverter<AudioButtonV2> = {
+export const audioButtonV2Converter = {
 	toFirestore(audioButton: AudioButtonV2): FirestoreAudioButtonData {
 		return mapAudioButtonEntityToFirestore(audioButton);
 	},
 
-	fromFirestore(snapshot, options): AudioButtonV2 | null {
+	fromFirestore(snapshot: any, options: any): AudioButtonV2 | null {
 		const data = snapshot.data(options) as FirestoreAudioButtonData;
 
 		// Ensure ID is set from document ID if not present in data
