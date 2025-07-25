@@ -7,6 +7,7 @@ import UserMenu from "../user-menu";
 // UserAvatarコンポーネントのモック
 vi.mock("../user-avatar", () => ({
 	default: ({ displayName, discordId, avatar, size, className }: any) => (
+		// biome-ignore lint/performance/noImgElement: モックコンポーネントでは<img>の使用を許可
 		<img
 			alt={`${displayName}のアバター`}
 			src={`https://cdn.discordapp.com/avatars/${discordId}/${avatar}.png?size=${size}`}

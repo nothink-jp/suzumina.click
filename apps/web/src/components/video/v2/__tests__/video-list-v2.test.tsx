@@ -15,6 +15,7 @@ vi.mock("next-auth/react", () => ({
 }));
 
 vi.mock("@/components/ui/thumbnail-image", () => ({
+	// biome-ignore lint/performance/noImgElement: モックコンポーネントでは<img>の使用を許可
 	default: ({ alt, src, ...props }: any) => <img alt={alt} src={src} {...props} />,
 }));
 

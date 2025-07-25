@@ -16,9 +16,11 @@ function createMockVideoV2(overrides?: Partial<any>): VideoV2 {
 		channelTitle: "テストチャンネル",
 		categoryId: "22",
 		duration: "PT10M30S",
-		viewCount: 1000,
-		likeCount: 100,
-		commentCount: 10,
+		statistics: {
+			viewCount: 1000,
+			likeCount: 100,
+			commentCount: 10,
+		},
 		liveBroadcastContent: "none",
 		liveStreamingDetails: null,
 		videoType: "normal",
@@ -38,7 +40,7 @@ describe("useVideoV2", () => {
 
 		expect(result.current.video).toBe(video);
 		expect(result.current.youtubeUrl).toBe("https://youtube.com/watch?v=abc123");
-		expect(result.current.thumbnailUrl).toBe("https://example.com/thumbnail.jpg");
+		expect(result.current.thumbnailUrl).toBe("https://img.youtube.com/vi/abc123/hqdefault.jpg");
 	});
 
 	it("日付を正しくフォーマットする", () => {
@@ -66,7 +68,13 @@ describe("useVideoV2", () => {
 	});
 
 	it("視聴回数をフォーマットする", () => {
-		const video = createMockVideoV2({ viewCount: 123456 });
+		const video = createMockVideoV2({
+			statistics: {
+				viewCount: 123456,
+				likeCount: 100,
+				commentCount: 10,
+			},
+		});
 		const { result } = renderHook(() => useVideoV2(video));
 
 		expect(result.current.formattedViewCount).toBe("123,456");
