@@ -4,7 +4,7 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
-import { getTotalVideoCount, getVideoTitles } from "./actions";
+import { getTotalVideoCount, getVideoTitles } from "./actions-v2";
 import VideoList from "./components/VideoList";
 
 interface VideosPageProps {

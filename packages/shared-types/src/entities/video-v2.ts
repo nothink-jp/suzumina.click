@@ -6,7 +6,7 @@
  * a cleaner domain model with proper encapsulation and business logic.
  */
 
-import { Channel, ChannelId, ChannelTitle } from "../value-objects/channel";
+import { Channel } from "../value-objects/channel";
 import {
 	ContentDetails,
 	type PrivacyStatus,

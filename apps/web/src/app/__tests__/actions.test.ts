@@ -9,8 +9,8 @@ import {
 } from "../actions";
 
 // Server Actionsのモック
-vi.mock("../videos/actions", () => ({
-	getVideoTitles: vi.fn(),
+vi.mock("../videos/actions-v2", () => ({
+	getVideoTitlesV2: vi.fn(),
 }));
 
 vi.mock("../works/actions", () => ({
@@ -24,7 +24,7 @@ vi.mock("../buttons/actions", () => ({
 
 import { getAudioButtons, getRecentAudioButtons } from "../buttons/actions";
 // モックのインポート
-import { getVideoTitles } from "../videos/actions";
+import { getVideoTitlesV2 } from "../videos/actions-v2";
 import { getWorks } from "../works/actions";
 
 // コンソールのモック
@@ -309,11 +309,11 @@ describe("Homepage Actions", () => {
 				hasMore: false,
 			};
 
-			(getVideoTitles as any).mockResolvedValue(mockResult);
+			(getVideoTitlesV2 as any).mockResolvedValue(mockResult);
 
 			const result = await getLatestVideos(10);
 
-			expect(getVideoTitles).toHaveBeenCalledWith({ page: 1, limit: 10 });
+			expect(getVideoTitlesV2).toHaveBeenCalledWith({ page: 1, limit: 10 });
 			expect(result).toEqual(mockVideos);
 			expect(result).toHaveLength(2);
 			expect(result[0].title).toBe("テスト動画1");
@@ -326,11 +326,11 @@ describe("Homepage Actions", () => {
 				hasMore: false,
 			};
 
-			(getVideoTitles as any).mockResolvedValue(mockResult);
+			(getVideoTitlesV2 as any).mockResolvedValue(mockResult);
 
 			await getLatestVideos();
 
-			expect(getVideoTitles).toHaveBeenCalledWith({ page: 1, limit: 10 });
+			expect(getVideoTitlesV2).toHaveBeenCalledWith({ page: 1, limit: 10 });
 		});
 
 		it("カスタムlimit値で動作する", async () => {
@@ -339,11 +339,11 @@ describe("Homepage Actions", () => {
 				hasMore: false,
 			};
 
-			(getVideoTitles as any).mockResolvedValue(mockResult);
+			(getVideoTitlesV2 as any).mockResolvedValue(mockResult);
 
 			await getLatestVideos(8);
 
-			expect(getVideoTitles).toHaveBeenCalledWith({ page: 1, limit: 8 });
+			expect(getVideoTitlesV2).toHaveBeenCalledWith({ page: 1, limit: 8 });
 		});
 
 		it("動画が0件の場合でも正常に動作する", async () => {
@@ -352,7 +352,7 @@ describe("Homepage Actions", () => {
 				hasMore: false,
 			};
 
-			(getVideoTitles as any).mockResolvedValue(mockResult);
+			(getVideoTitlesV2 as any).mockResolvedValue(mockResult);
 
 			const result = await getLatestVideos(10);
 
@@ -364,7 +364,7 @@ describe("Homepage Actions", () => {
 
 		it("エラーが発生した場合空配列を返す", async () => {
 			const error = new Error("YouTube API エラー");
-			(getVideoTitles as any).mockRejectedValue(error);
+			(getVideoTitlesV2 as any).mockRejectedValue(error);
 
 			const result = await getLatestVideos(10);
 
@@ -377,7 +377,7 @@ describe("Homepage Actions", () => {
 
 		it("非Errorオブジェクトが投げられた場合も適切に処理する", async () => {
 			const error = { code: 404, message: "Not Found" };
-			(getVideoTitles as any).mockRejectedValue(error);
+			(getVideoTitlesV2 as any).mockRejectedValue(error);
 
 			const result = await getLatestVideos(10);
 
@@ -421,13 +421,13 @@ describe("Homepage Actions", () => {
 				hasMore: true,
 			};
 
-			(getVideoTitles as any).mockResolvedValue(mockResult);
+			(getVideoTitlesV2 as any).mockResolvedValue(mockResult);
 
 			const result = await getLatestVideos(20);
 
 			// ログ出力は削除されたので、結果のみ確認
 			expect(result).toEqual(mockVideos);
-			expect(getVideoTitles).toHaveBeenCalledWith({ page: 1, limit: 20 });
+			expect(getVideoTitlesV2).toHaveBeenCalledWith({ page: 1, limit: 20 });
 		});
 	});
 
@@ -629,7 +629,7 @@ describe("Homepage Actions", () => {
 				totalCount: 1,
 			});
 
-			(getVideoTitles as any).mockResolvedValue({
+			(getVideoTitlesV2 as any).mockResolvedValue({
 				videos: mockVideos,
 				hasMore: false,
 			});
@@ -671,7 +671,7 @@ describe("Homepage Actions", () => {
 			expect(videosResult).toEqual(mockVideos);
 			expect(audioButtonsResult).toEqual(mockAudioButtons);
 			expect(getWorks).toHaveBeenCalledWith({ page: 1, limit: 5, excludeR18: false });
-			expect(getVideoTitles).toHaveBeenCalledWith({ page: 1, limit: 5 });
+			expect(getVideoTitlesV2).toHaveBeenCalledWith({ page: 1, limit: 5 });
 			expect(getRecentAudioButtons).toHaveBeenCalledWith(5);
 		});
 
@@ -701,7 +701,7 @@ describe("Homepage Actions", () => {
 			];
 
 			(getWorks as any).mockRejectedValue(new Error("作品取得エラー"));
-			(getVideoTitles as any).mockResolvedValue({
+			(getVideoTitlesV2 as any).mockResolvedValue({
 				videos: mockVideos,
 				hasMore: false,
 			});
@@ -781,11 +781,11 @@ describe("Homepage Actions", () => {
 					hasMore: false,
 				};
 
-				(getVideoTitles as any).mockResolvedValue(mockResult);
+				(getVideoTitlesV2 as any).mockResolvedValue(mockResult);
 
 				const result = await searchVideos("涼花みなせ", 6);
 
-				expect(getVideoTitles).toHaveBeenCalledWith({
+				expect(getVideoTitlesV2).toHaveBeenCalledWith({
 					page: 1,
 					limit: 6,
 					search: "涼花みなせ",
@@ -802,11 +802,11 @@ describe("Homepage Actions", () => {
 					hasMore: false,
 				};
 
-				(getVideoTitles as any).mockResolvedValue(mockResult);
+				(getVideoTitlesV2 as any).mockResolvedValue(mockResult);
 
 				await searchVideos("テスト");
 
-				expect(getVideoTitles).toHaveBeenCalledWith({
+				expect(getVideoTitlesV2).toHaveBeenCalledWith({
 					page: 1,
 					limit: 6,
 					search: "テスト",
@@ -820,11 +820,11 @@ describe("Homepage Actions", () => {
 					hasMore: false,
 				};
 
-				(getVideoTitles as any).mockResolvedValue(mockResult);
+				(getVideoTitlesV2 as any).mockResolvedValue(mockResult);
 
 				await searchVideos("テスト", 12);
 
-				expect(getVideoTitles).toHaveBeenCalledWith({
+				expect(getVideoTitlesV2).toHaveBeenCalledWith({
 					page: 1,
 					limit: 12,
 					search: "テスト",
@@ -838,7 +838,7 @@ describe("Homepage Actions", () => {
 					hasMore: false,
 				};
 
-				(getVideoTitles as any).mockResolvedValue(mockResult);
+				(getVideoTitlesV2 as any).mockResolvedValue(mockResult);
 
 				const result = await searchVideos("存在しない動画");
 
@@ -848,7 +848,7 @@ describe("Homepage Actions", () => {
 
 			it("エラーが発生した場合空配列を返す", async () => {
 				const error = new Error("YouTube検索エラー");
-				(getVideoTitles as any).mockRejectedValue(error);
+				(getVideoTitlesV2 as any).mockRejectedValue(error);
 
 				const result = await searchVideos("エラーテスト");
 
@@ -864,11 +864,11 @@ describe("Homepage Actions", () => {
 					hasMore: false,
 				};
 
-				(getVideoTitles as any).mockResolvedValue(mockResult);
+				(getVideoTitlesV2 as any).mockResolvedValue(mockResult);
 
 				const result = await searchVideos("", 6);
 
-				expect(getVideoTitles).toHaveBeenCalledWith({
+				expect(getVideoTitlesV2).toHaveBeenCalledWith({
 					page: 1,
 					limit: 6,
 					search: "",
