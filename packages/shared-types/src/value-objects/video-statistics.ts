@@ -5,6 +5,7 @@
  * view count, like count, dislike count, comment count, and other metrics.
  */
 
+import { calculateRatio, formatPercentage } from "../utils/number-parser";
 import { BaseValueObject, type ValidatableValueObject } from "./base/value-object";
 
 /**
@@ -102,18 +103,14 @@ export class LikeCount extends BaseValueObject<LikeCount> {
 	 * Calculates like ratio
 	 */
 	calculateRatio(totalInteractions: number): number {
-		if (totalInteractions === 0) {
-			return 0;
-		}
-		return this.value / totalInteractions;
+		return calculateRatio(this.value, totalInteractions);
 	}
 
 	/**
 	 * Returns percentage of likes
 	 */
 	toPercentage(totalInteractions: number): string {
-		const ratio = this.calculateRatio(totalInteractions);
-		return `${(ratio * 100).toFixed(1)}%`;
+		return formatPercentage(this.value, totalInteractions);
 	}
 
 	toNumber(): number {
@@ -130,6 +127,51 @@ export class LikeCount extends BaseValueObject<LikeCount> {
 
 	equals(other: LikeCount): boolean {
 		if (!other || !(other instanceof LikeCount)) {
+			return false;
+		}
+		return this.value === other.value;
+	}
+}
+
+/**
+ * Dislike count value object
+ */
+export class DislikeCount extends BaseValueObject<DislikeCount> {
+	private readonly value: number;
+
+	constructor(value: number) {
+		super();
+		this.value = Math.max(0, Math.floor(value));
+	}
+
+	/**
+	 * Calculates dislike ratio
+	 */
+	calculateRatio(totalInteractions: number): number {
+		return calculateRatio(this.value, totalInteractions);
+	}
+
+	/**
+	 * Returns percentage of dislikes
+	 */
+	toPercentage(totalInteractions: number): string {
+		return formatPercentage(this.value, totalInteractions);
+	}
+
+	toNumber(): number {
+		return this.value;
+	}
+
+	toString(): string {
+		return this.value.toString();
+	}
+
+	clone(): DislikeCount {
+		return new DislikeCount(this.value);
+	}
+
+	equals(other: DislikeCount): boolean {
+		if (!other || !(other instanceof DislikeCount)) {
 			return false;
 		}
 		return this.value === other.value;
@@ -184,7 +226,7 @@ export class VideoStatistics
 	constructor(
 		public readonly viewCount: ViewCount,
 		public readonly likeCount?: LikeCount,
-		public readonly dislikeCount?: LikeCount,
+		public readonly dislikeCount?: DislikeCount,
 		public readonly favoriteCount?: number,
 		public readonly commentCount?: CommentCount,
 	) {
@@ -204,7 +246,7 @@ export class VideoStatistics
 		return new VideoStatistics(
 			new ViewCount(Number(data.viewCount)),
 			data.likeCount !== undefined ? new LikeCount(Number(data.likeCount)) : undefined,
-			data.dislikeCount !== undefined ? new LikeCount(Number(data.dislikeCount)) : undefined,
+			data.dislikeCount !== undefined ? new DislikeCount(Number(data.dislikeCount)) : undefined,
 			data.favoriteCount !== undefined ? Number(data.favoriteCount) : undefined,
 			data.commentCount !== undefined ? new CommentCount(Number(data.commentCount)) : undefined,
 		);
