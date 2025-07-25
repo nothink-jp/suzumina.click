@@ -5,19 +5,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isEntityV2Enabled } from "../feature-flags";
 
+// Mocks
+vi.mock("../../shared/logger", () => ({
+	info: vi.fn(),
+}));
+
+import * as logger from "../../shared/logger";
+
 describe("Feature Flags", () => {
 	const originalEnv = process.env;
-	let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
 
 	beforeEach(() => {
 		// 環境変数をリセット
 		process.env = { ...originalEnv };
-		consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		vi.clearAllMocks();
 	});
 
 	afterEach(() => {
 		process.env = originalEnv;
-		consoleInfoSpy.mockRestore();
 	});
 
 	describe("isEntityV2Enabled", () => {
@@ -27,7 +32,7 @@ describe("Feature Flags", () => {
 			const result = isEntityV2Enabled();
 
 			expect(result).toBe(true);
-			expect(consoleInfoSpy).toHaveBeenCalledWith("Entity V2 is enabled in Cloud Functions");
+			expect(logger.info).toHaveBeenCalledWith("Entity V2 is enabled in Cloud Functions");
 		});
 
 		it("環境変数がfalseの場合はfalseを返す", () => {
@@ -36,7 +41,7 @@ describe("Feature Flags", () => {
 			const result = isEntityV2Enabled();
 
 			expect(result).toBe(false);
-			expect(consoleInfoSpy).not.toHaveBeenCalled();
+			expect(logger.info).not.toHaveBeenCalled();
 		});
 
 		it("環境変数が設定されていない場合はfalseを返す", () => {
@@ -45,7 +50,7 @@ describe("Feature Flags", () => {
 			const result = isEntityV2Enabled();
 
 			expect(result).toBe(false);
-			expect(consoleInfoSpy).not.toHaveBeenCalled();
+			expect(logger.info).not.toHaveBeenCalled();
 		});
 
 		it("環境変数が空文字の場合はfalseを返す", () => {
@@ -54,7 +59,7 @@ describe("Feature Flags", () => {
 			const result = isEntityV2Enabled();
 
 			expect(result).toBe(false);
-			expect(consoleInfoSpy).not.toHaveBeenCalled();
+			expect(logger.info).not.toHaveBeenCalled();
 		});
 
 		it("環境変数が大文字のTRUEの場合はfalseを返す", () => {
@@ -63,7 +68,7 @@ describe("Feature Flags", () => {
 			const result = isEntityV2Enabled();
 
 			expect(result).toBe(false);
-			expect(consoleInfoSpy).not.toHaveBeenCalled();
+			expect(logger.info).not.toHaveBeenCalled();
 		});
 	});
 });

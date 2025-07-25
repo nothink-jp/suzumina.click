@@ -1,4 +1,3 @@
-import type { CloudEvent } from "@google-cloud/functions-framework";
 import { describe, expect, it, vi } from "vitest";
 
 // Mocks
