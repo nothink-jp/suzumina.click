@@ -10,7 +10,25 @@ export function useVideoV2(video: VideoV2) {
 	const youtubeUrl = useMemo(() => video.getYouTubeUrl(), [video]);
 
 	// メモ化: サムネイルURL（高品質版）
-	const thumbnailUrl = useMemo(() => video.content.videoId.toThumbnailUrl(), [video]);
+	const thumbnailUrl = useMemo(() => {
+		try {
+			const url = video.content.videoId.toThumbnailUrl();
+			// 有効なURLかチェック（YouTube形式であることを確認）
+			if (url.includes("youtube.com") || url.includes("youtu.be")) {
+				return url;
+			}
+			// 無効なURLの場合はレガシー形式から取得を試みる
+			const legacy = video.toLegacyFormat();
+			if (legacy.thumbnailUrl && legacy.thumbnailUrl.startsWith("http")) {
+				return legacy.thumbnailUrl;
+			}
+			// それでも無効な場合はデフォルト画像
+			return "/images/no-thumbnail.svg";
+		} catch {
+			// エラーの場合もデフォルト画像
+			return "/images/no-thumbnail.svg";
+		}
+	}, [video]);
 
 	// メモ化: 公開日のフォーマット済み文字列
 	const formattedPublishedDate = useMemo(() => {
