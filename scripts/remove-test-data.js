@@ -9,16 +9,13 @@
  * - description が "Test video" のデータ
  */
 
-const { initializeApp, cert } = require("firebase-admin/app");
+const { initializeApp, applicationDefault } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
-const path = require("path");
-
-// サービスアカウントキーのパス
-const serviceAccountPath = path.join(__dirname, "../gcp-service-account-key.json");
 
 // Firebase Admin SDKの初期化
+// デフォルト認証を使用（gcloud auth application-default login）
 initializeApp({
-	credential: cert(serviceAccountPath),
+	credential: applicationDefault(),
 	projectId: "suzumina-click",
 });
 
