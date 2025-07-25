@@ -38,6 +38,8 @@ describe("Video Entity", () => {
 		tags?: VideoTags;
 		audioButtonInfo?: AudioButtonInfo;
 		liveStreamingDetails?: LiveStreamingDetails;
+		liveBroadcastContent?: string;
+		videoType?: string;
 		lastFetchedAt?: Date;
 	}): Video => {
 		const defaultContent = new VideoContent(
@@ -81,6 +83,8 @@ describe("Video Entity", () => {
 			overrides?.tags || { playlistTags: ["80s Music"], userTags: ["favorite"] },
 			overrides?.audioButtonInfo || { count: 5, hasButtons: true },
 			overrides?.liveStreamingDetails,
+			overrides?.liveBroadcastContent || "none",
+			overrides?.videoType || "normal",
 			overrides?.lastFetchedAt || new Date("2024-01-15"),
 		);
 	};

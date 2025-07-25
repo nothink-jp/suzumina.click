@@ -40,6 +40,7 @@ interface LegacyVideoData {
 	description?: string;
 	channelId: string;
 	channelTitle: string;
+	categoryId?: string;
 	publishedAt: string;
 	lastFetchedAt?: string;
 
@@ -88,6 +89,10 @@ interface LegacyVideoData {
 		actualEndTime?: string;
 		concurrentViewers?: number;
 	};
+
+	// Additional fields
+	liveBroadcastContent?: string;
+	videoType?: string;
 }
 
 /**
@@ -191,6 +196,8 @@ export class Video {
 		private readonly _tags: VideoTags = { playlistTags: [], userTags: [] },
 		private readonly _audioButtonInfo: AudioButtonInfo = { count: 0, hasButtons: false },
 		private readonly _liveStreamingDetails?: LiveStreamingDetails,
+		private readonly _liveBroadcastContent: string = "none",
+		private readonly _videoType: string = "normal",
 		private readonly _lastFetchedAt: Date = new Date(),
 	) {
 		this._lastModified = new Date();
@@ -284,6 +291,72 @@ export class Video {
 	}
 
 	/**
+	 * Get YouTube URL for the video
+	 */
+	getYouTubeUrl(): string {
+		return `https://youtube.com/watch?v=${this._content.videoId.toString()}`;
+	}
+
+	/**
+	 * Get live stream start time if available
+	 */
+	getLiveStreamStartTime(): Date | null {
+		return this._liveStreamingDetails?.actualStartTime || null;
+	}
+
+	/**
+	 * Check if this is a live stream
+	 */
+	isLiveStream(): boolean {
+		return this._liveBroadcastContent === "live";
+	}
+
+	/**
+	 * Check if this is an upcoming stream
+	 */
+	isUpcomingStream(): boolean {
+		return this._liveBroadcastContent === "upcoming";
+	}
+
+	/**
+	 * Check if this is an archived stream
+	 */
+	isArchivedStream(): boolean {
+		// Check explicit video type first
+		if (this._videoType === "archived") {
+			return true;
+		}
+
+		// If it has actual end time, it's an archived stream
+		if (this._liveStreamingDetails?.actualEndTime) {
+			// Duration over 15 minutes indicates a stream archive
+			const duration = this._metadata.duration;
+			if (duration) {
+				const durationMs = duration.toMilliseconds();
+				return durationMs > 15 * 60 * 1000; // 15 minutes
+			}
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if this is a premiere video
+	 */
+	isPremiere(): boolean {
+		// If it has live streaming details but duration is 15 minutes or less
+		if (this._liveStreamingDetails?.actualEndTime) {
+			const duration = this._metadata.duration;
+			if (duration) {
+				const durationMs = duration.toMilliseconds();
+				return durationMs <= 15 * 60 * 1000; // 15 minutes or less
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Updates user tags
 	 */
 	updateUserTags(tags: string[]): Video {
@@ -300,6 +373,8 @@ export class Video {
 			{ ...this._tags, userTags: validTags },
 			this._audioButtonInfo,
 			this._liveStreamingDetails,
+			this._liveBroadcastContent,
+			this._videoType,
 			this._lastFetchedAt,
 		);
 	}
@@ -316,6 +391,8 @@ export class Video {
 			this._tags,
 			this._audioButtonInfo,
 			this._liveStreamingDetails,
+			this._liveBroadcastContent,
+			this._videoType,
 			this._lastFetchedAt,
 		);
 	}
@@ -332,6 +409,8 @@ export class Video {
 			this._tags,
 			info,
 			this._liveStreamingDetails,
+			this._liveBroadcastContent,
+			this._videoType,
 			this._lastFetchedAt,
 		);
 	}
@@ -340,7 +419,11 @@ export class Video {
 	 * Creates channel from legacy data
 	 */
 	private static createChannelFromLegacy(data: LegacyVideoData): Channel {
-		return new Channel(new ChannelId(data.channelId), new ChannelTitle(data.channelTitle));
+		return Channel.fromPlainObject({
+			channelId: data.channelId,
+			channelTitle: data.channelTitle,
+			categoryId: data.categoryId,
+		});
 	}
 
 	/**
@@ -453,6 +536,8 @@ export class Video {
 				hasButtons: data.hasAudioButtons || false,
 			},
 			Video.createLiveStreamingDetailsFromLegacy(data),
+			data.liveBroadcastContent || "none",
+			data.videoType || "normal",
 			data.lastFetchedAt ? new Date(data.lastFetchedAt) : new Date(),
 		);
 	}
@@ -612,6 +697,8 @@ export class Video {
 			{ ...this._tags },
 			{ ...this._audioButtonInfo },
 			this._liveStreamingDetails ? { ...this._liveStreamingDetails } : undefined,
+			this._liveBroadcastContent,
+			this._videoType,
 			new Date(this._lastFetchedAt),
 		);
 	}

@@ -6,13 +6,15 @@
 interface LoadingSkeletonProps {
 	className?: string;
 	height?: number;
-	variant?: "carousel" | "form" | "menu" | "card";
+	variant?: "carousel" | "form" | "menu" | "card" | "grid" | "list";
+	count?: number;
 }
 
 export function LoadingSkeleton({
 	className = "",
 	height = 200,
 	variant = "carousel",
+	count = 6,
 }: LoadingSkeletonProps) {
 	switch (variant) {
 		case "carousel":
@@ -68,11 +70,51 @@ export function LoadingSkeleton({
 					</div>
 				</div>
 			);
+		case "grid":
+			return (
+				<div
+					className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+					data-testid="loading-skeleton"
+				>
+					{Array.from({ length: count }).map((_, i) => (
+						<div key={i} className="animate-pulse">
+							<div className="bg-muted rounded-lg" style={{ height: `${height}px` }}>
+								<div className="aspect-[16/9] bg-muted-foreground/20 rounded-t-lg" />
+								<div className="p-4">
+									<div className="h-5 bg-muted-foreground/20 rounded mb-2" />
+									<div className="h-4 bg-muted-foreground/20 rounded w-3/4 mb-3" />
+									<div className="h-3 bg-muted-foreground/20 rounded w-1/2" />
+								</div>
+							</div>
+						</div>
+					))}
+				</div>
+			);
+		case "list":
+			return (
+				<div className="space-y-4" data-testid="loading-skeleton">
+					{Array.from({ length: count }).map((_, i) => (
+						<div key={i} className="animate-pulse">
+							<div className="bg-muted rounded-lg p-4" style={{ height: `${height}px` }}>
+								<div className="flex gap-4">
+									<div className="w-40 h-24 bg-muted-foreground/20 rounded" />
+									<div className="flex-1">
+										<div className="h-5 bg-muted-foreground/20 rounded mb-2" />
+										<div className="h-4 bg-muted-foreground/20 rounded w-3/4 mb-2" />
+										<div className="h-3 bg-muted-foreground/20 rounded w-1/2" />
+									</div>
+								</div>
+							</div>
+						</div>
+					))}
+				</div>
+			);
 		default:
 			return (
 				<div
 					className={`animate-pulse bg-muted rounded-lg ${className}`}
 					style={{ height: `${height}px` }}
+					data-testid="loading-skeleton"
 				/>
 			);
 	}

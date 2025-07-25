@@ -7,6 +7,7 @@
 
 import { requireNonEmptyString } from "./base/transforms";
 import { BaseValueObject, type ValidatableValueObject } from "./base/value-object";
+import { VideoCategory } from "./video-category";
 
 /**
  * YouTube Channel ID value object
@@ -149,6 +150,7 @@ export class Channel extends BaseValueObject<Channel> implements ValidatableValu
 	constructor(
 		public readonly id: ChannelId,
 		public readonly title: ChannelTitle,
+		public readonly category?: VideoCategory,
 	) {
 		super();
 	}
@@ -156,8 +158,16 @@ export class Channel extends BaseValueObject<Channel> implements ValidatableValu
 	/**
 	 * Creates Channel from plain object
 	 */
-	static fromPlainObject(data: { channelId: string; channelTitle: string }): Channel {
-		return new Channel(new ChannelId(data.channelId), new ChannelTitle(data.channelTitle));
+	static fromPlainObject(data: {
+		channelId: string;
+		channelTitle: string;
+		categoryId?: string;
+	}): Channel {
+		return new Channel(
+			new ChannelId(data.channelId),
+			new ChannelTitle(data.channelTitle),
+			data.categoryId ? new VideoCategory(data.categoryId) : undefined,
+		);
 	}
 
 	/**
@@ -196,21 +206,34 @@ export class Channel extends BaseValueObject<Channel> implements ValidatableValu
 	toPlainObject(): {
 		channelId: string;
 		channelTitle: string;
+		categoryId?: string;
 	} {
 		return {
 			channelId: this.id.toString(),
 			channelTitle: this.title.toString(),
+			categoryId: this.category?.toId(),
 		};
 	}
 
 	clone(): Channel {
-		return new Channel(this.id.clone(), this.title.clone());
+		return new Channel(this.id.clone(), this.title.clone(), this.category?.clone());
 	}
 
 	equals(other: Channel): boolean {
 		if (!other || !(other instanceof Channel)) {
 			return false;
 		}
-		return this.id.equals(other.id) && this.title.equals(other.title);
+		// Handle category comparison
+		const categoryEquals = (() => {
+			if (this.category === undefined && other.category === undefined) {
+				return true;
+			}
+			if (this.category === undefined || other.category === undefined) {
+				return false;
+			}
+			return this.category.equals(other.category);
+		})();
+
+		return this.id.equals(other.id) && this.title.equals(other.title) && categoryEquals;
 	}
 }
