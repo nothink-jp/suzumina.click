@@ -8,7 +8,7 @@ import { Calendar, Clock, Eye, Plus, Radio, Video } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import React, { memo, useCallback } from "react";
+import { memo, useCallback } from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { useVideoV2 } from "@/hooks/use-video-v2";
 
@@ -18,6 +18,86 @@ interface VideoCardV2Props {
 	variant?: "grid" | "sidebar";
 	priority?: boolean;
 }
+
+/**
+ * VideoCard用のアクションボタンコンポーネント
+ */
+const VideoCardActionButtons = memo(function VideoCardActionButtons({
+	videoId,
+	videoTitle,
+	canCreateButton,
+	createButtonReason,
+	isGrid,
+}: {
+	videoId: string;
+	videoTitle: string;
+	canCreateButton: boolean;
+	createButtonReason?: string;
+	isGrid: boolean;
+}) {
+	if (!isGrid) {
+		return (
+			<Button
+				variant="outline"
+				size="sm"
+				className="w-full border text-muted-foreground hover:bg-accent min-h-[44px]"
+				asChild
+			>
+				<Link href={`/videos/${videoId}`} aria-describedby={`video-title-${videoId}`}>
+					<Eye className="h-4 w-4 mr-2" aria-hidden="true" />
+					動画を見る
+				</Link>
+			</Button>
+		);
+	}
+
+	if (canCreateButton) {
+		return (
+			<fieldset className="flex gap-2" aria-label="動画アクション">
+				<Button
+					size="sm"
+					variant="outline"
+					className="flex-1 border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
+					asChild
+				>
+					<Link href={`/videos/${videoId}`} aria-describedby={`video-title-${videoId}`}>
+						<Eye className="h-4 w-4 mr-1" aria-hidden="true" />
+						詳細を見る
+					</Link>
+				</Button>
+				<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
+					<Link
+						href={`/buttons/create?video_id=${videoId}`}
+						aria-label={`${videoTitle}の音声ボタンを作成`}
+						className="flex items-center whitespace-nowrap"
+					>
+						<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
+						ボタン作成
+					</Link>
+				</Button>
+			</fieldset>
+		);
+	}
+
+	return (
+		<div>
+			<Button
+				size="sm"
+				variant="outline"
+				className="w-full border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
+				asChild
+			>
+				<Link href={`/videos/${videoId}`} aria-describedby={`video-title-${videoId}`}>
+					<Eye className="h-4 w-4 mr-1" aria-hidden="true" />
+					詳細を見る
+				</Link>
+			</Button>
+			{createButtonReason && (
+				<p className="text-xs text-muted-foreground mt-2 text-center">{createButtonReason}</p>
+			)}
+		</div>
+	);
+});
 
 /**
  * Video V2 Entity用のカードコンポーネント
@@ -35,7 +115,6 @@ export const VideoCardV2 = memo(function VideoCardV2({
 
 	// useVideoV2フックを使用して必要な情報を取得
 	const {
-		youtubeUrl,
 		thumbnailUrl,
 		displayDate,
 		dateLabel,
@@ -167,64 +246,13 @@ export const VideoCardV2 = memo(function VideoCardV2({
 					</div>
 
 					{/* アクションボタン */}
-					{isGrid ? (
-						canCreateButton ? (
-							<fieldset className="flex gap-2" aria-label="動画アクション">
-								<Button
-									size="sm"
-									variant="outline"
-									className="flex-1 border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
-									asChild
-								>
-									<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-										<Eye className="h-4 w-4 mr-1" aria-hidden="true" />
-										詳細を見る
-									</Link>
-								</Button>
-								<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
-									<Link
-										href={`/buttons/create?video_id=${video.id}`}
-										aria-label={`${video.metadata.title.toString()}の音声ボタンを作成`}
-										className="flex items-center whitespace-nowrap"
-									>
-										<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
-										ボタン作成
-									</Link>
-								</Button>
-							</fieldset>
-						) : (
-							<div>
-								<Button
-									size="sm"
-									variant="outline"
-									className="w-full border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
-									asChild
-								>
-									<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-										<Eye className="h-4 w-4 mr-1" aria-hidden="true" />
-										詳細を見る
-									</Link>
-								</Button>
-								{createButtonReason && (
-									<p className="text-xs text-muted-foreground mt-2 text-center">
-										{createButtonReason}
-									</p>
-								)}
-							</div>
-						)
-					) : (
-						<Button
-							variant="outline"
-							size="sm"
-							className="w-full border text-muted-foreground hover:bg-accent min-h-[44px]"
-							asChild
-						>
-							<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-								<Eye className="h-4 w-4 mr-2" aria-hidden="true" />
-								動画を見る
-							</Link>
-						</Button>
-					)}
+					<VideoCardActionButtons
+						videoId={video.id}
+						videoTitle={video.metadata.title.toString()}
+						canCreateButton={!!canCreateButton}
+						createButtonReason={createButtonReason}
+						isGrid={isGrid}
+					/>
 				</div>
 			</div>
 		</article>
