@@ -1,6 +1,10 @@
 // functions/src/infrastructure/database/firestore.test.ts
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// Set up test environment before any imports
+process.env.NODE_ENV = "test";
+process.env.ALLOW_TEST_FIRESTORE = "true";
+
 // Mock constructor function that creates a new instance each time
 const mockFirestoreConstructor = vi.fn().mockImplementation(() => ({
 	collection: vi.fn(),
@@ -34,9 +38,11 @@ vi.mock("@google-cloud/firestore", () => {
 // ロガーのモック
 const mockLoggerInfo = vi.fn();
 const mockLoggerError = vi.fn();
+const mockLoggerWarn = vi.fn();
 vi.mock("../../../shared/logger", () => ({
 	info: mockLoggerInfo,
 	error: mockLoggerError,
+	warn: mockLoggerWarn,
 }));
 
 // テストの前にモジュールをインポート
@@ -121,7 +127,10 @@ describe("firestore", () => {
 			expect(mockFirestoreConstructor).toHaveBeenCalledWith({
 				ignoreUndefinedProperties: true,
 			});
-			expect(mockLoggerInfo).toHaveBeenCalledWith("Firestoreクライアントが初期化されました");
+			expect(mockLoggerInfo).toHaveBeenCalledWith("Firestoreクライアントが初期化されました", {
+				environment: "test",
+				projectId: "default",
+			});
 			expect(instance).toBeDefined();
 			expect(typeof instance).toBe("object");
 		});

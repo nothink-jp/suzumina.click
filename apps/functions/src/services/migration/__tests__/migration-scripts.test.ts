@@ -6,15 +6,33 @@
 
 import { describe, expect, it, vi } from "vitest";
 
+// テスト環境でFirestoreを許可
+process.env.NODE_ENV = "test";
+process.env.ALLOW_TEST_FIRESTORE = "true";
+
 // モックの設定
-vi.mock("../../infrastructure/firestore", () => ({
-	getFirestoreInstance: vi.fn(() => ({
-		collection: vi.fn(),
-		batch: vi.fn(() => ({
-			update: vi.fn(),
-			commit: vi.fn(),
-		})),
+const mockFirestore = {
+	collection: vi.fn(),
+	batch: vi.fn(() => ({
+		update: vi.fn(),
+		commit: vi.fn(),
 	})),
+	runTransaction: vi.fn(),
+};
+
+vi.mock("../../infrastructure/database/firestore", () => ({
+	getFirestore: vi.fn(() => mockFirestore),
+	default: {
+		get collection() {
+			return mockFirestore.collection;
+		},
+		get batch() {
+			return mockFirestore.batch;
+		},
+		get runTransaction() {
+			return mockFirestore.runTransaction;
+		},
+	},
 }));
 
 vi.mock("node:child_process", () => ({

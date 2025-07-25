@@ -2,10 +2,13 @@
  * レガシーフィールドクリーンアップテスト
  */
 
-import type { FieldValue as FieldValueType } from "@google-cloud/firestore";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-// モック設定を先に行う
+// テスト環境でFirestoreを許可
+process.env.NODE_ENV = "test";
+process.env.ALLOW_TEST_FIRESTORE = "true";
+
+// モックをインポートより前に設定
 const mockDoc = vi.fn();
 const mockQuery = {
 	get: vi.fn(),
@@ -24,7 +27,24 @@ const mockBatch = {
 const mockFirestore = {
 	collection: vi.fn(() => mockCollection),
 	batch: vi.fn(() => mockBatch),
+	runTransaction: vi.fn(),
 };
+
+// Firestoreモックの設定（インポートの前に）
+vi.mock("../../infrastructure/database/firestore", () => ({
+	getFirestore: vi.fn(() => mockFirestore),
+	default: {
+		get collection() {
+			return mockFirestore.collection;
+		},
+		get batch() {
+			return mockFirestore.batch;
+		},
+		get runTransaction() {
+			return mockFirestore.runTransaction;
+		},
+	},
+}));
 
 // @google-cloud/firestoreのモック
 vi.mock("@google-cloud/firestore", () => ({
@@ -34,17 +54,14 @@ vi.mock("@google-cloud/firestore", () => ({
 	Firestore: vi.fn(() => mockFirestore),
 }));
 
-// Firestoreモックの設定
-vi.mock("../../infrastructure/database/firestore", () => ({
-	default: mockFirestore,
-}));
-
 // Loggerモックの設定
 vi.mock("../../shared/logger", () => ({
 	info: vi.fn(),
 	debug: vi.fn(),
 	error: vi.fn(),
 }));
+
+import type { FieldValue as FieldValueType } from "@google-cloud/firestore";
 
 describe("cleanup-legacy-fields", () => {
 	let cleanupLegacyFields: typeof import("../cleanup-legacy-fields").cleanupLegacyFields;
