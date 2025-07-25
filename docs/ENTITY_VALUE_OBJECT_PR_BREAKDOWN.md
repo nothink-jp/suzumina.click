@@ -1,6 +1,6 @@
 # Entity/Value Object拡張 PR分割計画
 
-**最終更新**: 2025-01-25 20:15
+**最終更新**: 2025-01-25 21:10
 
 ## 概要
 
@@ -14,7 +14,8 @@ Entity/Value Objectアーキテクチャ拡張を、管理可能な単位のPR�
 - ✅ **Phase 4**: フロントエンド統合 - 完了
 - ✅ **Phase 5**: AudioButton V2 Components実装 - 完了
 - ✅ **Phase 6**: バックエンド統合 - 完了
-- ⏳ **Phase 7**: 移行作業
+- ⏳ **Phase 7**: 移行作業（PR #18完了、残り3 PRs）
+- 📝 **Phase 8**: オーバーヘッドコード削除（3ヶ月後）
 
 ## PR分割の原則
 
@@ -391,25 +392,33 @@ apps/functions/src/services/migration/
 
 ## Phase 7: 切り替えと廃止（4 PRs）
 
-### PR #18: フィーチャーフラグ実装
+### PR #18: フィーチャーフラグ実装 ✅
 
-**サイズ**: ~200行  
+**実際のPR**: [#112](https://github.com/nothink-jp/suzumina.click/pull/112)  
+**サイズ**: ~830行（テスト含む）  
 **リスク**: 低  
-**依存**: すべての実装PR
+**依存**: すべての実装PR  
+**ステータス**: 完了（2025-01-25）
 
 ```text
 packages/shared-types/src/config/
-└── feature-flags.ts
+├── feature-flags.ts  # 型定義とデフォルト値
+└── __tests__/
+    └── feature-flags.test.ts  # 5テストケース
 
 apps/web/src/lib/
-└── feature-flags.ts
+├── feature-flags.ts  # フロントエンド実装、React Hook
+└── __tests__/
+    └── feature-flags.test.ts  # 10テストケース
 ```
 
 **内容**:
 
-- Entity V2の段階的有効化
+- Entity V2の段階的有効化（パーセンテージロールアウト）
+- ホワイトリスト/ブラックリスト機能
+- React Hook（useFeatureFlag）実装
 - A/Bテスト準備
-- ロールバック機能
+- ロールバック機能（モニタリング設定）
 
 ### PR #19: 本番データ移行
 
