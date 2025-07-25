@@ -78,7 +78,7 @@ export type CollectionMetadata = any; // TODO: Replace with UnifiedDataCollectio
  * @alias FirestoreFieldTimestamp (to be implemented)
  */
 // biome-ignore lint/suspicious/noExplicitAny: Placeholder type - will be replaced with FirestoreFieldTimestamp in future PR
-export type Timestamp = any; // TODO: Replace with FirestoreFieldTimestamp when available
+export type FirestoreTimestamp = any; // TODO: Replace with FirestoreFieldTimestamp when available
 
 /**
  * Simplified alias for price history entry

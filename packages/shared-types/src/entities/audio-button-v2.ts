@@ -50,9 +50,9 @@ export class AudioButtonId {
 }
 
 /**
- * Creator information
+ * Creator information for AudioButton
  */
-export interface CreatorInfo {
+export interface AudioButtonCreatorInfo {
 	readonly id: string;
 	readonly name: string;
 }
@@ -69,7 +69,7 @@ export class AudioButtonV2
 		public readonly content: AudioContent,
 		public readonly reference: AudioReference,
 		public readonly statistics: ButtonStatistics,
-		private readonly _createdBy: CreatorInfo,
+		private readonly _createdBy: AudioButtonCreatorInfo,
 		private readonly _isPublic: boolean = true,
 		private readonly _createdAt: Date = new Date(),
 		private readonly _updatedAt: Date = new Date(),
@@ -81,7 +81,7 @@ export class AudioButtonV2
 	/**
 	 * Gets creator information
 	 */
-	get createdBy(): CreatorInfo {
+	get createdBy(): AudioButtonCreatorInfo {
 		return { ...this._createdBy };
 	}
 
