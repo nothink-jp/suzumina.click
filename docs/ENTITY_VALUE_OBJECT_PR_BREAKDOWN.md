@@ -1,6 +1,6 @@
 # Entity/Value Object拡張 PR分割計画
 
-**最終更新**: 2025-01-25 15:00
+**最終更新**: 2025-01-25 20:15
 
 ## 概要
 
@@ -9,11 +9,11 @@ Entity/Value Objectアーキテクチャ拡張を、管理可能な単位のPR�
 ## 進捗状況
 
 - ✅ **Phase 1**: 基盤整備 - 完了
-- 🚧 **Phase 2**: Video Entity実装 - 進行中  
+- ✅ **Phase 2**: Video Entity実装 - 完了  
 - ✅ **Phase 3**: AudioButton Entity実装 - 完了
 - ✅ **Phase 4**: フロントエンド統合 - 完了
 - ✅ **Phase 5**: AudioButton V2 Components実装 - 完了
-- ⏳ **Phase 6**: バックエンド統合
+- ✅ **Phase 6**: バックエンド統合 - 完了
 - ⏳ **Phase 7**: 移行作業
 
 ## PR分割の原則
@@ -368,11 +368,12 @@ apps/functions/src/
 - AudioButtonデータはWeb側のServer Actionsで管理
 - `audio-button-mapper-v2.ts`はPR #14で使用判断予定
 
-### PR #17: バッチ移行スクリプト
-
-**サイズ**: ~400行  
+### PR #17: バッチ移行スクリプト ✅
+**実際のPR**: [#111](https://github.com/nothink-jp/suzumina.click/pull/111)  
+**サイズ**: ~1,400行（テスト含む）  
 **リスク**: 高（データ移行）  
-**依存**: PR #15, #16
+**依存**: PR #15  
+**ステータス**: 完了（2025-01-25）
 
 ```text
 apps/functions/src/services/migration/
@@ -380,6 +381,13 @@ apps/functions/src/services/migration/
 ├── dry-run-report.ts
 └── __tests__/
 ```
+
+**内容**:
+- EntityV2MigrationService: Entity V2アーキテクチャへのバッチ移行サービス
+- DryRunReportGenerator: 移行前の詳細レポート生成機能
+- migrate-to-v2.ts: CLIスクリプト（ドライラン/本番移行対応）
+- 包括的なテストカバレッジ（16テストケース）
+- 進捗レポート、エラーハンドリング、バッチ処理対応
 
 ## Phase 7: 切り替えと廃止（4 PRs）
 
@@ -464,6 +472,72 @@ ESLintルール更新
 - ドキュメントの更新
 - 最終的な命名規則の確立
 
+## Phase 8: オーバーヘッドコード削除（後方互換性削除）
+
+### 概要
+Entity V2の安定稼働後、後方互換性のために実装したオーバーヘッドコードを段階的に削除し、クリーンなアーキテクチャを実現します。
+
+### 削除対象のオーバーヘッドコード
+
+#### 1. Legacy変換メソッド（約800行）
+```typescript
+// 各Entityから削除
+- fromLegacy()
+- toLegacyFormat()
+- fromLegacyFormat()
+```
+
+#### 2. Server Actions V1（約1,000行）
+```typescript
+// 削除対象
+- apps/web/src/actions/video-actions.ts
+- apps/web/src/actions/audio-button-actions.ts
+```
+
+#### 3. アダプターコンポーネント（約600行）
+```typescript
+// 削除対象
+- VideoAdapter
+- AudioButtonAdapter
+- その他の互換性レイヤー
+```
+
+#### 4. 移行用インフラ（約1,400行）
+```typescript
+// 移行完了後に削除
+- EntityV2MigrationService
+- DryRunReportGenerator
+- migrate-to-v2.ts（CLIスクリプト）
+```
+
+#### 5. 旧型定義（約500行）
+```typescript
+// 削除対象
+- FrontendVideoData
+- FirestoreVideoData
+- 旧AudioButton型定義
+```
+
+### 実施タイミング
+- **前提条件**: 本番環境での3ヶ月間の安定稼働
+- **推奨時期**: Phase 7完了の3ヶ月後
+- **削除可能コード**: 約4,300行
+
+### オーバーヘッドコード検出方法
+```bash
+# Legacy関連コードの検出
+grep -r "fromLegacy\|toLegacy\|Legacy" --include="*.ts" --include="*.tsx"
+
+# 非推奨コードの検出
+grep -r "@deprecated" --include="*.ts" --include="*.tsx"
+
+# 移行関連コードの検出
+grep -r "migration\|Migration" --include="*.ts" --include="*.tsx"
+
+# V1/V2共存コードの検出
+grep -r "V1\|v1" --include="*.ts" --include="*.tsx" | grep -v "test"
+```
+
 ## タイムライン
 
 ```mermaid
@@ -534,6 +608,8 @@ gantt
 | Phase 4 | UI不具合 | E2Eテスト強化 |
 | Phase 5 | データ不整合 | ドライラン実施 |
 | Phase 6 | 本番障害 | フィーチャーフラグ |
+| Phase 7 | 切り替えリスク | 段階的ロールアウト |
+| Phase 8 | オーバーヘッド削除時の不具合 | 3ヶ月の安定稼働後に実施 |
 
 ## 成功指標
 
@@ -552,6 +628,13 @@ gantt
 ---
 
 **作成日**: 2025年1月24日  
-**バージョン**: 1.3  
-**総PR数**: 21（PR #16削除、V2サフィックス削除を含む）  
-**推定期間**: 8週間（Phase 5まで完了済み）
+**最終更新日**: 2025年1月25日  
+**バージョン**: 1.4  
+**総PR数**: 22（PR #16削除、V2サフィックス削除を含む）  
+
+**推定期間**:
+- Phase 1-6: 8週間（完了済み）
+- Phase 7: 2週間（予定）
+- Phase 8: 本番稼働3ヶ月後に実施
+
+**オーバーヘッドコード削減見込み**: 約4,300行（Phase 8実施時）
