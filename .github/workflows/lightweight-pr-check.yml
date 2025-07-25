@@ -80,9 +80,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       
-      # Only build changed shared packages
-      - name: Build shared-types (if changed)
-        if: needs.changes.outputs.shared-types == 'true'
+      # Build shared packages (always build shared-types if web/admin/functions changed)
+      - name: Build shared-types
+        if: needs.changes.outputs.shared-types == 'true' || needs.changes.outputs.web == 'true' || needs.changes.outputs.admin == 'true' || needs.changes.outputs.functions == 'true'
         run: pnpm --filter @suzumina.click/shared-types build
       
       - name: Build UI (if changed)

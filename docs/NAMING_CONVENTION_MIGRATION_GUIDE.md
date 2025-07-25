@@ -64,6 +64,39 @@ type CollectionMetadata = { ... }
 | CircleCreatorInfoData | CircleCreator | 20+ | 低 |
 | VideoTagAssociationData | VideoTag | 10+ | 低 |
 
+## V2サフィックスの扱い
+
+### 移行期間中の一時的な命名規則
+Entity/Value Object移行期間中は、新旧の実装を区別するために一時的に"V2"サフィックスを使用しています：
+
+```typescript
+// 移行期間中の命名
+export class VideoV2 { ... }  // 新しいEntity実装
+export class AudioButtonV2 { ... }  // 新しいEntity実装
+
+// 最終的な命名（移行完了後）
+export class Video { ... }  // V2サフィックスを削除
+export class AudioButton { ... }  // V2サフィックスを削除
+```
+
+### V2サフィックス削除のタイミング
+1. **Phase 6（PR #21）で実施**: 旧実装の削除と同時にV2サフィックスも削除
+2. **削除方法**: 型エイリアスを使用した段階的移行
+3. **影響範囲**: 全コードベースでの一括置換が必要
+
+```typescript
+// Stage 1: エイリアスで新名称を準備
+export type Video = VideoV2;
+export type AudioButton = AudioButtonV2;
+
+// Stage 2: import文を新名称に更新
+import { Video } from '@suzumina.click/shared-types';  // VideoV2ではなく
+
+// Stage 3: V2実装を正式名称に変更、旧実装を削除
+export class Video { ... }  // 旧VideoV2クラス
+// 旧Videoクラスは削除済み
+```
+
 ## 段階的移行戦略
 
 ### Stage 1: エイリアス導入（リスク: 最小）
@@ -332,5 +365,6 @@ A: 完全移行まで約4-6週間を想定しています。
 ---
 
 **作成日**: 2025年7月24日  
-**バージョン**: 1.0  
-**ステータス**: 計画段階
+**バージョン**: 1.1  
+**ステータス**: 計画段階  
+**更新日**: 2025年7月25日 - V2サフィックスの扱いについて追記

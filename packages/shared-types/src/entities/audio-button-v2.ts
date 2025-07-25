@@ -349,6 +349,29 @@ export class AudioButtonV2
 	}
 
 	/**
+	 * Calculates popularity score
+	 * Formula: views + (likes * 2) - dislikes
+	 */
+	getPopularityScore(): number {
+		const views = this.statistics.viewCount.toNumber();
+		const likes = this.statistics.likeCount.toNumber();
+		const dislikes = this.statistics.dislikeCount.toNumber();
+		return views + likes * 2 - dislikes;
+	}
+
+	/**
+	 * Gets engagement rate as percentage
+	 * Formula: (likes + dislikes) / views * 100
+	 */
+	getEngagementRatePercentage(): number {
+		const views = this.statistics.viewCount.toNumber();
+		const likes = this.statistics.likeCount.toNumber();
+		const dislikes = this.statistics.dislikeCount.toNumber();
+		if (views === 0) return 0;
+		return Math.round(((likes + dislikes) / views) * 100);
+	}
+
+	/**
 	 * Checks if button belongs to a specific creator
 	 */
 	belongsTo(creatorId: string): boolean {

@@ -345,6 +345,35 @@ describe("AudioButtonV2", () => {
 			expect(button.getEngagementRate()).toBe(0.1); // 100 interactions / 1000 views
 		});
 
+		it("should calculate popularity score", () => {
+			const button = createSampleButton({
+				viewCount: 1000,
+				likeCount: 50,
+				dislikeCount: 10,
+			});
+			// Formula: views + (likes * 2) - dislikes = 1000 + (50 * 2) - 10 = 1090
+			expect(button.getPopularityScore()).toBe(1090);
+		});
+
+		it("should calculate engagement rate percentage", () => {
+			const button = createSampleButton({
+				viewCount: 1000,
+				likeCount: 50,
+				dislikeCount: 50,
+			});
+			// Formula: (likes + dislikes) / views * 100 = 100 / 1000 * 100 = 10%
+			expect(button.getEngagementRatePercentage()).toBe(10);
+		});
+
+		it("should return 0 engagement rate for zero views", () => {
+			const button = createSampleButton({
+				viewCount: 0,
+				likeCount: 0,
+				dislikeCount: 0,
+			});
+			expect(button.getEngagementRatePercentage()).toBe(0);
+		});
+
 		it("should check creator ownership", () => {
 			const button = createSampleButton({ creatorId: "user_123" });
 			expect(button.belongsTo("user_123")).toBe(true);
