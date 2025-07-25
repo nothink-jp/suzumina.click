@@ -16,23 +16,23 @@ import * as logger from "@/lib/logger";
 // biome-ignore lint/suspicious/noExplicitAny: Firestoreデータの柔軟な処理に必要
 function convertLiveStreamingDetails(details: any): any {
 	if (!details) return undefined;
+
+	const convertTimestamp = (value: unknown): string | undefined => {
+		if (!value) return undefined;
+		if (typeof value === "string") return value;
+		if (value instanceof Timestamp) return value.toDate().toISOString();
+		if (value instanceof Date) return value.toISOString();
+		if (value && typeof value === "object" && "_seconds" in value) {
+			return new Date((value as { _seconds: number })._seconds * 1000).toISOString();
+		}
+		return undefined;
+	};
+
 	return {
-		scheduledStartTime:
-			details.scheduledStartTime instanceof Timestamp
-				? details.scheduledStartTime.toDate().toISOString()
-				: undefined,
-		scheduledEndTime:
-			details.scheduledEndTime instanceof Timestamp
-				? details.scheduledEndTime.toDate().toISOString()
-				: undefined,
-		actualStartTime:
-			details.actualStartTime instanceof Timestamp
-				? details.actualStartTime.toDate().toISOString()
-				: undefined,
-		actualEndTime:
-			details.actualEndTime instanceof Timestamp
-				? details.actualEndTime.toDate().toISOString()
-				: undefined,
+		scheduledStartTime: convertTimestamp(details.scheduledStartTime),
+		scheduledEndTime: convertTimestamp(details.scheduledEndTime),
+		actualStartTime: convertTimestamp(details.actualStartTime),
+		actualEndTime: convertTimestamp(details.actualEndTime),
 		concurrentViewers: details.concurrentViewers,
 	};
 }
@@ -45,16 +45,69 @@ function convertToVideoV2(doc: DocumentSnapshot): VideoV2 | null {
 	try {
 		const data = doc.data() as FirestoreServerVideoData;
 
-		// Timestamp型をISO文字列に変換
-		const publishedAt =
-			data.publishedAt instanceof Timestamp
-				? data.publishedAt.toDate().toISOString()
-				: new Date().toISOString();
+		// デバッグ: 実際のデータを確認
+		if (doc.id === "yKwHLkRMEAo") {
+			logger.debug("Raw video data for yKwHLkRMEAo", {
+				publishedAt: data.publishedAt,
+				publishedAtType: typeof data.publishedAt,
+				publishedAtConstructor: data.publishedAt?.constructor?.name,
+			});
+		}
 
-		const lastFetchedAt =
-			data.lastFetchedAt instanceof Timestamp
-				? data.lastFetchedAt.toDate().toISOString()
-				: new Date().toISOString();
+		// Timestamp型をISO文字列に変換
+		// publishedAtの変換
+		let publishedAt: string;
+		if (data.publishedAt instanceof Timestamp) {
+			publishedAt = data.publishedAt.toDate().toISOString();
+		} else if (typeof data.publishedAt === "string") {
+			// すでにISO文字列の場合はそのまま使用
+			publishedAt = data.publishedAt;
+		} else if (data.publishedAt instanceof Date) {
+			publishedAt = data.publishedAt.toISOString();
+		} else if (
+			data.publishedAt &&
+			typeof data.publishedAt === "object" &&
+			"_seconds" in data.publishedAt
+		) {
+			// Firestore Timestampのプレーンオブジェクト形式
+			const seconds = data.publishedAt._seconds as number;
+			publishedAt = new Date(seconds * 1000).toISOString();
+		} else {
+			logger.error("Unknown publishedAt format", {
+				videoId: doc.id,
+				publishedAt: data.publishedAt,
+				type: typeof data.publishedAt,
+			});
+			// フォールバック: 現在時刻ではなく、適切なデフォルト値を使用
+			publishedAt = "2020-01-01T00:00:00.000Z";
+		}
+
+		// lastFetchedAtの変換
+		let lastFetchedAt: string;
+		if (data.lastFetchedAt instanceof Timestamp) {
+			lastFetchedAt = data.lastFetchedAt.toDate().toISOString();
+		} else if (typeof data.lastFetchedAt === "string") {
+			// すでにISO文字列の場合はそのまま使用
+			lastFetchedAt = data.lastFetchedAt;
+		} else if (data.lastFetchedAt instanceof Date) {
+			lastFetchedAt = data.lastFetchedAt.toISOString();
+		} else if (
+			data.lastFetchedAt &&
+			typeof data.lastFetchedAt === "object" &&
+			"_seconds" in data.lastFetchedAt
+		) {
+			// Firestore Timestampのプレーンオブジェクト形式
+			const seconds = data.lastFetchedAt._seconds as number;
+			lastFetchedAt = new Date(seconds * 1000).toISOString();
+		} else {
+			logger.error("Unknown lastFetchedAt format", {
+				videoId: doc.id,
+				lastFetchedAt: data.lastFetchedAt,
+				type: typeof data.lastFetchedAt,
+			});
+			// 現在時刻を使用（データの最終取得時刻なので妥当）
+			lastFetchedAt = new Date().toISOString();
+		}
 
 		return VideoV2.fromLegacyFormat({
 			id: doc.id,
@@ -206,8 +259,8 @@ export async function getVideoTitlesV2(params?: {
 				isPrivate: legacy.status?.privacyStatus !== "public",
 				isDeleted: false,
 				isLiveContent: false,
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
+				createdAt: legacy.publishedAt,
+				updatedAt: legacy.lastFetchedAt || new Date().toISOString(),
 			};
 			// FrontendVideoData形式に変換
 			return convertToFrontendVideo(firestoreData);
