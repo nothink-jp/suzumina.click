@@ -20,8 +20,44 @@ vi.mock("lucide-react", () => ({
 	Clock: () => <span>Clock Icon</span>,
 	Heart: () => <span>Heart Icon</span>,
 	Play: () => <span>Play Icon</span>,
+	Pause: () => <span>Pause Icon</span>,
 	ThumbsDown: () => <span>ThumbsDown Icon</span>,
 	ThumbsUp: () => <span>ThumbsUp Icon</span>,
+}));
+
+// AudioPlayerのモック
+vi.mock("@suzumina.click/ui/components/custom/audio-player", () => ({
+	AudioPlayer: vi.fn().mockImplementation(({ ref, onPlay, onPause, onEnd }) => {
+		// refにモックコントロールを設定
+		if (ref && typeof ref === "object" && "current" in ref) {
+			ref.current = {
+				play: () => onPlay?.(),
+				pause: () => onPause?.(),
+				stop: () => onEnd?.(),
+				setVolume: vi.fn(),
+				isPlaying: false,
+				isReady: true,
+			};
+		}
+		return null; // AudioPlayerは非表示なのでnullを返す
+	}),
+}));
+
+// UIコンポーネントのモック
+vi.mock("@suzumina.click/ui/components/ui/badge", () => ({
+	Badge: ({ children, ...props }: React.PropsWithChildren) => (
+		<span data-testid="badge" {...props}>
+			{children}
+		</span>
+	),
+}));
+
+vi.mock("@suzumina.click/ui/components/ui/button", () => ({
+	Button: ({ children, onClick, ...props }: React.PropsWithChildren<{ onClick?: () => void }>) => (
+		<button data-testid="button" onClick={onClick} {...props}>
+			{children}
+		</button>
+	),
 }));
 
 // テスト用のAudioButtonV2エンティティを作成するヘルパー
@@ -136,6 +172,23 @@ describe("AudioButtonCardV2", () => {
 		await user.click(playButton);
 
 		expect(handlePlay).toHaveBeenCalled();
+	});
+
+	it("再生中は一時停止ボタンが表示される", async () => {
+		const user = userEvent.setup();
+		const audioButton = createMockAudioButtonV2();
+		render(<AudioButtonCardV2 audioButton={audioButton} />);
+
+		// 初期状態では再生ボタン
+		expect(screen.getByRole("button", { name: /再生/ })).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /一時停止/ })).not.toBeInTheDocument();
+
+		// 再生ボタンをクリック
+		await user.click(screen.getByRole("button", { name: /再生/ }));
+
+		// 一時停止ボタンに変わる
+		expect(screen.getByRole("button", { name: /一時停止/ })).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /^再生$/ })).not.toBeInTheDocument();
 	});
 
 	it("ログインしていない場合、アクションボタンが無効になる", () => {

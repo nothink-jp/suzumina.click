@@ -65,21 +65,14 @@ export function useAudioButtonV2(audioButton: AudioButtonV2) {
 		return `/search?${params.toString()}`;
 	}, []);
 
-	// メモ化: 人気度スコア（再生回数 + いいね数 * 2 - 低評価数）
+	// メモ化: 人気度スコア（Entity内のビジネスロジックを使用）
 	const popularityScore = useMemo(() => {
-		const views = audioButton.statistics.viewCount.toNumber();
-		const likes = audioButton.statistics.likeCount.toNumber();
-		const dislikes = audioButton.statistics.dislikeCount.toNumber();
-		return views + likes * 2 - dislikes;
+		return audioButton.getPopularityScore();
 	}, [audioButton]);
 
-	// メモ化: エンゲージメント率（(いいね + 低評価) / 再生回数 * 100）
+	// メモ化: エンゲージメント率（Entity内のビジネスロジックを使用）
 	const engagementRate = useMemo(() => {
-		const views = audioButton.statistics.viewCount.toNumber();
-		const likes = audioButton.statistics.likeCount.toNumber();
-		const dislikes = audioButton.statistics.dislikeCount.toNumber();
-		if (views === 0) return 0;
-		return Math.round(((likes + dislikes) / views) * 100);
+		return audioButton.calculateEngagementRate();
 	}, [audioButton]);
 
 	return {

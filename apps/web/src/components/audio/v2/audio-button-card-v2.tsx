@@ -1,11 +1,12 @@
-import type { AudioButtonV2 } from "@suzumina.click/shared-types";
+import type { AudioButtonV2, FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import { type AudioControls, AudioPlayer } from "@suzumina.click/ui/components/custom/audio-player";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Clock, Heart, Play, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Clock, Heart, Pause, Play, ThumbsDown, ThumbsUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { useAudioButtonV2 } from "@/hooks/use-audio-button-v2";
 
 interface AudioButtonCardV2Props {
@@ -20,6 +21,34 @@ interface AudioButtonCardV2Props {
 	onDislikeToggle?: () => void;
 	className?: string;
 	showStats?: boolean;
+}
+
+// AudioButtonV2からFrontendAudioButtonDataへの変換
+function convertToFrontendData(
+	audioButton: AudioButtonV2,
+	formattedDuration: string,
+): FrontendAudioButtonData {
+	return {
+		id: audioButton.id.toString(),
+		sourceVideoId: audioButton.reference.videoId.toString(),
+		startTime: audioButton.reference.startTimestamp.toSeconds(),
+		endTime:
+			audioButton.reference.endTimestamp?.toSeconds() ??
+			audioButton.reference.startTimestamp.toSeconds(),
+		title: audioButton.content.text.toString(),
+		tags: audioButton.content.tags.toArray(),
+		createdBy: audioButton.createdBy.id,
+		createdByName: audioButton.createdBy.name,
+		playCount: audioButton.statistics.viewCount.toNumber(),
+		likeCount: audioButton.statistics.likeCount.toNumber(),
+		dislikeCount: audioButton.statistics.dislikeCount.toNumber(),
+		favoriteCount: audioButton.favoriteCount,
+		isPublic: audioButton.isPublic,
+		createdAt: audioButton.createdAt.toISOString(),
+		updatedAt: audioButton.updatedAt.toISOString(),
+		durationText: formattedDuration,
+		relativeTimeText: new Date(audioButton.createdAt).toLocaleDateString(),
+	};
 }
 
 /**
@@ -55,21 +84,38 @@ export const AudioButtonCardV2 = memo(function AudioButtonCardV2({
 		getTagSearchUrl,
 	} = useAudioButtonV2(audioButton);
 
+	// AudioPlayerのrefを作成
+	const audioControlsRef = useRef<AudioControls>(null);
+
 	// 再生ハンドラー
 	const handlePlay = useCallback(() => {
-		if (onPlay) {
-			onPlay();
+		if (audioControlsRef.current?.isReady) {
+			if (isPlaying) {
+				audioControlsRef.current.pause();
+			} else {
+				audioControlsRef.current.play();
+			}
 		}
+	}, [isPlaying]);
+
+	// AudioPlayerコールバック
+	const handleAudioPlay = useCallback(() => {
 		setIsPlaying(true);
-		// 実際の再生ロジックはここに実装
-		setTimeout(() => setIsPlaying(false), 1000); // デモ用
+		onPlay?.();
 	}, [onPlay]);
+
+	const handleAudioPause = useCallback(() => {
+		setIsPlaying(false);
+	}, []);
+
+	const handleAudioEnd = useCallback(() => {
+		setIsPlaying(false);
+	}, []);
 
 	// タグクリックハンドラー
 	const handleTagClick = useCallback(
 		(tag: string) => {
-			const url = getTagSearchUrl(tag);
-			router.push(url);
+			router.push(getTagSearchUrl(tag));
 		},
 		[router, getTagSearchUrl],
 	);
@@ -145,15 +191,9 @@ export const AudioButtonCardV2 = memo(function AudioButtonCardV2({
 
 			{/* アクションボタン */}
 			<div className="flex items-center gap-2">
-				<Button
-					size="sm"
-					variant="default"
-					onClick={handlePlay}
-					disabled={isPlaying}
-					className="flex-1"
-				>
-					<Play className="mr-1 h-4 w-4" />
-					{isPlaying ? "再生中..." : "再生"}
+				<Button size="sm" variant="default" onClick={handlePlay} className="flex-1">
+					{isPlaying ? <Pause className="mr-1 h-4 w-4" /> : <Play className="mr-1 h-4 w-4" />}
+					{isPlaying ? "一時停止" : "再生"}
 				</Button>
 
 				<Button
@@ -191,6 +231,15 @@ export const AudioButtonCardV2 = memo(function AudioButtonCardV2({
 			<div className="mt-3 border-t pt-3 text-xs text-muted-foreground">
 				<span>作成者: {audioButton.createdBy.name}</span>
 			</div>
+
+			{/* AudioPlayer（非表示） */}
+			<AudioPlayer
+				ref={audioControlsRef}
+				audioButton={convertToFrontendData(audioButton, formattedDuration)}
+				onPlay={handleAudioPlay}
+				onPause={handleAudioPause}
+				onEnd={handleAudioEnd}
+			/>
 		</article>
 	);
 });
