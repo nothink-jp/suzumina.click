@@ -2,7 +2,7 @@ import type { AudioButton } from "@suzumina.click/shared-types";
 import { useCallback, useMemo } from "react";
 
 /**
- * AudioButton V2 Entity用のカスタムフック
+ * AudioButton Entity用のカスタムフック
  * AudioButtonエンティティの便利なヘルパー関数と計算値を提供
  */
 export function useAudioButton(audioButton: AudioButton) {

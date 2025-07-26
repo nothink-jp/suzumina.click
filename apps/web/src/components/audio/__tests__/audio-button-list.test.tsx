@@ -172,7 +172,7 @@ describe("AudioButtonList", () => {
 			/>,
 		);
 
-		// 各コールバックはAudioButtonCardV2内で呼ばれるため、
+		// 各コールバックはAudioButtonCard内で呼ばれるため、
 		// ここではコンポーネントが正しくレンダリングされることを確認
 		expect(screen.getByRole("button", { name: /再生/ })).toBeInTheDocument();
 	});

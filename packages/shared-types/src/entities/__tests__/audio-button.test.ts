@@ -4,19 +4,19 @@ import {
 	ButtonCategory,
 	ButtonTags,
 	ButtonText,
-} from "../../value-objects/audio-content";
+} from "../../value-objects/audio-button/audio-content";
 import {
 	AudioReference,
 	AudioVideoId,
 	AudioVideoTitle,
 	Timestamp,
-} from "../../value-objects/audio-reference";
+} from "../../value-objects/audio-button/audio-reference";
 import {
 	ButtonDislikeCount,
 	ButtonLikeCount,
 	ButtonStatistics,
 	ButtonViewCount,
-} from "../../value-objects/button-statistics";
+} from "../../value-objects/audio-button/button-statistics";
 import { AudioButton, AudioButtonId } from "../audio-button";
 
 describe("AudioButtonId", () => {

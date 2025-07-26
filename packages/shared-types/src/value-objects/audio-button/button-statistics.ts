@@ -5,8 +5,8 @@
  * view count, like/dislike counts, and calculated metrics.
  */
 
-import { calculateRatio, formatPercentage } from "../utils/number-parser";
-import { BaseValueObject, type ValidatableValueObject } from "./base/value-object";
+import { calculateRatio, formatPercentage } from "../../utils/number-parser";
+import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
 
 /**
  * Button view count value object

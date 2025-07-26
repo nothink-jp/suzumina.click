@@ -1,5 +1,5 @@
 /**
- * AudioButton Entity V2対応のサーバーアクション
+ * AudioButton Entity対応のサーバーアクション
  *
  * AudioButtonエンティティを使用したサーバーサイドの操作を提供します。
  * 既存のfavorites.ts、likes.ts、dislikes.tsとの共存を考慮。
@@ -69,11 +69,11 @@ export async function getAudioButtonAction(audioButtonId: string): Promise<GetAu
 		const frontendData = convertToFrontendAudioButton(firestoreDataWithISODates);
 
 		// AudioButtonエンティティに変換
-		const audioButtonV2 = AudioButton.fromLegacy(frontendData);
+		const audioButton = AudioButton.fromLegacy(frontendData);
 
 		return {
 			success: true,
-			audioButton: audioButtonV2,
+			audioButton: audioButton,
 		};
 	} catch (error) {
 		return {
@@ -147,7 +147,7 @@ export async function getAudioButtonsAction(
 }
 
 /**
- * 公開音声ボタンの一覧を取得（V2エンティティ版）
+ * 公開音声ボタンの一覧を取得（エンティティ版）
  *
  * @param limit - 取得件数制限（デフォルト: 20）
  * @returns AudioButtonエンティティの配列

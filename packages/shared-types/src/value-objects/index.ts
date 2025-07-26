@@ -6,11 +6,11 @@
  */
 
 // Export AudioButton-related Value Objects
-export * from "./audio-content";
-export * from "./audio-reference";
+export * from "./audio-button/audio-content";
+export * from "./audio-button/audio-reference";
+export * from "./audio-button/button-statistics";
 // Export base Value Object utilities
 export * from "./base";
-export * from "./button-statistics";
 // Export Video-related Value Objects
 export * from "./video/channel";
 export * from "./video/video-content";
