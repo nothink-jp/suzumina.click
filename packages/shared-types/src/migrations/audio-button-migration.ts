@@ -1,12 +1,11 @@
 /**
  * AudioButton Migration Helper
  *
- * Provides utilities for migrating between legacy AudioButton format and AudioButtonV2 Entity.
+ * Provides utilities for migrating between legacy AudioButton format and AudioButton Entity.
  * Supports both individual and batch migrations with validation and error handling.
  */
 
-import type { FrontendAudioButtonData } from "../entities/audio-button";
-import { AudioButtonV2 } from "../entities/audio-button-v2";
+import { AudioButton, type FrontendAudioButtonData } from "../entities/audio-button";
 
 // Type alias for legacy audio button format (for migration purposes)
 type LegacyAudioButton = FrontendAudioButtonData;
@@ -16,7 +15,7 @@ type LegacyAudioButton = FrontendAudioButtonData;
  */
 export interface AudioButtonMigrationResult {
 	/** Successfully migrated entity */
-	entity?: AudioButtonV2;
+	entity?: AudioButton;
 	/** Original audio button data */
 	original: LegacyAudioButton;
 	/** Error if migration failed */
@@ -30,7 +29,7 @@ export interface AudioButtonMigrationResult {
  */
 export interface AudioButtonBatchMigrationResult {
 	/** Successfully migrated entities */
-	entities: AudioButtonV2[];
+	entities: AudioButton[];
 	/** Failed migrations with details */
 	failures: AudioButtonMigrationResult[];
 	/** Total number of items processed */
@@ -42,7 +41,24 @@ export interface AudioButtonBatchMigrationResult {
 }
 
 /**
- * Migrates a single AudioButton to AudioButtonV2
+ * Validates required fields for audio button migration
+ */
+function validateRequiredFields(audioButton: LegacyAudioButton): void {
+	if (!audioButton.id || !audioButton.title || !audioButton.sourceVideoId) {
+		throw new Error(
+			`Missing required fields: ${[
+				!audioButton.id && "id",
+				!audioButton.title && "title",
+				!audioButton.sourceVideoId && "sourceVideoId",
+			]
+				.filter(Boolean)
+				.join(", ")}`,
+		);
+	}
+}
+
+/**
+ * Migrates a single AudioButton to AudioButton
  *
  * @param audioButton - Legacy audio button to migrate
  * @returns Migration result with entity or error
@@ -50,20 +66,10 @@ export interface AudioButtonBatchMigrationResult {
 export function migrateAudioButton(audioButton: LegacyAudioButton): AudioButtonMigrationResult {
 	try {
 		// Validate required fields
-		if (!audioButton.id || !audioButton.title || !audioButton.sourceVideoId) {
-			throw new Error(
-				`Missing required fields: ${[
-					!audioButton.id && "id",
-					!audioButton.title && "title",
-					!audioButton.sourceVideoId && "sourceVideoId",
-				]
-					.filter(Boolean)
-					.join(", ")}`,
-			);
-		}
+		validateRequiredFields(audioButton);
 
-		// Use the AudioButtonV2.fromLegacy method
-		const entity = AudioButtonV2.fromLegacy({
+		// Use the AudioButton.fromLegacy method
+		const entity = AudioButton.fromLegacy({
 			id: audioButton.id,
 			title: audioButton.title,
 			description: audioButton.description,
@@ -71,7 +77,7 @@ export function migrateAudioButton(audioButton: LegacyAudioButton): AudioButtonM
 			sourceVideoId: audioButton.sourceVideoId,
 			sourceVideoTitle: audioButton.sourceVideoTitle,
 			startTime: audioButton.startTime,
-			endTime: audioButton.endTime,
+			endTime: audioButton.endTime || audioButton.startTime,
 			createdBy: audioButton.createdBy,
 			createdByName: audioButton.createdByName,
 			isPublic: audioButton.isPublic ?? true,
@@ -105,7 +111,7 @@ export function migrateAudioButton(audioButton: LegacyAudioButton): AudioButtonM
 }
 
 /**
- * Migrates multiple AudioButtons to AudioButtonV2 in batch
+ * Migrates multiple AudioButtons to AudioButton in batch
  *
  * @param audioButtons - Array of legacy audio buttons to migrate
  * @returns Batch migration result with statistics
@@ -113,7 +119,7 @@ export function migrateAudioButton(audioButton: LegacyAudioButton): AudioButtonM
 export function migrateAudioButtonBatch(
 	audioButtons: LegacyAudioButton[],
 ): AudioButtonBatchMigrationResult {
-	const entities: AudioButtonV2[] = [];
+	const entities: AudioButton[] = [];
 	const failures: AudioButtonMigrationResult[] = [];
 
 	for (const audioButton of audioButtons) {
@@ -158,10 +164,13 @@ export function validateAudioButtonForMigration(audioButton: LegacyAudioButton):
 	if (typeof audioButton.startTime !== "number" || audioButton.startTime < 0) {
 		errors.push("Invalid startTime: must be a non-negative number");
 	}
-	if (typeof audioButton.endTime !== "number" || audioButton.endTime < 0) {
+	if (
+		audioButton.endTime !== undefined &&
+		(typeof audioButton.endTime !== "number" || audioButton.endTime < 0)
+	) {
 		errors.push("Invalid endTime: must be a non-negative number");
 	}
-	if (audioButton.startTime >= audioButton.endTime) {
+	if (audioButton.endTime !== undefined && audioButton.startTime >= audioButton.endTime) {
 		errors.push("Invalid time range: startTime must be less than endTime");
 	}
 

@@ -122,7 +122,7 @@ async function checkAdminPermission(): Promise<
 function createEmptyVideoListResult(): { success: true; data: VideoListResult } {
 	return {
 		success: true,
-		data: { videos: [], hasMore: false },
+		data: { items: [], videos: [], total: 0, page: 1, pageSize: 0 },
 	};
 }
 
@@ -446,14 +446,16 @@ export async function getVideosForAdmin(params?: {
 		// データ変換とフィルタリング
 		const videos = processVideoDocuments(videoDocs, params?.search);
 
-		const lastVideo = videos.length > 0 ? videos[videos.length - 1] : undefined;
+		const _lastVideo = videos.length > 0 ? videos[videos.length - 1] : undefined;
 
 		return {
 			success: true,
 			data: {
+				items: videos,
 				videos,
-				hasMore,
-				lastVideo,
+				total: videos.length,
+				page: 1,
+				pageSize: videos.length,
 			},
 		};
 	} catch (error) {

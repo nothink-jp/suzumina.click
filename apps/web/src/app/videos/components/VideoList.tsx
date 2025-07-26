@@ -72,6 +72,7 @@ export default function VideoList({
 			{ value: "all", label: "すべてのカテゴリ" },
 			{ value: "ゲーム", label: "ゲーム" },
 			{ value: "エンターテインメント", label: "エンターテインメント" },
+			{ value: "音楽", label: "音楽" },
 		],
 		[],
 	);

@@ -3,7 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { isEntityV2Enabled } from "../feature-flags";
+import { isEntityEnabled } from "../feature-flags";
 
 // Mocks
 vi.mock("../../shared/logger", () => ({
@@ -25,47 +25,47 @@ describe("Feature Flags", () => {
 		process.env = originalEnv;
 	});
 
-	describe("isEntityV2Enabled", () => {
+	describe("isEntityEnabled", () => {
 		it("環境変数がtrueの場合はtrueを返す", () => {
-			process.env.ENABLE_ENTITY_V2 = "true";
+			process.env.ENABLE_ENTITY = "true";
 
-			const result = isEntityV2Enabled();
+			const result = isEntityEnabled();
 
 			expect(result).toBe(true);
-			expect(logger.info).toHaveBeenCalledWith("Entity V2 is enabled in Cloud Functions");
+			expect(logger.info).toHaveBeenCalledWith("Entity is enabled in Cloud Functions");
 		});
 
 		it("環境変数がfalseの場合はfalseを返す", () => {
-			process.env.ENABLE_ENTITY_V2 = "false";
+			process.env.ENABLE_ENTITY = "false";
 
-			const result = isEntityV2Enabled();
+			const result = isEntityEnabled();
 
 			expect(result).toBe(false);
 			expect(logger.info).not.toHaveBeenCalled();
 		});
 
 		it("環境変数が設定されていない場合はfalseを返す", () => {
-			delete process.env.ENABLE_ENTITY_V2;
+			delete process.env.ENABLE_ENTITY;
 
-			const result = isEntityV2Enabled();
+			const result = isEntityEnabled();
 
 			expect(result).toBe(false);
 			expect(logger.info).not.toHaveBeenCalled();
 		});
 
 		it("環境変数が空文字の場合はfalseを返す", () => {
-			process.env.ENABLE_ENTITY_V2 = "";
+			process.env.ENABLE_ENTITY = "";
 
-			const result = isEntityV2Enabled();
+			const result = isEntityEnabled();
 
 			expect(result).toBe(false);
 			expect(logger.info).not.toHaveBeenCalled();
 		});
 
 		it("環境変数が大文字のTRUEの場合はfalseを返す", () => {
-			process.env.ENABLE_ENTITY_V2 = "TRUE";
+			process.env.ENABLE_ENTITY = "TRUE";
 
-			const result = isEntityV2Enabled();
+			const result = isEntityEnabled();
 
 			expect(result).toBe(false);
 			expect(logger.info).not.toHaveBeenCalled();

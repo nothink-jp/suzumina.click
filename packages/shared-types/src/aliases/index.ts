@@ -10,6 +10,8 @@ import type { DLsiteRawApiResponse } from "../api-schemas/dlsite-raw";
 import type { OptimizedFirestoreDLsiteWorkData } from "../entities/work";
 import type { FirestoreWorkEvaluation } from "../entities/work-evaluation";
 
+// Legacy types are now exported directly from entities
+
 // Note: Some types are not yet defined in the codebase
 // They will be added as part of the Entity/Value Object migration
 // For now, we'll create placeholder types to demonstrate the aliasing system
@@ -36,12 +38,7 @@ export type User = any; // TODO: Replace with FirestoreUserDocument when availab
 // biome-ignore lint/suspicious/noExplicitAny: Placeholder type - will be replaced with FirestoreVideoDocument in future PR
 export type VideoDoc = any; // TODO: Replace with FirestoreVideoDocument when available
 
-/**
- * Simplified alias for audio button data
- * @alias OptimizedAudioButtonData (to be implemented)
- */
-// biome-ignore lint/suspicious/noExplicitAny: Placeholder type - will be replaced with OptimizedAudioButtonData in future PR
-export type AudioButton = any; // TODO: Replace with OptimizedAudioButtonData when available
+// AudioButton is now exported from entities/audio-button
 
 /**
  * Simplified alias for work evaluation
@@ -135,15 +132,5 @@ export function isVideoDoc(value: unknown): value is VideoDoc {
 	);
 }
 
-/**
- * Type guard to check if a value is an AudioButton
- */
-export function isAudioButton(value: unknown): value is AudioButton {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		"id" in value &&
-		"videoId" in value &&
-		"timestamp" in value
-	);
-}
+// Re-export isAudioButton from entities
+export { isAudioButton } from "../entities/audio-button";

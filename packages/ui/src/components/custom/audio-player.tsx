@@ -86,7 +86,7 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 				await pool.playSegment(
 					audioButton.sourceVideoId,
 					audioButton.startTime,
-					audioButton.endTime,
+					audioButton.endTime || audioButton.startTime,
 					callbacks,
 				);
 			} catch (error) {

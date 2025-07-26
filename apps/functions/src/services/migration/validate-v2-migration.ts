@@ -1,11 +1,11 @@
 /**
- * V2MigrationValidationService Stub
+ * MigrationValidationService Stub
  *
  * 型エラーを回避するための一時的なスタブ実装
  * TODO: 実際の検証ロジックを実装
  */
 
-export class V2MigrationValidationService {
+export class MigrationValidationService {
 	constructor(options: any) {}
 
 	async validate(): Promise<{ results: any[]; allValid: boolean }> {

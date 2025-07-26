@@ -9,7 +9,7 @@ vi.mock("../../../shared/logger", () => ({
 }));
 
 vi.mock("../../config/feature-flags", () => ({
-	isEntityV2Enabled: vi.fn(() => false), // デフォルトは無効
+	isEntityEnabled: vi.fn(() => false), // デフォルトは無効
 }));
 
 vi.mock("../../../infrastructure/database/firestore", () => ({

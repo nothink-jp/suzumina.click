@@ -36,7 +36,7 @@ describe("firestore-utils", () => {
 				publishedAt: "2023-05-15T10:30:00Z",
 				thumbnailUrl: "https://example.com/thumb.jpg",
 				lastFetchedAt: "2023-06-01T12:00:00Z",
-				videoType: "all" as const,
+				videoType: "normal" as const,
 				liveBroadcastContent: "none" as const,
 			};
 
@@ -56,7 +56,7 @@ describe("firestore-utils", () => {
 				lastFetchedAt: expect.objectContaining({
 					toDate: expect.any(Function),
 				}),
-				videoType: "all",
+				videoType: "normal",
 				liveBroadcastContent: "none",
 			});
 
@@ -216,7 +216,7 @@ describe("firestore-utils", () => {
 				publishedAt: createMockTimestamp(publishedDate),
 				thumbnailUrl: "https://example.com/thumb.jpg",
 				lastFetchedAt: createMockTimestamp(fetchedDate),
-				videoType: "all",
+				videoType: "normal",
 				liveBroadcastContent: "none",
 			};
 
@@ -232,7 +232,7 @@ describe("firestore-utils", () => {
 				publishedAt: "2023-05-15T10:30:00.000Z",
 				thumbnailUrl: "https://example.com/thumb.jpg",
 				lastFetchedAt: "2023-06-01T12:00:00.000Z",
-				videoType: "all",
+				videoType: "normal",
 				liveBroadcastContent: "none",
 			});
 		});

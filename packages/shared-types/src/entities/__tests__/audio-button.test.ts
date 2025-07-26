@@ -1,667 +1,514 @@
 import { describe, expect, it } from "vitest";
 import {
-	AudioButtonBaseSchema,
-	AudioFormatSchema,
-	type CreateAudioButtonInput,
-	CreateAudioButtonInputSchema,
-	checkRateLimit,
-	convertCreateInputToFirestoreAudioButton,
-	convertToFrontendAudioButton,
-	deserializeAudioButtonForRCC,
-	type FirestoreAudioButtonData,
-	FirestoreAudioButtonSchema,
-	type FrontendAudioButtonData,
-	filterAudioButtons,
-	formatTimestamp,
-	serializeAudioButtonForRSC,
-	sortAudioButtons,
-	validateAudioButtonCreation,
-	type YouTubeVideoInfo,
-} from "../audio-button";
+	AudioContent,
+	ButtonCategory,
+	ButtonTags,
+	ButtonText,
+} from "../../value-objects/audio-content";
+import {
+	AudioReference,
+	AudioVideoId,
+	AudioVideoTitle,
+	Timestamp,
+} from "../../value-objects/audio-reference";
+import {
+	ButtonDislikeCount,
+	ButtonLikeCount,
+	ButtonStatistics,
+	ButtonViewCount,
+} from "../../value-objects/button-statistics";
+import { AudioButton, AudioButtonId } from "../audio-button";
 
-describe("AudioButton Schemas", () => {
-	describe("AudioButtonBaseSchema", () => {
-		it("should validate a valid audio button base", () => {
-			const validAudioButton = {
-				id: "test-id",
-				title: "Test Title",
-				description: "Test Description",
-				tags: ["tag1", "tag2"],
-			};
-
-			expect(() => AudioButtonBaseSchema.parse(validAudioButton)).not.toThrow();
+describe("AudioButtonId", () => {
+	describe("constructor", () => {
+		it("should create valid ID", () => {
+			const id = new AudioButtonId("ab_123");
+			expect(id.toString()).toBe("ab_123");
 		});
 
-		it("should reject invalid audio button", () => {
-			const invalidAudioButton = {
-				// Missing required fields
-			};
-
-			expect(() => AudioButtonBaseSchema.parse(invalidAudioButton)).toThrow();
+		it("should throw error for empty ID", () => {
+			expect(() => new AudioButtonId("")).toThrow("AudioButton ID cannot be empty");
+			expect(() => new AudioButtonId("   ")).toThrow("AudioButton ID cannot be empty");
 		});
 	});
 
-	describe("AudioFormatSchema", () => {
-		it("should validate audio format values", () => {
-			expect(() => AudioFormatSchema.parse("opus")).not.toThrow();
-			expect(() => AudioFormatSchema.parse("aac")).not.toThrow();
-			expect(() => AudioFormatSchema.parse("mp3")).not.toThrow();
-			expect(() => AudioFormatSchema.parse("invalid")).toThrow();
+	describe("generate", () => {
+		it("should generate unique IDs", () => {
+			const id1 = AudioButtonId.generate();
+			const id2 = AudioButtonId.generate();
+
+			expect(id1.toString()).toMatch(/^ab_[a-z0-9]+_[a-z0-9]+$/);
+			expect(id2.toString()).toMatch(/^ab_[a-z0-9]+_[a-z0-9]+$/);
+			expect(id1.equals(id2)).toBe(false);
 		});
 	});
 
-	describe("FirestoreAudioButtonSchema", () => {
-		it("should validate basic structure", () => {
-			// Test that schema can parse without throwing on valid base data
-			expect(typeof FirestoreAudioButtonSchema.parse).toBe("function");
+	describe("equals", () => {
+		it("should return true for same ID", () => {
+			const id1 = new AudioButtonId("ab_123");
+			const id2 = new AudioButtonId("ab_123");
+			expect(id1.equals(id2)).toBe(true);
+		});
+
+		it("should return false for different IDs", () => {
+			const id1 = new AudioButtonId("ab_123");
+			const id2 = new AudioButtonId("ab_456");
+			expect(id1.equals(id2)).toBe(false);
 		});
 	});
 });
 
-describe("Audio Button Utility Functions", () => {
-	describe("sortAudioButtons", () => {
-		const mockButtons: FrontendAudioButtonData[] = [
-			{
-				id: "btn1",
-				title: "Button 1",
-				description: "Test",
-				tags: [],
-				sourceVideoId: "video1",
-				sourceVideoThumbnailUrl: "https://example.com/thumb1.jpg",
-				startTime: 0,
-				endTime: 10,
-				createdAt: "2023-01-01T00:00:00Z",
-				createdBy: "user1",
-				createdByName: "User 1",
-				isPublic: true,
-				likeCount: 5,
-				dislikeCount: 0,
-				playCount: 10,
-				favoriteCount: 0,
-				updatedAt: "2023-01-01T00:00:00Z",
-				durationText: "10秒",
-				relativeTimeText: "3日前",
-			},
-			{
-				id: "btn2",
-				title: "Button 2",
-				description: "Test",
-				tags: [],
-				sourceVideoId: "video2",
-				sourceVideoThumbnailUrl: "https://example.com/thumb2.jpg",
-				startTime: 0,
-				endTime: 10,
-				createdAt: "2023-01-02T00:00:00Z",
-				createdBy: "user2",
-				createdByName: "User 2",
-				isPublic: true,
-				likeCount: 15,
-				dislikeCount: 0,
-				playCount: 25,
-				favoriteCount: 0,
-				updatedAt: "2023-01-02T00:00:00Z",
-				durationText: "10秒",
-				relativeTimeText: "2日前",
-			},
-		];
-
-		it("should sort by newest", () => {
-			const sorted = sortAudioButtons(mockButtons, "newest");
-			expect(sorted[0]!.id).toBe("btn2");
-			expect(sorted[1]!.id).toBe("btn1");
-		});
-
-		it("should sort by oldest", () => {
-			const sorted = sortAudioButtons(mockButtons, "oldest");
-			expect(sorted[0]!.id).toBe("btn1");
-			expect(sorted[1]!.id).toBe("btn2");
-		});
-
-		it("should sort by popular", () => {
-			const sorted = sortAudioButtons(mockButtons, "popular");
-			expect(sorted[0]!.id).toBe("btn2"); // Higher like count
-			expect(sorted[1]!.id).toBe("btn1");
-		});
-
-		it("should sort by most played", () => {
-			const sorted = sortAudioButtons(mockButtons, "mostPlayed");
-			expect(sorted[0]!.id).toBe("btn2"); // Higher play count
-			expect(sorted[1]!.id).toBe("btn1");
-		});
-
-		it("should preserve order for relevance", () => {
-			const sorted = sortAudioButtons(mockButtons, "relevance");
-			expect(sorted[0]!.id).toBe("btn1");
-			expect(sorted[1]!.id).toBe("btn2");
-		});
-	});
-
-	describe("checkRateLimit", () => {
-		// 現在時刻を基準にしたテストデータを作成
-		const now = new Date();
-		const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-		const twentyFiveHoursAgo = new Date(now.getTime() - 25 * 60 * 60 * 1000);
-
-		const mockRecentCreations: FrontendAudioButtonData[] = [
-			{
-				id: "btn1",
-				title: "Button 1",
-				description: "Test",
-				tags: [],
-				sourceVideoId: "video1",
-				sourceVideoThumbnailUrl: "https://example.com/thumb1.jpg",
-				startTime: 0,
-				endTime: 10,
-				createdAt: oneHourAgo.toISOString(), // Within 24h
-				createdBy: "user1",
-				createdByName: "User 1",
-				isPublic: true,
-				likeCount: 0,
-				dislikeCount: 0,
-				playCount: 0,
-				favoriteCount: 0,
-				updatedAt: oneHourAgo.toISOString(),
-				durationText: "10秒",
-				relativeTimeText: "1時間前",
-			},
-			{
-				id: "btn2",
-				title: "Button 2",
-				description: "Test",
-				tags: [],
-				sourceVideoId: "video2",
-				sourceVideoThumbnailUrl: "https://example.com/thumb2.jpg",
-				startTime: 0,
-				endTime: 10,
-				createdAt: twentyFiveHoursAgo.toISOString(), // More than 24h ago
-				createdBy: "user1",
-				createdByName: "User 1",
-				isPublic: true,
-				likeCount: 0,
-				dislikeCount: 0,
-				playCount: 0,
-				favoriteCount: 0,
-				updatedAt: twentyFiveHoursAgo.toISOString(),
-				durationText: "10秒",
-				relativeTimeText: "25時間前",
-			},
-		];
-
-		it("should allow creation when under limit", () => {
-			const result = checkRateLimit(mockRecentCreations, "user1", 5);
-			expect(result.allowed).toBe(true);
-			expect(result.remainingQuota).toBe(4); // 5 - 1 recent creation
-		});
-
-		it("should deny creation when at limit", () => {
-			const result = checkRateLimit(mockRecentCreations, "user1", 1);
-			expect(result.allowed).toBe(false);
-			expect(result.remainingQuota).toBe(0);
-		});
-
-		it("should return correct reset time", () => {
-			const result = checkRateLimit(mockRecentCreations, "user1", 5);
-			expect(result.resetTime).toBeInstanceOf(Date);
-		});
-
-		it("should handle user with no recent creations", () => {
-			const result = checkRateLimit([], "user2", 5);
-			expect(result.allowed).toBe(true);
-			expect(result.remainingQuota).toBe(5);
-		});
-
-		it("should only count recent creations within 24 hours", () => {
-			// すべて24時間以上前の作成
-			const oldCreations: FrontendAudioButtonData[] = [
-				{
-					id: "btn3",
-					title: "Button 3",
-					description: "Test",
-					tags: [],
-					sourceVideoId: "video3",
-					sourceVideoThumbnailUrl: "https://example.com/thumb3.jpg",
-					startTime: 0,
-					endTime: 10,
-					createdAt: twentyFiveHoursAgo.toISOString(),
-					createdBy: "user1",
-					createdByName: "User 1",
-					isPublic: true,
-					likeCount: 0,
-					dislikeCount: 0,
-					playCount: 0,
-					favoriteCount: 0,
-					updatedAt: twentyFiveHoursAgo.toISOString(),
-					durationText: "10秒",
-					relativeTimeText: "25時間前",
-				},
-			];
-
-			const result = checkRateLimit(oldCreations, "user1", 5);
-			expect(result.allowed).toBe(true);
-			expect(result.remainingQuota).toBe(5); // No recent creations
-		});
-	});
-
-	describe("convertToFrontendAudioButton", () => {
-		const mockFirestoreData: FirestoreAudioButtonData = {
-			id: "btn1",
-			title: "Test Button",
-			description: "Test Description",
-			tags: ["tag1", "tag2"],
-			sourceVideoId: "video123",
-			sourceVideoTitle: "Test Video",
-			startTime: 10,
-			endTime: 20,
-			createdBy: "user123",
-			createdByName: "Test User",
-			isPublic: true,
-			playCount: 100,
-			likeCount: 50,
-			dislikeCount: 5,
-			favoriteCount: 25,
-			createdAt: "2024-01-01T00:00:00.000Z",
-			updatedAt: "2024-01-01T00:00:00.000Z",
+describe("AudioButton", () => {
+	const createSampleButton = (
+		overrides?: Partial<{
+			id: string;
+			text: string;
+			category?: string;
+			tags?: string[];
+			videoId: string;
+			videoTitle: string;
+			startTime: number;
+			endTime?: number;
+			viewCount?: number;
+			likeCount?: number;
+			dislikeCount?: number;
+			creatorId: string;
+			creatorName: string;
+			isPublic?: boolean;
+			favoriteCount?: number;
+		}>,
+	) => {
+		const defaults = {
+			id: "ab_123",
+			text: "Sample Button",
+			videoId: "dQw4w9WgXcQ",
+			videoTitle: "Test Video",
+			startTime: 120,
+			creatorId: "user_123",
+			creatorName: "Test User",
 		};
+		const params = { ...defaults, ...overrides };
 
-		it("should convert Firestore data to frontend format", () => {
-			const result = convertToFrontendAudioButton(mockFirestoreData);
+		const content = new AudioContent(
+			new ButtonText(params.text),
+			params.category ? new ButtonCategory(params.category) : undefined,
+			new ButtonTags(params.tags || []),
+		);
 
-			expect(result.id).toBe(mockFirestoreData.id);
-			expect(result.title).toBe(mockFirestoreData.title);
-			expect(result.tags).toEqual(mockFirestoreData.tags);
-			expect(result.sourceVideoThumbnailUrl).toBe(
-				"https://img.youtube.com/vi/video123/maxresdefault.jpg",
-			);
-			expect(result.durationText).toBe("10秒");
-			expect(result.relativeTimeText).toBeDefined();
+		const reference = new AudioReference(
+			new AudioVideoId(params.videoId),
+			new AudioVideoTitle(params.videoTitle),
+			new Timestamp(params.startTime),
+			params.endTime !== undefined ? new Timestamp(params.endTime) : undefined,
+		);
+
+		const statistics = new ButtonStatistics(
+			new ButtonViewCount(params.viewCount || 0),
+			new ButtonLikeCount(params.likeCount || 0),
+			new ButtonDislikeCount(params.dislikeCount || 0),
+		);
+
+		return new AudioButton(
+			new AudioButtonId(params.id),
+			content,
+			reference,
+			statistics,
+			{
+				id: params.creatorId,
+				name: params.creatorName,
+			},
+			params.isPublic ?? true,
+			new Date("2024-01-01"),
+			new Date("2024-01-01"),
+			params.favoriteCount || 0,
+		);
+	};
+
+	describe("constructor", () => {
+		it("should create valid audio button", () => {
+			const button = createSampleButton();
+
+			expect(button.id.toString()).toBe("ab_123");
+			expect(button.content.text.toString()).toBe("Sample Button");
+			expect(button.reference.videoId.toString()).toBe("dQw4w9WgXcQ");
+			expect(button.statistics.viewCount.toNumber()).toBe(0);
+			expect(button.createdBy).toEqual({ id: "user_123", name: "Test User" });
+			expect(button.isPublic).toBe(true);
+			expect(button.favoriteCount).toBe(0);
+		});
+	});
+
+	describe("fromLegacy", () => {
+		it("should create from legacy format", () => {
+			const legacyData = {
+				id: "ab_123",
+				title: "Legacy Button",
+				description: "Legacy description",
+				tags: ["tag1", "tag2"],
+				sourceVideoId: "dQw4w9WgXcQ",
+				sourceVideoTitle: "Legacy Video",
+				startTime: 60,
+				endTime: 65,
+				createdBy: "user_123",
+				createdByName: "Legacy User",
+				isPublic: true,
+				playCount: 100,
+				likeCount: 80,
+				dislikeCount: 20,
+				favoriteCount: 50,
+				createdAt: "2024-01-01T00:00:00Z",
+				updatedAt: "2024-01-02T00:00:00Z",
+			};
+
+			const button = AudioButton.fromLegacy(legacyData);
+
+			expect(button.id.toString()).toBe("ab_123");
+			expect(button.content.text.toString()).toBe("Legacy Button");
+			expect(button.content.tags.toArray()).toEqual(["tag1", "tag2"]);
+			expect(button.reference.videoId.toString()).toBe("dQw4w9WgXcQ");
+			expect(button.reference.startTimestamp.toSeconds()).toBe(60);
+			expect(button.reference.endTimestamp?.toSeconds()).toBe(65);
+			expect(button.statistics.viewCount.toNumber()).toBe(100);
+			expect(button.createdBy.id).toBe("user_123");
+			expect(button.favoriteCount).toBe(50);
 		});
 
 		it("should handle missing optional fields", () => {
-			const minimalData: FirestoreAudioButtonData = {
-				...mockFirestoreData,
-				description: undefined,
-				sourceVideoTitle: undefined,
-				tags: undefined as any,
-				dislikeCount: undefined as any,
-				favoriteCount: undefined as any,
-			};
-
-			const result = convertToFrontendAudioButton(minimalData);
-
-			expect(result.tags).toEqual([]);
-			expect(result.dislikeCount).toBe(0);
-			expect(result.favoriteCount).toBe(0);
-		});
-
-		it("should format relative time correctly", () => {
-			// Test with recent date (should show "たった今" or similar)
-			const recentData = {
-				...mockFirestoreData,
-				createdAt: new Date().toISOString(),
-			};
-			const recentResult = convertToFrontendAudioButton(recentData);
-			expect(recentResult.relativeTimeText).toMatch(/たった今|分前|時間前/);
-
-			// Test with yesterday
-			const yesterday = new Date();
-			yesterday.setDate(yesterday.getDate() - 1);
-			const yesterdayData = {
-				...mockFirestoreData,
-				createdAt: yesterday.toISOString(),
-			};
-			const yesterdayResult = convertToFrontendAudioButton(yesterdayData);
-			expect(yesterdayResult.relativeTimeText).toBe("昨日");
-
-			// Test with old date
-			const oldDate = new Date("2020-01-01");
-			const oldData = {
-				...mockFirestoreData,
-				createdAt: oldDate.toISOString(),
-			};
-			const oldResult = convertToFrontendAudioButton(oldData);
-			expect(oldResult.relativeTimeText).toMatch(/年前/);
-		});
-	});
-
-	describe("CreateAudioButtonInputSchema", () => {
-		it("should validate valid input", () => {
-			const input = {
-				title: "Test Button",
-				description: "Test Description",
-				tags: ["tag1", "tag2"],
-				sourceVideoId: "video123",
-				startTime: 10,
-				endTime: 20,
-				isPublic: true,
-			};
-
-			expect(() => CreateAudioButtonInputSchema.parse(input)).not.toThrow();
-		});
-
-		it("should reject when endTime <= startTime", () => {
-			const input = {
-				title: "Test Button",
-				sourceVideoId: "video123",
-				startTime: 20,
-				endTime: 10,
-			};
-
-			expect(() => CreateAudioButtonInputSchema.parse(input)).toThrow();
-		});
-
-		it("should reject too many tags", () => {
-			const input = {
-				title: "Test Button",
-				sourceVideoId: "video123",
-				startTime: 10,
-				endTime: 20,
-				tags: Array(11).fill("tag"), // 11 tags
-			};
-
-			expect(() => CreateAudioButtonInputSchema.parse(input)).toThrow();
-		});
-	});
-
-	describe("filterAudioButtons", () => {
-		const mockButtons: FrontendAudioButtonData[] = [
-			{
-				id: "btn1",
-				title: "Button One",
-				description: "Description one",
-				tags: ["voice", "asmr"],
-				sourceVideoId: "video1",
-				sourceVideoThumbnailUrl: "https://example.com/thumb1.jpg",
+			const minimalData = {
+				id: "ab_123",
+				title: "Minimal Button",
+				sourceVideoId: "dQw4w9WgXcQ",
 				startTime: 0,
-				endTime: 30,
+				endTime: 5,
+				createdBy: "user_123",
+				createdByName: "User",
 				createdAt: "2024-01-01T00:00:00Z",
-				createdBy: "user1",
-				createdByName: "User 1",
-				isPublic: true,
-				likeCount: 50,
-				dislikeCount: 5,
-				playCount: 100,
-				favoriteCount: 10,
 				updatedAt: "2024-01-01T00:00:00Z",
-				durationText: "30秒",
-				relativeTimeText: "3日前",
-			},
-			{
-				id: "btn2",
-				title: "Button Two",
-				description: "Description two",
-				tags: ["music", "bgm"],
-				sourceVideoId: "video2",
-				sourceVideoThumbnailUrl: "https://example.com/thumb2.jpg",
-				startTime: 0,
-				endTime: 60,
-				createdAt: "2024-01-05T00:00:00Z",
-				createdBy: "user2",
-				createdByName: "User 2",
-				isPublic: true,
-				likeCount: 25,
-				dislikeCount: 10,
-				playCount: 200,
-				favoriteCount: 5,
-				updatedAt: "2024-01-05T00:00:00Z",
-				durationText: "60秒",
-				relativeTimeText: "2日前",
-			},
-		];
+			};
 
-		it("should filter by tags", () => {
-			const filtered = filterAudioButtons(mockButtons, { tags: ["voice"] });
-			expect(filtered).toHaveLength(1);
-			expect(filtered[0]!.id).toBe("btn1");
-		});
+			const button = AudioButton.fromLegacy(minimalData);
 
-		it("should filter by search text", () => {
-			const filtered = filterAudioButtons(mockButtons, { searchText: "Two" });
-			expect(filtered).toHaveLength(1);
-			expect(filtered[0]!.id).toBe("btn2");
-		});
-
-		it("should filter by numeric ranges", () => {
-			const filtered = filterAudioButtons(mockButtons, {
-				playCountMin: 150,
-				playCountMax: 250,
-			});
-			expect(filtered).toHaveLength(1);
-			expect(filtered[0]!.id).toBe("btn2");
-		});
-
-		it("should filter by duration", () => {
-			const filtered = filterAudioButtons(mockButtons, {
-				durationMin: 40,
-				durationMax: 70,
-			});
-			expect(filtered).toHaveLength(1);
-			expect(filtered[0]!.id).toBe("btn2");
-		});
-
-		it("should filter by date range", () => {
-			const filtered = filterAudioButtons(mockButtons, {
-				createdAfter: "2024-01-03T00:00:00Z",
-				createdBefore: "2024-01-10T00:00:00Z",
-			});
-			expect(filtered).toHaveLength(1);
-			expect(filtered[0]!.id).toBe("btn2");
-		});
-
-		it("should filter by creator", () => {
-			const filtered = filterAudioButtons(mockButtons, { createdBy: "user1" });
-			expect(filtered).toHaveLength(1);
-			expect(filtered[0]!.id).toBe("btn1");
-		});
-
-		it("should combine multiple filters", () => {
-			const filtered = filterAudioButtons(mockButtons, {
-				tags: ["music"],
-				playCountMin: 100,
-				createdBy: "user2",
-			});
-			expect(filtered).toHaveLength(1);
-			expect(filtered[0]!.id).toBe("btn2");
-		});
-
-		it("should return all when no filters applied", () => {
-			const filtered = filterAudioButtons(mockButtons, {});
-			expect(filtered).toHaveLength(2);
+			expect(button.content.tags.size()).toBe(0);
+			expect(button.reference.videoTitle.toString()).toBe("Unknown Video");
+			expect(button.statistics.viewCount.toNumber()).toBe(0);
+			expect(button.isPublic).toBe(true);
+			expect(button.favoriteCount).toBe(0);
 		});
 	});
 
-	describe("validateAudioButtonCreation", () => {
-		const mockVideoInfo: YouTubeVideoInfo = {
-			id: "video123",
-			title: "Test Video",
-			duration: 300, // 5 minutes
-			thumbnailUrl: "https://example.com/thumb.jpg",
-			channelTitle: "Test Channel",
-			publishedAt: "2024-01-01T00:00:00Z",
-		};
+	describe("toLegacy", () => {
+		it("should convert to legacy format", () => {
+			const button = createSampleButton({
+				text: "Test Button",
+				tags: ["tag1", "tag2"],
+				endTime: 125,
+				viewCount: 100,
+				likeCount: 80,
+				dislikeCount: 20,
+				favoriteCount: 50,
+			});
 
-		const mockInput: CreateAudioButtonInput = {
-			title: "Test Button",
-			tags: [],
-			sourceVideoId: "video123",
-			startTime: 10,
-			endTime: 20,
-			isPublic: true,
-		};
+			const legacy = button.toLegacy();
 
-		const mockExistingButtons: FirestoreAudioButtonData[] = [
-			{
-				id: "existing1",
-				title: "Existing Button",
-				tags: [],
-				sourceVideoId: "video123",
-				startTime: 50,
-				endTime: 60,
-				createdBy: "user123",
+			expect(legacy).toEqual({
+				id: "ab_123",
+				title: "Test Button",
+				description: undefined, // Text is too short
+				tags: ["tag1", "tag2"],
+				sourceVideoId: "dQw4w9WgXcQ",
+				sourceVideoTitle: "Test Video",
+				startTime: 120,
+				endTime: 125,
+				createdBy: "user_123",
 				createdByName: "Test User",
 				isPublic: true,
-				playCount: 0,
+				playCount: 100,
+				likeCount: 80,
+				dislikeCount: 20,
+				favoriteCount: 50,
+				createdAt: "2024-01-01T00:00:00.000Z",
+				updatedAt: "2024-01-01T00:00:00.000Z",
+			});
+		});
+
+		it("should include description for long text", () => {
+			const longText = "This is a very long button text that exceeds 50 characters limit";
+			const button = createSampleButton({ text: longText });
+			const legacy = button.toLegacy();
+
+			expect(legacy.description).toBe(longText);
+		});
+	});
+
+	describe("update methods", () => {
+		it("should update content", () => {
+			const button = createSampleButton();
+			const newContent = new AudioContent(
+				new ButtonText("Updated Button"),
+				new ButtonCategory("greeting"),
+				new ButtonTags(["new", "tags"]),
+			);
+
+			const updated = button.updateContent(newContent);
+
+			expect(button.content.text.toString()).toBe("Sample Button"); // Original unchanged
+			expect(updated.content.text.toString()).toBe("Updated Button");
+			expect(updated.content.category?.toString()).toBe("greeting");
+			expect(updated.updatedAt.getTime()).toBeGreaterThan(button.updatedAt.getTime());
+		});
+
+		it("should update visibility", () => {
+			const button = createSampleButton({ isPublic: true });
+			const updated = button.updateVisibility(false);
+
+			expect(button.isPublic).toBe(true); // Original unchanged
+			expect(updated.isPublic).toBe(false);
+			expect(updated.updatedAt.getTime()).toBeGreaterThan(button.updatedAt.getTime());
+		});
+	});
+
+	describe("statistics methods", () => {
+		it("should record play", () => {
+			const button = createSampleButton({ viewCount: 100 });
+			const updated = button.recordPlay();
+
+			expect(button.statistics.viewCount.toNumber()).toBe(100); // Original unchanged
+			expect(updated.statistics.viewCount.toNumber()).toBe(101);
+			expect(updated.statistics.lastUsedAt).toBeDefined();
+		});
+
+		it("should record like", () => {
+			const button = createSampleButton({ likeCount: 10 });
+			const updated = button.recordLike();
+
+			expect(button.statistics.likeCount.toNumber()).toBe(10); // Original unchanged
+			expect(updated.statistics.likeCount.toNumber()).toBe(11);
+		});
+
+		it("should record dislike", () => {
+			const button = createSampleButton({ dislikeCount: 5 });
+			const updated = button.recordDislike();
+
+			expect(button.statistics.dislikeCount.toNumber()).toBe(5); // Original unchanged
+			expect(updated.statistics.dislikeCount.toNumber()).toBe(6);
+		});
+	});
+
+	describe("favorite methods", () => {
+		it("should increment favorite", () => {
+			const button = createSampleButton({ favoriteCount: 10 });
+			const updated = button.incrementFavorite();
+
+			expect(button.favoriteCount).toBe(10); // Original unchanged
+			expect(updated.favoriteCount).toBe(11);
+		});
+
+		it("should decrement favorite", () => {
+			const button = createSampleButton({ favoriteCount: 10 });
+			const updated = button.decrementFavorite();
+
+			expect(button.favoriteCount).toBe(10); // Original unchanged
+			expect(updated.favoriteCount).toBe(9);
+		});
+
+		it("should not go below zero when decrementing", () => {
+			const button = createSampleButton({ favoriteCount: 0 });
+			const updated = button.decrementFavorite();
+
+			expect(updated.favoriteCount).toBe(0);
+		});
+	});
+
+	describe("query methods", () => {
+		it("should check popularity", () => {
+			const popularButton = createSampleButton({
+				viewCount: 1000,
+				likeCount: 90,
+				dislikeCount: 10,
+			});
+			expect(popularButton.isPopular()).toBe(true);
+
+			const unpopularButton = createSampleButton({
+				viewCount: 50,
+				likeCount: 5,
+				dislikeCount: 5,
+			});
+			expect(unpopularButton.isPopular()).toBe(false);
+		});
+
+		it("should calculate engagement rate", () => {
+			const button = createSampleButton({
+				viewCount: 1000,
+				likeCount: 50,
+				dislikeCount: 50,
+			});
+			expect(button.getEngagementRate()).toBe(0.1); // 100 interactions / 1000 views
+		});
+
+		it("should calculate popularity score", () => {
+			const button = createSampleButton({
+				viewCount: 1000,
+				likeCount: 50,
+				dislikeCount: 10,
+			});
+			// Formula: views + (likes * 2) - dislikes = 1000 + (50 * 2) - 10 = 1090
+			expect(button.getPopularityScore()).toBe(1090);
+		});
+
+		it("should calculate engagement rate percentage", () => {
+			const button = createSampleButton({
+				viewCount: 1000,
+				likeCount: 50,
+				dislikeCount: 50,
+			});
+			// Formula: (likes + dislikes) / views * 100 = 100 / 1000 * 100 = 10%
+			expect(button.getEngagementRatePercentage()).toBe(10);
+		});
+
+		it("should return 0 engagement rate for zero views", () => {
+			const button = createSampleButton({
+				viewCount: 0,
 				likeCount: 0,
 				dislikeCount: 0,
-				favoriteCount: 0,
-				createdAt: "2024-01-01T00:00:00Z",
-				updatedAt: "2024-01-01T00:00:00Z",
-			},
-		];
-
-		it("should validate valid creation", () => {
-			const error = validateAudioButtonCreation(
-				mockInput,
-				mockVideoInfo,
-				"user123",
-				mockExistingButtons,
-			);
-			expect(error).toBeNull();
+			});
+			expect(button.getEngagementRatePercentage()).toBe(0);
 		});
 
-		it("should reject when endTime exceeds video duration", () => {
-			const invalidInput = { ...mockInput, endTime: 400 };
-			const error = validateAudioButtonCreation(
-				invalidInput,
-				mockVideoInfo,
-				"user123",
-				mockExistingButtons,
-			);
-			expect(error).toBe("終了時間が動画の長さを超えています");
+		it("should check creator ownership", () => {
+			const button = createSampleButton({ creatorId: "user_123" });
+			expect(button.belongsTo("user_123")).toBe(true);
+			expect(button.belongsTo("user_456")).toBe(false);
 		});
 
-		it("should detect duplicate buttons", () => {
-			const duplicateInput = { ...mockInput, startTime: 52, endTime: 58 };
-			const error = validateAudioButtonCreation(
-				duplicateInput,
-				mockVideoInfo,
-				"user123",
-				mockExistingButtons,
-			);
-			expect(error).toBe("類似の時間範囲で既に音声ボタンが作成されています");
-		});
+		it("should generate searchable text", () => {
+			const button = createSampleButton({
+				text: "Hello World",
+				tags: ["greeting", "test"],
+				videoTitle: "Test Video Title",
+				creatorName: "John Doe",
+			});
 
-		it("should allow different user to create similar button", () => {
-			const duplicateInput = { ...mockInput, startTime: 52, endTime: 58 };
-			const error = validateAudioButtonCreation(
-				duplicateInput,
-				mockVideoInfo,
-				"differentUser",
-				mockExistingButtons,
-			);
-			expect(error).toBeNull();
+			const searchText = button.getSearchableText();
+			expect(searchText).toContain("hello world");
+			expect(searchText).toContain("greeting");
+			expect(searchText).toContain("test");
+			expect(searchText).toContain("test video title");
+			expect(searchText).toContain("john doe");
 		});
 	});
 
-	describe("convertCreateInputToFirestoreAudioButton", () => {
-		it("should convert input to Firestore format", () => {
-			const input: CreateAudioButtonInput = {
-				title: "Test Button",
-				description: "Test Description",
-				tags: ["tag1", "tag2"],
-				sourceVideoId: "video123",
-				startTime: 10,
-				endTime: 20,
-				isPublic: true,
-			};
-
-			const result = convertCreateInputToFirestoreAudioButton(input, "user123", "Test User");
-
-			expect(result.title).toBe(input.title);
-			expect(result.description).toBe(input.description);
-			expect(result.tags).toEqual(input.tags);
-			expect(result.createdBy).toBe("user123");
-			expect(result.createdByName).toBe("Test User");
-			expect(result.playCount).toBe(0);
-			expect(result.likeCount).toBe(0);
-			expect(result.dislikeCount).toBe(0);
-			expect(result.favoriteCount).toBe(0);
-			expect(result.createdAt).toBeDefined();
-			expect(result.updatedAt).toBeDefined();
+	describe("validation", () => {
+		it("should be valid for correct data", () => {
+			const button = createSampleButton();
+			expect(button.isValid()).toBe(true);
+			expect(button.getValidationErrors()).toEqual([]);
 		});
 
-		it("should handle missing optional fields", () => {
-			const input: CreateAudioButtonInput = {
-				title: "Test Button",
-				tags: [],
-				sourceVideoId: "video123",
-				startTime: 10,
-				endTime: 20,
-				isPublic: false,
-			};
-
-			const result = convertCreateInputToFirestoreAudioButton(input, "user123", "Test User");
-
-			expect(result.description).toBeUndefined();
-			expect(result.tags).toEqual([]);
-			expect(result.isPublic).toBe(false);
-		});
-	});
-
-	describe("formatTimestamp", () => {
-		it("should format seconds without hours", () => {
-			expect(formatTimestamp(65.5)).toBe("1:05.5");
-			expect(formatTimestamp(125.3)).toBe("2:05.3");
-		});
-
-		it("should format seconds with hours", () => {
-			expect(formatTimestamp(3665.7)).toBe("1:01:05.7");
-			expect(formatTimestamp(7325.1)).toBe("2:02:05.1");
-		});
-
-		it("should handle edge cases", () => {
-			expect(formatTimestamp(0)).toBe("0:00.0");
-			expect(formatTimestamp(59.9)).toBe("0:59.9");
-			expect(formatTimestamp(3600)).toBe("1:00:00.0");
-		});
-
-		it("should handle decimal precision", () => {
-			expect(formatTimestamp(10.14)).toBe("0:10.1");
-			expect(formatTimestamp(10.16)).toBe("0:10.2");
-		});
-	});
-
-	describe("Serialization functions", () => {
-		const mockButton: FrontendAudioButtonData = {
-			id: "btn1",
-			title: "Test Button",
-			description: "Test Description",
-			tags: ["tag1"],
-			sourceVideoId: "video123",
-			sourceVideoThumbnailUrl: "https://example.com/thumb.jpg",
-			startTime: 10,
-			endTime: 20,
-			createdAt: "2024-01-01T00:00:00Z",
-			createdBy: "user123",
-			createdByName: "Test User",
-			isPublic: true,
-			likeCount: 50,
-			dislikeCount: 5,
-			playCount: 100,
-			favoriteCount: 10,
-			updatedAt: "2024-01-01T00:00:00Z",
-			durationText: "10秒",
-			relativeTimeText: "3日前",
-		};
-
-		it("should serialize and deserialize correctly", () => {
-			const serialized = serializeAudioButtonForRSC(mockButton);
-			expect(typeof serialized).toBe("string");
-
-			const deserialized = deserializeAudioButtonForRCC(serialized);
-			expect(deserialized).toEqual(mockButton);
-		});
-
-		it("should handle deserialization errors", () => {
-			expect(() => deserializeAudioButtonForRCC("invalid json")).toThrow(
-				"音声ボタンデータの形式が無効です",
+		it("should validate creator info", () => {
+			const button = new AudioButton(
+				AudioButtonId.generate(),
+				new AudioContent(new ButtonText("Test")),
+				new AudioReference(
+					new AudioVideoId("dQw4w9WgXcQ"),
+					new AudioVideoTitle("Test"),
+					new Timestamp(0),
+				),
+				new ButtonStatistics(),
+				{ id: "", name: "" }, // Invalid creator info
+				true,
 			);
+
+			expect(button.isValid()).toBe(false);
+			expect(button.getValidationErrors()).toContain("Creator information is incomplete");
 		});
 
-		it("should validate deserialized data", () => {
-			const invalidData = { ...mockButton, id: "" }; // Invalid: empty id
-			const serialized = JSON.stringify(invalidData);
+		it("should validate timestamps", () => {
+			const button = new AudioButton(
+				AudioButtonId.generate(),
+				new AudioContent(new ButtonText("Test")),
+				new AudioReference(
+					new AudioVideoId("dQw4w9WgXcQ"),
+					new AudioVideoTitle("Test"),
+					new Timestamp(0),
+				),
+				new ButtonStatistics(),
+				{ id: "user", name: "User" },
+				true,
+				new Date("2024-01-02"), // Created after updated
+				new Date("2024-01-01"), // Updated before created
+			);
 
-			expect(() => deserializeAudioButtonForRCC(serialized)).toThrow();
+			expect(button.isValid()).toBe(false);
+			expect(button.getValidationErrors()).toContain("Created date cannot be after updated date");
+		});
+
+		it("should validate favorite count", () => {
+			const button = new AudioButton(
+				AudioButtonId.generate(),
+				new AudioContent(new ButtonText("Test")),
+				new AudioReference(
+					new AudioVideoId("dQw4w9WgXcQ"),
+					new AudioVideoTitle("Test"),
+					new Timestamp(0),
+				),
+				new ButtonStatistics(),
+				{ id: "user", name: "User" },
+				true,
+				new Date(),
+				new Date(),
+				-1, // Negative favorite count
+			);
+
+			expect(button.isValid()).toBe(false);
+			expect(button.getValidationErrors()).toContain("Favorite count cannot be negative");
+		});
+	});
+
+	describe("clone", () => {
+		it("should create deep copy", () => {
+			const button = createSampleButton();
+			const cloned = button.clone();
+
+			expect(cloned.equals(button)).toBe(true);
+			expect(cloned).not.toBe(button); // Different instances
+
+			// Verify deep copy
+			const updatedClone = cloned.updateContent(new AudioContent(new ButtonText("Modified")));
+			expect(button.content.text.toString()).toBe("Sample Button");
+			expect(cloned.content.text.toString()).toBe("Sample Button");
+			expect(updatedClone.content.text.toString()).toBe("Modified");
+		});
+	});
+
+	describe("equals", () => {
+		it("should return true for identical buttons", () => {
+			const button1 = createSampleButton();
+			const button2 = createSampleButton();
+			expect(button1.equals(button2)).toBe(true);
+		});
+
+		it("should return false for different IDs", () => {
+			const button1 = createSampleButton({ id: "ab_123" });
+			const button2 = createSampleButton({ id: "ab_456" });
+			expect(button1.equals(button2)).toBe(false);
+		});
+
+		it("should return false for different content", () => {
+			const button1 = createSampleButton({ text: "Button 1" });
+			const button2 = createSampleButton({ text: "Button 2" });
+			expect(button1.equals(button2)).toBe(false);
+		});
+
+		it("should return false for different creators", () => {
+			const button1 = createSampleButton({ creatorId: "user_123" });
+			const button2 = createSampleButton({ creatorId: "user_456" });
+			expect(button1.equals(button2)).toBe(false);
+		});
+
+		it("should return false for null or wrong type", () => {
+			const button = createSampleButton();
+			expect(button.equals(null as any)).toBe(false);
+			expect(button.equals({} as any)).toBe(false);
 		});
 	});
 });

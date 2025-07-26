@@ -12,8 +12,6 @@ export * from "./api-schemas/dlsite-raw";
 export * from "./config";
 // 音声ボタン関連の型とスキーマのエクスポート
 export * from "./entities/audio-button";
-// 新しいAudioButton Entity (V2) - Entity/Value Objectアーキテクチャ
-export * from "./entities/audio-button-v2";
 // === Entities ===
 // Base entity infrastructure
 export * from "./entities/base/entity";
@@ -29,8 +27,6 @@ export * from "./entities/user";
 export * from "./entities/user-evaluation";
 // 動画関連の型とスキーマのエクスポート
 export * from "./entities/video";
-// 新しいVideo Entity (V2) - Entity/Value Objectアーキテクチャ
-export * from "./entities/video-v2";
 // DLsite作品関連の型とスキーマのエクスポート
 export * from "./entities/work";
 // 作品評価関連の型とスキーマのエクスポート

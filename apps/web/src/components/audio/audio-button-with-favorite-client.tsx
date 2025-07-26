@@ -41,7 +41,7 @@ export function AudioButtonWithFavoriteClient({
 	const [isLiked, setIsLiked] = useState(initialIsLiked);
 	const [isDisliked, setIsDisliked] = useState(initialIsDisliked);
 	const [likeCount, setLikeCount] = useState(audioButton.likeCount);
-	const [dislikeCount, setDislikeCount] = useState(audioButton.dislikeCount);
+	const [dislikeCount, setDislikeCount] = useState(audioButton.dislikeCount || 0);
 	const [_isPending, startTransition] = useTransition();
 	const isAuthenticated = !!session?.user;
 
@@ -117,7 +117,7 @@ export function AudioButtonWithFavoriteClient({
 		// 低評価が付いている場合は取り消し
 		if (isDisliked) {
 			setIsDisliked(false);
-			setDislikeCount(dislikeCount - 1);
+			setDislikeCount(Math.max(0, dislikeCount - 1));
 		}
 
 		return previousState;
@@ -158,7 +158,7 @@ export function AudioButtonWithFavoriteClient({
 		};
 
 		setIsDisliked(!isDisliked);
-		setDislikeCount(isDisliked ? dislikeCount - 1 : dislikeCount + 1);
+		setDislikeCount(isDisliked ? Math.max(0, dislikeCount - 1) : dislikeCount + 1);
 
 		// いいねが付いている場合は取り消し
 		if (isLiked) {

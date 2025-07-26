@@ -50,6 +50,7 @@ export function AudioButtonCreator({
 		try {
 			const input: CreateAudioButtonInput = {
 				sourceVideoId: videoId,
+				sourceVideoTitle: videoTitle,
 				title: title.trim(),
 				description: description.trim() || undefined,
 				tags,
@@ -81,6 +82,7 @@ export function AudioButtonCreator({
 		router,
 		setIsCreating,
 		setError,
+		videoTitle,
 	]);
 
 	// 時間調整用のハンドラーは共通フックから取得

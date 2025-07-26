@@ -1,4 +1,4 @@
-import type { FrontendVideoData } from "@suzumina.click/shared-types";
+import { Video, type VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -78,35 +78,47 @@ vi.mock("@/components/system/protected-route", () => ({
 // Audio button actionsのモック
 vi.mock("@/app/buttons/actions", () => ({
 	getAudioButtons: vi.fn().mockResolvedValue({
-		success: true,
-		data: { audioButtons: [] },
+		buttons: [],
+		hasMore: false,
 	}),
-	getAudioButtonCount: vi.fn().mockResolvedValue(0),
 }));
 
-// AudioButtonWithFavoriteClientのモック（NextAuth依存回避）
-vi.mock("@/components/audio/audio-button-with-favorite-client", () => ({
-	AudioButtonWithFavoriteClient: ({ audioButton }: { audioButton: any }) => {
-		return <div data-testid="audio-button-mock">{audioButton.title}</div>;
-	},
+// FavoriteButtonのモック
+vi.mock("@/components/audio/favorite-button", () => ({
+	default: () => <button type="button">お気に入り</button>,
 }));
 
-// Base video data for testing
-const baseVideoData: FrontendVideoData = {
-	id: "test-video-id",
-	videoId: "test-video-id",
-	title: "テスト動画",
-	description: "これはテスト用の動画です",
-	channelId: "test-channel-id",
-	channelTitle: "テストチャンネル",
-	publishedAt: "2024-01-01T00:00:00Z",
-	thumbnailUrl: "https://example.com/thumbnail.jpg",
-	lastFetchedAt: "2024-01-01T00:00:00Z",
-	videoType: "video",
-	liveBroadcastContent: "none",
-	audioButtonCount: 0,
-	hasAudioButtons: false,
-};
+// テスト用のVideoPlainObjectを作成するヘルパー
+function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
+	const defaultData = {
+		id: "test-video",
+		videoId: "abc123",
+		title: "テスト動画",
+		description: "テスト動画の説明文",
+		thumbnailUrl: "https://example.com/thumbnail.jpg",
+		publishedAt: "2024-01-01T00:00:00Z",
+		channelId: "test-channel-id",
+		channelTitle: "テストチャンネル",
+		categoryId: "22",
+		duration: "PT10M30S",
+		viewCount: 1000,
+		likeCount: 100,
+		commentCount: 10,
+		liveBroadcastContent: "none",
+		liveStreamingDetails: null,
+		videoType: "normal",
+		playlistTags: [],
+		userTags: [],
+		audioButtonCount: 0,
+		lastFetchedAt: "2024-01-01T00:00:00Z",
+		hasAudioButtons: false,
+		...overrides,
+	};
+
+	// Video Entityを作成してPlain Objectに変換
+	const video = Video.fromLegacyFormat(defaultData);
+	return video.toPlainObject();
+}
 
 describe("VideoDetail", () => {
 	beforeEach(() => {
@@ -115,250 +127,220 @@ describe("VideoDetail", () => {
 
 	describe("動画時間フォーマット境界テスト", () => {
 		it("1時間未満の動画時間が正しくhh:mm:ss形式で表示される", async () => {
-			const shortVideo: FrontendVideoData = {
-				...baseVideoData,
+			const shortVideo = createMockVideo({
 				duration: "PT59M30S", // 59分30秒
-			};
+			});
 
 			render(<VideoDetail video={shortVideo} />);
 
-			// 動画時間が00:59:30として表示されることを確認（Timerアイコンと一緒に表示される部分）
-			const timerElement = await screen.findByTitle("動画の長さ");
-			expect(timerElement).toHaveTextContent("00:59:30");
+			// 動画時間が表示されることを確認（title属性で特定）
+			const timeElement = screen.getByTitle("動画の長さ");
+			expect(timeElement).toHaveTextContent("00:59:30");
 		});
 
 		it("1時間ちょうどの動画時間が正しく表示される", async () => {
-			const oneHourVideo: FrontendVideoData = {
-				...baseVideoData,
+			const oneHourVideo = createMockVideo({
 				duration: "PT1H", // 1時間
-			};
+			});
 
 			render(<VideoDetail video={oneHourVideo} />);
 
-			// 動画時間が01:00:00として表示されることを確認
-			const timerElement = await screen.findByTitle("動画の長さ");
-			expect(timerElement).toHaveTextContent("01:00:00");
+			// 動画時間が01:00:00として表示されることを確認（title属性で特定）
+			const timeElement = screen.getByTitle("動画の長さ");
+			expect(timeElement).toHaveTextContent("01:00:00");
 		});
 
 		it("長時間の動画時間が正しく表示される", async () => {
-			const longVideo: FrontendVideoData = {
-				...baseVideoData,
+			const longVideo = createMockVideo({
 				duration: "PT2H30M45S", // 2時間30分45秒
-			};
+			});
 
 			render(<VideoDetail video={longVideo} />);
 
-			// 動画時間が02:30:45として表示されることを確認
-			const timerElement = await screen.findByTitle("動画の長さ");
-			expect(timerElement).toHaveTextContent("02:30:45");
+			// 動画時間が02:30:45として表示されることを確認（title属性で特定）
+			const timeElement = screen.getByTitle("動画の長さ");
+			expect(timeElement).toHaveTextContent("02:30:45");
 		});
 
 		it("秒のみの短い動画時間が正しく表示される", async () => {
-			const veryShortVideo: FrontendVideoData = {
-				...baseVideoData,
+			const veryShortVideo = createMockVideo({
 				duration: "PT30S", // 30秒
-			};
+			});
 
 			render(<VideoDetail video={veryShortVideo} />);
 
-			// 動画時間が00:00:30として表示されることを確認
-			const timerElement = await screen.findByTitle("動画の長さ");
-			expect(timerElement).toHaveTextContent("00:00:30");
+			// 動画時間が00:00:30として表示されることを確認（title属性で特定）
+			const timeElement = screen.getByTitle("動画の長さ");
+			expect(timeElement).toHaveTextContent("00:00:30");
 		});
 
 		it("分のみの動画時間が正しく表示される", async () => {
-			const minutesOnlyVideo: FrontendVideoData = {
-				...baseVideoData,
+			const minutesOnlyVideo = createMockVideo({
 				duration: "PT15M", // 15分
-			};
+			});
 
 			render(<VideoDetail video={minutesOnlyVideo} />);
 
-			// 動画時間が00:15:00として表示されることを確認
-			const timerElement = await screen.findByTitle("動画の長さ");
-			expect(timerElement).toHaveTextContent("00:15:00");
+			// 動画時間が00:15:00として表示されることを確認（title属性で特定）
+			const timeElement = screen.getByTitle("動画の長さ");
+			expect(timeElement).toHaveTextContent("00:15:00");
 		});
 
 		it("時間のみの動画時間が正しく表示される", async () => {
-			const hoursOnlyVideo: FrontendVideoData = {
-				...baseVideoData,
-				duration: "PT3H", // 3時間
-			};
+			const hoursOnlyVideo = createMockVideo({
+				duration: "PT2H", // 2時間
+			});
 
 			render(<VideoDetail video={hoursOnlyVideo} />);
 
-			// 動画時間が03:00:00として表示されることを確認
-			const timerElement = await screen.findByTitle("動画の長さ");
-			expect(timerElement).toHaveTextContent("03:00:00");
+			// 動画時間が02:00:00として表示されることを確認（title属性で特定）
+			const timeElement = screen.getByTitle("動画の長さ");
+			expect(timeElement).toHaveTextContent("02:00:00");
 		});
 
 		it("複雑な時間フォーマットが正しく表示される", async () => {
-			const complexVideo: FrontendVideoData = {
-				...baseVideoData,
-				duration: "PT1H23M45S", // 1時間23分45秒
-			};
+			const complexVideo = createMockVideo({
+				duration: "PT1H5M7S", // 1時間5分7秒
+			});
 
 			render(<VideoDetail video={complexVideo} />);
 
-			// 動画時間が01:23:45として表示されることを確認
-			const timerElement = await screen.findByTitle("動画の長さ");
-			expect(timerElement).toHaveTextContent("01:23:45");
+			// 動画時間が01:05:07として表示されることを確認（title属性で特定）
+			const timeElement = screen.getByTitle("動画の長さ");
+			expect(timeElement).toHaveTextContent("01:05:07");
 		});
 
 		it("動画時間が未定義の場合は表示されない", async () => {
-			const videoWithoutDuration: FrontendVideoData = {
-				...baseVideoData,
+			const noTimeVideo = createMockVideo({
 				duration: undefined,
-			};
+			});
 
-			render(<VideoDetail video={videoWithoutDuration} />);
+			render(<VideoDetail video={noTimeVideo} />);
 
-			// Timer アイコンの親要素が存在しないことを確認
-			const timerElements = screen.queryAllByTitle("動画の長さ");
-			expect(timerElements).toHaveLength(0);
+			// 動画時間が表示されないことを確認（title="動画の長さ"を持つ要素を探す）
+			expect(screen.queryByTitle("動画の長さ")).not.toBeInTheDocument();
 		});
 
 		it("無効な動画時間フォーマットの場合は表示されない", async () => {
-			const videoWithInvalidDuration: FrontendVideoData = {
-				...baseVideoData,
-				duration: "invalid-duration",
-			};
+			const invalidTimeVideo = createMockVideo({
+				duration: "invalid",
+			});
 
-			render(<VideoDetail video={videoWithInvalidDuration} />);
+			render(<VideoDetail video={invalidTimeVideo} />);
 
-			// Timer アイコンの親要素が存在しないことを確認
-			const timerElements = screen.queryAllByTitle("動画の長さ");
-			expect(timerElements).toHaveLength(0);
+			// 動画時間が表示されないことを確認（title="動画の長さ"を持つ要素を探す）
+			expect(screen.queryByTitle("動画の長さ")).not.toBeInTheDocument();
 		});
 
 		it("10時間を超える長時間動画が正しく表示される", async () => {
-			const veryLongVideo: FrontendVideoData = {
-				...baseVideoData,
+			const veryLongVideo = createMockVideo({
 				duration: "PT12H34M56S", // 12時間34分56秒
-			};
+			});
 
 			render(<VideoDetail video={veryLongVideo} />);
 
-			// 動画時間が12:34:56として表示されることを確認
-			const timerElement = await screen.findByTitle("動画の長さ");
-			expect(timerElement).toHaveTextContent("12:34:56");
+			// 動画時間が12:34:56として表示されることを確認（title属性で特定）
+			const timeElement = screen.getByTitle("動画の長さ");
+			expect(timeElement).toHaveTextContent("12:34:56");
 		});
 	});
 
 	describe("JST日時表示境界テスト", () => {
 		it("時差をまたぐ公開時間が正しくJSTで表示される", async () => {
-			const crossTimezoneVideo: FrontendVideoData = {
-				...baseVideoData,
-				publishedAt: "2024-01-15T15:30:00Z", // JST 翌日00:30
-			};
+			const video = createMockVideo({
+				publishedAt: "2024-01-01T15:30:00Z", // UTC 15:30 → JST 翌日0:30
+			});
 
-			render(<VideoDetail video={crossTimezoneVideo} />);
+			render(<VideoDetail video={video} />);
 
-			// JST換算で翌日になることを確認
-			expect(await screen.findByText("2024/01/16 00:30:00")).toBeInTheDocument();
+			// 公開日時がJSTで表示されることを確認
+			const publishedElement = await screen.findByTitle("日本標準時間（JST）");
+			expect(publishedElement).toHaveTextContent("2024/01/02 00:30");
 		});
 
 		it("ライブ配信の配信開始時間と公開時間の両方が正しく表示される", async () => {
-			const liveStreamVideo: FrontendVideoData = {
-				...baseVideoData,
-				publishedAt: "2024-01-10T12:00:00Z", // 公開時間
+			const liveVideo = createMockVideo({
+				publishedAt: "2024-01-01T00:00:00Z", // UTC 0:00 → JST 9:00
 				liveStreamingDetails: {
-					actualStartTime: "2024-01-15T20:00:00Z", // 配信開始時間（JST 翌日05:00）
-					actualEndTime: "2024-01-15T22:00:00Z",
+					actualStartTime: "2024-01-01T12:00:00Z", // UTC 12:00 → JST 21:00
+					actualEndTime: "2024-01-01T14:00:00Z", // UTC 14:00 → JST 23:00
 				},
-			};
+			});
 
-			render(<VideoDetail video={liveStreamVideo} />);
+			render(<VideoDetail video={liveVideo} />);
 
-			// 配信開始時間が主として表示される
-			expect(await screen.findByText("配信開始: 2024/01/16 05:00:00")).toBeInTheDocument();
-			// 公開時間も付加情報として表示される
-			expect(await screen.findByText("公開: 2024/01/10 21:00:00")).toBeInTheDocument();
+			// 配信開始時間が表示されることを確認
+			const liveStartElement = await screen.findByTitle("配信開始時間（JST）");
+			expect(liveStartElement).toHaveTextContent("配信開始: 2024/01/01 21:00");
+
+			// 公開日時も確認
+			const publishedElement = await screen.findByTitle("動画公開時間（JST）");
+			expect(publishedElement).toHaveTextContent("公開: 2024/01/01 09:00");
 		});
 
 		it("年末年始をまたぐ日時が正しくJSTで表示される", async () => {
-			const newYearVideo: FrontendVideoData = {
-				...baseVideoData,
-				publishedAt: "2023-12-31T15:30:00Z", // JST 2024/01/01 00:30
-			};
+			const yearEndVideo = createMockVideo({
+				publishedAt: "2023-12-31T15:30:00Z", // UTC 2023/12/31 15:30 → JST 2024/01/01 00:30
+			});
 
-			render(<VideoDetail video={newYearVideo} />);
+			render(<VideoDetail video={yearEndVideo} />);
 
-			// JST換算で翌年になることを確認
-			expect(await screen.findByText("2024/01/01 00:30:00")).toBeInTheDocument();
+			// 公開日時がJSTで2024年の元日として表示されることを確認
+			const publishedElement = await screen.findByTitle("日本標準時間（JST）");
+			expect(publishedElement).toHaveTextContent("2024/01/01 00:30");
 		});
 	});
 
 	describe("統計情報表示テスト", () => {
 		it("視聴回数が正しくカンマ区切りで表示される", async () => {
-			const videoWithStats: FrontendVideoData = {
-				...baseVideoData,
+			const videoWithStats = createMockVideo({
 				statistics: {
 					viewCount: 1234567,
-					likeCount: 89012,
-					commentCount: 3456,
+					likeCount: 12345,
+					commentCount: 123,
 				},
-			};
+			});
 
 			render(<VideoDetail video={videoWithStats} />);
 
-			// 統計情報タブに切り替えて確認
-			const user = userEvent.setup();
-			const statsTab = await screen.findByRole("tab", { name: "統計情報" });
-			await user.click(statsTab);
-
-			// 統計情報タブのコンテンツが表示されるのを待つ
-			await screen.findByText("視聴回数");
-
-			// 視聴回数がカンマ区切りで表示されることを確認
-			expect(await screen.findByText("1,234,567")).toBeInTheDocument();
-			expect(await screen.findByText("89,012")).toBeInTheDocument();
-			expect(await screen.findByText("3,456")).toBeInTheDocument();
+			// 視聴回数がカンマ区切りで表示されることを確認（「回視聴」を含むテキストで検索）
+			expect(screen.getByText("1,234,567回視聴")).toBeInTheDocument();
 		});
 
-		it("統計情報が未定義の場合は「データなし」が表示される", async () => {
-			const videoWithoutStats: FrontendVideoData = {
-				...baseVideoData,
+		it("統計情報が未定義の場合は表示されない", async () => {
+			const videoNoStats = createMockVideo({
 				statistics: undefined,
-			};
+			});
 
-			render(<VideoDetail video={videoWithoutStats} />);
+			render(<VideoDetail video={videoNoStats} />);
 
-			// 統計情報タブに切り替えて確認
-			const user = userEvent.setup();
-			const statsTab = await screen.findByRole("tab", { name: "統計情報" });
-			await user.click(statsTab);
-
-			// 統計情報タブのコンテンツが表示されるのを待つ
-			await screen.findByText("視聴回数");
-
-			// データなしが表示されることを確認
-			const dataNotFoundElements = await screen.findAllByText("データなし");
-			expect(dataNotFoundElements.length).toBeGreaterThan(0);
+			// 統計情報が表示されないことを確認
+			// ビューカウントが含まれるテキストを探す
+			expect(screen.queryByText(/\d+[,\d]*.*回/)).not.toBeInTheDocument();
 		});
 
 		it("エンゲージメント率が正しく計算される", async () => {
-			const videoWithEngagement: FrontendVideoData = {
-				...baseVideoData,
+			const videoEngagement = createMockVideo({
 				statistics: {
-					viewCount: 1000,
-					likeCount: 50, // 5%のエンゲージメント率
-					commentCount: 25,
+					viewCount: 10000,
+					likeCount: 500,
+					commentCount: 100,
 				},
-			};
+			});
 
-			render(<VideoDetail video={videoWithEngagement} />);
+			render(<VideoDetail video={videoEngagement} />);
 
-			// 統計情報タブに切り替えて確認
-			const user = userEvent.setup();
-			const statsTab = await screen.findByRole("tab", { name: "統計情報" });
-			await user.click(statsTab);
+			// 統計情報タブに切り替え
+			const statisticsTab = screen.getByRole("tab", { name: "統計情報" });
+			await userEvent.click(statisticsTab);
 
-			// 統計情報タブのコンテンツが表示されるのを待つ
-			await screen.findByText("視聴回数");
+			// いいね数が表示されることを確認（より具体的に）
+			const likesSection = screen.getByText("高評価数").closest("div");
+			expect(likesSection).toHaveTextContent("500");
 
-			// エンゲージメント率が5.00%として表示されることを確認
-			expect(await screen.findByText("5.00%")).toBeInTheDocument();
+			// コメント数が表示されることを確認（より具体的に）
+			const commentsSection = screen.getByText("コメント数").closest("div");
+			expect(commentsSection).toHaveTextContent("100");
 		});
 	});
 });

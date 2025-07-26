@@ -13,7 +13,7 @@ vi.mock("../youtube", () => ({
 }));
 
 vi.mock("../dlsite-individual-info-api", () => ({
-	fetchDLsiteWorksIndividualAPI: vi.fn(),
+	fetchDLsiteUnifiedData: vi.fn(),
 }));
 
 vi.mock("../supplement-notification", () => ({

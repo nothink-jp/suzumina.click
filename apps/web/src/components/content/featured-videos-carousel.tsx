@@ -13,7 +13,7 @@ export function FeaturedVideosCarousel({ videos }: FeaturedVideosCarouselProps) 
 			items={videos}
 			renderItem={(video, index) => <VideoCard video={video} priority={index < 3} />}
 			emptyStateMessage={UI_MESSAGES.LOADING.GENERAL}
-			getItemKey={(video) => video.id}
+			getItemKey={(video) => video.id || video.videoId}
 		/>
 	);
 }
