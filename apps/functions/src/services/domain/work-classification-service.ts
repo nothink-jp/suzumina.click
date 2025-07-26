@@ -20,6 +20,13 @@ export class WorkClassificationService {
 	 *
 	 * NOTE: workFormatベースの判定のみ残されています。
 	 * categoryベースの判定はWorkエンティティのメソッドを使用してください。
+	 *
+	 * TODO: 将来的にWork.toPlainObject()._computed.displayCategoryを使用する実装に移行予定
+	 * 移行時は以下のようなコードになります：
+	 * ```typescript
+	 * const workEntity = Work.fromFirestoreData(work);
+	 * return workEntity?.toPlainObject()._computed.displayCategory || 'other';
+	 * ```
 	 */
 	static determineMainCategory(work: OptimizedFirestoreDLsiteWorkData): string {
 		// workFormat から主要カテゴリを判定
@@ -62,6 +69,15 @@ export class WorkClassificationService {
 	 * 作品の人気度を計算（1-100のスコア）
 	 *
 	 * NOTE: 新作ボーナスの計算はWork.isNewRelease()を併用することを推奨
+	 *
+	 * TODO: 将来的にWorkエンティティベースの実装に移行予定
+	 * 移行時は以下のようなコードになります：
+	 * ```typescript
+	 * const workEntity = Work.fromFirestoreData(work);
+	 * if (!workEntity) return 0;
+	 *
+	 * // workEntity.rating, workEntity.isNewRelease()等を使用
+	 * ```
 	 */
 	static calculatePopularityScore(work: OptimizedFirestoreDLsiteWorkData): number {
 		let score = 0;

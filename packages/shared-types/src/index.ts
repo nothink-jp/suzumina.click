@@ -50,6 +50,8 @@ export * from "./utilities/firestore-utils";
 export * from "./utilities/price-history";
 // 検索フィルター関連の型とスキーマのエクスポート
 export * from "./utilities/search-filters";
+// Work変換ユーティリティのエクスポート
+export * from "./utilities/work-conversions";
 // ユーティリティ関数
 export * from "./utils";
 // === Value Objects ===
