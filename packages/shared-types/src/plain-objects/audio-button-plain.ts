@@ -8,6 +8,9 @@ import type { FirestoreServerAudioButtonData } from "../types/firestore/audio-bu
 
 /**
  * Computed properties for audio button business logic
+ *
+ * This interface can be extended in the future to add more computed properties
+ * without breaking existing implementations.
  */
 export interface AudioButtonComputedProperties {
 	isPopular: boolean;
@@ -17,6 +20,10 @@ export interface AudioButtonComputedProperties {
 	searchableText: string;
 	durationText: string;
 	relativeTimeText: string;
+	// Future computed properties can be added here as optional fields
+	// For example:
+	// trendingScore?: number;
+	// viralityIndex?: number;
 }
 
 /**

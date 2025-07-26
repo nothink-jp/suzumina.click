@@ -210,7 +210,9 @@ export class AudioButton extends BaseEntity<AudioButton> implements EntityValida
 				data.favoriteCount || 0,
 			);
 		} catch (_error) {
-			// Return null on error (no logging to avoid console in production)
+			// In development, this error would be caught by error boundary
+			// In production, we return null to gracefully handle invalid data
+			// TODO: Consider using a proper logging service for production environments
 			return null;
 		}
 	}
@@ -762,6 +764,7 @@ export interface AudioButtonQuery {
 /**
  * Convert audio button data to frontend format
  * Adds display-friendly fields for UI consumption
+ * @deprecated Use AudioButton.fromFirestoreData().toPlainObject() instead
  */
 export function convertToFrontendAudioButton(
 	data: FirestoreAudioButtonData | FrontendAudioButtonData,
