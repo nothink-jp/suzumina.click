@@ -54,7 +54,7 @@ function convertFirestoreToAudioButton(button: FirestoreAudioButtonData): AudioB
 		};
 		return AudioButton.fromLegacy(normalizedData);
 	} catch (error) {
-		logger.error("AudioButton V2変換エラー", {
+		logger.error("AudioButton変換エラー", {
 			buttonId: button.id,
 			error: error instanceof Error ? error.message : String(error),
 		});
@@ -63,7 +63,7 @@ function convertFirestoreToAudioButton(button: FirestoreAudioButtonData): AudioB
 }
 
 /**
- * Entity V2を使用した新着音声ボタンの取得
+ * Entityを使用した新着音声ボタンの取得
  */
 export async function getRecentAudioButtons(limit = 10): Promise<FrontendAudioButtonData[]> {
 	try {
@@ -82,7 +82,7 @@ export async function getRecentAudioButtons(limit = 10): Promise<FrontendAudioBu
 }
 
 /**
- * Entity V2を使用した音声ボタンの取得
+ * Entityを使用した音声ボタンの取得
  */
 export async function getAudioButtons(
 	query: {
@@ -182,13 +182,13 @@ export async function getAudioButtons(
 		// フィルタリングはクエリで実施済みなので、そのまま使用
 		const filteredButtons = buttons;
 
-		// Entity V2に変換
-		const v2Buttons = filteredButtons
+		// Entityに変換
+		const entityButtons = filteredButtons
 			.map(convertFirestoreToAudioButton)
 			.filter((button): button is AudioButton => button !== null);
 
 		// レガシー形式に変換して返す（互換性のため）
-		const frontendButtons = v2Buttons.map((button) => {
+		const frontendButtons = entityButtons.map((button) => {
 			const legacy = button.toLegacy();
 			return convertToFrontendAudioButton(legacy);
 		});
@@ -202,7 +202,7 @@ export async function getAudioButtons(
 			},
 		};
 	} catch (error) {
-		logger.error("音声ボタンV2取得でエラーが発生", {
+		logger.error("音声ボタン取得でエラーが発生", {
 			action: "getAudioButtons",
 			query,
 			error: error instanceof Error ? error.message : String(error),

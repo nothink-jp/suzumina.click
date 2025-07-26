@@ -2,24 +2,26 @@
  * AudioButton Entity
  *
  * Represents an audio button with rich domain behavior using Value Objects.
- * This new implementation maintains backward compatibility while introducing
- * a cleaner domain model with proper encapsulation and business logic.
+ * This implementation follows the Entity Implementation Guidelines,
+ * prioritizing practical design for Next.js + Cloud Functions environment.
  */
 
 import { z } from "zod";
-import { AudioContent, ButtonTags, ButtonText } from "../value-objects/audio-content";
+import type { AudioButtonPlainObject } from "../plain-objects/audio-button-plain";
+import type { FirestoreServerAudioButtonData } from "../types/firestore/audio-button";
+import { AudioContent, ButtonTags, ButtonText } from "../value-objects/audio-button/audio-content";
 import {
 	AudioReference,
 	AudioVideoId,
 	AudioVideoTitle,
 	Timestamp,
-} from "../value-objects/audio-reference";
+} from "../value-objects/audio-button/audio-reference";
 import {
 	ButtonDislikeCount,
 	ButtonLikeCount,
 	ButtonStatistics,
 	ButtonViewCount,
-} from "../value-objects/button-statistics";
+} from "../value-objects/audio-button/button-statistics";
 import { BaseEntity, type EntityValidatable } from "./base/entity";
 
 /**
@@ -60,6 +62,7 @@ export interface AudioButtonCreatorInfo {
 
 /**
  * Legacy type for frontend audio button data
+ * @deprecated Use AudioButtonPlainObject from plain-objects/audio-button-plain.ts
  */
 export interface FrontendAudioButtonData {
 	id: string;
@@ -86,16 +89,17 @@ export interface FrontendAudioButtonData {
 
 /**
  * Legacy type for Firestore audio button data
+ * @deprecated Use FirestoreServerAudioButtonData from types/firestore/audio-button.ts
  */
 export interface FirestoreAudioButtonData extends FrontendAudioButtonData {
 	// Firestore-specific fields can be added here if needed
 }
 
 /**
- * Legacy type for audio button list result
+ * Audio button list result
  */
 export interface AudioButtonListResult {
-	items: FrontendAudioButtonData[];
+	items: AudioButtonPlainObject[];
 	total: number;
 	page: number;
 	pageSize: number;
@@ -155,7 +159,66 @@ export class AudioButton extends BaseEntity<AudioButton> implements EntityValida
 	}
 
 	/**
-	 * Creates AudioButton from legacy format
+	 * Creates AudioButton from Firestore data (most important method)
+	 */
+	static fromFirestoreData(data: FirestoreServerAudioButtonData): AudioButton | null {
+		try {
+			// Timestamp processing helper
+			const convertTimestamp = (timestamp: unknown): Date => {
+				if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
+					// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
+					return (timestamp as any).toDate();
+				}
+				if (typeof timestamp === "string") {
+					return new Date(timestamp);
+				}
+				return new Date();
+			};
+
+			// Create value objects from Firestore data
+			const content = new AudioContent(
+				new ButtonText(data.title),
+				undefined, // Category will be inferred from tags or set later
+				new ButtonTags(data.tags || []),
+			);
+
+			const reference = new AudioReference(
+				new AudioVideoId(data.sourceVideoId),
+				new AudioVideoTitle(data.sourceVideoTitle || "Unknown Video"),
+				new Timestamp(data.startTime),
+				new Timestamp(data.endTime || data.startTime),
+			);
+
+			const statistics = new ButtonStatistics(
+				new ButtonViewCount(data.playCount || 0),
+				new ButtonLikeCount(data.likeCount || 0),
+				new ButtonDislikeCount(data.dislikeCount || 0),
+			);
+
+			return new AudioButton(
+				new AudioButtonId(data.id || AudioButtonId.generate().toString()),
+				content,
+				reference,
+				statistics,
+				{
+					id: data.createdBy,
+					name: data.createdByName,
+				},
+				data.isPublic ?? true,
+				convertTimestamp(data.createdAt),
+				convertTimestamp(data.updatedAt),
+				data.favoriteCount || 0,
+			);
+		} catch (_error) {
+			// In development, this error would be caught by error boundary
+			// In production, we return null to gracefully handle invalid data
+			// TODO: Consider using a proper logging service for production environments
+			return null;
+		}
+	}
+
+	/**
+	 * Creates AudioButton from legacy format (for migration period)
 	 */
 	static fromLegacy(data: {
 		id: string;
@@ -432,6 +495,97 @@ export class AudioButton extends BaseEntity<AudioButton> implements EntityValida
 	}
 
 	/**
+	 * Converts to Firestore format for persistence
+	 */
+	toFirestore(): FirestoreServerAudioButtonData {
+		const referenceData = this.reference.toPlainObject();
+		return {
+			id: this.id.toString(),
+			title: this.content.text.toString(),
+			description: this.content.text.length() > 50 ? this.content.text.toString() : undefined,
+			tags: this.content.tags.toArray(),
+			sourceVideoId: referenceData.videoId,
+			sourceVideoTitle: referenceData.videoTitle,
+			sourceVideoThumbnailUrl: undefined, // Will be set from external source if needed
+			startTime: referenceData.timestamp,
+			endTime: referenceData.endTimestamp || referenceData.timestamp,
+			createdBy: this._createdBy.id,
+			createdByName: this._createdBy.name,
+			isPublic: this._isPublic,
+			playCount: this.statistics.viewCount.toNumber(),
+			likeCount: this.statistics.likeCount.toNumber(),
+			dislikeCount: this.statistics.dislikeCount.toNumber(),
+			favoriteCount: this._favoriteCount,
+			createdAt: this._createdAt,
+			updatedAt: this._updatedAt,
+		};
+	}
+
+	/**
+	 * Converts to Plain Object for Server Component boundary (required)
+	 */
+	toPlainObject(): AudioButtonPlainObject {
+		// Calculate duration for display
+		const referenceData = this.reference.toPlainObject();
+		const duration =
+			(referenceData.endTimestamp || referenceData.timestamp) - referenceData.timestamp;
+		const minutes = Math.floor(duration / 60);
+		const seconds = Math.floor(duration % 60);
+		const durationText = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+		// Calculate relative time
+		const now = new Date();
+		const diffMs = now.getTime() - this._createdAt.getTime();
+		const diffMinutes = Math.floor(diffMs / 60000);
+		const diffHours = Math.floor(diffMinutes / 60);
+		const diffDays = Math.floor(diffHours / 24);
+
+		let relativeTimeText: string;
+		if (diffDays > 0) {
+			relativeTimeText = `${diffDays}日前`;
+		} else if (diffHours > 0) {
+			relativeTimeText = `${diffHours}時間前`;
+		} else if (diffMinutes > 0) {
+			relativeTimeText = `${diffMinutes}分前`;
+		} else {
+			relativeTimeText = "たった今";
+		}
+
+		return {
+			// All base data
+			id: this.id.toString(),
+			title: this.content.text.toString(),
+			description: this.content.text.length() > 50 ? this.content.text.toString() : undefined,
+			tags: this.content.tags.toArray(),
+			sourceVideoId: referenceData.videoId,
+			sourceVideoTitle: referenceData.videoTitle,
+			sourceVideoThumbnailUrl: undefined,
+			startTime: referenceData.timestamp,
+			endTime: referenceData.endTimestamp || referenceData.timestamp,
+			createdBy: this._createdBy.id,
+			createdByName: this._createdBy.name,
+			isPublic: this._isPublic,
+			playCount: this.statistics.viewCount.toNumber(),
+			likeCount: this.statistics.likeCount.toNumber(),
+			dislikeCount: this.statistics.dislikeCount.toNumber(),
+			favoriteCount: this._favoriteCount,
+			createdAt: this._createdAt.toISOString(),
+			updatedAt: this._updatedAt.toISOString(),
+
+			// Computed properties (important for client component performance)
+			_computed: {
+				isPopular: this.isPopular(),
+				engagementRate: this.getEngagementRate(),
+				engagementRatePercentage: this.getEngagementRatePercentage(),
+				popularityScore: this.getPopularityScore(),
+				searchableText: this.getSearchableText(),
+				durationText,
+				relativeTimeText,
+			},
+		};
+	}
+
+	/**
 	 * Validates the entity
 	 */
 	isValid(): boolean {
@@ -610,6 +764,7 @@ export interface AudioButtonQuery {
 /**
  * Convert audio button data to frontend format
  * Adds display-friendly fields for UI consumption
+ * @deprecated Use AudioButton.fromFirestoreData().toPlainObject() instead
  */
 export function convertToFrontendAudioButton(
 	data: FirestoreAudioButtonData | FrontendAudioButtonData,

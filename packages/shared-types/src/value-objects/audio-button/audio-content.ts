@@ -5,7 +5,7 @@
  * Handles text display, categorization, and search functionality.
  */
 
-import { BaseValueObject, type ValidatableValueObject } from "./base/value-object";
+import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
 
 /**
  * Button text value object

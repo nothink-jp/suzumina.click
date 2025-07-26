@@ -5,7 +5,7 @@
  * Handles timestamp formatting, URL generation, and duration calculations.
  */
 
-import { BaseValueObject, type ValidatableValueObject } from "./base/value-object";
+import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
 
 /**
  * Video ID value object for YouTube videos
