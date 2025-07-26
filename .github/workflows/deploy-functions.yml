@@ -232,27 +232,27 @@ jobs:
           done
 
 
-      - name: Deploy fetchDLsiteWorksIndividualAPI function
+      - name: Deploy fetchDLsiteUnifiedData function
         run: |
-          echo "🚀 Deploying fetchDLsiteWorksIndividualAPI function..."
+          echo "🚀 Deploying fetchDLsiteUnifiedData function..."
           
           # リトライロジック付きでデプロイ
           for attempt in 1 2 3; do
             echo "Attempt $attempt/3..."
             
-            if gcloud functions deploy fetchDLsiteWorksIndividualAPI \
+            if gcloud functions deploy fetchDLsiteUnifiedData \
               --source ${{ env.DEPLOYMENT_SOURCE }} \
               --runtime nodejs22 \
-              --entry-point fetchDLsiteWorksIndividualAPI \
+              --entry-point fetchDLsiteUnifiedData \
               --trigger-topic dlsite-individual-api-trigger \
               --region asia-northeast1 \
               --project ${{ secrets.GCP_PROJECT_ID }} \
-              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteWorksIndividualAPI,INDIVIDUAL_INFO_API_ENABLED=true,API_ONLY_MODE=true,MAX_CONCURRENT_API_REQUESTS=5,API_REQUEST_DELAY_MS=500,ENABLE_DATA_VALIDATION=true,MINIMUM_QUALITY_SCORE=80,ENABLE_TIMESERIES_INTEGRATION=true,LOG_LEVEL=info,ENABLE_ENTITY_V2=true \
+              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteUnifiedData,INDIVIDUAL_INFO_API_ENABLED=true,API_ONLY_MODE=true,MAX_CONCURRENT_API_REQUESTS=5,API_REQUEST_DELAY_MS=500,ENABLE_DATA_VALIDATION=true,MINIMUM_QUALITY_SCORE=80,ENABLE_TIMESERIES_INTEGRATION=true,LOG_LEVEL=info,ENABLE_ENTITY_V2=true \
               --memory 2Gi \
               --timeout 540s \
               --max-instances 2 \
               --quiet; then
-              echo "✅ fetchDLsiteWorksIndividualAPI deployed successfully"
+              echo "✅ fetchDLsiteUnifiedData deployed successfully"
               break
             else
               echo "❌ Deploy failed on attempt $attempt"
@@ -266,7 +266,7 @@ jobs:
           done
 
 # collectDLsiteTimeseries デプロイは統合アーキテクチャにより廃止
-# fetchDLsiteWorksIndividualAPI が時系列データ収集機能を統合実行
+# fetchDLsiteUnifiedData が時系列データ収集機能を統合実行
 
       - name: Cleanup deployment artifacts
         if: always()
@@ -291,7 +291,7 @@ jobs:
           echo "### 📦 デプロイされた関数" >> $GITHUB_STEP_SUMMARY
           echo "- **fetchYouTubeVideos**: ✅ デプロイ完了 (リトライロジック付き)" >> $GITHUB_STEP_SUMMARY
           echo "  - トリガー: \`youtube-video-fetch-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
-          echo "- **fetchDLsiteWorksIndividualAPI**: ✅ デプロイ完了 (統合データ収集・100% API-Only)" >> $GITHUB_STEP_SUMMARY
+          echo "- **fetchDLsiteUnifiedData**: ✅ デプロイ完了 (統合データ収集・100% API-Only)" >> $GITHUB_STEP_SUMMARY
           echo "  - トリガー: \`dlsite-individual-api-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
           echo "  - 機能: 基本データ更新 + 時系列データ収集の統合実行" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
