@@ -3,7 +3,7 @@ import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
 import { Youtube } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { getVideoByIdV2 } from "@/app/videos/actions-v2";
+import { getVideoById } from "@/app/videos/actions";
 import VideoCard from "@/app/videos/components/VideoCard";
 
 interface VideoCardWrapperProps {
@@ -13,7 +13,7 @@ interface VideoCardWrapperProps {
 
 export async function VideoCardWrapper({ videoId, fallbackTitle }: VideoCardWrapperProps) {
 	try {
-		const video = await getVideoByIdV2(videoId);
+		const video = await getVideoById(videoId);
 
 		if (!video) {
 			return (

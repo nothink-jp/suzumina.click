@@ -175,8 +175,8 @@ describe("Type Aliases", () => {
 			it("should return true for valid AudioButton objects", () => {
 				const validAudioButton = {
 					id: "button123",
-					videoId: "video123",
-					timestamp: 123,
+					sourceVideoId: "video123",
+					startTime: 123,
 					// ... other required fields
 				};
 				expect(isAudioButton(validAudioButton)).toBe(true);
@@ -187,7 +187,7 @@ describe("Type Aliases", () => {
 				expect(isAudioButton(undefined)).toBe(false);
 				expect(isAudioButton({})).toBe(false);
 				expect(isAudioButton({ id: "test" })).toBe(false);
-				expect(isAudioButton({ id: "test", videoId: "video123" })).toBe(false);
+				expect(isAudioButton({ id: "test", sourceVideoId: "video123" })).toBe(false);
 			});
 		});
 	});

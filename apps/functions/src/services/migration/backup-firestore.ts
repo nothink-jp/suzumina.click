@@ -22,7 +22,7 @@ export class FirestoreBackupService {
 	 */
 	async createBackup(): Promise<{ backupPath: string; timestamp: string }> {
 		const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-		const backupPath = `gs://${this.options.bucketName}/entity-v2-migration/${timestamp}`;
+		const backupPath = `gs://${this.options.bucketName}/entity-migration/${timestamp}`;
 
 		console.log("🔵 Firestoreバックアップを開始します...");
 		console.log(`📍 プロジェクト: ${this.options.projectId}`);
@@ -69,7 +69,7 @@ export class FirestoreBackupService {
 			timestamp,
 			backupPath,
 			collections: this.options.collections,
-			purpose: "entity-v2-migration",
+			purpose: "entity-migration",
 			createdAt: new Date().toISOString(),
 		};
 

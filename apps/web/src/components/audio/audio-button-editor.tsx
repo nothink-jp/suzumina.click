@@ -47,8 +47,6 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 				title: title.trim(),
 				description: description.trim() || undefined,
 				tags,
-				startTime: timeAdjustment.startTime,
-				endTime: timeAdjustment.endTime,
 			};
 
 			const result = await updateAudioButton(input);
@@ -71,8 +69,6 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 		description,
 		tags,
 		router,
-		timeAdjustment.startTime,
-		timeAdjustment.endTime,
 		setError,
 		setIsUpdating,
 	]);

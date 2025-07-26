@@ -314,7 +314,7 @@ export function AudioButton({
 	const audioPlayerRef = useRef<AudioControls>(null);
 
 	// 時間の計算
-	const duration = audioButton.endTime - audioButton.startTime;
+	const duration = (audioButton.endTime || audioButton.startTime) - audioButton.startTime;
 	const youtubeUrl = `https://www.youtube.com/watch?v=${audioButton.sourceVideoId}&t=${Math.floor(audioButton.startTime)}s`;
 
 	// タイトルの省略

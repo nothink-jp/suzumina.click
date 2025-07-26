@@ -814,7 +814,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 													{Object.entries(video.contentRating).map(([key, value]) => (
 														<div key={key}>
 															<span className="text-muted-foreground">{key}:</span>
-															<span className="ml-2">{value}</span>
+															<span className="ml-2">{String(value)}</span>
 														</div>
 													))}
 												</div>

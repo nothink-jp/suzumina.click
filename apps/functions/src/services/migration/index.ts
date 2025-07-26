@@ -3,8 +3,8 @@
  */
 
 export { DryRunReportGenerator, formatConsoleReport } from "./dry-run-report";
-export type { MigrationOptions } from "./entity-v2-migration";
-export { EntityV2MigrationService } from "./entity-v2-migration";
+export type { MigrationOptions } from "./entity-migration";
+export { EntityMigrationService } from "./entity-migration";
 export type {
 	CollectionStats,
 	DryRunEntry,

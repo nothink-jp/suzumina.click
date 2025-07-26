@@ -6,27 +6,52 @@ import type { Query } from "@google-cloud/firestore";
 import {
 	type FirestoreAudioButtonData,
 	type FrontendAudioButtonData,
-	FrontendAudioButtonSchema,
 	formatRelativeTime,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
 import { error as logError } from "./logger";
 
 /**
+ * Format duration from start and end time
+ */
+function formatDuration(startTime: number, endTime?: number): string {
+	const duration = (endTime || startTime) - startTime;
+
+	// 0秒の場合は "再生" を返す
+	if (duration === 0) {
+		return "再生";
+	}
+
+	// 60秒未満の場合は "X秒" 形式
+	if (duration < 60) {
+		return `${Math.floor(duration)}秒`;
+	}
+
+	// 60秒以上の場合は "X:XX" 形式
+	const minutes = Math.floor(duration / 60);
+	const seconds = Math.floor(duration % 60);
+	return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Ensure date is converted to string
+ */
+function ensureDateString(date: string | Date | unknown): string {
+	if (typeof date === "string") return date;
+	if (date instanceof Date) return date.toISOString();
+	return new Date().toISOString();
+}
+
+/**
  * Firestore音声ボタンデータをフロントエンド表示用に変換
  */
 export function convertToFrontendAudioButton(
-	data: FirestoreAudioButtonData,
+	data:
+		| FirestoreAudioButtonData
+		| (FirestoreAudioButtonData & { createdAt: Date; updatedAt: Date }),
 ): FrontendAudioButtonData {
-	// Duration calculation helper
-	const formatDuration = (startTime: number, endTime?: number) => {
-		const duration = endTime ? endTime - startTime : 0;
-		if (duration <= 0) return "再生";
-		if (duration < 60) return `${duration}秒`;
-		const minutes = Math.floor(duration / 60);
-		const seconds = duration % 60;
-		return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-	};
+	const createdAtStr = ensureDateString(data.createdAt);
+	const updatedAtStr = ensureDateString(data.updatedAt);
 
 	const frontendData: FrontendAudioButtonData = {
 		id: data.id,
@@ -36,7 +61,7 @@ export function convertToFrontendAudioButton(
 		sourceVideoTitle: data.sourceVideoTitle,
 		sourceVideoThumbnailUrl: `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
 		startTime: data.startTime,
-		endTime: data.endTime,
+		endTime: data.endTime || data.startTime,
 		createdBy: data.createdBy,
 		createdByName: data.createdByName,
 		isPublic: data.isPublic,
@@ -44,19 +69,15 @@ export function convertToFrontendAudioButton(
 		likeCount: data.likeCount,
 		dislikeCount: data.dislikeCount || 0,
 		favoriteCount: data.favoriteCount || 0,
-		createdAt: data.createdAt,
-		updatedAt: data.updatedAt,
+		createdAt: createdAtStr,
+		updatedAt: updatedAtStr,
 
 		// 表示用の追加情報
-		durationText: formatDuration(data.startTime, data.endTime),
-		relativeTimeText: formatRelativeTime(data.createdAt),
+		durationText: formatDuration(data.startTime, data.endTime || data.startTime),
+		relativeTimeText: formatRelativeTime(createdAtStr),
 	};
 
-	try {
-		return FrontendAudioButtonSchema.parse(frontendData);
-	} catch (_error) {
-		throw new Error("音声ボタンデータの形式が無効です");
-	}
+	return frontendData;
 }
 
 /**

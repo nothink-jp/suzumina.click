@@ -1,572 +1,1355 @@
-import { z } from "zod";
+/**
+ * Video Entity
+ *
+ * Represents a YouTube video with rich domain behavior using Value Objects.
+ * This new implementation maintains backward compatibility while introducing
+ * a cleaner domain model with proper encapsulation and business logic.
+ */
+
+import { Channel } from "../value-objects/channel";
+import {
+	ContentDetails,
+	type PrivacyStatus,
+	PublishedAt,
+	type UploadStatus,
+	VideoContent,
+	VideoId,
+} from "../value-objects/video-content";
+import {
+	VideoDescription,
+	VideoDuration,
+	VideoMetadata,
+	VideoTitle,
+} from "../value-objects/video-metadata";
+import {
+	CommentCount,
+	DislikeCount,
+	LikeCount,
+	VideoStatistics,
+	ViewCount,
+} from "../value-objects/video-statistics";
 
 /**
- * サムネイル情報のZodスキーマ定義
+ * Legacy format interface for type safety
  */
-export const ThumbnailInfoSchema = z.object({
-	url: z.string().url({
-		message: "サムネイルURLは有効なURL形式である必要があります",
-	}),
-	width: z.number().int().positive().optional(),
-	height: z.number().int().positive().optional(),
-});
+interface LegacyVideoData {
+	// Core fields
+	id?: string;
+	videoId?: string;
+	title: string;
+	description?: string;
+	channelId: string;
+	channelTitle: string;
+	categoryId?: string;
+	publishedAt: string;
+	lastFetchedAt?: string;
 
-/**
- * サムネイルセットのZodスキーマ定義
- */
-export const ThumbnailsSchema = z.object({
-	default: ThumbnailInfoSchema.optional(),
-	medium: ThumbnailInfoSchema.optional(),
-	high: ThumbnailInfoSchema.optional(),
-});
+	// Content details
+	duration?: string;
+	dimension?: string;
+	definition?: string;
+	caption?: boolean;
+	licensedContent?: boolean;
+	projection?: string;
 
-/**
- * 動画タイプのZodスキーマ定義
- */
-export const VideoTypeSchema = z.enum(["all", "archived", "upcoming"]);
-
-/**
- * ライブ配信状態のZodスキーマ定義
- */
-export const LiveBroadcastContentSchema = z.enum(["none", "live", "upcoming"]);
-
-/**
- * 基本的なYouTube動画データのZodスキーマ定義
- */
-export const YouTubeVideoBaseSchema = z.object({
-	id: z.string().min(1, {
-		message: "動画IDは1文字以上である必要があります",
-	}),
-	// YouTubeのvideoIdも追加
-	videoId: z
-		.string()
-		.min(1, {
-			message: "YouTube動画IDは1文字以上である必要があります",
-		})
-		.optional(),
-	title: z.string().min(1, {
-		message: "動画タイトルは1文字以上である必要があります",
-	}),
-	description: z.string(),
-	channelId: z.string().min(1),
-	channelTitle: z.string(),
-	publishedAt: z.string().datetime({
-		message: "公開日時はISO形式の日時である必要があります",
-	}),
-	videoType: VideoTypeSchema.optional(),
-});
-
-/**
- * Firestoreに保存するYouTube動画データのZodスキーマ定義
- */
-export const FirestoreVideoSchema = YouTubeVideoBaseSchema.extend({
-	// YouTube動画IDは必須
-	videoId: z.string().min(1),
-	// サムネイル情報
-	thumbnailUrl: z.string().url(),
-	// 日付情報
-	lastFetchedAt: z.string().datetime(),
-	// 配信状態
-	liveBroadcastContent: LiveBroadcastContentSchema.optional(),
-	// ライブ配信詳細
-	liveStreamingDetails: z
-		.object({
-			scheduledStartTime: z.string().datetime().optional(),
-			scheduledEndTime: z.string().datetime().optional(),
-			actualStartTime: z.string().datetime().optional(),
-			actualEndTime: z.string().datetime().optional(),
-			concurrentViewers: z.number().optional(),
-		})
-		.optional(),
-	// 音声ボタン関連情報
-	audioButtonCount: z.number().int().min(0).default(0),
-	hasAudioButtons: z.boolean().default(false),
-	// 3層タグシステム (VIDEO_TAGS_DESIGN.md準拠)
-	playlistTags: z
-		.array(z.string().min(1).max(50)) // プレイリスト名は長い場合があるため50文字
-		.max(20, {
-			message: "プレイリストタグは最大20個まで",
-		})
-		.optional()
-		.default([]),
-	userTags: z
-		.array(z.string().min(1).max(30))
-		.max(10, {
-			message: "ユーザータグは最大10個まで設定できます",
-		})
-		.default([]),
-});
-
-/**
- * フロントエンド表示用のYouTube動画データのZodスキーマ定義
- */
-export const FrontendVideoSchema = YouTubeVideoBaseSchema.extend({
-	// YouTube動画IDは必須
-	videoId: z.string().min(1),
-	// サムネイル情報
-	thumbnailUrl: z.string().url(),
-	thumbnails: ThumbnailsSchema, // フロントエンド用のサムネイル情報
-	// 日付情報
-	lastFetchedAt: z.string().datetime(),
-	// ISO形式の日付文字列（フロントエンドでの使用のため）
-	publishedAtISO: z.string().datetime(),
-	lastFetchedAtISO: z.string().datetime(),
-	// 配信状態
-	liveBroadcastContent: LiveBroadcastContentSchema.optional(),
-	// ライブ配信詳細
-	liveStreamingDetails: z
-		.object({
-			scheduledStartTime: z.string().datetime().optional(),
-			scheduledEndTime: z.string().datetime().optional(),
-			actualStartTime: z.string().datetime().optional(),
-			actualEndTime: z.string().datetime().optional(),
-			concurrentViewers: z.number().optional(),
-		})
-		.optional(),
-	// 音声ボタン関連情報
-	audioButtonCount: z.number().int().min(0).default(0),
-	hasAudioButtons: z.boolean().default(false),
-
-	// 統計情報 (statistics)
-	statistics: z
-		.object({
-			viewCount: z.number().optional(), // 視聴回数
-			likeCount: z.number().optional(), // 高評価数
-			dislikeCount: z.number().optional(), // 低評価数（現在APIからは非公開）
-			favoriteCount: z.number().optional(), // お気に入り数
-			commentCount: z.number().optional(), // コメント数
-		})
-		.optional(),
-
-	// コンテンツ詳細 (contentDetails)
-	duration: z.string().optional(), // ISO 8601形式の動画時間（例："PT1H2M3S"）
-	dimension: z.string().optional(), // "2d" または "3d"
-	definition: z.string().optional(), // "hd" または "sd"
-	caption: z.boolean().optional(), // キャプションの有無
-	licensedContent: z.boolean().optional(), // ライセンスコンテンツかどうか
-	contentRating: z.record(z.string(), z.string()).optional(), // 年齢制限情報
-	regionRestriction: z
-		.object({
-			allowed: z.array(z.string()).optional(), // 視聴可能な国コード
-			blocked: z.array(z.string()).optional(), // 視聴できない国コード
-		})
-		.optional(),
-
-	// ステータス情報 (status)
-	status: z
-		.object({
-			uploadStatus: z.string().optional(), // アップロードステータス
-			privacyStatus: z.string().optional(), // プライバシーステータス (public/unlisted/private)
-			commentStatus: z.string().optional(), // コメント許可状態
-		})
-		.optional(),
-
-	// カテゴリ情報
-	categoryId: z.string().optional(), // 動画カテゴリID
-	tags: z.array(z.string()).optional(), // 動画タグ
-
-	// 3層タグシステム (VIDEO_TAGS_DESIGN.md準拠)
-	playlistTags: z
-		.array(z.string().min(1).max(50)) // プレイリスト名は長い場合があるため50文字
-		.max(20, {
-			message: "プレイリストタグは最大20個まで",
-		})
-		.optional()
-		.default([]),
-	userTags: z
-		.array(z.string().min(1).max(30))
-		.max(10, {
-			message: "ユーザータグは最大10個まで設定できます",
-		})
-		.default([]),
-
-	// プレイヤー情報 (player)
-	player: z
-		.object({
-			embedHtml: z.string().optional(), // 埋め込み用HTML
-			embedHeight: z.number().optional(), // 埋め込み高さ
-			embedWidth: z.number().optional(), // 埋め込み幅
-		})
-		.optional(),
-
-	// 撮影詳細 (recordingDetails)
-	recordingDetails: z
-		.object({
-			locationDescription: z.string().optional(), // 撮影場所の説明
-			recordingDate: z.string().datetime().optional(), // 撮影日時（ISO文字列）
-		})
-		.optional(),
-
-	// トピック詳細 (topicDetails)
-	topicDetails: z
-		.object({
-			topicCategories: z.array(z.string()).optional(), // トピックカテゴリURL
-		})
-		.optional(),
-});
-
-/**
- * 動画リスト結果のZodスキーマ定義
- */
-export const VideoListResultSchema = z.object({
-	videos: z.array(FrontendVideoSchema),
-	hasMore: z.boolean(),
-	lastVideo: FrontendVideoSchema.optional(),
-});
-
-/**
- * ページネーションパラメータのZodスキーマ定義
- */
-export const PaginationParamsSchema = z.object({
-	limit: z.number().int().positive(),
-	startAfter: z.string().optional(),
-	videoType: VideoTypeSchema.optional(),
-});
-
-// Zodスキーマから型を抽出
-export type ThumbnailInfo = z.infer<typeof ThumbnailInfoSchema>;
-export type Thumbnails = z.infer<typeof ThumbnailsSchema>;
-export type VideoType = z.infer<typeof VideoTypeSchema>;
-export type LiveBroadcastContent = z.infer<typeof LiveBroadcastContentSchema>;
-export type YouTubeVideoBase = z.infer<typeof YouTubeVideoBaseSchema>;
-export type FirestoreVideoData = z.infer<typeof FirestoreVideoSchema>;
-export type FrontendVideoData = z.infer<typeof FrontendVideoSchema>;
-export type VideoListResult = z.infer<typeof VideoListResultSchema>;
-export type PaginationParams = z.infer<typeof PaginationParamsSchema>;
-
-/**
- * サムネイル情報を生成
- * @param thumbnailUrl サムネイルURL
- * @returns サムネイル情報オブジェクト
- */
-function createThumbnails(thumbnailUrl: string) {
-	return {
-		high: { url: thumbnailUrl, width: 480, height: 360 },
-		medium: { url: thumbnailUrl, width: 320, height: 180 },
-		default: { url: thumbnailUrl, width: 120, height: 90 },
-	};
-}
-
-/**
- * 最小限のフロントエンドビデオデータを作成
- * @param data Firestore形式のデータ
- * @param thumbnailUrl サムネイルURL
- * @param now 現在時刻のISO文字列
- * @returns 最小限のフロントエンドビデオデータ
- */
-function createMinimalFrontendVideo(
-	data: FirestoreVideoData,
-	thumbnailUrl: string,
-	now: string,
-): FrontendVideoData {
-	return {
-		id: data.id,
-		videoId: data.videoId || data.id,
-		title: data.title,
-		description: data.description || "",
-		channelId: data.channelId,
-		channelTitle: data.channelTitle,
-		publishedAt: data.publishedAt,
-		publishedAtISO: data.publishedAt,
-		thumbnailUrl: thumbnailUrl,
-		thumbnails: {
-			high: { url: thumbnailUrl },
-			medium: { url: thumbnailUrl },
-			default: { url: thumbnailUrl },
-		},
-		lastFetchedAt: now,
-		lastFetchedAtISO: now,
-		liveBroadcastContent:
-			data.videoType === "upcoming" ? "upcoming" : data.liveBroadcastContent || "none",
-		audioButtonCount: data.audioButtonCount || 0,
-		hasAudioButtons: data.hasAudioButtons || false,
-		playlistTags: data.playlistTags || [],
-		userTags: data.userTags || [],
-	};
-}
-
-/**
- * Firestoreデータをフロントエンド表示用に変換するヘルパー関数
- * @param data Firestoreから取得したデータ
- * @returns フロントエンド表示用に変換されたデータ
- */
-export function convertToFrontendVideo(data: FirestoreVideoData): FrontendVideoData {
-	const thumbnailUrl = data.thumbnailUrl || "";
-	const now = new Date().toISOString();
-
-	// FrontendVideoSchema形式のデータを生成
-	const frontendData: FrontendVideoData = {
-		...data,
-		// videoIdがなければidを使用（下位互換性のために両方を保持）
-		videoId: data.videoId || data.id,
-		thumbnailUrl,
-		thumbnails: createThumbnails(thumbnailUrl),
-		lastFetchedAtISO: data.lastFetchedAt,
-		// publishedAtISO も必ず設定する（publishedAtから生成）
-		publishedAtISO: data.publishedAt,
-		liveBroadcastContent:
-			data.videoType === "upcoming" ? "upcoming" : data.liveBroadcastContent || "none",
-		// 音声ボタン関連フィールドを追加（デフォルト値）
-		audioButtonCount: data.audioButtonCount || 0,
-		hasAudioButtons: data.hasAudioButtons || false,
-		// 3層タグシステムフィールドを追加（デフォルト値）
-		playlistTags: data.playlistTags || [],
-		userTags: data.userTags || [],
+	// Statistics
+	statistics?: {
+		viewCount?: number;
+		likeCount?: number;
+		dislikeCount?: number;
+		favoriteCount?: number;
+		commentCount?: number;
 	};
 
-	// データの検証
-	try {
-		return FrontendVideoSchema.parse(frontendData);
-	} catch (_error) {
-		// エラー時でも最低限のデータを返す
-		return createMinimalFrontendVideo(data, thumbnailUrl, now);
-	}
+	// Status
+	status?: {
+		privacyStatus?: string;
+		uploadStatus?: string;
+	};
+
+	// Player
+	player?: {
+		embedHtml?: string;
+	};
+
+	// Tags
+	tags?: string[];
+	playlistTags?: string[];
+	userTags?: string[];
+
+	// Audio button info
+	audioButtonCount?: number;
+	hasAudioButtons?: boolean;
+
+	// Live streaming
+	liveStreamingDetails?: {
+		scheduledStartTime?: string;
+		scheduledEndTime?: string;
+		actualStartTime?: string;
+		actualEndTime?: string;
+		concurrentViewers?: number;
+	};
+
+	// Additional fields
+	liveBroadcastContent?: LiveBroadcastContent;
+	videoType?: VideoType;
 }
 
 /**
- * RSCからRCCへ安全にデータを渡すためのシリアライズ関数
- * @param data フロントエンド表示用データ
- * @returns シリアライズされたデータ文字列
+ * Legacy output format interface
  */
-export function serializeForRSC(data: FrontendVideoData): string {
-	return JSON.stringify(data);
-}
-
-/**
- * RCCでのデシリアライズ関数
- * @param serialized シリアライズされたデータ文字列
- * @returns 検証済みのフロントエンド表示用データ
- */
-export function deserializeForRCC(serialized: string): FrontendVideoData {
-	try {
-		const data = JSON.parse(serialized);
-		return FrontendVideoSchema.parse(data);
-	} catch (_error) {
-		throw new Error("データの形式が無効です");
-	}
-}
-
-/**
- * リスト結果のシリアライズ関数
- * @param result 動画リスト結果
- * @returns シリアライズされたリスト結果
- */
-export function serializeListResult(result: VideoListResult): string {
-	return JSON.stringify(result);
-}
-
-/**
- * リスト結果のデシリアライズ関数
- * @param serialized シリアライズされたリスト結果
- * @returns 検証済みの動画リスト結果
- */
-export function deserializeListResult(serialized: string): VideoListResult {
-	try {
-		const data = JSON.parse(serialized);
-		return VideoListResultSchema.parse(data);
-	} catch (_error) {
-		return { videos: [], hasMore: false };
-	}
-}
-
-/**
- * Firestoreサーバーサイド（Cloud Functions）向けのデータ型定義
- * Timestampを使用するサーバーサイド向け
- */
-export interface FirestoreServerVideoData {
-	// ID系フィールド - どちらのプロパティ名でも対応できるようにする
-	id?: string; // フロントエンド側で使用
-	videoId: string; // サーバー側で使用
-	// 基本フィールド
+export interface LegacyVideoOutput {
+	// Core fields
+	id: string;
+	videoId: string;
 	title: string;
 	description: string;
 	channelId: string;
 	channelTitle: string;
-	// Firestoreのサーバーサイドモデルではタイムスタンプを使用
-	publishedAt: unknown; // Firestore.Timestamp型 (Firestore依存を避けるためunknown)
+	publishedAt: string;
+	publishedAtISO: string;
+	lastFetchedAt: string;
+	lastFetchedAtISO: string;
 	thumbnailUrl: string;
-	lastFetchedAt: unknown; // Firestore.Timestamp型
+	audioButtonCount: number;
+	hasAudioButtons: boolean;
+	playlistTags: string[];
+	userTags: string[];
+
+	// Optional fields
+	duration?: string;
+	dimension?: string;
+	definition?: string;
+	caption?: boolean;
+	licensedContent?: boolean;
+	statistics?: {
+		viewCount?: number;
+		likeCount?: number;
+		dislikeCount?: number;
+		favoriteCount?: number;
+		commentCount?: number;
+	};
+	status?: {
+		privacyStatus: string;
+		uploadStatus: string;
+		commentStatus?: string;
+	};
+	player?: {
+		embedHtml: string;
+		embedWidth?: number;
+		embedHeight?: number;
+	};
+	tags?: string[];
+	liveStreamingDetails?: {
+		scheduledStartTime?: string;
+		scheduledEndTime?: string;
+		actualStartTime?: string;
+		actualEndTime?: string;
+		concurrentViewers?: number;
+	};
+	thumbnails?: {
+		default: { url: string };
+		medium: { url: string };
+		high: { url: string };
+	};
+
+	// Additional fields to match FrontendVideoData
+	liveBroadcastContent?: LiveBroadcastContent;
+	videoType?: VideoType;
+	categoryId?: string;
+
+	// Additional YouTube API fields
+	topicDetails?: {
+		topicCategories?: string[];
+	};
+	recordingDetails?: {
+		recordingDate?: string;
+		location?: {
+			latitude?: number;
+			longitude?: number;
+			altitude?: number;
+		};
+		locationDescription?: string;
+	};
+	regionRestriction?: {
+		allowed?: string[];
+		blocked?: string[];
+	};
+	contentRating?: Record<string, unknown>;
+}
+
+/**
+ * Tag types for the 3-layer tag system
+ */
+export interface VideoTags {
+	playlistTags: string[];
+	userTags: string[];
+	contentTags?: string[]; // From YouTube API
+}
+
+/**
+ * Audio button association
+ */
+export interface AudioButtonInfo {
+	count: number;
+	hasButtons: boolean;
+}
+
+/**
+ * Legacy types for backward compatibility
+ */
+export type LiveBroadcastContent = "none" | "live" | "upcoming";
+export type VideoType = "normal" | "archived" | "premiere";
+
+/**
+ * Computed properties for video business logic
+ */
+export interface VideoComputedProperties {
+	isArchived: boolean;
+	isPremiere: boolean;
+	isLive: boolean;
+	isUpcoming: boolean;
+	canCreateButton: boolean;
+	videoType: "normal" | "archived" | "premiere" | "live" | "upcoming";
+	thumbnailUrl: string;
+	youtubeUrl: string;
+}
+
+/**
+ * Plain object representation of Video entity for Next.js serialization
+ */
+export interface VideoPlainObject
+	extends Omit<FirestoreServerVideoData, "publishedAt" | "lastFetchedAt" | "liveStreamingDetails"> {
+	// Override timestamp fields with string type
+	publishedAt: string;
+	lastFetchedAt: string;
+	// Override liveStreamingDetails with string timestamps
+	liveStreamingDetails?: {
+		scheduledStartTime?: string;
+		scheduledEndTime?: string;
+		actualStartTime?: string;
+		actualEndTime?: string;
+		concurrentViewers?: number;
+	};
+	// Computed properties from business logic
+	_computed: VideoComputedProperties;
+}
+
+/**
+ * Frontend video data type - Plain object for Server/Client Component boundary
+ */
+export type FrontendVideoData = VideoPlainObject;
+
+/**
+ * Firestore server video data type
+ */
+export interface FirestoreServerVideoData {
+	id?: string;
+	videoId: string;
+	title: string;
+	description: string;
+	channelId: string;
+	channelTitle: string;
+	publishedAt: unknown; // Firestore Timestamp
+	thumbnailUrl: string;
+	lastFetchedAt: unknown; // Firestore Timestamp
 	videoType?: VideoType;
 	liveBroadcastContent?: LiveBroadcastContent;
 
-	// 音声ボタン関連情報
+	// Audio button info
 	audioButtonCount?: number;
 	hasAudioButtons?: boolean;
 
-	// コンテンツ詳細 (contentDetails)
-	duration?: string; // ISO 8601形式の動画時間（例："PT1H2M3S"）
-	dimension?: string; // "2d" または "3d"
-	definition?: string; // "hd" または "sd"
-	caption?: boolean; // キャプションの有無
-	licensedContent?: boolean; // ライセンスコンテンツかどうか
-	contentRating?: Record<string, string>; // 年齢制限情報
-	regionRestriction?: {
-		allowed?: string[]; // 視聴可能な国コード
-		blocked?: string[]; // 視聴できない国コード
-	};
+	// Content details
+	duration?: string;
+	categoryId?: string;
+	tags?: string[];
+	playlistTags?: string[];
+	userTags?: string[];
 
-	// 統計情報 (statistics)
+	// Statistics
 	statistics?: {
-		viewCount?: number; // 視聴回数
-		likeCount?: number; // 高評価数
-		dislikeCount?: number; // 低評価数（現在APIからは非公開）
-		favoriteCount?: number; // お気に入り数
-		commentCount?: number; // コメント数
+		viewCount?: number;
+		likeCount?: number;
+		dislikeCount?: number;
+		favoriteCount?: number;
+		commentCount?: number;
 	};
 
-	// ライブ配信詳細 (liveStreamingDetails)
+	// Live streaming details
 	liveStreamingDetails?: {
-		scheduledStartTime?: unknown; // Firestore.Timestamp型
-		scheduledEndTime?: unknown; // Firestore.Timestamp型
-		actualStartTime?: unknown; // Firestore.Timestamp型
-		actualEndTime?: unknown; // Firestore.Timestamp型
-		concurrentViewers?: number; // 同時視聴者数
+		scheduledStartTime?: unknown; // Firestore Timestamp
+		scheduledEndTime?: unknown; // Firestore Timestamp
+		actualStartTime?: unknown; // Firestore Timestamp
+		actualEndTime?: unknown; // Firestore Timestamp
+		concurrentViewers?: number;
 	};
 
-	// プレイヤー情報 (player)
-	player?: {
-		embedHtml?: string; // 埋め込み用HTML
-		embedHeight?: number; // 埋め込み高さ
-		embedWidth?: number; // 埋め込み幅
-	};
+	// Video quality details
+	dimension?: string;
+	definition?: string;
+	caption?: string | boolean; // Can be either string or boolean for compatibility
+	licensedContent?: boolean;
 
-	// 撮影詳細 (recordingDetails)
-	recordingDetails?: {
-		locationDescription?: string; // 撮影場所の説明
-		recordingDate?: unknown; // Firestore.Timestamp型
-	};
-
-	// トピック詳細 (topicDetails)
-	topicDetails?: {
-		topicCategories?: string[]; // トピックカテゴリURL
-	};
-
-	// ステータス情報 (status)
+	// Video status
 	status?: {
-		uploadStatus?: string; // アップロードステータス
-		privacyStatus?: string; // プライバシーステータス (public/unlisted/private)
-		commentStatus?: string; // コメント許可状態
+		privacyStatus?: string;
+		uploadStatus?: string;
+		embeddable?: boolean;
+		publicStatsViewable?: boolean;
+		madeForKids?: boolean;
+		selfDeclaredMadeForKids?: boolean;
+		commentStatus?: string;
 	};
 
-	// カテゴリ情報
-	categoryId?: string; // 動画カテゴリID
-	tags?: string[]; // 動画タグ
-
-	// 3層タグシステム (VIDEO_TAGS_DESIGN.md準拠)
-	playlistTags?: string[]; // YouTubeプレイリスト名から自動生成
-	userTags?: string[]; // 登録ユーザーが編集可能なタグ配列
-
-	// Entity V2移行フラグ
-	_v2Migration?: {
-		migratedAt: unknown; // Firestore.Timestamp型
-		source: string;
-		version: string;
+	// Player embed
+	player?: {
+		embedHtml?: string;
+		embedWidth?: number;
+		embedHeight?: number;
 	};
 
-	// 更新日時
-	updatedAt?: unknown; // Firestore.Timestamp型
+	// Topic details
+	topicDetails?: {
+		topicCategories?: string[];
+	};
+
+	// Recording details
+	recordingDetails?: {
+		location?: string;
+		locationDescription?: string;
+		recordingDate?: string;
+	};
+
+	// Region restriction
+	regionRestriction?: {
+		allowed?: string[];
+		blocked?: string[];
+	};
+
+	// Content rating
+	contentRating?: Record<string, unknown>;
+}
+
+// Alias for backward compatibility
+export type FirestoreVideoData = FirestoreServerVideoData;
+
+/**
+ * Video list result type
+ */
+export interface VideoListResult {
+	items: VideoPlainObject[];
+	videos: VideoPlainObject[]; // Alias for backward compatibility
+	total: number;
+	page: number;
+	pageSize: number;
+	hasMore?: boolean;
+}
+
+/**
+ * Live streaming information
+ */
+export interface LiveStreamingDetails {
+	scheduledStartTime?: Date;
+	scheduledEndTime?: Date;
+	actualStartTime?: Date;
+	actualEndTime?: Date;
+	concurrentViewers?: number;
+}
+
+/**
+ * Video Entity
+ *
+ * The root entity for video domain model.
+ * Aggregates various value objects to represent a complete video.
+ */
+export class Video {
+	private _lastModified: Date;
+
+	constructor(
+		private readonly _content: VideoContent,
+		private readonly _metadata: VideoMetadata,
+		private readonly _channel: Channel,
+		private readonly _statistics?: VideoStatistics,
+		private readonly _tags: VideoTags = { playlistTags: [], userTags: [] },
+		private readonly _audioButtonInfo: AudioButtonInfo = { count: 0, hasButtons: false },
+		private readonly _liveStreamingDetails?: LiveStreamingDetails,
+		private readonly _liveBroadcastContent: string = "none",
+		private readonly _videoType: string = "normal",
+		private readonly _lastFetchedAt: Date = new Date(),
+	) {
+		this._lastModified = new Date();
+	}
+
+	// Getters for accessing value objects
+	get content(): VideoContent {
+		return this._content;
+	}
+
+	get metadata(): VideoMetadata {
+		return this._metadata;
+	}
+
+	get channel(): Channel {
+		return this._channel;
+	}
+
+	get audioButtonInfo(): AudioButtonInfo {
+		return { ...this._audioButtonInfo };
+	}
+
+	get liveStreamingDetails():
+		| {
+				scheduledStartTime?: string;
+				scheduledEndTime?: string;
+				actualStartTime?: string;
+				actualEndTime?: string;
+				concurrentViewers?: number;
+		  }
+		| undefined {
+		if (!this._liveStreamingDetails) return undefined;
+
+		return {
+			scheduledStartTime: this._liveStreamingDetails.scheduledStartTime?.toISOString(),
+			scheduledEndTime: this._liveStreamingDetails.scheduledEndTime?.toISOString(),
+			actualStartTime: this._liveStreamingDetails.actualStartTime?.toISOString(),
+			actualEndTime: this._liveStreamingDetails.actualEndTime?.toISOString(),
+			concurrentViewers: this._liveStreamingDetails.concurrentViewers,
+		};
+	}
+
+	get lastFetchedAt(): string {
+		return this._lastFetchedAt.toISOString();
+	}
+
+	get lastModified(): Date {
+		return new Date(this._lastModified);
+	}
+
+	// Identity
+	get id(): string {
+		return this._content.videoId.toString();
+	}
+
+	// Compatibility getters for legacy code
+	get videoId(): string {
+		return this.id;
+	}
+
+	get title(): string {
+		return this._metadata.title.toString();
+	}
+
+	get description(): string {
+		return this._metadata.description.toString();
+	}
+
+	get channelId(): string {
+		return this._channel.id.toString();
+	}
+
+	get channelTitle(): string {
+		return this._channel.title.toString();
+	}
+
+	get publishedAt(): string {
+		return this._content.publishedAt.toISOString();
+	}
+
+	get publishedAtISO(): string {
+		return this._content.publishedAt.toISOString();
+	}
+
+	get lastFetchedAtISO(): string {
+		return this._lastFetchedAt.toISOString();
+	}
+
+	get thumbnailUrl(): string {
+		return this._content.videoId.toThumbnailUrl();
+	}
+
+	get thumbnails(): { default: { url: string }; medium: { url: string }; high: { url: string } } {
+		return {
+			default: { url: this._content.videoId.toThumbnailUrl("default") },
+			medium: { url: this._content.videoId.toThumbnailUrl("medium") },
+			high: { url: this._content.videoId.toThumbnailUrl("high") },
+		};
+	}
+
+	get audioButtonCount(): number {
+		return this._audioButtonInfo.count;
+	}
+
+	get hasAudioButtons(): boolean {
+		return this._audioButtonInfo.hasButtons;
+	}
+
+	get playlistTags(): string[] {
+		return [...this._tags.playlistTags];
+	}
+
+	get userTags(): string[] {
+		return [...this._tags.userTags];
+	}
+
+	// duration getterの重複を修正
+	get duration(): string | undefined {
+		return this._metadata.duration?.toString();
+	}
+
+	get categoryId(): string | undefined {
+		return this._channel.toPlainObject().categoryId;
+	}
+
+	get liveBroadcastContent(): string {
+		return this._liveBroadcastContent;
+	}
+
+	get player(): { embedHtml: string; embedWidth?: number; embedHeight?: number } | undefined {
+		return this._content.embedHtml ? { embedHtml: this._content.embedHtml } : undefined;
+	}
+
+	get statistics():
+		| {
+				viewCount?: number;
+				likeCount?: number;
+				dislikeCount?: number;
+				favoriteCount?: number;
+				commentCount?: number;
+		  }
+		| undefined {
+		if (!this._statistics) return undefined;
+		return {
+			viewCount: this._statistics.viewCount.toNumber(),
+			likeCount: this._statistics.likeCount?.toNumber(),
+			dislikeCount: this._statistics.dislikeCount?.toNumber(),
+			favoriteCount: this._statistics.favoriteCount,
+			commentCount: this._statistics.commentCount?.toNumber(),
+		};
+	}
+
+	get tags(): string[] | undefined {
+		return this._content.tags;
+	}
+
+	// Additional compatibility getters
+	get videoType(): string | undefined {
+		return this._videoType;
+	}
+
+	get topicDetails(): { topicCategories?: string[] } | undefined {
+		// Not implemented in current Video entity
+		return undefined;
+	}
+
+	get recordingDetails(): Record<string, unknown> | undefined {
+		// Not implemented in current Video entity
+		return undefined;
+	}
+
+	get regionRestriction(): { allowed?: string[]; blocked?: string[] } | undefined {
+		// Not implemented in current Video entity
+		return undefined;
+	}
+
+	get definition(): string | undefined {
+		return this._metadata.definition;
+	}
+
+	get dimension(): string | undefined {
+		return this._metadata.dimension;
+	}
+
+	get caption(): boolean | undefined {
+		return this._metadata.hasCaption;
+	}
+
+	get licensedContent(): boolean | undefined {
+		return this._metadata.isLicensedContent;
+	}
+
+	get status():
+		| { privacyStatus: string; uploadStatus: string; commentStatus?: string }
+		| undefined {
+		return {
+			privacyStatus: this._content.privacyStatus,
+			uploadStatus: this._content.uploadStatus,
+		};
+	}
+
+	get contentRating(): Record<string, unknown> | undefined {
+		// Not implemented in current Video entity
+		return undefined;
+	}
+
+	// Business logic methods
+
+	/**
+	 * Checks if the video is available for viewing
+	 */
+	isAvailable(): boolean {
+		return this._content.isAvailable();
+	}
+
+	/**
+	 * Checks if the video is live or upcoming
+	 */
+	isLiveOrUpcoming(): boolean {
+		if (!this._liveStreamingDetails) {
+			return false;
+		}
+		const now = new Date();
+		return (
+			(this._liveStreamingDetails.scheduledStartTime !== undefined &&
+				this._liveStreamingDetails.scheduledStartTime > now) ||
+			(this._liveStreamingDetails.actualStartTime !== undefined &&
+				!this._liveStreamingDetails.actualEndTime)
+		);
+	}
+
+	/**
+	 * Checks if the video is currently live
+	 */
+	isLive(): boolean {
+		if (!this._liveStreamingDetails) {
+			return false;
+		}
+		return (
+			this._liveStreamingDetails.actualStartTime !== undefined &&
+			!this._liveStreamingDetails.actualEndTime
+		);
+	}
+
+	/**
+	 * Get YouTube URL for the video
+	 */
+	getYouTubeUrl(): string {
+		return `https://youtube.com/watch?v=${this._content.videoId.toString()}`;
+	}
+
+	/**
+	 * Get live stream start time if available
+	 */
+	getLiveStreamStartTime(): Date | null {
+		return this._liveStreamingDetails?.actualStartTime || null;
+	}
+
+	/**
+	 * Check if this is a live stream
+	 */
+	isLiveStream(): boolean {
+		return this._liveBroadcastContent === "live";
+	}
+
+	/**
+	 * Check if this is an upcoming stream
+	 */
+	isUpcomingStream(): boolean {
+		return this._liveBroadcastContent === "upcoming";
+	}
+
+	/**
+	 * Check if this is an archived stream
+	 */
+	isArchivedStream(): boolean {
+		// Check explicit video type first
+		if (this._videoType === "archived") {
+			return true;
+		}
+
+		// If it has actual end time, it's an archived stream
+		if (this._liveStreamingDetails?.actualEndTime) {
+			// Duration over 15 minutes indicates a stream archive
+			const duration = this._metadata.duration;
+			if (duration) {
+				const durationMs = duration.toMilliseconds();
+				return durationMs > 15 * 60 * 1000; // 15 minutes
+			}
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if this is a premiere video
+	 */
+	isPremiere(): boolean {
+		// If it has live streaming details but duration is 15 minutes or less
+		if (this._liveStreamingDetails?.actualEndTime) {
+			const duration = this._metadata.duration;
+			if (duration) {
+				const durationMs = duration.toMilliseconds();
+				return durationMs <= 15 * 60 * 1000; // 15 minutes or less
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Updates user tags
+	 */
+	updateUserTags(tags: string[]): Video {
+		if (tags.length > 10) {
+			throw new Error("ユーザータグは最大10個まで設定できます");
+		}
+		const validTags = tags.filter((tag) => tag.length >= 1 && tag.length <= 30);
+
+		return new Video(
+			this._content,
+			this._metadata,
+			this._channel,
+			this._statistics,
+			{ ...this._tags, userTags: validTags },
+			this._audioButtonInfo,
+			this._liveStreamingDetails,
+			this._liveBroadcastContent,
+			this._videoType,
+			this._lastFetchedAt,
+		);
+	}
+
+	/**
+	 * Updates statistics
+	 */
+	updateStatistics(statistics: VideoStatistics): Video {
+		return new Video(
+			this._content,
+			this._metadata,
+			this._channel,
+			statistics,
+			this._tags,
+			this._audioButtonInfo,
+			this._liveStreamingDetails,
+			this._liveBroadcastContent,
+			this._videoType,
+			this._lastFetchedAt,
+		);
+	}
+
+	/**
+	 * Updates audio button information
+	 */
+	updateAudioButtonInfo(info: AudioButtonInfo): Video {
+		return new Video(
+			this._content,
+			this._metadata,
+			this._channel,
+			this._statistics,
+			this._tags,
+			info,
+			this._liveStreamingDetails,
+			this._liveBroadcastContent,
+			this._videoType,
+			this._lastFetchedAt,
+		);
+	}
+
+	/**
+	 * Creates channel from legacy data
+	 */
+	private static createChannelFromLegacy(data: LegacyVideoData): Channel {
+		return Channel.fromPlainObject({
+			channelId: data.channelId,
+			channelTitle: data.channelTitle,
+			categoryId: data.categoryId,
+		});
+	}
+
+	/**
+	 * Creates metadata from legacy data
+	 */
+	private static createMetadataFromLegacy(data: LegacyVideoData): VideoMetadata {
+		return new VideoMetadata(
+			new VideoTitle(data.title),
+			new VideoDescription(data.description || ""),
+			data.duration ? new VideoDuration(data.duration) : undefined,
+			data.dimension as "2d" | "3d" | undefined,
+			data.definition as "hd" | "sd" | undefined,
+			data.caption,
+			data.licensedContent,
+		);
+	}
+
+	/**
+	 * Creates content from legacy data
+	 */
+	private static createContentFromLegacy(data: LegacyVideoData): VideoContent {
+		const hasContentDetails =
+			data.definition ||
+			data.dimension ||
+			data.caption !== undefined ||
+			data.licensedContent !== undefined;
+
+		const contentDetails = hasContentDetails
+			? new ContentDetails(
+					data.dimension as "2d" | "3d" | undefined,
+					data.definition as "hd" | "sd" | undefined,
+					data.caption,
+					data.licensedContent,
+					data.projection as "rectangular" | "360" | undefined,
+				)
+			: undefined;
+
+		return new VideoContent(
+			new VideoId(data.videoId || data.id || ""),
+			new PublishedAt(data.publishedAt),
+			(data.status?.privacyStatus as PrivacyStatus) || "public",
+			(data.status?.uploadStatus as UploadStatus) || "processed",
+			contentDetails,
+			data.player?.embedHtml,
+			data.tags,
+		);
+	}
+
+	/**
+	 * Creates statistics from legacy data
+	 */
+	private static createStatisticsFromLegacy(data: LegacyVideoData): VideoStatistics | undefined {
+		if (!data.statistics) {
+			return undefined;
+		}
+
+		return new VideoStatistics(
+			new ViewCount(data.statistics.viewCount || 0),
+			data.statistics.likeCount !== undefined
+				? new LikeCount(data.statistics.likeCount)
+				: undefined,
+			data.statistics.dislikeCount !== undefined
+				? new DislikeCount(data.statistics.dislikeCount)
+				: undefined,
+			data.statistics.favoriteCount,
+			data.statistics.commentCount !== undefined
+				? new CommentCount(data.statistics.commentCount)
+				: undefined,
+		);
+	}
+
+	/**
+	 * Creates live streaming details from legacy data
+	 */
+	private static createLiveStreamingDetailsFromLegacy(
+		data: LegacyVideoData,
+	): LiveStreamingDetails | undefined {
+		if (!data.liveStreamingDetails) {
+			return undefined;
+		}
+
+		const details = data.liveStreamingDetails;
+		return {
+			scheduledStartTime: details.scheduledStartTime
+				? new Date(details.scheduledStartTime)
+				: undefined,
+			scheduledEndTime: details.scheduledEndTime ? new Date(details.scheduledEndTime) : undefined,
+			actualStartTime: details.actualStartTime ? new Date(details.actualStartTime) : undefined,
+			actualEndTime: details.actualEndTime ? new Date(details.actualEndTime) : undefined,
+			concurrentViewers: details.concurrentViewers,
+		};
+	}
+
+	/**
+	 * Creates a Video from legacy format
+	 */
+	static fromLegacyFormat(data: LegacyVideoData): Video {
+		return new Video(
+			Video.createContentFromLegacy(data),
+			Video.createMetadataFromLegacy(data),
+			Video.createChannelFromLegacy(data),
+			Video.createStatisticsFromLegacy(data),
+			{
+				playlistTags: data.playlistTags || [],
+				userTags: data.userTags || [],
+				contentTags: data.tags,
+			},
+			{
+				count: data.audioButtonCount || 0,
+				hasButtons: data.hasAudioButtons || false,
+			},
+			Video.createLiveStreamingDetailsFromLegacy(data),
+			data.liveBroadcastContent || "none",
+			"normal", // Always use "normal" as internal state
+			data.lastFetchedAt ? new Date(data.lastFetchedAt) : new Date(),
+		);
+	}
+
+	/**
+	 * Convert Firestore timestamp to Date object
+	 */
+	private static convertTimestamp(timestamp: unknown): Date | undefined {
+		if (!timestamp) return undefined;
+		if (timestamp instanceof Date) return timestamp;
+		if (typeof timestamp === "string") return new Date(timestamp);
+		if (typeof timestamp === "object" && "_seconds" in timestamp) {
+			return new Date((timestamp as { _seconds: number })._seconds * 1000);
+		}
+		if (typeof timestamp === "object" && "toDate" in timestamp) {
+			const timestampWithToDate = timestamp as { toDate: () => Date };
+			return timestampWithToDate.toDate();
+		}
+		return undefined;
+	}
+
+	/**
+	 * Create VideoStatistics from Firestore data
+	 */
+	private static createStatisticsFromFirestore(
+		data: FirestoreServerVideoData,
+	): VideoStatistics | undefined {
+		if (!data.statistics) return undefined;
+
+		return new VideoStatistics(
+			new ViewCount(data.statistics.viewCount || 0),
+			data.statistics.likeCount !== undefined
+				? new LikeCount(data.statistics.likeCount)
+				: undefined,
+			data.statistics.dislikeCount !== undefined
+				? new DislikeCount(data.statistics.dislikeCount)
+				: undefined,
+			data.statistics.favoriteCount,
+			data.statistics.commentCount !== undefined
+				? new CommentCount(data.statistics.commentCount)
+				: undefined,
+		);
+	}
+
+	/**
+	 * Create LiveStreamingDetails from Firestore data
+	 */
+	private static createLiveStreamingDetailsFromFirestore(
+		data: FirestoreServerVideoData,
+	): LiveStreamingDetails | undefined {
+		if (!data.liveStreamingDetails) return undefined;
+
+		return {
+			scheduledStartTime: Video.convertTimestamp(data.liveStreamingDetails.scheduledStartTime),
+			scheduledEndTime: Video.convertTimestamp(data.liveStreamingDetails.scheduledEndTime),
+			actualStartTime: Video.convertTimestamp(data.liveStreamingDetails.actualStartTime),
+			actualEndTime: Video.convertTimestamp(data.liveStreamingDetails.actualEndTime),
+			concurrentViewers: data.liveStreamingDetails.concurrentViewers,
+		};
+	}
+
+	/**
+	 * Create ContentDetails from Firestore data
+	 */
+	private static createContentDetailsFromFirestore(
+		data: FirestoreServerVideoData,
+	): ContentDetails | undefined {
+		if (
+			!data.definition &&
+			!data.dimension &&
+			data.caption === undefined &&
+			data.licensedContent === undefined
+		) {
+			return undefined;
+		}
+
+		return new ContentDetails(
+			data.dimension as "2d" | "3d" | undefined,
+			data.definition as "hd" | "sd" | undefined,
+			typeof data.caption === "boolean" ? data.caption : data.caption === "true",
+			data.licensedContent,
+			undefined,
+		);
+	}
+
+	/**
+	 * Creates a Video directly from Firestore data
+	 */
+	static fromFirestoreData(data: FirestoreServerVideoData): Video {
+		// Create content
+		const content = new VideoContent(
+			new VideoId(data.videoId),
+			new PublishedAt(Video.convertTimestamp(data.publishedAt) || new Date()),
+			(data.status?.privacyStatus as PrivacyStatus) || "public",
+			(data.status?.uploadStatus as UploadStatus) || "processed",
+			Video.createContentDetailsFromFirestore(data),
+			data.player?.embedHtml,
+			data.tags,
+		);
+
+		// Create metadata
+		const metadata = new VideoMetadata(
+			new VideoTitle(data.title),
+			new VideoDescription(data.description || ""),
+			data.duration ? new VideoDuration(data.duration) : undefined,
+			data.dimension as "2d" | "3d" | undefined,
+			data.definition as "hd" | "sd" | undefined,
+			typeof data.caption === "boolean" ? data.caption : data.caption === "true",
+			data.licensedContent,
+		);
+
+		// Create channel
+		const channel = Channel.fromPlainObject({
+			channelId: data.channelId,
+			channelTitle: data.channelTitle,
+			categoryId: data.categoryId,
+		});
+
+		// Create statistics
+		const statistics = Video.createStatisticsFromFirestore(data);
+
+		// Create live streaming details
+		const liveStreamingDetails = Video.createLiveStreamingDetailsFromFirestore(data);
+
+		return new Video(
+			content,
+			metadata,
+			channel,
+			statistics,
+			{
+				playlistTags: data.playlistTags || [],
+				userTags: data.userTags || [],
+				contentTags: data.tags,
+			},
+			{
+				count: data.audioButtonCount || 0,
+				hasButtons: data.hasAudioButtons || false,
+			},
+			liveStreamingDetails,
+			data.liveBroadcastContent || "none",
+			"normal",
+			Video.convertTimestamp(data.lastFetchedAt) || new Date(),
+		);
+	}
+
+	/**
+	 * Creates base legacy object
+	 */
+	private createBaseLegacyObject(): LegacyVideoOutput {
+		return {
+			id: this.id,
+			videoId: this.id,
+			title: this._metadata.title.toString(),
+			description: this._metadata.description.toString(),
+			channelId: this._channel.id.toString(),
+			channelTitle: this._channel.title.toString(),
+			publishedAt: this._content.publishedAt.toISOString(),
+			publishedAtISO: this._content.publishedAt.toISOString(),
+			lastFetchedAt: this._lastFetchedAt.toISOString(),
+			lastFetchedAtISO: this._lastFetchedAt.toISOString(),
+			thumbnailUrl: this._content.videoId.toThumbnailUrl(),
+			audioButtonCount: this._audioButtonInfo.count,
+			hasAudioButtons: this._audioButtonInfo.hasButtons,
+			playlistTags: this._tags.playlistTags,
+			userTags: this._tags.userTags,
+		};
+	}
+
+	/**
+	 * Adds metadata fields to legacy object
+	 */
+	private addMetadataToLegacy(base: LegacyVideoOutput): void {
+		if (this._metadata.duration) {
+			base.duration = this._metadata.duration.toString();
+		}
+		if (this._metadata.dimension) {
+			base.dimension = this._metadata.dimension;
+		}
+		if (this._metadata.definition) {
+			base.definition = this._metadata.definition;
+		}
+		if (this._metadata.hasCaption !== undefined) {
+			base.caption = this._metadata.hasCaption;
+		}
+		if (this._metadata.isLicensedContent !== undefined) {
+			base.licensedContent = this._metadata.isLicensedContent;
+		}
+	}
+
+	/**
+	 * Adds statistics to legacy object
+	 */
+	private addStatisticsToLegacy(base: LegacyVideoOutput): void {
+		if (this._statistics) {
+			base.statistics = {
+				viewCount: this._statistics.viewCount.toNumber(),
+				likeCount: this._statistics.likeCount?.toNumber(),
+				dislikeCount: this._statistics.dislikeCount?.toNumber(),
+				favoriteCount: this._statistics.favoriteCount,
+				commentCount: this._statistics.commentCount?.toNumber(),
+			};
+		}
+	}
+
+	/**
+	 * Adds content details to legacy object
+	 */
+	private addContentDetailsToLegacy(base: LegacyVideoOutput): void {
+		if (this._content.contentDetails) {
+			base.status = {
+				privacyStatus: this._content.privacyStatus,
+				uploadStatus: this._content.uploadStatus,
+			};
+		}
+
+		if (this._content.embedHtml) {
+			base.player = {
+				embedHtml: this._content.embedHtml,
+			};
+		}
+
+		if (this._content.tags) {
+			base.tags = this._content.tags;
+		}
+	}
+
+	/**
+	 * Adds live streaming details to legacy object
+	 */
+	private addLiveStreamingToLegacy(base: LegacyVideoOutput): void {
+		if (!this._liveStreamingDetails) {
+			return;
+		}
+
+		const details: NonNullable<LegacyVideoOutput["liveStreamingDetails"]> = {};
+		const streaming = this._liveStreamingDetails;
+
+		if (streaming.scheduledStartTime) {
+			details.scheduledStartTime = streaming.scheduledStartTime.toISOString();
+		}
+		if (streaming.scheduledEndTime) {
+			details.scheduledEndTime = streaming.scheduledEndTime.toISOString();
+		}
+		if (streaming.actualStartTime) {
+			details.actualStartTime = streaming.actualStartTime.toISOString();
+		}
+		if (streaming.actualEndTime) {
+			details.actualEndTime = streaming.actualEndTime.toISOString();
+		}
+		if (streaming.concurrentViewers !== undefined) {
+			details.concurrentViewers = streaming.concurrentViewers;
+		}
+
+		base.liveStreamingDetails = details;
+	}
+
+	/**
+	 * Converts to legacy format for backward compatibility
+	 */
+	toLegacyFormat(): LegacyVideoOutput {
+		const base = this.createBaseLegacyObject();
+
+		// Add optional fields
+		this.addMetadataToLegacy(base);
+		this.addStatisticsToLegacy(base);
+		this.addContentDetailsToLegacy(base);
+		this.addLiveStreamingToLegacy(base);
+
+		// Add thumbnails for frontend compatibility
+		base.thumbnails = {
+			default: { url: this._content.videoId.toThumbnailUrl("default") },
+			medium: { url: this._content.videoId.toThumbnailUrl("medium") },
+			high: { url: this._content.videoId.toThumbnailUrl("high") },
+		};
+
+		// Add broadcast content
+		base.liveBroadcastContent = this._liveBroadcastContent as LiveBroadcastContent;
+
+		// Add category ID if available
+		const channelObj = this._channel.toPlainObject();
+		if (channelObj.categoryId) {
+			base.categoryId = channelObj.categoryId;
+		}
+
+		return base;
+	}
+
+	/**
+	 * Checks equality based on video ID
+	 */
+	equals(other: Video): boolean {
+		if (!other || !(other instanceof Video)) {
+			return false;
+		}
+		return this.id === other.id;
+	}
+
+	/**
+	 * Creates a copy of the video
+	 */
+	clone(): Video {
+		return new Video(
+			this._content.clone(),
+			this._metadata.clone(),
+			this._channel.clone(),
+			this._statistics?.clone(),
+			{ ...this._tags },
+			{ ...this._audioButtonInfo },
+			this._liveStreamingDetails ? { ...this._liveStreamingDetails } : undefined,
+			this._liveBroadcastContent,
+			this._videoType,
+			new Date(this._lastFetchedAt),
+		);
+	}
+
+	/**
+	 * Get video type for display
+	 */
+	getVideoType(): VideoComputedProperties["videoType"] {
+		if (this.isLiveStream()) return "live";
+		if (this.isUpcomingStream()) return "upcoming";
+		if (this.isArchivedStream()) return "archived";
+		if (this.isPremiere()) return "premiere";
+		return "normal";
+	}
+
+	/**
+	 * Check if audio button can be created
+	 */
+	canCreateAudioButton(): boolean {
+		// ライブ配信中または配信予定の動画は作成不可
+		if (this._liveBroadcastContent === "live" || this._liveBroadcastContent === "upcoming") {
+			return false;
+		}
+
+		// liveStreamingDetailsが存在しactualEndTimeがある場合は配信アーカイブ
+		// 15分以上の動画のみ音声ボタン作成可能
+		if (this._liveStreamingDetails?.actualEndTime) {
+			const duration = this._metadata.duration;
+			if (duration) {
+				const durationMs = duration.toMilliseconds();
+				return durationMs > 15 * 60 * 1000; // 15 minutes
+			}
+		}
+
+		// それ以外は作成不可
+		return false;
+	}
+
+	/**
+	 * Convert to plain object for Next.js serialization
+	 */
+	toPlainObject(): VideoPlainObject {
+		// Convert timestamps
+		const convertTimestamp = (date: Date | undefined): string => {
+			if (!date) return new Date().toISOString(); // デフォルト値
+			return date.toISOString();
+		};
+
+		// Convert live streaming details
+		const liveStreamingDetails = this._liveStreamingDetails
+			? {
+					scheduledStartTime: this._liveStreamingDetails.scheduledStartTime?.toISOString(),
+					scheduledEndTime: this._liveStreamingDetails.scheduledEndTime?.toISOString(),
+					actualStartTime: this._liveStreamingDetails.actualStartTime?.toISOString(),
+					actualEndTime: this._liveStreamingDetails.actualEndTime?.toISOString(),
+					concurrentViewers: this._liveStreamingDetails.concurrentViewers,
+				}
+			: undefined;
+
+		return {
+			// Core fields
+			id: this.id,
+			videoId: this.videoId,
+			title: this.title,
+			description: this.description,
+			channelId: this.channelId,
+			channelTitle: this.channelTitle,
+			publishedAt: convertTimestamp(this._content.publishedAt.toDate()),
+			thumbnailUrl: this.thumbnailUrl,
+			lastFetchedAt: convertTimestamp(this._lastFetchedAt),
+
+			// Audio button info
+			audioButtonCount: this.audioButtonCount,
+			hasAudioButtons: this.hasAudioButtons,
+
+			// Content details
+			duration: this.duration,
+			categoryId: this.categoryId,
+			tags: this.tags,
+			playlistTags: this.playlistTags,
+			userTags: this.userTags,
+
+			// Statistics
+			statistics: this.statistics,
+
+			// Live streaming
+			liveStreamingDetails,
+			liveBroadcastContent: this.liveBroadcastContent as LiveBroadcastContent,
+			videoType: this._videoType as VideoType,
+
+			// Video quality details
+			dimension: this.dimension,
+			definition: this.definition,
+			caption: this.caption,
+			licensedContent: this.licensedContent,
+
+			// Video status
+			status: this.status,
+
+			// Player embed
+			player: this.player,
+
+			// Topic details
+			topicDetails: this.topicDetails,
+
+			// Computed properties
+			_computed: {
+				isArchived: this.isArchivedStream(),
+				isPremiere: this.isPremiere(),
+				isLive: this.isLiveStream(),
+				isUpcoming: this.isUpcomingStream(),
+				canCreateButton: this.canCreateAudioButton(),
+				videoType: this.getVideoType(),
+				thumbnailUrl: this.thumbnailUrl,
+				youtubeUrl: this.getYouTubeUrl(),
+			},
+		};
+	}
 }
 
 /**
  * 動画が音声ボタン作成可能かどうかを判定する関数
- * ビジネスルール: 音声ボタンを作れるのは配信アーカイブのみ
+ * ビジネスルール: 配信アーカイブのみ音声ボタン作成可能
  * @param video 動画データ
  * @returns 音声ボタン作成可能かどうか
  */
 export function canCreateAudioButton(video: FrontendVideoData): boolean {
-	// 著作権とライブ配信ポリシーに基づき、音声ボタンを作成できるのは配信アーカイブのみ
-	// 作成可能な条件:
-	// 1. 明示的に videoType が "archived" の場合
-	// 2. ライブ配信アーカイブ（liveStreamingDetails.actualEndTime が存在）
-	//
-	// 作成不可な条件:
-	// - 配信中・配信予定（liveBroadcastContent が "live" または "upcoming"）
-	// - 通常動画（liveStreamingDetails が存在しない）
-	// - プレミア公開動画（liveStreamingDetails は存在するが actualEndTime がない）
-
-	// 明示的にアーカイブと設定されている場合
-	if (video.videoType === "archived") {
-		return true;
-	}
-
-	// 配信中・配信予定は作成不可
-	if (video.liveBroadcastContent !== "none") {
-		return false;
-	}
-
-	// ライブアーカイブの判定: actualEndTime が存在する場合
-	if (video.liveStreamingDetails?.actualEndTime) {
-		// 暫定ロジック: 15分以下の動画はプレミア公開として扱う
-		const durationSeconds = parseDurationToSeconds(video.duration);
-		const fifteenMinutes = 15 * 60; // 900秒
-
-		if (durationSeconds > 0 && durationSeconds <= fifteenMinutes) {
-			// 15分以下はプレミア公開と判定 → 作成不可
-			return false;
-		}
-
-		// 15分超過はライブアーカイブと判定 → 作成可能
-		return true;
-	}
-
-	// その他のケース（通常動画、プレミア公開動画など）は作成不可
-	return false;
+	// VideoPlainObjectは常に_computedプロパティを持つ
+	return video._computed.canCreateButton;
 }
 
 /**
- * ISO 8601 duration (PT3M3S) を秒数に変換
- * @param duration ISO 8601 duration文字列
- * @returns 秒数（解析失敗時は0）
- */
-export function parseDurationToSeconds(duration?: string): number {
-	if (!duration) return 0;
-
-	// PT3M3S, PT1H2M3S などの形式をパース
-	const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-	if (!match) return 0;
-
-	const hours = Number.parseInt(match[1] || "0", 10);
-	const minutes = Number.parseInt(match[2] || "0", 10);
-	const seconds = Number.parseInt(match[3] || "0", 10);
-
-	return hours * 3600 + minutes * 60 + seconds;
-}
-
-/**
- * 音声ボタン作成不可の理由を取得する
+ * 音声ボタン作成不可の理由を返す関数
  * @param video 動画データ
- * @returns エラーメッセージ（作成可能な場合は null）
+ * @returns エラーメッセージ
  */
 export function getAudioButtonCreationErrorMessage(video: FrontendVideoData): string | null {
-	// 作成可能な場合は null を返す
-	if (canCreateAudioButton(video)) {
+	// 作成可能な場合はnullを返す
+	if (video._computed.canCreateButton) {
 		return null;
 	}
 
-	// 配信中・配信予定の場合
-	if (video.liveBroadcastContent === "live") {
-		return "配信中は音声ボタンを作成できません";
+	// videoTypeに基づいてエラーメッセージを返す
+	switch (video._computed.videoType) {
+		case "live":
+			return "ライブ配信中は音声ボタンを作成できません";
+		case "upcoming":
+			return "配信予定の動画には音声ボタンを作成できません";
+		case "premiere":
+			return "プレミア公開動画には音声ボタンを作成できません";
+		case "normal":
+			return "音声ボタンを作成できるのは配信アーカイブのみです";
+		case "archived":
+			// アーカイブなのに作成できない場合（通常はないはず）
+			return "この動画では音声ボタンを作成できません";
+		default:
+			return "音声ボタンを作成できません";
 	}
-	if (video.liveBroadcastContent === "upcoming") {
-		return "配信開始前は音声ボタンを作成できません";
+}
+
+/**
+ * Convert Firestore data to frontend video format
+ * @param data Firestore video data or Video entity
+ * @returns Frontend video data (Plain object)
+ */
+export function convertToFrontendVideo(data: FirestoreServerVideoData | Video): FrontendVideoData {
+	// If it's already a Video entity, convert to plain object
+	if (data instanceof Video) {
+		return data.toPlainObject();
 	}
 
-	// liveStreamingDetails が存在する場合の詳細判定
-	if (video.liveStreamingDetails) {
-		// actualEndTime がない場合はプレミア公開
-		if (!video.liveStreamingDetails.actualEndTime) {
-			return "プレミア公開動画は著作権の関係上、音声ボタンの作成はできません";
-		}
-
-		// actualEndTime がある場合は15分以下かチェック
-		const durationSeconds = parseDurationToSeconds(video.duration);
-		const fifteenMinutes = 15 * 60; // 900秒
-
-		if (durationSeconds > 0 && durationSeconds <= fifteenMinutes) {
-			return "プレミア公開動画は著作権の関係上、音声ボタンの作成はできません";
-		}
-	}
-
-	// 通常動画（liveStreamingDetails が存在しない）
-	return "通常動画は著作権の関係上、音声ボタンの作成はできません";
+	// Convert Firestore data to Video entity and then to plain object
+	return Video.fromFirestoreData(data).toPlainObject();
 }

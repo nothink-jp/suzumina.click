@@ -67,7 +67,10 @@ export function AudioButtonDetailMainContent({
 								</span>
 								<span className="flex items-center gap-1">
 									<Clock className="h-4 w-4" />
-									{(audioButton.endTime - audioButton.startTime).toFixed(1)}秒
+									{((audioButton.endTime || audioButton.startTime) - audioButton.startTime).toFixed(
+										1,
+									)}
+									秒
 								</span>
 								<span className="text-xs text-muted-foreground">
 									by {audioButton.createdByName}
@@ -102,7 +105,7 @@ export function AudioButtonDetailMainContent({
 					{/* 統計情報 */}
 					<AudioButtonDetailStats
 						playCount={audioButton.playCount}
-						favoriteCount={audioButton.favoriteCount}
+						favoriteCount={audioButton.favoriteCount || 0}
 						likeCount={audioButton.likeCount}
 					/>
 
@@ -142,7 +145,7 @@ export function AudioButtonDetailMainContent({
 					<AudioButtonDetailActions
 						audioButtonId={audioButton.id}
 						isFavorited={isFavorited}
-						favoriteCount={audioButton.favoriteCount}
+						favoriteCount={audioButton.favoriteCount || 0}
 						likeCount={audioButton.likeCount}
 						isLiked={isLiked}
 						isDisliked={isDisliked}
@@ -159,8 +162,16 @@ export function AudioButtonDetailMainContent({
 							<p className="text-sm text-muted-foreground">
 								再生時間:{" "}
 								<TimeDisplay time={audioButton.startTime} format="mm:ss.s" className="inline" /> -{" "}
-								<TimeDisplay time={audioButton.endTime} format="mm:ss.s" className="inline" />{" "}
-								(切り抜き時間: {(audioButton.endTime - audioButton.startTime).toFixed(1)}秒)
+								<TimeDisplay
+									time={audioButton.endTime || audioButton.startTime}
+									format="mm:ss.s"
+									className="inline"
+								/>{" "}
+								(切り抜き時間:{" "}
+								{((audioButton.endTime || audioButton.startTime) - audioButton.startTime).toFixed(
+									1,
+								)}
+								秒)
 							</p>
 							<Button variant="outline" size="sm" asChild>
 								<a

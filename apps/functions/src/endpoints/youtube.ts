@@ -7,7 +7,7 @@ import {
 	initializeYouTubeClient,
 	searchVideos,
 } from "../services/youtube/youtube-api";
-import { saveVideosToFirestoreV2 } from "../services/youtube/youtube-firestore-v2";
+import { saveVideosToFirestore } from "../services/youtube/youtube-firestore";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../shared/common";
 import * as logger from "../shared/logger";
 
@@ -252,7 +252,7 @@ async function fetchYouTubeVideosLogic(): Promise<FetchResult> {
 		const videoDetails = await fetchVideoDetails(youtube, videoIds);
 
 		// 5. Firestoreにデータ保存
-		const savedCount = await saveVideosToFirestoreV2(videoDetails);
+		const savedCount = await saveVideosToFirestore(videoDetails);
 
 		// 6. メタデータを更新
 		if (isComplete) {

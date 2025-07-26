@@ -52,18 +52,18 @@ describe("Migration Scripts", () => {
 			expect(FirestoreBackupService).toBeDefined();
 		});
 
-		it("should import V2MigrationRollbackService", async () => {
-			const { V2MigrationRollbackService } = await import("../rollback-v2-migration");
-			expect(V2MigrationRollbackService).toBeDefined();
+		it("should import MigrationRollbackService", async () => {
+			const { MigrationRollbackService } = await import("../rollback-v2-migration");
+			expect(MigrationRollbackService).toBeDefined();
 		});
 
-		it("should import V2MigrationValidationService", async () => {
-			const { V2MigrationValidationService } = await import("../validate-v2-migration");
-			expect(V2MigrationValidationService).toBeDefined();
+		it("should import MigrationValidationService", async () => {
+			const { MigrationValidationService } = await import("../validate-v2-migration");
+			expect(MigrationValidationService).toBeDefined();
 		});
 
 		it("should import ProductionMigrationExecutor", async () => {
-			const { ProductionMigrationExecutor } = await import("../execute-v2-migration");
+			const { ProductionMigrationExecutor } = await import("../execute-migration");
 			expect(ProductionMigrationExecutor).toBeDefined();
 		});
 	});
@@ -80,25 +80,25 @@ describe("Migration Scripts", () => {
 			expect(service).toBeDefined();
 		});
 
-		it("should create V2MigrationRollbackService instance", async () => {
-			const { V2MigrationRollbackService } = await import("../rollback-v2-migration");
-			const service = new V2MigrationRollbackService({
+		it("should create MigrationRollbackService instance", async () => {
+			const { MigrationRollbackService } = await import("../rollback-v2-migration");
+			const service = new MigrationRollbackService({
 				collections: ["test"],
 				dryRun: true,
 			});
 			expect(service).toBeDefined();
 		});
 
-		it("should create V2MigrationValidationService instance", async () => {
-			const { V2MigrationValidationService } = await import("../validate-v2-migration");
-			const service = new V2MigrationValidationService({
+		it("should create MigrationValidationService instance", async () => {
+			const { MigrationValidationService } = await import("../validate-v2-migration");
+			const service = new MigrationValidationService({
 				collections: ["test"],
 			});
 			expect(service).toBeDefined();
 		});
 
 		it("should create ProductionMigrationExecutor instance", async () => {
-			const { ProductionMigrationExecutor } = await import("../execute-v2-migration");
+			const { ProductionMigrationExecutor } = await import("../execute-migration");
 			const executor = new ProductionMigrationExecutor();
 			expect(executor).toBeDefined();
 		});

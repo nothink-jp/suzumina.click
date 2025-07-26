@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getVideoByIdV2 } from "../actions-v2";
+import { getVideoById } from "../actions";
 import VideoDetail from "./components/VideoDetail";
 
 interface VideoDetailPageProps {
@@ -12,7 +12,7 @@ export default async function VideoDetailPage({ params }: VideoDetailPageProps) 
 	const resolvedParams = await params;
 	const { videoId } = resolvedParams;
 
-	const video = await getVideoByIdV2(videoId);
+	const video = await getVideoById(videoId);
 
 	if (!video) {
 		notFound();
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: VideoDetailPageProps) {
 	const resolvedParams = await params;
 	const { videoId } = resolvedParams;
 
-	const video = await getVideoByIdV2(videoId);
+	const video = await getVideoById(videoId);
 
 	if (!video) {
 		return {

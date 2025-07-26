@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: AudioButtonDetailPageProps): 
 	}
 
 	const audioButton = result.data;
-	const duration = audioButton.endTime - audioButton.startTime;
+	const duration = (audioButton.endTime || audioButton.startTime) - audioButton.startTime;
 	const description =
 		audioButton.description ||
 		`涼花みなせさんの音声ボタン「${audioButton.title}」。${duration.toFixed(1)}秒の音声をお楽しみください。${audioButton.createdByName}さんが作成しました。`;

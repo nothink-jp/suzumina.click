@@ -1,6 +1,6 @@
 import type { youtube_v3 } from "googleapis";
 import { describe, expect, it } from "vitest";
-import { mapYouTubeVideosToEntities, mapYouTubeVideosWithErrors } from "../video-mapper-v2";
+import { mapYouTubeVideosToEntities, mapYouTubeVideosWithErrors } from "../video-mapper";
 
 describe("Video Mapper V2 - Performance", () => {
 	// Helper to create many YouTube videos
@@ -140,8 +140,9 @@ describe("Video Mapper V2 - Performance", () => {
 			const duration = endTime - startTime;
 
 			expect(result).toHaveLength(100);
-			expect(result[0].tags.playlistTags).toHaveLength(3);
-			expect(result[0].tags.userTags).toHaveLength(4);
+			// tagsは個別のgetterに分かれた
+			expect(result[0].playlistTags).toHaveLength(3);
+			expect(result[0].userTags).toHaveLength(4);
 			expect(duration).toBeLessThan(150); // Should still be fast with tag mapping
 			console.log(`Mapped 100 videos with tags in ${duration.toFixed(2)}ms`);
 		});

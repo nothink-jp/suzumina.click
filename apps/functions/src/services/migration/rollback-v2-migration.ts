@@ -22,7 +22,7 @@ interface RollbackOptions {
 	};
 }
 
-export class V2MigrationRollbackService {
+export class MigrationRollbackService {
 	private readonly firestore = getFirestore();
 
 	constructor(private readonly options: RollbackOptions) {
@@ -203,7 +203,7 @@ if (require.main === module) {
 		backupPath = args[backupIndex + 1];
 	}
 
-	const rollbackService = new V2MigrationRollbackService({
+	const rollbackService = new MigrationRollbackService({
 		collections: ["videos", "audioButtons"],
 		batchSize: 100,
 		dryRun,
