@@ -22,7 +22,7 @@ import type { FirestoreWorkEvaluation } from "../entities/work-evaluation";
  * Simplified alias for DLsite work data
  * @alias OptimizedFirestoreDLsiteWorkData
  */
-export type Work = OptimizedFirestoreDLsiteWorkData;
+export type WorkDoc = OptimizedFirestoreDLsiteWorkData;
 
 /**
  * Simplified alias for user document
@@ -94,9 +94,9 @@ export type VideoTag = any; // TODO: Replace with VideoTagAssociationData when a
 // ===== Type Guards =====
 
 /**
- * Type guard to check if a value is a Work
+ * Type guard to check if a value is a WorkDoc
  */
-export function isWork(value: unknown): value is Work {
+export function isWorkDoc(value: unknown): value is WorkDoc {
 	return (
 		typeof value === "object" &&
 		value !== null &&

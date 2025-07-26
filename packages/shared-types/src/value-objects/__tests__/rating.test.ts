@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Rating, RatingAggregation } from "../rating";
+import { Rating, RatingAggregation } from "../work/rating";
 
 describe("Rating Value Object", () => {
 	describe("Rating creation and methods", () => {

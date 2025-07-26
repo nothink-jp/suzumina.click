@@ -17,7 +17,8 @@ export default function WorkCard({ work, variant = "default", priority = false }
 	// 価格表示の計算
 	const currentPrice = work.price.current;
 	const originalPrice = work.price.original;
-	const isOnSale = work.price.discount && work.price.discount > 0;
+	// NOTE: 将来的にはWorkPrice.isDiscounted()を使用することを推奨
+	const isOnSale = work.price.discount !== undefined && work.price.discount > 0;
 
 	// 日付フォーマット
 	const formatDate = (dateString: string) => {
