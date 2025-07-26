@@ -24,8 +24,8 @@ export default defineConfig({
 			"**/.{idea,git,cache,output,temp}/**",
 			"**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*",
 			"**/e2e/**", // E2Eテストを除外
-			"src/actions/__tests__/video-actions.test.ts", // Server Actions V2テスト（server configで実行）
-			"src/actions/__tests__/audio-button-actions.test.ts", // Server Actions V2テスト（server configで実行）
+			"src/actions/__tests__/video-actions.test.ts", // Server Actionsテスト（server configで実行）
+			"src/actions/__tests__/audio-button-actions.test.ts", // Server Actionsテスト（server configで実行）
 		],
 	},
 	resolve: {

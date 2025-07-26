@@ -1,7 +1,7 @@
 /**
- * Video Mapper V2
+ * Video Mapper
  *
- * Maps YouTube API data to the new Video Entity V2 domain model.
+ * Maps YouTube API data to the Video Entity domain model.
  * Provides conversion between YouTube API responses and our domain entities
  * while maintaining backward compatibility with the existing system.
  */
@@ -37,9 +37,9 @@ import {
  * This interface represents the original video data structure used before
  * the Entity/Value Object architecture migration. It maintains backward
  * compatibility with existing systems while the codebase transitions to
- * the new Video Entity V2 domain model.
+ * the new Video Entity domain model.
  *
- * @deprecated Will be removed in v3.0.0 (target: April 30, 2026, reviewed July 2025). Migrate to Video Entity V2
+ * @deprecated Will be removed in v3.0.0 (target: April 30, 2026, reviewed July 2025). Migrate to Video Entity
  */
 interface LegacyVideoData {
 	// Core fields
@@ -103,7 +103,7 @@ import type { youtube_v3 } from "googleapis";
 import * as logger from "../../shared/logger";
 
 /**
- * Maps YouTube API video data to Video Entity V2
+ * Maps YouTube API video data to Video Entity
  *
  * @param youtubeVideo - Video data from YouTube API
  * @param playlistTags - Playlist tags for the video
@@ -388,11 +388,11 @@ export function mapLegacyToVideoEntity(legacyData: LegacyVideoData): Video {
 }
 
 /**
- * VideoMapper - Provides mapping functions for Video Entity V2
+ * VideoMapper - Provides mapping functions for Video Entity
  */
 export const VideoMapper = {
 	/**
-	 * Maps YouTube API video data to Video Entity V2
+	 * Maps YouTube API video data to Video Entity
 	 */
 	fromYouTubeAPI: (youtubeVideo: youtube_v3.Schema$Video): Video | null => {
 		return mapYouTubeToVideoEntity(youtubeVideo);

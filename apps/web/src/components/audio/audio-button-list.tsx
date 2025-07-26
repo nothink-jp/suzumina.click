@@ -2,9 +2,9 @@ import type { AudioButton } from "@suzumina.click/shared-types";
 import { Alert, AlertDescription } from "@suzumina.click/ui/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { memo } from "react";
-import AudioButtonCardV2 from "./audio-button-card";
+import AudioButtonCard from "./audio-button-card";
 
-interface AudioButtonListV2Props {
+interface AudioButtonListProps {
 	audioButtons: AudioButton[];
 	playCounts?: Record<string, number>;
 	favoriteStates?: Record<string, boolean>;
@@ -21,10 +21,10 @@ interface AudioButtonListV2Props {
 }
 
 /**
- * AudioButton List V2 コンポーネント
- * 新しいAudioButton V2 Entity構造に対応したリストコンポーネント
+ * AudioButton List コンポーネント
+ * AudioButton Entity構造に対応したリストコンポーネント
  */
-export const AudioButtonListV2 = memo(function AudioButtonListV2({
+export const AudioButtonList = memo(function AudioButtonList({
 	audioButtons,
 	playCounts = {},
 	favoriteStates = {},
@@ -38,7 +38,7 @@ export const AudioButtonListV2 = memo(function AudioButtonListV2({
 	onDislikeToggle,
 	className = "",
 	showStats = true,
-}: AudioButtonListV2Props) {
+}: AudioButtonListProps) {
 	// ローディング状態
 	if (loading) {
 		return (
@@ -79,7 +79,7 @@ export const AudioButtonListV2 = memo(function AudioButtonListV2({
 			{audioButtons.map((audioButton) => {
 				const id = audioButton.id.toString();
 				return (
-					<AudioButtonCardV2
+					<AudioButtonCard
 						key={id}
 						audioButton={audioButton}
 						playCount={playCounts[id]}

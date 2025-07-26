@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { describe, expect, it, vi } from "vitest";
-import { AudioButtonListV2 } from "../audio-button-list";
+import { AudioButtonList } from "../audio-button-list";
 
 // モックの設定
 vi.mock("next/navigation", () => ({
@@ -71,7 +71,7 @@ function createMockAudioButton(id: string, overrides?: MockAudioButtonLegacyData
 	return AudioButton.fromLegacy(defaultData);
 }
 
-describe("AudioButtonListV2", () => {
+describe("AudioButtonList", () => {
 	const mockPush = vi.fn();
 	const mockRouter = { push: mockPush };
 
@@ -87,7 +87,7 @@ describe("AudioButtonListV2", () => {
 			createMockAudioButton("2"),
 			createMockAudioButton("3"),
 		];
-		render(<AudioButtonListV2 audioButtons={audioButtons} />);
+		render(<AudioButtonList audioButtons={audioButtons} />);
 
 		expect(screen.getByText("音声ボタン 1")).toBeInTheDocument();
 		expect(screen.getByText("音声ボタン 2")).toBeInTheDocument();
@@ -100,27 +100,27 @@ describe("AudioButtonListV2", () => {
 			"1": 500,
 			"2": 1000,
 		};
-		render(<AudioButtonListV2 audioButtons={audioButtons} playCounts={playCounts} />);
+		render(<AudioButtonList audioButtons={audioButtons} playCounts={playCounts} />);
 
 		expect(screen.getByText("500")).toBeInTheDocument();
 		expect(screen.getByText("1,000")).toBeInTheDocument();
 	});
 
 	it("ローディング状態が表示される", () => {
-		const { container } = render(<AudioButtonListV2 audioButtons={[]} loading={true} />);
+		const { container } = render(<AudioButtonList audioButtons={[]} loading={true} />);
 
 		const skeletons = container.querySelectorAll(".animate-pulse");
 		expect(skeletons).toHaveLength(6);
 	});
 
 	it("エラー状態が表示される", () => {
-		render(<AudioButtonListV2 audioButtons={[]} error="ネットワークエラーが発生しました" />);
+		render(<AudioButtonList audioButtons={[]} error="ネットワークエラーが発生しました" />);
 
 		expect(screen.getByText("ネットワークエラーが発生しました")).toBeInTheDocument();
 	});
 
 	it("空状態が表示される", () => {
-		render(<AudioButtonListV2 audioButtons={[]} />);
+		render(<AudioButtonList audioButtons={[]} />);
 
 		expect(screen.getByText("音声ボタンが見つかりませんでした")).toBeInTheDocument();
 	});
@@ -131,7 +131,7 @@ describe("AudioButtonListV2", () => {
 			"1": true,
 			"2": false,
 		};
-		render(<AudioButtonListV2 audioButtons={audioButtons} favoriteStates={favoriteStates} />);
+		render(<AudioButtonList audioButtons={audioButtons} favoriteStates={favoriteStates} />);
 
 		const favoriteButtons = screen.getAllByRole("button", { name: /お気に入り/ });
 		expect(favoriteButtons[0]).toHaveAttribute("aria-label", "お気に入りから削除");
@@ -144,7 +144,7 @@ describe("AudioButtonListV2", () => {
 		const dislikeStates = { "1": false };
 
 		render(
-			<AudioButtonListV2
+			<AudioButtonList
 				audioButtons={audioButtons}
 				likeStates={likeStates}
 				dislikeStates={dislikeStates}
@@ -163,7 +163,7 @@ describe("AudioButtonListV2", () => {
 
 		const audioButtons = [createMockAudioButton("1")];
 		render(
-			<AudioButtonListV2
+			<AudioButtonList
 				audioButtons={audioButtons}
 				onPlay={handlePlay}
 				onFavoriteToggle={handleFavorite}
@@ -183,17 +183,17 @@ describe("AudioButtonListV2", () => {
 			createMockAudioButton("2", { playCount: 888 }),
 		];
 
-		const { rerender } = render(<AudioButtonListV2 audioButtons={audioButtons} showStats={true} />);
+		const { rerender } = render(<AudioButtonList audioButtons={audioButtons} showStats={true} />);
 		expect(screen.getByText("999")).toBeInTheDocument();
 		expect(screen.getByText("888")).toBeInTheDocument();
 
-		rerender(<AudioButtonListV2 audioButtons={audioButtons} showStats={false} />);
+		rerender(<AudioButtonList audioButtons={audioButtons} showStats={false} />);
 		expect(screen.queryByText("999")).not.toBeInTheDocument();
 		expect(screen.queryByText("888")).not.toBeInTheDocument();
 	});
 
 	it("カスタムクラス名が適用される", () => {
-		const { container } = render(<AudioButtonListV2 audioButtons={[]} className="custom-class" />);
+		const { container } = render(<AudioButtonList audioButtons={[]} className="custom-class" />);
 
 		const emptyState = container.querySelector(".custom-class");
 		expect(emptyState).toBeInTheDocument();

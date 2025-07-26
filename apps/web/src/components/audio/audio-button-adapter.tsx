@@ -1,8 +1,8 @@
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { AudioButton } from "@suzumina.click/shared-types";
 import { memo, useMemo } from "react";
-import AudioButtonCardV2 from "./audio-button-card";
-import { AudioButtonListV2 } from "./audio-button-list";
+import AudioButtonCard from "./audio-button-card";
+import { AudioButtonList } from "./audio-button-list";
 
 /**
  * 既存のFrontendAudioButtonDataをAudioButtonに変換するアダプター
@@ -54,7 +54,7 @@ interface AudioButtonCardAdapterProps {
 
 /**
  * 既存のAudioButtonカードインターフェースに対応するアダプターコンポーネント
- * FrontendAudioButtonDataを受け取り、AudioButtonに変換してAudioButtonCardV2に渡す
+ * FrontendAudioButtonDataを受け取り、AudioButtonに変換してAudioButtonCardに渡す
  */
 export const AudioButtonCardAdapter = memo(function AudioButtonCardAdapter({
 	audioButton,
@@ -69,11 +69,11 @@ export const AudioButtonCardAdapter = memo(function AudioButtonCardAdapter({
 	className,
 	showStats,
 }: AudioButtonCardAdapterProps) {
-	const audioButtonV2 = useMemo(() => convertToAudioButton(audioButton), [audioButton]);
+	const audioButtonEntity = useMemo(() => convertToAudioButton(audioButton), [audioButton]);
 
 	return (
-		<AudioButtonCardV2
-			audioButton={audioButtonV2}
+		<AudioButtonCard
+			audioButton={audioButtonEntity}
 			playCount={playCount ?? audioButton.playCount}
 			isFavorited={isFavorited}
 			isLiked={isLiked}
@@ -102,7 +102,7 @@ interface AudioButtonListAdapterProps {
 
 /**
  * 既存のAudioButtonリストインターフェースに対応するアダプターコンポーネント
- * FrontendAudioButtonData配列を受け取り、AudioButton配列に変換してAudioButtonListV2に渡す
+ * FrontendAudioButtonData配列を受け取り、AudioButton配列に変換してAudioButtonListに渡す
  */
 export const AudioButtonListAdapter = memo(function AudioButtonListAdapter({
 	audioButtons,
@@ -115,7 +115,10 @@ export const AudioButtonListAdapter = memo(function AudioButtonListAdapter({
 	className,
 	showStats,
 }: AudioButtonListAdapterProps) {
-	const audioButtonsV2 = useMemo(() => convertToAudioButtonArray(audioButtons), [audioButtons]);
+	const audioButtonEntities = useMemo(
+		() => convertToAudioButtonArray(audioButtons),
+		[audioButtons],
+	);
 
 	// 既存データから状態マップを作成
 	const playCounts = useMemo(() => {
@@ -127,8 +130,8 @@ export const AudioButtonListAdapter = memo(function AudioButtonListAdapter({
 	}, [audioButtons]);
 
 	return (
-		<AudioButtonListV2
-			audioButtons={audioButtonsV2}
+		<AudioButtonList
+			audioButtons={audioButtonEntities}
 			playCounts={playCounts}
 			loading={loading}
 			error={error}

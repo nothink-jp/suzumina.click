@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { describe, expect, it, vi } from "vitest";
-import AudioButtonCardV2 from "../audio-button-card";
+import AudioButtonCard from "../audio-button-card";
 
 // モックの設定
 vi.mock("next/navigation", () => ({
@@ -107,7 +107,7 @@ function createMockAudioButton(overrides?: MockAudioButtonLegacyData): AudioButt
 	return AudioButton.fromLegacy(defaultData);
 }
 
-describe("AudioButtonCardV2", () => {
+describe("AudioButtonCard", () => {
 	const mockPush = vi.fn();
 	const mockRouter = { push: mockPush };
 
@@ -119,7 +119,7 @@ describe("AudioButtonCardV2", () => {
 
 	it("音声ボタンの基本情報が表示される", () => {
 		const audioButton = createMockAudioButton();
-		render(<AudioButtonCardV2 audioButton={audioButton} />);
+		render(<AudioButtonCard audioButton={audioButton} />);
 
 		expect(screen.getByText("テスト音声ボタン")).toBeInTheDocument();
 		expect(screen.getByText("テスト動画タイトル")).toBeInTheDocument();
@@ -128,11 +128,11 @@ describe("AudioButtonCardV2", () => {
 
 	it("公開/非公開バッジが正しく表示される", () => {
 		const publicButton = createMockAudioButton({ isPublic: true });
-		const { rerender } = render(<AudioButtonCardV2 audioButton={publicButton} />);
+		const { rerender } = render(<AudioButtonCard audioButton={publicButton} />);
 		expect(screen.getByText("公開")).toBeInTheDocument();
 
 		const privateButton = createMockAudioButton({ isPublic: false });
-		rerender(<AudioButtonCardV2 audioButton={privateButton} />);
+		rerender(<AudioButtonCard audioButton={privateButton} />);
 		expect(screen.getByText("非公開")).toBeInTheDocument();
 	});
 
@@ -141,7 +141,7 @@ describe("AudioButtonCardV2", () => {
 			startTime: 60,
 			endTime: 90,
 		});
-		render(<AudioButtonCardV2 audioButton={audioButton} />);
+		render(<AudioButtonCard audioButton={audioButton} />);
 
 		expect(screen.getByText("1:00 - 1:30")).toBeInTheDocument();
 		expect(screen.getByText("0:30")).toBeInTheDocument(); // 再生時間
@@ -150,7 +150,7 @@ describe("AudioButtonCardV2", () => {
 	it("タグが表示され、クリックできる", async () => {
 		const user = userEvent.setup();
 		const audioButton = createMockAudioButton();
-		render(<AudioButtonCardV2 audioButton={audioButton} />);
+		render(<AudioButtonCard audioButton={audioButton} />);
 
 		const tag1 = screen.getByText("タグ1");
 		expect(tag1).toBeInTheDocument();
@@ -166,7 +166,7 @@ describe("AudioButtonCardV2", () => {
 			playCount: 123456,
 			likeCount: 1234,
 		});
-		render(<AudioButtonCardV2 audioButton={audioButton} />);
+		render(<AudioButtonCard audioButton={audioButton} />);
 
 		expect(screen.getByText("123,456")).toBeInTheDocument();
 		expect(screen.getByText("1,234")).toBeInTheDocument();
@@ -177,7 +177,7 @@ describe("AudioButtonCardV2", () => {
 			playCount: 123456,
 			likeCount: 1234,
 		});
-		render(<AudioButtonCardV2 audioButton={audioButton} showStats={false} />);
+		render(<AudioButtonCard audioButton={audioButton} showStats={false} />);
 
 		expect(screen.queryByText("123,456")).not.toBeInTheDocument();
 		expect(screen.queryByText("1,234")).not.toBeInTheDocument();
@@ -187,7 +187,7 @@ describe("AudioButtonCardV2", () => {
 		const user = userEvent.setup();
 		const handlePlay = vi.fn();
 		const audioButton = createMockAudioButton();
-		render(<AudioButtonCardV2 audioButton={audioButton} onPlay={handlePlay} />);
+		render(<AudioButtonCard audioButton={audioButton} onPlay={handlePlay} />);
 
 		const playButton = screen.getByRole("button", { name: /再生/ });
 		await user.click(playButton);
@@ -198,7 +198,7 @@ describe("AudioButtonCardV2", () => {
 	it("再生中は一時停止ボタンが表示される", async () => {
 		const user = userEvent.setup();
 		const audioButton = createMockAudioButton();
-		render(<AudioButtonCardV2 audioButton={audioButton} />);
+		render(<AudioButtonCard audioButton={audioButton} />);
 
 		// 初期状態では再生ボタン
 		expect(screen.getByRole("button", { name: /再生/ })).toBeInTheDocument();
@@ -214,7 +214,7 @@ describe("AudioButtonCardV2", () => {
 
 	it("ログインしていない場合、アクションボタンが無効になる", () => {
 		const audioButton = createMockAudioButton();
-		render(<AudioButtonCardV2 audioButton={audioButton} />);
+		render(<AudioButtonCard audioButton={audioButton} />);
 
 		expect(screen.getByRole("button", { name: "お気に入りに追加" })).toBeDisabled();
 		expect(screen.getByRole("button", { name: "いいね" })).toBeDisabled();
@@ -227,7 +227,7 @@ describe("AudioButtonCardV2", () => {
 		});
 
 		const audioButton = createMockAudioButton();
-		render(<AudioButtonCardV2 audioButton={audioButton} />);
+		render(<AudioButtonCard audioButton={audioButton} />);
 
 		expect(screen.getByRole("button", { name: "お気に入りに追加" })).toBeEnabled();
 		expect(screen.getByRole("button", { name: "いいね" })).toBeEnabled();
@@ -240,13 +240,11 @@ describe("AudioButtonCardV2", () => {
 		});
 
 		const audioButton = createMockAudioButton();
-		const { rerender } = render(
-			<AudioButtonCardV2 audioButton={audioButton} isFavorited={false} />,
-		);
+		const { rerender } = render(<AudioButtonCard audioButton={audioButton} isFavorited={false} />);
 
 		expect(screen.getByRole("button", { name: "お気に入りに追加" })).toBeInTheDocument();
 
-		rerender(<AudioButtonCardV2 audioButton={audioButton} isFavorited={true} />);
+		rerender(<AudioButtonCard audioButton={audioButton} isFavorited={true} />);
 		expect(screen.getByRole("button", { name: "お気に入りから削除" })).toBeInTheDocument();
 	});
 
@@ -262,7 +260,7 @@ describe("AudioButtonCardV2", () => {
 
 		const audioButton = createMockAudioButton();
 		render(
-			<AudioButtonCardV2
+			<AudioButtonCard
 				audioButton={audioButton}
 				onFavoriteToggle={handleFavorite}
 				onLikeToggle={handleLike}
@@ -285,7 +283,7 @@ describe("AudioButtonCardV2", () => {
 			sourceVideoId: "dQw4w9WgXcQ",
 			startTime: 120,
 		});
-		render(<AudioButtonCardV2 audioButton={audioButton} />);
+		render(<AudioButtonCard audioButton={audioButton} />);
 
 		const link = screen.getByRole("link", { name: "テスト動画タイトル" });
 		expect(link).toHaveAttribute("href", "https://youtube.com/watch?v=dQw4w9WgXcQ&t=120");
