@@ -99,13 +99,15 @@ describe("YouTube Firestore  Service", () => {
 				content: {
 					videoId: { value: id },
 				},
-				toLegacyFormat: vi.fn(() => ({
+				toFirestore: vi.fn(() => ({
 					videoId: id,
 					title: `Video ${id}`,
 					description: "Test video",
 					channelId: "test-channel",
 					channelTitle: "Test Channel",
 					publishedAt: new Date("2025-01-25T00:00:00Z"),
+					thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+					lastFetchedAt: new Date("2025-01-25T00:00:00Z"),
 				})),
 			} as any;
 			return mockEntity;
@@ -137,6 +139,9 @@ describe("YouTube Firestore  Service", () => {
 			// データが正しく保存されていることを確認
 			const firstCall = mockBatches[0].set.mock.calls[0];
 			expect(firstCall[1].videoId).toBe("video1");
+
+			// 成功時は警告ログが出力されないことを確認
+			expect(logger.warn).not.toHaveBeenCalled();
 		});
 
 		it("チャンネルIDがない動画はスキップする", async () => {
@@ -163,7 +168,11 @@ describe("YouTube Firestore  Service", () => {
 			const result = await saveVideosToFirestore(mockVideos);
 
 			expect(result).toBe(0);
-			expect(logger.warn).toHaveBeenCalledWith("Entity 変換に失敗", { videoId: "video1" });
+			expect(logger.warn).toHaveBeenCalledWith("一部の動画保存に失敗", {
+				total: 1,
+				saved: 0,
+				failed: 1,
+			});
 		});
 
 		it("バッチサイズを超える場合は複数バッチに分割する", async () => {
@@ -182,6 +191,9 @@ describe("YouTube Firestore  Service", () => {
 			expect(mockBatches).toHaveLength(2); // 500 + 1
 			expect(mockBatches[0].commit).toHaveBeenCalledTimes(1);
 			expect(mockBatches[1].commit).toHaveBeenCalledTimes(1);
+
+			// 成功時は警告ログが出力されないことを確認
+			expect(logger.warn).not.toHaveBeenCalled();
 		});
 	});
 
@@ -206,12 +218,14 @@ describe("YouTube Firestore  Service", () => {
 
 		it("既存データをEntity 形式で更新する", () => {
 			const mockVideoEntity = {
-				toLegacyFormat: vi.fn(() => ({
+				toFirestore: vi.fn(() => ({
 					videoId: "video1",
 					title: "New Title",
 					channelId: "channel1",
 					channelTitle: "Test Channel",
 					publishedAt: new Date("2025-01-25T00:00:00Z"),
+					thumbnailUrl: "https://img.youtube.com/vi/video1/hqdefault.jpg",
+					lastFetchedAt: new Date("2025-01-25T00:00:00Z"),
 				})),
 			} as any;
 

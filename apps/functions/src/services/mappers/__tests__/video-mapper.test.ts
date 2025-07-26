@@ -3,8 +3,6 @@ import type { youtube_v3 } from "googleapis";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	type BatchMappingResult,
-	mapLegacyToVideoEntity,
-	mapVideoEntityToLegacy,
 	mapYouTubeToVideoEntity,
 	mapYouTubeVideosToEntities,
 	mapYouTubeVideosWithErrors,
@@ -266,47 +264,6 @@ describe("Video Mapper V2", () => {
 			expect(result.failureCount).toBe(0);
 			expect(result.videos).toHaveLength(2);
 			expect(result.errors).toHaveLength(0);
-		});
-	});
-
-	describe("Legacy format conversion", () => {
-		it("should convert Video Entity to legacy format", () => {
-			const youtubeVideo = createYouTubeVideo();
-			const video = mapYouTubeToVideoEntity(youtubeVideo)!;
-			const legacy = mapVideoEntityToLegacy(video);
-
-			expect(legacy.id).toBe("test123test");
-			expect(legacy.videoId).toBe("test123test");
-			expect(legacy.title).toBe("Test Video");
-			expect(legacy.description).toBe("Test Description");
-			expect(legacy.channelId).toBe("UCxxxxxxxxxxxxxxxxxxxxxx");
-			expect(legacy.channelTitle).toBe("Test Channel");
-			expect(legacy.statistics?.viewCount).toBe(1000000);
-		});
-
-		it("should convert legacy format to Video Entity", () => {
-			const legacyData = {
-				id: "legacy123",
-				videoId: "legacy123",
-				title: "Legacy Video",
-				description: "Legacy Description",
-				channelId: "UClegacyxxxxxxxxxxxxxx",
-				channelTitle: "Legacy Channel",
-				publishedAt: "2024-01-01T00:00:00Z",
-				statistics: {
-					viewCount: 500000,
-					likeCount: 10000,
-				},
-			};
-
-			const video = mapLegacyToVideoEntity(legacyData);
-
-			expect(video).toBeInstanceOf(Video);
-			expect(video.id).toBe("legacy123");
-			expect(video.metadata.title.toString()).toBe("Legacy Video");
-			expect(video.channel.title.toString()).toBe("Legacy Channel");
-			// statistics getterはプレーンオブジェクトを返す
-			expect(video.statistics?.viewCount).toBe(500000);
 		});
 	});
 

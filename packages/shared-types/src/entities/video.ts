@@ -6,7 +6,8 @@
  * a cleaner domain model with proper encapsulation and business logic.
  */
 
-import { Channel } from "../value-objects/channel";
+import type { VideoComputedProperties, VideoPlainObject } from "../plain-objects/video-plain";
+import { Channel } from "../value-objects/video/channel";
 import {
 	ContentDetails,
 	type PrivacyStatus,
@@ -14,169 +15,22 @@ import {
 	type UploadStatus,
 	VideoContent,
 	VideoId,
-} from "../value-objects/video-content";
+} from "../value-objects/video/video-content";
 import {
 	VideoDescription,
 	VideoDuration,
 	VideoMetadata,
 	VideoTitle,
-} from "../value-objects/video-metadata";
+} from "../value-objects/video/video-metadata";
 import {
 	CommentCount,
 	DislikeCount,
 	LikeCount,
 	VideoStatistics,
 	ViewCount,
-} from "../value-objects/video-statistics";
+} from "../value-objects/video/video-statistics";
 
-/**
- * Legacy format interface for type safety
- */
-interface LegacyVideoData {
-	// Core fields
-	id?: string;
-	videoId?: string;
-	title: string;
-	description?: string;
-	channelId: string;
-	channelTitle: string;
-	categoryId?: string;
-	publishedAt: string;
-	lastFetchedAt?: string;
-
-	// Content details
-	duration?: string;
-	dimension?: string;
-	definition?: string;
-	caption?: boolean;
-	licensedContent?: boolean;
-	projection?: string;
-
-	// Statistics
-	statistics?: {
-		viewCount?: number;
-		likeCount?: number;
-		dislikeCount?: number;
-		favoriteCount?: number;
-		commentCount?: number;
-	};
-
-	// Status
-	status?: {
-		privacyStatus?: string;
-		uploadStatus?: string;
-	};
-
-	// Player
-	player?: {
-		embedHtml?: string;
-	};
-
-	// Tags
-	tags?: string[];
-	playlistTags?: string[];
-	userTags?: string[];
-
-	// Audio button info
-	audioButtonCount?: number;
-	hasAudioButtons?: boolean;
-
-	// Live streaming
-	liveStreamingDetails?: {
-		scheduledStartTime?: string;
-		scheduledEndTime?: string;
-		actualStartTime?: string;
-		actualEndTime?: string;
-		concurrentViewers?: number;
-	};
-
-	// Additional fields
-	liveBroadcastContent?: LiveBroadcastContent;
-	videoType?: VideoType;
-}
-
-/**
- * Legacy output format interface
- */
-export interface LegacyVideoOutput {
-	// Core fields
-	id: string;
-	videoId: string;
-	title: string;
-	description: string;
-	channelId: string;
-	channelTitle: string;
-	publishedAt: string;
-	publishedAtISO: string;
-	lastFetchedAt: string;
-	lastFetchedAtISO: string;
-	thumbnailUrl: string;
-	audioButtonCount: number;
-	hasAudioButtons: boolean;
-	playlistTags: string[];
-	userTags: string[];
-
-	// Optional fields
-	duration?: string;
-	dimension?: string;
-	definition?: string;
-	caption?: boolean;
-	licensedContent?: boolean;
-	statistics?: {
-		viewCount?: number;
-		likeCount?: number;
-		dislikeCount?: number;
-		favoriteCount?: number;
-		commentCount?: number;
-	};
-	status?: {
-		privacyStatus: string;
-		uploadStatus: string;
-		commentStatus?: string;
-	};
-	player?: {
-		embedHtml: string;
-		embedWidth?: number;
-		embedHeight?: number;
-	};
-	tags?: string[];
-	liveStreamingDetails?: {
-		scheduledStartTime?: string;
-		scheduledEndTime?: string;
-		actualStartTime?: string;
-		actualEndTime?: string;
-		concurrentViewers?: number;
-	};
-	thumbnails?: {
-		default: { url: string };
-		medium: { url: string };
-		high: { url: string };
-	};
-
-	// Additional fields to match FrontendVideoData
-	liveBroadcastContent?: LiveBroadcastContent;
-	videoType?: VideoType;
-	categoryId?: string;
-
-	// Additional YouTube API fields
-	topicDetails?: {
-		topicCategories?: string[];
-	};
-	recordingDetails?: {
-		recordingDate?: string;
-		location?: {
-			latitude?: number;
-			longitude?: number;
-			altitude?: number;
-		};
-		locationDescription?: string;
-	};
-	regionRestriction?: {
-		allowed?: string[];
-		blocked?: string[];
-	};
-	contentRating?: Record<string, unknown>;
-}
+// Legacy types are removed - using direct entity to Firestore conversion
 
 /**
  * Tag types for the 3-layer tag system
@@ -201,39 +55,8 @@ export interface AudioButtonInfo {
 export type LiveBroadcastContent = "none" | "live" | "upcoming";
 export type VideoType = "normal" | "archived" | "premiere";
 
-/**
- * Computed properties for video business logic
- */
-export interface VideoComputedProperties {
-	isArchived: boolean;
-	isPremiere: boolean;
-	isLive: boolean;
-	isUpcoming: boolean;
-	canCreateButton: boolean;
-	videoType: "normal" | "archived" | "premiere" | "live" | "upcoming";
-	thumbnailUrl: string;
-	youtubeUrl: string;
-}
-
-/**
- * Plain object representation of Video entity for Next.js serialization
- */
-export interface VideoPlainObject
-	extends Omit<FirestoreServerVideoData, "publishedAt" | "lastFetchedAt" | "liveStreamingDetails"> {
-	// Override timestamp fields with string type
-	publishedAt: string;
-	lastFetchedAt: string;
-	// Override liveStreamingDetails with string timestamps
-	liveStreamingDetails?: {
-		scheduledStartTime?: string;
-		scheduledEndTime?: string;
-		actualStartTime?: string;
-		actualEndTime?: string;
-		concurrentViewers?: number;
-	};
-	// Computed properties from business logic
-	_computed: VideoComputedProperties;
-}
+// Re-export Plain Object types from separate file
+export type { VideoComputedProperties, VideoPlainObject } from "../plain-objects/video-plain";
 
 /**
  * Frontend video data type - Plain object for Server/Client Component boundary
@@ -746,133 +569,6 @@ export class Video {
 	}
 
 	/**
-	 * Creates channel from legacy data
-	 */
-	private static createChannelFromLegacy(data: LegacyVideoData): Channel {
-		return Channel.fromPlainObject({
-			channelId: data.channelId,
-			channelTitle: data.channelTitle,
-			categoryId: data.categoryId,
-		});
-	}
-
-	/**
-	 * Creates metadata from legacy data
-	 */
-	private static createMetadataFromLegacy(data: LegacyVideoData): VideoMetadata {
-		return new VideoMetadata(
-			new VideoTitle(data.title),
-			new VideoDescription(data.description || ""),
-			data.duration ? new VideoDuration(data.duration) : undefined,
-			data.dimension as "2d" | "3d" | undefined,
-			data.definition as "hd" | "sd" | undefined,
-			data.caption,
-			data.licensedContent,
-		);
-	}
-
-	/**
-	 * Creates content from legacy data
-	 */
-	private static createContentFromLegacy(data: LegacyVideoData): VideoContent {
-		const hasContentDetails =
-			data.definition ||
-			data.dimension ||
-			data.caption !== undefined ||
-			data.licensedContent !== undefined;
-
-		const contentDetails = hasContentDetails
-			? new ContentDetails(
-					data.dimension as "2d" | "3d" | undefined,
-					data.definition as "hd" | "sd" | undefined,
-					data.caption,
-					data.licensedContent,
-					data.projection as "rectangular" | "360" | undefined,
-				)
-			: undefined;
-
-		return new VideoContent(
-			new VideoId(data.videoId || data.id || ""),
-			new PublishedAt(data.publishedAt),
-			(data.status?.privacyStatus as PrivacyStatus) || "public",
-			(data.status?.uploadStatus as UploadStatus) || "processed",
-			contentDetails,
-			data.player?.embedHtml,
-			data.tags,
-		);
-	}
-
-	/**
-	 * Creates statistics from legacy data
-	 */
-	private static createStatisticsFromLegacy(data: LegacyVideoData): VideoStatistics | undefined {
-		if (!data.statistics) {
-			return undefined;
-		}
-
-		return new VideoStatistics(
-			new ViewCount(data.statistics.viewCount || 0),
-			data.statistics.likeCount !== undefined
-				? new LikeCount(data.statistics.likeCount)
-				: undefined,
-			data.statistics.dislikeCount !== undefined
-				? new DislikeCount(data.statistics.dislikeCount)
-				: undefined,
-			data.statistics.favoriteCount,
-			data.statistics.commentCount !== undefined
-				? new CommentCount(data.statistics.commentCount)
-				: undefined,
-		);
-	}
-
-	/**
-	 * Creates live streaming details from legacy data
-	 */
-	private static createLiveStreamingDetailsFromLegacy(
-		data: LegacyVideoData,
-	): LiveStreamingDetails | undefined {
-		if (!data.liveStreamingDetails) {
-			return undefined;
-		}
-
-		const details = data.liveStreamingDetails;
-		return {
-			scheduledStartTime: details.scheduledStartTime
-				? new Date(details.scheduledStartTime)
-				: undefined,
-			scheduledEndTime: details.scheduledEndTime ? new Date(details.scheduledEndTime) : undefined,
-			actualStartTime: details.actualStartTime ? new Date(details.actualStartTime) : undefined,
-			actualEndTime: details.actualEndTime ? new Date(details.actualEndTime) : undefined,
-			concurrentViewers: details.concurrentViewers,
-		};
-	}
-
-	/**
-	 * Creates a Video from legacy format
-	 */
-	static fromLegacyFormat(data: LegacyVideoData): Video {
-		return new Video(
-			Video.createContentFromLegacy(data),
-			Video.createMetadataFromLegacy(data),
-			Video.createChannelFromLegacy(data),
-			Video.createStatisticsFromLegacy(data),
-			{
-				playlistTags: data.playlistTags || [],
-				userTags: data.userTags || [],
-				contentTags: data.tags,
-			},
-			{
-				count: data.audioButtonCount || 0,
-				hasButtons: data.hasAudioButtons || false,
-			},
-			Video.createLiveStreamingDetailsFromLegacy(data),
-			data.liveBroadcastContent || "none",
-			"normal", // Always use "normal" as internal state
-			data.lastFetchedAt ? new Date(data.lastFetchedAt) : new Date(),
-		);
-	}
-
-	/**
 	 * Convert Firestore timestamp to Date object
 	 */
 	private static convertTimestamp(timestamp: unknown): Date | undefined {
@@ -1014,55 +710,97 @@ export class Video {
 	}
 
 	/**
-	 * Creates base legacy object
+	 * Convert to Firestore format for direct persistence
 	 */
-	private createBaseLegacyObject(): LegacyVideoOutput {
+	toFirestore(): FirestoreServerVideoData {
+		const data: FirestoreServerVideoData = {
+			...this.getCoreFirestoreFields(),
+			...this.getOptionalFirestoreFields(),
+			...this.getContentFirestoreFields(),
+		};
+
+		// Add complex nested objects
+		this.addStatisticsToFirestore(data);
+		this.addLiveStreamingToFirestore(data);
+		this.addStatusToFirestore(data);
+		this.addPlayerToFirestore(data);
+
+		return data;
+	}
+
+	/**
+	 * Get core required fields for Firestore
+	 */
+	private getCoreFirestoreFields(): Pick<
+		FirestoreServerVideoData,
+		| "videoId"
+		| "title"
+		| "description"
+		| "channelId"
+		| "channelTitle"
+		| "publishedAt"
+		| "thumbnailUrl"
+		| "lastFetchedAt"
+	> {
 		return {
-			id: this.id,
 			videoId: this.id,
-			title: this._metadata.title.toString(),
-			description: this._metadata.description.toString(),
-			channelId: this._channel.id.toString(),
-			channelTitle: this._channel.title.toString(),
-			publishedAt: this._content.publishedAt.toISOString(),
-			publishedAtISO: this._content.publishedAt.toISOString(),
-			lastFetchedAt: this._lastFetchedAt.toISOString(),
-			lastFetchedAtISO: this._lastFetchedAt.toISOString(),
-			thumbnailUrl: this._content.videoId.toThumbnailUrl(),
-			audioButtonCount: this._audioButtonInfo.count,
-			hasAudioButtons: this._audioButtonInfo.hasButtons,
-			playlistTags: this._tags.playlistTags,
-			userTags: this._tags.userTags,
+			title: this.title,
+			description: this.description,
+			channelId: this.channelId,
+			channelTitle: this.channelTitle,
+			publishedAt: this._content.publishedAt.toDate(),
+			thumbnailUrl: this.thumbnailUrl,
+			lastFetchedAt: this._lastFetchedAt,
 		};
 	}
 
 	/**
-	 * Adds metadata fields to legacy object
+	 * Get optional fields for Firestore
 	 */
-	private addMetadataToLegacy(base: LegacyVideoOutput): void {
-		if (this._metadata.duration) {
-			base.duration = this._metadata.duration.toString();
+	private getOptionalFirestoreFields(): Partial<FirestoreServerVideoData> {
+		const fields: Partial<FirestoreServerVideoData> = {};
+
+		if (this._videoType) {
+			fields.videoType = this._videoType as VideoType;
 		}
-		if (this._metadata.dimension) {
-			base.dimension = this._metadata.dimension;
+		if (this._liveBroadcastContent) {
+			fields.liveBroadcastContent = this._liveBroadcastContent as LiveBroadcastContent;
 		}
-		if (this._metadata.definition) {
-			base.definition = this._metadata.definition;
+		if (this._audioButtonInfo.count !== undefined) {
+			fields.audioButtonCount = this._audioButtonInfo.count;
 		}
-		if (this._metadata.hasCaption !== undefined) {
-			base.caption = this._metadata.hasCaption;
+		if (this._audioButtonInfo.hasButtons !== undefined) {
+			fields.hasAudioButtons = this._audioButtonInfo.hasButtons;
 		}
-		if (this._metadata.isLicensedContent !== undefined) {
-			base.licensedContent = this._metadata.isLicensedContent;
-		}
+
+		return fields;
 	}
 
 	/**
-	 * Adds statistics to legacy object
+	 * Get content-related fields for Firestore
 	 */
-	private addStatisticsToLegacy(base: LegacyVideoOutput): void {
+	private getContentFirestoreFields(): Partial<FirestoreServerVideoData> {
+		const fields: Partial<FirestoreServerVideoData> = {};
+
+		if (this.duration) fields.duration = this.duration;
+		if (this.categoryId) fields.categoryId = this.categoryId;
+		if (this.tags) fields.tags = this.tags;
+		if (this.playlistTags.length > 0) fields.playlistTags = this.playlistTags;
+		if (this.userTags.length > 0) fields.userTags = this.userTags;
+		if (this.dimension) fields.dimension = this.dimension;
+		if (this.definition) fields.definition = this.definition;
+		if (this.caption !== undefined) fields.caption = this.caption;
+		if (this.licensedContent !== undefined) fields.licensedContent = this.licensedContent;
+
+		return fields;
+	}
+
+	/**
+	 * Add statistics to Firestore data if available
+	 */
+	private addStatisticsToFirestore(data: FirestoreServerVideoData): void {
 		if (this._statistics) {
-			base.statistics = {
+			data.statistics = {
 				viewCount: this._statistics.viewCount.toNumber(),
 				likeCount: this._statistics.likeCount?.toNumber(),
 				dislikeCount: this._statistics.dislikeCount?.toNumber(),
@@ -1073,86 +811,41 @@ export class Video {
 	}
 
 	/**
-	 * Adds content details to legacy object
+	 * Add live streaming details to Firestore data if available
 	 */
-	private addContentDetailsToLegacy(base: LegacyVideoOutput): void {
-		if (this._content.contentDetails) {
-			base.status = {
+	private addLiveStreamingToFirestore(data: FirestoreServerVideoData): void {
+		if (this._liveStreamingDetails) {
+			data.liveStreamingDetails = {
+				scheduledStartTime: this._liveStreamingDetails.scheduledStartTime,
+				scheduledEndTime: this._liveStreamingDetails.scheduledEndTime,
+				actualStartTime: this._liveStreamingDetails.actualStartTime,
+				actualEndTime: this._liveStreamingDetails.actualEndTime,
+				concurrentViewers: this._liveStreamingDetails.concurrentViewers,
+			};
+		}
+	}
+
+	/**
+	 * Add status to Firestore data if available
+	 */
+	private addStatusToFirestore(data: FirestoreServerVideoData): void {
+		if (this._content.privacyStatus || this._content.uploadStatus) {
+			data.status = {
 				privacyStatus: this._content.privacyStatus,
 				uploadStatus: this._content.uploadStatus,
 			};
 		}
+	}
 
+	/**
+	 * Add player to Firestore data if available
+	 */
+	private addPlayerToFirestore(data: FirestoreServerVideoData): void {
 		if (this._content.embedHtml) {
-			base.player = {
+			data.player = {
 				embedHtml: this._content.embedHtml,
 			};
 		}
-
-		if (this._content.tags) {
-			base.tags = this._content.tags;
-		}
-	}
-
-	/**
-	 * Adds live streaming details to legacy object
-	 */
-	private addLiveStreamingToLegacy(base: LegacyVideoOutput): void {
-		if (!this._liveStreamingDetails) {
-			return;
-		}
-
-		const details: NonNullable<LegacyVideoOutput["liveStreamingDetails"]> = {};
-		const streaming = this._liveStreamingDetails;
-
-		if (streaming.scheduledStartTime) {
-			details.scheduledStartTime = streaming.scheduledStartTime.toISOString();
-		}
-		if (streaming.scheduledEndTime) {
-			details.scheduledEndTime = streaming.scheduledEndTime.toISOString();
-		}
-		if (streaming.actualStartTime) {
-			details.actualStartTime = streaming.actualStartTime.toISOString();
-		}
-		if (streaming.actualEndTime) {
-			details.actualEndTime = streaming.actualEndTime.toISOString();
-		}
-		if (streaming.concurrentViewers !== undefined) {
-			details.concurrentViewers = streaming.concurrentViewers;
-		}
-
-		base.liveStreamingDetails = details;
-	}
-
-	/**
-	 * Converts to legacy format for backward compatibility
-	 */
-	toLegacyFormat(): LegacyVideoOutput {
-		const base = this.createBaseLegacyObject();
-
-		// Add optional fields
-		this.addMetadataToLegacy(base);
-		this.addStatisticsToLegacy(base);
-		this.addContentDetailsToLegacy(base);
-		this.addLiveStreamingToLegacy(base);
-
-		// Add thumbnails for frontend compatibility
-		base.thumbnails = {
-			default: { url: this._content.videoId.toThumbnailUrl("default") },
-			medium: { url: this._content.videoId.toThumbnailUrl("medium") },
-			high: { url: this._content.videoId.toThumbnailUrl("high") },
-		};
-
-		// Add broadcast content
-		base.liveBroadcastContent = this._liveBroadcastContent as LiveBroadcastContent;
-
-		// Add category ID if available
-		const channelObj = this._channel.toPlainObject();
-		if (channelObj.categoryId) {
-			base.categoryId = channelObj.categoryId;
-		}
-
-		return base;
 	}
 
 	/**

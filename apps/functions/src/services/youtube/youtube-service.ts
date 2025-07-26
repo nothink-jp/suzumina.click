@@ -107,7 +107,7 @@ class YouTubeService implements VideoService {
 						videos.push(videoV2);
 					}
 				} catch (error) {
-					logger.error(`動画 ${video.id} の変換に失敗しました:`, error);
+					// 変換失敗した動画はスキップ
 				}
 			}
 
@@ -175,7 +175,7 @@ class YouTubeService implements VideoService {
 							allVideos.push(videoV2);
 						}
 					} catch (error) {
-						logger.error(`動画 ${video.id} の変換に失敗しました:`, error);
+						// 変換失敗した動画はスキップ
 					}
 				}
 			}

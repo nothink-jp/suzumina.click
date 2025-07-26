@@ -40,10 +40,7 @@ export async function saveVideosToFirestore(videos: youtube_v3.Schema$Video[]): 
 		videosByChannel.set(channelId, channelVideos);
 	}
 
-	logger.info("Entity 形式で動画を保存開始", {
-		totalVideos: videos.length,
-		channelCount: videosByChannel.size,
-	});
+	// Entity 形式で動画を保存開始
 
 	let totalSaved = 0;
 
@@ -53,11 +50,14 @@ export async function saveVideosToFirestore(videos: youtube_v3.Schema$Video[]): 
 		totalSaved += result.savedCount;
 	}
 
-	logger.info("Entity 形式での動画保存完了", {
-		totalVideos: videos.length,
-		totalSaved,
-		failedCount: videos.length - totalSaved,
-	});
+	// 保存に失敗した場合のみログを出力
+	if (totalSaved < videos.length) {
+		logger.warn("一部の動画保存に失敗", {
+			total: videos.length,
+			saved: totalSaved,
+			failed: videos.length - totalSaved,
+		});
+	}
 
 	return totalSaved;
 }
@@ -81,41 +81,26 @@ async function saveChannelVideos(
 		for (const video of batchVideos) {
 			try {
 				if (!video.id) {
-					logger.warn("動画IDがありません", { video });
+					logger.warn("動画IDがありません", { videoId: video.id });
 					continue;
 				}
 
 				// Entity に変換
 				const videoEntity = VideoMapper.fromYouTubeAPI(video);
 				if (!videoEntity) {
-					logger.warn("Entity 変換に失敗", { videoId: video.id });
+					// Entity 変換失敗（ログはエラーハンドリングで出力済み）
 					continue;
 				}
 
-				// レガシー形式に変換（後方互換性のため）
-				const legacyData = videoEntity.toLegacyFormat();
-
 				// Firestore用データに変換
-				// recordingDetailsの形式を調整（locationをstring形式に）
-				const firestoreData: FirestoreServerVideoData = {
-					...legacyData,
-					recordingDetails: legacyData.recordingDetails
-						? {
-								recordingDate: legacyData.recordingDetails.recordingDate,
-								locationDescription: legacyData.recordingDetails.locationDescription,
-								location: legacyData.recordingDetails.location
-									? JSON.stringify(legacyData.recordingDetails.location)
-									: undefined,
-							}
-						: undefined,
-				};
+				const firestoreData = videoEntity.toFirestore();
 
 				// 動画IDをドキュメントIDとして使用
 				const docRef = videoRef.doc(video.id);
 				batch.set(docRef, firestoreData, { merge: true });
 				batchCount++;
 			} catch (error) {
-				logger.error("Entity 変換エラー", {
+				logger.error("動画のEntity変換に失敗", {
 					videoId: video.id,
 					error: error instanceof Error ? error.message : String(error),
 				});
@@ -127,11 +112,7 @@ async function saveChannelVideos(
 			try {
 				await batch.commit();
 				savedCount += batchCount;
-				logger.info("バッチ保存完了", {
-					channelId,
-					batchNumber: Math.floor(i / MAX_FIRESTORE_BATCH_SIZE) + 1,
-					savedInBatch: batchCount,
-				});
+				// バッチ保存完了
 			} catch (error) {
 				logger.error("バッチ保存エラー", {
 					channelId,
@@ -163,25 +144,8 @@ export function updateVideoWith(
 			return null;
 		}
 
-		// レガシー形式に変換して既存データと統合
-		const legacyData = videoEntity.toLegacyFormat();
-
-		// Firestore用データに変換（recordingDetailsの形式を調整）
-		const updatedData: FirestoreServerVideoData = {
-			...existingData,
-			...legacyData,
-			recordingDetails: legacyData.recordingDetails
-				? {
-						recordingDate: legacyData.recordingDetails.recordingDate,
-						locationDescription: legacyData.recordingDetails.locationDescription,
-						location: legacyData.recordingDetails.location
-							? JSON.stringify(legacyData.recordingDetails.location)
-							: undefined,
-					}
-				: undefined,
-		};
-
-		return updatedData;
+		// Firestore用データに変換
+		return videoEntity.toFirestore();
 	} catch (error) {
 		logger.error("Entity 更新エラー", {
 			videoId: newVideo.id,

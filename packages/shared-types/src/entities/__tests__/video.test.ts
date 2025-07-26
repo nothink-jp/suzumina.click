@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Channel, ChannelId, ChannelTitle } from "../../value-objects/channel";
+import { Channel, ChannelId, ChannelTitle } from "../../value-objects/video/channel";
 import {
 	ContentDetails,
 	type PrivacyStatus,
@@ -7,20 +7,20 @@ import {
 	type UploadStatus,
 	VideoContent,
 	VideoId,
-} from "../../value-objects/video-content";
+} from "../../value-objects/video/video-content";
 import {
 	VideoDescription,
 	VideoDuration,
 	VideoMetadata,
 	VideoTitle,
-} from "../../value-objects/video-metadata";
+} from "../../value-objects/video/video-metadata";
 import {
 	CommentCount,
 	DislikeCount,
 	LikeCount,
 	VideoStatistics,
 	ViewCount,
-} from "../../value-objects/video-statistics";
+} from "../../value-objects/video/video-statistics";
 import { type AudioButtonInfo, type LiveStreamingDetails, Video, type VideoTags } from "../video";
 
 describe("Video Entity", () => {
@@ -280,118 +280,6 @@ describe("Video Entity", () => {
 				expect(updated.audioButtonInfo).toEqual({ count: 10, hasButtons: true });
 				expect(updated).not.toBe(video);
 			});
-		});
-	});
-
-	describe("fromLegacyFormat", () => {
-		it("should convert from minimal legacy format", () => {
-			const legacy = {
-				id: "test123test",
-				title: "Test Video",
-				description: "Test Description",
-				channelId: "UCxxxxxxxxxxxxxxxxxxxxxx",
-				channelTitle: "Test Channel",
-				publishedAt: "2024-01-01T00:00:00Z",
-			};
-
-			const video = Video.fromLegacyFormat(legacy);
-
-			expect(video.id).toBe("test123test");
-			expect(video.metadata.title.toString()).toBe("Test Video");
-			expect(video.metadata.description.toString()).toBe("Test Description");
-			expect(video.channel.id.toString()).toBe("UCxxxxxxxxxxxxxxxxxxxxxx");
-			expect(video.channel.title.toString()).toBe("Test Channel");
-		});
-
-		it("should convert from full legacy format", () => {
-			const legacy = {
-				videoId: "dQw4w9WgXcQ",
-				title: "Never Gonna Give You Up",
-				description: "Official video",
-				channelId: "UCuAXFkgsw1L7xaCfnd5JJOw",
-				channelTitle: "Rick Astley",
-				publishedAt: "2009-10-25T06:57:33Z",
-				duration: "PT3M32S",
-				dimension: "2d",
-				definition: "hd",
-				caption: true,
-				licensedContent: false,
-				statistics: {
-					viewCount: 1500000000,
-					likeCount: 14000000,
-					dislikeCount: 500000,
-					favoriteCount: 0,
-					commentCount: 2000000,
-				},
-				status: {
-					privacyStatus: "public",
-					uploadStatus: "processed",
-				},
-				player: {
-					embedHtml: "<iframe>...</iframe>",
-				},
-				tags: ["music", "80s"],
-				playlistTags: ["80s Music"],
-				userTags: ["favorite"],
-				audioButtonCount: 5,
-				hasAudioButtons: true,
-				lastFetchedAt: "2024-01-15T00:00:00Z",
-				liveStreamingDetails: {
-					scheduledStartTime: "2024-02-01T10:00:00Z",
-					actualStartTime: "2024-02-01T10:05:00Z",
-				},
-			};
-
-			const video = Video.fromLegacyFormat(legacy);
-
-			expect(video.id).toBe("dQw4w9WgXcQ");
-			expect(video.metadata.title.toString()).toBe("Never Gonna Give You Up");
-			expect(video.metadata.duration?.toString()).toBe("PT3M32S");
-			expect(video.statistics?.viewCount).toBe(1500000000);
-			expect(video.playlistTags).toEqual(["80s Music"]);
-			expect(video.audioButtonInfo.count).toBe(5);
-			// liveStreamingDetails getterはISO文字列を返す
-			expect(video.liveStreamingDetails?.scheduledStartTime).toBe("2024-02-01T10:00:00.000Z");
-			expect(video.liveStreamingDetails?.actualStartTime).toBe("2024-02-01T10:05:00.000Z");
-		});
-	});
-
-	describe("toLegacyFormat", () => {
-		it("should convert to legacy format", () => {
-			const video = createSampleVideo();
-			const legacy = video.toLegacyFormat();
-
-			expect(legacy.id).toBe("dQw4w9WgXcQ");
-			expect(legacy.videoId).toBe("dQw4w9WgXcQ");
-			expect(legacy.title).toBe("Never Gonna Give You Up");
-			expect(legacy.description).toBe("The official video");
-			expect(legacy.channelId).toBe("UCuAXFkgsw1L7xaCfnd5JJOw");
-			expect(legacy.channelTitle).toBe("Rick Astley");
-			expect(legacy.publishedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-			expect(legacy.duration).toBe("PT3M32S");
-			expect(legacy.statistics?.viewCount).toBe(1500000000);
-			expect(legacy.playlistTags).toEqual(["80s Music"]);
-			expect(legacy.userTags).toEqual(["favorite"]);
-			expect(legacy.audioButtonCount).toBe(5);
-			expect(legacy.hasAudioButtons).toBe(true);
-			expect(legacy.thumbnails).toBeDefined();
-			expect(legacy.thumbnails?.high.url).toContain("hqdefault.jpg");
-		});
-
-		it("should handle video with live streaming details", () => {
-			const video = createSampleVideo({
-				liveStreamingDetails: {
-					scheduledStartTime: new Date("2024-02-01T10:00:00Z"),
-					actualStartTime: new Date("2024-02-01T10:05:00Z"),
-					concurrentViewers: 50000,
-				},
-			});
-			const legacy = video.toLegacyFormat();
-
-			expect(legacy.liveStreamingDetails).toBeDefined();
-			expect(legacy.liveStreamingDetails?.scheduledStartTime).toBe("2024-02-01T10:00:00.000Z");
-			expect(legacy.liveStreamingDetails?.actualStartTime).toBe("2024-02-01T10:05:00.000Z");
-			expect(legacy.liveStreamingDetails?.concurrentViewers).toBe(50000);
 		});
 	});
 

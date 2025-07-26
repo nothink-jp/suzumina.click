@@ -521,6 +521,148 @@ export class Work {
 - 作品評価の集約
 - 評価統計の計算ロジック
 
+## ファイル配置方針
+
+### packages/shared-types配下の構造
+
+```
+packages/shared-types/src/
+├── entities/              # エンティティクラス
+│   ├── video.ts          # Video エンティティ
+│   ├── audio-button.ts   # AudioButton エンティティ
+│   ├── work.ts           # Work エンティティ（実装予定）
+│   └── user.ts           # User エンティティ（実装予定）
+├── value-objects/         # 値オブジェクト
+│   ├── video/            # Video関連の値オブジェクト
+│   │   ├── video-content.ts
+│   │   ├── video-metadata.ts
+│   │   ├── video-statistics.ts
+│   │   └── channel.ts
+│   ├── audio-button/     # AudioButton関連の値オブジェクト
+│   │   ├── audio-content.ts
+│   │   ├── audio-reference.ts
+│   │   └── button-statistics.ts
+│   ├── work/             # Work関連の値オブジェクト
+│   │   ├── price.ts
+│   │   ├── rating.ts
+│   │   ├── date-range.ts
+│   │   └── creator-type.ts
+│   └── common/           # 共通の値オブジェクト
+│       ├── timestamp.ts
+│       ├── id.ts
+│       └── metadata.ts
+├── plain-objects/         # Plain Object型定義
+│   ├── video-plain.ts
+│   ├── audio-button-plain.ts
+│   └── work-plain.ts
+└── utils/                 # 共通ユーティリティ
+    ├── date-parser.ts
+    ├── number-parser.ts
+    └── validators.ts
+```
+
+### apps/functions配下のMapper配置
+
+```
+apps/functions/src/
+├── services/
+│   ├── mappers/           # APIデータ → エンティティ変換
+│   │   ├── video-mapper.ts      # YouTube API → Video Entity
+│   │   ├── audio-button-mapper.ts # Firestore → AudioButton Entity
+│   │   └── work-mapper.ts       # DLsite API → Work Entity
+│   └── converters/        # エンティティ → 永続化データ変換
+│       ├── video-converter.ts    # Video Entity → Firestore
+│       └── work-converter.ts     # Work Entity → Firestore
+```
+
+### apps/web配下のアクション配置
+
+```
+apps/web/src/
+├── actions/               # Server Actions
+│   ├── video-actions.ts  # Video関連のServer Actions
+│   ├── audio-button-actions.ts # AudioButton関連
+│   └── work-actions.ts   # Work関連
+├── hooks/                 # Client側のカスタムフック
+│   ├── use-video.ts
+│   └── use-audio-button.ts
+└── components/
+    └── [entity-name]/     # エンティティ固有のコンポーネント
+```
+
+### ファイル配置の原則
+
+1. **エンティティとその値オブジェクトは密接に配置**
+   - エンティティ: `entities/[entity-name].ts`
+   - 値オブジェクト: `value-objects/[entity-name]/`
+   
+2. **Plain Object型定義は独立**
+   - Server/Client境界で使用される型は別ディレクトリ
+   - `plain-objects/[entity-name]-plain.ts`
+
+3. **Mapperは変換の方向で分離**
+   - 外部API → エンティティ: `services/mappers/`
+   - エンティティ → 永続化: `services/converters/`
+
+4. **テストファイルの配置**
+   ```
+   packages/shared-types/src/
+   ├── entities/
+   │   └── __tests__/
+   │       ├── video.test.ts
+   │       └── audio-button.test.ts
+   └── value-objects/
+       └── video/
+           └── __tests__/
+               ├── video-content.test.ts
+               └── video-statistics.test.ts
+   ```
+
+### 命名規則
+
+1. **ファイル名**
+   - エンティティ: `[entity-name].ts` (kebab-case)
+   - 値オブジェクト: `[value-object-name].ts` (kebab-case)
+   - Mapper: `[source]-mapper.ts`
+   - Plain Object: `[entity-name]-plain.ts`
+
+2. **クラス名**
+   - エンティティ: `EntityName` (PascalCase)
+   - 値オブジェクト: `ValueObjectName` (PascalCase)
+   - Plain Object型: `EntityNamePlainObject`
+
+3. **ディレクトリ名**
+   - すべてkebab-caseで統一
+   - 複数形は使用しない（例: `entity` ではなく `entities`）
+
+### インポートパス
+
+```typescript
+// エンティティのインポート
+import { Video } from '@suzumina.click/shared-types/entities/video';
+import { AudioButton } from '@suzumina.click/shared-types/entities/audio-button';
+
+// 値オブジェクトのインポート
+import { VideoContent } from '@suzumina.click/shared-types/value-objects/video/video-content';
+import { Price } from '@suzumina.click/shared-types/value-objects/work/price';
+
+// Plain Objectのインポート
+import type { VideoPainObject } from '@suzumina.click/shared-types/plain-objects/video-plain';
+
+// ユーティリティのインポート
+import { parseDate } from '@suzumina.click/shared-types/utils/date-parser';
+```
+
+### バンドル最適化
+
+1. **Tree-shaking対応**
+   - 各ファイルは独立してインポート可能
+   - barrel export (`index.ts`) は避ける
+
+2. **型定義とランタイムコードの分離**
+   - Plain Object型定義は `type` でエクスポート
+   - ランタイムコードを含まない
+
 ## まとめ
 
 **「動くコードが正義」** - Next.js + Cloud Functions環境で確実に動作し、開発者が理解しやすく、保守しやすい実装を心がけましょう。理論的な純粋性よりも、実際のプロジェクトでの有用性を優先します。

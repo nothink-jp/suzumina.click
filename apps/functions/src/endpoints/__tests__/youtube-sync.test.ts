@@ -136,13 +136,10 @@ describe("YouTube Sync V2 Endpoint", () => {
 		);
 
 		// Verify logging
-		expect(logger.info).toHaveBeenCalledWith(
-			expect.stringContaining("YouTube同期V2が完了しました"),
-			expect.objectContaining({
-				videoCount: 2,
-				migratedCount: 2,
-			}),
-		);
+		expect(logger.info).toHaveBeenCalledWith("YouTube同期V2完了", {
+			saved: 2,
+			migrated: 2,
+		});
 	});
 
 	it("should continue from next page token", async () => {
@@ -218,8 +215,8 @@ describe("YouTube Sync V2 Endpoint", () => {
 		// Verify YouTube service was not called
 		expect(mockYouTubeService.fetchChannelVideos).not.toHaveBeenCalled();
 
-		// Verify warning was logged
-		expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("別のインスタンスが実行中"));
+		// Verify no warning was logged (we removed the log)
+		expect(logger.warn).not.toHaveBeenCalled();
 	});
 
 	it("should handle errors gracefully", async () => {
@@ -284,14 +281,15 @@ function createMockVideo(id: string): Video {
 			likeCount: { value: 10 },
 			commentCount: { value: 5 },
 		},
-		toLegacyFormat: vi.fn().mockReturnValue({
-			id,
+		toFirestore: vi.fn().mockReturnValue({
 			videoId: id,
 			title: `Test Video ${id}`,
 			description: "Test description",
 			channelId: "test-channel",
 			channelTitle: "Test Channel",
-			publishedAt: new Date().toISOString(),
+			publishedAt: new Date(),
+			thumbnailUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+			lastFetchedAt: new Date(),
 			statistics: {
 				viewCount: 100,
 				likeCount: 10,
