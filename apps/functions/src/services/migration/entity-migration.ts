@@ -184,22 +184,21 @@ export class EntityMigrationService {
 
 		try {
 			// Validate that we can create V2 entity from the data
-			const videoData = {
-				id: doc.id,
+			// Using fromFirestoreData for validation
+			const firestoreData = {
 				videoId: data.videoId || doc.id,
 				title: data.title || "",
 				description: data.description || "",
 				channelId: data.channelId || "",
 				channelTitle: data.channelTitle || "",
-				publishedAt: data.publishedAt || new Date().toISOString(),
-				statistics: data.statistics || {},
-				contentDetails: data.contentDetails || {},
-				status: data.status || {},
-				thumbnails: data.thumbnails || {},
+				publishedAt: data.publishedAt || new Date(),
+				thumbnailUrl:
+					data.thumbnailUrl || `https://img.youtube.com/vi/${data.videoId || doc.id}/hqdefault.jpg`,
+				lastFetchedAt: data.lastFetchedAt || new Date(),
 			};
 
 			// Try to create V2 entity to validate data
-			Video.fromLegacyFormat(videoData);
+			Video.fromFirestoreData(firestoreData);
 
 			// Prepare migration data
 			const migrationData = {

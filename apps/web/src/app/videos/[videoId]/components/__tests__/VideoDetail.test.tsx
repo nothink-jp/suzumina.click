@@ -90,33 +90,52 @@ vi.mock("@/components/audio/favorite-button", () => ({
 
 // テスト用のVideoPlainObjectを作成するヘルパー
 function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
-	const defaultData = {
+	const firestoreData: any = {
 		id: "test-video",
 		videoId: "abc123",
 		title: "テスト動画",
 		description: "テスト動画の説明文",
+		publishedAt: new Date("2024-01-01T00:00:00Z"),
 		thumbnailUrl: "https://example.com/thumbnail.jpg",
-		publishedAt: "2024-01-01T00:00:00Z",
+		lastFetchedAt: new Date("2024-01-01T00:00:00Z"),
 		channelId: "test-channel-id",
 		channelTitle: "テストチャンネル",
 		categoryId: "22",
 		duration: "PT10M30S",
-		viewCount: 1000,
-		likeCount: 100,
-		commentCount: 10,
+		statistics: {
+			viewCount: 1000,
+			likeCount: 100,
+			commentCount: 10,
+		},
 		liveBroadcastContent: "none",
 		liveStreamingDetails: null,
 		videoType: "normal",
 		playlistTags: [],
 		userTags: [],
 		audioButtonCount: 0,
-		lastFetchedAt: "2024-01-01T00:00:00Z",
 		hasAudioButtons: false,
-		...overrides,
 	};
 
+	// overridesを適用（undefinedも許可）
+	if (overrides) {
+		Object.keys(overrides).forEach((key) => {
+			if (key === "statistics" && overrides[key] !== undefined) {
+				// statisticsが明示的に提供された場合はそれを使用
+				firestoreData[key] = overrides[key];
+			} else if (key === "viewCount" || key === "likeCount" || key === "commentCount") {
+				// 個別の統計値が提供された場合
+				if (!overrides.statistics) {
+					firestoreData.statistics[key] = overrides[key];
+				}
+			} else {
+				// その他のフィールドは直接上書き（undefinedも含む）
+				firestoreData[key] = overrides[key];
+			}
+		});
+	}
+
 	// Video Entityを作成してPlain Objectに変換
-	const video = Video.fromLegacyFormat(defaultData);
+	const video = Video.fromFirestoreData(firestoreData);
 	return video.toPlainObject();
 }
 

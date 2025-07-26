@@ -5,8 +5,8 @@
  * privacy status, upload status, content details, and other content metadata.
  */
 
-import { requireNonEmptyString } from "./base/transforms";
-import { BaseValueObject, type ValidatableValueObject } from "./base/value-object";
+import { requireNonEmptyString } from "../base/transforms";
+import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
 
 /**
  * Video privacy status

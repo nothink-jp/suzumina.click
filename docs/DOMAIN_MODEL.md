@@ -1,8 +1,17 @@
 # ドメインモデル設計書
 
+**最終更新**: 2025-07-26  
+**バージョン**: 2.0 (Entity V2統合完了)
+
 ## 概要
 
 suzumina.clickプロジェクトのドメイン駆動設計（DDD）に基づくドメインモデルの詳細な設計書です。エンティティ、値オブジェクト、およびそれらの関係性について記述します。
+
+## 更新履歴
+
+- 2025-07-26: Entity V2統合完了、V2サフィックス削除
+- 2025-07-15: VideoおよびAudioButtonエンティティのEntity/Value Objectアーキテクチャ採用
+- 2025-07-01: 初版作成
 
 ## ドメインモデル全体図
 
@@ -372,6 +381,33 @@ formatPercentage(numerator: number, denominator: number, decimals = 1): string
 - 安全な型変換（エラーを投げずにundefinedを返す）
 - 境界値の適切な処理（0除算、負の値など）
 - 一貫性のある数値フォーマット
+
+## Entity/Value Objectアーキテクチャ実装状況
+
+### 完全実装済み
+- ✅ **Video Entity** - YouTube動画エンティティ
+  - VideoContent, VideoMetadata, VideoStatistics, Channel等の値オブジェクト
+  - Plain Object変換パターン実装済み
+  - レガシー形式との相互変換サポート
+- ✅ **AudioButton Entity** - 音声ボタンエンティティ
+  - AudioContent, AudioReference, ButtonStatistics等の値オブジェクト
+  - ビジネスロジック（人気度、エンゲージメント率）実装済み
+  - Plain Object変換パターン実装済み
+
+### 未実装（今後の計画）
+- ⏳ **Work Entity** - DLsite作品エンティティ
+  - Price, Rating, DateRange等の値オブジェクトは実装済み
+  - エンティティクラス自体は未実装
+- ⏳ **User Entity** - ユーザーエンティティ
+  - 現在は簡易実装のみ
+- ⏳ **Evaluation Entity** - 評価エンティティ
+  - 作品評価システム用
+
+## 実装ガイドライン
+
+新しいエンティティを実装する際は、以下のドキュメントを参照してください：
+- `/docs/ENTITY_IMPLEMENTATION_GUIDELINES.md` - 実装ガイドライン
+- `/docs/ENTITY_SERIALIZATION_PATTERN.md` - Server Component連携パターン
 
 ## ドメインサービス
 

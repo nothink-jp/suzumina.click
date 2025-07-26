@@ -31,27 +31,32 @@ vi.mock("../VideoCard", () => ({
 
 // テスト用のVideoPlainObjectを作成するヘルパー
 function createMockVideo(id: string, title: string): VideoPlainObject {
-	const video = Video.fromLegacyFormat({
+	const firestoreData = {
 		id,
 		videoId: `video_${id}`,
 		title,
 		description: `${title}の説明文`,
+		publishedAt: new Date("2024-01-01T00:00:00Z"),
 		thumbnailUrl: `https://example.com/thumbnail_${id}.jpg`,
-		publishedAt: "2024-01-01T00:00:00Z",
+		lastFetchedAt: new Date("2024-01-01T00:00:00Z"),
 		channelId: "channel123",
 		channelTitle: "テストチャンネル",
 		categoryId: "22",
 		duration: "PT10M30S",
-		viewCount: 1000,
-		likeCount: 100,
-		commentCount: 10,
+		statistics: {
+			viewCount: 1000,
+			likeCount: 100,
+			commentCount: 10,
+		},
 		liveBroadcastContent: "none",
 		liveStreamingDetails: null,
 		videoType: "normal",
 		playlistTags: [],
 		userTags: [],
 		audioButtonCount: 0,
-	});
+	};
+
+	const video = Video.fromFirestoreData(firestoreData);
 	return video.toPlainObject();
 }
 

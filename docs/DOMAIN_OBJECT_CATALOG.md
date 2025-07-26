@@ -1,8 +1,21 @@
 # ドメインオブジェクトカタログ
 
+**最終更新**: 2025-07-26  
+**バージョン**: 2.0 (Entity V2統合完了)
+
 ## 概要
 
 suzumina.clickで使用されているすべてのドメインオブジェクトの詳細な仕様とコード例を記載したカタログです。
+
+## 実装状況
+
+### 完全実装済み（Entity/Value Objectアーキテクチャ）
+- ✅ **Video Entity** および関連値オブジェクト
+- ✅ **AudioButton Entity** および関連値オブジェクト
+
+### 部分実装済み（値オブジェクトのみ）
+- ⚠️ **Work Entity** - 値オブジェクトは実装済み、エンティティクラスは未実装
+- ⚠️ **User Entity** - 簡易実装のみ
 
 ## エンティティ詳細
 
@@ -93,7 +106,7 @@ if (work.hasCategory("ASMR")) {
 ### AudioButton（音声ボタン）エンティティ
 
 #### 概要
-YouTube動画の特定のタイムスタンプを参照し、音声クリップとして機能するエンティティ。Entity/Value Objectアーキテクチャに基づく新しい実装。
+YouTube動画の特定のタイムスタンプを参照し、音声クリップとして機能するエンティティ。Entity/Value Objectアーキテクチャに基づく実装。
 
 #### 構成要素
 
@@ -210,7 +223,7 @@ getEngagementRate(): number  // (いいね + 低評価) / 再生回数
 ### Video（動画）エンティティ
 
 #### 概要
-YouTube動画の情報を管理するエンティティ。Entity/Value Objectアーキテクチャに基づく新しい実装。
+YouTube動画の情報を管理するエンティティ。Entity/Value Objectアーキテクチャに基づく実装。
 
 #### 構成要素
 
@@ -577,6 +590,20 @@ formatPercentage(50, 100)       // "50.0%"
 formatPercentage(33.333, 100, 2) // "33.33%"
 formatPercentage(50, 0)         // "0.0%"
 ```
+
+## 実装パターンとガイドライン
+
+新しいエンティティや値オブジェクトを実装する際は、以下のドキュメントを参照してください：
+
+- **実装ガイドライン**: `/docs/ENTITY_IMPLEMENTATION_GUIDELINES.md`
+  - プライベートコンストラクタとファクトリメソッドパターン
+  - イミュータブル設計
+  - Plain Object変換パターン
+  - テスト戦略
+
+- **Server Component連携**: `/docs/ENTITY_SERIALIZATION_PATTERN.md`
+  - _computedプロパティパターン
+  - Server ComponentとClient Component間のデータ受け渡し
 
 ## ユーティリティ型
 

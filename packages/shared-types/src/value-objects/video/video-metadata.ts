@@ -5,8 +5,8 @@
  * title, description, duration, and other descriptive attributes.
  */
 
-import { requireNonEmptyString, requireNonNull } from "./base/transforms";
-import { BaseValueObject, type ValidatableValueObject } from "./base/value-object";
+import { requireNonEmptyString, requireNonNull } from "../base/transforms";
+import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
 
 /**
  * Video duration value object for ISO 8601 duration format

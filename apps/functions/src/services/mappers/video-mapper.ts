@@ -1,7 +1,7 @@
 /**
- * Video Mapper V2
+ * Video Mapper
  *
- * Maps YouTube API data to the new Video Entity V2 domain model.
+ * Maps YouTube API data to the Video Entity domain model.
  * Provides conversion between YouTube API responses and our domain entities
  * while maintaining backward compatibility with the existing system.
  */
@@ -31,79 +31,11 @@ import {
 	ViewCount,
 } from "@suzumina.click/shared-types";
 
-/**
- * Legacy format type from the Video Entity
- *
- * This interface represents the original video data structure used before
- * the Entity/Value Object architecture migration. It maintains backward
- * compatibility with existing systems while the codebase transitions to
- * the new Video Entity V2 domain model.
- *
- * @deprecated Will be removed in v3.0.0 (target: April 30, 2026, reviewed July 2025). Migrate to Video Entity V2
- */
-interface LegacyVideoData {
-	// Core fields
-	id?: string;
-	videoId?: string;
-	title: string;
-	description?: string;
-	channelId: string;
-	channelTitle: string;
-	publishedAt: string;
-	lastFetchedAt?: string;
-
-	// Content details
-	duration?: string;
-	dimension?: string;
-	definition?: string;
-	caption?: boolean;
-	licensedContent?: boolean;
-	projection?: string;
-
-	// Statistics
-	statistics?: {
-		viewCount?: number;
-		likeCount?: number;
-		dislikeCount?: number;
-		favoriteCount?: number;
-		commentCount?: number;
-	};
-
-	// Status
-	status?: {
-		privacyStatus?: string;
-		uploadStatus?: string;
-	};
-
-	// Player
-	player?: {
-		embedHtml?: string;
-	};
-
-	// Tags
-	tags?: string[];
-	playlistTags?: string[];
-	userTags?: string[];
-
-	// Audio button info
-	audioButtonCount?: number;
-	hasAudioButtons?: boolean;
-
-	// Live streaming
-	liveStreamingDetails?: {
-		scheduledStartTime?: string;
-		scheduledEndTime?: string;
-		actualStartTime?: string;
-		actualEndTime?: string;
-		concurrentViewers?: number;
-	};
-}
-
 import type { youtube_v3 } from "googleapis";
 import * as logger from "../../shared/logger";
 
 /**
- * Maps YouTube API video data to Video Entity V2
+ * Maps YouTube API video data to Video Entity
  *
  * @param youtubeVideo - Video data from YouTube API
  * @param playlistTags - Playlist tags for the video
@@ -368,48 +300,14 @@ export function mapYouTubeVideosToEntities(
 }
 
 /**
- * Maps Video Entity to legacy format for backward compatibility
- *
- * @param video - Video Entity
- * @returns Legacy format data
- */
-export function mapVideoEntityToLegacy(video: Video): LegacyVideoData {
-	return video.toLegacyFormat();
-}
-
-/**
- * Maps legacy format to Video Entity
- *
- * @param legacyData - Legacy video data
- * @returns Video Entity
- */
-export function mapLegacyToVideoEntity(legacyData: LegacyVideoData): Video {
-	return Video.fromLegacyFormat(legacyData);
-}
-
-/**
- * VideoMapper - Provides mapping functions for Video Entity V2
+ * VideoMapper - Provides mapping functions for Video Entity
  */
 export const VideoMapper = {
 	/**
-	 * Maps YouTube API video data to Video Entity V2
+	 * Maps YouTube API video data to Video Entity
 	 */
 	fromYouTubeAPI: (youtubeVideo: youtube_v3.Schema$Video): Video | null => {
 		return mapYouTubeToVideoEntity(youtubeVideo);
-	},
-
-	/**
-	 * Maps Video Entity to legacy format
-	 */
-	toLegacy: (video: Video): LegacyVideoData => {
-		return mapVideoEntityToLegacy(video);
-	},
-
-	/**
-	 * Maps legacy format to Video Entity
-	 */
-	fromLegacy: (legacyData: LegacyVideoData): Video => {
-		return mapLegacyToVideoEntity(legacyData);
 	},
 };
 

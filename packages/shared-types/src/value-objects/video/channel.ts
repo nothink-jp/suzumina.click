@@ -5,9 +5,9 @@
  * Ensures channel information is valid and consistent.
  */
 
-import { requireNonEmptyString } from "./base/transforms";
-import { BaseValueObject, type ValidatableValueObject } from "./base/value-object";
-import { VideoCategory } from "./video-category";
+import { requireNonEmptyString } from "../base/transforms";
+import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
+import { VideoCategory } from "../video-category";
 
 /**
  * YouTube Channel ID value object

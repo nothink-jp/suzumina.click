@@ -9,9 +9,9 @@ import { EntityMigrationService } from "../entity-migration";
 // Mock the shared-types entities
 vi.mock("@suzumina.click/shared-types", () => ({
 	Video: {
-		fromLegacyFormat: vi.fn((data) => ({
-			id: data.id || data.videoId,
-			toLegacyFormat: vi.fn(() => data),
+		fromFirestoreData: vi.fn((data) => ({
+			id: data.videoId || data.id,
+			toFirestore: vi.fn(() => data),
 		})),
 	},
 	AudioButton: {
@@ -127,16 +127,22 @@ describe("EntityMigrationService", () => {
 				createMockDoc("video1", {
 					videoId: "video1",
 					title: "Test Video 1",
+					description: "Test description 1",
 					channelId: "channel1",
 					channelTitle: "Test Channel",
 					publishedAt: "2024-01-01T00:00:00Z",
+					thumbnailUrl: "https://img.youtube.com/vi/video1/hqdefault.jpg",
+					lastFetchedAt: "2024-01-01T00:00:00Z",
 				}),
 				createMockDoc("video2", {
 					videoId: "video2",
 					title: "Test Video 2",
+					description: "Test description 2",
 					channelId: "channel1",
 					channelTitle: "Test Channel",
 					publishedAt: "2024-01-02T00:00:00Z",
+					thumbnailUrl: "https://img.youtube.com/vi/video2/hqdefault.jpg",
+					lastFetchedAt: "2024-01-02T00:00:00Z",
 				}),
 			];
 
@@ -179,11 +185,23 @@ describe("EntityMigrationService", () => {
 				createMockDoc("video1", {
 					videoId: "video1",
 					title: "Test Video 1",
+					description: "Test description 1",
+					channelId: "channel1",
+					channelTitle: "Test Channel",
+					publishedAt: "2024-01-01T00:00:00Z",
+					thumbnailUrl: "https://img.youtube.com/vi/video1/hqdefault.jpg",
+					lastFetchedAt: "2024-01-01T00:00:00Z",
 					_v2Migration: { version: "2.0.0" },
 				}),
 				createMockDoc("video2", {
 					videoId: "video2",
 					title: "Test Video 2",
+					description: "Test description 2",
+					channelId: "channel1",
+					channelTitle: "Test Channel",
+					publishedAt: "2024-01-02T00:00:00Z",
+					thumbnailUrl: "https://img.youtube.com/vi/video2/hqdefault.jpg",
+					lastFetchedAt: "2024-01-02T00:00:00Z",
 				}),
 			];
 
@@ -261,6 +279,12 @@ describe("EntityMigrationService", () => {
 				createMockDoc(`video${i}`, {
 					videoId: `video${i}`,
 					title: `Test Video ${i}`,
+					description: `Test description ${i}`,
+					channelId: "channel1",
+					channelTitle: "Test Channel",
+					publishedAt: `2024-01-0${i + 1}T00:00:00Z`,
+					thumbnailUrl: `https://img.youtube.com/vi/video${i}/hqdefault.jpg`,
+					lastFetchedAt: `2024-01-0${i + 1}T00:00:00Z`,
 				}),
 			);
 
@@ -286,9 +310,36 @@ describe("EntityMigrationService", () => {
 
 			// Mock documents in single batch
 			const videos = [
-				createMockDoc("video1", { videoId: "video1", title: "Video 1" }),
-				createMockDoc("video2", { videoId: "video2", title: "Video 2" }),
-				createMockDoc("video3", { videoId: "video3", title: "Video 3" }),
+				createMockDoc("video1", {
+					videoId: "video1",
+					title: "Video 1",
+					description: "Description 1",
+					channelId: "channel1",
+					channelTitle: "Test Channel",
+					publishedAt: "2024-01-01T00:00:00Z",
+					thumbnailUrl: "https://img.youtube.com/vi/video1/hqdefault.jpg",
+					lastFetchedAt: "2024-01-01T00:00:00Z",
+				}),
+				createMockDoc("video2", {
+					videoId: "video2",
+					title: "Video 2",
+					description: "Description 2",
+					channelId: "channel1",
+					channelTitle: "Test Channel",
+					publishedAt: "2024-01-02T00:00:00Z",
+					thumbnailUrl: "https://img.youtube.com/vi/video2/hqdefault.jpg",
+					lastFetchedAt: "2024-01-02T00:00:00Z",
+				}),
+				createMockDoc("video3", {
+					videoId: "video3",
+					title: "Video 3",
+					description: "Description 3",
+					channelId: "channel1",
+					channelTitle: "Test Channel",
+					publishedAt: "2024-01-03T00:00:00Z",
+					thumbnailUrl: "https://img.youtube.com/vi/video3/hqdefault.jpg",
+					lastFetchedAt: "2024-01-03T00:00:00Z",
+				}),
 			];
 
 			// Mock the collection

@@ -9,7 +9,7 @@ import { useSession } from "next-auth/react";
 import { memo, useCallback, useRef, useState } from "react";
 import { useAudioButton } from "@/hooks/use-audio-button";
 
-interface AudioButtonCardV2Props {
+interface AudioButtonCardProps {
 	audioButton: AudioButton;
 	playCount?: number;
 	isFavorited?: boolean;
@@ -52,10 +52,10 @@ function convertToFrontendData(
 }
 
 /**
- * AudioButton Card V2 コンポーネント
- * 新しいAudioButton V2 Entity構造に対応したカードコンポーネント
+ * AudioButton Card コンポーネント
+ * AudioButton Entity構造に対応したカードコンポーネント
  */
-export const AudioButtonCardV2 = memo(function AudioButtonCardV2({
+export const AudioButtonCard = memo(function AudioButtonCard({
 	audioButton,
 	playCount,
 	isFavorited = false,
@@ -67,7 +67,7 @@ export const AudioButtonCardV2 = memo(function AudioButtonCardV2({
 	onDislikeToggle,
 	className = "",
 	showStats = true,
-}: AudioButtonCardV2Props) {
+}: AudioButtonCardProps) {
 	const { data: session } = useSession();
 	const router = useRouter();
 	const [isPlaying, setIsPlaying] = useState(false);
@@ -244,4 +244,4 @@ export const AudioButtonCardV2 = memo(function AudioButtonCardV2({
 	);
 });
 
-export default AudioButtonCardV2;
+export default AudioButtonCard;

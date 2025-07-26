@@ -88,11 +88,11 @@ async function saveVideosV2Batch(videos: Video[]): Promise<{ saved: number; migr
 		const existingDoc = await videoRef.get();
 		const existingData = existingDoc.exists ? existingDoc.data() : {};
 
-		// V2形式のデータを既存形式に変換して保存
-		const legacyData = video.toLegacyFormat();
+		// V2形式のデータをFirestore形式に変換して保存
+		const firestoreData = video.toFirestore();
 		const mergedData = {
 			...existingData,
-			...legacyData,
+			...firestoreData,
 			// V2マイグレーション情報を追加
 			_v2Migration: {
 				migratedAt: Timestamp.now(),
@@ -133,9 +133,7 @@ async function fetchAndSaveVideosV2(
 		});
 
 		while (pagesProcessed < MAX_PAGES_PER_EXECUTION) {
-			logger.info(`ページ ${pagesProcessed + 1}/${MAX_PAGES_PER_EXECUTION} の処理を開始`, {
-				pageToken: currentPageToken,
-			});
+			// ページ処理開始（ログは削除）
 
 			// チャンネルの動画を取得
 			const { videos, nextPageToken } = await service.fetchChannelVideos(
@@ -145,7 +143,6 @@ async function fetchAndSaveVideosV2(
 			);
 
 			if (videos.length === 0) {
-				logger.info("取得する動画がなくなりました");
 				break;
 			}
 
@@ -154,11 +151,10 @@ async function fetchAndSaveVideosV2(
 			totalVideoCount += saved;
 			totalMigratedCount += migrated;
 
-			logger.info(`${saved}件の動画を保存しました（${migrated}件を新規マイグレーション）`);
+			// 保存完了（詳細ログは削除）
 
 			// 次のページがない場合は終了
 			if (!nextPageToken) {
-				logger.info("すべての動画を取得しました");
 				await updateMetadata({
 					nextPageToken: undefined,
 					lastSuccessfulCompleteFetch: Timestamp.now(),
@@ -171,9 +167,6 @@ async function fetchAndSaveVideosV2(
 
 			// ページ制限に達した場合
 			if (pagesProcessed >= MAX_PAGES_PER_EXECUTION) {
-				logger.info("ページ制限に達しました。次回の実行で継続します", {
-					nextPageToken: currentPageToken,
-				});
 				await updateMetadata({
 					nextPageToken: currentPageToken,
 				});
@@ -212,7 +205,7 @@ async function fetchAndSaveVideosV2(
  * YouTube動画同期のメイン関数（V2版）
  */
 export async function youtubeSyncV2(event: CloudEvent<unknown>): Promise<void> {
-	logger.info("YouTube同期V2を開始します", { eventType: event.type });
+	// YouTube同期V2開始
 
 	try {
 		// メタデータを取得
@@ -220,7 +213,6 @@ export async function youtubeSyncV2(event: CloudEvent<unknown>): Promise<void> {
 
 		// 別のインスタンスが実行中の場合はスキップ
 		if (metadata?.isInProgress) {
-			logger.warn("別のインスタンスが実行中のため、この実行をスキップします");
 			return;
 		}
 
@@ -236,11 +228,14 @@ export async function youtubeSyncV2(event: CloudEvent<unknown>): Promise<void> {
 		// 動画の取得と保存
 		const result = await fetchAndSaveVideosV2(service, channelId, metadata?.nextPageToken);
 
-		logger.info("YouTube同期V2が完了しました", {
-			videoCount: result.videoCount,
-			migratedCount: result.migratedCount,
-			error: result.error,
-		});
+		// 完了時のみサマリーログを出力
+		if (result.videoCount > 0 || result.error) {
+			logger.info("YouTube同期V2完了", {
+				saved: result.videoCount,
+				migrated: result.migratedCount,
+				...(result.error && { error: result.error }),
+			});
+		}
 
 		// エラーがあった場合はステータスコードを設定
 		if (result.error) {
