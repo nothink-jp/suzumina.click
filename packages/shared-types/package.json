@@ -1,6 +1,6 @@
 {
 	"name": "@suzumina.click/shared-types",
-	"version": "0.3.7",
+	"version": "0.3.4",
 	"description": "涼花みなせウェブサイト用の共有型定義",
 	"main": "dist/index.js",
 	"module": "dist/index.mjs",
