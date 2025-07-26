@@ -413,7 +413,7 @@ resource "google_pubsub_topic_iam_member" "scheduler_pubsub_publisher" {
 
 
 # Cloud Schedulerが時系列データ収集トピックにメッセージを発行する権限 (非推奨・削除済み)
-# ⚠️ 統合アーキテクチャにより廃止: fetchDLsiteWorksIndividualAPI が時系列データ収集も統合実行
+# ⚠️ 統合アーキテクチャにより廃止: fetchDLsiteUnifiedData が時系列データ収集も統合実行
 # resource "google_pubsub_topic_iam_member" "scheduler_timeseries_pubsub_publisher" {
 #   project = google_pubsub_topic.dlsite_timeseries_collect_trigger.project
 #   topic   = google_pubsub_topic.dlsite_timeseries_collect_trigger.name

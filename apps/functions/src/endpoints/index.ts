@@ -49,7 +49,7 @@ interface PubsubMessage {
 
 // 統合アーキテクチャによる Cloud Functions 登録
 functions.cloudEvent<PubsubMessage>("fetchYouTubeVideos", fetchYouTubeVideos);
-functions.cloudEvent<PubsubMessage>("fetchDLsiteWorksIndividualAPI", fetchDLsiteUnifiedData);
+functions.cloudEvent<PubsubMessage>("fetchDLsiteUnifiedData", fetchDLsiteUnifiedData);
 // collectDLsiteTimeseries は統合アーキテクチャにより廃止
 
 // Phase 3: 通知システム (失敗率監視削除済み)

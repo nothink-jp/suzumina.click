@@ -7,15 +7,15 @@
 
 # Individual Info API専用関数の設定
 locals {
-  dlsite_individual_api_function_name = "fetchDLsiteWorksIndividualAPI"
+  dlsite_individual_api_function_name = "fetchDLsiteUnifiedData"
   dlsite_individual_api_runtime       = "nodejs22"
-  dlsite_individual_api_entry_point   = "fetchDLsiteWorksIndividualAPI"
+  dlsite_individual_api_entry_point   = "fetchDLsiteUnifiedData"
   dlsite_individual_api_memory        = "512Mi"  # 使用率15%分析による最適化（2Gi→1Gi→512Mi）
   dlsite_individual_api_timeout       = 300    # 5分タイムアウト（API集約処理最適化）
 }
 
 # Individual Info API専用作品取得関数（手動デプロイ済みのためコメントアウト）
-# 注意: 既存のfetchDLsiteWorksIndividualAPI関数は手動でデプロイされており、統合データ収集システムとして稼働中
+# 注意: 既存のfetchDLsiteUnifiedData関数は手動でデプロイされており、統合データ収集システムとして稼働中
 # このリソースはterraform管理外のため、手動管理または別途GitHub Actionsでデプロイされます
 # resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
 #   # 100% API-Only アーキテクチャを有効化
@@ -164,7 +164,7 @@ resource "google_pubsub_topic_iam_member" "scheduler_individual_api_pubsub_publi
 #     display_name = "DLsite Individual Info API エラー数"
 #   }
 #
-#   # 手動デプロイされたfetchDLsiteWorksIndividualAPI関数への依存関係をコメントアウト
+#   # 手動デプロイされたfetchDLsiteUnifiedData関数への依存関係をコメントアウト
 #   # depends_on = [
 #   #   google_cloudfunctions2_function.fetch_dlsite_works_individual_api
 #   # ]
@@ -186,7 +186,7 @@ resource "google_pubsub_topic_iam_member" "scheduler_individual_api_pubsub_publi
 #     display_name = "DLsite Individual Info API 成功数"
 #   }
 #
-#   # 手動デプロイされたfetchDLsiteWorksIndividualAPI関数への依存関係をコメントアウト
+#   # 手動デプロイされたfetchDLsiteUnifiedData関数への依存関係をコメントアウト
 #   # depends_on = [
 #   #   google_cloudfunctions2_function.fetch_dlsite_works_individual_api
 #   # ]
@@ -210,7 +210,7 @@ resource "google_pubsub_topic_iam_member" "scheduler_individual_api_pubsub_publi
 #
 #   value_extractor = "EXTRACT(jsonPayload.quality_score)"
 #
-#   # 手動デプロイされたfetchDLsiteWorksIndividualAPI関数への依存関係をコメントアウト
+#   # 手動デプロイされたfetchDLsiteUnifiedData関数への依存関係をコメントアウト
 #   # depends_on = [
 #   #   google_cloudfunctions2_function.fetch_dlsite_works_individual_api
 #   # ]
