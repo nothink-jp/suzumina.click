@@ -3,7 +3,11 @@
  * Cloud Functions や サーバーサイド実装で使用
  */
 
-import type { FirestoreServerVideoData, LiveBroadcastContent, VideoType } from "../entities/video";
+import type {
+	FirestoreServerVideoData,
+	LiveBroadcastContent,
+	VideoType,
+} from "../types/firestore/video";
 
 /**
  * クライアント用のFirestoreVideoDataからサーバーサイド用のデータに変換

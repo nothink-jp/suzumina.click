@@ -4,7 +4,7 @@
  * These types are used for Server/Client Component boundary in Next.js
  */
 
-import type { FirestoreServerVideoData } from "../entities/video";
+import type { FirestoreServerVideoData } from "../types/firestore/video";
 
 /**
  * Computed properties for video business logic

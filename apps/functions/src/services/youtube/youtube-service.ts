@@ -107,7 +107,11 @@ class YouTubeService implements VideoService {
 						videos.push(videoV2);
 					}
 				} catch (error) {
-					// 変換失敗した動画はスキップ
+					// Log mapping errors for debugging
+					logger.debug("Failed to map YouTube video to entity", {
+						videoId: video.id,
+						error: error instanceof Error ? error.message : "Unknown error",
+					});
 				}
 			}
 
@@ -174,7 +178,7 @@ class YouTubeService implements VideoService {
 						if (videoV2) {
 							allVideos.push(videoV2);
 						}
-					} catch (error) {
+					} catch (_error) {
 						// 変換失敗した動画はスキップ
 					}
 				}

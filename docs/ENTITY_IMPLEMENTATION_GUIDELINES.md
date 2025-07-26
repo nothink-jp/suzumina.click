@@ -445,6 +445,11 @@ export class EntityService {
    - レガシー形式との相互変換メソッド
    - 移行期間中の互換性維持
 
+5. **循環参照の防止**
+   - Firestore型定義は`types/firestore/`に配置
+   - エンティティとPlain Objectの間で直接参照を避ける
+   - 共通の型は独立したファイルに定義
+
 ## チェックリスト
 
 新しいエンティティを実装する際のチェックリスト：
@@ -555,6 +560,12 @@ packages/shared-types/src/
 │   ├── video-plain.ts
 │   ├── audio-button-plain.ts
 │   └── work-plain.ts
+├── types/                 # 外部システム連携の型定義
+│   └── firestore/        # Firestore専用の型定義
+│       ├── index.ts
+│       ├── video.ts      # FirestoreServerVideoDataなど
+│       ├── audio-button.ts # FirestoreAudioButtonData（将来）
+│       └── work.ts       # FirestoreWorkData（将来）
 └── utils/                 # 共通ユーティリティ
     ├── date-parser.ts
     ├── number-parser.ts
@@ -600,11 +611,16 @@ apps/web/src/
    - Server/Client境界で使用される型は別ディレクトリ
    - `plain-objects/[entity-name]-plain.ts`
 
-3. **Mapperは変換の方向で分離**
+3. **外部システムの型定義は分離**
+   - Firestore型定義: `types/firestore/[entity-name].ts`
+   - 循環参照を防ぐために独立したディレクトリに配置
+   - エンティティファイルからは参照のみ（定義しない）
+
+4. **Mapperは変換の方向で分離**
    - 外部API → エンティティ: `services/mappers/`
    - エンティティ → 永続化: `services/converters/`
 
-4. **テストファイルの配置**
+5. **テストファイルの配置**
    ```
    packages/shared-types/src/
    ├── entities/
@@ -647,7 +663,10 @@ import { VideoContent } from '@suzumina.click/shared-types/value-objects/video/v
 import { Price } from '@suzumina.click/shared-types/value-objects/work/price';
 
 // Plain Objectのインポート
-import type { VideoPainObject } from '@suzumina.click/shared-types/plain-objects/video-plain';
+import type { VideoPlainObject } from '@suzumina.click/shared-types/plain-objects/video-plain';
+
+// Firestore型定義のインポート
+import type { FirestoreServerVideoData } from '@suzumina.click/shared-types/types/firestore/video';
 
 // ユーティリティのインポート
 import { parseDate } from '@suzumina.click/shared-types/utils/date-parser';
