@@ -118,9 +118,9 @@ export class WorkCreators {
 	}
 
 	/**
-	 * Creates from DLsite API creaters object
+	 * Creates from DLsite API creators object
 	 */
-	static fromCreatorsAPI(creaters?: {
+	static fromCreatorsAPI(creators?: {
 		voice_by?: Array<{ name: string }>;
 		scenario_by?: Array<{ name: string }>;
 		illust_by?: Array<{ name: string }>;
@@ -128,16 +128,16 @@ export class WorkCreators {
 		others_by?: Array<{ name: string }>;
 		created_by?: Array<{ name: string }>;
 	}): WorkCreators {
-		if (!creaters) return new WorkCreators();
+		if (!creators) return new WorkCreators();
 
 		return new WorkCreators(
-			creaters.voice_by?.map((c) => c.name) || [],
-			creaters.scenario_by?.map((c) => c.name) || [],
-			creaters.illust_by?.map((c) => c.name) || [],
-			creaters.music_by?.map((c) => c.name) || [],
+			creators.voice_by?.map((c) => c.name) || [],
+			creators.scenario_by?.map((c) => c.name) || [],
+			creators.illust_by?.map((c) => c.name) || [],
+			creators.music_by?.map((c) => c.name) || [],
 			[
-				...(creaters.others_by?.map((c) => c.name) || []),
-				...(creaters.created_by?.map((c) => c.name) || []),
+				...(creators.others_by?.map((c) => c.name) || []),
+				...(creators.created_by?.map((c) => c.name) || []),
 			],
 		);
 	}

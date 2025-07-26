@@ -83,6 +83,42 @@ export interface WorkSalesStatus {
  * Work Entity
  */
 export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
+	/**
+	 * Game work category codes
+	 */
+	private static readonly GAME_CATEGORIES = [
+		"GAM",
+		"RPG",
+		"ACN",
+		"SLN",
+		"ADV",
+		"PZL",
+		"QIZ",
+		"TBL",
+		"DGT",
+	] as const;
+
+	/**
+	 * Category display names mapping
+	 */
+	private static readonly CATEGORY_DISPLAY_NAMES: Record<WorkCategory, string> = {
+		ADV: "アドベンチャー",
+		SOU: "ボイス・ASMR",
+		RPG: "ロールプレイング",
+		MOV: "動画",
+		MNG: "マンガ",
+		GAM: "ゲーム",
+		CG: "CG・イラスト",
+		TOL: "ツール・アクセサリ",
+		ET3: "その他・3D",
+		SLN: "シミュレーション",
+		ACN: "アクション",
+		PZL: "パズル",
+		QIZ: "クイズ",
+		TBL: "テーブル",
+		DGT: "デジタルノベル",
+		etc: "その他",
+	};
 	constructor(
 		public readonly id: WorkId,
 		public readonly title: WorkTitle,
@@ -675,7 +711,7 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	 * Checks if this is a game work
 	 */
 	isGameWork(): boolean {
-		return ["GAM", "RPG", "ACN", "SLN", "ADV", "PZL", "QIZ", "TBL", "DGT"].includes(this.category);
+		return (Work.GAME_CATEGORIES as ReadonlyArray<string>).includes(this.category);
 	}
 
 	/**
@@ -747,28 +783,9 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	 * Gets display category name
 	 */
 	private getDisplayCategory(): string {
-		// Import from original work.ts
-		const categoryDisplayNames: Record<WorkCategory, string> = {
-			ADV: "アドベンチャー",
-			SOU: "ボイス・ASMR",
-			RPG: "ロールプレイング",
-			MOV: "動画",
-			MNG: "マンガ",
-			GAM: "ゲーム",
-			CG: "CG・イラスト",
-			TOL: "ツール・アクセサリ",
-			ET3: "その他・3D",
-			SLN: "シミュレーション",
-			ACN: "アクション",
-			PZL: "パズル",
-			QIZ: "クイズ",
-			TBL: "テーブル",
-			DGT: "デジタルノベル",
-			etc: "その他",
-		};
 		return (
 			this._extendedInfo.originalCategoryText ||
-			categoryDisplayNames[this.category] ||
+			Work.CATEGORY_DISPLAY_NAMES[this.category] ||
 			this.category
 		);
 	}
