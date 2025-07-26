@@ -80,10 +80,11 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 	// 元の価格を取得、もしくは割引率から計算
 	const originalPrice =
 		work.price.original ||
-		(work.price.discount && work.price.discount > 0
+		(work.price.discount !== undefined && work.price.discount > 0
 			? Math.round(currentPrice / (1 - work.price.discount / 100))
 			: undefined);
-	const isOnSale = work.price.discount && work.price.discount > 0;
+	// NOTE: 将来的にはWorkPrice.isDiscounted()を使用することを推奨
+	const isOnSale = work.price.discount !== undefined && work.price.discount > 0;
 
 	// ランキング情報は現在利用できません
 	const latestRank = undefined;
