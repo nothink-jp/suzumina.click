@@ -12,7 +12,7 @@ graph TB
     Work[Work<br/>作品エンティティ]
     User[User<br/>ユーザーエンティティ]
     AudioButton[AudioButton<br/>音声ボタンエンティティ]
-    Video[Video V2<br/>動画エンティティ]
+    Video[Video<br/>動画エンティティ]
     
     %% 値オブジェクト
     Price[Price<br/>価格値オブジェクト]
@@ -81,11 +81,11 @@ classDiagram
 
 ### 2. AudioButton（音声ボタン）
 
-YouTube動画の特定タイムスタンプを参照する音声ボタンエンティティです。Entity/Value Objectアーキテクチャに基づく新しい実装（V2）が利用可能です。
+YouTube動画の特定タイムスタンプを参照する音声ボタンエンティティです。Entity/Value Objectアーキテクチャに基づく実装です。
 
 ```mermaid
 classDiagram
-    class AudioButtonV2 {
+    class AudioButton {
         +AudioButtonId id
         +AudioContent content
         +AudioReference reference
@@ -95,13 +95,13 @@ classDiagram
         +Date createdAt
         +Date updatedAt
         +number favoriteCount
-        +updateContent(content) AudioButtonV2
-        +updateVisibility(isPublic) AudioButtonV2
-        +recordPlay() AudioButtonV2
-        +recordLike() AudioButtonV2
-        +recordDislike() AudioButtonV2
-        +incrementFavorite() AudioButtonV2
-        +decrementFavorite() AudioButtonV2
+        +updateContent(content) AudioButton
+        +updateVisibility(isPublic) AudioButton
+        +recordPlay() AudioButton
+        +recordLike() AudioButton
+        +recordDislike() AudioButton
+        +incrementFavorite() AudioButton
+        +decrementFavorite() AudioButton
         +isPopular() boolean
         +getEngagementRate() number
         +getPopularityScore() number
@@ -109,7 +109,7 @@ classDiagram
         +belongsTo(creatorId) boolean
         +getSearchableText() string
         +toLegacy() LegacyAudioButtonData
-        +static fromLegacy(data) AudioButtonV2
+        +static fromLegacy(data) AudioButton
     }
     
     class AudioContent {
@@ -145,9 +145,9 @@ classDiagram
         +getEngagementRate() number
     }
     
-    AudioButtonV2 --> AudioContent
-    AudioButtonV2 --> AudioReference
-    AudioButtonV2 --> ButtonStatistics
+    AudioButton --> AudioContent
+    AudioButton --> AudioReference
+    AudioButton --> ButtonStatistics
 ```
 
 **責務:**
@@ -160,7 +160,7 @@ classDiagram
 
 ### 3. Video（動画）
 
-YouTube動画情報を管理するエンティティです。Entity/Value Objectアーキテクチャに基づく新しい実装（V2）が利用可能です。
+YouTube動画情報を管理するエンティティです。Entity/Value Objectアーキテクチャに基づく実装です。
 
 ```mermaid
 classDiagram
@@ -485,14 +485,14 @@ interface VideoRepository {
 
 ## インフラストラクチャ層マッパー
 
-### Video Mapper V2
+### Video Mapper
 
-YouTube API レスポンスをVideo Entity V2に変換するマッパーです。
+YouTube API レスポンスをVideo Entityに変換するマッパーです。
 
 ```typescript
-// apps/functions/src/services/mappers/video-mapper-v2.ts
+// apps/functions/src/services/mappers/video-mapper.ts
 
-// YouTube API → Video Entity V2
+// YouTube API → Video Entity
 mapYouTubeToVideoEntity(
   youtubeVideo: youtube_v3.Schema$Video,
   playlistTags?: string[],
@@ -522,42 +522,41 @@ mapLegacyToVideoEntity(legacyData: LegacyVideoData): Video
 - 外部API形式からドメインモデルへの変換
 - エラーハンドリングと詳細なロギング
 - レガシーシステムとの互換性維持
-- 非推奨予定：2026年4月30日（Entity/Value Object移行完了後）
 
-### AudioButton Mapper V2
+### AudioButton Mapper
 
-Firestore形式のデータをAudioButton Entity V2に変換するマッパーです。
+Firestore形式のデータをAudioButton Entityに変換するマッパーです。
 
 ```typescript
-// apps/functions/src/services/mappers/audio-button-mapper-v2.ts
+// apps/functions/src/services/mappers/audio-button-mapper.ts
 
-// Firestore → AudioButton Entity V2
-mapFirestoreToAudioButtonV2(
+// Firestore → AudioButton Entity
+mapFirestoreToAudioButton(
   data: FirestoreAudioButtonData
-): AudioButtonV2
+): AudioButton
 
 // 複数ボタンの一括マッピング
-mapFirestoreToAudioButtonsV2(
+mapFirestoreToAudioButtons(
   documents: FirestoreAudioButtonData[]
-): AudioButtonV2[]
+): AudioButton[]
 
-// AudioButton Entity V2 → Firestore
-mapAudioButtonV2ToFirestore(
-  audioButton: AudioButtonV2
+// AudioButton Entity → Firestore
+mapAudioButtonToFirestore(
+  audioButton: AudioButton
 ): FirestoreAudioButtonData
 
 // エラー詳細付きマッピング
 mapFirestoreToAudioButtonsWithErrors(
   documents: FirestoreAudioButtonData[]
-): BatchMappingResult<AudioButtonV2>
+): BatchMappingResult<AudioButton>
 
 // レガシー形式との相互変換
-mapLegacyToAudioButtonV2(
+mapLegacyToAudioButton(
   legacyData: LegacyAudioButtonData
-): AudioButtonV2
+): AudioButton
 
-mapAudioButtonV2ToLegacy(
-  audioButton: AudioButtonV2
+mapAudioButtonToLegacy(
+  audioButton: AudioButton
 ): LegacyAudioButtonData
 ```
 
@@ -622,5 +621,5 @@ packages/shared-types/src/
 
 ---
 
-**最終更新**: 2025年1月25日  
-**バージョン**: 1.1
+**最終更新**: 2025年7月26日  
+**バージョン**: 1.2

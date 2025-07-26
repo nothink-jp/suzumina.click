@@ -90,7 +90,7 @@ if (work.hasCategory("ASMR")) {
 }
 ```
 
-### AudioButton（音声ボタン）エンティティ V2
+### AudioButton（音声ボタン）エンティティ
 
 #### 概要
 YouTube動画の特定のタイムスタンプを参照し、音声クリップとして機能するエンティティ。Entity/Value Objectアーキテクチャに基づく新しい実装。
@@ -113,17 +113,17 @@ YouTube動画の特定のタイムスタンプを参照し、音声クリップ�
 
 ```typescript
 // コンテンツ更新（新しいインスタンスを返す）
-updateContent(content: AudioContent): AudioButtonV2
+updateContent(content: AudioContent): AudioButton
 
 // 公開状態更新（新しいインスタンスを返す）
-updateVisibility(isPublic: boolean): AudioButtonV2
+updateVisibility(isPublic: boolean): AudioButton
 
 // 統計記録メソッド（新しいインスタンスを返す）
-recordPlay(): AudioButtonV2
-recordLike(): AudioButtonV2
-recordDislike(): AudioButtonV2
-incrementFavorite(): AudioButtonV2
-decrementFavorite(): AudioButtonV2
+recordPlay(): AudioButton
+recordLike(): AudioButton
+recordDislike(): AudioButton
+incrementFavorite(): AudioButton
+decrementFavorite(): AudioButton
 
 // 分析メソッド
 isPopular(): boolean
@@ -135,7 +135,7 @@ getEngagementRatePercentage(): number
 belongsTo(creatorId: string): boolean
 getSearchableText(): string
 toLegacy(): LegacyAudioButtonData
-static fromLegacy(data: LegacyAudioButtonData): AudioButtonV2
+static fromLegacy(data: LegacyAudioButtonData): AudioButton
 ```
 
 #### AudioContent（音声コンテンツ）値オブジェクト
@@ -207,7 +207,7 @@ isPopular(): boolean  // 再生回数100以上
 getEngagementRate(): number  // (いいね + 低評価) / 再生回数
 ```
 
-### Video（動画）エンティティ V2
+### Video（動画）エンティティ
 
 #### 概要
 YouTube動画の情報を管理するエンティティ。Entity/Value Objectアーキテクチャに基づく新しい実装。
@@ -664,5 +664,5 @@ function isWorkType(value: unknown): value is Work {
 
 ---
 
-**最終更新**: 2025年1月25日  
-**バージョン**: 1.1
+**最終更新**: 2025年7月26日  
+**バージョン**: 1.2

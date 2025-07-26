@@ -246,6 +246,17 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 
 ## 📝 RECENT UPDATES
 
+### v0.3.7 (2025-07-26)
+- **Entity System Unification COMPLETED**
+  - Complete removal of V2 suffix from all entities and components
+  - Unified `Video` and `AudioButton` entities (no more V2 variants)
+  - Removed feature flag system entirely
+  - Deleted all V2-specific migration scripts and tests
+  - Simplified codebase by ~15% (removed ~11,500 lines)
+  - Fixed all TypeScript and lint errors
+  - Improved cognitive complexity by extracting helper functions
+  - Enhanced type safety by eliminating `any` types
+
 ### v0.3.6 (2025-07-21)
 - **Work Evaluation System COMPLETED**
   - Complete evaluation system for DLsite works (3 evaluation types)
@@ -307,5 +318,5 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 
 ---
 
-**Last Updated**: 2025-07-24  
-**Document Version**: 3.4 (Domain Model Documentation Requirements)
+**Last Updated**: 2025-07-26  
+**Document Version**: 3.5 (Entity System Unification)
