@@ -14,90 +14,89 @@ locals {
   dlsite_individual_api_timeout       = 300    # 5分タイムアウト（API集約処理最適化）
 }
 
-# Individual Info API専用作品取得関数（手動デプロイ済みのためコメントアウト）
-# 注意: 既存のfetchDLsiteUnifiedData関数は手動でデプロイされており、統合データ収集システムとして稼働中
-# このリソースはterraform管理外のため、手動管理または別途GitHub Actionsでデプロイされます
-# resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
-#   # 100% API-Only アーキテクチャを有効化
-#   
-#   project  = var.gcp_project_id
-#   name     = local.dlsite_individual_api_function_name
-#   location = var.region
-#
-#   # ビルド設定
-#   build_config {
-#     runtime     = local.dlsite_individual_api_runtime
-#     entry_point = local.dlsite_individual_api_entry_point
-#     # 初回デプロイ用にダミーのソースコードを設定
-#     # GitHub Actionsによる実際のデプロイでは上書きされる
-#     source {
-#       storage_source {
-#         bucket = google_storage_bucket.functions_deployment.name
-#         object = "function-source-dummy.zip"
-#       }
-#     }
-#   }
-#
-#   # サービス設定
-#   service_config {
-#     max_instance_count = 2       # Individual Info API並列処理対応
-#     min_instance_count = 0       # コールドスタートを許容
-#     available_memory   = local.dlsite_individual_api_memory
-#     timeout_seconds    = local.dlsite_individual_api_timeout
-#     
-#     # 専用のサービスアカウントを使用
-#     service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
-#
-#     # Individual Info API処理用環境変数
-#     environment_variables = {
-#       FUNCTION_SIGNATURE_TYPE = "cloudevent"
-#       FUNCTION_TARGET        = local.dlsite_individual_api_entry_point
-#       
-#       # Individual Info API設定
-#       INDIVIDUAL_INFO_API_ENABLED = "true"
-#       API_ONLY_MODE              = "true"
-#       MAX_CONCURRENT_API_REQUESTS = "5"
-#       API_REQUEST_DELAY_MS       = "500"
-#       
-#       # データ品質設定
-#       ENABLE_DATA_VALIDATION = "true"
-#       MINIMUM_QUALITY_SCORE  = "80"
-#       
-#       # 時系列データ統合
-#       ENABLE_TIMESERIES_INTEGRATION = "true"
-#       
-#       # ログレベル
-#       LOG_LEVEL = "info"
-#     }
-#   }
-#
-#   # Pub/Subトリガー設定
-#   event_trigger {
-#     trigger_region = var.region
-#     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-#     pubsub_topic   = google_pubsub_topic.dlsite_individual_api_trigger.id
-#     retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
-#     service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
-#   }
-#
-#   # GitHub Actions からのデプロイとの競合を避けるため、
-#   # ソースコードと環境変数は GitHub Actions が管理し、Terraform は無視する
-#   lifecycle {
-#     ignore_changes = [
-#       build_config,
-#       service_config[0].environment_variables,
-#     ]
-#     create_before_destroy = false
-#   }
-#
-#   depends_on = [
-#     google_firestore_database.database,
-#     google_pubsub_topic.dlsite_individual_api_trigger,
-#     google_project_iam_member.fetch_dlsite_individual_api_firestore_user,
-#     google_project_iam_member.fetch_dlsite_individual_api_log_writer,
-#     google_service_account.fetch_dlsite_individual_api_sa,
-#   ]
-# }
+# Individual Info API専用作品取得関数（Gen2）
+# GitHub Actionsと連携してデプロイされる統合データ収集システム
+resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
+  # 100% API-Only アーキテクチャを有効化
+  
+  project  = var.gcp_project_id
+  name     = local.dlsite_individual_api_function_name
+  location = var.region
+
+  # ビルド設定
+  build_config {
+    runtime     = local.dlsite_individual_api_runtime
+    entry_point = local.dlsite_individual_api_entry_point
+    # 初回デプロイ用にダミーのソースコードを設定
+    # GitHub Actionsによる実際のデプロイでは上書きされる
+    source {
+      storage_source {
+        bucket = google_storage_bucket.functions_deployment.name
+        object = "function-source-dummy.zip"
+      }
+    }
+  }
+
+  # サービス設定
+  service_config {
+    max_instance_count = 2       # Individual Info API並列処理対応
+    min_instance_count = 0       # コールドスタートを許容
+    available_memory   = local.dlsite_individual_api_memory
+    timeout_seconds    = local.dlsite_individual_api_timeout
+    
+    # 専用のサービスアカウントを使用
+    service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
+
+    # Individual Info API処理用環境変数
+    environment_variables = {
+      FUNCTION_SIGNATURE_TYPE = "cloudevent"
+      FUNCTION_TARGET        = local.dlsite_individual_api_entry_point
+      
+      # Individual Info API設定
+      INDIVIDUAL_INFO_API_ENABLED = "true"
+      API_ONLY_MODE              = "true"
+      MAX_CONCURRENT_API_REQUESTS = "5"
+      API_REQUEST_DELAY_MS       = "500"
+      
+      # データ品質設定
+      ENABLE_DATA_VALIDATION = "true"
+      MINIMUM_QUALITY_SCORE  = "80"
+      
+      # 時系列データ統合
+      ENABLE_TIMESERIES_INTEGRATION = "true"
+      
+      # ログレベル
+      LOG_LEVEL = "info"
+    }
+  }
+
+  # Pub/Subトリガー設定
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.dlsite_individual_api_trigger.id
+    retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
+    service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
+  }
+
+  # GitHub Actions からのデプロイとの競合を避けるため、
+  # ソースコードと環境変数は GitHub Actions が管理し、Terraform は無視する
+  lifecycle {
+    ignore_changes = [
+      build_config,
+      service_config[0].environment_variables,
+    ]
+    create_before_destroy = false
+  }
+
+  depends_on = [
+    google_firestore_database.database,
+    google_pubsub_topic.dlsite_individual_api_trigger,
+    google_project_iam_member.fetch_dlsite_individual_api_firestore_user,
+    google_project_iam_member.fetch_dlsite_individual_api_log_writer,
+    google_service_account.fetch_dlsite_individual_api_sa,
+  ]
+}
 
 # Individual Info API専用のPub/Subトピック
 resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
