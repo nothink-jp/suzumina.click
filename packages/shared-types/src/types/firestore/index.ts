@@ -6,3 +6,4 @@
 
 export * from "./audio-button";
 export * from "./video";
+export * from "./work";

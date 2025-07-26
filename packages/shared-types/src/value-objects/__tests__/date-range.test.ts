@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DateFormatter, DateRange } from "../date-range";
+import { DateFormatter, DateRange } from "../work/date-range";
 
 describe("DateRange Value Object", () => {
 	describe("DateRange creation and methods", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Price, PriceComparison } from "../price";
+import { Price, PriceComparison } from "../work/price";
 
 describe("Price Value Object", () => {
 	describe("Price creation and methods", () => {

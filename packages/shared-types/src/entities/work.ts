@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { AggregatedCharacteristicsSchema } from "./user-evaluation";
 
+export type {
+	WorkExtendedInfo,
+	WorkMetadata,
+	WorkSalesStatus,
+	WorkSeriesInfo,
+} from "./work-entity";
+// Export the new Work entity
+export { Work } from "./work-entity";
+
 /**
  * DLsite作品カテゴリの型定義
  * HTMLから抽出される作品種別に対応
