@@ -10,8 +10,9 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		videoId: "abc123",
 		title: "テスト動画タイトル",
 		description: "テスト動画の説明文です",
+		publishedAt: new Date("2024-01-01T00:00:00Z"),
 		thumbnailUrl: "https://example.com/thumbnail.jpg",
-		publishedAt: "2024-01-01T00:00:00Z",
+		lastFetchedAt: new Date("2024-01-01T00:00:00Z"),
 		channelId: "channel123",
 		channelTitle: "テストチャンネル",
 		categoryId: "22",
@@ -27,10 +28,12 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		playlistTags: ["プレイリストタグ1", "プレイリストタグ2"],
 		userTags: ["ユーザータグ1", "ユーザータグ2"],
 		audioButtonCount: 0,
-		...overrides,
 	};
 
-	return Video.fromLegacyFormat(defaultData).toPlainObject();
+	// overridesを適用
+	const firestoreData = overrides ? { ...defaultData, ...overrides } : defaultData;
+
+	return Video.fromFirestoreData(firestoreData).toPlainObject();
 }
 
 describe("useVideo", () => {

@@ -27,26 +27,39 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		videoId: "abc123",
 		title: "テスト動画タイトル",
 		description: "テスト動画の説明文です",
+		publishedAt: new Date("2024-01-01T00:00:00Z"),
 		thumbnailUrl: "https://example.com/thumbnail.jpg",
-		publishedAt: "2024-01-01T00:00:00Z",
+		lastFetchedAt: new Date("2024-01-01T00:00:00Z"),
 		channelId: "channel123",
 		channelTitle: "テストチャンネル",
 		categoryId: "22",
 		duration: "PT10M30S",
-		viewCount: 1000,
-		likeCount: 100,
-		commentCount: 10,
+		statistics: {
+			viewCount: 1000,
+			likeCount: 100,
+			commentCount: 10,
+		},
 		liveBroadcastContent: "none",
 		liveStreamingDetails: null,
 		videoType: "normal",
 		playlistTags: ["プレイリストタグ1"],
 		userTags: ["ユーザータグ1"],
 		audioButtonCount: 0,
-		...overrides,
 	};
 
+	// overridesを適用
+	const firestoreData = { ...defaultData };
+	if (overrides) {
+		Object.assign(firestoreData, overrides);
+		// statisticsの個別フィールドを処理
+		if (overrides.viewCount !== undefined) firestoreData.statistics.viewCount = overrides.viewCount;
+		if (overrides.likeCount !== undefined) firestoreData.statistics.likeCount = overrides.likeCount;
+		if (overrides.commentCount !== undefined)
+			firestoreData.statistics.commentCount = overrides.commentCount;
+	}
+
 	// Video Entityを作成してPlain Objectに変換
-	const video = Video.fromLegacyFormat(defaultData);
+	const video = Video.fromFirestoreData(firestoreData);
 	return video.toPlainObject();
 }
 
