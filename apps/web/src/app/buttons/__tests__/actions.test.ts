@@ -98,6 +98,11 @@ describe("Audio Button Server Actions", () => {
 			startAfter: mockStartAfter,
 			select: mockSelect,
 			get: mockGet,
+			count: vi.fn().mockReturnValue({
+				get: vi.fn().mockResolvedValue({
+					data: vi.fn().mockReturnValue({ count: 0 }),
+				}),
+			}),
 		};
 
 		mockCollection.mockReturnValue(mockQuery);

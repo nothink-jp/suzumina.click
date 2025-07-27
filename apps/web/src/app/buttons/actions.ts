@@ -51,6 +51,7 @@ export async function getRecentAudioButtons(limit = 10): Promise<AudioButtonPlai
 export async function getAudioButtons(
 	query: {
 		limit?: number;
+		page?: number;
 		sortBy?: "newest" | "oldest" | "popular" | "mostPlayed";
 		onlyPublic?: boolean;
 		searchText?: string;
@@ -80,7 +81,7 @@ export async function getAudioButtons(
 			return { success: false, error: "検索条件が無効です" };
 		}
 
-		const { limit = 20, sortBy = "newest", onlyPublic = true, sourceVideoId } = query;
+		const { limit = 20, page = 1, sortBy = "newest", onlyPublic = true, sourceVideoId } = query;
 
 		// Firestoreから直接データを取得
 		const firestore = getFirestore();
@@ -130,24 +131,47 @@ export async function getAudioButtons(
 				break;
 		}
 
-		// limit + 1件取得してhasMoreを判定
-		queryRef = queryRef.limit(limit + 1) as typeof queryRef;
+		// 総件数を取得するためのクエリ（ソートなし）
+		let countQueryRef = firestore.collection("audioButtons").where("isPublic", "==", true);
+
+		if (sourceVideoId) {
+			countQueryRef = countQueryRef.where(
+				"sourceVideoId",
+				"==",
+				sourceVideoId,
+			) as typeof countQueryRef;
+		}
+
+		// TODO: searchText、tags、その他のフィルタ条件をcountQueryRefにも追加する必要があります
+		// 現在は簡易実装のため、基本的な条件のみ対応
+
+		// 総件数を取得
+		const countSnapshot = await countQueryRef.count().get();
+		const totalCount = countSnapshot.data().count;
+
+		// ページネーション計算
+		const offset = (page - 1) * limit;
+		const hasMore = offset + limit < totalCount;
+
+		// データ取得（offsetを使用）
+		queryRef = queryRef.limit(limit) as typeof queryRef;
+		if (offset > 0) {
+			// offsetを実現するために、まずoffset件スキップするためのクエリを実行
+			const skipSnapshot = await queryRef.limit(offset).get();
+			if (skipSnapshot.docs.length > 0) {
+				const lastDoc = skipSnapshot.docs[skipSnapshot.docs.length - 1];
+				queryRef = queryRef.startAfter(lastDoc) as typeof queryRef;
+			}
+		}
 
 		const snapshot = await queryRef.get();
-		const rawButtons = snapshot.docs.map((doc) => {
+		const buttons = snapshot.docs.map((doc) => {
 			const data = doc.data() as FirestoreServerAudioButtonData;
 			return { ...data, id: doc.id };
 		});
 
-		// hasMoreの判定とlimit件に切り詰め
-		const hasMore = rawButtons.length > limit;
-		const buttons = hasMore ? rawButtons.slice(0, limit) : rawButtons;
-
-		// フィルタリングはクエリで実施済みなので、そのまま使用
-		const filteredButtons = buttons;
-
 		// Entityに変換
-		const entityButtons = filteredButtons
+		const entityButtons = buttons
 			.map(convertFirestoreToAudioButton)
 			.filter((button): button is AudioButton => button !== null);
 
@@ -158,7 +182,7 @@ export async function getAudioButtons(
 			success: true,
 			data: {
 				audioButtons: frontendButtons,
-				totalCount: frontendButtons.length,
+				totalCount,
 				hasMore,
 			},
 		};
