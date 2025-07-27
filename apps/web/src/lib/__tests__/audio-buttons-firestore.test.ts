@@ -1,7 +1,7 @@
 import type { FirestoreAudioButtonData } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	convertToFrontendAudioButton,
+	convertToAudioButtonPlainObject,
 	getAudioButtonsByUser,
 	getUserAudioButtonStats,
 	incrementPlayCount,
@@ -66,7 +66,7 @@ describe("audio-buttons-firestore", () => {
 		});
 	});
 
-	describe("convertToFrontendAudioButton", () => {
+	describe("convertToAudioButtonPlainObject", () => {
 		it("should convert Firestore data to frontend format", () => {
 			const mockFirestoreData: FirestoreAudioButtonData = {
 				id: "test-button-1",
@@ -86,7 +86,7 @@ describe("audio-buttons-firestore", () => {
 				updatedAt: "2025-01-01T00:00:00.000Z",
 			};
 
-			const result = convertToFrontendAudioButton(mockFirestoreData);
+			const result = convertToAudioButtonPlainObject(mockFirestoreData);
 
 			expect(result).toMatchObject({
 				id: "test-button-1",
@@ -103,10 +103,11 @@ describe("audio-buttons-firestore", () => {
 				playCount: 100,
 				likeCount: 50,
 				favoriteCount: 25,
-				durationText: "15秒", // 25-10=15秒
 			});
 
-			expect(result.relativeTimeText).toBeDefined();
+			expect(result._computed).toBeDefined();
+			expect(result._computed.durationText).toBe("15秒"); // 25-10=15秒
+			expect(result._computed.relativeTimeText).toBeDefined();
 		});
 
 		it("should handle duration formatting correctly", () => {
@@ -128,8 +129,8 @@ describe("audio-buttons-firestore", () => {
 				updatedAt: "2025-01-01T00:00:00.000Z",
 			};
 
-			const result = convertToFrontendAudioButton(shortDurationData);
-			expect(result.durationText).toBe("5秒");
+			const result = convertToAudioButtonPlainObject(shortDurationData);
+			expect(result._computed.durationText).toBe("5秒");
 		});
 
 		it("should handle equal start and end time", () => {
@@ -151,8 +152,8 @@ describe("audio-buttons-firestore", () => {
 				updatedAt: "2025-01-01T00:00:00.000Z",
 			};
 
-			const result = convertToFrontendAudioButton(equalTimeData);
-			expect(result.durationText).toBe("再生");
+			const result = convertToAudioButtonPlainObject(equalTimeData);
+			expect(result._computed.durationText).toBe("再生");
 		});
 
 		it("should handle missing favoriteCount", () => {
@@ -174,7 +175,7 @@ describe("audio-buttons-firestore", () => {
 				updatedAt: "2025-01-01T00:00:00.000Z",
 			};
 
-			const result = convertToFrontendAudioButton(noFavoriteCountData);
+			const result = convertToAudioButtonPlainObject(noFavoriteCountData);
 			expect(result.favoriteCount).toBe(0);
 		});
 	});

@@ -30,7 +30,9 @@ export interface AudioButtonComputedProperties {
  * Plain object representation of AudioButton entity for Next.js serialization
  */
 export interface AudioButtonPlainObject
-	extends Omit<FirestoreServerAudioButtonData, "createdAt" | "updatedAt"> {
+	extends Omit<FirestoreServerAudioButtonData, "id" | "createdAt" | "updatedAt"> {
+	// ID is always required in plain objects
+	id: string;
 	// Override timestamp fields with string type
 	createdAt: string;
 	updatedAt: string;

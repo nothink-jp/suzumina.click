@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
 import { ListPageEmptyState } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 
 interface FavoritesListProps {
-	audioButtons: FrontendAudioButtonData[];
+	audioButtons: AudioButtonPlainObject[];
 	totalCount: number;
 	currentSort: string;
 }

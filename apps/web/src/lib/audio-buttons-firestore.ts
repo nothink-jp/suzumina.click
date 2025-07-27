@@ -4,8 +4,9 @@
 
 import type { Query } from "@google-cloud/firestore";
 import {
+	type AudioButtonPlainObject,
 	type FirestoreAudioButtonData,
-	type FrontendAudioButtonData,
+	type FirestoreServerAudioButtonData,
 	formatRelativeTime,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
@@ -43,41 +44,72 @@ function ensureDateString(date: string | Date | unknown): string {
 }
 
 /**
- * Firestore音声ボタンデータをフロントエンド表示用に変換
+ * Firestore音声ボタンデータをPlain Object形式に変換
  */
-export function convertToFrontendAudioButton(
+export function convertToAudioButtonPlainObject(
 	data:
+		| FirestoreServerAudioButtonData
 		| FirestoreAudioButtonData
 		| (FirestoreAudioButtonData & { createdAt: Date; updatedAt: Date }),
-): FrontendAudioButtonData {
+): AudioButtonPlainObject {
 	const createdAtStr = ensureDateString(data.createdAt);
 	const updatedAtStr = ensureDateString(data.updatedAt);
 
-	const frontendData: FrontendAudioButtonData = {
-		id: data.id,
+	// Calculate computed properties
+	const viewCount = data.playCount || 0;
+	const likeCount = data.likeCount || 0;
+	const dislikeCount = data.dislikeCount || 0;
+
+	// Calculate engagement metrics
+	const totalEngagements = likeCount + dislikeCount;
+	const engagementRate = viewCount > 0 ? totalEngagements / viewCount : 0;
+	const engagementRatePercentage = Math.round(engagementRate * 100);
+
+	// Calculate popularity score
+	const popularityScore = viewCount + likeCount * 2 - dislikeCount;
+
+	// Check if popular (threshold: 100+ views or 50+ engagements)
+	const isPopular = viewCount >= 100 || totalEngagements >= 50;
+
+	// Build searchable text
+	const searchableText = [
+		data.title.toLowerCase(),
+		...(data.tags || []).map((tag) => tag.toLowerCase()),
+		(data.sourceVideoTitle || "").toLowerCase(),
+		(data.createdByName || "").toLowerCase(),
+	].join(" ");
+
+	return {
+		id: data.id || "",
 		title: data.title,
+		description: data.description,
 		tags: data.tags || [],
 		sourceVideoId: data.sourceVideoId,
 		sourceVideoTitle: data.sourceVideoTitle,
-		sourceVideoThumbnailUrl: `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
+		sourceVideoThumbnailUrl:
+			data.sourceVideoThumbnailUrl ||
+			`https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
 		startTime: data.startTime,
 		endTime: data.endTime || data.startTime,
 		createdBy: data.createdBy,
 		createdByName: data.createdByName,
 		isPublic: data.isPublic,
-		playCount: data.playCount,
-		likeCount: data.likeCount,
-		dislikeCount: data.dislikeCount || 0,
+		playCount: viewCount,
+		likeCount: likeCount,
+		dislikeCount: dislikeCount,
 		favoriteCount: data.favoriteCount || 0,
 		createdAt: createdAtStr,
 		updatedAt: updatedAtStr,
-
-		// 表示用の追加情報
-		durationText: formatDuration(data.startTime, data.endTime || data.startTime),
-		relativeTimeText: formatRelativeTime(createdAtStr),
+		_computed: {
+			isPopular,
+			engagementRate,
+			engagementRatePercentage,
+			popularityScore,
+			searchableText,
+			durationText: formatDuration(data.startTime, data.endTime || data.startTime),
+			relativeTimeText: formatRelativeTime(createdAtStr),
+		},
 	};
-
-	return frontendData;
 }
 
 /**
@@ -90,7 +122,7 @@ export async function getAudioButtonsByUser(
 		onlyPublic?: boolean;
 		orderBy?: "newest" | "oldest" | "mostPlayed";
 	} = {},
-): Promise<FrontendAudioButtonData[]> {
+): Promise<AudioButtonPlainObject[]> {
 	try {
 		const firestore = getFirestore();
 		const { limit = 20, onlyPublic = true, orderBy = "newest" } = options;
@@ -125,7 +157,7 @@ export async function getAudioButtonsByUser(
 			.map((doc) => {
 				try {
 					const data = doc.data() as FirestoreAudioButtonData;
-					return convertToFrontendAudioButton({ ...data, id: doc.id });
+					return convertToAudioButtonPlainObject({ ...data, id: doc.id });
 				} catch (conversionError) {
 					logError("Failed to convert audio button data:", {
 						docId: doc.id,
@@ -135,7 +167,7 @@ export async function getAudioButtonsByUser(
 					return null;
 				}
 			})
-			.filter((button): button is FrontendAudioButtonData => button !== null)
+			.filter((button): button is AudioButtonPlainObject => button !== null)
 			.filter((button) => {
 				// 公開のみのフィルター（クライアント側で適用）
 				if (onlyPublic && !button.isPublic) {

@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendAudioButtonData, FrontendVideoData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject, FrontendVideoData } from "@suzumina.click/shared-types";
 import { canCreateAudioButton } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -33,7 +33,7 @@ interface VideoDetailProps {
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 動画詳細の複雑な表示ロジックのため許容
 export default function VideoDetail({ video }: VideoDetailProps) {
 	const { data: session } = useSession();
-	const [audioButtons, setAudioButtons] = useState<FrontendAudioButtonData[]>([]);
+	const [audioButtons, setAudioButtons] = useState<AudioButtonPlainObject[]>([]);
 	const [audioLoading, setAudioLoading] = useState(false);
 	const [_audioCount, setAudioCount] = useState(0);
 	const [totalAudioCount, setTotalAudioCount] = useState(0);

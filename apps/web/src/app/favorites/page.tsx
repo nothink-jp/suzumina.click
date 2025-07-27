@@ -1,8 +1,11 @@
-import type { FirestoreAudioButtonData } from "@suzumina.click/shared-types";
+import {
+	AudioButton,
+	type AudioButtonPlainObject,
+	type FirestoreServerAudioButtonData,
+} from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { convertToFrontendAudioButton } from "@/lib/audio-buttons-firestore";
 import { getAudioButtonsFromFavorites, getUserFavorites } from "@/lib/favorites-firestore";
 import FavoritesList from "./components/FavoritesList";
 
@@ -36,14 +39,19 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
 	// 音声ボタンデータを取得
 	const audioButtonsMap = await getAudioButtonsFromFavorites(favoritesList.favorites);
 
-	// フロントエンド用に変換
-	const audioButtons = favoritesList.favorites
-		.map((fav) => {
-			const audioButtonData = audioButtonsMap.get(fav.audioButtonId);
-			if (!audioButtonData) return null;
-			return convertToFrontendAudioButton(audioButtonData as FirestoreAudioButtonData);
-		})
-		.filter((button) => button !== null);
+	// AudioButtonPlainObject に変換
+	const audioButtons: AudioButtonPlainObject[] = [];
+	favoritesList.favorites.forEach((fav) => {
+		const audioButtonData = audioButtonsMap.get(fav.audioButtonId);
+		if (!audioButtonData) return;
+
+		const audioButton = AudioButton.fromFirestoreData(
+			audioButtonData as FirestoreServerAudioButtonData,
+		);
+		if (audioButton) {
+			audioButtons.push(audioButton.toPlainObject());
+		}
+	});
 
 	return (
 		<div className="container mx-auto px-4 py-8">

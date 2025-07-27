@@ -1,12 +1,12 @@
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { useEffect, useState } from "react";
 import { UI_MESSAGES } from "@/constants/ui-messages";
 import { AudioButtonWithPlayCount } from "./audio-button-with-play-count";
 
 interface FeaturedAudioButtonsCarouselProps {
-	audioButtons: FrontendAudioButtonData[];
+	audioButtons: AudioButtonPlainObject[];
 }
 
 export function FeaturedAudioButtonsCarousel({ audioButtons }: FeaturedAudioButtonsCarouselProps) {

@@ -61,39 +61,10 @@ export interface AudioButtonCreatorInfo {
 }
 
 /**
- * Legacy type for frontend audio button data
- * @deprecated Use AudioButtonPlainObject from plain-objects/audio-button-plain.ts
- */
-export interface FrontendAudioButtonData {
-	id: string;
-	title: string;
-	description?: string;
-	tags: string[];
-	sourceVideoId: string;
-	sourceVideoTitle?: string;
-	sourceVideoThumbnailUrl?: string;
-	startTime: number;
-	endTime?: number;
-	createdBy: string;
-	createdByName: string;
-	isPublic: boolean;
-	playCount: number;
-	likeCount: number;
-	dislikeCount?: number;
-	favoriteCount?: number;
-	createdAt: string;
-	updatedAt: string;
-	durationText?: string;
-	relativeTimeText?: string;
-}
-
-/**
  * Legacy type for Firestore audio button data
  * @deprecated Use FirestoreServerAudioButtonData from types/firestore/audio-button.ts
  */
-export interface FirestoreAudioButtonData extends FrontendAudioButtonData {
-	// Firestore-specific fields can be added here if needed
-}
+export type FirestoreAudioButtonData = FirestoreServerAudioButtonData;
 
 /**
  * Audio button list result
@@ -215,108 +186,6 @@ export class AudioButton extends BaseEntity<AudioButton> implements EntityValida
 			// TODO: Consider using a proper logging service for production environments
 			return null;
 		}
-	}
-
-	/**
-	 * Creates AudioButton from legacy format (for migration period)
-	 */
-	static fromLegacy(data: {
-		id: string;
-		title: string;
-		description?: string;
-		tags?: string[];
-		sourceVideoId: string;
-		sourceVideoTitle?: string;
-		startTime: number;
-		endTime?: number;
-		createdBy: string;
-		createdByName: string;
-		isPublic?: boolean;
-		playCount?: number;
-		likeCount?: number;
-		dislikeCount?: number;
-		favoriteCount?: number;
-		createdAt: string;
-		updatedAt: string;
-	}): AudioButton {
-		// Create value objects from legacy data
-		const content = new AudioContent(
-			new ButtonText(data.title),
-			undefined, // Category will be inferred from tags or set later
-			new ButtonTags(data.tags || []),
-		);
-
-		const reference = new AudioReference(
-			new AudioVideoId(data.sourceVideoId),
-			new AudioVideoTitle(data.sourceVideoTitle || "Unknown Video"),
-			new Timestamp(data.startTime),
-			new Timestamp(data.endTime || data.startTime),
-		);
-
-		const statistics = new ButtonStatistics(
-			new ButtonViewCount(data.playCount || 0),
-			new ButtonLikeCount(data.likeCount || 0),
-			new ButtonDislikeCount(data.dislikeCount || 0),
-		);
-
-		return new AudioButton(
-			new AudioButtonId(data.id),
-			content,
-			reference,
-			statistics,
-			{
-				id: data.createdBy,
-				name: data.createdByName,
-			},
-			data.isPublic ?? true,
-			new Date(data.createdAt),
-			new Date(data.updatedAt),
-			data.favoriteCount || 0,
-		);
-	}
-
-	/**
-	 * Converts to legacy format
-	 */
-	toLegacy(): {
-		id: string;
-		title: string;
-		description?: string;
-		tags: string[];
-		sourceVideoId: string;
-		sourceVideoTitle?: string;
-		startTime: number;
-		endTime?: number;
-		createdBy: string;
-		createdByName: string;
-		isPublic: boolean;
-		playCount: number;
-		likeCount: number;
-		dislikeCount: number;
-		favoriteCount: number;
-		createdAt: string;
-		updatedAt: string;
-	} {
-		const plain = this.reference.toPlainObject();
-		return {
-			id: this.id.toString(),
-			title: this.content.text.toString(),
-			description: this.content.text.length() > 50 ? this.content.text.toString() : undefined,
-			tags: this.content.tags.toArray(),
-			sourceVideoId: plain.videoId,
-			sourceVideoTitle: plain.videoTitle,
-			startTime: plain.timestamp,
-			endTime: plain.endTimestamp || plain.timestamp,
-			createdBy: this._createdBy.id,
-			createdByName: this._createdBy.name,
-			isPublic: this._isPublic,
-			playCount: this.statistics.viewCount.toNumber(),
-			likeCount: this.statistics.likeCount.toNumber(),
-			dislikeCount: this.statistics.dislikeCount.toNumber(),
-			favoriteCount: this._favoriteCount,
-			createdAt: this._createdAt.toISOString(),
-			updatedAt: this._updatedAt.toISOString(),
-		};
 	}
 
 	/**
@@ -674,7 +543,7 @@ export class AudioButton extends BaseEntity<AudioButton> implements EntityValida
 /**
  * Type guard to check if a value is an AudioButton-like object
  */
-export function isAudioButton(value: unknown): value is FrontendAudioButtonData {
+export function isAudioButton(value: unknown): value is AudioButtonPlainObject {
 	return (
 		typeof value === "object" &&
 		value !== null &&
@@ -759,52 +628,4 @@ export interface AudioButtonQuery {
 	durationMin?: number;
 	durationMax?: number;
 	includeTotalCount?: boolean;
-}
-
-/**
- * Convert audio button data to frontend format
- * Adds display-friendly fields for UI consumption
- * @deprecated Use AudioButton.fromFirestoreData().toPlainObject() instead
- */
-export function convertToFrontendAudioButton(
-	data: FirestoreAudioButtonData | FrontendAudioButtonData,
-): FrontendAudioButtonData {
-	// Calculate duration
-	const duration = (data.endTime || data.startTime) - data.startTime;
-	const minutes = Math.floor(duration / 60);
-	const seconds = Math.floor(duration % 60);
-	const durationText = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-
-	// Calculate relative time
-	const now = new Date();
-	const createdAtDate = new Date(data.createdAt);
-	const diffMs = now.getTime() - createdAtDate.getTime();
-	const diffMinutes = Math.floor(diffMs / 60000);
-	const diffHours = Math.floor(diffMinutes / 60);
-	const diffDays = Math.floor(diffHours / 24);
-
-	let relativeTimeText: string;
-	if (diffDays > 0) {
-		relativeTimeText = `${diffDays}日前`;
-	} else if (diffHours > 0) {
-		relativeTimeText = `${diffHours}時間前`;
-	} else if (diffMinutes > 0) {
-		relativeTimeText = `${diffMinutes}分前`;
-	} else {
-		relativeTimeText = "たった今";
-	}
-
-	return {
-		...data,
-		endTime: data.endTime || data.startTime,
-		description: data.description || "",
-		sourceVideoTitle: data.sourceVideoTitle || "",
-		sourceVideoThumbnailUrl: data.sourceVideoThumbnailUrl || "",
-		dislikeCount: data.dislikeCount || 0,
-		favoriteCount: data.favoriteCount || 0,
-		durationText,
-		relativeTimeText,
-		createdAt: data.createdAt,
-		updatedAt: data.updatedAt,
-	};
 }

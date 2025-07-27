@@ -10,7 +10,7 @@
 
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { memo, useCallback, useEffect, useState } from "react";
 import {
 	ProgressiveAudioButtonList,
@@ -48,35 +48,53 @@ export interface PerformanceTestResults {
 /**
  * 大量データ生成ユーティリティ
  */
-const generateLargeDataset = (count: number): FrontendAudioButtonData[] => {
-	return Array.from({ length: count }, (_, index) => ({
-		id: `test-audio-${index + 1}`,
-		title: `音声ボタン ${index + 1} - パフォーマンステスト用`,
-		description: `これは${index + 1}番目のテスト用音声ボタンです。大量データでのパフォーマンス検証を行います。`,
-		tags: [
+const generateLargeDataset = (count: number): AudioButtonPlainObject[] => {
+	return Array.from({ length: count }, (_, index) => {
+		const title = `音声ボタン ${index + 1} - パフォーマンステスト用`;
+		const tags = [
 			"テスト",
 			"パフォーマンス",
 			`カテゴリ${Math.floor(index / 10) + 1}`,
 			...(index % 5 === 0 ? ["人気"] : []),
 			...(index % 7 === 0 ? ["新着"] : []),
-		],
-		sourceVideoId: `test-video-${index + 1}`,
-		sourceVideoTitle: `テスト動画 ${index + 1}`,
-		sourceVideoThumbnailUrl: `https://img.youtube.com/vi/test-video-${index + 1}/maxresdefault.jpg`,
-		startTime: Math.floor(Math.random() * 300) + 10,
-		endTime: Math.floor(Math.random() * 300) + 50,
-		createdBy: `test-user-${Math.floor(index / 20) + 1}`,
-		createdByName: `テストユーザー${Math.floor(index / 20) + 1}`,
-		isPublic: true,
-		playCount: Math.floor(Math.random() * 1000),
-		likeCount: Math.floor(Math.random() * 100),
-		dislikeCount: 0,
-		favoriteCount: Math.floor(Math.random() * 50),
-		createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-		updatedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-		durationText: `${Math.floor(Math.random() * 60) + 1}秒`,
-		relativeTimeText: `${Math.floor(Math.random() * 30) + 1}日前`,
-	}));
+		];
+		const sourceVideoTitle = `テスト動画 ${index + 1}`;
+		const createdByName = `テストユーザー${Math.floor(index / 20) + 1}`;
+		const playCount = Math.floor(Math.random() * 1000);
+		const likeCount = Math.floor(Math.random() * 100);
+		const favoriteCount = Math.floor(Math.random() * 50);
+
+		return {
+			id: `test-audio-${index + 1}`,
+			title,
+			description: `これは${index + 1}番目のテスト用音声ボタンです。大量データでのパフォーマンス検証を行います。`,
+			tags,
+			sourceVideoId: `test-video-${index + 1}`,
+			sourceVideoTitle,
+			sourceVideoThumbnailUrl: `https://img.youtube.com/vi/test-video-${index + 1}/maxresdefault.jpg`,
+			startTime: Math.floor(Math.random() * 300) + 10,
+			endTime: Math.floor(Math.random() * 300) + 50,
+			createdBy: `test-user-${Math.floor(index / 20) + 1}`,
+			createdByName,
+			isPublic: true,
+			playCount,
+			likeCount,
+			dislikeCount: 0,
+			favoriteCount,
+			createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
+			updatedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+			_computed: {
+				isPopular: playCount > 500,
+				engagementRate: likeCount / (playCount || 1),
+				engagementRatePercentage: Math.round((likeCount / (playCount || 1)) * 100),
+				popularityScore: playCount + likeCount * 2,
+				searchableText:
+					`${title} ${tags.join(" ")} ${sourceVideoTitle} ${createdByName}`.toLowerCase(),
+				durationText: `${Math.floor(Math.random() * 60) + 1}秒`,
+				relativeTimeText: `${Math.floor(Math.random() * 30) + 1}日前`,
+			},
+		};
+	});
 };
 
 /**
@@ -129,7 +147,7 @@ const usePerformanceMetrics = (testMode: string, itemCount: number) => {
  */
 export const AudioButtonPerformanceTest = memo<AudioButtonPerformanceTestProps>(
 	({ testMode, itemCount = 96, showMetrics = true, onTestComplete, autoRun = false }) => {
-		const [testData, setTestData] = useState<FrontendAudioButtonData[]>([]);
+		const [testData, setTestData] = useState<AudioButtonPlainObject[]>([]);
 		const [isRunning, setIsRunning] = useState(false);
 		const [testResults, setTestResults] = useState<PerformanceTestResults | null>(null);
 		const [visibleRange, _setVisibleRange] = useState({ start: 0, end: 5 });
@@ -200,7 +218,7 @@ export const AudioButtonPerformanceTest = memo<AudioButtonPerformanceTestProps>(
 		}, []);
 
 		const handlePlay = useCallback(
-			(audioButton: FrontendAudioButtonData, index: number) => {
+			(audioButton: AudioButtonPlainObject, index: number) => {
 				// パフォーマンステスト用のダミー処理
 				// Play simulation for performance testing
 

@@ -1,7 +1,7 @@
 "use client";
 
 import type {
-	FrontendAudioButtonData,
+	AudioButtonPlainObject,
 	FrontendVideoData,
 	UnifiedSearchFilters,
 	WorkPlainObject,
@@ -25,7 +25,7 @@ import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { useDebounce } from "@/hooks/use-debounce";
 
 interface UnifiedSearchResult {
-	audioButtons: FrontendAudioButtonData[];
+	audioButtons: AudioButtonPlainObject[];
 	videos: FrontendVideoData[];
 	works: WorkPlainObject[];
 	totalCount: {

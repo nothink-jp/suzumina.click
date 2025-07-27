@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { render, renderHook, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -38,7 +38,7 @@ vi.mock("../audio-button", () => ({
 	)),
 }));
 
-const createMockAudioButton = (id: string, title: string): FrontendAudioButtonData => ({
+const createMockAudioButton = (id: string, title: string): AudioButtonPlainObject => ({
 	id,
 	title,
 	description: `説明: ${title}`,
@@ -57,12 +57,19 @@ const createMockAudioButton = (id: string, title: string): FrontendAudioButtonDa
 	favoriteCount: 0,
 	createdAt: "2025-01-01T00:00:00.000Z",
 	updatedAt: "2025-01-01T00:00:00.000Z",
-	durationText: "10秒",
-	relativeTimeText: "1日前",
+	_computed: {
+		isPopular: false,
+		engagementRate: 0,
+		engagementRatePercentage: 0,
+		popularityScore: 1,
+		searchableText: `${title} テスト 動画: ${title} テストユーザー`,
+		durationText: "10秒",
+		relativeTimeText: "1日前",
+	},
 });
 
 describe("VirtualizedAudioButtonList", () => {
-	const mockAudioButtons: FrontendAudioButtonData[] = [
+	const mockAudioButtons: AudioButtonPlainObject[] = [
 		createMockAudioButton("1", "テスト音声1"),
 		createMockAudioButton("2", "テスト音声2"),
 		createMockAudioButton("3", "テスト音声3"),
@@ -177,7 +184,7 @@ describe("VirtualizedAudioButtonList", () => {
 
 describe("calculateVirtualListLayout", () => {
 	it("should calculate layout correctly", () => {
-		const mockAudioButtons: FrontendAudioButtonData[] = [
+		const mockAudioButtons: AudioButtonPlainObject[] = [
 			createMockAudioButton("1", "テスト音声1"),
 			createMockAudioButton("2", "テスト音声2"),
 			createMockAudioButton("3", "テスト音声3"),
@@ -277,7 +284,7 @@ describe("VirtualizedAudioButtonList - Phase 2 Performance", () => {
 	});
 
 	it("should maintain performance with custom item size", () => {
-		const mockAudioButtons: FrontendAudioButtonData[] = [
+		const mockAudioButtons: AudioButtonPlainObject[] = [
 			createMockAudioButton("1", "テスト音声1"),
 			createMockAudioButton("2", "テスト音声2"),
 		];

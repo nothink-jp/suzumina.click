@@ -9,13 +9,13 @@
 
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { type PlaySegmentCallbacks, youTubePlayerPool } from "../../lib/youtube-player-pool";
 
 export interface AudioPlayerProps {
 	/** 音声ボタンデータ */
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject;
 	/** 再生開始時のコールバック */
 	onPlay?: () => void;
 	/** 一時停止時のコールバック */
@@ -195,7 +195,7 @@ AudioPlayer.displayName = "AudioPlayer";
 /**
  * AudioPlayerの状態を監視するフック
  */
-export const useAudioPlayerState = (audioButton: FrontendAudioButtonData) => {
+export const useAudioPlayerState = (audioButton: AudioButtonPlainObject) => {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [isReady, setIsReady] = useState(false);
 

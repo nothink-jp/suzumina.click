@@ -1,12 +1,12 @@
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { useEffect } from "react";
 import { usePlayCount } from "@/hooks/use-play-count";
 import { AudioButtonWithFavoriteClient } from "./audio-button-with-favorite-client";
 
 interface AudioButtonWithPlayCountProps {
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject;
 	className?: string;
 	maxTitleLength?: number;
 	showFavorite?: boolean;
