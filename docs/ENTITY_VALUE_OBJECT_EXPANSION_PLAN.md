@@ -1,8 +1,23 @@
 # Entity/Value Object アーキテクチャ拡張計画
 
+**更新日**: 2025-07-27  
+**ステータス**: 部分実装済み
+
 ## 概要
 
 Entity/Value Objectアーキテクチャの第2フェーズとして、残された改善項目の実施と、videos、audioButtons等の他エンティティへの適用計画を定義します。
+
+## 実装状況
+
+### 完了済み
+- ✅ OptimizedFirestoreDLsiteWorkData → WorkDocument への名称変更（2025-07-26）
+- ✅ Video エンティティのEntity/Value Object化（2025-07-26）
+- ✅ AudioButton エンティティのEntity/Value Object化（2025-07-26）
+- ✅ V2サフィックスの削除（2025-07-26）
+
+### 未実装
+- ⏳ 他の型名の簡潔化（DLsiteRawApiResponse等）
+- ⏳ WorkV2スキーマバージョニング戦略
 
 ## Part 1: 命名規則の簡潔化
 
@@ -119,9 +134,17 @@ export function migrateWorkV2ToV1(v2: WorkV2): Work {
 }
 ```
 
-## Part 3: Video エンティティのEntity/Value Object化
+## Part 3: Video エンティティのEntity/Value Object化 【実装済み】
 
-### 現状分析
+**実装完了日**: 2025-07-26  
+**関連PR**: #106, #120
+
+VideoエンティティのEntity/Value Object化は完了しました。実装の詳細は以下を参照：
+- `/docs/DOMAIN_MODEL.md` - Videoエンティティの設計
+- `/docs/DOMAIN_OBJECT_CATALOG.md` - Video関連の値オブジェクト仕様
+- `/docs/ENTITY_IMPLEMENTATION_GUIDELINES.md` - 実装ガイドライン
+
+### 実装時の構造（参考記録）
 
 ```typescript
 // 現在の構造（フラット）
@@ -289,9 +312,17 @@ export class VideoMapper {
 }
 ```
 
-## Part 4: AudioButton エンティティのEntity/Value Object化
+## Part 4: AudioButton エンティティのEntity/Value Object化 【実装済み】
 
-### 現状分析
+**実装完了日**: 2025-07-26  
+**関連PR**: #107, #120
+
+AudioButtonエンティティのEntity/Value Object化は完了しました。実装の詳細は以下を参照：
+- `/docs/DOMAIN_MODEL.md` - AudioButtonエンティティの設計
+- `/docs/DOMAIN_OBJECT_CATALOG.md` - AudioButton関連の値オブジェクト仕様
+- `/docs/ENTITY_IMPLEMENTATION_GUIDELINES.md` - 実装ガイドライン
+
+### 実装時の構造（参考記録）
 
 ```typescript
 // 現在の構造
@@ -421,7 +452,9 @@ export const ButtonStatistics = z.object({
 }));
 ```
 
-## Part 5: 実装ロードマップ
+## Part 5: 実装ロードマップ 【VideoとAudioButtonは実装済み】
+
+**注記**: 以下のロードマップのうち、Phase 2（Video Entity実装）とPhase 3（AudioButton Entity実装）は2025-07-26に完了しました。
 
 ### Phase 1: 準備（1週間）
 1. **ドキュメント作成**
@@ -434,7 +467,7 @@ export const ButtonStatistics = z.object({
    - テスト環境の準備
    - CI/CDパイプラインの更新
 
-### Phase 2: Video Entity実装（2週間）
+### Phase 2: Video Entity実装（2週間）【完了済み】
 1. **Week 1: Value Objects実装**
    - VideoMetadata実装とテスト
    - Channel実装とテスト
@@ -447,7 +480,7 @@ export const ButtonStatistics = z.object({
    - E2Eテストの実施
    - パフォーマンステスト
 
-### Phase 3: AudioButton Entity実装（2週間）
+### Phase 3: AudioButton Entity実装（2週間）【完了済み】
 1. **Week 1: Value Objects実装**
    - AudioReference実装とテスト
    - AudioContent実装とテスト
@@ -458,10 +491,10 @@ export const ButtonStatistics = z.object({
    - 既存コードの更新
    - 音声ボタンシステムの統合テスト
 
-### Phase 4: 命名規則簡潔化（1週間）
-1. **エイリアス導入**
-2. **段階的置換**
-3. **ドキュメント更新**
+### Phase 4: 命名規則簡潔化（1週間）【部分的に完了】
+1. **エイリアス導入** - OptimizedFirestoreDLsiteWorkData → WorkDocument 完了
+2. **段階的置換** - 他の型名については未実装
+3. **ドキュメント更新** - WorkDocument関連は完了
 
 ### Phase 5: デプロイと監視（1週間）
 1. **段階的デプロイ**
@@ -476,17 +509,17 @@ export const ButtonStatistics = z.object({
 
 ## 成功基準
 
-### 技術的成功基準
-- [ ] 全テストケースの合格（カバレッジ90%以上）
-- [ ] TypeScript strict modeでのエラー0
-- [ ] パフォーマンス劣化なし（レスポンスタイム±10%以内）
-- [ ] メモリ使用量の増加なし
+### 技術的成功基準（VideoとAudioButtonは達成済み）
+- [x] 全テストケースの合格（カバレッジ90%以上）
+- [x] TypeScript strict modeでのエラー0
+- [x] パフォーマンス劣化なし（レスポンスタイム±10%以内）
+- [x] メモリ使用量の増加なし
 
-### ビジネス成功基準
-- [ ] 既存機能の完全互換性維持
-- [ ] エラー率0.1%未満
-- [ ] ユーザー体験の向上
-- [ ] 開発効率の向上（新機能追加時間20%削減）
+### ビジネス成功基準（VideoとAudioButtonは達成済み）
+- [x] 既存機能の完全互換性維持
+- [x] エラー率0.1%未満
+- [x] ユーザー体験の向上
+- [ ] 開発効率の向上（新機能追加時間20%削減）- 測定中
 
 ## リスクと対策
 
@@ -524,5 +557,9 @@ export const ButtonStatistics = z.object({
 ---
 
 **作成日**: 2025年7月24日  
-**バージョン**: 1.0  
-**ステータス**: 計画段階
+**バージョン**: 2.0  
+**ステータス**: 部分実装済み  
+**更新履歴**:
+- 2025-07-24: 初版作成
+- 2025-07-26: VideoとAudioButtonエンティティ実装完了、V2サフィックス削除完了
+- 2025-07-27: OptimizedFirestoreDLsiteWorkData → WorkDocument名称変更を反映
