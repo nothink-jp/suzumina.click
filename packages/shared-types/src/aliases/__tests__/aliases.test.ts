@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { DLsiteRawApiResponse } from "../../api-schemas/dlsite-raw";
 
-import type { OptimizedFirestoreDLsiteWorkData } from "../../entities/work";
+import type { WorkDocument } from "../../entities/work";
 import type { FirestoreWorkEvaluation } from "../../entities/work-evaluation";
-import type { DLsiteApiResponse, Work, WorkEvaluation } from "../index";
+import type { DLsiteApiResponse, WorkDoc, WorkEvaluation } from "../index";
 
 // Note: These types will be imported once they are defined
 // For now, we'll use placeholders for testing the aliasing system
 
-import { isAudioButton, isUser, isVideoDoc, isWork } from "../index";
+import { isAudioButton, isUser, isVideoDoc, isWorkDoc } from "../index";
 
 // Type-level tests to ensure aliases are correctly mapped
 type AssertEqual<T, U> = T extends U ? (U extends T ? true : false) : false;
 
 describe("Type Aliases", () => {
 	describe("Entity Aliases", () => {
-		it("should correctly alias Work type", () => {
-			type TestWork = AssertEqual<Work, OptimizedFirestoreDLsiteWorkData>;
+		it("should correctly alias WorkDoc type", () => {
+			type TestWork = AssertEqual<WorkDoc, WorkDocument>;
 			const _test: TestWork = true;
 			expect(_test).toBe(true);
 		});
@@ -111,23 +111,23 @@ describe("Type Aliases", () => {
 	});
 
 	describe("Type Guards", () => {
-		describe("isWork", () => {
-			it("should return true for valid Work objects", () => {
+		describe("isWorkDoc", () => {
+			it("should return true for valid WorkDoc objects", () => {
 				const validWork = {
 					id: "RJ123456",
 					title: "Test Work",
 					circleId: "RG12345",
 					// ... other required fields
 				};
-				expect(isWork(validWork)).toBe(true);
+				expect(isWorkDoc(validWork)).toBe(true);
 			});
 
 			it("should return false for invalid objects", () => {
-				expect(isWork(null)).toBe(false);
-				expect(isWork(undefined)).toBe(false);
-				expect(isWork({})).toBe(false);
-				expect(isWork({ id: "test" })).toBe(false);
-				expect(isWork({ id: "test", title: "test" })).toBe(false);
+				expect(isWorkDoc(null)).toBe(false);
+				expect(isWorkDoc(undefined)).toBe(false);
+				expect(isWorkDoc({})).toBe(false);
+				expect(isWorkDoc({ id: "test" })).toBe(false);
+				expect(isWorkDoc({ id: "test", title: "test" })).toBe(false);
 			});
 		});
 

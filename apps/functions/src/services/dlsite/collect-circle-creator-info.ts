@@ -10,7 +10,7 @@ import type {
 	CreatorType,
 	CreatorWorkMapping,
 	DLsiteRawApiResponse,
-	OptimizedFirestoreDLsiteWorkData,
+	WorkDocument,
 } from "@suzumina.click/shared-types";
 import { isValidCircleId, isValidCreatorId } from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
@@ -25,7 +25,7 @@ const adminDb = new Firestore();
  * @returns 処理結果
  */
 export async function collectCircleAndCreatorInfo(
-	workData: OptimizedFirestoreDLsiteWorkData,
+	workData: WorkDocument,
 	apiData: DLsiteRawApiResponse,
 	isNewWork: boolean,
 ): Promise<{ success: boolean; error?: string }> {
@@ -180,7 +180,7 @@ async function updateCreatorMappings(
  */
 export async function batchCollectCircleAndCreatorInfo(
 	works: Array<{
-		workData: OptimizedFirestoreDLsiteWorkData;
+		workData: WorkDocument;
 		apiData: DLsiteRawApiResponse;
 		isNewWork: boolean;
 	}>,

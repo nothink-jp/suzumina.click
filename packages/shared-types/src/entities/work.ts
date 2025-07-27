@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { AggregatedCharacteristicsSchema } from "./user-evaluation";
 
+export type {
+	WorkExtendedInfo,
+	WorkMetadata,
+	WorkSalesStatus,
+	WorkSeriesInfo,
+} from "./work-entity";
+// Export the new Work entity
+export { Work } from "./work-entity";
+
 /**
  * DLsite作品カテゴリの型定義
  * HTMLから抽出される作品種別に対応
@@ -278,18 +287,22 @@ export const IndividualAPICreatorSchema = z.object({
 /**
  * Individual Info API準拠のクリエイター情報オブジェクト
  */
+/**
+ * クリエイター情報スキーマ
+ * DLsite API の `creaters` を正規化した構造
+ */
 export const CreatorsSchema = z.object({
-	/** 声優（CV）- Individual Info API `creaters.voice_by` */
+	/** 声優（CV）- DLsite API `creaters.voice_by` から */
 	voice_by: z.array(IndividualAPICreatorSchema).default([]),
-	/** シナリオ担当者 - Individual Info API `creaters.scenario_by` */
+	/** シナリオ担当者 - DLsite API `creaters.scenario_by` から */
 	scenario_by: z.array(IndividualAPICreatorSchema).default([]),
-	/** イラスト担当者 - Individual Info API `creaters.illust_by` */
+	/** イラスト担当者 - DLsite API `creaters.illust_by` から */
 	illust_by: z.array(IndividualAPICreatorSchema).default([]),
-	/** 音楽担当者 - Individual Info API `creaters.music_by` */
+	/** 音楽担当者 - DLsite API `creaters.music_by` から */
 	music_by: z.array(IndividualAPICreatorSchema).default([]),
-	/** その他制作者 - Individual Info API `creaters.others_by` */
+	/** その他制作者 - DLsite API `creaters.others_by` から */
 	others_by: z.array(IndividualAPICreatorSchema).default([]),
-	/** 制作担当者 - Individual Info API `creaters.created_by` */
+	/** 制作担当者 - DLsite API `creaters.created_by` から */
 	created_by: z.array(IndividualAPICreatorSchema).default([]),
 });
 
@@ -567,10 +580,13 @@ export const DataSourceTrackingSchema = z.object({
 });
 
 /**
- * 最適化されたFirestore DLsite作品データのZodスキーマ定義
+ * WorkDocumentスキーマ定義 - Firestoreドキュメント用
+ *
+ * Firestore上の作品ドキュメントの完全な型定義
  * FIRESTORE_STRUCTURE.md準拠の構造
+ * @since 2025-07-27
  */
-export const OptimizedFirestoreDLsiteWorkSchema = z.object({
+export const WorkDocumentSchema = z.object({
 	// === 基本識別情報 ===
 	/** FirestoreドキュメントID */
 	id: z.string(),
@@ -619,25 +635,24 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	/** 統合評価情報 */
 	rating: RatingInfoSchema.optional(),
 
-	// === Individual Info API準拠クリエイター情報 ===
-	/** クリエイター情報 - Individual Info API `creaters` オブジェクト */
-	creaters: CreatorsSchema.optional(),
-
-	// === 下位互換用統一クリエイター情報（レガシー） ===
-	/** 声優（最優先データ） */
-	voiceActors: z.array(z.string()).default([]),
-	/** シナリオ */
-	scenario: z.array(z.string()).default([]),
-	/** イラスト */
-	illustration: z.array(z.string()).default([]),
-	/** 音楽 */
-	music: z.array(z.string()).default([]),
-	/** 作者（その他・声優と重複しない場合のみ） */
-	author: z.array(z.string()).default([]),
+	// === クリエイター情報 ===
+	/** クリエイター情報 - DLsite API の `creaters` を正規化した `creators` */
+	creators: CreatorsSchema.optional(),
 
 	// === ジャンル情報 ===
 	/** DLsite公式ジャンル（Individual Info APIから取得） */
 	genres: z.array(z.string()).default([]),
+	/** カスタムジャンル */
+	customGenres: z
+		.array(
+			z.object({
+				genre_key: z.string(),
+				name: z.string(),
+				name_en: z.string().optional(),
+				display_order: z.number().optional(),
+			}),
+		)
+		.default([]),
 
 	// === Individual Info API準拠日付情報 ===
 	/** 登録日時 - Individual Info API `regist_date` */
@@ -656,10 +671,16 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	releaseDateDisplay: z.string().optional(),
 
 	// === 拡張メタデータ ===
+	/** シリーズID */
+	seriesId: z.string().optional(),
 	/** シリーズ名 */
 	seriesName: z.string().optional(),
 	/** 年齢制限 */
 	ageRating: z.string().optional(),
+	/** 年齢カテゴリ（数値） */
+	ageCategory: z.number().optional(),
+	/** 年齢カテゴリ文字列 */
+	ageCategoryString: z.string().optional(),
 	/** 作品形式 */
 	workFormat: z.string().optional(),
 	/** ファイル形式 */
@@ -707,38 +728,40 @@ export const OptimizedFirestoreDLsiteWorkSchema = z.object({
 	updatedAt: z.string().datetime(),
 });
 
-// FirestoreDLsiteWorkSchemaは削除 - OptimizedFirestoreDLsiteWorkSchemaのみ使用
+// FirestoreDLsiteWorkSchemaは削除 - WorkDocumentSchemaのみ使用
 
 /**
  * フロントエンド表示用のDLsite作品データのZodスキーマ定義
+ * @deprecated Use WorkPlainObject from plain-objects/work-plain instead
  */
-export const FrontendDLsiteWorkSchema = OptimizedFirestoreDLsiteWorkSchema.extend({
-	/** 表示用価格文字列 */
-	displayPrice: z.string(),
-	/** 割引表示テキスト */
-	discountText: z.string().optional(),
-	/** 評価表示テキスト */
-	ratingText: z.string().optional(),
-	/** ウィッシュリスト表示テキスト */
-	wishlistText: z.string().optional(),
-	/** 相対URL */
-	relativeUrl: z.string(),
-	/** ISO形式の日付文字列（フロントエンドでの使用のため） */
-	createdAtISO: z.string().datetime(),
-	lastFetchedAtISO: z.string().datetime(),
-	updatedAtISO: z.string().datetime(),
-});
+// export const FrontendDLsiteWorkSchema = WorkDocumentSchema.extend({
+// 	/** 表示用価格文字列 */
+// 	displayPrice: z.string(),
+// 	/** 割引表示テキスト */
+// 	discountText: z.string().optional(),
+// 	/** 評価表示テキスト */
+// 	ratingText: z.string().optional(),
+// 	/** ウィッシュリスト表示テキスト */
+// 	wishlistText: z.string().optional(),
+// 	/** 相対URL */
+// 	relativeUrl: z.string(),
+// 	/** ISO形式の日付文字列（フロントエンドでの使用のため） */
+// 	createdAtISO: z.string().datetime(),
+// 	lastFetchedAtISO: z.string().datetime(),
+// 	updatedAtISO: z.string().datetime(),
+// });
 
 /**
  * 作品リスト結果のZodスキーマ定義
+ * @deprecated Use WorkListResultPlain from plain-objects/work-plain instead
  */
-export const WorkListResultSchema = z.object({
-	works: z.array(FrontendDLsiteWorkSchema),
-	hasMore: z.boolean(),
-	lastWork: FrontendDLsiteWorkSchema.optional(),
-	totalCount: z.number().int().nonnegative().optional(),
-	filteredCount: z.number().int().nonnegative().optional(),
-});
+// export const WorkListResultSchema = z.object({
+// 	works: z.array(FrontendDLsiteWorkSchema),
+// 	hasMore: z.boolean(),
+// 	lastWork: FrontendDLsiteWorkSchema.optional(),
+// 	totalCount: z.number().int().nonnegative().optional(),
+// 	filteredCount: z.number().int().nonnegative().optional(),
+// });
 
 /**
  * ページネーションパラメータのZodスキーマ定義
@@ -772,11 +795,19 @@ export type TranslationInfo = z.infer<typeof TranslationInfoSchema>;
 export type LanguageDownload = z.infer<typeof LanguageDownloadSchema>;
 export type SalesStatus = z.infer<typeof SalesStatusSchema>;
 export type DLsiteWorkBase = z.infer<typeof DLsiteWorkBaseSchema>;
-// FirestoreDLsiteWorkData型は削除 - OptimizedFirestoreDLsiteWorkDataのみ使用
-export type OptimizedFirestoreDLsiteWorkData = z.infer<typeof OptimizedFirestoreDLsiteWorkSchema>;
+// FirestoreDLsiteWorkData型は削除 - WorkDocumentのみ使用
+
+/**
+ * WorkDocument型定義 - Firestoreドキュメント用
+ *
+ * Firestore上の作品ドキュメントの完全な型定義
+ * @since 2025-07-27
+ */
+export type WorkDocument = z.infer<typeof WorkDocumentSchema>;
+
 export type DataSourceTracking = z.infer<typeof DataSourceTrackingSchema>;
-export type FrontendDLsiteWorkData = z.infer<typeof FrontendDLsiteWorkSchema>;
-export type WorkListResult = z.infer<typeof WorkListResultSchema>;
+// export type FrontendDLsiteWorkData = z.infer<typeof FrontendDLsiteWorkSchema>;
+// export type WorkListResult = z.infer<typeof WorkListResultSchema>;
 export type WorkPaginationParams = z.infer<typeof WorkPaginationParamsSchema>;
 
 /**
@@ -840,9 +871,9 @@ export function parseSizeToBytes(sizeText?: string): number | undefined {
 	}
 }
 
-// migrateFileInfo関数は削除 - OptimizedFirestoreDLsiteWorkDataのみ使用
+// migrateFileInfo関数は削除 - WorkDocumentのみ使用
 
-// migrateToOptimizedStructure関数は削除 - OptimizedFirestoreDLsiteWorkDataのみ使用
+// migrateToOptimizedStructure関数は削除 - WorkDocumentのみ使用
 
 /**
  * Firestoreデータをフロントエンド表示用に変換するヘルパー関数
@@ -852,214 +883,157 @@ export function parseSizeToBytes(sizeText?: string): number | undefined {
 /**
  * 表示用価格テキストを生成
  */
-function generateDisplayPrice(price: OptimizedFirestoreDLsiteWorkData["price"]): string {
+function generateDisplayPrice(price: WorkDocument["price"]): string {
+	const formatPrice = (num: number) => num.toLocaleString("ja-JP");
 	return price.discount && price.original
-		? `${price.current}円（元：${price.original}円）`
-		: `${price.current}円`;
+		? `${formatPrice(price.current)}円（元：${formatPrice(price.original)}円）`
+		: `${formatPrice(price.current)}円`;
+}
+
+/**
+ * カテゴリ表示名を取得
+ */
+function getCategoryDisplayName(category: string): string {
+	const categoryMap: Record<string, string> = {
+		SOU: "音声作品",
+		MNG: "マンガ",
+		GAM: "ゲーム",
+		CG: "CG集",
+		MOV: "動画",
+		TOL: "ツール",
+		etc: "その他",
+	};
+	return categoryMap[category] || category;
 }
 
 /**
  * 評価テキストを生成
  */
-function generateRatingText(
-	rating?: OptimizedFirestoreDLsiteWorkData["rating"],
-): string | undefined {
+function generateRatingText(rating?: WorkDocument["rating"]): string | undefined {
 	return rating ? `★${rating.stars.toFixed(1)} (${rating.count}件)` : undefined;
 }
 
 /**
  * エラー時のフォールバック用フロントエンドデータを生成
+ * @deprecated This function is deprecated - will be removed in next version
  */
-function createFallbackFrontendWork(
-	data: OptimizedFirestoreDLsiteWorkData,
-): FrontendDLsiteWorkData {
-	// 安全なデータ抽出
-	const thumbnailUrl = extractImageUrl(data.thumbnailUrl);
-	const highResImageUrl = extractImageUrl(data.highResImageUrl);
-	const voiceActors = extractArrayField(data.voiceActors);
-	const scenario = extractArrayField(data.scenario);
-	const illustration = extractArrayField(data.illustration);
-	const music = extractArrayField(data.music);
-	const author = extractArrayField(data.author);
-	const genres = extractArrayField(data.genres);
+function createFallbackFrontendWork(data: WorkDocument): Record<string, unknown> {
+	const productId = data?.productId || "UNKNOWN";
 
-	const displayPrice = generateDisplayPrice(data.price);
-	const discountText = data.price.discount ? `${data.price.discount}%OFF` : undefined;
-	const ratingText = generateRatingText(data.rating);
-	const relativeUrl = `/maniax/work/=/product_id/${data.productId}.html`;
-	const ageRating = data.ageRating || undefined;
-
+	// Simplified version to reduce complexity
 	return {
-		id: data.id,
-		productId: data.productId,
-		title: data.title,
-		circle: data.circle,
-		description: data.description || "",
-		category: data.category,
-		workUrl: data.workUrl,
-		thumbnailUrl, // 修正: 安全に抽出
-		highResImageUrl, // 修正: 安全に抽出
-		price: data.price,
-		rating: data.rating,
-
-		// 統一されたクリエイター情報
-		voiceActors, // 修正: 安全に抽出
-		scenario, // 修正: 安全に抽出
-		illustration, // 修正: 安全に抽出
-		music, // 修正: 安全に抽出
-		author, // 修正: 安全に抽出
-
-		// 統一された作品情報
-		releaseDate: data.releaseDate,
-		seriesName: data.seriesName,
-		ageRating,
-		workFormat: data.workFormat,
-		fileFormat: data.fileFormat,
-		genres, // 修正: 安全に抽出
-
-		sampleImages: data.sampleImages || [],
-		dataSources: data.dataSources,
-
-		lastFetchedAt: data.lastFetchedAt,
-		createdAt: data.createdAt,
-		updatedAt: data.updatedAt,
-		displayPrice,
-		discountText,
-		ratingText,
-		wishlistText: undefined,
-		relativeUrl,
-		createdAtISO: data.createdAt,
-		lastFetchedAtISO: data.lastFetchedAt,
-		updatedAtISO: data.updatedAt,
-	};
-}
-
-/**
- * Firestoreの画像URLフィールドから文字列を安全に抽出
- */
-function extractImageUrl(imageField: unknown): string {
-	if (typeof imageField === "string") {
-		return imageField;
-	}
-	if (imageField && typeof imageField === "object" && "url" in imageField) {
-		const obj = imageField as { url: unknown };
-		if (typeof obj.url === "string") {
-			return obj.url;
-		}
-	}
-	return "";
-}
-
-/**
- * Firestoreの配列フィールドから安全に配列を抽出
- */
-function extractArrayField(arrayField: unknown): string[] {
-	if (Array.isArray(arrayField)) {
-		return arrayField.filter((item) => typeof item === "string");
-	}
-	return [];
-}
-
-export function convertToFrontendWork(
-	data: OptimizedFirestoreDLsiteWorkData,
-): FrontendDLsiteWorkData {
-	// 画像URLの安全な抽出
-	const thumbnailUrl = extractImageUrl(data.thumbnailUrl);
-	const highResImageUrl = extractImageUrl(data.highResImageUrl);
-
-	// 配列フィールドの安全な抽出
-	const voiceActors = extractArrayField(data.voiceActors);
-	const scenario = extractArrayField(data.scenario);
-	const illustration = extractArrayField(data.illustration);
-	const music = extractArrayField(data.music);
-	const author = extractArrayField(data.author);
-	const genres = extractArrayField(data.genres);
-
-	// 表示用テキストの生成
-	const displayPrice = generateDisplayPrice(data.price);
-	const discountText = data.price.discount ? `${data.price.discount}%OFF` : undefined;
-	const ratingText = generateRatingText(data.rating);
-	const relativeUrl = `/maniax/work/=/product_id/${data.productId}.html`;
-
-	// 年齢レーティングの取得
-	const ageRating = data.ageRating || undefined;
-
-	// FrontendDLsiteWorkSchema形式のデータを生成
-	const frontendData: FrontendDLsiteWorkData = {
 		...data,
-		// 修正されたフィールド
-		thumbnailUrl,
-		highResImageUrl,
-		voiceActors,
-		scenario,
-		illustration,
-		music,
-		author,
-		genres,
-		ageRating, // 修正: データソースから取得した年齢レーティングを使用
-		displayPrice,
-		discountText,
-		ratingText,
-		relativeUrl,
-		createdAtISO: data.createdAt,
-		lastFetchedAtISO: data.lastFetchedAt,
-		updatedAtISO: data.updatedAt,
+		id: data?.id || productId,
+		productId,
+		title: data?.title || "不明なタイトル",
+		displayPrice: "価格不明",
+		discountText: "",
+		ratingText: "",
+		relativeUrl: `/maniax/work/=/product_id/${productId}.html`,
+		categoryName: "不明",
+		isNew: false,
+		downloadCount: 0,
+		// Empty defaults for all other fields
+		thumbnailUrl2x: "",
+		mainImageUrl: "",
+		listImageUrl: "",
+		createdAtISO: "",
+		updatedAtISO: "",
+		lastFetchedAtISO: "",
+		formattedRegistDate: "",
+		formattedReleaseDate: "",
+		creators: {},
+		voiceActors: [],
+		scenario: [],
+		illustration: [],
+		music: [],
+		author: [],
 	};
+}
 
-	// データの検証
-	try {
-		return FrontendDLsiteWorkSchema.parse(frontendData);
-	} catch (_error) {
-		// エラー時でも最低限のデータを返す
-		return createFallbackFrontendWork(data);
+// Removed unused helper functions extractImageUrl and extractArrayField
+
+/**
+ * @deprecated Use convertToWorkPlainObject from work-conversions instead - will be removed in next version
+ */
+export function convertToFrontendWork(data: WorkDocument): Record<string, unknown> {
+	// Simplified version to reduce complexity
+	if (!data?.productId) {
+		return createFallbackFrontendWork(data || ({ productId: "UNKNOWN" } as WorkDocument));
 	}
+
+	// Extract legacy creator names
+	const extractCreatorNames = (creators: Array<{ name: string }> | undefined) =>
+		creators?.map((c) => c.name) || [];
+
+	// Return simplified frontend data
+	return {
+		...data,
+		displayPrice: data.price ? generateDisplayPrice(data.price) : "価格不明",
+		discountText: data.price?.discount ? `${data.price.discount}%OFF` : "",
+		ratingText: generateRatingText(data.rating) || "",
+		relativeUrl: `/maniax/work/=/product_id/${data.productId}.html`,
+		categoryName: getCategoryDisplayName(data.category),
+		isNew: false,
+		downloadCount: 0,
+		// Simplified defaults
+		thumbnailUrl2x: data.thumbnailUrl || "",
+		mainImageUrl: data.highResImageUrl || data.thumbnailUrl || "",
+		listImageUrl: data.thumbnailUrl || "",
+		createdAtISO: data.createdAt || "",
+		updatedAtISO: data.updatedAt || "",
+		lastFetchedAtISO: data.lastFetchedAt || "",
+		formattedRegistDate: data.registDate || "",
+		formattedReleaseDate: data.releaseDateDisplay || "",
+		// Legacy fields
+		voiceActors: extractCreatorNames(data.creators?.voice_by),
+		scenario: extractCreatorNames(data.creators?.scenario_by),
+		illustration: extractCreatorNames(data.creators?.illust_by),
+		music: extractCreatorNames(data.creators?.music_by),
+		author: extractCreatorNames(data.creators?.others_by),
+	};
 }
 
 /**
- * RSCからRCCへ安全にデータを渡すためのシリアライズ関数
- * @param data フロントエンド表示用データ
- * @returns シリアライズされたデータ文字列
+ * @deprecated Use WorkPlainObject serialization methods instead
  */
-export function serializeWorkForRSC(data: FrontendDLsiteWorkData): string {
-	return JSON.stringify(data);
-}
+// export function serializeWorkForRSC(data: FrontendDLsiteWorkData): string {
+// 	return JSON.stringify(data);
+// }
 
 /**
- * RCCでのデシリアライズ関数
- * @param serialized シリアライズされたデータ文字列
- * @returns 検証済みのフロントエンド表示用データ
+ * @deprecated Use WorkPlainObject deserialization methods instead
  */
-export function deserializeWorkForRCC(serialized: string): FrontendDLsiteWorkData {
-	try {
-		const data = JSON.parse(serialized);
-		return FrontendDLsiteWorkSchema.parse(data);
-	} catch (_error) {
-		throw new Error("データの形式が無効です");
-	}
-}
+// export function deserializeWorkForRCC(serialized: string): FrontendDLsiteWorkData {
+// 	try {
+// 		const data = JSON.parse(serialized);
+// 		return FrontendDLsiteWorkSchema.parse(data);
+// 	} catch (_error) {
+// 		throw new Error("データの形式が無効です");
+// 	}
+// }
 
 /**
- * 作品リスト結果のシリアライズ関数
- * @param result 作品リスト結果
- * @returns シリアライズされたリスト結果
+ * @deprecated Use WorkListResultPlain serialization methods instead
  */
-export function serializeWorkListResult(result: WorkListResult): string {
-	return JSON.stringify(result);
-}
+// export function serializeWorkListResult(result: WorkListResult): string {
+// 	return JSON.stringify(result);
+// }
 
 /**
- * 作品リスト結果のデシリアライズ関数
- * @param serialized シリアライズされたリスト結果
- * @returns 検証済みの作品リスト結果
+ * @deprecated Use WorkListResultPlain deserialization methods instead
  */
-export function deserializeWorkListResult(serialized: string): WorkListResult {
-	try {
-		const data = JSON.parse(serialized);
-		return WorkListResultSchema.parse(data);
-	} catch (_error) {
-		return { works: [], hasMore: false };
-	}
-}
+/**
+ * @deprecated Use WorkListResultPlain deserialization methods instead
+ */
+// export function deserializeWorkListResult(serialized: string): any {
+// 	try {
+// 		const data = JSON.parse(serialized);
+// 		return WorkListResultSchema.parse(data);
+// 	} catch (_error) {
+// 		return { works: [], hasMore: false };
+// 	}
+// }
 
 /**
  * Firestoreサーバーサイド（Cloud Functions）向けのデータ型定義
@@ -1262,7 +1236,7 @@ function detectLanguageFromTitle(title: string): WorkLanguage | null {
 /**
  * languageDownloadsから言語を判定
  */
-function detectLanguageFromDownloads(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage | null {
+function detectLanguageFromDownloads(work: WorkDocument): WorkLanguage | null {
 	if (!work.languageDownloads || work.languageDownloads.length === 0) {
 		return null;
 	}
@@ -1321,9 +1295,7 @@ function detectLanguageFromDownloads(work: OptimizedFirestoreDLsiteWorkData): Wo
 /**
  * translationInfoから言語を判定
  */
-function detectLanguageFromTranslation(
-	work: OptimizedFirestoreDLsiteWorkData,
-): WorkLanguage | null {
+function detectLanguageFromTranslation(work: WorkDocument): WorkLanguage | null {
 	if (!work.translationInfo) {
 		return null;
 	}
@@ -1339,7 +1311,7 @@ function detectLanguageFromTranslation(
 /**
  * ジャンルから言語を判定
  */
-function detectLanguageFromGenres(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage | null {
+function detectLanguageFromGenres(work: WorkDocument): WorkLanguage | null {
 	const allGenres = [...(work.genres || [])];
 
 	// 英語作品の判定
@@ -1400,7 +1372,7 @@ function detectLanguageFromGenres(work: OptimizedFirestoreDLsiteWorkData): WorkL
  * @param work 作品データ
  * @returns プライマリ言語コード
  */
-export function getWorkPrimaryLanguage(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage {
+export function getWorkPrimaryLanguage(work: WorkDocument): WorkLanguage {
 	const title = work.title || "";
 
 	// 1. タイトルから言語判定（最優先）
@@ -1436,7 +1408,7 @@ export function getWorkPrimaryLanguage(work: OptimizedFirestoreDLsiteWorkData): 
  * @param work 作品データ
  * @returns 利用可能な言語コードの配列
  */
-export function getWorkAvailableLanguages(work: OptimizedFirestoreDLsiteWorkData): WorkLanguage[] {
+export function getWorkAvailableLanguages(work: WorkDocument): WorkLanguage[] {
 	const languages: Set<WorkLanguage> = new Set();
 
 	// プライマリ言語を追加
@@ -1499,10 +1471,7 @@ export function getWorkAvailableLanguages(work: OptimizedFirestoreDLsiteWorkData
  * @param language フィルタリング対象言語
  * @returns フィルタリングされた作品配列
  */
-export function filterWorksByLanguage(
-	works: OptimizedFirestoreDLsiteWorkData[],
-	language: string,
-): OptimizedFirestoreDLsiteWorkData[] {
+export function filterWorksByLanguage(works: WorkDocument[], language: string): WorkDocument[] {
 	if (!language || language === "all") {
 		return works;
 	}

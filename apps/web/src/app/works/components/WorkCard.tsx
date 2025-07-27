@@ -1,12 +1,13 @@
-import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkPlainObject } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Calendar, ExternalLink, Tag, Users } from "lucide-react";
 import Link from "next/link";
+import React from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 
 interface WorkCardProps {
-	work: FrontendDLsiteWorkData;
+	work: WorkPlainObject;
 	variant?: "default" | "compact";
 	priority?: boolean; // LCP画像最適化用
 }
@@ -17,7 +18,8 @@ export default function WorkCard({ work, variant = "default", priority = false }
 	// 価格表示の計算
 	const currentPrice = work.price.current;
 	const originalPrice = work.price.original;
-	const isOnSale = work.price.discount && work.price.discount > 0;
+	// NOTE: 将来的にはWorkPrice.isDiscounted()を使用することを推奨
+	const isOnSale = work.price.discount !== undefined && work.price.discount > 0;
 
 	// 日付フォーマット
 	const formatDate = (dateString: string) => {
@@ -142,15 +144,10 @@ export default function WorkCard({ work, variant = "default", priority = false }
 							))}
 					</ul>
 
-					{/* 声優情報（ID付き対応） */}
+					{/* 声優情報 */}
 					{(() => {
-						// Individual Info API準拠のクリエイター情報を優先使用
-						const voiceActors = work.creaters?.voice_by || [];
-						const legacyVoiceActors = work.voiceActors || [];
-
-						// ID付き情報がある場合はそれを使用、なければレガシー情報
-						const displayVoiceActors =
-							voiceActors.length > 0 ? voiceActors.map((actor) => actor.name) : legacyVoiceActors;
+						// WorkPlainObjectはcreatorsにvoiceActorsを直接持つ
+						const displayVoiceActors = work.creators?.voiceActors || [];
 
 						if (displayVoiceActors.length === 0) return null;
 
@@ -159,7 +156,17 @@ export default function WorkCard({ work, variant = "default", priority = false }
 								<Users className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
 								<span className="text-muted-foreground">CV:</span>
 								<span className="text-foreground font-medium line-clamp-1">
-									{displayVoiceActors.slice(0, 2).join(", ")}
+									{displayVoiceActors.slice(0, 2).map((va, index) => (
+										<React.Fragment key={va.id || va.name}>
+											{index > 0 && ", "}
+											<Link
+												href={`/creators/${encodeURIComponent(va.id || va.name)}`}
+												className="hover:underline"
+											>
+												{va.name}
+											</Link>
+										</React.Fragment>
+									))}
 									{displayVoiceActors.length > 2 && " 他"}
 								</span>
 							</div>

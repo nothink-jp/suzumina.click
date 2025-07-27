@@ -2,9 +2,9 @@
 
 import type {
 	FrontendAudioButtonData,
-	FrontendDLsiteWorkData,
 	FrontendVideoData,
 	UnifiedSearchFilters,
+	WorkPlainObject,
 } from "@suzumina.click/shared-types";
 import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-text";
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
@@ -27,7 +27,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 interface UnifiedSearchResult {
 	audioButtons: FrontendAudioButtonData[];
 	videos: FrontendVideoData[];
-	works: FrontendDLsiteWorkData[];
+	works: WorkPlainObject[];
 	totalCount: {
 		buttons: number;
 		videos: number;

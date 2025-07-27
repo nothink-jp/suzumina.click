@@ -4,7 +4,7 @@
  * データ集約・統計処理に関するビジネスロジックを集約
  */
 
-import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkDocument } from "@suzumina.click/shared-types";
 import { WorkClassificationService } from "./work-classification-service";
 
 export interface WorkStatistics {
@@ -31,7 +31,7 @@ export class DataAggregationService {
 	/**
 	 * 作品コレクションの統計情報を集計
 	 */
-	static aggregateWorkStatistics(works: OptimizedFirestoreDLsiteWorkData[]): WorkStatistics {
+	static aggregateWorkStatistics(works: WorkDocument[]): WorkStatistics {
 		const categoryCounts: Record<string, number> = {};
 		const priceRanges = {
 			under1000: 0,
@@ -114,7 +114,7 @@ export class DataAggregationService {
 	 * 月別の売上トレンドを集計
 	 */
 	static aggregateMonthlySalesTrend(
-		works: OptimizedFirestoreDLsiteWorkData[],
+		works: WorkDocument[],
 		months = 12,
 	): Array<{
 		month: string;
@@ -174,7 +174,7 @@ export class DataAggregationService {
 	 * 人気ジャンルのトレンドを分析
 	 */
 	static analyzeGenreTrends(
-		works: OptimizedFirestoreDLsiteWorkData[],
+		works: WorkDocument[],
 		periodDays = 90,
 	): Array<{
 		genre: string;
@@ -250,7 +250,7 @@ export class DataAggregationService {
 	/**
 	 * サークルのパフォーマンス分析
 	 */
-	static analyzeCirclePerformance(works: OptimizedFirestoreDLsiteWorkData[]): Array<{
+	static analyzeCirclePerformance(works: WorkDocument[]): Array<{
 		circleId: string;
 		circleName: string;
 		metrics: {
@@ -266,7 +266,7 @@ export class DataAggregationService {
 			string,
 			{
 				name: string;
-				works: OptimizedFirestoreDLsiteWorkData[];
+				works: WorkDocument[];
 			}
 		> = new Map();
 

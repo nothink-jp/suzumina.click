@@ -8,12 +8,12 @@
 import type {
 	DLsiteRawApiResponse,
 	LanguageDownload,
-	OptimizedFirestoreDLsiteWorkData,
 	PriceInfo,
 	RatingInfo,
 	SalesStatus,
 	TranslationInfo,
 	WorkCategory,
+	WorkDocument,
 } from "@suzumina.click/shared-types";
 import { DateFormatter } from "@suzumina.click/shared-types";
 
@@ -37,7 +37,7 @@ export class WorkMapper {
 	/**
 	 * Raw APIレスポンスからWorkエンティティに変換
 	 */
-	static toWork(raw: DLsiteRawApiResponse): OptimizedFirestoreDLsiteWorkData {
+	static toWork(raw: DLsiteRawApiResponse): WorkDocument {
 		const productId = raw.workno || raw.product_id || "";
 
 		return {
@@ -45,10 +45,15 @@ export class WorkMapper {
 			id: productId,
 			productId,
 			circleId: raw.maker_id,
+			baseProductId: undefined, // Not available in raw API
 
 			// === 基本作品情報 ===
 			title: raw.work_name || `Unknown Work ${productId}`,
+			titleMasked: raw.work_name || `Unknown Work ${productId}`, // Use work_name as fallback
+			titleKana: undefined, // Not available in raw API
+			altName: undefined, // Not available in raw API
 			circle: raw.maker_name || "Unknown Maker",
+			circleEn: undefined, // Not available in raw API
 			description: raw.intro_s || "",
 			workType: raw.work_type,
 			workTypeString: raw.work_type_string,
@@ -63,14 +68,12 @@ export class WorkMapper {
 			rating: WorkMapper.toRating(raw),
 
 			// === クリエイター情報 ===
-			voiceActors: WorkMapper.extractVoiceActors(raw),
-			scenario: WorkMapper.extractScenarioWriters(raw),
-			illustration: WorkMapper.extractIllustrators(raw),
-			music: WorkMapper.extractMusicComposers(raw),
-			author: WorkMapper.extractAuthors(raw),
+			// DLsite APIの`creaters`を`creators`に正規化
+			creators: WorkMapper.normalizeCreators(raw),
 
 			// === ジャンル情報 ===
 			genres: WorkMapper.extractGenres(raw),
+			customGenres: WorkMapper.extractCustomGenres(raw),
 
 			// === 日付情報 ===
 			releaseDate: raw.regist_date,
@@ -78,10 +81,16 @@ export class WorkMapper {
 			releaseDateDisplay: raw.regist_date
 				? WorkMapper.formatDateDisplay(raw.regist_date)
 				: undefined,
+			registDate: raw.regist_date,
+			updateDate: undefined, // Not available in raw API
+			modifyFlag: undefined, // Not available in raw API
 
 			// === 拡張メタデータ ===
+			seriesId: raw.title?.title_id,
 			seriesName: raw.title?.title_name,
 			ageRating: WorkMapper.mapAgeRating(raw.age_category),
+			ageCategory: raw.age_category,
+			ageCategoryString: WorkMapper.mapAgeCategoryString(raw.age_category),
 			workFormat: raw.work_type_string,
 			fileFormat: raw.file_type_string,
 
@@ -187,6 +196,18 @@ export class WorkMapper {
 	}
 
 	/**
+	 * 年齢カテゴリ文字列のマッピング
+	 */
+	private static mapAgeCategoryString(ageCategory?: number): string | undefined {
+		const AGE_CATEGORY_STRING_MAP: Record<number, string> = {
+			1: "general",
+			2: "r15",
+			3: "adult",
+		};
+		return ageCategory ? AGE_CATEGORY_STRING_MAP[ageCategory] : undefined;
+	}
+
+	/**
 	 * サムネイルURLの抽出
 	 */
 	private static extractThumbnailUrl(raw: DLsiteRawApiResponse, productId: string): string {
@@ -258,48 +279,22 @@ export class WorkMapper {
 	}
 
 	/**
-	 * 声優情報の抽出
+	 * DLsite APIの`creaters`を`creators`に正規化
 	 */
-	private static extractVoiceActors(raw: DLsiteRawApiResponse): string[] {
-		if (!raw.creaters) return [];
-		if (Array.isArray(raw.creaters)) return [];
-		return raw.creaters.voice_by?.map((c) => c.name).filter(Boolean) || [];
-	}
+	private static normalizeCreators(
+		raw: DLsiteRawApiResponse,
+	): WorkDocument["creators"] | undefined {
+		if (!raw.creaters) return undefined;
+		if (Array.isArray(raw.creaters)) return undefined;
 
-	/**
-	 * シナリオライターの抽出
-	 */
-	private static extractScenarioWriters(raw: DLsiteRawApiResponse): string[] {
-		if (!raw.creaters) return [];
-		if (Array.isArray(raw.creaters)) return [];
-		return raw.creaters.scenario_by?.map((c) => c.name).filter(Boolean) || [];
-	}
-
-	/**
-	 * イラストレーターの抽出
-	 */
-	private static extractIllustrators(raw: DLsiteRawApiResponse): string[] {
-		if (!raw.creaters) return [];
-		if (Array.isArray(raw.creaters)) return [];
-		return raw.creaters.illust_by?.map((c) => c.name).filter(Boolean) || [];
-	}
-
-	/**
-	 * 音楽作曲者の抽出
-	 */
-	private static extractMusicComposers(raw: DLsiteRawApiResponse): string[] {
-		if (!raw.creaters) return [];
-		if (Array.isArray(raw.creaters)) return [];
-		return raw.creaters.music_by?.map((c) => c.name).filter(Boolean) || [];
-	}
-
-	/**
-	 * 作者情報の抽出
-	 */
-	private static extractAuthors(raw: DLsiteRawApiResponse): string[] {
-		if (!raw.creaters) return [];
-		if (Array.isArray(raw.creaters)) return [];
-		return raw.creaters.others_by?.map((c) => c.name).filter(Boolean) || [];
+		return {
+			voice_by: raw.creaters.voice_by || [],
+			scenario_by: raw.creaters.scenario_by || [],
+			illust_by: raw.creaters.illust_by || [],
+			music_by: raw.creaters.music_by || [],
+			others_by: raw.creaters.others_by || [],
+			created_by: raw.creaters.created_by || [],
+		};
 	}
 
 	/**
@@ -307,6 +302,24 @@ export class WorkMapper {
 	 */
 	private static extractGenres(raw: DLsiteRawApiResponse): string[] {
 		return raw.genres?.map((g) => g.name).filter((name) => name) || [];
+	}
+
+	/**
+	 * カスタムジャンル情報の抽出
+	 */
+	private static extractCustomGenres(raw: DLsiteRawApiResponse): Array<{
+		genre_key: string;
+		name: string;
+		name_en?: string;
+		display_order?: number;
+	}> {
+		if (!raw.genres) return [];
+		return raw.genres.map((g) => ({
+			genre_key: g.search_val || g.name, // Use search_val as genre_key
+			name: g.name,
+			name_en: undefined, // Not available in raw API
+			display_order: undefined, // Not available in raw API
+		}));
 	}
 
 	/**

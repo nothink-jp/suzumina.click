@@ -9,10 +9,7 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type {
-	DLsiteRawApiResponse,
-	OptimizedFirestoreDLsiteWorkData,
-} from "@suzumina.click/shared-types";
+import type { DLsiteRawApiResponse, WorkDocument } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../../infrastructure/management/user-agent-manager";
 import { batchCollectCircleAndCreatorInfo } from "../../services/dlsite/collect-circle-creator-info";
@@ -128,7 +125,7 @@ class LocalDataCollector {
 
 	// APIレスポンスとワークデータの保存用（サークル・クリエイター収集のため）
 	private apiResponses = new Map<string, DLsiteRawApiResponse>();
-	private workDataMap = new Map<string, OptimizedFirestoreDLsiteWorkData>();
+	private workDataMap = new Map<string, WorkDocument>();
 
 	/**
 	 * アセットファイルから作品IDリストを読み込み

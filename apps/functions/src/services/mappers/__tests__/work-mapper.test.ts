@@ -183,16 +183,19 @@ describe("WorkMapper", () => {
 		it("声優情報を正しく抽出できる", () => {
 			const work = WorkMapper.toWork(mockRawApiData);
 
-			expect(work.voiceActors).toEqual(["声優A", "声優B"]);
+			expect(work.creators?.voice_by).toEqual([
+				{ id: "cv001", name: "声優A" },
+				{ id: "cv002", name: "声優B" },
+			]);
 		});
 
 		it("シナリオライター情報を正しく抽出できる", () => {
 			const work = WorkMapper.toWork(mockRawApiData);
 
-			expect(work.scenario).toEqual(["シナリオライター"]);
+			expect(work.creators?.scenario_by).toEqual([{ id: "sc001", name: "シナリオライター" }]);
 		});
 
-		it("creatersフィールドがない場合は空配列を返す", () => {
+		it("creatersフィールドがない場合はundefinedを返す", () => {
 			const dataWithoutCreaters: DLsiteRawApiResponse = {
 				...mockRawApiData,
 				creaters: undefined,
@@ -202,7 +205,7 @@ describe("WorkMapper", () => {
 			const work = WorkMapper.toWork(dataWithoutCreaters);
 
 			// APIのcreaters.voice_byのみを使用し、authorフィールドからの抽出は行わない
-			expect(work.voiceActors).toEqual([]);
+			expect(work.creators).toBeUndefined();
 		});
 	});
 

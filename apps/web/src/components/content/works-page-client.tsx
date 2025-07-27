@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkPlainObject } from "@suzumina.click/shared-types";
 import {
 	ListPageContent,
 	ListPageHeader,
@@ -43,7 +43,7 @@ function parseSearchParams(
 
 interface WorksPageClientProps {
 	searchParams: { [key: string]: string | string[] | undefined };
-	initialData: FrontendDLsiteWorkData[];
+	initialData: WorkPlainObject[];
 	initialTotalCount: number;
 	initialPage: number;
 }

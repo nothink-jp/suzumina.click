@@ -4,6 +4,62 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// convertToWorkPlainObjectのモック
+vi.mock("@suzumina.click/shared-types", () => ({
+	convertToWorkPlainObject: vi.fn((data) => ({
+		...data,
+		price: {
+			current: data.currentPrice || data.price?.current || 0,
+			currency: data.currency || "JPY",
+			formattedPrice: `¥${(data.currentPrice || data.price?.current || 0).toLocaleString()}`,
+		},
+		rating: data.ratingStars
+			? {
+					stars: data.ratingStars,
+					count: data.ratingCount || 0,
+				}
+			: data.rating,
+		creators: {
+			voiceActors: data.voiceActors || [],
+			scenario: data.scenario || [],
+			illustration: data.illustration || [],
+			music: data.music || [],
+			others: data.author || [],
+		},
+		salesStatus: {
+			isOnSale: true,
+			isDiscounted: false,
+			isFree: false,
+			isSoldOut: false,
+			isReserveWork: false,
+			dlsiteplaySupported: false,
+		},
+		sampleImages: [],
+		genres: data.genres || [],
+		customGenres: [],
+		_computed: {
+			displayTitle: data.title,
+			displayCircle: data.circle,
+			displayCategory: data.category,
+			displayAgeRating: "全年齢",
+			displayReleaseDate: data.releaseDateDisplay || "",
+			relativeUrl: `/works/${data.productId}`,
+			isAdultContent: false,
+			isVoiceWork: data.category === "SOU",
+			isGameWork: false,
+			isMangaWork: false,
+			hasDiscount: false,
+			isNewRelease: false,
+			isPopular: false,
+			primaryLanguage: "ja",
+			availableLanguages: ["ja"],
+			searchableText: `${data.title} ${data.circle}`,
+			tags: data.tags || [],
+		},
+	})),
+	isValidCreatorId: vi.fn((id) => id && id.length > 0),
+}));
+
 // Firestore モック
 const mockWhere = vi.fn();
 const mockOrderBy = vi.fn();

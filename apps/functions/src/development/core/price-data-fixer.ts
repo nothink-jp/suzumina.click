@@ -4,10 +4,7 @@
  * 品質チェックで発見された問題のある価格データを修正
  */
 
-import type {
-	OptimizedFirestoreDLsiteWorkData,
-	PriceHistoryDocument,
-} from "@suzumina.click/shared-types";
+import type { PriceHistoryDocument, WorkDocument } from "@suzumina.click/shared-types";
 import { initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 
@@ -59,7 +56,7 @@ class PriceDataFixer {
 				);
 			}
 
-			const workData = workDoc.data() as OptimizedFirestoreDLsiteWorkData;
+			const workData = workDoc.data() as WorkDocument;
 			const { price, discountRate, officialPrice } = workData;
 
 			// 二重割引の条件チェック
@@ -145,7 +142,7 @@ class PriceDataFixer {
 				);
 			}
 
-			const workData = workDoc.data() as OptimizedFirestoreDLsiteWorkData;
+			const workData = workDoc.data() as WorkDocument;
 			const currentPrice = workData.price?.current;
 
 			if (currentPrice === undefined || currentPrice >= 0) {
@@ -215,7 +212,7 @@ class PriceDataFixer {
 				);
 			}
 
-			const workData = workDoc.data() as OptimizedFirestoreDLsiteWorkData;
+			const workData = workDoc.data() as WorkDocument;
 			const discountRate = workData.discountRate;
 
 			if (discountRate === undefined || (discountRate >= 0 && discountRate <= 1)) {

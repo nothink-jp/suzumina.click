@@ -1,13 +1,13 @@
 "use client";
 
-import type { FrontendDLsiteWorkData, FrontendVideoData } from "@suzumina.click/shared-types";
+import type { FrontendVideoData, WorkPlainObject } from "@suzumina.click/shared-types";
 import { useCallback, useEffect, useState } from "react";
 import { getLatestVideos, getLatestWorks } from "@/app/actions";
 
 interface SectionDataState {
 	videos: FrontendVideoData[];
-	works: FrontendDLsiteWorkData[];
-	allAgesWorks: FrontendDLsiteWorkData[];
+	works: WorkPlainObject[];
+	allAgesWorks: WorkPlainObject[];
 	loadingVideos: boolean;
 	loadingWorks: boolean;
 	errorVideos: string | null;

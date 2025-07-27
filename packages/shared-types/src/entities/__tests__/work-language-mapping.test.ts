@@ -78,6 +78,7 @@ describe("Work Language Mapping", () => {
 			music: [],
 			author: [],
 			genres: [],
+			customGenres: [], // Added missing property
 			sampleImages: [],
 			isExclusive: false,
 			// Individual Info API準拠フィールド
@@ -210,6 +211,7 @@ describe("Work Language Mapping", () => {
 			music: [],
 			author: [],
 			genres: [],
+			customGenres: [], // Added missing property
 			tags: [],
 			bonusContent: [],
 			sampleImages: [],

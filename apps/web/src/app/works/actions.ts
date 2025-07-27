@@ -1,12 +1,12 @@
 "use server";
 
 import type {
-	FrontendDLsiteWorkData,
-	OptimizedFirestoreDLsiteWorkData,
-	WorkListResult,
+	WorkDocument,
+	WorkListResultPlain,
+	WorkPlainObject,
 } from "@suzumina.click/shared-types";
 import {
-	convertToFrontendWork,
+	convertToWorkPlainObject,
 	filterR18Content,
 	filterWorksByLanguage,
 } from "@suzumina.click/shared-types";
@@ -51,8 +51,8 @@ interface EnhancedSearchParams {
 
 // ヘルパー関数：2つの作品間の類似スコアを計算
 function calculateSimilarityScore(
-	work: OptimizedFirestoreDLsiteWorkData,
-	baseWork: OptimizedFirestoreDLsiteWorkData,
+	work: WorkDocument,
+	baseWork: WorkDocument,
 	byCircle: boolean,
 	byVoiceActors: boolean,
 	byGenres: boolean,
@@ -65,14 +65,15 @@ function calculateSimilarityScore(
 	}
 
 	// 声優一致（統合データ活用）
-	if (byVoiceActors && Array.isArray(baseWork.voiceActors) && Array.isArray(work.voiceActors)) {
-		const commonVoiceActors = baseWork.voiceActors.filter(
+	if (byVoiceActors && baseWork.creators?.voice_by && work.creators?.voice_by) {
+		const baseVoiceActorNames = baseWork.creators.voice_by.map((v) => v.name);
+		const workVoiceActorNames = work.creators.voice_by.map((v) => v.name);
+		const commonVoiceActors = baseVoiceActorNames.filter(
 			(va) =>
 				typeof va === "string" &&
-				(work.voiceActors?.some(
+				workVoiceActorNames.some(
 					(wva) => typeof wva === "string" && (wva.includes(va) || va.includes(wva)),
-				) ??
-					false),
+				),
 		);
 		score += commonVoiceActors.length * 3;
 	}
@@ -96,7 +97,7 @@ function calculateSimilarityScore(
 	}
 
 	// 価格帯類似性
-	if (work.price?.current && baseWork.price?.current) {
+	if (work.price && baseWork.price) {
 		const priceDiff = Math.abs(work.price.current - baseWork.price.current);
 		if (priceDiff < 500) score += 1;
 	}
@@ -105,22 +106,18 @@ function calculateSimilarityScore(
 }
 
 // ヘルパー関数：検索テキストで作品をフィルタリング
-function filterWorksBySearchText(works: OptimizedFirestoreDLsiteWorkData[], searchText: string) {
+function filterWorksBySearchText(works: WorkDocument[], searchText: string) {
 	const lowerSearch = searchText.toLowerCase();
 	return works.filter((work) => {
 		const searchableText = [
 			work.title,
 			work.circle,
 			work.description,
-			...(Array.isArray(work.voiceActors)
-				? work.voiceActors.filter((va) => typeof va === "string")
-				: []),
-			...(Array.isArray(work.scenario) ? work.scenario.filter((s) => typeof s === "string") : []),
-			...(Array.isArray(work.illustration)
-				? work.illustration.filter((i) => typeof i === "string")
-				: []),
-			...(Array.isArray(work.music) ? work.music.filter((m) => typeof m === "string") : []),
-			...(Array.isArray(work.author) ? work.author.filter((a) => typeof a === "string") : []),
+			...(work.creators?.voice_by?.map((c) => c.name) || []),
+			...(work.creators?.scenario_by?.map((c) => c.name) || []),
+			...(work.creators?.illust_by?.map((c) => c.name) || []),
+			...(work.creators?.music_by?.map((c) => c.name) || []),
+			...(work.creators?.others_by?.map((c) => c.name) || []),
 			...(Array.isArray(work.genres) ? work.genres.filter((g) => typeof g === "string") : []),
 		]
 			.filter((text) => typeof text === "string")
@@ -135,9 +132,9 @@ function filterWorksBySearchText(works: OptimizedFirestoreDLsiteWorkData[], sear
  * 統合データ構造による拡張検索フィルタリング
  */
 function filterWorksByUnifiedData(
-	works: OptimizedFirestoreDLsiteWorkData[],
+	works: WorkDocument[],
 	params: EnhancedSearchParams,
-): OptimizedFirestoreDLsiteWorkData[] {
+): WorkDocument[] {
 	let filteredWorks = [...works];
 
 	// 基本検索（タイトル・サークル・説明文・統合クリエイター情報）
@@ -158,9 +155,9 @@ function filterWorksByUnifiedData(
 	// 声優フィルタリング（統合データ活用）
 	if (params.voiceActors && params.voiceActors.length > 0) {
 		filteredWorks = filteredWorks.filter((work) => {
-			const workVoiceActors = Array.isArray(work.voiceActors) ? work.voiceActors : [];
+			const workVoiceActorNames = work.creators?.voice_by?.map((c) => c.name) || [];
 			return params.voiceActors?.some((va) =>
-				workVoiceActors.some(
+				workVoiceActorNames.some(
 					(wva) => typeof wva === "string" && typeof va === "string" && wva.includes(va),
 				),
 			);
@@ -208,7 +205,7 @@ function filterWorksByUnifiedData(
 	// 年齢制限フィルタリング
 	if (params.excludeR18) {
 		// 年齢制限を取得する関数（データソースから優先的に取得）
-		const getAgeRatingFromWork = (work: OptimizedFirestoreDLsiteWorkData): string | undefined => {
+		const getAgeRatingFromWork = (work: WorkDocument): string | undefined => {
 			return work.ageRating || undefined;
 		};
 
@@ -234,11 +231,7 @@ function filterWorksByUnifiedData(
 /**
  * 販売日順ソート処理
  */
-function sortByReleaseDate(
-	a: OptimizedFirestoreDLsiteWorkData,
-	b: OptimizedFirestoreDLsiteWorkData,
-	isOldest: boolean,
-): number {
+function sortByReleaseDate(a: WorkDocument, b: WorkDocument, isOldest: boolean): number {
 	// 販売日のISO形式でソート（存在しない場合は末尾に配置）
 	const dateA = a.releaseDateISO || "1900-01-01";
 	const dateB = b.releaseDateISO || "1900-01-01";
@@ -257,10 +250,7 @@ function sortByReleaseDate(
 /**
  * 作品ソート処理
  */
-function sortWorks(
-	works: OptimizedFirestoreDLsiteWorkData[],
-	sort: SortOption,
-): OptimizedFirestoreDLsiteWorkData[] {
+function sortWorks(works: WorkDocument[], sort: SortOption): WorkDocument[] {
 	return works.sort((a, b) => {
 		switch (sort) {
 			case "oldest":
@@ -284,7 +274,7 @@ function sortWorks(
  * @param params - 拡張検索パラメータ
  * @returns 作品リスト結果
  */
-export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkListResult> {
+export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkListResultPlain> {
 	const {
 		page = 1,
 		limit = 12,
@@ -312,7 +302,7 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 		let allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as OptimizedFirestoreDLsiteWorkData[];
+		})) as WorkDocument[];
 
 		// 全件数（フィルタなし）
 		const totalCount = allWorks.length;
@@ -343,7 +333,7 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 		const paginatedWorks = sortedWorks.slice(startIndex, endIndex);
 
 		// FirestoreデータをFrontend用に変換
-		const works: FrontendDLsiteWorkData[] = [];
+		const works: WorkPlainObject[] = [];
 
 		for (const data of paginatedWorks) {
 			try {
@@ -352,9 +342,11 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 					data.id = data.productId; // productIdをフォールバック
 				}
 
-				// フロントエンド形式に変換（OptimizedFirestoreDLsiteWorkDataは上位互換）
-				const frontendData = convertToFrontendWork(data);
-				works.push(frontendData);
+				// フロントエンド形式に変換
+				const plainObject = convertToWorkPlainObject(data);
+				if (plainObject) {
+					works.push(plainObject);
+				}
 			} catch (_error) {
 				// エラーがあっても他のデータの処理は続行
 			}
@@ -362,7 +354,7 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 
 		const hasMore = page * limit < filteredCount;
 
-		const result: WorkListResult = {
+		const result: WorkListResultPlain = {
 			works,
 			hasMore,
 			lastWork: works[works.length - 1],
@@ -386,7 +378,7 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
  * @param workId - 作品ID
  * @returns 作品データまたはnull
  */
-export async function getWorkById(workId: string): Promise<FrontendDLsiteWorkData | null> {
+export async function getWorkById(workId: string): Promise<WorkPlainObject | null> {
 	try {
 		const firestore = getFirestore();
 		const doc = await firestore.collection("dlsiteWorks").doc(workId).get();
@@ -395,17 +387,15 @@ export async function getWorkById(workId: string): Promise<FrontendDLsiteWorkDat
 			return null;
 		}
 
-		const data = doc.data() as OptimizedFirestoreDLsiteWorkData;
+		const data = doc.data() as WorkDocument;
 
 		// データにIDが設定されていない場合、ドキュメントIDを使用
 		if (!data.id) {
 			data.id = doc.id;
 		}
 
-		// フロントエンド形式に変換（OptimizedFirestoreDLsiteWorkDataは上位互換）
-		const frontendData = convertToFrontendWork(data);
-
-		return frontendData;
+		// フロントエンド形式に変換
+		return convertToWorkPlainObject(data);
 	} catch (_error) {
 		return null;
 	}
@@ -425,21 +415,24 @@ export async function getRelatedWorks(
 		byGenres?: boolean;
 		limit?: number;
 	} = {},
-): Promise<FrontendDLsiteWorkData[]> {
+): Promise<WorkPlainObject[]> {
 	try {
 		const { byCircle = true, byVoiceActors = true, byGenres = true, limit = 6 } = options;
 
-		// 基準作品を取得
-		const baseWork = await getWorkById(workId);
-		if (!baseWork) return [];
-
 		const firestore = getFirestore();
+
+		// 基準作品を取得
+		const baseDoc = await firestore.collection("dlsiteWorks").doc(workId).get();
+		if (!baseDoc.exists) return [];
+
+		const baseWork = { id: baseDoc.id, ...baseDoc.data() } as WorkDocument;
+
 		const allSnapshot = await firestore.collection("dlsiteWorks").get();
 
 		let allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as OptimizedFirestoreDLsiteWorkData[];
+		})) as WorkDocument[];
 
 		// 自身を除外
 		allWorks = allWorks.filter((work) => work.id !== workId);
@@ -458,12 +451,14 @@ export async function getRelatedWorks(
 			.map((item) => item.work);
 
 		// フロントエンド形式に変換
-		const relatedWorks: FrontendDLsiteWorkData[] = [];
+		const relatedWorks: WorkPlainObject[] = [];
 		for (const work of topRelated) {
 			try {
 				if (!work.id) work.id = work.productId;
-				const frontendData = convertToFrontendWork(work);
-				relatedWorks.push(frontendData);
+				const plainObject = convertToWorkPlainObject(work);
+				if (plainObject) {
+					relatedWorks.push(plainObject);
+				}
 			} catch (_error) {
 				// エラーがあっても他のデータの処理は続行
 			}
@@ -493,7 +488,7 @@ export async function getWorksStats(
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as OptimizedFirestoreDLsiteWorkData[];
+		})) as WorkDocument[];
 
 		// 基本統計
 		const totalWorks = allWorks.length;
@@ -568,10 +563,10 @@ export async function getWorksStats(
 		// 人気声優（統合データ活用）
 		const voiceActorCounts = new Map<string, number>();
 		allWorks.forEach((work) => {
-			if (Array.isArray(work.voiceActors)) {
-				work.voiceActors.forEach((va) => {
-					if (typeof va === "string" && va.trim() !== "") {
-						voiceActorCounts.set(va, (voiceActorCounts.get(va) || 0) + 1);
+			if (work.creators?.voice_by) {
+				work.creators.voice_by.forEach((va) => {
+					if (va.name && va.name.trim() !== "") {
+						voiceActorCounts.set(va.name, (voiceActorCounts.get(va.name) || 0) + 1);
 					}
 				});
 			}
@@ -630,24 +625,26 @@ interface QualityStats {
 }
 
 // ヘルパー関数：基本的な品質統計を更新
-function updateBasicQualityStats(work: OptimizedFirestoreDLsiteWorkData, stats: QualityStats) {
+function updateBasicQualityStats(work: WorkDocument, stats: QualityStats) {
 	const hasHighRes = !!(work.highResImageUrl && work.highResImageUrl.trim() !== "");
 	if (hasHighRes) stats.hasHighResImage++;
-	if (Array.isArray(work.voiceActors) && work.voiceActors.length > 0) stats.hasVoiceActors++;
-	if (work.rating) stats.hasRating++;
+	if (work.creators?.voice_by && work.creators.voice_by.length > 0) stats.hasVoiceActors++;
+	if (work.rating?.stars) stats.hasRating++;
 	if (Array.isArray(work.genres) && work.genres.length > 0) stats.hasGenres++;
 }
 
 // ヘルパー関数：クリエイター統計を更新
-function updateCreatorStats(work: OptimizedFirestoreDLsiteWorkData, stats: QualityStats) {
-	const hasDetailedCreators = [work.scenario, work.illustration, work.music].some(
-		(creators) => Array.isArray(creators) && creators.length > 0,
-	);
+function updateCreatorStats(work: WorkDocument, stats: QualityStats) {
+	const hasDetailedCreators = [
+		work.creators?.scenario_by,
+		work.creators?.illust_by,
+		work.creators?.music_by,
+	].some((creators) => creators && creators.length > 0);
 	if (hasDetailedCreators) stats.hasDetailedCreators++;
 }
 
 // ヘルパー関数：データソース統計を更新
-function updateDataSourceStats(work: OptimizedFirestoreDLsiteWorkData, stats: QualityStats) {
+function updateDataSourceStats(work: WorkDocument, stats: QualityStats) {
 	if (work.dataSources) {
 		stats.hasDataSources++;
 		const sources = work.dataSources;
@@ -686,7 +683,7 @@ export async function getDataQualityReport() {
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as OptimizedFirestoreDLsiteWorkData[];
+		})) as WorkDocument[];
 
 		const qualityStats = {
 			total: allWorks.length,
@@ -735,7 +732,7 @@ export async function getWorksLegacy({
 	sort?: string;
 	search?: string;
 	category?: string;
-} = {}): Promise<WorkListResult> {
+} = {}): Promise<WorkListResultPlain> {
 	return getWorks({ page, limit, sort, search, category });
 }
 
@@ -749,8 +746,8 @@ export async function getWorkWithRelated(
 	workId: string,
 	includeRelated = true,
 ): Promise<{
-	work: FrontendDLsiteWorkData | null;
-	related?: FrontendDLsiteWorkData[];
+	work: WorkPlainObject | null;
+	related?: WorkPlainObject[];
 }> {
 	try {
 		const work = await getWorkById(workId);
@@ -789,7 +786,7 @@ export async function getPopularVoiceActors(limit = 20): Promise<
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as OptimizedFirestoreDLsiteWorkData[];
+		})) as WorkDocument[];
 
 		const voiceActorMap = new Map<
 			string,
@@ -800,13 +797,13 @@ export async function getPopularVoiceActors(limit = 20): Promise<
 		>();
 
 		allWorks.forEach((work) => {
-			if (Array.isArray(work.voiceActors)) {
-				work.voiceActors.forEach((va) => {
-					if (typeof va === "string" && va.trim() !== "") {
-						if (!voiceActorMap.has(va)) {
-							voiceActorMap.set(va, { count: 0, works: [] });
+			if (work.creators?.voice_by) {
+				work.creators.voice_by.forEach((va) => {
+					if (va.name && va.name.trim() !== "") {
+						if (!voiceActorMap.has(va.name)) {
+							voiceActorMap.set(va.name, { count: 0, works: [] });
 						}
-						const entry = voiceActorMap.get(va);
+						const entry = voiceActorMap.get(va.name);
 						if (entry) {
 							entry.count++;
 							entry.works.push(work.title);
@@ -847,7 +844,7 @@ export async function getPopularGenres(limit = 30): Promise<
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
 			id: doc.id,
-		})) as OptimizedFirestoreDLsiteWorkData[];
+		})) as WorkDocument[];
 
 		const genreCounts = new Map<string, number>();
 

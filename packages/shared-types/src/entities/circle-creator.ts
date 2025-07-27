@@ -54,7 +54,7 @@ export const CreatorWorkMappingSchema = z.object({
  * クリエイター情報（フロントエンド表示用）
  * クリエイターページで使用する集約情報
  */
-export const CreatorInfoSchema = z.object({
+export const CreatorPageInfoSchema = z.object({
 	/** クリエイターID */
 	id: z.string().min(1),
 	/** クリエイター名 */
@@ -69,7 +69,7 @@ export const CreatorInfoSchema = z.object({
 export type CircleData = z.infer<typeof CircleDataSchema>;
 export type CreatorType = z.infer<typeof CreatorTypeSchema>;
 export type CreatorWorkMapping = z.infer<typeof CreatorWorkMappingSchema>;
-export type CreatorInfo = z.infer<typeof CreatorInfoSchema>;
+export type CreatorPageInfo = z.infer<typeof CreatorPageInfoSchema>;
 
 // 日本語ラベルマッピング
 export const CREATOR_TYPE_LABELS: Record<CreatorType, string> = {

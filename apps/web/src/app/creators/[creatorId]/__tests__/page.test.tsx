@@ -68,6 +68,7 @@ vi.mock("@suzumina.click/shared-types", () => ({
 		return types.map((t) => labels[t] || t).join(" / ");
 	}),
 	convertToFrontendWork: vi.fn((work: any) => work), // パススルー変換
+	convertToWorkPlainObject: vi.fn((work: any) => work), // パススルー変換
 }));
 
 // テスト対象のインポート（モック設定後）

@@ -1,20 +1,15 @@
 "use server";
 
-import type { CircleData, OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
-import { isValidCircleId } from "@suzumina.click/shared-types";
+import type { CircleData, WorkDocument, WorkPlainObject } from "@suzumina.click/shared-types";
+import { convertToWorkPlainObject, isValidCircleId } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
-
-type ExtendedWorkData = OptimizedFirestoreDLsiteWorkData & {
-	releaseDateISO?: string;
-	priceInJPY?: number;
-};
 
 /**
  * Compare works by date (newest or oldest)
  */
-function compareByDate(a: ExtendedWorkData, b: ExtendedWorkData, isOldest = false): number {
-	const dateA = a.releaseDateISO || a.registDate || "1900-01-01";
-	const dateB = b.releaseDateISO || b.registDate || "1900-01-01";
+function compareByDate(a: WorkPlainObject, b: WorkPlainObject, isOldest = false): number {
+	const dateA = a.releaseDateISO || "1900-01-01";
+	const dateB = b.releaseDateISO || "1900-01-01";
 	if (dateA === dateB) {
 		return isOldest
 			? a.productId.localeCompare(b.productId)
@@ -26,7 +21,7 @@ function compareByDate(a: ExtendedWorkData, b: ExtendedWorkData, isOldest = fals
 /**
  * Compare works by rating (popular)
  */
-function compareByRating(a: ExtendedWorkData, b: ExtendedWorkData): number {
+function compareByRating(a: WorkPlainObject, b: WorkPlainObject): number {
 	const ratingA = a.rating?.stars || 0;
 	const ratingB = b.rating?.stars || 0;
 	return ratingB - ratingA;
@@ -35,16 +30,16 @@ function compareByRating(a: ExtendedWorkData, b: ExtendedWorkData): number {
 /**
  * Compare works by price
  */
-function compareByPrice(a: ExtendedWorkData, b: ExtendedWorkData, isHighToLow = false): number {
-	const priceA = a.price?.current || a.priceInJPY || 0;
-	const priceB = b.price?.current || b.priceInJPY || 0;
+function compareByPrice(a: WorkPlainObject, b: WorkPlainObject, isHighToLow = false): number {
+	const priceA = a.price?.current || 0;
+	const priceB = b.price?.current || 0;
 	return isHighToLow ? priceB - priceA : priceA - priceB;
 }
 
 /**
  * Works sorting comparison function
  */
-function compareWorks(a: ExtendedWorkData, b: ExtendedWorkData, sort: string): number {
+function compareWorks(a: WorkPlainObject, b: WorkPlainObject, sort: string): number {
 	switch (sort) {
 		case "newest":
 			return compareByDate(a, b, false);
@@ -98,9 +93,7 @@ export async function getCircleInfo(circleId: string): Promise<CircleData | null
  * @param circleId サークルID
  * @returns 作品一覧
  */
-export async function getCircleWorks(
-	circleId: string,
-): Promise<OptimizedFirestoreDLsiteWorkData[]> {
+export async function getCircleWorks(circleId: string): Promise<WorkPlainObject[]> {
 	// 入力検証
 	if (!isValidCircleId(circleId)) {
 		return [];
@@ -122,23 +115,32 @@ export async function getCircleWorks(
 		// circleId が設定されていない作品もサークル名で検索
 		const allWorksSnapshot = await firestore.collection("dlsiteWorks").get();
 
-		const matchingWorks = allWorksSnapshot.docs
+		const allMatchingWorks = allWorksSnapshot.docs
 			.map((doc) => {
 				const data = doc.data();
 				return {
 					...data,
 					id: doc.id,
-					// registDate: 文字列またはFirestore Timestampに対応
-					registDate: data.registDate?.toDate ? data.registDate.toDate() : data.registDate,
-				} as OptimizedFirestoreDLsiteWorkData;
+				} as WorkDocument;
 			})
 			.filter((work) => {
 				// circleId が一致するか、circleId がない場合はサークル名で一致判定
 				return work.circleId === circleId || work.circle === circleName;
-			})
-			.sort((a, b) => compareWorks(a as ExtendedWorkData, b as ExtendedWorkData, "newest"));
+			});
 
-		return matchingWorks;
+		// WorkPlainObjectに変換
+		const works: WorkPlainObject[] = [];
+		for (const work of allMatchingWorks) {
+			const plainObject = convertToWorkPlainObject(work);
+			if (plainObject) {
+				works.push(plainObject);
+			}
+		}
+
+		// ソート
+		works.sort((a, b) => compareWorks(a, b, "newest"));
+
+		return works;
 	} catch (_error) {
 		// エラー発生時は空配列を返す
 		return [];
@@ -158,7 +160,7 @@ export async function getCircleWorksWithPagination(
 	page = 1,
 	limit = 12,
 	sort = "newest",
-): Promise<{ works: OptimizedFirestoreDLsiteWorkData[]; totalCount: number }> {
+): Promise<{ works: WorkPlainObject[]; totalCount: number }> {
 	// 入力検証
 	if (!isValidCircleId(circleId)) {
 		return { works: [], totalCount: 0 };
@@ -185,9 +187,7 @@ export async function getCircleWorksWithPagination(
 				return {
 					...data,
 					id: doc.id,
-					// registDate: 文字列またはFirestore Timestampに対応
-					registDate: data.registDate?.toDate ? data.registDate.toDate() : data.registDate,
-				} as OptimizedFirestoreDLsiteWorkData;
+				} as WorkDocument;
 			})
 			.filter((work) => {
 				// circleId が一致するか、circleId がない場合はサークル名で一致判定
@@ -196,17 +196,24 @@ export async function getCircleWorksWithPagination(
 
 		const totalCount = allMatchingWorks.length;
 
+		// WorkPlainObjectに変換してからソート
+		const convertedWorks: WorkPlainObject[] = [];
+		for (const work of allMatchingWorks) {
+			const plainObject = convertToWorkPlainObject(work);
+			if (plainObject) {
+				convertedWorks.push(plainObject);
+			}
+		}
+
 		// ソート処理
-		allMatchingWorks.sort((a, b) =>
-			compareWorks(a as ExtendedWorkData, b as ExtendedWorkData, sort),
-		);
+		convertedWorks.sort((a, b) => compareWorks(a, b, sort));
 
 		// ページネーション適用
 		const startIndex = (page - 1) * limit;
 		const endIndex = startIndex + limit;
-		const paginatedWorks = allMatchingWorks.slice(startIndex, endIndex);
+		const works = convertedWorks.slice(startIndex, endIndex);
 
-		return { works: paginatedWorks, totalCount };
+		return { works, totalCount: convertedWorks.length };
 	} catch (_error) {
 		// エラー発生時は空配列を返す
 		return { works: [], totalCount: 0 };
@@ -228,7 +235,7 @@ export async function getCircleWithWorksWithPagination(
 	sort = "newest",
 ): Promise<{
 	circle: CircleData;
-	works: OptimizedFirestoreDLsiteWorkData[];
+	works: WorkPlainObject[];
 	totalCount: number;
 } | null> {
 	const [circle, worksData] = await Promise.all([
@@ -250,7 +257,7 @@ export async function getCircleWithWorksWithPagination(
  */
 export async function getCircleWithWorks(
 	circleId: string,
-): Promise<{ circle: CircleData; works: OptimizedFirestoreDLsiteWorkData[] } | null> {
+): Promise<{ circle: CircleData; works: WorkPlainObject[] } | null> {
 	const [circle, works] = await Promise.all([getCircleInfo(circleId), getCircleWorks(circleId)]);
 
 	if (!circle) {

@@ -1,14 +1,12 @@
 "use client";
 
-import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkPlainObject } from "@suzumina.click/shared-types";
 import {
 	checkAgeRating,
 	type FrontendWorkEvaluation,
 	getAgeRatingDisplayName,
-	getWorkAvailableLanguages,
 	getWorkCategoryDisplayText,
 	getWorkLanguageDisplayName,
-	getWorkPrimaryLanguage,
 } from "@suzumina.click/shared-types";
 import NotImplementedOverlay from "@suzumina.click/ui/components/custom/not-implemented-overlay";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
@@ -43,7 +41,7 @@ import SampleImageGallery from "./SampleImageGallery";
 import { WorkEvaluation } from "./work-evaluation";
 
 interface WorkDetailProps {
-	work: FrontendDLsiteWorkData;
+	work: WorkPlainObject;
 	initialEvaluation?: FrontendWorkEvaluation | null;
 }
 
@@ -80,10 +78,11 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 	// 元の価格を取得、もしくは割引率から計算
 	const originalPrice =
 		work.price.original ||
-		(work.price.discount && work.price.discount > 0
+		(work.price.discount !== undefined && work.price.discount > 0
 			? Math.round(currentPrice / (1 - work.price.discount / 100))
 			: undefined);
-	const isOnSale = work.price.discount && work.price.discount > 0;
+	// NOTE: 将来的にはWorkPrice.isDiscounted()を使用することを推奨
+	const isOnSale = work.price.discount !== undefined && work.price.discount > 0;
 
 	// ランキング情報は現在利用できません
 	const latestRank = undefined;
@@ -255,10 +254,10 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 									variant="default"
 									className="bg-blue-600 text-white font-medium text-base px-3 py-1"
 								>
-									{getWorkLanguageDisplayName(getWorkPrimaryLanguage(work))}
+									{getWorkLanguageDisplayName(work._computed.primaryLanguage)}
 								</Badge>
 								{(() => {
-									const availableLanguages = getWorkAvailableLanguages(work);
+									const availableLanguages = work._computed.availableLanguages;
 									const additionalCount = availableLanguages.length - 1;
 
 									if (additionalCount > 0) {
@@ -386,12 +385,12 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 													</div>
 												</div>
 											)}
-											{work.seriesName && (
+											{work.series?.name && (
 												<div className="flex items-center gap-3">
 													<FileText className="h-5 w-5 text-muted-foreground" />
 													<div>
 														<div className="text-sm text-gray-700">シリーズ名</div>
-														<div className="font-semibold text-gray-900">{work.seriesName}</div>
+														<div className="font-semibold text-gray-900">{work.series.name}</div>
 													</div>
 												</div>
 											)}
@@ -439,8 +438,8 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 														<div className="text-xs text-gray-600">対応言語</div>
 														<div className="flex flex-wrap gap-1">
 															{(() => {
-																const primaryLanguage = getWorkPrimaryLanguage(work);
-																const availableLanguages = getWorkAvailableLanguages(work);
+																const primaryLanguage = work._computed?.primaryLanguage || "ja";
+																const availableLanguages = work._computed?.availableLanguages || [];
 
 																return availableLanguages.map((lang) => (
 																	<Badge
@@ -466,11 +465,8 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 														if (!translationInfo) return null;
 
 														const isTranslation =
-															translationInfo.isChild || translationInfo.originalWorkno;
-														const isOriginalWithTranslations =
-															translationInfo.isParent ||
-															(translationInfo.childWorknos &&
-																translationInfo.childWorknos.length > 0);
+															!translationInfo.isOriginal && translationInfo.originalWorkno;
+														const isOriginalWithTranslations = translationInfo.isOriginal;
 
 														if (!isTranslation && !isOriginalWithTranslations) return null;
 
@@ -497,30 +493,15 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 																)}
 
 																{/* 翻訳版がある原作の場合 */}
-																{isOriginalWithTranslations &&
-																	translationInfo.childWorknos &&
-																	translationInfo.childWorknos.length > 0 && (
-																		<div className="space-y-1">
-																			<div className="text-xs text-gray-600">翻訳版</div>
-																			<div className="flex items-center gap-2 text-sm">
-																				<div className="w-2 h-2 bg-green-500 rounded-full" />
-																				<span className="text-gray-700">
-																					{translationInfo.childWorknos.length}件の翻訳版があります
-																				</span>
-																			</div>
-																			<div className="flex flex-wrap gap-1 ml-4">
-																				{translationInfo.childWorknos.map((childWorkno: string) => (
-																					<Link
-																						key={childWorkno}
-																						href={`/works/${childWorkno}`}
-																						className="text-xs text-blue-600 hover:text-blue-800 underline"
-																					>
-																						{childWorkno}
-																					</Link>
-																				))}
-																			</div>
+																{isOriginalWithTranslations && (
+																	<div className="space-y-1">
+																		<div className="text-xs text-gray-600">原作</div>
+																		<div className="flex items-center gap-2 text-sm">
+																			<div className="w-2 h-2 bg-green-500 rounded-full" />
+																			<span className="text-gray-700">翻訳版が利用可能です</span>
 																		</div>
-																	)}
+																	</div>
+																)}
 
 																{/* 言語版一覧（Individual Info API）*/}
 																{work.languageDownloads && work.languageDownloads.length > 1 && (
@@ -550,15 +531,9 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 
 										{/* 制作陣情報（Individual Info API準拠・段階的活用） */}
 										<div className="space-y-4">
-											{/* 声優（Individual Info API優先） */}
+											{/* 声優 */}
 											{(() => {
-												const apiVoiceActors = work.creaters?.voice_by || [];
-												const legacyVoiceActors = work.voiceActors || [];
-
-												const displayVoiceActors =
-													apiVoiceActors.length > 0
-														? apiVoiceActors
-														: legacyVoiceActors.map((name) => ({ name, id: undefined }));
+												const displayVoiceActors = work.creators?.voiceActors || [];
 
 												if (displayVoiceActors.length === 0) return null;
 
@@ -596,15 +571,9 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 												);
 											})()}
 
-											{/* シナリオ（Individual Info API優先） */}
+											{/* シナリオ */}
 											{(() => {
-												const apiScenarioWriters = work.creaters?.scenario_by || [];
-												const legacyScenarioWriters = work.scenario || [];
-
-												const displayScenarioWriters =
-													apiScenarioWriters.length > 0
-														? apiScenarioWriters
-														: legacyScenarioWriters.map((name) => ({ name, id: undefined }));
+												const displayScenarioWriters = work.creators?.scenario || [];
 
 												if (displayScenarioWriters.length === 0) return null;
 
@@ -627,15 +596,9 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 												);
 											})()}
 
-											{/* イラスト（Individual Info API優先） */}
+											{/* イラスト */}
 											{(() => {
-												const apiIllustrators = work.creaters?.illust_by || [];
-												const legacyIllustrators = work.illustration || [];
-
-												const displayIllustrators =
-													apiIllustrators.length > 0
-														? apiIllustrators
-														: legacyIllustrators.map((name) => ({ name, id: undefined }));
+												const displayIllustrators = work.creators?.illustration || [];
 
 												if (displayIllustrators.length === 0) return null;
 
@@ -658,15 +621,9 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 												);
 											})()}
 
-											{/* 音楽（Individual Info API優先） */}
+											{/* 音楽 */}
 											{(() => {
-												const apiMusicians = work.creaters?.music_by || [];
-												const legacyMusicians = work.music || [];
-
-												const displayMusicians =
-													apiMusicians.length > 0
-														? apiMusicians
-														: legacyMusicians.map((name) => ({ name, id: undefined }));
+												const displayMusicians = work.creators?.music || [];
 
 												if (displayMusicians.length === 0) return null;
 
@@ -690,11 +647,11 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 											})()}
 
 											{/* その他制作者（Individual Info API専用） */}
-											{work.creaters?.others_by && work.creaters.others_by.length > 0 && (
+											{work.creators?.others && work.creators.others.length > 0 && (
 												<div>
 													<div className="text-sm text-gray-700 mb-2">その他</div>
 													<div className="flex flex-wrap gap-2">
-														{work.creaters.others_by.map((creator, index) => (
+														{work.creators.others.map((creator, index) => (
 															<Badge
 																key={creator.id || creator.name || index}
 																variant="secondary"
@@ -708,24 +665,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 												</div>
 											)}
 
-											{/* 制作者（Individual Info API専用） */}
-											{work.creaters?.created_by && work.creaters.created_by.length > 0 && (
-												<div>
-													<div className="text-sm text-gray-700 mb-2">制作者</div>
-													<div className="flex flex-wrap gap-2">
-														{work.creaters.created_by.map((creator, index) => (
-															<Badge
-																key={creator.id || creator.name || index}
-																variant="secondary"
-																className="text-xs"
-																title={creator.id ? `ID: ${creator.id}` : undefined}
-															>
-																{creator.name}
-															</Badge>
-														))}
-													</div>
-												</div>
-											)}
+											{/* created_byはcreators構造に含まれていないため削除 */}
 										</div>
 									</div>
 								</CardContent>
@@ -734,7 +674,14 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 
 						{/* サンプル画像タブ */}
 						<TabsContent value="samples" className="space-y-6">
-							<SampleImageGallery sampleImages={work.sampleImages} workTitle={work.title} />
+							<SampleImageGallery
+								sampleImages={work.sampleImages.map((img) => ({
+									thumb: img.thumbnailUrl,
+									width: img.width,
+									height: img.height,
+								}))}
+								workTitle={work.title}
+							/>
 						</TabsContent>
 
 						{/* 特性評価タブ */}
@@ -822,262 +769,247 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 					</Card>
 
 					{/* クリエイター情報 */}
-					{((work.voiceActors && work.voiceActors.length > 0) ||
-						(work.scenario && work.scenario.length > 0) ||
-						(work.illustration && work.illustration.length > 0) ||
-						(work.music && work.music.length > 0)) && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<Users className="h-5 w-5" />
-									クリエイター情報
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="space-y-4">
-									{/* 声優（Individual Info API優先） */}
-									{(() => {
-										const apiVoiceActors = work.creaters?.voice_by || [];
-										const legacyVoiceActors = work.voiceActors || [];
+					{work.creators &&
+						(work.creators.voiceActors.length > 0 ||
+							work.creators.scenario.length > 0 ||
+							work.creators.illustration.length > 0 ||
+							work.creators.music.length > 0) && (
+							<Card>
+								<CardHeader>
+									<CardTitle className="flex items-center gap-2">
+										<Users className="h-5 w-5" />
+										クリエイター情報
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<div className="space-y-4">
+										{/* 声優（Individual Info API優先） */}
+										{(() => {
+											const displayVoiceActors = work.creators?.voiceActors || [];
 
-										const displayVoiceActors =
-											apiVoiceActors.length > 0
-												? apiVoiceActors
-												: legacyVoiceActors.map((name) => ({ name, id: undefined }));
+											if (displayVoiceActors.length === 0) return null;
 
-										if (displayVoiceActors.length === 0) return null;
-
-										return (
-											<div>
-												<h5 className="text-sm font-medium text-gray-700 mb-2">声優（CV）</h5>
-												<div className="space-y-2">
-													{displayVoiceActors.map((actor, index) => (
-														<div
-															key={actor.id || actor.name || index}
-															className="flex items-center gap-3"
-														>
-															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																<span className="text-foreground font-bold text-xs">
-																	{actor.name.charAt(0)}
-																</span>
-															</div>
-															{actor.id ? (
-																<Link
-																	href={`/creators/${actor.id}`}
-																	className="text-gray-900 text-sm hover:text-primary hover:underline"
-																	title={`ID: ${actor.id}`}
-																>
-																	{actor.name}
-																</Link>
-															) : (
-																<span className="text-gray-900 text-sm">{actor.name}</span>
-															)}
-														</div>
-													))}
-												</div>
-											</div>
-										);
-									})()}
-
-									{/* シナリオ（Individual Info API優先） */}
-									{(() => {
-										const apiScenarioWriters = work.creaters?.scenario_by || [];
-										const legacyScenarioWriters = work.scenario || [];
-
-										const displayScenarioWriters =
-											apiScenarioWriters.length > 0
-												? apiScenarioWriters
-												: legacyScenarioWriters.map((name) => ({ name, id: undefined }));
-
-										if (displayScenarioWriters.length === 0) return null;
-
-										return (
-											<div>
-												<h5 className="text-sm font-medium text-gray-700 mb-2">シナリオ</h5>
-												<div className="space-y-2">
-													{displayScenarioWriters.map((writer, index) => (
-														<div
-															key={writer.id || writer.name || index}
-															className="flex items-center gap-3"
-														>
-															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																<span className="text-foreground font-bold text-xs">
-																	{writer.name.charAt(0)}
-																</span>
-															</div>
-															{writer.id ? (
-																<Link
-																	href={`/creators/${writer.id}`}
-																	className="text-gray-900 text-sm hover:text-primary hover:underline"
-																	title={`ID: ${writer.id}`}
-																>
-																	{writer.name}
-																</Link>
-															) : (
-																<span className="text-gray-900 text-sm">{writer.name}</span>
-															)}
-														</div>
-													))}
-												</div>
-											</div>
-										);
-									})()}
-
-									{/* イラスト（Individual Info API優先） */}
-									{(() => {
-										const apiIllustrators = work.creaters?.illust_by || [];
-										const legacyIllustrators = work.illustration || [];
-
-										const displayIllustrators =
-											apiIllustrators.length > 0
-												? apiIllustrators
-												: legacyIllustrators.map((name) => ({ name, id: undefined }));
-
-										if (displayIllustrators.length === 0) return null;
-
-										return (
-											<div>
-												<h5 className="text-sm font-medium text-gray-700 mb-2">イラスト</h5>
-												<div className="space-y-2">
-													{displayIllustrators.map((illustrator, index) => (
-														<div
-															key={illustrator.id || illustrator.name || index}
-															className="flex items-center gap-3"
-														>
-															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																<span className="text-foreground font-bold text-xs">
-																	{illustrator.name.charAt(0)}
-																</span>
-															</div>
-															{illustrator.id ? (
-																<Link
-																	href={`/creators/${illustrator.id}`}
-																	className="text-gray-900 text-sm hover:text-primary hover:underline"
-																	title={`ID: ${illustrator.id}`}
-																>
-																	{illustrator.name}
-																</Link>
-															) : (
-																<span className="text-gray-900 text-sm">{illustrator.name}</span>
-															)}
-														</div>
-													))}
-												</div>
-											</div>
-										);
-									})()}
-
-									{/* 音楽（Individual Info API優先） */}
-									{(() => {
-										const apiMusicians = work.creaters?.music_by || [];
-										const legacyMusicians = work.music || [];
-
-										const displayMusicians =
-											apiMusicians.length > 0
-												? apiMusicians
-												: legacyMusicians.map((name) => ({ name, id: undefined }));
-
-										if (displayMusicians.length === 0) return null;
-
-										return (
-											<div>
-												<h5 className="text-sm font-medium text-gray-700 mb-2">音楽</h5>
-												<div className="space-y-2">
-													{displayMusicians.map((musician, index) => (
-														<div
-															key={musician.id || musician.name || index}
-															className="flex items-center gap-3"
-														>
-															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																<span className="text-foreground font-bold text-xs">
-																	{musician.name.charAt(0)}
-																</span>
-															</div>
-															{musician.id ? (
-																<Link
-																	href={`/creators/${musician.id}`}
-																	className="text-gray-900 text-sm hover:text-primary hover:underline"
-																	title={`ID: ${musician.id}`}
-																>
-																	{musician.name}
-																</Link>
-															) : (
-																<span className="text-gray-900 text-sm">{musician.name}</span>
-															)}
-														</div>
-													))}
-												</div>
-											</div>
-										);
-									})()}
-
-									{/* その他制作者（Individual Info API専用） */}
-									{work.creaters?.others_by && work.creaters.others_by.length > 0 && (
-										<div>
-											<h5 className="text-sm font-medium text-gray-700 mb-2">その他</h5>
-											<div className="space-y-2">
-												{work.creaters.others_by.map((creator, index) => (
-													<div
-														key={creator.id || creator.name || index}
-														className="flex items-center gap-3"
-													>
-														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-															<span className="text-foreground font-bold text-xs">
-																{creator.name.charAt(0)}
-															</span>
-														</div>
-														{creator.id ? (
-															<Link
-																href={`/creators/${creator.id}`}
-																className="text-gray-900 text-sm hover:text-primary hover:underline"
-																title={`ID: ${creator.id}`}
+											return (
+												<div>
+													<h5 className="text-sm font-medium text-gray-700 mb-2">声優（CV）</h5>
+													<div className="space-y-2">
+														{displayVoiceActors.map((actor, index) => (
+															<div
+																key={actor.id || actor.name || index}
+																className="flex items-center gap-3"
 															>
-																{creator.name}
-															</Link>
-														) : (
-															<span className="text-gray-900 text-sm">{creator.name}</span>
-														)}
+																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																	<span className="text-foreground font-bold text-xs">
+																		{actor.name.charAt(0)}
+																	</span>
+																</div>
+																{actor.id ? (
+																	<Link
+																		href={`/creators/${actor.id}`}
+																		className="text-gray-900 text-sm hover:text-primary hover:underline"
+																		title={`ID: ${actor.id}`}
+																	>
+																		{actor.name}
+																	</Link>
+																) : (
+																	<span className="text-gray-900 text-sm">{actor.name}</span>
+																)}
+															</div>
+														))}
 													</div>
-												))}
-											</div>
-										</div>
-									)}
+												</div>
+											);
+										})()}
 
-									{/* 制作者（Individual Info API専用） */}
-									{work.creaters?.created_by && work.creaters.created_by.length > 0 && (
-										<div>
-											<h5 className="text-sm font-medium text-gray-700 mb-2">制作者</h5>
-											<div className="space-y-2">
-												{work.creaters.created_by.map((creator, index) => (
-													<div
-														key={creator.id || creator.name || index}
-														className="flex items-center gap-3"
-													>
-														<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-															<span className="text-foreground font-bold text-xs">
-																{creator.name.charAt(0)}
-															</span>
-														</div>
-														{creator.id ? (
-															<Link
-																href={`/creators/${creator.id}`}
-																className="text-gray-900 text-sm hover:text-primary hover:underline"
-																title={`ID: ${creator.id}`}
+										{/* シナリオ */}
+										{(() => {
+											const displayScenarioWriters = work.creators?.scenario || [];
+
+											if (displayScenarioWriters.length === 0) return null;
+
+											return (
+												<div>
+													<h5 className="text-sm font-medium text-gray-700 mb-2">シナリオ</h5>
+													<div className="space-y-2">
+														{displayScenarioWriters.map((writer, index) => (
+															<div
+																key={writer.id || writer.name || index}
+																className="flex items-center gap-3"
 															>
-																{creator.name}
-															</Link>
-														) : (
-															<span className="text-gray-900 text-sm">{creator.name}</span>
-														)}
+																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																	<span className="text-foreground font-bold text-xs">
+																		{writer.name.charAt(0)}
+																	</span>
+																</div>
+																{writer.id ? (
+																	<Link
+																		href={`/creators/${writer.id}`}
+																		className="text-gray-900 text-sm hover:text-primary hover:underline"
+																		title={`ID: ${writer.id}`}
+																	>
+																		{writer.name}
+																	</Link>
+																) : (
+																	<span className="text-gray-900 text-sm">{writer.name}</span>
+																)}
+															</div>
+														))}
 													</div>
-												))}
+												</div>
+											);
+										})()}
+
+										{/* イラスト */}
+										{(() => {
+											const displayIllustrators = work.creators?.illustration || [];
+
+											if (displayIllustrators.length === 0) return null;
+
+											return (
+												<div>
+													<h5 className="text-sm font-medium text-gray-700 mb-2">イラスト</h5>
+													<div className="space-y-2">
+														{displayIllustrators.map((illustrator, index) => (
+															<div
+																key={illustrator.id || illustrator.name || index}
+																className="flex items-center gap-3"
+															>
+																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																	<span className="text-foreground font-bold text-xs">
+																		{illustrator.name.charAt(0)}
+																	</span>
+																</div>
+																{illustrator.id ? (
+																	<Link
+																		href={`/creators/${illustrator.id}`}
+																		className="text-gray-900 text-sm hover:text-primary hover:underline"
+																		title={`ID: ${illustrator.id}`}
+																	>
+																		{illustrator.name}
+																	</Link>
+																) : (
+																	<span className="text-gray-900 text-sm">{illustrator.name}</span>
+																)}
+															</div>
+														))}
+													</div>
+												</div>
+											);
+										})()}
+
+										{/* 音楽 */}
+										{(() => {
+											const displayMusicians = work.creators?.music || [];
+
+											if (displayMusicians.length === 0) return null;
+
+											return (
+												<div>
+													<h5 className="text-sm font-medium text-gray-700 mb-2">音楽</h5>
+													<div className="space-y-2">
+														{displayMusicians.map((musician, index) => (
+															<div
+																key={musician.id || musician.name || index}
+																className="flex items-center gap-3"
+															>
+																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																	<span className="text-foreground font-bold text-xs">
+																		{musician.name.charAt(0)}
+																	</span>
+																</div>
+																{musician.id ? (
+																	<Link
+																		href={`/creators/${musician.id}`}
+																		className="text-gray-900 text-sm hover:text-primary hover:underline"
+																		title={`ID: ${musician.id}`}
+																	>
+																		{musician.name}
+																	</Link>
+																) : (
+																	<span className="text-gray-900 text-sm">{musician.name}</span>
+																)}
+															</div>
+														))}
+													</div>
+												</div>
+											);
+										})()}
+
+										{/* その他制作者（Individual Info API専用） */}
+										{work.creators?.others && work.creators.others.length > 0 && (
+											<div>
+												<h5 className="text-sm font-medium text-gray-700 mb-2">その他</h5>
+												<div className="space-y-2">
+													{work.creators.others.map((creator, index) => (
+														<div
+															key={creator.id || creator.name || index}
+															className="flex items-center gap-3"
+														>
+															<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																<span className="text-foreground font-bold text-xs">
+																	{creator.name.charAt(0)}
+																</span>
+															</div>
+															{creator.id ? (
+																<Link
+																	href={`/creators/${creator.id}`}
+																	className="text-gray-900 text-sm hover:text-primary hover:underline"
+																	title={`ID: ${creator.id}`}
+																>
+																	{creator.name}
+																</Link>
+															) : (
+																<span className="text-gray-900 text-sm">{creator.name}</span>
+															)}
+														</div>
+													))}
+												</div>
 											</div>
-										</div>
-									)}
-								</div>
-							</CardContent>
-						</Card>
-					)}
+										)}
+
+										{/* 制作者（Individual Info API専用） */}
+										{work.creators &&
+											(work.creators.voiceActors.length > 0 ||
+												work.creators.scenario.length > 0 ||
+												work.creators.illustration.length > 0 ||
+												work.creators.music.length > 0) && (
+												<div>
+													<h5 className="text-sm font-medium text-gray-700 mb-2">制作者</h5>
+													<div className="space-y-2">
+														{[
+															...work.creators.voiceActors,
+															...work.creators.scenario,
+															...work.creators.illustration,
+															...work.creators.music,
+														].map((creator, index: number) => (
+															<div
+																key={`${creator.id}-${index}`}
+																className="flex items-center gap-3"
+															>
+																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+																	<span className="text-foreground font-bold text-xs">
+																		{creator.name.charAt(0)}
+																	</span>
+																</div>
+																{creator.id ? (
+																	<Link
+																		href={`/creators/${creator.id}`}
+																		className="text-gray-900 text-sm hover:text-primary hover:underline"
+																	>
+																		{creator.name}
+																	</Link>
+																) : (
+																	<span className="text-gray-900 text-sm">{creator.name}</span>
+																)}
+															</div>
+														))}
+													</div>
+												</div>
+											)}
+									</div>
+								</CardContent>
+							</Card>
+						)}
 				</div>
 			</div>
 		</div>

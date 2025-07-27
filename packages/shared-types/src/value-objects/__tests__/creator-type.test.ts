@@ -5,7 +5,7 @@ import {
 	CreatorRole,
 	CreatorsInfo,
 	CreatorUtils,
-} from "../creator-type";
+} from "../work/creator-type";
 
 describe("creator-type", () => {
 	describe("CreatorRole", () => {

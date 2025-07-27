@@ -2,15 +2,33 @@
  * Work Classification Domain Service
  *
  * 作品の分類・カテゴライズに関するビジネスロジックを集約
+ *
+ * NOTE: フロントエンドで使用されていないメソッドは削除されました。
+ * 削除されたメソッド:
+ * - isASMRContent(): Cloud Functions内部でのみ使用
+ * - normalizeTags(): Cloud Functions内部でのみ使用
+ * - isSeriesWork(): Cloud Functions内部でのみ使用
+ * - estimateTargetAudience(): Cloud Functions内部でのみ使用
+ * - calculateSimilarityScore(): Web appには別実装あり
  */
 
-import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkDocument } from "@suzumina.click/shared-types";
 
 export class WorkClassificationService {
 	/**
 	 * 作品のメインカテゴリを判定
+	 *
+	 * NOTE: workFormatベースの判定のみ残されています。
+	 * categoryベースの判定はWorkエンティティのメソッドを使用してください。
+	 *
+	 * TODO: 将来的にWork.toPlainObject()._computed.displayCategoryを使用する実装に移行予定
+	 * 移行時は以下のようなコードになります：
+	 * ```typescript
+	 * const workEntity = Work.fromFirestoreData(work);
+	 * return workEntity?.toPlainObject()._computed.displayCategory || 'other';
+	 * ```
 	 */
-	static determineMainCategory(work: OptimizedFirestoreDLsiteWorkData): string {
+	static determineMainCategory(work: WorkDocument): string {
 		// workFormat から主要カテゴリを判定
 		const format = work.workFormat?.toLowerCase() || "";
 
@@ -37,24 +55,11 @@ export class WorkClassificationService {
 	}
 
 	/**
-	 * ASMRコンテンツかどうか判定
-	 */
-	static isASMRContent(work: OptimizedFirestoreDLsiteWorkData): boolean {
-		const searchTargets = [
-			work.title.toLowerCase(),
-			...work.genres.map((g) => g.toLowerCase()),
-			work.workFormat?.toLowerCase() || "",
-		];
-
-		const asmrKeywords = ["asmr", "音声作品", "ボイス", "音声", "耳かき", "囁き"];
-
-		return searchTargets.some((target) => asmrKeywords.some((keyword) => target.includes(keyword)));
-	}
-
-	/**
 	 * R18コンテンツかどうか判定
+	 *
+	 * @deprecated Work.isAdultContent() を使用してください
 	 */
-	static isAdultContent(work: OptimizedFirestoreDLsiteWorkData): boolean {
+	static isAdultContent(work: WorkDocument): boolean {
 		// ageRating から判定
 		const ageRating = work.ageRating || "";
 		return ageRating === "R18" || ageRating.includes("18") || ageRating === "Adult";
@@ -62,8 +67,19 @@ export class WorkClassificationService {
 
 	/**
 	 * 作品の人気度を計算（1-100のスコア）
+	 *
+	 * NOTE: 新作ボーナスの計算はWork.isNewRelease()を併用することを推奨
+	 *
+	 * TODO: 将来的にWorkエンティティベースの実装に移行予定
+	 * 移行時は以下のようなコードになります：
+	 * ```typescript
+	 * const workEntity = Work.fromFirestoreData(work);
+	 * if (!workEntity) return 0;
+	 *
+	 * // workEntity.rating, workEntity.isNewRelease()等を使用
+	 * ```
 	 */
-	static calculatePopularityScore(work: OptimizedFirestoreDLsiteWorkData): number {
+	static calculatePopularityScore(work: WorkDocument): number {
 		let score = 0;
 
 		// レビュー評価による加点（最大40点）
@@ -91,108 +107,5 @@ export class WorkClassificationService {
 		}
 
 		return Math.round(Math.min(100, score));
-	}
-
-	/**
-	 * 作品のタグを正規化
-	 */
-	static normalizeTags(genres: string[]): string[] {
-		const tagMap: Record<string, string> = {
-			耳かき: "ASMR",
-			ボイス: "音声作品",
-			えっち: "R18",
-			成人向け: "R18",
-			// 追加のタグマッピング
-		};
-
-		const normalizedTags = new Set<string>();
-
-		for (const genre of genres) {
-			const normalized = tagMap[genre] || genre;
-			normalizedTags.add(normalized);
-		}
-
-		return Array.from(normalizedTags).sort();
-	}
-
-	/**
-	 * シリーズ作品かどうか判定
-	 */
-	static isSeriesWork(work: OptimizedFirestoreDLsiteWorkData): boolean {
-		const title = work.title.toLowerCase();
-		const seriesPatterns = [
-			/第\d+話/,
-			/vol\.\s*\d+/i,
-			/chapter\s*\d+/i,
-			/part\s*\d+/i,
-			/その\d+/,
-			/episode\s*\d+/i,
-			/#\d+/,
-		];
-
-		return seriesPatterns.some((pattern) => pattern.test(title));
-	}
-
-	/**
-	 * 作品のターゲット層を推定
-	 */
-	static estimateTargetAudience(work: OptimizedFirestoreDLsiteWorkData): {
-		gender: "male" | "female" | "all";
-		ageGroup: "teen" | "adult" | "all";
-	} {
-		const genres = work.genres.map((g) => g.toLowerCase());
-
-		// ジェンダー推定
-		let gender: "male" | "female" | "all" = "all";
-
-		const femaleKeywords = ["乙女", "女性向け", "bl", "ボーイズラブ"];
-		const maleKeywords = ["男性向け", "美少女"];
-
-		if (genres.some((g) => femaleKeywords.some((k) => g.includes(k)))) {
-			gender = "female";
-		} else if (genres.some((g) => maleKeywords.some((k) => g.includes(k)))) {
-			gender = "male";
-		}
-
-		// 年齢層推定
-		const ageGroup = WorkClassificationService.isAdultContent(work) ? "adult" : "all";
-
-		return { gender, ageGroup };
-	}
-
-	/**
-	 * 類似作品のスコアを計算
-	 */
-	static calculateSimilarityScore(
-		work1: OptimizedFirestoreDLsiteWorkData,
-		work2: OptimizedFirestoreDLsiteWorkData,
-	): number {
-		let score = 0;
-
-		// 同じサークルの作品（40点）
-		if (work1.circleId === work2.circleId) {
-			score += 40;
-		}
-
-		// ジャンルの一致度（最大30点）
-		const commonGenres = work1.genres.filter((g) => work2.genres.includes(g));
-		const genreScore =
-			(commonGenres.length / Math.max(work1.genres.length, work2.genres.length)) * 30;
-		score += genreScore;
-
-		// カテゴリの一致（20点）
-		if (
-			WorkClassificationService.determineMainCategory(work1) ===
-			WorkClassificationService.determineMainCategory(work2)
-		) {
-			score += 20;
-		}
-
-		// 価格帯の近さ（最大10点）
-		const priceDiff = Math.abs(work1.price.current - work2.price.current);
-		const priceScore = Math.max(0, 10 - priceDiff / 100);
-		score += priceScore;
-
-		return Math.round(score);
 	}
 }

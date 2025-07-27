@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkPlainObject } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
@@ -8,8 +8,8 @@ import { FeaturedWorksCarousel } from "@/components/content/featured-works-carou
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface WorksSectionProps {
-	works?: FrontendDLsiteWorkData[];
-	allAgesWorks?: FrontendDLsiteWorkData[];
+	works?: WorkPlainObject[];
+	allAgesWorks?: WorkPlainObject[];
 	loading?: boolean;
 	error?: string | null;
 }
