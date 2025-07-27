@@ -45,6 +45,17 @@ Entity V2 is already enabled in production through feature flags:
 3. **October 2025**: V2 suffixes and feature flags will be removed (PR #24)
 4. **January 2026**: Compatibility code (fromLegacy/toLegacy) will be removed (Phase 8)
 
+### Removed APIs (2025-07-26)
+
+The following APIs have been removed as part of PR #125:
+
+#### Shared Types
+
+##### `OptimizedFirestoreDLsiteWorkData` type - **REMOVED**
+- **Removal Date**: 2025-07-26
+- **Replacement**: Use `WorkDocument` type
+- **Reason**: Naming convention simplification as part of Entity/Value Object architecture
+
 ## Questions?
 
 If you have questions about migrating to the new APIs, please refer to:

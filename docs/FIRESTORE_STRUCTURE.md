@@ -88,7 +88,7 @@
 
 **データ収集状況**: 1015件完全収集済み (35%データ欠損問題解決完了)
 
-**データ構造** (`OptimizedFirestoreDLsiteWorkData` - 2025年7月24日Entity/Value Object移行完了):
+**データ構造** (`WorkDocument` - 2025年7月26日にOptimizedFirestoreDLsiteWorkDataから名称変更):
 
 ```typescript
 // Value Objects構造:
@@ -1398,10 +1398,10 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 - ✅ 画像表示機能の完全正常化・本番環境動作確認完了
 - ✅ 既存機能・テストスイートの完全保持
 
-### 2025-07-05 OptimizedFirestoreDLsiteWorkData完全統合・テストカバレッジ修正完了
+### 2025-07-05 WorkDocument完全統合・テストカバレッジ修正完了
 
 **実行した操作**:
-- ✅ `OptimizedFirestoreDLsiteWorkData` 統合データ構造への完全移行
+- ✅ `WorkDocument` 統合データ構造への完全移行（当時は`OptimizedFirestoreDLsiteWorkData`として実装）
 - ✅ 下位互換性コード削除: 旧 `FirestoreDLsiteWorkData` 関連コード・テスト・インポートの完全削除
 - ✅ 存在しないフィールド削除: `design`・`otherCreators`・`userEvaluationCount`・`basicInfo` 参照除去
 - ✅ テストカバレッジ修正: shared-types(50%)・functions(78%) 適正閾値設定

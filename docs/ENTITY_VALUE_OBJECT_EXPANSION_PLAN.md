@@ -9,7 +9,7 @@ Entity/Value Objectアーキテクチャの第2フェーズとして、残され
 ### 現状の課題
 
 現在の型名は機能的だが冗長：
-- `OptimizedFirestoreDLsiteWorkData` → 提案: `Work`
+- ~~`OptimizedFirestoreDLsiteWorkData` → 提案: `Work`~~ **完了: `WorkDocument`に変更済み (2025-07-26)**
 - `DLsiteRawApiResponse` → 提案: `DLsiteApiResponse`
 - `UnifiedDataCollectionMetadata` → 提案: `CollectionMetadata`
 - `FirestoreFieldTimestamp` → 提案: `Timestamp`
@@ -19,14 +19,13 @@ Entity/Value Objectアーキテクチャの第2フェーズとして、残され
 #### Phase 1: エイリアス導入（影響最小化）
 ```typescript
 // packages/shared-types/src/aliases/index.ts
-export type Work = OptimizedFirestoreDLsiteWorkData;
+// WorkDocument は既に実装済み（OptimizedFirestoreDLsiteWorkDataから名称変更）
 export type DLsiteApiResponse = DLsiteRawApiResponse;
 export type CollectionMetadata = UnifiedDataCollectionMetadata;
 export type Timestamp = FirestoreFieldTimestamp;
 
 // 段階的移行のための再エクスポート
 export {
-  OptimizedFirestoreDLsiteWorkData,
   DLsiteRawApiResponse,
   UnifiedDataCollectionMetadata,
   FirestoreFieldTimestamp
@@ -41,11 +40,11 @@ export {
 
 #### Phase 3: 旧名称の廃止
 ```typescript
-// 廃止予定マーク
+// 廃止予定マーク（WorkDocumentは廃止済み）
 /**
- * @deprecated Use `Work` instead
+ * @deprecated Use `DLsiteApiResponse` instead
  */
-export type OptimizedFirestoreDLsiteWorkData = Work;
+export type DLsiteRawApiResponse = DLsiteApiResponse;
 ```
 
 ### リスクと対策
@@ -91,7 +90,7 @@ export interface WorkV2 {
 
 ```typescript
 // packages/shared-types/src/migrations/work-migration.ts
-export function migrateWorkV1ToV2(v1: Work): WorkV2 {
+export function migrateWorkV1ToV2(v1: WorkDocument): WorkV2 {
   return {
     id: v1.id,
     version: 2,
