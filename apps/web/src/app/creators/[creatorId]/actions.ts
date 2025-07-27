@@ -1,15 +1,15 @@
 "use server";
 
 import type {
-	CreatorInfo,
+	CreatorPageInfo,
 	CreatorWorkMapping,
-	OptimizedFirestoreDLsiteWorkData,
+	WorkDocument,
+	WorkPlainObject,
 } from "@suzumina.click/shared-types";
-import { isValidCreatorId } from "@suzumina.click/shared-types";
+import { convertToWorkPlainObject, isValidCreatorId } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 
-type ExtendedWorkData = OptimizedFirestoreDLsiteWorkData & {
-	releaseDateISO?: string;
+type ExtendedWorkData = WorkDocument & {
 	priceInJPY?: number;
 };
 
@@ -41,7 +41,7 @@ function compareByRating(a: ExtendedWorkData, b: ExtendedWorkData): number {
  */
 function compareByPrice(a: ExtendedWorkData, b: ExtendedWorkData, isHighToLow = false): number {
 	const priceA = a.price?.current || a.priceInJPY || 0;
-	const priceB = b.price?.current || b.priceInJPY || 0;
+	const priceB = b.price?.current || a.priceInJPY || 0;
 	return isHighToLow ? priceB - priceA : priceA - priceB;
 }
 
@@ -70,7 +70,7 @@ function compareWorks(a: ExtendedWorkData, b: ExtendedWorkData, sort: string): n
  * @param creatorId クリエイターID
  * @returns クリエイター情報、存在しない場合はnull
  */
-export async function getCreatorInfo(creatorId: string): Promise<CreatorInfo | null> {
+export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo | null> {
 	// 入力検証
 	if (!isValidCreatorId(creatorId)) {
 		return null;
@@ -89,7 +89,7 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorInfo | n
 		}
 
 		// クリエイター情報の集約
-		const creatorInfo: CreatorInfo = {
+		const creatorInfo: CreatorPageInfo = {
 			id: creatorId,
 			name: "",
 			types: [],
@@ -123,9 +123,7 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorInfo | n
  * @param creatorId クリエイターID
  * @returns 作品一覧
  */
-export async function getCreatorWorks(
-	creatorId: string,
-): Promise<OptimizedFirestoreDLsiteWorkData[]> {
+export async function getCreatorWorks(creatorId: string): Promise<WorkPlainObject[]> {
 	// 入力検証
 	if (!isValidCreatorId(creatorId)) {
 		return [];
@@ -148,7 +146,7 @@ export async function getCreatorWorks(
 		);
 
 		// 作品詳細を取得（バッチ処理）
-		const works: OptimizedFirestoreDLsiteWorkData[] = [];
+		const allWorks: WorkDocument[] = [];
 
 		// Firestoreの whereIn 制限により、一度に10件まで
 		for (let i = 0; i < workIds.length; i += 10) {
@@ -159,18 +157,25 @@ export async function getCreatorWorks(
 			for (const doc of workDocs) {
 				if (doc.exists) {
 					const data = doc.data();
-					works.push({
+					allWorks.push({
 						...data,
 						id: doc.id,
-						// registDate: 文字列またはFirestore Timestampに対応
-						registDate: data?.registDate?.toDate ? data.registDate.toDate() : data?.registDate,
-					} as OptimizedFirestoreDLsiteWorkData);
+					} as WorkDocument);
 				}
 			}
 		}
 
 		// 登録日でソート（新しい順）
-		works.sort((a, b) => compareWorks(a as ExtendedWorkData, b as ExtendedWorkData, "newest"));
+		allWorks.sort((a, b) => compareWorks(a as ExtendedWorkData, b as ExtendedWorkData, "newest"));
+
+		// WorkPlainObjectに変換
+		const works: WorkPlainObject[] = [];
+		for (const work of allWorks) {
+			const plainObject = convertToWorkPlainObject(work);
+			if (plainObject) {
+				works.push(plainObject);
+			}
+		}
 
 		return works;
 	} catch (_error) {
@@ -192,7 +197,7 @@ export async function getCreatorWorksWithPagination(
 	page = 1,
 	limit = 12,
 	sort = "newest",
-): Promise<{ works: OptimizedFirestoreDLsiteWorkData[]; totalCount: number }> {
+): Promise<{ works: WorkPlainObject[]; totalCount: number }> {
 	// 入力検証
 	if (!isValidCreatorId(creatorId)) {
 		return { works: [], totalCount: 0 };
@@ -217,7 +222,7 @@ export async function getCreatorWorksWithPagination(
 		const totalCount = workIds.length;
 
 		// 作品詳細を取得（すべて取得してからソート・ページネーション）
-		const allWorks: OptimizedFirestoreDLsiteWorkData[] = [];
+		const allWorks: WorkDocument[] = [];
 
 		// Firestoreの whereIn 制限により、一度に10件まで
 		for (let i = 0; i < workIds.length; i += 10) {
@@ -231,9 +236,7 @@ export async function getCreatorWorksWithPagination(
 					allWorks.push({
 						...data,
 						id: doc.id,
-						// registDate: 文字列またはFirestore Timestampに対応
-						registDate: data?.registDate?.toDate ? data.registDate.toDate() : data?.registDate,
-					} as OptimizedFirestoreDLsiteWorkData);
+					} as WorkDocument);
 				}
 			}
 		}
@@ -244,9 +247,18 @@ export async function getCreatorWorksWithPagination(
 		// ページネーション適用
 		const startIndex = (page - 1) * limit;
 		const endIndex = startIndex + limit;
-		const paginatedWorks = allWorks.slice(startIndex, endIndex);
+		const paginatedFirestoreWorks = allWorks.slice(startIndex, endIndex);
 
-		return { works: paginatedWorks, totalCount };
+		// WorkPlainObjectに変換
+		const works: WorkPlainObject[] = [];
+		for (const work of paginatedFirestoreWorks) {
+			const plainObject = convertToWorkPlainObject(work);
+			if (plainObject) {
+				works.push(plainObject);
+			}
+		}
+
+		return { works, totalCount };
 	} catch (_error) {
 		// エラー発生時は空配列を返す
 		return { works: [], totalCount: 0 };
@@ -267,8 +279,8 @@ export async function getCreatorWithWorksWithPagination(
 	limit = 12,
 	sort = "newest",
 ): Promise<{
-	creator: CreatorInfo;
-	works: OptimizedFirestoreDLsiteWorkData[];
+	creator: CreatorPageInfo;
+	works: WorkPlainObject[];
 	totalCount: number;
 } | null> {
 	const [creator, worksData] = await Promise.all([
@@ -290,7 +302,7 @@ export async function getCreatorWithWorksWithPagination(
  */
 export async function getCreatorWithWorks(
 	creatorId: string,
-): Promise<{ creator: CreatorInfo; works: OptimizedFirestoreDLsiteWorkData[] } | null> {
+): Promise<{ creator: CreatorPageInfo; works: WorkPlainObject[] } | null> {
 	const [creator, works] = await Promise.all([
 		getCreatorInfo(creatorId),
 		getCreatorWorks(creatorId),

@@ -7,7 +7,6 @@
  */
 
 import type { WorkPlainObject } from "../plain-objects/work-plain";
-import type { FirestoreServerWorkData } from "../types/firestore/work";
 import { Circle } from "../value-objects/work/circle";
 import { WorkCreators } from "../value-objects/work/work-creators";
 import { WorkId } from "../value-objects/work/work-id";
@@ -15,7 +14,7 @@ import { WorkPrice } from "../value-objects/work/work-price";
 import { WorkRating } from "../value-objects/work/work-rating";
 import { WorkTitle } from "../value-objects/work/work-title";
 import { BaseEntity, type EntityValidatable } from "./base/entity";
-import type { WorkCategory, WorkLanguage } from "./work";
+import type { WorkCategory, WorkDocument, WorkLanguage } from "./work";
 
 /**
  * Work metadata for system management
@@ -201,8 +200,14 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	/**
 	 * Creates Work from Firestore data (most important method)
 	 */
-	static fromFirestoreData(data: FirestoreServerWorkData): Work | null {
+	static fromFirestoreData(data: WorkDocument): Work | null {
 		try {
+			// Validate required fields
+			if (!data.productId || !data.title || !data.circle) {
+				// Missing required fields - return null gracefully
+				return null;
+			}
+
 			const workId = new WorkId(data.productId);
 			const title = Work.createTitle(data);
 			const circle = Work.createCircle(data);
@@ -252,52 +257,83 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	/**
 	 * Creates WorkTitle from Firestore data
 	 */
-	private static createTitle(data: FirestoreServerWorkData): WorkTitle {
+	private static createTitle(data: WorkDocument): WorkTitle {
 		return new WorkTitle(data.title, data.titleMasked, data.titleKana, data.altName);
 	}
 
 	/**
 	 * Creates Circle from Firestore data
 	 */
-	private static createCircle(data: FirestoreServerWorkData): Circle {
+	private static createCircle(data: WorkDocument): Circle {
 		return new Circle(data.circleId || "UNKNOWN", data.circle, data.circleEn);
 	}
 
 	/**
 	 * Creates WorkPrice from Firestore data
 	 */
-	private static createPrice(data: FirestoreServerWorkData): WorkPrice {
+	private static createPrice(data: WorkDocument): WorkPrice {
+		// WorkDocument has nested price structure
+		const priceInfo = data.price;
+
 		return new WorkPrice(
-			data.currentPrice,
-			data.currency || "JPY",
-			data.originalPrice,
-			data.discount,
-			data.point,
+			priceInfo.current,
+			priceInfo.currency || "JPY",
+			priceInfo.original,
+			priceInfo.discount,
+			priceInfo.point,
 		);
 	}
 
 	/**
 	 * Creates WorkCreators from Firestore data
 	 */
-	private static createCreators(data: FirestoreServerWorkData): WorkCreators {
-		return WorkCreators.fromLegacyArrays({
-			voiceActors: data.voiceActors,
-			scenario: data.scenario,
-			illustration: data.illustration,
-			music: data.music,
-			author: data.author,
-		});
+	private static createCreators(data: WorkDocument): WorkCreators {
+		// creatorsフィールドがある場合はそれを使用
+		if (data.creators) {
+			// Convert optional id to required id with fallback
+			const normalizedCreators = {
+				voice_by: (data.creators.voice_by || []).map((c) => ({
+					id: c.id || c.name,
+					name: c.name,
+				})),
+				scenario_by: (data.creators.scenario_by || []).map((c) => ({
+					id: c.id || c.name,
+					name: c.name,
+				})),
+				illust_by: (data.creators.illust_by || []).map((c) => ({
+					id: c.id || c.name,
+					name: c.name,
+				})),
+				music_by: (data.creators.music_by || []).map((c) => ({
+					id: c.id || c.name,
+					name: c.name,
+				})),
+				others_by: (data.creators.others_by || []).map((c) => ({
+					id: c.id || c.name,
+					name: c.name,
+				})),
+				created_by: (data.creators.created_by || []).map((c) => ({
+					id: c.id || c.name,
+					name: c.name,
+				})),
+			};
+			return WorkCreators.fromCreatorsObject(normalizedCreators);
+		}
+
+		// creatorsフィールドがない場合は空のWorkCreatorsを返す
+		return new WorkCreators();
 	}
 
 	/**
 	 * Creates WorkRating from Firestore data
 	 */
-	private static createRating(data: FirestoreServerWorkData): WorkRating | undefined {
-		if (data.ratingStars === undefined || data.ratingCount === undefined) {
+	private static createRating(data: WorkDocument): WorkRating | undefined {
+		// WorkDocument has nested rating structure
+		if (!data.rating) {
 			return undefined;
 		}
 
-		const distribution = data.ratingDetail?.reduce(
+		const distribution = data.rating.ratingDetail?.reduce(
 			(acc, detail) => {
 				acc[detail.review_point] = detail.count;
 				return acc;
@@ -306,10 +342,10 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 		);
 
 		return new WorkRating(
-			data.ratingStars,
-			data.ratingCount,
-			data.averageRating || data.ratingStars,
-			data.reviewCount,
+			data.rating.stars,
+			data.rating.count,
+			data.rating.averageDecimal || data.rating.stars,
+			data.rating.reviewCount,
 			distribution,
 		);
 	}
@@ -317,7 +353,7 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	/**
 	 * Creates WorkExtendedInfo from Firestore data
 	 */
-	private static createExtendedInfo(data: FirestoreServerWorkData): WorkExtendedInfo {
+	private static createExtendedInfo(data: WorkDocument): WorkExtendedInfo {
 		return {
 			description: data.description || "",
 			ageRating: data.ageRating,
@@ -343,7 +379,7 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	/**
 	 * Creates WorkMetadata from Firestore data
 	 */
-	private static createMetadata(data: FirestoreServerWorkData): WorkMetadata {
+	private static createMetadata(data: WorkDocument): WorkMetadata {
 		const convertTimestamp = (timestamp: unknown): Date | undefined => {
 			if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
 				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
@@ -368,7 +404,7 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	/**
 	 * Creates WorkSeriesInfo from Firestore data
 	 */
-	private static createSeriesInfo(data: FirestoreServerWorkData): WorkSeriesInfo | undefined {
+	private static createSeriesInfo(data: WorkDocument): WorkSeriesInfo | undefined {
 		if (!data.seriesId && !data.seriesName) {
 			return undefined;
 		}
@@ -384,7 +420,7 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	/**
 	 * Creates WorkSalesStatus from Firestore data
 	 */
-	private static createSalesStatus(data: FirestoreServerWorkData): WorkSalesStatus | undefined {
+	private static createSalesStatus(data: WorkDocument): WorkSalesStatus | undefined {
 		if (!data.salesStatus) {
 			return undefined;
 		}
@@ -402,7 +438,7 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	/**
 	 * Converts to Firestore format for persistence
 	 */
-	toFirestore(): FirestoreServerWorkData {
+	toFirestore(): WorkDocument {
 		return {
 			id: this.id.toString(),
 			productId: this.id.toString(),
@@ -422,33 +458,42 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 			thumbnailUrl: this._extendedInfo.thumbnailUrl,
 			highResImageUrl: this._extendedInfo.highResImageUrl,
 
-			// Price information
-			currentPrice: this.price.current,
-			originalPrice: this.price.original,
-			currency: this.price.currency,
-			discount: this.price.discount,
-			point: this.price.point,
-			isFreeOrMissingPrice: this.price.isFree(),
+			// Price information (nested structure)
+			price: {
+				current: this.price.current,
+				original: this.price.original,
+				currency: this.price.currency,
+				discount: this.price.discount,
+				point: this.price.point,
+				isFreeOrMissingPrice: this.price.isFree(),
+			},
 
-			// Rating information
-			ratingStars: this._rating?.stars,
-			ratingCount: this._rating?.count,
-			reviewCount: this._rating?.reviewCount,
-			averageRating: this._rating?.average,
-			ratingDetail: this._rating?.distribution
-				? Object.entries(this._rating.distribution).map(([point, count]) => ({
-						review_point: Number.parseInt(point, 10),
-						count,
-						ratio: (count / (this._rating?.count || 1)) * 100,
-					}))
+			// Rating information (nested structure)
+			rating: this._rating
+				? {
+						stars: this._rating.stars,
+						count: this._rating.count,
+						reviewCount: this._rating.reviewCount,
+						averageDecimal: this._rating.average,
+						ratingDetail: this._rating.distribution
+							? Object.entries(this._rating.distribution).map(([point, count]) => ({
+									review_point: Number.parseInt(point, 10),
+									count,
+									ratio: (count / (this._rating?.count || 1)) * 100,
+								}))
+							: undefined,
+					}
 				: undefined,
 
-			// Creators
-			voiceActors: this._creators.voiceActors,
-			scenario: this._creators.scenario,
-			illustration: this._creators.illustration,
-			music: this._creators.music,
-			author: this._creators.others,
+			// Creators - 正規化された構造
+			creators: {
+				voice_by: this._creators.voiceActors,
+				scenario_by: this._creators.scenario,
+				illust_by: this._creators.illustration,
+				music_by: this._creators.music,
+				others_by: this._creators.others,
+				created_by: [],
+			},
 
 			// Extended info
 			genres: this._extendedInfo.genres,
@@ -499,9 +544,9 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 			})),
 
 			// Timestamps
-			createdAt: this._metadata.createdAt,
-			updatedAt: this._metadata.updatedAt,
-			lastFetchedAt: this._metadata.lastFetchedAt,
+			createdAt: this._metadata.createdAt.toISOString(),
+			updatedAt: this._metadata.updatedAt.toISOString(),
+			lastFetchedAt: this._metadata.lastFetchedAt.toISOString(),
 		};
 	}
 
@@ -687,7 +732,144 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 		);
 	}
 
+	// === Update Methods (returns new instance) ===
+
+	/**
+	 * Updates the work title
+	 */
+	updateTitle(newTitle: string): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._title = WorkTitle.create(newTitle);
+		return cloned;
+	}
+
+	/**
+	 * Updates the work price
+	 */
+	updatePrice(newPrice: WorkPrice): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._price = newPrice;
+		return cloned;
+	}
+
+	/**
+	 * Updates the work rating
+	 */
+	updateRating(newRating: WorkRating | undefined): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._rating = newRating;
+		return cloned;
+	}
+
+	/**
+	 * Updates the work creators
+	 */
+	updateCreators(newCreators: WorkCreators): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._creators = newCreators;
+		return cloned;
+	}
+
+	/**
+	 * Updates the sales status
+	 */
+	updateSalesStatus(newStatus: WorkSalesStatus | undefined): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._salesStatus = newStatus;
+		return cloned;
+	}
+
+	/**
+	 * Updates the series info
+	 */
+	updateSeriesInfo(newSeriesInfo: WorkSeriesInfo | undefined): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._seriesInfo = newSeriesInfo;
+		return cloned;
+	}
+
 	// === Business Logic Methods ===
+
+	/**
+	 * Determines the main category based on work format
+	 */
+	determineMainCategory(): string {
+		const format = this._extendedInfo.workFormat?.toLowerCase() || "";
+
+		if (format.includes("voice") || format.includes("音声") || format.includes("ボイス")) {
+			return "voice";
+		}
+		if (format.includes("game") || format.includes("ゲーム")) {
+			return "game";
+		}
+		if (format.includes("comic") || format.includes("manga") || format.includes("漫画")) {
+			return "comic";
+		}
+		if (format.includes("cg") || format.includes("illust") || format.includes("イラスト")) {
+			return "illustration";
+		}
+		if (format.includes("novel") || format.includes("小説")) {
+			return "novel";
+		}
+		if (format.includes("video") || format.includes("動画")) {
+			return "video";
+		}
+
+		return "other";
+	}
+
+	/**
+	 * Calculates popularity score (1-100)
+	 */
+	calculatePopularityScore(): number {
+		let score = 0;
+
+		// Review rating contribution (max 40 points)
+		if (this._rating) {
+			score += (this._rating.stars / 5) * 40;
+		}
+
+		// Review count contribution (max 30 points)
+		const reviewCount = this._rating?.count || 0;
+		if (reviewCount > 0) {
+			// Logarithmic scale (1000 reviews = max points)
+			score += Math.min(30, (Math.log10(reviewCount + 1) / 3) * 30);
+		}
+
+		// New release bonus (max 10 points)
+		if (this.isNewRelease()) {
+			const daysSinceRelease = this.getDaysSinceRelease();
+			if (daysSinceRelease < 30) {
+				score += 10 * (1 - daysSinceRelease / 30);
+			}
+		}
+
+		// Discount bonus (max 10 points)
+		if (this.price.isDiscounted()) {
+			const discountRate = this.price.discount || 0;
+			score += Math.min(10, discountRate / 10);
+		}
+
+		// Other factors (max 10 points)
+		if (this.isVoiceWork()) score += 5; // Voice work bonus
+		if (this._seriesInfo) score += 5; // Series work bonus
+
+		return Math.round(Math.min(100, score));
+	}
+
+	/**
+	 * Gets days since release
+	 */
+	private getDaysSinceRelease(): number {
+		if (!this._metadata.releaseDate) return Number.POSITIVE_INFINITY;
+		return Math.floor((Date.now() - this._metadata.releaseDate.getTime()) / (1000 * 60 * 60 * 24));
+	}
 
 	/**
 	 * Checks if this is adult content

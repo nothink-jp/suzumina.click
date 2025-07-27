@@ -1,4 +1,5 @@
 import type { DateRange, Price, Rating } from "@suzumina.click/shared-types";
+import { isValidCircleId, WorkId } from "@suzumina.click/shared-types";
 
 /**
  * Work Validation Service
@@ -8,16 +9,18 @@ import type { DateRange, Price, Rating } from "@suzumina.click/shared-types";
 export class WorkValidationService {
 	/**
 	 * 作品IDの形式を検証
+	 * @deprecated Use WorkId.isValidDLsiteWorkId() instead
 	 */
 	static isValidWorkId(workId: string): boolean {
-		return /^RJ\d{8}$/.test(workId);
+		return WorkId.isValidDLsiteWorkId(workId);
 	}
 
 	/**
 	 * サークルIDの形式を検証
+	 * @deprecated Use isValidCircleId from shared-types instead
 	 */
 	static isValidCircleId(circleId: string): boolean {
-		return /^RG\d+$/.test(circleId);
+		return isValidCircleId(circleId);
 	}
 
 	/**
@@ -161,7 +164,7 @@ export class WorkValidationService {
 		const errors: string[] = [];
 
 		// ID検証
-		if (!WorkValidationService.isValidWorkId(work.id)) {
+		if (!WorkId.isValidDLsiteWorkId(work.id)) {
 			errors.push(`無効な作品ID形式: ${work.id}`);
 		}
 

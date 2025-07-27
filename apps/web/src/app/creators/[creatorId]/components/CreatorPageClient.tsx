@@ -1,11 +1,7 @@
 "use client";
 
-import type {
-	CreatorInfo,
-	FrontendDLsiteWorkData,
-	OptimizedFirestoreDLsiteWorkData,
-} from "@suzumina.click/shared-types";
-import { convertToFrontendWork, getCreatorTypeLabel } from "@suzumina.click/shared-types";
+import type { CreatorPageInfo, WorkPlainObject } from "@suzumina.click/shared-types";
+import { getCreatorTypeLabel } from "@suzumina.click/shared-types";
 import {
 	ListPageContent,
 	ListPageHeader,
@@ -17,8 +13,8 @@ import WorkList from "@/app/works/components/WorkList";
 import { getCreatorWorksWithPagination } from "../actions";
 
 interface CreatorPageClientProps {
-	creator: CreatorInfo;
-	initialData: OptimizedFirestoreDLsiteWorkData[];
+	creator: CreatorPageInfo;
+	initialData: WorkPlainObject[];
 	initialTotalCount: number;
 	initialPage: number;
 	_searchParams: { [key: string]: string | string[] | undefined };
@@ -32,15 +28,13 @@ export function CreatorPageClient({
 	_searchParams,
 }: CreatorPageClientProps) {
 	const searchParamsHook = useSearchParams();
-	const [data, setData] = useState<FrontendDLsiteWorkData[]>(
-		initialData.map(convertToFrontendWork),
-	);
+	const [data, setData] = useState<WorkPlainObject[]>(initialData);
 	const [totalCount, setTotalCount] = useState(initialTotalCount);
 	const [isLoading, setIsLoading] = useState(false);
 
 	// ヘルパー関数：状態を更新
-	const updateState = useCallback((works: OptimizedFirestoreDLsiteWorkData[], count: number) => {
-		setData(works.map(convertToFrontendWork));
+	const updateState = useCallback((works: WorkPlainObject[], count: number) => {
+		setData(works);
 		setTotalCount(count);
 	}, []);
 

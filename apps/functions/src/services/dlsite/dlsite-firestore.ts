@@ -5,7 +5,7 @@
  */
 
 import type { Query } from "@google-cloud/firestore";
-import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
 import { chunkArray } from "../../shared/array-utils";
 import * as logger from "../../shared/logger";
@@ -20,7 +20,7 @@ const DLSITE_WORKS_COLLECTION = "dlsiteWorks";
  * 単一チャンクのバッチ処理
  */
 async function processChunk(
-	chunk: OptimizedFirestoreDLsiteWorkData[],
+	chunk: WorkDocument[],
 	chunkIndex: number,
 	totalChunks: number,
 ): Promise<void> {
@@ -45,7 +45,7 @@ async function processChunk(
  * チャンク処理失敗をハンドリング
  */
 async function handleChunkFailure(
-	chunk: OptimizedFirestoreDLsiteWorkData[],
+	chunk: WorkDocument[],
 	chunkIndex: number,
 	chunkError: unknown,
 ): Promise<void> {
@@ -81,7 +81,7 @@ async function handleChunkFailure(
 /**
  * 分割バッチ処理
  */
-async function processChunkedBatch(works: OptimizedFirestoreDLsiteWorkData[]): Promise<void> {
+async function processChunkedBatch(works: WorkDocument[]): Promise<void> {
 	const chunks = chunkArray(works, 50);
 	logger.info(`📦 分割バッチ処理: ${chunks.length}チャンク (50件/チャンク)`);
 
@@ -114,7 +114,7 @@ async function processChunkedBatch(works: OptimizedFirestoreDLsiteWorkData[]): P
 /**
  * 単一バッチ処理
  */
-async function processSingleBatch(works: OptimizedFirestoreDLsiteWorkData[]): Promise<void> {
+async function processSingleBatch(works: WorkDocument[]): Promise<void> {
 	const batch = firestore.batch();
 	const collection = firestore.collection(DLSITE_WORKS_COLLECTION);
 
@@ -132,9 +132,7 @@ async function processSingleBatch(works: OptimizedFirestoreDLsiteWorkData[]): Pr
 /**
  * 作品データをFirestoreに保存 (最適化構造対応)
  */
-export async function saveWorksToFirestore(
-	works: OptimizedFirestoreDLsiteWorkData[],
-): Promise<void> {
+export async function saveWorksToFirestore(works: WorkDocument[]): Promise<void> {
 	if (works.length === 0) {
 		logger.info("保存する作品データがありません");
 		return;
@@ -176,7 +174,7 @@ export async function saveWorksToFirestore(
  */
 export async function getExistingWorksMap(
 	productIds: string[],
-): Promise<Map<string, OptimizedFirestoreDLsiteWorkData>> {
+): Promise<Map<string, WorkDocument>> {
 	const existingWorksMap = new Map();
 
 	if (productIds.length === 0) {
@@ -195,9 +193,9 @@ export async function getExistingWorksMap(
 		const chunkPromises = chunks.map(async (chunk, index) => {
 			const snapshot = await collection.where("productId", "in", chunk).get();
 
-			const chunkResults = new Map<string, OptimizedFirestoreDLsiteWorkData>();
+			const chunkResults = new Map<string, WorkDocument>();
 			for (const doc of snapshot.docs) {
-				const data = doc.data() as OptimizedFirestoreDLsiteWorkData;
+				const data = doc.data() as WorkDocument;
 				chunkResults.set(data.productId, data);
 			}
 
@@ -281,7 +279,7 @@ export async function checkMultipleWorksExist(productIds: string[]): Promise<Map
 			}
 			// 存在するIDをtrueに更新
 			for (const doc of snapshot.docs) {
-				const data = doc.data() as OptimizedFirestoreDLsiteWorkData;
+				const data = doc.data() as WorkDocument;
 				chunkResults.set(data.productId, true);
 			}
 
@@ -318,9 +316,7 @@ export async function checkMultipleWorksExist(productIds: string[]): Promise<Map
 /**
  * 特定の作品データを取得 (最適化構造対応)
  */
-export async function getWorkFromFirestore(
-	productId: string,
-): Promise<OptimizedFirestoreDLsiteWorkData | null> {
+export async function getWorkFromFirestore(productId: string): Promise<WorkDocument | null> {
 	try {
 		const doc = await firestore.collection(DLSITE_WORKS_COLLECTION).doc(productId).get();
 
@@ -328,7 +324,7 @@ export async function getWorkFromFirestore(
 			return null;
 		}
 
-		return doc.data() as OptimizedFirestoreDLsiteWorkData;
+		return doc.data() as WorkDocument;
 	} catch (error) {
 		logger.error(`作品データの取得に失敗: ${productId}`, { error });
 		throw new Error(`作品データの取得に失敗: ${productId}`);
@@ -344,7 +340,7 @@ export async function searchWorksFromFirestore(options: {
 	limit?: number;
 	orderBy?: "createdAt" | "updatedAt" | "price.current";
 	orderDirection?: "asc" | "desc";
-}): Promise<OptimizedFirestoreDLsiteWorkData[]> {
+}): Promise<WorkDocument[]> {
 	try {
 		let query: Query = firestore.collection(DLSITE_WORKS_COLLECTION);
 
@@ -369,9 +365,9 @@ export async function searchWorksFromFirestore(options: {
 
 		const snapshot = await query.get();
 
-		const works: OptimizedFirestoreDLsiteWorkData[] = [];
+		const works: WorkDocument[] = [];
 		for (const doc of snapshot.docs) {
-			works.push(doc.data() as OptimizedFirestoreDLsiteWorkData);
+			works.push(doc.data() as WorkDocument);
 		}
 
 		logger.info(`作品検索完了: ${works.length}件取得`);
@@ -397,7 +393,7 @@ export async function getWorksStatistics(): Promise<{
 		const categoryCounts: Record<string, number> = {};
 
 		for (const doc of snapshot.docs) {
-			const data = doc.data() as OptimizedFirestoreDLsiteWorkData;
+			const data = doc.data() as WorkDocument;
 
 			// 最終更新日時を追跡
 			if (!lastUpdated || data.updatedAt > lastUpdated) {

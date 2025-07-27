@@ -38,7 +38,7 @@ export * from "./migrations";
 // === Plain Objects ===
 export * from "./plain-objects/work-plain";
 // === Firestore Types ===
-export * from "./types/firestore/work";
+// FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead
 // === Utilities ===
 // 年齢制限・レーティング関連の型とユーティリティのエクスポート
 export * from "./utilities/age-rating";

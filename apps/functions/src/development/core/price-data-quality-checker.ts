@@ -4,10 +4,7 @@
  * RJ01414353で発見された二重割引問題を含む、価格データの品質問題を検出・分析
  */
 
-import type {
-	OptimizedFirestoreDLsiteWorkData,
-	PriceHistoryDocument,
-} from "@suzumina.click/shared-types";
+import type { PriceHistoryDocument, WorkDocument } from "@suzumina.click/shared-types";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
@@ -58,7 +55,7 @@ class PriceDataQualityChecker {
 		console.log(`📊 総作品数: ${this.totalWorks}`);
 
 		for (const workDoc of worksSnapshot.docs) {
-			const workData = workDoc.data() as OptimizedFirestoreDLsiteWorkData;
+			const workData = workDoc.data() as WorkDocument;
 			await this.checkWorkPriceData(workDoc.id, workData);
 			this.checkedWorks++;
 
@@ -76,10 +73,7 @@ class PriceDataQualityChecker {
 	/**
 	 * 特定作品の価格データをチェック
 	 */
-	private async checkWorkPriceData(
-		workId: string,
-		workData: OptimizedFirestoreDLsiteWorkData,
-	): Promise<void> {
+	private async checkWorkPriceData(workId: string, workData: WorkDocument): Promise<void> {
 		// 現在価格の妥当性チェック
 		this.checkCurrentPriceValidity(workId, workData);
 
@@ -93,10 +87,7 @@ class PriceDataQualityChecker {
 	/**
 	 * 現在価格の妥当性をチェック
 	 */
-	private checkCurrentPriceValidity(
-		workId: string,
-		workData: OptimizedFirestoreDLsiteWorkData,
-	): void {
+	private checkCurrentPriceValidity(workId: string, workData: WorkDocument): void {
 		const currentPrice = workData.price?.current;
 		const discountRate = workData.discountRate;
 		const officialPrice = workData.officialPrice;
@@ -160,10 +151,7 @@ class PriceDataQualityChecker {
 	/**
 	 * 価格履歴データの妥当性をチェック
 	 */
-	private async checkPriceHistoryData(
-		workId: string,
-		workData: OptimizedFirestoreDLsiteWorkData,
-	): Promise<void> {
+	private async checkPriceHistoryData(workId: string, workData: WorkDocument): Promise<void> {
 		try {
 			const priceHistorySnapshot = await db
 				.collection("dlsiteWorks")
@@ -223,7 +211,7 @@ class PriceDataQualityChecker {
 	/**
 	 * 割引ロジックの妥当性をチェック
 	 */
-	private checkDiscountLogic(workId: string, workData: OptimizedFirestoreDLsiteWorkData): void {
+	private checkDiscountLogic(workId: string, workData: WorkDocument): void {
 		const currentPrice = workData.price?.current;
 		const discountRate = workData.discountRate;
 		const officialPrice = workData.officialPrice;
@@ -257,7 +245,7 @@ class PriceDataQualityChecker {
 	 */
 	private checkPriceConsistency(
 		workId: string,
-		workData: OptimizedFirestoreDLsiteWorkData,
+		workData: WorkDocument,
 		priceHistory: PriceHistoryDocument[],
 	): void {
 		const latestHistory = priceHistory[0];

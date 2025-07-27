@@ -1,9 +1,9 @@
-import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkDocument } from "@suzumina.click/shared-types";
 import { describe, expect, it } from "vitest";
 import { DataAggregationService } from "../data-aggregation-service";
 
 describe("DataAggregationService", () => {
-	const createMockWork = (overrides: Partial<OptimizedFirestoreDLsiteWorkData> = {}) =>
+	const createMockWork = (overrides: Partial<WorkDocument> = {}) =>
 		({
 			id: "RJ123456",
 			productId: "RJ123456",
@@ -20,7 +20,7 @@ describe("DataAggregationService", () => {
 			rating: { stars: 45, count: 100 },
 			favoriteCount: 500,
 			...overrides,
-		}) as OptimizedFirestoreDLsiteWorkData;
+		}) as WorkDocument;
 
 	describe("aggregateWorkStatistics", () => {
 		it("should calculate basic statistics", () => {

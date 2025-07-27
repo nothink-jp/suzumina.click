@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DLsiteRawApiResponse } from "../../api-schemas/dlsite-raw";
 
-import type { OptimizedFirestoreDLsiteWorkData } from "../../entities/work";
+import type { WorkDocument } from "../../entities/work";
 import type { FirestoreWorkEvaluation } from "../../entities/work-evaluation";
 import type { DLsiteApiResponse, WorkDoc, WorkEvaluation } from "../index";
 
@@ -16,7 +16,7 @@ type AssertEqual<T, U> = T extends U ? (U extends T ? true : false) : false;
 describe("Type Aliases", () => {
 	describe("Entity Aliases", () => {
 		it("should correctly alias WorkDoc type", () => {
-			type TestWork = AssertEqual<WorkDoc, OptimizedFirestoreDLsiteWorkData>;
+			type TestWork = AssertEqual<WorkDoc, WorkDocument>;
 			const _test: TestWork = true;
 			expect(_test).toBe(true);
 		});

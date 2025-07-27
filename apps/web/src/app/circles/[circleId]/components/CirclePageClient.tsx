@@ -1,11 +1,6 @@
 "use client";
 
-import type {
-	CircleData,
-	FrontendDLsiteWorkData,
-	OptimizedFirestoreDLsiteWorkData,
-} from "@suzumina.click/shared-types";
-import { convertToFrontendWork } from "@suzumina.click/shared-types";
+import type { CircleData, WorkPlainObject } from "@suzumina.click/shared-types";
 import {
 	ListPageContent,
 	ListPageHeader,
@@ -18,7 +13,7 @@ import { getCircleWorksWithPagination } from "../actions";
 
 interface CirclePageClientProps {
 	circle: CircleData;
-	initialData: OptimizedFirestoreDLsiteWorkData[];
+	initialData: WorkPlainObject[];
 	initialTotalCount: number;
 	initialPage: number;
 	_searchParams: { [key: string]: string | string[] | undefined };
@@ -32,15 +27,13 @@ export function CirclePageClient({
 	_searchParams,
 }: CirclePageClientProps) {
 	const searchParamsHook = useSearchParams();
-	const [data, setData] = useState<FrontendDLsiteWorkData[]>(
-		initialData.map(convertToFrontendWork),
-	);
+	const [data, setData] = useState<WorkPlainObject[]>(initialData);
 	const [totalCount, setTotalCount] = useState(initialTotalCount);
 	const [isLoading, setIsLoading] = useState(false);
 
 	// ヘルパー関数：状態を更新
-	const updateState = useCallback((works: OptimizedFirestoreDLsiteWorkData[], count: number) => {
-		setData(works.map(convertToFrontendWork));
+	const updateState = useCallback((works: WorkPlainObject[], count: number) => {
+		setData(works);
 		setTotalCount(count);
 	}, []);
 

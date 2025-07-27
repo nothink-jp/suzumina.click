@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { FirestoreServerWorkData } from "../../types/firestore/work";
+import type { WorkDocument } from "../../entities/work";
 import {
 	convertToWorkPlainObject,
 	convertToWorkPlainObjects,
@@ -12,9 +12,7 @@ import {
 } from "../work-conversions";
 
 describe("work-conversions", () => {
-	const createMockFirestoreData = (
-		overrides?: Partial<FirestoreServerWorkData>,
-	): FirestoreServerWorkData => ({
+	const createMockFirestoreData = (overrides?: Partial<WorkDocument>): WorkDocument => ({
 		id: "RJ123456",
 		productId: "RJ123456",
 		title: "Test Work",
@@ -25,18 +23,34 @@ describe("work-conversions", () => {
 		category: "SOU",
 		workUrl: "https://www.dlsite.com/maniax/work/=/product_id/RJ123456.html",
 		thumbnailUrl: "https://example.com/thumb.jpg",
-		currentPrice: 1000,
-		currency: "JPY",
+		price: {
+			current: 1000,
+			original: 1000,
+			currency: "JPY",
+		},
+		rating: {
+			stars: 4.5,
+			count: 100,
+		},
 		genres: ["ボイス", "ASMR"],
+		customGenres: [],
+		creators: {
+			voice_by: [],
+			scenario_by: [],
+			illust_by: [],
+			music_by: [],
+			others_by: [],
+			created_by: [],
+		},
 		sampleImages: [],
-		createdAt: new Date("2025-01-01"),
-		updatedAt: new Date("2025-01-01"),
-		lastFetchedAt: new Date("2025-01-01"),
+		createdAt: "2025-01-01T00:00:00.000Z",
+		updatedAt: "2025-01-01T00:00:00.000Z",
+		lastFetchedAt: "2025-01-01T00:00:00.000Z",
 		...overrides,
 	});
 
 	describe("convertToWorkPlainObject", () => {
-		it("converts valid FirestoreServerWorkData to WorkPlainObject", () => {
+		it("converts valid WorkDocument to WorkPlainObject", () => {
 			const firestoreData = createMockFirestoreData();
 			const result = convertToWorkPlainObject(firestoreData);
 
@@ -161,7 +175,7 @@ describe("work-conversions", () => {
 			expect(result).toBe(plainObject);
 		});
 
-		it("converts FirestoreServerWorkData to WorkPlainObject", () => {
+		it("converts WorkDocument to WorkPlainObject", () => {
 			const firestoreData = createMockFirestoreData();
 			const result = normalizeToWorkPlainObject(firestoreData);
 

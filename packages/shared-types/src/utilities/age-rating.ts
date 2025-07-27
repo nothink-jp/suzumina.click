@@ -3,8 +3,8 @@
  */
 
 import { z } from "zod";
+import type { WorkDocument } from "../entities/work";
 import { Work } from "../entities/work-entity";
-import type { FirestoreServerWorkData } from "../types/firestore/work";
 
 /**
  * 年齢制限レーティングの型定義
@@ -188,15 +188,16 @@ export function filterR18Content<T>(
 }
 
 /**
- * Type guard to check if an item is FirestoreServerWorkData
+ * Type guard to check if an item is WorkDocument
  */
-function isFirestoreWorkData(item: unknown): item is FirestoreServerWorkData {
+function isFirestoreWorkData(item: unknown): item is WorkDocument {
 	return (
 		typeof item === "object" &&
 		item !== null &&
 		"productId" in item &&
 		"title" in item &&
-		"price" in item
+		"price" in item &&
+		typeof (item as Record<string, unknown>).price === "object"
 	);
 }
 

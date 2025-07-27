@@ -1,4 +1,5 @@
-import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkDocument } from "@suzumina.click/shared-types";
+import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getWorkById, getWorks } from "../actions";
 
@@ -19,22 +20,106 @@ vi.mock("@/lib/firestore", () => ({
 	getFirestore: vi.fn(() => mockFirestore),
 }));
 
-// convertToFrontendWorkのモック
-vi.mock("@suzumina.click/shared-types", () => ({
-	convertToFrontendWork: vi.fn((data) => ({
-		...data,
-		// フロントエンド用の変換処理をシンプルにモック
-		createdAt: data.createdAt?.toISOString?.() || data.createdAt,
-		updatedAt: data.updatedAt?.toISOString?.() || data.updatedAt,
-		lastFetchedAt: data.lastFetchedAt?.toISOString?.() || data.lastFetchedAt,
-	})),
-}));
+// convertToWorkPlainObjectのモック
+vi.mock("@suzumina.click/shared-types", () => {
+	// モック用のヘルパー関数を定義（複雑度を下げるため）
+	const createMockPrice = (data: any) => {
+		if (!data.price) {
+			return {
+				current: 0,
+				currency: "JPY",
+				isFree: false,
+				isDiscounted: false,
+				formattedPrice: "¥0",
+			};
+		}
+		return {
+			current: data.price.current || 0,
+			original: data.price.original,
+			currency: data.price.currency || "JPY",
+			discount: data.price.discount,
+			point: data.price.point,
+			isFree: data.price.isFreeOrMissingPrice || false,
+			isDiscounted: !!data.price.discount,
+			formattedPrice: `¥${(data.price.current || 0).toLocaleString()}`,
+		};
+	};
+
+	const createMockRating = (data: any) => {
+		if (!data.rating) return undefined;
+		return {
+			stars: data.rating.stars,
+			count: data.rating.count || 0,
+			average: data.rating.averageDecimal || data.rating.stars,
+			reviewCount: data.rating.reviewCount,
+			hasRatings: true,
+			isHighlyRated: data.rating.stars >= 4,
+			reliability: data.rating.count > 50 ? "high" : data.rating.count > 10 ? "medium" : "low",
+			formattedRating: `${data.rating.stars}`,
+		};
+	};
+
+	const mockConvertToWorkPlainObject = (data: any) => {
+		if (!data || !data.id || !data.productId) return null;
+		return {
+			...data,
+			// フロントエンド用の変換処理をシンプルにモック
+			createdAt: data.createdAt?.toISOString?.() || data.createdAt,
+			updatedAt: data.updatedAt?.toISOString?.() || data.updatedAt,
+			lastFetchedAt: data.lastFetchedAt?.toISOString?.() || data.lastFetchedAt,
+			// OptimizedFirestoreDLsiteWorkDataからWorkPlainObjectへの変換
+			price: createMockPrice(data),
+			rating: createMockRating(data),
+			// 必須フィールドの追加
+			creators: {
+				voiceActors: data.voiceActors || [],
+				scenario: data.scenario || [],
+				illustration: data.illustration || [],
+				music: data.music || [],
+				others: data.author || [],
+			},
+			salesStatus: {
+				isOnSale: true,
+				isDiscounted: false,
+				isFree: false,
+				isSoldOut: false,
+				isReserveWork: false,
+				dlsiteplaySupported: false,
+			},
+			sampleImages: [],
+			genres: data.genres || [],
+			customGenres: [],
+			_computed: {
+				displayTitle: data.title,
+				displayCircle: data.circle,
+				displayCategory: data.category,
+				displayAgeRating: "全年齢",
+				displayReleaseDate: data.releaseDateDisplay || "",
+				relativeUrl: `/works/${data.productId}`,
+				isAdultContent: false,
+				isVoiceWork: data.category === "SOU",
+				isGameWork: false,
+				isMangaWork: false,
+				hasDiscount: false,
+				isNewRelease: false,
+				isPopular: false,
+				primaryLanguage: "ja",
+				availableLanguages: ["ja"],
+				searchableText: `${data.title} ${data.circle}`,
+				tags: data.tags || [],
+			},
+		};
+	};
+
+	return {
+		convertToWorkPlainObject: vi.fn(mockConvertToWorkPlainObject),
+		filterR18Content: vi.fn((items) => items),
+		filterWorksByLanguage: vi.fn((items) => items),
+	};
+});
 
 // テスト用のサンプルデータ
-const createMockWorkData = (
-	productId: string,
-	title: string,
-): OptimizedFirestoreDLsiteWorkData => ({
+const createMockWorkData = (productId: string, title: string): WorkDocument => ({
 	id: productId,
 	productId,
 	title,
@@ -48,8 +133,10 @@ const createMockWorkData = (
 	genres: ["テストジャンル"],
 	category: "SOU",
 	workUrl: `https://www.dlsite.com/maniax/work/=/product_id/${productId}.html`,
+	thumbnailUrl: "https://example.com/thumb.jpg",
 	price: {
 		current: 1000,
+		original: 1000,
 		currency: "JPY",
 	},
 	rating: {
@@ -57,7 +144,6 @@ const createMockWorkData = (
 		count: 100,
 	},
 	tags: ["テストタグ"],
-	thumbnailUrl: `https://img.dlsite.jp/modpub/images2/work/doujin/${productId}/${productId}_img_main.jpg`,
 	sampleImages: [],
 	// 追加の必須フィールド
 	releaseDateISO: "2023-01-01",
@@ -134,17 +220,55 @@ describe("works actions", () => {
 			mockCollection.mockReturnValue({ get: mockGet });
 			mockGet.mockResolvedValue(mockSnapshot);
 
-			// convertToFrontendWorkが一部のデータでエラーを投げるようにモック
-			const { convertToFrontendWork } = await import("@suzumina.click/shared-types");
-			vi.mocked(convertToFrontendWork).mockImplementation((data) => {
+			// convertToWorkPlainObjectが一部のデータでエラーを投げるようにモック
+			vi.mocked(convertToWorkPlainObject).mockImplementation((data) => {
 				if ((data as any).invalidField) {
 					throw new Error("変換エラー");
 				}
+				// 正常なデータの場合は、基本的な変換のみ行う
+				if (!data || !data.id || !data.productId) return null;
+
 				return {
 					...data,
 					createdAt: data.createdAt?.toISOString?.() || data.createdAt,
 					updatedAt: data.updatedAt?.toISOString?.() || data.updatedAt,
 					lastFetchedAt: data.lastFetchedAt?.toISOString?.() || data.lastFetchedAt,
+					// 最小限の必須フィールドのみ追加
+					price: {
+						current: data.price?.current || 0,
+						currency: "JPY",
+						formattedPrice: "¥0",
+					},
+					creators: {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: {},
+					sampleImages: [],
+					genres: [],
+					customGenres: [],
+					_computed: {
+						displayTitle: data.title,
+						displayCircle: data.circle,
+						displayCategory: data.category,
+						displayAgeRating: "全年齢",
+						displayReleaseDate: "",
+						relativeUrl: `/works/${data.productId}`,
+						isAdultContent: false,
+						isVoiceWork: false,
+						isGameWork: false,
+						isMangaWork: false,
+						hasDiscount: false,
+						isNewRelease: false,
+						isPopular: false,
+						primaryLanguage: "ja",
+						availableLanguages: ["ja"],
+						searchableText: "",
+						tags: [],
+					},
 				};
 			});
 
@@ -195,12 +319,15 @@ describe("works actions", () => {
 			const mockWorks = [
 				{
 					...createMockWorkData("RJ123456", "高い作品"),
-					price: { current: 1500, currency: "JPY" },
+					price: { current: 1500, original: 1500, currency: "JPY" },
 				},
-				{ ...createMockWorkData("RJ234567", "安い作品"), price: { current: 500, currency: "JPY" } },
+				{
+					...createMockWorkData("RJ234567", "安い作品"),
+					price: { current: 500, original: 500, currency: "JPY" },
+				},
 				{
 					...createMockWorkData("RJ345678", "中程度作品"),
-					price: { current: 1000, currency: "JPY" },
+					price: { current: 1000, original: 1000, currency: "JPY" },
 				},
 			];
 
@@ -218,6 +345,7 @@ describe("works actions", () => {
 			const result = await getWorks({ page: 1, limit: 10, sort: "price_low" });
 
 			// 価格安い順
+			expect(result.works).toHaveLength(3);
 			expect(result.works[0].price?.current).toBe(500);
 			expect(result.works[1].price?.current).toBe(1000);
 			expect(result.works[2].price?.current).toBe(1500);

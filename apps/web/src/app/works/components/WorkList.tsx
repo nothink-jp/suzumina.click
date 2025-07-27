@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkPlainObject } from "@suzumina.click/shared-types";
 import {
 	WORK_CATEGORY_DISPLAY_NAMES,
 	WORK_LANGUAGE_DISPLAY_NAMES,
@@ -23,7 +23,7 @@ import { useWorkListFilters } from "@/hooks/use-work-list-filters";
 import WorkCard from "./WorkCard";
 
 interface WorkListProps {
-	data: FrontendDLsiteWorkData[];
+	data: WorkPlainObject[];
 	totalCount: number;
 	filteredCount?: number;
 	currentPage: number;
@@ -106,7 +106,7 @@ const SORT_OPTIONS = [
 ];
 
 // 作品グリッドコンポーネント
-function WorkGrid({ data }: { data: FrontendDLsiteWorkData[] }) {
+function WorkGrid({ data }: { data: WorkPlainObject[] }) {
 	return data.length === 0 ? (
 		<ListPageEmptyState
 			icon={<FileText className="mx-auto h-12 w-12" />}

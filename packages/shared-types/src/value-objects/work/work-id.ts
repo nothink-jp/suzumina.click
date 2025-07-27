@@ -24,6 +24,10 @@ export class WorkId {
 		return this.value;
 	}
 
+	toJSON(): string {
+		return this.value;
+	}
+
 	equals(other: WorkId): boolean {
 		return other instanceof WorkId && this.value === other.value;
 	}
@@ -52,5 +56,40 @@ export class WorkId {
 		} catch {
 			return null;
 		}
+	}
+
+	/**
+	 * Creates a WorkId instance
+	 */
+	static create(value: string): WorkId {
+		return new WorkId(value);
+	}
+
+	/**
+	 * Checks if this is a DLsite work ID (RJ followed by 8 digits)
+	 */
+	isDLsiteWorkId(): boolean {
+		return /^RJ\d{8}$/.test(this.value);
+	}
+
+	/**
+	 * Checks if this is a DLsite work ID with legacy format support (RJ + 6-8 digits)
+	 */
+	isDLsiteWorkIdLoose(): boolean {
+		return /^RJ\d{6,8}$/.test(this.value);
+	}
+
+	/**
+	 * Static method to validate DLsite work ID format
+	 */
+	static isValidDLsiteWorkId(value: string): boolean {
+		return /^RJ\d{8}$/.test(value);
+	}
+
+	/**
+	 * Static method to validate DLsite work ID format with legacy support
+	 */
+	static isValidDLsiteWorkIdLoose(value: string): boolean {
+		return /^RJ\d{6,8}$/.test(value);
 	}
 }

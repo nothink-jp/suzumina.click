@@ -1,48 +1,77 @@
 /**
+ * Creator information type
+ */
+export interface CreatorInfo {
+	id: string;
+	name: string;
+}
+
+/**
  * Work Creators Value Object
  *
  * Represents all creators involved in a work
  */
 export class WorkCreators {
 	constructor(
-		private readonly _voiceActors: string[] = [],
-		private readonly _scenario: string[] = [],
-		private readonly _illustration: string[] = [],
-		private readonly _music: string[] = [],
-		private readonly _others: string[] = [],
+		private readonly _voiceActors: CreatorInfo[] = [],
+		private readonly _scenario: CreatorInfo[] = [],
+		private readonly _illustration: CreatorInfo[] = [],
+		private readonly _music: CreatorInfo[] = [],
+		private readonly _others: CreatorInfo[] = [],
 	) {
 		// Ensure arrays are valid
-		this._voiceActors = this._voiceActors.filter((v) => v?.trim());
-		this._scenario = this._scenario.filter((v) => v?.trim());
-		this._illustration = this._illustration.filter((v) => v?.trim());
-		this._music = this._music.filter((v) => v?.trim());
-		this._others = this._others.filter((v) => v?.trim());
+		this._voiceActors = this._voiceActors.filter((v) => v?.name?.trim());
+		this._scenario = this._scenario.filter((v) => v?.name?.trim());
+		this._illustration = this._illustration.filter((v) => v?.name?.trim());
+		this._music = this._music.filter((v) => v?.name?.trim());
+		this._others = this._others.filter((v) => v?.name?.trim());
 	}
 
-	get voiceActors(): string[] {
+	get voiceActors(): CreatorInfo[] {
 		return [...this._voiceActors];
 	}
 
-	get scenario(): string[] {
+	get scenario(): CreatorInfo[] {
 		return [...this._scenario];
 	}
 
-	get illustration(): string[] {
+	get illustration(): CreatorInfo[] {
 		return [...this._illustration];
 	}
 
-	get music(): string[] {
+	get music(): CreatorInfo[] {
 		return [...this._music];
 	}
 
-	get others(): string[] {
+	get others(): CreatorInfo[] {
 		return [...this._others];
+	}
+
+	// 互換性のための名前のみのゲッター
+	get voiceActorNames(): string[] {
+		return this._voiceActors.map((c) => c.name);
+	}
+
+	get scenarioNames(): string[] {
+		return this._scenario.map((c) => c.name);
+	}
+
+	get illustrationNames(): string[] {
+		return this._illustration.map((c) => c.name);
+	}
+
+	get musicNames(): string[] {
+		return this._music.map((c) => c.name);
+	}
+
+	get otherNames(): string[] {
+		return this._others.map((c) => c.name);
 	}
 
 	/**
 	 * Gets all creators as a flat array
 	 */
-	getAll(): string[] {
+	getAll(): CreatorInfo[] {
 		return [
 			...this._voiceActors,
 			...this._scenario,
@@ -53,10 +82,30 @@ export class WorkCreators {
 	}
 
 	/**
+	 * Gets all creator names as a flat array
+	 */
+	getAllNames(): string[] {
+		return this.getAll().map((c) => c.name);
+	}
+
+	/**
 	 * Gets all unique creators
 	 */
-	getAllUnique(): string[] {
-		return [...new Set(this.getAll())];
+	getAllUnique(): CreatorInfo[] {
+		const uniqueMap = new Map<string, CreatorInfo>();
+		this.getAll().forEach((c) => {
+			if (!uniqueMap.has(c.id)) {
+				uniqueMap.set(c.id, c);
+			}
+		});
+		return Array.from(uniqueMap.values());
+	}
+
+	/**
+	 * Gets all unique creator names
+	 */
+	getAllUniqueNames(): string[] {
+		return [...new Set(this.getAllNames())];
 	}
 
 	/**
@@ -76,15 +125,58 @@ export class WorkCreators {
 	/**
 	 * Gets primary voice actor (first one)
 	 */
-	getPrimaryVoiceActor(): string | undefined {
+	getPrimaryVoiceActor(): CreatorInfo | undefined {
 		return this._voiceActors[0];
+	}
+
+	/**
+	 * Gets primary voice actor name
+	 */
+	getPrimaryVoiceActorName(): string | undefined {
+		return this._voiceActors[0]?.name;
 	}
 
 	/**
 	 * Gets searchable text for all creators
 	 */
 	getSearchableText(): string {
-		return this.getAllUnique().join(" ");
+		return this.getAllUniqueNames().join(" ");
+	}
+
+	/**
+	 * Returns string representation
+	 */
+	toString(): string {
+		const parts: string[] = [];
+		if (this._voiceActors.length > 0) {
+			parts.push(`CV: ${this.voiceActorNames.join(", ")}`);
+		}
+		if (this._scenario.length > 0) {
+			parts.push(`シナリオ: ${this.scenarioNames.join(", ")}`);
+		}
+		if (this._illustration.length > 0) {
+			parts.push(`イラスト: ${this.illustrationNames.join(", ")}`);
+		}
+		if (this._music.length > 0) {
+			parts.push(`音楽: ${this.musicNames.join(", ")}`);
+		}
+		if (this._others.length > 0) {
+			parts.push(`その他: ${this.otherNames.join(", ")}`);
+		}
+		return parts.join(" / ");
+	}
+
+	/**
+	 * Returns JSON representation
+	 */
+	toJSON() {
+		return {
+			voice_by: this._voiceActors,
+			scenario_by: this._scenario,
+			illust_by: this._illustration,
+			music_by: this._music,
+			others_by: this._others,
+		};
 	}
 
 	/**
@@ -97,6 +189,12 @@ export class WorkCreators {
 			illustration: this.illustration,
 			music: this.music,
 			others: this.others,
+			// 互換性のための名前配列
+			voiceActorNames: this.voiceActorNames,
+			scenarioNames: this.scenarioNames,
+			illustrationNames: this.illustrationNames,
+			musicNames: this.musicNames,
+			otherNames: this.otherNames,
 		};
 	}
 
@@ -112,38 +210,35 @@ export class WorkCreators {
 		);
 	}
 
-	private arrayEquals(a: string[], b: string[]): boolean {
+	private arrayEquals(a: CreatorInfo[], b: CreatorInfo[]): boolean {
 		if (a.length !== b.length) return false;
-		return a.every((v, i) => v === b[i]);
+		return a.every((v, i) => b[i] && v.id === b[i].id && v.name === b[i].name);
 	}
 
 	/**
-	 * Creates from DLsite API creators object
+	 * Creates from creators object (normalized from DLsite API)
 	 */
-	static fromCreatorsAPI(creators?: {
-		voice_by?: Array<{ name: string }>;
-		scenario_by?: Array<{ name: string }>;
-		illust_by?: Array<{ name: string }>;
-		music_by?: Array<{ name: string }>;
-		others_by?: Array<{ name: string }>;
-		created_by?: Array<{ name: string }>;
+	static fromCreatorsObject(creators?: {
+		voice_by?: Array<{ id: string; name: string }>;
+		scenario_by?: Array<{ id: string; name: string }>;
+		illust_by?: Array<{ id: string; name: string }>;
+		music_by?: Array<{ id: string; name: string }>;
+		others_by?: Array<{ id: string; name: string }>;
+		created_by?: Array<{ id: string; name: string }>;
 	}): WorkCreators {
 		if (!creators) return new WorkCreators();
 
 		return new WorkCreators(
-			creators.voice_by?.map((c) => c.name) || [],
-			creators.scenario_by?.map((c) => c.name) || [],
-			creators.illust_by?.map((c) => c.name) || [],
-			creators.music_by?.map((c) => c.name) || [],
-			[
-				...(creators.others_by?.map((c) => c.name) || []),
-				...(creators.created_by?.map((c) => c.name) || []),
-			],
+			creators.voice_by || [],
+			creators.scenario_by || [],
+			creators.illust_by || [],
+			creators.music_by || [],
+			[...(creators.others_by || []), ...(creators.created_by || [])],
 		);
 	}
 
 	/**
-	 * Creates from legacy arrays
+	 * Creates from legacy arrays (for backward compatibility)
 	 */
 	static fromLegacyArrays(data: {
 		voiceActors?: string[];
@@ -152,12 +247,13 @@ export class WorkCreators {
 		music?: string[];
 		author?: string[];
 	}): WorkCreators {
+		// レガシー配列からはIDがないので、名前をIDとして使用
 		return new WorkCreators(
-			data.voiceActors || [],
-			data.scenario || [],
-			data.illustration || [],
-			data.music || [],
-			data.author || [],
+			(data.voiceActors || []).map((name) => ({ id: name, name })),
+			(data.scenario || []).map((name) => ({ id: name, name })),
+			(data.illustration || []).map((name) => ({ id: name, name })),
+			(data.music || []).map((name) => ({ id: name, name })),
+			(data.author || []).map((name) => ({ id: name, name })),
 		);
 	}
 }

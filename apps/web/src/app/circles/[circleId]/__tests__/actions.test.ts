@@ -2,7 +2,62 @@
  * Circle page server actions のテストスイート
  */
 
+import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// convertToWorkPlainObjectのモック
+vi.mock("@suzumina.click/shared-types", () => ({
+	convertToWorkPlainObject: vi.fn((data) => {
+		if (!data || !data.id || !data.productId) return null;
+		return {
+			...data,
+			price: data.price || {
+				current: 0,
+				currency: "JPY",
+				formattedPrice: "¥0",
+			},
+			rating: data.rating,
+			creators: data.creators || {
+				voiceActors: [],
+				scenario: [],
+				illustration: [],
+				music: [],
+				others: [],
+			},
+			salesStatus: data.salesStatus || {
+				isOnSale: true,
+				isDiscounted: false,
+				isFree: false,
+				isSoldOut: false,
+				isReserveWork: false,
+				dlsiteplaySupported: false,
+			},
+			sampleImages: data.sampleImages || [],
+			genres: data.genres || [],
+			customGenres: data.customGenres || [],
+			_computed: {
+				displayTitle: data.title,
+				displayCircle: data.circle,
+				displayCategory: data.category,
+				displayAgeRating: "全年齢",
+				displayReleaseDate: data.releaseDateDisplay || "",
+				relativeUrl: `/works/${data.productId}`,
+				isAdultContent: false,
+				isVoiceWork: data.category === "SOU",
+				isGameWork: false,
+				isMangaWork: false,
+				hasDiscount: false,
+				isNewRelease: false,
+				isPopular: false,
+				primaryLanguage: "ja",
+				availableLanguages: ["ja"],
+				searchableText: `${data.title} ${data.circle}`,
+				tags: data.tags || [],
+			},
+		};
+	}),
+	isValidCircleId: vi.fn((id) => id?.startsWith("RG")),
+}));
 
 // Firestore モック
 const mockDoc = vi.fn();
@@ -42,7 +97,8 @@ vi.mock("@/lib/firestore", () => ({
 }));
 
 // テスト対象のインポート（モック設定後）
-const { getCircleInfo, getCircleWorks, getCircleWorksWithPagination } = await import("../actions");
+
+import { getCircleInfo, getCircleWorks, getCircleWorksWithPagination } from "../actions";
 
 describe("Circle page server actions", () => {
 	beforeEach(() => {
@@ -57,6 +113,57 @@ describe("Circle page server actions", () => {
 		mockWhere.mockReturnValue(mockQuery);
 		mockOrderBy.mockReturnValue(mockQuery);
 		mockLimit.mockReturnValue(mockQuery);
+
+		// Reset convertToWorkPlainObject mock to default implementation
+		vi.mocked(convertToWorkPlainObject).mockImplementation((data) => {
+			if (!data || !data.id || !data.productId) return null;
+			return {
+				...data,
+				price: data.price || {
+					current: 0,
+					currency: "JPY",
+					formattedPrice: "¥0",
+				},
+				rating: data.rating,
+				creators: data.creators || {
+					voiceActors: [],
+					scenario: [],
+					illustration: [],
+					music: [],
+					others: [],
+				},
+				salesStatus: data.salesStatus || {
+					isOnSale: true,
+					isDiscounted: false,
+					isFree: false,
+					isSoldOut: false,
+					isReserveWork: false,
+					dlsiteplaySupported: false,
+				},
+				sampleImages: data.sampleImages || [],
+				genres: data.genres || [],
+				customGenres: data.customGenres || [],
+				_computed: {
+					displayTitle: data.title,
+					displayCircle: data.circle,
+					displayCategory: data.category,
+					displayAgeRating: "全年齢",
+					displayReleaseDate: data.releaseDateDisplay || "",
+					relativeUrl: `/works/${data.productId}`,
+					isAdultContent: false,
+					isVoiceWork: data.category === "SOU",
+					isGameWork: false,
+					isMangaWork: false,
+					hasDiscount: false,
+					isNewRelease: false,
+					isPopular: false,
+					primaryLanguage: "ja",
+					availableLanguages: ["ja"],
+					searchableText: `${data.title} ${data.circle}`,
+					tags: data.tags || [],
+				},
+			};
+		});
 	});
 
 	describe("getCircleInfo", () => {
@@ -137,13 +244,27 @@ describe("Circle page server actions", () => {
 					title: "作品1",
 					circle: "テストサークル",
 					circleId: "RG12345",
-					priceInJPY: 1100,
-					registDate: { toDate: () => new Date("2025-01-15") },
+					price: { current: 1100, currency: "JPY" },
+					registDate: "2025-01-15",
 					releaseDateISO: "2025-01-15",
-					images: { main: "image1.jpg", list: "list1.jpg" },
-					options: { genre: ["ボイス・ASMR"], aiUsed: false },
+					releaseDateDisplay: "2025年01月15日",
+					thumbnailUrl: "image1.jpg",
+					workUrl: "https://example.com/work1.html",
+					category: "SOU",
+					workType: "SOU",
+					genres: ["ボイス・ASMR"],
+					customGenres: [],
 					tags: ["tag1", "tag2"],
-					rating: { stars: 45, count: 5 },
+					rating: { stars: 4.5, count: 5 },
+					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					salesStatus: {},
+					sampleImages: [],
+					description: "",
+					ageRating: "general",
+					updateDate: "2025-01-15",
+					createdAt: "2025-01-15T00:00:00.000Z",
+					updatedAt: "2025-01-15T00:00:00.000Z",
+					lastFetchedAt: "2025-01-15T00:00:00.000Z",
 				},
 				{
 					id: "RJ222222",
@@ -151,13 +272,27 @@ describe("Circle page server actions", () => {
 					title: "作品2",
 					circle: "テストサークル",
 					circleId: "RG12345",
-					priceInJPY: 2200,
-					registDate: { toDate: () => new Date("2025-01-10") },
+					price: { current: 2200, currency: "JPY" },
+					registDate: "2025-01-10",
 					releaseDateISO: "2025-01-10",
-					images: { main: "image2.jpg", list: "list2.jpg" },
-					options: { genre: ["音声作品"], aiUsed: true },
+					releaseDateDisplay: "2025年01月10日",
+					thumbnailUrl: "image2.jpg",
+					workUrl: "https://example.com/work2.html",
+					category: "SOU",
+					workType: "SOU",
+					genres: ["音声作品"],
+					customGenres: [],
 					tags: ["tag3"],
-					rating: { stars: 40, count: 3 },
+					rating: { stars: 4.0, count: 3 },
+					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					salesStatus: {},
+					sampleImages: [],
+					description: "",
+					ageRating: "general",
+					updateDate: "2025-01-10",
+					createdAt: "2025-01-10T00:00:00.000Z",
+					updatedAt: "2025-01-10T00:00:00.000Z",
+					lastFetchedAt: "2025-01-10T00:00:00.000Z",
 				},
 				{
 					id: "RJ333333",
@@ -165,9 +300,27 @@ describe("Circle page server actions", () => {
 					title: "他のサークル作品",
 					circle: "他のサークル",
 					circleId: "RG99999",
-					priceInJPY: 3300,
-					registDate: { toDate: () => new Date("2025-01-12") },
+					price: { current: 3300, currency: "JPY" },
+					registDate: "2025-01-12",
 					releaseDateISO: "2025-01-12",
+					releaseDateDisplay: "2025年01月12日",
+					thumbnailUrl: "image3.jpg",
+					workUrl: "https://example.com/work3.html",
+					category: "SOU",
+					workType: "SOU",
+					genres: [],
+					customGenres: [],
+					tags: [],
+					rating: undefined,
+					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					salesStatus: {},
+					sampleImages: [],
+					description: "",
+					ageRating: "general",
+					updateDate: "2025-01-12",
+					createdAt: "2025-01-12T00:00:00.000Z",
+					updatedAt: "2025-01-12T00:00:00.000Z",
+					lastFetchedAt: "2025-01-12T00:00:00.000Z",
 				},
 			];
 
@@ -307,6 +460,7 @@ describe("Circle page server actions", () => {
 		it("ページネーション付きでサークルの作品一覧を正しく取得する", async () => {
 			// サークル情報のモック
 			const mockCircleData = {
+				id: "RG12345",
 				circleId: "RG12345",
 				name: "テストサークル",
 				workCount: 3,
@@ -319,9 +473,25 @@ describe("Circle page server actions", () => {
 					title: "作品1",
 					circle: "テストサークル",
 					circleId: "RG12345",
-					priceInJPY: 1100,
-					registDate: { toDate: () => new Date("2025-01-15") },
+					price: { current: 1100, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-15",
 					releaseDateISO: "2025-01-15",
+					releaseDateDisplay: "2025年01月15日",
+					genres: [],
+					customGenres: [],
+					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					salesStatus: {},
+					sampleImages: [],
+					description: "",
+					ageRating: "general",
+					updateDate: "2025-01-15",
+					createdAt: "2025-01-15T00:00:00.000Z",
+					updatedAt: "2025-01-15T00:00:00.000Z",
+					lastFetchedAt: "2025-01-15T00:00:00.000Z",
 				},
 				{
 					id: "RJ222222",
@@ -329,9 +499,25 @@ describe("Circle page server actions", () => {
 					title: "作品2",
 					circle: "テストサークル",
 					circleId: "RG12345",
-					priceInJPY: 2200,
-					registDate: { toDate: () => new Date("2025-01-10") },
+					price: { current: 2200, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-10",
 					releaseDateISO: "2025-01-10",
+					releaseDateDisplay: "2025年01月10日",
+					genres: [],
+					customGenres: [],
+					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					salesStatus: {},
+					sampleImages: [],
+					description: "",
+					ageRating: "general",
+					updateDate: "2025-01-10",
+					createdAt: "2025-01-10T00:00:00.000Z",
+					updatedAt: "2025-01-10T00:00:00.000Z",
+					lastFetchedAt: "2025-01-10T00:00:00.000Z",
 				},
 				{
 					id: "RJ333333",
@@ -339,9 +525,25 @@ describe("Circle page server actions", () => {
 					title: "作品3",
 					circle: "テストサークル",
 					circleId: "RG12345",
-					priceInJPY: 3300,
-					registDate: { toDate: () => new Date("2025-01-05") },
+					price: { current: 3300, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-05",
 					releaseDateISO: "2025-01-05",
+					releaseDateDisplay: "2025年01月05日",
+					genres: [],
+					customGenres: [],
+					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					salesStatus: {},
+					sampleImages: [],
+					description: "",
+					ageRating: "general",
+					updateDate: "2025-01-05",
+					createdAt: "2025-01-05T00:00:00.000Z",
+					updatedAt: "2025-01-05T00:00:00.000Z",
+					lastFetchedAt: "2025-01-05T00:00:00.000Z",
 				},
 			];
 
@@ -372,6 +574,12 @@ describe("Circle page server actions", () => {
 
 			const result = await getCircleWorksWithPagination("RG12345", 1, 2, "newest");
 
+			// Debug log
+			if (result.totalCount === 0) {
+				console.log("Circle doc get calls:", mockDoc.mock.calls);
+				console.log("Collection get calls:", mockGet.mock.calls);
+			}
+
 			expect(result.totalCount).toBe(3);
 			expect(result.works).toHaveLength(2); // ページサイズ2でページ1なので2件
 			expect(result.works[0].title).toBe("作品1"); // 新しい順で1番目
@@ -380,6 +588,7 @@ describe("Circle page server actions", () => {
 
 		it("ソート機能が正しく動作する", async () => {
 			const mockCircleData = {
+				id: "RG12345",
 				circleId: "RG12345",
 				name: "テストサークル",
 				workCount: 2,
@@ -392,9 +601,25 @@ describe("Circle page server actions", () => {
 					title: "高価格作品",
 					circle: "テストサークル",
 					circleId: "RG12345",
-					priceInJPY: 2000,
-					registDate: { toDate: () => new Date("2025-01-15") },
+					price: { current: 2000, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-15",
 					releaseDateISO: "2025-01-15",
+					releaseDateDisplay: "2025年01月15日",
+					genres: [],
+					customGenres: [],
+					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					salesStatus: {},
+					sampleImages: [],
+					description: "",
+					ageRating: "general",
+					updateDate: "2025-01-15",
+					createdAt: "2025-01-15T00:00:00.000Z",
+					updatedAt: "2025-01-15T00:00:00.000Z",
+					lastFetchedAt: "2025-01-15T00:00:00.000Z",
 				},
 				{
 					id: "RJ222222",
@@ -402,9 +627,25 @@ describe("Circle page server actions", () => {
 					title: "低価格作品",
 					circle: "テストサークル",
 					circleId: "RG12345",
-					priceInJPY: 1000,
-					registDate: { toDate: () => new Date("2025-01-10") },
+					price: { current: 1000, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-10",
 					releaseDateISO: "2025-01-10",
+					releaseDateDisplay: "2025年01月10日",
+					genres: [],
+					customGenres: [],
+					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					salesStatus: {},
+					sampleImages: [],
+					description: "",
+					ageRating: "general",
+					updateDate: "2025-01-10",
+					createdAt: "2025-01-10T00:00:00.000Z",
+					updatedAt: "2025-01-10T00:00:00.000Z",
+					lastFetchedAt: "2025-01-10T00:00:00.000Z",
 				},
 			];
 

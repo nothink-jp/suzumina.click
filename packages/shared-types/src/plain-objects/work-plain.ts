@@ -7,14 +7,28 @@
 import type { WorkCategory, WorkLanguage } from "../entities/work";
 
 /**
+ * Individual creator information
+ */
+export interface CreatorInfoPlain {
+	id: string;
+	name: string;
+}
+
+/**
  * Creator information for works
  */
 export interface WorkCreatorsPlain {
-	voiceActors: string[];
-	scenario: string[];
-	illustration: string[];
-	music: string[];
-	others: string[];
+	voiceActors: CreatorInfoPlain[];
+	scenario: CreatorInfoPlain[];
+	illustration: CreatorInfoPlain[];
+	music: CreatorInfoPlain[];
+	others: CreatorInfoPlain[];
+	// 互換性のための名前配列
+	voiceActorNames: string[];
+	scenarioNames: string[];
+	illustrationNames: string[];
+	musicNames: string[];
+	otherNames: string[];
 }
 
 /**
@@ -195,3 +209,14 @@ export interface WorkPlainObject {
  * @deprecated Use WorkPlainObject instead
  */
 export type FrontendWork = WorkPlainObject;
+
+/**
+ * Work list result with plain objects
+ */
+export interface WorkListResultPlain {
+	works: WorkPlainObject[];
+	hasMore: boolean;
+	lastWork?: WorkPlainObject;
+	totalCount?: number;
+	filteredCount?: number;
+}

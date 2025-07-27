@@ -7,7 +7,7 @@
 
 import type { DLsiteRawApiResponse } from "../api-schemas/dlsite-raw";
 // Import existing types
-import type { OptimizedFirestoreDLsiteWorkData } from "../entities/work";
+import type { WorkDocument } from "../entities/work";
 import type { FirestoreWorkEvaluation } from "../entities/work-evaluation";
 
 // Legacy types are now exported directly from entities
@@ -20,9 +20,9 @@ import type { FirestoreWorkEvaluation } from "../entities/work-evaluation";
 
 /**
  * Simplified alias for DLsite work data
- * @alias OptimizedFirestoreDLsiteWorkData
+ * @alias WorkDocument
  */
-export type WorkDoc = OptimizedFirestoreDLsiteWorkData;
+export type WorkDoc = WorkDocument;
 
 /**
  * Simplified alias for user document

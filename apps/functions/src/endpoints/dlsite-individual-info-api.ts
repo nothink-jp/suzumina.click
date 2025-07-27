@@ -6,7 +6,7 @@
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkDocument } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../infrastructure/management/user-agent-manager";
 import { batchCollectCircleAndCreatorInfo } from "../services/dlsite/collect-circle-creator-info";
@@ -107,7 +107,7 @@ async function updateUnifiedMetadata(
  */
 async function processBatch(
 	batchInfo: BatchProcessingInfo,
-	existingWorksMap: Map<string, OptimizedFirestoreDLsiteWorkData>,
+	existingWorksMap: Map<string, WorkDocument>,
 ): Promise<UnifiedFetchResult> {
 	const { batchNumber, totalBatches, workIds } = batchInfo;
 

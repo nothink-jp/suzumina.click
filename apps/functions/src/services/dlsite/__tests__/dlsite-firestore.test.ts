@@ -3,7 +3,7 @@
  * 重要な機能に絞った簡潔なテスト
  */
 
-import type { OptimizedFirestoreDLsiteWorkData } from "@suzumina.click/shared-types";
+import type { WorkDocument } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Firestoreのモック
@@ -59,7 +59,7 @@ const mockDoc = (firestoreMock as any).__mockDoc;
 const mockBatch = (firestoreMock as any).__mockBatch;
 
 // テスト用のサンプルデータ
-const sampleWork: OptimizedFirestoreDLsiteWorkData = {
+const sampleWork: WorkDocument = {
 	id: "RJ12345",
 	productId: "RJ12345",
 	title: "テスト作品",

@@ -5,12 +5,12 @@
  * to support gradual migration from legacy types to entity-based architecture.
  */
 
+import type { WorkDocument } from "../entities/work";
 import { Work } from "../entities/work-entity";
 import type { WorkPlainObject } from "../plain-objects/work-plain";
-import type { FirestoreServerWorkData } from "../types/firestore/work";
 
 /**
- * Converts FirestoreServerWorkData to WorkPlainObject via Work entity
+ * Converts WorkDocument to WorkPlainObject via Work entity
  *
  * This function provides a migration path from legacy Firestore data types
  * to the new entity-based plain object format. It uses the Work entity
@@ -32,7 +32,7 @@ import type { FirestoreServerWorkData } from "../types/firestore/work";
  * ```
  */
 export function convertToWorkPlainObject(
-	data: FirestoreServerWorkData | null | undefined,
+	data: WorkDocument | null | undefined,
 ): WorkPlainObject | null {
 	if (!data) {
 		return null;
@@ -47,7 +47,7 @@ export function convertToWorkPlainObject(
 }
 
 /**
- * Converts an array of FirestoreServerWorkData to WorkPlainObject array
+ * Converts an array of WorkDocument to WorkPlainObject array
  *
  * Filters out any works that fail to convert, ensuring a clean array
  * of valid plain objects.
@@ -65,7 +65,7 @@ export function convertToWorkPlainObject(
  * return <WorkList works={plainObjects} />;
  * ```
  */
-export function convertToWorkPlainObjects(dataArray: FirestoreServerWorkData[]): WorkPlainObject[] {
+export function convertToWorkPlainObjects(dataArray: WorkDocument[]): WorkPlainObject[] {
 	return dataArray
 		.map((data) => convertToWorkPlainObject(data))
 		.filter((work): work is WorkPlainObject => work !== null);
@@ -95,7 +95,7 @@ export function isWorkPlainObject(obj: unknown): obj is WorkPlainObject {
 /**
  * Migration helper to handle both legacy and new data formats
  *
- * This function accepts either FirestoreServerWorkData or WorkPlainObject
+ * This function accepts either WorkDocument or WorkPlainObject
  * and returns a normalized WorkPlainObject. This is useful during the
  * migration period when both formats may coexist.
  *
@@ -103,7 +103,7 @@ export function isWorkPlainObject(obj: unknown): obj is WorkPlainObject {
  * @returns Normalized plain object or null
  */
 export function normalizeToWorkPlainObject(
-	data: FirestoreServerWorkData | WorkPlainObject | null | undefined,
+	data: WorkDocument | WorkPlainObject | null | undefined,
 ): WorkPlainObject | null {
 	if (!data) {
 		return null;
@@ -115,5 +115,5 @@ export function normalizeToWorkPlainObject(
 	}
 
 	// Otherwise, convert from Firestore data
-	return convertToWorkPlainObject(data as FirestoreServerWorkData);
+	return convertToWorkPlainObject(data as WorkDocument);
 }

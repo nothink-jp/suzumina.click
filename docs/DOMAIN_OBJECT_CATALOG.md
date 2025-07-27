@@ -1,7 +1,7 @@
 # ドメインオブジェクトカタログ
 
-**最終更新**: 2025-07-26  
-**バージョン**: 2.0 (Entity V2統合完了)
+**最終更新**: 2025-07-27  
+**バージョン**: 2.1 (WorkDocument型への移行)
 
 ## 概要
 
@@ -10,11 +10,11 @@ suzumina.clickで使用されているすべてのドメインオブジェクト
 ## 実装状況
 
 ### 完全実装済み（Entity/Value Objectアーキテクチャ）
+- ✅ **Work Entity** および関連値オブジェクト - 2025-07-27 完全実装
 - ✅ **Video Entity** および関連値オブジェクト
 - ✅ **AudioButton Entity** および関連値オブジェクト
 
-### 部分実装済み（値オブジェクトのみ）
-- ⚠️ **Work Entity** - 値オブジェクトは実装済み、エンティティクラスは未実装
+### 部分実装済み
 - ⚠️ **User Entity** - 簡易実装のみ
 
 ## エンティティ詳細
@@ -23,6 +23,9 @@ suzumina.clickで使用されているすべてのドメインオブジェクト
 
 #### 概要
 DLsite作品を表現する中核エンティティ。作品の基本情報、価格、評価などを包含します。
+
+#### Firestore ドキュメント型（WorkDocument）
+Firestore上では`WorkDocument`型として保存されます。この型は2025-07-27に`OptimizedFirestoreDLsiteWorkData`から名称変更されました。
 
 #### プロパティ
 
@@ -38,10 +41,7 @@ DLsite作品を表現する中核エンティティ。作品の基本情報、�
 | price | Price | 価格情報 | ✓ |
 | rating | Rating | 評価情報 | ✓ |
 | categories | string[] | カテゴリ一覧 | ✓ |
-| voiceActors | string[] | 声優一覧 | |
-| illustrators | string[] | イラストレーター一覧 | |
-| writers | string[] | シナリオライター一覧 | |
-| musicians | string[] | 音楽担当一覧 | |
+| creators | WorkCreators | クリエイター情報（声優、イラストレーター等） | ✓ |
 | fileInfo | FileInfo[] | ファイル情報 | ✓ |
 
 #### メソッド
@@ -83,7 +83,13 @@ const work: Work = {
     average: 4.5
   }),
   categories: ["音声作品", "ASMR", "癒し"],
-  voiceActors: ["涼花みなせ"],
+  creators: WorkCreators.create({
+    voice_by: [{ id: "suzuka-minase", name: "涼花みなせ", type: "creator" }],
+    illustration_by: [],
+    scenario_by: [],
+    music_by: [],
+    created_by: { id: "RG12345", name: "サンプルサークル", type: "circle" }
+  }),
   fileInfo: [
     {
       type: "mp3",
@@ -107,6 +113,8 @@ if (work.hasCategory("ASMR")) {
 
 #### 概要
 YouTube動画の特定のタイムスタンプを参照し、音声クリップとして機能するエンティティ。Entity/Value Objectアーキテクチャに基づく実装。
+
+**注意**: AudioButtonはDLsite作品（Work）を直接参照しません。YouTube動画への参照のみを持ちます。
 
 #### 構成要素
 
@@ -224,6 +232,8 @@ getEngagementRate(): number  // (いいね + 低評価) / 再生回数
 
 #### 概要
 YouTube動画の情報を管理するエンティティ。Entity/Value Objectアーキテクチャに基づく実装。
+
+**注意**: VideoエンティティはDLsite作品（Work）を直接参照しません。YouTube APIから取得した動画情報のみを保持します。
 
 #### 構成要素
 
@@ -691,5 +701,16 @@ function isWorkType(value: unknown): value is Work {
 
 ---
 
-**最終更新**: 2025年7月26日  
-**バージョン**: 1.2
+## 変更履歴
+
+### バージョン 2.1 (2025-07-27)
+- WorkDocument型への名称変更を反映
+- Work Entityの完全実装済みステータスへの更新
+- AudioButtonとVideoがWorkを参照しないことを明記
+- WorkCreators値オブジェクトの使用例を更新
+
+### バージョン 2.0 (2025-07-26)
+- Entity V2統合完了
+
+**最終更新**: 2025年7月27日  
+**バージョン**: 2.1

@@ -1,12 +1,12 @@
 "use server";
 
 import {
-	convertToFrontendWork,
-	type FrontendDLsiteWorkData,
-	type OptimizedFirestoreDLsiteWorkData,
-	type WorkListResult,
+	convertToWorkPlainObject,
+	type WorkDocument,
+	type WorkListResultPlain,
 	type WorkPaginationParams,
 	WorkPaginationParamsSchema,
+	type WorkPlainObject,
 } from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/components/system/protected-route";
@@ -244,8 +244,13 @@ function buildWorksQuery(
 	let query = worksRef.orderBy("createdAt", "desc");
 
 	// 声優フィルター
+	// TODO: creators.voice_byは配列内のオブジェクト構造のため、
+	// Firestoreのarray-containsでは直接検索できない。
+	// 将来的に検索用の正規化フィールド（voiceActorNames等）を追加する必要がある。
 	if (params.author) {
-		query = query.where("voiceActors", "array-contains", params.author);
+		// 現在は動作しないが、後方互換性のためクエリは残す
+		// query = query.where("voiceActors", "array-contains", params.author);
+		logger.warn("Voice actor filtering is currently not supported due to data structure changes");
 	}
 
 	// カテゴリフィルター
@@ -278,14 +283,16 @@ async function applyPagination(
  */
 function processWorkDocuments(
 	workDocs: FirebaseFirestore.QueryDocumentSnapshot[],
-): FrontendDLsiteWorkData[] {
-	const works: FrontendDLsiteWorkData[] = [];
+): WorkPlainObject[] {
+	const works: WorkPlainObject[] = [];
 
 	for (const doc of workDocs) {
 		try {
-			const data = { id: doc.id, ...doc.data() } as OptimizedFirestoreDLsiteWorkData;
-			const frontendWork = convertToFrontendWork(data);
-			works.push(frontendWork);
+			const data = { id: doc.id, ...doc.data() } as WorkDocument;
+			const plainObject = convertToWorkPlainObject(data);
+			if (plainObject) {
+				works.push(plainObject);
+			}
 		} catch (conversionError) {
 			logger.warn("作品データ変換エラー", {
 				docId: doc.id,
@@ -320,7 +327,7 @@ async function getTotalWorksCount(
  */
 export async function getWorksForAdmin(
 	params: Partial<WorkPaginationParams> = {},
-): Promise<{ success: true; data: WorkListResult } | { success: false; error: string }> {
+): Promise<{ success: true; data: WorkListResultPlain } | { success: false; error: string }> {
 	try {
 		// 認証チェック（管理者権限必須）
 		const authCheck = await checkAdminPermissionForWorks();
@@ -427,7 +434,7 @@ export async function refreshWorkData(
 			};
 		}
 
-		const workData = workDoc.data() as OptimizedFirestoreDLsiteWorkData;
+		const workData = workDoc.data() as WorkDocument;
 
 		// DLsite Individual Info APIから最新情報を取得
 		// 実際の実装では、Cloud Functionsのエンドポイントを呼び出すか、
