@@ -349,4 +349,203 @@ describe("Video Entity", () => {
 			expect(cloned.liveStreamingDetails).toBeUndefined();
 		});
 	});
+
+	describe("Video Type Detection", () => {
+		it("should correctly identify live videos", () => {
+			const liveVideo = new Video(
+				new VideoContent(
+					new VideoId("live123"),
+					new PublishedAt(new Date()),
+					"public",
+					"processed",
+				),
+				new VideoMetadata(new VideoTitle("Live Stream"), new VideoDescription("Live")),
+				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+				undefined, // statistics
+				{ playlistTags: [], userTags: [] }, // tags
+				{ count: 0, hasButtons: false }, // audioButtonInfo
+				{
+					actualStartTime: new Date(),
+					// No actualEndTime means it's currently live
+				},
+				"live", // liveBroadcastContent
+			);
+
+			expect(liveVideo.getVideoType()).toBe("live");
+			expect(liveVideo.isLiveStream()).toBe(true);
+			expect(liveVideo.isArchivedStream()).toBe(false);
+		});
+
+		it("should correctly identify upcoming videos", () => {
+			const upcomingVideo = new Video(
+				new VideoContent(
+					new VideoId("upcoming123"),
+					new PublishedAt(new Date()),
+					"public",
+					"processed",
+				),
+				new VideoMetadata(new VideoTitle("Upcoming Stream"), new VideoDescription("Upcoming")),
+				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+				undefined, // statistics
+				{ playlistTags: [], userTags: [] }, // tags
+				{ count: 0, hasButtons: false }, // audioButtonInfo
+				{
+					scheduledStartTime: new Date(Date.now() + 86400000), // Tomorrow
+				},
+				"upcoming", // liveBroadcastContent
+			);
+
+			expect(upcomingVideo.getVideoType()).toBe("upcoming");
+			expect(upcomingVideo.isUpcomingStream()).toBe(true);
+			expect(upcomingVideo.isArchivedStream()).toBe(false);
+		});
+
+		it("should correctly identify archived streams", () => {
+			const archivedStream = new Video(
+				new VideoContent(
+					new VideoId("archived123"),
+					new PublishedAt(new Date()),
+					"public",
+					"processed",
+				),
+				new VideoMetadata(
+					new VideoTitle("Past Stream"),
+					new VideoDescription("Past"),
+					new VideoDuration("PT2H30M"), // 2.5 hours
+				),
+				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+				undefined, // statistics
+				{ playlistTags: [], userTags: [] }, // tags
+				{ count: 10, hasButtons: true }, // audioButtonInfo
+				{
+					actualStartTime: new Date(Date.now() - 86400000), // Yesterday
+					actualEndTime: new Date(Date.now() - 80000000), // Ended yesterday
+				},
+				"none", // liveBroadcastContent
+			);
+
+			expect(archivedStream.getVideoType()).toBe("archived");
+			expect(archivedStream.isArchivedStream()).toBe(true);
+			expect(archivedStream.isLiveStream()).toBe(false);
+			expect(archivedStream.canCreateAudioButton()).toBe(true);
+		});
+
+		it("should not identify live video with end time as archived", () => {
+			// This is the bug case - a video marked as "live" but has an end time
+			const buggyVideo = new Video(
+				new VideoContent(
+					new VideoId("buggy123"),
+					new PublishedAt(new Date()),
+					"public",
+					"processed",
+				),
+				new VideoMetadata(
+					new VideoTitle("Buggy Stream"),
+					new VideoDescription("Buggy"),
+					new VideoDuration("PT1H"), // 1 hour
+				),
+				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+				undefined, // statistics
+				{ playlistTags: [], userTags: [] }, // tags
+				{ count: 0, hasButtons: false }, // audioButtonInfo
+				{
+					actualStartTime: new Date(Date.now() - 7200000), // 2 hours ago
+					actualEndTime: new Date(Date.now() - 3600000), // 1 hour ago
+				},
+				"live", // liveBroadcastContent still says "live" (this is the bug)
+			);
+
+			// Should be identified as live, not archived
+			expect(buggyVideo.getVideoType()).toBe("live");
+			expect(buggyVideo.isLiveStream()).toBe(true);
+			expect(buggyVideo.isArchivedStream()).toBe(false);
+		});
+
+		it("should identify live video based on liveStreamingDetails when liveBroadcastContent is none", () => {
+			// This handles the case where YouTube API doesn't update liveBroadcastContent properly
+			const liveVideoWithNoneBroadcast = new Video(
+				new VideoContent(
+					new VideoId("97UnRtIlMc0"),
+					new PublishedAt(new Date()),
+					"public",
+					"processed",
+				),
+				new VideoMetadata(
+					new VideoTitle("Live Stream with none broadcast content"),
+					new VideoDescription("Live"),
+				),
+				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+				undefined, // statistics
+				{ playlistTags: [], userTags: [] }, // tags
+				{ count: 0, hasButtons: false }, // audioButtonInfo
+				{
+					actualStartTime: new Date(Date.now() - 3600000), // Started 1 hour ago
+					// No actualEndTime means it's still live
+					concurrentViewers: 121, // Has concurrent viewers
+				}, // liveStreamingDetails
+				"none", // liveBroadcastContent says "none" but it's actually live
+			);
+
+			// Should be identified as live based on liveStreamingDetails
+			expect(liveVideoWithNoneBroadcast.getVideoType()).toBe("live");
+			expect(liveVideoWithNoneBroadcast.isLiveStream()).toBe(true);
+			expect(liveVideoWithNoneBroadcast.isArchivedStream()).toBe(false);
+		});
+
+		it("should correctly identify premiere videos", () => {
+			const premiereVideo = new Video(
+				new VideoContent(
+					new VideoId("premiere123"),
+					new PublishedAt(new Date()),
+					"public",
+					"processed",
+				),
+				new VideoMetadata(
+					new VideoTitle("Premiere Video"),
+					new VideoDescription("Premiere"),
+					new VideoDuration("PT10M"), // 10 minutes
+				),
+				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+				undefined, // statistics
+				{ playlistTags: [], userTags: [] }, // tags
+				{ count: 0, hasButtons: false }, // audioButtonInfo
+				{
+					actualStartTime: new Date(Date.now() - 3600000), // 1 hour ago
+					actualEndTime: new Date(Date.now() - 3000000), // 50 minutes ago
+				},
+				"none", // liveBroadcastContent
+			);
+
+			expect(premiereVideo.getVideoType()).toBe("premiere");
+			expect(premiereVideo.isPremiere()).toBe(true);
+			expect(premiereVideo.isArchivedStream()).toBe(false);
+		});
+
+		it("should correctly identify normal videos", () => {
+			const normalVideo = new Video(
+				new VideoContent(
+					new VideoId("normal123"),
+					new PublishedAt(new Date()),
+					"public",
+					"processed",
+				),
+				new VideoMetadata(
+					new VideoTitle("Normal Video"),
+					new VideoDescription("Normal"),
+					new VideoDuration("PT15M"), // 15 minutes
+				),
+				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+				undefined, // statistics
+				{ playlistTags: [], userTags: [] }, // tags
+				{ count: 0, hasButtons: false }, // audioButtonInfo
+				undefined, // No liveStreamingDetails
+				"none", // liveBroadcastContent
+			);
+
+			expect(normalVideo.getVideoType()).toBe("normal");
+			expect(normalVideo.isLiveStream()).toBe(false);
+			expect(normalVideo.isArchivedStream()).toBe(false);
+			expect(normalVideo.canCreateAudioButton()).toBe(false);
+		});
+	});
 });

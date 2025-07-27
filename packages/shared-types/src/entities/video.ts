@@ -374,7 +374,21 @@ export class Video {
 	 * Check if this is a live stream
 	 */
 	isLiveStream(): boolean {
-		return this._liveBroadcastContent === "live";
+		// First check liveBroadcastContent
+		if (this._liveBroadcastContent === "live") return true;
+
+		// Also check liveStreamingDetails for ongoing streams
+		// This handles cases where liveBroadcastContent is not updated properly
+		if (
+			this._liveStreamingDetails &&
+			this._liveStreamingDetails.actualStartTime &&
+			!this._liveStreamingDetails.actualEndTime &&
+			this._liveStreamingDetails.concurrentViewers !== undefined
+		) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -391,6 +405,11 @@ export class Video {
 		// Check explicit video type first
 		if (this._videoType === "archived") {
 			return true;
+		}
+
+		// Can't be archived if it's currently live or upcoming
+		if (this._liveBroadcastContent === "live" || this._liveBroadcastContent === "upcoming") {
+			return false;
 		}
 
 		// If it has actual end time, it's an archived stream
@@ -793,10 +812,25 @@ export class Video {
 	 * Get video type for display
 	 */
 	getVideoType(): VideoComputedProperties["videoType"] {
-		if (this.isLiveStream()) return "live";
-		if (this.isUpcomingStream()) return "upcoming";
+		// First check the liveBroadcastContent field
+		if (this._liveBroadcastContent === "live") return "live";
+		if (this._liveBroadcastContent === "upcoming") return "upcoming";
+
+		// Check if it's currently live based on liveStreamingDetails
+		// This handles cases where liveBroadcastContent is "none" but the stream is still live
+		if (
+			this._liveStreamingDetails &&
+			this._liveStreamingDetails.actualStartTime &&
+			!this._liveStreamingDetails.actualEndTime &&
+			this._liveStreamingDetails.concurrentViewers !== undefined
+		) {
+			return "live";
+		}
+
+		// Then check if it's an archived stream or premiere
 		if (this.isArchivedStream()) return "archived";
 		if (this.isPremiere()) return "premiere";
+
 		return "normal";
 	}
 
