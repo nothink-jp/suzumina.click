@@ -7,11 +7,7 @@
 
 "use server";
 
-import {
-	AudioButton,
-	convertToFrontendAudioButton,
-	type FirestoreAudioButtonData,
-} from "@suzumina.click/shared-types";
+import { AudioButton, type FirestoreAudioButtonData } from "@suzumina.click/shared-types";
 import { auth } from "@/auth";
 import { getFirestore } from "@/lib/firestore";
 
@@ -65,11 +61,8 @@ export async function getAudioButtonAction(audioButtonId: string): Promise<GetAu
 			updatedAt: (data.updatedAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
 		};
 
-		// FrontendAudioButtonDataに変換
-		const frontendData = convertToFrontendAudioButton(firestoreDataWithISODates);
-
 		// AudioButtonエンティティに変換
-		const audioButton = AudioButton.fromLegacy(frontendData);
+		const audioButton = AudioButton.fromFirestoreData(data);
 
 		return {
 			success: true,
@@ -117,18 +110,7 @@ export async function getAudioButtonsAction(
 			if (!doc.exists) return null;
 
 			const data = doc.data() as FirestoreAudioButtonData;
-			const firestoreDataWithISODates = {
-				...data,
-				id: doc.id,
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-				createdAt: (data.createdAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-				updatedAt: (data.updatedAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-			};
-
-			const frontendData = convertToFrontendAudioButton(firestoreDataWithISODates);
-
-			return AudioButton.fromLegacy(frontendData);
+			return AudioButton.fromFirestoreData(data);
 		});
 
 		const results = await Promise.all(audioButtonsPromises);
@@ -173,18 +155,7 @@ export async function getPublicAudioButtonsAction(limit = 20): Promise<GetAudioB
 		// biome-ignore lint/suspicious/noExplicitAny: Firestore QueryDocumentSnapshot type
 		snapshot.forEach((doc: any) => {
 			const data = doc.data() as FirestoreAudioButtonData;
-			const firestoreDataWithISODates = {
-				...data,
-				id: doc.id,
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-				createdAt: (data.createdAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-				updatedAt: (data.updatedAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-			};
-
-			const frontendData = convertToFrontendAudioButton(firestoreDataWithISODates);
-
-			audioButtons.push(AudioButton.fromLegacy(frontendData));
+			audioButtons.push(AudioButton.fromFirestoreData(data));
 		});
 
 		return {

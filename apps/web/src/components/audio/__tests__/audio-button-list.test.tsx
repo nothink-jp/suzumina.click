@@ -68,7 +68,7 @@ function createMockAudioButton(id: string, overrides?: MockAudioButtonLegacyData
 		...overrides,
 	};
 
-	return AudioButton.fromLegacy(defaultData);
+	return AudioButton.fromFirestoreData(defaultData as any);
 }
 
 describe("AudioButtonList", () => {

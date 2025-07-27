@@ -35,9 +35,12 @@ export * from "./entities/work-entity";
 export * from "./entities/work-evaluation";
 // === Migration Utilities ===
 export * from "./migrations";
+export * from "./migrations/frontend-to-plain-object";
 // === Plain Objects ===
+export * from "./plain-objects/audio-button-plain";
 export * from "./plain-objects/work-plain";
 // === Firestore Types ===
+export type { FirestoreServerAudioButtonData } from "./types/firestore/audio-button";
 // FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead
 // === Utilities ===
 // 年齢制限・レーティング関連の型とユーティリティのエクスポート

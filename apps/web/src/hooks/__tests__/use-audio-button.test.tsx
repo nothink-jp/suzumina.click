@@ -26,7 +26,7 @@ function createMockAudioButton(overrides?: Partial<any>): AudioButton {
 		...overrides,
 	};
 
-	return AudioButton.fromLegacy(defaultData);
+	return AudioButton.fromFirestoreData(defaultData as any);
 }
 
 describe("useAudioButton", () => {

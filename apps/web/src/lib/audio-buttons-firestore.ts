@@ -4,9 +4,12 @@
 
 import type { Query } from "@google-cloud/firestore";
 import {
+	type AudioButtonPlainObject,
 	type FirestoreAudioButtonData,
+	type FirestoreServerAudioButtonData,
 	type FrontendAudioButtonData,
 	formatRelativeTime,
+	fromFrontendAudioButtonData,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
 import { error as logError } from "./logger";
@@ -44,6 +47,7 @@ function ensureDateString(date: string | Date | unknown): string {
 
 /**
  * Firestore音声ボタンデータをフロントエンド表示用に変換
+ * @deprecated Use convertToAudioButtonPlainObject instead
  */
 export function convertToFrontendAudioButton(
 	data:
@@ -78,6 +82,75 @@ export function convertToFrontendAudioButton(
 	};
 
 	return frontendData;
+}
+
+/**
+ * Firestore音声ボタンデータをPlain Object形式に変換
+ */
+export function convertToAudioButtonPlainObject(
+	data:
+		| FirestoreServerAudioButtonData
+		| FirestoreAudioButtonData
+		| (FirestoreAudioButtonData & { createdAt: Date; updatedAt: Date }),
+): AudioButtonPlainObject {
+	const createdAtStr = ensureDateString(data.createdAt);
+	const updatedAtStr = ensureDateString(data.updatedAt);
+
+	// Calculate computed properties
+	const viewCount = data.playCount || 0;
+	const likeCount = data.likeCount || 0;
+	const dislikeCount = data.dislikeCount || 0;
+
+	// Calculate engagement metrics
+	const totalEngagements = likeCount + dislikeCount;
+	const engagementRate = viewCount > 0 ? totalEngagements / viewCount : 0;
+	const engagementRatePercentage = Math.round(engagementRate * 100);
+
+	// Calculate popularity score
+	const popularityScore = viewCount + likeCount * 2 - dislikeCount;
+
+	// Check if popular (threshold: 100+ views or 50+ engagements)
+	const isPopular = viewCount >= 100 || totalEngagements >= 50;
+
+	// Build searchable text
+	const searchableText = [
+		data.title.toLowerCase(),
+		...(data.tags || []).map((tag) => tag.toLowerCase()),
+		(data.sourceVideoTitle || "").toLowerCase(),
+		(data.createdByName || "").toLowerCase(),
+	].join(" ");
+
+	return {
+		id: data.id,
+		title: data.title,
+		description: data.description,
+		tags: data.tags || [],
+		sourceVideoId: data.sourceVideoId,
+		sourceVideoTitle: data.sourceVideoTitle,
+		sourceVideoThumbnailUrl:
+			data.sourceVideoThumbnailUrl ||
+			`https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
+		startTime: data.startTime,
+		endTime: data.endTime || data.startTime,
+		createdBy: data.createdBy,
+		createdByName: data.createdByName,
+		isPublic: data.isPublic,
+		playCount: viewCount,
+		likeCount: likeCount,
+		dislikeCount: dislikeCount,
+		favoriteCount: data.favoriteCount || 0,
+		createdAt: createdAtStr,
+		updatedAt: updatedAtStr,
+		_computed: {
+			isPopular,
+			engagementRate,
+			engagementRatePercentage,
+			popularityScore,
+			searchableText,
+			durationText: formatDuration(data.startTime, data.endTime || data.startTime),
+			relativeTimeText: formatRelativeTime(createdAtStr),
+		},
+	};
 }
 
 /**

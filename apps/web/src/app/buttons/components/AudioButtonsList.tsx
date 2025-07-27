@@ -1,6 +1,6 @@
 "use client";
 
-import type { AudioButtonQuery, FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject, AudioButtonQuery } from "@suzumina.click/shared-types";
 import {
 	AdvancedFilterPanel,
 	type AdvancedFilters,
@@ -80,7 +80,7 @@ const convertFiltersToParams = (filters: AdvancedFilters): Record<string, string
 export default function AudioButtonsList({ searchParams }: AudioButtonsListProps) {
 	const router = useRouter();
 	const urlSearchParams = useSearchParams();
-	const [audioButtons, setAudioButtons] = useState<FrontendAudioButtonData[]>([]);
+	const [audioButtons, setAudioButtons] = useState<AudioButtonPlainObject[]>([]);
 	const [totalCount, setTotalCount] = useState(0);
 	const [filteredCount, setFilteredCount] = useState<number | undefined>(undefined);
 	const [loading, setLoading] = useState(true);

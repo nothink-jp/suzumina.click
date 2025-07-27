@@ -1,4 +1,4 @@
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject, FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { AudioButton } from "@suzumina.click/shared-types";
 import { memo, useMemo } from "react";
 import AudioButtonCard from "./audio-button-card";
@@ -8,13 +8,14 @@ import { AudioButtonList } from "./audio-button-list";
  * 既存のFrontendAudioButtonDataをAudioButtonに変換するアダプター
  */
 export function convertToAudioButton(audioButtonData: FrontendAudioButtonData): AudioButton {
-	return AudioButton.fromLegacy({
+	return AudioButton.fromFirestoreData({
 		id: audioButtonData.id,
 		title: audioButtonData.title,
-		description: audioButtonData.description || undefined,
+		description: audioButtonData.description,
 		tags: audioButtonData.tags || [],
 		sourceVideoId: audioButtonData.sourceVideoId,
-		sourceVideoTitle: audioButtonData.sourceVideoTitle || undefined,
+		sourceVideoTitle: audioButtonData.sourceVideoTitle,
+		sourceVideoThumbnailUrl: audioButtonData.sourceVideoThumbnailUrl,
 		startTime: audioButtonData.startTime,
 		endTime: audioButtonData.endTime || audioButtonData.startTime,
 		createdBy: audioButtonData.createdBy,
