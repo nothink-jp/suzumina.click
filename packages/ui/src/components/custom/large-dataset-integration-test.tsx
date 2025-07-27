@@ -10,7 +10,7 @@
 
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { memo, useCallback, useEffect, useState } from "react";
 import { ProgressiveAudioButtonList } from "./progressive-audio-button-list";
 import { SearchAndFilterPanel } from "./search-and-filter-panel";
@@ -39,7 +39,7 @@ export interface IntegrationTestResult {
 /**
  * 実用的な大量データ生成（実際のデータパターンを模倣）
  */
-const generateRealisticDataset = (size: number): FrontendAudioButtonData[] => {
+const generateRealisticDataset = (size: number): AudioButtonPlainObject[] => {
 	const categories = ["ボイスドラマ", "ASMR", "歌声", "朗読", "ゲーム実況", "日常会話"];
 	const creators = Array.from({ length: Math.ceil(size / 10) }, (_, i) => `クリエイター${i + 1}`);
 	const commonTags = ["人気", "新着", "お気に入り", "限定", "プレミアム"];
@@ -53,29 +53,43 @@ const generateRealisticDataset = (size: number): FrontendAudioButtonData[] => {
 			() => commonTags[Math.floor(Math.random() * commonTags.length)],
 		).filter((tag): tag is string => tag !== undefined);
 
+		const title = `${category} ${index + 1}: 実用テスト用音声データ`;
+		const tags = [category, creator, ...randomTags]
+			.filter((tag): tag is string => Boolean(tag))
+			.slice(0, 5);
+		const sourceVideoTitle = `【${category}】${creator} - 第${index + 1}話`;
+		const playCount = Math.floor(Math.random() * 10000);
+		const likeCount = Math.floor(Math.random() * 500);
+		const favoriteCount = Math.floor(Math.random() * 200);
+
 		return {
 			id: `real-audio-${index + 1}`,
-			title: `${category} ${index + 1}: 実用テスト用音声データ`,
+			title,
 			description: `${creator}による${category}の音声コンテンツです。実際のアプリケーションでの使用を想定したテストデータとして作成されています。長めの説明文でレイアウトのテストも兼ねています。`,
-			tags: [category, creator, ...randomTags]
-				.filter((tag): tag is string => Boolean(tag))
-				.slice(0, 5),
+			tags,
 			sourceVideoId: `realistic-video-${index + 1}`,
-			sourceVideoTitle: `【${category}】${creator} - 第${index + 1}話`,
+			sourceVideoTitle,
 			sourceVideoThumbnailUrl: `https://img.youtube.com/vi/realistic-video-${index + 1}/maxresdefault.jpg`,
 			startTime: Math.floor(Math.random() * 600) + 30,
 			endTime: Math.floor(Math.random() * 600) + 100,
 			createdBy: `user-${Math.floor(index / 20) + 1}`,
 			createdByName: creator,
 			isPublic: Math.random() > 0.1, // 90%が公開
-			playCount: Math.floor(Math.random() * 10000),
-			likeCount: Math.floor(Math.random() * 500),
+			playCount,
+			likeCount,
 			dislikeCount: 0,
-			favoriteCount: Math.floor(Math.random() * 200),
+			favoriteCount,
 			createdAt: new Date(Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000).toISOString(),
 			updatedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-			durationText: `${Math.floor(Math.random() * 300) + 10}秒`,
-			relativeTimeText: `${Math.floor(Math.random() * 180) + 1}日前`,
+			_computed: {
+				isPopular: playCount > 5000,
+				engagementRate: likeCount / (playCount || 1),
+				engagementRatePercentage: Math.round((likeCount / (playCount || 1)) * 100),
+				popularityScore: playCount + likeCount * 2 - 0,
+				searchableText: `${title} ${tags.join(" ")} ${sourceVideoTitle} ${creator}`.toLowerCase(),
+				durationText: `${Math.floor(Math.random() * 300) + 10}秒`,
+				relativeTimeText: `${Math.floor(Math.random() * 180) + 1}日前`,
+			},
 		};
 	});
 };
@@ -158,8 +172,8 @@ const useIntegrationTest = (scenario: string, dataSize: number) => {
  */
 export const LargeDatasetIntegrationTest = memo<LargeDatasetIntegrationTestProps>(
 	({ initialDataSize = 96, testScenario = "basic", onTestResult }) => {
-		const [dataset, setDataset] = useState<FrontendAudioButtonData[]>([]);
-		const [filteredData, setFilteredData] = useState<FrontendAudioButtonData[]>([]);
+		const [dataset, setDataset] = useState<AudioButtonPlainObject[]>([]);
+		const [filteredData, setFilteredData] = useState<AudioButtonPlainObject[]>([]);
 		const [searchQuery, setSearchQuery] = useState("");
 		const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
 		const [favoriteStates, setFavoriteStates] = useState<Map<string, boolean>>(new Map());
@@ -199,7 +213,7 @@ export const LargeDatasetIntegrationTest = memo<LargeDatasetIntegrationTestProps
 		);
 
 		// 再生処理
-		const handlePlay = useCallback((audioButton: FrontendAudioButtonData, index: number) => {
+		const handlePlay = useCallback((audioButton: AudioButtonPlainObject, index: number) => {
 			setCurrentPlayingId(audioButton.id);
 			// Play simulation for large dataset testing
 		}, []);

@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -25,7 +25,7 @@ vi.mock("../../lib/youtube-player-pool", () => ({
 	},
 }));
 
-const mockAudioButton: FrontendAudioButtonData = {
+const mockAudioButton: AudioButtonPlainObject = {
 	id: "test-audio-button",
 	title: "テスト音声ボタン",
 	description: "テスト用の音声ボタンです",
@@ -44,8 +44,15 @@ const mockAudioButton: FrontendAudioButtonData = {
 	favoriteCount: 1,
 	createdAt: "2025-01-01T00:00:00.000Z",
 	updatedAt: "2025-01-01T00:00:00.000Z",
-	durationText: "10秒",
-	relativeTimeText: "1日前",
+	_computed: {
+		isPopular: false,
+		engagementRate: 0.4,
+		engagementRatePercentage: 40,
+		popularityScore: 9,
+		searchableText: "テスト音声ボタン テスト サンプル テスト動画 テストユーザー",
+		durationText: "10秒",
+		relativeTimeText: "1日前",
+	},
 };
 
 describe("AudioButton", () => {

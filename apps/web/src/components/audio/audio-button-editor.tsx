@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendAudioButtonData, UpdateAudioButtonInput } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject, UpdateAudioButtonInput } from "@suzumina.click/shared-types";
 import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-player";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Loader2, Save } from "lucide-react";
@@ -13,7 +13,7 @@ import { TimeControlPanel } from "./time-control-panel";
 import { UsageGuide } from "./usage-guide";
 
 interface AudioButtonEditorProps {
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject;
 	videoDuration?: number;
 }
 

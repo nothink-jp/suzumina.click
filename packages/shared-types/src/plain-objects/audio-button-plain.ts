@@ -31,7 +31,7 @@ export interface AudioButtonComputedProperties {
  */
 export interface AudioButtonPlainObject
 	extends Omit<FirestoreServerAudioButtonData, "id" | "createdAt" | "updatedAt"> {
-	// Make id required
+	// ID is always required in plain objects
 	id: string;
 	// Override timestamp fields with string type
 	createdAt: string;
@@ -45,24 +45,3 @@ export interface AudioButtonPlainObject
  * @deprecated Use AudioButtonPlainObject instead
  */
 export type FrontendAudioButton = AudioButtonPlainObject;
-
-/**
- * Helper function to convert from legacy FrontendAudioButtonData to AudioButtonPlainObject
- * This is a temporary helper for migration purposes
- */
-export function fromFrontendAudioButtonData(
-	data: import("../entities/audio-button").FrontendAudioButtonData,
-): AudioButtonPlainObject {
-	return {
-		...data,
-		_computed: {
-			isPopular: false,
-			engagementRate: 0,
-			engagementRatePercentage: 0,
-			popularityScore: 0,
-			searchableText: "",
-			durationText: data.durationText || "0:00",
-			relativeTimeText: data.relativeTimeText || "たった今",
-		},
-	};
-}

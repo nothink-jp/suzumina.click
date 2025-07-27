@@ -10,7 +10,7 @@
 
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { Heart, Play } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import { cn } from "../../lib/utils";
@@ -18,7 +18,7 @@ import { HighlightText } from "./highlight-text";
 
 export interface AudioButtonPreviewProps {
 	/** 音声ボタンデータ */
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject;
 
 	/** 検索クエリ（ハイライト用） */
 	searchQuery?: string;
@@ -175,12 +175,12 @@ export const AudioButtonPreview = memo<AudioButtonPreviewProps>(
 				{/* 下部メタデータ */}
 				<div className="flex items-center justify-between text-xs text-muted-foreground">
 					<div className="flex items-center gap-2">
-						<span>{audioButton.durationText}</span>
+						<span>{audioButton._computed.durationText}</span>
 						<span>•</span>
 						<span>{audioButton.createdByName}</span>
 					</div>
 					<div className="flex items-center gap-2">
-						<span>{audioButton.relativeTimeText}</span>
+						<span>{audioButton._computed.relativeTimeText}</span>
 						{showDetailLink && (
 							<>
 								<span>•</span>

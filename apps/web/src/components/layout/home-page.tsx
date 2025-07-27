@@ -1,7 +1,7 @@
 "use client";
 
 // Video型を別途import
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
@@ -13,7 +13,7 @@ import {
 import { ParallelSectionsContainer } from "@/components/sections/parallel-sections-container";
 
 interface HomePageProps {
-	initialAudioButtons: FrontendAudioButtonData[];
+	initialAudioButtons: AudioButtonPlainObject[];
 }
 
 export function HomePage({ initialAudioButtons }: HomePageProps) {

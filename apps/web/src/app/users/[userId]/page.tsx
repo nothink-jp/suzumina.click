@@ -1,4 +1,4 @@
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
@@ -65,7 +65,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 	const isAdmin = currentUser?.role === "admin";
 
 	// ユーザーが作成した音声ボタンを取得
-	let audioButtons: FrontendAudioButtonData[] = [];
+	let audioButtons: AudioButtonPlainObject[] = [];
 	try {
 		audioButtons = await getAudioButtonsByUser(resolvedParams.userId);
 	} catch (_error) {

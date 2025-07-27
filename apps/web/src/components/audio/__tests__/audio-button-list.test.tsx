@@ -70,11 +70,15 @@ function createMockAudioButton(id: string, overrides?: MockAudioButtonLegacyData
 
 	const firestoreData: FirestoreServerAudioButtonData = {
 		...defaultData,
+		sourceVideoThumbnailUrl: "",
+		createdAt: new Date(defaultData.createdAt),
+		updatedAt: new Date(defaultData.updatedAt),
 	};
-	return (
-		AudioButton.fromFirestoreData(firestoreData) ||
-		AudioButton.fromFirestoreData({ ...firestoreData, id: "default-id" })!
-	);
+	const audioButton = AudioButton.fromFirestoreData(firestoreData);
+	if (!audioButton) {
+		throw new Error("Failed to create mock AudioButton");
+	}
+	return audioButton;
 }
 
 describe("AudioButtonList", () => {

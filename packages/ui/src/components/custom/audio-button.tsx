@@ -9,7 +9,7 @@
 
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { Popover, PopoverContent, PopoverTrigger } from "@suzumina.click/ui/components/ui/popover";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import {
@@ -32,7 +32,7 @@ import { HighlightText } from "./highlight-text";
 import { TagList } from "./tag-list";
 
 interface AudioButtonProps {
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject;
 	onPlay?: () => void;
 	className?: string;
 	maxTitleLength?: number;
@@ -55,7 +55,7 @@ interface AudioButtonProps {
 }
 
 interface AudioButtonPopoverContentProps {
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject;
 	duration: number;
 	youtubeUrl: string;
 	isFavorite: boolean;

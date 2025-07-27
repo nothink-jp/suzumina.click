@@ -106,13 +106,15 @@ function createMockAudioButton(overrides?: MockAudioButtonLegacyData): AudioButt
 
 	const firestoreData: FirestoreServerAudioButtonData = {
 		...defaultData,
-		durationText: undefined,
-		relativeTimeText: undefined,
+		sourceVideoThumbnailUrl: "",
+		createdAt: new Date(defaultData.createdAt),
+		updatedAt: new Date(defaultData.updatedAt),
 	};
-	return (
-		AudioButton.fromFirestoreData(firestoreData) ||
-		AudioButton.fromFirestoreData({ ...firestoreData, id: "default-id" })!
-	);
+	const audioButton = AudioButton.fromFirestoreData(firestoreData);
+	if (!audioButton) {
+		throw new Error("Failed to create mock AudioButton");
+	}
+	return audioButton;
 }
 
 describe("AudioButtonCard", () => {

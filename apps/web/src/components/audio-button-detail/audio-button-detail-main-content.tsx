@@ -1,4 +1,4 @@
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { TimeDisplay } from "@suzumina.click/ui/components/custom/time-display";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
@@ -35,7 +35,7 @@ function formatRelativeTime(dateString: string): string {
 }
 
 interface AudioButtonDetailMainContentProps {
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject;
 	session: Session | null;
 	isAuthenticated: boolean;
 	isFavorited: boolean;

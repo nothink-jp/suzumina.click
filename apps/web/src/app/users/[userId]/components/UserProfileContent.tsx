@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendAudioButtonData, FrontendUserData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject, FrontendUserData } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
@@ -27,7 +27,7 @@ import { recalculateStatsAction } from "../actions";
 
 interface UserProfileContentProps {
 	user: FrontendUserData;
-	audioButtons: FrontendAudioButtonData[];
+	audioButtons: AudioButtonPlainObject[];
 	isOwnProfile: boolean;
 	favoritesCount?: number;
 	isAdmin?: boolean;
@@ -116,7 +116,7 @@ function AudioButtonsList({
 	user,
 	isOwnProfile,
 }: {
-	audioButtons: FrontendAudioButtonData[];
+	audioButtons: AudioButtonPlainObject[];
 	user: FrontendUserData;
 	isOwnProfile: boolean;
 }) {

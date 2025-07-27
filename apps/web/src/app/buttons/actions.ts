@@ -152,9 +152,7 @@ export async function getAudioButtons(
 			.filter((button): button is AudioButton => button !== null);
 
 		// Plain Object形式に変換して返す
-		const frontendButtons = entityButtons.map((button) => {
-			return button.toPlainObject();
-		});
+		const frontendButtons = entityButtons.map((button) => button.toPlainObject());
 
 		return {
 			success: true,

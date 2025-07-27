@@ -61,39 +61,10 @@ export interface AudioButtonCreatorInfo {
 }
 
 /**
- * Legacy type for frontend audio button data
- * @deprecated Use AudioButtonPlainObject from plain-objects/audio-button-plain.ts
- */
-export interface FrontendAudioButtonData {
-	id: string;
-	title: string;
-	description?: string;
-	tags: string[];
-	sourceVideoId: string;
-	sourceVideoTitle?: string;
-	sourceVideoThumbnailUrl?: string;
-	startTime: number;
-	endTime?: number;
-	createdBy: string;
-	createdByName: string;
-	isPublic: boolean;
-	playCount: number;
-	likeCount: number;
-	dislikeCount?: number;
-	favoriteCount?: number;
-	createdAt: string;
-	updatedAt: string;
-	durationText?: string;
-	relativeTimeText?: string;
-}
-
-/**
  * Legacy type for Firestore audio button data
  * @deprecated Use FirestoreServerAudioButtonData from types/firestore/audio-button.ts
  */
-export interface FirestoreAudioButtonData extends FrontendAudioButtonData {
-	// Firestore-specific fields can be added here if needed
-}
+export type FirestoreAudioButtonData = FirestoreServerAudioButtonData;
 
 /**
  * Audio button list result
@@ -572,7 +543,7 @@ export class AudioButton extends BaseEntity<AudioButton> implements EntityValida
 /**
  * Type guard to check if a value is an AudioButton-like object
  */
-export function isAudioButton(value: unknown): value is FrontendAudioButtonData {
+export function isAudioButton(value: unknown): value is AudioButtonPlainObject {
 	return (
 		typeof value === "object" &&
 		value !== null &&
@@ -657,52 +628,4 @@ export interface AudioButtonQuery {
 	durationMin?: number;
 	durationMax?: number;
 	includeTotalCount?: boolean;
-}
-
-/**
- * Convert audio button data to frontend format
- * Adds display-friendly fields for UI consumption
- * @deprecated Use AudioButton.fromFirestoreData().toPlainObject() instead
- */
-export function convertToFrontendAudioButton(
-	data: FirestoreAudioButtonData | FrontendAudioButtonData,
-): FrontendAudioButtonData {
-	// Calculate duration
-	const duration = (data.endTime || data.startTime) - data.startTime;
-	const minutes = Math.floor(duration / 60);
-	const seconds = Math.floor(duration % 60);
-	const durationText = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-
-	// Calculate relative time
-	const now = new Date();
-	const createdAtDate = new Date(data.createdAt);
-	const diffMs = now.getTime() - createdAtDate.getTime();
-	const diffMinutes = Math.floor(diffMs / 60000);
-	const diffHours = Math.floor(diffMinutes / 60);
-	const diffDays = Math.floor(diffHours / 24);
-
-	let relativeTimeText: string;
-	if (diffDays > 0) {
-		relativeTimeText = `${diffDays}日前`;
-	} else if (diffHours > 0) {
-		relativeTimeText = `${diffHours}時間前`;
-	} else if (diffMinutes > 0) {
-		relativeTimeText = `${diffMinutes}分前`;
-	} else {
-		relativeTimeText = "たった今";
-	}
-
-	return {
-		...data,
-		endTime: data.endTime || data.startTime,
-		description: data.description || "",
-		sourceVideoTitle: data.sourceVideoTitle || "",
-		sourceVideoThumbnailUrl: data.sourceVideoThumbnailUrl || "",
-		dislikeCount: data.dislikeCount || 0,
-		favoriteCount: data.favoriteCount || 0,
-		durationText,
-		relativeTimeText,
-		createdAt: data.createdAt,
-		updatedAt: data.updatedAt,
-	};
 }

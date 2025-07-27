@@ -1,4 +1,4 @@
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAudioButtonValidation } from "./use-audio-button-validation";
 import { useTimeAdjustment } from "./use-time-adjustment";
@@ -19,7 +19,7 @@ export interface AudioButtonEditorConfig {
 	videoDuration?: number;
 	initialStartTime?: number;
 	initialEndTime?: number;
-	audioButton?: FrontendAudioButtonData; // 編集モードの場合に提供
+	audioButton?: AudioButtonPlainObject; // 編集モードの場合に提供
 }
 
 export interface AudioButtonEditorResult {
