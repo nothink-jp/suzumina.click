@@ -4,7 +4,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { recalculateAudioButtonCounts } from "@/app/actions/button-actions";
-import { toast } from "@/lib/toast";
+import { showToast } from "@/lib/toast";
 
 export default function RecalculateButton() {
 	const [isLoading, setIsLoading] = useState(false);
@@ -20,12 +20,12 @@ export default function RecalculateButton() {
 		try {
 			const result = await recalculateAudioButtonCounts();
 			if (result.success) {
-				toast.success("音声ボタン数の再計算が完了しました");
+				showToast.success("音声ボタン数の再計算が完了しました");
 			} else {
-				toast.error(result.error || "再計算に失敗しました");
+				showToast.error(result.error || "再計算に失敗しました");
 			}
 		} catch (error) {
-			toast.error("エラーが発生しました");
+			showToast.error("エラーが発生しました");
 		} finally {
 			setIsLoading(false);
 		}
