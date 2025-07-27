@@ -8,12 +8,9 @@
 
 ### 1. 過度に説明的な型名
 ```typescript
-// 現在
-type OptimizedFirestoreDLsiteWorkData = { ... }
-// → "Optimized", "Firestore", "DLsite" は文脈から明らか
-
-// 理想
-type Work = { ... }
+// 現在は完了
+type WorkDocument = { ... }  // 旧: OptimizedFirestoreDLsiteWorkData
+// → "Optimized", "Firestore", "DLsite" を削除し、Firestoreドキュメントであることを明示
 ```
 
 ### 2. 技術的詳細の露出
@@ -42,7 +39,7 @@ type CollectionMetadata = { ... }
 
 | 現在の名前 | 新しい名前 | 使用箇所数 | 影響度 |
 |-----------|-----------|-----------|--------|
-| OptimizedFirestoreDLsiteWorkData | Work | 150+ | 高 |
+| ~~OptimizedFirestoreDLsiteWorkData~~ | ~~Work~~ WorkDocument（完了） | 150+ | 高 |
 | DLsiteRawApiResponse | DLsiteApiResponse | 20+ | 中 |
 | UnifiedDataCollectionMetadata | CollectionMetadata | 30+ | 中 |
 | FirestoreFieldTimestamp | Timestamp | 80+ | 高 |
@@ -107,7 +104,7 @@ export class Video { ... }  // 旧VideoV2クラス
 // 新しい簡潔な名前をエイリアスとして定義
 
 // エンティティ
-export type Work = import('../entities/work').OptimizedFirestoreDLsiteWorkData;
+// WorkDocumentは既に実装済み（OptimizedFirestoreDLsiteWorkDataから名称変更）
 export type User = import('../entities/user').FirestoreUserDocument;
 export type Video = import('../entities/video').FirestoreVideoDocument;
 export type AudioButton = import('../entities/audio-button').OptimizedAudioButtonData;
@@ -141,8 +138,8 @@ export * from './entities/user';
 // ❌ 旧: 冗長な名前
 import { OptimizedFirestoreDLsiteWorkData } from '@suzumina.click/shared-types';
 
-// ✅ 新: 簡潔な名前
-import { Work } from '@suzumina.click/shared-types';
+// ✅ 現在: WorkDocumentに統一
+import { WorkDocument } from '@suzumina.click/shared-types';
 ```
 
 #### 2.2 コーディング規約の更新
@@ -169,7 +166,7 @@ const project = new Project({
 });
 
 const replacements = [
-  { from: 'OptimizedFirestoreDLsiteWorkData', to: 'Work' },
+  // { from: 'OptimizedFirestoreDLsiteWorkData', to: 'WorkDocument' }, // 完了済み
   { from: 'DLsiteRawApiResponse', to: 'DLsiteApiResponse' },
   // ... 他の置換
 ];
@@ -203,14 +200,9 @@ for (const sourceFile of project.getSourceFiles()) {
 ```typescript
 // packages/shared-types/src/entities/work.ts
 /**
- * @deprecated Use `Work` instead. Will be removed in v0.5.0
+ * OptimizedFirestoreDLsiteWorkDataはWorkDocumentに名称変更済み (2025-07-26)
+ * PR #125で完全移行完了
  */
-export type OptimizedFirestoreDLsiteWorkData = {
-  // ... 既存の定義
-};
-
-// 新しいエイリアス
-export type Work = OptimizedFirestoreDLsiteWorkData;
 ```
 
 #### 4.2 ESLintルールの追加
@@ -365,6 +357,8 @@ A: 完全移行まで約4-6週間を想定しています。
 ---
 
 **作成日**: 2025年7月24日  
-**バージョン**: 1.1  
-**ステータス**: 計画段階  
-**更新日**: 2025年7月25日 - V2サフィックスの扱いについて追記
+**バージョン**: 1.2  
+**ステータス**: 部分的に完了  
+**更新日**: 
+- 2025年7月25日 - V2サフィックスの扱いについて追記
+- 2025年7月26日 - OptimizedFirestoreDLsiteWorkData → WorkDocument移行完了
