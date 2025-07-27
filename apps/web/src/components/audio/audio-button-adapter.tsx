@@ -1,45 +1,58 @@
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
-import { AudioButton } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import { AudioButton, type FirestoreServerAudioButtonData } from "@suzumina.click/shared-types";
 import { memo, useMemo } from "react";
 import AudioButtonCard from "./audio-button-card";
 import { AudioButtonList } from "./audio-button-list";
 
 /**
- * 既存のFrontendAudioButtonDataをAudioButtonに変換するアダプター
+ * 既存のPlainObjectデータをAudioButtonに変換するアダプター
  */
-export function convertToAudioButton(audioButtonData: FrontendAudioButtonData): AudioButton {
-	return AudioButton.fromLegacy({
-		id: audioButtonData.id,
-		title: audioButtonData.title,
-		description: audioButtonData.description || undefined,
-		tags: audioButtonData.tags || [],
-		sourceVideoId: audioButtonData.sourceVideoId,
-		sourceVideoTitle: audioButtonData.sourceVideoTitle || undefined,
-		startTime: audioButtonData.startTime,
-		endTime: audioButtonData.endTime || audioButtonData.startTime,
-		createdBy: audioButtonData.createdBy,
-		createdByName: audioButtonData.createdByName,
-		isPublic: audioButtonData.isPublic ?? true,
-		playCount: audioButtonData.playCount || 0,
-		likeCount: audioButtonData.likeCount || 0,
-		dislikeCount: audioButtonData.dislikeCount || 0,
-		favoriteCount: audioButtonData.favoriteCount || 0,
-		createdAt: audioButtonData.createdAt,
-		updatedAt: audioButtonData.updatedAt,
-	});
+export function convertToAudioButton(
+	audioButtonData: AudioButtonPlainObject | FirestoreServerAudioButtonData,
+): AudioButton | null {
+	// AudioButtonPlainObject形式の場合（_computedプロパティがある）
+	if ("_computed" in audioButtonData) {
+		const plainObject = audioButtonData as AudioButtonPlainObject;
+		const firestoreData: FirestoreServerAudioButtonData = {
+			id: plainObject.id,
+			title: plainObject.title,
+			description: plainObject.description || undefined,
+			tags: plainObject.tags || [],
+			sourceVideoId: plainObject.sourceVideoId,
+			sourceVideoTitle: plainObject.sourceVideoTitle || undefined,
+			sourceVideoThumbnailUrl: plainObject.sourceVideoThumbnailUrl || undefined,
+			startTime: plainObject.startTime,
+			endTime: plainObject.endTime || plainObject.startTime,
+			createdBy: plainObject.createdBy,
+			createdByName: plainObject.createdByName,
+			isPublic: plainObject.isPublic ?? true,
+			playCount: plainObject.playCount || 0,
+			likeCount: plainObject.likeCount || 0,
+			dislikeCount: plainObject.dislikeCount || 0,
+			favoriteCount: plainObject.favoriteCount || 0,
+			createdAt: plainObject.createdAt,
+			updatedAt: plainObject.updatedAt,
+		};
+		return AudioButton.fromFirestoreData(firestoreData);
+	}
+
+	// FirestoreServerAudioButtonData形式の場合
+	return AudioButton.fromFirestoreData(audioButtonData as FirestoreServerAudioButtonData);
 }
 
 /**
- * 複数のFrontendAudioButtonDataをAudioButton配列に変換
+ * 複数のAudioButtonPlainObjectをAudioButton配列に変換
  */
 export function convertToAudioButtonArray(
-	audioButtonsData: FrontendAudioButtonData[],
+	audioButtonsData: (AudioButtonPlainObject | FirestoreServerAudioButtonData)[],
 ): AudioButton[] {
-	return audioButtonsData.map(convertToAudioButton);
+	return audioButtonsData
+		.map(convertToAudioButton)
+		.filter((button): button is AudioButton => button !== null);
 }
 
 interface AudioButtonCardAdapterProps {
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject | FirestoreServerAudioButtonData;
 	playCount?: number;
 	isFavorited?: boolean;
 	isLiked?: boolean;
@@ -54,7 +67,7 @@ interface AudioButtonCardAdapterProps {
 
 /**
  * 既存のAudioButtonカードインターフェースに対応するアダプターコンポーネント
- * FrontendAudioButtonDataを受け取り、AudioButtonに変換してAudioButtonCardに渡す
+ * AudioButtonPlainObjectまたはFirestoreServerAudioButtonDataを受け取り、AudioButtonに変換してAudioButtonCardに渡す
  */
 export const AudioButtonCardAdapter = memo(function AudioButtonCardAdapter({
 	audioButton,
@@ -70,6 +83,10 @@ export const AudioButtonCardAdapter = memo(function AudioButtonCardAdapter({
 	showStats,
 }: AudioButtonCardAdapterProps) {
 	const audioButtonEntity = useMemo(() => convertToAudioButton(audioButton), [audioButton]);
+
+	if (!audioButtonEntity) {
+		return null;
+	}
 
 	return (
 		<AudioButtonCard
@@ -89,7 +106,7 @@ export const AudioButtonCardAdapter = memo(function AudioButtonCardAdapter({
 });
 
 interface AudioButtonListAdapterProps {
-	audioButtons: FrontendAudioButtonData[];
+	audioButtons: (AudioButtonPlainObject | FirestoreServerAudioButtonData)[];
 	loading?: boolean;
 	error?: string | null;
 	onPlay?: (audioButtonId: string) => void;
@@ -102,7 +119,7 @@ interface AudioButtonListAdapterProps {
 
 /**
  * 既存のAudioButtonリストインターフェースに対応するアダプターコンポーネント
- * FrontendAudioButtonData配列を受け取り、AudioButton配列に変換してAudioButtonListに渡す
+ * AudioButtonPlainObjectまたはFirestoreServerAudioButtonData配列を受け取り、AudioButton配列に変換してAudioButtonListに渡す
  */
 export const AudioButtonListAdapter = memo(function AudioButtonListAdapter({
 	audioButtons,
@@ -124,7 +141,9 @@ export const AudioButtonListAdapter = memo(function AudioButtonListAdapter({
 	const playCounts = useMemo(() => {
 		const counts: Record<string, number> = {};
 		audioButtons.forEach((ab) => {
-			counts[ab.id] = ab.playCount || 0;
+			if (ab.id) {
+				counts[ab.id] = ab.playCount || 0;
+			}
 		});
 		return counts;
 	}, [audioButtons]);

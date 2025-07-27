@@ -30,7 +30,9 @@ export interface AudioButtonComputedProperties {
  * Plain object representation of AudioButton entity for Next.js serialization
  */
 export interface AudioButtonPlainObject
-	extends Omit<FirestoreServerAudioButtonData, "createdAt" | "updatedAt"> {
+	extends Omit<FirestoreServerAudioButtonData, "id" | "createdAt" | "updatedAt"> {
+	// Make id required
+	id: string;
 	// Override timestamp fields with string type
 	createdAt: string;
 	updatedAt: string;
@@ -43,3 +45,24 @@ export interface AudioButtonPlainObject
  * @deprecated Use AudioButtonPlainObject instead
  */
 export type FrontendAudioButton = AudioButtonPlainObject;
+
+/**
+ * Helper function to convert from legacy FrontendAudioButtonData to AudioButtonPlainObject
+ * This is a temporary helper for migration purposes
+ */
+export function fromFrontendAudioButtonData(
+	data: import("../entities/audio-button").FrontendAudioButtonData,
+): AudioButtonPlainObject {
+	return {
+		...data,
+		_computed: {
+			isPopular: false,
+			engagementRate: 0,
+			engagementRatePercentage: 0,
+			popularityScore: 0,
+			searchableText: "",
+			durationText: data.durationText || "0:00",
+			relativeTimeText: data.relativeTimeText || "たった今",
+		},
+	};
+}

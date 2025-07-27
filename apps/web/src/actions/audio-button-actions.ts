@@ -7,11 +7,7 @@
 
 "use server";
 
-import {
-	AudioButton,
-	convertToFrontendAudioButton,
-	type FirestoreAudioButtonData,
-} from "@suzumina.click/shared-types";
+import { AudioButton, type FirestoreServerAudioButtonData } from "@suzumina.click/shared-types";
 import { auth } from "@/auth";
 import { getFirestore } from "@/lib/firestore";
 
@@ -53,23 +49,17 @@ export async function getAudioButtonAction(audioButtonId: string): Promise<GetAu
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreAudioButtonData;
-
-		// FirestoreデータをISO文字列に変換
-		const firestoreDataWithISODates = {
-			...data,
-			id: doc.id,
-			// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-			createdAt: (data.createdAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-			// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-			updatedAt: (data.updatedAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-		};
-
-		// FrontendAudioButtonDataに変換
-		const frontendData = convertToFrontendAudioButton(firestoreDataWithISODates);
+		const data = doc.data() as FirestoreServerAudioButtonData;
 
 		// AudioButtonエンティティに変換
-		const audioButton = AudioButton.fromLegacy(frontendData);
+		const audioButton = AudioButton.fromFirestoreData({
+			...data,
+			id: doc.id,
+		});
+
+		if (!audioButton) {
+			return { success: false, error: "音声ボタンデータの変換に失敗しました" };
+		}
 
 		return {
 			success: true,
@@ -116,19 +106,11 @@ export async function getAudioButtonsAction(
 			const doc = await firestore.collection("audioButtons").doc(id).get();
 			if (!doc.exists) return null;
 
-			const data = doc.data() as FirestoreAudioButtonData;
-			const firestoreDataWithISODates = {
+			const data = doc.data() as FirestoreServerAudioButtonData;
+			return AudioButton.fromFirestoreData({
 				...data,
 				id: doc.id,
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-				createdAt: (data.createdAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-				updatedAt: (data.updatedAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-			};
-
-			const frontendData = convertToFrontendAudioButton(firestoreDataWithISODates);
-
-			return AudioButton.fromLegacy(frontendData);
+			});
 		});
 
 		const results = await Promise.all(audioButtonsPromises);
@@ -172,19 +154,14 @@ export async function getPublicAudioButtonsAction(limit = 20): Promise<GetAudioB
 
 		// biome-ignore lint/suspicious/noExplicitAny: Firestore QueryDocumentSnapshot type
 		snapshot.forEach((doc: any) => {
-			const data = doc.data() as FirestoreAudioButtonData;
-			const firestoreDataWithISODates = {
+			const data = doc.data() as FirestoreServerAudioButtonData;
+			const audioButton = AudioButton.fromFirestoreData({
 				...data,
 				id: doc.id,
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-				createdAt: (data.createdAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-				updatedAt: (data.updatedAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-			};
-
-			const frontendData = convertToFrontendAudioButton(firestoreDataWithISODates);
-
-			audioButtons.push(AudioButton.fromLegacy(frontendData));
+			});
+			if (audioButton) {
+				audioButtons.push(audioButton);
+			}
 		});
 
 		return {
@@ -225,7 +202,7 @@ export async function recordAudioButtonPlayAction(
 				throw new Error("音声ボタンが見つかりません");
 			}
 
-			const currentData = doc.data() as FirestoreAudioButtonData;
+			const currentData = doc.data() as FirestoreServerAudioButtonData;
 			const currentPlayCount = currentData.playCount || 0;
 
 			transaction.update(docRef, {

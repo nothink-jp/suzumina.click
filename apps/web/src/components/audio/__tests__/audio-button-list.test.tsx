@@ -1,4 +1,4 @@
-import { AudioButton } from "@suzumina.click/shared-types";
+import { AudioButton, type FirestoreServerAudioButtonData } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -68,7 +68,13 @@ function createMockAudioButton(id: string, overrides?: MockAudioButtonLegacyData
 		...overrides,
 	};
 
-	return AudioButton.fromLegacy(defaultData);
+	const firestoreData: FirestoreServerAudioButtonData = {
+		...defaultData,
+	};
+	return (
+		AudioButton.fromFirestoreData(firestoreData) ||
+		AudioButton.fromFirestoreData({ ...firestoreData, id: "default-id" })!
+	);
 }
 
 describe("AudioButtonList", () => {
