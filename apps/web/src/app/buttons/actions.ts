@@ -234,6 +234,27 @@ export async function createAudioButton(
 		// Update with ID
 		await docRef.update({ id: docRef.id });
 
+		// 動画のaudioButtonCountを更新
+		try {
+			const videoRef = firestore.collection("videos").doc(input.sourceVideoId);
+			const videoDoc = await videoRef.get();
+			if (videoDoc.exists) {
+				const videoData = videoDoc.data();
+				const currentCount = videoData?.audioButtonCount || 0;
+				await videoRef.update({
+					audioButtonCount: currentCount + 1,
+					hasAudioButtons: true,
+					updatedAt: new Date().toISOString(),
+				});
+			}
+		} catch (updateError) {
+			// 動画カウント更新エラーはログのみ（音声ボタン作成は成功として扱う）
+			logger.warn("動画のaudioButtonCount更新エラー", {
+				videoId: input.sourceVideoId,
+				error: updateError,
+			});
+		}
+
 		return { success: true, data: { id: docRef.id } };
 	} catch (error) {
 		logger.error("音声ボタン作成エラー", { error });
@@ -306,6 +327,30 @@ export async function deleteAudioButton(
 		}
 
 		await doc.ref.delete();
+
+		// 動画のaudioButtonCountを更新
+		if (data.sourceVideoId) {
+			try {
+				const videoRef = firestore.collection("videos").doc(data.sourceVideoId);
+				const videoDoc = await videoRef.get();
+				if (videoDoc.exists) {
+					const videoData = videoDoc.data();
+					const currentCount = videoData?.audioButtonCount || 0;
+					await videoRef.update({
+						audioButtonCount: Math.max(0, currentCount - 1),
+						hasAudioButtons: currentCount > 1,
+						updatedAt: new Date().toISOString(),
+					});
+				}
+			} catch (updateError) {
+				// 動画カウント更新エラーはログのみ（音声ボタン削除は成功として扱う）
+				logger.warn("動画のaudioButtonCount更新エラー", {
+					videoId: data.sourceVideoId,
+					error: updateError,
+				});
+			}
+		}
+
 		return { success: true };
 	} catch (error) {
 		logger.error("音声ボタン削除エラー", { audioButtonId, error });
@@ -543,6 +588,56 @@ export async function updateAudioButtonTags(
 	} catch (error) {
 		logger.error("音声ボタンタグ更新エラー", { audioButtonId, tags, error });
 		return { success: false, error: "タグの更新に失敗しました" };
+	}
+}
+
+/**
+ * 全動画の音声ボタン数を再計算して更新（メンテナンス用）
+ */
+export async function recalculateAllVideosAudioButtonCount(): Promise<{
+	success: boolean;
+	error?: string;
+}> {
+	try {
+		const firestore = getFirestore();
+
+		// 全動画を取得
+		const videosSnapshot = await firestore.collection("videos").get();
+
+		let updatedCount = 0;
+		const batch = firestore.batch();
+
+		for (const videoDoc of videosSnapshot.docs) {
+			// その動画の音声ボタン数を取得
+			const count = await getAudioButtonCount(videoDoc.id);
+
+			// 動画ドキュメントを更新
+			batch.update(videoDoc.ref, {
+				audioButtonCount: count,
+				hasAudioButtons: count > 0,
+				updatedAt: new Date().toISOString(),
+			});
+
+			updatedCount++;
+
+			// バッチサイズ制限（500）に達したらコミット
+			if (updatedCount % 500 === 0) {
+				await batch.commit();
+				// 新しいバッチを開始
+				logger.info(`Updated ${updatedCount} videos...`);
+			}
+		}
+
+		// 残りをコミット
+		if (updatedCount % 500 !== 0) {
+			await batch.commit();
+		}
+
+		logger.info(`Successfully updated audioButtonCount for ${updatedCount} videos`);
+		return { success: true };
+	} catch (error) {
+		logger.error("音声ボタン数再計算エラー", { error });
+		return { success: false, error: "音声ボタン数の再計算に失敗しました" };
 	}
 }
 
