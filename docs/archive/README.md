@@ -1,52 +1,84 @@
 # suzumina.click ドキュメントアーカイブ
 
-> **📅 アーカイブ日**: 2025年7月11日  
-> **📝 理由**: Phase 0-2 実装完了に伴うドキュメント整理統合
+> **📅 最終更新**: 2025年7月27日  
+> **📝 理由**: Entity/Value Objectアーキテクチャ移行完了に伴う整理
 
 ## 📂 アーカイブ構造
 
-### `/implementation/` - 完了した実装仕様
+### 2025-07 Entity/Value Object移行関連
+
+#### `/2025-07-entity-value-object-migration/`
+- **内容**: Entity/Value Objectアーキテクチャ移行（Phase 1）
+- **完了日**: 2025-07-24
+- **主要文書**:
+  - `ENTITY_VALUE_OBJECT_MIGRATION_PLAN.md` - 移行計画書
+  - `ENTITY_VALUE_OBJECT_ARCHITECTURE.md` - アーキテクチャ解説
+
+#### `/2025-07-entity-v2-migration/`
+- **内容**: Entity V2移行プロジェクト（Phase 2-6）
+- **完了日**: 2025-07-26
+- **主要文書**:
+  - `ENTITY_MIGRATION_PROJECT.md` - プロジェクト概要
+  - `NAMING_CONVENTION_MIGRATION_GUIDE.md` - 命名規則移行ガイド
+
+#### `/2025-07-video-legacy-migration/`
+- **内容**: Videoエンティティのレガシーフォーマット削除
+- **完了日**: 2025-07-26
+- **主要文書**:
+  - `VIDEO_LEGACY_FORMAT_MIGRATION.md` - 移行手順書
+
+#### `/2025-07-domain-docs-verbose/`
+- **内容**: 詳細なドメインモデルドキュメント（簡潔版に統合）
+- **アーカイブ日**: 2025-07-27
+- **主要文書**:
+  - `DOMAIN_MODEL.md` - 760行の詳細設計書
+  - `ENTITY_VALUE_OBJECT_EXPANSION_PLAN.md` - 拡張計画
+
+### 2025-07 パフォーマンス最適化関連
+
+#### `/2025-07-audio-button-optimization/`
+- **内容**: 音声ボタンシステムのパフォーマンス最適化
+- **完了日**: 2025-07-15
+- **成果**: メモリ使用量87%削減、96ボタン同時表示対応
+
+#### `/2025-07-dlsite-optimization/`
+- **内容**: DLsite API統合の最適化
+- **完了日**: 2025-07-09
+- **成果**: Individual Info API移行、エラー率低減
+
+#### `/2025-07-server-actions-migration/`
+- **内容**: API RoutesからServer Actionsへの移行
+- **完了日**: 2025-07
+- **成果**: レスポンス時間50%削減
+
+### 初期実装ドキュメント（2025-07以前）
+
+#### `/implementation/`
 完了済みの機能実装・設計ドキュメント（歴史的価値・参考資料として保持）
 
-- **DLSITE_DATA_STRUCTURE_SPECIFICATION.md** - DLsite統合データ構造仕様（v0.3.0で実装完了）
-- **BACKEND_FRONTEND_INTEGRATION.md** - Server Actions統合設計（実装完了）
-- **WORK_DETAIL_ENHANCEMENT.md** - 作品詳細ページ強化仕様（実装完了）
-- **WORK_DETAIL_PAGE_ENHANCEMENT.md** - WorkDetailコンポーネント拡張（実装完了）
+- `DLSITE_DATA_STRUCTURE_SPECIFICATION.md` - DLsite統合データ構造仕様
+- `BACKEND_FRONTEND_INTEGRATION.md` - Server Actions統合設計
+- `WORK_DETAIL_ENHANCEMENT.md` - 作品詳細ページ強化仕様
 
-### `/architecture/` - 完了した設計ドキュメント
+#### `/architecture/`
 システム簡素化・リージョン制限対応完了に伴いアーカイブ
 
-- **FUNCTIONS_ARCHITECTURE_CURRENT_ARCHIVED.md** - Cloud Functions アーキテクチャ解説（システム簡素化完了時点）
-- **DLSITE_REGION_RESTRICTION_DESIGN_ARCHIVED.md** - DLsite リージョン制限対応設計書（Phase 0-2 実装完了）
-- **YOUTUBE_VIDEO_CLASSIFICATION_ARCHIVED.md** - YouTube動画種別判定ルール（未実装のため設計書としてアーカイブ）
+- `FUNCTIONS_ARCHITECTURE_CURRENT_ARCHIVED.md` - Cloud Functions アーキテクチャ解説
+- `DLSITE_REGION_RESTRICTION_DESIGN_ARCHIVED.md` - DLsite リージョン制限対応設計書
+- `YOUTUBE_VIDEO_CLASSIFICATION_ARCHIVED.md` - YouTube動画種別判定ルール
 
-### `/analysis/` - 完了した分析レポート
+#### `/analysis/`
 技術分析・パフォーマンス分析・システム評価ドキュメント
 
-- **CHARACTER_EVALUATION_SYSTEM.md** - キャラクター評価システム分析
-- **DEPLOYMENT_OPTIMIZATION.md** - デプロイメント最適化分析
-- **DLSITE_LOAD_IMPACT_ANALYSIS.md** - DLsite負荷影響分析
-- **WORK_UPDATE_INTERVAL_ANALYSIS.md** - 作品更新間隔分析
-- **SD_METHOD_ANALYSIS.md** - SD手法分析
+- `CHARACTER_EVALUATION_SYSTEM.md` - キャラクター評価システム分析
+- `DEPLOYMENT_OPTIMIZATION.md` - デプロイメント最適化分析
+- `DLSITE_LOAD_IMPACT_ANALYSIS.md` - DLsite負荷影響分析
 
-### `/processes/` - 使用されていないプロセス文書
+#### `/processes/`
 計画されたが使用されていない、または完了したプロセス文書
 
-- **RELEASE_PROCESS.md** - 3段階リリースプロセス（main直接デプロイのため未使用）
-- **TEST_REORGANIZATION_PLAN.md** - テスト再編成計画（実装完了）
-
-### `/2025-07-dlsite-optimization/` - DLsite最適化プロジェクト
-2025年7月のDLsiteデータ最適化プロジェクト関連文書
-
-- **DLSITE_DATA_OPTIMIZATION_ANALYSIS.md** - 最適化分析レポート（実装前提案書）
-- **README.md** - プロジェクト完了レポート
-
-### `/2025-07-entity-value-object-migration/` - Entity/Value Objectアーキテクチャ移行
-2025年7月24日に完了したEntity/Value Object移行プロジェクト
-
-- **ENTITY_VALUE_OBJECT_MIGRATION_PLAN.md** - 移行計画書（全フェーズ完了）
-- **ENTITY_VALUE_OBJECT_ARCHITECTURE.md** - アーキテクチャ解説書
-- **README.md** - プロジェクト完了レポート
+- `RELEASE_PROCESS.md` - 3段階リリースプロセス
+- `TEST_REORGANIZATION_PLAN.md` - テスト再編成計画
 
 ## 🎯 アーカイブの価値
 
