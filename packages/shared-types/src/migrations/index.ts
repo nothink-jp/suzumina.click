@@ -2,4 +2,4 @@
  * Migration utilities for transitioning between legacy and new entity formats
  */
 
-export * from "./audio-button-migration";
+// All migrations have been completed. This file is kept for future migration needs.

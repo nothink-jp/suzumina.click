@@ -1,4 +1,4 @@
-import { AudioButton } from "@suzumina.click/shared-types";
+import { AudioButton, type FirestoreServerAudioButtonData } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
@@ -104,7 +104,17 @@ function createMockAudioButton(overrides?: MockAudioButtonLegacyData): AudioButt
 		...overrides,
 	};
 
-	return AudioButton.fromFirestoreData(defaultData as any);
+	const firestoreData: FirestoreServerAudioButtonData = {
+		...defaultData,
+		sourceVideoThumbnailUrl: "",
+		createdAt: new Date(defaultData.createdAt),
+		updatedAt: new Date(defaultData.updatedAt),
+	};
+	const audioButton = AudioButton.fromFirestoreData(firestoreData);
+	if (!audioButton) {
+		throw new Error("Failed to create mock AudioButton");
+	}
+	return audioButton;
 }
 
 describe("AudioButtonCard", () => {

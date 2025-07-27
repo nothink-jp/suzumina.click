@@ -1,17 +1,18 @@
-import { AudioButton } from "@suzumina.click/shared-types";
+import { AudioButton, type FirestoreServerAudioButtonData } from "@suzumina.click/shared-types";
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useAudioButton } from "../use-audio-button";
 
 // テスト用のAudioButtonエンティティを作成するヘルパー
-function createMockAudioButton(overrides?: Partial<any>): AudioButton {
-	const defaultData = {
+function createMockAudioButton(overrides?: Partial<FirestoreServerAudioButtonData>): AudioButton {
+	const defaultData: FirestoreServerAudioButtonData = {
 		id: "test-button-123",
 		title: "テスト音声ボタン",
 		description: "これはテスト用の音声ボタンです",
 		tags: ["タグ1", "タグ2", "タグ3"],
 		sourceVideoId: "dQw4w9WgXcQ",
 		sourceVideoTitle: "テスト動画タイトル",
+		sourceVideoThumbnailUrl: "",
 		startTime: 30,
 		endTime: 45,
 		createdBy: "user123",
@@ -21,12 +22,16 @@ function createMockAudioButton(overrides?: Partial<any>): AudioButton {
 		likeCount: 100,
 		dislikeCount: 5,
 		favoriteCount: 50,
-		createdAt: "2024-01-01T00:00:00Z",
-		updatedAt: "2024-01-01T00:00:00Z",
+		createdAt: new Date("2024-01-01T00:00:00Z"),
+		updatedAt: new Date("2024-01-01T00:00:00Z"),
 		...overrides,
 	};
 
-	return AudioButton.fromFirestoreData(defaultData as any);
+	const audioButton = AudioButton.fromFirestoreData(defaultData);
+	if (!audioButton) {
+		throw new Error("Failed to create mock AudioButton");
+	}
+	return audioButton;
 }
 
 describe("useAudioButton", () => {

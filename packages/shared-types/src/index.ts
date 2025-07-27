@@ -39,8 +39,9 @@ export * from "./migrations";
 export * from "./plain-objects/audio-button-plain";
 export * from "./plain-objects/work-plain";
 // === Firestore Types ===
-export type { FirestoreServerAudioButtonData } from "./types/firestore/audio-button";
 // FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead
+// FirestoreServerAudioButtonData is available from entities/audio-button
+export type { FirestoreServerAudioButtonData } from "./types/firestore/audio-button";
 // === Utilities ===
 // 年齢制限・レーティング関連の型とユーティリティのエクスポート
 export * from "./utilities/age-rating";

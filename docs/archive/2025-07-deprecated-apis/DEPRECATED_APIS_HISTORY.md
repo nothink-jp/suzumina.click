@@ -56,6 +56,31 @@ The following APIs have been removed as part of PR #125:
 - **Replacement**: Use `WorkDocument` type
 - **Reason**: Naming convention simplification as part of Entity/Value Object architecture
 
+### Removed APIs (2025-07-27)
+
+The following APIs have been removed as part of the legacy support cleanup:
+
+#### Feature Flags
+
+##### `ENABLE_ENTITY_V2` environment variable - **REMOVED**
+- **Removal Date**: 2025-07-27
+- **Location**: `/apps/web/.env.example` (line 35)
+- **Reason**: Entity V2 migration completed, feature flag no longer needed
+
+#### AudioButton Legacy Support
+
+##### `AudioButton.fromLegacy()` and `AudioButton.toLegacy()` methods - **REMOVED**
+- **Removal Date**: 2025-07-27
+- **Location**: `/packages/shared-types/src/entities/audio-button.ts`
+- **Reason**: Legacy format support ended
+
+##### `audio-button-migration.ts` and tests - **REMOVED**
+- **Removal Date**: 2025-07-27
+- **Files**:
+  - `/packages/shared-types/src/migrations/audio-button-migration.ts`
+  - `/packages/shared-types/src/migrations/__tests__/audio-button-migration.test.ts`
+- **Reason**: Migration utilities no longer needed after legacy support removal
+
 ## Questions?
 
 If you have questions about migrating to the new APIs, please refer to:

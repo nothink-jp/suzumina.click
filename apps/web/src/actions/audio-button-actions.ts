@@ -7,7 +7,7 @@
 
 "use server";
 
-import { AudioButton, type FirestoreAudioButtonData } from "@suzumina.click/shared-types";
+import { AudioButton, type FirestoreServerAudioButtonData } from "@suzumina.click/shared-types";
 import { auth } from "@/auth";
 import { getFirestore } from "@/lib/firestore";
 
@@ -49,16 +49,16 @@ export async function getAudioButtonAction(audioButtonId: string): Promise<GetAu
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreAudioButtonData;
+		const data = doc.data() as FirestoreServerAudioButtonData;
 
 		// AudioButtonエンティティに変換
-		const audioButton = AudioButton.fromFirestoreData(data);
+		const audioButton = AudioButton.fromFirestoreData({
+			...data,
+			id: doc.id,
+		});
 
 		if (!audioButton) {
-			return {
-				success: false,
-				error: "音声ボタンデータの変換に失敗しました",
-			};
+			return { success: false, error: "音声ボタンデータの変換に失敗しました" };
 		}
 
 		return {
@@ -106,8 +106,11 @@ export async function getAudioButtonsAction(
 			const doc = await firestore.collection("audioButtons").doc(id).get();
 			if (!doc.exists) return null;
 
-			const data = doc.data() as FirestoreAudioButtonData;
-			return AudioButton.fromFirestoreData(data);
+			const data = doc.data() as FirestoreServerAudioButtonData;
+			return AudioButton.fromFirestoreData({
+				...data,
+				id: doc.id,
+			});
 		});
 
 		const results = await Promise.all(audioButtonsPromises);
@@ -151,8 +154,11 @@ export async function getPublicAudioButtonsAction(limit = 20): Promise<GetAudioB
 
 		// biome-ignore lint/suspicious/noExplicitAny: Firestore QueryDocumentSnapshot type
 		snapshot.forEach((doc: any) => {
-			const data = doc.data() as FirestoreAudioButtonData;
-			const audioButton = AudioButton.fromFirestoreData(data);
+			const data = doc.data() as FirestoreServerAudioButtonData;
+			const audioButton = AudioButton.fromFirestoreData({
+				...data,
+				id: doc.id,
+			});
 			if (audioButton) {
 				audioButtons.push(audioButton);
 			}
@@ -196,7 +202,7 @@ export async function recordAudioButtonPlayAction(
 				throw new Error("音声ボタンが見つかりません");
 			}
 
-			const currentData = doc.data() as FirestoreAudioButtonData;
+			const currentData = doc.data() as FirestoreServerAudioButtonData;
 			const currentPlayCount = currentData.playCount || 0;
 
 			transaction.update(docRef, {

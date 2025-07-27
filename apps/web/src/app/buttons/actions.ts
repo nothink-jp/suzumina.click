@@ -4,7 +4,7 @@ import {
 	AudioButton,
 	type AudioButtonPlainObject,
 	type CreateAudioButtonInput,
-	type FirestoreAudioButtonData,
+	type FirestoreServerAudioButtonData,
 	type UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
 import { auth } from "@/auth";
@@ -12,9 +12,9 @@ import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 
 /**
- * FirestoreAudioButtonDataをAudioButtonに変換するヘルパー関数
+ * FirestoreServerAudioButtonDataをAudioButtonに変換するヘルパー関数
  */
-function convertFirestoreToAudioButton(button: FirestoreAudioButtonData): AudioButton | null {
+function convertFirestoreToAudioButton(button: FirestoreServerAudioButtonData): AudioButton | null {
 	try {
 		return AudioButton.fromFirestoreData(button);
 	} catch (error) {
@@ -135,7 +135,7 @@ export async function getAudioButtons(
 
 		const snapshot = await queryRef.get();
 		const rawButtons = snapshot.docs.map((doc) => {
-			const data = doc.data() as FirestoreAudioButtonData;
+			const data = doc.data() as FirestoreServerAudioButtonData;
 			return { ...data, id: doc.id };
 		});
 
@@ -235,7 +235,7 @@ export async function getAudioButtonById(
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreAudioButtonData;
+		const data = doc.data() as FirestoreServerAudioButtonData;
 		if (!data.isPublic) {
 			return { success: false, error: "この音声ボタンは非公開です" };
 		}
@@ -276,7 +276,7 @@ export async function deleteAudioButton(
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreAudioButtonData;
+		const data = doc.data() as FirestoreServerAudioButtonData;
 		if (data.createdBy !== session.user.discordId) {
 			return { success: false, error: "削除権限がありません" };
 		}
@@ -322,7 +322,7 @@ export async function incrementLikeCount(
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
-			const currentData = doc.data() as FirestoreAudioButtonData;
+			const currentData = doc.data() as FirestoreServerAudioButtonData;
 			transaction.update(docRef, {
 				likeCount: (currentData.likeCount || 0) + 1,
 				updatedAt: new Date().toISOString(),
@@ -349,7 +349,7 @@ export async function decrementLikeCount(
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
-			const currentData = doc.data() as FirestoreAudioButtonData;
+			const currentData = doc.data() as FirestoreServerAudioButtonData;
 			transaction.update(docRef, {
 				likeCount: Math.max(0, (currentData.likeCount || 0) - 1),
 				updatedAt: new Date().toISOString(),
@@ -376,7 +376,7 @@ export async function incrementDislikeCount(
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
-			const currentData = doc.data() as FirestoreAudioButtonData;
+			const currentData = doc.data() as FirestoreServerAudioButtonData;
 			transaction.update(docRef, {
 				dislikeCount: (currentData.dislikeCount || 0) + 1,
 				updatedAt: new Date().toISOString(),
@@ -403,7 +403,7 @@ export async function decrementDislikeCount(
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
-			const currentData = doc.data() as FirestoreAudioButtonData;
+			const currentData = doc.data() as FirestoreServerAudioButtonData;
 			transaction.update(docRef, {
 				dislikeCount: Math.max(0, (currentData.dislikeCount || 0) - 1),
 				updatedAt: new Date().toISOString(),
@@ -436,12 +436,12 @@ export async function updateAudioButton(
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreAudioButtonData;
+		const data = doc.data() as FirestoreServerAudioButtonData;
 		if (data.createdBy !== session.user.discordId) {
 			return { success: false, error: "更新権限がありません" };
 		}
 
-		const updates: Partial<FirestoreAudioButtonData> = {
+		const updates: Partial<FirestoreServerAudioButtonData> = {
 			updatedAt: new Date().toISOString(),
 		};
 
@@ -479,7 +479,7 @@ export async function updateAudioButtonTags(
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreAudioButtonData;
+		const data = doc.data() as FirestoreServerAudioButtonData;
 		if (data.createdBy !== session.user.discordId) {
 			return { success: false, error: "更新権限がありません" };
 		}
@@ -510,7 +510,7 @@ export async function incrementPlayCount(
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
-			const currentData = doc.data() as FirestoreAudioButtonData;
+			const currentData = doc.data() as FirestoreServerAudioButtonData;
 			transaction.update(docRef, {
 				playCount: (currentData.playCount || 0) + 1,
 				updatedAt: new Date().toISOString(),

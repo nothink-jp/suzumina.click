@@ -5,7 +5,11 @@
  * Supports both dry-run and actual migration modes with comprehensive reporting.
  */
 
-import { AudioButton, Video } from "@suzumina.click/shared-types";
+import {
+	AudioButton,
+	type FirestoreServerAudioButtonData,
+	Video,
+} from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
 import type { MigrationReport, MigrationResult } from "./types";
@@ -329,16 +333,17 @@ export class EntityMigrationService {
 		}
 
 		try {
-			// Prepare data for V2 entity
-			const audioButtonData = {
+			// Prepare data for V2 entity in FirestoreServerAudioButtonData format
+			const audioButtonData: FirestoreServerAudioButtonData = {
 				id: doc.id,
 				title: data.text || "", // Map text to title
-				description: data.description || "",
+				description: data.description,
 				tags: data.tags || [],
 				sourceVideoId: data.videoId || "",
-				sourceVideoTitle: data.videoTitle || "",
+				sourceVideoTitle: data.videoTitle,
+				sourceVideoThumbnailUrl: data.sourceVideoThumbnailUrl,
 				startTime: data.startTime || 0,
-				endTime: data.endTime || 0,
+				endTime: data.endTime,
 				createdBy: data.createdBy || "system",
 				createdByName: data.createdByName || "System",
 				isPublic: data.isPublic !== false,
@@ -346,31 +351,15 @@ export class EntityMigrationService {
 				likeCount: data.likeCount || 0,
 				dislikeCount: data.dislikeCount || 0,
 				favoriteCount: data.favoriteCount || 0,
-				createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-				updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+				createdAt: data.createdAt || Timestamp.now(),
+				updatedAt: data.updatedAt || Timestamp.now(),
 			};
 
-			// Try to create entity to validate data
-			AudioButton.fromFirestoreData({
-				id: audioButtonData.id,
-				title: audioButtonData.title,
-				description: audioButtonData.description,
-				tags: audioButtonData.tags,
-				sourceVideoId: audioButtonData.sourceVideoId,
-				sourceVideoTitle: audioButtonData.sourceVideoTitle,
-				sourceVideoThumbnailUrl: undefined,
-				startTime: audioButtonData.startTime,
-				endTime: audioButtonData.endTime,
-				createdBy: audioButtonData.createdBy,
-				createdByName: audioButtonData.createdByName,
-				isPublic: audioButtonData.isPublic,
-				playCount: audioButtonData.playCount,
-				likeCount: audioButtonData.likeCount,
-				dislikeCount: audioButtonData.dislikeCount,
-				favoriteCount: audioButtonData.favoriteCount,
-				createdAt: new Date(audioButtonData.createdAt),
-				updatedAt: new Date(audioButtonData.updatedAt),
-			});
+			// Try to create V2 entity to validate data
+			const audioButton = AudioButton.fromFirestoreData(audioButtonData);
+			if (!audioButton) {
+				throw new Error("Failed to create AudioButton from data");
+			}
 
 			// Prepare migration data
 			const migrationData = {
