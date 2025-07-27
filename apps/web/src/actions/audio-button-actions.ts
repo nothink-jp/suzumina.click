@@ -51,16 +51,6 @@ export async function getAudioButtonAction(audioButtonId: string): Promise<GetAu
 
 		const data = doc.data() as FirestoreAudioButtonData;
 
-		// FirestoreデータをISO文字列に変換
-		const firestoreDataWithISODates = {
-			...data,
-			id: doc.id,
-			// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-			createdAt: (data.createdAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-			// biome-ignore lint/suspicious/noExplicitAny: Firestore Timestamp type handling
-			updatedAt: (data.updatedAt as any)?.toDate?.()?.toISOString() || new Date().toISOString(),
-		};
-
 		// AudioButtonエンティティに変換
 		const audioButton = AudioButton.fromFirestoreData(data);
 

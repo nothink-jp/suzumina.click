@@ -10,7 +10,7 @@
 
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { Heart, Play } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import { cn } from "../../lib/utils";
@@ -18,7 +18,7 @@ import { HighlightText } from "./highlight-text";
 
 export interface AudioButtonPreviewProps {
 	/** 音声ボタンデータ */
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject;
 
 	/** 検索クエリ（ハイライト用） */
 	searchQuery?: string;

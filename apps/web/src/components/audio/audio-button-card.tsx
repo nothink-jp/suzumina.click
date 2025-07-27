@@ -1,4 +1,4 @@
-import type { AudioButton, FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButton, AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { type AudioControls, AudioPlayer } from "@suzumina.click/ui/components/custom/audio-player";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -23,32 +23,9 @@ interface AudioButtonCardProps {
 	showStats?: boolean;
 }
 
-// AudioButtonからFrontendAudioButtonDataへの変換
-function convertToFrontendData(
-	audioButton: AudioButton,
-	formattedDuration: string,
-): FrontendAudioButtonData {
-	return {
-		id: audioButton.id.toString(),
-		sourceVideoId: audioButton.reference.videoId.toString(),
-		startTime: audioButton.reference.startTimestamp.toSeconds(),
-		endTime:
-			audioButton.reference.endTimestamp?.toSeconds() ??
-			audioButton.reference.startTimestamp.toSeconds(),
-		title: audioButton.content.text.toString(),
-		tags: audioButton.content.tags.toArray(),
-		createdBy: audioButton.createdBy.id,
-		createdByName: audioButton.createdBy.name,
-		playCount: audioButton.statistics.viewCount.toNumber(),
-		likeCount: audioButton.statistics.likeCount.toNumber(),
-		dislikeCount: audioButton.statistics.dislikeCount.toNumber(),
-		favoriteCount: audioButton.favoriteCount,
-		isPublic: audioButton.isPublic,
-		createdAt: audioButton.createdAt.toISOString(),
-		updatedAt: audioButton.updatedAt.toISOString(),
-		durationText: formattedDuration,
-		relativeTimeText: new Date(audioButton.createdAt).toLocaleDateString(),
-	};
+// AudioButtonからAudioButtonPlainObjectへの変換
+function convertToPlainObject(audioButton: AudioButton): AudioButtonPlainObject {
+	return audioButton.toPlainObject();
 }
 
 /**
@@ -235,7 +212,7 @@ export const AudioButtonCard = memo(function AudioButtonCard({
 			{/* AudioPlayer（非表示） */}
 			<AudioPlayer
 				ref={audioControlsRef}
-				audioButton={convertToFrontendData(audioButton, formattedDuration)}
+				audioButton={convertToPlainObject(audioButton)}
 				onPlay={handleAudioPlay}
 				onPause={handleAudioPause}
 				onEnd={handleAudioEnd}

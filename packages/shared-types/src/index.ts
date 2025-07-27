@@ -35,7 +35,6 @@ export * from "./entities/work-entity";
 export * from "./entities/work-evaluation";
 // === Migration Utilities ===
 export * from "./migrations";
-export * from "./migrations/frontend-to-plain-object";
 // === Plain Objects ===
 export * from "./plain-objects/audio-button-plain";
 export * from "./plain-objects/work-plain";

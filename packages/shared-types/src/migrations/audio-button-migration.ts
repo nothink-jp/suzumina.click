@@ -5,10 +5,11 @@
  * Supports both individual and batch migrations with validation and error handling.
  */
 
-import { AudioButton, type FrontendAudioButtonData } from "../entities/audio-button";
+import { AudioButton } from "../entities/audio-button";
+import type { AudioButtonPlainObject } from "../plain-objects/audio-button-plain";
 
 // Type alias for legacy audio button format (for migration purposes)
-type LegacyAudioButton = FrontendAudioButtonData;
+type LegacyAudioButton = AudioButtonPlainObject;
 
 /**
  * Migration result for a single audio button
@@ -68,14 +69,15 @@ export function migrateAudioButton(audioButton: LegacyAudioButton): AudioButtonM
 		// Validate required fields
 		validateRequiredFields(audioButton);
 
-		// Use the AudioButton.fromLegacy method
-		const entity = AudioButton.fromLegacy({
+		// Use the AudioButton.fromFirestoreData method
+		const entity = AudioButton.fromFirestoreData({
 			id: audioButton.id,
 			title: audioButton.title,
 			description: audioButton.description,
 			tags: audioButton.tags || [],
 			sourceVideoId: audioButton.sourceVideoId,
-			sourceVideoTitle: audioButton.sourceVideoTitle,
+			sourceVideoTitle: audioButton.sourceVideoTitle || "",
+			sourceVideoThumbnailUrl: audioButton.sourceVideoThumbnailUrl || "",
 			startTime: audioButton.startTime,
 			endTime: audioButton.endTime || audioButton.startTime,
 			createdBy: audioButton.createdBy,
@@ -90,9 +92,9 @@ export function migrateAudioButton(audioButton: LegacyAudioButton): AudioButtonM
 		});
 
 		// Validate the migrated entity
-		if (!entity.isValid()) {
+		if (!entity || !entity.isValid()) {
 			throw new Error(
-				`Migrated entity validation failed: ${entity.getValidationErrors().join(", ")}`,
+				`Migrated entity validation failed: ${entity?.getValidationErrors().join(", ") || "entity is null"}`,
 			);
 		}
 

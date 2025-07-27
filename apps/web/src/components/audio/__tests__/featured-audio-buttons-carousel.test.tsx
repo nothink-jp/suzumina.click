@@ -1,4 +1,4 @@
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { SessionProvider } from "next-auth/react";
 import { describe, expect, it, vi } from "vitest";
@@ -7,7 +7,7 @@ import { FeaturedAudioButtonsCarousel } from "../featured-audio-buttons-carousel
 
 // AudioButtonWithPlayCount のモック
 vi.mock("../AudioButtonWithPlayCount", () => ({
-	AudioButtonWithPlayCount: ({ audioButton }: { audioButton: FrontendAudioButtonData }) => (
+	AudioButtonWithPlayCount: ({ audioButton }: { audioButton: AudioButtonPlainObject }) => (
 		<div data-testid="audio-button-with-favorite">
 			<span data-testid="audio-button-title">{audioButton.title}</span>
 			<span data-testid="audio-button-id">{audioButton.id}</span>
@@ -17,7 +17,7 @@ vi.mock("../AudioButtonWithPlayCount", () => ({
 
 // AudioButtonWithFavoriteClient のモック
 vi.mock("../audio-button-with-favorite-client", () => ({
-	AudioButtonWithFavoriteClient: ({ audioButton }: { audioButton: FrontendAudioButtonData }) => (
+	AudioButtonWithFavoriteClient: ({ audioButton }: { audioButton: AudioButtonPlainObject }) => (
 		<div data-testid="audio-button-with-favorite">
 			<span data-testid="audio-button-title">{audioButton.title}</span>
 			<span data-testid="audio-button-id">{audioButton.id}</span>
@@ -31,7 +31,7 @@ vi.mock("@/auth", () => ({
 }));
 
 describe("FeaturedAudioButtonsCarousel", () => {
-	const mockAudioButtons: FrontendAudioButtonData[] = [
+	const mockAudioButtons: AudioButtonPlainObject[] = [
 		{
 			id: "audio-1",
 			title: "テスト音声ボタン1",
@@ -51,8 +51,15 @@ describe("FeaturedAudioButtonsCarousel", () => {
 			favoriteCount: 1,
 			createdAt: "2023-01-01T00:00:00Z",
 			updatedAt: "2023-01-01T00:00:00Z",
-			durationText: "10秒",
-			relativeTimeText: "1日前",
+			_computed: {
+				isPopular: false,
+				engagementRate: 0.4,
+				engagementRatePercentage: 40,
+				popularityScore: 9,
+				searchableText: "テスト音声ボタン1 テスト テスト動画1 ユーザー1",
+				durationText: "10秒",
+				relativeTimeText: "1日前",
+			},
 		},
 		{
 			id: "audio-2",
@@ -73,8 +80,15 @@ describe("FeaturedAudioButtonsCarousel", () => {
 			favoriteCount: 0,
 			createdAt: "2023-01-02T00:00:00Z",
 			updatedAt: "2023-01-02T00:00:00Z",
-			durationText: "15秒",
-			relativeTimeText: "2日前",
+			_computed: {
+				isPopular: false,
+				engagementRate: 0.375,
+				engagementRatePercentage: 38,
+				popularityScore: 14,
+				searchableText: "テスト音声ボタン2 音楽 テスト動画2 ユーザー2",
+				durationText: "15秒",
+				relativeTimeText: "2日前",
+			},
 		},
 	];
 

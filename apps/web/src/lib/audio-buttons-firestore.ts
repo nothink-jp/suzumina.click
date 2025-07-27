@@ -7,9 +7,7 @@ import {
 	type AudioButtonPlainObject,
 	type FirestoreAudioButtonData,
 	type FirestoreServerAudioButtonData,
-	type FrontendAudioButtonData,
 	formatRelativeTime,
-	fromFrontendAudioButtonData,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
 import { error as logError } from "./logger";
@@ -43,45 +41,6 @@ function ensureDateString(date: string | Date | unknown): string {
 	if (typeof date === "string") return date;
 	if (date instanceof Date) return date.toISOString();
 	return new Date().toISOString();
-}
-
-/**
- * Firestore音声ボタンデータをフロントエンド表示用に変換
- * @deprecated Use convertToAudioButtonPlainObject instead
- */
-export function convertToFrontendAudioButton(
-	data:
-		| FirestoreAudioButtonData
-		| (FirestoreAudioButtonData & { createdAt: Date; updatedAt: Date }),
-): FrontendAudioButtonData {
-	const createdAtStr = ensureDateString(data.createdAt);
-	const updatedAtStr = ensureDateString(data.updatedAt);
-
-	const frontendData: FrontendAudioButtonData = {
-		id: data.id,
-		title: data.title,
-		tags: data.tags || [],
-		sourceVideoId: data.sourceVideoId,
-		sourceVideoTitle: data.sourceVideoTitle,
-		sourceVideoThumbnailUrl: `https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
-		startTime: data.startTime,
-		endTime: data.endTime || data.startTime,
-		createdBy: data.createdBy,
-		createdByName: data.createdByName,
-		isPublic: data.isPublic,
-		playCount: data.playCount,
-		likeCount: data.likeCount,
-		dislikeCount: data.dislikeCount || 0,
-		favoriteCount: data.favoriteCount || 0,
-		createdAt: createdAtStr,
-		updatedAt: updatedAtStr,
-
-		// 表示用の追加情報
-		durationText: formatDuration(data.startTime, data.endTime || data.startTime),
-		relativeTimeText: formatRelativeTime(createdAtStr),
-	};
-
-	return frontendData;
 }
 
 /**
@@ -163,7 +122,7 @@ export async function getAudioButtonsByUser(
 		onlyPublic?: boolean;
 		orderBy?: "newest" | "oldest" | "mostPlayed";
 	} = {},
-): Promise<FrontendAudioButtonData[]> {
+): Promise<AudioButtonPlainObject[]> {
 	try {
 		const firestore = getFirestore();
 		const { limit = 20, onlyPublic = true, orderBy = "newest" } = options;
@@ -198,7 +157,7 @@ export async function getAudioButtonsByUser(
 			.map((doc) => {
 				try {
 					const data = doc.data() as FirestoreAudioButtonData;
-					return convertToFrontendAudioButton({ ...data, id: doc.id });
+					return convertToAudioButtonPlainObject({ ...data, id: doc.id });
 				} catch (conversionError) {
 					logError("Failed to convert audio button data:", {
 						docId: doc.id,
@@ -208,7 +167,7 @@ export async function getAudioButtonsByUser(
 					return null;
 				}
 			})
-			.filter((button): button is FrontendAudioButtonData => button !== null)
+			.filter((button): button is AudioButtonPlainObject => button !== null)
 			.filter((button) => {
 				// 公開のみのフィルター（クライアント側で適用）
 				if (onlyPublic && !button.isPublic) {

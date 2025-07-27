@@ -222,7 +222,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		(result: {
 			success: boolean;
 			data?: {
-				audioButtons?: FrontendAudioButtonData[];
+				audioButtons?: AudioButtonPlainObject[];
 				totalCount?: number;
 				filteredCount?: number;
 				currentPage?: number;

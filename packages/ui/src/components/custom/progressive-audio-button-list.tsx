@@ -10,7 +10,7 @@
 
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { memo, useCallback, useMemo, useState } from "react";
 import { FixedSizeList as List } from "react-window";
 import { cn } from "../../lib/utils";
@@ -20,10 +20,10 @@ import { AudioButtonSkeleton } from "./audio-button-skeleton";
 
 export interface ProgressiveAudioButtonListProps {
 	/** 表示する音声ボタンデータ */
-	audioButtons: FrontendAudioButtonData[];
+	audioButtons: AudioButtonPlainObject[];
 
 	/** 再生イベントハンドラー */
-	onPlay?: (audioButton: FrontendAudioButtonData, index: number) => void;
+	onPlay?: (audioButton: AudioButtonPlainObject, index: number) => void;
 
 	/** 検索クエリ（ハイライト用） */
 	searchQuery?: string;
@@ -56,7 +56,7 @@ export interface ProgressiveAudioButtonListProps {
 	emptyMessage?: string;
 
 	/** アイテムクリックハンドラー */
-	onItemClick?: (audioButton: FrontendAudioButtonData, index: number) => void;
+	onItemClick?: (audioButton: AudioButtonPlainObject, index: number) => void;
 
 	/** オーバースキャン数 */
 	overscanCount?: number;
@@ -115,13 +115,13 @@ const ProgressiveListItem = memo<{
 	index: number;
 	style: React.CSSProperties;
 	data: {
-		audioButtons: FrontendAudioButtonData[];
-		onPlay?: (audioButton: FrontendAudioButtonData, index: number) => void;
+		audioButtons: AudioButtonPlainObject[];
+		onPlay?: (audioButton: AudioButtonPlainObject, index: number) => void;
 		searchQuery?: string;
 		favoriteStates?: Map<string, boolean>;
 		onFavoriteToggle?: (audioButtonId: string) => void;
 		currentPlayingId?: string;
-		onItemClick?: (audioButton: FrontendAudioButtonData, index: number) => void;
+		onItemClick?: (audioButton: AudioButtonPlainObject, index: number) => void;
 		showDetailLink?: boolean;
 		isAuthenticated?: boolean;
 		visibleRange: { start: number; end: number };

@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { AudioButton } from "@suzumina.click/ui/components/custom/audio-button";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -11,7 +11,7 @@ import { toggleFavoriteAction } from "@/actions/favorites";
 import { toggleLikeAction } from "@/actions/likes";
 
 interface AudioButtonWithFavoriteClientProps {
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject;
 	onPlay?: () => void;
 	showFavorite?: boolean;
 	className?: string;

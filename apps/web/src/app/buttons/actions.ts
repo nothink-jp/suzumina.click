@@ -12,21 +12,6 @@ import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 
 /**
- * Firestore Timestampを文字列に変換するヘルパー関数
- */
-function convertTimestampToString(timestamp: unknown): string {
-	if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
-		// Firestore Timestamp型の場合
-		const firestoreTimestamp = timestamp as { toDate: () => Date };
-		return firestoreTimestamp.toDate().toISOString();
-	}
-	if (typeof timestamp === "string") {
-		return timestamp;
-	}
-	return new Date().toISOString();
-}
-
-/**
  * FirestoreAudioButtonDataをAudioButtonに変換するヘルパー関数
  */
 function convertFirestoreToAudioButton(button: FirestoreAudioButtonData): AudioButton | null {

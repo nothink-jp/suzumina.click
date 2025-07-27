@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FrontendAudioButtonData } from "../../entities/audio-button";
+import type { AudioButtonPlainObject } from "../../plain-objects/audio-button-plain";
 import {
 	createMigrationReport,
 	migrateAudioButton,
@@ -9,8 +9,8 @@ import {
 
 describe("AudioButton Migration Helper", () => {
 	const createValidAudioButton = (
-		overrides?: Partial<FrontendAudioButtonData>,
-	): FrontendAudioButtonData => ({
+		overrides?: Partial<AudioButtonPlainObject>,
+	): AudioButtonPlainObject => ({
 		id: "ab_123",
 		title: "Test Audio Button",
 		description: "Test description",
@@ -28,6 +28,15 @@ describe("AudioButton Migration Helper", () => {
 		favoriteCount: 25,
 		createdAt: "2024-01-01T00:00:00Z",
 		updatedAt: "2024-01-02T00:00:00Z",
+		_computed: {
+			isPopular: true,
+			engagementRate: 0.55,
+			engagementRatePercentage: 55,
+			popularityScore: 195,
+			searchableText: "test audio button test sample test video test user",
+			durationText: "0:10",
+			relativeTimeText: "1日前",
+		},
 		...overrides,
 	});
 
