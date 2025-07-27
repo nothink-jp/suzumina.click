@@ -516,8 +516,6 @@ function convertFirestoreUserToFrontend(data: FirestoreUserData): FrontendUserDa
 		avatar: data.avatar,
 		displayName: data.displayName,
 		role: data.role,
-		audioButtonsCount: data.audioButtonsCount,
-		totalPlayCount: data.totalPlayCount,
 		createdAt: data.createdAt,
 		lastLoginAt: data.lastLoginAt,
 		isPublicProfile: data.isPublicProfile,

@@ -31,8 +31,6 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
 		avatar: data.avatar,
 		displayName: data.displayName,
 		role: data.role,
-		audioButtonsCount: data.audioButtonsCount,
-		totalPlayCount: data.totalPlayCount,
 		createdAt: data.createdAt,
 		lastLoginAt: data.lastLoginAt,
 		isPublicProfile: data.isPublicProfile,
@@ -65,37 +63,6 @@ export async function getUserByDiscordId(discordId: string): Promise<FrontendUse
 		}
 
 		const userData = userDoc.data() as FirestoreUserData;
-
-		// リアルタイムで統計情報を集計
-		try {
-			// 音声ボタン数を集計
-			const audioButtonsQuery = firestore
-				.collection("audioButtons")
-				.where("createdBy", "==", discordId);
-
-			const countSnapshot = await audioButtonsQuery.count().get();
-			const audioButtonsCount = countSnapshot.data().count;
-
-			// 総再生数を集計（ドキュメントを取得して合計）
-			const audioButtonsSnapshot = await audioButtonsQuery.get();
-			const totalPlayCount = audioButtonsSnapshot.docs.reduce((sum, doc) => {
-				const data = doc.data();
-				return sum + (data.playCount || 0);
-			}, 0);
-
-			// リアルタイム集計値で上書き
-			userData.audioButtonsCount = audioButtonsCount;
-			userData.totalPlayCount = totalPlayCount;
-		} catch (statsError) {
-			// 統計情報の取得に失敗してもユーザー情報は返す
-			if (process.env.NODE_ENV === "development") {
-				logError("統計情報の集計エラー:", { discordId, error: statsError });
-			}
-			// エラー時はデフォルト値を使用
-			userData.audioButtonsCount = 0;
-			userData.totalPlayCount = 0;
-		}
-
 		return convertToFrontendUser(userData);
 	} catch (error) {
 		// 開発環境でのみエラーログを出力
@@ -128,8 +95,6 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 			displayName,
 			isActive: true,
 			role: "member", // 新規ユーザーは全てmember権限から開始
-			audioButtonsCount: 0,
-			totalPlayCount: 0,
 			createdAt: now,
 			updatedAt: now,
 			lastLoginAt: now,

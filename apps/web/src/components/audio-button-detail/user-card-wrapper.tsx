@@ -1,7 +1,7 @@
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { Award, TrendingUp, User } from "lucide-react";
+import { User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getUserByDiscordId } from "@/lib/user-firestore";
@@ -88,30 +88,6 @@ export async function UserCardWrapper({ createdBy, createdByName }: UserCardWrap
 								)}
 							</div>
 						</div>
-
-						{/* 統計情報 */}
-						{user.showStatistics && (
-							<div className="grid grid-cols-2 gap-3">
-								<div className="text-center p-2 bg-suzuka-50 rounded-lg">
-									<div className="flex items-center justify-center mb-1">
-										<Award className="h-3 w-3 text-suzuka-600" />
-									</div>
-									<div className="text-sm font-bold text-suzuka-700">
-										{user.audioButtonsCount?.toLocaleString() || 0}
-									</div>
-									<div className="text-xs text-suzuka-600">ボタン</div>
-								</div>
-								<div className="text-center p-2 bg-minase-50 rounded-lg">
-									<div className="flex items-center justify-center mb-1">
-										<TrendingUp className="h-3 w-3 text-minase-600" />
-									</div>
-									<div className="text-sm font-bold text-minase-700">
-										{user.totalPlayCount?.toLocaleString() || 0}
-									</div>
-									<div className="text-xs text-minase-600">再生数</div>
-								</div>
-							</div>
-						)}
 
 						{/* プロフィールボタン */}
 						<Button variant="outline" size="sm" asChild className="w-full">
