@@ -24,6 +24,10 @@ export class WorkId {
 		return this.value;
 	}
 
+	toJSON(): string {
+		return this.value;
+	}
+
 	equals(other: WorkId): boolean {
 		return other instanceof WorkId && this.value === other.value;
 	}
@@ -52,5 +56,12 @@ export class WorkId {
 		} catch {
 			return null;
 		}
+	}
+
+	/**
+	 * Creates a WorkId instance
+	 */
+	static create(value: string): WorkId {
+		return new WorkId(value);
 	}
 }

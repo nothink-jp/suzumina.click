@@ -107,6 +107,26 @@ export class WorkPrice {
 	}
 
 	/**
+	 * Returns string representation
+	 */
+	toString(): string {
+		return this.formatWithOriginal();
+	}
+
+	/**
+	 * Returns JSON representation
+	 */
+	toJSON() {
+		return {
+			current: this._current,
+			currency: this._currency,
+			...(this._original !== undefined && { original: this._original }),
+			...(this._discount !== undefined && { discount: this._discount }),
+			...(this._point !== undefined && { point: this._point }),
+		};
+	}
+
+	/**
 	 * Converts to plain object
 	 */
 	toPlainObject() {

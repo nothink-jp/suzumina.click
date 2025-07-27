@@ -144,6 +144,42 @@ export class WorkCreators {
 	}
 
 	/**
+	 * Returns string representation
+	 */
+	toString(): string {
+		const parts: string[] = [];
+		if (this._voiceActors.length > 0) {
+			parts.push(`CV: ${this.voiceActorNames.join(", ")}`);
+		}
+		if (this._scenario.length > 0) {
+			parts.push(`シナリオ: ${this.scenarioNames.join(", ")}`);
+		}
+		if (this._illustration.length > 0) {
+			parts.push(`イラスト: ${this.illustrationNames.join(", ")}`);
+		}
+		if (this._music.length > 0) {
+			parts.push(`音楽: ${this.musicNames.join(", ")}`);
+		}
+		if (this._others.length > 0) {
+			parts.push(`その他: ${this.otherNames.join(", ")}`);
+		}
+		return parts.join(" / ");
+	}
+
+	/**
+	 * Returns JSON representation
+	 */
+	toJSON() {
+		return {
+			voice_by: this._voiceActors,
+			scenario_by: this._scenario,
+			illust_by: this._illustration,
+			music_by: this._music,
+			others_by: this._others,
+		};
+	}
+
+	/**
 	 * Converts to plain object
 	 */
 	toPlainObject() {

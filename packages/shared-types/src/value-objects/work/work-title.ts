@@ -19,6 +19,20 @@ export class WorkTitle {
 		return this.value;
 	}
 
+	toJSON(): {
+		value: string;
+		masked?: string;
+		kana?: string;
+		altName?: string;
+	} {
+		return {
+			value: this.value,
+			...(this._masked && { masked: this._masked }),
+			...(this._kana && { kana: this._kana }),
+			...(this._altName && { altName: this._altName }),
+		};
+	}
+
 	/**
 	 * Gets the masked title for sensitive content
 	 */
@@ -84,5 +98,12 @@ export class WorkTitle {
 	 */
 	withAltName(altName: string): WorkTitle {
 		return new WorkTitle(this.value, this._masked, this._kana, altName);
+	}
+
+	/**
+	 * Creates a WorkTitle instance
+	 */
+	static create(value: string, masked?: string, kana?: string, altName?: string): WorkTitle {
+		return new WorkTitle(value, masked, kana, altName);
 	}
 }

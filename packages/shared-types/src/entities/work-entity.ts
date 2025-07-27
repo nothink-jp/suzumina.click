@@ -732,6 +732,68 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 		);
 	}
 
+	// === Update Methods (returns new instance) ===
+
+	/**
+	 * Updates the work title
+	 */
+	updateTitle(newTitle: string): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._title = WorkTitle.create(newTitle);
+		return cloned;
+	}
+
+	/**
+	 * Updates the work price
+	 */
+	updatePrice(newPrice: WorkPrice): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._price = newPrice;
+		return cloned;
+	}
+
+	/**
+	 * Updates the work rating
+	 */
+	updateRating(newRating: WorkRating | undefined): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._rating = newRating;
+		return cloned;
+	}
+
+	/**
+	 * Updates the work creators
+	 */
+	updateCreators(newCreators: WorkCreators): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._creators = newCreators;
+		return cloned;
+	}
+
+	/**
+	 * Updates the sales status
+	 */
+	updateSalesStatus(newStatus: WorkSalesStatus | undefined): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._salesStatus = newStatus;
+		return cloned;
+	}
+
+	/**
+	 * Updates the series info
+	 */
+	updateSeriesInfo(newSeriesInfo: WorkSeriesInfo | undefined): Work {
+		const cloned = this.clone();
+		// @ts-ignore - accessing private property for update
+		cloned._seriesInfo = newSeriesInfo;
+		return cloned;
+	}
+
 	// === Business Logic Methods ===
 
 	/**

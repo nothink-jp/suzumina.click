@@ -101,6 +101,26 @@ export class WorkRating {
 	}
 
 	/**
+	 * Returns string representation
+	 */
+	toString(): string {
+		return this.formatWithReviews();
+	}
+
+	/**
+	 * Returns JSON representation
+	 */
+	toJSON() {
+		return {
+			stars: this._stars,
+			count: this._count,
+			average: this._average,
+			...(this._reviewCount !== undefined && { reviewCount: this._reviewCount }),
+			...(this._distribution && { distribution: this._distribution }),
+		};
+	}
+
+	/**
 	 * Converts to plain object
 	 */
 	toPlainObject() {

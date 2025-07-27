@@ -244,8 +244,13 @@ function buildWorksQuery(
 	let query = worksRef.orderBy("createdAt", "desc");
 
 	// 声優フィルター
+	// TODO: creators.voice_byは配列内のオブジェクト構造のため、
+	// Firestoreのarray-containsでは直接検索できない。
+	// 将来的に検索用の正規化フィールド（voiceActorNames等）を追加する必要がある。
 	if (params.author) {
-		query = query.where("voiceActors", "array-contains", params.author);
+		// 現在は動作しないが、後方互換性のためクエリは残す
+		// query = query.where("voiceActors", "array-contains", params.author);
+		logger.warn("Voice actor filtering is currently not supported due to data structure changes");
 	}
 
 	// カテゴリフィルター

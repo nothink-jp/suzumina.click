@@ -37,10 +37,11 @@ graph TB
     Work --> CreatorType
     Work --> WorkCategory
     
-    AudioButton --> Work
-    Video --> Work
+    AudioButton --> Video
+    AudioButton -.->|sourceVideoId| Video
     
     User --> Work
+    User --> AudioButton
     
     style Work fill:#f9f,stroke:#333,stroke-width:4px
     style User fill:#f9f,stroke:#333,stroke-width:4px
@@ -91,6 +92,8 @@ classDiagram
 ### 2. AudioButton（音声ボタン）
 
 YouTube動画の特定タイムスタンプを参照する音声ボタンエンティティです。Entity/Value Objectアーキテクチャに基づく実装です。
+
+**注意**: AudioButtonはDLsite作品（Work）を直接参照しません。YouTube動画のIDとタイムスタンプのみを保持します。
 
 ```mermaid
 classDiagram
@@ -167,9 +170,15 @@ classDiagram
 - ビジネスロジック（人気度スコア、エンゲージメント率）の計算
 - レガシー形式との相互変換
 
+**関係性:**
+- AudioButton → Video: sourceVideoIdを通じてYouTube動画を参照
+- AudioButton ↛ Work: DLsite作品との直接的な関連付けはなし
+
 ### 3. Video（動画）
 
 YouTube動画情報を管理するエンティティです。Entity/Value Objectアーキテクチャに基づく実装です。
+
+**注意**: VideoエンティティはDLsite作品（Work）を直接参照しません。YouTube APIから取得した動画メタデータのみを保持します。
 
 ```mermaid
 classDiagram
@@ -227,7 +236,11 @@ classDiagram
 - YouTube動画メタデータの保持（値オブジェクトによる構造化）
 - 統計情報の計算とエンゲージメント分析
 - レガシー形式との相互変換
-- 関連作品との紐付け
+- チャンネル情報の管理
+
+**関係性:**
+- Video ↛ Work: DLsite作品との直接的な関連付けはなし
+- Video ← AudioButton: 複数のAudioButtonから参照される可能性あり
 
 ### 4. User（ユーザー）
 
@@ -385,6 +398,11 @@ formatPercentage(numerator: number, denominator: number, decimals = 1): string
 ## Entity/Value Objectアーキテクチャ実装状況
 
 ### 完全実装済み
+- ✅ **Work Entity** - DLsite作品エンティティ
+  - WorkId, WorkTitle, WorkPrice, WorkRating, WorkCreators等の値オブジェクト
+  - Plain Object変換パターン実装済み
+  - Firestore形式との相互変換サポート
+  - ビジネスロジック（カテゴリ判定、新作判定、人気度判定）実装済み
 - ✅ **Video Entity** - YouTube動画エンティティ
   - VideoContent, VideoMetadata, VideoStatistics, Channel等の値オブジェクト
   - Plain Object変換パターン実装済み
@@ -395,13 +413,15 @@ formatPercentage(numerator: number, denominator: number, decimals = 1): string
   - Plain Object変換パターン実装済み
 
 ### 未実装（今後の計画）
-- ⏳ **Work Entity** - DLsite作品エンティティ
-  - Price, Rating, DateRange等の値オブジェクトは実装済み
-  - エンティティクラス自体は未実装
 - ⏳ **User Entity** - ユーザーエンティティ
   - 現在は簡易実装のみ
+  - UserRole値オブジェクトの実装が必要
 - ⏳ **Evaluation Entity** - 評価エンティティ
   - 作品評価システム用
+  - Top10Ranking, StarRating, NgEvaluation等の値オブジェクトが必要
+- ⏳ **PriceHistory Entity** - 価格履歴エンティティ
+  - 価格推移追跡用
+  - PriceSnapshot値オブジェクトの実装が必要
 
 ## 実装ガイドライン
 
@@ -455,12 +475,12 @@ graph TB
         Work[Work<br/>集約ルート]
         Price[Price]
         Rating[Rating]
-        FileInfo[FileInfo]
+        WorkCreators[WorkCreators]
         DateRange[DateRange]
         
         Work --> Price
         Work --> Rating
-        Work --> FileInfo
+        Work --> WorkCreators
         Work --> DateRange
     end
     
@@ -469,7 +489,7 @@ graph TB
 
 **集約の境界:**
 - 作品とその属性情報は一貫性を保つ必要がある
-- 価格、評価、ファイル情報は作品と共に更新される
+- 価格、評価、クリエイター情報は作品と共に更新される
 - 作品IDを通じてのみ外部から参照可能
 
 ### User集約
@@ -489,6 +509,58 @@ graph TB
     
     style User fill:#f96,stroke:#333,stroke-width:4px
 ```
+
+### AudioButton集約
+
+音声ボタンとその関連情報の集約です。
+
+```mermaid
+graph TB
+    subgraph "AudioButton Aggregate"
+        AudioButton[AudioButton<br/>集約ルート]
+        AudioContent[AudioContent]
+        AudioReference[AudioReference]
+        ButtonStatistics[ButtonStatistics]
+        
+        AudioButton --> AudioContent
+        AudioButton --> AudioReference
+        AudioButton --> ButtonStatistics
+    end
+    
+    style AudioButton fill:#f96,stroke:#333,stroke-width:4px
+```
+
+**集約の境界:**
+- 音声ボタンとその属性情報は一貫性を保つ必要がある
+- コンテンツ、参照情報、統計情報は音声ボタンと共に更新される
+- YouTube動画IDを通じて動画を参照するが、Video集約とは独立
+
+### Video集約
+
+YouTube動画とその関連情報の集約です。
+
+```mermaid
+graph TB
+    subgraph "Video Aggregate"
+        Video[Video<br/>集約ルート]
+        VideoContent[VideoContent]
+        VideoMetadata[VideoMetadata]
+        VideoStatistics[VideoStatistics]
+        Channel[Channel]
+        
+        Video --> VideoContent
+        Video --> VideoMetadata
+        Video --> VideoStatistics
+        Video --> Channel
+    end
+    
+    style Video fill:#f96,stroke:#333,stroke-width:4px
+```
+
+**集約の境界:**
+- 動画とその属性情報は一貫性を保つ必要がある
+- メタデータ、統計情報、チャンネル情報は動画と共に更新される
+- 動画IDを通じてのみ外部から参照可能
 
 ## リポジトリインターフェース
 
@@ -641,15 +713,32 @@ sequenceDiagram
 ```
 packages/shared-types/src/
 ├── entities/              # エンティティ定義
-│   ├── work.ts
-│   ├── audio-button.ts
-│   ├── video.ts
-│   └── user.ts
+│   ├── work.ts           # WorkDocument型定義
+│   ├── work-entity.ts    # Workエンティティクラス
+│   ├── audio-button.ts   # AudioButtonエンティティクラス
+│   ├── video.ts          # Videoエンティティクラス
+│   └── user.ts           # ユーザー型定義
 ├── value-objects/         # 値オブジェクト定義
-│   ├── price.ts
-│   ├── rating.ts
-│   ├── date-range.ts
-│   └── creator-type.ts
+│   ├── work/
+│   │   ├── work-id.ts
+│   │   ├── work-title.ts
+│   │   ├── work-price.ts
+│   │   ├── work-rating.ts
+│   │   ├── work-creators.ts
+│   │   └── circle.ts
+│   ├── audio-button/
+│   │   ├── audio-content.ts
+│   │   ├── audio-reference.ts
+│   │   └── button-statistics.ts
+│   └── video/
+│       ├── video-content.ts
+│       ├── video-metadata.ts
+│       ├── video-statistics.ts
+│       └── channel.ts
+├── plain-objects/         # Plain Object定義
+│   ├── work-plain.ts
+│   ├── audio-button-plain.ts
+│   └── video-plain.ts
 └── domain-services/       # ドメインサービス（将来実装）
     ├── work-aggregator.ts
     └── price-calculator.ts
@@ -657,5 +746,15 @@ packages/shared-types/src/
 
 ---
 
-**最終更新**: 2025年7月26日  
-**バージョン**: 1.2
+**最終更新**: 2025年7月27日  
+**バージョン**: 2.0
+
+## 変更履歴
+
+### バージョン 2.0 (2025-07-27)
+- Work, AudioButton, Video の実際の関係性を正確に反映
+- AudioButton → Work および Video → Work の誤った関連を削除
+- AudioButton → Video の正しい関係性を追加
+- Work Entityの完全実装を反映
+- 集約境界の詳細な定義を追加
+- ファイル構造を実際の実装に合わせて更新
