@@ -84,7 +84,6 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 			audioButtons={audioButtons}
 			isOwnProfile={isOwnProfile}
 			favoritesCount={favoritesCount}
-			isAdmin={isAdmin}
 		/>
 	);
 }

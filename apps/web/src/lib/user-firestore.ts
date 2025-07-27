@@ -53,7 +53,7 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
 }
 
 /**
- * Discord IDでユーザーを取得
+ * Discord IDでユーザーを取得（リアルタイム統計情報付き）
  */
 export async function getUserByDiscordId(discordId: string): Promise<FrontendUserData | null> {
 	try {
@@ -65,6 +65,37 @@ export async function getUserByDiscordId(discordId: string): Promise<FrontendUse
 		}
 
 		const userData = userDoc.data() as FirestoreUserData;
+
+		// リアルタイムで統計情報を集計
+		try {
+			// 音声ボタン数を集計
+			const audioButtonsQuery = firestore
+				.collection("audioButtons")
+				.where("createdBy", "==", discordId);
+
+			const countSnapshot = await audioButtonsQuery.count().get();
+			const audioButtonsCount = countSnapshot.data().count;
+
+			// 総再生数を集計（ドキュメントを取得して合計）
+			const audioButtonsSnapshot = await audioButtonsQuery.get();
+			const totalPlayCount = audioButtonsSnapshot.docs.reduce((sum, doc) => {
+				const data = doc.data();
+				return sum + (data.playCount || 0);
+			}, 0);
+
+			// リアルタイム集計値で上書き
+			userData.audioButtonsCount = audioButtonsCount;
+			userData.totalPlayCount = totalPlayCount;
+		} catch (statsError) {
+			// 統計情報の取得に失敗してもユーザー情報は返す
+			if (process.env.NODE_ENV === "development") {
+				logError("統計情報の集計エラー:", { discordId, error: statsError });
+			}
+			// エラー時はデフォルト値を使用
+			userData.audioButtonsCount = 0;
+			userData.totalPlayCount = 0;
+		}
+
 		return convertToFrontendUser(userData);
 	} catch (error) {
 		// 開発環境でのみエラーログを出力
@@ -168,75 +199,28 @@ export async function updateLastLogin(discordId: string): Promise<void> {
 
 /**
  * ユーザーの統計情報を更新 (Fire-and-Forget パターン)
- * revalidatePath を使用せず、バックグラウンドで非同期実行
+ * @deprecated リアルタイム集計に移行したため、この関数は不要になりました
  */
 export async function updateUserStats(
-	discordId: string,
-	updates: {
+	_discordId: string,
+	_updates: {
 		incrementAudioButtons?: boolean;
 		incrementPlayCount?: number;
 	},
 ): Promise<void> {
-	try {
-		const firestore = getFirestore();
-		const now = new Date().toISOString();
-
-		const updateData: Record<string, unknown> = {
-			updatedAt: now,
-		};
-
-		if (updates.incrementAudioButtons) {
-			// biome-ignore lint/suspicious/noExplicitAny: Firestore FieldValue typing limitation
-			updateData.audioButtonsCount = (firestore as any).FieldValue.increment(1);
-		}
-
-		if (updates.incrementPlayCount && updates.incrementPlayCount > 0) {
-			// biome-ignore lint/suspicious/noExplicitAny: Firestore FieldValue typing limitation
-			updateData.totalPlayCount = (firestore as any).FieldValue.increment(
-				updates.incrementPlayCount,
-			);
-		}
-
-		// Fire-and-Forget: 統計更新はバックグラウンドで実行
-		firestore
-			.collection("users")
-			.doc(discordId)
-			.update(updateData)
-			.catch((error) => {
-				if (process.env.NODE_ENV === "development") {
-					logError("ユーザー統計更新でエラー:", { discordId, updates, error });
-				}
-				// エラーは無視（Fire-and-Forget）
-			});
-	} catch (_error) {
-		// 統計更新の失敗は致命的ではないため、エラーを投げない
-	}
+	// リアルタイム集計に移行したため、この関数は何もしません
+	// 後方互換性のために残していますが、将来的に削除予定
+	return Promise.resolve();
 }
 
 /**
- * ユーザーの統計情報を再計算（実際のデータから）
+ * ユーザーの統計情報を再計算（リアルタイム集計なので実際には何もしない）
+ * @deprecated リアルタイム集計に移行したため、この関数は不要になりました
  */
-export async function recalculateUserStats(discordId: string): Promise<void> {
-	const firestore = getFirestore();
-
-	// ユーザーの全音声ボタンを取得（公開・非公開含む）
-	const audioButtonsSnapshot = await firestore
-		.collection("audioButtons")
-		.where("createdBy", "==", discordId)
-		.get();
-
-	const audioButtons = audioButtonsSnapshot.docs.map((doc) => doc.data());
-
-	// 統計を計算
-	const audioButtonsCount = audioButtons.length;
-	const totalPlayCount = audioButtons.reduce((sum, button) => sum + (button.playCount || 0), 0);
-
-	// ユーザー情報を更新
-	await firestore.collection("users").doc(discordId).update({
-		audioButtonsCount,
-		totalPlayCount,
-		updatedAt: new Date().toISOString(),
-	});
+export async function recalculateUserStats(_discordId: string): Promise<void> {
+	// リアルタイム集計に移行したため、この関数は何もしません
+	// 後方互換性のために残していますが、将来的に削除予定
+	return Promise.resolve();
 }
 
 /**

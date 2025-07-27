@@ -11,7 +11,6 @@ import {
 	Heart,
 	Music,
 	Play,
-	RefreshCw,
 	Settings,
 	Shield,
 	TrendingUp,
@@ -23,14 +22,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
-import { recalculateStatsAction } from "../actions";
 
 interface UserProfileContentProps {
 	user: FrontendUserData;
 	audioButtons: AudioButtonPlainObject[];
 	isOwnProfile: boolean;
 	favoritesCount?: number;
-	isAdmin?: boolean;
 }
 
 // Helper components to reduce complexity
@@ -61,17 +58,7 @@ function UserAvatar({ user }: { user: FrontendUserData }) {
 	);
 }
 
-function UserHeader({
-	user,
-	isOwnProfile,
-	isAdmin,
-	onRecalculateStats,
-}: {
-	user: FrontendUserData;
-	isOwnProfile: boolean;
-	isAdmin?: boolean;
-	onRecalculateStats?: () => void;
-}) {
+function UserHeader({ user, isOwnProfile }: { user: FrontendUserData; isOwnProfile: boolean }) {
 	return (
 		<div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
 			<div className="flex-1">
@@ -93,17 +80,6 @@ function UserHeader({
 							<Settings className="w-4 h-4 mr-2" />
 							設定
 						</Link>
-					</Button>
-				)}
-				{isAdmin && (
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={onRecalculateStats}
-						disabled={!onRecalculateStats}
-					>
-						<RefreshCw className={`w-4 h-4 mr-2 ${!onRecalculateStats ? "animate-spin" : ""}`} />
-						{!onRecalculateStats ? "処理中..." : "統計再計算"}
 					</Button>
 				)}
 			</div>
@@ -168,28 +144,10 @@ export function UserProfileContent({
 	audioButtons,
 	isOwnProfile,
 	favoritesCount = 0,
-	isAdmin,
 }: UserProfileContentProps) {
 	const [selectedTab, setSelectedTab] = useState<"buttons" | "stats" | "favorites">("buttons");
-	const [isRecalculating, setIsRecalculating] = useState(false);
 	const averagePlays =
 		user.audioButtonsCount > 0 ? Math.round(user.totalPlayCount / user.audioButtonsCount) : 0;
-
-	const handleRecalculateStats = async () => {
-		setIsRecalculating(true);
-		try {
-			const result = await recalculateStatsAction(user.discordId);
-			if (result.success) {
-				window.location.reload();
-			} else {
-				alert(`統計再計算に失敗しました: ${result.error}`);
-			}
-		} catch (_error) {
-			alert("統計再計算中にエラーが発生しました");
-		} finally {
-			setIsRecalculating(false);
-		}
-	};
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-suzuka-50/30 to-minase-50/30">
@@ -199,12 +157,7 @@ export function UserProfileContent({
 						<div className="flex flex-col md:flex-row items-start md:items-center gap-6">
 							<UserAvatar user={user} />
 							<div className="flex-1">
-								<UserHeader
-									user={user}
-									isOwnProfile={isOwnProfile}
-									isAdmin={isAdmin}
-									onRecalculateStats={isRecalculating ? undefined : handleRecalculateStats}
-								/>
+								<UserHeader user={user} isOwnProfile={isOwnProfile} />
 								<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
 									<div className="flex items-center gap-1">
 										<Calendar className="w-4 h-4" />
