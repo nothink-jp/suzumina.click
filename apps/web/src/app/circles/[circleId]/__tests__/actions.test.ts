@@ -56,7 +56,7 @@ vi.mock("@suzumina.click/shared-types", () => ({
 			},
 		};
 	}),
-	isValidCircleId: vi.fn((id) => id && id.startsWith("RG")),
+	isValidCircleId: vi.fn((id) => id?.startsWith("RG")),
 }));
 
 // Firestore モック

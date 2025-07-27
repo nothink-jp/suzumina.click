@@ -21,8 +21,45 @@ vi.mock("@/lib/firestore", () => ({
 }));
 
 // convertToWorkPlainObjectのモック
-vi.mock("@suzumina.click/shared-types", () => ({
-	convertToWorkPlainObject: vi.fn((data) => {
+vi.mock("@suzumina.click/shared-types", () => {
+	// モック用のヘルパー関数を定義（複雑度を下げるため）
+	const createMockPrice = (data: any) => {
+		if (!data.price) {
+			return {
+				current: 0,
+				currency: "JPY",
+				isFree: false,
+				isDiscounted: false,
+				formattedPrice: "¥0",
+			};
+		}
+		return {
+			current: data.price.current || 0,
+			original: data.price.original,
+			currency: data.price.currency || "JPY",
+			discount: data.price.discount,
+			point: data.price.point,
+			isFree: data.price.isFreeOrMissingPrice || false,
+			isDiscounted: !!data.price.discount,
+			formattedPrice: `¥${(data.price.current || 0).toLocaleString()}`,
+		};
+	};
+
+	const createMockRating = (data: any) => {
+		if (!data.rating) return undefined;
+		return {
+			stars: data.rating.stars,
+			count: data.rating.count || 0,
+			average: data.rating.averageDecimal || data.rating.stars,
+			reviewCount: data.rating.reviewCount,
+			hasRatings: true,
+			isHighlyRated: data.rating.stars >= 4,
+			reliability: data.rating.count > 50 ? "high" : data.rating.count > 10 ? "medium" : "low",
+			formattedRating: `${data.rating.stars}`,
+		};
+	};
+
+	const mockConvertToWorkPlainObject = (data: any) => {
 		if (!data || !data.id || !data.productId) return null;
 		return {
 			...data,
@@ -31,37 +68,8 @@ vi.mock("@suzumina.click/shared-types", () => ({
 			updatedAt: data.updatedAt?.toISOString?.() || data.updatedAt,
 			lastFetchedAt: data.lastFetchedAt?.toISOString?.() || data.lastFetchedAt,
 			// OptimizedFirestoreDLsiteWorkDataからWorkPlainObjectへの変換
-			price: data.price
-				? {
-						current: data.price.current || 0,
-						original: data.price.original,
-						currency: data.price.currency || "JPY",
-						discount: data.price.discount,
-						point: data.price.point,
-						isFree: data.price.isFreeOrMissingPrice || false,
-						isDiscounted: !!data.price.discount,
-						formattedPrice: `¥${(data.price.current || 0).toLocaleString()}`,
-					}
-				: {
-						current: 0,
-						currency: "JPY",
-						isFree: false,
-						isDiscounted: false,
-						formattedPrice: "¥0",
-					},
-			rating: data.rating
-				? {
-						stars: data.rating.stars,
-						count: data.rating.count || 0,
-						average: data.rating.averageDecimal || data.rating.stars,
-						reviewCount: data.rating.reviewCount,
-						hasRatings: true,
-						isHighlyRated: data.rating.stars >= 4,
-						reliability:
-							data.rating.count > 50 ? "high" : data.rating.count > 10 ? "medium" : "low",
-						formattedRating: `${data.rating.stars}`,
-					}
-				: undefined,
+			price: createMockPrice(data),
+			rating: createMockRating(data),
 			// 必須フィールドの追加
 			creators: {
 				voiceActors: data.voiceActors || [],
@@ -101,10 +109,14 @@ vi.mock("@suzumina.click/shared-types", () => ({
 				tags: data.tags || [],
 			},
 		};
-	}),
-	filterR18Content: vi.fn((items) => items),
-	filterWorksByLanguage: vi.fn((items) => items),
-}));
+	};
+
+	return {
+		convertToWorkPlainObject: vi.fn(mockConvertToWorkPlainObject),
+		filterR18Content: vi.fn((items) => items),
+		filterWorksByLanguage: vi.fn((items) => items),
+	};
+});
 
 // テスト用のサンプルデータ
 const createMockWorkData = (productId: string, title: string): WorkDocument => ({
@@ -153,87 +165,6 @@ describe("works actions", () => {
 		vi.clearAllMocks();
 		vi.spyOn(console, "log").mockImplementation(() => {});
 		vi.spyOn(console, "error").mockImplementation(() => {});
-		// Reset convertToWorkPlainObject mock to default implementation
-		vi.mocked(convertToWorkPlainObject).mockImplementation((data) => {
-			if (!data || !data.id || !data.productId) return null;
-			return {
-				...data,
-				// フロントエンド用の変換処理をシンプルにモック
-				createdAt: data.createdAt?.toISOString?.() || data.createdAt,
-				updatedAt: data.updatedAt?.toISOString?.() || data.updatedAt,
-				lastFetchedAt: data.lastFetchedAt?.toISOString?.() || data.lastFetchedAt,
-				// WorkDocumentからWorkPlainObjectへの変換
-				price: data.price
-					? {
-							current: data.price.current || 0,
-							original: data.price.original,
-							currency: data.price.currency || "JPY",
-							discount: data.price.discount,
-							point: data.price.point,
-							isFree: data.price.isFreeOrMissingPrice || false,
-							isDiscounted: !!data.price.discount,
-							formattedPrice: `¥${(data.price.current || 0).toLocaleString()}`,
-						}
-					: {
-							current: 0,
-							currency: "JPY",
-							isFree: false,
-							isDiscounted: false,
-							formattedPrice: "¥0",
-						},
-				rating: data.rating
-					? {
-							stars: data.rating.stars,
-							count: data.rating.count || 0,
-							average: data.rating.averageDecimal || data.rating.stars,
-							reviewCount: data.rating.reviewCount,
-							hasRatings: true,
-							isHighlyRated: data.rating.stars >= 4,
-							reliability:
-								data.rating.count > 50 ? "high" : data.rating.count > 10 ? "medium" : "low",
-							formattedRating: `${data.rating.stars}`,
-						}
-					: undefined,
-				// 必須フィールドの追加
-				creators: {
-					voiceActors: data.voiceActors || [],
-					scenario: data.scenario || [],
-					illustration: data.illustration || [],
-					music: data.music || [],
-					others: data.author || [],
-				},
-				salesStatus: {
-					isOnSale: true,
-					isDiscounted: false,
-					isFree: false,
-					isSoldOut: false,
-					isReserveWork: false,
-					dlsiteplaySupported: false,
-				},
-				sampleImages: [],
-				genres: data.genres || [],
-				customGenres: [],
-				_computed: {
-					displayTitle: data.title,
-					displayCircle: data.circle,
-					displayCategory: data.category,
-					displayAgeRating: "全年齢",
-					displayReleaseDate: data.releaseDateDisplay || "",
-					relativeUrl: `/works/${data.productId}`,
-					isAdultContent: false,
-					isVoiceWork: data.category === "SOU",
-					isGameWork: false,
-					isMangaWork: false,
-					hasDiscount: false,
-					isNewRelease: false,
-					isPopular: false,
-					primaryLanguage: "ja",
-					availableLanguages: ["ja"],
-					searchableText: `${data.title} ${data.circle}`,
-					tags: data.tags || [],
-				},
-			};
-		});
 	});
 
 	describe("getWorks", () => {
@@ -294,39 +225,40 @@ describe("works actions", () => {
 				if ((data as any).invalidField) {
 					throw new Error("変換エラー");
 				}
+				// 正常なデータの場合は、基本的な変換のみ行う
+				if (!data || !data.id || !data.productId) return null;
+
 				return {
 					...data,
 					createdAt: data.createdAt?.toISOString?.() || data.createdAt,
 					updatedAt: data.updatedAt?.toISOString?.() || data.updatedAt,
 					lastFetchedAt: data.lastFetchedAt?.toISOString?.() || data.lastFetchedAt,
-					// 必須フィールドの追加
+					// 最小限の必須フィールドのみ追加
+					price: {
+						current: data.price?.current || 0,
+						currency: "JPY",
+						formattedPrice: "¥0",
+					},
 					creators: {
-						voiceActors: data.voiceActors || [],
-						scenario: data.scenario || [],
-						illustration: data.illustration || [],
-						music: data.music || [],
-						others: data.author || [],
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
 					},
-					salesStatus: {
-						isOnSale: true,
-						isDiscounted: false,
-						isFree: false,
-						isSoldOut: false,
-						isReserveWork: false,
-						dlsiteplaySupported: false,
-					},
+					salesStatus: {},
 					sampleImages: [],
-					genres: data.genres || [],
+					genres: [],
 					customGenres: [],
 					_computed: {
 						displayTitle: data.title,
 						displayCircle: data.circle,
 						displayCategory: data.category,
 						displayAgeRating: "全年齢",
-						displayReleaseDate: data.releaseDateDisplay || "",
+						displayReleaseDate: "",
 						relativeUrl: `/works/${data.productId}`,
 						isAdultContent: false,
-						isVoiceWork: data.category === "SOU",
+						isVoiceWork: false,
 						isGameWork: false,
 						isMangaWork: false,
 						hasDiscount: false,
@@ -334,8 +266,8 @@ describe("works actions", () => {
 						isPopular: false,
 						primaryLanguage: "ja",
 						availableLanguages: ["ja"],
-						searchableText: `${data.title} ${data.circle}`,
-						tags: data.tags || [],
+						searchableText: "",
+						tags: [],
 					},
 				};
 			});

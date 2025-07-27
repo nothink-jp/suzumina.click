@@ -194,8 +194,6 @@ export async function getCircleWorksWithPagination(
 				return work.circleId === circleId || work.circle === circleName;
 			});
 
-		const totalCount = allMatchingWorks.length;
-
 		// WorkPlainObjectに変換してからソート
 		const convertedWorks: WorkPlainObject[] = [];
 		for (const work of allMatchingWorks) {
