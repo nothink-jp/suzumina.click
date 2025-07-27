@@ -195,7 +195,7 @@ AudioPlayer.displayName = "AudioPlayer";
 /**
  * AudioPlayerの状態を監視するフック
  */
-export const useAudioPlayerState = (audioButton: FrontendAudioButtonData) => {
+export const useAudioPlayerState = (audioButton: AudioButtonPlainObject) => {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [isReady, setIsReady] = useState(false);
 

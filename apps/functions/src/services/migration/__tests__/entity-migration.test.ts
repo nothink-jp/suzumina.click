@@ -15,9 +15,9 @@ vi.mock("@suzumina.click/shared-types", () => ({
 		})),
 	},
 	AudioButton: {
-		fromLegacy: vi.fn((data) => ({
+		fromFirestoreData: vi.fn((data) => ({
 			id: data.id,
-			toLegacyFormat: vi.fn(() => data),
+			toFirestore: vi.fn(() => data),
 		})),
 	},
 }));
@@ -228,13 +228,13 @@ describe("EntityMigrationService", () => {
 
 			// Mock AudioButton.fromLegacy to throw error for invalid data
 			const { AudioButton } = await import("@suzumina.click/shared-types");
-			(AudioButton.fromLegacy as any)
+			(AudioButton.fromFirestoreData as any)
 				.mockImplementationOnce(() => {
 					throw new Error("Missing required fields");
 				})
 				.mockImplementationOnce((data: any) => ({
 					id: data.id,
-					toLegacyFormat: vi.fn(() => data),
+					toFirestore: vi.fn(() => data),
 				}));
 
 			// Mock audio button documents with invalid data

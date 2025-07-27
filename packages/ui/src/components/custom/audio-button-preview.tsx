@@ -175,12 +175,12 @@ export const AudioButtonPreview = memo<AudioButtonPreviewProps>(
 				{/* 下部メタデータ */}
 				<div className="flex items-center justify-between text-xs text-muted-foreground">
 					<div className="flex items-center gap-2">
-						<span>{audioButton.durationText}</span>
+						<span>{audioButton._computed.durationText}</span>
 						<span>•</span>
 						<span>{audioButton.createdByName}</span>
 					</div>
 					<div className="flex items-center gap-2">
-						<span>{audioButton.relativeTimeText}</span>
+						<span>{audioButton._computed.relativeTimeText}</span>
 						{showDetailLink && (
 							<>
 								<span>•</span>

@@ -55,7 +55,7 @@ interface AudioButtonProps {
 }
 
 interface AudioButtonPopoverContentProps {
-	audioButton: FrontendAudioButtonData;
+	audioButton: AudioButtonPlainObject;
 	duration: number;
 	youtubeUrl: string;
 	isFavorite: boolean;

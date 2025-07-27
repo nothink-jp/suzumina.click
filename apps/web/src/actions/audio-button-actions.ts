@@ -54,6 +54,13 @@ export async function getAudioButtonAction(audioButtonId: string): Promise<GetAu
 		// AudioButtonエンティティに変換
 		const audioButton = AudioButton.fromFirestoreData(data);
 
+		if (!audioButton) {
+			return {
+				success: false,
+				error: "音声ボタンデータの変換に失敗しました",
+			};
+		}
+
 		return {
 			success: true,
 			audioButton: audioButton,
@@ -145,7 +152,10 @@ export async function getPublicAudioButtonsAction(limit = 20): Promise<GetAudioB
 		// biome-ignore lint/suspicious/noExplicitAny: Firestore QueryDocumentSnapshot type
 		snapshot.forEach((doc: any) => {
 			const data = doc.data() as FirestoreAudioButtonData;
-			audioButtons.push(AudioButton.fromFirestoreData(data));
+			const audioButton = AudioButton.fromFirestoreData(data);
+			if (audioButton) {
+				audioButtons.push(audioButton);
+			}
 		});
 
 		return {

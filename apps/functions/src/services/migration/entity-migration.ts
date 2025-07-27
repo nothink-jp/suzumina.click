@@ -350,8 +350,27 @@ export class EntityMigrationService {
 				updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
 			};
 
-			// Try to create V2 entity to validate data
-			AudioButton.fromLegacy(audioButtonData);
+			// Try to create entity to validate data
+			AudioButton.fromFirestoreData({
+				id: audioButtonData.id,
+				title: audioButtonData.title,
+				description: audioButtonData.description,
+				tags: audioButtonData.tags,
+				sourceVideoId: audioButtonData.sourceVideoId,
+				sourceVideoTitle: audioButtonData.sourceVideoTitle,
+				sourceVideoThumbnailUrl: undefined,
+				startTime: audioButtonData.startTime,
+				endTime: audioButtonData.endTime,
+				createdBy: audioButtonData.createdBy,
+				createdByName: audioButtonData.createdByName,
+				isPublic: audioButtonData.isPublic,
+				playCount: audioButtonData.playCount,
+				likeCount: audioButtonData.likeCount,
+				dislikeCount: audioButtonData.dislikeCount,
+				favoriteCount: audioButtonData.favoriteCount,
+				createdAt: new Date(audioButtonData.createdAt),
+				updatedAt: new Date(audioButtonData.updatedAt),
+			});
 
 			// Prepare migration data
 			const migrationData = {

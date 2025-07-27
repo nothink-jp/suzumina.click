@@ -80,7 +80,7 @@ export function convertToAudioButtonPlainObject(
 	].join(" ");
 
 	return {
-		id: data.id,
+		id: data.id || "",
 		title: data.title,
 		description: data.description,
 		tags: data.tags || [],
