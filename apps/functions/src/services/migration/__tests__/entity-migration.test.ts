@@ -15,10 +15,16 @@ vi.mock("@suzumina.click/shared-types", () => ({
 		})),
 	},
 	AudioButton: {
-		fromLegacy: vi.fn((data) => ({
-			id: data.id,
-			toLegacyFormat: vi.fn(() => data),
-		})),
+		fromFirestoreData: vi.fn((data) => {
+			// Simulate validation - return null if missing required fields
+			if (!data.sourceVideoId || !data.title) {
+				return null;
+			}
+			return {
+				id: data.id,
+				toFirestore: vi.fn(() => data),
+			};
+		}),
 	},
 }));
 
@@ -226,28 +232,20 @@ describe("EntityMigrationService", () => {
 				},
 			};
 
-			// Mock AudioButton.fromLegacy to throw error for invalid data
-			const { AudioButton } = await import("@suzumina.click/shared-types");
-			(AudioButton.fromLegacy as any)
-				.mockImplementationOnce(() => {
-					throw new Error("Missing required fields");
-				})
-				.mockImplementationOnce((data: any) => ({
-					id: data.id,
-					toLegacyFormat: vi.fn(() => data),
-				}));
-
 			// Mock audio button documents with invalid data
 			const audioDocs = [
 				createMockDoc("audio1", {
-					// Missing required fields
+					// Missing required fields (videoId)
 					text: "Test Audio",
+					startTime: 10,
 				}),
 				createMockDoc("audio2", {
 					text: "Test Audio 2",
 					videoId: "video1",
 					startTime: 10,
 					endTime: 15,
+					createdBy: "user1",
+					createdByName: "User 1",
 				}),
 			];
 
