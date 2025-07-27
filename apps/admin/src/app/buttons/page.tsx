@@ -17,12 +17,14 @@ import {
 	Heart,
 	Music,
 	Play,
+	RefreshCw,
 	ThumbsUp,
 	User,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ButtonActionsCell } from "@/components/actions/ButtonActionsCell";
+import RecalculateButton from "@/components/actions/RecalculateButton";
 import { auth } from "@/lib/auth";
 import { getFirestore } from "@/lib/firestore";
 
@@ -193,17 +195,20 @@ export default async function ButtonsPage({ searchParams }: ButtonsPageProps) {
 	return (
 		<div className="p-6 space-y-6">
 			{/* ページヘッダー */}
-			<div className="flex items-center gap-4">
-				<Button variant="outline" size="sm" asChild>
-					<Link href="/" className="gap-2">
-						<ArrowLeft className="h-4 w-4" />
-						ダッシュボードに戻る
-					</Link>
-				</Button>
-				<div>
-					<h1 className="text-3xl font-bold text-foreground">音声ボタン管理</h1>
-					<p className="text-muted-foreground mt-1">ユーザー作成音声ボタンの管理・統計</p>
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-4">
+					<Button variant="outline" size="sm" asChild>
+						<Link href="/" className="gap-2">
+							<ArrowLeft className="h-4 w-4" />
+							ダッシュボードに戻る
+						</Link>
+					</Button>
+					<div>
+						<h1 className="text-3xl font-bold text-foreground">音声ボタン管理</h1>
+						<p className="text-muted-foreground mt-1">ユーザー作成音声ボタンの管理・統計</p>
+					</div>
 				</div>
+				<RecalculateButton />
 			</div>
 
 			{/* 統計カード */}

@@ -124,3 +124,68 @@ export async function deleteAudioButton(buttonId: string): Promise<ActionResult>
 		};
 	}
 }
+
+export async function recalculateAudioButtonCounts(): Promise<{
+	success: boolean;
+	error?: string;
+}> {
+	try {
+		// 管理者権限確認
+		const session = await auth();
+		if (!session?.user?.isAdmin) {
+			return {
+				success: false,
+				error: "管理者権限が必要です",
+			};
+		}
+
+		const firestore = getFirestore();
+
+		// 全動画を取得
+		const videosSnapshot = await firestore.collection("videos").get();
+
+		let updatedCount = 0;
+		const batch = firestore.batch();
+
+		for (const videoDoc of videosSnapshot.docs) {
+			// その動画の音声ボタン数を取得
+			const buttonSnapshot = await firestore
+				.collection("audioButtons")
+				.where("sourceVideoId", "==", videoDoc.id)
+				.where("isPublic", "==", true)
+				.get();
+
+			const count = buttonSnapshot.size;
+
+			// 動画ドキュメントを更新
+			batch.update(videoDoc.ref, {
+				audioButtonCount: count,
+				hasAudioButtons: count > 0,
+				updatedAt: new Date().toISOString(),
+			});
+
+			updatedCount++;
+
+			// バッチサイズ制限（500）に達したらコミット
+			if (updatedCount % 500 === 0) {
+				await batch.commit();
+				// 新しいバッチを開始
+				console.log(`Updated ${updatedCount} videos...`);
+			}
+		}
+
+		// 残りをコミット
+		if (updatedCount % 500 !== 0) {
+			await batch.commit();
+		}
+
+		console.log(`Successfully updated audioButtonCount for ${updatedCount} videos`);
+		return { success: true };
+	} catch (error) {
+		console.error("音声ボタン数再計算エラー", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "音声ボタン数の再計算に失敗しました",
+		};
+	}
+}
