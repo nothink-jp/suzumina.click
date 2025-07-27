@@ -797,6 +797,81 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	// === Business Logic Methods ===
 
 	/**
+	 * Determines the main category based on work format
+	 */
+	determineMainCategory(): string {
+		const format = this._extendedInfo.workFormat?.toLowerCase() || "";
+
+		if (format.includes("voice") || format.includes("音声") || format.includes("ボイス")) {
+			return "voice";
+		}
+		if (format.includes("game") || format.includes("ゲーム")) {
+			return "game";
+		}
+		if (format.includes("comic") || format.includes("manga") || format.includes("漫画")) {
+			return "comic";
+		}
+		if (format.includes("cg") || format.includes("illust") || format.includes("イラスト")) {
+			return "illustration";
+		}
+		if (format.includes("novel") || format.includes("小説")) {
+			return "novel";
+		}
+		if (format.includes("video") || format.includes("動画")) {
+			return "video";
+		}
+
+		return "other";
+	}
+
+	/**
+	 * Calculates popularity score (1-100)
+	 */
+	calculatePopularityScore(): number {
+		let score = 0;
+
+		// Review rating contribution (max 40 points)
+		if (this._rating) {
+			score += (this._rating.stars / 5) * 40;
+		}
+
+		// Review count contribution (max 30 points)
+		const reviewCount = this._rating?.count || 0;
+		if (reviewCount > 0) {
+			// Logarithmic scale (1000 reviews = max points)
+			score += Math.min(30, (Math.log10(reviewCount + 1) / 3) * 30);
+		}
+
+		// New release bonus (max 10 points)
+		if (this.isNewRelease()) {
+			const daysSinceRelease = this.getDaysSinceRelease();
+			if (daysSinceRelease < 30) {
+				score += 10 * (1 - daysSinceRelease / 30);
+			}
+		}
+
+		// Discount bonus (max 10 points)
+		if (this.price.isDiscounted()) {
+			const discountRate = this.price.discount || 0;
+			score += Math.min(10, discountRate / 10);
+		}
+
+		// Other factors (max 10 points)
+		if (this.isVoiceWork()) score += 5; // Voice work bonus
+		if (this._seriesInfo) score += 5; // Series work bonus
+
+		return Math.round(Math.min(100, score));
+	}
+
+	/**
+	 * Gets days since release
+	 */
+	private getDaysSinceRelease(): number {
+		if (!this._metadata.releaseDate) return Number.POSITIVE_INFINITY;
+		return Math.floor((Date.now() - this._metadata.releaseDate.getTime()) / (1000 * 60 * 60 * 24));
+	}
+
+	/**
 	 * Checks if this is adult content
 	 */
 	isAdultContent(): boolean {
