@@ -7,6 +7,7 @@
  */
 
 import {
+	type AudioButtonInfo,
 	Channel,
 	ChannelId,
 	ChannelTitle,
@@ -87,10 +88,11 @@ export function mapYouTubeToVideoEntity(
 			contentTags: youtubeVideo.snippet.tags || undefined,
 		};
 
-		// Create audio button info (default values, will be updated by audio button service)
-		const audioButtonInfo = {
-			count: 0,
-			hasButtons: false,
+		// Create audio button info with undefined values to avoid overwriting in Firestore
+		// These will be preserved during merge operation
+		const audioButtonInfo: AudioButtonInfo = {
+			count: undefined as any,
+			hasButtons: undefined as any,
 		};
 
 		// Create live streaming details

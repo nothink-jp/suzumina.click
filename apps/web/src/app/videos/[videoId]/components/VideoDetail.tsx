@@ -473,30 +473,23 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 											<p className="text-sm text-muted-foreground">コメント</p>
 										</div>
 
-										<div className="bg-muted/30 p-4 rounded-lg">
-											<h4 className="font-semibold mb-2">音声ボタン数</h4>
-											<p className="text-2xl font-bold text-suzuka-600">
-												{video.audioButtonCount || 0}
-											</p>
-											<p className="text-sm text-muted-foreground">作成されたボタン</p>
-										</div>
+										{/* エンゲージメント率 */}
+										{video.statistics?.viewCount && video.statistics?.likeCount && (
+											<div className="bg-muted/30 p-4 rounded-lg">
+												<h4 className="font-semibold mb-2">エンゲージメント率</h4>
+												<p className="text-2xl font-bold text-suzuka-600">
+													{(
+														(video.statistics.likeCount / video.statistics.viewCount) *
+														100
+													).toFixed(2)}
+													%
+												</p>
+												<p className="text-sm text-muted-foreground">
+													高評価率（高評価数 ÷ 視聴回数）
+												</p>
+											</div>
+										)}
 									</div>
-
-									{/* エンゲージメント率 */}
-									{video.statistics?.viewCount && video.statistics?.likeCount && (
-										<div className="bg-muted/30 p-4 rounded-lg">
-											<h4 className="font-semibold mb-2">エンゲージメント率</h4>
-											<p className="text-2xl font-bold text-suzuka-600">
-												{((video.statistics.likeCount / video.statistics.viewCount) * 100).toFixed(
-													2,
-												)}
-												%
-											</p>
-											<p className="text-sm text-muted-foreground">
-												高評価率（高評価数 ÷ 視聴回数）
-											</p>
-										</div>
-									)}
 								</TabsContent>
 
 								{/* 詳細情報タブ */}
