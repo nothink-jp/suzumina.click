@@ -958,8 +958,8 @@ function createFallbackFrontendWork(data: WorkDocument): Record<string, unknown>
  */
 export function convertToFrontendWork(data: WorkDocument): Record<string, unknown> {
 	// Simplified version to reduce complexity
-	if (!data?.productId) {
-		return createFallbackFrontendWork(data || ({ productId: "UNKNOWN" } as WorkDocument));
+	if (!data?.productId || !data?.title) {
+		return createFallbackFrontendWork(data || ({} as WorkDocument));
 	}
 
 	// Extract legacy creator names

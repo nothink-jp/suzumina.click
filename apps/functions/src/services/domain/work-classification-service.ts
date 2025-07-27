@@ -27,6 +27,17 @@ export class WorkClassificationService {
 	}
 
 	/**
+	 * R18コンテンツかどうか判定
+	 *
+	 * @deprecated Work.isAdultContent() を使用してください
+	 */
+	static isAdultContent(work: WorkDocument): boolean {
+		// ageRating から判定
+		const ageRating = work.ageRating || "";
+		return ageRating === "R18" || ageRating.includes("18") || ageRating === "Adult";
+	}
+
+	/**
 	 * 作品の人気度を計算（1-100のスコア）
 	 *
 	 * @deprecated Work.calculatePopularityScore() を直接使用することを推奨

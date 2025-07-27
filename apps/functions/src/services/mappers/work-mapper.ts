@@ -293,7 +293,7 @@ export class WorkMapper {
 			illust_by: raw.creaters.illust_by || [],
 			music_by: raw.creaters.music_by || [],
 			others_by: raw.creaters.others_by || [],
-			created_by: raw.creaters.created_by || [],
+			created_by: [], // Not available in raw API, always empty
 		};
 	}
 
