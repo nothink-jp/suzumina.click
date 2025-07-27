@@ -319,15 +319,41 @@ export async function deleteAudioButton(
 export async function getAudioButtonCount(sourceVideoId: string): Promise<number> {
 	try {
 		const firestore = getFirestore();
-		const snapshot = await firestore
+
+		// デバッグログを追加
+		logger.info("getAudioButtonCount: 音声ボタン数取得開始", { sourceVideoId });
+
+		// Firestoreクエリを作成
+		const query = firestore
 			.collection("audioButtons")
 			.where("sourceVideoId", "==", sourceVideoId)
-			.where("isPublic", "==", true)
-			.count()
-			.get();
-		return snapshot.data().count;
+			.where("isPublic", "==", true);
+
+		try {
+			// count()メソッドを試す
+			const snapshot = await query.count().get();
+			const count = snapshot.data().count;
+			logger.info("getAudioButtonCount: count()メソッドで取得成功", { sourceVideoId, count });
+			return count;
+		} catch (countError) {
+			// count()が使えない場合はフォールバック
+			logger.warn("getAudioButtonCount: count()メソッドが使用できません、フォールバックします", {
+				sourceVideoId,
+				error: countError instanceof Error ? countError.message : String(countError),
+			});
+
+			// ドキュメントを取得して数える
+			const snapshot = await query.limit(1000).get();
+			const count = snapshot.size;
+			logger.info("getAudioButtonCount: フォールバックで取得成功", { sourceVideoId, count });
+			return count;
+		}
 	} catch (error) {
-		logger.error("音声ボタン数取得エラー", { sourceVideoId, error });
+		logger.error("音声ボタン数取得エラー", {
+			sourceVideoId,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
 		return 0;
 	}
 }

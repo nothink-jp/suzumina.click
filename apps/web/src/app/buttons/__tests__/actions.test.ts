@@ -536,4 +536,42 @@ describe("Audio Button Server Actions", () => {
 			expect(result.error).toContain("音声ボタンIDが指定されていません");
 		});
 	});
+
+	describe("getAudioButtonCount", () => {
+		it("音声ボタン数が正常に取得される", async () => {
+			// Mock count query with proper chaining
+			const mockCountChain = {
+				where: vi.fn().mockReturnThis(),
+				count: vi.fn().mockReturnValue({
+					get: vi.fn().mockResolvedValue({
+						data: vi.fn().mockReturnValue({ count: 5 }),
+					}),
+				}),
+			};
+
+			mockCollection.mockReturnValue(mockCountChain);
+
+			const { getAudioButtonCount } = await import("../actions");
+			const count = await getAudioButtonCount("test-video-id");
+
+			expect(count).toBe(5);
+			expect(mockCountChain.where).toHaveBeenCalledWith("sourceVideoId", "==", "test-video-id");
+			expect(mockCountChain.where).toHaveBeenCalledWith("isPublic", "==", true);
+		});
+
+		it("エラー時は0を返す", async () => {
+			// Mock count error
+			mockCollection.mockReturnValue({
+				where: vi.fn().mockReturnThis(),
+				count: vi.fn().mockReturnValue({
+					get: vi.fn().mockRejectedValue(new Error("Firestore error")),
+				}),
+			});
+
+			const { getAudioButtonCount } = await import("../actions");
+			const count = await getAudioButtonCount("test-video-id");
+
+			expect(count).toBe(0);
+		});
+	});
 });
