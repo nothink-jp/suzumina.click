@@ -13,6 +13,7 @@
 - `DOMAIN_OBJECT_CATALOG.md` - すべてのドメインオブジェクトの詳細カタログ
 - `ENTITY_IMPLEMENTATION_GUIDELINES.md` - 詳細な実装ガイドライン
 - `ENTITY_SERIALIZATION_PATTERN.md` - Server Component連携パターンの詳細
+- `ENTITY_VALUE_OBJECT_EXPANSION_PLAN.md` - 565行の拡張計画（実装済み部分含む）
 
 ## 新しいドキュメント
 
@@ -20,6 +21,7 @@
 
 - `/docs/DOMAIN_MODEL_SIMPLE.md` - ドメインモデルの簡易参照
 - `/docs/ENTITY_IMPLEMENTATION_GUIDE.md` - 実用的な実装ガイド
+- `/docs/FUTURE_ENTITY_PLANS.md` - 未実装項目のみの簡潔な計画
 
 ## なぜ簡潔化したか
 
