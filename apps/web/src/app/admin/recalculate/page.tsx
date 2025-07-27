@@ -1,19 +1,9 @@
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { RefreshCw } from "lucide-react";
-import { redirect } from "next/navigation";
 import { recalculateAllVideosAudioButtonCount } from "@/app/buttons/actions";
-import { auth } from "@/auth";
 
 export default async function RecalculatePage() {
-	const session = await auth();
-
-	// 管理者権限チェック（特定のDiscord IDのみアクセス可能）
-	const adminIds = process.env.ADMIN_DISCORD_IDS?.split(",") || [];
-	if (!session?.user?.discordId || !adminIds.includes(session.user.discordId)) {
-		redirect("/");
-	}
-
 	async function handleRecalculate() {
 		"use server";
 		const result = await recalculateAllVideosAudioButtonCount();
