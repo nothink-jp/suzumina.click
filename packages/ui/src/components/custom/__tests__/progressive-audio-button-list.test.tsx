@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useProgressiveLoadingMetrics } from "../progressive-audio-button-list";
@@ -45,7 +45,7 @@ vi.mock("../audio-button", () => ({
 	),
 }));
 
-const createMockAudioButton = (id: string, title: string): FrontendAudioButtonData => ({
+const createMockAudioButton = (id: string, title: string): AudioButtonPlainObject => ({
 	id,
 	title,
 	description: `説明: ${title}`,
@@ -64,14 +64,21 @@ const createMockAudioButton = (id: string, title: string): FrontendAudioButtonDa
 	favoriteCount: 0,
 	createdAt: "2025-01-01T00:00:00.000Z",
 	updatedAt: "2025-01-01T00:00:00.000Z",
-	durationText: "10秒",
-	relativeTimeText: "1日前",
+	_computed: {
+		isPopular: false,
+		engagementRate: 0,
+		engagementRatePercentage: 0,
+		popularityScore: 1,
+		searchableText: `${title} テスト 動画: ${title} テストユーザー`,
+		durationText: "10秒",
+		relativeTimeText: "1日前",
+	},
 });
 
 // ProgressiveAudioButtonListのテストは複雑すぎてメモリリークを起こすため、
 // 基本的な機能テストのみに簡素化
 describe("ProgressiveAudioButtonList", () => {
-	const mockAudioButtons: FrontendAudioButtonData[] = [
+	const mockAudioButtons: AudioButtonPlainObject[] = [
 		createMockAudioButton("1", "テスト音声1"),
 		createMockAudioButton("2", "テスト音声2"),
 	];
@@ -85,7 +92,7 @@ describe("ProgressiveAudioButtonList", () => {
 	});
 
 	it("should handle empty audio buttons", () => {
-		const emptyButtons: FrontendAudioButtonData[] = [];
+		const emptyButtons: AudioButtonPlainObject[] = [];
 		expect(emptyButtons).toHaveLength(0);
 	});
 });

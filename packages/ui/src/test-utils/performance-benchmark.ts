@@ -8,7 +8,7 @@
  * - 回帰テスト用の基準値設定
  */
 
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 
 export interface BenchmarkConfig {
 	/** データセットサイズ */
@@ -283,7 +283,7 @@ export const generateBenchmarkReport = (suite: BenchmarkSuite): string => {
 /**
  * パフォーマンステスト用のモックデータ生成
  */
-export const generateBenchmarkDataset = (size: number): FrontendAudioButtonData[] => {
+export const generateBenchmarkDataset = (size: number): AudioButtonPlainObject[] => {
 	return Array.from({ length: size }, (_, index) => ({
 		id: `benchmark-${index + 1}`,
 		title: `ベンチマークテスト音声 ${index + 1}`,
@@ -303,8 +303,15 @@ export const generateBenchmarkDataset = (size: number): FrontendAudioButtonData[
 		favoriteCount: Math.floor(Math.random() * 50),
 		createdAt: new Date(Date.now() - index * 24 * 60 * 60 * 1000).toISOString(),
 		updatedAt: new Date(Date.now() - index * 12 * 60 * 60 * 1000).toISOString(),
-		durationText: `${30 + (index % 30)}秒`,
-		relativeTimeText: `${index + 1}日前`,
+		_computed: {
+			isPopular: Math.random() > 0.7,
+			engagementRate: Math.random() * 0.3,
+			engagementRatePercentage: Math.floor(Math.random() * 30),
+			popularityScore: Math.floor(Math.random() * 1000),
+			searchableText: `ベンチマークテスト音声 ${index + 1} タグ${(index % 5) + 1} カテゴリ${Math.floor(index / 10) + 1} ベンチマーク動画 ${index + 1} ユーザー${Math.floor(index / 20) + 1}`,
+			durationText: `${30 + (index % 30)}秒`,
+			relativeTimeText: `${index + 1}日前`,
+		},
 	}));
 };
 
