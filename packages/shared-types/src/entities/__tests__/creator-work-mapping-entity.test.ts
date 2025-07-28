@@ -374,17 +374,11 @@ describe("CreatorWorkMappingEntity", () => {
 
 			expect(plain).toMatchObject({
 				id: "12345_RJ01234567",
-				mappingId: "12345_RJ01234567",
 				creatorId: "12345",
 				workId: "RJ01234567",
 				creatorName: "テスト声優",
-				roles: ["voice"],
+				types: ["voice"],
 				circleId: "RG23954",
-				isVoiceActor: true,
-				isIllustrator: false,
-				isScenarioWriter: false,
-				hasMultipleRoles: false,
-				isRecent: true,
 			});
 			expect(plain.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 		});

@@ -44,6 +44,7 @@ export * from "./migrations";
 // === Plain Objects ===
 export * from "./plain-objects/audio-button-plain";
 export * from "./plain-objects/circle-plain";
+export * from "./plain-objects/creator-plain";
 export * from "./plain-objects/work-plain";
 // === Firestore Types ===
 // FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead

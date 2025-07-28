@@ -58,6 +58,22 @@ vi.mock("@suzumina.click/shared-types", () => ({
 		},
 	})),
 	isValidCreatorId: vi.fn((id) => id && id.length > 0),
+	CreatorEntity: {
+		create: vi.fn((creatorId, name, types, workCount) => ({
+			toPlainObject: vi.fn(() => ({
+				id: creatorId,
+				creatorId,
+				name,
+				types,
+				workCount,
+				registeredAt: new Date().toISOString(),
+				lastUpdated: new Date().toISOString(),
+			})),
+		})),
+	},
+	CreatorWorkMappingEntity: {
+		create: vi.fn(),
+	},
 }));
 
 // Firestore モック
@@ -125,19 +141,19 @@ describe("Creator page server actions", () => {
 		it("存在するクリエイター情報を正しく集約する", async () => {
 			const mockMappings = [
 				{
-					creatorId: "creator123",
+					creatorId: "123456",
 					creatorName: "テストクリエイター",
 					types: ["voice"],
 					workId: "RJ111111",
 				},
 				{
-					creatorId: "creator123",
+					creatorId: "123456",
 					creatorName: "テストクリエイター",
 					types: ["illustration"],
 					workId: "RJ222222",
 				},
 				{
-					creatorId: "creator123",
+					creatorId: "123456",
 					creatorName: "テストクリエイター",
 					types: ["voice", "scenario"],
 					workId: "RJ333333",
@@ -151,15 +167,18 @@ describe("Creator page server actions", () => {
 				})),
 			});
 
-			const result = await getCreatorInfo("creator123");
+			const result = await getCreatorInfo("123456");
 
-			expect(result).toEqual({
-				id: "creator123",
+			expect(result).toMatchObject({
+				id: "123456",
+				creatorId: "123456",
 				name: "テストクリエイター",
 				types: ["voice", "illustration", "scenario"], // 重複なし、ユニークな値
 				workCount: 3,
 			});
-			expect(mockWhere).toHaveBeenCalledWith("creatorId", "==", "creator123");
+			expect(result?.registeredAt).toBeDefined();
+			expect(result?.lastUpdated).toBeDefined();
+			expect(mockWhere).toHaveBeenCalledWith("creatorId", "==", "123456");
 		});
 
 		it("クリエイターが存在しない場合はnullを返す", async () => {

@@ -1,12 +1,17 @@
 "use server";
 
 import type {
-	CreatorPageInfo,
+	CreatorPlainObject,
+	CreatorRole,
 	CreatorWorkMapping,
 	WorkDocument,
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
-import { convertToWorkPlainObject, isValidCreatorId } from "@suzumina.click/shared-types";
+import {
+	CreatorEntity,
+	convertToWorkPlainObject,
+	isValidCreatorId,
+} from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 
 type ExtendedWorkData = WorkDocument & {
@@ -70,7 +75,7 @@ function compareWorks(a: ExtendedWorkData, b: ExtendedWorkData, sort: string): n
  * @param creatorId クリエイターID
  * @returns クリエイター情報、存在しない場合はnull
  */
-export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo | null> {
+export async function getCreatorInfo(creatorId: string): Promise<CreatorPlainObject | null> {
 	// 入力検証
 	if (!isValidCreatorId(creatorId)) {
 		return null;
@@ -89,13 +94,7 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo
 		}
 
 		// クリエイター情報の集約
-		const creatorInfo: CreatorPageInfo = {
-			id: creatorId,
-			name: "",
-			types: [],
-			workCount: 0,
-		};
-
+		let creatorName = "";
 		const workIds = new Set<string>();
 		const allTypes = new Set<string>();
 
@@ -103,15 +102,20 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo
 			const data = doc.data() as CreatorWorkMapping;
 			workIds.add(data.workId);
 			data.types?.forEach((type) => allTypes.add(type));
-			if (data.creatorName && !creatorInfo.name) {
-				creatorInfo.name = data.creatorName;
+			if (data.creatorName && !creatorName) {
+				creatorName = data.creatorName;
 			}
 		});
 
-		creatorInfo.types = Array.from(allTypes);
-		creatorInfo.workCount = workIds.size;
+		// CreatorEntityを作成してPlainObjectに変換
+		const creatorEntity = CreatorEntity.create(
+			creatorId,
+			creatorName || "Unknown Creator",
+			Array.from(allTypes) as CreatorRole[],
+			workIds.size,
+		);
 
-		return creatorInfo;
+		return creatorEntity.toPlainObject();
 	} catch (_error) {
 		// エラー発生時はnullを返す
 		return null;
@@ -279,7 +283,7 @@ export async function getCreatorWithWorksWithPagination(
 	limit = 12,
 	sort = "newest",
 ): Promise<{
-	creator: CreatorPageInfo;
+	creator: CreatorPlainObject;
 	works: WorkPlainObject[];
 	totalCount: number;
 } | null> {
@@ -302,7 +306,7 @@ export async function getCreatorWithWorksWithPagination(
  */
 export async function getCreatorWithWorks(
 	creatorId: string,
-): Promise<{ creator: CreatorPageInfo; works: WorkPlainObject[] } | null> {
+): Promise<{ creator: CreatorPlainObject; works: WorkPlainObject[] } | null> {
 	const [creator, works] = await Promise.all([
 		getCreatorInfo(creatorId),
 		getCreatorWorks(creatorId),

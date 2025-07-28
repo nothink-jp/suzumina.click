@@ -24,7 +24,7 @@ const mockCircleRef = {
 };
 
 const mockMappingDoc = {
-	id: "creator1_RJ123456",
+	id: "123456_RJ123456",
 	exists: false,
 	data: vi.fn(),
 };
@@ -34,7 +34,7 @@ const mockMappingRef = {
 };
 
 const mockMappingDoc2 = {
-	id: "creator2_RJ123456",
+	id: "234567_RJ123456",
 	exists: false,
 	data: vi.fn(),
 };
@@ -44,7 +44,7 @@ const mockMappingRef2 = {
 };
 
 const mockMappingDoc3 = {
-	id: "creator3_RJ123456",
+	id: "345678_RJ123456",
 	exists: false,
 	data: vi.fn(),
 };
@@ -56,14 +56,26 @@ const mockMappingRef3 = {
 const mockCollection = {
 	doc: vi.fn((id: string) => {
 		// Return different mock refs based on the collection/document ID
-		if (id === "creator1_RJ123456") {
+		if (id === "123456_RJ123456") {
 			return mockMappingRef;
 		}
-		if (id === "creator2_RJ123456") {
+		if (id === "234567_RJ123456") {
 			return mockMappingRef2;
 		}
-		if (id === "creator3_RJ123456") {
+		if (id === "345678_RJ123456") {
 			return mockMappingRef3;
+		}
+		if (id === "INVALID_ID") {
+			// Invalid circle ID case - still need to return a mock ref
+			return {
+				get: vi.fn(() =>
+					Promise.resolve({
+						id: "INVALID_ID",
+						exists: false,
+						data: vi.fn(),
+					}),
+				),
+			};
 		}
 		if (id.includes("_")) {
 			// Default creator mapping document
@@ -76,7 +88,11 @@ const mockCollection = {
 
 const mockFirestore = {
 	batch: vi.fn(() => mockBatch),
-	collection: vi.fn(() => mockCollection),
+	collection: vi.fn((collectionName: string) => {
+		// Return the same mockCollection for all collections
+		// The doc() method will handle the specific document references
+		return mockCollection;
+	}),
 };
 
 vi.mock("@google-cloud/firestore", () => ({
@@ -108,15 +124,15 @@ describe("collect-circle-creator-info", () => {
 		mockCircleDoc.exists = false;
 		mockCircleDoc.data.mockReturnValue({});
 
-		mockMappingDoc.id = "creator1_RJ123456";
+		mockMappingDoc.id = "123456_RJ123456";
 		mockMappingDoc.exists = false;
 		mockMappingDoc.data.mockReturnValue({});
 
-		mockMappingDoc2.id = "creator2_RJ123456";
+		mockMappingDoc2.id = "234567_RJ123456";
 		mockMappingDoc2.exists = false;
 		mockMappingDoc2.data.mockReturnValue({});
 
-		mockMappingDoc3.id = "creator3_RJ123456";
+		mockMappingDoc3.id = "345678_RJ123456";
 		mockMappingDoc3.exists = false;
 		mockMappingDoc3.data.mockReturnValue({});
 	});
@@ -136,10 +152,10 @@ describe("collect-circle-creator-info", () => {
 			work_name: "テスト作品",
 			creaters: {
 				voice_by: [
-					{ id: "creator1", name: "声優A" },
-					{ id: "creator2", name: "声優B" },
+					{ id: "123456", name: "声優A" },
+					{ id: "234567", name: "声優B" },
 				],
-				illust_by: [{ id: "creator3", name: "イラストレーターC" }],
+				illust_by: [{ id: "345678", name: "イラストレーターC" }],
 			},
 		} as any;
 
@@ -235,7 +251,7 @@ describe("collect-circle-creator-info", () => {
 			expect(mockBatch.set).toHaveBeenCalledWith(
 				mockMappingRef,
 				expect.objectContaining({
-					creatorId: "creator1",
+					creatorId: "123456",
 					workId: "RJ123456",
 					creatorName: "声優A",
 					types: ["voice"],
@@ -248,7 +264,7 @@ describe("collect-circle-creator-info", () => {
 			expect(mockBatch.set).toHaveBeenCalledWith(
 				mockMappingRef2,
 				expect.objectContaining({
-					creatorId: "creator2",
+					creatorId: "234567",
 					workId: "RJ123456",
 					creatorName: "声優B",
 					types: ["voice"],
@@ -261,7 +277,7 @@ describe("collect-circle-creator-info", () => {
 			expect(mockBatch.set).toHaveBeenCalledWith(
 				mockMappingRef3,
 				expect.objectContaining({
-					creatorId: "creator3",
+					creatorId: "345678",
 					workId: "RJ123456",
 					creatorName: "イラストレーターC",
 					types: ["illustration"],
@@ -284,8 +300,8 @@ describe("collect-circle-creator-info", () => {
 			const apiDataWithMultiRole: DLsiteRawApiResponse = {
 				...mockApiData,
 				creaters: {
-					voice_by: [{ id: "creator1", name: "マルチクリエイター" }],
-					illust_by: [{ id: "creator1", name: "マルチクリエイター" }],
+					voice_by: [{ id: "123456", name: "マルチクリエイター" }],
+					illust_by: [{ id: "123456", name: "マルチクリエイター" }],
 				},
 			} as any;
 
@@ -293,19 +309,19 @@ describe("collect-circle-creator-info", () => {
 
 			// クリエイターマッピングの呼び出しを確認
 			const mappingCalls = mockBatch.set.mock.calls.filter(
-				(call) => call[1].creatorId === "creator1",
+				(call) => call[1].creatorId === "123456",
 			);
 
 			// processedCreatorsによって最初の1回のみ処理される
 			expect(mappingCalls).toHaveLength(1);
 			// 最初に処理される voice タイプのみが保存される
 			expect(mappingCalls[0][1]).toMatchObject({
-				creatorId: "creator1",
+				creatorId: "123456",
 				types: ["voice"],
 			});
 		});
 
-		it("無効なサークルIDの場合はスキップする", async () => {
+		it("無効なサークルIDの場合はエラーを返す", async () => {
 			const invalidApiData = {
 				...mockApiData,
 				maker_id: "INVALID_ID", // RGで始まらない
@@ -319,7 +335,9 @@ describe("collect-circle-creator-info", () => {
 
 			const result = await collectCircleAndCreatorInfo(mockWorkData, invalidApiData, true);
 
-			expect(result.success).toBe(true);
+			// 無効なサークルIDの場合、CircleEntity.createがエラーを投げるため、success: falseが返る
+			expect(result.success).toBe(false);
+			expect(result.error).toContain("Invalid circle ID format");
 			// サークル作成/更新が呼ばれないことを確認
 			const circleSetCalls = mockBatch.set.mock.calls.filter(
 				(call) => call[1].circleId !== undefined && call[1].name !== undefined,
@@ -347,7 +365,7 @@ describe("collect-circle-creator-info", () => {
 						maker_id: "RG11111",
 						maker_name: "サークル1",
 						workno: "RJ111111",
-						creaters: { voice_by: [{ id: "v1", name: "声優1" }] },
+						creaters: { voice_by: [{ id: "111111", name: "声優1" }] },
 					} as any,
 					isNewWork: true,
 				},
@@ -357,7 +375,7 @@ describe("collect-circle-creator-info", () => {
 						maker_id: "RG22222",
 						maker_name: "サークル2",
 						workno: "RJ222222",
-						creaters: { illust_by: [{ id: "i1", name: "イラスト1" }] },
+						creaters: { illust_by: [{ id: "456789", name: "イラスト1" }] },
 					} as any,
 					isNewWork: true,
 				},

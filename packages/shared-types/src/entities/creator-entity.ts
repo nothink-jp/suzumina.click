@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import type { CreatorPlainObject } from "../plain-objects/creator-plain";
 import {
 	CREATOR_ROLE_LABELS,
 	CREATOR_ROLE_PRIORITY,
@@ -494,34 +495,14 @@ export class CreatorEntity
 	/**
 	 * Converts to plain object for serialization
 	 */
-	toPlainObject(): {
-		id: string;
-		creatorId: string;
-		name: string;
-		roles: CreatorRole[];
-		rolesDisplay: string;
-		primaryRole: CreatorRole;
-		workCount: number;
-		isNew: boolean;
-		isActive: boolean;
-		hasWorks: boolean;
-		isVoiceActor: boolean;
-		createdAt: string;
-		lastUpdated: string;
-	} {
+	toPlainObject(): CreatorPlainObject {
 		return {
 			id: this.creatorId,
 			creatorId: this.creatorId,
 			name: this.creatorName,
-			roles: this.creatorRoles,
-			rolesDisplay: this._roles.toDisplayString(),
-			primaryRole: this._roles.getPrimaryRole(),
+			types: this.creatorRoles,
 			workCount: this.workCount,
-			isNew: this.isNewCreator(),
-			isActive: this.isActive(),
-			hasWorks: this.hasWorks(),
-			isVoiceActor: this.isVoiceActor(),
-			createdAt: this._createdAt.toISOString(),
+			registeredAt: this._createdAt.toISOString(),
 			lastUpdated: this._lastUpdated.toISOString(),
 		};
 	}
