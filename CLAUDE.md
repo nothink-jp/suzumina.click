@@ -1,66 +1,7 @@
-# suzumina.click - AI Assistant Instructions
+# suzumina.click - Claude AI Development Guidelines
 
-声優「涼花みなせ」ファンサイト - 音声ボタン共有 & DLsite作品情報プラットフォーム
-
----
-
-## 🎯 PROJECT OVERVIEW
-
-**suzumina.click** は声優「涼花みなせ」ファンコミュニティ向けWebプラットフォームです。
-
-### Core Features
-- **音声ボタンシステム**: YouTube動画タイムスタンプ参照・96件表示対応・プール化最適化
-- **DLsite統合**: Individual Info API・高解像度画像・詳細情報表示・価格履歴追跡
-- **サークル・クリエイターページ**: サークル別・クリエイター別作品一覧・シームレスナビゲーション・Individual Info API統合
-- **価格履歴システム**: 日別価格推移チャート・多通貨対応・統計表示・全期間保存
-- **作品評価システム**: DLsite作品への3種類評価（10選ランキング・3段階星評価・NG評価）・認証ユーザー専用機能
-- **認証・管理**: Discord OAuth・ユーザー管理・お気に入りシステム
-- **検索システム**: 全コンテンツ横断検索・高度フィルタリング
-- **管理者機能**: 完全なコンテンツ・ユーザー管理インターフェース
-
-### Current Status: **PRODUCTION READY v0.3.6**
-- 本番稼働中: https://suzumina.click
-- 980+件テストスイート全合格
-- TypeScript strict mode完全準拠
-- パフォーマンス最適化完了（音声ボタン96件表示・87%メモリ削減）
-- UI/UX最適化完了（非営利運営への移行・ローディング体験向上）
-- 価格履歴機能完全実装（全Phase完了・品質保証済み）
-- 作品評価システム完全実装（10選ランキング・星評価・NG評価）
-
----
-
-## 🏗️ ARCHITECTURE
-
-### Monorepo Structure
-```
-suzumina.click/
-├── apps/
-│   ├── web/                    # Next.js 15 Frontend
-│   │   ├── src/app/           # App Router
-│   │   ├── src/components/    # React Components
-│   │   ├── src/lib/           # Utilities
-│   │   └── src/actions/       # Server Actions
-│   ├── admin/                 # Admin Dashboard
-│   └── functions/             # Cloud Functions Backend
-│       ├── src/endpoints/     # API Endpoints
-│       ├── src/services/      # Business Logic
-│       └── src/infrastructure/ # Infrastructure Layer
-├── packages/
-│   ├── shared-types/          # Type Definitions
-│   ├── typescript-config/     # TypeScript Config
-│   └── ui/                    # UI Component Library
-└── docs/                      # Documentation
-```
-
-### Tech Stack
-- **Frontend**: Next.js 15 + React + TypeScript + Tailwind CSS v4
-- **Backend**: Cloud Functions + Node.js + TypeScript
-- **Database**: Cloud Firestore + Cloud Storage
-- **Authentication**: NextAuth.js + Discord OAuth
-- **APIs**: YouTube Data API v3 + DLsite Individual Info API
-- **Testing**: Vitest + Playwright E2E
-- **Code Quality**: Biome (Linter/Formatter)
-- **Infrastructure**: Terraform + Google Cloud Platform
+This document contains ESSENTIAL instructions for Claude AI when working on the suzumina.click project.
+For detailed project documentation, see [Documentation Index](docs/README.md).
 
 ---
 
@@ -97,92 +38,40 @@ suzumina.click/
 - **NO npm commands** - pnpm only
 - **NO creating documentation files** unless explicitly requested
 
-### 7. TESTING STRUCTURE
-- **Use `__tests__` directories** for all test files
-- **Example structure**:
-  ```
-  src/components/audio/
-  ├── __tests__/
-  │   ├── audio-button.test.tsx
-  │   └── favorite-button.test.tsx
-  ├── audio-button.tsx
-  └── favorite-button.tsx
-  ```
-- **NO co-location** - do not place test files next to source files
-
-### 8. DOMAIN MODEL DOCUMENTATION
+### 7. DOMAIN MODEL UPDATES
 - **ALWAYS update domain documentation** when modifying entities or value objects
-- **Update `DOMAIN_MODEL.md`** when:
-  - Adding/removing entities or value objects
-  - Changing relationships between domain objects
-  - Modifying aggregate boundaries
-  - Adding domain services
-- **Update `DOMAIN_OBJECT_CATALOG.md`** when:
-  - Adding/removing properties from entities/value objects
-  - Adding/modifying methods
-  - Changing validation rules
-  - Adding new type guards or utility functions
-- **Include Mermaid diagrams** for visual clarity when appropriate
+- Update `docs/reference/domain-model.md` for architectural changes
+- Update `docs/reference/domain-object-catalog.md` for entity/value object changes
 
 ---
 
-## 📊 KEY TECHNICAL DETAILS
+## 📚 REFERENCE DOCUMENTATION
 
-### Database (Firestore)
-- **dlsiteWorks**: `OptimizedFirestoreDLsiteWorkData`
-- **dlsiteWorks/{workId}/priceHistory**: Daily price tracking subcollection
-- **dlsiteMetadata**: `UnifiedDataCollectionMetadata`
-- **audioButtons**: Audio button data with YouTube references
-- **favorites**: User favorite tracking
-- **users**: User profile and authentication data
-- **evaluations**: User work evaluations (top10/star/ng types)
-- **users/{userId}/top10**: User's top 10 work rankings
+### Project Information
+- **Status**: PRODUCTION READY v0.3.8
+- **URL**: https://suzumina.click
+- **Tech Stack**: Next.js 15, TypeScript, Firestore, Cloud Functions
 
-### Data Collection Systems
-- **DLsite**: Individual Info API every hour at :00 minutes + price history tracking
-- **YouTube**: Data API for video information
-- **Price History**: Daily price collection with multi-currency support
-- **Optimization**: 重複API呼び出し完全排除・リージョン差異対応
+### Key Documentation Links
+- [Project Overview](docs/README.md)
+- [Development Guide](docs/guides/development.md)
+- [Architecture Reference](docs/reference/architecture.md)
+- [Database Schema](docs/reference/database-schema.md)
+- [Domain Model](docs/reference/domain-model.md)
+- [Testing Guide](docs/guides/testing.md)
 
-### Performance Optimizations (2025-07-15 COMPLETED)
-- **Audio Button System**: YouTube Player pooling (5 players max, LRU)
-- **Memory Usage**: 87% reduction (200-400MB → 25-50MB)
-- **API Calls**: 98% reduction (100-150 calls → 1 call)
-- **Display Capacity**: 96 audio buttons (92% improvement)
-- **Virtualization**: react-window integration for large datasets
-
----
-
-## 🔧 DEVELOPMENT COMMANDS
-
-### Environment Setup
+### Quick Command Reference
 ```bash
-# Development server
+# Development
 pnpm --filter @suzumina.click/web dev
 
 # Testing
-pnpm --filter @suzumina.click/web test
-pnpm --filter @suzumina.click/functions test
-pnpm --filter @suzumina.click/web test:e2e
-
-# Code quality
+pnpm test
 pnpm lint
 pnpm typecheck
-```
 
-### Key Environment Variables
-```bash
-# Required for development (.env.local)
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-nextauth-secret
-DISCORD_CLIENT_ID=your-discord-client-id
-DISCORD_CLIENT_SECRET=your-discord-client-secret
-GOOGLE_CLOUD_PROJECT=suzumina-click
-YOUTUBE_API_KEY=your-youtube-api-key
-
-# Public variables
-NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
-NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
+# Build
+pnpm build
 ```
 
 ---
@@ -191,132 +80,25 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 
 ### Preferred Patterns
 - **Server Actions**: Use for data operations and form processing
-- **API Routes**: Only for external system integration
-- **Cloud Functions**: GCF v2 CloudEvent handlers
-- **Firestore**: Always use batch operations with error handling
-- **Components**: Use packages/ui for reusable components
+- **Server Components**: Maximize for better performance
+- **Type Safety**: Always use TypeScript strict mode
+- **Testing**: Write tests for all new features
 
-### Implementation Guidelines
-- **YAGNI, DRY, KISS principles**
-- **Type safety first**
-- **Test-driven development**
-- **Security-first approach**
-- **Performance-conscious implementation**
+### Code Organization
+- Components: Use packages/ui for reusable components
+- Tests: Place in `__tests__` directories
+- Actions: Use Server Actions in `src/actions/`
+- Types: Use @suzumina.click/shared-types package
 
 ---
 
-## 📚 IMPORTANT DOCUMENTATION
+## ⚠️ IMPORTANT NOTES
 
-### Core Documentation
-- `docs/FIRESTORE_STRUCTURE.md`: Database schema details
-- `docs/DEVELOPMENT.md`: Development environment setup
-- `docs/UBIQUITOUS_LANGUAGE.md`: Domain terminology (MUST follow)
-- `docs/INFRASTRUCTURE_ARCHITECTURE.md`: Infrastructure details
-- `docs/DOMAIN_MODEL.md`: Domain model architecture (MUST keep updated)
-- `docs/DOMAIN_OBJECT_CATALOG.md`: Domain object specifications (MUST keep updated)
-
-### Archived Projects
-- `docs/archive/2025-07-audio-button-optimization/`: Completed optimization project
-- `docs/archive/2025-07-server-actions-migration/`: Server Actions migration
-- `docs/archive/2025-07-dlsite-optimization/`: DLsite optimization history
+1. **Ubiquitous Language**: Follow terminology in [UBIQUITOUS_LANGUAGE.md](docs/UBIQUITOUS_LANGUAGE.md)
+2. **Recent Changes**: Check [CHANGELOG.md](docs/operations/changelog.md) for latest updates
+3. **Active Tasks**: Review [TODO.md](docs/operations/todo.md) for current priorities
 
 ---
 
-## ⚠️ KNOWN CONSTRAINTS
-
-- **salesCount feature**: Completely discontinued (July 2025)
-- **Regional differences**: Handled by union-based data collection
-- **YouTube Player API**: postMessage warnings are harmless (Google internal)
-- **AdSense integration**: REMOVED - Non-profit operation since v0.3.4
-- **Amazon Associates**: REMOVED - Non-profit operation since v0.3.4
-- **Firebase commands**: NOT available - use Firestore admin SDK only
-
----
-
-## 🚀 DEPLOYMENT INFO
-
-- **Production URL**: https://suzumina.click
-- **Infrastructure**: Google Cloud Platform + Terraform
-- **CI/CD**: GitHub Actions for automated deployment
-- **Monitoring**: Cloud Monitoring + Logging
-- **Web App**: Cloud Run deployment
-- **Functions**: Cloud Functions v2 with event triggers
-
----
-
-## 📝 RECENT UPDATES
-
-### v0.3.7 (2025-07-26)
-- **Entity System Unification COMPLETED**
-  - Complete removal of V2 suffix from all entities and components
-  - Unified `Video` and `AudioButton` entities (no more V2 variants)
-  - Removed feature flag system entirely
-  - Deleted all V2-specific migration scripts and tests
-  - Simplified codebase by ~15% (removed ~11,500 lines)
-  - Fixed all TypeScript and lint errors
-  - Improved cognitive complexity by extracting helper functions
-  - Enhanced type safety by eliminating `any` types
-
-### v0.3.6 (2025-07-21)
-- **Work Evaluation System COMPLETED**
-  - Complete evaluation system for DLsite works (3 evaluation types)
-  - Top 10 ranking system with stack-type insertion mechanism
-  - 3-star rating system (普通・良い・とても良い)
-  - NG evaluation system for unwanted works
-  - Comprehensive UI components (WorkEvaluation, Top10RankModal, EvaluationRadioGroup)
-  - Server Actions implementation with transaction-based updates
-  - Complete integration with work detail pages
-  - Authentication-based access control (Discord OAuth required)
-  - Optimistic UI updates with error handling
-
-### v0.3.5 (2025-07-20)
-- **Price History System COMPLETED**
-  - Complete price tracking system for DLsite works (全Phase実装完了)
-  - Daily price history collection with multi-currency support (JPY/USD/EUR/CNY/TWD/KRW)
-  - Interactive price charts with Recharts integration
-  - Price statistics and trend analysis
-  - Critical bug fix: Individual Info API double discount issue (RJ01414353)
-  - Comprehensive E2E testing (11 test scenarios)
-  - Data quality management tools (quality checker + auto-fixer)
-  - Subcollection-based data architecture (dlsiteWorks/{workId}/priceHistory)
-
-### v0.3.4 (2025-07-19)
-- **Non-profit Operation Transition COMPLETED**
-  - Complete Google AdSense integration removal (ASMR content policy rejection)
-  - Amazon Associates integration removal
-  - Cookie consent system simplification (3 categories: necessary, analytics, personalization)
-  - Site operation model updated to non-profit status
-- **UI/UX Enhancement COMPLETED**
-  - Fixed placeholder image blur effect issue
-  - Carousel loading skeleton alignment optimization  
-  - LoadingSkeleton component structure redesign for GenericCarousel compatibility
-  - Cookie consent debugger component removal (GA4 stable)
-- **Authentication-based UX Improvements COMPLETED**
-  - Disabled favorite/like/dislike buttons for non-authenticated users
-  - Added visual feedback (opacity, cursor changes) for disabled buttons
-  - Implemented login requirement tooltips for better user guidance
-  - Enhanced accessibility with proper disabled states and ARIA labels
-  - Added comprehensive test coverage for authentication scenarios
-
-### v0.3.3 (2025-07-15)
-- **Audio Button Performance Optimization COMPLETED**
-  - YouTube Player pooling system (5 players, LRU management)
-  - 87% memory reduction (200-400MB → 25-50MB)
-  - 98% API call reduction (100-150 → 1 call)
-  - 96 audio buttons display capacity (92% improvement)
-  - Virtualization with react-window integration
-  - Progressive loading system (skeleton → preview → full)
-
-### v0.3.2 (2025-07-13)
-- Google AdSense integration with CSP compliance
-- Cookie consent system for GDPR compliance
-- Security policy updates for ad serving
-
-### v0.3.1 (2025-07-09)
-- DLsite data collection system optimization
-- Complete removal of salesCount functionality
-
----
-
-**Last Updated**: 2025-07-26  
-**Document Version**: 3.5 (Entity System Unification)
+**Last Updated**: 2025-07-28
+**Document Version**: 4.0 (Simplified for AI focus)

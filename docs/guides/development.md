@@ -1,15 +1,43 @@
-# suzumina.click 開発ガイド
+# Development Guide
+
+This guide covers setting up your local development environment for suzumina.click.
+
+## Quick Commands
+
+```bash
+# 📦 Setup
+pnpm install && pnpm --filter @suzumina.click/shared-types build
+gcloud auth application-default login
+
+# 🚀 Start development
+cd apps/web && pnpm dev
+
+# ✅ Quality checks (required before commit)
+pnpm check         # Lint + format + typecheck
+pnpm test          # Unit tests (980+ tests)
+
+# 🏗️ Production build
+pnpm build
+
+# 🔍 Test with coverage
+pnpm test:coverage
+
+# 🎨 Storybook
+cd packages/ui && pnpm storybook
+
+# 🔧 Admin app
+cd apps/admin && pnpm dev
+```
 
 ## 📋 概要
 
 suzumina.clickプロジェクトの開発ガイドライン、設計原則、コーディング規約、品質基準を定義します。  
-**Claude Code での開発作業における必須参照ドキュメント**
 
 **技術スタック**: Next.js 15 App Router + TypeScript + Tailwind CSS v4 + Biome  
 **開発体制**: 個人開発・個人運用（本番環境のみ）  
-**バージョン**: v0.3.6 (Entity/Value Object移行完了・作品評価システム実装)  
+**バージョン**: v0.3.8 (Server Component最適化完了)  
 **テスト成果**: 980+件全通過・Entity/Value Objectアーキテクチャ移行・作品評価システム実装  
-**更新日**: 2025年7月24日
+**更新日**: 2025年7月28日
 
 ## 🎯 核心設計原則 (優先度順)
 
