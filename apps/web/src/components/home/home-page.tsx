@@ -1,22 +1,32 @@
-"use client";
-
-// Video型を別途import
-import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import type {
+	AudioButtonPlainObject,
+	FrontendVideoData,
+	WorkPlainObject,
+} from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
 import { Suspense } from "react";
 import {
 	LazyFeaturedAudioButtonsCarousel,
-	LazySearchForm,
+	LazyHomeSearchForm,
 } from "@/components/optimization/lazy-components";
-import { ParallelSectionsContainer } from "@/components/sections/parallel-sections-container";
+import { VideosSection } from "@/components/sections/videos-section";
+import { WorksSection } from "@/components/sections/works-section";
 
 interface HomePageProps {
 	initialAudioButtons: AudioButtonPlainObject[];
+	initialVideos: FrontendVideoData[];
+	initialWorks: WorkPlainObject[];
+	initialAllAgesWorks: WorkPlainObject[];
 }
 
-export function HomePage({ initialAudioButtons }: HomePageProps) {
+export function HomePage({
+	initialAudioButtons,
+	initialVideos,
+	initialWorks,
+	initialAllAgesWorks,
+}: HomePageProps) {
 	return (
 		<div>
 			{/* メインビジュアル - LCP最適化済み + suzukaブランドカラー背景 */}
@@ -46,9 +56,7 @@ export function HomePage({ initialAudioButtons }: HomePageProps) {
 							あーたたちが集まる、あーたたちのためのファンサイトです
 						</p>
 						{/* 検索フォームをClient Componentに分離 - 遅延読み込み対応 */}
-						<Suspense fallback={<LoadingSkeleton variant="form" />}>
-							<LazySearchForm />
-						</Suspense>
+						<LazyHomeSearchForm />
 
 						{/* プレビューリリース案内バナー */}
 						<div className="mt-6 sm:mt-8 mx-auto max-w-3xl">
@@ -120,8 +128,16 @@ export function HomePage({ initialAudioButtons }: HomePageProps) {
 				</div>
 			</section>
 
-			{/* 新着動画・作品セクション - 真の並列読み込み */}
-			<ParallelSectionsContainer />
+			{/* 新着動画セクション */}
+			<VideosSection videos={initialVideos} loading={false} error={null} />
+
+			{/* 新着作品セクション */}
+			<WorksSection
+				works={initialWorks}
+				allAgesWorks={initialAllAgesWorks}
+				loading={false}
+				error={null}
+			/>
 
 			{/* コミュニティセクション - 遅延読み込み最適化 */}
 			<section
