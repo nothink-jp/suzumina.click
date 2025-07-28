@@ -1,5 +1,3 @@
-"use client";
-
 import type {
 	AudioButtonPlainObject,
 	FrontendVideoData,
@@ -11,7 +9,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import {
 	LazyFeaturedAudioButtonsCarousel,
-	LazySearchForm,
+	LazyHomeSearchForm,
 } from "@/components/optimization/lazy-components";
 import { VideosSection } from "@/components/sections/videos-section";
 import { WorksSection } from "@/components/sections/works-section";
@@ -58,9 +56,7 @@ export function HomePage({
 							あーたたちが集まる、あーたたちのためのファンサイトです
 						</p>
 						{/* 検索フォームをClient Componentに分離 - 遅延読み込み対応 */}
-						<Suspense fallback={<LoadingSkeleton variant="form" />}>
-							<LazySearchForm />
-						</Suspense>
+						<LazyHomeSearchForm />
 
 						{/* プレビューリリース案内バナー */}
 						<div className="mt-6 sm:mt-8 mx-auto max-w-3xl">

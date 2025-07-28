@@ -29,6 +29,13 @@ export const LazySearchForm = lazy(() =>
 	import("@/components/search/search-form").then((module) => ({ default: module.default })),
 );
 
+// ホームページ用検索フォームの遅延読み込み（Server Component対応）
+export const LazyHomeSearchForm = lazy(() =>
+	import("@/components/home/home-search-form").then((module) => ({
+		default: module.HomeSearchForm,
+	})),
+);
+
 // ユーザーメニューの遅延読み込み
 export const LazyUserMenu = lazy(() =>
 	import("@/components/user/user-menu").then((module) => ({ default: module.default })),

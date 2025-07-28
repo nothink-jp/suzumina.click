@@ -1,4 +1,4 @@
-import { HomePage } from "@/components/layout/home-page";
+import { HomePage } from "@/components/home/home-page";
 import { getLatestAudioButtons, getLatestVideos, getLatestWorks } from "./actions";
 
 // Static generation with ISR for better performance
