@@ -1,6 +1,5 @@
 "use server";
 
-import { FieldValue } from "@google-cloud/firestore";
 import {
 	createDiscordAvatarUrl,
 	type FirestoreUserData,
@@ -249,7 +248,8 @@ function buildUsersQuery(
 			firestoreQuery = firestoreQuery.orderBy("createdAt", "asc");
 			break;
 		case "mostActive":
-			firestoreQuery = firestoreQuery.orderBy("totalPlayCount", "desc");
+			// totalPlayCountフィールドが削除されたため、作成日時でソート
+			firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
 			break;
 		case "alphabetical":
 			firestoreQuery = firestoreQuery.orderBy("displayName", "asc");
@@ -427,80 +427,6 @@ export async function getUserById(
 		return {
 			success: false,
 			error: "ユーザー情報の取得に失敗しました",
-		};
-	}
-}
-
-/**
- * ユーザー統計を更新するServer Action（内部使用）
- */
-export async function updateUserStats(
-	userId: string,
-	stats: {
-		incrementAudioButtons?: boolean;
-		incrementPlayCount?: number;
-		decrementAudioButtons?: boolean;
-		decrementPlayCount?: number;
-	},
-): Promise<{ success: boolean; error?: string }> {
-	try {
-		if (!userId || typeof userId !== "string") {
-			return {
-				success: false,
-				error: "ユーザーIDが指定されていません",
-			};
-		}
-
-		const firestore = getFirestore();
-		const userRef = firestore.collection("users").doc(userId);
-
-		// ユーザーの存在確認
-		const userDoc = await userRef.get();
-		if (!userDoc.exists) {
-			return {
-				success: false,
-				error: "指定されたユーザーが見つかりません",
-			};
-		}
-
-		// 更新データの作成
-		const updateData: Record<string, unknown> = {
-			updatedAt: new Date().toISOString(),
-		};
-
-		if (stats.incrementAudioButtons) {
-			updateData.audioButtonsCount = FieldValue.increment(1);
-		}
-
-		if (stats.decrementAudioButtons) {
-			updateData.audioButtonsCount = FieldValue.increment(-1);
-		}
-
-		if (stats.incrementPlayCount) {
-			updateData.totalPlayCount = FieldValue.increment(stats.incrementPlayCount);
-		}
-
-		if (stats.decrementPlayCount) {
-			updateData.totalPlayCount = FieldValue.increment(-stats.decrementPlayCount);
-		}
-
-		// Firestoreを更新
-		await userRef.update(updateData);
-
-		// 統計情報更新時はページリロードを避けるため、revalidatePathを削除
-
-		return { success: true };
-	} catch (error) {
-		logger.error("ユーザー統計更新でエラーが発生しました", {
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
-			userId,
-			stats,
-		});
-
-		return {
-			success: false,
-			error: "ユーザー統計の更新に失敗しました",
 		};
 	}
 }
