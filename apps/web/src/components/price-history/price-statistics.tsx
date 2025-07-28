@@ -7,6 +7,33 @@ interface PriceStatisticsProps {
 	className?: string;
 }
 
+// 通貨コードとロケールコードのマッピング
+const CURRENCY_TO_LOCALE_MAP: Record<string, string> = {
+	USD: "en_US",
+	EUR: "de_DE",
+	CNY: "zh_CN",
+	TWD: "zh_TW",
+	KRW: "ko_KR",
+};
+
+// 定価を取得する関数
+function getOfficialPrice(
+	currentRecord: PriceHistoryDocument | undefined,
+	currency: string,
+): number | null {
+	if (!currentRecord) return null;
+
+	if (currency === "JPY") {
+		return currentRecord.officialPrice;
+	}
+
+	const localeCode = CURRENCY_TO_LOCALE_MAP[currency];
+	if (!localeCode) return null;
+
+	const price = currentRecord.localeOfficialPrice?.[localeCode];
+	return price !== undefined ? price : null;
+}
+
 export function PriceStatistics({
 	priceHistory,
 	currency = "JPY",
@@ -23,15 +50,17 @@ export function PriceStatistics({
 		return `${value.toLocaleString()} ${currency}`;
 	};
 
-	// 価格統計を計算
-	const stats = calculatePriceStatistics(priceHistory);
+	// 価格統計を計算（通貨指定）
+	const stats = calculatePriceStatistics(priceHistory, currency);
 	const { minPrice, maxPrice, currentPrice, avgPrice, priceChangeCount, campaignCount } = stats;
 
 	// 現在セール中かどうか
 	const currentRecord = priceHistory[priceHistory.length - 1];
-	const isCurrentlyOnSale = currentRecord?.discountPrice !== undefined;
-	const currentSalePrice = currentRecord?.discountPrice;
+	const isCurrentlyOnSale = currentRecord?.discountRate && currentRecord.discountRate > 0;
 	const currentDiscountRate = currentRecord?.discountRate || 0;
+
+	// 通貨別の定価を取得
+	const officialPrice = getOfficialPrice(currentRecord, currency);
 
 	return (
 		<div className={`grid grid-cols-2 gap-4 sm:grid-cols-4 ${className}`}>
@@ -39,10 +68,10 @@ export function PriceStatistics({
 			<div className="rounded-lg bg-blue-50 p-4">
 				<div className="text-sm font-medium text-blue-600">現在価格</div>
 				<div className="text-lg font-bold text-blue-900">{formatPrice(currentPrice)}</div>
-				{isCurrentlyOnSale && currentSalePrice && (
+				{isCurrentlyOnSale && officialPrice !== null && (
 					<div className="mt-1">
-						<div className="text-sm font-semibold text-red-600">
-							セール価格: {formatPrice(currentSalePrice)}
+						<div className="text-sm text-gray-600 line-through">
+							定価: {formatPrice(officialPrice)}
 						</div>
 						<div className="text-xs text-red-500">{currentDiscountRate}% OFF</div>
 					</div>

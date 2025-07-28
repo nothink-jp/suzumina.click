@@ -1,7 +1,6 @@
 import type { DLsiteRawApiResponse, PriceHistoryDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
-import { analyzePriceChanges } from "./price-change-detector";
-import { extractJPYPrice, isValidPriceData } from "./price-extractor";
+import { isValidPriceData } from "./price-extractor";
 
 /**
  * JST（日本標準時）での現在日付を YYYY-MM-DD 形式で取得
@@ -37,12 +36,10 @@ export async function savePriceHistory(
 			return false;
 		}
 
-		// データ検証
-		if (!isValidPriceData(apiResponse)) {
-			return false;
-		}
+		// 価格データの有効性を確認（欠損値も許可）
+		const hasValidPriceData = isValidPriceData(apiResponse);
 
-		// 価格データ有効性確認ログは省略（成功時ログ削減）
+		// データがない場合でも日付のエントリを作成（欠損値として記録）
 
 		// JST（日本標準時）での日付を取得
 		const today = getJSTDate();
@@ -56,71 +53,54 @@ export async function savePriceHistory(
 
 		// 既存データ確認（重複保存防止）
 		const existingDoc = await priceHistoryRef.get();
-		const isFirstRecordToday = !existingDoc.exists;
-
-		// 価格変動分析
-		const priceAnalysis = isFirstRecordToday
-			? { priceChanged: false, newCampaign: false }
-			: await analyzePriceChanges(workId as string, today as string, apiResponse);
-
-		// 価格データ構築
-		const regularPrice = extractJPYPrice(apiResponse, "regular");
-		const discountPrice = extractJPYPrice(apiResponse, "discount");
-		const discountRate = apiResponse.discount_rate || 0;
-
-		// locale_price を LocalePrice 形式に変換
-		// locale_priceを LocalePrice 配列形式に変換（配列/オブジェクト両対応）
-		let localePrices: Array<{ currency: string; price: number; priceString: string }> = [];
-
-		if (Array.isArray(apiResponse.locale_price)) {
-			// 配列の場合はpriceStringを追加
-			localePrices = apiResponse.locale_price.map((item) => ({
-				currency: item.currency,
-				price: item.price,
-				priceString: `${item.price} ${item.currency}`,
-			}));
-		} else if (typeof apiResponse.locale_price === "object" && apiResponse.locale_price !== null) {
-			// オブジェクトの場合は配列に変換
-			const localePriceObj = apiResponse.locale_price as Record<string, number>;
-			localePrices = Object.entries(localePriceObj).map(([currencyCode, price]) => ({
-				currency: currencyCode,
-				price: price,
-				priceString: `${price} ${currencyCode}`,
-			}));
+		if (existingDoc.exists) {
+			// 既にデータが存在する場合はスキップ
+			return true;
 		}
 
+		// locale_price/locale_official_priceを正規化（配列の場合はオブジェクトに変換）
+		const normalizeLocalePrice = (
+			localePrice?: Record<string, number> | Array<{ currency: string; price: number }>,
+		): Record<string, number> => {
+			if (!localePrice) return {};
+			if (Array.isArray(localePrice)) {
+				return localePrice.reduce(
+					(acc, item) => {
+						acc[item.currency] = item.price;
+						return acc;
+					},
+					{} as Record<string, number>,
+				);
+			}
+			return localePrice;
+		};
+
+		// 価格データを構築（欠損値の場合はnullを設定）
 		const priceData: PriceHistoryDocument = {
 			workId: workId as string,
 			date: today as string,
 			capturedAt: getJSTDateTime(), // JST時刻
 
-			// 変換された多通貨価格データ
-			localePrices,
+			// 日本円価格（データがない場合はnull）
+			price: hasValidPriceData ? (apiResponse.price ?? null) : null,
+			officialPrice: hasValidPriceData ? (apiResponse.official_price ?? null) : null,
 
-			// JPY価格サマリー（表示用）
-			regularPrice,
-			discountPrice: discountRate > 0 ? discountPrice : undefined,
-			discountRate,
-			campaignId: apiResponse.campaign?.campaign_id
-				? Number(apiResponse.campaign.campaign_id)
-				: undefined,
+			// 国際価格（データがない場合は空のオブジェクト）
+			localePrice: hasValidPriceData ? normalizeLocalePrice(apiResponse.locale_price) : {},
+			localeOfficialPrice: hasValidPriceData
+				? normalizeLocalePrice(apiResponse.locale_official_price)
+				: {},
 
-			// 価格変動検出結果
-			priceChanged: priceAnalysis.priceChanged,
-			newCampaign: priceAnalysis.newCampaign,
-
-			// メタデータ
-			dataSource: "individual_api",
-			apiCallCount: 1,
-			collectionVersion: "1.0",
+			// 割引情報
+			discountRate: hasValidPriceData ? apiResponse.discount_rate || 0 : 0,
+			campaignId:
+				hasValidPriceData && apiResponse.campaign?.campaign_id
+					? Number(apiResponse.campaign.campaign_id)
+					: undefined,
 		};
 
-		// Firestoreに保存（Merge対応）
-		await priceHistoryRef.set(priceData, { merge: true });
-
-		// 価格変動・新キャンペーンの場合のみログ出力
-		if (priceAnalysis.priceChanged || priceAnalysis.newCampaign) {
-		}
+		// Firestoreに保存
+		await priceHistoryRef.set(priceData);
 
 		return true;
 	} catch (_error) {
@@ -176,42 +156,4 @@ export async function saveBulkPriceHistory(
 		failed,
 		failedWorkIds,
 	};
-}
-
-/**
- * 古い価格履歴データのクリーンアップ（全履歴保持のため無効化）
- * この関数は後方互換性のため残していますが、実際には呼び出されません
- * 将来的に保持期間ポリシーが変更された場合に備えて実装を保持
- */
-export async function cleanupOldPriceHistory(
-	_workId: string,
-	_retentionDays: number,
-): Promise<void> {
-	return;
-
-	/* 元の実装（参考のため保持）
-	try {
-		const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000)
-			.toISOString()
-			.split('T')[0];
-		
-		const oldDocsQuery = firestore
-			.collection('dlsiteWorks')
-			.doc(workId)
-			.collection('priceHistory')
-			.where('date', '<', cutoffDate);
-		
-		const snapshot = await oldDocsQuery.get();
-		const batch = firestore.batch();
-		
-		snapshot.docs.forEach(doc => batch.delete(doc.ref));
-		
-		if (snapshot.docs.length > 0) {
-			await batch.commit();
-			console.log(`Cleaned up ${snapshot.docs.length} old price history records for ${workId}`);
-		}
-	} catch (error) {
-		console.error(`Failed to cleanup old price history for ${workId}:`, error);
-	}
-	*/
 }
