@@ -26,6 +26,8 @@ import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-p
 interface UserProfileContentProps {
 	user: FrontendUserData;
 	audioButtons: AudioButtonPlainObject[];
+	audioButtonsCount: number;
+	totalPlayCount: number;
 	isOwnProfile: boolean;
 	favoritesCount?: number;
 }
@@ -142,12 +144,13 @@ function AudioButtonsList({
 export function UserProfileContent({
 	user,
 	audioButtons,
+	audioButtonsCount,
+	totalPlayCount,
 	isOwnProfile,
 	favoritesCount = 0,
 }: UserProfileContentProps) {
 	const [selectedTab, setSelectedTab] = useState<"buttons" | "stats" | "favorites">("buttons");
-	const averagePlays =
-		user.audioButtonsCount > 0 ? Math.round(user.totalPlayCount / user.audioButtonsCount) : 0;
+	const averagePlays = audioButtonsCount > 0 ? Math.round(totalPlayCount / audioButtonsCount) : 0;
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-suzuka-50/30 to-minase-50/30">
@@ -185,12 +188,12 @@ export function UserProfileContent({
 					<CardContent className="p-6">
 						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 							<div className="text-center">
-								<div className="text-2xl font-bold text-suzuka-600">{user.audioButtonsCount}</div>
+								<div className="text-2xl font-bold text-suzuka-600">{audioButtonsCount}</div>
 								<div className="text-sm text-muted-foreground">作成ボタン</div>
 							</div>
 							<div className="text-center">
 								<div className="text-2xl font-bold text-minase-600">
-									{user.totalPlayCount.toLocaleString()}
+									{totalPlayCount.toLocaleString()}
 								</div>
 								<div className="text-sm text-muted-foreground">総再生数</div>
 							</div>
@@ -266,7 +269,7 @@ export function UserProfileContent({
 							<CardContent className="space-y-4">
 								<div className="flex justify-between">
 									<span>総ボタン数</span>
-									<span className="font-semibold">{user.audioButtonsCount}</span>
+									<span className="font-semibold">{audioButtonsCount}</span>
 								</div>
 								<div className="flex justify-between">
 									<span>公開ボタン</span>
@@ -274,9 +277,7 @@ export function UserProfileContent({
 								</div>
 								<div className="flex justify-between">
 									<span>非公開ボタン</span>
-									<span className="font-semibold">
-										{user.audioButtonsCount - audioButtons.length}
-									</span>
+									<span className="font-semibold">{audioButtonsCount - audioButtons.length}</span>
 								</div>
 							</CardContent>
 						</Card>
@@ -290,7 +291,7 @@ export function UserProfileContent({
 							<CardContent className="space-y-4">
 								<div className="flex justify-between">
 									<span>総再生数</span>
-									<span className="font-semibold">{user.totalPlayCount.toLocaleString()}</span>
+									<span className="font-semibold">{totalPlayCount.toLocaleString()}</span>
 								</div>
 								<div className="flex justify-between">
 									<span>平均再生数</span>

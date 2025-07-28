@@ -71,10 +71,6 @@ export const FirestoreUserSchema = z.object({
 	// 権限・ロール
 	role: z.enum(["member", "moderator", "admin"]).default("member"),
 
-	// 統計情報
-	audioButtonsCount: z.number().int().min(0).default(0),
-	totalPlayCount: z.number().int().min(0).default(0),
-
 	// 管理情報
 	createdAt: z.string().datetime({
 		message: "作成日時はISO形式の日時である必要があります",
@@ -101,10 +97,6 @@ export const FrontendUserSchema = z.object({
 	avatar: z.string().nullable().optional(),
 	displayName: z.string(),
 	role: z.enum(["member", "moderator", "admin"]),
-
-	// 表示用統計情報
-	audioButtonsCount: z.number().int().min(0),
-	totalPlayCount: z.number().int().min(0),
 
 	// 表示用日時
 	createdAt: z.string().datetime(),

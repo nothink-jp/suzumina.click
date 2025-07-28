@@ -2,7 +2,6 @@
  * ユーザー関連のFirestore操作を提供するモジュール
  */
 
-import type { Query } from "@google-cloud/firestore";
 import {
 	type CreateUserInput,
 	createDiscordAvatarUrl,
@@ -14,8 +13,6 @@ import {
 	formatRelativeTime,
 	resolveDisplayName,
 	type UpdateUserInput,
-	type UserListResult,
-	type UserQuery,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
 import { error as logError } from "./logger";
@@ -31,8 +28,6 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
 		avatar: data.avatar,
 		displayName: data.displayName,
 		role: data.role,
-		audioButtonsCount: data.audioButtonsCount,
-		totalPlayCount: data.totalPlayCount,
 		createdAt: data.createdAt,
 		lastLoginAt: data.lastLoginAt,
 		isPublicProfile: data.isPublicProfile,
@@ -65,37 +60,6 @@ export async function getUserByDiscordId(discordId: string): Promise<FrontendUse
 		}
 
 		const userData = userDoc.data() as FirestoreUserData;
-
-		// リアルタイムで統計情報を集計
-		try {
-			// 音声ボタン数を集計
-			const audioButtonsQuery = firestore
-				.collection("audioButtons")
-				.where("createdBy", "==", discordId);
-
-			const countSnapshot = await audioButtonsQuery.count().get();
-			const audioButtonsCount = countSnapshot.data().count;
-
-			// 総再生数を集計（ドキュメントを取得して合計）
-			const audioButtonsSnapshot = await audioButtonsQuery.get();
-			const totalPlayCount = audioButtonsSnapshot.docs.reduce((sum, doc) => {
-				const data = doc.data();
-				return sum + (data.playCount || 0);
-			}, 0);
-
-			// リアルタイム集計値で上書き
-			userData.audioButtonsCount = audioButtonsCount;
-			userData.totalPlayCount = totalPlayCount;
-		} catch (statsError) {
-			// 統計情報の取得に失敗してもユーザー情報は返す
-			if (process.env.NODE_ENV === "development") {
-				logError("統計情報の集計エラー:", { discordId, error: statsError });
-			}
-			// エラー時はデフォルト値を使用
-			userData.audioButtonsCount = 0;
-			userData.totalPlayCount = 0;
-		}
-
 		return convertToFrontendUser(userData);
 	} catch (error) {
 		// 開発環境でのみエラーログを出力
@@ -128,8 +92,6 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 			displayName,
 			isActive: true,
 			role: "member", // 新規ユーザーは全てmember権限から開始
-			audioButtonsCount: 0,
-			totalPlayCount: 0,
 			createdAt: now,
 			updatedAt: now,
 			lastLoginAt: now,
@@ -194,110 +156,6 @@ export async function updateLastLogin(discordId: string): Promise<void> {
 		});
 	} catch (_error) {
 		// ログイン時刻更新の失敗は致命的ではないため、エラーを投げない
-	}
-}
-
-/**
- * ユーザーの統計情報を更新 (Fire-and-Forget パターン)
- * @deprecated リアルタイム集計に移行したため、この関数は不要になりました
- */
-export async function updateUserStats(
-	_discordId: string,
-	_updates: {
-		incrementAudioButtons?: boolean;
-		incrementPlayCount?: number;
-	},
-): Promise<void> {
-	// リアルタイム集計に移行したため、この関数は何もしません
-	// 後方互換性のために残していますが、将来的に削除予定
-	return Promise.resolve();
-}
-
-/**
- * ユーザーの統計情報を再計算（リアルタイム集計なので実際には何もしない）
- * @deprecated リアルタイム集計に移行したため、この関数は不要になりました
- */
-export async function recalculateUserStats(_discordId: string): Promise<void> {
-	// リアルタイム集計に移行したため、この関数は何もしません
-	// 後方互換性のために残していますが、将来的に削除予定
-	return Promise.resolve();
-}
-
-/**
- * ユーザー一覧を取得（管理者用）
- */
-export async function getUserList(query: UserQuery): Promise<UserListResult> {
-	try {
-		const firestore = getFirestore();
-		let firestoreQuery: Query = firestore.collection("users");
-
-		// 公開プロファイルのみのフィルター
-		if (query.onlyPublic) {
-			firestoreQuery = firestoreQuery.where("isPublicProfile", "==", true);
-		}
-
-		// ロールフィルター
-		if (query.role) {
-			firestoreQuery = firestoreQuery.where("role", "==", query.role);
-		}
-
-		// ソート設定
-		switch (query.sortBy) {
-			case "newest":
-				firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
-				break;
-			case "oldest":
-				firestoreQuery = firestoreQuery.orderBy("createdAt", "asc");
-				break;
-			case "mostActive":
-				firestoreQuery = firestoreQuery.orderBy("lastLoginAt", "desc");
-				break;
-			case "alphabetical":
-				firestoreQuery = firestoreQuery.orderBy("displayName", "asc");
-				break;
-			default:
-				firestoreQuery = firestoreQuery.orderBy("createdAt", "desc");
-		}
-
-		// ページネーション
-		if (query.startAfter) {
-			const startAfterDoc = await firestore.collection("users").doc(query.startAfter).get();
-			if (startAfterDoc.exists) {
-				firestoreQuery = firestoreQuery.startAfter(startAfterDoc);
-			}
-		}
-
-		firestoreQuery = firestoreQuery.limit(query.limit + 1); // +1 for hasMore check
-
-		const snapshot = await firestoreQuery.get();
-		const docs = snapshot.docs;
-
-		const hasMore = docs.length > query.limit;
-		const users = docs.slice(0, query.limit).map((doc) => {
-			const userData = doc.data() as FirestoreUserData;
-			return convertToFrontendUser(userData);
-		});
-
-		// テキスト検索（フロントエンド側でフィルタリング）
-		let filteredUsers = users;
-		if (query.searchText) {
-			const searchTerms = query.searchText.toLowerCase().split(/\s+/);
-			filteredUsers = users.filter((user) => {
-				const searchableText = [user.username, user.globalName || "", user.displayName]
-					.join(" ")
-					.toLowerCase();
-
-				return searchTerms.every((term) => searchableText.includes(term));
-			});
-		}
-
-		return {
-			users: filteredUsers,
-			hasMore,
-			lastUser: filteredUsers.length > 0 ? filteredUsers[filteredUsers.length - 1] : undefined,
-		};
-	} catch (_error) {
-		throw new Error("ユーザー一覧の取得に失敗しました");
 	}
 }
 

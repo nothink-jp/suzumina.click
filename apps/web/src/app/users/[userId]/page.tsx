@@ -26,10 +26,10 @@ export async function generateMetadata({ params }: UserProfilePageProps): Promis
 
 		return {
 			title: `${user.displayName}のプロフィール | すずみなくりっく！`,
-			description: `${user.displayName}さんの作成した音声ボタン${user.audioButtonsCount}個をチェック。涼花みなせファンコミュニティ suzumina.click`,
+			description: `${user.displayName}さんの作成した音声ボタンをチェック。涼花みなせファンコミュニティ suzumina.click`,
 			openGraph: {
 				title: `${user.displayName}のプロフィール`,
-				description: `音声ボタン${user.audioButtonsCount}個、再生数${user.totalPlayCount}回`,
+				description: `${user.displayName}さんのプロフィール`,
 				images: user.avatarUrl ? [{ url: user.avatarUrl }] : undefined,
 			},
 		};
@@ -57,13 +57,6 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 		notFound();
 	}
 
-	// 現在のユーザーの情報を取得（管理者権限確認用）
-	let currentUser = null;
-	if (session?.user?.discordId) {
-		currentUser = await getUserByDiscordId(session.user.discordId);
-	}
-	const isAdmin = currentUser?.role === "admin";
-
 	// ユーザーが作成した音声ボタンを取得
 	let audioButtons: AudioButtonPlainObject[] = [];
 	try {
@@ -71,6 +64,10 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 	} catch (_error) {
 		// エラーが発生しても空の配列で続行
 	}
+
+	// 統計情報を計算
+	const audioButtonsCount = audioButtons.length;
+	const totalPlayCount = audioButtons.reduce((sum, button) => sum + (button.playCount || 0), 0);
 
 	// お気に入り数を取得（自分のプロフィールの場合のみ）
 	let favoritesCount = 0;
@@ -82,6 +79,8 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 		<UserProfileContent
 			user={user}
 			audioButtons={audioButtons}
+			audioButtonsCount={audioButtonsCount}
+			totalPlayCount={totalPlayCount}
 			isOwnProfile={isOwnProfile}
 			favoritesCount={favoritesCount}
 		/>

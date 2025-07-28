@@ -104,27 +104,10 @@ export function ProfileSettingsForm({ user }: ProfileSettingsFormProps) {
 
 			<Card className="mb-6">
 				<CardHeader>
-					<CardTitle>統計情報</CardTitle>
-					<CardDescription>あなたの活動記録</CardDescription>
+					<CardTitle>アカウント情報</CardTitle>
+					<CardDescription>あなたの登録情報</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
-					<div className="flex justify-between">
-						<span className="text-muted-foreground">作成した音声ボタン</span>
-						<span className="font-medium">{user.audioButtonsCount}個</span>
-					</div>
-					<div className="flex justify-between">
-						<span className="text-muted-foreground">総再生数</span>
-						<span className="font-medium">{user.totalPlayCount.toLocaleString()}回</span>
-					</div>
-					<div className="flex justify-between">
-						<span className="text-muted-foreground">平均再生数</span>
-						<span className="font-medium">
-							{user.audioButtonsCount > 0
-								? Math.round(user.totalPlayCount / user.audioButtonsCount).toLocaleString()
-								: 0}
-							回
-						</span>
-					</div>
 					<div className="flex justify-between">
 						<span className="text-muted-foreground">メンバー登録日</span>
 						<span className="font-medium">{user.memberSince}</span>
