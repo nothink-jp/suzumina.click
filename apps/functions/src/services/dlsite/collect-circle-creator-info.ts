@@ -7,17 +7,16 @@
 
 import { FieldValue, Firestore } from "@google-cloud/firestore";
 import type {
+	CircleData,
 	CreatorType,
 	CreatorWorkMapping,
 	DLsiteRawApiResponse,
 	WorkDocument,
 } from "@suzumina.click/shared-types";
 import { CircleEntity, isValidCircleId, isValidCreatorId } from "@suzumina.click/shared-types";
-import { CircleRepository } from "../../repositories/circle-repository";
 import * as logger from "../../shared/logger";
 
 const adminDb = new Firestore();
-const circleRepository = new CircleRepository(adminDb);
 
 /**
  * サークル・クリエイター情報を収集・保存
@@ -59,7 +58,7 @@ export async function collectCircleAndCreatorInfo(
 }
 
 /**
- * サークル情報を更新（Repositoryパターン使用）
+ * サークル情報を更新（直接Firestore操作）
  */
 async function updateCircleInfo(
 	batch: FirebaseFirestore.WriteBatch,
@@ -75,11 +74,11 @@ async function updateCircleInfo(
 		return;
 	}
 
-	// Repositoryを使ってサークルを取得
-	const existingCircle = await circleRepository.findById(circleId);
+	// 直接Firestoreから取得
 	const circleRef = adminDb.collection("circles").doc(circleId);
+	const circleDoc = await circleRef.get();
 
-	if (!existingCircle) {
+	if (!circleDoc.exists) {
 		// 新規サークル作成
 		const newCircle = CircleEntity.create(
 			circleId,
@@ -97,6 +96,12 @@ async function updateCircleInfo(
 		});
 	} else {
 		// 既存サークルの更新
+		const existingData = circleDoc.data() as CircleData;
+		const existingCircle = CircleEntity.fromFirestoreData({
+			...existingData,
+			circleId: circleDoc.id,
+		});
+
 		let updatedCircle = existingCircle;
 
 		// 名前が変更されている場合は更新

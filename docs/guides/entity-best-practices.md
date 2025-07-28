@@ -1,8 +1,30 @@
 # Entity利用のベストプラクティス
 
+> **📅 最終更新**: 2025年7月28日  
+> **📝 ステータス**: v2.0 - Minimal DDD アプローチの明文化  
+> **🎯 目的**: Cloud FunctionsとNext.js 15に最適化されたEntity実装ガイド
+
 ## 概要
 
 このドキュメントでは、suzumina.clickプロジェクトにおけるEntity利用のベストプラクティスを説明します。
+
+## 🚨 重要: Minimal DDD アプローチ
+
+**本プロジェクトでは、純粋なオブジェクト指向や厳密なDDDではなく、Cloud FunctionsとNext.js 15に最適化された最小限のDDDを採用しています。**
+
+### 設計原則
+
+1. **薄いオブジェクト構成** - オーバーヘッドを最小限に抑える
+2. **直接的なFirestoreアクセス** - Repositoryパターンは使用しない
+3. **TypeScriptの型安全性を活用** - 実行時オーバーヘッドを避ける
+4. **実用性重視** - 理論的純粋性より実装のシンプルさを優先
+
+### ❌ 使用しないパターン
+
+- **Repository パターン** - 不要な抽象化層を追加しない
+- **Unit of Work パターン** - Firestoreのトランザクション機能で十分
+- **複雑な集約** - エンティティは単純に保つ
+- **過度なカプセル化** - 必要最小限のプライベートプロパティ
 
 ## 1. Next.js App Router (Server Actions)
 
@@ -46,70 +68,84 @@ export function CirclePageClient({ circle, initialData }: CirclePageClientProps)
 
 ## 2. Cloud Functions
 
-### Repositoryパターンの活用
+### 直接的なFirestoreアクセス
 
-Cloud FunctionsではRepositoryパターンを使用してFirestoreアクセスを抽象化します。
+Cloud FunctionsではEntityを使用しつつ、直接Firestoreにアクセスします。Repositoryパターンは使用しません。
 
 ```typescript
-// repositories/circle-repository.ts
-export class CircleRepository {
-  constructor(private readonly db: Firestore) {}
+// services/dlsite/collect-circle-creator-info.ts
+async function updateCircleInfo(
+  batch: FirebaseFirestore.WriteBatch,
+  apiData: DLsiteRawApiResponse,
+  isNewWork: boolean
+): Promise<void> {
+  const circleId = apiData.maker_id;
+  if (!circleId || !isValidCircleId(circleId)) return;
 
-  async findById(circleId: string): Promise<CircleEntity | null> {
-    if (!isValidCircleId(circleId)) {
-      return null;
-    }
-    
-    const doc = await this.db.collection("circles").doc(circleId).get();
-    if (!doc.exists) {
-      return null;
-    }
-    
-    return CircleEntity.fromFirestoreData({
-      ...doc.data(),
-      circleId: doc.id,
-    });
-  }
-  
-  async save(entity: CircleEntity): Promise<boolean> {
-    const data = entity.toFirestore();
-    await this.db.collection("circles").doc(entity.circleId).set({
-      ...data,
+  // 直接Firestoreから取得
+  const circleRef = adminDb.collection("circles").doc(circleId);
+  const circleDoc = await circleRef.get();
+
+  if (!circleDoc.exists) {
+    // 新規作成 - Entityを使用してドメインロジックを適用
+    const newCircle = CircleEntity.create(
+      circleId,
+      apiData.maker_name || "",
+      undefined,
+      1
+    );
+
+    const circleData = newCircle.toFirestore();
+    batch.set(circleRef, {
+      ...circleData,
       lastUpdated: FieldValue.serverTimestamp(),
-    }, { merge: true });
-    return true;
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } else {
+    // 既存更新 - Entityで変更を管理
+    const existingData = circleDoc.data() as CircleData;
+    const existingCircle = CircleEntity.fromFirestoreData({
+      ...existingData,
+      circleId: circleDoc.id,
+    });
+
+    let updatedCircle = existingCircle;
+    
+    if (apiData.maker_name !== existingCircle.circleName) {
+      updatedCircle = existingCircle.updateName(apiData.maker_name);
+    }
+    if (isNewWork) {
+      updatedCircle = updatedCircle.incrementWorkCount();
+    }
+
+    if (updatedCircle !== existingCircle) {
+      batch.update(circleRef, {
+        name: updatedCircle.circleName,
+        workCount: updatedCircle.workCountNumber,
+        lastUpdated: FieldValue.serverTimestamp(),
+      });
+    }
   }
 }
 ```
 
-### サービス層での利用
+### Work Entityの利用例
 
 ```typescript
-// services/dlsite/collect-circle-creator-info.ts
-const circleRepository = new CircleRepository(adminDb);
-
-async function updateCircleInfo(apiData: DLsiteRawApiResponse, isNewWork: boolean) {
-  const existingCircle = await circleRepository.findById(apiData.maker_id);
-  
-  if (!existingCircle) {
-    // 新規作成
-    const newCircle = CircleEntity.create(
-      apiData.maker_id,
-      apiData.maker_name,
-      undefined,
-      1
-    );
-    await circleRepository.save(newCircle);
-  } else {
-    // 更新
-    let updated = existingCircle;
-    if (apiData.maker_name !== existingCircle.circleName) {
-      updated = existingCircle.updateName(apiData.maker_name);
+// services/domain/work-classification-service.ts
+static determineMainCategory(work: WorkDocument): string {
+  try {
+    // WorkDocumentから直接Entityを作成
+    const workEntity = Work.fromFirestoreData(work);
+    if (!workEntity) {
+      return WorkClassificationService.determineMainCategoryFromFormat(work.workFormat);
     }
-    if (isNewWork) {
-      updated = updated.incrementWorkCount();
-    }
-    await circleRepository.save(updated);
+    
+    // Entityのメソッドを使用してビジネスロジックを実行
+    return workEntity.determineCategory();
+  } catch (error) {
+    logger.warn("Failed to create Work entity", error);
+    return "その他";
   }
 }
 ```
@@ -182,26 +218,53 @@ describe("CircleEntity", () => {
 });
 ```
 
-### Repository層のテスト
+### サービス層のテスト
 
-Firestoreをモックしてテスト：
+Firestoreをモックしてサービス層をテスト：
 
 ```typescript
-describe("CircleRepository", () => {
-  it("サークルを保存できる", async () => {
-    mockSet.mockResolvedValueOnce(undefined);
-    const entity = CircleEntity.create("RG12345", "テストサークル");
-    const result = await repository.save(entity);
-    expect(result).toBe(true);
+describe("updateCircleInfo", () => {
+  it("新規サークルを作成できる", async () => {
+    mockGet.mockResolvedValueOnce({ exists: false });
+    
+    const batch = { set: jest.fn() };
+    await updateCircleInfo(batch, mockApiData, true);
+    
+    expect(batch.set).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        circleId: "RG12345",
+        name: "テストサークル",
+        workCount: 1,
+      })
+    );
   });
 });
 ```
 
 ## まとめ
 
-1. **Next.js**: Server ComponentsではPlain Objectを使用
-2. **Cloud Functions**: Repositoryパターンでデータアクセスを抽象化
-3. **共通**: 入力検証、エラーハンドリング、不変性の維持
-4. **テスト**: 各層で適切なテストを実装
+### Minimal DDD の実装指針
 
-これらのパターンに従うことで、型安全で保守性の高いコードを実現できます。
+1. **Next.js**: Server ComponentsではPlain Objectを使用
+2. **Cloud Functions**: 直接Firestoreアクセス（Repositoryパターンは使用しない）
+3. **Entity**: ドメインロジックとバリデーションのみに集中
+4. **共通**: 入力検証、エラーハンドリング、不変性の維持
+5. **テスト**: サービス層とEntity自体のテストに集中
+
+### 既存Entityの参考実装
+
+- **Work Entity**: `packages/shared-types/src/entities/work.ts`
+- **Video Entity**: `packages/shared-types/src/entities/video.ts`
+- **AudioButton Entity**: `packages/shared-types/src/entities/audio-button.ts`
+
+これらの既存実装を参考に、シンプルで実用的なEntityを実装してください。
+
+### 実装時の注意点
+
+- 過度な抽象化を避ける
+- Firestoreの機能を最大限活用する
+- TypeScriptの型システムで安全性を担保する
+- 実行時のパフォーマンスを常に意識する
+
+このアプローチにより、Cloud FunctionsとNext.js 15の特性に最適化された、メンテナンス性の高いコードベースを維持できます。

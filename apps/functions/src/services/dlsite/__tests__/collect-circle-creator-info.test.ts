@@ -12,12 +12,66 @@ const mockBatch = {
 	commit: vi.fn().mockResolvedValue(undefined),
 };
 
-const mockDoc = {
-	get: vi.fn(),
+// Create separate mocks for circles and creatorWorkMappings
+const mockCircleDoc = {
+	id: "RG12345",
+	exists: true,
+	data: vi.fn(),
+};
+
+const mockCircleRef = {
+	get: vi.fn(() => Promise.resolve(mockCircleDoc)),
+};
+
+const mockMappingDoc = {
+	id: "creator1_RJ123456",
+	exists: false,
+	data: vi.fn(),
+};
+
+const mockMappingRef = {
+	get: vi.fn(() => Promise.resolve(mockMappingDoc)),
+};
+
+const mockMappingDoc2 = {
+	id: "creator2_RJ123456",
+	exists: false,
+	data: vi.fn(),
+};
+
+const mockMappingRef2 = {
+	get: vi.fn(() => Promise.resolve(mockMappingDoc2)),
+};
+
+const mockMappingDoc3 = {
+	id: "creator3_RJ123456",
+	exists: false,
+	data: vi.fn(),
+};
+
+const mockMappingRef3 = {
+	get: vi.fn(() => Promise.resolve(mockMappingDoc3)),
 };
 
 const mockCollection = {
-	doc: vi.fn(() => mockDoc),
+	doc: vi.fn((id: string) => {
+		// Return different mock refs based on the collection/document ID
+		if (id === "creator1_RJ123456") {
+			return mockMappingRef;
+		}
+		if (id === "creator2_RJ123456") {
+			return mockMappingRef2;
+		}
+		if (id === "creator3_RJ123456") {
+			return mockMappingRef3;
+		}
+		if (id.includes("_")) {
+			// Default creator mapping document
+			return mockMappingRef;
+		}
+		// This is a circle document
+		return mockCircleRef;
+	}),
 };
 
 const mockFirestore = {
@@ -49,6 +103,22 @@ const { collectCircleAndCreatorInfo, batchCollectCircleAndCreatorInfo } = await 
 describe("collect-circle-creator-info", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Reset the document ID in case tests change it
+		mockCircleDoc.id = "RG12345";
+		mockCircleDoc.exists = false;
+		mockCircleDoc.data.mockReturnValue({});
+
+		mockMappingDoc.id = "creator1_RJ123456";
+		mockMappingDoc.exists = false;
+		mockMappingDoc.data.mockReturnValue({});
+
+		mockMappingDoc2.id = "creator2_RJ123456";
+		mockMappingDoc2.exists = false;
+		mockMappingDoc2.data.mockReturnValue({});
+
+		mockMappingDoc3.id = "creator3_RJ123456";
+		mockMappingDoc3.exists = false;
+		mockMappingDoc3.data.mockReturnValue({});
 	});
 
 	describe("collectCircleAndCreatorInfo", () => {
@@ -75,13 +145,16 @@ describe("collect-circle-creator-info", () => {
 
 		it("新規サークルを正しく作成する", async () => {
 			// 新規サークルの場合
-			mockDoc.get.mockResolvedValue({ exists: false });
+			mockCircleDoc.exists = false;
+			mockMappingDoc.exists = false;
+			mockMappingDoc2.exists = false;
+			mockMappingDoc3.exists = false;
 
 			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData, true);
 
 			expect(result.success).toBe(true);
 			expect(mockBatch.set).toHaveBeenCalledWith(
-				mockDoc,
+				mockCircleRef,
 				expect.objectContaining({
 					circleId: "RG12345",
 					name: "テストサークル",
@@ -95,50 +168,60 @@ describe("collect-circle-creator-info", () => {
 
 		it("既存サークルの新作品を正しく更新する", async () => {
 			// 既存サークルの場合
-			mockDoc.get.mockResolvedValue({
-				exists: true,
-				data: () => ({ name: "既存サークル", workCount: 5 }),
+			mockCircleDoc.exists = true;
+			mockCircleDoc.data.mockReturnValue({
+				// circleId is not in the document data, it comes from doc.id
+				name: "既存サークル",
+				workCount: 5,
 			});
+			mockMappingDoc.exists = false;
+			mockMappingDoc2.exists = false;
+			mockMappingDoc3.exists = false;
 
 			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData, true);
 
 			expect(result.success).toBe(true);
 			expect(mockBatch.update).toHaveBeenCalledWith(
-				mockDoc,
+				mockCircleRef,
 				expect.objectContaining({
 					name: "テストサークル",
-					workCount: { incrementValue: 1 },
+					workCount: 6, // Entity incrementWorkCount returns the new value
 					lastUpdated: "SERVER_TIMESTAMP",
 				}),
 			);
 		});
 
 		it("既存作品の更新時はworkCountを増加させない", async () => {
-			mockDoc.get.mockResolvedValue({
-				exists: true,
-				data: () => ({ name: "既存サークル", workCount: 5 }),
+			// circles用とcreatorWorkMappings用の両方をモック
+			mockCircleDoc.exists = true;
+			mockCircleDoc.data.mockReturnValue({
+				// circleId is not in the document data, it comes from doc.id
+				name: "既存サークル",
+				workCount: 5,
 			});
+			mockMappingDoc.exists = false;
+			mockMappingDoc2.exists = false;
+			mockMappingDoc3.exists = false;
 
 			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData, false);
 
 			expect(result.success).toBe(true);
+			// When not a new work, the name is updated but workCount stays the same (5)
 			expect(mockBatch.update).toHaveBeenCalledWith(
-				mockDoc,
+				mockCircleRef,
 				expect.objectContaining({
 					name: "テストサークル",
+					workCount: 5, // workCount should not be incremented
 					lastUpdated: "SERVER_TIMESTAMP",
-				}),
-			);
-			expect(mockBatch.update).toHaveBeenCalledWith(
-				mockDoc,
-				expect.not.objectContaining({
-					workCount: expect.anything(),
 				}),
 			);
 		});
 
 		it("クリエイターマッピングを正しく作成する", async () => {
-			mockDoc.get.mockResolvedValue({ exists: false });
+			mockCircleDoc.exists = false;
+			mockMappingDoc.exists = false;
+			mockMappingDoc2.exists = false;
+			mockMappingDoc3.exists = false;
 
 			await collectCircleAndCreatorInfo(mockWorkData, mockApiData, true);
 
@@ -150,7 +233,7 @@ describe("collect-circle-creator-info", () => {
 
 			// 声優Aのマッピング
 			expect(mockBatch.set).toHaveBeenCalledWith(
-				mockDoc,
+				mockMappingRef,
 				expect.objectContaining({
 					creatorId: "creator1",
 					workId: "RJ123456",
@@ -161,9 +244,22 @@ describe("collect-circle-creator-info", () => {
 				{ merge: true },
 			);
 
+			// 声優Bのマッピング
+			expect(mockBatch.set).toHaveBeenCalledWith(
+				mockMappingRef2,
+				expect.objectContaining({
+					creatorId: "creator2",
+					workId: "RJ123456",
+					creatorName: "声優B",
+					types: ["voice"],
+					circleId: "RG12345",
+				}),
+				{ merge: true },
+			);
+
 			// イラストレーターCのマッピング
 			expect(mockBatch.set).toHaveBeenCalledWith(
-				mockDoc,
+				mockMappingRef3,
 				expect.objectContaining({
 					creatorId: "creator3",
 					workId: "RJ123456",
@@ -179,23 +275,11 @@ describe("collect-circle-creator-info", () => {
 			// Note: 実装の動作を確認したところ、同じクリエイターに対しても
 			// processedCreatorsによって重複処理が防がれているため、
 			// 最初に処理されたタイプのみが保存される仕様
-			let callCount = 0;
-			mockDoc.get.mockImplementation(() => {
-				callCount++;
-				// 最初の呼び出しはサークル情報の確認
-				if (callCount === 1) {
-					return Promise.resolve({ exists: false });
-				}
-				// 2回目の呼び出しはクリエイターマッピングの確認（既存）
-				if (callCount === 2) {
-					return Promise.resolve({
-						exists: true,
-						data: () => ({ types: ["voice"] }),
-					});
-				}
-				// 3回目の呼び出しはクリエイターマッピングの確認（新規）
-				return Promise.resolve({ exists: false });
-			});
+			mockCircleDoc.exists = false;
+
+			// 最初のクリエイターマッピングは既存として設定
+			mockMappingDoc.exists = true;
+			mockMappingDoc.data.mockReturnValue({ types: ["voice"] });
 
 			const apiDataWithMultiRole: DLsiteRawApiResponse = {
 				...mockApiData,
@@ -228,7 +312,10 @@ describe("collect-circle-creator-info", () => {
 			};
 
 			// サークル情報のget呼び出しを設定
-			mockDoc.get.mockResolvedValue({ exists: false });
+			mockCircleDoc.exists = false;
+			mockMappingDoc.exists = false;
+			mockMappingDoc2.exists = false;
+			mockMappingDoc3.exists = false;
 
 			const result = await collectCircleAndCreatorInfo(mockWorkData, invalidApiData, true);
 
@@ -242,7 +329,7 @@ describe("collect-circle-creator-info", () => {
 
 		it("エラー発生時は適切にハンドリングする", async () => {
 			// get呼び出しでエラーを発生させる
-			mockDoc.get.mockRejectedValueOnce(new Error("Firestore error"));
+			mockCircleRef.get.mockRejectedValueOnce(new Error("Firestore error"));
 
 			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData, true);
 
@@ -276,7 +363,30 @@ describe("collect-circle-creator-info", () => {
 				},
 			];
 
-			mockDoc.get.mockResolvedValue({ exists: false });
+			// Setup mock to handle different circle IDs
+			mockCollection.doc.mockImplementation((id: string) => {
+				if (id === "RG11111" || id === "RG22222") {
+					return {
+						get: vi.fn(() =>
+							Promise.resolve({
+								id: id,
+								exists: false,
+								data: vi.fn(),
+							}),
+						),
+					};
+				}
+				// For creator mappings
+				return {
+					get: vi.fn(() =>
+						Promise.resolve({
+							id: id,
+							exists: false,
+							data: vi.fn(),
+						}),
+					),
+				};
+			});
 
 			const result = await batchCollectCircleAndCreatorInfo(works);
 
@@ -298,7 +408,16 @@ describe("collect-circle-creator-info", () => {
 				isNewWork: true,
 			}));
 
-			mockDoc.get.mockResolvedValue({ exists: false });
+			// Setup generic mock for all generated IDs
+			mockCollection.doc.mockImplementation((id: string) => ({
+				get: vi.fn(() =>
+					Promise.resolve({
+						id: id,
+						exists: false,
+						data: vi.fn(),
+					}),
+				),
+			}));
 
 			const result = await batchCollectCircleAndCreatorInfo(works);
 
@@ -315,7 +434,16 @@ describe("collect-circle-creator-info", () => {
 				},
 			];
 
-			mockDoc.get.mockResolvedValue({ exists: false });
+			// Setup mock for this specific test
+			mockCollection.doc.mockImplementation((id: string) => ({
+				get: vi.fn(() =>
+					Promise.resolve({
+						id: id,
+						exists: false,
+						data: vi.fn(),
+					}),
+				),
+			}));
 			mockBatch.commit.mockRejectedValueOnce(new Error("Batch commit failed"));
 
 			const result = await batchCollectCircleAndCreatorInfo(works);
@@ -338,7 +466,22 @@ describe("collect-circle-creator-info", () => {
 			];
 
 			// updateCircleInfoで例外を発生させる
-			mockDoc.get.mockRejectedValueOnce(new Error("Firestore read error"));
+			mockCollection.doc.mockImplementation((id: string) => {
+				if (id === "RG44444") {
+					return {
+						get: vi.fn(() => Promise.reject(new Error("Firestore read error"))),
+					};
+				}
+				return {
+					get: vi.fn(() =>
+						Promise.resolve({
+							id: id,
+							exists: false,
+							data: vi.fn(),
+						}),
+					),
+				};
+			});
 
 			const result = await batchCollectCircleAndCreatorInfo(works);
 
