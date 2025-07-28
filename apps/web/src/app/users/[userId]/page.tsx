@@ -57,12 +57,6 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 		notFound();
 	}
 
-	// 現在のユーザーの情報を取得（将来の拡張用）
-	let _currentUser = null;
-	if (session?.user?.discordId) {
-		_currentUser = await getUserByDiscordId(session.user.discordId);
-	}
-
 	// ユーザーが作成した音声ボタンを取得
 	let audioButtons: AudioButtonPlainObject[] = [];
 	try {
