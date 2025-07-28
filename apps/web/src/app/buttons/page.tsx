@@ -14,6 +14,7 @@ interface SearchParams {
 	tags?: string;
 	sort?: string;
 	page?: string;
+	limit?: string;
 	sourceVideoId?: string;
 	// 高度フィルタパラメータ
 	playCountMin?: string;
@@ -35,6 +36,10 @@ interface AudioButtonsPageProps {
 
 export default async function AudioButtonsPage({ searchParams }: AudioButtonsPageProps) {
 	const resolvedSearchParams = await searchParams;
+
+	// limitパラメータの処理（デフォルト: 12）
+	const limitValue = resolvedSearchParams.limit ? Number(resolvedSearchParams.limit) : 12;
+	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
 	// クエリパラメータを構築
 	const query: AudioButtonQuery = {
@@ -71,7 +76,7 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 		createdAfter: resolvedSearchParams.createdAfter,
 		createdBefore: resolvedSearchParams.createdBefore,
 		createdBy: resolvedSearchParams.createdBy,
-		limit: 24,
+		limit: validLimit,
 	};
 
 	// 初期データを取得（Server Component最適化）
