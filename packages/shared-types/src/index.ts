@@ -23,6 +23,8 @@ export * from "./entities/circle-entity";
 export * from "./entities/contact";
 // Creator Entity
 export * from "./entities/creator-entity";
+// CreatorWorkMapping Entity
+export * from "./entities/creator-work-mapping-entity";
 // お気に入り関連の型とスキーマのエクスポート
 export * from "./entities/favorite";
 // ユーザー認証関連の型とスキーマのエクスポート
