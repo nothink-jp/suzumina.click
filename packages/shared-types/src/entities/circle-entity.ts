@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import type { CirclePlainObject } from "../plain-objects/circle-plain";
 import { BaseEntity, type EntityValidatable } from "./base/entity";
 import type { CircleData } from "./circle-creator";
 
@@ -393,19 +394,7 @@ export class CircleEntity
 	/**
 	 * Converts to plain object for serialization
 	 */
-	toPlainObject(): {
-		id: string;
-		circleId: string;
-		name: string;
-		nameEn?: string;
-		workCount: number;
-		url: string;
-		isNew: boolean;
-		isActive: boolean;
-		hasWorks: boolean;
-		createdAt: string;
-		lastUpdated: string;
-	} {
+	toPlainObject(): CirclePlainObject {
 		return {
 			id: this.circleId,
 			circleId: this.circleId,

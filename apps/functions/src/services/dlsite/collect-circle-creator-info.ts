@@ -7,15 +7,18 @@
 
 import { FieldValue, Firestore } from "@google-cloud/firestore";
 import type {
+	CircleData,
 	CreatorType,
 	CreatorWorkMapping,
 	DLsiteRawApiResponse,
 	WorkDocument,
 } from "@suzumina.click/shared-types";
-import { isValidCircleId, isValidCreatorId } from "@suzumina.click/shared-types";
+import { CircleEntity, isValidCircleId, isValidCreatorId } from "@suzumina.click/shared-types";
+import { CircleRepository } from "../../repositories/circle-repository";
 import * as logger from "../../shared/logger";
 
 const adminDb = new Firestore();
+const circleRepository = new CircleRepository(adminDb);
 
 /**
  * サークル・クリエイター情報を収集・保存
@@ -57,7 +60,7 @@ export async function collectCircleAndCreatorInfo(
 }
 
 /**
- * サークル情報を更新
+ * サークル情報を更新（Repositoryパターン使用）
  */
 async function updateCircleInfo(
 	batch: FirebaseFirestore.WriteBatch,
@@ -73,36 +76,50 @@ async function updateCircleInfo(
 		return;
 	}
 
+	// Repositoryを使ってサークルを取得
+	const existingCircle = await circleRepository.findById(circleId);
 	const circleRef = adminDb.collection("circles").doc(circleId);
-	const circleDoc = await circleRef.get();
 
-	if (!circleDoc.exists) {
-		// 新規サークル - undefinedフィールドを除外
-		const newCircle = {
+	if (!existingCircle) {
+		// 新規サークル作成
+		const newCircle = CircleEntity.create(
 			circleId,
-			name: apiData.maker_name || "",
-			workCount: 1,
+			apiData.maker_name || "",
+			undefined, // nameEnは現時点で取得できない
+			1,
+		);
+
+		// バッチに追加（ServerTimestampを使用）
+		const circleData = newCircle.toFirestore();
+		batch.set(circleRef, {
+			...circleData,
 			lastUpdated: FieldValue.serverTimestamp(),
 			createdAt: FieldValue.serverTimestamp(),
-		};
-		batch.set(circleRef, newCircle);
-		// 新規サークル登録ログは省略（ログ削減）
-	} else if (isNewWork) {
-		// 既存サークルの新作品追加時のみworkCountを増加
-		const updateData = {
-			name: apiData.maker_name || circleDoc.data()?.name,
-			workCount: FieldValue.increment(1),
-			lastUpdated: FieldValue.serverTimestamp(),
-		};
-		batch.update(circleRef, updateData);
-		// サークル更新ログは省略（ログ削減）
+		});
 	} else {
-		// 既存作品の更新時は名前のみ更新
-		const updateData = {
-			name: apiData.maker_name || circleDoc.data()?.name,
-			lastUpdated: FieldValue.serverTimestamp(),
-		};
-		batch.update(circleRef, updateData);
+		// 既存サークルの更新
+		let updatedCircle = existingCircle;
+
+		// 名前が変更されている場合は更新
+		if (apiData.maker_name && apiData.maker_name !== existingCircle.circleName) {
+			updatedCircle = existingCircle.updateName(apiData.maker_name, existingCircle.circleNameEn);
+		}
+
+		// 新規作品の場合はwork countを増加
+		if (isNewWork) {
+			updatedCircle = updatedCircle.incrementWorkCount();
+		}
+
+		// 変更があった場合のみバッチに追加
+		if (updatedCircle !== existingCircle) {
+			const updateData = {
+				name: updatedCircle.circleName,
+				workCount: updatedCircle.workCountNumber,
+				lastUpdated: FieldValue.serverTimestamp(),
+			};
+
+			batch.update(circleRef, updateData);
+		}
 	}
 }
 

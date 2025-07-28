@@ -1,6 +1,10 @@
 "use server";
 
-import type { WorkDocument, WorkPlainObject } from "@suzumina.click/shared-types";
+import type {
+	CirclePlainObject,
+	WorkDocument,
+	WorkPlainObject,
+} from "@suzumina.click/shared-types";
 import {
 	CircleEntity,
 	convertToWorkPlainObject,
@@ -65,7 +69,7 @@ function compareWorks(a: WorkPlainObject, b: WorkPlainObject, sort: string): num
  * @param circleId サークルID
  * @returns サークル情報、存在しない場合はnull
  */
-export async function getCircleInfo(circleId: string): Promise<CircleEntity | null> {
+export async function getCircleInfo(circleId: string): Promise<CirclePlainObject | null> {
 	// 入力検証
 	if (!isValidCircleId(circleId)) {
 		return null;
@@ -83,8 +87,8 @@ export async function getCircleInfo(circleId: string): Promise<CircleEntity | nu
 		if (!data) {
 			return null;
 		}
-		// CircleEntityのfromFirestoreDataメソッドを使用
-		return CircleEntity.fromFirestoreData({
+		// CircleEntityのfromFirestoreDataメソッドを使用してPlain Objectに変換
+		const circleEntity = CircleEntity.fromFirestoreData({
 			circleId: circleDoc.id,
 			name: data.name || "",
 			nameEn: data.nameEn,
@@ -92,6 +96,7 @@ export async function getCircleInfo(circleId: string): Promise<CircleEntity | nu
 			lastUpdated: data.lastUpdated,
 			createdAt: data.createdAt,
 		});
+		return circleEntity.toPlainObject();
 	} catch (_error) {
 		// エラー発生時はnullを返す
 		return null;
@@ -248,7 +253,7 @@ export async function getCircleWithWorksWithPagination(
 	limit = 12,
 	sort = "newest",
 ): Promise<{
-	circle: CircleEntity;
+	circle: CirclePlainObject;
 	works: WorkPlainObject[];
 	totalCount: number;
 } | null> {
@@ -271,7 +276,7 @@ export async function getCircleWithWorksWithPagination(
  */
 export async function getCircleWithWorks(
 	circleId: string,
-): Promise<{ circle: CircleEntity; works: WorkPlainObject[] } | null> {
+): Promise<{ circle: CirclePlainObject; works: WorkPlainObject[] } | null> {
 	const [circle, works] = await Promise.all([getCircleInfo(circleId), getCircleWorks(circleId)]);
 
 	if (!circle) {

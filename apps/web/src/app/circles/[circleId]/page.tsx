@@ -21,11 +21,11 @@ export async function generateMetadata({ params }: { params: Promise<{ circleId:
 	}
 
 	return {
-		title: `${circle.circleName} - suzumina.click`,
-		description: `サークル「${circle.circleName}」の作品一覧。総作品数: ${circle.workCountNumber}作品`,
+		title: `${circle.name} - suzumina.click`,
+		description: `サークル「${circle.name}」の作品一覧。総作品数: ${circle.workCount}作品`,
 		openGraph: {
-			title: `${circle.circleName} - suzumina.click`,
-			description: `サークル「${circle.circleName}」の作品一覧。総作品数: ${circle.workCountNumber}作品`,
+			title: `${circle.name} - suzumina.click`,
+			description: `サークル「${circle.name}」の作品一覧。総作品数: ${circle.workCount}作品`,
 		},
 	};
 }

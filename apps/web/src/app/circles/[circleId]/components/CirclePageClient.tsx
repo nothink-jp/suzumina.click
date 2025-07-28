@@ -1,6 +1,6 @@
 "use client";
 
-import type { CircleEntity, WorkPlainObject } from "@suzumina.click/shared-types";
+import type { CirclePlainObject, WorkPlainObject } from "@suzumina.click/shared-types";
 import {
 	ListPageContent,
 	ListPageHeader,
@@ -12,7 +12,7 @@ import WorkList from "@/app/works/components/WorkList";
 import { getCircleWorksWithPagination } from "../actions";
 
 interface CirclePageClientProps {
-	circle: CircleEntity;
+	circle: CirclePlainObject;
 	initialData: WorkPlainObject[];
 	initialTotalCount: number;
 	initialPage: number;
@@ -84,8 +84,8 @@ export function CirclePageClient({
 	return (
 		<ListPageLayout>
 			<ListPageHeader
-				title={circle.circleName}
-				description={`${circle.circleNameEn ? `${circle.circleNameEn} - ` : ""}作品数: ${circle.workCountNumber}件`}
+				title={circle.name}
+				description={`${circle.nameEn ? `${circle.nameEn} - ` : ""}作品数: ${circle.workCount}件`}
 			/>
 
 			<ListPageContent>

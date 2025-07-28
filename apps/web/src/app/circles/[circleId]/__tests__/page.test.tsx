@@ -23,9 +23,9 @@ vi.mock("../actions", () => ({
 vi.mock("../components/CirclePageClient", () => ({
 	CirclePageClient: ({ circle, initialData }: any) => (
 		<div data-testid="circle-page-client">
-			<h1>{circle.circleName || circle.name}</h1>
-			{circle.circleNameEn && <p>{circle.circleNameEn}</p>}
-			<p>作品数: {circle.workCountNumber || circle.workCount}件</p>
+			<h1>{circle.name}</h1>
+			{circle.nameEn && <p>{circle.nameEn}</p>}
+			<p>作品数: {circle.workCount}件</p>
 			{initialData.map((work: any) => (
 				<div key={work.id} data-testid="work-card">
 					<h3>{work.title}</h3>
@@ -46,12 +46,17 @@ import CirclePage from "../page";
 
 describe("CirclePage", () => {
 	const mockCircleData = {
+		id: "RG12345",
 		circleId: "RG12345",
-		circleName: "テストサークル",
-		circleNameEn: "Test Circle",
-		workCountNumber: 10,
-		lastUpdated: new Date("2025-01-01"),
-		createdAt: new Date("2024-01-01"),
+		name: "テストサークル",
+		nameEn: "Test Circle",
+		workCount: 10,
+		url: "https://www.dlsite.com/maniax/circle/profile/=/maker_id/RG12345.html",
+		isNew: false,
+		isActive: true,
+		hasWorks: true,
+		createdAt: "2024-01-01T00:00:00.000Z",
+		lastUpdated: "2025-01-01T00:00:00.000Z",
 	};
 
 	const mockWorks = [
@@ -177,7 +182,7 @@ describe("CirclePage", () => {
 	it("英語名がない場合は日本語名のみ表示する", async () => {
 		const circleWithoutEnName = {
 			...mockCircleData,
-			circleNameEn: undefined,
+			nameEn: undefined,
 		};
 		(actions.getCircleWithWorksWithPagination as any).mockResolvedValue({
 			circle: circleWithoutEnName,
