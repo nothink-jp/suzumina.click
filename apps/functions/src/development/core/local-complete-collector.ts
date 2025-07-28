@@ -223,7 +223,6 @@ class LocalDataCollector {
 				}
 
 				// 🆕 価格履歴保存処理（バッチ単位で実行）
-				// 価格履歴保存処理
 				const priceHistoryResults = await Promise.allSettled(
 					Array.from(batchResults.entries())
 						.filter(([, apiData]) => apiData.workno) // worknoが存在するもののみ
@@ -434,7 +433,7 @@ class LocalDataCollector {
 
 		// バッチ処理用のデータを準備
 		const worksForCollection: Array<{
-			workData: any;
+			workData: WorkDocument;
 			apiData: DLsiteRawApiResponse;
 			isNewWork: boolean;
 		}> = [];

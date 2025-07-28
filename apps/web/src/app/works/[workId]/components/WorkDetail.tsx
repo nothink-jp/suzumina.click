@@ -966,46 +966,6 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 												</div>
 											</div>
 										)}
-
-										{/* 制作者（Individual Info API専用） */}
-										{work.creators &&
-											(work.creators.voiceActors.length > 0 ||
-												work.creators.scenario.length > 0 ||
-												work.creators.illustration.length > 0 ||
-												work.creators.music.length > 0) && (
-												<div>
-													<h5 className="text-sm font-medium text-gray-700 mb-2">制作者</h5>
-													<div className="space-y-2">
-														{[
-															...work.creators.voiceActors,
-															...work.creators.scenario,
-															...work.creators.illustration,
-															...work.creators.music,
-														].map((creator, index: number) => (
-															<div
-																key={`${creator.id}-${index}`}
-																className="flex items-center gap-3"
-															>
-																<div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-																	<span className="text-foreground font-bold text-xs">
-																		{creator.name.charAt(0)}
-																	</span>
-																</div>
-																{creator.id ? (
-																	<Link
-																		href={`/creators/${creator.id}`}
-																		className="text-gray-900 text-sm hover:text-primary hover:underline"
-																	>
-																		{creator.name}
-																	</Link>
-																) : (
-																	<span className="text-gray-900 text-sm">{creator.name}</span>
-																)}
-															</div>
-														))}
-													</div>
-												</div>
-											)}
 									</div>
 								</CardContent>
 							</Card>

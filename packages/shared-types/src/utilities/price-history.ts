@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { LocalePriceSchema } from "../entities/work";
 
 /**
  * 価格履歴ドキュメント型定義（サブコレクション方式）
@@ -13,33 +12,23 @@ export const PriceHistoryDocumentSchema = z.object({
 	/** 記録日時（ISO string） */
 	capturedAt: z.string().datetime(),
 
-	// === Individual Info API価格データ（そのまま保存） ===
-	/** 多通貨価格配列 - Individual Info API `locale_prices` */
-	localePrices: z.array(LocalePriceSchema).default([]),
+	// === 日本円価格（APIから直接） ===
+	/** 日本円セール価格 - API `price` (データがない場合はnull) */
+	price: z.number().nonnegative().nullable(),
+	/** 日本円定価 - API `official_price` (データがない場合はnull) */
+	officialPrice: z.number().nonnegative().nullable(),
 
-	// === 表示用サマリー価格（JPY基準） ===
-	/** 定価（JPY） */
-	regularPrice: z.number().nonnegative(),
-	/** セール価格（JPY、セール時のみ） */
-	discountPrice: z.number().nonnegative().optional(),
+	// === 国際価格（APIから直接） ===
+	/** 各国通貨セール価格 - API `locale_price` */
+	localePrice: z.record(z.string(), z.number()).default({}),
+	/** 各国通貨定価 - API `locale_official_price` */
+	localeOfficialPrice: z.record(z.string(), z.number()).default({}),
+
+	// === 割引情報 ===
 	/** 割引率（%） */
 	discountRate: z.number().min(0).max(100).default(0),
 	/** キャンペーンID */
 	campaignId: z.number().int().optional(),
-
-	// === 価格変動検出フラグ ===
-	/** 前日から価格変更あり */
-	priceChanged: z.boolean().default(false),
-	/** 新しいキャンペーン開始 */
-	newCampaign: z.boolean().default(false),
-
-	// === 収集メタデータ ===
-	/** データ取得元 */
-	dataSource: z.literal("individual_api"),
-	/** API呼び出し回数（その日） */
-	apiCallCount: z.number().positive().default(1),
-	/** データ収集バージョン */
-	collectionVersion: z.string().default("1.0"),
 });
 
 export type PriceHistoryDocument = z.infer<typeof PriceHistoryDocumentSchema>;
