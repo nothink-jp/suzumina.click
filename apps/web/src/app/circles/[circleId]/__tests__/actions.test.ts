@@ -2,11 +2,14 @@
  * Circle page server actions のテストスイート
  */
 
-import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
+import { CircleEntity, convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // convertToWorkPlainObjectのモック
 vi.mock("@suzumina.click/shared-types", () => ({
+	CircleEntity: {
+		fromFirestoreData: vi.fn(),
+	},
 	convertToWorkPlainObject: vi.fn((data) => {
 		if (!data || !data.id || !data.productId) return null;
 		return {
@@ -184,15 +187,37 @@ describe("Circle page server actions", () => {
 				}),
 			});
 
+			// CircleEntity.fromFirestoreDataのモック設定
+			vi.mocked(CircleEntity.fromFirestoreData).mockReturnValue({
+				toPlainObject: () => ({
+					id: "RG12345",
+					circleId: "RG12345",
+					name: "テストサークル",
+					nameEn: "Test Circle",
+					workCount: 10,
+					url: "https://www.dlsite.com/maniax/circle/profile/=/maker_id/RG12345.html",
+					isNew: false,
+					isActive: true,
+					hasWorks: true,
+					createdAt: "2024-01-01T00:00:00.000Z",
+					lastUpdated: "2025-01-01T00:00:00.000Z",
+				}),
+			} as any);
+
 			const result = await getCircleInfo("RG12345");
 
 			expect(result).toEqual({
+				id: "RG12345",
 				circleId: "RG12345",
 				name: "テストサークル",
 				nameEn: "Test Circle",
 				workCount: 10,
-				lastUpdated: expect.any(Date),
-				createdAt: expect.any(Date),
+				url: "https://www.dlsite.com/maniax/circle/profile/=/maker_id/RG12345.html",
+				isNew: false,
+				isActive: true,
+				hasWorks: true,
+				createdAt: "2024-01-01T00:00:00.000Z",
+				lastUpdated: "2025-01-01T00:00:00.000Z",
 			});
 			expect(mockCollection).toHaveBeenCalledWith("circles");
 			expect(mockDoc).toHaveBeenCalledWith("RG12345");
