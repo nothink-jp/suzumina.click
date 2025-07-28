@@ -148,15 +148,17 @@ export default async function HomePage() {
 
 ## 実装済みページ
 
-### ✅ 最適化完了
-- **トップページ（/）**: 全データをServer Componentで取得
+### ✅ Phase 1最適化完了（#128）
+- **トップページ（/）**: 全データをServer Componentで取得、26+ POSTリクエスト削減
+
+### ✅ Phase 2最適化完了（#130）
 - **動画詳細（/videos/[videoId]）**: 音声ボタンデータを事前取得
 - **音声ボタン一覧（/buttons）**: 初期データをServer Componentで取得
 
-### 🔄 既に最適化済み
-- **動画一覧（/videos）**: Server Component実装済み
-- **作品一覧（/works）**: Server Component実装済み
-- **作品詳細（/works/[workId]）**: Server Component実装済み
+### 🔄 既に最適化済み（追加作業不要）
+- **動画一覧（/videos）**: Server Component + Promise.all実装済み
+- **作品一覧（/works）**: Server Component実装済み（年齢確認のためClient Component必須）
+- **作品詳細（/works/[workId]）**: Server Component + 評価データ事前取得済み
 
 ## まとめ
 
