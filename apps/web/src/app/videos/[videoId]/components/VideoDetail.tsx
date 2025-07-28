@@ -28,18 +28,31 @@ import { VideoUserTagEditor } from "./VideoUserTagEditor";
 
 interface VideoDetailProps {
 	video: FrontendVideoData;
+	initialAudioButtons?: AudioButtonPlainObject[];
+	initialAudioCount?: number;
+	initialTotalAudioCount?: number;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 動画詳細の複雑な表示ロジックのため許容
-export default function VideoDetail({ video }: VideoDetailProps) {
+export default function VideoDetail({
+	video,
+	initialAudioButtons = [],
+	initialAudioCount = 0,
+	initialTotalAudioCount = 0,
+}: VideoDetailProps) {
 	const { data: session } = useSession();
-	const [audioButtons, setAudioButtons] = useState<AudioButtonPlainObject[]>([]);
+	const [audioButtons, setAudioButtons] = useState<AudioButtonPlainObject[]>(initialAudioButtons);
 	const [audioLoading, setAudioLoading] = useState(false);
-	const [_audioCount, setAudioCount] = useState(0);
-	const [totalAudioCount, setTotalAudioCount] = useState(0);
+	const [_audioCount, setAudioCount] = useState(initialAudioCount);
+	const [totalAudioCount, setTotalAudioCount] = useState(initialTotalAudioCount);
 
-	// 音声ボタンを取得
+	// 音声ボタンを取得（初期データがない場合のみ）
 	useEffect(() => {
+		// 既に初期データがある場合はスキップ
+		if (initialAudioButtons.length > 0 || initialTotalAudioCount > 0) {
+			return;
+		}
+
 		const fetchAudioButtons = async () => {
 			setAudioLoading(true);
 			try {
@@ -66,7 +79,7 @@ export default function VideoDetail({ video }: VideoDetailProps) {
 		};
 
 		fetchAudioButtons();
-	}, [video.videoId]);
+	}, [video.videoId, initialAudioButtons.length, initialTotalAudioCount]);
 
 	// ISO形式の日付を表示用にフォーマット（JST、秒単位まで）
 	const formatDate = (isoString: string) => {
