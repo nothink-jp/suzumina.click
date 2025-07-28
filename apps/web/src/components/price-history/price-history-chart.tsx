@@ -41,10 +41,10 @@ const CURRENCY_TO_LOCALE_MAP: Record<string, string> = {
 function calculatePricesForCurrency(
 	history: PriceHistoryDocument,
 	currency: string,
-): { regularPrice: number; discountPrice?: number } {
+): { regularPrice: number | null; discountPrice?: number } {
 	if (currency === "JPY") {
 		if (history.price === null || history.officialPrice === null) {
-			return { regularPrice: null as unknown as number, discountPrice: undefined };
+			return { regularPrice: null, discountPrice: undefined };
 		}
 		return {
 			regularPrice: history.officialPrice || history.price,
@@ -75,7 +75,11 @@ function createChartDataPoint(
 	dateStr: string,
 	priceMap: Map<string, PriceHistoryDocument>,
 	currency: string,
-	lastValidData: { regularPrice: number; discountPrice?: number; campaignActive: boolean } | null,
+	lastValidData: {
+		regularPrice: number | null;
+		discountPrice?: number;
+		campaignActive: boolean;
+	} | null,
 ): ChartDataPoint {
 	const date = new Date(dateStr);
 	const formattedDate = date.toLocaleDateString("ja-JP", {
@@ -112,7 +116,7 @@ function createChartDataPoint(
 	// まだ有効なデータがない場合はnullを設定
 	return {
 		date: dateStr,
-		regularPrice: null as unknown as number, // Rechartsはnullをギャップとして扱う
+		regularPrice: null, // Rechartsはnullをギャップとして扱う
 		discountPrice: undefined,
 		formattedDate,
 		campaignActive: false,
@@ -158,7 +162,7 @@ export function PriceHistoryChart({
 
 		// 各日付のデータを生成（データがない日はnullを設定）
 		let lastValidData: {
-			regularPrice: number;
+			regularPrice: number | null;
 			discountPrice?: number;
 			campaignActive: boolean;
 		} | null = null;
