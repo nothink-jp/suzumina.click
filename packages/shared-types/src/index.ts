@@ -21,6 +21,8 @@ export * from "./entities/circle-creator";
 export * from "./entities/circle-entity";
 // お問い合わせ関連の型とスキーマのエクスポート
 export * from "./entities/contact";
+// Creator Entity
+export * from "./entities/creator-entity";
 // お気に入り関連の型とスキーマのエクスポート
 export * from "./entities/favorite";
 // ユーザー認証関連の型とスキーマのエクスポート
