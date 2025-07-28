@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getAudioButtonCount, getAudioButtons } from "@/app/buttons/actions";
 import { getVideoById } from "../actions";
 import VideoDetail from "./components/VideoDetail";
 
@@ -12,16 +13,34 @@ export default async function VideoDetailPage({ params }: VideoDetailPageProps) 
 	const resolvedParams = await params;
 	const { videoId } = resolvedParams;
 
-	const video = await getVideoById(videoId);
+	// 並列でデータ取得（Server Component最適化）
+	const [video, audioButtonsResult, audioButtonCount] = await Promise.all([
+		getVideoById(videoId),
+		getAudioButtons({
+			sourceVideoId: videoId,
+			limit: 6,
+			sortBy: "newest",
+		}),
+		getAudioButtonCount(videoId),
+	]);
 
 	if (!video) {
 		notFound();
 	}
 
+	// 音声ボタンデータの準備
+	const audioButtons = audioButtonsResult.success ? audioButtonsResult.data.audioButtons : [];
+	const audioCount = audioButtons.length;
+
 	return (
 		<div className="min-h-screen suzuka-gradient-subtle">
 			<main className="container mx-auto px-4 py-8">
-				<VideoDetail video={video} />
+				<VideoDetail
+					video={video}
+					initialAudioButtons={audioButtons}
+					initialAudioCount={audioCount}
+					initialTotalAudioCount={audioButtonCount}
+				/>
 			</main>
 		</div>
 	);

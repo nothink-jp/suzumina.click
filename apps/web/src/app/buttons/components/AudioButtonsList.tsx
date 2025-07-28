@@ -38,6 +38,19 @@ interface SearchParams {
 
 interface AudioButtonsListProps {
 	searchParams: SearchParams;
+	initialData?:
+		| {
+				success: true;
+				data: {
+					audioButtons: AudioButtonPlainObject[];
+					totalCount: number;
+					hasMore: boolean;
+				};
+		  }
+		| {
+				success: false;
+				error: string;
+		  };
 }
 
 // Helper function to parse numeric range from search params
@@ -77,14 +90,20 @@ const convertFiltersToParams = (filters: AdvancedFilters): Record<string, string
 	createdBy: filters.createdBy,
 });
 
-export default function AudioButtonsList({ searchParams }: AudioButtonsListProps) {
+export default function AudioButtonsList({ searchParams, initialData }: AudioButtonsListProps) {
 	const router = useRouter();
 	const urlSearchParams = useSearchParams();
-	const [audioButtons, setAudioButtons] = useState<AudioButtonPlainObject[]>([]);
-	const [totalCount, setTotalCount] = useState(0);
+	const [audioButtons, setAudioButtons] = useState<AudioButtonPlainObject[]>(
+		initialData?.success ? initialData.data.audioButtons : [],
+	);
+	const [totalCount, setTotalCount] = useState(
+		initialData?.success ? initialData.data.totalCount : 0,
+	);
 	const [filteredCount, setFilteredCount] = useState<number | undefined>(undefined);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const [loading, setLoading] = useState(!initialData);
+	const [error, setError] = useState<string | null>(
+		initialData && !initialData.success ? initialData.error : null,
+	);
 
 	// デバウンス用のタイマー管理
 	const navigationTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -246,8 +265,14 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		[],
 	);
 
-	// データ取得
+	// データ取得（初期データがない場合、またはパラメータが変更された場合）
 	useEffect(() => {
+		// 初回ロード時で初期データがある場合はスキップ
+		const isInitialLoad = !urlSearchParams.toString() && initialData?.success;
+		if (isInitialLoad) {
+			return;
+		}
+
 		const fetchData = async () => {
 			setLoading(true);
 			setError(null);
@@ -264,7 +289,7 @@ export default function AudioButtonsList({ searchParams }: AudioButtonsListProps
 		};
 
 		fetchData();
-	}, [buildAudioButtonQuery, handleApiResponse]);
+	}, [buildAudioButtonQuery, handleApiResponse, urlSearchParams, initialData]);
 
 	// URLパラメータを更新（デバウンス機能付き）
 	const updateSearchParams = useCallback(
