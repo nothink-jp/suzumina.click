@@ -1,80 +1,126 @@
-# suzumina.click - 技術ドキュメント
+# suzumina.click Documentation
 
-声優「涼花みなせ」ファンサイト（v0.3.4）
+Welcome to the suzumina.click project documentation. This is the central hub for all project documentation.
 
-## 概要
+## 🚀 Quick Start
 
-「すずみなふぁみりー」Discordメンバー専用のファンサイト。YouTube動画の音声ボタン共有とDLsite作品情報を提供します。
+- **For AI Development**: See [CLAUDE.md](../CLAUDE.md) for essential AI guidelines
+- **For Development Setup**: See [Development Guide](guides/development.md)
+- **For Architecture Overview**: See [Architecture Reference](reference/architecture.md)
 
-## 主要機能
+## 📋 Project Overview
 
-- **Discord認証**: NextAuth + Guild確認
-- **音声ボタン**: YouTube動画タイムスタンプ参照システム
-- **お気に入り**: 音声ボタンの登録・管理
-- **検索機能**: 全コンテンツ横断検索・高度フィルタ
-- **DLsite連携**: 作品情報・高解像度画像対応
-- **管理機能**: ユーザー・コンテンツ管理UI
-- **収益化**: Google AdSense統合・packages/ui統合（v0.3.4）
+**suzumina.click** is a fan community web platform for voice actress "Suzuka Minase" (涼花みなせ).
 
-## 技術スタック
+- **Status**: Production Ready v0.3.8
+- **URL**: https://suzumina.click
+- **Tech Stack**: Next.js 15, TypeScript, Firestore, Cloud Functions
+- **Repository**: Private GitHub repository
 
-- **Frontend**: Next.js 15 + React + TypeScript + Tailwind CSS v4
-- **Backend**: Cloud Functions + Firestore
-- **Auth**: NextAuth.js + Discord OAuth
-- **Infrastructure**: Terraform + Google Cloud Platform
+### Core Features
+- Audio button system with YouTube timestamp references
+- DLsite work information integration
+- User authentication via Discord OAuth
+- Work evaluation system (rankings, ratings, NG marks)
+- Price history tracking for DLsite works
+- Advanced search and filtering
 
-## データベース
+## 📚 Documentation Structure
 
-### Firestore コレクション
+### Reference Documentation
+Core technical references for the project:
 
-- `users` - Discord認証ユーザー情報・権限管理
-- `audioButtons` - 音声ボタンメタデータ
-- `users/{userId}/favorites` - お気に入り音声ボタン
-- `videos` - YouTube動画情報
-- `dlsiteWorks` - DLsite作品情報
+- [Architecture Overview](reference/architecture.md) - System architecture and design decisions
+- [Database Schema](reference/database-schema.md) - Firestore structure and data models
+- [Domain Model](reference/domain-model.md) - Domain-driven design architecture
+- [Domain Object Catalog](reference/domain-object-catalog.md) - Detailed entity and value object specifications
+- [Ubiquitous Language](reference/ubiquitous-language.md) - Common terminology and concepts
 
-詳細: [Firestore構造](./FIRESTORE_STRUCTURE.md)
+### External API Documentation
+Integration specifications and analysis:
 
-## 開発ガイド
+- [DLsite API](reference/external-apis/dlsite-api.md) - Individual Info API integration details
+- [YouTube API](reference/external-apis/youtube-api.md) - YouTube Data API v3 usage
 
-### 基本セットアップ
+### Development Guides
+How-to guides for common tasks:
+
+- [Development Guide](guides/development.md) - Environment setup and development workflow
+- [Testing Guide](guides/testing.md) - Testing strategies and best practices
+- [Deployment Guide](guides/deployment.md) - Deployment procedures and infrastructure
+
+### Operational Documentation
+Day-to-day operational information:
+
+- [Changelog](operations/changelog.md) - Version history and release notes
+- [TODO](operations/todo.md) - Current tasks and priorities
+- [Monitoring](operations/monitoring.md) - System monitoring and alerts
+
+## 🛠️ Quick Commands
 
 ```bash
-git clone <repository-url>
-cd suzumina.click
-pnpm install
-pnpm --filter @suzumina.click/web dev
+# Development
+pnpm --filter @suzumina.click/web dev        # Start development server
+pnpm --filter @suzumina.click/functions dev   # Start functions emulator
+
+# Testing
+pnpm test                                     # Run all tests
+pnpm lint                                     # Run linter
+pnpm typecheck                                # Run type checking
+
+# Build
+pnpm build                                    # Build all packages
 ```
 
-### 品質管理
+## 🔍 Finding Information
 
-```bash
-pnpm check && pnpm test && pnpm build
-pnpm test:coverage
-pnpm test:e2e
-```
+### By Topic
 
-## ドキュメント
+**Architecture & Design**
+- System design → [Architecture](reference/architecture.md)
+- Database design → [Database Schema](reference/database-schema.md)
+- Domain modeling → [Domain Model](reference/domain-model.md)
 
-- **開発ガイド**: [DEVELOPMENT.md](./DEVELOPMENT.md)
-- **データベース**: [FIRESTORE_STRUCTURE.md](./FIRESTORE_STRUCTURE.md)
-- **デプロイ**: [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
-- **Git運用**: [GIT_WORKFLOW.md](./GIT_WORKFLOW.md)
-- **変更履歴**: [CHANGELOG.md](./CHANGELOG.md)
+**Development**
+- Getting started → [Development Guide](guides/development.md)
+- Writing tests → [Testing Guide](guides/testing.md)
+- Code standards → [CLAUDE.md](../CLAUDE.md)
 
-## プロジェクト構造
+**APIs & Integrations**
+- DLsite integration → [DLsite API](reference/external-apis/dlsite-api.md)
+- YouTube integration → [YouTube API](reference/external-apis/youtube-api.md)
 
-```
-suzumina.click/
-├── apps/
-│   ├── web/                    # Next.js 15 フロントエンド
-│   └── functions/              # Cloud Functions バックエンド
-├── packages/
-│   ├── shared-types/           # 共有型定義
-│   ├── ui/                     # UIコンポーネント（v0.3.3統合）
-│   └── typescript-config/      # TypeScript設定
-```
+**Operations**
+- Recent changes → [Changelog](operations/changelog.md)
+- Current work → [TODO](operations/todo.md)
 
-## ライセンス
+### By Role
 
-MIT License - 個人運営の非公式ファンサイト（v0.3.4）
+**For New Developers**
+1. Read [Development Guide](guides/development.md)
+2. Review [Architecture Overview](reference/architecture.md)
+3. Check [Ubiquitous Language](reference/ubiquitous-language.md)
+
+**For AI Assistants**
+1. Read [CLAUDE.md](../CLAUDE.md) first
+2. Reference this documentation index
+3. Use specific documents as needed
+
+**For Operations**
+1. Monitor [Changelog](operations/changelog.md)
+2. Track [TODO](operations/todo.md)
+3. Check [Monitoring](operations/monitoring.md)
+
+## 📁 Archive
+
+Completed project documentation is archived in the [archive/](archive/) directory, organized by date and project name.
+
+Recent archives:
+- [2025-07 Server Component Optimization](archive/2025-07-server-component-optimization/)
+- [2025-07 Entity System Migration](archive/2025-07-entity-system-migration/)
+- [2025-07 Audio Button Optimization](archive/2025-07-audio-button-optimization/)
+
+---
+
+**Last Updated**: 2025-07-28  
+**Maintained by**: suzumina.click development team

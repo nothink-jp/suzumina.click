@@ -110,8 +110,84 @@ packages/shared-types/src/
 3. **Plain Object変換**: Next.js Server Componentsとの連携用
 4. **型安全性**: TypeScript strict modeで完全な型安全性
 
-## 参考資料
+## Entity Implementation Patterns
 
-詳細な実装ガイド:
-- `/docs/ENTITY_IMPLEMENTATION_GUIDELINES.md` - 実装ガイドライン
-- `/docs/ENTITY_SERIALIZATION_PATTERN.md` - Server Component連携パターン
+### Basic Entity Structure
+
+```typescript
+export class EntityName {
+  // Private readonly properties
+  constructor(
+    private readonly _id: EntityId,
+    private readonly _content: ContentValueObject,
+    private readonly _metadata: MetadataValueObject
+  ) {}
+
+  // Firestore restoration (required)
+  static fromFirestoreData(data: FirestoreData): EntityName | null {
+    try {
+      const id = new EntityId(data.id);
+      const content = ContentValueObject.fromData(data);
+      const metadata = MetadataValueObject.fromData(data);
+      
+      return new EntityName(id, content, metadata);
+    } catch (error) {
+      console.error('Failed to create entity:', error);
+      return null;
+    }
+  }
+
+  // Plain Object conversion (for Server Components)
+  toPlainObject(): EntityPlainObject {
+    return {
+      id: this._id.value,
+      content: this._content.toPlainObject(),
+      metadata: this._metadata.toPlainObject(),
+      _computed: {
+        displayName: this.getDisplayName(),
+        isValid: this.isValid(),
+      }
+    };
+  }
+}
+```
+
+### Value Object Structure
+
+```typescript
+export class ValueObjectName {
+  constructor(private readonly _value: string) {
+    this.validate();
+  }
+
+  private validate(): void {
+    if (!this._value || this._value.length === 0) {
+      throw new Error('Value cannot be empty');
+    }
+  }
+
+  get value(): string {
+    return this._value;
+  }
+
+  equals(other: ValueObjectName): boolean {
+    return this._value === other._value;
+  }
+
+  toPlainObject(): string {
+    return this._value;
+  }
+}
+```
+
+### Implementation Guidelines
+
+1. **Error Handling**: Use null returns instead of throwing errors
+2. **Validation**: Validate in constructors and factory methods
+3. **Immutability**: All properties should be readonly
+4. **Type Safety**: Use TypeScript strict mode
+5. **Server Components**: Always provide toPlainObject() method
+
+---
+
+最終更新: 2025-07-28
