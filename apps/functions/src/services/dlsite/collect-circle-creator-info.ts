@@ -7,7 +7,6 @@
 
 import { FieldValue, Firestore } from "@google-cloud/firestore";
 import type {
-	CircleData,
 	CreatorType,
 	CreatorWorkMapping,
 	DLsiteRawApiResponse,

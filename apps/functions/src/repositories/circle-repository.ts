@@ -42,7 +42,7 @@ export class CircleRepository {
 				circleId: doc.id,
 			});
 		} catch (error) {
-			logger.error(`Failed to fetch circle: ${circleId}`, error);
+			logger.error(`Failed to fetch circle: ${circleId}`, { error });
 			return null;
 		}
 	}
@@ -78,7 +78,7 @@ export class CircleRepository {
 
 			return true;
 		} catch (error) {
-			logger.error(`Failed to save circle: ${entity.circleId}`, error);
+			logger.error(`Failed to save circle: ${entity.circleId}`, { error });
 			return false;
 		}
 	}
@@ -120,7 +120,7 @@ export class CircleRepository {
 			logger.info(`Created new circle: ${circleId}`);
 			return newCircle;
 		} catch (error) {
-			logger.error(`Failed to create circle: ${circleId}`, error);
+			logger.error(`Failed to create circle: ${circleId}`, { error });
 			return null;
 		}
 	}
@@ -141,7 +141,7 @@ export class CircleRepository {
 			const updated = circle.incrementWorkCount();
 			return await this.save(updated);
 		} catch (error) {
-			logger.error(`Failed to increment work count: ${circleId}`, error);
+			logger.error(`Failed to increment work count: ${circleId}`, { error });
 			return false;
 		}
 	}
@@ -179,14 +179,14 @@ export class CircleRepository {
 						});
 						results.push(entity);
 					} catch (error) {
-						logger.warn(`Failed to parse circle: ${doc.id}`, error);
+						logger.warn(`Failed to parse circle: ${doc.id}`, { error });
 					}
 				}
 			}
 
 			return results;
 		} catch (error) {
-			logger.error("Failed to fetch circles by IDs", error);
+			logger.error("Failed to fetch circles by IDs", { error });
 			return [];
 		}
 	}
@@ -214,13 +214,13 @@ export class CircleRepository {
 					});
 					results.push(entity);
 				} catch (error) {
-					logger.warn(`Failed to parse circle: ${doc.id}`, error);
+					logger.warn(`Failed to parse circle: ${doc.id}`, { error });
 				}
 			}
 
 			return results;
 		} catch (error) {
-			logger.error("Failed to fetch top circles", error);
+			logger.error("Failed to fetch top circles", { error });
 			return [];
 		}
 	}
