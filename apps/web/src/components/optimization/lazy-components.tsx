@@ -40,10 +40,3 @@ export const LazyAudioButtonCreator = lazy(() =>
 		default: module.AudioButtonCreator,
 	})),
 );
-
-// 並列セクションコンテナの遅延読み込み
-export const LazyParallelSectionsContainer = lazy(() =>
-	import("@/components/sections/parallel-sections-container").then((module) => ({
-		default: module.ParallelSectionsContainer,
-	})),
-);
