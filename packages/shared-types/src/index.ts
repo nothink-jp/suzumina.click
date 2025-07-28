@@ -17,6 +17,8 @@ export * from "./entities/audio-button";
 export * from "./entities/base/entity";
 // サークル・クリエイター関連の型とスキーマのエクスポート
 export * from "./entities/circle-creator";
+// Circle Entity
+export * from "./entities/circle-entity";
 // お問い合わせ関連の型とスキーマのエクスポート
 export * from "./entities/contact";
 // お気に入り関連の型とスキーマのエクスポート
