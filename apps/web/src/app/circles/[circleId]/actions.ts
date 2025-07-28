@@ -80,6 +80,9 @@ export async function getCircleInfo(circleId: string): Promise<CircleEntity | nu
 		}
 
 		const data = circleDoc.data();
+		if (!data) {
+			return null;
+		}
 		// CircleEntityのfromFirestoreDataメソッドを使用
 		return CircleEntity.fromFirestoreData({
 			circleId: circleDoc.id,
@@ -116,6 +119,9 @@ export async function getCircleWorks(circleId: string): Promise<WorkPlainObject[
 		}
 
 		const data = circleDoc.data();
+		if (!data) {
+			return [];
+		}
 		const circleName = data.name || "";
 
 		// 全作品を取得してクライアント側でフィルタリング
@@ -183,6 +189,9 @@ export async function getCircleWorksWithPagination(
 		}
 
 		const data = circleDoc.data();
+		if (!data) {
+			return { works: [], totalCount: 0 };
+		}
 		const circleName = data.name || "";
 
 		// 全作品を取得してクライアント側でフィルタリング

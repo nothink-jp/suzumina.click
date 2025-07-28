@@ -189,10 +189,10 @@ describe("Circle page server actions", () => {
 
 			// CircleEntity.fromFirestoreDataのモック設定
 			vi.mocked(CircleEntity.fromFirestoreData).mockReturnValue({
-				circleIdString: "RG12345",
-				circleNameString: "テストサークル",
-				nameEn: "Test Circle",
-				workCount: 10,
+				circleId: "RG12345",
+				circleName: "テストサークル",
+				circleNameEn: "Test Circle",
+				workCountNumber: 10,
 				createdAt: new Date("2024-01-01"),
 				lastUpdated: new Date("2025-01-01"),
 			} as any);
@@ -200,10 +200,10 @@ describe("Circle page server actions", () => {
 			const result = await getCircleInfo("RG12345");
 
 			expect(result).toEqual({
-				circleIdString: "RG12345",
-				circleNameString: "テストサークル",
-				nameEn: "Test Circle",
-				workCount: 10,
+				circleId: "RG12345",
+				circleName: "テストサークル",
+				circleNameEn: "Test Circle",
+				workCountNumber: 10,
 				lastUpdated: expect.any(Date),
 				createdAt: expect.any(Date),
 			});

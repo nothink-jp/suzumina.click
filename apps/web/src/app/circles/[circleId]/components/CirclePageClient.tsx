@@ -65,7 +65,7 @@ export function CirclePageClient({
 			setIsLoading(true);
 			try {
 				const result = await getCircleWorksWithPagination(
-					circle.circleIdString,
+					circle.circleId,
 					pageFromUrl,
 					limitFromUrl,
 					sortFromUrl,
@@ -79,13 +79,13 @@ export function CirclePageClient({
 		};
 
 		fetchData();
-	}, [searchParamsHook, circle.circleIdString, currentPage, updateState, initialPage, data.length]);
+	}, [searchParamsHook, circle.circleId, currentPage, updateState, initialPage, data.length]);
 
 	return (
 		<ListPageLayout>
 			<ListPageHeader
-				title={circle.circleNameString}
-				description={`${circle.nameEn ? `${circle.nameEn} - ` : ""}作品数: ${circle.workCount}件`}
+				title={circle.circleName}
+				description={`${circle.circleNameEn ? `${circle.circleNameEn} - ` : ""}作品数: ${circle.workCountNumber}件`}
 			/>
 
 			<ListPageContent>
@@ -108,7 +108,7 @@ export function CirclePageClient({
 							totalCount={totalCount}
 							currentPage={currentPage}
 							showFilters={false}
-							baseUrl={`/circles/${circle.circleIdString}`}
+							baseUrl={`/circles/${circle.circleId}`}
 						/>
 					)}
 				</Suspense>

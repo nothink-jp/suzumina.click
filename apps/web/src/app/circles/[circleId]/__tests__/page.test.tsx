@@ -23,9 +23,9 @@ vi.mock("../actions", () => ({
 vi.mock("../components/CirclePageClient", () => ({
 	CirclePageClient: ({ circle, initialData }: any) => (
 		<div data-testid="circle-page-client">
-			<h1>{circle.circleNameString || circle.name}</h1>
-			{circle.nameEn && <p>{circle.nameEn}</p>}
-			<p>作品数: {circle.workCount}件</p>
+			<h1>{circle.circleName || circle.name}</h1>
+			{circle.circleNameEn && <p>{circle.circleNameEn}</p>}
+			<p>作品数: {circle.workCountNumber || circle.workCount}件</p>
 			{initialData.map((work: any) => (
 				<div key={work.id} data-testid="work-card">
 					<h3>{work.title}</h3>
@@ -46,10 +46,10 @@ import CirclePage from "../page";
 
 describe("CirclePage", () => {
 	const mockCircleData = {
-		circleIdString: "RG12345",
-		circleNameString: "テストサークル",
-		nameEn: "Test Circle",
-		workCount: 10,
+		circleId: "RG12345",
+		circleName: "テストサークル",
+		circleNameEn: "Test Circle",
+		workCountNumber: 10,
 		lastUpdated: new Date("2025-01-01"),
 		createdAt: new Date("2024-01-01"),
 	};
@@ -177,7 +177,7 @@ describe("CirclePage", () => {
 	it("英語名がない場合は日本語名のみ表示する", async () => {
 		const circleWithoutEnName = {
 			...mockCircleData,
-			nameEn: undefined,
+			circleNameEn: undefined,
 		};
 		(actions.getCircleWithWorksWithPagination as any).mockResolvedValue({
 			circle: circleWithoutEnName,
