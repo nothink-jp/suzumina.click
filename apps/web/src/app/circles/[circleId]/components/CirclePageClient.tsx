@@ -1,6 +1,6 @@
 "use client";
 
-import type { CircleData, WorkPlainObject } from "@suzumina.click/shared-types";
+import type { CircleEntity, WorkPlainObject } from "@suzumina.click/shared-types";
 import {
 	ListPageContent,
 	ListPageHeader,
@@ -12,7 +12,7 @@ import WorkList from "@/app/works/components/WorkList";
 import { getCircleWorksWithPagination } from "../actions";
 
 interface CirclePageClientProps {
-	circle: CircleData;
+	circle: CircleEntity;
 	initialData: WorkPlainObject[];
 	initialTotalCount: number;
 	initialPage: number;
@@ -65,7 +65,7 @@ export function CirclePageClient({
 			setIsLoading(true);
 			try {
 				const result = await getCircleWorksWithPagination(
-					circle.circleId,
+					circle.circleIdString,
 					pageFromUrl,
 					limitFromUrl,
 					sortFromUrl,
@@ -79,12 +79,12 @@ export function CirclePageClient({
 		};
 
 		fetchData();
-	}, [searchParamsHook, circle.circleId, currentPage, updateState, initialPage, data.length]);
+	}, [searchParamsHook, circle.circleIdString, currentPage, updateState, initialPage, data.length]);
 
 	return (
 		<ListPageLayout>
 			<ListPageHeader
-				title={circle.name}
+				title={circle.circleNameString}
 				description={`${circle.nameEn ? `${circle.nameEn} - ` : ""}作品数: ${circle.workCount}件`}
 			/>
 
@@ -108,7 +108,7 @@ export function CirclePageClient({
 							totalCount={totalCount}
 							currentPage={currentPage}
 							showFilters={false}
-							baseUrl={`/circles/${circle.circleId}`}
+							baseUrl={`/circles/${circle.circleIdString}`}
 						/>
 					)}
 				</Suspense>

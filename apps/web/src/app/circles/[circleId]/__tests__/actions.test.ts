@@ -2,11 +2,14 @@
  * Circle page server actions のテストスイート
  */
 
-import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
+import { CircleEntity, convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // convertToWorkPlainObjectのモック
 vi.mock("@suzumina.click/shared-types", () => ({
+	CircleEntity: {
+		fromFirestoreData: vi.fn(),
+	},
 	convertToWorkPlainObject: vi.fn((data) => {
 		if (!data || !data.id || !data.productId) return null;
 		return {
@@ -184,11 +187,21 @@ describe("Circle page server actions", () => {
 				}),
 			});
 
+			// CircleEntity.fromFirestoreDataのモック設定
+			vi.mocked(CircleEntity.fromFirestoreData).mockReturnValue({
+				circleIdString: "RG12345",
+				circleNameString: "テストサークル",
+				nameEn: "Test Circle",
+				workCount: 10,
+				createdAt: new Date("2024-01-01"),
+				lastUpdated: new Date("2025-01-01"),
+			} as any);
+
 			const result = await getCircleInfo("RG12345");
 
 			expect(result).toEqual({
-				circleId: "RG12345",
-				name: "テストサークル",
+				circleIdString: "RG12345",
+				circleNameString: "テストサークル",
 				nameEn: "Test Circle",
 				workCount: 10,
 				lastUpdated: expect.any(Date),

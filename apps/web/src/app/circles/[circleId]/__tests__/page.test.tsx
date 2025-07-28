@@ -23,7 +23,7 @@ vi.mock("../actions", () => ({
 vi.mock("../components/CirclePageClient", () => ({
 	CirclePageClient: ({ circle, initialData }: any) => (
 		<div data-testid="circle-page-client">
-			<h1>{circle.name}</h1>
+			<h1>{circle.circleNameString || circle.name}</h1>
 			{circle.nameEn && <p>{circle.nameEn}</p>}
 			<p>作品数: {circle.workCount}件</p>
 			{initialData.map((work: any) => (
@@ -46,8 +46,8 @@ import CirclePage from "../page";
 
 describe("CirclePage", () => {
 	const mockCircleData = {
-		circleId: "RG12345",
-		name: "テストサークル",
+		circleIdString: "RG12345",
+		circleNameString: "テストサークル",
 		nameEn: "Test Circle",
 		workCount: 10,
 		lastUpdated: new Date("2025-01-01"),
