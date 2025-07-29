@@ -4,6 +4,11 @@
 > **📝 ステータス**: v11.0 タイムアウト最適化 + コスト最適化 + 時系列データ基盤実装完了  
 > **🔧 対象**: Terraformで管理されているGoogle Cloud Platform (GCP) インフラストラクチャ
 
+## 関連ドキュメント
+
+- [DDD実装判断基準](../architecture/ddd-implementation-decisions.md) - Entity実装の判断基準
+- [Entity実装履歴](../architecture/entity-implementation-history.md) - 実装の試みと学習事項
+
 ## 概要
 
 suzumina.clickは、声優「涼花みなせ」のファンサイトとして、YouTubeビデオとDLsite作品情報を自動収集し、音声ボタン機能を提供するWebプラットフォームです。v11.0では、タイムアウト最適化による100%処理成功保証、コスト最適化システム、時系列データ基盤を実装し、Terraformで管理されているGoogle Cloud Platform (GCP) インフラストラクチャの全体像を図解します。

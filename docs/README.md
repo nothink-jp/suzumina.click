@@ -36,6 +36,12 @@ Core technical references for the project:
 - [Domain Object Catalog](reference/domain-object-catalog.md) - Detailed entity and value object specifications
 - [Ubiquitous Language](reference/ubiquitous-language.md) - Common terminology and concepts
 
+### Architecture Decisions
+Design decisions and implementation patterns:
+
+- [DDD Implementation Decisions](architecture/ddd-implementation-decisions.md) - When and how to apply DDD patterns
+- [Entity Implementation History](architecture/entity-implementation-history.md) - Learning from our Entity implementations
+
 ### External API Documentation
 Integration specifications and analysis:
 
