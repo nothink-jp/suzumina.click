@@ -30,7 +30,9 @@ Welcome to the suzumina.click project documentation. This is the central hub for
 ### Reference Documentation
 Core technical references for the project:
 
-- [Architecture Overview](reference/architecture.md) - System architecture and design decisions
+- [Architecture Overview](reference/architecture.md) - Architecture documentation index
+- [Infrastructure Architecture](reference/infrastructure-architecture.md) - GCP infrastructure and deployment
+- [Application Architecture](reference/application-architecture.md) - Application design and patterns
 - [Database Schema](reference/database-schema.md) - Firestore structure and data models
 - [Domain Model](reference/domain-model.md) - Domain-driven design architecture
 - [Domain Object Catalog](reference/domain-object-catalog.md) - Detailed entity and value object specifications

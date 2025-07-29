@@ -56,7 +56,9 @@ For detailed project documentation, see [Documentation Index](docs/README.md).
 ### Key Documentation Links
 - [Project Overview](docs/README.md)
 - [Development Guide](docs/guides/development.md)
-- [Architecture Reference](docs/reference/architecture.md)
+- [Architecture Overview](docs/reference/architecture.md)
+- [Infrastructure Architecture](docs/reference/infrastructure-architecture.md)
+- [Application Architecture](docs/reference/application-architecture.md)
 - [Database Schema](docs/reference/database-schema.md)
 - [Domain Model](docs/reference/domain-model.md)
 - [Testing Guide](docs/guides/testing.md)
