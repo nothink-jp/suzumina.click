@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import type { CreatorWorkMappingPlainObject } from "../plain-objects/creator-plain";
 import { CreatorRole } from "../value-objects/work/creator-type";
 import { WorkId } from "../value-objects/work/work-id";
 import { BaseEntity, type EntityValidatable } from "./base/entity";
@@ -481,34 +482,14 @@ export class CreatorWorkMappingEntity
 	/**
 	 * Converts to plain object for serialization
 	 */
-	toPlainObject(): {
-		id: string;
-		mappingId: string;
-		creatorId: string;
-		workId: string;
-		creatorName: string;
-		roles: CreatorRole[];
-		circleId: string;
-		isVoiceActor: boolean;
-		isIllustrator: boolean;
-		isScenarioWriter: boolean;
-		hasMultipleRoles: boolean;
-		isRecent: boolean;
-		createdAt: string;
-	} {
+	toPlainObject(): CreatorWorkMappingPlainObject {
 		return {
 			id: this.mappingId,
-			mappingId: this.mappingId,
 			creatorId: this.creatorIdString,
 			workId: this.workIdString,
 			creatorName: this.creatorNameString,
-			roles: this.rolesArray,
+			types: this.rolesArray,
 			circleId: this.circleIdString,
-			isVoiceActor: this.isVoiceActorInWork(),
-			isIllustrator: this.isIllustratorInWork(),
-			isScenarioWriter: this.isScenarioWriterInWork(),
-			hasMultipleRoles: this.hasMultipleRoles(),
-			isRecent: this.isRecentMapping(),
 			createdAt: this._createdAt.toISOString(),
 		};
 	}

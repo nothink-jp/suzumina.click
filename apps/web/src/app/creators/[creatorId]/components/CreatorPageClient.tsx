@@ -1,6 +1,6 @@
 "use client";
 
-import type { CreatorPageInfo, WorkPlainObject } from "@suzumina.click/shared-types";
+import type { CreatorPlainObject, WorkPlainObject } from "@suzumina.click/shared-types";
 import { getCreatorTypeLabel } from "@suzumina.click/shared-types";
 import {
 	ListPageContent,
@@ -13,7 +13,7 @@ import WorkList from "@/app/works/components/WorkList";
 import { getCreatorWorksWithPagination } from "../actions";
 
 interface CreatorPageClientProps {
-	creator: CreatorPageInfo;
+	creator: CreatorPlainObject;
 	initialData: WorkPlainObject[];
 	initialTotalCount: number;
 	initialPage: number;

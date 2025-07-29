@@ -417,16 +417,10 @@ describe("CreatorEntity", () => {
 				id: "12345",
 				creatorId: "12345",
 				name: "テスト声優",
-				roles: ["voice"],
-				rolesDisplay: "声優",
-				primaryRole: "voice",
+				types: ["voice"],
 				workCount: 10,
-				isNew: true,
-				isActive: true,
-				hasWorks: true,
-				isVoiceActor: true,
 			});
-			expect(plain.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+			expect(plain.registeredAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 			expect(plain.lastUpdated).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 		});
 	});

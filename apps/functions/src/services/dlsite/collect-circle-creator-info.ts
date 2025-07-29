@@ -9,11 +9,15 @@ import { FieldValue, Firestore } from "@google-cloud/firestore";
 import type {
 	CircleData,
 	CreatorType,
-	CreatorWorkMapping,
 	DLsiteRawApiResponse,
 	WorkDocument,
 } from "@suzumina.click/shared-types";
-import { CircleEntity, isValidCircleId, isValidCreatorId } from "@suzumina.click/shared-types";
+import {
+	CircleEntity,
+	CreatorWorkMappingEntity,
+	isValidCircleId,
+	isValidCreatorId,
+} from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
 
 const adminDb = new Firestore();
@@ -175,16 +179,24 @@ async function updateCreatorMappings(
 
 			const updatedTypes = Array.from(new Set([...existingTypes, type]));
 
-			const mappingData: CreatorWorkMapping = {
-				creatorId: creator.id,
+			// CreatorWorkMappingEntityを作成
+			const mappingEntity = CreatorWorkMappingEntity.create(
+				creator.id,
 				workId,
-				creatorName: creator.name,
-				types: updatedTypes,
+				creator.name,
+				updatedTypes,
 				circleId,
-				createdAt: FieldValue.serverTimestamp(),
-			};
+			);
 
-			batch.set(mappingRef, mappingData, { merge: true });
+			const mappingData = mappingEntity.toFirestore();
+			batch.set(
+				mappingRef,
+				{
+					...mappingData,
+					createdAt: FieldValue.serverTimestamp(),
+				},
+				{ merge: true },
+			);
 
 			processedCreators.add(creator.id);
 		}
