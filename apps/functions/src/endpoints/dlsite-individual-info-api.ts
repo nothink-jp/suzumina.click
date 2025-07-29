@@ -24,9 +24,9 @@ const UNIFIED_METADATA_DOC_ID = "unified_data_collection_metadata";
 const METADATA_COLLECTION = "dlsiteMetadata";
 
 // バッチ処理設定
-const MAX_CONCURRENT_API_REQUESTS = 5;
-const API_REQUEST_DELAY = 800;
-const BATCH_SIZE = 200;
+const MAX_CONCURRENT_API_REQUESTS = 6;
+const API_REQUEST_DELAY = 400;
+const BATCH_SIZE = 100; // バッチサイズを削減して、より多くのバッチを処理可能に
 const MAX_EXECUTION_TIME = 420000; // 7分
 
 // 統合データ収集メタデータの型定義
@@ -139,7 +139,10 @@ async function processBatch(
 
 		// 失敗作品のログ
 		if (failedWorkIds.length > 0) {
-			logger.warn(`バッチ ${batchNumber}: ${failedWorkIds.length}件の取得失敗`, { failedWorkIds });
+			logger.warn(`バッチ ${batchNumber}: ${failedWorkIds.length}件の取得失敗`);
+			logger.debug(
+				`失敗ID一覧: ${failedWorkIds.slice(0, 10).join(", ")}${failedWorkIds.length > 10 ? "..." : ""}`,
+			);
 		}
 
 		const apiResponses = Array.from(apiDataMap.values());
@@ -167,6 +170,9 @@ async function processBatch(
 			await saveWorksToFirestore(processedWorkData);
 			results.basicDataUpdated = processedWorkData.length;
 			logger.info(`バッチ ${batchNumber}: ${results.basicDataUpdated}件の基本データ更新完了`);
+			logger.info(
+				`バッチ ${batchNumber} 詳細: 入力${workIds.length}件 → API成功${apiDataMap.size}件 → 有効データ${validWorkData.length}件 → 保存${results.basicDataUpdated}件`,
+			);
 		} catch (error) {
 			const errorMsg = `Firestore保存エラー: ${error instanceof Error ? error.message : String(error)}`;
 			logger.error(errorMsg);
@@ -274,7 +280,12 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 
 			batches = chunkArray(allWorkIds, BATCH_SIZE);
 
-			logger.info(`新規バッチ処理開始: 総作品数=${allWorkIds.length}, バッチ数=${batches.length}`);
+			logger.info(
+				`新規バッチ処理開始: 総作品数=${allWorkIds.length}, バッチ数=${batches.length}, バッチサイズ=${BATCH_SIZE}`,
+			);
+			logger.info(
+				`処理時間制限: ${MAX_EXECUTION_TIME / 1000}秒, 予想処理時間: ${batches.length * 30}秒（30秒/バッチ）`,
+			);
 
 			// メタデータを初期化
 			await updateUnifiedMetadata({

@@ -217,7 +217,7 @@ jobs:
               --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchYouTubeVideos \
               --memory 512Mi \
               --timeout 540s \
-              --max-instances 10 \
+              --max-instances 3 \
               --service-account fetch-youtube-videos-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
               --quiet; then
               echo "✅ fetchYouTubeVideos (Gen2) deployed successfully"
@@ -253,7 +253,7 @@ jobs:
               --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteUnifiedData,INDIVIDUAL_INFO_API_ENABLED=true,API_ONLY_MODE=true,MAX_CONCURRENT_API_REQUESTS=5,API_REQUEST_DELAY_MS=500,ENABLE_DATA_VALIDATION=true,MINIMUM_QUALITY_SCORE=80,ENABLE_TIMESERIES_INTEGRATION=true,LOG_LEVEL=info \
               --memory 512Mi \
               --timeout 300s \
-              --max-instances 2 \
+              --max-instances 1 \
               --service-account fetch-dlsite-individual-api-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
               --quiet; then
               echo "✅ fetchDLsiteUnifiedData (Gen2) deployed successfully"

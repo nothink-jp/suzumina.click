@@ -39,7 +39,7 @@ resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
 
   # サービス設定
   service_config {
-    max_instance_count = 2       # Individual Info API並列処理対応
+    max_instance_count = 1       # リソース削減のため1に制限
     min_instance_count = 0       # コールドスタートを許容
     available_memory   = local.dlsite_individual_api_memory
     timeout_seconds    = local.dlsite_individual_api_timeout
