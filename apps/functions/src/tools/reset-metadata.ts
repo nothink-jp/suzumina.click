@@ -121,6 +121,9 @@ async function main(): Promise<void> {
 	}
 }
 
+// 外部から呼び出し可能にするためのエクスポート
+export { resetMetadataState as resetUnifiedMetadata };
+
 // スクリプト実行
 if (require.main === module) {
 	main().catch((error) => {

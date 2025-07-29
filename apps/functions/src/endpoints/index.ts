@@ -12,9 +12,6 @@ import * as functions from "@google-cloud/functions-framework";
 import * as logger from "../shared/logger";
 // 各モジュールから関数をインポート（統合アーキテクチャ）
 import { fetchDLsiteUnifiedData } from "./dlsite-individual-info-api";
-// Phase 3: 通知システム
-import { supplementNotification, weeklyHealthReport } from "./supplement-notification";
-// collectDLsiteTimeseries は統合アーキテクチャにより fetchDLsiteWorksIndividualAPI に統合
 import { fetchYouTubeVideos } from "./youtube";
 
 /**
@@ -50,13 +47,6 @@ interface PubsubMessage {
 // 統合アーキテクチャによる Cloud Functions 登録
 functions.cloudEvent<PubsubMessage>("fetchYouTubeVideos", fetchYouTubeVideos);
 functions.cloudEvent<PubsubMessage>("fetchDLsiteUnifiedData", fetchDLsiteUnifiedData);
-// collectDLsiteTimeseries は統合アーキテクチャにより廃止
-
-// Phase 3: 通知システム (失敗率監視削除済み)
-
-// HTTPトリガー関数（通知システム）
-functions.http("supplementNotification", supplementNotification);
-functions.http("weeklyHealthReport", weeklyHealthReport);
 
 /**
  * プロセス終了処理
