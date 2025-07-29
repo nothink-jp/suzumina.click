@@ -43,6 +43,8 @@ export * from "./plain-objects/work-plain";
 // FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead
 // FirestoreServerAudioButtonData is available from entities/audio-button
 export type { FirestoreServerAudioButtonData } from "./types/firestore/audio-button";
+export type { CircleDocument } from "./types/firestore/circle";
+export { isCircleDocument } from "./types/firestore/circle";
 export type {
 	FirestoreServerVideoData,
 	FirestoreVideoData,
