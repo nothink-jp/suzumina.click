@@ -98,6 +98,12 @@ export function useVideo(video: VideoPlainObject) {
 					className: "bg-blue-600/90 text-white",
 					ariaLabel: "配信予定のライブ配信",
 				};
+			case "possibly_live":
+				return {
+					text: "配信中（推定）",
+					className: "bg-red-600/90 text-white",
+					ariaLabel: "配信中の可能性があるライブ配信",
+				};
 			case "archived":
 				return {
 					text: "配信アーカイブ",

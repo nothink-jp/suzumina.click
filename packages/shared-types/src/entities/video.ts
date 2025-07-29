@@ -827,6 +827,22 @@ export class Video {
 			return "live";
 		}
 
+		// Check if it's an upcoming stream based on scheduledStartTime
+		// This handles cases where liveBroadcastContent is "none" but scheduledStartTime is in the future
+		if (
+			this._liveStreamingDetails &&
+			this._liveStreamingDetails.scheduledStartTime &&
+			!this._liveStreamingDetails.actualStartTime
+		) {
+			const now = new Date();
+			if (this._liveStreamingDetails.scheduledStartTime > now) {
+				return "upcoming";
+			}
+			// 配信予定時刻を過ぎているが、actualStartTimeがない場合
+			// データ更新の遅延により、実際は配信中の可能性がある
+			return "possibly_live";
+		}
+
 		// Then check if it's an archived stream or premiere
 		if (this.isArchivedStream()) return "archived";
 		if (this.isPremiere()) return "premiere";

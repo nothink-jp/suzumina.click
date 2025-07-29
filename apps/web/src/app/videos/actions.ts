@@ -89,7 +89,7 @@ function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
 
 			// live_upcomingは特別な処理
 			if (params.videoType === "live_upcoming") {
-				return videoType === "live" || videoType === "upcoming";
+				return videoType === "live" || videoType === "upcoming" || videoType === "possibly_live";
 			}
 
 			return videoType === expectedType;

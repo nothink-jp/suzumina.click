@@ -4,7 +4,6 @@ import type { FrontendVideoData } from "@suzumina.click/shared-types";
 import {
 	canCreateAudioButton,
 	getAudioButtonCreationErrorMessage,
-	parseDurationToSeconds,
 } from "@suzumina.click/shared-types";
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
@@ -19,50 +18,9 @@ import ThumbnailImage from "@/components/ui/thumbnail-image";
 
 // Helper function to get video badge information
 function getVideoBadgeInfo(video: FrontendVideoData) {
-	// _computedプロパティがある場合は優先的に使用
-	if ("_computed" in video && video._computed) {
-		const { videoType } = video._computed;
-		switch (videoType) {
-			case "live":
-				return {
-					text: "配信中",
-					icon: Radio,
-					className: "bg-red-600/90 text-white",
-					ariaLabel: "現在配信中のライブ配信",
-				};
-			case "upcoming":
-				return {
-					text: "配信予告",
-					icon: Clock,
-					className: "bg-blue-600/90 text-white",
-					ariaLabel: "配信予定のライブ配信",
-				};
-			case "archived":
-				return {
-					text: "配信アーカイブ",
-					icon: Radio,
-					className: "bg-gray-600/90 text-white",
-					ariaLabel: "ライブ配信のアーカイブ",
-				};
-			case "premiere":
-				return {
-					text: "プレミア公開",
-					icon: Video,
-					className: "bg-purple-600/90 text-white",
-					ariaLabel: "プレミア公開動画",
-				};
-			default:
-				return {
-					text: "通常動画",
-					icon: Video,
-					className: "bg-black/70 text-white",
-					ariaLabel: "通常動画コンテンツ",
-				};
-		}
-	}
-
-	// 後方互換性のためのフォールバック
-	switch (video.liveBroadcastContent) {
+	// FrontendVideoData (VideoPlainObject) は常に_computedプロパティを持つ
+	const { videoType } = video._computed;
+	switch (videoType) {
 		case "live":
 			return {
 				text: "配信中",
@@ -77,47 +35,35 @@ function getVideoBadgeInfo(video: FrontendVideoData) {
 				className: "bg-blue-600/90 text-white",
 				ariaLabel: "配信予定のライブ配信",
 			};
-		case "none":
-			return getVideoBadgeInfoForNone(video);
-		default:
+		case "possibly_live":
 			return {
-				text: "動画",
-				icon: Video,
-				className: "bg-black/70 text-white",
-				ariaLabel: "動画コンテンツ",
+				text: "配信中（推定）",
+				icon: Radio,
+				className: "bg-red-600/90 text-white",
+				ariaLabel: "配信中の可能性があるライブ配信",
 			};
-	}
-}
-
-// Helper function for liveBroadcastContent === "none" cases
-function getVideoBadgeInfoForNone(video: FrontendVideoData) {
-	// liveStreamingDetails が存在し、actualEndTime がある場合は配信済み
-	if (video.liveStreamingDetails?.actualEndTime) {
-		// 15分ルールで配信アーカイブかプレミア公開かを判定
-		const durationSeconds = parseDurationToSeconds(video.duration);
-		if (durationSeconds > 15 * 60) {
+		case "archived":
 			return {
 				text: "配信アーカイブ",
 				icon: Radio,
 				className: "bg-gray-600/90 text-white",
 				ariaLabel: "ライブ配信のアーカイブ",
 			};
-		}
-		return {
-			text: "プレミア公開",
-			icon: Video,
-			className: "bg-purple-600/90 text-white",
-			ariaLabel: "プレミア公開動画",
-		};
+		case "premiere":
+			return {
+				text: "プレミア公開",
+				icon: Video,
+				className: "bg-purple-600/90 text-white",
+				ariaLabel: "プレミア公開動画",
+			};
+		default:
+			return {
+				text: "通常動画",
+				icon: Video,
+				className: "bg-black/70 text-white",
+				ariaLabel: "通常動画コンテンツ",
+			};
 	}
-
-	// 通常動画
-	return {
-		text: "通常動画",
-		icon: Video,
-		className: "bg-black/70 text-white",
-		ariaLabel: "通常動画コンテンツ",
-	};
 }
 
 interface VideoCardProps {
@@ -200,14 +146,6 @@ const VideoCard = memo(function VideoCard({
 		}
 	}, [video.publishedAt, video.liveStreamingDetails?.actualStartTime]);
 
-	// メモ化: YouTube URLを最適化
-	const _youtubeUrl = useMemo(() => {
-		if ("_computed" in video && video._computed) {
-			return video._computed.youtubeUrl;
-		}
-		return `https://youtube.com/watch?v=${video.videoId || video.id}`;
-	}, [video]);
-
 	// メモ化: YouTubeカテゴリ名取得
 	const categoryName = useMemo(() => {
 		return getYouTubeCategoryName(video.categoryId);
@@ -284,11 +222,7 @@ const VideoCard = memo(function VideoCard({
 					>
 						<div className="relative aspect-[16/9] bg-black rounded-t-lg overflow-hidden">
 							<ThumbnailImage
-								src={
-									"_computed" in video && video._computed
-										? video._computed.thumbnailUrl
-										: video.thumbnailUrl || ""
-								}
+								src={video._computed.thumbnailUrl}
 								alt={`${video.title}のサムネイル画像`}
 								className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
 								priority={priority}
