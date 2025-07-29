@@ -2,6 +2,12 @@
 
 This catalog provides detailed specifications for all domain objects in the suzumina.click system.
 
+## Related Documentation
+
+- [Entity Implementation Guide](entity-implementation-guide.md) - How to implement entities
+- [ADR-001: DDD Implementation Guidelines](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - When to use entities
+- [ADR-002: Entity Implementation Lessons](../decisions/architecture/ADR-002-entity-implementation-lessons.md) - Learning from experience
+
 ## Entities
 
 ### User

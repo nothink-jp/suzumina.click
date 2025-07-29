@@ -39,8 +39,9 @@ Core technical references for the project:
 ### Architecture Decisions
 Design decisions and implementation patterns:
 
-- [DDD Implementation Decisions](architecture/ddd-implementation-decisions.md) - When and how to apply DDD patterns
-- [Entity Implementation History](architecture/entity-implementation-history.md) - Learning from our Entity implementations
+- [Architecture Decision Records](decisions/README.md) - Important technical decisions
+- [ADR-001: DDD Implementation Guidelines](decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - When to apply DDD patterns
+- [ADR-002: Entity Implementation Lessons](decisions/architecture/ADR-002-entity-implementation-lessons.md) - Learning from our implementations
 
 ### External API Documentation
 Integration specifications and analysis:

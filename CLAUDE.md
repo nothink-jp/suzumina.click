@@ -42,6 +42,7 @@ For detailed project documentation, see [Documentation Index](docs/README.md).
 - **ALWAYS update domain documentation** when modifying entities or value objects
 - Update `docs/reference/domain-model.md` for architectural changes
 - Update `docs/reference/domain-object-catalog.md` for entity/value object changes
+- **Check DDD implementation criteria** before creating new entities - see `docs/decisions/architecture/ADR-001-ddd-implementation-guidelines.md`
 
 ---
 
@@ -59,6 +60,7 @@ For detailed project documentation, see [Documentation Index](docs/README.md).
 - [Database Schema](docs/reference/database-schema.md)
 - [Domain Model](docs/reference/domain-model.md)
 - [Testing Guide](docs/guides/testing.md)
+- [Architecture Decision Records](docs/decisions/README.md)
 
 ### Quick Command Reference
 ```bash

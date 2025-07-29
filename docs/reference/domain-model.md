@@ -87,6 +87,13 @@ User → AudioButton (作成者、お気に入り)
 ### ⏳ 部分実装
 - User エンティティ（簡易実装のみ）
 
+### ❌ 実装見送り
+- Circle エンティティ（シンプルなCRUD操作のみ）
+- Creator エンティティ（ビジネスルールが少ない）
+- CreatorWorkMapping エンティティ（単純な関連付け）
+
+詳細は [ADR-002: Entity実装の教訓](../decisions/architecture/ADR-002-entity-implementation-lessons.md) を参照
+
 ## ファイル構成
 
 ```
