@@ -13,7 +13,7 @@ import type { DLsiteRawApiResponse, WorkDocument } from "@suzumina.click/shared-
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../../infrastructure/management/user-agent-manager";
 import { batchCollectCircleAndCreatorInfo } from "../../services/dlsite/collect-circle-creator-info";
-import { getExistingWorksMap, saveWorksToFirestore } from "../../services/dlsite/dlsite-firestore";
+import { saveWorksToFirestore } from "../../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../../services/dlsite/individual-info-api-client";
 import { WorkMapper } from "../../services/mappers/work-mapper";
 import { savePriceHistory } from "../../services/price-history";
@@ -22,7 +22,7 @@ import * as logger from "../../shared/logger";
 
 // ローカル環境用設定（高速化版: DLsiteへの負荷を考慮しつつ高速実行）
 const MAX_CONCURRENT_REQUESTS = 5; // 同時実行数を増加（推奨値）
-const REQUEST_DELAY = 800; // 0.8秒間隔（安全な範囲で短縮）
+const REQUEST_DELAY = 400; // 0.4秒間隔（安全な範囲で短縮）
 const BATCH_SIZE = 50; // バッチサイズは維持
 
 // メタデータ保存用
@@ -138,27 +138,6 @@ class LocalDataCollector {
 		} catch (error) {
 			logger.error("アセットファイル読み込みエラー:", { error });
 			throw new Error("作品IDリストファイルが読み込めませんでした");
-		}
-	}
-
-	/**
-	 * 単一作品のローカルデータ取得
-	 */
-	private async fetchLocalWorkData(workId: string): Promise<DLsiteRawApiResponse | null> {
-		try {
-			const data = await batchFetchIndividualInfo([workId], {
-				maxConcurrent: 1,
-				batchDelay: REQUEST_DELAY,
-			});
-
-			if (data.results.size > 0) {
-				return data.results.get(workId) || null;
-			}
-
-			return null;
-		} catch (error) {
-			logger.warn(`個別取得失敗: ${workId}`, { error });
-			return null;
 		}
 	}
 
@@ -313,22 +292,7 @@ class LocalDataCollector {
 		try {
 			// APIレスポンスをワークデータに変換
 			const apiResponses = batch.map((item) => item.basicInfo);
-			const existingWorksMap = await getExistingWorksMap(batch.map((item) => item.workId));
-
-			// バッチ変換開始
-
-			// APIレスポンスの基本フィールド確認
-			const responseStatistics = {
-				total: apiResponses.length,
-				hasWorkno: apiResponses.filter((r) => r.workno).length,
-				hasWorkName: apiResponses.filter((r) => r.work_name).length,
-				hasMakerName: apiResponses.filter((r) => r.maker_name).length,
-				hasPriceInfo: apiResponses.filter((r) => r.price !== undefined).length,
-			};
-			// APIレスポンス統計は省略
-
 			const workDataList = apiResponses.map((apiData) => WorkMapper.toWork(apiData));
-			// バッチ変換完了
 
 			// APIレスポンスとワークデータを保存（後でサークル・クリエイター収集に使用）
 			batch.forEach((item, index) => {
@@ -498,16 +462,16 @@ class LocalDataCollector {
 	 * サークル・クリエイター収集統計の表示
 	 */
 	private displayCircleCreatorStats(): void {
-		console.log("\n=== サークル・クリエイター収集統計 ===");
-		console.log(`🏢 サークル数: ${this.circleStats.totalCircles}`);
-		console.log(`👥 ユニーククリエイター数: ${this.creatorStats.uniqueCreators.size}`);
-		console.log(`🔗 マッピング数: ${this.creatorStats.totalMappings}`);
+		logger.info("\n=== サークル・クリエイター収集統計 ===");
+		logger.info(`🏢 サークル数: ${this.circleStats.totalCircles}`);
+		logger.info(`👥 ユニーククリエイター数: ${this.creatorStats.uniqueCreators.size}`);
+		logger.info(`🔗 マッピング数: ${this.creatorStats.totalMappings}`);
 	}
 
 	/**
 	 * メタデータの保存
 	 */
-	private async saveCollectionMetadata(
+	async saveCollectionMetadata(
 		result: LocalCollectionResult,
 		_uploadResult?: UploadResult,
 	): Promise<void> {
@@ -569,7 +533,6 @@ async function executeCompleteLocalCollection(options?: {
 		// Step 4: メタデータ保存
 		await collector.saveCollectionMetadata(collectionResult, uploadResult);
 
-		// User-Agent使用統計
 		logUserAgentSummary();
 
 		return { collection: collectionResult, upload: uploadResult };
@@ -584,37 +547,33 @@ async function executeCompleteLocalCollection(options?: {
  */
 async function main(): Promise<void> {
 	try {
-		// DLsite完全データローカル収集ツール開始
-
 		const options = {
-			uploadToFirestore: true, // Firestoreへの投入を有効化
-			maxWorks: undefined, // 全作品を対象
+			uploadToFirestore: true,
+			maxWorks: undefined,
 		};
 
 		const result = await executeCompleteLocalCollection(options);
 
-		console.log("\n=== 完全収集結果 ===");
-		console.log(
+		logger.info("\n=== 完全収集結果 ===");
+		logger.info(
 			`成功: ${result.collection.successfulCollections}/${result.collection.totalAttempted}件 (${((result.collection.successfulCollections / result.collection.totalAttempted) * 100).toFixed(1)}%, ${(result.collection.processingTimeMs / 1000).toFixed(1)}s)`,
 		);
 
 		if (result.upload) {
-			console.log(
+			logger.info(
 				`Firestore投入: ${result.upload.totalUploaded}件成功, ${result.upload.totalErrors}件失敗`,
 			);
 		}
 
 		if (result.collection.errors.length > 0) {
-			console.log(`\n収集エラー (${result.collection.errors.length}件):`);
+			logger.error(`\n収集エラー (${result.collection.errors.length}件):`);
 			result.collection.errors.slice(0, 5).forEach((error, index) => {
-				console.log(`  ${index + 1}. ${error.workId}: ${error.error}`);
+				logger.error(`  ${index + 1}. ${error.workId}: ${error.error}`);
 			});
 			if (result.collection.errors.length > 5) {
-				console.log(`  ... 他${result.collection.errors.length - 5}件`);
+				logger.info(`  ... 他${result.collection.errors.length - 5}件`);
 			}
 		}
-
-		// 完全収集ツール実行完了
 	} catch (error) {
 		logger.error("メイン処理エラー:", {
 			error: error instanceof Error ? error.message : String(error),

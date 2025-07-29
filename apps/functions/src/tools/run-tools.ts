@@ -146,8 +146,7 @@ export async function resetMetadata(): Promise<void> {
 		console.log("\n=== メタデータリセット ===");
 		console.log("⚠️ この操作により処理状態がリセットされます");
 
-		// インポートを動的に行う（reset-metadata.tsが存在する場合）
-		const { resetUnifiedMetadata } = await import("./reset-metadata");
+		const { resetUnifiedMetadata } = await import("./reset-metadata.js");
 		await resetUnifiedMetadata();
 
 		console.log("✅ メタデータリセット完了");
