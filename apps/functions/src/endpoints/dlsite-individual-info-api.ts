@@ -266,7 +266,28 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			startBatch = metadata.currentBatch;
 		} else {
 			// 新規処理
-			allWorkIds = await collectWorkIdsForProduction();
+			try {
+				logger.info("作品ID収集を開始します...");
+				allWorkIds = await collectWorkIdsForProduction();
+				logger.info(`作品ID収集完了: ${allWorkIds.length}件`);
+			} catch (error) {
+				logger.error("作品ID収集エラー:", {
+					error: error instanceof Error ? error.message : String(error),
+					errorType: error instanceof Error ? error.name : "Unknown",
+				});
+				// エラー時はアセットファイルから読み込み
+				try {
+					const { readFileSync } = await import("node:fs");
+					const { join } = await import("node:path");
+					const assetPath = join(__dirname, "../assets/dlsite-work-ids.json");
+					const data = JSON.parse(readFileSync(assetPath, "utf-8"));
+					allWorkIds = data.workIds || [];
+					logger.warn(`アセットファイルから${allWorkIds.length}件の作品IDを読み込みました`);
+				} catch (assetError) {
+					logger.error("アセットファイル読み込みエラー:", assetError);
+					allWorkIds = [];
+				}
+			}
 
 			if (allWorkIds.length === 0) {
 				await handleNoWorkIdsError();
