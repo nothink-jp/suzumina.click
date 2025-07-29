@@ -43,6 +43,18 @@ function handleHttpError(
 		throw new Error(`API access denied for ${workId}`);
 	}
 
+	// 429: レート制限（リトライ可能）
+	if (response.status === 429) {
+		logger.warn(`Individual Info API レート制限: ${workId}`);
+		throw new Error(`Rate limited for ${workId} - retry needed`);
+	}
+
+	// 5xx: サーバーエラー（リトライ可能）
+	if (response.status >= 500) {
+		logger.warn(`Individual Info API サーバーエラー: ${workId} (Status: ${response.status})`);
+		throw new Error(`Server error for ${workId} - retry needed`);
+	}
+
 	// その他のエラー
 	throw new Error(`API request failed: ${response.status} ${response.statusText}`);
 }
@@ -115,7 +127,7 @@ function validateResponseFormat(
 
 /**
  * Individual Info APIから単一作品データを取得
- * 詳細エラーハンドリング付き
+ * 詳細エラーハンドリング付き（リトライ機能付き）
  *
  * @param workId - 作品ID (RJ形式)
  * @param options - API呼び出しオプション
@@ -123,9 +135,10 @@ function validateResponseFormat(
  */
 export async function fetchIndividualWorkInfo(
 	workId: string,
-	options: IndividualInfoAPIOptions = {},
+	options: IndividualInfoAPIOptions & { retryCount?: number } = {},
 ): Promise<DLsiteRawApiResponse | null> {
-	const { enableDetailedLogging = false } = options;
+	const { enableDetailedLogging = false, retryCount = 0 } = options;
+	const MAX_RETRIES = 2;
 
 	try {
 		const url = `${INDIVIDUAL_INFO_API_BASE_URL}?workno=${workId}`;
@@ -174,6 +187,21 @@ export async function fetchIndividualWorkInfo(
 
 		return validatedData;
 	} catch (error) {
+		// リトライ可能なエラーかチェック
+		if (
+			error instanceof Error &&
+			error.message.includes("retry needed") &&
+			retryCount < MAX_RETRIES
+		) {
+			logger.warn(`リトライ実行 (${retryCount + 1}/${MAX_RETRIES}): ${workId}`);
+			// エクスポネンシャルバックオフ
+			await new Promise((resolve) => setTimeout(resolve, (retryCount + 1) * 1000));
+			return fetchIndividualWorkInfo(workId, {
+				...options,
+				retryCount: retryCount + 1,
+			});
+		}
+
 		// API取得エラーは重要なため保持
 		logger.error(`Individual Info API取得エラー: ${workId}`, {
 			error: error instanceof Error ? error.message : String(error),
@@ -194,7 +222,7 @@ export async function fetchIndividualWorkInfo(
 export async function batchFetchIndividualInfo(
 	workIds: string[],
 	options: IndividualInfoAPIOptions & {
-		/** 最大並列数（デフォルト: 5） */
+		/** 最大並列数（デフォルト: 3） */
 		maxConcurrent?: number;
 		/** バッチ間隔（ms）（デフォルト: 800） */
 		batchDelay?: number;
@@ -203,7 +231,7 @@ export async function batchFetchIndividualInfo(
 	results: Map<string, DLsiteRawApiResponse>;
 	failedWorkIds: string[];
 }> {
-	const { maxConcurrent = 5, batchDelay = 800, ...apiOptions } = options;
+	const { maxConcurrent = 3, batchDelay = 800, ...apiOptions } = options;
 	const results = new Map<string, DLsiteRawApiResponse>();
 	const failedWorkIds: string[] = [];
 
