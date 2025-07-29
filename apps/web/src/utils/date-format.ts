@@ -1,13 +1,40 @@
 /**
+ * 日付を検証して Date オブジェクトを返す
+ * @param dateString - ISO形式の日付文字列またはDateオブジェクト
+ * @returns 有効な Date オブジェクト、または無効な場合は null
+ */
+function validateAndParseDate(dateString: string | Date): Date | null {
+	const date = typeof dateString === "string" ? new Date(dateString) : dateString;
+
+	// 無効な日付の場合
+	if (Number.isNaN(date.getTime())) {
+		return null;
+	}
+
+	return date;
+}
+
+/**
+ * 日本標準時でフォーマットした日付のパーツを取得
+ * @param date - Dateオブジェクト
+ * @param options - Intl.DateTimeFormatOptions
+ * @returns フォーマットされた日付のパーツ
+ */
+function getJSTFormattedParts(date: Date, options: Intl.DateTimeFormatOptions) {
+	const formatter = new Intl.DateTimeFormat("ja-JP", options);
+	return formatter.formatToParts(date);
+}
+
+/**
  * 日付を日本標準時でフォーマット
  * @param dateString - ISO形式の日付文字列
  * @returns "YYYY年 M月 D日 h時mm分" 形式の文字列
  */
 export function formatJSTDateTime(dateString: string | Date): string {
-	const date = typeof dateString === "string" ? new Date(dateString) : dateString;
+	const date = validateAndParseDate(dateString);
 
 	// 無効な日付の場合は元の文字列を返す
-	if (Number.isNaN(date.getTime())) {
+	if (!date) {
 		return typeof dateString === "string" ? dateString : "";
 	}
 
@@ -22,8 +49,7 @@ export function formatJSTDateTime(dateString: string | Date): string {
 	};
 
 	// 日本語ロケールでフォーマット
-	const formatter = new Intl.DateTimeFormat("ja-JP", options);
-	const parts = formatter.formatToParts(date);
+	const parts = getJSTFormattedParts(date, options);
 
 	// パーツから各要素を取得
 	const year = parts.find((p) => p.type === "year")?.value || "";
@@ -41,10 +67,10 @@ export function formatJSTDateTime(dateString: string | Date): string {
  * @returns "YYYY年 M月 D日" 形式の文字列
  */
 export function formatJSTDate(dateString: string | Date): string {
-	const date = typeof dateString === "string" ? new Date(dateString) : dateString;
+	const date = validateAndParseDate(dateString);
 
 	// 無効な日付の場合は元の文字列を返す
-	if (Number.isNaN(date.getTime())) {
+	if (!date) {
 		return typeof dateString === "string" ? dateString : "";
 	}
 
@@ -57,8 +83,7 @@ export function formatJSTDate(dateString: string | Date): string {
 	};
 
 	// 日本語ロケールでフォーマット
-	const formatter = new Intl.DateTimeFormat("ja-JP", options);
-	const parts = formatter.formatToParts(date);
+	const parts = getJSTFormattedParts(date, options);
 
 	// パーツから各要素を取得
 	const year = parts.find((p) => p.type === "year")?.value || "";
