@@ -56,7 +56,7 @@ export function PriceStatistics({
 
 	// 現在セール中かどうか
 	const currentRecord = priceHistory[priceHistory.length - 1];
-	const isCurrentlyOnSale = currentRecord?.discountRate && currentRecord.discountRate > 0;
+	const isCurrentlyOnSale = !!currentRecord?.discountRate && currentRecord.discountRate > 0;
 	const currentDiscountRate = currentRecord?.discountRate || 0;
 
 	// 通貨別の定価を取得
