@@ -36,6 +36,7 @@ import { useMemo } from "react";
 import CharacteristicEvaluation from "@/components/content/characteristic-evaluation";
 import { PriceHistory } from "@/components/price-history/price-history";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
+import { formatJSTDateTime } from "@/utils/date-format";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
 import SampleImageGallery from "./SampleImageGallery";
 import { WorkEvaluation } from "./work-evaluation";
@@ -237,11 +238,6 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 										</Badge>
 									)}
 								</div>
-								{ageRatingCheck.isR18 && (
-									<p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
-										この作品は18歳以上の方を対象とした内容を含みます。
-									</p>
-								)}
 							</div>
 						)}
 
@@ -381,7 +377,9 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 													<Calendar className="h-5 w-5 text-muted-foreground" />
 													<div>
 														<div className="text-sm text-gray-700">販売日</div>
-														<div className="font-semibold text-gray-900">{work.releaseDate}</div>
+														<div className="font-semibold text-gray-900">
+															{formatJSTDateTime(work.releaseDate)}
+														</div>
 													</div>
 												</div>
 											)}
@@ -708,13 +706,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 
 						{/* 価格推移タブ */}
 						<TabsContent value="price-history" className="space-y-6">
-							<div className="space-y-4">
-								<div className="text-center mb-6">
-									<h3 className="text-xl font-semibold text-gray-900 mb-2">価格推移チャート</h3>
-									<p className="text-gray-600">この作品の価格変動やセール情報を確認できます</p>
-								</div>
-								<PriceHistory workId={work.productId} />
-							</div>
+							<PriceHistory workId={work.productId} />
 						</TabsContent>
 					</Tabs>
 				</div>
