@@ -14,6 +14,7 @@ export const DLsiteRawWork = z.object({
 	work_name: z.string().optional(),
 	maker_id: z.string().optional(),
 	maker_name: z.string().optional(),
+	maker_name_en: z.string().nullable().optional(),
 	age_category: z.number().optional(),
 	site_id: z.string().optional(),
 	regist_date: z.string().optional(),

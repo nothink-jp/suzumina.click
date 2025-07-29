@@ -94,6 +94,7 @@ describe("circle-firestore", () => {
 			const existingCircle: CircleDocument = {
 				circleId: "RG01234",
 				name: "テストサークル",
+				nameEn: "",
 				workIds: ["RJ111111", "RJ222222"],
 				createdAt: Timestamp.now(),
 				updatedAt: Timestamp.now(),
@@ -104,7 +105,7 @@ describe("circle-firestore", () => {
 				data: () => existingCircle,
 			});
 
-			const result = await updateCircleWithWork("RG01234", "RJ333333", "テストサークル");
+			const result = await updateCircleWithWork("RG01234", "RJ333333", "テストサークル", "");
 
 			expect(result).toBe(true);
 			expect(mockUpdate).toHaveBeenCalledWith(
@@ -118,6 +119,7 @@ describe("circle-firestore", () => {
 			const existingCircle: CircleDocument = {
 				circleId: "RG01234",
 				name: "テストサークル",
+				nameEn: "",
 				workIds: ["RJ123456"],
 				createdAt: Timestamp.now(),
 				updatedAt: Timestamp.now(),
@@ -128,7 +130,7 @@ describe("circle-firestore", () => {
 				data: () => existingCircle,
 			});
 
-			const result = await updateCircleWithWork("RG01234", "RJ123456", "テストサークル");
+			const result = await updateCircleWithWork("RG01234", "RJ123456", "テストサークル", "");
 
 			expect(result).toBe(false);
 			expect(mockUpdate).not.toHaveBeenCalled();
@@ -167,9 +169,9 @@ describe("circle-firestore", () => {
 		it("エラー時は例外を投げる", async () => {
 			mockGet.mockRejectedValue(new Error("Firestore error"));
 
-			await expect(updateCircleWithWork("RG01234", "RJ123456", "テストサークル")).rejects.toThrow(
-				"Firestore error",
-			);
+			await expect(
+				updateCircleWithWork("RG01234", "RJ123456", "テストサークル", ""),
+			).rejects.toThrow("Firestore error");
 
 			expect(logger.error).toHaveBeenCalled();
 		});
@@ -180,6 +182,7 @@ describe("circle-firestore", () => {
 			const existingCircle: CircleDocument = {
 				circleId: "RG01234",
 				name: "テストサークル",
+				nameEn: "",
 				workIds: ["RJ111111", "RJ222222", "RJ333333"],
 				createdAt: Timestamp.now(),
 				updatedAt: Timestamp.now(),
@@ -213,6 +216,7 @@ describe("circle-firestore", () => {
 			const existingCircle: CircleDocument = {
 				circleId: "RG01234",
 				name: "テストサークル",
+				nameEn: "",
 				workIds: ["RJ111111"],
 				createdAt: Timestamp.now(),
 				updatedAt: Timestamp.now(),
@@ -235,6 +239,7 @@ describe("circle-firestore", () => {
 			const existingCircle: CircleDocument = {
 				circleId: "RG01234",
 				name: "テストサークル",
+				nameEn: "",
 				workIds: ["RJ111111", "RJ222222", "RJ333333"],
 				createdAt: Timestamp.now(),
 				updatedAt: Timestamp.now(),
@@ -282,6 +287,7 @@ describe("circle-firestore", () => {
 			const circle1: CircleDocument = {
 				circleId: "RG01234",
 				name: "サークル1",
+				nameEn: "",
 				workIds: ["RJ111111"],
 				createdAt: Timestamp.now(),
 				updatedAt: Timestamp.now(),
@@ -290,6 +296,7 @@ describe("circle-firestore", () => {
 			const circle2: CircleDocument = {
 				circleId: "RG01235",
 				name: "サークル2",
+				nameEn: "",
 				workIds: ["RJ222222"],
 				createdAt: Timestamp.now(),
 				updatedAt: Timestamp.now(),
@@ -339,6 +346,7 @@ describe("circle-firestore", () => {
 			const existingCircle: CircleDocument = {
 				circleId: "RG01234",
 				name: "テストサークル",
+				nameEn: "",
 				workIds: ["RJ111111", "RJ999999"], // RJ999999は存在しない
 				createdAt: Timestamp.now(),
 				updatedAt: Timestamp.now(),
@@ -394,6 +402,7 @@ describe("circle-firestore", () => {
 			const existingCircle: CircleDocument = {
 				circleId: "RG01234",
 				name: "テストサークル",
+				nameEn: "",
 				workIds: ["RJ111111", "RJ222222"],
 				createdAt: Timestamp.now(),
 				updatedAt: Timestamp.now(),

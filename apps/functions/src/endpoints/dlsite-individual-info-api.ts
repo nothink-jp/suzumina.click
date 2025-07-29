@@ -202,7 +202,7 @@ async function processBatch(
 					apiResponse.maker_id,
 					apiResponse.workno,
 					apiResponse.maker_name || "",
-					apiResponse.maker_name_eng,
+					apiResponse.maker_name_en || "",
 				).catch((error) => {
 					logger.warn(`サークル更新失敗 ${apiResponse.maker_id}:`, error);
 					return false;

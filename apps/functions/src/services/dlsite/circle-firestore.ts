@@ -24,7 +24,7 @@ export async function updateCircleWithWork(
 	circleId: string,
 	workId: string,
 	circleName: string,
-	circleNameEn?: string,
+	circleNameEn: string,
 ): Promise<boolean> {
 	try {
 		const circleRef = firestore.collection(CIRCLES_COLLECTION).doc(circleId);
@@ -62,9 +62,7 @@ export async function updateCircleWithWork(
 
 			if (needsNameUpdate) {
 				updateData.name = circleName;
-				if (circleNameEn !== undefined) {
-					updateData.nameEn = circleNameEn;
-				}
+				updateData.nameEn = circleNameEn;
 			}
 
 			if (needsWorkIdUpdate) {
