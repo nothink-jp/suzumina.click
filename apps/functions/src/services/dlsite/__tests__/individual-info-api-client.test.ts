@@ -98,7 +98,7 @@ describe("Individual Info API Client", () => {
 			);
 		});
 
-		it("500エラーの場合例外を投げる", async () => {
+		it("500エラーの場合リトライ後に例外を投げる", async () => {
 			const mockResponse = {
 				ok: false,
 				status: 500,
@@ -109,8 +109,29 @@ describe("Individual Info API Client", () => {
 			mockFetch.mockResolvedValue(mockResponse);
 
 			await expect(fetchIndividualWorkInfo("RJ123456")).rejects.toThrow(
-				"API request failed: 500 Internal Server Error",
+				"Server error for RJ123456 - retry needed",
 			);
+
+			// リトライが実行されたことを確認（MAX_RETRIES=2なので、初回+2回リトライ=3回）
+			expect(mockFetch).toHaveBeenCalledTimes(3);
+		});
+
+		it("429エラーの場合リトライ後に例外を投げる", async () => {
+			const mockResponse = {
+				ok: false,
+				status: 429,
+				statusText: "Too Many Requests",
+				text: vi.fn().mockResolvedValue("Rate Limited"),
+				headers: new Headers(),
+			};
+			mockFetch.mockResolvedValue(mockResponse);
+
+			await expect(fetchIndividualWorkInfo("RJ123456")).rejects.toThrow(
+				"Rate limited for RJ123456 - retry needed",
+			);
+
+			// リトライが実行されたことを確認
+			expect(mockFetch).toHaveBeenCalledTimes(3);
 		});
 
 		it("JSONパースエラーの場合nullを返す", async () => {
@@ -177,6 +198,32 @@ describe("Individual Info API Client", () => {
 			mockFetch.mockRejectedValue(new Error("Network error"));
 
 			await expect(fetchIndividualWorkInfo("RJ123456")).rejects.toThrow();
+		});
+
+		it("リトライが成功した場合データを返す", async () => {
+			const successResponse = {
+				ok: true,
+				status: 200,
+				statusText: "OK",
+				text: vi.fn().mockResolvedValue(JSON.stringify([mockWorkData])),
+				headers: new Headers({ "content-type": "application/json" }),
+			};
+
+			// 初回は500エラー、リトライで成功
+			mockFetch
+				.mockResolvedValueOnce({
+					ok: false,
+					status: 500,
+					statusText: "Internal Server Error",
+					text: vi.fn().mockResolvedValue("Server Error"),
+					headers: new Headers(),
+				})
+				.mockResolvedValueOnce(successResponse);
+
+			const result = await fetchIndividualWorkInfo("RJ123456");
+
+			expect(result).toEqual(mockWorkData);
+			expect(mockFetch).toHaveBeenCalledTimes(2); // 初回失敗 + リトライ成功
 		});
 	});
 
