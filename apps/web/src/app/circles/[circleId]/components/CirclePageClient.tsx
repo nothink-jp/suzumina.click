@@ -1,6 +1,6 @@
 "use client";
 
-import type { CircleData, WorkPlainObject } from "@suzumina.click/shared-types";
+import type { CirclePlainObject, WorkPlainObject } from "@suzumina.click/shared-types";
 import {
 	ListPageContent,
 	ListPageHeader,
@@ -12,7 +12,7 @@ import WorkList from "@/app/works/components/WorkList";
 import { getCircleWorksWithPagination } from "../actions";
 
 interface CirclePageClientProps {
-	circle: CircleData;
+	circle: CirclePlainObject;
 	initialData: WorkPlainObject[];
 	initialTotalCount: number;
 	initialPage: number;

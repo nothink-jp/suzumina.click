@@ -37,6 +37,7 @@ export * from "./entities/work-evaluation";
 export * from "./migrations";
 // === Plain Objects ===
 export * from "./plain-objects/audio-button-plain";
+export * from "./plain-objects/circle-plain";
 export * from "./plain-objects/video-plain";
 export * from "./plain-objects/work-plain";
 // === Firestore Types ===
@@ -54,6 +55,8 @@ export type {
 // === Utilities ===
 // 年齢制限・レーティング関連の型とユーティリティのエクスポート
 export * from "./utilities/age-rating";
+// Circle変換ユーティリティのエクスポート
+export * from "./utilities/circle-conversions";
 // 共通ユーティリティと型のエクスポート
 export * from "./utilities/common";
 // Firestore関連のユーティリティ
