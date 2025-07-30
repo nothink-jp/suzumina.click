@@ -441,19 +441,17 @@ class LocalDataCollector {
 		const circlesSnapshot = await firestore.collection("circles").get();
 		this.circleStats.totalCircles = circlesSnapshot.size;
 
-		// クリエイターマッピング数を取得
-		const mappingsSnapshot = await firestore.collection("creatorWorkMappings").get();
-		this.creatorStats.totalMappings = mappingsSnapshot.size;
+		// クリエイター数を取得（新しいcreatorsコレクション）
+		const creatorsSnapshot = await firestore.collection("creators").get();
+		this.creatorStats.uniqueCreators = new Set(creatorsSnapshot.docs.map((doc) => doc.id));
 
-		// ユニーククリエイター数を計算
-		const uniqueCreatorIds = new Set<string>();
-		mappingsSnapshot.forEach((doc) => {
-			const data = doc.data();
-			if (data.creatorId) {
-				uniqueCreatorIds.add(data.creatorId);
-			}
-		});
-		this.creatorStats.uniqueCreators = uniqueCreatorIds;
+		// 全クリエイターの作品マッピング数を集計
+		let totalMappings = 0;
+		for (const creatorDoc of creatorsSnapshot.docs) {
+			const worksSnapshot = await creatorDoc.ref.collection("works").get();
+			totalMappings += worksSnapshot.size;
+		}
+		this.creatorStats.totalMappings = totalMappings;
 	}
 
 	/**

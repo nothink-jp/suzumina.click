@@ -46,17 +46,25 @@ vi.mock("../circle-firestore", () => ({
 	updateCircleWithWork: vi.fn().mockResolvedValue(true),
 }));
 
+// creator-firestoreモック
+vi.mock("../creator-firestore", () => ({
+	updateCreatorWorkMapping: vi.fn().mockResolvedValue({ success: true }),
+}));
+
 // テスト対象のインポート（モック設定後）
 const { collectCircleAndCreatorInfo, batchCollectCircleAndCreatorInfo } = await import(
 	"../collect-circle-creator-info"
 );
 const { updateCircleWithWork } = await import("../circle-firestore");
+const { updateCreatorWorkMapping } = await import("../creator-firestore");
 
 describe("collect-circle-creator-info", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// デフォルトで存在しないドキュメントを返す
 		mockDoc.get.mockResolvedValue({ exists: false });
+		// updateCreatorWorkMappingのデフォルトモックをリセット
+		vi.mocked(updateCreatorWorkMapping).mockResolvedValue({ success: true });
 	});
 
 	describe("collectCircleAndCreatorInfo", () => {
@@ -92,69 +100,20 @@ describe("collect-circle-creator-info", () => {
 				"テストサークル",
 				"",
 			);
-			expect(mockBatch.commit).toHaveBeenCalled();
+			expect(updateCreatorWorkMapping).toHaveBeenCalledWith(mockApiData, "RJ123456");
 		});
 
 		it("クリエイターマッピングを正しく作成する", async () => {
-			mockDoc.get.mockResolvedValue({ exists: false });
+			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData);
 
-			await collectCircleAndCreatorInfo(mockWorkData, mockApiData);
-
-			// 声優2名とイラストレーター1名のマッピングが作成されることを確認
-			const setCallsForMappings = mockBatch.set.mock.calls.filter(
-				(call) => call[1].creatorId !== undefined,
-			);
-			expect(setCallsForMappings).toHaveLength(3);
-
-			// 声優Aのマッピング
-			expect(mockBatch.set).toHaveBeenCalledWith(
-				mockDoc,
-				expect.objectContaining({
-					creatorId: "creator1",
-					workId: "RJ123456",
-					creatorName: "声優A",
-					types: ["voice"],
-					circleId: "RG12345",
-				}),
-				{ merge: true },
-			);
-
-			// イラストレーターCのマッピング
-			expect(mockBatch.set).toHaveBeenCalledWith(
-				mockDoc,
-				expect.objectContaining({
-					creatorId: "creator3",
-					workId: "RJ123456",
-					creatorName: "イラストレーターC",
-					types: ["illustration"],
-					circleId: "RG12345",
-				}),
-				{ merge: true },
-			);
+			expect(result.success).toBe(true);
+			// updateCreatorWorkMappingが正しいデータで呼ばれたことを確認
+			expect(updateCreatorWorkMapping).toHaveBeenCalledWith(mockApiData, "RJ123456");
+			expect(updateCreatorWorkMapping).toHaveBeenCalledTimes(1);
 		});
 
 		it("既存のクリエイターマッピングにタイプを追加する", async () => {
-			// Note: 実装の動作を確認したところ、同じクリエイターに対しても
-			// processedCreatorsによって重複処理が防がれているため、
-			// 最初に処理されたタイプのみが保存される仕様
-			let callCount = 0;
-			mockDoc.get.mockImplementation(() => {
-				callCount++;
-				// 最初の呼び出しはサークル情報の確認
-				if (callCount === 1) {
-					return Promise.resolve({ exists: false });
-				}
-				// 2回目の呼び出しはクリエイターマッピングの確認（既存）
-				if (callCount === 2) {
-					return Promise.resolve({
-						exists: true,
-						data: () => ({ types: ["voice"] }),
-					});
-				}
-				// 3回目の呼び出しはクリエイターマッピングの確認（新規）
-				return Promise.resolve({ exists: false });
-			});
-
+			// 新しい実装では、updateCreatorWorkMappingが複数の役割を内部で処理する
 			const apiDataWithMultiRole: DLsiteRawApiResponse = {
 				...mockApiData,
 				creaters: {
@@ -163,44 +122,40 @@ describe("collect-circle-creator-info", () => {
 				},
 			} as any;
 
-			await collectCircleAndCreatorInfo(mockWorkData, apiDataWithMultiRole);
+			const result = await collectCircleAndCreatorInfo(mockWorkData, apiDataWithMultiRole);
 
-			// クリエイターマッピングの呼び出しを確認
-			const mappingCalls = mockBatch.set.mock.calls.filter(
-				(call) => call[1].creatorId === "creator1",
-			);
-
-			// processedCreatorsによって最初の1回のみ処理される
-			expect(mappingCalls).toHaveLength(1);
-			// 最初に処理される voice タイプのみが保存される
-			expect(mappingCalls[0][1]).toMatchObject({
-				creatorId: "creator1",
-				types: ["voice"],
-			});
+			expect(result.success).toBe(true);
+			// updateCreatorWorkMappingが呼ばれたことを確認
+			expect(updateCreatorWorkMapping).toHaveBeenCalledWith(apiDataWithMultiRole, "RJ123456");
+			expect(updateCreatorWorkMapping).toHaveBeenCalledTimes(1);
 		});
 
-		it("無効なサークルIDの場合はスキップする", async () => {
+		it("無効なサークルIDの場合でも処理は継続する", async () => {
 			const invalidApiData = {
 				...mockApiData,
 				maker_id: "INVALID_ID", // RGで始まらない
 			};
 
-			// サークル情報のget呼び出しを設定
-			mockDoc.get.mockResolvedValue({ exists: false });
-
 			const result = await collectCircleAndCreatorInfo(mockWorkData, invalidApiData);
 
 			expect(result.success).toBe(true);
-			// サークル作成/更新が呼ばれないことを確認
-			const circleSetCalls = mockBatch.set.mock.calls.filter(
-				(call) => call[1].circleId !== undefined && call[1].name !== undefined,
+			// サークル更新も呼ばれる（updateCircleWithWork内部で検証される）
+			expect(updateCircleWithWork).toHaveBeenCalledWith(
+				"INVALID_ID",
+				"RJ123456",
+				"テストサークル",
+				"",
 			);
-			expect(circleSetCalls).toHaveLength(0);
+			// クリエイターマッピングも呼ばれる
+			expect(updateCreatorWorkMapping).toHaveBeenCalledWith(invalidApiData, "RJ123456");
 		});
 
 		it("エラー発生時は適切にハンドリングする", async () => {
-			// get呼び出しでエラーを発生させる
-			mockDoc.get.mockRejectedValueOnce(new Error("Firestore error"));
+			// updateCreatorWorkMappingでエラーを発生させる
+			vi.mocked(updateCreatorWorkMapping).mockResolvedValueOnce({
+				success: false,
+				error: "Firestore error",
+			});
 
 			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData);
 
@@ -239,7 +194,6 @@ describe("collect-circle-creator-info", () => {
 			expect(result.success).toBe(true);
 			expect(result.processed).toBe(2);
 			expect(result.errors).toHaveLength(0);
-			expect(mockBatch.commit).toHaveBeenCalledTimes(1);
 		});
 
 		it("大量の作品を複数バッチに分割して処理する", async () => {
@@ -254,24 +208,26 @@ describe("collect-circle-creator-info", () => {
 				isNewWork: true,
 			}));
 
-			mockDoc.get.mockResolvedValue({ exists: false });
-
 			const result = await batchCollectCircleAndCreatorInfo(works);
 
 			expect(result.processed).toBe(150);
-			expect(mockBatch.commit).toHaveBeenCalledTimes(2); // 2バッチ
+			// 各作品に対して一度ずつupdateCreatorWorkMappingが呼ばれる
+			expect(updateCreatorWorkMapping).toHaveBeenCalledTimes(150);
 		});
 
 		it("バッチコミット失敗時はエラーを記録する", async () => {
 			const works = [
 				{
 					workData: { id: "RJ333333", title: "作品3" } as any,
-					apiData: { maker_id: "RG33333", maker_name: "サークル3" } as any,
+					apiData: { maker_id: "RG33333", maker_name: "サークル3", workno: "RJ333333" } as any,
 				},
 			];
 
-			mockDoc.get.mockResolvedValue({ exists: false });
-			mockBatch.commit.mockRejectedValueOnce(new Error("Batch commit failed"));
+			// updateCreatorWorkMappingでエラーを発生させる
+			vi.mocked(updateCreatorWorkMapping).mockResolvedValueOnce({
+				success: false,
+				error: "Batch commit failed",
+			});
 
 			const result = await batchCollectCircleAndCreatorInfo(works);
 

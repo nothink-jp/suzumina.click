@@ -1,8 +1,9 @@
 "use server";
 
 import type {
+	CreatorDocument,
 	CreatorPageInfo,
-	CreatorWorkMapping,
+	CreatorWorkRelation,
 	WorkDocument,
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
@@ -77,39 +78,37 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo
 	}
 
 	try {
-		// creatorWorkMappings から情報を集約
+		// 新しいcreatorsコレクションから情報を取得
 		const firestore = getFirestore();
-		const mappingsSnapshot = await firestore
-			.collection("creatorWorkMappings")
-			.where("creatorId", "==", creatorId)
-			.get();
+		const creatorDoc = await firestore.collection("creators").doc(creatorId).get();
 
-		if (mappingsSnapshot.empty) {
+		if (!creatorDoc.exists) {
 			return null;
 		}
+
+		const creatorData = creatorDoc.data() as CreatorDocument;
+
+		// worksサブコレクションから作品数と役割を取得
+		const worksSnapshot = await creatorDoc.ref.collection("works").get();
+
+		const allTypes = new Set<string>();
+		worksSnapshot.docs.forEach((doc) => {
+			const workRelation = doc.data() as CreatorWorkRelation;
+			workRelation.roles?.forEach((role) => allTypes.add(role));
+		});
 
 		// クリエイター情報の集約
 		const creatorInfo: CreatorPageInfo = {
 			id: creatorId,
-			name: "",
-			types: [],
-			workCount: 0,
+			name: creatorData.name,
+			types: Array.from(allTypes),
+			workCount: worksSnapshot.size,
 		};
 
-		const workIds = new Set<string>();
-		const allTypes = new Set<string>();
-
-		mappingsSnapshot.docs.forEach((doc) => {
-			const data = doc.data() as CreatorWorkMapping;
-			workIds.add(data.workId);
-			data.types?.forEach((type) => allTypes.add(type));
-			if (data.creatorName && !creatorInfo.name) {
-				creatorInfo.name = data.creatorName;
-			}
-		});
-
-		creatorInfo.types = Array.from(allTypes);
-		creatorInfo.workCount = workIds.size;
+		// primaryRoleが設定されていて、typesに含まれていない場合は追加
+		if (creatorData.primaryRole && !allTypes.has(creatorData.primaryRole)) {
+			creatorInfo.types.unshift(creatorData.primaryRole);
+		}
 
 		return creatorInfo;
 	} catch (_error) {
@@ -130,20 +129,22 @@ export async function getCreatorWorks(creatorId: string): Promise<WorkPlainObjec
 	}
 
 	try {
-		// creatorWorkMappings から作品IDを取得
+		// 新しいcreatorsコレクションから作品IDを取得
 		const firestore = getFirestore();
-		const mappingsSnapshot = await firestore
-			.collection("creatorWorkMappings")
-			.where("creatorId", "==", creatorId)
-			.get();
+		const creatorDoc = await firestore.collection("creators").doc(creatorId).get();
 
-		if (mappingsSnapshot.empty) {
+		if (!creatorDoc.exists) {
 			return [];
 		}
 
-		const workIds = Array.from(
-			new Set(mappingsSnapshot.docs.map((doc) => doc.data().workId as string)),
-		);
+		// worksサブコレクションから作品情報を取得
+		const worksSnapshot = await creatorDoc.ref.collection("works").get();
+
+		if (worksSnapshot.empty) {
+			return [];
+		}
+
+		const workIds = worksSnapshot.docs.map((doc) => doc.id);
 
 		// 作品詳細を取得（バッチ処理）
 		const allWorks: WorkDocument[] = [];
@@ -204,21 +205,22 @@ export async function getCreatorWorksWithPagination(
 	}
 
 	try {
-		// creatorWorkMappings から作品IDを取得
+		// 新しいcreatorsコレクションから作品IDを取得
 		const firestore = getFirestore();
-		const mappingsSnapshot = await firestore
-			.collection("creatorWorkMappings")
-			.where("creatorId", "==", creatorId)
-			.get();
+		const creatorDoc = await firestore.collection("creators").doc(creatorId).get();
 
-		if (mappingsSnapshot.empty) {
+		if (!creatorDoc.exists) {
 			return { works: [], totalCount: 0 };
 		}
 
-		const workIds = Array.from(
-			new Set(mappingsSnapshot.docs.map((doc) => doc.data().workId as string)),
-		);
+		// worksサブコレクションから作品情報を取得
+		const worksSnapshot = await creatorDoc.ref.collection("works").get();
 
+		if (worksSnapshot.empty) {
+			return { works: [], totalCount: 0 };
+		}
+
+		const workIds = worksSnapshot.docs.map((doc) => doc.id);
 		const totalCount = workIds.length;
 
 		// 作品詳細を取得（すべて取得してからソート・ページネーション）

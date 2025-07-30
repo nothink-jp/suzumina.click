@@ -5,18 +5,10 @@
  * サークル情報とクリエイター・作品マッピング情報を収集・保存します。
  */
 
-import { FieldValue, Firestore } from "@google-cloud/firestore";
-import type {
-	CreatorType,
-	CreatorWorkMapping,
-	DLsiteRawApiResponse,
-	WorkDocument,
-} from "@suzumina.click/shared-types";
-import { isValidCreatorId } from "@suzumina.click/shared-types";
+import type { DLsiteRawApiResponse, WorkDocument } from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
 import { updateCircleWithWork } from "./circle-firestore";
-
-const adminDb = new Firestore();
+import { updateCreatorWorkMapping } from "./creator-firestore";
 
 /**
  * サークル・クリエイター情報を収集・保存
@@ -29,8 +21,6 @@ export async function collectCircleAndCreatorInfo(
 	apiData: DLsiteRawApiResponse,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
-		const batch = adminDb.batch();
-
 		// 1. サークル情報の更新（新しいupdateCircleWithWorkを使用）
 		if (apiData.maker_id && apiData.workno) {
 			await updateCircleWithWork(
@@ -41,11 +31,12 @@ export async function collectCircleAndCreatorInfo(
 			);
 		}
 
-		// 2. クリエイターマッピングの更新
-		await updateCreatorMappings(batch, apiData, workData.id);
+		// 2. クリエイターマッピングの更新（新しいcreator-firestoreを使用）
+		const result = await updateCreatorWorkMapping(apiData, workData.id);
 
-		// バッチコミット（最大500操作）
-		await batch.commit();
+		if (!result.success) {
+			return result;
+		}
 
 		// 個別作品の収集完了ログは省略（ログ削減）
 
@@ -59,74 +50,6 @@ export async function collectCircleAndCreatorInfo(
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
 		};
-	}
-}
-
-/**
- * クリエイターマッピング情報を更新
- */
-async function updateCreatorMappings(
-	batch: FirebaseFirestore.WriteBatch,
-	apiData: DLsiteRawApiResponse,
-	workId: string,
-): Promise<void> {
-	const creatorTypeMap: Array<[string, CreatorType]> = [
-		["voice_by", "voice"],
-		["illust_by", "illustration"],
-		["scenario_by", "scenario"],
-		["music_by", "music"],
-		["others_by", "other"],
-		["directed_by", "other"],
-	];
-
-	const circleId = apiData.maker_id || "UNKNOWN";
-	const processedCreators = new Set<string>(); // 重複処理防止
-
-	// Check if creaters is an object with fields, not an array
-	if (!apiData.creaters || Array.isArray(apiData.creaters)) {
-		return;
-	}
-
-	for (const [field, type] of creatorTypeMap) {
-		const creators = (apiData.creaters as any)?.[field] || [];
-
-		for (const creator of creators) {
-			if (!creator.id || processedCreators.has(creator.id)) continue;
-
-			// 入力検証
-			if (!isValidCreatorId(creator.id)) {
-				logger.warn(`無効なクリエイターID: ${creator.id}`);
-				continue;
-			}
-
-			// マッピングドキュメントの作成/更新
-			const mappingId = `${creator.id}_${workId}`;
-			const mappingRef = adminDb.collection("creatorWorkMappings").doc(mappingId);
-
-			const existingMapping = await mappingRef.get();
-			const existingTypes = existingMapping.exists
-				? (existingMapping.data()?.types as CreatorType[]) || []
-				: [];
-
-			const updatedTypes = Array.from(new Set([...existingTypes, type]));
-
-			const mappingData: CreatorWorkMapping = {
-				creatorId: creator.id,
-				workId,
-				creatorName: creator.name,
-				types: updatedTypes,
-				circleId,
-				createdAt: FieldValue.serverTimestamp(),
-			};
-
-			batch.set(mappingRef, mappingData, { merge: true });
-
-			processedCreators.add(creator.id);
-		}
-	}
-
-	if (processedCreators.size > 0) {
-		// クリエイターマッピング更新ログは省略（ログ削減）
 	}
 }
 
@@ -147,28 +70,24 @@ export async function batchCollectCircleAndCreatorInfo(
 	const errors: Array<{ workId: string; error: string }> = [];
 	let processed = 0;
 
-	// バッチ処理（500操作ごとに分割）
-	const batchSize = 100; // 1作品あたり複数の操作があるため、安全に100作品ずつ処理
+	// バッチ処理（100作品ごとに分割）
+	const batchSize = 100;
 	for (let i = 0; i < works.length; i += batchSize) {
 		const batchWorks = works.slice(i, i + batchSize);
-		const batch = adminDb.batch();
 
 		for (const { workData, apiData } of batchWorks) {
 			try {
-				// サークル情報の更新（新しいupdateCircleWithWorkを使用）
-				if (apiData.maker_id && apiData.workno) {
-					await updateCircleWithWork(
-						apiData.maker_id,
-						apiData.workno,
-						apiData.maker_name || "",
-						apiData.maker_name_en || "",
-					);
+				// 個別に処理（新しいユーティリティ関数を使用）
+				const result = await collectCircleAndCreatorInfo(workData, apiData);
+
+				if (result.success) {
+					processed++;
+				} else {
+					errors.push({
+						workId: workData.id,
+						error: result.error || "Unknown error",
+					});
 				}
-
-				// クリエイターマッピングの更新
-				await updateCreatorMappings(batch, apiData, workData.id);
-
-				processed++;
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : String(error);
 				errors.push({
@@ -184,22 +103,9 @@ export async function batchCollectCircleAndCreatorInfo(
 			}
 		}
 
-		// バッチコミット
-		try {
-			await batch.commit();
-			logger.info(
-				`バッチコミット完了: ${i + 1}-${Math.min(i + batchSize, works.length)}/${works.length}`,
-			);
-		} catch (error) {
-			logger.error("バッチコミットエラー:", error);
-			// バッチ内のすべての作品をエラーとして記録
-			for (const { workData } of batchWorks) {
-				errors.push({
-					workId: workData.id,
-					error: "Batch commit failed",
-				});
-			}
-		}
+		logger.info(
+			`バッチ処理進捗: ${i + 1}-${Math.min(i + batchSize, works.length)}/${works.length}`,
+		);
 	}
 
 	return {

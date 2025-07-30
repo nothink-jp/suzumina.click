@@ -427,37 +427,48 @@ resource "google_firestore_index" "circles_name_workcount_desc" {
   }
 }
 
-# creatorWorkMappings コレクション - クリエイター検索用
-# クリエイターIDと作品IDの複合インデックス
-resource "google_firestore_index" "creatormappings_creatorid_workid" {
-  project    = var.gcp_project_id
-  collection = "creatorWorkMappings"
-  
-  fields {
-    field_path = "creatorId"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "workId"
-    order      = "ASCENDING"
-  }
-}
+# creators サブコレクション works - Collection Group Query用
+# 注意: 単一フィールドのCollection Group QueryはFirestoreが自動的にインデックスを作成するため、
+# 複合インデックスのみを定義する必要があります。
 
-# creatorWorkMappings コレクション - クリエイタータイプ検索用
-# クリエイターIDとタイプ（配列）の複合インデックス
-resource "google_firestore_index" "creatormappings_creatorid_types" {
+# 複合インデックスの例: 役割と作品IDの組み合わせ検索用
+# 現在のクエリでは不要だが、将来的に必要になる可能性がある
+# resource "google_firestore_index" "creators_works_collection_group_roles_workid" {
+#   project    = var.gcp_project_id
+#   collection = "works"
+#   database   = "(default)"
+#   
+#   query_scope = "COLLECTION_GROUP"
+#   
+#   fields {
+#     field_path   = "roles"
+#     array_config = "CONTAINS"
+#   }
+#   
+#   fields {
+#     field_path = "workId"
+#     order      = "ASCENDING"
+#   }
+# }
+
+# creators サブコレクション works - サークル別クリエイター検索用（複合インデックス）
+# 特定のサークルで活動するクリエイターを更新日時順で検索
+# このインデックスは複合クエリで必要
+resource "google_firestore_index" "creators_works_collection_group_circleid" {
   project    = var.gcp_project_id
-  collection = "creatorWorkMappings"
+  collection = "works"
+  database   = "(default)"
+  
+  query_scope = "COLLECTION_GROUP"
   
   fields {
-    field_path = "creatorId"
+    field_path = "circleId"
     order      = "ASCENDING"
   }
   
   fields {
-    field_path   = "types"
-    array_config = "CONTAINS"
+    field_path = "updatedAt"
+    order      = "DESCENDING"
   }
 }
 

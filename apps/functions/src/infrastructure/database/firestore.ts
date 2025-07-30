@@ -71,6 +71,9 @@ const firestore = {
 	get collection() {
 		return getFirestore().collection.bind(getFirestore());
 	},
+	get collectionGroup() {
+		return getFirestore().collectionGroup.bind(getFirestore());
+	},
 	get batch() {
 		return getFirestore().batch.bind(getFirestore());
 	},
