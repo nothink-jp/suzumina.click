@@ -16,7 +16,6 @@ interface CirclePageClientProps {
 	initialData: WorkPlainObject[];
 	initialTotalCount: number;
 	initialPage: number;
-	_searchParams: { [key: string]: string | string[] | undefined };
 }
 
 export function CirclePageClient({
@@ -24,7 +23,6 @@ export function CirclePageClient({
 	initialData,
 	initialTotalCount,
 	initialPage,
-	_searchParams,
 }: CirclePageClientProps) {
 	const searchParamsHook = useSearchParams();
 	const [data, setData] = useState<WorkPlainObject[]>(initialData);

@@ -5,8 +5,19 @@
 import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// convertToWorkPlainObjectのモック
+// convertToWorkPlainObjectとconvertToCirclePlainObjectのモック
 vi.mock("@suzumina.click/shared-types", () => ({
+	convertToCirclePlainObject: vi.fn((data) => {
+		if (!data) return null;
+		return {
+			circleId: data.circleId,
+			name: data.name,
+			nameEn: data.nameEn,
+			workCount: data.workIds ? data.workIds.length : data.workCount || 0,
+			createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : null,
+			updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : null,
+		};
+	}),
 	convertToWorkPlainObject: vi.fn((data) => {
 		if (!data || !data.id || !data.productId) return null;
 		return {
@@ -172,8 +183,19 @@ describe("Circle page server actions", () => {
 				circleId: "RG12345",
 				name: "テストサークル",
 				nameEn: "Test Circle",
-				workCount: 10,
-				lastUpdated: { toDate: () => new Date("2025-01-01") },
+				workIds: [
+					"RJ111111",
+					"RJ222222",
+					"RJ333333",
+					"RJ444444",
+					"RJ555555",
+					"RJ666666",
+					"RJ777777",
+					"RJ888888",
+					"RJ999999",
+					"RJ000000",
+				],
+				updatedAt: { toDate: () => new Date("2025-01-01") },
 				createdAt: { toDate: () => new Date("2024-01-01") },
 			};
 
@@ -191,8 +213,8 @@ describe("Circle page server actions", () => {
 				name: "テストサークル",
 				nameEn: "Test Circle",
 				workCount: 10,
-				lastUpdated: expect.any(Date),
-				createdAt: expect.any(Date),
+				createdAt: "2024-01-01T00:00:00.000Z",
+				updatedAt: "2025-01-01T00:00:00.000Z",
 			});
 			expect(mockCollection).toHaveBeenCalledWith("circles");
 			expect(mockDoc).toHaveBeenCalledWith("RG12345");

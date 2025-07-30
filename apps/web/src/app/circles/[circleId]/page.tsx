@@ -54,7 +54,6 @@ export default async function CirclePage({ params, searchParams }: CirclePagePro
 			initialData={works}
 			initialTotalCount={totalCount}
 			initialPage={validPage}
-			_searchParams={searchParamsData}
 		/>
 	);
 }
