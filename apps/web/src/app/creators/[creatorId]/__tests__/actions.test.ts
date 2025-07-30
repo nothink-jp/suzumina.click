@@ -66,8 +66,10 @@ const mockOrderBy = vi.fn();
 const mockLimit = vi.fn();
 const mockGet = vi.fn();
 const mockGetAll = vi.fn();
+const mockSubCollectionGet = vi.fn();
 
 const mockDoc = vi.fn();
+const mockSubCollection = vi.fn();
 
 const mockCollection = vi.fn((_collectionName) => ({
 	where: mockWhere,
@@ -81,7 +83,17 @@ const mockCollection = vi.fn((_collectionName) => ({
 // Configure mockDoc to return proper document references
 mockDoc.mockImplementation((docId) => ({
 	id: docId,
-	collection: () => "dlsiteWorks",
+	ref: {
+		collection: mockSubCollection,
+	},
+	get: mockGet,
+	data: () => ({}),
+	exists: false,
+}));
+
+// Configure subcollection mock
+mockSubCollection.mockImplementation(() => ({
+	get: mockSubCollectionGet,
 }));
 
 // チェーン可能なクエリモック
@@ -123,31 +135,47 @@ describe("Creator page server actions", () => {
 
 	describe("getCreatorInfo", () => {
 		it("存在するクリエイター情報を正しく集約する", async () => {
-			const mockMappings = [
+			const mockCreatorData = {
+				creatorId: "creator123",
+				name: "テストクリエイター",
+				primaryRole: "voice",
+				createdAt: { seconds: 1234567890, nanoseconds: 0 },
+				updatedAt: { seconds: 1234567890, nanoseconds: 0 },
+			};
+
+			const mockWorkRelations = [
 				{
-					creatorId: "creator123",
-					creatorName: "テストクリエイター",
-					types: ["voice"],
 					workId: "RJ111111",
+					roles: ["voice"],
+					circleId: "RG11111",
 				},
 				{
-					creatorId: "creator123",
-					creatorName: "テストクリエイター",
-					types: ["illustration"],
 					workId: "RJ222222",
+					roles: ["illustration"],
+					circleId: "RG22222",
 				},
 				{
-					creatorId: "creator123",
-					creatorName: "テストクリエイター",
-					types: ["voice", "scenario"],
 					workId: "RJ333333",
+					roles: ["voice", "scenario"],
+					circleId: "RG33333",
 				},
 			];
 
-			mockGet.mockResolvedValue({
+			// クリエイタードキュメントの取得
+			mockGet.mockResolvedValueOnce({
+				exists: true,
+				data: () => mockCreatorData,
+				ref: {
+					collection: mockSubCollection,
+				},
+			});
+
+			// worksサブコレクションの取得
+			mockSubCollectionGet.mockResolvedValueOnce({
 				empty: false,
-				docs: mockMappings.map((mapping) => ({
-					data: () => mapping,
+				size: 3,
+				docs: mockWorkRelations.map((relation) => ({
+					data: () => relation,
 				})),
 			});
 
@@ -159,13 +187,12 @@ describe("Creator page server actions", () => {
 				types: ["voice", "illustration", "scenario"], // 重複なし、ユニークな値
 				workCount: 3,
 			});
-			expect(mockWhere).toHaveBeenCalledWith("creatorId", "==", "creator123");
+			expect(mockDoc).toHaveBeenCalledWith("creator123");
 		});
 
 		it("クリエイターが存在しない場合はnullを返す", async () => {
-			mockGet.mockResolvedValue({
-				empty: true,
-				docs: [],
+			mockGet.mockResolvedValueOnce({
+				exists: false,
 			});
 
 			const result = await getCreatorInfo("nonexistent");
@@ -177,7 +204,7 @@ describe("Creator page server actions", () => {
 			const result = await getCreatorInfo("");
 
 			expect(result).toBeNull();
-			expect(mockWhere).not.toHaveBeenCalled();
+			expect(mockDoc).not.toHaveBeenCalled();
 		});
 
 		it("エラー発生時はnullを返す", async () => {
@@ -191,9 +218,14 @@ describe("Creator page server actions", () => {
 
 	describe("getCreatorWorks", () => {
 		it("クリエイターの作品一覧を正しく取得する", async () => {
-			const mockMappings = [
-				{ workId: "RJ111111", creatorId: "creator123" },
-				{ workId: "RJ222222", creatorId: "creator123" },
+			const mockCreatorData = {
+				creatorId: "creator123",
+				name: "テストクリエイター",
+			};
+
+			const mockWorkRelations = [
+				{ workId: "RJ111111", roles: ["voice"], circleId: "RG11111" },
+				{ workId: "RJ222222", roles: ["voice"], circleId: "RG22222" },
 			];
 
 			const mockWorks = [
@@ -227,11 +259,21 @@ describe("Creator page server actions", () => {
 				},
 			];
 
-			// マッピング取得のモック
+			// クリエイタードキュメントの取得
 			mockGet.mockResolvedValueOnce({
+				exists: true,
+				data: () => mockCreatorData,
+				ref: {
+					collection: mockSubCollection,
+				},
+			});
+
+			// worksサブコレクションの取得
+			mockSubCollectionGet.mockResolvedValueOnce({
 				empty: false,
-				docs: mockMappings.map((mapping) => ({
-					data: () => mapping,
+				docs: mockWorkRelations.map((relation) => ({
+					id: relation.workId,
+					data: () => relation,
 				})),
 			});
 
@@ -255,14 +297,13 @@ describe("Creator page server actions", () => {
 				id: "RJ222222",
 				title: "作品2",
 			});
-			expect(mockWhere).toHaveBeenCalledWith("creatorId", "==", "creator123");
+			expect(mockDoc).toHaveBeenCalledWith("creator123");
 			expect(mockGetAll).toHaveBeenCalled();
 		});
 
 		it("作品が見つからない場合は空配列を返す", async () => {
-			mockGet.mockResolvedValue({
-				empty: true,
-				docs: [],
+			mockGet.mockResolvedValueOnce({
+				exists: false,
 			});
 
 			const result = await getCreatorWorks("creator999");
@@ -274,13 +315,18 @@ describe("Creator page server actions", () => {
 			const result = await getCreatorWorks("");
 
 			expect(result).toEqual([]);
-			expect(mockWhere).not.toHaveBeenCalled();
+			expect(mockDoc).not.toHaveBeenCalled();
 		});
 
 		it("作品ドキュメントが削除されている場合は除外する", async () => {
-			const mockMappings = [
-				{ workId: "RJ111111", creatorId: "creator123" },
-				{ workId: "RJ222222", creatorId: "creator123" }, // この作品は削除済み
+			const mockCreatorData = {
+				creatorId: "creator123",
+				name: "テストクリエイター",
+			};
+
+			const mockWorkRelations = [
+				{ workId: "RJ111111", roles: ["voice"], circleId: "RG11111" },
+				{ workId: "RJ222222", roles: ["voice"], circleId: "RG22222" }, // この作品は削除済み
 			];
 
 			const mockWork = {
@@ -299,10 +345,21 @@ describe("Creator page server actions", () => {
 				wishlistCount: 100,
 			};
 
+			// クリエイタードキュメントの取得
 			mockGet.mockResolvedValueOnce({
+				exists: true,
+				data: () => mockCreatorData,
+				ref: {
+					collection: mockSubCollection,
+				},
+			});
+
+			// worksサブコレクションの取得
+			mockSubCollectionGet.mockResolvedValueOnce({
 				empty: false,
-				docs: mockMappings.map((mapping) => ({
-					data: () => mapping,
+				docs: mockWorkRelations.map((relation) => ({
+					id: relation.workId,
+					data: () => relation,
 				})),
 			});
 
@@ -326,15 +383,21 @@ describe("Creator page server actions", () => {
 		});
 
 		it("whereIn制限を超える場合は複数バッチで処理する", async () => {
-			// 15個のマッピング（whereInは10個まで）
-			const mockMappings = Array.from({ length: 15 }, (_, i) => ({
-				workId: `RJ${String(i).padStart(6, "0")}`,
+			const mockCreatorData = {
 				creatorId: "creator123",
+				name: "テストクリエイター",
+			};
+
+			// 15個のマッピング（whereInは10個まで）
+			const mockWorkRelations = Array.from({ length: 15 }, (_, i) => ({
+				workId: `RJ${String(i).padStart(6, "0")}`,
+				roles: ["voice"],
+				circleId: `RG${String(i).padStart(5, "0")}`,
 			}));
 
-			const mockWorks = mockMappings.map((mapping, i) => ({
-				id: mapping.workId,
-				productId: mapping.workId,
+			const mockWorks = mockWorkRelations.map((relation, i) => ({
+				id: relation.workId,
+				productId: relation.workId,
 				title: `作品${i}`,
 				circle: `サークル${i}`,
 				circleId: `RG${String(i).padStart(5, "0")}`,
@@ -347,10 +410,21 @@ describe("Creator page server actions", () => {
 				rating: { stars: 45, count: 5 },
 			}));
 
+			// クリエイタードキュメントの取得
 			mockGet.mockResolvedValueOnce({
+				exists: true,
+				data: () => mockCreatorData,
+				ref: {
+					collection: mockSubCollection,
+				},
+			});
+
+			// worksサブコレクションの取得
+			mockSubCollectionGet.mockResolvedValueOnce({
 				empty: false,
-				docs: mockMappings.map((mapping) => ({
-					data: () => mapping,
+				docs: mockWorkRelations.map((relation) => ({
+					id: relation.workId,
+					data: () => relation,
 				})),
 			});
 
