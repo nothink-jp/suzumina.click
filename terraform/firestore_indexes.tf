@@ -427,15 +427,40 @@ resource "google_firestore_index" "circles_name_workcount_desc" {
   }
 }
 
-# creatorWorkMappings コレクション - クリエイター検索用
-# クリエイターIDと作品IDの複合インデックス
-resource "google_firestore_index" "creatormappings_creatorid_workid" {
+# creators サブコレクション works - Collection Group Query用
+# 作品IDから関連するクリエイターを効率的に検索するためのインデックス
+# getExistingCreatorMappings() での N+1 問題を解決
+resource "google_firestore_index" "creators_works_collection_group_workid" {
   project    = var.gcp_project_id
-  collection = "creatorWorkMappings"
+  collection = "works"
+  database   = "(default)"
+  
+  # Collection Group Query として定義
+  query_scope = "COLLECTION_GROUP"
   
   fields {
-    field_path = "creatorId"
+    field_path = "workId"
     order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "__name__"
+    order      = "ASCENDING"
+  }
+}
+
+# creators サブコレクション works - 役割検索用
+# 特定の役割を持つクリエイターの作品を検索
+resource "google_firestore_index" "creators_works_collection_group_roles" {
+  project    = var.gcp_project_id
+  collection = "works"
+  database   = "(default)"
+  
+  query_scope = "COLLECTION_GROUP"
+  
+  fields {
+    field_path   = "roles"
+    array_config = "CONTAINS"
   }
   
   fields {
@@ -444,20 +469,23 @@ resource "google_firestore_index" "creatormappings_creatorid_workid" {
   }
 }
 
-# creatorWorkMappings コレクション - クリエイタータイプ検索用
-# クリエイターIDとタイプ（配列）の複合インデックス
-resource "google_firestore_index" "creatormappings_creatorid_types" {
+# creators サブコレクション works - サークル別クリエイター検索用
+# 特定のサークルで活動するクリエイターを検索
+resource "google_firestore_index" "creators_works_collection_group_circleid" {
   project    = var.gcp_project_id
-  collection = "creatorWorkMappings"
+  collection = "works"
+  database   = "(default)"
+  
+  query_scope = "COLLECTION_GROUP"
   
   fields {
-    field_path = "creatorId"
+    field_path = "circleId"
     order      = "ASCENDING"
   }
   
   fields {
-    field_path   = "types"
-    array_config = "CONTAINS"
+    field_path = "updatedAt"
+    order      = "DESCENDING"
   }
 }
 

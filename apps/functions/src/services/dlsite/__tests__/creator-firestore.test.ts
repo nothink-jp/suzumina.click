@@ -33,6 +33,7 @@ vi.mock("../../../infrastructure/database/firestore", () => {
 	return {
 		default: {
 			collection: vi.fn(),
+			collectionGroup: vi.fn(),
 			batch: vi.fn(),
 		},
 		Timestamp,
@@ -42,6 +43,7 @@ vi.mock("../../../infrastructure/database/firestore", () => {
 
 // Firestoreモック関数（モック定義の後に記述）
 const mockCollection = vi.fn();
+const mockCollectionGroup = vi.fn();
 const mockDoc = vi.fn();
 const mockGet = vi.fn();
 const mockSet = vi.fn();
@@ -49,10 +51,12 @@ const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
 const mockBatch = vi.fn();
 const mockCommit = vi.fn();
+const mockWhere = vi.fn();
 
 // モックのリセット用関数
 const resetMocks = () => {
 	mockCollection.mockClear();
+	mockCollectionGroup.mockClear();
 	mockDoc.mockClear();
 	mockGet.mockClear();
 	mockSet.mockClear();
@@ -60,6 +64,7 @@ const resetMocks = () => {
 	mockDelete.mockClear();
 	mockBatch.mockClear();
 	mockCommit.mockClear();
+	mockWhere.mockClear();
 };
 
 // ロガーのモック
@@ -75,6 +80,7 @@ describe("creator-firestore", () => {
 		// Firestoreのdefaultインスタンスのモックを設定
 		const firestoreMock = await import("../../../infrastructure/database/firestore");
 		firestoreMock.default.collection = mockCollection;
+		firestoreMock.default.collectionGroup = mockCollectionGroup;
 		firestoreMock.default.batch = mockBatch;
 
 		// バッチモック
@@ -136,12 +142,19 @@ describe("creator-firestore", () => {
 				},
 			} as any;
 
-			// 既存マッピングなし
+			// Collection Group Queryのモック - 既存マッピングなし
+			mockCollectionGroup.mockReturnValueOnce({
+				where: mockWhere,
+			});
+			mockWhere.mockReturnValueOnce({
+				get: mockGet,
+			});
+			mockGet.mockResolvedValueOnce({ docs: [] });
+
+			// クリエイタードキュメントの存在チェック（全て新規）
 			mockGet.mockResolvedValue({
 				exists: false,
 				data: () => null,
-				docs: [],
-				empty: true,
 			});
 
 			const result = await updateCreatorWorkMapping(apiData, "RJ123456");
@@ -161,28 +174,33 @@ describe("creator-firestore", () => {
 				},
 			} as any;
 
-			// 既存クリエイター
-			mockGet
-				.mockResolvedValueOnce({
-					exists: true,
-					data: () => ({ creatorId: "VA001", name: "声優A" }),
-				})
-				.mockResolvedValueOnce({
-					docs: [
-						{
-							id: "VA001",
-							ref: { collection: mockCollection },
-						},
-					],
-				})
-				.mockResolvedValueOnce({
-					exists: true,
-					data: () => ({
-						workId: "RJ123456",
-						roles: ["voice"],
-						circleId: "RG11111",
-					}),
-				});
+			// Collection Group Queryのモック
+			mockCollectionGroup.mockReturnValueOnce({
+				where: mockWhere,
+			});
+			mockWhere.mockReturnValueOnce({
+				get: mockGet,
+			});
+
+			// 既存マッピングの取得結果
+			mockGet.mockResolvedValueOnce({
+				docs: [
+					{
+						ref: { parent: { parent: { id: "VA001" } } },
+						data: () => ({
+							workId: "RJ123456",
+							roles: ["voice"],
+							circleId: "RG11111",
+						}),
+					},
+				],
+			});
+
+			// クリエイタードキュメントの取得
+			mockGet.mockResolvedValueOnce({
+				exists: true,
+				data: () => ({ creatorId: "VA001", name: "声優A" }),
+			});
 
 			const result = await updateCreatorWorkMapping(apiData, "RJ123456");
 
@@ -272,6 +290,21 @@ describe("creator-firestore", () => {
 				},
 			} as any;
 
+			// Collection Group Queryのモック - 既存マッピングなし
+			mockCollectionGroup.mockReturnValueOnce({
+				where: mockWhere,
+			});
+			mockWhere.mockReturnValueOnce({
+				get: mockGet,
+			});
+			mockGet.mockResolvedValueOnce({ docs: [] });
+
+			// クリエイタードキュメントの存在チェック
+			mockGet.mockResolvedValue({
+				exists: false,
+				data: () => null,
+			});
+
 			const result = await updateCreatorWorkMapping(apiData, "RJ123456");
 
 			expect(result.success).toBe(true);
@@ -287,6 +320,21 @@ describe("creator-firestore", () => {
 				},
 			} as any;
 
+			// Collection Group Queryのモック
+			mockCollectionGroup.mockReturnValueOnce({
+				where: mockWhere,
+			});
+			mockWhere.mockReturnValueOnce({
+				get: mockGet,
+			});
+			mockGet.mockResolvedValueOnce({ docs: [] });
+
+			// クリエイタードキュメントの存在チェック
+			mockGet.mockResolvedValueOnce({
+				exists: false,
+				data: () => null,
+			});
+
 			mockCommit.mockRejectedValueOnce(new Error("Commit failed"));
 
 			const result = await updateCreatorWorkMapping(apiData, "RJ123456");
@@ -299,34 +347,35 @@ describe("creator-firestore", () => {
 
 	describe("removeCreatorMappings", () => {
 		it("作品のすべてのマッピングを削除する", async () => {
+			// Collection Group Queryのモック
+			mockCollectionGroup.mockReturnValueOnce({
+				where: mockWhere,
+			});
+			mockWhere.mockReturnValueOnce({
+				get: mockGet,
+			});
+
 			// 既存マッピング
-			mockGet
-				.mockResolvedValueOnce({
-					docs: [
-						{
-							id: "VA001",
-							ref: { collection: mockCollection },
-						},
-						{
-							id: "IL001",
-							ref: { collection: mockCollection },
-						},
-					],
-				})
-				.mockResolvedValueOnce({
-					exists: true,
-					data: () => ({
-						workId: "RJ123456",
-						roles: ["voice"],
-					}),
-				})
-				.mockResolvedValueOnce({
-					exists: true,
-					data: () => ({
-						workId: "RJ123456",
-						roles: ["illustration"],
-					}),
-				});
+			mockGet.mockResolvedValueOnce({
+				docs: [
+					{
+						ref: { parent: { parent: { id: "VA001" } } },
+						data: () => ({
+							workId: "RJ123456",
+							roles: ["voice"],
+							circleId: "RG11111",
+						}),
+					},
+					{
+						ref: { parent: { parent: { id: "IL001" } } },
+						data: () => ({
+							workId: "RJ123456",
+							roles: ["illustration"],
+							circleId: "RG11111",
+						}),
+					},
+				],
+			});
 
 			const count = await removeCreatorMappings("RJ123456");
 
@@ -336,6 +385,14 @@ describe("creator-firestore", () => {
 		});
 
 		it("マッピングがない場合は0を返す", async () => {
+			// Collection Group Queryのモック
+			mockCollectionGroup.mockReturnValueOnce({
+				where: mockWhere,
+			});
+			mockWhere.mockReturnValueOnce({
+				get: mockGet,
+			});
+
 			mockGet.mockResolvedValueOnce({
 				docs: [],
 				empty: true,

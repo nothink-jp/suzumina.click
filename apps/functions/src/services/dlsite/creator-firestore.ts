@@ -88,20 +88,21 @@ async function getExistingCreatorMappings(
 	const mappings = new Map<string, CreatorWorkRelation>();
 
 	try {
-		// 全クリエイターのサブコレクションから該当作品を検索
-		// 注: この実装は小規模データ向け。大規模な場合は別途インデックスが必要
-		const creatorsSnapshot = await firestore.collection(CREATORS_COLLECTION).get();
+		// Collection Group Queryを使用して効率的に検索
+		// Terraformで定義されたインデックスを使用
+		const worksSnapshot = await firestore
+			.collectionGroup("works")
+			.where("workId", "==", workId)
+			.get();
 
-		await Promise.all(
-			creatorsSnapshot.docs.map(async (creatorDoc) => {
-				const workRelationDoc = await creatorDoc.ref.collection("works").doc(workId).get();
-
-				if (workRelationDoc.exists) {
-					const data = workRelationDoc.data() as CreatorWorkRelation;
-					mappings.set(creatorDoc.id, data);
-				}
-			}),
-		);
+		worksSnapshot.docs.forEach((doc) => {
+			// 親ドキュメントのIDがクリエイターID
+			const creatorId = doc.ref.parent.parent?.id;
+			if (creatorId) {
+				const data = doc.data() as CreatorWorkRelation;
+				mappings.set(creatorId, data);
+			}
+		});
 	} catch (error) {
 		logger.error(`既存クリエイターマッピング取得エラー: ${workId}`, {
 			error: error instanceof Error ? error.message : String(error),
