@@ -56,14 +56,6 @@ export async function updateCircleWithWork(
 		const needsWorkIdUpdate = !currentWorkIds.includes(workId);
 		const needsWorkIdsInit = !data.workIds; // workIdsフィールドが存在しない
 
-		logger.debug(`サークル更新チェック: ${circleId}`, {
-			hasWorkIds: !!data.workIds,
-			currentWorkIds: currentWorkIds.length,
-			needsWorkIdsInit,
-			needsWorkIdUpdate,
-			needsNameUpdate,
-		});
-
 		if (needsNameUpdate || needsWorkIdUpdate || needsWorkIdsInit) {
 			const updateData: Partial<CircleDocument> = {
 				updatedAt: Timestamp.now(),
