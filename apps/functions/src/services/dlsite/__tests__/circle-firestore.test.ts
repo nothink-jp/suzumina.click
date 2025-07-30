@@ -156,7 +156,6 @@ describe("circle-firestore", () => {
 			expect(mockUpdate).toHaveBeenCalledWith(
 				expect.objectContaining({
 					workIds: ["RJ123456"],
-					workCount: { delete: undefined }, // FieldValue.delete()のモック
 				}),
 			);
 		});
@@ -304,26 +303,6 @@ describe("circle-firestore", () => {
 			const count = await getCircleWorkCount("RG01234");
 
 			expect(count).toBe(0);
-		});
-
-		it("workIdsがない場合はworkCountを使用する（後方互換性）", async () => {
-			const circleWithWorkCount = {
-				circleId: "RG01234",
-				name: "テストサークル",
-				workCount: 10, // 古いworkCountフィールド
-				createdAt: Timestamp.now(),
-				updatedAt: Timestamp.now(),
-			};
-
-			mockGet.mockResolvedValue({
-				exists: true,
-				data: () => circleWithWorkCount,
-			});
-
-			const count = await getCircleWorkCount("RG01234");
-
-			expect(count).toBe(10);
-			expect(logger.debug).toHaveBeenCalledWith("サークル RG01234 はまだworkCountを使用しています");
 		});
 	});
 

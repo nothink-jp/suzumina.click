@@ -65,9 +65,7 @@ export async function updateCircleWithWork(
 		});
 
 		if (needsNameUpdate || needsWorkIdUpdate || needsWorkIdsInit) {
-			const updateData: Partial<CircleDocument> & {
-				workCount?: FieldValue; // FieldValue.delete()のため
-			} = {
+			const updateData: Partial<CircleDocument> = {
 				updatedAt: Timestamp.now(),
 			};
 
@@ -79,8 +77,6 @@ export async function updateCircleWithWork(
 			if (needsWorkIdsInit) {
 				// workIdsフィールドが存在しない場合は初期化
 				updateData.workIds = [workId];
-				// workCountフィールドがある場合は削除（段階的廃止）
-				updateData.workCount = FieldValue.delete();
 				logger.info(`workIds初期化: ${circleId} - 最初の作品: ${workId}`);
 			} else if (needsWorkIdUpdate) {
 				// FieldValue.arrayUnionを使用して重複を防ぐ
@@ -166,17 +162,11 @@ export async function getCircleWorkCount(circleId: string): Promise<number> {
 			return 0;
 		}
 
-		const data = doc.data() as CircleDocument & { workCount?: number };
+		const data = doc.data() as CircleDocument;
 
-		// workIdsがあればそちらを優先（新しい実装）
+		// workIdsから作品数を計算
 		if (data.workIds && Array.isArray(data.workIds)) {
 			return data.workIds.length;
-		}
-
-		// 後方互換性のためworkCountも見る（段階的廃止予定）
-		if (typeof data.workCount === "number") {
-			logger.debug(`サークル ${circleId} はまだworkCountを使用しています`);
-			return data.workCount;
 		}
 
 		return 0;
