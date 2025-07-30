@@ -41,14 +41,22 @@ vi.mock("../../shared/logger", () => ({
 	debug: vi.fn(),
 }));
 
+// circle-firestoreモック
+vi.mock("../circle-firestore", () => ({
+	updateCircleWithWork: vi.fn().mockResolvedValue(true),
+}));
+
 // テスト対象のインポート（モック設定後）
 const { collectCircleAndCreatorInfo, batchCollectCircleAndCreatorInfo } = await import(
 	"../collect-circle-creator-info"
 );
+const { updateCircleWithWork } = await import("../circle-firestore");
 
 describe("collect-circle-creator-info", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// デフォルトで存在しないドキュメントを返す
+		mockDoc.get.mockResolvedValue({ exists: false });
 	});
 
 	describe("collectCircleAndCreatorInfo", () => {
@@ -62,6 +70,7 @@ describe("collect-circle-creator-info", () => {
 		const mockApiData: DLsiteRawApiResponse = {
 			maker_id: "RG12345",
 			maker_name: "テストサークル",
+			maker_name_en: "",
 			workno: "RJ123456",
 			work_name: "テスト作品",
 			creaters: {
@@ -73,74 +82,23 @@ describe("collect-circle-creator-info", () => {
 			},
 		} as any;
 
-		it("新規サークルを正しく作成する", async () => {
-			// 新規サークルの場合
-			mockDoc.get.mockResolvedValue({ exists: false });
-
-			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData, true);
+		it("updateCircleWithWorkを呼び出す", async () => {
+			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData);
 
 			expect(result.success).toBe(true);
-			expect(mockBatch.set).toHaveBeenCalledWith(
-				mockDoc,
-				expect.objectContaining({
-					circleId: "RG12345",
-					name: "テストサークル",
-					workCount: 1,
-					lastUpdated: "SERVER_TIMESTAMP",
-					createdAt: "SERVER_TIMESTAMP",
-				}),
+			expect(updateCircleWithWork).toHaveBeenCalledWith(
+				"RG12345",
+				"RJ123456",
+				"テストサークル",
+				"",
 			);
 			expect(mockBatch.commit).toHaveBeenCalled();
-		});
-
-		it("既存サークルの新作品を正しく更新する", async () => {
-			// 既存サークルの場合
-			mockDoc.get.mockResolvedValue({
-				exists: true,
-				data: () => ({ name: "既存サークル", workCount: 5 }),
-			});
-
-			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData, true);
-
-			expect(result.success).toBe(true);
-			expect(mockBatch.update).toHaveBeenCalledWith(
-				mockDoc,
-				expect.objectContaining({
-					name: "テストサークル",
-					workCount: { incrementValue: 1 },
-					lastUpdated: "SERVER_TIMESTAMP",
-				}),
-			);
-		});
-
-		it("既存作品の更新時はworkCountを増加させない", async () => {
-			mockDoc.get.mockResolvedValue({
-				exists: true,
-				data: () => ({ name: "既存サークル", workCount: 5 }),
-			});
-
-			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData, false);
-
-			expect(result.success).toBe(true);
-			expect(mockBatch.update).toHaveBeenCalledWith(
-				mockDoc,
-				expect.objectContaining({
-					name: "テストサークル",
-					lastUpdated: "SERVER_TIMESTAMP",
-				}),
-			);
-			expect(mockBatch.update).toHaveBeenCalledWith(
-				mockDoc,
-				expect.not.objectContaining({
-					workCount: expect.anything(),
-				}),
-			);
 		});
 
 		it("クリエイターマッピングを正しく作成する", async () => {
 			mockDoc.get.mockResolvedValue({ exists: false });
 
-			await collectCircleAndCreatorInfo(mockWorkData, mockApiData, true);
+			await collectCircleAndCreatorInfo(mockWorkData, mockApiData);
 
 			// 声優2名とイラストレーター1名のマッピングが作成されることを確認
 			const setCallsForMappings = mockBatch.set.mock.calls.filter(
@@ -205,7 +163,7 @@ describe("collect-circle-creator-info", () => {
 				},
 			} as any;
 
-			await collectCircleAndCreatorInfo(mockWorkData, apiDataWithMultiRole, true);
+			await collectCircleAndCreatorInfo(mockWorkData, apiDataWithMultiRole);
 
 			// クリエイターマッピングの呼び出しを確認
 			const mappingCalls = mockBatch.set.mock.calls.filter(
@@ -230,7 +188,7 @@ describe("collect-circle-creator-info", () => {
 			// サークル情報のget呼び出しを設定
 			mockDoc.get.mockResolvedValue({ exists: false });
 
-			const result = await collectCircleAndCreatorInfo(mockWorkData, invalidApiData, true);
+			const result = await collectCircleAndCreatorInfo(mockWorkData, invalidApiData);
 
 			expect(result.success).toBe(true);
 			// サークル作成/更新が呼ばれないことを確認
@@ -244,7 +202,7 @@ describe("collect-circle-creator-info", () => {
 			// get呼び出しでエラーを発生させる
 			mockDoc.get.mockRejectedValueOnce(new Error("Firestore error"));
 
-			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData, true);
+			const result = await collectCircleAndCreatorInfo(mockWorkData, mockApiData);
 
 			expect(result.success).toBe(false);
 			expect(result.error).toContain("Firestore error");
@@ -262,7 +220,6 @@ describe("collect-circle-creator-info", () => {
 						workno: "RJ111111",
 						creaters: { voice_by: [{ id: "v1", name: "声優1" }] },
 					} as any,
-					isNewWork: true,
 				},
 				{
 					workData: { id: "RJ222222", title: "作品2" } as any,
@@ -272,7 +229,6 @@ describe("collect-circle-creator-info", () => {
 						workno: "RJ222222",
 						creaters: { illust_by: [{ id: "i1", name: "イラスト1" }] },
 					} as any,
-					isNewWork: true,
 				},
 			];
 
@@ -311,7 +267,6 @@ describe("collect-circle-creator-info", () => {
 				{
 					workData: { id: "RJ333333", title: "作品3" } as any,
 					apiData: { maker_id: "RG33333", maker_name: "サークル3" } as any,
-					isNewWork: true,
 				},
 			];
 
@@ -332,20 +287,24 @@ describe("collect-circle-creator-info", () => {
 			const works = [
 				{
 					workData: { id: "RJ444444", title: "作品4" } as any,
-					apiData: { maker_id: "RG44444", maker_name: "サークル4" } as any,
-					isNewWork: true,
+					apiData: {
+						maker_id: "RG44444",
+						maker_name: "サークル4",
+						maker_name_en: "",
+						workno: "RJ444444",
+					} as any,
 				},
 			];
 
-			// updateCircleInfoで例外を発生させる
-			mockDoc.get.mockRejectedValueOnce(new Error("Firestore read error"));
+			// updateCircleWithWorkでエラーを発生させる
+			vi.mocked(updateCircleWithWork).mockRejectedValueOnce(new Error("Circle update error"));
 
 			const result = await batchCollectCircleAndCreatorInfo(works);
 
 			expect(result.success).toBe(false);
 			expect(result.errors).toHaveLength(1);
 			expect(result.errors[0].workId).toBe("RJ444444");
-			expect(result.errors[0].error).toBe("Firestore read error");
+			expect(result.errors[0].error).toBe("Circle update error");
 		});
 	});
 

@@ -413,46 +413,40 @@ resource "google_cloud_scheduler_job" "recalculate_circle_counts" {
 
 ### Phase 1 のPR計画（1-2週間）
 
-#### PR #1: 差分更新モードの基盤実装
+#### PR #1: 差分更新モードの基盤実装 ❌ (スキップ: YAGNI原則により不要と判断)
 ```
-feat: add incremental update mode for DLsite data collection
-
-- 更新モード判定ロジックの追加
-- メタデータによる更新対象の選定
-- 設定ファイルでのモード切り替え
-
-Files:
-- apps/functions/src/services/dlsite/update-mode-manager.ts (new)
-- apps/functions/src/endpoints/dlsite-individual-info-api.ts (modify)
-- apps/functions/src/services/dlsite/__tests__/update-mode-manager.test.ts (new)
+理由:
+- 現在の全件更新（5分）はCloud Functions制限（9分）内で問題なく動作
+- バッチ処理の継続機能が既に実装済み
+- 設定ファイルでのモード切り替えの具体的要件が不明
+- 複雑性を増すだけで実際の問題を解決しない
 ```
 
-#### PR #2: 人気作品の価格チェック機能
+#### PR #2: 人気作品の価格チェック機能 ❌ (スキップ: YAGNI原則により不要と判断)
 ```
-feat: add popular works price check for daily updates
-
-- 人気作品の選定ロジック
-- 価格変更検出の実装
-- 日次更新への統合
-
-Files:
-- apps/functions/src/services/dlsite/popular-works-selector.ts (new)
-- apps/functions/src/services/price-history/price-change-detector.ts (new)
-- tests for above files
+理由:
+- 人気作品の定義が不明確（ビジネス要件なし）
+- 全作品を平等に扱う現在の方式がシンプルで良い
+- 優先順位付けの具体的なメリットが不明
+- 月額コスト$0.29は既に十分低い
 ```
 
-#### PR #3: バッチサイズ最適化
+#### PR #3: バッチサイズ最適化 ✅ (完了: PR #138)
 ```
 perf: optimize batch size for API stability
 
 - BATCH_SIZE: 100 → 50
 - MAX_CONCURRENT_API_REQUESTS: 6 → 3
 - エラーハンドリングの改善
+- リトライロジックの追加（429/5xxエラー対応）
 
 Files:
 - apps/functions/src/endpoints/dlsite-individual-info-api.ts
 - apps/functions/src/services/dlsite/individual-info-api-client.ts
+- apps/functions/src/services/dlsite/__tests__/individual-info-api-client.test.ts
 ```
+
+**実装済み**: 2025-07-29
 
 ### Phase 2 のPR計画（2-3週間）
 
@@ -590,3 +584,23 @@ Files:
 
 **作成日**: 2025-07-29
 **バージョン**: 4.0（PR計画を追加）
+
+## 実装進捗
+
+### Phase 1: バッチ処理の安定化
+- [x] PR #3: バッチサイズ最適化の実装 - **完了・マージ済み (PR #138)**
+- [x] PR #1: 差分更新モードの基盤実装 - **スキップ（YAGNI原則）**
+- [x] PR #2: 人気作品の価格チェック機能 - **スキップ（YAGNI原則）**
+
+### Phase 2: データ正規化
+- [x] PR #4: Circleデータ構造の正規化 - **完了・PR作成済み (PR #139)**
+- [ ] PR #5: Creatorマッピングの正規化
+- [ ] PR #6: 統合更新処理の実装
+- [ ] PR #7: マイグレーションスクリプト
+- [ ] PR #8: workCount再集計機能
+
+### Phase 3: 並列処理・監視
+- [ ] PR #9: Cloud Tasks並列処理
+- [ ] PR #10: 監視・アラート設定
+
+**最終更新**: 2025-07-29

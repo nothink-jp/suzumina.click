@@ -1,7 +1,16 @@
 "use server";
 
-import type { CircleData, WorkDocument, WorkPlainObject } from "@suzumina.click/shared-types";
-import { convertToWorkPlainObject, isValidCircleId } from "@suzumina.click/shared-types";
+import type {
+	CircleDocument,
+	CirclePlainObject,
+	WorkDocument,
+	WorkPlainObject,
+} from "@suzumina.click/shared-types";
+import {
+	convertToCirclePlainObject,
+	convertToWorkPlainObject,
+	isValidCircleId,
+} from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 
 /**
@@ -61,7 +70,7 @@ function compareWorks(a: WorkPlainObject, b: WorkPlainObject, sort: string): num
  * @param circleId サークルID
  * @returns サークル情報、存在しない場合はnull
  */
-export async function getCircleInfo(circleId: string): Promise<CircleData | null> {
+export async function getCircleInfo(circleId: string): Promise<CirclePlainObject | null> {
 	// 入力検証
 	if (!isValidCircleId(circleId)) {
 		return null;
@@ -75,13 +84,8 @@ export async function getCircleInfo(circleId: string): Promise<CircleData | null
 			return null;
 		}
 
-		const data = circleDoc.data() as CircleData;
-		return {
-			...data,
-			// Firestore Timestampを Date に変換
-			lastUpdated: data.lastUpdated?.toDate ? data.lastUpdated.toDate() : data.lastUpdated,
-			createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
-		};
+		const data = circleDoc.data() as CircleDocument;
+		return convertToCirclePlainObject(data);
 	} catch (_error) {
 		// エラー発生時はnullを返す
 		return null;
@@ -108,7 +112,7 @@ export async function getCircleWorks(circleId: string): Promise<WorkPlainObject[
 			return [];
 		}
 
-		const circleData = circleDoc.data() as CircleData;
+		const circleData = circleDoc.data() as CircleDocument;
 		const circleName = circleData.name;
 
 		// 全作品を取得してクライアント側でフィルタリング
@@ -175,7 +179,7 @@ export async function getCircleWorksWithPagination(
 			return { works: [], totalCount: 0 };
 		}
 
-		const circleData = circleDoc.data() as CircleData;
+		const circleData = circleDoc.data() as CircleDocument;
 		const circleName = circleData.name;
 
 		// 全作品を取得してクライアント側でフィルタリング
@@ -232,7 +236,7 @@ export async function getCircleWithWorksWithPagination(
 	limit = 12,
 	sort = "newest",
 ): Promise<{
-	circle: CircleData;
+	circle: CirclePlainObject;
 	works: WorkPlainObject[];
 	totalCount: number;
 } | null> {
@@ -255,7 +259,7 @@ export async function getCircleWithWorksWithPagination(
  */
 export async function getCircleWithWorks(
 	circleId: string,
-): Promise<{ circle: CircleData; works: WorkPlainObject[] } | null> {
+): Promise<{ circle: CirclePlainObject; works: WorkPlainObject[] } | null> {
 	const [circle, works] = await Promise.all([getCircleInfo(circleId), getCircleWorks(circleId)]);
 
 	if (!circle) {

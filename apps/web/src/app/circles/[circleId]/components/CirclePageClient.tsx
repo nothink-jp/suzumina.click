@@ -1,6 +1,6 @@
 "use client";
 
-import type { CircleData, WorkPlainObject } from "@suzumina.click/shared-types";
+import type { CirclePlainObject, WorkPlainObject } from "@suzumina.click/shared-types";
 import {
 	ListPageContent,
 	ListPageHeader,
@@ -12,11 +12,10 @@ import WorkList from "@/app/works/components/WorkList";
 import { getCircleWorksWithPagination } from "../actions";
 
 interface CirclePageClientProps {
-	circle: CircleData;
+	circle: CirclePlainObject;
 	initialData: WorkPlainObject[];
 	initialTotalCount: number;
 	initialPage: number;
-	_searchParams: { [key: string]: string | string[] | undefined };
 }
 
 export function CirclePageClient({
@@ -24,7 +23,6 @@ export function CirclePageClient({
 	initialData,
 	initialTotalCount,
 	initialPage,
-	_searchParams,
 }: CirclePageClientProps) {
 	const searchParamsHook = useSearchParams();
 	const [data, setData] = useState<WorkPlainObject[]>(initialData);

@@ -12,8 +12,9 @@ import type {
 	DLsiteRawApiResponse,
 	WorkDocument,
 } from "@suzumina.click/shared-types";
-import { isValidCircleId, isValidCreatorId } from "@suzumina.click/shared-types";
+import { isValidCreatorId } from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
+import { updateCircleWithWork } from "./circle-firestore";
 
 const adminDb = new Firestore();
 
@@ -21,19 +22,24 @@ const adminDb = new Firestore();
  * サークル・クリエイター情報を収集・保存
  * @param workData Firestore用に変換された作品データ
  * @param apiData Individual Info APIの生データ
- * @param isNewWork 新規作品かどうか
  * @returns 処理結果
  */
 export async function collectCircleAndCreatorInfo(
 	workData: WorkDocument,
 	apiData: DLsiteRawApiResponse,
-	isNewWork: boolean,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		const batch = adminDb.batch();
 
-		// 1. サークル情報の更新（Fire-and-Forget パターン）
-		await updateCircleInfo(batch, apiData, isNewWork);
+		// 1. サークル情報の更新（新しいupdateCircleWithWorkを使用）
+		if (apiData.maker_id && apiData.workno) {
+			await updateCircleWithWork(
+				apiData.maker_id,
+				apiData.workno,
+				apiData.maker_name || "",
+				apiData.maker_name_en || "",
+			);
+		}
 
 		// 2. クリエイターマッピングの更新
 		await updateCreatorMappings(batch, apiData, workData.id);
@@ -53,56 +59,6 @@ export async function collectCircleAndCreatorInfo(
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
 		};
-	}
-}
-
-/**
- * サークル情報を更新
- */
-async function updateCircleInfo(
-	batch: FirebaseFirestore.WriteBatch,
-	apiData: DLsiteRawApiResponse,
-	isNewWork: boolean,
-): Promise<void> {
-	const circleId = apiData.maker_id;
-	if (!circleId) return;
-
-	// 入力検証
-	if (!isValidCircleId(circleId)) {
-		logger.warn(`無効なサークルID: ${circleId}`);
-		return;
-	}
-
-	const circleRef = adminDb.collection("circles").doc(circleId);
-	const circleDoc = await circleRef.get();
-
-	if (!circleDoc.exists) {
-		// 新規サークル - undefinedフィールドを除外
-		const newCircle = {
-			circleId,
-			name: apiData.maker_name || "",
-			workCount: 1,
-			lastUpdated: FieldValue.serverTimestamp(),
-			createdAt: FieldValue.serverTimestamp(),
-		};
-		batch.set(circleRef, newCircle);
-		// 新規サークル登録ログは省略（ログ削減）
-	} else if (isNewWork) {
-		// 既存サークルの新作品追加時のみworkCountを増加
-		const updateData = {
-			name: apiData.maker_name || circleDoc.data()?.name,
-			workCount: FieldValue.increment(1),
-			lastUpdated: FieldValue.serverTimestamp(),
-		};
-		batch.update(circleRef, updateData);
-		// サークル更新ログは省略（ログ削減）
-	} else {
-		// 既存作品の更新時は名前のみ更新
-		const updateData = {
-			name: apiData.maker_name || circleDoc.data()?.name,
-			lastUpdated: FieldValue.serverTimestamp(),
-		};
-		batch.update(circleRef, updateData);
 	}
 }
 
@@ -182,7 +138,6 @@ export async function batchCollectCircleAndCreatorInfo(
 	works: Array<{
 		workData: WorkDocument;
 		apiData: DLsiteRawApiResponse;
-		isNewWork: boolean;
 	}>,
 ): Promise<{
 	success: boolean;
@@ -198,10 +153,17 @@ export async function batchCollectCircleAndCreatorInfo(
 		const batchWorks = works.slice(i, i + batchSize);
 		const batch = adminDb.batch();
 
-		for (const { workData, apiData, isNewWork } of batchWorks) {
+		for (const { workData, apiData } of batchWorks) {
 			try {
-				// サークル情報の更新
-				await updateCircleInfo(batch, apiData, isNewWork);
+				// サークル情報の更新（新しいupdateCircleWithWorkを使用）
+				if (apiData.maker_id && apiData.workno) {
+					await updateCircleWithWork(
+						apiData.maker_id,
+						apiData.workno,
+						apiData.maker_name || "",
+						apiData.maker_name_en || "",
+					);
+				}
 
 				// クリエイターマッピングの更新
 				await updateCreatorMappings(batch, apiData, workData.id);

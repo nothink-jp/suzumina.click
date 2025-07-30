@@ -5,7 +5,7 @@
  * Cloud Run Functions環境での軽量化を実現します。
  */
 
-import { Firestore, Timestamp } from "@google-cloud/firestore";
+import { FieldValue, Firestore, Timestamp } from "@google-cloud/firestore";
 import * as logger from "../../shared/logger";
 
 // シングルトンパターンで一度だけFirestoreインスタンスを作成
@@ -60,9 +60,9 @@ export function resetFirestoreInstance(): void {
 	firestoreInstance = null;
 }
 
-// エクスポート用にFirestoreとTimestampを再エクスポート
+// エクスポート用にFirestore、FieldValue、Timestampを再エクスポート
 // これにより、他のモジュールでのインポートを簡素化
-export { Firestore, Timestamp };
+export { FieldValue, Firestore, Timestamp };
 
 // デフォルトエクスポートとしてgetFirestore関数を提供
 // 注意: インスタンスではなく関数をエクスポートすることで、
