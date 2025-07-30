@@ -6,15 +6,12 @@
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import type { WorkDocument } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../infrastructure/management/user-agent-manager";
-import { updateCircleWithWork } from "../services/dlsite/circle-firestore";
 import { batchCollectCircleAndCreatorInfo } from "../services/dlsite/collect-circle-creator-info";
 import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../services/dlsite/individual-info-api-client";
 import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collector";
-import { handleNoWorkIdsError } from "../services/dlsite/work-id-validator";
 import { WorkMapper } from "../services/mappers/work-mapper";
 import { savePriceHistory } from "../services/price-history";
 import { chunkArray } from "../shared/array-utils";
@@ -106,10 +103,7 @@ async function updateUnifiedMetadata(
 /**
  * バッチ処理実行
  */
-async function processBatch(
-	batchInfo: BatchProcessingInfo,
-	existingWorksMap: Map<string, WorkDocument>,
-): Promise<UnifiedFetchResult> {
+async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetchResult> {
 	const { batchNumber, totalBatches, workIds } = batchInfo;
 
 	logger.info(`バッチ ${batchNumber}/${totalBatches} 処理開始: ${workIds.length}件`);
@@ -193,34 +187,7 @@ async function processBatch(
 			(result) => result.status === "fulfilled" && result.value,
 		).length;
 
-		// 6. サークル情報更新（新しいユーティリティ使用）
-		try {
-			const circleUpdatePromises = apiResponses.map(async (apiResponse) => {
-				if (!apiResponse.maker_id || !apiResponse.workno) return false;
-
-				return updateCircleWithWork(
-					apiResponse.maker_id,
-					apiResponse.workno,
-					apiResponse.maker_name || "",
-					apiResponse.maker_name_en || "",
-				).catch((error) => {
-					logger.warn(`サークル更新失敗 ${apiResponse.maker_id}:`, error);
-					return false;
-				});
-			});
-
-			const circleResults = await Promise.allSettled(circleUpdatePromises);
-			const circleUpdated = circleResults.filter(
-				(result) => result.status === "fulfilled" && result.value,
-			).length;
-			logger.debug(`サークル情報更新: ${circleUpdated}件`);
-		} catch (error) {
-			const errorMsg = `サークル情報更新エラー: ${error instanceof Error ? error.message : String(error)}`;
-			logger.error(errorMsg);
-			results.errors.push(errorMsg);
-		}
-
-		// 7. クリエイター情報収集（既存のbatchCollectCircleAndCreatorInfoを使用）
+		// 6. サークル・クリエイター情報収集（batchCollectCircleAndCreatorInfoがサークル更新も行う）
 		try {
 			const circleCreatorWorkData = validWorkData
 				.map((workData) => {
@@ -230,7 +197,6 @@ async function processBatch(
 					return {
 						workData,
 						apiData: matchingApiData || {},
-						isNewWork: !existingWorksMap.has(workData.id),
 					};
 				})
 				.filter((item) => item.apiData.workno);
@@ -318,7 +284,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			}
 
 			if (allWorkIds.length === 0) {
-				await handleNoWorkIdsError();
+				logger.error("収集対象の作品IDが見つかりません");
 				return {
 					workCount: 0,
 					apiCallCount: 0,
@@ -354,7 +320,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		}
 
 		// 3. 既存データの取得
-		const existingWorksMap = await getExistingWorksMap(allWorkIds);
+		await getExistingWorksMap(allWorkIds);
 
 		// 4. バッチ処理の実行
 		let totalUpdated = 0;
@@ -385,7 +351,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			};
 
 			// バッチ処理実行
-			const result = await processBatch(batchInfo, existingWorksMap);
+			const result = await processBatch(batchInfo);
 
 			totalUpdated += result.basicDataUpdated;
 			totalApiCalls += result.apiCallCount;

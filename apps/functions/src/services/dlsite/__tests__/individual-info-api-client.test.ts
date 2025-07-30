@@ -4,11 +4,7 @@
 
 import type { Mock } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-	batchFetchIndividualInfo,
-	fetchIndividualWorkInfo,
-	type IndividualInfoAPIOptions,
-} from "../individual-info-api-client";
+import { batchFetchIndividualInfo, fetchIndividualWorkInfo } from "../individual-info-api-client";
 
 // モックの設定
 vi.mock("../../../infrastructure/management/user-agent-manager", () => ({
@@ -24,8 +20,6 @@ vi.mock("../../../shared/logger", () => ({
 	error: vi.fn(),
 	debug: vi.fn(),
 }));
-
-import * as logger from "../../../shared/logger";
 
 // グローバルfetchのモック
 const mockFetch = vi.fn() as Mock;

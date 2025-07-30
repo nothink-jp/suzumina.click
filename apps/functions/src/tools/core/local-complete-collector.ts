@@ -399,7 +399,6 @@ class LocalDataCollector {
 		const worksForCollection: Array<{
 			workData: WorkDocument;
 			apiData: DLsiteRawApiResponse;
-			isNewWork: boolean;
 		}> = [];
 
 		for (const [workId, apiData] of this.apiResponses) {
@@ -409,7 +408,6 @@ class LocalDataCollector {
 			worksForCollection.push({
 				workData,
 				apiData,
-				isNewWork: true, // ローカル収集では全て新規扱い
 			});
 		}
 

@@ -56,8 +56,18 @@ export async function updateCircleWithWork(
 		const needsWorkIdUpdate = !currentWorkIds.includes(workId);
 		const needsWorkIdsInit = !data.workIds; // workIdsフィールドが存在しない
 
+		logger.debug(`サークル更新チェック: ${circleId}`, {
+			hasWorkIds: !!data.workIds,
+			currentWorkIds: currentWorkIds.length,
+			needsWorkIdsInit,
+			needsWorkIdUpdate,
+			needsNameUpdate,
+		});
+
 		if (needsNameUpdate || needsWorkIdUpdate || needsWorkIdsInit) {
-			const updateData: any = {
+			const updateData: Partial<CircleDocument> & {
+				workCount?: FieldValue; // FieldValue.delete()のため
+			} = {
 				updatedAt: Timestamp.now(),
 			};
 
@@ -71,6 +81,7 @@ export async function updateCircleWithWork(
 				updateData.workIds = [workId];
 				// workCountフィールドがある場合は削除（段階的廃止）
 				updateData.workCount = FieldValue.delete();
+				logger.info(`workIds初期化: ${circleId} - 最初の作品: ${workId}`);
 			} else if (needsWorkIdUpdate) {
 				// FieldValue.arrayUnionを使用して重複を防ぐ
 				await circleRef.update({
@@ -155,7 +166,7 @@ export async function getCircleWorkCount(circleId: string): Promise<number> {
 			return 0;
 		}
 
-		const data = doc.data() as any;
+		const data = doc.data() as CircleDocument & { workCount?: number };
 
 		// workIdsがあればそちらを優先（新しい実装）
 		if (data.workIds && Array.isArray(data.workIds)) {

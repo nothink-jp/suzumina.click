@@ -38,7 +38,6 @@ vi.mock("../../../shared/logger", () => ({
 }));
 
 describe("circle-firestore", () => {
-	const mockCollection = vi.fn();
 	const mockDoc = vi.fn();
 	const mockGet = vi.fn();
 	const mockSet = vi.fn();
