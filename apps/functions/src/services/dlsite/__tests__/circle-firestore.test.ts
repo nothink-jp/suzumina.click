@@ -23,6 +23,7 @@ vi.mock("../../../infrastructure/database/firestore", () => ({
 	FieldValue: {
 		arrayUnion: vi.fn((value) => ({ arrayUnion: value })),
 		arrayRemove: vi.fn((value) => ({ arrayRemove: value })),
+		delete: vi.fn(() => ({ delete: undefined })),
 	},
 	Timestamp: {
 		now: vi.fn(() => ({ seconds: 1234567890, nanoseconds: 0 })),
@@ -134,6 +135,31 @@ describe("circle-firestore", () => {
 
 			expect(result).toBe(false);
 			expect(mockUpdate).not.toHaveBeenCalled();
+		});
+
+		it("workIdsがない既存サークルを初期化できる", async () => {
+			const existingCircle = {
+				circleId: "RG01234",
+				name: "テストサークル",
+				workCount: 5, // 古いworkCountフィールド
+				createdAt: Timestamp.now(),
+				updatedAt: Timestamp.now(),
+			};
+
+			mockGet.mockResolvedValue({
+				exists: true,
+				data: () => existingCircle,
+			});
+
+			const result = await updateCircleWithWork("RG01234", "RJ123456", "テストサークル", "");
+
+			expect(result).toBe(true);
+			expect(mockUpdate).toHaveBeenCalledWith(
+				expect.objectContaining({
+					workIds: ["RJ123456"],
+					workCount: { delete: undefined }, // FieldValue.delete()のモック
+				}),
+			);
 		});
 
 		it("サークル名の更新ができる", async () => {
@@ -279,6 +305,26 @@ describe("circle-firestore", () => {
 			const count = await getCircleWorkCount("RG01234");
 
 			expect(count).toBe(0);
+		});
+
+		it("workIdsがない場合はworkCountを使用する（後方互換性）", async () => {
+			const circleWithWorkCount = {
+				circleId: "RG01234",
+				name: "テストサークル",
+				workCount: 10, // 古いworkCountフィールド
+				createdAt: Timestamp.now(),
+				updatedAt: Timestamp.now(),
+			};
+
+			mockGet.mockResolvedValue({
+				exists: true,
+				data: () => circleWithWorkCount,
+			});
+
+			const count = await getCircleWorkCount("RG01234");
+
+			expect(count).toBe(10);
+			expect(logger.debug).toHaveBeenCalledWith("サークル RG01234 はまだworkCountを使用しています");
 		});
 	});
 
