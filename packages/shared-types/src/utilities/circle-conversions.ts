@@ -35,7 +35,7 @@ export function convertToCirclePlainObject(
 	}
 
 	// Timestampオブジェクトの変換処理
-	const toISOString = (timestamp: unknown): string | null => {
+	const convertTimestampToISOString = (timestamp: unknown): string | null => {
 		if (!timestamp) return null;
 		// Firestore Timestampの場合
 		if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
@@ -59,9 +59,9 @@ export function convertToCirclePlainObject(
 		circleId: data.circleId,
 		name: data.name,
 		nameEn: data.nameEn,
-		workCount: data.workIds ? data.workIds.length : 0,
-		createdAt: toISOString(data.createdAt),
-		updatedAt: toISOString(data.updatedAt),
+		workCount: data.workIds?.length ?? 0,
+		createdAt: convertTimestampToISOString(data.createdAt),
+		updatedAt: convertTimestampToISOString(data.updatedAt),
 	};
 }
 

@@ -70,16 +70,17 @@ export async function updateCircleWithWork(
 				// workIdsフィールドが存在しない場合は初期化
 				updateData.workIds = [workId];
 				logger.info(`workIds初期化: ${circleId} - 最初の作品: ${workId}`);
-			} else if (needsWorkIdUpdate) {
-				// FieldValue.arrayUnionを使用して重複を防ぐ
-				await circleRef.update({
-					...updateData,
-					workIds: FieldValue.arrayUnion(workId),
-				});
-				return true;
 			}
 
+			// 基本的な更新を実行
 			await circleRef.update(updateData);
+
+			// workIdの追加が必要な場合は、arrayUnionで別途更新
+			if (!needsWorkIdsInit && needsWorkIdUpdate) {
+				await circleRef.update({
+					workIds: FieldValue.arrayUnion(workId),
+				});
+			}
 
 			logger.debug(
 				`サークル更新: ${circleId} - 名前更新: ${needsNameUpdate}, 作品追加: ${needsWorkIdUpdate}`,
