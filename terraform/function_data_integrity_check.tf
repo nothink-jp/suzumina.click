@@ -98,6 +98,35 @@ resource "google_pubsub_topic_iam_member" "scheduler_data_integrity_pubsub_publi
   member  = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
 }
 
+# Pub/Sub サービスエージェントに Token Creator 権限を付与
+# これにより、Pub/SubがOIDCトークンを作成してCloud Functionsを認証付きで呼び出せるようになる
+resource "google_service_account_iam_member" "data_integrity_pubsub_token_creator" {
+  service_account_id = google_service_account.data_integrity_check_sa.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
+# Cloud Run Invoker権限を付与（Cloud Functions Gen2で必要）
+resource "google_project_iam_member" "data_integrity_check_run_invoker" {
+  project = var.gcp_project_id
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:${google_service_account.data_integrity_check_sa.email}"
+}
+
+# Eventarc サービスエージェントに必要な権限を付与
+resource "google_project_iam_member" "data_integrity_eventarc_receiver" {
+  project = var.gcp_project_id
+  role    = "roles/eventarc.eventReceiver"
+  member  = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-eventarc.iam.gserviceaccount.com"
+}
+
+# Eventarc から Cloud Run への Invoker 権限
+resource "google_project_iam_member" "data_integrity_eventarc_run_invoker" {
+  project = var.gcp_project_id
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:service-${data.google_project.current.number}@gcp-sa-eventarc.iam.gserviceaccount.com"
+}
+
 # データ整合性チェック関数の出力情報
 # 関数はGitHub Actionsでデプロイされるため、関数名のみ出力
 output "data_integrity_check_function_info" {
