@@ -296,7 +296,7 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 
 		// まず全てのデータを取得して、クライアント側で並び替え
 		// (DLsiteのIDフォーマットに対応するため)
-		const allSnapshot = await firestore.collection("dlsiteWorks").get();
+		const allSnapshot = await firestore.collection("works").get();
 
 		// 全データを配列に変換
 		let allWorks = allSnapshot.docs.map((doc) => ({
@@ -381,7 +381,7 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 export async function getWorkById(workId: string): Promise<WorkPlainObject | null> {
 	try {
 		const firestore = getFirestore();
-		const doc = await firestore.collection("dlsiteWorks").doc(workId).get();
+		const doc = await firestore.collection("works").doc(workId).get();
 
 		if (!doc.exists) {
 			return null;
@@ -422,12 +422,12 @@ export async function getRelatedWorks(
 		const firestore = getFirestore();
 
 		// 基準作品を取得
-		const baseDoc = await firestore.collection("dlsiteWorks").doc(workId).get();
+		const baseDoc = await firestore.collection("works").doc(workId).get();
 		if (!baseDoc.exists) return [];
 
 		const baseWork = { id: baseDoc.id, ...baseDoc.data() } as WorkDocument;
 
-		const allSnapshot = await firestore.collection("dlsiteWorks").get();
+		const allSnapshot = await firestore.collection("works").get();
 
 		let allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
@@ -483,7 +483,7 @@ export async function getWorksStats(
 ) {
 	try {
 		const firestore = getFirestore();
-		const allSnapshot = await firestore.collection("dlsiteWorks").get();
+		const allSnapshot = await firestore.collection("works").get();
 
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
@@ -678,7 +678,7 @@ function calculateQualityPercentages(stats: QualityStats) {
 export async function getDataQualityReport() {
 	try {
 		const firestore = getFirestore();
-		const allSnapshot = await firestore.collection("dlsiteWorks").get();
+		const allSnapshot = await firestore.collection("works").get();
 
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
@@ -781,7 +781,7 @@ export async function getPopularVoiceActors(limit = 20): Promise<
 > {
 	try {
 		const firestore = getFirestore();
-		const allSnapshot = await firestore.collection("dlsiteWorks").get();
+		const allSnapshot = await firestore.collection("works").get();
 
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),
@@ -839,7 +839,7 @@ export async function getPopularGenres(limit = 30): Promise<
 > {
 	try {
 		const firestore = getFirestore();
-		const allSnapshot = await firestore.collection("dlsiteWorks").get();
+		const allSnapshot = await firestore.collection("works").get();
 
 		const allWorks = allSnapshot.docs.map((doc) => ({
 			...doc.data(),

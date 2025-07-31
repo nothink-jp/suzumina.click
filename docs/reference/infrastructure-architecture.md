@@ -519,7 +519,7 @@ service cloud.firestore {
     
     // 動画・作品データ - 読み取りのみ
     match /{collection}/{document} {
-      allow read: if collection in ['videos', 'dlsiteWorks'];
+      allow read: if collection in ['videos', 'works'];
       allow write: if false;
     }
   }

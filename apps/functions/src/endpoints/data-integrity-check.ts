@@ -96,7 +96,7 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult): Promise<void
 		const existingWorkIds: string[] = [];
 		for (const workId of uniqueWorkIds) {
 			const workDoc = await firestore
-				.collection("dlsiteWorks")
+				.collection("works")
 				.doc(workId as string)
 				.get();
 			if (workDoc.exists) {
@@ -150,7 +150,7 @@ async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void
 
 		for (const workMapping of worksSnapshot.docs) {
 			const workId = workMapping.id;
-			const workDoc = await firestore.collection("dlsiteWorks").doc(workId).get();
+			const workDoc = await firestore.collection("works").doc(workId).get();
 
 			if (!workDoc.exists) {
 				logger.warn(`Creator ${creatorDoc.id}: 孤立したマッピング ${workId} を検出`);
@@ -292,7 +292,7 @@ async function commitBatchIfNeeded(
 async function restoreCreatorWorkRelations(result: IntegrityCheckResult): Promise<void> {
 	logger.info("Creator-Work関連の復元を開始");
 
-	const worksSnapshot = await firestore.collection("dlsiteWorks").get();
+	const worksSnapshot = await firestore.collection("works").get();
 	const batch = firestore.batch();
 	const processedCreators = new Set<string>();
 
@@ -366,7 +366,7 @@ async function restoreCreatorWorkRelations(result: IntegrityCheckResult): Promis
 async function checkWorkCircleConsistency(result: IntegrityCheckResult): Promise<void> {
 	logger.info("Work-Circle相互参照の整合性チェックを開始");
 
-	const worksSnapshot = await firestore.collection("dlsiteWorks").get();
+	const worksSnapshot = await firestore.collection("works").get();
 	const batch = firestore.batch();
 	let batchCount = 0;
 

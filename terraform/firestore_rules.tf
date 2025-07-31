@@ -34,7 +34,7 @@ resource "google_firestore_document" "firestore_rules" {
             }
             
             // DLsite作品コレクション
-            match /dlsiteWorks/{workId} {
+            match /works/{workId} {
               // 誰でも読み取り可能、書き込みは管理者のみ
               allow read;
               allow write: if false; // 管理者APIのみ書き込み可能

@@ -322,7 +322,7 @@ resource "google_firestore_index" "videos_categoryid_publishedat_asc" {
 # ℹ️  NOTES - 自動作成・外部管理インデックス
 # ===================================================================
 # 
-# dlsiteWorks コレクション:
+# works コレクション:
 # - category×releaseDateISO: 既存インデックス使用 (Terraform外管理)
 # - price.current, rating.stars: Single-field自動作成
 # 
@@ -390,7 +390,7 @@ resource "google_firestore_index" "contacts_priority_createdat_desc" {
 # 📈 PRICE HISTORY INDEXES - 価格履歴サブコレクション用
 # ===================================================================
 
-# dlsiteWorks/{workId}/priceHistory サブコレクション
+# works/{workId}/priceHistory サブコレクション
 # price-history.ts の getPriceHistory() で使用
 # 
 # ⚠️ 注意: dateフィールドのみのインデックスは不要
@@ -472,11 +472,11 @@ resource "google_firestore_index" "creators_works_collection_group_circleid" {
   }
 }
 
-# dlsiteWorks コレクション - サークル別作品一覧用
+# works コレクション - サークル別作品一覧用
 # サークルIDと登録日の複合インデックス
-resource "google_firestore_index" "dlsiteworks_circleid_registdate_desc" {
+resource "google_firestore_index" "works_circleid_registdate_desc" {
   project    = var.gcp_project_id
-  collection = "dlsiteWorks"
+  collection = "works"
   
   fields {
     field_path = "circleId"
@@ -494,7 +494,7 @@ resource "google_firestore_index" "dlsiteworks_circleid_registdate_desc" {
 # ===================================================================
 # 
 # 【現在の構成】
-# ✅ 実装済み (使用中):          15個 (audioButtons: 8, users: 2, contacts: 2, favorites: 1, circles: 1, creatorMappings: 2, dlsiteWorks: 1)
+# ✅ 実装済み (使用中):          15個 (audioButtons: 8, users: 2, contacts: 2, favorites: 1, circles: 1, creatorMappings: 2, works: 1)
 # 🔴 削除推奨 (未使用):          10個 (videos関連、audioButtons startTime 1個)
 # 🔶 無効化中 (フォールバック):   4個 (createdBy関連、マイページ用)
 # ℹ️ 自動インデックス対応:        priceHistory (single-fieldで十分)

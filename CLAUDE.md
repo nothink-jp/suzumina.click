@@ -45,8 +45,8 @@ For detailed project documentation, see [Documentation Index](docs/README.md).
 - **Check DDD implementation criteria** before creating new entities - see `docs/decisions/architecture/ADR-001-ddd-implementation-guidelines.md`
 
 ### 8. CRITICAL NAMING CONVENTIONS
-- **Firestore collection for DLsite works is `dlsiteWorks`** - NOT `works`
-- This naming inconsistency is known but changing would require major migration
+- **Firestore collection for DLsite works is `works`** - NOT `dlsiteWorks` (renamed on 2025-07-31)
+- Previously named `dlsiteWorks`, but renamed to `works` for consistency
 - Always verify collection names when working with Firestore
 
 ### 9. DATA INTEGRITY
@@ -116,4 +116,4 @@ pnpm build
 ---
 
 **Last Updated**: 2025-07-31
-**Document Version**: 4.1 (Added data integrity checks)
+**Document Version**: 4.2 (Updated collection name from dlsiteWorks to works)

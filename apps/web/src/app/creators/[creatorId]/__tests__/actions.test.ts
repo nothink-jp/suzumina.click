@@ -120,7 +120,7 @@ describe("Creator page server actions", () => {
 					doc: mockDoc,
 				};
 			}
-			if (collectionName === "dlsiteWorks") {
+			if (collectionName === "works") {
 				return {
 					doc: vi.fn((id) => ({
 						id,

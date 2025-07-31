@@ -227,7 +227,7 @@ export async function recalculateCircleWorkIds(circleId: string): Promise<number
 	try {
 		// 実際の作品を検索
 		const worksSnapshot = await firestore
-			.collection("dlsiteWorks")
+			.collection("works")
 			.where("circleId", "==", circleId)
 			.get();
 

@@ -41,7 +41,7 @@ async function validateWorkExists(
 	workId: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
 	const firestore = getFirestore();
-	const workRef = firestore.collection("dlsiteWorks").doc(workId);
+	const workRef = firestore.collection("works").doc(workId);
 	const workDoc = await workRef.get();
 
 	if (!workDoc.exists) {
@@ -118,7 +118,7 @@ export async function updateWork(
 
 		// Firestoreを更新
 		const firestore = getFirestore();
-		const workRef = firestore.collection("dlsiteWorks").doc(workId);
+		const workRef = firestore.collection("works").doc(workId);
 		await workRef.update(updateData);
 
 		// キャッシュの無効化
@@ -176,7 +176,7 @@ export async function deleteWork(
 		}
 
 		const firestore = getFirestore();
-		const workRef = firestore.collection("dlsiteWorks").doc(workId);
+		const workRef = firestore.collection("works").doc(workId);
 
 		// 作品の存在確認
 		const workDoc = await workRef.get();
@@ -270,7 +270,7 @@ async function applyPagination(
 	params: WorkPaginationParams,
 ) {
 	if (params.startAfter) {
-		const startAfterDoc = await firestore.collection("dlsiteWorks").doc(params.startAfter).get();
+		const startAfterDoc = await firestore.collection("works").doc(params.startAfter).get();
 		if (startAfterDoc.exists) {
 			return query.startAfter(startAfterDoc);
 		}
@@ -312,7 +312,7 @@ async function getTotalWorksCount(
 	firestore: FirebaseFirestore.Firestore,
 ): Promise<number | undefined> {
 	try {
-		const countSnapshot = await firestore.collection("dlsiteWorks").get();
+		const countSnapshot = await firestore.collection("works").get();
 		return countSnapshot.size;
 	} catch (countError) {
 		logger.warn("総件数取得エラー", {
@@ -346,7 +346,7 @@ export async function getWorksForAdmin(
 
 		const validatedParams = validationResult.data;
 		const firestore = getFirestore();
-		const worksRef = firestore.collection("dlsiteWorks");
+		const worksRef = firestore.collection("works");
 
 		// クエリ構築
 		let query = buildWorksQuery(worksRef, validatedParams);
@@ -423,7 +423,7 @@ export async function refreshWorkData(
 		}
 
 		const firestore = getFirestore();
-		const workRef = firestore.collection("dlsiteWorks").doc(workId);
+		const workRef = firestore.collection("works").doc(workId);
 
 		// 作品の存在確認
 		const workDoc = await workRef.get();

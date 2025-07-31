@@ -129,8 +129,8 @@
 
 | 用語 | 定義 | 英語表記 | 技術的詳細 |
 |------|------|----------|----------|
-| **価格履歴** | 作品価格の日別変動記録 | Price History | `dlsiteWorks/{workId}/priceHistory` サブコレクション |
-| **dlsiteWorksコレクション** | DLsite作品データを格納するFirestoreコレクション | dlsiteWorks Collection | **注意: "works"ではなく"dlsiteWorks"** |
+| **価格履歴** | 作品価格の日別変動記録 | Price History | `works/{workId}/priceHistory` サブコレクション |
+| **worksコレクション** | DLsite作品データを格納するFirestoreコレクション | works Collection | **注意: 以前は"dlsiteWorks"だったが"works"に移行** |
 | **価格推移チャート** | 価格変動をグラフィカルに表示する機能 | Price Trend Chart | Recharts統合・インタラクティブ表示 |
 | **定価** | 作品の通常販売価格 | Regular Price | キャンペーン適用前価格 |
 | **セール価格** | 割引キャンペーン適用後の価格 | Discount Price | `discount_rate` 適用後価格 |

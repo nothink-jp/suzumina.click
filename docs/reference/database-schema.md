@@ -80,7 +80,7 @@
 }
 ```
 
-### 2. `dlsiteWorks` コレクション ✅ 実装完了・v0.3.0統合データ構造対応完了
+### 2. `works` コレクション ✅ 実装完了・v0.3.0統合データ構造対応完了
 
 **目的**: 涼花みなせ様の関連DLsite作品情報を保存（統合データ構造実装済み）
 
@@ -647,7 +647,7 @@
 
 **データ保持期間**: 永続保存（長期分析用）
 
-#### サブコレクション: `dlsiteWorks/{workId}/priceHistory` ✅ v0.3.4価格履歴実装完了
+#### サブコレクション: `works/{workId}/priceHistory` ✅ v0.3.4価格履歴実装完了
 
 **目的**: DLsite作品の詳細価格履歴データ（サブコレクション方式・全履歴保持）
 
@@ -817,12 +817,12 @@ type CreatorType = "voice" | "illustration" | "scenario" | "music" | "other";
 | `isPublicProfile + createdAt (DESC)` | [`isPublicProfile`, `createdAt`, `__name__`] | ✅ **使用中** | 管理者ユーザー一覧 |
 | `isPublicProfile + role + lastLoginAt (DESC)` | [`isPublicProfile`, `role`, `lastLoginAt`, `__name__`] | ✅ **使用中** | 管理者フィルター機能 |
 
-#### ⚠️ **dlsiteWorks コレクション** (0個 - 全件取得方式)
+#### ⚠️ **works コレクション** (0個 - 全件取得方式)
 
 **実装方式**: 全件取得 + クライアントサイドフィルタリング
 ```typescript
 // 作品一覧は複合インデックスを使用しない
-const allSnapshot = await firestore.collection("dlsiteWorks").get();
+const allSnapshot = await firestore.collection("works").get();
 ```
 
 **フィルタリング**: カテゴリ・価格・評価・検索 全てクライアントサイド実行
@@ -861,7 +861,7 @@ const allSnapshot = await firestore.collection("dlsiteWorks").get();
 - **audioButtons**: マイページ用（現在無効化中だが保持）
 
 #### **ℹ️ 対象外**
-- **dlsiteWorks**: 全件取得方式のため複合インデックス不要
+- **works**: 全件取得方式のため複合インデックス不要
 - **時系列データ**: 外部管理インデックス使用
 
 #### 🔍 **2025-07-19 総合分析結果** - 全21個の複合インデックス要件特定
@@ -1000,7 +1000,7 @@ try {
 - **videos 削除対象**: videoType(1個) + liveStreamingDetails関連(6個) = 7個
 - **audioButtons 削除対象**: startTime未使用(1個) = 1個  
 - **videos 保持**: liveBroadcastContent(2個) + categoryId(2個) = 4個 ✅ **実際に使用中**
-- **サークル・クリエイター新規追加**: circles(2個) + creatorWorkMappings(3個) + dlsiteWorks(1個) = 6個
+- **サークル・クリエイター新規追加**: circles(2個) + creatorWorkMappings(3個) + works(1個) = 6個
 
 ### 🎯 **実装優先度マトリックス**
 
@@ -1052,7 +1052,7 @@ try {
 | `creatorId + types (ARRAY_CONTAINS)` | [`creatorId`, `types`, `__name__`] | ⚠️ **未設定** | クリエイタータイプ別検索 |
 | `workId + types (ARRAY_CONTAINS)` | [`workId`, `types`, `__name__`] | ⚠️ **未設定** | 作品からクリエイター検索 |
 
-#### ✅ **dlsiteWorks コレクション** (1個) - v11.6新規追加必要
+#### ✅ **works コレクション** (1個) - v11.6新規追加必要
 
 | インデックス | フィールド | 使用状況 | 使用箇所 |
 |-------------|------------|----------|----------|
@@ -1184,8 +1184,8 @@ terraform apply -target=google_firestore_index.videos_publishedat_range_desc
 
 ## アクセスパターン
 
-- **パブリック読み取り**: `videos`、`dlsiteWorks`、公開`audioButtons`
-- **管理者書き込み**: `videos`と`dlsiteWorks`はCloud Functionsのみが書き込み可能
+- **パブリック読み取り**: `videos`、`works`、公開`audioButtons`
+- **管理者書き込み**: `videos`と`works`はCloud Functionsのみが書き込み可能
 - **ユーザー制御**: `audioButtons`はServer Actionsで作成・更新・削除（実装完了、運用準備完了）
 - **認証制御**: `audioButtons`、`users`、`favorites`コレクション（実装完了）
 - **お気に入り機能**: `users/{userId}/favorites`サブコレクション（実装完了）
@@ -1323,7 +1323,7 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 
 **実行した操作**:
 - ✅ **Entity/Value Objectアーキテクチャ移行**: DLsiteWorkエンティティとValue Object分離完了
-- ✅ **レガシーフィールド削除**: 以下のフィールドをdlsiteWorksコレクションから完全削除:
+- ✅ **レガシーフィールド削除**: 以下のフィールドをworksコレクションから完全削除:
   - `totalDownloadCount`: 総DL数（未使用）
   - `bonusContent`: 特典情報（低頻度アクセス）
   - `isExclusive`: 独占配信フラグ（未使用）
@@ -1345,7 +1345,7 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 
 **実行した操作**:
 - ✅ **サークル・クリエイター情報収集**: `circles`・`creatorWorkMappings`コレクション新規追加
-- ✅ **dlsiteWorks拡張**: `circleId`フィールド統合・サークル情報参照対応
+- ✅ **works拡張**: `circleId`フィールド統合・サークル情報参照対応
 - ✅ **Individual Info API統合**: maker_id/maker_name/creaters自動抽出・バッチ処理対応
 - ✅ **Fire-and-Forget実装**: メイン処理に影響しないサークル・クリエイター情報更新
 - ✅ **非正規化データ設計**: 効率的クエリのためのcreatorWorkMappings最適化
@@ -1368,16 +1368,16 @@ gcloud firestore indexes composite delete projects/suzumina-click/databases/\(de
 ### 2025-07-19 v11.4 完全実装状況調査・Terraformインデックス管理統合・正確なコスト最適化完了
 
 **実行した操作**:
-- ✅ **全コレクション実装状況調査**: videos/dlsiteWorks/audioButtons/contacts/favorites 全機能実装状況確認
+- ✅ **全コレクション実装状況調査**: videos/works/audioButtons/contacts/favorites 全機能実装状況確認
 - ✅ **Terraform管理統合**: 複合インデックス定義の過不足分析・未使用11個特定・必要3個追加
 - ✅ **正確なコスト最適化**: 年間$120削減（当初$24から修正）・削除8個/追加3個の詳細計画
 - ✅ **動画フィルター機能確認**: liveBroadcastContent・categoryIdインデックスが実際に使用中と判明
-- ✅ **作品一覧設計思想確認**: dlsiteWorksは全件取得+クライアントサイドフィルタリング方式
+- ✅ **作品一覧設計思想確認**: worksは全件取得+クライアントサイドフィルタリング方式
 - ✅ **実装状況ドキュメント化**: 各コレクションの実際のクエリパターンと使用状況を正確に記録
 
 **重要な発見・修正**:
 - ✅ **videos インデックス見直し**: 当初「削除推奨」とした4個が実際には使用中（重大な誤分析修正）
-- ✅ **dlsiteWorks インデックス不要**: 複合クエリを使用せず全件取得方式のため既存インデックス未使用
+- ✅ **works インデックス不要**: 複合クエリを使用せず全件取得方式のため既存インデックス未使用
 - ✅ **audioButtons 最適化済み**: 8個が適切に使用中・フォールバック戦略で障害耐性確保
 - ✅ **コスト試算修正**: $24/年 → $120/年削減（5倍の効果）・詳細内訳提供
 - ✅ **Terraform設定完備**: 即座適用可能な追加・削除コマンド・管理方針策定

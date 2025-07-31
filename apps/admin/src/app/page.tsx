@@ -31,7 +31,7 @@ async function getAdminStats() {
 		const [usersSnap, videosSnap, worksSnap, buttonsSnap, contactsSnap] = await Promise.all([
 			firestore.collection("users").get(),
 			firestore.collection("videos").get(),
-			firestore.collection("dlsiteWorks").get(),
+			firestore.collection("works").get(),
 			firestore.collection("audioButtons").get(),
 			firestore.collection("contacts").get(),
 		]);

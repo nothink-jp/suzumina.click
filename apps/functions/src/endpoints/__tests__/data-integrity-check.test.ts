@@ -84,7 +84,7 @@ describe("checkDataIntegrity", () => {
 
 		// collection().get()のモック
 		mockCollection.mockImplementation((collName: string) => {
-			if (collName === "circles" || collName === "creators" || collName === "dlsiteWorks") {
+			if (collName === "circles" || collName === "creators" || collName === "works") {
 				return {
 					get: vi.fn().mockResolvedValue(emptySnapshot),
 					doc: mockDoc,
@@ -164,7 +164,7 @@ describe("checkDataIntegrity", () => {
 					doc: mockDoc,
 				};
 			}
-			if (collName === "creators" || collName === "dlsiteWorks") {
+			if (collName === "creators" || collName === "works") {
 				return {
 					get: vi.fn().mockResolvedValue(emptySnapshot),
 					doc: vi.fn(() => mockWorkDoc),
@@ -241,7 +241,7 @@ describe("checkDataIntegrity", () => {
 
 		// collection()のモック
 		mockCollection.mockImplementation((collName: string) => {
-			if (collName === "circles" || collName === "dlsiteWorks") {
+			if (collName === "circles" || collName === "works") {
 				return {
 					get: vi.fn().mockResolvedValue(emptySnapshot),
 					doc: mockDoc,
@@ -290,7 +290,7 @@ describe("checkDataIntegrity", () => {
 	});
 
 	it("削除されたCreator-Work関連を復元する", async () => {
-		// dlsiteWorksコレクションのモック
+		// worksコレクションのモック
 		const mockWorks = {
 			size: 1,
 			docs: [
@@ -332,7 +332,7 @@ describe("checkDataIntegrity", () => {
 
 		// collection()のモック
 		mockCollection.mockImplementation((collName: string) => {
-			if (collName === "dlsiteWorks") {
+			if (collName === "works") {
 				return {
 					get: vi.fn().mockResolvedValue(mockWorks),
 					doc: mockDoc,

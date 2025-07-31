@@ -382,12 +382,12 @@ describe("circle-firestore", () => {
 				docs: actualWorks.map((work) => ({ id: work.id })),
 			};
 
-			// dlsiteWorksコレクションのクエリ
-			const dlsiteWorksQuery = {
+			// worksコレクションのクエリ
+			const worksQuery = {
 				get: vi.fn().mockResolvedValue(worksSnapshot),
 			};
 
-			mockWhere.mockReturnValueOnce(dlsiteWorksQuery);
+			mockWhere.mockReturnValueOnce(worksQuery);
 
 			// circlesコレクションのドキュメント取得
 			mockGet.mockResolvedValueOnce({
@@ -409,11 +409,11 @@ describe("circle-firestore", () => {
 				docs: [{ id: "RJ111111" }],
 			};
 
-			const dlsiteWorksQuery = {
+			const worksQuery = {
 				get: vi.fn().mockResolvedValue(worksSnapshot),
 			};
 
-			mockWhere.mockReturnValueOnce(dlsiteWorksQuery);
+			mockWhere.mockReturnValueOnce(worksQuery);
 			mockGet.mockResolvedValueOnce({ exists: false });
 
 			const result = await recalculateCircleWorkIds("RG99999");
@@ -438,11 +438,11 @@ describe("circle-firestore", () => {
 				docs: actualWorks.map((work) => ({ id: work.id })),
 			};
 
-			const dlsiteWorksQuery = {
+			const worksQuery = {
 				get: vi.fn().mockResolvedValue(worksSnapshot),
 			};
 
-			mockWhere.mockReturnValueOnce(dlsiteWorksQuery);
+			mockWhere.mockReturnValueOnce(worksQuery);
 			mockGet.mockResolvedValueOnce({
 				exists: true,
 				data: () => existingCircle,

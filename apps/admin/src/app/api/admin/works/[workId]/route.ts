@@ -15,7 +15,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ wor
 		const body = await request.json();
 
 		const firestore = getFirestore();
-		const workRef = firestore.collection("dlsiteWorks").doc(workId);
+		const workRef = firestore.collection("works").doc(workId);
 
 		// 作品の存在確認
 		const workDoc = await workRef.get();
@@ -68,7 +68,7 @@ export async function DELETE(
 		const firestore = getFirestore();
 
 		// 作品の存在確認
-		const workRef = firestore.collection("dlsiteWorks").doc(workId);
+		const workRef = firestore.collection("works").doc(workId);
 		const workDoc = await workRef.get();
 		if (!workDoc.exists) {
 			return NextResponse.json({ error: "Work not found" }, { status: 404 });

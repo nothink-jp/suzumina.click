@@ -117,7 +117,7 @@ export async function getCircleWorks(circleId: string): Promise<WorkPlainObject[
 
 		// 全作品を取得してクライアント側でフィルタリング
 		// circleId が設定されていない作品もサークル名で検索
-		const allWorksSnapshot = await firestore.collection("dlsiteWorks").get();
+		const allWorksSnapshot = await firestore.collection("works").get();
 
 		const allMatchingWorks = allWorksSnapshot.docs
 			.map((doc) => {
@@ -183,7 +183,7 @@ export async function getCircleWorksWithPagination(
 		const circleName = circleData.name;
 
 		// 全作品を取得してクライアント側でフィルタリング
-		const allWorksSnapshot = await firestore.collection("dlsiteWorks").get();
+		const allWorksSnapshot = await firestore.collection("works").get();
 
 		const allMatchingWorks = allWorksSnapshot.docs
 			.map((doc) => {

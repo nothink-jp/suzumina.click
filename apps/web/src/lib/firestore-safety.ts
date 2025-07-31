@@ -236,7 +236,7 @@ export function validateFirestoreData(
 			break;
 		}
 
-		case "dlsiteWorks": {
+		case "works": {
 			// thumbnailUrlの検証
 			if (data.thumbnailUrl && typeof data.thumbnailUrl === "string") {
 				const urlValidation = validateUrl(data.thumbnailUrl, "thumbnailUrl", [

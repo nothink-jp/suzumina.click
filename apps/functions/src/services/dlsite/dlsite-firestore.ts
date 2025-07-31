@@ -14,7 +14,7 @@ import { FAILURE_REASONS, trackMultipleFailedWorks } from "./failure-tracker";
 // Note: 最適化構造では mapToFirestoreData, filterWorksForUpdate, validateWorkData は不要
 
 // Firestore関連の定数
-const DLSITE_WORKS_COLLECTION = "dlsiteWorks";
+const DLSITE_WORKS_COLLECTION = "works";
 
 /**
  * 単一チャンクのバッチ処理

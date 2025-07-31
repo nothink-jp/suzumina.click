@@ -141,7 +141,7 @@ describe("firestore-safety", () => {
 				workUrl: "https://www.dlsite.com/maniax/work/=/product_id/RJ123456.html",
 			};
 
-			const result = validateFirestoreData("dlsiteWorks", validWork);
+			const result = validateFirestoreData("works", validWork);
 			expect(result.valid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
