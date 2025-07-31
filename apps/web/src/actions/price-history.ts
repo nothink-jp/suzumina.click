@@ -69,8 +69,13 @@ export async function getPriceHistory(
  * @returns 最近90日間の価格履歴
  */
 export async function getRecentPriceHistory(workId: string): Promise<PriceHistoryDocument[]> {
-	const endDate = new Date().toISOString().split("T")[0];
-	const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+	// JST（日本時間）で現在日付を取得
+	const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+	const endDate = nowJST.toISOString().split("T")[0];
+
+	// 90日前の日付（JST）
+	const startJST = new Date(nowJST.getTime() - 90 * 24 * 60 * 60 * 1000);
+	const startDate = startJST.toISOString().split("T")[0];
 
 	return getPriceHistory(workId, startDate, endDate);
 }

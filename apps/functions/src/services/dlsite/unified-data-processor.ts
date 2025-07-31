@@ -72,55 +72,61 @@ export async function processUnifiedDLsiteData(
 		const workData = WorkMapper.toWork(apiData);
 
 		// 2. 既存データの存在確認（スキップ判定用）
+		let skipWorkUpdate = false;
 		if (!options.forceUpdate) {
 			const existingWork = await getWorkFromFirestore(workData.productId);
 			if (existingWork && !hasSignificantChanges(existingWork, workData)) {
-				// 変更なしの場合はログを出さない（大量のログを防ぐため）
-				result.success = true;
-				return result;
+				// 変更なしの場合は作品データの更新をスキップ
+				skipWorkUpdate = true;
 			}
 		}
 
 		// 3. Work更新
-		try {
-			await saveWorksToFirestore([workData]);
-			result.updates.work = true;
-		} catch (error) {
-			result.errors.push(
-				`Work更新エラー: ${error instanceof Error ? error.message : String(error)}`,
-			);
-			logger.error(`Work更新エラー: ${workData.productId}`, { error });
+		if (!skipWorkUpdate) {
+			try {
+				await saveWorksToFirestore([workData]);
+				result.updates.work = true;
+			} catch (error) {
+				result.errors.push(
+					`Work更新エラー: ${error instanceof Error ? error.message : String(error)}`,
+				);
+				logger.error(`Work更新エラー: ${workData.productId}`, { error });
+			}
 		}
 
 		// 4. Circle更新
-		try {
-			await updateCircleWithWork(
-				apiData.maker_id || "UNKNOWN",
-				workData.productId,
-				apiData.maker_name || "UNKNOWN",
-				apiData.maker_name_en || "",
-			);
-			result.updates.circle = true;
-		} catch (error) {
-			result.errors.push(
-				`Circle更新エラー: ${error instanceof Error ? error.message : String(error)}`,
-			);
-			logger.error(`Circle更新エラー: ${workData.productId}`, { error });
+		if (!skipWorkUpdate) {
+			try {
+				await updateCircleWithWork(
+					apiData.maker_id || "UNKNOWN",
+					workData.productId,
+					apiData.maker_name || "UNKNOWN",
+					apiData.maker_name_en || "",
+				);
+				result.updates.circle = true;
+			} catch (error) {
+				result.errors.push(
+					`Circle更新エラー: ${error instanceof Error ? error.message : String(error)}`,
+				);
+				logger.error(`Circle更新エラー: ${workData.productId}`, { error });
+			}
 		}
 
 		// 5. Creator更新（サブコレクション操作のため別処理）
-		try {
-			const creatorResult = await updateCreatorWorkMapping(apiData, workData.productId);
-			if (creatorResult.success) {
-				result.updates.creators = true;
-			} else if (creatorResult.error) {
-				result.errors.push(`Creator更新エラー: ${creatorResult.error}`);
+		if (!skipWorkUpdate) {
+			try {
+				const creatorResult = await updateCreatorWorkMapping(apiData, workData.productId);
+				if (creatorResult.success) {
+					result.updates.creators = true;
+				} else if (creatorResult.error) {
+					result.errors.push(`Creator更新エラー: ${creatorResult.error}`);
+				}
+			} catch (error) {
+				result.errors.push(
+					`Creator更新エラー: ${error instanceof Error ? error.message : String(error)}`,
+				);
+				logger.error(`Creator更新エラー: ${workData.productId}`, { error });
 			}
-		} catch (error) {
-			result.errors.push(
-				`Creator更新エラー: ${error instanceof Error ? error.message : String(error)}`,
-			);
-			logger.error(`Creator更新エラー: ${workData.productId}`, { error });
 		}
 
 		// 6. 価格履歴（オプション）
@@ -138,8 +144,12 @@ export async function processUnifiedDLsiteData(
 			}
 		}
 
-		// 成功判定: 主要な更新（Work, Circle, Creator）のうち少なくとも1つが成功
-		result.success = result.updates.work || result.updates.circle || result.updates.creators;
+		// 成功判定: 主要な更新（Work, Circle, Creator）または価格履歴のうち少なくとも1つが成功
+		result.success =
+			result.updates.work ||
+			result.updates.circle ||
+			result.updates.creators ||
+			result.updates.priceHistory;
 
 		// デバッグログ
 		if (result.errors.length > 0) {

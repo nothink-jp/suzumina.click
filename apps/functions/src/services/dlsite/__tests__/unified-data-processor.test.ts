@@ -121,7 +121,7 @@ describe("unified-data-processor", () => {
 			expect(savePriceHistory).toHaveBeenCalledWith("RJ123456", mockApiData);
 		});
 
-		it("既存作品で変更がない場合、スキップする", async () => {
+		it("既存作品で変更がない場合、価格履歴のみ更新する", async () => {
 			vi.mocked(getWorkFromFirestore).mockResolvedValue(mockWorkData);
 
 			const result = await processUnifiedDLsiteData(mockApiData);
@@ -132,15 +132,16 @@ describe("unified-data-processor", () => {
 				work: false,
 				circle: false,
 				creators: false,
-				priceHistory: false,
+				priceHistory: true,
 			});
 			expect(result.errors).toHaveLength(0);
 
-			// 更新関数が呼ばれていないことを確認
+			// Work, Circle, Creator更新関数が呼ばれていないことを確認
 			expect(saveWorksToFirestore).not.toHaveBeenCalled();
 			expect(updateCircleWithWork).not.toHaveBeenCalled();
 			expect(updateCreatorWorkMapping).not.toHaveBeenCalled();
-			expect(savePriceHistory).not.toHaveBeenCalled();
+			// 価格履歴は呼ばれていることを確認
+			expect(savePriceHistory).toHaveBeenCalled();
 		});
 
 		it("価格変更がある場合、更新を実行する", async () => {
@@ -216,14 +217,14 @@ describe("unified-data-processor", () => {
 			expect(result.errors).toContain("Creator更新エラー: Creator mapping failed");
 		});
 
-		it("全ての主要更新が失敗した場合、successがfalseになる", async () => {
+		it("全ての主要更新が失敗した場合でも、価格履歴が成功すればsuccessがtrueになる", async () => {
 			vi.mocked(saveWorksToFirestore).mockRejectedValue(new Error("Work failed"));
 			vi.mocked(updateCircleWithWork).mockRejectedValue(new Error("Circle failed"));
 			vi.mocked(updateCreatorWorkMapping).mockRejectedValue(new Error("Creator failed"));
 
 			const result = await processUnifiedDLsiteData(mockApiData);
 
-			expect(result.success).toBe(false);
+			expect(result.success).toBe(true); // 価格履歴が成功しているのでtrue
 			expect(result.updates).toEqual({
 				work: false,
 				circle: false,
