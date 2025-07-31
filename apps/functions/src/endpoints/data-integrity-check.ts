@@ -36,6 +36,11 @@ interface IntegrityCheckResult {
 			mismatches: number;
 			fixed: number;
 		};
+		creatorWorkRestore?: {
+			checked: number;
+			restored: number;
+			creatorsCreated: number;
+		};
 	};
 	totalIssues: number;
 	totalFixed: number;
@@ -188,6 +193,116 @@ async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void
 }
 
 /**
+ * 削除されたCreator-Work関連を復元
+ */
+async function restoreCreatorWorkRelations(result: IntegrityCheckResult): Promise<void> {
+	logger.info("Creator-Work関連の復元を開始");
+
+	const worksSnapshot = await firestore.collection("dlsiteWorks").get();
+	const batch = firestore.batch();
+	let batchCount = 0;
+	let restoredCount = 0;
+	let creatorsCreated = 0;
+	const processedCreators = new Set<string>();
+
+	for (const workDoc of worksSnapshot.docs) {
+		const workData = workDoc.data();
+		const creators = workData.creators;
+
+		if (!creators) continue;
+
+		// 各クリエイタータイプをチェック
+		const creatorTypes = [
+			{ field: "voice_by", type: "voice" },
+			{ field: "scenario_by", type: "scenario" },
+			{ field: "illust_by", type: "illustration" },
+			{ field: "music_by", type: "music" },
+			{ field: "others_by", type: "other" },
+		];
+
+		for (const { field, type } of creatorTypes) {
+			const creatorList = creators[field] || [];
+
+			for (const creator of creatorList) {
+				if (!creator.id || !creator.name) continue;
+
+				// Creatorドキュメント自体が存在するか確認
+				const creatorRef = firestore.collection("creators").doc(creator.id);
+
+				if (!processedCreators.has(creator.id)) {
+					const creatorDoc = await creatorRef.get();
+
+					if (!creatorDoc.exists) {
+						logger.info(`Creatorドキュメント作成: ${creator.id} - ${creator.name}`);
+
+						// Creatorドキュメントを作成
+						batch.set(creatorRef, {
+							creatorId: creator.id,
+							name: creator.name,
+							primaryRole: type,
+							createdAt: Timestamp.now(),
+							updatedAt: Timestamp.now(),
+						});
+
+						creatorsCreated++;
+						batchCount++;
+
+						if (batchCount >= 400) {
+							await batch.commit();
+							batchCount = 0;
+						}
+					}
+					processedCreators.add(creator.id);
+				}
+
+				// Creator-Workマッピングが存在するか確認
+				const mappingRef = creatorRef.collection("works").doc(workDoc.id);
+				const mappingDoc = await mappingRef.get();
+
+				if (!mappingDoc.exists) {
+					logger.info(`マッピング復元: Creator ${creator.id} - Work ${workDoc.id} (${type})`);
+
+					// マッピングを復元
+					batch.set(mappingRef, {
+						workId: workDoc.id,
+						workTitle: workData.title,
+						circleId: workData.circleId,
+						circleName: workData.circle,
+						creatorName: creator.name,
+						creatorType: type,
+						createdAt: Timestamp.now(),
+						updatedAt: Timestamp.now(),
+					});
+
+					restoredCount++;
+					batchCount++;
+
+					if (batchCount >= 400) {
+						await batch.commit();
+						batchCount = 0;
+					}
+				}
+			}
+		}
+	}
+
+	if (batchCount > 0) {
+		await batch.commit();
+	}
+
+	// 結果に追加
+	result.checks.creatorWorkRestore = {
+		checked: worksSnapshot.size,
+		restored: restoredCount,
+		creatorsCreated: creatorsCreated,
+	};
+
+	logger.info(
+		`Creator-Work関連復元完了: ${worksSnapshot.size}件チェック、${restoredCount}件マッピング復元、${creatorsCreated}件Creator作成`,
+	);
+}
+
+/**
  * Work-Circle相互参照の整合性をチェック
  */
 async function checkWorkCircleConsistency(result: IntegrityCheckResult): Promise<void> {
@@ -318,6 +433,9 @@ export async function checkDataIntegrity(event: CloudEvent<unknown>): Promise<vo
 		// 3. Work-Circle相互参照の整合性
 		await checkWorkCircleConsistency(result);
 
+		// 4. Creator-Work関連の復元（削除されたデータの回復）
+		await restoreCreatorWorkRelations(result);
+
 		// 総計を計算
 		result.totalIssues =
 			result.checks.circleWorkCounts.mismatches +
@@ -327,7 +445,9 @@ export async function checkDataIntegrity(event: CloudEvent<unknown>): Promise<vo
 		result.totalFixed =
 			result.checks.circleWorkCounts.fixed +
 			result.checks.orphanedCreators.cleaned +
-			result.checks.workCircleConsistency.fixed;
+			result.checks.workCircleConsistency.fixed +
+			(result.checks.creatorWorkRestore?.restored || 0) +
+			(result.checks.creatorWorkRestore?.creatorsCreated || 0);
 
 		result.executionTimeMs = Date.now() - startTime;
 

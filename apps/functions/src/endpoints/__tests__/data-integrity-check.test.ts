@@ -64,6 +64,7 @@ describe("checkDataIntegrity", () => {
 		mockBatch.mockReturnValue({
 			update: mockUpdate,
 			delete: mockDelete,
+			set: mockSet,
 			commit: mockCommit,
 		});
 
@@ -286,5 +287,115 @@ describe("checkDataIntegrity", () => {
 		// work2のマッピングが削除されたことを確認
 		expect(mockDelete).toHaveBeenCalled();
 		expect(mockCommit).toHaveBeenCalled();
+	});
+
+	it("削除されたCreator-Work関連を復元する", async () => {
+		// dlsiteWorksコレクションのモック
+		const mockWorks = {
+			size: 1,
+			docs: [
+				{
+					id: "work1",
+					data: () => ({
+						title: "テスト作品",
+						circleId: "circle1",
+						circle: "テストサークル",
+						creators: {
+							voice_by: [{ id: "creator1", name: "声優1" }],
+							illust_by: [{ id: "creator2", name: "イラストレーター1" }],
+						},
+					}),
+				},
+			],
+		};
+
+		// Creatorドキュメントの存在確認モック
+		const mockCreatorExists = vi
+			.fn()
+			.mockResolvedValueOnce({ exists: false }) // creator1は存在しない
+			.mockResolvedValueOnce({ exists: true }); // creator2は存在する
+
+		// マッピングの存在確認モック
+		const mockMappingExists = vi.fn().mockResolvedValue({ exists: false }); // 全てのマッピングが存在しない
+
+		// collection().doc().collection().doc()のモック
+		const mockSubDoc = vi.fn(() => ({
+			get: mockMappingExists,
+		}));
+
+		const mockSubCollection = vi.fn(() => ({
+			doc: mockSubDoc,
+		}));
+
+		// 空のスナップショット
+		const emptySnapshot = { size: 0, docs: [] };
+
+		// collection()のモック
+		mockCollection.mockImplementation((collName: string) => {
+			if (collName === "dlsiteWorks") {
+				return {
+					get: vi.fn().mockResolvedValue(mockWorks),
+					doc: mockDoc,
+				};
+			}
+			if (collName === "creators") {
+				return {
+					get: vi.fn().mockResolvedValue(emptySnapshot), // creatorsコレクション全体の取得
+					doc: vi.fn((id: string) => ({
+						get: mockCreatorExists,
+						collection: mockSubCollection,
+					})),
+				};
+			}
+			if (collName === "circles") {
+				return {
+					get: vi.fn().mockResolvedValue(emptySnapshot),
+					doc: vi.fn(() => ({
+						get: vi.fn().mockResolvedValue({
+							exists: true,
+							data: () => ({ workIds: ["work1"] }),
+						}),
+					})),
+				};
+			}
+			if (collName === "dlsiteMetadata") {
+				return {
+					doc: vi.fn(() => ({
+						set: mockSet,
+						collection: vi.fn(() => ({
+							doc: vi.fn(() => ({
+								set: mockSet,
+							})),
+							orderBy: vi.fn(() => ({
+								limit: vi.fn(() => ({
+									get: vi.fn().mockResolvedValue(emptySnapshot),
+								})),
+							})),
+						})),
+					})),
+				};
+			}
+			return {};
+		});
+
+		await checkDataIntegrity(mockEvent);
+
+		// バッチでの作成が呼ばれたことを確認（結果保存のset呼び出しも含む）
+		expect(mockSet).toHaveBeenCalled();
+		expect(mockCommit).toHaveBeenCalled();
+
+		// 結果に復元情報が含まれることを確認
+		const lastSetCall = mockSet.mock.calls[mockSet.mock.calls.length - 2]; // 最後から2番目が結果保存
+		expect(lastSetCall[0]).toMatchObject({
+			latest: expect.objectContaining({
+				checks: expect.objectContaining({
+					creatorWorkRestore: {
+						checked: 1,
+						restored: 2,
+						creatorsCreated: 1,
+					},
+				}),
+			}),
+		});
 	});
 });
