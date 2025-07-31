@@ -17,70 +17,17 @@ locals {
 }
 
 # データ整合性チェック関数（Gen2）
-resource "google_cloudfunctions2_function" "check_data_integrity" {
-  project  = var.gcp_project_id
-  name     = local.data_integrity_check_function_name
-  location = var.region
-
-  # ビルド設定
-  build_config {
-    runtime     = local.data_integrity_check_runtime
-    entry_point = local.data_integrity_check_entry_point
-    
-    source {
-      storage_source {
-        bucket = google_storage_bucket.functions_deployment.name
-        object = "function-source-dummy.zip"
-      }
-    }
-  }
-
-  # サービス設定
-  service_config {
-    max_instance_count = 1       # 並列実行不要
-    min_instance_count = 0       # コールドスタートを許容
-    available_memory   = local.data_integrity_check_memory
-    timeout_seconds    = local.data_integrity_check_timeout
-    
-    # 専用のサービスアカウントを使用
-    service_account_email = google_service_account.data_integrity_check_sa.email
-
-    # 環境変数
-    environment_variables = {
-      FUNCTION_SIGNATURE_TYPE = "cloudevent"
-      FUNCTION_TARGET        = local.data_integrity_check_entry_point
-      
-      # ログレベル
-      LOG_LEVEL = "info"
-    }
-  }
-
-  # Pub/Subトリガー設定
-  event_trigger {
-    trigger_region = var.region
-    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.data_integrity_check_trigger.id
-    retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
-    service_account_email = google_service_account.data_integrity_check_sa.email
-  }
-
-  # GitHub Actions からのデプロイとの競合を避ける
-  lifecycle {
-    ignore_changes = [
-      build_config,
-      service_config[0].environment_variables,
-    ]
-    create_before_destroy = false
-  }
-
-  depends_on = [
-    google_firestore_database.database,
-    google_pubsub_topic.data_integrity_check_trigger,
-    google_project_iam_member.data_integrity_check_firestore_user,
-    google_project_iam_member.data_integrity_check_log_writer,
-    google_service_account.data_integrity_check_sa,
-  ]
-}
+# 注意: 関数自体はGitHub Actionsでデプロイされるため、
+# Terraformではインフラストラクチャのみを管理します。
+# 
+# 関数のデプロイは以下の手順で行われます：
+# 1. terraform apply でサービスアカウント、Pub/Subトピック、Cloud Schedulerを作成
+# 2. GitHub ActionsのCloud Functionsデプロイワークフローで関数をデプロイ
+#
+# resource "google_cloudfunctions2_function" "check_data_integrity" {
+#   # この関数リソースはコメントアウトされています。
+#   # GitHub Actionsによるデプロイとの競合を避けるためです。
+# }
 
 # データ整合性チェック用のPub/Subトピック
 resource "google_pubsub_topic" "data_integrity_check_trigger" {
@@ -152,11 +99,12 @@ resource "google_pubsub_topic_iam_member" "scheduler_data_integrity_pubsub_publi
 }
 
 # データ整合性チェック関数の出力情報
+# 関数はGitHub Actionsでデプロイされるため、関数名のみ出力
 output "data_integrity_check_function_info" {
   value = {
-    name = google_cloudfunctions2_function.check_data_integrity.name
-    id = google_cloudfunctions2_function.check_data_integrity.id
-    url = google_cloudfunctions2_function.check_data_integrity.url
+    name = local.data_integrity_check_function_name
+    # 関数はGitHub Actionsでデプロイされるため、IDとURLは動的に決定されます
+    note = "Function will be deployed via GitHub Actions"
   }
   description = "データ整合性チェック関数の情報"
 }
