@@ -269,6 +269,41 @@ jobs:
             fi
           done
 
+      - name: Deploy checkDataIntegrity function (Gen2)
+        run: |
+          echo "🚀 Deploying checkDataIntegrity function (Gen2)..."
+          
+          # リトライロジック付きでデプロイ
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt/3..."
+            
+            if gcloud functions deploy checkDataIntegrity \
+              --gen2 \
+              --source ${{ env.DEPLOYMENT_SOURCE }} \
+              --runtime nodejs22 \
+              --entry-point checkDataIntegrity \
+              --trigger-topic data-integrity-check-trigger \
+              --region asia-northeast1 \
+              --project ${{ secrets.GCP_PROJECT_ID }} \
+              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=checkDataIntegrity \
+              --memory 512Mi \
+              --timeout 540s \
+              --max-instances 1 \
+              --service-account data-integrity-checker-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+              --quiet; then
+              echo "✅ checkDataIntegrity (Gen2) deployed successfully"
+              break
+            else
+              echo "❌ Deploy failed on attempt $attempt"
+              if [ $attempt -eq 3 ]; then
+                echo "🚨 All retry attempts failed"
+                exit 1
+              fi
+              echo "⏳ Waiting 30 seconds before retry..."
+              sleep 30
+            fi
+          done
+
 # collectDLsiteTimeseries デプロイは統合アーキテクチャにより廃止
 # fetchDLsiteUnifiedData が時系列データ収集機能を統合実行
 
@@ -298,6 +333,9 @@ jobs:
           echo "- **fetchDLsiteUnifiedData (Gen2)**: ✅ デプロイ完了 (統合データ収集・100% API-Only)" >> $GITHUB_STEP_SUMMARY
           echo "  - トリガー: \`dlsite-individual-api-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
           echo "  - 機能: 基本データ更新 + 時系列データ収集の統合実行" >> $GITHUB_STEP_SUMMARY
+          echo "- **checkDataIntegrity (Gen2)**: ✅ デプロイ完了 (データ整合性チェック)" >> $GITHUB_STEP_SUMMARY
+          echo "  - トリガー: \`data-integrity-check-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
+          echo "  - 機能: 週次でデータ整合性を検証・修正" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔧 設定情報" >> $GITHUB_STEP_SUMMARY
           echo "- **プロジェクト**: \`${{ secrets.GCP_PROJECT_ID }}\`" >> $GITHUB_STEP_SUMMARY
@@ -318,8 +356,8 @@ jobs:
         run: |
           echo "🧹 Cleaning up old Cloud Functions revisions (keeping last 5 versions)"
           
-          # Function names (統合アーキテクチャにより2関数のみ)
-          FUNCTIONS=("fetchyoutubevideos" "fetchdlsiteworksindividualapi")
+          # Function names
+          FUNCTIONS=("fetchyoutubevideos" "fetchdlsiteunifieddata" "checkdataintegrity")
           KEEP_COUNT=5
           
           for function_name in "${FUNCTIONS[@]}"; do
