@@ -10,7 +10,7 @@ locals {
   dlsite_individual_api_function_name = "fetchDLsiteUnifiedData"
   dlsite_individual_api_runtime       = "nodejs22"
   dlsite_individual_api_entry_point   = "fetchDLsiteUnifiedData"
-  dlsite_individual_api_memory        = "256Mi"  # さらなるコスト最適化（512Mi→256Mi）
+  dlsite_individual_api_memory        = "512Mi"  # Memory increased due to 260 MiB usage
   dlsite_individual_api_timeout       = 300    # 5分タイムアウト（API集約処理最適化）
 }
 

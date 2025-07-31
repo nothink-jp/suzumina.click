@@ -242,7 +242,7 @@ jobs:
             --region asia-northeast1 \
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteUnifiedData,INDIVIDUAL_INFO_API_ENABLED=true,API_ONLY_MODE=true,MAX_CONCURRENT_API_REQUESTS=5,API_REQUEST_DELAY_MS=500,ENABLE_DATA_VALIDATION=true,MINIMUM_QUALITY_SCORE=80,ENABLE_TIMESERIES_INTEGRATION=true,LOG_LEVEL=info \
-            --memory 256Mi \
+            --memory 512Mi \
             --timeout 300s \
             --max-instances 1 \
             --service-account fetch-dlsite-individual-api-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
