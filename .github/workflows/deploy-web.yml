@@ -13,6 +13,10 @@ on:
   # Manual triggering
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: asia-northeast1
@@ -96,10 +100,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check-pr-status, pre-deploy-checks]
     if: always() && !failure() && !cancelled()
-    
-    permissions:
-      contents: read
-      id-token: write
     
     steps:
       - name: Checkout code

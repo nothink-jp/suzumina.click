@@ -19,7 +19,8 @@ pre-push:
       glob: "*.{ts,tsx}"
       run: |
         # 変更ファイルが属するパッケージを特定して型チェック
-        for file in {staged_files}; do
+        for file in {staged_files}
+        do
           if [[ $file == apps/* ]] || [[ $file == packages/* ]]; then
             pkg_dir=$(echo $file | cut -d'/' -f1-2)
             pnpm --filter "./$pkg_dir" typecheck 2>/dev/null || true
