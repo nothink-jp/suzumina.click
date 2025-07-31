@@ -289,7 +289,7 @@ jobs:
               --memory 512Mi \
               --timeout 540s \
               --max-instances 1 \
-              --service-account data-integrity-checker-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+              --service-account data-integrity-check-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
               --quiet; then
               echo "✅ checkDataIntegrity (Gen2) deployed successfully"
               break
