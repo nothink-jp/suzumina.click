@@ -380,8 +380,7 @@ export class Video {
 		// Also check liveStreamingDetails for ongoing streams
 		// This handles cases where liveBroadcastContent is not updated properly
 		if (
-			this._liveStreamingDetails &&
-			this._liveStreamingDetails.actualStartTime &&
+			this._liveStreamingDetails?.actualStartTime &&
 			!this._liveStreamingDetails.actualEndTime &&
 			this._liveStreamingDetails.concurrentViewers !== undefined
 		) {
@@ -819,8 +818,7 @@ export class Video {
 		// Check if it's currently live based on liveStreamingDetails
 		// This handles cases where liveBroadcastContent is "none" but the stream is still live
 		if (
-			this._liveStreamingDetails &&
-			this._liveStreamingDetails.actualStartTime &&
+			this._liveStreamingDetails?.actualStartTime &&
 			!this._liveStreamingDetails.actualEndTime &&
 			this._liveStreamingDetails.concurrentViewers !== undefined
 		) {
@@ -830,8 +828,7 @@ export class Video {
 		// Check if it's an upcoming stream based on scheduledStartTime
 		// This handles cases where liveBroadcastContent is "none" but scheduledStartTime is in the future
 		if (
-			this._liveStreamingDetails &&
-			this._liveStreamingDetails.scheduledStartTime &&
+			this._liveStreamingDetails?.scheduledStartTime &&
 			!this._liveStreamingDetails.actualStartTime
 		) {
 			const now = new Date();

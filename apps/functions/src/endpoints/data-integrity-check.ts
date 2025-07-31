@@ -8,6 +8,7 @@
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
+import type { firestore as FirestoreType } from "firebase-admin";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import * as logger from "../shared/logger";
 
@@ -193,6 +194,99 @@ async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void
 }
 
 /**
+ * クリエイター情報の復元に関する統計
+ */
+interface RestoreStats {
+	restoredCount: number;
+	creatorsCreated: number;
+	batchCount: number;
+}
+
+/**
+ * Creatorドキュメントを作成または確認
+ */
+async function ensureCreatorExists(
+	creatorId: string,
+	creatorName: string,
+	type: string,
+	batch: FirestoreType.WriteBatch,
+	processedCreators: Set<string>,
+	stats: RestoreStats,
+): Promise<FirestoreType.DocumentReference> {
+	const creatorRef = firestore.collection("creators").doc(creatorId);
+
+	if (!processedCreators.has(creatorId)) {
+		const creatorDoc = await creatorRef.get();
+
+		if (!creatorDoc.exists) {
+			logger.info(`Creatorドキュメント作成: ${creatorId} - ${creatorName}`);
+
+			batch.set(creatorRef, {
+				creatorId: creatorId,
+				name: creatorName,
+				primaryRole: type,
+				createdAt: Timestamp.now(),
+				updatedAt: Timestamp.now(),
+			});
+
+			stats.creatorsCreated++;
+			stats.batchCount++;
+		}
+		processedCreators.add(creatorId);
+	}
+
+	return creatorRef;
+}
+
+/**
+ * Creator-Workマッピングを復元
+ */
+async function restoreCreatorWorkMapping(
+	creatorRef: FirestoreType.DocumentReference,
+	workDoc: FirestoreType.QueryDocumentSnapshot,
+	workData: FirestoreType.DocumentData,
+	creator: { id: string; name: string },
+	type: string,
+	batch: FirestoreType.WriteBatch,
+	stats: RestoreStats,
+): Promise<void> {
+	const mappingRef = creatorRef.collection("works").doc(workDoc.id);
+	const mappingDoc = await mappingRef.get();
+
+	if (!mappingDoc.exists) {
+		logger.info(`マッピング復元: Creator ${creator.id} - Work ${workDoc.id} (${type})`);
+
+		batch.set(mappingRef, {
+			workId: workDoc.id,
+			workTitle: workData.title,
+			circleId: workData.circleId,
+			circleName: workData.circle,
+			creatorName: creator.name,
+			creatorType: type,
+			createdAt: Timestamp.now(),
+			updatedAt: Timestamp.now(),
+		});
+
+		stats.restoredCount++;
+		stats.batchCount++;
+	}
+}
+
+/**
+ * バッチが満杯の場合はコミット
+ */
+async function commitBatchIfNeeded(
+	batch: FirestoreType.WriteBatch,
+	stats: RestoreStats,
+	force = false,
+): Promise<void> {
+	if (stats.batchCount >= 400 || (force && stats.batchCount > 0)) {
+		await batch.commit();
+		stats.batchCount = 0;
+	}
+}
+
+/**
  * 削除されたCreator-Work関連を復元
  */
 async function restoreCreatorWorkRelations(result: IntegrityCheckResult): Promise<void> {
@@ -200,10 +294,22 @@ async function restoreCreatorWorkRelations(result: IntegrityCheckResult): Promis
 
 	const worksSnapshot = await firestore.collection("dlsiteWorks").get();
 	const batch = firestore.batch();
-	let batchCount = 0;
-	let restoredCount = 0;
-	let creatorsCreated = 0;
 	const processedCreators = new Set<string>();
+
+	const stats: RestoreStats = {
+		restoredCount: 0,
+		creatorsCreated: 0,
+		batchCount: 0,
+	};
+
+	// クリエイタータイプの定義
+	const creatorTypes = [
+		{ field: "voice_by", type: "voice" },
+		{ field: "scenario_by", type: "scenario" },
+		{ field: "illust_by", type: "illustration" },
+		{ field: "music_by", type: "music" },
+		{ field: "others_by", type: "other" },
+	];
 
 	for (const workDoc of worksSnapshot.docs) {
 		const workData = workDoc.data();
@@ -211,94 +317,46 @@ async function restoreCreatorWorkRelations(result: IntegrityCheckResult): Promis
 
 		if (!creators) continue;
 
-		// 各クリエイタータイプをチェック
-		const creatorTypes = [
-			{ field: "voice_by", type: "voice" },
-			{ field: "scenario_by", type: "scenario" },
-			{ field: "illust_by", type: "illustration" },
-			{ field: "music_by", type: "music" },
-			{ field: "others_by", type: "other" },
-		];
-
 		for (const { field, type } of creatorTypes) {
 			const creatorList = creators[field] || [];
 
 			for (const creator of creatorList) {
 				if (!creator.id || !creator.name) continue;
 
-				// Creatorドキュメント自体が存在するか確認
-				const creatorRef = firestore.collection("creators").doc(creator.id);
+				// Creatorドキュメントの確認・作成
+				const creatorRef = await ensureCreatorExists(
+					creator.id,
+					creator.name,
+					type,
+					batch,
+					processedCreators,
+					stats,
+				);
 
-				if (!processedCreators.has(creator.id)) {
-					const creatorDoc = await creatorRef.get();
+				// バッチサイズチェック
+				await commitBatchIfNeeded(batch, stats);
 
-					if (!creatorDoc.exists) {
-						logger.info(`Creatorドキュメント作成: ${creator.id} - ${creator.name}`);
+				// Creator-Workマッピングの復元
+				await restoreCreatorWorkMapping(creatorRef, workDoc, workData, creator, type, batch, stats);
 
-						// Creatorドキュメントを作成
-						batch.set(creatorRef, {
-							creatorId: creator.id,
-							name: creator.name,
-							primaryRole: type,
-							createdAt: Timestamp.now(),
-							updatedAt: Timestamp.now(),
-						});
-
-						creatorsCreated++;
-						batchCount++;
-
-						if (batchCount >= 400) {
-							await batch.commit();
-							batchCount = 0;
-						}
-					}
-					processedCreators.add(creator.id);
-				}
-
-				// Creator-Workマッピングが存在するか確認
-				const mappingRef = creatorRef.collection("works").doc(workDoc.id);
-				const mappingDoc = await mappingRef.get();
-
-				if (!mappingDoc.exists) {
-					logger.info(`マッピング復元: Creator ${creator.id} - Work ${workDoc.id} (${type})`);
-
-					// マッピングを復元
-					batch.set(mappingRef, {
-						workId: workDoc.id,
-						workTitle: workData.title,
-						circleId: workData.circleId,
-						circleName: workData.circle,
-						creatorName: creator.name,
-						creatorType: type,
-						createdAt: Timestamp.now(),
-						updatedAt: Timestamp.now(),
-					});
-
-					restoredCount++;
-					batchCount++;
-
-					if (batchCount >= 400) {
-						await batch.commit();
-						batchCount = 0;
-					}
-				}
+				// バッチサイズチェック
+				await commitBatchIfNeeded(batch, stats);
 			}
 		}
 	}
 
-	if (batchCount > 0) {
-		await batch.commit();
-	}
+	// 残りのバッチをコミット
+	await commitBatchIfNeeded(batch, stats, true);
 
 	// 結果に追加
 	result.checks.creatorWorkRestore = {
 		checked: worksSnapshot.size,
-		restored: restoredCount,
-		creatorsCreated: creatorsCreated,
+		restored: stats.restoredCount,
+		creatorsCreated: stats.creatorsCreated,
 	};
 
 	logger.info(
-		`Creator-Work関連復元完了: ${worksSnapshot.size}件チェック、${restoredCount}件マッピング復元、${creatorsCreated}件Creator作成`,
+		`Creator-Work関連復元完了: ${worksSnapshot.size}件チェック、${stats.restoredCount}件マッピング復元、${stats.creatorsCreated}件Creator作成`,
 	);
 }
 
