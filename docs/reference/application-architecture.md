@@ -168,6 +168,23 @@ Firestore
 - Tree shaking
 - Component lazy loading
 
+## Cloud Functions アーキテクチャ
+
+### 1. データ収集関数
+- **fetchYouTubeVideos**: YouTube動画データの定期収集（1時間ごと）
+- **fetchDLsiteUnifiedData**: DLsite作品データの統合収集（2時間ごと）
+- **checkDataIntegrity**: データ整合性チェック（週次）NEW
+
+### 2. checkDataIntegrity関数の詳細
+- **実行タイミング**: 毎週日曜日 3:00 JST
+- **トリガー**: Cloud Scheduler → Pub/Sub
+- **処理内容**:
+  - CircleのworkIds配列の重複除去と整合性確認
+  - 孤立したCreatorマッピングのクリーンアップ
+  - Work-Circle相互参照の整合性確認
+  - 削除されたCreator-Work関連の自動復元
+- **結果保存**: `dlsiteMetadata/dataIntegrityCheck`ドキュメント
+
 ## 今後の方向性
 
 1. **API Routes廃止**

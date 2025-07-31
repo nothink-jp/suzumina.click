@@ -2,6 +2,33 @@
 
 suzumina.clickプロジェクトの変更履歴
 
+## [v0.3.9] - 2025-07-31
+
+### 🔍 データ整合性チェック機能の実装
+
+- **自動データ整合性検証（PR #142）**
+  - 週次で実行される自動整合性チェック（毎週日曜3:00 JST）
+  - CircleのworkIds配列の重複除去と整合性検証
+  - 孤立したCreatorマッピングの自動クリーンアップ
+  - Work-Circle相互参照の整合性確認と修正
+  - 削除されたCreator-Work関連の自動復元機能
+
+- **インフラストラクチャ（PR #144）**
+  - Cloud Functions Gen2: `checkDataIntegrity`
+  - Cloud Scheduler: 週次実行スケジュール
+  - Pub/Sub Topic: `data-integrity-check-trigger`
+  - 専用サービスアカウント: `data-integrity-check-sa`
+
+- **エラー修正**
+  - Firestore collection名の誤り修正（`works` → `dlsiteWorks`）
+  - サービスアカウント名の不一致修正
+  - バッチ処理の制限値を定数化（FIRESTORE_BATCH_LIMIT = 400）
+
+- **運用改善**
+  - 実行結果を`dlsiteMetadata/dataIntegrityCheck`に保存
+  - 履歴管理（最大10件保持）
+  - 詳細な実行ログとメトリクス
+
 ## [v0.3.8] - 2025-07-28
 
 ### 🚀 Server Component最適化完了

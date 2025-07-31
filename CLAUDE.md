@@ -49,6 +49,12 @@ For detailed project documentation, see [Documentation Index](docs/README.md).
 - This naming inconsistency is known but changing would require major migration
 - Always verify collection names when working with Firestore
 
+### 9. DATA INTEGRITY
+- **Weekly data integrity checks** run automatically via `checkDataIntegrity` function
+- Scheduled for Sundays at 3:00 JST
+- Checks and fixes: Circle workIds arrays, orphaned Creator mappings, Work-Circle consistency
+- Results stored in `dlsiteMetadata/dataIntegrityCheck` document
+
 ---
 
 ## 📚 REFERENCE DOCUMENTATION
@@ -109,5 +115,5 @@ pnpm build
 
 ---
 
-**Last Updated**: 2025-07-28
-**Document Version**: 4.0 (Simplified for AI focus)
+**Last Updated**: 2025-07-31
+**Document Version**: 4.1 (Added data integrity checks)

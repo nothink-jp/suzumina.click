@@ -271,7 +271,7 @@
 
 **目的**: DLsite統合データ収集処理のメタデータを保存（15分間隔実行・タイムアウト最適化対応）
 
-**ドキュメントID**: `"unified_data_collection_metadata"`
+#### ドキュメント1: `"unified_data_collection_metadata"`
 
 **データ構造** (`UnifiedDataCollectionMetadata` - v11.0統合システム対応):
 
@@ -303,6 +303,52 @@
   timeoutOptimizationEnabled?: boolean         // タイムアウト最適化フラグ
 }
 ```
+
+#### ドキュメント2: `"dataIntegrityCheck"`
+
+**データ構造** (`DataIntegrityCheckMetadata`):
+
+```typescript
+{
+  // 最新の実行結果
+  latest: {
+    timestamp: string,                         // 実行日時（ISO 8601形式）
+    checks: {
+      circleWorkCounts: {                      // Circleの作品数チェック
+        checked: number,                       // チェックしたサークル数
+        mismatches: number,                    // 不整合発見数
+        fixed: number                          // 修正数
+      },
+      orphanedCreators: {                      // 孤立したCreatorマッピング
+        checked: number,                       // チェックしたCreator数
+        found: number,                         // 孤立発見数
+        cleaned: number                        // クリーンアップ数
+      },
+      workCircleConsistency: {                 // Work-Circle相互参照
+        checked: number,                       // チェックした作品数
+        mismatches: number,                    // 不整合発見数
+        fixed: number                          // 修正数
+      },
+      creatorWorkRestore?: {                   // 削除されたCreator-Work関連の復元
+        checked: number,                       // チェックした作品数
+        restored: number,                      // 復元したマッピング数
+        creatorsCreated: number                // 作成したCreatorドキュメント数
+      }
+    },
+    totalIssues: number,                       // 総問題数
+    totalFixed: number,                        // 総修正数
+    executionTimeMs: number                    // 実行時間（ミリ秒）
+  },
+  
+  // メタデータ
+  lastCheckedAt: Timestamp,                    // 最終チェック日時
+  updatedAt: Timestamp                         // 最終更新日時
+}
+```
+
+**サブコレクション**: `history`
+- 過去の実行履歴を保存（最大10件）
+- ドキュメントID: 実行日時のISO文字列
 
 ### 5. `audioButtons` コレクション ✅ 実装完了
 
