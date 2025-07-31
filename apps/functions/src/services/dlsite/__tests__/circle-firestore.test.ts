@@ -2,8 +2,8 @@
  * Circle Firestore ユーティリティ関数のテスト
  */
 
+import { Timestamp } from "@google-cloud/firestore";
 import type { CircleDocument } from "@suzumina.click/shared-types";
-import { Timestamp } from "firebase-admin/firestore";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import firestore from "../../../infrastructure/database/firestore";
 import * as logger from "../../../shared/logger";

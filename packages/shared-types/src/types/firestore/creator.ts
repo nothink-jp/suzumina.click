@@ -5,7 +5,7 @@
  * サブコレクションを使用して作品との関連を管理
  */
 
-import type { Timestamp } from "firebase-admin/firestore";
+import type { Timestamp } from "@google-cloud/firestore";
 import type { CreatorType } from "../../entities/circle-creator";
 
 /**

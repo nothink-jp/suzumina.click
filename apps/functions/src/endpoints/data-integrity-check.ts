@@ -7,8 +7,13 @@
  * - Work-Circle相互参照の整合性
  */
 
+import type {
+	DocumentData,
+	DocumentReference,
+	QueryDocumentSnapshot,
+	WriteBatch,
+} from "@google-cloud/firestore";
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import type { firestore as FirestoreType } from "firebase-admin";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import * as logger from "../shared/logger";
 
@@ -209,10 +214,10 @@ async function ensureCreatorExists(
 	creatorId: string,
 	creatorName: string,
 	type: string,
-	batch: FirestoreType.WriteBatch,
+	batch: WriteBatch,
 	processedCreators: Set<string>,
 	stats: RestoreStats,
-): Promise<FirestoreType.DocumentReference> {
+): Promise<DocumentReference> {
 	const creatorRef = firestore.collection("creators").doc(creatorId);
 
 	if (!processedCreators.has(creatorId)) {
@@ -242,12 +247,12 @@ async function ensureCreatorExists(
  * Creator-Workマッピングを復元
  */
 async function restoreCreatorWorkMapping(
-	creatorRef: FirestoreType.DocumentReference,
-	workDoc: FirestoreType.QueryDocumentSnapshot,
-	workData: FirestoreType.DocumentData,
+	creatorRef: DocumentReference,
+	workDoc: QueryDocumentSnapshot,
+	workData: DocumentData,
 	creator: { id: string; name: string },
 	type: string,
-	batch: FirestoreType.WriteBatch,
+	batch: WriteBatch,
 	stats: RestoreStats,
 ): Promise<void> {
 	const mappingRef = creatorRef.collection("works").doc(workDoc.id);
@@ -276,7 +281,7 @@ async function restoreCreatorWorkMapping(
  * バッチが満杯の場合はコミット
  */
 async function commitBatchIfNeeded(
-	batch: FirestoreType.WriteBatch,
+	batch: WriteBatch,
 	stats: RestoreStats,
 	force = false,
 ): Promise<void> {
