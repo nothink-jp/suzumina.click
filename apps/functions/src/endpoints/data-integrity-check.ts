@@ -16,6 +16,9 @@ import * as logger from "../shared/logger";
 const INTEGRITY_CHECK_COLLECTION = "dlsiteMetadata";
 const INTEGRITY_CHECK_DOC_ID = "dataIntegrityCheck";
 
+// Firestoreバッチ操作の制限値（500より少し余裕を持たせた値）
+const FIRESTORE_BATCH_LIMIT = 400;
+
 /**
  * 整合性チェック結果の型定義
  */
@@ -83,15 +86,13 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult): Promise<void
 			batchCount++;
 
 			// バッチサイズ制限
-			if (batchCount >= 400) {
+			if (batchCount >= FIRESTORE_BATCH_LIMIT) {
 				await batch.commit();
 				batchCount = 0;
 			}
 		}
 
-		// 存在しない作品IDのチェック（現在は削除しない - 収集対象が限定的なため）
-		// TODO: 全作品収集完了後に有効化
-		/*
+		// 存在しない作品IDのチェック
 		const existingWorkIds: string[] = [];
 		for (const workId of uniqueWorkIds) {
 			const workDoc = await firestore
@@ -115,12 +116,11 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult): Promise<void
 			result.checks.circleWorkCounts.fixed++;
 			batchCount++;
 
-			if (batchCount >= 400) {
+			if (batchCount >= FIRESTORE_BATCH_LIMIT) {
 				await batch.commit();
 				batchCount = 0;
 			}
 		}
-		*/
 	}
 
 	if (batchCount > 0) {
@@ -161,7 +161,7 @@ async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void
 				result.checks.orphanedCreators.cleaned++;
 				batchCount++;
 
-				if (batchCount >= 400) {
+				if (batchCount >= FIRESTORE_BATCH_LIMIT) {
 					await batch.commit();
 					batchCount = 0;
 				}
@@ -177,7 +177,7 @@ async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void
 			result.checks.orphanedCreators.cleaned++;
 			batchCount++;
 
-			if (batchCount >= 400) {
+			if (batchCount >= FIRESTORE_BATCH_LIMIT) {
 				await batch.commit();
 				batchCount = 0;
 			}
@@ -280,7 +280,7 @@ async function commitBatchIfNeeded(
 	stats: RestoreStats,
 	force = false,
 ): Promise<void> {
-	if (stats.batchCount >= 400 || (force && stats.batchCount > 0)) {
+	if (stats.batchCount >= FIRESTORE_BATCH_LIMIT || (force && stats.batchCount > 0)) {
 		await batch.commit();
 		stats.batchCount = 0;
 	}
@@ -409,7 +409,7 @@ async function checkWorkCircleConsistency(result: IntegrityCheckResult): Promise
 			result.checks.workCircleConsistency.fixed++;
 			batchCount++;
 
-			if (batchCount >= 400) {
+			if (batchCount >= FIRESTORE_BATCH_LIMIT) {
 				await batch.commit();
 				batchCount = 0;
 			}
