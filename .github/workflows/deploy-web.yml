@@ -105,55 +105,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Enable Corepack
-        run: corepack enable
-      
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-      
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-      
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-      
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      
-      # Cache Next.js build
-      - name: Cache Next.js build
-        uses: actions/cache@v4
-        with:
-          path: |
-            apps/web/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'pnpm-lock.yaml') }}-${{ hashFiles('apps/web/**/*.ts', 'apps/web/**/*.tsx', 'apps/web/**/*.js', 'apps/web/**/*.jsx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'pnpm-lock.yaml') }}-
-            ${{ runner.os }}-nextjs-
-      
-      # Build shared packages
-      - name: Build shared packages
-        run: |
-          echo "🔨 Building shared packages..."
-          pnpm --filter @suzumina.click/shared-types build
-          echo "✅ Shared packages built successfully"
-      
-      # Google Cloud authentication
+      # Google Cloud authentication - 早期に実行
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -169,37 +121,40 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
       
-      # Set up Docker Buildx
+      # Set up Docker Buildx with advanced caching
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:master
+            network=host
       
-      # Build and push Docker image
+      # Build and push using docker/build-push-action for better performance
       - name: Build and push Docker image
-        run: |
-          # Generate image tags
-          IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-          LATEST_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest"
-          CACHE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:cache"
-          
-          # Build with cache
-          docker buildx build \
-            --platform linux/amd64 \
-            --file apps/web/Dockerfile \
-            --tag $IMAGE_TAG \
-            --tag $LATEST_TAG \
-            --cache-from type=registry,ref=$CACHE_TAG \
-            --cache-to type=registry,ref=$CACHE_TAG,mode=max \
-            --push \
-            .
-          
-          echo "✅ Docker image built and pushed"
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: |
+            type=registry,ref=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: |
+            type=registry,ref=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          platforms: linux/amd64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
       
-      # Deploy to Cloud Run
+      # Deploy to Cloud Run with zero downtime
       - name: Deploy to Cloud Run
         run: |
+          IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          
+          # Deploy without traffic routing first
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image ${{ env.IMAGE_TAG }} \
+            --image $IMAGE_TAG \
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
@@ -211,44 +166,53 @@ jobs:
             --min-instances 0 \
             --max-instances 2 \
             --timeout 300 \
-            --port 8080
-
-      # Configure public access
-      - name: Configure public access
-        run: |
-          echo "Configuring public access..."
+            --port 8080 \
+            --no-traffic
           
-          # Add IAM policy binding
-          gcloud run services add-iam-policy-binding ${{ env.SERVICE_NAME }} \
-            --region=${{ env.REGION }} \
-            --member="allUsers" \
-            --role="roles/run.invoker"
+          echo "✅ New revision deployed without traffic"
       
-      # Health check
-      - name: Health check
+      # Health check and traffic migration
+      - name: Health check and traffic migration
         run: |
-          # Get service URL
-          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+          # Get the new revision URL
+          NEW_REVISION_URL=$(gcloud run revisions list \
+            --service ${{ env.SERVICE_NAME }} \
             --region ${{ env.REGION }} \
-            --format 'value(status.address.url)')
+            --format 'value(status.address.url)' \
+            --limit 1)
           
-          echo "Service URL: $SERVICE_URL"
+          echo "New revision URL: $NEW_REVISION_URL"
           
-          # Wait for deployment
-          echo "Waiting for deployment..."
-          sleep 30
+          # Wait for revision to be ready
+          echo "Waiting for revision to be ready..."
+          sleep 20
           
-          # Health check with retries
-          HEALTH_URL="https://suzumina.click/api/health"
-          
+          # Health check on new revision
           for i in {1..5}; do
             echo "Health check attempt $i/5..."
             
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$NEW_REVISION_URL/api/health" || echo "000")
             
             if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ Health check passed"
-              curl -s "$HEALTH_URL" | jq '.' || echo "Response received"
+              echo "✅ Health check passed on new revision"
+              
+              # Migrate traffic to new revision
+              echo "Migrating traffic to new revision..."
+              gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+                --region ${{ env.REGION }} \
+                --to-latest
+              
+              echo "✅ Traffic migrated successfully"
+              
+              # Final check on production URL
+              sleep 10
+              PROD_CHECK=$(curl -s -o /dev/null -w "%{http_code}" "https://suzumina.click/api/health" || echo "000")
+              if [ "$PROD_CHECK" = "200" ]; then
+                echo "✅ Production health check passed"
+              else
+                echo "⚠️ Production health check returned $PROD_CHECK"
+              fi
+              
               exit 0
             else
               echo "❌ Health check failed (HTTP $HTTP_CODE)"
@@ -259,52 +223,61 @@ jobs:
           echo "❌ Health check failed after 5 attempts"
           exit 1
       
-      # Cleanup
+      # Parallel cleanup
       - name: Cleanup old resources
+        if: always()
         run: |
-          echo "🧹 Cleaning up old resources..."
+          echo "🧹 Starting parallel cleanup..."
           
-          # Cloud Run revisions
-          REVISIONS=$(gcloud run revisions list \
-            --service="${{ env.SERVICE_NAME }}" \
-            --region="${{ env.REGION }}" \
-            --sort-by="~metadata.creationTimestamp" \
-            --format="value(metadata.name)" \
-            --limit=10)
-          
-          if [ -n "$REVISIONS" ]; then
-            REVISION_ARRAY=($REVISIONS)
-            TOTAL=${#REVISION_ARRAY[@]}
+          # Cloud Run revisions cleanup (background)
+          (
+            REVISIONS=$(gcloud run revisions list \
+              --service="${{ env.SERVICE_NAME }}" \
+              --region="${{ env.REGION }}" \
+              --sort-by="~metadata.creationTimestamp" \
+              --format="value(metadata.name)" \
+              --limit=10)
             
-            if [ $TOTAL -gt 3 ]; then
-              for ((i=3; i<TOTAL; i++)); do
-                echo "Deleting revision: ${REVISION_ARRAY[$i]}"
-                gcloud run revisions delete "${REVISION_ARRAY[$i]}" \
-                  --region="${{ env.REGION }}" \
-                  --quiet || true
-              done
+            if [ -n "$REVISIONS" ]; then
+              REVISION_ARRAY=($REVISIONS)
+              TOTAL=${#REVISION_ARRAY[@]}
+              
+              if [ $TOTAL -gt 3 ]; then
+                echo "Cleaning up $((TOTAL-3)) old revisions..."
+                for ((i=3; i<TOTAL; i++)); do
+                  gcloud run revisions delete "${REVISION_ARRAY[$i]}" \
+                    --region="${{ env.REGION }}" \
+                    --quiet || true
+                done
+              fi
             fi
-          fi
+          ) &
+          REVISION_PID=$!
           
-          # Docker images
-          IMAGES=$(gcloud artifacts docker images list \
-            "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}" \
-            --sort-by="CREATE_TIME" \
-            --format="value(IMAGE)" \
-            --limit=20)
-          
-          if [ -n "$IMAGES" ]; then
-            IMAGE_ARRAY=($IMAGES)
-            TOTAL=${#IMAGE_ARRAY[@]}
+          # Docker images cleanup (background)
+          (
+            IMAGES=$(gcloud artifacts docker images list \
+              "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}" \
+              --sort-by="CREATE_TIME" \
+              --format="value(IMAGE)" \
+              --limit=20)
             
-            if [ $TOTAL -gt 5 ]; then
-              for ((i=0; i<$((TOTAL-5)); i++)); do
-                echo "Deleting image: ${IMAGE_ARRAY[$i]}"
-                gcloud artifacts docker images delete "${IMAGE_ARRAY[$i]}" \
-                  --delete-tags \
-                  --quiet || true
-              done
+            if [ -n "$IMAGES" ]; then
+              IMAGE_ARRAY=($IMAGES)
+              TOTAL=${#IMAGE_ARRAY[@]}
+              
+              if [ $TOTAL -gt 5 ]; then
+                echo "Cleaning up $((TOTAL-5)) old images..."
+                for ((i=0; i<$((TOTAL-5)); i++)); do
+                  gcloud artifacts docker images delete "${IMAGE_ARRAY[$i]}" \
+                    --delete-tags \
+                    --quiet || true
+                done
+              fi
             fi
-          fi
+          ) &
+          IMAGE_PID=$!
           
-          echo "✅ Cleanup completed"
+          # Wait for both cleanup processes
+          wait $REVISION_PID $IMAGE_PID
+          echo "✅ Parallel cleanup completed"
