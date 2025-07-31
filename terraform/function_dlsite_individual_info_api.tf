@@ -113,14 +113,15 @@ resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
   depends_on = [google_project_service.pubsub]
 }
 
-# Individual Info API専用のCloud Scheduler（毎時実行）
+# Individual Info API専用のCloud Scheduler（2時間ごと実行）
+# 注: リソース名は互換性のため "hourly" のままだが、実際は2時間ごとに実行
 resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
   project  = var.gcp_project_id
   region   = var.region
-  name     = "fetch-dlsite-individual-api-hourly"
+  name     = "fetch-dlsite-individual-api-hourly"  # 名前は互換性のため変更しない
   
-  description = "Individual Info API専用データ更新（1時間間隔・レイテンシ最適化対応）"
-  schedule    = "0 * * * *"  # 毎時0分実行（レイテンシ最適化）
+  description = "Individual Info API専用データ更新（2時間間隔・取得漏れ防止のため3分後実行）"
+  schedule    = "3 */2 * * *"  # 2時間ごとの3分に実行（0:03, 2:03, 4:03...）
   time_zone   = "Asia/Tokyo"
   paused      = false
 
