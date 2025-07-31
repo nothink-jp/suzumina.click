@@ -126,12 +126,12 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
-            image=moby/buildkit:master
+            image=moby/buildkit:v0.23.2
             network=host
       
       # Build and push using docker/build-push-action for better performance
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6.18.0
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/web/Dockerfile
@@ -209,11 +209,13 @@ jobs:
               PROD_CHECK=$(curl -s -o /dev/null -w "%{http_code}" "https://suzumina.click/api/health" || echo "000")
               if [ "$PROD_CHECK" = "200" ]; then
                 echo "✅ Production health check passed"
+                exit 0
               else
-                echo "⚠️ Production health check returned $PROD_CHECK"
+                echo "❌ Production health check failed with HTTP code $PROD_CHECK"
+                echo "⚠️ Warning: Traffic has been migrated but production health check failed"
+                echo "Manual intervention may be required to rollback if necessary"
+                exit 1
               fi
-              
-              exit 0
             else
               echo "❌ Health check failed (HTTP $HTTP_CODE)"
               sleep 10
