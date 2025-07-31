@@ -83,7 +83,9 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult): Promise<void
 			}
 		}
 
-		// 存在しない作品IDのチェック
+		// 存在しない作品IDのチェック（現在は削除しない - 収集対象が限定的なため）
+		// TODO: 全作品収集完了後に有効化
+		/*
 		const existingWorkIds: string[] = [];
 		for (const workId of uniqueWorkIds) {
 			const workDoc = await firestore
@@ -112,6 +114,7 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult): Promise<void
 				batchCount = 0;
 			}
 		}
+		*/
 	}
 
 	if (batchCount > 0) {

@@ -147,7 +147,7 @@ describe("checkDataIntegrity", () => {
 			],
 		};
 
-		// 作品の存在確認モック
+		// 作品の存在確認モック（現在は使用されない - コメントアウトされているため）
 		const mockWorkDoc = {
 			get: vi.fn().mockResolvedValue({ exists: true }),
 		};
