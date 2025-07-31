@@ -11,6 +11,7 @@ import * as functions from "@google-cloud/functions-framework";
 // 適切なロギング
 import * as logger from "../shared/logger";
 // 各モジュールから関数をインポート（統合アーキテクチャ）
+import { checkDataIntegrity } from "./data-integrity-check";
 import { fetchDLsiteUnifiedData } from "./dlsite-individual-info-api";
 import { fetchYouTubeVideos } from "./youtube";
 
@@ -47,6 +48,7 @@ interface PubsubMessage {
 // 統合アーキテクチャによる Cloud Functions 登録
 functions.cloudEvent<PubsubMessage>("fetchYouTubeVideos", fetchYouTubeVideos);
 functions.cloudEvent<PubsubMessage>("fetchDLsiteUnifiedData", fetchDLsiteUnifiedData);
+functions.cloudEvent<PubsubMessage>("checkDataIntegrity", checkDataIntegrity);
 
 /**
  * プロセス終了処理
