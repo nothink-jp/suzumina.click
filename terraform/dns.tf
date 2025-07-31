@@ -70,21 +70,6 @@ resource "google_dns_record_set" "domain_verification" {
   depends_on = [google_dns_managed_zone.main]
 }
 
-# Admin App用のCNAMEレコード (admin.suzumina.click → Cloud Run URL)
-resource "google_dns_record_set" "admin_app_cname" {
-  count = local.current_env.enable_custom_domain ? 1 : 0
-  
-  project      = var.gcp_project_id
-  managed_zone = google_dns_managed_zone.main[0].name
-  name         = "admin.${var.domain_name}."
-  type         = "CNAME"
-  ttl          = 300
-
-  # Cloud RunのURLを直接CNAMEで設定
-  rrdatas = ["ghs.googlehosted.com."]
-  
-  depends_on = [google_dns_managed_zone.main]
-}
 
 # ==============================================================================
 # Resend Email Service DNS Records

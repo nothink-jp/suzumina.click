@@ -240,59 +240,6 @@ resource "google_project_iam_member" "github_actions_service_account_user" {
   depends_on = [google_service_account.github_actions_sa]
 }
 
-# ------------------------------------------------------------------------------
-# Admin アプリ用のサービスアカウントとIAM権限設定
-# ------------------------------------------------------------------------------
-
-# Admin アプリ用のサービスアカウント
-resource "google_service_account" "suzumina_admin_sa" {
-  project      = var.gcp_project_id
-  account_id   = "suzumina-admin-sa"
-  display_name = "Suzumina Admin App Service Account"
-  description  = "Admin アプリケーションがFirestoreにアクセスするためのサービスアカウント"
-}
-
-# Admin サービスアカウントにFirestore管理権限を付与
-resource "google_project_iam_member" "admin_firestore_user" {
-  project = var.gcp_project_id
-  role    = "roles/datastore.user"
-  member  = "serviceAccount:${google_service_account.suzumina_admin_sa.email}"
-  
-  depends_on = [google_service_account.suzumina_admin_sa]
-}
-
-# Admin サービスアカウントにSecret Manager アクセス権限を付与
-resource "google_project_iam_member" "admin_secret_manager_accessor" {
-  project = var.gcp_project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${google_service_account.suzumina_admin_sa.email}"
-  
-  depends_on = [google_service_account.suzumina_admin_sa]
-}
-
-# GitHub Actions用サービスアカウントにAdmin SAのToken Creator権限を付与
-resource "google_service_account_iam_member" "github_actions_admin_token_creator" {
-  service_account_id = google_service_account.suzumina_admin_sa.name
-  role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "serviceAccount:${google_service_account.github_actions_sa.email}"
-  
-  depends_on = [
-    google_service_account.github_actions_sa,
-    google_service_account.suzumina_admin_sa
-  ]
-}
-
-# GitHub Actions用サービスアカウントにAdmin SAのUser権限を付与
-resource "google_service_account_iam_member" "github_actions_admin_sa_user" {
-  service_account_id = google_service_account.suzumina_admin_sa.name
-  role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:${google_service_account.github_actions_sa.email}"
-  
-  depends_on = [
-    google_service_account.github_actions_sa,
-    google_service_account.suzumina_admin_sa
-  ]
-}
 
 # GitHub Actions用サービスアカウントにCloud Run IAM管理権限を付与
 resource "google_project_iam_member" "github_actions_run_admin" {
