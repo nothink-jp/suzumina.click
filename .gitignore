@@ -58,6 +58,8 @@ terraform/terraform.tfvars
 .terraform/
 *.tfstate
 *.tfstate.backup
+*.tfplan
+tfplan.out
 
 # temporary deploy packages
 tmp/

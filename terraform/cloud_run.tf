@@ -144,7 +144,6 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = var.google_tag_manager_id
       }
 
-
       # Resend API Key (Secret Managerから取得)
       env {
         name = "RESEND_API_KEY"
@@ -214,10 +213,11 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
   }
 
   # GitHub Actions からのデプロイとの競合を避けるため、
-  # 画像参照は GitHub Actions が管理し、Terraform は無視する
+  # 画像参照と環境変数は GitHub Actions が管理し、Terraform は無視する
   lifecycle {
     ignore_changes = [
       template[0].containers[0].image,
+      template[0].containers[0].env,
     ]
   }
 
