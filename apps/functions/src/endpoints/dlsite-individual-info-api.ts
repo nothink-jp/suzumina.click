@@ -20,7 +20,7 @@ const UNIFIED_METADATA_DOC_ID = "unified_data_collection_metadata";
 const METADATA_COLLECTION = "dlsiteMetadata";
 
 // バッチ処理設定
-const MAX_CONCURRENT_API_REQUESTS = 3; // 6 → 3に削減（API安定性向上）
+const MAX_CONCURRENT_API_REQUESTS = 5; // 6 → 3 → 5（バッチサイズ50の約数で効率化）
 const API_REQUEST_DELAY = 400;
 const BATCH_SIZE = 50; // 100 → 50に削減（エラー率低下とタイムアウト回避）
 const MAX_EXECUTION_TIME = 420000; // 7分

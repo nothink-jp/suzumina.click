@@ -75,7 +75,7 @@ export async function processUnifiedDLsiteData(
 		if (!options.forceUpdate) {
 			const existingWork = await getWorkFromFirestore(workData.productId);
 			if (existingWork && !hasSignificantChanges(existingWork, workData)) {
-				logger.debug(`作品 ${workData.productId} は変更なしのためスキップ`);
+				// 変更なしの場合はログを出さない（大量のログを防ぐため）
 				result.success = true;
 				return result;
 			}
@@ -166,7 +166,7 @@ export async function processUnifiedDLsiteData(
 function hasSignificantChanges(existing: WorkDocument, updated: WorkDocument): boolean {
 	// 価格変更
 	if (existing.price.current !== updated.price.current) {
-		logger.debug(
+		logger.info(
 			`価格変更検出: ${existing.productId} - ${existing.price.current} → ${updated.price.current}`,
 		);
 		return true;
@@ -174,13 +174,13 @@ function hasSignificantChanges(existing: WorkDocument, updated: WorkDocument): b
 
 	// タイトル変更
 	if (existing.title !== updated.title) {
-		logger.debug(`タイトル変更検出: ${existing.productId}`);
+		logger.info(`タイトル変更検出: ${existing.productId}`);
 		return true;
 	}
 
 	// 販売状態変更
 	if (existing.salesStatus?.isSale !== updated.salesStatus?.isSale) {
-		logger.debug(
+		logger.info(
 			`販売状態変更検出: ${existing.productId} - ${existing.salesStatus?.isSale} → ${updated.salesStatus?.isSale}`,
 		);
 		return true;
@@ -190,13 +190,13 @@ function hasSignificantChanges(existing: WorkDocument, updated: WorkDocument): b
 	const existingStars = existing.rating?.stars || 0;
 	const updatedStars = updated.rating?.stars || 0;
 	if (Math.abs(existingStars - updatedStars) > 2) {
-		logger.debug(`評価変更検出: ${existing.productId} - ${existingStars} → ${updatedStars}`);
+		logger.info(`評価変更検出: ${existing.productId} - ${existingStars} → ${updatedStars}`);
 		return true;
 	}
 
 	// 販売終了の検出
 	if (!existing.salesStatus?.isSoldOut && updated.salesStatus?.isSoldOut) {
-		logger.debug(`販売終了検出: ${existing.productId}`);
+		logger.info(`販売終了検出: ${existing.productId}`);
 		return true;
 	}
 
@@ -204,7 +204,7 @@ function hasSignificantChanges(existing: WorkDocument, updated: WorkDocument): b
 	const existingGenres = new Set(existing.genres || []);
 	const hasNewGenres = (updated.genres || []).some((genre) => !existingGenres.has(genre));
 	if (hasNewGenres) {
-		logger.debug(`ジャンル追加検出: ${existing.productId}`);
+		logger.info(`ジャンル追加検出: ${existing.productId}`);
 		return true;
 	}
 

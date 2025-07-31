@@ -589,7 +589,10 @@ Files:
   - サブコレクション構造での実装
   - Collection Group Queryによる性能最適化
   - 既存のcreatorWorkMappingsコレクションからの移行完了
-- [ ] PR #6: 統合更新処理の最適化（再設計）
+- [x] PR #6: 統合更新処理の最適化 - **実装中**
+  - unified-data-processor.tsの実装完了
+  - テストの作成完了
+  - 不要コードのクリーンアップ完了
 - [ ] PR #8: データ整合性検証機能
 
 ### 削除されたタスク
@@ -617,6 +620,71 @@ Files:
 2. **原子性の保証**: 可能な限りトランザクションで整合性を保証
 3. **エラーの集約**: 統一されたエラーハンドリング
 4. **パフォーマンス**: 差分チェックで無駄な更新をスキップ
+
+### バッチ処理フローの変更
+
+#### 変更前のフロー（分散処理）
+```mermaid
+graph TD
+    A[バッチ開始] --> B[DLsite API呼び出し<br/>50件並列]
+    B --> C[APIレスポンス取得]
+    C --> D[WorkMapperで変換]
+    D --> E[saveWorksToFirestore<br/>一括保存]
+    E --> F[collectCircleCreatorInfo<br/>個別処理]
+    F --> G[Circle更新]
+    F --> H[Creator更新]
+    G --> I[savePriceHistory<br/>個別処理]
+    H --> I
+    I --> J[次のバッチへ]
+    
+    style B fill:#ffcc00
+    style E fill:#ff9999
+    style F fill:#ff9999
+    style I fill:#ff9999
+```
+
+#### 変更後のフロー（統合処理）
+```mermaid
+graph TD
+    A[バッチ開始] --> B[DLsite API呼び出し<br/>50件並列]
+    B --> C[APIレスポンス取得]
+    C --> D[processUnifiedDLsiteData<br/>統合処理]
+    D --> E{差分チェック}
+    E -->|変更あり| F[統合更新処理]
+    E -->|変更なし| K[スキップ]
+    F --> G[Work更新]
+    F --> H[Circle更新]
+    F --> I[Creator更新]
+    F --> J[価格履歴更新]
+    G --> L[結果集約]
+    H --> L
+    I --> L
+    J --> L
+    K --> L
+    L --> M[次のバッチへ]
+    
+    style B fill:#ffcc00
+    style D fill:#66ff66
+    style F fill:#66ff66
+```
+
+#### 主な改善点
+
+1. **処理の統合**
+   - 従来: `saveWorksToFirestore` → `collectCircleCreatorInfo` → `savePriceHistory` と個別に実行
+   - 改善後: `processUnifiedDLsiteData` で全ての更新を一元管理
+
+2. **差分チェックの導入**
+   - 重要な変更（価格、タイトル、販売状態など）がない場合はスキップ
+   - 無駄なFirestore書き込みを削減
+
+3. **エラーハンドリングの改善**
+   - 各コンポーネントのエラーを個別に追跡
+   - 一部が失敗しても他の更新は継続
+
+4. **トランザクション性の向上**
+   - 関連データの更新をより原子的に実行
+   - データ整合性の向上
 
 ### 実装案
 
