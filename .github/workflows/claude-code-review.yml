@@ -105,8 +105,11 @@ jobs:
             if (!anthropicApiKey) {
               core.setOutput('error', 'true');
               core.setOutput('message', 'ANTHROPIC_API_KEY is not set in repository secrets');
+              console.log('ANTHROPIC_API_KEY is not found in environment');
               return;
             }
+            
+            console.log('ANTHROPIC_API_KEY is set, length:', anthropicApiKey.length);
             
             try {
               const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -128,18 +131,39 @@ jobs:
                 })
               });
               
+              console.log('API Response status:', response.status);
+              
               if (!response.ok) {
-                const errorData = await response.json();
+                const errorText = await response.text();
+                console.error('API Error Response:', errorText);
+                
+                let errorMessage = 'Unknown error';
+                try {
+                  const errorData = JSON.parse(errorText);
+                  errorMessage = errorData.error?.message || errorData.message || errorText;
+                } catch (e) {
+                  errorMessage = errorText;
+                }
+                
                 core.setOutput('error', 'true');
-                core.setOutput('message', `API Error: ${errorData.error?.message || 'Unknown error'}`);
+                core.setOutput('message', `API Error (${response.status}): ${errorMessage}`);
                 return;
               }
               
               const data = await response.json();
+              console.log('API Response received successfully');
+              
+              if (!data.content || !data.content[0] || !data.content[0].text) {
+                core.setOutput('error', 'true');
+                core.setOutput('message', 'Invalid response format from Claude API');
+                return;
+              }
+              
               core.setOutput('error', 'false');
               core.setOutput('message', data.content[0].text);
               
             } catch (error) {
+              console.error('Error calling Claude API:', error);
               core.setOutput('error', 'true');
               core.setOutput('message', `Error calling Claude API: ${error.message}`);
             }
@@ -156,8 +180,9 @@ jobs:
               pr_number = context.payload.pull_request.number;
             }
 
-            const isError = '${{ steps.claude-review.outputs.error }}' === 'true';
-            const message = `${{ steps.claude-review.outputs.message }}`;
+            const outputs = ${{ toJSON(steps.claude-review.outputs) }};
+            const isError = outputs.error === 'true';
+            const message = outputs.message || 'No response received';
             
             let body = '';
             
