@@ -2,6 +2,21 @@
 
 suzumina.clickプロジェクトの変更履歴
 
+## [v0.3.10] - 2025-07-31
+
+### 🔄 コレクション名の統一
+
+- **Firestoreコレクション名変更**
+  - `dlsiteWorks` → `works` への名称変更完了
+  - 他のコレクション（`videos`, `users`, `circles`等）と統一された命名規則を採用
+  - マイグレーションツール実装完了（`migrate-dlsiteworks-to-works.ts`）
+
+- **ドキュメント更新**
+  - CLAUDE.md: コレクション名変更の注意事項を更新
+  - ubiquitous-language.md: worksコレクションの定義を更新
+  - external-apis/dlsite-api.md: 価格履歴サブコレクションのパスを更新
+  - その他関連ドキュメントの参照を全て更新
+
 ## [v0.3.9] - 2025-07-31
 
 ### 🔍 データ整合性チェック機能の実装
@@ -20,7 +35,7 @@ suzumina.clickプロジェクトの変更履歴
   - 専用サービスアカウント: `data-integrity-check-sa`
 
 - **エラー修正**
-  - Firestore collection名の誤り修正（`works` → `dlsiteWorks`）
+  - Firestore collection名を統一命名規則に合わせて修正（`dlsiteWorks` → `works`）
   - サービスアカウント名の不一致修正
   - バッチ処理の制限値を定数化（FIRESTORE_BATCH_LIMIT = 400）
 

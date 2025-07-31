@@ -35,7 +35,7 @@ DLsite統合データ構造を活用し、効率的なバックエンド・フ�
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Data Layer    │    │   Cache Layer    │    │   Firestore     │
 │                 │    │                  │    │                 │
-│ • Type Safe     │    │ • Next.js Cache  │    │ • dlsiteWorks   │
+│ • Type Safe     │    │ • Next.js Cache  │    │ • works         │
 │ • Validation    │    │ • Memory Cache   │    │ • Unified Data  │
 │ • Transformation│    │ • ISR/SSG        │    │ • Real-time     │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
@@ -172,7 +172,7 @@ export async function getWorks(params: WorksParams = {}): Promise<WorksResult> {
     const firestore = getFirestore();
     
     // 1. Firestore直接アクセス (統合データ活用)
-    const snapshot = await firestore.collection("dlsiteWorks").get();
+    const snapshot = await firestore.collection("works").get();
     
     // 2. データ変換・フィルタリング・ソート
     let allWorks = snapshot.docs.map(doc => ({
@@ -223,7 +223,7 @@ export async function generateStaticParams() {
 export async function getWorkById(workId: string): Promise<FrontendDLsiteWorkData | null> {
   try {
     const firestore = getFirestore();
-    const doc = await firestore.collection("dlsiteWorks").doc(workId).get();
+    const doc = await firestore.collection("works").doc(workId).get();
     
     if (!doc.exists) return null;
     

@@ -24,7 +24,7 @@ DLsite Individual Info APIから取得できるサークル情報（`maker_id`/`
 
 #### 既存コレクションの活用優先
 
-**方針**: 新規コレクション作成は最小限とし、既存の`dlsiteWorks`コレクションを最大限活用する。
+**方針**: 新規コレクション作成は最小限とし、既存の`works`コレクションを最大限活用する。
 
 #### circles コレクション（必要最小限の新規コレクション）
 
@@ -56,7 +56,7 @@ interface CreatorWorkMapping {
 type CreatorType = "voice" | "illustration" | "scenario" | "music" | "other";
 ```
 
-#### dlsiteWorks コレクションの拡張
+#### works コレクションの拡張
 
 ```typescript
 // 既存のOptimizedFirestoreDLsiteWorkDataに追加
@@ -133,10 +133,10 @@ resource "google_firestore_index" "creatormappings_creatorid_types" {
   }
 }
 
-# dlsiteWorks コレクション - サークル別作品一覧用
-resource "google_firestore_index" "dlsiteworks_circleid_registdate_desc" {
+# works コレクション - サークル別作品一覧用
+resource "google_firestore_index" "works_circleid_registdate_desc" {
   project    = var.gcp_project_id
-  collection = "dlsiteWorks"
+  collection = "works"
   
   fields {
     field_path = "circleId"
@@ -390,7 +390,7 @@ export async function getCircleWithWorks(circleId: string) {
     
     // サークルの作品一覧取得
     const worksSnapshot = await adminDb
-      .collection('dlsiteWorks')
+      .collection('works')
       .where('circleId', '==', circleId)
       .orderBy('registDate', 'desc')
       .limit(100)
@@ -481,7 +481,7 @@ export async function getCreatorWithWorks(creatorId: string) {
     for (let i = 0; i < workIdArray.length; i += 10) {
       const batch = workIdArray.slice(i, i + 10);
       const snapshot = await adminDb
-        .collection('dlsiteWorks')
+        .collection('works')
         .where(Firestore.FieldPath.documentId(), 'in', batch)
         .get();
       

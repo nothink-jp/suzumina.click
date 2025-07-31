@@ -24,7 +24,7 @@ DLsiteデータ収集システムの改善計画から、データ整合性チ�
 - 専用サービスアカウント: `data-integrity-check-sa`
 
 ### 3. 重要な修正
-- Firestore collection名の誤り修正（`works` → `dlsiteWorks`）
+- Firestore collection名を統一命名規則に合わせて修正（`dlsiteWorks` → `works`）
 - サービスアカウント名の不一致修正
 - バッチ処理の制限値を定数化（FIRESTORE_BATCH_LIMIT = 400）
 

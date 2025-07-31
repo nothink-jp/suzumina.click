@@ -16,14 +16,14 @@
 ### 技術要件
 - **データソース**: 既存の `fetchdlsiteworksindividualapi` (1日24回実行) を活用
 - **データ形式**: DLsite Individual Info APIの `LocalePrice[]` 形式を保持
-- **保存先**: `dlsiteWorks/{workId}/priceHistory` サブコレクション（新設計）
+- **保存先**: `works/{workId}/priceHistory` サブコレクション（新設計）
 - **データ保持期間**: システム開始日から全期間（無期限保存）
 
 ## 🗃️ データアーキテクチャ設計
 
 ### 1. サブコレクション方式採用
 
-#### 新設計: `dlsiteWorks/{workId}/priceHistory/{YYYY-MM-DD}` サブコレクション
+#### 新設計: `works/{workId}/priceHistory/{YYYY-MM-DD}` サブコレクション
 
 ```typescript
 // 価格履歴ドキュメント型定義
@@ -79,7 +79,7 @@ export type PriceHistoryDocument = z.infer<typeof PriceHistoryDocumentSchema>;
 1. **スケーラビリティ**: 作品ごとの履歴データが独立、Firestore 1MB/ドキュメント制限回避
 2. **クエリ効率**: 期間指定での高速検索 (`where('date', '>=', startDate)`)
 3. **データ永続性**: 全履歴保持により完全な価格推移トレンド分析が可能
-4. **段階的導入**: 既存 `dlsiteWorks` ドキュメントに影響なし
+4. **段階的導入**: 既存 `works` ドキュメントに影響なし
 5. **Firestore最適化**: 複合インデックス活用による効率的データアクセス
 
 ### 3. データ収集・保存ロジック
@@ -97,7 +97,7 @@ async function savePriceHistoryData(
   
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const priceHistoryRef = firestore
-    .collection('dlsiteWorks')
+    .collection('works')
     .doc(workId)
     .collection('priceHistory')
     .doc(today);
@@ -164,7 +164,7 @@ async function detectPriceChange(
     .toISOString().split('T')[0];
   
   const yesterdayDoc = await firestore
-    .collection('dlsiteWorks')
+    .collection('works')
     .doc(workId)
     .collection('priceHistory')
     .doc(yesterday)
@@ -189,7 +189,7 @@ async function detectNewCampaign(
     .toISOString().split('T')[0];
   
   const yesterdayDoc = await firestore
-    .collection('dlsiteWorks')
+    .collection('works')
     .doc(workId)
     .collection('priceHistory')
     .doc(yesterday)
@@ -216,7 +216,7 @@ async function cleanupOldPriceHistory(workId: string, retentionDays: number): Pr
     .toISOString().split('T')[0];
   
   const oldDocsQuery = firestore
-    .collection('dlsiteWorks')
+    .collection('works')
     .doc(workId)
     .collection('priceHistory')
     .where('date', '<', cutoffDate);
@@ -398,7 +398,7 @@ export async function getPriceHistoryFromSubcollection(
   // days = 0 の場合は全期間のデータを取得
   if (days === 0) {
     const snapshot = await firestore
-      .collection('dlsiteWorks')
+      .collection('works')
       .doc(workId)
       .collection('priceHistory')
       .orderBy('date', 'asc')
@@ -412,7 +412,7 @@ export async function getPriceHistoryFromSubcollection(
   const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
   
   const snapshot = await firestore
-    .collection('dlsiteWorks')
+    .collection('works')
     .doc(workId)
     .collection('priceHistory')
     .where('date', '>=', startDate.toISOString().split('T')[0])
@@ -937,7 +937,7 @@ export function PriceStatistics({ statistics, period }: PriceStatisticsProps) {
 
 **完了条件**:
 - [x] サブコレクション正常書き込み・全履歴保持確認
-- [x] 既存 `dlsiteWorks` データに影響なし
+- [x] 既存 `works` データに影響なし
 - [x] テストスイート更新・全パス
 
 **実装済み内容** (2025-07-20):
@@ -1098,7 +1098,7 @@ export function PriceStatistics({ statistics, period }: PriceStatisticsProps) {
 
 ### 🔧 **新設計の利点**
 
-1. **既存インフラ活用**: `dlsiteWorks` コレクション拡張で実装コスト最小化
+1. **既存インフラ活用**: `works` コレクション拡張で実装コスト最小化
 2. **段階的導入**: サブコレクション方式で既存データに影響なし  
 3. **完全な履歴保持**: システム開始日からの全価格推移を永続的に保存
 4. **スケーラブル**: 作品ごと独立した価格履歴管理

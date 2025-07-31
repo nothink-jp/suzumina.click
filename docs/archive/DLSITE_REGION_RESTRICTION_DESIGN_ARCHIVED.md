@@ -244,7 +244,7 @@ async function detectAndRecordRegionRestriction(
   const isInAssetFile = await checkWorkIdInAssetFile(workId);
   
   if (isInAssetFile) {
-    // dlsiteWorks コレクションにフラグ設定
+    // works コレクションにフラグ設定
     await updateWorkRegionRestriction(workId, {
       regionRestricted: true,
       regionRestrictedReason: 'API_NOT_FOUND',

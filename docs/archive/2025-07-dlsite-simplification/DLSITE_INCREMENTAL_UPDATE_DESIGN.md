@@ -260,7 +260,7 @@ interface TimeSeriesDailyAggregate {
 
 ### DLsite関連コレクション
 
-#### **1. 作品基本データ (`dlsiteWorks`)**
+#### **1. 作品基本データ (`works`)**
 ```typescript
 interface OptimizedFirestoreDLsiteWorkData {
   productId: string;                    // 作品ID (RJ123456)

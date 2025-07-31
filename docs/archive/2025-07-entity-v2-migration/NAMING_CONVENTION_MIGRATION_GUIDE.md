@@ -241,8 +241,8 @@ module.exports = {
 
 ### 1. データベースとの整合性
 ```typescript
-// Firestoreのコレクション名は変更しない
-const COLLECTION_NAME = 'dlsiteWorks'; // 変更なし
+// Firestoreのコレクション名は変更済み
+const COLLECTION_NAME = 'works'; // 'dlsiteWorks'から'works'に変更済み
 
 // 型名のみ変更
 type Work = { ... }; // 旧: OptimizedFirestoreDLsiteWorkData
@@ -253,7 +253,7 @@ type Work = { ... }; // 旧: OptimizedFirestoreDLsiteWorkData
 // APIレスポンスの型は内部的に変換
 export async function fetchWork(id: string): Promise<Work> {
   const doc = await firestore
-    .collection('dlsiteWorks')
+    .collection('works')
     .doc(id)
     .get();
   

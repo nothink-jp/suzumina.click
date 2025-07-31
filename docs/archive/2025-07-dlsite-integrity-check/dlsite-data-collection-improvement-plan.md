@@ -214,7 +214,7 @@ export async function updateFromDLsiteData(
   // トランザクションで整合性を保証
   await firestore.runTransaction(async (transaction) => {
     // 1. Work更新（既存のsaveWorksToFirestore相当）
-    const workRef = firestore.collection('dlsiteWorks').doc(workData.productId);
+    const workRef = firestore.collection('works').doc(workData.productId);
     transaction.set(workRef, workData, { merge: true });
     
     // 2. Circle更新（新しいユーティリティ関数）
@@ -240,7 +240,7 @@ export async function recalculateCircleWorkCounts(): Promise<void> {
     
     // 実際の作品を検索
     const works = await firestore
-      .collection('dlsiteWorks')
+      .collection('works')
       .where('circleId', '==', circleId)
       .get();
     
@@ -264,7 +264,7 @@ export async function recalculateCircleWorkCounts(): Promise<void> {
 ```typescript
 // 将来的な拡張: Firestoreトリガーで自動同期
 export const onWorkDelete = functions.firestore
-  .document('dlsiteWorks/{workId}')
+  .document('works/{workId}')
   .onDelete(async (snapshot) => {
     const workData = snapshot.data() as WorkDocument;
     
@@ -754,7 +754,7 @@ export async function processUnifiedDLsiteData(
     const batch = firestore.batch();
     
     // 3.1 Work更新
-    const workRef = firestore.collection('dlsiteWorks').doc(workData.productId);
+    const workRef = firestore.collection('works').doc(workData.productId);
     batch.set(workRef, workData, { merge: true });
     result.updates.work = true;
 

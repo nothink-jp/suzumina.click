@@ -894,7 +894,7 @@ const monthlyTrackingFields = [
 
 - ✅ **価格データ収集**: `price`, `official_price`, `discount_rate`, `campaign_id`
 - ✅ **多通貨対応**: `locale_price` フィールド活用（JPY/USD/EUR/CNY/TWD/KRW）
-- ✅ **価格履歴保存**: `dlsiteWorks/{workId}/priceHistory` サブコレクション
+- ✅ **価格履歴保存**: `works/{workId}/priceHistory` サブコレクション
 - ✅ **価格変動検出**: 前日比価格変更・新キャンペーン検出
 - ✅ **データ品質管理**: 二重割引問題修正（RJ01414353）
 

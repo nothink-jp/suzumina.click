@@ -10,7 +10,7 @@
 - ✅ DLsite Individual Info API からのサークル・クリエイター情報抽出
 - ✅ `circles` コレクション実装
 - ✅ `creatorWorkMappings` コレクション実装
-- ✅ `dlsiteWorks` への `circleId` フィールド追加
+- ✅ `works` への `circleId` フィールド追加
 
 ### データ収集システム
 - ✅ `batchCollectCircleAndCreatorInfo` 関数実装

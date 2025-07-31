@@ -73,7 +73,7 @@ export const fetchDLsiteWorksIndividualAPI = async (cloudEvent: CloudEvent<any>)
 
 #### 1.3 保持する機能
 - Individual Info API 取得・統合
-- 基本作品データ保存（`dlsiteWorks`）
+- 基本作品データ保存（`works`）
 - 失敗追跡システム（`failure-tracker.ts`）
 - ローカル補完収集システム
 
@@ -104,7 +104,7 @@ export const fetchDLsiteWorksIndividualAPI = async (cloudEvent: CloudEvent<any>)
 #### 3.1 Firestore コレクション整理
 ```javascript
 // 保持するコレクション
-✅ dlsiteWorks           // 基本作品データ
+✅ works                  // 基本作品データ
 ✅ dlsiteMetadata        // 統合メタデータ  
 ✅ dlsite_failure_log    // 失敗追跡
 ✅ users                 // ユーザーデータ
