@@ -144,7 +144,6 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = var.google_tag_manager_id
       }
 
-
       # Resend API Key (Secret Managerから取得)
       env {
         name = "RESEND_API_KEY"
