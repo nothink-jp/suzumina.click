@@ -41,34 +41,25 @@
 
 ### Phase 1: 即効性のある改善（1-2週間）
 
-#### 1.1 差分更新モードの実装
-```typescript
-// 実装概要
-export async function fetchDLsiteUnifiedData() {
-  const mode = determineUpdateMode();
-  
-  switch (mode) {
-    case 'daily-incremental':     // 日次: 新作品 + 人気作品の価格
-    case 'weekly-full':           // 週次: 全作品の価格履歴
-    case 'monthly-complete':      // 月次: 完全更新
-  }
-}
+#### 1.1 差分更新モードの実装 ❌ (スキップ: YAGNI原則により不要と判断)
+```
+理由:
+- 現在の全件更新（5分）はCloud Functions制限（9分）内で問題なく動作
+- 1時間ごとの更新で即応性は十分確保
+- 月額コスト$0.29は既に十分低い
+- 複雑性を増すだけで実際の問題を解決しない
 ```
 
-**期待効果**:
-- 日次処理時間: 5分 → 1-2分（80%削減）
-- API呼び出し: 1,500件 → 200件（87%削減）
-- コスト: 月額$0.29 → $0.06（80%削減）
-
-#### 1.2 バッチサイズ最適化
+#### 1.2 バッチサイズ最適化 ✅ (完了: PR #138)
 ```typescript
 const BATCH_SIZE = 50; // 100 → 50に削減
 const MAX_CONCURRENT_API_REQUESTS = 3; // 6 → 3に削減
 ```
 
-**期待効果**:
+**実装済み効果**:
 - エラー率の低下
 - 処理の安定性向上
+- API制限エラーの減少
 
 ### Phase 2: データ構造とユーティリティ関数の改善（2-3週間）
 
@@ -593,14 +584,344 @@ Files:
 - [x] PR #2: 人気作品の価格チェック機能 - **スキップ（YAGNI原則）**
 
 ### Phase 2: データ正規化
-- [x] PR #4: Circleデータ構造の正規化 - **完了・PR作成済み (PR #139)**
-- [ ] PR #5: Creatorマッピングの正規化
-- [ ] PR #6: 統合更新処理の実装
-- [ ] PR #7: マイグレーションスクリプト
-- [ ] PR #8: workCount再集計機能
+- [x] PR #4: Circleデータ構造の正規化 - **完了・マージ済み (PR #139)**
+- [x] PR #5: Creatorマッピングの正規化 - **完了・PR作成済み (PR #140)**
+  - サブコレクション構造での実装
+  - Collection Group Queryによる性能最適化
+  - 既存のcreatorWorkMappingsコレクションからの移行完了
+- [ ] PR #6: 統合更新処理の最適化（再設計）
+- [ ] PR #8: データ整合性検証機能
 
-### Phase 3: 並列処理・監視
-- [ ] PR #9: Cloud Tasks並列処理
-- [ ] PR #10: 監視・アラート設定
+### 削除されたタスク
+- ~~PR #7: マイグレーションスクリプト~~ （データ構造の作り直しで不要に）
+- ~~PR #9: Cloud Tasks並列処理~~ （実装量が大きくスコープから除外）
+- ~~PR #10: 監視・アラート設定~~ （実装量が大きくスコープから除外）
 
-**最終更新**: 2025-07-29
+**最終更新**: 2025-07-30
+
+## PR #6: 統合更新処理の最適化（再設計）
+
+### 重要な前提
+- **更新頻度は変更しない**: 現在の1時間ごとの更新を維持
+- **即応性は現状維持**: 新作品や価格変更を1時間以内に反映
+- **目的は処理の質の改善**: エラー追跡、整合性、保守性の向上
+
+### 現状の問題点
+1. **ビジネスロジックの分散**: Work、Circle、Creatorの更新処理が異なる場所に散在
+2. **エラーハンドリングの不統一**: 各処理で独自のエラーハンドリング
+3. **トランザクションの欠如**: データ整合性が保証されていない
+4. **重複処理**: 同じAPIデータから複数回情報を抽出
+
+### 設計方針
+1. **単一責任の原則**: 1つの関数で1つのAPIデータから全ての更新を行う
+2. **原子性の保証**: 可能な限りトランザクションで整合性を保証
+3. **エラーの集約**: 統一されたエラーハンドリング
+4. **パフォーマンス**: 差分チェックで無駄な更新をスキップ
+
+### 実装案
+
+```typescript
+// apps/functions/src/services/dlsite/unified-data-processor.ts
+
+interface ProcessingResult {
+  workId: string;
+  success: boolean;
+  updates: {
+    work: boolean;
+    circle: boolean;
+    creators: boolean;
+    priceHistory: boolean;
+  };
+  errors: string[];
+}
+
+/**
+ * DLsite APIデータから全ての関連データを統合的に更新
+ * 
+ * この関数が責任を持つこと:
+ * 1. Workデータの更新
+ * 2. Circleデータの更新（workIds配列の管理）
+ * 3. Creatorマッピングの更新（差分更新）
+ * 4. 価格履歴の記録
+ */
+export async function processUnifiedDLsiteData(
+  apiData: DLsiteRawApiResponse,
+  options?: {
+    skipPriceHistory?: boolean;
+    forceUpdate?: boolean;
+  }
+): Promise<ProcessingResult> {
+  const result: ProcessingResult = {
+    workId: apiData.workno,
+    success: false,
+    updates: {
+      work: false,
+      circle: false,
+      creators: false,
+      priceHistory: false,
+    },
+    errors: [],
+  };
+
+  try {
+    // 1. APIデータをWorkDocumentに変換
+    const workData = WorkMapper.toWork(apiData);
+    
+    // 2. 既存データの存在確認（スキップ判定用）
+    if (!options?.forceUpdate) {
+      const existingWork = await getWorkFromFirestore(workData.productId);
+      if (existingWork && !hasSignificantChanges(existingWork, workData)) {
+        logger.debug(`作品 ${workData.productId} は変更なしのためスキップ`);
+        result.success = true;
+        return result;
+      }
+    }
+
+    // 3. バッチ処理で全て更新（部分的なトランザクション）
+    const batch = firestore.batch();
+    
+    // 3.1 Work更新
+    const workRef = firestore.collection('dlsiteWorks').doc(workData.productId);
+    batch.set(workRef, workData, { merge: true });
+    result.updates.work = true;
+
+    // 3.2 Circle更新（別バッチだが連続実行）
+    await updateCircleWithWork(
+      apiData.maker_id,
+      workData.productId,
+      apiData.maker_name,
+      apiData.maker_name_en
+    );
+    result.updates.circle = true;
+
+    // バッチコミット
+    await batch.commit();
+
+    // 4. Creator更新（サブコレクション操作のため別処理）
+    const creatorResult = await updateCreatorWorkMapping(apiData, workData.productId);
+    if (creatorResult.success) {
+      result.updates.creators = true;
+    } else if (creatorResult.error) {
+      result.errors.push(`Creator更新エラー: ${creatorResult.error}`);
+    }
+
+    // 5. 価格履歴（オプション）
+    if (!options?.skipPriceHistory) {
+      try {
+        await savePriceHistory(workData.productId, apiData);
+        result.updates.priceHistory = true;
+      } catch (error) {
+        result.errors.push(`価格履歴エラー: ${error}`);
+      }
+    }
+
+    result.success = result.errors.length === 0;
+    
+  } catch (error) {
+    result.errors.push(`統合処理エラー: ${error instanceof Error ? error.message : String(error)}`);
+    logger.error(`統合データ処理エラー: ${apiData.workno}`, { error });
+  }
+
+  return result;
+}
+
+/**
+ * 重要な変更があるかチェック
+ */
+function hasSignificantChanges(
+  existing: WorkDocument,
+  updated: WorkDocument
+): boolean {
+  // 価格変更
+  if (existing.price.current !== updated.price.current) return true;
+  
+  // タイトル変更
+  if (existing.title !== updated.title) return true;
+  
+  // 販売状態変更
+  if (existing.salesStatus.isOnSale !== updated.salesStatus.isOnSale) return true;
+  
+  // 評価の大幅な変更
+  if (Math.abs((existing.rating?.stars || 0) - (updated.rating?.stars || 0)) > 2) return true;
+  
+  return false;
+}
+```
+
+### エンドポイントの更新
+
+```typescript
+// apps/functions/src/endpoints/dlsite-individual-info-api.ts の修正
+
+async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
+  // ... 既存の作品ID収集処理 ...
+
+  // バッチ処理の実行
+  for (const batch of batches) {
+    const batchResults = await batchFetchIndividualInfo(batch, {
+      maxConcurrent: MAX_CONCURRENT_API_REQUESTS,
+      batchDelay: config.requestDelay,
+    });
+
+    // 統合処理の実行
+    const processingPromises = Array.from(batchResults.entries()).map(
+      async ([workId, apiData]) => {
+        const result = await processUnifiedDLsiteData(apiData, {
+          skipPriceHistory: false, // 全て更新
+          forceUpdate: false,      // 差分チェックあり
+        });
+        
+        if (!result.success) {
+          logger.warn(`作品処理警告: ${workId}`, { errors: result.errors });
+        }
+        
+        return result;
+      }
+    );
+
+    const results = await Promise.allSettled(processingPromises);
+    
+    // 結果の集計
+    results.forEach((result) => {
+      if (result.status === 'fulfilled' && result.value.success) {
+        successCount++;
+      } else {
+        failureCount++;
+      }
+    });
+  }
+
+  // ... 後続処理 ...
+}
+```
+
+### メリット
+1. **コードの集約**: 1つのAPIデータから全ての更新を1箇所で実行
+2. **エラーの可視化**: どの更新が失敗したか明確
+3. **柔軟性**: オプションで特定の更新をスキップ可能
+4. **保守性**: 更新ロジックが1箇所に集約
+
+## PR #8: データ整合性検証機能（再設計）
+
+### 位置づけ
+- **通常の更新処理（1時間ごと）とは独立した補完機能**
+- **週次で実行し、データの正確性を保証**
+- **即応性には影響しない**
+
+### 目的
+- 定期的にデータの整合性をチェック
+- 不整合を検出して修正
+- システムの健全性を維持
+
+### 実装案
+
+```typescript
+// apps/functions/src/endpoints/data-integrity-check.ts
+
+interface IntegrityCheckResult {
+  timestamp: string;
+  checks: {
+    circleWorkCounts: {
+      checked: number;
+      mismatches: number;
+      fixed: number;
+    };
+    orphanedCreators: {
+      checked: number;
+      found: number;
+      cleaned: number;
+    };
+    workCircleConsistency: {
+      checked: number;
+      mismatches: number;
+      fixed: number;
+    };
+  };
+  totalIssues: number;
+  totalFixed: number;
+}
+
+export const checkDataIntegrity = functions.pubsub
+  .schedule('0 3 * * 0') // 毎週日曜日 3:00 JST
+  .timeZone('Asia/Tokyo')
+  .onRun(async (context) => {
+    const result: IntegrityCheckResult = {
+      timestamp: new Date().toISOString(),
+      checks: {
+        circleWorkCounts: { checked: 0, mismatches: 0, fixed: 0 },
+        orphanedCreators: { checked: 0, found: 0, cleaned: 0 },
+        workCircleConsistency: { checked: 0, mismatches: 0, fixed: 0 },
+      },
+      totalIssues: 0,
+      totalFixed: 0,
+    };
+
+    // 1. CircleのworkIds配列の整合性チェック
+    await checkCircleWorkCounts(result);
+    
+    // 2. 孤立したCreatorマッピングのクリーンアップ
+    await checkOrphanedCreators(result);
+    
+    // 3. Work-Circle相互参照の整合性
+    await checkWorkCircleConsistency(result);
+
+    // 結果をログとFirestoreに保存
+    await saveIntegrityCheckResult(result);
+    
+    logger.info('データ整合性チェック完了', result);
+  });
+```
+
+### Terraform設定
+
+```hcl
+# terraform/scheduler_data_integrity.tf
+
+resource "google_cloud_scheduler_job" "data_integrity_check" {
+  name        = "data-integrity-check"
+  description = "週次データ整合性チェック"
+  schedule    = "0 3 * * 0"
+  time_zone   = "Asia/Tokyo"
+  
+  pubsub_target {
+    topic_name = google_pubsub_topic.data_integrity.id
+    data       = base64encode(jsonencode({
+      task = "check_data_integrity"
+    }))
+  }
+}
+```
+
+## 実装優先順位（更新）
+
+1. **PR #6: 統合更新処理の最適化**（1週間）
+   - 既存の分散したロジックを統合
+   - エラーハンドリングの改善
+   - 差分チェックによる効率化
+   - **1時間ごとの更新頻度は変更なし**
+
+2. **PR #8: データ整合性検証機能**（3-4日）
+   - 週次の自動チェック（通常の更新とは別）
+   - 不整合の自動修正
+   - レポート機能
+
+## まとめ
+
+### 現在の運用
+- **1時間ごと**: `fetchDLsiteUnifiedData`が全作品データを更新（約5分）
+- **コスト**: 月額約$0.29（十分に低い）
+- **即応性**: 新作品や価格変更を1時間以内に反映
+
+### 改善後の運用
+- **1時間ごと**: 同じ頻度だが、より効率的で信頼性の高い処理
+  - 統合された更新処理（PR #6）
+  - 差分チェックで無駄な更新をスキップ
+  - エラー追跡の改善
+- **週次**: データ整合性チェック（PR #8）
+  - 通常の更新とは独立
+  - データの正確性を保証
+
+### 削除された提案
+- 日次・週次・月次の差分更新モード → YAGNI原則により不要と判断
+- Cloud Tasks並列処理 → 実装量が大きくスコープから除外
+- 監視・アラート設定 → 実装量が大きくスコープから除外
