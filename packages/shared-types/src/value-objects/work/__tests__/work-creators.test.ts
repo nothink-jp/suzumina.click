@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type CreatorInfo, WorkCreators } from "../work-creators";
+import { WorkCreators } from "../work-creators";
 
 describe("WorkCreators", () => {
 	// Helper to create sample creators

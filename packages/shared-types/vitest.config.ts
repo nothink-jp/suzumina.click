@@ -15,6 +15,8 @@ export default defineConfig({
 				"**/*.config.{js,ts,mjs,cjs,mts,cts}",
 				"**/index.ts", // re-export only
 				"dist/**", // compiled output
+				"**/types/firestore/**", // firestore type definitions only
+				"**/plain-objects/**", // plain object types only
 			],
 			thresholds: {
 				statements: 80,

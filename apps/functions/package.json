@@ -19,7 +19,8 @@
 		"tools:stats": "dotenv -e .env -- tsx src/tools/run-tools.ts stats",
 		"tools:report": "dotenv -e .env -- tsx src/tools/run-tools.ts report",
 		"tools:reset": "dotenv -e .env -- tsx src/tools/run-tools.ts reset",
-		"tools:help": "dotenv -e .env -- tsx src/tools/run-tools.ts help"
+		"tools:help": "dotenv -e .env -- tsx src/tools/run-tools.ts help",
+		"check:integrity": "dotenv -e .env -- tsx src/tools/core/run-data-integrity-check.ts"
 	},
 	"main": "lib/endpoints/index.js",
 	"engines": {

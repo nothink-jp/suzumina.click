@@ -91,6 +91,16 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": ["**/data-integrity-check.ts"],
+			"linter": {
+				"rules": {
+					"complexity": {
+						"noExcessiveCognitiveComplexity": "off"
+					}
+				}
+			}
 		}
 	]
 }
