@@ -46,7 +46,7 @@ export async function savePriceHistory(
 
 		// サブコレクション参照
 		const priceHistoryRef = firestore
-			.collection("dlsiteWorks")
+			.collection("works")
 			.doc(workId)
 			.collection("priceHistory")
 			.doc(today as string);

@@ -68,7 +68,7 @@ async function getWorks(
 		const firestore = getFirestore();
 
 		// 総件数を取得
-		const totalSnap = await firestore.collection("dlsiteWorks").get();
+		const totalSnap = await firestore.collection("works").get();
 		const totalCount = totalSnap.size;
 
 		// ページング計算
@@ -80,11 +80,7 @@ async function getWorks(
 		const actualOffset = (currentPage - 1) * limit;
 
 		// データ取得（ソートなしで安全に取得）
-		const worksSnap = await firestore
-			.collection("dlsiteWorks")
-			.offset(actualOffset)
-			.limit(limit)
-			.get();
+		const worksSnap = await firestore.collection("works").offset(actualOffset).limit(limit).get();
 
 		const works = worksSnap.docs.map((doc) => {
 			const data = doc.data();
@@ -156,7 +152,7 @@ function formatPrice(price: {
 async function calculateStats() {
 	try {
 		const firestore = getFirestore();
-		const allWorksSnap = await firestore.collection("dlsiteWorks").get();
+		const allWorksSnap = await firestore.collection("works").get();
 
 		const allWorks = allWorksSnap.docs.map((doc) => {
 			const data = doc.data();

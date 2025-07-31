@@ -24,7 +24,7 @@ export async function getPriceHistory(
 		// サブコレクション参照
 		const firestore = getFirestore();
 		let query = firestore
-			.collection("dlsiteWorks")
+			.collection("works")
 			.doc(workId)
 			.collection("priceHistory")
 			.orderBy("date", "desc");

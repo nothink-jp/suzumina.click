@@ -152,7 +152,7 @@ export async function getCreatorWorks(creatorId: string): Promise<WorkPlainObjec
 		// Firestoreの whereIn 制限により、一度に10件まで
 		for (let i = 0; i < workIds.length; i += 10) {
 			const batch = workIds.slice(i, i + 10);
-			const workRefs = batch.map((id) => firestore.collection("dlsiteWorks").doc(id));
+			const workRefs = batch.map((id) => firestore.collection("works").doc(id));
 			const workDocs = await firestore.getAll(...workRefs);
 
 			for (const doc of workDocs) {
@@ -229,7 +229,7 @@ export async function getCreatorWorksWithPagination(
 		// Firestoreの whereIn 制限により、一度に10件まで
 		for (let i = 0; i < workIds.length; i += 10) {
 			const batch = workIds.slice(i, i + 10);
-			const workRefs = batch.map((id) => firestore.collection("dlsiteWorks").doc(id));
+			const workRefs = batch.map((id) => firestore.collection("works").doc(id));
 			const workDocs = await firestore.getAll(...workRefs);
 
 			for (const doc of workDocs) {

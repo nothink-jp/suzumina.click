@@ -30,7 +30,7 @@ export async function updateWork(workId: string, data: UpdateWorkData): Promise<
 		}
 
 		const firestore = getFirestore();
-		const workRef = firestore.collection("dlsiteWorks").doc(workId);
+		const workRef = firestore.collection("works").doc(workId);
 
 		// 作品の存在確認
 		const workDoc = await workRef.get();
@@ -90,7 +90,7 @@ export async function deleteWork(workId: string): Promise<ActionResult> {
 		const firestore = getFirestore();
 
 		// 作品の存在確認
-		const workRef = firestore.collection("dlsiteWorks").doc(workId);
+		const workRef = firestore.collection("works").doc(workId);
 		const workDoc = await workRef.get();
 		if (!workDoc.exists) {
 			return {

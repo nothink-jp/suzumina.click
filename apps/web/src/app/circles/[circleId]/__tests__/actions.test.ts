@@ -358,7 +358,7 @@ describe("Circle page server actions", () => {
 						}),
 					};
 				}
-				if (collectionName === "dlsiteWorks") {
+				if (collectionName === "works") {
 					return {
 						get: vi.fn().mockResolvedValue({
 							empty: false,
@@ -404,7 +404,7 @@ describe("Circle page server actions", () => {
 						}),
 					};
 				}
-				if (collectionName === "dlsiteWorks") {
+				if (collectionName === "works") {
 					return {
 						get: vi.fn().mockResolvedValue({
 							empty: true,
@@ -463,7 +463,7 @@ describe("Circle page server actions", () => {
 						}),
 					};
 				}
-				if (collectionName === "dlsiteWorks") {
+				if (collectionName === "works") {
 					return {
 						get: vi.fn().mockRejectedValue(new Error("Firestore error")),
 					};
@@ -580,7 +580,7 @@ describe("Circle page server actions", () => {
 						}),
 					};
 				}
-				if (collectionName === "dlsiteWorks") {
+				if (collectionName === "works") {
 					return {
 						get: vi.fn().mockResolvedValue({
 							empty: false,
@@ -682,7 +682,7 @@ describe("Circle page server actions", () => {
 						}),
 					};
 				}
-				if (collectionName === "dlsiteWorks") {
+				if (collectionName === "works") {
 					return {
 						get: vi.fn().mockResolvedValue({
 							empty: false,

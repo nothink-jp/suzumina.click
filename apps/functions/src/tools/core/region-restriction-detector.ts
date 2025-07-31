@@ -148,7 +148,7 @@ class RegionRestrictionDetector {
 		},
 	): Promise<void> {
 		try {
-			const workRef = firestore.collection("dlsiteWorks").doc(workId);
+			const workRef = firestore.collection("works").doc(workId);
 			await workRef.update(restrictionData);
 			// 作品フラグ更新ログは省略（ログ削減）
 		} catch (error) {
@@ -156,7 +156,7 @@ class RegionRestrictionDetector {
 				// ドキュメントが存在しない場合は作成
 				// 作品ドキュメント作成ログは省略（ログ削減）
 				await firestore
-					.collection("dlsiteWorks")
+					.collection("works")
 					.doc(workId)
 					.set({
 						productId: workId,

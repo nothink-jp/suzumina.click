@@ -373,7 +373,7 @@ describe("works actions", () => {
 			expect(result).toBeTruthy();
 			expect(result?.productId).toBe("RJ123456");
 			expect(result?.title).toBe("テスト作品");
-			expect(mockCollection).toHaveBeenCalledWith("dlsiteWorks");
+			expect(mockCollection).toHaveBeenCalledWith("works");
 			expect(mockDoc).toHaveBeenCalledWith("RJ123456");
 		});
 
