@@ -21,15 +21,15 @@ locals {
       enable_custom_domain   = false  # staging用ドメイン不要
     }
     production = {
-      # 本番環境（個人利用レベル・安定性重視）
-      cloud_run_min_instances = 0     # プレリリース・コスト最適化（コールドスタート許容）
-      cloud_run_max_instances = 2     # 個人開発・軽量トラフィック対応
-      cloud_run_cpu          = "1000m" # プレリリース・コスト最適化
-      cloud_run_memory       = "1Gi"   # プレリリース・最小構成
+      # 本番環境（個人利用レベル・コスト最適化強化）
+      cloud_run_min_instances = 0     # コールドスタート許容
+      cloud_run_max_instances = 2     # 最大インスタンス数を制限
+      cloud_run_cpu          = "500m"  # CPU削減（0.5vCPU）
+      cloud_run_memory       = "512Mi" # メモリ削減（512MB）
       functions_memory        = "256Mi"  # YouTube API軽量処理用に最適化
       functions_timeout       = 120     # API呼び出し最適化
       functions_enabled       = true   # 本番では有効
-      budget_amount          = 2000   # プレリリース・コスト最適化（約2000円/月）
+      budget_amount          = 5000   # 月額5000円制限
       enable_monitoring      = true   # フル監視
       enable_custom_domain   = true   # 本番ドメイン
     }

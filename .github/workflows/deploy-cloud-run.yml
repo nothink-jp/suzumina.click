@@ -190,10 +190,10 @@ jobs:
             --service-account="cloud-run-nextjs@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
             --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},NEXTAUTH_URL=https://suzumina.click,AUTH_TRUST_HOST=true,NEXT_PUBLIC_GA_MEASUREMENT_ID=G-9SYZ48LBPH,NEXT_PUBLIC_GTM_ID=GTM-W7QT5PCR,NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-8077945848616354,ENABLE_ENTITY_V2=true" \
             --set-secrets="DISCORD_CLIENT_ID=DISCORD_CLIENT_ID:latest,DISCORD_CLIENT_SECRET=DISCORD_CLIENT_SECRET:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,YOUTUBE_API_KEY=YOUTUBE_API_KEY:latest,RESEND_API_KEY=RESEND_API_KEY:latest,CONTACT_EMAIL_RECIPIENTS=CONTACT_EMAIL_RECIPIENTS:latest" \
-            --memory 2Gi \
-            --cpu 1 \
+            --memory 512Mi \
+            --cpu 0.5 \
             --min-instances 0 \
-            --max-instances 10 \
+            --max-instances 2 \
             --timeout 300 \
             --port 8080
 
