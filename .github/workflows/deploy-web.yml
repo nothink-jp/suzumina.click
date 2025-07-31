@@ -208,8 +208,14 @@ jobs:
           for i in {1..10}; do
             echo "Health check attempt $i/10..."
             
-            # Use longer timeout for curl (10 seconds)
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$NEW_REVISION_URL/api/health" || echo "000")
+            # Debug: Show the actual health check URL
+            HEALTH_CHECK_URL="$NEW_REVISION_URL/api/health"
+            echo "Checking URL: $HEALTH_CHECK_URL"
+            
+            # Use longer timeout for curl (10 seconds) and capture response
+            RESPONSE=$(curl -s --max-time 10 -w "\n%{http_code}" "$HEALTH_CHECK_URL" 2>&1 || echo -e "\n000")
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | head -n-1)
             
             if [ "$HTTP_CODE" = "200" ]; then
               echo "✅ Health check passed on new revision"
@@ -243,12 +249,26 @@ jobs:
               exit 1
             else
               echo "❌ Health check failed (HTTP $HTTP_CODE)"
+              if [ -n "$BODY" ]; then
+                echo "Response body: $BODY"
+              fi
+              
+              # Get the latest revision name properly
+              REVISION_NAME=$(gcloud run revisions list \
+                --service ${{ env.SERVICE_NAME }} \
+                --region ${{ env.REGION }} \
+                --format 'value(metadata.name)' \
+                --limit 1)
               
               # Check if the revision exists and is serving
-              REVISION_STATUS=$(gcloud run revisions describe $(basename $NEW_REVISION_URL) \
-                --region ${{ env.REGION }} \
-                --format 'value(status.conditions[0].message)' 2>/dev/null || echo "Revision not found")
-              echo "Revision status: $REVISION_STATUS"
+              if [ -n "$REVISION_NAME" ]; then
+                REVISION_STATUS=$(gcloud run revisions describe $REVISION_NAME \
+                  --region ${{ env.REGION }} \
+                  --format 'value(status.conditions[0].message)' 2>/dev/null || echo "Failed to get status")
+                echo "Revision $REVISION_NAME status: $REVISION_STATUS"
+              else
+                echo "Failed to get revision name"
+              fi
               
               # Exponential backoff for retries
               if [ $i -le 5 ]; then
