@@ -1,0 +1,310 @@
+name: Deploy Web
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/web/**'
+      - 'packages/shared-types/**'
+      - 'packages/ui/**'
+      - '.github/workflows/deploy-web.yml'
+  
+  # Manual triggering
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: asia-northeast1
+  SERVICE_NAME: suzumina-click-web
+  REPOSITORY: suzumina-click-web
+  IMAGE_NAME: web
+
+jobs:
+  check-pr-status:
+    name: Check PR Status
+    runs-on: ubuntu-latest
+    outputs:
+      skip-checks: ${{ steps.check.outputs.skip-checks }}
+    steps:
+      - name: Check if from merged PR
+        id: check
+        run: |
+          # PRマージによるコミットの場合、すでにPRチェックで検証済み
+          if [[ "${{ github.event.head_commit.message }}" =~ ^Merge\ pull\ request ]]; then
+            echo "skip-checks=true" >> $GITHUB_OUTPUT
+            echo "✅ PR already validated, skipping redundant checks"
+          else
+            echo "skip-checks=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Direct push detected, full checks required"
+          fi
+
+  pre-deploy-checks:
+    name: Pre-deploy Checks
+    runs-on: ubuntu-latest
+    needs: check-pr-status
+    if: needs.check-pr-status.outputs.skip-checks == 'false'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Quick validation
+        run: |
+          echo "🧪 Running quick validation for direct push..."
+          
+          # Build dependencies
+          pnpm --filter @suzumina.click/shared-types build
+          
+          # Run critical checks in parallel
+          pnpm --filter @suzumina.click/web typecheck &
+          TYPECHECK_PID=$!
+          
+          pnpm --filter @suzumina.click/web test:critical --run &
+          TEST_PID=$!
+          
+          # Wait for results
+          if wait $TYPECHECK_PID; then
+            echo "✅ TypeScript check passed"
+          else
+            echo "❌ TypeScript check failed"
+            exit 1
+          fi
+          
+          if wait $TEST_PID; then
+            echo "✅ Critical tests passed"
+          else
+            echo "❌ Critical tests failed"
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    needs: [check-pr-status, pre-deploy-checks]
+    if: always() && !failure() && !cancelled()
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Enable Corepack
+        run: corepack enable
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      # Cache Next.js build
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'pnpm-lock.yaml') }}-${{ hashFiles('apps/web/**/*.ts', 'apps/web/**/*.tsx', 'apps/web/**/*.js', 'apps/web/**/*.jsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-
+      
+      # Build shared packages
+      - name: Build shared packages
+        run: |
+          echo "🔨 Building shared packages..."
+          pnpm --filter @suzumina.click/shared-types build
+          echo "✅ Shared packages built successfully"
+      
+      # Google Cloud authentication
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+      
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+      
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      # Build and push Docker image
+      - name: Build and push Docker image
+        run: |
+          # Generate image tags
+          IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          LATEST_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest"
+          CACHE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:cache"
+          
+          # Build with cache
+          docker buildx build \
+            --platform linux/amd64 \
+            --file apps/web/Dockerfile \
+            --tag $IMAGE_TAG \
+            --tag $LATEST_TAG \
+            --cache-from type=registry,ref=$CACHE_TAG \
+            --cache-to type=registry,ref=$CACHE_TAG,mode=max \
+            --push \
+            .
+          
+          echo "✅ Docker image built and pushed"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+      
+      # Deploy to Cloud Run
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.IMAGE_TAG }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --service-account="cloud-run-nextjs@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+            --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},NEXTAUTH_URL=https://suzumina.click,AUTH_TRUST_HOST=true,NEXT_PUBLIC_GA_MEASUREMENT_ID=G-9SYZ48LBPH,NEXT_PUBLIC_GTM_ID=GTM-W7QT5PCR,NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-8077945848616354,ENABLE_ENTITY_V2=true" \
+            --set-secrets="DISCORD_CLIENT_ID=DISCORD_CLIENT_ID:latest,DISCORD_CLIENT_SECRET=DISCORD_CLIENT_SECRET:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,YOUTUBE_API_KEY=YOUTUBE_API_KEY:latest,RESEND_API_KEY=RESEND_API_KEY:latest,CONTACT_EMAIL_RECIPIENTS=CONTACT_EMAIL_RECIPIENTS:latest" \
+            --memory 512Mi \
+            --cpu 0.5 \
+            --min-instances 0 \
+            --max-instances 2 \
+            --timeout 300 \
+            --port 8080
+
+      # Configure public access
+      - name: Configure public access
+        run: |
+          echo "Configuring public access..."
+          
+          # Add IAM policy binding
+          gcloud run services add-iam-policy-binding ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --member="allUsers" \
+            --role="roles/run.invoker"
+      
+      # Health check
+      - name: Health check
+        run: |
+          # Get service URL
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --format 'value(status.address.url)')
+          
+          echo "Service URL: $SERVICE_URL"
+          
+          # Wait for deployment
+          echo "Waiting for deployment..."
+          sleep 30
+          
+          # Health check with retries
+          HEALTH_URL="https://suzumina.click/api/health"
+          
+          for i in {1..5}; do
+            echo "Health check attempt $i/5..."
+            
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ Health check passed"
+              curl -s "$HEALTH_URL" | jq '.' || echo "Response received"
+              exit 0
+            else
+              echo "❌ Health check failed (HTTP $HTTP_CODE)"
+              sleep 10
+            fi
+          done
+          
+          echo "❌ Health check failed after 5 attempts"
+          exit 1
+      
+      # Cleanup
+      - name: Cleanup old resources
+        run: |
+          echo "🧹 Cleaning up old resources..."
+          
+          # Cloud Run revisions
+          REVISIONS=$(gcloud run revisions list \
+            --service="${{ env.SERVICE_NAME }}" \
+            --region="${{ env.REGION }}" \
+            --sort-by="~metadata.creationTimestamp" \
+            --format="value(metadata.name)" \
+            --limit=10)
+          
+          if [ -n "$REVISIONS" ]; then
+            REVISION_ARRAY=($REVISIONS)
+            TOTAL=${#REVISION_ARRAY[@]}
+            
+            if [ $TOTAL -gt 3 ]; then
+              for ((i=3; i<TOTAL; i++)); do
+                echo "Deleting revision: ${REVISION_ARRAY[$i]}"
+                gcloud run revisions delete "${REVISION_ARRAY[$i]}" \
+                  --region="${{ env.REGION }}" \
+                  --quiet || true
+              done
+            fi
+          fi
+          
+          # Docker images
+          IMAGES=$(gcloud artifacts docker images list \
+            "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}" \
+            --sort-by="CREATE_TIME" \
+            --format="value(IMAGE)" \
+            --limit=20)
+          
+          if [ -n "$IMAGES" ]; then
+            IMAGE_ARRAY=($IMAGES)
+            TOTAL=${#IMAGE_ARRAY[@]}
+            
+            if [ $TOTAL -gt 5 ]; then
+              for ((i=0; i<$((TOTAL-5)); i++)); do
+                echo "Deleting image: ${IMAGE_ARRAY[$i]}"
+                gcloud artifacts docker images delete "${IMAGE_ARRAY[$i]}" \
+                  --delete-tags \
+                  --quiet || true
+              done
+            fi
+          fi
+          
+          echo "✅ Cleanup completed"

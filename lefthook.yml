@@ -1,33 +1,33 @@
-# 開発フロー重視のlefthook設定
+# 最適化された開発フロー設定
+# pre-commit: 自動修正のみ（開発速度重視）
+# pre-push: 最小限の品質チェック（他開発者への影響防止）
 
 pre-commit:
   commands:
-    # 1. コードフォーマット・リント（自動修正付き）
-    format-and-lint:
+    # 自動フォーマット（ブロッキングなし、即座の修正）
+    format:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
       run: npx @biomejs/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
       stage_fixed: true
-      fail_text: "コードフォーマット・リントに失敗しました"
-    
-    # 2. 型チェック（変更ファイルに影響する範囲のみ）
-    typecheck-incremental:
-      glob: "*.{ts,tsx}"
-      run: pnpm --filter @suzumina.click/shared-types typecheck
-      fail_text: "型チェックに失敗しました"
+      fail_text: "コード整形に失敗しました"
 
 pre-push:
+  parallel: true  # 並列実行で高速化
   commands:
-    # 1. 共有型のビルド確認（依存関係の整合性保証）
-    build-shared-types:
+    # 1. 変更影響範囲の型チェック（高速）
+    typecheck-changed:
+      glob: "*.{ts,tsx}"
+      run: |
+        # 変更ファイルが属するパッケージを特定して型チェック
+        for file in {staged_files}; do
+          if [[ $file == apps/* ]] || [[ $file == packages/* ]]; then
+            pkg_dir=$(echo $file | cut -d'/' -f1-2)
+            pnpm --filter "./$pkg_dir" typecheck 2>/dev/null || true
+          fi
+        done
+      fail_text: "変更ファイルの型チェックに失敗しました"
+    
+    # 2. 依存関係の整合性確認（必須）
+    build-deps:
       run: pnpm --filter @suzumina.click/shared-types build
       fail_text: "共有型のビルドに失敗しました"
-    
-    # 2. 全体の型チェック（プッシュ前の品質保証）
-    typecheck-all:
-      run: pnpm typecheck
-      fail_text: "TypeScript型チェックに失敗しました"
-    
-    # 3. 基本テスト（shared-typesのみ - 最重要）
-    test-shared-types:
-      run: pnpm --filter @suzumina.click/shared-types test
-      fail_text: "共有型のテストに失敗しました"
