@@ -1,4 +1,4 @@
-name: Deploy Cloud Functions
+name: Deploy Functions
 
 on:
   push:
@@ -10,13 +10,34 @@ on:
       - '.github/workflows/deploy-functions.yml'
   workflow_dispatch:
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+permissions:
+  contents: read
+  id-token: write
 
+jobs:
+  check-pr-status:
+    name: Check PR Status
+    runs-on: ubuntu-latest
+    outputs:
+      skip-checks: ${{ steps.check.outputs.skip-checks }}
+    steps:
+      - name: Check if from merged PR
+        id: check
+        run: |
+          # PRマージによるコミットの場合、すでにPRチェックで検証済み
+          if [[ "${{ github.event.head_commit.message }}" =~ ^Merge\ pull\ request ]]; then
+            echo "skip-checks=true" >> $GITHUB_OUTPUT
+            echo "✅ PR already validated, skipping redundant checks"
+          else
+            echo "skip-checks=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Direct push detected, full checks required"
+          fi
+
+  pre-deploy-checks:
+    name: Pre-deploy Checks
+    runs-on: ubuntu-latest
+    needs: check-pr-status
+    if: needs.check-pr-status.outputs.skip-checks == 'false'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,14 +56,57 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build shared-types
-        run: pnpm --filter=@suzumina.click/shared-types build
+      - name: Quick validation
+        run: |
+          echo "🧪 Running quick validation for direct push..."
+          
+          # Build shared-types
+          pnpm --filter=@suzumina.click/shared-types build
+          
+          # Run build and test in parallel
+          pnpm --filter=@suzumina.click/functions build &
+          BUILD_PID=$!
+          
+          # Wait for build to complete
+          if wait $BUILD_PID; then
+            echo "✅ Build completed"
+          else
+            echo "❌ Build failed"
+            exit 1
+          fi
+          
+          # Run critical tests
+          NODE_ENV=test pnpm --filter=@suzumina.click/functions test --bail 1
+          echo "✅ Critical tests passed"
 
-      - name: Build functions
-        run: pnpm --filter=@suzumina.click/functions build
+  deploy:
+    name: Deploy Functions
+    runs-on: ubuntu-latest
+    needs: [check-pr-status, pre-deploy-checks]
+    if: always() && !failure() && !cancelled()
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Run tests
-        run: NODE_ENV=test pnpm --filter=@suzumina.click/functions test
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          echo "🔨 Building packages..."
+          pnpm --filter=@suzumina.click/shared-types build
+          pnpm --filter=@suzumina.click/functions build
 
       - name: Authenticate to GCP
         id: 'auth'
@@ -127,20 +191,6 @@ jobs:
           # バケットが存在するかチェック
           if ! gsutil ls gs://$BUCKET_NAME/ &>/dev/null; then
             echo "❌ Error: Deployment bucket does not exist: gs://$BUCKET_NAME"
-            echo "Please create the bucket first using one of these methods:"
-            echo ""
-            echo "1. Using gcloud CLI:"
-            echo "   gcloud storage buckets create gs://$BUCKET_NAME --location=asia-northeast1 --project=${{ secrets.GCP_PROJECT_ID }}"
-            echo ""
-            echo "2. Using Terraform (recommended):"
-            echo "   Add the following resource to your terraform configuration:"
-            echo "   resource \"google_storage_bucket\" \"functions_deployment\" {"
-            echo "     name     = \"$BUCKET_NAME\""
-            echo "     location = \"asia-northeast1\""
-            echo "   }"
-            echo ""
-            echo "3. Using Google Cloud Console:"
-            echo "   Visit https://console.cloud.google.com/storage and create a bucket named '$BUCKET_NAME'"
             exit 1
           else
             echo "✅ Deployment bucket exists: $BUCKET_NAME"
@@ -158,156 +208,83 @@ jobs:
           echo "DEPLOYMENT_SOURCE=gs://$BUCKET_NAME/$ARCHIVE_NAME" >> $GITHUB_ENV
           echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
-      - name: Check and wait for pending operations
+      - name: Deploy functions in parallel
         run: |
-          echo "🔍 Checking for pending Cloud Functions operations..."
+          echo "🚀 Deploying functions in parallel..."
           
-          # 進行中のオペレーションをチェック
-          PENDING_OPS=$(gcloud functions operations list \
-            --region=asia-northeast1 \
-            --project=${{ secrets.GCP_PROJECT_ID }} \
-            --filter="done=false" \
-            --format="value(name)" || echo "")
+          # 各関数のデプロイを並列実行
+          declare -A deploy_pids
           
-          if [ ! -z "$PENDING_OPS" ]; then
-            echo "⏳ Found pending operations, waiting for completion..."
-            echo "$PENDING_OPS"
-            
-            # 最大5分間待機
-            for i in {1..30}; do
-              sleep 10
-              PENDING_OPS=$(gcloud functions operations list \
-                --region=asia-northeast1 \
-                --project=${{ secrets.GCP_PROJECT_ID }} \
-                --filter="done=false" \
-                --format="value(name)" || echo "")
-              
-              if [ -z "$PENDING_OPS" ]; then
-                echo "✅ All pending operations completed"
-                break
-              fi
-              
-              echo "Still waiting... ($i/30)"
-              
-              if [ $i -eq 30 ]; then
-                echo "⚠️ Warning: Some operations are still pending after 5 minutes"
-                echo "Continuing with deployment..."
-              fi
-            done
+          # fetchYouTubeVideos
+          gcloud functions deploy fetchYouTubeVideos \
+            --gen2 \
+            --source ${{ env.DEPLOYMENT_SOURCE }} \
+            --runtime nodejs22 \
+            --entry-point fetchYouTubeVideos \
+            --trigger-topic youtube-video-fetch-trigger \
+            --region asia-northeast1 \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchYouTubeVideos \
+            --memory 256Mi \
+            --timeout 540s \
+            --max-instances 3 \
+            --service-account fetch-youtube-videos-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --quiet &
+          deploy_pids["fetchYouTubeVideos"]=$!
+          
+          # fetchDLsiteUnifiedData
+          gcloud functions deploy fetchDLsiteUnifiedData \
+            --gen2 \
+            --source ${{ env.DEPLOYMENT_SOURCE }} \
+            --runtime nodejs22 \
+            --entry-point fetchDLsiteUnifiedData \
+            --trigger-topic dlsite-individual-api-trigger \
+            --region asia-northeast1 \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteUnifiedData,INDIVIDUAL_INFO_API_ENABLED=true,API_ONLY_MODE=true,MAX_CONCURRENT_API_REQUESTS=5,API_REQUEST_DELAY_MS=500,ENABLE_DATA_VALIDATION=true,MINIMUM_QUALITY_SCORE=80,ENABLE_TIMESERIES_INTEGRATION=true,LOG_LEVEL=info \
+            --memory 256Mi \
+            --timeout 300s \
+            --max-instances 1 \
+            --service-account fetch-dlsite-individual-api-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --quiet &
+          deploy_pids["fetchDLsiteUnifiedData"]=$!
+          
+          # checkDataIntegrity
+          gcloud functions deploy checkDataIntegrity \
+            --gen2 \
+            --source ${{ env.DEPLOYMENT_SOURCE }} \
+            --runtime nodejs22 \
+            --entry-point checkDataIntegrity \
+            --trigger-topic data-integrity-check-trigger \
+            --region asia-northeast1 \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=checkDataIntegrity \
+            --memory 256Mi \
+            --timeout 540s \
+            --max-instances 1 \
+            --service-account data-integrity-check-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --quiet &
+          deploy_pids["checkDataIntegrity"]=$!
+          
+          # 全デプロイの完了を待つ
+          failed=false
+          for func_name in "${!deploy_pids[@]}"; do
+            if wait ${deploy_pids[$func_name]}; then
+              echo "✅ $func_name deployed successfully"
+            else
+              echo "❌ $func_name deployment failed"
+              failed=true
+            fi
+          done
+          
+          if $failed; then
+            echo "❌ Some deployments failed"
+            exit 1
           else
-            echo "✅ No pending operations found"
+            echo "🎉 All functions deployed successfully"
           fi
 
-      - name: Deploy fetchYouTubeVideos function (Gen2)
-        run: |
-          echo "🚀 Deploying fetchYouTubeVideos function (Gen2)..."
-          
-          # リトライロジック付きでデプロイ
-          for attempt in 1 2 3; do
-            echo "Attempt $attempt/3..."
-            
-            if gcloud functions deploy fetchYouTubeVideos \
-              --gen2 \
-              --source ${{ env.DEPLOYMENT_SOURCE }} \
-              --runtime nodejs22 \
-              --entry-point fetchYouTubeVideos \
-              --trigger-topic youtube-video-fetch-trigger \
-              --region asia-northeast1 \
-              --project ${{ secrets.GCP_PROJECT_ID }} \
-              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchYouTubeVideos \
-              --memory 256Mi \
-              --timeout 540s \
-              --max-instances 3 \
-              --service-account fetch-youtube-videos-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
-              --quiet; then
-              echo "✅ fetchYouTubeVideos (Gen2) deployed successfully"
-              break
-            else
-              echo "❌ Deploy failed on attempt $attempt"
-              if [ $attempt -eq 3 ]; then
-                echo "🚨 All retry attempts failed"
-                exit 1
-              fi
-              echo "⏳ Waiting 30 seconds before retry..."
-              sleep 30
-            fi
-          done
-
-
-      - name: Deploy fetchDLsiteUnifiedData function (Gen2)
-        run: |
-          echo "🚀 Deploying fetchDLsiteUnifiedData function (Gen2)..."
-          
-          # リトライロジック付きでデプロイ
-          for attempt in 1 2 3; do
-            echo "Attempt $attempt/3..."
-            
-            if gcloud functions deploy fetchDLsiteUnifiedData \
-              --gen2 \
-              --source ${{ env.DEPLOYMENT_SOURCE }} \
-              --runtime nodejs22 \
-              --entry-point fetchDLsiteUnifiedData \
-              --trigger-topic dlsite-individual-api-trigger \
-              --region asia-northeast1 \
-              --project ${{ secrets.GCP_PROJECT_ID }} \
-              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=fetchDLsiteUnifiedData,INDIVIDUAL_INFO_API_ENABLED=true,API_ONLY_MODE=true,MAX_CONCURRENT_API_REQUESTS=5,API_REQUEST_DELAY_MS=500,ENABLE_DATA_VALIDATION=true,MINIMUM_QUALITY_SCORE=80,ENABLE_TIMESERIES_INTEGRATION=true,LOG_LEVEL=info \
-              --memory 256Mi \
-              --timeout 300s \
-              --max-instances 1 \
-              --service-account fetch-dlsite-individual-api-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
-              --quiet; then
-              echo "✅ fetchDLsiteUnifiedData (Gen2) deployed successfully"
-              break
-            else
-              echo "❌ Deploy failed on attempt $attempt"
-              if [ $attempt -eq 3 ]; then
-                echo "🚨 All retry attempts failed"
-                exit 1
-              fi
-              echo "⏳ Waiting 30 seconds before retry..."
-              sleep 30
-            fi
-          done
-
-      - name: Deploy checkDataIntegrity function (Gen2)
-        run: |
-          echo "🚀 Deploying checkDataIntegrity function (Gen2)..."
-          
-          # リトライロジック付きでデプロイ
-          for attempt in 1 2 3; do
-            echo "Attempt $attempt/3..."
-            
-            if gcloud functions deploy checkDataIntegrity \
-              --gen2 \
-              --source ${{ env.DEPLOYMENT_SOURCE }} \
-              --runtime nodejs22 \
-              --entry-point checkDataIntegrity \
-              --trigger-topic data-integrity-check-trigger \
-              --region asia-northeast1 \
-              --project ${{ secrets.GCP_PROJECT_ID }} \
-              --set-env-vars NODE_ENV=production,FUNCTION_SIGNATURE_TYPE=cloudevent,FUNCTION_TARGET=checkDataIntegrity \
-              --memory 256Mi \
-              --timeout 540s \
-              --max-instances 1 \
-              --service-account data-integrity-check-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
-              --quiet; then
-              echo "✅ checkDataIntegrity (Gen2) deployed successfully"
-              break
-            else
-              echo "❌ Deploy failed on attempt $attempt"
-              if [ $attempt -eq 3 ]; then
-                echo "🚨 All retry attempts failed"
-                exit 1
-              fi
-              echo "⏳ Waiting 30 seconds before retry..."
-              sleep 30
-            fi
-          done
-
-# collectDLsiteTimeseries デプロイは統合アーキテクチャにより廃止
-# fetchDLsiteUnifiedData が時系列データ収集機能を統合実行
-
-      - name: Cleanup deployment artifacts
+      - name: Cleanup
         if: always()
         run: |
           # 一時ファイルを削除
@@ -322,87 +299,55 @@ jobs:
               tail -n +6 | \
               xargs -r gsutil rm || echo "No old files to clean up"
           fi
-
-      - name: Deploy status summary
-        run: |
-          echo "## 🚀 デプロイ結果" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 デプロイされた関数" >> $GITHUB_STEP_SUMMARY
-          echo "- **fetchYouTubeVideos (Gen2)**: ✅ デプロイ完了 (リトライロジック付き)" >> $GITHUB_STEP_SUMMARY
-          echo "  - トリガー: \`youtube-video-fetch-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
-          echo "- **fetchDLsiteUnifiedData (Gen2)**: ✅ デプロイ完了 (統合データ収集・100% API-Only)" >> $GITHUB_STEP_SUMMARY
-          echo "  - トリガー: \`dlsite-individual-api-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
-          echo "  - 機能: 基本データ更新 + 時系列データ収集の統合実行" >> $GITHUB_STEP_SUMMARY
-          echo "- **checkDataIntegrity (Gen2)**: ✅ デプロイ完了 (データ整合性チェック)" >> $GITHUB_STEP_SUMMARY
-          echo "  - トリガー: \`data-integrity-check-trigger\` (Pub/Sub)" >> $GITHUB_STEP_SUMMARY
-          echo "  - 機能: 週次でデータ整合性を検証・修正" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔧 設定情報" >> $GITHUB_STEP_SUMMARY
-          echo "- **プロジェクト**: \`${{ secrets.GCP_PROJECT_ID }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **リージョン**: \`asia-northeast1\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **ランタイム**: \`nodejs22\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **メモリ**: \`512MB\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **タイムアウト**: \`540秒\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **デプロイソース**: \`${{ env.DEPLOYMENT_SOURCE }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🛡️ 改善点" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ デプロイ前にペンディング中のオペレーションをチェック" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ 3回のリトライロジックで信頼性向上" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ 関数デプロイを順次実行して競合を回避" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ 古いリビジョンの自動クリーンアップ（最新5個を保持）" >> $GITHUB_STEP_SUMMARY
-
-      # Cleanup old Cloud Functions revisions
-      - name: Cleanup old Cloud Functions revisions
-        run: |
-          echo "🧹 Cleaning up old Cloud Functions revisions (keeping last 5 versions)"
           
-          # Function names
+          # Cloud Functions リビジョンのクリーンアップ
+          echo "🧹 Cleaning up old Cloud Functions revisions..."
+          
           FUNCTIONS=("fetchyoutubevideos" "fetchdlsiteunifieddata" "checkdataintegrity")
-          KEEP_COUNT=5
+          KEEP_COUNT=3
           
           for function_name in "${FUNCTIONS[@]}"; do
             echo "Processing function: $function_name"
             
-            # Get revisions sorted by creation time (newest first)
             revisions=$(gcloud run revisions list \
               --service="$function_name" \
               --region="asia-northeast1" \
               --project="${{ secrets.GCP_PROJECT_ID }}" \
               --sort-by="~metadata.creationTimestamp" \
               --format="value(metadata.name)" \
-              --limit=20)
+              --limit=10)
             
             if [ -z "$revisions" ]; then
-              echo "No revisions found for $function_name"
               continue
             fi
             
-            # Convert to array
             revision_array=($revisions)
             total_count=${#revision_array[@]}
             
-            echo "Total revisions for $function_name: $total_count"
-            
             if [ $total_count -le $KEEP_COUNT ]; then
-              echo "Revision count is within keep limit, skipping cleanup"
               continue
             fi
             
-            # Delete old revisions
-            deleted=0
             for ((i=KEEP_COUNT; i<total_count; i++)); do
               revision=${revision_array[$i]}
               echo "Deleting revision: $revision"
-              
-              if gcloud run revisions delete "$revision" \
+              gcloud run revisions delete "$revision" \
                 --region="asia-northeast1" \
                 --project="${{ secrets.GCP_PROJECT_ID }}" \
-                --quiet; then
-                deleted=$((deleted + 1))
-              else
-                echo "Failed to delete $revision, but continuing..."
-              fi
+                --quiet || true
             done
-            
-            echo "✅ Deleted $deleted revisions for $function_name"
-          done || true  # Don't fail the entire workflow if cleanup fails
+          done || true
+
+      - name: Deploy summary
+        run: |
+          echo "## 🚀 デプロイ結果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 デプロイされた関数" >> $GITHUB_STEP_SUMMARY
+          echo "- **fetchYouTubeVideos**: ✅ デプロイ完了" >> $GITHUB_STEP_SUMMARY
+          echo "- **fetchDLsiteUnifiedData**: ✅ デプロイ完了" >> $GITHUB_STEP_SUMMARY
+          echo "- **checkDataIntegrity**: ✅ デプロイ完了" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛡️ 最適化の改善点" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ PRマージ時の重複チェック回避" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 並列デプロイで高速化" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 自動クリーンアップ（最新3リビジョンを保持）" >> $GITHUB_STEP_SUMMARY
