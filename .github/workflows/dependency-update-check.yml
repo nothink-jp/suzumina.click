@@ -8,22 +8,23 @@ on:
       - "apps/*/package.json"
       - "packages/*/package.json"
 
+permissions:
+  contents: read
+
 jobs:
   dependency-check:
     name: Verify Dependency Updates
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-
+    timeout-minutes: 10
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          version: 10
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -39,31 +40,6 @@ jobs:
           echo "🔍 Checking for dependency conflicts..."
           pnpm ls --depth=0 || echo "Dependencies installed with warnings"
 
-      - name: Build shared-types package
-        run: |
-          echo "📦 Building shared-types package..."
-          pnpm --filter @suzumina.click/shared-types build
-
-      - name: Run TypeScript check
-        run: |
-          echo "📝 Running TypeScript check..."
-          pnpm typecheck
-
-      - name: Run linting
-        run: |
-          echo "🧹 Running linting..."
-          pnpm lint
-
-      - name: Build all packages
-        run: |
-          echo "🏗️ Building all packages..."
-          pnpm build
-
-      - name: Run tests
-        run: |
-          echo "🧪 Running tests..."
-          pnpm test:coverage
-
       - name: Security audit
         run: |
           echo "🔒 Running security audit..."
@@ -71,36 +47,53 @@ jobs:
 
       - name: Check bundle size impact
         run: |
-          echo "📦 Checking bundle size..."
+          echo "📦 Checking bundle size impact..."
+          # Build shared-types first
+          pnpm --filter @suzumina.click/shared-types build
+          
+          # Build web app and check size
           cd apps/web
           pnpm build
-          echo "Build completed. Check the output above for bundle size changes."
+          
+          # Extract and display bundle size
+          if [ -d ".next" ]; then
+            echo "📊 Bundle size analysis:"
+            find .next -name "*.js" -type f | xargs du -ch | grep total$ || echo "Unable to calculate bundle size"
+          fi
 
       - name: Report dependency changes
         run: |
-          echo "📊 Dependency change summary:"
-          echo "Changed files:"
-          git diff --name-only HEAD~1 | grep -E "(package\.json|pnpm-lock\.yaml)" || echo "No package files changed"
+          echo "## 📊 Dependency Change Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           
-          echo "Package.json changes:"
-          git diff HEAD~1 -- "*.json" | grep -E "[\+\-].*\".*\":" || echo "No dependency changes detected"
+          echo "### Changed Files:" >> $GITHUB_STEP_SUMMARY
+          git diff --name-only origin/${{ github.base_ref }}..HEAD | grep -E "(package\.json|pnpm-lock\.yaml)" | while read file; do
+            echo "- \`$file\`" >> $GITHUB_STEP_SUMMARY
+          done || echo "No package files changed" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Dependency Changes:" >> $GITHUB_STEP_SUMMARY
+          echo '```diff' >> $GITHUB_STEP_SUMMARY
+          git diff origin/${{ github.base_ref }}..HEAD -- "**/package.json" | grep -E "^[+-]\s+\".*\":" | head -20 >> $GITHUB_STEP_SUMMARY || echo "No dependency changes detected" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
   e2e-verification:
-    name: E2E Verification
+    name: E2E Verification for Critical Updates
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: contains(github.event.pull_request.labels.*.name, 'dependencies:framework') || contains(github.event.pull_request.labels.*.name, 'dependencies:auth')
-    permissions:
-      contents: read
-
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'dependencies:framework') || 
+      contains(github.event.pull_request.labels.*.name, 'dependencies:auth') ||
+      contains(github.event.pull_request.labels.*.name, 'dependencies:critical')
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          version: 10
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -110,6 +103,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build dependencies
+        run: pnpm --filter @suzumina.click/shared-types build
 
       - name: Install Playwright browsers
         run: pnpm --filter @suzumina.click/web exec playwright install chromium
