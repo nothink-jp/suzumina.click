@@ -263,6 +263,7 @@ jobs:
             --timeout 540s \
             --max-instances 1 \
             --service-account data-integrity-check-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --ingress-settings internal-only \
             --quiet &
           deploy_pids["checkDataIntegrity"]=$!
           
