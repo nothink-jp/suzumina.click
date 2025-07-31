@@ -83,7 +83,7 @@ describe("checkDataIntegrity", () => {
 
 		// collection().get()のモック
 		mockCollection.mockImplementation((collName: string) => {
-			if (collName === "circles" || collName === "creators" || collName === "works") {
+			if (collName === "circles" || collName === "creators" || collName === "dlsiteWorks") {
 				return {
 					get: vi.fn().mockResolvedValue(emptySnapshot),
 					doc: mockDoc,
@@ -163,7 +163,7 @@ describe("checkDataIntegrity", () => {
 					doc: mockDoc,
 				};
 			}
-			if (collName === "creators" || collName === "works") {
+			if (collName === "creators" || collName === "dlsiteWorks") {
 				return {
 					get: vi.fn().mockResolvedValue(emptySnapshot),
 					doc: vi.fn(() => mockWorkDoc),
@@ -202,7 +202,7 @@ describe("checkDataIntegrity", () => {
 		expect(mockCommit).toHaveBeenCalled();
 	});
 
-	it("孤立したCreatorマッピングを削除する", async () => {
+	it("孤立したCreatorマッピングのチェックは現在無効化されている", async () => {
 		// クリエイターデータのモック
 		const mockCreators = {
 			size: 1,
@@ -240,7 +240,7 @@ describe("checkDataIntegrity", () => {
 
 		// collection()のモック
 		mockCollection.mockImplementation((collName: string) => {
-			if (collName === "circles" || collName === "works") {
+			if (collName === "circles" || collName === "dlsiteWorks") {
 				return {
 					get: vi.fn().mockResolvedValue(emptySnapshot),
 					doc: mockDoc,
@@ -283,8 +283,8 @@ describe("checkDataIntegrity", () => {
 
 		await checkDataIntegrity(mockEvent);
 
-		// work2のマッピングが削除されたことを確認
-		expect(mockDelete).toHaveBeenCalled();
-		expect(mockCommit).toHaveBeenCalled();
+		// 削除が行われていないことを確認（機能が無効化されているため）
+		expect(mockDelete).not.toHaveBeenCalled();
+		expect(mockCommit).not.toHaveBeenCalled();
 	});
 });

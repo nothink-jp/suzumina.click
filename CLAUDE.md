@@ -44,6 +44,11 @@ For detailed project documentation, see [Documentation Index](docs/README.md).
 - Update `docs/reference/domain-object-catalog.md` for entity/value object changes
 - **Check DDD implementation criteria** before creating new entities - see `docs/decisions/architecture/ADR-001-ddd-implementation-guidelines.md`
 
+### 8. CRITICAL NAMING CONVENTIONS
+- **Firestore collection for DLsite works is `dlsiteWorks`** - NOT `works`
+- This naming inconsistency is known but changing would require major migration
+- Always verify collection names when working with Firestore
+
 ---
 
 ## 📚 REFERENCE DOCUMENTATION

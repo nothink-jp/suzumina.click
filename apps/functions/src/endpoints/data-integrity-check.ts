@@ -89,7 +89,7 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult): Promise<void
 		const existingWorkIds: string[] = [];
 		for (const workId of uniqueWorkIds) {
 			const workDoc = await firestore
-				.collection("works")
+				.collection("dlsiteWorks")
 				.doc(workId as string)
 				.get();
 			if (workDoc.exists) {
@@ -132,10 +132,19 @@ async function checkCircleWorkCounts(result: IntegrityCheckResult): Promise<void
 async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void> {
 	logger.info("孤立したCreatorマッピングのチェックを開始");
 
-	const creatorsSnapshot = await firestore.collection("creators").get();
-	const batch = firestore.batch();
-	let batchCount = 0;
+	// 未使用変数: 将来の有効化時に使用予定
+	// @ts-ignore - 将来の有効化時に使用
+	const _creatorsSnapshot = await firestore.collection("creators").get();
+	// @ts-ignore - 将来の有効化時に使用
+	const _batch = firestore.batch();
+	// @ts-ignore - 将来の有効化時に使用
+	const _batchCount = 0;
 
+	// TODO: 全作品収集完了後に有効化
+	// 現在は収集対象が限定的なため、実際には存在する作品が「存在しない」と誤判定される
+	logger.warn("孤立Creatorチェックは現在無効化されています（収集対象が限定的なため）");
+
+	/*
 	for (const creatorDoc of creatorsSnapshot.docs) {
 		result.checks.orphanedCreators.checked++;
 
@@ -144,7 +153,7 @@ async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void
 
 		for (const workMapping of worksSnapshot.docs) {
 			const workId = workMapping.id;
-			const workDoc = await firestore.collection("works").doc(workId).get();
+			const workDoc = await firestore.collection("dlsiteWorks").doc(workId).get();
 
 			if (!workDoc.exists) {
 				logger.warn(`Creator ${creatorDoc.id}: 孤立したマッピング ${workId} を検出`);
@@ -181,6 +190,7 @@ async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void
 	if (batchCount > 0) {
 		await batch.commit();
 	}
+	*/
 
 	logger.info(
 		`孤立Creatorチェック完了: ${result.checks.orphanedCreators.checked}件チェック、${result.checks.orphanedCreators.cleaned}件クリーンアップ`,
@@ -193,7 +203,7 @@ async function checkOrphanedCreators(result: IntegrityCheckResult): Promise<void
 async function checkWorkCircleConsistency(result: IntegrityCheckResult): Promise<void> {
 	logger.info("Work-Circle相互参照の整合性チェックを開始");
 
-	const worksSnapshot = await firestore.collection("works").get();
+	const worksSnapshot = await firestore.collection("dlsiteWorks").get();
 	const batch = firestore.batch();
 	let batchCount = 0;
 
