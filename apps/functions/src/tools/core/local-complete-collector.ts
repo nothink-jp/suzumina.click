@@ -9,14 +9,11 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { DLsiteRawApiResponse, WorkDocument } from "@suzumina.click/shared-types";
+import type { DLsiteRawApiResponse } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../../infrastructure/management/user-agent-manager";
-import { batchCollectCircleAndCreatorInfo } from "../../services/dlsite/collect-circle-creator-info";
-import { saveWorksToFirestore } from "../../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../../services/dlsite/individual-info-api-client";
-import { WorkMapper } from "../../services/mappers/work-mapper";
-import { savePriceHistory } from "../../services/price-history";
+import { processBatchUnifiedDLsiteData } from "../../services/dlsite/unified-data-processor";
 import { chunkArray } from "../../shared/array-utils";
 import * as logger from "../../shared/logger";
 
@@ -68,16 +65,6 @@ interface CollectionError {
 }
 
 /**
- * バッチアップロード結果の型定義
- */
-interface UploadBatchResult {
-	batchIndex: number;
-	successCount: number;
-	errorCount: number;
-	errors: string[];
-}
-
-/**
  * アップロード結果の型定義
  */
 interface UploadResult {
@@ -123,9 +110,8 @@ class LocalDataCollector {
 		uniqueCreators: new Set<string>(),
 	};
 
-	// APIレスポンスとワークデータの保存用（サークル・クリエイター収集のため）
+	// APIレスポンスの保存用（統計収集のため）
 	private apiResponses = new Map<string, DLsiteRawApiResponse>();
-	private workDataMap = new Map<string, WorkDocument>();
 
 	/**
 	 * アセットファイルから作品IDリストを読み込み
@@ -174,13 +160,24 @@ class LocalDataCollector {
 				});
 
 				// 成功データの処理
-				for (const [workId, apiData] of batchResults.entries()) {
-					try {
+				const apiResponses = Array.from(batchResults.values());
+
+				// 統合処理を使用
+				const processingResults = await processBatchUnifiedDLsiteData(apiResponses, {
+					skipPriceHistory: false, // 価格履歴も含めて全て更新
+					forceUpdate: false, // 差分チェックあり
+				});
+
+				// 結果の集計
+				for (const [index, [workId, apiData]] of Array.from(batchResults.entries()).entries()) {
+					const processingResult = processingResults[index];
+
+					if (processingResult && processingResult.success) {
 						const localData: LocalCollectedWorkData = {
 							workId,
 							collectedAt: new Date().toISOString(),
 							collectionMethod: "INDIVIDUAL_API",
-							basicInfo: apiData, // 後でマッピング処理
+							basicInfo: apiData,
 							metadata: {
 								collectorVersion: this.collectorVersion,
 								collectionEnvironment: this.collectionEnvironment,
@@ -188,44 +185,19 @@ class LocalDataCollector {
 								verificationStatus: true,
 							},
 						};
-
 						results.push(localData);
-						// 個別成功ログは省略
-					} catch (error) {
+
+						// APIレスポンスを保存（後でサークル・クリエイター収集に使用）
+						this.apiResponses.set(workId, apiData);
+					} else if (processingResult) {
 						errors.push({
 							workId,
-							error: error instanceof Error ? error.message : String(error),
+							error: processingResult.errors.join(", "),
 							timestamp: new Date().toISOString(),
 							errorType: "VALIDATION_ERROR",
 						});
 					}
 				}
-
-				// 🆕 価格履歴保存処理（バッチ単位で実行）
-				const priceHistoryResults = await Promise.allSettled(
-					Array.from(batchResults.entries())
-						.filter(([, apiData]) => apiData.workno) // worknoが存在するもののみ
-						.map(([workId, apiData]) => savePriceHistory(workId, apiData)),
-				);
-
-				// 価格履歴保存結果の集計
-				let priceHistorySuccess = 0;
-				let priceHistoryFailure = 0;
-				priceHistoryResults.forEach((result, index) => {
-					if (result.status === "fulfilled") {
-						if (result.value) {
-							priceHistorySuccess++;
-						} else {
-							priceHistoryFailure++;
-						}
-					} else {
-						priceHistoryFailure++;
-						const workIds = Array.from(batchResults.keys());
-						logger.warn(`価格履歴保存失敗: ${workIds[index]} - ${result.reason}`);
-					}
-				});
-
-				// 価格履歴結果ログは省略
 
 				// 失敗データの処理
 				const failedIds = batch.filter((id) => !batchResults.has(id));
@@ -279,110 +251,18 @@ class LocalDataCollector {
 	}
 
 	/**
-	 * バッチデータのアップロード
-	 */
-	private async uploadBatch(batch: LocalCollectedWorkData[]): Promise<UploadBatchResult> {
-		const batchResult: UploadBatchResult = {
-			batchIndex: 0,
-			successCount: 0,
-			errorCount: 0,
-			errors: [],
-		};
-
-		try {
-			// APIレスポンスをワークデータに変換
-			const apiResponses = batch.map((item) => item.basicInfo);
-			const workDataList = apiResponses.map((apiData) => WorkMapper.toWork(apiData));
-
-			// APIレスポンスとワークデータを保存（後でサークル・クリエイター収集に使用）
-			batch.forEach((item, index) => {
-				this.apiResponses.set(item.workId, item.basicInfo);
-				if (workDataList[index]) {
-					this.workDataMap.set(item.workId, workDataList[index]);
-				}
-			});
-
-			const validWorkData = workDataList.filter((work) => {
-				// Basic validation - ensure required fields exist
-				if (!work.id || !work.title || !work.circle) {
-					logger.warn(`データ品質エラー: ${work.productId}`, {
-						reason: "必須フィールドが欠落",
-					});
-					batchResult.errors.push(`品質エラー: ${work.productId}`);
-					return false;
-				}
-				return true;
-			});
-
-			if (validWorkData.length > 0) {
-				// ローカル収集フラグを追加
-				const enhancedWorkData = validWorkData.map((work) => ({
-					...work,
-					localDataSource: true,
-					collectedAt: new Date().toISOString(),
-				}));
-
-				await saveWorksToFirestore(enhancedWorkData);
-				batchResult.successCount = enhancedWorkData.length;
-				// バッチアップロード成功ログは省略（ログ削減）
-			}
-
-			batchResult.errorCount = batch.length - batchResult.successCount;
-		} catch (error) {
-			const errorMsg = error instanceof Error ? error.message : String(error);
-			logger.error("バッチアップロードエラー:", { error });
-			batchResult.errors.push(errorMsg);
-			batchResult.errorCount = batch.length;
-		}
-
-		return batchResult;
-	}
-
-	/**
 	 * Firestoreへの安全なデータ投入
+	 * 注意: 新しい統合処理ではすでにFirestoreへの保存が完了しているため、
+	 * このメソッドは集計結果を返すのみ
 	 */
 	async uploadToFirestore(localData: LocalCollectedWorkData[]): Promise<UploadResult> {
-		logger.info(`🔄 Firestore投入開始: ${localData.length}件`);
-
-		const batches = chunkArray(localData, 100); // Firestore制限を考慮して100件ずつ
-		const results: UploadBatchResult[] = [];
-
-		for (const [index, batch] of batches.entries()) {
-			try {
-				const batchResult = await this.uploadBatch(batch);
-				batchResult.batchIndex = index;
-				results.push(batchResult);
-
-				// バッチ完了ログは省略（ログ削減）
-
-				// バッチ間の待機
-				if (index < batches.length - 1) {
-					await new Promise((resolve) => setTimeout(resolve, 1000));
-				}
-			} catch (error) {
-				logger.error(`❌ バッチ${index + 1}投入失敗:`, { error });
-				results.push({
-					batchIndex: index,
-					successCount: 0,
-					errorCount: batch.length,
-					errors: [error instanceof Error ? error.message : String(error)],
-				});
-			}
-		}
-
-		return this.aggregateUploadResults(results);
-	}
-
-	/**
-	 * アップロード結果の集計
-	 */
-	private aggregateUploadResults(results: UploadBatchResult[]): UploadResult {
+		// 統合処理で既にアップロード済みなので、結果を集計するのみ
 		return {
-			totalBatches: results.length,
-			successfulBatches: results.filter((r) => r.errorCount === 0).length,
-			totalUploaded: results.reduce((sum, r) => sum + r.successCount, 0),
-			totalErrors: results.reduce((sum, r) => sum + r.errorCount, 0),
-			errors: results.flatMap((r) => r.errors),
+			totalBatches: 1,
+			successfulBatches: 1,
+			totalUploaded: localData.length,
+			totalErrors: 0,
+			errors: [],
 		};
 	}
 
@@ -395,33 +275,8 @@ class LocalDataCollector {
 		logger.info("🔄 サークル・クリエイター情報の収集を開始...");
 		logger.info(`📊 対象作品数: ${this.apiResponses.size}件`);
 
-		// バッチ処理用のデータを準備
-		const worksForCollection: Array<{
-			workData: WorkDocument;
-			apiData: DLsiteRawApiResponse;
-		}> = [];
-
-		for (const [workId, apiData] of this.apiResponses) {
-			const workData = this.workDataMap.get(workId);
-			if (!workData || !apiData) continue;
-
-			worksForCollection.push({
-				workData,
-				apiData,
-			});
-		}
-
-		// バッチ処理でサークル・クリエイター情報を収集
-		const result = await batchCollectCircleAndCreatorInfo(worksForCollection);
-
-		if (result.success) {
-			logger.info(`✅ サークル・クリエイター情報収集完了: ${result.processed}件処理`);
-		} else {
-			logger.warn(`⚠️ サークル・クリエイター情報収集一部失敗: ${result.errors.length}件のエラー`);
-			result.errors.slice(0, 10).forEach((error) => {
-				logger.error(`エラー: ${error.workId} - ${error.error}`);
-			});
-		}
+		// 統合処理ですでにサークル・クリエイター情報は更新済み
+		// ここでは統計情報の収集のみ行う
 
 		// 統計情報を収集
 		await this.collectStatistics();

@@ -8,12 +8,10 @@
 import type { CloudEvent } from "@google-cloud/functions-framework";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../infrastructure/management/user-agent-manager";
-import { batchCollectCircleAndCreatorInfo } from "../services/dlsite/collect-circle-creator-info";
-import { getExistingWorksMap, saveWorksToFirestore } from "../services/dlsite/dlsite-firestore";
+import { getExistingWorksMap } from "../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../services/dlsite/individual-info-api-client";
+import { processBatchUnifiedDLsiteData } from "../services/dlsite/unified-data-processor";
 import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collector";
-import { WorkMapper } from "../services/mappers/work-mapper";
-import { savePriceHistory } from "../services/price-history";
 import { chunkArray } from "../shared/array-utils";
 import * as logger from "../shared/logger";
 
@@ -142,74 +140,46 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
 
 		const apiResponses = Array.from(apiDataMap.values());
 
-		// 2. 新しいマッパーでデータ変換
-		const validWorkData = apiResponses
-			.map((apiData) => WorkMapper.toWork(apiData))
-			.filter((work) => work.id && work.title && work.circle);
+		// 2. 新しい統合処理を使用
+		const processingResults = await processBatchUnifiedDLsiteData(apiResponses, {
+			skipPriceHistory: false, // 価格履歴も含めて全て更新
+			forceUpdate: false, // 差分チェックあり
+		});
 
-		if (validWorkData.length === 0) {
-			logger.warn(`バッチ ${batchNumber}: 有効な作品データなし`);
-			return {
-				workCount: 0,
-				apiCallCount: workIds.length,
-				basicDataUpdated: 0,
-				error: "有効な作品データなし",
-			};
-		}
+		// 3. 結果の集計
+		let workUpdated = 0;
+		let circleUpdated = 0;
+		let creatorUpdated = 0;
+		let priceHistoryUpdated = 0;
 
-		// 3. レガシーフィールドの削除は不要（新しいマッパーは最適化済み）
-		const processedWorkData = validWorkData;
-
-		// 4. Firestoreに保存
-		try {
-			await saveWorksToFirestore(processedWorkData);
-			results.basicDataUpdated = processedWorkData.length;
-			logger.info(`バッチ ${batchNumber}: ${results.basicDataUpdated}件の基本データ更新完了`);
-			logger.info(
-				`バッチ ${batchNumber} 詳細: 入力${workIds.length}件 → API成功${apiDataMap.size}件 → 有効データ${validWorkData.length}件 → 保存${results.basicDataUpdated}件`,
-			);
-		} catch (error) {
-			const errorMsg = `Firestore保存エラー: ${error instanceof Error ? error.message : String(error)}`;
-			logger.error(errorMsg);
-			results.errors.push(errorMsg);
-		}
-
-		// 5. 価格履歴保存（並列処理）
-		const priceHistoryPromises = apiResponses.map((apiResponse) =>
-			savePriceHistory(apiResponse.workno || "", apiResponse).catch((error) => {
-				logger.warn(`価格履歴保存失敗 ${apiResponse.workno}:`, error);
-				return null;
-			}),
-		);
-
-		const priceHistoryResults = await Promise.allSettled(priceHistoryPromises);
-		results.priceHistorySaved = priceHistoryResults.filter(
-			(result) => result.status === "fulfilled" && result.value,
-		).length;
-
-		// 6. サークル・クリエイター情報収集（batchCollectCircleAndCreatorInfoがサークル更新も行う）
-		try {
-			const circleCreatorWorkData = validWorkData
-				.map((workData) => {
-					const matchingApiData = apiResponses.find(
-						(apiResponse) => apiResponse.workno === workData.id,
-					);
-					return {
-						workData,
-						apiData: matchingApiData || {},
-					};
-				})
-				.filter((item) => item.apiData.workno);
-
-			if (circleCreatorWorkData.length > 0) {
-				const circleCreatorResult = await batchCollectCircleAndCreatorInfo(circleCreatorWorkData);
-				results.circleCreatorUpdated = circleCreatorResult.processed;
+		for (const result of processingResults) {
+			if (result.success) {
+				if (result.updates.work) workUpdated++;
+				if (result.updates.circle) circleUpdated++;
+				if (result.updates.creators) creatorUpdated++;
+				if (result.updates.priceHistory) priceHistoryUpdated++;
 			}
-		} catch (error) {
-			const errorMsg = `サークル・クリエイター情報収集エラー: ${error instanceof Error ? error.message : String(error)}`;
-			logger.error(errorMsg);
-			results.errors.push(errorMsg);
+
+			// エラーの収集
+			if (result.errors.length > 0) {
+				results.errors.push(...result.errors);
+			}
 		}
+
+		results.basicDataUpdated = workUpdated;
+		results.circleCreatorUpdated = Math.max(circleUpdated, creatorUpdated);
+		results.priceHistorySaved = priceHistoryUpdated;
+
+		// ログ出力
+		logger.info(`バッチ ${batchNumber}: 統合処理完了`, {
+			入力: workIds.length,
+			API成功: apiDataMap.size,
+			Work更新: workUpdated,
+			Circle更新: circleUpdated,
+			Creator更新: creatorUpdated,
+			価格履歴: priceHistoryUpdated,
+			エラー数: results.errors.length,
+		});
 
 		return {
 			workCount: results.basicDataUpdated,
