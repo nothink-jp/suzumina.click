@@ -75,7 +75,7 @@ describe("unified-data-processor", () => {
 		},
 		salesStatus: {
 			isSale: true,
-			notsale: false,
+			isSoldOut: false,
 		},
 		rating: {
 			stars: 4.5,
@@ -302,7 +302,7 @@ describe("unified-data-processor", () => {
 		it("販売状態変更を検出する", async () => {
 			const existingWork = {
 				...mockWorkData,
-				salesStatus: { isSale: false, notsale: false },
+				salesStatus: { isSale: false, isSoldOut: false },
 			};
 			vi.mocked(getWorkFromFirestore).mockResolvedValue(existingWork);
 
