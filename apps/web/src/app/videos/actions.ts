@@ -118,6 +118,145 @@ function convertToVideo(doc: DocumentSnapshot): Video | null {
 }
 
 /**
+ * 複雑なフィルタリングが必要かチェック
+ */
+function needsVideoComplexFiltering(params?: {
+	search?: string;
+	year?: string;
+	playlistTags?: string[];
+	userTags?: string[];
+	categoryNames?: string[];
+	videoType?: string;
+}): boolean {
+	return !!(
+		params?.search ||
+		params?.year ||
+		params?.playlistTags?.length ||
+		params?.userTags?.length ||
+		params?.categoryNames?.length ||
+		params?.videoType
+	);
+}
+
+/**
+ * シンプルなクエリで動画を取得
+ */
+async function getVideosWithSimpleQuery(
+	firestore: FirebaseFirestore.Firestore,
+	params: {
+		page: number;
+		limit: number;
+		sort: string;
+	},
+): Promise<VideoListResult> {
+	const { page, limit, sort } = params;
+	const sortOrder = sort === "oldest" ? "asc" : "desc";
+	let query: FirebaseFirestore.Query = firestore
+		.collection("videos")
+		.orderBy("publishedAt", sortOrder);
+
+	// オフセット処理
+	const startOffset = (page - 1) * limit;
+	if (startOffset > 0) {
+		const offsetSnapshot = await firestore
+			.collection("videos")
+			.orderBy("publishedAt", sortOrder)
+			.limit(startOffset)
+			.get();
+
+		if (offsetSnapshot.size > 0) {
+			const lastDoc = offsetSnapshot.docs[offsetSnapshot.docs.length - 1];
+			query = query.startAfter(lastDoc);
+		}
+	}
+
+	query = query.limit(limit + 1); // +1 for hasMore check
+	const snapshot = await query.get();
+
+	const videos = snapshot.docs
+		.slice(0, limit)
+		.map((doc) => convertToVideo(doc))
+		.filter((video): video is Video => video !== null)
+		.filter((video) => video.content.privacyStatus === "public");
+
+	const plainVideos = videos.map((v) => v.toPlainObject());
+	const hasMore = snapshot.size > limit;
+
+	// 総数を取得
+	const allCountSnapshot = await firestore.collection("videos").count().get();
+	const total = allCountSnapshot.data().count;
+
+	return {
+		items: plainVideos,
+		videos: plainVideos,
+		total,
+		page,
+		pageSize: plainVideos.length,
+		hasMore,
+	};
+}
+
+/**
+ * 複雑なフィルタリングで動画を取得
+ */
+async function getVideosWithComplexFiltering(
+	firestore: FirebaseFirestore.Firestore,
+	params: {
+		page: number;
+		limit: number;
+		sort: string;
+		search?: string;
+		year?: string;
+		playlistTags?: string[];
+		userTags?: string[];
+		categoryNames?: string[];
+		videoType?: string;
+	},
+): Promise<VideoListResult> {
+	const { page, limit, sort } = params;
+	const sortOrder = sort === "oldest" ? "asc" : "desc";
+	let query: FirebaseFirestore.Query = firestore
+		.collection("videos")
+		.orderBy("publishedAt", sortOrder);
+
+	// ページネーション用のオフセット
+	const startOffset = (page - 1) * limit;
+	const fetchLimit = Math.min(startOffset + limit * 3, 300);
+	query = query.limit(fetchLimit);
+
+	const snapshot = await query.get();
+
+	// Video Entityに変換してフィルタリング
+	const allVideos = snapshot.docs
+		.map((doc) => convertToVideo(doc))
+		.filter((video): video is Video => video !== null)
+		.filter((video) => video.content.privacyStatus === "public");
+
+	// フィルタリング処理
+	const filteredVideos = filterVideos(allVideos, params);
+
+	// ページネーション
+	const paginatedVideos = filteredVideos.slice(startOffset, startOffset + limit + 1);
+	const hasMore = paginatedVideos.length > limit;
+	const videos = hasMore ? paginatedVideos.slice(0, limit) : paginatedVideos;
+
+	// Plain Objectに変換
+	const plainVideos = videos.map((v) => v.toPlainObject());
+
+	// 総数の推定
+	const total = snapshot.size < fetchLimit ? filteredVideos.length : filteredVideos.length * 2;
+
+	return {
+		items: plainVideos,
+		videos: plainVideos,
+		total,
+		page,
+		pageSize: plainVideos.length,
+		hasMore,
+	};
+}
+
+/**
  * Entity V2を使用した動画タイトル一覧の取得
  */
 export async function getVideoTitles(params?: {
@@ -134,43 +273,19 @@ export async function getVideoTitles(params?: {
 	try {
 		const { page = 1, limit = 20, sort = "newest" } = params || {};
 		const firestore = getFirestore();
-		let query = firestore.collection("videos");
 
-		// ソート順を設定
-		const sortOrder = sort === "oldest" ? "asc" : "desc";
-		query = query.orderBy("publishedAt", sortOrder) as typeof query;
+		// 複雑なフィルタリングが必要かチェック
+		if (needsVideoComplexFiltering(params)) {
+			return await getVideosWithComplexFiltering(firestore, {
+				page,
+				limit,
+				sort,
+				...params,
+			});
+		}
 
-		// 全件を取得してメモリ上でフィルタリング（一時的な対応）
-		// TODO: 将来的にはFirestoreの複合インデックスを使用
-		const allSnapshot = await query.get();
-
-		// Video Entityに変換してフィルタリング
-		const allVideos = allSnapshot.docs
-			.map((doc) => convertToVideo(doc))
-			.filter((video): video is Video => video !== null)
-			.filter((video) => video.content.privacyStatus === "public");
-
-		// フィルタリング処理をヘルパー関数に委譲
-		const filteredVideos = filterVideos(allVideos, params || {});
-
-		// ページネーション
-		const startIndex = (page - 1) * limit;
-		const endIndex = startIndex + limit;
-		const paginatedVideos = filteredVideos.slice(startIndex, endIndex + 1); // +1 for hasMore check
-		const hasMore = paginatedVideos.length > limit;
-		const videos = hasMore ? paginatedVideos.slice(0, limit) : paginatedVideos;
-
-		// Plain Objectに変換
-		const plainVideos = videos.map((v) => v.toPlainObject());
-
-		return {
-			items: plainVideos,
-			videos: plainVideos,
-			total: filteredVideos.length, // フィルタ後の総数
-			page,
-			pageSize: plainVideos.length,
-			hasMore,
-		};
+		// シンプルなクエリの場合
+		return await getVideosWithSimpleQuery(firestore, { page, limit, sort });
 	} catch (error) {
 		logger.error("動画タイトルV2取得でエラーが発生", {
 			action: "getVideoTitles",
@@ -184,6 +299,7 @@ export async function getVideoTitles(params?: {
 			total: 0,
 			page: 1,
 			pageSize: 0,
+			hasMore: false,
 		};
 	}
 }

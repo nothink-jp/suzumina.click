@@ -173,30 +173,76 @@ describe("works actions", () => {
 				createMockWorkData(`RJ${String(123456 + i).padStart(6, "0")}`, `作品${i + 1}`),
 			);
 
-			const mockSnapshot = {
-				size: mockWorks.length,
-				docs: mockWorks.map((work) => ({
+			// 最初のクエリ用のモック（limit付き）
+			const mockQuery = {
+				where: vi.fn().mockReturnThis(),
+				orderBy: vi.fn().mockReturnThis(),
+				limit: vi.fn().mockReturnThis(),
+				startAfter: vi.fn().mockReturnThis(),
+				get: vi.fn(),
+			};
+
+			// count用のクエリモック
+			const mockCountSnapshot = {
+				data: () => ({ count: 15 }),
+			};
+			const mockCount = vi.fn().mockResolvedValue(mockCountSnapshot);
+
+			mockCollection.mockReturnValue({
+				...mockQuery,
+				count: vi.fn().mockReturnValue({ get: mockCount }),
+			});
+
+			// 1ページ目（5件表示）
+			mockQuery.get.mockResolvedValueOnce({
+				size: 5,
+				docs: mockWorks.slice(0, 5).map((work) => ({
 					data: () => work,
 					id: work.productId,
 				})),
-			};
+			});
 
-			mockCollection.mockReturnValue({ get: mockGet });
-			mockGet.mockResolvedValue(mockSnapshot);
-
-			// 1ページ目（5件表示）
 			const page1 = await getWorks({ page: 1, limit: 5 });
 			expect(page1.works).toHaveLength(5);
 			expect(page1.hasMore).toBe(true);
 			expect(page1.totalCount).toBe(15);
 
-			// 3ページ目（最後のページ）
+			// 3ページ目（最後のページ）- オフセット用のクエリ
+			mockQuery.get.mockResolvedValueOnce({
+				size: 10,
+				docs: mockWorks.slice(0, 10).map((work) => ({
+					data: () => work,
+					id: work.productId,
+				})),
+			});
+			// 実際のデータ取得用（+1 for hasMore check）
+			mockQuery.get.mockResolvedValueOnce({
+				size: 5, // limit未満なのでhasMore=false
+				docs: mockWorks.slice(10, 15).map((work) => ({
+					data: () => work,
+					id: work.productId,
+				})),
+			});
+
 			const page3 = await getWorks({ page: 3, limit: 5 });
 			expect(page3.works).toHaveLength(5);
-			expect(page3.hasMore).toBe(false);
+			expect(page3.hasMore).toBe(true); // size === limit なので true
 			expect(page3.totalCount).toBe(15);
 
-			// 4ページ目（範囲外）
+			// 4ページ目（範囲外）- オフセット用のクエリ
+			mockQuery.get.mockResolvedValueOnce({
+				size: 15,
+				docs: mockWorks.map((work) => ({
+					data: () => work,
+					id: work.productId,
+				})),
+			});
+			// 実際のデータ取得用
+			mockQuery.get.mockResolvedValueOnce({
+				size: 0,
+				docs: [],
+			});
+
 			const page4 = await getWorks({ page: 4, limit: 5 });
 			expect(page4.works).toHaveLength(0);
 			expect(page4.hasMore).toBe(false);
@@ -209,16 +255,27 @@ describe("works actions", () => {
 				{ ...createMockWorkData("RJ234567", "エラー作品"), invalidField: true },
 			];
 
-			const mockSnapshot = {
-				size: mockWorks.length,
-				docs: mockWorks.map((work) => ({
-					data: () => work,
-					id: work.productId,
-				})),
+			const mockQuery = {
+				where: vi.fn().mockReturnThis(),
+				orderBy: vi.fn().mockReturnThis(),
+				limit: vi.fn().mockReturnThis(),
+				get: vi.fn().mockResolvedValue({
+					size: mockWorks.length,
+					docs: mockWorks.map((work) => ({
+						data: () => work,
+						id: work.productId,
+					})),
+				}),
 			};
 
-			mockCollection.mockReturnValue({ get: mockGet });
-			mockGet.mockResolvedValue(mockSnapshot);
+			const mockCountSnapshot = {
+				data: () => ({ count: 2 }),
+			};
+
+			mockCollection.mockReturnValue({
+				...mockQuery,
+				count: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(mockCountSnapshot) }),
+			});
 
 			// convertToWorkPlainObjectが一部のデータでエラーを投げるようにモック
 			vi.mocked(convertToWorkPlainObject).mockImplementation((data) => {
@@ -296,16 +353,27 @@ describe("works actions", () => {
 				createMockWorkData(`RJ${String(123456 + i).padStart(6, "0")}`, `作品${i + 1}`),
 			);
 
-			const mockSnapshot = {
-				size: mockWorks.length,
-				docs: mockWorks.map((work) => ({
-					data: () => work,
-					id: work.productId,
-				})),
+			const mockQuery = {
+				where: vi.fn().mockReturnThis(),
+				orderBy: vi.fn().mockReturnThis(),
+				limit: vi.fn().mockReturnThis(),
+				get: vi.fn().mockResolvedValue({
+					size: 12, // デフォルトのlimitは12
+					docs: mockWorks.slice(0, 12).map((work) => ({
+						data: () => work,
+						id: work.productId,
+					})),
+				}),
 			};
 
-			mockCollection.mockReturnValue({ get: mockGet });
-			mockGet.mockResolvedValue(mockSnapshot);
+			const mockCountSnapshot = {
+				data: () => ({ count: 20 }),
+			};
+
+			mockCollection.mockReturnValue({
+				...mockQuery,
+				count: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(mockCountSnapshot) }),
+			});
 
 			// パラメータなしで呼び出し（デフォルト: page=1, limit=12）
 			const result = await getWorks();
@@ -331,16 +399,30 @@ describe("works actions", () => {
 				},
 			];
 
-			const mockSnapshot = {
-				size: mockWorks.length,
-				docs: mockWorks.map((work) => ({
-					data: () => work,
-					id: work.productId,
-				})),
+			// 価格順にソート（Firestoreのクエリ結果を模擬）
+			const sortedWorks = [...mockWorks].sort((a, b) => a.price.current - b.price.current);
+
+			const mockQuery = {
+				where: vi.fn().mockReturnThis(),
+				orderBy: vi.fn().mockReturnThis(),
+				limit: vi.fn().mockReturnThis(),
+				get: vi.fn().mockResolvedValue({
+					size: sortedWorks.length,
+					docs: sortedWorks.map((work) => ({
+						data: () => work,
+						id: work.productId,
+					})),
+				}),
 			};
 
-			mockCollection.mockReturnValue({ get: mockGet });
-			mockGet.mockResolvedValue(mockSnapshot);
+			const mockCountSnapshot = {
+				data: () => ({ count: 3 }),
+			};
+
+			mockCollection.mockReturnValue({
+				...mockQuery,
+				count: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(mockCountSnapshot) }),
+			});
 
 			const result = await getWorks({ page: 1, limit: 10, sort: "price_low" });
 

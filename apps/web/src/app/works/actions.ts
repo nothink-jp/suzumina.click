@@ -12,8 +12,6 @@ import {
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 
-type SortOption = "newest" | "oldest" | "price_low" | "price_high" | "rating" | "popular";
-
 /**
  * データ取得戦略の定義（統合データ構造対応）
  */
@@ -229,44 +227,96 @@ function filterWorksByUnifiedData(
 }
 
 /**
- * 販売日順ソート処理
+ * Firestoreクエリを構築する
  */
-function sortByReleaseDate(a: WorkDocument, b: WorkDocument, isOldest: boolean): number {
-	// 販売日のISO形式でソート（存在しない場合は末尾に配置）
-	const dateA = a.releaseDateISO || "1900-01-01";
-	const dateB = b.releaseDateISO || "1900-01-01";
+function buildWorksQuery(
+	firestore: FirebaseFirestore.Firestore,
+	params: {
+		category?: string;
+		excludeR18?: boolean;
+		ageRating?: string[];
+		sort?: string;
+	},
+): FirebaseFirestore.Query {
+	let query: FirebaseFirestore.Query = firestore.collection("works");
 
-	// 日付が同じ場合は作品IDでセカンダリソート（一意性保証）
-	if (dateA === dateB) {
-		return isOldest
-			? a.productId.localeCompare(b.productId)
-			: b.productId.localeCompare(a.productId);
+	// カテゴリーフィルタ
+	if (params.category && params.category !== "all") {
+		query = query.where("category", "==", params.category);
 	}
 
-	// 販売日でプライマリソート
-	return isOldest ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
+	// 年齢制限フィルタ
+	if (params.excludeR18) {
+		query = query.where("isR18", "==", false);
+	}
+
+	// 特定の年齢制限フィルタ（単一の場合のみ）
+	if (params.ageRating && params.ageRating.length === 1) {
+		query = query.where("ageRating", "==", params.ageRating[0]);
+	}
+
+	// ソート処理
+	switch (params.sort) {
+		case "oldest":
+			query = query.orderBy("releaseDateISO", "asc");
+			break;
+		case "price_low":
+			query = query.orderBy("price.current", "asc");
+			break;
+		case "price_high":
+			query = query.orderBy("price.current", "desc");
+			break;
+		case "rating":
+			query = query.orderBy("rating.stars", "desc");
+			break;
+		case "popular":
+			query = query.orderBy("rating.count", "desc");
+			break;
+		default: // "newest"
+			query = query.orderBy("releaseDateISO", "desc");
+	}
+
+	return query;
 }
 
 /**
- * 作品ソート処理
+ * 複雑なフィルタリングが必要かチェック
  */
-function sortWorks(works: WorkDocument[], sort: SortOption): WorkDocument[] {
-	return works.sort((a, b) => {
-		switch (sort) {
-			case "oldest":
-				return sortByReleaseDate(a, b, true);
-			case "price_low":
-				return (a.price?.current || 0) - (b.price?.current || 0);
-			case "price_high":
-				return (b.price?.current || 0) - (a.price?.current || 0);
-			case "rating":
-				return (b.rating?.stars || 0) - (a.rating?.stars || 0);
-			case "popular":
-				return (b.rating?.count || 0) - (a.rating?.count || 0);
-			default: // "newest"
-				return sortByReleaseDate(a, b, false);
+function needsComplexFiltering(params: EnhancedSearchParams): boolean {
+	return !!(
+		params.search ||
+		params.language ||
+		params.voiceActors?.length ||
+		params.genres?.length ||
+		params.priceRange ||
+		params.ratingRange ||
+		params.hasHighResImage !== undefined ||
+		(params.ageRating && params.ageRating.length > 1)
+	);
+}
+
+/**
+ * Firestoreドキュメントを作品オブジェクトに変換
+ */
+async function convertDocsToWorks(
+	docs: FirebaseFirestore.QueryDocumentSnapshot[],
+): Promise<WorkPlainObject[]> {
+	const works: WorkPlainObject[] = [];
+	for (const doc of docs) {
+		try {
+			const data = { ...doc.data(), id: doc.id } as WorkDocument;
+			if (!data.id) {
+				data.id = data.productId;
+			}
+			const plainObject = convertToWorkPlainObject(data);
+			if (plainObject) {
+				works.push(plainObject);
+			}
+		} catch (_error) {
+			// エラーがあっても他のデータの処理は続行
 		}
-	});
+	}
+	return works;
 }
 
 /**
@@ -275,6 +325,76 @@ function sortWorks(works: WorkDocument[], sort: SortOption): WorkDocument[] {
  * @returns 作品リスト結果
  */
 export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkListResultPlain> {
+	try {
+		const firestore = getFirestore();
+
+		// 複雑なフィルタリングが必要かチェック
+		if (needsComplexFiltering(params)) {
+			return await getWorksWithComplexFiltering(firestore, params);
+		}
+
+		// シンプルなクエリの場合
+		return await getWorksWithSimpleQuery(firestore, params);
+	} catch (_error) {
+		return {
+			works: [],
+			hasMore: false,
+			totalCount: 0,
+		};
+	}
+}
+
+/**
+ * シンプルなクエリで作品を取得
+ */
+async function getWorksWithSimpleQuery(
+	firestore: FirebaseFirestore.Firestore,
+	params: EnhancedSearchParams,
+): Promise<WorkListResultPlain> {
+	const { page = 1, limit = 12, sort = "newest", category, excludeR18, ageRating } = params;
+
+	// クエリ構築
+	let query = buildWorksQuery(firestore, { category, excludeR18, ageRating, sort });
+	query = query.limit(limit);
+
+	// オフセット処理
+	const startOffset = (page - 1) * limit;
+	if (startOffset > 0) {
+		const offsetSnapshot = await firestore
+			.collection("works")
+			.orderBy("releaseDateISO", sort === "oldest" ? "asc" : "desc")
+			.limit(startOffset)
+			.get();
+
+		if (offsetSnapshot.size > 0) {
+			const lastDoc = offsetSnapshot.docs[offsetSnapshot.docs.length - 1];
+			query = query.startAfter(lastDoc);
+		}
+	}
+
+	const snapshot = await query.get();
+	const works = await convertDocsToWorks(snapshot.docs);
+
+	// 全件数を取得
+	const countSnapshot = await firestore.collection("works").count().get();
+	const totalCount = countSnapshot.data().count;
+
+	return {
+		works,
+		hasMore: snapshot.size === limit,
+		lastWork: works[works.length - 1],
+		totalCount,
+		filteredCount: totalCount,
+	};
+}
+
+/**
+ * 複雑なフィルタリングで作品を取得
+ */
+async function getWorksWithComplexFiltering(
+	firestore: FirebaseFirestore.Firestore,
+	params: EnhancedSearchParams,
+): Promise<WorkListResultPlain> {
 	const {
 		page = 1,
 		limit = 12,
@@ -287,90 +407,66 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 		priceRange,
 		ratingRange,
 		hasHighResImage,
-		_strategy = "standard",
 		ageRating,
-		excludeR18 = false,
+		excludeR18,
 	} = params;
-	try {
-		const firestore = getFirestore();
 
-		// まず全てのデータを取得して、クライアント側で並び替え
-		// (DLsiteのIDフォーマットに対応するため)
-		const allSnapshot = await firestore.collection("works").get();
+	// クエリ構築
+	let query = buildWorksQuery(firestore, { category, excludeR18, ageRating, sort });
 
-		// 全データを配列に変換
-		let allWorks = allSnapshot.docs.map((doc) => ({
-			...doc.data(),
-			id: doc.id,
-		})) as WorkDocument[];
+	// ページネーション用のオフセット
+	const startOffset = (page - 1) * limit;
+	const fetchLimit = Math.min(startOffset + limit * 3, 500);
+	query = query.limit(fetchLimit);
 
-		// 全件数（フィルタなし）
-		const totalCount = allWorks.length;
+	const snapshot = await query.get();
+	let allWorks = snapshot.docs.map((doc) => ({
+		...doc.data(),
+		id: doc.id,
+	})) as WorkDocument[];
 
-		// 統合データ構造による拡張検索フィルタリング
-		allWorks = filterWorksByUnifiedData(allWorks, {
-			search,
-			category,
-			language,
-			voiceActors,
-			genres,
-			priceRange,
-			ratingRange,
-			hasHighResImage,
-			ageRating,
-			excludeR18,
-		});
+	// メモリ上でのフィルタリング
+	allWorks = filterWorksByUnifiedData(allWorks, {
+		search,
+		language,
+		voiceActors,
+		genres,
+		priceRange,
+		ratingRange,
+		hasHighResImage,
+		ageRating: ageRating && ageRating.length > 1 ? ageRating : undefined,
+	});
 
-		// フィルタリング後の件数
-		const filteredCount = allWorks.length;
+	const filteredCount = allWorks.length;
+	const paginatedWorks = allWorks.slice(startOffset, startOffset + limit);
 
-		// ソート処理
-		const sortedWorks = sortWorks(allWorks, sort as SortOption);
-
-		// ページネーション適用
-		const startIndex = (page - 1) * limit;
-		const endIndex = startIndex + limit;
-		const paginatedWorks = sortedWorks.slice(startIndex, endIndex);
-
-		// FirestoreデータをFrontend用に変換
-		const works: WorkPlainObject[] = [];
-
-		for (const data of paginatedWorks) {
-			try {
-				// データにIDが設定されていない場合、ドキュメントIDを使用
-				if (!data.id) {
-					data.id = data.productId; // productIdをフォールバック
-				}
-
-				// フロントエンド形式に変換
-				const plainObject = convertToWorkPlainObject(data);
-				if (plainObject) {
-					works.push(plainObject);
-				}
-			} catch (_error) {
-				// エラーがあっても他のデータの処理は続行
+	// 変換処理
+	const works: WorkPlainObject[] = [];
+	for (const data of paginatedWorks) {
+		try {
+			if (!data.id) {
+				data.id = data.productId;
 			}
+			const plainObject = convertToWorkPlainObject(data);
+			if (plainObject) {
+				works.push(plainObject);
+			}
+		} catch (_error) {
+			// エラーがあっても他のデータの処理は続行
 		}
-
-		const hasMore = page * limit < filteredCount;
-
-		const result: WorkListResultPlain = {
-			works,
-			hasMore,
-			lastWork: works[works.length - 1],
-			totalCount,
-			filteredCount,
-		};
-
-		return result;
-	} catch (_error) {
-		// エラー時は空の結果を返す
-		return {
-			works: [],
-			hasMore: false,
-			totalCount: 0,
-		};
 	}
+
+	// 全件数の推定
+	const totalCount = snapshot.size < fetchLimit ? filteredCount : filteredCount * 2;
+	const hasMore = startOffset + limit < filteredCount || snapshot.size === fetchLimit;
+
+	return {
+		works,
+		hasMore,
+		lastWork: works[works.length - 1],
+		totalCount,
+		filteredCount,
+	};
 }
 
 /**

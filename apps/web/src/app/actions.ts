@@ -13,32 +13,23 @@ import { getWorks } from "./works/actions";
  */
 export async function getLatestWorks(limit = 10, excludeR18 = false) {
 	try {
-		// R18除外の場合、より多く取得してフィルタリング後に調整
-		// 全年齢作品が少ない可能性があるため、より大きな数を取得
-		const fetchLimit = excludeR18 ? Math.max(limit * 5, 50) : limit;
+		// トップページでは最新作品のみが必要なので、最適化されたクエリを使用
 		const result = await getWorks({
 			page: 1,
-			limit: fetchLimit,
-			excludeR18: excludeR18, // excludeR18パラメータを渡す
+			limit: limit,
+			sort: "newest",
+			excludeR18: excludeR18,
 		});
 
-		let works = result.works;
-
-		// 指定された件数にトリム（getWorksでフィルタリング済みなので再度フィルタリングは不要）
-		if (excludeR18 && works.length > limit) {
-			works = works.slice(0, limit);
-		}
-
-		if (works.length === 0) {
+		if (result.works.length === 0) {
 			logger.warn("新着作品取得で0件返却", {
 				action: "getLatestWorks",
 				limit,
 				excludeR18,
-				originalCount: result.works.length,
 			});
 		}
 
-		return works;
+		return result.works;
 	} catch (error) {
 		logger.error("新着作品取得でエラーが発生", {
 			action: "getLatestWorks",

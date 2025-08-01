@@ -490,12 +490,110 @@ resource "google_firestore_index" "works_circleid_registdate_desc" {
 }
 
 # ===================================================================
-# 📊 SUMMARY - Terraform管理インデックス状況 (2025-07-22更新 - クリーンアップ完了)
+# 🆕 WORKS COLLECTION OPTIMIZATION INDEXES - パフォーマンス最適化用 (2025-08-01追加)
+# ===================================================================
+
+# works コレクション - R18フィルタ + 最新順
+resource "google_firestore_index" "works_isr18_releasedateiso_desc" {
+  project    = var.gcp_project_id
+  collection = "works"
+  
+  fields {
+    field_path = "isR18"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "releaseDateISO"
+    order      = "DESCENDING"
+  }
+}
+
+# works コレクション - カテゴリ + 最新順
+resource "google_firestore_index" "works_category_releasedateiso_desc" {
+  project    = var.gcp_project_id
+  collection = "works"
+  
+  fields {
+    field_path = "category"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "releaseDateISO"
+    order      = "DESCENDING"
+  }
+}
+
+# works コレクション - カテゴリ + R18フィルタ + 最新順
+resource "google_firestore_index" "works_category_isr18_releasedateiso_desc" {
+  project    = var.gcp_project_id
+  collection = "works"
+  
+  fields {
+    field_path = "category"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "isR18"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "releaseDateISO"
+    order      = "DESCENDING"
+  }
+}
+
+# 注意: 単一フィールドのインデックスはFirestoreが自動的に作成するため、
+# 以下のインデックスは不要です。コードでorderByを使用すると自動作成されます。
+# - price.current (ASCENDING/DESCENDING)
+# - rating.stars (DESCENDING)
+# - rating.count (DESCENDING)
+
+# videos コレクション - 公開状態 + 最新順（トップページ最適化）
+# 既存のインデックスと競合するため、削除またはインポートが必要
+# resource "google_firestore_index" "videos_privacystatus_publishedat_desc" {
+#   project    = var.gcp_project_id
+#   collection = "videos"
+#   
+#   fields {
+#     field_path = "privacyStatus"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "publishedAt"
+#     order      = "DESCENDING"
+#   }
+# }
+
+# videos コレクション - 公開状態 + 古い順
+# 既存のインデックスと競合するため、削除またはインポートが必要
+# resource "google_firestore_index" "videos_privacystatus_publishedat_asc" {
+#   project    = var.gcp_project_id
+#   collection = "videos"
+#   
+#   fields {
+#     field_path = "privacyStatus"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "publishedAt"
+#     order      = "ASCENDING"
+#   }
+# }
+
+# ===================================================================
+# 📊 SUMMARY - Terraform管理インデックス状況 (2025-08-01更新 - クエリ最適化追加)
 # ===================================================================
 # 
 # 【現在の構成】
-# ✅ 実装済み (使用中):          15個 (audioButtons: 8, users: 2, contacts: 2, favorites: 1, circles: 1, creatorMappings: 2, works: 1)
+# ✅ 実装済み (使用中):          24個 (audioButtons: 8, users: 2, contacts: 2, favorites: 1, circles: 1, creatorMappings: 2, works: 8, videos: 2追加)
 # 🔴 削除推奨 (未使用):          10個 (videos関連、audioButtons startTime 1個)
+# 🆕 新規追加 (最適化):           9個 (works: 7, videos: 2)
 # 🔶 無効化中 (フォールバック):   4個 (createdBy関連、マイページ用)
 # ℹ️ 自動インデックス対応:        priceHistory (single-fieldで十分)
 # 
