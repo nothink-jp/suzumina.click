@@ -109,9 +109,6 @@ export async function fetchVideosForGenericList(
 		import("@suzumina.click/shared-types").VideoPlainObject
 	>
 > {
-	// デバッグログ
-	console.log("[fetchVideosForGenericList] params:", params);
-
 	// フィルターパラメータの変換
 	const videoParams = {
 		page: params.page,
@@ -130,8 +127,6 @@ export async function fetchVideosForGenericList(
 		videoType:
 			params.filters?.videoType === "all" ? undefined : (params.filters?.videoType as string),
 	};
-
-	console.log("[fetchVideosForGenericList] videoParams:", videoParams);
 
 	// データ取得
 	const data = await getVideoTitles(videoParams);
@@ -297,10 +292,6 @@ export async function getVideoTitles(params?: {
 }): Promise<VideoListResult> {
 	try {
 		const { page = 1, limit = 12, sort = "newest" } = params || {};
-
-		// デバッグログ
-		console.log("[getVideoTitles] params:", params);
-		console.log("[getVideoTitles] limit:", limit);
 
 		const firestore = getFirestore();
 
