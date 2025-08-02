@@ -2,7 +2,7 @@
  * URL同期用のフック（改善版）
  */
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import type { FilterConfig } from "../types";
 import { getDefaultFilterValues } from "../utils/filterHelpers";
@@ -19,6 +19,7 @@ interface UseListUrlOptions {
 export function useListUrl(options: UseListUrlOptions = {}) {
 	const { filters = {}, defaultPageSize = 12, defaultSort } = options;
 	const searchParams = useSearchParams();
+	const router = useRouter();
 
 	// 現在のパラメータを解析
 	const currentParams = useMemo(() => {
@@ -147,9 +148,10 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 			}
 
 			// URLを更新（スクロール位置を保持）
-			window.history.replaceState(null, "", `?${params.toString()}`);
+			const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+			router.replace(newUrl);
 		},
-		[searchParams, filters, defaultPageSize, defaultSort],
+		[searchParams, filters, defaultPageSize, defaultSort, router],
 	);
 
 	// 個別の更新関数
