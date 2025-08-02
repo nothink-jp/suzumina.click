@@ -129,31 +129,27 @@ export async function fetchVideosForGenericList(
 	};
 
 	// データ取得
-	const [data, filteredCount, totalCount] = await Promise.all([
-		getVideoTitles(videoParams),
-		getTotalVideoCount({
-			year: videoParams.year,
-			search: videoParams.search,
-			playlistTags: videoParams.playlistTags,
-			userTags: videoParams.userTags,
-			categoryNames: videoParams.categoryNames,
-			videoType: videoParams.videoType,
-		}),
-		getTotalVideoCount({}),
-	]);
+	const data = await getVideoTitles(videoParams);
+
+	// getVideoTitlesが返すtotalを使用（実際のフィルタリング結果の件数）
+	const filteredCount = data.total;
+
+	// フィルターが適用されていない場合のみ、全件数を取得
+	const hasFilters = !!(
+		videoParams.year ||
+		videoParams.search ||
+		videoParams.playlistTags ||
+		videoParams.userTags ||
+		videoParams.categoryNames ||
+		videoParams.videoType
+	);
+
+	const totalCount = hasFilters ? filteredCount : await getTotalVideoCount({});
 
 	return {
 		items: data.videos,
 		totalCount,
-		filteredCount:
-			videoParams.year ||
-			videoParams.search ||
-			videoParams.playlistTags ||
-			videoParams.userTags ||
-			videoParams.categoryNames ||
-			videoParams.videoType
-				? filteredCount
-				: totalCount,
+		filteredCount,
 	};
 }
 
