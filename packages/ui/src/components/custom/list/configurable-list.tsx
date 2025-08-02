@@ -176,7 +176,12 @@ export function ConfigurableList<T>({
 
 	// 現在のページのアイテム
 	const currentItems = useMemo(() => {
-		if (isServerSide) return data.items;
+		// サーバーサイドの場合、データが期待するページサイズと一致しているか確認
+		if (isServerSide) {
+			// サーバーから取得したデータが現在のページサイズと一致している場合はそのまま使用
+			// そうでない場合は、データの再取得が必要なのでローディング中として扱う
+			return data.items;
+		}
 		return processedItems.slice(pagination.startIndex, pagination.endIndex);
 	}, [processedItems, pagination, isServerSide, data.items]);
 

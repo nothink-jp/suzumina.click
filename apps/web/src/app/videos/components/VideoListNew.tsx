@@ -3,6 +3,7 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import type { StandardListParams } from "@suzumina.click/ui/components/custom/list";
 import { ConfigurableList, generateYearOptions } from "@suzumina.click/ui/components/custom/list";
+import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { fetchVideosForGenericList } from "../actions";
 import VideoCard from "./VideoCard";
@@ -16,6 +17,20 @@ interface VideoListNewProps {
 }
 
 export default function VideoListNew({ initialData }: VideoListNewProps) {
+	// URLパラメータを取得
+	const searchParams = useSearchParams();
+	const urlPageSize = Number(searchParams.get("itemsPerPage") || "12");
+
+	// 初期データがURLのページサイズと一致しているか確認
+	const adjustedInitialItems = useMemo(() => {
+		// URLのページサイズと初期データのアイテム数が一致している場合はそのまま使用
+		// 一致していない場合は空配列を返して再取得を促す
+		if (initialData.items.length === urlPageSize || urlPageSize === 12) {
+			return initialData.items;
+		}
+		return [];
+	}, [initialData.items, urlPageSize]);
+
 	// 年代選択肢を動的に生成（2018年から現在年まで）
 	const currentYear = new Date().getFullYear();
 	const yearOptions = useMemo(() => generateYearOptions(2018, currentYear), [currentYear]);
@@ -90,7 +105,7 @@ export default function VideoListNew({ initialData }: VideoListNewProps) {
 
 	return (
 		<ConfigurableList
-			items={initialData.items}
+			items={adjustedInitialItems}
 			renderItem={renderItem}
 			filters={filters}
 			sorts={sorts}
