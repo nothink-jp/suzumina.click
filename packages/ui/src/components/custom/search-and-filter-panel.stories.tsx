@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
+import { fn } from "storybook/test";
 import { SearchAndFilterPanel } from "./search-and-filter-panel";
 import { FilterSelect } from "./search-filter-panel";
 

@@ -17,6 +17,20 @@ export { AutocompleteDropdown } from "./autocomplete-dropdown";
 export { DateRangeFilter } from "./date-range-filter";
 // Utility components
 export { GenericCarousel } from "./generic-carousel";
+export type {
+	FilterDefinition,
+	FilterType,
+	GenericListProps,
+	ListAction,
+	ListConfig,
+	ListParams,
+	ListResult,
+	ListState,
+	PaginationConfig,
+	SortDefinition,
+} from "./generic-list";
+// Generic list components
+export { GenericList, useListState, useUrlParams } from "./generic-list";
 export { HighlightTags, HighlightText, MultiFieldHighlight } from "./highlight-text";
 // Layout components
 export { ListDisplayControls } from "./list-display-controls";

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
+import { fn } from "storybook/test";
 import { VideoTagDisplay } from "./three-layer-tag-display";
 
 const meta: Meta<typeof VideoTagDisplay> = {
