@@ -47,6 +47,13 @@ export interface GenericListCompatProps<T> {
 			search?: string;
 			[key: string]: string | undefined;
 		};
+		gridColumns?: {
+			default?: number;
+			sm?: number;
+			md?: number;
+			lg?: number;
+			xl?: number;
+		};
 	};
 	fetchData: (params: {
 		page: number;
@@ -151,6 +158,8 @@ export function GenericListCompat<T>({
 				dataAdapter={dataAdapter}
 				onError={handleError}
 				emptyMessage="データがありません"
+				layout={config.gridColumns ? "grid" : "list"}
+				gridColumns={config.gridColumns}
 			/>
 		</div>
 	);

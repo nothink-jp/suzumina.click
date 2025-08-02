@@ -100,6 +100,12 @@ export default function VideoListNew({ initialData }: VideoListNewProps) {
 			fetchFn={fetchVideosForGenericList}
 			dataAdapter={dataAdapter}
 			emptyMessage="動画が見つかりませんでした。検索条件を変更してみてください。"
+			layout="grid"
+			gridColumns={{
+				default: 1,
+				md: 2,
+				lg: 3,
+			}}
 		/>
 	);
 }

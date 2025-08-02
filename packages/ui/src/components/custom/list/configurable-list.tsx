@@ -43,6 +43,12 @@ export function ConfigurableList<T>({
 	onError,
 	emptyMessage = "データがありません",
 	loadingComponent,
+	layout = "list",
+	gridColumns = {
+		default: 1,
+		md: 2,
+		lg: 3,
+	},
 }: ConfigurableListProps<T>) {
 	// URLパラメータとの同期
 	const urlHook = useListUrl({
@@ -370,7 +376,40 @@ export function ConfigurableList<T>({
 
 			{/* リスト本体 */}
 			{currentItems.length > 0 && (
-				<div className="space-y-4">
+				<div
+					className={(() => {
+						if (layout === "grid") {
+							const classes = ["grid", "gap-6"];
+							// デフォルトカラム数
+							if (gridColumns.default === 1) classes.push("grid-cols-1");
+							else if (gridColumns.default === 2) classes.push("grid-cols-2");
+							else if (gridColumns.default === 3) classes.push("grid-cols-3");
+							else if (gridColumns.default === 4) classes.push("grid-cols-4");
+							// sm
+							if (gridColumns.sm === 1) classes.push("sm:grid-cols-1");
+							else if (gridColumns.sm === 2) classes.push("sm:grid-cols-2");
+							else if (gridColumns.sm === 3) classes.push("sm:grid-cols-3");
+							else if (gridColumns.sm === 4) classes.push("sm:grid-cols-4");
+							// md
+							if (gridColumns.md === 1) classes.push("md:grid-cols-1");
+							else if (gridColumns.md === 2) classes.push("md:grid-cols-2");
+							else if (gridColumns.md === 3) classes.push("md:grid-cols-3");
+							else if (gridColumns.md === 4) classes.push("md:grid-cols-4");
+							// lg
+							if (gridColumns.lg === 1) classes.push("lg:grid-cols-1");
+							else if (gridColumns.lg === 2) classes.push("lg:grid-cols-2");
+							else if (gridColumns.lg === 3) classes.push("lg:grid-cols-3");
+							else if (gridColumns.lg === 4) classes.push("lg:grid-cols-4");
+							// xl
+							if (gridColumns.xl === 1) classes.push("xl:grid-cols-1");
+							else if (gridColumns.xl === 2) classes.push("xl:grid-cols-2");
+							else if (gridColumns.xl === 3) classes.push("xl:grid-cols-3");
+							else if (gridColumns.xl === 4) classes.push("xl:grid-cols-4");
+							return classes.join(" ");
+						}
+						return "space-y-4";
+					})()}
+				>
 					{currentItems.map((item, index) => (
 						<div key={pagination.startIndex + index}>
 							{renderItem(item, pagination.startIndex + index)}

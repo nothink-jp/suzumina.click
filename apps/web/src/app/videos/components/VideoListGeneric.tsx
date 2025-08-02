@@ -85,6 +85,11 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 				categoryNames: "categoryNames",
 				videoType: "videoType",
 			},
+			gridColumns: {
+				default: 1,
+				md: 2,
+				lg: 3,
+			},
 		}),
 		[yearOptions],
 	);

@@ -108,6 +108,16 @@ export interface ConfigurableListProps<T> extends SimpleListProps<T> {
 	onError?: (error: ListError) => void;
 	emptyMessage?: string;
 	loadingComponent?: React.ReactNode;
+
+	// レイアウト設定
+	layout?: "list" | "grid";
+	gridColumns?: {
+		default?: number;
+		sm?: number;
+		md?: number;
+		lg?: number;
+		xl?: number;
+	};
 }
 
 /**
