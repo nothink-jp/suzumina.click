@@ -4,8 +4,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import type { ListConfig, ListParams } from "./types";
 
-// Storybook環境の検出
-const isStorybook = typeof window !== "undefined" && window.location.href.includes("iframe.html");
+// Storybook環境の検出（環境変数とURLの両方でチェック）
+const isStorybook =
+	process.env.STORYBOOK === "true" ||
+	(typeof window !== "undefined" && window.location.href.includes("iframe.html"));
 
 /**
  * URLパラメータとリスト状態を同期するフック

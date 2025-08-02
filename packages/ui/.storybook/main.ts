@@ -28,6 +28,12 @@ const config: StorybookConfig = {
 			"next/navigation": resolve(__dirname, "./mocks/next-navigation.ts"),
 		};
 
+		// Storybook環境変数を設定
+		config.define = {
+			...config.define,
+			"process.env.STORYBOOK": JSON.stringify("true"),
+		};
+
 		return config;
 	},
 };
