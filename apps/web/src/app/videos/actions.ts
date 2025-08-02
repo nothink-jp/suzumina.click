@@ -100,6 +100,60 @@ function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
 }
 
 /**
+ * GenericList用のビデオデータ取得関数
+ */
+export async function fetchVideosForGenericList(
+	params: import("@suzumina.click/ui/components/custom/generic-list").ListParams,
+): Promise<
+	import("@suzumina.click/ui/components/custom/generic-list").ListResult<
+		import("@suzumina.click/shared-types").VideoPlainObject
+	>
+> {
+	// フィルターパラメータの変換
+	const videoParams = {
+		page: params.page,
+		limit: params.limit,
+		sort: params.sort,
+		search: params.search,
+		year: params.filters?.year as string,
+		playlistTags: params.filters?.playlistTags as string[],
+		userTags: params.filters?.userTags as string[],
+		categoryNames: params.filters?.categoryNames
+			? [params.filters.categoryNames as string]
+			: undefined,
+		videoType: params.filters?.videoType as string,
+	};
+
+	// データ取得
+	const [data, filteredCount, totalCount] = await Promise.all([
+		getVideoTitles(videoParams),
+		getTotalVideoCount({
+			year: videoParams.year,
+			search: videoParams.search,
+			playlistTags: videoParams.playlistTags,
+			userTags: videoParams.userTags,
+			categoryNames: videoParams.categoryNames,
+			videoType: videoParams.videoType,
+		}),
+		getTotalVideoCount({}),
+	]);
+
+	return {
+		items: data.videos,
+		totalCount,
+		filteredCount:
+			videoParams.year ||
+			videoParams.search ||
+			videoParams.playlistTags ||
+			videoParams.userTags ||
+			videoParams.categoryNames ||
+			videoParams.videoType
+				? filteredCount
+				: totalCount,
+	};
+}
+
+/**
  * FirestoreデータをVideoに変換
  */
 function convertToVideo(doc: DocumentSnapshot): Video | null {

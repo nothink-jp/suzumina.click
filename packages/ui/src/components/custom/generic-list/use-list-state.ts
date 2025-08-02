@@ -139,6 +139,7 @@ function listReducer<T>(state: ListState<T>, action: ListAction): ListState<T> {
 export function useListState<T>(
 	config: ListConfig,
 	fetchData: (params: ListParams) => Promise<ListResult<T>>,
+	initialData?: ListResult<T>,
 ) {
 	const urlParams = useUrlParams(config);
 	const { params } = urlParams;
@@ -146,20 +147,22 @@ export function useListState<T>(
 	// 初期状態（一度だけ作成）
 	const initialState = useMemo(
 		(): ListState<T> => ({
-			items: [],
+			items: initialData?.items || [],
 			counts: {
-				total: 0,
-				filtered: 0,
-				displayed: 0,
+				total: initialData?.totalCount || 0,
+				filtered: initialData?.filteredCount || initialData?.totalCount || 0,
+				displayed: initialData?.items.length || 0,
 			},
 			pagination: {
 				currentPage: params.page,
 				itemsPerPage: params.limit,
-				totalPages: 0,
+				totalPages: initialData
+					? Math.ceil((initialData.filteredCount || initialData.totalCount) / params.limit)
+					: 0,
 			},
 			filters: params.filters,
-			sort: params.sort,
-			search: params.search,
+			sort: params.sort || "",
+			search: params.search || "",
 			isLoading: false,
 			error: null,
 		}),

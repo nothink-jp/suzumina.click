@@ -4,15 +4,62 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
-import { getTotalVideoCount, getVideoTitles } from "./actions";
+import { fetchVideosForGenericList, getTotalVideoCount, getVideoTitles } from "./actions";
 import VideoList from "./components/VideoList";
+import VideoListGeneric from "./components/VideoListGeneric";
 
 interface VideosPageProps {
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
+// Feature flagで新旧コンポーネントを切り替え
+const USE_GENERIC_LIST = process.env.USE_GENERIC_LIST === "true";
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 3層タグパラメータ解析と検索条件処理が必要
 export default async function VideosPage({ searchParams }: VideosPageProps) {
+	// GenericListを使う場合は別の実装を使用
+	if (USE_GENERIC_LIST) {
+		const params = await searchParams;
+
+		// 初期データを取得
+		const initialData = await fetchVideosForGenericList({
+			page: Number.parseInt((params.page as string) || "1", 10),
+			limit: Number.parseInt((params.limit as string) || "12", 10),
+			sort: (params.sort as string) || "newest",
+			search: params.search as string,
+			filters: {
+				year: params.year !== "all" ? params.year : undefined,
+				categoryNames: params.categoryNames !== "all" ? params.categoryNames : undefined,
+				videoType: params.videoType !== "all" ? params.videoType : undefined,
+				playlistTags: params.playlistTags,
+				userTags: params.userTags,
+			},
+		});
+
+		return (
+			<ListPageLayout>
+				<ListPageHeader
+					title="動画一覧"
+					description="涼花みなせさんのYouTube動画から、あなただけの音声ボタンを作成しよう"
+				/>
+
+				<ListPageContent>
+					<Suspense
+						fallback={
+							<div className="text-center py-12">
+								<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+								<p className="mt-2 text-muted-foreground">読み込み中...</p>
+							</div>
+						}
+					>
+						<VideoListGeneric initialData={initialData} />
+					</Suspense>
+				</ListPageContent>
+			</ListPageLayout>
+		);
+	}
+
+	// 既存の実装
 	const params = await searchParams;
 	const pageNumber = Number.parseInt(params.page as string, 10) || 1;
 	const validPage = Math.max(1, pageNumber);

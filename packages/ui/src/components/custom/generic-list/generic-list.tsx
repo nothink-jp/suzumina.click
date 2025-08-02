@@ -1,5 +1,6 @@
 "use client";
 
+import { PlayCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import {
@@ -45,6 +46,11 @@ export interface GenericListProps<T> {
 	renderItem: (item: T, index: number) => ReactNode;
 
 	/**
+	 * 初期データ（サーバーサイドで取得済みのデータ）
+	 */
+	initialData?: ListResult<T>;
+
+	/**
 	 * 空状態時のカスタムレンダリング関数
 	 * @default デフォルトの空状態メッセージを表示
 	 */
@@ -86,6 +92,20 @@ export interface GenericListProps<T> {
 	 * 追加のCSSクラス名
 	 */
 	className?: string;
+
+	/**
+	 * リストのタイトル（表示用）
+	 */
+	listTitle?: string;
+
+	/**
+	 * 空状態のカスタムプロパティ
+	 */
+	emptyStateProps?: {
+		icon?: string;
+		title?: string;
+		description?: string;
+	};
 }
 
 /**
@@ -105,6 +125,9 @@ export function GenericList<T>({
 	renderCustomFilters,
 	renderContainer,
 	className,
+	initialData,
+	listTitle,
+	emptyStateProps,
 }: GenericListProps<T>) {
 	const {
 		state,
@@ -115,12 +138,14 @@ export function GenericList<T>({
 		setSearch,
 		setFilter,
 		hasActiveFilters,
-	} = useListState(config, fetchData);
+	} = useListState(config, fetchData, initialData);
 
-	// 初回データ取得
+	// 初回データ取得（初期データがない場合のみ）
 	useEffect(() => {
-		loadData();
-	}, [loadData]);
+		if (!initialData) {
+			loadData();
+		}
+	}, [loadData, initialData]);
 
 	// ページネーションリンクの生成
 	const renderPaginationItems = () => {
@@ -231,12 +256,21 @@ export function GenericList<T>({
 		);
 
 	// 空状態
-	const defaultEmptyState = () => (
-		<ListPageEmptyState
-			title="データが見つかりませんでした"
-			description="検索条件を変更してお試しください"
-		/>
-	);
+	const defaultEmptyState = () => {
+		// デフォルトアイコンはPlayCircle（動画用）
+		const icon =
+			emptyStateProps?.icon === "PlayCircle" ? (
+				<PlayCircle className="mx-auto h-12 w-12" />
+			) : undefined;
+
+		return (
+			<ListPageEmptyState
+				icon={icon}
+				title={emptyStateProps?.title || "データが見つかりませんでした"}
+				description={emptyStateProps?.description || "検索条件を変更してお試しください"}
+			/>
+		);
+	};
 
 	return (
 		<ListPageLayout className={className}>
@@ -246,20 +280,20 @@ export function GenericList<T>({
 					searchValue={state.search}
 					onSearchChange={setSearch}
 					onSearch={loadData}
-					searchPlaceholder="検索..."
+					searchPlaceholder={config.searchConfig?.placeholder || "検索..."}
 					filters={renderFilters()}
 				/>
 
 				{/* リスト制御 */}
 				<ListDisplayControls
-					title={config.title || "一覧"}
+					title={listTitle || config.title || "一覧"}
 					totalCount={state.counts.total}
 					filteredCount={hasActiveFilters ? state.counts.filtered : undefined}
 					currentPage={state.pagination.currentPage}
 					totalPages={state.pagination.totalPages}
 					sortValue={state.sort}
 					onSortChange={setSort}
-					sortOptions={config.sortOptions?.map((s) => ({ value: s.key, label: s.label })) || []}
+					sortOptions={config.sorts?.map((s) => ({ value: s.value, label: s.label })) || []}
 					itemsPerPageValue={state.pagination.itemsPerPage.toString()}
 					onItemsPerPageChange={(value) => setItemsPerPage(Number(value))}
 					itemsPerPageOptions={
