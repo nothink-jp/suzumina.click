@@ -6,7 +6,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Filter, Search, X } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
@@ -185,15 +185,35 @@ export function ConfigurableList<T>({
 		return processedItems.slice(pagination.startIndex, pagination.endIndex);
 	}, [processedItems, pagination, isServerSide, data.items]);
 
+	// IME変換中かどうかを管理
+	const [isComposing, setIsComposing] = useState(false);
+	const [localSearchValue, setLocalSearchValue] = useState(fetchParams.search);
+
+	// URLパラメータが変更されたときにローカル値を同期
+	useEffect(() => {
+		setLocalSearchValue(fetchParams.search);
+	}, [fetchParams.search]);
+
 	// アクション関数
 	const handleSearchChange = useCallback(
 		(value: string) => {
-			if (urlSync) {
+			setLocalSearchValue(value);
+			// IME変換中は更新しない
+			if (!isComposing && urlSync) {
 				urlHook.setSearch(value);
 			}
 		},
-		[urlSync, urlHook],
+		[urlSync, urlHook, isComposing],
 	);
+
+	// IME変換終了時の処理
+	const handleCompositionEnd = useCallback(() => {
+		setIsComposing(false);
+		// 変換が終了したら、現在の値で更新
+		if (urlSync) {
+			urlHook.setSearch(localSearchValue);
+		}
+	}, [urlSync, urlHook, localSearchValue]);
 
 	const handleSortChange = useCallback(
 		(value: string) => {
@@ -327,8 +347,10 @@ export function ConfigurableList<T>({
 							<Input
 								type="search"
 								placeholder={searchPlaceholder}
-								value={fetchParams.search}
+								value={localSearchValue}
 								onChange={(e) => handleSearchChange(e.target.value)}
+								onCompositionStart={() => setIsComposing(true)}
+								onCompositionEnd={handleCompositionEnd}
 								className="pl-10"
 							/>
 						</div>
