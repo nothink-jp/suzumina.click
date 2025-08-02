@@ -104,7 +104,7 @@ export function ConfigurableList<T>({
 						const value = (item as any)[prop];
 						return (
 							typeof value === "string" &&
-							value.toLowerCase().includes(fetchParams.search.toLowerCase())
+							value.toLowerCase().includes(fetchParams.search?.toLowerCase() || "")
 						);
 					});
 				}
@@ -143,8 +143,8 @@ export function ConfigurableList<T>({
 		// ソート
 		if (fetchParams.sort) {
 			result.sort((a, b) => {
-				const aValue = (a as any)[fetchParams.sort];
-				const bValue = (b as any)[fetchParams.sort];
+				const aValue = (a as any)[fetchParams.sort!];
+				const bValue = (b as any)[fetchParams.sort!];
 
 				if (aValue < bValue) return -1;
 				if (aValue > bValue) return 1;
@@ -277,7 +277,14 @@ export function ConfigurableList<T>({
 	}
 
 	// ソートオプションの正規化
-	const sortOptions = normalizeOptions(sorts);
+	const sortOptions = normalizeOptions(
+		sorts.map((sort) => {
+			if (typeof sort === "string") {
+				return { value: sort, label: sort };
+			}
+			return sort;
+		}),
+	);
 	const hasFilters = Object.keys(filters).length > 0;
 	const activeFilters = hasActiveFilters(fetchParams.filters, filters);
 

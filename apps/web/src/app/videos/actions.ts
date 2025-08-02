@@ -303,7 +303,12 @@ export async function getVideoTitles(params?: {
 			page,
 			limit,
 			sort,
-			...params,
+			search: params?.search,
+			year: params?.year,
+			playlistTags: params?.playlistTags,
+			userTags: params?.userTags,
+			categoryNames: params?.categoryNames,
+			videoType: params?.videoType,
 		});
 	} catch (error) {
 		logger.error("動画タイトルV2取得でエラーが発生", {
