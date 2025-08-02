@@ -2,7 +2,7 @@
 
 import { PlayCircle } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
 	Pagination,
 	PaginationContent,
@@ -146,6 +146,52 @@ export function GenericList<T>({
 			loadData();
 		}
 	}, [loadData, initialData]);
+
+	// stateが変更されたらデータを再取得（初回レンダリング時は除く）
+	const isFirstRender = useRef(true);
+	const prevStateRef = useRef({
+		page: state.pagination.currentPage,
+		itemsPerPage: state.pagination.itemsPerPage,
+		sort: state.sort,
+		search: state.search,
+		filters: JSON.stringify(state.filters),
+	});
+
+	useEffect(() => {
+		if (isFirstRender.current) {
+			isFirstRender.current = false;
+			return;
+		}
+
+		// 状態が実際に変更されたかチェック
+		const currentState = {
+			page: state.pagination.currentPage,
+			itemsPerPage: state.pagination.itemsPerPage,
+			sort: state.sort,
+			search: state.search,
+			filters: JSON.stringify(state.filters),
+		};
+
+		const hasChanged =
+			prevStateRef.current.page !== currentState.page ||
+			prevStateRef.current.itemsPerPage !== currentState.itemsPerPage ||
+			prevStateRef.current.sort !== currentState.sort ||
+			prevStateRef.current.search !== currentState.search ||
+			prevStateRef.current.filters !== currentState.filters;
+
+		if (hasChanged && !state.isLoading) {
+			loadData();
+			prevStateRef.current = currentState;
+		}
+	}, [
+		state.pagination.currentPage,
+		state.pagination.itemsPerPage,
+		state.sort,
+		state.search,
+		state.filters,
+		state.isLoading,
+		loadData,
+	]);
 
 	// ページネーションリンクの生成
 	const renderPaginationItems = () => {

@@ -21,17 +21,17 @@ describe("generic-list types", () => {
 
 	test("SortDefinition型が正しく定義されている", () => {
 		const sort: SortDefinition = {
-			key: "newest",
+			value: "newest",
 			label: "新しい順",
-			fields: [{ field: "createdAt", direction: "desc" }],
 		};
 
-		expect(sort.key).toBe("newest");
-		expect(sort.fields[0].direction).toBe("desc");
+		expect(sort.value).toBe("newest");
+		expect(sort.label).toBe("新しい順");
 	});
 
 	test("ListState型が正しく定義されている", () => {
 		const state: ListState = {
+			items: [],
 			counts: {
 				total: 100,
 				filtered: 50,
@@ -76,22 +76,18 @@ describe("generic-list types", () => {
 					label: "価格",
 				},
 			],
-			sortOptions: [
+			sorts: [
 				{
-					key: "popular",
+					value: "popular",
 					label: "人気順",
-					fields: [
-						{ field: "viewCount", direction: "desc" },
-						{ field: "rating", direction: "desc" },
-					],
 				},
 			],
 		};
 
 		expect(config.filters).toHaveLength(3);
-		expect(config.filters?.[0].type).toBe("multiselect");
-		expect(config.filters?.[1].type).toBe("dateRange");
-		expect(config.filters?.[2].type).toBe("range");
-		expect(config.sortOptions?.[0].fields).toHaveLength(2);
+		expect(config.filters![0].type).toBe("multiselect");
+		expect(config.filters![1].type).toBe("dateRange");
+		expect(config.filters![2].type).toBe("range");
+		expect(config.sorts![0].value).toBe("popular");
 	});
 });
