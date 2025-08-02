@@ -185,12 +185,14 @@ export function useListState<T>(
 		// パラメータが実際に変更されたかチェック
 		const hasChanged =
 			prevParamsRef.current.page !== params.page ||
+			prevParamsRef.current.limit !== params.limit ||
 			prevParamsRef.current.sort !== params.sort ||
 			prevParamsRef.current.search !== params.search ||
 			JSON.stringify(prevParamsRef.current.filters) !== JSON.stringify(params.filters);
 
 		if (hasChanged) {
 			dispatch({ type: "SET_PAGE", payload: params.page });
+			dispatch({ type: "SET_ITEMS_PER_PAGE", payload: params.limit });
 			dispatch({ type: "SET_SORT", payload: params.sort || "" });
 			dispatch({ type: "SET_SEARCH", payload: params.search || "" });
 			dispatch({ type: "SET_FILTERS", payload: params.filters });
@@ -234,7 +236,6 @@ export function useListState<T>(
 	// アクション関数
 	const setPage = useCallback(
 		(page: number) => {
-			dispatch({ type: "SET_PAGE", payload: page });
 			urlParams.updatePage(page);
 		},
 		[urlParams],
@@ -242,7 +243,6 @@ export function useListState<T>(
 
 	const setItemsPerPage = useCallback(
 		(itemsPerPage: number) => {
-			dispatch({ type: "SET_ITEMS_PER_PAGE", payload: itemsPerPage });
 			urlParams.updateLimit(itemsPerPage);
 		},
 		[urlParams],
@@ -250,7 +250,6 @@ export function useListState<T>(
 
 	const setSort = useCallback(
 		(sort: string) => {
-			dispatch({ type: "SET_SORT", payload: sort });
 			urlParams.updateSort(sort);
 		},
 		[urlParams],
@@ -258,7 +257,6 @@ export function useListState<T>(
 
 	const setSearch = useCallback(
 		(search: string) => {
-			dispatch({ type: "SET_SEARCH", payload: search });
 			urlParams.updateSearch(search);
 		},
 		[urlParams],
@@ -266,14 +264,12 @@ export function useListState<T>(
 
 	const setFilter = useCallback(
 		(key: string, value: any) => {
-			dispatch({ type: "SET_FILTER", payload: { key, value } });
 			urlParams.updateFilter(key, value);
 		},
 		[urlParams],
 	);
 
 	const resetFilters = useCallback(() => {
-		dispatch({ type: "RESET_FILTERS" });
 		urlParams.resetFilters();
 	}, [urlParams]);
 
