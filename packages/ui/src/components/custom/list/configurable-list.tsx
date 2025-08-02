@@ -66,19 +66,25 @@ export function ConfigurableList<T>({
 		[urlSync, urlHook.params, itemsPerPage, defaultSort, filters],
 	);
 
+	// fetchFnをメモ化
+	const memoizedFetchFn = useMemo(() => {
+		if (!isServerSide) {
+			return async () => ({ items: initialItems, total: initialItems.length });
+		}
+		return wrapLegacyFetchData(async (params) => {
+			const apiParams = dataAdapter!.toParams(params);
+			const result = await fetchFn!(apiParams);
+			return {
+				items: result.items || [],
+				totalCount: result.total || result.totalCount || 0,
+				filteredCount: result.total || result.filteredCount || 0,
+			};
+		}, dataAdapter!);
+	}, [isServerSide, dataAdapter, fetchFn, initialItems]);
+
 	// サーバーサイドデータ取得
 	const serverData = useListData(fetchParams, {
-		fetchFn: isServerSide
-			? wrapLegacyFetchData(async (params) => {
-					const apiParams = dataAdapter!.toParams(params);
-					const result = await fetchFn!(apiParams);
-					return {
-						items: result.items || [],
-						totalCount: result.total || result.totalCount || 0,
-						filteredCount: result.total || result.filteredCount || 0,
-					};
-				}, dataAdapter!)
-			: async () => ({ items: initialItems, total: initialItems.length }),
+		fetchFn: memoizedFetchFn,
 		initialData: isServerSide ? undefined : { items: initialItems, total: initialItems.length },
 		onError,
 		debounceMs: searchable ? 300 : 0, // 検索時のみデバウンス

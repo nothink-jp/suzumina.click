@@ -103,7 +103,17 @@ export function useListData<T>(params: StandardListParams, options: UseListDataO
 				onError?.(listError);
 			}
 		}
-	}, [params, fetchFn, debounceMs, onError]);
+	}, [
+		params.page,
+		params.itemsPerPage,
+		params.sort,
+		params.search,
+		// filtersオブジェクトをJSON文字列化して比較
+		JSON.stringify(params.filters),
+		fetchFn,
+		debounceMs,
+		onError,
+	]);
 
 	// パラメータが変更されたらデータを再取得
 	useEffect(() => {
