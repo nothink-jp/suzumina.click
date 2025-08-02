@@ -1,8 +1,8 @@
 "use client";
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import { GenericList, type ListConfig } from "@suzumina.click/ui/components/custom/generic-list";
-import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
+import type { ListConfig } from "@suzumina.click/ui/components/custom/generic-list/types";
+import { GenericList } from "@suzumina.click/ui/components/custom/list/generic-list-compat";
 import { useMemo } from "react";
 import { fetchVideosForGenericList } from "../actions";
 import VideoCard from "./VideoCard";
@@ -100,20 +100,11 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 		</div>
 	);
 
-	// 空状態のカスタマイズ
-	const emptyStateProps = {
-		icon: "PlayCircle",
-		title: "動画が見つかりませんでした",
-		description: "検索条件を変更してみてください。",
-	};
-
 	return (
 		<GenericList
 			config={config}
 			fetchData={fetchVideosForGenericList}
 			renderItem={renderItem}
-			emptyStateProps={emptyStateProps}
-			listTitle="動画一覧"
 			initialData={initialData}
 		/>
 	);
