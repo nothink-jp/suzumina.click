@@ -2,6 +2,7 @@
  * リストコンポーネントのエクスポート
  */
 
+export { ConfigurableList } from "./configurable-list";
 export { useListData } from "./core/hooks/useListData";
 export { useListUrl } from "./core/hooks/useListUrl";
 // Core types and utilities
@@ -31,5 +32,5 @@ export {
 	transformFilterValue,
 	validateFilterValue,
 } from "./core/utils/filterHelpers";
-// SimpleList
+// Components
 export { SimpleList } from "./simple-list";
