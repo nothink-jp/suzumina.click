@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import type { StorybookConfig } from "@storybook/react-vite";
 
 const config: StorybookConfig = {
@@ -19,6 +20,14 @@ const config: StorybookConfig = {
 		config.css.postcss = {
 			plugins: [postcssPlugin.default()],
 		};
+
+		// Next.js navigation モックを追加
+		config.resolve = config.resolve || {};
+		config.resolve.alias = {
+			...config.resolve.alias,
+			"next/navigation": resolve(__dirname, "./mocks/next-navigation.ts"),
+		};
+
 		return config;
 	},
 };

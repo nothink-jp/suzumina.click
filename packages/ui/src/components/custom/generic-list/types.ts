@@ -47,6 +47,7 @@ export interface PaginationConfig {
 
 // リスト設定
 export interface ListConfig {
+	title?: string;
 	baseUrl: string;
 	filters?: FilterDefinition[];
 	sortOptions?: SortDefinition[];
@@ -79,7 +80,9 @@ export interface ListResult<T> {
 }
 
 // リスト状態
-export interface ListState {
+export interface ListState<T = any> {
+	// データ
+	items: T[];
 	// 件数管理
 	counts: {
 		total: number;

@@ -1,16 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useMemo, useReducer } from "react";
 import type { ListAction, ListConfig, ListParams, ListResult, ListState } from "./types";
 import { useUrlParams } from "./use-url-params";
 
 /**
  * リスト状態を管理するリデューサー
  */
-function listReducer(state: ListState, action: ListAction): ListState {
+function listReducer<T>(state: ListState<T>, action: ListAction): ListState<T> {
 	switch (action.type) {
 		case "SET_ITEMS": {
-			const { totalCount, filteredCount } = action.payload;
+			const { items, totalCount, filteredCount } = action.payload;
 			const totalPages = Math.ceil(filteredCount / state.pagination.itemsPerPage);
 
 			// ページ番号の妥当性チェック
@@ -21,10 +21,11 @@ function listReducer(state: ListState, action: ListAction): ListState {
 
 			return {
 				...state,
+				items: items as T[],
 				counts: {
 					total: totalCount,
 					filtered: filteredCount,
-					displayed: action.payload.items.length,
+					displayed: items.length,
 				},
 				pagination: {
 					...state.pagination,
@@ -142,9 +143,10 @@ export function useListState<T>(
 	const urlParams = useUrlParams(config);
 	const { params } = urlParams;
 
-	// 初期状態
+	// 初期状態（一度だけ作成）
 	const initialState = useMemo(
-		(): ListState => ({
+		(): ListState<T> => ({
+			items: [],
 			counts: {
 				total: 0,
 				filtered: 0,
@@ -161,19 +163,12 @@ export function useListState<T>(
 			isLoading: false,
 			error: null,
 		}),
-		[params],
+		[], // 空の依存配列にして一度だけ作成
 	);
 
 	const [state, dispatch] = useReducer(listReducer, initialState);
 
-	// URLパラメータとの同期
-	useEffect(() => {
-		dispatch({ type: "SET_PAGE", payload: params.page });
-		dispatch({ type: "SET_ITEMS_PER_PAGE", payload: params.limit });
-		dispatch({ type: "SET_SORT", payload: params.sort });
-		dispatch({ type: "SET_SEARCH", payload: params.search });
-		dispatch({ type: "SET_FILTERS", payload: params.filters });
-	}, [params]);
+	// URLパラメータとの同期は削除（各アクション関数でURLを更新するため）
 
 	// データ取得
 	const loadData = useCallback(async () => {
@@ -181,7 +176,15 @@ export function useListState<T>(
 		dispatch({ type: "SET_ERROR", payload: null });
 
 		try {
-			const result = await fetchData(params);
+			// 現在のstateから値を構築
+			const currentParams: ListParams = {
+				page: state.pagination.currentPage,
+				limit: state.pagination.itemsPerPage,
+				sort: state.sort,
+				search: state.search,
+				filters: state.filters,
+			};
+			const result = await fetchData(currentParams);
 			dispatch({
 				type: "SET_ITEMS",
 				payload: {
@@ -198,7 +201,14 @@ export function useListState<T>(
 		} finally {
 			dispatch({ type: "SET_LOADING", payload: false });
 		}
-	}, [fetchData, params]);
+	}, [
+		fetchData,
+		state.pagination.currentPage,
+		state.pagination.itemsPerPage,
+		state.sort,
+		state.search,
+		state.filters,
+	]);
 
 	// アクション関数
 	const setPage = useCallback(

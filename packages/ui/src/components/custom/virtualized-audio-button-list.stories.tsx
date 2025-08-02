@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import { fn } from "storybook/test";
 import { VirtualizedAudioButtonList } from "./virtualized-audio-button-list";
 
 const meta: Meta<typeof VirtualizedAudioButtonList> = {

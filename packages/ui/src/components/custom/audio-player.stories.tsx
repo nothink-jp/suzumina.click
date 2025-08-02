@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
 import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
 import { useRef } from "react";
+import { fn } from "storybook/test";
 import { type AudioControls, AudioPlayer } from "./audio-player";
 
 const meta = {
