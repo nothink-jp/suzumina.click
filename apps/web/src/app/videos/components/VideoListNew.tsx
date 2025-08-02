@@ -23,11 +23,18 @@ export default function VideoListNew({ initialData }: VideoListNewProps) {
 
 	// 初期データがURLのページサイズと一致しているか確認
 	const adjustedInitialItems = useMemo(() => {
+		console.log("[VideoListNew] Checking initial data:", {
+			initialItemsLength: initialData.items.length,
+			urlPageSize,
+			willUseInitialData: initialData.items.length === urlPageSize,
+		});
+
 		// URLのページサイズと初期データのアイテム数が一致している場合はそのまま使用
 		// 一致していない場合は空配列を返して再取得を促す
-		if (initialData.items.length === urlPageSize || urlPageSize === 12) {
+		if (initialData.items.length === urlPageSize) {
 			return initialData.items;
 		}
+		// ページサイズが変更された場合は空配列を返して再取得を促す
 		return [];
 	}, [initialData.items, urlPageSize]);
 

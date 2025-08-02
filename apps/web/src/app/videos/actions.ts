@@ -109,6 +109,12 @@ export async function fetchVideosForGenericList(
 		import("@suzumina.click/shared-types").VideoPlainObject
 	>
 > {
+	console.log("[fetchVideosForGenericList] Called with params:", {
+		page: params.page,
+		limit: params.limit,
+		itemsPerPage: params.itemsPerPage,
+	});
+
 	// フィルターパラメータの変換
 	const videoParams = {
 		page: params.page,
@@ -129,7 +135,12 @@ export async function fetchVideosForGenericList(
 	};
 
 	// データ取得
+	console.log("[fetchVideosForGenericList] Calling getVideoTitles with:", videoParams);
 	const data = await getVideoTitles(videoParams);
+	console.log("[fetchVideosForGenericList] Got data:", {
+		itemsCount: data.videos.length,
+		total: data.total,
+	});
 
 	// getVideoTitlesが返すtotalを使用（実際のフィルタリング結果の件数）
 	const filteredCount = data.total;

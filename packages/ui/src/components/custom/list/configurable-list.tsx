@@ -79,8 +79,8 @@ export function ConfigurableList<T>({
 			return async () => ({ items: initialItems, total: initialItems.length });
 		}
 		return wrapLegacyFetchData(async (params) => {
-			const apiParams = dataAdapter!.toParams(params);
-			const result = await fetchFn!(apiParams);
+			// paramsはすでにdataAdapterによって変換されているので、そのまま使用
+			const result = await fetchFn!(params);
 			return {
 				items: result.items || [],
 				totalCount: result.total || result.totalCount || 0,
