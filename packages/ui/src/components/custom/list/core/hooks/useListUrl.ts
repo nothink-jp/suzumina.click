@@ -5,6 +5,7 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import type { FilterConfig } from "../types";
+import { getDefaultFilterValues } from "../utils/filterHelpers";
 
 interface UseListUrlOptions {
 	/** フィルター設定 */
@@ -191,12 +192,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 	);
 
 	const resetFilters = useCallback(() => {
-		const defaultFilters: Record<string, any> = {};
-		Object.entries(filters).forEach(([key, config]) => {
-			if (config.showAll && config.type === "select") {
-				defaultFilters[key] = "all";
-			}
-		});
+		const defaultFilters = getDefaultFilterValues(filters);
 
 		updateUrl({
 			filters: defaultFilters,
