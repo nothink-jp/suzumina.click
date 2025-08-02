@@ -49,6 +49,7 @@ export function ConfigurableList<T>({
 		md: 2,
 		lg: 3,
 	},
+	itemsPerPageOptions,
 }: ConfigurableListProps<T>) {
 	// URLパラメータとの同期
 	const urlHook = useListUrl({
@@ -222,6 +223,15 @@ export function ConfigurableList<T>({
 		}
 	}, [urlSync, urlHook]);
 
+	const handleItemsPerPageChange = useCallback(
+		(value: string) => {
+			if (urlSync) {
+				urlHook.setItemsPerPage(Number(value));
+			}
+		},
+		[urlSync, urlHook],
+	);
+
 	// フィルターコンポーネントのレンダリング
 	const renderFilter = (key: string, config: FilterConfig) => {
 		const value = fetchParams.filters[key];
@@ -353,18 +363,40 @@ export function ConfigurableList<T>({
 				)}
 			</div>
 
-			{/* アイテム数表示 */}
+			{/* アイテム数表示とページサイズ選択 */}
 			<div className="mb-4 flex items-center justify-between text-sm text-muted-foreground">
-				<div>
-					{data.total > 0 ? (
-						<>
-							{data.total}件中 {pagination.startIndex + 1}-
-							{Math.min(pagination.endIndex, data.total)}件を表示
-						</>
-					) : fetchParams.search ? (
-						"検索結果がありません"
-					) : (
-						emptyMessage
+				<div className="flex items-center gap-4">
+					<div>
+						{data.total > 0 ? (
+							<>
+								{data.total}件中 {pagination.startIndex + 1}-
+								{Math.min(pagination.endIndex, data.total)}件を表示
+							</>
+						) : fetchParams.search ? (
+							"検索結果がありません"
+						) : (
+							emptyMessage
+						)}
+					</div>
+					{itemsPerPageOptions && itemsPerPageOptions.length > 0 && data.total > 0 && (
+						<div className="flex items-center gap-2">
+							<span className="text-xs">表示件数:</span>
+							<Select
+								value={fetchParams.itemsPerPage.toString()}
+								onValueChange={handleItemsPerPageChange}
+							>
+								<SelectTrigger className="h-8 w-[80px]">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{itemsPerPageOptions.map((option) => (
+										<SelectItem key={option} value={option.toString()}>
+											{option}件
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 					)}
 				</div>
 				{activeFilters && (

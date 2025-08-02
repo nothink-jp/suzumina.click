@@ -97,6 +97,7 @@ export default function VideoListNew({ initialData }: VideoListNewProps) {
 			defaultSort="newest"
 			searchPlaceholder="動画タイトルで検索..."
 			itemsPerPage={12}
+			itemsPerPageOptions={[12, 24, 48]}
 			fetchFn={fetchVideosForGenericList}
 			dataAdapter={dataAdapter}
 			emptyMessage="動画が見つかりませんでした。検索条件を変更してみてください。"

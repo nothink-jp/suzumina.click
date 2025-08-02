@@ -153,6 +153,7 @@ export function GenericListCompat<T>({
 				searchable={!!config.searchConfig}
 				searchPlaceholder={config.searchConfig?.placeholder}
 				itemsPerPage={config.paginationConfig?.itemsPerPage || 12}
+				itemsPerPageOptions={config.paginationConfig?.itemsPerPageOptions}
 				urlSync={true}
 				fetchFn={fetchData}
 				dataAdapter={dataAdapter}

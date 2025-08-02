@@ -118,6 +118,9 @@ export interface ConfigurableListProps<T> extends SimpleListProps<T> {
 		lg?: number;
 		xl?: number;
 	};
+
+	// ページサイズ設定
+	itemsPerPageOptions?: number[];
 }
 
 /**
