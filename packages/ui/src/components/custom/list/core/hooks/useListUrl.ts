@@ -116,11 +116,17 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 			}
 
 			// フィルター
-			if (updates.filters) {
+			if (updates.filters !== undefined) {
+				// まず、既存のフィルターパラメータをすべて削除
+				Object.keys(filters).forEach((key) => {
+					params.delete(key);
+				});
+
+				// 新しいフィルター値を設定
 				Object.entries(updates.filters).forEach(([key, value]) => {
 					const config = filters[key];
 
-					// "all"値や空値は削除
+					// "all"値や空値は削除（すでに削除済みなのでスキップ）
 					if (
 						value === undefined ||
 						value === null ||
@@ -128,7 +134,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 						(config?.showAll && value === "all") ||
 						(Array.isArray(value) && value.length === 0)
 					) {
-						params.delete(key);
+						// すでに削除されているので何もしない
 					} else {
 						// 型に応じてシリアライズ
 						if (Array.isArray(value)) {
@@ -138,7 +144,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 							if (min !== undefined || max !== undefined) {
 								params.set(key, `${min || ""}-${max || ""}`);
 							} else {
-								params.delete(key);
+								// すでに削除されている
 							}
 						} else {
 							params.set(key, value.toString());
