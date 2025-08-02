@@ -29,13 +29,8 @@ export interface FilterDefinition {
 
 // ソート定義
 export interface SortDefinition {
-	key: string;
+	value: string;
 	label: string;
-	// 複数フィールドでのソートに対応
-	fields: Array<{
-		field: string;
-		direction: "asc" | "desc";
-	}>;
 }
 
 // ページネーション設定
@@ -45,13 +40,20 @@ export interface PaginationConfig {
 	itemsPerPageOptions?: number[];
 }
 
+// 検索設定
+export interface SearchConfig {
+	placeholder?: string;
+	debounceMs?: number;
+}
+
 // リスト設定
 export interface ListConfig {
 	title?: string;
 	baseUrl: string;
 	filters?: FilterDefinition[];
-	sortOptions?: SortDefinition[];
+	sorts?: SortDefinition[];
 	defaultSort?: string;
+	searchConfig?: SearchConfig;
 	paginationConfig?: Partial<PaginationConfig>;
 	// URLパラメータのカスタマイズ
 	urlParamMapping?: {

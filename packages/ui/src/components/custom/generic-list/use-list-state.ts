@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type { ListAction, ListConfig, ListParams, ListResult, ListState } from "./types";
 import { useUrlParams } from "./use-url-params";
 
@@ -139,6 +139,7 @@ function listReducer<T>(state: ListState<T>, action: ListAction): ListState<T> {
 export function useListState<T>(
 	config: ListConfig,
 	fetchData: (params: ListParams) => Promise<ListResult<T>>,
+	initialData?: ListResult<T>,
 ) {
 	const urlParams = useUrlParams(config);
 	const { params } = urlParams;
@@ -146,20 +147,22 @@ export function useListState<T>(
 	// 初期状態（一度だけ作成）
 	const initialState = useMemo(
 		(): ListState<T> => ({
-			items: [],
+			items: initialData?.items || [],
 			counts: {
-				total: 0,
-				filtered: 0,
-				displayed: 0,
+				total: initialData?.totalCount || 0,
+				filtered: initialData?.filteredCount || initialData?.totalCount || 0,
+				displayed: initialData?.items.length || 0,
 			},
 			pagination: {
 				currentPage: params.page,
 				itemsPerPage: params.limit,
-				totalPages: 0,
+				totalPages: initialData
+					? Math.ceil((initialData.filteredCount || initialData.totalCount) / params.limit)
+					: 0,
 			},
 			filters: params.filters,
-			sort: params.sort,
-			search: params.search,
+			sort: params.sort || "",
+			search: params.search || "",
 			isLoading: false,
 			error: null,
 		}),
@@ -168,7 +171,34 @@ export function useListState<T>(
 
 	const [state, dispatch] = useReducer(listReducer, initialState);
 
-	// URLパラメータとの同期は削除（各アクション関数でURLを更新するため）
+	// URLパラメータが変更されたときにstateを更新（初回レンダリング時は除く）
+	const isFirstRender = useRef(true);
+	const prevParamsRef = useRef(params);
+
+	useEffect(() => {
+		if (isFirstRender.current) {
+			isFirstRender.current = false;
+			prevParamsRef.current = params;
+			return;
+		}
+
+		// パラメータが実際に変更されたかチェック
+		const hasChanged =
+			prevParamsRef.current.page !== params.page ||
+			prevParamsRef.current.limit !== params.limit ||
+			prevParamsRef.current.sort !== params.sort ||
+			prevParamsRef.current.search !== params.search ||
+			JSON.stringify(prevParamsRef.current.filters) !== JSON.stringify(params.filters);
+
+		if (hasChanged) {
+			dispatch({ type: "SET_PAGE", payload: params.page });
+			dispatch({ type: "SET_ITEMS_PER_PAGE", payload: params.limit });
+			dispatch({ type: "SET_SORT", payload: params.sort || "" });
+			dispatch({ type: "SET_SEARCH", payload: params.search || "" });
+			dispatch({ type: "SET_FILTERS", payload: params.filters });
+			prevParamsRef.current = params;
+		}
+	}, [params]);
 
 	// データ取得
 	const loadData = useCallback(async () => {
@@ -176,13 +206,13 @@ export function useListState<T>(
 		dispatch({ type: "SET_ERROR", payload: null });
 
 		try {
-			// 現在のstateから値を構築
+			// URLパラメータから最新の値を使用
 			const currentParams: ListParams = {
-				page: state.pagination.currentPage,
-				limit: state.pagination.itemsPerPage,
-				sort: state.sort,
-				search: state.search,
-				filters: state.filters,
+				page: params.page,
+				limit: params.limit,
+				sort: params.sort,
+				search: params.search,
+				filters: params.filters,
 			};
 			const result = await fetchData(currentParams);
 			dispatch({
@@ -201,14 +231,7 @@ export function useListState<T>(
 		} finally {
 			dispatch({ type: "SET_LOADING", payload: false });
 		}
-	}, [
-		fetchData,
-		state.pagination.currentPage,
-		state.pagination.itemsPerPage,
-		state.sort,
-		state.search,
-		state.filters,
-	]);
+	}, [fetchData, params]);
 
 	// アクション関数
 	const setPage = useCallback(
