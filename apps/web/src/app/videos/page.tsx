@@ -21,11 +21,11 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 		sort: (params.sort as string) || "newest",
 		search: params.search as string,
 		filters: {
-			year: params.year !== "all" ? params.year : undefined,
-			categoryNames: params.categoryNames !== "all" ? params.categoryNames : undefined,
-			videoType: params.videoType !== "all" ? params.videoType : undefined,
-			playlistTags: params.playlistTags,
-			userTags: params.userTags,
+			year: params.year as string,
+			categoryNames: params.categoryNames as string,
+			videoType: params.videoType as string,
+			playlistTags: params.playlistTags as string | string[],
+			userTags: params.userTags as string | string[],
 		},
 	});
 

@@ -115,13 +115,17 @@ export async function fetchVideosForGenericList(
 		limit: params.limit,
 		sort: params.sort,
 		search: params.search,
-		year: params.filters?.year as string,
+		year: params.filters?.year === "all" ? undefined : (params.filters?.year as string),
 		playlistTags: params.filters?.playlistTags as string[],
 		userTags: params.filters?.userTags as string[],
-		categoryNames: params.filters?.categoryNames
-			? [params.filters.categoryNames as string]
-			: undefined,
-		videoType: params.filters?.videoType as string,
+		categoryNames:
+			params.filters?.categoryNames === "all"
+				? undefined
+				: params.filters?.categoryNames
+					? [params.filters.categoryNames as string]
+					: undefined,
+		videoType:
+			params.filters?.videoType === "all" ? undefined : (params.filters?.videoType as string),
 	};
 
 	// データ取得
@@ -275,7 +279,23 @@ async function getVideosWithComplexFiltering(
 
 	// ページネーション用のオフセット
 	const startOffset = (page - 1) * limit;
-	const fetchLimit = Math.min(startOffset + limit * 3, 300);
+
+	// 年代フィルタがある場合は、その年のデータだけを取得するようにクエリを調整
+	if (params.year) {
+		const year = Number.parseInt(params.year, 10);
+		if (!Number.isNaN(year)) {
+			// 年の開始と終了の日付を作成
+			const startDate = new Date(year, 0, 1);
+			const endDate = new Date(year + 1, 0, 1);
+
+			query = query.where("publishedAt", ">=", startDate).where("publishedAt", "<", endDate);
+		}
+	}
+
+	// フィルタに応じてフェッチ制限を調整
+	const fetchLimit = params.year
+		? Math.min(startOffset + limit * 3, 500) // 年代フィルタがある場合は少なめ
+		: Math.min(startOffset + limit * 3, 300);
 	query = query.limit(fetchLimit);
 
 	const snapshot = await query.get();
@@ -287,7 +307,10 @@ async function getVideosWithComplexFiltering(
 		.filter((video) => video.content.privacyStatus === "public");
 
 	// フィルタリング処理
-	const filteredVideos = filterVideos(allVideos, params);
+	// 年代フィルタはクエリレベルで適用済みなので、paramsから削除
+	const filterParams = { ...params };
+	delete filterParams.year;
+	const filteredVideos = filterVideos(allVideos, filterParams);
 
 	// ページネーション
 	const paginatedVideos = filteredVideos.slice(startOffset, startOffset + limit + 1);
