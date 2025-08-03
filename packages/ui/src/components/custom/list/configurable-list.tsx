@@ -1,0 +1,655 @@
+/**
+ * ConfigurableList - カスタマイズ可能なリストコンポーネント
+ * フィルター、ソート、URL同期、サーバーサイドデータ取得機能を提供
+ */
+
+"use client";
+
+import { Search, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "../../ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
+import { Skeleton } from "../../ui/skeleton";
+import { useListData } from "./core/hooks/useListData";
+import { useListUrl } from "./core/hooks/useListUrl";
+import type { ConfigurableListProps, FilterConfig, StandardListParams } from "./core/types";
+import { generateGridClasses } from "./core/utils/classHelpers";
+import { calculatePagination, wrapLegacyFetchData } from "./core/utils/dataAdapter";
+import {
+	generateOptions,
+	getDefaultFilterValues,
+	hasActiveFilters,
+	normalizeOptions,
+	transformFilterValue,
+} from "./core/utils/filterHelpers";
+import { getFilterableValue, getSearchableText } from "./core/utils/typeSafeAccess";
+
+export function ConfigurableList<T>({
+	items: initialItems,
+	renderItem,
+	itemsPerPage = 12,
+	loading: externalLoading = false,
+	error: externalError,
+	className = "",
+	// ConfigurableList専用props
+	filters = {},
+	sorts = [],
+	defaultSort,
+	searchable = true,
+	searchPlaceholder = "検索...",
+	urlSync = true,
+	dataAdapter,
+	fetchFn,
+	onError,
+	emptyMessage = "データがありません",
+	loadingComponent,
+	layout = "list",
+	gridColumns = {
+		default: 1,
+		md: 2,
+		lg: 3,
+	},
+	itemsPerPageOptions,
+	initialTotal,
+}: ConfigurableListProps<T>) {
+	// URLパラメータとの同期
+	const urlHook = useListUrl({
+		filters,
+		defaultSort,
+		defaultPageSize: itemsPerPage,
+	});
+
+	// urlSyncがfalseの場合のローカル状態
+	const [localParams, setLocalParams] = useState<StandardListParams>({
+		page: 1,
+		itemsPerPage,
+		sort: defaultSort || "",
+		search: "",
+		filters: getDefaultFilterValues(filters),
+	});
+
+	// サーバーサイドデータ取得が有効な場合
+	const isServerSide = !!fetchFn && !!dataAdapter;
+
+	// データ取得用のパラメータ
+	const fetchParams: StandardListParams = useMemo(
+		() => (urlSync ? urlHook.params : localParams),
+		[urlSync, urlHook.params, localParams],
+	);
+
+	// fetchFnをメモ化
+	const memoizedFetchFn = useMemo(() => {
+		if (!isServerSide) {
+			return async () => ({ items: initialItems, total: initialItems.length });
+		}
+		return wrapLegacyFetchData(
+			async (params) => {
+				// paramsはすでにdataAdapterによって変換されているので、そのまま使用
+				if (!fetchFn) {
+					throw new Error("fetchFn is required when using server-side data fetching");
+				}
+				const result = await fetchFn(params);
+				const typedResult = result as {
+					items?: T[];
+					total?: number;
+					totalCount?: number;
+					filteredCount?: number;
+				};
+				return {
+					items: typedResult.items || [],
+					totalCount: typedResult.total || typedResult.totalCount || 0,
+					filteredCount: typedResult.total || typedResult.filteredCount || 0,
+				};
+			},
+			dataAdapter || {
+				toParams: (params) => params,
+				fromResult: (result) => {
+					const typedResult = result as import("./core/types").ListDataSource<T>;
+					return typedResult;
+				},
+			},
+		);
+	}, [isServerSide, dataAdapter, fetchFn, initialItems]);
+
+	// サーバーサイドデータ取得
+	const serverData = useListData(fetchParams, {
+		fetchFn: memoizedFetchFn,
+		initialData:
+			isServerSide && initialTotal !== undefined
+				? { items: initialItems, total: initialTotal }
+				: !isServerSide
+					? { items: initialItems, total: initialTotal || initialItems.length }
+					: undefined,
+		onError,
+		debounceMs: searchable ? 300 : 0, // 検索時のみデバウンス
+	});
+
+	// 使用するデータソース
+	const data = serverData.data || {
+		items: initialItems,
+		total: initialTotal || initialItems.length,
+	};
+	const loading = externalLoading || serverData.loading;
+	const error = externalError || serverData.error;
+
+	// クライアントサイドのフィルタリング（サーバーサイドでない場合）
+	const processedItems = useMemo(() => {
+		if (isServerSide) return data.items;
+
+		let result = [...data.items];
+
+		// 検索フィルタリング
+		if (fetchParams.search && searchable) {
+			result = result.filter((item) => {
+				const searchableText = getSearchableText(item);
+				return searchableText
+					? searchableText.toLowerCase().includes(fetchParams.search?.toLowerCase() || "")
+					: false;
+			});
+		}
+
+		// カスタムフィルターの適用
+		Object.entries(fetchParams.filters).forEach(([key, value]) => {
+			const config = filters[key];
+			if (!config) return;
+
+			// 空文字列の場合はフィルタリングしない
+			if (value === "") return;
+
+			const transformedValue = transformFilterValue(value, config);
+			if (transformedValue === undefined) return;
+
+			result = result.filter((item) => {
+				const itemValue = getFilterableValue(item, key);
+
+				switch (config.type) {
+					case "multiselect":
+						return Array.isArray(transformedValue) && transformedValue.includes(itemValue);
+					case "range": {
+						const { min, max } = transformedValue as { min?: number; max?: number };
+						const numValue = Number(itemValue);
+						return (min === undefined || numValue >= min) && (max === undefined || numValue <= max);
+					}
+					case "boolean":
+						return Boolean(itemValue) === transformedValue;
+					default:
+						return itemValue === transformedValue;
+				}
+			});
+		});
+
+		// ソート
+		if (fetchParams.sort) {
+			result.sort((a, b) => {
+				const sortKey = fetchParams.sort;
+				if (!sortKey) return 0;
+
+				const aValue = getFilterableValue(a, sortKey);
+				const bValue = getFilterableValue(b, sortKey);
+
+				// Handle undefined values
+				if (aValue === undefined && bValue === undefined) return 0;
+				if (aValue === undefined) return 1;
+				if (bValue === undefined) return -1;
+
+				// Compare values
+				// For string comparison
+				if (typeof aValue === "string" && typeof bValue === "string") {
+					return aValue.localeCompare(bValue);
+				}
+				// For number comparison
+				if (typeof aValue === "number" && typeof bValue === "number") {
+					return aValue - bValue;
+				}
+				// For other types, convert to string and compare
+				const aStr = String(aValue);
+				const bStr = String(bValue);
+				return aStr.localeCompare(bStr);
+			});
+		}
+
+		return result;
+	}, [data.items, fetchParams, isServerSide, searchable, filters]);
+
+	// ページネーション情報
+	const pagination = useMemo(() => {
+		const total = isServerSide ? data.total : processedItems.length;
+		return calculatePagination(total, fetchParams.itemsPerPage, fetchParams.page);
+	}, [data.total, processedItems.length, fetchParams.itemsPerPage, fetchParams.page, isServerSide]);
+
+	// 現在のページのアイテム
+	const currentItems = useMemo(() => {
+		// サーバーサイドの場合、データが期待するページサイズと一致しているか確認
+		if (isServerSide) {
+			// サーバーから取得したデータが現在のページサイズと一致している場合はそのまま使用
+			// そうでない場合は、データの再取得が必要なのでローディング中として扱う
+			return data.items;
+		}
+		return processedItems.slice(pagination.startIndex, pagination.endIndex);
+	}, [processedItems, pagination, isServerSide, data.items]);
+
+	// IME変換中かどうかを管理
+	const [isComposing, setIsComposing] = useState(false);
+	const [localSearchValue, setLocalSearchValue] = useState(fetchParams.search);
+
+	// URLパラメータが変更されたときにローカル値を同期
+	useEffect(() => {
+		setLocalSearchValue(fetchParams.search);
+	}, [fetchParams.search]);
+
+	// アクション関数
+	const handleSearchChange = useCallback(
+		(value: string) => {
+			setLocalSearchValue(value);
+			// IME変換中は更新しない
+			if (!isComposing) {
+				if (urlSync) {
+					urlHook.setSearch(value);
+				} else {
+					setLocalParams((prev) => ({ ...prev, search: value }));
+				}
+			}
+		},
+		[urlSync, urlHook, isComposing],
+	);
+
+	// IME変換終了時の処理
+	const handleCompositionEnd = useCallback(() => {
+		setIsComposing(false);
+		// 変換が終了したら、現在の値で更新
+		if (urlSync) {
+			urlHook.setSearch(localSearchValue || "");
+		} else {
+			setLocalParams((prev) => ({ ...prev, search: localSearchValue || "" }));
+		}
+	}, [urlSync, urlHook, localSearchValue]);
+
+	const handleSortChange = useCallback(
+		(value: string) => {
+			if (urlSync) {
+				urlHook.setSort(value);
+			} else {
+				setLocalParams((prev) => ({ ...prev, sort: value }));
+			}
+		},
+		[urlSync, urlHook],
+	);
+
+	const handleFilterChange = useCallback(
+		(key: string, value: unknown) => {
+			if (urlSync) {
+				urlHook.setFilter(key, value);
+			} else {
+				setLocalParams((prev) => ({
+					...prev,
+					filters: { ...prev.filters, [key]: value },
+				}));
+			}
+		},
+		[urlSync, urlHook],
+	);
+
+	const handlePageChange = useCallback(
+		(page: number) => {
+			if (urlSync) {
+				urlHook.setPage(page);
+			} else {
+				setLocalParams((prev) => ({ ...prev, page }));
+			}
+		},
+		[urlSync, urlHook],
+	);
+
+	const handleResetFilters = useCallback(() => {
+		if (urlSync) {
+			urlHook.resetFilters();
+		} else {
+			setLocalParams((prev) => ({
+				...prev,
+				filters: getDefaultFilterValues(filters),
+				search: "",
+			}));
+		}
+	}, [urlSync, urlHook, filters]);
+
+	const handleItemsPerPageChange = useCallback(
+		(value: string) => {
+			if (urlSync) {
+				urlHook.setItemsPerPage(Number(value));
+			} else {
+				setLocalParams((prev) => ({ ...prev, itemsPerPage: Number(value), page: 1 }));
+			}
+		},
+		[urlSync, urlHook],
+	);
+
+	// フィルターコンポーネントのレンダリング
+	const renderFilter = (key: string, config: FilterConfig) => {
+		const value = fetchParams.filters[key];
+
+		switch (config.type) {
+			case "select": {
+				const options = generateOptions(config);
+				return (
+					<Select value={String(value || "")} onValueChange={(v) => handleFilterChange(key, v)}>
+						<SelectTrigger className="w-[180px]">
+							<SelectValue placeholder={config.placeholder || `${config.label || key}を選択`} />
+						</SelectTrigger>
+						<SelectContent>
+							{options.map((opt) => (
+								<SelectItem key={opt.value} value={opt.value}>
+									{opt.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				);
+			}
+			case "boolean":
+				return (
+					<Button
+						variant={value ? "default" : "outline"}
+						size="sm"
+						onClick={() => handleFilterChange(key, !value)}
+					>
+						{config.label || key}
+					</Button>
+				);
+			default:
+				return null;
+		}
+	};
+
+	// ローディング表示
+	if (loading && currentItems.length === 0) {
+		if (loadingComponent) return <>{loadingComponent}</>;
+
+		return (
+			<div className={className}>
+				<div className="space-y-4">
+					{Array.from({ length: 3 }).map((_, i) => (
+						<Skeleton key={i} className="h-24 w-full" />
+					))}
+				</div>
+			</div>
+		);
+	}
+
+	// エラー表示
+	if (error) {
+		return (
+			<div className={`rounded-lg border border-destructive/50 p-6 ${className}`}>
+				<p className="text-destructive">{error.message}</p>
+				{error.retry && (
+					<Button onClick={error.retry} variant="outline" size="sm" className="mt-4">
+						再試行
+					</Button>
+				)}
+			</div>
+		);
+	}
+
+	// ソートオプションの正規化
+	const sortOptions = normalizeOptions(
+		sorts.map((sort) => {
+			if (typeof sort === "string") {
+				return { value: sort, label: sort };
+			}
+			return sort;
+		}),
+	);
+	const hasFilters = Object.keys(filters).length > 0;
+	const activeFilters = hasActiveFilters(fetchParams.filters, filters);
+
+	return (
+		<div className={className}>
+			{/* ヘッダー：検索とフィルターを横並び */}
+			<div className="mb-6">
+				<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
+					{/* 検索ボックス */}
+					{searchable && (
+						<div className="relative flex-1 lg:max-w-md">
+							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								type="search"
+								placeholder={searchPlaceholder}
+								value={localSearchValue}
+								onChange={(e) => handleSearchChange(e.target.value)}
+								onCompositionStart={() => setIsComposing(true)}
+								onCompositionEnd={handleCompositionEnd}
+								className="pl-10"
+							/>
+						</div>
+					)}
+
+					{/* フィルター */}
+					{hasFilters && (
+						<div className="flex flex-shrink-0 flex-wrap items-center gap-2">
+							{Object.entries(filters).map(([key, config]) => (
+								<div key={key}>{renderFilter(key, config)}</div>
+							))}
+							{activeFilters && (
+								<Button variant="ghost" size="sm" onClick={handleResetFilters}>
+									<X className="mr-1 h-3 w-3" />
+									リセット
+								</Button>
+							)}
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* 情報表示とコントロール：件数、ソート、ページサイズ */}
+			<div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				{/* 左側：件数表示 */}
+				<div className="text-sm text-muted-foreground">
+					{data.total > 0 ? (
+						<>
+							全{data.total}件 <span className="mx-2">/</span> {pagination.startIndex + 1}-
+							{Math.min(pagination.endIndex, data.total)}件を表示
+						</>
+					) : fetchParams.search ? (
+						"検索結果がありません"
+					) : (
+						emptyMessage
+					)}
+				</div>
+
+				{/* 右側：ソートとページサイズ */}
+				<div className="flex items-center gap-3">
+					{/* ソート選択 */}
+					{sortOptions.length > 0 && (
+						<Select value={fetchParams.sort} onValueChange={handleSortChange}>
+							<SelectTrigger className="h-8 w-[140px]">
+								<SelectValue placeholder="並び順" />
+							</SelectTrigger>
+							<SelectContent>
+								{sortOptions.map((opt) => (
+									<SelectItem key={opt.value} value={opt.value}>
+										{opt.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					)}
+
+					{/* ページサイズ選択 */}
+					{itemsPerPageOptions && itemsPerPageOptions.length > 0 && data.total > 0 && (
+						<Select
+							value={fetchParams.itemsPerPage.toString()}
+							onValueChange={handleItemsPerPageChange}
+						>
+							<SelectTrigger className="h-8 w-[140px]">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{itemsPerPageOptions.map((option) => (
+									<SelectItem key={option} value={option.toString()}>
+										{option}件/ページ
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					)}
+				</div>
+			</div>
+
+			{/* リスト本体 */}
+			{currentItems.length > 0 && (
+				<div className={layout === "grid" ? generateGridClasses(gridColumns) : "space-y-4"}>
+					{currentItems.map((item, index) => (
+						<div key={pagination.startIndex + index}>
+							{renderItem(item, pagination.startIndex + index)}
+						</div>
+					))}
+				</div>
+			)}
+
+			{/* ページネーション（下部） */}
+			{pagination.totalPages > 1 && (
+				<Pagination className="mt-8">
+					<PaginationContent>
+						{/* Previous ボタン */}
+						<PaginationItem>
+							<PaginationPrevious
+								href="#"
+								onClick={(e) => {
+									e.preventDefault();
+									if (pagination.hasPrev) {
+										handlePageChange(fetchParams.page - 1);
+									}
+								}}
+								className={
+									!pagination.hasPrev ? "pointer-events-none opacity-50" : "cursor-pointer"
+								}
+							/>
+						</PaginationItem>
+
+						{/* ページ番号の生成 */}
+						{(() => {
+							const current = fetchParams.page;
+							const total = pagination.totalPages;
+							const maxVisiblePages = 5;
+							const halfVisible = Math.floor(maxVisiblePages / 2);
+
+							// ページ番号の範囲を計算
+							let startPage = Math.max(1, current - halfVisible);
+							const endPage = Math.min(total, startPage + maxVisiblePages - 1);
+
+							// 開始ページを調整
+							if (endPage - startPage < maxVisiblePages - 1) {
+								startPage = Math.max(1, endPage - maxVisiblePages + 1);
+							}
+
+							const pages = [];
+
+							// 最初のページと省略記号
+							if (startPage > 1) {
+								pages.push(
+									<PaginationItem key="page-1">
+										<PaginationLink
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												handlePageChange(1);
+											}}
+										>
+											1
+										</PaginationLink>
+									</PaginationItem>,
+								);
+
+								if (startPage > 2) {
+									pages.push(
+										<PaginationItem key="ellipsis-start">
+											<PaginationEllipsis />
+										</PaginationItem>,
+									);
+								}
+							}
+
+							// ページ番号
+							for (let i = startPage; i <= endPage; i++) {
+								pages.push(
+									<PaginationItem key={`page-${i}`}>
+										<PaginationLink
+											href="#"
+											isActive={current === i}
+											onClick={(e) => {
+												e.preventDefault();
+												handlePageChange(i);
+											}}
+										>
+											{i}
+										</PaginationLink>
+									</PaginationItem>,
+								);
+							}
+
+							// 最後のページと省略記号
+							if (endPage < total) {
+								if (endPage < total - 1) {
+									pages.push(
+										<PaginationItem key="ellipsis-end">
+											<PaginationEllipsis />
+										</PaginationItem>,
+									);
+								}
+
+								pages.push(
+									<PaginationItem key={`page-${total}`}>
+										<PaginationLink
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												handlePageChange(total);
+											}}
+										>
+											{total}
+										</PaginationLink>
+									</PaginationItem>,
+								);
+							}
+
+							return pages;
+						})()}
+
+						{/* Next ボタン */}
+						<PaginationItem>
+							<PaginationNext
+								href="#"
+								onClick={(e) => {
+									e.preventDefault();
+									if (pagination.hasNext) {
+										handlePageChange(fetchParams.page + 1);
+									}
+								}}
+								className={
+									!pagination.hasNext ? "pointer-events-none opacity-50" : "cursor-pointer"
+								}
+							/>
+						</PaginationItem>
+					</PaginationContent>
+				</Pagination>
+			)}
+
+			{/* 合計件数表示（ページネーションの下） */}
+			{pagination.totalPages > 1 && (
+				<div className="mt-2 text-center text-sm text-muted-foreground">
+					{data.total}件中 {pagination.startIndex + 1}〜{Math.min(pagination.endIndex, data.total)}
+					件を表示
+				</div>
+			)}
+		</div>
+	);
+}

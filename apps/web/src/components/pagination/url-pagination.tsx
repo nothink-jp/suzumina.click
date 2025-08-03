@@ -12,14 +12,14 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
-interface PaginationProps {
+interface UrlPaginationProps {
 	currentPage: number;
 	totalPages: number;
 	baseUrl?: string;
 }
 
 // Client Component版のPagination（URLベースのナビゲーション）
-export default function Pagination({ currentPage, totalPages, baseUrl }: PaginationProps) {
+export default function UrlPagination({ currentPage, totalPages, baseUrl }: UrlPaginationProps) {
 	const router = useRouter();
 
 	// FID改善: ページ変更をメモ化して再レンダリングを減らす

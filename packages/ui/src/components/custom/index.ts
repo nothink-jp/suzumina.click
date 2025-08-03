@@ -17,21 +17,19 @@ export { AutocompleteDropdown } from "./autocomplete-dropdown";
 export { DateRangeFilter } from "./date-range-filter";
 // Utility components
 export { GenericCarousel } from "./generic-carousel";
-export type {
-	FilterDefinition,
-	FilterType,
-	GenericListProps,
-	ListAction,
-	ListConfig,
-	ListParams,
-	ListResult,
-	ListState,
-	PaginationConfig,
-	SortDefinition,
-} from "./generic-list";
-// Generic list components
-export { GenericList, useListState, useUrlParams } from "./generic-list";
 export { HighlightTags, HighlightText, MultiFieldHighlight } from "./highlight-text";
+export type {
+	ConfigurableListProps,
+	FilterConfig,
+	ListDataSource,
+	ListError,
+	SimpleListProps,
+	SortConfig,
+	StandardListParams,
+} from "./list";
+export { ConfigurableList, SimpleList } from "./list";
+// List components
+export { GenericList } from "./list/generic-list-compat";
 // Layout components
 export { ListDisplayControls } from "./list-display-controls";
 export { ListHeader } from "./list-header";

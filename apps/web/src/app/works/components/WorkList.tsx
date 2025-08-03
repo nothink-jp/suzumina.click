@@ -17,7 +17,7 @@ import { Switch } from "@suzumina.click/ui/components/ui/switch";
 import { FileText, Shield } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import Pagination from "@/components/ui/pagination";
+import UrlPagination from "@/components/pagination/url-pagination";
 import { useR18Filter } from "@/hooks/use-r18-filter";
 import { useWorkListFilters } from "@/hooks/use-work-list-filters";
 import WorkCard from "./WorkCard";
@@ -275,7 +275,7 @@ export default function WorkList({
 			{/* 3. ページネーション */}
 			{totalPages > 1 && (
 				<div className="mt-8">
-					<Pagination currentPage={currentPage} totalPages={totalPages} baseUrl={baseUrl} />
+					<UrlPagination currentPage={currentPage} totalPages={totalPages} baseUrl={baseUrl} />
 				</div>
 			)}
 

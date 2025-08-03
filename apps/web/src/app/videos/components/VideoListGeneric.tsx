@@ -1,8 +1,7 @@
 "use client";
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import { GenericList, type ListConfig } from "@suzumina.click/ui/components/custom/generic-list";
-import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
+import { GenericList } from "@suzumina.click/ui/components/custom/list/generic-list-compat";
 import { useMemo } from "react";
 import { fetchVideosForGenericList } from "../actions";
 import VideoCard from "./VideoCard";
@@ -30,21 +29,23 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 	}, [currentYear]);
 
 	// GenericList設定
-	const config: ListConfig = useMemo(
+	const config = useMemo(
 		() => ({
 			baseUrl: "/videos",
 			filters: [
 				{
 					key: "year",
-					type: "select",
+					type: "select" as const,
 					label: "年代",
+					placeholder: "年代を選択",
 					options: [{ value: "all", label: "すべての年代" }, ...yearOptions],
 					defaultValue: "all",
 				},
 				{
 					key: "categoryNames",
-					type: "select",
+					type: "select" as const,
 					label: "カテゴリ",
+					placeholder: "カテゴリを選択",
 					options: [
 						{ value: "all", label: "すべてのカテゴリ" },
 						{ value: "ゲーム", label: "ゲーム" },
@@ -55,8 +56,9 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 				},
 				{
 					key: "videoType",
-					type: "select",
+					type: "select" as const,
 					label: "動画種別",
+					placeholder: "動画種別を選択",
 					options: [
 						{ value: "all", label: "すべての動画" },
 						{ value: "live_archive", label: "配信アーカイブ" },
@@ -85,6 +87,11 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 				categoryNames: "categoryNames",
 				videoType: "videoType",
 			},
+			gridColumns: {
+				default: 1,
+				md: 2,
+				lg: 3,
+			},
 		}),
 		[yearOptions],
 	);
@@ -100,20 +107,11 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 		</div>
 	);
 
-	// 空状態のカスタマイズ
-	const emptyStateProps = {
-		icon: "PlayCircle",
-		title: "動画が見つかりませんでした",
-		description: "検索条件を変更してみてください。",
-	};
-
 	return (
 		<GenericList
 			config={config}
 			fetchData={fetchVideosForGenericList}
 			renderItem={renderItem}
-			emptyStateProps={emptyStateProps}
-			listTitle="動画一覧"
 			initialData={initialData}
 		/>
 	);

@@ -103,9 +103,9 @@ function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
  * GenericList用のビデオデータ取得関数
  */
 export async function fetchVideosForGenericList(
-	params: import("@suzumina.click/ui/components/custom/generic-list").ListParams,
+	params: import("@suzumina.click/ui/components/custom/list/generic-list-compat").ListParams,
 ): Promise<
-	import("@suzumina.click/ui/components/custom/generic-list").ListResult<
+	import("@suzumina.click/ui/components/custom/list/generic-list-compat").ListResult<
 		import("@suzumina.click/shared-types").VideoPlainObject
 	>
 > {
@@ -129,31 +129,27 @@ export async function fetchVideosForGenericList(
 	};
 
 	// データ取得
-	const [data, filteredCount, totalCount] = await Promise.all([
-		getVideoTitles(videoParams),
-		getTotalVideoCount({
-			year: videoParams.year,
-			search: videoParams.search,
-			playlistTags: videoParams.playlistTags,
-			userTags: videoParams.userTags,
-			categoryNames: videoParams.categoryNames,
-			videoType: videoParams.videoType,
-		}),
-		getTotalVideoCount({}),
-	]);
+	const data = await getVideoTitles(videoParams);
+
+	// getVideoTitlesが返すtotalを使用（実際のフィルタリング結果の件数）
+	const filteredCount = data.total;
+
+	// フィルターが適用されていない場合のみ、全件数を取得
+	const hasFilters = !!(
+		videoParams.year ||
+		videoParams.search ||
+		videoParams.playlistTags ||
+		videoParams.userTags ||
+		videoParams.categoryNames ||
+		videoParams.videoType
+	);
+
+	const totalCount = hasFilters ? filteredCount : await getTotalVideoCount({});
 
 	return {
 		items: data.videos,
 		totalCount,
-		filteredCount:
-			videoParams.year ||
-			videoParams.search ||
-			videoParams.playlistTags ||
-			videoParams.userTags ||
-			videoParams.categoryNames ||
-			videoParams.videoType
-				? filteredCount
-				: totalCount,
+		filteredCount,
 	};
 }
 
@@ -266,9 +262,14 @@ async function getVideosWithFiltering(
 	const plainVideos = videos.map((v) => v.toPlainObject());
 	const hasMore = snapshot.size > limit;
 
-	// 総数を取得
-	const allCountSnapshot = await firestore.collection("videos").count().get();
-	const total = allCountSnapshot.data().count;
+	// publicな動画の総数を取得
+	// TODO: パフォーマンス最適化のため、メタデータコレクションでのキャッシュを検討
+	const countQuery = firestore.collection("videos");
+	const countSnapshot = await countQuery.get();
+	const total = countSnapshot.docs
+		.map((doc) => convertToVideo(doc))
+		.filter((video): video is Video => video !== null)
+		.filter((video) => video.content.privacyStatus === "public").length;
 
 	return {
 		items: plainVideos,
@@ -295,7 +296,8 @@ export async function getVideoTitles(params?: {
 	videoType?: string;
 }): Promise<VideoListResult> {
 	try {
-		const { page = 1, limit = 20, sort = "newest" } = params || {};
+		const { page = 1, limit = 12, sort = "newest" } = params || {};
+
 		const firestore = getFirestore();
 
 		// 統一された処理を使用
@@ -303,7 +305,12 @@ export async function getVideoTitles(params?: {
 			page,
 			limit,
 			sort,
-			...params,
+			search: params?.search,
+			year: params?.year,
+			playlistTags: params?.playlistTags,
+			userTags: params?.userTags,
+			categoryNames: params?.categoryNames,
+			videoType: params?.videoType,
 		});
 	} catch (error) {
 		logger.error("動画タイトルV2取得でエラーが発生", {
