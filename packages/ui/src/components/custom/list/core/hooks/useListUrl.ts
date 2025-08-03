@@ -140,9 +140,9 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 						if (Array.isArray(value)) {
 							params.set(key, value.join(","));
 						} else if (typeof value === "object" && config?.type === "range") {
-							const { min, max } = value;
-							if (min !== undefined || max !== undefined) {
-								params.set(key, `${min || ""}-${max || ""}`);
+							const rangeValue = value as { min?: number; max?: number };
+							if (rangeValue.min !== undefined || rangeValue.max !== undefined) {
+								params.set(key, `${rangeValue.min || ""}-${rangeValue.max || ""}`);
 							} else {
 								// すでに削除されている
 							}

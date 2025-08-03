@@ -52,15 +52,35 @@ export function useListData<T>(params: StandardListParams, options: UseListDataO
 	const abortControllerRef = useRef<AbortController | null>(null);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+	// paramsの各値をメモ化して依存関係を安定化
+	const paramsRef = useRef(params);
+	paramsRef.current = params;
+
+	// パラメータの比較関数
+	const areParamsEqual = useCallback((prev: StandardListParams, next: StandardListParams) => {
+		return (
+			prev.page === next.page &&
+			prev.itemsPerPage === next.itemsPerPage &&
+			prev.sort === next.sort &&
+			prev.search === next.search &&
+			JSON.stringify(prev.filters) === JSON.stringify(next.filters)
+		);
+	}, []);
+
+	// 前回のパラメータを保持
+	const prevParamsRef = useRef(params);
+
 	const fetchData = useCallback(async () => {
 		// 前回のリクエストをキャンセル
 		if (abortControllerRef.current) {
 			abortControllerRef.current.abort();
+			abortControllerRef.current = null;
 		}
 
 		// デバウンスタイマーをクリア
 		if (timeoutRef.current) {
 			clearTimeout(timeoutRef.current);
+			timeoutRef.current = null;
 		}
 
 		// デバウンス処理
@@ -81,7 +101,8 @@ export function useListData<T>(params: StandardListParams, options: UseListDataO
 			dispatch({ type: "FETCH_START" });
 
 			try {
-				const data = await fetchFn(params);
+				// 現在のパラメータを使用
+				const data = await fetchFn(paramsRef.current);
 
 				// リクエストがキャンセルされていないかチェック
 				if (!abortController.signal.aborted) {
@@ -103,22 +124,30 @@ export function useListData<T>(params: StandardListParams, options: UseListDataO
 				onError?.(listError);
 			}
 		}
-	}, [params, fetchFn, debounceMs, onError]);
+	}, [fetchFn, debounceMs, onError]);
 
 	// パラメータが変更されたらデータを再取得
 	useEffect(() => {
-		fetchData();
+		// パラメータが実際に変更されたかチェック
+		if (!areParamsEqual(prevParamsRef.current, params)) {
+			prevParamsRef.current = params;
+			fetchData();
+		}
+	}, [params, fetchData, areParamsEqual]);
 
-		// クリーンアップ
+	// クリーンアップ
+	useEffect(() => {
 		return () => {
 			if (abortControllerRef.current) {
 				abortControllerRef.current.abort();
+				abortControllerRef.current = null;
 			}
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
+				timeoutRef.current = null;
 			}
 		};
-	}, [fetchData]);
+	}, []);
 
 	return {
 		...state,

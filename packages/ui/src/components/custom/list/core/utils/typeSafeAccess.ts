@@ -55,9 +55,13 @@ export function getDateProperty(item: unknown): Date | undefined {
 			return value;
 		}
 		if (typeof value === "string" || typeof value === "number") {
-			const date = new Date(value);
-			if (!Number.isNaN(date.getTime())) {
-				return date;
+			try {
+				const date = new Date(value);
+				if (!Number.isNaN(date.getTime())) {
+					return date;
+				}
+			} catch {
+				// Invalid date value, return undefined
 			}
 		}
 	}

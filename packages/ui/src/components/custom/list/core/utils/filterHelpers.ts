@@ -118,7 +118,8 @@ export function hasActiveFilters(
 
 		// rangeフィルターの場合
 		if (config.type === "range" && typeof value === "object") {
-			return value.min !== undefined || value.max !== undefined;
+			const rangeValue = value as { min?: number; max?: number };
+			return rangeValue.min !== undefined || rangeValue.max !== undefined;
 		}
 
 		return true;

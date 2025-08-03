@@ -181,7 +181,7 @@ export function checkMigrationReadiness(oldConfig: OldListConfig): {
 
 	// URLパラメータマッピングのチェック
 	// 新しいコンポーネントはデフォルトのマッピングを使用
-	const urlMapping = (oldConfig as Record<string, unknown>).urlParamMapping;
+	const urlMapping = (oldConfig as unknown as Record<string, unknown>).urlParamMapping;
 	if (urlMapping) {
 		warnings.push("Custom URL parameter mapping is not supported in the compatibility layer");
 	}
