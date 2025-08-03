@@ -48,6 +48,12 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 						min: min ? Number.parseFloat(min) : undefined,
 						max: max ? Number.parseFloat(max) : undefined,
 					};
+				} else if (config.type === "dateRange") {
+					const [start, end] = value.split("-");
+					filterValues[key] = {
+						start: start || undefined,
+						end: end || undefined,
+					};
 				} else {
 					filterValues[key] = value;
 				}
@@ -143,6 +149,13 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 							const rangeValue = value as { min?: number; max?: number };
 							if (rangeValue.min !== undefined || rangeValue.max !== undefined) {
 								params.set(key, `${rangeValue.min || ""}-${rangeValue.max || ""}`);
+							} else {
+								// すでに削除されている
+							}
+						} else if (typeof value === "object" && config?.type === "dateRange") {
+							const dateValue = value as { start?: string; end?: string };
+							if (dateValue.start !== undefined || dateValue.end !== undefined) {
+								params.set(key, `${dateValue.start || ""}-${dateValue.end || ""}`);
 							} else {
 								// すでに削除されている
 							}

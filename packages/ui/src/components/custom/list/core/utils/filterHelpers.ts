@@ -90,6 +90,10 @@ export function getDefaultFilterValues(
 			defaults[key] = [];
 		} else if (config.type === "range") {
 			defaults[key] = { min: undefined, max: undefined };
+		} else if (config.type === "date") {
+			defaults[key] = undefined;
+		} else if (config.type === "dateRange") {
+			defaults[key] = { start: undefined, end: undefined };
 		}
 	});
 
@@ -120,6 +124,12 @@ export function hasActiveFilters(
 		if (config.type === "range" && typeof value === "object") {
 			const rangeValue = value as { min?: number; max?: number };
 			return rangeValue.min !== undefined || rangeValue.max !== undefined;
+		}
+
+		// dateRangeフィルターの場合
+		if (config.type === "dateRange" && typeof value === "object") {
+			const dateValue = value as { start?: string; end?: string };
+			return dateValue.start !== undefined || dateValue.end !== undefined;
 		}
 
 		return true;
