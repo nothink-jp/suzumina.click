@@ -337,12 +337,12 @@ export function ConfigurableList<T>({
 
 	return (
 		<div className={className}>
-			{/* ヘッダー：検索、フィルター、ソート */}
-			<div className="mb-6 space-y-4">
-				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+			{/* ヘッダー：検索とフィルターを横並び */}
+			<div className="mb-6">
+				<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-3">
 					{/* 検索ボックス */}
 					{searchable && (
-						<div className="relative max-w-sm flex-1">
+						<div className="relative flex-1 lg:max-w-md">
 							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 							<Input
 								type="search"
@@ -356,10 +356,74 @@ export function ConfigurableList<T>({
 						</div>
 					)}
 
+					{/* フィルター */}
+					{hasFilters && (
+						<div className="flex flex-wrap items-center gap-2">
+							{Object.entries(filters).map(([key, config]) => (
+								<div key={key}>{renderFilter(key, config)}</div>
+							))}
+							{activeFilters && (
+								<Button variant="ghost" size="sm" onClick={handleResetFilters}>
+									<X className="mr-1 h-3 w-3" />
+									リセット
+								</Button>
+							)}
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* 情報表示とコントロール：件数、ページネーション、ソート、ページサイズ */}
+			<div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				{/* 左側：件数表示とページネーション */}
+				<div className="flex items-center gap-4 text-sm text-muted-foreground">
+					<div>
+						{data.total > 0 ? (
+							<>
+								全{data.total}件 <span className="mx-2">/</span> {pagination.startIndex + 1}-
+								{Math.min(pagination.endIndex, data.total)}件を表示
+							</>
+						) : fetchParams.search ? (
+							"検索結果がありません"
+						) : (
+							emptyMessage
+						)}
+					</div>
+
+					{/* ページネーション */}
+					{pagination.totalPages > 1 && (
+						<div className="flex items-center gap-2">
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8"
+								onClick={() => handlePageChange(fetchParams.page - 1)}
+								disabled={!pagination.hasPrev}
+							>
+								<ChevronLeft className="h-4 w-4" />
+							</Button>
+							<span className="text-muted-foreground">
+								{pagination.currentPage} / {pagination.totalPages}
+							</span>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8"
+								onClick={() => handlePageChange(fetchParams.page + 1)}
+								disabled={!pagination.hasNext}
+							>
+								<ChevronRight className="h-4 w-4" />
+							</Button>
+						</div>
+					)}
+				</div>
+
+				{/* 右側：ソートとページサイズ */}
+				<div className="flex items-center gap-3">
 					{/* ソート選択 */}
 					{sortOptions.length > 0 && (
 						<Select value={fetchParams.sort} onValueChange={handleSortChange}>
-							<SelectTrigger className="w-[180px]">
+							<SelectTrigger className="h-8 w-[140px]">
 								<SelectValue placeholder="並び順" />
 							</SelectTrigger>
 							<SelectContent>
@@ -371,66 +435,26 @@ export function ConfigurableList<T>({
 							</SelectContent>
 						</Select>
 					)}
-				</div>
 
-				{/* フィルター */}
-				{hasFilters && (
-					<div className="flex flex-wrap items-center gap-2">
-						<Filter className="h-4 w-4 text-muted-foreground" />
-						{Object.entries(filters).map(([key, config]) => (
-							<div key={key}>{renderFilter(key, config)}</div>
-						))}
-						{activeFilters && (
-							<Button variant="ghost" size="sm" onClick={handleResetFilters} className="ml-2">
-								<X className="mr-1 h-3 w-3" />
-								リセット
-							</Button>
-						)}
-					</div>
-				)}
-			</div>
-
-			{/* アイテム数表示とページサイズ選択 */}
-			<div className="mb-4 flex items-center justify-between text-sm text-muted-foreground">
-				<div className="flex items-center gap-4">
-					<div>
-						{data.total > 0 ? (
-							<>
-								{data.total}件中 {pagination.startIndex + 1}-
-								{Math.min(pagination.endIndex, data.total)}件を表示
-							</>
-						) : fetchParams.search ? (
-							"検索結果がありません"
-						) : (
-							emptyMessage
-						)}
-					</div>
+					{/* ページサイズ選択 */}
 					{itemsPerPageOptions && itemsPerPageOptions.length > 0 && data.total > 0 && (
-						<div className="flex items-center gap-2">
-							<span className="text-xs">表示件数:</span>
-							<Select
-								value={fetchParams.itemsPerPage.toString()}
-								onValueChange={handleItemsPerPageChange}
-							>
-								<SelectTrigger className="h-8 w-[80px]">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{itemsPerPageOptions.map((option) => (
-										<SelectItem key={option} value={option.toString()}>
-											{option}件
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+						<Select
+							value={fetchParams.itemsPerPage.toString()}
+							onValueChange={handleItemsPerPageChange}
+						>
+							<SelectTrigger className="h-8 w-[120px]">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{itemsPerPageOptions.map((option) => (
+									<SelectItem key={option} value={option.toString()}>
+										{option}件/ページ
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					)}
 				</div>
-				{activeFilters && (
-					<Badge variant="secondary" className="text-xs">
-						フィルター適用中
-					</Badge>
-				)}
 			</div>
 
 			{/* リスト本体 */}
@@ -474,57 +498,6 @@ export function ConfigurableList<T>({
 							{renderItem(item, pagination.startIndex + index)}
 						</div>
 					))}
-				</div>
-			)}
-
-			{/* ページネーション */}
-			{pagination.totalPages > 1 && (
-				<div className="mt-8 flex items-center justify-center gap-2">
-					<Button
-						variant="outline"
-						size="icon"
-						onClick={() => handlePageChange(fetchParams.page - 1)}
-						disabled={!pagination.hasPrev}
-					>
-						<ChevronLeft className="h-4 w-4" />
-					</Button>
-
-					<div className="flex gap-1">
-						{Array.from({ length: Math.min(pagination.totalPages, 7) }, (_, i) => {
-							let pageNum: number;
-							if (pagination.totalPages <= 7) {
-								pageNum = i + 1;
-							} else if (fetchParams.page <= 4) {
-								pageNum = i + 1;
-							} else if (fetchParams.page >= pagination.totalPages - 3) {
-								pageNum = pagination.totalPages - 6 + i;
-							} else {
-								pageNum = fetchParams.page - 3 + i;
-							}
-
-							if (pageNum < 1 || pageNum > pagination.totalPages) return null;
-
-							return (
-								<Button
-									key={pageNum}
-									variant={pageNum === fetchParams.page ? "default" : "outline"}
-									size="icon"
-									onClick={() => handlePageChange(pageNum)}
-								>
-									{pageNum}
-								</Button>
-							);
-						})}
-					</div>
-
-					<Button
-						variant="outline"
-						size="icon"
-						onClick={() => handlePageChange(fetchParams.page + 1)}
-						disabled={!pagination.hasNext}
-					>
-						<ChevronRight className="h-4 w-4" />
-					</Button>
 				</div>
 			)}
 		</div>
