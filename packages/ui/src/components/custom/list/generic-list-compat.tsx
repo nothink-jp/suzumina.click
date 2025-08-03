@@ -9,6 +9,24 @@ import type { ReactNode } from "react";
 import { ConfigurableList } from "./configurable-list";
 import type { DataAdapter, FilterConfig, SortConfig } from "./core/types";
 
+// 互換性のための型定義
+export interface ListParams {
+	page: number;
+	limit: number;
+	sort?: string;
+	search?: string;
+	filters?: Record<string, unknown>;
+}
+
+export interface ListResult<T> {
+	items: T[];
+	totalCount: number;
+	filteredCount: number;
+}
+
+// ListConfig型を再エクスポート
+export interface ListConfig<T> extends GenericListCompatProps<T> {}
+
 // 既存のGenericList型定義（互換性のため）
 export interface GenericListCompatProps<T> {
 	config: {

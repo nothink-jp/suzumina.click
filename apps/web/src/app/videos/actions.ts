@@ -103,9 +103,9 @@ function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
  * GenericList用のビデオデータ取得関数
  */
 export async function fetchVideosForGenericList(
-	params: import("@suzumina.click/ui/components/custom/generic-list").ListParams,
+	params: import("@suzumina.click/ui/components/custom/list/generic-list-compat").ListParams,
 ): Promise<
-	import("@suzumina.click/ui/components/custom/generic-list").ListResult<
+	import("@suzumina.click/ui/components/custom/list/generic-list-compat").ListResult<
 		import("@suzumina.click/shared-types").VideoPlainObject
 	>
 > {
@@ -262,9 +262,14 @@ async function getVideosWithFiltering(
 	const plainVideos = videos.map((v) => v.toPlainObject());
 	const hasMore = snapshot.size > limit;
 
-	// 総数を取得
-	const allCountSnapshot = await firestore.collection("videos").count().get();
-	const total = allCountSnapshot.data().count;
+	// publicな動画の総数を取得
+	// TODO: パフォーマンス最適化のため、メタデータコレクションでのキャッシュを検討
+	const countQuery = firestore.collection("videos");
+	const countSnapshot = await countQuery.get();
+	const total = countSnapshot.docs
+		.map((doc) => convertToVideo(doc))
+		.filter((video): video is Video => video !== null)
+		.filter((video) => video.content.privacyStatus === "public").length;
 
 	return {
 		items: plainVideos,

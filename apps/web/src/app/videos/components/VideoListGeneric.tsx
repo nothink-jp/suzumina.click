@@ -1,7 +1,6 @@
 "use client";
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import type { ListConfig } from "@suzumina.click/ui/components/custom/generic-list/types";
 import { GenericList } from "@suzumina.click/ui/components/custom/list/generic-list-compat";
 import { useMemo } from "react";
 import { fetchVideosForGenericList } from "../actions";
@@ -30,13 +29,13 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 	}, [currentYear]);
 
 	// GenericList設定
-	const config: ListConfig = useMemo(
+	const config = useMemo(
 		() => ({
 			baseUrl: "/videos",
 			filters: [
 				{
 					key: "year",
-					type: "select",
+					type: "select" as const,
 					label: "年代",
 					placeholder: "年代を選択",
 					options: [{ value: "all", label: "すべての年代" }, ...yearOptions],
@@ -44,7 +43,7 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 				},
 				{
 					key: "categoryNames",
-					type: "select",
+					type: "select" as const,
 					label: "カテゴリ",
 					placeholder: "カテゴリを選択",
 					options: [
@@ -57,7 +56,7 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 				},
 				{
 					key: "videoType",
-					type: "select",
+					type: "select" as const,
 					label: "動画種別",
 					placeholder: "動画種別を選択",
 					options: [
