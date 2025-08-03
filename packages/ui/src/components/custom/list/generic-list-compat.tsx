@@ -38,6 +38,10 @@ export interface GenericListCompatProps<T> {
 			label: string;
 			placeholder?: string;
 			options?: Array<{ value: string; label: string }>;
+			// rangeフィルタ用
+			min?: number;
+			max?: number;
+			step?: number;
 			defaultValue?: unknown;
 			validation?: (value: unknown) => boolean;
 			transform?: (value: unknown) => unknown;
@@ -116,9 +120,15 @@ export function GenericListCompat<T>({
 	if (config.filters) {
 		config.filters.forEach((filter) => {
 			// サポートされているフィルタータイプのみ変換
-			if (filter.type === "select" || filter.type === "boolean") {
+			if (
+				filter.type === "select" ||
+				filter.type === "boolean" ||
+				filter.type === "range" ||
+				filter.type === "multiselect" ||
+				filter.type === "dateRange"
+			) {
 				filters[filter.key] = {
-					type: filter.type as "select" | "boolean",
+					type: filter.type as FilterConfig["type"],
 					label: filter.label,
 					placeholder: filter.placeholder,
 					options: filter.options,
@@ -132,9 +142,17 @@ export function GenericListCompat<T>({
 								return !!parentValue && parentValue !== "all";
 							}
 						: undefined,
+					// rangeフィルタ用の追加プロパティ
+					...(filter.type === "range" && "min" in filter
+						? {
+								min: filter.min ?? 0,
+								max: filter.max ?? 100,
+								step: filter.step ?? 1,
+							}
+						: {}),
 				};
 			}
-			// TODO: multiselect, range, dateRange, custom のサポートを追加
+			// TODO: custom のサポートを追加
 		});
 	}
 

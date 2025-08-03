@@ -2,9 +2,9 @@
 
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import {
-	GenericListCompat,
-	type GenericListCompatProps,
-} from "@suzumina.click/ui/components/custom/list/generic-list-compat";
+	ConfigurableList,
+	type StandardListParams,
+} from "@suzumina.click/ui/components/custom/list";
 import { useMemo } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
@@ -44,42 +44,35 @@ interface AudioButtonsListGenericProps {
 	};
 }
 
-// 音声ボタン用のfetchAdapter
-async function fetchAudioButtonsAdapter(params: {
-	page: number;
-	limit: number;
-	sort?: string;
-	search?: string;
-	filters: Record<string, unknown>;
-}) {
-	// GenericListのパラメータをgetAudioButtons用に変換
+// 音声ボタン用のfetchData関数
+async function fetchAudioButtons(
+	params: StandardListParams,
+): Promise<{ items: AudioButtonPlainObject[]; total: number }> {
+	// 範囲フィルタの処理
+	const playCountFilter = params.filters.playCount as { min?: number; max?: number } | undefined;
+	const likeCountFilter = params.filters.likeCount as { min?: number; max?: number } | undefined;
+	const favoriteCountFilter = params.filters.favoriteCount as
+		| { min?: number; max?: number }
+		| undefined;
+	const durationFilter = params.filters.duration as { min?: number; max?: number } | undefined;
+
+	// ConfigurableListのパラメータをgetAudioButtons用に変換
 	const query = {
 		page: params.page,
-		limit: params.limit,
+		limit: params.itemsPerPage,
 		sortBy: (params.sort || "newest") as "newest" | "oldest" | "popular" | "mostPlayed",
 		searchText: params.search,
-		tags: params.filters.tags
-			? (params.filters.tags as string).split(",").filter(Boolean)
-			: undefined,
-		sourceVideoId: params.filters.sourceVideoId as string | undefined,
 		// 数値範囲フィルタ
-		playCountMin: params.filters.playCountMin ? Number(params.filters.playCountMin) : undefined,
-		playCountMax: params.filters.playCountMax ? Number(params.filters.playCountMax) : undefined,
-		likeCountMin: params.filters.likeCountMin ? Number(params.filters.likeCountMin) : undefined,
-		likeCountMax: params.filters.likeCountMax ? Number(params.filters.likeCountMax) : undefined,
-		favoriteCountMin: params.filters.favoriteCountMin
-			? Number(params.filters.favoriteCountMin)
-			: undefined,
-		favoriteCountMax: params.filters.favoriteCountMax
-			? Number(params.filters.favoriteCountMax)
-			: undefined,
-		durationMin: params.filters.durationMin ? Number(params.filters.durationMin) : undefined,
-		durationMax: params.filters.durationMax ? Number(params.filters.durationMax) : undefined,
-		// 日付範囲フィルタ
-		createdAfter: params.filters.createdAfter as string | undefined,
-		createdBefore: params.filters.createdBefore as string | undefined,
-		// 作成者フィルタ
-		createdBy: params.filters.createdBy as string | undefined,
+		playCountMin: playCountFilter?.min,
+		playCountMax: playCountFilter?.max,
+		likeCountMin: likeCountFilter?.min,
+		likeCountMax: likeCountFilter?.max,
+		favoriteCountMin: favoriteCountFilter?.min,
+		favoriteCountMax: favoriteCountFilter?.max,
+		durationMin: durationFilter?.min,
+		durationMax: durationFilter?.max,
+		// その他
+		onlyPublic: true,
 	};
 
 	const result = await getAudioButtons(query);
@@ -87,8 +80,7 @@ async function fetchAudioButtonsAdapter(params: {
 	if (result.success) {
 		return {
 			items: result.data.audioButtons,
-			totalCount: result.data.totalCount,
-			filteredCount: result.data.totalCount, // 現在のAPIでは同じ値
+			total: result.data.totalCount,
 		};
 	}
 
@@ -127,36 +119,14 @@ export default function AudioButtonsListGeneric({
 		}
 		return {
 			items: initialData.data.audioButtons,
-			totalCount: initialData.data.totalCount,
-			filteredCount: initialData.data.totalCount,
+			total: initialData.data.totalCount,
+			page: 1,
+			itemsPerPage: initialData.data.audioButtons.length,
 		};
 	}, [initialData]);
 
 	// sourceVideoIdがある場合のタイトル
 	const title = searchParams.sourceVideoId ? "この動画の音声ボタン" : "音声ボタン一覧";
-
-	const config: GenericListCompatProps<AudioButtonPlainObject>["config"] = {
-		title,
-		baseUrl: "/buttons",
-		filters: [], // 現在はフィルターなし、将来的に実装
-		sorts: [
-			{ value: "newest", label: "新しい順" },
-			{ value: "oldest", label: "古い順" },
-			{ value: "popular", label: "人気順" },
-			{ value: "mostPlayed", label: "再生回数順" },
-		],
-		defaultSort: "newest",
-		searchConfig: {
-			placeholder: "音声ボタンを検索...",
-			debounceMs: 300,
-		},
-		paginationConfig: {
-			itemsPerPage: 12,
-			itemsPerPageOptions: [12, 24, 48],
-		},
-		// フレックスボックスレイアウトを使用
-		layout: "flex",
-	};
 
 	// 一時的な実装：お気に入り状態を管理
 	const audioButtonIds = useMemo(() => {
@@ -168,9 +138,9 @@ export default function AudioButtonsListGeneric({
 
 	return (
 		<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
-			<GenericListCompat
-				config={config}
-				fetchData={fetchAudioButtonsAdapter}
+			<h1 className="text-2xl font-bold mb-6">{title}</h1>
+			<ConfigurableList<AudioButtonPlainObject>
+				items={transformedInitialData?.items || []}
 				renderItem={(audioButton) => (
 					<AudioButtonItem
 						audioButton={audioButton}
@@ -178,7 +148,54 @@ export default function AudioButtonsListGeneric({
 						isFavorited={favoriteStates.get(audioButton.id) || false}
 					/>
 				)}
-				initialData={transformedInitialData}
+				fetchFn={fetchAudioButtons as (params: unknown) => Promise<unknown>}
+				dataAdapter={{
+					toParams: (params) => params,
+					fromResult: (result) => result as { items: AudioButtonPlainObject[]; total: number },
+				}}
+				searchable
+				searchPlaceholder="音声ボタンを検索..."
+				urlSync
+				layout="flex"
+				sorts={[
+					{ value: "newest", label: "新しい順" },
+					{ value: "oldest", label: "古い順" },
+					{ value: "popular", label: "人気順" },
+					{ value: "mostPlayed", label: "再生回数順" },
+				]}
+				defaultSort="newest"
+				filters={{
+					playCount: {
+						type: "range",
+						label: "再生数",
+						min: 0,
+						max: 10000,
+						step: 100,
+					},
+					likeCount: {
+						type: "range",
+						label: "いいね数",
+						min: 0,
+						max: 1000,
+						step: 10,
+					},
+					favoriteCount: {
+						type: "range",
+						label: "お気に入り数",
+						min: 0,
+						max: 1000,
+						step: 10,
+					},
+					duration: {
+						type: "range",
+						label: "音声長",
+						min: 0,
+						max: 60,
+						step: 1,
+					},
+				}}
+				itemsPerPageOptions={[12, 24, 48]}
+				initialTotal={transformedInitialData?.total}
 			/>
 		</div>
 	);
