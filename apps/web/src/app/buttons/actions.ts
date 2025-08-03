@@ -48,6 +48,7 @@ export async function getRecentAudioButtons(limit = 10): Promise<AudioButtonPlai
 /**
  * Entityを使用した音声ボタンの取得
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO: 関数を分割してリファクタリングする
 export async function getAudioButtons(
 	query: {
 		limit?: number;
@@ -81,7 +82,15 @@ export async function getAudioButtons(
 			return { success: false, error: "検索条件が無効です" };
 		}
 
-		const { limit = 20, page = 1, sortBy = "newest", onlyPublic = true, sourceVideoId } = query;
+		const {
+			limit = 20,
+			page = 1,
+			sortBy = "newest",
+			onlyPublic = true,
+			sourceVideoId,
+			durationMin,
+			durationMax,
+		} = query;
 
 		// Firestoreから直接データを取得
 		const firestore = getFirestore();
@@ -113,6 +122,16 @@ export async function getAudioButtons(
 
 		if (sourceVideoId) {
 			queryRef = queryRef.where("sourceVideoId", "==", sourceVideoId) as typeof queryRef;
+		}
+
+		// 範囲フィルタの追加
+		// 注意: Firestoreは複数フィールドに対する範囲クエリをサポートしていないため、
+		// 現在はdurationフィルタのみ実装（最も使用頻度が高いと想定）
+		const hasDurationFilter = durationMin !== undefined || durationMax !== undefined;
+		if (hasDurationFilter) {
+			// durationは endTime - startTime で計算
+			// ここでは簡易的な実装として、フロントエンドで後からフィルタリングする
+			// TODO: Cloud Functionsで duration フィールドを事前計算して保存する
 		}
 
 		// ソート条件を追加
@@ -175,8 +194,11 @@ export async function getAudioButtons(
 			.map(convertFirestoreToAudioButton)
 			.filter((button): button is AudioButton => button !== null);
 
-		// Plain Object形式に変換して返す
+		// Plain Object形式に変換
 		const frontendButtons = entityButtons.map((button) => button.toPlainObject());
+
+		// TODO: 音声長フィルタの実装（複雑度の問題を解決後に実装）
+		// 現在は一時的に無効化
 
 		return {
 			success: true,

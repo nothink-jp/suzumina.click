@@ -48,12 +48,7 @@ interface AudioButtonsListGenericProps {
 async function fetchAudioButtons(
 	params: StandardListParams,
 ): Promise<{ items: AudioButtonPlainObject[]; total: number }> {
-	// 範囲フィルタの処理
-	const playCountFilter = params.filters.playCount as { min?: number; max?: number } | undefined;
-	const likeCountFilter = params.filters.likeCount as { min?: number; max?: number } | undefined;
-	const favoriteCountFilter = params.filters.favoriteCount as
-		| { min?: number; max?: number }
-		| undefined;
+	// 音声長フィルタの処理
 	const durationFilter = params.filters.duration as { min?: number; max?: number } | undefined;
 
 	// ConfigurableListのパラメータをgetAudioButtons用に変換
@@ -62,13 +57,7 @@ async function fetchAudioButtons(
 		limit: params.itemsPerPage,
 		sortBy: (params.sort || "newest") as "newest" | "oldest" | "popular" | "mostPlayed",
 		searchText: params.search,
-		// 数値範囲フィルタ
-		playCountMin: playCountFilter?.min,
-		playCountMax: playCountFilter?.max,
-		likeCountMin: likeCountFilter?.min,
-		likeCountMax: likeCountFilter?.max,
-		favoriteCountMin: favoriteCountFilter?.min,
-		favoriteCountMax: favoriteCountFilter?.max,
+		// 音声長フィルタ
 		durationMin: durationFilter?.min,
 		durationMax: durationFilter?.max,
 		// その他
@@ -164,36 +153,11 @@ export default function AudioButtonsListGeneric({
 					{ value: "mostPlayed", label: "再生回数順" },
 				]}
 				defaultSort="newest"
-				filters={{
-					playCount: {
-						type: "range",
-						label: "再生数",
-						min: 0,
-						max: 10000,
-						step: 100,
-					},
-					likeCount: {
-						type: "range",
-						label: "いいね数",
-						min: 0,
-						max: 1000,
-						step: 10,
-					},
-					favoriteCount: {
-						type: "range",
-						label: "お気に入り数",
-						min: 0,
-						max: 1000,
-						step: 10,
-					},
-					duration: {
-						type: "range",
-						label: "音声長",
-						min: 0,
-						max: 60,
-						step: 1,
-					},
-				}}
+				filters={
+					{
+						// TODO: 音声長フィルタの実装
+					}
+				}
 				itemsPerPageOptions={[12, 24, 48]}
 				initialTotal={transformedInitialData?.total}
 			/>
