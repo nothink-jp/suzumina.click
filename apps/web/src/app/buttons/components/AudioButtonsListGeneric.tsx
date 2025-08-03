@@ -154,14 +154,8 @@ export default function AudioButtonsListGeneric({
 			itemsPerPage: 12,
 			itemsPerPageOptions: [12, 24, 48],
 		},
-		// グリッドレイアウト設定
-		gridColumns: {
-			default: 2,
-			sm: 3,
-			md: 4,
-			lg: 5,
-			xl: 6,
-		},
+		// フレックスボックスレイアウトを使用
+		layout: "flex",
 	};
 
 	// 一時的な実装：お気に入り状態を管理

@@ -125,7 +125,7 @@ export interface ConfigurableListProps<T> extends SimpleListProps<T> {
 	loadingComponent?: React.ReactNode;
 
 	// レイアウト設定
-	layout?: "list" | "grid";
+	layout?: "list" | "grid" | "flex";
 	gridColumns?: {
 		default?: number;
 		sm?: number;

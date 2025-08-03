@@ -641,7 +641,15 @@ export function ConfigurableList<T>({
 
 			{/* リスト本体 */}
 			{currentItems.length > 0 && (
-				<div className={layout === "grid" ? generateGridClasses(gridColumns) : "space-y-4"}>
+				<div
+					className={
+						layout === "grid"
+							? generateGridClasses(gridColumns)
+							: layout === "flex"
+								? "flex flex-wrap gap-3 items-start"
+								: "space-y-4"
+					}
+				>
 					{currentItems.map((item, index) => (
 						<div key={pagination.startIndex + index}>
 							{renderItem(item, pagination.startIndex + index)}
