@@ -276,7 +276,7 @@ export function ConfigurableList<T>({
 				return (
 					<Select value={value || ""} onValueChange={(v) => handleFilterChange(key, v)}>
 						<SelectTrigger className="w-[180px]">
-							<SelectValue placeholder={`${key}を選択`} />
+							<SelectValue placeholder={config.placeholder || `${config.label || key}を選択`} />
 						</SelectTrigger>
 						<SelectContent>
 							{options.map((opt) => (
@@ -295,7 +295,7 @@ export function ConfigurableList<T>({
 						size="sm"
 						onClick={() => handleFilterChange(key, !value)}
 					>
-						{key}
+						{config.label || key}
 					</Button>
 				);
 			default:
@@ -348,7 +348,7 @@ export function ConfigurableList<T>({
 		<div className={className}>
 			{/* ヘッダー：検索とフィルターを横並び */}
 			<div className="mb-6">
-				<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-3">
+				<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
 					{/* 検索ボックス */}
 					{searchable && (
 						<div className="relative flex-1 lg:max-w-md">
@@ -367,7 +367,7 @@ export function ConfigurableList<T>({
 
 					{/* フィルター */}
 					{hasFilters && (
-						<div className="flex flex-wrap items-center gap-2">
+						<div className="flex flex-shrink-0 flex-wrap items-center gap-2">
 							{Object.entries(filters).map(([key, config]) => (
 								<div key={key}>{renderFilter(key, config)}</div>
 							))}
@@ -422,7 +422,7 @@ export function ConfigurableList<T>({
 							value={fetchParams.itemsPerPage.toString()}
 							onValueChange={handleItemsPerPageChange}
 						>
-							<SelectTrigger className="h-8 w-[120px]">
+							<SelectTrigger className="h-8 w-[140px]">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>

@@ -39,6 +39,12 @@ export interface StandardListParams {
 export interface FilterConfig {
 	type: "select" | "multiselect" | "range" | "date" | "boolean";
 
+	// フィルターの表示ラベル
+	label?: string;
+
+	// プレースホルダーテキスト
+	placeholder?: string;
+
 	// 選択肢（selectとmultiselectで使用）
 	options?: string[] | Array<{ value: string; label: string }>;
 

@@ -38,6 +38,7 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 					key: "year",
 					type: "select",
 					label: "年代",
+					placeholder: "年代を選択",
 					options: [{ value: "all", label: "すべての年代" }, ...yearOptions],
 					defaultValue: "all",
 				},
@@ -45,6 +46,7 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 					key: "categoryNames",
 					type: "select",
 					label: "カテゴリ",
+					placeholder: "カテゴリを選択",
 					options: [
 						{ value: "all", label: "すべてのカテゴリ" },
 						{ value: "ゲーム", label: "ゲーム" },
@@ -57,6 +59,7 @@ export default function VideoListGeneric({ initialData }: VideoListGenericProps)
 					key: "videoType",
 					type: "select",
 					label: "動画種別",
+					placeholder: "動画種別を選択",
 					options: [
 						{ value: "all", label: "すべての動画" },
 						{ value: "live_archive", label: "配信アーカイブ" },

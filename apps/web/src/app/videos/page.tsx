@@ -6,7 +6,6 @@ import {
 import { Suspense } from "react";
 import { fetchVideosForGenericList } from "./actions";
 import VideoListGeneric from "./components/VideoListGeneric";
-import VideoListNew from "./components/VideoListNew";
 
 interface VideosPageProps {
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -46,11 +45,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						</div>
 					}
 				>
-					{process.env.USE_NEW_LIST === "true" ? (
-						<VideoListNew initialData={initialData} />
-					) : (
-						<VideoListGeneric initialData={initialData} />
-					)}
+					<VideoListGeneric initialData={initialData} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>

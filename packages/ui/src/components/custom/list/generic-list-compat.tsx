@@ -100,6 +100,8 @@ export function GenericListCompat<T>({
 			if (filter.type === "select" || filter.type === "boolean") {
 				filters[filter.key] = {
 					type: filter.type as "select" | "boolean",
+					label: filter.label,
+					placeholder: filter.placeholder,
 					options: filter.options,
 					showAll: filter.type === "select" && !filter.defaultValue,
 					emptyValue: filter.defaultValue,
