@@ -37,7 +37,7 @@ export interface StandardListParams {
  * フィルター設定（簡潔版）
  */
 export interface FilterConfig {
-	type: "select" | "multiselect" | "range" | "date" | "boolean";
+	type: "select" | "multiselect" | "range" | "date" | "dateRange" | "boolean";
 
 	// フィルターの表示ラベル
 	label?: string;
@@ -47,6 +47,15 @@ export interface FilterConfig {
 
 	// 選択肢（selectとmultiselectで使用）
 	options?: string[] | Array<{ value: string; label: string }>;
+
+	// 範囲設定（rangeで使用）
+	min?: number;
+	max?: number;
+	step?: number;
+
+	// 日付範囲設定（dateRangeで使用）
+	minDate?: string;
+	maxDate?: string;
 
 	// "all"オプションの自動生成
 	showAll?: boolean;
