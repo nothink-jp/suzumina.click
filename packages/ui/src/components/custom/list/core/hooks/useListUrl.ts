@@ -49,11 +49,34 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 						max: max ? Number.parseFloat(max) : undefined,
 					};
 				} else if (config.type === "dateRange") {
-					const [start, end] = value.split("-");
-					filterValues[key] = {
-						start: start || undefined,
-						end: end || undefined,
-					};
+					// ISO日付形式（YYYY-MM-DD~YYYY-MM-DD）を正確に分割
+					const separatorIndex = value.indexOf("~");
+					if (separatorIndex !== -1) {
+						const start = value.substring(0, separatorIndex);
+						const end = value.substring(separatorIndex + 1);
+						filterValues[key] = {
+							start: start || undefined,
+							end: end || undefined,
+						};
+					} else {
+						// 旧形式（ハイフン区切り）のフォールバック
+						const parts = value.split("-");
+						if (parts.length >= 6) {
+							// YYYY-MM-DD-YYYY-MM-DD形式を想定
+							const start = parts.slice(0, 3).join("-");
+							const end = parts.slice(3).join("-");
+							filterValues[key] = {
+								start: start || undefined,
+								end: end || undefined,
+							};
+						} else {
+							// 解析できない場合は空の範囲
+							filterValues[key] = {
+								start: undefined,
+								end: undefined,
+							};
+						}
+					}
 				} else {
 					filterValues[key] = value;
 				}
@@ -155,7 +178,8 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 						} else if (typeof value === "object" && config?.type === "dateRange") {
 							const dateValue = value as { start?: string; end?: string };
 							if (dateValue.start !== undefined || dateValue.end !== undefined) {
-								params.set(key, `${dateValue.start || ""}-${dateValue.end || ""}`);
+								// チルダ（~）を区切り文字として使用
+								params.set(key, `${dateValue.start || ""}~${dateValue.end || ""}`);
 							} else {
 								// すでに削除されている
 							}

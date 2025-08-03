@@ -344,7 +344,7 @@ export function ConfigurableList<T>({
 			case "select": {
 				const options = generateOptions(config);
 				return (
-					<Select value={String(value || "")} onValueChange={(v) => handleFilterChange(key, v)}>
+					<Select value={value?.toString() || ""} onValueChange={(v) => handleFilterChange(key, v)}>
 						<SelectTrigger className="w-[180px]">
 							<SelectValue placeholder={config.placeholder || `${config.label || key}を選択`} />
 						</SelectTrigger>
@@ -456,7 +456,7 @@ export function ConfigurableList<T>({
 						<Label>{config.label || key}</Label>
 						<Input
 							type="date"
-							value={String(value || "")}
+							value={value?.toString() || ""}
 							onChange={(e) => handleFilterChange(key, e.target.value || undefined)}
 							className="w-[180px]"
 						/>
