@@ -32,7 +32,6 @@ export { ConfigurableList, SimpleList } from "./list";
 export { GenericList } from "./list/generic-list-compat";
 // Layout components
 export { ListDisplayControls } from "./list-display-controls";
-export { ListHeader } from "./list-header";
 export { ListPageLayout } from "./list-page-layout";
 export { LoadingSkeleton } from "./loading-skeleton";
 export { NotImplementedOverlay } from "./not-implemented-overlay";
