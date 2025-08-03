@@ -118,7 +118,7 @@ import { Button, Card, Input, Dialog } from "@suzumina.click/ui/components/ui";
 プロジェクト特化コンポーネント - suzumina.click 専用機能
 
 ```typescript
-import { AudioButton, ListHeader, SearchFilterPanel } from "@suzumina.click/ui/components/custom";
+import { AudioButton, SearchFilterPanel } from "@suzumina.click/ui/components/custom";
 ```
 
 ## 🛠️ 使用方法

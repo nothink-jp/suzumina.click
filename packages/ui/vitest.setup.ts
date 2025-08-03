@@ -1,17 +1,28 @@
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
+// グローバルな型定義
+declare global {
+	var mockRouter: any;
+	var mockSearchParams: URLSearchParams;
+}
+
+// グローバル変数の初期化
+global.mockRouter = {
+	push: vi.fn(),
+	replace: vi.fn(),
+	refresh: vi.fn(),
+	back: vi.fn(),
+	forward: vi.fn(),
+	prefetch: vi.fn(),
+};
+
+global.mockSearchParams = new URLSearchParams();
+
 // Mock Next.js navigation
 vi.mock("next/navigation", () => ({
-	useRouter: () => ({
-		push: vi.fn(),
-		replace: vi.fn(),
-		refresh: vi.fn(),
-		back: vi.fn(),
-		forward: vi.fn(),
-		prefetch: vi.fn(),
-	}),
-	useSearchParams: () => new URLSearchParams(),
+	useRouter: () => global.mockRouter,
+	useSearchParams: () => global.mockSearchParams,
 	usePathname: () => "/",
 }));
 

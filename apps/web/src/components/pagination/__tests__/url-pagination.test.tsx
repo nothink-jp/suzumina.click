@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import Pagination from "../pagination";
+import UrlPagination from "../url-pagination";
 
 // Mock next/navigation
 const mockPush = vi.fn();
@@ -29,7 +29,7 @@ Object.defineProperty(window, "location", {
 	writable: true,
 });
 
-describe("Pagination", () => {
+describe("UrlPagination", () => {
 	beforeEach(() => {
 		mockPush.mockClear();
 		mockReplace.mockClear();
@@ -39,7 +39,7 @@ describe("Pagination", () => {
 	// (src/__tests__/integration/basicComponentRendering.test.tsx)
 
 	it("中間ページで前後のボタンが有効になる", () => {
-		render(<Pagination currentPage={3} totalPages={5} />);
+		render(<UrlPagination currentPage={3} totalPages={5} />);
 
 		expect(screen.getByText("3")).toBeInTheDocument();
 		expect(screen.getByText("Previous")).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe("Pagination", () => {
 	});
 
 	it("最後のページで次のボタンが無効になる", () => {
-		render(<Pagination currentPage={5} totalPages={5} />);
+		render(<UrlPagination currentPage={5} totalPages={5} />);
 
 		expect(screen.getByText("5")).toBeInTheDocument();
 		expect(screen.getByText("Previous")).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe("Pagination", () => {
 
 	it("次のページボタンをクリックするとページが変更される", async () => {
 		const user = userEvent.setup();
-		render(<Pagination currentPage={1} totalPages={5} />);
+		render(<UrlPagination currentPage={1} totalPages={5} />);
 
 		const nextButton = screen.getByText("Next");
 		await user.click(nextButton);
@@ -66,7 +66,7 @@ describe("Pagination", () => {
 
 	it("前のページボタンをクリックするとページが変更される", async () => {
 		const user = userEvent.setup();
-		render(<Pagination currentPage={3} totalPages={5} />);
+		render(<UrlPagination currentPage={3} totalPages={5} />);
 
 		const prevButton = screen.getByText("Previous");
 		await user.click(prevButton);
@@ -76,7 +76,7 @@ describe("Pagination", () => {
 
 	it("キーボードナビゲーションが動作する", async () => {
 		const user = userEvent.setup();
-		render(<Pagination currentPage={2} totalPages={5} />);
+		render(<UrlPagination currentPage={2} totalPages={5} />);
 
 		const nextButton = screen.getByText("Next");
 		await user.tab(); // Focus on first interactive element
@@ -87,14 +87,14 @@ describe("Pagination", () => {
 	});
 
 	it("アクセシビリティ属性が正しく設定される", () => {
-		render(<Pagination currentPage={2} totalPages={5} />);
+		render(<UrlPagination currentPage={2} totalPages={5} />);
 
 		// aria-labelでナビゲーション要素を確認
 		expect(screen.getByRole("navigation")).toBeInTheDocument();
 	});
 
 	it("総ページ数が1の場合はボタンが表示されない", () => {
-		render(<Pagination currentPage={1} totalPages={1} />);
+		render(<UrlPagination currentPage={1} totalPages={1} />);
 
 		expect(screen.getByText("1")).toBeInTheDocument();
 		expect(screen.getByText("Previous")).toBeInTheDocument();
@@ -102,14 +102,14 @@ describe("Pagination", () => {
 	});
 
 	it("アイテムが0件の場合は適切に表示される", () => {
-		render(<Pagination currentPage={1} totalPages={0} />);
+		render(<UrlPagination currentPage={1} totalPages={0} />);
 
 		// totalPagesが0でもコンポーネントは表示される
 		expect(screen.getByRole("navigation")).toBeInTheDocument();
 	});
 
 	it("最後のページでアイテム数が端数の場合は正しく表示される", () => {
-		render(<Pagination currentPage={3} totalPages={3} />);
+		render(<UrlPagination currentPage={3} totalPages={3} />);
 
 		expect(screen.getByText("3")).toBeInTheDocument();
 		expect(screen.getByText("Previous")).toBeInTheDocument();

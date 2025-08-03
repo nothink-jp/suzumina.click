@@ -4,65 +4,30 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
-import { getTotalVideoCount, getVideoTitles } from "./actions";
-import VideoList from "./components/VideoList";
+import { fetchVideosForGenericList } from "./actions";
+import VideoListGeneric from "./components/VideoListGeneric";
 
 interface VideosPageProps {
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 3層タグパラメータ解析と検索条件処理が必要
 export default async function VideosPage({ searchParams }: VideosPageProps) {
 	const params = await searchParams;
-	const pageNumber = Number.parseInt(params.page as string, 10) || 1;
-	const validPage = Math.max(1, pageNumber);
-	const year = typeof params.year === "string" ? params.year : undefined;
-	const sort = typeof params.sort === "string" ? params.sort : "newest";
-	const search = typeof params.search === "string" ? params.search : undefined;
-	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
-	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
-	// 3層タグフィルターパラメータの抽出
-	const playlistTags = Array.isArray(params.playlistTags)
-		? params.playlistTags
-		: typeof params.playlistTags === "string"
-			? [params.playlistTags]
-			: undefined;
-	const userTags = Array.isArray(params.userTags)
-		? params.userTags
-		: typeof params.userTags === "string"
-			? [params.userTags]
-			: undefined;
-	const categoryNames = Array.isArray(params.categoryNames)
-		? params.categoryNames
-		: typeof params.categoryNames === "string"
-			? [params.categoryNames]
-			: undefined;
-	const videoType = typeof params.videoType === "string" ? params.videoType : undefined;
-
-	// 並行してデータを取得
-	const [initialData, filteredCount, totalCount] = await Promise.all([
-		getVideoTitles({
-			page: validPage,
-			limit: validLimit,
-			year,
-			sort,
-			search,
-			playlistTags,
-			userTags,
-			categoryNames, // 複合インデックス作成後に有効化
-			videoType,
-		}),
-		getTotalVideoCount({
-			year,
-			search,
-			playlistTags,
-			userTags,
-			categoryNames, // 複合インデックス作成後に有効化
-			videoType,
-		}),
-		getTotalVideoCount({}), // フィルタなしの総件数
-	]);
+	// 初期データを取得
+	const initialData = await fetchVideosForGenericList({
+		page: Number.parseInt((params.page as string) || "1", 10),
+		limit: Number.parseInt((params.itemsPerPage as string) || "12", 10), // itemsPerPageを使用
+		sort: (params.sort as string) || "newest",
+		search: params.search as string,
+		filters: {
+			year: params.year as string,
+			categoryNames: params.categoryNames as string,
+			videoType: params.videoType as string,
+			playlistTags: params.playlistTags as string | string[],
+			userTags: params.userTags as string | string[],
+		},
+	});
 
 	return (
 		<ListPageLayout>
@@ -80,16 +45,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						</div>
 					}
 				>
-					<VideoList
-						data={initialData}
-						totalCount={totalCount}
-						filteredCount={
-							year || search || playlistTags || userTags || categoryNames || videoType
-								? filteredCount
-								: undefined
-						}
-						currentPage={validPage}
-					/>
+					<VideoListGeneric initialData={initialData} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>
