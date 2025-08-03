@@ -4,7 +4,7 @@ import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import {
 	GenericListCompat,
 	type GenericListCompatProps,
-} from "@suzumina.click/ui/components/custom/list";
+} from "@suzumina.click/ui/components/custom/list/generic-list-compat";
 import { useMemo } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
@@ -153,6 +153,14 @@ export default function AudioButtonsListGeneric({
 		paginationConfig: {
 			itemsPerPage: 12,
 			itemsPerPageOptions: [12, 24, 48],
+		},
+		// グリッドレイアウト設定
+		gridColumns: {
+			default: 2,
+			sm: 3,
+			md: 4,
+			lg: 5,
+			xl: 6,
 		},
 	};
 
