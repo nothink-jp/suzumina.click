@@ -10,6 +10,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "../../ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Skeleton } from "../../ui/skeleton";
 import { useListData } from "./core/hooks/useListData";
@@ -211,7 +220,7 @@ export function ConfigurableList<T>({
 		setIsComposing(false);
 		// 変換が終了したら、現在の値で更新
 		if (urlSync) {
-			urlHook.setSearch(localSearchValue);
+			urlHook.setSearch(localSearchValue || "");
 		}
 	}, [urlSync, urlHook, localSearchValue]);
 
@@ -373,48 +382,19 @@ export function ConfigurableList<T>({
 				</div>
 			</div>
 
-			{/* 情報表示とコントロール：件数、ページネーション、ソート、ページサイズ */}
+			{/* 情報表示とコントロール：件数、ソート、ページサイズ */}
 			<div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				{/* 左側：件数表示とページネーション */}
-				<div className="flex items-center gap-4 text-sm text-muted-foreground">
-					<div>
-						{data.total > 0 ? (
-							<>
-								全{data.total}件 <span className="mx-2">/</span> {pagination.startIndex + 1}-
-								{Math.min(pagination.endIndex, data.total)}件を表示
-							</>
-						) : fetchParams.search ? (
-							"検索結果がありません"
-						) : (
-							emptyMessage
-						)}
-					</div>
-
-					{/* ページネーション */}
-					{pagination.totalPages > 1 && (
-						<div className="flex items-center gap-2">
-							<Button
-								variant="ghost"
-								size="icon"
-								className="h-8 w-8"
-								onClick={() => handlePageChange(fetchParams.page - 1)}
-								disabled={!pagination.hasPrev}
-							>
-								<ChevronLeft className="h-4 w-4" />
-							</Button>
-							<span className="text-muted-foreground">
-								{pagination.currentPage} / {pagination.totalPages}
-							</span>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="h-8 w-8"
-								onClick={() => handlePageChange(fetchParams.page + 1)}
-								disabled={!pagination.hasNext}
-							>
-								<ChevronRight className="h-4 w-4" />
-							</Button>
-						</div>
+				{/* 左側：件数表示 */}
+				<div className="text-sm text-muted-foreground">
+					{data.total > 0 ? (
+						<>
+							全{data.total}件 <span className="mx-2">/</span> {pagination.startIndex + 1}-
+							{Math.min(pagination.endIndex, data.total)}件を表示
+						</>
+					) : fetchParams.search ? (
+						"検索結果がありません"
+					) : (
+						emptyMessage
 					)}
 				</div>
 
@@ -498,6 +478,142 @@ export function ConfigurableList<T>({
 							{renderItem(item, pagination.startIndex + index)}
 						</div>
 					))}
+				</div>
+			)}
+
+			{/* ページネーション（下部） */}
+			{pagination.totalPages > 1 && (
+				<Pagination className="mt-8">
+					<PaginationContent>
+						{/* Previous ボタン */}
+						<PaginationItem>
+							<PaginationPrevious
+								href="#"
+								onClick={(e) => {
+									e.preventDefault();
+									if (pagination.hasPrev) {
+										handlePageChange(fetchParams.page - 1);
+									}
+								}}
+								className={
+									!pagination.hasPrev ? "pointer-events-none opacity-50" : "cursor-pointer"
+								}
+							/>
+						</PaginationItem>
+
+						{/* ページ番号の生成 */}
+						{(() => {
+							const current = fetchParams.page;
+							const total = pagination.totalPages;
+							const maxVisiblePages = 5;
+							const halfVisible = Math.floor(maxVisiblePages / 2);
+
+							// ページ番号の範囲を計算
+							let startPage = Math.max(1, current - halfVisible);
+							const endPage = Math.min(total, startPage + maxVisiblePages - 1);
+
+							// 開始ページを調整
+							if (endPage - startPage < maxVisiblePages - 1) {
+								startPage = Math.max(1, endPage - maxVisiblePages + 1);
+							}
+
+							const pages = [];
+
+							// 最初のページと省略記号
+							if (startPage > 1) {
+								pages.push(
+									<PaginationItem key="page-1">
+										<PaginationLink
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												handlePageChange(1);
+											}}
+										>
+											1
+										</PaginationLink>
+									</PaginationItem>,
+								);
+
+								if (startPage > 2) {
+									pages.push(
+										<PaginationItem key="ellipsis-start">
+											<PaginationEllipsis />
+										</PaginationItem>,
+									);
+								}
+							}
+
+							// ページ番号
+							for (let i = startPage; i <= endPage; i++) {
+								pages.push(
+									<PaginationItem key={`page-${i}`}>
+										<PaginationLink
+											href="#"
+											isActive={current === i}
+											onClick={(e) => {
+												e.preventDefault();
+												handlePageChange(i);
+											}}
+										>
+											{i}
+										</PaginationLink>
+									</PaginationItem>,
+								);
+							}
+
+							// 最後のページと省略記号
+							if (endPage < total) {
+								if (endPage < total - 1) {
+									pages.push(
+										<PaginationItem key="ellipsis-end">
+											<PaginationEllipsis />
+										</PaginationItem>,
+									);
+								}
+
+								pages.push(
+									<PaginationItem key={`page-${total}`}>
+										<PaginationLink
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												handlePageChange(total);
+											}}
+										>
+											{total}
+										</PaginationLink>
+									</PaginationItem>,
+								);
+							}
+
+							return pages;
+						})()}
+
+						{/* Next ボタン */}
+						<PaginationItem>
+							<PaginationNext
+								href="#"
+								onClick={(e) => {
+									e.preventDefault();
+									if (pagination.hasNext) {
+										handlePageChange(fetchParams.page + 1);
+									}
+								}}
+								className={
+									!pagination.hasNext ? "pointer-events-none opacity-50" : "cursor-pointer"
+								}
+							/>
+						</PaginationItem>
+					</PaginationContent>
+				</Pagination>
+			)}
+
+			{/* 合計件数表示（ページネーションの下） */}
+			{pagination.totalPages > 1 && (
+				<div className="mt-2 text-center text-sm text-muted-foreground">
+					{data.total}件中 {pagination.startIndex + 1}〜{Math.min(pagination.endIndex, data.total)}
+					件を表示
 				</div>
 			)}
 		</div>

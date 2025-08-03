@@ -114,7 +114,7 @@ vi.mock("./components/AudioButtonsListSkeleton", () => ({
 }));
 
 // Mock Pagination component
-vi.mock("@/components/ui/pagination", () => ({
+vi.mock("@/components/pagination/url-pagination", () => ({
 	default: ({ currentPage, totalPages }: any) => (
 		<div data-testid="pagination">
 			Pagination: {currentPage} / {totalPages}

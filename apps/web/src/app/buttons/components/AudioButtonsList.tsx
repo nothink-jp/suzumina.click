@@ -4,7 +4,7 @@ import { AdvancedFilterPanel } from "@suzumina.click/ui/components/custom/advanc
 import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
 import Link from "next/link";
 import { startTransition } from "react";
-import Pagination from "@/components/ui/pagination";
+import UrlPagination from "@/components/pagination/url-pagination";
 import { AudioButtonsEmptyState } from "./AudioButtonsEmptyState";
 import { AudioButtonsErrorState } from "./AudioButtonsErrorState";
 import { AudioButtonsGrid } from "./AudioButtonsGrid";
@@ -148,7 +148,7 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 			{/* 3. ページネーション */}
 			{totalPages > 1 && (
 				<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
-					<Pagination currentPage={currentPage} totalPages={totalPages} />
+					<UrlPagination currentPage={currentPage} totalPages={totalPages} />
 				</div>
 			)}
 
