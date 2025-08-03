@@ -8,7 +8,9 @@
 import { Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "../../ui/button";
+import { Checkbox } from "../../ui/checkbox";
 import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
 import {
 	Pagination,
 	PaginationContent,
@@ -20,6 +22,7 @@ import {
 } from "../../ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Skeleton } from "../../ui/skeleton";
+import { Slider } from "../../ui/slider";
 import { useListData } from "./core/hooks/useListData";
 import { useListUrl } from "./core/hooks/useListUrl";
 import type { ConfigurableListProps, FilterConfig, StandardListParams } from "./core/types";
@@ -341,7 +344,7 @@ export function ConfigurableList<T>({
 			case "select": {
 				const options = generateOptions(config);
 				return (
-					<Select value={String(value || "")} onValueChange={(v) => handleFilterChange(key, v)}>
+					<Select value={value?.toString() || ""} onValueChange={(v) => handleFilterChange(key, v)}>
 						<SelectTrigger className="w-[180px]">
 							<SelectValue placeholder={config.placeholder || `${config.label || key}を選択`} />
 						</SelectTrigger>
@@ -365,6 +368,138 @@ export function ConfigurableList<T>({
 						{config.label || key}
 					</Button>
 				);
+			case "multiselect": {
+				const options = generateOptions(config);
+				const selectedValues = Array.isArray(value) ? value : [];
+				return (
+					<div className="space-y-2">
+						<Label>{config.label || key}</Label>
+						<div className="space-y-1 max-h-48 overflow-y-auto border rounded-md p-2">
+							{options.map((opt) => (
+								<div key={opt.value} className="flex items-center space-x-2">
+									<Checkbox
+										id={`${key}-${opt.value}`}
+										checked={selectedValues.includes(opt.value)}
+										onCheckedChange={(checked) => {
+											const newValues = checked
+												? [...selectedValues, opt.value]
+												: selectedValues.filter((v) => v !== opt.value);
+											handleFilterChange(key, newValues.length > 0 ? newValues : undefined);
+										}}
+									/>
+									<Label
+										htmlFor={`${key}-${opt.value}`}
+										className="text-sm font-normal cursor-pointer"
+									>
+										{opt.label}
+									</Label>
+								</div>
+							))}
+						</div>
+					</div>
+				);
+			}
+			case "range": {
+				const min = config.min ?? 0;
+				const max = config.max ?? 100;
+				const step = config.step ?? 1;
+				const rangeValue = value as { min?: number; max?: number } | undefined;
+				const currentMin = rangeValue?.min ?? min;
+				const currentMax = rangeValue?.max ?? max;
+
+				return (
+					<div className="space-y-2">
+						<Label>{config.label || key}</Label>
+						<div className="flex items-center space-x-2">
+							<Input
+								type="number"
+								value={currentMin}
+								min={min}
+								max={max}
+								step={step}
+								className="w-20"
+								onChange={(e) => {
+									const newMin = Number(e.target.value);
+									handleFilterChange(key, { min: newMin, max: currentMax });
+								}}
+							/>
+							<span className="text-sm text-muted-foreground">〜</span>
+							<Input
+								type="number"
+								value={currentMax}
+								min={min}
+								max={max}
+								step={step}
+								className="w-20"
+								onChange={(e) => {
+									const newMax = Number(e.target.value);
+									handleFilterChange(key, { min: currentMin, max: newMax });
+								}}
+							/>
+						</div>
+						<Slider
+							value={[currentMin, currentMax]}
+							min={min}
+							max={max}
+							step={step}
+							onValueChange={([newMin, newMax]) => {
+								handleFilterChange(key, { min: newMin, max: newMax });
+							}}
+							className="mt-2"
+						/>
+					</div>
+				);
+			}
+			case "date": {
+				return (
+					<div className="space-y-2">
+						<Label>{config.label || key}</Label>
+						<Input
+							type="date"
+							value={value?.toString() || ""}
+							onChange={(e) => handleFilterChange(key, e.target.value || undefined)}
+							className="w-[180px]"
+						/>
+					</div>
+				);
+			}
+			case "dateRange": {
+				const dateValue = value as { start?: string; end?: string } | undefined;
+				return (
+					<div className="space-y-2">
+						<Label>{config.label || key}</Label>
+						<div className="flex items-center space-x-2">
+							<Input
+								type="date"
+								value={dateValue?.start || ""}
+								min={config.minDate}
+								max={config.maxDate}
+								onChange={(e) => {
+									handleFilterChange(key, {
+										start: e.target.value || undefined,
+										end: dateValue?.end,
+									});
+								}}
+								className="w-[140px]"
+							/>
+							<span className="text-sm text-muted-foreground">〜</span>
+							<Input
+								type="date"
+								value={dateValue?.end || ""}
+								min={config.minDate}
+								max={config.maxDate}
+								onChange={(e) => {
+									handleFilterChange(key, {
+										start: dateValue?.start,
+										end: e.target.value || undefined,
+									});
+								}}
+								className="w-[140px]"
+							/>
+						</div>
+					</div>
+				);
+			}
 			default:
 				return null;
 		}
