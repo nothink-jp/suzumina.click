@@ -212,6 +212,7 @@ const VideoCard = memo(function VideoCard({
 		<article
 			className="hover:shadow-lg transition-shadow group border bg-card text-card-foreground rounded-lg shadow-sm h-full flex flex-col"
 			aria-labelledby={`video-title-${video.id}`}
+			data-testid="video-card"
 		>
 			<div className="flex flex-col h-full">
 				<div className="relative">
