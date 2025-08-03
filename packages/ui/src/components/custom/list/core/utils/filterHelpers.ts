@@ -7,7 +7,7 @@ import type { FilterConfig } from "../types";
 /**
  * "all"値を適切な空値に変換
  */
-export function transformFilterValue(value: any, config: FilterConfig): any {
+export function transformFilterValue(value: unknown, config: FilterConfig): unknown {
 	// showAllが有効で、値が"all"の場合
 	if (config.showAll && value === "all") {
 		return config.emptyValue ?? undefined;
@@ -56,7 +56,7 @@ export function normalizeOptions(
 export function isFilterEnabled(
 	filterKey: string,
 	config: FilterConfig,
-	allFilters: Record<string, any>,
+	allFilters: Record<string, unknown>,
 ): boolean {
 	if (!config.enabled) return true;
 	return config.enabled(allFilters);
@@ -65,7 +65,7 @@ export function isFilterEnabled(
 /**
  * フィルター値のバリデーション
  */
-export function validateFilterValue(value: any, config: FilterConfig): boolean {
+export function validateFilterValue(value: unknown, config: FilterConfig): boolean {
 	if (!config.validate) return true;
 	return config.validate(value);
 }
@@ -73,12 +73,17 @@ export function validateFilterValue(value: any, config: FilterConfig): boolean {
 /**
  * デフォルトフィルター値を生成
  */
-export function getDefaultFilterValues(filters: Record<string, FilterConfig>): Record<string, any> {
-	const defaults: Record<string, any> = {};
+export function getDefaultFilterValues(
+	filters: Record<string, FilterConfig>,
+): Record<string, unknown> {
+	const defaults: Record<string, unknown> = {};
 
 	Object.entries(filters).forEach(([key, config]) => {
 		if (config.showAll && config.type === "select") {
 			defaults[key] = "all";
+		} else if (config.type === "select") {
+			// showAllがfalseの場合、空文字列をデフォルトに
+			defaults[key] = "";
 		} else if (config.type === "boolean") {
 			defaults[key] = false;
 		} else if (config.type === "multiselect") {
@@ -95,7 +100,7 @@ export function getDefaultFilterValues(filters: Record<string, FilterConfig>): R
  * アクティブなフィルターがあるかチェック
  */
 export function hasActiveFilters(
-	currentFilters: Record<string, any>,
+	currentFilters: Record<string, unknown>,
 	filterConfigs: Record<string, FilterConfig>,
 ): boolean {
 	return Object.entries(currentFilters).some(([key, value]) => {

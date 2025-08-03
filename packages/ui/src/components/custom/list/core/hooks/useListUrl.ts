@@ -32,7 +32,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 		const search = searchParams.get("search") || "";
 
 		// フィルターを解析
-		const filterValues: Record<string, any> = {};
+		const filterValues: Record<string, unknown> = {};
 		Object.entries(filters).forEach(([key, config]) => {
 			const value = searchParams.get(key);
 
@@ -74,7 +74,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 				itemsPerPage: number;
 				sort: string;
 				search: string;
-				filters: Record<string, any>;
+				filters: Record<string, unknown>;
 			}>,
 		) => {
 			const params = new URLSearchParams(searchParams.toString());
@@ -190,7 +190,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 	);
 
 	const setFilter = useCallback(
-		(key: string, value: any) => {
+		(key: string, value: unknown) => {
 			updateUrl({
 				filters: { ...currentParams.filters, [key]: value },
 				page: 1, // フィルター変更時は1ページ目へ

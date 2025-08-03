@@ -7,7 +7,7 @@ import type { DataAdapter, ListDataSource, StandardListParams } from "../types";
 /**
  * 標準的なデータアダプターを作成
  */
-export function createDataAdapter<T, P = any>(config: {
+export function createDataAdapter<T, TParams = unknown>(config: {
 	/** パラメータ変換のマッピング */
 	paramMapping?: {
 		page?: string;
@@ -17,16 +17,16 @@ export function createDataAdapter<T, P = any>(config: {
 		[key: string]: string | undefined;
 	};
 	/** フィルター値の変換 */
-	filterTransforms?: Record<string, (value: any) => any>;
+	filterTransforms?: Record<string, (value: unknown) => unknown>;
 	/** 結果の変換 */
 	resultMapping: {
-		items: string | ((result: P) => T[]);
-		total: string | ((result: P) => number);
+		items: string | ((result: TParams) => T[]);
+		total: string | ((result: TParams) => number);
 	};
-}): DataAdapter<T, P> {
+}): DataAdapter<T, TParams> {
 	return {
 		toParams: (listParams: StandardListParams) => {
-			const params: any = {};
+			const params: Record<string, unknown> = {};
 
 			// 基本パラメータのマッピング
 			if (config.paramMapping?.page) {
@@ -69,19 +69,19 @@ export function createDataAdapter<T, P = any>(config: {
 				}
 			});
 
-			return params as P;
+			return params as TParams;
 		},
 
-		fromResult: (result: P) => {
+		fromResult: (result: unknown) => {
 			const items =
 				typeof config.resultMapping.items === "string"
-					? (result as any)[config.resultMapping.items]
-					: config.resultMapping.items(result);
+					? ((result as Record<string, unknown>)[config.resultMapping.items] as T[])
+					: config.resultMapping.items(result as TParams);
 
 			const total =
 				typeof config.resultMapping.total === "string"
-					? (result as any)[config.resultMapping.total]
-					: config.resultMapping.total(result);
+					? ((result as Record<string, unknown>)[config.resultMapping.total] as number)
+					: config.resultMapping.total(result as TParams);
 
 			return {
 				items,
@@ -95,12 +95,12 @@ export function createDataAdapter<T, P = any>(config: {
  * 既存のfetchData関数をラップして新しい形式に適合させる
  */
 export function wrapLegacyFetchData<T>(
-	fetchData: (params: any) => Promise<{
+	fetchData: (params: unknown) => Promise<{
 		items: T[];
 		totalCount: number;
 		filteredCount: number;
 	}>,
-	adapter: DataAdapter<T>,
+	adapter: DataAdapter<T, unknown>,
 ): (params: StandardListParams) => Promise<ListDataSource<T>> {
 	return async (params: StandardListParams) => {
 		const apiParams = adapter.toParams(params);

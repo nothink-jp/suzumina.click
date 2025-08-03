@@ -20,11 +20,11 @@ interface OldFilterDefinition {
 	label: string;
 	placeholder?: string;
 	options?: Array<{ value: string; label: string }>;
-	defaultValue?: any;
-	validation?: (value: any) => boolean;
-	transform?: (value: any) => any;
+	defaultValue?: unknown;
+	validation?: (value: unknown) => boolean;
+	transform?: (value: unknown) => unknown;
 	dependsOn?: string;
-	getDynamicOptions?: (parentValue: any) => Array<{ value: string; label: string }>;
+	getDynamicOptions?: (parentValue: unknown) => Array<{ value: string; label: string }>;
 }
 
 interface OldListConfig {
@@ -64,7 +64,7 @@ export function migrateFilters(oldFilters?: OldFilterDefinition[]): Record<strin
 					dependsOn: filter.dependsOn,
 					enabled: filter.dependsOn
 						? (allFilters) => {
-								const parentValue = allFilters[filter.dependsOn!];
+								const parentValue = filter.dependsOn ? allFilters[filter.dependsOn] : undefined;
 								return !!parentValue && parentValue !== "all";
 							}
 						: undefined,
@@ -80,34 +80,39 @@ export function migrateFilters(oldFilters?: OldFilterDefinition[]): Record<strin
 
 			case "multiselect":
 				// TODO: ConfigurableListにmultiselect対応を追加後に実装
-				console.warn(
-					`Filter type "multiselect" for "${filter.key}" is not yet supported in the new list component`,
-				);
+				if (process.env.NODE_ENV !== "production")
+					console.warn(
+						`Filter type "multiselect" for "${filter.key}" is not yet supported in the new list component`,
+					);
 				break;
 
 			case "range":
 				// TODO: ConfigurableListにrange対応を追加後に実装
-				console.warn(
-					`Filter type "range" for "${filter.key}" is not yet supported in the new list component`,
-				);
+				if (process.env.NODE_ENV !== "production")
+					console.warn(
+						`Filter type "range" for "${filter.key}" is not yet supported in the new list component`,
+					);
 				break;
 
 			case "dateRange":
 				// TODO: ConfigurableListにdateRange対応を追加後に実装
-				console.warn(
-					`Filter type "dateRange" for "${filter.key}" is not yet supported in the new list component`,
-				);
+				if (process.env.NODE_ENV !== "production")
+					console.warn(
+						`Filter type "dateRange" for "${filter.key}" is not yet supported in the new list component`,
+					);
 				break;
 
 			case "search":
 				// 検索は別途searchableプロパティで制御
-				console.info(
-					`Filter type "search" for "${filter.key}" should be handled by the searchable prop`,
-				);
+				if (process.env.NODE_ENV !== "production")
+					console.info(
+						`Filter type "search" for "${filter.key}" should be handled by the searchable prop`,
+					);
 				break;
 
 			case "custom":
-				console.warn(`Filter type "custom" for "${filter.key}" requires manual migration`);
+				if (process.env.NODE_ENV !== "production")
+					console.warn(`Filter type "custom" for "${filter.key}" requires manual migration`);
 				break;
 		}
 	});
@@ -176,7 +181,7 @@ export function checkMigrationReadiness(oldConfig: OldListConfig): {
 
 	// URLパラメータマッピングのチェック
 	// 新しいコンポーネントはデフォルトのマッピングを使用
-	const urlMapping = (oldConfig as any).urlParamMapping;
+	const urlMapping = (oldConfig as Record<string, unknown>).urlParamMapping;
 	if (urlMapping) {
 		warnings.push("Custom URL parameter mapping is not supported in the compatibility layer");
 	}

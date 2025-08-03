@@ -5,9 +5,8 @@
 
 "use client";
 
-import { ChevronLeft, ChevronRight, Filter, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import {
@@ -24,6 +23,7 @@ import { Skeleton } from "../../ui/skeleton";
 import { useListData } from "./core/hooks/useListData";
 import { useListUrl } from "./core/hooks/useListUrl";
 import type { ConfigurableListProps, FilterConfig, StandardListParams } from "./core/types";
+import { generateGridClasses } from "./core/utils/classHelpers";
 import { calculatePagination, wrapLegacyFetchData } from "./core/utils/dataAdapter";
 import {
 	generateOptions,
@@ -32,6 +32,7 @@ import {
 	normalizeOptions,
 	transformFilterValue,
 } from "./core/utils/filterHelpers";
+import { getFilterableValue, getSearchableText } from "./core/utils/typeSafeAccess";
 
 export function ConfigurableList<T>({
 	items: initialItems,
@@ -67,19 +68,22 @@ export function ConfigurableList<T>({
 		defaultPageSize: itemsPerPage,
 	});
 
+	// urlSyncがfalseの場合のローカル状態
+	const [localParams, setLocalParams] = useState<StandardListParams>({
+		page: 1,
+		itemsPerPage,
+		sort: defaultSort || "",
+		search: "",
+		filters: getDefaultFilterValues(filters),
+	});
+
 	// サーバーサイドデータ取得が有効な場合
 	const isServerSide = !!fetchFn && !!dataAdapter;
 
 	// データ取得用のパラメータ
 	const fetchParams: StandardListParams = useMemo(
-		() => ({
-			page: urlSync ? urlHook.params.page : 1,
-			itemsPerPage: urlSync ? urlHook.params.itemsPerPage : itemsPerPage,
-			sort: urlSync ? urlHook.params.sort : defaultSort || "",
-			search: urlSync ? urlHook.params.search : "",
-			filters: urlSync ? urlHook.params.filters : getDefaultFilterValues(filters),
-		}),
-		[urlSync, urlHook.params, itemsPerPage, defaultSort, filters],
+		() => (urlSync ? urlHook.params : localParams),
+		[urlSync, urlHook.params, localParams],
 	);
 
 	// fetchFnをメモ化
@@ -87,15 +91,33 @@ export function ConfigurableList<T>({
 		if (!isServerSide) {
 			return async () => ({ items: initialItems, total: initialItems.length });
 		}
-		return wrapLegacyFetchData(async (params) => {
-			// paramsはすでにdataAdapterによって変換されているので、そのまま使用
-			const result = await fetchFn!(params);
-			return {
-				items: result.items || [],
-				totalCount: result.total || result.totalCount || 0,
-				filteredCount: result.total || result.filteredCount || 0,
-			};
-		}, dataAdapter!);
+		return wrapLegacyFetchData(
+			async (params) => {
+				// paramsはすでにdataAdapterによって変換されているので、そのまま使用
+				if (!fetchFn) {
+					throw new Error("fetchFn is required when using server-side data fetching");
+				}
+				const result = await fetchFn(params);
+				const typedResult = result as {
+					items?: T[];
+					total?: number;
+					totalCount?: number;
+					filteredCount?: number;
+				};
+				return {
+					items: typedResult.items || [],
+					totalCount: typedResult.total || typedResult.totalCount || 0,
+					filteredCount: typedResult.total || typedResult.filteredCount || 0,
+				};
+			},
+			dataAdapter || {
+				toParams: (params) => params,
+				fromResult: (result) => {
+					const typedResult = result as import("./core/types").ListDataSource<T>;
+					return typedResult;
+				},
+			},
+		);
 	}, [isServerSide, dataAdapter, fetchFn, initialItems]);
 
 	// サーバーサイドデータ取得
@@ -120,17 +142,10 @@ export function ConfigurableList<T>({
 		// 検索フィルタリング
 		if (fetchParams.search && searchable) {
 			result = result.filter((item) => {
-				if (typeof item === "object" && item !== null) {
-					const searchableProps = ["title", "name", "label"];
-					return searchableProps.some((prop) => {
-						const value = (item as any)[prop];
-						return (
-							typeof value === "string" &&
-							value.toLowerCase().includes(fetchParams.search?.toLowerCase() || "")
-						);
-					});
-				}
-				return false;
+				const searchableText = getSearchableText(item);
+				return searchableText
+					? searchableText.toLowerCase().includes(fetchParams.search?.toLowerCase() || "")
+					: false;
 			});
 		}
 
@@ -139,23 +154,25 @@ export function ConfigurableList<T>({
 			const config = filters[key];
 			if (!config) return;
 
+			// 空文字列の場合はフィルタリングしない
+			if (value === "") return;
+
 			const transformedValue = transformFilterValue(value, config);
 			if (transformedValue === undefined) return;
 
 			result = result.filter((item) => {
-				const itemValue = (item as any)[key];
+				const itemValue = getFilterableValue(item, key);
 
 				switch (config.type) {
 					case "multiselect":
 						return Array.isArray(transformedValue) && transformedValue.includes(itemValue);
 					case "range": {
-						const { min, max } = transformedValue;
-						return (
-							(min === undefined || itemValue >= min) && (max === undefined || itemValue <= max)
-						);
+						const { min, max } = transformedValue as { min?: number; max?: number };
+						const numValue = Number(itemValue);
+						return (min === undefined || numValue >= min) && (max === undefined || numValue <= max);
 					}
 					case "boolean":
-						return itemValue === transformedValue;
+						return Boolean(itemValue) === transformedValue;
 					default:
 						return itemValue === transformedValue;
 				}
@@ -165,12 +182,30 @@ export function ConfigurableList<T>({
 		// ソート
 		if (fetchParams.sort) {
 			result.sort((a, b) => {
-				const aValue = (a as any)[fetchParams.sort!];
-				const bValue = (b as any)[fetchParams.sort!];
+				const sortKey = fetchParams.sort;
+				if (!sortKey) return 0;
 
-				if (aValue < bValue) return -1;
-				if (aValue > bValue) return 1;
-				return 0;
+				const aValue = getFilterableValue(a, sortKey);
+				const bValue = getFilterableValue(b, sortKey);
+
+				// Handle undefined values
+				if (aValue === undefined && bValue === undefined) return 0;
+				if (aValue === undefined) return 1;
+				if (bValue === undefined) return -1;
+
+				// Compare values
+				// For string comparison
+				if (typeof aValue === "string" && typeof bValue === "string") {
+					return aValue.localeCompare(bValue);
+				}
+				// For number comparison
+				if (typeof aValue === "number" && typeof bValue === "number") {
+					return aValue - bValue;
+				}
+				// For other types, convert to string and compare
+				const aStr = String(aValue);
+				const bStr = String(bValue);
+				return aStr.localeCompare(bStr);
 			});
 		}
 
@@ -208,8 +243,12 @@ export function ConfigurableList<T>({
 		(value: string) => {
 			setLocalSearchValue(value);
 			// IME変換中は更新しない
-			if (!isComposing && urlSync) {
-				urlHook.setSearch(value);
+			if (!isComposing) {
+				if (urlSync) {
+					urlHook.setSearch(value);
+				} else {
+					setLocalParams((prev) => ({ ...prev, search: value }));
+				}
 			}
 		},
 		[urlSync, urlHook, isComposing],
@@ -221,6 +260,8 @@ export function ConfigurableList<T>({
 		// 変換が終了したら、現在の値で更新
 		if (urlSync) {
 			urlHook.setSearch(localSearchValue || "");
+		} else {
+			setLocalParams((prev) => ({ ...prev, search: localSearchValue || "" }));
 		}
 	}, [urlSync, urlHook, localSearchValue]);
 
@@ -228,15 +269,22 @@ export function ConfigurableList<T>({
 		(value: string) => {
 			if (urlSync) {
 				urlHook.setSort(value);
+			} else {
+				setLocalParams((prev) => ({ ...prev, sort: value }));
 			}
 		},
 		[urlSync, urlHook],
 	);
 
 	const handleFilterChange = useCallback(
-		(key: string, value: any) => {
+		(key: string, value: unknown) => {
 			if (urlSync) {
 				urlHook.setFilter(key, value);
+			} else {
+				setLocalParams((prev) => ({
+					...prev,
+					filters: { ...prev.filters, [key]: value },
+				}));
 			}
 		},
 		[urlSync, urlHook],
@@ -246,6 +294,8 @@ export function ConfigurableList<T>({
 		(page: number) => {
 			if (urlSync) {
 				urlHook.setPage(page);
+			} else {
+				setLocalParams((prev) => ({ ...prev, page }));
 			}
 		},
 		[urlSync, urlHook],
@@ -254,13 +304,21 @@ export function ConfigurableList<T>({
 	const handleResetFilters = useCallback(() => {
 		if (urlSync) {
 			urlHook.resetFilters();
+		} else {
+			setLocalParams((prev) => ({
+				...prev,
+				filters: getDefaultFilterValues(filters),
+				search: "",
+			}));
 		}
-	}, [urlSync, urlHook]);
+	}, [urlSync, urlHook, filters]);
 
 	const handleItemsPerPageChange = useCallback(
 		(value: string) => {
 			if (urlSync) {
 				urlHook.setItemsPerPage(Number(value));
+			} else {
+				setLocalParams((prev) => ({ ...prev, itemsPerPage: Number(value), page: 1 }));
 			}
 		},
 		[urlSync, urlHook],
@@ -274,7 +332,7 @@ export function ConfigurableList<T>({
 			case "select": {
 				const options = generateOptions(config);
 				return (
-					<Select value={value || ""} onValueChange={(v) => handleFilterChange(key, v)}>
+					<Select value={String(value || "")} onValueChange={(v) => handleFilterChange(key, v)}>
 						<SelectTrigger className="w-[180px]">
 							<SelectValue placeholder={config.placeholder || `${config.label || key}を選択`} />
 						</SelectTrigger>
@@ -439,40 +497,7 @@ export function ConfigurableList<T>({
 
 			{/* リスト本体 */}
 			{currentItems.length > 0 && (
-				<div
-					className={(() => {
-						if (layout === "grid") {
-							const classes = ["grid", "gap-6"];
-							// デフォルトカラム数
-							if (gridColumns.default === 1) classes.push("grid-cols-1");
-							else if (gridColumns.default === 2) classes.push("grid-cols-2");
-							else if (gridColumns.default === 3) classes.push("grid-cols-3");
-							else if (gridColumns.default === 4) classes.push("grid-cols-4");
-							// sm
-							if (gridColumns.sm === 1) classes.push("sm:grid-cols-1");
-							else if (gridColumns.sm === 2) classes.push("sm:grid-cols-2");
-							else if (gridColumns.sm === 3) classes.push("sm:grid-cols-3");
-							else if (gridColumns.sm === 4) classes.push("sm:grid-cols-4");
-							// md
-							if (gridColumns.md === 1) classes.push("md:grid-cols-1");
-							else if (gridColumns.md === 2) classes.push("md:grid-cols-2");
-							else if (gridColumns.md === 3) classes.push("md:grid-cols-3");
-							else if (gridColumns.md === 4) classes.push("md:grid-cols-4");
-							// lg
-							if (gridColumns.lg === 1) classes.push("lg:grid-cols-1");
-							else if (gridColumns.lg === 2) classes.push("lg:grid-cols-2");
-							else if (gridColumns.lg === 3) classes.push("lg:grid-cols-3");
-							else if (gridColumns.lg === 4) classes.push("lg:grid-cols-4");
-							// xl
-							if (gridColumns.xl === 1) classes.push("xl:grid-cols-1");
-							else if (gridColumns.xl === 2) classes.push("xl:grid-cols-2");
-							else if (gridColumns.xl === 3) classes.push("xl:grid-cols-3");
-							else if (gridColumns.xl === 4) classes.push("xl:grid-cols-4");
-							return classes.join(" ");
-						}
-						return "space-y-4";
-					})()}
-				>
+				<div className={layout === "grid" ? generateGridClasses(gridColumns) : "space-y-4"}>
 					{currentItems.map((item, index) => (
 						<div key={pagination.startIndex + index}>
 							{renderItem(item, pagination.startIndex + index)}

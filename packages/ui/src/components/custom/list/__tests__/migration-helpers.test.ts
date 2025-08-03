@@ -24,15 +24,18 @@ describe("migration-helpers", () => {
 
 			const result = migrateFilters(oldFilters);
 
-			expect(result.category).toEqual({
-				type: "select",
-				options: oldFilters[0].options,
-				showAll: true,
-				emptyValue: undefined,
-				validate: undefined,
-				dependsOn: undefined,
-				enabled: undefined,
-			});
+			expect(result.category).toBeDefined();
+			if (result.category) {
+				expect(result.category).toEqual({
+					type: "select",
+					options: oldFilters[0]?.options,
+					showAll: true,
+					emptyValue: undefined,
+					validate: undefined,
+					dependsOn: undefined,
+					enabled: undefined,
+				});
+			}
 		});
 
 		it("converts boolean filters correctly", () => {
@@ -47,10 +50,13 @@ describe("migration-helpers", () => {
 
 			const result = migrateFilters(oldFilters);
 
-			expect(result.active).toEqual({
-				type: "boolean",
-				validate: oldFilters[0].validation,
-			});
+			expect(result.active).toBeDefined();
+			if (result.active) {
+				expect(result.active).toEqual({
+					type: "boolean",
+					validate: oldFilters[0]?.validation,
+				});
+			}
 		});
 
 		it("handles dependent filters", () => {
@@ -65,11 +71,11 @@ describe("migration-helpers", () => {
 			];
 
 			const result = migrateFilters(oldFilters);
-			const enabledFn = result.subcategory.enabled!;
+			const enabledFn = result.subcategory?.enabled;
 
-			expect(enabledFn({ category: "A" })).toBe(true);
-			expect(enabledFn({ category: "all" })).toBe(false);
-			expect(enabledFn({ category: undefined })).toBe(false);
+			expect(enabledFn?.({ category: "A" })).toBe(true);
+			expect(enabledFn?.({ category: "all" })).toBe(false);
+			expect(enabledFn?.({ category: undefined })).toBe(false);
 		});
 
 		it("warns about unsupported filter types", () => {

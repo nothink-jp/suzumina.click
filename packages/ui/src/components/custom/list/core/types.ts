@@ -15,11 +15,11 @@ export interface ListDataSource<T> {
  * データアダプターパターン
  * 既存のAPIと新しいコンポーネントをつなぐ
  */
-export interface DataAdapter<T, P = any> {
+export interface DataAdapter<T, TParams = unknown> {
 	/** リストパラメータをAPI用のパラメータに変換 */
-	toParams: (listParams: StandardListParams) => P;
+	toParams: (listParams: StandardListParams) => TParams;
 	/** APIの結果をリストデータソースに変換 */
-	fromResult: (result: P) => ListDataSource<T>;
+	fromResult: (result: unknown) => ListDataSource<T>;
 }
 
 /**
@@ -30,7 +30,7 @@ export interface StandardListParams {
 	itemsPerPage: number;
 	sort?: string;
 	search?: string;
-	filters: Record<string, any>;
+	filters: Record<string, unknown>;
 }
 
 /**
@@ -52,14 +52,14 @@ export interface FilterConfig {
 	showAll?: boolean;
 
 	// "all"が選択された時の値（デフォルト: undefined）
-	emptyValue?: any;
+	emptyValue?: unknown;
 
 	// バリデーション
-	validate?: (value: any) => boolean;
+	validate?: (value: unknown) => boolean;
 
 	// 他のフィルターへの依存
 	dependsOn?: string;
-	enabled?: (filters: Record<string, any>) => boolean;
+	enabled?: (filters: Record<string, unknown>) => boolean;
 }
 
 /**
@@ -108,7 +108,7 @@ export interface ConfigurableListProps<T> extends SimpleListProps<T> {
 
 	// データアダプター（既存APIとの接続用）
 	dataAdapter?: DataAdapter<T>;
-	fetchFn?: (params: any) => Promise<any>;
+	fetchFn?: (params: unknown) => Promise<unknown>;
 
 	// カスタマイズ
 	onError?: (error: ListError) => void;
@@ -139,8 +139,8 @@ export interface ListController<T> {
 	error: ListError | null;
 
 	// フィルター
-	filters: Record<string, any>;
-	setFilter: (key: string, value: any) => void;
+	filters: Record<string, unknown>;
+	setFilter: (key: string, value: unknown) => void;
 	resetFilters: () => void;
 
 	// ソート

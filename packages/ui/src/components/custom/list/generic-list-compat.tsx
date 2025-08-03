@@ -20,11 +20,11 @@ export interface GenericListCompatProps<T> {
 			label: string;
 			placeholder?: string;
 			options?: Array<{ value: string; label: string }>;
-			defaultValue?: any;
-			validation?: (value: any) => boolean;
-			transform?: (value: any) => any;
+			defaultValue?: unknown;
+			validation?: (value: unknown) => boolean;
+			transform?: (value: unknown) => unknown;
 			dependsOn?: string;
-			getDynamicOptions?: (parentValue: any) => Array<{ value: string; label: string }>;
+			getDynamicOptions?: (parentValue: unknown) => Array<{ value: string; label: string }>;
 		}>;
 		sorts?: Array<{
 			value: string;
@@ -60,7 +60,7 @@ export interface GenericListCompatProps<T> {
 		limit: number;
 		sort?: string;
 		search?: string;
-		filters: Record<string, any>;
+		filters: Record<string, unknown>;
 	}) => Promise<{
 		items: T[];
 		totalCount: number;
@@ -72,7 +72,7 @@ export interface GenericListCompatProps<T> {
 		totalCount: number;
 		filteredCount: number;
 	};
-	onFilterChange?: (filters: Record<string, any>) => void;
+	onFilterChange?: (filters: Record<string, unknown>) => void;
 	onPageChange?: (page: number) => void;
 	onSortChange?: (sort: string) => void;
 	onSearchChange?: (search: string) => void;
@@ -109,7 +109,7 @@ export function GenericListCompat<T>({
 					dependsOn: filter.dependsOn,
 					enabled: filter.dependsOn
 						? (allFilters) => {
-								const parentValue = allFilters[filter.dependsOn!];
+								const parentValue = filter.dependsOn ? allFilters[filter.dependsOn] : undefined;
 								return !!parentValue && parentValue !== "all";
 							}
 						: undefined,
@@ -131,10 +131,17 @@ export function GenericListCompat<T>({
 			search: params.search,
 			filters: params.filters,
 		}),
-		fromResult: (result) => ({
-			items: result.items,
-			total: result.totalCount || result.filteredCount,
-		}),
+		fromResult: (result) => {
+			const typedResult = result as {
+				items: T[];
+				totalCount: number;
+				filteredCount: number;
+			};
+			return {
+				items: typedResult.items,
+				total: typedResult.totalCount || typedResult.filteredCount,
+			};
+		},
 	};
 
 	// イベントハンドラーの処理
@@ -157,7 +164,7 @@ export function GenericListCompat<T>({
 				itemsPerPage={config.paginationConfig?.itemsPerPage || 12}
 				itemsPerPageOptions={config.paginationConfig?.itemsPerPageOptions}
 				urlSync={true}
-				fetchFn={fetchData}
+				fetchFn={fetchData as (params: unknown) => Promise<unknown>}
 				dataAdapter={dataAdapter}
 				onError={handleError}
 				emptyMessage="データがありません"

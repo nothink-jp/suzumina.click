@@ -12,6 +12,7 @@ import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import type { SimpleListProps } from "./core/types";
 import { calculatePagination } from "./core/utils/dataAdapter";
+import { getDateProperty, getSearchableText } from "./core/utils/typeSafeAccess";
 
 export function SimpleList<T>({
 	items,
@@ -34,32 +35,21 @@ export function SimpleList<T>({
 		if (searchTerm) {
 			result = result.filter((item) => {
 				// itemがオブジェクトで、title, name, label のいずれかを持つ場合に検索
-				if (typeof item === "object" && item !== null) {
-					const searchableProps = ["title", "name", "label"];
-					return searchableProps.some((prop) => {
-						const value = (item as any)[prop];
-						return (
-							typeof value === "string" && value.toLowerCase().includes(searchTerm.toLowerCase())
-						);
-					});
-				}
-				return false;
+				const searchableText = getSearchableText(item);
+				return searchableText
+					? searchableText.toLowerCase().includes(searchTerm.toLowerCase())
+					: false;
 			});
 		}
 
 		// ソート（createdAt, updatedAt, dateがある場合）
 		result.sort((a, b) => {
-			if (typeof a === "object" && typeof b === "object" && a !== null && b !== null) {
-				const dateProps = ["createdAt", "updatedAt", "date"];
-				for (const prop of dateProps) {
-					const aDate = (a as any)[prop];
-					const bDate = (b as any)[prop];
-					if (aDate && bDate) {
-						const aTime = new Date(aDate).getTime();
-						const bTime = new Date(bDate).getTime();
-						return sortOrder === "desc" ? bTime - aTime : aTime - bTime;
-					}
-				}
+			const aDate = getDateProperty(a);
+			const bDate = getDateProperty(b);
+			if (aDate && bDate) {
+				const aTime = aDate.getTime();
+				const bTime = bDate.getTime();
+				return sortOrder === "desc" ? bTime - aTime : aTime - bTime;
 			}
 			return 0;
 		});
