@@ -104,14 +104,7 @@ const usePerformanceMetrics = (testMode: string, itemCount: number) => {
 	const [renderTime, setRenderTime] = useState(0);
 	const [scrollPerformance, setScrollPerformance] = useState(0);
 
-	const measureRenderTime = useCallback(() => {
-		const start = performance.now();
-		// ダミー処理（実際のレンダリング時間をシミュレート）
-		return () => {
-			const end = performance.now();
-			setRenderTime(end - start);
-		};
-	}, []);
+	// レンダリング時間は runPerformanceTest 内で直接測定される
 
 	const measureScrollPerformance = useCallback(() => {
 		const scrollTests = 10;
@@ -137,8 +130,8 @@ const usePerformanceMetrics = (testMode: string, itemCount: number) => {
 	return {
 		renderTime,
 		scrollPerformance,
-		measureRenderTime,
 		measureScrollPerformance,
+		setRenderTime,
 	};
 };
 
@@ -153,7 +146,7 @@ export const AudioButtonPerformanceTest = memo<AudioButtonPerformanceTestProps>(
 		const [visibleRange, _setVisibleRange] = useState({ start: 0, end: 5 });
 		const [upgradedCount, setUpgradedCount] = useState(0);
 
-		const { renderTime, scrollPerformance, measureRenderTime, measureScrollPerformance } =
+		const { renderTime, scrollPerformance, measureScrollPerformance, setRenderTime } =
 			usePerformanceMetrics(testMode, itemCount);
 
 		const progressiveMetrics = useProgressiveLoadingMetrics(itemCount, upgradedCount, visibleRange);
@@ -168,11 +161,16 @@ export const AudioButtonPerformanceTest = memo<AudioButtonPerformanceTestProps>(
 
 		const runPerformanceTest = useCallback(async () => {
 			setIsRunning(true);
-			const endRenderMeasure = measureRenderTime();
+
+			// レンダリング開始時刻を記録
+			const startTime = performance.now();
 
 			// レンダリング完了を待つ
 			await new Promise((resolve) => setTimeout(resolve, 100));
-			endRenderMeasure();
+
+			// レンダリング時間を計算
+			const endTime = performance.now();
+			setRenderTime(endTime - startTime);
 
 			// スクロールパフォーマンステスト
 			const _scrollTime = measureScrollPerformance();
@@ -200,8 +198,8 @@ export const AudioButtonPerformanceTest = memo<AudioButtonPerformanceTestProps>(
 			renderTime,
 			scrollPerformance,
 			progressiveMetrics.upgradeRatio,
-			measureRenderTime,
 			measureScrollPerformance,
+			setRenderTime,
 			onTestComplete,
 		]);
 
