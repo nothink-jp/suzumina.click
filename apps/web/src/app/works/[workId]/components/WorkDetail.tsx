@@ -39,6 +39,7 @@ import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { formatJSTDateTime } from "@/utils/date-format";
 import { generateMockCharacteristicData } from "@/utils/mock-evaluation-data";
 import SampleImageGallery from "./SampleImageGallery";
+import WorkDescription from "./WorkDescription";
 import { WorkEvaluation } from "./work-evaluation";
 
 interface WorkDetailProps {
@@ -344,6 +345,9 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 
 						{/* 詳細情報タブ（基本情報・制作陣） */}
 						<TabsContent value="overview" className="space-y-6">
+							{/* 作品説明 */}
+							<WorkDescription description={work.description} title={work.title} />
+
 							{/* 作品基本情報 */}
 							<Card>
 								<CardHeader>
