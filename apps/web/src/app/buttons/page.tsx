@@ -6,7 +6,7 @@ import {
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
 import { getAudioButtons } from "./actions";
-import AudioButtonsList from "./components/AudioButtonsList";
+import AudioButtonsListGeneric from "./components/AudioButtonsListGeneric";
 
 interface SearchParams {
 	q?: string;
@@ -98,7 +98,7 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 						</div>
 					}
 				>
-					<AudioButtonsList searchParams={resolvedSearchParams} initialData={initialData} />
+					<AudioButtonsListGeneric searchParams={resolvedSearchParams} initialData={initialData} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>
