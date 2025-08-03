@@ -60,6 +60,7 @@ export function ConfigurableList<T>({
 		lg: 3,
 	},
 	itemsPerPageOptions,
+	initialTotal,
 }: ConfigurableListProps<T>) {
 	// URLパラメータとの同期
 	const urlHook = useListUrl({
@@ -123,13 +124,21 @@ export function ConfigurableList<T>({
 	// サーバーサイドデータ取得
 	const serverData = useListData(fetchParams, {
 		fetchFn: memoizedFetchFn,
-		initialData: isServerSide ? undefined : { items: initialItems, total: initialItems.length },
+		initialData:
+			isServerSide && initialTotal !== undefined
+				? { items: initialItems, total: initialTotal }
+				: !isServerSide
+					? { items: initialItems, total: initialTotal || initialItems.length }
+					: undefined,
 		onError,
 		debounceMs: searchable ? 300 : 0, // 検索時のみデバウンス
 	});
 
 	// 使用するデータソース
-	const data = serverData.data || { items: initialItems, total: initialItems.length };
+	const data = serverData.data || {
+		items: initialItems,
+		total: initialTotal || initialItems.length,
+	};
 	const loading = externalLoading || serverData.loading;
 	const error = externalError || serverData.error;
 

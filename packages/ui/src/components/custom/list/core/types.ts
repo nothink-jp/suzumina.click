@@ -127,6 +127,9 @@ export interface ConfigurableListProps<T> extends SimpleListProps<T> {
 
 	// ページサイズ設定
 	itemsPerPageOptions?: number[];
+
+	// 初期総数（サーバーサイドレンダリング時）
+	initialTotal?: number;
 }
 
 /**

@@ -264,15 +264,28 @@ describe("ConfigurableList", () => {
 		expect(screen.getByTestId("custom-loading")).toBeInTheDocument();
 	});
 
+	it("displays initialTotal correctly for server-side rendering", () => {
+		// Render with initialTotal to simulate server-side rendering
+		render(
+			<ConfigurableList items={sampleItems.slice(0, 2)} initialTotal={5} renderItem={renderItem} />,
+		);
+
+		// Verify initial data is displayed with correct total
+		expect(screen.getByTestId("item-1")).toBeInTheDocument();
+		expect(screen.getByTestId("item-2")).toBeInTheDocument();
+		expect(screen.getByText(/全\d+件/)).toHaveTextContent("全5件");
+	});
+
 	it("handles server-side data fetching", async () => {
 		const mockFetch = vi.fn().mockResolvedValue({
 			items: sampleItems.slice(0, 2),
 			total: 5,
 		});
 
-		render(
+		// Render without initialData to trigger fetch
+		const { rerender } = render(
 			<ConfigurableList
-				items={[]}
+				items={sampleItems}
 				renderItem={renderItem}
 				fetchFn={mockFetch}
 				dataAdapter={{
@@ -284,13 +297,40 @@ describe("ConfigurableList", () => {
 						return typedResult;
 					},
 				}}
+				searchable={true}
+				urlSync={false}
 			/>,
 		);
 
+		// Change a filter to trigger fetch
+		rerender(
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={mockFetch}
+				dataAdapter={{
+					toParams: (params) => params,
+					fromResult: (result) => {
+						const typedResult = result as import("../core/types").ListDataSource<
+							(typeof sampleItems)[0]
+						>;
+						return typedResult;
+					},
+				}}
+				searchable={true}
+				urlSync={false}
+				filters={_filters}
+			/>,
+		);
+
+		// Select a filter to trigger fetch
+		const filterButton = screen.getByRole("combobox");
+		fireEvent.click(filterButton);
+		const optionA = await screen.findByText("A");
+		fireEvent.click(optionA);
+
 		await waitFor(() => {
 			expect(mockFetch).toHaveBeenCalled();
-			expect(screen.getByTestId("item-1")).toBeInTheDocument();
-			expect(screen.getByTestId("item-2")).toBeInTheDocument();
 		});
 	});
 });

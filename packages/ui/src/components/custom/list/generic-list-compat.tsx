@@ -173,6 +173,7 @@ export function GenericListCompat<T>({
 
 			<ConfigurableList
 				items={initialData?.items || []}
+				initialTotal={initialData?.totalCount}
 				renderItem={renderItem}
 				filters={filters}
 				sorts={sorts}
