@@ -37,6 +37,7 @@ const mockItems: TestItem[] = Array.from({ length: 50 }, (_, i) => ({
 const mockFetchData = vi.fn();
 
 const defaultConfig: GenericListCompatProps<TestItem>["config"] = {
+	baseUrl: "/test",
 	filters: [
 		{
 			key: "category",
@@ -99,7 +100,7 @@ describe("GenericListCompat Integration Tests", () => {
 
 	it.skip("初期表示が正しく行われる", async () => {
 		render(
-			<GenericListCompat
+			<GenericListCompat<TestItem>
 				config={defaultConfig}
 				fetchData={mockFetchData}
 				renderItem={(item) => <div key={item.id}>{item.name}</div>}
@@ -139,7 +140,7 @@ describe("GenericListCompat Integration Tests", () => {
 		const user = userEvent.setup();
 
 		render(
-			<GenericListCompat
+			<GenericListCompat<TestItem>
 				config={defaultConfig}
 				fetchData={mockFetchData}
 				renderItem={(item) => <div key={item.id}>{item.name}</div>}
@@ -178,7 +179,7 @@ describe("GenericListCompat Integration Tests", () => {
 		const user = userEvent.setup({ delay: null });
 
 		render(
-			<GenericListCompat
+			<GenericListCompat<TestItem>
 				config={defaultConfig}
 				fetchData={mockFetchData}
 				renderItem={(item) => <div key={item.id}>{item.name}</div>}
@@ -217,7 +218,7 @@ describe("GenericListCompat Integration Tests", () => {
 		const user = userEvent.setup();
 
 		render(
-			<GenericListCompat
+			<GenericListCompat<TestItem>
 				config={defaultConfig}
 				fetchData={mockFetchData}
 				renderItem={(item) => <div key={item.id}>{item.name}</div>}
@@ -251,7 +252,7 @@ describe("GenericListCompat Integration Tests", () => {
 		const user = userEvent.setup();
 
 		render(
-			<GenericListCompat
+			<GenericListCompat<TestItem>
 				config={defaultConfig}
 				fetchData={mockFetchData}
 				renderItem={(item) => <div key={item.id}>{item.name}</div>}
@@ -289,7 +290,7 @@ describe("GenericListCompat Integration Tests", () => {
 		const user = userEvent.setup();
 
 		render(
-			<GenericListCompat
+			<GenericListCompat<TestItem>
 				config={defaultConfig}
 				fetchData={mockFetchData}
 				renderItem={(item) => <div key={item.id}>{item.name}</div>}
@@ -327,7 +328,7 @@ describe("GenericListCompat Integration Tests", () => {
 		const user = userEvent.setup();
 
 		render(
-			<GenericListCompat
+			<GenericListCompat<TestItem>
 				config={defaultConfig}
 				fetchData={mockFetchData}
 				renderItem={(item) => <div key={item.id}>{item.name}</div>}
@@ -369,7 +370,7 @@ describe("GenericListCompat Integration Tests", () => {
 		mockFetchData.mockRejectedValueOnce(error);
 
 		render(
-			<GenericListCompat
+			<GenericListCompat<TestItem>
 				config={defaultConfig}
 				fetchData={mockFetchData}
 				renderItem={(item) => <div key={item.id}>{item.name}</div>}
@@ -433,7 +434,7 @@ describe("GenericListCompat Integration Tests", () => {
 		});
 
 		render(
-			<GenericListCompat
+			<GenericListCompat<TestItem>
 				config={defaultConfig}
 				fetchData={mockFetchData}
 				renderItem={(item) => <div key={item.id}>{item.name}</div>}
@@ -461,7 +462,7 @@ describe("GenericListCompat Integration Tests", () => {
 		const user = userEvent.setup();
 
 		render(
-			<GenericListCompat
+			<GenericListCompat<TestItem>
 				config={defaultConfig}
 				fetchData={mockFetchData}
 				renderItem={(item) => <div key={item.id}>{item.name}</div>}
