@@ -110,6 +110,7 @@ export function hasActiveFilters(
 	currentFilters: Record<string, unknown>,
 	filterConfigs: Record<string, FilterConfig>,
 ): boolean {
+	const defaultValues = getDefaultFilterValues(filterConfigs);
 	return Object.entries(currentFilters).some(([key, value]) => {
 		const config = filterConfigs[key];
 		if (!config) return false;
@@ -122,6 +123,9 @@ export function hasActiveFilters(
 
 		// undefinedやnullは非アクティブ
 		if (value === undefined || value === null) return false;
+
+		// デフォルト値と同じ場合は非アクティブ
+		if (value === defaultValues[key]) return false;
 
 		// rangeフィルターの場合
 		if (config.type === "range" && typeof value === "object") {

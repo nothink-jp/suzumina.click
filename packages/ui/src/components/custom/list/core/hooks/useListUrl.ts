@@ -153,14 +153,16 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 				// 新しいフィルター値を設定
 				Object.entries(updates.filters).forEach(([key, value]) => {
 					const config = filters[key];
+					const defaultValue = getDefaultFilterValues(filters)[key];
 
-					// "all"値や空値は削除（すでに削除済みなのでスキップ）
+					// "all"値、空値、またはデフォルト値と同じ場合はURLから削除
 					if (
 						value === undefined ||
 						value === null ||
 						value === "" ||
 						(config?.showAll && value === "all") ||
-						(Array.isArray(value) && value.length === 0)
+						(Array.isArray(value) && value.length === 0) ||
+						value === defaultValue
 					) {
 						// すでに削除されているので何もしない
 					} else {
