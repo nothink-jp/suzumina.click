@@ -113,83 +113,81 @@ export default function WorksFilters({ showR18Content }: WorksFiltersProps) {
 	}, [category, language, excludeR18, updateUrl, searchParams]);
 
 	return (
-		<div className="space-y-4 mb-6">
-			{/* 検索フォーム */}
-			<form onSubmit={handleSearch} className="flex gap-2">
-				<div className="relative flex-1">
-					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-					<Input
-						type="text"
-						placeholder="作品タイトルで検索..."
-						value={searchText}
-						onChange={(e) => setSearchText(e.target.value)}
-						className="pl-10"
-					/>
-					{searchText && (
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-							onClick={() => {
-								setSearchText("");
-								const params = new URLSearchParams(searchParams.toString());
-								params.delete("search");
-								params.set("page", "1");
-								router.push(`/works?${params.toString()}`);
-							}}
-						>
-							<X className="h-4 w-4" />
-						</Button>
-					)}
-				</div>
-				<Button type="submit">検索</Button>
-			</form>
+		<div className="mb-6">
+			{/* 検索とフィルターを1行に配置 */}
+			<div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
+				{/* 検索フォーム */}
+				<form onSubmit={handleSearch} className="flex-1 min-w-0">
+					<div className="relative">
+						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+						<Input
+							type="text"
+							placeholder="作品タイトルで検索..."
+							value={searchText}
+							onChange={(e) => setSearchText(e.target.value)}
+							className="pl-10 pr-10 w-full"
+						/>
+						{searchText && (
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+								onClick={() => {
+									setSearchText("");
+									const params = new URLSearchParams(searchParams.toString());
+									params.delete("search");
+									params.set("page", "1");
+									router.push(`/works?${params.toString()}`);
+								}}
+							>
+								<X className="h-4 w-4" />
+							</Button>
+						)}
+					</div>
+				</form>
 
-			{/* フィルターオプション */}
-			<div className="flex flex-wrap gap-4 items-center">
 				{/* カテゴリフィルター */}
-				<div className="flex items-center gap-2">
-					<Label htmlFor="category-filter" className="text-sm whitespace-nowrap">
-						カテゴリ:
-					</Label>
-					<Select value={category} onValueChange={setCategory}>
-						<SelectTrigger id="category-filter" className="w-[180px]">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{CATEGORY_OPTIONS.map((option) => (
-								<SelectItem key={option.value} value={option.value}>
-									{option.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
+				<Select value={category} onValueChange={setCategory}>
+					<SelectTrigger className="w-[140px] sm:w-[180px]">
+						<SelectValue placeholder="すべて" />
+					</SelectTrigger>
+					<SelectContent>
+						{CATEGORY_OPTIONS.map((option) => (
+							<SelectItem key={option.value} value={option.value}>
+								{option.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 
 				{/* 言語フィルター */}
-				<div className="flex items-center gap-2">
-					<Label htmlFor="language-filter" className="text-sm whitespace-nowrap">
-						言語:
-					</Label>
-					<Select value={language} onValueChange={setLanguage}>
-						<SelectTrigger id="language-filter" className="w-[150px]">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{LANGUAGE_OPTIONS.map((option) => (
-								<SelectItem key={option.value} value={option.value}>
-									{option.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
+				<Select value={language} onValueChange={setLanguage}>
+					<SelectTrigger className="w-[100px] sm:w-[150px]">
+						<SelectValue placeholder="すべて" />
+					</SelectTrigger>
+					<SelectContent>
+						{LANGUAGE_OPTIONS.map((option) => (
+							<SelectItem key={option.value} value={option.value}>
+								{option.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 
 				{/* R18フィルター */}
-				<div className="flex items-center gap-2">
-					<Label htmlFor="r18-toggle" className="text-sm whitespace-nowrap cursor-pointer">
+				<div className="flex items-center gap-2 ml-2">
+					<Label
+						htmlFor="r18-toggle"
+						className="text-sm whitespace-nowrap cursor-pointer hidden sm:inline"
+					>
 						R18作品表示
+					</Label>
+					<Label
+						htmlFor="r18-toggle"
+						className="text-sm whitespace-nowrap cursor-pointer sm:hidden"
+					>
+						R18
 					</Label>
 					<Switch
 						id="r18-toggle"
@@ -202,8 +200,8 @@ export default function WorksFilters({ showR18Content }: WorksFiltersProps) {
 
 			{/* アクティブフィルター表示 */}
 			{(searchText || category !== "all" || language !== "all" || excludeR18) && (
-				<div className="flex flex-wrap gap-2 items-center">
-					<span className="text-sm text-muted-foreground">フィルター:</span>
+				<div className="flex flex-wrap gap-2 items-center mt-3">
+					<span className="text-sm text-muted-foreground">適用中:</span>
 					{searchText && (
 						<Badge variant="secondary" className="gap-1">
 							検索: {searchText}
