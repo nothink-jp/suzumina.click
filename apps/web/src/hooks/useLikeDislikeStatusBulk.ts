@@ -28,7 +28,7 @@ export function useLikeDislikeStatusBulk(audioButtonIds: string[]) {
 			.then((statusMap) => {
 				setLikeDislikeStates(statusMap);
 			})
-			.catch((error) => {
+			.catch((_error) => {
 				setLikeDislikeStates(new Map());
 			})
 			.finally(() => {

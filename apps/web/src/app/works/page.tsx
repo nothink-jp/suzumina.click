@@ -31,16 +31,8 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 		language,
 		excludeR18: shouldExcludeR18,
 	});
-	const { works: initialData, totalCount } = result;
 
-	return (
-		<WorksPageClient
-			searchParams={params}
-			initialData={initialData}
-			initialTotalCount={totalCount || 0}
-			initialPage={validPage}
-		/>
-	);
+	return <WorksPageClient searchParams={params} initialData={result} />;
 }
 
 // メタデータ設定
