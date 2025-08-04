@@ -49,6 +49,9 @@ export default function WorksListGeneric({
 					return Array.isArray(value) ? value[0] : value;
 				};
 
+				// showR18フィルターの値を取得（boolean型フィルター）
+				const showR18Value = params.filters.showR18 as boolean | undefined;
+
 				return {
 					page: params.page,
 					limit: params.itemsPerPage,
@@ -56,7 +59,13 @@ export default function WorksListGeneric({
 					search: params.search,
 					category: getValue("category"),
 					language: getValue("language"),
-					excludeR18: excludeR18 !== undefined ? excludeR18 : !showR18Content,
+					// showR18がtrueならexcludeR18はfalse、showR18がfalseまたは未定義ならexcludeR18はtrue
+					excludeR18:
+						excludeR18 !== undefined
+							? excludeR18
+							: showR18Value !== undefined
+								? !showR18Value
+								: !showR18Content,
 				};
 			},
 			fromResult: (result: unknown) => result as { items: WorkPlainObject[]; total: number },
@@ -107,9 +116,10 @@ export default function WorksListGeneric({
 						label: "カテゴリ",
 						placeholder: "すべてのカテゴリ",
 						options: [
-							{ value: "voice", label: "音声・ASMR" },
-							{ value: "adult", label: "成人向け" },
-							{ value: "general", label: "全年齢" },
+							{ value: "ACN", label: "ボイス・ASMR" },
+							{ value: "ADV", label: "アドベンチャー" },
+							{ value: "RPG", label: "ロールプレイング" },
+							{ value: "MOV", label: "動画" },
 						],
 						showAll: true,
 						emptyValue: "all",
@@ -119,19 +129,24 @@ export default function WorksListGeneric({
 						label: "言語",
 						placeholder: "すべての言語",
 						options: [
-							{ value: "japanese", label: "日本語" },
-							{ value: "english", label: "英語" },
-							{ value: "chinese", label: "中国語" },
-							{ value: "korean", label: "韓国語" },
+							{ value: "JPN", label: "日本語" },
+							{ value: "ENG", label: "英語" },
+							{ value: "ZHO", label: "簡体中文" },
+							{ value: "ZHT", label: "繁體中文" },
+							{ value: "KOR", label: "한국어" },
+							{ value: "SPA", label: "Español" },
+							{ value: "NRE", label: "言語不要" },
+							{ value: "DLS", label: "DLsite公式" },
+							{ value: "OTH", label: "その他言語" },
 						],
 						showAll: true,
 						emptyValue: "all",
 					},
 					...(showR18Content
 						? {
-								excludeR18: {
+								showR18: {
 									type: "boolean",
-									label: "R18作品を除外",
+									label: "R18作品表示",
 								},
 							}
 						: {}),
