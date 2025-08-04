@@ -70,12 +70,6 @@ export default function WorksListGeneric({ searchParams, initialData }: WorksLis
 	const dataAdapter = useMemo(
 		() => ({
 			toParams: (params: StandardListParams) => {
-				// 配列の場合は最初の値を使用
-				const getValue = (key: string): string | undefined => {
-					const value = searchParams[key];
-					return Array.isArray(value) ? value[0] : value;
-				};
-
 				return {
 					page: params.page,
 					limit: params.itemsPerPage,
@@ -88,7 +82,7 @@ export default function WorksListGeneric({ searchParams, initialData }: WorksLis
 			},
 			fromResult: (result: unknown) => result as { items: WorkPlainObject[]; total: number },
 		}),
-		[searchParams],
+		[],
 	);
 
 	// フェッチ関数
