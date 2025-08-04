@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAudioButtonCount, getAudioButtons } from "@/app/buttons/actions";
 import { getVideoById } from "../actions";
+import { RelatedAudioButtonsServer } from "./components/RelatedAudioButtonsServer";
 import VideoDetail from "./components/VideoDetail";
 
 interface VideoDetailPageProps {
@@ -30,16 +31,20 @@ export default async function VideoDetailPage({ params }: VideoDetailPageProps) 
 
 	// 音声ボタンデータの準備
 	const audioButtons = audioButtonsResult.success ? audioButtonsResult.data.audioButtons : [];
-	const audioCount = audioButtons.length;
 
 	return (
 		<div className="min-h-screen suzuka-gradient-subtle">
 			<main className="container mx-auto px-4 py-8">
 				<VideoDetail
 					video={video}
-					initialAudioButtons={audioButtons}
-					initialAudioCount={audioCount}
 					initialTotalAudioCount={audioButtonCount}
+					relatedAudioButtonsSlot={
+						<RelatedAudioButtonsServer
+							audioButtons={audioButtons}
+							totalCount={audioButtonCount}
+							videoId={videoId}
+						/>
+					}
 				/>
 			</main>
 		</div>
