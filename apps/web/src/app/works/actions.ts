@@ -247,9 +247,9 @@ function buildWorksQuery(
 	}
 
 	// 年齢制限フィルタ
-	if (params.showR18 === false) {
-		query = query.where("isR18", "==", false);
-	}
+	// 注意: FirestoreクエリではageRatingフィールドによる複雑なフィルタリングができないため、
+	// R18フィルタリングはメモリ上で行う必要がある。
+	// showR18パラメータはneedsComplexFilteringで処理される。
 
 	// 特定の年齢制限フィルタ（単一の場合のみ）
 	if (params.ageRating && params.ageRating.length === 1) {
@@ -285,14 +285,17 @@ function buildWorksQuery(
  */
 function needsComplexFiltering(params: EnhancedSearchParams): boolean {
 	return !!(
-		params.search ||
-		params.language ||
-		params.voiceActors?.length ||
-		params.genres?.length ||
-		params.priceRange ||
-		params.ratingRange ||
-		params.hasHighResImage !== undefined ||
-		(params.ageRating && params.ageRating.length > 1)
+		(
+			params.search ||
+			params.language ||
+			params.voiceActors?.length ||
+			params.genres?.length ||
+			params.priceRange ||
+			params.ratingRange ||
+			params.hasHighResImage !== undefined ||
+			(params.ageRating && params.ageRating.length > 1) ||
+			params.showR18 === false
+		) // R18フィルタリングは複雑なフィルタリングが必要
 	);
 }
 
@@ -376,8 +379,17 @@ async function getWorksWithSimpleQuery(
 	const snapshot = await query.get();
 	const works = await convertDocsToWorks(snapshot.docs);
 
-	// 全件数を取得
-	const countSnapshot = await firestore.collection("works").count().get();
+	// カテゴリフィルタを適用したクエリで全件数を取得
+	let countQuery = buildWorksQuery(firestore, { category, ageRating, sort });
+	// ソートを削除（countクエリでは不要）
+	countQuery = firestore.collection("works");
+	if (category && category !== "all") {
+		countQuery = countQuery.where("category", "==", category);
+	}
+	if (ageRating && ageRating.length === 1) {
+		countQuery = countQuery.where("ageRating", "==", ageRating[0]);
+	}
+	const countSnapshot = await countQuery.count().get();
 	const totalCount = countSnapshot.data().count;
 
 	return {
@@ -457,9 +469,9 @@ async function getWorksWithComplexFiltering(
 		}
 	}
 
-	// 全件数の推定
-	const totalCount = snapshot.size < fetchLimit ? filteredCount : filteredCount * 2;
-	const hasMore = startOffset + limit < filteredCount || snapshot.size === fetchLimit;
+	// 全件数はフィルタリング後の件数
+	const totalCount = filteredCount;
+	const hasMore = startOffset + limit < filteredCount;
 
 	return {
 		works,
