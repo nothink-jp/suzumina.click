@@ -4,8 +4,8 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
-import { fetchVideosForGenericList } from "./actions";
-import VideoListGeneric from "./components/VideoListGeneric";
+import { fetchVideosForConfigurableList } from "./actions";
+import VideoList from "./components/VideoList";
 
 interface VideosPageProps {
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -15,7 +15,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 	const params = await searchParams;
 
 	// 初期データを取得
-	const initialData = await fetchVideosForGenericList({
+	const initialData = await fetchVideosForConfigurableList({
 		page: Number.parseInt((params.page as string) || "1", 10),
 		limit: Number.parseInt((params.itemsPerPage as string) || "12", 10), // itemsPerPageを使用
 		sort: (params.sort as string) || "newest",
@@ -45,7 +45,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						</div>
 					}
 				>
-					<VideoListGeneric initialData={initialData} />
+					<VideoList initialData={initialData} searchParams={params} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>

@@ -52,9 +52,11 @@ export function AudioButtonWithFavoriteClient({
 		setIsDisliked(initialIsDisliked);
 	}, [initialIsFavorited, initialIsLiked, initialIsDisliked]);
 
-	// いいね・低評価状態を取得
+	// いいね・低評価状態を取得（初期値が提供されていない場合のみ）
 	useEffect(() => {
-		if (isAuthenticated && !initialIsLiked && !initialIsDisliked) {
+		// initialIsLiked/initialIsDislikedがtrueまたはfalseの場合は、すでにデータが提供されている
+		// undefinedの場合のみ個別に取得
+		if (isAuthenticated && initialIsLiked === undefined && initialIsDisliked === undefined) {
 			getLikeDislikeStatusAction([audioButton.id]).then((statusMap) => {
 				const status = statusMap.get(audioButton.id) || { isLiked: false, isDisliked: false };
 				setIsLiked(status.isLiked);

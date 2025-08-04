@@ -246,8 +246,18 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 		});
 	}, [updateUrl, filters]);
 
+	// filters オブジェクトの参照を安定化
+	const stableParams = useMemo(() => {
+		// filtersの内容が同じであれば同じ参照を保持
+		const filtersStr = JSON.stringify(currentParams.filters);
+		return {
+			...currentParams,
+			filters: JSON.parse(filtersStr),
+		};
+	}, [currentParams.page, currentParams.itemsPerPage, currentParams.sort, currentParams.search]);
+
 	return {
-		params: currentParams,
+		params: stableParams,
 		setPage,
 		setItemsPerPage,
 		setSort,

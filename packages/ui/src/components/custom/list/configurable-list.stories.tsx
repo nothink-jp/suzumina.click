@@ -254,3 +254,106 @@ export const CustomLoading: Story = {
 		),
 	},
 };
+
+// Flexレイアウトのサンプルデータ（タグやバッジなど）
+interface Tag {
+	id: number;
+	name: string;
+	color: string;
+	count: number;
+}
+
+const generateTags = (count: number): Tag[] => {
+	const colors = ["primary", "secondary", "destructive", "outline", "default"] as const;
+	const categories = [
+		"JavaScript",
+		"React",
+		"TypeScript",
+		"CSS",
+		"HTML",
+		"Node.js",
+		"Vue",
+		"Angular",
+		"Svelte",
+		"Next.js",
+	];
+
+	return Array.from({ length: count }, (_, i) => ({
+		id: i + 1,
+		name: categories[i % categories.length],
+		color: colors[i % colors.length],
+		count: Math.floor(Math.random() * 100) + 1,
+	}));
+};
+
+// タグのレンダリング（インライン要素として）
+const renderTag = (tag: Tag) => (
+	<Badge
+		key={tag.id}
+		variant={tag.color as any}
+		className="cursor-pointer hover:scale-105 transition-transform"
+	>
+		{tag.name} ({tag.count})
+	</Badge>
+);
+
+export const FlexLayout: Story = {
+	args: {
+		items: generateTags(50),
+		renderItem: renderTag,
+		layout: "flex",
+		searchable: true,
+		searchPlaceholder: "タグを検索...",
+		sorts: [
+			{ value: "name", label: "名前順" },
+			{ value: "count", label: "使用数順" },
+		],
+		defaultSort: "count",
+		itemsPerPage: 24,
+	},
+};
+
+// 音声ボタンのようなインタラクティブ要素の例
+interface ActionButton {
+	id: number;
+	label: string;
+	icon: string;
+	action: string;
+}
+
+const generateActionButtons = (count: number): ActionButton[] => {
+	const actions = [
+		{ label: "再生", icon: "▶️", action: "play" },
+		{ label: "停止", icon: "⏹️", action: "stop" },
+		{ label: "お気に入り", icon: "⭐", action: "favorite" },
+		{ label: "共有", icon: "🔗", action: "share" },
+		{ label: "ダウンロード", icon: "⬇️", action: "download" },
+	];
+
+	return Array.from({ length: count }, (_, i) => ({
+		id: i + 1,
+		...actions[i % actions.length],
+	}));
+};
+
+const renderActionButton = (button: ActionButton) => (
+	<button
+		key={button.id}
+		className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+		onClick={() => alert(`Action: ${button.action}`)}
+	>
+		<span>{button.icon}</span>
+		<span>{button.label}</span>
+	</button>
+);
+
+export const FlexLayoutWithButtons: Story = {
+	args: {
+		items: generateActionButtons(30),
+		renderItem: renderActionButton,
+		layout: "flex",
+		searchable: false,
+		itemsPerPage: 20,
+		emptyMessage: "ボタンがありません",
+	},
+};

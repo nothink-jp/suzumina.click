@@ -9,6 +9,8 @@ interface ListDataState<T> {
 	data: ListDataSource<T> | null;
 	loading: boolean;
 	error: ListError | null;
+	/** データが存在している状態でのローディング（フリッカー防止用） */
+	isRefreshing: boolean;
 }
 
 type ListDataAction<T> =
@@ -19,11 +21,24 @@ type ListDataAction<T> =
 function listDataReducer<T>(state: ListDataState<T>, action: ListDataAction<T>): ListDataState<T> {
 	switch (action.type) {
 		case "FETCH_START":
-			return { ...state, loading: true, error: null };
+			// データがある場合はリフレッシュ状態、ない場合は通常のローディング状態
+			return state.data
+				? { ...state, isRefreshing: true, error: null }
+				: { ...state, loading: true, isRefreshing: false, error: null };
 		case "FETCH_SUCCESS":
-			return { data: action.payload, loading: false, error: null };
+			return {
+				data: action.payload,
+				loading: false,
+				isRefreshing: false,
+				error: null,
+			};
 		case "FETCH_ERROR":
-			return { ...state, loading: false, error: action.payload };
+			return {
+				...state,
+				loading: false,
+				isRefreshing: false,
+				error: action.payload,
+			};
 		default:
 			return state;
 	}
@@ -46,6 +61,7 @@ export function useListData<T>(params: StandardListParams, options: UseListDataO
 	const [state, dispatch] = useReducer(listDataReducer<T>, {
 		data: initialData || null,
 		loading: !initialData,
+		isRefreshing: false,
 		error: null,
 	});
 
