@@ -29,13 +29,12 @@ export function useLikeDislikeStatusBulk(audioButtonIds: string[]) {
 				setLikeDislikeStates(statusMap);
 			})
 			.catch((error) => {
-				console.error("Failed to fetch like/dislike status:", error);
 				setLikeDislikeStates(new Map());
 			})
 			.finally(() => {
 				setIsLoading(false);
 			});
-	}, [session?.user, audioButtonIds.join(",")]); // audioButtonIdsの内容が変わったら再取得
+	}, [session?.user, audioButtonIds]); // audioButtonIdsの内容が変わったら再取得
 
 	return { likeDislikeStates, isLoading };
 }

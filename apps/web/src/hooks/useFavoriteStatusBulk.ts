@@ -42,7 +42,7 @@ export const useFavoriteStatusBulk = (
 	// biome-ignore lint/correctness/useExhaustiveDependencies: audioButtonIds.join(",") は意図的に使用（無限ループ防止）
 	const cacheKey = useMemo(() => {
 		return [...audioButtonIds].sort().join(",");
-	}, [audioButtonIds.join(",")]);
+	}, [audioButtonIds]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: audioButtonIds は cacheKey 経由で変更を検知（無限ループ防止）
 	const fetchFavoriteStates = useCallback(async () => {

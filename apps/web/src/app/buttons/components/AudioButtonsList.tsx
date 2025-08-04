@@ -131,9 +131,14 @@ export default function AudioButtonsList({
 				dataAdapter={{
 					toParams: (params) => {
 						// ConfigurableListのStandardListParamsをAudioButtonQueryに変換
+						const validSortOptions = ["newest", "mostPlayed"] as const;
+						const sortBy = validSortOptions.includes(params.sort as AudioButtonQuery["sortBy"])
+							? (params.sort as AudioButtonQuery["sortBy"])
+							: "newest";
+
 						const query: AudioButtonQuery = {
 							searchText: params.search,
-							sortBy: params.sort as AudioButtonQuery["sortBy"],
+							sortBy,
 							page: params.page,
 							limit: params.itemsPerPage,
 						};
