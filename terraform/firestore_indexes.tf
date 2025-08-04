@@ -546,6 +546,86 @@ resource "google_firestore_index" "works_category_isr18_releasedateiso_desc" {
   }
 }
 
+# works コレクション - カテゴリ + 古い順
+resource "google_firestore_index" "works_category_releasedateiso_asc" {
+  project    = var.gcp_project_id
+  collection = "works"
+  
+  fields {
+    field_path = "category"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "releaseDateISO"
+    order      = "ASCENDING"
+  }
+}
+
+# works コレクション - カテゴリ + 価格が安い順
+resource "google_firestore_index" "works_category_price_asc" {
+  project    = var.gcp_project_id
+  collection = "works"
+  
+  fields {
+    field_path = "category"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "price.current"
+    order      = "ASCENDING"
+  }
+}
+
+# works コレクション - カテゴリ + 価格が高い順
+resource "google_firestore_index" "works_category_price_desc" {
+  project    = var.gcp_project_id
+  collection = "works"
+  
+  fields {
+    field_path = "category"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "price.current"
+    order      = "DESCENDING"
+  }
+}
+
+# works コレクション - カテゴリ + 評価が高い順
+resource "google_firestore_index" "works_category_rating_desc" {
+  project    = var.gcp_project_id
+  collection = "works"
+  
+  fields {
+    field_path = "category"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "rating.stars"
+    order      = "DESCENDING"
+  }
+}
+
+# works コレクション - カテゴリ + 人気順
+resource "google_firestore_index" "works_category_popular_desc" {
+  project    = var.gcp_project_id
+  collection = "works"
+  
+  fields {
+    field_path = "category"
+    order      = "ASCENDING"
+  }
+  
+  fields {
+    field_path = "rating.count"
+    order      = "DESCENDING"
+  }
+}
+
 # 注意: 単一フィールドのインデックスはFirestoreが自動的に作成するため、
 # 以下のインデックスは不要です。コードでorderByを使用すると自動作成されます。
 # - price.current (ASCENDING/DESCENDING)
@@ -587,13 +667,13 @@ resource "google_firestore_index" "works_category_isr18_releasedateiso_desc" {
 # }
 
 # ===================================================================
-# 📊 SUMMARY - Terraform管理インデックス状況 (2025-08-01更新 - クエリ最適化追加)
+# 📊 SUMMARY - Terraform管理インデックス状況 (2025-08-04更新 - worksソート用インデックス追加)
 # ===================================================================
 # 
 # 【現在の構成】
-# ✅ 実装済み (使用中):          24個 (audioButtons: 8, users: 2, contacts: 2, favorites: 1, circles: 1, creatorMappings: 2, works: 8, videos: 2追加)
+# ✅ 実装済み (使用中):          30個 (audioButtons: 8, users: 2, contacts: 2, favorites: 1, circles: 1, creatorMappings: 2, works: 14, videos: 2追加)
 # 🔴 削除推奨 (未使用):          10個 (videos関連、audioButtons startTime 1個)
-# 🆕 新規追加 (最適化):           9個 (works: 7, videos: 2)
+# 🆕 新規追加 (最適化):          15個 (works: 13, videos: 2)
 # 🔶 無効化中 (フォールバック):   4個 (createdBy関連、マイページ用)
 # ℹ️ 自動インデックス対応:        priceHistory (single-fieldで十分)
 # 
