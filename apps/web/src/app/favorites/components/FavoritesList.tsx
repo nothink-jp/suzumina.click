@@ -13,12 +13,14 @@ interface FavoritesListProps {
 	audioButtons: AudioButtonPlainObject[];
 	totalCount: number;
 	currentSort: string;
+	initialLikeDislikeStatuses?: Record<string, { isLiked: boolean; isDisliked: boolean }>;
 }
 
 export default function FavoritesList({
 	audioButtons,
 	totalCount,
 	currentSort,
+	initialLikeDislikeStatuses = {},
 }: FavoritesListProps) {
 	const router = useRouter();
 
@@ -60,16 +62,22 @@ export default function FavoritesList({
 			/>
 
 			<div className="flex flex-wrap gap-3 items-start">
-				{audioButtons.map((audioButton) => (
-					<AudioButtonWithPlayCount
-						key={audioButton.id}
-						audioButton={audioButton}
-						showFavorite={true}
-						maxTitleLength={50}
-						className="shadow-sm hover:shadow-md transition-all duration-200"
-						initialIsFavorited={true}
-					/>
-				))}
+				{audioButtons.map((audioButton) => {
+					const likeDislikeStatus = initialLikeDislikeStatuses[audioButton.id];
+
+					return (
+						<AudioButtonWithPlayCount
+							key={audioButton.id}
+							audioButton={audioButton}
+							showFavorite={true}
+							maxTitleLength={50}
+							className="shadow-sm hover:shadow-md transition-all duration-200"
+							initialIsFavorited={true}
+							initialIsLiked={likeDislikeStatus?.isLiked || false}
+							initialIsDisliked={likeDislikeStatus?.isDisliked || false}
+						/>
+					);
+				})}
 			</div>
 		</div>
 	);

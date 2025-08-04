@@ -5,6 +5,7 @@ import {
 } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getLikeDislikeStatusAction } from "@/actions/dislikes";
 import { auth } from "@/auth";
 import { getAudioButtonsFromFavorites, getUserFavorites } from "@/lib/favorites-firestore";
 import FavoritesList from "./components/FavoritesList";
@@ -41,6 +42,7 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
 
 	// AudioButtonPlainObject に変換
 	const audioButtons: AudioButtonPlainObject[] = [];
+	const audioButtonIds: string[] = [];
 	favoritesList.favorites.forEach((fav) => {
 		const audioButtonData = audioButtonsMap.get(fav.audioButtonId);
 		if (!audioButtonData) return;
@@ -50,8 +52,16 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
 		);
 		if (audioButton) {
 			audioButtons.push(audioButton.toPlainObject());
+			audioButtonIds.push(audioButton.id.toString());
 		}
 	});
+
+	// いいね・低評価状態を一括取得
+	let likeDislikeStatuses: Record<string, { isLiked: boolean; isDisliked: boolean }> = {};
+	if (audioButtonIds.length > 0) {
+		const likeDislikeData = await getLikeDislikeStatusAction(audioButtonIds);
+		likeDislikeStatuses = Object.fromEntries(likeDislikeData);
+	}
 
 	return (
 		<div className="container mx-auto px-4 py-8">
@@ -60,6 +70,7 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
 				audioButtons={audioButtons}
 				totalCount={audioButtons.length}
 				currentSort={orderBy}
+				initialLikeDislikeStatuses={likeDislikeStatuses}
 			/>
 		</div>
 	);
