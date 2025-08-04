@@ -89,10 +89,10 @@ jobs:
           declare -a build_pids
           
           # shared-typesのビルド
-          if [[ "${{ needs.changes.outputs.shared-types }}" == "true" || 
-                "${{ needs.changes.outputs.web }}" == "true" || 
-                "${{ needs.changes.outputs.admin }}" == "true" || 
-                "${{ needs.changes.outputs.functions }}" == "true" ]]; then
+          if [[ "${{ needs.changes.outputs.shared-types }}" == "true" ]] || \
+             [[ "${{ needs.changes.outputs.web }}" == "true" ]] || \
+             [[ "${{ needs.changes.outputs.admin }}" == "true" ]] || \
+             [[ "${{ needs.changes.outputs.functions }}" == "true" ]]; then
             pnpm --filter @suzumina.click/shared-types build &
             build_pids+=("$!:shared-types")
           fi
