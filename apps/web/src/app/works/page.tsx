@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { WorksPageClient } from "@/components/content/works-page-client";
 import { getWorks } from "./actions";
 
@@ -16,9 +17,17 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
 	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
-	// showR18パラメータの処理（成人向けサイトのため、デフォルトでR18表示）
+	// 年齢確認の状態を取得
+	const cookieStore = await cookies();
+	const ageVerificationCookie = cookieStore.get("age-verified");
+	const isAgeVerified = ageVerificationCookie?.value === "true";
+
+	// showR18パラメータの処理
+	// URLパラメータが明示的に指定されている場合はそれを使用
+	// そうでない場合は年齢確認の状態に基づいて決定
 	const showR18FromParams = params.showR18;
-	const shouldShowR18 = showR18FromParams !== undefined ? showR18FromParams === "true" : true; // デフォルトでR18表示（成人向けサイト）
+	const shouldShowR18 =
+		showR18FromParams !== undefined ? showR18FromParams === "true" : isAgeVerified; // 年齢確認済みの場合のみR18表示
 
 	// 初期データを取得
 	const result = await getWorks({
