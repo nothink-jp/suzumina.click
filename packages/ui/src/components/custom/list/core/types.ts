@@ -69,6 +69,9 @@ export interface FilterConfig {
 	// 他のフィルターへの依存
 	dependsOn?: string;
 	enabled?: (filters: Record<string, unknown>) => boolean;
+
+	// デフォルト値
+	defaultValue?: unknown;
 }
 
 /**

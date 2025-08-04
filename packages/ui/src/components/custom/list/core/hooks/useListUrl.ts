@@ -32,7 +32,8 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 		const search = searchParams.get("search") || "";
 
 		// フィルターを解析
-		const filterValues: Record<string, unknown> = {};
+		const defaultFilterValues = getDefaultFilterValues(filters);
+		const filterValues: Record<string, unknown> = { ...defaultFilterValues };
 		Object.entries(filters).forEach(([key, config]) => {
 			const value = searchParams.get(key);
 
@@ -80,10 +81,8 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 				} else {
 					filterValues[key] = value;
 				}
-			} else if (config.showAll && config.type === "select") {
-				// showAllが有効な場合のデフォルト値
-				filterValues[key] = "all";
 			}
+			// value が null の場合は、defaultFilterValues の値がそのまま使われる
 		});
 
 		return {

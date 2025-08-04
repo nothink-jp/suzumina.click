@@ -201,8 +201,8 @@ function filterWorksByUnifiedData(
 	}
 
 	// 年齢制限フィルタリング
+	// showR18が明示的にfalseの場合のみR18作品を除外（undefined/trueの場合は表示）
 	if (params.showR18 === false) {
-		// showR18がfalseの場合、R18作品を除外
 		// 年齢制限を取得する関数（データソースから優先的に取得）
 		const getAgeRatingFromWork = (work: WorkDocument): string | undefined => {
 			return work.ageRating || undefined;

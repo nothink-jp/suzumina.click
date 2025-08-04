@@ -79,7 +79,10 @@ export function getDefaultFilterValues(
 	const defaults: Record<string, unknown> = {};
 
 	Object.entries(filters).forEach(([key, config]) => {
-		if (config.showAll && config.type === "select") {
+		// defaultValueが指定されていればそれを優先
+		if (config.defaultValue !== undefined) {
+			defaults[key] = config.defaultValue;
+		} else if (config.showAll && config.type === "select") {
 			defaults[key] = "all";
 		} else if (config.type === "select") {
 			// showAllがfalseの場合、空文字列をデフォルトに
