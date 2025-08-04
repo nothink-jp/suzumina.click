@@ -28,14 +28,9 @@ export async function FeaturedAudioButtonsCarouselServer({
 			getFavoritesStatusAction(audioButtonIds),
 		]);
 
-		// MapをRecordに変換
-		likeDislikeData.forEach((value, key) => {
-			likeDislikeStatuses[key] = value;
-		});
-
-		favoriteData.forEach((value, key) => {
-			favoriteStatuses[key] = value;
-		});
+		// MapをRecordに変換（Object.fromEntriesを使用して効率化）
+		Object.assign(likeDislikeStatuses, Object.fromEntries(likeDislikeData));
+		Object.assign(favoriteStatuses, Object.fromEntries(favoriteData));
 	}
 
 	// Client Componentに状態を渡す
