@@ -287,7 +287,7 @@ function needsComplexFiltering(params: EnhancedSearchParams): boolean {
 	return !!(
 		(
 			params.search ||
-			params.language ||
+			(params.language && params.language !== "all") ||
 			params.voiceActors?.length ||
 			params.genres?.length ||
 			params.priceRange ||
@@ -429,7 +429,13 @@ async function getWorksWithComplexFiltering(
 
 	// ページネーション用のオフセット
 	const startOffset = (page - 1) * limit;
-	const fetchLimit = Math.min(startOffset + limit * 3, 500);
+	// 全件数を取得してから必要な分だけ取得する
+	// R18フィルタリングの場合は、メモリ上でフィルタリングするため、
+	// ある程度余裕を持って取得する必要がある
+	const fetchLimit =
+		showR18 === false
+			? Math.min(startOffset + limit * 10, 2000) // R18フィルタリング時は多めに取得
+			: Math.min(startOffset + limit * 3, 1000); // 通常の複雑フィルタリング
 	query = query.limit(fetchLimit);
 
 	const snapshot = await query.get();
