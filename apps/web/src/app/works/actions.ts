@@ -44,7 +44,7 @@ interface EnhancedSearchParams {
 	_strategy?: DataFetchStrategy; // データ取得戦略（未使用）
 	// 年齢制限フィルター
 	ageRating?: string[]; // 特定のレーティングのみ
-	excludeR18?: boolean; // R18作品を除外
+	showR18?: boolean; // R18作品を表示
 }
 
 // ヘルパー関数：2つの作品間の類似スコアを計算
@@ -201,7 +201,8 @@ function filterWorksByUnifiedData(
 	}
 
 	// 年齢制限フィルタリング
-	if (params.excludeR18) {
+	if (params.showR18 === false) {
+		// showR18がfalseの場合、R18作品を除外
 		// 年齢制限を取得する関数（データソースから優先的に取得）
 		const getAgeRatingFromWork = (work: WorkDocument): string | undefined => {
 			return work.ageRating || undefined;
@@ -233,7 +234,7 @@ function buildWorksQuery(
 	firestore: FirebaseFirestore.Firestore,
 	params: {
 		category?: string;
-		excludeR18?: boolean;
+		showR18?: boolean;
 		ageRating?: string[];
 		sort?: string;
 	},
@@ -246,7 +247,7 @@ function buildWorksQuery(
 	}
 
 	// 年齢制限フィルタ
-	if (params.excludeR18) {
+	if (params.showR18 === false) {
 		query = query.where("isR18", "==", false);
 	}
 
@@ -351,10 +352,10 @@ async function getWorksWithSimpleQuery(
 	firestore: FirebaseFirestore.Firestore,
 	params: EnhancedSearchParams,
 ): Promise<WorkListResultPlain> {
-	const { page = 1, limit = 12, sort = "newest", category, excludeR18, ageRating } = params;
+	const { page = 1, limit = 12, sort = "newest", category, showR18, ageRating } = params;
 
 	// クエリ構築
-	let query = buildWorksQuery(firestore, { category, excludeR18, ageRating, sort });
+	let query = buildWorksQuery(firestore, { category, showR18, ageRating, sort });
 	query = query.limit(limit);
 
 	// オフセット処理
@@ -408,11 +409,11 @@ async function getWorksWithComplexFiltering(
 		ratingRange,
 		hasHighResImage,
 		ageRating,
-		excludeR18,
+		showR18,
 	} = params;
 
 	// クエリ構築
-	let query = buildWorksQuery(firestore, { category, excludeR18, ageRating, sort });
+	let query = buildWorksQuery(firestore, { category, showR18, ageRating, sort });
 
 	// ページネーション用のオフセット
 	const startOffset = (page - 1) * limit;

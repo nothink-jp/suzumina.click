@@ -18,11 +18,6 @@ interface WorksPageClientProps {
 export function WorksPageClient({ searchParams, initialData }: WorksPageClientProps) {
 	const { showR18Content, isLoading: ageVerificationLoading } = useAgeVerification();
 
-	// URLパラメータからexcludeR18を取得、年齢確認状況に基づいてデフォルト値を決定
-	const excludeR18FromParams = searchParams.excludeR18;
-	const shouldExcludeR18 =
-		excludeR18FromParams !== undefined ? excludeR18FromParams === "true" : !showR18Content;
-
 	if (ageVerificationLoading) {
 		return (
 			<ListPageLayout>
@@ -60,11 +55,7 @@ export function WorksPageClient({ searchParams, initialData }: WorksPageClientPr
 						</div>
 					}
 				>
-					<WorksListGeneric
-						searchParams={searchParams}
-						initialData={initialData}
-						excludeR18={shouldExcludeR18}
-					/>
+					<WorksListGeneric searchParams={searchParams} initialData={initialData} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>
