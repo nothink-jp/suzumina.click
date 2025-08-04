@@ -35,7 +35,7 @@ function WorkItem({ work }: { work: WorkPlainObject }) {
 
 // カテゴリと言語のオプション
 const CATEGORY_OPTIONS = [
-	{ value: "ACN", label: "ボイス・ASMR" },
+	{ value: "SOU", label: "ボイス・ASMR" },
 	{ value: "ADV", label: "アドベンチャー" },
 	{ value: "RPG", label: "ロールプレイング" },
 	{ value: "MOV", label: "動画" },
