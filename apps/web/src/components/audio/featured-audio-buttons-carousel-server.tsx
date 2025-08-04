@@ -16,8 +16,8 @@ export async function FeaturedAudioButtonsCarouselServer({
 	const userId = session?.user?.discordId;
 
 	// ユーザーがログインしている場合のみ、いいね・低評価・お気に入り状態を一括取得
-	const likeDislikeStatuses: Record<string, { isLiked: boolean; isDisliked: boolean }> = {};
-	const favoriteStatuses: Record<string, boolean> = {};
+	let likeDislikeStatuses: Record<string, { isLiked: boolean; isDisliked: boolean }> = {};
+	let favoriteStatuses: Record<string, boolean> = {};
 
 	if (userId && audioButtons.length > 0) {
 		const audioButtonIds = audioButtons.map((button) => button.id);
@@ -28,9 +28,9 @@ export async function FeaturedAudioButtonsCarouselServer({
 			getFavoritesStatusAction(audioButtonIds),
 		]);
 
-		// MapをRecordに変換（Object.fromEntriesを使用して効率化）
-		Object.assign(likeDislikeStatuses, Object.fromEntries(likeDislikeData));
-		Object.assign(favoriteStatuses, Object.fromEntries(favoriteData));
+		// MapをRecordに変換
+		likeDislikeStatuses = Object.fromEntries(likeDislikeData);
+		favoriteStatuses = Object.fromEntries(favoriteData);
 	}
 
 	// Client Componentに状態を渡す
