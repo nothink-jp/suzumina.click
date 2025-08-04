@@ -7,8 +7,8 @@ import { lazy } from "react";
 
 // 画面外のカルーセルコンポーネントを遅延読み込み
 export const LazyFeaturedAudioButtonsCarousel = lazy(() =>
-	import("@/components/audio/featured-audio-buttons-carousel").then((module) => ({
-		default: module.FeaturedAudioButtonsCarousel,
+	import("@/components/audio/featured-audio-buttons-carousel-server").then((module) => ({
+		default: module.FeaturedAudioButtonsCarouselServer,
 	})),
 );
 
