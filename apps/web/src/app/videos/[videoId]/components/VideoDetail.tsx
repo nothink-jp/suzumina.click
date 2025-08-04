@@ -1,6 +1,6 @@
 "use client";
 
-import type { AudioButtonPlainObject, FrontendVideoData } from "@suzumina.click/shared-types";
+import type { FrontendVideoData } from "@suzumina.click/shared-types";
 import { canCreateAudioButton } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -19,67 +19,24 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import React, { useEffect, useMemo, useState } from "react";
-import { getAudioButtonCount, getAudioButtons } from "@/app/buttons/actions";
-import { AudioButtonWithPlayCount } from "@/components/audio";
+import React, { type ReactNode, useMemo } from "react";
 import { ThumbnailImage } from "@/components/ui";
 import { formatDescriptionText } from "@/lib/text-utils";
 import { VideoUserTagEditor } from "./VideoUserTagEditor";
 
 interface VideoDetailProps {
 	video: FrontendVideoData;
-	initialAudioButtons?: AudioButtonPlainObject[];
-	initialAudioCount?: number;
 	initialTotalAudioCount?: number;
+	relatedAudioButtonsSlot?: ReactNode;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 動画詳細の複雑な表示ロジックのため許容
 export default function VideoDetail({
 	video,
-	initialAudioButtons = [],
-	initialAudioCount = 0,
 	initialTotalAudioCount = 0,
+	relatedAudioButtonsSlot,
 }: VideoDetailProps) {
 	const { data: session } = useSession();
-	const [audioButtons, setAudioButtons] = useState<AudioButtonPlainObject[]>(initialAudioButtons);
-	const [audioLoading, setAudioLoading] = useState(false);
-	const [_audioCount, setAudioCount] = useState(initialAudioCount);
-	const [totalAudioCount, setTotalAudioCount] = useState(initialTotalAudioCount);
-
-	// 音声ボタンを取得（初期データがない場合のみ）
-	useEffect(() => {
-		// 既に初期データがある場合はスキップ
-		if (initialAudioButtons.length > 0 || initialTotalAudioCount > 0) {
-			return;
-		}
-
-		const fetchAudioButtons = async () => {
-			setAudioLoading(true);
-			try {
-				// 音声ボタンと総件数を並列で取得
-				const [result, totalCount] = await Promise.all([
-					getAudioButtons({
-						sourceVideoId: video.videoId,
-						limit: 6,
-						sortBy: "newest",
-					}),
-					getAudioButtonCount(video.videoId),
-				]);
-
-				if (result.success) {
-					setAudioButtons(result.data.audioButtons);
-					setAudioCount(result.data.audioButtons.length);
-				}
-				setTotalAudioCount(totalCount);
-			} catch (_error) {
-				// 音声ボタン取得エラーは無視してページ表示を継続
-			} finally {
-				setAudioLoading(false);
-			}
-		};
-
-		fetchAudioButtons();
-	}, [video.videoId, initialAudioButtons.length, initialTotalAudioCount]);
 
 	// ISO形式の日付を表示用にフォーマット（JST、秒単位まで）
 	const formatDate = (isoString: string) => {
@@ -870,7 +827,7 @@ export default function VideoDetail({
 					<Card className="p-6 bg-suzuka-50 dark:bg-suzuka-950 border-suzuka-200 dark:border-suzuka-800">
 						<div className="flex items-center justify-between mb-4">
 							<h3 className="text-lg font-semibold text-suzuka-700 dark:text-suzuka-300">
-								🔊 この動画のボタン ({totalAudioCount})
+								🔊 この動画のボタン ({initialTotalAudioCount})
 							</h3>
 							{canCreateButton && (
 								<Button
@@ -884,54 +841,8 @@ export default function VideoDetail({
 							)}
 						</div>
 
-						{audioLoading ? (
-							<div className="flex items-center justify-center py-8">
-								<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-suzuka-500" />
-							</div>
-						) : audioButtons.length > 0 ? (
-							<div className="space-y-4">
-								{/* 音声ボタン一覧 */}
-								<div className="flex flex-wrap gap-2">
-									{audioButtons.map((audioButton) => (
-										<AudioButtonWithPlayCount
-											key={audioButton.id}
-											audioButton={audioButton}
-											maxTitleLength={15}
-											className="shadow-sm hover:shadow-md transition-all duration-200"
-										/>
-									))}
-								</div>
-
-								{/* もっと見るボタン */}
-								<div className="pt-3 border-t border-suzuka-200 dark:border-suzuka-800">
-									<Button variant="outline" size="sm" className="w-full" asChild>
-										<Link href={`/buttons?sourceVideoId=${video.videoId}`}>
-											すべてのボタンを見る
-										</Link>
-									</Button>
-								</div>
-							</div>
-						) : (
-							<div className="text-center py-8">
-								<p className="text-sm text-muted-foreground mb-3">
-									{canCreateButton
-										? "まだボタンが作成されていません"
-										: "この動画からは音声ボタンを作成できません"}
-								</p>
-								{canCreateButton && (
-									<Button
-										size="sm"
-										className="bg-suzuka-500 hover:bg-suzuka-600 text-white"
-										asChild
-									>
-										<Link href={`/buttons/create?video_id=${video.videoId}`}>
-											<Plus className="h-3 w-3 mr-1" />
-											最初のボタンを作成
-										</Link>
-									</Button>
-								)}
-							</div>
-						)}
+						{/* 音声ボタンのSlot */}
+						{relatedAudioButtonsSlot}
 					</Card>
 
 					{/* チャンネル情報 */}
