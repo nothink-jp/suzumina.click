@@ -6,7 +6,8 @@ import {
 	ListPageHeader,
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { getWorks } from "@/app/works/actions";
 import WorksListGeneric from "@/app/works/components/WorksListGeneric";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
@@ -17,8 +18,52 @@ interface WorksPageClientProps {
 
 export function WorksPageClient({ searchParams, initialData }: WorksPageClientProps) {
 	const { showR18Content, isLoading: ageVerificationLoading } = useAgeVerification();
+	const [data, setData] = useState<WorkListResultPlain>(initialData);
+	const [isLoadingData, setIsLoadingData] = useState(false);
 
-	if (ageVerificationLoading) {
+	// 検索パラメータを取得する関数
+	const getSearchParams = () => {
+		const pageNumber = Number.parseInt(searchParams.page as string, 10) || 1;
+		const validPage = Math.max(1, pageNumber);
+		const sort = typeof searchParams.sort === "string" ? searchParams.sort : "newest";
+		const search = typeof searchParams.search === "string" ? searchParams.search : undefined;
+		const category = typeof searchParams.category === "string" ? searchParams.category : undefined;
+		const language = typeof searchParams.language === "string" ? searchParams.language : undefined;
+		const limitValue = Number.parseInt(searchParams.limit as string, 10) || 12;
+		const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
+
+		return { validPage, validLimit, sort, search, category, language };
+	};
+
+	// 年齢確認状態が変更されたら、適切なデータを再取得
+	useEffect(() => {
+		if (ageVerificationLoading) return;
+
+		// URLパラメータにshowR18が明示的に指定されている場合は再取得しない
+		if (searchParams.showR18 !== undefined) return;
+
+		// 初期データが適切な場合は再取得しない
+		// サーバーサイドではshowR18=falseで取得しているため、
+		// 年齢確認済みユーザーの場合は再取得が必要
+		if (showR18Content) {
+			setIsLoadingData(true);
+			const { validPage, validLimit, sort, search, category, language } = getSearchParams();
+
+			getWorks({
+				page: validPage,
+				limit: validLimit,
+				sort,
+				search,
+				category,
+				language,
+				showR18: true, // 年齢確認済みの場合はR18表示
+			})
+				.then(setData)
+				.finally(() => setIsLoadingData(false));
+		}
+	}, [ageVerificationLoading, showR18Content, searchParams]);
+
+	if (ageVerificationLoading || isLoadingData) {
 		return (
 			<ListPageLayout>
 				<ListPageHeader
@@ -55,7 +100,7 @@ export function WorksPageClient({ searchParams, initialData }: WorksPageClientPr
 						</div>
 					}
 				>
-					<WorksListGeneric searchParams={searchParams} initialData={initialData} />
+					<WorksListGeneric initialData={data} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>

@@ -11,7 +11,6 @@ import { getWorks } from "../actions";
 import WorkCard from "./WorkCard";
 
 interface WorksListGenericProps {
-	searchParams: Record<string, string | string[] | undefined>;
 	initialData?: WorkListResultPlain;
 }
 
@@ -52,7 +51,7 @@ const LANGUAGE_OPTIONS = [
 	{ value: "other", label: "その他言語" },
 ];
 
-export default function WorksListGeneric({ searchParams, initialData }: WorksListGenericProps) {
+export default function WorksListGeneric({ initialData }: WorksListGenericProps) {
 	const { showR18Content } = useAgeVerification();
 
 	// 初期データを変換
@@ -144,7 +143,7 @@ export default function WorksListGeneric({ searchParams, initialData }: WorksLis
 								showR18: {
 									type: "boolean",
 									label: "R18作品表示",
-									defaultValue: true,
+									defaultValue: showR18Content, // 年齢確認状態に基づいてデフォルト値を設定
 								},
 							}
 						: {}),
