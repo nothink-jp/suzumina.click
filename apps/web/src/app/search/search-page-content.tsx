@@ -23,6 +23,8 @@ import { SearchFilters } from "@/components/search/search-filters";
 import { SearchInputWithAutocomplete } from "@/components/search/search-input-with-autocomplete";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
+import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
 
 interface UnifiedSearchResult {
 	audioButtons: AudioButtonPlainObject[];
@@ -228,12 +230,16 @@ function SearchResults({
 	onTabChange,
 	isAutoSearching,
 	searchQuery,
+	likeDislikeStates,
+	favoriteStates,
 }: {
 	searchResult: UnifiedSearchResult | null;
 	activeTab: ContentTab;
 	onTabChange: (value: string) => void;
 	isAutoSearching: boolean;
 	searchQuery: string;
+	likeDislikeStates: Map<string, { isLiked: boolean; isDisliked: boolean }>;
+	favoriteStates: Map<string, boolean>;
 }) {
 	if (!searchResult) return null;
 
@@ -291,14 +297,22 @@ function SearchResults({
 								<Badge variant="secondary">{searchResult.totalCount.buttons}</Badge>
 							</div>
 							<div className="flex flex-wrap gap-3">
-								{searchResult.audioButtons.slice(0, 6).map((button) => (
-									<AudioButtonWithPlayCount
-										key={button.id}
-										audioButton={button}
-										searchQuery={searchQuery}
-										highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
-									/>
-								))}
+								{searchResult.audioButtons.slice(0, 6).map((button) => {
+									const likeDislikeStatus = likeDislikeStates.get(button.id);
+									const isFavorited = favoriteStates.get(button.id) || false;
+
+									return (
+										<AudioButtonWithPlayCount
+											key={button.id}
+											audioButton={button}
+											searchQuery={searchQuery}
+											highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+											initialIsFavorited={isFavorited}
+											initialIsLiked={likeDislikeStatus?.isLiked || false}
+											initialIsDisliked={likeDislikeStatus?.isDisliked || false}
+										/>
+									);
+								})}
 							</div>
 							{searchResult.hasMore.buttons && (
 								<div className="text-center">
@@ -435,14 +449,22 @@ function SearchResults({
 
 				<TabsContent value="buttons">
 					<div className="flex flex-wrap gap-3">
-						{searchResult.audioButtons.map((button) => (
-							<AudioButtonWithPlayCount
-								key={button.id}
-								audioButton={button}
-								searchQuery={searchQuery}
-								highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
-							/>
-						))}
+						{searchResult.audioButtons.map((button) => {
+							const likeDislikeStatus = likeDislikeStates.get(button.id);
+							const isFavorited = favoriteStates.get(button.id) || false;
+
+							return (
+								<AudioButtonWithPlayCount
+									key={button.id}
+									audioButton={button}
+									searchQuery={searchQuery}
+									highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+									initialIsFavorited={isFavorited}
+									initialIsLiked={likeDislikeStatus?.isLiked || false}
+									initialIsDisliked={likeDislikeStatus?.isDisliked || false}
+								/>
+							);
+						})}
 					</div>
 				</TabsContent>
 
@@ -561,6 +583,15 @@ export default function SearchPageContent() {
 
 	// デバウンスされた検索クエリ（自動検索用）
 	const debouncedSearchQuery = useDebounce(searchQuery, 400);
+
+	// 音声ボタンのいいね・低評価・お気に入り状態を一括取得
+	const audioButtonIds = useMemo(
+		() => searchResult?.audioButtons.map((button) => button.id) || [],
+		[searchResult?.audioButtons],
+	);
+
+	const { likeDislikeStates } = useLikeDislikeStatusBulk(audioButtonIds);
+	const { favoriteStates } = useFavoriteStatusBulk(audioButtonIds);
 
 	// 検索実行
 	const performSearch = useCallback(
@@ -815,6 +846,8 @@ export default function SearchPageContent() {
 					onTabChange={handleTabChange}
 					isAutoSearching={isAutoSearching}
 					searchQuery={searchQuery}
+					likeDislikeStates={likeDislikeStates}
+					favoriteStates={favoriteStates}
 				/>
 			)}
 
