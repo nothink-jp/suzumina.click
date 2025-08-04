@@ -586,7 +586,7 @@ export default function SearchPageContent() {
 
 	// 音声ボタンのいいね・低評価・お気に入り状態を一括取得
 	const audioButtonIds = useMemo(
-		() => searchResult?.audioButtons.map((button) => button.id) || [],
+		() => (searchResult?.audioButtons ? searchResult.audioButtons.map((button) => button.id) : []),
 		[searchResult?.audioButtons],
 	);
 
