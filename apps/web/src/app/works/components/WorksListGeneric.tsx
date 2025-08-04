@@ -5,11 +5,20 @@ import {
 	ConfigurableList,
 	type StandardListParams,
 } from "@suzumina.click/ui/components/custom/list";
-import { useCallback } from "react";
+import { Label } from "@suzumina.click/ui/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@suzumina.click/ui/components/ui/select";
+import { Switch } from "@suzumina.click/ui/components/ui/switch";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 import { getWorks } from "../actions";
 import WorkCard from "./WorkCard";
-import WorksFilters from "./WorksFilters";
 
 interface WorksListGenericProps {
 	searchParams: Record<string, string | string[] | undefined>;
@@ -22,56 +31,131 @@ function WorkItem({ work }: { work: WorkPlainObject }) {
 	return <WorkCard work={work} />;
 }
 
-// 検索パラメータを変換する関数
-function convertSearchParams(
-	params: Record<string, string | string[] | undefined>,
-	excludeR18?: boolean,
-) {
-	// 配列の場合は最初の値を使用
-	const getValue = (key: string): string | undefined => {
-		const value = params[key];
-		return Array.isArray(value) ? value[0] : value;
+const CATEGORY_OPTIONS = [
+	{ value: "all", label: "すべてのカテゴリ" },
+	{ value: "voice", label: "音声・ASMR" },
+	{ value: "adult", label: "成人向け" },
+	{ value: "general", label: "全年齢" },
+];
+
+const LANGUAGE_OPTIONS = [
+	{ value: "all", label: "すべての言語" },
+	{ value: "japanese", label: "日本語" },
+	{ value: "english", label: "英語" },
+	{ value: "chinese", label: "中国語" },
+	{ value: "korean", label: "韓国語" },
+];
+
+// カスタムフィルターコンポーネント
+function WorksCustomFilters({ showR18Content }: { showR18Content: boolean }) {
+	const router = useRouter();
+	const searchParams = useSearchParams();
+	const [category, setCategory] = useState(searchParams.get("category") || "all");
+	const [language, setLanguage] = useState(searchParams.get("language") || "all");
+	const [excludeR18, setExcludeR18] = useState(
+		searchParams.get("excludeR18") === "true" || !showR18Content,
+	);
+
+	// URLパラメータを更新
+	const updateUrl = useCallback(
+		(newCategory: string, newLanguage: string, newExcludeR18: boolean) => {
+			const params = new URLSearchParams(searchParams.toString());
+
+			// カテゴリ
+			if (newCategory && newCategory !== "all") {
+				params.set("category", newCategory);
+			} else {
+				params.delete("category");
+			}
+
+			// 言語
+			if (newLanguage && newLanguage !== "all") {
+				params.set("language", newLanguage);
+			} else {
+				params.delete("language");
+			}
+
+			// R18フィルター
+			if (newExcludeR18) {
+				params.set("excludeR18", "true");
+			} else {
+				params.delete("excludeR18");
+			}
+
+			// ページを1にリセット
+			params.set("page", "1");
+
+			router.push(`/works?${params.toString()}`);
+		},
+		[searchParams, router],
+	);
+
+	// R18トグルの処理
+	const handleR18Toggle = () => {
+		if (!excludeR18 && !showR18Content) {
+			// R18表示をONにしようとしている場合、年齢確認が必要
+			// 年齢確認されていない場合はトグルを無効化
+			return;
+		}
+		const newValue = !excludeR18;
+		setExcludeR18(newValue);
+		updateUrl(category, language, newValue);
 	};
 
-	return {
-		page: Number(getValue("page")) || 1,
-		limit: Number(getValue("limit")) || 12,
-		sort: getValue("sort") || "newest",
-		search: getValue("search"),
-		category: getValue("category"),
-		language: getValue("language"),
-		excludeR18,
-	};
-}
+	// パラメータが変更されたらURLを更新
+	useEffect(() => {
+		if (
+			category !== (searchParams.get("category") || "all") ||
+			language !== (searchParams.get("language") || "all")
+		) {
+			updateUrl(category, language, excludeR18);
+		}
+	}, [category, language, excludeR18, updateUrl, searchParams]);
 
-// データ取得関数のラッパー
-async function fetchWorks(params: StandardListParams): Promise<{
-	success: boolean;
-	data?: {
-		items: WorkPlainObject[];
-		totalCount: number;
-		hasMore: boolean;
-		filteredCount?: number;
-	};
-	error?: string;
-}> {
-	try {
-		const result = await getWorks(params);
-		return {
-			success: true,
-			data: {
-				items: result.works,
-				totalCount: result.totalCount || 0,
-				hasMore: result.hasMore,
-				filteredCount: result.filteredCount,
-			},
-		};
-	} catch (error) {
-		return {
-			success: false,
-			error: error instanceof Error ? error.message : "作品の取得に失敗しました",
-		};
-	}
+	return (
+		<div className="flex gap-2 items-center">
+			{/* カテゴリフィルター */}
+			<Select value={category} onValueChange={(value) => setCategory(value)}>
+				<SelectTrigger className="w-[180px]">
+					<SelectValue placeholder="すべてのカテゴリ" />
+				</SelectTrigger>
+				<SelectContent>
+					{CATEGORY_OPTIONS.map((option) => (
+						<SelectItem key={option.value} value={option.value}>
+							{option.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+
+			{/* 言語フィルター */}
+			<Select value={language} onValueChange={(value) => setLanguage(value)}>
+				<SelectTrigger className="w-[150px]">
+					<SelectValue placeholder="すべての言語" />
+				</SelectTrigger>
+				<SelectContent>
+					{LANGUAGE_OPTIONS.map((option) => (
+						<SelectItem key={option.value} value={option.value}>
+							{option.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+
+			{/* R18フィルター */}
+			<div className="flex items-center gap-2">
+				<Label htmlFor="r18-toggle" className="text-sm whitespace-nowrap cursor-pointer">
+					R18作品表示
+				</Label>
+				<Switch
+					id="r18-toggle"
+					checked={!excludeR18}
+					onCheckedChange={handleR18Toggle}
+					disabled={!showR18Content && excludeR18}
+				/>
+			</div>
+		</div>
+	);
 }
 
 export default function WorksListGeneric({
@@ -80,40 +164,88 @@ export default function WorksListGeneric({
 	excludeR18,
 }: WorksListGenericProps) {
 	const { showR18Content } = useAgeVerification();
-	const listParams = convertSearchParams(searchParams, excludeR18);
-
-	// データ取得関数のアダプター
-	const fetchDataAdapter = useCallback(async (params: unknown) => {
-		const result = await fetchWorks(params as StandardListParams);
-		return result;
-	}, []);
 
 	// 初期データを変換
-	const convertedInitialData = initialData
-		? {
-				success: true,
-				data: {
-					items: initialData.works,
-					totalCount: initialData.totalCount || 0,
-					hasMore: initialData.hasMore,
-					filteredCount: initialData.filteredCount,
-				},
-			}
-		: undefined;
+	const transformedInitialData = useMemo(() => {
+		if (!initialData) return null;
+		return {
+			items: initialData.works,
+			total: initialData.totalCount || 0,
+			page: 1,
+			itemsPerPage: initialData.works.length,
+		};
+	}, [initialData]);
+
+	// データアダプター
+	const dataAdapter = useMemo(
+		() => ({
+			toParams: (params: StandardListParams) => {
+				// 配列の場合は最初の値を使用
+				const getValue = (key: string): string | undefined => {
+					const value = searchParams[key];
+					return Array.isArray(value) ? value[0] : value;
+				};
+
+				return {
+					page: params.page,
+					limit: params.itemsPerPage,
+					sort: params.sort || "newest",
+					search: params.search,
+					category: getValue("category"),
+					language: getValue("language"),
+					excludeR18: excludeR18 !== undefined ? excludeR18 : !showR18Content,
+				};
+			},
+			fromResult: (result: unknown) => result as { items: WorkPlainObject[]; total: number },
+		}),
+		[searchParams, excludeR18, showR18Content],
+	);
+
+	// フェッチ関数
+	const fetchFn = useCallback(async (params: unknown) => {
+		const typedParams = params as Parameters<typeof getWorks>[0];
+		const result = await getWorks(typedParams);
+		return {
+			items: result.works,
+			total: result.totalCount || 0,
+		};
+	}, []);
 
 	return (
-		<div className="space-y-6">
+		<div>
 			{/* カスタムフィルター */}
-			<WorksFilters showR18Content={showR18Content} />
+			<div className="mb-4">
+				<WorksCustomFilters showR18Content={showR18Content} />
+			</div>
 
 			{/* 作品リスト */}
 			<ConfigurableList<WorkPlainObject>
-				items={convertedInitialData?.data?.items || []}
+				items={transformedInitialData?.items || []}
+				initialTotal={transformedInitialData?.total || 0}
 				renderItem={(work) => <WorkItem work={work} />}
-				fetchFn={fetchDataAdapter}
-				urlSync={true}
-				searchable={false} // カスタムフィルターで検索を処理
-				itemsPerPage={12}
+				fetchFn={fetchFn}
+				dataAdapter={dataAdapter}
+				searchable
+				searchPlaceholder="作品タイトルで検索..."
+				urlSync
+				layout="grid"
+				gridColumns={{
+					default: 1,
+					sm: 2,
+					lg: 3,
+					xl: 4,
+				}}
+				sorts={[
+					{ value: "newest", label: "新しい順" },
+					{ value: "oldest", label: "古い順" },
+					{ value: "popular", label: "人気順" },
+					{ value: "price_low", label: "価格が安い順" },
+					{ value: "price_high", label: "価格が高い順" },
+					{ value: "rating", label: "評価が高い順" },
+				]}
+				defaultSort="newest"
+				itemsPerPageOptions={[12, 24, 48]}
+				emptyMessage="作品が見つかりませんでした"
 			/>
 		</div>
 	);
