@@ -30,6 +30,7 @@ interface UserProfileContentProps {
 	totalPlayCount: number;
 	isOwnProfile: boolean;
 	favoritesCount?: number;
+	initialLikeDislikeStatuses?: Record<string, { isLiked: boolean; isDisliked: boolean }>;
 }
 
 // Helper components to reduce complexity
@@ -93,10 +94,12 @@ function AudioButtonsList({
 	audioButtons,
 	user,
 	isOwnProfile,
+	initialLikeDislikeStatuses = {},
 }: {
 	audioButtons: AudioButtonPlainObject[];
 	user: FrontendUserData;
 	isOwnProfile: boolean;
+	initialLikeDislikeStatuses?: Record<string, { isLiked: boolean; isDisliked: boolean }>;
 }) {
 	if (audioButtons.length === 0) {
 		return (
@@ -122,15 +125,20 @@ function AudioButtonsList({
 	return (
 		<>
 			<div className="flex flex-wrap gap-3 items-start">
-				{audioButtons.map((button) => (
-					<AudioButtonWithPlayCount
-						key={button.id}
-						audioButton={button}
-						showFavorite={true}
-						maxTitleLength={50}
-						className="shadow-sm hover:shadow-md transition-all duration-200"
-					/>
-				))}
+				{audioButtons.map((button) => {
+					const likeDislikeStatus = initialLikeDislikeStatuses[button.id];
+					return (
+						<AudioButtonWithPlayCount
+							key={button.id}
+							audioButton={button}
+							showFavorite={true}
+							maxTitleLength={50}
+							className="shadow-sm hover:shadow-md transition-all duration-200"
+							initialIsLiked={likeDislikeStatus?.isLiked || false}
+							initialIsDisliked={likeDislikeStatus?.isDisliked || false}
+						/>
+					);
+				})}
 			</div>
 			{audioButtons.length >= 20 && (
 				<div className="text-center mt-8">
@@ -148,6 +156,7 @@ export function UserProfileContent({
 	totalPlayCount,
 	isOwnProfile,
 	favoritesCount = 0,
+	initialLikeDislikeStatuses = {},
 }: UserProfileContentProps) {
 	const [selectedTab, setSelectedTab] = useState<"buttons" | "stats" | "favorites">("buttons");
 	const averagePlays = audioButtonsCount > 0 ? Math.round(totalPlayCount / audioButtonsCount) : 0;
@@ -239,7 +248,12 @@ export function UserProfileContent({
 				</div>
 
 				{selectedTab === "buttons" && (
-					<AudioButtonsList audioButtons={audioButtons} user={user} isOwnProfile={isOwnProfile} />
+					<AudioButtonsList
+						audioButtons={audioButtons}
+						user={user}
+						isOwnProfile={isOwnProfile}
+						initialLikeDislikeStatuses={initialLikeDislikeStatuses}
+					/>
 				)}
 
 				{selectedTab === "favorites" && (
