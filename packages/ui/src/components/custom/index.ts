@@ -28,8 +28,6 @@ export type {
 	StandardListParams,
 } from "./list";
 export { ConfigurableList, SimpleList } from "./list";
-// List components
-export { GenericList } from "./list/generic-list-compat";
 // Layout components
 export { ListDisplayControls } from "./list-display-controls";
 export { ListPageLayout } from "./list-page-layout";

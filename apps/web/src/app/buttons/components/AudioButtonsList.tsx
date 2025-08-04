@@ -1,165 +1,164 @@
 "use client";
 
-import { AdvancedFilterPanel } from "@suzumina.click/ui/components/custom/advanced-filter-panel";
-import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
-import Link from "next/link";
-import { startTransition } from "react";
-import UrlPagination from "@/components/pagination/url-pagination";
-import { AudioButtonsEmptyState } from "./AudioButtonsEmptyState";
-import { AudioButtonsErrorState } from "./AudioButtonsErrorState";
-import { AudioButtonsGrid } from "./AudioButtonsGrid";
-import { AudioButtonsLoadingState } from "./AudioButtonsLoadingState";
-import { AudioButtonsSearchBar } from "./AudioButtonsSearchBar";
-import { AudioButtonsStats } from "./AudioButtonsStats";
-import type { SearchParams } from "./audio-buttons-list-helpers";
-import { useAudioButtonsList } from "./useAudioButtonsList";
+import type { AudioButtonPlainObject, AudioButtonQuery } from "@suzumina.click/shared-types";
+import {
+	ConfigurableList,
+	type StandardListParams,
+} from "@suzumina.click/ui/components/custom/list";
+import { useMemo } from "react";
+import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
+import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
+import { getAudioButtons } from "../actions";
 
-interface AudioButtonsListProps {
-	searchParams: SearchParams;
-	initialData?:
+interface AudioButtonsListGenericProps {
+	searchParams:
+		| Record<string, string | string[] | undefined>
 		| {
-				success: true;
-				data: {
-					audioButtons: AudioButtonPlainObject[];
-					totalCount: number;
-					hasMore: boolean;
-				};
-		  }
-		| {
-				success: false;
-				error: string;
+				q?: string;
+				category?: string;
+				tags?: string;
+				sort?: string;
+				page?: string;
+				limit?: string;
+				sourceVideoId?: string;
+				playCountMin?: string;
+				playCountMax?: string;
+				likeCountMin?: string;
+				likeCountMax?: string;
+				favoriteCountMin?: string;
+				favoriteCountMax?: string;
+				durationMin?: string;
+				durationMax?: string;
+				createdAfter?: string;
+				createdBefore?: string;
+				createdBy?: string;
 		  };
+	initialData?: {
+		success: boolean;
+		data?: {
+			audioButtons: AudioButtonPlainObject[];
+			totalCount: number;
+			hasMore: boolean;
+		};
+		error?: string;
+	};
 }
 
-import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+// 音声ボタン表示用のコンポーネント
+function AudioButtonItem({
+	audioButton,
+	searchQuery,
+	isFavorited,
+	isLiked,
+	isDisliked,
+}: {
+	audioButton: AudioButtonPlainObject;
+	searchQuery?: string;
+	isFavorited: boolean;
+	isLiked: boolean;
+	isDisliked: boolean;
+}) {
+	return (
+		<AudioButtonWithPlayCount
+			audioButton={audioButton}
+			className="shadow-sm hover:shadow-md transition-all duration-200"
+			searchQuery={searchQuery}
+			highlightClassName="bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
+			initialIsFavorited={isFavorited}
+			initialIsLiked={isLiked}
+			initialIsDisliked={isDisliked}
+		/>
+	);
+}
 
-export default function AudioButtonsList({ searchParams, initialData }: AudioButtonsListProps) {
-	const {
-		// 状態
-		audioButtons,
-		totalCount,
-		filteredCount,
-		loading,
-		error,
-		searchQuery,
-		sortBy,
-		itemsPerPageValue,
-		advancedFilters,
-		currentPage,
-		totalPages,
-		effectiveCount,
-		isFiltered,
-		// 状態更新関数
-		setSearchQuery,
-		setSortBy,
-		setItemsPerPageValue,
-		setAdvancedFilters,
-		// アクション
-		updateSearchParams,
-		applyAdvancedFilters,
-	} = useAudioButtonsList({ searchParams, initialData });
+export default function AudioButtonsList({
+	searchParams,
+	initialData,
+}: AudioButtonsListGenericProps) {
+	// 初期データの変換
+	const transformedInitialData = useMemo(() => {
+		if (!initialData || !initialData.success || !initialData.data) {
+			return undefined;
+		}
+		return {
+			items: initialData.data.audioButtons,
+			total: initialData.data.totalCount,
+			page: 1,
+			itemsPerPage: initialData.data.audioButtons.length,
+		};
+	}, [initialData]);
 
-	// イベントハンドラー
+	// 一時的な実装：お気に入り状態を管理
+	const audioButtonIds = useMemo(() => {
+		if (!transformedInitialData) return [];
+		return transformedInitialData.items.map((button) => button.id);
+	}, [transformedInitialData]);
 
-	const handleSearch = () => updateSearchParams({ q: searchQuery || undefined });
-	const handleReset = () => {
-		setSearchQuery("");
-		updateSearchParams({ q: undefined, tags: undefined });
-	};
-	const handleSortChange = (value: string) => {
-		setSortBy(value);
-		startTransition(() => {
-			updateSearchParams({ sort: value === "default" ? undefined : value });
-		});
-	};
-	const handleItemsPerPageChange = (value: string) => {
-		startTransition(() => {
-			setItemsPerPageValue(value);
-			updateSearchParams({ page: undefined, limit: value === "12" ? undefined : value });
-		});
-	};
-
-	// ローディング状態
-	if (loading) return <AudioButtonsLoadingState />;
-
-	// エラー状態
-	if (error) return <AudioButtonsErrorState error={error} />;
+	const { favoriteStates } = useFavoriteStatusBulk(audioButtonIds);
+	const { likeDislikeStates } = useLikeDislikeStatusBulk(audioButtonIds);
 
 	return (
-		<div className="space-y-6">
-			{/* 1. 検索・フィルターエリア */}
-			<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
-				<div className="space-y-4">
-					<AudioButtonsSearchBar
-						searchQuery={searchQuery}
-						onSearchQueryChange={setSearchQuery}
-						onSearch={handleSearch}
-						onReset={handleReset}
-					/>
-
-					{/* 高度フィルタ */}
-					<AdvancedFilterPanel
-						filters={advancedFilters}
-						onChange={setAdvancedFilters}
-						onApply={applyAdvancedFilters}
-					/>
-				</div>
-			</div>
-
-			{/* 2. リスト表示制御 */}
-			<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
-				<ListDisplayControls
-					title={searchParams.sourceVideoId ? "この動画の音声ボタン" : "音声ボタン一覧"}
-					totalCount={totalCount}
-					filteredCount={isFiltered ? filteredCount : undefined}
-					currentPage={currentPage}
-					totalPages={totalPages}
-					sortValue={sortBy}
-					onSortChange={handleSortChange}
-					sortOptions={[
-						{ value: "default", label: "並び順" },
-						{ value: "newest", label: "新しい順" },
-						{ value: "oldest", label: "古い順" },
-						{ value: "popular", label: "人気順" },
-						{ value: "mostPlayed", label: "再生回数順" },
-					]}
-					itemsPerPageValue={itemsPerPageValue}
-					onItemsPerPageChange={handleItemsPerPageChange}
-					actions={
-						searchParams.sourceVideoId ? (
-							<Link
-								href={`/videos/${searchParams.sourceVideoId}`}
-								className="text-sm text-suzuka-600 hover:text-suzuka-700 font-medium"
-							>
-								← 動画詳細に戻る
-							</Link>
-						) : undefined
+		<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
+			<ConfigurableList<AudioButtonPlainObject>
+				items={transformedInitialData?.items || []}
+				initialTotal={transformedInitialData?.total || 0}
+				renderItem={(audioButton) => {
+					const likeDislikeStatus = likeDislikeStates.get(audioButton.id) || {
+						isLiked: false,
+						isDisliked: false,
+					};
+					return (
+						<AudioButtonItem
+							audioButton={audioButton}
+							searchQuery={searchParams.q as string}
+							isFavorited={favoriteStates.get(audioButton.id) || false}
+							isLiked={likeDislikeStatus.isLiked}
+							isDisliked={likeDislikeStatus.isDisliked}
+						/>
+					);
+				}}
+				fetchFn={async (params: unknown) => {
+					const result = await getAudioButtons(params as AudioButtonQuery);
+					if (!result.success || !result.data) {
+						throw new Error("error" in result ? result.error : "Failed to fetch audio buttons");
 					}
-				/>
-			</div>
-
-			{/* 音声ボタン一覧 */}
-			{audioButtons.length === 0 ? (
-				<AudioButtonsEmptyState />
-			) : (
-				<AudioButtonsGrid audioButtons={audioButtons} searchQuery={searchParams.q} />
-			)}
-
-			{/* 3. ページネーション */}
-			{totalPages > 1 && (
-				<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
-					<UrlPagination currentPage={currentPage} totalPages={totalPages} />
-				</div>
-			)}
-
-			{/* 統計情報 */}
-			{audioButtons.length > 0 && (
-				<AudioButtonsStats
-					effectiveCount={effectiveCount}
-					currentPage={currentPage}
-					itemsPerPage={Number.parseInt(itemsPerPageValue, 10)}
-				/>
-			)}
+					return {
+						items: result.data.audioButtons,
+						total: result.data.totalCount,
+					};
+				}}
+				dataAdapter={{
+					toParams: (params) => {
+						// ConfigurableListのStandardListParamsをAudioButtonQueryに変換
+						const query: AudioButtonQuery = {
+							searchText: params.search,
+							sortBy: params.sort as AudioButtonQuery["sortBy"],
+							page: params.page,
+							limit: params.itemsPerPage,
+						};
+						// フィルターがあれば追加
+						if (params.filters.duration) {
+							const range = params.filters.duration as { min?: number; max?: number };
+							query.durationMin = range.min;
+							query.durationMax = range.max;
+						}
+						return query;
+					},
+					fromResult: (result) => result as { items: AudioButtonPlainObject[]; total: number },
+				}}
+				searchable
+				searchPlaceholder="音声ボタンを検索..."
+				urlSync
+				layout="flex"
+				sorts={[
+					{ value: "newest", label: "新しい順" },
+					{ value: "mostPlayed", label: "再生回数順" },
+				]}
+				defaultSort="newest"
+				// filters={{}} // 一旦音声長フィルタは無効化
+				itemsPerPageOptions={[12, 24, 48]}
+			/>
 		</div>
 	);
 }

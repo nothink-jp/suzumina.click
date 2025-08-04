@@ -25,9 +25,14 @@ import { Skeleton } from "../../ui/skeleton";
 import { Slider } from "../../ui/slider";
 import { useListData } from "./core/hooks/useListData";
 import { useListUrl } from "./core/hooks/useListUrl";
-import type { ConfigurableListProps, FilterConfig, StandardListParams } from "./core/types";
+import type {
+	ConfigurableListProps,
+	DataAdapter,
+	FilterConfig,
+	StandardListParams,
+} from "./core/types";
 import { generateGridClasses } from "./core/utils/classHelpers";
-import { calculatePagination, wrapLegacyFetchData } from "./core/utils/dataAdapter";
+import { calculatePagination } from "./core/utils/dataAdapter";
 import {
 	generateOptions,
 	getDefaultFilterValues,
@@ -82,7 +87,7 @@ export function ConfigurableList<T>({
 	});
 
 	// サーバーサイドデータ取得が有効な場合
-	const isServerSide = !!fetchFn && !!dataAdapter;
+	const isServerSide = !!fetchFn;
 
 	// データ取得用のパラメータ
 	const fetchParams: StandardListParams = useMemo(
@@ -93,46 +98,42 @@ export function ConfigurableList<T>({
 	// fetchFnをメモ化
 	const memoizedFetchFn = useMemo(() => {
 		if (!isServerSide) {
-			return async () => ({ items: initialItems, total: initialItems.length });
+			return async () => ({ items: initialItems, total: initialTotal ?? initialItems.length });
 		}
-		return wrapLegacyFetchData(
-			async (params) => {
-				// paramsはすでにdataAdapterによって変換されているので、そのまま使用
-				if (!fetchFn) {
-					throw new Error("fetchFn is required when using server-side data fetching");
-				}
-				const result = await fetchFn(params);
-				const typedResult = result as {
-					items?: T[];
-					total?: number;
-					totalCount?: number;
-					filteredCount?: number;
-				};
-				return {
-					items: typedResult.items || [],
-					totalCount: typedResult.total || typedResult.totalCount || 0,
-					filteredCount: typedResult.total || typedResult.filteredCount || 0,
-				};
-			},
-			dataAdapter || {
+		return async (params: StandardListParams) => {
+			if (!fetchFn) {
+				throw new Error("fetchFn is required when using server-side data fetching");
+			}
+
+			// デフォルトアダプター: 結果がすでにListDataSource形式であることを想定
+			const defaultAdapter: DataAdapter<T, unknown> = {
 				toParams: (params) => params,
 				fromResult: (result) => {
-					const typedResult = result as import("./core/types").ListDataSource<T>;
-					return typedResult;
+					const typedResult = result as any;
+					// itemsとtotalがあればそのまま使用、totalCountがあればtotalに変換
+					return {
+						items: typedResult.items || [],
+						total: typedResult.total ?? typedResult.totalCount ?? 0,
+					};
 				},
-			},
-		);
-	}, [isServerSide, dataAdapter, fetchFn, initialItems]);
+			};
+
+			const actualAdapter = dataAdapter || defaultAdapter;
+			const apiParams = actualAdapter.toParams(params);
+			const result = await fetchFn(apiParams);
+			return actualAdapter.fromResult(result);
+		};
+	}, [isServerSide, dataAdapter, fetchFn, initialItems, initialTotal]);
 
 	// サーバーサイドデータ取得
+	const initialDataForHook = {
+		items: initialItems,
+		total: initialTotal ?? initialItems.length,
+	};
+
 	const serverData = useListData(fetchParams, {
 		fetchFn: memoizedFetchFn,
-		initialData:
-			isServerSide && initialTotal !== undefined
-				? { items: initialItems, total: initialTotal }
-				: !isServerSide
-					? { items: initialItems, total: initialTotal || initialItems.length }
-					: undefined,
+		initialData: initialDataForHook,
 		onError,
 		debounceMs: searchable ? 300 : 0, // 検索時のみデバウンス
 	});
@@ -142,14 +143,19 @@ export function ConfigurableList<T>({
 		items: initialItems,
 		total: initialTotal || initialItems.length,
 	};
+
+	// データソースの決定
+	const actualData = serverData.data || data;
+
 	const loading = externalLoading || serverData.loading;
+	const isRefreshing = serverData.isRefreshing || false;
 	const error = externalError || serverData.error;
 
 	// クライアントサイドのフィルタリング（サーバーサイドでない場合）
 	const processedItems = useMemo(() => {
-		if (isServerSide) return data.items;
+		if (isServerSide) return actualData.items;
 
-		let result = [...data.items];
+		let result = [...actualData.items];
 
 		// 検索フィルタリング
 		if (fetchParams.search && searchable) {
@@ -222,24 +228,34 @@ export function ConfigurableList<T>({
 		}
 
 		return result;
-	}, [data.items, fetchParams, isServerSide, searchable, filters]);
+	}, [actualData.items, fetchParams, isServerSide, searchable, filters]);
 
 	// ページネーション情報
 	const pagination = useMemo(() => {
-		const total = isServerSide ? data.total : processedItems.length;
+		const total = isServerSide ? actualData.total : processedItems.length;
 		return calculatePagination(total, fetchParams.itemsPerPage, fetchParams.page);
-	}, [data.total, processedItems.length, fetchParams.itemsPerPage, fetchParams.page, isServerSide]);
+	}, [
+		actualData.total,
+		processedItems.length,
+		fetchParams.itemsPerPage,
+		fetchParams.page,
+		isServerSide,
+	]);
 
 	// 現在のページのアイテム
 	const currentItems = useMemo(() => {
-		// サーバーサイドの場合、データが期待するページサイズと一致しているか確認
 		if (isServerSide) {
-			// サーバーから取得したデータが現在のページサイズと一致している場合はそのまま使用
-			// そうでない場合は、データの再取得が必要なのでローディング中として扱う
-			return data.items;
+			// サーバーサイドの場合でも、念のためページサイズに合わせてスライス
+			// サーバーが異なるページサイズのデータを返した場合の対応
+			const itemsPerPage = fetchParams.itemsPerPage;
+			if (actualData.items.length > itemsPerPage) {
+				// ページサイズより多いデータが返された場合はスライス
+				return actualData.items.slice(0, itemsPerPage);
+			}
+			return actualData.items;
 		}
 		return processedItems.slice(pagination.startIndex, pagination.endIndex);
-	}, [processedItems, pagination, isServerSide, data.items]);
+	}, [processedItems, pagination, isServerSide, actualData.items, fetchParams.itemsPerPage]);
 
 	// IME変換中かどうかを管理
 	const [isComposing, setIsComposing] = useState(false);
@@ -505,8 +521,8 @@ export function ConfigurableList<T>({
 		}
 	};
 
-	// ローディング表示
-	if (loading && currentItems.length === 0) {
+	// ローディング表示（データがない場合のみスケルトンを表示）
+	if (loading && currentItems.length === 0 && !actualData.total) {
 		if (loadingComponent) return <>{loadingComponent}</>;
 
 		return (
@@ -587,11 +603,15 @@ export function ConfigurableList<T>({
 			{/* 情報表示とコントロール：件数、ソート、ページサイズ */}
 			<div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				{/* 左側：件数表示 */}
-				<div className="text-sm text-muted-foreground">
-					{data.total > 0 ? (
+				<div className="text-sm text-muted-foreground flex items-center gap-2">
+					{isRefreshing && (
+						<div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+					)}
+					{actualData.total > 0 ? (
 						<>
-							全{data.total}件 <span className="mx-2">/</span> {pagination.startIndex + 1}-
-							{Math.min(pagination.endIndex, data.total)}件を表示
+							全{actualData.total}件 <span className="mx-2">/</span> {pagination.startIndex + 1}-
+							{Math.min(pagination.endIndex, actualData.total)}件を表示
+							{isRefreshing && <span className="text-xs">（更新中...）</span>}
 						</>
 					) : fetchParams.search ? (
 						"検索結果がありません"
@@ -619,28 +639,30 @@ export function ConfigurableList<T>({
 					)}
 
 					{/* ページサイズ選択 */}
-					{itemsPerPageOptions && itemsPerPageOptions.length > 0 && data.total > 0 && (
-						<Select
-							value={fetchParams.itemsPerPage.toString()}
-							onValueChange={handleItemsPerPageChange}
-						>
-							<SelectTrigger className="h-8 w-[140px]">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{itemsPerPageOptions.map((option) => (
-									<SelectItem key={option} value={option.toString()}>
-										{option}件/ページ
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					)}
+					{itemsPerPageOptions &&
+						itemsPerPageOptions.length > 0 &&
+						(actualData.total > 0 || (initialTotal && initialTotal > 0)) && (
+							<Select
+								value={fetchParams.itemsPerPage.toString()}
+								onValueChange={handleItemsPerPageChange}
+							>
+								<SelectTrigger className="h-8 w-[140px]">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{itemsPerPageOptions.map((option) => (
+										<SelectItem key={option} value={option.toString()}>
+											{option}件/ページ
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						)}
 				</div>
 			</div>
 
 			{/* リスト本体 */}
-			{currentItems.length > 0 && (
+			{currentItems.length > 0 ? (
 				<div
 					className={
 						layout === "grid"
@@ -656,6 +678,13 @@ export function ConfigurableList<T>({
 						</div>
 					))}
 				</div>
+			) : (
+				// データがない場合は、ローディング中でない且つ初期データも存在しない場合のみ空メッセージを表示
+				!loading &&
+				actualData.total === 0 &&
+				currentItems.length === 0 && (
+					<div className="text-center py-8 text-muted-foreground">{emptyMessage}</div>
+				)
 			)}
 
 			{/* ページネーション（下部） */}
@@ -789,7 +818,8 @@ export function ConfigurableList<T>({
 			{/* 合計件数表示（ページネーションの下） */}
 			{pagination.totalPages > 1 && (
 				<div className="mt-2 text-center text-sm text-muted-foreground">
-					{data.total}件中 {pagination.startIndex + 1}〜{Math.min(pagination.endIndex, data.total)}
+					{actualData.total}件中 {pagination.startIndex + 1}〜
+					{Math.min(pagination.endIndex, actualData.total)}
 					件を表示
 				</div>
 			)}

@@ -5,7 +5,7 @@ import {
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
 import { fetchVideosForGenericList } from "./actions";
-import VideoListGeneric from "./components/VideoListGeneric";
+import VideoList from "./components/VideoList";
 
 interface VideosPageProps {
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -45,7 +45,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						</div>
 					}
 				>
-					<VideoListGeneric initialData={initialData} />
+					<VideoList initialData={initialData} searchParams={params} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>

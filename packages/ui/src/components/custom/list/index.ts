@@ -32,7 +32,5 @@ export {
 	transformFilterValue,
 	validateFilterValue,
 } from "./core/utils/filterHelpers";
-// Compatibility layer
-export { GenericListCompat, type GenericListCompatProps } from "./generic-list-compat";
 // Components
 export { SimpleList } from "./simple-list";

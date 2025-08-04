@@ -100,15 +100,19 @@ function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
 }
 
 /**
- * GenericList用のビデオデータ取得関数
+ * ConfigurableList用のビデオデータ取得関数
  */
-export async function fetchVideosForGenericList(
-	params: import("@suzumina.click/ui/components/custom/list/generic-list-compat").ListParams,
-): Promise<
-	import("@suzumina.click/ui/components/custom/list/generic-list-compat").ListResult<
-		import("@suzumina.click/shared-types").VideoPlainObject
-	>
-> {
+export async function fetchVideosForGenericList(params: {
+	page: number;
+	limit: number;
+	sort?: string;
+	search?: string;
+	filters?: Record<string, unknown>;
+}): Promise<{
+	items: import("@suzumina.click/shared-types").VideoPlainObject[];
+	totalCount: number;
+	filteredCount: number;
+}> {
 	// フィルターパラメータの変換
 	const videoParams = {
 		page: params.page,
@@ -301,7 +305,7 @@ export async function getVideoTitles(params?: {
 		const firestore = getFirestore();
 
 		// 統一された処理を使用
-		return await getVideosWithFiltering(firestore, {
+		const result = await getVideosWithFiltering(firestore, {
 			page,
 			limit,
 			sort,
@@ -312,6 +316,8 @@ export async function getVideoTitles(params?: {
 			categoryNames: params?.categoryNames,
 			videoType: params?.videoType,
 		});
+
+		return result;
 	} catch (error) {
 		logger.error("動画タイトルV2取得でエラーが発生", {
 			action: "getVideoTitles",

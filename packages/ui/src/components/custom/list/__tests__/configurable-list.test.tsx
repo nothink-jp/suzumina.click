@@ -333,4 +333,63 @@ describe("ConfigurableList", () => {
 			expect(mockFetch).toHaveBeenCalled();
 		});
 	});
+
+	it("ページサイズ変更時にフリッカーを防ぐ", async () => {
+		let resolvePromise: (value: unknown) => void = () => {};
+		const fetchPromise = new Promise((resolve) => {
+			resolvePromise = resolve;
+		});
+
+		const mockFetch = vi.fn(() => fetchPromise);
+
+		render(
+			<ConfigurableList
+				items={sampleItems}
+				renderItem={renderItem}
+				fetchFn={mockFetch}
+				dataAdapter={{
+					toParams: (params) => params,
+					fromResult: (result) => {
+						const typedResult = result as import("../core/types").ListDataSource<
+							(typeof sampleItems)[0]
+						>;
+						return typedResult;
+					},
+				}}
+				itemsPerPageOptions={[2, 4, 6]}
+				itemsPerPage={2}
+				initialTotal={sampleItems.length}
+				urlSync={false}
+			/>,
+		);
+
+		// 初期データが表示されることを確認
+		expect(screen.getByTestId("item-1")).toBeInTheDocument();
+		expect(screen.getByTestId("item-2")).toBeInTheDocument();
+
+		// ページサイズ変更を開始
+		const pageSizeSelect = screen.getByText("2件/ページ");
+		fireEvent.click(pageSizeSelect);
+
+		// セレクトボックスが開くのを待つ
+		const option4 = await screen.findByText("4件/ページ");
+		fireEvent.click(option4);
+
+		// データ取得中でも既存データが表示され続けることを確認
+		expect(screen.getByTestId("item-1")).toBeInTheDocument();
+		expect(screen.getByTestId("item-2")).toBeInTheDocument();
+
+		// "データがありません"メッセージが表示されないことを確認
+		expect(screen.queryByText("データがありません")).not.toBeInTheDocument();
+
+		// フェッチが完了
+		resolvePromise({
+			items: sampleItems.slice(0, 4),
+			total: sampleItems.length,
+		});
+
+		await waitFor(() => {
+			expect(mockFetch).toHaveBeenCalled();
+		});
+	});
 });

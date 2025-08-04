@@ -11,6 +11,8 @@ interface AudioButtonWithPlayCountProps {
 	maxTitleLength?: number;
 	showFavorite?: boolean;
 	initialIsFavorited?: boolean;
+	initialIsLiked?: boolean;
+	initialIsDisliked?: boolean;
 	searchQuery?: string;
 	highlightClassName?: string;
 }
@@ -24,6 +26,8 @@ export function AudioButtonWithPlayCount({
 	maxTitleLength,
 	showFavorite = true,
 	initialIsFavorited,
+	initialIsLiked,
+	initialIsDisliked,
 	searchQuery,
 	highlightClassName,
 }: AudioButtonWithPlayCountProps) {
@@ -42,6 +46,8 @@ export function AudioButtonWithPlayCount({
 			maxTitleLength={maxTitleLength}
 			showFavorite={showFavorite}
 			initialIsFavorited={initialIsFavorited}
+			initialIsLiked={initialIsLiked}
+			initialIsDisliked={initialIsDisliked}
 			searchQuery={searchQuery}
 			highlightClassName={highlightClassName}
 		/>

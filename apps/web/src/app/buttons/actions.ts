@@ -48,7 +48,7 @@ export async function getRecentAudioButtons(limit = 10): Promise<AudioButtonPlai
 /**
  * Entityを使用した音声ボタンの取得
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO: 関数を分割してリファクタリングする
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: フィルタ条件が多いため一時的に許可
 export async function getAudioButtons(
 	query: {
 		limit?: number;
@@ -128,30 +128,29 @@ export async function getAudioButtons(
 		// 注意: Firestoreは複数フィールドに対する範囲クエリをサポートしていないため、
 		// 現在はdurationフィルタのみ実装（最も使用頻度が高いと想定）
 		const hasDurationFilter = durationMin !== undefined || durationMax !== undefined;
-		if (hasDurationFilter) {
-			// durationは endTime - startTime で計算
-			// ここでは簡易的な実装として、フロントエンドで後からフィルタリングする
-			// TODO: Cloud Functionsで duration フィールドを事前計算して保存する
-		}
+		// 音声長フィルタはConfigurableListのクライアントサイドで処理される
 
 		// ソート条件を追加
+		// 注意: Firestoreの複合インデックス制限により、whereとorderByの組み合わせを制限
 		switch (sortBy) {
 			case "newest":
+				// createdAtでのソートはwhereと組み合わせても問題ない
 				queryRef = queryRef.orderBy("createdAt", "desc") as typeof queryRef;
 				break;
-			case "oldest":
-				queryRef = queryRef.orderBy("createdAt", "asc") as typeof queryRef;
-				break;
-			case "popular":
-				queryRef = queryRef.orderBy("favoriteCount", "desc") as typeof queryRef;
-				break;
 			case "mostPlayed":
+				// playCountでのソートはwhereと組み合わせると複合インデックスが必要
 				queryRef = queryRef.orderBy("playCount", "desc") as typeof queryRef;
 				break;
+			default:
+				// デフォルトは新しい順
+				queryRef = queryRef.orderBy("createdAt", "desc") as typeof queryRef;
 		}
 
 		// 総件数を取得するためのクエリ（ソートなし）
-		let countQueryRef = firestore.collection("audioButtons").where("isPublic", "==", true);
+		let countQueryRef = firestore.collection("audioButtons");
+		if (onlyPublic) {
+			countQueryRef = countQueryRef.where("isPublic", "==", true) as typeof countQueryRef;
+		}
 
 		if (sourceVideoId) {
 			countQueryRef = countQueryRef.where(
@@ -160,9 +159,6 @@ export async function getAudioButtons(
 				sourceVideoId,
 			) as typeof countQueryRef;
 		}
-
-		// TODO: searchText、tags、その他のフィルタ条件をcountQueryRefにも追加する必要があります
-		// 現在は簡易実装のため、基本的な条件のみ対応
 
 		// 総件数を取得
 		const countSnapshot = await countQueryRef.count().get();
@@ -197,8 +193,7 @@ export async function getAudioButtons(
 		// Plain Object形式に変換
 		const frontendButtons = entityButtons.map((button) => button.toPlainObject());
 
-		// TODO: 音声長フィルタの実装（複雑度の問題を解決後に実装）
-		// 現在は一時的に無効化
+		// 音声長フィルタはクライアントサイドで実装済み（Firestoreの制限のため）
 
 		return {
 			success: true,
