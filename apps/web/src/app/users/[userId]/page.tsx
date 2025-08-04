@@ -1,6 +1,7 @@
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getLikeDislikeStatusAction } from "@/actions/dislikes";
 import { auth } from "@/auth";
 import { getAudioButtonsByUser } from "@/lib/audio-buttons-firestore";
 import { getUserFavoritesCount } from "@/lib/favorites-firestore";
@@ -75,6 +76,14 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 		favoritesCount = await getUserFavoritesCount(resolvedParams.userId);
 	}
 
+	// いいね・低評価状態を一括取得（ログインユーザーのみ）
+	let likeDislikeStatuses: Record<string, { isLiked: boolean; isDisliked: boolean }> = {};
+	if (session?.user && audioButtons.length > 0) {
+		const audioButtonIds = audioButtons.map((button) => button.id);
+		const likeDislikeData = await getLikeDislikeStatusAction(audioButtonIds);
+		likeDislikeStatuses = Object.fromEntries(likeDislikeData);
+	}
+
 	return (
 		<UserProfileContent
 			user={user}
@@ -83,6 +92,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 			totalPlayCount={totalPlayCount}
 			isOwnProfile={isOwnProfile}
 			favoritesCount={favoritesCount}
+			initialLikeDislikeStatuses={likeDislikeStatuses}
 		/>
 	);
 }
