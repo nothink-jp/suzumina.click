@@ -33,7 +33,7 @@ export function RelatedAudioButtons({
 			<div className="text-center py-8 text-muted-foreground">
 				<p className="mb-4">この動画の音声ボタンはまだありません</p>
 				<Button asChild size="sm" variant="outline">
-					<Link href={`/buttons/create?videoId=${videoId}`}>
+					<Link href={`/buttons/create?video_id=${videoId}`}>
 						<Plus className="h-4 w-4 mr-2" />
 						最初の音声ボタンを作る
 					</Link>
