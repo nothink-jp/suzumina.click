@@ -146,13 +146,6 @@ export function useListData<T>(params: StandardListParams, options: UseListDataO
 	useEffect(() => {
 		// パラメータが実際に変更されたかチェック
 		if (!areParamsEqual(prevParamsRef.current, params)) {
-			if (typeof window !== "undefined") {
-				console.log("useListData: Params changed, fetching data", {
-					prev: prevParamsRef.current,
-					next: params,
-					equal: areParamsEqual(prevParamsRef.current, params),
-				});
-			}
 			prevParamsRef.current = params;
 			fetchData();
 		}

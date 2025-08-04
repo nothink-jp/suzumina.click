@@ -6,7 +6,7 @@ import {
 	type StandardListParams,
 } from "@suzumina.click/ui/components/custom/list";
 import { useMemo } from "react";
-import { fetchVideosForGenericList } from "../actions";
+import { fetchVideosForConfigurableList } from "../actions";
 import VideoCard from "./VideoCard";
 
 interface VideoListGenericProps {
@@ -36,7 +36,7 @@ export default function VideoList({ initialData, searchParams }: VideoListGeneri
 	async function fetchVideos(
 		params: StandardListParams,
 	): Promise<{ items: VideoPlainObject[]; total: number }> {
-		// ConfigurableListのパラメータをfetchVideosForGenericList用に変換
+		// ConfigurableListのパラメータをfetchVideosForConfigurableList用に変換
 		const query = {
 			page: params.page,
 			limit: params.itemsPerPage,
@@ -45,7 +45,7 @@ export default function VideoList({ initialData, searchParams }: VideoListGeneri
 			filters: params.filters,
 		};
 
-		const result = await fetchVideosForGenericList(query);
+		const result = await fetchVideosForConfigurableList(query);
 		return {
 			items: result.items,
 			total: result.totalCount,

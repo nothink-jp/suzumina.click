@@ -156,7 +156,6 @@ export default function AudioButtonsList({
 					{ value: "mostPlayed", label: "再生回数順" },
 				]}
 				defaultSort="newest"
-				// filters={{}} // 一旦音声長フィルタは無効化
 				itemsPerPageOptions={[12, 24, 48]}
 			/>
 		</div>

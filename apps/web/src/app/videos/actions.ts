@@ -102,7 +102,7 @@ function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
 /**
  * ConfigurableList用のビデオデータ取得関数
  */
-export async function fetchVideosForGenericList(params: {
+export async function fetchVideosForConfigurableList(params: {
 	page: number;
 	limit: number;
 	sort?: string;
