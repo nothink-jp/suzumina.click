@@ -135,6 +135,22 @@ vi.mock("@/auth", () => ({
 	auth: () => Promise.resolve(null),
 }));
 
+// Mock useLikeDislikeStatusBulk hook
+vi.mock("@/hooks/useLikeDislikeStatusBulk", () => ({
+	useLikeDislikeStatusBulk: () => ({
+		likeDislikeStates: new Map(),
+		isLoading: false,
+	}),
+}));
+
+// Mock useFavoriteStatusBulk hook
+vi.mock("@/hooks/useFavoriteStatusBulk", () => ({
+	useFavoriteStatusBulk: () => ({
+		favoriteStates: new Map(),
+		isLoading: false,
+	}),
+}));
+
 // Test wrapper component
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 	<AgeVerificationProvider>{children}</AgeVerificationProvider>
