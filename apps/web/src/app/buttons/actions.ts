@@ -88,6 +88,7 @@ export async function getAudioButtons(
 			sortBy = "newest",
 			onlyPublic = true,
 			sourceVideoId,
+			searchText,
 			durationMin,
 			durationMax,
 		} = query;
@@ -192,6 +193,84 @@ export async function getAudioButtons(
 
 		// Plain Object形式に変換
 		const frontendButtons = entityButtons.map((button) => button.toPlainObject());
+
+		// 検索テキストでフィルタリング
+		if (searchText) {
+			const searchLower = searchText.toLowerCase();
+			// 検索の場合は全データを取得してフィルタリング
+			let allQueryRef = firestore
+				.collection("audioButtons")
+				.select(
+					"id",
+					"title",
+					"description",
+					"tags",
+					"sourceVideoId",
+					"sourceVideoTitle",
+					"startTime",
+					"endTime",
+					"createdBy",
+					"createdByName",
+					"isPublic",
+					"playCount",
+					"likeCount",
+					"dislikeCount",
+					"favoriteCount",
+					"createdAt",
+					"updatedAt",
+				);
+
+			if (onlyPublic) {
+				allQueryRef = allQueryRef.where("isPublic", "==", true) as typeof allQueryRef;
+			}
+
+			if (sourceVideoId) {
+				allQueryRef = allQueryRef.where("sourceVideoId", "==", sourceVideoId) as typeof allQueryRef;
+			}
+
+			// ソート適用
+			switch (sortBy) {
+				case "newest":
+					allQueryRef = allQueryRef.orderBy("createdAt", "desc") as typeof allQueryRef;
+					break;
+				case "mostPlayed":
+					allQueryRef = allQueryRef.orderBy("playCount", "desc") as typeof allQueryRef;
+					break;
+				default:
+					allQueryRef = allQueryRef.orderBy("createdAt", "desc") as typeof allQueryRef;
+			}
+
+			// 全データ取得（一時的に1000件まで）
+			const allSnapshot = await allQueryRef.limit(1000).get();
+			const allButtons = allSnapshot.docs
+				.map((doc) => {
+					const data = doc.data() as FirestoreServerAudioButtonData;
+					return { ...data, id: doc.id };
+				})
+				.map(convertFirestoreToAudioButton)
+				.filter((button): button is AudioButton => button !== null)
+				.map((button) => button.toPlainObject());
+
+			// タイトルで検索
+			const filteredButtons = allButtons.filter((button) =>
+				button.title.toLowerCase().includes(searchLower),
+			);
+
+			// ページネーション再計算
+			const filteredTotal = filteredButtons.length;
+			const startIdx = (page - 1) * limit;
+			const endIdx = startIdx + limit;
+			const paginatedButtons = filteredButtons.slice(startIdx, endIdx);
+
+			return {
+				success: true,
+				data: {
+					audioButtons: paginatedButtons,
+					totalCount: filteredTotal,
+					hasMore: endIdx < filteredTotal,
+				},
+			};
+		}
 
 		// 音声長フィルタはクライアントサイドで実装済み（Firestoreの制限のため）
 
