@@ -54,15 +54,15 @@ const CATEGORY_OPTIONS = [
 ];
 
 const LANGUAGE_OPTIONS = [
-	{ value: "JPN", label: "日本語" },
-	{ value: "ENG", label: "英語" },
-	{ value: "ZHO", label: "簡体中文" },
-	{ value: "ZHT", label: "繁體中文" },
-	{ value: "KOR", label: "한국어" },
-	{ value: "SPA", label: "Español" },
-	{ value: "NRE", label: "言語不要" },
-	{ value: "DLS", label: "DLsite公式" },
-	{ value: "OTH", label: "その他言語" },
+	{ value: "ja", label: "日本語" },
+	{ value: "en", label: "英語" },
+	{ value: "zh-cn", label: "簡体中文" },
+	{ value: "zh-tw", label: "繁體中文" },
+	{ value: "ko", label: "한국어" },
+	{ value: "es", label: "Español" },
+	{ value: "not-required", label: "言語不要" },
+	{ value: "dlsite-official", label: "DLsite公式" },
+	{ value: "other", label: "その他言語" },
 ];
 
 export default function WorksListGeneric({
