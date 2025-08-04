@@ -429,14 +429,18 @@ async function getWorksWithComplexFiltering(
 
 	// ページネーション用のオフセット
 	const startOffset = (page - 1) * limit;
-	// 全件数を取得してから必要な分だけ取得する
-	// R18フィルタリングの場合は、メモリ上でフィルタリングするため、
-	// ある程度余裕を持って取得する必要がある
-	const fetchLimit =
-		showR18 === false
-			? Math.min(startOffset + limit * 10, 2000) // R18フィルタリング時は多めに取得
-			: Math.min(startOffset + limit * 3, 1000); // 通常の複雑フィルタリング
-	query = query.limit(fetchLimit);
+
+	// 言語フィルタリングまR18フィルタリングはメモリ上で行う必要があるため、
+	// 全件取得する。Firestoreには1519件しかないので問題ない。
+	// その他のフィルタリングの場合は、必要な分だけ取得する。
+	if (showR18 === false || (language && language !== "all")) {
+		// 全件取得（limitを設定しない）
+		// query = query.limit() を呼ばない
+	} else {
+		// その他の複雑フィルタリングの場合は、必要な分+余裕を取得
+		const fetchLimit = Math.min(startOffset + limit * 10, 3000);
+		query = query.limit(fetchLimit);
+	}
 
 	const snapshot = await query.get();
 	let allWorks = snapshot.docs.map((doc) => ({
@@ -454,6 +458,7 @@ async function getWorksWithComplexFiltering(
 		ratingRange,
 		hasHighResImage,
 		ageRating: ageRating && ageRating.length > 1 ? ageRating : undefined,
+		showR18, // R18フィルタリングも適用する
 	});
 
 	const filteredCount = allWorks.length;
