@@ -43,7 +43,7 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 
 	// クエリパラメータを構築
 	const query: AudioButtonQuery = {
-		searchText: resolvedSearchParams.q,
+		search: resolvedSearchParams.q,
 		tags: resolvedSearchParams.tags?.split(",").filter(Boolean),
 		sortBy: (resolvedSearchParams.sort as AudioButtonQuery["sortBy"]) || "newest",
 		page: resolvedSearchParams.page ? Number(resolvedSearchParams.page) : 1,

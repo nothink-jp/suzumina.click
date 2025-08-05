@@ -327,7 +327,7 @@ export async function searchAudioButtons(params: {
 		const actualSortBy = params.sortBy === "relevance" ? "newest" : params.sortBy;
 
 		const result = await getAudioButtons({
-			searchText: params.searchText,
+			search: params.searchText,
 			limit: params.limit,
 			onlyPublic: params.onlyPublic,
 			sortBy: actualSortBy,

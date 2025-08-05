@@ -141,7 +141,7 @@ export default function AudioButtonsList({
 								: "newest";
 
 						const query: AudioButtonQuery = {
-							searchText: params.search,
+							search: params.search,
 							sortBy,
 							page: params.page,
 							limit: params.itemsPerPage,

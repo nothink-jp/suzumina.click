@@ -17,9 +17,9 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 	// 初期データを取得
 	const initialData = await fetchVideosForConfigurableList({
 		page: Number.parseInt((params.page as string) || "1", 10),
-		limit: Number.parseInt((params.itemsPerPage as string) || "12", 10), // itemsPerPageを使用
+		limit: Number.parseInt((params.limit as string) || "12", 10),
 		sort: (params.sort as string) || "newest",
-		search: params.search as string,
+		search: params.q as string,
 		filters: {
 			year: params.year as string,
 			categoryNames: params.categoryNames as string,

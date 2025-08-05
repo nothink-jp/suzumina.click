@@ -616,7 +616,7 @@ export interface AudioButtonQuery {
 	sourceVideoId?: string;
 	createdBy?: string;
 	onlyPublic?: boolean;
-	searchText?: string;
+	search?: string;
 	createdAfter?: string;
 	createdBefore?: string;
 	playCountMin?: number;

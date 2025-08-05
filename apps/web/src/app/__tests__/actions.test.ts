@@ -1139,7 +1139,14 @@ describe("Homepage Actions", () => {
 
 				const result = await searchAudioButtons(params);
 
-				expect(getAudioButtons).toHaveBeenCalledWith(params);
+				expect(getAudioButtons).toHaveBeenCalledWith(
+					expect.objectContaining({
+						search: "涼花みなせ",
+						limit: 6,
+						onlyPublic: true,
+						sortBy: "newest",
+					}),
+				);
 				expect(result.audioButtons).toEqual(mockAudioButtons);
 				expect(result.totalCount).toBe(2);
 				expect(result.hasMore).toBe(true);
@@ -1167,12 +1174,14 @@ describe("Homepage Actions", () => {
 
 				await searchAudioButtons(params);
 
-				expect(getAudioButtons).toHaveBeenCalledWith({
-					searchText: "テスト検索",
-					limit: 12,
-					onlyPublic: true,
-					sortBy: "popular",
-				});
+				expect(getAudioButtons).toHaveBeenCalledWith(
+					expect.objectContaining({
+						search: "テスト検索",
+						limit: 12,
+						onlyPublic: true,
+						sortBy: "popular",
+					}),
+				);
 			});
 
 			it("検索結果が0件の場合でも正常に動作する", async () => {
@@ -1263,7 +1272,7 @@ describe("Homepage Actions", () => {
 				});
 
 				expect(getAudioButtons).toHaveBeenCalledWith({
-					searchText: "テスト",
+					search: "テスト",
 					limit: 6,
 					onlyPublic: true,
 					sortBy: "popular",
@@ -1278,7 +1287,7 @@ describe("Homepage Actions", () => {
 				});
 
 				expect(getAudioButtons).toHaveBeenCalledWith({
-					searchText: "テスト",
+					search: "テスト",
 					limit: 6,
 					onlyPublic: true,
 					sortBy: "mostPlayed",
@@ -1306,7 +1315,7 @@ describe("Homepage Actions", () => {
 				await searchAudioButtons(params);
 
 				expect(getAudioButtons).toHaveBeenCalledWith({
-					searchText: "全ボタン検索",
+					search: "全ボタン検索",
 					limit: 6,
 					onlyPublic: false,
 					sortBy: "newest",

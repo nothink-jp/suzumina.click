@@ -78,7 +78,7 @@ export class AudioButtonQueryBuilder {
 	}
 
 	addBasicSearchParams(params: SearchParams): this {
-		if (params.q) this.query.searchText = params.q;
+		if (params.q) this.query.search = params.q;
 		if (params.tags) this.query.tags = params.tags.split(",");
 		if (params.sort)
 			this.query.sortBy = params.sort as "newest" | "oldest" | "popular" | "mostPlayed";

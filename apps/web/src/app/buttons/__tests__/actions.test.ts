@@ -346,6 +346,48 @@ describe("Audio Button Server Actions", () => {
 			expect(mockWhere).toHaveBeenCalledWith("isPublic", "==", true);
 		});
 
+		it("検索パラメータが正しく処理される", async () => {
+			const mockDocs = [
+				{
+					id: "audio-1",
+					data: () => ({
+						id: "audio-1",
+						title: "テスト音声",
+						description: "検索キーワードを含む説明",
+						tags: ["テスト"],
+						sourceVideoId: "video-1",
+						sourceVideoTitle: "動画1",
+						startTime: 0,
+						endTime: 10,
+						createdBy: "user-1",
+						createdByName: "User 1",
+						isPublic: true,
+						playCount: 5,
+						likeCount: 2,
+						dislikeCount: 0,
+						favoriteCount: 0,
+						createdAt: "2024-01-01T00:00:00Z",
+						updatedAt: "2024-01-01T00:00:00Z",
+					}),
+				},
+			];
+
+			mockGet.mockResolvedValue({
+				docs: mockDocs,
+			});
+
+			const result = await getAudioButtons({
+				search: "検索キーワード",
+				limit: 20,
+				sortBy: "newest",
+				onlyPublic: true,
+			});
+
+			expect(result.success).toBe(true);
+			// 検索はメモリ上で行われるため、全データを取得するlimitが使用される
+			expect(mockLimit).toHaveBeenCalledWith(1000);
+		});
+
 		it("無効なクエリでエラーが返される", async () => {
 			const result = await getAudioButtons({
 				limit: -1, // Invalid limit
