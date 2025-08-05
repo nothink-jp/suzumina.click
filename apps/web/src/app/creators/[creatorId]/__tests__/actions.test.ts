@@ -70,7 +70,7 @@ const mockConvertToWorkPlainObject = (data: any) => {
 
 // convertToWorkPlainObjectのモック
 vi.mock("@suzumina.click/shared-types", () => ({
-	convertToWorkPlainObject: vi.fn(mockConvertToWorkPlainObject),
+	convertToWorkPlainObject: vi.fn(),
 	isValidCreatorId: vi.fn((id) => /^[A-Z]{2}\d{5,7}$/.test(id)),
 }));
 
@@ -83,18 +83,7 @@ const mockCollection = vi.fn((collectionName) => ({
 	doc: collectionName === "works" ? vi.fn((id) => ({ id })) : mockDoc,
 }));
 
-// doc method setup
-mockDoc.mockReturnValue({
-	get: mockGet,
-	collection: vi.fn().mockReturnValue({
-		get: mockGet,
-	}),
-	ref: {
-		collection: vi.fn().mockReturnValue({
-			get: mockGet,
-		}),
-	},
-});
+// doc method setup - will be configured per test
 
 vi.mock("@/lib/firestore", () => ({
 	getFirestore: () => ({
@@ -109,14 +98,18 @@ import { fetchCreatorWorksForConfigurableList, getCreatorInfo } from "../actions
 describe("Creator page server actions", () => {
 	// テスト用のヘルパー関数
 	const setupCreatorMocks = (creatorData: any, worksSnapshot: any) => {
-		// creatorドキュメントの存在チェック
-		mockGet.mockResolvedValueOnce({
-			exists: true,
-			data: () => creatorData,
+		// mockDocの設定
+		mockDoc.mockReturnValue({
+			get: vi.fn().mockResolvedValueOnce({
+				exists: true,
+				data: () => creatorData,
+				ref: {
+					collection: vi.fn().mockReturnValue({
+						get: vi.fn().mockResolvedValueOnce(worksSnapshot),
+					}),
+				},
+			}),
 		});
-
-		// worksサブコレクションの取得
-		mockGet.mockResolvedValueOnce(worksSnapshot);
 	};
 
 	beforeEach(() => {
@@ -149,14 +142,19 @@ describe("Creator page server actions", () => {
 				{ id: "RJ333333", data: () => ({ roles: ["illustration"] }) },
 			];
 
-			mockGet.mockResolvedValueOnce({
-				exists: true,
-				data: () => mockCreatorData,
-			});
-
-			mockGet.mockResolvedValueOnce({
-				size: mockWorksData.length,
-				docs: mockWorksData,
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValueOnce({
+					exists: true,
+					data: () => mockCreatorData,
+					ref: {
+						collection: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValueOnce({
+								size: mockWorksData.length,
+								docs: mockWorksData,
+							}),
+						}),
+					},
+				}),
 			});
 
 			const result = await getCreatorInfo("VA12345");
@@ -304,10 +302,17 @@ describe("Creator page server actions", () => {
 						// refはdocメソッドから返されるオブジェクトで、idプロパティを持つ
 						const workId = ref.id;
 						const work = mockWorks.find((w) => w.id === workId);
+						if (work) {
+							return {
+								exists: true,
+								id: workId,
+								data: () => work,
+							};
+						}
 						return {
-							exists: !!work,
+							exists: false,
 							id: workId,
-							data: () => work || null,
+							data: () => null,
 						};
 					}),
 				);
@@ -406,10 +411,17 @@ describe("Creator page server actions", () => {
 						// refはdocメソッドから返されるオブジェクトで、idプロパティを持つ
 						const workId = ref.id;
 						const work = mockWorks.find((w) => w.id === workId);
+						if (work) {
+							return {
+								exists: true,
+								id: workId,
+								data: () => work,
+							};
+						}
 						return {
-							exists: !!work,
+							exists: false,
 							id: workId,
-							data: () => work || null,
+							data: () => null,
 						};
 					}),
 				);
@@ -476,10 +488,17 @@ describe("Creator page server actions", () => {
 						// refはdocメソッドから返されるオブジェクトで、idプロパティを持つ
 						const workId = ref.id;
 						const work = mockWorks.find((w) => w.id === workId);
+						if (work) {
+							return {
+								exists: true,
+								id: workId,
+								data: () => work,
+							};
+						}
 						return {
-							exists: !!work,
+							exists: false,
 							id: workId,
-							data: () => work || null,
+							data: () => null,
 						};
 					}),
 				);
@@ -553,10 +572,17 @@ describe("Creator page server actions", () => {
 						// refはdocメソッドから返されるオブジェクトで、idプロパティを持つ
 						const workId = ref.id;
 						const work = mockWorks.find((w) => w.id === workId);
+						if (work) {
+							return {
+								exists: true,
+								id: workId,
+								data: () => work,
+							};
+						}
 						return {
-							exists: !!work,
+							exists: false,
 							id: workId,
-							data: () => work || null,
+							data: () => null,
 						};
 					}),
 				);
@@ -626,10 +652,17 @@ describe("Creator page server actions", () => {
 						// refはdocメソッドから返されるオブジェクトで、idプロパティを持つ
 						const workId = ref.id;
 						const work = mockWorks.find((w) => w.id === workId);
+						if (work) {
+							return {
+								exists: true,
+								id: workId,
+								data: () => work,
+							};
+						}
 						return {
-							exists: !!work,
+							exists: false,
 							id: workId,
-							data: () => work || null,
+							data: () => null,
 						};
 					}),
 				);

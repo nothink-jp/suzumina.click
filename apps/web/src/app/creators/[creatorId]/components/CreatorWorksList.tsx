@@ -9,6 +9,22 @@ import { useCallback, useMemo } from "react";
 import WorkCard from "@/app/works/components/WorkCard";
 import { fetchCreatorWorksForConfigurableList } from "../actions";
 
+// ページサイズオプションを定数として定義
+const ITEMS_PER_PAGE_OPTIONS = [12, 24, 48] as const;
+
+// 型ガード関数：fetchFnの結果が正しい形式かチェック
+function isValidFetchResult(
+	result: unknown,
+): result is { items: WorkPlainObject[]; total: number } {
+	if (!result || typeof result !== "object") return false;
+	const r = result as Record<string, unknown>;
+	return (
+		Array.isArray(r.items) &&
+		r.items.every((item) => typeof item === "object" && item !== null) &&
+		typeof r.total === "number"
+	);
+}
+
 interface CreatorWorksListProps {
 	creatorId: string;
 	initialData?: WorkListResultPlain;
@@ -30,7 +46,7 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 					? (initialData.filteredCount ?? initialData.totalCount ?? 0)
 					: initialData.totalCount || 0,
 			page: 1,
-			itemsPerPage: 12, // デフォルトのページサイズ
+			itemsPerPage: ITEMS_PER_PAGE_OPTIONS[0], // デフォルトのページサイズ
 		};
 	}, [initialData]);
 
@@ -46,7 +62,13 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 					search: params.search,
 				};
 			},
-			fromResult: (result: unknown) => result as { items: WorkPlainObject[]; total: number },
+			fromResult: (result: unknown) => {
+				if (!isValidFetchResult(result)) {
+					// 型ガードでバリデーションエラーの場合は空の結果を返す
+					return { items: [], total: 0 };
+				}
+				return result;
+			},
 		}),
 		[creatorId],
 	);
@@ -87,7 +109,7 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 					{ value: "price_high", label: "価格が高い順" },
 				]}
 				defaultSort="newest"
-				itemsPerPageOptions={[12, 24, 48]}
+				itemsPerPageOptions={[...ITEMS_PER_PAGE_OPTIONS]}
 				emptyMessage="作品が見つかりませんでした"
 			/>
 		</div>
