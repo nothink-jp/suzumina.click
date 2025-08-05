@@ -1,91 +1,21 @@
 "use client";
 
-import type { WorkPlainObject } from "@suzumina.click/shared-types";
+import type { WorkListResultPlain } from "@suzumina.click/shared-types";
 import {
 	ListPageContent,
 	ListPageHeader,
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
-import { Suspense, useCallback, useEffect, useState } from "react";
-import { getWorks } from "@/app/works/actions";
-import WorkList from "@/app/works/components/WorkList";
+import { Suspense } from "react";
+import WorksListGeneric from "@/app/works/components/WorksListGeneric";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
-// ヘルパー関数：検索パラメータを解析
-function parseSearchParams(
-	searchParams: { [key: string]: string | string[] | undefined },
-	showR18Content: boolean,
-) {
-	const pageNumber = Number.parseInt(searchParams.page as string, 10) || 1;
-	const validPage = Math.max(1, pageNumber);
-	const sort = typeof searchParams.sort === "string" ? searchParams.sort : "newest";
-	const search = typeof searchParams.search === "string" ? searchParams.search : undefined;
-	const category = typeof searchParams.category === "string" ? searchParams.category : undefined;
-	const language = typeof searchParams.language === "string" ? searchParams.language : undefined;
-	const limitValue = Number.parseInt(searchParams.limit as string, 10) || 12;
-	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
-
-	// URLパラメータからexcludeR18を取得、年齢確認状況に基づいてデフォルト値を決定
-	const excludeR18FromParams = searchParams.excludeR18;
-	const shouldExcludeR18 =
-		excludeR18FromParams !== undefined ? excludeR18FromParams === "true" : !showR18Content;
-
-	return {
-		page: validPage,
-		limit: validLimit,
-		sort,
-		search,
-		category,
-		language,
-		excludeR18: shouldExcludeR18,
-	};
-}
-
 interface WorksPageClientProps {
-	searchParams: { [key: string]: string | string[] | undefined };
-	initialData: WorkPlainObject[];
-	initialTotalCount: number;
-	initialPage: number;
+	initialData: WorkListResultPlain;
 }
 
-export function WorksPageClient({
-	searchParams,
-	initialData,
-	initialTotalCount,
-	initialPage,
-}: WorksPageClientProps) {
+export function WorksPageClient({ initialData }: WorksPageClientProps) {
 	const { showR18Content, isLoading: ageVerificationLoading } = useAgeVerification();
-	const [data, setData] = useState(initialData);
-	const [totalCount, setTotalCount] = useState(initialTotalCount);
-	const [filteredCount, setFilteredCount] = useState<number | undefined>(undefined);
-	const [isLoading, setIsLoading] = useState(false);
-
-	// ヘルパー関数：状態を更新
-	const updateState = useCallback((result: Awaited<ReturnType<typeof getWorks>>) => {
-		setData(result.works);
-		setTotalCount(result.totalCount || 0);
-		setFilteredCount(result.filteredCount);
-	}, []);
-
-	// 年齢確認状態が変更された時にデータを再取得
-	useEffect(() => {
-		if (ageVerificationLoading) return;
-
-		const fetchData = async () => {
-			setIsLoading(true);
-			try {
-				const params = parseSearchParams(searchParams, showR18Content);
-				const result = await getWorks(params);
-				updateState(result);
-			} catch (_error) {
-				// Error handling - silent fail to prevent console noise
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchData();
-	}, [showR18Content, ageVerificationLoading, searchParams, updateState]);
 
 	if (ageVerificationLoading) {
 		return (
@@ -124,19 +54,7 @@ export function WorksPageClient({
 						</div>
 					}
 				>
-					{isLoading ? (
-						<div className="text-center py-12">
-							<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-							<p className="mt-2 text-muted-foreground">フィルタリング中...</p>
-						</div>
-					) : (
-						<WorkList
-							data={data}
-							totalCount={totalCount}
-							filteredCount={filteredCount}
-							currentPage={initialPage}
-						/>
-					)}
+					<WorksListGeneric initialData={initialData} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>

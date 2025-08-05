@@ -44,7 +44,7 @@ interface EnhancedSearchParams {
 	_strategy?: DataFetchStrategy; // データ取得戦略（未使用）
 	// 年齢制限フィルター
 	ageRating?: string[]; // 特定のレーティングのみ
-	excludeR18?: boolean; // R18作品を除外
+	showR18?: boolean; // R18作品を表示
 }
 
 // ヘルパー関数：2つの作品間の類似スコアを計算
@@ -201,7 +201,8 @@ function filterWorksByUnifiedData(
 	}
 
 	// 年齢制限フィルタリング
-	if (params.excludeR18) {
+	// showR18が明示的にfalseの場合のみR18作品を除外（undefined/trueの場合は表示）
+	if (params.showR18 === false) {
 		// 年齢制限を取得する関数（データソースから優先的に取得）
 		const getAgeRatingFromWork = (work: WorkDocument): string | undefined => {
 			return work.ageRating || undefined;
@@ -233,7 +234,7 @@ function buildWorksQuery(
 	firestore: FirebaseFirestore.Firestore,
 	params: {
 		category?: string;
-		excludeR18?: boolean;
+		showR18?: boolean;
 		ageRating?: string[];
 		sort?: string;
 	},
@@ -246,9 +247,9 @@ function buildWorksQuery(
 	}
 
 	// 年齢制限フィルタ
-	if (params.excludeR18) {
-		query = query.where("isR18", "==", false);
-	}
+	// 注意: FirestoreクエリではageRatingフィールドによる複雑なフィルタリングができないため、
+	// R18フィルタリングはメモリ上で行う必要がある。
+	// showR18パラメータはneedsComplexFilteringで処理される。
 
 	// 特定の年齢制限フィルタ（単一の場合のみ）
 	if (params.ageRating && params.ageRating.length === 1) {
@@ -284,15 +285,48 @@ function buildWorksQuery(
  */
 function needsComplexFiltering(params: EnhancedSearchParams): boolean {
 	return !!(
-		params.search ||
-		params.language ||
-		params.voiceActors?.length ||
-		params.genres?.length ||
-		params.priceRange ||
-		params.ratingRange ||
-		params.hasHighResImage !== undefined ||
-		(params.ageRating && params.ageRating.length > 1)
+		(
+			params.search ||
+			(params.language && params.language !== "all") ||
+			params.voiceActors?.length ||
+			params.genres?.length ||
+			params.priceRange ||
+			params.ratingRange ||
+			params.hasHighResImage !== undefined ||
+			(params.ageRating && params.ageRating.length > 1) ||
+			params.showR18 === false
+		) // R18フィルタリングは複雑なフィルタリングが必要
 	);
+}
+
+/**
+ * 作品リストをソート
+ */
+function sortWorks(works: WorkDocument[], sort: string): WorkDocument[] {
+	const sorted = [...works];
+
+	switch (sort) {
+		case "oldest":
+			return sorted.sort((a, b) => {
+				const dateA = a.releaseDateISO || "";
+				const dateB = b.releaseDateISO || "";
+				return dateA.localeCompare(dateB);
+			});
+		case "price_low":
+			return sorted.sort((a, b) => (a.price?.current || 0) - (b.price?.current || 0));
+		case "price_high":
+			return sorted.sort((a, b) => (b.price?.current || 0) - (a.price?.current || 0));
+		case "rating":
+			return sorted.sort((a, b) => (b.rating?.stars || 0) - (a.rating?.stars || 0));
+		case "popular":
+			return sorted.sort((a, b) => (b.rating?.count || 0) - (a.rating?.count || 0));
+		default: // "newest"
+			return sorted.sort((a, b) => {
+				const dateA = a.releaseDateISO || "";
+				const dateB = b.releaseDateISO || "";
+				return dateB.localeCompare(dateA);
+			});
+	}
 }
 
 /**
@@ -351,10 +385,10 @@ async function getWorksWithSimpleQuery(
 	firestore: FirebaseFirestore.Firestore,
 	params: EnhancedSearchParams,
 ): Promise<WorkListResultPlain> {
-	const { page = 1, limit = 12, sort = "newest", category, excludeR18, ageRating } = params;
+	const { page = 1, limit = 12, sort = "newest", category, showR18, ageRating } = params;
 
 	// クエリ構築
-	let query = buildWorksQuery(firestore, { category, excludeR18, ageRating, sort });
+	let query = buildWorksQuery(firestore, { category, showR18, ageRating, sort });
 	query = query.limit(limit);
 
 	// オフセット処理
@@ -375,8 +409,17 @@ async function getWorksWithSimpleQuery(
 	const snapshot = await query.get();
 	const works = await convertDocsToWorks(snapshot.docs);
 
-	// 全件数を取得
-	const countSnapshot = await firestore.collection("works").count().get();
+	// カテゴリフィルタを適用したクエリで全件数を取得
+	let countQuery = buildWorksQuery(firestore, { category, ageRating, sort });
+	// ソートを削除（countクエリでは不要）
+	countQuery = firestore.collection("works");
+	if (category && category !== "all") {
+		countQuery = countQuery.where("category", "==", category);
+	}
+	if (ageRating && ageRating.length === 1) {
+		countQuery = countQuery.where("ageRating", "==", ageRating[0]);
+	}
+	const countSnapshot = await countQuery.count().get();
 	const totalCount = countSnapshot.data().count;
 
 	return {
@@ -408,16 +451,26 @@ async function getWorksWithComplexFiltering(
 		ratingRange,
 		hasHighResImage,
 		ageRating,
-		excludeR18,
+		showR18,
 	} = params;
 
 	// クエリ構築
-	let query = buildWorksQuery(firestore, { category, excludeR18, ageRating, sort });
+	let query = buildWorksQuery(firestore, { category, showR18, ageRating, sort });
 
 	// ページネーション用のオフセット
 	const startOffset = (page - 1) * limit;
-	const fetchLimit = Math.min(startOffset + limit * 3, 500);
-	query = query.limit(fetchLimit);
+
+	// 言語フィルタリングやR18フィルタリングはメモリ上で行う必要があるため、
+	// 全件取得する。Firestoreには1519件しかないので問題ない。
+	// その他のフィルタリングの場合は、必要な分だけ取得する。
+	if (showR18 === false || (language && language !== "all")) {
+		// 全件取得（limitを設定しない）
+		// query = query.limit() を呼ばない
+	} else {
+		// その他の複雑フィルタリングの場合は、必要な分+余裕を取得
+		const fetchLimit = Math.min(startOffset + limit * 10, 3000);
+		query = query.limit(fetchLimit);
+	}
 
 	const snapshot = await query.get();
 	let allWorks = snapshot.docs.map((doc) => ({
@@ -435,7 +488,11 @@ async function getWorksWithComplexFiltering(
 		ratingRange,
 		hasHighResImage,
 		ageRating: ageRating && ageRating.length > 1 ? ageRating : undefined,
+		showR18, // R18フィルタリングも適用する
 	});
+
+	// フィルタリング後にソートを適用
+	allWorks = sortWorks(allWorks, sort);
 
 	const filteredCount = allWorks.length;
 	const paginatedWorks = allWorks.slice(startOffset, startOffset + limit);
@@ -456,9 +513,9 @@ async function getWorksWithComplexFiltering(
 		}
 	}
 
-	// 全件数の推定
-	const totalCount = snapshot.size < fetchLimit ? filteredCount : filteredCount * 2;
-	const hasMore = startOffset + limit < filteredCount || snapshot.size === fetchLimit;
+	// 全件数はフィルタリング後の件数
+	const totalCount = filteredCount;
+	const hasMore = startOffset + limit < filteredCount;
 
 	return {
 		works,

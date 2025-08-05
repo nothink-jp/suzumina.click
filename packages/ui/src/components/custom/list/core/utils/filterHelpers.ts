@@ -79,7 +79,10 @@ export function getDefaultFilterValues(
 	const defaults: Record<string, unknown> = {};
 
 	Object.entries(filters).forEach(([key, config]) => {
-		if (config.showAll && config.type === "select") {
+		// defaultValueが指定されていればそれを優先
+		if (config.defaultValue !== undefined) {
+			defaults[key] = config.defaultValue;
+		} else if (config.showAll && config.type === "select") {
 			defaults[key] = "all";
 		} else if (config.type === "select") {
 			// showAllがfalseの場合、空文字列をデフォルトに
@@ -107,6 +110,7 @@ export function hasActiveFilters(
 	currentFilters: Record<string, unknown>,
 	filterConfigs: Record<string, FilterConfig>,
 ): boolean {
+	const defaultValues = getDefaultFilterValues(filterConfigs);
 	return Object.entries(currentFilters).some(([key, value]) => {
 		const config = filterConfigs[key];
 		if (!config) return false;
@@ -119,6 +123,9 @@ export function hasActiveFilters(
 
 		// undefinedやnullは非アクティブ
 		if (value === undefined || value === null) return false;
+
+		// デフォルト値と同じ場合は非アクティブ
+		if (value === defaultValues[key]) return false;
 
 		// rangeフィルターの場合
 		if (config.type === "range" && typeof value === "object") {

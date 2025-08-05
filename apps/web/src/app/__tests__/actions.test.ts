@@ -124,7 +124,7 @@ describe("Homepage Actions", () => {
 				page: 1,
 				limit: 10,
 				sort: "newest",
-				excludeR18: false,
+				showR18: true,
 			});
 			expect(result).toEqual(mockWorks);
 			expect(result).toHaveLength(2);
@@ -147,7 +147,7 @@ describe("Homepage Actions", () => {
 				page: 1,
 				limit: 10,
 				sort: "newest",
-				excludeR18: false,
+				showR18: true,
 			});
 		});
 
@@ -166,7 +166,7 @@ describe("Homepage Actions", () => {
 				page: 1,
 				limit: 5,
 				sort: "newest",
-				excludeR18: false,
+				showR18: true,
 			});
 		});
 
@@ -260,7 +260,7 @@ describe("Homepage Actions", () => {
 				page: 1,
 				limit: 15,
 				sort: "newest",
-				excludeR18: false,
+				showR18: true,
 			});
 		});
 	});
@@ -694,7 +694,7 @@ describe("Homepage Actions", () => {
 				page: 1,
 				limit: 5,
 				sort: "newest",
-				excludeR18: false,
+				showR18: true,
 			});
 			expect(getVideoTitles).toHaveBeenCalledWith({ page: 1, limit: 5 });
 			expect(getRecentAudioButtons).toHaveBeenCalledWith(5);

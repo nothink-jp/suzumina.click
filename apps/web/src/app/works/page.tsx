@@ -16,12 +16,14 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
 	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
-	// excludeR18パラメータの処理（成人向けサイトのため、デフォルトでR18表示）
-	const excludeR18FromParams = params.excludeR18;
-	const shouldExcludeR18 =
-		excludeR18FromParams !== undefined ? excludeR18FromParams === "true" : false; // デフォルトでR18表示（成人向けサイト）
+	// showR18パラメータの処理
+	// URLパラメータが明示的に指定されている場合はその値を使用
+	// 指定されていない場合はundefinedとして、クライアント側で判断させる
+	const showR18FromParams = params.showR18;
+	const shouldShowR18 = showR18FromParams !== undefined ? showR18FromParams === "true" : undefined; // クライアント側で年齢確認状態に基づいて判断
 
 	// 初期データを取得
+	// showR18がundefinedの場合はデフォルトで全件取得（クライアント側でフィルタリング）
 	const result = await getWorks({
 		page: validPage,
 		limit: validLimit,
@@ -29,18 +31,10 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 		search,
 		category,
 		language,
-		excludeR18: shouldExcludeR18,
+		showR18: shouldShowR18 !== undefined ? shouldShowR18 : true, // undefinedの場合は全件取得
 	});
-	const { works: initialData, totalCount } = result;
 
-	return (
-		<WorksPageClient
-			searchParams={params}
-			initialData={initialData}
-			initialTotalCount={totalCount || 0}
-			initialPage={validPage}
-		/>
-	);
+	return <WorksPageClient initialData={result} />;
 }
 
 // メタデータ設定

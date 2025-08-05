@@ -18,7 +18,7 @@ export async function getLatestWorks(limit = 10, excludeR18 = false) {
 			page: 1,
 			limit: limit,
 			sort: "newest",
-			excludeR18: excludeR18,
+			showR18: !excludeR18, // excludeR18がtrueの時、showR18はfalseになる
 		});
 
 		if (result.works.length === 0) {
