@@ -149,7 +149,6 @@ export async function fetchCreatorWorksForConfigurableList(params: {
 		}
 
 		const workIds = worksSnapshot.docs.map((doc) => doc.id);
-		const totalCount = workIds.length;
 
 		// 作品詳細を取得（すべて取得してからフィルター・ソート・ページネーション）
 		const allWorks: WorkDocument[] = [];

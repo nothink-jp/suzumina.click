@@ -5,57 +5,72 @@
 import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// convertToWorkPlainObjectのモック実装を別関数として定義
+const mockConvertToWorkPlainObject = (data: any) => {
+	if (!data || !data.id || !data.productId) return null;
+	const creators = data.creators || {};
+	const mapCreators = (arr: any[] = []) =>
+		arr.map((item: any) => ({ id: item.id, name: item.name }));
+	const mapNames = (arr: any[] = []) => arr.map((item: any) => item.name);
+
+	return {
+		...data,
+		price: data.price || {
+			current: 0,
+			currency: "JPY",
+			formattedPrice: "¥0",
+			isFree: false,
+			isDiscounted: false,
+		},
+		rating: data.rating,
+		creators: {
+			voiceActors: mapCreators(creators.voice_by),
+			scenario: mapCreators(creators.scenario_by),
+			illustration: mapCreators(creators.illust_by),
+			music: mapCreators(creators.music_by),
+			others: mapCreators(creators.others),
+			voiceActorNames: mapNames(creators.voice_by),
+			scenarioNames: mapNames(creators.scenario_by),
+			illustrationNames: mapNames(creators.illust_by),
+			musicNames: mapNames(creators.music_by),
+			otherNames: mapNames(creators.others),
+		},
+		salesStatus: data.salesStatus || {
+			isOnSale: true,
+			isDiscounted: false,
+			isFree: false,
+			isSoldOut: false,
+			isReserveWork: false,
+			dlsiteplaySupported: false,
+		},
+		sampleImages: data.sampleImages || [],
+		genres: data.genres?.map((g: any) => g.name || g) || [],
+		customGenres: data.customGenres || [],
+		_computed: {
+			displayTitle: data.title,
+			displayCircle: data.circle,
+			displayCategory: data.category,
+			displayAgeRating: "全年齢",
+			displayReleaseDate: data.releaseDateDisplay || "",
+			relativeUrl: `/works/${data.productId}`,
+			isAdultContent: false,
+			isVoiceWork: data.category === "SOU",
+			isGameWork: false,
+			isMangaWork: false,
+			hasDiscount: false,
+			isNewRelease: false,
+			isPopular: false,
+			primaryLanguage: "ja",
+			availableLanguages: ["ja"],
+			searchableText: `${data.title} ${data.circle}`,
+			tags: data.tags || [],
+		},
+	};
+};
+
 // convertToWorkPlainObjectのモック
 vi.mock("@suzumina.click/shared-types", () => ({
-	convertToWorkPlainObject: vi.fn((data) => {
-		if (!data || !data.id || !data.productId) return null;
-		return {
-			...data,
-			price: data.price || {
-				current: 0,
-				currency: "JPY",
-				formattedPrice: "¥0",
-			},
-			rating: data.rating,
-			creators: data.creators || {
-				voiceActors: [],
-				scenario: [],
-				illustration: [],
-				music: [],
-				others: [],
-			},
-			salesStatus: data.salesStatus || {
-				isOnSale: true,
-				isDiscounted: false,
-				isFree: false,
-				isSoldOut: false,
-				isReserveWork: false,
-				dlsiteplaySupported: false,
-			},
-			sampleImages: data.sampleImages || [],
-			genres: data.genres || [],
-			customGenres: data.customGenres || [],
-			_computed: {
-				displayTitle: data.title,
-				displayCircle: data.circle,
-				displayCategory: data.category,
-				displayAgeRating: "全年齢",
-				displayReleaseDate: data.releaseDateDisplay || "",
-				relativeUrl: `/works/${data.productId}`,
-				isAdultContent: false,
-				isVoiceWork: data.category === "SOU",
-				isGameWork: false,
-				isMangaWork: false,
-				hasDiscount: false,
-				isNewRelease: false,
-				isPopular: false,
-				primaryLanguage: "ja",
-				availableLanguages: ["ja"],
-				searchableText: `${data.title} ${data.circle}`,
-				tags: data.tags || [],
-			},
-		};
-	}),
+	convertToWorkPlainObject: vi.fn(mockConvertToWorkPlainObject),
 	isValidCreatorId: vi.fn((id) => /^[A-Z]{2}\d{5,7}$/.test(id)),
 }));
 
@@ -64,8 +79,8 @@ const mockDoc = vi.fn();
 const mockGet = vi.fn();
 const mockGetAll = vi.fn();
 
-const mockCollection = vi.fn((_collectionName) => ({
-	doc: mockDoc,
+const mockCollection = vi.fn((collectionName) => ({
+	doc: collectionName === "works" ? vi.fn((id) => ({ id })) : mockDoc,
 }));
 
 // doc method setup
@@ -92,58 +107,33 @@ vi.mock("@/lib/firestore", () => ({
 import { fetchCreatorWorksForConfigurableList, getCreatorInfo } from "../actions";
 
 describe("Creator page server actions", () => {
+	// テスト用のヘルパー関数
+	const setupCreatorMocks = (creatorData: any, worksSnapshot: any) => {
+		// creatorドキュメントの存在チェック
+		mockGet.mockResolvedValueOnce({
+			exists: true,
+			data: () => creatorData,
+		});
+
+		// worksサブコレクションの取得
+		mockGet.mockResolvedValueOnce(worksSnapshot);
+	};
+
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Reset convertToWorkPlainObject mock to default implementation
-		vi.mocked(convertToWorkPlainObject).mockImplementation((data) => {
-			if (!data || !data.id || !data.productId) return null;
-			return {
-				...data,
-				price: data.price || {
-					current: 0,
-					currency: "JPY",
-					formattedPrice: "¥0",
-				},
-				rating: data.rating,
-				creators: data.creators || {
-					voiceActors: [],
-					scenario: [],
-					illustration: [],
-					music: [],
-					others: [],
-				},
-				salesStatus: data.salesStatus || {
-					isOnSale: true,
-					isDiscounted: false,
-					isFree: false,
-					isSoldOut: false,
-					isReserveWork: false,
-					dlsiteplaySupported: false,
-				},
-				sampleImages: data.sampleImages || [],
-				genres: data.genres || [],
-				customGenres: data.customGenres || [],
-				_computed: {
-					displayTitle: data.title,
-					displayCircle: data.circle,
-					displayCategory: data.category,
-					displayAgeRating: "全年齢",
-					displayReleaseDate: data.releaseDateDisplay || "",
-					relativeUrl: `/works/${data.productId}`,
-					isAdultContent: false,
-					isVoiceWork: data.category === "SOU",
-					isGameWork: false,
-					isMangaWork: false,
-					hasDiscount: false,
-					isNewRelease: false,
-					isPopular: false,
-					primaryLanguage: "ja",
-					availableLanguages: ["ja"],
-					searchableText: `${data.title} ${data.circle}`,
-					tags: data.tags || [],
-				},
-			};
+
+		// mockGetAll のデフォルト実装を設定
+		mockGetAll.mockImplementation((...workRefs) => {
+			return Promise.resolve(
+				workRefs.map((ref: any) => ({
+					exists: false,
+					id: ref.id || "unknown",
+					data: () => null,
+				})),
+			);
 		});
+		// Reset convertToWorkPlainObject mock to default implementation
+		vi.mocked(convertToWorkPlainObject).mockImplementation(mockConvertToWorkPlainObject);
 	});
 
 	describe("getCreatorInfo", () => {
@@ -159,19 +149,14 @@ describe("Creator page server actions", () => {
 				{ id: "RJ333333", data: () => ({ roles: ["illustration"] }) },
 			];
 
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({
-					exists: true,
-					data: () => mockCreatorData,
-				}),
-				ref: {
-					collection: vi.fn().mockReturnValue({
-						get: vi.fn().mockResolvedValue({
-							size: mockWorksData.length,
-							docs: mockWorksData,
-						}),
-					}),
-				},
+			mockGet.mockResolvedValueOnce({
+				exists: true,
+				data: () => mockCreatorData,
+			});
+
+			mockGet.mockResolvedValueOnce({
+				size: mockWorksData.length,
+				docs: mockWorksData,
 			});
 
 			const result = await getCreatorInfo("VA12345");
@@ -187,10 +172,8 @@ describe("Creator page server actions", () => {
 		});
 
 		it("存在しないクリエイターの場合はnullを返す", async () => {
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({
-					exists: false,
-				}),
+			mockGet.mockResolvedValueOnce({
+				exists: false,
 			});
 
 			const result = await getCreatorInfo("VA99999");
@@ -206,9 +189,7 @@ describe("Creator page server actions", () => {
 		});
 
 		it("エラー発生時はnullを返す", async () => {
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockRejectedValue(new Error("Firestore error")),
-			});
+			mockGet.mockRejectedValueOnce(new Error("Firestore error"));
 
 			const result = await getCreatorInfo("VA12345");
 
@@ -247,14 +228,10 @@ describe("Creator page server actions", () => {
 					releaseDateISO: "2025-01-15",
 					releaseDateDisplay: "2025年01月15日",
 					description: "魔法の世界",
-					genres: ["ファンタジー"],
+					genres: [{ name: "ファンタジー" }],
 					customGenres: ["魔法"],
 					creators: {
-						voiceActors: [{ name: "声優A", id: "VA001" }],
-						scenario: [],
-						illustration: [],
-						music: [],
-						others: [],
+						voice_by: [{ name: "声優A", id: "VA001" }],
 					},
 					salesStatus: {},
 					sampleImages: [],
@@ -279,15 +256,9 @@ describe("Creator page server actions", () => {
 					releaseDateISO: "2025-01-10",
 					releaseDateDisplay: "2025年01月10日",
 					description: "勇者の冒険",
-					genres: ["RPG"],
+					genres: [{ name: "RPG" }],
 					customGenres: ["冒険"],
-					creators: {
-						voiceActors: [],
-						scenario: [],
-						illustration: [],
-						music: [],
-						others: [],
-					},
+					creators: {},
 					salesStatus: {},
 					sampleImages: [],
 					ageRating: "general",
@@ -311,15 +282,9 @@ describe("Creator page server actions", () => {
 					releaseDateISO: "2025-01-05",
 					releaseDateDisplay: "2025年01月05日",
 					description: "日常の風景",
-					genres: ["日常系"],
+					genres: [{ name: "日常系" }],
 					customGenres: [],
-					creators: {
-						voiceActors: [],
-						scenario: [],
-						illustration: [],
-						music: [],
-						others: [],
-					},
+					creators: {},
 					salesStatus: {},
 					sampleImages: [],
 					ageRating: "general",
@@ -330,25 +295,23 @@ describe("Creator page server actions", () => {
 				},
 			];
 
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({
-					exists: true,
-					data: () => mockCreatorData,
-				}),
-				ref: {
-					collection: vi.fn().mockReturnValue({
-						get: vi.fn().mockResolvedValue(mockWorksSnapshot),
-					}),
-				},
-			});
+			setupCreatorMocks(mockCreatorData, mockWorksSnapshot);
 
-			mockGetAll.mockResolvedValue(
-				mockWorks.map((work) => ({
-					exists: true,
-					id: work.id,
-					data: () => work,
-				})),
-			);
+			// mockGetAllを設定 - workRefsの順番に従って対応するworkを返す
+			mockGetAll.mockImplementation((...workRefs) => {
+				return Promise.resolve(
+					workRefs.map((ref: any) => {
+						// refはdocメソッドから返されるオブジェクトで、idプロパティを持つ
+						const workId = ref.id;
+						const work = mockWorks.find((w) => w.id === workId);
+						return {
+							exists: !!work,
+							id: workId,
+							data: () => work || null,
+						};
+					}),
+				);
+			});
 
 			// "魔法"で検索
 			const result = await fetchCreatorWorksForConfigurableList({
@@ -394,11 +357,7 @@ describe("Creator page server actions", () => {
 					genres: [],
 					customGenres: [],
 					creators: {
-						voiceActors: [{ name: "田中太郎", id: "VA001" }],
-						scenario: [],
-						illustration: [],
-						music: [],
-						others: [],
+						voice_by: [{ name: "田中太郎", id: "VA001" }],
 					},
 					salesStatus: {},
 					sampleImages: [],
@@ -426,11 +385,7 @@ describe("Creator page server actions", () => {
 					genres: [],
 					customGenres: [],
 					creators: {
-						voiceActors: [{ name: "鈴木花子", id: "VA002" }],
-						scenario: [],
-						illustration: [],
-						music: [],
-						others: [],
+						voice_by: [{ name: "鈴木花子", id: "VA002" }],
 					},
 					salesStatus: {},
 					sampleImages: [],
@@ -442,25 +397,23 @@ describe("Creator page server actions", () => {
 				},
 			];
 
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({
-					exists: true,
-					data: () => mockCreatorData,
-				}),
-				ref: {
-					collection: vi.fn().mockReturnValue({
-						get: vi.fn().mockResolvedValue(mockWorksSnapshot),
-					}),
-				},
-			});
+			setupCreatorMocks(mockCreatorData, mockWorksSnapshot);
 
-			mockGetAll.mockResolvedValue(
-				mockWorks.map((work) => ({
-					exists: true,
-					id: work.id,
-					data: () => work,
-				})),
-			);
+			// mockGetAllを設定 - workRefsの順番に従って対応するworkを返す
+			mockGetAll.mockImplementation((...workRefs) => {
+				return Promise.resolve(
+					workRefs.map((ref: any) => {
+						// refはdocメソッドから返されるオブジェクトで、idプロパティを持つ
+						const workId = ref.id;
+						const work = mockWorks.find((w) => w.id === workId);
+						return {
+							exists: !!work,
+							id: workId,
+							data: () => work || null,
+						};
+					}),
+				);
+			});
 
 			// 声優名で検索
 			const result = await fetchCreatorWorksForConfigurableList({
@@ -504,13 +457,7 @@ describe("Creator page server actions", () => {
 				description: i < 3 ? "冒険の物語" : "日常の物語",
 				genres: [],
 				customGenres: [],
-				creators: {
-					voiceActors: [],
-					scenario: [],
-					illustration: [],
-					music: [],
-					others: [],
-				},
+				creators: {},
 				salesStatus: {},
 				sampleImages: [],
 				ageRating: "general",
@@ -520,25 +467,23 @@ describe("Creator page server actions", () => {
 				lastFetchedAt: `2025-01-${15 - i}T00:00:00.000Z`,
 			}));
 
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({
-					exists: true,
-					data: () => mockCreatorData,
-				}),
-				ref: {
-					collection: vi.fn().mockReturnValue({
-						get: vi.fn().mockResolvedValue(mockWorksSnapshot),
-					}),
-				},
-			});
+			setupCreatorMocks(mockCreatorData, mockWorksSnapshot);
 
-			mockGetAll.mockResolvedValue(
-				mockWorks.map((work) => ({
-					exists: true,
-					id: work.id,
-					data: () => work,
-				})),
-			);
+			// mockGetAllを設定 - workRefsの順番に従って対応するworkを返す
+			mockGetAll.mockImplementation((...workRefs) => {
+				return Promise.resolve(
+					workRefs.map((ref: any) => {
+						// refはdocメソッドから返されるオブジェクトで、idプロパティを持つ
+						const workId = ref.id;
+						const work = mockWorks.find((w) => w.id === workId);
+						return {
+							exists: !!work,
+							id: workId,
+							data: () => work || null,
+						};
+					}),
+				);
+			});
 
 			// "冒険"で検索、ページ2を取得（limit=2）
 			const result = await fetchCreatorWorksForConfigurableList({
@@ -599,25 +544,23 @@ describe("Creator page server actions", () => {
 				},
 			];
 
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({
-					exists: true,
-					data: () => mockCreatorData,
-				}),
-				ref: {
-					collection: vi.fn().mockReturnValue({
-						get: vi.fn().mockResolvedValue(mockWorksSnapshot),
-					}),
-				},
-			});
+			setupCreatorMocks(mockCreatorData, mockWorksSnapshot);
 
-			mockGetAll.mockResolvedValue(
-				mockWorks.map((work) => ({
-					exists: true,
-					id: work.id,
-					data: () => work,
-				})),
-			);
+			// mockGetAllを設定 - workRefsの順番に従って対応するworkを返す
+			mockGetAll.mockImplementation((...workRefs) => {
+				return Promise.resolve(
+					workRefs.map((ref: any) => {
+						// refはdocメソッドから返されるオブジェクトで、idプロパティを持つ
+						const workId = ref.id;
+						const work = mockWorks.find((w) => w.id === workId);
+						return {
+							exists: !!work,
+							id: workId,
+							data: () => work || null,
+						};
+					}),
+				);
+			});
 
 			const result = await fetchCreatorWorksForConfigurableList({
 				creatorId: "VA12345",
@@ -674,25 +617,23 @@ describe("Creator page server actions", () => {
 				},
 			];
 
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({
-					exists: true,
-					data: () => mockCreatorData,
-				}),
-				ref: {
-					collection: vi.fn().mockReturnValue({
-						get: vi.fn().mockResolvedValue(mockWorksSnapshot),
-					}),
-				},
-			});
+			setupCreatorMocks(mockCreatorData, mockWorksSnapshot);
 
-			mockGetAll.mockResolvedValue(
-				mockWorks.map((work) => ({
-					exists: true,
-					id: work.id,
-					data: () => work,
-				})),
-			);
+			// mockGetAllを設定 - workRefsの順番に従って対応するworkを返す
+			mockGetAll.mockImplementation((...workRefs) => {
+				return Promise.resolve(
+					workRefs.map((ref: any) => {
+						// refはdocメソッドから返されるオブジェクトで、idプロパティを持つ
+						const workId = ref.id;
+						const work = mockWorks.find((w) => w.id === workId);
+						return {
+							exists: !!work,
+							id: workId,
+							data: () => work || null,
+						};
+					}),
+				);
+			});
 
 			const result = await fetchCreatorWorksForConfigurableList({
 				creatorId: "VA12345",
@@ -712,10 +653,8 @@ describe("Creator page server actions", () => {
 		});
 
 		it("クリエイターが存在しない場合は空の結果を返す", async () => {
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockResolvedValue({
-					exists: false,
-				}),
+			mockGet.mockResolvedValueOnce({
+				exists: false,
 			});
 
 			const result = await fetchCreatorWorksForConfigurableList({
@@ -726,9 +665,7 @@ describe("Creator page server actions", () => {
 		});
 
 		it("エラー発生時は空の結果を返す", async () => {
-			mockDoc.mockReturnValue({
-				get: vi.fn().mockRejectedValue(new Error("Firestore error")),
-			});
+			mockGet.mockRejectedValueOnce(new Error("Firestore error"));
 
 			const result = await fetchCreatorWorksForConfigurableList({
 				creatorId: "VA12345",
