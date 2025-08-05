@@ -54,7 +54,7 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 		const result = await fetchCreatorWorksForConfigurableList(typedParams);
 		return {
 			items: result.works,
-			total: result.totalCount || 0,
+			total: result.filteredCount ?? result.totalCount ?? 0,
 		};
 	}, []);
 
