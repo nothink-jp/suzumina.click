@@ -17,12 +17,13 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
 	// showR18パラメータの処理
-	// サーバーサイドでは年齢確認状態が分からないため、
-	// URLパラメータが無い場合は保守的にfalseとする
+	// URLパラメータが明示的に指定されている場合はその値を使用
+	// 指定されていない場合はundefinedとして、クライアント側で判断させる
 	const showR18FromParams = params.showR18;
-	const shouldShowR18 = showR18FromParams !== undefined ? showR18FromParams === "true" : false;
+	const shouldShowR18 = showR18FromParams !== undefined ? showR18FromParams === "true" : undefined; // クライアント側で年齢確認状態に基づいて判断
 
 	// 初期データを取得
+	// showR18がundefinedの場合はデフォルトで全件取得（クライアント側でフィルタリング）
 	const result = await getWorks({
 		page: validPage,
 		limit: validLimit,
@@ -30,10 +31,10 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 		search,
 		category,
 		language,
-		showR18: shouldShowR18,
+		showR18: shouldShowR18 !== undefined ? shouldShowR18 : true, // undefinedの場合は全件取得
 	});
 
-	return <WorksPageClient searchParams={params} initialData={result} />;
+	return <WorksPageClient initialData={result} />;
 }
 
 // メタデータ設定
