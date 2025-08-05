@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCircleInfo, getCircleWithWorksWithPagination } from "./actions";
+import { fetchCircleWorksForConfigurableList, getCircleInfo } from "./actions";
 import { CirclePageClient } from "./components/CirclePageClient";
 
 export const dynamic = "force-dynamic";
@@ -34,26 +34,38 @@ export default async function CirclePage({ params, searchParams }: CirclePagePro
 	const { circleId } = await params;
 	const searchParamsData = await searchParams;
 
+	// サークル情報を取得
+	const circle = await getCircleInfo(circleId);
+	if (!circle) {
+		notFound();
+	}
+
+	// URLパラメータの処理
 	const pageNumber = Number.parseInt(searchParamsData.page as string, 10) || 1;
 	const validPage = Math.max(1, pageNumber);
 	const limitValue = Number.parseInt(searchParamsData.limit as string, 10) || 12;
 	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 	const sort = typeof searchParamsData.sort === "string" ? searchParamsData.sort : "newest";
+	const search = typeof searchParamsData.q === "string" ? searchParamsData.q : undefined;
 
-	const data = await getCircleWithWorksWithPagination(circleId, validPage, validLimit, sort);
-
-	if (!data) {
-		notFound();
-	}
-
-	const { circle, works, totalCount } = data;
+	// 初期データを取得
+	const result = await fetchCircleWorksForConfigurableList({
+		circleId,
+		page: validPage,
+		limit: validLimit,
+		sort,
+		search,
+	});
 
 	return (
 		<CirclePageClient
 			circle={circle}
-			initialData={works}
-			initialTotalCount={totalCount}
-			initialPage={validPage}
+			initialData={{
+				works: result.works,
+				totalCount: result.totalCount,
+				filteredCount: result.filteredCount,
+				hasMore: result.works.length === validLimit,
+			}}
 		/>
 	);
 }

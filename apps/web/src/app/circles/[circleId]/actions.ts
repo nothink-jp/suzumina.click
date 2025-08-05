@@ -93,78 +93,19 @@ export async function getCircleInfo(circleId: string): Promise<CirclePlainObject
 }
 
 /**
- * サークルの作品一覧を取得
- * @param circleId サークルID
- * @returns 作品一覧
- */
-export async function getCircleWorks(circleId: string): Promise<WorkPlainObject[]> {
-	// 入力検証
-	if (!isValidCircleId(circleId)) {
-		return [];
-	}
-
-	try {
-		const firestore = getFirestore();
-
-		// まずサークル情報を取得してサークル名を確認
-		const circleDoc = await firestore.collection("circles").doc(circleId).get();
-		if (!circleDoc.exists) {
-			return [];
-		}
-
-		const circleData = circleDoc.data() as CircleDocument;
-		const circleName = circleData.name;
-
-		// 全作品を取得してクライアント側でフィルタリング
-		// circleId が設定されていない作品もサークル名で検索
-		const allWorksSnapshot = await firestore.collection("works").get();
-
-		const allMatchingWorks = allWorksSnapshot.docs
-			.map((doc) => {
-				const data = doc.data();
-				return {
-					...data,
-					id: doc.id,
-				} as WorkDocument;
-			})
-			.filter((work) => {
-				// circleId が一致するか、circleId がない場合はサークル名で一致判定
-				return work.circleId === circleId || work.circle === circleName;
-			});
-
-		// WorkPlainObjectに変換
-		const works: WorkPlainObject[] = [];
-		for (const work of allMatchingWorks) {
-			const plainObject = convertToWorkPlainObject(work);
-			if (plainObject) {
-				works.push(plainObject);
-			}
-		}
-
-		// ソート
-		works.sort((a, b) => compareWorks(a, b, "newest"));
-
-		return works;
-	} catch (_error) {
-		// エラー発生時は空配列を返す
-		return [];
-	}
-}
-
-/**
- * ページネーション付きサークル作品取得
- * @param circleId サークルID
- * @param page ページ番号（1から開始）
- * @param limit 1ページあたりの件数
- * @param sort ソート順序（newest, oldest, popular, price_low, price_high）
+ * ConfigurableList用のサークル作品取得関数
+ * @param params パラメータ
  * @returns 作品一覧と総件数
  */
-export async function getCircleWorksWithPagination(
-	circleId: string,
-	page = 1,
-	limit = 12,
-	sort = "newest",
-): Promise<{ works: WorkPlainObject[]; totalCount: number }> {
+export async function fetchCircleWorksForConfigurableList(params: {
+	circleId: string;
+	page?: number;
+	limit?: number;
+	sort?: string;
+	search?: string;
+}): Promise<{ works: WorkPlainObject[]; totalCount: number; filteredCount?: number }> {
+	const { circleId, page = 1, limit = 12, sort = "newest", search } = params;
+
 	// 入力検証
 	if (!isValidCircleId(circleId)) {
 		return { works: [], totalCount: 0 };
@@ -198,7 +139,7 @@ export async function getCircleWorksWithPagination(
 				return work.circleId === circleId || work.circle === circleName;
 			});
 
-		// WorkPlainObjectに変換してからソート
+		// WorkPlainObjectに変換
 		const convertedWorks: WorkPlainObject[] = [];
 		for (const work of allMatchingWorks) {
 			const plainObject = convertToWorkPlainObject(work);
@@ -207,64 +148,40 @@ export async function getCircleWorksWithPagination(
 			}
 		}
 
+		// 検索フィルタリング
+		let filteredWorks = convertedWorks;
+		if (search) {
+			const searchLower = search.toLowerCase();
+			filteredWorks = convertedWorks.filter((work) => {
+				const searchableText = [
+					work.title,
+					work.description,
+					...(work.creators?.voiceActors?.map((actor) => actor.name) || []),
+					...(work.customGenres || []),
+					...(work.genres || []),
+				]
+					.filter(Boolean)
+					.join(" ")
+					.toLowerCase();
+				return searchableText.includes(searchLower);
+			});
+		}
+
 		// ソート処理
-		convertedWorks.sort((a, b) => compareWorks(a, b, sort));
+		filteredWorks.sort((a, b) => compareWorks(a, b, sort));
 
 		// ページネーション適用
 		const startIndex = (page - 1) * limit;
 		const endIndex = startIndex + limit;
-		const works = convertedWorks.slice(startIndex, endIndex);
+		const paginatedWorks = filteredWorks.slice(startIndex, endIndex);
 
-		return { works, totalCount: convertedWorks.length };
+		return {
+			works: paginatedWorks,
+			totalCount: convertedWorks.length,
+			filteredCount: search ? filteredWorks.length : undefined,
+		};
 	} catch (_error) {
 		// エラー発生時は空配列を返す
 		return { works: [], totalCount: 0 };
 	}
-}
-
-/**
- * サークル情報と作品一覧を同時に取得（ページネーション付き）
- * @param circleId サークルID
- * @param page ページ番号（1から開始）
- * @param limit 1ページあたりの件数
- * @param sort ソート順序（newest, oldest, popular, price_low, price_high）
- * @returns サークル情報と作品一覧、存在しない場合はnull
- */
-export async function getCircleWithWorksWithPagination(
-	circleId: string,
-	page = 1,
-	limit = 12,
-	sort = "newest",
-): Promise<{
-	circle: CirclePlainObject;
-	works: WorkPlainObject[];
-	totalCount: number;
-} | null> {
-	const [circle, worksData] = await Promise.all([
-		getCircleInfo(circleId),
-		getCircleWorksWithPagination(circleId, page, limit, sort),
-	]);
-
-	if (!circle) {
-		return null;
-	}
-
-	return { circle, works: worksData.works, totalCount: worksData.totalCount };
-}
-
-/**
- * サークル情報と作品一覧を同時に取得（後方互換性のため残す）
- * @param circleId サークルID
- * @returns サークル情報と作品一覧、存在しない場合はnull
- */
-export async function getCircleWithWorks(
-	circleId: string,
-): Promise<{ circle: CirclePlainObject; works: WorkPlainObject[] } | null> {
-	const [circle, works] = await Promise.all([getCircleInfo(circleId), getCircleWorks(circleId)]);
-
-	if (!circle) {
-		return null;
-	}
-
-	return { circle, works };
 }
