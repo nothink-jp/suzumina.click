@@ -118,87 +118,19 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo
 }
 
 /**
- * クリエイターの作品一覧を取得
- * @param creatorId クリエイターID
- * @returns 作品一覧
- */
-export async function getCreatorWorks(creatorId: string): Promise<WorkPlainObject[]> {
-	// 入力検証
-	if (!isValidCreatorId(creatorId)) {
-		return [];
-	}
-
-	try {
-		// 新しいcreatorsコレクションから作品IDを取得
-		const firestore = getFirestore();
-		const creatorDoc = await firestore.collection("creators").doc(creatorId).get();
-
-		if (!creatorDoc.exists) {
-			return [];
-		}
-
-		// worksサブコレクションから作品情報を取得
-		const worksSnapshot = await creatorDoc.ref.collection("works").get();
-
-		if (worksSnapshot.empty) {
-			return [];
-		}
-
-		const workIds = worksSnapshot.docs.map((doc) => doc.id);
-
-		// 作品詳細を取得（バッチ処理）
-		const allWorks: WorkDocument[] = [];
-
-		// Firestoreの whereIn 制限により、一度に10件まで
-		for (let i = 0; i < workIds.length; i += 10) {
-			const batch = workIds.slice(i, i + 10);
-			const workRefs = batch.map((id) => firestore.collection("works").doc(id));
-			const workDocs = await firestore.getAll(...workRefs);
-
-			for (const doc of workDocs) {
-				if (doc.exists) {
-					const data = doc.data();
-					allWorks.push({
-						...data,
-						id: doc.id,
-					} as WorkDocument);
-				}
-			}
-		}
-
-		// 登録日でソート（新しい順）
-		allWorks.sort((a, b) => compareWorks(a as ExtendedWorkData, b as ExtendedWorkData, "newest"));
-
-		// WorkPlainObjectに変換
-		const works: WorkPlainObject[] = [];
-		for (const work of allWorks) {
-			const plainObject = convertToWorkPlainObject(work);
-			if (plainObject) {
-				works.push(plainObject);
-			}
-		}
-
-		return works;
-	} catch (_error) {
-		// エラー発生時は空配列を返す
-		return [];
-	}
-}
-
-/**
- * ページネーション付きクリエイター作品取得
- * @param creatorId クリエイターID
- * @param page ページ番号（1から開始）
- * @param limit 1ページあたりの件数
- * @param sort ソート順序（newest, oldest, popular, price_low, price_high）
+ * ConfigurableList用のクリエイター作品取得関数
+ * @param params パラメータ
  * @returns 作品一覧と総件数
  */
-export async function getCreatorWorksWithPagination(
-	creatorId: string,
-	page = 1,
-	limit = 12,
-	sort = "newest",
-): Promise<{ works: WorkPlainObject[]; totalCount: number }> {
+export async function fetchCreatorWorksForConfigurableList(params: {
+	creatorId: string;
+	page?: number;
+	limit?: number;
+	sort?: string;
+	search?: string;
+}): Promise<{ works: WorkPlainObject[]; totalCount: number; filteredCount?: number }> {
+	const { creatorId, page = 1, limit = 12, sort = "newest", search } = params;
+
 	// 入力検証
 	if (!isValidCreatorId(creatorId)) {
 		return { works: [], totalCount: 0 };
@@ -223,7 +155,7 @@ export async function getCreatorWorksWithPagination(
 		const workIds = worksSnapshot.docs.map((doc) => doc.id);
 		const totalCount = workIds.length;
 
-		// 作品詳細を取得（すべて取得してからソート・ページネーション）
+		// 作品詳細を取得（すべて取得してからフィルター・ソート・ページネーション）
 		const allWorks: WorkDocument[] = [];
 
 		// Firestoreの whereIn 制限により、一度に10件まで
@@ -243,13 +175,42 @@ export async function getCreatorWorksWithPagination(
 			}
 		}
 
+		// 検索フィルター適用
+		let filteredWorks = allWorks;
+		let filteredCount: number | undefined;
+
+		if (search) {
+			const searchLower = search.toLowerCase();
+			filteredWorks = allWorks.filter((work) => {
+				// タイトルで検索
+				if (work.title?.toLowerCase().includes(searchLower)) return true;
+
+				// 説明で検索
+				if (work.description?.toLowerCase().includes(searchLower)) return true;
+
+				// 声優名で検索
+				if (work.creators?.voice_by?.some((va) => va.name?.toLowerCase().includes(searchLower))) {
+					return true;
+				}
+
+				// ジャンルで検累
+				if (work.genres?.some((genre) => genre.name?.toLowerCase().includes(searchLower)))
+					return true;
+				if (work.customGenres?.some((genre) => genre.toLowerCase().includes(searchLower)))
+					return true;
+
+				return false;
+			});
+			filteredCount = filteredWorks.length;
+		}
+
 		// ソート処理
-		allWorks.sort((a, b) => compareWorks(a as ExtendedWorkData, b as ExtendedWorkData, sort));
+		filteredWorks.sort((a, b) => compareWorks(a as ExtendedWorkData, b as ExtendedWorkData, sort));
 
 		// ページネーション適用
 		const startIndex = (page - 1) * limit;
 		const endIndex = startIndex + limit;
-		const paginatedFirestoreWorks = allWorks.slice(startIndex, endIndex);
+		const paginatedFirestoreWorks = filteredWorks.slice(startIndex, endIndex);
 
 		// WorkPlainObjectに変換
 		const works: WorkPlainObject[] = [];
@@ -260,59 +221,9 @@ export async function getCreatorWorksWithPagination(
 			}
 		}
 
-		return { works, totalCount };
+		return { works, totalCount, filteredCount };
 	} catch (_error) {
 		// エラー発生時は空配列を返す
 		return { works: [], totalCount: 0 };
 	}
-}
-
-/**
- * クリエイター情報と作品一覧を同時に取得（ページネーション付き）
- * @param creatorId クリエイターID
- * @param page ページ番号（1から開始）
- * @param limit 1ページあたりの件数
- * @param sort ソート順序（newest, oldest, popular, price_low, price_high）
- * @returns クリエイター情報と作品一覧、存在しない場合はnull
- */
-export async function getCreatorWithWorksWithPagination(
-	creatorId: string,
-	page = 1,
-	limit = 12,
-	sort = "newest",
-): Promise<{
-	creator: CreatorPageInfo;
-	works: WorkPlainObject[];
-	totalCount: number;
-} | null> {
-	const [creator, worksData] = await Promise.all([
-		getCreatorInfo(creatorId),
-		getCreatorWorksWithPagination(creatorId, page, limit, sort),
-	]);
-
-	if (!creator) {
-		return null;
-	}
-
-	return { creator, works: worksData.works, totalCount: worksData.totalCount };
-}
-
-/**
- * クリエイター情報と作品一覧を同時に取得（後方互換性のため残す）
- * @param creatorId クリエイターID
- * @returns クリエイター情報と作品一覧、存在しない場合はnull
- */
-export async function getCreatorWithWorks(
-	creatorId: string,
-): Promise<{ creator: CreatorPageInfo; works: WorkPlainObject[] } | null> {
-	const [creator, works] = await Promise.all([
-		getCreatorInfo(creatorId),
-		getCreatorWorks(creatorId),
-	]);
-
-	if (!creator) {
-		return null;
-	}
-
-	return { creator, works };
 }

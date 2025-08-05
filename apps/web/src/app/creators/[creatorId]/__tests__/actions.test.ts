@@ -2,520 +2,739 @@
  * Creator page server actions のテストスイート
  */
 
+import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // convertToWorkPlainObjectのモック
 vi.mock("@suzumina.click/shared-types", () => ({
-	convertToWorkPlainObject: vi.fn((data) => ({
-		...data,
-		price: {
-			current: data.currentPrice || data.price?.current || 0,
-			currency: data.currency || "JPY",
-			formattedPrice: `¥${(data.currentPrice || data.price?.current || 0).toLocaleString()}`,
-		},
-		rating: data.ratingStars
-			? {
-					stars: data.ratingStars,
-					count: data.ratingCount || 0,
-				}
-			: data.rating,
-		creators: {
-			voiceActors: data.voiceActors || [],
-			scenario: data.scenario || [],
-			illustration: data.illustration || [],
-			music: data.music || [],
-			others: data.author || [],
-		},
-		salesStatus: {
-			isOnSale: true,
-			isDiscounted: false,
-			isFree: false,
-			isSoldOut: false,
-			isReserveWork: false,
-			dlsiteplaySupported: false,
-		},
-		sampleImages: [],
-		genres: data.genres || [],
-		customGenres: [],
-		_computed: {
-			displayTitle: data.title,
-			displayCircle: data.circle,
-			displayCategory: data.category,
-			displayAgeRating: "全年齢",
-			displayReleaseDate: data.releaseDateDisplay || "",
-			relativeUrl: `/works/${data.productId}`,
-			isAdultContent: false,
-			isVoiceWork: data.category === "SOU",
-			isGameWork: false,
-			isMangaWork: false,
-			hasDiscount: false,
-			isNewRelease: false,
-			isPopular: false,
-			primaryLanguage: "ja",
-			availableLanguages: ["ja"],
-			searchableText: `${data.title} ${data.circle}`,
-			tags: data.tags || [],
-		},
-	})),
-	isValidCreatorId: vi.fn((id) => id && id.length > 0),
+	convertToWorkPlainObject: vi.fn((data) => {
+		if (!data || !data.id || !data.productId) return null;
+		return {
+			...data,
+			price: data.price || {
+				current: 0,
+				currency: "JPY",
+				formattedPrice: "¥0",
+			},
+			rating: data.rating,
+			creators: data.creators || {
+				voiceActors: [],
+				scenario: [],
+				illustration: [],
+				music: [],
+				others: [],
+			},
+			salesStatus: data.salesStatus || {
+				isOnSale: true,
+				isDiscounted: false,
+				isFree: false,
+				isSoldOut: false,
+				isReserveWork: false,
+				dlsiteplaySupported: false,
+			},
+			sampleImages: data.sampleImages || [],
+			genres: data.genres || [],
+			customGenres: data.customGenres || [],
+			_computed: {
+				displayTitle: data.title,
+				displayCircle: data.circle,
+				displayCategory: data.category,
+				displayAgeRating: "全年齢",
+				displayReleaseDate: data.releaseDateDisplay || "",
+				relativeUrl: `/works/${data.productId}`,
+				isAdultContent: false,
+				isVoiceWork: data.category === "SOU",
+				isGameWork: false,
+				isMangaWork: false,
+				hasDiscount: false,
+				isNewRelease: false,
+				isPopular: false,
+				primaryLanguage: "ja",
+				availableLanguages: ["ja"],
+				searchableText: `${data.title} ${data.circle}`,
+				tags: data.tags || [],
+			},
+		};
+	}),
+	isValidCreatorId: vi.fn((id) => /^[A-Z]{2}\d{5,7}$/.test(id)),
 }));
 
 // Firestore モック
-const mockWhere = vi.fn();
-const mockOrderBy = vi.fn();
-const mockLimit = vi.fn();
+const mockDoc = vi.fn();
 const mockGet = vi.fn();
 const mockGetAll = vi.fn();
-const mockSubCollectionGet = vi.fn();
 
-const mockDoc = vi.fn();
-const mockSubCollection = vi.fn();
-const mockCollection = vi.fn();
-
-// Configure subcollection mock
-mockSubCollection.mockImplementation(() => ({
-	get: mockSubCollectionGet,
+const mockCollection = vi.fn((_collectionName) => ({
+	doc: mockDoc,
 }));
 
+// doc method setup
+mockDoc.mockReturnValue({
+	get: mockGet,
+	collection: vi.fn().mockReturnValue({
+		get: mockGet,
+	}),
+	ref: {
+		collection: vi.fn().mockReturnValue({
+			get: mockGet,
+		}),
+	},
+});
+
 vi.mock("@/lib/firestore", () => ({
-	getFirestore: vi.fn(() => ({
+	getFirestore: () => ({
 		collection: mockCollection,
 		getAll: mockGetAll,
-		doc: mockDoc,
-	})),
+	}),
 }));
 
 // テスト対象のインポート（モック設定後）
-const { getCreatorInfo, getCreatorWorks } = await import("../actions");
+import { fetchCreatorWorksForConfigurableList, getCreatorInfo } from "../actions";
 
 describe("Creator page server actions", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Reset mock implementations to ensure proper chaining
-		const mockQuery = {
-			orderBy: mockOrderBy,
-			limit: mockLimit,
-			get: mockGet,
-		};
-
-		mockWhere.mockReturnValue(mockQuery);
-		mockOrderBy.mockReturnValue(mockQuery);
-		mockLimit.mockReturnValue(mockQuery);
-
-		// Reset mockDoc to default implementation
-		mockDoc.mockImplementation((docId) => ({
-			id: docId,
-			ref: {
-				collection: mockSubCollection,
-			},
-			get: mockGet,
-			data: () => ({}),
-			exists: false,
-		}));
-
-		// Reset collection mock
-		mockCollection.mockImplementation((collectionName) => {
-			if (collectionName === "creators") {
-				return {
-					doc: mockDoc,
-				};
-			}
-			if (collectionName === "works") {
-				return {
-					doc: vi.fn((id) => ({
-						id,
-						get: vi.fn(),
-					})),
-				};
-			}
+		// Reset convertToWorkPlainObject mock to default implementation
+		vi.mocked(convertToWorkPlainObject).mockImplementation((data) => {
+			if (!data || !data.id || !data.productId) return null;
 			return {
-				where: mockWhere,
-				orderBy: mockOrderBy,
-				limit: mockLimit,
-				get: mockGet,
-				getAll: mockGetAll,
-				doc: mockDoc,
+				...data,
+				price: data.price || {
+					current: 0,
+					currency: "JPY",
+					formattedPrice: "¥0",
+				},
+				rating: data.rating,
+				creators: data.creators || {
+					voiceActors: [],
+					scenario: [],
+					illustration: [],
+					music: [],
+					others: [],
+				},
+				salesStatus: data.salesStatus || {
+					isOnSale: true,
+					isDiscounted: false,
+					isFree: false,
+					isSoldOut: false,
+					isReserveWork: false,
+					dlsiteplaySupported: false,
+				},
+				sampleImages: data.sampleImages || [],
+				genres: data.genres || [],
+				customGenres: data.customGenres || [],
+				_computed: {
+					displayTitle: data.title,
+					displayCircle: data.circle,
+					displayCategory: data.category,
+					displayAgeRating: "全年齢",
+					displayReleaseDate: data.releaseDateDisplay || "",
+					relativeUrl: `/works/${data.productId}`,
+					isAdultContent: false,
+					isVoiceWork: data.category === "SOU",
+					isGameWork: false,
+					isMangaWork: false,
+					hasDiscount: false,
+					isNewRelease: false,
+					isPopular: false,
+					primaryLanguage: "ja",
+					availableLanguages: ["ja"],
+					searchableText: `${data.title} ${data.circle}`,
+					tags: data.tags || [],
+				},
 			};
 		});
 	});
 
 	describe("getCreatorInfo", () => {
-		it("存在するクリエイター情報を正しく集約する", async () => {
+		it("存在するクリエイター情報を正しく取得する", async () => {
 			const mockCreatorData = {
-				creatorId: "creator123",
 				name: "テストクリエイター",
-				primaryRole: "voice",
-				createdAt: { seconds: 1234567890, nanoseconds: 0 },
-				updatedAt: { seconds: 1234567890, nanoseconds: 0 },
+				primaryRole: "voiceActor",
 			};
 
-			const mockWorkRelations = [
-				{
-					workId: "RJ111111",
-					roles: ["voice"],
-					circleId: "RG11111",
-				},
-				{
-					workId: "RJ222222",
-					roles: ["illustration"],
-					circleId: "RG22222",
-				},
-				{
-					workId: "RJ333333",
-					roles: ["voice", "scenario"],
-					circleId: "RG33333",
-				},
+			const mockWorksData = [
+				{ id: "RJ111111", data: () => ({ roles: ["voiceActor", "scenario"] }) },
+				{ id: "RJ222222", data: () => ({ roles: ["voiceActor"] }) },
+				{ id: "RJ333333", data: () => ({ roles: ["illustration"] }) },
 			];
 
-			// クリエイタードキュメントの取得
-			mockGet.mockResolvedValueOnce({
-				exists: true,
-				data: () => mockCreatorData,
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue({
+					exists: true,
+					data: () => mockCreatorData,
+				}),
 				ref: {
-					collection: mockSubCollection,
+					collection: vi.fn().mockReturnValue({
+						get: vi.fn().mockResolvedValue({
+							size: mockWorksData.length,
+							docs: mockWorksData,
+						}),
+					}),
 				},
 			});
 
-			// worksサブコレクションの取得
-			mockSubCollectionGet.mockResolvedValueOnce({
-				empty: false,
-				size: 3,
-				docs: mockWorkRelations.map((relation) => ({
-					data: () => relation,
-				})),
-			});
-
-			const result = await getCreatorInfo("creator123");
+			const result = await getCreatorInfo("VA12345");
 
 			expect(result).toEqual({
-				id: "creator123",
+				id: "VA12345",
 				name: "テストクリエイター",
-				types: ["voice", "illustration", "scenario"], // 重複なし、ユニークな値
+				types: ["voiceActor", "scenario", "illustration"],
 				workCount: 3,
 			});
-			expect(mockDoc).toHaveBeenCalledWith("creator123");
+			expect(mockCollection).toHaveBeenCalledWith("creators");
+			expect(mockDoc).toHaveBeenCalledWith("VA12345");
 		});
 
-		it("クリエイターが存在しない場合はnullを返す", async () => {
-			mockGet.mockResolvedValueOnce({
-				exists: false,
+		it("存在しないクリエイターの場合はnullを返す", async () => {
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue({
+					exists: false,
+				}),
 			});
 
-			const result = await getCreatorInfo("nonexistent");
+			const result = await getCreatorInfo("VA99999");
 
 			expect(result).toBeNull();
 		});
 
 		it("無効なクリエイターIDの場合はnullを返す", async () => {
-			const result = await getCreatorInfo("");
+			const result = await getCreatorInfo("INVALID_ID");
 
 			expect(result).toBeNull();
-			expect(mockDoc).not.toHaveBeenCalled();
+			expect(mockCollection).not.toHaveBeenCalled();
 		});
 
 		it("エラー発生時はnullを返す", async () => {
-			mockGet.mockRejectedValue(new Error("Firestore error"));
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockRejectedValue(new Error("Firestore error")),
+			});
 
-			const result = await getCreatorInfo("creator123");
+			const result = await getCreatorInfo("VA12345");
 
 			expect(result).toBeNull();
 		});
 	});
 
-	describe("getCreatorWorks", () => {
-		// biome-ignore lint/suspicious/noSkippedTests: Complex mock setup with subcollection structure
-		it.skip("クリエイターの作品一覧を正しく取得する", async () => {
-			// Note: This test is skipped due to complex mock setup with subcollection structure
-			// The implementation has been verified to work correctly in production
+	describe("fetchCreatorWorksForConfigurableList", () => {
+		it("検索機能が正しく動作する", async () => {
 			const mockCreatorData = {
-				creatorId: "creator123",
 				name: "テストクリエイター",
 			};
 
-			const mockWorkRelations = [
-				{ workId: "RJ111111", roles: ["voice"], circleId: "RG11111" },
-				{ workId: "RJ222222", roles: ["voice"], circleId: "RG22222" },
+			const mockWorksSnapshot = {
+				empty: false,
+				docs: [
+					{ id: "RJ111111", data: () => ({}) },
+					{ id: "RJ222222", data: () => ({}) },
+					{ id: "RJ333333", data: () => ({}) },
+				],
+			};
+
+			const mockWorks = [
+				{
+					id: "RJ111111",
+					productId: "RJ111111",
+					title: "魔法少女の冒険",
+					circle: "テストサークル",
+					circleId: "RG12345",
+					price: { current: 1100, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-15",
+					releaseDateISO: "2025-01-15",
+					releaseDateDisplay: "2025年01月15日",
+					description: "魔法の世界",
+					genres: ["ファンタジー"],
+					customGenres: ["魔法"],
+					creators: {
+						voiceActors: [{ name: "声優A", id: "VA001" }],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: {},
+					sampleImages: [],
+					ageRating: "general",
+					updateDate: "2025-01-15",
+					createdAt: "2025-01-15T00:00:00.000Z",
+					updatedAt: "2025-01-15T00:00:00.000Z",
+					lastFetchedAt: "2025-01-15T00:00:00.000Z",
+				},
+				{
+					id: "RJ222222",
+					productId: "RJ222222",
+					title: "勇者の物語",
+					circle: "テストサークル",
+					circleId: "RG12345",
+					price: { current: 2200, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-10",
+					releaseDateISO: "2025-01-10",
+					releaseDateDisplay: "2025年01月10日",
+					description: "勇者の冒険",
+					genres: ["RPG"],
+					customGenres: ["冒険"],
+					creators: {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: {},
+					sampleImages: [],
+					ageRating: "general",
+					updateDate: "2025-01-10",
+					createdAt: "2025-01-10T00:00:00.000Z",
+					updatedAt: "2025-01-10T00:00:00.000Z",
+					lastFetchedAt: "2025-01-10T00:00:00.000Z",
+				},
+				{
+					id: "RJ333333",
+					productId: "RJ333333",
+					title: "日常系作品",
+					circle: "テストサークル",
+					circleId: "RG12345",
+					price: { current: 3300, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-05",
+					releaseDateISO: "2025-01-05",
+					releaseDateDisplay: "2025年01月05日",
+					description: "日常の風景",
+					genres: ["日常系"],
+					customGenres: [],
+					creators: {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: {},
+					sampleImages: [],
+					ageRating: "general",
+					updateDate: "2025-01-05",
+					createdAt: "2025-01-05T00:00:00.000Z",
+					updatedAt: "2025-01-05T00:00:00.000Z",
+					lastFetchedAt: "2025-01-05T00:00:00.000Z",
+				},
 			];
+
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue({
+					exists: true,
+					data: () => mockCreatorData,
+				}),
+				ref: {
+					collection: vi.fn().mockReturnValue({
+						get: vi.fn().mockResolvedValue(mockWorksSnapshot),
+					}),
+				},
+			});
+
+			mockGetAll.mockResolvedValue(
+				mockWorks.map((work) => ({
+					exists: true,
+					id: work.id,
+					data: () => work,
+				})),
+			);
+
+			// "魔法"で検索
+			const result = await fetchCreatorWorksForConfigurableList({
+				creatorId: "VA12345",
+				search: "魔法",
+			});
+
+			expect(result.totalCount).toBe(3); // 全作品数
+			expect(result.filteredCount).toBe(1); // フィルター後の作品数
+			expect(result.works).toHaveLength(1);
+			expect(result.works[0].title).toBe("魔法少女の冒険");
+		});
+
+		it("声優名で検索できる", async () => {
+			const mockCreatorData = {
+				name: "テストクリエイター",
+			};
+
+			const mockWorksSnapshot = {
+				empty: false,
+				docs: [
+					{ id: "RJ111111", data: () => ({}) },
+					{ id: "RJ222222", data: () => ({}) },
+				],
+			};
 
 			const mockWorks = [
 				{
 					id: "RJ111111",
 					productId: "RJ111111",
 					title: "作品1",
-					circle: "サークルA",
-					circleId: "RG11111",
-					priceInJPY: 1100,
-					registDate: { toDate: () => new Date("2025-01-15") },
+					circle: "テストサークル",
+					circleId: "RG12345",
+					price: { current: 1100, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-15",
 					releaseDateISO: "2025-01-15",
-					images: { main: "image1.jpg", list: "list1.jpg" },
-					options: { genre: ["ボイス・ASMR"], aiUsed: false },
-					tags: ["tag1"],
-					rating: { stars: 45, count: 5 },
+					releaseDateDisplay: "2025年01月15日",
+					description: "",
+					genres: [],
+					customGenres: [],
+					creators: {
+						voiceActors: [{ name: "田中太郎", id: "VA001" }],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: {},
+					sampleImages: [],
+					ageRating: "general",
+					updateDate: "2025-01-15",
+					createdAt: "2025-01-15T00:00:00.000Z",
+					updatedAt: "2025-01-15T00:00:00.000Z",
+					lastFetchedAt: "2025-01-15T00:00:00.000Z",
 				},
 				{
 					id: "RJ222222",
 					productId: "RJ222222",
 					title: "作品2",
-					circle: "サークルB",
-					circleId: "RG22222",
-					priceInJPY: 2200,
-					registDate: { toDate: () => new Date("2025-01-10") },
+					circle: "テストサークル",
+					circleId: "RG12345",
+					price: { current: 2200, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-10",
 					releaseDateISO: "2025-01-10",
-					images: { main: "image2.jpg", list: "list2.jpg" },
-					options: { genre: ["音声作品"], aiUsed: true },
-					tags: ["tag2"],
-					rating: { stars: 40, count: 3 },
+					releaseDateDisplay: "2025年01月10日",
+					description: "",
+					genres: [],
+					customGenres: [],
+					creators: {
+						voiceActors: [{ name: "鈴木花子", id: "VA002" }],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: {},
+					sampleImages: [],
+					ageRating: "general",
+					updateDate: "2025-01-10",
+					createdAt: "2025-01-10T00:00:00.000Z",
+					updatedAt: "2025-01-10T00:00:00.000Z",
+					lastFetchedAt: "2025-01-10T00:00:00.000Z",
 				},
 			];
 
-			// クリエイタードキュメントの取得
-			// まずmockDocが正しいドキュメント参照を返すようにする
-			const creatorDocSnapshot = {
-				exists: true,
-				data: () => mockCreatorData,
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue({
+					exists: true,
+					data: () => mockCreatorData,
+				}),
 				ref: {
-					collection: mockSubCollection,
-				},
-			};
-
-			const creatorDocRef = {
-				id: "creator123",
-				get: vi.fn().mockResolvedValueOnce(creatorDocSnapshot),
-			};
-
-			// Ensure mockDoc is properly reset and then set for this test
-			mockDoc.mockReset();
-			mockDoc.mockReturnValue(creatorDocRef);
-
-			// worksサブコレクションの取得
-			mockSubCollectionGet.mockResolvedValueOnce({
-				empty: false,
-				docs: mockWorkRelations.map((relation) => ({
-					id: relation.workId,
-					data: () => relation,
-				})),
-			});
-
-			// 作品取得のモック（getAll）
-			// getAll receives document references and returns document snapshots
-			mockGetAll.mockImplementation((...docRefs) => {
-				return Promise.resolve(
-					docRefs.map((ref) => {
-						const work = mockWorks.find((w) => w.id === ref.id);
-						return {
-							exists: !!work,
-							id: ref.id,
-							data: () => work,
-						};
+					collection: vi.fn().mockReturnValue({
+						get: vi.fn().mockResolvedValue(mockWorksSnapshot),
 					}),
-				);
+				},
 			});
 
-			const result = await getCreatorWorks("creator123");
+			mockGetAll.mockResolvedValue(
+				mockWorks.map((work) => ({
+					exists: true,
+					id: work.id,
+					data: () => work,
+				})),
+			);
 
-			expect(result).toHaveLength(2);
-			expect(result[0]).toMatchObject({
-				id: "RJ111111",
-				title: "作品1",
+			// 声優名で検索
+			const result = await fetchCreatorWorksForConfigurableList({
+				creatorId: "VA12345",
+				search: "田中",
 			});
-			expect(result[1]).toMatchObject({
-				id: "RJ222222",
-				title: "作品2",
-			});
-			expect(mockDoc).toHaveBeenCalledWith("creator123");
-			expect(mockGetAll).toHaveBeenCalled();
+
+			expect(result.filteredCount).toBe(1);
+			expect(result.works).toHaveLength(1);
+			expect(result.works[0].creators.voiceActors[0].name).toBe("田中太郎");
 		});
 
-		it("作品が見つからない場合は空配列を返す", async () => {
-			const creatorDocRef = {
-				id: "creator999",
-				get: vi.fn().mockResolvedValueOnce({
+		it("ページネーションと検索を組み合わせて正しく動作する", async () => {
+			const mockCreatorData = {
+				name: "テストクリエイター",
+			};
+
+			const mockWorksSnapshot = {
+				empty: false,
+				docs: Array.from({ length: 5 }, (_, i) => ({
+					id: `RJ${i + 1}11111`,
+					data: () => ({}),
+				})),
+			};
+
+			// 5つの作品（3つが"冒険"を含む）
+			const mockWorks = Array.from({ length: 5 }, (_, i) => ({
+				id: `RJ${i + 1}11111`,
+				productId: `RJ${i + 1}11111`,
+				title: i < 3 ? `冒険作品${i + 1}` : `日常作品${i - 2}`,
+				circle: "テストサークル",
+				circleId: "RG12345",
+				price: { current: (i + 1) * 1000, currency: "JPY" },
+				category: "SOU",
+				workType: "SOU",
+				thumbnailUrl: "https://example.com/thumb.jpg",
+				workUrl: "https://example.com/work.html",
+				registDate: `2025-01-${15 - i}`,
+				releaseDateISO: `2025-01-${15 - i}`,
+				releaseDateDisplay: `2025年01月${15 - i}日`,
+				description: i < 3 ? "冒険の物語" : "日常の物語",
+				genres: [],
+				customGenres: [],
+				creators: {
+					voiceActors: [],
+					scenario: [],
+					illustration: [],
+					music: [],
+					others: [],
+				},
+				salesStatus: {},
+				sampleImages: [],
+				ageRating: "general",
+				updateDate: `2025-01-${15 - i}`,
+				createdAt: `2025-01-${15 - i}T00:00:00.000Z`,
+				updatedAt: `2025-01-${15 - i}T00:00:00.000Z`,
+				lastFetchedAt: `2025-01-${15 - i}T00:00:00.000Z`,
+			}));
+
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue({
+					exists: true,
+					data: () => mockCreatorData,
+				}),
+				ref: {
+					collection: vi.fn().mockReturnValue({
+						get: vi.fn().mockResolvedValue(mockWorksSnapshot),
+					}),
+				},
+			});
+
+			mockGetAll.mockResolvedValue(
+				mockWorks.map((work) => ({
+					exists: true,
+					id: work.id,
+					data: () => work,
+				})),
+			);
+
+			// "冒険"で検索、ページ2を取得（limit=2）
+			const result = await fetchCreatorWorksForConfigurableList({
+				creatorId: "VA12345",
+				search: "冒険",
+				page: 2,
+				limit: 2,
+			});
+
+			expect(result.totalCount).toBe(5); // 全作品数
+			expect(result.filteredCount).toBe(3); // "冒険"を含む作品数
+			expect(result.works).toHaveLength(1); // ページ2には1件のみ（3件中の3件目）
+			expect(result.works[0].title).toBe("冒険作品3");
+		});
+
+		it("検索語が見つからない場合は空の結果を返す", async () => {
+			const mockCreatorData = {
+				name: "テストクリエイター",
+			};
+
+			const mockWorksSnapshot = {
+				empty: false,
+				docs: [{ id: "RJ111111", data: () => ({}) }],
+			};
+
+			const mockWorks = [
+				{
+					id: "RJ111111",
+					productId: "RJ111111",
+					title: "作品1",
+					circle: "テストサークル",
+					circleId: "RG12345",
+					price: { current: 1100, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-15",
+					releaseDateISO: "2025-01-15",
+					releaseDateDisplay: "2025年01月15日",
+					description: "",
+					genres: [],
+					customGenres: [],
+					creators: {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: {},
+					sampleImages: [],
+					ageRating: "general",
+					updateDate: "2025-01-15",
+					createdAt: "2025-01-15T00:00:00.000Z",
+					updatedAt: "2025-01-15T00:00:00.000Z",
+					lastFetchedAt: "2025-01-15T00:00:00.000Z",
+				},
+			];
+
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue({
+					exists: true,
+					data: () => mockCreatorData,
+				}),
+				ref: {
+					collection: vi.fn().mockReturnValue({
+						get: vi.fn().mockResolvedValue(mockWorksSnapshot),
+					}),
+				},
+			});
+
+			mockGetAll.mockResolvedValue(
+				mockWorks.map((work) => ({
+					exists: true,
+					id: work.id,
+					data: () => work,
+				})),
+			);
+
+			const result = await fetchCreatorWorksForConfigurableList({
+				creatorId: "VA12345",
+				search: "存在しない検索語",
+			});
+
+			expect(result.totalCount).toBe(1);
+			expect(result.filteredCount).toBe(0);
+			expect(result.works).toHaveLength(0);
+		});
+
+		it("検索パラメータがない場合はfilteredCountを返さない", async () => {
+			const mockCreatorData = {
+				name: "テストクリエイター",
+			};
+
+			const mockWorksSnapshot = {
+				empty: false,
+				docs: [{ id: "RJ111111", data: () => ({}) }],
+			};
+
+			const mockWorks = [
+				{
+					id: "RJ111111",
+					productId: "RJ111111",
+					title: "作品1",
+					circle: "テストサークル",
+					circleId: "RG12345",
+					price: { current: 1100, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-15",
+					releaseDateISO: "2025-01-15",
+					releaseDateDisplay: "2025年01月15日",
+					description: "",
+					genres: [],
+					customGenres: [],
+					creators: {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: {},
+					sampleImages: [],
+					ageRating: "general",
+					updateDate: "2025-01-15",
+					createdAt: "2025-01-15T00:00:00.000Z",
+					updatedAt: "2025-01-15T00:00:00.000Z",
+					lastFetchedAt: "2025-01-15T00:00:00.000Z",
+				},
+			];
+
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue({
+					exists: true,
+					data: () => mockCreatorData,
+				}),
+				ref: {
+					collection: vi.fn().mockReturnValue({
+						get: vi.fn().mockResolvedValue(mockWorksSnapshot),
+					}),
+				},
+			});
+
+			mockGetAll.mockResolvedValue(
+				mockWorks.map((work) => ({
+					exists: true,
+					id: work.id,
+					data: () => work,
+				})),
+			);
+
+			const result = await fetchCreatorWorksForConfigurableList({
+				creatorId: "VA12345",
+			});
+
+			expect(result.totalCount).toBe(1);
+			expect(result.filteredCount).toBeUndefined();
+			expect(result.works).toHaveLength(1);
+		});
+
+		it("無効なクリエイターIDの場合は空の結果を返す", async () => {
+			const result = await fetchCreatorWorksForConfigurableList({
+				creatorId: "INVALID_ID",
+			});
+
+			expect(result).toEqual({ works: [], totalCount: 0 });
+		});
+
+		it("クリエイターが存在しない場合は空の結果を返す", async () => {
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue({
 					exists: false,
 				}),
-			};
-
-			// Ensure mockDoc is properly reset and then set for this test
-			mockDoc.mockReset();
-			mockDoc.mockReturnValue(creatorDocRef);
-
-			const result = await getCreatorWorks("creator999");
-
-			expect(result).toEqual([]);
-		});
-
-		it("無効なクリエイターIDの場合は空配列を返す", async () => {
-			const result = await getCreatorWorks("");
-
-			expect(result).toEqual([]);
-			expect(mockDoc).not.toHaveBeenCalled();
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Complex mock setup with subcollection structure
-		it.skip("作品ドキュメントが削除されている場合は除外する", async () => {
-			// Note: This test is skipped due to complex mock setup with subcollection structure
-			// The implementation has been verified to work correctly in production
-			const mockCreatorData = {
-				creatorId: "creator123",
-				name: "テストクリエイター",
-			};
-
-			const mockWorkRelations = [
-				{ workId: "RJ111111", roles: ["voice"], circleId: "RG11111" },
-				{ workId: "RJ222222", roles: ["voice"], circleId: "RG22222" }, // この作品は削除済み
-			];
-
-			const mockWork = {
-				id: "RJ111111",
-				productId: "RJ111111",
-				title: "作品1",
-				circle: "サークルA",
-				circleId: "RG11111",
-				priceInJPY: 1100,
-				registDate: { toDate: () => new Date("2025-01-15") },
-				releaseDateISO: "2025-01-15",
-				images: { main: "image1.jpg", list: "list1.jpg" },
-				options: { genre: ["ボイス・ASMR"], aiUsed: false },
-				tags: ["tag1"],
-				rating: { stars: 45, count: 5 },
-				wishlistCount: 100,
-			};
-
-			// クリエイタードキュメントの取得
-			const creatorDocSnapshot = {
-				exists: true,
-				data: () => mockCreatorData,
-				ref: {
-					collection: mockSubCollection,
-				},
-			};
-
-			const creatorDocRef = {
-				id: "creator123",
-				get: vi.fn().mockResolvedValueOnce(creatorDocSnapshot),
-			};
-
-			// Ensure mockDoc is properly reset and then set for this test
-			mockDoc.mockReset();
-			mockDoc.mockReturnValue(creatorDocRef);
-
-			// worksサブコレクションの取得
-			mockSubCollectionGet.mockResolvedValueOnce({
-				empty: false,
-				docs: mockWorkRelations.map((relation) => ({
-					id: relation.workId,
-					data: () => relation,
-				})),
 			});
 
-			// RJ111111は存在、RJ222222は削除済み
-			mockGetAll.mockImplementation((...docRefs) => {
-				return Promise.resolve(
-					docRefs.map((ref) => {
-						if (ref.id === "RJ111111") {
-							return {
-								exists: true,
-								id: "RJ111111",
-								data: () => mockWork,
-							};
-						}
-						return {
-							exists: false,
-							id: ref.id,
-						};
-					}),
-				);
+			const result = await fetchCreatorWorksForConfigurableList({
+				creatorId: "VA99999",
 			});
 
-			const result = await getCreatorWorks("creator123");
-
-			expect(result).toHaveLength(1);
-			expect(result[0].id).toBe("RJ111111");
+			expect(result).toEqual({ works: [], totalCount: 0 });
 		});
 
-		// biome-ignore lint/suspicious/noSkippedTests: Complex mock setup with subcollection structure
-		it.skip("whereIn制限を超える場合は複数バッチで処理する", async () => {
-			// Note: This test is skipped due to complex mock setup with subcollection structure
-			// The implementation has been verified to work correctly in production
-			const mockCreatorData = {
-				creatorId: "creator123",
-				name: "テストクリエイター",
-			};
-
-			// 15個のマッピング（whereInは10個まで）
-			const mockWorkRelations = Array.from({ length: 15 }, (_, i) => ({
-				workId: `RJ${String(i).padStart(6, "0")}`,
-				roles: ["voice"],
-				circleId: `RG${String(i).padStart(5, "0")}`,
-			}));
-
-			const mockWorks = mockWorkRelations.map((relation, i) => ({
-				id: relation.workId,
-				productId: relation.workId,
-				title: `作品${i}`,
-				circle: `サークル${i}`,
-				circleId: `RG${String(i).padStart(5, "0")}`,
-				priceInJPY: 1000 + i * 100,
-				registDate: { toDate: () => new Date(`2025-01-${String(i + 1).padStart(2, "0")}`) },
-				releaseDateISO: `2025-01-${String(i + 1).padStart(2, "0")}`,
-				images: { main: `image${i}.jpg`, list: `list${i}.jpg` },
-				options: { genre: ["ボイス・ASMR"], aiUsed: false },
-				tags: [`tag${i}`],
-				rating: { stars: 45, count: 5 },
-			}));
-
-			// クリエイタードキュメントの取得
-			const creatorDocSnapshot = {
-				exists: true,
-				data: () => mockCreatorData,
-				ref: {
-					collection: mockSubCollection,
-				},
-			};
-
-			const creatorDocRef = {
-				id: "creator123",
-				get: vi.fn().mockResolvedValueOnce(creatorDocSnapshot),
-			};
-
-			// Ensure mockDoc is properly reset and then set for this test
-			mockDoc.mockReset();
-			mockDoc.mockReturnValue(creatorDocRef);
-
-			// worksサブコレクションの取得
-			mockSubCollectionGet.mockResolvedValueOnce({
-				empty: false,
-				docs: mockWorkRelations.map((relation) => ({
-					id: relation.workId,
-					data: () => relation,
-				})),
+		it("エラー発生時は空の結果を返す", async () => {
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockRejectedValue(new Error("Firestore error")),
 			});
 
-			// 2回のgetAllが呼ばれることを想定
-			mockGetAll.mockImplementation((...docRefs) => {
-				return Promise.resolve(
-					docRefs.map((ref) => {
-						const work = mockWorks.find((w) => w.id === ref.id);
-						return {
-							exists: !!work,
-							id: ref.id,
-							data: () => work,
-						};
-					}),
-				);
+			const result = await fetchCreatorWorksForConfigurableList({
+				creatorId: "VA12345",
 			});
 
-			const result = await getCreatorWorks("creator123");
-
-			expect(result).toHaveLength(15);
-			expect(mockGetAll).toHaveBeenCalledTimes(2);
-		});
-
-		it("エラー発生時は空配列を返す", async () => {
-			mockGet.mockRejectedValue(new Error("Firestore error"));
-
-			const result = await getCreatorWorks("creator123");
-
-			expect(result).toEqual([]);
+			expect(result).toEqual({ works: [], totalCount: 0 });
 		});
 	});
 
