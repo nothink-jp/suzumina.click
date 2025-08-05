@@ -460,7 +460,7 @@ async function getWorksWithComplexFiltering(
 	// ページネーション用のオフセット
 	const startOffset = (page - 1) * limit;
 
-	// 言語フィルタリングまR18フィルタリングはメモリ上で行う必要があるため、
+	// 言語フィルタリングやR18フィルタリングはメモリ上で行う必要があるため、
 	// 全件取得する。Firestoreには1519件しかないので問題ない。
 	// その他のフィルタリングの場合は、必要な分だけ取得する。
 	if (showR18 === false || (language && language !== "all")) {
