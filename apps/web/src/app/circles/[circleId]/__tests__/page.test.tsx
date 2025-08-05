@@ -9,14 +9,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Next.js モック
 vi.mock("next/navigation", () => ({
 	notFound: vi.fn(),
+	useSearchParams: () => new URLSearchParams(),
+	useRouter: () => ({
+		push: vi.fn(),
+		replace: vi.fn(),
+	}),
+	usePathname: () => "/circles/RG12345",
 }));
 
 // Server Actions モック
 vi.mock("../actions", () => ({
 	getCircleInfo: vi.fn(),
-	getCircleWorks: vi.fn(),
-	getCircleWithWorks: vi.fn(),
-	getCircleWithWorksWithPagination: vi.fn(),
+	fetchCircleWorksForConfigurableList: vi.fn(),
 }));
 
 // コンポーネントモック
@@ -26,7 +30,7 @@ vi.mock("../components/CirclePageClient", () => ({
 			<h1>{circle.name}</h1>
 			{circle.nameEn && <p>{circle.nameEn}</p>}
 			<p>作品数: {circle.workCount}件</p>
-			{initialData.map((work: any) => (
+			{initialData.works.map((work: any) => (
 				<div key={work.id} data-testid="work-card">
 					<h3>{work.title}</h3>
 				</div>
@@ -100,10 +104,11 @@ describe("CirclePage", () => {
 	});
 
 	it("サークル情報と作品一覧を正しく表示する", async () => {
-		(actions.getCircleWithWorksWithPagination as any).mockResolvedValue({
-			circle: mockCircleData,
+		(actions.getCircleInfo as any).mockResolvedValue(mockCircleData);
+		(actions.fetchCircleWorksForConfigurableList as any).mockResolvedValue({
 			works: mockWorks,
-			totalCount: 2,
+			totalCount: 10,
+			filteredCount: undefined,
 		});
 
 		// 非同期コンポーネントの実行を待つ
@@ -133,7 +138,7 @@ describe("CirclePage", () => {
 
 	it("サークルが存在しない場合は404を表示する", async () => {
 		const { notFound } = await import("next/navigation");
-		(actions.getCircleWithWorksWithPagination as any).mockResolvedValue(null);
+		(actions.getCircleInfo as any).mockResolvedValue(null);
 
 		// 非同期コンポーネントの実行を試みる
 		try {
@@ -151,10 +156,11 @@ describe("CirclePage", () => {
 	});
 
 	it("作品が存在しない場合も正しく表示する", async () => {
-		(actions.getCircleWithWorksWithPagination as any).mockResolvedValue({
-			circle: mockCircleData,
+		(actions.getCircleInfo as any).mockResolvedValue(mockCircleData);
+		(actions.fetchCircleWorksForConfigurableList as any).mockResolvedValue({
 			works: [],
 			totalCount: 0,
+			filteredCount: undefined,
 		});
 
 		// 非同期コンポーネントの実行を待つ
@@ -179,10 +185,11 @@ describe("CirclePage", () => {
 			...mockCircleData,
 			nameEn: undefined,
 		};
-		(actions.getCircleWithWorksWithPagination as any).mockResolvedValue({
-			circle: circleWithoutEnName,
+		(actions.getCircleInfo as any).mockResolvedValue(circleWithoutEnName);
+		(actions.fetchCircleWorksForConfigurableList as any).mockResolvedValue({
 			works: [],
 			totalCount: 0,
+			filteredCount: undefined,
 		});
 
 		// 非同期コンポーネントの実行を待つ
@@ -228,6 +235,54 @@ describe("CirclePage", () => {
 			title: "サークル情報 - suzumina.click",
 			description: "DLsiteサークルの作品一覧",
 		});
+	});
+
+	it("検索パラメータがServer Actionに正しく渡される", async () => {
+		(actions.getCircleInfo as any).mockResolvedValue(mockCircleData);
+		(actions.fetchCircleWorksForConfigurableList as any).mockResolvedValue({
+			works: mockWorks,
+			totalCount: 10,
+			filteredCount: 2,
+		});
+
+		const params = Promise.resolve({ circleId: "RG12345" });
+		const searchParams = Promise.resolve({
+			page: "2",
+			q: "テスト検索",
+			sort: "popular",
+			limit: "24",
+		});
+
+		await CirclePage({ params, searchParams });
+
+		expect(actions.fetchCircleWorksForConfigurableList).toHaveBeenCalledWith({
+			circleId: "RG12345",
+			page: 2,
+			limit: 24,
+			sort: "popular",
+			search: "テスト検索",
+		});
+	});
+
+	it("qパラメータが正しく処理される", async () => {
+		(actions.getCircleInfo as any).mockResolvedValue(mockCircleData);
+		(actions.fetchCircleWorksForConfigurableList as any).mockResolvedValue({
+			works: [],
+			totalCount: 0,
+			filteredCount: undefined,
+		});
+
+		const params = Promise.resolve({ circleId: "RG12345" });
+		const searchParams = Promise.resolve({ q: "検索キーワード" });
+
+		await CirclePage({ params, searchParams });
+
+		// searchパラメータとして渡される
+		expect(actions.fetchCircleWorksForConfigurableList).toHaveBeenCalledWith(
+			expect.objectContaining({
+				search: "検索キーワード",
+			}),
+		);
 	});
 
 	afterEach(() => {

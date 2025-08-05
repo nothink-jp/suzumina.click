@@ -109,7 +109,7 @@ vi.mock("@/lib/firestore", () => ({
 
 // テスト対象のインポート（モック設定後）
 
-import { getCircleInfo, getCircleWorks, getCircleWorksWithPagination } from "../actions";
+import { fetchCircleWorksForConfigurableList, getCircleInfo } from "../actions";
 
 describe("Circle page server actions", () => {
 	beforeEach(() => {
@@ -250,239 +250,9 @@ describe("Circle page server actions", () => {
 		});
 	});
 
-	describe("getCircleWorks", () => {
-		it("サークルの作品一覧を正しく取得する", async () => {
-			// サークル情報のモック
+	describe("fetchCircleWorksForConfigurableList", () => {
+		it("検索機能が正しく動作する", async () => {
 			const mockCircleData = {
-				circleId: "RG12345",
-				name: "テストサークル",
-				workCount: 2,
-			};
-
-			const mockWorks = [
-				{
-					id: "RJ111111",
-					productId: "RJ111111",
-					title: "作品1",
-					circle: "テストサークル",
-					circleId: "RG12345",
-					price: { current: 1100, currency: "JPY" },
-					registDate: "2025-01-15",
-					releaseDateISO: "2025-01-15",
-					releaseDateDisplay: "2025年01月15日",
-					thumbnailUrl: "image1.jpg",
-					workUrl: "https://example.com/work1.html",
-					category: "SOU",
-					workType: "SOU",
-					genres: ["ボイス・ASMR"],
-					customGenres: [],
-					tags: ["tag1", "tag2"],
-					rating: { stars: 4.5, count: 5 },
-					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
-					salesStatus: {},
-					sampleImages: [],
-					description: "",
-					ageRating: "general",
-					updateDate: "2025-01-15",
-					createdAt: "2025-01-15T00:00:00.000Z",
-					updatedAt: "2025-01-15T00:00:00.000Z",
-					lastFetchedAt: "2025-01-15T00:00:00.000Z",
-				},
-				{
-					id: "RJ222222",
-					productId: "RJ222222",
-					title: "作品2",
-					circle: "テストサークル",
-					circleId: "RG12345",
-					price: { current: 2200, currency: "JPY" },
-					registDate: "2025-01-10",
-					releaseDateISO: "2025-01-10",
-					releaseDateDisplay: "2025年01月10日",
-					thumbnailUrl: "image2.jpg",
-					workUrl: "https://example.com/work2.html",
-					category: "SOU",
-					workType: "SOU",
-					genres: ["音声作品"],
-					customGenres: [],
-					tags: ["tag3"],
-					rating: { stars: 4.0, count: 3 },
-					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
-					salesStatus: {},
-					sampleImages: [],
-					description: "",
-					ageRating: "general",
-					updateDate: "2025-01-10",
-					createdAt: "2025-01-10T00:00:00.000Z",
-					updatedAt: "2025-01-10T00:00:00.000Z",
-					lastFetchedAt: "2025-01-10T00:00:00.000Z",
-				},
-				{
-					id: "RJ333333",
-					productId: "RJ333333",
-					title: "他のサークル作品",
-					circle: "他のサークル",
-					circleId: "RG99999",
-					price: { current: 3300, currency: "JPY" },
-					registDate: "2025-01-12",
-					releaseDateISO: "2025-01-12",
-					releaseDateDisplay: "2025年01月12日",
-					thumbnailUrl: "image3.jpg",
-					workUrl: "https://example.com/work3.html",
-					category: "SOU",
-					workType: "SOU",
-					genres: [],
-					customGenres: [],
-					tags: [],
-					rating: undefined,
-					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
-					salesStatus: {},
-					sampleImages: [],
-					description: "",
-					ageRating: "general",
-					updateDate: "2025-01-12",
-					createdAt: "2025-01-12T00:00:00.000Z",
-					updatedAt: "2025-01-12T00:00:00.000Z",
-					lastFetchedAt: "2025-01-12T00:00:00.000Z",
-				},
-			];
-
-			// Mock collection method to return appropriate mock based on collection name
-			mockCollection.mockImplementation((collectionName) => {
-				if (collectionName === "circles") {
-					return {
-						doc: vi.fn().mockReturnValue({
-							get: vi.fn().mockResolvedValue({
-								exists: true,
-								data: () => mockCircleData,
-							}),
-						}),
-					};
-				}
-				if (collectionName === "works") {
-					return {
-						get: vi.fn().mockResolvedValue({
-							empty: false,
-							docs: mockWorks.map((work) => ({
-								id: work.id,
-								data: () => work,
-							})),
-						}),
-					};
-				}
-				return {};
-			});
-
-			const result = await getCircleWorks("RG12345");
-
-			expect(result).toHaveLength(2); // フィルタリングにより該当する作品のみ
-			expect(result[0]).toMatchObject({
-				id: "RJ111111",
-				title: "作品1",
-			});
-			expect(result[1]).toMatchObject({
-				id: "RJ222222",
-				title: "作品2",
-			});
-		});
-
-		it("作品が存在しない場合は空配列を返す", async () => {
-			// Mock for circle that exists but has no works
-			const mockCircleData = {
-				circleId: "RG99999",
-				name: "作品なしサークル",
-				workCount: 0,
-			};
-
-			mockCollection.mockImplementation((collectionName) => {
-				if (collectionName === "circles") {
-					return {
-						doc: vi.fn().mockReturnValue({
-							get: vi.fn().mockResolvedValue({
-								exists: true,
-								data: () => mockCircleData,
-							}),
-						}),
-					};
-				}
-				if (collectionName === "works") {
-					return {
-						get: vi.fn().mockResolvedValue({
-							empty: true,
-							docs: [],
-						}),
-					};
-				}
-				return {};
-			});
-
-			const result = await getCircleWorks("RG99999");
-
-			expect(result).toEqual([]);
-		});
-
-		it("無効なサークルIDの場合は空配列を返す", async () => {
-			const result = await getCircleWorks("INVALID_ID");
-
-			expect(result).toEqual([]);
-			expect(mockWhere).not.toHaveBeenCalled();
-		});
-
-		it("エラー発生時は空配列を返す", async () => {
-			mockCollection.mockImplementation((collectionName) => {
-				if (collectionName === "circles") {
-					return {
-						doc: vi.fn().mockReturnValue({
-							get: vi.fn().mockRejectedValue(new Error("Firestore error")),
-						}),
-					};
-				}
-				return {};
-			});
-
-			const result = await getCircleWorks("RG12345");
-
-			expect(result).toEqual([]);
-		});
-
-		it("データ変換時のエラーをハンドリングする", async () => {
-			// Mock circle data but error on works collection
-			const mockCircleData = {
-				circleId: "RG12345",
-				name: "テストサークル",
-				workCount: 2,
-			};
-
-			mockCollection.mockImplementation((collectionName) => {
-				if (collectionName === "circles") {
-					return {
-						doc: vi.fn().mockReturnValue({
-							get: vi.fn().mockResolvedValue({
-								exists: true,
-								data: () => mockCircleData,
-							}),
-						}),
-					};
-				}
-				if (collectionName === "works") {
-					return {
-						get: vi.fn().mockRejectedValue(new Error("Firestore error")),
-					};
-				}
-				return {};
-			});
-
-			const result = await getCircleWorks("RG12345");
-
-			// エラーが発生してもクラッシュせず、空配列を返す
-			expect(result).toEqual([]);
-		});
-	});
-
-	describe("getCircleWorksWithPagination", () => {
-		it("ページネーション付きでサークルの作品一覧を正しく取得する", async () => {
-			// サークル情報のモック
-			const mockCircleData = {
-				id: "RG12345",
 				circleId: "RG12345",
 				name: "テストサークル",
 				workCount: 3,
@@ -492,7 +262,7 @@ describe("Circle page server actions", () => {
 				{
 					id: "RJ111111",
 					productId: "RJ111111",
-					title: "作品1",
+					title: "魔法少女の冒険",
 					circle: "テストサークル",
 					circleId: "RG12345",
 					price: { current: 1100, currency: "JPY" },
@@ -503,12 +273,18 @@ describe("Circle page server actions", () => {
 					registDate: "2025-01-15",
 					releaseDateISO: "2025-01-15",
 					releaseDateDisplay: "2025年01月15日",
-					genres: [],
-					customGenres: [],
-					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					description: "魔法の世界",
+					genres: ["ファンタジー"],
+					customGenres: ["魔法"],
+					creators: {
+						voiceActors: [{ name: "声優A", id: "VA001" }],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
 					salesStatus: {},
 					sampleImages: [],
-					description: "",
 					ageRating: "general",
 					updateDate: "2025-01-15",
 					createdAt: "2025-01-15T00:00:00.000Z",
@@ -518,7 +294,7 @@ describe("Circle page server actions", () => {
 				{
 					id: "RJ222222",
 					productId: "RJ222222",
-					title: "作品2",
+					title: "勇者の物語",
 					circle: "テストサークル",
 					circleId: "RG12345",
 					price: { current: 2200, currency: "JPY" },
@@ -529,12 +305,18 @@ describe("Circle page server actions", () => {
 					registDate: "2025-01-10",
 					releaseDateISO: "2025-01-10",
 					releaseDateDisplay: "2025年01月10日",
-					genres: [],
-					customGenres: [],
-					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					description: "勇者の冒険",
+					genres: ["RPG"],
+					customGenres: ["冒険"],
+					creators: {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
 					salesStatus: {},
 					sampleImages: [],
-					description: "",
 					ageRating: "general",
 					updateDate: "2025-01-10",
 					createdAt: "2025-01-10T00:00:00.000Z",
@@ -544,7 +326,7 @@ describe("Circle page server actions", () => {
 				{
 					id: "RJ333333",
 					productId: "RJ333333",
-					title: "作品3",
+					title: "日常系作品",
 					circle: "テストサークル",
 					circleId: "RG12345",
 					price: { current: 3300, currency: "JPY" },
@@ -555,12 +337,18 @@ describe("Circle page server actions", () => {
 					registDate: "2025-01-05",
 					releaseDateISO: "2025-01-05",
 					releaseDateDisplay: "2025年01月05日",
-					genres: [],
+					description: "日常の風景",
+					genres: ["日常系"],
 					customGenres: [],
-					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					creators: {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
 					salesStatus: {},
 					sampleImages: [],
-					description: "",
 					ageRating: "general",
 					updateDate: "2025-01-05",
 					createdAt: "2025-01-05T00:00:00.000Z",
@@ -594,23 +382,20 @@ describe("Circle page server actions", () => {
 				return {};
 			});
 
-			const result = await getCircleWorksWithPagination("RG12345", 1, 2, "newest");
+			// "魔法"で検索
+			const result = await fetchCircleWorksForConfigurableList({
+				circleId: "RG12345",
+				search: "魔法",
+			});
 
-			// Debug log
-			if (result.totalCount === 0) {
-				console.log("Circle doc get calls:", mockDoc.mock.calls);
-				console.log("Collection get calls:", mockGet.mock.calls);
-			}
-
-			expect(result.totalCount).toBe(3);
-			expect(result.works).toHaveLength(2); // ページサイズ2でページ1なので2件
-			expect(result.works[0].title).toBe("作品1"); // 新しい順で1番目
-			expect(result.works[1].title).toBe("作品2"); // 新しい順で2番目
+			expect(result.totalCount).toBe(3); // 全作品数
+			expect(result.filteredCount).toBe(1); // フィルター後の作品数
+			expect(result.works).toHaveLength(1);
+			expect(result.works[0].title).toBe("魔法少女の冒険");
 		});
 
-		it("ソート機能が正しく動作する", async () => {
+		it("声優名で検索できる", async () => {
 			const mockCircleData = {
-				id: "RG12345",
 				circleId: "RG12345",
 				name: "テストサークル",
 				workCount: 2,
@@ -620,10 +405,10 @@ describe("Circle page server actions", () => {
 				{
 					id: "RJ111111",
 					productId: "RJ111111",
-					title: "高価格作品",
+					title: "作品1",
 					circle: "テストサークル",
 					circleId: "RG12345",
-					price: { current: 2000, currency: "JPY" },
+					price: { current: 1100, currency: "JPY" },
 					category: "SOU",
 					workType: "SOU",
 					thumbnailUrl: "https://example.com/thumb.jpg",
@@ -631,12 +416,18 @@ describe("Circle page server actions", () => {
 					registDate: "2025-01-15",
 					releaseDateISO: "2025-01-15",
 					releaseDateDisplay: "2025年01月15日",
+					description: "",
 					genres: [],
 					customGenres: [],
-					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					creators: {
+						voiceActors: [{ name: "田中太郎", id: "VA001" }],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
 					salesStatus: {},
 					sampleImages: [],
-					description: "",
 					ageRating: "general",
 					updateDate: "2025-01-15",
 					createdAt: "2025-01-15T00:00:00.000Z",
@@ -646,10 +437,10 @@ describe("Circle page server actions", () => {
 				{
 					id: "RJ222222",
 					productId: "RJ222222",
-					title: "低価格作品",
+					title: "作品2",
 					circle: "テストサークル",
 					circleId: "RG12345",
-					price: { current: 1000, currency: "JPY" },
+					price: { current: 2200, currency: "JPY" },
 					category: "SOU",
 					workType: "SOU",
 					thumbnailUrl: "https://example.com/thumb.jpg",
@@ -657,12 +448,18 @@ describe("Circle page server actions", () => {
 					registDate: "2025-01-10",
 					releaseDateISO: "2025-01-10",
 					releaseDateDisplay: "2025年01月10日",
+					description: "",
 					genres: [],
 					customGenres: [],
-					creators: { voiceActors: [], scenario: [], illustration: [], music: [], others: [] },
+					creators: {
+						voiceActors: [{ name: "鈴木花子", id: "VA002" }],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
 					salesStatus: {},
 					sampleImages: [],
-					description: "",
 					ageRating: "general",
 					updateDate: "2025-01-10",
 					createdAt: "2025-01-10T00:00:00.000Z",
@@ -696,11 +493,289 @@ describe("Circle page server actions", () => {
 				return {};
 			});
 
-			// 価格の低い順でソート
-			const result = await getCircleWorksWithPagination("RG12345", 1, 10, "price_low");
+			// 声優名で検索
+			const result = await fetchCircleWorksForConfigurableList({
+				circleId: "RG12345",
+				search: "田中",
+			});
 
-			expect(result.works[0].title).toBe("低価格作品");
-			expect(result.works[1].title).toBe("高価格作品");
+			expect(result.filteredCount).toBe(1);
+			expect(result.works).toHaveLength(1);
+			expect(result.works[0].creators.voiceActors[0].name).toBe("田中太郎");
+		});
+
+		it("ページネーションと検索を組み合わせて正しく動作する", async () => {
+			const mockCircleData = {
+				circleId: "RG12345",
+				name: "テストサークル",
+				workCount: 5,
+			};
+
+			// 5つの作品（3つが"冒険"を含む）
+			const mockWorks = Array.from({ length: 5 }, (_, i) => ({
+				id: `RJ${i + 1}11111`,
+				productId: `RJ${i + 1}11111`,
+				title: i < 3 ? `冒険作品${i + 1}` : `日常作品${i - 2}`,
+				circle: "テストサークル",
+				circleId: "RG12345",
+				price: { current: (i + 1) * 1000, currency: "JPY" },
+				category: "SOU",
+				workType: "SOU",
+				thumbnailUrl: "https://example.com/thumb.jpg",
+				workUrl: "https://example.com/work.html",
+				registDate: `2025-01-${15 - i}`,
+				releaseDateISO: `2025-01-${15 - i}`,
+				releaseDateDisplay: `2025年01月${15 - i}日`,
+				description: i < 3 ? "冒険の物語" : "日常の物語",
+				genres: [],
+				customGenres: [],
+				creators: {
+					voiceActors: [],
+					scenario: [],
+					illustration: [],
+					music: [],
+					others: [],
+				},
+				salesStatus: {},
+				sampleImages: [],
+				ageRating: "general",
+				updateDate: `2025-01-${15 - i}`,
+				createdAt: `2025-01-${15 - i}T00:00:00.000Z`,
+				updatedAt: `2025-01-${15 - i}T00:00:00.000Z`,
+				lastFetchedAt: `2025-01-${15 - i}T00:00:00.000Z`,
+			}));
+
+			mockCollection.mockImplementation((collectionName) => {
+				if (collectionName === "circles") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => mockCircleData,
+							}),
+						}),
+					};
+				}
+				if (collectionName === "works") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							empty: false,
+							docs: mockWorks.map((work) => ({
+								id: work.id,
+								data: () => work,
+							})),
+						}),
+					};
+				}
+				return {};
+			});
+
+			// "冒険"で検索、ページ2を取得（limit=2）
+			const result = await fetchCircleWorksForConfigurableList({
+				circleId: "RG12345",
+				search: "冒険",
+				page: 2,
+				limit: 2,
+			});
+
+			expect(result.totalCount).toBe(5); // 全作品数
+			expect(result.filteredCount).toBe(3); // "冒険"を含む作品数
+			expect(result.works).toHaveLength(1); // ページ2には1件のみ（3件中の3件目）
+			expect(result.works[0].title).toBe("冒険作品3");
+		});
+
+		it("検索語が見つからない場合は空の結果を返す", async () => {
+			const mockCircleData = {
+				circleId: "RG12345",
+				name: "テストサークル",
+				workCount: 2,
+			};
+
+			const mockWorks = [
+				{
+					id: "RJ111111",
+					productId: "RJ111111",
+					title: "作品1",
+					circle: "テストサークル",
+					circleId: "RG12345",
+					price: { current: 1100, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-15",
+					releaseDateISO: "2025-01-15",
+					releaseDateDisplay: "2025年01月15日",
+					description: "",
+					genres: [],
+					customGenres: [],
+					creators: {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: {},
+					sampleImages: [],
+					ageRating: "general",
+					updateDate: "2025-01-15",
+					createdAt: "2025-01-15T00:00:00.000Z",
+					updatedAt: "2025-01-15T00:00:00.000Z",
+					lastFetchedAt: "2025-01-15T00:00:00.000Z",
+				},
+			];
+
+			mockCollection.mockImplementation((collectionName) => {
+				if (collectionName === "circles") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => mockCircleData,
+							}),
+						}),
+					};
+				}
+				if (collectionName === "works") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							empty: false,
+							docs: mockWorks.map((work) => ({
+								id: work.id,
+								data: () => work,
+							})),
+						}),
+					};
+				}
+				return {};
+			});
+
+			const result = await fetchCircleWorksForConfigurableList({
+				circleId: "RG12345",
+				search: "存在しない検索語",
+			});
+
+			expect(result.totalCount).toBe(1);
+			expect(result.filteredCount).toBe(0);
+			expect(result.works).toHaveLength(0);
+		});
+
+		it("検索パラメータがない場合はfilteredCountを返さない", async () => {
+			const mockCircleData = {
+				circleId: "RG12345",
+				name: "テストサークル",
+				workCount: 1,
+			};
+
+			const mockWorks = [
+				{
+					id: "RJ111111",
+					productId: "RJ111111",
+					title: "作品1",
+					circle: "テストサークル",
+					circleId: "RG12345",
+					price: { current: 1100, currency: "JPY" },
+					category: "SOU",
+					workType: "SOU",
+					thumbnailUrl: "https://example.com/thumb.jpg",
+					workUrl: "https://example.com/work.html",
+					registDate: "2025-01-15",
+					releaseDateISO: "2025-01-15",
+					releaseDateDisplay: "2025年01月15日",
+					description: "",
+					genres: [],
+					customGenres: [],
+					creators: {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: {},
+					sampleImages: [],
+					ageRating: "general",
+					updateDate: "2025-01-15",
+					createdAt: "2025-01-15T00:00:00.000Z",
+					updatedAt: "2025-01-15T00:00:00.000Z",
+					lastFetchedAt: "2025-01-15T00:00:00.000Z",
+				},
+			];
+
+			mockCollection.mockImplementation((collectionName) => {
+				if (collectionName === "circles") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => mockCircleData,
+							}),
+						}),
+					};
+				}
+				if (collectionName === "works") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							empty: false,
+							docs: mockWorks.map((work) => ({
+								id: work.id,
+								data: () => work,
+							})),
+						}),
+					};
+				}
+				return {};
+			});
+
+			const result = await fetchCircleWorksForConfigurableList({
+				circleId: "RG12345",
+			});
+
+			expect(result.totalCount).toBe(1);
+			expect(result.filteredCount).toBeUndefined();
+			expect(result.works).toHaveLength(1);
+		});
+
+		it("無効なサークルIDの場合は空の結果を返す", async () => {
+			const result = await fetchCircleWorksForConfigurableList({
+				circleId: "INVALID_ID",
+			});
+
+			expect(result).toEqual({ works: [], totalCount: 0 });
+		});
+
+		it("サークルが存在しない場合は空の結果を返す", async () => {
+			mockCollection.mockImplementation((collectionName) => {
+				if (collectionName === "circles") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: false,
+							}),
+						}),
+					};
+				}
+				return {};
+			});
+
+			const result = await fetchCircleWorksForConfigurableList({
+				circleId: "RG99999",
+			});
+
+			expect(result).toEqual({ works: [], totalCount: 0 });
+		});
+
+		it("エラー発生時は空の結果を返す", async () => {
+			mockCollection.mockImplementation(() => {
+				throw new Error("Firestore error");
+			});
+
+			const result = await fetchCircleWorksForConfigurableList({
+				circleId: "RG12345",
+			});
+
+			expect(result).toEqual({ works: [], totalCount: 0 });
 		});
 	});
 
