@@ -10,14 +10,10 @@ import type {
 import { convertToWorkPlainObject, isValidCreatorId } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 
-type ExtendedWorkData = WorkDocument & {
-	priceInJPY?: number;
-};
-
 /**
  * Compare works by date (newest or oldest)
  */
-function compareByDate(a: ExtendedWorkData, b: ExtendedWorkData, isOldest = false): number {
+function compareByDate(a: WorkPlainObject, b: WorkPlainObject, isOldest = false): number {
 	const dateA = a.releaseDateISO || a.registDate || "1900-01-01";
 	const dateB = b.releaseDateISO || b.registDate || "1900-01-01";
 	if (dateA === dateB) {
@@ -31,7 +27,7 @@ function compareByDate(a: ExtendedWorkData, b: ExtendedWorkData, isOldest = fals
 /**
  * Compare works by rating (popular)
  */
-function compareByRating(a: ExtendedWorkData, b: ExtendedWorkData): number {
+function compareByRating(a: WorkPlainObject, b: WorkPlainObject): number {
 	const ratingA = a.rating?.stars || 0;
 	const ratingB = b.rating?.stars || 0;
 	return ratingB - ratingA;
@@ -40,16 +36,16 @@ function compareByRating(a: ExtendedWorkData, b: ExtendedWorkData): number {
 /**
  * Compare works by price
  */
-function compareByPrice(a: ExtendedWorkData, b: ExtendedWorkData, isHighToLow = false): number {
-	const priceA = a.price?.current || a.priceInJPY || 0;
-	const priceB = b.price?.current || a.priceInJPY || 0;
+function compareByPrice(a: WorkPlainObject, b: WorkPlainObject, isHighToLow = false): number {
+	const priceA = a.price?.current || 0;
+	const priceB = b.price?.current || 0;
 	return isHighToLow ? priceB - priceA : priceA - priceB;
 }
 
 /**
  * Works sorting comparison function
  */
-function compareWorks(a: ExtendedWorkData, b: ExtendedWorkData, sort: string): number {
+function compareWorks(a: WorkPlainObject, b: WorkPlainObject, sort: string): number {
 	switch (sort) {
 		case "newest":
 			return compareByDate(a, b, false);
@@ -175,28 +171,37 @@ export async function fetchCreatorWorksForConfigurableList(params: {
 			}
 		}
 
+		// WorkPlainObjectに変換（検索前に変換することが重要）
+		const convertedWorks: WorkPlainObject[] = [];
+		for (const work of allWorks) {
+			const plainObject = convertToWorkPlainObject(work);
+			if (plainObject) {
+				convertedWorks.push(plainObject);
+			}
+		}
+
 		// 検索フィルター適用
-		let filteredWorks = allWorks;
+		let filteredWorks = convertedWorks;
 		let filteredCount: number | undefined;
 
 		if (search) {
 			const searchLower = search.toLowerCase();
-
-			filteredWorks = allWorks.filter((work) => {
+			filteredWorks = convertedWorks.filter((work) => {
 				// タイトルで検索
 				if (work.title?.toLowerCase().includes(searchLower)) return true;
 
 				// 説明で検索
 				if (work.description?.toLowerCase().includes(searchLower)) return true;
 
-				// 声優名で検索
-				if (work.creators?.voice_by?.some((va) => va.name?.toLowerCase().includes(searchLower))) {
+				// 声優名で検索（WorkPlainObjectでは voiceActors フィールド）
+				if (
+					work.creators?.voiceActors?.some((va) => va.name?.toLowerCase().includes(searchLower))
+				) {
 					return true;
 				}
 
-				// ジャンルで検索
-				if (work.genres?.some((genre) => genre.name?.toLowerCase().includes(searchLower)))
-					return true;
+				// ジャンルで検索（WorkPlainObjectでは genres は string[] ）
+				if (work.genres?.some((genre) => genre.toLowerCase().includes(searchLower))) return true;
 				if (work.customGenres?.some((genre) => genre.toLowerCase().includes(searchLower)))
 					return true;
 
@@ -206,23 +211,14 @@ export async function fetchCreatorWorksForConfigurableList(params: {
 		}
 
 		// ソート処理
-		filteredWorks.sort((a, b) => compareWorks(a as ExtendedWorkData, b as ExtendedWorkData, sort));
+		filteredWorks.sort((a, b) => compareWorks(a, b, sort));
 
 		// ページネーション適用
 		const startIndex = (page - 1) * limit;
 		const endIndex = startIndex + limit;
-		const paginatedFirestoreWorks = filteredWorks.slice(startIndex, endIndex);
+		const paginatedWorks = filteredWorks.slice(startIndex, endIndex);
 
-		// WorkPlainObjectに変換
-		const works: WorkPlainObject[] = [];
-		for (const work of paginatedFirestoreWorks) {
-			const plainObject = convertToWorkPlainObject(work);
-			if (plainObject) {
-				works.push(plainObject);
-			}
-		}
-
-		return { works, totalCount, filteredCount };
+		return { works: paginatedWorks, totalCount: convertedWorks.length, filteredCount };
 	} catch (_error) {
 		// エラー発生時は空配列を返す
 		return { works: [], totalCount: 0 };
