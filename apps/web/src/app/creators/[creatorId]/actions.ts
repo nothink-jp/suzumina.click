@@ -181,6 +181,7 @@ export async function fetchCreatorWorksForConfigurableList(params: {
 
 		if (search) {
 			const searchLower = search.toLowerCase();
+
 			filteredWorks = allWorks.filter((work) => {
 				// タイトルで検索
 				if (work.title?.toLowerCase().includes(searchLower)) return true;
@@ -193,7 +194,7 @@ export async function fetchCreatorWorksForConfigurableList(params: {
 					return true;
 				}
 
-				// ジャンルで検累
+				// ジャンルで検索
 				if (work.genres?.some((genre) => genre.name?.toLowerCase().includes(searchLower)))
 					return true;
 				if (work.customGenres?.some((genre) => genre.toLowerCase().includes(searchLower)))

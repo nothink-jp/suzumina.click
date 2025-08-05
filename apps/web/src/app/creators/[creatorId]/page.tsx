@@ -60,7 +60,14 @@ export default async function CreatorPage({ params, searchParams }: CreatorPageP
 		notFound();
 	}
 
-	const { works, totalCount } = worksResult;
+	const { works, totalCount, filteredCount } = worksResult;
 
-	return <CreatorPageClient creator={creator} initialData={works} initialTotalCount={totalCount} />;
+	return (
+		<CreatorPageClient
+			creator={creator}
+			initialData={works}
+			initialTotalCount={totalCount}
+			initialFilteredCount={filteredCount}
+		/>
+	);
 }

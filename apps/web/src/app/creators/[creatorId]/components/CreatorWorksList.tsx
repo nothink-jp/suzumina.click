@@ -25,9 +25,12 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 		if (!initialData) return null;
 		return {
 			items: initialData.works,
-			total: initialData.totalCount || 0,
+			total:
+				initialData.hasMore !== undefined
+					? (initialData.filteredCount ?? initialData.totalCount ?? 0)
+					: initialData.totalCount || 0,
 			page: 1,
-			itemsPerPage: initialData.works.length,
+			itemsPerPage: 12, // デフォルトのページサイズ
 		};
 	}, [initialData]);
 

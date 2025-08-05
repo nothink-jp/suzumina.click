@@ -13,12 +13,14 @@ interface CreatorPageClientProps {
 	creator: CreatorPageInfo;
 	initialData: WorkPlainObject[];
 	initialTotalCount: number;
+	initialFilteredCount?: number;
 }
 
 export function CreatorPageClient({
 	creator,
 	initialData,
 	initialTotalCount,
+	initialFilteredCount,
 }: CreatorPageClientProps) {
 	const typeLabel = getCreatorTypeLabel(creator.types);
 
@@ -35,6 +37,7 @@ export function CreatorPageClient({
 					initialData={{
 						works: initialData,
 						totalCount: initialTotalCount,
+						filteredCount: initialFilteredCount,
 						hasMore: initialData.length < initialTotalCount,
 					}}
 				/>
