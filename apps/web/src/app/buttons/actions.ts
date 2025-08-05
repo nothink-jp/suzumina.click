@@ -55,7 +55,7 @@ export async function getAudioButtons(
 		page?: number;
 		sortBy?: "newest" | "oldest" | "popular" | "mostPlayed";
 		onlyPublic?: boolean;
-		searchText?: string;
+		search?: string;
 		sourceVideoId?: string;
 		tags?: string[];
 		createdAfter?: string;
@@ -88,7 +88,7 @@ export async function getAudioButtons(
 			sortBy = "newest",
 			onlyPublic = true,
 			sourceVideoId,
-			searchText,
+			search,
 			durationMin,
 			durationMax,
 		} = query;
@@ -194,9 +194,13 @@ export async function getAudioButtons(
 		// Plain Object形式に変換
 		const frontendButtons = entityButtons.map((button) => button.toPlainObject());
 
-		// 検索テキストでフィルタリング
-		if (searchText) {
-			const searchLower = searchText.toLowerCase();
+		// 検索テキストでフィルタリング（メモリ内検索）
+		let finalButtons = frontendButtons;
+		let finalTotal = totalCount;
+		let finalHasMore = hasMore;
+
+		if (search) {
+			const searchLower = search.toLowerCase();
 			// 検索の場合は全データを取得してフィルタリング
 			let allQueryRef = firestore
 				.collection("audioButtons")
@@ -251,10 +255,12 @@ export async function getAudioButtons(
 				.filter((button): button is AudioButton => button !== null)
 				.map((button) => button.toPlainObject());
 
-			// タイトルで検索
-			const filteredButtons = allButtons.filter((button) =>
-				button.title.toLowerCase().includes(searchLower),
-			);
+			// タイトルと説明で検索
+			const filteredButtons = allButtons.filter((button) => {
+				const titleMatch = button.title.toLowerCase().includes(searchLower);
+				const descriptionMatch = button.description?.toLowerCase().includes(searchLower) || false;
+				return titleMatch || descriptionMatch;
+			});
 
 			// ページネーション再計算
 			const filteredTotal = filteredButtons.length;
@@ -262,14 +268,9 @@ export async function getAudioButtons(
 			const endIdx = startIdx + limit;
 			const paginatedButtons = filteredButtons.slice(startIdx, endIdx);
 
-			return {
-				success: true,
-				data: {
-					audioButtons: paginatedButtons,
-					totalCount: filteredTotal,
-					hasMore: endIdx < filteredTotal,
-				},
-			};
+			finalButtons = paginatedButtons;
+			finalTotal = filteredTotal;
+			finalHasMore = endIdx < filteredTotal;
 		}
 
 		// 音声長フィルタはクライアントサイドで実装済み（Firestoreの制限のため）
@@ -277,9 +278,9 @@ export async function getAudioButtons(
 		return {
 			success: true,
 			data: {
-				audioButtons: frontendButtons,
-				totalCount,
-				hasMore,
+				audioButtons: finalButtons,
+				totalCount: finalTotal,
+				hasMore: finalHasMore,
 			},
 		};
 	} catch (error) {

@@ -148,4 +148,19 @@ describe("AudioButtonsPage", () => {
 		const list = screen.getByTestId("audio-buttons-list");
 		expect(list).toBeInTheDocument();
 	});
+
+	it("検索パラメータがServer Actionに正しく渡される", async () => {
+		const { getAudioButtons } = await import("../actions");
+		const searchParams = { page: "2", q: "テスト検索", category: "", sort: "newest" };
+
+		render(await AudioButtonsPage({ searchParams }));
+
+		expect(getAudioButtons).toHaveBeenCalledWith(
+			expect.objectContaining({
+				page: 2,
+				search: "テスト検索",
+				sortBy: "newest",
+			}),
+		);
+	});
 });

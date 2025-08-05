@@ -267,31 +267,30 @@ export function ConfigurableList<T>({
 	}, [fetchParams.search]);
 
 	// アクション関数
-	const handleSearchChange = useCallback(
-		(value: string) => {
-			setLocalSearchValue(value);
-			// IME変換中は更新しない
-			if (!isComposing) {
-				if (urlSync) {
-					urlHook.setSearch(value);
-				} else {
-					setLocalParams((prev) => ({ ...prev, search: value }));
-				}
-			}
-		},
-		[urlSync, urlHook, isComposing],
-	);
+	const handleSearchChange = useCallback((value: string) => {
+		setLocalSearchValue(value);
+		// Enterキー入力時のみ更新するため、ここでは更新しない
+	}, []);
 
 	// IME変換終了時の処理
 	const handleCompositionEnd = useCallback(() => {
 		setIsComposing(false);
-		// 変換が終了したら、現在の値で更新
-		if (urlSync) {
-			urlHook.setSearch(localSearchValue || "");
-		} else {
-			setLocalParams((prev) => ({ ...prev, search: localSearchValue || "" }));
-		}
-	}, [urlSync, urlHook, localSearchValue]);
+		// Enterキー入力時のみ更新するため、ここでは更新しない
+	}, []);
+
+	// Enterキー押下時の処理
+	const handleSearchKeyDown = useCallback(
+		(e: React.KeyboardEvent<HTMLInputElement>) => {
+			if (e.key === "Enter" && !isComposing) {
+				if (urlSync) {
+					urlHook.setSearch(localSearchValue || "");
+				} else {
+					setLocalParams((prev) => ({ ...prev, search: localSearchValue || "" }));
+				}
+			}
+		},
+		[urlSync, urlHook, localSearchValue, isComposing],
+	);
 
 	const handleSortChange = useCallback(
 		(value: string) => {
@@ -573,9 +572,12 @@ export function ConfigurableList<T>({
 							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 							<Input
 								type="search"
-								placeholder={searchPlaceholder}
+								placeholder={
+									searchPlaceholder ? `${searchPlaceholder} (Enterで検索)` : "検索... (Enterで検索)"
+								}
 								value={localSearchValue}
 								onChange={(e) => handleSearchChange(e.target.value)}
+								onKeyDown={handleSearchKeyDown}
 								onCompositionStart={() => setIsComposing(true)}
 								onCompositionEnd={handleCompositionEnd}
 								className="pl-10"

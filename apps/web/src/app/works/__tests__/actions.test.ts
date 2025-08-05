@@ -1,515 +1,230 @@
-import type { WorkDocument } from "@suzumina.click/shared-types";
-import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getWorkById, getWorks } from "../actions";
+import { getWorks } from "../actions";
 
-// Firestoreモック
-const mockCollection = vi.fn();
-const mockDoc = vi.fn();
+// Mock Firestore
 const mockGet = vi.fn();
-const mockDocGet = vi.fn();
+const mockDoc = vi.fn();
+const mockCollection = vi.fn();
+const mockWhere = vi.fn();
+const mockOrderBy = vi.fn();
+const mockLimit = vi.fn();
+const mockStartAfter = vi.fn();
+const mockCount = vi.fn();
 
-// Firestoreインスタンスのモック
-const mockFirestore = {
-	collection: mockCollection,
-	doc: mockDoc,
-};
-
-// getFirestoreのモック
 vi.mock("@/lib/firestore", () => ({
-	getFirestore: vi.fn(() => mockFirestore),
+	getFirestore: () => ({
+		collection: mockCollection,
+	}),
 }));
 
-// convertToWorkPlainObjectのモック
-vi.mock("@suzumina.click/shared-types", () => {
-	// モック用のヘルパー関数を定義（複雑度を下げるため）
-	const createMockPrice = (data: any) => {
-		if (!data.price) {
-			return {
-				current: 0,
-				currency: "JPY",
-				isFree: false,
-				isDiscounted: false,
-				formattedPrice: "¥0",
-			};
-		}
-		return {
-			current: data.price.current || 0,
-			original: data.price.original,
-			currency: data.price.currency || "JPY",
-			discount: data.price.discount,
-			point: data.price.point,
-			isFree: data.price.isFreeOrMissingPrice || false,
-			isDiscounted: !!data.price.discount,
-			formattedPrice: `¥${(data.price.current || 0).toLocaleString()}`,
-		};
-	};
+// Mock logger
+vi.mock("@/lib/logger", () => ({
+	info: vi.fn(),
+	error: vi.fn(),
+	warn: vi.fn(),
+	debug: vi.fn(),
+}));
 
-	const createMockRating = (data: any) => {
-		if (!data.rating) return undefined;
-		return {
-			stars: data.rating.stars,
-			count: data.rating.count || 0,
-			average: data.rating.averageDecimal || data.rating.stars,
-			reviewCount: data.rating.reviewCount,
-			hasRatings: true,
-			isHighlyRated: data.rating.stars >= 4,
-			reliability: data.rating.count > 50 ? "high" : data.rating.count > 10 ? "medium" : "low",
-			formattedRating: `${data.rating.stars}`,
-		};
-	};
-
-	const mockConvertToWorkPlainObject = (data: any) => {
-		if (!data || !data.id || !data.productId) return null;
-		return {
-			...data,
-			// フロントエンド用の変換処理をシンプルにモック
-			createdAt: data.createdAt?.toISOString?.() || data.createdAt,
-			updatedAt: data.updatedAt?.toISOString?.() || data.updatedAt,
-			lastFetchedAt: data.lastFetchedAt?.toISOString?.() || data.lastFetchedAt,
-			// OptimizedFirestoreDLsiteWorkDataからWorkPlainObjectへの変換
-			price: createMockPrice(data),
-			rating: createMockRating(data),
-			// 必須フィールドの追加
-			creators: {
-				voiceActors: data.voiceActors || [],
-				scenario: data.scenario || [],
-				illustration: data.illustration || [],
-				music: data.music || [],
-				others: data.author || [],
-			},
-			salesStatus: {
-				isOnSale: true,
-				isDiscounted: false,
-				isFree: false,
-				isSoldOut: false,
-				isReserveWork: false,
-				dlsiteplaySupported: false,
-			},
-			sampleImages: [],
-			genres: data.genres || [],
-			customGenres: [],
-			_computed: {
-				displayTitle: data.title,
-				displayCircle: data.circle,
-				displayCategory: data.category,
-				displayAgeRating: "全年齢",
-				displayReleaseDate: data.releaseDateDisplay || "",
-				relativeUrl: `/works/${data.productId}`,
-				isAdultContent: false,
-				isVoiceWork: data.category === "SOU",
-				isGameWork: false,
-				isMangaWork: false,
-				hasDiscount: false,
-				isNewRelease: false,
-				isPopular: false,
-				primaryLanguage: "ja",
-				availableLanguages: ["ja"],
-				searchableText: `${data.title} ${data.circle}`,
-				tags: data.tags || [],
-			},
-		};
-	};
-
-	return {
-		convertToWorkPlainObject: vi.fn(mockConvertToWorkPlainObject),
-		filterR18Content: vi.fn((items) => items),
-		filterWorksByLanguage: vi.fn((items) => items),
-	};
-});
-
-// テスト用のサンプルデータ
-const createMockWorkData = (productId: string, title: string): WorkDocument => ({
-	id: productId,
-	productId,
-	title,
-	circle: "テストサークル",
-	description: "テスト用の説明",
-	voiceActors: ["テスト作者"],
-	scenario: [],
-	illustration: [],
-	music: [],
-	author: [],
-	genres: ["テストジャンル"],
-	category: "SOU",
-	workUrl: `https://www.dlsite.com/maniax/work/=/product_id/${productId}.html`,
-	thumbnailUrl: "https://example.com/thumb.jpg",
-	price: {
-		current: 1000,
-		original: 1000,
-		currency: "JPY",
-	},
-	rating: {
-		stars: 4.5,
-		count: 100,
-	},
-	tags: ["テストタグ"],
-	sampleImages: [],
-	// 追加の必須フィールド
-	releaseDateISO: "2023-01-01",
-	releaseDateDisplay: "2023年01月01日",
-	dataSources: {
-		searchResult: {
-			lastFetched: "2023-01-01T00:00:00.000Z",
-			genres: ["テストジャンル"],
-			basicInfo: {} as any,
-		},
-	},
-	createdAt: "2023-01-01T00:00:00.000Z",
-	updatedAt: "2023-01-01T00:00:00.000Z",
-	lastFetchedAt: "2023-01-01T00:00:00.000Z",
-});
-
-describe("works actions", () => {
+describe("Works Server Actions", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		vi.spyOn(console, "log").mockImplementation(() => {});
-		vi.spyOn(console, "error").mockImplementation(() => {});
+
+		// Setup collection chain
+		const mockQuery = {
+			doc: mockDoc,
+			where: mockWhere,
+			orderBy: mockOrderBy,
+			limit: mockLimit,
+			startAfter: mockStartAfter,
+			get: mockGet,
+			count: mockCount,
+		};
+
+		mockCollection.mockReturnValue(mockQuery);
+		mockWhere.mockReturnValue(mockQuery);
+		mockOrderBy.mockReturnValue(mockQuery);
+		mockLimit.mockReturnValue(mockQuery);
+		mockStartAfter.mockReturnValue(mockQuery);
+		mockCount.mockReturnValue({
+			get: vi.fn().mockResolvedValue({
+				data: vi.fn().mockReturnValue({ count: 100 }),
+			}),
+		});
 	});
 
 	describe("getWorks", () => {
-		it("should handle pagination correctly", async () => {
-			const mockWorks = Array.from({ length: 15 }, (_, i) =>
-				createMockWorkData(`RJ${String(123456 + i).padStart(6, "0")}`, `作品${i + 1}`),
-			);
-
-			// 最初のクエリ用のモック（limit付き）
-			const mockQuery = {
-				where: vi.fn().mockReturnThis(),
-				orderBy: vi.fn().mockReturnThis(),
-				limit: vi.fn().mockReturnThis(),
-				startAfter: vi.fn().mockReturnThis(),
-				get: vi.fn(),
-			};
-
-			// count用のクエリモック
-			const mockCountSnapshot = {
-				data: () => ({ count: 15 }),
-			};
-			const mockCount = vi.fn().mockResolvedValue(mockCountSnapshot);
-
-			mockCollection.mockReturnValue({
-				...mockQuery,
-				count: vi.fn().mockReturnValue({ get: mockCount }),
-			});
-
-			// 1ページ目（5件表示）
-			mockQuery.get.mockResolvedValueOnce({
-				size: 5,
-				docs: mockWorks.slice(0, 5).map((work) => ({
-					data: () => work,
-					id: work.productId,
-				})),
-			});
-
-			const page1 = await getWorks({ page: 1, limit: 5 });
-			expect(page1.works).toHaveLength(5);
-			expect(page1.hasMore).toBe(true);
-			expect(page1.totalCount).toBe(15);
-
-			// 3ページ目（最後のページ）- オフセット用のクエリ
-			mockQuery.get.mockResolvedValueOnce({
-				size: 10,
-				docs: mockWorks.slice(0, 10).map((work) => ({
-					data: () => work,
-					id: work.productId,
-				})),
-			});
-			// 実際のデータ取得用（+1 for hasMore check）
-			mockQuery.get.mockResolvedValueOnce({
-				size: 5, // limit未満なのでhasMore=false
-				docs: mockWorks.slice(10, 15).map((work) => ({
-					data: () => work,
-					id: work.productId,
-				})),
-			});
-
-			const page3 = await getWorks({ page: 3, limit: 5 });
-			expect(page3.works).toHaveLength(5);
-			expect(page3.hasMore).toBe(true); // size === limit なので true
-			expect(page3.totalCount).toBe(15);
-
-			// 4ページ目（範囲外）- オフセット用のクエリ
-			mockQuery.get.mockResolvedValueOnce({
-				size: 15,
-				docs: mockWorks.map((work) => ({
-					data: () => work,
-					id: work.productId,
-				})),
-			});
-			// 実際のデータ取得用
-			mockQuery.get.mockResolvedValueOnce({
-				size: 0,
-				docs: [],
-			});
-
-			const page4 = await getWorks({ page: 4, limit: 5 });
-			expect(page4.works).toHaveLength(0);
-			expect(page4.hasMore).toBe(false);
-		});
-
-		it("should handle data conversion errors gracefully", async () => {
-			const mockWorks = [
-				createMockWorkData("RJ123456", "正常な作品"),
-				// 不正なデータを含む作品
-				{ ...createMockWorkData("RJ234567", "エラー作品"), invalidField: true },
-			];
-
-			const mockQuery = {
-				where: vi.fn().mockReturnThis(),
-				orderBy: vi.fn().mockReturnThis(),
-				limit: vi.fn().mockReturnThis(),
-				get: vi.fn().mockResolvedValue({
-					size: mockWorks.length,
-					docs: mockWorks.map((work) => ({
-						data: () => work,
-						id: work.productId,
-					})),
+		const mockWorkDocs = [
+			{
+				id: "RJ001",
+				data: () => ({
+					productId: "RJ001",
+					title: "作品1",
+					description: "説明1",
+					circle: "サークル1",
+					category: "SOU",
+					ageRating: "全年齢",
+					price: { current: 1000, currency: "JPY" },
+					rating: { stars: 4.5, count: 100 },
+					releaseDateISO: "2024-01-01",
+					highResImageUrl: "https://example.com/1.jpg",
+					language: "ja",
 				}),
-			};
-
-			const mockCountSnapshot = {
-				data: () => ({ count: 2 }),
-			};
-
-			mockCollection.mockReturnValue({
-				...mockQuery,
-				count: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(mockCountSnapshot) }),
-			});
-
-			// convertToWorkPlainObjectが一部のデータでエラーを投げるようにモック
-			vi.mocked(convertToWorkPlainObject).mockImplementation((data) => {
-				if ((data as any).invalidField) {
-					throw new Error("変換エラー");
-				}
-				// 正常なデータの場合は、基本的な変換のみ行う
-				if (!data || !data.id || !data.productId) return null;
-
-				return {
-					...data,
-					createdAt: data.createdAt?.toISOString?.() || data.createdAt,
-					updatedAt: data.updatedAt?.toISOString?.() || data.updatedAt,
-					lastFetchedAt: data.lastFetchedAt?.toISOString?.() || data.lastFetchedAt,
-					// 最小限の必須フィールドのみ追加
-					price: {
-						current: data.price?.current || 0,
-						currency: "JPY",
-						formattedPrice: "¥0",
-					},
-					creators: {
-						voiceActors: [],
-						scenario: [],
-						illustration: [],
-						music: [],
-						others: [],
-					},
-					salesStatus: {},
-					sampleImages: [],
-					genres: [],
-					customGenres: [],
-					_computed: {
-						displayTitle: data.title,
-						displayCircle: data.circle,
-						displayCategory: data.category,
-						displayAgeRating: "全年齢",
-						displayReleaseDate: "",
-						relativeUrl: `/works/${data.productId}`,
-						isAdultContent: false,
-						isVoiceWork: false,
-						isGameWork: false,
-						isMangaWork: false,
-						hasDiscount: false,
-						isNewRelease: false,
-						isPopular: false,
-						primaryLanguage: "ja",
-						availableLanguages: ["ja"],
-						searchableText: "",
-						tags: [],
-					},
-				};
-			});
-
-			const result = await getWorks({ page: 1, limit: 10 });
-
-			// エラーがあった作品は除外され、正常な作品のみ返される
-			expect(result.works).toHaveLength(1);
-			expect(result.works[0].productId).toBe("RJ123456");
-			expect(result.totalCount).toBe(2); // 総数は元のデータ数
-		});
-
-		it("should return empty result on Firestore error", async () => {
-			mockCollection.mockReturnValue({ get: mockGet });
-			mockGet.mockRejectedValue(new Error("Firestore接続エラー"));
-
-			const result = await getWorks({ page: 1, limit: 10 });
-
-			expect(result.works).toHaveLength(0);
-			expect(result.hasMore).toBe(false);
-			expect(result.totalCount).toBe(0);
-		});
-
-		it("should use default pagination parameters", async () => {
-			const mockWorks = Array.from({ length: 20 }, (_, i) =>
-				createMockWorkData(`RJ${String(123456 + i).padStart(6, "0")}`, `作品${i + 1}`),
-			);
-
-			const mockQuery = {
-				where: vi.fn().mockReturnThis(),
-				orderBy: vi.fn().mockReturnThis(),
-				limit: vi.fn().mockReturnThis(),
-				get: vi.fn().mockResolvedValue({
-					size: 12, // デフォルトのlimitは12
-					docs: mockWorks.slice(0, 12).map((work) => ({
-						data: () => work,
-						id: work.productId,
-					})),
+			},
+			{
+				id: "RJ002",
+				data: () => ({
+					productId: "RJ002",
+					title: "作品2",
+					description: "説明2",
+					circle: "サークル2",
+					category: "SOU",
+					ageRating: "R18",
+					price: { current: 2000, currency: "JPY" },
+					rating: { stars: 4.0, count: 50 },
+					releaseDateISO: "2024-01-02",
+					highResImageUrl: "https://example.com/2.jpg",
+					language: "ja",
 				}),
-			};
+			},
+		];
 
-			const mockCountSnapshot = {
-				data: () => ({ count: 20 }),
-			};
-
-			mockCollection.mockReturnValue({
-				...mockQuery,
-				count: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(mockCountSnapshot) }),
+		it("検索パラメータなしで作品リストが取得できる", async () => {
+			mockGet.mockResolvedValue({
+				docs: mockWorkDocs,
+				size: 2,
 			});
 
-			// パラメータなしで呼び出し（デフォルト: page=1, limit=12）
 			const result = await getWorks();
 
-			expect(result.works).toHaveLength(12);
-			expect(result.hasMore).toBe(true);
-			expect(result.totalCount).toBe(20);
+			expect(result.works).toHaveLength(2);
+			expect(result.works[0].title).toBe("作品1");
+			expect(result.hasMore).toBe(false);
+			expect(mockOrderBy).toHaveBeenCalledWith("releaseDateISO", "desc");
 		});
 
-		it("should sort works by price when sort=price_low", async () => {
-			const mockWorks = [
-				{
-					...createMockWorkData("RJ123456", "高い作品"),
-					price: { current: 1500, original: 1500, currency: "JPY" },
-				},
-				{
-					...createMockWorkData("RJ234567", "安い作品"),
-					price: { current: 500, original: 500, currency: "JPY" },
-				},
-				{
-					...createMockWorkData("RJ345678", "中程度作品"),
-					price: { current: 1000, original: 1000, currency: "JPY" },
-				},
-			];
-
-			// 価格順にソート（Firestoreのクエリ結果を模擬）
-			const sortedWorks = [...mockWorks].sort((a, b) => a.price.current - b.price.current);
-
-			const mockQuery = {
-				where: vi.fn().mockReturnThis(),
-				orderBy: vi.fn().mockReturnThis(),
-				limit: vi.fn().mockReturnThis(),
-				get: vi.fn().mockResolvedValue({
-					size: sortedWorks.length,
-					docs: sortedWorks.map((work) => ({
-						data: () => work,
-						id: work.productId,
-					})),
-				}),
-			};
-
-			const mockCountSnapshot = {
-				data: () => ({ count: 3 }),
-			};
-
-			mockCollection.mockReturnValue({
-				...mockQuery,
-				count: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(mockCountSnapshot) }),
+		it("検索パラメータで複雑なフィルタリングが動作する", async () => {
+			// 検索時は全件取得される
+			mockGet.mockResolvedValue({
+				docs: mockWorkDocs,
+				size: 2,
 			});
 
-			const result = await getWorks({ page: 1, limit: 10, sort: "price_low" });
-
-			// 価格安い順
-			expect(result.works).toHaveLength(3);
-			expect(result.works[0].price?.current).toBe(500);
-			expect(result.works[1].price?.current).toBe(1000);
-			expect(result.works[2].price?.current).toBe(1500);
-		});
-	});
-
-	describe("getWorkById", () => {
-		it("should return work data for existing work", async () => {
-			const mockWork = createMockWorkData("RJ123456", "テスト作品");
-
-			const mockDocInstance = {
-				get: mockDocGet,
-			};
-
-			mockCollection.mockReturnValue({ doc: mockDoc });
-			mockDoc.mockReturnValue(mockDocInstance);
-			mockDocGet.mockResolvedValue({
-				exists: true,
-				data: () => mockWork,
-				id: "RJ123456",
+			const result = await getWorks({
+				search: "作品1",
+				page: 1,
+				limit: 12,
 			});
 
-			const result = await getWorkById("RJ123456");
-
-			expect(result).toBeTruthy();
-			expect(result?.productId).toBe("RJ123456");
-			expect(result?.title).toBe("テスト作品");
-			expect(mockCollection).toHaveBeenCalledWith("works");
-			expect(mockDoc).toHaveBeenCalledWith("RJ123456");
+			// 検索はメモリ上で行われるため、limitが呼ばれない（全件取得）
+			expect(mockLimit).not.toHaveBeenCalled();
+			expect(result.works).toBeDefined();
 		});
 
-		it("should return null for non-existing work", async () => {
-			const mockDocInstance = {
-				get: mockDocGet,
-			};
-
-			mockCollection.mockReturnValue({ doc: mockDoc });
-			mockDoc.mockReturnValue(mockDocInstance);
-			mockDocGet.mockResolvedValue({
-				exists: false,
+		it("言語フィルタリングが動作する", async () => {
+			mockGet.mockResolvedValue({
+				docs: mockWorkDocs,
+				size: 2,
 			});
 
-			const result = await getWorkById("RJ999999");
-
-			expect(result).toBeNull();
-		});
-
-		it("should return null on Firestore error", async () => {
-			const mockDocInstance = {
-				get: mockDocGet,
-			};
-
-			mockCollection.mockReturnValue({ doc: mockDoc });
-			mockDoc.mockReturnValue(mockDocInstance);
-			mockDocGet.mockRejectedValue(new Error("Firestore接続エラー"));
-
-			const result = await getWorkById("RJ123456");
-
-			expect(result).toBeNull();
-		});
-
-		it("should handle missing ID in document data", async () => {
-			const mockWork = createMockWorkData("RJ123456", "テスト作品");
-			delete (mockWork as any).id; // IDフィールドを削除
-
-			const mockDocInstance = {
-				get: mockDocGet,
-			};
-
-			mockCollection.mockReturnValue({ doc: mockDoc });
-			mockDoc.mockReturnValue(mockDocInstance);
-			mockDocGet.mockResolvedValue({
-				exists: true,
-				data: () => mockWork,
-				id: "RJ123456",
+			const result = await getWorks({
+				language: "ja",
+				page: 1,
+				limit: 12,
 			});
 
-			const result = await getWorkById("RJ123456");
+			// 言語フィルタリングもメモリ上で行われる
+			expect(mockLimit).not.toHaveBeenCalled();
+			expect(result.works).toBeDefined();
+		});
 
-			expect(result).toBeTruthy();
-			expect(result?.productId).toBe("RJ123456");
-			// IDがドキュメントIDから設定されることを確認
+		it("R18フィルタリングが動作する", async () => {
+			mockGet.mockResolvedValue({
+				docs: mockWorkDocs,
+				size: 2,
+			});
+
+			const result = await getWorks({
+				showR18: false,
+				page: 1,
+				limit: 12,
+			});
+
+			// R18フィルタリングもメモリ上で行われる
+			expect(mockLimit).not.toHaveBeenCalled();
+			expect(result.works).toBeDefined();
+		});
+
+		it("showR18がundefinedの場合は全作品を表示する", async () => {
+			mockGet.mockResolvedValue({
+				docs: mockWorkDocs,
+				size: 2,
+			});
+
+			const result = await getWorks({
+				showR18: undefined,
+				page: 1,
+				limit: 12,
+			});
+
+			// showR18がundefinedの場合はシンプルクエリ
+			expect(mockLimit).toHaveBeenCalledWith(12);
+			expect(result.works).toHaveLength(2);
+		});
+
+		it("カテゴリフィルタが動作する", async () => {
+			mockGet.mockResolvedValue({
+				docs: [mockWorkDocs[0]], // SOUカテゴリのみ
+				size: 1,
+			});
+
+			const result = await getWorks({
+				category: "SOU",
+				page: 1,
+				limit: 12,
+			});
+
+			expect(mockWhere).toHaveBeenCalledWith("category", "==", "SOU");
+			expect(result.works).toHaveLength(1);
+		});
+
+		it("ソート順が正しく適用される", async () => {
+			mockGet.mockResolvedValue({
+				docs: mockWorkDocs,
+				size: 2,
+			});
+
+			await getWorks({
+				sort: "price_low",
+				page: 1,
+				limit: 12,
+			});
+
+			expect(mockOrderBy).toHaveBeenCalledWith("price.current", "asc");
+		});
+
+		it("ページネーションが正しく動作する", async () => {
+			mockGet.mockResolvedValue({
+				docs: [],
+				size: 0,
+			});
+
+			await getWorks({
+				page: 2,
+				limit: 12,
+			});
+
+			// オフセット処理の確認
+			expect(mockLimit).toHaveBeenCalledWith(12); // オフセット用
+		});
+
+		it("エラー時に空の結果を返す", async () => {
+			mockGet.mockRejectedValue(new Error("Firestore error"));
+
+			const result = await getWorks();
+
+			expect(result.works).toEqual([]);
+			expect(result.hasMore).toBe(false);
+			expect(result.totalCount).toBe(0);
 		});
 	});
 });

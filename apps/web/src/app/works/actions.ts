@@ -460,12 +460,16 @@ async function getWorksWithComplexFiltering(
 	// ページネーション用のオフセット
 	const startOffset = (page - 1) * limit;
 
-	// 言語フィルタリングやR18フィルタリングはメモリ上で行う必要があるため、
-	// 全件取得する。Firestoreには1519件しかないので問題ない。
-	// その他のフィルタリングの場合は、必要な分だけ取得する。
-	if (showR18 === false || (language && language !== "all")) {
+	// メモリ上での処理が必要かどうかを判定
+	const requiresFullDataFetch = () => {
+		// 言語フィルタリング、R18フィルタリング、または検索の場合は
+		// Firestoreでの直接フィルタリングができないため全件取得が必要
+		return showR18 === false || (language && language !== "all") || search;
+	};
+
+	if (requiresFullDataFetch()) {
 		// 全件取得（limitを設定しない）
-		// query = query.limit() を呼ばない
+		// 注: Firestoreには1519件しかないので問題ない
 	} else {
 		// その他の複雑フィルタリングの場合は、必要な分+余裕を取得
 		const fetchLimit = Math.min(startOffset + limit * 10, 3000);

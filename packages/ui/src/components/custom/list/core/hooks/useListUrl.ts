@@ -33,7 +33,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 			10,
 		);
 		const sort = searchParams.get("sort") || defaultSort || "";
-		const search = searchParams.get("search") || "";
+		const search = searchParams.get("q") || "";
 
 		// フィルターを解析
 		const defaultFilterValues = getDefaultFilterValues(filters);
@@ -141,9 +141,9 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 			// 検索
 			if (updates.search !== undefined) {
 				if (updates.search === "") {
-					params.delete("search");
+					params.delete("q");
 				} else {
-					params.set("search", updates.search);
+					params.set("q", updates.search);
 				}
 			}
 

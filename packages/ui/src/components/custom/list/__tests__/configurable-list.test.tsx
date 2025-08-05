@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { ConfigurableList } from "../configurable-list";
 import type { FilterConfig } from "../core/types";
 
@@ -125,14 +126,101 @@ describe("ConfigurableList", () => {
 	});
 
 	it("searches items by name", async () => {
-		render(<ConfigurableList items={sampleItems} renderItem={renderItem} urlSync={false} />);
+		render(
+			<ConfigurableList items={sampleItems} renderItem={renderItem} urlSync={false} searchable />,
+		);
 
-		const searchInput = screen.getByPlaceholderText("検索...");
+		const searchInput = screen.getByPlaceholderText("検索... (Enterで検索)");
 		fireEvent.change(searchInput, { target: { value: "Item 1" } });
+		fireEvent.keyDown(searchInput, { key: "Enter", code: "Enter" });
 
 		await waitFor(() => {
 			expect(screen.getByTestId("item-1")).toBeInTheDocument();
 			expect(screen.queryByTestId("item-2")).not.toBeInTheDocument();
+		});
+	});
+
+	it("検索ボックスに入力してもEnterキーを押すまでフィルタリングされない", async () => {
+		const user = userEvent.setup();
+		render(
+			<ConfigurableList items={sampleItems} renderItem={renderItem} urlSync={false} searchable />,
+		);
+
+		const searchInput = screen.getByPlaceholderText("検索... (Enterで検索)");
+
+		// 文字を入力してもすぐにはフィルタリングされない
+		await user.type(searchInput, "Item 1");
+
+		// 全てのアイテムがまだ表示されている
+		sampleItems.forEach((item) => {
+			expect(screen.getByTestId(`item-${item.id}`)).toBeInTheDocument();
+		});
+
+		// Enterキーを押すとフィルタリングされる
+		fireEvent.keyDown(searchInput, { key: "Enter", code: "Enter" });
+
+		await waitFor(() => {
+			expect(screen.getByTestId("item-1")).toBeInTheDocument();
+			expect(screen.queryByTestId("item-2")).not.toBeInTheDocument();
+			expect(screen.queryByTestId("item-3")).not.toBeInTheDocument();
+			expect(screen.queryByTestId("item-4")).not.toBeInTheDocument();
+			expect(screen.queryByTestId("item-5")).not.toBeInTheDocument();
+		});
+	});
+
+	it("日本語入力中（IME変換中）はEnterキーでも検索が実行されない", async () => {
+		render(
+			<ConfigurableList items={sampleItems} renderItem={renderItem} urlSync={false} searchable />,
+		);
+
+		const searchInput = screen.getByPlaceholderText("検索... (Enterで検索)");
+
+		// IME変換開始
+		fireEvent.compositionStart(searchInput);
+		fireEvent.change(searchInput, { target: { value: "アイテム" } });
+		fireEvent.keyDown(searchInput, { key: "Enter", code: "Enter" });
+
+		// 全てのアイテムがまだ表示されている（検索が実行されていない）
+		sampleItems.forEach((item) => {
+			expect(screen.getByTestId(`item-${item.id}`)).toBeInTheDocument();
+		});
+
+		// IME変換終了
+		fireEvent.compositionEnd(searchInput);
+
+		// IME変換終了後にEnterキーを押すと検索が実行される
+		fireEvent.keyDown(searchInput, { key: "Enter", code: "Enter" });
+
+		await waitFor(() => {
+			// "アイテム"にマッチするアイテムがないので、全て非表示になる
+			sampleItems.forEach((item) => {
+				expect(screen.queryByTestId(`item-${item.id}`)).not.toBeInTheDocument();
+			});
+		});
+	});
+
+	it("URLSync有効時にEnterキーでHistory APIが呼ばれる", async () => {
+		// History APIをモック
+		const mockPushState = vi.fn();
+		const mockDispatchEvent = vi.fn();
+		window.history.pushState = mockPushState;
+		window.dispatchEvent = mockDispatchEvent;
+
+		render(
+			<ConfigurableList items={sampleItems} renderItem={renderItem} urlSync={true} searchable />,
+		);
+
+		const searchInput = screen.getByPlaceholderText("検索... (Enterで検索)");
+		fireEvent.change(searchInput, { target: { value: "test" } });
+		fireEvent.keyDown(searchInput, { key: "Enter", code: "Enter" });
+
+		await waitFor(() => {
+			expect(mockPushState).toHaveBeenCalled();
+			expect(mockDispatchEvent).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "popstate",
+				}),
+			);
 		});
 	});
 
@@ -221,8 +309,9 @@ describe("ConfigurableList", () => {
 			/>,
 		);
 
-		const searchInput = screen.getByPlaceholderText("検索...");
+		const searchInput = screen.getByPlaceholderText("検索... (Enterで検索)");
 		fireEvent.change(searchInput, { target: { value: "NotFound" } });
+		fireEvent.keyDown(searchInput, { key: "Enter", code: "Enter" });
 
 		// 実際の動作では検索結果がありませんと表示されるはずだが、
 		// すべてのアイテムが表示されている場合は元のアイテムが表示されている
@@ -240,7 +329,7 @@ describe("ConfigurableList", () => {
 	it("disables search when searchable is false", () => {
 		render(<ConfigurableList items={sampleItems} renderItem={renderItem} searchable={false} />);
 
-		expect(screen.queryByPlaceholderText("検索...")).not.toBeInTheDocument();
+		expect(screen.queryByPlaceholderText("検索... (Enterで検索)")).not.toBeInTheDocument();
 	});
 
 	it("shows loading state", () => {

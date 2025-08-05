@@ -10,7 +10,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const pageNumber = Number.parseInt(params.page as string, 10) || 1;
 	const validPage = Math.max(1, pageNumber);
 	const sort = typeof params.sort === "string" ? params.sort : "newest";
-	const search = typeof params.search === "string" ? params.search : undefined;
+	const search = typeof params.q === "string" ? params.q : undefined;
 	const category = typeof params.category === "string" ? params.category : undefined;
 	const language = typeof params.language === "string" ? params.language : undefined;
 	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
@@ -19,8 +19,12 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	// showR18パラメータの処理
 	// URLパラメータが明示的に指定されている場合はその値を使用
 	// 指定されていない場合はundefinedとして、クライアント側で判断させる
+	// 動作仕様:
+	// - undefined: URLにshowR18パラメータがない場合。全作品を表示（R18含む）
+	// - true: showR18=trueの場合。R18作品も表示
+	// - false: showR18=falseの場合。R18作品を除外
 	const showR18FromParams = params.showR18;
-	const shouldShowR18 = showR18FromParams !== undefined ? showR18FromParams === "true" : undefined; // クライアント側で年齢確認状態に基づいて判断
+	const shouldShowR18 = showR18FromParams !== undefined ? showR18FromParams === "true" : undefined;
 
 	// 初期データを取得
 	// showR18がundefinedの場合はデフォルトで全件取得（クライアント側でフィルタリング）
@@ -31,7 +35,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 		search,
 		category,
 		language,
-		showR18: shouldShowR18 !== undefined ? shouldShowR18 : true, // undefinedの場合は全件取得
+		showR18: shouldShowR18, // undefinedの場合はundefinedのまま渡す
 	});
 
 	return <WorksPageClient initialData={result} />;
