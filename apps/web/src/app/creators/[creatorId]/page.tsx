@@ -1,6 +1,6 @@
 import { getCreatorTypeLabel } from "@suzumina.click/shared-types";
 import { notFound } from "next/navigation";
-import { getCreatorInfo, getCreatorWithWorksWithPagination } from "./actions";
+import { fetchCreatorWorksForConfigurableList, getCreatorInfo } from "./actions";
 import { CreatorPageClient } from "./components/CreatorPageClient";
 
 export const dynamic = "force-dynamic";
@@ -42,22 +42,32 @@ export default async function CreatorPage({ params, searchParams }: CreatorPageP
 	const limitValue = Number.parseInt(searchParamsData.limit as string, 10) || 12;
 	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 	const sort = typeof searchParamsData.sort === "string" ? searchParamsData.sort : "newest";
+	const search = typeof searchParamsData.q === "string" ? searchParamsData.q : undefined;
 
-	const data = await getCreatorWithWorksWithPagination(creatorId, validPage, validLimit, sort);
+	// クリエイター情報と作品を並列で取得
+	const [creator, worksResult] = await Promise.all([
+		getCreatorInfo(creatorId),
+		fetchCreatorWorksForConfigurableList({
+			creatorId,
+			page: validPage,
+			limit: validLimit,
+			sort,
+			search,
+		}),
+	]);
 
-	if (!data) {
+	if (!creator) {
 		notFound();
 	}
 
-	const { creator, works, totalCount } = data;
+	const { works, totalCount, filteredCount } = worksResult;
 
 	return (
 		<CreatorPageClient
 			creator={creator}
 			initialData={works}
 			initialTotalCount={totalCount}
-			initialPage={validPage}
-			_searchParams={searchParamsData}
+			initialFilteredCount={filteredCount}
 		/>
 	);
 }

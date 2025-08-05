@@ -24,9 +24,14 @@ vi.mock("../actions", () => ({
 	getCreatorWorks: vi.fn(),
 	getCreatorWithWorks: vi.fn(),
 	getCreatorWithWorksWithPagination: vi.fn(),
+	fetchCreatorWorksForConfigurableList: vi.fn(),
 }));
 
 // コンポーネントモック
+vi.mock("../components/CreatorWorksList", () => ({
+	default: vi.fn(() => <div data-testid="creator-works-list">CreatorWorksList</div>),
+}));
+
 vi.mock("@/app/components/BackButton", () => ({
 	BackButton: () => <button type="button">戻る</button>,
 }));
@@ -129,8 +134,8 @@ describe("CreatorPage", () => {
 	});
 
 	it("クリエイター情報と作品一覧を正しく表示する", async () => {
-		(actions.getCreatorWithWorksWithPagination as any).mockResolvedValue({
-			creator: mockCreatorInfo,
+		(actions.getCreatorInfo as any).mockResolvedValue(mockCreatorInfo);
+		(actions.fetchCreatorWorksForConfigurableList as any).mockResolvedValue({
 			works: mockWorks,
 			totalCount: 2,
 		});
@@ -150,16 +155,13 @@ describe("CreatorPage", () => {
 		// 統計情報の表示（部分一致で検索）
 		expect(screen.getByText(/参加作品数:.*5件/)).toBeInTheDocument();
 
-		// 作品カードの表示
-		const workCards = screen.getAllByTestId("work-card");
-		expect(workCards).toHaveLength(2);
-		expect(screen.getByText("作品1")).toBeInTheDocument();
-		expect(screen.getByText("サークルA")).toBeInTheDocument();
+		// CreatorWorksListコンポーネントが表示される
+		expect(screen.getByTestId("creator-works-list")).toBeInTheDocument();
 	});
 
 	it("クリエイターが存在しない場合は404を表示する", async () => {
 		const { notFound } = await import("next/navigation");
-		(actions.getCreatorWithWorksWithPagination as any).mockResolvedValue(null);
+		(actions.getCreatorInfo as any).mockResolvedValue(null);
 
 		// 非同期コンポーネントの実行を試みる
 		try {
@@ -177,8 +179,8 @@ describe("CreatorPage", () => {
 	});
 
 	it("作品が存在しない場合も正しく表示する", async () => {
-		(actions.getCreatorWithWorksWithPagination as any).mockResolvedValue({
-			creator: mockCreatorInfo,
+		(actions.getCreatorInfo as any).mockResolvedValue(mockCreatorInfo);
+		(actions.fetchCreatorWorksForConfigurableList as any).mockResolvedValue({
 			works: [],
 			totalCount: 0,
 		});
@@ -195,9 +197,8 @@ describe("CreatorPage", () => {
 		// クリエイター名の表示確認
 		expect(screen.getByText("テストクリエイター")).toBeInTheDocument();
 
-		// 作品カードは表示されない
-		const workCards = screen.queryAllByTestId("work-card");
-		expect(workCards).toHaveLength(0);
+		// CreatorWorksListコンポーネントが表示される（空でも）
+		expect(screen.getByTestId("creator-works-list")).toBeInTheDocument();
 	});
 
 	it("単一の役割の場合も正しく表示する", async () => {
@@ -205,8 +206,8 @@ describe("CreatorPage", () => {
 			...mockCreatorInfo,
 			types: ["voice"],
 		};
-		(actions.getCreatorWithWorksWithPagination as any).mockResolvedValue({
-			creator: singleTypeCreator,
+		(actions.getCreatorInfo as any).mockResolvedValue(singleTypeCreator);
+		(actions.fetchCreatorWorksForConfigurableList as any).mockResolvedValue({
 			works: [],
 			totalCount: 0,
 		});
