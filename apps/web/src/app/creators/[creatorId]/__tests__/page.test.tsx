@@ -45,21 +45,6 @@ vi.mock("@/app/works/components/WorkCard", () => ({
 	),
 }));
 
-vi.mock("@/app/works/components/WorkList", () => ({
-	default: ({ data, totalCount, currentPage }: any) => (
-		<div data-testid="work-list">
-			<p>Total: {totalCount}</p>
-			<p>Page: {currentPage}</p>
-			{data.map((work: any) => (
-				<div key={work.id} data-testid="work-card">
-					<h3>{work.title}</h3>
-					<p>{work.circle}</p>
-				</div>
-			))}
-		</div>
-	),
-}));
-
 // shared-types モック
 vi.mock("@suzumina.click/shared-types", () => ({
 	getCreatorTypeLabel: vi.fn((types: string[]) => {

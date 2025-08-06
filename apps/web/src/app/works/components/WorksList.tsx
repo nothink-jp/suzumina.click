@@ -10,7 +10,7 @@ import { useAgeVerification } from "@/contexts/age-verification-context";
 import { getWorks } from "../actions";
 import WorkCard from "./WorkCard";
 
-interface WorksListGenericProps {
+interface WorksListProps {
 	initialData?: WorkListResultPlain;
 }
 
@@ -51,7 +51,7 @@ const LANGUAGE_OPTIONS = [
 	{ value: "other", label: "その他言語" },
 ];
 
-export default function WorksListGeneric({ initialData }: WorksListGenericProps) {
+export default function WorksList({ initialData }: WorksListProps) {
 	const { showR18Content } = useAgeVerification();
 
 	// 初期データを変換

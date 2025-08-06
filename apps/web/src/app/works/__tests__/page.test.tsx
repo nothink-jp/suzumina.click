@@ -54,8 +54,8 @@ vi.mock("../actions", () => ({
 	}),
 }));
 
-// Mock WorksListGeneric component
-vi.mock("../components/WorksListGeneric", () => ({
+// Mock WorksList component
+vi.mock("../components/WorksList", () => ({
 	default: ({ initialData }: any) => (
 		<div data-testid="works-list">
 			{initialData?.works?.map((work: any) => (

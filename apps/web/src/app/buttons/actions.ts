@@ -89,8 +89,6 @@ export async function getAudioButtons(
 			onlyPublic = true,
 			sourceVideoId,
 			search,
-			durationMin,
-			durationMax,
 		} = query;
 
 		// Firestoreから直接データを取得
@@ -127,8 +125,7 @@ export async function getAudioButtons(
 
 		// 範囲フィルタの追加
 		// 注意: Firestoreは複数フィールドに対する範囲クエリをサポートしていないため、
-		// 現在はdurationフィルタのみ実装（最も使用頻度が高いと想定）
-		const hasDurationFilter = durationMin !== undefined || durationMax !== undefined;
+		// 現在は範囲フィルタは実装されていません
 		// 音声長フィルタはConfigurableListのクライアントサイドで処理される
 
 		// ソート条件を追加
