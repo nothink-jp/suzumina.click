@@ -18,7 +18,7 @@ vi.mock("@/auth", () => ({
 
 // Mock the server actions
 vi.mock("../actions", () => ({
-	getAudioButtons: vi.fn().mockResolvedValue({
+	getAudioButtonsList: vi.fn().mockResolvedValue({
 		success: true,
 		data: {
 			audioButtons: [
@@ -150,12 +150,12 @@ describe("AudioButtonsPage", () => {
 	});
 
 	it("検索パラメータがServer Actionに正しく渡される", async () => {
-		const { getAudioButtons } = await import("../actions");
+		const { getAudioButtonsList } = await import("../actions");
 		const searchParams = { page: "2", q: "テスト検索", category: "", sort: "newest" };
 
 		render(await AudioButtonsPage({ searchParams }));
 
-		expect(getAudioButtons).toHaveBeenCalledWith(
+		expect(getAudioButtonsList).toHaveBeenCalledWith(
 			expect.objectContaining({
 				page: 2,
 				search: "テスト検索",

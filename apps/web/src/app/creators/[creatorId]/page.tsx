@@ -1,6 +1,6 @@
 import { getCreatorTypeLabel } from "@suzumina.click/shared-types";
 import { notFound } from "next/navigation";
-import { fetchCreatorWorksForConfigurableList, getCreatorInfo } from "./actions";
+import { getCreatorInfo, getCreatorWorksList } from "./actions";
 import { CreatorPageClient } from "./components/CreatorPageClient";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +47,7 @@ export default async function CreatorPage({ params, searchParams }: CreatorPageP
 	// クリエイター情報と作品を並列で取得
 	const [creator, worksResult] = await Promise.all([
 		getCreatorInfo(creatorId),
-		fetchCreatorWorksForConfigurableList({
+		getCreatorWorksList({
 			creatorId,
 			page: validPage,
 			limit: validLimit,

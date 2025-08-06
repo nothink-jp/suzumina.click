@@ -4,7 +4,7 @@ import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import type { AdvancedFilters } from "@suzumina.click/ui/components/custom/advanced-filter-panel";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getAudioButtons } from "@/app/buttons/actions";
+import { getAudioButtonsList } from "@/app/buttons/actions";
 import {
 	AudioButtonQueryBuilder,
 	convertFiltersToParams,
@@ -114,7 +114,7 @@ export function useAudioButtonsList({ searchParams, initialData }: UseAudioButto
 
 			try {
 				const query = buildAudioButtonQuery();
-				const result = await getAudioButtons(query);
+				const result = await getAudioButtonsList(query);
 				handleApiResponse(result);
 			} catch (_err) {
 				setError("データの取得に失敗しました");

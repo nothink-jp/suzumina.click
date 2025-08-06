@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getAudioButtonCount, getAudioButtons } from "@/app/buttons/actions";
+import { getAudioButtonCount, getAudioButtonsList } from "@/app/buttons/actions";
 import { getVideoById } from "../actions";
 import { RelatedAudioButtonsServer } from "./components/RelatedAudioButtonsServer";
 import VideoDetail from "./components/VideoDetail";
@@ -17,7 +17,7 @@ export default async function VideoDetailPage({ params }: VideoDetailPageProps) 
 	// 並列でデータ取得（Server Component最適化）
 	const [video, audioButtonsResult, audioButtonCount] = await Promise.all([
 		getVideoById(videoId),
-		getAudioButtons({
+		getAudioButtonsList({
 			sourceVideoId: videoId,
 			limit: 6,
 			sortBy: "newest",

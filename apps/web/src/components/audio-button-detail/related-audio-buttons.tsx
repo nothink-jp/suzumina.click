@@ -1,9 +1,9 @@
-import type { AudioButtonQuery } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject, AudioButtonQuery } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { Youtube } from "lucide-react";
 import Link from "next/link";
-import { getAudioButtons } from "@/app/buttons/actions";
+import { getAudioButtonsList } from "@/app/buttons/actions";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 
 interface RelatedAudioButtonsProps {
@@ -27,11 +27,11 @@ export async function RelatedAudioButtons({
 			includeTotalCount: false, // 関連音声ボタンでは総数は不要
 		};
 
-		const sameVideoResult = await getAudioButtons(sameVideoQuery);
+		const sameVideoResult = await getAudioButtonsList(sameVideoQuery);
 
 		if (sameVideoResult.success) {
 			const relatedButtons = sameVideoResult.data.audioButtons.filter(
-				(button) => button.id !== currentId,
+				(button: AudioButtonPlainObject) => button.id !== currentId,
 			);
 
 			if (relatedButtons.length > 0) {
@@ -45,7 +45,7 @@ export async function RelatedAudioButtons({
 						</CardHeader>
 						<CardContent>
 							<div className="flex flex-wrap gap-3 items-start">
-								{relatedButtons.slice(0, 6).map((audioButton) => (
+								{relatedButtons.slice(0, 6).map((audioButton: AudioButtonPlainObject) => (
 									<AudioButtonWithPlayCount
 										key={audioButton.id}
 										audioButton={audioButton}
