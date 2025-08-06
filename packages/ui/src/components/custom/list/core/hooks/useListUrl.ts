@@ -283,7 +283,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 			}, 0);
 			return () => clearTimeout(timer);
 		}
-	}, [searchParams]);
+	}, []);
 
 	return {
 		params: stableParams,

@@ -5,7 +5,7 @@
  * DLsite固有のドメインロジックを含むため services/dlsite に配置
  */
 
-import type { DLsiteRawApiResponse } from "@suzumina.click/shared-types";
+import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import { generateDLsiteHeaders } from "../../infrastructure/management/user-agent-manager";
 import * as logger from "../../shared/logger";
 
@@ -29,7 +29,7 @@ function handleHttpError(
 	_url: string,
 	_responseText: string,
 	_enableDetailedLogging: boolean,
-): DLsiteRawApiResponse | null {
+): DLsiteApiResponse | null {
 	// 詳細ログは環境に関係なく省略
 
 	// 404: 作品が見つからない（ログ省略）
@@ -94,7 +94,7 @@ function validateResponseFormat(
 	url: string,
 	responseText: string,
 	_enableDetailedLogging: boolean,
-): DLsiteRawApiResponse | null {
+): DLsiteApiResponse | null {
 	// Individual Info APIは配列形式でレスポンスを返す
 	if (!Array.isArray(responseData) || responseData.length === 0) {
 		const invalidContext = {
@@ -115,7 +115,7 @@ function validateResponseFormat(
 		return null;
 	}
 
-	const data = responseData[0] as DLsiteRawApiResponse;
+	const data = responseData[0] as DLsiteApiResponse;
 
 	// 基本的なデータ検証（ログ省略）
 	if (!data.workno && !data.product_id) {
@@ -136,7 +136,7 @@ function validateResponseFormat(
 export async function fetchIndividualWorkInfo(
 	workId: string,
 	options: IndividualInfoAPIOptions & { retryCount?: number } = {},
-): Promise<DLsiteRawApiResponse | null> {
+): Promise<DLsiteApiResponse | null> {
 	const { enableDetailedLogging = false, retryCount = 0 } = options;
 	const MAX_RETRIES = 2;
 
@@ -228,11 +228,11 @@ export async function batchFetchIndividualInfo(
 		batchDelay?: number;
 	} = {},
 ): Promise<{
-	results: Map<string, DLsiteRawApiResponse>;
+	results: Map<string, DLsiteApiResponse>;
 	failedWorkIds: string[];
 }> {
 	const { maxConcurrent = 3, batchDelay = 800, ...apiOptions } = options;
-	const results = new Map<string, DLsiteRawApiResponse>();
+	const results = new Map<string, DLsiteApiResponse>();
 	const failedWorkIds: string[] = [];
 
 	// バッチに分割

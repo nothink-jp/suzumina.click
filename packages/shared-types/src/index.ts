@@ -46,6 +46,8 @@ export * from "./plain-objects/work-plain";
 export type { FirestoreServerAudioButtonData } from "./types/firestore/audio-button";
 export type { CircleDocument } from "./types/firestore/circle";
 export { isCircleDocument } from "./types/firestore/circle";
+export type { CollectionMetadata } from "./types/firestore/collection-metadata";
+export { isCollectionMetadata } from "./types/firestore/collection-metadata";
 export type { CreatorDocument, CreatorWorkRelation } from "./types/firestore/creator";
 export {
 	isCreatorDocument,

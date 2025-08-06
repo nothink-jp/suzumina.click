@@ -3,13 +3,13 @@
  * プロトコル相対URLの正規化が正しく動作することを検証
  */
 
-import type { DLsiteRawApiResponse } from "@suzumina.click/shared-types";
+import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import { describe, expect, it } from "vitest";
 import { WorkMapper } from "../../mappers/work-mapper";
 
 describe("URL正規化機能", () => {
 	it("プロトコル相対URLを正しく正規化する", () => {
-		const mockApiData: DLsiteRawApiResponse = {
+		const mockApiData: DLsiteApiResponse = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -62,7 +62,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("既に正しい形式のURLはそのまま維持する", () => {
-		const mockApiData: DLsiteRawApiResponse = {
+		const mockApiData: DLsiteApiResponse = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -104,7 +104,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("srcsetから抽出した高解像度URLも正規化される", () => {
-		const mockApiData: DLsiteRawApiResponse = {
+		const mockApiData: DLsiteApiResponse = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -141,7 +141,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("undefinedやnullのURLは適切に処理される", () => {
-		const mockApiData: DLsiteRawApiResponse = {
+		const mockApiData: DLsiteApiResponse = {
 			workno: "RJ01037463",
 			product_id: "RJ01037463",
 			work_name: "テスト作品",
@@ -179,7 +179,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("必須フィールドが欠損していても処理される", () => {
-		const mockApiData: DLsiteRawApiResponse = {
+		const mockApiData: DLsiteApiResponse = {
 			workno: "RJ01037463",
 			// work_name と maker_name が欠損
 			// price 情報も欠損
@@ -196,7 +196,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("画像URLが数値型でも正しく処理される", () => {
-		const mockApiData: DLsiteRawApiResponse = {
+		const mockApiData: DLsiteApiResponse = {
 			workno: "RJ01037463",
 			work_name: "テスト作品",
 			maker_name: "テストサークル",
@@ -221,7 +221,7 @@ describe("URL正規化機能", () => {
 	});
 
 	it("画像URLがオブジェクト型でも正しく処理される", () => {
-		const mockApiData: DLsiteRawApiResponse = {
+		const mockApiData: DLsiteApiResponse = {
 			workno: "RJ01037463",
 			work_name: "テスト作品",
 			maker_name: "テストサークル",

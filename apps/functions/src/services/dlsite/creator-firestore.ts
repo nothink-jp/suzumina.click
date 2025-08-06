@@ -9,7 +9,7 @@ import type {
 	CreatorDocument,
 	CreatorType,
 	CreatorWorkRelation,
-	DLsiteRawApiResponse,
+	DLsiteApiResponse,
 } from "@suzumina.click/shared-types";
 import { isValidCreatorId } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
@@ -32,7 +32,7 @@ interface ExtractedCreator {
  * @param apiData DLsite APIレスポンス
  * @returns クリエイターIDをキーとしたMap
  */
-function extractCreatorMappings(apiData: DLsiteRawApiResponse): Map<string, ExtractedCreator> {
+function extractCreatorMappings(apiData: DLsiteApiResponse): Map<string, ExtractedCreator> {
 	const mappings = new Map<string, ExtractedCreator>();
 
 	if (!apiData.creaters || Array.isArray(apiData.creaters)) {
@@ -121,7 +121,7 @@ async function getExistingCreatorMappings(
  * @returns 処理結果
  */
 export async function updateCreatorWorkMapping(
-	apiData: DLsiteRawApiResponse,
+	apiData: DLsiteApiResponse,
 	workId: string,
 ): Promise<{ success: boolean; error?: string }> {
 	try {

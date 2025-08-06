@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { DLsiteRawApiResponse } from "../../api-schemas/dlsite-raw";
-
 import type { WorkDocument } from "../../entities/work";
 import type { FirestoreWorkEvaluation } from "../../entities/work-evaluation";
-import type { DLsiteApiResponse, WorkDoc, WorkEvaluation } from "../index";
+import type { WorkDoc, WorkEvaluation } from "../index";
 
 // Note: These types will be imported once they are defined
 // For now, we'll use placeholders for testing the aliasing system
@@ -28,13 +26,7 @@ describe("Type Aliases", () => {
 		});
 	});
 
-	describe("API Aliases", () => {
-		it("should correctly alias DLsiteApiResponse type", () => {
-			type TestApiResponse = AssertEqual<DLsiteApiResponse, DLsiteRawApiResponse>;
-			const _test: TestApiResponse = true;
-			expect(_test).toBe(true);
-		});
-	});
+	// API Aliases are no longer needed since DLsiteApiResponse is the primary type now
 
 	describe("Type Guards", () => {
 		describe("isWorkDoc", () => {

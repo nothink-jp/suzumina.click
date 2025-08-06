@@ -1,4 +1,4 @@
-import type { DLsiteRawApiResponse, PriceHistoryDocument } from "@suzumina.click/shared-types";
+import type { DLsiteApiResponse, PriceHistoryDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
 import { isValidPriceData } from "./price-extractor";
 
@@ -28,7 +28,7 @@ function getJSTDateTime(): string {
  */
 export async function savePriceHistory(
 	workId: string,
-	apiResponse: DLsiteRawApiResponse,
+	apiResponse: DLsiteApiResponse,
 ): Promise<boolean> {
 	try {
 		// worknoが存在しない場合は保存しない
@@ -113,9 +113,7 @@ export async function savePriceHistory(
  * @param workPriceMap 作品ID -> APIレスポンスのマップ
  * @returns 保存結果の統計情報
  */
-export async function saveBulkPriceHistory(
-	workPriceMap: Map<string, DLsiteRawApiResponse>,
-): Promise<{
+export async function saveBulkPriceHistory(workPriceMap: Map<string, DLsiteApiResponse>): Promise<{
 	total: number;
 	success: number;
 	failed: number;

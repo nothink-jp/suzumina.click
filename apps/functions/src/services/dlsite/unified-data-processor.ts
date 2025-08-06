@@ -5,7 +5,7 @@
  * Work、Circle、Creator、価格履歴の更新を一元管理
  */
 
-import type { DLsiteRawApiResponse, WorkDocument } from "@suzumina.click/shared-types";
+import type { DLsiteApiResponse, WorkDocument } from "@suzumina.click/shared-types";
 import * as logger from "../../shared/logger";
 import { WorkMapper } from "../mappers/work-mapper";
 import { savePriceHistory } from "../price-history";
@@ -52,7 +52,7 @@ export interface ProcessingOptions {
  * @returns 処理結果
  */
 export async function processUnifiedDLsiteData(
-	apiData: DLsiteRawApiResponse,
+	apiData: DLsiteApiResponse,
 	options: ProcessingOptions = {},
 ): Promise<ProcessingResult> {
 	const result: ProcessingResult = {
@@ -229,7 +229,7 @@ function hasSignificantChanges(existing: WorkDocument, updated: WorkDocument): b
  * @returns 処理結果のリスト
  */
 export async function processBatchUnifiedDLsiteData(
-	apiDataList: DLsiteRawApiResponse[],
+	apiDataList: DLsiteApiResponse[],
 	options: ProcessingOptions = {},
 ): Promise<ProcessingResult[]> {
 	const results: ProcessingResult[] = [];

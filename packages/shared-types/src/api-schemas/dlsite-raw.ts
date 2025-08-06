@@ -152,7 +152,7 @@ export const DLsiteRawCreater = z.object({
 export const DLsiteRawCreaters = z.array(DLsiteRawCreater);
 
 // === 統合APIレスポンス ===
-export const DLsiteRawApiResponse = z.object({
+export const DLsiteApiResponse = z.object({
 	// 基本情報
 	...DLsiteRawWork.shape,
 	// 評価情報
@@ -208,14 +208,14 @@ export const DLsiteRawApiResponse = z.object({
 		.optional(),
 });
 
-export type DLsiteRawApiResponse = z.infer<typeof DLsiteRawApiResponse>;
+export type DLsiteApiResponse = z.infer<typeof DLsiteApiResponse>;
 
 /**
  * APIレスポンスのバリデーション
  */
-export const validateApiResponse = (data: unknown): DLsiteRawApiResponse | null => {
+export const validateApiResponse = (data: unknown): DLsiteApiResponse | null => {
 	try {
-		return DLsiteRawApiResponse.parse(data);
+		return DLsiteApiResponse.parse(data);
 	} catch (_error) {
 		return null;
 	}

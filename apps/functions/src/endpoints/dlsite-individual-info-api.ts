@@ -6,6 +6,7 @@
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
+import type { CollectionMetadata } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../infrastructure/management/user-agent-manager";
 import { getExistingWorksMap } from "../services/dlsite/dlsite-firestore";
@@ -28,25 +29,7 @@ const API_REQUEST_DELAY = 400;
 const BATCH_SIZE = 50; // 100 → 50に削減（エラー率低下とタイムアウト回避）
 const MAX_EXECUTION_TIME = 420000; // 7分
 
-// 統合データ収集メタデータの型定義
-interface UnifiedDataCollectionMetadata {
-	lastFetchedAt: Timestamp;
-	currentBatch?: number;
-	totalBatches?: number;
-	currentBatchStartTime?: Timestamp;
-	isInProgress: boolean;
-	lastError?: string;
-	lastSuccessfulCompleteFetch?: Timestamp;
-	totalWorks?: number;
-	processedWorks?: number;
-	basicDataUpdated?: number;
-	unifiedSystemStarted?: Timestamp;
-	batchProcessingMode?: boolean;
-	allWorkIds?: string[];
-	completedBatches?: number[];
-	// 追加フィールド
-	migrationVersion?: string;
-}
+// Note: CollectionMetadata type is now imported from @suzumina.click/shared-types
 
 /**
  * 統合処理結果の型定義
@@ -72,15 +55,15 @@ interface BatchProcessingInfo {
 /**
  * 統合データ収集メタデータの取得または初期化
  */
-async function getOrCreateUnifiedMetadata(): Promise<UnifiedDataCollectionMetadata> {
+async function getOrCreateUnifiedMetadata(): Promise<CollectionMetadata> {
 	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
 	const doc = await metadataRef.get();
 
 	if (doc.exists) {
-		return doc.data() as UnifiedDataCollectionMetadata;
+		return doc.data() as CollectionMetadata;
 	}
 
-	const initialMetadata: UnifiedDataCollectionMetadata = {
+	const initialMetadata: CollectionMetadata = {
 		lastFetchedAt: Timestamp.now(),
 		isInProgress: false,
 		unifiedSystemStarted: Timestamp.now(),
@@ -94,9 +77,7 @@ async function getOrCreateUnifiedMetadata(): Promise<UnifiedDataCollectionMetada
 /**
  * 統合データ収集メタデータの更新
  */
-async function updateUnifiedMetadata(
-	update: Partial<UnifiedDataCollectionMetadata>,
-): Promise<void> {
+async function updateUnifiedMetadata(update: Partial<CollectionMetadata>): Promise<void> {
 	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
 	await metadataRef.update(update);
 }
@@ -267,7 +248,7 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
  * バッチ処理の継続情報を取得
  */
 function getContinuationInfo(
-	metadata: UnifiedDataCollectionMetadata,
+	metadata: CollectionMetadata,
 ): { isContinuation: true; allWorkIds: string[]; startBatch: number } | { isContinuation: false } {
 	if (
 		metadata.batchProcessingMode &&
@@ -358,7 +339,7 @@ async function executeBatchLoop(
 	batches: string[][],
 	startBatch: number,
 	startTime: number,
-	metadata: UnifiedDataCollectionMetadata,
+	metadata: CollectionMetadata,
 ): Promise<{
 	totalUpdated: number;
 	totalApiCalls: number;

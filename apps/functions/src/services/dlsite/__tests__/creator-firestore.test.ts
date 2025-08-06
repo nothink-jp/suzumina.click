@@ -5,7 +5,7 @@
 import type {
 	CreatorDocument,
 	CreatorWorkRelation,
-	DLsiteRawApiResponse,
+	DLsiteApiResponse,
 } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as logger from "../../../shared/logger";
@@ -129,7 +129,7 @@ describe("creator-firestore", () => {
 
 	describe("updateCreatorWorkMapping", () => {
 		it("新規クリエイターマッピングを作成する", async () => {
-			const apiData: DLsiteRawApiResponse = {
+			const apiData: DLsiteApiResponse = {
 				workno: "RJ123456",
 				maker_id: "RG11111",
 				maker_name: "テストサークル",
@@ -165,7 +165,7 @@ describe("creator-firestore", () => {
 		});
 
 		it("既存マッピングを更新する", async () => {
-			const apiData: DLsiteRawApiResponse = {
+			const apiData: DLsiteApiResponse = {
 				workno: "RJ123456",
 				maker_id: "RG11111",
 				maker_name: "テストサークル",
@@ -209,7 +209,7 @@ describe("creator-firestore", () => {
 		});
 
 		it("無効なクリエイターIDはスキップする", async () => {
-			const apiData: DLsiteRawApiResponse = {
+			const apiData: DLsiteApiResponse = {
 				workno: "RJ123456",
 				maker_id: "RG11111",
 				maker_name: "テストサークル",
@@ -243,7 +243,7 @@ describe("creator-firestore", () => {
 		});
 
 		it("エラーが発生した場合は失敗を返す", async () => {
-			const apiData: DLsiteRawApiResponse = {
+			const apiData: DLsiteApiResponse = {
 				workno: "RJ123456",
 				maker_id: "RG11111",
 				creaters: {
