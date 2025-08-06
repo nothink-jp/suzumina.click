@@ -43,8 +43,9 @@ export const AudioButtonList = memo(function AudioButtonList({
 	if (loading) {
 		return (
 			<div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${className}`}>
-				{Array.from({ length: 6 }).map((_, index) => (
+				{Array.from({ length: 6 }, (_, index) => (
 					<div
+						// biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton loading
 						key={`audio-button-skeleton-${index}-of-6`}
 						className="h-48 animate-pulse rounded-lg bg-muted"
 					/>

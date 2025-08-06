@@ -39,7 +39,6 @@ export const useFavoriteStatusBulk = (
 	const [error, setError] = useState<string | null>(null);
 
 	// キャッシュキーの生成（配列の内容で依存管理）
-	// biome-ignore lint/correctness/useExhaustiveDependencies: audioButtonIds.join(",") は意図的に使用（無限ループ防止）
 	const cacheKey = useMemo(() => {
 		return [...audioButtonIds].sort().join(",");
 	}, [audioButtonIds]);

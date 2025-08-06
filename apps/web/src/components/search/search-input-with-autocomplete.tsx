@@ -137,6 +137,7 @@ export function SearchInputWithAutocomplete({
 			<div className="relative">
 				<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 
+				{/* biome-ignore lint/a11y/useSemanticElements: combobox role is correct for autocomplete */}
 				<Input
 					ref={inputRef}
 					type="text"
