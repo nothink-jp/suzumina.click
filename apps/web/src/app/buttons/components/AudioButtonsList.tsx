@@ -1,17 +1,14 @@
 "use client";
 
 import type { AudioButtonPlainObject, AudioButtonQuery } from "@suzumina.click/shared-types";
-import {
-	ConfigurableList,
-	type StandardListParams,
-} from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
 import { useMemo } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
 import { getAudioButtons } from "../actions";
 
-interface AudioButtonsListGenericProps {
+interface AudioButtonsListProps {
 	searchParams:
 		| Record<string, string | string[] | undefined>
 		| {
@@ -72,10 +69,7 @@ function AudioButtonItem({
 	);
 }
 
-export default function AudioButtonsList({
-	searchParams,
-	initialData,
-}: AudioButtonsListGenericProps) {
+export default function AudioButtonsList({ searchParams, initialData }: AudioButtonsListProps) {
 	// 初期データの変換
 	const transformedInitialData = useMemo(() => {
 		if (!initialData || !initialData.success || !initialData.data) {
@@ -166,6 +160,7 @@ export default function AudioButtonsList({
 				]}
 				defaultSort="newest"
 				itemsPerPageOptions={[12, 24, 48]}
+				emptyMessage="音声ボタンが見つかりませんでした"
 			/>
 		</div>
 	);

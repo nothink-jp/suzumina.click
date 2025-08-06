@@ -45,7 +45,7 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
 						</div>
 					}
 				>
-					<VideoList initialData={initialData} searchParams={params} />
+					<VideoList initialData={initialData} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>

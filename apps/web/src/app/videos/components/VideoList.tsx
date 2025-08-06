@@ -9,16 +9,15 @@ import { useMemo } from "react";
 import { fetchVideosForConfigurableList } from "../actions";
 import VideoCard from "./VideoCard";
 
-interface VideoListGenericProps {
+interface VideoListProps {
 	initialData: {
 		items: VideoPlainObject[];
 		totalCount: number;
 		filteredCount: number;
 	};
-	searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default function VideoList({ initialData, searchParams }: VideoListGenericProps) {
+export default function VideoList({ initialData }: VideoListProps) {
 	// 年代選択肢を動的に生成（2018年から現在年まで）
 	const currentYear = new Date().getFullYear();
 	const yearOptions = useMemo(() => {
