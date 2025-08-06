@@ -230,8 +230,8 @@ describe("audio-button-actions", () => {
 	});
 
 	describe("recordAudioButtonPlayAction", () => {
-		// biome-ignore lint/suspicious/noSkippedTests: Transaction mock needs improvement
-		it.skip("再生回数を記録できる", async () => {
+		it("再生回数を記録できる", async () => {
+			const mockDocRef = { id: "button-123" };
 			const mockDoc = {
 				exists: true,
 				data: () => createMockFirestoreData({ playCount: 100 }),
@@ -244,7 +244,7 @@ describe("audio-button-actions", () => {
 
 			const mockFirestore = {
 				collection: vi.fn().mockReturnValue({
-					doc: vi.fn().mockReturnValue({}),
+					doc: vi.fn().mockReturnValue(mockDocRef),
 				}),
 				runTransaction: vi.fn().mockImplementation(async (callback) => {
 					await callback(mockTransaction);
@@ -256,8 +256,9 @@ describe("audio-button-actions", () => {
 			const result = await recordAudioButtonPlayAction("button-123");
 
 			expect(result.success).toBe(true);
+			expect(mockTransaction.get).toHaveBeenCalledWith(mockDocRef);
 			expect(mockTransaction.update).toHaveBeenCalledWith(
-				expect.anything(),
+				mockDocRef,
 				expect.objectContaining({
 					playCount: 101,
 					updatedAt: expect.any(Date),
@@ -265,20 +266,21 @@ describe("audio-button-actions", () => {
 			);
 		});
 
-		// biome-ignore lint/suspicious/noSkippedTests: Transaction mock needs improvement
-		it.skip("存在しないボタンでエラーを返す", async () => {
+		it("存在しないボタンでエラーを返す", async () => {
+			const mockDocRef = { id: "non-existent" };
 			const mockDoc = {
 				exists: false,
 			};
 
 			const mockFirestore = {
 				collection: vi.fn().mockReturnValue({
-					doc: vi.fn().mockReturnValue({}),
+					doc: vi.fn().mockReturnValue(mockDocRef),
 				}),
 				runTransaction: vi.fn().mockImplementation(async (callback) => {
 					const mockTransaction = {
 						get: vi.fn().mockResolvedValue(mockDoc),
 					};
+					// Transactionコールバック内でエラーがスローされることを想定
 					await callback(mockTransaction);
 				}),
 			};

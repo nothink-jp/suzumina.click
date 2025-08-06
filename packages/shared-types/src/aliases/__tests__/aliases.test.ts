@@ -21,46 +21,10 @@ describe("Type Aliases", () => {
 			expect(_test).toBe(true);
 		});
 
-		// biome-ignore lint/suspicious/noSkippedTests: Types not yet implemented
-		it.skip("should correctly alias User type", () => {
-			// TODO: Enable when FirestoreUserDocument is available
-			// type TestUser = AssertEqual<User, FirestoreUserDocument>;
-			// const _test: TestUser = true;
-			// expect(_test).toBe(true);
-			expect(true).toBe(true);
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Types not yet implemented
-		it.skip("should correctly alias Video type", () => {
-			// TODO: Enable when FirestoreVideoDocument is available
-			// type TestVideo = AssertEqual<Video, FirestoreVideoDocument>;
-			// const _test: TestVideo = true;
-			// expect(_test).toBe(true);
-			expect(true).toBe(true);
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Types not yet implemented
-		it.skip("should correctly alias AudioButton type", () => {
-			// TODO: Enable when OptimizedAudioButtonData is available
-			// type TestAudioButton = AssertEqual<AudioButton, OptimizedAudioButtonData>;
-			// const _test: TestAudioButton = true;
-			// expect(_test).toBe(true);
-			expect(true).toBe(true);
-		});
-
 		it("should correctly alias WorkEvaluation type", () => {
 			type TestWorkEvaluation = AssertEqual<WorkEvaluation, FirestoreWorkEvaluation>;
 			const _test: TestWorkEvaluation = true;
 			expect(_test).toBe(true);
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Types not yet implemented
-		it.skip("should correctly alias CircleCreator type", () => {
-			// TODO: Enable when CircleCreatorInfoData is available
-			// type TestCircleCreator = AssertEqual<CircleCreator, CircleCreatorInfoData>;
-			// const _test: TestCircleCreator = true;
-			// expect(_test).toBe(true);
-			expect(true).toBe(true);
 		});
 	});
 
@@ -69,44 +33,6 @@ describe("Type Aliases", () => {
 			type TestApiResponse = AssertEqual<DLsiteApiResponse, DLsiteRawApiResponse>;
 			const _test: TestApiResponse = true;
 			expect(_test).toBe(true);
-		});
-	});
-
-	describe("Metadata Aliases", () => {
-		// biome-ignore lint/suspicious/noSkippedTests: Types not yet implemented
-		it.skip("should correctly alias CollectionMetadata type", () => {
-			// TODO: Enable when UnifiedDataCollectionMetadata is available
-			// type TestMetadata = AssertEqual<CollectionMetadata, UnifiedDataCollectionMetadata>;
-			// const _test: TestMetadata = true;
-			// expect(_test).toBe(true);
-			expect(true).toBe(true);
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Types not yet implemented
-		it.skip("should correctly alias Timestamp type", () => {
-			// TODO: Enable when FirestoreFieldTimestamp is available
-			// type TestTimestamp = AssertEqual<Timestamp, FirestoreFieldTimestamp>;
-			// const _test: TestTimestamp = true;
-			// expect(_test).toBe(true);
-			expect(true).toBe(true);
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Types not yet implemented
-		it.skip("should correctly alias PriceHistory type", () => {
-			// TODO: Enable when PriceHistoryEntryData is available
-			// type TestPriceHistory = AssertEqual<PriceHistory, PriceHistoryEntryData>;
-			// const _test: TestPriceHistory = true;
-			// expect(_test).toBe(true);
-			expect(true).toBe(true);
-		});
-
-		// biome-ignore lint/suspicious/noSkippedTests: Types not yet implemented
-		it.skip("should correctly alias VideoTag type", () => {
-			// TODO: Enable when VideoTagAssociationData is available
-			// type TestVideoTag = AssertEqual<VideoTag, VideoTagAssociationData>;
-			// const _test: TestVideoTag = true;
-			// expect(_test).toBe(true);
-			expect(true).toBe(true);
 		});
 	});
 
