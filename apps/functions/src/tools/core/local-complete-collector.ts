@@ -214,12 +214,19 @@ class LocalDataCollector {
 			for (const [index, [workId, apiData]] of Array.from(batchResults.entries()).entries()) {
 				const processingResult = processingResults[index];
 
-				const localData = this.processSuccessfulData(workId, apiData, processingResult);
-				if (localData) {
-					results.push(localData);
-				} else if (processingResult) {
+				if (processingResult) {
+					const localData = this.processSuccessfulData(workId, apiData, processingResult);
+					if (localData) {
+						results.push(localData);
+					} else {
+						errors.push(
+							this.createError(workId, processingResult.errors.join(", "), "VALIDATION_ERROR"),
+						);
+					}
+				} else {
+					// processingResultがundefinedの場合
 					errors.push(
-						this.createError(workId, processingResult.errors.join(", "), "VALIDATION_ERROR"),
+						this.createError(workId, "処理結果が取得できませんでした", "VALIDATION_ERROR"),
 					);
 				}
 			}

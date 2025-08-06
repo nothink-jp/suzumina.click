@@ -41,7 +41,7 @@ export interface ProcessingOptions {
 /**
  * 処理結果を初期化
  */
-function initializeResult(workId: string): ProcessingResult {
+function initializeResult(workId: string | undefined): ProcessingResult {
 	return {
 		workId: workId || "UNKNOWN",
 		success: false,
