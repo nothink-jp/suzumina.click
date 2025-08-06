@@ -329,17 +329,9 @@ function extractSampleImages(
 	if (!raw.image_samples?.length) return [];
 
 	return raw.image_samples
-		.map(extractSampleImageUrl)
+		.map(extractUrlFromImageField)
 		.filter((thumb): thumb is string => thumb !== undefined)
 		.map((thumb) => ({ thumb }));
-}
-
-/**
- * サンプル画像アイテムからURLを抽出
- */
-function extractSampleImageUrl(item: unknown): string | undefined {
-	// extractUrlFromImageFieldを再利用して、コードの重複を削減
-	return extractUrlFromImageField(item);
 }
 
 /**
@@ -440,4 +432,19 @@ export const WorkMapper = {
 	toWork,
 	toPrice,
 	toRating,
+	// Private methods that were previously accessible as static methods
+	mapAgeRating,
+	mapAgeCategoryString,
+	extractThumbnailUrl,
+	extractHighResImageUrl,
+	normalizeCreators,
+	extractGenres,
+	extractCustomGenres,
+	extractSampleImages,
+	toTranslationInfo,
+	toLanguageDownloads,
+	toISODate,
+	formatDateDisplay,
+	toSalesStatus,
+	normalizeUrl,
 };
