@@ -88,11 +88,11 @@ export function mapYouTubeToVideoEntity(
 			contentTags: youtubeVideo.snippet.tags || undefined,
 		};
 
-		// Create audio button info with undefined values to avoid overwriting in Firestore
-		// These will be preserved during merge operation
+		// Create audio button info with default values
+		// These will be preserved during merge operation in Firestore
 		const audioButtonInfo: AudioButtonInfo = {
-			count: undefined as any,
-			hasButtons: undefined as any,
+			count: 0,
+			hasButtons: false,
 		};
 
 		// Create live streaming details
