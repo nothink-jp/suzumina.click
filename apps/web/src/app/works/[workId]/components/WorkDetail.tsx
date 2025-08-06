@@ -255,7 +255,12 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 								</Badge>
 								{(() => {
 									const availableLanguages = work._computed.availableLanguages;
-									const additionalCount = availableLanguages.length - 1;
+									const primaryLanguage = work._computed.primaryLanguage;
+									// 主要言語以外の言語をカウント
+									const additionalLanguages = availableLanguages.filter(
+										(lang) => lang !== primaryLanguage,
+									);
+									const additionalCount = additionalLanguages.length;
 
 									if (additionalCount > 0) {
 										return <span className="text-sm text-gray-600">+{additionalCount}言語</span>;
