@@ -7,6 +7,12 @@ import {
 } from "@suzumina.click/ui/components/custom/list";
 import { useMemo } from "react";
 import { ListWrapper } from "@/components/list/ListWrapper";
+import {
+	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
+	DEFAULT_LIST_PROPS,
+	GRID_COLUMNS_3,
+	VIDEO_SORT_OPTIONS,
+} from "@/constants/list-options";
 import { fetchVideosForConfigurableList } from "../actions";
 import VideoCard from "./VideoCard";
 
@@ -68,20 +74,11 @@ export default function VideoList({ initialData }: VideoListProps) {
 				initialTotal={initialData.totalCount}
 				renderItem={renderItem}
 				fetchFn={fetchVideos as (params: unknown) => Promise<unknown>}
-				searchable
+				{...DEFAULT_LIST_PROPS}
 				searchPlaceholder="動画タイトルで検索..."
-				urlSync
 				layout="grid"
-				gridColumns={{
-					default: 1,
-					md: 2,
-					lg: 3,
-				}}
-				sorts={[
-					{ value: "newest", label: "新しい順" },
-					{ value: "oldest", label: "古い順" },
-				]}
-				defaultSort="newest"
+				gridColumns={GRID_COLUMNS_3}
+				sorts={VIDEO_SORT_OPTIONS}
 				filters={{
 					year: {
 						type: "select",
@@ -117,7 +114,7 @@ export default function VideoList({ initialData }: VideoListProps) {
 						emptyValue: "all",
 					},
 				}}
-				itemsPerPageOptions={[12, 24, 48]}
+				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 				emptyMessage="動画がありません"
 			/>
 		</ListWrapper>

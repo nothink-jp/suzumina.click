@@ -7,6 +7,12 @@ import {
 } from "@suzumina.click/ui/components/custom/list";
 import { useCallback, useMemo } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import {
+	BASIC_SORT_OPTIONS,
+	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
+	DEFAULT_LIST_PROPS,
+} from "@/constants/list-options";
+import { createBasicToParams } from "@/utils/list-adapters";
 import { fetchFavoriteAudioButtons } from "../actions";
 
 interface FavoritesListProps {
@@ -23,12 +29,7 @@ export default function FavoritesList({ initialData, userId }: FavoritesListProp
 	// データアダプター
 	const dataAdapter = useMemo(
 		() => ({
-			toParams: (params: StandardListParams) => ({
-				page: params.page,
-				limit: params.itemsPerPage || 20,
-				sort: params.sort || "newest",
-				userId,
-			}),
+			toParams: createBasicToParams("newest", () => ({ userId })),
 			fromResult: (result: unknown) => {
 				const data = result as Awaited<ReturnType<typeof fetchFavoriteAudioButtons>>;
 				return {
@@ -84,7 +85,7 @@ export default function FavoritesList({ initialData, userId }: FavoritesListProp
 			items: initialData.audioButtons,
 			total: initialData.totalCount,
 			page: 1,
-			itemsPerPage: 20,
+			itemsPerPage: DEFAULT_ITEMS_PER_PAGE_OPTIONS[0],
 		}),
 		[initialData],
 	);
@@ -96,14 +97,10 @@ export default function FavoritesList({ initialData, userId }: FavoritesListProp
 			renderItem={renderItem}
 			fetchFn={fetchFn}
 			dataAdapter={dataAdapter}
-			urlSync
+			{...DEFAULT_LIST_PROPS}
 			layout="flex"
-			sorts={[
-				{ value: "newest", label: "新しい順" },
-				{ value: "oldest", label: "古い順" },
-			]}
-			defaultSort="newest"
-			itemsPerPageOptions={[20, 40, 60]}
+			sorts={BASIC_SORT_OPTIONS}
+			itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 			emptyMessage="お気に入りがまだありません。音声ボタンをお気に入りに追加すると、ここに表示されます"
 		/>
 	);

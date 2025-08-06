@@ -6,17 +6,20 @@ import {
 	type StandardListParams,
 } from "@suzumina.click/ui/components/custom/list";
 import { useCallback, useMemo } from "react";
-import WorkCard from "@/app/works/components/WorkCard";
+import { ListWrapper } from "@/components/list/ListWrapper";
+import { WorkListItem } from "@/components/work/WorkListItem";
+import {
+	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
+	DEFAULT_LIST_PROPS,
+	GRID_COLUMNS_4,
+	WORK_SORT_OPTIONS,
+} from "@/constants/list-options";
+import { createBasicToParams } from "@/utils/list-adapters";
 import { fetchCircleWorksForConfigurableList } from "../actions";
 
 interface CircleWorksListProps {
 	circleId: string;
 	initialData?: WorkListResultPlain;
-}
-
-// 作品表示用のコンポーネント
-function WorkItem({ work }: { work: WorkPlainObject }) {
-	return <WorkCard work={work} />;
 }
 
 export default function CircleWorksList({ circleId, initialData }: CircleWorksListProps) {
@@ -34,15 +37,7 @@ export default function CircleWorksList({ circleId, initialData }: CircleWorksLi
 	// データアダプター
 	const dataAdapter = useMemo(
 		() => ({
-			toParams: (params: StandardListParams) => {
-				return {
-					circleId,
-					page: params.page,
-					limit: params.itemsPerPage,
-					sort: params.sort || "newest",
-					search: params.search,
-				};
-			},
+			toParams: createBasicToParams("newest", () => ({ circleId })),
 			fromResult: (result: unknown) => result as { items: WorkPlainObject[]; total: number },
 		}),
 		[circleId],
@@ -59,34 +54,21 @@ export default function CircleWorksList({ circleId, initialData }: CircleWorksLi
 	}, []);
 
 	return (
-		<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
+		<ListWrapper>
 			<ConfigurableList<WorkPlainObject>
 				items={transformedInitialData?.items || []}
 				initialTotal={transformedInitialData?.total || 0}
-				renderItem={(work) => <WorkItem work={work} />}
+				renderItem={(work) => <WorkListItem work={work} />}
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
-				searchable
+				{...DEFAULT_LIST_PROPS}
 				searchPlaceholder="作品タイトルで検索..."
-				urlSync
 				layout="grid"
-				gridColumns={{
-					default: 1,
-					sm: 2,
-					lg: 3,
-					xl: 4,
-				}}
-				sorts={[
-					{ value: "newest", label: "新しい順" },
-					{ value: "oldest", label: "古い順" },
-					{ value: "popular", label: "人気順" },
-					{ value: "price_low", label: "価格が安い順" },
-					{ value: "price_high", label: "価格が高い順" },
-				]}
-				defaultSort="newest"
-				itemsPerPageOptions={[12, 24, 48]}
+				gridColumns={GRID_COLUMNS_4}
+				sorts={WORK_SORT_OPTIONS}
+				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 				emptyMessage="作品が見つかりませんでした"
 			/>
-		</div>
+		</ListWrapper>
 	);
 }

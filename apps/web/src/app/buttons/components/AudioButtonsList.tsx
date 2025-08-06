@@ -5,6 +5,11 @@ import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
 import { useMemo } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import { ListWrapper } from "@/components/list/ListWrapper";
+import {
+	AUDIO_SORT_OPTIONS,
+	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
+	DEFAULT_LIST_PROPS,
+} from "@/constants/list-options";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
 import { getAudioButtons } from "../actions";
@@ -135,16 +140,11 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 					},
 					fromResult: (result) => result as { items: AudioButtonPlainObject[]; total: number },
 				}}
-				searchable
+				{...DEFAULT_LIST_PROPS}
 				searchPlaceholder="音声ボタンを検索..."
-				urlSync
 				layout="flex"
-				sorts={[
-					{ value: "newest", label: "新しい順" },
-					{ value: "mostPlayed", label: "再生回数順" },
-				]}
-				defaultSort="newest"
-				itemsPerPageOptions={[12, 24, 48]}
+				sorts={AUDIO_SORT_OPTIONS}
+				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 				emptyMessage="音声ボタンが見つかりませんでした"
 			/>
 		</ListWrapper>

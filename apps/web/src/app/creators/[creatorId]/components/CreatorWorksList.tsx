@@ -6,21 +6,20 @@ import {
 	type StandardListParams,
 } from "@suzumina.click/ui/components/custom/list";
 import { useCallback, useMemo } from "react";
-import WorkCard from "@/app/works/components/WorkCard";
 import { ListWrapper } from "@/components/list/ListWrapper";
+import { WorkListItem } from "@/components/work/WorkListItem";
+import {
+	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
+	DEFAULT_LIST_PROPS,
+	GRID_COLUMNS_4,
+	WORK_SORT_OPTIONS,
+} from "@/constants/list-options";
+import { createBasicToParams } from "@/utils/list-adapters";
 import { fetchCreatorWorksForConfigurableList } from "../actions";
-
-// ページサイズオプションを定数として定義
-const ITEMS_PER_PAGE_OPTIONS = [12, 24, 48] as const;
 
 interface CreatorWorksListProps {
 	creatorId: string;
 	initialData?: WorkListResultPlain;
-}
-
-// 作品表示用のコンポーネント
-function WorkItem({ work }: { work: WorkPlainObject }) {
-	return <WorkCard work={work} />;
 }
 
 export default function CreatorWorksList({ creatorId, initialData }: CreatorWorksListProps) {
@@ -34,29 +33,15 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 					? (initialData.filteredCount ?? initialData.totalCount ?? 0)
 					: initialData.totalCount || 0,
 			page: 1,
-			itemsPerPage: ITEMS_PER_PAGE_OPTIONS[0], // デフォルトのページサイズ
+			itemsPerPage: DEFAULT_ITEMS_PER_PAGE_OPTIONS[0], // デフォルトのページサイズ
 		};
 	}, [initialData]);
 
 	// データアダプター
 	const dataAdapter = useMemo(
 		() => ({
-			toParams: (params: StandardListParams) => {
-				return {
-					creatorId,
-					page: params.page,
-					limit: params.itemsPerPage,
-					sort: params.sort || "newest",
-					search: params.search,
-				};
-			},
-			fromResult: (result: unknown) => {
-				if (!isValidFetchResult(result)) {
-					// 型ガードでバリデーションエラーの場合は空の結果を返す
-					return { items: [], total: 0 };
-				}
-				return result;
-			},
+			toParams: createBasicToParams("newest", () => ({ creatorId })),
+			fromResult: (result: unknown) => result as { items: WorkPlainObject[]; total: number },
 		}),
 		[creatorId],
 	);
@@ -76,28 +61,15 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 			<ConfigurableList<WorkPlainObject>
 				items={transformedInitialData?.items || []}
 				initialTotal={transformedInitialData?.total || 0}
-				renderItem={(work) => <WorkItem work={work} />}
+				renderItem={(work) => <WorkListItem work={work} />}
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
-				searchable
+				{...DEFAULT_LIST_PROPS}
 				searchPlaceholder="作品タイトルで検索..."
-				urlSync
 				layout="grid"
-				gridColumns={{
-					default: 1,
-					sm: 2,
-					lg: 3,
-					xl: 4,
-				}}
-				sorts={[
-					{ value: "newest", label: "新しい順" },
-					{ value: "oldest", label: "古い順" },
-					{ value: "popular", label: "人気順" },
-					{ value: "price_low", label: "価格が安い順" },
-					{ value: "price_high", label: "価格が高い順" },
-				]}
-				defaultSort="newest"
-				itemsPerPageOptions={[...ITEMS_PER_PAGE_OPTIONS]}
+				gridColumns={GRID_COLUMNS_4}
+				sorts={WORK_SORT_OPTIONS}
+				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 				emptyMessage="作品が見つかりませんでした"
 			/>
 		</ListWrapper>
