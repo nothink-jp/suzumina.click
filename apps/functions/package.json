@@ -20,7 +20,9 @@
 		"tools:report": "dotenv -e .env -- tsx src/tools/run-tools.ts report",
 		"tools:reset": "dotenv -e .env -- tsx src/tools/run-tools.ts reset",
 		"tools:help": "dotenv -e .env -- tsx src/tools/run-tools.ts help",
-		"check:integrity": "dotenv -e .env -- tsx src/tools/core/run-data-integrity-check.ts"
+		"check:integrity": "dotenv -e .env -- tsx src/tools/core/run-data-integrity-check.ts",
+		"check:price-history": "dotenv -e .env -- tsx src/tools/check-price-history.ts",
+		"debug:price-history": "dotenv -e .env -- tsx src/tools/debug-price-history.ts"
 	},
 	"main": "lib/endpoints/index.js",
 	"engines": {

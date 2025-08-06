@@ -124,9 +124,13 @@ async function updatePriceHistory(
 	result: ProcessingResult,
 ): Promise<void> {
 	try {
+		logger.debug(`価格履歴更新開始: ${workId}`);
 		const saved = await savePriceHistory(workId, apiData);
 		if (saved) {
 			result.updates.priceHistory = true;
+			logger.debug(`価格履歴更新成功: ${workId}`);
+		} else {
+			logger.debug(`価格履歴更新失敗: ${workId}`);
 		}
 	} catch (error) {
 		result.errors.push(`価格履歴エラー: ${error instanceof Error ? error.message : String(error)}`);
@@ -156,6 +160,10 @@ async function performUpdates(
 	result: ProcessingResult,
 	skipWorkUpdate: boolean,
 ): Promise<void> {
+	logger.debug(
+		`performUpdates開始: ${workData.productId}, skipWorkUpdate=${skipWorkUpdate}, skipPriceHistory=${options.skipPriceHistory}`,
+	);
+
 	if (!skipWorkUpdate) {
 		await updateWork(workData, result);
 		await updateCircle(apiData, workData.productId, result);
@@ -163,7 +171,10 @@ async function performUpdates(
 	}
 
 	if (!options.skipPriceHistory) {
+		logger.debug(`価格履歴更新を実行: ${workData.productId}`);
 		await updatePriceHistory(workData.productId, apiData, result);
+	} else {
+		logger.debug(`価格履歴更新をスキップ: ${workData.productId}`);
 	}
 }
 
