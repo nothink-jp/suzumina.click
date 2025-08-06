@@ -6,6 +6,7 @@ import {
 	type StandardListParams,
 } from "@suzumina.click/ui/components/custom/list";
 import { useCallback, useMemo } from "react";
+import { ListWrapper } from "@/components/list/ListWrapper";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 import { getWorks } from "../actions";
 import WorkCard from "./WorkCard";
@@ -54,16 +55,9 @@ const LANGUAGE_OPTIONS = [
 export default function WorksList({ initialData }: WorksListProps) {
 	const { showR18Content } = useAgeVerification();
 
-	// 初期データを変換
-	const transformedInitialData = useMemo(() => {
-		if (!initialData) return null;
-		return {
-			items: initialData.works,
-			total: initialData.totalCount || 0,
-			page: 1,
-			itemsPerPage: initialData.works.length,
-		};
-	}, [initialData]);
+	// 初期データを準備
+	const initialItems = initialData?.works || [];
+	const initialTotal = initialData?.totalCount || 0;
 
 	// データアダプター
 	const dataAdapter = useMemo(
@@ -95,10 +89,10 @@ export default function WorksList({ initialData }: WorksListProps) {
 	}, []);
 
 	return (
-		<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
+		<ListWrapper>
 			<ConfigurableList<WorkPlainObject>
-				items={transformedInitialData?.items || []}
-				initialTotal={transformedInitialData?.total || 0}
+				items={initialItems}
+				initialTotal={initialTotal}
 				renderItem={(work) => <WorkItem work={work} />}
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
@@ -151,6 +145,6 @@ export default function WorksList({ initialData }: WorksListProps) {
 				itemsPerPageOptions={[12, 24, 48]}
 				emptyMessage="作品が見つかりませんでした"
 			/>
-		</div>
+		</ListWrapper>
 	);
 }

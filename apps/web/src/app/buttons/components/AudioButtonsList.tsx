@@ -4,6 +4,7 @@ import type { AudioButtonPlainObject, AudioButtonQuery } from "@suzumina.click/s
 import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
 import { useMemo } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import { ListWrapper } from "@/components/list/ListWrapper";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
 import { getAudioButtons } from "../actions";
@@ -70,33 +71,24 @@ function AudioButtonItem({
 }
 
 export default function AudioButtonsList({ searchParams, initialData }: AudioButtonsListProps) {
-	// 初期データの変換
-	const transformedInitialData = useMemo(() => {
-		if (!initialData || !initialData.success || !initialData.data) {
-			return undefined;
-		}
-		return {
-			items: initialData.data.audioButtons,
-			total: initialData.data.totalCount,
-			page: 1,
-			itemsPerPage: initialData.data.audioButtons.length,
-		};
-	}, [initialData]);
+	// 初期データを準備
+	const initialItems =
+		initialData?.success && initialData.data ? initialData.data.audioButtons : [];
+	const initialTotal = initialData?.success && initialData.data ? initialData.data.totalCount : 0;
 
 	// 一時的な実装：お気に入り状態を管理
 	const audioButtonIds = useMemo(() => {
-		if (!transformedInitialData) return [];
-		return transformedInitialData.items.map((button) => button.id);
-	}, [transformedInitialData]);
+		return initialItems.map((button) => button.id);
+	}, [initialItems]);
 
 	const { favoriteStates } = useFavoriteStatusBulk(audioButtonIds);
 	const { likeDislikeStates } = useLikeDislikeStatusBulk(audioButtonIds);
 
 	return (
-		<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
+		<ListWrapper>
 			<ConfigurableList<AudioButtonPlainObject>
-				items={transformedInitialData?.items || []}
-				initialTotal={transformedInitialData?.total || 0}
+				items={initialItems}
+				initialTotal={initialTotal}
 				renderItem={(audioButton) => {
 					const likeDislikeStatus = likeDislikeStates.get(audioButton.id) || {
 						isLiked: false,
@@ -134,19 +126,12 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 								? (params.sort as AudioButtonQuery["sortBy"])
 								: "newest";
 
-						const query: AudioButtonQuery = {
+						return {
 							search: params.search,
 							sortBy,
 							page: params.page,
 							limit: params.itemsPerPage,
 						};
-						// フィルターがあれば追加
-						if (params.filters.duration) {
-							const range = params.filters.duration as { min?: number; max?: number };
-							query.durationMin = range.min;
-							query.durationMax = range.max;
-						}
-						return query;
 					},
 					fromResult: (result) => result as { items: AudioButtonPlainObject[]; total: number },
 				}}
@@ -162,6 +147,6 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 				itemsPerPageOptions={[12, 24, 48]}
 				emptyMessage="音声ボタンが見つかりませんでした"
 			/>
-		</div>
+		</ListWrapper>
 	);
 }

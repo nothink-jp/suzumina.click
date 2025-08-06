@@ -7,23 +7,11 @@ import {
 } from "@suzumina.click/ui/components/custom/list";
 import { useCallback, useMemo } from "react";
 import WorkCard from "@/app/works/components/WorkCard";
+import { ListWrapper } from "@/components/list/ListWrapper";
 import { fetchCreatorWorksForConfigurableList } from "../actions";
 
 // ページサイズオプションを定数として定義
 const ITEMS_PER_PAGE_OPTIONS = [12, 24, 48] as const;
-
-// 型ガード関数：fetchFnの結果が正しい形式かチェック
-function isValidFetchResult(
-	result: unknown,
-): result is { items: WorkPlainObject[]; total: number } {
-	if (!result || typeof result !== "object") return false;
-	const r = result as Record<string, unknown>;
-	return (
-		Array.isArray(r.items) &&
-		r.items.every((item) => typeof item === "object" && item !== null) &&
-		typeof r.total === "number"
-	);
-}
 
 interface CreatorWorksListProps {
 	creatorId: string;
@@ -84,7 +72,7 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 	}, []);
 
 	return (
-		<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
+		<ListWrapper>
 			<ConfigurableList<WorkPlainObject>
 				items={transformedInitialData?.items || []}
 				initialTotal={transformedInitialData?.total || 0}
@@ -112,6 +100,6 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 				itemsPerPageOptions={[...ITEMS_PER_PAGE_OPTIONS]}
 				emptyMessage="作品が見つかりませんでした"
 			/>
-		</div>
+		</ListWrapper>
 	);
 }

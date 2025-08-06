@@ -6,6 +6,7 @@ import {
 	type StandardListParams,
 } from "@suzumina.click/ui/components/custom/list";
 import { useMemo } from "react";
+import { ListWrapper } from "@/components/list/ListWrapper";
 import { fetchVideosForConfigurableList } from "../actions";
 import VideoCard from "./VideoCard";
 
@@ -18,9 +19,9 @@ interface VideoListProps {
 }
 
 export default function VideoList({ initialData }: VideoListProps) {
-	// 年代選択肢を動的に生成（2018年から現在年まで）
-	const currentYear = new Date().getFullYear();
+	// 年代選択肢を生成（2018年から現在年まで）
 	const yearOptions = useMemo(() => {
+		const currentYear = new Date().getFullYear();
 		const years = [];
 		for (let year = currentYear; year >= 2018; year--) {
 			years.push({
@@ -29,7 +30,7 @@ export default function VideoList({ initialData }: VideoListProps) {
 			});
 		}
 		return years;
-	}, [currentYear]);
+	}, []);
 
 	// 動画一覧用のfetchData関数
 	async function fetchVideos(
@@ -61,22 +62,12 @@ export default function VideoList({ initialData }: VideoListProps) {
 	);
 
 	return (
-		<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
+		<ListWrapper>
 			<ConfigurableList<VideoPlainObject>
 				items={initialData.items}
 				initialTotal={initialData.totalCount}
 				renderItem={renderItem}
 				fetchFn={fetchVideos as (params: unknown) => Promise<unknown>}
-				dataAdapter={{
-					toParams: (params) => params,
-					fromResult: (result) => {
-						const typedResult = result as { items: VideoPlainObject[]; total: number };
-						return {
-							items: typedResult.items,
-							total: typedResult.total,
-						};
-					},
-				}}
 				searchable
 				searchPlaceholder="動画タイトルで検索..."
 				urlSync
@@ -129,6 +120,6 @@ export default function VideoList({ initialData }: VideoListProps) {
 				itemsPerPageOptions={[12, 24, 48]}
 				emptyMessage="動画がありません"
 			/>
-		</div>
+		</ListWrapper>
 	);
 }
