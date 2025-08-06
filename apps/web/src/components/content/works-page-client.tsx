@@ -7,7 +7,7 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
-import WorksListGeneric from "@/app/works/components/WorksListGeneric";
+import WorksList from "@/app/works/components/WorksList";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface WorksPageClientProps {
@@ -54,7 +54,7 @@ export function WorksPageClient({ initialData }: WorksPageClientProps) {
 						</div>
 					}
 				>
-					<WorksListGeneric initialData={initialData} />
+					<WorksList initialData={initialData} />
 				</Suspense>
 			</ListPageContent>
 		</ListPageLayout>
