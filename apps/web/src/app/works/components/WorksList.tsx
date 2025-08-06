@@ -12,7 +12,6 @@ import {
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
 	DEFAULT_LIST_PROPS,
 	GRID_COLUMNS_4,
-	SEARCH_PLACEHOLDER,
 	WORK_SORT_OPTIONS_WITH_RATING,
 } from "@/constants/list-options";
 import { WORK_CATEGORY_OPTIONS, WORK_LANGUAGE_OPTIONS } from "@/constants/work-options";
@@ -68,7 +67,6 @@ export default function WorksList({ initialData }: WorksListProps) {
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
 				{...DEFAULT_LIST_PROPS}
-				searchPlaceholder={SEARCH_PLACEHOLDER}
 				layout="grid"
 				gridColumns={GRID_COLUMNS_4}
 				sorts={WORK_SORT_OPTIONS_WITH_RATING}

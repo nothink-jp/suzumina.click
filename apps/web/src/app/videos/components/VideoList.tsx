@@ -8,7 +8,6 @@ import {
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
 	DEFAULT_LIST_PROPS,
 	GRID_COLUMNS_4,
-	SEARCH_PLACEHOLDER,
 	VIDEO_SORT_OPTIONS,
 } from "@/constants/list-options";
 import { getVideosList } from "../actions";
@@ -53,7 +52,6 @@ export default function VideoList({ initialData }: VideoListProps) {
 				renderItem={renderItem}
 				fetchFn={getVideosList as (params: unknown) => Promise<unknown>}
 				{...DEFAULT_LIST_PROPS}
-				searchPlaceholder={SEARCH_PLACEHOLDER}
 				layout="grid"
 				gridColumns={GRID_COLUMNS_4}
 				sorts={VIDEO_SORT_OPTIONS}

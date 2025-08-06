@@ -38,12 +38,13 @@ export const GRID_COLUMNS_4 = {
 	xl: 4,
 };
 
+// 検索プレースホルダー
+export const SEARCH_PLACEHOLDER = "検索...";
+
 // デフォルト設定
 export const DEFAULT_LIST_PROPS = {
 	searchable: true,
 	urlSync: true,
 	defaultSort: "newest",
+	searchPlaceholder: SEARCH_PLACEHOLDER,
 };
-
-// 検索プレースホルダー
-export const SEARCH_PLACEHOLDER = "検索...";

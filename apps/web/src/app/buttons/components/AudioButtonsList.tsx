@@ -9,7 +9,6 @@ import {
 	AUDIO_SORT_OPTIONS,
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
 	DEFAULT_LIST_PROPS,
-	SEARCH_PLACEHOLDER,
 } from "@/constants/list-options";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
@@ -113,7 +112,6 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 					fromResult: (result) => result as { items: AudioButtonPlainObject[]; total: number },
 				}}
 				{...DEFAULT_LIST_PROPS}
-				searchPlaceholder={SEARCH_PLACEHOLDER}
 				layout="flex"
 				sorts={AUDIO_SORT_OPTIONS}
 				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
