@@ -153,7 +153,7 @@ jobs:
             pnpm --filter @suzumina.click/functions build 2>&1 | sed 's/^/[functions-build] /' &
             checks["functions-build"]=$!
             
-            # ビルドの完了を待ってからlint/testを実行
+            # ビルドの完了を待ってからlint/typecheck/testを実行
             wait ${checks["functions-build"]}
             build_result=$?
             
@@ -162,6 +162,9 @@ jobs:
               
               pnpm --filter @suzumina.click/functions lint 2>&1 | sed 's/^/[functions-lint] /' &
               checks["functions-lint"]=$!
+              
+              pnpm --filter @suzumina.click/functions typecheck 2>&1 | sed 's/^/[functions-typecheck] /' &
+              checks["functions-typecheck"]=$!
               
               pnpm --filter @suzumina.click/functions test --run 2>&1 | sed 's/^/[functions-test] /' &
               checks["functions-test"]=$!
