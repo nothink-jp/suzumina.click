@@ -287,6 +287,8 @@ function getContinuationInfo(
 		logger.info("バッチ処理を継続します", {
 			currentBatch: metadata.currentBatch,
 			totalBatches: metadata.totalBatches,
+			allWorkIdsLength: metadata.allWorkIds?.length || 0,
+			completedBatchesLength: metadata.completedBatches?.length || 0,
 		});
 
 		return {
@@ -377,6 +379,18 @@ async function executeBatchLoop(
 	let totalUpdated = 0;
 	let totalApiCalls = 0;
 	const completedBatches = metadata.completedBatches || [];
+
+	logger.info(
+		`executeBatchLoop開始: startBatch=${startBatch}, batches.length=${batches.length}, completedBatches=${completedBatches.length}`,
+	);
+
+	// forループが実行されるかチェック
+	if (startBatch >= batches.length) {
+		logger.warn(
+			`バッチ処理スキップ: startBatch(${startBatch}) >= batches.length(${batches.length})`,
+		);
+		logger.warn("これは全てのバッチが既に処理済みであることを意味します");
+	}
 
 	for (let i = startBatch; i < batches.length; i++) {
 		// 実行時間チェック
@@ -469,6 +483,9 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			allWorkIds = continuationInfo.allWorkIds;
 			batches = chunkArray(allWorkIds, BATCH_SIZE);
 			startBatch = continuationInfo.startBatch;
+			logger.info(
+				`継続処理詳細: allWorkIds.length=${allWorkIds.length}, batches.length=${batches.length}, startBatch=${startBatch}`,
+			);
 		} else {
 			// 新規処理
 			allWorkIds = await collectWorkIdsWithFallback();
@@ -490,6 +507,12 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		// 既存データの取得
 		const existingWorksMap = await getExistingWorksMap(allWorkIds);
 		logger.info(`既存作品マップ取得完了: ${existingWorksMap.size}件`);
+
+		// デバッグ: バッチ処理の状態を確認
+		logger.info(`バッチ処理開始: batches.length=${batches.length}, startBatch=${startBatch}`);
+		if (batches.length === 0) {
+			logger.error("バッチ配列が空です");
+		}
 
 		// バッチ処理の実行
 		const { totalUpdated, totalApiCalls, completedBatches } = await executeBatchLoop(
