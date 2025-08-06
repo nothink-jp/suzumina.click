@@ -109,7 +109,11 @@ export function ConfigurableList<T>({
 			const defaultAdapter: DataAdapter<T, unknown> = {
 				toParams: (params) => params,
 				fromResult: (result) => {
-					const typedResult = result as any;
+					const typedResult = result as {
+						items?: T[];
+						total?: number;
+						totalCount?: number;
+					};
 					// itemsとtotalがあればそのまま使用、totalCountがあればtotalに変換
 					return {
 						items: typedResult.items || [],

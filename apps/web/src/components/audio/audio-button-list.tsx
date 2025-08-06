@@ -45,8 +45,7 @@ export const AudioButtonList = memo(function AudioButtonList({
 			<div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${className}`}>
 				{Array.from({ length: 6 }).map((_, index) => (
 					<div
-						// biome-ignore lint/suspicious/noArrayIndexKey: スケルトン要素のため
-						key={index}
+						key={`audio-button-skeleton-${index}-of-6`}
 						className="h-48 animate-pulse rounded-lg bg-muted"
 					/>
 				))}

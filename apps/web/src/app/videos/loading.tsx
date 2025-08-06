@@ -19,8 +19,7 @@ export default function VideosLoading() {
 			{/* 動画グリッドのスケルトン */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{Array.from({ length: 6 }).map((_, index) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton items, order never changes
-					<Card key={index} className="overflow-hidden animate-pulse">
+					<Card key={`video-skeleton-${index}-of-6`} className="overflow-hidden animate-pulse">
 						{/* サムネイルエリア */}
 						<div className="relative aspect-video bg-gradient-to-br from-suzuka-100 to-minase-100">
 							<Skeleton className="absolute inset-0" />

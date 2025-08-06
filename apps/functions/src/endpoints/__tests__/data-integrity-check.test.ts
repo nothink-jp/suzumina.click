@@ -341,7 +341,7 @@ describe("checkDataIntegrity", () => {
 			if (collName === "creators") {
 				return {
 					get: vi.fn().mockResolvedValue(emptySnapshot), // creatorsコレクション全体の取得
-					doc: vi.fn((id: string) => ({
+					doc: vi.fn((_id: string) => ({
 						get: mockCreatorExists,
 						collection: mockSubCollection,
 					})),

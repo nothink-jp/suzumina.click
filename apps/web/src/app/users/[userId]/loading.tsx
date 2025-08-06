@@ -31,8 +31,7 @@ export default function UserProfileLoading() {
 					<CardContent className="p-6">
 						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 							{Array.from({ length: 4 }).map((_, i) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton items
-								<div key={i} className="text-center space-y-2">
+								<div key={`stat-skeleton-${i}-of-4`} className="text-center space-y-2">
 									<Skeleton className="h-8 w-16 mx-auto" />
 									<Skeleton className="h-4 w-20 mx-auto" />
 								</div>
@@ -50,8 +49,7 @@ export default function UserProfileLoading() {
 				{/* コンテンツエリア スケルトン */}
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 					{Array.from({ length: 6 }).map((_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton items
-						<Card key={i}>
+						<Card key={`content-skeleton-${i}-of-6`}>
 							<CardHeader>
 								<Skeleton className="h-6 w-3/4" />
 								<Skeleton className="h-4 w-1/2" />

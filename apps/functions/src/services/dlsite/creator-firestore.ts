@@ -49,7 +49,8 @@ function extractCreatorMappings(apiData: DLsiteRawApiResponse): Map<string, Extr
 	];
 
 	for (const [field, role] of creatorTypeMap) {
-		const creators = (apiData.creaters as any)?.[field] || [];
+		const creators =
+			(apiData.creaters as Record<string, { id?: string; name?: string }[]>)?.[field] || [];
 
 		for (const creator of creators) {
 			if (!creator.id || !isValidCreatorId(creator.id)) {
