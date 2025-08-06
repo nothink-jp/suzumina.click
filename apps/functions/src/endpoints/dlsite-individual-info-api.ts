@@ -6,7 +6,7 @@
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import type { CollectionMetadata } from "@suzumina.click/shared-types";
+import type { CollectionMetadata, WorkDocument } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../infrastructure/management/user-agent-manager";
 import { getExistingWorksMap } from "../services/dlsite/dlsite-firestore";
@@ -50,6 +50,7 @@ interface BatchProcessingInfo {
 	totalBatches: number;
 	workIds: string[];
 	startTime: Timestamp;
+	existingWorksMap?: Map<string, WorkDocument>;
 }
 
 /**
@@ -171,7 +172,7 @@ function createBatchResult(
  * バッチ処理実行
  */
 async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetchResult> {
-	const { batchNumber, totalBatches, workIds } = batchInfo;
+	const { batchNumber, totalBatches, workIds, existingWorksMap } = batchInfo;
 
 	logger.info(`バッチ ${batchNumber}/${totalBatches} 処理開始: ${workIds.length}件`);
 
@@ -217,6 +218,7 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
 		const processingResults = await processBatchUnifiedDLsiteData(apiResponses, {
 			skipPriceHistory: false, // 価格履歴も含めて全て更新
 			forceUpdate: false, // 差分チェックあり
+			existingWorksMap, // 既存作品マップを渡す
 		});
 
 		// 3. 結果の集計
@@ -237,6 +239,14 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
 			logger.warn(
 				`[DEBUG] JST時刻: ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`,
 			);
+			// 既存作品の状態を確認
+			const sampleWorkId = apiResponses[0]?.workno;
+			if (sampleWorkId && existingWorksMap) {
+				const existingWork = existingWorksMap.get(sampleWorkId);
+				logger.warn(
+					`[DEBUG] サンプル作品 ${sampleWorkId} の既存データ: ${existingWork ? "あり" : "なし"}`,
+				);
+			}
 		}
 
 		// ログ出力
@@ -358,6 +368,7 @@ async function executeBatchLoop(
 	startBatch: number,
 	startTime: number,
 	metadata: CollectionMetadata,
+	existingWorksMap?: Map<string, WorkDocument>,
 ): Promise<{
 	totalUpdated: number;
 	totalApiCalls: number;
@@ -387,6 +398,7 @@ async function executeBatchLoop(
 			totalBatches: batches.length,
 			workIds: batches[i] || [],
 			startTime: Timestamp.now(),
+			existingWorksMap,
 		};
 
 		const result = await processBatch(batchInfo);
@@ -476,7 +488,8 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		}
 
 		// 既存データの取得
-		await getExistingWorksMap(allWorkIds);
+		const existingWorksMap = await getExistingWorksMap(allWorkIds);
+		logger.info(`既存作品マップ取得完了: ${existingWorksMap.size}件`);
 
 		// バッチ処理の実行
 		const { totalUpdated, totalApiCalls, completedBatches } = await executeBatchLoop(
@@ -484,6 +497,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			startBatch,
 			startTime,
 			metadata,
+			existingWorksMap,
 		);
 
 		// 処理完了チェック

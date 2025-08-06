@@ -36,6 +36,8 @@ export interface ProcessingOptions {
 	skipPriceHistory?: boolean;
 	/** 差分チェックをスキップして強制更新 */
 	forceUpdate?: boolean;
+	/** 既存作品のマップ（パフォーマンス最適化用） */
+	existingWorksMap?: Map<string, WorkDocument>;
 }
 
 /**
@@ -141,12 +143,24 @@ async function updatePriceHistory(
 /**
  * 更新が必要かチェック
  */
-async function shouldSkipUpdate(workData: WorkDocument, forceUpdate?: boolean): Promise<boolean> {
-	if (forceUpdate) {
+async function shouldSkipUpdate(
+	workData: WorkDocument,
+	options: ProcessingOptions,
+): Promise<boolean> {
+	if (options.forceUpdate) {
 		return false;
 	}
 
-	const existingWork = await getWorkFromFirestore(workData.productId);
+	// 既存作品マップが提供されている場合は優先的に使用
+	let existingWork: WorkDocument | null = null;
+
+	if (options.existingWorksMap) {
+		existingWork = options.existingWorksMap.get(workData.productId) || null;
+	} else {
+		// マップがない場合は個別に取得（パフォーマンス低下）
+		existingWork = await getWorkFromFirestore(workData.productId);
+	}
+
 	return !!(existingWork && !hasSignificantChanges(existingWork, workData));
 }
 
@@ -168,8 +182,11 @@ async function performUpdates(
 		await updateWork(workData, result);
 		await updateCircle(apiData, workData.productId, result);
 		await updateCreators(apiData, workData.productId, result);
+	} else {
+		logger.debug(`Work/Circle/Creator更新をスキップ: ${workData.productId} (変更なし)`);
 	}
 
+	// 価格履歴は常に保存を試みる（既存チェックは価格履歴保存側で行う）
 	if (!options.skipPriceHistory) {
 		logger.debug(`価格履歴更新を実行: ${workData.productId}`);
 		await updatePriceHistory(workData.productId, apiData, result);
@@ -202,7 +219,7 @@ export async function processUnifiedDLsiteData(
 		const workData = WorkMapper.toWork(apiData);
 
 		// 既存データの存在確認（スキップ判定用）
-		const skipWorkUpdate = await shouldSkipUpdate(workData, options.forceUpdate);
+		const skipWorkUpdate = await shouldSkipUpdate(workData, options);
 
 		// 関連データの更新処理
 		await performUpdates(apiData, workData, options, result, skipWorkUpdate);
