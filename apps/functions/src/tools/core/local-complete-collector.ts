@@ -128,6 +128,126 @@ class LocalDataCollector {
 	}
 
 	/**
+	 * バッチ進捗のログ出力
+	 */
+	private logBatchProgress(batchIndex: number, totalBatches: number): void {
+		if (batchIndex % 10 === 0 || batchIndex === totalBatches - 1) {
+			logger.info(
+				`バッチ進捗: ${batchIndex + 1}/${totalBatches} (${Math.round(((batchIndex + 1) / totalBatches) * 100)}%)`,
+			);
+		}
+	}
+
+	/**
+	 * 成功データの処理
+	 */
+	private processSuccessfulData(
+		workId: string,
+		apiData: DLsiteApiResponse,
+		processingResult: { success: boolean; errors: string[] },
+	): LocalCollectedWorkData | null {
+		if (!processingResult?.success) {
+			return null;
+		}
+
+		const localData: LocalCollectedWorkData = {
+			workId,
+			collectedAt: new Date().toISOString(),
+			collectionMethod: "INDIVIDUAL_API",
+			basicInfo: apiData,
+			metadata: {
+				collectorVersion: this.collectorVersion,
+				collectionEnvironment: this.collectionEnvironment,
+				dataQuality: "COMPLETE",
+				verificationStatus: true,
+			},
+		};
+
+		// APIレスポンスを保存（後でサークル・クリエイター収集に使用）
+		this.apiResponses.set(workId, apiData);
+
+		return localData;
+	}
+
+	/**
+	 * エラーの作成
+	 */
+	private createError(
+		workId: string,
+		errorMessage: string,
+		errorType: CollectionError["errorType"],
+	): CollectionError {
+		return {
+			workId,
+			error: errorMessage,
+			timestamp: new Date().toISOString(),
+			errorType,
+		};
+	}
+
+	/**
+	 * バッチ処理の実行
+	 */
+	private async processBatch(
+		batch: string[],
+		batchIndex: number,
+		results: LocalCollectedWorkData[],
+		errors: CollectionError[],
+	): Promise<void> {
+		try {
+			// バッチでデータ取得
+			const { results: batchResults } = await batchFetchIndividualInfo(batch, {
+				maxConcurrent: MAX_CONCURRENT_REQUESTS,
+				batchDelay: REQUEST_DELAY,
+			});
+
+			// 成功データの処理
+			const apiResponses = Array.from(batchResults.values());
+
+			// 統合処理を使用
+			const processingResults = await processBatchUnifiedDLsiteData(apiResponses, {
+				skipPriceHistory: false, // 価格履歴も含めて全て更新
+				forceUpdate: false, // 差分チェックあり
+			});
+
+			// 結果の集計
+			for (const [index, [workId, apiData]] of Array.from(batchResults.entries()).entries()) {
+				const processingResult = processingResults[index];
+
+				const localData = this.processSuccessfulData(workId, apiData, processingResult);
+				if (localData) {
+					results.push(localData);
+				} else if (processingResult) {
+					errors.push(
+						this.createError(workId, processingResult.errors.join(", "), "VALIDATION_ERROR"),
+					);
+				}
+			}
+
+			// 失敗データの処理
+			const failedIds = batch.filter((id) => !batchResults.has(id));
+			for (const workId of failedIds) {
+				errors.push(
+					this.createError(workId, "Individual Info API取得失敗", "LOCAL_COLLECTION_FAILED"),
+				);
+				logger.warn(`API取得失敗: ${workId}`);
+			}
+		} catch (error) {
+			logger.error(`❌ バッチ ${batchIndex + 1} エラー:`, { error });
+			// バッチ全体が失敗した場合
+			for (const workId of batch) {
+				errors.push(
+					this.createError(
+						workId,
+						error instanceof Error ? error.message : String(error),
+						"API_ERROR",
+					),
+				);
+			}
+		}
+	}
+
+	/**
 	 * ローカル環境での完全データ収集
 	 */
 	async collectCompleteLocalData(): Promise<LocalCollectionResult> {
@@ -142,92 +262,17 @@ class LocalDataCollector {
 
 		// バッチ処理で実行
 		const batches = chunkArray(assetWorkIds, BATCH_SIZE);
-		// バッチ処理設定完了
 
 		for (const [batchIndex, batch] of batches.entries()) {
-			// 進捗ログは10バッチ毎に表示
-			if (batchIndex % 10 === 0 || batchIndex === batches.length - 1) {
-				logger.info(
-					`バッチ進捗: ${batchIndex + 1}/${batches.length} (${Math.round(((batchIndex + 1) / batches.length) * 100)}%)`,
-				);
-			}
+			// 進捗ログを出力
+			this.logBatchProgress(batchIndex, batches.length);
 
-			try {
-				// バッチでデータ取得
-				const { results: batchResults } = await batchFetchIndividualInfo(batch, {
-					maxConcurrent: MAX_CONCURRENT_REQUESTS,
-					batchDelay: REQUEST_DELAY,
-				});
+			// バッチ処理を実行
+			await this.processBatch(batch, batchIndex, results, errors);
 
-				// 成功データの処理
-				const apiResponses = Array.from(batchResults.values());
-
-				// 統合処理を使用
-				const processingResults = await processBatchUnifiedDLsiteData(apiResponses, {
-					skipPriceHistory: false, // 価格履歴も含めて全て更新
-					forceUpdate: false, // 差分チェックあり
-				});
-
-				// 結果の集計
-				for (const [index, [workId, apiData]] of Array.from(batchResults.entries()).entries()) {
-					const processingResult = processingResults[index];
-
-					if (processingResult?.success) {
-						const localData: LocalCollectedWorkData = {
-							workId,
-							collectedAt: new Date().toISOString(),
-							collectionMethod: "INDIVIDUAL_API",
-							basicInfo: apiData,
-							metadata: {
-								collectorVersion: this.collectorVersion,
-								collectionEnvironment: this.collectionEnvironment,
-								dataQuality: "COMPLETE",
-								verificationStatus: true,
-							},
-						};
-						results.push(localData);
-
-						// APIレスポンスを保存（後でサークル・クリエイター収集に使用）
-						this.apiResponses.set(workId, apiData);
-					} else if (processingResult) {
-						errors.push({
-							workId,
-							error: processingResult.errors.join(", "),
-							timestamp: new Date().toISOString(),
-							errorType: "VALIDATION_ERROR",
-						});
-					}
-				}
-
-				// 失敗データの処理
-				const failedIds = batch.filter((id) => !batchResults.has(id));
-				for (const workId of failedIds) {
-					errors.push({
-						workId,
-						error: "Individual Info API取得失敗",
-						timestamp: new Date().toISOString(),
-						errorType: "LOCAL_COLLECTION_FAILED",
-					});
-					logger.warn(`API取得失敗: ${workId}`);
-				}
-
-				// バッチ完了ログは省略（ログ削減）
-
-				// バッチ間の待機
-				if (batchIndex < batches.length - 1) {
-					await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY));
-				}
-			} catch (error) {
-				logger.error(`❌ バッチ ${batchIndex + 1} エラー:`, { error });
-				// バッチ全体が失敗した場合
-				for (const workId of batch) {
-					errors.push({
-						workId,
-						error: error instanceof Error ? error.message : String(error),
-						timestamp: new Date().toISOString(),
-						errorType: "API_ERROR",
-					});
-				}
+			// バッチ間の待機
+			if (batchIndex < batches.length - 1) {
+				await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY));
 			}
 		}
 
