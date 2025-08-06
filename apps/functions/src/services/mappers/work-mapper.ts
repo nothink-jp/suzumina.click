@@ -166,7 +166,7 @@ export class WorkMapper {
 		const ratingDetail = raw.rate_count_detail
 			? [1, 2, 3, 4, 5]
 					.map((reviewPoint) => {
-						const detailCount = raw.rate_count_detail[reviewPoint.toString()] || 0;
+						const detailCount = raw.rate_count_detail?.[reviewPoint.toString()] || 0;
 						return {
 							review_point: reviewPoint,
 							count: detailCount,
