@@ -987,39 +987,132 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	}
 
 	/**
+	 * Normalizes language code to WorkLanguage
+	 */
+	private normalizeLanguageCode(lang: string | undefined): WorkLanguage | undefined {
+		if (!lang) return undefined;
+
+		const normalized = lang.toLowerCase();
+		switch (normalized) {
+			case "ja":
+			case "japanese":
+			case "jpn":
+			case "日本語":
+				return "ja";
+			case "en":
+			case "english":
+			case "eng":
+			case "英語":
+				return "en";
+			case "zh-cn":
+			case "chinese_simplified":
+			case "簡体中文":
+			case "简体中文":
+				return "zh-cn";
+			case "zh-tw":
+			case "chinese_traditional":
+			case "繁體中文":
+			case "繁体中文":
+				return "zh-tw";
+			case "ko":
+			case "korean":
+			case "kor":
+			case "한국어":
+			case "韓国語":
+				return "ko";
+			case "es":
+			case "spanish":
+			case "spa":
+			case "español":
+			case "スペイン語":
+				return "es";
+			case "th":
+			case "thai":
+			case "tha":
+			case "ไทย":
+			case "タイ語":
+				return "th";
+			case "de":
+			case "german":
+			case "deu":
+			case "deutsch":
+			case "ドイツ語":
+				return "de";
+			case "fr":
+			case "french":
+			case "fra":
+			case "français":
+			case "フランス語":
+				return "fr";
+			case "it":
+			case "italian":
+			case "ita":
+			case "italiano":
+			case "イタリア語":
+				return "it";
+			case "pt":
+			case "portuguese":
+			case "por":
+			case "português":
+			case "ポルトガル語":
+				return "pt";
+			case "ru":
+			case "russian":
+			case "rus":
+			case "русский":
+			case "ロシア語":
+				return "ru";
+			case "vi":
+			case "vietnamese":
+			case "vie":
+			case "tiếng việt":
+			case "ベトナム語":
+				return "vi";
+			case "id":
+			case "indonesian":
+			case "ind":
+			case "bahasa indonesia":
+			case "インドネシア語":
+				return "id";
+			default:
+				return undefined;
+		}
+	}
+
+	/**
+	 * Detects language from title
+	 */
+	private detectLanguageFromTitle(title: string): WorkLanguage | undefined {
+		if (title.includes("繁体中文版") || title.includes("繁體中文版")) return "zh-tw";
+		if (title.includes("簡体中文版") || title.includes("简体中文版")) return "zh-cn";
+		if (title.includes("English") || title.includes("英語版")) return "en";
+		if (title.includes("한국어") || title.includes("韓国語版")) return "ko";
+		if (title.includes("Español") || title.includes("スペイン語版")) return "es";
+		return undefined;
+	}
+
+	/**
 	 * Gets primary language
 	 */
 	private getPrimaryLanguage(): WorkLanguage {
 		// Check title for language indicators
-		const titleStr = this.title.toString();
-		if (titleStr.includes("繁体中文版") || titleStr.includes("繁體中文版")) return "zh-tw";
-		if (titleStr.includes("簡体中文版") || titleStr.includes("简体中文版")) return "zh-cn";
-		if (titleStr.includes("English") || titleStr.includes("英語版")) return "en";
-		if (titleStr.includes("한국어") || titleStr.includes("韓国語版")) return "ko";
-		if (titleStr.includes("Español") || titleStr.includes("スペイン語版")) return "es";
+		const languageFromTitle = this.detectLanguageFromTitle(this.title.toString());
+		if (languageFromTitle) return languageFromTitle;
 
 		// Check language downloads
 		if (this._languageDownloads && this._languageDownloads.length > 0) {
-			const firstLang = this._languageDownloads[0]?.lang.toLowerCase();
-			switch (firstLang) {
-				case "ja":
-				case "japanese":
-					return "ja";
-				case "en":
-				case "english":
-					return "en";
-				case "zh-cn":
-				case "chinese_simplified":
-					return "zh-cn";
-				case "zh-tw":
-				case "chinese_traditional":
-					return "zh-tw";
-				case "ko":
-				case "korean":
-					return "ko";
-				case "es":
-				case "spanish":
-					return "es";
+			// First try to find the entry that matches this work's ID
+			const currentWorkId = this.id.toString();
+			const matchingEntry = this._languageDownloads.find(
+				(download) => download.workno === currentWorkId,
+			);
+
+			// Use the matching entry if found, otherwise fall back to the first entry
+			const targetEntry = matchingEntry || this._languageDownloads[0];
+			const normalizedLang = this.normalizeLanguageCode(targetEntry?.lang);
+
+			if (normalizedLang) {
+				return normalizedLang;
 			}
 		}
 
@@ -1042,34 +1135,11 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 		// Add from language downloads
 		if (this._languageDownloads) {
 			for (const download of this._languageDownloads) {
-				const lang = download.lang.toLowerCase();
-				switch (lang) {
-					case "ja":
-					case "japanese":
-						languages.add("ja");
-						break;
-					case "en":
-					case "english":
-						languages.add("en");
-						break;
-					case "zh-cn":
-					case "chinese_simplified":
-						languages.add("zh-cn");
-						break;
-					case "zh-tw":
-					case "chinese_traditional":
-						languages.add("zh-tw");
-						break;
-					case "ko":
-					case "korean":
-						languages.add("ko");
-						break;
-					case "es":
-					case "spanish":
-						languages.add("es");
-						break;
-					default:
-						languages.add("other");
+				const normalizedLang = this.normalizeLanguageCode(download.lang);
+				if (normalizedLang) {
+					languages.add(normalizedLang);
+				} else {
+					languages.add("other");
 				}
 			}
 		}

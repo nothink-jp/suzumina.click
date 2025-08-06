@@ -66,6 +66,14 @@ export const WorkLanguageSchema = z.enum([
 	"zh-tw", // 繁體中文
 	"ko", // 한국어
 	"es", // スペイン語
+	"th", // タイ語
+	"de", // ドイツ語
+	"fr", // フランス語
+	"it", // イタリア語
+	"pt", // ポルトガル語
+	"ru", // ロシア語
+	"vi", // ベトナム語
+	"id", // インドネシア語
 	"not-required", // 言語不要
 	"dlsite-official", // DLsite公式
 	"other", // その他言語
@@ -81,6 +89,14 @@ export const WORK_LANGUAGE_DISPLAY_NAMES: Record<WorkLanguage, string> = {
 	"zh-tw": "繁體中文",
 	ko: "한국어",
 	es: "Español",
+	th: "ไทย",
+	de: "Deutsch",
+	fr: "Français",
+	it: "Italiano",
+	pt: "Português",
+	ru: "Русский",
+	vi: "Tiếng Việt",
+	id: "Bahasa Indonesia",
 	"not-required": "言語不要",
 	"dlsite-official": "DLsite公式",
 	other: "その他言語",
