@@ -306,11 +306,21 @@ function getContinuationInfo(
 		metadata.currentBatch !== undefined &&
 		metadata.totalBatches !== undefined
 	) {
+		// completedBatchesがtotalBatchesを超えている場合は新規処理として扱う
+		const completedBatchesLength = metadata.completedBatches?.length || 0;
+		if (completedBatchesLength >= metadata.totalBatches) {
+			logger.info("前回の処理は完了済み。新規処理として開始します", {
+				completedBatchesLength,
+				totalBatches: metadata.totalBatches,
+			});
+			return { isContinuation: false };
+		}
+
 		logger.info("バッチ処理を継続します", {
 			currentBatch: metadata.currentBatch,
 			totalBatches: metadata.totalBatches,
 			allWorkIdsLength: metadata.allWorkIds?.length || 0,
-			completedBatchesLength: metadata.completedBatches?.length || 0,
+			completedBatchesLength,
 		});
 
 		return {
@@ -494,7 +504,24 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 	try {
 		// メタデータから処理状態を確認
 		const metadata = await getOrCreateUnifiedMetadata();
-		const continuationInfo = getContinuationInfo(metadata);
+
+		// 現在の作品IDリストを取得
+		const currentWorkIds = await collectWorkIdsWithFallback();
+
+		// 作品数が変わっているかチェック
+		const isWorkCountChanged =
+			metadata.allWorkIds && metadata.allWorkIds.length !== currentWorkIds.length;
+
+		if (isWorkCountChanged) {
+			logger.info("作品数が変更されたため新規処理として開始します", {
+				前回の作品数: metadata.allWorkIds.length,
+				現在の作品数: currentWorkIds.length,
+			});
+		}
+
+		const continuationInfo = isWorkCountChanged
+			? { isContinuation: false }
+			: getContinuationInfo(metadata);
 
 		let allWorkIds: string[];
 		let batches: string[][];
@@ -510,7 +537,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			);
 		} else {
 			// 新規処理
-			allWorkIds = await collectWorkIdsWithFallback();
+			allWorkIds = currentWorkIds;
 
 			if (allWorkIds.length === 0) {
 				logger.error("収集対象の作品IDが見つかりません");
