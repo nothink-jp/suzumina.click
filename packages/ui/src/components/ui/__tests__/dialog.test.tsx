@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "../dialog";
 
 describe("Dialog - Custom Props", () => {
 	describe("showCloseButton prop", () => {
@@ -8,6 +8,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent>
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -23,6 +24,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent showCloseButton={true}>
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -38,6 +40,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent showCloseButton={false}>
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -56,6 +59,7 @@ describe("Dialog - Custom Props", () => {
 					<DialogTrigger data-testid="trigger">Open Dialog</DialogTrigger>
 					<DialogContent data-testid="content">
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -76,6 +80,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent data-testid="content">
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -93,6 +98,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent data-testid="content">
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -115,6 +121,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent data-testid="content">
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -138,6 +145,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent>
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -166,6 +174,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent>
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -186,6 +195,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent data-testid="content">
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -207,6 +217,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent data-testid="content">
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -227,6 +238,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent data-testid="content">
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -245,6 +257,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent>
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -263,6 +276,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent>
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,
@@ -281,6 +295,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent>
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						<div data-testid="child-content">Custom Child Content</div>
 					</DialogContent>
 				</Dialog>,
@@ -296,6 +311,7 @@ describe("Dialog - Custom Props", () => {
 				<Dialog open>
 					<DialogContent className="custom-class" data-testid="content">
 						<DialogTitle>Test Title</DialogTitle>
+						<DialogDescription>Test Description</DialogDescription>
 						Test Content
 					</DialogContent>
 				</Dialog>,

@@ -2,7 +2,7 @@
  * URL同期用のフック（改善版）
  */
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { FilterConfig } from "../types";
 import { getDefaultFilterValues } from "../utils/filterHelpers";
@@ -19,7 +19,6 @@ interface UseListUrlOptions {
 export function useListUrl(options: UseListUrlOptions = {}) {
 	const { filters = {}, defaultPageSize = 12, defaultSort } = options;
 	const searchParams = useSearchParams();
-	const router = useRouter();
 
 	// URLの更新フラグを管理
 	const isUpdatingUrl = useRef(false);
@@ -213,7 +212,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 			// popstateイベントを手動で発火させて、useSearchParamsを更新
 			window.dispatchEvent(new PopStateEvent("popstate", { state: {} }));
 		},
-		[searchParams, filters, defaultPageSize, defaultSort, router],
+		[searchParams, filters, defaultPageSize, defaultSort],
 	);
 
 	// 個別の更新関数
@@ -273,13 +272,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 			...currentParams,
 			filters: JSON.parse(filtersStr),
 		};
-	}, [
-		currentParams.page,
-		currentParams.itemsPerPage,
-		currentParams.sort,
-		currentParams.search,
-		JSON.stringify(currentParams.filters),
-	]);
+	}, [currentParams]);
 
 	// URLの更新フラグをリセット
 	useEffect(() => {
