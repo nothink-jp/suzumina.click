@@ -3,6 +3,8 @@
  * 予期しない値の書き込みを防ぐ
  */
 
+import type { Firestore, QueryDocumentSnapshot } from "@google-cloud/firestore";
+
 /**
  * 有効なURLパターンの定義
  */
@@ -366,8 +368,7 @@ export function validateFirestoreRead(
  * バッチ検証スクリプト用のヘルパー
  */
 export async function scanCollectionForInvalidData(
-	// biome-ignore lint/suspicious/noExplicitAny: Firestore type from external library
-	firestore: any,
+	firestore: Firestore,
 	collectionName: string,
 	options?: {
 		limit?: number;
@@ -392,8 +393,7 @@ export async function scanCollectionForInvalidData(
 		warnings: string[];
 	}> = [];
 
-	// biome-ignore lint/suspicious/noExplicitAny: Firestore DocumentSnapshot type
-	snapshot.forEach((doc: any) => {
+	snapshot.forEach((doc: QueryDocumentSnapshot) => {
 		const data = doc.data();
 		const validation = validateFirestoreData(collectionName, data);
 
