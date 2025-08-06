@@ -2,7 +2,7 @@
  * unified-data-processor.ts のテストスイート
  */
 
-import type { DLsiteRawApiResponse, WorkDocument } from "@suzumina.click/shared-types";
+import type { DLsiteApiResponse, WorkDocument } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // モックの設定
@@ -47,7 +47,7 @@ const { savePriceHistory } = await import("../../price-history");
 const { WorkMapper } = await import("../../mappers/work-mapper");
 
 describe("unified-data-processor", () => {
-	const mockApiData: DLsiteRawApiResponse = {
+	const mockApiData: DLsiteApiResponse = {
 		workno: "RJ123456",
 		work_name: "テスト作品",
 		maker_id: "RG12345",

@@ -361,38 +361,19 @@ async function main(): Promise<void> {
 
 		// Step 2: 統計情報取得
 		const statistics = await detector.getRestrictionStatistics();
-
-		console.log("\n=== リージョン制限検出結果 ===");
-		console.log(`総チェック作品: ${detectionResult.totalChecked}件`);
-		console.log(`制限作品検出: ${detectionResult.restrictedWorksDetected}件`);
-		console.log(`新規検出: ${detectionResult.newlyDetected}件`);
-		console.log(`既知作品: ${detectionResult.alreadyKnown}件`);
-		console.log(
-			`カバー率: ${detectionResult.detectionReport.coveragePercentage.toFixed(1)}% (${detectionResult.detectionReport.currentRegionWorks}/${detectionResult.detectionReport.totalAssetWorks})`,
-		);
-		console.log(`制限率: ${detectionResult.detectionReport.missingPercentage.toFixed(1)}%`);
-
-		console.log("\n=== 制限作品統計 ===");
-		console.log(`総制限作品: ${statistics.totalRestricted}件`);
-		console.log("検出方法別:");
-		for (const [method, count] of Object.entries(statistics.byDetectionMethod)) {
+		for (const [_method, count] of Object.entries(statistics.byDetectionMethod)) {
 			if (count > 0) {
-				console.log(`  - ${method}: ${count}件`);
 			}
 		}
 
 		if (statistics.recentDetections.length > 0) {
-			console.log(`\n最近24時間の検出: ${statistics.recentDetections.length}件`);
 		}
 
 		if (detectionResult.newlyDetected > 0) {
-			console.log("\n新規検出作品ID（上位10件）:");
 			detectionResult.restrictedWorkIds
 				.filter((id) => !detectionResult.restrictedWorkIds.includes(id))
 				.slice(0, 10)
-				.forEach((workId, index) => {
-					console.log(`${index + 1}. ${workId}`);
-				});
+				.forEach((_workId, _index) => {});
 		}
 
 		logger.info("🎉 リージョン制限検出ツール完了");

@@ -9,7 +9,7 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { DLsiteRawApiResponse } from "@suzumina.click/shared-types";
+import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../../infrastructure/management/user-agent-manager";
 import { batchFetchIndividualInfo } from "../../services/dlsite/individual-info-api-client";
@@ -33,7 +33,7 @@ interface LocalCollectedWorkData {
 	workId: string;
 	collectedAt: string;
 	collectionMethod: "INDIVIDUAL_API" | "MANUAL_ENTRY" | "HYBRID";
-	basicInfo: DLsiteRawApiResponse;
+	basicInfo: DLsiteApiResponse;
 	metadata: {
 		collectorVersion: string;
 		collectionEnvironment: string;
@@ -111,7 +111,7 @@ class LocalDataCollector {
 	};
 
 	// APIレスポンスの保存用（統計収集のため）
-	private apiResponses = new Map<string, DLsiteRawApiResponse>();
+	private apiResponses = new Map<string, DLsiteApiResponse>();
 
 	/**
 	 * アセットファイルから作品IDリストを読み込み
@@ -172,7 +172,7 @@ class LocalDataCollector {
 				for (const [index, [workId, apiData]] of Array.from(batchResults.entries()).entries()) {
 					const processingResult = processingResults[index];
 
-					if (processingResult && processingResult.success) {
+					if (processingResult?.success) {
 						const localData: LocalCollectedWorkData = {
 							workId,
 							collectedAt: new Date().toISOString(),

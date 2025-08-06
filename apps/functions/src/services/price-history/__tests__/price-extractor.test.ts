@@ -1,41 +1,41 @@
-import type { DLsiteRawApiResponse } from "@suzumina.click/shared-types";
+import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
 import { describe, expect, it } from "vitest";
 import { extractJPYPrice, isOnSale, isValidPriceData } from "../price-extractor";
 
 describe("価格抽出関数", () => {
 	describe("extractJPYPrice", () => {
 		it("セール中の場合：正しく定価とセール価格を返す", () => {
-			const apiResponse: Partial<DLsiteRawApiResponse> = {
+			const apiResponse: Partial<DLsiteApiResponse> = {
 				locale_price: { ja_JP: 1056 }, // セール価格
 				official_price: 1760, // 定価
 				discount_rate: 40,
 				price: 1056,
 			};
 
-			const regularPrice = extractJPYPrice(apiResponse as DLsiteRawApiResponse, "regular");
-			const discountPrice = extractJPYPrice(apiResponse as DLsiteRawApiResponse, "discount");
+			const regularPrice = extractJPYPrice(apiResponse as DLsiteApiResponse, "regular");
+			const discountPrice = extractJPYPrice(apiResponse as DLsiteApiResponse, "discount");
 
 			expect(regularPrice).toBe(1760); // 定価（official_price）
 			expect(discountPrice).toBe(1056); // セール価格（locale_price）
 		});
 
 		it("セールなしの場合：通常価格を返す", () => {
-			const apiResponse: Partial<DLsiteRawApiResponse> = {
+			const apiResponse: Partial<DLsiteApiResponse> = {
 				locale_price: { ja_JP: 1760 },
 				official_price: undefined,
 				discount_rate: 0,
 				price: 1760,
 			};
 
-			const regularPrice = extractJPYPrice(apiResponse as DLsiteRawApiResponse, "regular");
-			const discountPrice = extractJPYPrice(apiResponse as DLsiteRawApiResponse, "discount");
+			const regularPrice = extractJPYPrice(apiResponse as DLsiteApiResponse, "regular");
+			const discountPrice = extractJPYPrice(apiResponse as DLsiteApiResponse, "discount");
 
 			expect(regularPrice).toBe(1760);
 			expect(discountPrice).toBe(1760);
 		});
 
 		it("locale_priceが配列形式の場合", () => {
-			const apiResponse: Partial<DLsiteRawApiResponse> = {
+			const apiResponse: Partial<DLsiteApiResponse> = {
 				locale_price: [
 					{ currency: "JPY", price: 1056 },
 					{ currency: "USD", price: 10 },
@@ -44,38 +44,38 @@ describe("価格抽出関数", () => {
 				discount_rate: 40,
 			};
 
-			const regularPrice = extractJPYPrice(apiResponse as DLsiteRawApiResponse, "regular");
-			const discountPrice = extractJPYPrice(apiResponse as DLsiteRawApiResponse, "discount");
+			const regularPrice = extractJPYPrice(apiResponse as DLsiteApiResponse, "regular");
+			const discountPrice = extractJPYPrice(apiResponse as DLsiteApiResponse, "discount");
 
 			expect(regularPrice).toBe(1760);
 			expect(discountPrice).toBe(1056);
 		});
 
 		it("フォールバック：直接価格を使用", () => {
-			const apiResponse: Partial<DLsiteRawApiResponse> = {
+			const apiResponse: Partial<DLsiteApiResponse> = {
 				locale_price: undefined,
 				official_price: 1760,
 				discount_rate: 40,
 				price: 1056,
 			};
 
-			const regularPrice = extractJPYPrice(apiResponse as DLsiteRawApiResponse, "regular");
-			const discountPrice = extractJPYPrice(apiResponse as DLsiteRawApiResponse, "discount");
+			const regularPrice = extractJPYPrice(apiResponse as DLsiteApiResponse, "regular");
+			const discountPrice = extractJPYPrice(apiResponse as DLsiteApiResponse, "discount");
 
 			expect(regularPrice).toBe(1760); // official_price優先
 			expect(discountPrice).toBe(1056); // price使用
 		});
 
 		it("official_priceがない場合はlocale_priceを使用", () => {
-			const apiResponse: Partial<DLsiteRawApiResponse> = {
+			const apiResponse: Partial<DLsiteApiResponse> = {
 				locale_price: { ja_JP: 1056 },
 				official_price: undefined,
 				discount_rate: 40,
 				price: 1056,
 			};
 
-			const regularPrice = extractJPYPrice(apiResponse as DLsiteRawApiResponse, "regular");
-			const discountPrice = extractJPYPrice(apiResponse as DLsiteRawApiResponse, "discount");
+			const regularPrice = extractJPYPrice(apiResponse as DLsiteApiResponse, "regular");
+			const discountPrice = extractJPYPrice(apiResponse as DLsiteApiResponse, "discount");
 
 			expect(regularPrice).toBe(1056); // official_priceがないのでlocale_priceを使用
 			expect(discountPrice).toBe(1056);
@@ -84,42 +84,42 @@ describe("価格抽出関数", () => {
 
 	describe("isOnSale", () => {
 		it("discount_rate > 0 の場合はtrueを返す", () => {
-			const apiResponse: Partial<DLsiteRawApiResponse> = {
+			const apiResponse: Partial<DLsiteApiResponse> = {
 				discount_rate: 40,
 			};
 
-			expect(isOnSale(apiResponse as DLsiteRawApiResponse)).toBe(true);
+			expect(isOnSale(apiResponse as DLsiteApiResponse)).toBe(true);
 		});
 
 		it("discount_rate = 0 の場合はfalseを返す", () => {
-			const apiResponse: Partial<DLsiteRawApiResponse> = {
+			const apiResponse: Partial<DLsiteApiResponse> = {
 				discount_rate: 0,
 			};
 
-			expect(isOnSale(apiResponse as DLsiteRawApiResponse)).toBe(false);
+			expect(isOnSale(apiResponse as DLsiteApiResponse)).toBe(false);
 		});
 
 		it("discount_rateが未定義の場合はfalseを返す", () => {
-			const apiResponse: Partial<DLsiteRawApiResponse> = {};
+			const apiResponse: Partial<DLsiteApiResponse> = {};
 
-			expect(isOnSale(apiResponse as DLsiteRawApiResponse)).toBe(false);
+			expect(isOnSale(apiResponse as DLsiteApiResponse)).toBe(false);
 		});
 	});
 
 	describe("isValidPriceData", () => {
 		it("有効な価格データがある場合はtrueを返す", () => {
-			const apiResponse: Partial<DLsiteRawApiResponse> = {
+			const apiResponse: Partial<DLsiteApiResponse> = {
 				price: 1760,
 				locale_price: { ja_JP: 1760 },
 			};
 
-			expect(isValidPriceData(apiResponse as DLsiteRawApiResponse)).toBe(true);
+			expect(isValidPriceData(apiResponse as DLsiteApiResponse)).toBe(true);
 		});
 
 		it("価格データがない場合はfalseを返す", () => {
-			const apiResponse: Partial<DLsiteRawApiResponse> = {};
+			const apiResponse: Partial<DLsiteApiResponse> = {};
 
-			expect(isValidPriceData(apiResponse as DLsiteRawApiResponse)).toBe(false);
+			expect(isValidPriceData(apiResponse as DLsiteApiResponse)).toBe(false);
 		});
 	});
 });

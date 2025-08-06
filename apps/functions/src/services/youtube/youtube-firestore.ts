@@ -134,7 +134,7 @@ async function saveChannelVideos(
  * @returns 更新されたFirestoreデータ
  */
 export function updateVideoWith(
-	existingData: FirestoreServerVideoData,
+	_existingData: FirestoreServerVideoData,
 	newVideo: youtube_v3.Schema$Video,
 ): FirestoreServerVideoData | null {
 	try {

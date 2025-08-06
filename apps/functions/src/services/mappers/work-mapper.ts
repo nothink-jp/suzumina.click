@@ -6,7 +6,7 @@
  */
 
 import type {
-	DLsiteRawApiResponse,
+	DLsiteApiResponse,
 	LanguageDownload,
 	PriceInfo,
 	RatingInfo,
@@ -37,7 +37,7 @@ export class WorkMapper {
 	/**
 	 * Raw APIレスポンスからWorkエンティティに変換
 	 */
-	static toWork(raw: DLsiteRawApiResponse): WorkDocument {
+	static toWork(raw: DLsiteApiResponse): WorkDocument {
 		const productId = raw.workno || raw.product_id || "";
 
 		return {
@@ -128,7 +128,7 @@ export class WorkMapper {
 	/**
 	 * 価格情報への変換
 	 */
-	static toPrice(raw: DLsiteRawApiResponse): PriceInfo | undefined {
+	static toPrice(raw: DLsiteApiResponse): PriceInfo | undefined {
 		const current = raw.price ?? 0;
 		const basePrice: PriceInfo = {
 			current,
@@ -154,7 +154,7 @@ export class WorkMapper {
 	 * 評価情報への変換
 	 * APIが提供する評価分布をそのまま保持
 	 */
-	static toRating(raw: DLsiteRawApiResponse): RatingInfo | undefined {
+	static toRating(raw: DLsiteApiResponse): RatingInfo | undefined {
 		const avgRating = raw.rate_average_star ?? raw.rate_average ?? 0;
 		const count = raw.rate_count ?? 0;
 		if (!avgRating || !count) return undefined;
@@ -166,7 +166,7 @@ export class WorkMapper {
 		const ratingDetail = raw.rate_count_detail
 			? [1, 2, 3, 4, 5]
 					.map((reviewPoint) => {
-						const detailCount = raw.rate_count_detail![reviewPoint.toString()] || 0;
+						const detailCount = raw.rate_count_detail[reviewPoint.toString()] || 0;
 						return {
 							review_point: reviewPoint,
 							count: detailCount,
@@ -210,7 +210,7 @@ export class WorkMapper {
 	/**
 	 * サムネイルURLの抽出
 	 */
-	private static extractThumbnailUrl(raw: DLsiteRawApiResponse, productId: string): string {
+	private static extractThumbnailUrl(raw: DLsiteApiResponse, productId: string): string {
 		// 文字列の場合
 		if (raw.image_thum && typeof raw.image_thum === "string") {
 			return WorkMapper.normalizeUrl(raw.image_thum);
@@ -239,7 +239,7 @@ export class WorkMapper {
 	/**
 	 * 高解像度画像URLの抽出
 	 */
-	private static extractHighResImageUrl(raw: DLsiteRawApiResponse): string | undefined {
+	private static extractHighResImageUrl(raw: DLsiteApiResponse): string | undefined {
 		// image_mainの処理
 		if (raw.image_main) {
 			// 文字列の場合
@@ -281,9 +281,7 @@ export class WorkMapper {
 	/**
 	 * DLsite APIの`creaters`を`creators`に正規化
 	 */
-	private static normalizeCreators(
-		raw: DLsiteRawApiResponse,
-	): WorkDocument["creators"] | undefined {
+	private static normalizeCreators(raw: DLsiteApiResponse): WorkDocument["creators"] | undefined {
 		if (!raw.creaters) return undefined;
 		if (Array.isArray(raw.creaters)) return undefined;
 
@@ -300,14 +298,14 @@ export class WorkMapper {
 	/**
 	 * ジャンル情報の抽出
 	 */
-	private static extractGenres(raw: DLsiteRawApiResponse): string[] {
+	private static extractGenres(raw: DLsiteApiResponse): string[] {
 		return raw.genres?.map((g) => g.name).filter((name) => name) || [];
 	}
 
 	/**
 	 * カスタムジャンル情報の抽出
 	 */
-	private static extractCustomGenres(raw: DLsiteRawApiResponse): Array<{
+	private static extractCustomGenres(raw: DLsiteApiResponse): Array<{
 		genre_key: string;
 		name: string;
 		name_en?: string;
@@ -326,7 +324,7 @@ export class WorkMapper {
 	 * サンプル画像の抽出
 	 */
 	private static extractSampleImages(
-		raw: DLsiteRawApiResponse,
+		raw: DLsiteApiResponse,
 	): Array<{ thumb: string; width?: number; height?: number }> {
 		if (!raw.image_samples?.length) return [];
 
@@ -359,7 +357,7 @@ export class WorkMapper {
 	/**
 	 * 翻訳情報の変換
 	 */
-	private static toTranslationInfo(raw: DLsiteRawApiResponse): TranslationInfo | undefined {
+	private static toTranslationInfo(raw: DLsiteApiResponse): TranslationInfo | undefined {
 		if (!raw.translation) return undefined;
 		return {
 			isTranslationAgree: raw.translation.is_translation_agree,
@@ -373,7 +371,7 @@ export class WorkMapper {
 	/**
 	 * 言語別ダウンロード情報の変換
 	 */
-	private static toLanguageDownloads(raw: DLsiteRawApiResponse): LanguageDownload[] {
+	private static toLanguageDownloads(raw: DLsiteApiResponse): LanguageDownload[] {
 		if (!raw.language_editions) return [];
 
 		// 配列形式の場合
@@ -424,7 +422,7 @@ export class WorkMapper {
 	/**
 	 * 販売状態情報の変換
 	 */
-	private static toSalesStatus(raw: DLsiteRawApiResponse): SalesStatus | undefined {
+	private static toSalesStatus(raw: DLsiteApiResponse): SalesStatus | undefined {
 		if (!raw.sales_status) return undefined;
 
 		return {

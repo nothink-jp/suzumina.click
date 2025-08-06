@@ -5,7 +5,6 @@
  * while maintaining backward compatibility with existing code.
  */
 
-import type { DLsiteRawApiResponse } from "../api-schemas/dlsite-raw";
 // Import existing types
 import type { WorkDocument } from "../entities/work";
 import type { FirestoreWorkEvaluation } from "../entities/work-evaluation";
@@ -55,27 +54,14 @@ export type CircleCreator = any; // TODO: Replace with CircleCreatorInfoData whe
 
 // ===== API Aliases =====
 
-/**
- * Simplified alias for DLsite API response
- * @alias DLsiteRawApiResponse
- */
-export type DLsiteApiResponse = DLsiteRawApiResponse;
+// DLsiteApiResponse is now exported directly from api-schemas/dlsite-raw
 
 // ===== Metadata Aliases =====
 
-/**
- * Simplified alias for collection metadata
- * @alias UnifiedDataCollectionMetadata (to be implemented)
- */
-// biome-ignore lint/suspicious/noExplicitAny: Placeholder type - will be replaced with UnifiedDataCollectionMetadata in future PR
-export type CollectionMetadata = any; // TODO: Replace with UnifiedDataCollectionMetadata when available
+// CollectionMetadata is now exported directly from types/firestore/collection-metadata
 
-/**
- * Simplified alias for Firestore timestamp
- * @alias FirestoreFieldTimestamp (to be implemented)
- */
-// biome-ignore lint/suspicious/noExplicitAny: Placeholder type - will be replaced with FirestoreFieldTimestamp in future PR
-export type FirestoreTimestamp = any; // TODO: Replace with FirestoreFieldTimestamp when available
+// FirestoreTimestamp is kept as 'unknown' to avoid Firebase dependencies in shared-types
+// In Cloud Functions, cast to Timestamp from firebase-admin/firestore as needed
 
 /**
  * Simplified alias for price history entry

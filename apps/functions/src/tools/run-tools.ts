@@ -16,40 +16,22 @@ export async function showFailureStats(): Promise<void> {
 	try {
 		logger.info("📊 失敗統計表示開始");
 
-		console.log("\n=== DLsite失敗統計表示 ===");
-
 		// 現在の失敗統計を表示
 		const failureStats = await getFailureStatistics();
 		const totalWorks = failureStats.totalFailedWorks + failureStats.recoveredWorks;
 		const currentFailureRate =
 			totalWorks > 0 ? (failureStats.unrecoveredWorks / totalWorks) * 100 : 0;
-
-		console.log("\n📊 現在の統計:");
-		console.log(`総作品数: ${totalWorks}件`);
-		console.log(`未回復失敗数: ${failureStats.unrecoveredWorks}件`);
-		console.log(`回復済み: ${failureStats.recoveredWorks}件`);
-		console.log(`現在の失敗率: ${currentFailureRate.toFixed(1)}%`);
-
-		console.log("\n🔍 失敗理由別:");
-		Object.entries(failureStats.failureReasons).forEach(([reason, count]) => {
-			console.log(`  ${reason}: ${count}件`);
-		});
+		Object.entries(failureStats.failureReasons).forEach(([_reason, _count]) => {});
 
 		// 単純な状況評価
 		if (currentFailureRate > 50) {
-			console.log("\n🔴 失敗率が高いです。補完収集の実行を推奨します。");
 		} else if (currentFailureRate > 20) {
-			console.log("\n🟡 失敗率がやや高めです。状況を確認してください。");
 		} else {
-			console.log("\n✅ 失敗率は正常範囲内です。");
 		}
-
-		console.log("\n✅ 失敗統計表示完了");
 	} catch (error) {
 		logger.error("失敗統計表示エラー:", {
 			error: error instanceof Error ? error.message : String(error),
 		});
-		console.error("❌ 実行エラー:", error instanceof Error ? error.message : String(error));
 		throw error;
 	}
 }
@@ -98,17 +80,7 @@ function displayStatistics(stats: {
 	topFailureReasons: Array<{ reason: string; count: number }>;
 	systemStatus: string;
 }): void {
-	console.log("\n📊 システム統計:");
-	console.log(`総作品数: ${stats.totalWorks}件`);
-	console.log(`成功率: ${stats.successRate.toFixed(1)}%`);
-	console.log(`未解決失敗数: ${stats.unrecoveredWorks}件`);
-
-	console.log("\n🔍 主な失敗理由:");
-	stats.topFailureReasons.forEach((item, index) => {
-		console.log(`${index + 1}. ${item.reason}: ${item.count}件`);
-	});
-
-	console.log(`\nシステム状況: ${stats.systemStatus}`);
+	stats.topFailureReasons.forEach((_item, _index) => {});
 }
 
 /**
@@ -117,12 +89,7 @@ function displayStatistics(stats: {
 function displayImprovementSuggestions(successRate: number): void {
 	if (successRate >= 95) return;
 
-	console.log("\n💡 改善提案:");
-	console.log("- ローカル補完収集の定期実行推奨");
-	console.log("- 失敗理由分析による対策検討");
-
 	if (successRate < 90) {
-		console.log("- 緊急対応が必要な状況です");
 	}
 }
 
@@ -132,8 +99,6 @@ function displayImprovementSuggestions(successRate: number): void {
 export async function runWeeklyReport(): Promise<void> {
 	try {
 		logger.info("📈 週次健全性レポートスクリプト開始");
-
-		console.log("\n=== DLsiteシステム週次健全性レポート生成 ===");
 
 		// 1. 失敗統計取得
 		const failureStats = await getFailureStatistics();
@@ -161,8 +126,6 @@ export async function runWeeklyReport(): Promise<void> {
 			stillFailingCount: failureStats.unrecoveredWorks,
 			topFailureReasons,
 		};
-
-		console.log("\n📊 週次健全性レポート記録中...");
 		logger.info("📈 週次健全性レポート", {
 			operation: "runWeeklyReport",
 			reportPeriod: `${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString()} - ${new Date().toLocaleDateString()}`,
@@ -172,17 +135,13 @@ export async function runWeeklyReport(): Promise<void> {
 			topFailureReasons: weeklyStats.topFailureReasons,
 			systemStatus,
 		});
-		console.log("✅ 週次健全性レポートを記録しました");
 
 		// 5. 改善提案
 		displayImprovementSuggestions(successRate);
-
-		console.log("\n✅ 週次健全性レポートスクリプト完了");
 	} catch (error) {
 		logger.error("週次健全性レポートスクリプトエラー:", {
 			error: error instanceof Error ? error.message : String(error),
 		});
-		console.error("❌ 実行エラー:", error instanceof Error ? error.message : String(error));
 		throw error;
 	}
 }
@@ -194,18 +153,12 @@ export async function resetMetadata(): Promise<void> {
 	try {
 		logger.info("🔄 メタデータリセット開始");
 
-		console.log("\n=== メタデータリセット ===");
-		console.log("⚠️ この操作により処理状態がリセットされます");
-
 		const { resetUnifiedMetadata } = await import("./reset-metadata.js");
 		await resetUnifiedMetadata();
-
-		console.log("✅ メタデータリセット完了");
 	} catch (error) {
 		logger.error("メタデータリセットエラー:", {
 			error: error instanceof Error ? error.message : String(error),
 		});
-		console.error("❌ リセットエラー:", error instanceof Error ? error.message : String(error));
 		throw error;
 	}
 }
@@ -213,22 +166,7 @@ export async function resetMetadata(): Promise<void> {
 /**
  * 運用ツールのヘルプ表示
  */
-export function showHelp(): void {
-	console.log("\n=== suzumina.click 運用ツール ===");
-	console.log("利用可能なコマンド:");
-	console.log("");
-	console.log("📊 監視・レポート:");
-	console.log("  stats          - 失敗統計表示");
-	console.log("  report         - 週次健全性レポート生成");
-	console.log("");
-	console.log("🔧 管理:");
-	console.log("  reset          - メタデータリセット");
-	console.log("");
-	console.log("💡 使用例:");
-	console.log("  node run-tools.js stats");
-	console.log("  node run-tools.js report");
-	console.log("");
-}
+export function showHelp(): void {}
 
 // スクリプト実行
 if (require.main === module) {
@@ -251,7 +189,6 @@ if (require.main === module) {
 				showHelp();
 				break;
 			default:
-				console.log("❓ 不明なコマンドです");
 				showHelp();
 				process.exit(1);
 		}
@@ -262,7 +199,6 @@ if (require.main === module) {
 			command,
 			error: error instanceof Error ? error.message : error,
 		});
-		console.error("❌ 実行エラー:", error instanceof Error ? error.message : error);
 		process.exit(1);
 	});
 }

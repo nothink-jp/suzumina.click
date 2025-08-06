@@ -4,14 +4,14 @@
  * 薄いマッピング層の動作確認
  */
 
-import type { DLsiteRawApiResponse } from "@suzumina.click/shared-types";
-import { describe, expect, it, vi } from "vitest";
+import type { DLsiteApiResponse } from "@suzumina.click/shared-types";
+import { describe, expect, it } from "vitest";
 import { WorkMapper } from "../work-mapper";
 
 // Domain Service のモックは不要になった（直接APIデータを使用）
 
 describe("WorkMapper", () => {
-	const mockRawApiData: DLsiteRawApiResponse = {
+	const mockRawApiData: DLsiteApiResponse = {
 		workno: "RJ12345678",
 		product_id: "RJ12345678",
 		work_name: "テスト作品",
@@ -103,7 +103,7 @@ describe("WorkMapper", () => {
 		});
 
 		it("割引価格を正しくマッピングできる", () => {
-			const discountData: DLsiteRawApiResponse = {
+			const discountData: DLsiteApiResponse = {
 				...mockRawApiData,
 				price: 770,
 				official_price: 1100,
@@ -119,7 +119,7 @@ describe("WorkMapper", () => {
 		});
 
 		it("無料作品を正しくマッピングできる", () => {
-			const freeData: DLsiteRawApiResponse = {
+			const freeData: DLsiteApiResponse = {
 				...mockRawApiData,
 				price: 0,
 				official_price: 0,
@@ -155,7 +155,7 @@ describe("WorkMapper", () => {
 		});
 
 		it("評価がない場合はundefinedを返す", () => {
-			const noRatingData: DLsiteRawApiResponse = {
+			const noRatingData: DLsiteApiResponse = {
 				...mockRawApiData,
 				rate_count: 0,
 				rate_average_star: undefined,
@@ -167,7 +167,7 @@ describe("WorkMapper", () => {
 		});
 
 		it("評価分布がない場合も正しく処理できる", () => {
-			const noDistributionData: DLsiteRawApiResponse = {
+			const noDistributionData: DLsiteApiResponse = {
 				...mockRawApiData,
 				rate_count_detail: undefined,
 			};
@@ -196,7 +196,7 @@ describe("WorkMapper", () => {
 		});
 
 		it("creatersフィールドがない場合はundefinedを返す", () => {
-			const dataWithoutCreaters: DLsiteRawApiResponse = {
+			const dataWithoutCreaters: DLsiteApiResponse = {
 				...mockRawApiData,
 				creaters: undefined,
 				author: "CV:テスト声優1,テスト声優2",
@@ -217,7 +217,7 @@ describe("WorkMapper", () => {
 		});
 
 		it("すべてのジャンルをそのまま保持する", () => {
-			const dataWithPromo: DLsiteRawApiResponse = {
+			const dataWithPromo: DLsiteApiResponse = {
 				...mockRawApiData,
 				genres: [
 					{ id: "1", name: "ASMR", search_val: "asmr" },
@@ -243,7 +243,7 @@ describe("WorkMapper", () => {
 		});
 
 		it("日付がない場合はundefinedを返す", () => {
-			const noDateData: DLsiteRawApiResponse = {
+			const noDateData: DLsiteApiResponse = {
 				...mockRawApiData,
 				regist_date: undefined,
 			};
@@ -265,7 +265,7 @@ describe("WorkMapper", () => {
 		});
 
 		it("すでにHTTPSのURLはそのまま保持する", () => {
-			const httpsData: DLsiteRawApiResponse = {
+			const httpsData: DLsiteApiResponse = {
 				...mockRawApiData,
 				image_thum: "https://img.dlsite.jp/test.jpg",
 			};
