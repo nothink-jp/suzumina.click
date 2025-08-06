@@ -1,10 +1,7 @@
 "use client";
 
 import type { WorkListResultPlain, WorkPlainObject } from "@suzumina.click/shared-types";
-import {
-	ConfigurableList,
-	type StandardListParams,
-} from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
 import { useCallback, useMemo } from "react";
 import { ListWrapper } from "@/components/list/ListWrapper";
 import { WorkListItem } from "@/components/work/WorkListItem";
@@ -15,7 +12,7 @@ import {
 	WORK_SORT_OPTIONS,
 } from "@/constants/list-options";
 import { createBasicToParams } from "@/utils/list-adapters";
-import { fetchCreatorWorksForConfigurableList } from "../actions";
+import { getCreatorWorksList } from "../actions";
 
 interface CreatorWorksListProps {
 	creatorId: string;
@@ -48,8 +45,8 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 
 	// フェッチ関数
 	const fetchFn = useCallback(async (params: unknown) => {
-		const typedParams = params as Parameters<typeof fetchCreatorWorksForConfigurableList>[0];
-		const result = await fetchCreatorWorksForConfigurableList(typedParams);
+		const typedParams = params as Parameters<typeof getCreatorWorksList>[0];
+		const result = await getCreatorWorksList(typedParams);
 		return {
 			items: result.works,
 			total: result.filteredCount ?? result.totalCount ?? 0,

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchVideosForConfigurableList, getVideoTitles } from "../actions";
+import { getVideosList, getVideoTitles } from "../actions";
 
 // Mock Firestore
 const mockGet = vi.fn();
@@ -209,7 +209,7 @@ describe("Video Server Actions", () => {
 		});
 	});
 
-	describe("fetchVideosForConfigurableList", () => {
+	describe("getVideosList", () => {
 		it("ConfigurableList用のフォーマットでデータを返す", async () => {
 			const mockVideoDocs = [
 				{
@@ -256,7 +256,7 @@ describe("Video Server Actions", () => {
 				size: 1,
 			});
 
-			const result = await fetchVideosForConfigurableList({
+			const result = await getVideosList({
 				page: 1,
 				limit: 12,
 				search: "動画",
@@ -273,7 +273,7 @@ describe("Video Server Actions", () => {
 				size: 0,
 			});
 
-			await fetchVideosForConfigurableList({
+			await getVideosList({
 				page: 1,
 				limit: 12,
 				filters: {

@@ -12,7 +12,7 @@ import {
 } from "@/constants/list-options";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
-import { getAudioButtons } from "../actions";
+import { getAudioButtonsList } from "../actions";
 
 interface AudioButtonsListProps {
 	searchParams:
@@ -81,7 +81,7 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 					);
 				}}
 				fetchFn={async (params: unknown) => {
-					const result = await getAudioButtons(params as AudioButtonQuery);
+					const result = await getAudioButtonsList(params as AudioButtonQuery);
 					if (!result.success || !result.data) {
 						throw new Error("error" in result ? result.error : "Failed to fetch audio buttons");
 					}

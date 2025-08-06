@@ -1,10 +1,7 @@
 "use client";
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import {
-	ConfigurableList,
-	type StandardListParams,
-} from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
 import { useMemo } from "react";
 import { ListWrapper } from "@/components/list/ListWrapper";
 import {
@@ -13,7 +10,7 @@ import {
 	GRID_COLUMNS_4,
 	VIDEO_SORT_OPTIONS,
 } from "@/constants/list-options";
-import { fetchVideosForConfigurableList } from "../actions";
+import { getVideosList } from "../actions";
 import VideoCard from "./VideoCard";
 
 interface VideoListProps {
@@ -38,26 +35,6 @@ export default function VideoList({ initialData }: VideoListProps) {
 		return years;
 	}, []);
 
-	// 動画一覧用のfetchData関数
-	async function fetchVideos(
-		params: StandardListParams,
-	): Promise<{ items: VideoPlainObject[]; total: number }> {
-		// ConfigurableListのパラメータをfetchVideosForConfigurableList用に変換
-		const query = {
-			page: params.page,
-			limit: params.itemsPerPage,
-			sort: params.sort || "newest",
-			search: params.search,
-			filters: params.filters,
-		};
-
-		const result = await fetchVideosForConfigurableList(query);
-		return {
-			items: result.items,
-			total: result.totalCount,
-		};
-	}
-
 	// レンダリング設定
 	const renderItem = (video: VideoPlainObject, index: number) => (
 		<VideoCard
@@ -73,7 +50,7 @@ export default function VideoList({ initialData }: VideoListProps) {
 				items={initialData.items}
 				initialTotal={initialData.totalCount}
 				renderItem={renderItem}
-				fetchFn={fetchVideos as (params: unknown) => Promise<unknown>}
+				fetchFn={getVideosList as (params: unknown) => Promise<unknown>}
 				{...DEFAULT_LIST_PROPS}
 				searchPlaceholder="動画タイトルで検索..."
 				layout="grid"

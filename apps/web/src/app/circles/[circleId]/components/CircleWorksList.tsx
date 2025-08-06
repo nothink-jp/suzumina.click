@@ -1,10 +1,7 @@
 "use client";
 
 import type { WorkListResultPlain, WorkPlainObject } from "@suzumina.click/shared-types";
-import {
-	ConfigurableList,
-	type StandardListParams,
-} from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
 import { useCallback, useMemo } from "react";
 import { ListWrapper } from "@/components/list/ListWrapper";
 import { WorkListItem } from "@/components/work/WorkListItem";
@@ -15,7 +12,7 @@ import {
 	WORK_SORT_OPTIONS,
 } from "@/constants/list-options";
 import { createBasicToParams } from "@/utils/list-adapters";
-import { fetchCircleWorksForConfigurableList } from "../actions";
+import { getCircleWorksList } from "../actions";
 
 interface CircleWorksListProps {
 	circleId: string;
@@ -45,8 +42,8 @@ export default function CircleWorksList({ circleId, initialData }: CircleWorksLi
 
 	// フェッチ関数
 	const fetchFn = useCallback(async (params: unknown) => {
-		const typedParams = params as Parameters<typeof fetchCircleWorksForConfigurableList>[0];
-		const result = await fetchCircleWorksForConfigurableList(typedParams);
+		const typedParams = params as Parameters<typeof getCircleWorksList>[0];
+		const result = await getCircleWorksList(typedParams);
 		return {
 			items: result.works,
 			total: result.totalCount || 0,

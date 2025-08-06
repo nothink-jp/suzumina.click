@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { fetchFavoriteAudioButtons } from "../actions";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getFavoritesList } from "../actions";
 
 vi.mock("@/lib/favorites-firestore", () => ({
 	getUserFavoritesCount: vi.fn(),
@@ -17,7 +17,7 @@ vi.mock("@suzumina.click/shared-types", () => ({
 	},
 }));
 
-describe("fetchFavoriteAudioButtons", () => {
+describe("getFavoritesList", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
@@ -53,7 +53,7 @@ describe("fetchFavoriteAudioButtons", () => {
 			[mockAudioButtonId, { isLiked: true, isDisliked: false }],
 		]);
 
-		const result = await fetchFavoriteAudioButtons({
+		const result = await getFavoritesList({
 			userId: mockUserId,
 			page: 1,
 			limit: 20,
@@ -80,7 +80,7 @@ describe("fetchFavoriteAudioButtons", () => {
 		const { getUserFavoritesCount } = await import("@/lib/favorites-firestore");
 		vi.mocked(getUserFavoritesCount).mockRejectedValue(new Error("Test error"));
 
-		const result = await fetchFavoriteAudioButtons({
+		const result = await getFavoritesList({
 			userId: "test-user-id",
 		});
 
@@ -105,7 +105,7 @@ describe("fetchFavoriteAudioButtons", () => {
 		vi.mocked(getAudioButtonsFromFavorites).mockResolvedValue(new Map());
 		vi.mocked(AudioButton.fromFirestoreData).mockReturnValue(null);
 
-		const result = await fetchFavoriteAudioButtons({
+		const result = await getFavoritesList({
 			userId: "test-user-id",
 		});
 

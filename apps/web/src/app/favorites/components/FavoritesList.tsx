@@ -1,10 +1,7 @@
 "use client";
 
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
-import {
-	ConfigurableList,
-	type StandardListParams,
-} from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
 import { useCallback, useMemo } from "react";
 import { AudioButtonListItem } from "@/components/audio/AudioButtonListItem";
 import {
@@ -13,7 +10,7 @@ import {
 	DEFAULT_LIST_PROPS,
 } from "@/constants/list-options";
 import { createBasicToParams } from "@/utils/list-adapters";
-import { fetchFavoriteAudioButtons } from "../actions";
+import { getFavoritesList } from "../actions";
 
 interface FavoritesListProps {
 	initialData: {
@@ -31,7 +28,7 @@ export default function FavoritesList({ initialData, userId }: FavoritesListProp
 		() => ({
 			toParams: createBasicToParams("newest", () => ({ userId })),
 			fromResult: (result: unknown) => {
-				const data = result as Awaited<ReturnType<typeof fetchFavoriteAudioButtons>>;
+				const data = result as Awaited<ReturnType<typeof getFavoritesList>>;
 				return {
 					items: data.audioButtons,
 					total: data.totalCount,
@@ -43,8 +40,8 @@ export default function FavoritesList({ initialData, userId }: FavoritesListProp
 
 	// フェッチ関数
 	const fetchFn = useCallback(async (params: unknown) => {
-		const typedParams = params as Parameters<typeof fetchFavoriteAudioButtons>[0];
-		return fetchFavoriteAudioButtons(typedParams);
+		const typedParams = params as Parameters<typeof getFavoritesList>[0];
+		return getFavoritesList(typedParams);
 	}, []);
 
 	// 初期のいいね/低評価状態をMapに変換

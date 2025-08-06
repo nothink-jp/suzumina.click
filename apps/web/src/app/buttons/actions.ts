@@ -31,7 +31,7 @@ function convertFirestoreToAudioButton(button: FirestoreServerAudioButtonData): 
  */
 export async function getRecentAudioButtons(limit = 10): Promise<AudioButtonPlainObject[]> {
 	try {
-		const result = await getAudioButtons({
+		const result = await getAudioButtonsList({
 			limit,
 			sortBy: "newest",
 			onlyPublic: true,
@@ -48,8 +48,11 @@ export async function getRecentAudioButtons(limit = 10): Promise<AudioButtonPlai
 /**
  * Entityを使用した音声ボタンの取得
  */
+/**
+ * 音声ボタンリストを取得（ConfigurableList用）
+ */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: フィルタ条件が多いため一時的に許可
-export async function getAudioButtons(
+export async function getAudioButtonsList(
 	query: {
 		limit?: number;
 		page?: number;

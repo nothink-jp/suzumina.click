@@ -4,7 +4,7 @@ import {
 	createAudioButton,
 	deleteAudioButton,
 	getAudioButtonById,
-	getAudioButtons,
+	getAudioButtonsList,
 } from "../actions";
 
 // Mock Firestore
@@ -260,7 +260,7 @@ describe("Audio Button Server Actions", () => {
 		});
 	});
 
-	describe("getAudioButtons", () => {
+	describe("getAudioButtonsList", () => {
 		// biome-ignore lint/suspicious/noSkippedTests: V2変換のモック問題で一時的にスキップ
 		it.skip("音声ボタンリストが正常に取得される", async () => {
 			const mockDocs = [
@@ -316,7 +316,7 @@ describe("Audio Button Server Actions", () => {
 				docs: mockDocs,
 			});
 
-			const result = await getAudioButtons({
+			const result = await getAudioButtonsList({
 				limit: 20,
 				sortBy: "newest",
 				onlyPublic: true,
@@ -335,7 +335,7 @@ describe("Audio Button Server Actions", () => {
 				docs: [],
 			});
 
-			const result = await getAudioButtons({
+			const result = await getAudioButtonsList({
 				limit: 20,
 				tags: ["挨拶"],
 				sortBy: "newest",
@@ -376,7 +376,7 @@ describe("Audio Button Server Actions", () => {
 				docs: mockDocs,
 			});
 
-			const result = await getAudioButtons({
+			const result = await getAudioButtonsList({
 				search: "検索キーワード",
 				limit: 20,
 				sortBy: "newest",
@@ -389,7 +389,7 @@ describe("Audio Button Server Actions", () => {
 		});
 
 		it("無効なクエリでエラーが返される", async () => {
-			const result = await getAudioButtons({
+			const result = await getAudioButtonsList({
 				limit: -1, // Invalid limit
 				sortBy: "newest",
 				onlyPublic: true,

@@ -109,7 +109,7 @@ vi.mock("@/lib/firestore", () => ({
 
 // テスト対象のインポート（モック設定後）
 
-import { fetchCircleWorksForConfigurableList, getCircleInfo } from "../actions";
+import { getCircleInfo, getCircleWorksList } from "../actions";
 
 describe("Circle page server actions", () => {
 	beforeEach(() => {
@@ -250,7 +250,7 @@ describe("Circle page server actions", () => {
 		});
 	});
 
-	describe("fetchCircleWorksForConfigurableList", () => {
+	describe("getCircleWorksList", () => {
 		it("検索機能が正しく動作する", async () => {
 			const mockCircleData = {
 				circleId: "RG12345",
@@ -383,7 +383,7 @@ describe("Circle page server actions", () => {
 			});
 
 			// "魔法"で検索
-			const result = await fetchCircleWorksForConfigurableList({
+			const result = await getCircleWorksList({
 				circleId: "RG12345",
 				search: "魔法",
 			});
@@ -494,7 +494,7 @@ describe("Circle page server actions", () => {
 			});
 
 			// 声優名で検索
-			const result = await fetchCircleWorksForConfigurableList({
+			const result = await getCircleWorksList({
 				circleId: "RG12345",
 				search: "田中",
 			});
@@ -571,7 +571,7 @@ describe("Circle page server actions", () => {
 			});
 
 			// "冒険"で検索、ページ2を取得（limit=2）
-			const result = await fetchCircleWorksForConfigurableList({
+			const result = await getCircleWorksList({
 				circleId: "RG12345",
 				search: "冒険",
 				page: 2,
@@ -651,7 +651,7 @@ describe("Circle page server actions", () => {
 				return {};
 			});
 
-			const result = await fetchCircleWorksForConfigurableList({
+			const result = await getCircleWorksList({
 				circleId: "RG12345",
 				search: "存在しない検索語",
 			});
@@ -728,7 +728,7 @@ describe("Circle page server actions", () => {
 				return {};
 			});
 
-			const result = await fetchCircleWorksForConfigurableList({
+			const result = await getCircleWorksList({
 				circleId: "RG12345",
 			});
 
@@ -738,7 +738,7 @@ describe("Circle page server actions", () => {
 		});
 
 		it("無効なサークルIDの場合は空の結果を返す", async () => {
-			const result = await fetchCircleWorksForConfigurableList({
+			const result = await getCircleWorksList({
 				circleId: "INVALID_ID",
 			});
 
@@ -759,7 +759,7 @@ describe("Circle page server actions", () => {
 				return {};
 			});
 
-			const result = await fetchCircleWorksForConfigurableList({
+			const result = await getCircleWorksList({
 				circleId: "RG99999",
 			});
 
@@ -771,7 +771,7 @@ describe("Circle page server actions", () => {
 				throw new Error("Firestore error");
 			});
 
-			const result = await fetchCircleWorksForConfigurableList({
+			const result = await getCircleWorksList({
 				circleId: "RG12345",
 			});
 
