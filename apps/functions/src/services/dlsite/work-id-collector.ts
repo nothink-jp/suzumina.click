@@ -70,6 +70,53 @@ const WORK_ID_EXTRACTION_PATTERNS = {
 } as const;
 
 /**
+ * 作品IDの形式を検証
+ */
+function isValidWorkId(workId: string | undefined): boolean {
+	return !!workId && /^RJ\d{6,8}$/.test(workId);
+}
+
+/**
+ * パターンマッチングで作品IDを抽出
+ */
+function extractWorkIdsWithPatterns(html: string, patterns: RegExp[]): Set<string> {
+	const workIds = new Set<string>();
+
+	for (const pattern of patterns) {
+		const matches = [...html.matchAll(pattern)];
+		for (const match of matches) {
+			const workId = match[1];
+			if (isValidWorkId(workId)) {
+				workIds.add(workId);
+			}
+		}
+	}
+
+	return workIds;
+}
+
+/**
+ * メインパターンで作品IDを抽出
+ */
+function extractWithMainPattern(html: string): Set<string> {
+	const workIds = new Set<string>();
+	const searchResultSections = [...html.matchAll(WORK_ID_EXTRACTION_PATTERNS.main[0])];
+
+	for (const section of searchResultSections) {
+		const sectionHtml = section[0];
+		const sectionWorkIds = extractWorkIdsWithPatterns(
+			sectionHtml,
+			WORK_ID_EXTRACTION_PATTERNS.fallback,
+		);
+		for (const workId of sectionWorkIds) {
+			workIds.add(workId);
+		}
+	}
+
+	return workIds;
+}
+
+/**
  * HTMLから作品IDを抽出
  *
  * @param html - 抽出対象のHTML
@@ -82,31 +129,11 @@ function extractWorkIdsFromHtml(
 	useMainPattern = true,
 	enableDetailedLogging = false,
 ): Set<string> {
-	const allMatches = new Set<string>();
-	// let patternUsed = "fallback"; // 未使用変数（ログ削減により不要）
+	let allMatches = new Set<string>();
 
 	// メインパターンの試行
 	if (useMainPattern) {
-		const searchResultSections = [...html.matchAll(WORK_ID_EXTRACTION_PATTERNS.main[0])];
-
-		if (searchResultSections.length > 0) {
-			// patternUsed = "main"; // 未使用（ログ削減により不要）
-
-			for (const section of searchResultSections) {
-				const sectionHtml = section[0];
-
-				// メインパターン内での詳細抽出
-				for (const pattern of WORK_ID_EXTRACTION_PATTERNS.fallback) {
-					const matches = [...sectionHtml.matchAll(pattern)];
-					matches.forEach((match) => {
-						const workId = match[1];
-						if (workId && /^RJ\d{6,8}$/.test(workId)) {
-							allMatches.add(workId);
-						}
-					});
-				}
-			}
-		}
+		allMatches = extractWithMainPattern(html);
 	}
 
 	// フォールバックパターン（メインパターンが失敗した場合 or 直接指定）
@@ -115,24 +142,100 @@ function extractWorkIdsFromHtml(
 			logger.debug("検索結果コンテナが見つからないため、代替パターンを使用");
 		}
 
-		// patternUsed = "fallback"; // 未使用（ログ削減により不要）
-
-		for (const pattern of WORK_ID_EXTRACTION_PATTERNS.fallback) {
-			const matches = [...html.matchAll(pattern)];
-			matches.forEach((match) => {
-				const workId = match[1];
-				if (workId && /^RJ\d{6,8}$/.test(workId)) {
-					allMatches.add(workId);
-				}
-			});
-		}
-	}
-
-	if (enableDetailedLogging && allMatches.size > 0) {
-		// パターン抽出ログは省略（ログ削減）
+		allMatches = extractWorkIdsWithPatterns(html, WORK_ID_EXTRACTION_PATTERNS.fallback);
 	}
 
 	return allMatches;
+}
+
+/**
+ * ページ処理の結果
+ */
+interface PageProcessingResult {
+	workIds: string[];
+	totalCount?: number;
+	shouldContinue: boolean;
+}
+
+/**
+ * 単一ページの処理
+ */
+async function processSinglePage(
+	pageNumber: number,
+	enableDetailedLogging: boolean,
+): Promise<PageProcessingResult> {
+	if (enableDetailedLogging) {
+		logger.info(`ページ ${pageNumber} を処理中...`);
+	}
+
+	const ajaxResult = await fetchDLsiteAjaxResult(pageNumber);
+	const result: PageProcessingResult = {
+		workIds: [],
+		shouldContinue: true,
+	};
+
+	// 初回ページの場合、総作品数を記録
+	if (pageNumber === 1) {
+		result.totalCount = ajaxResult.page_info.count;
+		logger.info(`総作品数: ${result.totalCount}`);
+	}
+
+	// HTMLコンテンツの検証
+	if (!validateAjaxHtmlContent(ajaxResult.search_result)) {
+		logger.warn(`ページ ${pageNumber}: 無効なHTMLコンテンツ`);
+		result.shouldContinue = false;
+		return result;
+	}
+
+	// 作品ID抽出
+	const pageWorkIds = extractWorkIdsFromHtml(ajaxResult.search_result, true, enableDetailedLogging);
+
+	if (pageWorkIds.size === 0) {
+		logger.info(`ページ ${pageNumber}: 作品が見つかりません。収集完了`);
+		result.shouldContinue = false;
+		return result;
+	}
+
+	result.workIds = Array.from(pageWorkIds);
+
+	// 最終ページ判定
+	if (isLastPageFromPageInfo(ajaxResult.page_info, pageNumber)) {
+		logger.info(`ページ ${pageNumber} が最終ページです`);
+		result.shouldContinue = false;
+	}
+
+	return result;
+}
+
+/**
+ * 収集結果の検証とレポート作成
+ */
+function validateAndCreateReport(
+	uniqueWorkIds: string[],
+	validationOptions: WorkIdCollectionOptions["validation"],
+): WorkIdCollectionResult["validationResult"] | undefined {
+	if (!validationOptions) {
+		return undefined;
+	}
+
+	const validationCheck = validateWorkIds(uniqueWorkIds, {
+		minCoveragePercentage: validationOptions.minCoveragePercentage,
+		maxExtraPercentage: validationOptions.maxExtraPercentage,
+		logDetails: validationOptions.logDetails,
+	});
+
+	const validationResult: WorkIdCollectionResult["validationResult"] = {
+		isValid: !validationCheck.regionWarning,
+		regionWarning: validationCheck.regionWarning,
+		warnings: validationCheck.regionWarning ? ["リージョン差異が検出されました"] : [],
+	};
+
+	// 検証結果に基づく警告
+	if (validationCheck.regionWarning) {
+		warnPartialSuccess(validationCheck);
+	}
+
+	return validationResult;
 }
 
 /**
@@ -163,46 +266,18 @@ export async function collectAllWorkIds(
 
 	while (currentPage <= maxPages) {
 		try {
-			if (enableDetailedLogging) {
-				logger.info(`ページ ${currentPage} を処理中...`);
+			const pageResult = await processSinglePage(currentPage, enableDetailedLogging);
+
+			// 初回ページの総作品数を記録
+			if (pageResult.totalCount !== undefined) {
+				totalCount = pageResult.totalCount;
 			}
 
-			const ajaxResult = await fetchDLsiteAjaxResult(currentPage);
+			// 作品IDを追加
+			allWorkIds.push(...pageResult.workIds);
 
-			// 総作品数を記録（初回のみ）
-			if (currentPage === 1) {
-				totalCount = ajaxResult.page_info.count;
-				logger.info(`総作品数: ${totalCount}`);
-			}
-
-			if (!validateAjaxHtmlContent(ajaxResult.search_result)) {
-				logger.warn(`ページ ${currentPage}: 無効なHTMLコンテンツ`);
-				break;
-			}
-
-			// 作品ID抽出
-			const pageWorkIds = extractWorkIdsFromHtml(
-				ajaxResult.search_result,
-				true, // メインパターンを試行
-				enableDetailedLogging,
-			);
-
-			if (pageWorkIds.size === 0) {
-				logger.info(`ページ ${currentPage}: 作品が見つかりません。収集完了`);
-				break;
-			}
-
-			const pageWorkIdsArray = Array.from(pageWorkIds);
-			allWorkIds.push(...pageWorkIdsArray);
-
-			if (enableDetailedLogging) {
-				// ページごとの作品ID取得ログは省略（ログ削減）
-			}
-
-			// 最終ページ判定
-			const isLastPage = isLastPageFromPageInfo(ajaxResult.page_info, currentPage);
-			if (isLastPage) {
-				logger.info(`ページ ${currentPage} が最終ページです`);
+			// 継続判定
+			if (!pageResult.shouldContinue) {
 				break;
 			}
 
@@ -222,25 +297,7 @@ export async function collectAllWorkIds(
 	logger.info(`✅ 作品ID収集完了: ${uniqueWorkIds.length}件`);
 
 	// データ検証
-	let validationResult: WorkIdCollectionResult["validationResult"];
-	if (validation) {
-		const validationCheck = validateWorkIds(uniqueWorkIds, {
-			minCoveragePercentage: validation.minCoveragePercentage,
-			maxExtraPercentage: validation.maxExtraPercentage,
-			logDetails: validation.logDetails,
-		});
-
-		validationResult = {
-			isValid: !validationCheck.regionWarning,
-			regionWarning: validationCheck.regionWarning,
-			warnings: validationCheck.regionWarning ? ["リージョン差異が検出されました"] : [],
-		};
-
-		// 検証結果に基づく警告
-		if (validationCheck.regionWarning) {
-			warnPartialSuccess(validationCheck);
-		}
-	}
+	const validationResult = validateAndCreateReport(uniqueWorkIds, validation);
 
 	// エラーハンドリング
 	if (uniqueWorkIds.length === 0) {
