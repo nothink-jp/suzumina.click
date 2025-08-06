@@ -34,6 +34,110 @@ const DLSITE_AJAX_BASE_URL =
 	"https://www.dlsite.com/maniax/fsr/ajax/=/keyword_creater/%22%E6%B6%BC%E8%8A%B1%E3%81%BF%E3%81%AA%E3%81%9B%22/order/release/per_page/100/";
 
 /**
+ * HTTPレスポンスのContent-Typeを検証
+ */
+function validateContentType(response: Response): void {
+	const contentType = response.headers.get("Content-Type") || "";
+	if (contentType.includes("application/json")) {
+		return;
+	}
+
+	// text/htmlが返された場合は、エラーページやメンテナンスページの可能性が高い
+	logger.error(`予期しないContent-Type: ${contentType}. JSONレスポンスを期待していました。`);
+	throw new Error(
+		"DLsite AJAX APIが予期しないHTML形式のレスポンスを返しました。" +
+			`Content-Type: ${contentType}`,
+	);
+}
+
+/**
+ * HTMLレスポンスのエラーパターンをチェック
+ */
+async function checkHtmlErrorPatterns(response: Response): Promise<void> {
+	const responseText = await response.text();
+	const previewLength = 500;
+	logger.error("HTMLレスポンスの内容プレビュー:", {
+		preview: responseText.substring(0, previewLength),
+		fullLength: responseText.length,
+	});
+
+	// よくあるエラーパターンをチェック
+	if (responseText.includes("メンテナンス中") || responseText.includes("maintenance")) {
+		throw new Error("DLsiteはメンテナンス中です。しばらく待ってから再試行してください。");
+	}
+	if (responseText.includes("404") || responseText.includes("ページが見つかりません")) {
+		throw new Error("DLsite APIエンドポイントが見つかりません。URLを確認してください。");
+	}
+	if (responseText.includes("アクセス制限") || responseText.includes("rate limit")) {
+		throw new Error("DLsiteのレート制限に達しました。しばらく待ってから再試行してください。");
+	}
+}
+
+/**
+ * HTTPレスポンスのステータスを検証
+ */
+async function validateHttpStatus(response: Response): Promise<void> {
+	if (response.ok) {
+		return;
+	}
+
+	const responseText = await response.text();
+	logger.error(`DLsite AJAX リクエストが失敗しました: ${response.status} ${response.statusText}`, {
+		responsePreview: responseText.substring(0, 500),
+	});
+	throw new Error(
+		`DLsite AJAX リクエストが失敗しました: ${response.status} ${response.statusText}`,
+	);
+}
+
+/**
+ * JSONレスポンスをパースして検証
+ */
+async function parseAndValidateJson(response: Response): Promise<DLsiteAjaxResponse> {
+	let jsonData: DLsiteAjaxResponse;
+	try {
+		const responseText = await response.text();
+		jsonData = JSON.parse(responseText) as DLsiteAjaxResponse;
+	} catch (parseError) {
+		logger.error("JSONパースエラー:", { error: parseError });
+		throw new Error("DLsite AJAX APIから無効なJSONレスポンスが返されました");
+	}
+
+	// レスポンスの検証
+	if (!jsonData.search_result || !jsonData.page_info) {
+		logger.error("不正なAJAXレスポンス構造", {
+			hasSearchResult: !!jsonData.search_result,
+			hasPageInfo: !!jsonData.page_info,
+		});
+		throw new Error("DLsite AJAX APIから不正なレスポンス構造が返されました");
+	}
+
+	return jsonData;
+}
+
+/**
+ * エラーハンドリング
+ */
+function handleFetchError(error: unknown, page: number): never {
+	// タイムアウトエラーの特別処理
+	if (error instanceof Error && error.name === "AbortError") {
+		logger.error(`DLsite AJAX リクエストがタイムアウトしました (${config.timeoutMs}ms)`, {
+			page,
+		});
+		throw new Error(`DLsite AJAX リクエストがタイムアウトしました: ページ${page}`);
+	}
+
+	// その他のエラー（既にエラーメッセージが整形されている場合はそのまま投げる）
+	if (error instanceof Error) {
+		logger.error(`DLsite AJAX リクエスト中にエラーが発生しました: ページ${page}`, {
+			error: error.message,
+			page,
+		});
+	}
+	throw error;
+}
+
+/**
  * DLsiteのAJAXエンドポイントから検索結果を取得
  *
  * @param page - 取得するページ番号（1以上）
@@ -79,66 +183,19 @@ export async function fetchDLsiteAjaxResult(page: number): Promise<DLsiteAjaxRes
 		);
 
 		// HTTPステータスの確認
-		if (!response.ok) {
-			const responseText = await response.text();
-			logger.error(
-				`DLsite AJAX リクエストが失敗しました: ${response.status} ${response.statusText}`,
-				{ responsePreview: responseText.substring(0, 500) },
-			);
-			throw new Error(
-				`DLsite AJAX リクエストが失敗しました: ${response.status} ${response.statusText}`,
-			);
-		}
+		await validateHttpStatus(response);
 
 		// Content-Typeの確認
-		const contentType = response.headers.get("Content-Type") || "";
-		if (!contentType.includes("application/json")) {
-			// text/htmlが返された場合は、エラーページやメンテナンスページの可能性が高い
-			logger.error(`予期しないContent-Type: ${contentType}. JSONレスポンスを期待していました。`);
-
-			// HTMLレスポンスの内容を確認してエラーメッセージを改善
-			const responseText = await response.text();
-			const previewLength = 500;
-			logger.error("HTMLレスポンスの内容プレビュー:", {
-				preview: responseText.substring(0, previewLength),
-				fullLength: responseText.length,
-			});
-
-			// よくあるエラーパターンをチェック
-			if (responseText.includes("メンテナンス中") || responseText.includes("maintenance")) {
-				throw new Error("DLsiteはメンテナンス中です。しばらく待ってから再試行してください。");
-			}
-			if (responseText.includes("404") || responseText.includes("ページが見つかりません")) {
-				throw new Error("DLsite APIエンドポイントが見つかりません。URLを確認してください。");
-			}
-			if (responseText.includes("アクセス制限") || responseText.includes("rate limit")) {
-				throw new Error("DLsiteのレート制限に達しました。しばらく待ってから再試行してください。");
-			}
-
-			throw new Error(
-				"DLsite AJAX APIが予期しないHTML形式のレスポンスを返しました。" +
-					`Content-Type: ${contentType}`,
-			);
-		}
-
-		// JSONレスポンスのパース
-		let jsonData: DLsiteAjaxResponse;
 		try {
-			const responseText = await response.text();
-			jsonData = JSON.parse(responseText) as DLsiteAjaxResponse;
-		} catch (parseError) {
-			logger.error("JSONパースエラー:", { error: parseError });
-			throw new Error("DLsite AJAX APIから無効なJSONレスポンスが返されました");
+			validateContentType(response);
+		} catch (error) {
+			// HTMLレスポンスの内容を確認してエラーメッセージを改善
+			await checkHtmlErrorPatterns(response);
+			throw error;
 		}
 
-		// レスポンスの検証
-		if (!jsonData.search_result || !jsonData.page_info) {
-			logger.error("不正なAJAXレスポンス構造", {
-				hasSearchResult: !!jsonData.search_result,
-				hasPageInfo: !!jsonData.page_info,
-			});
-			throw new Error("DLsite AJAX APIから不正なレスポンス構造が返されました");
-		}
+		// JSONレスポンスのパースと検証
+		const jsonData = await parseAndValidateJson(response);
 
 		// ページング情報のログ出力
 		logger.info(
@@ -153,22 +210,7 @@ export async function fetchDLsiteAjaxResult(page: number): Promise<DLsiteAjaxRes
 
 		return jsonData;
 	} catch (error) {
-		// タイムアウトエラーの特別処理
-		if (error instanceof Error && error.name === "AbortError") {
-			logger.error(`DLsite AJAX リクエストがタイムアウトしました (${config.timeoutMs}ms)`, {
-				page,
-			});
-			throw new Error(`DLsite AJAX リクエストがタイムアウトしました: ページ${page}`);
-		}
-
-		// その他のエラー（既にエラーメッセージが整形されている場合はそのまま投げる）
-		if (error instanceof Error) {
-			logger.error(`DLsite AJAX リクエスト中にエラーが発生しました: ページ${page}`, {
-				error: error.message,
-				page,
-			});
-		}
-		throw error;
+		handleFetchError(error, page);
 	}
 }
 
