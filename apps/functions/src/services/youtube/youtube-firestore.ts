@@ -63,6 +63,78 @@ export async function saveVideosToFirestore(videos: youtube_v3.Schema$Video[]): 
 }
 
 /**
+ * 動画をFirestoreバッチに追加
+ */
+function addVideoToBatch(
+	video: youtube_v3.Schema$Video,
+	batch: FirebaseFirestore.WriteBatch,
+	videoRef: FirebaseFirestore.CollectionReference,
+): boolean {
+	if (!video.id) {
+		logger.warn("動画IDがありません", { videoId: video.id });
+		return false;
+	}
+
+	// Entity に変換
+	const videoEntity = VideoMapper.fromYouTubeAPI(video);
+	if (!videoEntity) {
+		// Entity 変換失敗（ログはエラーハンドリングで出力済み）
+		return false;
+	}
+
+	// Firestore用データに変換
+	const firestoreData = videoEntity.toFirestore();
+
+	// 動画IDをドキュメントIDとして使用
+	const docRef = videoRef.doc(video.id);
+	batch.set(docRef, firestoreData, { merge: true });
+	return true;
+}
+
+/**
+ * バッチ単位で動画を保存
+ */
+async function saveBatchVideos(
+	batchVideos: youtube_v3.Schema$Video[],
+	videoRef: FirebaseFirestore.CollectionReference,
+	channelId: string,
+	batchNumber: number,
+): Promise<number> {
+	const batch = firestore.batch();
+	let batchCount = 0;
+
+	for (const video of batchVideos) {
+		try {
+			if (addVideoToBatch(video, batch, videoRef)) {
+				batchCount++;
+			}
+		} catch (error) {
+			logger.error("動画のEntity変換に失敗", {
+				videoId: video.id,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
+
+	// バッチをコミット
+	if (batchCount > 0) {
+		try {
+			await batch.commit();
+			return batchCount;
+		} catch (error) {
+			logger.error("バッチ保存エラー", {
+				channelId,
+				batchNumber,
+				error: error instanceof Error ? error.message : String(error),
+			});
+			return 0;
+		}
+	}
+
+	return 0;
+}
+
+/**
  * チャンネル別に動画を保存（Entity 形式）
  */
 async function saveChannelVideos(
@@ -75,52 +147,9 @@ async function saveChannelVideos(
 	// バッチサイズごとに分割して処理
 	for (let i = 0; i < videos.length; i += MAX_FIRESTORE_BATCH_SIZE) {
 		const batchVideos = videos.slice(i, i + MAX_FIRESTORE_BATCH_SIZE);
-		const batch = firestore.batch();
-		let batchCount = 0;
-
-		for (const video of batchVideos) {
-			try {
-				if (!video.id) {
-					logger.warn("動画IDがありません", { videoId: video.id });
-					continue;
-				}
-
-				// Entity に変換
-				const videoEntity = VideoMapper.fromYouTubeAPI(video);
-				if (!videoEntity) {
-					// Entity 変換失敗（ログはエラーハンドリングで出力済み）
-					continue;
-				}
-
-				// Firestore用データに変換
-				const firestoreData = videoEntity.toFirestore();
-
-				// 動画IDをドキュメントIDとして使用
-				const docRef = videoRef.doc(video.id);
-				batch.set(docRef, firestoreData, { merge: true });
-				batchCount++;
-			} catch (error) {
-				logger.error("動画のEntity変換に失敗", {
-					videoId: video.id,
-					error: error instanceof Error ? error.message : String(error),
-				});
-			}
-		}
-
-		// バッチをコミット
-		if (batchCount > 0) {
-			try {
-				await batch.commit();
-				savedCount += batchCount;
-				// バッチ保存完了
-			} catch (error) {
-				logger.error("バッチ保存エラー", {
-					channelId,
-					batchNumber: Math.floor(i / MAX_FIRESTORE_BATCH_SIZE) + 1,
-					error: error instanceof Error ? error.message : String(error),
-				});
-			}
-		}
+		const batchNumber = Math.floor(i / MAX_FIRESTORE_BATCH_SIZE) + 1;
+		const batchSavedCount = await saveBatchVideos(batchVideos, videoRef, channelId, batchNumber);
+		savedCount += batchSavedCount;
 	}
 
 	return { savedCount };
