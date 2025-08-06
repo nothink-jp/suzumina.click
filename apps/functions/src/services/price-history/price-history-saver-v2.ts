@@ -1,3 +1,8 @@
+/**
+ * 価格履歴保存サービス（改善版）
+ * 既存データがある場合でも、より低い価格の場合は更新する
+ */
+
 import type { DLsiteApiResponse, PriceHistoryDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
 import { isValidPriceData } from "./price-extractor";
@@ -7,16 +12,13 @@ import { isValidPriceData } from "./price-extractor";
  * @returns JST日付文字列
  */
 function getJSTDate(): string {
-	// 現在のUTC時刻を取得
 	const now = new Date();
-	// toLocaleStringでJSTの日付を取得
 	const jstDateStr = now.toLocaleString("ja-JP", {
 		timeZone: "Asia/Tokyo",
 		year: "numeric",
 		month: "2-digit",
 		day: "2-digit",
 	});
-	// YYYY/MM/DD形式をYYYY-MM-DD形式に変換
 	const [year, month, day] = jstDateStr.split("/");
 	if (!year || !month || !day) {
 		throw new Error(`Invalid date format: ${jstDateStr}`);
@@ -29,9 +31,7 @@ function getJSTDate(): string {
  * @returns JST日時のISO文字列
  */
 function getJSTDateTime(): string {
-	// 現在のUTC時刻を取得
 	const now = new Date();
-	// JSTでフォーマット
 	const jstDateStr = now.toLocaleString("ja-JP", {
 		timeZone: "Asia/Tokyo",
 		year: "numeric",
@@ -42,7 +42,6 @@ function getJSTDateTime(): string {
 		second: "2-digit",
 		hour12: false,
 	});
-	// YYYY/MM/DD HH:mm:ss形式をISO形式に変換
 	const [datePart, timePart] = jstDateStr.split(" ");
 	if (!datePart || !timePart) {
 		throw new Error(`Invalid datetime format: ${jstDateStr}`);
@@ -55,12 +54,12 @@ function getJSTDateTime(): string {
 }
 
 /**
- * 価格履歴データをサブコレクションに保存
+ * 価格履歴データをサブコレクションに保存（改善版）
  * @param workId 作品ID
  * @param apiResponse Individual Info APIレスポンス
  * @returns 保存成功可否
  */
-export async function savePriceHistory(
+export async function savePriceHistoryV2(
 	workId: string,
 	apiResponse: DLsiteApiResponse,
 ): Promise<boolean> {
@@ -74,8 +73,6 @@ export async function savePriceHistory(
 		// 価格データの有効性を確認（欠損値も許可）
 		const hasValidPriceData = isValidPriceData(apiResponse);
 
-		// データがない場合でも日付のエントリを作成（欠損値として記録）
-
 		// JST（日本標準時）での日付を取得
 		const today = getJSTDate();
 
@@ -86,16 +83,8 @@ export async function savePriceHistory(
 			.collection("priceHistory")
 			.doc(today as string);
 
-		// 既存データ確認（重複保存防止）
+		// 既存データ確認
 		const existingDoc = await priceHistoryRef.get();
-		if (existingDoc.exists) {
-			// 既にデータが存在する場合はスキップ
-			const existingData = existingDoc.data() as PriceHistoryDocument;
-			console.log(`価格履歴保存スキップ: ${workId} - ${today}のデータが既に存在します`);
-			console.log(`既存データの保存時刻: ${existingData.capturedAt}`);
-			console.log(`現在のJST時刻: ${getJSTDateTime()}`);
-			return true;
-		}
 
 		// locale_price/locale_official_priceを正規化（配列の場合はオブジェクトに変換）
 		const normalizeLocalePrice = (
@@ -114,8 +103,8 @@ export async function savePriceHistory(
 			return localePrice;
 		};
 
-		// 価格データを構築（欠損値の場合はnullを設定）
-		const priceData: PriceHistoryDocument = {
+		// 新しい価格データを構築
+		const newPriceData: PriceHistoryDocument = {
 			workId: workId as string,
 			date: today as string,
 			capturedAt: getJSTDateTime(), // JST時刻
@@ -138,10 +127,32 @@ export async function savePriceHistory(
 					: undefined,
 		};
 
-		// Firestoreに保存
-		await priceHistoryRef.set(priceData);
-		console.log(`価格履歴保存成功: ${workId} - ${today}`);
+		if (existingDoc.exists) {
+			const existingData = existingDoc.data() as PriceHistoryDocument;
 
+			// 既存データと新規データの価格を比較
+			const existingPrice = existingData.price;
+			const newPrice = newPriceData.price;
+
+			// より低い価格が検出された場合、または既存価格がnullの場合は更新
+			if (newPrice !== null && (existingPrice === null || newPrice < existingPrice)) {
+				console.log(`価格更新検出: ${workId} - ${today}`);
+				console.log(`既存価格: ${existingPrice ?? "null"} → 新価格: ${newPrice}`);
+				console.log(`既存データの保存時刻: ${existingData.capturedAt}`);
+				console.log(`新規データの保存時刻: ${newPriceData.capturedAt}`);
+
+				// より低い価格で更新
+				await priceHistoryRef.set(newPriceData);
+				console.log(`価格履歴更新成功: ${workId} - ${today} (最低価格更新)`);
+				return true;
+			}
+			console.log(`価格履歴保存スキップ: ${workId} - ${today}のデータが既に存在し、価格変更なし`);
+			console.log(`既存価格: ${existingPrice ?? "null"}, 新価格: ${newPrice ?? "null"}`);
+			return true;
+		}
+		// 新規保存
+		await priceHistoryRef.set(newPriceData);
+		console.log(`価格履歴保存成功: ${workId} - ${today} (新規)`);
 		return true;
 	} catch (error) {
 		console.error(`価格履歴保存エラー: ${workId}`, error);
@@ -150,24 +161,28 @@ export async function savePriceHistory(
 }
 
 /**
- * 複数作品の価格履歴を並列保存
+ * 複数作品の価格履歴を並列保存（改善版）
  * @param workPriceMap 作品ID -> APIレスポンスのマップ
  * @returns 保存結果の統計情報
  */
-export async function saveBulkPriceHistory(workPriceMap: Map<string, DLsiteApiResponse>): Promise<{
+export async function saveBulkPriceHistoryV2(
+	workPriceMap: Map<string, DLsiteApiResponse>,
+): Promise<{
 	total: number;
 	success: number;
 	failed: number;
 	failedWorkIds: string[];
+	updated: number; // 既存データを更新した件数
 }> {
 	const total = workPriceMap.size;
 	let success = 0;
+	const updated = 0;
 	const failedWorkIds: string[] = [];
 
 	// Promise.allSettledで並列実行（エラー耐性）
 	const results = await Promise.allSettled(
 		Array.from(workPriceMap.entries()).map(async ([workId, apiResponse]) => {
-			const result = await savePriceHistory(workId, apiResponse);
+			const result = await savePriceHistoryV2(workId, apiResponse);
 			return { workId, success: result };
 		}),
 	);
@@ -187,12 +202,11 @@ export async function saveBulkPriceHistory(workPriceMap: Map<string, DLsiteApiRe
 
 	const failed = total - success;
 
-	// 価格履歴一括保存完了ログは省略（成功時ログ削減）
-
 	return {
 		total,
 		success,
 		failed,
 		failedWorkIds,
+		updated, // TODO: 更新件数のカウント実装
 	};
 }

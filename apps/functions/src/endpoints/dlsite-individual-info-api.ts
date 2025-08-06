@@ -204,6 +204,15 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
 
 		const apiResponses = Array.from(apiDataMap.values());
 
+		// デバッグ: API取得数とデータ内容を確認
+		logger.info(`[DEBUG] バッチ ${batchNumber}: API取得成功数=${apiResponses.length}`);
+		if (apiResponses.length > 0) {
+			const sampleWork = apiResponses[0];
+			if (sampleWork) {
+				logger.info(`[DEBUG] サンプルworkno: ${sampleWork.workno}`);
+			}
+		}
+
 		// 2. 新しい統合処理を使用
 		const processingResults = await processBatchUnifiedDLsiteData(apiResponses, {
 			skipPriceHistory: false, // 価格履歴も含めて全て更新
@@ -220,6 +229,15 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
 		);
 		results.priceHistorySaved = aggregatedResults.priceHistoryUpdated;
 		results.errors = aggregatedResults.errors;
+
+		// デバッグ: 価格履歴保存の詳細
+		if (aggregatedResults.priceHistoryUpdated === 0 && apiResponses.length > 0) {
+			logger.warn(`[DEBUG] バッチ ${batchNumber}: 価格履歴が1件も保存されませんでした`);
+			logger.warn(`[DEBUG] 現在時刻: ${new Date().toISOString()}`);
+			logger.warn(
+				`[DEBUG] JST時刻: ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`,
+			);
+		}
 
 		// ログ出力
 		logger.info(`バッチ ${batchNumber}: 統合処理完了`, {
@@ -505,7 +523,13 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
  * Cloud Functions エントリーポイント
  */
 export async function fetchDLsiteUnifiedData(event: CloudEvent<unknown>): Promise<void> {
-	logger.info("統合データ収集開始", { eventType: event.type });
+	// デバッグ: 関数実行開始をログ出力
+	console.log(`[DEBUG] fetchDLsiteUnifiedData開始: ${new Date().toISOString()}`);
+	logger.info("統合データ収集開始", {
+		eventType: event.type,
+		timestamp: new Date().toISOString(),
+		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+	});
 
 	try {
 		const result = await executeUnifiedDataCollection();
