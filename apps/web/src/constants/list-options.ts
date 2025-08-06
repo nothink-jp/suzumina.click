@@ -38,12 +38,6 @@ export const GRID_COLUMNS_4 = {
 	xl: 4,
 };
 
-export const GRID_COLUMNS_3 = {
-	default: 1,
-	md: 2,
-	lg: 3,
-};
-
 // デフォルト設定
 export const DEFAULT_LIST_PROPS = {
 	searchable: true,

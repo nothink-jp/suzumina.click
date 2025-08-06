@@ -10,7 +10,7 @@ import { ListWrapper } from "@/components/list/ListWrapper";
 import {
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
 	DEFAULT_LIST_PROPS,
-	GRID_COLUMNS_3,
+	GRID_COLUMNS_4,
 	VIDEO_SORT_OPTIONS,
 } from "@/constants/list-options";
 import { fetchVideosForConfigurableList } from "../actions";
@@ -77,7 +77,7 @@ export default function VideoList({ initialData }: VideoListProps) {
 				{...DEFAULT_LIST_PROPS}
 				searchPlaceholder="動画タイトルで検索..."
 				layout="grid"
-				gridColumns={GRID_COLUMNS_3}
+				gridColumns={GRID_COLUMNS_4}
 				sorts={VIDEO_SORT_OPTIONS}
 				filters={{
 					year: {
