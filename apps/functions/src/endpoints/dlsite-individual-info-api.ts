@@ -6,7 +6,11 @@
  */
 
 import type { CloudEvent } from "@google-cloud/functions-framework";
-import type { CollectionMetadata, WorkDocument } from "@suzumina.click/shared-types";
+import type {
+	CollectionMetadata,
+	DLsiteApiResponse,
+	WorkDocument,
+} from "@suzumina.click/shared-types";
 import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../infrastructure/management/user-agent-manager";
 import { getExistingWorksMap } from "../services/dlsite/dlsite-firestore";
@@ -169,19 +173,70 @@ function createBatchResult(
 }
 
 /**
+ * API呼び出しの失敗をログ出力
+ */
+function logApiFailures(batchNumber: number, failedWorkIds: string[]): void {
+	if (failedWorkIds.length > 0) {
+		logger.warn(`バッチ ${batchNumber}: ${failedWorkIds.length}件の取得失敗`);
+		logger.debug(
+			`失敗ID一覧: ${failedWorkIds.slice(0, 10).join(", ")}${failedWorkIds.length > 10 ? "..." : ""}`,
+		);
+	}
+}
+
+/**
+ * 価格履歴の保存状況をデバッグログ出力
+ */
+function logPriceHistoryDebug(
+	batchNumber: number,
+	priceHistoryUpdated: number,
+	apiResponses: DLsiteApiResponse[],
+	existingWorksMap?: Map<string, WorkDocument>,
+): void {
+	if (priceHistoryUpdated === 0 && apiResponses.length > 0) {
+		logger.warn(`[DEBUG] バッチ ${batchNumber}: 価格履歴が1件も保存されませんでした`);
+		logger.warn(`[DEBUG] 現在時刻: ${new Date().toISOString()}`);
+		logger.warn(
+			`[DEBUG] JST時刻: ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`,
+		);
+		// 既存作品の状態を確認
+		const sampleWorkId = apiResponses[0]?.workno;
+		if (sampleWorkId && existingWorksMap) {
+			const existingWork = existingWorksMap.get(sampleWorkId);
+			logger.warn(
+				`[DEBUG] サンプル作品 ${sampleWorkId} の既存データ: ${existingWork ? "あり" : "なし"}`,
+			);
+		}
+	}
+}
+
+/**
+ * バッチ処理の結果をログ出力
+ */
+function logBatchComplete(
+	batchNumber: number,
+	workIdsLength: number,
+	apiDataMapSize: number,
+	aggregatedResults: ReturnType<typeof aggregateProcessingResults>,
+): void {
+	logger.info(`バッチ ${batchNumber}: 統合処理完了`, {
+		入力: workIdsLength,
+		API成功: apiDataMapSize,
+		Work更新: aggregatedResults.workUpdated,
+		Circle更新: aggregatedResults.circleUpdated,
+		Creator更新: aggregatedResults.creatorUpdated,
+		価格履歴: aggregatedResults.priceHistoryUpdated,
+		エラー数: aggregatedResults.errors.length,
+	});
+}
+
+/**
  * バッチ処理実行
  */
 async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetchResult> {
 	const { batchNumber, totalBatches, workIds, existingWorksMap } = batchInfo;
 
 	logger.info(`バッチ ${batchNumber}/${totalBatches} 処理開始: ${workIds.length}件`);
-
-	const results = {
-		basicDataUpdated: 0,
-		priceHistorySaved: 0,
-		circleCreatorUpdated: 0,
-		errors: [] as string[],
-	};
 
 	try {
 		// 1. Individual Info API 呼び出し（バッチ）
@@ -196,22 +251,14 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
 		}
 
 		// 失敗作品のログ
-		if (failedWorkIds.length > 0) {
-			logger.warn(`バッチ ${batchNumber}: ${failedWorkIds.length}件の取得失敗`);
-			logger.debug(
-				`失敗ID一覧: ${failedWorkIds.slice(0, 10).join(", ")}${failedWorkIds.length > 10 ? "..." : ""}`,
-			);
-		}
+		logApiFailures(batchNumber, failedWorkIds);
 
 		const apiResponses = Array.from(apiDataMap.values());
 
 		// デバッグ: API取得数とデータ内容を確認
 		logger.info(`[DEBUG] バッチ ${batchNumber}: API取得成功数=${apiResponses.length}`);
-		if (apiResponses.length > 0) {
-			const sampleWork = apiResponses[0];
-			if (sampleWork) {
-				logger.info(`[DEBUG] サンプルworkno: ${sampleWork.workno}`);
-			}
+		if (apiResponses.length > 0 && apiResponses[0]) {
+			logger.info(`[DEBUG] サンプルworkno: ${apiResponses[0].workno}`);
 		}
 
 		// 2. 新しい統合処理を使用
@@ -224,41 +271,16 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
 		// 3. 結果の集計
 		const aggregatedResults = aggregateProcessingResults(processingResults);
 
-		results.basicDataUpdated = aggregatedResults.workUpdated;
-		results.circleCreatorUpdated = Math.max(
-			aggregatedResults.circleUpdated,
-			aggregatedResults.creatorUpdated,
-		);
-		results.priceHistorySaved = aggregatedResults.priceHistoryUpdated;
-		results.errors = aggregatedResults.errors;
-
 		// デバッグ: 価格履歴保存の詳細
-		if (aggregatedResults.priceHistoryUpdated === 0 && apiResponses.length > 0) {
-			logger.warn(`[DEBUG] バッチ ${batchNumber}: 価格履歴が1件も保存されませんでした`);
-			logger.warn(`[DEBUG] 現在時刻: ${new Date().toISOString()}`);
-			logger.warn(
-				`[DEBUG] JST時刻: ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`,
-			);
-			// 既存作品の状態を確認
-			const sampleWorkId = apiResponses[0]?.workno;
-			if (sampleWorkId && existingWorksMap) {
-				const existingWork = existingWorksMap.get(sampleWorkId);
-				logger.warn(
-					`[DEBUG] サンプル作品 ${sampleWorkId} の既存データ: ${existingWork ? "あり" : "なし"}`,
-				);
-			}
-		}
+		logPriceHistoryDebug(
+			batchNumber,
+			aggregatedResults.priceHistoryUpdated,
+			apiResponses,
+			existingWorksMap,
+		);
 
 		// ログ出力
-		logger.info(`バッチ ${batchNumber}: 統合処理完了`, {
-			入力: workIds.length,
-			API成功: apiDataMap.size,
-			Work更新: aggregatedResults.workUpdated,
-			Circle更新: aggregatedResults.circleUpdated,
-			Creator更新: aggregatedResults.creatorUpdated,
-			価格履歴: aggregatedResults.priceHistoryUpdated,
-			エラー数: results.errors.length,
-		});
+		logBatchComplete(batchNumber, workIds.length, apiDataMap.size, aggregatedResults);
 
 		return createBatchResult(aggregatedResults, workIds.length);
 	} catch (error) {
