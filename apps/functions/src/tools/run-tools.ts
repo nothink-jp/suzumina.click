@@ -4,8 +4,6 @@
  * 運用に必要な基本ツールのみを提供
  */
 
-// biome-ignore lint/suspicious/noConsole: これはCLIツールであり、コンソール出力が主要な機能です
-
 import { getFailureStatistics } from "../services/dlsite/failure-tracker";
 import * as logger from "../shared/logger";
 
