@@ -86,13 +86,15 @@ async function debugPriceHistory(workId: string): Promise<void> {
 
 		if (todayDoc.exists) {
 			const todayData = todayDoc.data();
-			logger.info(`\n今日（${today}）のデータ: 存在する`);
-			logger.info(`- capturedAt: ${todayData.capturedAt}`);
-			if (todayData.capturedAt) {
-				const capturedDate = new Date(todayData.capturedAt);
-				logger.info(
-					`- 保存時刻 (JST): ${capturedDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`,
-				);
+			if (todayData) {
+				logger.info(`\n今日（${today}）のデータ: 存在する`);
+				logger.info(`- capturedAt: ${todayData.capturedAt}`);
+				if (todayData.capturedAt) {
+					const capturedDate = new Date(todayData.capturedAt);
+					logger.info(
+						`- 保存時刻 (JST): ${capturedDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}`,
+					);
+				}
 			}
 		} else {
 			logger.warn(`\n今日（${today}）のデータ: 存在しない`);
@@ -108,8 +110,10 @@ async function debugPriceHistory(workId: string): Promise<void> {
 
 		if (yesterdayDoc.exists) {
 			const yesterdayData = yesterdayDoc.data();
-			logger.info(`\n昨日（${yesterdayStr}）のデータ: 存在する`);
-			logger.info(`- capturedAt: ${yesterdayData.capturedAt}`);
+			if (yesterdayData) {
+				logger.info(`\n昨日（${yesterdayStr}）のデータ: 存在する`);
+				logger.info(`- capturedAt: ${yesterdayData.capturedAt}`);
+			}
 		} else {
 			logger.info(`\n昨日（${yesterdayStr}）のデータ: 存在しない`);
 		}

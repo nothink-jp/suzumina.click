@@ -78,7 +78,9 @@ async function checkPriceHistory(workId: string): Promise<void> {
 		if (todayDoc.exists) {
 			logger.info(`\n今日（${today}）のデータが存在します`);
 			const todayData = todayDoc.data();
-			logger.info(`保存時刻: ${todayData.capturedAt}`);
+			if (todayData) {
+				logger.info(`保存時刻: ${todayData.capturedAt}`);
+			}
 		} else {
 			logger.warn(`\n今日（${today}）のデータが存在しません`);
 		}

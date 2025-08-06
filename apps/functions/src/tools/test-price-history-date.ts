@@ -2,7 +2,6 @@
  * 価格履歴の日付ロジックをテストするスクリプト
  */
 
-import { savePriceHistory } from "../services/price-history";
 import * as logger from "../shared/logger";
 
 /**
@@ -31,14 +30,16 @@ async function testDateCalculation(): Promise<void> {
 
 	// 現在の各種時刻を表示
 	const now = new Date();
-	logger.info("現在のUTC時刻:", now.toISOString());
-	logger.info("現在のローカル時刻:", now.toString());
-	logger.info("現在のJST時刻:", now.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }));
-	logger.info("getJSTDate()の結果:", getJSTDate());
+	logger.info("現在のUTC時刻:", { time: now.toISOString() });
+	logger.info("現在のローカル時刻:", { time: now.toString() });
+	logger.info("現在のJST時刻:", { time: now.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }) });
+	logger.info("getJSTDate()の結果:", { date: getJSTDate() });
 
 	// タイムゾーン情報
-	logger.info("実行環境のタイムゾーン:", Intl.DateTimeFormat().resolvedOptions().timeZone);
-	logger.info("UTC時刻のミリ秒:", Date.now());
+	logger.info("実行環境のタイムゾーン:", {
+		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+	});
+	logger.info("UTC時刻のミリ秒:", { milliseconds: Date.now() });
 
 	// 特定の時刻でのテスト（0:03 JST相当）
 	const testTimes = [
@@ -73,8 +74,8 @@ async function testDateCalculation(): Promise<void> {
 	};
 
 	logger.info("\n=== 価格履歴保存テスト ===");
-	logger.info("テスト作品ID:", testApiResponse.workno);
-	logger.info("現在のJST日付:", getJSTDate());
+	logger.info("テスト作品ID:", { workno: testApiResponse.workno });
+	logger.info("現在のJST日付:", { date: getJSTDate() });
 
 	// 実際の保存は実行しない（ドライラン）
 	logger.info("保存処理のドライランを実行（実際には保存しません）");
