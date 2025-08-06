@@ -83,12 +83,18 @@ function addNumericParams(params: URLSearchParams, filters: UnifiedSearchFilters
 	}
 }
 
-// Helper function to add date and other filter parameters
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 3層タグフィルター対応で複数パラメータ処理が必要
-function addFilterParams(params: URLSearchParams, filters: UnifiedSearchFilters) {
+// Helper function to add basic filter parameters
+function addBasicFilterParams(params: URLSearchParams, filters: UnifiedSearchFilters) {
 	if (filters.sortBy && filters.sortBy !== "relevance") {
 		params.set("sortBy", filters.sortBy);
 	}
+	if (filters.tagMode && filters.tagMode !== "any") {
+		params.set("tagMode", filters.tagMode);
+	}
+}
+
+// Helper function to add date filter parameters
+function addDateFilterParams(params: URLSearchParams, filters: UnifiedSearchFilters) {
 	if (filters.dateRange) {
 		params.set("dateRange", filters.dateRange);
 	}
@@ -98,13 +104,17 @@ function addFilterParams(params: URLSearchParams, filters: UnifiedSearchFilters)
 	if (filters.dateTo) {
 		params.set("dateTo", filters.dateTo);
 	}
+}
+
+// Helper function to add tag filter parameters
+function addTagFilterParams(params: URLSearchParams, filters: UnifiedSearchFilters) {
 	if (filters.tags && filters.tags.length > 0) {
 		params.set("tags", filters.tags.join(","));
 	}
-	if (filters.tagMode && filters.tagMode !== "any") {
-		params.set("tagMode", filters.tagMode);
-	}
-	// 3層タグフィルターパラメータ
+}
+
+// Helper function to add 3-layer tag filter parameters
+function addThreeLayerTagFilterParams(params: URLSearchParams, filters: UnifiedSearchFilters) {
 	if (filters.playlistTags && filters.playlistTags.length > 0) {
 		params.set("playlistTags", filters.playlistTags.join(","));
 	}
@@ -117,6 +127,14 @@ function addFilterParams(params: URLSearchParams, filters: UnifiedSearchFilters)
 	if (filters.layerSearchMode && filters.layerSearchMode !== "any_layer") {
 		params.set("layerSearchMode", filters.layerSearchMode);
 	}
+}
+
+// Helper function to add all filter parameters
+function addFilterParams(params: URLSearchParams, filters: UnifiedSearchFilters) {
+	addBasicFilterParams(params, filters);
+	addDateFilterParams(params, filters);
+	addTagFilterParams(params, filters);
+	addThreeLayerTagFilterParams(params, filters);
 }
 
 // Helper function to build search parameters

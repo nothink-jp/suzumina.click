@@ -4,6 +4,7 @@
  */
 
 import type { Firestore, QueryDocumentSnapshot } from "@google-cloud/firestore";
+import { info, warn } from "./logger";
 
 /**
  * 有効なURLパターンの定義
@@ -78,9 +79,76 @@ export function isProductionProject(): boolean {
 }
 
 /**
+ * URLがHTTPプロトコルで始まるかチェック
+ */
+function checkUrlProtocol(url: string, fieldName: string, errors: string[]): boolean {
+	if (!url.startsWith("http://") && !url.startsWith("https://")) {
+		// まずファイルパスパターンをチェック
+		for (const pattern of INVALID_VALUE_PATTERNS.localPaths) {
+			if (pattern.test(url)) {
+				errors.push(`${fieldName}: Local file path detected - ${url}`);
+				return false;
+			}
+		}
+		// ファイルパスでない場合は通常のURLエラー
+		errors.push(`${fieldName}: Invalid URL format - must start with http:// or https://`);
+		return false;
+	}
+	return true;
+}
+
+/**
+ * URLに対してパターンマッチングを実行
+ */
+function checkPatterns(
+	url: string,
+	patterns: RegExp[],
+	errorMessage: (fieldName: string, url: string) => string,
+	fieldName: string,
+	errors: string[],
+): void {
+	for (const pattern of patterns) {
+		if (pattern.test(url)) {
+			errors.push(errorMessage(fieldName, url));
+		}
+	}
+}
+
+/**
+ * 画像URLの追加検証
+ */
+function validateImageUrl(url: string, fieldName: string, errors: string[]): void {
+	if (fieldName.toLowerCase().includes("thumbnail") || fieldName.toLowerCase().includes("image")) {
+		checkPatterns(
+			url,
+			INVALID_VALUE_PATTERNS.invalidImages,
+			(field, u) => `${field}: Invalid image URL format - ${u}`,
+			fieldName,
+			errors,
+		);
+	}
+}
+
+/**
+ * 許可されたパターンとの照合
+ */
+function checkAllowedPatterns(
+	url: string,
+	fieldName: string,
+	allowedPatterns: RegExp[] | undefined,
+	errors: string[],
+): void {
+	if (allowedPatterns && allowedPatterns.length > 0) {
+		const matchesAllowed = allowedPatterns.some((pattern) => pattern.test(url));
+		if (!matchesAllowed) {
+			errors.push(`${fieldName}: URL does not match allowed patterns - ${url}`);
+		}
+	}
+}
+
+/**
  * URLの妥当性をチェック
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: URL validation requires comprehensive checks
 export function validateUrl(
 	url: string,
 	fieldName: string,
@@ -94,49 +162,33 @@ export function validateUrl(
 	}
 
 	// 基本的なURL形式チェック
-	if (!url.startsWith("http://") && !url.startsWith("https://")) {
-		// まずファイルパスパターンをチェック
-		for (const pattern of INVALID_VALUE_PATTERNS.localPaths) {
-			if (pattern.test(url)) {
-				errors.push(`${fieldName}: Local file path detected - ${url}`);
-				return { valid: false, errors };
-			}
-		}
-		// ファイルパスでない場合は通常のURLエラー
-		errors.push(`${fieldName}: Invalid URL format - must start with http:// or https://`);
+	if (!checkUrlProtocol(url, fieldName, errors)) {
 		return { valid: false, errors };
 	}
 
 	// ローカルファイルパスのチェック
-	for (const pattern of INVALID_VALUE_PATTERNS.localPaths) {
-		if (pattern.test(url)) {
-			errors.push(`${fieldName}: Local file path detected - ${url}`);
-		}
-	}
+	checkPatterns(
+		url,
+		INVALID_VALUE_PATTERNS.localPaths,
+		(field, u) => `${field}: Local file path detected - ${u}`,
+		fieldName,
+		errors,
+	);
 
 	// 開発環境URLのチェック
-	for (const pattern of INVALID_VALUE_PATTERNS.devUrls) {
-		if (pattern.test(url)) {
-			errors.push(`${fieldName}: Development URL detected - ${url}`);
-		}
-	}
+	checkPatterns(
+		url,
+		INVALID_VALUE_PATTERNS.devUrls,
+		(field, u) => `${field}: Development URL detected - ${u}`,
+		fieldName,
+		errors,
+	);
 
 	// 画像URLの場合の追加チェック
-	if (fieldName.toLowerCase().includes("thumbnail") || fieldName.toLowerCase().includes("image")) {
-		for (const pattern of INVALID_VALUE_PATTERNS.invalidImages) {
-			if (pattern.test(url)) {
-				errors.push(`${fieldName}: Invalid image URL format - ${url}`);
-			}
-		}
-	}
+	validateImageUrl(url, fieldName, errors);
 
-	// 許可されたパターンのチェック（指定された場合）
-	if (allowedPatterns && allowedPatterns.length > 0) {
-		const matchesAllowed = allowedPatterns.some((pattern) => pattern.test(url));
-		if (!matchesAllowed) {
-			errors.push(`${fieldName}: URL does not match allowed patterns - ${url}`);
-		}
-	}
+	// 許可されたパターンのチェック
+	checkAllowedPatterns(url, fieldName, allowedPatterns, errors);
 
 	return {
 		valid: errors.length === 0,
@@ -195,82 +247,77 @@ export function validateStringField(
 }
 
 /**
- * Firestoreドキュメントのデータ検証
+ * Videosコレクションのデータ検証
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Collection-specific validation requires detailed checks
-export function validateFirestoreData(
-	collection: string,
-	data: Record<string, unknown>,
-): { valid: boolean; errors: string[]; warnings: string[] } {
-	const errors: string[] = [];
-	const warnings: string[] = [];
-
-	// コレクション別の検証ルール
-	switch (collection) {
-		case "videos": {
-			// thumbnailUrlの検証
-			if (data.thumbnailUrl && typeof data.thumbnailUrl === "string") {
-				const urlValidation = validateUrl(data.thumbnailUrl, "thumbnailUrl", [
-					...VALID_URL_PATTERNS.youtube,
-					...VALID_URL_PATTERNS.cdn,
-				]);
-				errors.push(...urlValidation.errors);
-			}
-
-			// videoIdの検証
-			if (data.videoId && typeof data.videoId === "string") {
-				const idValidation = validateStringField(data.videoId, "videoId", {
-					minLength: 11,
-					maxLength: 11,
-					pattern: /^[a-zA-Z0-9_-]{11}$/,
-				});
-				errors.push(...idValidation.errors);
-			}
-
-			// titleの検証
-			if (data.title && typeof data.title === "string") {
-				const titleValidation = validateStringField(data.title, "title", {
-					maxLength: 500,
-					disallowedPatterns: INVALID_VALUE_PATTERNS.localPaths,
-				});
-				errors.push(...titleValidation.errors);
-			}
-			break;
-		}
-
-		case "works": {
-			// thumbnailUrlの検証
-			if (data.thumbnailUrl && typeof data.thumbnailUrl === "string") {
-				const urlValidation = validateUrl(data.thumbnailUrl, "thumbnailUrl", [
-					...VALID_URL_PATTERNS.dlsite,
-					...VALID_URL_PATTERNS.cdn,
-				]);
-				errors.push(...urlValidation.errors);
-			}
-
-			// workUrlの検証
-			if (data.workUrl && typeof data.workUrl === "string") {
-				const urlValidation = validateUrl(data.workUrl, "workUrl", VALID_URL_PATTERNS.dlsite);
-				errors.push(...urlValidation.errors);
-			}
-			break;
-		}
-
-		case "audioButtons": {
-			// 音声ボタン固有の検証
-			if (data.videoId && typeof data.videoId === "string") {
-				const idValidation = validateStringField(data.videoId, "videoId", {
-					minLength: 11,
-					maxLength: 11,
-					pattern: /^[a-zA-Z0-9_-]{11}$/,
-				});
-				errors.push(...idValidation.errors);
-			}
-			break;
-		}
+function validateVideosData(data: Record<string, unknown>, errors: string[]): void {
+	// thumbnailUrlの検証
+	if (data.thumbnailUrl && typeof data.thumbnailUrl === "string") {
+		const urlValidation = validateUrl(data.thumbnailUrl, "thumbnailUrl", [
+			...VALID_URL_PATTERNS.youtube,
+			...VALID_URL_PATTERNS.cdn,
+		]);
+		errors.push(...urlValidation.errors);
 	}
 
-	// 共通フィールドの検証
+	// videoIdの検証
+	if (data.videoId && typeof data.videoId === "string") {
+		const idValidation = validateStringField(data.videoId, "videoId", {
+			minLength: 11,
+			maxLength: 11,
+			pattern: /^[a-zA-Z0-9_-]{11}$/,
+		});
+		errors.push(...idValidation.errors);
+	}
+
+	// titleの検証
+	if (data.title && typeof data.title === "string") {
+		const titleValidation = validateStringField(data.title, "title", {
+			maxLength: 500,
+			disallowedPatterns: INVALID_VALUE_PATTERNS.localPaths,
+		});
+		errors.push(...titleValidation.errors);
+	}
+}
+
+/**
+ * Worksコレクションのデータ検証
+ */
+function validateWorksData(data: Record<string, unknown>, errors: string[]): void {
+	// thumbnailUrlの検証
+	if (data.thumbnailUrl && typeof data.thumbnailUrl === "string") {
+		const urlValidation = validateUrl(data.thumbnailUrl, "thumbnailUrl", [
+			...VALID_URL_PATTERNS.dlsite,
+			...VALID_URL_PATTERNS.cdn,
+		]);
+		errors.push(...urlValidation.errors);
+	}
+
+	// workUrlの検証
+	if (data.workUrl && typeof data.workUrl === "string") {
+		const urlValidation = validateUrl(data.workUrl, "workUrl", VALID_URL_PATTERNS.dlsite);
+		errors.push(...urlValidation.errors);
+	}
+}
+
+/**
+ * AudioButtonsコレクションのデータ検証
+ */
+function validateAudioButtonsData(data: Record<string, unknown>, errors: string[]): void {
+	// 音声ボタン固有の検証
+	if (data.videoId && typeof data.videoId === "string") {
+		const idValidation = validateStringField(data.videoId, "videoId", {
+			minLength: 11,
+			maxLength: 11,
+			pattern: /^[a-zA-Z0-9_-]{11}$/,
+		});
+		errors.push(...idValidation.errors);
+	}
+}
+
+/**
+ * 共通フィールドの検証
+ */
+function validateCommonFields(data: Record<string, unknown>, warnings: string[]): void {
 	// IDフィールド
 	if (data.id && typeof data.id === "string") {
 		const idValidation = validateStringField(data.id, "id", {
@@ -281,6 +328,33 @@ export function validateFirestoreData(
 			warnings.push(...idValidation.errors);
 		}
 	}
+}
+
+/**
+ * Firestoreドキュメントのデータ検証
+ */
+export function validateFirestoreData(
+	collection: string,
+	data: Record<string, unknown>,
+): { valid: boolean; errors: string[]; warnings: string[] } {
+	const errors: string[] = [];
+	const warnings: string[] = [];
+
+	// コレクション別の検証ルール
+	switch (collection) {
+		case "videos":
+			validateVideosData(data, errors);
+			break;
+		case "works":
+			validateWorksData(data, errors);
+			break;
+		case "audioButtons":
+			validateAudioButtonsData(data, errors);
+			break;
+	}
+
+	// 共通フィールドの検証
+	validateCommonFields(data, warnings);
 
 	return {
 		valid: errors.length === 0,
@@ -408,15 +482,23 @@ export async function scanCollectionForInvalidData(
 
 			if (options?.logInvalid) {
 				// Logging is intentional for validation scripts
-				// biome-ignore lint/suspicious/noConsole: Validation script needs console output
-				console.log(`\nInvalid document: ${collectionName}/${doc.id}`);
+				info(`Invalid document: ${collectionName}/${doc.id}`, {
+					collection: collectionName,
+					documentId: doc.id,
+				});
 				if (validation.errors.length > 0) {
-					// biome-ignore lint/suspicious/noConsole: Validation script needs console output
-					console.log("Errors:", validation.errors);
+					warn("Document validation errors", {
+						collection: collectionName,
+						documentId: doc.id,
+						errors: validation.errors,
+					});
 				}
 				if (validation.warnings.length > 0) {
-					// biome-ignore lint/suspicious/noConsole: Validation script needs console output
-					console.log("Warnings:", validation.warnings);
+					info("Document validation warnings", {
+						collection: collectionName,
+						documentId: doc.id,
+						warnings: validation.warnings,
+					});
 				}
 			}
 		}

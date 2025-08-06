@@ -7,6 +7,24 @@ import { getFirestore } from "./firestore";
 import { error as logError } from "./logger";
 
 /**
+ * レガシービデオデータの型定義
+ * TODO: 将来的にはshared-typesのVideoDocumentに移行予定
+ */
+interface LegacyVideoData {
+	id: string;
+	title?: string;
+	description?: string;
+	thumbnailUrl?: string;
+	videoUrl?: string;
+	tags?: string[];
+	userTags?: string[];
+	duration?: number;
+	createdAt?: string;
+	updatedAt?: string;
+	[key: string]: unknown; // その他のレガシーフィールド
+}
+
+/**
  * Firestore操作のエラーハンドリング共通関数
  */
 function handleFirestoreError(
@@ -103,8 +121,7 @@ export async function getVideoUserTags(videoId: string): Promise<string[]> {
  * @param videoId - 取得する動画のID
  * @returns 動画データまたはnull
  */
-// biome-ignore lint/suspicious/noExplicitAny: Legacy video data structure
-export async function getVideoByIdFromFirestore(videoId: string): Promise<any | null> {
+export async function getVideoByIdFromFirestore(videoId: string): Promise<LegacyVideoData | null> {
 	try {
 		const firestore = getFirestore();
 		const videoRef = firestore.collection("videos").doc(videoId);
@@ -130,12 +147,10 @@ export async function getVideoByIdFromFirestore(videoId: string): Promise<any | 
  * @param videoIds - 取得する動画のID配列
  * @returns 動画データの配列
  */
-// biome-ignore lint/suspicious/noExplicitAny: Legacy video data structure
-export async function getVideosByIdsFromFirestore(videoIds: string[]): Promise<any[]> {
+export async function getVideosByIdsFromFirestore(videoIds: string[]): Promise<LegacyVideoData[]> {
 	try {
 		const firestore = getFirestore();
-		// biome-ignore lint/suspicious/noExplicitAny: Legacy video data structure
-		const videos: any[] = [];
+		const videos: LegacyVideoData[] = [];
 
 		// Firestoreのバッチ取得制限に対応するため、チャンクに分割
 		const chunks = [];

@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { error as logError } from "./logger";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -86,8 +87,7 @@ User Agent: ${data.userAgent}
 
 		return true;
 	} catch (error) {
-		// biome-ignore lint/suspicious/noConsole: Server-side error logging
-		console.error("Failed to send contact notification email:", error);
+		logError("Failed to send contact notification email", error);
 		return false;
 	}
 }

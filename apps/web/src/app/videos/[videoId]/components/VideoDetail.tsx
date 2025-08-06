@@ -30,6 +30,146 @@ interface VideoDetailProps {
 	relatedAudioButtonsSlot?: ReactNode;
 }
 
+// ISO形式の日付を表示用にフォーマット（JST、秒単位まで）
+const formatDate = (isoString: string) => {
+	try {
+		const date = new Date(isoString);
+		return date.toLocaleString("ja-JP", {
+			timeZone: "Asia/Tokyo",
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+			hour12: false,
+		});
+	} catch {
+		return isoString;
+	}
+};
+
+// YouTubeカテゴリIDとカテゴリ名の対応表
+const getYouTubeCategoryName = (categoryId?: string): string | null => {
+	if (!categoryId) return null;
+
+	const categories: Record<string, string> = {
+		"1": "映画とアニメ",
+		"2": "自動車と乗り物",
+		"10": "音楽",
+		"15": "ペットと動物",
+		"17": "スポーツ",
+		"19": "旅行とイベント",
+		"20": "ゲーム",
+		"22": "ブログ",
+		"23": "コメディ",
+		"24": "エンターテイメント",
+		"25": "ニュースと政治",
+		"26": "ハウツーとスタイル",
+		"27": "教育",
+		"28": "科学と技術",
+		"29": "非営利団体と社会活動",
+	};
+
+	return categories[categoryId] || null;
+};
+
+// URLかどうかを判定する関数
+const isValidUrl = (text: string): boolean => {
+	try {
+		new URL(text);
+		return text.startsWith("http://") || text.startsWith("https://");
+	} catch {
+		return false;
+	}
+};
+
+// 動画時間をフォーマット（ISO 8601 duration → hh:mm:ss）
+const formatDuration = (duration?: string) => {
+	if (!duration) return null;
+	// PT1H2M3S → hh:mm:ss の形式に変換
+	const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+	if (!match) return null;
+
+	const hours = match[1] ? Number.parseInt(match[1]) : 0;
+	const minutes = match[2] ? Number.parseInt(match[2]) : 0;
+	const seconds = match[3] ? Number.parseInt(match[3]) : 0;
+
+	// 常にhh:mm:ssフォーマットで表示
+	return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+};
+
+// 動画タイプバッジの情報を取得
+function getVideoBadgeInfo(video: FrontendVideoData) {
+	switch (video.liveBroadcastContent) {
+		case "live":
+			return {
+				text: "配信中",
+				icon: Radio,
+				className: "bg-red-600/80 text-white border-none",
+				ariaLabel: "現在配信中のライブ配信",
+			};
+		case "upcoming":
+			return {
+				text: "配信予告",
+				icon: Clock,
+				className: "bg-blue-600/80 text-white border-none",
+				ariaLabel: "配信予定のライブ配信",
+			};
+		case "none":
+			// videoType が"archived"の場合、または liveStreamingDetails に actualStartTime と actualEndTime がある場合は配信アーカイブ
+			if (
+				video.videoType === "archived" ||
+				(video.liveStreamingDetails?.actualStartTime && video.liveStreamingDetails?.actualEndTime)
+			) {
+				return {
+					text: "配信アーカイブ",
+					icon: Radio,
+					className: "bg-gray-600/80 text-white border-none",
+					ariaLabel: "ライブ配信のアーカイブ",
+				};
+			}
+			return {
+				text: "動画",
+				icon: Video,
+				className: "bg-black/80 text-white border-none",
+				ariaLabel: "動画コンテンツ",
+			};
+		default:
+			return {
+				text: "動画",
+				icon: Video,
+				className: "bg-black/80 text-white border-none",
+				ariaLabel: "動画コンテンツ",
+			};
+	}
+}
+
+// 音声ボタン作成可能判定
+function getCanCreateButtonData(video: FrontendVideoData, session: { user?: unknown } | null) {
+	// ログインしていない場合
+	if (!session?.user) {
+		return {
+			canCreate: false,
+			reason: "音声ボタンを作成するにはすずみなふぁみりーメンバーとしてログインが必要です",
+		};
+	}
+
+	// 動画の条件をチェック
+	const videoCanCreate = canCreateAudioButton(video);
+	if (!videoCanCreate) {
+		return {
+			canCreate: false,
+			reason: "許諾により音声ボタンを作成できるのは配信アーカイブのみです",
+		};
+	}
+
+	return {
+		canCreate: true,
+		reason: null,
+	};
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 動画詳細の複雑な表示ロジックのため許容
 export default function VideoDetail({
 	video,
@@ -38,150 +178,17 @@ export default function VideoDetail({
 }: VideoDetailProps) {
 	const { data: session } = useSession();
 
-	// ISO形式の日付を表示用にフォーマット（JST、秒単位まで）
-	const formatDate = (isoString: string) => {
-		try {
-			const date = new Date(isoString);
-			return date.toLocaleString("ja-JP", {
-				timeZone: "Asia/Tokyo",
-				year: "numeric",
-				month: "2-digit",
-				day: "2-digit",
-				hour: "2-digit",
-				minute: "2-digit",
-				second: "2-digit",
-				hour12: false,
-			});
-		} catch {
-			return isoString;
-		}
-	};
-
 	// YouTube動画URLを生成
 	const youtubeUrl = `https://youtube.com/watch?v=${video.videoId}`;
 
-	// YouTubeカテゴリIDとカテゴリ名の対応表
-	const getYouTubeCategoryName = (categoryId?: string): string | null => {
-		if (!categoryId) return null;
-
-		const categories: Record<string, string> = {
-			"1": "映画とアニメ",
-			"2": "自動車と乗り物",
-			"10": "音楽",
-			"15": "ペットと動物",
-			"17": "スポーツ",
-			"19": "旅行とイベント",
-			"20": "ゲーム",
-			"22": "ブログ",
-			"23": "コメディ",
-			"24": "エンターテイメント",
-			"25": "ニュースと政治",
-			"26": "ハウツーとスタイル",
-			"27": "教育",
-			"28": "科学と技術",
-			"29": "非営利団体と社会活動",
-		};
-
-		return categories[categoryId] || null;
-	};
-
-	// URLかどうかを判定する関数
-	const isValidUrl = (text: string): boolean => {
-		try {
-			new URL(text);
-			return text.startsWith("http://") || text.startsWith("https://");
-		} catch {
-			return false;
-		}
-	};
-
-	// 動画時間をフォーマット（ISO 8601 duration → hh:mm:ss）
-	const formatDuration = (duration?: string) => {
-		if (!duration) return null;
-		// PT1H2M3S → hh:mm:ss の形式に変換
-		const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-		if (!match) return null;
-
-		const hours = match[1] ? Number.parseInt(match[1]) : 0;
-		const minutes = match[2] ? Number.parseInt(match[2]) : 0;
-		const seconds = match[3] ? Number.parseInt(match[3]) : 0;
-
-		// 常にhh:mm:ssフォーマットで表示
-		return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-	};
-
 	// メモ化: 動画タイプバッジの情報
-	const videoBadgeInfo = useMemo(() => {
-		switch (video.liveBroadcastContent) {
-			case "live":
-				return {
-					text: "配信中",
-					icon: Radio,
-					className: "bg-red-600/80 text-white border-none",
-					ariaLabel: "現在配信中のライブ配信",
-				};
-			case "upcoming":
-				return {
-					text: "配信予告",
-					icon: Clock,
-					className: "bg-blue-600/80 text-white border-none",
-					ariaLabel: "配信予定のライブ配信",
-				};
-			case "none":
-				// videoType が"archived"の場合、または liveStreamingDetails に actualStartTime と actualEndTime がある場合は配信アーカイブ
-				if (
-					video.videoType === "archived" ||
-					(video.liveStreamingDetails?.actualStartTime && video.liveStreamingDetails?.actualEndTime)
-				) {
-					return {
-						text: "配信アーカイブ",
-						icon: Radio,
-						className: "bg-gray-600/80 text-white border-none",
-						ariaLabel: "ライブ配信のアーカイブ",
-					};
-				}
-				return {
-					text: "動画",
-					icon: Video,
-					className: "bg-black/80 text-white border-none",
-					ariaLabel: "動画コンテンツ",
-				};
-			default:
-				return {
-					text: "動画",
-					icon: Video,
-					className: "bg-black/80 text-white border-none",
-					ariaLabel: "動画コンテンツ",
-				};
-		}
-	}, [
-		video.liveBroadcastContent,
-		video.videoType,
-		video.liveStreamingDetails?.actualStartTime,
-		video.liveStreamingDetails?.actualEndTime,
-	]);
+	const videoBadgeInfo = useMemo(() => getVideoBadgeInfo(video), [video]);
 
 	// メモ化: 音声ボタン作成可能判定（認証状態も考慮）
-	const canCreateButtonData = useMemo(() => {
-		// ログインしていない場合
-		if (!session?.user) {
-			return {
-				canCreate: false,
-				reason: "音声ボタンを作成するにはすずみなふぁみりーメンバーとしてログインが必要です",
-			};
-		}
-
-		// 動画の条件をチェック
-		const videoCanCreate = canCreateAudioButton(video);
-		if (!videoCanCreate) {
-			return {
-				canCreate: false,
-				reason: "許諾により音声ボタンを作成できるのは配信アーカイブのみです",
-			};
-		}
-
-		return { canCreate: true, reason: undefined };
-	}, [video, session?.user]);
+	const canCreateButtonData = useMemo(
+		() => getCanCreateButtonData(video, session),
+		[video, session],
+	);
 
 	const canCreateButton = canCreateButtonData.canCreate;
 
@@ -337,7 +344,7 @@ export default function VideoDetail({
 									className="bg-suzuka-500 hover:bg-suzuka-600 text-white"
 									disabled={!canCreateButton}
 									asChild={canCreateButton}
-									title={canCreateButton ? undefined : canCreateButtonData.reason}
+									title={canCreateButton ? undefined : canCreateButtonData.reason || undefined}
 								>
 									{canCreateButton ? (
 										<Link

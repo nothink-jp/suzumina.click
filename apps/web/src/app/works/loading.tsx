@@ -18,12 +18,8 @@ export default function WorksLoading() {
 
 			{/* 作品グリッドのスケルトン */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				{Array.from({ length: 9 }, (_, index) => (
-					<Card
-						// biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton loading
-						key={`work-skeleton-${index}-of-9`}
-						className="overflow-hidden animate-pulse"
-					>
+				{Array.from({ length: 9 }, (_, i) => `work-skeleton-${i}`).map((key) => (
+					<Card key={key} className="overflow-hidden animate-pulse">
 						{/* サムネイルエリア */}
 						<div className="relative aspect-[3/4] bg-gradient-to-br from-suzuka-100 to-minase-100">
 							<Skeleton className="absolute inset-0" />

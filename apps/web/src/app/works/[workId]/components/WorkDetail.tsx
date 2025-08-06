@@ -47,6 +47,52 @@ interface WorkDetailProps {
 	initialEvaluation?: FrontendWorkEvaluation | null;
 }
 
+// スターレーティングコンポーネント
+function StarRating({ rating }: { rating: number }) {
+	// Convert 0-50 scale to 0-5 scale for display
+	const displayRating = Math.round(rating / 10);
+	return (
+		<div className="flex items-center">
+			{[1, 2, 3, 4, 5].map((star) => (
+				<Star
+					key={star}
+					className={`h-5 w-5 ${star <= displayRating ? "text-foreground fill-current" : "text-gray-300"}`}
+				/>
+			))}
+		</div>
+	);
+}
+
+// 価格情報を計算
+function calculatePriceInfo(work: WorkPlainObject) {
+	const currentPrice = work.price.current;
+	// 元の価格を取得、もしくは割引率から計算
+	const originalPrice =
+		work.price.original ||
+		(work.price.discount !== undefined && work.price.discount > 0
+			? Math.round(currentPrice / (1 - work.price.discount / 100))
+			: undefined);
+	// NOTE: 将来的にはWorkPrice.isDiscounted()を使用することを推奨
+	const isOnSale = work.price.discount !== undefined && work.price.discount > 0;
+
+	return { currentPrice, originalPrice, isOnSale };
+}
+
+// シェア処理
+function handleShare(work: WorkPlainObject) {
+	if (navigator.share) {
+		navigator.share({
+			title: work.title,
+			text: work.description,
+			url: window.location.href,
+		});
+	} else {
+		// フォールバック: URLをクリップボードにコピー
+		navigator.clipboard.writeText(window.location.href);
+		alert("URLをクリップボードにコピーしました");
+	}
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex UI component with multiple tabs and conditional rendering
 export default function WorkDetail({ work, initialEvaluation = null }: WorkDetailProps) {
 	// モック特性評価データを生成（作品IDに基づいて一意）
@@ -60,48 +106,11 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 		return checkAgeRating(work.ageRating);
 	}, [work.ageRating]);
 
-	const renderStars = (rating: number) => {
-		// Convert 0-50 scale to 0-5 scale for display
-		const displayRating = Math.round(rating / 10);
-		return (
-			<div className="flex items-center">
-				{[1, 2, 3, 4, 5].map((star) => (
-					<Star
-						key={star}
-						className={`h-5 w-5 ${star <= displayRating ? "text-foreground fill-current" : "text-gray-300"}`}
-					/>
-				))}
-			</div>
-		);
-	};
-
-	// 価格表示の計算
-	const currentPrice = work.price.current;
-	// 元の価格を取得、もしくは割引率から計算
-	const originalPrice =
-		work.price.original ||
-		(work.price.discount !== undefined && work.price.discount > 0
-			? Math.round(currentPrice / (1 - work.price.discount / 100))
-			: undefined);
-	// NOTE: 将来的にはWorkPrice.isDiscounted()を使用することを推奨
-	const isOnSale = work.price.discount !== undefined && work.price.discount > 0;
+	// 価格情報の計算
+	const { currentPrice, originalPrice, isOnSale } = useMemo(() => calculatePriceInfo(work), [work]);
 
 	// ランキング情報は現在利用できません
 	const latestRank = undefined;
-
-	const handleShare = () => {
-		if (navigator.share) {
-			navigator.share({
-				title: work.title,
-				text: work.description,
-				url: window.location.href,
-			});
-		} else {
-			// フォールバック: URLをクリップボードにコピー
-			navigator.clipboard.writeText(window.location.href);
-			alert("URLをクリップボードにコピーしました");
-		}
-	};
 
 	return (
 		<div className="max-w-6xl mx-auto">
@@ -202,7 +211,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 						{/* 評価 */}
 						{work.rating && (
 							<div className="flex items-center gap-3">
-								{renderStars(work.rating.stars)}
+								<StarRating rating={work.rating.stars} />
 								<span className="text-xl font-semibold text-gray-900">
 									{(work.rating.stars / 10).toFixed(1)}
 								</span>
@@ -304,7 +313,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 								<Button
 									variant="outline"
 									className="flex-1 border text-foreground hover:bg-accent"
-									onClick={handleShare}
+									onClick={() => handleShare(work)}
 								>
 									<Share2 className="h-4 w-4 mr-2" />
 									共有

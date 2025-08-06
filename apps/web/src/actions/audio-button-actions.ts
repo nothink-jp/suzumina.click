@@ -7,6 +7,7 @@
 
 "use server";
 
+import type { QueryDocumentSnapshot, Transaction } from "@google-cloud/firestore";
 import { AudioButton, type FirestoreServerAudioButtonData } from "@suzumina.click/shared-types";
 import { auth } from "@/auth";
 import { getFirestore } from "@/lib/firestore";
@@ -152,8 +153,7 @@ export async function getPublicAudioButtonsAction(limit = 20): Promise<GetAudioB
 
 		const audioButtons: AudioButton[] = [];
 
-		// biome-ignore lint/suspicious/noExplicitAny: Firestore QueryDocumentSnapshot type
-		snapshot.forEach((doc: any) => {
+		snapshot.forEach((doc: QueryDocumentSnapshot) => {
 			const data = doc.data() as FirestoreServerAudioButtonData;
 			const audioButton = AudioButton.fromFirestoreData({
 				...data,
@@ -193,8 +193,7 @@ export async function recordAudioButtonPlayAction(
 
 		// Firestoreのトランザクションで再生回数を更新
 		const firestore = getFirestore();
-		// biome-ignore lint/suspicious/noExplicitAny: Firestore Transaction type
-		await firestore.runTransaction(async (transaction: any) => {
+		await firestore.runTransaction(async (transaction: Transaction) => {
 			const docRef = firestore.collection("audioButtons").doc(audioButtonId);
 			const doc = await transaction.get(docRef);
 

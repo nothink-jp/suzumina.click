@@ -49,9 +49,84 @@ export async function getRecentAudioButtons(limit = 10): Promise<AudioButtonPlai
  * Entityを使用した音声ボタンの取得
  */
 /**
+ * Firestoreクエリにフィルタを適用
+ */
+function applyFilters(
+	queryRef: FirebaseFirestore.Query,
+	onlyPublic: boolean,
+	sourceVideoId?: string,
+): FirebaseFirestore.Query {
+	let filteredQuery = queryRef;
+
+	if (onlyPublic) {
+		filteredQuery = filteredQuery.where("isPublic", "==", true) as typeof filteredQuery;
+	}
+
+	if (sourceVideoId) {
+		filteredQuery = filteredQuery.where(
+			"sourceVideoId",
+			"==",
+			sourceVideoId,
+		) as typeof filteredQuery;
+	}
+
+	return filteredQuery;
+}
+
+/**
+ * Firestoreクエリにソート条件を適用
+ */
+function applySorting(
+	queryRef: FirebaseFirestore.Query,
+	sortBy: "newest" | "oldest" | "popular" | "mostPlayed",
+): FirebaseFirestore.Query {
+	switch (sortBy) {
+		case "newest":
+			return queryRef.orderBy("createdAt", "desc") as typeof queryRef;
+		case "mostPlayed":
+			return queryRef.orderBy("playCount", "desc") as typeof queryRef;
+		default:
+			return queryRef.orderBy("createdAt", "desc") as typeof queryRef;
+	}
+}
+
+/**
+ * 検索フィルタを適用
+ */
+function filterBySearch(
+	buttons: AudioButtonPlainObject[],
+	search: string,
+): AudioButtonPlainObject[] {
+	const searchLower = search.toLowerCase();
+	return buttons.filter((button) => {
+		const titleMatch = button.title.toLowerCase().includes(searchLower);
+		const descriptionMatch = button.description?.toLowerCase().includes(searchLower) || false;
+		return titleMatch || descriptionMatch;
+	});
+}
+
+/**
+ * Firestoreから音声ボタンを取得して変換
+ */
+async function fetchAndConvertButtons(
+	queryRef: FirebaseFirestore.Query,
+): Promise<AudioButtonPlainObject[]> {
+	const snapshot = await queryRef.get();
+	const buttons = snapshot.docs.map((doc) => {
+		const data = doc.data() as FirestoreServerAudioButtonData;
+		return { ...data, id: doc.id };
+	});
+
+	const entityButtons = buttons
+		.map(convertFirestoreToAudioButton)
+		.filter((button): button is AudioButton => button !== null);
+
+	return entityButtons.map((button) => button.toPlainObject());
+}
+
+/**
  * 音声ボタンリストを取得（ConfigurableList用）
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: フィルタ条件が多いため一時的に許可
 export async function getAudioButtonsList(
 	query: {
 		limit?: number;
@@ -118,48 +193,16 @@ export async function getAudioButtonsList(
 				"updatedAt",
 			);
 
-		if (onlyPublic) {
-			queryRef = queryRef.where("isPublic", "==", true) as typeof queryRef;
-		}
-
-		if (sourceVideoId) {
-			queryRef = queryRef.where("sourceVideoId", "==", sourceVideoId) as typeof queryRef;
-		}
-
-		// 範囲フィルタの追加
-		// 注意: Firestoreは複数フィールドに対する範囲クエリをサポートしていないため、
-		// 現在は範囲フィルタは実装されていません
-		// 音声長フィルタはConfigurableListのクライアントサイドで処理される
-
-		// ソート条件を追加
-		// 注意: Firestoreの複合インデックス制限により、whereとorderByの組み合わせを制限
-		switch (sortBy) {
-			case "newest":
-				// createdAtでのソートはwhereと組み合わせても問題ない
-				queryRef = queryRef.orderBy("createdAt", "desc") as typeof queryRef;
-				break;
-			case "mostPlayed":
-				// playCountでのソートはwhereと組み合わせると複合インデックスが必要
-				queryRef = queryRef.orderBy("playCount", "desc") as typeof queryRef;
-				break;
-			default:
-				// デフォルトは新しい順
-				queryRef = queryRef.orderBy("createdAt", "desc") as typeof queryRef;
-		}
+		// フィルタとソートを適用
+		queryRef = applyFilters(queryRef, onlyPublic, sourceVideoId);
+		queryRef = applySorting(queryRef, sortBy);
 
 		// 総件数を取得するためのクエリ（ソートなし）
-		let countQueryRef = firestore.collection("audioButtons");
-		if (onlyPublic) {
-			countQueryRef = countQueryRef.where("isPublic", "==", true) as typeof countQueryRef;
-		}
-
-		if (sourceVideoId) {
-			countQueryRef = countQueryRef.where(
-				"sourceVideoId",
-				"==",
-				sourceVideoId,
-			) as typeof countQueryRef;
-		}
+		const countQueryRef = applyFilters(
+			firestore.collection("audioButtons"),
+			onlyPublic,
+			sourceVideoId,
+		);
 
 		// 総件数を取得
 		const countSnapshot = await countQueryRef.count().get();
@@ -180,19 +223,7 @@ export async function getAudioButtonsList(
 			}
 		}
 
-		const snapshot = await queryRef.get();
-		const buttons = snapshot.docs.map((doc) => {
-			const data = doc.data() as FirestoreServerAudioButtonData;
-			return { ...data, id: doc.id };
-		});
-
-		// Entityに変換
-		const entityButtons = buttons
-			.map(convertFirestoreToAudioButton)
-			.filter((button): button is AudioButton => button !== null);
-
-		// Plain Object形式に変換
-		const frontendButtons = entityButtons.map((button) => button.toPlainObject());
+		const frontendButtons = await fetchAndConvertButtons(queryRef);
 
 		// 検索テキストでフィルタリング（メモリ内検索）
 		let finalButtons = frontendButtons;
@@ -200,7 +231,6 @@ export async function getAudioButtonsList(
 		let finalHasMore = hasMore;
 
 		if (search) {
-			const searchLower = search.toLowerCase();
 			// 検索の場合は全データを取得してフィルタリング
 			let allQueryRef = firestore
 				.collection("audioButtons")
@@ -224,43 +254,16 @@ export async function getAudioButtonsList(
 					"updatedAt",
 				);
 
-			if (onlyPublic) {
-				allQueryRef = allQueryRef.where("isPublic", "==", true) as typeof allQueryRef;
-			}
-
-			if (sourceVideoId) {
-				allQueryRef = allQueryRef.where("sourceVideoId", "==", sourceVideoId) as typeof allQueryRef;
-			}
-
-			// ソート適用
-			switch (sortBy) {
-				case "newest":
-					allQueryRef = allQueryRef.orderBy("createdAt", "desc") as typeof allQueryRef;
-					break;
-				case "mostPlayed":
-					allQueryRef = allQueryRef.orderBy("playCount", "desc") as typeof allQueryRef;
-					break;
-				default:
-					allQueryRef = allQueryRef.orderBy("createdAt", "desc") as typeof allQueryRef;
-			}
+			// フィルタとソートを適用
+			allQueryRef = applyFilters(allQueryRef, onlyPublic, sourceVideoId);
+			allQueryRef = applySorting(allQueryRef, sortBy);
 
 			// 全データ取得（一時的に1000件まで）
-			const allSnapshot = await allQueryRef.limit(1000).get();
-			const allButtons = allSnapshot.docs
-				.map((doc) => {
-					const data = doc.data() as FirestoreServerAudioButtonData;
-					return { ...data, id: doc.id };
-				})
-				.map(convertFirestoreToAudioButton)
-				.filter((button): button is AudioButton => button !== null)
-				.map((button) => button.toPlainObject());
+			allQueryRef = allQueryRef.limit(1000) as typeof allQueryRef;
+			const allButtons = await fetchAndConvertButtons(allQueryRef);
 
 			// タイトルと説明で検索
-			const filteredButtons = allButtons.filter((button) => {
-				const titleMatch = button.title.toLowerCase().includes(searchLower);
-				const descriptionMatch = button.description?.toLowerCase().includes(searchLower) || false;
-				return titleMatch || descriptionMatch;
-			});
+			const filteredButtons = filterBySearch(allButtons, search);
 
 			// ページネーション再計算
 			const filteredTotal = filteredButtons.length;

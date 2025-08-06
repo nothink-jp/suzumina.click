@@ -2,7 +2,7 @@
  * 音声ボタン関連のFirestore操作を提供するモジュール
  */
 
-import type { Query } from "@google-cloud/firestore";
+import { FieldValue, type Query } from "@google-cloud/firestore";
 import {
 	type AudioButtonPlainObject,
 	type FirestoreAudioButtonData,
@@ -218,8 +218,7 @@ export async function incrementPlayCount(audioButtonId: string): Promise<void> {
 		const docRef = firestore.collection("audioButtons").doc(audioButtonId);
 
 		await docRef.update({
-			// biome-ignore lint/suspicious/noExplicitAny: Firestore FieldValue typing limitation
-			playCount: (firestore as any).FieldValue.increment(1),
+			playCount: FieldValue.increment(1),
 			updatedAt: new Date().toISOString(),
 		});
 	} catch (_error) {

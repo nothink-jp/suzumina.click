@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { sendContactNotification } from "@/lib/email";
 import { getFirestore } from "@/lib/firestore";
+import { error as logError } from "@/lib/logger";
 
 export interface ContactSubmissionResult {
 	success: boolean;
@@ -59,8 +60,7 @@ export async function submitContactForm(data: ContactFormData): Promise<ContactS
 			});
 		} catch (emailError) {
 			// メール送信失敗はログに記録するが、メイン処理は続行
-			// biome-ignore lint/suspicious/noConsole: Server-side error logging
-			console.error("Failed to send contact notification email:", emailError);
+			logError("Failed to send contact notification email", emailError);
 		}
 
 		// キャッシュの無効化（重要な操作なので即座に反映）

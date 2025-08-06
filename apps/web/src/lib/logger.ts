@@ -118,9 +118,19 @@ function logMessage(level: LogLevel, message: string, optionsOrError?: LogOption
 		}
 	}
 
-	// 標準出力に構造化ログを出力（Cloud Runが自動的にCloud Loggingに転送）
-	// biome-ignore lint/suspicious/noConsole: Cloud Loggingとの統合に必要
-	console.log(JSON.stringify(logEntry));
+	// 本番環境では構造化ログを出力（Cloud Runが自動的にCloud Loggingに転送）
+	// 開発環境では読みやすい形式で出力
+	if (process.env.NODE_ENV === "production") {
+		// biome-ignore lint/suspicious/noConsole: Cloud Loggingとの統合に必要
+		console.log(JSON.stringify(logEntry));
+	} else {
+		// 開発環境では読みやすい形式で出力
+		const { severity, message: msg, ...rest } = logEntry;
+		const logMethod =
+			severity === LogLevel.ERROR ? "error" : severity === LogLevel.WARN ? "warn" : "log";
+		// biome-ignore lint/suspicious/noConsole: 開発環境でのデバッグ用
+		console[logMethod](`[${severity}] ${msg}`, rest);
+	}
 }
 
 /**

@@ -14,18 +14,16 @@ export default function ButtonsLoading() {
 			<div className="mb-6 space-y-4">
 				<Skeleton className="h-10 w-full max-w-2xl mx-auto" />
 				<div className="flex flex-wrap gap-2 justify-center">
-					{/* biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton loading */}
-					{Array.from({ length: 5 }, (_, index) => (
-						<Skeleton key={`category-skeleton-${index}-of-5`} className="h-8 w-20 rounded-full" />
+					{Array.from({ length: 5 }, (_, i) => `category-${i}`).map((key) => (
+						<Skeleton key={key} className="h-8 w-20 rounded-full" />
 					))}
 				</div>
 			</div>
 
 			{/* 音声ボタングリッドのスケルトン */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-				{/* biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton loading */}
-				{Array.from({ length: 12 }, (_, index) => (
-					<Card key={`button-skeleton-${index}-of-12`} className="p-4 animate-pulse">
+				{Array.from({ length: 12 }, (_, i) => `button-skeleton-${i}`).map((key) => (
+					<Card key={key} className="p-4 animate-pulse">
 						<div className="space-y-3">
 							{/* ボタンエリア */}
 							<div className="relative">
