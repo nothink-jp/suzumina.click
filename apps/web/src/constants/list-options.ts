@@ -39,7 +39,7 @@ export const GRID_COLUMNS_4 = {
 };
 
 // 検索プレースホルダー
-export const SEARCH_PLACEHOLDER = "検索...";
+const SEARCH_PLACEHOLDER = "検索...";
 
 // デフォルト設定
 export const DEFAULT_LIST_PROPS = {
