@@ -79,14 +79,14 @@ function isValidWorkId(workId: string | undefined): boolean {
 /**
  * パターンマッチングで作品IDを抽出
  */
-function extractWorkIdsWithPatterns(html: string, patterns: RegExp[]): Set<string> {
+function extractWorkIdsWithPatterns(html: string, patterns: readonly RegExp[]): Set<string> {
 	const workIds = new Set<string>();
 
 	for (const pattern of patterns) {
 		const matches = [...html.matchAll(pattern)];
 		for (const match of matches) {
 			const workId = match[1];
-			if (isValidWorkId(workId)) {
+			if (workId && isValidWorkId(workId)) {
 				workIds.add(workId);
 			}
 		}
