@@ -10,7 +10,10 @@ import firestore, { Timestamp } from "../infrastructure/database/firestore";
 import { logUserAgentSummary } from "../infrastructure/management/user-agent-manager";
 import { getExistingWorksMap } from "../services/dlsite/dlsite-firestore";
 import { batchFetchIndividualInfo } from "../services/dlsite/individual-info-api-client";
-import { processBatchUnifiedDLsiteData } from "../services/dlsite/unified-data-processor";
+import {
+	type ProcessingResult,
+	processBatchUnifiedDLsiteData,
+} from "../services/dlsite/unified-data-processor";
 import { collectWorkIdsForProduction } from "../services/dlsite/work-id-collector";
 import { chunkArray } from "../shared/array-utils";
 import * as logger from "../shared/logger";
@@ -99,6 +102,91 @@ async function updateUnifiedMetadata(
 }
 
 /**
+ * APIレスポンスがない場合のエラーレスポンスを作成
+ */
+function createNoResponseResult(workIdsLength: number): UnifiedFetchResult {
+	return {
+		workCount: 0,
+		apiCallCount: workIdsLength,
+		basicDataUpdated: 0,
+		error: "APIレスポンスなし",
+	};
+}
+
+/**
+ * 成功した処理結果をカウント
+ */
+function countSuccessfulUpdates(result: ProcessingResult) {
+	if (!result.success || !result.updates) {
+		return { work: 0, circle: 0, creator: 0, priceHistory: 0 };
+	}
+
+	return {
+		work: result.updates.work ? 1 : 0,
+		circle: result.updates.circle ? 1 : 0,
+		creator: result.updates.creators ? 1 : 0,
+		priceHistory: result.updates.priceHistory ? 1 : 0,
+	};
+}
+
+/**
+ * 処理結果を集計
+ */
+function aggregateProcessingResults(processingResults: ProcessingResult[]): {
+	workUpdated: number;
+	circleUpdated: number;
+	creatorUpdated: number;
+	priceHistoryUpdated: number;
+	errors: string[];
+} {
+	let workUpdated = 0;
+	let circleUpdated = 0;
+	let creatorUpdated = 0;
+	let priceHistoryUpdated = 0;
+	const errors: string[] = [];
+
+	for (const result of processingResults) {
+		const counts = countSuccessfulUpdates(result);
+		workUpdated += counts.work;
+		circleUpdated += counts.circle;
+		creatorUpdated += counts.creator;
+		priceHistoryUpdated += counts.priceHistory;
+
+		if (result.errors?.length > 0) {
+			errors.push(...result.errors);
+		}
+	}
+
+	return {
+		workUpdated,
+		circleUpdated,
+		creatorUpdated,
+		priceHistoryUpdated,
+		errors,
+	};
+}
+
+/**
+ * バッチ処理結果をUnifiedFetchResult形式に変換
+ */
+function createBatchResult(
+	aggregatedResults: {
+		workUpdated: number;
+		circleUpdated: number;
+		creatorUpdated: number;
+		errors: string[];
+	},
+	workIdsLength: number,
+): UnifiedFetchResult {
+	return {
+		workCount: aggregatedResults.workUpdated,
+		apiCallCount: workIdsLength,
+		basicDataUpdated: aggregatedResults.workUpdated,
+		unificationComplete: aggregatedResults.errors.length === 0,
+	};
+}
+
+/**
  * バッチ処理実行
  */
 async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetchResult> {
@@ -122,12 +210,7 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
 
 		if (apiDataMap.size === 0) {
 			logger.warn(`バッチ ${batchNumber}: APIレスポンスなし`);
-			return {
-				workCount: 0,
-				apiCallCount: workIds.length,
-				basicDataUpdated: 0,
-				error: "APIレスポンスなし",
-			};
+			return createNoResponseResult(workIds.length);
 		}
 
 		// 失敗作品のログ
@@ -147,46 +230,28 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
 		});
 
 		// 3. 結果の集計
-		let workUpdated = 0;
-		let circleUpdated = 0;
-		let creatorUpdated = 0;
-		let priceHistoryUpdated = 0;
+		const aggregatedResults = aggregateProcessingResults(processingResults);
 
-		for (const result of processingResults) {
-			if (result.success) {
-				if (result.updates.work) workUpdated++;
-				if (result.updates.circle) circleUpdated++;
-				if (result.updates.creators) creatorUpdated++;
-				if (result.updates.priceHistory) priceHistoryUpdated++;
-			}
-
-			// エラーの収集
-			if (result.errors.length > 0) {
-				results.errors.push(...result.errors);
-			}
-		}
-
-		results.basicDataUpdated = workUpdated;
-		results.circleCreatorUpdated = Math.max(circleUpdated, creatorUpdated);
-		results.priceHistorySaved = priceHistoryUpdated;
+		results.basicDataUpdated = aggregatedResults.workUpdated;
+		results.circleCreatorUpdated = Math.max(
+			aggregatedResults.circleUpdated,
+			aggregatedResults.creatorUpdated,
+		);
+		results.priceHistorySaved = aggregatedResults.priceHistoryUpdated;
+		results.errors = aggregatedResults.errors;
 
 		// ログ出力
 		logger.info(`バッチ ${batchNumber}: 統合処理完了`, {
 			入力: workIds.length,
 			API成功: apiDataMap.size,
-			Work更新: workUpdated,
-			Circle更新: circleUpdated,
-			Creator更新: creatorUpdated,
-			価格履歴: priceHistoryUpdated,
+			Work更新: aggregatedResults.workUpdated,
+			Circle更新: aggregatedResults.circleUpdated,
+			Creator更新: aggregatedResults.creatorUpdated,
+			価格履歴: aggregatedResults.priceHistoryUpdated,
 			エラー数: results.errors.length,
 		});
 
-		return {
-			workCount: results.basicDataUpdated,
-			apiCallCount: workIds.length,
-			basicDataUpdated: results.basicDataUpdated,
-			unificationComplete: results.errors.length === 0,
-		};
+		return createBatchResult(aggregatedResults, workIds.length);
 	} catch (error) {
 		logger.error(`バッチ ${batchNumber} 処理エラー:`, { error });
 		return {
@@ -199,59 +264,203 @@ async function processBatch(batchInfo: BatchProcessingInfo): Promise<UnifiedFetc
 }
 
 /**
+ * バッチ処理の継続情報を取得
+ */
+function getContinuationInfo(
+	metadata: UnifiedDataCollectionMetadata,
+): { isContinuation: true; allWorkIds: string[]; startBatch: number } | { isContinuation: false } {
+	if (
+		metadata.batchProcessingMode &&
+		metadata.allWorkIds &&
+		metadata.currentBatch !== undefined &&
+		metadata.totalBatches !== undefined
+	) {
+		logger.info("バッチ処理を継続します", {
+			currentBatch: metadata.currentBatch,
+			totalBatches: metadata.totalBatches,
+		});
+
+		return {
+			isContinuation: true,
+			allWorkIds: metadata.allWorkIds,
+			startBatch: metadata.currentBatch,
+		};
+	}
+
+	return { isContinuation: false };
+}
+
+/**
+ * 作品IDを収集（エラー時はフォールバック）
+ */
+async function collectWorkIdsWithFallback(): Promise<string[]> {
+	try {
+		logger.info("作品ID収集を開始します...");
+		const workIds = await collectWorkIdsForProduction();
+		logger.info(`作品ID収集完了: ${workIds.length}件`);
+		return workIds;
+	} catch (error) {
+		logger.error("作品ID収集エラー:", {
+			error: error instanceof Error ? error.message : String(error),
+			errorType: error instanceof Error ? error.name : "Unknown",
+		});
+
+		// エラー時はアセットファイルから読み込み
+		try {
+			const { readFileSync } = await import("node:fs");
+			const { join } = await import("node:path");
+			const assetPath = join(__dirname, "../assets/dlsite-work-ids.json");
+			const data = JSON.parse(readFileSync(assetPath, "utf-8"));
+			const workIds = data.workIds || [];
+			logger.warn(`アセットファイルから${workIds.length}件の作品IDを読み込みました`);
+			return workIds;
+		} catch (assetError) {
+			logger.error("アセットファイル読み込みエラー:", assetError);
+			return [];
+		}
+	}
+}
+
+/**
+ * 新規バッチ処理を初期化
+ */
+async function initializeNewBatchProcessing(
+	allWorkIds: string[],
+	batches: string[][],
+): Promise<void> {
+	logger.info(
+		`新規バッチ処理開始: 総作品数=${allWorkIds.length}, バッチ数=${batches.length}, バッチサイズ=${BATCH_SIZE}`,
+	);
+	logger.info(
+		`処理時間制限: ${MAX_EXECUTION_TIME / 1000}秒, 予想処理時間: ${batches.length * 30}秒（30秒/バッチ）`,
+	);
+
+	await updateUnifiedMetadata({
+		isInProgress: true,
+		batchProcessingMode: true,
+		allWorkIds,
+		totalBatches: batches.length,
+		currentBatch: 0,
+		totalWorks: allWorkIds.length,
+		processedWorks: 0,
+		basicDataUpdated: 0,
+		completedBatches: [],
+		lastError: undefined,
+		currentBatchStartTime: Timestamp.now(),
+		migrationVersion: "v2",
+	});
+}
+
+/**
+ * バッチループ処理を実行
+ */
+async function executeBatchLoop(
+	batches: string[][],
+	startBatch: number,
+	startTime: number,
+	metadata: UnifiedDataCollectionMetadata,
+): Promise<{
+	totalUpdated: number;
+	totalApiCalls: number;
+	completedBatches: number[];
+}> {
+	let totalUpdated = 0;
+	let totalApiCalls = 0;
+	const completedBatches = metadata.completedBatches || [];
+
+	for (let i = startBatch; i < batches.length; i++) {
+		// 実行時間チェック
+		if (Date.now() - startTime > MAX_EXECUTION_TIME) {
+			logger.info(`実行時間制限に達しました。バッチ ${i}/${batches.length} で中断`);
+
+			await updateUnifiedMetadata({
+				currentBatch: i,
+				processedWorks: i * BATCH_SIZE,
+				basicDataUpdated: (metadata.basicDataUpdated || 0) + totalUpdated,
+				lastError: "実行時間制限により中断",
+			});
+			break;
+		}
+
+		// バッチ処理実行
+		const batchInfo: BatchProcessingInfo = {
+			batchNumber: i + 1,
+			totalBatches: batches.length,
+			workIds: batches[i] || [],
+			startTime: Timestamp.now(),
+		};
+
+		const result = await processBatch(batchInfo);
+		totalUpdated += result.basicDataUpdated;
+		totalApiCalls += result.apiCallCount;
+		completedBatches.push(i);
+
+		// メタデータ更新
+		await updateUnifiedMetadata({
+			currentBatch: i + 1,
+			processedWorks: (i + 1) * BATCH_SIZE,
+			basicDataUpdated: (metadata.basicDataUpdated || 0) + totalUpdated,
+			completedBatches,
+			lastError: result.error,
+			currentBatchStartTime: Timestamp.now(),
+		});
+
+		// バッチ間の遅延
+		if (i < batches.length - 1) {
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+		}
+	}
+
+	return { totalUpdated, totalApiCalls, completedBatches };
+}
+
+/**
+ * 処理完了時のメタデータ更新
+ */
+async function finalizeCompletedProcessing(
+	allWorkIds: string[],
+	totalUpdated: number,
+): Promise<void> {
+	logger.info("全バッチ処理完了", {
+		totalWorks: allWorkIds.length,
+		totalUpdated,
+	});
+
+	await updateUnifiedMetadata({
+		isInProgress: false,
+		lastSuccessfulCompleteFetch: Timestamp.now(),
+		lastFetchedAt: Timestamp.now(),
+		batchProcessingMode: false,
+		currentBatch: undefined,
+		totalBatches: undefined,
+		allWorkIds: undefined,
+		completedBatches: undefined,
+	});
+}
+
+/**
  * 統合データ収集処理の実行
  */
 async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 	const startTime = Date.now();
 
 	try {
-		// 1. メタデータから処理状態を確認
+		// メタデータから処理状態を確認
 		const metadata = await getOrCreateUnifiedMetadata();
+		const continuationInfo = getContinuationInfo(metadata);
 
 		let allWorkIds: string[];
 		let batches: string[][];
 		let startBatch = 0;
 
-		// 2. 継続処理かどうかを判定
-		if (
-			metadata.batchProcessingMode &&
-			metadata.allWorkIds &&
-			metadata.currentBatch !== undefined &&
-			metadata.totalBatches !== undefined
-		) {
+		if (continuationInfo.isContinuation) {
 			// 継続処理
-			logger.info("バッチ処理を継続します", {
-				currentBatch: metadata.currentBatch,
-				totalBatches: metadata.totalBatches,
-			});
-
-			allWorkIds = metadata.allWorkIds;
+			allWorkIds = continuationInfo.allWorkIds;
 			batches = chunkArray(allWorkIds, BATCH_SIZE);
-			startBatch = metadata.currentBatch;
+			startBatch = continuationInfo.startBatch;
 		} else {
 			// 新規処理
-			try {
-				logger.info("作品ID収集を開始します...");
-				allWorkIds = await collectWorkIdsForProduction();
-				logger.info(`作品ID収集完了: ${allWorkIds.length}件`);
-			} catch (error) {
-				logger.error("作品ID収集エラー:", {
-					error: error instanceof Error ? error.message : String(error),
-					errorType: error instanceof Error ? error.name : "Unknown",
-				});
-				// エラー時はアセットファイルから読み込み
-				try {
-					const { readFileSync } = await import("node:fs");
-					const { join } = await import("node:path");
-					const assetPath = join(__dirname, "../assets/dlsite-work-ids.json");
-					const data = JSON.parse(readFileSync(assetPath, "utf-8"));
-					allWorkIds = data.workIds || [];
-					logger.warn(`アセットファイルから${allWorkIds.length}件の作品IDを読み込みました`);
-				} catch (assetError) {
-					logger.error("アセットファイル読み込みエラー:", assetError);
-					allWorkIds = [];
-				}
-			}
+			allWorkIds = await collectWorkIdsWithFallback();
 
 			if (allWorkIds.length === 0) {
 				logger.error("収集対象の作品IDが見つかりません");
@@ -264,106 +473,25 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 			}
 
 			batches = chunkArray(allWorkIds, BATCH_SIZE);
-
-			logger.info(
-				`新規バッチ処理開始: 総作品数=${allWorkIds.length}, バッチ数=${batches.length}, バッチサイズ=${BATCH_SIZE}`,
-			);
-			logger.info(
-				`処理時間制限: ${MAX_EXECUTION_TIME / 1000}秒, 予想処理時間: ${batches.length * 30}秒（30秒/バッチ）`,
-			);
-
-			// メタデータを初期化
-			await updateUnifiedMetadata({
-				isInProgress: true,
-				batchProcessingMode: true,
-				allWorkIds,
-				totalBatches: batches.length,
-				currentBatch: 0,
-				totalWorks: allWorkIds.length,
-				processedWorks: 0,
-				basicDataUpdated: 0,
-				completedBatches: [],
-				lastError: undefined,
-				currentBatchStartTime: Timestamp.now(),
-				migrationVersion: "v2",
-			});
+			await initializeNewBatchProcessing(allWorkIds, batches);
 		}
 
-		// 3. 既存データの取得
+		// 既存データの取得
 		await getExistingWorksMap(allWorkIds);
 
-		// 4. バッチ処理の実行
-		let totalUpdated = 0;
-		let totalApiCalls = 0;
-		const completedBatches = metadata.completedBatches || [];
+		// バッチ処理の実行
+		const { totalUpdated, totalApiCalls, completedBatches } = await executeBatchLoop(
+			batches,
+			startBatch,
+			startTime,
+			metadata,
+		);
 
-		for (let i = startBatch; i < batches.length; i++) {
-			// 実行時間チェック
-			if (Date.now() - startTime > MAX_EXECUTION_TIME) {
-				logger.info(`実行時間制限に達しました。バッチ ${i}/${batches.length} で中断`);
-
-				await updateUnifiedMetadata({
-					currentBatch: i,
-					processedWorks: i * BATCH_SIZE,
-					basicDataUpdated: (metadata.basicDataUpdated || 0) + totalUpdated,
-					lastError: "実行時間制限により中断",
-				});
-
-				break;
-			}
-
-			const batch = batches[i];
-			const batchInfo: BatchProcessingInfo = {
-				batchNumber: i + 1,
-				totalBatches: batches.length,
-				workIds: batch || [],
-				startTime: Timestamp.now(),
-			};
-
-			// バッチ処理実行
-			const result = await processBatch(batchInfo);
-
-			totalUpdated += result.basicDataUpdated;
-			totalApiCalls += result.apiCallCount;
-
-			// 完了バッチを記録
-			completedBatches.push(i);
-
-			// メタデータ更新
-			await updateUnifiedMetadata({
-				currentBatch: i + 1,
-				processedWorks: (i + 1) * BATCH_SIZE,
-				basicDataUpdated: (metadata.basicDataUpdated || 0) + totalUpdated,
-				completedBatches,
-				lastError: result.error,
-				currentBatchStartTime: Timestamp.now(),
-			});
-
-			// バッチ間の遅延
-			if (i < batches.length - 1) {
-				await new Promise((resolve) => setTimeout(resolve, 1000));
-			}
-		}
-
-		// 5. 処理完了チェック
+		// 処理完了チェック
 		const allBatchesCompleted = completedBatches.length === batches.length;
 
 		if (allBatchesCompleted) {
-			logger.info("全バッチ処理完了", {
-				totalWorks: allWorkIds.length,
-				totalUpdated,
-			});
-
-			await updateUnifiedMetadata({
-				isInProgress: false,
-				lastSuccessfulCompleteFetch: Timestamp.now(),
-				lastFetchedAt: Timestamp.now(),
-				batchProcessingMode: false,
-				currentBatch: undefined,
-				totalBatches: undefined,
-				allWorkIds: undefined,
-				completedBatches: undefined,
-			});
+			await finalizeCompletedProcessing(allWorkIds, totalUpdated);
 		}
 
 		logUserAgentSummary();

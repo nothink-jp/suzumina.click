@@ -55,6 +55,78 @@ export async function showFailureStats(): Promise<void> {
 }
 
 /**
+ * 統計データから成功率を計算
+ */
+function calculateSuccessRate(failureStats: {
+	totalFailedWorks: number;
+	recoveredWorks: number;
+	unrecoveredWorks: number;
+}): number {
+	const totalWorks = failureStats.totalFailedWorks + failureStats.recoveredWorks;
+	return totalWorks > 0 ? ((totalWorks - failureStats.unrecoveredWorks) / totalWorks) * 100 : 100;
+}
+
+/**
+ * 失敗理由の上位項目を取得
+ */
+function getTopFailureReasons(
+	failureReasons: Record<string, number> | undefined,
+	limit = 5,
+): Array<{ reason: string; count: number }> {
+	return Object.entries(failureReasons || {})
+		.map(([reason, count]) => ({ reason, count }))
+		.sort((a, b) => b.count - a.count)
+		.slice(0, limit);
+}
+
+/**
+ * システム状況を評価
+ */
+function evaluateSystemStatus(successRate: number): string {
+	if (successRate >= 95) return "🟢 良好";
+	if (successRate >= 90) return "🟡 注意";
+	return "🔴 要対応";
+}
+
+/**
+ * 統計情報を表示
+ */
+function displayStatistics(stats: {
+	totalWorks: number;
+	successRate: number;
+	unrecoveredWorks: number;
+	topFailureReasons: Array<{ reason: string; count: number }>;
+	systemStatus: string;
+}): void {
+	console.log("\n📊 システム統計:");
+	console.log(`総作品数: ${stats.totalWorks}件`);
+	console.log(`成功率: ${stats.successRate.toFixed(1)}%`);
+	console.log(`未解決失敗数: ${stats.unrecoveredWorks}件`);
+
+	console.log("\n🔍 主な失敗理由:");
+	stats.topFailureReasons.forEach((item, index) => {
+		console.log(`${index + 1}. ${item.reason}: ${item.count}件`);
+	});
+
+	console.log(`\nシステム状況: ${stats.systemStatus}`);
+}
+
+/**
+ * 改善提案を表示
+ */
+function displayImprovementSuggestions(successRate: number): void {
+	if (successRate >= 95) return;
+
+	console.log("\n💡 改善提案:");
+	console.log("- ローカル補完収集の定期実行推奨");
+	console.log("- 失敗理由分析による対策検討");
+
+	if (successRate < 90) {
+		console.log("- 緊急対応が必要な状況です");
+	}
+}
+
+/**
  * 週次健全性レポートの実行
  */
 export async function runWeeklyReport(): Promise<void> {
@@ -66,32 +138,22 @@ export async function runWeeklyReport(): Promise<void> {
 		// 1. 失敗統計取得
 		const failureStats = await getFailureStatistics();
 		const totalWorks = failureStats.totalFailedWorks + failureStats.recoveredWorks;
-		const successRate =
-			totalWorks > 0 ? ((totalWorks - failureStats.unrecoveredWorks) / totalWorks) * 100 : 100;
+		const successRate = calculateSuccessRate(failureStats);
 
-		// 2. 失敗理由の上位項目
-		const topFailureReasons = Object.entries(failureStats.failureReasons || {})
-			.map(([reason, count]) => ({ reason, count }))
-			.sort((a, b) => b.count - a.count)
-			.slice(0, 5);
+		// 2. データ集計
+		const topFailureReasons = getTopFailureReasons(failureStats.failureReasons);
+		const systemStatus = evaluateSystemStatus(successRate);
 
-		// 3. 週次統計表示
-		console.log("\n📊 システム統計:");
-		console.log(`総作品数: ${totalWorks}件`);
-		console.log(`成功率: ${successRate.toFixed(1)}%`);
-		console.log(`未解決失敗数: ${failureStats.unrecoveredWorks}件`);
-
-		console.log("\n🔍 主な失敗理由:");
-		topFailureReasons.forEach((item, index) => {
-			console.log(`${index + 1}. ${item.reason}: ${item.count}件`);
+		// 3. 統計表示
+		displayStatistics({
+			totalWorks,
+			successRate,
+			unrecoveredWorks: failureStats.unrecoveredWorks,
+			topFailureReasons,
+			systemStatus,
 		});
 
-		// 4. システム状況評価
-		const systemStatus =
-			successRate >= 95 ? "🟢 良好" : successRate >= 90 ? "🟡 注意" : "🔴 要対応";
-		console.log(`\nシステム状況: ${systemStatus}`);
-
-		// 5. レポートデータ構築
+		// 4. レポートデータ記録
 		const weeklyStats = {
 			totalWorks,
 			successRate,
@@ -100,7 +162,6 @@ export async function runWeeklyReport(): Promise<void> {
 			topFailureReasons,
 		};
 
-		// 6. レポート記録（ログ出力）
 		console.log("\n📊 週次健全性レポート記録中...");
 		logger.info("📈 週次健全性レポート", {
 			operation: "runWeeklyReport",
@@ -109,24 +170,12 @@ export async function runWeeklyReport(): Promise<void> {
 			successRate: Number(weeklyStats.successRate.toFixed(1)),
 			stillFailingCount: weeklyStats.stillFailingCount,
 			topFailureReasons: weeklyStats.topFailureReasons,
-			systemStatus:
-				weeklyStats.successRate >= 95
-					? "🟢 良好"
-					: weeklyStats.successRate >= 90
-						? "🟡 注意"
-						: "🔴 要対応",
+			systemStatus,
 		});
 		console.log("✅ 週次健全性レポートを記録しました");
 
-		// 7. 改善提案
-		if (successRate < 95) {
-			console.log("\n💡 改善提案:");
-			console.log("- ローカル補完収集の定期実行推奨");
-			console.log("- 失敗理由分析による対策検討");
-			if (successRate < 90) {
-				console.log("- 緊急対応が必要な状況です");
-			}
-		}
+		// 5. 改善提案
+		displayImprovementSuggestions(successRate);
 
 		console.log("\n✅ 週次健全性レポートスクリプト完了");
 	} catch (error) {
