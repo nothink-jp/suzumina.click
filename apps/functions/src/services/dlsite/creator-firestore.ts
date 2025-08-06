@@ -67,7 +67,7 @@ function extractCreatorMappings(apiData: DLsiteRawApiResponse): Map<string, Extr
 				// 新規クリエイター
 				mappings.set(creator.id, {
 					id: creator.id,
-					name: creator.name,
+					name: creator.name || "Unknown Creator",
 					roles: [role],
 				});
 			}
