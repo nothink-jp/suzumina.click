@@ -20,7 +20,7 @@ vi.mock("next/navigation", () => ({
 // Server Actions モック
 vi.mock("../actions", () => ({
 	getCircleInfo: vi.fn(),
-	fetchCircleWorksForConfigurableList: vi.fn(),
+	getCircleWorksList: vi.fn(),
 }));
 
 // コンポーネントモック
@@ -105,7 +105,7 @@ describe("CirclePage", () => {
 
 	it("サークル情報と作品一覧を正しく表示する", async () => {
 		(actions.getCircleInfo as any).mockResolvedValue(mockCircleData);
-		(actions.fetchCircleWorksForConfigurableList as any).mockResolvedValue({
+		(actions.getCircleWorksList as any).mockResolvedValue({
 			works: mockWorks,
 			totalCount: 10,
 			filteredCount: undefined,
@@ -157,7 +157,7 @@ describe("CirclePage", () => {
 
 	it("作品が存在しない場合も正しく表示する", async () => {
 		(actions.getCircleInfo as any).mockResolvedValue(mockCircleData);
-		(actions.fetchCircleWorksForConfigurableList as any).mockResolvedValue({
+		(actions.getCircleWorksList as any).mockResolvedValue({
 			works: [],
 			totalCount: 0,
 			filteredCount: undefined,
@@ -186,7 +186,7 @@ describe("CirclePage", () => {
 			nameEn: undefined,
 		};
 		(actions.getCircleInfo as any).mockResolvedValue(circleWithoutEnName);
-		(actions.fetchCircleWorksForConfigurableList as any).mockResolvedValue({
+		(actions.getCircleWorksList as any).mockResolvedValue({
 			works: [],
 			totalCount: 0,
 			filteredCount: undefined,
@@ -239,7 +239,7 @@ describe("CirclePage", () => {
 
 	it("検索パラメータがServer Actionに正しく渡される", async () => {
 		(actions.getCircleInfo as any).mockResolvedValue(mockCircleData);
-		(actions.fetchCircleWorksForConfigurableList as any).mockResolvedValue({
+		(actions.getCircleWorksList as any).mockResolvedValue({
 			works: mockWorks,
 			totalCount: 10,
 			filteredCount: 2,
@@ -255,7 +255,7 @@ describe("CirclePage", () => {
 
 		await CirclePage({ params, searchParams });
 
-		expect(actions.fetchCircleWorksForConfigurableList).toHaveBeenCalledWith({
+		expect(actions.getCircleWorksList).toHaveBeenCalledWith({
 			circleId: "RG12345",
 			page: 2,
 			limit: 24,
@@ -266,7 +266,7 @@ describe("CirclePage", () => {
 
 	it("qパラメータが正しく処理される", async () => {
 		(actions.getCircleInfo as any).mockResolvedValue(mockCircleData);
-		(actions.fetchCircleWorksForConfigurableList as any).mockResolvedValue({
+		(actions.getCircleWorksList as any).mockResolvedValue({
 			works: [],
 			totalCount: 0,
 			filteredCount: undefined,
@@ -278,7 +278,7 @@ describe("CirclePage", () => {
 		await CirclePage({ params, searchParams });
 
 		// searchパラメータとして渡される
-		expect(actions.fetchCircleWorksForConfigurableList).toHaveBeenCalledWith(
+		expect(actions.getCircleWorksList).toHaveBeenCalledWith(
 			expect.objectContaining({
 				search: "検索キーワード",
 			}),

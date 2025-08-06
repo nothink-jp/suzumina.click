@@ -18,7 +18,7 @@ vi.mock("@/auth", () => ({
 
 // Mock the server actions
 vi.mock("../actions", () => ({
-	fetchVideosForConfigurableList: vi.fn().mockResolvedValue({
+	getVideosList: vi.fn().mockResolvedValue({
 		items: [
 			{
 				id: "video-1",
@@ -91,7 +91,7 @@ describe("VideosPage", () => {
 	});
 
 	it("検索パラメータがServer Actionに正しく渡される", async () => {
-		const { fetchVideosForConfigurableList } = await import("../actions");
+		const { getVideosList } = await import("../actions");
 		const searchParams = {
 			page: "2",
 			q: "テスト検索",
@@ -103,7 +103,7 @@ describe("VideosPage", () => {
 
 		render(await VideosPage({ searchParams }));
 
-		expect(fetchVideosForConfigurableList).toHaveBeenCalledWith(
+		expect(getVideosList).toHaveBeenCalledWith(
 			expect.objectContaining({
 				page: 2,
 				limit: 12,
@@ -119,13 +119,13 @@ describe("VideosPage", () => {
 	});
 
 	it("qパラメータが正しく処理される", async () => {
-		const { fetchVideosForConfigurableList } = await import("../actions");
+		const { getVideosList } = await import("../actions");
 		const searchParams = { q: "検索キーワード" };
 
 		render(await VideosPage({ searchParams }));
 
 		// searchパラメータとして渡される
-		expect(fetchVideosForConfigurableList).toHaveBeenCalledWith(
+		expect(getVideosList).toHaveBeenCalledWith(
 			expect.objectContaining({
 				search: "検索キーワード",
 			}),

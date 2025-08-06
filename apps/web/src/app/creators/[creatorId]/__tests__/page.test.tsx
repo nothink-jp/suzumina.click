@@ -24,7 +24,7 @@ vi.mock("../actions", () => ({
 	getCreatorWorks: vi.fn(),
 	getCreatorWithWorks: vi.fn(),
 	getCreatorWithWorksWithPagination: vi.fn(),
-	fetchCreatorWorksForConfigurableList: vi.fn(),
+	getCreatorWorksList: vi.fn(),
 }));
 
 // コンポーネントモック
@@ -120,7 +120,7 @@ describe("CreatorPage", () => {
 
 	it("クリエイター情報と作品一覧を正しく表示する", async () => {
 		(actions.getCreatorInfo as any).mockResolvedValue(mockCreatorInfo);
-		(actions.fetchCreatorWorksForConfigurableList as any).mockResolvedValue({
+		(actions.getCreatorWorksList as any).mockResolvedValue({
 			works: mockWorks,
 			totalCount: 2,
 		});
@@ -165,7 +165,7 @@ describe("CreatorPage", () => {
 
 	it("作品が存在しない場合も正しく表示する", async () => {
 		(actions.getCreatorInfo as any).mockResolvedValue(mockCreatorInfo);
-		(actions.fetchCreatorWorksForConfigurableList as any).mockResolvedValue({
+		(actions.getCreatorWorksList as any).mockResolvedValue({
 			works: [],
 			totalCount: 0,
 		});
@@ -192,7 +192,7 @@ describe("CreatorPage", () => {
 			types: ["voice"],
 		};
 		(actions.getCreatorInfo as any).mockResolvedValue(singleTypeCreator);
-		(actions.fetchCreatorWorksForConfigurableList as any).mockResolvedValue({
+		(actions.getCreatorWorksList as any).mockResolvedValue({
 			works: [],
 			totalCount: 0,
 		});
