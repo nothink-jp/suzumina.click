@@ -6,7 +6,7 @@ import {
 	type StandardListParams,
 } from "@suzumina.click/ui/components/custom/list";
 import { useCallback, useMemo } from "react";
-import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import { AudioButtonListItem } from "@/components/audio/AudioButtonListItem";
 import {
 	BASIC_SORT_OPTIONS,
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
@@ -65,14 +65,11 @@ export default function FavoritesList({ initialData, userId }: FavoritesListProp
 			};
 
 			return (
-				<AudioButtonWithPlayCount
+				<AudioButtonListItem
 					audioButton={audioButton}
-					showFavorite={true}
-					maxTitleLength={50}
-					className="shadow-sm hover:shadow-md transition-all duration-200"
-					initialIsFavorited={true}
-					initialIsLiked={likeDislikeStatus.isLiked}
-					initialIsDisliked={likeDislikeStatus.isDisliked}
+					isFavorited={true}
+					isLiked={likeDislikeStatus.isLiked}
+					isDisliked={likeDislikeStatus.isDisliked}
 				/>
 			);
 		},

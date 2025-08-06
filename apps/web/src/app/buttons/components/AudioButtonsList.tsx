@@ -3,7 +3,7 @@
 import type { AudioButtonPlainObject, AudioButtonQuery } from "@suzumina.click/shared-types";
 import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
 import { useMemo } from "react";
-import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import { AudioButtonListItem } from "@/components/audio/AudioButtonListItem";
 import { ListWrapper } from "@/components/list/ListWrapper";
 import {
 	AUDIO_SORT_OPTIONS,
@@ -46,33 +46,6 @@ interface AudioButtonsListProps {
 	};
 }
 
-// 音声ボタン表示用のコンポーネント
-function AudioButtonItem({
-	audioButton,
-	searchQuery,
-	isFavorited,
-	isLiked,
-	isDisliked,
-}: {
-	audioButton: AudioButtonPlainObject;
-	searchQuery?: string;
-	isFavorited: boolean;
-	isLiked: boolean;
-	isDisliked: boolean;
-}) {
-	return (
-		<AudioButtonWithPlayCount
-			audioButton={audioButton}
-			className="shadow-sm hover:shadow-md transition-all duration-200"
-			searchQuery={searchQuery}
-			highlightClassName="bg-suzuka-200 text-suzuka-900 px-0.5 rounded"
-			initialIsFavorited={isFavorited}
-			initialIsLiked={isLiked}
-			initialIsDisliked={isDisliked}
-		/>
-	);
-}
-
 export default function AudioButtonsList({ searchParams, initialData }: AudioButtonsListProps) {
 	// 初期データを準備
 	const initialItems =
@@ -98,7 +71,7 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 						isDisliked: false,
 					};
 					return (
-						<AudioButtonItem
+						<AudioButtonListItem
 							audioButton={audioButton}
 							searchQuery={searchParams.q as string}
 							isFavorited={favoriteStates.get(audioButton.id) || false}
