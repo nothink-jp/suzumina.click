@@ -58,37 +58,56 @@ async function resetMetadataState(): Promise<void> {
 }
 
 /**
+ * メタデータドキュメントの取得
+ */
+async function fetchMetadataDocument(): Promise<FirebaseFirestore.DocumentData | null> {
+	const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
+	const metadataDoc = await metadataRef.get();
+
+	if (!metadataDoc.exists) {
+		logger.warn("メタデータドキュメントが存在しません", { operation: "showMetadataDetails" });
+		return null;
+	}
+
+	return metadataDoc.data() || null;
+}
+
+/**
+ * メタデータのログ出力用オブジェクトを構築
+ */
+function buildMetadataLogObject(metadata: FirebaseFirestore.DocumentData): Record<string, unknown> {
+	return {
+		operation: "showMetadataDetails",
+		isInProgress: metadata?.isInProgress,
+		lastFetchedAt: metadata?.lastFetchedAt?.toDate() || "N/A",
+		lastSuccessfulCompleteFetch: metadata?.lastSuccessfulCompleteFetch?.toDate() || "N/A",
+		totalWorks: metadata?.totalWorks || "N/A",
+		processedWorks: metadata?.processedWorks || "N/A",
+		basicDataUpdated: metadata?.basicDataUpdated || "N/A",
+		timeSeriesCollected: metadata?.timeSeriesCollected || "N/A",
+		unionTotalIds: metadata?.unionTotalIds || "N/A",
+		regionOnlyIds: metadata?.regionOnlyIds || "N/A",
+		assetOnlyIds: metadata?.assetOnlyIds || "N/A",
+		regionDifferenceDetected: metadata?.regionDifferenceDetected || "N/A",
+		lastError: metadata?.lastError || "N/A",
+		unifiedSystemStarted: metadata?.unifiedSystemStarted?.toDate() || "N/A",
+	};
+}
+
+/**
  * メタデータの詳細情報表示
  */
 async function showMetadataDetails(): Promise<void> {
 	try {
 		logger.info("メタデータ詳細情報表示開始", { operation: "showMetadataDetails" });
 
-		const metadataRef = firestore.collection(METADATA_COLLECTION).doc(UNIFIED_METADATA_DOC_ID);
-		const metadataDoc = await metadataRef.get();
-
-		if (!metadataDoc.exists) {
-			logger.warn("メタデータドキュメントが存在しません", { operation: "showMetadataDetails" });
+		const metadata = await fetchMetadataDocument();
+		if (!metadata) {
 			return;
 		}
 
-		const metadata = metadataDoc.data();
-		logger.info("統合データ収集メタデータ", {
-			operation: "showMetadataDetails",
-			isInProgress: metadata?.isInProgress,
-			lastFetchedAt: metadata?.lastFetchedAt?.toDate() || "N/A",
-			lastSuccessfulCompleteFetch: metadata?.lastSuccessfulCompleteFetch?.toDate() || "N/A",
-			totalWorks: metadata?.totalWorks || "N/A",
-			processedWorks: metadata?.processedWorks || "N/A",
-			basicDataUpdated: metadata?.basicDataUpdated || "N/A",
-			timeSeriesCollected: metadata?.timeSeriesCollected || "N/A",
-			unionTotalIds: metadata?.unionTotalIds || "N/A",
-			regionOnlyIds: metadata?.regionOnlyIds || "N/A",
-			assetOnlyIds: metadata?.assetOnlyIds || "N/A",
-			regionDifferenceDetected: metadata?.regionDifferenceDetected || "N/A",
-			lastError: metadata?.lastError || "N/A",
-			unifiedSystemStarted: metadata?.unifiedSystemStarted?.toDate() || "N/A",
-		});
+		const logObject = buildMetadataLogObject(metadata);
+		logger.info("統合データ収集メタデータ", logObject);
 	} catch (error) {
 		logger.error("メタデータ詳細表示エラー", {
 			operation: "showMetadataDetails",
