@@ -42,6 +42,35 @@ describe("formatWorkDescription", () => {
 		expect(result).not.toContain('<a href="https://example.com."');
 	});
 
+	it("日本語の句読点も除去する", () => {
+		const input = "詳細はこちら（https://example.com）をご覧ください。";
+		const result = formatWorkDescription(input);
+		expect(result).toContain('<a href="https://example.com"');
+		expect(result).not.toContain('<a href="https://example.com）"');
+	});
+
+	it("見出し記号を強調表示する", () => {
+		const input = "■重要なお知らせ\n◆新機能について";
+		const result = formatWorkDescription(input);
+		expect(result).toContain('<strong class="font-semibold">■重要なお知らせ</strong>');
+		expect(result).toContain('<strong class="font-semibold">◆新機能について</strong>');
+	});
+
+	it("【】で囲まれた部分を強調表示する", () => {
+		const input = "【注意事項】こちらをお読みください";
+		const result = formatWorkDescription(input);
+		expect(result).toContain('<span class="font-semibold text-gray-900">【注意事項】</span>');
+	});
+
+	it("リスト項目を処理する", () => {
+		const input = "・項目1\n・項目2\n・項目3";
+		const result = formatWorkDescription(input);
+		expect(result).toContain('<ul class="list-disc list-inside');
+		expect(result).toContain('<li class="ml-4">項目1</li>');
+		expect(result).toContain('<li class="ml-4">項目2</li>');
+		expect(result).toContain('<li class="ml-4">項目3</li>');
+	});
+
 	it("複数の段落とURLを正しく処理する", () => {
 		const input = `作品の説明です。
 
