@@ -114,11 +114,11 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo
 }
 
 /**
- * ConfigurableList用のクリエイター作品取得関数
+ * クリエイター作品リストを取得（ConfigurableList用）
  * @param params パラメータ
  * @returns 作品一覧と総件数
  */
-export async function fetchCreatorWorksForConfigurableList(params: {
+export async function getCreatorWorksList(params: {
 	creatorId: string;
 	page?: number;
 	limit?: number;

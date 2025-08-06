@@ -93,7 +93,7 @@ vi.mock("@/lib/firestore", () => ({
 }));
 
 // テスト対象のインポート（モック設定後）
-import { fetchCreatorWorksForConfigurableList, getCreatorInfo } from "../actions";
+import { getCreatorInfo, getCreatorWorksList } from "../actions";
 
 describe("Creator page server actions", () => {
 	// テスト用のヘルパー関数
@@ -195,7 +195,7 @@ describe("Creator page server actions", () => {
 		});
 	});
 
-	describe("fetchCreatorWorksForConfigurableList", () => {
+	describe("getCreatorWorksList", () => {
 		it("検索機能が正しく動作する", async () => {
 			const mockCreatorData = {
 				name: "テストクリエイター",
@@ -319,7 +319,7 @@ describe("Creator page server actions", () => {
 			});
 
 			// "魔法"で検索
-			const result = await fetchCreatorWorksForConfigurableList({
+			const result = await getCreatorWorksList({
 				creatorId: "VA12345",
 				search: "魔法",
 			});
@@ -428,7 +428,7 @@ describe("Creator page server actions", () => {
 			});
 
 			// 声優名で検索
-			const result = await fetchCreatorWorksForConfigurableList({
+			const result = await getCreatorWorksList({
 				creatorId: "VA12345",
 				search: "田中",
 			});
@@ -505,7 +505,7 @@ describe("Creator page server actions", () => {
 			});
 
 			// "冒険"で検索、ページ2を取得（limit=2）
-			const result = await fetchCreatorWorksForConfigurableList({
+			const result = await getCreatorWorksList({
 				creatorId: "VA12345",
 				search: "冒険",
 				page: 2,
@@ -588,7 +588,7 @@ describe("Creator page server actions", () => {
 				);
 			});
 
-			const result = await fetchCreatorWorksForConfigurableList({
+			const result = await getCreatorWorksList({
 				creatorId: "VA12345",
 				search: "存在しない検索語",
 			});
@@ -668,7 +668,7 @@ describe("Creator page server actions", () => {
 				);
 			});
 
-			const result = await fetchCreatorWorksForConfigurableList({
+			const result = await getCreatorWorksList({
 				creatorId: "VA12345",
 			});
 
@@ -678,7 +678,7 @@ describe("Creator page server actions", () => {
 		});
 
 		it("無効なクリエイターIDの場合は空の結果を返す", async () => {
-			const result = await fetchCreatorWorksForConfigurableList({
+			const result = await getCreatorWorksList({
 				creatorId: "INVALID_ID",
 			});
 
@@ -690,7 +690,7 @@ describe("Creator page server actions", () => {
 				exists: false,
 			});
 
-			const result = await fetchCreatorWorksForConfigurableList({
+			const result = await getCreatorWorksList({
 				creatorId: "VA99999",
 			});
 
@@ -700,7 +700,7 @@ describe("Creator page server actions", () => {
 		it("エラー発生時は空の結果を返す", async () => {
 			mockGet.mockRejectedValueOnce(new Error("Firestore error"));
 
-			const result = await fetchCreatorWorksForConfigurableList({
+			const result = await getCreatorWorksList({
 				creatorId: "VA12345",
 			});
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { fetchFavoriteAudioButtons } from "./actions";
+import { getFavoritesList } from "./actions";
 import FavoritesList from "./components/FavoritesList";
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
 	const sort = params.sort || "newest";
 
 	// 初期データの取得
-	const initialData = await fetchFavoriteAudioButtons({
+	const initialData = await getFavoritesList({
 		page,
 		limit: 20,
 		sort,

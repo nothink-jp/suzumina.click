@@ -16,8 +16,6 @@ export interface SearchParams {
 	likeCountMax?: string;
 	favoriteCountMin?: string;
 	favoriteCountMax?: string;
-	durationMin?: string;
-	durationMax?: string;
 	createdAfter?: string;
 	createdBefore?: string;
 	createdBy?: string;
@@ -40,7 +38,6 @@ export const createAdvancedFiltersFromParams = (params: SearchParams): AdvancedF
 	playCount: parseNumericRange(params.playCountMin, params.playCountMax),
 	likeCount: parseNumericRange(params.likeCountMin, params.likeCountMax),
 	favoriteCount: parseNumericRange(params.favoriteCountMin, params.favoriteCountMax),
-	duration: parseNumericRange(params.durationMin, params.durationMax),
 	createdAt: parseDateRange(params.createdAfter, params.createdBefore),
 	createdBy: params.createdBy || undefined,
 });
@@ -55,8 +52,6 @@ export const convertFiltersToParams = (
 	likeCountMax: filters.likeCount?.max?.toString(),
 	favoriteCountMin: filters.favoriteCount?.min?.toString(),
 	favoriteCountMax: filters.favoriteCount?.max?.toString(),
-	durationMin: filters.duration?.min?.toString(),
-	durationMax: filters.duration?.max?.toString(),
 	createdAfter: filters.createdAt?.from?.toISOString(),
 	createdBefore: filters.createdAt?.to?.toISOString(),
 	createdBy: filters.createdBy,
@@ -100,12 +95,6 @@ export class AudioButtonQueryBuilder {
 		return this;
 	}
 
-	addDurationParams(params: SearchParams): this {
-		if (params.durationMin) this.query.durationMin = Number(params.durationMin);
-		if (params.durationMax) this.query.durationMax = Number(params.durationMax);
-		return this;
-	}
-
 	addDateAndUserParams(params: SearchParams): this {
 		if (params.createdAfter) this.query.createdAfter = params.createdAfter;
 		if (params.createdBefore) this.query.createdBefore = params.createdBefore;
@@ -130,8 +119,6 @@ export const hasFilters = (params: SearchParams): boolean => {
 		params.likeCountMax ||
 		params.favoriteCountMin ||
 		params.favoriteCountMax ||
-		params.durationMin ||
-		params.durationMax ||
 		params.createdAfter ||
 		params.createdBefore ||
 		params.createdBy

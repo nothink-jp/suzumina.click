@@ -19,10 +19,10 @@ vi.mock("../works/actions", () => ({
 
 vi.mock("../buttons/actions", () => ({
 	getRecentAudioButtons: vi.fn(),
-	getAudioButtons: vi.fn(),
+	getAudioButtonsList: vi.fn(),
 }));
 
-import { getAudioButtons, getRecentAudioButtons } from "../buttons/actions";
+import { getAudioButtonsList, getRecentAudioButtons } from "../buttons/actions";
 // モックのインポート
 import { getVideoTitles } from "../videos/actions";
 import { getWorks } from "../works/actions";
@@ -1128,7 +1128,7 @@ describe("Homepage Actions", () => {
 					},
 				};
 
-				(getAudioButtons as any).mockResolvedValue(mockResult);
+				(getAudioButtonsList as any).mockResolvedValue(mockResult);
 
 				const params = {
 					searchText: "涼花みなせ",
@@ -1139,7 +1139,7 @@ describe("Homepage Actions", () => {
 
 				const result = await searchAudioButtons(params);
 
-				expect(getAudioButtons).toHaveBeenCalledWith(
+				expect(getAudioButtonsList).toHaveBeenCalledWith(
 					expect.objectContaining({
 						search: "涼花みなせ",
 						limit: 6,
@@ -1163,7 +1163,7 @@ describe("Homepage Actions", () => {
 					},
 				};
 
-				(getAudioButtons as any).mockResolvedValue(mockResult);
+				(getAudioButtonsList as any).mockResolvedValue(mockResult);
 
 				const params = {
 					searchText: "テスト検索",
@@ -1174,7 +1174,7 @@ describe("Homepage Actions", () => {
 
 				await searchAudioButtons(params);
 
-				expect(getAudioButtons).toHaveBeenCalledWith(
+				expect(getAudioButtonsList).toHaveBeenCalledWith(
 					expect.objectContaining({
 						search: "テスト検索",
 						limit: 12,
@@ -1193,7 +1193,7 @@ describe("Homepage Actions", () => {
 					},
 				};
 
-				(getAudioButtons as any).mockResolvedValue(mockResult);
+				(getAudioButtonsList as any).mockResolvedValue(mockResult);
 
 				const params = {
 					searchText: "存在しない音声",
@@ -1209,13 +1209,13 @@ describe("Homepage Actions", () => {
 				expect(result.hasMore).toBe(false);
 			});
 
-			it("getAudioButtons が失敗した場合のエラーハンドリング", async () => {
+			it("getAudioButtonsList が失敗した場合のエラーハンドリング", async () => {
 				const mockResult = {
 					success: false,
 					error: "音声ボタン取得エラー",
 				};
 
-				(getAudioButtons as any).mockResolvedValue(mockResult);
+				(getAudioButtonsList as any).mockResolvedValue(mockResult);
 
 				const params = {
 					searchText: "エラーテスト",
@@ -1233,7 +1233,7 @@ describe("Homepage Actions", () => {
 
 			it("例外が発生した場合空の結果を返す", async () => {
 				const error = new Error("音声ボタン検索エラー");
-				(getAudioButtons as any).mockRejectedValue(error);
+				(getAudioButtonsList as any).mockRejectedValue(error);
 
 				const params = {
 					searchText: "例外テスト",
@@ -1261,7 +1261,7 @@ describe("Homepage Actions", () => {
 					},
 				};
 
-				(getAudioButtons as any).mockResolvedValue(mockResult);
+				(getAudioButtonsList as any).mockResolvedValue(mockResult);
 
 				// 人気順での検索
 				await searchAudioButtons({
@@ -1271,7 +1271,7 @@ describe("Homepage Actions", () => {
 					sortBy: "popular",
 				});
 
-				expect(getAudioButtons).toHaveBeenCalledWith({
+				expect(getAudioButtonsList).toHaveBeenCalledWith({
 					search: "テスト",
 					limit: 6,
 					onlyPublic: true,
@@ -1286,7 +1286,7 @@ describe("Homepage Actions", () => {
 					sortBy: "mostPlayed",
 				});
 
-				expect(getAudioButtons).toHaveBeenCalledWith({
+				expect(getAudioButtonsList).toHaveBeenCalledWith({
 					search: "テスト",
 					limit: 6,
 					onlyPublic: true,
@@ -1303,7 +1303,7 @@ describe("Homepage Actions", () => {
 					},
 				};
 
-				(getAudioButtons as any).mockResolvedValue(mockResult);
+				(getAudioButtonsList as any).mockResolvedValue(mockResult);
 
 				const params = {
 					searchText: "全ボタン検索",
@@ -1314,7 +1314,7 @@ describe("Homepage Actions", () => {
 
 				await searchAudioButtons(params);
 
-				expect(getAudioButtons).toHaveBeenCalledWith({
+				expect(getAudioButtonsList).toHaveBeenCalledWith({
 					search: "全ボタン検索",
 					limit: 6,
 					onlyPublic: false,

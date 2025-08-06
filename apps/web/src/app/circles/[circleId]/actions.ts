@@ -93,11 +93,11 @@ export async function getCircleInfo(circleId: string): Promise<CirclePlainObject
 }
 
 /**
- * ConfigurableList用のサークル作品取得関数
+ * サークル作品リストを取得（ConfigurableList用）
  * @param params パラメータ
  * @returns 作品一覧と総件数
  */
-export async function fetchCircleWorksForConfigurableList(params: {
+export async function getCircleWorksList(params: {
 	circleId: string;
 	page?: number;
 	limit?: number;

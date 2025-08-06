@@ -100,9 +100,9 @@ function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
 }
 
 /**
- * ConfigurableList用のビデオデータ取得関数
+ * 動画リストを取得（ConfigurableList用）
  */
-export async function fetchVideosForConfigurableList(params: {
+export async function getVideosList(params: {
 	page: number;
 	limit: number;
 	sort?: string;

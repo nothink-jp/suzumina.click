@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { fetchCircleWorksForConfigurableList, getCircleInfo } from "./actions";
+import { getCircleInfo, getCircleWorksList } from "./actions";
 import { CirclePageClient } from "./components/CirclePageClient";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +49,7 @@ export default async function CirclePage({ params, searchParams }: CirclePagePro
 	const search = typeof searchParamsData.q === "string" ? searchParamsData.q : undefined;
 
 	// 初期データを取得
-	const result = await fetchCircleWorksForConfigurableList({
+	const result = await getCircleWorksList({
 		circleId,
 		page: validPage,
 		limit: validLimit,

@@ -5,7 +5,7 @@ import {
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom/list-page-layout";
 import { Suspense } from "react";
-import { getAudioButtons } from "./actions";
+import { getAudioButtonsList } from "./actions";
 import AudioButtonsList from "./components/AudioButtonsList";
 
 interface SearchParams {
@@ -23,8 +23,6 @@ interface SearchParams {
 	likeCountMax?: string;
 	favoriteCountMin?: string;
 	favoriteCountMax?: string;
-	durationMin?: string;
-	durationMax?: string;
 	createdAfter?: string;
 	createdBefore?: string;
 	createdBy?: string;
@@ -67,12 +65,6 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 		favoriteCountMax: resolvedSearchParams.favoriteCountMax
 			? Number(resolvedSearchParams.favoriteCountMax)
 			: undefined,
-		durationMin: resolvedSearchParams.durationMin
-			? Number(resolvedSearchParams.durationMin)
-			: undefined,
-		durationMax: resolvedSearchParams.durationMax
-			? Number(resolvedSearchParams.durationMax)
-			: undefined,
 		createdAfter: resolvedSearchParams.createdAfter,
 		createdBefore: resolvedSearchParams.createdBefore,
 		createdBy: resolvedSearchParams.createdBy,
@@ -80,7 +72,7 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 	};
 
 	// 初期データを取得（Server Component最適化）
-	const initialData = await getAudioButtons(query);
+	const initialData = await getAudioButtonsList(query);
 
 	return (
 		<ListPageLayout>

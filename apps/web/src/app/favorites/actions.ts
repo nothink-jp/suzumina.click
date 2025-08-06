@@ -27,9 +27,9 @@ interface FavoriteAudioButtonsResult {
 }
 
 /**
- * ConfigurableList用のお気に入り音声ボタン取得関数
+ * お気に入りリストを取得（ConfigurableList用）
  */
-export async function fetchFavoriteAudioButtons(
+export async function getFavoritesList(
 	params: FetchFavoriteAudioButtonsParams,
 ): Promise<FavoriteAudioButtonsResult> {
 	const { limit = 20, sort = "newest", userId } = params;

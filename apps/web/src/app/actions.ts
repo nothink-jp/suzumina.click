@@ -2,7 +2,7 @@
 
 import { type DateRangePreset, getDateRangeFromPreset } from "@suzumina.click/shared-types";
 import * as logger from "@/lib/logger";
-import { getAudioButtons, getRecentAudioButtons } from "./buttons/actions";
+import { getAudioButtonsList, getRecentAudioButtons } from "./buttons/actions";
 import { getVideoTitles } from "./videos/actions";
 import { getWorks } from "./works/actions";
 
@@ -326,7 +326,7 @@ export async function searchAudioButtons(params: {
 		// relevanceの場合はnewestにマッピング（関連度順は検索結果の順序を保持するため）
 		const actualSortBy = params.sortBy === "relevance" ? "newest" : params.sortBy;
 
-		const result = await getAudioButtons({
+		const result = await getAudioButtonsList({
 			search: params.searchText,
 			limit: params.limit,
 			onlyPublic: params.onlyPublic,

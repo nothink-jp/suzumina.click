@@ -1,12 +1,16 @@
 "use client";
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import {
-	ConfigurableList,
-	type StandardListParams,
-} from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
 import { useMemo } from "react";
-import { fetchVideosForConfigurableList } from "../actions";
+import { ListWrapper } from "@/components/list/ListWrapper";
+import {
+	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
+	DEFAULT_LIST_PROPS,
+	GRID_COLUMNS_4,
+	VIDEO_SORT_OPTIONS,
+} from "@/constants/list-options";
+import { getVideosList } from "../actions";
 import VideoCard from "./VideoCard";
 
 interface VideoListProps {
@@ -18,9 +22,9 @@ interface VideoListProps {
 }
 
 export default function VideoList({ initialData }: VideoListProps) {
-	// 年代選択肢を動的に生成（2018年から現在年まで）
-	const currentYear = new Date().getFullYear();
+	// 年代選択肢を生成（2018年から現在年まで）
 	const yearOptions = useMemo(() => {
+		const currentYear = new Date().getFullYear();
 		const years = [];
 		for (let year = currentYear; year >= 2018; year--) {
 			years.push({
@@ -29,27 +33,7 @@ export default function VideoList({ initialData }: VideoListProps) {
 			});
 		}
 		return years;
-	}, [currentYear]);
-
-	// 動画一覧用のfetchData関数
-	async function fetchVideos(
-		params: StandardListParams,
-	): Promise<{ items: VideoPlainObject[]; total: number }> {
-		// ConfigurableListのパラメータをfetchVideosForConfigurableList用に変換
-		const query = {
-			page: params.page,
-			limit: params.itemsPerPage,
-			sort: params.sort || "newest",
-			search: params.search,
-			filters: params.filters,
-		};
-
-		const result = await fetchVideosForConfigurableList(query);
-		return {
-			items: result.items,
-			total: result.totalCount,
-		};
-	}
+	}, []);
 
 	// レンダリング設定
 	const renderItem = (video: VideoPlainObject, index: number) => (
@@ -61,54 +45,22 @@ export default function VideoList({ initialData }: VideoListProps) {
 	);
 
 	return (
-		<div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-suzuka-100 p-6">
+		<ListWrapper>
 			<ConfigurableList<VideoPlainObject>
 				items={initialData.items}
 				initialTotal={initialData.totalCount}
 				renderItem={renderItem}
-				fetchFn={fetchVideos as (params: unknown) => Promise<unknown>}
-				dataAdapter={{
-					toParams: (params) => params,
-					fromResult: (result) => {
-						const typedResult = result as { items: VideoPlainObject[]; total: number };
-						return {
-							items: typedResult.items,
-							total: typedResult.total,
-						};
-					},
-				}}
-				searchable
-				searchPlaceholder="動画タイトルで検索..."
-				urlSync
+				fetchFn={getVideosList as (params: unknown) => Promise<unknown>}
+				{...DEFAULT_LIST_PROPS}
 				layout="grid"
-				gridColumns={{
-					default: 1,
-					md: 2,
-					lg: 3,
-				}}
-				sorts={[
-					{ value: "newest", label: "新しい順" },
-					{ value: "oldest", label: "古い順" },
-				]}
-				defaultSort="newest"
+				gridColumns={GRID_COLUMNS_4}
+				sorts={VIDEO_SORT_OPTIONS}
 				filters={{
 					year: {
 						type: "select",
 						label: "年代",
 						placeholder: "年代を選択",
 						options: yearOptions,
-						showAll: true,
-						emptyValue: "all",
-					},
-					categoryNames: {
-						type: "select",
-						label: "カテゴリ",
-						placeholder: "カテゴリを選択",
-						options: [
-							{ value: "ゲーム", label: "ゲーム" },
-							{ value: "エンターテインメント", label: "エンターテインメント" },
-							{ value: "音楽", label: "音楽" },
-						],
 						showAll: true,
 						emptyValue: "all",
 					},
@@ -126,9 +78,9 @@ export default function VideoList({ initialData }: VideoListProps) {
 						emptyValue: "all",
 					},
 				}}
-				itemsPerPageOptions={[12, 24, 48]}
+				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 				emptyMessage="動画がありません"
 			/>
-		</div>
+		</ListWrapper>
 	);
 }
