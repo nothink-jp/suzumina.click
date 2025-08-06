@@ -261,16 +261,17 @@ describe("Audio Button Server Actions", () => {
 	});
 
 	describe("getAudioButtonsList", () => {
-		// biome-ignore lint/suspicious/noSkippedTests: V2変換のモック問題で一時的にスキップ
-		it.skip("音声ボタンリストが正常に取得される", async () => {
+		it("音声ボタンリストが正常に取得される", async () => {
+			// FirestoreServerAudioButtonData形式のモックデータ
 			const mockDocs = [
 				{
 					id: "audio-ref-1",
 					data: () => ({
+						id: "audio-ref-1",
 						title: "音声ボタン1",
 						description: "説明1",
 						tags: ["挨拶"],
-						sourceVideoId: "video-1",
+						sourceVideoId: "dQw4w9WgXcQ",
 						sourceVideoTitle: "動画タイトル1",
 						startTime: 10,
 						endTime: 20,
@@ -283,17 +284,18 @@ describe("Audio Button Server Actions", () => {
 						isPublic: true,
 						createdBy: "123456789012345678",
 						createdByName: "Test User",
-						createdAt: "2024-01-01T00:00:00Z",
-						updatedAt: "2024-01-01T00:00:00Z",
+						createdAt: { toDate: () => new Date("2024-01-01T00:00:00Z") },
+						updatedAt: { toDate: () => new Date("2024-01-01T00:00:00Z") },
 					}),
 				},
 				{
 					id: "audio-ref-2",
 					data: () => ({
+						id: "audio-ref-2",
 						title: "音声ボタン2",
 						description: "説明2",
 						tags: ["BGM"],
-						sourceVideoId: "video-2",
+						sourceVideoId: "dQw4w9WgXcQ",
 						sourceVideoTitle: "動画タイトル2",
 						startTime: 30,
 						endTime: 45,
@@ -306,8 +308,8 @@ describe("Audio Button Server Actions", () => {
 						isPublic: true,
 						createdBy: "123456789012345678",
 						createdByName: "Test User",
-						createdAt: "2024-01-02T00:00:00Z",
-						updatedAt: "2024-01-02T00:00:00Z",
+						createdAt: { toDate: () => new Date("2024-01-02T00:00:00Z") },
+						updatedAt: { toDate: () => new Date("2024-01-02T00:00:00Z") },
 					}),
 				},
 			];
@@ -403,13 +405,13 @@ describe("Audio Button Server Actions", () => {
 	});
 
 	describe("getAudioButtonById", () => {
-		// biome-ignore lint/suspicious/noSkippedTests: V2変換のモック問題で一時的にスキップ
-		it.skip("IDで音声ボタンが正常に取得される", async () => {
+		it("IDで音声ボタンが正常に取得される", async () => {
 			const mockDocData = {
+				id: "test-audio-ref-id",
 				title: "テスト音声ボタン",
 				description: "テスト用の説明",
 				tags: ["テスト"],
-				sourceVideoId: "test-video",
+				sourceVideoId: "dQw4w9WgXcQ",
 				sourceVideoTitle: "テスト動画",
 				startTime: 10,
 				endTime: 25,
@@ -422,8 +424,8 @@ describe("Audio Button Server Actions", () => {
 				isPublic: true,
 				createdBy: "123456789012345678",
 				createdByName: "Test User",
-				createdAt: "2024-01-01T00:00:00Z",
-				updatedAt: "2024-01-01T00:00:00Z",
+				createdAt: { toDate: () => new Date("2024-01-01T00:00:00Z") },
+				updatedAt: { toDate: () => new Date("2024-01-01T00:00:00Z") },
 			};
 
 			mockGet.mockResolvedValue({
@@ -436,7 +438,7 @@ describe("Audio Button Server Actions", () => {
 
 			expect(result.success).toBe(true);
 			if (result.success) {
-				expect(result.data.id).toBe("test-audio-ref-id");
+				expect(result.data.id.toString()).toBe("test-audio-ref-id");
 				expect(result.data.title).toBe("テスト音声ボタン");
 			}
 		});
