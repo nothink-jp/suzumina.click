@@ -9,6 +9,7 @@ import {
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
 	DEFAULT_LIST_PROPS,
 	GRID_COLUMNS_4,
+	SEARCH_PLACEHOLDER,
 	WORK_SORT_OPTIONS,
 } from "@/constants/list-options";
 import { createBasicToParams } from "@/utils/list-adapters";
@@ -62,7 +63,7 @@ export default function CreatorWorksList({ creatorId, initialData }: CreatorWork
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
 				{...DEFAULT_LIST_PROPS}
-				searchPlaceholder="作品タイトルで検索..."
+				searchPlaceholder={SEARCH_PLACEHOLDER}
 				layout="grid"
 				gridColumns={GRID_COLUMNS_4}
 				sorts={WORK_SORT_OPTIONS}

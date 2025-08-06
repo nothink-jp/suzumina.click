@@ -44,3 +44,6 @@ export const DEFAULT_LIST_PROPS = {
 	urlSync: true,
 	defaultSort: "newest",
 };
+
+// 検索プレースホルダー
+export const SEARCH_PLACEHOLDER = "検索...";
