@@ -1,5 +1,6 @@
 import type { DLsiteApiResponse, PriceHistoryDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
+import * as logger from "../../shared/logger";
 import { isValidPriceData } from "./price-extractor";
 
 /**
@@ -67,7 +68,7 @@ export async function savePriceHistory(
 	try {
 		// worknoが存在しない場合は保存しない
 		if (!apiResponse.workno) {
-			console.log(`価格履歴保存スキップ: ${workId} - worknoが存在しません`);
+			logger.debug(`価格履歴保存スキップ: ${workId} - worknoが存在しません`);
 			return false;
 		}
 
@@ -91,9 +92,9 @@ export async function savePriceHistory(
 		if (existingDoc.exists) {
 			// 既にデータが存在する場合はスキップ
 			const existingData = existingDoc.data() as PriceHistoryDocument;
-			console.log(`価格履歴保存スキップ: ${workId} - ${today}のデータが既に存在します`);
-			console.log(`既存データの保存時刻: ${existingData.capturedAt}`);
-			console.log(`現在のJST時刻: ${getJSTDateTime()}`);
+			logger.debug(`価格履歴保存スキップ: ${workId} - ${today}のデータが既に存在します`);
+			logger.debug(`既存データの保存時刻: ${existingData.capturedAt}`);
+			logger.debug(`現在のJST時刻: ${getJSTDateTime()}`);
 			return true;
 		}
 
@@ -140,11 +141,11 @@ export async function savePriceHistory(
 
 		// Firestoreに保存
 		await priceHistoryRef.set(priceData);
-		console.log(`価格履歴保存成功: ${workId} - ${today}`);
+		logger.info(`価格履歴保存成功: ${workId} - ${today}`);
 
 		return true;
 	} catch (error) {
-		console.error(`価格履歴保存エラー: ${workId}`, error);
+		logger.error(`価格履歴保存エラー: ${workId}`, error);
 		return false;
 	}
 }

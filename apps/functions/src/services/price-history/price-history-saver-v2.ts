@@ -5,6 +5,7 @@
 
 import type { DLsiteApiResponse, PriceHistoryDocument } from "@suzumina.click/shared-types";
 import firestore from "../../infrastructure/database/firestore";
+import * as logger from "../../shared/logger";
 import { isValidPriceData } from "./price-extractor";
 
 /**
@@ -66,7 +67,7 @@ export async function savePriceHistoryV2(
 	try {
 		// worknoが存在しない場合は保存しない
 		if (!apiResponse.workno) {
-			console.log(`価格履歴保存スキップ: ${workId} - worknoが存在しません`);
+			logger.debug(`価格履歴保存スキップ: ${workId} - worknoが存在しません`);
 			return false;
 		}
 
@@ -136,26 +137,26 @@ export async function savePriceHistoryV2(
 
 			// より低い価格が検出された場合、または既存価格がnullの場合は更新
 			if (newPrice !== null && (existingPrice === null || newPrice < existingPrice)) {
-				console.log(`価格更新検出: ${workId} - ${today}`);
-				console.log(`既存価格: ${existingPrice ?? "null"} → 新価格: ${newPrice}`);
-				console.log(`既存データの保存時刻: ${existingData.capturedAt}`);
-				console.log(`新規データの保存時刻: ${newPriceData.capturedAt}`);
+				logger.info(`価格更新検出: ${workId} - ${today}`);
+				logger.info(`既存価格: ${existingPrice ?? "null"} → 新価格: ${newPrice}`);
+				logger.debug(`既存データの保存時刻: ${existingData.capturedAt}`);
+				logger.debug(`新規データの保存時刻: ${newPriceData.capturedAt}`);
 
 				// より低い価格で更新
 				await priceHistoryRef.set(newPriceData);
-				console.log(`価格履歴更新成功: ${workId} - ${today} (最低価格更新)`);
+				logger.info(`価格履歴更新成功: ${workId} - ${today} (最低価格更新)`);
 				return true;
 			}
-			console.log(`価格履歴保存スキップ: ${workId} - ${today}のデータが既に存在し、価格変更なし`);
-			console.log(`既存価格: ${existingPrice ?? "null"}, 新価格: ${newPrice ?? "null"}`);
+			logger.debug(`価格履歴保存スキップ: ${workId} - ${today}のデータが既に存在し、価格変更なし`);
+			logger.debug(`既存価格: ${existingPrice ?? "null"}, 新価格: ${newPrice ?? "null"}`);
 			return true;
 		}
 		// 新規保存
 		await priceHistoryRef.set(newPriceData);
-		console.log(`価格履歴保存成功: ${workId} - ${today} (新規)`);
+		logger.info(`価格履歴保存成功: ${workId} - ${today} (新規)`);
 		return true;
 	} catch (error) {
-		console.error(`価格履歴保存エラー: ${workId}`, error);
+		logger.error(`価格履歴保存エラー: ${workId}`, error);
 		return false;
 	}
 }

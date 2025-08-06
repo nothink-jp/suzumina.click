@@ -1,6 +1,6 @@
 {
 	"name": "@suzumina.click/shared-types",
-	"version": "0.3.8",
+	"version": "0.3.9",
 	"description": "涼花みなせウェブサイト用の共有型定義",
 	"main": "dist/index.js",
 	"module": "dist/index.mjs",
@@ -22,14 +22,14 @@
 		"test:coverage": "vitest run --coverage"
 	},
 	"dependencies": {
-		"@google-cloud/firestore": "^7.11.2",
-		"zod": "^4.0.5"
+		"@google-cloud/firestore": "^7.11.3",
+		"zod": "^4.0.15"
 	},
 	"devDependencies": {
 		"@suzumina.click/typescript-config": "workspace:*",
 		"rimraf": "^6.0.1",
 		"tsup": "^8.5.0",
-		"typescript": "^5.8.3",
+		"typescript": "^5.9.2",
 		"vitest": "^3.2.4"
 	}
 }

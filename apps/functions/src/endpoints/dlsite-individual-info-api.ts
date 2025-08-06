@@ -523,8 +523,6 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
  * Cloud Functions エントリーポイント
  */
 export async function fetchDLsiteUnifiedData(event: CloudEvent<unknown>): Promise<void> {
-	// デバッグ: 関数実行開始をログ出力
-	console.log(`[DEBUG] fetchDLsiteUnifiedData開始: ${new Date().toISOString()}`);
 	logger.info("統合データ収集開始", {
 		eventType: event.type,
 		timestamp: new Date().toISOString(),

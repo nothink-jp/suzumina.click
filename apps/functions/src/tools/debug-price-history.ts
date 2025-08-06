@@ -135,7 +135,7 @@ async function main(): Promise<void> {
 
 	for (const workId of testWorkIds) {
 		await debugPriceHistory(workId);
-		logger.info("\n" + "=".repeat(60) + "\n");
+		logger.info(`\n${"=".repeat(60)}\n`);
 	}
 }
 
