@@ -1,12 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-	getLatestAudioButtons,
-	getLatestVideos,
-	getLatestWorks,
-	searchAudioButtons,
-	searchVideos,
-	searchWorks,
-} from "../actions";
 
 // Server Actionsのモック
 vi.mock("../videos/actions", () => ({
@@ -22,27 +14,34 @@ vi.mock("../buttons/actions", () => ({
 	getAudioButtonsList: vi.fn(),
 }));
 
+// loggerモジュールのモック
+vi.mock("@/lib/logger", () => ({
+	info: vi.fn(),
+	warn: vi.fn(),
+	error: vi.fn(),
+	log: vi.fn(),
+}));
+
+// モックされたloggerをインポート
+import * as mockLogger from "@/lib/logger";
+
+import {
+	getLatestAudioButtons,
+	getLatestVideos,
+	getLatestWorks,
+	searchAudioButtons,
+	searchVideos,
+	searchWorks,
+} from "../actions";
+
 import { getAudioButtonsList, getRecentAudioButtons } from "../buttons/actions";
 // モックのインポート
 import { getVideoTitles } from "../videos/actions";
 import { getWorks } from "../works/actions";
 
-// コンソールのモック
-const mockConsole = {
-	log: vi.fn(),
-	warn: vi.fn(),
-	error: vi.fn(),
-};
-
 describe("Homepage Actions", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-
-		// console関数をモック
-		global.console = {
-			...global.console,
-			...mockConsole,
-		};
 	});
 
 	afterEach(() => {
@@ -182,10 +181,11 @@ describe("Homepage Actions", () => {
 			const result = await getLatestWorks(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"severity":"WARNING"'));
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				expect.stringContaining('"message":"新着作品取得で0件返却"'),
-			);
+			expect(mockLogger.warn).toHaveBeenCalledWith("新着作品取得で0件返却", {
+				action: "getLatestWorks",
+				limit: 10,
+				excludeR18: false,
+			});
 		});
 
 		it("エラーが発生した場合空配列を返す", async () => {
@@ -195,10 +195,13 @@ describe("Homepage Actions", () => {
 			const result = await getLatestWorks(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.log).toHaveBeenCalledWith(expect.stringContaining('"severity":"ERROR"'));
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				expect.stringContaining('"message":"新着作品取得でエラーが発生"'),
-			);
+			expect(mockLogger.error).toHaveBeenCalledWith("新着作品取得でエラーが発生", {
+				action: "getLatestWorks",
+				limit: 10,
+				excludeR18: false,
+				error: "データベース接続エラー",
+				stack: expect.any(String),
+			});
 			// エラー詳細は構造化ログのerrorフィールドに含まれる
 		});
 
@@ -377,9 +380,10 @@ describe("Homepage Actions", () => {
 			const result = await getLatestVideos(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				expect.stringContaining('"新着動画取得で0件返却"'),
-			);
+			expect(mockLogger.warn).toHaveBeenCalledWith("新着動画取得で0件返却", {
+				action: "getLatestVideos",
+				limit: 10,
+			});
 		});
 
 		it("エラーが発生した場合空配列を返す", async () => {
@@ -389,9 +393,12 @@ describe("Homepage Actions", () => {
 			const result = await getLatestVideos(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				expect.stringContaining('"新着動画取得でエラーが発生"'),
-			);
+			expect(mockLogger.error).toHaveBeenCalledWith("新着動画取得でエラーが発生", {
+				action: "getLatestVideos",
+				limit: 10,
+				error: "YouTube API エラー",
+				stack: expect.any(String),
+			});
 			// エラー詳細は構造化ログに含まれる
 		});
 
@@ -533,9 +540,10 @@ describe("Homepage Actions", () => {
 			const result = await getLatestAudioButtons(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				expect.stringContaining('"新着音声ボタン取得で0件返却"'),
-			);
+			expect(mockLogger.warn).toHaveBeenCalledWith("新着音声ボタン取得で0件返却", {
+				action: "getLatestAudioButtons",
+				limit: 10,
+			});
 		});
 
 		it("エラーが発生した場合空配列を返す", async () => {
@@ -545,8 +553,14 @@ describe("Homepage Actions", () => {
 			const result = await getLatestAudioButtons(10);
 
 			expect(result).toEqual([]);
-			expect(mockConsole.log).toHaveBeenCalledWith(
-				expect.stringContaining('"新着音声ボタン取得でエラーが発生"'),
+			expect(mockLogger.error).toHaveBeenCalledWith(
+				"新着音声ボタン取得でエラーが発生",
+				expect.objectContaining({
+					action: "getLatestAudioButtons",
+					limit: 10,
+					error: "Firestore エラー",
+					stack: expect.any(String),
+				}),
 			);
 		});
 
@@ -878,8 +892,15 @@ describe("Homepage Actions", () => {
 				const result = await searchVideos("エラーテスト");
 
 				expect(result).toEqual([]);
-				expect(mockConsole.log).toHaveBeenCalledWith(
-					expect.stringContaining('"動画検索でエラーが発生"'),
+				expect(mockLogger.error).toHaveBeenCalledWith(
+					"動画検索でエラーが発生",
+					expect.objectContaining({
+						action: "searchVideos",
+						query: "エラーテスト",
+						error: "YouTube検索エラー",
+						limit: 6,
+						stack: expect.any(String),
+					}),
 				);
 			});
 
@@ -1045,8 +1066,15 @@ describe("Homepage Actions", () => {
 				const result = await searchWorks("エラーテスト");
 
 				expect(result).toEqual([]);
-				expect(mockConsole.log).toHaveBeenCalledWith(
-					expect.stringContaining('"作品検索でエラーが発生"'),
+				expect(mockLogger.error).toHaveBeenCalledWith(
+					"作品検索でエラーが発生",
+					expect.objectContaining({
+						action: "searchWorks",
+						query: "エラーテスト",
+						error: "DLsite検索エラー",
+						limit: 6,
+						stack: expect.any(String),
+					}),
 				);
 			});
 
@@ -1247,8 +1275,16 @@ describe("Homepage Actions", () => {
 				expect(result.audioButtons).toEqual([]);
 				expect(result.totalCount).toBe(0);
 				expect(result.hasMore).toBe(false);
-				expect(mockConsole.log).toHaveBeenCalledWith(
-					expect.stringContaining('"音声ボタン検索でエラーが発生"'),
+				expect(mockLogger.error).toHaveBeenCalledWith(
+					"音声ボタン検索でエラーが発生",
+					expect.objectContaining({
+						action: "searchAudioButtons",
+						error: "音声ボタン検索エラー",
+						params: expect.objectContaining({
+							searchText: "例外テスト",
+						}),
+						stack: expect.any(String),
+					}),
 				);
 			});
 

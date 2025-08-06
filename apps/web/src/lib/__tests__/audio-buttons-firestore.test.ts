@@ -31,7 +31,7 @@ describe("audio-buttons-firestore", () => {
 		const mockFirestore = {
 			collection: mockCollection,
 			FieldValue: {
-				increment: vi.fn((value: number) => ({ _increment: value })),
+				increment: vi.fn((value: number) => ({ operand: value })),
 			},
 		};
 
@@ -281,7 +281,7 @@ describe("audio-buttons-firestore", () => {
 			expect(mockCollection).toHaveBeenCalledWith("audioButtons");
 			expect(mockDoc).toHaveBeenCalledWith("button-123");
 			expect(mockUpdate).toHaveBeenCalledWith({
-				playCount: { _increment: 1 },
+				playCount: expect.objectContaining({ operand: 1 }),
 				updatedAt: expect.any(String),
 			});
 		});
