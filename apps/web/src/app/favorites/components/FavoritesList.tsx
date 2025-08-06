@@ -1,84 +1,110 @@
 "use client";
 
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
-import { ListDisplayControls } from "@suzumina.click/ui/components/custom/list-display-controls";
-import { ListPageEmptyState } from "@suzumina.click/ui/components/custom/list-page-layout";
-import { Button } from "@suzumina.click/ui/components/ui/button";
-import { Heart, Music } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import {
+	ConfigurableList,
+	type StandardListParams,
+} from "@suzumina.click/ui/components/custom/list";
+import { useCallback, useMemo } from "react";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import { fetchFavoriteAudioButtons } from "../actions";
 
 interface FavoritesListProps {
-	audioButtons: AudioButtonPlainObject[];
-	totalCount: number;
-	currentSort: string;
-	initialLikeDislikeStatuses?: Record<string, { isLiked: boolean; isDisliked: boolean }>;
+	initialData: {
+		audioButtons: AudioButtonPlainObject[];
+		totalCount: number;
+		hasMore?: boolean;
+		likeDislikeStatuses: Record<string, { isLiked: boolean; isDisliked: boolean }>;
+	};
+	userId: string;
 }
 
-export default function FavoritesList({
-	audioButtons,
-	totalCount,
-	currentSort,
-	initialLikeDislikeStatuses = {},
-}: FavoritesListProps) {
-	const router = useRouter();
+export default function FavoritesList({ initialData, userId }: FavoritesListProps) {
+	// データアダプター
+	const dataAdapter = useMemo(
+		() => ({
+			toParams: (params: StandardListParams) => ({
+				page: params.page,
+				limit: params.itemsPerPage || 20,
+				sort: params.sort || "newest",
+				userId,
+			}),
+			fromResult: (result: unknown) => {
+				const data = result as Awaited<ReturnType<typeof fetchFavoriteAudioButtons>>;
+				return {
+					items: data.audioButtons,
+					total: data.totalCount,
+				};
+			},
+		}),
+		[userId],
+	);
 
-	const handleSortChange = (value: string) => {
-		router.push(`/favorites?sort=${value}`);
-	};
+	// フェッチ関数
+	const fetchFn = useCallback(async (params: unknown) => {
+		const typedParams = params as Parameters<typeof fetchFavoriteAudioButtons>[0];
+		return fetchFavoriteAudioButtons(typedParams);
+	}, []);
 
-	if (audioButtons.length === 0) {
-		return (
-			<ListPageEmptyState
-				icon={<Heart className="mx-auto h-12 w-12" />}
-				title="お気に入りがまだありません"
-				description="音声ボタンをお気に入りに追加すると、ここに表示されます"
-				action={
-					<Button asChild>
-						<Link href="/buttons">
-							<Music className="h-4 w-4 mr-2" />
-							音声ボタン一覧へ
-						</Link>
-					</Button>
-				}
-			/>
-		);
-	}
+	// 初期のいいね/低評価状態をMapに変換
+	const initialLikeDislikeMap = useMemo(() => {
+		const map = new Map<string, { isLiked: boolean; isDisliked: boolean }>();
+		Object.entries(initialData.likeDislikeStatuses).forEach(([id, status]) => {
+			map.set(id, status);
+		});
+		return map;
+	}, [initialData.likeDislikeStatuses]);
+
+	// レンダリング関数
+	const renderItem = useCallback(
+		(audioButton: AudioButtonPlainObject) => {
+			const likeDislikeStatus = initialLikeDislikeMap.get(audioButton.id) || {
+				isLiked: false,
+				isDisliked: false,
+			};
+
+			return (
+				<AudioButtonWithPlayCount
+					audioButton={audioButton}
+					showFavorite={true}
+					maxTitleLength={50}
+					className="shadow-sm hover:shadow-md transition-all duration-200"
+					initialIsFavorited={true}
+					initialIsLiked={likeDislikeStatus.isLiked}
+					initialIsDisliked={likeDislikeStatus.isDisliked}
+				/>
+			);
+		},
+		[initialLikeDislikeMap],
+	);
+
+	// 初期データの変換
+	const transformedInitialData = useMemo(
+		() => ({
+			items: initialData.audioButtons,
+			total: initialData.totalCount,
+			page: 1,
+			itemsPerPage: 20,
+		}),
+		[initialData],
+	);
 
 	return (
-		<div>
-			<ListDisplayControls
-				title="お気に入り一覧"
-				totalCount={totalCount}
-				currentPage={1}
-				totalPages={1}
-				sortValue={currentSort}
-				onSortChange={handleSortChange}
-				sortOptions={[
-					{ value: "newest", label: "新しい順" },
-					{ value: "oldest", label: "古い順" },
-				]}
-			/>
-
-			<div className="flex flex-wrap gap-3 items-start">
-				{audioButtons.map((audioButton) => {
-					const likeDislikeStatus = initialLikeDislikeStatuses[audioButton.id];
-
-					return (
-						<AudioButtonWithPlayCount
-							key={audioButton.id}
-							audioButton={audioButton}
-							showFavorite={true}
-							maxTitleLength={50}
-							className="shadow-sm hover:shadow-md transition-all duration-200"
-							initialIsFavorited={true}
-							initialIsLiked={likeDislikeStatus?.isLiked || false}
-							initialIsDisliked={likeDislikeStatus?.isDisliked || false}
-						/>
-					);
-				})}
-			</div>
-		</div>
+		<ConfigurableList<AudioButtonPlainObject>
+			items={transformedInitialData.items}
+			initialTotal={transformedInitialData.total}
+			renderItem={renderItem}
+			fetchFn={fetchFn}
+			dataAdapter={dataAdapter}
+			urlSync
+			layout="flex"
+			sorts={[
+				{ value: "newest", label: "新しい順" },
+				{ value: "oldest", label: "古い順" },
+			]}
+			defaultSort="newest"
+			itemsPerPageOptions={[20, 40, 60]}
+			emptyMessage="お気に入りがまだありません。音声ボタンをお気に入りに追加すると、ここに表示されます"
+		/>
 	);
 }

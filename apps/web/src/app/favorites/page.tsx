@@ -1,13 +1,7 @@
-import {
-	AudioButton,
-	type AudioButtonPlainObject,
-	type FirestoreServerAudioButtonData,
-} from "@suzumina.click/shared-types";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getLikeDislikeStatusAction } from "@/actions/dislikes";
 import { auth } from "@/auth";
-import { getAudioButtonsFromFavorites, getUserFavorites } from "@/lib/favorites-firestore";
+import { fetchFavoriteAudioButtons } from "./actions";
 import FavoritesList from "./components/FavoritesList";
 
 export const metadata: Metadata = {
@@ -29,49 +23,21 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
 	}
 
 	const params = await searchParams;
-	const orderBy = (params.sort as "newest" | "oldest") || "newest";
+	const page = Number(params.page) || 1;
+	const sort = params.sort || "newest";
 
-	// お気に入り一覧を取得
-	const favoritesList = await getUserFavorites(session.user.discordId, {
+	// 初期データの取得
+	const initialData = await fetchFavoriteAudioButtons({
+		page,
 		limit: 20,
-		orderBy,
+		sort,
+		userId: session.user.discordId,
 	});
-
-	// 音声ボタンデータを取得
-	const audioButtonsMap = await getAudioButtonsFromFavorites(favoritesList.favorites);
-
-	// AudioButtonPlainObject に変換
-	const audioButtons: AudioButtonPlainObject[] = [];
-	const audioButtonIds: string[] = [];
-	favoritesList.favorites.forEach((fav) => {
-		const audioButtonData = audioButtonsMap.get(fav.audioButtonId);
-		if (!audioButtonData) return;
-
-		const audioButton = AudioButton.fromFirestoreData(
-			audioButtonData as FirestoreServerAudioButtonData,
-		);
-		if (audioButton) {
-			audioButtons.push(audioButton.toPlainObject());
-			audioButtonIds.push(audioButton.id.toString());
-		}
-	});
-
-	// いいね・低評価状態を一括取得
-	let likeDislikeStatuses: Record<string, { isLiked: boolean; isDisliked: boolean }> = {};
-	if (audioButtonIds.length > 0) {
-		const likeDislikeData = await getLikeDislikeStatusAction(audioButtonIds);
-		likeDislikeStatuses = Object.fromEntries(likeDislikeData);
-	}
 
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<h1 className="text-3xl font-bold mb-8">お気に入り</h1>
-			<FavoritesList
-				audioButtons={audioButtons}
-				totalCount={audioButtons.length}
-				currentSort={orderBy}
-				initialLikeDislikeStatuses={likeDislikeStatuses}
-			/>
+			<FavoritesList initialData={initialData} userId={session.user.discordId} />
 		</div>
 	);
 }
