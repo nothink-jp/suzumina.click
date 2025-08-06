@@ -88,18 +88,6 @@ export default function VideoList({ initialData }: VideoListProps) {
 						showAll: true,
 						emptyValue: "all",
 					},
-					categoryNames: {
-						type: "select",
-						label: "カテゴリ",
-						placeholder: "カテゴリを選択",
-						options: [
-							{ value: "ゲーム", label: "ゲーム" },
-							{ value: "エンターテインメント", label: "エンターテインメント" },
-							{ value: "音楽", label: "音楽" },
-						],
-						showAll: true,
-						emptyValue: "all",
-					},
 					videoType: {
 						type: "select",
 						label: "動画種別",

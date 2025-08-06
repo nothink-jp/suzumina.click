@@ -31,8 +31,6 @@ interface AudioButtonsListProps {
 				likeCountMax?: string;
 				favoriteCountMin?: string;
 				favoriteCountMax?: string;
-				durationMin?: string;
-				durationMax?: string;
 				createdAfter?: string;
 				createdBefore?: string;
 				createdBy?: string;

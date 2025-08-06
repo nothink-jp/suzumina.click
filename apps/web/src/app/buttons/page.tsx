@@ -23,8 +23,6 @@ interface SearchParams {
 	likeCountMax?: string;
 	favoriteCountMin?: string;
 	favoriteCountMax?: string;
-	durationMin?: string;
-	durationMax?: string;
 	createdAfter?: string;
 	createdBefore?: string;
 	createdBy?: string;
@@ -66,12 +64,6 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 			: undefined,
 		favoriteCountMax: resolvedSearchParams.favoriteCountMax
 			? Number(resolvedSearchParams.favoriteCountMax)
-			: undefined,
-		durationMin: resolvedSearchParams.durationMin
-			? Number(resolvedSearchParams.durationMin)
-			: undefined,
-		durationMax: resolvedSearchParams.durationMax
-			? Number(resolvedSearchParams.durationMax)
 			: undefined,
 		createdAfter: resolvedSearchParams.createdAfter,
 		createdBefore: resolvedSearchParams.createdBefore,

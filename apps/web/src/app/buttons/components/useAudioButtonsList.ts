@@ -72,7 +72,6 @@ export function useAudioButtonsList({ searchParams, initialData }: UseAudioButto
 			.addBasicSearchParams(searchParams)
 			.addPlayAndLikeParams(searchParams)
 			.addFavoriteParams(searchParams)
-			.addDurationParams(searchParams)
 			.addDateAndUserParams(searchParams)
 			.build();
 	}, [searchParams, itemsPerPageNum, currentPage]);
