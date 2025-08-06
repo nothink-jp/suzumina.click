@@ -27,6 +27,60 @@ interface ExtractedCreator {
 }
 
 /**
+ * クリエイタータイプのマッピング定義
+ */
+const CREATOR_TYPE_MAP: ReadonlyArray<[string, CreatorType]> = [
+	["voice_by", "voice"],
+	["illust_by", "illustration"],
+	["scenario_by", "scenario"],
+	["music_by", "music"],
+	["others_by", "other"],
+	["directed_by", "other"],
+];
+
+/**
+ * クリエイター情報をマッピングに追加または更新
+ */
+function addOrUpdateCreatorMapping(
+	mappings: Map<string, ExtractedCreator>,
+	creatorId: string,
+	creatorName: string,
+	role: CreatorType,
+): void {
+	const existing = mappings.get(creatorId);
+	if (existing) {
+		// 既存のクリエイターに役割を追加
+		if (!existing.roles.includes(role)) {
+			existing.roles.push(role);
+		}
+	} else {
+		// 新規クリエイター
+		mappings.set(creatorId, {
+			id: creatorId,
+			name: creatorName || "Unknown Creator",
+			roles: [role],
+		});
+	}
+}
+
+/**
+ * 特定の役割のクリエイターを処理
+ */
+function processCreatorsByRole(
+	creaters: Record<string, { id?: string; name?: string }[]>,
+	field: string,
+	role: CreatorType,
+	mappings: Map<string, ExtractedCreator>,
+): void {
+	const creators = creaters[field] || [];
+	for (const creator of creators) {
+		if (creator.id && isValidCreatorId(creator.id)) {
+			addOrUpdateCreatorMapping(mappings, creator.id, creator.name || "", role);
+		}
+	}
+}
+
+/**
  * DLsite APIレスポンスからクリエイター情報を抽出
  *
  * @param apiData DLsite APIレスポンス
@@ -39,39 +93,10 @@ function extractCreatorMappings(apiData: DLsiteApiResponse): Map<string, Extract
 		return mappings;
 	}
 
-	const creatorTypeMap: Array<[string, CreatorType]> = [
-		["voice_by", "voice"],
-		["illust_by", "illustration"],
-		["scenario_by", "scenario"],
-		["music_by", "music"],
-		["others_by", "other"],
-		["directed_by", "other"],
-	];
+	const creaters = apiData.creaters as Record<string, { id?: string; name?: string }[]>;
 
-	for (const [field, role] of creatorTypeMap) {
-		const creators =
-			(apiData.creaters as Record<string, { id?: string; name?: string }[]>)?.[field] || [];
-
-		for (const creator of creators) {
-			if (!creator.id || !isValidCreatorId(creator.id)) {
-				continue;
-			}
-
-			const existing = mappings.get(creator.id);
-			if (existing) {
-				// 既存のクリエイターに役割を追加
-				if (!existing.roles.includes(role)) {
-					existing.roles.push(role);
-				}
-			} else {
-				// 新規クリエイター
-				mappings.set(creator.id, {
-					id: creator.id,
-					name: creator.name || "Unknown Creator",
-					roles: [role],
-				});
-			}
-		}
+	for (const [field, role] of CREATOR_TYPE_MAP) {
+		processCreatorsByRole(creaters, field, role, mappings);
 	}
 
 	return mappings;
