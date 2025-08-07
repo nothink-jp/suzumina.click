@@ -22,6 +22,7 @@ import {
 	safeParseNumber,
 	type UploadStatus,
 	Video,
+	VideoCategory,
 	VideoContent,
 	VideoDescription,
 	VideoDuration,
@@ -81,7 +82,7 @@ export function mapYouTubeToVideoEntity(
 			? createVideoStatisticsFromYouTube(youtubeVideo.statistics)
 			: undefined;
 
-		// Create tags
+		// Create tags structure
 		const tags = {
 			playlistTags,
 			userTags,
@@ -129,7 +130,11 @@ function createChannelFromYouTube(snippet: youtube_v3.Schema$VideoSnippet): Chan
 	}
 
 	try {
-		return new Channel(new ChannelId(snippet.channelId), new ChannelTitle(snippet.channelTitle));
+		return new Channel(
+			new ChannelId(snippet.channelId),
+			new ChannelTitle(snippet.channelTitle),
+			snippet.categoryId ? new VideoCategory(snippet.categoryId) : undefined,
+		);
 	} catch (error) {
 		logger.error("Failed to create Channel", {
 			channelId: snippet.channelId,
@@ -310,6 +315,16 @@ export const VideoMapper = {
 	 */
 	fromYouTubeAPI: (youtubeVideo: youtube_v3.Schema$Video): Video | null => {
 		return mapYouTubeToVideoEntity(youtubeVideo);
+	},
+
+	/**
+	 * Maps YouTube API video data to Video Entity with playlist tags
+	 */
+	fromYouTubeAPIWithTags: (
+		youtubeVideo: youtube_v3.Schema$Video,
+		playlistTags: string[] = [],
+	): Video | null => {
+		return mapYouTubeToVideoEntity(youtubeVideo, playlistTags);
 	},
 };
 
