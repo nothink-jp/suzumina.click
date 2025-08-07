@@ -2,7 +2,7 @@
 
 import type { AudioButtonPlainObject, AudioButtonQuery } from "@suzumina.click/shared-types";
 import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AudioButtonListItem } from "@/components/audio/AudioButtonListItem";
 import { ListWrapper } from "@/components/list/ListWrapper";
 import {
@@ -12,7 +12,7 @@ import {
 } from "@/constants/list-options";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
-import { getAudioButtonsList } from "../actions";
+import { getAudioButtonsList, getPopularAudioButtonTags } from "../actions";
 
 interface AudioButtonsListProps {
 	searchParams:
@@ -47,6 +47,25 @@ interface AudioButtonsListProps {
 }
 
 export default function AudioButtonsList({ searchParams, initialData }: AudioButtonsListProps) {
+	const [availableTags, setAvailableTags] = useState<Array<{ value: string; label: string }>>([]);
+
+	// 人気タグを取得
+	useEffect(() => {
+		const fetchTags = async () => {
+			try {
+				const tags = await getPopularAudioButtonTags(20); // 上位20タグを取得
+				const formattedTags = tags.map((t) => ({
+					value: t.tag,
+					label: `${t.tag} (${t.count}件)`,
+				}));
+				setAvailableTags(formattedTags);
+			} catch {
+				// タグの取得に失敗してもUIは動作可能
+			}
+		};
+		fetchTags();
+	}, []);
+
 	// 初期データを準備
 	const initialItems =
 		initialData?.success && initialData.data ? initialData.data.audioButtons : [];
@@ -104,6 +123,7 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 
 						return {
 							search: params.search,
+							tags: params.filters.tags as string[] | undefined,
 							sortBy,
 							page: params.page,
 							limit: params.itemsPerPage,
@@ -114,6 +134,14 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 				{...DEFAULT_LIST_PROPS}
 				layout="flex"
 				sorts={AUDIO_SORT_OPTIONS}
+				filters={{
+					tags: {
+						type: "tags",
+						label: "タグ",
+						placeholder: "タグを選択",
+						options: availableTags,
+					},
+				}}
 				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 				emptyMessage="音声ボタンが見つかりませんでした"
 			/>

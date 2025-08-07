@@ -5,7 +5,7 @@ import {
 	ConfigurableList,
 	type StandardListParams,
 } from "@suzumina.click/ui/components/custom/list";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ListWrapper } from "@/components/list/ListWrapper";
 import { WorkListItem } from "@/components/work/WorkListItem";
 import {
@@ -16,7 +16,7 @@ import {
 } from "@/constants/list-options";
 import { WORK_CATEGORY_OPTIONS, WORK_LANGUAGE_OPTIONS } from "@/constants/work-options";
 import { useAgeVerification } from "@/contexts/age-verification-context";
-import { getWorks } from "../actions";
+import { getPopularGenres, getWorks } from "../actions";
 
 interface WorksListProps {
 	initialData?: WorkListResultPlain;
@@ -24,6 +24,26 @@ interface WorksListProps {
 
 export default function WorksList({ initialData }: WorksListProps) {
 	const { showR18Content } = useAgeVerification();
+	const [availableGenres, setAvailableGenres] = useState<Array<{ value: string; label: string }>>(
+		[],
+	);
+
+	// 人気ジャンルを取得
+	useEffect(() => {
+		const fetchGenres = async () => {
+			try {
+				const genres = await getPopularGenres(20); // 上位20ジャンルを取得
+				const formattedGenres = genres.map((g) => ({
+					value: g.genre,
+					label: `${g.genre} (${g.count}作品)`,
+				}));
+				setAvailableGenres(formattedGenres);
+			} catch {
+				// ジャンルの取得に失敗してもUIは動作可能
+			}
+		};
+		fetchGenres();
+	}, []);
 
 	// 初期データを準備
 	const initialItems = initialData?.works || [];
@@ -41,6 +61,7 @@ export default function WorksList({ initialData }: WorksListProps) {
 					category: params.filters.category as string | undefined,
 					language: params.filters.language as string | undefined,
 					showR18: params.filters.showR18 as boolean | undefined,
+					genres: params.filters.genres as string[] | undefined,
 				};
 			},
 			fromResult: (result: unknown) => result as { items: WorkPlainObject[]; total: number },
@@ -86,6 +107,12 @@ export default function WorksList({ initialData }: WorksListProps) {
 						options: WORK_LANGUAGE_OPTIONS,
 						showAll: true,
 						emptyValue: "all",
+					},
+					genres: {
+						type: "tags",
+						label: "ジャンル",
+						placeholder: "ジャンルを選択",
+						options: availableGenres,
 					},
 					...(showR18Content
 						? {

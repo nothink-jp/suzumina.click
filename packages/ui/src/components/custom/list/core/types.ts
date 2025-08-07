@@ -37,7 +37,7 @@ export interface StandardListParams {
  * フィルター設定（簡潔版）
  */
 export interface FilterConfig {
-	type: "select" | "multiselect" | "range" | "date" | "dateRange" | "boolean";
+	type: "select" | "multiselect" | "range" | "date" | "dateRange" | "boolean" | "tags";
 
 	// フィルターの表示ラベル
 	label?: string;

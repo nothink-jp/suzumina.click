@@ -28,6 +28,23 @@ interface SearchParams {
 	createdBy?: string;
 }
 
+// タグパラメータをパースする関数（複雑度を下げるため分離）
+function parseTags(tagsParam: string | undefined): string[] | undefined {
+	if (!tagsParam) return undefined;
+
+	// Next.jsのsearchParamsは既にデコード済みの値を提供
+	if (tagsParam.includes("|")) {
+		// 新形式: パイプ区切り
+		return tagsParam.split("|").filter(Boolean);
+	}
+	if (tagsParam.includes(",") && !tagsParam.includes(" ")) {
+		// 旧形式: カンマ区切り（スペースを含まない場合のみ）
+		return tagsParam.split(",").filter(Boolean);
+	}
+	// 単一の値（スペースを含む可能性がある）
+	return [tagsParam];
+}
+
 interface AudioButtonsPageProps {
 	searchParams: Promise<SearchParams>;
 }
@@ -39,10 +56,13 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 	const limitValue = resolvedSearchParams.limit ? Number(resolvedSearchParams.limit) : 12;
 	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
+	// タグパラメータの処理
+	const tags = parseTags(resolvedSearchParams.tags);
+
 	// クエリパラメータを構築
 	const query: AudioButtonQuery = {
 		search: resolvedSearchParams.q,
-		tags: resolvedSearchParams.tags?.split(",").filter(Boolean),
+		tags,
 		sortBy: (resolvedSearchParams.sort as AudioButtonQuery["sortBy"]) || "newest",
 		page: resolvedSearchParams.page ? Number(resolvedSearchParams.page) : 1,
 		sourceVideoId: resolvedSearchParams.sourceVideoId,

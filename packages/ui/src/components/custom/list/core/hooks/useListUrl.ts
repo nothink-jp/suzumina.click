@@ -42,8 +42,19 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 
 			if (value !== null) {
 				// 型に応じて変換
-				if (config.type === "multiselect") {
-					filterValues[key] = value.split(",").filter(Boolean);
+				if (config.type === "multiselect" || config.type === "tags") {
+					// URLSearchParamsは既にデコード済みの値を返すので追加のデコードは不要
+					// パイプ文字"|"を区切り文字として使用
+					if (value.includes("|")) {
+						// 新形式: パイプ区切り
+						filterValues[key] = value.split("|").filter(Boolean);
+					} else if (value.includes(",") && !value.includes(" ")) {
+						// 旧形式: カンマ区切り（スペースを含まない場合のみ）
+						filterValues[key] = value.split(",").filter(Boolean);
+					} else {
+						// 単一の値（スペースを含む可能性がある）
+						filterValues[key] = [value];
+					}
 				} else if (config.type === "boolean") {
 					filterValues[key] = value === "true";
 				} else if (config.type === "range") {
@@ -171,7 +182,10 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 					} else {
 						// 型に応じてシリアライズ
 						if (Array.isArray(value)) {
-							params.set(key, value.join(","));
+							// パイプ文字で結合（URLSearchParamsが自動的にエンコードする）
+							// これによりスペースやカンマを含む値も正しく扱える
+							const joined = value.map((v) => String(v)).join("|");
+							params.set(key, joined);
 						} else if (typeof value === "object" && config?.type === "range") {
 							const rangeValue = value as { min?: number; max?: number };
 							if (rangeValue.min !== undefined || rangeValue.max !== undefined) {

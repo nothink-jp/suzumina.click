@@ -106,6 +106,28 @@ function filterBySearch(
 }
 
 /**
+ * タグでフィルタリング（AND検索）
+ */
+function filterByTags(buttons: AudioButtonPlainObject[], tags: string[]): AudioButtonPlainObject[] {
+	return buttons.filter((button) => {
+		if (!button.tags || button.tags.length === 0) return false;
+
+		return tags.every((searchTag) => {
+			// 完全一致を試す
+			const exactMatch = button.tags?.includes(searchTag);
+			// 大文字小文字を無視した比較
+			const caseInsensitiveMatch = button.tags?.some(
+				(buttonTag) => buttonTag.toLowerCase() === searchTag.toLowerCase(),
+			);
+			// トリムした比較
+			const trimmedMatch = button.tags?.some((buttonTag) => buttonTag.trim() === searchTag.trim());
+
+			return exactMatch || caseInsensitiveMatch || trimmedMatch;
+		});
+	});
+}
+
+/**
  * Firestoreから音声ボタンを取得して変換
  */
 async function fetchAndConvertButtons(
@@ -230,7 +252,55 @@ export async function getAudioButtonsList(
 		let finalTotal = totalCount;
 		let finalHasMore = hasMore;
 
-		if (search) {
+		// タグフィルタリング
+		if (query.tags && query.tags.length > 0) {
+			// タグの場合も全データを取得してフィルタリング（Firestoreのarray-contains制限のため）
+			let allQueryRef = firestore
+				.collection("audioButtons")
+				.select(
+					"id",
+					"title",
+					"description",
+					"tags",
+					"sourceVideoId",
+					"sourceVideoTitle",
+					"startTime",
+					"endTime",
+					"createdBy",
+					"createdByName",
+					"isPublic",
+					"playCount",
+					"likeCount",
+					"dislikeCount",
+					"favoriteCount",
+					"createdAt",
+					"updatedAt",
+				);
+
+			// フィルタとソートを適用
+			allQueryRef = applyFilters(allQueryRef, onlyPublic, sourceVideoId);
+			allQueryRef = applySorting(allQueryRef, sortBy);
+
+			// 全データ取得（一時的に1000件まで）
+			allQueryRef = allQueryRef.limit(1000) as typeof allQueryRef;
+			const allButtons = await fetchAndConvertButtons(allQueryRef);
+
+			// タグでフィルタリング（AND検索）
+			const filteredButtons = filterByTags(allButtons, query.tags);
+
+			// さらに検索テキストでフィルタリング
+			const searchFiltered = search ? filterBySearch(filteredButtons, search) : filteredButtons;
+
+			// ページネーション再計算
+			const filteredTotal = searchFiltered.length;
+			const startIdx = (page - 1) * limit;
+			const endIdx = startIdx + limit;
+			const paginatedButtons = searchFiltered.slice(startIdx, endIdx);
+
+			finalButtons = paginatedButtons;
+			finalTotal = filteredTotal;
+			finalHasMore = endIdx < filteredTotal;
+		} else if (search) {
 			// 検索の場合は全データを取得してフィルタリング
 			let allQueryRef = firestore
 				.collection("audioButtons")
@@ -738,6 +808,42 @@ export async function recalculateAllVideosAudioButtonCount(): Promise<{
 	} catch (error) {
 		logger.error("音声ボタン数再計算エラー", { error });
 		return { success: false, error: "音声ボタン数の再計算に失敗しました" };
+	}
+}
+
+/**
+ * 人気タグリストを取得する
+ */
+export async function getPopularAudioButtonTags(limit = 30): Promise<
+	Array<{
+		tag: string;
+		count: number;
+	}>
+> {
+	try {
+		const firestore = getFirestore();
+		const snapshot = await firestore.collection("audioButtons").where("isPublic", "==", true).get();
+
+		const tagCounts = new Map<string, number>();
+
+		for (const doc of snapshot.docs) {
+			const data = doc.data() as FirestoreServerAudioButtonData;
+			if (Array.isArray(data.tags)) {
+				for (const tag of data.tags) {
+					if (typeof tag === "string" && tag.trim() !== "") {
+						tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+					}
+				}
+			}
+		}
+
+		return Array.from(tagCounts.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, limit)
+			.map(([tag, count]) => ({ tag, count }));
+	} catch (error) {
+		logger.error("人気タグの取得に失敗", { error });
+		return [];
 	}
 }
 
