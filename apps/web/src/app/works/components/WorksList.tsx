@@ -38,7 +38,7 @@ export default function WorksList({ initialData }: WorksListProps) {
 					label: `${g.genre} (${g.count}作品)`,
 				}));
 				setAvailableGenres(formattedGenres);
-			} catch (error) {
+			} catch {
 				// ジャンルの取得に失敗してもUIは動作可能
 			}
 		};

@@ -59,7 +59,7 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 					label: `${t.tag} (${t.count}件)`,
 				}));
 				setAvailableTags(formattedTags);
-			} catch (error) {
+			} catch {
 				// タグの取得に失敗してもUIは動作可能
 			}
 		};
