@@ -559,7 +559,7 @@ export function ConfigurableList<T>({
 										<div className="hidden space-x-1 lg:flex">
 											{selectedValues.length > 2 ? (
 												<Badge variant="secondary" className="rounded-sm px-1 font-normal">
-													{selectedValues.length} selected
+													{selectedValues.length}件選択中
 												</Badge>
 											) : (
 												options

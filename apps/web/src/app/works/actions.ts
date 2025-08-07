@@ -11,6 +11,7 @@ import {
 	filterWorksByLanguage,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
+import * as logger from "@/lib/logger";
 
 /**
  * データ取得戦略の定義（統合データ構造対応）
@@ -348,8 +349,12 @@ async function convertDocsToWorks(
 			if (plainObject) {
 				works.push(plainObject);
 			}
-		} catch (_error) {
+		} catch (error) {
 			// エラーがあっても他のデータの処理は続行
+			logger.warn("作品データ変換エラー", {
+				workId: doc.id,
+				error: error instanceof Error ? error.message : String(error),
+			});
 		}
 	}
 	return works;
@@ -371,7 +376,11 @@ export async function getWorks(params: EnhancedSearchParams = {}): Promise<WorkL
 
 		// シンプルなクエリの場合
 		return await getWorksWithSimpleQuery(firestore, params);
-	} catch (_error) {
+	} catch (error) {
+		logger.error("作品データ取得エラー", {
+			params,
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return {
 			works: [],
 			hasMore: false,
@@ -524,8 +533,12 @@ async function getWorksWithComplexFiltering(
 			if (plainObject) {
 				works.push(plainObject);
 			}
-		} catch (_error) {
+		} catch (error) {
 			// エラーがあっても他のデータの処理は続行
+			logger.warn("作品データ変換エラー", {
+				workId: data.id || data.productId,
+				error: error instanceof Error ? error.message : String(error),
+			});
 		}
 	}
 
@@ -565,7 +578,11 @@ export async function getWorkById(workId: string): Promise<WorkPlainObject | nul
 
 		// フロントエンド形式に変換
 		return convertToWorkPlainObject(data);
-	} catch (_error) {
+	} catch (error) {
+		logger.error("作品取得エラー", {
+			workId,
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return null;
 	}
 }
@@ -628,13 +645,22 @@ export async function getRelatedWorks(
 				if (plainObject) {
 					relatedWorks.push(plainObject);
 				}
-			} catch (_error) {
+			} catch (error) {
 				// エラーがあっても他のデータの処理は続行
+				logger.warn("関連作品変換エラー", {
+					workId: work.id,
+					error: error instanceof Error ? error.message : String(error),
+				});
 			}
 		}
 
 		return relatedWorks;
-	} catch (_error) {
+	} catch (error) {
+		logger.error("関連作品取得エラー", {
+			workId,
+			options,
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return [];
 	}
 }
@@ -759,7 +785,10 @@ export async function getWorksStats(
 				popularVoiceActors,
 			},
 		};
-	} catch (_error) {
+	} catch (error) {
+		logger.error("作品統計取得エラー", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return {
 			overview: {
 				totalWorks: 0,
@@ -880,7 +909,10 @@ export async function getDataQualityReport() {
 			...qualityStats,
 			percentages: calculateQualityPercentages(qualityStats),
 		};
-	} catch (_error) {
+	} catch (error) {
+		logger.error("データ品質レポート取得エラー", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return null;
 	}
 }
@@ -931,7 +963,11 @@ export async function getWorkWithRelated(
 		const related = await getRelatedWorks(workId, { limit: 6 });
 
 		return { work, related };
-	} catch (_error) {
+	} catch (error) {
+		logger.error("作品詳細取得エラー", {
+			workId,
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return { work: null };
 	}
 }
@@ -990,7 +1026,11 @@ export async function getPopularVoiceActors(limit = 20): Promise<
 				count: data.count,
 				works: data.works.slice(0, 5), // 最大5作品を表示
 			}));
-	} catch (_error) {
+	} catch (error) {
+		logger.error("人気タグ取得エラー", {
+			limit,
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return [];
 	}
 }
@@ -1031,7 +1071,11 @@ export async function getPopularGenres(limit = 30): Promise<
 			.sort((a, b) => b[1] - a[1])
 			.slice(0, limit)
 			.map(([genre, count]) => ({ genre, count }));
-	} catch (_error) {
+	} catch (error) {
+		logger.error("人気ジャンル取得エラー", {
+			limit,
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return [];
 	}
 }
