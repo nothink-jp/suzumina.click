@@ -106,6 +106,28 @@ function filterBySearch(
 }
 
 /**
+ * タグでフィルタリング（AND検索）
+ */
+function filterByTags(buttons: AudioButtonPlainObject[], tags: string[]): AudioButtonPlainObject[] {
+	return buttons.filter((button) => {
+		if (!button.tags || button.tags.length === 0) return false;
+
+		return tags.every((searchTag) => {
+			// 完全一致を試す
+			const exactMatch = button.tags?.includes(searchTag);
+			// 大文字小文字を無視した比較
+			const caseInsensitiveMatch = button.tags?.some(
+				(buttonTag) => buttonTag.toLowerCase() === searchTag.toLowerCase(),
+			);
+			// トリムした比較
+			const trimmedMatch = button.tags?.some((buttonTag) => buttonTag.trim() === searchTag.trim());
+
+			return exactMatch || caseInsensitiveMatch || trimmedMatch;
+		});
+	});
+}
+
+/**
  * Firestoreから音声ボタンを取得して変換
  */
 async function fetchAndConvertButtons(
@@ -264,11 +286,7 @@ export async function getAudioButtonsList(
 			const allButtons = await fetchAndConvertButtons(allQueryRef);
 
 			// タグでフィルタリング（AND検索）
-			const filteredButtons = allButtons.filter((button) => {
-				if (!button.tags || button.tags.length === 0) return false;
-				// すべての選択タグがボタンに含まれているかチェック
-				return query.tags?.every((tag) => button.tags?.includes(tag));
-			});
+			const filteredButtons = filterByTags(allButtons, query.tags);
 
 			// さらに検索テキストでフィルタリング
 			const searchFiltered = search ? filterBySearch(filteredButtons, search) : filteredButtons;
