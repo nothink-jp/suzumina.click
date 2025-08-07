@@ -5,16 +5,17 @@ import { getWorks } from "./actions";
 function parseGenres(genresParam: string | undefined): string[] | undefined {
 	if (typeof genresParam !== "string") return undefined;
 
+	// Next.jsのsearchParamsは既にデコード済みの値を提供
 	if (genresParam.includes("|")) {
 		// 新形式: パイプ区切り
-		return genresParam.split("|").map(decodeURIComponent).filter(Boolean);
+		return genresParam.split("|").filter(Boolean);
 	}
 	if (genresParam.includes(",") && !genresParam.includes(" ")) {
 		// 旧形式: カンマ区切り（スペースを含まない場合のみ）
 		return genresParam.split(",").filter(Boolean);
 	}
 	// 単一の値（スペースを含む可能性がある）
-	return [decodeURIComponent(genresParam)];
+	return [genresParam];
 }
 
 interface WorksPageProps {

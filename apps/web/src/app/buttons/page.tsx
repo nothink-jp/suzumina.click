@@ -32,16 +32,17 @@ interface SearchParams {
 function parseTags(tagsParam: string | undefined): string[] | undefined {
 	if (!tagsParam) return undefined;
 
+	// Next.jsのsearchParamsは既にデコード済みの値を提供
 	if (tagsParam.includes("|")) {
 		// 新形式: パイプ区切り
-		return tagsParam.split("|").map(decodeURIComponent).filter(Boolean);
+		return tagsParam.split("|").filter(Boolean);
 	}
 	if (tagsParam.includes(",") && !tagsParam.includes(" ")) {
 		// 旧形式: カンマ区切り（スペースを含まない場合のみ）
 		return tagsParam.split(",").filter(Boolean);
 	}
 	// 単一の値（スペースを含む可能性がある）
-	return [decodeURIComponent(tagsParam)];
+	return [tagsParam];
 }
 
 interface AudioButtonsPageProps {
