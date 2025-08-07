@@ -464,14 +464,24 @@ async function getWorksWithComplexFiltering(
 
 	// メモリ上での処理が必要かどうかを判定
 	const requiresFullDataFetch = () => {
-		// 言語フィルタリング、R18フィルタリング、または検索の場合は
-		// Firestoreでの直接フィルタリングができないため全件取得が必要
-		return showR18 === false || (language && language !== "all") || search;
+		// 以下の場合はFirestoreでの直接フィルタリングができないため全件取得が必要
+		// - R18フィルタリング
+		// - 言語フィルタリング
+		// - 検索
+		// - ジャンルフィルタリング（AND検索のため）
+		// - 声優フィルタリング
+		return (
+			showR18 === false ||
+			(language && language !== "all") ||
+			search ||
+			(genres && genres.length > 0) ||
+			(voiceActors && voiceActors.length > 0)
+		);
 	};
 
 	if (requiresFullDataFetch()) {
 		// 全件取得（limitを設定しない）
-		// 注: Firestoreには1519件しかないので問題ない
+		// 注: Firestoreには約1500件なので問題ない
 	} else {
 		// その他の複雑フィルタリングの場合は、必要な分+余裕を取得
 		const fetchLimit = Math.min(startOffset + limit * 10, 3000);
