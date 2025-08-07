@@ -697,10 +697,10 @@ export class Video {
 		if (this._liveBroadcastContent) {
 			fields.liveBroadcastContent = this._liveBroadcastContent as LiveBroadcastContent;
 		}
-		if (this._audioButtonInfo.count !== undefined) {
+		// Only include audio button fields if count is not -1
+		// -1 is a sentinel value indicating "do not update"
+		if (this._audioButtonInfo.count >= 0) {
 			fields.audioButtonCount = this._audioButtonInfo.count;
-		}
-		if (this._audioButtonInfo.hasButtons !== undefined) {
 			fields.hasAudioButtons = this._audioButtonInfo.hasButtons;
 		}
 

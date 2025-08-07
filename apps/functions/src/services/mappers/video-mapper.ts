@@ -89,10 +89,11 @@ export function mapYouTubeToVideoEntity(
 			contentTags: youtubeVideo.snippet.tags || undefined,
 		};
 
-		// Create audio button info with default values
-		// These will be preserved during merge operation in Firestore
+		// Audio button info should not be updated during YouTube data fetch
+		// to preserve existing values in Firestore
+		// Use -1 as a sentinel value to indicate "do not update"
 		const audioButtonInfo: AudioButtonInfo = {
-			count: 0,
+			count: -1,
 			hasButtons: false,
 		};
 
