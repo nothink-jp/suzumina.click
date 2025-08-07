@@ -512,7 +512,7 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		const isWorkCountChanged =
 			metadata.allWorkIds && metadata.allWorkIds.length !== currentWorkIds.length;
 
-		if (isWorkCountChanged) {
+		if (isWorkCountChanged && metadata.allWorkIds) {
 			logger.info("作品数が変更されたため新規処理として開始します", {
 				前回の作品数: metadata.allWorkIds.length,
 				現在の作品数: currentWorkIds.length,
@@ -529,9 +529,9 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 
 		if (continuationInfo.isContinuation) {
 			// 継続処理
-			allWorkIds = continuationInfo.allWorkIds;
+			allWorkIds = (continuationInfo as any).allWorkIds;
 			batches = chunkArray(allWorkIds, BATCH_SIZE);
-			startBatch = continuationInfo.startBatch;
+			startBatch = (continuationInfo as any).startBatch;
 			logger.info(
 				`継続処理詳細: allWorkIds.length=${allWorkIds.length}, batches.length=${batches.length}, startBatch=${startBatch}`,
 			);
