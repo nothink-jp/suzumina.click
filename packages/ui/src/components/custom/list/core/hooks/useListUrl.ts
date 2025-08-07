@@ -43,7 +43,18 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 			if (value !== null) {
 				// 型に応じて変換
 				if (config.type === "multiselect" || config.type === "tags") {
-					filterValues[key] = value.split(",").filter(Boolean);
+					// パイプ文字"|"を区切り文字として使用（URLエンコード後は%7C）
+					// これによりスペースやカンマを含むタグも正しく扱える
+					if (value.includes("|")) {
+						// 新形式: パイプ区切り
+						filterValues[key] = value.split("|").map(decodeURIComponent).filter(Boolean);
+					} else if (value.includes(",") && !value.includes(" ")) {
+						// 旧形式: カンマ区切り（スペースを含まない場合のみ）
+						filterValues[key] = value.split(",").filter(Boolean);
+					} else {
+						// 単一の値（スペースを含む可能性がある）
+						filterValues[key] = [decodeURIComponent(value)];
+					}
 				} else if (config.type === "boolean") {
 					filterValues[key] = value === "true";
 				} else if (config.type === "range") {
@@ -171,7 +182,10 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 					} else {
 						// 型に応じてシリアライズ
 						if (Array.isArray(value)) {
-							params.set(key, value.join(","));
+							// 各値をURIエンコードしてパイプ文字で結合
+							// これによりスペースやカンマを含む値も正しく扱える
+							const encoded = value.map((v) => encodeURIComponent(String(v))).join("|");
+							params.set(key, encoded);
 						} else if (typeof value === "object" && config?.type === "range") {
 							const rangeValue = value as { min?: number; max?: number };
 							if (rangeValue.min !== undefined || rangeValue.max !== undefined) {

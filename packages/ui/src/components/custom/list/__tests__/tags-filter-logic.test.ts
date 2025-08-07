@@ -164,7 +164,7 @@ describe("Tags Filter Logic", () => {
 			});
 
 			expect(filtered).toHaveLength(1);
-			expect(filtered[0].id).toBe(1);
+			expect(filtered[0]?.id).toBe(1);
 		});
 	});
 });

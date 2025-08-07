@@ -1,6 +1,22 @@
 import { WorksPageClient } from "@/components/content/works-page-client";
 import { getWorks } from "./actions";
 
+// ジャンルパラメータをパースする関数（複雑度を下げるため分離）
+function parseGenres(genresParam: string | undefined): string[] | undefined {
+	if (typeof genresParam !== "string") return undefined;
+
+	if (genresParam.includes("|")) {
+		// 新形式: パイプ区切り
+		return genresParam.split("|").map(decodeURIComponent).filter(Boolean);
+	}
+	if (genresParam.includes(",") && !genresParam.includes(" ")) {
+		// 旧形式: カンマ区切り（スペースを含まない場合のみ）
+		return genresParam.split(",").filter(Boolean);
+	}
+	// 単一の値（スペースを含む可能性がある）
+	return [decodeURIComponent(genresParam)];
+}
+
 interface WorksPageProps {
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
@@ -13,8 +29,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const search = typeof params.q === "string" ? params.q : undefined;
 	const category = typeof params.category === "string" ? params.category : undefined;
 	const language = typeof params.language === "string" ? params.language : undefined;
-	const genres =
-		typeof params.genres === "string" ? params.genres.split(",").filter(Boolean) : undefined;
+	const genres = parseGenres(params.genres as string);
 	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
 	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
