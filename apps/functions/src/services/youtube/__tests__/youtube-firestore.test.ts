@@ -39,6 +39,7 @@ vi.mock("../../../shared/logger", () => ({
 vi.mock("../../mappers/video-mapper", () => ({
 	VideoMapper: {
 		fromYouTubeAPI: vi.fn(),
+		fromYouTubeAPIWithTags: vi.fn(),
 	},
 }));
 
@@ -125,7 +126,7 @@ describe("YouTube Firestore  Service", () => {
 				createMockYouTubeVideo("video2", "channel1"),
 			];
 
-			vi.mocked(VideoMapper.fromYouTubeAPI)
+			vi.mocked(VideoMapper.fromYouTubeAPIWithTags)
 				.mockReturnValueOnce(createMockVideoEntity("video1"))
 				.mockReturnValueOnce(createMockVideoEntity("video2"));
 
@@ -150,7 +151,9 @@ describe("YouTube Firestore  Service", () => {
 				{ id: "video2", snippet: { title: "No channel" } },
 			];
 
-			vi.mocked(VideoMapper.fromYouTubeAPI).mockReturnValue(createMockVideoEntity("video1"));
+			vi.mocked(VideoMapper.fromYouTubeAPIWithTags).mockReturnValue(
+				createMockVideoEntity("video1"),
+			);
 
 			const result = await saveVideosToFirestore(mockVideos);
 
@@ -163,7 +166,7 @@ describe("YouTube Firestore  Service", () => {
 		it("Entity 変換に失敗した場合はスキップする", async () => {
 			const mockVideos = [createMockYouTubeVideo("video1", "channel1")];
 
-			vi.mocked(VideoMapper.fromYouTubeAPI).mockReturnValue(null);
+			vi.mocked(VideoMapper.fromYouTubeAPIWithTags).mockReturnValue(null);
 
 			const result = await saveVideosToFirestore(mockVideos);
 
@@ -181,7 +184,7 @@ describe("YouTube Firestore  Service", () => {
 				createMockYouTubeVideo(`video${i}`, "channel1"),
 			);
 
-			vi.mocked(VideoMapper.fromYouTubeAPI).mockImplementation((video) =>
+			vi.mocked(VideoMapper.fromYouTubeAPIWithTags).mockImplementation((video) =>
 				createMockVideoEntity(video.id!),
 			);
 

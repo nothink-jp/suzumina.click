@@ -38,10 +38,12 @@ export interface FirestoreServerVideoData {
 
 	// Content details
 	duration?: string;
-	categoryId?: string;
-	tags?: string[];
-	playlistTags?: string[];
-	userTags?: string[];
+
+	// 4層タグシステム (4-Layer Tag System)
+	categoryId?: string; // Layer 1: YouTubeカテゴリID（投稿者が選択）
+	tags?: string[]; // Layer 2: YouTube投稿者が設定したタグ（YouTube API由来）
+	playlistTags?: string[]; // Layer 3: プレイリストから自動生成されるタグ
+	userTags?: string[]; // Layer 4: コミュニティメンバーが編集可能なタグ
 
 	// Statistics
 	statistics?: {

@@ -66,7 +66,7 @@ export async function saveVideosToFirestore(videos: youtube_v3.Schema$Video[]): 
  * 動画をFirestoreバッチに追加
  */
 function addVideoToBatch(
-	video: youtube_v3.Schema$Video,
+	video: youtube_v3.Schema$Video & { _playlistTags?: string[] },
 	batch: FirebaseFirestore.WriteBatch,
 	videoRef: FirebaseFirestore.CollectionReference,
 ): boolean {
@@ -75,8 +75,11 @@ function addVideoToBatch(
 		return false;
 	}
 
-	// Entity に変換
-	const videoEntity = VideoMapper.fromYouTubeAPI(video);
+	// プレイリストタグを抽出
+	const playlistTags = video._playlistTags || [];
+
+	// Entity に変換（プレイリストタグも渡す）
+	const videoEntity = VideoMapper.fromYouTubeAPIWithTags(video, playlistTags);
 	if (!videoEntity) {
 		// Entity 変換失敗（ログはエラーハンドリングで出力済み）
 		return false;
