@@ -39,7 +39,7 @@ export default function WorksList({ initialData }: WorksListProps) {
 				}));
 				setAvailableGenres(formattedGenres);
 			} catch (error) {
-				console.error("ジャンルの取得に失敗:", error);
+				// ジャンルの取得に失敗してもUIは動作可能
 			}
 		};
 		fetchGenres();

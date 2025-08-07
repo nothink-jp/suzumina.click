@@ -160,7 +160,7 @@ describe("Tags Filter Logic", () => {
 
 			const filtered = items.filter((item) => {
 				if (!item.tags || item.tags.length === 0) return false;
-				return selectedTags.every((tag) => item.tags!.includes(tag));
+				return selectedTags.every((tag) => item.tags?.includes(tag));
 			});
 
 			expect(filtered).toHaveLength(1);

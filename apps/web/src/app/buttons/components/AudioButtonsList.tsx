@@ -60,7 +60,7 @@ export default function AudioButtonsList({ searchParams, initialData }: AudioBut
 				}));
 				setAvailableTags(formattedTags);
 			} catch (error) {
-				console.error("タグの取得に失敗:", error);
+				// タグの取得に失敗してもUIは動作可能
 			}
 		};
 		fetchTags();
