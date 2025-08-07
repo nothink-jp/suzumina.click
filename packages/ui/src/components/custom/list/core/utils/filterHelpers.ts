@@ -12,6 +12,14 @@ export function transformFilterValue(value: unknown, config: FilterConfig): unkn
 	if (config.showAll && value === "all") {
 		return config.emptyValue ?? undefined;
 	}
+	// tags/multiselectタイプで空配列の場合はundefinedを返す
+	if (
+		(config.type === "tags" || config.type === "multiselect") &&
+		Array.isArray(value) &&
+		value.length === 0
+	) {
+		return undefined;
+	}
 	return value;
 }
 
@@ -19,7 +27,7 @@ export function transformFilterValue(value: unknown, config: FilterConfig): unkn
  * フィルター設定から"all"オプションを含む選択肢を生成
  */
 export function generateOptions(config: FilterConfig): Array<{ value: string; label: string }> {
-	if (config.type !== "select" && config.type !== "multiselect") {
+	if (config.type !== "select" && config.type !== "multiselect" && config.type !== "tags") {
 		return [];
 	}
 
@@ -89,7 +97,7 @@ export function getDefaultFilterValues(
 			defaults[key] = "";
 		} else if (config.type === "boolean") {
 			defaults[key] = false;
-		} else if (config.type === "multiselect") {
+		} else if (config.type === "multiselect" || config.type === "tags") {
 			defaults[key] = [];
 		} else if (config.type === "range") {
 			defaults[key] = { min: undefined, max: undefined };

@@ -5,8 +5,9 @@
 
 "use client";
 
-import { Search, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { Checkbox } from "../../ui/checkbox";
 import { Input } from "../../ui/input";
@@ -20,6 +21,7 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "../../ui/pagination";
+import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Skeleton } from "../../ui/skeleton";
 import { Slider } from "../../ui/slider";
@@ -187,7 +189,18 @@ export function ConfigurableList<T>({
 
 				switch (config.type) {
 					case "multiselect":
-						return Array.isArray(transformedValue) && transformedValue.includes(itemValue);
+					case "tags":
+						// tagsタイプもmultiselectと同じロジックで処理
+						if (Array.isArray(transformedValue)) {
+							// itemValueが配列の場合（例：genres配列）
+							if (Array.isArray(itemValue)) {
+								// 選択されたタグのいずれかがアイテムのタグに含まれているか確認
+								return transformedValue.some((selectedTag) => itemValue.includes(selectedTag));
+							}
+							// itemValueが単一値の場合
+							return transformedValue.includes(itemValue);
+						}
+						return false;
 					case "range": {
 						const { min, max } = transformedValue as { min?: number; max?: number };
 						const numValue = Number(itemValue);
@@ -517,6 +530,107 @@ export function ConfigurableList<T>({
 							/>
 						</div>
 					</div>
+				);
+			}
+			case "tags": {
+				const options = generateOptions(config);
+				const selectedValues = Array.isArray(value) ? value : [];
+				// optionsがundefinedまたはnullの場合のみローディング中とみなす
+				// 空配列の場合は有効なデータとして扱う
+				const isLoading = options === undefined || options === null;
+				const hasNoData = !isLoading && options.length === 0;
+
+				return (
+					<Popover>
+						<PopoverTrigger asChild>
+							<Button
+								variant="outline"
+								size="sm"
+								className="h-9 border-dashed"
+								disabled={isLoading || hasNoData}
+							>
+								{config.label || key}
+								{selectedValues.length > 0 && (
+									<>
+										<div className="mx-1 h-4 w-[1px] bg-border" />
+										<Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
+											{selectedValues.length}
+										</Badge>
+										<div className="hidden space-x-1 lg:flex">
+											{selectedValues.length > 2 ? (
+												<Badge variant="secondary" className="rounded-sm px-1 font-normal">
+													{selectedValues.length} selected
+												</Badge>
+											) : (
+												options
+													.filter((option) => selectedValues.includes(option.value))
+													.map((option) => (
+														<Badge
+															key={option.value}
+															variant="secondary"
+															className="rounded-sm px-1 font-normal"
+														>
+															{option.label}
+														</Badge>
+													))
+											)}
+										</div>
+									</>
+								)}
+								<ChevronDown className="ml-2 h-4 w-4" />
+							</Button>
+						</PopoverTrigger>
+						<PopoverContent className="w-[300px] p-0" align="start">
+							<div className="p-4">
+								<div className="mb-2 text-sm font-medium">{config.label || key}</div>
+								{isLoading ? (
+									<div className="flex items-center justify-center py-8">
+										<div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+										<span className="ml-2 text-sm text-muted-foreground">読み込み中...</span>
+									</div>
+								) : options.length === 0 ? (
+									<div className="text-center py-4 text-sm text-muted-foreground">
+										データがありません
+									</div>
+								) : (
+									<>
+										<div className="grid gap-2 max-h-[300px] overflow-y-auto">
+											{options.map((option) => (
+												<div key={option.value} className="flex items-center space-x-2">
+													<Checkbox
+														id={`tag-${option.value}`}
+														checked={selectedValues.includes(option.value)}
+														onCheckedChange={(checked) => {
+															const newValues = checked
+																? [...selectedValues, option.value]
+																: selectedValues.filter((v) => v !== option.value);
+															handleFilterChange(key, newValues.length > 0 ? newValues : undefined);
+														}}
+													/>
+													<Label
+														htmlFor={`tag-${option.value}`}
+														className="text-sm font-normal cursor-pointer flex-1"
+													>
+														{option.label}
+													</Label>
+												</div>
+											))}
+										</div>
+										{selectedValues.length > 0 && (
+											<Button
+												variant="ghost"
+												size="sm"
+												className="mt-2 w-full"
+												onClick={() => handleFilterChange(key, undefined)}
+											>
+												クリア
+											</Button>
+										)}
+									</>
+								)}
+							</div>
+						</PopoverContent>
+					</Popover>
 				);
 			}
 			default:

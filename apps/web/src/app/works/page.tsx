@@ -13,6 +13,8 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 	const search = typeof params.q === "string" ? params.q : undefined;
 	const category = typeof params.category === "string" ? params.category : undefined;
 	const language = typeof params.language === "string" ? params.language : undefined;
+	const genres =
+		typeof params.genres === "string" ? params.genres.split(",").filter(Boolean) : undefined;
 	const limitValue = Number.parseInt(params.limit as string, 10) || 12;
 	const validLimit = [12, 24, 48].includes(limitValue) ? limitValue : 12;
 
@@ -35,6 +37,7 @@ export default async function WorksPage({ searchParams }: WorksPageProps) {
 		search,
 		category,
 		language,
+		genres,
 		showR18: shouldShowR18, // undefinedの場合はundefinedのまま渡す
 	});
 

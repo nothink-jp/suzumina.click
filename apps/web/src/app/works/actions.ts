@@ -163,10 +163,12 @@ function filterWorksByUnifiedData(
 	}
 
 	// ジャンルフィルタリング（統合ジャンル活用）
+	// AND検索：選択されたすべてのジャンルを含む作品のみ表示
 	if (params.genres && params.genres.length > 0) {
 		filteredWorks = filteredWorks.filter((work) => {
 			const workGenres = Array.isArray(work.genres) ? work.genres : [];
-			return params.genres?.some((genre) =>
+			// すべての選択ジャンルが作品に含まれているかチェック
+			return params.genres?.every((genre) =>
 				workGenres.some(
 					(wg) => typeof wg === "string" && typeof genre === "string" && wg.includes(genre),
 				),

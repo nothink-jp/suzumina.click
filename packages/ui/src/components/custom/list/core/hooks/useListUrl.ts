@@ -42,7 +42,7 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 
 			if (value !== null) {
 				// 型に応じて変換
-				if (config.type === "multiselect") {
+				if (config.type === "multiselect" || config.type === "tags") {
 					filterValues[key] = value.split(",").filter(Boolean);
 				} else if (config.type === "boolean") {
 					filterValues[key] = value === "true";
