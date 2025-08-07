@@ -12,6 +12,8 @@ export default defineConfig({
 		typecheck: {
 			tsconfig: "tsconfig.test.json",
 		},
+		// 標準エラー出力を抑制
+		silent: true,
 		server: {
 			deps: {
 				external: ["next/server"],
