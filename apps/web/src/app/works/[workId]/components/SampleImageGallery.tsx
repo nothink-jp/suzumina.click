@@ -9,23 +9,34 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@suzumina.click/ui/components/ui/dialog";
-import { Image, ZoomIn } from "lucide-react";
-import { useState } from "react";
+import { Image as ImageIcon, ZoomIn } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 interface SampleImageGalleryProps {
 	sampleImages: SampleImage[];
 	workTitle: string;
 }
 
-// DLsite画像URLをプロキシ経由のURLに変換
-function getDLsiteProxyUrl(url: string): string {
-	if (typeof url === "string" && url.trim() !== "" && url.includes("img.dlsite.jp")) {
-		return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+// DLsite画像URLを正規化
+function normalizeDLsiteUrl(url: string): string {
+	if (typeof url !== "string" || url.trim() === "") {
+		return "";
 	}
+
+	// プロトコル相対URL（//img.dlsite.jp/...）をHTTPS URLに変換
+	if (url.startsWith("//")) {
+		return `https:${url}`;
+	}
+	// HTTPプロトコルをHTTPSに変換
+	if (url.startsWith("http://")) {
+		return url.replace("http://", "https://");
+	}
+
 	return url;
 }
 
-// サムネイル専用の画像コンポーネント（fillモードを使わない）
+// サムネイル専用の画像コンポーネント
 function SampleThumbnail({
 	src,
 	alt,
@@ -35,27 +46,111 @@ function SampleThumbnail({
 	alt: string;
 	className?: string;
 }) {
+	const [hasError, setHasError] = useState(false);
+	const normalizedSrc = normalizeDLsiteUrl(src);
+
+	if (hasError) {
+		return (
+			<div
+				className={`${className} bg-gray-100 flex items-center justify-center`}
+				style={{ aspectRatio: "1/1" }}
+			>
+				<span className="text-gray-400 text-xs">読み込み失敗</span>
+			</div>
+		);
+	}
+
 	return (
-		// biome-ignore lint/performance/noImgElement: サンプル画像は外部URLのため、next/imageの最適化が適用されない
-		<img
-			src={getDLsiteProxyUrl(src)}
+		<Image
+			src={normalizedSrc}
 			alt={alt}
+			width={300}
+			height={300}
 			className={className}
 			loading="lazy"
 			style={{
 				objectFit: "cover",
 				objectPosition: "center",
 			}}
-			onError={(e) => {
-				const target = e.target as HTMLImageElement;
-				target.style.backgroundColor = "#f3f4f6";
-				target.style.display = "flex";
-				target.style.alignItems = "center";
-				target.style.justifyContent = "center";
-				target.style.color = "#9ca3af";
-				target.style.fontSize = "12px";
-				target.alt = "読み込み失敗";
+			onError={() => setHasError(true)}
+		/>
+	);
+}
+
+// 拡大表示用の画像コンポーネント
+function ExpandedImage({
+	src,
+	alt,
+	width,
+	height,
+}: {
+	src: string;
+	alt: string;
+	width: number;
+	height: number;
+}) {
+	const [hasError, setHasError] = useState(false);
+	const [displayDimensions, setDisplayDimensions] = useState({ width, height });
+	const normalizedSrc = normalizeDLsiteUrl(src);
+
+	// SSR対応: クライアントサイドでのみwindowサイズを取得
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+
+		const calculateDimensions = () => {
+			const maxWidth = window.innerWidth * 0.95;
+			const maxHeight = window.innerHeight * 0.95 - 40;
+
+			let newWidth = width;
+			let newHeight = height;
+
+			if (width > maxWidth) {
+				const ratio = maxWidth / width;
+				newWidth = maxWidth;
+				newHeight = height * ratio;
+			}
+
+			if (newHeight > maxHeight) {
+				const ratio = maxHeight / newHeight;
+				newHeight = maxHeight;
+				newWidth = newWidth * ratio;
+			}
+
+			setDisplayDimensions({ width: newWidth, height: newHeight });
+		};
+
+		calculateDimensions();
+
+		// リサイズ時に再計算
+		const handleResize = () => calculateDimensions();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, [width, height]);
+
+	if (hasError) {
+		return (
+			<div
+				className="bg-gray-100 flex items-center justify-center"
+				style={{ width: "400px", height: "300px" }}
+			>
+				<span className="text-gray-400">画像を読み込めませんでした</span>
+			</div>
+		);
+	}
+
+	return (
+		<Image
+			src={normalizedSrc}
+			alt={alt}
+			width={displayDimensions.width}
+			height={displayDimensions.height}
+			className="block"
+			style={{
+				maxWidth: "95vw",
+				maxHeight: "calc(95vh - 40px)",
+				objectFit: "contain",
 			}}
+			onError={() => setHasError(true)}
 		/>
 	);
 }
@@ -68,13 +163,13 @@ export default function SampleImageGallery({ sampleImages, workTitle }: SampleIm
 			<Card>
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
-						<Image className="h-5 w-5" />
+						<ImageIcon className="h-5 w-5" />
 						サンプル画像
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<div className="text-center py-8 text-gray-500">
-						<Image className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+						<ImageIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
 						<p>サンプル画像はありません</p>
 					</div>
 				</CardContent>
@@ -86,7 +181,7 @@ export default function SampleImageGallery({ sampleImages, workTitle }: SampleIm
 		<Card>
 			<CardHeader>
 				<CardTitle className="flex items-center gap-2">
-					<Image className="h-5 w-5" />
+					<ImageIcon className="h-5 w-5" />
 					サンプル画像 ({sampleImages.length}枚)
 				</CardTitle>
 			</CardHeader>
@@ -133,25 +228,11 @@ export default function SampleImageGallery({ sampleImages, workTitle }: SampleIm
 									{workTitle}の{index + 1}番目のサンプル画像を拡大表示しています
 								</DialogDescription>
 								<div className="flex flex-col">
-									{/* biome-ignore lint/performance/noImgElement: サンプル画像は外部URLのため、next/imageの最適化が適用されない */}
-									<img
-										src={getDLsiteProxyUrl(image.thumb)}
+									<ExpandedImage
+										src={image.thumb}
 										alt={`${workTitle} サンプル画像 ${index + 1}`}
-										className="block"
-										style={{
-											width: image.width ? `${image.width}px` : "auto",
-											height: image.height ? `${image.height}px` : "auto",
-											maxWidth: "95vw",
-											maxHeight: "calc(95vh - 40px)", // 情報バーの高さを考慮
-											objectFit: "contain",
-										}}
-										onError={(e) => {
-											const target = e.target as HTMLImageElement;
-											target.style.backgroundColor = "#f3f4f6";
-											target.style.width = "400px";
-											target.style.height = "300px";
-											target.alt = "画像を読み込めませんでした";
-										}}
+										width={image.width || 800}
+										height={image.height || 600}
 									/>
 									<div className="bg-black bg-opacity-60 text-white text-sm p-2 text-center">
 										{index + 1} / {sampleImages.length}
