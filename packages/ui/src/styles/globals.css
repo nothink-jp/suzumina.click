@@ -416,6 +416,35 @@
 		color: hsl(var(--foreground));
 	}
 
+	/* 日本語システムフォントスタック */
+	/* Web Fontを使用せず帯域を節約し、各OSネイティブフォントを活用 */
+	body {
+		font-family:
+			/* 丸みのあるフォント優先 (macOS/iOS) */
+			"ヒラギノ丸ゴ ProN",
+			"Hiragino Maru Gothic ProN",
+			/* 懐が広く読みやすいフォント (Windows) */
+			"メイリオ",
+			Meiryo,
+			/* UD（ユニバーサルデザイン）フォント (Windows 10+) */
+			"BIZ UDゴシック",
+			"BIZ UDGothic",
+			/* 標準ゴシック体 */
+			"ヒラギノ角ゴ ProN",
+			"Hiragino Kaku Gothic ProN",
+			"游ゴシック体",
+			YuGothic,
+			"Yu Gothic",
+			/* システムデフォルト */
+			system-ui,
+			-apple-system,
+			BlinkMacSystemFont,
+			"Segoe UI",
+			Roboto,
+			"Noto Sans CJK JP",
+			sans-serif;
+	}
+
 	/* フォーカス状態の改善 */
 	*:focus-visible {
 		outline: none;
