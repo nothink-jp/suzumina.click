@@ -11,7 +11,7 @@ import {
 } from "@suzumina.click/ui/components/ui/dialog";
 import { Image as ImageIcon, ZoomIn } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface SampleImageGalleryProps {
 	sampleImages: SampleImage[];
@@ -90,7 +90,42 @@ function ExpandedImage({
 	height: number;
 }) {
 	const [hasError, setHasError] = useState(false);
+	const [displayDimensions, setDisplayDimensions] = useState({ width, height });
 	const normalizedSrc = normalizeDLsiteUrl(src);
+
+	// SSR対応: クライアントサイドでのみwindowサイズを取得
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+
+		const calculateDimensions = () => {
+			const maxWidth = window.innerWidth * 0.95;
+			const maxHeight = window.innerHeight * 0.95 - 40;
+
+			let newWidth = width;
+			let newHeight = height;
+
+			if (width > maxWidth) {
+				const ratio = maxWidth / width;
+				newWidth = maxWidth;
+				newHeight = height * ratio;
+			}
+
+			if (newHeight > maxHeight) {
+				const ratio = maxHeight / newHeight;
+				newHeight = maxHeight;
+				newWidth = newWidth * ratio;
+			}
+
+			setDisplayDimensions({ width: newWidth, height: newHeight });
+		};
+
+		calculateDimensions();
+
+		// リサイズ時に再計算
+		const handleResize = () => calculateDimensions();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, [width, height]);
 
 	if (hasError) {
 		return (
@@ -103,31 +138,12 @@ function ExpandedImage({
 		);
 	}
 
-	// 表示サイズの計算（最大95vw x 95vh - 40px）
-	const maxWidth = typeof window !== "undefined" ? window.innerWidth * 0.95 : 1200;
-	const maxHeight = typeof window !== "undefined" ? window.innerHeight * 0.95 - 40 : 800;
-
-	let displayWidth = width;
-	let displayHeight = height;
-
-	if (width > maxWidth) {
-		const ratio = maxWidth / width;
-		displayWidth = maxWidth;
-		displayHeight = height * ratio;
-	}
-
-	if (displayHeight > maxHeight) {
-		const ratio = maxHeight / displayHeight;
-		displayHeight = maxHeight;
-		displayWidth = displayWidth * ratio;
-	}
-
 	return (
 		<Image
 			src={normalizedSrc}
 			alt={alt}
-			width={displayWidth}
-			height={displayHeight}
+			width={displayDimensions.width}
+			height={displayDimensions.height}
 			className="block"
 			style={{
 				maxWidth: "95vw",
