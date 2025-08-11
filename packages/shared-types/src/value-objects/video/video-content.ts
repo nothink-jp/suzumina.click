@@ -250,6 +250,7 @@ export class VideoContent
 		public readonly contentDetails?: ContentDetails,
 		public readonly embedHtml?: string,
 		public readonly tags?: string[],
+		public readonly embeddable?: boolean,
 	) {
 		super();
 	}
@@ -271,6 +272,7 @@ export class VideoContent
 		};
 		embedHtml?: string;
 		tags?: string[];
+		embeddable?: boolean;
 	}): VideoContent {
 		return new VideoContent(
 			new VideoId(data.videoId),
@@ -288,6 +290,7 @@ export class VideoContent
 				: undefined,
 			data.embedHtml,
 			data.tags,
+			data.embeddable,
 		);
 	}
 
@@ -303,6 +306,13 @@ export class VideoContent
 	 */
 	isAvailable(): boolean {
 		return this.uploadStatus === "processed" && this.privacyStatus !== "private";
+	}
+
+	/**
+	 * Checks if video is embeddable
+	 */
+	isEmbeddable(): boolean {
+		return this.embeddable !== false;
 	}
 
 	/**
@@ -379,6 +389,7 @@ export class VideoContent
 		};
 		embedHtml?: string;
 		tags?: string[];
+		embeddable?: boolean;
 	} {
 		return {
 			videoId: this.videoId.toString(),
@@ -396,6 +407,7 @@ export class VideoContent
 				: undefined,
 			embedHtml: this.embedHtml,
 			tags: this.tags,
+			embeddable: this.embeddable,
 		};
 	}
 
@@ -408,6 +420,7 @@ export class VideoContent
 			this.contentDetails?.clone(),
 			this.embedHtml,
 			this.tags ? [...this.tags] : undefined,
+			this.embeddable,
 		);
 	}
 
@@ -448,7 +461,8 @@ export class VideoContent
 			this.uploadStatus === other.uploadStatus &&
 			contentDetailsEqual &&
 			this.embedHtml === other.embedHtml &&
-			tagsEqual
+			tagsEqual &&
+			this.embeddable === other.embeddable
 		);
 	}
 }

@@ -305,11 +305,12 @@ export class Video {
 	}
 
 	get status():
-		| { privacyStatus: string; uploadStatus: string; commentStatus?: string }
+		| { privacyStatus: string; uploadStatus: string; embeddable?: boolean; commentStatus?: string }
 		| undefined {
 		return {
 			privacyStatus: this._content.privacyStatus,
 			uploadStatus: this._content.uploadStatus,
+			embeddable: this._content.embeddable,
 		};
 	}
 
@@ -325,6 +326,13 @@ export class Video {
 	 */
 	isAvailable(): boolean {
 		return this._content.isAvailable();
+	}
+
+	/**
+	 * Checks if the video is embeddable
+	 */
+	isEmbeddable(): boolean {
+		return this._content.isEmbeddable();
 	}
 
 	/**
@@ -593,6 +601,7 @@ export class Video {
 			Video.createContentDetailsFromFirestore(data),
 			data.player?.embedHtml,
 			data.tags,
+			data.status?.embeddable,
 		);
 
 		// Create metadata
@@ -760,10 +769,15 @@ export class Video {
 	 * Add status to Firestore data if available
 	 */
 	private addStatusToFirestore(data: FirestoreServerVideoData): void {
-		if (this._content.privacyStatus || this._content.uploadStatus) {
+		if (
+			this._content.privacyStatus ||
+			this._content.uploadStatus ||
+			this._content.embeddable !== undefined
+		) {
 			data.status = {
 				privacyStatus: this._content.privacyStatus,
 				uploadStatus: this._content.uploadStatus,
+				embeddable: this._content.embeddable,
 			};
 		}
 	}
