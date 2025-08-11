@@ -39,7 +39,7 @@
 		"react-hook-form": "^7.62.0",
 		"react-window": "^1.8.11",
 		"recharts": "3.1.2",
-		"resend": "^5.0.0",
+		"resend": "^6.0.1",
 		"sonner": "^2.0.7",
 		"swr": "^2.3.4",
 		"zod": "^4.0.15"
