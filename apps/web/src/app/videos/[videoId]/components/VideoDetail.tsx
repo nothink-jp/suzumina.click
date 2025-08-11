@@ -155,6 +155,14 @@ function getCanCreateButtonData(video: FrontendVideoData, session: { user?: unkn
 		};
 	}
 
+	// 埋め込み制限チェック
+	if (video.status?.embeddable === false) {
+		return {
+			canCreate: false,
+			reason: "この動画は埋め込みが制限されているため、音声ボタンを作成できません",
+		};
+	}
+
 	// 動画の条件をチェック
 	const videoCanCreate = canCreateAudioButton(video);
 	if (!videoCanCreate) {
@@ -766,6 +774,14 @@ export default function VideoDetail({
 															{video.status.commentStatus || "データなし"}
 														</span>
 													</div>
+													{video.status.embeddable !== undefined && (
+														<div>
+															<span className="text-muted-foreground">埋め込み:</span>
+															<span className="ml-2">
+																{video.status.embeddable === false ? "無効" : "許可"}
+															</span>
+														</div>
+													)}
 													{video.status.uploadStatus && (
 														<div>
 															<span className="text-muted-foreground">アップロード:</span>

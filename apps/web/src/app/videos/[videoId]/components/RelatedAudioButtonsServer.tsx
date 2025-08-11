@@ -1,4 +1,4 @@
-import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject, FrontendVideoData } from "@suzumina.click/shared-types";
 import { getLikeDislikeStatusAction } from "@/actions/dislikes";
 import { getFavoritesStatusAction } from "@/actions/favorites";
 import { auth } from "@/auth";
@@ -8,6 +8,7 @@ interface RelatedAudioButtonsServerProps {
 	audioButtons: AudioButtonPlainObject[];
 	totalCount: number;
 	videoId: string;
+	video: FrontendVideoData;
 	loading?: boolean;
 }
 
@@ -15,6 +16,7 @@ export async function RelatedAudioButtonsServer({
 	audioButtons,
 	totalCount,
 	videoId,
+	video,
 	loading = false,
 }: RelatedAudioButtonsServerProps) {
 	// 認証情報を取得
@@ -45,6 +47,7 @@ export async function RelatedAudioButtonsServer({
 			audioButtons={audioButtons}
 			totalCount={totalCount}
 			videoId={videoId}
+			video={video}
 			loading={loading}
 			initialLikeDislikeStatuses={likeDislikeStatuses}
 			initialFavoriteStatuses={favoriteStatuses}
