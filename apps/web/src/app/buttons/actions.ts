@@ -5,6 +5,7 @@ import {
 	type AudioButtonPlainObject,
 	type CreateAudioButtonInput,
 	type FirestoreServerAudioButtonData,
+	parseDurationToSeconds,
 	type UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
 import { auth } from "@/auth";
@@ -388,6 +389,38 @@ export async function createAudioButton(
 		}
 
 		const firestore = getFirestore();
+
+		// 動画タイプチェック（配信アーカイブのみ音声ボタン作成可能）
+		const videoRef = firestore.collection("videos").doc(input.sourceVideoId);
+		const videoDoc = await videoRef.get();
+		if (!videoDoc.exists) {
+			return { success: false, error: "指定された動画が見つかりません" };
+		}
+
+		const videoData = videoDoc.data();
+
+		// 埋め込み制限チェック
+		if (videoData?.status?.embeddable === false) {
+			return {
+				success: false,
+				error: "この動画は埋め込みが制限されているため、音声ボタンを作成できません",
+			};
+		}
+
+		// 配信アーカイブチェック（liveStreamingDetailsの存在と実際の配信時間を確認）
+		const hasLiveStreamingDetails = videoData?.liveStreamingDetails?.actualEndTime;
+		const duration = videoData?.duration;
+
+		// 15分以上の動画で、配信履歴がある場合のみ許可
+		const isArchivedStream =
+			hasLiveStreamingDetails && duration && parseDurationToSeconds(duration) > 15 * 60;
+
+		if (!isArchivedStream) {
+			// videoTypeも確認（互換性のため）
+			if (videoData?.videoType !== "archived") {
+				return { success: false, error: "音声ボタンを作成できるのは配信アーカイブのみです" };
+			}
+		}
 		const docRef = await firestore.collection("audioButtons").add({
 			...input,
 			createdBy: session.user.discordId,

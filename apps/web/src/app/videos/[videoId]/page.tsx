@@ -43,6 +43,7 @@ export default async function VideoDetailPage({ params }: VideoDetailPageProps) 
 							audioButtons={audioButtons}
 							totalCount={audioButtonCount}
 							videoId={videoId}
+							video={video}
 						/>
 					}
 				/>
