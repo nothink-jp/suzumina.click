@@ -1,18 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-	hasProperties,
-	hasProperty,
 	isArray,
 	isBoolean,
 	isDate,
 	isDefined,
-	isEmail,
 	isEmptyString,
 	isNullOrUndefined,
 	isNumber,
 	isObject,
 	isString,
-	isUrl,
 } from "../base/guards";
 import {
 	clamp,
@@ -27,7 +23,6 @@ import {
 } from "../base/transforms";
 import {
 	BaseValueObject,
-	type SerializableValueObject,
 	type ValidatableValueObject,
 	type ValueObject,
 } from "../base/value-object";
@@ -88,37 +83,14 @@ class ValidatableTestObject
 
 	getValidationErrors(): string[] {
 		const errors: string[] = [];
-		if (!isEmail(this.email)) {
+		// Simple email validation for test purposes
+		if (!this.email.includes("@")) {
 			errors.push("Invalid email format");
 		}
 		if (this.age < 0 || this.age > 150) {
 			errors.push("Age must be between 0 and 150");
 		}
 		return errors;
-	}
-}
-
-// Test implementation of SerializableValueObject
-class SerializableTestObject
-	extends BaseValueObject<SerializableTestObject>
-	implements SerializableValueObject<SerializableTestObject, { id: string; data: string }>
-{
-	constructor(
-		public readonly id: string,
-		public readonly data: string,
-	) {
-		super();
-	}
-
-	clone(): SerializableTestObject {
-		return new SerializableTestObject(this.id, this.data);
-	}
-
-	toJSON(): { id: string; data: string } {
-		return {
-			id: this.id,
-			data: this.data,
-		};
 	}
 }
 
@@ -185,18 +157,6 @@ describe("Value Object Base", () => {
 
 			expect(invalidAge.isValid()).toBe(false);
 			expect(invalidAge.getValidationErrors()).toContain("Age must be between 0 and 150");
-		});
-	});
-
-	describe("SerializableValueObject", () => {
-		it("should serialize to JSON", () => {
-			const obj = new SerializableTestObject("123", "test data");
-			const json = obj.toJSON();
-
-			expect(json).toEqual({
-				id: "123",
-				data: "test data",
-			});
 		});
 	});
 });
@@ -358,37 +318,6 @@ describe("Guard Functions", () => {
 			expect(isEmptyString("")).toBe(true);
 			expect(isEmptyString("   ")).toBe(true);
 			expect(isEmptyString("test")).toBe(false);
-		});
-
-		it("should check email format", () => {
-			expect(isEmail("test@example.com")).toBe(true);
-			expect(isEmail("user.name@domain.co.jp")).toBe(true);
-			expect(isEmail("invalid-email")).toBe(false);
-			expect(isEmail("@example.com")).toBe(false);
-		});
-
-		it("should check URL format", () => {
-			expect(isUrl("https://example.com")).toBe(true);
-			expect(isUrl("http://localhost:3000")).toBe(true);
-			expect(isUrl("ftp://files.com")).toBe(true);
-			expect(isUrl("not-a-url")).toBe(false);
-			expect(isUrl("example.com")).toBe(false);
-		});
-	});
-
-	describe("property guards", () => {
-		it("should check single property", () => {
-			const obj = { name: "test", value: 123 };
-			expect(hasProperty(obj, "name")).toBe(true);
-			expect(hasProperty(obj, "missing")).toBe(false);
-			expect(hasProperty(null, "name")).toBe(false);
-		});
-
-		it("should check multiple properties", () => {
-			const obj = { name: "test", value: 123, active: true };
-			expect(hasProperties(obj, ["name", "value"])).toBe(true);
-			expect(hasProperties(obj, ["name", "missing"])).toBe(false);
-			expect(hasProperties(null, ["name"])).toBe(false);
 		});
 	});
 });

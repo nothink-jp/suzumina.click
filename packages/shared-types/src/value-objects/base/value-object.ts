@@ -24,12 +24,49 @@ export interface ValueObject<T> {
 }
 
 /**
+ * Helper function to compare object properties
+ */
+function compareObjectProperties(
+	aObj: Record<string, unknown>,
+	bObj: Record<string, unknown>,
+): boolean {
+	const aKeys = Object.keys(aObj);
+	const bKeys = Object.keys(bObj);
+
+	if (aKeys.length !== bKeys.length) return false;
+
+	for (const key of aKeys) {
+		if (!bKeys.includes(key)) return false;
+		if (!deepEquals(aObj[key], bObj[key])) return false;
+	}
+
+	return true;
+}
+
+/**
+ * Deep equality comparison helper
+ */
+function deepEquals(a: unknown, b: unknown): boolean {
+	// Early returns for primitive comparisons
+	if (a === b) return true;
+	if (a == null || b == null) return false;
+	if (typeof a !== typeof b) return false;
+
+	// Object comparison
+	if (typeof a === "object") {
+		return compareObjectProperties(a as Record<string, unknown>, b as Record<string, unknown>);
+	}
+
+	return false;
+}
+
+/**
  * Base abstract class for Value Objects with common functionality
  */
 export abstract class BaseValueObject<T> implements ValueObject<T> {
 	/**
-	 * Default implementation of equals using JSON comparison
-	 * Subclasses should override for better performance
+	 * Optimized equals implementation using deep comparison
+	 * Subclasses can override for domain-specific optimization
 	 */
 	equals(other: T): boolean {
 		if (other === null || other === undefined) {
@@ -38,7 +75,7 @@ export abstract class BaseValueObject<T> implements ValueObject<T> {
 		if ((other as unknown) === this) {
 			return true;
 		}
-		return JSON.stringify(this) === JSON.stringify(other);
+		return deepEquals(this, other);
 	}
 
 	/**
@@ -63,20 +100,3 @@ export interface ValidatableValueObject<T> extends ValueObject<T> {
 	 */
 	getValidationErrors(): string[];
 }
-
-/**
- * Interface for Value Objects that can be serialized
- */
-export interface SerializableValueObject<T, S = unknown> extends ValueObject<T> {
-	/**
-	 * Converts the value object to a plain object for storage
-	 * @returns Plain object representation
-	 */
-	toJSON(): S;
-}
-
-/**
- * Utility type for extracting the serialized type of a value object
- */
-// biome-ignore lint/suspicious/noExplicitAny: Required for generic type inference
-export type SerializedType<T> = T extends SerializableValueObject<any, infer S> ? S : never;
