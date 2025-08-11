@@ -9,7 +9,7 @@ import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
-import { Calendar, Clock, ExternalLink, Eye, Plus, Radio, Video } from "lucide-react";
+import { Calendar, Clock, ExternalLink, Eye, Lock, Plus, Radio, Video } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -186,6 +186,14 @@ const VideoCard = memo(function VideoCard({
 			};
 		}
 
+		// 埋め込み制限チェック
+		if (video.status?.embeddable === false) {
+			return {
+				canCreate: false,
+				reason: "この動画は埋め込みが制限されているため、音声ボタンを作成できません",
+			};
+		}
+
 		// 動画の条件をチェック
 		const videoCanCreate = canCreateAudioButton(video);
 		if (!videoCanCreate) {
@@ -252,6 +260,19 @@ const VideoCard = memo(function VideoCard({
 								aria-label={`${actualButtonCount}個の音声ボタンが作成されています`}
 							>
 								{actualButtonCount} ボタン
+							</Badge>
+						</div>
+					)}
+					{video.status?.embeddable === false && (
+						<div className="absolute top-2 right-2">
+							<Badge
+								variant="destructive"
+								className="bg-red-600/90 text-white"
+								aria-label="埋め込み制限あり"
+								title="この動画は埋め込みが制限されているため、音声ボタンを作成できません"
+							>
+								<Lock className="h-3 w-3 mr-1" aria-hidden="true" />
+								埋め込み不可
 							</Badge>
 						</div>
 					)}

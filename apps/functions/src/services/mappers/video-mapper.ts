@@ -167,6 +167,7 @@ function createVideoContentFromYouTube(video: youtube_v3.Schema$Video): VideoCon
 		const publishedAt = new PublishedAt(publishedDate);
 		const privacyStatus = (video.status?.privacyStatus || "public") as PrivacyStatus;
 		const uploadStatus = (video.status?.uploadStatus || "processed") as UploadStatus;
+		const embeddable = video.status?.embeddable ?? undefined;
 
 		// Create ContentDetails if available
 		const contentDetails = video.contentDetails
@@ -187,6 +188,7 @@ function createVideoContentFromYouTube(video: youtube_v3.Schema$Video): VideoCon
 			contentDetails,
 			video.player?.embedHtml || undefined,
 			video.snippet.tags || undefined,
+			embeddable,
 		);
 	} catch (error) {
 		logger.error("Failed to create VideoContent", {

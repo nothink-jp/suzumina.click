@@ -62,6 +62,47 @@ export default async function CreateAudioButtonPage({ searchParams }: CreateAudi
 		notFound();
 	}
 
+	// 埋め込み制限チェック
+	if (videoResult.status?.embeddable === false) {
+		return (
+			<div className="container mx-auto px-4 py-8 max-w-4xl">
+				<div className="mb-6">
+					<Button variant="ghost" size="sm" asChild>
+						<Link href="/videos" className="flex items-center gap-2">
+							<ArrowLeft className="h-4 w-4" />
+							動画一覧に戻る
+						</Link>
+					</Button>
+				</div>
+
+				<div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+					<AlertCircle className="h-12 w-12 text-destructive" />
+					<h1 className="text-2xl font-bold text-foreground">
+						この動画は埋め込みが制限されています
+					</h1>
+					<p className="text-muted-foreground max-w-md">
+						動画の所有者によって埋め込みが無効にされているため、音声ボタンを作成できません。
+					</p>
+					<p className="text-sm text-muted-foreground">動画タイトル: {videoResult.title}</p>
+					<div className="flex gap-3">
+						<Button asChild>
+							<Link href="/videos">他の動画を選ぶ</Link>
+						</Button>
+						<Button variant="outline" asChild>
+							<a
+								href={`https://youtube.com/watch?v=${videoId}`}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								YouTubeで見る
+							</a>
+						</Button>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	// 動画の長さを取得（秒数に変換）
 	const videoDurationSeconds = parseDurationToSeconds(videoResult.duration);
 	// フォールバック: 取得失敗時は10分
