@@ -20,29 +20,12 @@ export interface EntityValidatable<_T> {
 }
 
 /**
- * Base interface for entity cloning
- */
-export interface EntityClonable<T> {
-	/**
-	 * Creates a deep copy of the entity
-	 */
-	clone(): T;
-}
-
-/**
- * Base interface for entity equality
- */
-export interface EntityEquatable<T> {
-	/**
-	 * Checks if two entities are equal
-	 */
-	equals(other: T): boolean;
-}
-
-/**
  * Abstract base class for all entities
+ *
+ * Provides common functionality for domain entities including
+ * cloning and equality checking.
  */
-export abstract class BaseEntity<T> implements EntityClonable<T>, EntityEquatable<T> {
+export abstract class BaseEntity<T> {
 	/**
 	 * Creates a deep copy of the entity
 	 */

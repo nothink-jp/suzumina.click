@@ -24,12 +24,68 @@ export interface ValueObject<T> {
 }
 
 /**
+ * Compare two arrays for deep equality
+ */
+function compareArrays(a: unknown[], b: unknown[]): boolean {
+	if (a.length !== b.length) return false;
+	for (let i = 0; i < a.length; i++) {
+		if (!deepEquals(a[i], b[i])) return false;
+	}
+	return true;
+}
+
+/**
+ * Compare two objects for deep equality
+ */
+function compareObjects(a: object, b: object): boolean {
+	const aObj = a as Record<string, unknown>;
+	const bObj = b as Record<string, unknown>;
+
+	const aKeys = Object.keys(aObj);
+	const bKeys = new Set(Object.keys(bObj));
+
+	if (aKeys.length !== bKeys.size) return false;
+
+	for (const key of aKeys) {
+		if (!bKeys.has(key)) return false;
+		if (!deepEquals(aObj[key], bObj[key])) return false;
+	}
+
+	return true;
+}
+
+/**
+ * Deep equality comparison helper
+ */
+function deepEquals(a: unknown, b: unknown): boolean {
+	// Handle null/undefined and same reference
+	if (a === b) return true;
+	if (a == null || b == null) return false;
+
+	// Type must match
+	if (typeof a !== typeof b) return false;
+
+	// Handle arrays
+	if (Array.isArray(a)) {
+		return Array.isArray(b) && compareArrays(a, b);
+	}
+
+	// Handle objects
+	if (typeof a === "object") {
+		return compareObjects(a, b);
+	}
+
+	// Primitive values already checked with a === b
+	return false;
+}
+
+/**
  * Base abstract class for Value Objects with common functionality
  */
 export abstract class BaseValueObject<T> implements ValueObject<T> {
 	/**
-	 * Default implementation of equals using JSON comparison
-	 * Subclasses should override for better performance
+	 * Optimized equals implementation using deep comparison
+	 * Subclasses can override for domain-specific optimization
 	 */
 	equals(other: T): boolean {
 		if (other === null || other === undefined) {
@@ -38,7 +94,7 @@ export abstract class BaseValueObject<T> implements ValueObject<T> {
 		if ((other as unknown) === this) {
 			return true;
 		}
-		return JSON.stringify(this) === JSON.stringify(other);
+		return deepEquals(this, other);
 	}
 
 	/**
@@ -63,20 +119,3 @@ export interface ValidatableValueObject<T> extends ValueObject<T> {
 	 */
 	getValidationErrors(): string[];
 }
-
-/**
- * Interface for Value Objects that can be serialized
- */
-export interface SerializableValueObject<T, S = unknown> extends ValueObject<T> {
-	/**
-	 * Converts the value object to a plain object for storage
-	 * @returns Plain object representation
-	 */
-	toJSON(): S;
-}
-
-/**
- * Utility type for extracting the serialized type of a value object
- */
-// biome-ignore lint/suspicious/noExplicitAny: Required for generic type inference
-export type SerializedType<T> = T extends SerializableValueObject<any, infer S> ? S : never;
