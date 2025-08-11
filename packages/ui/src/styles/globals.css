@@ -448,6 +448,24 @@
 		button.bg-primary,
 		button.bg-secondary {
 			filter: none !important;
+		}
+		
+		/* Disabled状態のボタンを明確に区別 */
+		button:disabled,
+		.opacity-50:disabled,
+		button[disabled] {
+			opacity: 0.3 !important;
+			background-color: hsl(12 6% 15%) !important;
+			color: hsl(24 5% 50%) !important;
+			cursor: not-allowed !important;
+		}
+		
+		/* Enabled状態のボタンを確実に表示 */
+		button:not(:disabled).bg-primary {
+			opacity: 1 !important;
+		}
+		
+		button:not(:disabled).bg-secondary {
 			opacity: 1 !important;
 		}
 	}
