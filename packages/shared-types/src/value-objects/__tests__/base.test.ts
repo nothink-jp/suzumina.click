@@ -96,7 +96,7 @@ class ValidatableTestObject
 
 describe("Value Object Base", () => {
 	describe("BaseValueObject", () => {
-		it("should implement equals using JSON comparison", () => {
+		it("should implement equals using deep comparison", () => {
 			const obj1 = new TestValueObject("1", 100);
 			const obj2 = new TestValueObject("1", 100);
 			const obj3 = new TestValueObject("2", 100);
@@ -106,6 +106,26 @@ describe("Value Object Base", () => {
 			expect(obj1.equals(null as any)).toBe(false);
 			expect(obj1.equals(undefined as any)).toBe(false);
 			expect(obj1.equals(obj1)).toBe(true);
+		});
+
+		it("should correctly compare objects with arrays", () => {
+			class ArrayValueObject extends BaseValueObject<ArrayValueObject> {
+				constructor(public readonly items: number[]) {
+					super();
+				}
+				clone(): ArrayValueObject {
+					return new ArrayValueObject([...this.items]);
+				}
+			}
+
+			const obj1 = new ArrayValueObject([1, 2, 3]);
+			const obj2 = new ArrayValueObject([1, 2, 3]);
+			const obj3 = new ArrayValueObject([1, 2, 4]);
+			const obj4 = new ArrayValueObject([1, 2]);
+
+			expect(obj1.equals(obj2)).toBe(true);
+			expect(obj1.equals(obj3)).toBe(false);
+			expect(obj1.equals(obj4)).toBe(false);
 		});
 
 		it("should implement clone using JSON parse/stringify", () => {

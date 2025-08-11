@@ -24,19 +24,30 @@ export interface ValueObject<T> {
 }
 
 /**
- * Helper function to compare object properties
+ * Compare two arrays for deep equality
  */
-function compareObjectProperties(
-	aObj: Record<string, unknown>,
-	bObj: Record<string, unknown>,
-): boolean {
-	const aKeys = Object.keys(aObj);
-	const bKeys = Object.keys(bObj);
+function compareArrays(a: unknown[], b: unknown[]): boolean {
+	if (a.length !== b.length) return false;
+	for (let i = 0; i < a.length; i++) {
+		if (!deepEquals(a[i], b[i])) return false;
+	}
+	return true;
+}
 
-	if (aKeys.length !== bKeys.length) return false;
+/**
+ * Compare two objects for deep equality
+ */
+function compareObjects(a: object, b: object): boolean {
+	const aObj = a as Record<string, unknown>;
+	const bObj = b as Record<string, unknown>;
+
+	const aKeys = Object.keys(aObj);
+	const bKeys = new Set(Object.keys(bObj));
+
+	if (aKeys.length !== bKeys.size) return false;
 
 	for (const key of aKeys) {
-		if (!bKeys.includes(key)) return false;
+		if (!bKeys.has(key)) return false;
 		if (!deepEquals(aObj[key], bObj[key])) return false;
 	}
 
@@ -47,16 +58,24 @@ function compareObjectProperties(
  * Deep equality comparison helper
  */
 function deepEquals(a: unknown, b: unknown): boolean {
-	// Early returns for primitive comparisons
+	// Handle null/undefined and same reference
 	if (a === b) return true;
 	if (a == null || b == null) return false;
+
+	// Type must match
 	if (typeof a !== typeof b) return false;
 
-	// Object comparison
-	if (typeof a === "object") {
-		return compareObjectProperties(a as Record<string, unknown>, b as Record<string, unknown>);
+	// Handle arrays
+	if (Array.isArray(a)) {
+		return Array.isArray(b) && compareArrays(a, b);
 	}
 
+	// Handle objects
+	if (typeof a === "object") {
+		return compareObjects(a, b);
+	}
+
+	// Primitive values already checked with a === b
 	return false;
 }
 
