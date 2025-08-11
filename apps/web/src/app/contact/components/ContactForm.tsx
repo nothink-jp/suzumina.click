@@ -93,10 +93,11 @@ export function ContactForm() {
 		handleSubmit,
 		setValue,
 		watch,
-		formState: { errors },
+		formState: { errors, isValid },
 		reset,
 	} = useForm<z.infer<typeof contactFormSchema>>({
 		resolver: zodResolver(contactFormSchema),
+		mode: "onChange", // リアルタイムバリデーション
 	});
 
 	const selectedCategory = watch("category");
@@ -218,7 +219,12 @@ export function ContactForm() {
 
 			{/* 送信ボタン */}
 			<div className="pt-4">
-				<Button type="submit" disabled={isPending} className="w-full flex items-center gap-2">
+				<Button
+					type="submit"
+					disabled={!isValid || isPending}
+					className="w-full flex items-center gap-2"
+					title={!isValid ? "必須項目をすべて入力してください" : undefined}
+				>
 					{isPending ? (
 						<>
 							<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />

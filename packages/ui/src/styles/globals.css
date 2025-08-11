@@ -8,6 +8,52 @@
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
+	/* OSのダークモード設定を自動検出 */
+	@media (prefers-color-scheme: dark) {
+		:root {
+			--color-scheme: dark;
+
+			--background: 20 14% 4%;
+			--foreground: 60 9% 98%;
+
+			--card: 24 10% 10%;
+			--card-foreground: 60 9% 98%;
+
+			--popover: 20 14% 4%;
+			--popover-foreground: 60 9% 98%;
+
+			--primary: 340 75% 65%; /* suzuka-400 - ダークモードでは明るめ */
+			--primary-foreground: 340 100% 98%; /* より薄い色でコントラスト確保 */
+
+			--secondary: 27 90% 65%; /* minase - ダークモードでは明るめ */
+			--secondary-foreground: 27 100% 97%;
+
+			--muted: 12 6% 15%;
+			--muted-foreground: 24 5% 64%;
+
+			--accent: 12 6% 15%;
+			--accent-foreground: 60 9% 98%;
+
+			--destructive: 0 62.8% 30.6%;
+			--destructive-foreground: 60 9% 98%;
+
+			--border: 12 6% 15%;
+			--input: 12 6% 15%;
+			--ring: 340 75% 65%;
+
+			/* ダークモードでのフォーカス状態 */
+			--focus-ring: 340 75% 65%;
+			--focus-ring-offset: 20 14% 4%;
+
+			/* Dark mode chart colors */
+			--chart-1: 220 70% 50%;
+			--chart-2: 160 60% 45%;
+			--chart-3: 30 80% 55%;
+			--chart-4: 280 65% 60%;
+			--chart-5: 340 75% 55%;
+		}
+	}
+
 	:root {
 		/* Tailwind CSS v4 configuration via CSS variables - Default shadcn/ui theme */
 
@@ -121,23 +167,24 @@
 		--line-height-a11y-xl: 1.6;
 	}
 
+	/* 手動でダークモードクラスを適用した場合 */
 	.dark {
 		--color-scheme: dark;
 
 		--background: 20 14% 4%;
 		--foreground: 60 9% 98%;
 
-		--card: 20 14% 4%;
+		--card: 24 10% 10%;
 		--card-foreground: 60 9% 98%;
 
 		--popover: 20 14% 4%;
 		--popover-foreground: 60 9% 98%;
 
-		--primary: 340 75% 55%; /* suzuka-500 - ダークモードでも同じ */
-		--primary-foreground: 60 9% 98%;
+		--primary: 340 75% 65%; /* suzuka-400 - ダークモードでは明るめ */
+		--primary-foreground: 340 100% 98%;
 
-		--secondary: 27 100% 59%; /* minase-500 - ダークモードでも同じ */
-		--secondary-foreground: 60 9% 98%;
+		--secondary: 27 90% 65%; /* minase - ダークモードでは明るめ */
+		--secondary-foreground: 27 100% 97%;
 
 		--muted: 12 6% 15%;
 		--muted-foreground: 24 5% 64%;
@@ -150,10 +197,10 @@
 
 		--border: 12 6% 15%;
 		--input: 12 6% 15%;
-		--ring: 24 5% 83%;
+		--ring: 340 75% 65%;
 
-		/* ダークモードでのフォーカス状態 (Stone palette) */
-		--focus-ring: 24 5% 83%;
+		/* ダークモードでのフォーカス状態 */
+		--focus-ring: 340 75% 65%;
 		--focus-ring-offset: 20 14% 4%;
 
 		/* Dark mode chart colors */
@@ -366,6 +413,62 @@
 	.hover\:bg-secondary\/80:hover { background-color: hsl(var(--secondary) / 0.8); }
 	.hover\:bg-accent:hover { background-color: hsl(var(--accent)); }
 	.hover\:text-accent-foreground:hover { color: hsl(var(--accent-foreground)); }
+	
+	/* Dark Reader / 拡張機能対策 - 重要なボタンスタイルを強制 */
+	@media (prefers-color-scheme: dark) {
+		/* Primary buttons - ダークモードでも確実に読める */
+		.bg-primary {
+			background-color: hsl(340 75% 65%) !important;
+			color: hsl(340 100% 98%) !important;
+		}
+		
+		/* Secondary buttons */
+		.bg-secondary {
+			background-color: hsl(27 90% 65%) !important;
+			color: hsl(27 100% 97%) !important;
+		}
+		
+		/* Destructive buttons */
+		.bg-destructive {
+			background-color: hsl(0 62.8% 30.6%) !important;
+			color: hsl(60 9% 98%) !important;
+		}
+		
+		/* ボタンのテキストを確実に表示 */
+		.text-primary-foreground {
+			color: hsl(340 100% 98%) !important;
+		}
+		
+		.text-secondary-foreground {
+			color: hsl(27 100% 97%) !important;
+		}
+		
+		/* フォーム送信ボタンなど特定のボタンを強調 */
+		button[type="submit"],
+		button.bg-primary,
+		button.bg-secondary {
+			filter: none !important;
+		}
+		
+		/* Disabled状態のボタンを明確に区別 */
+		button:disabled,
+		.opacity-50:disabled,
+		button[disabled] {
+			opacity: 0.3 !important;
+			background-color: hsl(12 6% 15%) !important;
+			color: hsl(24 5% 50%) !important;
+			cursor: not-allowed !important;
+		}
+		
+		/* Enabled状態のボタンを確実に表示 */
+		button:not(:disabled).bg-primary {
+			opacity: 1 !important;
+		}
+		
+		button:not(:disabled).bg-secondary {
+			opacity: 1 !important;
+		}
+	}
 	
 	/* Tabs specific hover states */
 	.hover\:bg-suzuka-600:hover { background-color: hsl(340 70% 45%); }

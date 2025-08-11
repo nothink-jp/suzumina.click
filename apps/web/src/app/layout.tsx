@@ -82,6 +82,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 	return (
 		<html lang="ja" className="scroll-smooth">
 			<head>
+				{/* Dark Reader / ダークモード拡張機能対策 */}
+				<meta name="darkreader-lock" />
+				<meta name="color-scheme" content="light dark" />
+				<meta name="supported-color-schemes" content="light dark" />
+
 				{/* DNS prefetch for external domains */}
 				<link rel="dns-prefetch" href="//www.google-analytics.com" />
 				<link rel="dns-prefetch" href="//img.dlsite.jp" />
