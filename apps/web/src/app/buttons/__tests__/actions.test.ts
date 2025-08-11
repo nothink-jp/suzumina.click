@@ -161,6 +161,28 @@ describe("Audio Button Server Actions", () => {
 		};
 
 		it("有効な入力で音声ボタンが作成される", async () => {
+			// Mock video document (配信アーカイブとして設定)
+			const mockVideoDoc = {
+				exists: true,
+				data: () => ({
+					videoType: "archived",
+					duration: "PT1H30M", // 1時間30分
+					liveStreamingDetails: {
+						actualEndTime: "2024-01-01T02:00:00Z",
+					},
+					status: {
+						embeddable: true,
+					},
+				}),
+				get: mockGet,
+			};
+
+			// Mock video collection
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue(mockVideoDoc),
+				update: mockUpdate,
+			});
+
 			// Mock successful add with update method
 			mockAdd.mockResolvedValue({
 				id: "new-audio-button-id",
@@ -221,7 +243,88 @@ describe("Audio Button Server Actions", () => {
 			expect(mockAdd).not.toHaveBeenCalled();
 		});
 
+		it("配信アーカイブ以外の動画では作成できない", async () => {
+			// Mock video document (通常の動画として設定)
+			const mockVideoDoc = {
+				exists: true,
+				data: () => ({
+					videoType: "normal",
+					duration: "PT5M", // 5分
+					status: {
+						embeddable: true,
+					},
+				}),
+				get: mockGet,
+			};
+
+			// Mock video collection
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue(mockVideoDoc),
+			});
+
+			const result = await createAudioButton(validInput);
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toContain("音声ボタンを作成できるのは配信アーカイブのみです");
+			}
+			expect(mockAdd).not.toHaveBeenCalled();
+		});
+
+		it("埋め込み制限のある動画では作成できない", async () => {
+			// Mock video document (埋め込み無効)
+			const mockVideoDoc = {
+				exists: true,
+				data: () => ({
+					videoType: "archived",
+					duration: "PT1H30M",
+					liveStreamingDetails: {
+						actualEndTime: "2024-01-01T02:00:00Z",
+					},
+					status: {
+						embeddable: false,
+					},
+				}),
+				get: mockGet,
+			};
+
+			// Mock video collection
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue(mockVideoDoc),
+			});
+
+			const result = await createAudioButton(validInput);
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toContain("この動画は埋め込みが制限されているため");
+			}
+			expect(mockAdd).not.toHaveBeenCalled();
+		});
+
 		it("Firestoreエラーが適切にハンドリングされる", async () => {
+			// Mock video document (配信アーカイブとして設定)
+			const mockVideoDoc = {
+				exists: true,
+				data: () => ({
+					videoType: "archived",
+					duration: "PT1H30M", // 1時間30分
+					liveStreamingDetails: {
+						actualEndTime: "2024-01-01T02:00:00Z",
+					},
+					status: {
+						embeddable: true,
+					},
+				}),
+				get: mockGet,
+			};
+
+			// Mock video collection
+			mockDoc.mockReturnValue({
+				get: vi.fn().mockResolvedValue(mockVideoDoc),
+				update: mockUpdate,
+			});
+
 			// Mock successful YouTube API
 			global.fetch = vi.fn().mockResolvedValue({
 				ok: true,
