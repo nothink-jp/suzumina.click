@@ -75,9 +75,17 @@ export interface FilterConfig {
 }
 
 /**
- * ソート設定（簡潔版）
+ * ソート設定
  */
-export type SortConfig = string | { value: string; label: string };
+export interface SortOption {
+	value: string;
+	label: string;
+	field?: string;
+	order?: "asc" | "desc";
+	compareFn?: <T>(a: T, b: T) => number;
+}
+
+export type SortConfig = string | SortOption;
 
 /**
  * リストエラー

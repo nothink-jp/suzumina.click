@@ -3,75 +3,141 @@
  */
 
 /**
- * オブジェクトから型安全にプロパティを取得
+ * オブジェクトから検索可能なテキストを取得
+ * title, name, label, description などの一般的なプロパティを探す
  */
-export function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] | undefined {
-	if (obj && typeof obj === "object" && key in obj) {
-		return obj[key];
-	}
-	return undefined;
-}
+export function getSearchableText(item: unknown): string | null {
+	if (!item || typeof item !== "object") return null;
 
-/**
- * オブジェクトから複数のプロパティを試行して取得
- */
-export function getPropertyFromPaths<T>(obj: T, paths: string[]): unknown | undefined {
-	if (!obj || typeof obj !== "object") return undefined;
+	const obj = item as any;
 
-	for (const path of paths) {
-		if (path in obj) {
-			return (obj as Record<string, unknown>)[path];
-		}
-	}
-	return undefined;
-}
+	// 一般的な検索対象プロパティ
+	const searchableProps = ["title", "name", "label", "description", "text"];
 
-/**
- * 検索可能なテキストを取得
- */
-export function getSearchableText(item: unknown): string | undefined {
-	if (!item || typeof item !== "object") return undefined;
-
-	const searchableProps = ["title", "name", "label"];
 	for (const prop of searchableProps) {
-		const value = (item as Record<string, unknown>)[prop];
-		if (typeof value === "string") {
-			return value;
+		if (obj[prop] && typeof obj[prop] === "string") {
+			return obj[prop];
 		}
 	}
-	return undefined;
+
+	// ネストされたオブジェクトもチェック
+	if (obj.data) {
+		return getSearchableText(obj.data);
+	}
+
+	return null;
 }
 
 /**
- * 日付プロパティを取得
+ * オブジェクトから日付プロパティを取得
+ * createdAt, updatedAt, date などの一般的な日付プロパティを探す
  */
-export function getDateProperty(item: unknown): Date | undefined {
-	if (!item || typeof item !== "object") return undefined;
+export function getDateProperty(item: unknown): Date | null {
+	if (!item || typeof item !== "object") return null;
 
-	const dateProps = ["createdAt", "updatedAt", "date"];
+	const obj = item as any;
+
+	// 一般的な日付プロパティ
+	const dateProps = ["createdAt", "updatedAt", "date", "publishedAt", "modifiedAt"];
+
 	for (const prop of dateProps) {
-		const value = (item as Record<string, unknown>)[prop];
-		if (value instanceof Date) {
-			return value;
-		}
-		if (typeof value === "string" || typeof value === "number") {
-			try {
-				const date = new Date(value);
-				if (!Number.isNaN(date.getTime())) {
+		if (obj[prop]) {
+			// Date オブジェクトの場合
+			if (obj[prop] instanceof Date) {
+				return obj[prop];
+			}
+			// 文字列の場合、パースを試みる
+			if (typeof obj[prop] === "string") {
+				const date = new Date(obj[prop]);
+				if (!isNaN(date.getTime())) {
 					return date;
 				}
-			} catch {
-				// Invalid date value, return undefined
+			}
+			// Firestore Timestamp の場合
+			if (obj[prop].toDate && typeof obj[prop].toDate === "function") {
+				return obj[prop].toDate();
 			}
 		}
 	}
-	return undefined;
+
+	// ネストされたオブジェクトもチェック
+	if (obj.data) {
+		return getDateProperty(obj.data);
+	}
+
+	return null;
 }
 
 /**
- * フィルター可能な値を取得
+ * オブジェクトから数値プロパティを取得
  */
-export function getFilterableValue(item: unknown, key: string): unknown | undefined {
+export function getNumericProperty(item: unknown, propertyPath: string): number | null {
+	if (!item || typeof item !== "object") return null;
+
+	const obj = item as any;
+	const parts = propertyPath.split(".");
+
+	let current = obj;
+	for (const part of parts) {
+		if (current[part] === undefined) return null;
+		current = current[part];
+	}
+
+	if (typeof current === "number") {
+		return current;
+	}
+
+	if (typeof current === "string") {
+		const num = Number.parseFloat(current);
+		if (!isNaN(num)) {
+			return num;
+		}
+	}
+
+	return null;
+}
+
+/**
+ * オブジェクトから文字列プロパティを取得
+ */
+export function getStringProperty(item: unknown, propertyPath: string): string | null {
+	if (!item || typeof item !== "object") return null;
+
+	const obj = item as any;
+	const parts = propertyPath.split(".");
+
+	let current = obj;
+	for (const part of parts) {
+		if (current[part] === undefined) return null;
+		current = current[part];
+	}
+
+	if (typeof current === "string") {
+		return current;
+	}
+
+	if (current && typeof current.toString === "function") {
+		return current.toString();
+	}
+
+	return null;
+}
+
+/**
+ * オブジェクトからフィルター可能な値を取得
+ * プロパティパスに対応
+ */
+export function getFilterableValue(item: unknown, propertyPath: string): unknown {
 	if (!item || typeof item !== "object") return undefined;
-	return (item as Record<string, unknown>)[key];
+
+	const obj = item as any;
+	const parts = propertyPath.split(".");
+
+	let current = obj;
+	for (const part of parts) {
+		if (current === null || current === undefined) return undefined;
+		current = current[part];
+	}
+
+	return current;
 }
