@@ -5,7 +5,7 @@ import {
 	ListPageContent,
 	ListPageHeader,
 	ListPageLayout,
-} from "@suzumina.click/ui/components/custom/list-page-layout";
+} from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
 import CircleWorksList from "./CircleWorksList";
 

@@ -1,10 +1,7 @@
 "use client";
 
 import type { WorkListResultPlain, WorkPlainObject } from "@suzumina.click/shared-types";
-import {
-	ConfigurableList,
-	type StandardListParams,
-} from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/components/custom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ListWrapper } from "@/components/list/ListWrapper";
 import { WorkListItem } from "@/components/work/WorkListItem";
@@ -119,7 +116,7 @@ export default function WorksList({ initialData }: WorksListProps) {
 								showR18: {
 									type: "boolean",
 									label: "R18作品表示",
-									defaultValue: showR18Content, // 年齢確認状態に基づいてデフォルト値を設定
+									defaultValue: showR18Content,
 								},
 							}
 						: {}),

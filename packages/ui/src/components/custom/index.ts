@@ -5,26 +5,41 @@ export { AudioPlayer } from "./audio-player";
 // Types
 export type { AutocompleteSuggestionItem } from "./autocomplete-dropdown";
 export { AutocompleteDropdown } from "./autocomplete-dropdown";
+export { ConfigurableList } from "./configurable-list";
+// List components
+export type {
+	ConfigurableListProps,
+	DataAdapter,
+	FilterConfig,
+	ListController,
+	ListDataSource,
+	ListError,
+	SortConfig,
+	StandardListParams,
+} from "./configurable-list/types";
+// Hooks are not exported from index to avoid Server Component issues
+// Import them directly from the component that uses them if needed
+export {
+	calculatePagination,
+	createDataAdapter,
+	wrapLegacyFetchData,
+} from "./configurable-list/utils/dataAdapter";
+export {
+	generateOptions,
+	generateYearOptions,
+	getDefaultFilterValues,
+	hasActiveFilters,
+	isFilterEnabled,
+	normalizeOptions,
+	transformFilterValue,
+	validateFilterValue,
+} from "./configurable-list/utils/filterHelpers";
 
 // Utility components
 export { HighlightTags, HighlightText, MultiFieldHighlight } from "./highlight-text";
 
-// List components
-export type {
-	BasicListProps,
-	ConfigurableListProps,
-	FilterableListProps,
-	FilterConfig,
-	ListDataSource,
-	ListError,
-	SortableListProps,
-	SortConfig,
-	StandardListParams,
-} from "./list";
-export { BasicList, ConfigurableList, FilterableList, SortableList } from "./list";
-
 // Layout components
-export { ListPageLayout } from "./list-page-layout";
+export { ListPageContent, ListPageHeader, ListPageLayout } from "./list-page-layout";
 export { LoadingSkeleton } from "./loading-skeleton";
 export { NotImplementedOverlay } from "./not-implemented-overlay";
 

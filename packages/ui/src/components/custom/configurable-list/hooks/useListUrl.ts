@@ -2,6 +2,8 @@
  * URL同期用のフック（改善版）
  */
 
+"use client";
+
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { FilterConfig } from "../types";

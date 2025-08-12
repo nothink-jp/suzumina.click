@@ -1,7 +1,7 @@
 "use client";
 
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
-import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList } from "@suzumina.click/ui/components/custom";
 import { useCallback, useMemo } from "react";
 import { AudioButtonListItem } from "@/components/audio/AudioButtonListItem";
 import {

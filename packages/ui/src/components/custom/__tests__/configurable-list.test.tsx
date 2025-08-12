@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ConfigurableList } from "../configurable-list";
-import type { FilterConfig } from "../core/types";
+import type { FilterConfig } from "../configurable-list/types";
 
 // Next.js のルーターをモック
 vi.mock("next/navigation", () => ({
@@ -380,7 +380,7 @@ describe("ConfigurableList", () => {
 				dataAdapter={{
 					toParams: (params) => params,
 					fromResult: (result) => {
-						const typedResult = result as import("../core/types").ListDataSource<
+						const typedResult = result as import("../configurable-list/types").ListDataSource<
 							(typeof sampleItems)[0]
 						>;
 						return typedResult;
@@ -400,7 +400,7 @@ describe("ConfigurableList", () => {
 				dataAdapter={{
 					toParams: (params) => params,
 					fromResult: (result) => {
-						const typedResult = result as import("../core/types").ListDataSource<
+						const typedResult = result as import("../configurable-list/types").ListDataSource<
 							(typeof sampleItems)[0]
 						>;
 						return typedResult;
@@ -439,7 +439,7 @@ describe("ConfigurableList", () => {
 				dataAdapter={{
 					toParams: (params) => params,
 					fromResult: (result) => {
-						const typedResult = result as import("../core/types").ListDataSource<
+						const typedResult = result as import("../configurable-list/types").ListDataSource<
 							(typeof sampleItems)[0]
 						>;
 						return typedResult;

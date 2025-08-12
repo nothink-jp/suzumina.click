@@ -1,7 +1,7 @@
 "use client";
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import { ConfigurableList } from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList } from "@suzumina.click/ui/components/custom";
 import { useMemo } from "react";
 import { ListWrapper } from "@/components/list/ListWrapper";
 import {

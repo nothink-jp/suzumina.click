@@ -1,4 +1,4 @@
-import type { StandardListParams } from "@suzumina.click/ui/components/custom/list";
+import type { StandardListParams } from "@suzumina.click/ui/components/custom";
 
 /**
  * 基本的なtoParams関数を作成するユーティリティ
