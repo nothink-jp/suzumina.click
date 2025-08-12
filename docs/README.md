@@ -45,6 +45,11 @@ Design decisions and implementation patterns:
 - [ADR-001: DDD Implementation Guidelines](decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - When to apply DDD patterns
 - [ADR-002: TypeScript Type Safety Enhancement](decisions/architecture/ADR-002-typescript-type-safety-enhancement.md) - Branded Types, Result patterns, and Zod integration
 
+### Postmortems
+Incident analysis and lessons learned:
+
+- [2025-08-12: UI Component Deletion](postmortems/2025-08-12-ui-component-deletion.md) - Accidental deletion of used components
+
 ### External API Documentation
 Integration specifications and analysis:
 
