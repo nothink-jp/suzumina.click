@@ -73,167 +73,306 @@ describe("WorkRating", () => {
 
 	describe("hasRatings", () => {
 		it("should return true when count > 0", () => {
-			const rating = WorkRating.create(4.5, 100, 4.5)._unsafeUnwrap();
-			expect(rating.hasRatings()).toBe(true);
+			const result = WorkRating.create(4.5, 100, 4.5);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const rating = result.value;
+				expect(rating.hasRatings()).toBe(true);
+			}
 		});
 
 		it("should return false when count = 0", () => {
-			const rating = WorkRating.create(0, 0, 0)._unsafeUnwrap();
-			expect(rating.hasRatings()).toBe(false);
+			const result = WorkRating.create(0, 0, 0);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const rating = result.value;
+				expect(rating.hasRatings()).toBe(false);
+			}
 		});
 	});
 
 	describe("isHighlyRated", () => {
 		it("should return true for average >= 4.0", () => {
-			expect(WorkRating.create(4.0, 100, 4.0)._unsafeUnwrap().isHighlyRated()).toBe(true);
-			expect(WorkRating.create(4.5, 100, 4.5)._unsafeUnwrap().isHighlyRated()).toBe(true);
+			const result1 = WorkRating.create(4.0, 100, 4.0);
+			const result2 = WorkRating.create(4.5, 100, 4.5);
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			if (result1.isOk()) {
+				expect(result1.value.isHighlyRated()).toBe(true);
+			}
+			if (result2.isOk()) {
+				expect(result2.value.isHighlyRated()).toBe(true);
+			}
 		});
 
 		it("should return false for average < 4.0", () => {
-			expect(WorkRating.create(3.9, 100, 3.9)._unsafeUnwrap().isHighlyRated()).toBe(false);
-			expect(WorkRating.create(3.0, 100, 3.0)._unsafeUnwrap().isHighlyRated()).toBe(false);
+			const result1 = WorkRating.create(3.9, 100, 3.9);
+			const result2 = WorkRating.create(3.0, 100, 3.0);
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			if (result1.isOk()) {
+				expect(result1.value.isHighlyRated()).toBe(false);
+			}
+			if (result2.isOk()) {
+				expect(result2.value.isHighlyRated()).toBe(false);
+			}
 		});
 	});
 
 	describe("getReliability", () => {
 		it("should return 'high' for count >= 100", () => {
-			expect(WorkRating.create(4.5, 100, 4.5)._unsafeUnwrap().getReliability()).toBe("high");
-			expect(WorkRating.create(4.5, 150, 4.5)._unsafeUnwrap().getReliability()).toBe("high");
+			const result1 = WorkRating.create(4.5, 100, 4.5);
+			const result2 = WorkRating.create(4.5, 150, 4.5);
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			if (result1.isOk()) {
+				expect(result1.value.getReliability()).toBe("high");
+			}
+			if (result2.isOk()) {
+				expect(result2.value.getReliability()).toBe("high");
+			}
 		});
 
 		it("should return 'medium' for count >= 50", () => {
-			expect(WorkRating.create(4.5, 50, 4.5)._unsafeUnwrap().getReliability()).toBe("medium");
-			expect(WorkRating.create(4.5, 99, 4.5)._unsafeUnwrap().getReliability()).toBe("medium");
+			const result1 = WorkRating.create(4.5, 50, 4.5);
+			const result2 = WorkRating.create(4.5, 99, 4.5);
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			if (result1.isOk()) {
+				expect(result1.value.getReliability()).toBe("medium");
+			}
+			if (result2.isOk()) {
+				expect(result2.value.getReliability()).toBe("medium");
+			}
 		});
 
 		it("should return 'low' for count >= 10", () => {
-			expect(WorkRating.create(4.5, 10, 4.5)._unsafeUnwrap().getReliability()).toBe("low");
-			expect(WorkRating.create(4.5, 49, 4.5)._unsafeUnwrap().getReliability()).toBe("low");
+			const result1 = WorkRating.create(4.5, 10, 4.5);
+			const result2 = WorkRating.create(4.5, 49, 4.5);
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			if (result1.isOk()) {
+				expect(result1.value.getReliability()).toBe("low");
+			}
+			if (result2.isOk()) {
+				expect(result2.value.getReliability()).toBe("low");
+			}
 		});
 
 		it("should return 'insufficient' for count < 10", () => {
-			expect(WorkRating.create(4.5, 9, 4.5)._unsafeUnwrap().getReliability()).toBe("insufficient");
-			expect(WorkRating.create(4.5, 0, 4.5)._unsafeUnwrap().getReliability()).toBe("insufficient");
+			const result1 = WorkRating.create(4.5, 9, 4.5);
+			const result2 = WorkRating.create(4.5, 0, 4.5);
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			if (result1.isOk()) {
+				expect(result1.value.getReliability()).toBe("insufficient");
+			}
+			if (result2.isOk()) {
+				expect(result2.value.getReliability()).toBe("insufficient");
+			}
 		});
 	});
 
 	describe("getDisplayStars", () => {
 		it("should round stars", () => {
-			expect(WorkRating.create(4.2, 100, 4.2)._unsafeUnwrap().getDisplayStars()).toBe(4);
-			expect(WorkRating.create(4.5, 100, 4.5)._unsafeUnwrap().getDisplayStars()).toBe(5);
-			expect(WorkRating.create(4.8, 100, 4.8)._unsafeUnwrap().getDisplayStars()).toBe(5);
+			const result1 = WorkRating.create(4.2, 100, 4.2);
+			const result2 = WorkRating.create(4.5, 100, 4.5);
+			const result3 = WorkRating.create(4.8, 100, 4.8);
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			expect(result3.isOk()).toBe(true);
+			if (result1.isOk()) {
+				expect(result1.value.getDisplayStars()).toBe(4);
+			}
+			if (result2.isOk()) {
+				expect(result2.value.getDisplayStars()).toBe(5);
+			}
+			if (result3.isOk()) {
+				expect(result3.value.getDisplayStars()).toBe(5);
+			}
 		});
 	});
 
 	describe("getPercentage", () => {
 		it("should convert average to percentage", () => {
-			expect(WorkRating.create(5.0, 100, 5.0)._unsafeUnwrap().getPercentage()).toBe(100);
-			expect(WorkRating.create(4.0, 100, 4.0)._unsafeUnwrap().getPercentage()).toBe(80);
-			expect(WorkRating.create(2.5, 100, 2.5)._unsafeUnwrap().getPercentage()).toBe(50);
-			expect(WorkRating.create(0, 0, 0)._unsafeUnwrap().getPercentage()).toBe(0);
+			const result1 = WorkRating.create(5.0, 100, 5.0);
+			const result2 = WorkRating.create(4.0, 100, 4.0);
+			const result3 = WorkRating.create(2.5, 100, 2.5);
+			const result4 = WorkRating.create(0, 0, 0);
+
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			expect(result3.isOk()).toBe(true);
+			expect(result4.isOk()).toBe(true);
+
+			if (result1.isOk()) {
+				expect(result1.value.getPercentage()).toBe(100);
+			}
+			if (result2.isOk()) {
+				expect(result2.value.getPercentage()).toBe(80);
+			}
+			if (result3.isOk()) {
+				expect(result3.value.getPercentage()).toBe(50);
+			}
+			if (result4.isOk()) {
+				expect(result4.value.getPercentage()).toBe(0);
+			}
 		});
 	});
 
 	describe("format", () => {
 		it("should format rating", () => {
-			expect(WorkRating.create(4.5, 100, 4.5)._unsafeUnwrap().format()).toBe("★4.5 (100件)");
-			expect(WorkRating.create(4.0, 50, 4.0)._unsafeUnwrap().format()).toBe("★4.0 (50件)");
+			const result1 = WorkRating.create(4.5, 100, 4.5);
+			const result2 = WorkRating.create(4.0, 50, 4.0);
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			if (result1.isOk()) {
+				expect(result1.value.format()).toBe("★4.5 (100件)");
+			}
+			if (result2.isOk()) {
+				expect(result2.value.format()).toBe("★4.0 (50件)");
+			}
 		});
 	});
 
 	describe("formatWithReviews", () => {
 		it("should format with review count if available", () => {
-			expect(WorkRating.create(4.5, 100, 4.5, 50)._unsafeUnwrap().formatWithReviews()).toBe(
-				"★4.5 (100件の評価, 50件のレビュー)",
-			);
+			const result = WorkRating.create(4.5, 100, 4.5, 50);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				expect(result.value.formatWithReviews()).toBe("★4.5 (100件の評価, 50件のレビュー)");
+			}
 		});
 
 		it("should fallback to format() without review count", () => {
-			expect(WorkRating.create(4.5, 100, 4.5)._unsafeUnwrap().formatWithReviews()).toBe(
-				"★4.5 (100件)",
-			);
+			const result = WorkRating.create(4.5, 100, 4.5);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				expect(result.value.formatWithReviews()).toBe("★4.5 (100件)");
+			}
 		});
 
 		it("should fallback to format() when review count is 0", () => {
-			expect(WorkRating.create(4.5, 100, 4.5, 0)._unsafeUnwrap().formatWithReviews()).toBe(
-				"★4.5 (100件)",
-			);
+			const result = WorkRating.create(4.5, 100, 4.5, 0);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				expect(result.value.formatWithReviews()).toBe("★4.5 (100件)");
+			}
 		});
 	});
 
 	describe("toString", () => {
 		it("should use formatWithReviews", () => {
-			const rating = WorkRating.create(4.5, 100, 4.5, 50)._unsafeUnwrap();
-			expect(rating.toString()).toBe(rating.formatWithReviews());
+			const result = WorkRating.create(4.5, 100, 4.5, 50);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const rating = result.value;
+				expect(rating.toString()).toBe(rating.formatWithReviews());
+			}
 		});
 	});
 
 	describe("toJSON", () => {
 		it("should include all properties", () => {
-			const rating = WorkRating.create(4.5, 100, 4.5, 50, { 5: 60, 4: 30, 3: 10 })._unsafeUnwrap();
-			expect(rating.toJSON()).toEqual({
-				stars: 4.5,
-				count: 100,
-				average: 4.5,
-				reviewCount: 50,
-				distribution: { 5: 60, 4: 30, 3: 10 },
-			});
+			const result = WorkRating.create(4.5, 100, 4.5, 50, { 5: 60, 4: 30, 3: 10 });
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const rating = result.value;
+				expect(rating.toJSON()).toEqual({
+					stars: 4.5,
+					count: 100,
+					average: 4.5,
+					reviewCount: 50,
+					distribution: { 5: 60, 4: 30, 3: 10 },
+				});
+			}
 		});
 
 		it("should exclude undefined properties", () => {
-			const rating = WorkRating.create(4.5, 100, 4.5)._unsafeUnwrap();
-			expect(rating.toJSON()).toEqual({
-				stars: 4.5,
-				count: 100,
-				average: 4.5,
-			});
+			const result = WorkRating.create(4.5, 100, 4.5);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const rating = result.value;
+				expect(rating.toJSON()).toEqual({
+					stars: 4.5,
+					count: 100,
+					average: 4.5,
+				});
+			}
 		});
 	});
 
 	describe("toPlainObject", () => {
 		it("should include computed properties", () => {
-			const rating = WorkRating.create(4.5, 100, 4.5, 50)._unsafeUnwrap();
-			const plain = rating.toPlainObject();
-
-			expect(plain).toMatchObject({
-				stars: 4.5,
-				count: 100,
-				average: 4.5,
-				reviewCount: 50,
-			});
+			const result = WorkRating.create(4.5, 100, 4.5, 50);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const rating = result.value;
+				const plain = rating.toPlainObject();
+				expect(plain).toMatchObject({
+					stars: 4.5,
+					count: 100,
+					average: 4.5,
+					reviewCount: 50,
+					hasRatings: true,
+					isHighlyRated: true,
+					reliability: "high",
+					formattedRating: "★4.5 (100件)",
+				});
+			}
 		});
 	});
 
 	describe("equals", () => {
 		it("should return true for equal ratings", () => {
-			const rating1 = WorkRating.create(4.5, 100, 4.5, 50)._unsafeUnwrap();
-			const rating2 = WorkRating.create(4.5, 100, 4.5, 50)._unsafeUnwrap();
-			expect(rating1.equals(rating2)).toBe(true);
+			const result1 = WorkRating.create(4.5, 100, 4.5, 50);
+			const result2 = WorkRating.create(4.5, 100, 4.5, 50);
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			if (result1.isOk() && result2.isOk()) {
+				expect(result1.value.equals(result2.value)).toBe(true);
+			}
 		});
 
-		it("should return false for different properties", () => {
-			const rating1 = WorkRating.create(4.5, 100, 4.5)._unsafeUnwrap();
-			const rating2 = WorkRating.create(4.0, 100, 4.0)._unsafeUnwrap();
-			expect(rating1.equals(rating2)).toBe(false);
+		it("should return false for different ratings", () => {
+			const result1 = WorkRating.create(4.5, 100, 4.5);
+			const result2 = WorkRating.create(4.0, 100, 4.0);
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			if (result1.isOk() && result2.isOk()) {
+				expect(result1.value.equals(result2.value)).toBe(false);
+			}
 		});
 
-		it("should handle distribution comparison", () => {
-			const rating1 = WorkRating.create(4.5, 100, 4.5, 50, { 5: 60, 4: 30, 3: 10 })._unsafeUnwrap();
-			const rating2 = WorkRating.create(4.5, 100, 4.5, 50, { 5: 60, 4: 30, 3: 10 })._unsafeUnwrap();
-			expect(rating1.equals(rating2)).toBe(true);
+		it("should check distribution equality", () => {
+			const result1 = WorkRating.create(4.5, 100, 4.5, 50, { 5: 60, 4: 30, 3: 10 });
+			const result2 = WorkRating.create(4.5, 100, 4.5, 50, { 5: 60, 4: 30, 3: 10 });
+			expect(result1.isOk()).toBe(true);
+			expect(result2.isOk()).toBe(true);
+			if (result1.isOk() && result2.isOk()) {
+				expect(result1.value.equals(result2.value)).toBe(true);
+			}
 
-			const rating3 = WorkRating.create(4.5, 100, 4.5, 50, { 5: 50, 4: 40, 3: 10 })._unsafeUnwrap();
-			expect(rating1.equals(rating3)).toBe(false);
+			const result3 = WorkRating.create(4.5, 100, 4.5, 50, { 5: 50, 4: 40, 3: 10 });
+			expect(result3.isOk()).toBe(true);
+			if (result1.isOk() && result3.isOk()) {
+				expect(result1.value.equals(result3.value)).toBe(false);
+			}
 		});
 
 		it("should return false for non-WorkRating", () => {
-			const rating = WorkRating.create(4.5, 100, 4.5)._unsafeUnwrap();
-			expect(rating.equals({} as any)).toBe(false);
+			const result = WorkRating.create(4.5, 100, 4.5);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const rating = result.value;
+				expect(rating.equals(null as any)).toBe(false);
+				expect(rating.equals({} as any)).toBe(false);
+			}
 		});
 	});
 
 	describe("fromDLsiteRating", () => {
-		it("should convert from DLsite scale", () => {
+		it("should convert DLsite rating (10-50) to 1-5 scale", () => {
 			const result = WorkRating.fromDLsiteRating(45, 100, 50, { "5": 60, "4": 30, "3": 10 });
 			expect(result.isOk()).toBe(true);
 			if (result.isOk()) {
@@ -246,7 +385,7 @@ describe("WorkRating", () => {
 			}
 		});
 
-		it("should handle without optional parameters", () => {
+		it("should handle minimal parameters", () => {
 			const result = WorkRating.fromDLsiteRating(30, 50);
 			expect(result.isOk()).toBe(true);
 			if (result.isOk()) {
@@ -258,18 +397,48 @@ describe("WorkRating", () => {
 				expect(rating.distribution).toBeUndefined();
 			}
 		});
+
+		it("should validate API rating range (10-50)", () => {
+			const result1 = WorkRating.fromDLsiteRating(9, 100);
+			expect(result1.isErr()).toBe(true);
+			if (result1.isErr()) {
+				expect(result1.error.message).toBe("DLsite評価は10-50の範囲である必要があります");
+			}
+
+			const result2 = WorkRating.fromDLsiteRating(51, 100);
+			expect(result2.isErr()).toBe(true);
+			if (result2.isErr()) {
+				expect(result2.error.message).toBe("DLsite評価は10-50の範囲である必要があります");
+			}
+		});
 	});
 
-	describe("empty", () => {
-		it("should create empty rating", () => {
-			const result = WorkRating.empty();
+	describe("isValid", () => {
+		it("should validate instance state", () => {
+			const result = WorkRating.create(4.5, 100, 4.5);
 			expect(result.isOk()).toBe(true);
 			if (result.isOk()) {
 				const rating = result.value;
-				expect(rating.stars).toBe(0);
-				expect(rating.count).toBe(0);
-				expect(rating.average).toBe(0);
-				expect(rating.hasRatings()).toBe(false);
+				expect(rating.isValid()).toBe(true);
+				expect(rating.getValidationErrors()).toEqual([]);
+			}
+		});
+	});
+
+	describe("clone", () => {
+		it("should create a copy", () => {
+			const result = WorkRating.create(4.5, 100, 4.5, 50, { 5: 60, 4: 30, 3: 10 });
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const original = result.value;
+				const cloned = original.clone();
+				expect(cloned).not.toBe(original);
+				expect(cloned.equals(original)).toBe(true);
+				expect(cloned.stars).toBe(original.stars);
+				expect(cloned.count).toBe(original.count);
+				expect(cloned.average).toBe(original.average);
+				expect(cloned.reviewCount).toBe(original.reviewCount);
+				expect(cloned.distribution).toEqual(original.distribution);
 			}
 		});
 	});

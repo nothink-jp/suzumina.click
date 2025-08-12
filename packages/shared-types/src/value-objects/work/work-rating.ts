@@ -320,6 +320,11 @@ export class WorkRating
 		reviewCount?: number,
 		distribution?: Record<string, number>,
 	): Result<WorkRating, ValidationError> {
+		// Validate DLsite API rating range
+		if (apiRating < 10 || apiRating > 50) {
+			return err(validationError("apiRating", "DLsite評価は10-50の範囲である必要があります"));
+		}
+
 		const stars = apiRating / 10; // Convert 10-50 to 1-5
 		const average = stars;
 
