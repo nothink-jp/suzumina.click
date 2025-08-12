@@ -11,7 +11,11 @@ import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { BasicList, type BasicListProps } from "./basic-list";
 import type { SortConfig } from "./core/types";
-import { getDateProperty, getSearchableText } from "./core/utils/typeSafeAccess";
+import {
+	getDateProperty,
+	getFilterableValue,
+	getSearchableText,
+} from "./core/utils/typeSafeAccess";
 
 export interface SortableListProps<T> extends BasicListProps<T> {
 	sorts?: SortConfig[];
@@ -29,6 +33,7 @@ export function SortableList<T>({
 	...basicListProps
 }: SortableListProps<T>) {
 	const [searchTerm, setSearchTerm] = useState("");
+	const [currentPage, setCurrentPage] = useState(1);
 
 	// ソート設定の正規化
 	const normalizedSorts = useMemo(() => {
@@ -78,11 +83,19 @@ export function SortableList<T>({
 
 					// プロパティ名によるソート
 					if (sortConfig.field) {
-						const aVal = (a as any)[sortConfig.field];
-						const bVal = (b as any)[sortConfig.field];
+						const aVal = getFilterableValue(a, sortConfig.field);
+						const bVal = getFilterableValue(b, sortConfig.field);
 
-						if (aVal < bVal) return sortConfig.order === "desc" ? 1 : -1;
-						if (aVal > bVal) return sortConfig.order === "desc" ? -1 : 1;
+						// 型安全な比較
+						if (aVal === undefined && bVal === undefined) return 0;
+						if (aVal === undefined) return 1;
+						if (bVal === undefined) return -1;
+
+						// 文字列または数値として比較
+						const comparison = String(aVal).localeCompare(String(bVal), undefined, {
+							numeric: true,
+						});
+						return sortConfig.order === "desc" ? -comparison : comparison;
 					}
 
 					return 0;
@@ -96,12 +109,12 @@ export function SortableList<T>({
 	// 検索やソート変更時は1ページ目に戻る
 	const handleSearchChange = (value: string) => {
 		setSearchTerm(value);
-		// BasicListのページをリセットする方法が必要
+		setCurrentPage(1);
 	};
 
 	const handleSortChange = (value: string) => {
 		setCurrentSort(value);
-		// BasicListのページをリセットする方法が必要
+		setCurrentPage(1);
 	};
 
 	return (
@@ -147,7 +160,12 @@ export function SortableList<T>({
 					<div className="text-muted-foreground">検索結果がありません</div>
 				</div>
 			) : (
-				<BasicList {...basicListProps} items={processedItems} />
+				<BasicList
+					{...basicListProps}
+					items={processedItems}
+					page={currentPage}
+					onPageChange={setCurrentPage}
+				/>
 			)}
 		</div>
 	);

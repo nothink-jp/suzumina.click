@@ -18,6 +18,8 @@ export interface BasicListProps<T> {
 	loading?: boolean;
 	error?: ListError;
 	className?: string;
+	page?: number;
+	onPageChange?: (page: number) => void;
 }
 
 export function BasicList<T>({
@@ -27,8 +29,20 @@ export function BasicList<T>({
 	loading = false,
 	error,
 	className = "",
+	page: controlledPage,
+	onPageChange,
 }: BasicListProps<T>) {
-	const [currentPage, setCurrentPage] = useState(1);
+	const [internalPage, setInternalPage] = useState(1);
+
+	// 制御/非制御コンポーネントパターン
+	const currentPage = controlledPage ?? internalPage;
+	const setCurrentPage = (newPage: number) => {
+		if (onPageChange) {
+			onPageChange(newPage);
+		} else {
+			setInternalPage(newPage);
+		}
+	};
 
 	// ページネーション情報を計算
 	const pagination = useMemo(

@@ -13,6 +13,7 @@ import { FilterPanel } from "./core/components/FilterPanel";
 import { useListUrl } from "./core/hooks/useListUrl";
 import type { FilterConfig } from "./core/types";
 import { getDefaultFilterValues, hasActiveFilters } from "./core/utils/filterHelpers";
+import { getFilterableValue } from "./core/utils/typeSafeAccess";
 import { SortableList, type SortableListProps } from "./sortable-list";
 
 export interface FilterableListProps<T> extends SortableListProps<T> {
@@ -67,7 +68,7 @@ export function FilterableList<T>({
 				if (!filterConfig) continue;
 
 				// フィルター適用ロジック（実際の実装では各フィルタータイプに応じた処理が必要）
-				const itemValue = (item as any)[key];
+				const itemValue = getFilterableValue(item, key);
 
 				switch (filterConfig.type) {
 					case "select":
@@ -79,8 +80,11 @@ export function FilterableList<T>({
 						break;
 					case "range": {
 						const range = value as { min?: number; max?: number };
-						if (range.min !== undefined && itemValue < range.min) return false;
-						if (range.max !== undefined && itemValue > range.max) return false;
+						const numValue = typeof itemValue === "number" ? itemValue : Number(itemValue);
+						if (!isNaN(numValue)) {
+							if (range.min !== undefined && numValue < range.min) return false;
+							if (range.max !== undefined && numValue > range.max) return false;
+						}
 						break;
 					}
 					case "boolean":
