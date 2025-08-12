@@ -7,7 +7,6 @@ export type { AutocompleteSuggestionItem } from "./autocomplete-dropdown";
 export { AutocompleteDropdown } from "./autocomplete-dropdown";
 
 // Utility components
-export { GenericCarousel } from "./generic-carousel";
 export { HighlightTags, HighlightText, MultiFieldHighlight } from "./highlight-text";
 
 // List components
@@ -16,14 +15,12 @@ export type {
 	FilterConfig,
 	ListDataSource,
 	ListError,
-	SimpleListProps,
 	SortConfig,
 	StandardListParams,
 } from "./list";
-export { ConfigurableList, SimpleList } from "./list";
+export { ConfigurableList } from "./list";
 
 // Layout components
-export { ListDisplayControls } from "./list-display-controls";
 export { ListPageLayout } from "./list-page-layout";
 export { LoadingSkeleton } from "./loading-skeleton";
 export { NotImplementedOverlay } from "./not-implemented-overlay";
