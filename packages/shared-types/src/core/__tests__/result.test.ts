@@ -19,7 +19,9 @@ describe("Result/Either Pattern", () => {
 			const result = ok("success");
 			expect(result.isOk()).toBe(true);
 			expect(result.isErr()).toBe(false);
-			expect(result._unsafeUnwrap()).toBe("success");
+			if (result.isOk()) {
+				expect(result.value).toBe("success");
+			}
 		});
 
 		it("errでエラー結果を作成できる", () => {

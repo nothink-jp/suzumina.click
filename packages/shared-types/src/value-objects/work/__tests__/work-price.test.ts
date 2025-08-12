@@ -13,7 +13,7 @@ function createPrice(
 	if (result.isErr()) {
 		throw new Error(`Failed to create WorkPrice: ${result.error.message}`);
 	}
-	return result._unsafeUnwrap();
+	return result.value;
 }
 
 describe("WorkPrice", () => {
@@ -21,19 +21,23 @@ describe("WorkPrice", () => {
 		it("should create a valid work price", () => {
 			const result = WorkPrice.create(1000, "JPY", 1500, 33, 100);
 			expect(result.isOk()).toBe(true);
-			const price = result._unsafeUnwrap();
-			expect(price.current).toBe(1000);
-			expect(price.currency).toBe("JPY");
-			expect(price.original).toBe(1500);
-			expect(price.discount).toBe(33);
-			expect(price.point).toBe(100);
+			if (result.isOk()) {
+				const price = result.value;
+				expect(price.current).toBe(1000);
+				expect(price.currency).toBe("JPY");
+				expect(price.original).toBe(1500);
+				expect(price.discount).toBe(33);
+				expect(price.point).toBe(100);
+			}
 		});
 
 		it("should use default currency JPY", () => {
 			const result = WorkPrice.create(1000);
 			expect(result.isOk()).toBe(true);
-			const price = result._unsafeUnwrap();
-			expect(price.currency).toBe("JPY");
+			if (result.isOk()) {
+				const price = result.value;
+				expect(price.currency).toBe("JPY");
+			}
 		});
 
 		it("should return error for negative current price", () => {

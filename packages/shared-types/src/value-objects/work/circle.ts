@@ -196,7 +196,11 @@ export class Circle extends BaseValueObject<Circle> implements ValidatableValueO
 	}
 
 	clone(): Circle {
-		return new Circle(this._id, this._name, this._nameEn);
+		const result = Circle.create(this._id as string, this._name, this._nameEn);
+		if (result.isErr()) {
+			throw new Error(`Failed to clone Circle: ${result.error.message}`);
+		}
+		return result.value;
 	}
 
 	toPlainObject(): CircleData {
@@ -215,6 +219,10 @@ export class Circle extends BaseValueObject<Circle> implements ValidatableValueO
 	static fromPartial(data: { id?: string; name: string; nameEn?: string }): Circle {
 		// If no ID provided, generate from name
 		const id = data.id || `UNKNOWN_${Date.now()}`;
-		return new Circle(id, data.name, data.nameEn);
+		const result = Circle.create(id, data.name, data.nameEn);
+		if (result.isErr()) {
+			throw new Error(`Failed to create Circle from partial data: ${result.error.message}`);
+		}
+		return result.value;
 	}
 }

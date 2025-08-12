@@ -255,9 +255,11 @@ describe("Price Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const freePrice = result._unsafeUnwrap();
-			expect(freePrice.isFree()).toBe(true);
-			expect(freePrice.isDiscounted()).toBe(false);
+			if (result.isOk()) {
+				const freePrice = result.value;
+				expect(freePrice.isFree()).toBe(true);
+				expect(freePrice.isDiscounted()).toBe(false);
+			}
 		});
 
 		it("割引作品を正しく判定する", () => {
@@ -268,10 +270,12 @@ describe("Price Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const discountedPrice = result._unsafeUnwrap();
-			expect(discountedPrice.isDiscounted()).toBe(true);
-			expect(discountedPrice.discountAmount()).toBe(200);
-			expect(discountedPrice.effectiveDiscountRate()).toBe(20);
+			if (result.isOk()) {
+				const discountedPrice = result.value;
+				expect(discountedPrice.isDiscounted()).toBe(true);
+				expect(discountedPrice.discountAmount()).toBe(200);
+				expect(discountedPrice.effectiveDiscountRate()).toBe(20);
+			}
 		});
 
 		it("通常価格（割引なし）を正しく判定する", () => {
@@ -281,10 +285,12 @@ describe("Price Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const normalPrice = result._unsafeUnwrap();
-			expect(normalPrice.isDiscounted()).toBe(false);
-			expect(normalPrice.discountAmount()).toBe(0);
-			expect(normalPrice.effectiveDiscountRate()).toBe(0);
+			if (result.isOk()) {
+				const normalPrice = result.value;
+				expect(normalPrice.isDiscounted()).toBe(false);
+				expect(normalPrice.discountAmount()).toBe(0);
+				expect(normalPrice.effectiveDiscountRate()).toBe(0);
+			}
 		});
 
 		it("元価格が0の場合の割引率を正しく計算する", () => {
@@ -295,8 +301,10 @@ describe("Price Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const price = result._unsafeUnwrap();
-			expect(price.effectiveDiscountRate()).toBe(0);
+			if (result.isOk()) {
+				const price = result.value;
+				expect(price.effectiveDiscountRate()).toBe(0);
+			}
 		});
 
 		it("価格を正しくフォーマットする", () => {
@@ -306,9 +314,11 @@ describe("Price Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const price = result._unsafeUnwrap();
-			expect(price.format()).toMatch(/¥|￥/);
-			expect(price.format()).toContain("1,980");
+			if (result.isOk()) {
+				const price = result.value;
+				expect(price.format()).toMatch(/¥|￥/);
+				expect(price.format()).toContain("1,980");
+			}
 		});
 
 		it("USD価格を正しくフォーマットする", () => {
@@ -318,10 +328,12 @@ describe("Price Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const price = result._unsafeUnwrap();
-			const formatted = price.format();
-			expect(formatted).toContain("$");
-			expect(formatted).toContain("1,500");
+			if (result.isOk()) {
+				const price = result.value;
+				const formatted = price.format();
+				expect(formatted).toContain("$");
+				expect(formatted).toContain("1,500");
+			}
 		});
 	});
 
@@ -364,12 +376,14 @@ describe("Price Value Object", () => {
 			expect(price2Result.isOk()).toBe(true);
 			expect(price3Result.isOk()).toBe(true);
 
-			const price1 = price1Result._unsafeUnwrap();
-			const price2 = price2Result._unsafeUnwrap();
-			const price3 = price3Result._unsafeUnwrap();
+			if (price1Result.isOk() && price2Result.isOk() && price3Result.isOk()) {
+				const price1 = price1Result.value;
+				const price2 = price2Result.value;
+				const price3 = price3Result.value;
 
-			expect(price1.equals(price2)).toBe(true);
-			expect(price1.equals(price3)).toBe(false);
+				expect(price1.equals(price2)).toBe(true);
+				expect(price1.equals(price3)).toBe(false);
+			}
 		});
 
 		it("should return false for non-Price objects", () => {
@@ -458,10 +472,12 @@ describe("Price Value Object", () => {
 			expect(price2.isOk()).toBe(true);
 			expect(price3.isOk()).toBe(true);
 
-			const prices = [price1._unsafeUnwrap(), price2._unsafeUnwrap(), price3._unsafeUnwrap()];
+			if (price1.isOk() && price2.isOk() && price3.isOk()) {
+				const prices = [price1.value, price2.value, price3.value];
 
-			const lowest = PriceComparison.getLowest(prices);
-			expect(lowest?.amount).toBe(800);
+				const lowest = PriceComparison.getLowest(prices);
+				expect(lowest?.amount).toBe(800);
+			}
 		});
 
 		it("最高値を正しく取得する", () => {
@@ -473,10 +489,12 @@ describe("Price Value Object", () => {
 			expect(price2.isOk()).toBe(true);
 			expect(price3.isOk()).toBe(true);
 
-			const prices = [price1._unsafeUnwrap(), price2._unsafeUnwrap(), price3._unsafeUnwrap()];
+			if (price1.isOk() && price2.isOk() && price3.isOk()) {
+				const prices = [price1.value, price2.value, price3.value];
 
-			const highest = PriceComparison.getHighest(prices);
-			expect(highest?.amount).toBe(1200);
+				const highest = PriceComparison.getHighest(prices);
+				expect(highest?.amount).toBe(1200);
+			}
 		});
 
 		it("空の配列から最安値・最高値を取得する", () => {
@@ -491,13 +509,15 @@ describe("Price Value Object", () => {
 			const priceResult = PriceValueObject.create({ amount: 1000, currency: "JPY" });
 			expect(priceResult.isOk()).toBe(true);
 
-			const prices = [priceResult._unsafeUnwrap()];
+			if (priceResult.isOk()) {
+				const prices = [priceResult.value];
 
-			const lowest = PriceComparison.getLowest(prices);
-			expect(lowest?.amount).toBe(1000);
+				const lowest = PriceComparison.getLowest(prices);
+				expect(lowest?.amount).toBe(1000);
 
-			const highest = PriceComparison.getHighest(prices);
-			expect(highest?.amount).toBe(1000);
+				const highest = PriceComparison.getHighest(prices);
+				expect(highest?.amount).toBe(1000);
+			}
 		});
 
 		it("価格変動率を正しく計算する", () => {
@@ -507,11 +527,13 @@ describe("Price Value Object", () => {
 			expect(oldPriceResult.isOk()).toBe(true);
 			expect(newPriceResult.isOk()).toBe(true);
 
-			const oldPrice = oldPriceResult._unsafeUnwrap();
-			const newPrice = newPriceResult._unsafeUnwrap();
+			if (oldPriceResult.isOk() && newPriceResult.isOk()) {
+				const oldPrice = oldPriceResult.value;
+				const newPrice = newPriceResult.value;
 
-			const changeRate = PriceComparison.calculateChangeRate(oldPrice, newPrice);
-			expect(changeRate).toBe(20);
+				const changeRate = PriceComparison.calculateChangeRate(oldPrice, newPrice);
+				expect(changeRate).toBe(20);
+			}
 		});
 
 		it("価格下落の変動率を正しく計算する", () => {
@@ -521,11 +543,13 @@ describe("Price Value Object", () => {
 			expect(oldPriceResult.isOk()).toBe(true);
 			expect(newPriceResult.isOk()).toBe(true);
 
-			const oldPrice = oldPriceResult._unsafeUnwrap();
-			const newPrice = newPriceResult._unsafeUnwrap();
+			if (oldPriceResult.isOk() && newPriceResult.isOk()) {
+				const oldPrice = oldPriceResult.value;
+				const newPrice = newPriceResult.value;
 
-			const changeRate = PriceComparison.calculateChangeRate(oldPrice, newPrice);
-			expect(changeRate).toBe(-20);
+				const changeRate = PriceComparison.calculateChangeRate(oldPrice, newPrice);
+				expect(changeRate).toBe(-20);
+			}
 		});
 
 		it("元価格が0の場合の変動率を計算する", () => {
@@ -535,11 +559,13 @@ describe("Price Value Object", () => {
 			expect(oldPriceResult.isOk()).toBe(true);
 			expect(newPriceResult.isOk()).toBe(true);
 
-			const oldPrice = oldPriceResult._unsafeUnwrap();
-			const newPrice = newPriceResult._unsafeUnwrap();
+			if (oldPriceResult.isOk() && newPriceResult.isOk()) {
+				const oldPrice = oldPriceResult.value;
+				const newPrice = newPriceResult.value;
 
-			const changeRate = PriceComparison.calculateChangeRate(oldPrice, newPrice);
-			expect(changeRate).toBe(0);
+				const changeRate = PriceComparison.calculateChangeRate(oldPrice, newPrice);
+				expect(changeRate).toBe(0);
+			}
 		});
 
 		it("異なる通貨での比較はエラーを投げる", () => {
@@ -549,12 +575,14 @@ describe("Price Value Object", () => {
 			expect(jpyPriceResult.isOk()).toBe(true);
 			expect(usdPriceResult.isOk()).toBe(true);
 
-			const jpyPrice = jpyPriceResult._unsafeUnwrap();
-			const usdPrice = usdPriceResult._unsafeUnwrap();
+			if (jpyPriceResult.isOk() && usdPriceResult.isOk()) {
+				const jpyPrice = jpyPriceResult.value;
+				const usdPrice = usdPriceResult.value;
 
-			expect(() => {
-				PriceComparison.calculateChangeRate(jpyPrice, usdPrice);
-			}).toThrow("Cannot compare prices with different currencies");
+				expect(() => {
+					PriceComparison.calculateChangeRate(jpyPrice, usdPrice);
+				}).toThrow("Cannot compare prices with different currencies");
+			}
 		});
 	});
 });

@@ -139,8 +139,10 @@ describe("DateRange Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const dateRange = result._unsafeUnwrap();
-			expect(dateRange.toDate()).toEqual(new Date("2024-01-10T00:00:00.000Z"));
+			if (result.isOk()) {
+				const dateRange = result.value;
+				expect(dateRange.toDate()).toEqual(new Date("2024-01-10T00:00:00.000Z"));
+			}
 		});
 
 		it("現在からの経過日数を正しく計算する", () => {
@@ -151,8 +153,10 @@ describe("DateRange Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const dateRange = result._unsafeUnwrap();
-			expect(dateRange.daysFromNow()).toBe(5);
+			if (result.isOk()) {
+				const dateRange = result.value;
+				expect(dateRange.daysFromNow()).toBe(5);
+			}
 		});
 
 		it("相対的な時間表現を正しく生成する", () => {
@@ -192,17 +196,25 @@ describe("DateRange Value Object", () => {
 			expect(monthAgoResult.isOk()).toBe(true);
 			expect(yearAgoResult.isOk()).toBe(true);
 
-			const today = todayResult._unsafeUnwrap();
-			const yesterday = yesterdayResult._unsafeUnwrap();
-			const weekAgo = weekAgoResult._unsafeUnwrap();
-			const monthAgo = monthAgoResult._unsafeUnwrap();
-			const yearAgo = yearAgoResult._unsafeUnwrap();
+			if (
+				todayResult.isOk() &&
+				yesterdayResult.isOk() &&
+				weekAgoResult.isOk() &&
+				monthAgoResult.isOk() &&
+				yearAgoResult.isOk()
+			) {
+				const today = todayResult.value;
+				const yesterday = yesterdayResult.value;
+				const weekAgo = weekAgoResult.value;
+				const monthAgo = monthAgoResult.value;
+				const yearAgo = yearAgoResult.value;
 
-			expect(today.relative()).toBe("今日");
-			expect(yesterday.relative()).toBe("昨日");
-			expect(weekAgo.relative()).toBe("1週間前");
-			expect(monthAgo.relative()).toBe("1ヶ月前");
-			expect(yearAgo.relative()).toBe("1年前");
+				expect(today.relative()).toBe("今日");
+				expect(yesterday.relative()).toBe("昨日");
+				expect(weekAgo.relative()).toBe("1週間前");
+				expect(monthAgo.relative()).toBe("1ヶ月前");
+				expect(yearAgo.relative()).toBe("1年前");
+			}
 		});
 
 		it("日付の比較を正しく行う", () => {
@@ -221,13 +233,15 @@ describe("DateRange Value Object", () => {
 			expect(date1Result.isOk()).toBe(true);
 			expect(date2Result.isOk()).toBe(true);
 
-			const date1 = date1Result._unsafeUnwrap();
-			const date2 = date2Result._unsafeUnwrap();
+			if (date1Result.isOk() && date2Result.isOk()) {
+				const date1 = date1Result.value;
+				const date2 = date2Result.value;
 
-			expect(date1.isBefore(date2)).toBe(true);
-			expect(date2.isAfter(date1)).toBe(true);
-			expect(date1.equals(date1)).toBe(true);
-			expect(date1.equals(date2)).toBe(false);
+				expect(date1.isBefore(date2)).toBe(true);
+				expect(date2.isAfter(date1)).toBe(true);
+				expect(date1.equals(date1)).toBe(true);
+				expect(date1.equals(date2)).toBe(false);
+			}
 		});
 
 		it("期間内かどうかを正しく判定する", () => {
@@ -260,13 +274,15 @@ describe("DateRange Value Object", () => {
 			expect(targetResult.isOk()).toBe(true);
 			expect(outsideResult.isOk()).toBe(true);
 
-			const start = startResult._unsafeUnwrap();
-			const end = endResult._unsafeUnwrap();
-			const target = targetResult._unsafeUnwrap();
-			const outside = outsideResult._unsafeUnwrap();
+			if (startResult.isOk() && endResult.isOk() && targetResult.isOk() && outsideResult.isOk()) {
+				const start = startResult.value;
+				const end = endResult.value;
+				const target = targetResult.value;
+				const outside = outsideResult.value;
 
-			expect(target.isWithin(start, end)).toBe(true);
-			expect(outside.isWithin(start, end)).toBe(false);
+				expect(target.isWithin(start, end)).toBe(true);
+				expect(outside.isWithin(start, end)).toBe(false);
+			}
 		});
 	});
 

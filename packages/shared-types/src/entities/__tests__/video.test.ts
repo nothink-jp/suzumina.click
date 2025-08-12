@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Result } from "../../core/result";
 import { Channel, ChannelId, ChannelTitle } from "../../value-objects/video/channel";
 import {
 	ContentDetails,
@@ -23,6 +24,14 @@ import {
 } from "../../value-objects/video/video-statistics";
 import { type AudioButtonInfo, type LiveStreamingDetails, Video, type VideoTags } from "../video";
 
+// Helper function to unwrap Result values for testing
+function unwrap<T, E>(result: Result<T, E>): T {
+	if (result.isErr()) {
+		throw new Error(`Failed to create value: ${JSON.stringify(result.error)}`);
+	}
+	return result.value;
+}
+
 describe("Video Entity", () => {
 	// Helper function to create sample video
 	const createSampleVideo = (overrides?: {
@@ -37,14 +46,16 @@ describe("Video Entity", () => {
 		videoType?: string;
 		lastFetchedAt?: Date;
 	}): Video => {
-		const defaultContent = new VideoContent(
-			new VideoId("dQw4w9WgXcQ"),
-			new PublishedAt("2024-01-01"),
-			"public" as PrivacyStatus,
-			"processed" as UploadStatus,
-			new ContentDetails("2d", "hd", true, false, "rectangular"),
-			'<iframe src="..."></iframe>',
-			["music", "rickroll"],
+		const defaultContent = unwrap(
+			VideoContent.create(
+				unwrap(VideoId.create("dQw4w9WgXcQ")),
+				unwrap(PublishedAt.create("2024-01-01")),
+				"public" as PrivacyStatus,
+				"processed" as UploadStatus,
+				unwrap(ContentDetails.create("2d", "hd", true, false, "rectangular")),
+				'<iframe src="..."></iframe>',
+				["music", "rickroll"],
+			),
 		);
 
 		const defaultMetadata = new VideoMetadata(
@@ -70,17 +81,19 @@ describe("Video Entity", () => {
 			new CommentCount(2000000),
 		);
 
-		return new Video(
-			overrides?.content || defaultContent,
-			overrides?.metadata || defaultMetadata,
-			overrides?.channel || defaultChannel,
-			overrides?.statistics || defaultStatistics,
-			overrides?.tags || { playlistTags: ["80s Music"], userTags: ["favorite"] },
-			overrides?.audioButtonInfo || { count: 5, hasButtons: true },
-			overrides?.liveStreamingDetails,
-			overrides?.liveBroadcastContent || "none",
-			overrides?.videoType || "normal",
-			overrides?.lastFetchedAt || new Date("2024-01-15"),
+		return unwrap(
+			Video.create(
+				overrides?.content || defaultContent,
+				overrides?.metadata || defaultMetadata,
+				overrides?.channel || defaultChannel,
+				overrides?.statistics || defaultStatistics,
+				overrides?.tags || { playlistTags: ["80s Music"], userTags: ["favorite"] },
+				overrides?.audioButtonInfo || { count: 5, hasButtons: true },
+				overrides?.liveStreamingDetails,
+				overrides?.liveBroadcastContent || "none",
+				overrides?.videoType || "normal",
+				overrides?.lastFetchedAt || new Date("2024-01-15"),
+			),
 		);
 	};
 
@@ -103,15 +116,19 @@ describe("Video Entity", () => {
 		});
 
 		it("should handle optional properties", () => {
-			const video = new Video(
-				new VideoContent(
-					new VideoId("test123test"),
-					new PublishedAt(new Date()),
-					"public",
-					"processed",
+			const video = unwrap(
+				Video.create(
+					unwrap(
+						VideoContent.create(
+							unwrap(VideoId.create("test123test")),
+							unwrap(PublishedAt.create(new Date())),
+							"public",
+							"processed",
+						),
+					),
+					new VideoMetadata(new VideoTitle("Test Video"), new VideoDescription("Test")),
+					new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test Channel")),
 				),
-				new VideoMetadata(new VideoTitle("Test Video"), new VideoDescription("Test")),
-				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test Channel")),
 			);
 
 			expect(video.statistics).toBeUndefined();
@@ -143,11 +160,13 @@ describe("Video Entity", () => {
 
 			it("should return false for private videos", () => {
 				const video = createSampleVideo({
-					content: new VideoContent(
-						new VideoId("test123test"),
-						new PublishedAt(new Date()),
-						"private",
-						"processed",
+					content: unwrap(
+						VideoContent.create(
+							unwrap(VideoId.create("test123test")),
+							unwrap(PublishedAt.create(new Date())),
+							"private",
+							"processed",
+						),
 					),
 				});
 				expect(video.isAvailable()).toBe(false);
@@ -232,32 +251,34 @@ describe("Video Entity", () => {
 		describe("updateUserTags", () => {
 			it("should update user tags", () => {
 				const video = createSampleVideo();
-				const updated = video.updateUserTags(["new", "tags"]);
+				const result = video.updateUserTags(["new", "tags"]);
+				const updated = unwrap(result);
 
 				expect(updated.userTags).toEqual(["new", "tags"]);
 				expect(updated.playlistTags).toEqual(["80s Music"]);
 				expect(updated).not.toBe(video); // New instance
 			});
 
-			it("should filter invalid tags", () => {
-				const video = createSampleVideo();
-				const updated = video.updateUserTags([
-					"valid",
-					"", // Too short
-					"a".repeat(31), // Too long
-					"also valid",
-				]);
-
-				expect(updated.userTags).toEqual(["valid", "also valid"]);
-			});
-
-			it("should throw for too many tags", () => {
+			it("should return error for too many tags", () => {
 				const video = createSampleVideo();
 				const tooManyTags = Array(11).fill("tag");
 
-				expect(() => video.updateUserTags(tooManyTags)).toThrow(
-					"ユーザータグは最大10個まで設定できます",
-				);
+				const result = video.updateUserTags(tooManyTags);
+				expect(result.isErr()).toBe(true);
+				if (result.isErr()) {
+					expect(result.error.message).toContain("User tags must not exceed 10 items");
+				}
+			});
+
+			it("should return error for invalid tag length", () => {
+				const video = createSampleVideo();
+				const invalidTags = ["valid", "a".repeat(31)]; // Too long
+
+				const result = video.updateUserTags(invalidTags);
+				expect(result.isErr()).toBe(true);
+				if (result.isErr()) {
+					expect(result.error.message).toContain("must be between 1 and 30 characters");
+				}
 			});
 		});
 
@@ -265,7 +286,8 @@ describe("Video Entity", () => {
 			it("should update statistics", () => {
 				const video = createSampleVideo();
 				const newStats = new VideoStatistics(new ViewCount(2000000000), new LikeCount(15000000));
-				const updated = video.updateStatistics(newStats);
+				const result = video.updateStatistics(newStats);
+				const updated = unwrap(result);
 
 				expect(updated.statistics?.viewCount).toBe(2000000000);
 				expect(updated).not.toBe(video);
@@ -275,7 +297,8 @@ describe("Video Entity", () => {
 		describe("updateAudioButtonInfo", () => {
 			it("should update audio button info", () => {
 				const video = createSampleVideo();
-				const updated = video.updateAudioButtonInfo({ count: 10, hasButtons: true });
+				const result = video.updateAudioButtonInfo({ count: 10, hasButtons: true });
+				const updated = unwrap(result);
 
 				expect(updated.audioButtonInfo).toEqual({ count: 10, hasButtons: true });
 				expect(updated).not.toBe(video);
@@ -299,11 +322,13 @@ describe("Video Entity", () => {
 		it("should not equal videos with different IDs", () => {
 			const video1 = createSampleVideo();
 			const video2 = createSampleVideo({
-				content: new VideoContent(
-					new VideoId("different123"),
-					new PublishedAt(new Date()),
-					"public",
-					"processed",
+				content: unwrap(
+					VideoContent.create(
+						unwrap(VideoId.create("different123")),
+						unwrap(PublishedAt.create(new Date())),
+						"public",
+						"processed",
+					),
 				),
 			});
 
@@ -333,15 +358,19 @@ describe("Video Entity", () => {
 		});
 
 		it("should handle cloning with undefined optional properties", () => {
-			const video = new Video(
-				new VideoContent(
-					new VideoId("test123test"),
-					new PublishedAt(new Date()),
-					"public",
-					"processed",
+			const video = unwrap(
+				Video.create(
+					unwrap(
+						VideoContent.create(
+							unwrap(VideoId.create("test123test")),
+							unwrap(PublishedAt.create(new Date())),
+							"public",
+							"processed",
+						),
+					),
+					new VideoMetadata(new VideoTitle("Test"), new VideoDescription("Test")),
+					new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
 				),
-				new VideoMetadata(new VideoTitle("Test"), new VideoDescription("Test")),
-				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
 			);
 
 			const cloned = video.clone();
@@ -352,23 +381,27 @@ describe("Video Entity", () => {
 
 	describe("Video Type Detection", () => {
 		it("should correctly identify live videos", () => {
-			const liveVideo = new Video(
-				new VideoContent(
-					new VideoId("live123"),
-					new PublishedAt(new Date()),
-					"public",
-					"processed",
+			const liveVideo = unwrap(
+				Video.create(
+					unwrap(
+						VideoContent.create(
+							unwrap(VideoId.create("live123")),
+							unwrap(PublishedAt.create(new Date())),
+							"public",
+							"processed",
+						),
+					),
+					new VideoMetadata(new VideoTitle("Live Stream"), new VideoDescription("Live")),
+					new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+					undefined, // statistics
+					{ playlistTags: [], userTags: [] }, // tags
+					{ count: 0, hasButtons: false }, // audioButtonInfo
+					{
+						actualStartTime: new Date(),
+						// No actualEndTime means it's currently live
+					},
+					"live", // liveBroadcastContent
 				),
-				new VideoMetadata(new VideoTitle("Live Stream"), new VideoDescription("Live")),
-				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
-				undefined, // statistics
-				{ playlistTags: [], userTags: [] }, // tags
-				{ count: 0, hasButtons: false }, // audioButtonInfo
-				{
-					actualStartTime: new Date(),
-					// No actualEndTime means it's currently live
-				},
-				"live", // liveBroadcastContent
 			);
 
 			expect(liveVideo.getVideoType()).toBe("live");
@@ -377,22 +410,26 @@ describe("Video Entity", () => {
 		});
 
 		it("should correctly identify upcoming videos", () => {
-			const upcomingVideo = new Video(
-				new VideoContent(
-					new VideoId("upcoming123"),
-					new PublishedAt(new Date()),
-					"public",
-					"processed",
+			const upcomingVideo = unwrap(
+				Video.create(
+					unwrap(
+						VideoContent.create(
+							unwrap(VideoId.create("upcoming123")),
+							unwrap(PublishedAt.create(new Date())),
+							"public",
+							"processed",
+						),
+					),
+					new VideoMetadata(new VideoTitle("Upcoming Stream"), new VideoDescription("Upcoming")),
+					new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+					undefined, // statistics
+					{ playlistTags: [], userTags: [] }, // tags
+					{ count: 0, hasButtons: false }, // audioButtonInfo
+					{
+						scheduledStartTime: new Date(Date.now() + 86400000), // Tomorrow
+					},
+					"upcoming", // liveBroadcastContent
 				),
-				new VideoMetadata(new VideoTitle("Upcoming Stream"), new VideoDescription("Upcoming")),
-				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
-				undefined, // statistics
-				{ playlistTags: [], userTags: [] }, // tags
-				{ count: 0, hasButtons: false }, // audioButtonInfo
-				{
-					scheduledStartTime: new Date(Date.now() + 86400000), // Tomorrow
-				},
-				"upcoming", // liveBroadcastContent
 			);
 
 			expect(upcomingVideo.getVideoType()).toBe("upcoming");
@@ -401,27 +438,31 @@ describe("Video Entity", () => {
 		});
 
 		it("should correctly identify archived streams", () => {
-			const archivedStream = new Video(
-				new VideoContent(
-					new VideoId("archived123"),
-					new PublishedAt(new Date()),
-					"public",
-					"processed",
+			const archivedStream = unwrap(
+				Video.create(
+					unwrap(
+						VideoContent.create(
+							unwrap(VideoId.create("archived123")),
+							unwrap(PublishedAt.create(new Date())),
+							"public",
+							"processed",
+						),
+					),
+					new VideoMetadata(
+						new VideoTitle("Past Stream"),
+						new VideoDescription("Past"),
+						new VideoDuration("PT2H30M"), // 2.5 hours
+					),
+					new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+					undefined, // statistics
+					{ playlistTags: [], userTags: [] }, // tags
+					{ count: 10, hasButtons: true }, // audioButtonInfo
+					{
+						actualStartTime: new Date(Date.now() - 86400000), // Yesterday
+						actualEndTime: new Date(Date.now() - 80000000), // Ended yesterday
+					},
+					"none", // liveBroadcastContent
 				),
-				new VideoMetadata(
-					new VideoTitle("Past Stream"),
-					new VideoDescription("Past"),
-					new VideoDuration("PT2H30M"), // 2.5 hours
-				),
-				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
-				undefined, // statistics
-				{ playlistTags: [], userTags: [] }, // tags
-				{ count: 10, hasButtons: true }, // audioButtonInfo
-				{
-					actualStartTime: new Date(Date.now() - 86400000), // Yesterday
-					actualEndTime: new Date(Date.now() - 80000000), // Ended yesterday
-				},
-				"none", // liveBroadcastContent
 			);
 
 			expect(archivedStream.getVideoType()).toBe("archived");
@@ -432,27 +473,31 @@ describe("Video Entity", () => {
 
 		it("should not identify live video with end time as archived", () => {
 			// This is the bug case - a video marked as "live" but has an end time
-			const buggyVideo = new Video(
-				new VideoContent(
-					new VideoId("buggy123"),
-					new PublishedAt(new Date()),
-					"public",
-					"processed",
+			const buggyVideo = unwrap(
+				Video.create(
+					unwrap(
+						VideoContent.create(
+							unwrap(VideoId.create("buggy123")),
+							unwrap(PublishedAt.create(new Date())),
+							"public",
+							"processed",
+						),
+					),
+					new VideoMetadata(
+						new VideoTitle("Buggy Stream"),
+						new VideoDescription("Buggy"),
+						new VideoDuration("PT1H"), // 1 hour
+					),
+					new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+					undefined, // statistics
+					{ playlistTags: [], userTags: [] }, // tags
+					{ count: 0, hasButtons: false }, // audioButtonInfo
+					{
+						actualStartTime: new Date(Date.now() - 7200000), // 2 hours ago
+						actualEndTime: new Date(Date.now() - 3600000), // 1 hour ago
+					},
+					"live", // liveBroadcastContent still says "live" (this is the bug)
 				),
-				new VideoMetadata(
-					new VideoTitle("Buggy Stream"),
-					new VideoDescription("Buggy"),
-					new VideoDuration("PT1H"), // 1 hour
-				),
-				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
-				undefined, // statistics
-				{ playlistTags: [], userTags: [] }, // tags
-				{ count: 0, hasButtons: false }, // audioButtonInfo
-				{
-					actualStartTime: new Date(Date.now() - 7200000), // 2 hours ago
-					actualEndTime: new Date(Date.now() - 3600000), // 1 hour ago
-				},
-				"live", // liveBroadcastContent still says "live" (this is the bug)
 			);
 
 			// Should be identified as live, not archived
@@ -463,27 +508,31 @@ describe("Video Entity", () => {
 
 		it("should identify live video based on liveStreamingDetails when liveBroadcastContent is none", () => {
 			// This handles the case where YouTube API doesn't update liveBroadcastContent properly
-			const liveVideoWithNoneBroadcast = new Video(
-				new VideoContent(
-					new VideoId("97UnRtIlMc0"),
-					new PublishedAt(new Date()),
-					"public",
-					"processed",
+			const liveVideoWithNoneBroadcast = unwrap(
+				Video.create(
+					unwrap(
+						VideoContent.create(
+							unwrap(VideoId.create("97UnRtIlMc0")),
+							unwrap(PublishedAt.create(new Date())),
+							"public",
+							"processed",
+						),
+					),
+					new VideoMetadata(
+						new VideoTitle("Live Stream with none broadcast content"),
+						new VideoDescription("Live"),
+					),
+					new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+					undefined, // statistics
+					{ playlistTags: [], userTags: [] }, // tags
+					{ count: 0, hasButtons: false }, // audioButtonInfo
+					{
+						actualStartTime: new Date(Date.now() - 3600000), // Started 1 hour ago
+						// No actualEndTime means it's still live
+						concurrentViewers: 121, // Has concurrent viewers
+					}, // liveStreamingDetails
+					"none", // liveBroadcastContent says "none" but it's actually live
 				),
-				new VideoMetadata(
-					new VideoTitle("Live Stream with none broadcast content"),
-					new VideoDescription("Live"),
-				),
-				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
-				undefined, // statistics
-				{ playlistTags: [], userTags: [] }, // tags
-				{ count: 0, hasButtons: false }, // audioButtonInfo
-				{
-					actualStartTime: new Date(Date.now() - 3600000), // Started 1 hour ago
-					// No actualEndTime means it's still live
-					concurrentViewers: 121, // Has concurrent viewers
-				}, // liveStreamingDetails
-				"none", // liveBroadcastContent says "none" but it's actually live
 			);
 
 			// Should be identified as live based on liveStreamingDetails
@@ -493,27 +542,31 @@ describe("Video Entity", () => {
 		});
 
 		it("should correctly identify premiere videos", () => {
-			const premiereVideo = new Video(
-				new VideoContent(
-					new VideoId("premiere123"),
-					new PublishedAt(new Date()),
-					"public",
-					"processed",
+			const premiereVideo = unwrap(
+				Video.create(
+					unwrap(
+						VideoContent.create(
+							unwrap(VideoId.create("premiere123")),
+							unwrap(PublishedAt.create(new Date())),
+							"public",
+							"processed",
+						),
+					),
+					new VideoMetadata(
+						new VideoTitle("Premiere Video"),
+						new VideoDescription("Premiere"),
+						new VideoDuration("PT10M"), // 10 minutes
+					),
+					new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+					undefined, // statistics
+					{ playlistTags: [], userTags: [] }, // tags
+					{ count: 0, hasButtons: false }, // audioButtonInfo
+					{
+						actualStartTime: new Date(Date.now() - 3600000), // 1 hour ago
+						actualEndTime: new Date(Date.now() - 3000000), // 50 minutes ago
+					},
+					"none", // liveBroadcastContent
 				),
-				new VideoMetadata(
-					new VideoTitle("Premiere Video"),
-					new VideoDescription("Premiere"),
-					new VideoDuration("PT10M"), // 10 minutes
-				),
-				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
-				undefined, // statistics
-				{ playlistTags: [], userTags: [] }, // tags
-				{ count: 0, hasButtons: false }, // audioButtonInfo
-				{
-					actualStartTime: new Date(Date.now() - 3600000), // 1 hour ago
-					actualEndTime: new Date(Date.now() - 3000000), // 50 minutes ago
-				},
-				"none", // liveBroadcastContent
 			);
 
 			expect(premiereVideo.getVideoType()).toBe("premiere");
@@ -522,24 +575,28 @@ describe("Video Entity", () => {
 		});
 
 		it("should correctly identify normal videos", () => {
-			const normalVideo = new Video(
-				new VideoContent(
-					new VideoId("normal123"),
-					new PublishedAt(new Date()),
-					"public",
-					"processed",
+			const normalVideo = unwrap(
+				Video.create(
+					unwrap(
+						VideoContent.create(
+							unwrap(VideoId.create("normal123")),
+							unwrap(PublishedAt.create(new Date())),
+							"public",
+							"processed",
+						),
+					),
+					new VideoMetadata(
+						new VideoTitle("Normal Video"),
+						new VideoDescription("Normal"),
+						new VideoDuration("PT15M"), // 15 minutes
+					),
+					new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
+					undefined, // statistics
+					{ playlistTags: [], userTags: [] }, // tags
+					{ count: 0, hasButtons: false }, // audioButtonInfo
+					undefined, // No liveStreamingDetails
+					"none", // liveBroadcastContent
 				),
-				new VideoMetadata(
-					new VideoTitle("Normal Video"),
-					new VideoDescription("Normal"),
-					new VideoDuration("PT15M"), // 15 minutes
-				),
-				new Channel(new ChannelId("UCxxxxxxxxxxxxxxxxxxxxxx"), new ChannelTitle("Test")),
-				undefined, // statistics
-				{ playlistTags: [], userTags: [] }, // tags
-				{ count: 0, hasButtons: false }, // audioButtonInfo
-				undefined, // No liveStreamingDetails
-				"none", // liveBroadcastContent
 			);
 
 			expect(normalVideo.getVideoType()).toBe("normal");
