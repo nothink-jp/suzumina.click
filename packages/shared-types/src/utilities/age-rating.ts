@@ -175,9 +175,9 @@ export function filterR18Content<T>(
 	return items.filter((item) => {
 		// Try to use Work entity if the item is a Firestore work data
 		if (isFirestoreWorkData(item)) {
-			const work = Work.fromFirestoreData(item);
-			if (work) {
-				return !work.isAdultContent();
+			const workResult = Work.fromFirestoreData(item);
+			if (workResult.isOk()) {
+				return !workResult.value.isAdultContent();
 			}
 		}
 

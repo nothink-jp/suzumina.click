@@ -14,9 +14,9 @@ describe("WorkCreators", () => {
 		others: [{ id: "ot1", name: "その他スタッフ" }],
 	};
 
-	describe("constructor", () => {
+	describe("create", () => {
 		it("should create with all creator types", () => {
-			const creators = new WorkCreators(
+			const result = WorkCreators.create(
 				sampleCreators.voiceActors,
 				sampleCreators.scenario,
 				sampleCreators.illustration,
@@ -24,6 +24,8 @@ describe("WorkCreators", () => {
 				sampleCreators.others,
 			);
 
+			expect(result.isOk()).toBe(true);
+			const creators = result._unsafeUnwrap();
 			expect(creators.voiceActors).toEqual(sampleCreators.voiceActors);
 			expect(creators.scenario).toEqual(sampleCreators.scenario);
 			expect(creators.illustration).toEqual(sampleCreators.illustration);
@@ -32,7 +34,9 @@ describe("WorkCreators", () => {
 		});
 
 		it("should create with empty arrays by default", () => {
-			const creators = new WorkCreators();
+			const result = WorkCreators.create();
+			expect(result.isOk()).toBe(true);
+			const creators = result._unsafeUnwrap();
 			expect(creators.voiceActors).toEqual([]);
 			expect(creators.scenario).toEqual([]);
 			expect(creators.illustration).toEqual([]);
@@ -41,7 +45,7 @@ describe("WorkCreators", () => {
 		});
 
 		it("should filter out invalid entries", () => {
-			const creators = new WorkCreators([
+			const result = WorkCreators.create([
 				{ id: "va1", name: "声優1" },
 				{ id: "va2", name: "" }, // Empty name
 				{ id: "va3", name: "   " }, // Whitespace only
@@ -49,6 +53,8 @@ describe("WorkCreators", () => {
 				{ id: "va4", name: "声優4" },
 			]);
 
+			expect(result.isOk()).toBe(true);
+			const creators = result._unsafeUnwrap();
 			expect(creators.voiceActors).toEqual([
 				{ id: "va1", name: "声優1" },
 				{ id: "va4", name: "声優4" },
@@ -58,13 +64,14 @@ describe("WorkCreators", () => {
 
 	describe("name getters", () => {
 		it("should return arrays of names", () => {
-			const creators = new WorkCreators(
+			const result = WorkCreators.create(
 				sampleCreators.voiceActors,
 				sampleCreators.scenario,
 				sampleCreators.illustration,
 				sampleCreators.music,
 				sampleCreators.others,
 			);
+			const creators = result._unsafeUnwrap();
 
 			expect(creators.voiceActorNames).toEqual(["声優1", "声優2"]);
 			expect(creators.scenarioNames).toEqual(["シナリオライター"]);
@@ -76,13 +83,14 @@ describe("WorkCreators", () => {
 
 	describe("getAll", () => {
 		it("should return all creators in order", () => {
-			const creators = new WorkCreators(
+			const result = WorkCreators.create(
 				sampleCreators.voiceActors,
 				sampleCreators.scenario,
 				sampleCreators.illustration,
 				sampleCreators.music,
 				sampleCreators.others,
 			);
+			const creators = result._unsafeUnwrap();
 
 			const all = creators.getAll();
 			expect(all).toHaveLength(6);
@@ -93,7 +101,8 @@ describe("WorkCreators", () => {
 
 	describe("getAllNames", () => {
 		it("should return all creator names", () => {
-			const creators = new WorkCreators(sampleCreators.voiceActors, sampleCreators.scenario);
+			const result = WorkCreators.create(sampleCreators.voiceActors, sampleCreators.scenario);
+			const creators = result._unsafeUnwrap();
 
 			expect(creators.getAllNames()).toEqual(["声優1", "声優2", "シナリオライター"]);
 		});
@@ -101,11 +110,12 @@ describe("WorkCreators", () => {
 
 	describe("getAllUnique", () => {
 		it("should return unique creators by ID", () => {
-			const creators = new WorkCreators(
+			const result = WorkCreators.create(
 				[{ id: "1", name: "クリエイター1" }],
 				[{ id: "1", name: "クリエイター1" }], // Duplicate ID
 				[{ id: "2", name: "クリエイター2" }],
 			);
+			const creators = result._unsafeUnwrap();
 
 			const unique = creators.getAllUnique();
 			expect(unique).toHaveLength(2);
@@ -115,13 +125,14 @@ describe("WorkCreators", () => {
 
 	describe("getAllUniqueNames", () => {
 		it("should return unique creator names", () => {
-			const creators = new WorkCreators(
+			const result = WorkCreators.create(
 				[
 					{ id: "1", name: "同じ名前" },
 					{ id: "2", name: "同じ名前" },
 				],
 				[{ id: "3", name: "別の名前" }],
 			);
+			const creators = result._unsafeUnwrap();
 
 			expect(creators.getAllUniqueNames()).toEqual(["同じ名前", "別の名前"]);
 		});
@@ -129,59 +140,68 @@ describe("WorkCreators", () => {
 
 	describe("hasVoiceActors", () => {
 		it("should return true when has voice actors", () => {
-			const creators = new WorkCreators([{ id: "1", name: "声優" }]);
+			const result = WorkCreators.create([{ id: "1", name: "声優" }]);
+			const creators = result._unsafeUnwrap();
 			expect(creators.hasVoiceActors()).toBe(true);
 		});
 
 		it("should return false when no voice actors", () => {
-			const creators = new WorkCreators();
+			const result = WorkCreators.create();
+			const creators = result._unsafeUnwrap();
 			expect(creators.hasVoiceActors()).toBe(false);
 		});
 	});
 
 	describe("hasAnyCreators", () => {
 		it("should return true when has any creators", () => {
-			const creators = new WorkCreators([], [{ id: "1", name: "シナリオ" }]);
+			const result = WorkCreators.create([], [{ id: "1", name: "シナリオ" }]);
+			const creators = result._unsafeUnwrap();
 			expect(creators.hasAnyCreators()).toBe(true);
 		});
 
 		it("should return false when no creators", () => {
-			const creators = new WorkCreators();
+			const result = WorkCreators.create();
+			const creators = result._unsafeUnwrap();
 			expect(creators.hasAnyCreators()).toBe(false);
 		});
 	});
 
 	describe("getPrimaryVoiceActor", () => {
 		it("should return first voice actor", () => {
-			const creators = new WorkCreators(sampleCreators.voiceActors);
+			const result = WorkCreators.create(sampleCreators.voiceActors);
+			const creators = result._unsafeUnwrap();
 			expect(creators.getPrimaryVoiceActor()).toEqual({ id: "va1", name: "声優1" });
 		});
 
 		it("should return undefined when no voice actors", () => {
-			const creators = new WorkCreators();
+			const result = WorkCreators.create();
+			const creators = result._unsafeUnwrap();
 			expect(creators.getPrimaryVoiceActor()).toBeUndefined();
 		});
 	});
 
 	describe("getPrimaryVoiceActorName", () => {
 		it("should return first voice actor name", () => {
-			const creators = new WorkCreators(sampleCreators.voiceActors);
+			const result = WorkCreators.create(sampleCreators.voiceActors);
+			const creators = result._unsafeUnwrap();
 			expect(creators.getPrimaryVoiceActorName()).toBe("声優1");
 		});
 
 		it("should return undefined when no voice actors", () => {
-			const creators = new WorkCreators();
+			const result = WorkCreators.create();
+			const creators = result._unsafeUnwrap();
 			expect(creators.getPrimaryVoiceActorName()).toBeUndefined();
 		});
 	});
 
 	describe("getSearchableText", () => {
 		it("should return unique names joined", () => {
-			const creators = new WorkCreators(
+			const result = WorkCreators.create(
 				[{ id: "1", name: "声優" }],
 				[{ id: "2", name: "声優" }], // Duplicate name
 				[{ id: "3", name: "イラスト" }],
 			);
+			const creators = result._unsafeUnwrap();
 
 			expect(creators.getSearchableText()).toBe("声優 イラスト");
 		});
@@ -189,13 +209,14 @@ describe("WorkCreators", () => {
 
 	describe("toString", () => {
 		it("should format all creator types", () => {
-			const creators = new WorkCreators(
+			const result = WorkCreators.create(
 				sampleCreators.voiceActors,
 				sampleCreators.scenario,
 				sampleCreators.illustration,
 				sampleCreators.music,
 				sampleCreators.others,
 			);
+			const creators = result._unsafeUnwrap();
 
 			expect(creators.toString()).toBe(
 				"CV: 声優1, 声優2 / シナリオ: シナリオライター / イラスト: イラストレーター / 音楽: 音楽制作者 / その他: その他スタッフ",
@@ -203,30 +224,33 @@ describe("WorkCreators", () => {
 		});
 
 		it("should omit empty categories", () => {
-			const creators = new WorkCreators(
+			const result = WorkCreators.create(
 				sampleCreators.voiceActors,
 				[], // No scenario
 				sampleCreators.illustration,
 			);
+			const creators = result._unsafeUnwrap();
 
 			expect(creators.toString()).toBe("CV: 声優1, 声優2 / イラスト: イラストレーター");
 		});
 
 		it("should return empty string when no creators", () => {
-			const creators = new WorkCreators();
+			const result = WorkCreators.create();
+			const creators = result._unsafeUnwrap();
 			expect(creators.toString()).toBe("");
 		});
 	});
 
 	describe("toJSON", () => {
 		it("should use underscore property names", () => {
-			const creators = new WorkCreators(
+			const result = WorkCreators.create(
 				sampleCreators.voiceActors,
 				sampleCreators.scenario,
 				sampleCreators.illustration,
 				sampleCreators.music,
 				sampleCreators.others,
 			);
+			const creators = result._unsafeUnwrap();
 
 			expect(creators.toJSON()).toEqual({
 				voice_by: sampleCreators.voiceActors,
@@ -239,49 +263,60 @@ describe("WorkCreators", () => {
 	});
 
 	describe("toPlainObject", () => {
-		it("should include both objects and name arrays", () => {
-			const creators = new WorkCreators(sampleCreators.voiceActors);
+		it("should include objects", () => {
+			const result = WorkCreators.create(sampleCreators.voiceActors);
+			const creators = result._unsafeUnwrap();
 			const plain = creators.toPlainObject();
 
 			expect(plain.voiceActors).toEqual(sampleCreators.voiceActors);
-			expect(plain.voiceActorNames).toEqual(["声優1", "声優2"]);
+			expect(plain.scenario).toEqual([]);
+			expect(plain.illustration).toEqual([]);
+			expect(plain.music).toEqual([]);
+			expect(plain.others).toEqual([]);
 		});
 	});
 
 	describe("equals", () => {
 		it("should return true for equal creators", () => {
-			const creators1 = new WorkCreators(sampleCreators.voiceActors);
-			const creators2 = new WorkCreators(sampleCreators.voiceActors);
+			const result1 = WorkCreators.create(sampleCreators.voiceActors);
+			const result2 = WorkCreators.create(sampleCreators.voiceActors);
+			const creators1 = result1._unsafeUnwrap();
+			const creators2 = result2._unsafeUnwrap();
 			expect(creators1.equals(creators2)).toBe(true);
 		});
 
 		it("should return false for different creators", () => {
-			const creators1 = new WorkCreators([{ id: "1", name: "声優1" }]);
-			const creators2 = new WorkCreators([{ id: "2", name: "声優2" }]);
+			const result1 = WorkCreators.create([{ id: "1", name: "声優1" }]);
+			const result2 = WorkCreators.create([{ id: "2", name: "声優2" }]);
+			const creators1 = result1._unsafeUnwrap();
+			const creators2 = result2._unsafeUnwrap();
 			expect(creators1.equals(creators2)).toBe(false);
 		});
 
 		it("should return false for different order", () => {
-			const creators1 = new WorkCreators([
+			const result1 = WorkCreators.create([
 				{ id: "1", name: "声優1" },
 				{ id: "2", name: "声優2" },
 			]);
-			const creators2 = new WorkCreators([
+			const result2 = WorkCreators.create([
 				{ id: "2", name: "声優2" },
 				{ id: "1", name: "声優1" },
 			]);
+			const creators1 = result1._unsafeUnwrap();
+			const creators2 = result2._unsafeUnwrap();
 			expect(creators1.equals(creators2)).toBe(false);
 		});
 
 		it("should return false for non-WorkCreators", () => {
-			const creators = new WorkCreators();
+			const result = WorkCreators.create();
+			const creators = result._unsafeUnwrap();
 			expect(creators.equals({} as any)).toBe(false);
 		});
 	});
 
 	describe("fromCreatorsObject", () => {
 		it("should create from API object", () => {
-			const creators = WorkCreators.fromCreatorsObject({
+			const result = WorkCreators.fromCreatorsObject({
 				voice_by: [{ id: "1", name: "声優" }],
 				scenario_by: [{ id: "2", name: "シナリオ" }],
 				illust_by: [{ id: "3", name: "イラスト" }],
@@ -290,6 +325,8 @@ describe("WorkCreators", () => {
 				created_by: [{ id: "6", name: "制作" }],
 			});
 
+			expect(result.isOk()).toBe(true);
+			const creators = result._unsafeUnwrap();
 			expect(creators.voiceActors).toHaveLength(1);
 			expect(creators.scenario).toHaveLength(1);
 			expect(creators.illustration).toHaveLength(1);
@@ -298,42 +335,22 @@ describe("WorkCreators", () => {
 		});
 
 		it("should handle undefined creators", () => {
-			const creators = WorkCreators.fromCreatorsObject(undefined);
+			const result = WorkCreators.fromCreatorsObject(undefined);
+			expect(result.isOk()).toBe(true);
+			const creators = result._unsafeUnwrap();
 			expect(creators.hasAnyCreators()).toBe(false);
 		});
 
 		it("should handle partial creators", () => {
-			const creators = WorkCreators.fromCreatorsObject({
+			const result = WorkCreators.fromCreatorsObject({
 				voice_by: [{ id: "1", name: "声優" }],
 				// Other fields undefined
 			});
 
+			expect(result.isOk()).toBe(true);
+			const creators = result._unsafeUnwrap();
 			expect(creators.voiceActors).toHaveLength(1);
 			expect(creators.scenario).toHaveLength(0);
-		});
-	});
-
-	describe("fromLegacyArrays", () => {
-		it("should create from string arrays", () => {
-			const creators = WorkCreators.fromLegacyArrays({
-				voiceActors: ["声優1", "声優2"],
-				scenario: ["シナリオ"],
-				illustration: ["イラスト"],
-				music: ["音楽"],
-				author: ["作者"],
-			});
-
-			expect(creators.voiceActors).toEqual([
-				{ id: "声優1", name: "声優1" },
-				{ id: "声優2", name: "声優2" },
-			]);
-			expect(creators.scenario).toEqual([{ id: "シナリオ", name: "シナリオ" }]);
-			expect(creators.others).toEqual([{ id: "作者", name: "作者" }]);
-		});
-
-		it("should handle empty data", () => {
-			const creators = WorkCreators.fromLegacyArrays({});
-			expect(creators.hasAnyCreators()).toBe(false);
 		});
 	});
 });

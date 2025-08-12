@@ -12,7 +12,7 @@ ADR（Architecture Decision Record）は、重要な技術的決定とその理�
 ### アーキテクチャ設計
 
 - [ADR-001: DDD実装ガイドライン](architecture/ADR-001-ddd-implementation-guidelines.md) - Entity実装の判断基準
-- [ADR-002: Entity実装の教訓](architecture/ADR-002-entity-implementation-lessons.md) - 実装の試みと学習事項
+- [ADR-002: TypeScript型安全性強化とDDDパターンの統一](architecture/ADR-002-typescript-type-safety-enhancement.md) - Branded Types、Result型、Zod統合による型安全性向上
 
 ## ADRの書き方
 

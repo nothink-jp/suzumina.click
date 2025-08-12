@@ -76,6 +76,10 @@ export class ViewCount
 		return this.value.toString();
 	}
 
+	toPlainObject(): number {
+		return this.value;
+	}
+
 	clone(): ViewCount {
 		return new ViewCount(this.value);
 	}
@@ -119,6 +123,10 @@ export class LikeCount extends BaseValueObject<LikeCount> {
 
 	toString(): string {
 		return this.value.toString();
+	}
+
+	toPlainObject(): number {
+		return this.value;
 	}
 
 	clone(): LikeCount {
@@ -166,6 +174,10 @@ export class DislikeCount extends BaseValueObject<DislikeCount> {
 		return this.value.toString();
 	}
 
+	toPlainObject(): number {
+		return this.value;
+	}
+
 	clone(): DislikeCount {
 		return new DislikeCount(this.value);
 	}
@@ -202,6 +214,10 @@ export class CommentCount extends BaseValueObject<CommentCount> {
 
 	toString(): string {
 		return this.value.toString();
+	}
+
+	toPlainObject(): number {
+		return this.value;
 	}
 
 	clone(): CommentCount {

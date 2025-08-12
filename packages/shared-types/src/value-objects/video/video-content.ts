@@ -5,6 +5,7 @@
  * privacy status, upload status, content details, and other content metadata.
  */
 
+import type { VideoId as VideoIdBrand } from "../../core/ids";
 import { requireNonEmptyString } from "../base/transforms";
 import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
 
@@ -22,25 +23,27 @@ export type UploadStatus = "uploaded" | "processed" | "failed" | "rejected" | "d
  * Video ID value object
  */
 export class VideoId extends BaseValueObject<VideoId> implements ValidatableValueObject<VideoId> {
-	private readonly value: string;
+	private readonly value: VideoIdBrand;
 
 	constructor(value: string) {
 		super();
-		this.value = requireNonEmptyString(value, "videoId").trim();
+		const sanitizedValue = requireNonEmptyString(value, "videoId").trim();
+		// Convert string to branded type
+		this.value = sanitizedValue as VideoIdBrand;
 	}
 
 	/**
 	 * Returns YouTube video URL
 	 */
 	toUrl(): string {
-		return `https://www.youtube.com/watch?v=${this.value}`;
+		return `https://www.youtube.com/watch?v=${this.value as string}`;
 	}
 
 	/**
 	 * Returns YouTube video embed URL
 	 */
 	toEmbedUrl(): string {
-		return `https://www.youtube.com/embed/${this.value}`;
+		return `https://www.youtube.com/embed/${this.value as string}`;
 	}
 
 	/**
@@ -54,7 +57,7 @@ export class VideoId extends BaseValueObject<VideoId> implements ValidatableValu
 			standard: "sddefault",
 			maxres: "maxresdefault",
 		};
-		return `https://img.youtube.com/vi/${this.value}/${qualityMap[quality]}.jpg`;
+		return `https://img.youtube.com/vi/${this.value as string}/${qualityMap[quality]}.jpg`;
 	}
 
 	isValid(): boolean {
@@ -65,12 +68,12 @@ export class VideoId extends BaseValueObject<VideoId> implements ValidatableValu
 		const errors: string[] = [];
 
 		// YouTube video IDs are typically 11 characters
-		if (this.value.length !== 11) {
+		if ((this.value as string).length !== 11) {
 			errors.push("Video ID should be 11 characters");
 		}
 
 		// Basic validation for allowed characters
-		if (!this.value.match(/^[a-zA-Z0-9_-]+$/)) {
+		if (!(this.value as string).match(/^[a-zA-Z0-9_-]+$/)) {
 			errors.push("Video ID contains invalid characters");
 		}
 
@@ -78,18 +81,22 @@ export class VideoId extends BaseValueObject<VideoId> implements ValidatableValu
 	}
 
 	toString(): string {
-		return this.value;
+		return this.value as string;
+	}
+
+	toPlainObject(): string {
+		return this.value as string;
 	}
 
 	clone(): VideoId {
-		return new VideoId(this.value);
+		return new VideoId(this.value as string);
 	}
 
 	equals(other: VideoId): boolean {
 		if (!other || !(other instanceof VideoId)) {
 			return false;
 		}
-		return this.value === other.value;
+		return (this.value as string) === (other.value as string);
 	}
 }
 
@@ -164,6 +171,10 @@ export class PublishedAt extends BaseValueObject<PublishedAt> {
 		return this.value.toISOString();
 	}
 
+	toPlainObject(): string {
+		return this.value.toISOString();
+	}
+
 	clone(): PublishedAt {
 		return new PublishedAt(new Date(this.value));
 	}
@@ -209,6 +220,22 @@ export class ContentDetails extends BaseValueObject<ContentDetails> {
 	 */
 	is360Video(): boolean {
 		return this.projection === "360";
+	}
+
+	toPlainObject(): {
+		dimension?: "2d" | "3d";
+		definition?: "hd" | "sd";
+		caption?: boolean;
+		licensedContent?: boolean;
+		projection?: "rectangular" | "360";
+	} {
+		return {
+			dimension: this.dimension,
+			definition: this.definition,
+			caption: this.caption,
+			licensedContent: this.licensedContent,
+			projection: this.projection,
+		};
 	}
 
 	clone(): ContentDetails {

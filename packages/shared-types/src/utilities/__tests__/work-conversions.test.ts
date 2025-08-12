@@ -54,28 +54,34 @@ describe("work-conversions", () => {
 			const firestoreData = createMockFirestoreData();
 			const result = convertToWorkPlainObject(firestoreData);
 
-			expect(result).not.toBeNull();
-			expect(result?.id).toBe("RJ123456");
-			expect(result?.productId).toBe("RJ123456");
-			expect(result?.title).toBe("Test Work");
-			expect(result?.circle).toBe("Test Circle");
-			expect(result?.category).toBe("SOU");
-			expect(result?._computed).toBeDefined();
-			expect(result?._computed.isVoiceWork).toBe(true);
-			expect(result?._computed.displayCategory).toBe("ボイス・ASMR");
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const plainObject = result.value;
+				expect(plainObject.id).toBe("RJ123456");
+				expect(plainObject.productId).toBe("RJ123456");
+				expect(plainObject.title).toBe("Test Work");
+				expect(plainObject.circle).toBe("Test Circle");
+				expect(plainObject.category).toBe("SOU");
+				expect(plainObject._computed).toBeDefined();
+				expect(plainObject._computed.isVoiceWork).toBe(true);
+				expect(plainObject._computed.displayCategory).toBe("ボイス・ASMR");
+			}
 		});
 
-		it("returns null for null input", () => {
-			expect(convertToWorkPlainObject(null)).toBeNull();
+		it("returns error for null input", () => {
+			const result = convertToWorkPlainObject(null);
+			expect(result.isErr()).toBe(true);
 		});
 
-		it("returns null for undefined input", () => {
-			expect(convertToWorkPlainObject(undefined)).toBeNull();
+		it("returns error for undefined input", () => {
+			const result = convertToWorkPlainObject(undefined);
+			expect(result.isErr()).toBe(true);
 		});
 
-		it("returns null for invalid FirestoreServerWorkData", () => {
+		it("returns error for invalid FirestoreServerWorkData", () => {
 			const invalidData = { id: "invalid" } as any;
-			expect(convertToWorkPlainObject(invalidData)).toBeNull();
+			const result = convertToWorkPlainObject(invalidData);
+			expect(result.isErr()).toBe(true);
 		});
 
 		it("handles adult content correctly", () => {
@@ -85,8 +91,11 @@ describe("work-conversions", () => {
 			});
 			const result = convertToWorkPlainObject(adultWork);
 
-			expect(result?._computed.isAdultContent).toBe(true);
-			expect(result?._computed.displayAgeRating).toBe("18禁");
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				expect(result.value._computed.isAdultContent).toBe(true);
+				expect(result.value._computed.displayAgeRating).toBe("18禁");
+			}
 		});
 	});
 
@@ -98,12 +107,16 @@ describe("work-conversions", () => {
 				createMockFirestoreData({ productId: "RJ333333" }),
 			];
 
-			const results = convertToWorkPlainObjects(data);
+			const result = convertToWorkPlainObjects(data);
 
-			expect(results).toHaveLength(3);
-			expect(results[0]?.productId).toBe("RJ111111");
-			expect(results[1]?.productId).toBe("RJ222222");
-			expect(results[2]?.productId).toBe("RJ333333");
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const results = result.value;
+				expect(results).toHaveLength(3);
+				expect(results[0]?.productId).toBe("RJ111111");
+				expect(results[1]?.productId).toBe("RJ222222");
+				expect(results[2]?.productId).toBe("RJ333333");
+			}
 		});
 
 		it("filters out invalid works", () => {
@@ -113,24 +126,35 @@ describe("work-conversions", () => {
 				createMockFirestoreData({ productId: "RJ333333" }),
 			];
 
-			const results = convertToWorkPlainObjects(data);
+			const result = convertToWorkPlainObjects(data);
 
-			expect(results).toHaveLength(2);
-			expect(results[0]?.productId).toBe("RJ111111");
-			expect(results[1]?.productId).toBe("RJ333333");
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const results = result.value;
+				expect(results).toHaveLength(2);
+				expect(results[0]?.productId).toBe("RJ111111");
+				expect(results[1]?.productId).toBe("RJ333333");
+			}
 		});
 
 		it("returns empty array for empty input", () => {
-			expect(convertToWorkPlainObjects([])).toEqual([]);
+			const result = convertToWorkPlainObjects([]);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				expect(result.value).toEqual([]);
+			}
 		});
 	});
 
 	describe("isWorkPlainObject", () => {
 		it("returns true for valid WorkPlainObject", () => {
 			const firestoreData = createMockFirestoreData();
-			const plainObject = convertToWorkPlainObject(firestoreData);
+			const result = convertToWorkPlainObject(firestoreData);
 
-			expect(isWorkPlainObject(plainObject)).toBe(true);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				expect(isWorkPlainObject(result.value)).toBe(true);
+			}
 		});
 
 		it("returns false for null", () => {
@@ -169,32 +193,44 @@ describe("work-conversions", () => {
 	describe("normalizeToWorkPlainObject", () => {
 		it("returns WorkPlainObject as-is", () => {
 			const firestoreData = createMockFirestoreData();
-			const plainObject = convertToWorkPlainObject(firestoreData);
+			const convertResult = convertToWorkPlainObject(firestoreData);
 
-			const result = normalizeToWorkPlainObject(plainObject);
-			expect(result).toBe(plainObject);
+			expect(convertResult.isOk()).toBe(true);
+			if (convertResult.isOk()) {
+				const plainObject = convertResult.value;
+				const normalizeResult = normalizeToWorkPlainObject(plainObject);
+				expect(normalizeResult.isOk()).toBe(true);
+				if (normalizeResult.isOk()) {
+					expect(normalizeResult.value).toBe(plainObject);
+				}
+			}
 		});
 
 		it("converts WorkDocument to WorkPlainObject", () => {
 			const firestoreData = createMockFirestoreData();
 			const result = normalizeToWorkPlainObject(firestoreData);
 
-			expect(result).not.toBeNull();
-			expect(result?.productId).toBe("RJ123456");
-			expect(result?._computed).toBeDefined();
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				expect(result.value.productId).toBe("RJ123456");
+				expect(result.value._computed).toBeDefined();
+			}
 		});
 
-		it("returns null for null input", () => {
-			expect(normalizeToWorkPlainObject(null)).toBeNull();
+		it("returns error for null input", () => {
+			const result = normalizeToWorkPlainObject(null);
+			expect(result.isErr()).toBe(true);
 		});
 
-		it("returns null for undefined input", () => {
-			expect(normalizeToWorkPlainObject(undefined)).toBeNull();
+		it("returns error for undefined input", () => {
+			const result = normalizeToWorkPlainObject(undefined);
+			expect(result.isErr()).toBe(true);
 		});
 
-		it("returns null for invalid data", () => {
+		it("returns error for invalid data", () => {
 			const invalidData = { some: "random", data: true };
-			expect(normalizeToWorkPlainObject(invalidData as any)).toBeNull();
+			const result = normalizeToWorkPlainObject(invalidData as any);
+			expect(result.isErr()).toBe(true);
 		});
 	});
 });

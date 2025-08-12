@@ -1,73 +1,247 @@
 import { z } from "zod";
+import type { ValidationError } from "../../core/result";
+import { err, ok, type Result, validationError } from "../../core/result";
+import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
+
+/**
+ * Rating distribution interface
+ */
+interface RatingDistribution {
+	1: number;
+	2: number;
+	3: number;
+	4: number;
+	5: number;
+}
+
+/**
+ * Rating data interface for internal use
+ */
+interface RatingData {
+	stars: number;
+	count: number;
+	average: number;
+	distribution?: RatingDistribution;
+}
 
 /**
  * Rating Value Object
  *
  * 不変で評価情報を表現する値オブジェクト
  * DLsite作品の評価データを扱う
+ * Enhanced with BaseValueObject and Result pattern for type safety
  */
-export const Rating = z
-	.object({
-		/** 評価星数 (1-5の範囲) */
-		stars: z.number().min(0).max(5),
-		/** 評価数 */
-		count: z.number().int().min(0),
-		/** 平均評価（小数点付き） */
-		average: z.number().min(0).max(5),
-		/** 評価分布（オプション） */
-		distribution: z
-			.object({
-				1: z.number().int().min(0),
-				2: z.number().int().min(0),
-				3: z.number().int().min(0),
-				4: z.number().int().min(0),
-				5: z.number().int().min(0),
-			})
-			.optional(),
-	})
-	.transform((data) => ({
-		...data,
-		/** 評価があるかどうか */
-		hasRatings: () => data.count > 0,
-		/** 高評価かどうか（4.0以上） */
-		isHighlyRated: () => data.average >= 4.0,
-		/** 評価の信頼性（評価数ベース） */
-		reliability: () => {
-			if (data.count >= 100) return "high";
-			if (data.count >= 50) return "medium";
-			if (data.count >= 10) return "low";
-			return "insufficient";
-		},
-		/** 星数の整数表現（表示用） */
-		displayStars: () => Math.round(data.stars),
-		/** パーセンテージ表現（0-100） */
-		percentage: () => (data.average / 5) * 100,
-		/** 他のRatingと等価か判定 */
-		equals: (other: unknown): boolean => {
-			// 入力検証: null/undefined チェック
-			if (!other) return false;
+export class RatingValueObject
+	extends BaseValueObject<RatingValueObject>
+	implements ValidatableValueObject<RatingValueObject>
+{
+	private constructor(private readonly data: RatingData) {
+		super();
+	}
 
-			// 型ガード: Rating型かチェック
-			if (typeof other !== "object") return false;
-			const o = other as Record<string, unknown>;
+	/**
+	 * Creates a Rating with validation
+	 * @param data - The rating data
+	 * @returns Result containing Rating or ValidationError
+	 */
+	static create(data: {
+		stars: number;
+		count: number;
+		average: number;
+		distribution?: RatingDistribution;
+	}): Result<RatingValueObject, ValidationError> {
+		const validation = RatingValueObject.validate(data);
+		if (!validation.isValid) {
+			return err(validationError("rating", validation.error ?? "評価の検証に失敗しました"));
+		}
 
-			// 必須プロパティの存在確認
-			if (
-				typeof o.stars !== "number" ||
-				typeof o.count !== "number" ||
-				typeof o.average !== "number"
-			) {
+		return ok(new RatingValueObject(data));
+	}
+
+	/**
+	 * Creates a Rating from plain object (for deserialization)
+	 * @param obj - Plain object to convert
+	 * @returns Result containing Rating or ValidationError
+	 */
+	static fromPlainObject(obj: unknown): Result<RatingValueObject, ValidationError> {
+		if (!obj || typeof obj !== "object") {
+			return err(validationError("rating", "Rating data must be an object"));
+		}
+
+		const data = obj as Record<string, unknown>;
+
+		if (
+			typeof data.stars !== "number" ||
+			typeof data.count !== "number" ||
+			typeof data.average !== "number"
+		) {
+			return err(
+				validationError("rating", "Rating must have stars, count, and average as numbers"),
+			);
+		}
+
+		const ratingData: RatingData = {
+			stars: data.stars,
+			count: data.count,
+			average: data.average,
+		};
+
+		if (data.distribution && typeof data.distribution === "object") {
+			const dist = data.distribution as Record<string, unknown>;
+			if (RatingValueObject.isValidDistribution(dist)) {
+				ratingData.distribution = dist as unknown as RatingDistribution;
+			}
+		}
+
+		return RatingValueObject.create(ratingData);
+	}
+
+	/**
+	 * Validates rating data
+	 */
+	private static validate(data: RatingData): { isValid: boolean; error?: string } {
+		if (data.stars < 0 || data.stars > 5) {
+			return { isValid: false, error: "Stars must be between 0 and 5" };
+		}
+
+		if (data.count < 0 || !Number.isInteger(data.count)) {
+			return { isValid: false, error: "Count must be a non-negative integer" };
+		}
+
+		if (data.average < 0 || data.average > 5) {
+			return { isValid: false, error: "Average must be between 0 and 5" };
+		}
+
+		if (data.distribution && !RatingValueObject.isValidDistribution(data.distribution)) {
+			return { isValid: false, error: "Distribution must contain valid rating counts" };
+		}
+
+		return { isValid: true };
+	}
+
+	/**
+	 * Validates distribution object
+	 */
+	private static isValidDistribution(dist: unknown): boolean {
+		if (!dist || typeof dist !== "object") return false;
+		const d = dist as Record<string, unknown>;
+		for (const key of ["1", "2", "3", "4", "5"]) {
+			if (typeof d[key] !== "number" || d[key] < 0 || !Number.isInteger(d[key])) {
 				return false;
 			}
+		}
+		return true;
+	}
 
-			// 安全な比較
-			return data.stars === o.stars && data.count === o.count && data.average === o.average;
-		},
-		/** フォーマット済み文字列 */
-		format: () => `★${data.average.toFixed(1)} (${data.count}件)`,
-	}));
+	// Accessors
 
-export type Rating = z.infer<typeof Rating>;
+	get stars(): number {
+		return this.data.stars;
+	}
+
+	get count(): number {
+		return this.data.count;
+	}
+
+	get average(): number {
+		return this.data.average;
+	}
+
+	get distribution(): RatingDistribution | undefined {
+		return this.data.distribution ? { ...this.data.distribution } : undefined;
+	}
+
+	// Business logic methods
+
+	/**
+	 * 評価があるかどうか
+	 */
+	hasRatings(): boolean {
+		return this.data.count > 0;
+	}
+
+	/**
+	 * 高評価かどうか（4.0以上）
+	 */
+	isHighlyRated(): boolean {
+		return this.data.average >= 4.0;
+	}
+
+	/**
+	 * 評価の信頼性（評価数ベース）
+	 */
+	reliability(): RatingReliability {
+		if (this.data.count >= 100) return "high";
+		if (this.data.count >= 50) return "medium";
+		if (this.data.count >= 10) return "low";
+		return "insufficient";
+	}
+
+	/**
+	 * 星数の整数表現（表示用）
+	 */
+	displayStars(): number {
+		return Math.round(this.data.stars);
+	}
+
+	/**
+	 * パーセンテージ表現（0-100）
+	 */
+	percentage(): number {
+		return (this.data.average / 5) * 100;
+	}
+
+	/**
+	 * フォーマット済み文字列
+	 */
+	format(): string {
+		return `★${this.data.average.toFixed(1)} (${this.data.count}件)`;
+	}
+
+	// ValidatableValueObject implementation
+
+	isValid(): boolean {
+		return RatingValueObject.validate(this.data).isValid;
+	}
+
+	getValidationErrors(): string[] {
+		const validation = RatingValueObject.validate(this.data);
+		return validation.isValid ? [] : [validation.error ?? "評価の検証に失敗しました"];
+	}
+
+	// BaseValueObject implementation
+
+	equals(other: RatingValueObject): boolean {
+		if (!other || !(other instanceof RatingValueObject)) {
+			return false;
+		}
+
+		return (
+			this.data.stars === other.data.stars &&
+			this.data.count === other.data.count &&
+			this.data.average === other.data.average
+		);
+	}
+
+	clone(): RatingValueObject {
+		return new RatingValueObject({
+			stars: this.data.stars,
+			count: this.data.count,
+			average: this.data.average,
+			distribution: this.data.distribution ? { ...this.data.distribution } : undefined,
+		});
+	}
+
+	toPlainObject(): RatingData {
+		return {
+			stars: this.data.stars,
+			count: this.data.count,
+			average: this.data.average,
+			distribution: this.data.distribution ? { ...this.data.distribution } : undefined,
+		};
+	}
+}
+
 export type RatingReliability = "high" | "medium" | "low" | "insufficient";
 
 /**
@@ -155,3 +329,6 @@ export const RatingAggregation = {
 		return totalCount > 0 ? totalScore / totalCount : 0;
 	},
 };
+
+// Type alias for backward compatibility
+export type Rating = RatingValueObject;

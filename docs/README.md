@@ -43,7 +43,7 @@ Design decisions and implementation patterns:
 
 - [Architecture Decision Records](decisions/README.md) - Important technical decisions
 - [ADR-001: DDD Implementation Guidelines](decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - When to apply DDD patterns
-- [ADR-002: Entity Implementation Lessons](decisions/architecture/ADR-002-entity-implementation-lessons.md) - Learning from our implementations
+- [ADR-002: TypeScript Type Safety Enhancement](decisions/architecture/ADR-002-typescript-type-safety-enhancement.md) - Branded Types, Result patterns, and Zod integration
 
 ### External API Documentation
 Integration specifications and analysis:
@@ -57,6 +57,13 @@ How-to guides for common tasks:
 - [Development Guide](guides/development.md) - Environment setup and development workflow
 - [Testing Guide](guides/testing.md) - Testing strategies and best practices
 - [Deployment Guide](guides/deployment.md) - Deployment procedures and infrastructure
+- [TypeScript Type Safety Migration](guides/typescript-type-safety-migration.md) - Implementation guide for type safety enhancements
+- [TypeScript Migration Checklist](guides/typescript-migration-checklist.md) - Step-by-step checklist for migration
+
+### Code Examples
+Practical implementation examples:
+
+- [TypeScript Type Safety Examples](examples/typescript-type-safety-examples.md) - Before/after comparisons and sample implementations
 
 ### Operational Documentation
 Day-to-day operational information:

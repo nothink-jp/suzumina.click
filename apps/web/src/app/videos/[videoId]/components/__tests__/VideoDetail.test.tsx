@@ -135,8 +135,11 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 	}
 
 	// Video Entityを作成してPlain Objectに変換
-	const video = Video.fromFirestoreData(firestoreData);
-	return video.toPlainObject();
+	const videoResult = Video.fromFirestoreData(firestoreData);
+	if (videoResult.isErr()) {
+		throw new Error(`Failed to create video: ${videoResult.error.detail}`);
+	}
+	return videoResult.value.toPlainObject();
 }
 
 describe("VideoDetail", () => {

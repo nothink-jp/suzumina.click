@@ -1,4 +1,16 @@
 /**
+ * Work Creators Value Object
+ *
+ * Represents all creators involved in a work
+ * Refactored to use BaseValueObject and Result pattern for type safety
+ */
+
+import type { ValidationError } from "../../core/result";
+import { err, ok, type Result, validationError } from "../../core/result";
+import type { WorkCreatorsPlain } from "../../plain-objects/work-plain";
+import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
+
+/**
  * Creator information type
  */
 export interface CreatorInfo {
@@ -7,24 +19,153 @@ export interface CreatorInfo {
 }
 
 /**
- * Work Creators Value Object
- *
- * Represents all creators involved in a work
+ * WorkCreators data structure
  */
-export class WorkCreators {
-	constructor(
+interface WorkCreatorsData {
+	voiceActors: CreatorInfo[];
+	scenario: CreatorInfo[];
+	illustration: CreatorInfo[];
+	music: CreatorInfo[];
+	others: CreatorInfo[];
+}
+
+/**
+ * WorkCreators Value Object with enhanced type safety
+ */
+export class WorkCreators
+	extends BaseValueObject<WorkCreators>
+	implements ValidatableValueObject<WorkCreators>
+{
+	private constructor(
 		private readonly _voiceActors: CreatorInfo[] = [],
 		private readonly _scenario: CreatorInfo[] = [],
 		private readonly _illustration: CreatorInfo[] = [],
 		private readonly _music: CreatorInfo[] = [],
 		private readonly _others: CreatorInfo[] = [],
 	) {
-		// Ensure arrays are valid
-		this._voiceActors = this._voiceActors.filter((v) => v?.name?.trim());
-		this._scenario = this._scenario.filter((v) => v?.name?.trim());
-		this._illustration = this._illustration.filter((v) => v?.name?.trim());
-		this._music = this._music.filter((v) => v?.name?.trim());
-		this._others = this._others.filter((v) => v?.name?.trim());
+		super();
+	}
+
+	/**
+	 * Creates a WorkCreators with validation
+	 * @param voiceActors - Voice actors
+	 * @param scenario - Scenario writers
+	 * @param illustration - Illustrators
+	 * @param music - Music composers
+	 * @param others - Other creators
+	 * @returns Result containing WorkCreators or ValidationError
+	 */
+	static create(
+		voiceActors: CreatorInfo[] = [],
+		scenario: CreatorInfo[] = [],
+		illustration: CreatorInfo[] = [],
+		music: CreatorInfo[] = [],
+		others: CreatorInfo[] = [],
+	): Result<WorkCreators, ValidationError> {
+		const validation = WorkCreators.validate({
+			voiceActors,
+			scenario,
+			illustration,
+			music,
+			others,
+		});
+		if (!validation.isValid) {
+			return err(
+				validationError("workCreators", validation.error ?? "クリエイター情報の検証に失敗しました"),
+			);
+		}
+
+		// Filter valid creators
+		const filteredVoiceActors = voiceActors.filter((v) => v?.name?.trim());
+		const filteredScenario = scenario.filter((v) => v?.name?.trim());
+		const filteredIllustration = illustration.filter((v) => v?.name?.trim());
+		const filteredMusic = music.filter((v) => v?.name?.trim());
+		const filteredOthers = others.filter((v) => v?.name?.trim());
+
+		return ok(
+			new WorkCreators(
+				filteredVoiceActors,
+				filteredScenario,
+				filteredIllustration,
+				filteredMusic,
+				filteredOthers,
+			),
+		);
+	}
+
+	/**
+	 * Creates a WorkCreators from data object
+	 * @param data - WorkCreators data object
+	 * @returns Result containing WorkCreators or ValidationError
+	 */
+	static fromData(data: WorkCreatorsData): Result<WorkCreators, ValidationError> {
+		return WorkCreators.create(
+			data.voiceActors,
+			data.scenario,
+			data.illustration,
+			data.music,
+			data.others,
+		);
+	}
+
+	/**
+	 * Creates a WorkCreators from plain object (for deserialization)
+	 * @param obj - Plain object to convert
+	 * @returns Result containing WorkCreators or ValidationError
+	 */
+	static fromPlainObject(obj: unknown): Result<WorkCreators, ValidationError> {
+		if (typeof obj !== "object" || obj === null) {
+			return err(validationError("workCreators", "WorkCreators must be an object"));
+		}
+
+		const data = obj as Record<string, unknown>;
+
+		const voiceActors = Array.isArray(data.voiceActors) ? (data.voiceActors as CreatorInfo[]) : [];
+		const scenario = Array.isArray(data.scenario) ? (data.scenario as CreatorInfo[]) : [];
+		const illustration = Array.isArray(data.illustration)
+			? (data.illustration as CreatorInfo[])
+			: [];
+		const music = Array.isArray(data.music) ? (data.music as CreatorInfo[]) : [];
+		const others = Array.isArray(data.others) ? (data.others as CreatorInfo[]) : [];
+
+		return WorkCreators.create(voiceActors, scenario, illustration, music, others);
+	}
+
+	/**
+	 * Validates WorkCreators data
+	 */
+	private static validate(data: {
+		voiceActors: CreatorInfo[];
+		scenario: CreatorInfo[];
+		illustration: CreatorInfo[];
+		music: CreatorInfo[];
+		others: CreatorInfo[];
+	}): { isValid: boolean; error?: string } {
+		// Validate each array contains valid CreatorInfo objects
+		const arrays = [
+			{ name: "voiceActors", array: data.voiceActors },
+			{ name: "scenario", array: data.scenario },
+			{ name: "illustration", array: data.illustration },
+			{ name: "music", array: data.music },
+			{ name: "others", array: data.others },
+		];
+
+		for (const { name, array } of arrays) {
+			if (!Array.isArray(array)) {
+				return { isValid: false, error: `${name} must be an array` };
+			}
+
+			for (const item of array) {
+				if (typeof item !== "object" || !item) {
+					continue; // Will be filtered out
+				}
+				if (typeof item.id !== "string" || typeof item.name !== "string") {
+					return { isValid: false, error: `${name} must contain objects with id and name strings` };
+				}
+			}
+		}
+
+		return { isValid: true };
 	}
 
 	get voiceActors(): CreatorInfo[] {
@@ -179,27 +320,35 @@ export class WorkCreators {
 		};
 	}
 
-	/**
-	 * Converts to plain object
-	 */
-	toPlainObject() {
-		return {
-			voiceActors: this.voiceActors,
-			scenario: this.scenario,
-			illustration: this.illustration,
-			music: this.music,
-			others: this.others,
-			// 互換性のための名前配列
-			voiceActorNames: this.voiceActorNames,
-			scenarioNames: this.scenarioNames,
-			illustrationNames: this.illustrationNames,
-			musicNames: this.musicNames,
-			otherNames: this.otherNames,
-		};
+	// ValidatableValueObject implementation
+
+	isValid(): boolean {
+		return WorkCreators.validate({
+			voiceActors: this._voiceActors,
+			scenario: this._scenario,
+			illustration: this._illustration,
+			music: this._music,
+			others: this._others,
+		}).isValid;
 	}
 
+	getValidationErrors(): string[] {
+		const validation = WorkCreators.validate({
+			voiceActors: this._voiceActors,
+			scenario: this._scenario,
+			illustration: this._illustration,
+			music: this._music,
+			others: this._others,
+		});
+		return validation.isValid ? [] : [validation.error ?? "クリエイター情報の検証に失敗しました"];
+	}
+
+	// BaseValueObject implementation
+
 	equals(other: WorkCreators): boolean {
-		if (!(other instanceof WorkCreators)) return false;
+		if (!other || !(other instanceof WorkCreators)) {
+			return false;
+		}
 
 		return (
 			this.arrayEquals(this._voiceActors, other._voiceActors) &&
@@ -215,8 +364,35 @@ export class WorkCreators {
 		return a.every((v, i) => b[i] && v.id === b[i].id && v.name === b[i].name);
 	}
 
+	clone(): WorkCreators {
+		return new WorkCreators(
+			[...this._voiceActors.map((c) => ({ ...c }))],
+			[...this._scenario.map((c) => ({ ...c }))],
+			[...this._illustration.map((c) => ({ ...c }))],
+			[...this._music.map((c) => ({ ...c }))],
+			[...this._others.map((c) => ({ ...c }))],
+		);
+	}
+
+	toPlainObject(): WorkCreatorsPlain {
+		return {
+			voiceActors: [...this._voiceActors.map((c) => ({ ...c }))],
+			scenario: [...this._scenario.map((c) => ({ ...c }))],
+			illustration: [...this._illustration.map((c) => ({ ...c }))],
+			music: [...this._music.map((c) => ({ ...c }))],
+			others: [...this._others.map((c) => ({ ...c }))],
+			voiceActorNames: this.voiceActorNames,
+			scenarioNames: this.scenarioNames,
+			illustrationNames: this.illustrationNames,
+			musicNames: this.musicNames,
+			otherNames: this.otherNames,
+		};
+	}
+
 	/**
 	 * Creates from creators object (normalized from DLsite API)
+	 * @param creators - Creators object from API
+	 * @returns Result containing WorkCreators or ValidationError
 	 */
 	static fromCreatorsObject(creators?: {
 		voice_by?: Array<{ id: string; name: string }>;
@@ -225,10 +401,12 @@ export class WorkCreators {
 		music_by?: Array<{ id: string; name: string }>;
 		others_by?: Array<{ id: string; name: string }>;
 		created_by?: Array<{ id: string; name: string }>;
-	}): WorkCreators {
-		if (!creators) return new WorkCreators();
+	}): Result<WorkCreators, ValidationError> {
+		if (!creators) {
+			return WorkCreators.create();
+		}
 
-		return new WorkCreators(
+		return WorkCreators.create(
 			creators.voice_by || [],
 			creators.scenario_by || [],
 			creators.illust_by || [],
@@ -239,6 +417,8 @@ export class WorkCreators {
 
 	/**
 	 * Creates from legacy arrays (for backward compatibility)
+	 * @param data - Legacy array data
+	 * @returns Result containing WorkCreators or ValidationError
 	 */
 	static fromLegacyArrays(data: {
 		voiceActors?: string[];
@@ -246,14 +426,22 @@ export class WorkCreators {
 		illustration?: string[];
 		music?: string[];
 		author?: string[];
-	}): WorkCreators {
+	}): Result<WorkCreators, ValidationError> {
 		// レガシー配列からはIDがないので、名前をIDとして使用
-		return new WorkCreators(
+		return WorkCreators.create(
 			(data.voiceActors || []).map((name) => ({ id: name, name })),
 			(data.scenario || []).map((name) => ({ id: name, name })),
 			(data.illustration || []).map((name) => ({ id: name, name })),
 			(data.music || []).map((name) => ({ id: name, name })),
 			(data.author || []).map((name) => ({ id: name, name })),
 		);
+	}
+
+	/**
+	 * Creates an empty WorkCreators instance
+	 * @returns Empty WorkCreators
+	 */
+	static createEmpty(): WorkCreators {
+		return new WorkCreators([], [], [], [], []);
 	}
 }

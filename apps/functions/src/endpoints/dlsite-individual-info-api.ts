@@ -313,7 +313,7 @@ function getContinuationInfo(
 				completedBatchesLength,
 				totalBatches: metadata.totalBatches,
 			});
-			return { isContinuation: false };
+			return { isContinuation: false as const };
 		}
 
 		logger.info("バッチ処理を継続します", {
@@ -324,13 +324,13 @@ function getContinuationInfo(
 		});
 
 		return {
-			isContinuation: true,
+			isContinuation: true as const,
 			allWorkIds: metadata.allWorkIds,
 			startBatch: metadata.currentBatch,
 		};
 	}
 
-	return { isContinuation: false };
+	return { isContinuation: false as const };
 }
 
 /**
@@ -520,18 +520,18 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		}
 
 		const continuationInfo = isWorkCountChanged
-			? { isContinuation: false }
+			? { isContinuation: false as const }
 			: getContinuationInfo(metadata);
 
 		let allWorkIds: string[];
 		let batches: string[][];
 		let startBatch = 0;
 
-		if (continuationInfo.isContinuation) {
+		if (continuationInfo.isContinuation === true) {
 			// 継続処理
-			allWorkIds = (continuationInfo as any).allWorkIds;
+			allWorkIds = continuationInfo.allWorkIds;
 			batches = chunkArray(allWorkIds, BATCH_SIZE);
-			startBatch = (continuationInfo as any).startBatch;
+			startBatch = continuationInfo.startBatch;
 			logger.info(
 				`継続処理詳細: allWorkIds.length=${allWorkIds.length}, batches.length=${batches.length}, startBatch=${startBatch}`,
 			);

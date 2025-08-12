@@ -109,6 +109,10 @@ export class VideoCategory
 		return this.value;
 	}
 
+	toPlainObject(): string {
+		return this.value;
+	}
+
 	clone(): VideoCategory {
 		return new VideoCategory(this.value);
 	}

@@ -92,6 +92,10 @@ export class VideoDuration
 		return this.value;
 	}
 
+	toPlainObject(): string {
+		return this.value;
+	}
+
 	clone(): VideoDuration {
 		return new VideoDuration(this.value);
 	}
@@ -140,6 +144,10 @@ export class VideoTitle
 		return this.value;
 	}
 
+	toPlainObject(): string {
+		return this.value;
+	}
+
 	clone(): VideoTitle {
 		return new VideoTitle(this.value);
 	}
@@ -180,6 +188,10 @@ export class VideoDescription extends BaseValueObject<VideoDescription> {
 	}
 
 	toString(): string {
+		return this.value;
+	}
+
+	toPlainObject(): string {
 		return this.value;
 	}
 

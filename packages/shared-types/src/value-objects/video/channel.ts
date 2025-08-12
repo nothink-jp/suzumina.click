@@ -5,6 +5,7 @@
  * Ensures channel information is valid and consistent.
  */
 
+import type { ChannelId as ChannelIdBrand } from "../../core/ids";
 import { requireNonEmptyString } from "../base/transforms";
 import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
 import { VideoCategory } from "../video-category";
@@ -16,26 +17,28 @@ export class ChannelId
 	extends BaseValueObject<ChannelId>
 	implements ValidatableValueObject<ChannelId>
 {
-	private readonly value: string;
+	private readonly value: ChannelIdBrand;
 
 	constructor(value: string) {
 		super();
-		this.value = requireNonEmptyString(value, "channelId").trim();
+		const sanitizedValue = requireNonEmptyString(value, "channelId").trim();
+		// Convert string to branded type
+		this.value = sanitizedValue as ChannelIdBrand;
 	}
 
 	/**
 	 * Returns the YouTube channel URL
 	 */
 	toUrl(): string {
-		return `https://www.youtube.com/channel/${this.value}`;
+		return `https://www.youtube.com/channel/${this.value as string}`;
 	}
 
 	/**
 	 * Returns the YouTube channel handle URL (if it's a handle)
 	 */
 	toHandleUrl(): string {
-		if (this.value.startsWith("@")) {
-			return `https://www.youtube.com/${this.value}`;
+		if ((this.value as string).startsWith("@")) {
+			return `https://www.youtube.com/${this.value as string}`;
 		}
 		return this.toUrl();
 	}
@@ -49,12 +52,12 @@ export class ChannelId
 
 		// YouTube channel IDs are typically 24 characters
 		// But handles start with @ and can vary in length
-		if (!this.value.startsWith("@") && this.value.length !== 24) {
+		if (!(this.value as string).startsWith("@") && (this.value as string).length !== 24) {
 			errors.push("Channel ID should be 24 characters or start with @");
 		}
 
 		// Basic validation for allowed characters
-		if (!this.value.match(/^[@a-zA-Z0-9_-]+$/)) {
+		if (!(this.value as string).match(/^[@a-zA-Z0-9_-]+$/)) {
 			errors.push("Channel ID contains invalid characters");
 		}
 
@@ -62,18 +65,22 @@ export class ChannelId
 	}
 
 	toString(): string {
-		return this.value;
+		return this.value as string;
+	}
+
+	toPlainObject(): string {
+		return this.value as string;
 	}
 
 	clone(): ChannelId {
-		return new ChannelId(this.value);
+		return new ChannelId(this.value as string);
 	}
 
 	equals(other: ChannelId): boolean {
 		if (!other || !(other instanceof ChannelId)) {
 			return false;
 		}
-		return this.value === other.value;
+		return (this.value as string) === (other.value as string);
 	}
 }
 
@@ -128,6 +135,10 @@ export class ChannelTitle
 	}
 
 	toString(): string {
+		return this.value;
+	}
+
+	toPlainObject(): string {
 		return this.value;
 	}
 
