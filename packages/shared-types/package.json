@@ -23,7 +23,7 @@
 	},
 	"dependencies": {
 		"@google-cloud/firestore": "^7.11.3",
-		"zod": "^4.0.15"
+		"zod": "^4.0.17"
 	},
 	"devDependencies": {
 		"@suzumina.click/typescript-config": "workspace:*",
