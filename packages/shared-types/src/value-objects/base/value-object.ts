@@ -101,6 +101,16 @@ export abstract class BaseValueObject<T> implements ValueObject<T> {
 	 * Abstract clone method that must be implemented by subclasses
 	 */
 	abstract clone(): T;
+
+	/**
+	 * Converts the value object to a plain object representation
+	 * @returns Plain object representation
+	 */
+	abstract toPlainObject(): unknown;
+
+	// Note: fromPlainObject should be implemented as a static method in subclasses
+	// Each subclass should define its own:
+	// static fromPlainObject(obj: unknown): Result<SpecificType, ValidationError>
 }
 
 /**
@@ -118,4 +128,9 @@ export interface ValidatableValueObject<T> extends ValueObject<T> {
 	 * @returns Array of validation error messages
 	 */
 	getValidationErrors(): string[];
+
+	/**
+	 * Converts the value object to a plain object representation
+	 */
+	toPlainObject(): unknown;
 }

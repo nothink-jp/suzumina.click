@@ -6,6 +6,8 @@
  * prioritizing practical design for Next.js + Cloud Functions environment.
  */
 
+import type { DatabaseError } from "../core/result";
+import { databaseError, err, ok, type Result } from "../core/result";
 import type { WorkPlainObject } from "../plain-objects/work-plain";
 import { Circle } from "../value-objects/work/circle";
 import { WorkCreators } from "../value-objects/work/work-creators";
@@ -199,16 +201,22 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 
 	/**
 	 * Creates Work from Firestore data (most important method)
+	 * Returns Result<Work, DatabaseError> for proper error handling
 	 */
-	static fromFirestoreData(data: WorkDocument): Work | null {
+	static fromFirestoreData(data: WorkDocument): Result<Work, DatabaseError> {
 		try {
 			// Validate required fields
 			if (!data.productId || !data.title || !data.circle) {
-				// Missing required fields - return null gracefully
-				return null;
+				return err(
+					databaseError("Missing required fields: productId, title, or circle", "INVALID_DATA"),
+				);
 			}
 
-			const workId = new WorkId(data.productId);
+			const workIdResult = WorkId.create(data.productId);
+			if (workIdResult.isErr()) {
+				return err(databaseError(`Invalid work ID: ${workIdResult.error.message}`, "INVALID_DATA"));
+			}
+			const workId = workIdResult.value;
 			const title = Work.createTitle(data);
 			const circle = Work.createCircle(data);
 			const price = Work.createPrice(data);
@@ -219,7 +227,7 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 			const seriesInfo = Work.createSeriesInfo(data);
 			const salesStatus = Work.createSalesStatus(data);
 
-			return new Work(
+			const work = new Work(
 				workId,
 				title,
 				circle,
@@ -246,11 +254,15 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 					dlCount: dl.dlCount,
 				})),
 			);
-		} catch (_error) {
-			// In development, this error would be caught by error boundary
-			// In production, we return null to gracefully handle invalid data
-			// TODO: Consider using a proper logging service for production environments
-			return null;
+
+			return ok(work);
+		} catch (error) {
+			return err(
+				databaseError(
+					`Failed to create Work from Firestore data: ${error instanceof Error ? error.message : String(error)}`,
+					"CREATION_FAILED",
+				),
+			);
 		}
 	}
 
@@ -258,14 +270,20 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	 * Creates WorkTitle from Firestore data
 	 */
 	private static createTitle(data: WorkDocument): WorkTitle {
-		return new WorkTitle(data.title, data.titleMasked, data.titleKana, data.altName);
+		const result = WorkTitle.create(data.title, data.titleMasked, data.titleKana, data.altName);
+		return result.isOk()
+			? result.value
+			: WorkTitle.create(data.title || "Unknown Title")._unsafeUnwrap();
 	}
 
 	/**
 	 * Creates Circle from Firestore data
 	 */
 	private static createCircle(data: WorkDocument): Circle {
-		return new Circle(data.circleId || "UNKNOWN", data.circle, data.circleEn);
+		const result = Circle.create(data.circleId || "UNKNOWN", data.circle, data.circleEn);
+		return result.isOk()
+			? result.value
+			: Circle.create("UNKNOWN", data.circle || "Unknown Circle")._unsafeUnwrap();
 	}
 
 	/**
@@ -275,13 +293,14 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 		// WorkDocument has nested price structure
 		const priceInfo = data.price;
 
-		return new WorkPrice(
+		const result = WorkPrice.create(
 			priceInfo.current,
 			priceInfo.currency || "JPY",
 			priceInfo.original,
 			priceInfo.discount,
 			priceInfo.point,
 		);
+		return result.isOk() ? result.value : WorkPrice.create(0)._unsafeUnwrap();
 	}
 
 	/**
@@ -317,11 +336,13 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 					name: c.name,
 				})),
 			};
-			return WorkCreators.fromCreatorsObject(normalizedCreators);
+			// Use newer method that returns Result
+			const result = WorkCreators.fromCreatorsObject(normalizedCreators);
+			return result.isOk() ? result.value : WorkCreators.createEmpty();
 		}
 
 		// creatorsフィールドがない場合は空のWorkCreatorsを返す
-		return new WorkCreators();
+		return WorkCreators.createEmpty();
 	}
 
 	/**
@@ -341,13 +362,14 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 			{} as Record<number, number>,
 		);
 
-		return new WorkRating(
+		const result = WorkRating.create(
 			data.rating.stars,
 			data.rating.count,
 			data.rating.averageDecimal || data.rating.stars,
 			data.rating.reviewCount,
 			distribution,
 		);
+		return result.isOk() ? result.value : WorkRating.empty()._unsafeUnwrap();
 	}
 
 	/**

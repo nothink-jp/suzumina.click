@@ -5,8 +5,56 @@
 import { convertToWorkPlainObject } from "@suzumina.click/shared-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Mock conversion helper function
+const mockConvertToWorkPlainObject = (data: any) => {
+	if (!data || !data.id || !data.productId) return null;
+	return {
+		...data,
+		price: data.price || {
+			current: 0,
+			currency: "JPY",
+			formattedPrice: "¥0",
+		},
+		rating: data.rating,
+		creators: data.creators || {
+			voiceActors: [],
+			scenario: [],
+			illustration: [],
+			music: [],
+			others: [],
+		},
+		salesStatus: data.salesStatus || {
+			isOnSale: true,
+			isDiscounted: false,
+			isFree: false,
+			isSoldOut: false,
+			isReserveWork: false,
+			dlsiteplaySupported: false,
+		},
+		sampleImages: data.sampleImages || [],
+		genres: data.genres || [],
+		customGenres: data.customGenres || [],
+		_computed: {
+			displayTitle: data.title,
+			isAdult: data.category === "adult",
+			thumbnailUrl: data.thumbnailUrl || "",
+			priceInYen: data.price?.amount || 0,
+			discountRate: 0,
+			hasDiscount: false,
+			creatorNames: "",
+			voiceActorNames: "",
+			genreNames: "",
+			releaseYear: 2024,
+			formattedReleaseDate: "2024年1月1日",
+			detailPageUrl: `/works/${data.productId}`,
+			purchasePageUrl: `https://www.dlsite.com/maniax/work/=/product_id/${data.productId}.html`,
+		},
+	};
+};
+
 // convertToWorkPlainObjectとconvertToCirclePlainObjectのモック
 vi.mock("@suzumina.click/shared-types", () => ({
+	convertToWorkPlainObject: vi.fn(),
 	convertToCirclePlainObject: vi.fn((data) => {
 		if (!data) return null;
 		return {
@@ -16,55 +64,6 @@ vi.mock("@suzumina.click/shared-types", () => ({
 			workCount: data.workIds ? data.workIds.length : data.workCount || 0,
 			createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : null,
 			updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : null,
-		};
-	}),
-	convertToWorkPlainObject: vi.fn((data) => {
-		if (!data || !data.id || !data.productId) return null;
-		return {
-			...data,
-			price: data.price || {
-				current: 0,
-				currency: "JPY",
-				formattedPrice: "¥0",
-			},
-			rating: data.rating,
-			creators: data.creators || {
-				voiceActors: [],
-				scenario: [],
-				illustration: [],
-				music: [],
-				others: [],
-			},
-			salesStatus: data.salesStatus || {
-				isOnSale: true,
-				isDiscounted: false,
-				isFree: false,
-				isSoldOut: false,
-				isReserveWork: false,
-				dlsiteplaySupported: false,
-			},
-			sampleImages: data.sampleImages || [],
-			genres: data.genres || [],
-			customGenres: data.customGenres || [],
-			_computed: {
-				displayTitle: data.title,
-				displayCircle: data.circle,
-				displayCategory: data.category,
-				displayAgeRating: "全年齢",
-				displayReleaseDate: data.releaseDateDisplay || "",
-				relativeUrl: `/works/${data.productId}`,
-				isAdultContent: false,
-				isVoiceWork: data.category === "SOU",
-				isGameWork: false,
-				isMangaWork: false,
-				hasDiscount: false,
-				isNewRelease: false,
-				isPopular: false,
-				primaryLanguage: "ja",
-				availableLanguages: ["ja"],
-				searchableText: `${data.title} ${data.circle}`,
-				tags: data.tags || [],
-			},
 		};
 	}),
 	isValidCircleId: vi.fn((id) => id?.startsWith("RG")),
@@ -127,52 +126,16 @@ describe("Circle page server actions", () => {
 
 		// Reset convertToWorkPlainObject mock to default implementation
 		vi.mocked(convertToWorkPlainObject).mockImplementation((data) => {
-			if (!data || !data.id || !data.productId) return null;
+			const result = mockConvertToWorkPlainObject(data);
+			if (result === null) {
+				return {
+					isOk: () => false,
+					error: { message: "Invalid data" },
+				};
+			}
 			return {
-				...data,
-				price: data.price || {
-					current: 0,
-					currency: "JPY",
-					formattedPrice: "¥0",
-				},
-				rating: data.rating,
-				creators: data.creators || {
-					voiceActors: [],
-					scenario: [],
-					illustration: [],
-					music: [],
-					others: [],
-				},
-				salesStatus: data.salesStatus || {
-					isOnSale: true,
-					isDiscounted: false,
-					isFree: false,
-					isSoldOut: false,
-					isReserveWork: false,
-					dlsiteplaySupported: false,
-				},
-				sampleImages: data.sampleImages || [],
-				genres: data.genres || [],
-				customGenres: data.customGenres || [],
-				_computed: {
-					displayTitle: data.title,
-					displayCircle: data.circle,
-					displayCategory: data.category,
-					displayAgeRating: "全年齢",
-					displayReleaseDate: data.releaseDateDisplay || "",
-					relativeUrl: `/works/${data.productId}`,
-					isAdultContent: false,
-					isVoiceWork: data.category === "SOU",
-					isGameWork: false,
-					isMangaWork: false,
-					hasDiscount: false,
-					isNewRelease: false,
-					isPopular: false,
-					primaryLanguage: "ja",
-					availableLanguages: ["ja"],
-					searchableText: `${data.title} ${data.circle}`,
-					tags: data.tags || [],
-				},
+				isOk: () => true,
+				value: result,
 			};
 		});
 	});

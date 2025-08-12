@@ -9,6 +9,7 @@ import type {
 } from "@suzumina.click/shared-types";
 import { convertToWorkPlainObject, isValidCreatorId } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
+import { warn } from "@/lib/logger";
 
 /**
  * Compare works by date (newest or oldest)
@@ -114,6 +115,113 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo
 }
 
 /**
+ * 作品IDを取得
+ */
+async function fetchWorkIds(
+	firestore: FirebaseFirestore.Firestore,
+	creatorId: string,
+): Promise<string[] | null> {
+	const creatorDoc = await firestore.collection("creators").doc(creatorId).get();
+
+	if (!creatorDoc.exists) {
+		return null;
+	}
+
+	const worksSnapshot = await creatorDoc.ref.collection("works").get();
+
+	if (worksSnapshot.empty) {
+		return [];
+	}
+
+	return worksSnapshot.docs.map((doc) => doc.id);
+}
+
+/**
+ * 作品詳細を取得
+ */
+async function fetchWorkDocuments(
+	firestore: FirebaseFirestore.Firestore,
+	workIds: string[],
+): Promise<WorkDocument[]> {
+	const allWorks: WorkDocument[] = [];
+
+	// Firestoreの whereIn 制限により、一度に10件まで
+	for (let i = 0; i < workIds.length; i += 10) {
+		const batch = workIds.slice(i, i + 10);
+		const workRefs = batch.map((id) => firestore.collection("works").doc(id));
+		const workDocs = await firestore.getAll(...workRefs);
+
+		for (const doc of workDocs) {
+			if (doc.exists) {
+				const data = doc.data();
+				allWorks.push({
+					...data,
+					id: doc.id,
+				} as WorkDocument);
+			}
+		}
+	}
+
+	return allWorks;
+}
+
+/**
+ * 作品をWorkPlainObjectに変換
+ */
+function convertWorksToPlainObjects(allWorks: WorkDocument[]): WorkPlainObject[] {
+	const convertedWorks: WorkPlainObject[] = [];
+	for (const work of allWorks) {
+		const result = convertToWorkPlainObject(work);
+		if (result.isOk()) {
+			convertedWorks.push(result.value);
+		} else {
+			// Log warning but continue processing other items
+			warn(`Failed to convert work ${work.id}`, {
+				error:
+					result.error.type === "DatabaseError"
+						? result.error.detail
+						: `${result.error.resource} not found: ${result.error.id}`,
+			});
+		}
+	}
+	return convertedWorks;
+}
+
+/**
+ * 検索フィルター適用
+ */
+function applySearchFilter(
+	works: WorkPlainObject[],
+	search?: string,
+): { filtered: WorkPlainObject[]; count?: number } {
+	if (!search) {
+		return { filtered: works };
+	}
+
+	const searchLower = search.toLowerCase();
+	const filtered = works.filter((work) => {
+		// タイトルで検索
+		if (work.title?.toLowerCase().includes(searchLower)) return true;
+
+		// 説明で検索
+		if (work.description?.toLowerCase().includes(searchLower)) return true;
+
+		// 声優名で検索（WorkPlainObjectでは voiceActors フィールド）
+		if (work.creators?.voiceActors?.some((va) => va.name?.toLowerCase().includes(searchLower))) {
+			return true;
+		}
+
+		// ジャンルで検索（WorkPlainObjectでは genres は string[] ）
+		if (work.genres?.some((genre) => genre.toLowerCase().includes(searchLower))) return true;
+		if (work.customGenres?.some((genre) => genre.toLowerCase().includes(searchLower))) return true;
+
+		return false;
+	});
+
+	return { filtered, count: filtered.length };
+}
+
+/**
  * クリエイター作品リストを取得（ConfigurableList用）
  * @param params パラメータ
  * @returns 作品一覧と総件数
@@ -133,81 +241,28 @@ export async function getCreatorWorksList(params: {
 	}
 
 	try {
-		// 新しいcreatorsコレクションから作品IDを取得
 		const firestore = getFirestore();
-		const creatorDoc = await firestore.collection("creators").doc(creatorId).get();
 
-		if (!creatorDoc.exists) {
+		// 作品IDを取得
+		const workIds = await fetchWorkIds(firestore, creatorId);
+		if (workIds === null) {
+			return { works: [], totalCount: 0 };
+		}
+		if (workIds.length === 0) {
 			return { works: [], totalCount: 0 };
 		}
 
-		// worksサブコレクションから作品情報を取得
-		const worksSnapshot = await creatorDoc.ref.collection("works").get();
+		// 作品詳細を取得
+		const allWorks = await fetchWorkDocuments(firestore, workIds);
 
-		if (worksSnapshot.empty) {
-			return { works: [], totalCount: 0 };
-		}
-
-		const workIds = worksSnapshot.docs.map((doc) => doc.id);
-
-		// 作品詳細を取得（すべて取得してからフィルター・ソート・ページネーション）
-		const allWorks: WorkDocument[] = [];
-
-		// Firestoreの whereIn 制限により、一度に10件まで
-		for (let i = 0; i < workIds.length; i += 10) {
-			const batch = workIds.slice(i, i + 10);
-			const workRefs = batch.map((id) => firestore.collection("works").doc(id));
-			const workDocs = await firestore.getAll(...workRefs);
-
-			for (const doc of workDocs) {
-				if (doc.exists) {
-					const data = doc.data();
-					allWorks.push({
-						...data,
-						id: doc.id,
-					} as WorkDocument);
-				}
-			}
-		}
-
-		// WorkPlainObjectに変換（検索前に変換することが重要）
-		const convertedWorks: WorkPlainObject[] = [];
-		for (const work of allWorks) {
-			const plainObject = convertToWorkPlainObject(work);
-			if (plainObject) {
-				convertedWorks.push(plainObject);
-			}
-		}
+		// WorkPlainObjectに変換
+		const convertedWorks = convertWorksToPlainObjects(allWorks);
 
 		// 検索フィルター適用
-		let filteredWorks = convertedWorks;
-		let filteredCount: number | undefined;
-
-		if (search) {
-			const searchLower = search.toLowerCase();
-			filteredWorks = convertedWorks.filter((work) => {
-				// タイトルで検索
-				if (work.title?.toLowerCase().includes(searchLower)) return true;
-
-				// 説明で検索
-				if (work.description?.toLowerCase().includes(searchLower)) return true;
-
-				// 声優名で検索（WorkPlainObjectでは voiceActors フィールド）
-				if (
-					work.creators?.voiceActors?.some((va) => va.name?.toLowerCase().includes(searchLower))
-				) {
-					return true;
-				}
-
-				// ジャンルで検索（WorkPlainObjectでは genres は string[] ）
-				if (work.genres?.some((genre) => genre.toLowerCase().includes(searchLower))) return true;
-				if (work.customGenres?.some((genre) => genre.toLowerCase().includes(searchLower)))
-					return true;
-
-				return false;
-			});
-			filteredCount = filteredWorks.length;
-		}
+		const { filtered: filteredWorks, count: filteredCount } = applySearchFilter(
+			convertedWorks,
+			search,
+		);
 
 		// ソート処理
 		filteredWorks.sort((a, b) => compareWorks(a, b, sort));

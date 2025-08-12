@@ -7,260 +7,391 @@ This catalog provides detailed specifications for all domain objects in the suzu
 - [Entity Implementation Guide](entity-implementation-guide.md) - How to implement entities
 - [ADR-001: DDD Implementation Guidelines](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - When to use entities
 - [ADR-002: Entity Implementation Lessons](../decisions/architecture/ADR-002-entity-implementation-lessons.md) - Learning from experience
+- [ADR-002: TypeScript Type Safety Enhancement](../decisions/architecture/ADR-002-typescript-type-safety-enhancement.md) - Type safety patterns
 
 ## Entities
 
-### User
+All entities now extend `BaseEntity<T>` and implement `EntityValidatable<T>` interface.
 
-**Location**: `packages/shared-types/src/entities/user.ts`
+### Work
 
-```typescript
-interface User {
-  id: string;                    // Discord user ID
-  displayName: string;           // Display name
-  email?: string;                // Email address
-  discordId: string;             // Discord ID (same as id)
-  avatarUrl?: string;            // Discord avatar URL
-  role: "user" | "admin";        // User role
-  isActive: boolean;             // Account status
-  favoriteAudioButtonIds: string[]; // Favorite audio buttons
-  favoriteWorkIds: string[];     // Favorite DLsite works
-  createdAt: Date;               // Account creation
-  updatedAt: Date;               // Last update
-  lastLoginAt?: Date;            // Last login time
-}
-```
-
-### AudioButton
-
-**Location**: `packages/shared-types/src/entities/audio-button.ts`
+**Location**: `packages/shared-types/src/entities/work-entity.ts`
+**Pattern**: Entity with Result-based factory methods
 
 ```typescript
-interface AudioButton {
-  id: string;                    // Unique identifier
-  text: string;                  // Button display text
-  sourceVideoId: string;         // YouTube video ID
-  startTime: number;             // Start timestamp (seconds)
-  endTime?: number;              // End timestamp (optional)
-  duration: number;              // Duration (seconds)
-  category: AudioButtonCategory; // Category
-  tags: string[];                // Search tags
-  createdBy: string;             // Creator user ID
-  createdAt: Date;               // Creation date
-  playCount: number;             // Total play count
-  likeCount: number;             // Total like count
-  dislikeCount: number;          // Total dislike count
-  favoriteCount: number;         // Favorite count
-  isActive: boolean;             // Active status
-  moderationStatus: "pending" | "approved" | "rejected";
-  moderatedBy?: string;          // Moderator user ID
-  moderatedAt?: Date;            // Moderation date
+class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
+  // Private constructor - use factory methods
+  private constructor(...) { ... }
+  
+  // Factory method returns Result type
+  static fromFirestoreData(data: WorkDocument): Result<Work, DatabaseError> {
+    // Validation and construction logic
+  }
+  
+  // Validation methods
+  isValid(): boolean
+  getValidationErrors(): string[]
+  
+  // Business methods
+  toPlainObject(): WorkPlainObject
+  equals(other: Work): boolean
+  clone(): Work
 }
 ```
 
 ### Video
 
 **Location**: `packages/shared-types/src/entities/video.ts`
+**Pattern**: Entity with Result-based factory methods
 
 ```typescript
-interface Video {
-  id: string;                    // YouTube video ID
-  title: string;                 // Video title
-  channelId: string;             // YouTube channel ID
-  channelTitle: string;          // Channel name
-  thumbnailUrl: string;          // Thumbnail URL
-  duration: string;              // Duration (ISO 8601)
-  publishedAt: Date;             // Publish date
-  viewCount: number;             // View count
-  likeCount: number;             // Like count
-  commentCount: number;          // Comment count
-  createdAt: Date;               // First fetch date
-  updatedAt: Date;               // Last update
-  audioButtonIds: string[];      // Related audio buttons
-  isActive: boolean;             // Active status
+class Video extends BaseEntity<Video> implements EntityValidatable<Video> {
+  // Private constructor
+  private constructor(...) { ... }
+  
+  // Factory method returns Result type
+  static fromFirestoreData(data: FirestoreServerVideoData): Result<Video, DatabaseError> {
+    // Validation and construction logic
+  }
+  
+  // Validation methods
+  isValid(): boolean
+  getValidationErrors(): string[]
+  
+  // Business methods
+  toPlainObject(): VideoPlainObject
+  getVideoType(): VideoComputedProperties["videoType"]
+  canCreateAudioButton(): boolean
 }
 ```
 
-### DLsiteWork
+### AudioButton
 
-**Location**: `packages/shared-types/src/entities/dlsite-work.ts`
-
-```typescript
-interface DLsiteWork {
-  id: string;                    // DLsite work ID (e.g., "RJ123456")
-  title: string;                 // Work title
-  circleId: string;              // Circle ID
-  circleName: string;            // Circle name
-  thumbnailUrl: string;          // Thumbnail URL
-  description: string;           // Description
-  releaseDate: Date;             // Release date
-  lastModified: Date;            // Last modification
-  price: DLsitePrice;            // Current price info
-  categories: string[];          // Categories
-  tags: string[];                // Tags
-  voiceActors: string[];         // Voice actors
-  ageRating: DLsiteAgeRating;   // Age rating
-  fileFormat: string[];          // File formats
-  fileSize: string;              // Total file size
-  createdAt: Date;               // First fetch date
-  updatedAt: Date;               // Last update
-  affiliateUrl?: string;         // Affiliate URL
-  isActive: boolean;             // Active status
-}
-```
-
-### Evaluation
-
-**Location**: `packages/shared-types/src/entities/evaluation.ts`
+**Location**: `packages/shared-types/src/entities/audio-button.ts`
+**Pattern**: Entity with BaseEntity inheritance
 
 ```typescript
-interface Evaluation {
-  id: string;                    // Evaluation ID
-  userId: string;                // User ID
-  workId: string;                // DLsite work ID
-  type: "top10" | "star" | "ng"; // Evaluation type
-  value?: number;                // Value (rank for top10, 1-3 for star)
-  createdAt: Date;               // Creation date
-  updatedAt: Date;               // Last update
+class AudioButton extends BaseEntity<AudioButton> {
+  // Entity implementation
 }
 ```
 
 ## Value Objects
 
-### AudioButtonCategory
+All value objects now extend `BaseValueObject<T>` and implement `ValidatableValueObject<T>` interface.
+They use the Result pattern for error handling.
 
-**Location**: `packages/shared-types/src/value-objects/audio-button-category.ts`
+### Work Value Objects
 
-```typescript
-type AudioButtonCategory = 
-  | "greeting"      // 挨拶
-  | "response"      // 返事・相槌
-  | "emotion"       // 感情表現
-  | "situation"     // シチュエーション
-  | "character"     // キャラクター
-  | "singing"       // 歌
-  | "mimicry"       // モノマネ
-  | "material"      // 素材
-  | "other";        // その他
-```
+#### WorkId
 
-### DLsitePrice
-
-**Location**: `packages/shared-types/src/value-objects/dlsite-price.ts`
+**Location**: `packages/shared-types/src/value-objects/work/work-id.ts`
+**Pattern**: Value Object with Branded Type
 
 ```typescript
-interface DLsitePrice {
-  regular: number;               // Regular price (JPY)
-  sale?: number;                 // Sale price (JPY)
-  discountRate?: number;         // Discount rate (0-100)
-  currency: "JPY";               // Currency
-  campaignEnd?: Date;            // Campaign end date
-}
-```
-
-### DLsiteAgeRating
-
-**Location**: `packages/shared-types/src/value-objects/dlsite-age-rating.ts`
-
-```typescript
-type DLsiteAgeRating = 
-  | "all"          // All ages
-  | "r15"          // R-15
-  | "r18";         // R-18
-```
-
-### SearchQuery
-
-**Location**: `packages/shared-types/src/value-objects/search-query.ts`
-
-```typescript
-interface SearchQuery {
-  text?: string;                 // Search text
-  categories?: string[];         // Category filter
-  tags?: string[];               // Tag filter
-  sortBy?: "newest" | "popular" | "oldest";
-  limit?: number;                // Results per page
-  offset?: number;               // Pagination offset
+class WorkId extends BaseValueObject<WorkId> implements ValidatableValueObject<WorkId> {
+  // Private constructor
+  private constructor(private readonly value: WorkIdBrand) { ... }
+  
+  // Factory method returns Result type
+  static create(value: string): Result<WorkId, ValidationError> {
+    // Format: RJ + 6-8 digits
+  }
+  
+  // Validation
+  isValid(): boolean
+  getValidationErrors(): string[]
+  
+  // Serialization
+  toPlainObject(): string
+  static fromPlainObject(obj: unknown): Result<WorkId, ValidationError>
 }
 ```
 
-### PriceHistory
+#### WorkTitle
 
-**Location**: `packages/shared-types/src/value-objects/price-history.ts`
+**Location**: `packages/shared-types/src/value-objects/work/work-title.ts`
+**Pattern**: Complex Value Object with multiple fields
 
 ```typescript
-interface PriceHistory {
-  date: Date;                    // Record date
-  regularPrice: number;          // Regular price
-  salePrice?: number;            // Sale price
-  discountRate?: number;         // Discount rate
-  campaignName?: string;         // Campaign name
-  currency: "JPY";               // Currency
+class WorkTitle extends BaseValueObject<WorkTitle> {
+  static create(
+    value: string,
+    masked?: string,
+    kana?: string,
+    altName?: string
+  ): Result<WorkTitle, ValidationError>
+  
+  // Business methods
+  toDisplayString(preferMasked?: boolean): string
+  getSearchableText(): string
 }
 ```
 
-## Type Guards
+#### WorkPrice
 
-### User Type Guards
+**Location**: `packages/shared-types/src/value-objects/work/work-price.ts`
+**Pattern**: Value Object with business logic
 
 ```typescript
-function isAdmin(user: User): boolean {
-  return user.role === "admin" && user.isActive;
-}
-
-function isActiveUser(user: User): boolean {
-  return user.isActive;
+class WorkPrice extends BaseValueObject<WorkPrice> {
+  static create(
+    current: number,
+    original?: number,
+    discountRate?: number,
+    currency?: string
+  ): Result<WorkPrice, ValidationError>
+  
+  // Business methods
+  isOnSale(): boolean
+  getDiscountAmount(): number
+  format(): string
 }
 ```
 
-### Work Type Guards
+#### WorkRating
+
+**Location**: `packages/shared-types/src/value-objects/work/work-rating.ts`
 
 ```typescript
-function isR18Work(work: DLsiteWork): boolean {
-  return work.ageRating === "r18";
-}
-
-function isOnSale(work: DLsiteWork): boolean {
-  return work.price.sale !== undefined && 
-         work.price.sale < work.price.regular;
+class WorkRating extends BaseValueObject<WorkRating> {
+  static create(
+    stars: number,
+    count: number,
+    average: number,
+    reviewCount?: number,
+    distribution?: RatingDistribution
+  ): Result<WorkRating, ValidationError>
+  
+  // Business methods
+  hasRatings(): boolean
+  isHighlyRated(): boolean
+  getReliability(): RatingReliability
 }
 ```
 
-### Validation Functions
+#### WorkCreators
+
+**Location**: `packages/shared-types/src/value-objects/work/work-creators.ts`
 
 ```typescript
-function isValidWorkId(id: string): boolean {
-  return /^RJ\d{6,8}$/.test(id);
+class WorkCreators extends BaseValueObject<WorkCreators> {
+  static create(
+    voiceActors?: CreatorInfo[],
+    scenario?: CreatorInfo[],
+    illustration?: CreatorInfo[],
+    music?: CreatorInfo[],
+    others?: CreatorInfo[]
+  ): Result<WorkCreators, ValidationError>
+  
+  // Query methods
+  hasVoiceActors(): boolean
+  getPrimaryVoiceActor(): CreatorInfo | undefined
+  getAllUniqueNames(): string[]
 }
+```
 
-function isValidYouTubeId(id: string): boolean {
-  return /^[a-zA-Z0-9_-]{11}$/.test(id);
+#### Circle
+
+**Location**: `packages/shared-types/src/value-objects/work/circle.ts`
+**Pattern**: Value Object with Branded Type
+
+```typescript
+class Circle extends BaseValueObject<Circle> {
+  static create(id: string, name: string, nameEn?: string): Result<Circle, ValidationError>
+  
+  toUrl(): string
+  toDisplayString(preferEnglish?: boolean): string
 }
+```
+
+### Video Value Objects
+
+#### VideoId
+
+**Location**: `packages/shared-types/src/value-objects/video/video-content.ts`
+**Pattern**: Value Object with Branded Type
+
+```typescript
+class VideoId extends BaseValueObject<VideoId> {
+  // YouTube video ID (11 characters)
+  static create(value: string): Result<VideoId, ValidationError>
+  
+  toThumbnailUrl(quality?: "default" | "medium" | "high"): string
+  toYouTubeUrl(): string
+}
+```
+
+#### Channel
+
+**Location**: `packages/shared-types/src/value-objects/video/channel.ts`
+
+```typescript
+class Channel extends BaseValueObject<Channel> {
+  // YouTube channel information
+  static create(channelId: string, channelTitle: string): Result<Channel, ValidationError>
+}
+```
+
+### Reusable Value Objects
+
+#### DateRange
+
+**Location**: `packages/shared-types/src/value-objects/work/date-range.ts`
+
+```typescript
+class DateRangeValueObject extends BaseValueObject<DateRangeValueObject> {
+  static create(original: string, iso: string, display: string): Result<DateRangeValueObject, ValidationError>
+  
+  toDate(): Date
+  daysFromNow(): number
+  relative(): string
+}
+```
+
+#### Price
+
+**Location**: `packages/shared-types/src/value-objects/work/price.ts`
+
+```typescript
+class PriceValueObject extends BaseValueObject<PriceValueObject> {
+  static create(amount: number, currency: string, ...): Result<PriceValueObject, ValidationError>
+  
+  isFree(): boolean
+  isDiscounted(): boolean
+  format(): string
+}
+```
+
+#### Rating
+
+**Location**: `packages/shared-types/src/value-objects/work/rating.ts`
+
+```typescript
+class RatingValueObject extends BaseValueObject<RatingValueObject> {
+  static create(stars: number, count: number, average: number): Result<RatingValueObject, ValidationError>
+  
+  hasRatings(): boolean
+  isHighlyRated(): boolean
+  reliability(): RatingReliability
+}
+```
+
+## Type System Enhancements
+
+### Branded Types
+
+**Location**: `packages/shared-types/src/core/branded-types.ts`
+
+```typescript
+// Nominal typing for domain IDs
+type WorkId = Brand<string, 'WorkId'>
+type CircleId = Brand<string, 'CircleId'>
+type VideoId = Brand<string, 'VideoId'>
+type ChannelId = Brand<string, 'ChannelId'>
+type UserId = Brand<string, 'UserId'>
+```
+
+### Result Pattern
+
+**Location**: `packages/shared-types/src/core/result.ts`
+
+```typescript
+// Functional error handling
+type Result<T, E> = Ok<T> | Err<E>
+
+// Domain-specific error types
+type ValidationError = { field: string; message: string }
+type NotFoundError = { entity: string; message: string }
+type DatabaseError = { entity: string; message: string }
+```
+
+## Conversion Utilities
+
+### Work Conversions
+
+**Location**: `packages/shared-types/src/utilities/work-conversions.ts`
+
+```typescript
+// All conversion functions return Result types
+function convertToWorkPlainObject(
+  data: WorkDocument | null | undefined
+): Result<WorkPlainObject, NotFoundError | DatabaseError>
+
+function convertToWorkPlainObjects(
+  dataArray: WorkDocument[]
+): Result<WorkPlainObject[], DatabaseError>
+
+function normalizeToWorkPlainObject(
+  data: WorkDocument | WorkPlainObject | null | undefined
+): Result<WorkPlainObject, NotFoundError | DatabaseError>
 ```
 
 ## Business Rules
 
-### Audio Button Rules
+### Work Business Rules
 
-1. **Duration**: Must be between 0.1 and 300 seconds
-2. **Text**: Maximum 100 characters
-3. **Tags**: Maximum 10 tags per button
-4. **Moderation**: Must be approved before public display
+1. **Work ID Format**: Must match `/^RJ\d{6,8}$/`
+2. **Price**: Must be non-negative, discount cannot exceed original price
+3. **Rating**: Stars 0-5, count >= 0, average 0-5
+4. **Creators**: Each creator must have ID and name
+5. **Title**: Cannot be empty, max 500 characters
 
-### Work Evaluation Rules
+### Video Business Rules
 
-1. **Top 10**: Each user can rank up to 10 works
-2. **Star Rating**: 3 levels (普通=1, 良い=2, とても良い=3)
-3. **NG**: Marks work as "not interested"
-4. **Exclusivity**: A work can only have one evaluation type per user
+1. **Video ID**: Must be 11 characters YouTube ID
+2. **Channel ID**: Must start with "UC" and be 24 characters
+3. **Audio Button Creation**: Only allowed for archived streams > 15 minutes
+4. **Live Detection**: Based on liveBroadcastContent and liveStreamingDetails
 
-### User Permission Rules
+### Validation Rules
 
-1. **Guest**: Can view and play, cannot save favorites
-2. **User**: Full access to favorites and evaluations
-3. **Admin**: Additional moderation capabilities
+1. **All factory methods return Result types** - No exceptions thrown
+2. **Private constructors** - Object creation only through factory methods
+3. **Immutability** - All value objects are immutable
+4. **Validation on creation** - All validation happens in factory methods
+
+## Migration Notes
+
+### From Legacy to Result Pattern
+
+```typescript
+// Before (Legacy)
+const work = Work.fromFirestoreDataLegacy(data); // throws or returns null
+if (!work) {
+  // handle error
+}
+
+// After (Result Pattern)
+const result = Work.fromFirestoreData(data);
+if (result.isErr()) {
+  console.error(result.error.message);
+  return;
+}
+const work = result.value;
+```
+
+### Value Object Creation
+
+```typescript
+// Before (Constructor or Zod)
+const title = new WorkTitle("タイトル"); // throws
+const price = Price.parse({ amount: 1000, currency: "JPY" }); // Zod
+
+// After (Result Pattern)
+const titleResult = WorkTitle.create("タイトル");
+if (titleResult.isOk()) {
+  const title = titleResult.value;
+}
+
+const priceResult = WorkPrice.create(1000, undefined, undefined, "JPY");
+if (priceResult.isOk()) {
+  const price = priceResult.value;
+}
+```
 
 ---
 
-**Last Updated**: 2025-07-28  
-**Note**: This catalog should be updated whenever domain objects are modified.
+**Last Updated**: 2025-08-11
+**Version**: 0.4.0
+**Note**: All legacy methods have been removed. All APIs now use Result pattern for error handling.

@@ -48,6 +48,10 @@ export class AudioVideoId extends BaseValueObject<AudioVideoId> {
 		}
 		return this.value === other.value;
 	}
+
+	toPlainObject(): string {
+		return this.value;
+	}
 }
 
 /**
@@ -87,6 +91,10 @@ export class AudioVideoTitle extends BaseValueObject<AudioVideoTitle> {
 			return false;
 		}
 		return this.value === other.value;
+	}
+
+	toPlainObject(): string {
+		return this.value;
 	}
 }
 
@@ -191,6 +199,10 @@ export class Timestamp
 			return false;
 		}
 		return this.value === other.value;
+	}
+
+	toPlainObject(): number {
+		return this.value;
 	}
 }
 

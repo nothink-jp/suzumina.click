@@ -82,6 +82,10 @@ export class ButtonViewCount
 		}
 		return this.value === other.value;
 	}
+
+	toPlainObject(): number {
+		return this.value;
+	}
 }
 
 /**
@@ -127,6 +131,10 @@ export class ButtonLikeCount extends BaseValueObject<ButtonLikeCount> {
 		}
 		return this.value === other.value;
 	}
+
+	toPlainObject(): number {
+		return this.value;
+	}
 }
 
 /**
@@ -171,6 +179,10 @@ export class ButtonDislikeCount extends BaseValueObject<ButtonDislikeCount> {
 			return false;
 		}
 		return this.value === other.value;
+	}
+
+	toPlainObject(): number {
+		return this.value;
 	}
 }
 

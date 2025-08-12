@@ -84,6 +84,10 @@ export class ButtonText
 		}
 		return this.value === other.value;
 	}
+
+	toPlainObject(): string {
+		return this.value;
+	}
 }
 
 /**
@@ -170,6 +174,10 @@ export class ButtonCategory extends BaseValueObject<ButtonCategory> {
 			return false;
 		}
 		return this.value === other.value;
+	}
+
+	toPlainObject(): string {
+		return this.value;
 	}
 }
 
@@ -277,6 +285,10 @@ export class ButtonTags
 			}
 		}
 		return true;
+	}
+
+	toPlainObject(): string[] {
+		return this.toArray();
 	}
 }
 

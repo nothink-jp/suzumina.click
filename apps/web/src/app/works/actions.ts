@@ -345,9 +345,17 @@ async function convertDocsToWorks(
 			if (!data.id) {
 				data.id = data.productId;
 			}
-			const plainObject = convertToWorkPlainObject(data);
-			if (plainObject) {
-				works.push(plainObject);
+			const result = convertToWorkPlainObject(data);
+			if (result.isOk()) {
+				works.push(result.value);
+			} else {
+				logger.warn("作品データ変換エラー", {
+					workId: doc.id,
+					error:
+						result.error.type === "DatabaseError"
+							? result.error.detail
+							: `${result.error.resource} not found: ${result.error.id}`,
+				});
 			}
 		} catch (error) {
 			// エラーがあっても他のデータの処理は続行
@@ -443,6 +451,39 @@ async function getWorksWithSimpleQuery(
 }
 
 /**
+ * 作品をPlainObjectに変換
+ */
+function convertWorksToPainObjects(paginatedWorks: WorkDocument[]): WorkPlainObject[] {
+	const works: WorkPlainObject[] = [];
+	for (const data of paginatedWorks) {
+		try {
+			if (!data.id) {
+				data.id = data.productId;
+			}
+			const result = convertToWorkPlainObject(data);
+			if (result.isOk()) {
+				works.push(result.value);
+			} else {
+				logger.warn("作品データ変換エラー", {
+					workId: data.id || data.productId,
+					error:
+						result.error.type === "DatabaseError"
+							? result.error.detail
+							: `${result.error.resource} not found: ${result.error.id}`,
+				});
+			}
+		} catch (error) {
+			// エラーがあっても他のデータの処理は続行
+			logger.warn("作品データ変換エラー", {
+				workId: data.id || data.productId,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
+	return works;
+}
+
+/**
  * 複雑なフィルタリングで作品を取得
  */
 async function getWorksWithComplexFiltering(
@@ -472,23 +513,14 @@ async function getWorksWithComplexFiltering(
 	const startOffset = (page - 1) * limit;
 
 	// メモリ上での処理が必要かどうかを判定
-	const requiresFullDataFetch = () => {
-		// 以下の場合はFirestoreでの直接フィルタリングができないため全件取得が必要
-		// - R18フィルタリング
-		// - 言語フィルタリング
-		// - 検索
-		// - ジャンルフィルタリング（AND検索のため）
-		// - 声優フィルタリング
-		return (
-			showR18 === false ||
-			(language && language !== "all") ||
-			search ||
-			(genres && genres.length > 0) ||
-			(voiceActors && voiceActors.length > 0)
-		);
-	};
+	const requiresFullDataFetch =
+		showR18 === false ||
+		(language && language !== "all") ||
+		!!search ||
+		(genres && genres.length > 0) ||
+		(voiceActors && voiceActors.length > 0);
 
-	if (requiresFullDataFetch()) {
+	if (requiresFullDataFetch) {
 		// 全件取得（limitを設定しない）
 		// 注: Firestoreには約1500件なので問題ない
 	} else {
@@ -523,24 +555,7 @@ async function getWorksWithComplexFiltering(
 	const paginatedWorks = allWorks.slice(startOffset, startOffset + limit);
 
 	// 変換処理
-	const works: WorkPlainObject[] = [];
-	for (const data of paginatedWorks) {
-		try {
-			if (!data.id) {
-				data.id = data.productId;
-			}
-			const plainObject = convertToWorkPlainObject(data);
-			if (plainObject) {
-				works.push(plainObject);
-			}
-		} catch (error) {
-			// エラーがあっても他のデータの処理は続行
-			logger.warn("作品データ変換エラー", {
-				workId: data.id || data.productId,
-				error: error instanceof Error ? error.message : String(error),
-			});
-		}
-	}
+	const works = convertWorksToPainObjects(paginatedWorks);
 
 	// 全件数はフィルタリング後の件数
 	const totalCount = filteredCount;
@@ -577,7 +592,8 @@ export async function getWorkById(workId: string): Promise<WorkPlainObject | nul
 		}
 
 		// フロントエンド形式に変換
-		return convertToWorkPlainObject(data);
+		const result = convertToWorkPlainObject(data);
+		return result.isOk() ? result.value : null;
 	} catch (error) {
 		logger.error("作品取得エラー", {
 			workId,
@@ -641,9 +657,9 @@ export async function getRelatedWorks(
 		for (const work of topRelated) {
 			try {
 				if (!work.id) work.id = work.productId;
-				const plainObject = convertToWorkPlainObject(work);
-				if (plainObject) {
-					relatedWorks.push(plainObject);
+				const plainObjectResult = convertToWorkPlainObject(work);
+				if (plainObjectResult.isOk()) {
+					relatedWorks.push(plainObjectResult.value);
 				}
 			} catch (error) {
 				// エラーがあっても他のデータの処理は続行

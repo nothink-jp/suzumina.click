@@ -747,39 +747,6 @@ export const WorkDocumentSchema = z.object({
 // FirestoreDLsiteWorkSchemaは削除 - WorkDocumentSchemaのみ使用
 
 /**
- * フロントエンド表示用のDLsite作品データのZodスキーマ定義
- * @deprecated Use WorkPlainObject from plain-objects/work-plain instead
- */
-// export const FrontendDLsiteWorkSchema = WorkDocumentSchema.extend({
-// 	/** 表示用価格文字列 */
-// 	displayPrice: z.string(),
-// 	/** 割引表示テキスト */
-// 	discountText: z.string().optional(),
-// 	/** 評価表示テキスト */
-// 	ratingText: z.string().optional(),
-// 	/** ウィッシュリスト表示テキスト */
-// 	wishlistText: z.string().optional(),
-// 	/** 相対URL */
-// 	relativeUrl: z.string(),
-// 	/** ISO形式の日付文字列（フロントエンドでの使用のため） */
-// 	createdAtISO: z.string().datetime(),
-// 	lastFetchedAtISO: z.string().datetime(),
-// 	updatedAtISO: z.string().datetime(),
-// });
-
-/**
- * 作品リスト結果のZodスキーマ定義
- * @deprecated Use WorkListResultPlain from plain-objects/work-plain instead
- */
-// export const WorkListResultSchema = z.object({
-// 	works: z.array(FrontendDLsiteWorkSchema),
-// 	hasMore: z.boolean(),
-// 	lastWork: FrontendDLsiteWorkSchema.optional(),
-// 	totalCount: z.number().int().nonnegative().optional(),
-// 	filteredCount: z.number().int().nonnegative().optional(),
-// });
-
-/**
  * ページネーションパラメータのZodスキーマ定義
  */
 export const WorkPaginationParamsSchema = z.object({
@@ -899,7 +866,7 @@ export function parseSizeToBytes(sizeText?: string): number | undefined {
 /**
  * 表示用価格テキストを生成
  */
-function generateDisplayPrice(price: WorkDocument["price"]): string {
+function _generateDisplayPrice(price: WorkDocument["price"]): string {
 	const formatPrice = (num: number) => num.toLocaleString("ja-JP");
 	return price.discount && price.original
 		? `${formatPrice(price.current)}円（元：${formatPrice(price.original)}円）`
@@ -909,7 +876,7 @@ function generateDisplayPrice(price: WorkDocument["price"]): string {
 /**
  * カテゴリ表示名を取得
  */
-function getCategoryDisplayName(category: string): string {
+function _getCategoryDisplayName(category: string): string {
 	const categoryMap: Record<string, string> = {
 		SOU: "音声作品",
 		MNG: "マンガ",
@@ -925,131 +892,9 @@ function getCategoryDisplayName(category: string): string {
 /**
  * 評価テキストを生成
  */
-function generateRatingText(rating?: WorkDocument["rating"]): string | undefined {
+function _generateRatingText(rating?: WorkDocument["rating"]): string | undefined {
 	return rating ? `★${rating.stars.toFixed(1)} (${rating.count}件)` : undefined;
 }
-
-/**
- * エラー時のフォールバック用フロントエンドデータを生成
- * @deprecated This function is deprecated - will be removed in next version
- */
-function createFallbackFrontendWork(data: WorkDocument): Record<string, unknown> {
-	const productId = data?.productId || "UNKNOWN";
-
-	// Simplified version to reduce complexity
-	return {
-		...data,
-		id: data?.id || productId,
-		productId,
-		title: data?.title || "不明なタイトル",
-		displayPrice: "価格不明",
-		discountText: "",
-		ratingText: "",
-		relativeUrl: `/maniax/work/=/product_id/${productId}.html`,
-		categoryName: "不明",
-		isNew: false,
-		downloadCount: 0,
-		// Empty defaults for all other fields
-		thumbnailUrl2x: "",
-		mainImageUrl: "",
-		listImageUrl: "",
-		createdAtISO: "",
-		updatedAtISO: "",
-		lastFetchedAtISO: "",
-		formattedRegistDate: "",
-		formattedReleaseDate: "",
-		creators: {},
-		voiceActors: [],
-		scenario: [],
-		illustration: [],
-		music: [],
-		author: [],
-	};
-}
-
-// Removed unused helper functions extractImageUrl and extractArrayField
-
-/**
- * @deprecated Use convertToWorkPlainObject from work-conversions instead - will be removed in next version
- */
-export function convertToFrontendWork(data: WorkDocument): Record<string, unknown> {
-	// Simplified version to reduce complexity
-	if (!data?.productId || !data?.title) {
-		return createFallbackFrontendWork(data || ({} as WorkDocument));
-	}
-
-	// Extract legacy creator names
-	const extractCreatorNames = (creators: Array<{ name: string }> | undefined) =>
-		creators?.map((c) => c.name) || [];
-
-	// Return simplified frontend data
-	return {
-		...data,
-		displayPrice: data.price ? generateDisplayPrice(data.price) : "価格不明",
-		discountText: data.price?.discount ? `${data.price.discount}%OFF` : "",
-		ratingText: generateRatingText(data.rating) || "",
-		relativeUrl: `/maniax/work/=/product_id/${data.productId}.html`,
-		categoryName: getCategoryDisplayName(data.category),
-		isNew: false,
-		downloadCount: 0,
-		// Simplified defaults
-		thumbnailUrl2x: data.thumbnailUrl || "",
-		mainImageUrl: data.highResImageUrl || data.thumbnailUrl || "",
-		listImageUrl: data.thumbnailUrl || "",
-		createdAtISO: data.createdAt || "",
-		updatedAtISO: data.updatedAt || "",
-		lastFetchedAtISO: data.lastFetchedAt || "",
-		formattedRegistDate: data.registDate || "",
-		formattedReleaseDate: data.releaseDateDisplay || "",
-		// Legacy fields
-		voiceActors: extractCreatorNames(data.creators?.voice_by),
-		scenario: extractCreatorNames(data.creators?.scenario_by),
-		illustration: extractCreatorNames(data.creators?.illust_by),
-		music: extractCreatorNames(data.creators?.music_by),
-		author: extractCreatorNames(data.creators?.others_by),
-	};
-}
-
-/**
- * @deprecated Use WorkPlainObject serialization methods instead
- */
-// export function serializeWorkForRSC(data: FrontendDLsiteWorkData): string {
-// 	return JSON.stringify(data);
-// }
-
-/**
- * @deprecated Use WorkPlainObject deserialization methods instead
- */
-// export function deserializeWorkForRCC(serialized: string): FrontendDLsiteWorkData {
-// 	try {
-// 		const data = JSON.parse(serialized);
-// 		return FrontendDLsiteWorkSchema.parse(data);
-// 	} catch (_error) {
-// 		throw new Error("データの形式が無効です");
-// 	}
-// }
-
-/**
- * @deprecated Use WorkListResultPlain serialization methods instead
- */
-// export function serializeWorkListResult(result: WorkListResult): string {
-// 	return JSON.stringify(result);
-// }
-
-/**
- * @deprecated Use WorkListResultPlain deserialization methods instead
- */
-/**
- * @deprecated Use WorkListResultPlain deserialization methods instead
- */
-// export function deserializeWorkListResult(serialized: string): any {
-// 	try {
-// 		const data = JSON.parse(serialized);
-// 		return WorkListResultSchema.parse(data);
-// 	} catch (_error) {
-// 		return { works: [], hasMore: false };
-// 	}
-// }
 
 /**
  * Firestoreサーバーサイド（Cloud Functions）向けのデータ型定義

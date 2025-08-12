@@ -12,6 +12,7 @@ import {
 	isValidCircleId,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
+import { warn } from "@/lib/logger";
 
 /**
  * Compare works by date (newest or oldest)
@@ -142,9 +143,17 @@ export async function getCircleWorksList(params: {
 		// WorkPlainObjectに変換
 		const convertedWorks: WorkPlainObject[] = [];
 		for (const work of allMatchingWorks) {
-			const plainObject = convertToWorkPlainObject(work);
-			if (plainObject) {
-				convertedWorks.push(plainObject);
+			const result = convertToWorkPlainObject(work);
+			if (result.isOk()) {
+				convertedWorks.push(result.value);
+			} else {
+				// Log warning but continue processing other items
+				warn(`Failed to convert work ${work.id}`, {
+					error:
+						result.error.type === "DatabaseError"
+							? result.error.detail
+							: `${result.error.resource} not found: ${result.error.id}`,
+				});
 			}
 		}
 
