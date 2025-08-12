@@ -103,7 +103,7 @@ export function mapYouTubeToVideoEntity(
 			: undefined;
 
 		// Create Video Entity
-		return new Video(
+		const videoResult = Video.create(
 			content,
 			metadata,
 			channel,
@@ -112,6 +112,16 @@ export function mapYouTubeToVideoEntity(
 			audioButtonInfo,
 			liveStreamingDetails,
 		);
+
+		if (videoResult.isErr()) {
+			logger.error("Failed to create Video entity", {
+				videoId: youtubeVideo.id,
+				error: videoResult.error.message,
+			});
+			return null;
+		}
+
+		return videoResult.value;
 	} catch (error) {
 		logger.error("Failed to map YouTube video to entity", {
 			videoId: youtubeVideo.id,
@@ -155,7 +165,15 @@ function createVideoContentFromYouTube(video: youtube_v3.Schema$Video): VideoCon
 	}
 
 	try {
-		const videoId = new VideoId(video.id);
+		const videoIdResult = VideoId.create(video.id);
+		if (videoIdResult.isErr()) {
+			logger.error("Failed to create VideoId", {
+				videoId: video.id,
+				error: videoIdResult.error.message,
+			});
+			return null;
+		}
+		const videoId = videoIdResult.value;
 
 		// Validate publishedAt date
 		const publishedDate = parseDate(video.snippet.publishedAt);
@@ -164,23 +182,39 @@ function createVideoContentFromYouTube(video: youtube_v3.Schema$Video): VideoCon
 			return null;
 		}
 
-		const publishedAt = new PublishedAt(publishedDate);
+		const publishedAtResult = PublishedAt.create(publishedDate);
+		if (publishedAtResult.isErr()) {
+			logger.error("Failed to create PublishedAt", {
+				publishedDate,
+				error: publishedAtResult.error.message,
+			});
+			return null;
+		}
+		const publishedAt = publishedAtResult.value;
+
 		const privacyStatus = (video.status?.privacyStatus || "public") as PrivacyStatus;
 		const uploadStatus = (video.status?.uploadStatus || "processed") as UploadStatus;
 		const embeddable = video.status?.embeddable ?? undefined;
 
 		// Create ContentDetails if available
 		const contentDetails = video.contentDetails
-			? new ContentDetails(
-					video.contentDetails.dimension as "2d" | "3d" | undefined,
-					video.contentDetails.definition as "hd" | "sd" | undefined,
-					video.contentDetails.caption === "true",
-					video.contentDetails.licensedContent ?? false,
-					video.contentDetails.projection as "rectangular" | "360" | undefined,
-				)
+			? (() => {
+					const result = ContentDetails.create(
+						video.contentDetails.dimension as "2d" | "3d" | undefined,
+						video.contentDetails.definition as "hd" | "sd" | undefined,
+						video.contentDetails.caption === "true",
+						video.contentDetails.licensedContent ?? false,
+						video.contentDetails.projection as "rectangular" | "360" | undefined,
+					);
+					if (result.isErr()) {
+						logger.warn("Failed to create ContentDetails", { error: result.error.message });
+						return undefined;
+					}
+					return result.value;
+				})()
 			: undefined;
 
-		return new VideoContent(
+		const contentResult = VideoContent.create(
 			videoId,
 			publishedAt,
 			privacyStatus,
@@ -190,6 +224,16 @@ function createVideoContentFromYouTube(video: youtube_v3.Schema$Video): VideoCon
 			video.snippet.tags || undefined,
 			embeddable,
 		);
+
+		if (contentResult.isErr()) {
+			logger.error("Failed to create VideoContent", {
+				videoId: video.id,
+				error: contentResult.error.message,
+			});
+			return null;
+		}
+
+		return contentResult.value;
 	} catch (error) {
 		logger.error("Failed to create VideoContent", {
 			videoId: video.id,

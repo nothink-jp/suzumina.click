@@ -125,31 +125,7 @@ describe("Circle", () => {
 		});
 	});
 
-	describe("constructor (legacy)", () => {
-		it("should create a valid circle", () => {
-			const circle = new Circle("RG23954", "テストサークル", "Test Circle");
-			expect(circle.id).toBe("RG23954");
-			expect(circle.name).toBe("テストサークル");
-			expect(circle.nameEn).toBe("Test Circle");
-		});
-
-		it("should create circle without English name", () => {
-			const circle = new Circle("RG23954", "テストサークル");
-			expect(circle.id).toBe("RG23954");
-			expect(circle.name).toBe("テストサークル");
-			expect(circle.nameEn).toBeUndefined();
-		});
-
-		it("should throw error for empty name", () => {
-			expect(() => new Circle("RG23954", "")).toThrow("Circle name cannot be empty");
-			expect(() => new Circle("RG23954", "   ")).toThrow("Circle name cannot be empty");
-		});
-
-		it("should throw error for empty ID", () => {
-			expect(() => new Circle("", "サークル名")).toThrow("Circle ID cannot be empty");
-			expect(() => new Circle("   ", "サークル名")).toThrow("Circle ID cannot be empty");
-		});
-	});
+	// Legacy constructor tests removed - use factory methods instead
 
 	describe("toDisplayString", () => {
 		it("should return Japanese name by default", () => {

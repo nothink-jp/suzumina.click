@@ -262,7 +262,11 @@ export class WorkTitle
 	}
 
 	clone(): WorkTitle {
-		return new WorkTitle(this.value, this._masked, this._kana, this._altName);
+		const result = WorkTitle.create(this.value, this._masked, this._kana, this._altName);
+		if (result.isErr()) {
+			throw new Error(`Failed to clone WorkTitle: ${result.error.message}`);
+		}
+		return result.value;
 	}
 
 	toPlainObject(): WorkTitleData {

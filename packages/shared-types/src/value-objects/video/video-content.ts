@@ -6,6 +6,8 @@
  */
 
 import type { VideoId as VideoIdBrand } from "../../core/ids";
+import type { ValidationError } from "../../core/result";
+import { err, ok, type Result, validationError } from "../../core/result";
 import { requireNonEmptyString } from "../base/transforms";
 import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
 
@@ -25,11 +27,27 @@ export type UploadStatus = "uploaded" | "processed" | "failed" | "rejected" | "d
 export class VideoId extends BaseValueObject<VideoId> implements ValidatableValueObject<VideoId> {
 	private readonly value: VideoIdBrand;
 
-	constructor(value: string) {
+	private constructor(value: string) {
 		super();
 		const sanitizedValue = requireNonEmptyString(value, "videoId").trim();
 		// Convert string to branded type
 		this.value = sanitizedValue as VideoIdBrand;
+	}
+
+	/**
+	 * Creates a VideoId with validation
+	 * @param value - The video ID string
+	 * @returns Result containing VideoId or ValidationError
+	 */
+	static create(value: string): Result<VideoId, ValidationError> {
+		try {
+			const instance = new VideoId(value);
+			return ok(instance);
+		} catch (error) {
+			return err(
+				validationError("videoId", error instanceof Error ? error.message : "Unknown error"),
+			);
+		}
 	}
 
 	/**
@@ -89,7 +107,11 @@ export class VideoId extends BaseValueObject<VideoId> implements ValidatableValu
 	}
 
 	clone(): VideoId {
-		return new VideoId(this.value as string);
+		const result = VideoId.create(this.value as string);
+		if (result.isErr()) {
+			throw new Error(`Failed to clone VideoId: ${result.error.message}`);
+		}
+		return result.value;
 	}
 
 	equals(other: VideoId): boolean {
@@ -106,9 +128,25 @@ export class VideoId extends BaseValueObject<VideoId> implements ValidatableValu
 export class PublishedAt extends BaseValueObject<PublishedAt> {
 	private readonly value: Date;
 
-	constructor(value: Date | string) {
+	private constructor(value: Date | string) {
 		super();
 		this.value = value instanceof Date ? value : new Date(value);
+	}
+
+	/**
+	 * Creates a PublishedAt with validation
+	 * @param value - The date or string value
+	 * @returns Result containing PublishedAt or ValidationError
+	 */
+	static create(value: Date | string): Result<PublishedAt, ValidationError> {
+		try {
+			const instance = new PublishedAt(value);
+			return ok(instance);
+		} catch (error) {
+			return err(
+				validationError("publishedAt", error instanceof Error ? error.message : "Unknown error"),
+			);
+		}
 	}
 
 	/**
@@ -176,7 +214,11 @@ export class PublishedAt extends BaseValueObject<PublishedAt> {
 	}
 
 	clone(): PublishedAt {
-		return new PublishedAt(new Date(this.value));
+		const result = PublishedAt.create(new Date(this.value));
+		if (result.isErr()) {
+			throw new Error(`Failed to clone PublishedAt: ${result.error.message}`);
+		}
+		return result.value;
 	}
 
 	equals(other: PublishedAt): boolean {
@@ -191,7 +233,7 @@ export class PublishedAt extends BaseValueObject<PublishedAt> {
  * Content details value object
  */
 export class ContentDetails extends BaseValueObject<ContentDetails> {
-	constructor(
+	private constructor(
 		public readonly dimension?: "2d" | "3d",
 		public readonly definition?: "hd" | "sd",
 		public readonly caption?: boolean,
@@ -199,6 +241,38 @@ export class ContentDetails extends BaseValueObject<ContentDetails> {
 		public readonly projection?: "rectangular" | "360",
 	) {
 		super();
+	}
+
+	/**
+	 * Creates a ContentDetails with validation
+	 * @param dimension - Video dimension
+	 * @param definition - Video definition
+	 * @param caption - Has captions
+	 * @param licensedContent - Is licensed content
+	 * @param projection - Video projection type
+	 * @returns Result containing ContentDetails or ValidationError
+	 */
+	static create(
+		dimension?: "2d" | "3d",
+		definition?: "hd" | "sd",
+		caption?: boolean,
+		licensedContent?: boolean,
+		projection?: "rectangular" | "360",
+	): Result<ContentDetails, ValidationError> {
+		try {
+			const instance = new ContentDetails(
+				dimension,
+				definition,
+				caption,
+				licensedContent,
+				projection,
+			);
+			return ok(instance);
+		} catch (error) {
+			return err(
+				validationError("contentDetails", error instanceof Error ? error.message : "Unknown error"),
+			);
+		}
 	}
 
 	/**
@@ -239,13 +313,17 @@ export class ContentDetails extends BaseValueObject<ContentDetails> {
 	}
 
 	clone(): ContentDetails {
-		return new ContentDetails(
+		const result = ContentDetails.create(
 			this.dimension,
 			this.definition,
 			this.caption,
 			this.licensedContent,
 			this.projection,
 		);
+		if (result.isErr()) {
+			throw new Error(`Failed to clone ContentDetails: ${result.error.message}`);
+		}
+		return result.value;
 	}
 
 	equals(other: ContentDetails): boolean {
@@ -269,7 +347,7 @@ export class VideoContent
 	extends BaseValueObject<VideoContent>
 	implements ValidatableValueObject<VideoContent>
 {
-	constructor(
+	private constructor(
 		public readonly videoId: VideoId,
 		public readonly publishedAt: PublishedAt,
 		public readonly privacyStatus: PrivacyStatus,
@@ -280,6 +358,47 @@ export class VideoContent
 		public readonly embeddable?: boolean,
 	) {
 		super();
+	}
+
+	/**
+	 * Creates a VideoContent with validation
+	 * @param videoId - Video ID
+	 * @param publishedAt - Published date
+	 * @param privacyStatus - Privacy status
+	 * @param uploadStatus - Upload status
+	 * @param contentDetails - Content details
+	 * @param embedHtml - Embed HTML
+	 * @param tags - Tags
+	 * @param embeddable - Is embeddable
+	 * @returns Result containing VideoContent or ValidationError
+	 */
+	static create(
+		videoId: VideoId,
+		publishedAt: PublishedAt,
+		privacyStatus: PrivacyStatus,
+		uploadStatus: UploadStatus,
+		contentDetails?: ContentDetails,
+		embedHtml?: string,
+		tags?: string[],
+		embeddable?: boolean,
+	): Result<VideoContent, ValidationError> {
+		try {
+			const instance = new VideoContent(
+				videoId,
+				publishedAt,
+				privacyStatus,
+				uploadStatus,
+				contentDetails,
+				embedHtml,
+				tags,
+				embeddable,
+			);
+			return ok(instance);
+		} catch (error) {
+			return err(
+				validationError("videoContent", error instanceof Error ? error.message : "Unknown error"),
+			);
+		}
 	}
 
 	/**
@@ -301,24 +420,45 @@ export class VideoContent
 		tags?: string[];
 		embeddable?: boolean;
 	}): VideoContent {
-		return new VideoContent(
-			new VideoId(data.videoId),
-			new PublishedAt(data.publishedAt),
+		const videoIdResult = VideoId.create(data.videoId);
+		if (videoIdResult.isErr()) {
+			throw new Error(`Failed to create VideoId: ${videoIdResult.error.message}`);
+		}
+
+		const publishedAtResult = PublishedAt.create(data.publishedAt);
+		if (publishedAtResult.isErr()) {
+			throw new Error(`Failed to create PublishedAt: ${publishedAtResult.error.message}`);
+		}
+
+		let contentDetails: ContentDetails | undefined;
+		if (data.contentDetails) {
+			const contentDetailsResult = ContentDetails.create(
+				data.contentDetails.dimension as "2d" | "3d" | undefined,
+				data.contentDetails.definition as "hd" | "sd" | undefined,
+				data.contentDetails.caption,
+				data.contentDetails.licensedContent,
+				data.contentDetails.projection as "rectangular" | "360" | undefined,
+			);
+			if (contentDetailsResult.isErr()) {
+				throw new Error(`Failed to create ContentDetails: ${contentDetailsResult.error.message}`);
+			}
+			contentDetails = contentDetailsResult.value;
+		}
+
+		const result = VideoContent.create(
+			videoIdResult.value,
+			publishedAtResult.value,
 			data.privacyStatus as PrivacyStatus,
 			data.uploadStatus as UploadStatus,
-			data.contentDetails
-				? new ContentDetails(
-						data.contentDetails.dimension as "2d" | "3d" | undefined,
-						data.contentDetails.definition as "hd" | "sd" | undefined,
-						data.contentDetails.caption,
-						data.contentDetails.licensedContent,
-						data.contentDetails.projection as "rectangular" | "360" | undefined,
-					)
-				: undefined,
+			contentDetails,
 			data.embedHtml,
 			data.tags,
 			data.embeddable,
 		);
+		if (result.isErr()) {
+			throw new Error(`Failed to create VideoContent: ${result.error.message}`);
+		}
+		return result.value;
 	}
 
 	/**
@@ -439,7 +579,7 @@ export class VideoContent
 	}
 
 	clone(): VideoContent {
-		return new VideoContent(
+		const result = VideoContent.create(
 			this.videoId.clone(),
 			this.publishedAt.clone(),
 			this.privacyStatus,
@@ -449,6 +589,10 @@ export class VideoContent
 			this.tags ? [...this.tags] : undefined,
 			this.embeddable,
 		);
+		if (result.isErr()) {
+			throw new Error(`Failed to clone VideoContent: ${result.error.message}`);
+		}
+		return result.value;
 	}
 
 	equals(other: VideoContent): boolean {

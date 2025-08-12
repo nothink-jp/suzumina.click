@@ -216,11 +216,13 @@ describe("Rating Value Object", () => {
 			expect(noRatingResult.isOk()).toBe(true);
 			expect(hasRatingResult.isOk()).toBe(true);
 
-			const noRating = noRatingResult._unsafeUnwrap();
-			const hasRating = hasRatingResult._unsafeUnwrap();
+			if (noRatingResult.isOk() && hasRatingResult.isOk()) {
+				const noRating = noRatingResult.value;
+				const hasRating = hasRatingResult.value;
 
-			expect(noRating.hasRatings()).toBe(false);
-			expect(hasRating.hasRatings()).toBe(true);
+				expect(noRating.hasRatings()).toBe(false);
+				expect(hasRating.hasRatings()).toBe(true);
+			}
 		});
 
 		it("高評価を正しく判定する", () => {
@@ -239,11 +241,13 @@ describe("Rating Value Object", () => {
 			expect(highRatingResult.isOk()).toBe(true);
 			expect(normalRatingResult.isOk()).toBe(true);
 
-			const highRating = highRatingResult._unsafeUnwrap();
-			const normalRating = normalRatingResult._unsafeUnwrap();
+			if (highRatingResult.isOk() && normalRatingResult.isOk()) {
+				const highRating = highRatingResult.value;
+				const normalRating = normalRatingResult.value;
 
-			expect(highRating.isHighlyRated()).toBe(true);
-			expect(normalRating.isHighlyRated()).toBe(false);
+				expect(highRating.isHighlyRated()).toBe(true);
+				expect(normalRating.isHighlyRated()).toBe(false);
+			}
 		});
 
 		it("信頼性を正しく判定する", () => {
@@ -276,15 +280,22 @@ describe("Rating Value Object", () => {
 			expect(lowReliabilityResult.isOk()).toBe(true);
 			expect(insufficientResult.isOk()).toBe(true);
 
-			const highReliability = highReliabilityResult._unsafeUnwrap();
-			const mediumReliability = mediumReliabilityResult._unsafeUnwrap();
-			const lowReliability = lowReliabilityResult._unsafeUnwrap();
-			const insufficient = insufficientResult._unsafeUnwrap();
+			if (
+				highReliabilityResult.isOk() &&
+				mediumReliabilityResult.isOk() &&
+				lowReliabilityResult.isOk() &&
+				insufficientResult.isOk()
+			) {
+				const highReliability = highReliabilityResult.value;
+				const mediumReliability = mediumReliabilityResult.value;
+				const lowReliability = lowReliabilityResult.value;
+				const insufficient = insufficientResult.value;
 
-			expect(highReliability.reliability()).toBe("high");
-			expect(mediumReliability.reliability()).toBe("medium");
-			expect(lowReliability.reliability()).toBe("low");
-			expect(insufficient.reliability()).toBe("insufficient");
+				expect(highReliability.reliability()).toBe("high");
+				expect(mediumReliability.reliability()).toBe("medium");
+				expect(lowReliability.reliability()).toBe("low");
+				expect(insufficient.reliability()).toBe("insufficient");
+			}
 		});
 
 		it("表示用の星数を正しく取得する", () => {
@@ -295,8 +306,10 @@ describe("Rating Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const rating = result._unsafeUnwrap();
-			expect(rating.displayStars()).toBe(5);
+			if (result.isOk()) {
+				const rating = result.value;
+				expect(rating.displayStars()).toBe(5);
+			}
 		});
 
 		it("パーセンテージを正しく計算する", () => {
@@ -307,8 +320,10 @@ describe("Rating Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const rating = result._unsafeUnwrap();
-			expect(rating.percentage()).toBe(80);
+			if (result.isOk()) {
+				const rating = result.value;
+				expect(rating.percentage()).toBe(80);
+			}
 		});
 
 		it("フォーマット済み文字列を正しく生成する", () => {
@@ -319,8 +334,10 @@ describe("Rating Value Object", () => {
 			});
 
 			expect(result.isOk()).toBe(true);
-			const rating = result._unsafeUnwrap();
-			expect(rating.format()).toBe("★4.5 (123件)");
+			if (result.isOk()) {
+				const rating = result.value;
+				expect(rating.format()).toBe("★4.5 (123件)");
+			}
 		});
 	});
 

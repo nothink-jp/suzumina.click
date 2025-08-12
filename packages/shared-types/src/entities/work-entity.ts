@@ -271,9 +271,21 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	 */
 	private static createTitle(data: WorkDocument): WorkTitle {
 		const result = WorkTitle.create(data.title, data.titleMasked, data.titleKana, data.altName);
-		return result.isOk()
-			? result.value
-			: WorkTitle.create(data.title || "Unknown Title")._unsafeUnwrap();
+		if (result.isOk()) {
+			return result.value;
+		}
+		// Fallback: Create with minimal valid title
+		const fallbackResult = WorkTitle.create(data.title || "Unknown Title");
+		if (fallbackResult.isOk()) {
+			return fallbackResult.value;
+		}
+		// Last resort fallback
+		const lastResortResult = WorkTitle.create("Unknown Title");
+		if (lastResortResult.isOk()) {
+			return lastResortResult.value;
+		}
+		// This should never happen, but satisfies TypeScript
+		throw new Error("Failed to create WorkTitle even with fallback");
 	}
 
 	/**
@@ -281,9 +293,21 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	 */
 	private static createCircle(data: WorkDocument): Circle {
 		const result = Circle.create(data.circleId || "UNKNOWN", data.circle, data.circleEn);
-		return result.isOk()
-			? result.value
-			: Circle.create("UNKNOWN", data.circle || "Unknown Circle")._unsafeUnwrap();
+		if (result.isOk()) {
+			return result.value;
+		}
+		// Fallback: Create with minimal valid circle
+		const fallbackResult = Circle.create("UNKNOWN", data.circle || "Unknown Circle");
+		if (fallbackResult.isOk()) {
+			return fallbackResult.value;
+		}
+		// Last resort fallback
+		const lastResortResult = Circle.create("UNKNOWN", "Unknown Circle");
+		if (lastResortResult.isOk()) {
+			return lastResortResult.value;
+		}
+		// This should never happen, but satisfies TypeScript
+		throw new Error("Failed to create Circle even with fallback");
 	}
 
 	/**
@@ -300,7 +324,16 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 			priceInfo.discount,
 			priceInfo.point,
 		);
-		return result.isOk() ? result.value : WorkPrice.create(0)._unsafeUnwrap();
+		if (result.isOk()) {
+			return result.value;
+		}
+		// Fallback: Create free price
+		const fallbackResult = WorkPrice.create(0);
+		if (fallbackResult.isOk()) {
+			return fallbackResult.value;
+		}
+		// This should never happen since WorkPrice.create(0) should always succeed
+		throw new Error("Failed to create WorkPrice even with free price fallback");
 	}
 
 	/**
@@ -369,7 +402,16 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 			data.rating.reviewCount,
 			distribution,
 		);
-		return result.isOk() ? result.value : WorkRating.empty()._unsafeUnwrap();
+		if (result.isOk()) {
+			return result.value;
+		}
+		// Fallback: Create empty rating
+		const fallbackResult = WorkRating.empty();
+		if (fallbackResult.isOk()) {
+			return fallbackResult.value;
+		}
+		// This should never happen since WorkRating.empty() should always succeed
+		throw new Error("Failed to create WorkRating even with empty rating fallback");
 	}
 
 	/**

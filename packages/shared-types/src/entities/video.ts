@@ -6,7 +6,15 @@
  * a cleaner domain model with proper encapsulation and business logic.
  */
 
-import { type DatabaseError, databaseError, err, ok, type Result } from "../core/result";
+import {
+	type DatabaseError,
+	databaseError,
+	err,
+	ok,
+	type Result,
+	type ValidationError,
+	validationError,
+} from "../core/result";
 import type { VideoComputedProperties, VideoPlainObject } from "../plain-objects/video-plain";
 import type {
 	FirestoreServerVideoData,
@@ -104,7 +112,7 @@ export interface LiveStreamingDetails {
 export class Video extends BaseEntity<Video> implements EntityValidatable<Video> {
 	private _lastModified: Date;
 
-	constructor(
+	private constructor(
 		private readonly _content: VideoContent,
 		private readonly _metadata: VideoMetadata,
 		private readonly _channel: Channel,
@@ -118,6 +126,90 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 	) {
 		super();
 		this._lastModified = new Date();
+	}
+
+	/**
+	 * Factory method to create a Video with validation
+	 */
+	static create(
+		content: VideoContent,
+		metadata: VideoMetadata,
+		channel: Channel,
+		statistics?: VideoStatistics,
+		tags: VideoTags = { playlistTags: [], userTags: [] },
+		audioButtonInfo: AudioButtonInfo = { count: 0, hasButtons: false },
+		liveStreamingDetails?: LiveStreamingDetails,
+		liveBroadcastContent = "none",
+		videoType = "normal",
+		lastFetchedAt: Date = new Date(),
+	): Result<Video, ValidationError> {
+		// Validate input parameters
+		if (!content) {
+			return err(validationError("content", "VideoContent is required"));
+		}
+		if (!metadata) {
+			return err(validationError("metadata", "VideoMetadata is required"));
+		}
+		if (!channel) {
+			return err(validationError("channel", "Channel is required"));
+		}
+
+		// Validate tag constraints
+		if (tags.userTags && tags.userTags.length > 10) {
+			return err(validationError("tags.userTags", "User tags must not exceed 10 items"));
+		}
+		if (tags.userTags) {
+			for (let i = 0; i < tags.userTags.length; i++) {
+				const tag = tags.userTags[i];
+				if (!tag || tag.length < 1 || tag.length > 30) {
+					return err(
+						validationError(
+							"tags.userTags",
+							`User tag at index ${i} must be between 1 and 30 characters`,
+						),
+					);
+				}
+			}
+		}
+
+		// Validate audio button info
+		if (audioButtonInfo.count < -1) {
+			return err(
+				validationError("audioButtonInfo.count", "Audio button count must be -1 or greater"),
+			);
+		}
+
+		// Validate live broadcast content
+		const validBroadcastContent = ["none", "live", "upcoming"];
+		if (!validBroadcastContent.includes(liveBroadcastContent)) {
+			return err(
+				validationError(
+					"liveBroadcastContent",
+					`Invalid live broadcast content: ${liveBroadcastContent}`,
+				),
+			);
+		}
+
+		// Validate video type
+		const validVideoTypes = ["normal", "live", "upcoming", "archived", "premiere", "possibly_live"];
+		if (!validVideoTypes.includes(videoType)) {
+			return err(validationError("videoType", `Invalid video type: ${videoType}`));
+		}
+
+		const video = new Video(
+			content,
+			metadata,
+			channel,
+			statistics,
+			tags,
+			audioButtonInfo,
+			liveStreamingDetails,
+			liveBroadcastContent,
+			videoType,
+			lastFetchedAt,
+		);
+
+		return ok(video);
 	}
 
 	// Getters for accessing value objects
@@ -454,31 +546,28 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 	/**
 	 * Updates user tags
 	 */
-	updateUserTags(tags: string[]): Video {
-		if (tags.length > 10) {
-			throw new Error("ユーザータグは最大10個まで設定できます");
-		}
-		const validTags = tags.filter((tag) => tag.length >= 1 && tag.length <= 30);
-
-		return new Video(
+	updateUserTags(tags: string[]): Result<Video, ValidationError> {
+		const result = Video.create(
 			this._content,
 			this._metadata,
 			this._channel,
 			this._statistics,
-			{ ...this._tags, userTags: validTags },
+			{ ...this._tags, userTags: tags },
 			this._audioButtonInfo,
 			this._liveStreamingDetails,
 			this._liveBroadcastContent,
 			this._videoType,
 			this._lastFetchedAt,
 		);
+
+		return result;
 	}
 
 	/**
 	 * Updates statistics
 	 */
-	updateStatistics(statistics: VideoStatistics): Video {
-		return new Video(
+	updateStatistics(statistics: VideoStatistics): Result<Video, ValidationError> {
+		const result = Video.create(
 			this._content,
 			this._metadata,
 			this._channel,
@@ -490,13 +579,15 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 			this._videoType,
 			this._lastFetchedAt,
 		);
+
+		return result;
 	}
 
 	/**
 	 * Updates audio button information
 	 */
-	updateAudioButtonInfo(info: AudioButtonInfo): Video {
-		return new Video(
+	updateAudioButtonInfo(info: AudioButtonInfo): Result<Video, ValidationError> {
+		const result = Video.create(
 			this._content,
 			this._metadata,
 			this._channel,
@@ -508,6 +599,8 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 			this._videoType,
 			this._lastFetchedAt,
 		);
+
+		return result;
 	}
 
 	/**
@@ -582,13 +675,17 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 			return undefined;
 		}
 
-		return new ContentDetails(
+		const result = ContentDetails.create(
 			data.dimension as "2d" | "3d" | undefined,
 			data.definition as "hd" | "sd" | undefined,
 			typeof data.caption === "boolean" ? data.caption : data.caption === "true",
 			data.licensedContent,
 			undefined,
 		);
+		if (result.isErr()) {
+			return undefined; // Return undefined if creation fails
+		}
+		return result.value;
 	}
 
 	/**
@@ -619,9 +716,34 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 		data: FirestoreServerVideoData,
 	): Result<VideoContent, DatabaseError> {
 		try {
-			const content = new VideoContent(
-				new VideoId(data.videoId),
-				new PublishedAt(Video.convertTimestamp(data.publishedAt) || new Date()),
+			// Create VideoId
+			const videoIdResult = VideoId.create(data.videoId);
+			if (videoIdResult.isErr()) {
+				return err(
+					databaseError(
+						"fromFirestoreData",
+						`Failed to create VideoId: ${videoIdResult.error.message}`,
+					),
+				);
+			}
+
+			// Create PublishedAt
+			const publishedAtResult = PublishedAt.create(
+				Video.convertTimestamp(data.publishedAt) || new Date(),
+			);
+			if (publishedAtResult.isErr()) {
+				return err(
+					databaseError(
+						"fromFirestoreData",
+						`Failed to create PublishedAt: ${publishedAtResult.error.message}`,
+					),
+				);
+			}
+
+			// Create VideoContent
+			const contentResult = VideoContent.create(
+				videoIdResult.value,
+				publishedAtResult.value,
 				(data.status?.privacyStatus as PrivacyStatus) || "public",
 				(data.status?.uploadStatus as UploadStatus) || "processed",
 				Video.createContentDetailsFromFirestore(data),
@@ -629,7 +751,15 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 				data.tags,
 				data.status?.embeddable,
 			);
-			return ok(content);
+			if (contentResult.isErr()) {
+				return err(
+					databaseError(
+						"fromFirestoreData",
+						`Failed to create VideoContent: ${contentResult.error.message}`,
+					),
+				);
+			}
+			return ok(contentResult.value);
 		} catch (error) {
 			return err(
 				databaseError(
@@ -916,7 +1046,7 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 	 * Creates a copy of the video
 	 */
 	clone(): Video {
-		return new Video(
+		const result = Video.create(
 			this._content.clone(),
 			this._metadata.clone(),
 			this._channel.clone(),
@@ -928,6 +1058,14 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 			this._videoType,
 			new Date(this._lastFetchedAt),
 		);
+
+		if (result.isErr()) {
+			// This should not happen in normal circumstances since we're cloning existing valid data
+			// But if it does, we need to handle it gracefully
+			throw new Error(`Failed to clone video: ${result.error.message}`);
+		}
+
+		return result.value;
 	}
 
 	/**

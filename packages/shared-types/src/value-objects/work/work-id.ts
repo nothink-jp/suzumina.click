@@ -165,7 +165,11 @@ export class WorkId extends BaseValueObject<WorkId> implements ValidatableValueO
 	}
 
 	clone(): WorkId {
-		return new WorkId(this.value);
+		const result = WorkId.create(this.value as string);
+		if (result.isErr()) {
+			throw new Error(`Failed to clone WorkId: ${result.error.message}`);
+		}
+		return result.value;
 	}
 
 	toPlainObject(): string {
