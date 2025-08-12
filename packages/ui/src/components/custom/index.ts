@@ -2,12 +2,14 @@
 export { AudioButton } from "./audio-button";
 export { AudioPlayer } from "./audio-player";
 
-// Filter components
+// Types
 export type { AutocompleteSuggestionItem } from "./autocomplete-dropdown";
 export { AutocompleteDropdown } from "./autocomplete-dropdown";
+
 // Utility components
 export { GenericCarousel } from "./generic-carousel";
 export { HighlightTags, HighlightText, MultiFieldHighlight } from "./highlight-text";
+
 // List components
 export type {
 	ConfigurableListProps,
@@ -19,18 +21,24 @@ export type {
 	StandardListParams,
 } from "./list";
 export { ConfigurableList, SimpleList } from "./list";
+
 // Layout components
 export { ListDisplayControls } from "./list-display-controls";
 export { ListPageLayout } from "./list-page-layout";
 export { LoadingSkeleton } from "./loading-skeleton";
+export { NotImplementedOverlay } from "./not-implemented-overlay";
+
 // Tag components
 export type { TagSuggestion } from "./tag-input";
 export { TagInput } from "./tag-input";
 export { TagList } from "./tag-list";
 export { ThreeLayerTagDisplay } from "./three-layer-tag-display";
-// Time components
+
+// Time and validation components
 export type { TimeDisplayProps } from "./time-display";
 export { TimeDisplay } from "./time-display";
+export type { ValidationMessageProps } from "./validation-message";
+export { ValidationMessage, ValidationMessages } from "./validation-message";
 
 // YouTube components
 export { YouTubeAPIManager } from "./youtube-api-manager";
