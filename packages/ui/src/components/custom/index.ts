@@ -11,14 +11,17 @@ export { HighlightTags, HighlightText, MultiFieldHighlight } from "./highlight-t
 
 // List components
 export type {
+	BasicListProps,
 	ConfigurableListProps,
+	FilterableListProps,
 	FilterConfig,
 	ListDataSource,
 	ListError,
+	SortableListProps,
 	SortConfig,
 	StandardListParams,
 } from "./list";
-export { ConfigurableList } from "./list";
+export { BasicList, ConfigurableList, FilterableList, SortableList } from "./list";
 
 // Layout components
 export { ListPageLayout } from "./list-page-layout";
