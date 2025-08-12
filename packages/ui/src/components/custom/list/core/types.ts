@@ -89,21 +89,15 @@ export interface ListError {
 }
 
 /**
- * SimpleList用のプロパティ
+ * ConfigurableList用のプロパティ
  */
-export interface SimpleListProps<T> {
+export interface ConfigurableListProps<T> {
 	items: T[];
 	renderItem: (item: T, index: number) => React.ReactNode;
 	itemsPerPage?: number;
 	loading?: boolean;
 	error?: ListError;
 	className?: string;
-}
-
-/**
- * ConfigurableList用のプロパティ
- */
-export interface ConfigurableListProps<T> extends SimpleListProps<T> {
 	// フィルター設定
 	filters?: Record<string, FilterConfig>;
 

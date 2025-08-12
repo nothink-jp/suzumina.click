@@ -33,7 +33,11 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 	// overridesを適用
 	const firestoreData = overrides ? { ...defaultData, ...overrides } : defaultData;
 
-	return Video.fromFirestoreData(firestoreData).toPlainObject();
+	const videoResult = Video.fromFirestoreData(firestoreData);
+	if (videoResult.isErr()) {
+		throw new Error(`Failed to create video: ${videoResult.error.detail}`);
+	}
+	return videoResult.value.toPlainObject();
 }
 
 describe("useVideo", () => {

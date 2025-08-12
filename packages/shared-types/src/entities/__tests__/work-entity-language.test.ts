@@ -94,9 +94,9 @@ describe("Work Entity - Language Detection", () => {
 				],
 			});
 
-			const work = Work.fromFirestoreData(workData);
-			if (!work) throw new Error("Failed to create work entity");
-			const plainObject = work.toPlainObject();
+			const result = Work.fromFirestoreData(workData);
+			if (result.isErr()) throw new Error(`Failed to create work entity: ${result.error.detail}`);
+			const plainObject = result.value.toPlainObject();
 
 			expect(plainObject._computed?.primaryLanguage).toBe("th");
 		});
@@ -130,9 +130,9 @@ describe("Work Entity - Language Detection", () => {
 				],
 			});
 
-			const work = Work.fromFirestoreData(workData);
-			if (!work) throw new Error("Failed to create work entity");
-			const plainObject = work.toPlainObject();
+			const result = Work.fromFirestoreData(workData);
+			if (result.isErr()) throw new Error(`Failed to create work entity: ${result.error.detail}`);
+			const plainObject = result.value.toPlainObject();
 
 			expect(plainObject._computed?.primaryLanguage).toBe("ja");
 		});
@@ -166,9 +166,9 @@ describe("Work Entity - Language Detection", () => {
 				],
 			});
 
-			const work = Work.fromFirestoreData(workData);
-			if (!work) throw new Error("Failed to create work entity");
-			const plainObject = work.toPlainObject();
+			const result = Work.fromFirestoreData(workData);
+			if (result.isErr()) throw new Error(`Failed to create work entity: ${result.error.detail}`);
+			const plainObject = result.value.toPlainObject();
 
 			expect(plainObject._computed?.primaryLanguage).toBe("en");
 		});
@@ -178,9 +178,9 @@ describe("Work Entity - Language Detection", () => {
 				title: "Test Work 繁体中文版",
 			});
 
-			const work = Work.fromFirestoreData(workData);
-			if (!work) throw new Error("Failed to create work entity");
-			const plainObject = work.toPlainObject();
+			const result = Work.fromFirestoreData(workData);
+			if (result.isErr()) throw new Error(`Failed to create work entity: ${result.error.detail}`);
+			const plainObject = result.value.toPlainObject();
 
 			expect(plainObject._computed?.primaryLanguage).toBe("zh-tw");
 		});
@@ -216,9 +216,9 @@ describe("Work Entity - Language Detection", () => {
 					],
 				});
 
-				const work = Work.fromFirestoreData(workData);
-				if (!work) throw new Error("Failed to create work entity");
-				const plainObject = work.toPlainObject();
+				const result = Work.fromFirestoreData(workData);
+				if (result.isErr()) throw new Error(`Failed to create work entity: ${result.error.detail}`);
+				const plainObject = result.value.toPlainObject();
 
 				expect(plainObject._computed?.primaryLanguage).toBe(testCase.expected);
 			}
@@ -262,9 +262,9 @@ describe("Work Entity - Language Detection", () => {
 				],
 			});
 
-			const work = Work.fromFirestoreData(workData);
-			if (!work) throw new Error("Failed to create work entity");
-			const plainObject = work.toPlainObject();
+			const result = Work.fromFirestoreData(workData);
+			if (result.isErr()) throw new Error(`Failed to create work entity: ${result.error.detail}`);
+			const plainObject = result.value.toPlainObject();
 
 			expect(plainObject._computed?.availableLanguages).toContain("ja");
 			expect(plainObject._computed?.availableLanguages).toContain("en");
@@ -288,9 +288,9 @@ describe("Work Entity - Language Detection", () => {
 				],
 			});
 
-			const work = Work.fromFirestoreData(workData);
-			if (!work) throw new Error("Failed to create work entity");
-			const plainObject = work.toPlainObject();
+			const result = Work.fromFirestoreData(workData);
+			if (result.isErr()) throw new Error(`Failed to create work entity: ${result.error.detail}`);
+			const plainObject = result.value.toPlainObject();
 
 			expect(plainObject._computed?.availableLanguages).toContain("other");
 		});

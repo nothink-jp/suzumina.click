@@ -55,6 +55,86 @@ function getJSTDateTime(): string {
 }
 
 /**
+ * locale_price/locale_official_priceを正規化（配列の場合はオブジェクトに変換）
+ */
+function normalizeLocalePrice(
+	localePrice?: Record<string, number> | Array<{ currency: string; price: number }>,
+): Record<string, number> {
+	if (!localePrice) return {};
+	if (Array.isArray(localePrice)) {
+		return localePrice.reduce(
+			(acc, item) => {
+				acc[item.currency] = item.price;
+				return acc;
+			},
+			{} as Record<string, number>,
+		);
+	}
+	return localePrice;
+}
+
+/**
+ * 新しい価格データを構築
+ */
+function createPriceData(
+	workId: string,
+	apiResponse: DLsiteApiResponse,
+	hasValidPriceData: boolean,
+): PriceHistoryDocument {
+	const today = getJSTDate();
+
+	return {
+		workId: workId as string,
+		date: today as string,
+		capturedAt: getJSTDateTime(), // JST時刻
+
+		// 日本円価格（データがない場合はnull）
+		price: hasValidPriceData ? (apiResponse.price ?? null) : null,
+		officialPrice: hasValidPriceData ? (apiResponse.official_price ?? null) : null,
+
+		// 国際価格（データがない場合は空のオブジェクト）
+		localePrice: hasValidPriceData ? normalizeLocalePrice(apiResponse.locale_price) : {},
+		localeOfficialPrice: hasValidPriceData
+			? normalizeLocalePrice(apiResponse.locale_official_price)
+			: {},
+
+		// 割引情報
+		discountRate: hasValidPriceData ? apiResponse.discount_rate || 0 : 0,
+		campaignId:
+			hasValidPriceData && apiResponse.campaign?.campaign_id
+				? Number(apiResponse.campaign.campaign_id)
+				: undefined,
+	};
+}
+
+/**
+ * 既存データの更新が必要かチェック
+ */
+function shouldUpdateExistingData(
+	existingData: PriceHistoryDocument,
+	newPriceData: PriceHistoryDocument,
+	workId: string,
+): boolean {
+	const existingPrice = existingData.price;
+	const newPrice = newPriceData.price;
+
+	// より低い価格が検出された場合、または既存価格がnullの場合は更新
+	if (newPrice !== null && (existingPrice === null || newPrice < existingPrice)) {
+		logger.info(`価格更新検出: ${workId} - ${newPriceData.date}`);
+		logger.info(`既存価格: ${existingPrice ?? "null"} → 新価格: ${newPrice}`);
+		logger.debug(`既存データの保存時刻: ${existingData.capturedAt}`);
+		logger.debug(`新規データの保存時刻: ${newPriceData.capturedAt}`);
+		return true;
+	}
+
+	logger.debug(
+		`価格履歴保存スキップ: ${workId} - ${newPriceData.date}のデータが既に存在し、価格変更なし`,
+	);
+	logger.debug(`既存価格: ${existingPrice ?? "null"}, 新価格: ${newPrice ?? "null"}`);
+	return false;
+}
+
+/**
  * 価格履歴データをサブコレクションに保存（改善版）
  * @param workId 作品ID
  * @param apiResponse Individual Info APIレスポンス
@@ -74,86 +154,32 @@ export async function savePriceHistoryV2(
 		// 価格データの有効性を確認（欠損値も許可）
 		const hasValidPriceData = isValidPriceData(apiResponse);
 
-		// JST（日本標準時）での日付を取得
-		const today = getJSTDate();
+		// 新しい価格データを構築
+		const newPriceData = createPriceData(workId, apiResponse, hasValidPriceData);
 
 		// サブコレクション参照
 		const priceHistoryRef = firestore
 			.collection("works")
 			.doc(workId)
 			.collection("priceHistory")
-			.doc(today as string);
+			.doc(newPriceData.date);
 
 		// 既存データ確認
 		const existingDoc = await priceHistoryRef.get();
 
-		// locale_price/locale_official_priceを正規化（配列の場合はオブジェクトに変換）
-		const normalizeLocalePrice = (
-			localePrice?: Record<string, number> | Array<{ currency: string; price: number }>,
-		): Record<string, number> => {
-			if (!localePrice) return {};
-			if (Array.isArray(localePrice)) {
-				return localePrice.reduce(
-					(acc, item) => {
-						acc[item.currency] = item.price;
-						return acc;
-					},
-					{} as Record<string, number>,
-				);
-			}
-			return localePrice;
-		};
-
-		// 新しい価格データを構築
-		const newPriceData: PriceHistoryDocument = {
-			workId: workId as string,
-			date: today as string,
-			capturedAt: getJSTDateTime(), // JST時刻
-
-			// 日本円価格（データがない場合はnull）
-			price: hasValidPriceData ? (apiResponse.price ?? null) : null,
-			officialPrice: hasValidPriceData ? (apiResponse.official_price ?? null) : null,
-
-			// 国際価格（データがない場合は空のオブジェクト）
-			localePrice: hasValidPriceData ? normalizeLocalePrice(apiResponse.locale_price) : {},
-			localeOfficialPrice: hasValidPriceData
-				? normalizeLocalePrice(apiResponse.locale_official_price)
-				: {},
-
-			// 割引情報
-			discountRate: hasValidPriceData ? apiResponse.discount_rate || 0 : 0,
-			campaignId:
-				hasValidPriceData && apiResponse.campaign?.campaign_id
-					? Number(apiResponse.campaign.campaign_id)
-					: undefined,
-		};
-
 		if (existingDoc.exists) {
 			const existingData = existingDoc.data() as PriceHistoryDocument;
-
-			// 既存データと新規データの価格を比較
-			const existingPrice = existingData.price;
-			const newPrice = newPriceData.price;
-
-			// より低い価格が検出された場合、または既存価格がnullの場合は更新
-			if (newPrice !== null && (existingPrice === null || newPrice < existingPrice)) {
-				logger.info(`価格更新検出: ${workId} - ${today}`);
-				logger.info(`既存価格: ${existingPrice ?? "null"} → 新価格: ${newPrice}`);
-				logger.debug(`既存データの保存時刻: ${existingData.capturedAt}`);
-				logger.debug(`新規データの保存時刻: ${newPriceData.capturedAt}`);
-
+			if (shouldUpdateExistingData(existingData, newPriceData, workId)) {
 				// より低い価格で更新
 				await priceHistoryRef.set(newPriceData);
-				logger.info(`価格履歴更新成功: ${workId} - ${today} (最低価格更新)`);
-				return true;
+				logger.info(`価格履歴更新成功: ${workId} - ${newPriceData.date} (最低価格更新)`);
 			}
-			logger.debug(`価格履歴保存スキップ: ${workId} - ${today}のデータが既に存在し、価格変更なし`);
-			logger.debug(`既存価格: ${existingPrice ?? "null"}, 新価格: ${newPrice ?? "null"}`);
 			return true;
 		}
+
 		// 新規保存
 		await priceHistoryRef.set(newPriceData);
-		logger.info(`価格履歴保存成功: ${workId} - ${today} (新規)`);
+		logger.info(`価格履歴保存成功: ${workId} - ${newPriceData.date} (新規)`);
 		return true;
 	} catch (error) {
 		logger.error(`価格履歴保存エラー: ${workId}`, error);

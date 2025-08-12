@@ -1,5 +1,25 @@
 import type { AudioButtonQuery } from "@suzumina.click/shared-types";
-import type { AdvancedFilters } from "@suzumina.click/ui/components/custom/advanced-filter-panel";
+
+// AdvancedFilters type definition (previously from advanced-filter-panel)
+export interface AdvancedFilters {
+	playCount?: {
+		min?: number;
+		max?: number;
+	};
+	likeCount?: {
+		min?: number;
+		max?: number;
+	};
+	favoriteCount?: {
+		min?: number;
+		max?: number;
+	};
+	createdAt?: {
+		from?: Date;
+		to?: Date;
+	};
+	createdBy?: string;
+}
 
 // SearchParams型定義
 export interface SearchParams {

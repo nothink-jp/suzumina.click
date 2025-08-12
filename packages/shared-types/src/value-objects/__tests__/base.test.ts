@@ -39,6 +39,10 @@ class TestValueObject extends BaseValueObject<TestValueObject> {
 	clone(): TestValueObject {
 		return new TestValueObject(this.id, this.value);
 	}
+
+	toPlainObject(): unknown {
+		return { id: this.id, value: this.value };
+	}
 }
 
 // Test implementation with custom equals/clone
@@ -75,6 +79,10 @@ class ValidatableTestObject
 
 	clone(): ValidatableTestObject {
 		return new ValidatableTestObject(this.email, this.age);
+	}
+
+	toPlainObject(): unknown {
+		return { email: this.email, age: this.age };
 	}
 
 	isValid(): boolean {
@@ -115,6 +123,9 @@ describe("Value Object Base", () => {
 				}
 				clone(): ArrayValueObject {
 					return new ArrayValueObject([...this.items]);
+				}
+				toPlainObject(): unknown {
+					return { items: [...this.items] };
 				}
 			}
 

@@ -39,9 +39,3 @@ export interface AudioButtonPlainObject
 	// Computed properties from business logic
 	_computed: AudioButtonComputedProperties;
 }
-
-/**
- * Frontend audio button data type - Plain object for Server/Client Component boundary
- * @deprecated Use AudioButtonPlainObject instead
- */
-export type FrontendAudioButton = AudioButtonPlainObject;

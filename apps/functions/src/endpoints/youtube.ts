@@ -243,7 +243,7 @@ async function buildPlaylistVideoMapping(
 					}
 					videoPlaylistMap.set(videoId, current);
 				}
-			} catch (error) {
+			} catch (_error) {
 				logger.warn(`プレイリスト「${playlist.title}」の動画取得に失敗`);
 				// 個別のプレイリストエラーは継続
 			}

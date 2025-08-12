@@ -13,7 +13,6 @@ export type {
 	ListController,
 	ListDataSource,
 	ListError,
-	SimpleListProps,
 	SortConfig,
 	StandardListParams,
 } from "./core/types";
@@ -32,5 +31,3 @@ export {
 	transformFilterValue,
 	validateFilterValue,
 } from "./core/utils/filterHelpers";
-// Components
-export { SimpleList } from "./simple-list";

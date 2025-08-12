@@ -5,7 +5,6 @@
 import { FieldValue, type Query } from "@google-cloud/firestore";
 import {
 	type AudioButtonPlainObject,
-	type FirestoreAudioButtonData,
 	type FirestoreServerAudioButtonData,
 	formatRelativeTime,
 } from "@suzumina.click/shared-types";
@@ -49,8 +48,8 @@ function ensureDateString(date: string | Date | unknown): string {
 export function convertToAudioButtonPlainObject(
 	data:
 		| FirestoreServerAudioButtonData
-		| FirestoreAudioButtonData
-		| (FirestoreAudioButtonData & { createdAt: Date; updatedAt: Date }),
+		| FirestoreServerAudioButtonData
+		| (FirestoreServerAudioButtonData & { createdAt: Date; updatedAt: Date }),
 ): AudioButtonPlainObject {
 	const createdAtStr = ensureDateString(data.createdAt);
 	const updatedAtStr = ensureDateString(data.updatedAt);
@@ -74,7 +73,7 @@ export function convertToAudioButtonPlainObject(
 	// Build searchable text
 	const searchableText = [
 		data.title.toLowerCase(),
-		...(data.tags || []).map((tag) => tag.toLowerCase()),
+		...(data.tags || []).map((tag: string) => tag.toLowerCase()),
 		(data.sourceVideoTitle || "").toLowerCase(),
 		(data.createdByName || "").toLowerCase(),
 	].join(" ");
@@ -156,7 +155,7 @@ export async function getAudioButtonsByUser(
 		let audioButtons = snapshot.docs
 			.map((doc) => {
 				try {
-					const data = doc.data() as FirestoreAudioButtonData;
+					const data = doc.data() as FirestoreServerAudioButtonData;
 					return convertToAudioButtonPlainObject({ ...data, id: doc.id });
 				} catch (conversionError) {
 					logError("Failed to convert audio button data:", {
@@ -259,7 +258,7 @@ export async function getUserAudioButtonStats(discordId: string): Promise<{
 		// 再生回数の合計を計算
 		let totalPlays = 0;
 		allButtonsSnapshot.docs.forEach((doc) => {
-			const data = doc.data() as FirestoreAudioButtonData;
+			const data = doc.data() as FirestoreServerAudioButtonData;
 			totalPlays += data.playCount || 0;
 		});
 

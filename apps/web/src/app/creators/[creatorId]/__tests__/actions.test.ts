@@ -126,7 +126,19 @@ describe("Creator page server actions", () => {
 			);
 		});
 		// Reset convertToWorkPlainObject mock to default implementation
-		vi.mocked(convertToWorkPlainObject).mockImplementation(mockConvertToWorkPlainObject);
+		vi.mocked(convertToWorkPlainObject).mockImplementation((data: any) => {
+			const result = mockConvertToWorkPlainObject(data);
+			if (result === null) {
+				return {
+					isOk: () => false,
+					error: { message: "Invalid data" },
+				};
+			}
+			return {
+				isOk: () => true,
+				value: result,
+			};
+		});
 	});
 
 	describe("getCreatorInfo", () => {

@@ -5,6 +5,8 @@
  * to support gradual migration from legacy types to entity-based architecture.
  */
 
+import type { DatabaseError, NotFoundError } from "../core/result";
+import { databaseError, err, notFoundError, ok, type Result } from "../core/result";
 import type { WorkDocument } from "../entities/work";
 import { Work } from "../entities/work-entity";
 import type { WorkPlainObject } from "../plain-objects/work-plain";
@@ -33,17 +35,17 @@ import type { WorkPlainObject } from "../plain-objects/work-plain";
  */
 export function convertToWorkPlainObject(
 	data: WorkDocument | null | undefined,
-): WorkPlainObject | null {
+): Result<WorkPlainObject, NotFoundError | DatabaseError> {
 	if (!data) {
-		return null;
+		return err(notFoundError("work", "Work document is null or undefined"));
 	}
 
-	const work = Work.fromFirestoreData(data);
-	if (!work) {
-		return null;
+	const workResult = Work.fromFirestoreData(data);
+	if (!workResult.isOk()) {
+		return err(databaseError(workResult.error.detail, workResult.error.type));
 	}
 
-	return work.toPlainObject();
+	return ok(workResult.value.toPlainObject());
 }
 
 /**
@@ -65,10 +67,20 @@ export function convertToWorkPlainObject(
  * return <WorkList works={plainObjects} />;
  * ```
  */
-export function convertToWorkPlainObjects(dataArray: WorkDocument[]): WorkPlainObject[] {
-	return dataArray
-		.map((data) => convertToWorkPlainObject(data))
-		.filter((work): work is WorkPlainObject => work !== null);
+export function convertToWorkPlainObjects(
+	dataArray: WorkDocument[],
+): Result<WorkPlainObject[], DatabaseError> {
+	const results: WorkPlainObject[] = [];
+
+	for (const data of dataArray) {
+		const result = convertToWorkPlainObject(data);
+		if (result.isOk()) {
+			results.push(result.value);
+		}
+		// Skip failed conversions silently (as before)
+	}
+
+	return ok(results);
 }
 
 /**
@@ -104,14 +116,14 @@ export function isWorkPlainObject(obj: unknown): obj is WorkPlainObject {
  */
 export function normalizeToWorkPlainObject(
 	data: WorkDocument | WorkPlainObject | null | undefined,
-): WorkPlainObject | null {
+): Result<WorkPlainObject, NotFoundError | DatabaseError> {
 	if (!data) {
-		return null;
+		return err(notFoundError("work", "Input data is null or undefined"));
 	}
 
 	// If it's already a plain object, return it
 	if (isWorkPlainObject(data)) {
-		return data;
+		return ok(data);
 	}
 
 	// Otherwise, convert from Firestore data

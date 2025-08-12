@@ -61,12 +61,6 @@ export interface AudioButtonCreatorInfo {
 }
 
 /**
- * Legacy type for Firestore audio button data
- * @deprecated Use FirestoreServerAudioButtonData from types/firestore/audio-button.ts
- */
-export type FirestoreAudioButtonData = FirestoreServerAudioButtonData;
-
-/**
  * Audio button list result
  */
 export interface AudioButtonListResult {

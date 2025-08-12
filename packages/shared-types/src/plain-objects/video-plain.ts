@@ -39,9 +39,3 @@ export interface VideoPlainObject
 	// Computed properties from business logic
 	_computed: VideoComputedProperties;
 }
-
-/**
- * Frontend video data type - Plain object for Server/Client Component boundary
- * @deprecated Use VideoPlainObject instead
- */
-export type FrontendVideo = VideoPlainObject;

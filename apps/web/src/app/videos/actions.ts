@@ -164,8 +164,16 @@ function convertToVideo(doc: DocumentSnapshot): Video | null {
 	try {
 		const data = doc.data() as FirestoreServerVideoData;
 
-		// 直接Video Entityに変換
-		return Video.fromFirestoreData(data);
+		// Video Entityに変換（Result型を処理）
+		const result = Video.fromFirestoreData(data);
+		if (result.isErr()) {
+			logger.error("Video変換エラー", {
+				videoId: doc.id,
+				error: result.error.detail,
+			});
+			return null;
+		}
+		return result.value;
 	} catch (error) {
 		logger.error("Video変換エラー", {
 			videoId: doc.id,

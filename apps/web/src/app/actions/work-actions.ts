@@ -289,9 +289,18 @@ function processWorkDocuments(
 	for (const doc of workDocs) {
 		try {
 			const data = { id: doc.id, ...doc.data() } as WorkDocument;
-			const plainObject = convertToWorkPlainObject(data);
-			if (plainObject) {
-				works.push(plainObject);
+			const result = convertToWorkPlainObject(data);
+			if (result.isOk()) {
+				works.push(result.value);
+			} else {
+				logger.warn("作品データ変換エラー", {
+					docId: doc.id,
+					error:
+						result.error.type === "DatabaseError"
+							? result.error.detail
+							: `${result.error.resource} not found: ${result.error.id}`,
+				});
+				// 変換エラーは無視して次の作品を処理
 			}
 		} catch (conversionError) {
 			logger.warn("作品データ変換エラー", {

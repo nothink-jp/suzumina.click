@@ -6,6 +6,15 @@
  * a cleaner domain model with proper encapsulation and business logic.
  */
 
+import {
+	type DatabaseError,
+	databaseError,
+	err,
+	ok,
+	type Result,
+	type ValidationError,
+	validationError,
+} from "../core/result";
 import type { VideoComputedProperties, VideoPlainObject } from "../plain-objects/video-plain";
 import type {
 	FirestoreServerVideoData,
@@ -34,6 +43,7 @@ import {
 	VideoStatistics,
 	ViewCount,
 } from "../value-objects/video/video-statistics";
+import { BaseEntity, type EntityValidatable } from "./base/entity";
 
 // Legacy types are removed - using direct entity to Firestore conversion
 
@@ -99,10 +109,10 @@ export interface LiveStreamingDetails {
  * The root entity for video domain model.
  * Aggregates various value objects to represent a complete video.
  */
-export class Video {
+export class Video extends BaseEntity<Video> implements EntityValidatable<Video> {
 	private _lastModified: Date;
 
-	constructor(
+	private constructor(
 		private readonly _content: VideoContent,
 		private readonly _metadata: VideoMetadata,
 		private readonly _channel: Channel,
@@ -114,7 +124,92 @@ export class Video {
 		private readonly _videoType: string = "normal",
 		private readonly _lastFetchedAt: Date = new Date(),
 	) {
+		super();
 		this._lastModified = new Date();
+	}
+
+	/**
+	 * Factory method to create a Video with validation
+	 */
+	static create(
+		content: VideoContent,
+		metadata: VideoMetadata,
+		channel: Channel,
+		statistics?: VideoStatistics,
+		tags: VideoTags = { playlistTags: [], userTags: [] },
+		audioButtonInfo: AudioButtonInfo = { count: 0, hasButtons: false },
+		liveStreamingDetails?: LiveStreamingDetails,
+		liveBroadcastContent = "none",
+		videoType = "normal",
+		lastFetchedAt: Date = new Date(),
+	): Result<Video, ValidationError> {
+		// Validate input parameters
+		if (!content) {
+			return err(validationError("content", "VideoContent is required"));
+		}
+		if (!metadata) {
+			return err(validationError("metadata", "VideoMetadata is required"));
+		}
+		if (!channel) {
+			return err(validationError("channel", "Channel is required"));
+		}
+
+		// Validate tag constraints
+		if (tags.userTags && tags.userTags.length > 10) {
+			return err(validationError("tags.userTags", "User tags must not exceed 10 items"));
+		}
+		if (tags.userTags) {
+			for (let i = 0; i < tags.userTags.length; i++) {
+				const tag = tags.userTags[i];
+				if (!tag || tag.length < 1 || tag.length > 30) {
+					return err(
+						validationError(
+							"tags.userTags",
+							`User tag at index ${i} must be between 1 and 30 characters`,
+						),
+					);
+				}
+			}
+		}
+
+		// Validate audio button info
+		if (audioButtonInfo.count < -1) {
+			return err(
+				validationError("audioButtonInfo.count", "Audio button count must be -1 or greater"),
+			);
+		}
+
+		// Validate live broadcast content
+		const validBroadcastContent = ["none", "live", "upcoming"];
+		if (!validBroadcastContent.includes(liveBroadcastContent)) {
+			return err(
+				validationError(
+					"liveBroadcastContent",
+					`Invalid live broadcast content: ${liveBroadcastContent}`,
+				),
+			);
+		}
+
+		// Validate video type
+		const validVideoTypes = ["normal", "live", "upcoming", "archived", "premiere", "possibly_live"];
+		if (!validVideoTypes.includes(videoType)) {
+			return err(validationError("videoType", `Invalid video type: ${videoType}`));
+		}
+
+		const video = new Video(
+			content,
+			metadata,
+			channel,
+			statistics,
+			tags,
+			audioButtonInfo,
+			liveStreamingDetails,
+			liveBroadcastContent,
+			videoType,
+			lastFetchedAt,
+		);
+
+		return ok(video);
 	}
 
 	// Getters for accessing value objects
@@ -451,31 +546,28 @@ export class Video {
 	/**
 	 * Updates user tags
 	 */
-	updateUserTags(tags: string[]): Video {
-		if (tags.length > 10) {
-			throw new Error("ユーザータグは最大10個まで設定できます");
-		}
-		const validTags = tags.filter((tag) => tag.length >= 1 && tag.length <= 30);
-
-		return new Video(
+	updateUserTags(tags: string[]): Result<Video, ValidationError> {
+		const result = Video.create(
 			this._content,
 			this._metadata,
 			this._channel,
 			this._statistics,
-			{ ...this._tags, userTags: validTags },
+			{ ...this._tags, userTags: tags },
 			this._audioButtonInfo,
 			this._liveStreamingDetails,
 			this._liveBroadcastContent,
 			this._videoType,
 			this._lastFetchedAt,
 		);
+
+		return result;
 	}
 
 	/**
 	 * Updates statistics
 	 */
-	updateStatistics(statistics: VideoStatistics): Video {
-		return new Video(
+	updateStatistics(statistics: VideoStatistics): Result<Video, ValidationError> {
+		const result = Video.create(
 			this._content,
 			this._metadata,
 			this._channel,
@@ -487,13 +579,15 @@ export class Video {
 			this._videoType,
 			this._lastFetchedAt,
 		);
+
+		return result;
 	}
 
 	/**
 	 * Updates audio button information
 	 */
-	updateAudioButtonInfo(info: AudioButtonInfo): Video {
-		return new Video(
+	updateAudioButtonInfo(info: AudioButtonInfo): Result<Video, ValidationError> {
+		const result = Video.create(
 			this._content,
 			this._metadata,
 			this._channel,
@@ -505,6 +599,8 @@ export class Video {
 			this._videoType,
 			this._lastFetchedAt,
 		);
+
+		return result;
 	}
 
 	/**
@@ -579,74 +675,217 @@ export class Video {
 			return undefined;
 		}
 
-		return new ContentDetails(
+		const result = ContentDetails.create(
 			data.dimension as "2d" | "3d" | undefined,
 			data.definition as "hd" | "sd" | undefined,
 			typeof data.caption === "boolean" ? data.caption : data.caption === "true",
 			data.licensedContent,
 			undefined,
 		);
+		if (result.isErr()) {
+			return undefined; // Return undefined if creation fails
+		}
+		return result.value;
+	}
+
+	/**
+	 * Validates required fields for Video creation
+	 */
+	private static validateRequiredFields(
+		data: FirestoreServerVideoData,
+	): Result<void, DatabaseError> {
+		if (!data.videoId) {
+			return err(databaseError("fromFirestoreData", "Missing required field: videoId"));
+		}
+		if (!data.title) {
+			return err(databaseError("fromFirestoreData", "Missing required field: title"));
+		}
+		if (!data.channelId) {
+			return err(databaseError("fromFirestoreData", "Missing required field: channelId"));
+		}
+		if (!data.channelTitle) {
+			return err(databaseError("fromFirestoreData", "Missing required field: channelTitle"));
+		}
+		return ok(undefined);
+	}
+
+	/**
+	 * Creates VideoContent from Firestore data
+	 */
+	private static createVideoContent(
+		data: FirestoreServerVideoData,
+	): Result<VideoContent, DatabaseError> {
+		try {
+			// Create VideoId
+			const videoIdResult = VideoId.create(data.videoId);
+			if (videoIdResult.isErr()) {
+				return err(
+					databaseError(
+						"fromFirestoreData",
+						`Failed to create VideoId: ${videoIdResult.error.message}`,
+					),
+				);
+			}
+
+			// Create PublishedAt
+			const publishedAtResult = PublishedAt.create(
+				Video.convertTimestamp(data.publishedAt) || new Date(),
+			);
+			if (publishedAtResult.isErr()) {
+				return err(
+					databaseError(
+						"fromFirestoreData",
+						`Failed to create PublishedAt: ${publishedAtResult.error.message}`,
+					),
+				);
+			}
+
+			// Create VideoContent
+			const contentResult = VideoContent.create(
+				videoIdResult.value,
+				publishedAtResult.value,
+				(data.status?.privacyStatus as PrivacyStatus) || "public",
+				(data.status?.uploadStatus as UploadStatus) || "processed",
+				Video.createContentDetailsFromFirestore(data),
+				data.player?.embedHtml,
+				data.tags,
+				data.status?.embeddable,
+			);
+			if (contentResult.isErr()) {
+				return err(
+					databaseError(
+						"fromFirestoreData",
+						`Failed to create VideoContent: ${contentResult.error.message}`,
+					),
+				);
+			}
+			return ok(contentResult.value);
+		} catch (error) {
+			return err(
+				databaseError(
+					"fromFirestoreData",
+					`Failed to create VideoContent: ${error instanceof Error ? error.message : "Unknown error"}`,
+				),
+			);
+		}
+	}
+
+	/**
+	 * Creates VideoMetadata from Firestore data
+	 */
+	private static createVideoMetadata(
+		data: FirestoreServerVideoData,
+	): Result<VideoMetadata, DatabaseError> {
+		try {
+			const metadata = new VideoMetadata(
+				new VideoTitle(data.title),
+				new VideoDescription(data.description || ""),
+				data.duration ? new VideoDuration(data.duration) : undefined,
+				data.dimension as "2d" | "3d" | undefined,
+				data.definition as "hd" | "sd" | undefined,
+				typeof data.caption === "boolean" ? data.caption : data.caption === "true",
+				data.licensedContent,
+			);
+			return ok(metadata);
+		} catch (error) {
+			return err(
+				databaseError(
+					"fromFirestoreData",
+					`Failed to create VideoMetadata: ${error instanceof Error ? error.message : "Unknown error"}`,
+				),
+			);
+		}
+	}
+
+	/**
+	 * Creates Channel from Firestore data
+	 */
+	private static createChannel(data: FirestoreServerVideoData): Result<Channel, DatabaseError> {
+		try {
+			const channel = Channel.fromPlainObject({
+				channelId: data.channelId,
+				channelTitle: data.channelTitle,
+				categoryId: data.categoryId,
+			});
+			return ok(channel);
+		} catch (error) {
+			return err(
+				databaseError(
+					"fromFirestoreData",
+					`Failed to create Channel: ${error instanceof Error ? error.message : "Unknown error"}`,
+				),
+			);
+		}
 	}
 
 	/**
 	 * Creates a Video directly from Firestore data
+	 * Returns Result<Video, DatabaseError> for proper error handling
 	 */
-	static fromFirestoreData(data: FirestoreServerVideoData): Video {
-		// Create content
-		const content = new VideoContent(
-			new VideoId(data.videoId),
-			new PublishedAt(Video.convertTimestamp(data.publishedAt) || new Date()),
-			(data.status?.privacyStatus as PrivacyStatus) || "public",
-			(data.status?.uploadStatus as UploadStatus) || "processed",
-			Video.createContentDetailsFromFirestore(data),
-			data.player?.embedHtml,
-			data.tags,
-			data.status?.embeddable,
-		);
+	static fromFirestoreData(data: FirestoreServerVideoData): Result<Video, DatabaseError> {
+		try {
+			// Validate required fields
+			const validationResult = Video.validateRequiredFields(data);
+			if (validationResult.isErr()) {
+				return err(validationResult.error);
+			}
 
-		// Create metadata
-		const metadata = new VideoMetadata(
-			new VideoTitle(data.title),
-			new VideoDescription(data.description || ""),
-			data.duration ? new VideoDuration(data.duration) : undefined,
-			data.dimension as "2d" | "3d" | undefined,
-			data.definition as "hd" | "sd" | undefined,
-			typeof data.caption === "boolean" ? data.caption : data.caption === "true",
-			data.licensedContent,
-		);
+			// Create content
+			const contentResult = Video.createVideoContent(data);
+			if (contentResult.isErr()) {
+				return err(contentResult.error);
+			}
+			const content = contentResult.value;
 
-		// Create channel
-		const channel = Channel.fromPlainObject({
-			channelId: data.channelId,
-			channelTitle: data.channelTitle,
-			categoryId: data.categoryId,
-		});
+			// Create metadata
+			const metadataResult = Video.createVideoMetadata(data);
+			if (metadataResult.isErr()) {
+				return err(metadataResult.error);
+			}
+			const metadata = metadataResult.value;
 
-		// Create statistics
-		const statistics = Video.createStatisticsFromFirestore(data);
+			// Create channel
+			const channelResult = Video.createChannel(data);
+			if (channelResult.isErr()) {
+				return err(channelResult.error);
+			}
+			const channel = channelResult.value;
 
-		// Create live streaming details
-		const liveStreamingDetails = Video.createLiveStreamingDetailsFromFirestore(data);
+			// Create optional components
+			const statistics = Video.createStatisticsFromFirestore(data);
+			const liveStreamingDetails = Video.createLiveStreamingDetailsFromFirestore(data);
+			const lastFetchedAt = Video.convertTimestamp(data.lastFetchedAt) || new Date();
 
-		return new Video(
-			content,
-			metadata,
-			channel,
-			statistics,
-			{
-				playlistTags: data.playlistTags || [],
-				userTags: data.userTags || [],
-				contentTags: data.tags,
-			},
-			{
-				count: data.audioButtonCount || 0,
-				hasButtons: data.hasAudioButtons || false,
-			},
-			liveStreamingDetails,
-			data.liveBroadcastContent || "none",
-			"normal",
-			Video.convertTimestamp(data.lastFetchedAt) || new Date(),
-		);
+			// Create the Video instance
+			const video = new Video(
+				content,
+				metadata,
+				channel,
+				statistics,
+				{
+					playlistTags: data.playlistTags || [],
+					userTags: data.userTags || [],
+					contentTags: data.tags,
+				},
+				{
+					count: data.audioButtonCount || 0,
+					hasButtons: data.hasAudioButtons || false,
+				},
+				liveStreamingDetails,
+				data.liveBroadcastContent || "none",
+				"normal",
+				lastFetchedAt,
+			);
+
+			return ok(video);
+		} catch (error) {
+			return err(
+				databaseError(
+					"fromFirestoreData",
+					`Unexpected error creating Video from Firestore data: ${error instanceof Error ? error.message : "Unknown error"}`,
+				),
+			);
+		}
 	}
 
 	/**
@@ -807,7 +1046,7 @@ export class Video {
 	 * Creates a copy of the video
 	 */
 	clone(): Video {
-		return new Video(
+		const result = Video.create(
 			this._content.clone(),
 			this._metadata.clone(),
 			this._channel.clone(),
@@ -819,6 +1058,96 @@ export class Video {
 			this._videoType,
 			new Date(this._lastFetchedAt),
 		);
+
+		if (result.isErr()) {
+			// This should not happen in normal circumstances since we're cloning existing valid data
+			// But if it does, we need to handle it gracefully
+			throw new Error(`Failed to clone video: ${result.error.message}`);
+		}
+
+		return result.value;
+	}
+
+	/**
+	 * Validates the entity and returns whether it's valid
+	 */
+	isValid(): boolean {
+		// Validate required value objects
+		if (!this._content.isValid()) return false;
+		if (!this._metadata.isValid()) return false;
+		if (!this._channel.isValid()) return false;
+
+		// Validate optional value objects
+		if (this._statistics && !this._statistics.isValid()) return false;
+
+		// Validate tag constraints
+		if (this._tags.userTags.length > 10) return false;
+		if (this._tags.userTags.some((tag) => tag.length < 1 || tag.length > 30)) return false;
+
+		// Validate audio button info
+		if (this._audioButtonInfo.count < -1) return false;
+
+		// Validate live broadcast content
+		const validBroadcastContent = ["none", "live", "upcoming"];
+		if (!validBroadcastContent.includes(this._liveBroadcastContent)) return false;
+
+		// Validate video type
+		const validVideoTypes = ["normal", "live", "upcoming", "archived", "premiere", "possibly_live"];
+		if (!validVideoTypes.includes(this._videoType)) return false;
+
+		return true;
+	}
+
+	/**
+	 * Returns an array of validation error messages
+	 */
+	getValidationErrors(): string[] {
+		const errors: string[] = [];
+
+		// Check required value objects
+		if (!this._content.isValid()) {
+			errors.push(...this._content.getValidationErrors().map((e) => `Content: ${e}`));
+		}
+		if (!this._metadata.isValid()) {
+			errors.push(...this._metadata.getValidationErrors().map((e) => `Metadata: ${e}`));
+		}
+		if (!this._channel.isValid()) {
+			errors.push(...this._channel.getValidationErrors().map((e) => `Channel: ${e}`));
+		}
+
+		// Check optional value objects
+		if (this._statistics && !this._statistics.isValid()) {
+			errors.push(...this._statistics.getValidationErrors().map((e) => `Statistics: ${e}`));
+		}
+
+		// Check tag constraints
+		if (this._tags.userTags.length > 10) {
+			errors.push("User tags must not exceed 10 items");
+		}
+		this._tags.userTags.forEach((tag, index) => {
+			if (tag.length < 1 || tag.length > 30) {
+				errors.push(`User tag at index ${index} must be between 1 and 30 characters`);
+			}
+		});
+
+		// Check audio button info
+		if (this._audioButtonInfo.count < -1) {
+			errors.push("Audio button count must be -1 or greater");
+		}
+
+		// Check live broadcast content
+		const validBroadcastContent = ["none", "live", "upcoming"];
+		if (!validBroadcastContent.includes(this._liveBroadcastContent)) {
+			errors.push(`Invalid live broadcast content: ${this._liveBroadcastContent}`);
+		}
+
+		// Check video type
+		const validVideoTypes = ["normal", "live", "upcoming", "archived", "premiere", "possibly_live"];
+		if (!validVideoTypes.includes(this._videoType)) {
+			errors.push(`Invalid video type: ${this._videoType}`);
+		}
+
+		return errors;
 	}
 
 	/**
@@ -1018,5 +1347,9 @@ export function convertToFrontendVideo(data: FirestoreServerVideoData | Video): 
 	}
 
 	// Convert Firestore data to Video entity and then to plain object
-	return Video.fromFirestoreData(data).toPlainObject();
+	const result = Video.fromFirestoreData(data);
+	if (result.isErr()) {
+		throw new Error(`Failed to convert Firestore data to frontend video: ${result.error.detail}`);
+	}
+	return result.value.toPlainObject();
 }

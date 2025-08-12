@@ -205,12 +205,6 @@ export interface WorkPlainObject {
 }
 
 /**
- * Frontend work data type - Plain object for Server/Client Component boundary
- * @deprecated Use WorkPlainObject instead
- */
-export type FrontendWork = WorkPlainObject;
-
-/**
  * Work list result with plain objects
  */
 export interface WorkListResultPlain {

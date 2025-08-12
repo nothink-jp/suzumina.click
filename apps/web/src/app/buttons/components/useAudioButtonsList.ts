@@ -1,11 +1,11 @@
 "use client";
 
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
-import type { AdvancedFilters } from "@suzumina.click/ui/components/custom/advanced-filter-panel";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getAudioButtonsList } from "@/app/buttons/actions";
 import {
+	type AdvancedFilters,
 	AudioButtonQueryBuilder,
 	convertFiltersToParams,
 	createAdvancedFiltersFromParams,

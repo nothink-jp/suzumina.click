@@ -2,27 +2,134 @@
  * Work Rating Value Object
  *
  * Immutable value object representing work rating information
+ * Refactored to use BaseValueObject and Result pattern for type safety
  */
-export class WorkRating {
-	constructor(
+
+import type { ValidationError } from "../../core/result";
+import { err, ok, type Result, validationError } from "../../core/result";
+import type { WorkRatingPlain } from "../../plain-objects/work-plain";
+import { BaseValueObject, type ValidatableValueObject } from "../base/value-object";
+
+/**
+ * WorkRating data structure
+ */
+interface WorkRatingData {
+	stars: number;
+	count: number;
+	average: number;
+	reviewCount?: number;
+	distribution?: Record<number, number>;
+}
+
+/**
+ * WorkRating Value Object with enhanced type safety
+ */
+export class WorkRating
+	extends BaseValueObject<WorkRating>
+	implements ValidatableValueObject<WorkRating>
+{
+	private constructor(
 		private readonly _stars: number,
 		private readonly _count: number,
 		private readonly _average: number,
 		private readonly _reviewCount?: number,
 		private readonly _distribution?: Record<number, number>,
 	) {
-		if (_stars < 0 || _stars > 5) {
-			throw new Error("Stars must be between 0 and 5");
+		super();
+	}
+
+	/**
+	 * Creates a WorkRating with validation
+	 * @param stars - Star rating (0-5)
+	 * @param count - Number of ratings
+	 * @param average - Average rating (0-5)
+	 * @param reviewCount - Optional number of reviews
+	 * @param distribution - Optional rating distribution
+	 * @returns Result containing WorkRating or ValidationError
+	 */
+	static create(
+		stars: number,
+		count: number,
+		average: number,
+		reviewCount?: number,
+		distribution?: Record<number, number>,
+	): Result<WorkRating, ValidationError> {
+		const validation = WorkRating.validate({ stars, count, average, reviewCount, distribution });
+		if (!validation.isValid) {
+			return err(validationError("workRating", validation.error ?? "評価の検証に失敗しました"));
 		}
-		if (_count < 0) {
-			throw new Error("Count cannot be negative");
+		return ok(new WorkRating(stars, count, average, reviewCount, distribution));
+	}
+
+	/**
+	 * Creates a WorkRating from data object
+	 * @param data - WorkRating data object
+	 * @returns Result containing WorkRating or ValidationError
+	 */
+	static fromData(data: WorkRatingData): Result<WorkRating, ValidationError> {
+		return WorkRating.create(
+			data.stars,
+			data.count,
+			data.average,
+			data.reviewCount,
+			data.distribution,
+		);
+	}
+
+	/**
+	 * Creates a WorkRating from plain object (for deserialization)
+	 * @param obj - Plain object to convert
+	 * @returns Result containing WorkRating or ValidationError
+	 */
+	static fromPlainObject(obj: unknown): Result<WorkRating, ValidationError> {
+		if (typeof obj !== "object" || obj === null) {
+			return err(validationError("workRating", "WorkRating must be an object"));
 		}
-		if (_average < 0 || _average > 5) {
-			throw new Error("Average must be between 0 and 5");
+
+		const data = obj as Record<string, unknown>;
+
+		if (typeof data.stars !== "number") {
+			return err(validationError("stars", "Stars must be a number"));
 		}
-		if (_reviewCount !== undefined && _reviewCount < 0) {
-			throw new Error("Review count cannot be negative");
+		if (typeof data.count !== "number") {
+			return err(validationError("count", "Count must be a number"));
 		}
+		if (typeof data.average !== "number") {
+			return err(validationError("average", "Average must be a number"));
+		}
+
+		const reviewCount = typeof data.reviewCount === "number" ? data.reviewCount : undefined;
+		const distribution =
+			data.distribution && typeof data.distribution === "object"
+				? (data.distribution as Record<number, number>)
+				: undefined;
+
+		return WorkRating.create(data.stars, data.count, data.average, reviewCount, distribution);
+	}
+
+	/**
+	 * Validates WorkRating data
+	 */
+	private static validate(data: {
+		stars: number;
+		count: number;
+		average: number;
+		reviewCount?: number;
+		distribution?: Record<number, number>;
+	}): { isValid: boolean; error?: string } {
+		if (data.stars < 0 || data.stars > 5) {
+			return { isValid: false, error: "Stars must be between 0 and 5" };
+		}
+		if (data.count < 0) {
+			return { isValid: false, error: "Count cannot be negative" };
+		}
+		if (data.average < 0 || data.average > 5) {
+			return { isValid: false, error: "Average must be between 0 and 5" };
+		}
+		if (data.reviewCount !== undefined && data.reviewCount < 0) {
+			return { isValid: false, error: "Review count cannot be negative" };
+		}
+		return { isValid: true };
 	}
 
 	get stars(): number {
@@ -120,25 +227,35 @@ export class WorkRating {
 		};
 	}
 
-	/**
-	 * Converts to plain object
-	 */
-	toPlainObject() {
-		return {
+	// ValidatableValueObject implementation
+
+	isValid(): boolean {
+		return WorkRating.validate({
 			stars: this._stars,
 			count: this._count,
 			average: this._average,
 			reviewCount: this._reviewCount,
-			distribution: this.distribution,
-			hasRatings: this.hasRatings(),
-			isHighlyRated: this.isHighlyRated(),
-			reliability: this.getReliability(),
-			formattedRating: this.format(),
-		};
+			distribution: this._distribution,
+		}).isValid;
 	}
 
+	getValidationErrors(): string[] {
+		const validation = WorkRating.validate({
+			stars: this._stars,
+			count: this._count,
+			average: this._average,
+			reviewCount: this._reviewCount,
+			distribution: this._distribution,
+		});
+		return validation.isValid ? [] : [validation.error ?? "評価の検証に失敗しました"];
+	}
+
+	// BaseValueObject implementation
+
 	equals(other: WorkRating): boolean {
-		if (!(other instanceof WorkRating)) return false;
+		if (!other || !(other instanceof WorkRating)) {
+			return false;
+		}
 
 		// Basic properties comparison
 		if (
@@ -164,15 +281,50 @@ export class WorkRating {
 		});
 	}
 
+	clone(): WorkRating {
+		const distributionCopy = this._distribution ? { ...this._distribution } : undefined;
+		return new WorkRating(
+			this._stars,
+			this._count,
+			this._average,
+			this._reviewCount,
+			distributionCopy,
+		);
+	}
+
+	toPlainObject(): WorkRatingPlain {
+		return {
+			stars: this._stars,
+			count: this._count,
+			average: this._average,
+			reviewCount: this._reviewCount,
+			distribution: this._distribution ? { ...this._distribution } : undefined,
+			hasRatings: this.hasRatings(),
+			isHighlyRated: this.isHighlyRated(),
+			reliability: this.getReliability(),
+			formattedRating: this.format(),
+		};
+	}
+
 	/**
 	 * Creates from DLsite API rating (10-50 scale)
+	 * @param apiRating - API rating (10-50)
+	 * @param count - Number of ratings
+	 * @param reviewCount - Optional review count
+	 * @param distribution - Optional distribution
+	 * @returns Result containing WorkRating or ValidationError
 	 */
 	static fromDLsiteRating(
 		apiRating: number,
 		count: number,
 		reviewCount?: number,
 		distribution?: Record<string, number>,
-	): WorkRating {
+	): Result<WorkRating, ValidationError> {
+		// Validate DLsite API rating range
+		if (apiRating < 10 || apiRating > 50) {
+			return err(validationError("apiRating", "DLsite評価は10-50の範囲である必要があります"));
+		}
+
 		const stars = apiRating / 10; // Convert 10-50 to 1-5
 		const average = stars;
 
@@ -185,49 +337,14 @@ export class WorkRating {
 			}
 		}
 
-		return new WorkRating(stars, count, average, reviewCount, numericDistribution);
-	}
-
-	/**
-	 * Creates from legacy rating info
-	 */
-	static fromLegacyRatingInfo(ratingInfo?: {
-		stars: number;
-		count: number;
-		reviewCount?: number;
-		ratingDetail?: Array<{
-			review_point: number;
-			count: number;
-			ratio: number;
-		}>;
-		averageDecimal?: number;
-	}): WorkRating | undefined {
-		if (!ratingInfo) return undefined;
-
-		// Convert rating detail to distribution
-		let distribution: Record<number, number> | undefined;
-		if (ratingInfo.ratingDetail) {
-			distribution = {};
-			for (const detail of ratingInfo.ratingDetail) {
-				distribution[detail.review_point] = detail.count;
-			}
-		}
-
-		const average = ratingInfo.averageDecimal || ratingInfo.stars;
-
-		return new WorkRating(
-			ratingInfo.stars,
-			ratingInfo.count,
-			average,
-			ratingInfo.reviewCount,
-			distribution,
-		);
+		return WorkRating.create(stars, count, average, reviewCount, numericDistribution);
 	}
 
 	/**
 	 * Creates an empty rating
+	 * @returns Result containing empty WorkRating or ValidationError
 	 */
-	static empty(): WorkRating {
-		return new WorkRating(0, 0, 0);
+	static empty(): Result<WorkRating, ValidationError> {
+		return WorkRating.create(0, 0, 0);
 	}
 }

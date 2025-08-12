@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-	convertToFrontendWork,
 	// deserializeWorkForRCC,
 	// deserializeWorkListResult,
 	// type FrontendDLsiteWorkData,
@@ -472,69 +471,7 @@ describe("WorkPaginationParamsSchema", () => {
 	});
 });
 
-describe("convertToFrontendWork", () => {
-	it("Firestoreデータを正しくフロントエンド形式に変換できる", () => {
-		const result = convertToFrontendWork(validFirestoreWork);
-
-		expect(result.productId).toBe("RJ236867");
-		expect(result.title).toBe("夏の苦い思い出");
-		expect(result.displayPrice).toContain("1,100");
-		expect(result.discountText).toBe("20%OFF");
-		expect(result.ratingText).toContain("4.5");
-		expect(result.ratingText).toContain("125");
-		expect(result.relativeUrl).toBe("/maniax/work/=/product_id/RJ236867.html");
-		expect(result.categoryName).toBe("音声作品");
-		expect(result.formattedRegistDate).toBeDefined();
-		expect(result.formattedReleaseDate).toBeDefined();
-		expect(result.thumbnailUrl2x).toBeDefined();
-		expect(result.mainImageUrl).toBeDefined();
-		expect(result.listImageUrl).toBeDefined();
-		expect(result.isNew).toBe(false);
-		expect(result.downloadCount).toBe(0);
-	});
-
-	it("割引なしの価格を正しく表示できる", () => {
-		const workWithoutDiscount = {
-			...validFirestoreWork,
-			price: {
-				current: 1000,
-				currency: "JPY",
-			},
-		};
-
-		const result = convertToFrontendWork(workWithoutDiscount);
-		expect(result.displayPrice).toBe("1,000円");
-		expect(result.discountText).toBe("");
-	});
-
-	it("評価なしの作品も正しく処理できる", () => {
-		const workWithoutRating = {
-			...validFirestoreWork,
-			rating: undefined,
-		};
-
-		const result = convertToFrontendWork(workWithoutRating);
-		expect(result.ratingText).toBe("");
-	});
-
-	it("スキーマ検証エラー時にフォールバックデータを返す", () => {
-		const invalidWork = {
-			productId: "RJ123456",
-			// 必須フィールドが不足
-		} as any;
-
-		const result = convertToFrontendWork(invalidWork);
-
-		// フォールバックデータが返される
-		expect(result.productId).toBe("RJ123456");
-		expect(result.title).toBe("不明なタイトル");
-		expect(result.displayPrice).toBe("価格不明");
-		expect(result.discountText).toBe("");
-		expect(result.ratingText).toBe("");
-		expect(result.isNew).toBe(false);
-		expect(result.downloadCount).toBe(0);
-	});
-});
+// convertToFrontendWork function has been removed - tests no longer needed
 
 // Deprecated: Serialization tests are commented out
 // describe("serializeWorkForRSC/deserializeWorkForRCC", () => {

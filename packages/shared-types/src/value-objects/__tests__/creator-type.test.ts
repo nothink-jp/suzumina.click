@@ -3,9 +3,19 @@ import {
 	CREATOR_ROLE_LABELS,
 	CREATOR_ROLE_PRIORITY,
 	CreatorRole,
-	CreatorsInfo,
+	CreatorsInfoValueObject,
 	CreatorUtils,
 } from "../work/creator-type";
+
+// Create alias for the test file - the class is exported as CreatorsInfoValueObject
+const CreatorsInfo = CreatorsInfoValueObject;
+
+// Helper function to create creators and extract from Result
+function createCreators(data: Parameters<typeof CreatorsInfo.create>[0]): CreatorsInfoValueObject {
+	const result = CreatorsInfo.create(data);
+	if (result.isErr()) throw new Error(result.error.message);
+	return result.value;
+}
 
 describe("creator-type", () => {
 	describe("CreatorRole", () => {
@@ -45,12 +55,16 @@ describe("creator-type", () => {
 
 	describe("CreatorsInfo", () => {
 		it("should create valid creators info with defaults", () => {
-			const creators = CreatorsInfo.parse({});
-			expect(creators.voice).toEqual([]);
-			expect(creators.scenario).toEqual([]);
-			expect(creators.illustration).toEqual([]);
-			expect(creators.music).toEqual([]);
-			expect(creators.other).toEqual([]);
+			const result = CreatorsInfo.create({});
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const creators = result.value;
+				expect(creators.voice).toEqual([]);
+				expect(creators.scenario).toEqual([]);
+				expect(creators.illustration).toEqual([]);
+				expect(creators.music).toEqual([]);
+				expect(creators.other).toEqual([]);
+			}
 		});
 
 		it("should create valid creators info with data", () => {
@@ -61,16 +75,20 @@ describe("creator-type", () => {
 				music: ["Composer 1"],
 				other: ["Other 1"],
 			};
-			const creators = CreatorsInfo.parse(input);
-			expect(creators.voice).toEqual(["涼花みなせ", "Voice Actor 2"]);
-			expect(creators.scenario).toEqual(["Writer 1"]);
-			expect(creators.illustration).toEqual(["Artist 1", "Artist 2"]);
-			expect(creators.music).toEqual(["Composer 1"]);
-			expect(creators.other).toEqual(["Other 1"]);
+			const result = CreatorsInfo.create(input);
+			expect(result.isOk()).toBe(true);
+			if (result.isOk()) {
+				const creators = result.value;
+				expect(creators.voice).toEqual(["涼花みなせ", "Voice Actor 2"]);
+				expect(creators.scenario).toEqual(["Writer 1"]);
+				expect(creators.illustration).toEqual(["Artist 1", "Artist 2"]);
+				expect(creators.music).toEqual(["Composer 1"]);
+				expect(creators.other).toEqual(["Other 1"]);
+			}
 		});
 
 		describe("transform methods", () => {
-			const testCreators = CreatorsInfo.parse({
+			const testCreators = createCreators({
 				voice: ["涼花みなせ", "Voice Actor 2"],
 				scenario: ["Writer 1"],
 				illustration: ["Artist 1"],
@@ -89,7 +107,7 @@ describe("creator-type", () => {
 				});
 
 				it("should handle empty creators", () => {
-					const emptyCreators = CreatorsInfo.parse({});
+					const emptyCreators = createCreators({});
 					expect(emptyCreators.getAll()).toEqual([]);
 				});
 			});
@@ -100,7 +118,7 @@ describe("creator-type", () => {
 				});
 
 				it("should return false when no creators exist", () => {
-					const emptyCreators = CreatorsInfo.parse({});
+					const emptyCreators = createCreators({});
 					expect(emptyCreators.hasCreators()).toBe(false);
 				});
 			});
@@ -121,7 +139,7 @@ describe("creator-type", () => {
 				});
 
 				it("should return 0 for empty creators", () => {
-					const emptyCreators = CreatorsInfo.parse({});
+					const emptyCreators = createCreators({});
 					expect(emptyCreators.totalCount()).toBe(0);
 				});
 			});
@@ -137,7 +155,7 @@ describe("creator-type", () => {
 				});
 
 				it("should handle empty types", () => {
-					const creators = CreatorsInfo.parse({
+					const creators = createCreators({
 						voice: ["涼花みなせ"],
 					});
 					const primary = creators.getPrimary();
@@ -149,11 +167,11 @@ describe("creator-type", () => {
 
 			describe("equals", () => {
 				it("should return true for equal creators", () => {
-					const creators1 = CreatorsInfo.parse({
+					const creators1 = createCreators({
 						voice: ["涼花みなせ", "Voice Actor 2"],
 						scenario: ["Writer 1"],
 					});
-					const creators2 = CreatorsInfo.parse({
+					const creators2 = createCreators({
 						voice: ["Voice Actor 2", "涼花みなせ"], // Different order
 						scenario: ["Writer 1"],
 					});
@@ -161,18 +179,18 @@ describe("creator-type", () => {
 				});
 
 				it("should return false for different creators", () => {
-					const creators1 = CreatorsInfo.parse({
+					const creators1 = createCreators({
 						voice: ["涼花みなせ"],
 					});
-					const creators2 = CreatorsInfo.parse({
+					const creators2 = createCreators({
 						voice: ["Voice Actor 2"],
 					});
 					expect(creators1.equals(creators2)).toBe(false);
 				});
 
 				it("should handle empty creators", () => {
-					const creators1 = CreatorsInfo.parse({});
-					const creators2 = CreatorsInfo.parse({});
+					const creators1 = createCreators({});
+					const creators2 = createCreators({});
 					expect(creators1.equals(creators2)).toBe(true);
 				});
 			});
