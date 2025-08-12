@@ -1,5 +1,11 @@
 import type { FrontendVideoData } from "@suzumina.click/shared-types";
-import { GenericCarousel } from "@suzumina.click/ui/components/custom/generic-carousel";
+import {
+	Carousel,
+	CarouselContent,
+	CarouselItem,
+	CarouselNext,
+	CarouselPrevious,
+} from "@suzumina.click/ui/components/ui/carousel";
 import VideoCard from "@/app/videos/components/VideoCard";
 import { UI_MESSAGES } from "@/constants/ui-messages";
 
@@ -8,12 +14,39 @@ interface FeaturedVideosCarouselProps {
 }
 
 export function FeaturedVideosCarousel({ videos }: FeaturedVideosCarouselProps) {
+	if (videos.length === 0) {
+		return (
+			<div className="flex items-center justify-center min-h-[240px] sm:min-h-[280px] bg-muted rounded-lg mx-2 sm:mx-0">
+				<p className="text-muted-foreground text-center px-4">{UI_MESSAGES.LOADING.GENERAL}</p>
+			</div>
+		);
+	}
+
 	return (
-		<GenericCarousel
-			items={videos}
-			renderItem={(video, index) => <VideoCard video={video} priority={index < 3} />}
-			emptyStateMessage={UI_MESSAGES.LOADING.GENERAL}
-			getItemKey={(video) => video.id || video.videoId}
-		/>
+		<Carousel
+			className="w-full"
+			opts={{
+				align: "start",
+				slidesToScroll: "auto",
+				containScroll: "trimSnaps",
+			}}
+		>
+			<CarouselContent className="-ml-2 md:-ml-4">
+				{videos.map((video, index) => (
+					<CarouselItem
+						key={video.id || video.videoId}
+						className="pl-2 md:pl-4 min-w-0"
+						style={{
+							flexBasis: "clamp(240px, 45vw, 320px)",
+							maxWidth: "320px",
+						}}
+					>
+						<VideoCard video={video} priority={index < 3} />
+					</CarouselItem>
+				))}
+			</CarouselContent>
+			<CarouselPrevious className="left-1 sm:left-2 h-10 w-10 sm:h-12 sm:w-12" />
+			<CarouselNext className="right-1 sm:right-2 h-10 w-10 sm:h-12 sm:w-12" />
+		</Carousel>
 	);
 }
