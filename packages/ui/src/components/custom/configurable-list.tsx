@@ -7,11 +7,11 @@
 
 import { ChevronDown, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Badge } from "../../ui/badge";
-import { Button } from "../../ui/button";
-import { Checkbox } from "../../ui/checkbox";
-import { Input } from "../../ui/input";
-import { Label } from "../../ui/label";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import {
 	Pagination,
 	PaginationContent,
@@ -20,29 +20,29 @@ import {
 	PaginationLink,
 	PaginationNext,
 	PaginationPrevious,
-} from "../../ui/pagination";
-import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
-import { Skeleton } from "../../ui/skeleton";
-import { Slider } from "../../ui/slider";
-import { useListData } from "./core/hooks/useListData";
-import { useListUrl } from "./core/hooks/useListUrl";
+} from "../ui/pagination";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Skeleton } from "../ui/skeleton";
+import { Slider } from "../ui/slider";
+import { useListData } from "./configurable-list/hooks/useListData";
+import { useListUrl } from "./configurable-list/hooks/useListUrl";
 import type {
 	ConfigurableListProps,
 	DataAdapter,
 	FilterConfig,
 	StandardListParams,
-} from "./core/types";
-import { generateGridClasses } from "./core/utils/classHelpers";
-import { calculatePagination } from "./core/utils/dataAdapter";
+} from "./configurable-list/types";
+import { generateGridClasses } from "./configurable-list/utils/classHelpers";
+import { calculatePagination } from "./configurable-list/utils/dataAdapter";
 import {
 	generateOptions,
 	getDefaultFilterValues,
 	hasActiveFilters,
 	normalizeOptions,
 	transformFilterValue,
-} from "./core/utils/filterHelpers";
-import { getFilterableValue, getSearchableText } from "./core/utils/typeSafeAccess";
+} from "./configurable-list/utils/filterHelpers";
+import { getFilterableValue, getSearchableText } from "./configurable-list/utils/typeSafeAccess";
 
 export function ConfigurableList<T>({
 	items: initialItems,

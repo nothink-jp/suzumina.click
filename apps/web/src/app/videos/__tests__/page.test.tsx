@@ -67,7 +67,7 @@ vi.mock("../components/VideoList", () => ({
 }));
 
 // Mock the custom list components
-vi.mock("@suzumina.click/ui/components/custom/list", () => ({
+vi.mock("@suzumina.click/ui/components/custom", () => ({
 	ConfigurableList: vi.fn(() => null),
 }));
 

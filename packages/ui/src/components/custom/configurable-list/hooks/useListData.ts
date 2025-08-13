@@ -2,6 +2,8 @@
  * データ管理用のフック
  */
 
+"use client";
+
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import type { ListDataSource, ListError, StandardListParams } from "../types";
 

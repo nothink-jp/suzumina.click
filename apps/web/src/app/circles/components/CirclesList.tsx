@@ -1,10 +1,7 @@
 "use client";
 
 import type { CirclePlainObject } from "@suzumina.click/shared-types";
-import {
-	ConfigurableList,
-	type StandardListParams,
-} from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/components/custom";
 import Link from "next/link";
 import { useCallback, useMemo } from "react";
 import { ListWrapper } from "@/components/list/ListWrapper";

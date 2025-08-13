@@ -5,10 +5,7 @@ import {
 	type CreatorPageInfo,
 	type CreatorType,
 } from "@suzumina.click/shared-types";
-import {
-	ConfigurableList,
-	type StandardListParams,
-} from "@suzumina.click/ui/components/custom/list";
+import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/components/custom";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import Link from "next/link";
 import { useCallback, useMemo } from "react";

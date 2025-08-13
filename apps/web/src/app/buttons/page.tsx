@@ -3,7 +3,7 @@ import {
 	ListPageContent,
 	ListPageHeader,
 	ListPageLayout,
-} from "@suzumina.click/ui/components/custom/list-page-layout";
+} from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
 import { getAudioButtonsList } from "./actions";
 import AudioButtonsList from "./components/AudioButtonsList";
