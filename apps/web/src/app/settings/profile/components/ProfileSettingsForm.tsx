@@ -76,6 +76,45 @@ export function ProfileSettingsForm({ user }: ProfileSettingsFormProps) {
 						<Label>Discord ID</Label>
 						<p className="text-lg font-mono">{user.discordId}</p>
 					</div>
+
+					<div className="space-y-2">
+						<Label>メンバーシップステータス</Label>
+						<div className="flex items-center gap-2">
+							{user.isFamilyMember ? (
+								<>
+									<span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3 py-1 text-sm font-semibold text-purple-700">
+										<span className="text-base">👨‍👩‍👧‍👦</span>
+										すずみなふぁみりー
+									</span>
+									<span className="text-sm text-muted-foreground">
+										1日110個まで音声ボタン作成可能
+									</span>
+								</>
+							) : (
+								<>
+									<span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+										<span className="text-base">👤</span>
+										一般ユーザー
+									</span>
+									<span className="text-sm text-muted-foreground">
+										1日10個まで音声ボタン作成可能
+									</span>
+								</>
+							)}
+						</div>
+						<p className="text-xs text-muted-foreground">
+							※ ci-en支援者は
+							<a
+								href="https://ci-en.dlsite.com/creator/9805"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-blue-600 hover:text-blue-700 underline"
+							>
+								こちら
+							</a>
+							からDiscordサーバーに参加できます
+						</p>
+					</div>
 				</CardContent>
 			</Card>
 
