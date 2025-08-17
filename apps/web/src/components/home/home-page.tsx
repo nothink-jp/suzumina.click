@@ -57,46 +57,6 @@ export function HomePage({
 						</p>
 						{/* 検索フォームをClient Componentに分離 - 遅延読み込み対応 */}
 						<LazyHomeSearchForm />
-
-						{/* プレビューリリース案内バナー */}
-						<div className="mt-6 sm:mt-8 mx-auto max-w-3xl">
-							<div className="bg-gradient-to-r from-suzuka-50 to-suzuka-100 border border-suzuka-200 rounded-lg p-4 sm:p-6">
-								<div className="flex items-start gap-3">
-									<div className="flex-shrink-0 mt-1">
-										<span className="text-2xl">🚀</span>
-									</div>
-									<div className="flex-1 space-y-3">
-										<div>
-											<h3 className="text-sm sm:text-base font-semibold text-suzuka-900 mb-2">
-												🎉 プレビューリリース中！
-											</h3>
-											<p className="text-sm text-suzuka-800 leading-relaxed">
-												現在、すずみなくりっく！はプレビューリリース段階です。
-												<br />
-												<strong className="font-semibold">音声ボタンの閲覧・利用は誰でも</strong>
-												できますが、音声ボタンの作成は
-												<strong className="font-semibold">すずみなふぁみりー</strong>
-												のDiscordメンバーの皆さまに限定させていただいております。
-											</p>
-										</div>
-										<div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-											<a
-												href="https://ci-en.dlsite.com/creator/9805"
-												target="_blank"
-												rel="noopener noreferrer"
-												className="inline-flex items-center gap-2 bg-suzuka-600 hover:bg-suzuka-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-											>
-												<span>💝</span>
-												すずみなふぁみりーに参加する
-											</a>
-											<p className="text-xs text-suzuka-700">
-												※ 涼花みなせさんのci-en支援者向けDiscordサーバーです
-											</p>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
 					</div>
 				</div>
 			</section>

@@ -40,6 +40,9 @@ export function convertToFrontendUser(data: FirestoreUserData): FrontendUserData
 		avatarUrl: createDiscordAvatarUrl(data.discordId, data.avatar),
 		memberSince: formatMemberSince(data.createdAt),
 		lastActiveText: formatRelativeTime(data.lastLoginAt),
+
+		// ファミリーメンバーシップ状態
+		isFamilyMember: data.flags?.isFamilyMember || false,
 	};
 
 	try {
