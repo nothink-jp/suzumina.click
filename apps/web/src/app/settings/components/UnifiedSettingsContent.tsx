@@ -15,14 +15,18 @@ import { Separator } from "@suzumina.click/ui/components/ui/separator";
 import { Switch } from "@suzumina.click/ui/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
 import {
-	ArrowLeft,
+	Calendar,
 	ChevronRight,
 	Cookie,
+	Eye,
+	EyeOff,
+	Info,
+	Lock,
 	RotateCcw,
-	Save,
 	Settings,
 	Shield,
 	User,
+	UserCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,7 +34,7 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 import { getCurrentConsentState, resetAllConsent } from "@/lib/consent/google-consent-mode";
-import { updateUserProfile } from "../profile/actions";
+import { updateUserProfile } from "../actions";
 
 interface UnifiedSettingsContentProps {
 	user: FrontendUserData;
@@ -74,22 +78,27 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 		updateAgeVerification(isAdult);
 	};
 
-	// プロフィール設定の保存
-	const handleSaveProfile = async () => {
+	// プロフィール公開設定の変更（即座に保存）
+	const handleProfileVisibilityChange = async (checked: boolean) => {
+		setIsPublicProfile(checked);
 		startTransition(async () => {
 			try {
 				const result = await updateUserProfile({
-					isPublicProfile,
+					isPublicProfile: checked,
 				});
 
 				if (result.success) {
-					toast.success("プロフィール設定を保存しました");
+					toast.success(checked ? "プロフィールを公開しました" : "プロフィールを非公開にしました");
 					router.refresh();
 				} else {
 					toast.error(result.error || "更新に失敗しました");
+					// エラー時は元に戻す
+					setIsPublicProfile(!checked);
 				}
 			} catch (_error) {
 				toast.error("予期しないエラーが発生しました");
+				// エラー時は元に戻す
+				setIsPublicProfile(!checked);
 			}
 		});
 	};
@@ -298,8 +307,13 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 						<TabsContent value="profile" className="space-y-6">
 							<Card>
 								<CardHeader>
-									<CardTitle>基本情報</CardTitle>
-									<CardDescription>ユーザー情報の表示設定</CardDescription>
+									<div className="flex items-center gap-3">
+										<User className="h-5 w-5 text-primary" />
+										<div>
+											<CardTitle>基本情報</CardTitle>
+											<CardDescription>ユーザー情報の表示設定</CardDescription>
+										</div>
+									</div>
 								</CardHeader>
 								<CardContent className="space-y-6">
 									<div className="space-y-2">
@@ -322,6 +336,8 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 										<Label>Discord ID</Label>
 										<p className="text-lg font-mono">{user.discordId}</p>
 									</div>
+
+									<Separator />
 
 									<div className="space-y-2">
 										<Label>メンバーシップステータス</Label>
@@ -366,22 +382,40 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 
 							<Card>
 								<CardHeader>
-									<CardTitle>プライバシー設定</CardTitle>
-									<CardDescription>プロフィールの公開範囲を設定</CardDescription>
+									<div className="flex items-center gap-3">
+										<Lock className="h-5 w-5 text-primary" />
+										<div>
+											<CardTitle>プライバシー設定</CardTitle>
+											<CardDescription>プロフィールの公開範囲を設定</CardDescription>
+										</div>
+									</div>
 								</CardHeader>
-								<CardContent>
-									<div className="flex items-center justify-between space-x-2">
-										<Label htmlFor="public-profile" className="flex flex-col space-y-1">
-											<span>プロフィールを公開</span>
-											<span className="font-normal text-sm text-muted-foreground">
+								<CardContent className="space-y-4">
+									<div className="flex items-center justify-between">
+										<div className="space-y-1">
+											<div className="flex items-center gap-2">
+												<span className="font-medium">プロフィールを公開</span>
+												{isPublicProfile ? (
+													<Badge variant="default" className="bg-green-100 text-green-800">
+														<Eye className="w-3 h-3 mr-1" />
+														公開
+													</Badge>
+												) : (
+													<Badge variant="secondary">
+														<EyeOff className="w-3 h-3 mr-1" />
+														非公開
+													</Badge>
+												)}
+											</div>
+											<p className="text-sm text-muted-foreground">
 												他のユーザーがあなたのプロフィールページを閲覧できるようになります
-											</span>
-										</Label>
+											</p>
+										</div>
 										<Switch
-											id="public-profile"
 											checked={isPublicProfile}
-											onCheckedChange={setIsPublicProfile}
+											onCheckedChange={handleProfileVisibilityChange}
 											disabled={isPending}
+											aria-label="プロフィール公開の切り替え"
 										/>
 									</div>
 								</CardContent>
@@ -389,34 +423,31 @@ export function UnifiedSettingsContent({ user }: UnifiedSettingsContentProps) {
 
 							<Card>
 								<CardHeader>
-									<CardTitle>アカウント情報</CardTitle>
-									<CardDescription>あなたの登録情報</CardDescription>
+									<div className="flex items-center gap-3">
+										<Info className="h-5 w-5 text-primary" />
+										<div>
+											<CardTitle>アカウント情報</CardTitle>
+											<CardDescription>あなたの登録情報</CardDescription>
+										</div>
+									</div>
 								</CardHeader>
 								<CardContent className="space-y-4">
-									<div className="flex justify-between">
-										<span className="text-muted-foreground">メンバー登録日</span>
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-2 text-muted-foreground">
+											<Calendar className="w-4 h-4" />
+											<span>メンバー登録日</span>
+										</div>
 										<span className="font-medium">{user.memberSince}</span>
 									</div>
-									<div className="flex justify-between">
-										<span className="text-muted-foreground">最終ログイン</span>
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-2 text-muted-foreground">
+											<UserCheck className="w-4 h-4" />
+											<span>最終ログイン</span>
+										</div>
 										<span className="font-medium">{user.lastActiveText}</span>
 									</div>
 								</CardContent>
 							</Card>
-
-							{/* 保存ボタン */}
-							<div className="flex gap-4">
-								<Button type="button" variant="outline" asChild>
-									<Link href={`/users/${user.discordId}`}>
-										<ArrowLeft className="w-4 h-4 mr-2" />
-										キャンセル
-									</Link>
-								</Button>
-								<Button onClick={handleSaveProfile} disabled={isPending}>
-									<Save className="w-4 h-4 mr-2" />
-									{isPending ? "保存中..." : "変更を保存"}
-								</Button>
-							</div>
 						</TabsContent>
 					</Tabs>
 				</div>
