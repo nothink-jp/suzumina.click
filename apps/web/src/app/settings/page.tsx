@@ -1,12 +1,15 @@
-import { SettingsPageContent } from "./components/SettingsPageContent";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { getUserByDiscordId } from "@/lib/user-firestore";
+import { UnifiedSettingsContent } from "./components/UnifiedSettingsContent";
 
 export const metadata = {
 	title: "設定",
-	description: "年齢制限、Cookie許諾、その他の設定を管理できます。",
-	keywords: ["設定", "年齢制限", "Cookie", "プライバシー", "suzumina.click"],
+	description: "アカウント設定とサイトの動作設定を管理できます。",
+	keywords: ["設定", "年齢制限", "Cookie", "プライバシー", "プロフィール", "suzumina.click"],
 	openGraph: {
 		title: "設定 | すずみなくりっく！",
-		description: "年齢制限、Cookie許諾、その他の設定を管理できます。",
+		description: "アカウント設定とサイトの動作設定を管理できます。",
 		url: "https://suzumina.click/settings",
 	},
 	alternates: {
@@ -14,6 +17,17 @@ export const metadata = {
 	},
 };
 
-export default function SettingsPage() {
-	return <SettingsPageContent />;
+export default async function SettingsPage() {
+	const session = await auth();
+
+	if (!session?.user?.discordId) {
+		redirect("/auth/signin");
+	}
+
+	const user = await getUserByDiscordId(session.user.discordId);
+	if (!user) {
+		redirect("/auth/signin");
+	}
+
+	return <UnifiedSettingsContent user={user} />;
 }
