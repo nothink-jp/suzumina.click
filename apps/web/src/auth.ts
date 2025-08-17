@@ -1,3 +1,4 @@
+import type { DocumentReference } from "@google-cloud/firestore";
 import {
 	type DiscordUser,
 	type GuildMembership,
@@ -11,7 +12,32 @@ import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { getFirestore } from "@/lib/firestore";
 import { error as logError } from "@/lib/logger";
+import { calculateDailyLimit, getJSTDateString, hasDateChangedJST } from "@/lib/rate-limit-utils";
 import { createUser, updateLastLogin, userExists } from "@/lib/user-firestore";
+
+/**
+ * Firestore内のユーザーデータ型
+ */
+type FirestoreUserData = {
+	isActive: boolean;
+	discordId: string;
+	username: string;
+	globalName?: string;
+	avatar?: string | null;
+	displayName: string;
+	role: "member" | "moderator" | "admin";
+	flags?: {
+		isFamilyMember?: boolean;
+		lastGuildCheckDate?: string;
+	};
+	dailyButtonLimit?: {
+		date: string;
+		count: number;
+		limit: number;
+		guildChecked: boolean;
+	};
+	[key: string]: unknown;
+};
 
 /**
  * Discord画像URLからアバターハッシュを抽出するヘルパー関数
@@ -85,6 +111,79 @@ async function getUserRoleFromFirestore(discordId: string): Promise<string> {
 		// エラー時はデフォルトロールを返す
 		return "member";
 	}
+}
+
+/**
+ * 日次Guildメンバーシップチェックと更新
+ */
+async function updateDailyGuildStatus(
+	userRef: DocumentReference,
+	userData: FirestoreUserData,
+	accessToken: string,
+	discordId: string,
+): Promise<{ isFamilyMember: boolean; limit: number }> {
+	const today = getJSTDateString();
+
+	try {
+		// Discord APIでGuild確認
+		const guildMembership = await fetchDiscordGuildMembership(accessToken, discordId);
+		const isFamilyMember = guildMembership ? isValidGuildMember(guildMembership) : false;
+		const newLimit = calculateDailyLimit({ isFamilyMember });
+
+		// Firestoreを更新（トランザクション使用）
+		const firestore = getFirestore();
+		await firestore.runTransaction(async (transaction) => {
+			const freshUserDoc = await transaction.get(userRef);
+			const freshData = freshUserDoc.data();
+
+			// フラグとレート制限を更新
+			const updates: Record<string, unknown> = {
+				"flags.isFamilyMember": isFamilyMember,
+				"flags.lastGuildCheckDate": today,
+				"dailyButtonLimit.limit": newLimit,
+				"dailyButtonLimit.guildChecked": true,
+			};
+
+			// 日付も変わっていたらカウントリセット
+			if (freshData?.dailyButtonLimit?.date !== today) {
+				updates["dailyButtonLimit.date"] = today;
+				updates["dailyButtonLimit.count"] = 0;
+			}
+
+			transaction.update(userRef, updates);
+		});
+
+		return { isFamilyMember, limit: newLimit };
+	} catch (error) {
+		// Guildチェック失敗時は前回の値を使用
+		if (process.env.NODE_ENV === "development") {
+			logError("Guild check failed", { userId: discordId, error });
+		}
+		return {
+			isFamilyMember: userData.flags?.isFamilyMember || false,
+			limit: userData.dailyButtonLimit?.limit || 10,
+		};
+	}
+}
+
+/**
+ * ユーザーセッション情報を構築
+ */
+function buildUserSession(
+	userData: FirestoreUserData,
+	guildMembership?: GuildMembership,
+): UserSession {
+	return {
+		discordId: userData.discordId,
+		username: userData.username,
+		globalName: userData.globalName,
+		avatar: userData.avatar || undefined,
+		displayName: userData.displayName,
+		role: userData.role,
+		guildMembership,
+		isActive: userData.isActive,
+		isFamilyMember: userData.flags?.isFamilyMember || false,
+	};
 }
 
 /**
@@ -167,12 +266,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 					account.providerAccountId,
 				);
 
-				if (!guildMembership || !isValidGuildMember(guildMembership)) {
-					return false; // ログイン拒否
-				}
+				// Guildメンバーシップは確認するが、必須ではない（一般ユーザーも許可）
+				const isFamilyMember = guildMembership ? isValidGuildMember(guildMembership) : false;
 
-				// Guild情報をユーザープロファイルに保存（次のcallbackで使用）
-				user.guildMembership = guildMembership;
+				// Guild情報とフラグをユーザープロファイルに保存（次のcallbackで使用）
+				user.guildMembership = guildMembership || undefined;
+				user.isFamilyMember = isFamilyMember;
 			}
 
 			return true;
@@ -181,11 +280,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 		async jwt({ token, user, account }) {
 			// 初回ログイン時にユーザー情報とGuild情報を保存
 			if (user && account?.provider === "discord" && account.providerAccountId) {
+				// アクセストークンを保存（日次Guildチェック用）
+				if (account.access_token) {
+					token.accessToken = account.access_token;
+				}
 				const discordUser = createDiscordUserObject(account.providerAccountId, user);
 				const guildMembership = user.guildMembership as GuildMembership;
 
 				token.discordUser = discordUser;
 				token.guildMembership = guildMembership;
+				token.isFamilyMember = user.isFamilyMember;
 				token.displayName = resolveDisplayName(
 					undefined, // displayNameは後でユーザーが設定
 					discordUser.globalName,
@@ -203,72 +307,62 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 			const extendedToken = token as {
 				discordUser?: DiscordUser;
 				guildMembership?: GuildMembership;
+				accessToken?: string;
+				isFamilyMember?: boolean;
 				[key: string]: unknown;
 			};
-			if (
-				extendedToken.discordUser &&
-				extendedToken.guildMembership &&
-				extendedToken.discordUser.id
-			) {
-				try {
-					// Firestoreから最新のユーザー情報を取得
-					const firestore = getFirestore();
-					const userDoc = await firestore
-						.collection("users")
-						.doc(extendedToken.discordUser.id)
-						.get();
 
-					if (!userDoc.exists) {
-						// セッションを無効化するため、userをundefinedに設定
-						return { ...session, user: undefined };
-					}
-
-					const user = userDoc.data() as {
-						isActive: boolean;
-						discordId: string;
-						username: string;
-						globalName?: string;
-						avatar?: string | null;
-						displayName: string;
-						role: "member" | "moderator" | "admin";
-						[key: string]: unknown;
-					};
-
-					if (!user.isActive) {
-						// セッションを無効化するため、userをundefinedに設定
-						return { ...session, user: undefined };
-					}
-
-					// UserSessionスキーマに準拠したセッション情報を作成
-					const userSession: UserSession = {
-						discordId: user.discordId,
-						username: user.username,
-						globalName: user.globalName,
-						avatar: user.avatar,
-						displayName: user.displayName,
-						role: user.role,
-						guildMembership: extendedToken.guildMembership as GuildMembership,
-						isActive: user.isActive,
-					};
-
-					// スキーマ検証
-					const validatedUserSession = UserSessionSchema.parse(userSession);
-
-					// ログイン時刻を更新（非同期、エラーは無視）
-					updateLastLogin(user.discordId).catch((error) => {
-						if (process.env.NODE_ENV === "development") {
-							logError("updateLastLogin error:", error);
-						}
-					});
-
-					return { ...session, user: validatedUserSession };
-				} catch (_error) {
-					// 検証失敗時はセッションを無効化
-					return { ...session, user: undefined };
-				}
+			if (!extendedToken.discordUser?.id) {
+				return session;
 			}
 
-			return session;
+			try {
+				// Firestoreから最新のユーザー情報を取得
+				const firestore = getFirestore();
+				const userRef = firestore.collection("users").doc(extendedToken.discordUser.id);
+				const userDoc = await userRef.get();
+
+				if (!userDoc.exists) {
+					return { ...session, user: undefined };
+				}
+
+				const userData = userDoc.data() as FirestoreUserData;
+				if (!userData?.isActive) {
+					return { ...session, user: undefined };
+				}
+
+				// 日次Guildチェックが必要な場合
+				if (hasDateChangedJST(userData.flags?.lastGuildCheckDate) && extendedToken.accessToken) {
+					const guildStatus = await updateDailyGuildStatus(
+						userRef,
+						userData,
+						extendedToken.accessToken,
+						extendedToken.discordUser.id,
+					);
+
+					// userDataを更新
+					if (!userData.flags) userData.flags = {};
+					userData.flags.isFamilyMember = guildStatus.isFamilyMember;
+					if (userData.dailyButtonLimit) {
+						userData.dailyButtonLimit.limit = guildStatus.limit;
+					}
+				}
+
+				// セッション情報を構築
+				const userSession = buildUserSession(userData, extendedToken.guildMembership);
+				const validatedUserSession = UserSessionSchema.parse(userSession);
+
+				// ログイン時刻を非同期更新
+				updateLastLogin(userData.discordId).catch((error) => {
+					if (process.env.NODE_ENV === "development") {
+						logError("updateLastLogin error:", error);
+					}
+				});
+
+				return { ...session, user: validatedUserSession };
+			} catch (_error) {
+				return { ...session, user: undefined };
+			}
 		},
 	},
 
@@ -288,7 +382,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 			}
 
 			// Discord認証での新規ユーザーの場合、Firestoreにユーザーデータを作成
-			if (account?.provider === "discord" && user.guildMembership) {
+			if (account?.provider === "discord") {
 				await handleNewDiscordUser(account.providerAccountId, user);
 			}
 		},
@@ -305,6 +399,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 declare module "next-auth" {
 	interface User {
 		guildMembership?: GuildMembership;
+		isFamilyMember?: boolean;
 	}
 
 	interface Session {

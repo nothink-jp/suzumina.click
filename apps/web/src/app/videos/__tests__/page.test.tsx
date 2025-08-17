@@ -69,6 +69,9 @@ vi.mock("../components/VideoList", () => ({
 // Mock the custom list components
 vi.mock("@suzumina.click/ui/components/custom", () => ({
 	ConfigurableList: vi.fn(() => null),
+	ListPageLayout: ({ children }: any) => <div>{children}</div>,
+	ListPageHeader: ({ children }: any) => <div>{children}</div>,
+	ListPageContent: ({ children }: any) => <div>{children}</div>,
 }));
 
 // Mock Next.js navigation

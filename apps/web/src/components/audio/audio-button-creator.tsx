@@ -5,10 +5,12 @@ import { YouTubePlayer } from "@suzumina.click/ui/components/custom/youtube-play
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useCallback } from "react";
 import { createAudioButton } from "@/app/buttons/actions";
 import { useAudioButtonEditor } from "@/hooks/use-audio-button-editor";
 import { BasicInfoPanel } from "./basic-info-panel";
+import { CreateButtonLimit } from "./create-button-limit";
 import { TimeControlPanel } from "./time-control-panel";
 import { UsageGuide } from "./usage-guide";
 
@@ -26,6 +28,7 @@ export function AudioButtonCreator({
 	initialStartTime = 0,
 }: AudioButtonCreatorProps) {
 	const router = useRouter();
+	const { data: session } = useSession();
 
 	// 共通の音声ボタン編集ロジック
 	const editor = useAudioButtonEditor({
@@ -91,8 +94,17 @@ export function AudioButtonCreator({
 		<div className="min-h-screen bg-background">
 			<div className="container mx-auto px-4 py-6">
 				<div className="mb-6">
-					<h1 className="text-2xl font-bold mb-2">音声ボタンを作成</h1>
-					<p className="text-muted-foreground text-sm">動画: {videoTitle}</p>
+					<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+						<div>
+							<h1 className="text-2xl font-bold mb-2">音声ボタンを作成</h1>
+							<p className="text-muted-foreground text-sm">動画: {videoTitle}</p>
+						</div>
+						{session?.user?.discordId && (
+							<div className="sm:min-w-[280px]">
+								<CreateButtonLimit userId={session.user.discordId} />
+							</div>
+						)}
+					</div>
 				</div>
 
 				{error && (

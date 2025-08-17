@@ -12,6 +12,17 @@ vi.mock("@/app/buttons/actions", () => ({
 	}),
 }));
 
+// Mock rate limit actions
+vi.mock("@/actions/rate-limit-actions", () => ({
+	getUserRateLimitInfo: vi.fn().mockResolvedValue({
+		canCreate: true,
+		current: 5,
+		limit: 10,
+		remaining: 5,
+		isFamilyMember: false,
+	}),
+}));
+
 // Mock Next.js router
 const mockPush = vi.fn();
 const mockBack = vi.fn();
@@ -20,6 +31,22 @@ vi.mock("next/navigation", () => ({
 		push: mockPush,
 		back: mockBack,
 	}),
+}));
+
+// Mock next-auth
+vi.mock("next-auth/react", () => ({
+	useSession: () => ({
+		data: {
+			user: {
+				discordId: "test-user-id",
+				username: "Test User",
+				displayName: "Test User",
+				role: "member",
+			},
+		},
+		status: "authenticated",
+	}),
+	SessionProvider: ({ children }: any) => <div>{children}</div>,
 }));
 
 // Mock YouTubePlayer with player methods

@@ -16,19 +16,11 @@ function SignInForm({ callbackUrl, error }: { callbackUrl?: string; error?: stri
 					{error && (
 						<div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
 							<p className="text-red-700 text-sm">
-								{error === "AccessDenied" ? (
-									<>
-										<strong>アクセスが拒否されました</strong>
-										<br />
-										このサイトは「すずみなふぁみりー」Discordサーバーのメンバー限定です。
-										<br />
-										先にDiscordサーバーにご参加ください。
-									</>
-								) : error === "Configuration" ? (
-									"認証設定にエラーがあります。管理者にお問い合わせください。"
-								) : (
-									"ログインに失敗しました。もう一度お試しください。"
-								)}
+								{error === "AccessDenied"
+									? "アクセスが拒否されました。もう一度お試しください。"
+									: error === "Configuration"
+										? "認証設定にエラーがあります。管理者にお問い合わせください。"
+										: "ログインに失敗しました。もう一度お試しください。"}
 							</p>
 						</div>
 					)}
@@ -56,20 +48,18 @@ function SignInForm({ callbackUrl, error }: { callbackUrl?: string; error?: stri
 				</form>
 
 				<div className="text-center text-sm text-gray-500 space-y-3">
-					<p>
-						ログインすることで、あなたが「すずみなふぁみりー」Discord
-						サーバーのメンバーであることを確認します。
-					</p>
+					<p>Discordアカウントでログインして、音声ボタンを作成・共有しましょう！</p>
 
 					{/* プレビューリリース案内 */}
 					<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
 						<div className="flex items-start gap-2">
-							<span className="text-lg">🚀</span>
+							<span className="text-lg">🎉</span>
 							<div className="space-y-2">
-								<h4 className="font-semibold text-blue-900 text-sm">プレビューリリース中</h4>
+								<h4 className="font-semibold text-blue-900 text-sm">一般公開スタート！</h4>
 								<p className="text-blue-800 text-xs leading-relaxed">
-									現在、すずみなくりっく！はプレビューリリース段階です。
-									音声ボタンの作成機能は「すずみなふぁみりー」メンバー限定となっております。
+									すずみなくりっく！は全てのDiscordユーザーに公開されました。
+									<br />• 一般ユーザー：1日10個まで音声ボタン作成可能
+									<br />• ふぁみりーメンバー：1日110個まで音声ボタン作成可能
 								</p>
 								<div className="pt-2">
 									<a
