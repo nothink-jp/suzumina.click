@@ -8,6 +8,7 @@ import {
 	parseDurationToSeconds,
 	type UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
+import { checkRateLimit, incrementButtonCount } from "@/actions/rate-limit-actions";
 import { auth } from "@/auth";
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
@@ -372,6 +373,70 @@ export async function getAudioButtonsList(
 }
 
 /**
+ * 動画が音声ボタン作成可能かチェック
+ */
+async function validateVideoForAudioButton(
+	videoId: string,
+	firestore: ReturnType<typeof getFirestore>,
+): Promise<{ valid: boolean; error?: string }> {
+	const videoRef = firestore.collection("videos").doc(videoId);
+	const videoDoc = await videoRef.get();
+
+	if (!videoDoc.exists) {
+		return { valid: false, error: "指定された動画が見つかりません" };
+	}
+
+	const videoData = videoDoc.data();
+
+	// 埋め込み制限チェック
+	if (videoData?.status?.embeddable === false) {
+		return {
+			valid: false,
+			error: "この動画は埋め込みが制限されているため、音声ボタンを作成できません",
+		};
+	}
+
+	// 配信アーカイブチェック
+	const hasLiveStreamingDetails = videoData?.liveStreamingDetails?.actualEndTime;
+	const duration = videoData?.duration;
+	const isArchivedStream =
+		hasLiveStreamingDetails && duration && parseDurationToSeconds(duration) > 15 * 60;
+
+	if (!isArchivedStream && videoData?.videoType !== "archived") {
+		return { valid: false, error: "音声ボタンを作成できるのは配信アーカイブのみです" };
+	}
+
+	return { valid: true };
+}
+
+/**
+ * 動画のaudioButtonCountを更新
+ */
+async function updateVideoButtonCount(
+	videoId: string,
+	firestore: ReturnType<typeof getFirestore>,
+): Promise<void> {
+	try {
+		const videoRef = firestore.collection("videos").doc(videoId);
+		const videoDoc = await videoRef.get();
+		if (videoDoc.exists) {
+			const videoData = videoDoc.data();
+			const currentCount = videoData?.audioButtonCount || 0;
+			await videoRef.update({
+				audioButtonCount: currentCount + 1,
+				hasAudioButtons: true,
+				updatedAt: new Date().toISOString(),
+			});
+		}
+	} catch (updateError) {
+		logger.warn("動画のaudioButtonCount更新エラー", {
+			videoId,
+			error: updateError,
+		});
+	}
+}
+
+/**
  * Create audio button
  */
 export async function createAudioButton(
@@ -379,48 +444,33 @@ export async function createAudioButton(
 ): Promise<{ success: true; data: { id: string } } | { success: false; error: string }> {
 	try {
 		// 入力検証
-		if (!input.title || input.title.trim() === "") {
+		if (!input.title?.trim()) {
 			return { success: false, error: "入力データが無効です" };
 		}
 
 		const session = await auth();
 		if (!session?.user) {
-			return { success: false, error: "認証が必要です" };
+			return { success: false, error: "ログインが必要です" };
+		}
+
+		// レート制限チェック
+		const rateLimit = await checkRateLimit(session.user.discordId);
+		if (!rateLimit.canCreate) {
+			return {
+				success: false,
+				error: `本日の作成上限（${rateLimit.limit}個）に達しています。明日また作成できます。`,
+			};
 		}
 
 		const firestore = getFirestore();
 
-		// 動画タイプチェック（配信アーカイブのみ音声ボタン作成可能）
-		const videoRef = firestore.collection("videos").doc(input.sourceVideoId);
-		const videoDoc = await videoRef.get();
-		if (!videoDoc.exists) {
-			return { success: false, error: "指定された動画が見つかりません" };
+		// 動画検証
+		const videoValidation = await validateVideoForAudioButton(input.sourceVideoId, firestore);
+		if (!videoValidation.valid) {
+			return { success: false, error: videoValidation.error || "動画の検証に失敗しました" };
 		}
 
-		const videoData = videoDoc.data();
-
-		// 埋め込み制限チェック
-		if (videoData?.status?.embeddable === false) {
-			return {
-				success: false,
-				error: "この動画は埋め込みが制限されているため、音声ボタンを作成できません",
-			};
-		}
-
-		// 配信アーカイブチェック（liveStreamingDetailsの存在と実際の配信時間を確認）
-		const hasLiveStreamingDetails = videoData?.liveStreamingDetails?.actualEndTime;
-		const duration = videoData?.duration;
-
-		// 15分以上の動画で、配信履歴がある場合のみ許可
-		const isArchivedStream =
-			hasLiveStreamingDetails && duration && parseDurationToSeconds(duration) > 15 * 60;
-
-		if (!isArchivedStream) {
-			// videoTypeも確認（互換性のため）
-			if (videoData?.videoType !== "archived") {
-				return { success: false, error: "音声ボタンを作成できるのは配信アーカイブのみです" };
-			}
-		}
+		// 音声ボタン作成
 		const docRef = await firestore.collection("audioButtons").add({
 			...input,
 			createdBy: session.user.discordId,
@@ -434,29 +484,16 @@ export async function createAudioButton(
 			isPublic: input.isPublic ?? true,
 		});
 
-		// Update with ID
 		await docRef.update({ id: docRef.id });
 
-		// 動画のaudioButtonCountを更新
-		try {
-			const videoRef = firestore.collection("videos").doc(input.sourceVideoId);
-			const videoDoc = await videoRef.get();
-			if (videoDoc.exists) {
-				const videoData = videoDoc.data();
-				const currentCount = videoData?.audioButtonCount || 0;
-				await videoRef.update({
-					audioButtonCount: currentCount + 1,
-					hasAudioButtons: true,
-					updatedAt: new Date().toISOString(),
-				});
-			}
-		} catch (updateError) {
-			// 動画カウント更新エラーはログのみ（音声ボタン作成は成功として扱う）
-			logger.warn("動画のaudioButtonCount更新エラー", {
-				videoId: input.sourceVideoId,
-				error: updateError,
-			});
+		// レート制限カウントを増やす
+		const incremented = await incrementButtonCount(session.user.discordId);
+		if (!incremented) {
+			logger.warn("レート制限に達した後のボタン作成", { userId: session.user.discordId });
 		}
+
+		// 動画カウント更新（非同期）
+		await updateVideoButtonCount(input.sourceVideoId, firestore);
 
 		return { success: true, data: { id: docRef.id } };
 	} catch (error) {

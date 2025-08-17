@@ -105,6 +105,7 @@
 		"./lib/*": "./src/lib/*.ts",
 		"./components/*": "./src/components/*.tsx",
 		"./components/ui/*": "./src/components/ui/*.tsx",
+		"./components/custom": "./src/components/custom/index.ts",
 		"./components/custom/*": "./src/components/custom/*.tsx",
 		"./hooks/*": "./src/hooks/*.ts",
 		"./test-utils/*": "./src/test-utils/*.ts"

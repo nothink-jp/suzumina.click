@@ -11,11 +11,13 @@ import {
 	FrontendUserSchema,
 	formatMemberSince,
 	formatRelativeTime,
+	isValidGuildMember,
 	resolveDisplayName,
 	type UpdateUserInput,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
 import { error as logError } from "./logger";
+import { calculateDailyLimit, getJSTDateString } from "./rate-limit-utils";
 
 /**
  * Firestoreユーザーデータをフロントエンド表示用に変換
@@ -83,6 +85,13 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 			input.displayName ||
 			resolveDisplayName(undefined, input.discordUser.globalName, input.discordUser.username);
 
+		// Guildメンバーシップの確認
+		const isFamilyMember = input.guildMembership
+			? isValidGuildMember(input.guildMembership)
+			: false;
+		const today = getJSTDateString();
+		const dailyLimit = calculateDailyLimit({ isFamilyMember });
+
 		const userData: FirestoreUserData = {
 			discordId: input.discordUser.id,
 			username: input.discordUser.username,
@@ -92,6 +101,16 @@ export async function createUser(input: CreateUserInput): Promise<FrontendUserDa
 			displayName,
 			isActive: true,
 			role: "member", // 新規ユーザーは全てmember権限から開始
+			flags: {
+				isFamilyMember,
+				lastGuildCheckDate: today,
+			},
+			dailyButtonLimit: {
+				date: today,
+				count: 0,
+				limit: dailyLimit,
+				guildChecked: true,
+			},
 			createdAt: now,
 			updatedAt: now,
 			lastLoginAt: now,

@@ -71,6 +71,24 @@ export const FirestoreUserSchema = z.object({
 	// 権限・ロール
 	role: z.enum(["member", "moderator", "admin"]).default("member"),
 
+	// ユーザーフラグ（権限管理用）
+	flags: z
+		.object({
+			isFamilyMember: z.boolean().default(false),
+			lastGuildCheckDate: z.string().optional(), // YYYY-MM-DD形式
+		})
+		.optional(),
+
+	// レート制限
+	dailyButtonLimit: z
+		.object({
+			date: z.string(), // YYYY-MM-DD形式（JST）
+			count: z.number().int().min(0).default(0),
+			limit: z.number().int().min(0).default(10),
+			guildChecked: z.boolean().default(false),
+		})
+		.optional(),
+
 	// 管理情報
 	createdAt: z.string().datetime({
 		message: "作成日時はISO形式の日時である必要があります",
@@ -123,8 +141,9 @@ export const UserSessionSchema = z.object({
 	avatar: z.string().nullable().optional(),
 	displayName: z.string(),
 	role: z.enum(["member", "moderator", "admin"]),
-	guildMembership: GuildMembershipSchema,
+	guildMembership: GuildMembershipSchema.optional(), // 一般ユーザーはGuildメンバーでない可能性
 	isActive: z.boolean(),
+	isFamilyMember: z.boolean().optional(), // セッションにフラグ情報を追加
 });
 
 /**
@@ -176,6 +195,20 @@ export type CreateUserInput = z.infer<typeof CreateUserInputSchema>;
 export type UpdateUserInput = z.infer<typeof UpdateUserInputSchema>;
 export type UserQuery = z.infer<typeof UserQuerySchema>;
 export type UserListResult = z.infer<typeof UserListResultSchema>;
+
+// ユーザーフラグの型定義
+export type UserFlags = {
+	isFamilyMember: boolean;
+	lastGuildCheckDate?: string;
+};
+
+// レート制限の型定義
+export type DailyButtonLimit = {
+	date: string;
+	count: number;
+	limit: number;
+	guildChecked: boolean;
+};
 
 /**
  * ユーザーロール表示名を取得するヘルパー関数
