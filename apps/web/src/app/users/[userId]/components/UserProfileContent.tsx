@@ -88,7 +88,7 @@ function UserHeader({ user, isOwnProfile }: { user: FrontendUserData; isOwnProfi
 			<div className="flex gap-2">
 				{isOwnProfile && (
 					<Button variant="outline" size="sm" asChild>
-						<Link href="/settings/profile">
+						<Link href="/settings">
 							<Settings className="w-4 h-4 mr-2" />
 							設定
 						</Link>

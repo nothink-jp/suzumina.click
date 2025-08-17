@@ -23,7 +23,7 @@ export async function updateUserProfile(data: UpdateProfileData) {
 
 		// キャッシュを再検証
 		revalidatePath(`/users/${session.user.discordId}`);
-		revalidatePath("/settings/profile");
+		revalidatePath("/settings");
 
 		return { success: true };
 	} catch (_error) {
