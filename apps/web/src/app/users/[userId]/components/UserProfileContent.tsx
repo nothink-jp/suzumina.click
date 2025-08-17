@@ -67,6 +67,15 @@ function UserHeader({ user, isOwnProfile }: { user: FrontendUserData; isOwnProfi
 			<div className="flex-1">
 				<h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
 					{user.displayName}
+					{user.isFamilyMember && (
+						<Badge
+							variant="default"
+							className="bg-purple-100 text-purple-700 hover:bg-purple-200 text-xs"
+						>
+							<span className="mr-1">👨‍👩‍👧‍👦</span>
+							すずみなふぁみりー
+						</Badge>
+					)}
 					{user.role === "admin" && (
 						<Badge variant="secondary" className="text-xs">
 							<Shield className="w-3 h-3 mr-1" />
