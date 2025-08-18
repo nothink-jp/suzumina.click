@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+	detectWorkLanguage,
 	filterWorksByLanguage,
 	getWorkLanguageDisplayName,
 	getWorkLanguageDisplayNameSafe,
-	getWorkPrimaryLanguage,
 	WORK_LANGUAGE_DISPLAY_NAMES,
 	type WorkLanguage,
 } from "../work";
@@ -60,7 +60,7 @@ describe("Work Language Mapping", () => {
 		});
 	});
 
-	describe("getWorkPrimaryLanguage", () => {
+	describe("detectWorkLanguage", () => {
 		// テスト用の最小限のwork objectを作成するヘルパー
 		const createMockWork = (id?: string, overrides: Partial<any> = {}) => ({
 			id: id || "test-id",
@@ -93,57 +93,57 @@ describe("Work Language Mapping", () => {
 
 		it("日本語作品を正しく判定する", () => {
 			const work = createMockWork(undefined, { genres: ["日本語"] });
-			expect(getWorkPrimaryLanguage(work)).toBe("ja");
+			expect(detectWorkLanguage(work)).toBe("ja");
 		});
 
 		it("英語作品を正しく判定する", () => {
 			const work = createMockWork(undefined, { genres: ["english"] });
-			expect(getWorkPrimaryLanguage(work)).toBe("en");
+			expect(detectWorkLanguage(work)).toBe("en");
 		});
 
 		it("中国語作品を正しく判定する", () => {
 			const work = createMockWork(undefined, { genres: ["中文"] });
-			expect(getWorkPrimaryLanguage(work)).toBe("zh-cn");
+			expect(detectWorkLanguage(work)).toBe("zh-cn");
 		});
 
 		it("韓国語作品を正しく判定する", () => {
 			const work = createMockWork(undefined, { genres: ["한국어"] });
-			expect(getWorkPrimaryLanguage(work)).toBe("ko");
+			expect(detectWorkLanguage(work)).toBe("ko");
 		});
 
 		it("languageDownloadsのJPNコードを正しく判定する", () => {
 			const work = createMockWork(undefined, {
 				languageDownloads: [{ lang: "JPN", label: "日本語" }],
 			});
-			expect(getWorkPrimaryLanguage(work)).toBe("ja");
+			expect(detectWorkLanguage(work)).toBe("ja");
 		});
 
 		it("languageDownloadsのENGコードを正しく判定する", () => {
 			const work = createMockWork(undefined, {
 				languageDownloads: [{ lang: "ENG", label: "English" }],
 			});
-			expect(getWorkPrimaryLanguage(work)).toBe("en");
+			expect(detectWorkLanguage(work)).toBe("en");
 		});
 
 		it("languageDownloadsのCHI_HANSコードを正しく判定する", () => {
 			const work = createMockWork(undefined, {
 				languageDownloads: [{ lang: "CHI_HANS", label: "簡体中文" }],
 			});
-			expect(getWorkPrimaryLanguage(work)).toBe("zh-cn");
+			expect(detectWorkLanguage(work)).toBe("zh-cn");
 		});
 
 		it("languageDownloadsのCHI_HANTコードを正しく判定する", () => {
 			const work = createMockWork(undefined, {
 				languageDownloads: [{ lang: "CHI_HANT", label: "繁体中文" }],
 			});
-			expect(getWorkPrimaryLanguage(work)).toBe("zh-tw");
+			expect(detectWorkLanguage(work)).toBe("zh-tw");
 		});
 
 		it("languageDownloadsのKO_KRコードを正しく判定する", () => {
 			const work = createMockWork(undefined, {
 				languageDownloads: [{ lang: "KO_KR", label: "한국어" }],
 			});
-			expect(getWorkPrimaryLanguage(work)).toBe("ko");
+			expect(detectWorkLanguage(work)).toBe("ko");
 		});
 
 		it("複数のlanguageDownloadsから現在の作品に対応する言語を正しく判定する", () => {
@@ -156,7 +156,7 @@ describe("Work Language Mapping", () => {
 					{ workno: "RJ01209126", lang: "JPN", label: "日本語" },
 				],
 			});
-			expect(getWorkPrimaryLanguage(work)).toBe("en");
+			expect(detectWorkLanguage(work)).toBe("en");
 		});
 
 		it("対応するworknoが見つからない場合は最初の要素を使用する", () => {
@@ -167,29 +167,29 @@ describe("Work Language Mapping", () => {
 					{ workno: "RJ01424302", lang: "ENG", label: "英語" },
 				],
 			});
-			expect(getWorkPrimaryLanguage(work)).toBe("zh-cn");
+			expect(detectWorkLanguage(work)).toBe("zh-cn");
 		});
 
 		it("languageDownloadsの未対応言語コードをotherとして判定する", () => {
 			const work = createMockWork(undefined, {
-				languageDownloads: [{ lang: "FR", label: "French" }],
+				languageDownloads: [{ lang: "UNKNOWN", label: "Unknown Language" }],
 			});
-			expect(getWorkPrimaryLanguage(work)).toBe("other");
+			expect(detectWorkLanguage(work)).toBe("other");
 		});
 
-		it("言語情報がない場合はデフォルトで日本語を返す", () => {
+		it("言語情報がない場合はnullを返す", () => {
 			const work = createMockWork(undefined, { genres: ["voice", "asmr"] });
-			expect(getWorkPrimaryLanguage(work)).toBe("ja");
+			expect(detectWorkLanguage(work)).toBeNull();
 		});
 
 		it("genresがundefinedでもエラーにならない", () => {
 			const work = createMockWork(undefined, { genres: undefined });
-			expect(getWorkPrimaryLanguage(work)).toBe("ja");
+			expect(detectWorkLanguage(work)).toBeNull();
 		});
 
 		it("tagsがundefinedでもエラーにならない", () => {
 			const work = createMockWork(undefined, { genres: ["voice"] });
-			expect(getWorkPrimaryLanguage(work)).toBe("ja");
+			expect(detectWorkLanguage(work)).toBeNull();
 		});
 	});
 

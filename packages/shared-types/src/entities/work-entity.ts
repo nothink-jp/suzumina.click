@@ -202,6 +202,8 @@ export class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
 	/**
 	 * Creates Work from Firestore data (most important method)
 	 * Returns Result<Work, DatabaseError> for proper error handling
+	 *
+	 * @deprecated Use WorkFactory.fromFirestoreData() instead
 	 */
 	static fromFirestoreData(data: WorkDocument): Result<Work, DatabaseError> {
 		try {

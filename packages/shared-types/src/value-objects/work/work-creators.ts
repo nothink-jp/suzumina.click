@@ -416,28 +416,6 @@ export class WorkCreators
 	}
 
 	/**
-	 * Creates from legacy arrays (for backward compatibility)
-	 * @param data - Legacy array data
-	 * @returns Result containing WorkCreators or ValidationError
-	 */
-	static fromLegacyArrays(data: {
-		voiceActors?: string[];
-		scenario?: string[];
-		illustration?: string[];
-		music?: string[];
-		author?: string[];
-	}): Result<WorkCreators, ValidationError> {
-		// レガシー配列からはIDがないので、名前をIDとして使用
-		return WorkCreators.create(
-			(data.voiceActors || []).map((name) => ({ id: name, name })),
-			(data.scenario || []).map((name) => ({ id: name, name })),
-			(data.illustration || []).map((name) => ({ id: name, name })),
-			(data.music || []).map((name) => ({ id: name, name })),
-			(data.author || []).map((name) => ({ id: name, name })),
-		);
-	}
-
-	/**
 	 * Creates an empty WorkCreators instance
 	 * @returns Empty WorkCreators
 	 */
