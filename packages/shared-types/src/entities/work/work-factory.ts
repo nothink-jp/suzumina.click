@@ -6,7 +6,7 @@
  */
 
 import type { DatabaseError } from "../../core/result";
-import { databaseError, err, type Result } from "../../core/result";
+import { databaseError, err, ok, type Result } from "../../core/result";
 import type { WorkPlainObject } from "../../plain-objects/work-plain";
 import { Circle } from "../../value-objects/work/circle";
 import { WorkCreators } from "../../value-objects/work/work-creators";
@@ -49,7 +49,7 @@ function setBasicProperties(
 	}
 
 	// Set Title
-	const titleResult = WorkTitle.create(data.title, data.maskedTitle, data.titleKana, data.altTitle);
+	const titleResult = WorkTitle.create(data.title, data.titleMasked, data.titleKana, data.altName);
 	if (titleResult.isErr()) {
 		return err(databaseError(titleResult.error.message, "INVALID_DATA"));
 	}
@@ -76,7 +76,7 @@ function setBasicProperties(
 		return err(databaseError(circleBuilderResult.error.message, "INVALID_DATA"));
 	}
 
-	return circleBuilderResult;
+	return ok(circleBuilderResult.value);
 }
 
 /**
@@ -87,42 +87,55 @@ function setCreatorsAndFinancials(
 	data: WorkDocument,
 ): Result<WorkBuilder, DatabaseError> {
 	// Set Creators
-	const creatorsResult = WorkCreators.fromCreatorsObject(data.creators);
-	if (creatorsResult.isErr()) {
-		return err(databaseError(creatorsResult.error.message, "INVALID_DATA"));
-	}
-	const creatorsBuilderResult = builder.withCreators(creatorsResult.value);
-	if (creatorsBuilderResult.isErr()) {
-		return err(databaseError(creatorsBuilderResult.error.message, "INVALID_DATA"));
+	let creatorsBuilderResult = builder;
+	if (data.creators) {
+		// Transform creators data to ensure id is present
+		const transformedCreators = {
+			voice_by: data.creators.voice_by?.map((c) => ({ id: c.id || "UNKNOWN", name: c.name })) || [],
+			scenario_by:
+				data.creators.scenario_by?.map((c) => ({ id: c.id || "UNKNOWN", name: c.name })) || [],
+			illust_by:
+				data.creators.illust_by?.map((c) => ({ id: c.id || "UNKNOWN", name: c.name })) || [],
+			music_by: data.creators.music_by?.map((c) => ({ id: c.id || "UNKNOWN", name: c.name })) || [],
+			others_by:
+				data.creators.others_by?.map((c) => ({ id: c.id || "UNKNOWN", name: c.name })) || [],
+			created_by:
+				data.creators.created_by?.map((c) => ({ id: c.id || "UNKNOWN", name: c.name })) || [],
+		};
+		const creatorsResult = WorkCreators.fromCreatorsObject(transformedCreators);
+		if (creatorsResult.isErr()) {
+			return err(databaseError(creatorsResult.error.message, "INVALID_DATA"));
+		}
+		creatorsBuilderResult = builder.withCreators(creatorsResult.value);
 	}
 
 	// Set Price
-	const priceResult = WorkPrice.create(data.prices?.price ?? 0, data.prices?.currency);
+	const priceResult = WorkPrice.create(data.price?.current ?? 0, data.price?.currency);
 	if (priceResult.isErr()) {
 		return err(databaseError(priceResult.error.message, "INVALID_DATA"));
 	}
-	const priceBuilderResult = creatorsBuilderResult.value.withPrice(priceResult.value);
-	if (priceBuilderResult.isErr()) {
-		return err(databaseError(priceBuilderResult.error.message, "INVALID_DATA"));
-	}
+	const priceBuilderResult = creatorsBuilderResult.withWorkPrice(priceResult.value);
 
 	// Set Rating
 	const ratingResult = WorkRating.create(
 		data.rating?.stars ?? 0,
 		data.rating?.count ?? 0,
-		data.rating?.average ?? data.rating?.stars ?? 0,
+		data.rating?.averageDecimal ?? data.rating?.stars ?? 0,
 		data.rating?.reviewCount,
-		data.rating?.distribution,
+		data.rating?.ratingDetail?.reduce(
+			(acc, item) => {
+				acc[item.review_point] = item.count;
+				return acc;
+			},
+			{} as Record<number, number>,
+		),
 	);
 	if (ratingResult.isErr()) {
 		return err(databaseError(ratingResult.error.message, "INVALID_DATA"));
 	}
-	const ratingBuilderResult = priceBuilderResult.value.withRating(ratingResult.value);
-	if (ratingBuilderResult.isErr()) {
-		return err(databaseError(ratingBuilderResult.error.message, "INVALID_DATA"));
-	}
+	const ratingBuilderResult = priceBuilderResult.withWorkRating(ratingResult.value);
 
-	return ratingBuilderResult;
+	return ok(ratingBuilderResult);
 }
 
 /**
@@ -135,32 +148,22 @@ function setAdditionalProperties(
 	// Set Sales Status
 	const salesStatus = createSalesStatus(data);
 	const salesStatusResult = builder.withSalesStatus(salesStatus);
-	if (salesStatusResult.isErr()) {
-		return err(databaseError(salesStatusResult.error.message, "INVALID_DATA"));
-	}
 
 	// Set Series Info
 	const seriesInfo = createSeriesInfo(data);
-	const seriesResult = salesStatusResult.value.withSeriesInfo(seriesInfo);
-	if (seriesResult.isErr()) {
-		return err(databaseError(seriesResult.error.message, "INVALID_DATA"));
-	}
+	const seriesResult = seriesInfo
+		? salesStatusResult.withSeriesInfo(seriesInfo)
+		: salesStatusResult;
 
 	// Set Extended Info
 	const extendedInfo = createExtendedInfo(data);
-	const extendedResult = seriesResult.value.withExtendedInfo(extendedInfo);
-	if (extendedResult.isErr()) {
-		return err(databaseError(extendedResult.error.message, "INVALID_DATA"));
-	}
+	const extendedResult = seriesResult.withExtendedInfo(extendedInfo);
 
 	// Set Metadata
 	const metadata = createMetadata(data);
-	const metadataResult = extendedResult.value.withMetadata(metadata);
-	if (metadataResult.isErr()) {
-		return err(databaseError(metadataResult.error.message, "INVALID_DATA"));
-	}
+	const metadataResult = extendedResult.withMetadata(metadata);
 
-	return metadataResult;
+	return ok(metadataResult);
 }
 
 /**
@@ -172,7 +175,7 @@ export function createWorkFromFirestoreData(data: WorkDocument): Result<Work, Da
 		// Validate required fields
 		const validationResult = validateRequiredFields(data);
 		if (validationResult.isErr()) {
-			return validationResult as Result<Work, DatabaseError>;
+			return err(databaseError("Missing required fields", "INVALID_DATA"));
 		}
 
 		const builder = WorkBuilder.create();
@@ -180,23 +183,27 @@ export function createWorkFromFirestoreData(data: WorkDocument): Result<Work, Da
 		// Set basic properties
 		const basicResult = setBasicProperties(builder, data);
 		if (basicResult.isErr()) {
-			return basicResult as Result<Work, DatabaseError>;
+			return err(databaseError(basicResult.error.detail, "INVALID_DATA"));
 		}
 
 		// Set creators and financials
 		const creatorsResult = setCreatorsAndFinancials(basicResult.value, data);
 		if (creatorsResult.isErr()) {
-			return creatorsResult as Result<Work, DatabaseError>;
+			return err(databaseError(creatorsResult.error.detail, "INVALID_DATA"));
 		}
 
 		// Set additional properties
 		const additionalResult = setAdditionalProperties(creatorsResult.value, data);
 		if (additionalResult.isErr()) {
-			return additionalResult as Result<Work, DatabaseError>;
+			return err(databaseError(additionalResult.error.detail, "INVALID_DATA"));
 		}
 
 		// Build the Work entity
-		return additionalResult.value.build();
+		const buildResult = additionalResult.value.build();
+		if (buildResult.isErr()) {
+			return err(databaseError(buildResult.error.message, "CONVERSION_ERROR"));
+		}
+		return ok(buildResult.value);
 	} catch (error) {
 		return err(
 			databaseError(`Failed to create Work from Firestore data: ${error}`, "CONVERSION_ERROR"),
@@ -234,26 +241,12 @@ function parseDate(date: unknown): Date | undefined {
  */
 function createSalesStatus(data: WorkDocument): WorkSalesStatus {
 	return {
-		saleDate: parseDate(data.salesStatus?.saleDate),
-		preSaleDate: parseDate(data.salesStatus?.preSaleDate),
-		isOnSale: data.salesStatus?.isOnSale ?? true,
-		isSoldOut: data.salesStatus?.isSoldOut ?? false,
-		salesCount: data.salesStatus?.salesCount,
-		wishlistCount: data.salesStatus?.wishlistCount,
-		dlsiteExclusive: data.salesStatus?.dlsiteExclusive ?? false,
-		dlsitePlayWork: data.salesStatus?.dlsiteplayWork ?? false,
-		retailPrice: data.prices?.retailPrice,
-		discountRate: data.prices?.discountRate,
-		discountEndDate: parseDate(data.prices?.discountEndDate),
-		pointRate: data.prices?.pointRate,
-		grantPointDate: parseDate(data.prices?.grantPointDate),
-		fanzaExclusive: data.salesStatus?.fanzaExclusive ?? false,
-		isHidden: data.salesStatus?.isHidden ?? false,
-		affiliateAllowed: data.salesStatus?.affiliateAllowed ?? true,
-		downloads: data.salesStatus?.downloads,
-		monthlyDownloads: data.salesStatus?.monthlyDownloads,
-		weeklyDownloads: data.salesStatus?.weeklyDownloads,
-		lastModified: parseDate(data.modifiedDate ?? data.updatedAt),
+		isOnSale: data.salesStatus?.isSale ?? true,
+		isDiscounted: data.salesStatus?.isDiscount ?? false,
+		isFree: data.salesStatus?.isFree ?? false,
+		isSoldOut: false,
+		isReserveWork: false,
+		dlsiteplaySupported: data.salesStatus?.dlsiteplayWork ?? false,
 	};
 }
 
@@ -261,15 +254,11 @@ function createSalesStatus(data: WorkDocument): WorkSalesStatus {
  * Creates WorkSeriesInfo from Firestore data
  */
 function createSeriesInfo(data: WorkDocument): WorkSeriesInfo | undefined {
-	if (!data.series?.id) return undefined;
+	if (!data.seriesId) return undefined;
 
 	return {
-		id: data.series.id,
-		name: data.series.name ?? "",
-		// TODO: Implement ordering logic
-		order: 0,
-		nextWorkId: undefined,
-		previousWorkId: undefined,
+		id: data.seriesId,
+		name: data.seriesName ?? "",
 	};
 }
 
@@ -278,39 +267,39 @@ function createSeriesInfo(data: WorkDocument): WorkSeriesInfo | undefined {
  */
 function createBasicExtendedInfo(data: WorkDocument) {
 	return {
-		tags: data.tags ?? [],
+		tags: [],
 		genres: data.genres ?? [],
-		categories: data.categories ?? [],
+		categories: [],
 		ageRating: data.ageRating ?? "all-ages",
-		language: data.language ?? "ja-jp",
+		language: "ja-jp",
 		workType: data.workType ?? "other",
-		format: data.format ?? "other",
+		format: data.fileFormat ?? "other",
 		fileSize: data.fileSize,
-		productFormats: data.productFormats ?? [],
+		productFormats: [],
 		imageUrls: {
-			main: data.imageUrls?.main ?? "",
-			thumbnail: data.imageUrls?.thumbnail,
-			samples: data.imageUrls?.samples ?? [],
+			main: data.highResImageUrl ?? data.thumbnailUrl ?? "",
+			thumbnail: data.thumbnailUrl,
+			samples: data.sampleImages?.map((img) => img.thumb) ?? [],
 		},
 		description: data.description ?? "",
-		shortDescription: data.shortDescription,
-		catchCopy: data.catchCopy,
-		announcement: data.announcement,
-		upgradeInformation: data.upgradeInformation,
-		keywords: data.keywords ?? [],
-		affiliateInfo: data.affiliateInfo,
-		specialCategories: data.specialCategories ?? [],
+		shortDescription: undefined,
+		catchCopy: undefined,
+		announcement: undefined,
+		upgradeInformation: undefined,
+		keywords: [],
+		affiliateInfo: undefined,
+		specialCategories: [],
 	};
 }
 
 /**
  * Creates user-related flags
  */
-function createUserFlags(data: WorkDocument) {
+function createUserFlags(_data: WorkDocument) {
 	return {
-		isPurchased: data.isPurchased ?? false,
-		isFavorite: data.isFavorite ?? false,
-		isWishlisted: data.isWishlisted ?? false,
+		isPurchased: false,
+		isFavorite: false,
+		isWishlisted: false,
 	};
 }
 
@@ -319,19 +308,19 @@ function createUserFlags(data: WorkDocument) {
  */
 function createFeatureFlags(data: WorkDocument) {
 	return {
-		isRanking: data.isRanking ?? false,
-		isDiscounted: data.isDiscounted ?? false,
-		isNew: data.isNew ?? false,
-		isBrowserOnly: data.isBrowserOnly ?? false,
-		isPc: data.isPc ?? false,
-		isAndroidApp: data.isAndroidApp ?? false,
-		isIosApp: data.isIosApp ?? false,
-		isExclusive: data.isExclusive ?? false,
-		isBulkOnly: data.isBulkOnly ?? false,
-		isLimitedEdition: data.isLimitedEdition ?? false,
-		isTrialAvailable: data.isTrialAvailable ?? false,
-		hasCoupon: data.hasCoupon ?? false,
-		isTranslated: data.isTranslated ?? false,
+		isRanking: false,
+		isDiscounted: data.salesStatus?.isDiscount ?? false,
+		isNew: false,
+		isBrowserOnly: false,
+		isPc: false,
+		isAndroidApp: false,
+		isIosApp: false,
+		isExclusive: false,
+		isBulkOnly: false,
+		isLimitedEdition: false,
+		isTrialAvailable: false,
+		hasCoupon: false,
+		isTranslated: !!data.translationInfo,
 	};
 }
 
@@ -340,15 +329,15 @@ function createFeatureFlags(data: WorkDocument) {
  */
 function createAdditionalExtendedInfo(data: WorkDocument) {
 	return {
-		translationType: data.translationType,
-		supportedLanguages: data.supportedLanguages ?? [],
-		lastWatchedDate: parseDate(data.lastWatchedDate),
-		lastDownloadedDate: parseDate(data.lastDownloadedDate),
-		lastUpdatedDate: parseDate(data.lastUpdatedDate),
-		cienUrl: data.cienUrl,
-		dlAffiliateUrl: data.dlAffiliateUrl,
-		fanzaAffiliateUrl: data.fanzaAffiliateUrl,
-		productPageUrl: data.productPageUrl,
+		translationType: undefined,
+		supportedLanguages: [],
+		lastWatchedDate: undefined,
+		lastDownloadedDate: undefined,
+		lastUpdatedDate: parseDate(data.updateDate),
+		cienUrl: undefined,
+		dlAffiliateUrl: undefined,
+		fanzaAffiliateUrl: undefined,
+		productPageUrl: data.workUrl,
 	};
 }
 
@@ -361,6 +350,11 @@ function createExtendedInfo(data: WorkDocument): WorkExtendedInfo {
 		...createUserFlags(data),
 		...createFeatureFlags(data),
 		...createAdditionalExtendedInfo(data),
+		// Add required fields
+		customGenres: data.customGenres?.map((g) => g.name) ?? [],
+		sampleImages: data.sampleImages ?? [],
+		workUrl: data.workUrl,
+		thumbnailUrl: data.thumbnailUrl,
 	};
 }
 
@@ -369,30 +363,12 @@ function createExtendedInfo(data: WorkDocument): WorkExtendedInfo {
  */
 function createMetadata(data: WorkDocument): WorkMetadata {
 	return {
-		version: 1,
-		dataSource: "firestore",
-		lastIndexedAt: parseDate(data.lastIndexedAt),
-		registrationDate: parseDate(data.createdAt),
-		lastModifiedDate: parseDate(data.updatedAt),
-		createdAt: parseDate(data.createdAt),
-		updatedAt: parseDate(data.updatedAt),
-		reviewedAt: undefined,
-		indexedAt: parseDate(data.indexedAt),
-		revisionNumber: 1,
-		schemaVersion: "1.0.0",
-		isDeleted: false,
-		deletedAt: undefined,
-		dataQuality: "low",
-		hasHighResolutionImages: false,
-		hasDetailedCreators: !!data.creators,
-		hasStructuredData: true,
-		hasCompleteInformation: false,
-		hasPriceHistory: false,
-		hasReviewData: !!data.rating,
-		hasSalesData: !!data.salesStatus,
-		hasDownloadData: false,
-		hasAffiliateData: false,
-		dlsiteplaySupported: data.salesStatus?.dlsiteplayWork ?? false,
+		registDate: parseDate(data.registDate),
+		updateDate: parseDate(data.updateDate),
+		releaseDate: parseDate(data.releaseDate ?? data.registDate),
+		createdAt: parseDate(data.createdAt) ?? new Date(),
+		updatedAt: parseDate(data.updatedAt) ?? new Date(),
+		lastFetchedAt: parseDate(data.lastFetchedAt) ?? new Date(),
 	};
 }
 
