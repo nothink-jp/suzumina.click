@@ -25,13 +25,13 @@ import type { WorkDocument } from "./work-document-schema";
 /**
  * Validates required fields for Work creation
  */
-function validateRequiredFields(data: WorkDocument): Result<void, DatabaseError> {
+function validateRequiredFields(data: WorkDocument): Result<boolean, DatabaseError> {
 	if (!data.productId || !data.title || !data.circle) {
 		return err(
-			databaseError("Missing required fields: productId, title, or circle", "INVALID_DATA"),
+			databaseError("INVALID_DATA", "Missing required fields: productId, title, or circle"),
 		);
 	}
-	return { isOk: () => true, isErr: () => false } as Result<void, DatabaseError>;
+	return ok(true);
 }
 
 /**
@@ -44,13 +44,13 @@ function setBasicProperties(
 	// Set ID
 	const idResult = builder.withId(data.productId);
 	if (idResult.isErr()) {
-		return err(databaseError(idResult.error.message, "INVALID_DATA"));
+		return err(databaseError("INVALID_DATA", idResult.error.message));
 	}
 
 	// Set Title
 	const titleResult = WorkTitle.create(data.title, data.titleMasked, data.titleKana, data.altName);
 	if (titleResult.isErr()) {
-		return err(databaseError(titleResult.error.message, "INVALID_DATA"));
+		return err(databaseError("INVALID_DATA", titleResult.error.message));
 	}
 	const titleBuilderResult = idResult.value.withTitle(
 		titleResult.value.toString(),
@@ -59,23 +59,27 @@ function setBasicProperties(
 		titleResult.value.getAltName(),
 	);
 	if (titleBuilderResult.isErr()) {
-		return err(databaseError(titleBuilderResult.error.message, "INVALID_DATA"));
+		return err(databaseError("INVALID_DATA", titleBuilderResult.error.message));
 	}
 
 	// Set Circle (following the original implementation pattern)
 	const circleResult = Circle.create(data.circleId || "UNKNOWN", data.circle, data.circleEn);
 	if (circleResult.isErr()) {
-		return err(databaseError(circleResult.error.message, "INVALID_DATA"));
+		return err(databaseError("INVALID_DATA", circleResult.error.message));
 	}
 	const circleBuilderResult = titleBuilderResult.value.withCircle(
 		circleResult.value.id,
 		circleResult.value.name,
+		circleResult.value.nameEn,
 	);
 	if (circleBuilderResult.isErr()) {
-		return err(databaseError(circleBuilderResult.error.message, "INVALID_DATA"));
+		return err(databaseError("INVALID_DATA", circleBuilderResult.error.message));
 	}
 
-	return ok(circleBuilderResult.value);
+	// Set Category
+	const categoryBuilder = circleBuilderResult.value.withCategory(data.category || "OTHER");
+
+	return ok(categoryBuilder);
 }
 
 /**
@@ -103,7 +107,7 @@ function setCreatorsAndFinancials(
 		};
 		const creatorsResult = WorkCreators.fromCreatorsObject(transformedCreators);
 		if (creatorsResult.isErr()) {
-			return err(databaseError(creatorsResult.error.message, "INVALID_DATA"));
+			return err(databaseError("INVALID_DATA", creatorsResult.error.message));
 		}
 		creatorsBuilderResult = builder.withCreators(creatorsResult.value);
 	}
@@ -111,7 +115,7 @@ function setCreatorsAndFinancials(
 	// Set Price
 	const priceResult = WorkPrice.create(data.price?.current ?? 0, data.price?.currency);
 	if (priceResult.isErr()) {
-		return err(databaseError(priceResult.error.message, "INVALID_DATA"));
+		return err(databaseError("INVALID_DATA", `Invalid price: ${priceResult.error.message}`));
 	}
 	const priceBuilderResult = creatorsBuilderResult.withWorkPrice(priceResult.value);
 
@@ -130,7 +134,7 @@ function setCreatorsAndFinancials(
 		),
 	);
 	if (ratingResult.isErr()) {
-		return err(databaseError(ratingResult.error.message, "INVALID_DATA"));
+		return err(databaseError("INVALID_DATA", ratingResult.error.message));
 	}
 	const ratingBuilderResult = priceBuilderResult.withWorkRating(ratingResult.value);
 
@@ -174,7 +178,7 @@ export function createWorkFromFirestoreData(data: WorkDocument): Result<Work, Da
 		// Validate required fields
 		const validationResult = validateRequiredFields(data);
 		if (validationResult.isErr()) {
-			return err(databaseError("Missing required fields", "INVALID_DATA"));
+			return err(databaseError("INVALID_DATA", "Missing required fields"));
 		}
 
 		const builder = WorkBuilder.create();
@@ -182,30 +186,30 @@ export function createWorkFromFirestoreData(data: WorkDocument): Result<Work, Da
 		// Set basic properties
 		const basicResult = setBasicProperties(builder, data);
 		if (basicResult.isErr()) {
-			return err(databaseError(basicResult.error.detail, "INVALID_DATA"));
+			return err(basicResult.error);
 		}
 
 		// Set creators and financials
 		const creatorsResult = setCreatorsAndFinancials(basicResult.value, data);
 		if (creatorsResult.isErr()) {
-			return err(databaseError(creatorsResult.error.detail, "INVALID_DATA"));
+			return err(creatorsResult.error);
 		}
 
 		// Set additional properties
 		const additionalResult = setAdditionalProperties(creatorsResult.value, data);
 		if (additionalResult.isErr()) {
-			return err(databaseError(additionalResult.error.detail, "INVALID_DATA"));
+			return err(additionalResult.error);
 		}
 
 		// Build the Work entity
 		const buildResult = additionalResult.value.build();
 		if (buildResult.isErr()) {
-			return err(databaseError(buildResult.error.message, "CONVERSION_ERROR"));
+			return err(databaseError("CONVERSION_ERROR", buildResult.error.message));
 		}
 		return ok(buildResult.value);
 	} catch (error) {
 		return err(
-			databaseError(`Failed to create Work from Firestore data: ${error}`, "CONVERSION_ERROR"),
+			databaseError("CONVERSION_ERROR", `Failed to create Work from Firestore data: ${error}`),
 		);
 	}
 }

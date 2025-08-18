@@ -111,11 +111,14 @@ export const SUPPORTED_LANGUAGES = [
 export const LANGUAGE_CODE_MAPPING: Record<string, WorkLanguage> = {
 	// 日本語
 	ja: "ja",
+	"ja-jp": "ja",
 	japanese: "ja",
 	jpn: "ja",
 
 	// 英語
 	en: "en",
+	"en-us": "en",
+	"en-gb": "en",
 	english: "en",
 	eng: "en",
 
@@ -135,9 +138,10 @@ export const LANGUAGE_CODE_MAPPING: Record<string, WorkLanguage> = {
 
 	// 韓国語
 	ko: "ko",
+	"ko-kr": "ko",
+	ko_kr: "ko",
 	korean: "ko",
 	kor: "ko",
-	ko_kr: "ko",
 
 	// スペイン語
 	es: "es",

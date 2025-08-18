@@ -273,9 +273,9 @@ function collectFromLanguageDownloads(work: WorkDocument, languages: Set<WorkLan
 export function getSupportedLanguages(work: WorkDocument): WorkLanguage[] {
 	const languages = new Set<WorkLanguage>();
 
-	// メイン言語を追加
+	// メイン言語を追加（"other"は除外）
 	const mainLanguage = detectWorkLanguage(work);
-	if (mainLanguage) {
+	if (mainLanguage && mainLanguage !== "other") {
 		languages.add(mainLanguage);
 	}
 
