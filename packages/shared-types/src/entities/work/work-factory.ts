@@ -7,7 +7,6 @@
 
 import type { DatabaseError } from "../../core/result";
 import { databaseError, err, ok, type Result } from "../../core/result";
-import type { WorkPlainObject } from "../../plain-objects/work-plain";
 import { Circle } from "../../value-objects/work/circle";
 import { WorkCreators } from "../../value-objects/work/work-creators";
 import { WorkPrice } from "../../value-objects/work/work-price";
@@ -212,15 +211,6 @@ export function createWorkFromFirestoreData(data: WorkDocument): Result<Work, Da
 }
 
 /**
- * Creates Work from plain object (not yet implemented)
- * This will be used for deserialization from JSON
- */
-export function createWorkFromPlainObject(_obj: WorkPlainObject): Result<Work, DatabaseError> {
-	// TODO: Implement this method
-	return err(databaseError("fromPlainObject not yet implemented", "NOT_IMPLEMENTED"));
-}
-
-/**
  * Utility to safely parse dates from Firestore
  */
 function parseDate(date: unknown): Date | undefined {
@@ -375,5 +365,4 @@ function createMetadata(data: WorkDocument): WorkMetadata {
 // Legacy exports for backward compatibility
 export const WorkFactory = {
 	fromFirestoreData: createWorkFromFirestoreData,
-	fromPlainObject: createWorkFromPlainObject,
 };
