@@ -1,4 +1,9 @@
-import type { AudioButton, AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import type {
+	AudioButton,
+	AudioButtonCompat,
+	AudioButtonPlainObject,
+} from "@suzumina.click/shared-types";
+import { toAudioButtonCompat } from "@suzumina.click/shared-types";
 import { type AudioControls, AudioPlayer } from "@suzumina.click/ui/components/custom/audio-player";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -10,7 +15,7 @@ import { memo, useCallback, useRef, useState } from "react";
 import { useAudioButton } from "@/hooks/use-audio-button";
 
 interface AudioButtonCardProps {
-	audioButton: AudioButton;
+	audioButton: AudioButton | AudioButtonPlainObject | AudioButtonCompat;
 	playCount?: number;
 	isFavorited?: boolean;
 	isLiked?: boolean;
@@ -23,14 +28,9 @@ interface AudioButtonCardProps {
 	showStats?: boolean;
 }
 
-// AudioButtonからAudioButtonPlainObjectへの変換
-function convertToPlainObject(audioButton: AudioButton): AudioButtonPlainObject {
-	return audioButton.toPlainObject();
-}
-
 /**
  * AudioButton Card コンポーネント
- * AudioButton Entity構造に対応したカードコンポーネント
+ * AudioButton Entity/PlainObject/Compat対応のカードコンポーネント
  */
 export const AudioButtonCard = memo(function AudioButtonCard({
 	audioButton,
@@ -51,6 +51,7 @@ export const AudioButtonCard = memo(function AudioButtonCard({
 	const isAuthenticated = !!session?.user;
 
 	const {
+		audioButton: compat,
 		buttonText,
 		tags,
 		formattedDuration,
@@ -59,6 +60,7 @@ export const AudioButtonCard = memo(function AudioButtonCard({
 		formattedLikeCount,
 		youtubeUrl,
 		getTagSearchUrl,
+		plainObject,
 	} = useAudioButton(audioButton);
 
 	// AudioPlayerのrefを作成
@@ -100,17 +102,17 @@ export const AudioButtonCard = memo(function AudioButtonCard({
 	return (
 		<article
 			className={`group relative rounded-lg border bg-card p-4 transition-all hover:shadow-md ${className}`}
-			aria-labelledby={`audio-button-${audioButton.id.toString()}`}
+			aria-labelledby={`audio-button-${compat.id.toString()}`}
 		>
 			{/* ヘッダー部分 */}
 			<div className="mb-3 flex items-start justify-between gap-2">
 				<h3
-					id={`audio-button-${audioButton.id.toString()}`}
+					id={`audio-button-${compat.id.toString()}`}
 					className="line-clamp-2 text-lg font-semibold"
 				>
 					{buttonText}
 				</h3>
-				{audioButton.isPublic ? (
+				{compat.isPublic() ? (
 					<Badge variant="outline" className="shrink-0">
 						公開
 					</Badge>
@@ -129,7 +131,7 @@ export const AudioButtonCard = memo(function AudioButtonCard({
 					rel="noopener noreferrer"
 					className="hover:text-foreground hover:underline"
 				>
-					{audioButton.reference.videoTitle.toString()}
+					{compat.reference.videoTitle.toString()}
 				</Link>
 				<div className="mt-1 flex items-center gap-2 text-xs">
 					<Clock className="h-3 w-3" />
@@ -206,13 +208,13 @@ export const AudioButtonCard = memo(function AudioButtonCard({
 
 			{/* 作成者情報（フッター） */}
 			<div className="mt-3 border-t pt-3 text-xs text-muted-foreground">
-				<span>作成者: {audioButton.createdBy.name}</span>
+				<span>作成者: {compat.getCreatorName()}</span>
 			</div>
 
 			{/* AudioPlayer（非表示） */}
 			<AudioPlayer
 				ref={audioControlsRef}
-				audioButton={convertToPlainObject(audioButton)}
+				audioButton={plainObject}
 				onPlay={handleAudioPlay}
 				onPause={handleAudioPause}
 				onEnd={handleAudioEnd}
