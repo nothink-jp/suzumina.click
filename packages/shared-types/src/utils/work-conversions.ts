@@ -35,7 +35,7 @@ function convertToWorkData(data: unknown): WorkData | null {
 		"productId" in obj &&
 		"title" in obj
 	) {
-		return obj as WorkData;
+		return obj as unknown as WorkData;
 	}
 
 	// Check if it has basic work structure (Firestore format)
@@ -43,7 +43,7 @@ function convertToWorkData(data: unknown): WorkData | null {
 		// It's likely FirestoreWorkDocument format - pass it directly
 		// fromFirestore expects circle to be a string
 		if (typeof obj.circle === "string") {
-			return fromFirestore(obj as FirestoreWorkDocument);
+			return fromFirestore(obj as unknown as FirestoreWorkDocument);
 		}
 
 		// If circle is not a string, fix it
@@ -53,7 +53,7 @@ function convertToWorkData(data: unknown): WorkData | null {
 			circle:
 				typeof obj.circle === "string" ? obj.circle : (circleObj?.name as string) || "Unknown",
 		};
-		return fromFirestore(firestoreDoc as FirestoreWorkDocument);
+		return fromFirestore(firestoreDoc as unknown as FirestoreWorkDocument);
 	}
 
 	return null;
