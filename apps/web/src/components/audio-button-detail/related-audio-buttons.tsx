@@ -1,10 +1,11 @@
-import type { AudioButtonPlainObject, AudioButtonQuery } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { Youtube } from "lucide-react";
 import Link from "next/link";
 import { getAudioButtonsList } from "@/app/buttons/actions";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
+import type { AudioButtonQuery } from "@/types/audio-button";
 
 interface RelatedAudioButtonsProps {
 	currentId: string;

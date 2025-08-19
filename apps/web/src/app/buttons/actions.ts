@@ -444,7 +444,7 @@ export async function createAudioButton(
 ): Promise<{ success: true; data: { id: string } } | { success: false; error: string }> {
 	try {
 		// 入力検証
-		if (!input.title?.trim()) {
+		if (!input.buttonText?.trim()) {
 			return { success: false, error: "入力データが無効です" };
 		}
 
@@ -465,7 +465,7 @@ export async function createAudioButton(
 		const firestore = getFirestore();
 
 		// 動画検証
-		const videoValidation = await validateVideoForAudioButton(input.sourceVideoId, firestore);
+		const videoValidation = await validateVideoForAudioButton(input.videoId, firestore);
 		if (!videoValidation.valid) {
 			return { success: false, error: videoValidation.error || "動画の検証に失敗しました" };
 		}
@@ -493,7 +493,7 @@ export async function createAudioButton(
 		}
 
 		// 動画カウント更新（非同期）
-		await updateVideoButtonCount(input.sourceVideoId, firestore);
+		await updateVideoButtonCount(input.videoId, firestore);
 
 		return { success: true, data: { id: docRef.id } };
 	} catch (error) {
@@ -755,6 +755,7 @@ export async function decrementDislikeCount(
  * Update audio button
  */
 export async function updateAudioButton(
+	id: string,
 	input: UpdateAudioButtonInput,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
@@ -764,7 +765,7 @@ export async function updateAudioButton(
 		}
 
 		const firestore = getFirestore();
-		const docRef = firestore.collection("audioButtons").doc(input.id);
+		const docRef = firestore.collection("audioButtons").doc(id);
 		const doc = await docRef.get();
 
 		if (!doc.exists) {
@@ -780,8 +781,7 @@ export async function updateAudioButton(
 			updatedAt: new Date().toISOString(),
 		};
 
-		if (input.title !== undefined) updates.title = input.title;
-		if (input.description !== undefined) updates.description = input.description;
+		if (input.buttonText !== undefined) updates.title = input.buttonText;
 		if (input.tags !== undefined) updates.tags = input.tags;
 		if (input.isPublic !== undefined) updates.isPublic = input.isPublic;
 

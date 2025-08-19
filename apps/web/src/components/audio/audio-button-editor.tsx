@@ -43,13 +43,11 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 
 		try {
 			const input: UpdateAudioButtonInput = {
-				id: audioButton.id,
-				title: title.trim(),
-				description: description.trim() || undefined,
+				buttonText: title.trim(),
 				tags,
 			};
 
-			const result = await updateAudioButton(input);
+			const result = await updateAudioButton(audioButton.id, input);
 
 			if (result.success) {
 				router.push(`/buttons/${audioButton.id}`);
@@ -61,17 +59,7 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 		} finally {
 			setIsUpdating(false);
 		}
-	}, [
-		isValid,
-		hasChanges,
-		audioButton.id,
-		title,
-		description,
-		tags,
-		router,
-		setError,
-		setIsUpdating,
-	]);
+	}, [isValid, hasChanges, audioButton.id, title, tags, router, setError, setIsUpdating]);
 
 	// 時間調整用のハンドラーは共通フックから取得
 

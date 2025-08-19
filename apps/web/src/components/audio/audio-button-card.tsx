@@ -1,9 +1,4 @@
-import type {
-	AudioButton,
-	AudioButtonCompat,
-	AudioButtonPlainObject,
-} from "@suzumina.click/shared-types";
-import { toAudioButtonCompat } from "@suzumina.click/shared-types";
+import type { AudioButtonCompat, AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { type AudioControls, AudioPlayer } from "@suzumina.click/ui/components/custom/audio-player";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -15,7 +10,7 @@ import { memo, useCallback, useRef, useState } from "react";
 import { useAudioButton } from "@/hooks/use-audio-button";
 
 interface AudioButtonCardProps {
-	audioButton: AudioButton | AudioButtonPlainObject | AudioButtonCompat;
+	audioButton: AudioButtonPlainObject | AudioButtonCompat;
 	playCount?: number;
 	isFavorited?: boolean;
 	isLiked?: boolean;

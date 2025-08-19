@@ -44,8 +44,7 @@ export {
 	validationError,
 } from "./core/result";
 // === AudioButton Migration (Phase 3) ===
-// Keep existing AudioButton Entity export for now
-export * from "./entities/audio-button";
+// AudioButton Entity removed - using PlainObject + functions pattern
 // === Entities ===
 // Base entity infrastructure
 export * from "./entities/base/entity";

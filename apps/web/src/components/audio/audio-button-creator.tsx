@@ -52,13 +52,16 @@ export function AudioButtonCreator({
 
 		try {
 			const input: CreateAudioButtonInput = {
-				sourceVideoId: videoId,
-				sourceVideoTitle: videoTitle,
-				title: title.trim(),
-				description: description.trim() || undefined,
+				videoId: videoId,
+				videoTitle: videoTitle,
+				buttonText: title.trim(),
 				tags,
 				startTime: timeAdjustment.startTime,
 				endTime: timeAdjustment.endTime,
+				createdBy: {
+					id: "", // This will be filled by the server
+					name: "", // This will be filled by the server
+				},
 				isPublic: true,
 			};
 
@@ -78,7 +81,6 @@ export function AudioButtonCreator({
 		isValid,
 		videoId,
 		title,
-		description,
 		tags,
 		timeAdjustment.startTime,
 		timeAdjustment.endTime,

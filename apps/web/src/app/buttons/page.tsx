@@ -1,10 +1,10 @@
-import type { AudioButtonQuery } from "@suzumina.click/shared-types";
 import {
 	ListPageContent,
 	ListPageHeader,
 	ListPageLayout,
 } from "@suzumina.click/ui/components/custom";
 import { Suspense } from "react";
+import type { AudioButtonQuery } from "@/types/audio-button";
 import { getAudioButtonsList } from "./actions";
 import AudioButtonsList from "./components/AudioButtonsList";
 

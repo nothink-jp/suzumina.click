@@ -1,5 +1,4 @@
 import {
-	type AudioButton,
 	AudioButtonCompat,
 	type AudioButtonPlainObject,
 	toAudioButtonCompat,
@@ -10,17 +9,14 @@ import { useCallback, useMemo } from "react";
  * AudioButton Entity/PlainObject両対応のカスタムフック
  * 段階的移行のための互換性レイヤー
  */
-export function useAudioButtonCompat(
-	audioButton: AudioButton | AudioButtonPlainObject | AudioButtonCompat,
-) {
+export function useAudioButtonCompat(audioButton: AudioButtonPlainObject | AudioButtonCompat) {
 	// 互換性ラッパーに変換
 	const compat = useMemo(() => {
 		try {
 			return toAudioButtonCompat(audioButton);
-		} catch (error) {
+		} catch (_error) {
 			// テスト環境以外でエラーログを出力
 			if (process.env.NODE_ENV !== "test") {
-				console.error("Failed to convert AudioButton:", error);
 			}
 			// フォールバック: 最小限のデータを返す
 			return new AudioButtonCompat({

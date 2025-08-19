@@ -1,8 +1,4 @@
-import type {
-	AudioButton,
-	AudioButtonCompat,
-	AudioButtonPlainObject,
-} from "@suzumina.click/shared-types";
+import type { AudioButtonCompat, AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { toAudioButtonCompat } from "@suzumina.click/shared-types";
 import { Alert, AlertDescription } from "@suzumina.click/ui/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -10,7 +6,7 @@ import { memo } from "react";
 import AudioButtonCard from "./audio-button-card";
 
 interface AudioButtonListProps {
-	audioButtons: (AudioButton | AudioButtonPlainObject | AudioButtonCompat)[];
+	audioButtons: (AudioButtonPlainObject | AudioButtonCompat)[];
 	playCounts?: Record<string, number>;
 	favoriteStates?: Record<string, boolean>;
 	likeStates?: Record<string, boolean>;

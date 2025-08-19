@@ -1,8 +1,4 @@
-import type {
-	AudioButton,
-	AudioButtonCompat,
-	AudioButtonPlainObject,
-} from "@suzumina.click/shared-types";
+import type { AudioButtonCompat, AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { useAudioButtonCompat } from "./use-audio-button-compat";
 
 /**
@@ -11,9 +7,7 @@ import { useAudioButtonCompat } from "./use-audio-button-compat";
  *
  * @deprecated Use useAudioButtonCompat instead for better compatibility
  */
-export function useAudioButton(
-	audioButton: AudioButton | AudioButtonPlainObject | AudioButtonCompat,
-) {
+export function useAudioButton(audioButton: AudioButtonPlainObject | AudioButtonCompat) {
 	// 互換性のため、内部的にuseAudioButtonCompatを使用
 	return useAudioButtonCompat(audioButton);
 }

@@ -5,10 +5,7 @@
  * Value Objects in the domain model.
  */
 
-// Export AudioButton-related Value Objects
-export * from "./audio-button/audio-content";
-export * from "./audio-button/audio-reference";
-export * from "./audio-button/button-statistics";
+// AudioButton-related Value Objects removed - using PlainObject pattern
 // Export base Value Object utilities
 export * from "./base";
 // Export Video-related Value Objects

@@ -1,4 +1,4 @@
-import type { AudioButtonQuery } from "@suzumina.click/shared-types";
+import type { AudioButtonQuery } from "@/types/audio-button";
 
 // AdvancedFilters type definition (previously from advanced-filter-panel)
 export interface AdvancedFilters {

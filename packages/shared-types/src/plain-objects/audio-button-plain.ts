@@ -39,3 +39,53 @@ export interface AudioButtonPlainObject
 	// Computed properties from business logic
 	_computed: AudioButtonComputedProperties;
 }
+
+/**
+ * Input type for creating a new AudioButton
+ */
+export interface CreateAudioButtonInput {
+	buttonText: string;
+	startTime: number;
+	endTime: number;
+	videoId: string;
+	videoTitle: string;
+	tags?: string[];
+	createdBy: {
+		id: string;
+		name: string;
+	};
+	isPublic?: boolean;
+}
+
+/**
+ * Input type for updating an existing AudioButton
+ */
+export interface UpdateAudioButtonInput {
+	buttonText?: string;
+	startTime?: number;
+	endTime?: number;
+	tags?: string[];
+	isPublic?: boolean;
+}
+
+/**
+ * Query parameters for filtering AudioButtons
+ */
+export interface AudioButtonQuery {
+	search?: string;
+	tags?: string[];
+	sortBy?: "newest" | "oldest" | "popular" | "engagement";
+	page?: number;
+	limit?: number;
+	sourceVideoId?: string;
+	// Advanced filters
+	playCountMin?: number;
+	playCountMax?: number;
+	likeCountMin?: number;
+	likeCountMax?: number;
+	favoriteCountMin?: number;
+	favoriteCountMax?: number;
+	createdAfter?: string;
+	createdBefore?: string;
+	createdBy?: string;
+}
