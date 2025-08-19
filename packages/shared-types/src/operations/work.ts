@@ -138,9 +138,9 @@ export function getAllTags(work: WorkPlainObject): string[] {
 }
 
 /**
- * Formats price display
+ * Formats work price display
  */
-export function formatPrice(work: WorkPlainObject): string {
+export function formatWorkPrice(work: WorkPlainObject): string {
 	return work.price.formattedPrice;
 }
 
@@ -214,7 +214,7 @@ export const workOperations = {
 	hasDiscount,
 	getSearchableText,
 	getAllTags,
-	formatPrice,
+	formatWorkPrice,
 	getDiscountPercentage,
 	hasHighQualityRating,
 	getWorkTypeDisplay,

@@ -5,6 +5,8 @@
 
 // === API Schemas ===
 export * from "./api-schemas/dlsite-raw";
+// Compatibility Layer (Temporary - will be removed in Phase 1 Week 3)
+export { Work as WorkCompat, WorkEntity } from "./compatibility/work-entity-compat";
 // === Configuration ===
 export * from "./config";
 // 音声ボタン関連の型とスキーマのエクスポート
@@ -32,11 +34,16 @@ export * from "./entities/work-entity";
 export * from "./entities/work-evaluation";
 // === Migration Utilities ===
 export * from "./migrations";
+// === Functional Architecture (New) ===
+// Operations (Business Logic)
+export * from "./operations/work";
 // === Plain Objects ===
 export * from "./plain-objects/audio-button-plain";
 export * from "./plain-objects/circle-plain";
 export * from "./plain-objects/video-plain";
 export * from "./plain-objects/work-plain";
+// Transformers
+export * from "./transformers/firestore";
 // === Firestore Types ===
 // FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead
 // FirestoreServerAudioButtonData is available from entities/audio-button
@@ -74,6 +81,8 @@ export * from "./utilities/search-filters";
 export * from "./utilities/work-conversions";
 // ユーティリティ関数
 export * from "./utils";
+// Validators
+export * from "./validators/work";
 // === Value Objects ===
 // Export base Value Object utilities and interfaces
 export * from "./value-objects";
