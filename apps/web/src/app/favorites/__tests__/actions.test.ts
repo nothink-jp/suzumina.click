@@ -30,12 +30,9 @@ describe("getFavoritesList", () => {
 		const mockUserId = "test-user-id";
 		const mockAudioButtonId = "test-button-id";
 		const mockAudioButton = {
-			id: { toString: () => mockAudioButtonId },
-			toPlainObject: () => ({
-				id: mockAudioButtonId,
-				title: "Test Button",
-				playCount: 10,
-			}),
+			id: mockAudioButtonId,
+			title: "Test Button",
+			playCount: 10,
 		};
 
 		const { getUserFavoritesCount, getUserFavorites, getAudioButtonsFromFavorites } = await import(
