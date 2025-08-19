@@ -10,8 +10,14 @@ export { Video as VideoCompat, VideoEntity } from "./compatibility/video-entity-
 export { Work as WorkCompat, WorkEntity } from "./compatibility/work-entity-compat";
 // === Configuration ===
 export * from "./config";
-// 音声ボタン関連の型とスキーマのエクスポート
+// === AudioButton Migration (Phase 3) ===
+// Keep existing AudioButton Entity export for now
 export * from "./entities/audio-button";
+
+// New functional exports will be added in next iteration
+// export { audioButtonOperations } from "./operations/audio-button";
+// export { audioButtonValidators } from "./validators/audio-button";
+// export { audioButtonTransformers } from "./transformers/audio-button";
 // === Entities ===
 // Base entity infrastructure
 export * from "./entities/base/entity";
@@ -56,14 +62,14 @@ export {
 } from "./operations/video";
 // === Functional Architecture (New) ===
 // Operations (Business Logic)
-export * from "./operations/work";
+export { workOperations } from "./operations/work";
 // === Plain Objects ===
 export * from "./plain-objects/audio-button-plain";
 export * from "./plain-objects/circle-plain";
 export * from "./plain-objects/video-plain";
 export * from "./plain-objects/work-plain";
 // Transformers
-export * from "./transformers/firestore";
+export { workTransformers } from "./transformers/firestore";
 export {
 	fromFirestore as videoFromFirestore,
 	toFirestore as videoToFirestore,
@@ -104,8 +110,10 @@ export * from "./utilities/price-history";
 export * from "./utilities/search-filters";
 // Work変換ユーティリティのエクスポート
 export * from "./utilities/work-conversions";
-// ユーティリティ関数
-export * from "./utils";
+export { formatTimestamp, parseDurationToSeconds } from "./utils";
+// ユーティリティ関数 (from subdirectories)
+export * from "./utils/date-parser";
+export * from "./utils/number-parser";
 export {
 	canUpdateVideo,
 	type ValidationResult as VideoValidationResult,
@@ -115,7 +123,7 @@ export {
 	videoValidators,
 } from "./validators/video";
 // Validators
-export * from "./validators/work";
+export { workValidators } from "./validators/work";
 // === Value Objects ===
 // Export base Value Object utilities and interfaces
 export * from "./value-objects";
