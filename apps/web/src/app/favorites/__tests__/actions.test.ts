@@ -11,11 +11,15 @@ vi.mock("@/actions/dislikes", () => ({
 	getLikeDislikeStatusAction: vi.fn(),
 }));
 
-vi.mock("@suzumina.click/shared-types", () => ({
-	AudioButton: {
-		fromFirestoreData: vi.fn(),
-	},
-}));
+vi.mock("@suzumina.click/shared-types", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@suzumina.click/shared-types")>();
+	return {
+		...actual,
+		audioButtonTransformers: {
+			fromFirestore: vi.fn(),
+		},
+	};
+});
 
 describe("getFavoritesList", () => {
 	beforeEach(() => {
@@ -38,7 +42,7 @@ describe("getFavoritesList", () => {
 			"@/lib/favorites-firestore"
 		);
 		const { getLikeDislikeStatusAction } = await import("@/actions/dislikes");
-		const { AudioButton } = await import("@suzumina.click/shared-types");
+		const { audioButtonTransformers } = await import("@suzumina.click/shared-types");
 
 		vi.mocked(getUserFavoritesCount).mockResolvedValue(1);
 		vi.mocked(getUserFavorites).mockResolvedValue({
@@ -48,7 +52,7 @@ describe("getFavoritesList", () => {
 		vi.mocked(getAudioButtonsFromFavorites).mockResolvedValue(
 			new Map([[mockAudioButtonId, { id: mockAudioButtonId }]]),
 		);
-		vi.mocked(AudioButton.fromFirestoreData).mockReturnValue(mockAudioButton);
+		vi.mocked(audioButtonTransformers.fromFirestore).mockReturnValue(mockAudioButton);
 		vi.mocked(getLikeDislikeStatusAction).mockResolvedValue([
 			[mockAudioButtonId, { isLiked: true, isDisliked: false }],
 		]);
@@ -95,7 +99,7 @@ describe("getFavoritesList", () => {
 		const { getUserFavoritesCount, getUserFavorites, getAudioButtonsFromFavorites } = await import(
 			"@/lib/favorites-firestore"
 		);
-		const { AudioButton } = await import("@suzumina.click/shared-types");
+		const { audioButtonTransformers } = await import("@suzumina.click/shared-types");
 
 		vi.mocked(getUserFavoritesCount).mockResolvedValue(1);
 		vi.mocked(getUserFavorites).mockResolvedValue({
@@ -103,7 +107,7 @@ describe("getFavoritesList", () => {
 			hasMore: false,
 		});
 		vi.mocked(getAudioButtonsFromFavorites).mockResolvedValue(new Map());
-		vi.mocked(AudioButton.fromFirestoreData).mockReturnValue(null);
+		vi.mocked(audioButtonTransformers.fromFirestore).mockReturnValue(null);
 
 		const result = await getFavoritesList({
 			userId: "test-user-id",

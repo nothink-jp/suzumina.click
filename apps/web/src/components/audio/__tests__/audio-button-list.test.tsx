@@ -1,4 +1,8 @@
-import { AudioButton, type FirestoreServerAudioButtonData } from "@suzumina.click/shared-types";
+import {
+	type AudioButtonPlainObject,
+	audioButtonTransformers,
+	type FirestoreServerAudioButtonData,
+} from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -45,8 +49,11 @@ interface MockAudioButtonLegacyData {
 	updatedAt?: string;
 }
 
-// テスト用のAudioButtonエンティティを作成するヘルパー
-function createMockAudioButton(id: string, overrides?: MockAudioButtonLegacyData): AudioButton {
+// テスト用のAudioButtonPlainObjectを作成するヘルパー
+function createMockAudioButton(
+	id: string,
+	overrides?: MockAudioButtonLegacyData,
+): AudioButtonPlainObject {
 	const defaultData = {
 		id,
 		title: `音声ボタン ${id}`,
@@ -74,11 +81,11 @@ function createMockAudioButton(id: string, overrides?: MockAudioButtonLegacyData
 		createdAt: new Date(defaultData.createdAt),
 		updatedAt: new Date(defaultData.updatedAt),
 	};
-	const audioButton = AudioButton.fromFirestoreData(firestoreData);
-	if (!audioButton) {
+	const plainObject = audioButtonTransformers.fromFirestore(firestoreData);
+	if (!plainObject) {
 		throw new Error("Failed to create mock AudioButton");
 	}
-	return audioButton;
+	return plainObject;
 }
 
 describe("AudioButtonList", () => {
