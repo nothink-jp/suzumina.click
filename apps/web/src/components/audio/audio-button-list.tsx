@@ -1,11 +1,16 @@
-import type { AudioButton } from "@suzumina.click/shared-types";
+import type {
+	AudioButton,
+	AudioButtonCompat,
+	AudioButtonPlainObject,
+} from "@suzumina.click/shared-types";
+import { toAudioButtonCompat } from "@suzumina.click/shared-types";
 import { Alert, AlertDescription } from "@suzumina.click/ui/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { memo } from "react";
 import AudioButtonCard from "./audio-button-card";
 
 interface AudioButtonListProps {
-	audioButtons: AudioButton[];
+	audioButtons: (AudioButton | AudioButtonPlainObject | AudioButtonCompat)[];
 	playCounts?: Record<string, number>;
 	favoriteStates?: Record<string, boolean>;
 	likeStates?: Record<string, boolean>;
@@ -22,7 +27,7 @@ interface AudioButtonListProps {
 
 /**
  * AudioButton List コンポーネント
- * AudioButton Entity構造に対応したリストコンポーネント
+ * AudioButton Entity/PlainObject/Compat対応のリストコンポーネント
  */
 export const AudioButtonList = memo(function AudioButtonList({
 	audioButtons,
@@ -73,7 +78,8 @@ export const AudioButtonList = memo(function AudioButtonList({
 	return (
 		<div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${className}`}>
 			{audioButtons.map((audioButton) => {
-				const id = audioButton.id.toString();
+				const compat = toAudioButtonCompat(audioButton);
+				const id = compat.id.toString();
 				return (
 					<AudioButtonCard
 						key={id}
