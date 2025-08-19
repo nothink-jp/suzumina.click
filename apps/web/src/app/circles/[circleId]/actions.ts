@@ -6,11 +6,7 @@ import type {
 	WorkDocument,
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
-import {
-	convertToCirclePlainObject,
-	convertToWorkPlainObject,
-	isValidCircleId,
-} from "@suzumina.click/shared-types";
+import { convertToWorkPlainObject, isValidCircleId } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 import { warn } from "@/lib/logger";
 
@@ -86,7 +82,15 @@ export async function getCircleInfo(circleId: string): Promise<CirclePlainObject
 		}
 
 		const data = circleDoc.data() as CircleDocument;
-		return convertToCirclePlainObject(data);
+		// CircleDocumentをCirclePlainObjectに変換
+		return {
+			circleId: circleDoc.id,
+			name: data.name,
+			nameEn: data.nameEn,
+			workCount: data.workIds?.length || 0,
+			createdAt: data.createdAt ? String(data.createdAt) : null,
+			updatedAt: data.updatedAt ? String(data.updatedAt) : null,
+		} as CirclePlainObject;
 	} catch (_error) {
 		// エラー発生時はnullを返す
 		return null;

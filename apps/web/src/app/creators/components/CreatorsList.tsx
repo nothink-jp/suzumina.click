@@ -1,10 +1,6 @@
 "use client";
 
-import {
-	CREATOR_TYPE_LABELS,
-	type CreatorPageInfo,
-	type CreatorType,
-} from "@suzumina.click/shared-types";
+import { CREATOR_TYPE_LABELS, type CreatorPageInfo } from "@suzumina.click/shared-types";
 import { ConfigurableList, type StandardListParams } from "@suzumina.click/ui/components/custom";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import Link from "next/link";
@@ -49,7 +45,12 @@ function CreatorListItem({ creator }: { creator: CreatorPageInfo }) {
 					<h3 className="font-semibold text-lg truncate">{creator.name}</h3>
 					<div className="flex flex-wrap gap-1 mt-2">
 						{creator.types.map((type) => {
-							const label = CREATOR_TYPE_LABELS[type as CreatorType] || type;
+							// Handle both old and new CreatorType values
+							let mappedType = type;
+							if (type === "voiceActor") {
+								mappedType = "voice";
+							}
+							const label = (CREATOR_TYPE_LABELS as any)[mappedType] || type;
 							return (
 								<Badge key={type} variant="secondary" className="text-xs">
 									{label}

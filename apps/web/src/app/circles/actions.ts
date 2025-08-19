@@ -1,7 +1,6 @@
 "use server";
 
 import type { CircleDocument, CirclePlainObject } from "@suzumina.click/shared-types";
-import { convertToCirclePlainObject } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 
 /**
@@ -27,7 +26,15 @@ export async function getCircles(params: {
 		const allCircles: CirclePlainObject[] = [];
 		for (const doc of circlesSnapshot.docs) {
 			const data = doc.data() as CircleDocument;
-			const plainObject = convertToCirclePlainObject(data);
+			// CircleDocumentをCirclePlainObjectに変換
+			const plainObject: CirclePlainObject = {
+				circleId: doc.id,
+				name: data.name,
+				nameEn: data.nameEn,
+				workCount: data.workIds?.length || 0,
+				createdAt: data.createdAt ? String(data.createdAt) : null,
+				updatedAt: data.updatedAt ? String(data.updatedAt) : null,
+			};
 			if (plainObject) {
 				allCircles.push(plainObject);
 			}

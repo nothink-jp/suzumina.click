@@ -54,8 +54,9 @@ export function getDateProperty(item: unknown): Date | null {
 				}
 			}
 			// Firestore Timestamp の場合
-			if (obj[prop].toDate && typeof obj[prop].toDate === "function") {
-				return obj[prop].toDate();
+			const value = obj[prop] as any;
+			if (value?.toDate && typeof value.toDate === "function") {
+				return value.toDate();
 			}
 		}
 	}
@@ -77,7 +78,7 @@ export function getNumericProperty(item: unknown, propertyPath: string): number 
 	const obj = item as Record<string, unknown>;
 	const parts = propertyPath.split(".");
 
-	let current = obj;
+	let current: any = obj;
 	for (const part of parts) {
 		if (current[part] === undefined) return null;
 		current = current[part];
@@ -106,7 +107,7 @@ export function getStringProperty(item: unknown, propertyPath: string): string |
 	const obj = item as Record<string, unknown>;
 	const parts = propertyPath.split(".");
 
-	let current = obj;
+	let current: any = obj;
 	for (const part of parts) {
 		if (current[part] === undefined) return null;
 		current = current[part];
@@ -133,7 +134,7 @@ export function getFilterableValue(item: unknown, propertyPath: string): unknown
 	const obj = item as Record<string, unknown>;
 	const parts = propertyPath.split(".");
 
-	let current = obj;
+	let current: any = obj;
 	for (const part of parts) {
 		if (current === null || current === undefined) return undefined;
 		current = current[part];

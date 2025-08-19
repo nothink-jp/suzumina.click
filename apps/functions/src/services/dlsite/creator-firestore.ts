@@ -30,12 +30,12 @@ interface ExtractedCreator {
  * クリエイタータイプのマッピング定義
  */
 const CREATOR_TYPE_MAP: ReadonlyArray<[string, CreatorType]> = [
-	["voice_by", "voice"],
-	["illust_by", "illustration"],
-	["scenario_by", "scenario"],
-	["music_by", "music"],
-	["others_by", "other"],
-	["directed_by", "other"],
+	["voice_by", "voice" as CreatorType],
+	["illust_by", "illustration" as CreatorType],
+	["scenario_by", "scenario" as CreatorType],
+	["music_by", "music" as CreatorType],
+	["others_by", "other" as CreatorType],
+	["directed_by", "other" as CreatorType],
 ];
 
 /**
@@ -182,7 +182,7 @@ export async function updateCreatorWorkMapping(
 			// 作品との関連情報を設定
 			const relationData: CreatorWorkRelation = {
 				workId,
-				roles: mapping.roles,
+				roles: mapping.roles as ("voice" | "scenario" | "illustration" | "music" | "other")[],
 				circleId: apiData.maker_id || "UNKNOWN",
 				updatedAt: Timestamp.now(),
 			};
@@ -316,8 +316,8 @@ export async function updateCreatorPrimaryRole(creatorId: string): Promise<boole
 
 		worksSnapshot.docs.forEach((doc) => {
 			const relation = doc.data() as CreatorWorkRelation;
-			relation.roles.forEach((role: CreatorType) => {
-				roleCount.set(role, (roleCount.get(role) || 0) + 1);
+			relation.roles.forEach((role) => {
+				roleCount.set(role as CreatorType, (roleCount.get(role as CreatorType) || 0) + 1);
 			});
 		});
 
