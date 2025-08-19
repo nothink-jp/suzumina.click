@@ -165,6 +165,7 @@ describe("Circle page server actions", () => {
 			mockDoc.mockReturnValue({
 				get: vi.fn().mockResolvedValue({
 					exists: true,
+					id: "RG12345",
 					data: () => mockCircleData,
 				}),
 			});

@@ -50,7 +50,7 @@ function CreatorListItem({ creator }: { creator: CreatorPageInfo }) {
 							if (type === "voiceActor") {
 								mappedType = "voice";
 							}
-							const label = (CREATOR_TYPE_LABELS as any)[mappedType] || type;
+							const label = (CREATOR_TYPE_LABELS as Record<string, string>)[mappedType] || type;
 							return (
 								<Badge key={type} variant="secondary" className="text-xs">
 									{label}

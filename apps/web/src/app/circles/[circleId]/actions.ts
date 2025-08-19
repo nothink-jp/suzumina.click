@@ -88,8 +88,8 @@ export async function getCircleInfo(circleId: string): Promise<CirclePlainObject
 			name: data.name,
 			nameEn: data.nameEn,
 			workCount: data.workIds?.length || 0,
-			createdAt: data.createdAt ? String(data.createdAt) : null,
-			updatedAt: data.updatedAt ? String(data.updatedAt) : null,
+			createdAt: data.createdAt?.toDate?.().toISOString() || null,
+			updatedAt: data.updatedAt?.toDate?.().toISOString() || null,
 		} as CirclePlainObject;
 	} catch (_error) {
 		// エラー発生時はnullを返す

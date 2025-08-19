@@ -32,8 +32,8 @@ export async function getCircles(params: {
 				name: data.name,
 				nameEn: data.nameEn,
 				workCount: data.workIds?.length || 0,
-				createdAt: data.createdAt ? String(data.createdAt) : null,
-				updatedAt: data.updatedAt ? String(data.updatedAt) : null,
+				createdAt: data.createdAt?.toDate?.().toISOString() || null,
+				updatedAt: data.updatedAt?.toDate?.().toISOString() || null,
 			};
 			if (plainObject) {
 				allCircles.push(plainObject);
