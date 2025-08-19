@@ -12,51 +12,119 @@ interface WorkCardProps {
 	priority?: boolean; // LCP画像最適化用
 }
 
+// 日付フォーマット関数を外部に抽出
+const formatDate = (dateString: string) => {
+	try {
+		// 日本語形式の日付（例: "2024年04月27日"）をパース
+		const japaneseMatch = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+		if (japaneseMatch) {
+			const [, year, month, day] = japaneseMatch;
+			const date = new Date(Number(year), Number(month) - 1, Number(day));
+			return date.toLocaleDateString("ja-JP", {
+				timeZone: "Asia/Tokyo",
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+			});
+		}
+
+		// ISO形式やその他の形式を試す
+		const date = new Date(dateString);
+		if (!Number.isNaN(date.getTime())) {
+			return date.toLocaleDateString("ja-JP", {
+				timeZone: "Asia/Tokyo",
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+			});
+		}
+
+		// パースできない場合は元の文字列を返す
+		return dateString;
+	} catch {
+		return dateString;
+	}
+};
+
+// 声優情報の表示コンポーネントを抽出
+interface VoiceActor {
+	id?: string;
+	name: string;
+}
+
+const VoiceActorsDisplay = ({ voiceActors }: { voiceActors: VoiceActor[] }) => {
+	if (voiceActors.length === 0) return null;
+
+	return (
+		<div className="flex items-center gap-1 mb-2 text-xs">
+			<Users className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+			<span className="text-muted-foreground">CV:</span>
+			<span className="text-foreground font-medium line-clamp-1">
+				{voiceActors.slice(0, 2).map((va, index) => (
+					<React.Fragment key={va.id || va.name}>
+						{index > 0 && ", "}
+						<Link
+							href={`/creators/${encodeURIComponent(va.id || va.name)}`}
+							className="hover:underline"
+						>
+							{va.name}
+						</Link>
+					</React.Fragment>
+				))}
+				{voiceActors.length > 2 && " 他"}
+			</span>
+		</div>
+	);
+};
+
+// 発売日表示の取得
+const getDisplayDate = (work: WorkPlainObject) => {
+	const releaseDate = work.releaseDate;
+	return releaseDate ? formatDate(releaseDate) : "不明";
+};
+
+// 価格表示コンポーネント
+const PriceDisplay = ({
+	currentPrice,
+	originalPrice,
+	isOnSale,
+	discount,
+}: {
+	currentPrice: number;
+	originalPrice: number;
+	isOnSale: boolean;
+	discount?: number;
+}) => {
+	if (isOnSale && originalPrice) {
+		return (
+			<div className="flex items-center gap-2">
+				<span className="text-lg font-bold text-destructive">¥{currentPrice.toLocaleString()}</span>
+				<span className="text-sm text-muted-foreground line-through">
+					¥{originalPrice.toLocaleString()}
+				</span>
+				<Badge className="bg-destructive/10 text-destructive text-xs">{discount}% OFF</Badge>
+			</div>
+		);
+	}
+	return (
+		<span className="text-lg font-bold text-foreground">¥{currentPrice.toLocaleString()}</span>
+	);
+};
+
 export default function WorkCard({ work, variant = "default", priority = false }: WorkCardProps) {
 	const isCompact = variant === "compact";
 
 	// 価格表示の計算
-	const currentPrice = work.price.current;
-	const originalPrice = work.price.original;
+	const currentPrice = work.price?.current ?? 0;
+	const originalPrice = work.price?.original ?? 0;
 	// NOTE: 将来的にはWorkPrice.isDiscounted()を使用することを推奨
-	const isOnSale = work.price.discount !== undefined && work.price.discount > 0;
-
-	// 日付フォーマット
-	const formatDate = (dateString: string) => {
-		try {
-			// 日本語形式の日付（例: "2024年04月27日"）をパース
-			const japaneseMatch = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-			if (japaneseMatch) {
-				const [, year, month, day] = japaneseMatch;
-				const date = new Date(Number(year), Number(month) - 1, Number(day));
-				return date.toLocaleDateString("ja-JP", {
-					timeZone: "Asia/Tokyo",
-					year: "numeric",
-					month: "2-digit",
-					day: "2-digit",
-				});
-			}
-
-			// ISO形式やその他の形式を試す
-			const date = new Date(dateString);
-			if (!Number.isNaN(date.getTime())) {
-				return date.toLocaleDateString("ja-JP", {
-					timeZone: "Asia/Tokyo",
-					year: "numeric",
-					month: "2-digit",
-					day: "2-digit",
-				});
-			}
-
-			// パースできない場合は元の文字列を返す
-			return dateString;
-		} catch {
-			return dateString;
-		}
-	};
+	const isOnSale = work.price?.discount !== undefined && work.price.discount > 0;
 
 	// ランキング情報は現在利用できません
 	const latestRank = undefined;
+
+	// 発売日
+	const displayDate = getDisplayDate(work);
 
 	return (
 		<article
@@ -145,48 +213,14 @@ export default function WorkCard({ work, variant = "default", priority = false }
 					</ul>
 
 					{/* 声優情報 */}
-					{(() => {
-						// WorkPlainObjectはcreatorsにvoiceActorsを直接持つ
-						const displayVoiceActors = work.creators?.voiceActors || [];
-
-						if (displayVoiceActors.length === 0) return null;
-
-						return (
-							<div className="flex items-center gap-1 mb-2 text-xs">
-								<Users className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
-								<span className="text-muted-foreground">CV:</span>
-								<span className="text-foreground font-medium line-clamp-1">
-									{displayVoiceActors.slice(0, 2).map((va, index) => (
-										<React.Fragment key={va.id || va.name}>
-											{index > 0 && ", "}
-											<Link
-												href={`/creators/${encodeURIComponent(va.id || va.name)}`}
-												className="hover:underline"
-											>
-												{va.name}
-											</Link>
-										</React.Fragment>
-									))}
-									{displayVoiceActors.length > 2 && " 他"}
-								</span>
-							</div>
-						);
-					})()}
+					<VoiceActorsDisplay voiceActors={work.creators?.voiceActors || []} />
 
 					{/* 発売日 */}
 					<div className="flex items-center text-sm mb-2">
 						<Calendar className="h-4 w-4 text-muted-foreground mr-1" aria-hidden="true" />
-						{(() => {
-							// 統合された releaseDate を優先、次に registDate を使用
-							const releaseDate = work.releaseDate;
-							const displayDate = releaseDate ? formatDate(releaseDate) : "不明";
-
-							return (
-								<time dateTime={releaseDate} title={`発売日: ${displayDate}`}>
-									<span className="text-foreground">{displayDate}</span>
-								</time>
-							);
-						})()}
+						<time dateTime={work.releaseDate} title={`発売日: ${displayDate}`}>
+							<span className="text-foreground">{displayDate}</span>
+						</time>
 					</div>
 
 					{/* 価格表示 */}
@@ -194,23 +228,12 @@ export default function WorkCard({ work, variant = "default", priority = false }
 						<div className="mb-3">
 							<div className="flex items-center justify-between">
 								<div>
-									{isOnSale && originalPrice ? (
-										<div className="flex items-center gap-2">
-											<span className="text-lg font-bold text-destructive">
-												¥{currentPrice.toLocaleString()}
-											</span>
-											<span className="text-sm text-muted-foreground line-through">
-												¥{originalPrice.toLocaleString()}
-											</span>
-											<Badge className="bg-destructive/10 text-destructive text-xs">
-												{work.price.discount}% OFF
-											</Badge>
-										</div>
-									) : (
-										<span className="text-lg font-bold text-foreground">
-											¥{currentPrice.toLocaleString()}
-										</span>
-									)}
+									<PriceDisplay
+										currentPrice={currentPrice}
+										originalPrice={originalPrice}
+										isOnSale={isOnSale}
+										discount={work.price?.discount}
+									/>
 								</div>
 							</div>
 						</div>

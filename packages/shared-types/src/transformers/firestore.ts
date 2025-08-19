@@ -16,7 +16,11 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 	// Temporary: Use existing conversion utilities
 	// This will be replaced with proper implementation in Week 3
 	const { convertToWorkPlainObject } = require("../utilities/work-conversions");
-	return convertToWorkPlainObject(doc as unknown);
+	const result = convertToWorkPlainObject(doc as unknown);
+	if (result.isOk()) {
+		return result.value;
+	}
+	throw new Error(`Failed to convert work document: ${doc.id || doc.productId}`);
 }
 
 /**

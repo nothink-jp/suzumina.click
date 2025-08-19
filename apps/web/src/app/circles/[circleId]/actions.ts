@@ -8,8 +8,8 @@ import type {
 } from "@suzumina.click/shared-types";
 import {
 	convertToCirclePlainObject,
-	convertToWorkPlainObject,
 	isValidCircleId,
+	workTransformers,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 import { warn } from "@/lib/logger";
@@ -143,16 +143,13 @@ export async function getCircleWorksList(params: {
 		// WorkPlainObjectに変換
 		const convertedWorks: WorkPlainObject[] = [];
 		for (const work of allMatchingWorks) {
-			const result = convertToWorkPlainObject(work);
-			if (result.isOk()) {
-				convertedWorks.push(result.value);
-			} else {
+			try {
+				const converted = workTransformers.fromFirestore(work);
+				convertedWorks.push(converted);
+			} catch (error) {
 				// Log warning but continue processing other items
 				warn(`Failed to convert work ${work.id}`, {
-					error:
-						result.error.type === "DatabaseError"
-							? result.error.detail
-							: `${result.error.resource} not found: ${result.error.id}`,
+					error: error instanceof Error ? error.message : String(error),
 				});
 			}
 		}
