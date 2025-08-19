@@ -5,6 +5,7 @@
 
 // === API Schemas ===
 export * from "./api-schemas/dlsite-raw";
+export { Video as VideoCompat, VideoEntity } from "./compatibility/video-entity-compat";
 // Compatibility Layer (Temporary - will be removed in Phase 1 Week 3)
 export { Work as WorkCompat, WorkEntity } from "./compatibility/work-entity-compat";
 // === Configuration ===
@@ -34,6 +35,25 @@ export * from "./entities/work-entity";
 export * from "./entities/work-evaluation";
 // === Migration Utilities ===
 export * from "./migrations";
+export {
+	canCreateButton,
+	formatDuration,
+	getAgeInDays,
+	getAllTags as getVideoAllTags,
+	getAudioButtonCount,
+	getDisplayTitle,
+	getFormattedViewCount,
+	getThumbnailUrl,
+	getYouTubeUrl,
+	hasAudioButtons,
+	isArchived,
+	isLive as isVideoLive,
+	isOlderThan,
+	isPossiblyLive,
+	isPremiere,
+	isUpcoming,
+	videoOperations,
+} from "./operations/video";
 // === Functional Architecture (New) ===
 // Operations (Business Logic)
 export * from "./operations/work";
@@ -44,6 +64,11 @@ export * from "./plain-objects/video-plain";
 export * from "./plain-objects/work-plain";
 // Transformers
 export * from "./transformers/firestore";
+export {
+	fromFirestore as videoFromFirestore,
+	toFirestore as videoToFirestore,
+	videoTransformers,
+} from "./transformers/video-firestore";
 // === Firestore Types ===
 // FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead
 // FirestoreServerAudioButtonData is available from entities/audio-button
@@ -81,6 +106,14 @@ export * from "./utilities/search-filters";
 export * from "./utilities/work-conversions";
 // ユーティリティ関数
 export * from "./utils";
+export {
+	canUpdateVideo,
+	type ValidationResult as VideoValidationResult,
+	validateChannelId,
+	validateVideo,
+	validateVideoId,
+	videoValidators,
+} from "./validators/video";
 // Validators
 export * from "./validators/work";
 // === Value Objects ===
