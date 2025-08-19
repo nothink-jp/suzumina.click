@@ -13,11 +13,6 @@ export * from "./config";
 // === AudioButton Migration (Phase 3) ===
 // Keep existing AudioButton Entity export for now
 export * from "./entities/audio-button";
-
-// New functional exports will be added in next iteration
-// export { audioButtonOperations } from "./operations/audio-button";
-// export { audioButtonValidators } from "./validators/audio-button";
-// export { audioButtonTransformers } from "./transformers/audio-button";
 // === Entities ===
 // Base entity infrastructure
 export * from "./entities/base/entity";
@@ -68,6 +63,8 @@ export * from "./plain-objects/audio-button-plain";
 export * from "./plain-objects/circle-plain";
 export * from "./plain-objects/video-plain";
 export * from "./plain-objects/work-plain";
+// New functional exports (available for gradual migration)
+export { audioButtonTransformers } from "./transformers/audio-button";
 // Transformers
 export { workTransformers } from "./transformers/firestore";
 export {

@@ -168,7 +168,7 @@ export function createAudioButton(params: {
 export function updateAudioButton(
 	button: AudioButtonPlainObject,
 	updates: Partial<
-		Pick<AudioButtonPlainObject, "buttonText" | "tags" | "isPublic" | "startTime" | "endTime">
+		Pick<AudioButtonPlainObject, "title" | "tags" | "isPublic" | "startTime" | "endTime">
 	>,
 ): AudioButtonPlainObject {
 	return {
@@ -184,7 +184,7 @@ export function updateAudioButton(
 export function incrementViewCount(button: AudioButtonPlainObject): AudioButtonPlainObject {
 	return {
 		...button,
-		viewCount: (button.viewCount || 0) + 1,
+		playCount: (button.playCount || 0) + 1,
 		updatedAt: new Date().toISOString(),
 	};
 }
@@ -260,7 +260,7 @@ export function decrementFavoriteCount(button: AudioButtonPlainObject): AudioBut
  */
 export function updateStatistics(
 	button: AudioButtonPlainObject,
-	stats: Partial<Pick<AudioButtonPlainObject, "viewCount" | "likeCount" | "dislikeCount">>,
+	stats: Partial<Pick<AudioButtonPlainObject, "playCount" | "likeCount" | "dislikeCount">>,
 ): AudioButtonPlainObject {
 	return {
 		...button,
