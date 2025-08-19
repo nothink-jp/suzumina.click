@@ -7,7 +7,7 @@ import type {
 	WorkDocument,
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
-import { convertToWorkPlainObject, isValidCreatorId } from "@suzumina.click/shared-types";
+import { isValidCreatorId, workTransformers } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 import { warn } from "@/lib/logger";
 
@@ -171,16 +171,13 @@ async function fetchWorkDocuments(
 function convertWorksToPlainObjects(allWorks: WorkDocument[]): WorkPlainObject[] {
 	const convertedWorks: WorkPlainObject[] = [];
 	for (const work of allWorks) {
-		const result = convertToWorkPlainObject(work);
-		if (result.isOk()) {
-			convertedWorks.push(result.value);
-		} else {
+		try {
+			const converted = workTransformers.fromFirestore(work);
+			convertedWorks.push(converted);
+		} catch (error) {
 			// Log warning but continue processing other items
 			warn(`Failed to convert work ${work.id}`, {
-				error:
-					result.error.type === "DatabaseError"
-						? result.error.detail
-						: `${result.error.resource} not found: ${result.error.id}`,
+				error: error instanceof Error ? error.message : String(error),
 			});
 		}
 	}

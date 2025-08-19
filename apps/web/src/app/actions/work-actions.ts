@@ -1,12 +1,12 @@
 "use server";
 
 import {
-	convertToWorkPlainObject,
 	type WorkDocument,
 	type WorkListResultPlain,
 	type WorkPaginationParams,
 	WorkPaginationParamsSchema,
 	type WorkPlainObject,
+	workTransformers,
 } from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/components/system/protected-route";
@@ -289,19 +289,8 @@ function processWorkDocuments(
 	for (const doc of workDocs) {
 		try {
 			const data = { id: doc.id, ...doc.data() } as WorkDocument;
-			const result = convertToWorkPlainObject(data);
-			if (result.isOk()) {
-				works.push(result.value);
-			} else {
-				logger.warn("作品データ変換エラー", {
-					docId: doc.id,
-					error:
-						result.error.type === "DatabaseError"
-							? result.error.detail
-							: `${result.error.resource} not found: ${result.error.id}`,
-				});
-				// 変換エラーは無視して次の作品を処理
-			}
+			const converted = workTransformers.fromFirestore(data);
+			works.push(converted);
 		} catch (conversionError) {
 			logger.warn("作品データ変換エラー", {
 				docId: doc.id,

@@ -6,9 +6,9 @@ import type {
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
 import {
-	convertToWorkPlainObject,
 	filterR18Content,
 	filterWorksByLanguage,
+	workTransformers,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
@@ -345,18 +345,8 @@ async function convertDocsToWorks(
 			if (!data.id) {
 				data.id = data.productId;
 			}
-			const result = convertToWorkPlainObject(data);
-			if (result.isOk()) {
-				works.push(result.value);
-			} else {
-				logger.warn("作品データ変換エラー", {
-					workId: doc.id,
-					error:
-						result.error.type === "DatabaseError"
-							? result.error.detail
-							: `${result.error.resource} not found: ${result.error.id}`,
-				});
-			}
+			const converted = workTransformers.fromFirestore(data);
+			works.push(converted);
 		} catch (error) {
 			// エラーがあっても他のデータの処理は続行
 			logger.warn("作品データ変換エラー", {
@@ -460,18 +450,8 @@ function convertWorksToPainObjects(paginatedWorks: WorkDocument[]): WorkPlainObj
 			if (!data.id) {
 				data.id = data.productId;
 			}
-			const result = convertToWorkPlainObject(data);
-			if (result.isOk()) {
-				works.push(result.value);
-			} else {
-				logger.warn("作品データ変換エラー", {
-					workId: data.id || data.productId,
-					error:
-						result.error.type === "DatabaseError"
-							? result.error.detail
-							: `${result.error.resource} not found: ${result.error.id}`,
-				});
-			}
+			const converted = workTransformers.fromFirestore(data);
+			works.push(converted);
 		} catch (error) {
 			// エラーがあっても他のデータの処理は続行
 			logger.warn("作品データ変換エラー", {
@@ -592,8 +572,16 @@ export async function getWorkById(workId: string): Promise<WorkPlainObject | nul
 		}
 
 		// フロントエンド形式に変換
-		const result = convertToWorkPlainObject(data);
-		return result.isOk() ? result.value : null;
+		try {
+			const converted = workTransformers.fromFirestore(data);
+			return converted;
+		} catch (error) {
+			logger.warn("作品データ変換エラー", {
+				workId,
+				error: error instanceof Error ? error.message : String(error),
+			});
+			return null;
+		}
 	} catch (error) {
 		logger.error("作品取得エラー", {
 			workId,
@@ -657,10 +645,8 @@ export async function getRelatedWorks(
 		for (const work of topRelated) {
 			try {
 				if (!work.id) work.id = work.productId;
-				const plainObjectResult = convertToWorkPlainObject(work);
-				if (plainObjectResult.isOk()) {
-					relatedWorks.push(plainObjectResult.value);
-				}
+				const converted = workTransformers.fromFirestore(work);
+				relatedWorks.push(converted);
 			} catch (error) {
 				// エラーがあっても他のデータの処理は続行
 				logger.warn("関連作品変換エラー", {
