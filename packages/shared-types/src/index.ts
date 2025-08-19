@@ -10,6 +10,33 @@ export { Video as VideoCompat, VideoEntity } from "./compatibility/video-entity-
 export { Work as WorkCompat, WorkEntity } from "./compatibility/work-entity-compat";
 // === Configuration ===
 export * from "./config";
+// === Core utilities ===
+export {
+	type BusinessRuleError,
+	businessRuleError,
+	combineValidationErrors,
+	type DatabaseError,
+	type DomainError,
+	databaseError,
+	Err,
+	err,
+	errAsync,
+	isDomainError,
+	isValidationError,
+	type NetworkError,
+	type NotFoundError,
+	networkError,
+	notFoundError,
+	Ok,
+	ok,
+	okAsync,
+	Result,
+	ResultAsync,
+	type UnauthorizedError,
+	unauthorizedError,
+	type ValidationError as ResultValidationError,
+	validationError,
+} from "./core/result";
 // === AudioButton Migration (Phase 3) ===
 // Keep existing AudioButton Entity export for now
 export * from "./entities/audio-button";
