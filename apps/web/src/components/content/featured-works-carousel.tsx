@@ -34,7 +34,7 @@ export function FeaturedWorksCarousel({ works }: FeaturedWorksCarouselProps) {
 			<CarouselContent className="-ml-2 md:-ml-4">
 				{works.map((work, index) => (
 					<CarouselItem
-						key={work.id}
+						key={work.id || work.productId || `work-${index}`}
 						className="pl-2 md:pl-4 min-w-0"
 						style={{
 							flexBasis: "clamp(240px, 45vw, 320px)",
