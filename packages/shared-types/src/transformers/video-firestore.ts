@@ -30,19 +30,19 @@ export function fromFirestore(doc: FirestoreServerVideoData): VideoPlainObject {
 			scheduledStartTime:
 				doc.liveStreamingDetails.scheduledStartTime instanceof Date
 					? doc.liveStreamingDetails.scheduledStartTime.toISOString()
-					: doc.liveStreamingDetails.scheduledStartTime,
+					: (doc.liveStreamingDetails.scheduledStartTime as string | undefined),
 			scheduledEndTime:
 				doc.liveStreamingDetails.scheduledEndTime instanceof Date
 					? doc.liveStreamingDetails.scheduledEndTime.toISOString()
-					: doc.liveStreamingDetails.scheduledEndTime,
+					: (doc.liveStreamingDetails.scheduledEndTime as string | undefined),
 			actualStartTime:
 				doc.liveStreamingDetails.actualStartTime instanceof Date
 					? doc.liveStreamingDetails.actualStartTime.toISOString()
-					: doc.liveStreamingDetails.actualStartTime,
+					: (doc.liveStreamingDetails.actualStartTime as string | undefined),
 			actualEndTime:
 				doc.liveStreamingDetails.actualEndTime instanceof Date
 					? doc.liveStreamingDetails.actualEndTime.toISOString()
-					: doc.liveStreamingDetails.actualEndTime,
+					: (doc.liveStreamingDetails.actualEndTime as string | undefined),
 			concurrentViewers: doc.liveStreamingDetails.concurrentViewers,
 		};
 	}
@@ -50,8 +50,8 @@ export function fromFirestore(doc: FirestoreServerVideoData): VideoPlainObject {
 	// Create base plain object
 	const plainObject: VideoPlainObject = {
 		...doc,
-		publishedAt,
-		lastFetchedAt,
+		publishedAt: publishedAt as string,
+		lastFetchedAt: lastFetchedAt as string,
 		liveStreamingDetails,
 		// Add computed properties
 		_computed: computeProperties(doc),

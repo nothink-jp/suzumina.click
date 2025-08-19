@@ -25,21 +25,23 @@ export function isPremiere(video: VideoPlainObject): boolean {
  * Checks if a video is currently live
  */
 export function isLive(video: VideoPlainObject): boolean {
-	return video.videoType === "live" || (video.liveBroadcastContent as string) === "live";
+	return video.liveBroadcastContent === "live";
 }
 
 /**
  * Checks if a video is upcoming (scheduled)
  */
 export function isUpcoming(video: VideoPlainObject): boolean {
-	return video.videoType === "upcoming" || (video.liveBroadcastContent as string) === "upcoming";
+	return video.liveBroadcastContent === "upcoming";
 }
 
 /**
  * Checks if a video might be live (uncertain state)
+ * Note: This is a legacy state that may not be used anymore
  */
 export function isPossiblyLive(video: VideoPlainObject): boolean {
-	return (video.videoType as string) === "possibly_live";
+	// "possibly_live" is not a valid VideoType, always return false
+	return false;
 }
 
 /**
