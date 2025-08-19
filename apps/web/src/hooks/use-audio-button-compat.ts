@@ -18,7 +18,10 @@ export function useAudioButtonCompat(
 		try {
 			return toAudioButtonCompat(audioButton);
 		} catch (error) {
-			console.error("Failed to convert AudioButton:", error);
+			// テスト環境以外でエラーログを出力
+			if (process.env.NODE_ENV !== "test") {
+				console.error("Failed to convert AudioButton:", error);
+			}
 			// フォールバック: 最小限のデータを返す
 			return new AudioButtonCompat({
 				id: "unknown",

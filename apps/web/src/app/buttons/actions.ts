@@ -1,8 +1,8 @@
 "use server";
 
 import {
-	AudioButton,
 	type AudioButtonPlainObject,
+	audioButtonTransformers,
 	type CreateAudioButtonInput,
 	type FirestoreServerAudioButtonData,
 	parseDurationToSeconds,
@@ -14,11 +14,13 @@ import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 
 /**
- * FirestoreServerAudioButtonDataをAudioButtonに変換するヘルパー関数
+ * FirestoreServerAudioButtonDataをAudioButtonPlainObjectに変換するヘルパー関数
  */
-function convertFirestoreToAudioButton(button: FirestoreServerAudioButtonData): AudioButton | null {
+function convertFirestoreToAudioButtonPlain(
+	button: FirestoreServerAudioButtonData,
+): AudioButtonPlainObject | null {
 	try {
-		return AudioButton.fromFirestoreData(button);
+		return audioButtonTransformers.fromFirestore(button);
 	} catch (error) {
 		logger.error("AudioButton変換エラー", {
 			buttonId: button.id,
@@ -141,11 +143,9 @@ async function fetchAndConvertButtons(
 		return { ...data, id: doc.id };
 	});
 
-	const entityButtons = buttons
-		.map(convertFirestoreToAudioButton)
-		.filter((button): button is AudioButton => button !== null);
-
-	return entityButtons.map((button) => button.toPlainObject());
+	return buttons
+		.map(convertFirestoreToAudioButtonPlain)
+		.filter((button): button is AudioButtonPlainObject => button !== null);
 }
 
 /**
@@ -527,11 +527,11 @@ export async function getAudioButtonById(
 
 		// dataにidを含めたデータを作成
 		const buttonData = { ...data, id };
-		const button = convertFirestoreToAudioButton(buttonData);
+		const button = convertFirestoreToAudioButtonPlain(buttonData);
 		if (!button) {
 			return { success: false, error: "音声ボタンのデータ変換に失敗しました" };
 		}
-		return { success: true, data: button.toPlainObject() };
+		return { success: true, data: button };
 	} catch (error) {
 		logger.error("音声ボタン取得エラー", { id, error });
 		return { success: false, error: "音声ボタンの取得に失敗しました" };

@@ -1,8 +1,8 @@
 "use server";
 
 import {
-	AudioButton,
 	type AudioButtonPlainObject,
+	audioButtonTransformers,
 	type FirestoreServerAudioButtonData,
 } from "@suzumina.click/shared-types";
 import { getLikeDislikeStatusAction } from "@/actions/dislikes";
@@ -57,12 +57,12 @@ export async function getFavoritesList(
 			const audioButtonData = audioButtonsMap.get(fav.audioButtonId);
 			if (!audioButtonData) return;
 
-			const audioButton = AudioButton.fromFirestoreData(
+			const plainObject = audioButtonTransformers.fromFirestore(
 				audioButtonData as FirestoreServerAudioButtonData,
 			);
-			if (audioButton) {
-				audioButtons.push(audioButton.toPlainObject());
-				audioButtonIds.push(audioButton.id.toString());
+			if (plainObject) {
+				audioButtons.push(plainObject);
+				audioButtonIds.push(plainObject.id);
 			}
 		});
 
