@@ -1,7 +1,7 @@
 # ADR-003: Entity/DDDパターンから関数型アーキテクチャへの完全移行
 
 ## ステータス
-提案 (2025-08-19)
+実施中 (2025-08-19開始)
 
 ## コンテキスト
 
@@ -57,46 +57,49 @@ const workTransformers = {
 ## 移行計画
 
 ### Phase 0: 準備（Week 1: 2025-08-19〜25）
-- [ ] 移行計画の承認
-- [ ] 現在のEntity使用箇所の完全なマッピング
-- [ ] テスト戦略の策定
-- [ ] ロールバック計画の準備
+- [x] 移行計画の承認
+- [x] 現在のEntity使用箇所の完全なマッピング
+- [x] テスト戦略の策定
+- [x] ロールバック計画の準備
 
-### Phase 1: Work Entity削除（Week 2-3: 2025-08-26〜09-08）
+### Phase 1: Work Entity削除（Week 2-3: 2025-08-26〜09-08） ✅ 完了
 **理由**: 最も使用頻度が高く、既にPlainObjectが存在
 
 #### Week 2: 実装
-- [ ] work-operations.ts作成（ビジネスロジック移植）
-- [ ] work-transformers.ts作成（データ変換）
-- [ ] work-validators.ts作成（バリデーション）
-- [ ] 既存のWorkEntityメソッドを関数として再実装
+- [x] work-operations.ts作成（ビジネスロジック移植）
+- [x] work-transformers.ts作成（データ変換）
+- [x] work-validators.ts作成（バリデーション）
+- [x] 既存のWorkEntityメソッドを関数として再実装
 
 #### Week 3: 移行
-- [ ] apps/web内のWork Entity使用箇所を関数呼び出しに変更
-- [ ] テストの書き換え
-- [ ] Work Entity関連ファイルの削除
+- [x] apps/web内のWork Entity使用箇所を関数呼び出しに変更
+- [x] テストの書き換え
+- [x] Work Entity関連ファイルの削除
 
-### Phase 2: Video Entity簡素化（Week 4-5: 2025-09-09〜22）
+### Phase 2: Video Entity簡素化（Week 4-5: 2025-09-09〜22） ✅ 完了
 **理由**: 最も複雑だが、使用箇所が限定的
 
 #### Week 4: 実装
-- [ ] video-operations.ts作成（状態遷移ロジック）
-- [ ] video-validators.ts作成（複雑なバリデーション）
-- [ ] AudioButton関連の移行
+- [x] video-operations.ts作成（状態遷移ロジック）
+- [x] video-validators.ts作成（複雑なバリデーション）
+- [x] AudioButton関連の移行
 
 #### Week 5: 移行とテスト
-- [ ] 管理画面のVideo Entity使用箇所を移行
-- [ ] E2Eテストで状態遷移を確認
-- [ ] Video Entity削除
+- [x] 管理画面のVideo Entity使用箇所を移行
+- [x] E2Eテストで状態遷移を確認
+- [x] Video Entity削除
 
-### Phase 3: User/残りの整理（Week 6: 2025-09-23〜29）
-- [ ] User関連の整理
+### Phase 3: User/残りの整理（Week 6: 2025-09-23〜29） 🔄 進行中
+- [x] User関連の整理（既にZodスキーマベース）
+- [x] AudioButton関数化モジュール作成
+- [ ] AudioButton Entityの段階的移行（863箇所）
 - [ ] BaseEntity/BaseValueObject削除
-- [ ] core/result, core/errorsの評価（維持 or 削除）
+- [x] core/result, core/errorsの評価（維持決定）
 
-### Phase 4: 最終調整（Week 7: 2025-09-30〜10-06）
+### Phase 4: 最終調整（Week 7: 2025-09-30〜10-06） 🔄 進行中
+- [x] neverthrowインポート警告解決
 - [ ] 全体的な型定義の整理
-- [ ] ドキュメント更新
+- [x] ドキュメント更新
 - [ ] パフォーマンステスト
 - [ ] 最終レビュー
 
@@ -157,3 +160,4 @@ packages/shared-types/src/
 
 ## 更新履歴
 - 2025-08-19: 初版作成
+- 2025-08-19: Phase 0-2完了、Phase 3-4進行中
