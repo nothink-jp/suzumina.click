@@ -52,9 +52,60 @@ const mockConvertToWorkPlainObject = (data: any) => {
 	};
 };
 
-// convertToWorkPlainObjectとconvertToCirclePlainObjectのモック
+// convertToWorkPlainObject, workTransformers, convertToCirclePlainObjectのモック
 vi.mock("@suzumina.click/shared-types", () => ({
 	convertToWorkPlainObject: vi.fn(),
+	workTransformers: {
+		fromFirestore: vi.fn((data) => {
+			// Use the mock helper function to transform data
+			const mockConvertToWorkPlainObject = (data: any) => {
+				if (!data || !data.id || !data.productId) return null;
+				return {
+					...data,
+					price: data.price || {
+						current: 0,
+						currency: "JPY",
+						formattedPrice: "¥0",
+					},
+					rating: data.rating,
+					creators: data.creators || {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: data.salesStatus || {
+						isOnSale: true,
+						isDiscounted: false,
+						isFree: false,
+						isSoldOut: false,
+						isReserveWork: false,
+						dlsiteplaySupported: false,
+					},
+					sampleImages: data.sampleImages || [],
+					genres: data.genres || [],
+					customGenres: data.customGenres || [],
+					_computed: {
+						displayTitle: data.title,
+						isAdult: data.category === "adult",
+						thumbnailUrl: data.thumbnailUrl || "",
+						priceInYen: data.price?.amount || 0,
+						discountRate: 0,
+						hasDiscount: false,
+						creatorNames: "",
+						voiceActorNames: "",
+						genreNames: "",
+						releaseYear: 2024,
+						formattedReleaseDate: "2024年1月1日",
+						detailPageUrl: `/works/${data.productId}`,
+						purchasePageUrl: `https://www.dlsite.com/maniax/work/=/product_id/${data.productId}.html`,
+					},
+				};
+			};
+			return mockConvertToWorkPlainObject(data);
+		}),
+	},
 	convertToCirclePlainObject: vi.fn((data) => {
 		if (!data) return null;
 		return {

@@ -68,9 +68,60 @@ const mockConvertToWorkPlainObject = (data: any) => {
 	};
 };
 
-// convertToWorkPlainObjectのモック
+// convertToWorkPlainObject, workTransformersのモック
 vi.mock("@suzumina.click/shared-types", () => ({
 	convertToWorkPlainObject: vi.fn(),
+	workTransformers: {
+		fromFirestore: vi.fn((data) => {
+			// Use the mock helper function to transform data
+			const mockConvertToWorkPlainObject = (data: any) => {
+				if (!data || !data.id || !data.productId) return null;
+				return {
+					...data,
+					price: data.price || { current: 0, currency: "JPY" },
+					rating: data.rating || { stars: 0, reviewCount: 0 },
+					creators: data.creators || {
+						voiceActors: [],
+						scenario: [],
+						illustration: [],
+						music: [],
+						others: [],
+					},
+					salesStatus: data.salesStatus || {},
+					sampleImages: data.sampleImages || [],
+					genres: data.genres || [],
+					customGenres: data.customGenres || [],
+					_computed: {
+						displayTitle: data.title,
+						isAdult: data.category === "adult",
+						thumbnailUrl: data.thumbnailUrl || "",
+						priceInYen: data.price?.current || 0,
+						discountRate: 0,
+						hasDiscount: false,
+						creatorNames: "",
+						voiceActorNames: "",
+						genreNames: "",
+						releaseYear: 2024,
+						formattedReleaseDate: "2024年1月1日",
+						detailPageUrl: `/works/${data.productId}`,
+						purchasePageUrl: `https://www.dlsite.com/maniax/work/=/product_id/${data.productId}.html`,
+						relativeUrl: `/works/${data.productId}`,
+						isAdultContent: false,
+						isVoiceWork: data.category === "SOU",
+						isGameWork: false,
+						isMangaWork: false,
+						isNewRelease: false,
+						isPopular: false,
+						primaryLanguage: "ja",
+						availableLanguages: ["ja"],
+						searchableText: `${data.title} ${data.circle}`,
+						tags: data.tags || [],
+					},
+				};
+			};
+			return mockConvertToWorkPlainObject(data);
+		}),
+	},
 	isValidCreatorId: vi.fn((id) => /^[A-Z]{2}\d{5,7}$/.test(id)),
 }));
 
@@ -100,12 +151,12 @@ describe("Creator page server actions", () => {
 	const setupCreatorMocks = (creatorData: any, worksSnapshot: any) => {
 		// mockDocの設定
 		mockDoc.mockReturnValue({
-			get: vi.fn().mockResolvedValueOnce({
+			get: vi.fn().mockResolvedValue({
 				exists: true,
 				data: () => creatorData,
 				ref: {
 					collection: vi.fn().mockReturnValue({
-						get: vi.fn().mockResolvedValueOnce(worksSnapshot),
+						get: vi.fn().mockResolvedValue(worksSnapshot),
 					}),
 				},
 			}),
@@ -238,7 +289,7 @@ describe("Creator page server actions", () => {
 					releaseDateISO: "2025-01-15",
 					releaseDateDisplay: "2025年01月15日",
 					description: "魔法の世界",
-					genres: [{ name: "ファンタジー" }],
+					genres: ["ファンタジー"],
 					customGenres: ["魔法"],
 					creators: {
 						voice_by: [{ name: "声優A", id: "VA001" }],
@@ -292,7 +343,7 @@ describe("Creator page server actions", () => {
 					releaseDateISO: "2025-01-05",
 					releaseDateDisplay: "2025年01月05日",
 					description: "日常の風景",
-					genres: [{ name: "日常系" }],
+					genres: ["日常系"],
 					customGenres: [],
 					creators: {},
 					salesStatus: {},
@@ -374,7 +425,7 @@ describe("Creator page server actions", () => {
 					genres: [],
 					customGenres: [],
 					creators: {
-						voice_by: [{ name: "田中太郎", id: "VA001" }],
+						voiceActors: [{ name: "田中太郎", id: "VA001" }],
 					},
 					salesStatus: {},
 					sampleImages: [],
@@ -402,7 +453,7 @@ describe("Creator page server actions", () => {
 					genres: [],
 					customGenres: [],
 					creators: {
-						voice_by: [{ name: "鈴木花子", id: "VA002" }],
+						voiceActors: [{ name: "鈴木花子", id: "VA002" }],
 					},
 					salesStatus: {},
 					sampleImages: [],
