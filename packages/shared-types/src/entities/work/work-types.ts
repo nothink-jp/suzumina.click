@@ -55,6 +55,41 @@ export type SalesStatus = z.infer<typeof SalesStatusSchema>;
 export type DataSourceTracking = z.infer<typeof DataSourceTrackingSchema>;
 export type WorkPaginationParams = z.infer<typeof WorkPaginationParamsSchema>;
 
+// Work Entity related types (migrated from work-entity.ts)
+export interface WorkMetadata {
+	createdAt: string | null;
+	updatedAt: string | null;
+	lastCheckedAt: string | null;
+	dataSourceTracking?: DataSourceTracking;
+}
+
+export interface WorkSalesStatus {
+	isOnSale: boolean;
+	saleEndDate: string | null;
+	discountRate: number;
+	originalPrice: number;
+	currentPrice: number;
+}
+
+export interface WorkSeriesInfo {
+	seriesId: string | null;
+	seriesName: string | null;
+	seriesNameEn: string | null;
+}
+
+export interface WorkExtendedInfo extends WorkMetadata, WorkSalesStatus, WorkSeriesInfo {
+	tags?: string[];
+	description?: string;
+	keywords?: string[];
+	sampleImages?: SampleImage[];
+	translations?: TranslationInfo;
+	categories?: WorkCategory[];
+	languages?: WorkLanguage[];
+	individualAPIData?: unknown;
+	searchResultData?: unknown;
+	detailPageData?: unknown;
+}
+
 // FirestoreServerWorkData has been removed
 // Use WorkDocument from work-document-schema.ts instead
 // WorkDocument is the canonical type for Firestore documents

@@ -2,9 +2,15 @@
  * Shared utility functions for the application
  */
 
+export * from "./age-rating";
+export * from "./common";
 // Re-export utilities
 export * from "./date-parser";
+export * from "./firestore-utils";
 export * from "./number-parser";
+export * from "./price-history";
+export * from "./search-filters";
+export * from "./work-conversions";
 
 /**
  * Format timestamp to mm:ss or hh:mm:ss format with tenths of a second

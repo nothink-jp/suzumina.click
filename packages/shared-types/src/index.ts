@@ -3,6 +3,7 @@
  * 涼花みなせウェブサイト用の共有型定義パッケージ
  */
 
+export * from "./actions/work-actions";
 // === API Schemas ===
 export * from "./api-schemas/dlsite-raw";
 // === Configuration ===
@@ -26,17 +27,36 @@ export * from "./entities/user-evaluation";
 export * from "./entities/video";
 // DLsite作品関連の型とスキーマのエクスポート
 export * from "./entities/work";
-// Work Entity
-export * from "./entities/work-entity";
 // 作品評価関連の型とスキーマのエクスポート
 export * from "./entities/work-evaluation";
 // === Migration Utilities ===
 export * from "./migrations";
+// === Functional Pattern ===
+export {
+	type CircleData,
+	type CreatorInfo as CreatorInfoFunctional,
+	type CreatorsData,
+	isWorkData,
+	type PriceData,
+	type RatingData,
+	type WorkData,
+} from "./models/work-data";
 // === Plain Objects ===
 export * from "./plain-objects/audio-button-plain";
 export * from "./plain-objects/circle-plain";
 export * from "./plain-objects/video-plain";
 export * from "./plain-objects/work-plain";
+// === Transformers ===
+export * from "./transformers/api-transformer";
+export * from "./transformers/circle-conversions-legacy";
+export * from "./transformers/firestore-transformer";
+export {
+	batchFromPlainObject,
+	batchToPlainObject,
+	fromWorkPlainObject,
+	isWorkPlainObject,
+	toWorkPlainObject,
+} from "./transformers/legacy-transformer";
 // === Firestore Types ===
 // FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead
 // FirestoreServerAudioButtonData is available from entities/audio-button
@@ -58,20 +78,6 @@ export type {
 	VideoType,
 } from "./types/firestore/video";
 // === Utilities ===
-// 年齢制限・レーティング関連の型とユーティリティのエクスポート
-export * from "./utilities/age-rating";
-// Circle変換ユーティリティのエクスポート
-export * from "./utilities/circle-conversions";
-// 共通ユーティリティと型のエクスポート
-export * from "./utilities/common";
-// Firestore関連のユーティリティ
-export * from "./utilities/firestore-utils";
-// 価格履歴関連の型とスキーマのエクスポート
-export * from "./utilities/price-history";
-// 検索フィルター関連の型とスキーマのエクスポート
-export * from "./utilities/search-filters";
-// Work変換ユーティリティのエクスポート
-export * from "./utilities/work-conversions";
 // ユーティリティ関数
 export * from "./utils";
 // === Value Objects ===

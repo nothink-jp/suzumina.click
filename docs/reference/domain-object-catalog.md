@@ -15,8 +15,9 @@ All entities now extend `BaseEntity<T>` and implement `EntityValidatable<T>` int
 
 ### Work
 
-**Location**: `packages/shared-types/src/entities/work-entity.ts`
+**Location**: `packages/shared-types/src/entities/work/` (modularized)
 **Pattern**: Entity with Result-based factory methods
+**Note**: Refactored from single 1,352-line file to 9 modules (2025-08-18)
 
 ```typescript
 class Work extends BaseEntity<Work> implements EntityValidatable<Work> {
@@ -392,6 +393,6 @@ if (priceResult.isOk()) {
 
 ---
 
-**Last Updated**: 2025-08-11
-**Version**: 0.4.0
-**Note**: All legacy methods have been removed. All APIs now use Result pattern for error handling.
+**Last Updated**: 2025-08-18
+**Version**: 0.4.1
+**Note**: Work Entity modularized. RSC constraints documented. All APIs use Result pattern for error handling.

@@ -9,7 +9,7 @@
 export function getSearchableText(item: unknown): string | null {
 	if (!item || typeof item !== "object") return null;
 
-	const obj = item as any;
+	const obj = item as Record<string, unknown>;
 
 	// 一般的な検索対象プロパティ
 	const searchableProps = ["title", "name", "label", "description", "text"];
@@ -35,7 +35,7 @@ export function getSearchableText(item: unknown): string | null {
 export function getDateProperty(item: unknown): Date | null {
 	if (!item || typeof item !== "object") return null;
 
-	const obj = item as any;
+	const obj = item as Record<string, unknown>;
 
 	// 一般的な日付プロパティ
 	const dateProps = ["createdAt", "updatedAt", "date", "publishedAt", "modifiedAt"];
@@ -49,7 +49,7 @@ export function getDateProperty(item: unknown): Date | null {
 			// 文字列の場合、パースを試みる
 			if (typeof obj[prop] === "string") {
 				const date = new Date(obj[prop]);
-				if (!isNaN(date.getTime())) {
+				if (!Number.isNaN(date.getTime())) {
 					return date;
 				}
 			}
@@ -74,7 +74,7 @@ export function getDateProperty(item: unknown): Date | null {
 export function getNumericProperty(item: unknown, propertyPath: string): number | null {
 	if (!item || typeof item !== "object") return null;
 
-	const obj = item as any;
+	const obj = item as Record<string, unknown>;
 	const parts = propertyPath.split(".");
 
 	let current = obj;
@@ -89,7 +89,7 @@ export function getNumericProperty(item: unknown, propertyPath: string): number 
 
 	if (typeof current === "string") {
 		const num = Number.parseFloat(current);
-		if (!isNaN(num)) {
+		if (!Number.isNaN(num)) {
 			return num;
 		}
 	}
@@ -103,7 +103,7 @@ export function getNumericProperty(item: unknown, propertyPath: string): number 
 export function getStringProperty(item: unknown, propertyPath: string): string | null {
 	if (!item || typeof item !== "object") return null;
 
-	const obj = item as any;
+	const obj = item as Record<string, unknown>;
 	const parts = propertyPath.split(".");
 
 	let current = obj;
@@ -130,7 +130,7 @@ export function getStringProperty(item: unknown, propertyPath: string): string |
 export function getFilterableValue(item: unknown, propertyPath: string): unknown {
 	if (!item || typeof item !== "object") return undefined;
 
-	const obj = item as any;
+	const obj = item as Record<string, unknown>;
 	const parts = propertyPath.split(".");
 
 	let current = obj;

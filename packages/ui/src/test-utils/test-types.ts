@@ -5,7 +5,7 @@
 import type { Mock } from "vitest";
 
 // モック関数の型
-export type MockFunction<T extends (...args: any[]) => any> = Mock<T>;
+export type MockFunction<T extends (...args: unknown[]) => unknown> = Mock<T>;
 
 // テスト用のジェネリック型
 export interface TestItem {
@@ -24,8 +24,8 @@ export interface TestListProps<T = TestItem> {
 }
 
 // フェッチ関数のモック型
-export type MockFetchFunction<T = unknown> = Mock<
-	(params: any) => Promise<{
+export type MockFetchFunction<T = unknown, P = Record<string, unknown>> = Mock<
+	(params: P) => Promise<{
 		items: T[];
 		totalCount: number;
 		filteredCount: number;

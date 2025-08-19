@@ -345,6 +345,7 @@ async function convertDocsToWorks(
 			if (!data.id) {
 				data.id = data.productId;
 			}
+
 			const result = convertToWorkPlainObject(data);
 			if (result.isOk()) {
 				works.push(result.value);

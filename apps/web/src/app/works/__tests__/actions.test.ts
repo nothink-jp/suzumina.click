@@ -61,13 +61,16 @@ describe("Works Server Actions", () => {
 					title: "作品1",
 					description: "説明1",
 					circle: "サークル1",
+					circleId: "circle001",
 					category: "SOU",
-					ageRating: "全年齢",
 					price: { current: 1000, currency: "JPY" },
-					rating: { stars: 4.5, count: 100 },
+					rating: { average: 4.5, count: 100 },
+					releaseDate: "2024-01-01",
 					releaseDateISO: "2024-01-01",
-					highResImageUrl: "https://example.com/1.jpg",
-					language: "ja",
+					imageUrl: "https://example.com/1.jpg",
+					tags: [],
+					isAdult: false,
+					creators: {},
 				}),
 			},
 			{
@@ -77,13 +80,16 @@ describe("Works Server Actions", () => {
 					title: "作品2",
 					description: "説明2",
 					circle: "サークル2",
+					circleId: "circle002",
 					category: "SOU",
-					ageRating: "R18",
 					price: { current: 2000, currency: "JPY" },
-					rating: { stars: 4.0, count: 50 },
+					rating: { average: 4.0, count: 50 },
+					releaseDate: "2024-01-02",
 					releaseDateISO: "2024-01-02",
-					highResImageUrl: "https://example.com/2.jpg",
-					language: "ja",
+					imageUrl: "https://example.com/2.jpg",
+					tags: [],
+					isAdult: true,
+					creators: {},
 				}),
 			},
 		];
@@ -103,7 +109,6 @@ describe("Works Server Actions", () => {
 		});
 
 		it("検索パラメータで複雑なフィルタリングが動作する", async () => {
-			// 検索時は全件取得される
 			mockGet.mockResolvedValue({
 				docs: mockWorkDocs,
 				size: 2,
@@ -115,7 +120,6 @@ describe("Works Server Actions", () => {
 				limit: 12,
 			});
 
-			// 検索はメモリ上で行われるため、limitが呼ばれない（全件取得）
 			expect(mockLimit).not.toHaveBeenCalled();
 			expect(result.works).toBeDefined();
 		});
@@ -132,7 +136,6 @@ describe("Works Server Actions", () => {
 				limit: 12,
 			});
 
-			// 言語フィルタリングもメモリ上で行われる
 			expect(mockLimit).not.toHaveBeenCalled();
 			expect(result.works).toBeDefined();
 		});
@@ -149,7 +152,6 @@ describe("Works Server Actions", () => {
 				limit: 12,
 			});
 
-			// R18フィルタリングもメモリ上で行われる
 			expect(mockLimit).not.toHaveBeenCalled();
 			expect(result.works).toBeDefined();
 		});
@@ -166,14 +168,13 @@ describe("Works Server Actions", () => {
 				limit: 12,
 			});
 
-			// showR18がundefinedの場合はシンプルクエリ
 			expect(mockLimit).toHaveBeenCalledWith(12);
 			expect(result.works).toHaveLength(2);
 		});
 
 		it("カテゴリフィルタが動作する", async () => {
 			mockGet.mockResolvedValue({
-				docs: [mockWorkDocs[0]], // SOUカテゴリのみ
+				docs: [mockWorkDocs[0]],
 				size: 1,
 			});
 
@@ -213,8 +214,7 @@ describe("Works Server Actions", () => {
 				limit: 12,
 			});
 
-			// オフセット処理の確認
-			expect(mockLimit).toHaveBeenCalledWith(12); // オフセット用
+			expect(mockLimit).toHaveBeenCalledWith(12);
 		});
 
 		it("エラー時に空の結果を返す", async () => {

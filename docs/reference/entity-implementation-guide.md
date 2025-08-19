@@ -14,6 +14,23 @@ Entity実装を開始する前に、必ず以下を確認してください：
 1. [ADR-001: DDD実装ガイドライン](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - 実装判断基準
 2. [ADR-002: Entity実装の教訓](../decisions/architecture/ADR-002-entity-implementation-lessons.md) - 過去の実装から学ぶ
 
+### ⚠️ Next.js Server Components (RSC) の制約
+
+**重要**: React Server Components環境では、以下の制約があります：
+
+1. **クラスインスタンスは Server/Client 境界を越えられない**
+   - Entity/Value Objectのインスタンスは直接シリアライズできません
+   - PlainObject形式への変換が必須です
+
+2. **PlainObjectパターンの必要性**
+   - Server ComponentsからClient Componentsへのデータ受け渡しには、プリミティブ型のみで構成されたPlainObjectが必要
+   - WorkPlainObjectのようなインターフェースは、RSC環境では廃止できません
+
+3. **実装の推奨事項**
+   - Entity実装が本当に必要か再考する（多くの場合、PlainObjectで十分）
+   - 複雑なEntityパターンは認知負荷を増やす可能性がある
+   - YAGNI原則を厳守し、過度な抽象化を避ける
+
 ## Entity実装パターン
 
 ### 1. 基本構造（Result型パターン）
@@ -215,15 +232,30 @@ describe("SomeEntity", () => {
 
 成功例：
 - [Video Entity](../../packages/shared-types/src/entities/video.ts)
-- [Work Entity](../../packages/shared-types/src/entities/work.ts)
+- [Work Module](../../packages/shared-types/src/entities/work/) - モジュール分割の成功例
+
+### リファクタリング事例（2025-08-18）
+
+**Work Entity のモジュール分割**：
+- 1,352行の単一ファイルを9つのモジュールに分割
+- 各モジュールは400行以下に収まる
+- 100%後方互換性を維持
+- テストカバレッジ88.26%を達成
+
+**教訓**：
+- WorkPlainObjectの廃止を試みたが、RSC制約により断念
+- 過度なEntityパターンの適用は複雑度を増加させる
+- モジュール分割は成功したが、根本的な型システムの変更は慎重に
 
 ## 注意事項
 
 1. **エラーハンドリング**: 例外をスローせず、Result型でエラーを返す
 2. **プライベートコンストラクタ**: すべてのEntity/Value Objectで採用
-3. **YAGNI原則**: 必要になるまで実装しない
+3. **YAGNI原則**: 必要になるまで実装しない（特に重要）
 4. **段階的実装**: 最小限から始めて徐々に拡張
 5. **ROI考慮**: 実装コストが利益を上回る場合は見送る
+6. **RSC制約**: Server/Client境界を意識し、PlainObjectパターンを維持
+7. **複雑度管理**: Entityパターンが本当に必要か常に再評価する
 
 詳細な判断基準は以下を参照：
 - [ADR-001: DDD実装ガイドライン](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md)
@@ -231,5 +263,5 @@ describe("SomeEntity", () => {
 
 ---
 
-**最終更新**: 2025-08-11
-**バージョン**: 2.0 (Result型パターン採用)
+**最終更新**: 2025-08-18
+**バージョン**: 2.1 (RSC制約とリファクタリング教訓を追加)

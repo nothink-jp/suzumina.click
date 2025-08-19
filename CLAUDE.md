@@ -49,7 +49,15 @@ For detailed project documentation, see [Documentation Index](docs/README.md).
 - Previously named `dlsiteWorks`, but renamed to `works` for consistency
 - Always verify collection names when working with Firestore
 
-### 9. DATA INTEGRITY
+### 9. ENTITY IMPLEMENTATION GUIDELINES
+- **Consider RSC (React Server Components) constraints** before implementing Entity patterns
+- **PlainObject patterns are REQUIRED** for Server/Client component boundaries
+- **Entity/Value Object instances CANNOT cross RSC boundaries** - they cannot be serialized
+- **Avoid over-engineering** - many cases work fine with PlainObject + utility functions
+- **YAGNI principle is critical** - don't implement Entity patterns unless truly necessary
+- See `docs/reference/entity-implementation-guide.md` for detailed guidance
+
+### 10. DATA INTEGRITY
 - **Weekly data integrity checks** run automatically via `checkDataIntegrity` function
 - Scheduled for Sundays at 3:00 JST
 - Checks and fixes: Circle workIds arrays, orphaned Creator mappings, Work-Circle consistency
@@ -115,5 +123,5 @@ pnpm build
 
 ---
 
-**Last Updated**: 2025-08-06
-**Document Version**: 4.3 (Updated to v0.3.9 with dependency updates)
+**Last Updated**: 2025-08-18
+**Document Version**: 4.4 (Added RSC constraints and Entity implementation lessons)

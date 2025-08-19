@@ -11,6 +11,46 @@
 
 ## 実装履歴
 
+### 2025年8月: Work Entityのモジュール分割とリファクタリング
+
+#### 背景
+- 1,352行の巨大なwork.tsファイルを保守性向上のために分割
+- WorkPlainObjectとWork Entityの統合を検討
+
+#### 実装内容（Phase 1 - 成功）
+1. **モジュール分割** (PR #226でマージ)
+   - work.tsを9つのモジュールに分割
+   - 最大ファイルサイズを403行に削減
+   - 100%後方互換性を維持
+   - テストカバレッジ88.26%達成
+
+2. **分割されたモジュール**:
+   - work-types.ts: 基本型定義
+   - work-validators.ts: バリデーションロジック
+   - work-factory.ts: ファクトリメソッド
+   - work-builder.ts: Builderパターン
+   - work-converters.ts: 変換メソッド
+   - work-entity.ts: Entityクラス本体
+   - work-getters.ts: getterメソッド
+   - work-serializers.ts: シリアライズ処理
+   - index.ts: re-export層
+
+#### 実装内容（Phase 2 - 失敗）
+1. **WorkPlainObject廃止の試み**
+   - 新しい統合型システムの設計
+   - work-v2ディレクトリでの実装
+   - Result: **RSC制約により断念**
+
+2. **失敗の原因**:
+   - React Server Components (RSC)でクラスインスタンスがシリアライズできない
+   - Server/Client境界を越えるデータはプリミティブ型のみ
+   - WorkPlainObjectは実はRSCのための必須パターンだった
+
+#### 教訓
+- **成功**: モジュール分割によるコード整理は有効
+- **失敗**: 型システムの根本的な変更は慎重に（RSC制約を考慮）
+- **重要**: 「複雑度を減らす」つもりが逆に増やす可能性がある
+
 ### 2025年1月: Circle/Creator/CreatorWorkMapping Entity実装の試み
 
 #### 背景
@@ -141,6 +181,20 @@ export class WorkEntity {
 
 ## 今後の方針
 
+### 0. RSC環境での制約事項
+
+**Next.js Server Components環境では以下を必ず考慮**:
+
+1. **PlainObjectパターンは必須**
+   - Entity/Value Objectインスタンスは直接シリアライズ不可
+   - Server/Client境界ではプリミティブ型のみ
+   - WorkPlainObjectのようなインターフェースは廃止できない
+
+2. **Entity実装の再評価**
+   - RSC環境ではEntityパターンの利点が限定的
+   - PlainObject + ユーティリティ関数が最適解の場合が多い
+   - 複雑なビジネスロジックがない限りEntity化は避ける
+
 ### 1. Entity化の判断プロセス
 
 ```mermaid
@@ -183,6 +237,8 @@ graph TD
 2. **段階的アプローチ**を採用し、最小限から始める
 3. **ROI計算**を必ず行い、コストが利益を上回る場合は実装しない
 4. **既存コードが安定**している場合は変更しない
+5. **RSC制約を必ず考慮**し、PlainObjectパターンの必要性を認識する
+6. **リファクタリングの目的を見失わない** - 複雑度削減が本当に達成されるか常に検証
 
 ## 理由
 
@@ -204,3 +260,5 @@ graph TD
 
 - [ADR-001: DDD実装ガイドライン](ADR-001-ddd-implementation-guidelines.md)
 - [PR #133: feat: implement Circle, Creator, and CreatorWorkMapping entities](https://github.com/nothink-jp/suzumina.click/pull/133) (マージ見送り)
+- [PR #226: refactor: shared-types パッケージの大規模モジュール化](https://github.com/nothink-jp/suzumina.click/pull/226) (マージ済み)
+- [Entity実装ガイド](../../reference/entity-implementation-guide.md) (RSC制約追加済み)

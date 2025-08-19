@@ -3,8 +3,8 @@
  */
 
 import { z } from "zod";
-import type { WorkDocument } from "../entities/work";
-import { Work } from "../entities/work-entity";
+import { WorkActions } from "../actions/work-actions";
+import type { WorkData } from "../models/work-data";
 
 /**
  * 年齢制限レーティングの型定義
@@ -164,21 +164,15 @@ export function checkAgeRating(ageRating?: string): AgeRatingCheck {
  * @param items フィルタリング対象のアイテム配列
  * @param getAgeRating アイテムから年齢制限を取得する関数
  * @returns フィルタリング済みアイテム配列
- *
- * NOTE: 内部実装はWork.isAdultContent()を使用するように更新されました。
- * getAgeRatingパラメータは互換性のために残されていますが、将来的に削除される可能性があります。
  */
 export function filterR18Content<T>(
 	items: T[],
 	getAgeRating: (item: T) => string | undefined,
 ): T[] {
 	return items.filter((item) => {
-		// Try to use Work entity if the item is a Firestore work data
-		if (isFirestoreWorkData(item)) {
-			const workResult = Work.fromFirestoreData(item);
-			if (workResult.isOk()) {
-				return !workResult.value.isAdultContent();
-			}
+		// Try to use WorkActions if the item is WorkData
+		if (isWorkData(item)) {
+			return !WorkActions.isAdultContent(item);
 		}
 
 		// Fallback to legacy implementation for backward compatibility
@@ -188,12 +182,13 @@ export function filterR18Content<T>(
 }
 
 /**
- * Type guard to check if an item is WorkDocument
+ * Type guard to check if an item is WorkData
  */
-function isFirestoreWorkData(item: unknown): item is WorkDocument {
+function isWorkData(item: unknown): item is WorkData {
 	return (
 		typeof item === "object" &&
 		item !== null &&
+		"id" in item &&
 		"productId" in item &&
 		"title" in item &&
 		"price" in item &&
