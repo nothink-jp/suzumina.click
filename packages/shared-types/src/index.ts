@@ -34,8 +34,11 @@ export * from "./entities/work-evaluation";
 export * from "./migrations";
 // === Models ===
 export {
+	type CircleData,
+	type CreatorData,
 	type CreatorInfo as CreatorInfoFunctional,
 	type CreatorsData,
+	type CreatorType,
 	isWorkData,
 	type PriceData,
 	type RatingData,

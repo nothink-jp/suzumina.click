@@ -44,6 +44,25 @@ export interface CreatorInfo {
 }
 
 /**
+ * クリエイターの役割タイプ
+ */
+export type CreatorType = "scenario" | "illustration" | "voiceActor" | "music" | "other";
+
+/**
+ * クリエイターデータ
+ */
+export interface CreatorData {
+	readonly id: string;
+	readonly name: string;
+	readonly nameReading?: string;
+	readonly types: readonly CreatorType[];
+	readonly workIds: readonly string[];
+	readonly circleIds?: readonly string[];
+	readonly createdAt: string;
+	readonly updatedAt: string;
+}
+
+/**
  * クリエイター情報（役割別）
  */
 export interface CreatorsData {

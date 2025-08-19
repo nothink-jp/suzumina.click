@@ -5,11 +5,12 @@
  * Firestoreは既にcamelCase形式で統一されている
  */
 
-import type { CircleData } from "../models/circle-data";
-import type { CreatorData, CreatorType } from "../models/creator-data";
 import type {
+	CircleData,
+	CreatorData,
 	CreatorInfo,
 	CreatorsData,
+	CreatorType,
 	PriceData,
 	RatingData,
 	WorkData,
