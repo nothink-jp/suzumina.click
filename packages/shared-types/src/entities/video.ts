@@ -741,6 +741,12 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 			}
 
 			// Create VideoContent
+			// Convert structured tags to flat array for VideoContent
+			const flatTags: string[] = [];
+			if (data.tags?.playlistTags) flatTags.push(...data.tags.playlistTags);
+			if (data.tags?.userTags) flatTags.push(...data.tags.userTags);
+			if (data.tags?.contentTags) flatTags.push(...data.tags.contentTags);
+
 			const contentResult = VideoContent.create(
 				videoIdResult.value,
 				publishedAtResult.value,
@@ -748,7 +754,7 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 				(data.status?.uploadStatus as UploadStatus) || "processed",
 				Video.createContentDetailsFromFirestore(data),
 				data.player?.embedHtml,
-				data.tags,
+				flatTags.length > 0 ? flatTags : undefined,
 				data.status?.embeddable,
 			);
 			if (contentResult.isErr()) {
@@ -863,9 +869,9 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 				channel,
 				statistics,
 				{
-					playlistTags: data.playlistTags || [],
-					userTags: data.userTags || [],
-					contentTags: data.tags,
+					playlistTags: data.tags?.playlistTags || data.playlistTags || [],
+					userTags: data.tags?.userTags || data.userTags || [],
+					contentTags: data.tags?.contentTags || [],
 				},
 				{
 					count: data.audioButtonCount || 0,
@@ -963,7 +969,14 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 
 		if (this.duration) fields.duration = this.duration;
 		if (this.categoryId) fields.categoryId = this.categoryId;
-		if (this.tags) fields.tags = this.tags;
+		// Use _tags (VideoTags object) instead of tags getter (string[])
+		if (this._tags) {
+			fields.tags = {
+				playlistTags: this._tags.playlistTags,
+				userTags: this._tags.userTags,
+				contentTags: this._tags.contentTags,
+			};
+		}
 		if (this.playlistTags.length > 0) fields.playlistTags = this.playlistTags;
 		if (this.userTags.length > 0) fields.userTags = this.userTags;
 		if (this.dimension) fields.dimension = this.dimension;
@@ -1253,7 +1266,11 @@ export class Video extends BaseEntity<Video> implements EntityValidatable<Video>
 			// Content details
 			duration: this.duration,
 			categoryId: this.categoryId,
-			tags: this.tags,
+			tags: {
+				playlistTags: this._tags.playlistTags,
+				userTags: this._tags.userTags,
+				contentTags: this._tags.contentTags,
+			},
 			playlistTags: this.playlistTags,
 			userTags: this.userTags,
 
