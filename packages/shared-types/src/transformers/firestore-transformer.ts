@@ -6,7 +6,7 @@
  */
 
 import type {
-	CircleData,
+	CircleFullData,
 	CreatorData,
 	CreatorInfo,
 	CreatorsData,
@@ -147,12 +147,12 @@ export interface FirestoreCircleDocument {
 }
 
 /**
- * Firestore → CircleData 変換
+ * Firestore → CircleFullData 変換
  */
 export const circleFromFirestore = (
 	doc: FirestoreCircleDocument,
 	id?: string,
-): CircleData | null => {
+): CircleFullData | null => {
 	if (!doc.name) {
 		return null;
 	}
@@ -170,9 +170,9 @@ export const circleFromFirestore = (
 };
 
 /**
- * CircleData → Firestore 変換
+ * CircleFullData → Firestore 変換
  */
-export const circleToFirestore = (circle: CircleData): FirestoreCircleDocument => {
+export const circleToFirestore = (circle: CircleFullData): FirestoreCircleDocument => {
 	return {
 		name: circle.name,
 		nameEn: circle.nameEn,

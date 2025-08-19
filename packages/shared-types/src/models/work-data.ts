@@ -18,12 +18,23 @@ export interface PriceData {
 }
 
 /**
- * サークル情報
+ * サークル情報（Work内で使用）
  */
 export interface CircleData {
 	readonly id: string;
 	readonly name: string;
 	readonly nameEn?: string;
+}
+
+/**
+ * サークル完全データ（Firestoreドキュメント用）
+ */
+export interface CircleFullData extends CircleData {
+	readonly workIds: readonly string[];
+	readonly createdAt: string;
+	readonly updatedAt: string;
+	readonly totalWorks?: number;
+	readonly latestWorkDate?: string;
 }
 
 /**
