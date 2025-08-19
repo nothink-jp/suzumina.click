@@ -120,28 +120,6 @@ suzumina.click の現実的な開発計画（個人開発・本番稼働中）
 
 詳細な変更履歴は [CHANGELOG.md](./changelog.md) を参照してください。
 
-## Future Entity Plans
-
-### Unimplemented Items
-
-#### 1. Type Name Simplification
-- `DLsiteRawApiResponse` → `DLsiteApiResponse`
-- `UnifiedDataCollectionMetadata` → `CollectionMetadata`
-- `FirestoreFieldTimestamp` → `Timestamp`
-
-#### 2. WorkV2 Schema Versioning
-For future schema changes, consider versioned entities.
-
-#### 3. Unimplemented Entities
-- **User Entity** (full implementation with UserRole value object)
-- **Evaluation Entity** (Top10Ranking, StarRating, NgEvaluation)
-- **PriceHistory Entity** (PriceSnapshot value object)
-
-### Implementation Priority
-1. **High**: Type name simplification
-2. **Medium**: User Entity full implementation
-3. **Low**: Other new entities
-
 ---
 
 **📝 注記**: 本プロジェクトは個人開発による完成したファンサイトです。現在の機能で十分な価値を提供しており、大規模な機能追加よりも安定運用を重視しています。

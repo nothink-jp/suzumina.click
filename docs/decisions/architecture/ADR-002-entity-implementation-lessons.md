@@ -204,3 +204,30 @@ graph TD
 
 - [ADR-001: DDD実装ガイドライン](ADR-001-ddd-implementation-guidelines.md)
 - [PR #133: feat: implement Circle, Creator, and CreatorWorkMapping entities](https://github.com/nothink-jp/suzumina.click/pull/133) (マージ見送り)
+
+## 2025年8月19日追記: 関数型パターンへの移行試みと断念
+
+### 背景
+Entity/PlainObjectパターンから関数型プログラミングパターンへの完全移行を試行。
+
+### 実装内容
+- WorkDataインターフェース作成（WorkPlainObjectの代替）
+- Firestore transformerの実装
+- 関数型パターンによるアクション実装
+
+### 問題点
+1. **データフィールドの不足** - WorkDataに`genres`、`customGenres`、`salesStatus`等が欠落
+2. **移行リスクの高さ** - 本番稼働中のシステムでの大規模変更
+3. **ROIの低さ** - 労力に見合う価値が得られない
+
+### 決定
+- 関数型パターンへの移行を断念
+- 現行のEntity/PlainObjectパターンを維持
+- 本番環境の安定性を最優先
+
+### 教訓
+1. **本番システムでの大規模パラダイム変更は避ける**
+2. **段階的移行が困難な場合は現状維持が賢明**
+3. **技術的理想より実用性を重視**
+
+- [PR #227: refactor: Entity パターンから関数型プログラミングパターンへの移行](https://github.com/nothink-jp/suzumina.click/pull/227) (クローズ)
