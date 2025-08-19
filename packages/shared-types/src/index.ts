@@ -3,6 +3,7 @@
  * 涼花みなせウェブサイト用の共有型定義パッケージ
  */
 
+// === Actions ===
 export * from "./actions/work-actions";
 // === API Schemas ===
 export * from "./api-schemas/dlsite-raw";
@@ -31,9 +32,8 @@ export * from "./entities/work";
 export * from "./entities/work-evaluation";
 // === Migration Utilities ===
 export * from "./migrations";
-// === Functional Pattern ===
+// === Models ===
 export {
-	type CircleData,
 	type CreatorInfo as CreatorInfoFunctional,
 	type CreatorsData,
 	isWorkData,
@@ -47,8 +47,6 @@ export * from "./plain-objects/circle-plain";
 export * from "./plain-objects/video-plain";
 export * from "./plain-objects/work-plain";
 // === Transformers ===
-export * from "./transformers/api-transformer";
-export * from "./transformers/circle-conversions-legacy";
 export * from "./transformers/firestore-transformer";
 export {
 	batchFromPlainObject,
