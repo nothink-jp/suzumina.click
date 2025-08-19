@@ -1,7 +1,7 @@
 "use client";
 
 import type { FrontendVideoData } from "@suzumina.click/shared-types";
-import { canCreateAudioButton } from "@suzumina.click/shared-types";
+import { canCreateAudioButton, getVideoAllTags } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card } from "@suzumina.click/ui/components/ui/card";
@@ -401,22 +401,25 @@ export default function VideoDetail({
 									</div>
 
 									{/* タグ */}
-									{video.tags && video.tags.length > 0 && (
-										<div>
-											<h4 className="font-medium mb-2">タグ</h4>
-											<div className="flex flex-wrap gap-2">
-												{video.tags.slice(0, 10).map((tag) => (
-													<Badge
-														key={tag}
-														variant="secondary"
-														className="bg-suzuka-100 text-suzuka-700 dark:bg-suzuka-900 dark:text-suzuka-300"
-													>
-														{tag}
-													</Badge>
-												))}
+									{(() => {
+										const allTags = getVideoAllTags(video);
+										return allTags.length > 0 ? (
+											<div>
+												<h4 className="font-medium mb-2">タグ</h4>
+												<div className="flex flex-wrap gap-2">
+													{allTags.slice(0, 10).map((tag) => (
+														<Badge
+															key={tag}
+															variant="secondary"
+															className="bg-suzuka-100 text-suzuka-700 dark:bg-suzuka-900 dark:text-suzuka-300"
+														>
+															{tag}
+														</Badge>
+													))}
+												</div>
 											</div>
-										</div>
-									)}
+										) : null;
+									})()}
 								</TabsContent>
 
 								{/* タグタブ */}
