@@ -292,7 +292,7 @@ describe("Creator page server actions", () => {
 					genres: ["ファンタジー"],
 					customGenres: ["魔法"],
 					creators: {
-						voice_by: [{ name: "声優A", id: "VA001" }],
+						voiceActors: [{ name: "声優A", id: "VA001" }],
 					},
 					salesStatus: {},
 					sampleImages: [],
@@ -317,7 +317,7 @@ describe("Creator page server actions", () => {
 					releaseDateISO: "2025-01-10",
 					releaseDateDisplay: "2025年01月10日",
 					description: "勇者の冒険",
-					genres: [{ name: "RPG" }],
+					genres: ["RPG"],
 					customGenres: ["冒険"],
 					creators: {},
 					salesStatus: {},
