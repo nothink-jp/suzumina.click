@@ -4,8 +4,35 @@
  * Minimal implementation that only maps fields that exist in both WorkDocument and WorkPlainObject.
  */
 
+import type { WorkLanguage } from "../entities/work";
 import type { WorkDocument } from "../entities/work/work-document-schema";
 import type { WorkPlainObject } from "../plain-objects/work-plain";
+
+/**
+ * Map language code to WorkLanguage type
+ */
+function mapLanguageCode(lang: string | undefined): WorkLanguage | null {
+	if (!lang) return null;
+	const code = lang.toLowerCase();
+
+	// ISO 639-3 to ISO 639-1 mapping
+	if (code === "jpn" || code === "ja" || code === "jp") return "ja";
+	if (code === "eng" || code === "en") return "en";
+	if (code === "zho" || code === "zh" || code === "chi" || code === "chn") return "zh-cn";
+	if (code === "zht" || code === "zh-tw" || code === "tw") return "zh-tw";
+	if (code === "kor" || code === "ko" || code === "kr") return "ko";
+	if (code === "spa" || code === "es") return "es";
+	if (code === "tha" || code === "th") return "th";
+	if (code === "deu" || code === "de") return "de";
+	if (code === "fra" || code === "fr") return "fr";
+	if (code === "ita" || code === "it") return "it";
+	if (code === "por" || code === "pt") return "pt";
+	if (code === "rus" || code === "ru") return "ru";
+	if (code === "vie" || code === "vi" || code === "vn") return "vi";
+	if (code === "ind" || code === "id") return "id";
+
+	return null;
+}
 
 /**
  * Get display name for work category
@@ -262,9 +289,49 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 			})(),
 			isPopular: (doc.rating?.count || 0) > 100,
 
-			// Language-related (simplified)
-			primaryLanguage: "ja",
-			availableLanguages: ["ja"],
+			// Language-related
+			primaryLanguage: (() => {
+				// Check translation info first
+				const mapped = mapLanguageCode(doc.translationInfo?.lang);
+				if (mapped) return mapped;
+
+				// Check language downloads for primary language
+				if (doc.languageDownloads && doc.languageDownloads.length > 0) {
+					// Usually the first one is the primary language
+					const firstDownload = doc.languageDownloads[0];
+					if (firstDownload) {
+						const firstLang = mapLanguageCode(firstDownload.lang);
+						if (firstLang) return firstLang;
+					}
+				}
+
+				// Default to Japanese
+				return "ja";
+			})() as WorkLanguage,
+			availableLanguages: (() => {
+				const languages = new Set<WorkLanguage>();
+
+				// Always include Japanese as it's the original for most works
+				languages.add("ja");
+
+				// Add translation language if exists
+				const translationLang = mapLanguageCode(doc.translationInfo?.lang);
+				if (translationLang) {
+					languages.add(translationLang);
+				}
+
+				// Add languages from language downloads
+				if (doc.languageDownloads && doc.languageDownloads.length > 0) {
+					for (const ld of doc.languageDownloads) {
+						const mapped = mapLanguageCode(ld.lang);
+						if (mapped) {
+							languages.add(mapped);
+						}
+					}
+				}
+
+				return Array.from(languages);
+			})() as WorkLanguage[],
 
 			// Search and filtering
 			searchableText: [doc.title, doc.circle, doc.description].filter(Boolean).join(" "),
