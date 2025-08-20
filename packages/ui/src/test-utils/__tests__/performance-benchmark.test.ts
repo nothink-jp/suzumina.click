@@ -265,12 +265,12 @@ describe("generateBenchmarkDataset", () => {
 
 		for (const item of dataset) {
 			expect(item).toHaveProperty("id");
-			expect(item).toHaveProperty("title");
+			expect(item).toHaveProperty("buttonText");
 			expect(item).toHaveProperty("description");
 			expect(item).toHaveProperty("tags");
-			expect(item).toHaveProperty("sourceVideoId");
+			expect(item).toHaveProperty("videoId");
 			expect(item.id).toMatch(/^benchmark-\d+$/);
-			expect(typeof item.title).toBe("string");
+			expect(typeof item.buttonText).toBe("string");
 			expect(Array.isArray(item.tags)).toBe(true);
 		}
 	});

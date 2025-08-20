@@ -8,7 +8,7 @@
  * - 回帰テスト用の基準値設定
  */
 
-import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import type { AudioButton } from "@suzumina.click/shared-types";
 
 export interface BenchmarkConfig {
 	/** データセットサイズ */
@@ -283,24 +283,28 @@ export const generateBenchmarkReport = (suite: BenchmarkSuite): string => {
 /**
  * パフォーマンステスト用のモックデータ生成
  */
-export const generateBenchmarkDataset = (size: number): AudioButtonPlainObject[] => {
+export const generateBenchmarkDataset = (size: number): AudioButton[] => {
 	return Array.from({ length: size }, (_, index) => ({
 		id: `benchmark-${index + 1}`,
-		title: `ベンチマークテスト音声 ${index + 1}`,
+		buttonText: `ベンチマークテスト音声 ${index + 1}`,
 		description: `パフォーマンステスト用の音声データです。インデックス: ${index + 1}`,
 		tags: [`タグ${(index % 5) + 1}`, `カテゴリ${Math.floor(index / 10) + 1}`],
-		sourceVideoId: `benchmark-video-${index + 1}`,
-		sourceVideoTitle: `ベンチマーク動画 ${index + 1}`,
-		sourceVideoThumbnailUrl: `https://example.com/thumb-${index + 1}.jpg`,
+		videoId: `benchmark-video-${index + 1}`,
+		videoTitle: `ベンチマーク動画 ${index + 1}`,
+		videoThumbnailUrl: `https://example.com/thumb-${index + 1}.jpg`,
+		duration: 30,
 		startTime: 30 + (index % 60),
 		endTime: 60 + (index % 120),
-		createdBy: `user-${Math.floor(index / 20) + 1}`,
-		createdByName: `ユーザー${Math.floor(index / 20) + 1}`,
+		creatorId: `user-${Math.floor(index / 20) + 1}`,
+		creatorName: `ユーザー${Math.floor(index / 20) + 1}`,
 		isPublic: true,
-		playCount: Math.floor(Math.random() * 1000),
-		likeCount: Math.floor(Math.random() * 100),
-		dislikeCount: 0,
-		favoriteCount: Math.floor(Math.random() * 50),
+		stats: {
+			playCount: Math.floor(Math.random() * 1000),
+			likeCount: Math.floor(Math.random() * 100),
+			dislikeCount: 0,
+			favoriteCount: Math.floor(Math.random() * 50),
+			engagementRate: Math.random() * 0.3,
+		},
 		createdAt: new Date(Date.now() - index * 24 * 60 * 60 * 1000).toISOString(),
 		updatedAt: new Date(Date.now() - index * 12 * 60 * 60 * 1000).toISOString(),
 		_computed: {

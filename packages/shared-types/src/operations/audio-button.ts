@@ -5,35 +5,35 @@
  * Replaces AudioButton Entity methods with functional approach.
  */
 
-import type { AudioButtonPlainObject } from "../plain-objects/audio-button-plain";
+import type { AudioButton } from "../types/audio-button";
 
 /**
  * Checks if button is public
  */
-export function isPublic(button: AudioButtonPlainObject): boolean {
+export function isPublic(button: AudioButton): boolean {
 	return button.isPublic;
 }
 
 /**
  * Gets display text for button
  */
-export function getDisplayText(button: AudioButtonPlainObject): string {
-	return button.title;
+export function getDisplayText(button: AudioButton): string {
+	return button.buttonText;
 }
 
 /**
  * Gets YouTube URL for the source video
  */
-export function getYouTubeUrl(button: AudioButtonPlainObject): string {
-	return `https://www.youtube.com/watch?v=${button.sourceVideoId}`;
+export function getYouTubeUrl(button: AudioButton): string {
+	return `https://www.youtube.com/watch?v=${button.videoId}`;
 }
 
 /**
  * Gets YouTube URL with timestamp
  */
-export function getYouTubeUrlWithTime(button: AudioButtonPlainObject): string {
+export function getYouTubeUrlWithTime(button: AudioButton): string {
 	const startTime = Math.floor(button.startTime);
-	return `https://www.youtube.com/watch?v=${button.sourceVideoId}&t=${startTime}s`;
+	return `https://www.youtube.com/watch?v=${button.videoId}&t=${startTime}s`;
 }
 
 /**
@@ -53,14 +53,14 @@ export function formatTimestamp(seconds: number): string {
 /**
  * Gets formatted start time
  */
-export function getFormattedStartTime(button: AudioButtonPlainObject): string {
+export function getFormattedStartTime(button: AudioButton): string {
 	return formatTimestamp(button.startTime);
 }
 
 /**
  * Gets formatted end time
  */
-export function getFormattedEndTime(button: AudioButtonPlainObject): string {
+export function getFormattedEndTime(button: AudioButton): string {
 	const endTime = button.endTime || button.startTime;
 	return formatTimestamp(endTime);
 }
@@ -68,7 +68,7 @@ export function getFormattedEndTime(button: AudioButtonPlainObject): string {
 /**
  * Gets duration in seconds
  */
-export function getDuration(button: AudioButtonPlainObject): number {
+export function getDuration(button: AudioButton): number {
 	const endTime = button.endTime || button.startTime;
 	return endTime - button.startTime;
 }
@@ -76,7 +76,7 @@ export function getDuration(button: AudioButtonPlainObject): number {
 /**
  * Gets formatted duration
  */
-export function getFormattedDuration(button: AudioButtonPlainObject): string {
+export function getFormattedDuration(button: AudioButton): string {
 	const duration = getDuration(button);
 	return formatTimestamp(duration);
 }
@@ -84,22 +84,22 @@ export function getFormattedDuration(button: AudioButtonPlainObject): string {
 /**
  * Checks if button has been played
  */
-export function hasBeenPlayed(button: AudioButtonPlainObject): boolean {
-	return (button.playCount || 0) > 0;
+export function hasBeenPlayed(button: AudioButton): boolean {
+	return (button.stats.playCount || 0) > 0;
 }
 
 /**
  * Gets total engagement (likes + dislikes)
  */
-export function getTotalEngagement(button: AudioButtonPlainObject): number {
-	return (button.likeCount || 0) + (button.dislikeCount || 0);
+export function getTotalEngagement(button: AudioButton): number {
+	return (button.stats.likeCount || 0) + (button.stats.dislikeCount || 0);
 }
 
 /**
  * Gets engagement rate (engagement / views)
  */
-export function getEngagementRate(button: AudioButtonPlainObject): number {
-	const plays = button.playCount || 0;
+export function getEngagementRate(button: AudioButton): number {
+	const plays = button.stats.playCount || 0;
 	if (plays === 0) return 0;
 	return getTotalEngagement(button) / plays;
 }
@@ -107,58 +107,58 @@ export function getEngagementRate(button: AudioButtonPlainObject): number {
 /**
  * Gets like ratio (likes / total engagement)
  */
-export function getLikeRatio(button: AudioButtonPlainObject): number {
+export function getLikeRatio(button: AudioButton): number {
 	const engagement = getTotalEngagement(button);
 	if (engagement === 0) return 0;
-	return (button.likeCount || 0) / engagement;
+	return (button.stats.likeCount || 0) / engagement;
 }
 
 /**
  * Checks if button is popular (high engagement)
  */
-export function isPopular(button: AudioButtonPlainObject, threshold = 100): boolean {
-	return (button.playCount || 0) >= threshold;
+export function isPopular(button: AudioButton, threshold = 100): boolean {
+	return (button.stats.playCount || 0) >= threshold;
 }
 
 /**
  * Gets all tags combined
  */
-export function getAllTags(button: AudioButtonPlainObject): string[] {
+export function getAllTags(button: AudioButton): string[] {
 	return button.tags || [];
 }
 
 /**
  * Checks if button has specific tag
  */
-export function hasTag(button: AudioButtonPlainObject, tag: string): boolean {
+export function hasTag(button: AudioButton, tag: string): boolean {
 	return getAllTags(button).includes(tag);
 }
 
 /**
  * Gets creator name
  */
-export function getCreatorName(button: AudioButtonPlainObject): string {
-	return button.createdByName;
+export function getCreatorName(button: AudioButton): string {
+	return button.creatorName;
 }
 
 /**
  * Gets creator ID
  */
-export function getCreatorId(button: AudioButtonPlainObject): string {
-	return button.createdBy;
+export function getCreatorId(button: AudioButton): string {
+	return button.creatorId;
 }
 
 /**
  * Checks if button was created by specific user
  */
-export function isCreatedBy(button: AudioButtonPlainObject, userId: string): boolean {
-	return button.createdBy === userId;
+export function isCreatedBy(button: AudioButton, userId: string): boolean {
+	return button.creatorId === userId;
 }
 
 /**
  * Gets age in days
  */
-export function getAgeInDays(button: AudioButtonPlainObject): number {
+export function getAgeInDays(button: AudioButton): number {
 	const createdAt = new Date(button.createdAt);
 	const now = new Date();
 	const diffTime = Math.abs(now.getTime() - createdAt.getTime());
@@ -168,15 +168,15 @@ export function getAgeInDays(button: AudioButtonPlainObject): number {
 /**
  * Checks if button is recent (created within N days)
  */
-export function isRecent(button: AudioButtonPlainObject, days = 7): boolean {
+export function isRecent(button: AudioButton, days = 7): boolean {
 	return getAgeInDays(button) <= days;
 }
 
 /**
  * Gets formatted view count
  */
-export function getFormattedViewCount(button: AudioButtonPlainObject): string {
-	const count = button.playCount || 0;
+export function getFormattedViewCount(button: AudioButton): string {
+	const count = button.stats.playCount || 0;
 	if (count >= 10000) {
 		return `${(count / 10000).toFixed(1)}万`;
 	}
@@ -186,8 +186,8 @@ export function getFormattedViewCount(button: AudioButtonPlainObject): string {
 /**
  * Gets formatted like count
  */
-export function getFormattedLikeCount(button: AudioButtonPlainObject): string {
-	const count = button.likeCount || 0;
+export function getFormattedLikeCount(button: AudioButton): string {
+	const count = button.stats.likeCount || 0;
 	if (count >= 10000) {
 		return `${(count / 10000).toFixed(1)}万`;
 	}
@@ -197,7 +197,7 @@ export function getFormattedLikeCount(button: AudioButtonPlainObject): string {
 /**
  * Gets share URL for the button
  */
-export function getShareUrl(button: AudioButtonPlainObject): string {
+export function getShareUrl(button: AudioButton): string {
 	// Assuming the app is hosted at suzumina.click
 	return `https://suzumina.click/buttons/${button.id}`;
 }
@@ -206,7 +206,7 @@ export function getShareUrl(button: AudioButtonPlainObject): string {
  * Checks if button overlaps with time range
  */
 export function overlapsWithTimeRange(
-	button: AudioButtonPlainObject,
+	button: AudioButton,
 	startTime: number,
 	endTime: number,
 ): boolean {

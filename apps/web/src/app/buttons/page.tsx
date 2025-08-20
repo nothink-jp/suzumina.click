@@ -15,7 +15,7 @@ interface SearchParams {
 	sort?: string;
 	page?: string;
 	limit?: string;
-	sourceVideoId?: string;
+	videoId?: string;
 	// 高度フィルタパラメータ
 	playCountMin?: string;
 	playCountMax?: string;
@@ -25,7 +25,7 @@ interface SearchParams {
 	favoriteCountMax?: string;
 	createdAfter?: string;
 	createdBefore?: string;
-	createdBy?: string;
+	creatorId?: string;
 }
 
 // タグパラメータをパースする関数（複雑度を下げるため分離）
@@ -65,7 +65,7 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 		tags,
 		sortBy: (resolvedSearchParams.sort as AudioButtonQuery["sortBy"]) || "newest",
 		page: resolvedSearchParams.page ? Number(resolvedSearchParams.page) : 1,
-		sourceVideoId: resolvedSearchParams.sourceVideoId,
+		sourceVideoId: resolvedSearchParams.videoId,
 		// 高度フィルタ
 		playCountMin: resolvedSearchParams.playCountMin
 			? Number(resolvedSearchParams.playCountMin)
@@ -87,7 +87,7 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 			: undefined,
 		createdAfter: resolvedSearchParams.createdAfter,
 		createdBefore: resolvedSearchParams.createdBefore,
-		createdBy: resolvedSearchParams.createdBy,
+		createdBy: resolvedSearchParams.creatorId,
 		limit: validLimit,
 	};
 

@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 
-import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-types";
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { AudioPlayer } from "../audio-player";
@@ -24,23 +24,27 @@ vi.mock("../../lib/youtube-player-pool", () => ({
 	},
 }));
 
-const mockAudioButton: AudioButtonPlainObject = {
+const mockAudioButton: AudioButtonType = {
 	id: "test-audio-button",
-	title: "テスト音声ボタン",
+	buttonText: "テスト音声ボタン",
 	description: "テスト用の音声ボタンです",
 	tags: ["テスト"],
-	sourceVideoId: "test-video-id",
-	sourceVideoTitle: "テスト動画",
-	sourceVideoThumbnailUrl: "https://img.youtube.com/vi/test-video-id/maxresdefault.jpg",
+	videoId: "test-video-id",
+	videoTitle: "テスト動画",
+	videoThumbnailUrl: "https://img.youtube.com/vi/test-video-id/maxresdefault.jpg",
+	duration: 10,
 	startTime: 10,
 	endTime: 20,
-	createdBy: "test-user-id",
-	createdByName: "テストユーザー",
+	creatorId: "test-user-id",
+	creatorName: "テストユーザー",
 	isPublic: true,
-	playCount: 5,
-	likeCount: 2,
-	dislikeCount: 0,
-	favoriteCount: 1,
+	stats: {
+		playCount: 5,
+		likeCount: 2,
+		dislikeCount: 0,
+		favoriteCount: 1,
+		engagementRate: 0.4,
+	},
 	createdAt: "2025-01-01T00:00:00.000Z",
 	updatedAt: "2025-01-01T00:00:00.000Z",
 	_computed: {

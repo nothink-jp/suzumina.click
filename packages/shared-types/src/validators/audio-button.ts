@@ -5,7 +5,7 @@
  * Replaces AudioButton Entity validation with functional approach.
  */
 
-import type { AudioButtonPlainObject } from "../plain-objects/audio-button-plain";
+import type { AudioButton } from "../types/audio-button";
 
 export interface ValidationResult {
 	isValid: boolean;
@@ -130,13 +130,13 @@ export function validateCreatorInfo(creatorId: string, creatorName: string): Val
  * Validates statistics
  */
 export function validateStatistics(
-	viewCount: number,
+	playCount: number,
 	likeCount: number,
 	dislikeCount: number,
 ): ValidationResult {
 	const errors: string[] = [];
 
-	if (viewCount < 0) {
+	if (playCount < 0) {
 		errors.push("再生回数は0以上である必要があります");
 	}
 
@@ -157,7 +157,7 @@ export function validateStatistics(
 /**
  * Validates complete AudioButton data
  */
-export function validateAudioButton(button: Partial<AudioButtonPlainObject>): ValidationResult {
+export function validateAudioButton(button: Partial<AudioButton>): ValidationResult {
 	const errors: string[] = [];
 
 	// Required fields check
@@ -195,23 +195,19 @@ export function validateAudioButton(button: Partial<AudioButtonPlainObject>): Va
 	}
 
 	// Creator info validation
-	if (!button.createdBy) {
+	if (!button.creatorId || !button.creatorName) {
 		errors.push("作成者情報は必須です");
-	} else if (typeof button.createdBy === "object" && button.createdBy.id && button.createdBy.name) {
-		const creatorValidation = validateCreatorInfo(button.createdBy.id, button.createdBy.name);
+	} else if (button.creatorId && button.creatorName) {
+		const creatorValidation = validateCreatorInfo(button.creatorId, button.creatorName);
 		errors.push(...creatorValidation.errors);
 	}
 
 	// Statistics validation (optional, with defaults)
-	if (
-		button.viewCount !== undefined ||
-		button.likeCount !== undefined ||
-		button.dislikeCount !== undefined
-	) {
+	if (button.stats) {
 		const statsValidation = validateStatistics(
-			button.viewCount ?? 0,
-			button.likeCount ?? 0,
-			button.dislikeCount ?? 0,
+			button.stats.playCount ?? 0,
+			button.stats.likeCount ?? 0,
+			button.stats.dislikeCount ?? 0,
 		);
 		errors.push(...statsValidation.errors);
 	}
@@ -259,7 +255,7 @@ export function validateForCreation(
 /**
  * Validates audio button for update
  */
-export function validateForUpdate(button: Partial<AudioButtonPlainObject>): ValidationResult {
+export function validateForUpdate(button: Partial<AudioButton>): ValidationResult {
 	const errors: string[] = [];
 
 	// Only validate provided fields

@@ -58,7 +58,7 @@ export function AudioButtonDetailMainContent({
 					<div className="flex items-start justify-between mb-6">
 						<div className="space-y-3 flex-1">
 							<h1 className="text-3xl font-bold text-foreground leading-tight">
-								{audioButton.title}
+								{audioButton.buttonText}
 							</h1>
 							<div className="flex items-center gap-4 text-sm text-muted-foreground">
 								<span className="flex items-center gap-1">
@@ -72,16 +72,14 @@ export function AudioButtonDetailMainContent({
 									)}
 									秒
 								</span>
-								<span className="text-xs text-muted-foreground">
-									by {audioButton.createdByName}
-								</span>
+								<span className="text-xs text-muted-foreground">by {audioButton.creatorName}</span>
 							</div>
 						</div>
 						{/* 編集・削除ボタン */}
 						<div className="flex items-center gap-2">
 							{/* 編集ボタン */}
 							{session?.user &&
-								(audioButton.createdBy === session.user.discordId ||
+								(audioButton.creatorId === session.user.discordId ||
 									session.user.role === "admin") && (
 									<Button variant="outline" size="sm" asChild className="flex items-center gap-1">
 										<Link href={`/buttons/${audioButton.id}/edit`}>
@@ -93,8 +91,8 @@ export function AudioButtonDetailMainContent({
 							{/* 削除ボタン */}
 							<AudioButtonDeleteButton
 								audioButtonId={audioButton.id}
-								audioButtonTitle={audioButton.title}
-								createdBy={audioButton.createdBy}
+								audioButtonTitle={audioButton.buttonText}
+								createdBy={audioButton.creatorId}
 								variant="outline"
 								size="sm"
 								showLabel={true}
@@ -104,9 +102,9 @@ export function AudioButtonDetailMainContent({
 
 					{/* 統計情報 */}
 					<AudioButtonDetailStats
-						playCount={audioButton.playCount}
-						favoriteCount={audioButton.favoriteCount || 0}
-						likeCount={audioButton.likeCount}
+						playCount={audioButton.stats.playCount}
+						favoriteCount={audioButton.stats.favoriteCount || 0}
+						likeCount={audioButton.stats.likeCount}
 					/>
 
 					{/* 説明文 */}
@@ -125,7 +123,7 @@ export function AudioButtonDetailMainContent({
 						<AudioButtonTagEditorDetail
 							audioButtonId={audioButton.id}
 							tags={audioButton.tags || []}
-							createdBy={audioButton.createdBy}
+							createdBy={audioButton.creatorId}
 							currentUserId={session?.user?.discordId}
 							currentUserRole={session?.user?.role}
 						/>
@@ -145,8 +143,8 @@ export function AudioButtonDetailMainContent({
 					<AudioButtonDetailActions
 						audioButtonId={audioButton.id}
 						isFavorited={isFavorited}
-						favoriteCount={audioButton.favoriteCount || 0}
-						likeCount={audioButton.likeCount}
+						favoriteCount={audioButton.stats.favoriteCount || 0}
+						likeCount={audioButton.stats.likeCount}
 						isLiked={isLiked}
 						isDisliked={isDisliked}
 						isAuthenticated={isAuthenticated}
@@ -175,7 +173,7 @@ export function AudioButtonDetailMainContent({
 							</p>
 							<Button variant="outline" size="sm" asChild>
 								<a
-									href={`https://www.youtube.com/watch?v=${audioButton.sourceVideoId}&t=${Math.floor(audioButton.startTime)}`}
+									href={`https://www.youtube.com/watch?v=${audioButton.videoId}&t=${Math.floor(audioButton.startTime)}`}
 									target="_blank"
 									rel="noopener noreferrer"
 								>

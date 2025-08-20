@@ -5,12 +5,6 @@
 
 // === API Schemas ===
 export * from "./api-schemas/dlsite-raw";
-// Compatibility layer for gradual migration
-export {
-	AudioButtonCompat,
-	isAudioButtonLike,
-	toAudioButtonCompat,
-} from "./compat/audio-button-entity-compat";
 export { Video as VideoCompat, VideoEntity } from "./compatibility/video-entity-compat";
 // Compatibility Layer (Temporary - will be removed in Phase 1 Week 3)
 export { Work as WorkCompat, WorkEntity } from "./compatibility/work-entity-compat";
@@ -91,7 +85,6 @@ export {
 // Operations (Business Logic)
 export { workOperations } from "./operations/work";
 // === Plain Objects ===
-export * from "./plain-objects/audio-button-plain";
 export * from "./plain-objects/circle-plain";
 export * from "./plain-objects/video-plain";
 export * from "./plain-objects/work-plain";
@@ -107,7 +100,16 @@ export {
 // === Firestore Types ===
 // FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead
 // FirestoreServerAudioButtonData is available from entities/audio-button
-export type { FirestoreServerAudioButtonData } from "./types/firestore/audio-button";
+// AudioButton types (unified structure)
+export type {
+	AudioButton,
+	AudioButtonDocument,
+	AudioButtonPlainObject, // Deprecated alias
+	AudioButtonQuery,
+	CreateAudioButtonInput,
+	FirestoreServerAudioButtonData, // Deprecated alias
+	UpdateAudioButtonInput,
+} from "./types/audio-button";
 export type { CircleDocument } from "./types/firestore/circle";
 export { isCircleDocument } from "./types/firestore/circle";
 export type { CollectionMetadata } from "./types/firestore/collection-metadata";

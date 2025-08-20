@@ -39,8 +39,14 @@ export function AudioButtonCreator({
 	});
 
 	const { state, setState, youtubeManager, timeAdjustment, timeHandlers, validation } = editor;
-	const { title, description, tags, isProcessing: isCreating, error } = state;
-	const { setTitle, setDescription, setTags, setIsProcessing: setIsCreating, setError } = setState;
+	const { buttonText, description, tags, isProcessing: isCreating, error } = state;
+	const {
+		setButtonText,
+		setDescription,
+		setTags,
+		setIsProcessing: setIsCreating,
+		setError,
+	} = setState;
 	const isValid = validation.isValid;
 
 	// 作成処理
@@ -54,14 +60,10 @@ export function AudioButtonCreator({
 			const input: CreateAudioButtonInput = {
 				videoId: videoId,
 				videoTitle: videoTitle,
-				buttonText: title.trim(),
+				buttonText: buttonText.trim(),
 				tags,
 				startTime: timeAdjustment.startTime,
 				endTime: timeAdjustment.endTime,
-				createdBy: {
-					id: "", // This will be filled by the server
-					name: "", // This will be filled by the server
-				},
 				isPublic: true,
 			};
 
@@ -80,7 +82,7 @@ export function AudioButtonCreator({
 	}, [
 		isValid,
 		videoId,
-		title,
+		buttonText,
 		tags,
 		timeAdjustment.startTime,
 		timeAdjustment.endTime,
@@ -155,10 +157,10 @@ export function AudioButtonCreator({
 							</div>
 
 							<BasicInfoPanel
-								title={title}
+								title={buttonText}
 								description={description}
 								tags={tags}
-								onTitleChange={setTitle}
+								onTitleChange={setButtonText}
 								onDescriptionChange={setDescription}
 								onTagsChange={setTags}
 								disabled={isCreating}

@@ -84,7 +84,7 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 				};
 
 				await pool.playSegment(
-					audioButton.sourceVideoId,
+					audioButton.videoId,
 					audioButton.startTime,
 					audioButton.endTime || audioButton.startTime,
 					callbacks,
@@ -127,13 +127,13 @@ export const AudioPlayer = forwardRef<AudioControls, AudioPlayerProps>(
 			async (newVolume: number) => {
 				try {
 					// プールから現在のプレイヤーを取得して音量設定
-					const player = await pool.getOrCreatePlayer(audioButton.sourceVideoId);
+					const player = await pool.getOrCreatePlayer(audioButton.videoId);
 					player.setVolume(Math.max(0, Math.min(100, newVolume)));
 				} catch (error) {
 					console.error("Failed to set volume:", error);
 				}
 			},
-			[audioButton.sourceVideoId, pool.getOrCreatePlayer],
+			[audioButton.videoId, pool.getOrCreatePlayer],
 		);
 
 		// YouTube API準備完了の監視
@@ -209,7 +209,7 @@ export const useAudioPlayerState = (audioButton: AudioButtonPlainObject) => {
 		// プールの統計情報から現在の再生状態を取得
 		const checkPlayingState = () => {
 			const stats = pool.getStats();
-			setIsPlaying(stats.activeSegmentVideoId === audioButton.sourceVideoId);
+			setIsPlaying(stats.activeSegmentVideoId === audioButton.videoId);
 		};
 
 		// 定期的に状態をチェック
@@ -218,7 +218,7 @@ export const useAudioPlayerState = (audioButton: AudioButtonPlainObject) => {
 		return () => {
 			clearInterval(interval);
 		};
-	}, [audioButton.sourceVideoId]);
+	}, [audioButton.videoId]);
 
 	return {
 		isPlaying,

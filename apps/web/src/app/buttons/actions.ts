@@ -1,10 +1,9 @@
 "use server";
 
 import {
-	type AudioButtonPlainObject,
+	type AudioButton,
 	audioButtonTransformers,
 	type CreateAudioButtonInput,
-	type FirestoreServerAudioButtonData,
 	parseDurationToSeconds,
 	type UpdateAudioButtonInput,
 } from "@suzumina.click/shared-types";
@@ -14,11 +13,9 @@ import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 
 /**
- * FirestoreServerAudioButtonDataをAudioButtonPlainObjectに変換するヘルパー関数
+ * FirestoreデータをAudioButtonに変換するヘルパー関数
  */
-function convertFirestoreToAudioButtonPlain(
-	button: FirestoreServerAudioButtonData,
-): AudioButtonPlainObject | null {
+function convertFirestoreToAudioButton(button: any): AudioButton | null {
 	try {
 		return audioButtonTransformers.fromFirestore(button);
 	} catch (error) {
@@ -33,7 +30,7 @@ function convertFirestoreToAudioButtonPlain(
 /**
  * Entityを使用した新着音声ボタンの取得
  */
-export async function getRecentAudioButtons(limit = 10): Promise<AudioButtonPlainObject[]> {
+export async function getRecentAudioButtons(limit = 10): Promise<AudioButton[]> {
 	try {
 		const result = await getAudioButtonsList({
 			limit,
@@ -67,11 +64,8 @@ function applyFilters(
 	}
 
 	if (sourceVideoId) {
-		filteredQuery = filteredQuery.where(
-			"sourceVideoId",
-			"==",
-			sourceVideoId,
-		) as typeof filteredQuery;
+		// Use videoId field (unified naming)
+		filteredQuery = filteredQuery.where("videoId", "==", sourceVideoId) as typeof filteredQuery;
 	}
 
 	return filteredQuery;
@@ -97,13 +91,10 @@ function applySorting(
 /**
  * 検索フィルタを適用
  */
-function filterBySearch(
-	buttons: AudioButtonPlainObject[],
-	search: string,
-): AudioButtonPlainObject[] {
+function filterBySearch(buttons: AudioButton[], search: string): AudioButton[] {
 	const searchLower = search.toLowerCase();
 	return buttons.filter((button) => {
-		const titleMatch = button.title.toLowerCase().includes(searchLower);
+		const titleMatch = button.buttonText.toLowerCase().includes(searchLower);
 		const descriptionMatch = button.description?.toLowerCase().includes(searchLower) || false;
 		return titleMatch || descriptionMatch;
 	});
@@ -112,7 +103,7 @@ function filterBySearch(
 /**
  * タグでフィルタリング（AND検索）
  */
-function filterByTags(buttons: AudioButtonPlainObject[], tags: string[]): AudioButtonPlainObject[] {
+function filterByTags(buttons: AudioButton[], tags: string[]): AudioButton[] {
 	return buttons.filter((button) => {
 		if (!button.tags || button.tags.length === 0) return false;
 
@@ -134,18 +125,16 @@ function filterByTags(buttons: AudioButtonPlainObject[], tags: string[]): AudioB
 /**
  * Firestoreから音声ボタンを取得して変換
  */
-async function fetchAndConvertButtons(
-	queryRef: FirebaseFirestore.Query,
-): Promise<AudioButtonPlainObject[]> {
+async function fetchAndConvertButtons(queryRef: FirebaseFirestore.Query): Promise<AudioButton[]> {
 	const snapshot = await queryRef.get();
 	const buttons = snapshot.docs.map((doc) => {
-		const data = doc.data() as FirestoreServerAudioButtonData;
+		const data = doc.data();
 		return { ...data, id: doc.id };
 	});
 
 	return buttons
-		.map(convertFirestoreToAudioButtonPlain)
-		.filter((button): button is AudioButtonPlainObject => button !== null);
+		.map(convertFirestoreToAudioButton)
+		.filter((button): button is AudioButton => button !== null);
 }
 
 /**
@@ -174,7 +163,7 @@ export async function getAudioButtonsList(
 ): Promise<
 	| {
 			success: true;
-			data: { audioButtons: AudioButtonPlainObject[]; totalCount: number; hasMore: boolean };
+			data: { audioButtons: AudioButton[]; totalCount: number; hasMore: boolean };
 	  }
 	| { success: false; error: string }
 > {
@@ -202,8 +191,8 @@ export async function getAudioButtonsList(
 				"title",
 				"description",
 				"tags",
-				"sourceVideoId",
-				"sourceVideoTitle",
+				"videoId",
+				"videoTitle",
 				"startTime",
 				"endTime",
 				"createdBy",
@@ -470,18 +459,28 @@ export async function createAudioButton(
 			return { success: false, error: videoValidation.error || "動画の検証に失敗しました" };
 		}
 
-		// 音声ボタン作成
+		// 音声ボタン作成（統一されたフィールド名）
+		const duration = input.endTime - input.startTime;
 		const docRef = await firestore.collection("audioButtons").add({
-			...input,
-			createdBy: session.user.discordId,
-			createdByName: session.user.displayName || session.user.username || "Unknown",
+			buttonText: input.buttonText,
+			videoId: input.videoId,
+			videoTitle: input.videoTitle,
+			startTime: input.startTime,
+			endTime: input.endTime,
+			duration,
+			tags: input.tags || [],
+			creatorId: session.user.discordId,
+			creatorName: session.user.displayName || session.user.username || "Unknown",
+			isPublic: input.isPublic ?? true,
+			stats: {
+				playCount: 0,
+				likeCount: 0,
+				dislikeCount: 0,
+				favoriteCount: 0,
+				engagementRate: 0,
+			},
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
-			playCount: 0,
-			likeCount: 0,
-			dislikeCount: 0,
-			favoriteCount: 0,
-			isPublic: input.isPublic ?? true,
 		});
 
 		await docRef.update({ id: docRef.id });
@@ -507,7 +506,7 @@ export async function createAudioButton(
  */
 export async function getAudioButtonById(
 	id: string,
-): Promise<{ success: true; data: AudioButtonPlainObject } | { success: false; error: string }> {
+): Promise<{ success: true; data: AudioButton } | { success: false; error: string }> {
 	try {
 		if (!id) {
 			return { success: false, error: "音声ボタンIDが指定されていません" };
@@ -520,14 +519,14 @@ export async function getAudioButtonById(
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreServerAudioButtonData;
-		if (!data.isPublic) {
+		const data = doc.data();
+		if (!data || !data.isPublic) {
 			return { success: false, error: "この音声ボタンは非公開です" };
 		}
 
 		// dataにidを含めたデータを作成
 		const buttonData = { ...data, id };
-		const button = convertFirestoreToAudioButtonPlain(buttonData);
+		const button = convertFirestoreToAudioButton(buttonData);
 		if (!button) {
 			return { success: false, error: "音声ボタンのデータ変換に失敗しました" };
 		}
@@ -561,17 +560,23 @@ export async function deleteAudioButton(
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreServerAudioButtonData;
-		if (data.createdBy !== session.user.discordId) {
+		const data = doc.data();
+		if (!data) {
+			return { success: false, error: "音声ボタンのデータが無効です" };
+		}
+		// Check both old and new field names for backward compatibility
+		const creatorId = data.creatorId || data.createdBy;
+		if (creatorId !== session.user.discordId) {
 			return { success: false, error: "削除権限がありません" };
 		}
 
 		await doc.ref.delete();
 
-		// 動画のaudioButtonCountを更新
-		if (data.sourceVideoId) {
+		// 動画のaudioButtonCountを更新 - handle both field names
+		const videoId = data.videoId || data.sourceVideoId;
+		if (videoId) {
 			try {
-				const videoRef = firestore.collection("videos").doc(data.sourceVideoId);
+				const videoRef = firestore.collection("videos").doc(videoId);
 				const videoDoc = await videoRef.get();
 				if (videoDoc.exists) {
 					const videoData = videoDoc.data();
@@ -585,7 +590,7 @@ export async function deleteAudioButton(
 			} catch (updateError) {
 				// 動画カウント更新エラーはログのみ（音声ボタン削除は成功として扱う）
 				logger.warn("動画のaudioButtonCount更新エラー", {
-					videoId: data.sourceVideoId,
+					videoId,
 					error: updateError,
 				});
 			}
@@ -611,7 +616,7 @@ export async function getAudioButtonCount(sourceVideoId: string): Promise<number
 		// Firestoreクエリを作成
 		const query = firestore
 			.collection("audioButtons")
-			.where("sourceVideoId", "==", sourceVideoId)
+			.where("videoId", "==", sourceVideoId)
 			.where("isPublic", "==", true);
 
 		try {
@@ -657,9 +662,12 @@ export async function incrementLikeCount(
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
-			const currentData = doc.data() as FirestoreServerAudioButtonData;
+			const currentData = doc.data();
+			if (!currentData) throw new Error("データが無効です");
+			// Handle both nested and flat stats structure
+			const likeCount = currentData.stats?.likeCount ?? currentData.likeCount ?? 0;
 			transaction.update(docRef, {
-				likeCount: (currentData.likeCount || 0) + 1,
+				"stats.likeCount": likeCount + 1,
 				updatedAt: new Date().toISOString(),
 			});
 		});
@@ -684,9 +692,11 @@ export async function decrementLikeCount(
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
-			const currentData = doc.data() as FirestoreServerAudioButtonData;
+			const currentData = doc.data();
+			if (!currentData) throw new Error("データが無効です");
+			const likeCount = currentData.stats?.likeCount ?? currentData.likeCount ?? 0;
 			transaction.update(docRef, {
-				likeCount: Math.max(0, (currentData.likeCount || 0) - 1),
+				"stats.likeCount": Math.max(0, likeCount - 1),
 				updatedAt: new Date().toISOString(),
 			});
 		});
@@ -711,9 +721,11 @@ export async function incrementDislikeCount(
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
-			const currentData = doc.data() as FirestoreServerAudioButtonData;
+			const currentData = doc.data();
+			if (!currentData) throw new Error("データが無効です");
+			const dislikeCount = currentData.stats?.dislikeCount ?? currentData.dislikeCount ?? 0;
 			transaction.update(docRef, {
-				dislikeCount: (currentData.dislikeCount || 0) + 1,
+				"stats.dislikeCount": dislikeCount + 1,
 				updatedAt: new Date().toISOString(),
 			});
 		});
@@ -738,9 +750,11 @@ export async function decrementDislikeCount(
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
-			const currentData = doc.data() as FirestoreServerAudioButtonData;
+			const currentData = doc.data();
+			if (!currentData) throw new Error("データが無効です");
+			const dislikeCount = currentData.stats?.dislikeCount ?? currentData.dislikeCount ?? 0;
 			transaction.update(docRef, {
-				dislikeCount: Math.max(0, (currentData.dislikeCount || 0) - 1),
+				"stats.dislikeCount": Math.max(0, dislikeCount - 1),
 				updatedAt: new Date().toISOString(),
 			});
 		});
@@ -772,16 +786,20 @@ export async function updateAudioButton(
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreServerAudioButtonData;
-		if (data.createdBy !== session.user.discordId) {
+		const data = doc.data();
+		if (!data) {
+			return { success: false, error: "音声ボタンのデータが無効です" };
+		}
+		const creatorId = data.creatorId || data.createdBy;
+		if (creatorId !== session.user.discordId) {
 			return { success: false, error: "更新権限がありません" };
 		}
 
-		const updates: Partial<FirestoreServerAudioButtonData> = {
+		const updates: Record<string, any> = {
 			updatedAt: new Date().toISOString(),
 		};
 
-		if (input.buttonText !== undefined) updates.title = input.buttonText;
+		if (input.buttonText !== undefined) updates.buttonText = input.buttonText;
 		if (input.tags !== undefined) updates.tags = input.tags;
 		if (input.isPublic !== undefined) updates.isPublic = input.isPublic;
 
@@ -814,8 +832,12 @@ export async function updateAudioButtonTags(
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreServerAudioButtonData;
-		if (data.createdBy !== session.user.discordId) {
+		const data = doc.data();
+		if (!data) {
+			return { success: false, error: "音声ボタンのデータが無効です" };
+		}
+		const creatorId = data.creatorId || data.createdBy;
+		if (creatorId !== session.user.discordId) {
 			return { success: false, error: "更新権限がありません" };
 		}
 
@@ -897,8 +919,8 @@ export async function getPopularAudioButtonTags(limit = 30): Promise<
 		const tagCounts = new Map<string, number>();
 
 		for (const doc of snapshot.docs) {
-			const data = doc.data() as FirestoreServerAudioButtonData;
-			if (Array.isArray(data.tags)) {
+			const data = doc.data();
+			if (data && Array.isArray(data.tags)) {
 				for (const tag of data.tags) {
 					if (typeof tag === "string" && tag.trim() !== "") {
 						tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
@@ -931,9 +953,11 @@ export async function incrementPlayCount(
 			if (!doc.exists) {
 				throw new Error("音声ボタンが見つかりません");
 			}
-			const currentData = doc.data() as FirestoreServerAudioButtonData;
+			const currentData = doc.data();
+			if (!currentData) throw new Error("データが無効です");
+			const playCount = currentData.stats?.playCount ?? currentData.playCount ?? 0;
 			transaction.update(docRef, {
-				playCount: (currentData.playCount || 0) + 1,
+				"stats.playCount": playCount + 1,
 				updatedAt: new Date().toISOString(),
 			});
 		});

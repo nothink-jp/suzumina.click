@@ -324,7 +324,7 @@ export function UserProfileContent({
 									<span>最高再生数</span>
 									<span className="font-semibold">
 										{audioButtons.length > 0
-											? Math.max(...audioButtons.map((b) => b.playCount)).toLocaleString()
+											? Math.max(...audioButtons.map((b) => b.stats.playCount)).toLocaleString()
 											: 0}
 									</span>
 								</div>

@@ -30,13 +30,13 @@ export default async function AudioButtonEditPage({ params }: AudioButtonEditPag
 	}
 
 	// 権限チェック：作成者本人または管理者のみ編集可能
-	const canEdit = audioButton.createdBy === session.user.discordId || session.user.role === "admin";
+	const canEdit = audioButton.creatorId === session.user.discordId || session.user.role === "admin";
 	if (!canEdit) {
 		redirect(`/buttons/${id}`);
 	}
 
 	// 動画情報を取得して実際の動画長を取得
-	const video = await getVideoById(audioButton.sourceVideoId);
+	const video = await getVideoById(audioButton.videoId);
 	const videoDuration = video ? parseDurationToSeconds(video.duration) : 600; // 取得できない場合は600秒をデフォルト値に
 
 	return <AudioButtonEditor audioButton={audioButton} videoDuration={videoDuration} />;
@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: AudioButtonEditPageProps) {
 	const audioButton = result.data;
 
 	return {
-		title: `「${audioButton.title}」を編集 - suzumina.click`,
-		description: `音声ボタン「${audioButton.title}」の編集画面`,
+		title: `「${audioButton.buttonText}」を編集 - suzumina.click`,
+		description: `音声ボタン「${audioButton.buttonText}」の編集画面`,
 	};
 }

@@ -22,16 +22,22 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 
 	// 共通の音声ボタン編集ロジック（編集モード）
 	const editor = useAudioButtonEditor({
-		videoId: audioButton.sourceVideoId,
-		videoTitle: audioButton.sourceVideoTitle,
+		videoId: audioButton.videoId,
+		videoTitle: audioButton.videoTitle,
 		videoDuration,
 		audioButton,
 	});
 
 	const { state, setState, youtubeManager, timeAdjustment, timeHandlers, validation, hasChanges } =
 		editor;
-	const { title, description, tags, isProcessing: isUpdating, error } = state;
-	const { setTitle, setDescription, setTags, setIsProcessing: setIsUpdating, setError } = setState;
+	const { buttonText, description, tags, isProcessing: isUpdating, error } = state;
+	const {
+		setButtonText,
+		setDescription,
+		setTags,
+		setIsProcessing: setIsUpdating,
+		setError,
+	} = setState;
 	const isValid = validation.isValid;
 
 	// 更新処理
@@ -43,7 +49,7 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 
 		try {
 			const input: UpdateAudioButtonInput = {
-				buttonText: title.trim(),
+				buttonText: buttonText.trim(),
 				tags,
 			};
 
@@ -59,7 +65,7 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 		} finally {
 			setIsUpdating(false);
 		}
-	}, [isValid, hasChanges, audioButton.id, title, tags, router, setError, setIsUpdating]);
+	}, [isValid, hasChanges, audioButton.id, buttonText, tags, router, setError, setIsUpdating]);
 
 	// 時間調整用のハンドラーは共通フックから取得
 
@@ -68,7 +74,7 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 			<div className="container mx-auto px-4 py-6">
 				<div className="mb-6">
 					<h1 className="text-2xl font-bold mb-2">音声ボタンを編集</h1>
-					<p className="text-muted-foreground text-sm">動画: {audioButton.sourceVideoTitle}</p>
+					<p className="text-muted-foreground text-sm">動画: {audioButton.videoTitle}</p>
 				</div>
 
 				{error && (
@@ -117,10 +123,10 @@ export function AudioButtonEditor({ audioButton, videoDuration = 600 }: AudioBut
 							</div>
 
 							<BasicInfoPanel
-								title={title}
+								title={buttonText}
 								description={description}
 								tags={tags}
-								onTitleChange={setTitle}
+								onTitleChange={setButtonText}
 								onDescriptionChange={setDescription}
 								onTagsChange={setTags}
 								disabled={isUpdating}

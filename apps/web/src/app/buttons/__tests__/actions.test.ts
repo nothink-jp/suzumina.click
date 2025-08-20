@@ -706,7 +706,7 @@ describe("Audio Button Server Actions", () => {
 			const count = await getAudioButtonCount("test-video-id");
 
 			expect(count).toBe(5);
-			expect(mockCountChain.where).toHaveBeenCalledWith("sourceVideoId", "==", "test-video-id");
+			expect(mockCountChain.where).toHaveBeenCalledWith("videoId", "==", "test-video-id");
 			expect(mockCountChain.where).toHaveBeenCalledWith("isPublic", "==", true);
 		});
 
