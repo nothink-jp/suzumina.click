@@ -121,6 +121,11 @@ describe("useVideo", () => {
 				actualStartTime: "2024-01-01T00:00:00Z",
 				actualEndTime: "2024-01-01T02:00:00Z",
 			},
+			_computed: {
+				...createMockVideo()._computed,
+				videoType: "archived",
+				isArchived: true,
+			},
 		});
 		const { result } = renderHook(() => useVideo(video));
 
@@ -134,11 +139,16 @@ describe("useVideo", () => {
 
 	it("プレミア公開のバッジ情報を返す", () => {
 		const video = createMockVideo({
-			videoType: "normal",
+			videoType: "premiere",
 			duration: "PT5M", // 5分
 			liveStreamingDetails: {
 				actualStartTime: "2024-01-01T00:00:00Z",
 				actualEndTime: "2024-01-01T00:05:00Z",
+			},
+			_computed: {
+				...createMockVideo()._computed,
+				videoType: "premiere",
+				isPremiere: true,
 			},
 		});
 		const { result } = renderHook(() => useVideo(video));

@@ -133,7 +133,7 @@ describe("Video Server Actions", () => {
 
 			expect(result.videos).toHaveLength(2);
 			expect(result.videos[0].title).toBe("動画タイトル1");
-			expect(result.hasMore).toBe(false);
+			expect(result.total).toBe(2);
 		});
 
 		it("検索パラメータで動画がフィルタリングされる", async () => {
@@ -204,8 +204,8 @@ describe("Video Server Actions", () => {
 			const result = await getVideoTitles();
 
 			expect(result.videos).toEqual([]);
-			expect(result.hasMore).toBe(false);
 			expect(result.total).toBe(0);
+			expect(result.page).toBe(1);
 		});
 	});
 

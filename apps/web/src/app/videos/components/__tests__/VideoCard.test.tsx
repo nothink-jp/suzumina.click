@@ -92,7 +92,12 @@ describe("VideoCard", () => {
 	});
 
 	it("サムネイル画像が正しく表示される", () => {
-		const video = createMockVideo();
+		const video = createMockVideo({
+			_computed: {
+				...createMockVideo()._computed,
+				thumbnailUrl: "https://img.youtube.com/vi/abc123/hqdefault.jpg",
+			},
+		});
 		render(<VideoCard video={video} />);
 
 		const thumbnail = screen.getByAltText("テスト動画タイトルのサムネイル画像");
@@ -115,6 +120,12 @@ describe("VideoCard", () => {
 				actualStartTime: "2024-01-01T00:00:00Z",
 				actualEndTime: "2024-01-01T02:30:00Z",
 			},
+			_computed: {
+				...createMockVideo()._computed,
+				videoType: "archived",
+				isArchived: true,
+				canCreateButton: true,
+			},
 		});
 		render(<VideoCard video={video} />);
 
@@ -131,7 +142,13 @@ describe("VideoCard", () => {
 	});
 
 	it("タグが表示される", () => {
-		const video = createMockVideo();
+		const video = createMockVideo({
+			tags: {
+				playlistTags: ["プレイリストタグ1"],
+				userTags: ["ユーザータグ1"],
+				contentTags: [],
+			},
+		});
 		render(<VideoCard video={video} />);
 
 		expect(screen.getByText("プレイリストタグ1")).toBeInTheDocument();
@@ -140,7 +157,13 @@ describe("VideoCard", () => {
 
 	it("タグクリックで検索ページに遷移する", async () => {
 		const user = userEvent.setup();
-		const video = createMockVideo();
+		const video = createMockVideo({
+			tags: {
+				playlistTags: ["プレイリストタグ1"],
+				userTags: ["ユーザータグ1"],
+				contentTags: [],
+			},
+		});
 		render(<VideoCard video={video} />);
 
 		const playlistTag = screen.getByText("プレイリストタグ1");
@@ -177,6 +200,12 @@ describe("VideoCard", () => {
 			liveStreamingDetails: {
 				actualStartTime: "2024-01-01T00:00:00Z",
 				actualEndTime: "2024-01-01T02:30:00Z",
+			},
+			_computed: {
+				...createMockVideo()._computed,
+				videoType: "archived",
+				isArchived: true,
+				canCreateButton: true,
 			},
 		});
 		render(<VideoCard video={video} />);
