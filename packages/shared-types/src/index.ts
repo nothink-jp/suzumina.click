@@ -5,9 +5,6 @@
 
 // === API Schemas ===
 export * from "./api-schemas/dlsite-raw";
-export { Video as VideoCompat, VideoEntity } from "./compatibility/video-entity-compat";
-// Compatibility Layer (Temporary - will be removed in Phase 1 Week 3)
-export { Work as WorkCompat, WorkEntity } from "./compatibility/work-entity-compat";
 // === Configuration ===
 export * from "./config";
 // === Core utilities ===
@@ -37,11 +34,7 @@ export {
 	type ValidationError as ResultValidationError,
 	validationError,
 } from "./core/result";
-// === AudioButton Migration (Phase 3) ===
-// AudioButton Entity removed - using PlainObject + functions pattern
 // === Entities ===
-// Base entity infrastructure
-export * from "./entities/base/entity";
 // サークル・クリエイター関連の型とスキーマのエクスポート
 export * from "./entities/circle-creator";
 // お問い合わせ関連の型とスキーマのエクスポート
@@ -52,12 +45,8 @@ export * from "./entities/favorite";
 export * from "./entities/user";
 // ユーザー評価関連の型とスキーマのエクスポート
 export * from "./entities/user-evaluation";
-// 動画関連の型とスキーマのエクスポート
-export * from "./entities/video";
 // DLsite作品関連の型とスキーマのエクスポート
 export * from "./entities/work";
-// Work Entity
-export * from "./entities/work-entity";
 // 作品評価関連の型とスキーマのエクスポート
 export * from "./entities/work-evaluation";
 // === Migration Utilities ===

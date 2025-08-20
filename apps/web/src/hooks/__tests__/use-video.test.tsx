@@ -1,11 +1,11 @@
-import { Video, type VideoPlainObject } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useVideo } from "../use-video";
 
 // テスト用のVideoPlainObjectを作成するヘルパー
-function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
-	const defaultData = {
+function createMockVideo(overrides?: Partial<VideoPlainObject>): VideoPlainObject {
+	const defaultData: VideoPlainObject = {
 		id: "video123",
 		videoId: "abc123",
 		title: "テスト動画タイトル",
@@ -31,13 +31,7 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 	};
 
 	// overridesを適用
-	const firestoreData = overrides ? { ...defaultData, ...overrides } : defaultData;
-
-	const videoResult = Video.fromFirestoreData(firestoreData);
-	if (videoResult.isErr()) {
-		throw new Error(`Failed to create video: ${videoResult.error.detail}`);
-	}
-	return videoResult.value.toPlainObject();
+	return overrides ? { ...defaultData, ...overrides } : defaultData;
 }
 
 describe("useVideo", () => {

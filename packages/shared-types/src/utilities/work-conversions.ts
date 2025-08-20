@@ -8,8 +8,8 @@
 import type { DatabaseError, NotFoundError } from "../core/result";
 import { databaseError, err, notFoundError, ok, type Result } from "../core/result";
 import type { WorkDocument } from "../entities/work";
-import { Work } from "../entities/work-entity";
 import type { WorkPlainObject } from "../plain-objects/work-plain";
+import { workTransformers } from "../transformers/firestore";
 
 /**
  * Converts WorkDocument to WorkPlainObject via Work entity
@@ -40,12 +40,17 @@ export function convertToWorkPlainObject(
 		return err(notFoundError("work", "Work document is null or undefined"));
 	}
 
-	const workResult = Work.fromFirestoreData(data);
-	if (!workResult.isOk()) {
-		return err(databaseError(workResult.error.detail, workResult.error.type));
+	try {
+		const plainObject = workTransformers.fromFirestore(data);
+		return ok(plainObject);
+	} catch (error) {
+		return err(
+			databaseError(
+				error instanceof Error ? error.message : "Failed to convert work data",
+				"CONVERSION_ERROR",
+			),
+		);
 	}
-
-	return ok(workResult.value.toPlainObject());
 }
 
 /**

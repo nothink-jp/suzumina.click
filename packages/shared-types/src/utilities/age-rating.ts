@@ -4,7 +4,6 @@
 
 import { z } from "zod";
 import type { WorkDocument } from "../entities/work";
-import { Work } from "../entities/work-entity";
 
 /**
  * 年齢制限レーティングの型定義
@@ -173,12 +172,11 @@ export function filterR18Content<T>(
 	getAgeRating: (item: T) => string | undefined,
 ): T[] {
 	return items.filter((item) => {
-		// Try to use Work entity if the item is a Firestore work data
+		// Check if the item has an ageRating field directly
 		if (isFirestoreWorkData(item)) {
-			const workResult = Work.fromFirestoreData(item);
-			if (workResult.isOk()) {
-				return !workResult.value.isAdultContent();
-			}
+			const workData = item as unknown as WorkDocument;
+			const ageRating = workData.ageRating || workData.ageCategoryString;
+			return !isR18Content(ageRating);
 		}
 
 		// Fallback to legacy implementation for backward compatibility

@@ -1,4 +1,4 @@
-import { Video, type VideoPlainObject } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
@@ -58,12 +58,8 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 			firestoreData.statistics.commentCount = overrides.commentCount;
 	}
 
-	// Video Entityを作成してPlain Objectに変換
-	const videoResult = Video.fromFirestoreData(firestoreData);
-	if (videoResult.isErr()) {
-		throw new Error(`Failed to create video: ${videoResult.error.detail}`);
-	}
-	return videoResult.value.toPlainObject();
+	// Plain Objectを直接返す
+	return firestoreData as VideoPlainObject;
 }
 
 describe("VideoCard", () => {

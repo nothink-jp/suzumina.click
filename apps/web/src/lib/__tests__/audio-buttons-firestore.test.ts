@@ -121,20 +121,25 @@ describe("audio-buttons-firestore", () => {
 		});
 
 		it("should handle duration formatting correctly", () => {
-			const shortDurationData: FirestoreAudioButtonData = {
+			const shortDurationData: AudioButtonDocument & { id: string } = {
 				id: "short-button",
 				buttonText: "短い音声",
 				tags: [],
 				videoId: "video-123",
-				sourceVideoTitle: "動画",
+				videoTitle: "動画",
 				startTime: 0,
 				endTime: 5,
-				createdBy: "user-123",
-				createdByName: "ユーザー",
+				duration: 5,
+				creatorId: "user-123",
+				creatorName: "ユーザー",
 				isPublic: true,
-				playCount: 0,
-				likeCount: 0,
-				favoriteCount: 0,
+				stats: {
+					playCount: 0,
+					likeCount: 0,
+					dislikeCount: 0,
+					favoriteCount: 0,
+					engagementRate: 0,
+				},
 				createdAt: "2025-01-01T00:00:00.000Z",
 				updatedAt: "2025-01-01T00:00:00.000Z",
 			};
@@ -144,20 +149,25 @@ describe("audio-buttons-firestore", () => {
 		});
 
 		it("should handle equal start and end time", () => {
-			const equalTimeData: FirestoreAudioButtonData = {
+			const equalTimeData: AudioButtonDocument & { id: string } = {
 				id: "equal-time-button",
 				buttonText: "同じ開始終了時間",
 				tags: [],
 				videoId: "video-123",
-				sourceVideoTitle: "動画",
+				videoTitle: "動画",
 				startTime: 10,
 				endTime: 10, // Same as startTime
-				createdBy: "user-123",
-				createdByName: "ユーザー",
+				duration: 0,
+				creatorId: "user-123",
+				creatorName: "ユーザー",
 				isPublic: true,
-				playCount: 0,
-				likeCount: 0,
-				favoriteCount: 0,
+				stats: {
+					playCount: 0,
+					likeCount: 0,
+					dislikeCount: 0,
+					favoriteCount: 0,
+					engagementRate: 0,
+				},
 				createdAt: "2025-01-01T00:00:00.000Z",
 				updatedAt: "2025-01-01T00:00:00.000Z",
 			};
@@ -167,26 +177,31 @@ describe("audio-buttons-firestore", () => {
 		});
 
 		it("should handle missing favoriteCount", () => {
-			const noFavoriteCountData: FirestoreAudioButtonData = {
+			const noFavoriteCountData: AudioButtonDocument & { id: string } = {
 				id: "no-favorite-button",
 				buttonText: "お気に入り数なし",
 				tags: [],
 				videoId: "video-123",
-				sourceVideoTitle: "動画",
+				videoTitle: "動画",
 				startTime: 0,
 				endTime: 10,
-				createdBy: "user-123",
-				createdByName: "ユーザー",
+				duration: 10,
+				creatorId: "user-123",
+				creatorName: "ユーザー",
 				isPublic: true,
-				playCount: 0,
-				likeCount: 0,
-				favoriteCount: undefined,
+				stats: {
+					playCount: 0,
+					likeCount: 0,
+					dislikeCount: 0,
+					favoriteCount: 0,
+					engagementRate: 0,
+				},
 				createdAt: "2025-01-01T00:00:00.000Z",
 				updatedAt: "2025-01-01T00:00:00.000Z",
 			};
 
 			const result = convertToAudioButtonPlainObject(noFavoriteCountData);
-			expect(result.favoriteCount).toBe(0);
+			expect(result.stats.favoriteCount).toBe(0);
 		});
 	});
 
@@ -225,13 +240,13 @@ describe("audio-buttons-firestore", () => {
 			const result = await getAudioButtonsByUser("user-123");
 
 			expect(mockCollection).toHaveBeenCalledWith("audioButtons");
-			expect(mockWhere).toHaveBeenCalledWith("createdBy", "==", "user-123");
+			expect(mockWhere).toHaveBeenCalledWith("creatorId", "==", "user-123");
 			// isPublic フィルタはクライアント側で適用される
 			expect(mockOrderBy).toHaveBeenCalledWith("createdAt", "desc");
 			expect(mockLimit).toHaveBeenCalledWith(40); // limit * 2
 
 			expect(result).toHaveLength(1);
-			expect(result[0].title).toBe("音声ボタン1");
+			expect(result[0].buttonText).toBe("音声ボタン1");
 		});
 
 		it("should respect custom options", async () => {
@@ -295,7 +310,7 @@ describe("audio-buttons-firestore", () => {
 			expect(mockCollection).toHaveBeenCalledWith("audioButtons");
 			expect(mockDoc).toHaveBeenCalledWith("button-123");
 			expect(mockUpdate).toHaveBeenCalledWith({
-				playCount: expect.objectContaining({ operand: 1 }),
+				"stats.playCount": expect.objectContaining({ operand: 1 }),
 				updatedAt: expect.any(String),
 			});
 		});
@@ -313,9 +328,9 @@ describe("audio-buttons-firestore", () => {
 			const allButtonsSnapshot = {
 				size: 3,
 				docs: [
-					{ data: () => ({ playCount: 100 }) },
-					{ data: () => ({ playCount: 50 }) },
-					{ data: () => ({ playCount: 25 }) },
+					{ data: () => ({ stats: { playCount: 100 } }) },
+					{ data: () => ({ stats: { playCount: 50 } }) },
+					{ data: () => ({ stats: { playCount: 25 } }) },
 				],
 			};
 
@@ -336,7 +351,7 @@ describe("audio-buttons-firestore", () => {
 				publicButtons: 2,
 			});
 
-			expect(mockWhere).toHaveBeenCalledWith("createdBy", "==", "user-123");
+			expect(mockWhere).toHaveBeenCalledWith("creatorId", "==", "user-123");
 		});
 
 		it("should handle user with no buttons", async () => {
@@ -361,8 +376,8 @@ describe("audio-buttons-firestore", () => {
 			const snapshotWithMissingPlayCount = {
 				size: 2,
 				docs: [
-					{ data: () => ({ playCount: 10 }) },
-					{ data: () => ({}) }, // No playCount
+					{ data: () => ({ stats: { playCount: 10 } }) },
+					{ data: () => ({}) }, // No stats
 				],
 			};
 

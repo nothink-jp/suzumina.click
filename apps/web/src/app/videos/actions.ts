@@ -3,8 +3,9 @@
 import type { DocumentSnapshot } from "@google-cloud/firestore";
 import {
 	type FirestoreServerVideoData,
-	Video,
 	type VideoListResult,
+	type VideoPlainObject,
+	videoTransformers,
 } from "@suzumina.click/shared-types";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { getFirestore } from "@/lib/firestore";
@@ -160,20 +161,12 @@ export async function getVideosList(params: {
 /**
  * FirestoreデータをVideoに変換
  */
-function convertToVideo(doc: DocumentSnapshot): Video | null {
+function convertToVideo(doc: DocumentSnapshot): VideoPlainObject | null {
 	try {
 		const data = doc.data() as FirestoreServerVideoData;
 
-		// Video Entityに変換（Result型を処理）
-		const result = Video.fromFirestoreData(data);
-		if (result.isErr()) {
-			logger.error("Video変換エラー", {
-				videoId: doc.id,
-				error: result.error.detail,
-			});
-			return null;
-		}
-		return result.value;
+		// VideoPlainObjectに変換
+		return videoTransformers.fromFirestore(data);
 	} catch (error) {
 		logger.error("Video変換エラー", {
 			videoId: doc.id,
