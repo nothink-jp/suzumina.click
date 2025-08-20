@@ -1,6 +1,6 @@
 "use client";
 
-import type { AudioButtonPlainObject, FrontendVideoData } from "@suzumina.click/shared-types";
+import type { AudioButton, FrontendVideoData } from "@suzumina.click/shared-types";
 import { canCreateAudioButton } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -10,7 +10,7 @@ import { useSession } from "next-auth/react";
 import { AudioButtonWithPlayCount } from "@/components/audio";
 
 interface RelatedAudioButtonsProps {
-	audioButtons: AudioButtonPlainObject[];
+	audioButtons: AudioButton[];
 	totalCount: number;
 	videoId: string;
 	video: FrontendVideoData;
@@ -77,7 +77,7 @@ export function RelatedAudioButtons({
 			{totalCount > audioButtons.length && (
 				<div className="text-center pt-2">
 					<Button asChild variant="outline" size="sm">
-						<Link href={`/buttons?sourceVideoId=${videoId}`}>
+						<Link href={`/buttons?videoId=${videoId}`}>
 							<ArrowRight className="h-4 w-4 mr-2" />
 							すべての音声ボタンを見る ({totalCount}件)
 						</Link>

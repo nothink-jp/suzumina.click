@@ -74,107 +74,112 @@ resource "google_firestore_index" "audiobuttons_ispublic_createdat_desc" {
   }
 }
 
-# audioButtons コレクションのインデックス - isPublic（昇順）、playCount（降順）
-resource "google_firestore_index" "audiobuttons_ispublic_playcount_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "playCount"
-    order      = "DESCENDING"
-  }
-}
+# 🔄 MIGRATED TO NEW FIELD NAMES - Use audiobuttons_ispublic_stats_playcount_desc instead
+# # audioButtons コレクションのインデックス - isPublic（昇順）、playCount（降順）
+# resource "google_firestore_index" "audiobuttons_ispublic_playcount_desc" {
+#   project    = var.gcp_project_id
+#   collection = "audioButtons"
+#   
+#   fields {
+#     field_path = "isPublic"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "playCount"
+#     order      = "DESCENDING"
+#   }
+# }
 
-# audioButtons コレクションのインデックス - isPublic（昇順）、likeCount（降順）
-resource "google_firestore_index" "audiobuttons_ispublic_likecount_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "likeCount"
-    order      = "DESCENDING"
-  }
-}
+# 🔄 MIGRATED TO NEW FIELD NAMES - Use audiobuttons_ispublic_stats_likecount_desc instead
+# # audioButtons コレクションのインデックス - isPublic（昇順）、likeCount（降順）
+# resource "google_firestore_index" "audiobuttons_ispublic_likecount_desc" {
+#   project    = var.gcp_project_id
+#   collection = "audioButtons"
+#   
+#   fields {
+#     field_path = "isPublic"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "likeCount"
+#     order      = "DESCENDING"
+#   }
+# }
 
 # Note: category フィールドはタグベースシステムに移行したため、インデックスを削除
 
 # audiobuttons_ispublic_sourcevideoid_starttime_asc: 削除完了 (startTime ソート機能未実装)
 
-# audioButtons コレクションのインデックス - sourceVideoId（昇順）、isPublic（昇順）、createdAt（降順）
-# 動画詳細ページでの音声ボタン取得用
-resource "google_firestore_index" "audiobuttons_sourcevideoid_ispublic_createdat_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "sourceVideoId"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "createdAt"
-    order      = "DESCENDING"
-  }
-}
+# 🔄 MIGRATED TO NEW FIELD NAMES - Use audiobuttons_videoid_ispublic_createdat_desc instead
+# # audioButtons コレクションのインデックス - sourceVideoId（昇順）、isPublic（昇順）、createdAt（降順）
+# # 動画詳細ページでの音声ボタン取得用
+# resource "google_firestore_index" "audiobuttons_sourcevideoid_ispublic_createdat_desc" {
+#   project    = var.gcp_project_id
+#   collection = "audioButtons"
+#   
+#   fields {
+#     field_path = "sourceVideoId"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "isPublic"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "createdAt"
+#     order      = "DESCENDING"
+#   }
+# }
 
 # audioButtons コレクションのインデックス - sourceVideoId（昇順）、isPublic（昇順）、likeCount（降順）
 # 動画詳細ページでの音声ボタン取得用（人気順）
-resource "google_firestore_index" "audiobuttons_sourcevideoid_ispublic_likecount_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "sourceVideoId"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "likeCount"
-    order      = "DESCENDING"
-  }
-}
+# 🔄 MIGRATED TO NEW FIELD NAMES - Use audiobuttons_videoid_ispublic_stats_likecount_desc instead
+# resource "google_firestore_index" "audiobuttons_sourcevideoid_ispublic_likecount_desc" {
+#   project    = var.gcp_project_id
+#   collection = "audioButtons"
+#   
+#   fields {
+#     field_path = "sourceVideoId"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "isPublic"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "likeCount"
+#     order      = "DESCENDING"
+#   }
+# }
 
 # audioButtons コレクションのインデックス - sourceVideoId（昇順）、isPublic（昇順）、playCount（降順）
 # 動画詳細ページでの音声ボタン取得用（再生回数順）
-resource "google_firestore_index" "audiobuttons_sourcevideoid_ispublic_playcount_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "sourceVideoId"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "isPublic"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "playCount"
-    order      = "DESCENDING"
-  }
-}
+# 🔄 MIGRATED TO NEW FIELD NAMES - Use audiobuttons_videoid_ispublic_stats_playcount_desc instead
+# resource "google_firestore_index" "audiobuttons_sourcevideoid_ispublic_playcount_desc" {
+#   project    = var.gcp_project_id
+#   collection = "audioButtons"
+#   
+#   fields {
+#     field_path = "sourceVideoId"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "isPublic"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "playCount"
+#     order      = "DESCENDING"
+#   }
+# }
 
 # audioButtons コレクションのインデックス - tags（配列）、isPublic（昇順）、createdAt（降順）
 resource "google_firestore_index" "audiobuttons_tags_ispublic_createdat_desc" {
@@ -198,20 +203,21 @@ resource "google_firestore_index" "audiobuttons_tags_ispublic_createdat_desc" {
 }
 
 # audioButtons コレクションのインデックス - createdBy（昇順）、createdAt（降順）
-resource "google_firestore_index" "audiobuttons_createdby_createdat_desc" {
-  project    = var.gcp_project_id
-  collection = "audioButtons"
-  
-  fields {
-    field_path = "createdBy"
-    order      = "ASCENDING"
-  }
-  
-  fields {
-    field_path = "createdAt"
-    order      = "DESCENDING"
-  }
-}
+# 🔄 MIGRATED TO NEW FIELD NAMES - Use audiobuttons_creatorid_createdat_desc instead
+# resource "google_firestore_index" "audiobuttons_createdby_createdat_desc" {
+#   project    = var.gcp_project_id
+#   collection = "audioButtons"
+#   
+#   fields {
+#     field_path = "createdBy"
+#     order      = "ASCENDING"
+#   }
+#   
+#   fields {
+#     field_path = "createdAt"
+#     order      = "DESCENDING"
+#   }
+# }
 
 # audioButtons コレクションのインデックス - createdBy（昇順）、createdAt（昇順）
 # レート制限チェッククエリで使用（範囲クエリ対応）

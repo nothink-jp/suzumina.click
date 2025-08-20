@@ -4,8 +4,8 @@
 
 import { FieldValue, type Query } from "@google-cloud/firestore";
 import {
-	type AudioButtonPlainObject,
-	type FirestoreServerAudioButtonData,
+	type AudioButton,
+	type AudioButtonDocument,
 	formatRelativeTime,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
@@ -47,10 +47,9 @@ function ensureDateString(date: string | Date | unknown): string {
  */
 export function convertToAudioButtonPlainObject(
 	data:
-		| FirestoreServerAudioButtonData
-		| FirestoreServerAudioButtonData
-		| (FirestoreServerAudioButtonData & { createdAt: Date; updatedAt: Date }),
-): AudioButtonPlainObject {
+		| (AudioButtonDocument & { id?: string })
+		| (AudioButtonDocument & { id?: string; createdAt: Date; updatedAt: Date }),
+): AudioButton {
 	const createdAtStr = ensureDateString(data.createdAt);
 	const updatedAtStr = ensureDateString(data.updatedAt);
 
@@ -124,7 +123,7 @@ export async function getAudioButtonsByUser(
 		onlyPublic?: boolean;
 		orderBy?: "newest" | "oldest" | "mostPlayed";
 	} = {},
-): Promise<AudioButtonPlainObject[]> {
+): Promise<AudioButton[]> {
 	try {
 		const firestore = getFirestore();
 		const { limit = 20, onlyPublic = true, orderBy = "newest" } = options;
@@ -158,7 +157,7 @@ export async function getAudioButtonsByUser(
 		let audioButtons = snapshot.docs
 			.map((doc) => {
 				try {
-					const data = doc.data() as FirestoreServerAudioButtonData;
+					const data = doc.data() as AudioButtonDocument;
 					return convertToAudioButtonPlainObject({ ...data, id: doc.id });
 				} catch (conversionError) {
 					logError("Failed to convert audio button data:", {
@@ -169,7 +168,7 @@ export async function getAudioButtonsByUser(
 					return null;
 				}
 			})
-			.filter((button): button is AudioButtonPlainObject => button !== null)
+			.filter((button): button is AudioButton => button !== null)
 			.filter((button) => {
 				// 公開のみのフィルター（クライアント側で適用）
 				if (onlyPublic && !button.isPublic) {
@@ -261,7 +260,7 @@ export async function getUserAudioButtonStats(discordId: string): Promise<{
 		// 再生回数の合計を計算
 		let totalPlays = 0;
 		allButtonsSnapshot.docs.forEach((doc) => {
-			const data = doc.data() as FirestoreServerAudioButtonData;
+			const data = doc.data() as AudioButtonDocument;
 			totalPlays += data.stats?.playCount || 0;
 		});
 

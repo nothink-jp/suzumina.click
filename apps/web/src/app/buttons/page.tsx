@@ -65,7 +65,7 @@ export default async function AudioButtonsPage({ searchParams }: AudioButtonsPag
 		tags,
 		sortBy: (resolvedSearchParams.sort as AudioButtonQuery["sortBy"]) || "newest",
 		page: resolvedSearchParams.page ? Number(resolvedSearchParams.page) : 1,
-		sourceVideoId: resolvedSearchParams.videoId,
+		videoId: resolvedSearchParams.videoId,
 		// 高度フィルタ
 		playCountMin: resolvedSearchParams.playCountMin
 			? Number(resolvedSearchParams.playCountMin)

@@ -2,6 +2,7 @@
 
 import {
 	type AudioButton,
+	type AudioButtonDocument,
 	audioButtonTransformers,
 	type CreateAudioButtonInput,
 	parseDurationToSeconds,
@@ -15,7 +16,9 @@ import * as logger from "@/lib/logger";
 /**
  * FirestoreデータをAudioButtonに変換するヘルパー関数
  */
-function convertFirestoreToAudioButton(button: any): AudioButton | null {
+function convertFirestoreToAudioButton(
+	button: AudioButtonDocument & { id: string },
+): AudioButton | null {
 	try {
 		return audioButtonTransformers.fromFirestore(button);
 	} catch (error) {
@@ -55,7 +58,7 @@ export async function getRecentAudioButtons(limit = 10): Promise<AudioButton[]> 
 function applyFilters(
 	queryRef: FirebaseFirestore.Query,
 	onlyPublic: boolean,
-	sourceVideoId?: string,
+	videoId?: string,
 ): FirebaseFirestore.Query {
 	let filteredQuery = queryRef;
 
@@ -63,9 +66,9 @@ function applyFilters(
 		filteredQuery = filteredQuery.where("isPublic", "==", true) as typeof filteredQuery;
 	}
 
-	if (sourceVideoId) {
+	if (videoId) {
 		// Use videoId field (unified naming)
-		filteredQuery = filteredQuery.where("videoId", "==", sourceVideoId) as typeof filteredQuery;
+		filteredQuery = filteredQuery.where("videoId", "==", videoId) as typeof filteredQuery;
 	}
 
 	return filteredQuery;
@@ -147,7 +150,7 @@ export async function getAudioButtonsList(
 		sortBy?: "newest" | "oldest" | "popular" | "mostPlayed";
 		onlyPublic?: boolean;
 		search?: string;
-		sourceVideoId?: string;
+		videoId?: string;
 		tags?: string[];
 		createdAfter?: string;
 		createdBefore?: string;
@@ -173,14 +176,7 @@ export async function getAudioButtonsList(
 			return { success: false, error: "検索条件が無効です" };
 		}
 
-		const {
-			limit = 20,
-			page = 1,
-			sortBy = "newest",
-			onlyPublic = true,
-			sourceVideoId,
-			search,
-		} = query;
+		const { limit = 20, page = 1, sortBy = "newest", onlyPublic = true, videoId, search } = query;
 
 		// Firestoreから直接データを取得
 		const firestore = getFirestore();
@@ -188,34 +184,29 @@ export async function getAudioButtonsList(
 			.collection("audioButtons")
 			.select(
 				"id",
-				"title",
+				"buttonText",
 				"description",
 				"tags",
 				"videoId",
 				"videoTitle",
+				"videoThumbnailUrl",
 				"startTime",
 				"endTime",
-				"createdBy",
-				"createdByName",
+				"duration",
+				"creatorId",
+				"creatorName",
 				"isPublic",
-				"playCount",
-				"likeCount",
-				"dislikeCount",
-				"favoriteCount",
+				"stats",
 				"createdAt",
 				"updatedAt",
 			);
 
 		// フィルタとソートを適用
-		queryRef = applyFilters(queryRef, onlyPublic, sourceVideoId);
+		queryRef = applyFilters(queryRef, onlyPublic, videoId);
 		queryRef = applySorting(queryRef, sortBy);
 
 		// 総件数を取得するためのクエリ（ソートなし）
-		const countQueryRef = applyFilters(
-			firestore.collection("audioButtons"),
-			onlyPublic,
-			sourceVideoId,
-		);
+		const countQueryRef = applyFilters(firestore.collection("audioButtons"), onlyPublic, videoId);
 
 		// 総件数を取得
 		const countSnapshot = await countQueryRef.count().get();
@@ -250,26 +241,25 @@ export async function getAudioButtonsList(
 				.collection("audioButtons")
 				.select(
 					"id",
-					"title",
+					"buttonText",
 					"description",
 					"tags",
-					"sourceVideoId",
-					"sourceVideoTitle",
+					"videoId",
+					"videoTitle",
+					"videoThumbnailUrl",
 					"startTime",
 					"endTime",
-					"createdBy",
-					"createdByName",
+					"duration",
+					"creatorId",
+					"creatorName",
 					"isPublic",
-					"playCount",
-					"likeCount",
-					"dislikeCount",
-					"favoriteCount",
+					"stats",
 					"createdAt",
 					"updatedAt",
 				);
 
 			// フィルタとソートを適用
-			allQueryRef = applyFilters(allQueryRef, onlyPublic, sourceVideoId);
+			allQueryRef = applyFilters(allQueryRef, onlyPublic, videoId);
 			allQueryRef = applySorting(allQueryRef, sortBy);
 
 			// 全データ取得（一時的に1000件まで）
@@ -297,26 +287,25 @@ export async function getAudioButtonsList(
 				.collection("audioButtons")
 				.select(
 					"id",
-					"title",
+					"buttonText",
 					"description",
 					"tags",
-					"sourceVideoId",
-					"sourceVideoTitle",
+					"videoId",
+					"videoTitle",
+					"videoThumbnailUrl",
 					"startTime",
 					"endTime",
-					"createdBy",
-					"createdByName",
+					"duration",
+					"creatorId",
+					"creatorName",
 					"isPublic",
-					"playCount",
-					"likeCount",
-					"dislikeCount",
-					"favoriteCount",
+					"stats",
 					"createdAt",
 					"updatedAt",
 				);
 
 			// フィルタとソートを適用
-			allQueryRef = applyFilters(allQueryRef, onlyPublic, sourceVideoId);
+			allQueryRef = applyFilters(allQueryRef, onlyPublic, videoId);
 			allQueryRef = applySorting(allQueryRef, sortBy);
 
 			// 全データ取得（一時的に1000件まで）
@@ -350,9 +339,11 @@ export async function getAudioButtonsList(
 	} catch (error) {
 		logger.error("音声ボタン取得でエラーが発生", {
 			action: "getAudioButtons",
-			query,
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
+			queryVideoId: query.videoId,
+			queryLimit: query.limit,
+			errorMessage: error instanceof Error ? error.message : String(error),
+			errorStack:
+				error instanceof Error ? error.stack?.split("\n").slice(0, 3).join("\n") : undefined,
 		});
 		return {
 			success: false,
@@ -573,7 +564,7 @@ export async function deleteAudioButton(
 		await doc.ref.delete();
 
 		// 動画のaudioButtonCountを更新 - handle both field names
-		const videoId = data.videoId || data.sourceVideoId;
+		const videoId = data.videoId || data.videoId;
 		if (videoId) {
 			try {
 				const videoRef = firestore.collection("videos").doc(videoId);
@@ -606,41 +597,41 @@ export async function deleteAudioButton(
 /**
  * Get audio button count for a video
  */
-export async function getAudioButtonCount(sourceVideoId: string): Promise<number> {
+export async function getAudioButtonCount(videoId: string): Promise<number> {
 	try {
 		const firestore = getFirestore();
 
 		// デバッグログを追加
-		logger.info("getAudioButtonCount: 音声ボタン数取得開始", { sourceVideoId });
+		logger.info("getAudioButtonCount: 音声ボタン数取得開始", { videoId });
 
 		// Firestoreクエリを作成
 		const query = firestore
 			.collection("audioButtons")
-			.where("videoId", "==", sourceVideoId)
+			.where("videoId", "==", videoId)
 			.where("isPublic", "==", true);
 
 		try {
 			// count()メソッドを試す
 			const snapshot = await query.count().get();
 			const count = snapshot.data().count;
-			logger.info("getAudioButtonCount: count()メソッドで取得成功", { sourceVideoId, count });
+			logger.info("getAudioButtonCount: count()メソッドで取得成功", { videoId, count });
 			return count;
 		} catch (countError) {
 			// count()が使えない場合はフォールバック
 			logger.warn("getAudioButtonCount: count()メソッドが使用できません、フォールバックします", {
-				sourceVideoId,
+				videoId,
 				error: countError instanceof Error ? countError.message : String(countError),
 			});
 
 			// ドキュメントを取得して数える
 			const snapshot = await query.limit(1000).get();
 			const count = snapshot.size;
-			logger.info("getAudioButtonCount: フォールバックで取得成功", { sourceVideoId, count });
+			logger.info("getAudioButtonCount: フォールバックで取得成功", { videoId, count });
 			return count;
 		}
 	} catch (error) {
 		logger.error("音声ボタン数取得エラー", {
-			sourceVideoId,
+			videoId,
 			error: error instanceof Error ? error.message : String(error),
 			stack: error instanceof Error ? error.stack : undefined,
 		});
@@ -795,7 +786,7 @@ export async function updateAudioButton(
 			return { success: false, error: "更新権限がありません" };
 		}
 
-		const updates: Record<string, any> = {
+		const updates: Record<string, unknown> = {
 			updatedAt: new Date().toISOString(),
 		};
 
