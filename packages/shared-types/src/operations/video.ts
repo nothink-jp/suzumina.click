@@ -11,6 +11,11 @@ import type { VideoPlainObject } from "../plain-objects/video-plain";
  * Checks if a video is archived (older streams)
  */
 export function isArchived(video: VideoPlainObject): boolean {
+	// Use _computed properties if available
+	if (video._computed?.isArchived !== undefined) {
+		return video._computed.isArchived;
+	}
+	// Fallback to videoType check
 	return video.videoType === "archived";
 }
 
@@ -18,6 +23,11 @@ export function isArchived(video: VideoPlainObject): boolean {
  * Checks if a video is a premiere
  */
 export function isPremiere(video: VideoPlainObject): boolean {
+	// Use _computed properties if available
+	if (video._computed?.isPremiere !== undefined) {
+		return video._computed.isPremiere;
+	}
+	// Fallback to videoType check
 	return video.videoType === "premiere";
 }
 
@@ -48,17 +58,13 @@ export function isPossiblyLive(_video: VideoPlainObject): boolean {
  * Checks if audio buttons can be created for this video
  */
 export function canCreateButton(video: VideoPlainObject): boolean {
-	// Cannot create buttons for live or upcoming videos
-	if (isLive(video) || isUpcoming(video)) {
-		return false;
+	// Use _computed properties if available
+	if (video._computed?.canCreateButton !== undefined) {
+		return video._computed.canCreateButton;
 	}
-
-	// Must have valid duration
-	if (!video.duration || video.duration === "PT0S") {
-		return false;
-	}
-
-	return true;
+	
+	// Only archived videos can have buttons
+	return isArchived(video);
 }
 
 /**

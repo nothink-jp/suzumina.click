@@ -168,6 +168,8 @@ function convertToVideo(doc: DocumentSnapshot): VideoPlainObject | null {
 		// Firestore Timestampを変換
 		const normalizedData = {
 			...data,
+			id: data.videoId || doc.id,  // videoIdフィールドを優先、なければドキュメントID
+			videoId: data.videoId || doc.id,  // videoIdフィールドを優先
 			publishedAt:
 				data.publishedAt && typeof data.publishedAt === "object" && "toDate" in data.publishedAt
 					? (data.publishedAt as { toDate(): Date }).toDate()

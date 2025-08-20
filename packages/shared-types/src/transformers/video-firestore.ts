@@ -100,6 +100,20 @@ export function toFirestore(video: VideoPlainObject): FirestoreServerVideoData {
 }
 
 /**
+ * Parse ISO 8601 duration to seconds
+ */
+function parseDurationToSeconds(duration: string): number {
+	const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+	if (!match) return 0;
+	
+	const hours = Number.parseInt(match[1] || "0", 10);
+	const minutes = Number.parseInt(match[2] || "0", 10);
+	const seconds = Number.parseInt(match[3] || "0", 10);
+	
+	return hours * 3600 + minutes * 60 + seconds;
+}
+
+/**
  * Computes derived properties for a video
  */
 function computeProperties(
@@ -108,13 +122,43 @@ function computeProperties(
 	// Create a temporary object for operations
 	const temp = video as VideoPlainObject;
 
+	// Determine video type based on live streaming details and duration
+	let videoType: VideoComputedProperties["videoType"] = "normal";
+	if (video.liveStreamingDetails) {
+		if (video.liveStreamingDetails.actualEndTime) {
+			// Check if it's long enough to be a live stream archive
+			const duration = video.duration;
+			if (duration && parseDurationToSeconds(duration) > 15 * 60) {
+				videoType = "archived";
+			} else {
+				videoType = "premiere";
+			}
+		} else if (video.liveStreamingDetails.scheduledStartTime) {
+			const scheduledTime = video.liveStreamingDetails.scheduledStartTime instanceof Date
+				? video.liveStreamingDetails.scheduledStartTime
+				: new Date(video.liveStreamingDetails.scheduledStartTime as string);
+			if (scheduledTime > new Date()) {
+				videoType = "upcoming";
+			} else {
+				videoType = "live";
+			}
+		}
+	}
+
+	// Computed properties based on the determined video type
+	const isArchived = videoType === "archived";
+	const isPremiere = videoType === "premiere";
+	const isLive = video.liveBroadcastContent === "live" || videoType === "live";
+	const isUpcoming = video.liveBroadcastContent === "upcoming" || videoType === "upcoming";
+	const canCreateButton = isArchived; // Only archived videos can have buttons
+
 	return {
-		isArchived: videoOperations.isArchived(temp),
-		isPremiere: videoOperations.isPremiere(temp),
-		isLive: videoOperations.isLive(temp),
-		isUpcoming: videoOperations.isUpcoming(temp),
-		canCreateButton: videoOperations.canCreateButton(temp),
-		videoType: video.videoType || "normal",
+		isArchived,
+		isPremiere,
+		isLive,
+		isUpcoming,
+		canCreateButton,
+		videoType,
 		thumbnailUrl: videoOperations.getThumbnailUrl(temp),
 		youtubeUrl: videoOperations.getYouTubeUrl(temp),
 	};
