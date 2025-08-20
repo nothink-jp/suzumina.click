@@ -53,14 +53,14 @@ function filterVideos(videos: VideoPlainObject[], params: VideoFilterParams): Vi
 	// プレイリストタグフィルタ
 	if (params.playlistTags && params.playlistTags.length > 0) {
 		filtered = filtered.filter((video) =>
-			params.playlistTags?.some((tag) => video.playlistTags?.includes(tag) || false),
+			params.playlistTags?.some((tag) => video.tags?.playlistTags?.includes(tag) || false),
 		);
 	}
 
 	// ユーザータグフィルタ
 	if (params.userTags && params.userTags.length > 0) {
 		filtered = filtered.filter((video) =>
-			params.userTags?.some((tag) => video.userTags?.includes(tag) || false),
+			params.userTags?.some((tag) => video.tags?.userTags?.includes(tag) || false),
 		);
 	}
 
@@ -159,6 +159,16 @@ export async function getVideosList(params: {
 }
 
 /**
+ * Firestore Timestampを変換するヘルパー関数
+ */
+function convertTimestamp(value: unknown): Date | string | undefined {
+	if (value && typeof value === "object" && "toDate" in value) {
+		return (value as { toDate(): Date }).toDate();
+	}
+	return value as Date | string | undefined;
+}
+
+/**
  * FirestoreデータをVideoに変換
  */
 function convertToVideo(doc: DocumentSnapshot): VideoPlainObject | null {
@@ -168,45 +178,17 @@ function convertToVideo(doc: DocumentSnapshot): VideoPlainObject | null {
 		// Firestore Timestampを変換
 		const normalizedData = {
 			...data,
-			id: data.videoId || doc.id,  // videoIdフィールドを優先、なければドキュメントID
-			videoId: data.videoId || doc.id,  // videoIdフィールドを優先
-			publishedAt:
-				data.publishedAt && typeof data.publishedAt === "object" && "toDate" in data.publishedAt
-					? (data.publishedAt as { toDate(): Date }).toDate()
-					: data.publishedAt,
-			lastFetchedAt:
-				data.lastFetchedAt &&
-				typeof data.lastFetchedAt === "object" &&
-				"toDate" in data.lastFetchedAt
-					? (data.lastFetchedAt as { toDate(): Date }).toDate()
-					: data.lastFetchedAt,
+			id: data.videoId || doc.id, // videoIdフィールドを優先、なければドキュメントID
+			videoId: data.videoId || doc.id, // videoIdフィールドを優先
+			publishedAt: convertTimestamp(data.publishedAt),
+			lastFetchedAt: convertTimestamp(data.lastFetchedAt),
 			liveStreamingDetails: data.liveStreamingDetails
 				? {
 						...data.liveStreamingDetails,
-						scheduledStartTime:
-							data.liveStreamingDetails.scheduledStartTime &&
-							typeof data.liveStreamingDetails.scheduledStartTime === "object" &&
-							"toDate" in data.liveStreamingDetails.scheduledStartTime
-								? (data.liveStreamingDetails.scheduledStartTime as { toDate(): Date }).toDate()
-								: data.liveStreamingDetails.scheduledStartTime,
-						scheduledEndTime:
-							data.liveStreamingDetails.scheduledEndTime &&
-							typeof data.liveStreamingDetails.scheduledEndTime === "object" &&
-							"toDate" in data.liveStreamingDetails.scheduledEndTime
-								? (data.liveStreamingDetails.scheduledEndTime as { toDate(): Date }).toDate()
-								: data.liveStreamingDetails.scheduledEndTime,
-						actualStartTime:
-							data.liveStreamingDetails.actualStartTime &&
-							typeof data.liveStreamingDetails.actualStartTime === "object" &&
-							"toDate" in data.liveStreamingDetails.actualStartTime
-								? (data.liveStreamingDetails.actualStartTime as { toDate(): Date }).toDate()
-								: data.liveStreamingDetails.actualStartTime,
-						actualEndTime:
-							data.liveStreamingDetails.actualEndTime &&
-							typeof data.liveStreamingDetails.actualEndTime === "object" &&
-							"toDate" in data.liveStreamingDetails.actualEndTime
-								? (data.liveStreamingDetails.actualEndTime as { toDate(): Date }).toDate()
-								: data.liveStreamingDetails.actualEndTime,
+						scheduledStartTime: convertTimestamp(data.liveStreamingDetails.scheduledStartTime),
+						scheduledEndTime: convertTimestamp(data.liveStreamingDetails.scheduledEndTime),
+						actualStartTime: convertTimestamp(data.liveStreamingDetails.actualStartTime),
+						actualEndTime: convertTimestamp(data.liveStreamingDetails.actualEndTime),
 					}
 				: undefined,
 		};

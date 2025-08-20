@@ -302,8 +302,8 @@ const VideoCard = memo(function VideoCard({
 					{/* タグ表示（一列・コンパクト） */}
 					<div className="mb-4">
 						<ThreeLayerTagDisplay
-							playlistTags={video.playlistTags || []}
-							userTags={video.userTags || []}
+							playlistTags={video.tags?.playlistTags || []}
+							userTags={video.tags?.userTags || []}
 							categoryId={video.categoryId}
 							categoryName={categoryName || undefined}
 							size="sm"

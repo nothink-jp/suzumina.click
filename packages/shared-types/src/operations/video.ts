@@ -62,7 +62,7 @@ export function canCreateButton(video: VideoPlainObject): boolean {
 	if (video._computed?.canCreateButton !== undefined) {
 		return video._computed.canCreateButton;
 	}
-	
+
 	// Only archived videos can have buttons
 	return isArchived(video);
 }

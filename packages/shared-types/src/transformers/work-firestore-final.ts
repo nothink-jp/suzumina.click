@@ -62,17 +62,17 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 		circleEn: doc.circleEn,
 		description: doc.description || "",
 		category: doc.category,
-		originalCategoryText: undefined,
+		originalCategoryText: doc.originalCategoryText,
 		workUrl: doc.workUrl || "",
 		thumbnailUrl: doc.thumbnailUrl || "",
-		highResImageUrl: undefined,
+		highResImageUrl: doc.highResImageUrl,
 
 		// Price (required)
 		price: {
 			current: doc.price?.current || 0,
 			original: doc.price?.original || doc.price?.current || 0,
 			currency: doc.price?.currency || "JPY",
-			discount: undefined,
+			discount: doc.price?.discount,
 			point: doc.price?.point,
 			isFree: (doc.price?.current || 0) === 0,
 			isDiscounted: (doc.price?.current || 0) < (doc.price?.original || doc.price?.current || 0),
@@ -139,16 +139,25 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 		},
 
 		// Series (optional)
-		series: undefined,
+		series:
+			doc.seriesId || doc.seriesName
+				? {
+						id: doc.seriesId || (doc.seriesName ? `series-${doc.seriesName}` : ""),
+						name: doc.seriesName || "",
+						workCount: undefined,
+					}
+				: undefined,
 
 		// Sales status (required)
 		salesStatus: {
-			isOnSale: true,
-			isDiscounted: (doc.price?.current || 0) < (doc.price?.original || doc.price?.current || 0),
-			isFree: (doc.price?.current || 0) === 0,
-			isSoldOut: false,
-			isReserveWork: false,
-			dlsiteplaySupported: false,
+			isOnSale: doc.salesStatus?.isSale ?? true,
+			isDiscounted:
+				doc.salesStatus?.isDiscount ??
+				(doc.price?.current || 0) < (doc.price?.original || doc.price?.current || 0),
+			isFree: doc.salesStatus?.isFree ?? (doc.price?.current || 0) === 0,
+			isSoldOut: false, // Not available in current schema
+			isReserveWork: false, // Not available in current schema
+			dlsiteplaySupported: false, // Not available in current schema
 		},
 
 		// Extended metadata
@@ -187,7 +196,7 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 				}
 				return {
 					// biome-ignore lint/suspicious/noExplicitAny: Image can have different structures
-					thumbnailUrl: (img as any).thumb || "",
+					thumbnailUrl: (img as any).thumb || (img as any).thumbnailUrl || "",
 					// biome-ignore lint/suspicious/noExplicitAny: Image can have different structures
 					width: (img as any).width,
 					// biome-ignore lint/suspicious/noExplicitAny: Image can have different structures
@@ -201,9 +210,25 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 		releaseDate: doc.releaseDate,
 		releaseDateISO: doc.releaseDateISO,
 		releaseDateDisplay: doc.releaseDateDisplay,
-		createdAt: doc.createdAt || new Date().toISOString(),
-		updatedAt: doc.updatedAt || new Date().toISOString(),
+		createdAt: doc.createdAt || doc.registDate || new Date().toISOString(),
+		updatedAt: doc.updatedAt || doc.updateDate || new Date().toISOString(),
 		lastFetchedAt: doc.lastFetchedAt || new Date().toISOString(),
+
+		// Translation and Language (optional)
+		translationInfo: doc.translationInfo
+			? {
+					isTranslationAgree: doc.translationInfo.isTranslationAgree || false,
+					isOriginal: doc.translationInfo.isOriginal || false,
+					originalWorkno: doc.translationInfo.originalWorkno,
+					lang: doc.translationInfo.lang,
+				}
+			: undefined,
+		languageDownloads: doc.languageDownloads?.map((ld) => ({
+			workno: ld.workno,
+			label: ld.label,
+			lang: ld.lang,
+			dlCount: ld.dlCount,
+		})),
 
 		// Computed properties (required)
 		_computed: {
@@ -223,7 +248,18 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 				false,
 			isMangaWork: ["MNG", "ICG"].includes(doc.category) || false,
 			hasDiscount: (doc.price?.current || 0) < (doc.price?.original || doc.price?.current || 0),
-			isNewRelease: false,
+			isNewRelease: (() => {
+				if (!doc.releaseDate && !doc.releaseDateISO && !doc.registDate) return false;
+				const dateStr = doc.releaseDateISO || doc.releaseDate || doc.registDate || "";
+				try {
+					const releaseDate = new Date(dateStr);
+					const thirtyDaysAgo = new Date();
+					thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+					return releaseDate >= thirtyDaysAgo;
+				} catch {
+					return false;
+				}
+			})(),
 			isPopular: (doc.rating?.count || 0) > 100,
 
 			// Language-related (simplified)
@@ -296,7 +332,13 @@ export function toFirestore(work: WorkPlainObject): WorkDocument {
 			others_by: work.creators.others.map((c) => ({ id: c.id, name: c.name })),
 			created_by: [],
 		},
-		sampleImages: work.sampleImages.map((img) => img.thumbnailUrl),
+		sampleImages: work.sampleImages.map((img) => ({
+			thumb: img.thumbnailUrl,
+			width: img.width,
+			height: img.height,
+		})),
+		translationInfo: work.translationInfo,
+		languageDownloads: work.languageDownloads,
 		createdAt: work.createdAt,
 		updatedAt: work.updatedAt,
 		lastFetchedAt: work.lastFetchedAt,

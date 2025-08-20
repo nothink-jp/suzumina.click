@@ -6,9 +6,63 @@
  */
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
+import { parseDurationToSeconds } from "@suzumina.click/shared-types";
 
 import type { youtube_v3 } from "googleapis";
 import * as logger from "../../shared/logger";
+
+/**
+ * Helper function to determine video type
+ */
+function determineVideoType(
+	youtubeVideo: youtube_v3.Schema$Video,
+): "normal" | "short" | "live" | "premiere" | "archived" {
+	const snippet = youtubeVideo.snippet;
+	const contentDetails = youtubeVideo.contentDetails;
+	const liveStreamingDetails = youtubeVideo.liveStreamingDetails;
+
+	// Check for shorts
+	if (snippet?.title?.includes("#shorts") || snippet?.description?.includes("#shorts")) {
+		return "short";
+	}
+
+	const duration = contentDetails?.duration;
+	if (duration && parseDurationToSeconds(duration) < 60) {
+		return "short";
+	}
+
+	// Check for live content
+	if (liveStreamingDetails) {
+		if (!liveStreamingDetails.actualEndTime) {
+			if (liveStreamingDetails.actualStartTime) {
+				return "live";
+			}
+			return "premiere";
+		}
+
+		// Archived stream
+		if (duration && parseDurationToSeconds(duration) > 15 * 60) {
+			return "archived";
+		}
+		return "premiere";
+	}
+
+	return "normal";
+}
+
+/**
+ * Helper function to calculate audio button info
+ */
+function calculateAudioButtonInfo(videoType: string): {
+	count: number;
+	hasButtons: boolean;
+} {
+	const canCreate = videoType === "normal" || videoType === "archived";
+	return {
+		count: 0,
+		hasButtons: canCreate,
+	};
+}
 
 /**
  * Maps YouTube API video data to VideoPlainObject
@@ -38,27 +92,11 @@ export function mapYouTubeToVideoPlainObject(
 		const statistics = youtubeVideo.statistics;
 		const liveStreamingDetails = youtubeVideo.liveStreamingDetails;
 
-		// Determine video type
-		let videoType: "normal" | "archived" | "premiere" | "live" | "upcoming" | "possibly_live" =
-			"normal";
-		if (liveStreamingDetails) {
-			if (liveStreamingDetails.actualEndTime) {
-				// Check if it's long enough to be a live stream archive
-				const duration = contentDetails?.duration;
-				if (duration && parseDuration(duration) > 15 * 60) {
-					videoType = "archived";
-				} else {
-					videoType = "premiere";
-				}
-			} else if (liveStreamingDetails.scheduledStartTime) {
-				const scheduledTime = new Date(liveStreamingDetails.scheduledStartTime);
-				if (scheduledTime > new Date()) {
-					videoType = "upcoming";
-				} else {
-					videoType = "live";
-				}
-			}
-		}
+		// Determine video type using helper
+		const videoType = determineVideoType(youtubeVideo);
+
+		// Calculate audio button info
+		const audioButtonInfo = calculateAudioButtonInfo(videoType);
 
 		// Create live streaming details
 		const liveDetails: VideoPlainObject["liveStreamingDetails"] = liveStreamingDetails
@@ -98,10 +136,17 @@ export function mapYouTubeToVideoPlainObject(
 				"none") as VideoPlainObject["liveBroadcastContent"],
 			liveStreamingDetails: liveDetails,
 			videoType,
+			// Use both new and old format for compatibility
+			tags: {
+				playlistTags,
+				userTags,
+				contentTags: snippet.tags || [],
+			},
+			// Keep legacy fields for backward compatibility
 			playlistTags,
 			userTags,
-			audioButtonCount: 0,
-			hasAudioButtons: false,
+			audioButtonCount: audioButtonInfo.count,
+			hasAudioButtons: audioButtonInfo.hasButtons,
 			_computed: {
 				isArchived: videoType === "archived",
 				isPremiere: videoType === "premiere",
@@ -138,20 +183,6 @@ function getBestThumbnail(thumbnails: youtube_v3.Schema$ThumbnailDetails | undef
 	if (thumbnails.default?.url) return thumbnails.default.url;
 
 	return "";
-}
-
-/**
- * Parses ISO 8601 duration to seconds
- */
-function parseDuration(duration: string): number {
-	const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-	if (!match) return 0;
-
-	const hours = Number.parseInt(match[1] || "0", 10);
-	const minutes = Number.parseInt(match[2] || "0", 10);
-	const seconds = Number.parseInt(match[3] || "0", 10);
-
-	return hours * 3600 + minutes * 60 + seconds;
 }
 
 /**
@@ -243,17 +274,17 @@ export function mapYouTubeVideosWithErrors(
 // Re-export the main function with the old name for backward compatibility
 export const mapYouTubeToVideoEntity = mapYouTubeToVideoPlainObject;
 
-// VideoMapper class for backward compatibility
-export class VideoMapper {
-	static fromYouTubeAPI(video: youtube_v3.Schema$Video): VideoPlainObject | null {
+// Backward compatibility exports (using object instead of class)
+export const VideoMapper = {
+	fromYouTubeAPI(video: youtube_v3.Schema$Video): VideoPlainObject | null {
 		return mapYouTubeToVideoPlainObject(video);
-	}
+	},
 
-	static fromYouTubeAPIWithTags(
+	fromYouTubeAPIWithTags(
 		video: youtube_v3.Schema$Video,
 		playlistTags: string[] = [],
 		userTags: string[] = [],
 	): VideoPlainObject | null {
 		return mapYouTubeToVideoPlainObject(video, playlistTags, userTags);
-	}
-}
+	},
+};

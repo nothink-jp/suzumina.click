@@ -105,11 +105,11 @@ export function toFirestore(video: VideoPlainObject): FirestoreServerVideoData {
 function parseDurationToSeconds(duration: string): number {
 	const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
 	if (!match) return 0;
-	
+
 	const hours = Number.parseInt(match[1] || "0", 10);
 	const minutes = Number.parseInt(match[2] || "0", 10);
 	const seconds = Number.parseInt(match[3] || "0", 10);
-	
+
 	return hours * 3600 + minutes * 60 + seconds;
 }
 
@@ -134,9 +134,10 @@ function computeProperties(
 				videoType = "premiere";
 			}
 		} else if (video.liveStreamingDetails.scheduledStartTime) {
-			const scheduledTime = video.liveStreamingDetails.scheduledStartTime instanceof Date
-				? video.liveStreamingDetails.scheduledStartTime
-				: new Date(video.liveStreamingDetails.scheduledStartTime as string);
+			const scheduledTime =
+				video.liveStreamingDetails.scheduledStartTime instanceof Date
+					? video.liveStreamingDetails.scheduledStartTime
+					: new Date(video.liveStreamingDetails.scheduledStartTime as string);
 			if (scheduledTime > new Date()) {
 				videoType = "upcoming";
 			} else {
