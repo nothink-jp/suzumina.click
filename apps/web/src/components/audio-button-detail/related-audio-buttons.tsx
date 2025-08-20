@@ -1,4 +1,4 @@
-import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import type { AudioButton } from "@suzumina.click/shared-types";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { Youtube } from "lucide-react";
@@ -21,7 +21,7 @@ export async function RelatedAudioButtons({
 	try {
 		// 同じ動画の音声ボタンを取得
 		const sameVideoQuery: AudioButtonQuery = {
-			sourceVideoId: videoId,
+			videoId: videoId,
 			limit: 6,
 			sortBy: "newest",
 			onlyPublic: true,
@@ -32,7 +32,7 @@ export async function RelatedAudioButtons({
 
 		if (sameVideoResult.success) {
 			const relatedButtons = sameVideoResult.data.audioButtons.filter(
-				(button: AudioButtonPlainObject) => button.id !== currentId,
+				(button: AudioButton) => button.id !== currentId,
 			);
 
 			if (relatedButtons.length > 0) {
@@ -46,7 +46,7 @@ export async function RelatedAudioButtons({
 						</CardHeader>
 						<CardContent>
 							<div className="flex flex-wrap gap-3 items-start">
-								{relatedButtons.slice(0, 6).map((audioButton: AudioButtonPlainObject) => (
+								{relatedButtons.slice(0, 6).map((audioButton: AudioButton) => (
 									<AudioButtonWithPlayCount
 										key={audioButton.id}
 										audioButton={audioButton}

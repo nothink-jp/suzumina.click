@@ -132,7 +132,7 @@ async function fetchAndConvertButtons(queryRef: FirebaseFirestore.Query): Promis
 	const snapshot = await queryRef.get();
 	const buttons = snapshot.docs.map((doc) => {
 		const data = doc.data();
-		return { ...data, id: doc.id };
+		return { ...data, id: doc.id } as AudioButtonDocument & { id: string };
 	});
 
 	return buttons
@@ -516,7 +516,7 @@ export async function getAudioButtonById(
 		}
 
 		// dataにidを含めたデータを作成
-		const buttonData = { ...data, id };
+		const buttonData = { ...data, id } as AudioButtonDocument & { id: string };
 		const button = convertFirestoreToAudioButton(buttonData);
 		if (!button) {
 			return { success: false, error: "音声ボタンのデータ変換に失敗しました" };

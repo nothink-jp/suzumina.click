@@ -28,7 +28,7 @@ export interface SearchParams {
 	sort?: string;
 	page?: string;
 	limit?: string;
-	sourceVideoId?: string;
+	videoId?: string;
 	// 高度フィルタパラメータ
 	playCountMin?: string;
 	playCountMax?: string;
@@ -97,7 +97,7 @@ export class AudioButtonQueryBuilder {
 		if (params.tags) this.query.tags = params.tags.split(",");
 		if (params.sort)
 			this.query.sortBy = params.sort as "newest" | "oldest" | "popular" | "mostPlayed";
-		if (params.sourceVideoId) this.query.sourceVideoId = params.sourceVideoId;
+		if (params.videoId) this.query.videoId = params.videoId;
 		return this;
 	}
 
@@ -132,7 +132,7 @@ export const hasFilters = (params: SearchParams): boolean => {
 	return !!(
 		params.q ||
 		params.tags ||
-		params.sourceVideoId ||
+		params.videoId ||
 		params.playCountMin ||
 		params.playCountMax ||
 		params.likeCountMin ||
