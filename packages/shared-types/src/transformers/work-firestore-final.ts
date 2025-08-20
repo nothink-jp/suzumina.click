@@ -291,21 +291,7 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 
 			// Language-related
 			primaryLanguage: (() => {
-				// Check translation info first
-				const mapped = mapLanguageCode(doc.translationInfo?.lang);
-				if (mapped) return mapped;
-
-				// Check language downloads for primary language
-				if (doc.languageDownloads && doc.languageDownloads.length > 0) {
-					// Usually the first one is the primary language
-					const firstDownload = doc.languageDownloads[0];
-					if (firstDownload) {
-						const firstLang = mapLanguageCode(firstDownload.lang);
-						if (firstLang) return firstLang;
-					}
-				}
-
-				// Try to detect from title as fallback
+				// First priority: detect from title for translations
 				if (doc.title) {
 					if (doc.title.includes("【繁体中文版】") || doc.title.includes("【繁體中文版】")) {
 						return "zh-tw";
@@ -318,6 +304,20 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 					}
 					if (doc.title.includes("【韓国語版】") || doc.title.includes("【한국어】")) {
 						return "ko";
+					}
+				}
+
+				// Second priority: check translation info
+				const mapped = mapLanguageCode(doc.translationInfo?.lang);
+				if (mapped) return mapped;
+
+				// Third priority: check language downloads
+				if (doc.languageDownloads && doc.languageDownloads.length > 0) {
+					// Usually the first one is the primary language
+					const firstDownload = doc.languageDownloads[0];
+					if (firstDownload) {
+						const firstLang = mapLanguageCode(firstDownload.lang);
+						if (firstLang) return firstLang;
 					}
 				}
 

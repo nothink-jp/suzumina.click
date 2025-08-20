@@ -26,7 +26,7 @@ export interface VideoComputedProperties {
 	isLive: boolean;
 	isUpcoming: boolean;
 	canCreateButton: boolean;
-	videoType: "normal" | "archived" | "premiere" | "live" | "upcoming" | "possibly_live";
+	videoType: "normal" | "archived" | "premiere" | "live" | "upcoming" | "possibly_live" | "short";
 	thumbnailUrl: string;
 	youtubeUrl: string;
 }

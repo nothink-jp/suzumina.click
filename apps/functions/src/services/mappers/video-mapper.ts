@@ -16,7 +16,7 @@ import * as logger from "../../shared/logger";
  */
 function determineVideoType(
 	youtubeVideo: youtube_v3.Schema$Video,
-): "normal" | "short" | "live" | "premiere" | "archived" {
+): "normal" | "short" | "live" | "premiere" | "archived" | "upcoming" {
 	const snippet = youtubeVideo.snippet;
 	const contentDetails = youtubeVideo.contentDetails;
 	const liveStreamingDetails = youtubeVideo.liveStreamingDetails;
@@ -36,6 +36,10 @@ function determineVideoType(
 		if (!liveStreamingDetails.actualEndTime) {
 			if (liveStreamingDetails.actualStartTime) {
 				return "live";
+			}
+			// Check if it's upcoming
+			if (liveStreamingDetails.scheduledStartTime && !liveStreamingDetails.actualStartTime) {
+				return "upcoming";
 			}
 			return "premiere";
 		}
