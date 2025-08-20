@@ -254,6 +254,19 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 						{/* 言語情報表示（シンプル版） */}
 						<div className="space-y-2">
 							<div className="text-sm font-medium text-gray-700">対応言語</div>
+							{/* Debug info */}
+							{process.env.NODE_ENV === "development" && (
+								<div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+									<div>
+										Debug: primaryLanguage = {JSON.stringify(work._computed?.primaryLanguage)}
+									</div>
+									<div>
+										Debug: availableLanguages = {JSON.stringify(work._computed?.availableLanguages)}
+									</div>
+									<div>Debug: translationInfo = {JSON.stringify(work.translationInfo)}</div>
+									<div>Debug: languageDownloads = {JSON.stringify(work.languageDownloads)}</div>
+								</div>
+							)}
 							<div className="flex items-center gap-2">
 								<Globe className="h-4 w-4 text-muted-foreground" />
 								<Badge

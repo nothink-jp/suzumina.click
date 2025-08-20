@@ -305,13 +305,45 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
 					}
 				}
 
+				// Try to detect from title as fallback
+				if (doc.title) {
+					if (doc.title.includes("【繁体中文版】") || doc.title.includes("【繁體中文版】")) {
+						return "zh-tw";
+					}
+					if (doc.title.includes("【简体中文版】") || doc.title.includes("【簡体中文版】")) {
+						return "zh-cn";
+					}
+					if (doc.title.includes("【英語版】") || doc.title.includes("【English】")) {
+						return "en";
+					}
+					if (doc.title.includes("【韓国語版】") || doc.title.includes("【한국어】")) {
+						return "ko";
+					}
+				}
+
 				// Default to Japanese
 				return "ja";
 			})() as WorkLanguage,
 			availableLanguages: (() => {
 				const languages = new Set<WorkLanguage>();
 
-				// Always include Japanese as it's the original for most works
+				// Detect from title first for translations
+				if (doc.title) {
+					if (doc.title.includes("【繁体中文版】") || doc.title.includes("【繁體中文版】")) {
+						languages.add("zh-tw");
+					}
+					if (doc.title.includes("【简体中文版】") || doc.title.includes("【簡体中文版】")) {
+						languages.add("zh-cn");
+					}
+					if (doc.title.includes("【英語版】") || doc.title.includes("【English】")) {
+						languages.add("en");
+					}
+					if (doc.title.includes("【韓国語版】") || doc.title.includes("【한국어】")) {
+						languages.add("ko");
+					}
+				}
+
+				// Always include Japanese as it's usually available
 				languages.add("ja");
 
 				// Add translation language if exists
