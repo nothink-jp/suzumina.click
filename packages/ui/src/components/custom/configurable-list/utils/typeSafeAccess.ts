@@ -49,7 +49,7 @@ export function getDateProperty(item: unknown): Date | null {
 			// 文字列の場合、パースを試みる
 			if (typeof obj[prop] === "string") {
 				const date = new Date(obj[prop]);
-				if (!isNaN(date.getTime())) {
+				if (!Number.isNaN(date.getTime())) {
 					return date;
 				}
 			}
@@ -89,7 +89,7 @@ export function getNumericProperty(item: unknown, propertyPath: string): number 
 
 	if (typeof current === "string") {
 		const num = Number.parseFloat(current);
-		if (!isNaN(num)) {
+		if (!Number.isNaN(num)) {
 			return num;
 		}
 	}

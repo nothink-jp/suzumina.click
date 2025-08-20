@@ -5,7 +5,7 @@
 
 "use client";
 
-import type { FrontendVideoData } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
@@ -17,7 +17,7 @@ import { updateUserTagsAction } from "@/actions/user-tags";
 import { VideoTagEditor } from "@/components/video/video-tag-editor";
 
 interface VideoUserTagEditorProps {
-	video: FrontendVideoData;
+	video: VideoPlainObject;
 }
 
 export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
@@ -91,8 +91,8 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 		<div className="space-y-6">
 			{/* 動画タグ表示 */}
 			<ThreeLayerTagDisplay
-				playlistTags={video.playlistTags || []}
-				userTags={video.userTags || []}
+				playlistTags={video.tags?.playlistTags || []}
+				userTags={video.tags?.userTags || []}
 				categoryId={video.categoryId}
 				categoryName={categoryName || undefined}
 				size="default"
@@ -119,8 +119,8 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 					{isEditingUserTags ? (
 						<VideoTagEditor
 							videoId={video.videoId}
-							userTags={video.userTags || []}
-							playlistTags={video.playlistTags || []}
+							userTags={video.tags?.userTags || []}
+							playlistTags={video.tags?.playlistTags || []}
 							categoryId={video.categoryId}
 							canEdit={canEdit}
 							onUpdateTags={handleUpdateTags}

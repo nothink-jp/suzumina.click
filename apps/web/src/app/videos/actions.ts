@@ -3,8 +3,9 @@
 import type { DocumentSnapshot } from "@google-cloud/firestore";
 import {
 	type FirestoreServerVideoData,
-	Video,
 	type VideoListResult,
+	type VideoPlainObject,
+	videoTransformers,
 } from "@suzumina.click/shared-types";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { getFirestore } from "@/lib/firestore";
@@ -25,7 +26,7 @@ interface VideoFilterParams {
 /**
  * Video配列をフィルタリングするヘルパー関数
  */
-function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
+function filterVideos(videos: VideoPlainObject[], params: VideoFilterParams): VideoPlainObject[] {
 	let filtered = videos;
 
 	// 年代フィルタリング
@@ -33,7 +34,7 @@ function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
 		const year = Number.parseInt(params.year, 10);
 		if (!Number.isNaN(year)) {
 			filtered = filtered.filter((video) => {
-				const publishedYear = video.content.publishedAt.toDate().getFullYear();
+				const publishedYear = new Date(video.publishedAt).getFullYear();
 				return publishedYear === year;
 			});
 		}
@@ -44,22 +45,22 @@ function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
 		const searchLower = params.search.toLowerCase();
 		filtered = filtered.filter(
 			(video) =>
-				video.metadata.title.toString().toLowerCase().includes(searchLower) ||
-				video.metadata.description.toString().toLowerCase().includes(searchLower),
+				video.title.toLowerCase().includes(searchLower) ||
+				video.description.toLowerCase().includes(searchLower),
 		);
 	}
 
 	// プレイリストタグフィルタ
 	if (params.playlistTags && params.playlistTags.length > 0) {
 		filtered = filtered.filter((video) =>
-			params.playlistTags?.some((tag) => video.playlistTags.includes(tag)),
+			params.playlistTags?.some((tag) => video.tags?.playlistTags?.includes(tag) || false),
 		);
 	}
 
 	// ユーザータグフィルタ
 	if (params.userTags && params.userTags.length > 0) {
 		filtered = filtered.filter((video) =>
-			params.userTags?.some((tag) => video.userTags.includes(tag)),
+			params.userTags?.some((tag) => video.tags?.userTags?.includes(tag) || false),
 		);
 	}
 
@@ -74,7 +75,7 @@ function filterVideos(videos: Video[], params: VideoFilterParams): Video[] {
 	// 動画タイプフィルタ
 	if (params.videoType) {
 		filtered = filtered.filter((video) => {
-			const videoType = video.getVideoType();
+			const videoType = video._computed.videoType;
 
 			// UIとEntity間の値のマッピング
 			const typeMapping: Record<string, string> = {
@@ -158,22 +159,42 @@ export async function getVideosList(params: {
 }
 
 /**
+ * Firestore Timestampを変換するヘルパー関数
+ */
+function convertTimestamp(value: unknown): Date | string | undefined {
+	if (value && typeof value === "object" && "toDate" in value) {
+		return (value as { toDate(): Date }).toDate();
+	}
+	return value as Date | string | undefined;
+}
+
+/**
  * FirestoreデータをVideoに変換
  */
-function convertToVideo(doc: DocumentSnapshot): Video | null {
+function convertToVideo(doc: DocumentSnapshot): VideoPlainObject | null {
 	try {
 		const data = doc.data() as FirestoreServerVideoData;
 
-		// Video Entityに変換（Result型を処理）
-		const result = Video.fromFirestoreData(data);
-		if (result.isErr()) {
-			logger.error("Video変換エラー", {
-				videoId: doc.id,
-				error: result.error.detail,
-			});
-			return null;
-		}
-		return result.value;
+		// Firestore Timestampを変換
+		const normalizedData = {
+			...data,
+			id: data.videoId || doc.id, // videoIdフィールドを優先、なければドキュメントID
+			videoId: data.videoId || doc.id, // videoIdフィールドを優先
+			publishedAt: convertTimestamp(data.publishedAt),
+			lastFetchedAt: convertTimestamp(data.lastFetchedAt),
+			liveStreamingDetails: data.liveStreamingDetails
+				? {
+						...data.liveStreamingDetails,
+						scheduledStartTime: convertTimestamp(data.liveStreamingDetails.scheduledStartTime),
+						scheduledEndTime: convertTimestamp(data.liveStreamingDetails.scheduledEndTime),
+						actualStartTime: convertTimestamp(data.liveStreamingDetails.actualStartTime),
+						actualEndTime: convertTimestamp(data.liveStreamingDetails.actualEndTime),
+					}
+				: undefined,
+		};
+
+		// VideoPlainObjectに変換
+		return videoTransformers.fromFirestore(normalizedData);
 	} catch (error) {
 		logger.error("Video変換エラー", {
 			videoId: doc.id,
@@ -219,11 +240,11 @@ async function getVideosWithFiltering(
 		// フィルタがある場合は全件取得
 		const snapshot = await query.get();
 
-		// Video Entityに変換してフィルタリング
+		// VideoPlainObjectに変換してフィルタリング
 		const allVideos = snapshot.docs
 			.map((doc) => convertToVideo(doc))
-			.filter((video): video is Video => video !== null)
-			.filter((video) => video.content.privacyStatus === "public");
+			.filter((video): video is VideoPlainObject => video !== null)
+			.filter((video) => video.status?.privacyStatus === "public" || !video.status);
 
 		// フィルタリング処理
 		const filteredVideos = filterVideos(allVideos, params);
@@ -234,8 +255,8 @@ async function getVideosWithFiltering(
 		const hasMore = paginatedVideos.length > limit;
 		const videos = hasMore ? paginatedVideos.slice(0, limit) : paginatedVideos;
 
-		// Plain Objectに変換
-		const plainVideos = videos.map((v) => v.toPlainObject());
+		// すでにPlainObjectなのでそのまま使用
+		const plainVideos = videos;
 
 		return {
 			items: plainVideos,
@@ -243,7 +264,6 @@ async function getVideosWithFiltering(
 			total: filteredVideos.length,
 			page,
 			pageSize: plainVideos.length,
-			hasMore,
 		};
 	}
 
@@ -268,11 +288,11 @@ async function getVideosWithFiltering(
 	const videos = snapshot.docs
 		.slice(0, limit)
 		.map((doc) => convertToVideo(doc))
-		.filter((video): video is Video => video !== null)
-		.filter((video) => video.content.privacyStatus === "public");
+		.filter((video): video is VideoPlainObject => video !== null)
+		.filter((video) => video.status?.privacyStatus === "public" || !video.status);
 
-	const plainVideos = videos.map((v) => v.toPlainObject());
-	const hasMore = snapshot.size > limit;
+	const plainVideos = videos; // すでにPlainObject
+	const _hasMore = snapshot.size > limit;
 
 	// publicな動画の総数を取得
 	// TODO: パフォーマンス最適化のため、メタデータコレクションでのキャッシュを検討
@@ -280,8 +300,8 @@ async function getVideosWithFiltering(
 	const countSnapshot = await countQuery.get();
 	const total = countSnapshot.docs
 		.map((doc) => convertToVideo(doc))
-		.filter((video): video is Video => video !== null)
-		.filter((video) => video.content.privacyStatus === "public").length;
+		.filter((video): video is VideoPlainObject => video !== null)
+		.filter((video) => video.status?.privacyStatus === "public" || !video.status).length;
 
 	return {
 		items: plainVideos,
@@ -289,7 +309,6 @@ async function getVideosWithFiltering(
 		total,
 		page,
 		pageSize: plainVideos.length,
-		hasMore,
 	};
 }
 
@@ -339,7 +358,6 @@ export async function getVideoTitles(params?: {
 			total: 0,
 			page: 1,
 			pageSize: 0,
-			hasMore: false,
 		};
 	}
 }
@@ -359,7 +377,7 @@ export async function getVideoById(videoId: string) {
 		}
 
 		const video = convertToVideo(doc);
-		return video ? video.toPlainObject() : null;
+		return video; // すでにPlainObject
 	} catch (error) {
 		logger.error("動画詳細V2取得でエラーが発生", {
 			action: "getVideoById",
@@ -392,8 +410,8 @@ export async function getTotalVideoCount(params?: {
 		// Video Entityに変換してフィルタリング
 		const videos = snapshot.docs
 			.map((doc) => convertToVideo(doc))
-			.filter((video): video is Video => video !== null)
-			.filter((video) => video.content.privacyStatus === "public");
+			.filter((video): video is VideoPlainObject => video !== null)
+			.filter((video) => video.status?.privacyStatus === "public" || !video.status);
 
 		// フィルタリング処理をヘルパー関数に委譲
 		const filteredVideos = filterVideos(videos, params || {});

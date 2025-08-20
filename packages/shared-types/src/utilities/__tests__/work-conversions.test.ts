@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { WorkDocument } from "../../entities/work";
+import type { WorkDocument } from "../../entities/work/work-document-schema";
 import {
 	convertToWorkPlainObject,
 	convertToWorkPlainObjects,

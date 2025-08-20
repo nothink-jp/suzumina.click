@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendVideoData } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { canCreateAudioButton, getVideoAllTags } from "@suzumina.click/shared-types";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -25,7 +25,7 @@ import { formatDescriptionText } from "@/lib/text-utils";
 import { VideoUserTagEditor } from "./VideoUserTagEditor";
 
 interface VideoDetailProps {
-	video: FrontendVideoData;
+	video: VideoPlainObject;
 	initialTotalAudioCount?: number;
 	relatedAudioButtonsSlot?: ReactNode;
 }
@@ -100,7 +100,7 @@ const formatDuration = (duration?: string) => {
 };
 
 // 動画タイプバッジの情報を取得
-function getVideoBadgeInfo(video: FrontendVideoData) {
+function getVideoBadgeInfo(video: VideoPlainObject) {
 	switch (video.liveBroadcastContent) {
 		case "live":
 			return {
@@ -146,7 +146,7 @@ function getVideoBadgeInfo(video: FrontendVideoData) {
 }
 
 // 音声ボタン作成可能判定
-function getCanCreateButtonData(video: FrontendVideoData, session: { user?: unknown } | null) {
+function getCanCreateButtonData(video: VideoPlainObject, session: { user?: unknown } | null) {
 	// ログインしていない場合
 	if (!session?.user) {
 		return {

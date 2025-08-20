@@ -152,10 +152,10 @@ export function useVideo(video: VideoPlainObject) {
 	}, []);
 
 	// メモ化: プレイリストタグの配列
-	const playlistTags = useMemo(() => video.playlistTags || [], [video]);
+	const playlistTags = useMemo(() => video.tags?.playlistTags || [], [video]);
 
 	// メモ化: ユーザータグの配列
-	const userTags = useMemo(() => video.userTags || [], [video]);
+	const userTags = useMemo(() => video.tags?.userTags || [], [video]);
 
 	return {
 		// 基本情報

@@ -1,18 +1,18 @@
-import { Video, type VideoPlainObject } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useVideo } from "../use-video";
 
 // テスト用のVideoPlainObjectを作成するヘルパー
-function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
-	const defaultData = {
+function createMockVideo(overrides?: Partial<VideoPlainObject>): VideoPlainObject {
+	const defaultData: VideoPlainObject = {
 		id: "video123",
 		videoId: "abc123",
 		title: "テスト動画タイトル",
 		description: "テスト動画の説明文です",
-		publishedAt: new Date("2024-01-01T00:00:00Z"),
+		publishedAt: "2024-01-01T00:00:00Z",
 		thumbnailUrl: "https://example.com/thumbnail.jpg",
-		lastFetchedAt: new Date("2024-01-01T00:00:00Z"),
+		lastFetchedAt: "2024-01-01T00:00:00Z",
 		channelId: "channel123",
 		channelTitle: "テストチャンネル",
 		categoryId: "22",
@@ -28,16 +28,20 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		playlistTags: ["プレイリストタグ1", "プレイリストタグ2"],
 		userTags: ["ユーザータグ1", "ユーザータグ2"],
 		audioButtonCount: 0,
+		_computed: {
+			isArchived: false,
+			isPremiere: false,
+			isLive: false,
+			isUpcoming: false,
+			canCreateButton: false,
+			videoType: "normal",
+			thumbnailUrl: "https://example.com/thumbnail.jpg",
+			youtubeUrl: "https://youtube.com/watch?v=abc123",
+		},
 	};
 
 	// overridesを適用
-	const firestoreData = overrides ? { ...defaultData, ...overrides } : defaultData;
-
-	const videoResult = Video.fromFirestoreData(firestoreData);
-	if (videoResult.isErr()) {
-		throw new Error(`Failed to create video: ${videoResult.error.detail}`);
-	}
-	return videoResult.value.toPlainObject();
+	return overrides ? { ...defaultData, ...overrides } : defaultData;
 }
 
 describe("useVideo", () => {

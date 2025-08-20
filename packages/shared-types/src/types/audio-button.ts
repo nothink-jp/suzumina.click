@@ -94,7 +94,7 @@ export interface AudioButtonQuery {
 	sortBy?: "newest" | "oldest" | "popular" | "engagement";
 	page?: number;
 	limit?: number;
-	sourceVideoId?: string;
+	videoId?: string;
 	// Advanced filters
 	playCountMin?: number;
 	playCountMax?: number;

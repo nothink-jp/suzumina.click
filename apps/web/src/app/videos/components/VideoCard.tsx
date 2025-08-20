@@ -1,6 +1,6 @@
 "use client";
 
-import type { FrontendVideoData } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import {
 	canCreateAudioButton,
 	getAudioButtonCreationErrorMessage,
@@ -17,8 +17,8 @@ import React, { memo, useCallback, useMemo } from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
 
 // Helper function to get video badge information
-function getVideoBadgeInfo(video: FrontendVideoData) {
-	// FrontendVideoData (VideoPlainObject) は常に_computedプロパティを持つ
+function getVideoBadgeInfo(video: VideoPlainObject) {
+	// VideoPlainObject は常に_computedプロパティを持つ
 	const { videoType } = video._computed;
 	switch (videoType) {
 		case "live":
@@ -67,7 +67,7 @@ function getVideoBadgeInfo(video: FrontendVideoData) {
 }
 
 interface VideoCardProps {
-	video: FrontendVideoData;
+	video: VideoPlainObject;
 	buttonCount?: number; // 従来の互換性のため残すが、video.audioButtonCountを優先
 	variant?: "grid" | "sidebar";
 	priority?: boolean; // LCP画像最適化用
@@ -302,8 +302,8 @@ const VideoCard = memo(function VideoCard({
 					{/* タグ表示（一列・コンパクト） */}
 					<div className="mb-4">
 						<ThreeLayerTagDisplay
-							playlistTags={video.playlistTags || []}
-							userTags={video.userTags || []}
+							playlistTags={video.tags?.playlistTags || []}
+							userTags={video.tags?.userTags || []}
 							categoryId={video.categoryId}
 							categoryName={categoryName || undefined}
 							size="sm"

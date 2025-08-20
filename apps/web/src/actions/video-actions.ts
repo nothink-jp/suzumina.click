@@ -1,13 +1,13 @@
 /**
- * Video Entity V2対応のサーバーアクション
+ * Video PlainObject対応のサーバーアクション
  *
- * Videoエンティティを使用したサーバーサイドの操作を提供します。
+ * VideoPlainObjectを使用したサーバーサイドの操作を提供します。
  * 既存のvideo関連actionsとの共存を考慮し、V2サフィックスを使用。
  */
 
 "use server";
 
-import type { Video } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { auth } from "@/auth";
 import { getVideoByIdFromFirestore, getVideosByIdsFromFirestore } from "@/lib/video-firestore";
 
@@ -16,7 +16,7 @@ import { getVideoByIdFromFirestore, getVideosByIdsFromFirestore } from "@/lib/vi
  */
 export interface GetVideoResponse {
 	success: boolean;
-	video?: Video;
+	video?: VideoPlainObject;
 	error?: string;
 }
 
@@ -25,7 +25,7 @@ export interface GetVideoResponse {
  */
 export interface GetVideosResponse {
 	success: boolean;
-	videos?: Video[];
+	videos?: VideoPlainObject[];
 	error?: string;
 }
 
@@ -55,7 +55,7 @@ export async function getVideoAction(videoId: string): Promise<GetVideoResponse>
 
 		return {
 			success: true,
-			video: legacyVideo as unknown as Video, // 一時的なキャスト
+			video: legacyVideo as unknown as VideoPlainObject, // 一時的なキャスト
 		};
 	} catch (error) {
 		return {
@@ -95,7 +95,7 @@ export async function getVideosAction(videoIds: string[]): Promise<GetVideosResp
 
 		// Video V2エンティティに変換
 		// 注: 実際の変換は後のPRで実装
-		const videosV2 = legacyVideos as unknown as Video[];
+		const videosV2 = legacyVideos as unknown as VideoPlainObject[];
 
 		return {
 			success: true,
@@ -117,7 +117,7 @@ export async function getVideosAction(videoIds: string[]): Promise<GetVideosResp
 export async function updateVideoAction(
 	_videoId: string,
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	_updates: Partial<Video>,
+	_updates: Partial<VideoPlainObject>,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		// 認証チェック

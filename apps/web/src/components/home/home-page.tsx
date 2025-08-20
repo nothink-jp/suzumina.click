@@ -1,6 +1,6 @@
 import type {
 	AudioButtonPlainObject,
-	FrontendVideoData,
+	VideoPlainObject,
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
@@ -16,7 +16,7 @@ import { WorksSection } from "@/components/sections/works-section";
 
 interface HomePageProps {
 	initialAudioButtons: AudioButtonPlainObject[];
-	initialVideos: FrontendVideoData[];
+	initialVideos: VideoPlainObject[];
 	initialWorks: WorkPlainObject[];
 	initialAllAgesWorks: WorkPlainObject[];
 }

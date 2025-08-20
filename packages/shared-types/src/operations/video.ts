@@ -11,6 +11,11 @@ import type { VideoPlainObject } from "../plain-objects/video-plain";
  * Checks if a video is archived (older streams)
  */
 export function isArchived(video: VideoPlainObject): boolean {
+	// Use _computed properties if available
+	if (video._computed?.isArchived !== undefined) {
+		return video._computed.isArchived;
+	}
+	// Fallback to videoType check
 	return video.videoType === "archived";
 }
 
@@ -18,6 +23,11 @@ export function isArchived(video: VideoPlainObject): boolean {
  * Checks if a video is a premiere
  */
 export function isPremiere(video: VideoPlainObject): boolean {
+	// Use _computed properties if available
+	if (video._computed?.isPremiere !== undefined) {
+		return video._computed.isPremiere;
+	}
+	// Fallback to videoType check
 	return video.videoType === "premiere";
 }
 
@@ -39,7 +49,7 @@ export function isUpcoming(video: VideoPlainObject): boolean {
  * Checks if a video might be live (uncertain state)
  * Note: This is a legacy state that may not be used anymore
  */
-export function isPossiblyLive(video: VideoPlainObject): boolean {
+export function isPossiblyLive(_video: VideoPlainObject): boolean {
 	// "possibly_live" is not a valid VideoType, always return false
 	return false;
 }
@@ -48,17 +58,37 @@ export function isPossiblyLive(video: VideoPlainObject): boolean {
  * Checks if audio buttons can be created for this video
  */
 export function canCreateButton(video: VideoPlainObject): boolean {
-	// Cannot create buttons for live or upcoming videos
-	if (isLive(video) || isUpcoming(video)) {
-		return false;
+	// Use _computed properties if available
+	if (video._computed?.canCreateButton !== undefined) {
+		return video._computed.canCreateButton;
 	}
 
-	// Must have valid duration
+	// Only archived videos can have buttons
+	return isArchived(video);
+}
+
+/**
+ * Alias for backward compatibility with old naming
+ */
+export const canCreateAudioButton = canCreateButton;
+
+/**
+ * Gets error message explaining why audio button cannot be created
+ */
+export function getAudioButtonCreationErrorMessage(video: VideoPlainObject): string | null {
+	if (isLive(video)) {
+		return "ライブ配信中は音声ボタンを作成できません";
+	}
+
+	if (isUpcoming(video)) {
+		return "配信予定の動画には音声ボタンを作成できません";
+	}
+
 	if (!video.duration || video.duration === "PT0S") {
-		return false;
+		return "動画の長さが不明なため音声ボタンを作成できません";
 	}
 
-	return true;
+	return null;
 }
 
 /**
@@ -85,7 +115,7 @@ export function getThumbnailUrl(
 	const thumbnails = video.thumbnails;
 
 	// Try to get requested quality, fallback to available ones
-	if (thumbnails && thumbnails[quality]) {
+	if (thumbnails?.[quality]) {
 		return thumbnails[quality].url;
 	}
 
@@ -98,7 +128,7 @@ export function getThumbnailUrl(
 		"maxres",
 	];
 	for (const q of fallbackOrder) {
-		if (thumbnails && thumbnails[q]) {
+		if (thumbnails?.[q]) {
 			return thumbnails[q].url;
 		}
 	}
@@ -205,6 +235,8 @@ export const videoOperations = {
 	isUpcoming,
 	isPossiblyLive,
 	canCreateButton,
+	canCreateAudioButton,
+	getAudioButtonCreationErrorMessage,
 	getDisplayTitle,
 	getYouTubeUrl,
 	getThumbnailUrl,

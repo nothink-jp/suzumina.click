@@ -1,4 +1,4 @@
-import { Video, type VideoPlainObject } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -95,9 +95,9 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		videoId: "abc123",
 		title: "テスト動画",
 		description: "テスト動画の説明文",
-		publishedAt: new Date("2024-01-01T00:00:00Z"),
+		publishedAt: "2024-01-01T00:00:00Z",
 		thumbnailUrl: "https://example.com/thumbnail.jpg",
-		lastFetchedAt: new Date("2024-01-01T00:00:00Z"),
+		lastFetchedAt: "2024-01-01T00:00:00Z",
 		channelId: "test-channel-id",
 		channelTitle: "テストチャンネル",
 		categoryId: "22",
@@ -114,6 +114,16 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		userTags: [],
 		audioButtonCount: 0,
 		hasAudioButtons: false,
+		_computed: {
+			isArchived: false,
+			isPremiere: false,
+			isLive: false,
+			isUpcoming: false,
+			canCreateButton: false,
+			videoType: "normal",
+			thumbnailUrl: "https://example.com/thumbnail.jpg",
+			youtubeUrl: "https://youtube.com/watch?v=abc123",
+		},
 	};
 
 	// overridesを適用（undefinedも許可）
@@ -134,12 +144,8 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		});
 	}
 
-	// Video Entityを作成してPlain Objectに変換
-	const videoResult = Video.fromFirestoreData(firestoreData);
-	if (videoResult.isErr()) {
-		throw new Error(`Failed to create video: ${videoResult.error.detail}`);
-	}
-	return videoResult.value.toPlainObject();
+	// Plain Objectを直接返す
+	return firestoreData as VideoPlainObject;
 }
 
 describe("VideoDetail", () => {

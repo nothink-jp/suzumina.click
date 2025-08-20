@@ -2,8 +2,8 @@
 
 import type {
 	AudioButtonPlainObject,
-	FrontendVideoData,
 	UnifiedSearchFilters,
+	VideoPlainObject,
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
 import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-text";
@@ -28,7 +28,7 @@ import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
 
 interface UnifiedSearchResult {
 	audioButtons: AudioButtonPlainObject[];
-	videos: FrontendVideoData[];
+	videos: VideoPlainObject[];
 	works: WorkPlainObject[];
 	totalCount: {
 		buttons: number;
@@ -381,8 +381,8 @@ function SearchResults({
 												{/* 3層タグハイライト表示 */}
 												<div className="mt-2">
 													<ThreeLayerTagDisplay
-														playlistTags={video.playlistTags || []}
-														userTags={video.userTags || []}
+														playlistTags={video.tags?.playlistTags || []}
+														userTags={video.tags?.userTags || []}
 														categoryId={video.categoryId}
 														categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
 														searchQuery={searchQuery}
@@ -518,8 +518,8 @@ function SearchResults({
 										{/* 3層タグハイライト表示 */}
 										<div className="mt-2">
 											<ThreeLayerTagDisplay
-												playlistTags={video.playlistTags || []}
-												userTags={video.userTags || []}
+												playlistTags={video.tags?.playlistTags || []}
+												userTags={video.tags?.userTags || []}
 												categoryId={video.categoryId}
 												categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
 												searchQuery={searchQuery}
