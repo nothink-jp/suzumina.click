@@ -5,8 +5,8 @@ import {
 	convertToFrontendVideo,
 	type FirestoreServerVideoData,
 	type FirestoreVideoData,
-	type FrontendVideoData,
 	type VideoListResult,
+	type VideoPlainObject,
 } from "@suzumina.click/shared-types";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/components/system/protected-route";
@@ -132,8 +132,8 @@ function createEmptyVideoListResult(): { success: true; data: VideoListResult } 
 function processVideoDocuments(
 	videoDocs: FirebaseFirestore.QueryDocumentSnapshot[],
 	searchFilter?: string,
-): FrontendVideoData[] {
-	const videos: FrontendVideoData[] = [];
+): VideoPlainObject[] {
+	const videos: VideoPlainObject[] = [];
 
 	for (const doc of videoDocs) {
 		try {

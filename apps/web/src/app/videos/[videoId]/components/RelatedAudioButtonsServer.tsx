@@ -1,4 +1,4 @@
-import type { AudioButton, FrontendVideoData } from "@suzumina.click/shared-types";
+import type { AudioButton, VideoPlainObject } from "@suzumina.click/shared-types";
 import { getLikeDislikeStatusAction } from "@/actions/dislikes";
 import { getFavoritesStatusAction } from "@/actions/favorites";
 import { auth } from "@/auth";
@@ -8,7 +8,7 @@ interface RelatedAudioButtonsServerProps {
 	audioButtons: AudioButton[];
 	totalCount: number;
 	videoId: string;
-	video: FrontendVideoData;
+	video: VideoPlainObject;
 	loading?: boolean;
 }
 

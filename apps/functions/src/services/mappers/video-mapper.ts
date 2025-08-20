@@ -1,54 +1,28 @@
 /**
- * Video Mapper
+ * Video Mapper (Plain Object Version)
  *
- * Maps YouTube API data to the Video Entity domain model.
- * Provides conversion between YouTube API responses and our domain entities
- * while maintaining backward compatibility with the existing system.
+ * Maps YouTube API data to VideoPlainObject.
+ * This is a simplified version that works with plain objects instead of entities.
  */
 
-import {
-	type AudioButtonInfo,
-	Channel,
-	ChannelId,
-	ChannelTitle,
-	CommentCount,
-	ContentDetails,
-	DislikeCount,
-	LikeCount,
-	type LiveStreamingDetails,
-	type PrivacyStatus,
-	PublishedAt,
-	parseDate,
-	safeParseNumber,
-	type UploadStatus,
-	Video,
-	VideoCategory,
-	VideoContent,
-	VideoDescription,
-	VideoDuration,
-	VideoId,
-	VideoMetadata,
-	VideoStatistics,
-	VideoTitle,
-	ViewCount,
-} from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 
 import type { youtube_v3 } from "googleapis";
 import * as logger from "../../shared/logger";
 
 /**
- * Maps YouTube API video data to Video Entity
+ * Maps YouTube API video data to VideoPlainObject
  *
  * @param youtubeVideo - Video data from YouTube API
  * @param playlistTags - Playlist tags for the video
  * @param userTags - User-defined tags for the video
- * @returns Video Entity or null if mapping fails
+ * @returns VideoPlainObject or null if mapping fails
  */
-export function mapYouTubeToVideoEntity(
+export function mapYouTubeToVideoPlainObject(
 	youtubeVideo: youtube_v3.Schema$Video,
 	playlistTags: string[] = [],
 	userTags: string[] = [],
-): Video | null {
+): VideoPlainObject | null {
 	try {
 		// Validate required fields
 		if (!youtubeVideo.id || !youtubeVideo.snippet) {
@@ -59,71 +33,90 @@ export function mapYouTubeToVideoEntity(
 			return null;
 		}
 
-		// Create Channel
-		const channel = createChannelFromYouTube(youtubeVideo.snippet);
-		if (!channel) {
-			return null;
+		const snippet = youtubeVideo.snippet;
+		const contentDetails = youtubeVideo.contentDetails;
+		const statistics = youtubeVideo.statistics;
+		const liveStreamingDetails = youtubeVideo.liveStreamingDetails;
+
+		// Determine video type
+		let videoType: "normal" | "archived" | "premiere" | "live" | "upcoming" | "possibly_live" =
+			"normal";
+		if (liveStreamingDetails) {
+			if (liveStreamingDetails.actualEndTime) {
+				// Check if it's long enough to be a live stream archive
+				const duration = contentDetails?.duration;
+				if (duration && parseDuration(duration) > 15 * 60) {
+					videoType = "archived";
+				} else {
+					videoType = "premiere";
+				}
+			} else if (liveStreamingDetails.scheduledStartTime) {
+				const scheduledTime = new Date(liveStreamingDetails.scheduledStartTime);
+				if (scheduledTime > new Date()) {
+					videoType = "upcoming";
+				} else {
+					videoType = "live";
+				}
+			}
 		}
-
-		// Create VideoContent
-		const content = createVideoContentFromYouTube(youtubeVideo);
-		if (!content) {
-			return null;
-		}
-
-		// Create VideoMetadata
-		const metadata = createVideoMetadataFromYouTube(youtubeVideo);
-		if (!metadata) {
-			return null;
-		}
-
-		// Create VideoStatistics (optional)
-		const statistics = youtubeVideo.statistics
-			? createVideoStatisticsFromYouTube(youtubeVideo.statistics)
-			: undefined;
-
-		// Create tags structure
-		const tags = {
-			playlistTags,
-			userTags,
-			contentTags: youtubeVideo.snippet.tags || undefined,
-		};
-
-		// Audio button info should not be updated during YouTube data fetch
-		// to preserve existing values in Firestore
-		// Use -1 as a sentinel value to indicate "do not update"
-		const audioButtonInfo: AudioButtonInfo = {
-			count: -1,
-			hasButtons: false,
-		};
 
 		// Create live streaming details
-		const liveStreamingDetails = youtubeVideo.liveStreamingDetails
-			? mapLiveStreamingDetails(youtubeVideo.liveStreamingDetails)
+		const liveDetails: VideoPlainObject["liveStreamingDetails"] = liveStreamingDetails
+			? {
+					scheduledStartTime: liveStreamingDetails.scheduledStartTime || undefined,
+					scheduledEndTime: liveStreamingDetails.scheduledEndTime || undefined,
+					actualStartTime: liveStreamingDetails.actualStartTime || undefined,
+					actualEndTime: liveStreamingDetails.actualEndTime || undefined,
+					concurrentViewers:
+						typeof liveStreamingDetails.concurrentViewers === "string"
+							? Number.parseInt(liveStreamingDetails.concurrentViewers, 10)
+							: liveStreamingDetails.concurrentViewers || undefined,
+				}
 			: undefined;
 
-		// Create Video Entity
-		const videoResult = Video.create(
-			content,
-			metadata,
-			channel,
-			statistics,
-			tags,
-			audioButtonInfo,
-			liveStreamingDetails,
-		);
+		// Create the VideoPlainObject
+		const video: VideoPlainObject = {
+			id: youtubeVideo.id,
+			videoId: youtubeVideo.id,
+			title: snippet.title || "",
+			description: snippet.description || "",
+			publishedAt: snippet.publishedAt || new Date().toISOString(),
+			thumbnailUrl: getBestThumbnail(snippet.thumbnails),
+			lastFetchedAt: new Date().toISOString(),
+			channelId: snippet.channelId || "",
+			channelTitle: snippet.channelTitle || "",
+			categoryId: snippet.categoryId || "",
+			duration: contentDetails?.duration || "",
+			statistics: statistics
+				? {
+						viewCount: Number.parseInt(statistics.viewCount || "0", 10),
+						likeCount: Number.parseInt(statistics.likeCount || "0", 10),
+						commentCount: Number.parseInt(statistics.commentCount || "0", 10),
+					}
+				: undefined,
+			liveBroadcastContent: (snippet.liveBroadcastContent ||
+				"none") as VideoPlainObject["liveBroadcastContent"],
+			liveStreamingDetails: liveDetails,
+			videoType,
+			playlistTags,
+			userTags,
+			audioButtonCount: 0,
+			hasAudioButtons: false,
+			_computed: {
+				isArchived: videoType === "archived",
+				isPremiere: videoType === "premiere",
+				isLive: videoType === "live",
+				isUpcoming: videoType === "upcoming",
+				canCreateButton: videoType === "archived",
+				videoType,
+				thumbnailUrl: getBestThumbnail(snippet.thumbnails),
+				youtubeUrl: `https://youtube.com/watch?v=${youtubeVideo.id}`,
+			},
+		};
 
-		if (videoResult.isErr()) {
-			logger.error("Failed to create Video entity", {
-				videoId: youtubeVideo.id,
-				error: videoResult.error.message,
-			});
-			return null;
-		}
-
-		return videoResult.value;
+		return video;
 	} catch (error) {
-		logger.error("Failed to map YouTube video to entity", {
+		logger.error("Failed to map YouTube video to plain object", {
 			videoId: youtubeVideo.id,
 			error: error instanceof Error ? error.message : "Unknown error",
 		});
@@ -132,251 +125,48 @@ export function mapYouTubeToVideoEntity(
 }
 
 /**
- * Creates Channel from YouTube snippet
+ * Gets the best available thumbnail URL
  */
-function createChannelFromYouTube(snippet: youtube_v3.Schema$VideoSnippet): Channel | null {
-	if (!snippet.channelId || !snippet.channelTitle) {
-		logger.warn("Missing channel information in YouTube snippet");
-		return null;
-	}
+function getBestThumbnail(thumbnails: youtube_v3.Schema$ThumbnailDetails | undefined): string {
+	if (!thumbnails) return "";
 
-	try {
-		return new Channel(
-			new ChannelId(snippet.channelId),
-			new ChannelTitle(snippet.channelTitle),
-			snippet.categoryId ? new VideoCategory(snippet.categoryId) : undefined,
-		);
-	} catch (error) {
-		logger.error("Failed to create Channel", {
-			channelId: snippet.channelId,
-			error: error instanceof Error ? error.message : "Unknown error",
-		});
-		return null;
-	}
+	// Priority: maxres > standard > high > medium > default
+	if (thumbnails.maxres?.url) return thumbnails.maxres.url;
+	if (thumbnails.standard?.url) return thumbnails.standard.url;
+	if (thumbnails.high?.url) return thumbnails.high.url;
+	if (thumbnails.medium?.url) return thumbnails.medium.url;
+	if (thumbnails.default?.url) return thumbnails.default.url;
+
+	return "";
 }
 
 /**
- * Creates VideoContent from YouTube data
+ * Parses ISO 8601 duration to seconds
  */
-function createVideoContentFromYouTube(video: youtube_v3.Schema$Video): VideoContent | null {
-	if (!video.id || !video.snippet?.publishedAt) {
-		logger.warn("Missing required fields for VideoContent");
-		return null;
-	}
+function parseDuration(duration: string): number {
+	const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+	if (!match) return 0;
 
-	try {
-		const videoIdResult = VideoId.create(video.id);
-		if (videoIdResult.isErr()) {
-			logger.error("Failed to create VideoId", {
-				videoId: video.id,
-				error: videoIdResult.error.message,
-			});
-			return null;
-		}
-		const videoId = videoIdResult.value;
+	const hours = Number.parseInt(match[1] || "0", 10);
+	const minutes = Number.parseInt(match[2] || "0", 10);
+	const seconds = Number.parseInt(match[3] || "0", 10);
 
-		// Validate publishedAt date
-		const publishedDate = parseDate(video.snippet.publishedAt);
-		if (!publishedDate) {
-			logger.warn("Invalid publishedAt date", { publishedAt: video.snippet.publishedAt });
-			return null;
-		}
-
-		const publishedAtResult = PublishedAt.create(publishedDate);
-		if (publishedAtResult.isErr()) {
-			logger.error("Failed to create PublishedAt", {
-				publishedDate,
-				error: publishedAtResult.error.message,
-			});
-			return null;
-		}
-		const publishedAt = publishedAtResult.value;
-
-		const privacyStatus = (video.status?.privacyStatus || "public") as PrivacyStatus;
-		const uploadStatus = (video.status?.uploadStatus || "processed") as UploadStatus;
-		const embeddable = video.status?.embeddable ?? undefined;
-
-		// Create ContentDetails if available
-		const contentDetails = video.contentDetails
-			? (() => {
-					const result = ContentDetails.create(
-						video.contentDetails.dimension as "2d" | "3d" | undefined,
-						video.contentDetails.definition as "hd" | "sd" | undefined,
-						video.contentDetails.caption === "true",
-						video.contentDetails.licensedContent ?? false,
-						video.contentDetails.projection as "rectangular" | "360" | undefined,
-					);
-					if (result.isErr()) {
-						logger.warn("Failed to create ContentDetails", { error: result.error.message });
-						return undefined;
-					}
-					return result.value;
-				})()
-			: undefined;
-
-		const contentResult = VideoContent.create(
-			videoId,
-			publishedAt,
-			privacyStatus,
-			uploadStatus,
-			contentDetails,
-			video.player?.embedHtml || undefined,
-			video.snippet.tags || undefined,
-			embeddable,
-		);
-
-		if (contentResult.isErr()) {
-			logger.error("Failed to create VideoContent", {
-				videoId: video.id,
-				error: contentResult.error.message,
-			});
-			return null;
-		}
-
-		return contentResult.value;
-	} catch (error) {
-		logger.error("Failed to create VideoContent", {
-			videoId: video.id,
-			error: error instanceof Error ? error.message : "Unknown error",
-		});
-		return null;
-	}
+	return hours * 3600 + minutes * 60 + seconds;
 }
 
 /**
- * Creates VideoMetadata from YouTube data
+ * Batch mapping result
  */
-function createVideoMetadataFromYouTube(video: youtube_v3.Schema$Video): VideoMetadata | null {
-	if (!video.snippet?.title) {
-		logger.warn("Missing title for VideoMetadata");
-		return null;
-	}
-
-	try {
-		const title = new VideoTitle(video.snippet.title);
-		const description = new VideoDescription(video.snippet.description || "");
-		const duration = video.contentDetails?.duration
-			? new VideoDuration(video.contentDetails.duration)
-			: undefined;
-
-		return new VideoMetadata(
-			title,
-			description,
-			duration,
-			video.contentDetails?.dimension as "2d" | "3d" | undefined,
-			video.contentDetails?.definition as "hd" | "sd" | undefined,
-			video.contentDetails?.caption === "true",
-			video.contentDetails?.licensedContent || undefined,
-		);
-	} catch (error) {
-		logger.error("Failed to create VideoMetadata", {
-			videoId: video.id,
-			error: error instanceof Error ? error.message : "Unknown error",
-		});
-		return null;
-	}
+export interface BatchMappingResult {
+	videos: VideoPlainObject[];
+	errors: VideoMappingError[];
+	totalProcessed: number;
+	successCount: number;
+	failureCount: number;
 }
 
 /**
- * Creates VideoStatistics from YouTube statistics
- */
-function createVideoStatisticsFromYouTube(
-	stats: youtube_v3.Schema$VideoStatistics,
-): VideoStatistics {
-	const viewCount = new ViewCount(Number(stats.viewCount || "0"));
-	const likeCount = stats.likeCount ? new LikeCount(Number(stats.likeCount)) : undefined;
-	const dislikeCount = stats.dislikeCount
-		? new DislikeCount(Number(stats.dislikeCount))
-		: undefined;
-	const favoriteCount = stats.favoriteCount
-		? Math.max(0, safeParseNumber(stats.favoriteCount) ?? 0)
-		: undefined;
-	const commentCount = stats.commentCount
-		? new CommentCount(Number(stats.commentCount))
-		: undefined;
-
-	return new VideoStatistics(viewCount, likeCount, dislikeCount, favoriteCount, commentCount);
-}
-
-/**
- * Maps live streaming details from YouTube API
- */
-function mapLiveStreamingDetails(
-	details: youtube_v3.Schema$VideoLiveStreamingDetails,
-): LiveStreamingDetails {
-	return {
-		scheduledStartTime: parseDate(details.scheduledStartTime) || undefined,
-		scheduledEndTime: parseDate(details.scheduledEndTime) || undefined,
-		actualStartTime: parseDate(details.actualStartTime) || undefined,
-		actualEndTime: parseDate(details.actualEndTime) || undefined,
-		concurrentViewers: safeParseNumber(details.concurrentViewers),
-	};
-}
-
-/**
- * Maps multiple YouTube videos to Video entities
- *
- * @param youtubeVideos - Array of YouTube API video data
- * @param playlistTagsMap - Map of video ID to playlist tags
- * @param userTagsMap - Map of video ID to user tags
- * @returns Array of successfully mapped Video entities
- */
-export function mapYouTubeVideosToEntities(
-	youtubeVideos: youtube_v3.Schema$Video[],
-	playlistTagsMap: Map<string, string[]> = new Map(),
-	userTagsMap: Map<string, string[]> = new Map(),
-): Video[] {
-	const mappedVideos: Video[] = [];
-	let failedCount = 0;
-
-	for (const youtubeVideo of youtubeVideos) {
-		if (!youtubeVideo.id) {
-			failedCount++;
-			continue;
-		}
-
-		const playlistTags = playlistTagsMap.get(youtubeVideo.id) || [];
-		const userTags = userTagsMap.get(youtubeVideo.id) || [];
-
-		const video = mapYouTubeToVideoEntity(youtubeVideo, playlistTags, userTags);
-		if (video) {
-			mappedVideos.push(video);
-		} else {
-			failedCount++;
-		}
-	}
-
-	if (failedCount > 0) {
-		logger.warn(`Failed to map ${failedCount} videos out of ${youtubeVideos.length}`);
-	}
-
-	return mappedVideos;
-}
-
-/**
- * VideoMapper - Provides mapping functions for Video Entity
- */
-export const VideoMapper = {
-	/**
-	 * Maps YouTube API video data to Video Entity
-	 */
-	fromYouTubeAPI: (youtubeVideo: youtube_v3.Schema$Video): Video | null => {
-		return mapYouTubeToVideoEntity(youtubeVideo);
-	},
-
-	/**
-	 * Maps YouTube API video data to Video Entity with playlist tags
-	 */
-	fromYouTubeAPIWithTags: (
-		youtubeVideo: youtube_v3.Schema$Video,
-		playlistTags: string[] = [],
-	): Video | null => {
-		return mapYouTubeToVideoEntity(youtubeVideo, playlistTags);
-	},
-};
-
-/**
- * Error information for mapping failures
+ * Video mapping error
  */
 export interface VideoMappingError {
 	videoId?: string;
@@ -385,18 +175,7 @@ export interface VideoMappingError {
 }
 
 /**
- * Result of batch video mapping
- */
-export interface BatchMappingResult {
-	videos: Video[];
-	errors: VideoMappingError[];
-	totalProcessed: number;
-	successCount: number;
-	failureCount: number;
-}
-
-/**
- * Maps YouTube videos with detailed error tracking
+ * Maps multiple YouTube videos to VideoPlainObjects with error tracking
  *
  * @param youtubeVideos - Array of YouTube API video data
  * @param playlistTagsMap - Map of video ID to playlist tags
@@ -408,7 +187,7 @@ export function mapYouTubeVideosWithErrors(
 	playlistTagsMap: Map<string, string[]> = new Map(),
 	userTagsMap: Map<string, string[]> = new Map(),
 ): BatchMappingResult {
-	const videos: Video[] = [];
+	const videos: VideoPlainObject[] = [];
 	const errors: VideoMappingError[] = [];
 
 	for (const youtubeVideo of youtubeVideos) {
@@ -433,14 +212,14 @@ export function mapYouTubeVideosWithErrors(
 			const playlistTags = playlistTagsMap.get(youtubeVideo.id) || [];
 			const userTags = userTagsMap.get(youtubeVideo.id) || [];
 
-			const video = mapYouTubeToVideoEntity(youtubeVideo, playlistTags, userTags);
+			const video = mapYouTubeToVideoPlainObject(youtubeVideo, playlistTags, userTags);
 			if (video) {
 				videos.push(video);
 			} else {
 				errors.push({
 					videoId: youtubeVideo.id,
 					field: "mapping",
-					reason: "Failed to create Video entity",
+					reason: "Failed to create VideoPlainObject",
 				});
 			}
 		} catch (error) {
@@ -459,4 +238,22 @@ export function mapYouTubeVideosWithErrors(
 		successCount: videos.length,
 		failureCount: errors.length,
 	};
+}
+
+// Re-export the main function with the old name for backward compatibility
+export const mapYouTubeToVideoEntity = mapYouTubeToVideoPlainObject;
+
+// VideoMapper class for backward compatibility
+export class VideoMapper {
+	static fromYouTubeAPI(video: youtube_v3.Schema$Video): VideoPlainObject | null {
+		return mapYouTubeToVideoPlainObject(video);
+	}
+
+	static fromYouTubeAPIWithTags(
+		video: youtube_v3.Schema$Video,
+		playlistTags: string[] = [],
+		userTags: string[] = [],
+	): VideoPlainObject | null {
+		return mapYouTubeToVideoPlainObject(video, playlistTags, userTags);
+	}
 }

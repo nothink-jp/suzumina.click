@@ -1,6 +1,6 @@
 "use client";
 
-import type { AudioButton, FrontendVideoData } from "@suzumina.click/shared-types";
+import type { AudioButton, VideoPlainObject } from "@suzumina.click/shared-types";
 import { canCreateAudioButton } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
@@ -13,7 +13,7 @@ interface RelatedAudioButtonsProps {
 	audioButtons: AudioButton[];
 	totalCount: number;
 	videoId: string;
-	video: FrontendVideoData;
+	video: VideoPlainObject;
 	loading?: boolean;
 	initialLikeDislikeStatuses?: Record<string, { isLiked: boolean; isDisliked: boolean }>;
 	initialFavoriteStatuses?: Record<string, boolean>;

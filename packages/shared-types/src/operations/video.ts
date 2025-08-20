@@ -39,7 +39,7 @@ export function isUpcoming(video: VideoPlainObject): boolean {
  * Checks if a video might be live (uncertain state)
  * Note: This is a legacy state that may not be used anymore
  */
-export function isPossiblyLive(video: VideoPlainObject): boolean {
+export function isPossiblyLive(_video: VideoPlainObject): boolean {
 	// "possibly_live" is not a valid VideoType, always return false
 	return false;
 }
@@ -59,6 +59,30 @@ export function canCreateButton(video: VideoPlainObject): boolean {
 	}
 
 	return true;
+}
+
+/**
+ * Alias for backward compatibility with old naming
+ */
+export const canCreateAudioButton = canCreateButton;
+
+/**
+ * Gets error message explaining why audio button cannot be created
+ */
+export function getAudioButtonCreationErrorMessage(video: VideoPlainObject): string | null {
+	if (isLive(video)) {
+		return "ライブ配信中は音声ボタンを作成できません";
+	}
+
+	if (isUpcoming(video)) {
+		return "配信予定の動画には音声ボタンを作成できません";
+	}
+
+	if (!video.duration || video.duration === "PT0S") {
+		return "動画の長さが不明なため音声ボタンを作成できません";
+	}
+
+	return null;
 }
 
 /**
@@ -85,7 +109,7 @@ export function getThumbnailUrl(
 	const thumbnails = video.thumbnails;
 
 	// Try to get requested quality, fallback to available ones
-	if (thumbnails && thumbnails[quality]) {
+	if (thumbnails?.[quality]) {
 		return thumbnails[quality].url;
 	}
 
@@ -98,7 +122,7 @@ export function getThumbnailUrl(
 		"maxres",
 	];
 	for (const q of fallbackOrder) {
-		if (thumbnails && thumbnails[q]) {
+		if (thumbnails?.[q]) {
 			return thumbnails[q].url;
 		}
 	}
@@ -205,6 +229,8 @@ export const videoOperations = {
 	isUpcoming,
 	isPossiblyLive,
 	canCreateButton,
+	canCreateAudioButton,
+	getAudioButtonCreationErrorMessage,
 	getDisplayTitle,
 	getYouTubeUrl,
 	getThumbnailUrl,

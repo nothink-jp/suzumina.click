@@ -7,6 +7,17 @@
 import type { FirestoreServerVideoData } from "../types/firestore/video";
 
 /**
+ * Video list result for paginated queries
+ */
+export interface VideoListResult {
+	items: VideoPlainObject[];
+	videos: VideoPlainObject[]; // Alias for backward compatibility
+	total: number;
+	page: number;
+	pageSize: number;
+}
+
+/**
  * Computed properties for video business logic
  */
 export interface VideoComputedProperties {

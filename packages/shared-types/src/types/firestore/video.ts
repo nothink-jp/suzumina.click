@@ -13,7 +13,7 @@ export type LiveBroadcastContent = "none" | "live" | "upcoming";
 /**
  * Video type classification
  */
-export type VideoType = "normal" | "archived" | "premiere";
+export type VideoType = "normal" | "archived" | "premiere" | "live" | "upcoming" | "possibly_live";
 
 /**
  * Firestore server video data type

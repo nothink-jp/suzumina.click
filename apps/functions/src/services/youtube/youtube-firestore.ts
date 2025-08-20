@@ -1,11 +1,12 @@
 /**
  * YouTube Firestore Service
  *
- * Entity 形式でFirestoreに動画データを保存する
+ * VideoPlainObject形式でFirestoreに動画データを保存する
  * 新規データには_v2Migrationフラグを自動付与
  */
 
 import type { FirestoreServerVideoData } from "@suzumina.click/shared-types";
+import { videoToFirestore } from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
 import firestore from "../../infrastructure/database/firestore";
 import * as logger from "../../shared/logger";
@@ -78,15 +79,15 @@ function addVideoToBatch(
 	// プレイリストタグを抽出
 	const playlistTags = video._playlistTags || [];
 
-	// Entity に変換（プレイリストタグも渡す）
-	const videoEntity = VideoMapper.fromYouTubeAPIWithTags(video, playlistTags);
-	if (!videoEntity) {
-		// Entity 変換失敗（ログはエラーハンドリングで出力済み）
+	// VideoPlainObjectに変換（プレイリストタグも渡す）
+	const videoPlainObject = VideoMapper.fromYouTubeAPIWithTags(video, playlistTags);
+	if (!videoPlainObject) {
+		// 変換失敗（ログはエラーハンドリングで出力済み）
 		return false;
 	}
 
 	// Firestore用データに変換
-	const firestoreData = videoEntity.toFirestore();
+	const firestoreData = videoToFirestore(videoPlainObject);
 
 	// 動画IDをドキュメントIDとして使用
 	const docRef = videoRef.doc(video.id);
@@ -170,16 +171,16 @@ export function updateVideoWith(
 	newVideo: youtube_v3.Schema$Video,
 ): FirestoreServerVideoData | null {
 	try {
-		// Entity に変換
-		const videoEntity = VideoMapper.fromYouTubeAPI(newVideo);
-		if (!videoEntity) {
+		// VideoPlainObjectに変換
+		const videoPlainObject = VideoMapper.fromYouTubeAPI(newVideo);
+		if (!videoPlainObject) {
 			return null;
 		}
 
 		// Firestore用データに変換
-		return videoEntity.toFirestore();
+		return videoToFirestore(videoPlainObject);
 	} catch (error) {
-		logger.error("Entity 更新エラー", {
+		logger.error("動画更新エラー", {
 			videoId: newVideo.id,
 			error: error instanceof Error ? error.message : String(error),
 		});

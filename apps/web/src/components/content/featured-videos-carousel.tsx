@@ -1,4 +1,4 @@
-import type { FrontendVideoData } from "@suzumina.click/shared-types";
+import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import {
 	Carousel,
 	CarouselContent,
@@ -10,7 +10,7 @@ import VideoCard from "@/app/videos/components/VideoCard";
 import { UI_MESSAGES } from "@/constants/ui-messages";
 
 interface FeaturedVideosCarouselProps {
-	videos: FrontendVideoData[];
+	videos: VideoPlainObject[];
 }
 
 export function FeaturedVideosCarousel({ videos }: FeaturedVideosCarouselProps) {

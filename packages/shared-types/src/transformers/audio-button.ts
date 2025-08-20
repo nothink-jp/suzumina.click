@@ -5,11 +5,7 @@
  * Handles migration from legacy formats to unified structure.
  */
 
-import type {
-	AudioButton,
-	AudioButtonDocument,
-	FirestoreServerAudioButtonData,
-} from "../types/audio-button";
+import type { AudioButton, AudioButtonDocument } from "../types/audio-button";
 
 /**
  * Legacy data format (for migration)
@@ -151,8 +147,7 @@ export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): Au
 				relativeTimeText,
 			},
 		};
-	} catch (error) {
-		console.error("Failed to transform Firestore data to AudioButton:", error);
+	} catch (_error) {
 		return null;
 	}
 }

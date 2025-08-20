@@ -2,8 +2,8 @@
 
 import type {
 	AudioButtonPlainObject,
-	FrontendVideoData,
 	UnifiedSearchFilters,
+	VideoPlainObject,
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
 import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-text";
@@ -28,7 +28,7 @@ import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
 
 interface UnifiedSearchResult {
 	audioButtons: AudioButtonPlainObject[];
-	videos: FrontendVideoData[];
+	videos: VideoPlainObject[];
 	works: WorkPlainObject[];
 	totalCount: {
 		buttons: number;

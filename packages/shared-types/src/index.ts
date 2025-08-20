@@ -52,11 +52,13 @@ export * from "./entities/work-evaluation";
 // === Migration Utilities ===
 export * from "./migrations";
 export {
+	canCreateAudioButton,
 	canCreateButton,
 	formatDuration,
 	getAgeInDays,
 	getAllTags as getVideoAllTags,
 	getAudioButtonCount,
+	getAudioButtonCreationErrorMessage,
 	getDisplayTitle,
 	getFormattedViewCount,
 	getThumbnailUrl,
@@ -80,6 +82,7 @@ export * from "./plain-objects/work-plain";
 // New functional exports (available for gradual migration)
 export { audioButtonTransformers } from "./transformers/audio-button";
 export {
+	convertToFrontendVideo,
 	fromFirestore as videoFromFirestore,
 	toFirestore as videoToFirestore,
 	videoTransformers,
@@ -115,6 +118,13 @@ export type {
 	LiveBroadcastContent,
 	VideoType,
 } from "./types/firestore/video";
+// === Video Types ===
+export type {
+	AudioButtonInfo,
+	LiveStreamingDetails,
+	PrivacyStatus,
+	UploadStatus,
+} from "./types/video-types";
 // === Utilities ===
 // 年齢制限・レーティング関連の型とユーティリティのエクスポート
 export * from "./utilities/age-rating";

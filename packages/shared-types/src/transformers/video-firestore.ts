@@ -121,9 +121,15 @@ function computeProperties(
 }
 
 /**
+ * Alias for backward compatibility
+ */
+export const convertToFrontendVideo = fromFirestore;
+
+/**
  * Video Firestore transformers namespace
  */
 export const videoTransformers = {
 	fromFirestore,
 	toFirestore,
+	convertToFrontendVideo,
 };
