@@ -7,9 +7,9 @@
 
 import type { DatabaseError, NotFoundError } from "../core/result";
 import { databaseError, err, notFoundError, ok, type Result } from "../core/result";
-import type { WorkDocument } from "../entities/work";
+import type { WorkDocument } from "../entities/work/work-document-schema";
 import type { WorkPlainObject } from "../plain-objects/work-plain";
-import { workTransformers } from "../transformers/firestore";
+import { workTransformers } from "../transformers/work-firestore-final";
 
 /**
  * Converts WorkDocument to WorkPlainObject via Work entity

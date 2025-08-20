@@ -79,13 +79,13 @@ export * from "./plain-objects/video-plain";
 export * from "./plain-objects/work-plain";
 // New functional exports (available for gradual migration)
 export { audioButtonTransformers } from "./transformers/audio-button";
-// Transformers
-export { workTransformers } from "./transformers/firestore";
 export {
 	fromFirestore as videoFromFirestore,
 	toFirestore as videoToFirestore,
 	videoTransformers,
 } from "./transformers/video-firestore";
+// Transformers
+export { workTransformers } from "./transformers/work-firestore-final";
 // === Firestore Types ===
 // FirestoreServerWorkData has been removed - use WorkDocument from entities/work instead
 // FirestoreServerAudioButtonData is available from entities/audio-button

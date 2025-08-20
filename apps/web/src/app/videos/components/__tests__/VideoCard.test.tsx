@@ -27,9 +27,9 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		videoId: "abc123",
 		title: "テスト動画タイトル",
 		description: "テスト動画の説明文です",
-		publishedAt: new Date("2024-01-01T00:00:00Z"),
+		publishedAt: "2024-01-01T00:00:00Z",
 		thumbnailUrl: "https://example.com/thumbnail.jpg",
-		lastFetchedAt: new Date("2024-01-01T00:00:00Z"),
+		lastFetchedAt: "2024-01-01T00:00:00Z",
 		channelId: "channel123",
 		channelTitle: "テストチャンネル",
 		categoryId: "22",
@@ -45,6 +45,16 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 		playlistTags: ["プレイリストタグ1"],
 		userTags: ["ユーザータグ1"],
 		audioButtonCount: 0,
+		_computed: {
+			isArchived: false,
+			isPremiere: false,
+			isLive: false,
+			isUpcoming: false,
+			canCreateButton: false,
+			videoType: "normal",
+			thumbnailUrl: "https://example.com/thumbnail.jpg",
+			youtubeUrl: "https://youtube.com/watch?v=abc123",
+		},
 	};
 
 	// overridesを適用
