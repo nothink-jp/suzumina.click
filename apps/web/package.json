@@ -21,7 +21,11 @@
 		"clean": "rimraf .next coverage node_modules/.cache .vitest test-results playwright-report",
 		"deploy:build": "cd ../.. && docker build -f apps/web/Dockerfile -t suzumina-web .",
 		"deploy:test": "docker run --rm -p 8080:8080 suzumina-web",
-		"analyze": "ANALYZE=true next build"
+		"analyze": "ANALYZE=true next build",
+		"migrate:audiobuttons:dry": "tsx src/scripts/complete-audiobutton-migration.ts --dry-run",
+		"migrate:audiobuttons:backup": "tsx src/scripts/complete-audiobutton-migration.ts --skip-backup --dry-run",
+		"migrate:audiobuttons:run": "tsx src/scripts/complete-audiobutton-migration.ts",
+		"migrate:audiobuttons:validate": "tsx src/scripts/complete-audiobutton-migration.ts --validate-only"
 	},
 	"dependencies": {
 		"@auth/core": "^0.40.0",

@@ -151,12 +151,16 @@ describe("Audio Button Server Actions", () => {
 
 	describe("createAudioButton", () => {
 		const validInput: CreateAudioButtonInput = {
-			title: "テスト音声ボタン",
-			description: "テスト用の説明",
+			buttonText: "テスト音声ボタン",
 			tags: ["テスト"],
-			sourceVideoId: "test-video-id",
+			videoId: "test-video-id",
+			videoTitle: "テスト動画",
 			startTime: 30,
 			endTime: 45,
+			createdBy: {
+				id: "test-user-id",
+				name: "Test User",
+			},
 			isPublic: true,
 		};
 
@@ -231,7 +235,7 @@ describe("Audio Button Server Actions", () => {
 		it("無効な入力でエラーが返される", async () => {
 			const invalidInput = {
 				...validInput,
-				title: "", // Empty title should fail validation
+				buttonText: "", // Empty buttonText should fail validation
 			};
 
 			const result = await createAudioButton(invalidInput);
@@ -702,7 +706,7 @@ describe("Audio Button Server Actions", () => {
 			const count = await getAudioButtonCount("test-video-id");
 
 			expect(count).toBe(5);
-			expect(mockCountChain.where).toHaveBeenCalledWith("sourceVideoId", "==", "test-video-id");
+			expect(mockCountChain.where).toHaveBeenCalledWith("videoId", "==", "test-video-id");
 			expect(mockCountChain.where).toHaveBeenCalledWith("isPublic", "==", true);
 		});
 

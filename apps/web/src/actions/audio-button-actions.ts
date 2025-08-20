@@ -8,12 +8,7 @@
 "use server";
 
 import type { QueryDocumentSnapshot, Transaction } from "@google-cloud/firestore";
-import {
-	AudioButtonCompat,
-	type AudioButtonPlainObject,
-	audioButtonTransformers,
-	type FirestoreServerAudioButtonData,
-} from "@suzumina.click/shared-types";
+import { type AudioButton, audioButtonTransformers } from "@suzumina.click/shared-types";
 import { auth } from "@/auth";
 import { getFirestore } from "@/lib/firestore";
 
@@ -22,7 +17,7 @@ import { getFirestore } from "@/lib/firestore";
  */
 export interface GetAudioButtonResponse {
 	success: boolean;
-	audioButton?: AudioButtonCompat;
+	audioButton?: AudioButton;
 	error?: string;
 }
 
@@ -31,7 +26,7 @@ export interface GetAudioButtonResponse {
  */
 export interface GetAudioButtonsResponse {
 	success: boolean;
-	audioButtons?: AudioButtonCompat[];
+	audioButtons?: AudioButton[];
 	error?: string;
 }
 
@@ -55,7 +50,7 @@ export async function getAudioButtonAction(audioButtonId: string): Promise<GetAu
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as FirestoreServerAudioButtonData;
+		const data = doc.data() as any;
 
 		// AudioButtonエンティティに変換
 		const plainObject = audioButtonTransformers.fromFirestore({
@@ -67,7 +62,7 @@ export async function getAudioButtonAction(audioButtonId: string): Promise<GetAu
 			return { success: false, error: "音声ボタンデータの変換に失敗しました" };
 		}
 
-		const audioButton = new AudioButtonCompat(plainObject);
+		const audioButton = plainObject;
 
 		return {
 			success: true,
@@ -114,16 +109,16 @@ export async function getAudioButtonsAction(
 			const doc = await firestore.collection("audioButtons").doc(id).get();
 			if (!doc.exists) return null;
 
-			const data = doc.data() as FirestoreServerAudioButtonData;
+			const data = doc.data() as any;
 			const plain = audioButtonTransformers.fromFirestore({
 				...data,
 				id: doc.id,
 			});
-			return plain ? new AudioButtonCompat(plain) : null;
+			return plain;
 		});
 
 		const results = await Promise.all(audioButtonsPromises);
-		const audioButtons = results.filter((ab): ab is AudioButtonCompat => ab !== null);
+		const audioButtons = results.filter((ab): ab is AudioButton => ab !== null);
 
 		return {
 			success: true,
@@ -159,16 +154,16 @@ export async function getPublicAudioButtonsAction(limit = 20): Promise<GetAudioB
 			.limit(limit)
 			.get();
 
-		const audioButtons: AudioButtonCompat[] = [];
+		const audioButtons: AudioButton[] = [];
 
 		snapshot.forEach((doc: QueryDocumentSnapshot) => {
-			const data = doc.data() as FirestoreServerAudioButtonData;
+			const data = doc.data() as any;
 			const plainObject = audioButtonTransformers.fromFirestore({
 				...data,
 				id: doc.id,
 			});
 			if (plainObject) {
-				audioButtons.push(new AudioButtonCompat(plainObject));
+				audioButtons.push(plainObject);
 			}
 		});
 
@@ -209,11 +204,11 @@ export async function recordAudioButtonPlayAction(
 				throw new Error("音声ボタンが見つかりません");
 			}
 
-			const currentData = doc.data() as FirestoreServerAudioButtonData;
-			const currentPlayCount = currentData.playCount || 0;
+			const currentData = doc.data() as any;
+			const currentPlayCount = currentData.stats?.playCount || currentData.playCount || 0;
 
 			transaction.update(docRef, {
-				playCount: currentPlayCount + 1,
+				"stats.playCount": currentPlayCount + 1,
 				updatedAt: new Date(),
 			});
 		});
@@ -235,7 +230,7 @@ export async function recordAudioButtonPlayAction(
 export async function updateAudioButtonAction(
 	_audioButtonId: string,
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	_updates: Partial<AudioButtonPlainObject>,
+	_updates: Partial<AudioButton>,
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		// 認証チェック

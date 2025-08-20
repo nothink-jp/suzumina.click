@@ -1,6 +1,6 @@
 "use client";
 
-import type { AudioButtonPlainObject, AudioButtonQuery } from "@suzumina.click/shared-types";
+import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { ConfigurableList } from "@suzumina.click/ui/components/custom";
 import { useEffect, useMemo, useState } from "react";
 import { AudioButtonListItem } from "@/components/audio/AudioButtonListItem";
@@ -12,6 +12,7 @@ import {
 } from "@/constants/list-options";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
+import type { AudioButtonQuery } from "@/types/audio-button";
 import { getAudioButtonsList, getPopularAudioButtonTags } from "../actions";
 
 interface AudioButtonsListProps {

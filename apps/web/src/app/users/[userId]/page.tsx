@@ -68,7 +68,10 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 
 	// 統計情報を計算
 	const audioButtonsCount = audioButtons.length;
-	const totalPlayCount = audioButtons.reduce((sum, button) => sum + (button.playCount || 0), 0);
+	const totalPlayCount = audioButtons.reduce(
+		(sum, button) => sum + (button.stats.playCount || 0),
+		0,
+	);
 
 	// お気に入り数を取得（自分のプロフィールの場合のみ）
 	let favoritesCount = 0;

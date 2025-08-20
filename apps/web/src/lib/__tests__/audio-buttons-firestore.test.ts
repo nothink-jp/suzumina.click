@@ -1,4 +1,4 @@
-import type { FirestoreAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButtonDocument } from "@suzumina.click/shared-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	convertToAudioButtonPlainObject,
@@ -68,20 +68,25 @@ describe("audio-buttons-firestore", () => {
 
 	describe("convertToAudioButtonPlainObject", () => {
 		it("should convert Firestore data to frontend format", () => {
-			const mockFirestoreData: FirestoreAudioButtonData = {
+			const mockFirestoreData: AudioButtonDocument & { id: string } = {
 				id: "test-button-1",
-				title: "テスト音声ボタン",
+				buttonText: "テスト音声ボタン",
 				tags: ["テスト", "音声"],
-				sourceVideoId: "test-video-123",
-				sourceVideoTitle: "テスト動画",
+				videoId: "test-video-123",
+				videoTitle: "テスト動画",
 				startTime: 10,
 				endTime: 25,
-				createdBy: "discord-user-123",
-				createdByName: "テストユーザー",
+				duration: 15,
+				creatorId: "discord-user-123",
+				creatorName: "テストユーザー",
 				isPublic: true,
-				playCount: 100,
-				likeCount: 50,
-				favoriteCount: 25,
+				stats: {
+					playCount: 100,
+					likeCount: 50,
+					dislikeCount: 0,
+					favoriteCount: 25,
+					engagementRate: 0.5,
+				},
 				createdAt: "2025-01-01T00:00:00.000Z",
 				updatedAt: "2025-01-01T00:00:00.000Z",
 			};
@@ -90,19 +95,24 @@ describe("audio-buttons-firestore", () => {
 
 			expect(result).toMatchObject({
 				id: "test-button-1",
-				title: "テスト音声ボタン",
+				buttonText: "テスト音声ボタン",
 				tags: ["テスト", "音声"],
-				sourceVideoId: "test-video-123",
-				sourceVideoTitle: "テスト動画",
-				sourceVideoThumbnailUrl: "https://img.youtube.com/vi/test-video-123/maxresdefault.jpg",
+				videoId: "test-video-123",
+				videoTitle: "テスト動画",
+				videoThumbnailUrl: "https://img.youtube.com/vi/test-video-123/maxresdefault.jpg",
 				startTime: 10,
 				endTime: 25,
-				createdBy: "discord-user-123",
-				createdByName: "テストユーザー",
+				duration: 15,
+				creatorId: "discord-user-123",
+				creatorName: "テストユーザー",
 				isPublic: true,
-				playCount: 100,
-				likeCount: 50,
-				favoriteCount: 25,
+				stats: {
+					playCount: 100,
+					likeCount: 50,
+					dislikeCount: 0,
+					favoriteCount: 25,
+					engagementRate: 0.5,
+				},
 			});
 
 			expect(result._computed).toBeDefined();
@@ -113,9 +123,9 @@ describe("audio-buttons-firestore", () => {
 		it("should handle duration formatting correctly", () => {
 			const shortDurationData: FirestoreAudioButtonData = {
 				id: "short-button",
-				title: "短い音声",
+				buttonText: "短い音声",
 				tags: [],
-				sourceVideoId: "video-123",
+				videoId: "video-123",
 				sourceVideoTitle: "動画",
 				startTime: 0,
 				endTime: 5,
@@ -136,9 +146,9 @@ describe("audio-buttons-firestore", () => {
 		it("should handle equal start and end time", () => {
 			const equalTimeData: FirestoreAudioButtonData = {
 				id: "equal-time-button",
-				title: "同じ開始終了時間",
+				buttonText: "同じ開始終了時間",
 				tags: [],
-				sourceVideoId: "video-123",
+				videoId: "video-123",
 				sourceVideoTitle: "動画",
 				startTime: 10,
 				endTime: 10, // Same as startTime
@@ -159,9 +169,9 @@ describe("audio-buttons-firestore", () => {
 		it("should handle missing favoriteCount", () => {
 			const noFavoriteCountData: FirestoreAudioButtonData = {
 				id: "no-favorite-button",
-				title: "お気に入り数なし",
+				buttonText: "お気に入り数なし",
 				tags: [],
-				sourceVideoId: "video-123",
+				videoId: "video-123",
 				sourceVideoTitle: "動画",
 				startTime: 0,
 				endTime: 10,
@@ -186,18 +196,22 @@ describe("audio-buttons-firestore", () => {
 				{
 					id: "button-1",
 					data: () => ({
-						title: "音声ボタン1",
+						buttonText: "音声ボタン1",
 						tags: ["タグ1"],
-						sourceVideoId: "video-1",
-						sourceVideoTitle: "動画1",
+						videoId: "video-1",
+						videoTitle: "動画1",
 						startTime: 0,
 						endTime: 10,
-						createdBy: "user-123",
-						createdByName: "ユーザー",
+						creatorId: "user-123",
+						creatorName: "ユーザー",
 						isPublic: true,
-						playCount: 50,
-						likeCount: 25,
-						favoriteCount: 10,
+						stats: {
+							playCount: 50,
+							likeCount: 25,
+							dislikeCount: 0,
+							favoriteCount: 10,
+							engagementRate: 0,
+						},
 						createdAt: "2025-01-01T00:00:00.000Z",
 						updatedAt: "2025-01-01T00:00:00.000Z",
 					}),

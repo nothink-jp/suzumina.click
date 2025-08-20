@@ -6,7 +6,7 @@ import { useTimeHandlers } from "./use-time-handlers";
 import { useYouTubePlayerManager } from "./use-youtube-player-manager";
 
 export interface AudioButtonEditorState {
-	title: string;
+	buttonText: string;
 	description: string;
 	tags: string[];
 	isProcessing: boolean;
@@ -26,7 +26,7 @@ export interface AudioButtonEditorResult {
 	// 基本状態
 	state: AudioButtonEditorState;
 	setState: {
-		setTitle: (title: string) => void;
+		setButtonText: (buttonText: string) => void;
 		setDescription: (description: string) => void;
 		setTags: (tags: string[]) => void;
 		setIsProcessing: (processing: boolean) => void;
@@ -63,7 +63,7 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 	} = config;
 
 	// 基本情報の状態（編集モードの場合は既存データで初期化）
-	const [title, setTitle] = useState(audioButton?.title || "");
+	const [buttonText, setButtonText] = useState(audioButton?.buttonText || "");
 	const [description, setDescription] = useState(audioButton?.description || "");
 	const [tags, setTags] = useState<string[]>(audioButton?.tags || []);
 	const [isProcessing, setIsProcessing] = useState(false);
@@ -115,7 +115,7 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 
 	// バリデーション
 	const validation = useAudioButtonValidation({
-		title,
+		title: buttonText,
 		startTime: timeAdjustment.startTime,
 		endTime: timeAdjustment.endTime,
 		tags,
@@ -127,13 +127,20 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 		if (!audioButton) return false;
 
 		return (
-			title !== audioButton.title ||
+			buttonText !== audioButton.buttonText ||
 			description !== (audioButton.description || "") ||
 			JSON.stringify(tags) !== JSON.stringify(audioButton.tags || []) ||
 			timeAdjustment.startTime !== audioButton.startTime ||
 			timeAdjustment.endTime !== audioButton.endTime
 		);
-	}, [audioButton, title, description, tags, timeAdjustment.startTime, timeAdjustment.endTime]);
+	}, [
+		audioButton,
+		buttonText,
+		description,
+		tags,
+		timeAdjustment.startTime,
+		timeAdjustment.endTime,
+	]);
 
 	useEffect(() => {
 		return () => {
@@ -143,14 +150,14 @@ export function useAudioButtonEditor(config: AudioButtonEditorConfig): AudioButt
 
 	return {
 		state: {
-			title,
+			buttonText,
 			description,
 			tags,
 			isProcessing,
 			error,
 		},
 		setState: {
-			setTitle,
+			setButtonText,
 			setDescription,
 			setTags,
 			setIsProcessing,

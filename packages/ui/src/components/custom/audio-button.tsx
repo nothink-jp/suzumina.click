@@ -9,7 +9,7 @@
 
 "use client";
 
-import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
+import type { AudioButton } from "@suzumina.click/shared-types";
 import { Popover, PopoverContent, PopoverTrigger } from "@suzumina.click/ui/components/ui/popover";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import {
@@ -32,7 +32,7 @@ import { HighlightText } from "./highlight-text";
 import { TagList } from "./tag-list";
 
 interface AudioButtonProps {
-	audioButton: AudioButtonPlainObject;
+	audioButton: AudioButton;
 	onPlay?: () => void;
 	className?: string;
 	maxTitleLength?: number;
@@ -55,7 +55,7 @@ interface AudioButtonProps {
 }
 
 interface AudioButtonPopoverContentProps {
-	audioButton: AudioButtonPlainObject;
+	audioButton: AudioButton;
 	duration: number;
 	youtubeUrl: string;
 	isFavorite: boolean;
@@ -96,14 +96,14 @@ function AudioButtonPopoverContent({
 				<h4 className="font-semibold text-base text-foreground leading-tight">
 					{searchQuery ? (
 						<HighlightText
-							text={audioButton.title}
+							text={audioButton.buttonText}
 							searchQuery={searchQuery}
 							highlightClassName={
 								highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"
 							}
 						/>
 					) : (
-						audioButton.title
+						audioButton.buttonText
 					)}
 				</h4>
 				{audioButton.description && (
@@ -132,27 +132,27 @@ function AudioButtonPopoverContent({
 				<div className="flex items-center gap-2">
 					<User className="h-4 w-4" />
 					<a
-						href={`/users/${audioButton.createdBy}`}
+						href={`/users/${audioButton.creatorId}`}
 						className="text-suzuka-600 hover:text-suzuka-700 hover:underline transition-colors"
 						onClick={(e) => e.stopPropagation()}
 					>
-						{audioButton.createdByName}
+						{audioButton.creatorName}
 					</a>
 				</div>
 				<div className="flex items-center gap-2">
 					<Video className="h-4 w-4" />
-					<span className="text-xs">再生: {audioButton.playCount}回</span>
+					<span className="text-xs">再生: {audioButton.stats.playCount}回</span>
 				</div>
-				{audioButton.sourceVideoTitle && (
+				{audioButton.videoTitle && (
 					<div className="flex items-center gap-2">
 						<Video className="h-4 w-4" />
 						<a
-							href={`/videos/${audioButton.sourceVideoId}`}
+							href={`/videos/${audioButton.videoId}`}
 							className="text-suzuka-600 hover:text-suzuka-700 hover:underline transition-colors text-xs truncate"
 							onClick={(e: React.MouseEvent) => e.stopPropagation()}
-							title={audioButton.sourceVideoTitle}
+							title={audioButton.videoTitle}
 						>
-							{audioButton.sourceVideoTitle}
+							{audioButton.videoTitle}
 						</a>
 					</div>
 				)}
@@ -223,7 +223,7 @@ function AudioButtonPopoverContent({
 							)}
 						>
 							<ThumbsUp className={cn("h-4 w-4", isLiked && "fill-current")} />
-							<span>{audioButton.likeCount}</span>
+							<span>{audioButton.stats.likeCount}</span>
 						</button>
 
 						{/* 低評価ボタン（YouTube方式：集計数は非表示） */}
@@ -315,13 +315,13 @@ export function AudioButton({
 
 	// 時間の計算
 	const duration = (audioButton.endTime || audioButton.startTime) - audioButton.startTime;
-	const youtubeUrl = `https://www.youtube.com/watch?v=${audioButton.sourceVideoId}&t=${Math.floor(audioButton.startTime)}s`;
+	const youtubeUrl = `https://www.youtube.com/watch?v=${audioButton.videoId}&t=${Math.floor(audioButton.startTime)}s`;
 
 	// タイトルの省略
 	const displayTitle =
-		audioButton.title.length > maxTitleLength
-			? `${audioButton.title.slice(0, maxTitleLength)}...`
-			: audioButton.title;
+		audioButton.buttonText.length > maxTitleLength
+			? `${audioButton.buttonText.slice(0, maxTitleLength)}...`
+			: audioButton.buttonText;
 
 	const handlePlayClick = useCallback(
 		async (e: React.MouseEvent) => {
@@ -393,7 +393,7 @@ export function AudioButton({
 						</div>
 
 						{/* タイトル */}
-						<span className="font-medium text-sm truncate" title={audioButton.title}>
+						<span className="font-medium text-sm truncate" title={audioButton.buttonText}>
 							{searchQuery ? (
 								<HighlightText
 									text={displayTitle}

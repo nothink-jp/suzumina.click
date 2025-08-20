@@ -44,40 +44,40 @@ export async function generateMetadata({ params }: AudioButtonDetailPageProps): 
 	const duration = (audioButton.endTime || audioButton.startTime) - audioButton.startTime;
 	const description =
 		audioButton.description ||
-		`涼花みなせさんの音声ボタン「${audioButton.title}」。${duration.toFixed(1)}秒の音声をお楽しみください。${audioButton.createdByName}さんが作成しました。`;
+		`涼花みなせさんの音声ボタン「${audioButton.buttonText}」。${duration.toFixed(1)}秒の音声をお楽しみください。${audioButton.creatorName}さんが作成しました。`;
 
 	return {
-		title: `${audioButton.title}`,
+		title: `${audioButton.buttonText}`,
 		description: description,
 		keywords: [
 			"涼花みなせ",
 			"音声ボタン",
-			audioButton.title,
+			audioButton.buttonText,
 			...(audioButton.tags || []),
 			"YouTube",
 			"音声切り抜き",
 		],
 		openGraph: {
-			title: `${audioButton.title} | すずみなくりっく！`,
+			title: `${audioButton.buttonText} | すずみなくりっく！`,
 			description: description,
 			type: "article",
 			url: `https://suzumina.click/buttons/${audioButton.id}`,
 			images: [
 				{
-					url: `https://img.youtube.com/vi/${audioButton.sourceVideoId}/maxresdefault.jpg`,
+					url: `https://img.youtube.com/vi/${audioButton.videoId}/maxresdefault.jpg`,
 					width: 1280,
 					height: 720,
-					alt: `${audioButton.title} - 涼花みなせ音声ボタン`,
+					alt: `${audioButton.buttonText} - 涼花みなせ音声ボタン`,
 				},
 			],
 			publishedTime: audioButton.createdAt,
-			authors: [audioButton.createdByName],
+			authors: [audioButton.creatorName],
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: `${audioButton.title} | すずみなくりっく！`,
+			title: `${audioButton.buttonText} | すずみなくりっく！`,
 			description: description,
-			images: [`https://img.youtube.com/vi/${audioButton.sourceVideoId}/maxresdefault.jpg`],
+			images: [`https://img.youtube.com/vi/${audioButton.videoId}/maxresdefault.jpg`],
 		},
 		alternates: {
 			canonical: `/buttons/${audioButton.id}`,
@@ -139,7 +139,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-suzuka-50 via-background to-minase-50">
 			{/* パンくずナビゲーション */}
-			<AudioButtonDetailHeader title={audioButton.title} />
+			<AudioButtonDetailHeader title={audioButton.buttonText} />
 
 			<div className="container mx-auto px-4 pb-8 max-w-7xl">
 				{/* メインコンテンツ: グリッドレイアウト */}
@@ -156,10 +156,10 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 
 					{/* 右側: 動画カード + ユーザーカード */}
 					<AudioButtonDetailSidebar
-						videoId={audioButton.sourceVideoId}
-						videoTitle={audioButton.sourceVideoTitle}
-						createdBy={audioButton.createdBy}
-						createdByName={audioButton.createdByName}
+						videoId={audioButton.videoId}
+						videoTitle={audioButton.videoTitle}
+						createdBy={audioButton.creatorId}
+						createdByName={audioButton.creatorName}
 					/>
 				</div>
 
@@ -180,7 +180,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 				>
 					<RelatedAudioButtons
 						currentId={audioButton.id}
-						videoId={audioButton.sourceVideoId}
+						videoId={audioButton.videoId}
 						tags={audioButton.tags || []}
 					/>
 				</Suspense>

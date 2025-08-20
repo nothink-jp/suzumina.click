@@ -40,8 +40,8 @@ export function AudioButtonWithFavoriteClient({
 	const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
 	const [isLiked, setIsLiked] = useState(initialIsLiked);
 	const [isDisliked, setIsDisliked] = useState(initialIsDisliked);
-	const [likeCount, setLikeCount] = useState(audioButton.likeCount);
-	const [dislikeCount, setDislikeCount] = useState(audioButton.dislikeCount || 0);
+	const [likeCount, setLikeCount] = useState(audioButton.stats.likeCount);
+	const [dislikeCount, setDislikeCount] = useState(audioButton.stats.dislikeCount || 0);
 	const [_isPending, startTransition] = useTransition();
 	const isAuthenticated = !!session?.user;
 
@@ -200,8 +200,11 @@ export function AudioButtonWithFavoriteClient({
 		<AudioButton
 			audioButton={{
 				...audioButton,
-				likeCount: likeCount,
-				dislikeCount: dislikeCount, // 内部管理用（UI表示では使用しない）
+				stats: {
+					...audioButton.stats,
+					likeCount: likeCount,
+					dislikeCount: dislikeCount,
+				},
 			}}
 			onPlay={onPlay}
 			className={className}

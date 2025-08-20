@@ -4,8 +4,8 @@
 
 import { FieldValue, type Query } from "@google-cloud/firestore";
 import {
-	type AudioButtonPlainObject,
-	type FirestoreServerAudioButtonData,
+	type AudioButton,
+	type AudioButtonDocument,
 	formatRelativeTime,
 } from "@suzumina.click/shared-types";
 import { getFirestore } from "./firestore";
@@ -47,17 +47,16 @@ function ensureDateString(date: string | Date | unknown): string {
  */
 export function convertToAudioButtonPlainObject(
 	data:
-		| FirestoreServerAudioButtonData
-		| FirestoreServerAudioButtonData
-		| (FirestoreServerAudioButtonData & { createdAt: Date; updatedAt: Date }),
-): AudioButtonPlainObject {
+		| (AudioButtonDocument & { id?: string })
+		| (AudioButtonDocument & { id?: string; createdAt: Date; updatedAt: Date }),
+): AudioButton {
 	const createdAtStr = ensureDateString(data.createdAt);
 	const updatedAtStr = ensureDateString(data.updatedAt);
 
 	// Calculate computed properties
-	const viewCount = data.playCount || 0;
-	const likeCount = data.likeCount || 0;
-	const dislikeCount = data.dislikeCount || 0;
+	const viewCount = data.stats?.playCount || 0;
+	const likeCount = data.stats?.likeCount || 0;
+	const dislikeCount = data.stats?.dislikeCount || 0;
 
 	// Calculate engagement metrics
 	const totalEngagements = likeCount + dislikeCount;
@@ -72,31 +71,34 @@ export function convertToAudioButtonPlainObject(
 
 	// Build searchable text
 	const searchableText = [
-		data.title.toLowerCase(),
+		data.buttonText.toLowerCase(),
 		...(data.tags || []).map((tag: string) => tag.toLowerCase()),
-		(data.sourceVideoTitle || "").toLowerCase(),
-		(data.createdByName || "").toLowerCase(),
+		(data.videoTitle || "").toLowerCase(),
+		(data.creatorName || "").toLowerCase(),
 	].join(" ");
 
 	return {
 		id: data.id || "",
-		title: data.title,
+		buttonText: data.buttonText,
 		description: data.description,
 		tags: data.tags || [],
-		sourceVideoId: data.sourceVideoId,
-		sourceVideoTitle: data.sourceVideoTitle,
-		sourceVideoThumbnailUrl:
-			data.sourceVideoThumbnailUrl ||
-			`https://img.youtube.com/vi/${data.sourceVideoId}/maxresdefault.jpg`,
+		videoId: data.videoId,
+		videoTitle: data.videoTitle,
+		videoThumbnailUrl:
+			data.videoThumbnailUrl || `https://img.youtube.com/vi/${data.videoId}/maxresdefault.jpg`,
 		startTime: data.startTime,
 		endTime: data.endTime || data.startTime,
-		createdBy: data.createdBy,
-		createdByName: data.createdByName,
+		duration: (data.endTime || data.startTime) - data.startTime,
+		creatorId: data.creatorId,
+		creatorName: data.creatorName,
 		isPublic: data.isPublic,
-		playCount: viewCount,
-		likeCount: likeCount,
-		dislikeCount: dislikeCount,
-		favoriteCount: data.favoriteCount || 0,
+		stats: {
+			playCount: viewCount,
+			likeCount: likeCount,
+			dislikeCount: dislikeCount,
+			favoriteCount: data.stats?.favoriteCount || 0,
+			engagementRate: engagementRate,
+		},
 		createdAt: createdAtStr,
 		updatedAt: updatedAtStr,
 		_computed: {
@@ -121,7 +123,7 @@ export async function getAudioButtonsByUser(
 		onlyPublic?: boolean;
 		orderBy?: "newest" | "oldest" | "mostPlayed";
 	} = {},
-): Promise<AudioButtonPlainObject[]> {
+): Promise<AudioButton[]> {
 	try {
 		const firestore = getFirestore();
 		const { limit = 20, onlyPublic = true, orderBy = "newest" } = options;
@@ -130,7 +132,7 @@ export async function getAudioButtonsByUser(
 
 		try {
 			// まず最適化されたクエリを試行
-			let query: Query = firestore.collection("audioButtons").where("createdBy", "==", discordId);
+			let query: Query = firestore.collection("audioButtons").where("creatorId", "==", discordId);
 
 			// デフォルトは作成日順のソートのみ（最もシンプルなインデックス）
 			if (orderBy === "newest" || orderBy === "oldest") {
@@ -149,13 +151,13 @@ export async function getAudioButtonsByUser(
 				indexError: indexError instanceof Error ? indexError.message : String(indexError),
 			});
 
-			const simpleQuery = firestore.collection("audioButtons").where("createdBy", "==", discordId);
+			const simpleQuery = firestore.collection("audioButtons").where("creatorId", "==", discordId);
 			snapshot = await simpleQuery.get();
 		}
 		let audioButtons = snapshot.docs
 			.map((doc) => {
 				try {
-					const data = doc.data() as FirestoreServerAudioButtonData;
+					const data = doc.data() as AudioButtonDocument;
 					return convertToAudioButtonPlainObject({ ...data, id: doc.id });
 				} catch (conversionError) {
 					logError("Failed to convert audio button data:", {
@@ -166,7 +168,7 @@ export async function getAudioButtonsByUser(
 					return null;
 				}
 			})
-			.filter((button): button is AudioButtonPlainObject => button !== null)
+			.filter((button): button is AudioButton => button !== null)
 			.filter((button) => {
 				// 公開のみのフィルター（クライアント側で適用）
 				if (onlyPublic && !button.isPublic) {
@@ -188,7 +190,7 @@ export async function getAudioButtonsByUser(
 				);
 				break;
 			case "mostPlayed":
-				audioButtons.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
+				audioButtons.sort((a, b) => (b.stats.playCount || 0) - (a.stats.playCount || 0));
 				break;
 		}
 
@@ -217,7 +219,7 @@ export async function incrementPlayCount(audioButtonId: string): Promise<void> {
 		const docRef = firestore.collection("audioButtons").doc(audioButtonId);
 
 		await docRef.update({
-			playCount: FieldValue.increment(1),
+			"stats.playCount": FieldValue.increment(1),
 			updatedAt: new Date().toISOString(),
 		});
 	} catch (_error) {
@@ -240,11 +242,11 @@ export async function getUserAudioButtonStats(discordId: string): Promise<{
 		// ユーザーの全音声ボタンを取得
 		const allButtonsQuery = firestore
 			.collection("audioButtons")
-			.where("createdBy", "==", discordId);
+			.where("creatorId", "==", discordId);
 
 		const publicButtonsQuery = firestore
 			.collection("audioButtons")
-			.where("createdBy", "==", discordId)
+			.where("creatorId", "==", discordId)
 			.where("isPublic", "==", true);
 
 		const [allButtonsSnapshot, publicButtonsSnapshot] = await Promise.all([
@@ -258,8 +260,8 @@ export async function getUserAudioButtonStats(discordId: string): Promise<{
 		// 再生回数の合計を計算
 		let totalPlays = 0;
 		allButtonsSnapshot.docs.forEach((doc) => {
-			const data = doc.data() as FirestoreServerAudioButtonData;
-			totalPlays += data.playCount || 0;
+			const data = doc.data() as AudioButtonDocument;
+			totalPlays += data.stats?.playCount || 0;
 		});
 
 		const averagePlays = totalButtons > 0 ? Math.round(totalPlays / totalButtons) : 0;

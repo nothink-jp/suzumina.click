@@ -18,7 +18,7 @@ export default async function VideoDetailPage({ params }: VideoDetailPageProps) 
 	const [video, audioButtonsResult, audioButtonCount] = await Promise.all([
 		getVideoById(videoId),
 		getAudioButtonsList({
-			sourceVideoId: videoId,
+			videoId: videoId,
 			limit: 6,
 			sortBy: "newest",
 		}),
