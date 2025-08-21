@@ -8,7 +8,7 @@
 	"linter": {
 		"rules": {
 			"suspicious": {
-				"noExplicitAny": "warn",
+				"noExplicitAny": "error",
 				"noConsole": "off",
 				"noArrayIndexKey": "off"
 			},
@@ -22,7 +22,7 @@
 				"noUnusedFunctionParameters": "off"
 			},
 			"complexity": {
-				"noExcessiveCognitiveComplexity": "off"
+				"noExcessiveCognitiveComplexity": "error"
 			},
 			"style": {
 				"noParameterAssign": "error",

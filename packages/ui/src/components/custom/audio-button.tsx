@@ -9,12 +9,11 @@
 
 "use client";
 
-import type { AudioButton } from "@suzumina.click/shared-types";
+import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-types";
 import { Popover, PopoverContent, PopoverTrigger } from "@suzumina.click/ui/components/ui/popover";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import {
 	Clock,
-	ExternalLink,
 	Heart,
 	Info,
 	Loader2,
@@ -32,7 +31,7 @@ import { HighlightText } from "./highlight-text";
 import { TagList } from "./tag-list";
 
 interface AudioButtonProps {
-	audioButton: AudioButton;
+	audioButton: AudioButtonType;
 	onPlay?: () => void;
 	className?: string;
 	maxTitleLength?: number;
@@ -55,7 +54,7 @@ interface AudioButtonProps {
 }
 
 interface AudioButtonPopoverContentProps {
-	audioButton: AudioButton;
+	audioButton: AudioButtonType;
 	duration: number;
 	youtubeUrl: string;
 	isFavorite: boolean;
@@ -70,6 +69,294 @@ interface AudioButtonPopoverContentProps {
 	searchQuery?: string;
 	highlightClassName?: string;
 	isAuthenticated: boolean;
+}
+
+// Extracted components for reducing complexity
+function PopoverTitle({
+	text,
+	searchQuery,
+	highlightClassName,
+}: {
+	text: string;
+	searchQuery?: string;
+	highlightClassName?: string;
+}) {
+	if (!searchQuery) return <>{text}</>;
+	return (
+		<HighlightText
+			text={text}
+			searchQuery={searchQuery}
+			highlightClassName={highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"}
+		/>
+	);
+}
+
+function PopoverDescription({
+	description,
+	searchQuery,
+	highlightClassName,
+}: {
+	description: string | undefined;
+	searchQuery?: string;
+	highlightClassName?: string;
+}) {
+	if (!description) return null;
+	return (
+		<p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+			<PopoverTitle
+				text={description}
+				searchQuery={searchQuery}
+				highlightClassName={highlightClassName}
+			/>
+		</p>
+	);
+}
+
+// Metadata section component
+function PopoverMetadata({
+	audioButton,
+	duration,
+}: {
+	audioButton: AudioButtonType;
+	duration: number;
+}) {
+	return (
+		<div className="space-y-2 text-sm text-muted-foreground">
+			<div className="flex items-center gap-2">
+				<Clock className="h-4 w-4" />
+				<span>{duration.toFixed(1)}秒</span>
+			</div>
+			<div className="flex items-center gap-2">
+				<User className="h-4 w-4" />
+				<a
+					href={`/users/${audioButton.creatorId}`}
+					className="text-suzuka-600 hover:text-suzuka-700 hover:underline transition-colors"
+					onClick={(e) => e.stopPropagation()}
+				>
+					{audioButton.creatorName}
+				</a>
+			</div>
+			<div className="flex items-center gap-2">
+				<Video className="h-4 w-4" />
+				<span className="text-xs">再生: {audioButton.stats.playCount}回</span>
+			</div>
+			{audioButton.videoTitle && (
+				<div className="flex items-center gap-2">
+					<Video className="h-4 w-4" />
+					<a
+						href={`/videos/${audioButton.videoId}`}
+						className="text-suzuka-600 hover:text-suzuka-700 hover:underline transition-colors text-xs truncate"
+						onClick={(e: React.MouseEvent) => e.stopPropagation()}
+						title={audioButton.videoTitle}
+					>
+						{audioButton.videoTitle}
+					</a>
+				</div>
+			)}
+		</div>
+	);
+}
+
+// Tags section component
+function PopoverTags({
+	audioButton,
+	searchQuery,
+	highlightClassName,
+}: {
+	audioButton: AudioButtonType;
+	searchQuery?: string;
+	highlightClassName?: string;
+}) {
+	if (!audioButton.tags || audioButton.tags.length === 0) return null;
+	return (
+		<div>
+			<p className="text-xs text-muted-foreground mb-2">タグ</p>
+			<TagList
+				tags={audioButton.tags}
+				variant="outline"
+				showIcon={true}
+				searchQuery={searchQuery}
+				highlightClassName={highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"}
+				size="default"
+			/>
+		</div>
+	);
+}
+
+// Favorite button component
+function FavoriteButton({
+	isFavorite,
+	onFavoriteToggle,
+	isAuthenticated,
+}: {
+	isFavorite?: boolean;
+	onFavoriteToggle?: () => void;
+	isAuthenticated: boolean;
+}) {
+	if (!onFavoriteToggle) return null;
+
+	return (
+		<button
+			type="button"
+			onClick={(e) => {
+				e.stopPropagation();
+				if (isAuthenticated) onFavoriteToggle();
+			}}
+			aria-label={isFavorite ? "お気に入りを解除" : "お気に入りに追加"}
+			disabled={!isAuthenticated}
+			title={!isAuthenticated ? "お気に入りするにはログインが必要です" : undefined}
+			className={cn(
+				"flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
+				isFavorite
+					? "text-suzuka-600 hover:text-suzuka-700"
+					: "text-muted-foreground hover:text-suzuka-600",
+				!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
+			)}
+		>
+			<Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
+		</button>
+	);
+}
+
+// Like/Dislike buttons component
+function LikeDislikeButtons({
+	audioButton,
+	isLiked,
+	onLikeToggle,
+	isDisliked,
+	onDislikeToggle,
+	isAuthenticated,
+}: {
+	audioButton: AudioButtonType;
+	isLiked?: boolean;
+	onLikeToggle?: () => void;
+	isDisliked?: boolean;
+	onDislikeToggle?: () => void;
+	isAuthenticated: boolean;
+}) {
+	if (!onLikeToggle) return null;
+
+	return (
+		<div className="flex rounded-md border border-input">
+			<button
+				type="button"
+				onClick={(e) => {
+					e.stopPropagation();
+					if (isAuthenticated) onLikeToggle();
+				}}
+				disabled={!isAuthenticated}
+				title={!isAuthenticated ? "高評価するにはログインが必要です" : undefined}
+				className={cn(
+					"flex items-center gap-1 px-3 py-2 text-sm font-medium border-0 rounded-l-md rounded-r-none border-r border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
+					isLiked
+						? "text-suzuka-600 hover:text-suzuka-700"
+						: "text-muted-foreground hover:text-suzuka-600",
+					!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
+				)}
+			>
+				<ThumbsUp className={cn("h-4 w-4", isLiked && "fill-current")} />
+				<span>{audioButton.stats.likeCount}</span>
+			</button>
+			<button
+				type="button"
+				onClick={(e) => {
+					e.stopPropagation();
+					if (isAuthenticated && onDislikeToggle) onDislikeToggle();
+				}}
+				disabled={!isAuthenticated}
+				title={
+					!isAuthenticated
+						? "低評価するにはログインが必要です"
+						: isDisliked
+							? "低評価を取り消す"
+							: "低評価する"
+				}
+				className={cn(
+					"flex items-center justify-center w-10 h-10 border-0 rounded-r-md rounded-l-none bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
+					isDisliked
+						? "text-gray-600 hover:text-gray-700"
+						: "text-muted-foreground hover:text-gray-600",
+					!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
+				)}
+			>
+				<ThumbsDown className={cn("h-4 w-4", isDisliked && "fill-current")} />
+			</button>
+		</div>
+	);
+}
+
+// Action buttons component
+function PopoverActions({
+	audioButton,
+	youtubeUrl,
+	isFavorite,
+	onFavoriteToggle,
+	isLiked,
+	onLikeToggle,
+	isDisliked,
+	onDislikeToggle,
+	showDetailLink,
+	onDetailClick,
+	onPopoverClose,
+	isAuthenticated,
+}: {
+	audioButton: AudioButtonType;
+	youtubeUrl: string;
+	isFavorite?: boolean;
+	onFavoriteToggle?: () => void;
+	isLiked?: boolean;
+	onLikeToggle?: () => void;
+	isDisliked?: boolean;
+	onDislikeToggle?: () => void;
+	showDetailLink?: boolean;
+	onDetailClick?: () => void;
+	onPopoverClose?: () => void;
+	isAuthenticated: boolean;
+}) {
+	return (
+		<div className="flex gap-2 pt-2 items-center">
+			<FavoriteButton
+				isFavorite={isFavorite}
+				onFavoriteToggle={onFavoriteToggle}
+				isAuthenticated={isAuthenticated}
+			/>
+
+			<LikeDislikeButtons
+				audioButton={audioButton}
+				isLiked={isLiked}
+				onLikeToggle={onLikeToggle}
+				isDisliked={isDisliked}
+				onDislikeToggle={onDislikeToggle}
+				isAuthenticated={isAuthenticated}
+			/>
+
+			<a
+				href={youtubeUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+				onClick={(e) => e.stopPropagation()}
+			>
+				<Youtube className="h-4 w-4" />
+				YouTube
+			</a>
+
+			{showDetailLink && onDetailClick && (
+				<button
+					type="button"
+					onClick={(e) => {
+						e.stopPropagation();
+						onDetailClick();
+						onPopoverClose?.();
+					}}
+					className="ml-auto flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+				>
+					詳細
+					<ArrowRight className="h-3 w-3" />
+				</button>
+			)}
+		</div>
+	);
 }
 
 function AudioButtonPopoverContent({
@@ -94,196 +381,44 @@ function AudioButtonPopoverContent({
 			{/* タイトル */}
 			<div>
 				<h4 className="font-semibold text-base text-foreground leading-tight">
-					{searchQuery ? (
-						<HighlightText
-							text={audioButton.buttonText}
-							searchQuery={searchQuery}
-							highlightClassName={
-								highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"
-							}
-						/>
-					) : (
-						audioButton.buttonText
-					)}
+					<PopoverTitle
+						text={audioButton.buttonText}
+						searchQuery={searchQuery}
+						highlightClassName={highlightClassName}
+					/>
 				</h4>
-				{audioButton.description && (
-					<p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-						{searchQuery ? (
-							<HighlightText
-								text={audioButton.description}
-								searchQuery={searchQuery}
-								highlightClassName={
-									highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"
-								}
-							/>
-						) : (
-							audioButton.description
-						)}
-					</p>
-				)}
+				<PopoverDescription
+					description={audioButton.description}
+					searchQuery={searchQuery}
+					highlightClassName={highlightClassName}
+				/>
 			</div>
 
 			{/* メタデータ */}
-			<div className="space-y-2 text-sm text-muted-foreground">
-				<div className="flex items-center gap-2">
-					<Clock className="h-4 w-4" />
-					<span>{duration.toFixed(1)}秒</span>
-				</div>
-				<div className="flex items-center gap-2">
-					<User className="h-4 w-4" />
-					<a
-						href={`/users/${audioButton.creatorId}`}
-						className="text-suzuka-600 hover:text-suzuka-700 hover:underline transition-colors"
-						onClick={(e) => e.stopPropagation()}
-					>
-						{audioButton.creatorName}
-					</a>
-				</div>
-				<div className="flex items-center gap-2">
-					<Video className="h-4 w-4" />
-					<span className="text-xs">再生: {audioButton.stats.playCount}回</span>
-				</div>
-				{audioButton.videoTitle && (
-					<div className="flex items-center gap-2">
-						<Video className="h-4 w-4" />
-						<a
-							href={`/videos/${audioButton.videoId}`}
-							className="text-suzuka-600 hover:text-suzuka-700 hover:underline transition-colors text-xs truncate"
-							onClick={(e: React.MouseEvent) => e.stopPropagation()}
-							title={audioButton.videoTitle}
-						>
-							{audioButton.videoTitle}
-						</a>
-					</div>
-				)}
-			</div>
+			<PopoverMetadata audioButton={audioButton} duration={duration} />
 
 			{/* タグ */}
-			{audioButton.tags && audioButton.tags.length > 0 && (
-				<div>
-					<p className="text-xs text-muted-foreground mb-2">タグ</p>
-					<TagList
-						tags={audioButton.tags}
-						variant="outline"
-						showIcon={true}
-						searchQuery={searchQuery}
-						highlightClassName={highlightClassName || "bg-suzuka-200 text-suzuka-900 px-1 rounded"}
-						size="default"
-					/>
-				</div>
-			)}
+			<PopoverTags
+				audioButton={audioButton}
+				searchQuery={searchQuery}
+				highlightClassName={highlightClassName}
+			/>
 
 			{/* アクションボタン */}
-			<div className="flex gap-2 pt-2 items-center">
-				{/* お気に入りボタン */}
-				{onFavoriteToggle && (
-					<button
-						type="button"
-						onClick={(e) => {
-							e.stopPropagation();
-							if (isAuthenticated) {
-								onFavoriteToggle();
-							}
-						}}
-						aria-label={isFavorite ? "お気に入りを解除" : "お気に入りに追加"}
-						disabled={!isAuthenticated}
-						title={!isAuthenticated ? "お気に入りするにはログインが必要です" : undefined}
-						className={cn(
-							"flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
-							isFavorite
-								? "text-suzuka-600 hover:text-suzuka-700"
-								: "text-muted-foreground hover:text-suzuka-600",
-							!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
-						)}
-					>
-						<Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
-					</button>
-				)}
-
-				{/* 高評価・低評価ボタングループ */}
-				{onLikeToggle && (
-					<div className="flex rounded-md border border-input">
-						{/* 高評価ボタン */}
-						<button
-							type="button"
-							onClick={(e) => {
-								e.stopPropagation();
-								if (isAuthenticated) {
-									onLikeToggle();
-								}
-							}}
-							disabled={!isAuthenticated}
-							title={!isAuthenticated ? "高評価するにはログインが必要です" : undefined}
-							className={cn(
-								"flex items-center gap-1 px-3 py-2 text-sm font-medium border-0 rounded-l-md rounded-r-none border-r border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
-								isLiked
-									? "text-suzuka-600 hover:text-suzuka-700"
-									: "text-muted-foreground hover:text-suzuka-600",
-								!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
-							)}
-						>
-							<ThumbsUp className={cn("h-4 w-4", isLiked && "fill-current")} />
-							<span>{audioButton.stats.likeCount}</span>
-						</button>
-
-						{/* 低評価ボタン（YouTube方式：集計数は非表示） */}
-						<button
-							type="button"
-							onClick={(e) => {
-								e.stopPropagation();
-								if (isAuthenticated) {
-									onDislikeToggle?.();
-								}
-							}}
-							disabled={!isAuthenticated}
-							title={
-								!isAuthenticated
-									? "低評価するにはログインが必要です"
-									: isDisliked
-										? "低評価を取り消す"
-										: "低評価する"
-							}
-							className={cn(
-								"flex items-center justify-center w-10 h-10 border-0 rounded-r-md rounded-l-none bg-background hover:bg-accent hover:text-accent-foreground transition-colors",
-								isDisliked
-									? "text-gray-600 hover:text-gray-700"
-									: "text-muted-foreground hover:text-gray-600",
-								!isAuthenticated && "opacity-50 cursor-not-allowed hover:bg-background",
-							)}
-						>
-							<ThumbsDown className={cn("h-4 w-4", isDisliked && "fill-current")} />
-						</button>
-					</div>
-				)}
-
-				{/* YouTubeボタン */}
-				<a
-					href={youtubeUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-					onClick={(e) => e.stopPropagation()}
-				>
-					<Youtube className="h-4 w-4" />
-					YouTube
-				</a>
-
-				{/* 詳細ページへのアイコンボタン */}
-				{showDetailLink && onDetailClick && (
-					<button
-						type="button"
-						onClick={(e) => {
-							e.stopPropagation();
-							onDetailClick();
-							onPopoverClose();
-						}}
-						aria-label="詳細ページを開く"
-						className="flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
-					>
-						<ExternalLink className="h-4 w-4" />
-					</button>
-				)}
-			</div>
+			<PopoverActions
+				audioButton={audioButton}
+				youtubeUrl={youtubeUrl}
+				isFavorite={isFavorite}
+				onFavoriteToggle={onFavoriteToggle}
+				isLiked={isLiked}
+				onLikeToggle={onLikeToggle}
+				isDisliked={isDisliked}
+				onDislikeToggle={onDislikeToggle}
+				showDetailLink={showDetailLink}
+				onDetailClick={onDetailClick}
+				onPopoverClose={onPopoverClose}
+				isAuthenticated={isAuthenticated}
+			/>
 		</div>
 	);
 }

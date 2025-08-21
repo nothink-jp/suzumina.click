@@ -155,62 +155,77 @@ export function validateStatistics(
 }
 
 /**
+ * Validate required field
+ */
+function validateRequiredField(value: unknown, errorMessage: string, errors: string[]): boolean {
+	if (!value) {
+		errors.push(errorMessage);
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Validate required fields and collect errors
+ */
+function validateRequiredFields(button: Partial<AudioButton>, errors: string[]): void {
+	// Basic required fields
+	validateRequiredField(button.id, "IDは必須です", errors);
+
+	// Button text
+	if (validateRequiredField(button.buttonText, "ボタンテキストは必須です", errors)) {
+		errors.push(...validateButtonText(button.buttonText).errors);
+	}
+
+	// Timestamps
+	if (button.startTime === undefined || button.endTime === undefined) {
+		errors.push("開始時間と終了時間は必須です");
+	} else {
+		errors.push(...validateTimestamps(button.startTime, button.endTime).errors);
+	}
+
+	// Video info
+	if (!button.videoId || !button.videoTitle) {
+		errors.push("動画情報は必須です");
+	} else {
+		errors.push(...validateVideoReference(button.videoId, button.videoTitle).errors);
+	}
+
+	// Creator info
+	if (!button.creatorId || !button.creatorName) {
+		errors.push("作成者情報は必須です");
+	} else {
+		errors.push(...validateCreatorInfo(button.creatorId, button.creatorName).errors);
+	}
+}
+
+/**
+ * Validate optional fields and collect errors
+ */
+function validateOptionalFields(button: Partial<AudioButton>, errors: string[]): void {
+	// Tags
+	if (button.tags && button.tags.length > 0) {
+		errors.push(...validateTags(button.tags).errors);
+	}
+
+	// Statistics
+	if (button.stats) {
+		const stats = button.stats;
+		errors.push(
+			...validateStatistics(stats.playCount ?? 0, stats.likeCount ?? 0, stats.dislikeCount ?? 0)
+				.errors,
+		);
+	}
+}
+
+/**
  * Validates complete AudioButton data
  */
 export function validateAudioButton(button: Partial<AudioButton>): ValidationResult {
 	const errors: string[] = [];
 
-	// Required fields check
-	if (!button.id) {
-		errors.push("IDは必須です");
-	}
-
-	if (!button.buttonText) {
-		errors.push("ボタンテキストは必須です");
-	} else if (button.buttonText) {
-		const textValidation = validateButtonText(button.buttonText);
-		errors.push(...textValidation.errors);
-	}
-
-	// Timestamps validation
-	if (button.startTime === undefined || button.endTime === undefined) {
-		errors.push("開始時間と終了時間は必須です");
-	} else {
-		const timestampValidation = validateTimestamps(button.startTime, button.endTime);
-		errors.push(...timestampValidation.errors);
-	}
-
-	// Video reference validation
-	if (!button.videoId || !button.videoTitle) {
-		errors.push("動画情報は必須です");
-	} else if (button.videoId && button.videoTitle) {
-		const videoValidation = validateVideoReference(button.videoId, button.videoTitle);
-		errors.push(...videoValidation.errors);
-	}
-
-	// Tags validation (optional)
-	if (button.tags && button.tags.length > 0) {
-		const tagsValidation = validateTags(button.tags);
-		errors.push(...tagsValidation.errors);
-	}
-
-	// Creator info validation
-	if (!button.creatorId || !button.creatorName) {
-		errors.push("作成者情報は必須です");
-	} else if (button.creatorId && button.creatorName) {
-		const creatorValidation = validateCreatorInfo(button.creatorId, button.creatorName);
-		errors.push(...creatorValidation.errors);
-	}
-
-	// Statistics validation (optional, with defaults)
-	if (button.stats) {
-		const statsValidation = validateStatistics(
-			button.stats.playCount ?? 0,
-			button.stats.likeCount ?? 0,
-			button.stats.dislikeCount ?? 0,
-		);
-		errors.push(...statsValidation.errors);
-	}
+	validateRequiredFields(button, errors);
+	validateOptionalFields(button, errors);
 
 	return {
 		isValid: errors.length === 0,
