@@ -827,10 +827,9 @@ export async function updateAudioButtonTags(
 		if (!data) {
 			return { success: false, error: "音声ボタンのデータが無効です" };
 		}
-		const creatorId = data.creatorId || data.createdBy;
-		if (creatorId !== session.user.discordId) {
-			return { success: false, error: "更新権限がありません" };
-		}
+
+		// タグ編集はログインユーザーなら誰でも可能
+		// （作成者チェックを削除）
 
 		await docRef.update({
 			tags,

@@ -34,9 +34,7 @@ export function AudioButtonDeleteButton({
 	const [isPending, startTransition] = useTransition();
 
 	// 削除権限チェック
-	const canDelete =
-		session?.user?.discordId &&
-		(session.user.discordId === createdBy || session.user.role === "admin");
+	const canDelete = session?.user?.discordId && session.user.discordId === createdBy;
 
 	if (!canDelete) {
 		return null;

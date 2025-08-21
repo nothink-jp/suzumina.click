@@ -44,8 +44,8 @@ export function AudioButtonTagEditorDetail({
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	// 編集権限チェック
-	const canEdit = currentUserId && (currentUserId === createdBy || currentUserRole === "admin");
+	// 編集権限チェック（ログインユーザーなら誰でも編集可能）
+	const canEdit = !!currentUserId;
 
 	/**
 	 * AutocompleteSuggestion を TagSuggestion に変換

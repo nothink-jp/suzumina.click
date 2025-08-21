@@ -57,7 +57,7 @@ describe("AudioButtonTagEditorDetail", () => {
 			).not.toBeInTheDocument();
 		});
 
-		it("作成者でない一般ユーザーには編集権限がない", () => {
+		it("ログインユーザーなら誰でも編集権限がある", () => {
 			render(
 				<AudioButtonTagEditorDetail
 					{...defaultProps}
@@ -66,10 +66,10 @@ describe("AudioButtonTagEditorDetail", () => {
 				/>,
 			);
 
-			expect(screen.queryByText("編集")).not.toBeInTheDocument();
+			expect(screen.getByText("編集")).toBeInTheDocument();
 			expect(
-				screen.getByText("※ タグを編集するには、ボタンの作成者としてログインする必要があります"),
-			).toBeInTheDocument();
+				screen.queryByText("※ タグを編集するには、ボタンの作成者としてログインする必要があります"),
+			).not.toBeInTheDocument();
 		});
 	});
 
