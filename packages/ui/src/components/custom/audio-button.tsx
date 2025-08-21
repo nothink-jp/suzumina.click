@@ -350,6 +350,7 @@ function PopoverActions({
 						onDetailClick();
 						onPopoverClose?.();
 					}}
+					aria-label="詳細ページを開く"
 					className="ml-auto flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
 				>
 					詳細
