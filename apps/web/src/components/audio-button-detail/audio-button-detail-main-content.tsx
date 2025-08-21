@@ -78,16 +78,14 @@ export function AudioButtonDetailMainContent({
 						{/* 編集・削除ボタン */}
 						<div className="flex items-center gap-2">
 							{/* 編集ボタン */}
-							{session?.user &&
-								(audioButton.creatorId === session.user.discordId ||
-									session.user.role === "admin") && (
-									<Button variant="outline" size="sm" asChild className="flex items-center gap-1">
-										<Link href={`/buttons/${audioButton.id}/edit`}>
-											<Pencil className="h-4 w-4" />
-											編集
-										</Link>
-									</Button>
-								)}
+							{session?.user && audioButton.creatorId === session.user.discordId && (
+								<Button variant="outline" size="sm" asChild className="flex items-center gap-1">
+									<Link href={`/buttons/${audioButton.id}/edit`}>
+										<Pencil className="h-4 w-4" />
+										編集
+									</Link>
+								</Button>
+							)}
 							{/* 削除ボタン */}
 							<AudioButtonDeleteButton
 								audioButtonId={audioButton.id}
@@ -123,9 +121,7 @@ export function AudioButtonDetailMainContent({
 						<AudioButtonTagEditorDetail
 							audioButtonId={audioButton.id}
 							tags={audioButton.tags || []}
-							createdBy={audioButton.creatorId}
 							currentUserId={session?.user?.discordId}
-							currentUserRole={session?.user?.role}
 						/>
 					</div>
 

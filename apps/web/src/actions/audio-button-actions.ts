@@ -50,7 +50,7 @@ export async function getAudioButtonAction(audioButtonId: string): Promise<GetAu
 			return { success: false, error: "音声ボタンが見つかりません" };
 		}
 
-		const data = doc.data() as any;
+		const data = doc.data();
 
 		// AudioButtonエンティティに変換
 		const plainObject = audioButtonTransformers.fromFirestore({
@@ -109,7 +109,7 @@ export async function getAudioButtonsAction(
 			const doc = await firestore.collection("audioButtons").doc(id).get();
 			if (!doc.exists) return null;
 
-			const data = doc.data() as any;
+			const data = doc.data();
 			const plain = audioButtonTransformers.fromFirestore({
 				...data,
 				id: doc.id,
@@ -157,7 +157,7 @@ export async function getPublicAudioButtonsAction(limit = 20): Promise<GetAudioB
 		const audioButtons: AudioButton[] = [];
 
 		snapshot.forEach((doc: QueryDocumentSnapshot) => {
-			const data = doc.data() as any;
+			const data = doc.data();
 			const plainObject = audioButtonTransformers.fromFirestore({
 				...data,
 				id: doc.id,
@@ -204,7 +204,10 @@ export async function recordAudioButtonPlayAction(
 				throw new Error("音声ボタンが見つかりません");
 			}
 
-			const currentData = doc.data() as any;
+			const currentData = doc.data();
+			if (!currentData) {
+				throw new Error("音声ボタンデータが見つかりません");
+			}
 			const currentPlayCount = currentData.stats?.playCount || currentData.playCount || 0;
 
 			transaction.update(docRef, {
