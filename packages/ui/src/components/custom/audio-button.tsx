@@ -13,6 +13,7 @@ import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-type
 import { Popover, PopoverContent, PopoverTrigger } from "@suzumina.click/ui/components/ui/popover";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import {
+	ArrowRight,
 	Clock,
 	Heart,
 	Info,
