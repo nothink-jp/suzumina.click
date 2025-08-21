@@ -121,9 +121,7 @@ export function AudioButtonDetailMainContent({
 						<AudioButtonTagEditorDetail
 							audioButtonId={audioButton.id}
 							tags={audioButton.tags || []}
-							createdBy={audioButton.creatorId}
 							currentUserId={session?.user?.discordId}
-							currentUserRole={session?.user?.role}
 						/>
 					</div>
 

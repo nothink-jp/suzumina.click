@@ -20,12 +20,8 @@ export interface AudioButtonTagEditorDetailProps {
 	audioButtonId: string;
 	/** 現在のタグ配列 */
 	tags: string[];
-	/** 作成者のDiscord ID */
-	createdBy: string;
 	/** 現在のユーザーのDiscord ID */
 	currentUserId?: string;
-	/** 現在のユーザーの権限 */
-	currentUserRole?: string;
 	/** 追加のクラス名 */
 	className?: string;
 }
@@ -33,9 +29,7 @@ export interface AudioButtonTagEditorDetailProps {
 export function AudioButtonTagEditorDetail({
 	audioButtonId,
 	tags,
-	createdBy,
 	currentUserId,
-	currentUserRole,
 	className,
 }: AudioButtonTagEditorDetailProps) {
 	const router = useRouter();

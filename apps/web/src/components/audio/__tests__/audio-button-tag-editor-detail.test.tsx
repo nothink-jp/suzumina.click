@@ -14,9 +14,7 @@ describe("AudioButtonTagEditorDetail", () => {
 	const defaultProps = {
 		audioButtonId: "test-button-id",
 		tags: [],
-		createdBy: "creator-id",
 		currentUserId: undefined,
-		currentUserRole: undefined,
 	};
 
 	beforeEach(() => {
@@ -43,13 +41,7 @@ describe("AudioButtonTagEditorDetail", () => {
 		});
 
 		it("管理者には編集権限がある", () => {
-			render(
-				<AudioButtonTagEditorDetail
-					{...defaultProps}
-					currentUserId="admin-id"
-					currentUserRole="admin"
-				/>,
-			);
+			render(<AudioButtonTagEditorDetail {...defaultProps} currentUserId="admin-id" />);
 
 			expect(screen.getByText("編集")).toBeInTheDocument();
 			expect(
@@ -58,13 +50,7 @@ describe("AudioButtonTagEditorDetail", () => {
 		});
 
 		it("ログインユーザーなら誰でも編集権限がある", () => {
-			render(
-				<AudioButtonTagEditorDetail
-					{...defaultProps}
-					currentUserId="other-user-id"
-					currentUserRole="member"
-				/>,
-			);
+			render(<AudioButtonTagEditorDetail {...defaultProps} currentUserId="other-user-id" />);
 
 			expect(screen.getByText("編集")).toBeInTheDocument();
 			expect(

@@ -42,14 +42,16 @@ interface LegacyAudioButtonData {
 		favoriteCount?: number;
 		engagementRate?: number;
 	};
-	createdAt?: any;
-	updatedAt?: any;
+	createdAt?: string | { toDate?: () => Date; _seconds?: number };
+	updatedAt?: string | { toDate?: () => Date; _seconds?: number };
 }
 
 /**
  * Convert timestamp to ISO string
  */
-function toISOString(timestamp: any): string {
+function toISOString(
+	timestamp: string | { toDate?: () => Date; _seconds?: number } | undefined,
+): string {
 	if (typeof timestamp === "string") return timestamp;
 	if (timestamp?.toDate) return timestamp.toDate().toISOString();
 	if (timestamp?._seconds) {
@@ -156,8 +158,17 @@ export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): Au
  * Transforms AudioButton to Firestore document format
  */
 export function toFirestore(audioButton: Partial<AudioButton>): AudioButtonDocument {
-	const { id, ...data } = audioButton as AudioButton;
-	return data;
+	// idと_computedフィールドを除外してFirestore用のドキュメントを作成
+	const { id, _computed, ...documentData } = audioButton as AudioButton & {
+		id?: string;
+		_computed?: unknown;
+	};
+
+	// 未使用変数の警告を抑制（構造化代入で除外するため）
+	void id;
+	void _computed;
+
+	return documentData as AudioButtonDocument;
 }
 
 /**
