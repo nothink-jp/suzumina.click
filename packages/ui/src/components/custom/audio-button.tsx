@@ -315,7 +315,7 @@ function PopoverActions({
 	isAuthenticated: boolean;
 }) {
 	return (
-		<div className="flex gap-2 pt-2 items-center">
+		<div className="flex gap-2 pt-2 items-center flex-wrap">
 			<FavoriteButton
 				isFavorite={isFavorite}
 				onFavoriteToggle={onFavoriteToggle}
@@ -351,7 +351,7 @@ function PopoverActions({
 						onPopoverClose?.();
 					}}
 					aria-label="詳細ページを開く"
-					className="ml-auto flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+					className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
 				>
 					詳細
 					<ArrowRight className="h-3 w-3" />
@@ -379,7 +379,7 @@ function AudioButtonPopoverContent({
 	isAuthenticated,
 }: AudioButtonPopoverContentProps) {
 	return (
-		<div className="w-80 p-4 space-y-4">
+		<div className="w-96 p-4 space-y-4">
 			{/* タイトル */}
 			<div>
 				<h4 className="font-semibold text-base text-foreground leading-tight">
@@ -557,7 +557,7 @@ export function AudioButton({
 					</PopoverTrigger>
 				</div>
 
-				<PopoverContent className="w-80 p-0 border-suzuka-200" align="start">
+				<PopoverContent className="w-96 p-0 border-suzuka-200" align="start">
 					<AudioButtonPopoverContent
 						audioButton={audioButton}
 						duration={duration}
