@@ -18,6 +18,146 @@ interface UseListUrlOptions {
 	defaultSort?: string;
 }
 
+// Helper function to parse multiselect/tags value
+function parseMultiselectValue(value: string): string[] {
+	if (value.includes("|")) {
+		// 新形式: パイプ区切り
+		return value.split("|").filter(Boolean);
+	}
+	if (value.includes(",") && !value.includes(" ")) {
+		// 旧形式: カンマ区切り（スペースを含まない場合のみ）
+		return value.split(",").filter(Boolean);
+	}
+	// 単一の値（スペースを含む可能性がある）
+	return [value];
+}
+
+// Helper function to parse range value
+function parseRangeValue(value: string): { min?: number; max?: number } {
+	const [min, max] = value.split("-");
+	return {
+		min: min ? Number.parseFloat(min) : undefined,
+		max: max ? Number.parseFloat(max) : undefined,
+	};
+}
+
+// Helper function to parse date range value
+function parseDateRangeValue(value: string): { start?: string; end?: string } {
+	// ISO日付形式（YYYY-MM-DD~YYYY-MM-DD）を正確に分割
+	const separatorIndex = value.indexOf("~");
+	if (separatorIndex !== -1) {
+		const start = value.substring(0, separatorIndex);
+		const end = value.substring(separatorIndex + 1);
+		return {
+			start: start || undefined,
+			end: end || undefined,
+		};
+	}
+
+	// 旧形式（ハイフン区切り）のフォールバック
+	const parts = value.split("-");
+	if (parts.length >= 6) {
+		// YYYY-MM-DD-YYYY-MM-DD形式を想定
+		const start = parts.slice(0, 3).join("-");
+		const end = parts.slice(3).join("-");
+		return {
+			start: start || undefined,
+			end: end || undefined,
+		};
+	}
+
+	// 解析できない場合は空の範囲
+	return {
+		start: undefined,
+		end: undefined,
+	};
+}
+
+// Helper function to parse filter value based on type
+function parseFilterValue(value: string, config: FilterConfig): unknown {
+	if (config.type === "multiselect" || config.type === "tags") {
+		return parseMultiselectValue(value);
+	}
+	if (config.type === "boolean") {
+		return value === "true";
+	}
+	if (config.type === "range") {
+		return parseRangeValue(value);
+	}
+	if (config.type === "dateRange") {
+		return parseDateRangeValue(value);
+	}
+	return value;
+}
+
+// Helper function to serialize array values
+function serializeArrayValue(value: unknown[]): string | null {
+	if (value.length === 0) return null;
+	// パイプ文字で結合（URLSearchParamsが自動的にエンコードする）
+	return value.map((v) => String(v)).join("|");
+}
+
+// Helper function to serialize range values
+function serializeRangeValue(value: unknown): string | null {
+	const rangeValue = value as { min?: number; max?: number };
+	if (rangeValue.min !== undefined || rangeValue.max !== undefined) {
+		return `${rangeValue.min || ""}-${rangeValue.max || ""}`;
+	}
+	return null;
+}
+
+// Helper function to serialize date range values
+function serializeDateRangeValue(value: unknown): string | null {
+	const dateValue = value as { start?: string; end?: string };
+	if (dateValue.start !== undefined || dateValue.end !== undefined) {
+		// チルダ（~）を区切り文字として使用
+		return `${dateValue.start || ""}~${dateValue.end || ""}`;
+	}
+	return null;
+}
+
+// Helper function to serialize filter value to URL parameter
+function serializeFilterValue(value: unknown, config?: FilterConfig): string | null {
+	if (value === undefined || value === null || value === "") {
+		return null;
+	}
+
+	if (Array.isArray(value)) {
+		return serializeArrayValue(value);
+	}
+
+	if (typeof value === "object") {
+		if (config?.type === "range") {
+			return serializeRangeValue(value);
+		}
+		if (config?.type === "dateRange") {
+			return serializeDateRangeValue(value);
+		}
+	}
+
+	return value.toString();
+}
+
+// Helper function to update single parameter in URLSearchParams
+function updateParam(
+	params: URLSearchParams,
+	key: string,
+	value: unknown,
+	defaultValue?: unknown,
+): void {
+	if (
+		value === undefined ||
+		value === null ||
+		value === defaultValue ||
+		value === "" ||
+		value === 1
+	) {
+		params.delete(key);
+	} else {
+		params.set(key, String(value));
+	}
+}
+
 export function useListUrl(options: UseListUrlOptions = {}) {
 	const { filters = {}, defaultPageSize = 12, defaultSort } = options;
 	const searchParams = useSearchParams();
@@ -41,62 +181,8 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 		const filterValues: Record<string, unknown> = { ...defaultFilterValues };
 		Object.entries(filters).forEach(([key, config]) => {
 			const value = searchParams.get(key);
-
 			if (value !== null) {
-				// 型に応じて変換
-				if (config.type === "multiselect" || config.type === "tags") {
-					// URLSearchParamsは既にデコード済みの値を返すので追加のデコードは不要
-					// パイプ文字"|"を区切り文字として使用
-					if (value.includes("|")) {
-						// 新形式: パイプ区切り
-						filterValues[key] = value.split("|").filter(Boolean);
-					} else if (value.includes(",") && !value.includes(" ")) {
-						// 旧形式: カンマ区切り（スペースを含まない場合のみ）
-						filterValues[key] = value.split(",").filter(Boolean);
-					} else {
-						// 単一の値（スペースを含む可能性がある）
-						filterValues[key] = [value];
-					}
-				} else if (config.type === "boolean") {
-					filterValues[key] = value === "true";
-				} else if (config.type === "range") {
-					const [min, max] = value.split("-");
-					filterValues[key] = {
-						min: min ? Number.parseFloat(min) : undefined,
-						max: max ? Number.parseFloat(max) : undefined,
-					};
-				} else if (config.type === "dateRange") {
-					// ISO日付形式（YYYY-MM-DD~YYYY-MM-DD）を正確に分割
-					const separatorIndex = value.indexOf("~");
-					if (separatorIndex !== -1) {
-						const start = value.substring(0, separatorIndex);
-						const end = value.substring(separatorIndex + 1);
-						filterValues[key] = {
-							start: start || undefined,
-							end: end || undefined,
-						};
-					} else {
-						// 旧形式（ハイフン区切り）のフォールバック
-						const parts = value.split("-");
-						if (parts.length >= 6) {
-							// YYYY-MM-DD-YYYY-MM-DD形式を想定
-							const start = parts.slice(0, 3).join("-");
-							const end = parts.slice(3).join("-");
-							filterValues[key] = {
-								start: start || undefined,
-								end: end || undefined,
-							};
-						} else {
-							// 解析できない場合は空の範囲
-							filterValues[key] = {
-								start: undefined,
-								end: undefined,
-							};
-						}
-					}
-				} else {
-					filterValues[key] = value;
-				}
+				filterValues[key] = parseFilterValue(value, config);
 			}
 			// value が null の場合は、defaultFilterValues の値がそのまま使われる
 		});
@@ -125,38 +211,22 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 
 			// ページ
 			if (updates.page !== undefined) {
-				if (updates.page === 1) {
-					params.delete("page");
-				} else {
-					params.set("page", updates.page.toString());
-				}
+				updateParam(params, "page", updates.page, 1);
 			}
 
 			// ページサイズ
 			if (updates.itemsPerPage !== undefined) {
-				if (updates.itemsPerPage === defaultPageSize) {
-					params.delete("limit");
-				} else {
-					params.set("limit", updates.itemsPerPage.toString());
-				}
+				updateParam(params, "limit", updates.itemsPerPage, defaultPageSize);
 			}
 
 			// ソート
 			if (updates.sort !== undefined) {
-				if (updates.sort === "" || updates.sort === defaultSort) {
-					params.delete("sort");
-				} else {
-					params.set("sort", updates.sort);
-				}
+				updateParam(params, "sort", updates.sort, defaultSort || "");
 			}
 
 			// 検索
 			if (updates.search !== undefined) {
-				if (updates.search === "") {
-					params.delete("q");
-				} else {
-					params.set("q", updates.search);
-				}
+				updateParam(params, "q", updates.search, "");
 			}
 
 			// フィルター
@@ -172,40 +242,13 @@ export function useListUrl(options: UseListUrlOptions = {}) {
 					const defaultValue = getDefaultFilterValues(filters)[key];
 
 					// "all"値、空値、またはデフォルト値と同じ場合はURLから削除
-					if (
-						value === undefined ||
-						value === null ||
-						value === "" ||
-						(config?.showAll && value === "all") ||
-						(Array.isArray(value) && value.length === 0) ||
-						value === defaultValue
-					) {
-						// すでに削除されているので何もしない
-					} else {
-						// 型に応じてシリアライズ
-						if (Array.isArray(value)) {
-							// パイプ文字で結合（URLSearchParamsが自動的にエンコードする）
-							// これによりスペースやカンマを含む値も正しく扱える
-							const joined = value.map((v) => String(v)).join("|");
-							params.set(key, joined);
-						} else if (typeof value === "object" && config?.type === "range") {
-							const rangeValue = value as { min?: number; max?: number };
-							if (rangeValue.min !== undefined || rangeValue.max !== undefined) {
-								params.set(key, `${rangeValue.min || ""}-${rangeValue.max || ""}`);
-							} else {
-								// すでに削除されている
-							}
-						} else if (typeof value === "object" && config?.type === "dateRange") {
-							const dateValue = value as { start?: string; end?: string };
-							if (dateValue.start !== undefined || dateValue.end !== undefined) {
-								// チルダ（~）を区切り文字として使用
-								params.set(key, `${dateValue.start || ""}~${dateValue.end || ""}`);
-							} else {
-								// すでに削除されている
-							}
-						} else {
-							params.set(key, value.toString());
-						}
+					if ((config?.showAll && value === "all") || value === defaultValue) {
+						return; // すでに削除されているので何もしない
+					}
+
+					const serialized = serializeFilterValue(value, config);
+					if (serialized !== null) {
+						params.set(key, serialized);
 					}
 				});
 			}

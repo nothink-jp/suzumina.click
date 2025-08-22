@@ -129,59 +129,74 @@ export const PERFORMANCE_THRESHOLDS = {
 /**
  * 測定結果を分析してスコアを算出
  */
+// Helper function to get data size category
+function getDataSizeCategory(datasetSize: number): "small" | "medium" | "large" | "xlarge" {
+	if (datasetSize <= 48) return "small";
+	if (datasetSize <= 96) return "medium";
+	if (datasetSize <= 192) return "large";
+	return "xlarge";
+}
+
+// Helper function to calculate render score
+function calculateRenderScore(avgRenderTime: number, threshold: number): number {
+	if (avgRenderTime <= threshold * 0.5) return 30;
+	if (avgRenderTime <= threshold) return 20;
+	if (avgRenderTime <= threshold * 1.5) return 10;
+	return 0;
+}
+
+// Helper function to calculate memory score
+function calculateMemoryScore(peakMemory: number, threshold: number): number {
+	if (peakMemory <= threshold * 0.7) return 25;
+	if (peakMemory <= threshold) return 18;
+	if (peakMemory <= threshold * 1.3) return 10;
+	return 0;
+}
+
+// Helper function to calculate scroll score
+function calculateScrollScore(avgFps: number): number {
+	if (avgFps >= 58) return 25;
+	if (avgFps >= PERFORMANCE_THRESHOLDS.minScrollFps) return 18;
+	if (avgFps >= 40) return 10;
+	return 0;
+}
+
+// Helper function to calculate interaction score
+function calculateInteractionScore(interactionLatency: {
+	click: number;
+	search: number;
+	scroll: number;
+}): number {
+	let score = 0;
+	if (interactionLatency.click <= PERFORMANCE_THRESHOLDS.maxInteractionLatency.click) score += 7;
+	if (interactionLatency.search <= PERFORMANCE_THRESHOLDS.maxInteractionLatency.search) score += 7;
+	if (interactionLatency.scroll <= PERFORMANCE_THRESHOLDS.maxInteractionLatency.scroll) score += 6;
+	return score;
+}
+
 export const calculatePerformanceScore = (
 	result: Omit<BenchmarkResult, "performanceScore" | "timestamp">,
 ): number => {
 	const { datasetSize, renderTime, memoryUsage, scrollPerformance, interactionLatency } = result;
 
-	// データサイズカテゴリを決定
-	const sizeCategory =
-		datasetSize <= 48
-			? "small"
-			: datasetSize <= 96
-				? "medium"
-				: datasetSize <= 192
-					? "large"
-					: "xlarge";
+	const sizeCategory = getDataSizeCategory(datasetSize);
 
 	let score = 0;
 
 	// レンダリング時間評価（30点）
-	const renderThreshold = PERFORMANCE_THRESHOLDS.maxRenderTime[sizeCategory];
-	if (renderTime.avg <= renderThreshold * 0.5) {
-		score += 30;
-	} else if (renderTime.avg <= renderThreshold) {
-		score += 20;
-	} else if (renderTime.avg <= renderThreshold * 1.5) {
-		score += 10;
-	}
+	score += calculateRenderScore(renderTime.avg, PERFORMANCE_THRESHOLDS.maxRenderTime[sizeCategory]);
 
 	// メモリ使用量評価（25点）
-	const memoryThreshold = PERFORMANCE_THRESHOLDS.maxMemoryUsage[sizeCategory];
-	if (memoryUsage.peak <= memoryThreshold * 0.7) {
-		score += 25;
-	} else if (memoryUsage.peak <= memoryThreshold) {
-		score += 18;
-	} else if (memoryUsage.peak <= memoryThreshold * 1.3) {
-		score += 10;
-	}
+	score += calculateMemoryScore(
+		memoryUsage.peak,
+		PERFORMANCE_THRESHOLDS.maxMemoryUsage[sizeCategory],
+	);
 
 	// スクロールパフォーマンス評価（25点）
-	if (scrollPerformance.avgFps >= 58) {
-		score += 25;
-	} else if (scrollPerformance.avgFps >= PERFORMANCE_THRESHOLDS.minScrollFps) {
-		score += 18;
-	} else if (scrollPerformance.avgFps >= 40) {
-		score += 10;
-	}
+	score += calculateScrollScore(scrollPerformance.avgFps);
 
 	// インタラクション応答性評価（20点）
-	const interactionScore =
-		(interactionLatency.click <= PERFORMANCE_THRESHOLDS.maxInteractionLatency.click ? 7 : 0) +
-		(interactionLatency.search <= PERFORMANCE_THRESHOLDS.maxInteractionLatency.search ? 7 : 0) +
-		(interactionLatency.scroll <= PERFORMANCE_THRESHOLDS.maxInteractionLatency.scroll ? 6 : 0);
-
-	score += interactionScore;
+	score += calculateInteractionScore(interactionLatency);
 
 	return Math.min(100, Math.max(0, score));
 };

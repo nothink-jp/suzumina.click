@@ -52,7 +52,7 @@ interface UseListDataOptions<T> {
 	/** 初期データ */
 	initialData?: ListDataSource<T>;
 	/** エラーハンドラー */
-	onError?: (error: ListError) => void;
+	onError?: (error: Error) => void;
 	/** デバウンス時間（ミリ秒） */
 	debounceMs?: number;
 }
@@ -88,34 +88,9 @@ export function useListData<T>(params: StandardListParams, options: UseListDataO
 	// 前回のパラメータを保持
 	const prevParamsRef = useRef(params);
 
-	const fetchData = useCallback(async () => {
-		// 前回のリクエストをキャンセル
-		if (abortControllerRef.current) {
-			abortControllerRef.current.abort();
-			abortControllerRef.current = null;
-		}
-
-		// デバウンスタイマーをクリア
-		if (timeoutRef.current) {
-			clearTimeout(timeoutRef.current);
-			timeoutRef.current = null;
-		}
-
-		// デバウンス処理
-		if (debounceMs > 0) {
-			return new Promise<void>((resolve) => {
-				timeoutRef.current = setTimeout(async () => {
-					await performFetch();
-					resolve();
-				}, debounceMs);
-			});
-		}
-		return performFetch();
-
-		async function performFetch() {
-			const abortController = new AbortController();
-			abortControllerRef.current = abortController;
-
+	// performFetchを外部に定義してcomplexityを下げる
+	const performFetchInternal = useCallback(
+		async (abortController: AbortController) => {
 			dispatch({ type: "FETCH_START" });
 
 			try {
@@ -135,14 +110,47 @@ export function useListData<T>(params: StandardListParams, options: UseListDataO
 				const listError: ListError = {
 					type: "fetch",
 					message: error instanceof Error ? error.message : "データの取得に失敗しました",
-					retry: () => performFetch(),
+					retry: () => performFetchInternal(abortController),
 				};
 
 				dispatch({ type: "FETCH_ERROR", payload: listError });
-				onError?.(listError);
+
+				// onErrorにはError型で渡す
+				const errorForCallback = error instanceof Error ? error : new Error(listError.message);
+				onError?.(errorForCallback);
 			}
+		},
+		[fetchFn, onError],
+	);
+
+	const fetchData = useCallback(async () => {
+		// 前回のリクエストをキャンセル
+		if (abortControllerRef.current) {
+			abortControllerRef.current.abort();
+			abortControllerRef.current = null;
 		}
-	}, [fetchFn, debounceMs, onError]);
+
+		// デバウンスタイマーをクリア
+		if (timeoutRef.current) {
+			clearTimeout(timeoutRef.current);
+			timeoutRef.current = null;
+		}
+
+		const abortController = new AbortController();
+		abortControllerRef.current = abortController;
+
+		// デバウンス処理
+		if (debounceMs > 0) {
+			return new Promise<void>((resolve) => {
+				timeoutRef.current = setTimeout(async () => {
+					await performFetchInternal(abortController);
+					resolve();
+				}, debounceMs);
+			});
+		}
+
+		return performFetchInternal(abortController);
+	}, [debounceMs, performFetchInternal]);
 
 	// パラメータが変更されたらデータを再取得
 	useEffect(() => {

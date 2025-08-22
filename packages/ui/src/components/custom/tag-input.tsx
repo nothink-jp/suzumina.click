@@ -219,44 +219,48 @@ export function TagInput({
 	}, []);
 
 	/**
+	 * 候補ナビゲーションの処理
+	 */
+	const handleSuggestionNavigation = (e: React.KeyboardEvent): boolean => {
+		if (!showSuggestions || suggestions.length === 0) return false;
+
+		switch (e.key) {
+			case "ArrowDown":
+				e.preventDefault();
+				setSelectedSuggestionIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+				return true;
+			case "ArrowUp":
+				e.preventDefault();
+				setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+				return true;
+			case "Enter":
+			case "Tab":
+				if (selectedSuggestionIndex >= 0 && suggestions[selectedSuggestionIndex]) {
+					e.preventDefault();
+					selectSuggestion(suggestions[selectedSuggestionIndex]);
+					return true;
+				}
+				break;
+			case "Escape":
+				e.preventDefault();
+				setShowSuggestions(false);
+				setSelectedSuggestionIndex(-1);
+				return true;
+		}
+		return false;
+	};
+
+	/**
 	 * Enter キー押下時の処理
 	 * 日本語入力（IME）変換中は無視
 	 */
 	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (isComposing) return;
 
-		if (showSuggestions && suggestions.length > 0) {
-			switch (e.key) {
-				case "ArrowDown":
-					e.preventDefault();
-					setSelectedSuggestionIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
-					break;
-				case "ArrowUp":
-					e.preventDefault();
-					setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
-					break;
-				case "Enter":
-					if (selectedSuggestionIndex >= 0 && suggestions[selectedSuggestionIndex]) {
-						e.preventDefault();
-						selectSuggestion(suggestions[selectedSuggestionIndex]);
-						return;
-					}
-					break;
-				case "Escape":
-					e.preventDefault();
-					setShowSuggestions(false);
-					setSelectedSuggestionIndex(-1);
-					break;
-				case "Tab":
-					if (selectedSuggestionIndex >= 0 && suggestions[selectedSuggestionIndex]) {
-						e.preventDefault();
-						selectSuggestion(suggestions[selectedSuggestionIndex]);
-						return;
-					}
-					break;
-			}
-		}
+		// 候補ナビゲーションの処理
+		if (handleSuggestionNavigation(e)) return;
 
+		// Enterキーでタグ追加
 		if (e.key === "Enter") {
 			e.preventDefault();
 			addTag();

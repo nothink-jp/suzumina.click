@@ -81,31 +81,39 @@ export function validateFilterValue(value: unknown, config: FilterConfig): boole
 /**
  * デフォルトフィルター値を生成
  */
+// Helper function to get default value for a single filter
+function getFilterDefaultValue(config: FilterConfig): unknown {
+	// defaultValueが指定されていればそれを優先
+	if (config.defaultValue !== undefined) {
+		return config.defaultValue;
+	}
+
+	switch (config.type) {
+		case "select":
+			return config.showAll ? "all" : "";
+		case "boolean":
+			return false;
+		case "multiselect":
+		case "tags":
+			return [];
+		case "range":
+			return { min: undefined, max: undefined };
+		case "date":
+			return undefined;
+		case "dateRange":
+			return { start: undefined, end: undefined };
+		default:
+			return undefined;
+	}
+}
+
 export function getDefaultFilterValues(
 	filters: Record<string, FilterConfig>,
 ): Record<string, unknown> {
 	const defaults: Record<string, unknown> = {};
 
 	Object.entries(filters).forEach(([key, config]) => {
-		// defaultValueが指定されていればそれを優先
-		if (config.defaultValue !== undefined) {
-			defaults[key] = config.defaultValue;
-		} else if (config.showAll && config.type === "select") {
-			defaults[key] = "all";
-		} else if (config.type === "select") {
-			// showAllがfalseの場合、空文字列をデフォルトに
-			defaults[key] = "";
-		} else if (config.type === "boolean") {
-			defaults[key] = false;
-		} else if (config.type === "multiselect" || config.type === "tags") {
-			defaults[key] = [];
-		} else if (config.type === "range") {
-			defaults[key] = { min: undefined, max: undefined };
-		} else if (config.type === "date") {
-			defaults[key] = undefined;
-		} else if (config.type === "dateRange") {
-			defaults[key] = { start: undefined, end: undefined };
-		}
+		defaults[key] = getFilterDefaultValue(config);
 	});
 
 	return defaults;
@@ -114,6 +122,35 @@ export function getDefaultFilterValues(
 /**
  * アクティブなフィルターがあるかチェック
  */
+// Helper function to check if a single filter is active
+function isFilterActive(value: unknown, config: FilterConfig, defaultValue: unknown): boolean {
+	// "all"値は非アクティブとみなす
+	if (config.showAll && value === "all") return false;
+
+	// 空配列は非アクティブ
+	if (Array.isArray(value) && value.length === 0) return false;
+
+	// undefinedやnullは非アクティブ
+	if (value === undefined || value === null) return false;
+
+	// デフォルト値と同じ場合は非アクティブ
+	if (value === defaultValue) return false;
+
+	// rangeフィルターの場合
+	if (config.type === "range" && typeof value === "object") {
+		const rangeValue = value as { min?: number; max?: number };
+		return rangeValue.min !== undefined || rangeValue.max !== undefined;
+	}
+
+	// dateRangeフィルターの場合
+	if (config.type === "dateRange" && typeof value === "object") {
+		const dateValue = value as { start?: string; end?: string };
+		return dateValue.start !== undefined || dateValue.end !== undefined;
+	}
+
+	return true;
+}
+
 export function hasActiveFilters(
 	currentFilters: Record<string, unknown>,
 	filterConfigs: Record<string, FilterConfig>,
@@ -122,32 +159,7 @@ export function hasActiveFilters(
 	return Object.entries(currentFilters).some(([key, value]) => {
 		const config = filterConfigs[key];
 		if (!config) return false;
-
-		// "all"値は非アクティブとみなす
-		if (config.showAll && value === "all") return false;
-
-		// 空配列は非アクティブ
-		if (Array.isArray(value) && value.length === 0) return false;
-
-		// undefinedやnullは非アクティブ
-		if (value === undefined || value === null) return false;
-
-		// デフォルト値と同じ場合は非アクティブ
-		if (value === defaultValues[key]) return false;
-
-		// rangeフィルターの場合
-		if (config.type === "range" && typeof value === "object") {
-			const rangeValue = value as { min?: number; max?: number };
-			return rangeValue.min !== undefined || rangeValue.max !== undefined;
-		}
-
-		// dateRangeフィルターの場合
-		if (config.type === "dateRange" && typeof value === "object") {
-			const dateValue = value as { start?: string; end?: string };
-			return dateValue.start !== undefined || dateValue.end !== undefined;
-		}
-
-		return true;
+		return isFilterActive(value, config, defaultValues[key]);
 	});
 }
 

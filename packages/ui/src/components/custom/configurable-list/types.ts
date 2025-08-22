@@ -3,6 +3,14 @@
  */
 
 /**
+ * 選択肢の型定義
+ */
+export interface Option {
+	value: string;
+	label: string;
+}
+
+/**
  * データソースの基本構造
  * filteredCountは削除し、items.lengthから算出
  */
@@ -125,7 +133,7 @@ export interface ConfigurableListProps<T> {
 	fetchFn?: (params: unknown) => Promise<unknown>;
 
 	// カスタマイズ
-	onError?: (error: ListError) => void;
+	onError?: (error: Error) => void;
 	emptyMessage?: string;
 	loadingComponent?: React.ReactNode;
 

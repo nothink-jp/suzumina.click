@@ -174,7 +174,10 @@ function validateRequiredFields(button: Partial<AudioButton>, errors: string[]):
 
 	// Button text
 	if (validateRequiredField(button.buttonText, "ボタンテキストは必須です", errors)) {
-		errors.push(...validateButtonText(button.buttonText).errors);
+		// validateRequiredFieldがtrueを返した場合、button.buttonTextは必ず存在する
+		if (button.buttonText) {
+			errors.push(...validateButtonText(button.buttonText).errors);
+		}
 	}
 
 	// Timestamps
