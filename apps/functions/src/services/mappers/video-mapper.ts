@@ -149,7 +149,8 @@ export function mapYouTubeToVideoPlainObject(
 			// Keep legacy fields for backward compatibility
 			playlistTags,
 			userTags,
-			audioButtonCount: audioButtonInfo.count,
+			// audioButtonCountは既存の値を保持するため、YouTube更新時には設定しない
+			// audioButtonCount: audioButtonInfo.count, // この行を削除
 			hasAudioButtons: audioButtonInfo.hasButtons,
 			_computed: {
 				isArchived: videoType === "archived",
