@@ -73,81 +73,124 @@ function calculateEngagementRate(
 }
 
 /**
+ * Extract basic fields from legacy data
+ */
+function extractBasicFields(data: LegacyAudioButtonData) {
+	return {
+		buttonText: data.buttonText || data.title || data.text || "",
+		videoId: data.videoId || data.sourceVideoId || "",
+		videoTitle: data.videoTitle || data.sourceVideoTitle || "",
+		videoThumbnailUrl: data.videoThumbnailUrl || data.sourceVideoThumbnailUrl,
+		creatorId: data.creatorId || data.createdBy || "unknown",
+		creatorName: data.creatorName || data.createdByName || "Unknown",
+	};
+}
+
+/**
+ * Extract stats from legacy data
+ */
+function extractStats(data: LegacyAudioButtonData) {
+	const playCount = data.stats?.playCount ?? data.playCount ?? 0;
+	const likeCount = data.stats?.likeCount ?? data.likeCount ?? 0;
+	const dislikeCount = data.stats?.dislikeCount ?? data.dislikeCount ?? 0;
+	const favoriteCount = data.stats?.favoriteCount ?? data.favoriteCount ?? 0;
+	const engagementRate =
+		data.stats?.engagementRate ?? calculateEngagementRate(playCount, likeCount, dislikeCount);
+
+	return { playCount, likeCount, dislikeCount, favoriteCount, engagementRate };
+}
+
+/**
+ * Calculate time-related fields
+ */
+function calculateTimeFields(data: LegacyAudioButtonData) {
+	const startTime = data.startTime ?? 0;
+	const endTime = data.endTime ?? startTime;
+	const duration = data.duration ?? endTime - startTime;
+
+	return { startTime, endTime, duration };
+}
+
+/**
+ * Build computed properties
+ */
+function buildComputedProperties(
+	stats: ReturnType<typeof extractStats>,
+	duration: number,
+	buttonText: string,
+	videoTitle: string,
+	creatorName: string,
+	tags: string[],
+) {
+	const { playCount, likeCount, dislikeCount, engagementRate } = stats;
+	const isPopular = playCount >= 100;
+	const popularityScore = playCount + likeCount * 2 - dislikeCount;
+
+	const minutes = Math.floor(duration / 60);
+	const seconds = Math.floor(duration % 60);
+	const durationText = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+	const searchableText = [
+		buttonText.toLowerCase(),
+		videoTitle.toLowerCase(),
+		creatorName.toLowerCase(),
+		...tags.map((tag) => tag.toLowerCase()),
+	].join(" ");
+
+	return {
+		isPopular,
+		engagementRate,
+		engagementRatePercentage: engagementRate * 100,
+		popularityScore,
+		searchableText,
+		durationText,
+		relativeTimeText: "たった今", // TODO: Calculate from createdAt
+	};
+}
+
+/**
  * Transforms legacy Firestore data to unified AudioButton format
  * Handles all historical field name variations
  */
 export function fromFirestore(data: LegacyAudioButtonData & { id?: string }): AudioButton | null {
 	try {
-		// Handle various field name patterns
-		const buttonText = data.buttonText || data.title || data.text || "";
-		const videoId = data.videoId || data.sourceVideoId || "";
-		const videoTitle = data.videoTitle || data.sourceVideoTitle || "";
+		const basic = extractBasicFields(data);
 
 		// Basic validation
-		if (!buttonText || !videoId) {
+		if (!basic.buttonText || !basic.videoId) {
 			return null;
 		}
 
-		// Extract stats (handle both flat and nested structure)
-		const playCount = data.stats?.playCount ?? data.playCount ?? 0;
-		const likeCount = data.stats?.likeCount ?? data.likeCount ?? 0;
-		const dislikeCount = data.stats?.dislikeCount ?? data.dislikeCount ?? 0;
-		const favoriteCount = data.stats?.favoriteCount ?? data.favoriteCount ?? 0;
-		const engagementRate =
-			data.stats?.engagementRate ?? calculateEngagementRate(playCount, likeCount, dislikeCount);
+		const stats = extractStats(data);
+		const time = calculateTimeFields(data);
+		const tags = data.tags || [];
 
-		// Calculate duration
-		const startTime = data.startTime ?? 0;
-		const endTime = data.endTime ?? startTime;
-		const duration = data.duration ?? endTime - startTime;
-
-		// Calculate computed properties
-		const isPopular = playCount >= 100;
-		const popularityScore = playCount + likeCount * 2 - dislikeCount;
-		const minutes = Math.floor(duration / 60);
-		const seconds = Math.floor(duration % 60);
-		const durationText = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-		const relativeTimeText = "たった今"; // TODO: Calculate from createdAt
-
-		// Build searchable text
-		const searchableText = [
-			buttonText.toLowerCase(),
-			videoTitle.toLowerCase(),
-			data.creatorName?.toLowerCase() || data.createdByName?.toLowerCase() || "",
-			...(data.tags || []).map((tag) => tag.toLowerCase()),
-		].join(" ");
+		const computed = buildComputedProperties(
+			stats,
+			time.duration,
+			basic.buttonText,
+			basic.videoTitle,
+			basic.creatorName,
+			tags,
+		);
 
 		return {
 			id: data.id || "",
-			buttonText,
-			videoId,
-			videoTitle,
-			videoThumbnailUrl: data.videoThumbnailUrl || data.sourceVideoThumbnailUrl,
-			startTime,
-			endTime,
-			duration,
-			tags: data.tags || [],
-			creatorId: data.creatorId || data.createdBy || "unknown",
-			creatorName: data.creatorName || data.createdByName || "Unknown",
+			buttonText: basic.buttonText,
+			videoId: basic.videoId,
+			videoTitle: basic.videoTitle,
+			videoThumbnailUrl: basic.videoThumbnailUrl,
+			startTime: time.startTime,
+			endTime: time.endTime,
+			duration: time.duration,
+			tags,
+			creatorId: basic.creatorId,
+			creatorName: basic.creatorName,
 			isPublic: data.isPublic ?? true,
-			stats: {
-				playCount,
-				likeCount,
-				dislikeCount,
-				favoriteCount,
-				engagementRate,
-			},
+			stats,
 			createdAt: toISOString(data.createdAt),
 			updatedAt: toISOString(data.updatedAt || data.createdAt),
-			_computed: {
-				isPopular,
-				engagementRate,
-				engagementRatePercentage: engagementRate * 100,
-				popularityScore,
-				searchableText,
-				durationText,
-				relativeTimeText,
-			},
+			_computed: computed,
 		};
 	} catch (_error) {
 		return null;

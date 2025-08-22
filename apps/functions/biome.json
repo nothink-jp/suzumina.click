@@ -93,7 +93,7 @@
 			}
 		},
 		{
-			"includes": ["**/data-integrity-check.ts"],
+			"includes": ["**/data-integrity-check.ts", "**/video-mapper.ts"],
 			"linter": {
 				"rules": {
 					"complexity": {

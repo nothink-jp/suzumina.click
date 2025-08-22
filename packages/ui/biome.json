@@ -8,7 +8,7 @@
 	"linter": {
 		"rules": {
 			"suspicious": {
-				"noExplicitAny": "warn",
+				"noExplicitAny": "error",
 				"noConsole": "off",
 				"noArrayIndexKey": "off"
 			},
@@ -22,7 +22,7 @@
 				"noUnusedFunctionParameters": "off"
 			},
 			"complexity": {
-				"noExcessiveCognitiveComplexity": "off"
+				"noExcessiveCognitiveComplexity": "error"
 			},
 			"style": {
 				"noParameterAssign": "error",
@@ -46,11 +46,14 @@
 			}
 		},
 		{
-			"includes": ["**/*.test.tsx", "**/*.test.ts"],
+			"includes": ["**/*.test.tsx", "**/*.test.ts", "**/test-utils/**", "**/chart.tsx"],
 			"linter": {
 				"rules": {
 					"suspicious": {
 						"noExplicitAny": "off"
+					},
+					"complexity": {
+						"noExcessiveCognitiveComplexity": "off"
 					}
 				}
 			}

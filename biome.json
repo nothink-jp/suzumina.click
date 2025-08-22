@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.1.4/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -43,7 +43,7 @@
 			},
 			"suspicious": {
 				"noConsole": "warn",
-				"noExplicitAny": "warn",
+				"noExplicitAny": "error",
 				"noArrayIndexKey": "warn",
 				"noSkippedTests": "warn"
 			},
@@ -65,7 +65,7 @@
 				"noDelete": "warn"
 			},
 			"complexity": {
-				"noExcessiveCognitiveComplexity": "warn"
+				"noExcessiveCognitiveComplexity": "error"
 			},
 			"security": {
 				"noDangerouslySetInnerHtml": "off"
@@ -99,6 +99,19 @@
 			},
 			"formatter": {
 				"enabled": false
+			}
+		},
+		{
+			"includes": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "warn"
+					},
+					"complexity": {
+						"noExcessiveCognitiveComplexity": "warn"
+					}
+				}
 			}
 		}
 	],

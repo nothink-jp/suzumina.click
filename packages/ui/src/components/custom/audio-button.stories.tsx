@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import type { FrontendAudioButtonData } from "@suzumina.click/shared-types";
+import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-types";
 import { fn } from "storybook/test";
 import { AudioButton } from "./audio-button";
 
@@ -15,27 +15,38 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const mockAudioButton: FrontendAudioButtonData = {
+const mockAudioButton: AudioButtonType = {
 	id: "1",
-	title: "おはよう！",
+	buttonText: "おはよう！",
 	description: "朝の挨拶音声",
 	tags: ["挨拶", "朝"],
-	sourceVideoId: "dQw4w9WgXcQ",
-	sourceVideoTitle: "涼花みなせ 朝配信 2024/06/26",
-	sourceVideoThumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+	videoId: "dQw4w9WgXcQ",
+	videoTitle: "涼花みなせ 朝配信 2024/06/26",
+	videoThumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
 	startTime: 120,
 	endTime: 123,
-	createdBy: "user123",
-	createdByName: "テストユーザー",
+	duration: 3,
+	creatorId: "user123",
+	creatorName: "テストユーザー",
 	isPublic: true,
-	playCount: 1234,
-	likeCount: 567,
-	dislikeCount: 0,
-	favoriteCount: 0,
+	stats: {
+		playCount: 1234,
+		likeCount: 567,
+		dislikeCount: 0,
+		favoriteCount: 0,
+		engagementRate: 0.46,
+	},
 	createdAt: "2024-06-26T00:00:00.000Z",
 	updatedAt: "2024-06-26T00:00:00.000Z",
-	durationText: "3秒",
-	relativeTimeText: "1日前",
+	_computed: {
+		isPopular: true,
+		engagementRate: 0.46,
+		engagementRatePercentage: 46,
+		popularityScore: 1801,
+		searchableText: "おはよう！ 朝の挨拶音声 挨拶 朝",
+		durationText: "3秒",
+		relativeTimeText: "1日前",
+	},
 };
 
 export const Default: Story = {
@@ -69,7 +80,7 @@ export const WithSearchHighlight: Story = {
 	args: {
 		audioButton: {
 			...mockAudioButton,
-			title: "おはよう！今日もがんばって",
+			buttonText: "おはよう！今日もがんばって",
 			description: "朝の挨拶音声です。がんばって",
 			tags: ["挨拶", "朝", "がんばって"],
 		},
@@ -83,7 +94,7 @@ export const LongTitle: Story = {
 	args: {
 		audioButton: {
 			...mockAudioButton,
-			title: "これはとても長いタイトルのボタンです。レイアウトがどうなるか確認しています。",
+			buttonText: "これはとても長いタイトルのボタンです。レイアウトがどうなるか確認しています。",
 		},
 		onPlay: fn(),
 		isAuthenticated: true,

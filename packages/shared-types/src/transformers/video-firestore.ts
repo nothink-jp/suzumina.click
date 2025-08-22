@@ -114,37 +114,41 @@ function parseDurationToSeconds(duration: string): number {
 }
 
 /**
+ * Determine video type based on live streaming details
+ */
+function determineVideoType(
+	video: FirestoreServerVideoData | VideoPlainObject,
+): VideoComputedProperties["videoType"] {
+	if (!video.liveStreamingDetails) {
+		return "normal";
+	}
+
+	if (video.liveStreamingDetails.actualEndTime) {
+		// Check if it's long enough to be a live stream archive
+		const duration = video.duration;
+		const durationSeconds = duration ? parseDurationToSeconds(duration) : 0;
+		return durationSeconds > 15 * 60 ? "archived" : "premiere";
+	}
+
+	if (video.liveStreamingDetails.scheduledStartTime) {
+		const scheduledTime =
+			video.liveStreamingDetails.scheduledStartTime instanceof Date
+				? video.liveStreamingDetails.scheduledStartTime
+				: new Date(video.liveStreamingDetails.scheduledStartTime as string);
+		return scheduledTime > new Date() ? "upcoming" : "live";
+	}
+
+	return "normal";
+}
+
+/**
  * Computes derived properties for a video
  */
 function computeProperties(
 	video: FirestoreServerVideoData | VideoPlainObject,
 ): VideoComputedProperties {
-	// Create a temporary object for operations
 	const temp = video as VideoPlainObject;
-
-	// Determine video type based on live streaming details and duration
-	let videoType: VideoComputedProperties["videoType"] = "normal";
-	if (video.liveStreamingDetails) {
-		if (video.liveStreamingDetails.actualEndTime) {
-			// Check if it's long enough to be a live stream archive
-			const duration = video.duration;
-			if (duration && parseDurationToSeconds(duration) > 15 * 60) {
-				videoType = "archived";
-			} else {
-				videoType = "premiere";
-			}
-		} else if (video.liveStreamingDetails.scheduledStartTime) {
-			const scheduledTime =
-				video.liveStreamingDetails.scheduledStartTime instanceof Date
-					? video.liveStreamingDetails.scheduledStartTime
-					: new Date(video.liveStreamingDetails.scheduledStartTime as string);
-			if (scheduledTime > new Date()) {
-				videoType = "upcoming";
-			} else {
-				videoType = "live";
-			}
-		}
-	}
+	const videoType = determineVideoType(video);
 
 	// Computed properties based on the determined video type
 	const isArchived = videoType === "archived";
