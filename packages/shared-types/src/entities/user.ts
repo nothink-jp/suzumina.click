@@ -240,7 +240,7 @@ export function createDiscordAvatarUrl(
 
 	if (!avatarHash) {
 		// デフォルトアバター (ユーザーIDベース)
-		const defaultAvatarIndex = Number.parseInt(userId) % 5;
+		const defaultAvatarIndex = Number.parseInt(userId, 10) % 5;
 		return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;
 	}
 

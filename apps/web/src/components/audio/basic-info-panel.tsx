@@ -25,6 +25,7 @@ export function BasicInfoPanel({
 	disabled = false,
 }: BasicInfoPanelProps) {
 	const titleId = useId();
+	const descriptionId = useId();
 
 	return (
 		<div className="bg-card border rounded-lg p-4 lg:p-6 shadow-sm">
@@ -49,11 +50,11 @@ export function BasicInfoPanel({
 
 				{/* 説明文入力 */}
 				<div className="space-y-2">
-					<label htmlFor="description-input" className="text-sm sm:text-base font-medium">
+					<label htmlFor={descriptionId} className="text-sm sm:text-base font-medium">
 						説明（任意）
 					</label>
 					<Textarea
-						id="description-input"
+						id={descriptionId}
 						value={description || ""}
 						onChange={(e) => onDescriptionChange(e.target.value)}
 						placeholder="音声ボタンの詳細説明を入力（任意）"

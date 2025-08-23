@@ -76,7 +76,9 @@ export function usePlayCount() {
 
 	// Cleanup function to clear all timeouts
 	const cleanup = useCallback(() => {
-		playTimeouts.current.forEach((timeout) => clearTimeout(timeout));
+		playTimeouts.current.forEach((timeout) => {
+			clearTimeout(timeout);
+		});
 		playTimeouts.current.clear();
 		playedInSession.current.clear();
 		pendingIncrements.current.clear();

@@ -28,7 +28,7 @@ import {
 	SlidersHorizontal,
 	X,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
 // Date range filter component
@@ -47,6 +47,13 @@ function DateRangeFilter({
 	setCustomDateFrom: (date: Date | undefined) => void;
 	setCustomDateTo: (date: Date | undefined) => void;
 }) {
+	// Generate unique IDs for radio buttons
+	const todayId = useId();
+	const thisWeekId = useId();
+	const thisMonthId = useId();
+	const last30DaysId = useId();
+	const customId = useId();
+
 	return (
 		<div className="space-y-3">
 			<Label className="text-sm font-semibold">作成日</Label>
@@ -55,32 +62,32 @@ function DateRangeFilter({
 				onValueChange={(value) => onDateRangeChange(value as DateRangePreset)}
 			>
 				<div className="flex items-center space-x-2">
-					<RadioGroupItem value="today" id="today" />
-					<Label htmlFor="today" className="font-normal cursor-pointer">
+					<RadioGroupItem value="today" id={todayId} />
+					<Label htmlFor={todayId} className="font-normal cursor-pointer">
 						今日
 					</Label>
 				</div>
 				<div className="flex items-center space-x-2">
-					<RadioGroupItem value="this_week" id="this_week" />
-					<Label htmlFor="this_week" className="font-normal cursor-pointer">
+					<RadioGroupItem value="this_week" id={thisWeekId} />
+					<Label htmlFor={thisWeekId} className="font-normal cursor-pointer">
 						今週
 					</Label>
 				</div>
 				<div className="flex items-center space-x-2">
-					<RadioGroupItem value="this_month" id="this_month" />
-					<Label htmlFor="this_month" className="font-normal cursor-pointer">
+					<RadioGroupItem value="this_month" id={thisMonthId} />
+					<Label htmlFor={thisMonthId} className="font-normal cursor-pointer">
 						今月
 					</Label>
 				</div>
 				<div className="flex items-center space-x-2">
-					<RadioGroupItem value="last_30_days" id="last_30_days" />
-					<Label htmlFor="last_30_days" className="font-normal cursor-pointer">
+					<RadioGroupItem value="last_30_days" id={last30DaysId} />
+					<Label htmlFor={last30DaysId} className="font-normal cursor-pointer">
 						過去30日
 					</Label>
 				</div>
 				<div className="flex items-center space-x-2">
-					<RadioGroupItem value="custom" id="custom" />
-					<Label htmlFor="custom" className="font-normal cursor-pointer">
+					<RadioGroupItem value="custom" id={customId} />
+					<Label htmlFor={customId} className="font-normal cursor-pointer">
 						カスタム
 					</Label>
 				</div>

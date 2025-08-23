@@ -165,7 +165,7 @@ function parseBasicSearchParams(params: URLSearchParams) {
 	return {
 		query: params.get("q") || "",
 		type: (params.get("type") as "all" | "buttons" | "videos" | "works") || "all",
-		limit: Number.parseInt(params.get("limit") || "12"),
+		limit: Number.parseInt(params.get("limit") || "12", 10),
 		sortBy: params.get("sortBy") || undefined,
 	};
 }

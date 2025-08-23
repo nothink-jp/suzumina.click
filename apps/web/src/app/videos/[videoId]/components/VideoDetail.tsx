@@ -91,9 +91,9 @@ const formatDuration = (duration?: string) => {
 	const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
 	if (!match) return null;
 
-	const hours = match[1] ? Number.parseInt(match[1]) : 0;
-	const minutes = match[2] ? Number.parseInt(match[2]) : 0;
-	const seconds = match[3] ? Number.parseInt(match[3]) : 0;
+	const hours = match[1] ? Number.parseInt(match[1], 10) : 0;
+	const minutes = match[2] ? Number.parseInt(match[2], 10) : 0;
+	const seconds = match[3] ? Number.parseInt(match[3], 10) : 0;
 
 	// 常にhh:mm:ssフォーマットで表示
 	return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
