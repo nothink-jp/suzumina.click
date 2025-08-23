@@ -1,7 +1,7 @@
 "use client";
 
-import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@suzumina.click/ui/lib/utils";
+import { Tabs as TabsPrimitive } from "radix-ui";
 import type * as React from "react";
 
 function Tabs({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Root>) {
