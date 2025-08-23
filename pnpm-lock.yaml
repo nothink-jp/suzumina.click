@@ -223,15 +223,9 @@ importers:
 
   packages/ui:
     dependencies:
-      '@hookform/resolvers':
-        specifier: ^5.2.1
-        version: 5.2.1(react-hook-form@7.62.0(react@19.1.1))
       '@suzumina.click/shared-types':
         specifier: workspace:*
         version: link:../shared-types
-      '@types/react-window':
-        specifier: ^1.8.8
-        version: 1.8.8
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -277,9 +271,6 @@ importers:
       react-resizable-panels:
         specifier: ^3.0.4
         version: 3.0.4(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      react-window:
-        specifier: ^1.8.11
-        version: 1.8.11(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       recharts:
         specifier: 3.1.2
         version: 3.1.2(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react-is@19.1.1)(react@19.1.1)(redux@5.0.1)
@@ -295,9 +286,6 @@ importers:
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      zod:
-        specifier: ^4.0.17
-        version: 4.0.17
     devDependencies:
       '@chromatic-com/storybook':
         specifier: ^4.1.1
