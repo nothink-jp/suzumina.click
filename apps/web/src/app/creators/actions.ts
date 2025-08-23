@@ -39,7 +39,9 @@ export async function getCreators(params: {
 			const allTypes = new Set<string>();
 			worksSnapshot.docs.forEach((workDoc) => {
 				const workRelation = workDoc.data() as CreatorWorkRelation;
-				workRelation.roles?.forEach((r) => allTypes.add(r));
+				workRelation.roles?.forEach((r) => {
+					allTypes.add(r);
+				});
 			});
 
 			// primaryRoleが設定されていて、typesに含まれていない場合は追加

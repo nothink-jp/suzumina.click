@@ -214,7 +214,9 @@ export async function getFavoritesStatus(
 		const statusMap = new Map<string, boolean>();
 
 		// 初期化
-		audioButtonIds.forEach((id) => statusMap.set(id, false));
+		audioButtonIds.forEach((id) => {
+			statusMap.set(id, false);
+		});
 
 		if (audioButtonIds.length === 0) {
 			return statusMap;
@@ -248,7 +250,9 @@ export async function getFavoritesStatus(
 		handleFirestoreError("getFavoritesStatus", { userId, audioButtonIds }, error);
 		// エラー時は全てfalseを返す
 		const statusMap = new Map<string, boolean>();
-		audioButtonIds.forEach((id) => statusMap.set(id, false));
+		audioButtonIds.forEach((id) => {
+			statusMap.set(id, false);
+		});
 		return statusMap;
 	}
 }

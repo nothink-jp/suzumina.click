@@ -91,7 +91,9 @@ export async function getCreatorInfo(creatorId: string): Promise<CreatorPageInfo
 		const allTypes = new Set<string>();
 		worksSnapshot.docs.forEach((doc) => {
 			const workRelation = doc.data() as CreatorWorkRelation;
-			workRelation.roles?.forEach((role) => allTypes.add(role));
+			workRelation.roles?.forEach((role) => {
+				allTypes.add(role);
+			});
 		});
 
 		// クリエイター情報の集約

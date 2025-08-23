@@ -1,7 +1,7 @@
 "use client";
 
 import type { PriceHistoryDocument } from "@suzumina.click/shared-types";
-import { useState } from "react";
+import { useId, useState } from "react";
 import useSWR from "swr";
 import { getRecentPriceHistory } from "@/actions/price-history";
 import { error as logError } from "@/lib/logger";
@@ -35,6 +35,7 @@ async function fetchPriceHistory(workId: string): Promise<PriceHistoryDocument[]
 
 export function PriceHistory({ workId, className = "" }: PriceHistoryProps) {
 	const [selectedCurrency, setSelectedCurrency] = useState<CurrencyOption>("JPY");
+	const currencySelectId = useId();
 
 	const {
 		data: priceHistory,
@@ -93,11 +94,11 @@ export function PriceHistory({ workId, className = "" }: PriceHistoryProps) {
 		<div className={`space-y-6 ${className}`}>
 			{/* コントロールパネル */}
 			<div className="flex items-center gap-2">
-				<label htmlFor="currency-select" className="text-sm font-medium text-gray-700">
+				<label htmlFor={currencySelectId} className="text-sm font-medium text-gray-700">
 					通貨:
 				</label>
 				<select
-					id="currency-select"
+					id={currencySelectId}
 					value={selectedCurrency}
 					onChange={(e) => setSelectedCurrency(e.target.value as CurrencyOption)}
 					className="rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"

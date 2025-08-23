@@ -16,6 +16,7 @@ vi.mock("../../../shared/logger", () => ({
 	debug: vi.fn(),
 }));
 
+// biome-ignore lint/suspicious/noSkippedTests: Entity tests need migration to PlainObject
 describe.skip("Video Mapper V2 (Entity tests - needs migration to PlainObject)", () => {
 	// Sample YouTube API response
 	const createYouTubeVideo = (

@@ -47,6 +47,7 @@ import firestore from "../../../infrastructure/database/firestore";
 import * as logger from "../../../shared/logger";
 import { VideoMapper } from "../../mappers/video-mapper";
 
+// biome-ignore lint/suspicious/noSkippedTests: Entity tests need migration to PlainObject
 describe.skip("YouTube Firestore  Service (Entity tests - needs migration to PlainObject)", () => {
 	let mockBatches: any[];
 	let mockCollection: any;

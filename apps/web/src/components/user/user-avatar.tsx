@@ -19,7 +19,7 @@ export default function UserAvatar({
 	className = "",
 }: UserAvatarProps) {
 	const avatarUrl = createDiscordAvatarUrl(discordId, avatar, size);
-	const fallbackUrl = `https://cdn.discordapp.com/embed/avatars/${Number.parseInt(discordId) % 5}.png`;
+	const fallbackUrl = `https://cdn.discordapp.com/embed/avatars/${Number.parseInt(discordId, 10) % 5}.png`;
 
 	return (
 		<Image

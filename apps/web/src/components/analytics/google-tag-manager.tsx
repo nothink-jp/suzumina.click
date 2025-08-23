@@ -14,6 +14,7 @@ export function GoogleTagManager() {
 	return (
 		<>
 			{/* Google Tag Manager Script */}
+			{/* biome-ignore lint/correctness/useUniqueElementIds: Google Tag Manager script needs consistent ID for singleton behavior */}
 			<Script
 				id="google-tag-manager"
 				strategy="afterInteractive"

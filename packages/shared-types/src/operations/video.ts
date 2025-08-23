@@ -175,17 +175,23 @@ export function getAllTags(video: VideoPlainObject): string[] {
 
 	// Add playlist tags
 	if (video.tags?.playlistTags) {
-		video.tags.playlistTags.forEach((tag) => tags.add(tag));
+		video.tags.playlistTags.forEach((tag) => {
+			tags.add(tag);
+		});
 	}
 
 	// Add user tags
 	if (video.tags?.userTags) {
-		video.tags.userTags.forEach((tag) => tags.add(tag));
+		video.tags.userTags.forEach((tag) => {
+			tags.add(tag);
+		});
 	}
 
 	// Add content tags from YouTube
 	if (video.tags?.contentTags) {
-		video.tags.contentTags.forEach((tag) => tags.add(tag));
+		video.tags.contentTags.forEach((tag) => {
+			tags.add(tag);
+		});
 	}
 
 	return Array.from(tags);

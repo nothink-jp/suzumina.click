@@ -111,7 +111,9 @@ export async function getFavoritesStatusAction(
 		if (!session?.user?.discordId) {
 			// 未ログイン時は全てfalseを返す
 			const statusMap = new Map<string, boolean>();
-			audioButtonIds.forEach((id) => statusMap.set(id, false));
+			audioButtonIds.forEach((id) => {
+				statusMap.set(id, false);
+			});
 			return statusMap;
 		}
 
@@ -119,7 +121,9 @@ export async function getFavoritesStatusAction(
 	} catch (_error) {
 		// エラー時は全てfalseを返す
 		const statusMap = new Map<string, boolean>();
-		audioButtonIds.forEach((id) => statusMap.set(id, false));
+		audioButtonIds.forEach((id) => {
+			statusMap.set(id, false);
+		});
 		return statusMap;
 	}
 }

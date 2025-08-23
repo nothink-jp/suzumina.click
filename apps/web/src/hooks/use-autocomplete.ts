@@ -66,7 +66,9 @@ export function useAutocomplete(
 				const oldEntries = Array.from(cache.entries()).filter(
 					([, value]) => now - value.timestamp > CACHE_TTL,
 				);
-				oldEntries.forEach(([key]) => cache.delete(key));
+				oldEntries.forEach(([key]) => {
+					cache.delete(key);
+				});
 			}
 		},
 		[maxSuggestions],

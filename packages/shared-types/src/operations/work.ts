@@ -123,8 +123,12 @@ export function getAllTags(work: WorkPlainObject): string[] {
 	const tags = new Set<string>();
 
 	// Add genres
-	work.genres.forEach((genre) => tags.add(genre));
-	work.customGenres.forEach((genre) => tags.add(genre));
+	work.genres.forEach((genre) => {
+		tags.add(genre);
+	});
+	work.customGenres.forEach((genre) => {
+		tags.add(genre);
+	});
 
 	// Add category tags
 	if (isVoiceWork(work)) tags.add("音声作品");
