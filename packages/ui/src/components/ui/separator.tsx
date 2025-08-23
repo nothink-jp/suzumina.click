@@ -1,7 +1,7 @@
 "use client";
 
-import * as SeparatorPrimitive from "@radix-ui/react-separator";
 import { cn } from "@suzumina.click/ui/lib/utils";
+import { Separator as SeparatorPrimitive } from "radix-ui";
 import type * as React from "react";
 
 function Separator({

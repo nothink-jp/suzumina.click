@@ -11,7 +11,7 @@ import { Input } from "@suzumina.click/ui/components/ui/input";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Hash, Plus, X } from "lucide-react";
 import type * as React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 export interface TagSuggestion {
 	/** 候補のID */
@@ -82,6 +82,7 @@ export function TagInput({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const suggestionsRef = useRef<HTMLDivElement>(null);
 	const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const errorId = useId();
 
 	/**
 	 * タグを追加する
@@ -438,7 +439,7 @@ export function TagInput({
 
 			{/* エラーメッセージ */}
 			{error && (
-				<p id="tag-input-error" className="text-sm text-destructive">
+				<p id={errorId} className="text-sm text-destructive">
 					{error}
 				</p>
 			)}
