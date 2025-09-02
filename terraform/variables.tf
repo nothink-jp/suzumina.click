@@ -47,9 +47,9 @@ variable "environment" {
   description = "環境名（staging, production）"
   type        = string
   default     = "staging"
-  
+
   validation {
-    condition = contains(["staging", "production"], var.environment)
+    condition     = contains(["staging", "production"], var.environment)
     error_message = "環境は staging または production である必要があります。"
   }
 }
@@ -62,9 +62,9 @@ variable "custom_domain" {
   description = "Cloud Runにマッピングするカスタムドメイン（空文字列の場合はマッピングしない）"
   type        = string
   default     = ""
-  
+
   validation {
-    condition = var.custom_domain == "" || can(regex("^[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]*\\.[a-zA-Z]{2,}$", var.custom_domain))
+    condition     = var.custom_domain == "" || can(regex("^[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]*\\.[a-zA-Z]{2,}$", var.custom_domain))
     error_message = "custom_domain は有効なドメイン名である必要があります。"
   }
 }
@@ -96,7 +96,7 @@ variable "admin_email" {
 variable "budget_amount" {
   description = "月次予算アラートの金額（USD）"
   type        = number
-  default     = 50  # 約5000円相当（個人開発向け）
+  default     = 50 # 約5000円相当（個人開発向け）
 }
 
 variable "budget_threshold_percent" {
@@ -122,7 +122,7 @@ variable "enable_detailed_scraping" {
 variable "discord_client_id" {
   description = "Discord OAuth Application Client ID"
   type        = string
-  sensitive   = false  # Client IDは公開情報のためsensitiveではない
+  sensitive   = false # Client IDは公開情報のためsensitiveではない
 }
 
 variable "discord_client_secret" {
@@ -142,7 +142,7 @@ variable "suzumina_guild_id" {
   description = "すずみなふぁみりー Discord Guild ID"
   type        = string
   default     = "959095494456537158"
-  sensitive   = false  # Guild IDは公開情報
+  sensitive   = false # Guild IDは公開情報
 }
 
 # ==========================================================
@@ -169,14 +169,14 @@ variable "google_analytics_measurement_id" {
   description = "Google Analytics 4 Measurement ID"
   type        = string
   default     = "G-9SYZ48LBPH"
-  sensitive   = false  # Measurement IDは公開情報
+  sensitive   = false # Measurement IDは公開情報
 }
 
 variable "google_tag_manager_id" {
   description = "Google Tag Manager Container ID"
   type        = string
   default     = "GTM-W7QT5PCR"
-  sensitive   = false  # GTM IDは公開情報
+  sensitive   = false # GTM IDは公開情報
 }
 
 

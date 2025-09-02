@@ -10,15 +10,15 @@ locals {
   dlsite_individual_api_function_name = "fetchDLsiteUnifiedData"
   dlsite_individual_api_runtime       = "nodejs22"
   dlsite_individual_api_entry_point   = "fetchDLsiteUnifiedData"
-  dlsite_individual_api_memory        = "512Mi"  # Memory increased due to 260 MiB usage
-  dlsite_individual_api_timeout       = 300    # 5分タイムアウト（API集約処理最適化）
+  dlsite_individual_api_memory        = "512Mi" # Memory increased due to 260 MiB usage
+  dlsite_individual_api_timeout       = 300     # 5分タイムアウト（API集約処理最適化）
 }
 
 # Individual Info API専用作品取得関数（Gen2）
 # GitHub Actionsと連携してデプロイされる統合データ収集システム
 resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
   # 100% API-Only アーキテクチャを有効化
-  
+
   project  = var.gcp_project_id
   name     = local.dlsite_individual_api_function_name
   location = var.region
@@ -39,32 +39,32 @@ resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
 
   # サービス設定
   service_config {
-    max_instance_count = 1       # リソース削減のため1に制限
-    min_instance_count = 0       # コールドスタートを許容
+    max_instance_count = 1 # リソース削減のため1に制限
+    min_instance_count = 0 # コールドスタートを許容
     available_memory   = local.dlsite_individual_api_memory
     timeout_seconds    = local.dlsite_individual_api_timeout
-    
+
     # 専用のサービスアカウントを使用
     service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
 
     # Individual Info API処理用環境変数
     environment_variables = {
       FUNCTION_SIGNATURE_TYPE = "cloudevent"
-      FUNCTION_TARGET        = local.dlsite_individual_api_entry_point
-      
+      FUNCTION_TARGET         = local.dlsite_individual_api_entry_point
+
       # Individual Info API設定
       INDIVIDUAL_INFO_API_ENABLED = "true"
-      API_ONLY_MODE              = "true"
+      API_ONLY_MODE               = "true"
       MAX_CONCURRENT_API_REQUESTS = "5"
-      API_REQUEST_DELAY_MS       = "500"
-      
+      API_REQUEST_DELAY_MS        = "500"
+
       # データ品質設定
       ENABLE_DATA_VALIDATION = "true"
       MINIMUM_QUALITY_SCORE  = "80"
-      
+
       # 時系列データ統合
       ENABLE_TIMESERIES_INTEGRATION = "true"
-      
+
       # ログレベル
       LOG_LEVEL = "info"
     }
@@ -72,10 +72,10 @@ resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
 
   # Pub/Subトリガー設定
   event_trigger {
-    trigger_region = var.region
-    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.dlsite_individual_api_trigger.id
-    retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
+    trigger_region        = var.region
+    event_type            = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic          = google_pubsub_topic.dlsite_individual_api_trigger.id
+    retry_policy          = "RETRY_POLICY_DO_NOT_RETRY"
     service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
   }
 
@@ -102,12 +102,12 @@ resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
 resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
   project = var.gcp_project_id
   name    = "dlsite-individual-api-trigger"
-  
+
   labels = {
-    environment    = var.environment
-    function       = "dlsite-individual-api"
-    api-only       = "true"
-    managed-by     = "terraform"
+    environment = var.environment
+    function    = "dlsite-individual-api"
+    api-only    = "true"
+    managed-by  = "terraform"
   }
 
   depends_on = [google_project_service.pubsub]
@@ -116,20 +116,20 @@ resource "google_pubsub_topic" "dlsite_individual_api_trigger" {
 # Individual Info API専用のCloud Scheduler（2時間ごと実行）
 # 注: リソース名は互換性のため "hourly" のままだが、実際は2時間ごとに実行
 resource "google_cloud_scheduler_job" "fetch_dlsite_individual_api_hourly" {
-  project  = var.gcp_project_id
-  region   = var.region
-  name     = "fetch-dlsite-individual-api-hourly"  # 名前は互換性のため変更しない
-  
+  project = var.gcp_project_id
+  region  = var.region
+  name    = "fetch-dlsite-individual-api-hourly" # 名前は互換性のため変更しない
+
   description = "Individual Info API専用データ更新（2時間間隔・取得漏れ防止のため3分後実行）"
-  schedule    = "3 */2 * * *"  # 2時間ごとの3分に実行（0:03, 2:03, 4:03...）
+  schedule    = "3 */2 * * *" # 2時間ごとの3分に実行（0:03, 2:03, 4:03...）
   time_zone   = "Asia/Tokyo"
   paused      = false
 
   pubsub_target {
     topic_name = google_pubsub_topic.dlsite_individual_api_trigger.id
-    data       = base64encode(jsonencode({
-      type = "unified_update"
-      mode = "individual_info_api_unified"
+    data = base64encode(jsonencode({
+      type        = "unified_update"
+      mode        = "individual_info_api_unified"
       description = "統合アーキテクチャによる基本データ+時系列データ収集"
     }))
   }

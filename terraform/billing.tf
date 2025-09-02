@@ -61,7 +61,7 @@
 # 予算アラート用のPub/Subトピック
 resource "google_pubsub_topic" "budget_alerts" {
   name = "${local.resource_prefix}-budget-alerts"
-  
+
   labels = local.common_labels
 }
 
@@ -75,7 +75,7 @@ resource "google_pubsub_subscription" "budget_alerts_subscription" {
 
   # 未配信メッセージの保持期間
   retain_acked_messages = false
-  
+
   labels = local.common_labels
 }
 
@@ -87,7 +87,7 @@ data "google_project" "current" {
 # コスト使用量の監視ダッシュボード（オプション）
 resource "google_monitoring_dashboard" "cost_overview" {
   count = local.current_env.enable_monitoring ? 1 : 0
-  
+
   dashboard_json = jsonencode({
     displayName = "${var.gcp_project_id} コスト概要ダッシュボード"
     mosaicLayout = {

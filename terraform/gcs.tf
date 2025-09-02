@@ -6,9 +6,9 @@
 
 # Terraformのstateファイルを保存するためのGCSバケット
 resource "google_storage_bucket" "tfstate" {
-  project      = var.gcp_project_id
-  name         = "suzumina-click-tfstate"
-  location     = var.region
+  project       = var.gcp_project_id
+  name          = "suzumina-click-tfstate"
+  location      = var.region
   storage_class = "STANDARD"
   force_destroy = false # 本番環境ではtrueにしない
 

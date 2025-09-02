@@ -7,7 +7,7 @@
 resource "google_logging_project_sink" "application_logs" {
   name        = "suzumina-click-application-logs"
   destination = "storage.googleapis.com/${google_storage_bucket.log_storage.name}"
-  
+
   # Cloud Runとフロントエンドのログをフィルタリング
   filter = <<-EOT
     (resource.type="cloud_run_revision" AND resource.labels.service_name="suzumina-click-web")
@@ -25,7 +25,7 @@ resource "google_logging_project_sink" "application_logs" {
 resource "google_storage_bucket" "log_storage" {
   name     = "${local.project_id}applicationlogs"
   location = var.region
-  
+
   # ライフサイクル管理（90日後に削除）
   lifecycle_rule {
     condition {
@@ -35,7 +35,7 @@ resource "google_storage_bucket" "log_storage" {
       type = "Delete"
     }
   }
-  
+
   # 暗号化設定
   encryption {
     default_kms_key_name = google_kms_crypto_key.log_encryption_key.id
@@ -53,7 +53,7 @@ resource "google_kms_key_ring" "log_key_ring" {
 resource "google_kms_crypto_key" "log_encryption_key" {
   name     = "log-encryption-key"
   key_ring = google_kms_key_ring.log_key_ring.id
-  
+
   # キーローテーション（90日ごと）
   rotation_period = "7776000s" # 90日
 }
@@ -69,7 +69,7 @@ resource "google_kms_crypto_key_iam_member" "cloud_storage_kms" {
 resource "google_storage_bucket_iam_binding" "log_storage_writer" {
   bucket = google_storage_bucket.log_storage.name
   role   = "roles/storage.objectCreator"
-  
+
   members = [
     google_logging_project_sink.application_logs.writer_identity
   ]

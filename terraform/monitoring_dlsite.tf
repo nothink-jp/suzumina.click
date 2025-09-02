@@ -4,16 +4,16 @@
 resource "google_logging_metric" "dlsite_error_count" {
   name    = "dlsite_function_errors"
   project = var.gcp_project_id
-  
+
   filter = <<-EOT
     resource.type="cloud_function"
     resource.labels.function_name="fetchDLsiteUnifiedData"
     severity >= "ERROR"
   EOT
-  
+
   metric_descriptor {
-    metric_kind = "DELTA"
-    value_type  = "INT64"
+    metric_kind  = "DELTA"
+    value_type   = "INT64"
     display_name = "DLsite Function Errors"
   }
 }
@@ -23,30 +23,30 @@ resource "google_monitoring_alert_policy" "dlsite_function_error" {
   display_name = "DLsite Function Error Alert"
   project      = var.gcp_project_id
   combiner     = "OR"
-  
+
   conditions {
     display_name = "DLsite関数でエラーログ検出"
-    
+
     condition_threshold {
       filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_error_count.id}\" resource.type=\"cloud_function\""
-      
+
       aggregations {
         alignment_period   = "60s"
         per_series_aligner = "ALIGN_RATE"
       }
-      
+
       comparison      = "COMPARISON_GT"
       threshold_value = 0
       duration        = "60s"
     }
   }
-  
+
   notification_channels = [
     google_monitoring_notification_channel.email.name
   ]
-  
+
   documentation {
-    content = <<-EOT
+    content   = <<-EOT
     # DLsite Individual Info API データ取得エラー
     
     DLsite Individual Info APIからのデータ取得でエラーが発生しました。
@@ -64,7 +64,7 @@ resource "google_monitoring_alert_policy" "dlsite_function_error" {
     EOT
     mime_type = "text/markdown"
   }
-  
+
   depends_on = [
     google_monitoring_notification_channel.email,
     google_logging_metric.dlsite_error_count
@@ -75,16 +75,16 @@ resource "google_monitoring_alert_policy" "dlsite_function_error" {
 resource "google_logging_metric" "dlsite_no_data" {
   name    = "dlsite_no_data_fetched"
   project = var.gcp_project_id
-  
+
   filter = <<-EOT
     resource.type="cloud_function"
     resource.labels.function_name="fetchDLsiteUnifiedData"
     jsonPayload.message:"取得した作品数: 0件"
   EOT
-  
+
   metric_descriptor {
-    metric_kind = "DELTA"
-    value_type  = "INT64"
+    metric_kind  = "DELTA"
+    value_type   = "INT64"
     display_name = "DLsite No Data Fetched"
   }
 }
@@ -94,30 +94,30 @@ resource "google_monitoring_alert_policy" "dlsite_no_data_fetched" {
   display_name = "DLsite No Data Fetched Alert"
   project      = var.gcp_project_id
   combiner     = "OR"
-  
+
   conditions {
     display_name = "作品数0件を検出"
-    
+
     condition_threshold {
       filter = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.dlsite_no_data.id}\" resource.type=\"cloud_function\""
-      
+
       aggregations {
         alignment_period   = "300s"
         per_series_aligner = "ALIGN_RATE"
       }
-      
+
       comparison      = "COMPARISON_GT"
       threshold_value = 0
       duration        = "60s"
     }
   }
-  
+
   notification_channels = [
     google_monitoring_notification_channel.email.name
   ]
-  
+
   documentation {
-    content = <<-EOT
+    content   = <<-EOT
     # DLsiteデータ取得0件
     
     DLsite関数が実行されましたが、作品データが1件も取得できませんでした。
@@ -133,7 +133,7 @@ resource "google_monitoring_alert_policy" "dlsite_no_data_fetched" {
     EOT
     mime_type = "text/markdown"
   }
-  
+
   depends_on = [
     google_monitoring_notification_channel.email,
     google_logging_metric.dlsite_no_data
@@ -145,10 +145,10 @@ resource "google_monitoring_alert_policy" "dlsite_function_failure" {
   display_name = "DLsite Function Execution Failure"
   project      = var.gcp_project_id
   combiner     = "OR"
-  
+
   conditions {
     display_name = "関数実行の失敗"
-    
+
     condition_threshold {
       filter = <<-EOT
         resource.type="cloud_function"
@@ -156,24 +156,24 @@ resource "google_monitoring_alert_policy" "dlsite_function_failure" {
         metric.type="cloudfunctions.googleapis.com/function/execution_count"
         metric.labels.status!="ok"
       EOT
-      
+
       aggregations {
         alignment_period   = "60s"
         per_series_aligner = "ALIGN_RATE"
       }
-      
+
       comparison      = "COMPARISON_GT"
       threshold_value = 0
       duration        = "60s"
     }
   }
-  
+
   notification_channels = [
     google_monitoring_notification_channel.email.name
   ]
-  
+
   documentation {
-    content = <<-EOT
+    content   = <<-EOT
     # DLsite関数の実行失敗
     
     fetchDLsiteUnifiedData関数の実行が失敗しました。
@@ -186,6 +186,6 @@ resource "google_monitoring_alert_policy" "dlsite_function_failure" {
     EOT
     mime_type = "text/markdown"
   }
-  
+
   depends_on = [google_monitoring_notification_channel.email]
 }

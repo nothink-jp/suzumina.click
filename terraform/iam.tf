@@ -31,11 +31,11 @@ resource "google_service_account" "cloud_functions_deployer_sa" {
 resource "google_service_account_iam_binding" "cloud_functions_sa_binding" {
   service_account_id = google_service_account.cloud_functions_deployer_sa.name
   role               = "roles/iam.workloadIdentityUser"
-  
+
   members = [
     "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/nothink-jp/suzumina.click"
   ]
-  
+
   depends_on = [
     google_service_account.cloud_functions_deployer_sa,
     google_iam_workload_identity_pool.github_pool
@@ -48,7 +48,7 @@ resource "google_project_iam_member" "cloud_functions_deployer_developer" {
   project = var.gcp_project_id
   role    = "roles/cloudfunctions.developer"
   member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
-  
+
   depends_on = [google_service_account.cloud_functions_deployer_sa]
 }
 
@@ -57,7 +57,7 @@ resource "google_project_iam_member" "cloud_functions_deployer_log_writer" {
   project = var.gcp_project_id
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
-  
+
   depends_on = [google_service_account.cloud_functions_deployer_sa]
 }
 
@@ -66,7 +66,7 @@ resource "google_project_iam_member" "cloud_functions_deployer_sa_user" {
   project = var.gcp_project_id
   role    = "roles/iam.serviceAccountUser"
   member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
-  
+
   depends_on = [google_service_account.cloud_functions_deployer_sa]
 }
 
@@ -75,7 +75,7 @@ resource "google_project_iam_member" "cloud_functions_deployer_cloudbuild_builde
   project = var.gcp_project_id
   role    = "roles/cloudbuild.builds.builder"
   member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
-  
+
   depends_on = [data.google_project.project]
 }
 
@@ -84,7 +84,7 @@ resource "google_project_iam_member" "cloud_functions_deployer_viewer" {
   project = var.gcp_project_id
   role    = "roles/viewer"
   member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
-  
+
   depends_on = [google_service_account.cloud_functions_deployer_sa]
 }
 
@@ -93,7 +93,7 @@ resource "google_project_iam_member" "cloud_functions_deployer_storage_admin" {
   project = var.gcp_project_id
   role    = "roles/storage.admin"
   member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
-  
+
   depends_on = [google_service_account.cloud_functions_deployer_sa]
 }
 
@@ -102,7 +102,7 @@ resource "google_project_iam_member" "cloud_functions_deployer_iam_admin" {
   project = var.gcp_project_id
   role    = "roles/resourcemanager.projectIamAdmin"
   member  = "serviceAccount:${google_service_account.cloud_functions_deployer_sa.email}"
-  
+
   depends_on = [google_service_account.cloud_functions_deployer_sa]
 }
 
@@ -110,9 +110,9 @@ resource "google_project_iam_member" "cloud_functions_deployer_iam_admin" {
 resource "google_iam_workload_identity_pool" "github_pool" {
   project                   = var.gcp_project_id
   workload_identity_pool_id = "github-pool"
-  display_name              = "GitHub Actions ID Pool"  # 表示名を短く変更
+  display_name              = "GitHub Actions ID Pool" # 表示名を短く変更
   description               = "GitHubからの認証用のID Pool"
-  
+
   # 初回作成後に保護設定を有効化する
   # lifecycle {
   #   prevent_destroy = true
@@ -129,17 +129,17 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
   workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-provider"
   display_name                       = "GitHub Actions Provider"
-  
+
   attribute_mapping = {
     "google.subject"       = "assertion.sub"
     "attribute.actor"      = "assertion.actor"
     "attribute.repository" = "assertion.repository"
     "attribute.ref"        = "assertion.ref"
   }
-  
+
   # GitHub Actionsからの認証時に検証する条件を追加
   attribute_condition = "attribute.repository == \"nothink-jp/suzumina.click\""
-  
+
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
@@ -149,11 +149,11 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
 resource "google_service_account_iam_binding" "github_sa_binding" {
   service_account_id = google_service_account.github_actions_sa.name
   role               = "roles/iam.workloadIdentityUser"
-  
+
   members = [
     "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/nothink-jp/suzumina.click"
   ]
-  
+
   depends_on = [
     google_service_account.github_actions_sa,
     google_iam_workload_identity_pool.github_pool
@@ -165,7 +165,7 @@ resource "google_project_iam_member" "github_actions_cloudbuild_invoker" {
   project = var.gcp_project_id
   role    = "roles/cloudbuild.builds.editor"
   member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
-  
+
   depends_on = [google_service_account.github_actions_sa]
 }
 
@@ -174,7 +174,7 @@ resource "google_project_iam_member" "github_actions_log_viewer" {
   project = var.gcp_project_id
   role    = "roles/logging.viewer"
   member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
-  
+
   depends_on = [google_service_account.github_actions_sa]
 }
 
@@ -183,7 +183,7 @@ resource "google_project_iam_member" "github_actions_run_developer" {
   project = var.gcp_project_id
   role    = "roles/run.developer"
   member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
-  
+
   depends_on = [google_service_account.github_actions_sa]
 }
 
@@ -193,16 +193,16 @@ resource "google_project_iam_custom_role" "github_actions_artifact_registry_role
   role_id     = "githubActionsArtifactRegistryManager"
   title       = "GitHub Actions Artifact Registry Manager"
   description = "Custom role for GitHub Actions to manage Artifact Registry images with cleanup permissions"
-  
+
   permissions = [
     "artifactregistry.repositories.get",
-    "artifactregistry.repositories.list", 
+    "artifactregistry.repositories.list",
     "artifactregistry.packages.get",
     "artifactregistry.packages.list",
-    "artifactregistry.packages.delete",  # Dockerイメージ削除に必要
+    "artifactregistry.packages.delete", # Dockerイメージ削除に必要
     "artifactregistry.versions.get",
     "artifactregistry.versions.list",
-    "artifactregistry.versions.delete",  # クリーンアップに必要
+    "artifactregistry.versions.delete", # クリーンアップに必要
     "artifactregistry.tags.create",
     "artifactregistry.tags.update",
     "artifactregistry.tags.get",
@@ -215,7 +215,7 @@ resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
   project = var.gcp_project_id
   role    = "roles/artifactregistry.writer"
   member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
-  
+
   depends_on = [google_service_account.github_actions_sa]
 }
 
@@ -224,7 +224,7 @@ resource "google_project_iam_member" "github_actions_artifact_registry_manager" 
   project = var.gcp_project_id
   role    = google_project_iam_custom_role.github_actions_artifact_registry_role.name
   member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
-  
+
   depends_on = [
     google_service_account.github_actions_sa,
     google_project_iam_custom_role.github_actions_artifact_registry_role
@@ -236,7 +236,7 @@ resource "google_project_iam_member" "github_actions_service_account_user" {
   project = var.gcp_project_id
   role    = "roles/iam.serviceAccountUser"
   member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
-  
+
   depends_on = [google_service_account.github_actions_sa]
 }
 
@@ -246,7 +246,7 @@ resource "google_project_iam_member" "github_actions_run_admin" {
   project = var.gcp_project_id
   role    = "roles/run.admin"
   member  = "serviceAccount:${google_service_account.github_actions_sa.email}"
-  
+
   depends_on = [google_service_account.github_actions_sa]
 }
 
@@ -350,7 +350,7 @@ resource "google_pubsub_topic_iam_member" "scheduler_pubsub_publisher" {
   topic   = google_pubsub_topic.youtube_video_fetch_trigger.name
   role    = "roles/pubsub.publisher"
   # データソースからプロジェクト番号を使用してサービスエージェントのメールアドレスを構築
-  member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
+  member = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
 
   depends_on = [
     google_pubsub_topic.youtube_video_fetch_trigger,

@@ -25,12 +25,12 @@
 resource "google_firestore_index" "videos_liveBroadcast_publishedAt_desc" {
   project    = var.gcp_project_id
   collection = "videos"
-  
+
   fields {
     field_path = "liveBroadcastContent"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "publishedAt"
     order      = "DESCENDING"
@@ -41,12 +41,12 @@ resource "google_firestore_index" "videos_liveBroadcast_publishedAt_desc" {
 resource "google_firestore_index" "videos_liveBroadcast_publishedAt_asc" {
   project    = var.gcp_project_id
   collection = "videos"
-  
+
   fields {
     field_path = "liveBroadcastContent"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "publishedAt"
     order      = "ASCENDING"
@@ -62,12 +62,12 @@ resource "google_firestore_index" "videos_liveBroadcast_publishedAt_asc" {
 resource "google_firestore_index" "audiobuttons_ispublic_createdat_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
-  
+
   fields {
     field_path = "isPublic"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "createdAt"
     order      = "DESCENDING"
@@ -185,17 +185,17 @@ resource "google_firestore_index" "audiobuttons_ispublic_createdat_desc" {
 resource "google_firestore_index" "audiobuttons_tags_ispublic_createdat_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
-  
+
   fields {
     field_path   = "tags"
     array_config = "CONTAINS"
   }
-  
+
   fields {
     field_path = "isPublic"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "createdAt"
     order      = "DESCENDING"
@@ -228,12 +228,12 @@ resource "google_firestore_index" "audiobuttons_tags_ispublic_createdat_desc" {
 resource "google_firestore_index" "users_ispublicprofile_createdat_desc" {
   project    = var.gcp_project_id
   collection = "users"
-  
+
   fields {
     field_path = "isPublicProfile"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "createdAt"
     order      = "DESCENDING"
@@ -244,17 +244,17 @@ resource "google_firestore_index" "users_ispublicprofile_createdat_desc" {
 resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" {
   project    = var.gcp_project_id
   collection = "users"
-  
+
   fields {
     field_path = "isPublicProfile"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "role"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "lastLoginAt"
     order      = "DESCENDING"
@@ -283,12 +283,12 @@ resource "google_firestore_index" "users_ispublicprofile_role_lastloginat_desc" 
 resource "google_firestore_index" "videos_categoryid_publishedat_desc" {
   project    = var.gcp_project_id
   collection = "videos"
-  
+
   fields {
     field_path = "categoryId"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "publishedAt"
     order      = "DESCENDING"
@@ -299,12 +299,12 @@ resource "google_firestore_index" "videos_categoryid_publishedat_desc" {
 resource "google_firestore_index" "videos_categoryid_publishedat_asc" {
   project    = var.gcp_project_id
   collection = "videos"
-  
+
   fields {
     field_path = "categoryId"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "publishedAt"
     order      = "ASCENDING"
@@ -347,17 +347,17 @@ resource "google_firestore_index" "videos_categoryid_publishedat_asc" {
 resource "google_firestore_index" "contacts_status_createdat_desc" {
   project    = var.gcp_project_id
   collection = "contacts"
-  
+
   fields {
     field_path = "status"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "createdAt"
     order      = "DESCENDING"
   }
-  
+
   fields {
     field_path = "__name__"
     order      = "DESCENDING"
@@ -368,17 +368,17 @@ resource "google_firestore_index" "contacts_status_createdat_desc" {
 resource "google_firestore_index" "contacts_priority_createdat_desc" {
   project    = var.gcp_project_id
   collection = "contacts"
-  
+
   fields {
     field_path = "priority"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "createdAt"
     order      = "DESCENDING"
   }
-  
+
   fields {
     field_path = "__name__"
     order      = "DESCENDING"
@@ -421,12 +421,12 @@ resource "google_firestore_index" "contacts_priority_createdat_desc" {
 resource "google_firestore_index" "circles_name_workcount_desc" {
   project    = var.gcp_project_id
   collection = "circles"
-  
+
   fields {
     field_path = "name"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "workCount"
     order      = "DESCENDING"
@@ -464,14 +464,14 @@ resource "google_firestore_index" "creators_works_collection_group_circleid" {
   project    = var.gcp_project_id
   collection = "works"
   database   = "(default)"
-  
+
   query_scope = "COLLECTION_GROUP"
-  
+
   fields {
     field_path = "circleId"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "updatedAt"
     order      = "DESCENDING"
@@ -483,12 +483,12 @@ resource "google_firestore_index" "creators_works_collection_group_circleid" {
 resource "google_firestore_index" "works_circleid_registdate_desc" {
   project    = var.gcp_project_id
   collection = "works"
-  
+
   fields {
     field_path = "circleId"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "registDate"
     order      = "DESCENDING"
@@ -503,12 +503,12 @@ resource "google_firestore_index" "works_circleid_registdate_desc" {
 resource "google_firestore_index" "works_isr18_releasedateiso_desc" {
   project    = var.gcp_project_id
   collection = "works"
-  
+
   fields {
     field_path = "isR18"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "releaseDateISO"
     order      = "DESCENDING"
@@ -519,12 +519,12 @@ resource "google_firestore_index" "works_isr18_releasedateiso_desc" {
 resource "google_firestore_index" "works_category_releasedateiso_desc" {
   project    = var.gcp_project_id
   collection = "works"
-  
+
   fields {
     field_path = "category"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "releaseDateISO"
     order      = "DESCENDING"
@@ -535,17 +535,17 @@ resource "google_firestore_index" "works_category_releasedateiso_desc" {
 resource "google_firestore_index" "works_category_isr18_releasedateiso_desc" {
   project    = var.gcp_project_id
   collection = "works"
-  
+
   fields {
     field_path = "category"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "isR18"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "releaseDateISO"
     order      = "DESCENDING"
@@ -556,12 +556,12 @@ resource "google_firestore_index" "works_category_isr18_releasedateiso_desc" {
 resource "google_firestore_index" "works_category_releasedateiso_asc" {
   project    = var.gcp_project_id
   collection = "works"
-  
+
   fields {
     field_path = "category"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "releaseDateISO"
     order      = "ASCENDING"
@@ -572,12 +572,12 @@ resource "google_firestore_index" "works_category_releasedateiso_asc" {
 resource "google_firestore_index" "works_category_price_asc" {
   project    = var.gcp_project_id
   collection = "works"
-  
+
   fields {
     field_path = "category"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "price.current"
     order      = "ASCENDING"
@@ -588,12 +588,12 @@ resource "google_firestore_index" "works_category_price_asc" {
 resource "google_firestore_index" "works_category_price_desc" {
   project    = var.gcp_project_id
   collection = "works"
-  
+
   fields {
     field_path = "category"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "price.current"
     order      = "DESCENDING"
@@ -604,12 +604,12 @@ resource "google_firestore_index" "works_category_price_desc" {
 resource "google_firestore_index" "works_category_rating_desc" {
   project    = var.gcp_project_id
   collection = "works"
-  
+
   fields {
     field_path = "category"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "rating.stars"
     order      = "DESCENDING"
@@ -620,12 +620,12 @@ resource "google_firestore_index" "works_category_rating_desc" {
 resource "google_firestore_index" "works_category_popular_desc" {
   project    = var.gcp_project_id
   collection = "works"
-  
+
   fields {
     field_path = "category"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "rating.count"
     order      = "DESCENDING"

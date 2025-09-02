@@ -22,7 +22,7 @@ locals {
 # YouTube動画取得関数 (v2 - Pub/Subトリガー)（環境設定により条件付き作成）
 resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
   count = local.current_env.functions_enabled ? 1 : 0
-  
+
   project  = var.gcp_project_id
   name     = local.youtube_function_name
   location = var.region
@@ -43,8 +43,8 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
 
   # サービス設定
   service_config {
-    max_instance_count = 1       # スケジュールタスクのため低めに設定
-    min_instance_count = 0       # コールドスタートを許容
+    max_instance_count = 1 # スケジュールタスクのため低めに設定
+    min_instance_count = 0 # コールドスタートを許容
     available_memory   = local.youtube_memory
     timeout_seconds    = local.youtube_timeout
     # 専用のサービスアカウントを使用
@@ -63,8 +63,8 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
 
     # CloudEventトリガーのための環境変数設定
     environment_variables = {
-      FUNCTION_SIGNATURE_TYPE = "cloudevent"  # CloudEvent形式であることを明示
-      FUNCTION_TARGET        = local.youtube_entry_point  # エントリポイント名を指定
+      FUNCTION_SIGNATURE_TYPE = "cloudevent"              # CloudEvent形式であることを明示
+      FUNCTION_TARGET         = local.youtube_entry_point # エントリポイント名を指定
     }
   }
 
@@ -82,7 +82,7 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
   # ソースコードと環境変数は GitHub Actions が管理し、Terraform は無視する
   lifecycle {
     ignore_changes = [
-      build_config, # ビルド設定全体を無視（GitHub Actionsが管理）
+      build_config,                            # ビルド設定全体を無視（GitHub Actionsが管理）
       service_config[0].environment_variables, # 環境変数もGitHub Actionsが管理
     ]
     # 既存のリソースとの競合を避けるため、作成失敗時は手動で解決する
@@ -103,8 +103,8 @@ resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
 
 # YouTube動画取得関数用のサービスアカウントにシークレットアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "youtube_video_secret_accessor" {
-  for_each  = toset(local.youtube_secrets)
-  
+  for_each = toset(local.youtube_secrets)
+
   project   = var.gcp_project_id
   secret_id = google_secret_manager_secret.secrets[each.value].secret_id
   role      = google_project_iam_custom_role.secret_manager_accessor_role.id

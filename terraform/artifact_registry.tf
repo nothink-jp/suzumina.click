@@ -25,7 +25,7 @@ resource "google_artifact_registry_repository" "docker_repo" {
       package_name_prefixes = ["web", "suzumina-admin"]
     }
   }
-  
+
   cleanup_policies {
     id     = "delete-old-versions"
     action = "DELETE"
@@ -34,12 +34,12 @@ resource "google_artifact_registry_repository" "docker_repo" {
       tag_state  = "UNTAGGED"
     }
   }
-  
+
   cleanup_policies {
     id     = "keep-recent-versions"
     action = "KEEP"
     most_recent_versions {
-      keep_count = 5
+      keep_count            = 5
       package_name_prefixes = ["web"]
     }
   }
@@ -48,7 +48,7 @@ resource "google_artifact_registry_repository" "docker_repo" {
     id     = "keep-recent-admin-versions"
     action = "KEEP"
     most_recent_versions {
-      keep_count = 3  # 管理者アプリは更新頻度が低いため3個まで
+      keep_count            = 3 # 管理者アプリは更新頻度が低いため3個まで
       package_name_prefixes = ["suzumina-admin"]
     }
   }
@@ -68,7 +68,7 @@ resource "google_artifact_registry_repository" "gcf_artifacts" {
 
   # Cloud Functions用のクリーンアップポリシー
   cleanup_policy_dry_run = false
-  
+
   # 古いタグなしイメージを7日後に削除
   cleanup_policies {
     id     = "delete-old-untagged"
@@ -78,7 +78,7 @@ resource "google_artifact_registry_repository" "gcf_artifacts" {
       tag_state  = "UNTAGGED"
     }
   }
-  
+
   # 最新5バージョンを保持（Function毎）
   cleanup_policies {
     id     = "keep-recent-function-versions"

@@ -17,15 +17,15 @@ output "enhanced_cleanup_info" {
   description = "Enhanced cleanup policies information"
   value = {
     existing_policies = {
-      keep_latest_web    = "5 images"
-      keep_latest_admin  = "3 images"
-      delete_untagged    = "7 days"
+      keep_latest_web   = "5 images"
+      keep_latest_admin = "3 images"
+      delete_untagged   = "7 days"
     }
     github_actions_cleanup = {
-      web_images        = "10 images kept"
-      web_revisions     = "5 revisions kept"
-      admin_images      = "5 images kept"
-      admin_revisions   = "3 revisions kept"
+      web_images      = "10 images kept"
+      web_revisions   = "5 revisions kept"
+      admin_images    = "5 images kept"
+      admin_revisions = "3 revisions kept"
     }
     repository_url = "${var.region}-docker.pkg.dev/${var.gcp_project_id}/${var.artifact_registry_repository_id}"
   }

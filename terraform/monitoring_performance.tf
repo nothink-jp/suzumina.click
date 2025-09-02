@@ -314,37 +314,37 @@ EOF
 resource "google_monitoring_alert_policy" "high_latency" {
   display_name = "高レイテンシ検知アラート"
   combiner     = "OR"
-  
+
   conditions {
-    display_name = "P95レイテンシが閾値超過 (> 5000ms)"
-    
+    display_name = "P95レイテンシが閾値超過 (> 10000ms)"
+
     condition_threshold {
       filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_latencies\""
-      duration        = "300s"  # 5分間継続（データ不足対応）
+      duration        = "300s" # 5分間継続（データ不足対応）
       comparison      = "COMPARISON_GT"
-      threshold_value = 5000   # 5秒（P95用調整）
-      
+      threshold_value = 10000 # 10秒（コールドスタート許容）
+
       aggregations {
         alignment_period   = "60s"
         per_series_aligner = "ALIGN_PERCENTILE_95"
       }
-      
+
       trigger {
         count = 1
       }
     }
   }
-  
+
   notification_channels = [
     google_monitoring_notification_channel.email.name
   ]
-  
+
   documentation {
-    content = <<-EOT
+    content   = <<-EOT
     # 高レイテンシ検知アラート（個人開発版・P95）
     
-    Next.jsアプリケーションのP95レスポンス時間が5秒を超えました。
-    P99からP95に変更し、データ不足問題を解決。
+    Next.jsアプリケーションのP95レスポンス時間が10秒を超えました。
+    コールドスタートを考慮した閾値に調整済み。
     
     ## 対応アクション
     1. Cloud Loggingで遅いクエリを特定
@@ -354,8 +354,8 @@ resource "google_monitoring_alert_policy" "high_latency" {
     EOT
     mime_type = "text/markdown"
   }
-  
-  project = var.gcp_project_id
+
+  project    = var.gcp_project_id
   depends_on = [google_monitoring_notification_channel.email]
 }
 
@@ -363,33 +363,33 @@ resource "google_monitoring_alert_policy" "high_latency" {
 resource "google_monitoring_alert_policy" "high_cpu" {
   display_name = "CPU使用率高アラート"
   combiner     = "OR"
-  
+
   conditions {
     display_name = "CPU使用率が持続的に高い (> 95%)"
-    
+
     condition_threshold {
       filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/container/cpu/utilizations\""
-      duration        = "600s"  # 10分間継続
+      duration        = "600s" # 10分間継続
       comparison      = "COMPARISON_GT"
-      threshold_value = 0.95    # 95%（個人開発・余裕持った設定）
-      
+      threshold_value = 0.95 # 95%（個人開発・余裕持った設定）
+
       aggregations {
         alignment_period   = "60s"
         per_series_aligner = "ALIGN_PERCENTILE_95"
       }
-      
+
       trigger {
         count = 1
       }
     }
   }
-  
+
   notification_channels = [
     google_monitoring_notification_channel.email.name
   ]
-  
+
   documentation {
-    content = <<-EOT
+    content   = <<-EOT
     # CPU使用率高アラート（個人開発版）
     
     Cloud RunでCPU使用率が95%を10分間継続しています。
@@ -403,8 +403,8 @@ resource "google_monitoring_alert_policy" "high_cpu" {
     EOT
     mime_type = "text/markdown"
   }
-  
-  project = var.gcp_project_id
+
+  project    = var.gcp_project_id
   depends_on = [google_monitoring_notification_channel.email]
 }
 
@@ -412,37 +412,37 @@ resource "google_monitoring_alert_policy" "high_cpu" {
 resource "google_monitoring_alert_policy" "high_memory" {
   display_name = "メモリ使用率高アラート"
   combiner     = "OR"
-  
+
   conditions {
     display_name = "メモリ使用率が危険レベル (> 95%)"
-    
+
     condition_threshold {
       filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/container/memory/utilizations\""
-      duration        = "600s"  # 10分間継続（誤報削減）
+      duration        = "600s" # 10分間継続（誤報削減）
       comparison      = "COMPARISON_GT"
-      threshold_value = 0.95    # 95%（より厳しい閾値）
-      
+      threshold_value = 0.95 # 95%（より厳しい閾値）
+
       aggregations {
         alignment_period   = "60s"
         per_series_aligner = "ALIGN_PERCENTILE_95"
       }
-      
+
       trigger {
         count = 1
       }
     }
   }
-  
+
   notification_channels = [
     google_monitoring_notification_channel.email.name
   ]
-  
+
   documentation {
-    content = "メモリ使用率95%超過。緊急対応が必要です。"
+    content   = "メモリ使用率95%超過。緊急対応が必要です。"
     mime_type = "text/markdown"
   }
-  
-  project = var.gcp_project_id
+
+  project    = var.gcp_project_id
   depends_on = [google_monitoring_notification_channel.email]
 }
 

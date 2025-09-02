@@ -9,7 +9,7 @@ resource "google_firestore_document" "firestore_rules" {
   project     = var.gcp_project_id
   collection  = "_firestore_rules"
   document_id = "firestore_rules"
-  fields      = jsonencode({
+  fields = jsonencode({
     rules = {
       string_value = <<-EOT
         rules_version = '2';

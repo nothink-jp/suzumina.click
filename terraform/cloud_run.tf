@@ -6,14 +6,14 @@
 
 # Cloud Runサービス（全環境で有効）
 resource "google_cloud_run_v2_service" "nextjs_app" {
-  
+
   provider = google
 
   name     = var.cloud_run_service_name
   location = var.region
-  
+
   description = "suzumina.click Next.js 15 Web Application"
-  
+
   labels = local.common_labels
 
 
@@ -40,7 +40,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
           cpu    = local.current_env.cloud_run_cpu
           memory = local.current_env.cloud_run_memory
         }
-        cpu_idle = true  # コスト削減のため、全環境でCPUアイドルを有効化
+        cpu_idle          = true                            # コスト削減のため、全環境でCPUアイドルを有効化
         startup_cpu_boost = var.environment == "production" # 本番のみCPUブースト
       }
 
@@ -55,7 +55,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         name  = "NODE_ENV"
         value = var.environment == "development" ? "development" : "production"
       }
-      
+
 
       # Firestore設定（プロジェクトIDを環境変数で設定）
       env {
@@ -200,7 +200,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
     service_account = google_service_account.cloud_run_service_account.email
 
     # タイムアウト設定
-    timeout = "300s"  # 5分
+    timeout = "300s" # 5分
 
     # セッション親和性（なし - ステートレス）
     session_affinity = false
@@ -230,7 +230,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
 
 # Cloud Run用サービスアカウント（全環境で有効）
 resource "google_service_account" "cloud_run_service_account" {
-  
+
   provider = google
 
   account_id   = "cloud-run-nextjs"

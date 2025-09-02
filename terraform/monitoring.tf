@@ -351,33 +351,33 @@ EOF
 resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
   display_name = "Cloud Run エラー率アラート"
   combiner     = "OR"
-  
+
   conditions {
     display_name = "高エラー率検知 (5xx > 5%)"
-    
+
     condition_threshold {
       filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\""
       duration        = "60s"
       comparison      = "COMPARISON_GT"
-      threshold_value = 0.05  # 5%
-      
+      threshold_value = 0.05 # 5%
+
       aggregations {
         alignment_period   = "60s"
         per_series_aligner = "ALIGN_RATE"
       }
-      
+
       trigger {
         count = 1
       }
     }
   }
-  
+
   notification_channels = [
     google_monitoring_notification_channel.email.name
   ]
-  
+
   documentation {
-    content = <<-EOT
+    content   = <<-EOT
     # Cloud Run エラー率が閾値を超過
     
     suzumina-click-web サービスでエラーレート(5xx)が 5% を超えました。
@@ -390,7 +390,7 @@ resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
     EOT
     mime_type = "text/markdown"
   }
-  
+
   depends_on = [google_monitoring_notification_channel.email]
 }
 
@@ -398,11 +398,11 @@ resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
 resource "google_monitoring_notification_channel" "email" {
   display_name = "管理者メール通知"
   type         = "email"
-  
+
   labels = {
     email_address = var.admin_email
   }
-  
+
   project = var.gcp_project_id
 }
 
@@ -410,33 +410,33 @@ resource "google_monitoring_notification_channel" "email" {
 resource "google_monitoring_alert_policy" "cloud_run_scaling" {
   display_name = "Cloud Run スケーリング通知"
   combiner     = "OR"
-  
+
   conditions {
     display_name = "インスタンス数が急増 (> 5)"
-    
+
     condition_threshold {
       filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"suzumina-click-web\" AND metric.type=\"run.googleapis.com/container/instance_count\""
       duration        = "60s"
       comparison      = "COMPARISON_GT"
-      threshold_value = 5  # インスタンス数閾値
-      
+      threshold_value = 5 # インスタンス数閾値
+
       aggregations {
         alignment_period   = "60s"
         per_series_aligner = "ALIGN_MAX"
       }
-      
+
       trigger {
         count = 1
       }
     }
   }
-  
+
   notification_channels = [
     google_monitoring_notification_channel.email.name
   ]
-  
+
   documentation {
-    content = <<-EOT
+    content   = <<-EOT
     # Cloud Run インスタンス数急増
     
     suzumina-click-web サービスのインスタンス数が急増しました。
@@ -449,8 +449,8 @@ resource "google_monitoring_alert_policy" "cloud_run_scaling" {
     EOT
     mime_type = "text/markdown"
   }
-  
+
   project = var.gcp_project_id
-  
+
   depends_on = [google_monitoring_notification_channel.email]
 }

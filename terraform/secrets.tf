@@ -9,7 +9,7 @@
 locals {
   # すべてのシークレットに共通の設定
   common_secret_settings = {
-    replication_location = "asia-northeast1"  # 東京リージョン
+    replication_location = "asia-northeast1" # 東京リージョン
     labels = {
       "managed-by" = "terraform"
       "project"    = local.project_id
@@ -60,16 +60,16 @@ locals {
 # 注: 既存のシークレットがある場合は、先に以下のコマンドでインポートしてください:
 # terraform import 'google_secret_manager_secret.secrets["YOUTUBE_API_KEY"]' projects/${local.project_id}/secrets/YOUTUBE_API_KEY
 resource "google_secret_manager_secret" "secrets" {
-  for_each  = { for secret in local.all_secrets : secret.id => secret }
-  
+  for_each = { for secret in local.all_secrets : secret.id => secret }
+
   project   = var.gcp_project_id
   secret_id = each.key
-  
+
   # メタデータとしてシークレットの説明を追加
   labels = merge(local.common_secret_settings.labels, {
     "category" = contains(["YOUTUBE_API_KEY"], each.key) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], each.key) ? "email" : "auth"
   })
-  
+
   annotations = {
     description = each.value.description
   }
@@ -99,12 +99,12 @@ resource "google_secret_manager_secret" "secrets" {
 # シークレットバージョンの作成
 resource "google_secret_manager_secret_version" "secret_versions" {
   for_each = {
-    "DISCORD_CLIENT_ID"         = var.discord_client_id
-    "DISCORD_CLIENT_SECRET"     = var.discord_client_secret
-    "NEXTAUTH_SECRET"           = var.nextauth_secret
-    "YOUTUBE_API_KEY"           = var.youtube_api_key
-    "RESEND_API_KEY"            = var.resend_api_key
-    "CONTACT_EMAIL_RECIPIENTS"  = var.contact_email_recipients
+    "DISCORD_CLIENT_ID"        = var.discord_client_id
+    "DISCORD_CLIENT_SECRET"    = var.discord_client_secret
+    "NEXTAUTH_SECRET"          = var.nextauth_secret
+    "YOUTUBE_API_KEY"          = var.youtube_api_key
+    "RESEND_API_KEY"           = var.resend_api_key
+    "CONTACT_EMAIL_RECIPIENTS" = var.contact_email_recipients
   }
 
   secret      = google_secret_manager_secret.secrets[each.key].id
@@ -131,10 +131,10 @@ output "secrets_info" {
   value = {
     for id, secret in google_secret_manager_secret.secrets :
     id => {
-      name = secret.name
+      name     = secret.name
       category = contains(["YOUTUBE_API_KEY"], id) ? "api" : contains(["RESEND_API_KEY", "CONTACT_EMAIL_RECIPIENTS"], id) ? "email" : "auth"
     }
   }
   description = "作成されたシークレットの一覧"
-  sensitive   = false  # シークレットの値ではなくメタデータのみなので非センシティブ
+  sensitive   = false # シークレットの値ではなくメタデータのみなので非センシティブ
 }

@@ -16,17 +16,17 @@
 resource "google_firestore_index" "audiobuttons_videoid_ispublic_createdat_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
-  
+
   fields {
     field_path = "videoId"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "isPublic"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "createdAt"
     order      = "DESCENDING"
@@ -37,12 +37,12 @@ resource "google_firestore_index" "audiobuttons_videoid_ispublic_createdat_desc"
 resource "google_firestore_index" "audiobuttons_ispublic_stats_playcount_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
-  
+
   fields {
     field_path = "isPublic"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "stats.playCount"
     order      = "DESCENDING"
@@ -53,12 +53,12 @@ resource "google_firestore_index" "audiobuttons_ispublic_stats_playcount_desc" {
 resource "google_firestore_index" "audiobuttons_ispublic_stats_likecount_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
-  
+
   fields {
     field_path = "isPublic"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "stats.likeCount"
     order      = "DESCENDING"
@@ -69,17 +69,17 @@ resource "google_firestore_index" "audiobuttons_ispublic_stats_likecount_desc" {
 resource "google_firestore_index" "audiobuttons_videoid_ispublic_stats_playcount_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
-  
+
   fields {
     field_path = "videoId"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "isPublic"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "stats.playCount"
     order      = "DESCENDING"
@@ -90,17 +90,17 @@ resource "google_firestore_index" "audiobuttons_videoid_ispublic_stats_playcount
 resource "google_firestore_index" "audiobuttons_videoid_ispublic_stats_likecount_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
-  
+
   fields {
     field_path = "videoId"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "isPublic"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "stats.likeCount"
     order      = "DESCENDING"
@@ -111,12 +111,12 @@ resource "google_firestore_index" "audiobuttons_videoid_ispublic_stats_likecount
 resource "google_firestore_index" "audiobuttons_creatorid_createdat_desc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
-  
+
   fields {
     field_path = "creatorId"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "createdAt"
     order      = "DESCENDING"
@@ -128,12 +128,12 @@ resource "google_firestore_index" "audiobuttons_creatorid_createdat_desc" {
 resource "google_firestore_index" "audiobuttons_creatorid_createdat_asc" {
   project    = var.gcp_project_id
   collection = "audioButtons"
-  
+
   fields {
     field_path = "creatorId"
     order      = "ASCENDING"
   }
-  
+
   fields {
     field_path = "createdAt"
     order      = "ASCENDING"
