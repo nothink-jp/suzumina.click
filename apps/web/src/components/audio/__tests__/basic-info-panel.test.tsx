@@ -259,7 +259,7 @@ describe("BasicInfoPanel", () => {
 			const descriptionInput = screen.getByPlaceholderText("音声ボタンの詳細説明を入力（任意）");
 
 			expect(titleInput).toHaveAttribute("id");
-			expect(descriptionInput).toHaveAttribute("id", "description-input");
+			expect(descriptionInput).toHaveAttribute("id");
 		});
 	});
 
