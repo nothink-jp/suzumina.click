@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getPopularAudioButtonTags } from "../actions";
+import { getPopularAudioButtonTags } from "../lib/audio-button-stats";
 
 // Mock auth
 vi.mock("@/auth", () => ({

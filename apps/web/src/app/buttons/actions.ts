@@ -30,11 +30,9 @@ import {
 	fetchAndConvertButtons,
 } from "./utils/audio-button-converters";
 
-// Re-export utility functions
-export {
-	getPopularAudioButtonTags,
-	recalculateAllVideosAudioButtonCount,
-} from "./lib/audio-button-stats";
+// Note: getPopularAudioButtonTags and recalculateAllVideosAudioButtonCount
+// are now available in ./lib/audio-button-stats.ts
+// They cannot be re-exported from a "use server" file
 
 /**
  * Entityを使用した新着音声ボタンの取得

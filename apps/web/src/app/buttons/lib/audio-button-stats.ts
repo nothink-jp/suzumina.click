@@ -1,3 +1,5 @@
+"use server";
+
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
 

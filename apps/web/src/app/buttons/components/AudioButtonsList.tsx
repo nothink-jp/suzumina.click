@@ -13,7 +13,8 @@ import {
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
 import type { AudioButtonQuery } from "@/types/audio-button";
-import { getAudioButtonsList, getPopularAudioButtonTags } from "../actions";
+import { getAudioButtonsList } from "../actions";
+import { getPopularAudioButtonTags } from "../lib/audio-button-stats";
 
 interface AudioButtonsListProps {
 	searchParams:
