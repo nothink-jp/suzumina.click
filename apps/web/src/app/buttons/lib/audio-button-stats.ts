@@ -97,7 +97,7 @@ export async function recalculateAllVideosAudioButtonCount(): Promise<{
 		const videosSnapshot = await firestore.collection("videos").get();
 
 		let updatedCount = 0;
-		const batch = firestore.batch();
+		let batch = firestore.batch();
 
 		for (const videoDoc of videosSnapshot.docs) {
 			// その動画の音声ボタン数を取得
@@ -115,7 +115,8 @@ export async function recalculateAllVideosAudioButtonCount(): Promise<{
 			// バッチサイズ制限（500）に達したらコミット
 			if (updatedCount % 500 === 0) {
 				await batch.commit();
-				// 新しいバッチを開始
+				// 新しいバッチインスタンスを作成
+				batch = firestore.batch();
 				logger.info(`Updated ${updatedCount} videos...`);
 			}
 		}

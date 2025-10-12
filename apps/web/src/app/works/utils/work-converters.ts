@@ -31,7 +31,7 @@ export async function convertDocsToWorks(
 /**
  * 作品をPlainObjectに変換
  */
-export function convertWorksToPainObjects(paginatedWorks: WorkDocument[]): WorkPlainObject[] {
+export function convertWorksToPlainObjects(paginatedWorks: WorkDocument[]): WorkPlainObject[] {
 	const works: WorkPlainObject[] = [];
 	for (const data of paginatedWorks) {
 		try {

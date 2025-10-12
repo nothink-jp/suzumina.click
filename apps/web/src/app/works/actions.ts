@@ -12,7 +12,7 @@ import { buildWorksQuery } from "./lib/work-query-builder";
 import { calculateSimilarityScore } from "./lib/work-similarity";
 import { sortWorks } from "./lib/work-sorting";
 import { generateDataQualityReport, generateWorksStats } from "./lib/work-statistics";
-import { convertDocsToWorks, convertWorksToPainObjects } from "./utils/work-converters";
+import { convertDocsToWorks, convertWorksToPlainObjects } from "./utils/work-converters";
 
 /**
  * シンプルなクエリで作品を取得
@@ -139,7 +139,7 @@ async function getWorksWithComplexFiltering(
 	const paginatedWorks = allWorks.slice(startOffset, startOffset + limit);
 
 	// 変換処理
-	const works = convertWorksToPainObjects(paginatedWorks);
+	const works = convertWorksToPlainObjects(paginatedWorks);
 
 	// 全件数はフィルタリング後の件数
 	const totalCount = filteredCount;
