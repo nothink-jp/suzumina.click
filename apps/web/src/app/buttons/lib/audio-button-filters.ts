@@ -32,8 +32,12 @@ export function applySorting(
 	switch (sortBy) {
 		case "newest":
 			return queryRef.orderBy("createdAt", "desc") as typeof queryRef;
+		case "oldest":
+			return queryRef.orderBy("createdAt", "asc") as typeof queryRef;
+		case "popular":
+			return queryRef.orderBy("stats.likeCount", "desc") as typeof queryRef;
 		case "mostPlayed":
-			return queryRef.orderBy("playCount", "desc") as typeof queryRef;
+			return queryRef.orderBy("stats.playCount", "desc") as typeof queryRef;
 		default:
 			return queryRef.orderBy("createdAt", "desc") as typeof queryRef;
 	}
