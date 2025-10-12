@@ -242,7 +242,8 @@ describe("Audio Button Server Actions", () => {
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
-				expect(result.error).toContain("入力データが無効です");
+				// withValidation now returns the specific validation error
+				expect(result.error).toContain("ボタンテキストは必須です");
 			}
 			expect(mockAdd).not.toHaveBeenCalled();
 		});
@@ -362,7 +363,8 @@ describe("Audio Button Server Actions", () => {
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
-				expect(result.error).toContain("音声ボタンの作成に失敗しました");
+				// withErrorHandling now returns the actual error message
+				expect(result.error).toContain("Firestore error");
 			}
 		});
 	});
