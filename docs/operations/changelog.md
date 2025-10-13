@@ -2,50 +2,66 @@
 
 suzumina.clickプロジェクトの変更履歴
 
-## [v0.4.0] - 2025-08-11
+## [v0.3.11] - 2025-10-13
 
-### 🚀 TypeScript型安全性強化 - DDDパターン完全統一
+### 🔧 Server Actions大規模リファクタリング
 
-#### Result/Eitherパターン全面採用
-- **すべてのファクトリメソッドがResult型を返すように統一**
-  - エラーを値として扱い、例外をスローしない設計
-  - `neverthrow`ライブラリによる関数型エラーハンドリング
-  - 型安全なエラー処理でコンパイル時エラー検出を実現
+#### モジュール分割による保守性向上
+- **works/actions.tsのモジュール化** (1,083行 → 551行, 49%削減)
+  - lib/work-filtering.ts: 検索・フィルタリングロジック
+  - lib/work-sorting.ts: ソート処理
+  - lib/work-similarity.ts: 類似度計算
+  - lib/work-query-builder.ts: Firestoreクエリ構築
+  - lib/work-statistics.ts: 統計処理
+  - utils/work-converters.ts: データ変換
 
-#### BaseEntity/BaseValueObject継承の完全実装
-- **すべてのエンティティがBaseEntityを継承**
-  - Work, Video, AudioButtonエンティティの統一
-  - EntityValidatable インターフェースの実装
-  - プライベートコンストラクタパターンの採用
+- **buttons/actions.tsのモジュール化** (959行 → 574行, 40%削減)
+  - lib/audio-button-filters.ts: フィルタリング・ソート
+  - lib/audio-button-validation.ts: バリデーション
+  - lib/audio-button-stats.ts: 統計・人気タグ
+  - utils/audio-button-converters.ts: データ変換
 
-- **すべての値オブジェクトがBaseValueObjectを継承**
-  - 10個の値オブジェクトを完全移行
-  - ValidatableValueObject インターフェースの実装
-  - 不変性とバリデーションルールの統一
+#### 共通ヘルパー関数の実装
+- **server-action-wrapper.ts**: エラーハンドリング統一化
+  - `withErrorHandling`: 基本的なエラーハンドリング
+  - `withAuthenticatedAction`: 認証付きアクション
+  - `withValidation`: バリデーション付きアクション
 
-#### Branded Types導入
-- **プリミティブ型に意味的な区別を追加**
-  - WorkId, CircleId, VideoId等のID型を定義
-  - 型レベルでの誤用防止
-  - コンパイル時の型安全性向上
+- **firestore-helpers.ts**: Firestore操作の汎用化
+  - `updateCounter`: カウンター更新の汎用関数
+  - `getNestedValue`: ネストされたフィールドアクセス
 
-#### レガシーコード完全削除
-- **すべてのlegacyメソッドを削除**
-  - Zodスキーマを削除（バリデーションはファクトリメソッドに統合）
-  - Server ActionsをResult型対応に更新
-  - 全34テストをResult型対応に更新
+### 🐛 バグ修正
 
-### 📊 品質メトリクス
-- **TypeScript strict mode違反**: 0件達成
-- **認知負荷**: 45-55%削減（推定）
-- **開発者体験**: 40-50%向上（推定）
-- **実装期間**: 計画10週間 → 実際1日で完了
+- **音声ボタンソート機能修正**
+  - フィールド名エラー修正: `playCount` → `stats.playCount`
+  - `popular`ソート追加: `stats.likeCount`でソート
+  - `oldest`ソート追加: `createdAt`昇順でソート
 
-### 📖 ドキュメント更新
-- domain-object-catalog.md: Result型パターンの反映
-- typescript-type-safety-migration.md: 実装完了ステータス更新
-- ADR-002: 実装結果の追記
-- entity-implementation-guide.md: 新パターンの反映
+### ♻️ コード品質改善（YAGNI原則適用）
+
+- **未使用ヘルパー関数削除** (約460行削減)
+  - server-action-wrapper.ts: `withTransaction` 削除
+  - firestore-helpers.ts: 6関数削除
+    - `_setNestedValue`, `batchUpdateCounters`, `documentExists`
+    - `processBatch`, `paginatedQuery`, `conditionalUpdate`
+  - 実際に使用されていない機能を削除し、コードベースを簡素化
+
+### 📊 改善効果
+
+- **コード削減**: 約1,350行削減（45%削減）
+- **保守性向上**: ロジックが論理的にモジュール化
+- **再利用性向上**: 共通処理が汎用関数として利用可能
+- **エラーハンドリング統一**: 全Server Actionsで一貫したエラー処理
+- **テスト容易性**: 小さなモジュールで単体テスト可能
+
+## [v0.3.10] - 2025-08-12
+
+### 📚 ドキュメント整理とコレクション名統一
+
+- **コレクション名の統一**
+  - CLAUDE.mdのコレクション名変更注意事項を更新
+  - `dlsiteWorks` → `works` の名称変更を文書全体に反映
 
 ## [v0.3.9] - 2025-08-06
 
