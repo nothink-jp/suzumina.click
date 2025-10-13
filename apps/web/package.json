@@ -28,7 +28,7 @@
 		"migrate:audiobuttons:validate": "tsx src/scripts/complete-audiobutton-migration.ts --validate-only"
 	},
 	"dependencies": {
-		"@auth/core": "^0.40.0",
+		"@auth/core": "^0.41.0",
 		"@google-cloud/firestore": "^7.11.6",
 		"@hookform/resolvers": "^5.2.2",
 		"@suzumina.click/shared-types": "workspace:*",
