@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { recalculateAllVideosAudioButtonCount } from "@/app/buttons/actions";
+import { recalculateAllVideosAudioButtonCount } from "@/app/buttons/lib/audio-button-stats";
 import { auth } from "@/auth";
 import * as logger from "@/lib/logger";
 
