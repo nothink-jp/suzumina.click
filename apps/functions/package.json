@@ -26,7 +26,7 @@
 	},
 	"main": "lib/endpoints/index.js",
 	"engines": {
-		"node": "22.21.1"
+		"node": "24.11.1"
 	},
 	"dependencies": {
 		"@google-cloud/firestore": "^8.0.0",

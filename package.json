@@ -24,7 +24,7 @@
 		"vitest": "^4.0.10"
 	},
 	"engines": {
-		"node": "22.21.1",
+		"node": "24.11.1",
 		"pnpm": "10.22.0"
 	},
 	"packageManager": "pnpm@10.22.0"
