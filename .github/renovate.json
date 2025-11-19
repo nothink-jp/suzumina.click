@@ -21,7 +21,7 @@
 			"description": "Critical auth packages - manual review required",
 			"matchPackageNames": ["next-auth", "@auth/core"],
 			"groupName": "authentication core",
-			"schedule": ["before 6am on first day of month"],
+			"schedule": ["on the first day of the month before 6am"],
 			"automerge": false,
 			"addLabels": ["dependencies:auth", "review:required"]
 		},
@@ -29,7 +29,7 @@
 			"description": "Framework packages - quarterly updates",
 			"matchPackageNames": ["next", "react", "react-dom"],
 			"groupName": "core framework",
-			"schedule": ["before 6am on first day of quarter"],
+			"schedule": ["every 3 months on the first day of the month before 6am"],
 			"automerge": false,
 			"addLabels": ["dependencies:framework", "review:required"]
 		},
@@ -52,6 +52,6 @@
 	},
 	"lockFileMaintenance": {
 		"enabled": true,
-		"schedule": ["before 6am on first day of month"]
+		"schedule": ["on the first day of the month before 6am"]
 	}
 }
