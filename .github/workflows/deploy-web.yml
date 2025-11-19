@@ -32,7 +32,7 @@ jobs:
       skip-checks: ${{ steps.check.outputs.skip-checks }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -59,7 +59,7 @@ jobs:
     if: needs.check-pr-status.outputs.skip-checks == 'false'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -112,7 +112,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       # Google Cloud authentication - 早期に実行
       - name: Authenticate to Google Cloud
