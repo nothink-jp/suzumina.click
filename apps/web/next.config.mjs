@@ -20,10 +20,11 @@ const nextConfig = {
 		removeConsole: process.env.NODE_ENV === "production",
 	},
 
+	// React Compiler（Next.js 16対応）
+	reactCompiler: true,
+
 	// 実験的機能・パフォーマンス最適化
 	experimental: {
-		// React Compiler（Next.js 15.3対応）
-		reactCompiler: true,
 		// App Router最適化
 		optimizePackageImports: ["lucide-react", "date-fns", "zod", "react-hook-form", "sonner"],
 		// 並列レンダリング最適化
@@ -146,12 +147,6 @@ const nextConfig = {
 
 	// パフォーマンス最適化
 	compress: true,
-	// 静的最適化強化
-	modularizeImports: {
-		"lucide-react": {
-			transform: "lucide-react/dist/esm/icons/{{member}}",
-		},
-	},
 
 	// SWCコンパイラーはNext.js 15でデフォルト有効
 

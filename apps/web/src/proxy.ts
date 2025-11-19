@@ -23,7 +23,7 @@ function handleHostValidation(request: NextRequest): NextResponse | null {
 	return null;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
 	// ホスト名バリデーション
 	const hostResponse = handleHostValidation(request);
 	if (hostResponse) {
@@ -39,6 +39,9 @@ export async function middleware(request: NextRequest) {
 
 	return response;
 }
+
+// Next.js 16互換性: middleware関数もエクスポート（下位互換性のため）
+export const middleware = proxy;
 
 export const config = {
 	matcher: [
