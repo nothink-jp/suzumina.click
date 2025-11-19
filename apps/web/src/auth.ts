@@ -8,7 +8,7 @@ import {
 	type UserSession,
 	UserSessionSchema,
 } from "@suzumina.click/shared-types";
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthResult } from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { getFirestore } from "@/lib/firestore";
 import { error as logError } from "@/lib/logger";
@@ -40,7 +40,7 @@ type FirestoreUserData = {
 };
 
 /**
- * Discord画像URLからアバターハッシュを抽出するヘルパー関数
+ * Discord画像URLからアバターハッシュを抽出
  */
 function extractAvatarHash(imageUrl: string | null | undefined): string | null {
 	if (!imageUrl) {
@@ -51,7 +51,7 @@ function extractAvatarHash(imageUrl: string | null | undefined): string | null {
 }
 
 /**
- * DiscordUserオブジェクトを作成するヘルパー関数
+ * DiscordUserオブジェクトを作成
  */
 function createDiscordUserObject(
 	providerAccountId: string,
@@ -68,7 +68,7 @@ function createDiscordUserObject(
 }
 
 /**
- * 新規Discordユーザーの処理を行うヘルパー関数
+ * 新規Discordユーザーの処理
  */
 async function handleNewDiscordUser(
 	providerAccountId: string,
@@ -95,20 +95,16 @@ async function handleNewDiscordUser(
 }
 
 /**
- * Firestoreからユーザーロールを取得する関数
+ * Firestoreからユーザーロールを取得
+ * @returns ユーザーロール（デフォルト: "member"）
  */
 async function getUserRoleFromFirestore(discordId: string): Promise<string> {
 	try {
 		const firestore = getFirestore();
 		const userDoc = await firestore.collection("users").doc(discordId).get();
-		if (userDoc.exists) {
-			const userData = userDoc.data() as { role?: string };
-			return userData.role || "member";
-		}
-		// 新規ユーザーの場合はデフォルトロールを返す
-		return "member";
-	} catch (_error) {
-		// エラー時はデフォルトロールを返す
+		const userData = userDoc.data() as { role?: string } | undefined;
+		return userData?.role || "member";
+	} catch {
 		return "member";
 	}
 }
@@ -187,7 +183,7 @@ function buildUserSession(
 }
 
 /**
- * Discord Guild情報を取得するヘルパー関数
+ * Discord Guild情報を取得
  */
 async function fetchDiscordGuildMembership(
 	accessToken: string,
@@ -230,20 +226,20 @@ async function fetchDiscordGuildMembership(
 	}
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-	// カスタムFirestore管理（アダプターなし）
-
-	// 本番環境でのリバースプロキシ対応
+/**
+ * NextAuth.js設定
+ *
+ * @note 型推論の問題を回避するため、NextAuthResultで明示的に型付け
+ * @note アダプターなし（カスタムFirestore管理）
+ */
+const nextAuth: NextAuthResult = NextAuth({
 	trustHost: true,
-
-	// セキュリティ強化: CSRF攻撃対策
 	useSecureCookies: process.env.NODE_ENV === "production",
 
 	providers: [
 		Discord({
 			clientId: process.env.DISCORD_CLIENT_ID || "",
 			clientSecret: process.env.DISCORD_CLIENT_SECRET || "",
-			// Guild情報取得のためのスコープを追加
 			authorization: {
 				params: {
 					scope: "identify email guilds",
@@ -254,22 +250,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
 	callbacks: {
 		async signIn({ user, account, profile }) {
-			// Discord認証の場合のみGuild確認を実行
 			if (account?.provider === "discord" && account.access_token && account.providerAccountId) {
-				// 追加セキュリティ検証
+				// セキュリティ検証: プロフィールIDとアカウントIDの一致確認
 				if (!profile?.id || profile.id !== account.providerAccountId) {
-					return false; // プロフィール不一致
+					return false;
 				}
 
 				const guildMembership = await fetchDiscordGuildMembership(
 					account.access_token,
 					account.providerAccountId,
 				);
-
-				// Guildメンバーシップは確認するが、必須ではない（一般ユーザーも許可）
 				const isFamilyMember = guildMembership ? isValidGuildMember(guildMembership) : false;
 
-				// Guild情報とフラグをユーザープロファイルに保存（次のcallbackで使用）
 				user.guildMembership = guildMembership || undefined;
 				user.isFamilyMember = isFamilyMember;
 			}
@@ -278,9 +270,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 		},
 
 		async jwt({ token, user, account }) {
-			// 初回ログイン時にユーザー情報とGuild情報を保存
 			if (user && account?.provider === "discord" && account.providerAccountId) {
-				// アクセストークンを保存（日次Guildチェック用）
 				if (account.access_token) {
 					token.accessToken = account.access_token;
 				}
@@ -291,12 +281,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 				token.guildMembership = guildMembership;
 				token.isFamilyMember = user.isFamilyMember;
 				token.displayName = resolveDisplayName(
-					undefined, // displayNameは後でユーザーが設定
+					undefined,
 					discordUser.globalName,
 					discordUser.username,
 				);
-
-				// ロール情報をFirestoreから取得してJWTトークンに追加
 				token.role = await getUserRoleFromFirestore(discordUser.id);
 			}
 
@@ -317,7 +305,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 			}
 
 			try {
-				// Firestoreから最新のユーザー情報を取得
 				const firestore = getFirestore();
 				const userRef = firestore.collection("users").doc(extendedToken.discordUser.id);
 				const userDoc = await userRef.get();
@@ -331,7 +318,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 					return { ...session, user: undefined };
 				}
 
-				// 日次Guildチェックが必要な場合
 				if (hasDateChangedJST(userData.flags?.lastGuildCheckDate) && extendedToken.accessToken) {
 					const guildStatus = await updateDailyGuildStatus(
 						userRef,
@@ -340,7 +326,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 						extendedToken.discordUser.id,
 					);
 
-					// userDataを更新
 					if (!userData.flags) userData.flags = {};
 					userData.flags.isFamilyMember = guildStatus.isFamilyMember;
 					if (userData.dailyButtonLimit) {
@@ -348,11 +333,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 					}
 				}
 
-				// セッション情報を構築
 				const userSession = buildUserSession(userData, extendedToken.guildMembership);
 				const validatedUserSession = UserSessionSchema.parse(userSession);
 
-				// ログイン時刻を非同期更新
 				updateLastLogin(userData.discordId).catch((error) => {
 					if (process.env.NODE_ENV === "development") {
 						logError("updateLastLogin error:", error);
@@ -367,35 +350,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 	},
 
 	session: {
-		strategy: "jwt", // JWTベースのセッション管理
+		strategy: "jwt",
 	},
 
 	pages: {
-		signIn: "/auth/signin", // カスタムサインインページ
-		error: "/auth/error", // エラーページ
+		signIn: "/auth/signin",
+		error: "/auth/error",
 	},
 
 	events: {
 		async signIn({ user, account }) {
-			if (!account?.providerAccountId) {
+			if (!account?.providerAccountId || account?.provider !== "discord") {
 				return;
 			}
-
-			// Discord認証での新規ユーザーの場合、Firestoreにユーザーデータを作成
-			if (account?.provider === "discord") {
-				await handleNewDiscordUser(account.providerAccountId, user);
-			}
-		},
-
-		signOut(params) {
-			const _token = "token" in params ? params.token : null;
+			await handleNewDiscordUser(account.providerAccountId, user);
 		},
 	},
 
 	debug: process.env.NODE_ENV === "development",
 });
 
-// TypeScript用の型定義拡張
+/**
+ * NextAuth.jsのエクスポート
+ *
+ * 注意: signInのみ明示的な型注釈を使用しています。
+ * 理由: signIn関数の複雑なジェネリック型（ProviderId）が内部パッケージ（@auth/core/providers）
+ * への参照を含むため、TypeScript 2742エラー（型の移植性問題）が発生します。
+ * NextAuthResult["signIn"]で明示的に型付けすることで、型情報を保持しつつエラーを回避。
+ *
+ * @see https://authjs.dev/getting-started/installation
+ */
+export const handlers = nextAuth.handlers;
+export const auth = nextAuth.auth;
+export const signIn: NextAuthResult["signIn"] = nextAuth.signIn;
+export const signOut = nextAuth.signOut;
+
 declare module "next-auth" {
 	interface User {
 		guildMembership?: GuildMembership;
@@ -406,5 +395,3 @@ declare module "next-auth" {
 		user?: UserSession | undefined;
 	}
 }
-
-// JWT type extensions removed to avoid module resolution errors
