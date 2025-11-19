@@ -5,10 +5,19 @@
 import type { RenderOptions } from "@testing-library/react";
 import { render } from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
+import type { Mock } from "vitest";
 import { vi } from "vitest";
 
 // Next.js のモック
-export const mockRouter = {
+export const mockRouter: {
+	push: Mock;
+	replace: Mock;
+	back: Mock;
+	forward: Mock;
+	refresh: Mock;
+	prefetch: Mock;
+	pathname: string;
+} = {
 	push: vi.fn(),
 	replace: vi.fn(),
 	back: vi.fn(),
