@@ -1,6 +1,6 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": ["config:base"],
+	"extends": ["config:recommended"],
 	"schedule": ["before 6am on monday"],
 	"timezone": "Asia/Tokyo",
 	"semanticCommits": "enabled",
@@ -11,7 +11,7 @@
 	"packageRules": [
 		{
 			"description": "Type definitions - weekly updates",
-			"matchPackagePatterns": ["^@types/"],
+			"matchPackagePrefixes": ["@types/"],
 			"groupName": "type definitions",
 			"schedule": ["before 6am on monday"],
 			"automerge": true,
@@ -23,7 +23,6 @@
 			"groupName": "authentication core",
 			"schedule": ["before 6am on first day of month"],
 			"automerge": false,
-			"reviewersFromCodeOwners": true,
 			"addLabels": ["dependencies:auth", "review:required"]
 		},
 		{
@@ -32,7 +31,6 @@
 			"groupName": "core framework",
 			"schedule": ["before 6am on first day of quarter"],
 			"automerge": false,
-			"reviewersFromCodeOwners": true,
 			"addLabels": ["dependencies:framework", "review:required"]
 		},
 		{
@@ -45,23 +43,12 @@
 		},
 		{
 			"description": "Beta/RC versions - manual only",
-			"matchCurrentVersion": "/(alpha|beta|rc)/",
+			"matchCurrentVersion": "/-(alpha|beta|rc)/",
 			"enabled": false
-		},
-		{
-			"description": "Security updates - immediate",
-			"matchDatasources": ["npm"],
-			"matchUpdateTypes": ["patch"],
-			"matchPackageNames": ["*"],
-			"vulnerabilityAlertsOnly": true,
-			"schedule": ["at any time"],
-			"automerge": true,
-			"addLabels": ["security"]
 		}
 	],
 	"vulnerabilityAlerts": {
-		"enabled": true,
-		"automerge": true
+		"enabled": true
 	},
 	"lockFileMaintenance": {
 		"enabled": true,
