@@ -39,8 +39,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared-types
       googleapis:
-        specifier: ^162.0.0
-        version: 162.0.0
+        specifier: ^166.0.0
+        version: 166.0.0
     devDependencies:
       '@suzumina.click/typescript-config':
         specifier: workspace:*
@@ -2949,8 +2949,8 @@ packages:
     resolution: {integrity: sha512-66if47It7y+Sab3HMkwEXx1kCq9qUC9px8ZXoj1CMrmLmUw81GpbnsNlXnlyZyGbGPGcj+tDD9XsZ23m7GLaJQ==}
     engines: {node: '>=18.0.0'}
 
-  googleapis@162.0.0:
-    resolution: {integrity: sha512-dxHgGExRjbRLHxHZuPyiFB2692H9hP4Qg9OI6nhzw5OOFlxl6ufG5GMqraKv6HAFvHltz7Ytx/C1ndcM85USxA==}
+  googleapis@166.0.0:
+    resolution: {integrity: sha512-Xz7yG+ihVvYMwSULKIMeTp6vDX95rrSbsaR3xUmgYjwQdAkchMQ5ndFeG5QZwcBOIyvJFvG7ZLIZE7mKW2X/hw==}
     engines: {node: '>=18'}
 
   gopd@1.2.0:
@@ -7035,7 +7035,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  googleapis@162.0.0:
+  googleapis@166.0.0:
     dependencies:
       google-auth-library: 10.4.0
       googleapis-common: 8.0.0
