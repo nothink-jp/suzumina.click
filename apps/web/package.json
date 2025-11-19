@@ -46,7 +46,7 @@
 		"zod": "^4.1.12"
 	},
 	"devDependencies": {
-		"@next/bundle-analyzer": "^15.5.4",
+		"@next/bundle-analyzer": "^16.0.3",
 		"@playwright/test": "^1.56.0",
 		"@suzumina.click/typescript-config": "workspace:*",
 		"@tailwindcss/postcss": "^4.1.17",
