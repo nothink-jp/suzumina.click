@@ -16,7 +16,7 @@
 		"clean:all": "pnpm clean && rimraf node_modules **/node_modules"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.3.6",
+		"@biomejs/biome": "2.3.7",
 		"@vitest/coverage-v8": "^4.0.12",
 		"lefthook": "^2.0.4",
 		"rimraf": "^6.1.2",
