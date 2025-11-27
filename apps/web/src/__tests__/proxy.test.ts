@@ -1,36 +1,39 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { middleware } from "../middleware";
+import { proxy } from "../proxy";
 
 // NextResponse をモック
 vi.mock("next/server", async () => {
 	const actual = await vi.importActual("next/server");
+
+	// Mock NextResponse class
+	class MockNextResponse {
+		status: number;
+		body: any;
+		headers: Map<string, string>;
+
+		constructor(body?: any, init?: { status?: number }) {
+			this.status = init?.status || 200;
+			this.body = body;
+			this.headers = new Map();
+		}
+
+		static next() {
+			const response = new MockNextResponse(null, { status: 200 });
+			return response;
+		}
+	}
+
 	return {
 		...actual,
-		NextResponse: vi.fn().mockImplementation((body, init) => ({
-			status: init?.status || 200,
-			body,
-		})),
+		NextResponse: MockNextResponse,
 	};
 });
 
-// NextResponseのstatic methodsを追加
+// Setup headers mock
 beforeEach(() => {
-	(NextResponse as any).next = vi.fn(() => ({
-		status: 200,
-		headers: {
-			set: vi.fn(),
-			get: vi.fn(),
-			has: vi.fn(),
-			delete: vi.fn(),
-			append: vi.fn(),
-			entries: vi.fn(),
-			forEach: vi.fn(),
-			keys: vi.fn(),
-			values: vi.fn(),
-		},
-	}));
+	// MockNextResponse already has headers, no additional setup needed
+	vi.clearAllMocks();
 });
 
 // NextRequestのモック用ヘルパー
@@ -48,7 +51,7 @@ const createMockNextRequest = (url: string, options?: { headers?: Record<string,
 	} as unknown as NextRequest;
 };
 
-describe("middleware", () => {
+describe("proxy", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// 環境変数をリセット
@@ -61,7 +64,7 @@ describe("middleware", () => {
 			process.env.NODE_ENV = "development";
 
 			const request = createMockNextRequest("http://localhost:3000/test");
-			const response = await middleware(request);
+			const response = await proxy(request);
 
 			expect(response.status).toBe(200);
 		});
@@ -70,7 +73,7 @@ describe("middleware", () => {
 			process.env.NODE_ENV = "production";
 
 			const request = createMockNextRequest("http://example.com/test");
-			const response = await middleware(request);
+			const response = await proxy(request);
 
 			expect(response.status).toBe(200);
 		});
@@ -82,7 +85,7 @@ describe("middleware", () => {
 			const request = createMockNextRequest("http://suzumina.click/test", {
 				headers: { host: "suzumina.click" },
 			});
-			const response = await middleware(request);
+			const response = await proxy(request);
 
 			expect(response.status).toBe(200);
 		});
@@ -95,7 +98,7 @@ describe("middleware", () => {
 				headers: { host: "malicious.com" },
 			});
 
-			const response = await middleware(request);
+			const response = await proxy(request);
 
 			expect(response.status).toBe(404);
 			expect(response.body).toBe("Not Found");
@@ -108,7 +111,7 @@ describe("middleware", () => {
 			const request = createMockNextRequest("http://malicious.com/api/health", {
 				headers: { host: "malicious.com" },
 			});
-			const response = await middleware(request);
+			const response = await proxy(request);
 
 			expect(response.status).toBe(200);
 		});
@@ -120,14 +123,14 @@ describe("middleware", () => {
 			const adminRequest = createMockNextRequest("http://admin.suzumina.click/admin", {
 				headers: { host: "admin.suzumina.click" },
 			});
-			const adminResponse = await middleware(adminRequest);
+			const adminResponse = await proxy(adminRequest);
 
 			expect(adminResponse.status).toBe(200);
 
 			const apiRequest = createMockNextRequest("http://api.suzumina.click/api/test", {
 				headers: { host: "api.suzumina.click" },
 			});
-			const apiResponse = await middleware(apiRequest);
+			const apiResponse = await proxy(apiRequest);
 
 			expect(apiResponse.status).toBe(200);
 		});
@@ -138,7 +141,7 @@ describe("middleware", () => {
 
 			const request = createMockNextRequest("http://suzumina.click/test");
 			// headers.get("host") will return null
-			const response = await middleware(request);
+			const response = await proxy(request);
 
 			expect(response.status).toBe(200);
 		});
@@ -150,7 +153,7 @@ describe("middleware", () => {
 			const request = createMockNextRequest("http://suzumina.click/test", {
 				headers: { host: "suzumina.click" },
 			});
-			const response = await middleware(request);
+			const response = await proxy(request);
 
 			expect(response.status).toBe(200);
 		});
@@ -159,7 +162,7 @@ describe("middleware", () => {
 	describe("Path matching", () => {
 		it("should process paths that match the config matcher", async () => {
 			const request = createMockNextRequest("http://localhost:3000/test");
-			const response = await middleware(request);
+			const response = await proxy(request);
 
 			expect(response.status).toBe(200);
 		});
@@ -177,7 +180,7 @@ describe("middleware", () => {
 
 		it("should process API routes", async () => {
 			const request = createMockNextRequest("http://localhost:3000/api/test");
-			const response = await middleware(request);
+			const response = await proxy(request);
 
 			expect(response.status).toBe(200);
 		});
@@ -187,7 +190,7 @@ describe("middleware", () => {
 
 			for (const route of dynamicRoutes) {
 				const request = createMockNextRequest(`http://localhost:3000${route}`);
-				const response = await middleware(request);
+				const response = await proxy(request);
 
 				expect(response.status).toBe(200);
 			}
