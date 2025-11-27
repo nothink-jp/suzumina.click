@@ -5,33 +5,44 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { YouTubePlayerPool } from "../youtube-player-pool";
 
-// YouTube APIのモック
-const mockYTPlayer = {
-	playVideo: vi.fn(),
-	pauseVideo: vi.fn(),
-	stopVideo: vi.fn(),
-	seekTo: vi.fn(),
-	getCurrentTime: vi.fn(() => 0),
-	getPlayerState: vi.fn(() => 1),
-	setVolume: vi.fn(),
-	getVolume: vi.fn(() => 50),
-	destroy: vi.fn(),
-	addEventListener: vi.fn(),
-	removeEventListener: vi.fn(),
-};
+// Track the last created player instance
+let lastCreatedPlayer: MockYouTubePlayer | null = null;
 
-const mockYTConstructor = vi.fn((elementId, config) => {
-	// onReadyコールバックを即座に実行
-	setTimeout(() => {
-		config.events?.onReady?.();
-	}, 0);
-	return mockYTPlayer;
-});
+// Mock YouTube Player class
+class MockYouTubePlayer {
+	playVideo = vi.fn();
+	pauseVideo = vi.fn();
+	stopVideo = vi.fn();
+	seekTo = vi.fn();
+	getCurrentTime = vi.fn(() => 0);
+	getPlayerState = vi.fn(() => 1);
+	setVolume = vi.fn();
+	getVolume = vi.fn(() => 50);
+	destroy = vi.fn();
+	addEventListener = vi.fn();
+	removeEventListener = vi.fn();
+
+	constructor(elementId: string, config: any) {
+		// Track constructor calls
+		mockYTConstructorSpy(elementId, config);
+
+		// Store this instance as the last created player
+		lastCreatedPlayer = this;
+
+		// onReadyコールバックを即座に実行
+		setTimeout(() => {
+			config.events?.onReady?.();
+		}, 0);
+	}
+}
+
+// Spy for tracking constructor calls
+const mockYTConstructorSpy = vi.fn();
 
 // グローバルなYTオブジェクトをモック
 Object.defineProperty(window, "YT", {
 	value: {
-		Player: mockYTConstructor,
+		Player: MockYouTubePlayer,
 		PlayerState: {
 			UNSTARTED: -1,
 			ENDED: 0,
@@ -53,6 +64,9 @@ describe("YouTubePlayerPool", () => {
 
 		// DOMをクリア
 		document.body.innerHTML = "";
+
+		// Reset last created player
+		lastCreatedPlayer = null;
 
 		// シングルトンインスタンスをリセット
 		(YouTubePlayerPool as any).instance = null;
@@ -76,7 +90,7 @@ describe("YouTubePlayerPool", () => {
 		const player = await pool.getOrCreatePlayer("test-video-id");
 
 		expect(player).toBeDefined();
-		expect(mockYTConstructor).toHaveBeenCalledWith(
+		expect(mockYTConstructorSpy).toHaveBeenCalledWith(
 			expect.stringContaining("youtube-player-pool-test-video-id"),
 			expect.objectContaining({
 				videoId: "test-video-id",
@@ -91,7 +105,7 @@ describe("YouTubePlayerPool", () => {
 		const player2 = await pool.getOrCreatePlayer("test-video-id");
 
 		expect(player1).toBe(player2);
-		expect(mockYTConstructor).toHaveBeenCalledTimes(1);
+		expect(mockYTConstructorSpy).toHaveBeenCalledTimes(1);
 	});
 
 	it("should limit pool size to maximum", async () => {
@@ -115,8 +129,8 @@ describe("YouTubePlayerPool", () => {
 
 		await pool.playSegment("test-video-id", 10, 20, callbacks);
 
-		expect(mockYTPlayer.seekTo).toHaveBeenCalledWith(10, true);
-		expect(mockYTPlayer.playVideo).toHaveBeenCalled();
+		expect(lastCreatedPlayer?.seekTo).toHaveBeenCalledWith(10, true);
+		expect(lastCreatedPlayer?.playVideo).toHaveBeenCalled();
 		expect(callbacks.onPlay).toHaveBeenCalled();
 	});
 
@@ -129,7 +143,7 @@ describe("YouTubePlayerPool", () => {
 		await pool.playSegment("test-video-id", 10, 20, callbacks);
 		pool.stopCurrentSegment();
 
-		expect(mockYTPlayer.pauseVideo).toHaveBeenCalled();
+		expect(lastCreatedPlayer?.pauseVideo).toHaveBeenCalled();
 		expect(callbacks.onEnd).toHaveBeenCalled();
 	});
 
@@ -177,7 +191,7 @@ describe("YouTubePlayerPool", () => {
 
 		const stats = pool.getStats();
 		expect(stats.totalPlayers).toBe(0);
-		expect(mockYTPlayer.destroy).toHaveBeenCalled();
+		expect(lastCreatedPlayer?.destroy).toHaveBeenCalled();
 	});
 
 	it("should handle player creation errors", async () => {
@@ -205,7 +219,7 @@ describe("YouTubePlayerPool", () => {
 		await pool.playSegment("test-video-id", 10, 20, callbacks);
 
 		// getCurrentTimeが終了時間を超える値を返すように設定
-		mockYTPlayer.getCurrentTime.mockReturnValue(25);
+		lastCreatedPlayer?.getCurrentTime.mockReturnValue(25);
 
 		// 少し待ってからタイマーが動作したかチェック
 		await new Promise((resolve) => setTimeout(resolve, 300));

@@ -2,24 +2,42 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useYouTubePlayer, YouTubePlayer } from "../youtube-player";
 
+// Mock YouTube Player class
+class MockYouTubePlayer {
+	playVideo = vi.fn();
+	pauseVideo = vi.fn();
+	stopVideo = vi.fn();
+	seekTo = vi.fn();
+	getCurrentTime = vi.fn(() => 10);
+	getDuration = vi.fn(() => 300);
+	getPlayerState = vi.fn(() => 1);
+	setVolume = vi.fn();
+	getVolume = vi.fn(() => 50);
+	mute = vi.fn();
+	unMute = vi.fn();
+	isMuted = vi.fn(() => false);
+	destroy = vi.fn();
+
+	constructor(elementId: string, options: any) {
+		// Track constructor calls
+		MockYouTubePlayerConstructorSpy(elementId, options);
+
+		// Call onReady callback if provided
+		if (options?.events?.onReady) {
+			setTimeout(() => {
+				options.events.onReady({ target: this });
+			}, 0);
+		}
+	}
+}
+
+// Spy for tracking constructor calls
+const MockYouTubePlayerConstructorSpy = vi.fn();
+
 // Mock global window object
 Object.defineProperty(window, "YT", {
 	value: {
-		Player: vi.fn().mockImplementation(() => ({
-			playVideo: vi.fn(),
-			pauseVideo: vi.fn(),
-			stopVideo: vi.fn(),
-			seekTo: vi.fn(),
-			getCurrentTime: vi.fn(() => 10),
-			getDuration: vi.fn(() => 300),
-			getPlayerState: vi.fn(() => 1),
-			setVolume: vi.fn(),
-			getVolume: vi.fn(() => 50),
-			mute: vi.fn(),
-			unMute: vi.fn(),
-			isMuted: vi.fn(() => false),
-			destroy: vi.fn(),
-		})),
+		Player: MockYouTubePlayer,
 		PlayerState: {
 			UNSTARTED: -1,
 			ENDED: 0,
@@ -69,7 +87,7 @@ describe("YouTubePlayer", () => {
 			render(<YouTubePlayer videoId="test-video-id" startTime={30} endTime={120} />);
 
 			await waitFor(() => {
-				expect(window.YT.Player).toHaveBeenCalledWith(
+				expect(MockYouTubePlayerConstructorSpy).toHaveBeenCalledWith(
 					expect.any(String),
 					expect.objectContaining({
 						videoId: "test-video-id",
