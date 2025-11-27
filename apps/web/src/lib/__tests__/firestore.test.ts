@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// テスト用のモック実装
-const mockFirestoreInstance = {
-	collection: vi.fn(),
-	doc: vi.fn(),
-};
+// Mock Firestore class
+class MockFirestore {
+	collection = vi.fn();
+	doc = vi.fn();
 
-// Firestoreクラスのモック
-const MockFirestore = vi.fn(() => mockFirestoreInstance);
+	constructor(config?: any) {
+		// Track constructor calls
+		mockFirestoreConstructorSpy(config);
+	}
+}
+
+// Spy for tracking constructor calls
+const mockFirestoreConstructorSpy = vi.fn();
 
 // モジュール全体をモック
 vi.mock("@google-cloud/firestore", () => ({
@@ -27,11 +32,11 @@ describe("firestore module", () => {
 			const { createFirestoreInstance } = await import("../firestore");
 			const instance = createFirestoreInstance();
 
-			expect(MockFirestore).toHaveBeenCalledWith({
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledWith({
 				projectId: "suzumina-click-firebase",
 				ignoreUndefinedProperties: true,
 			});
-			expect(instance).toBe(mockFirestoreInstance);
+			expect(instance).toBeInstanceOf(MockFirestore);
 
 			process.env.GOOGLE_CLOUD_PROJECT = undefined;
 		});
@@ -43,11 +48,11 @@ describe("firestore module", () => {
 			const { createFirestoreInstance } = await import("../firestore");
 			const instance = createFirestoreInstance();
 
-			expect(MockFirestore).toHaveBeenCalledWith({
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledWith({
 				projectId: "suzumina-click",
 				ignoreUndefinedProperties: true,
 			});
-			expect(instance).toBe(mockFirestoreInstance);
+			expect(instance).toBeInstanceOf(MockFirestore);
 		});
 	});
 
@@ -60,7 +65,7 @@ describe("firestore module", () => {
 			const instance2 = getFirestore();
 
 			expect(instance1).toBe(instance2);
-			expect(MockFirestore).toHaveBeenCalledTimes(1);
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(1);
 		});
 
 		it("should create instance with correct project configuration", async () => {
@@ -70,7 +75,7 @@ describe("firestore module", () => {
 
 			getFirestore();
 
-			expect(MockFirestore).toHaveBeenCalledWith({
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledWith({
 				projectId: "suzumina-click",
 				ignoreUndefinedProperties: true,
 			});

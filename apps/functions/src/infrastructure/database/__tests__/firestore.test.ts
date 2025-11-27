@@ -5,13 +5,33 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 process.env.NODE_ENV = "test";
 process.env.ALLOW_TEST_FIRESTORE = "true";
 
-// Mock constructor function that creates a new instance each time
-const mockFirestoreConstructor = vi.fn().mockImplementation(() => ({
-	collection: vi.fn(),
-	doc: vi.fn(),
-	batch: vi.fn(),
-	runTransaction: vi.fn(),
-}));
+// Flag to control error throwing in constructor
+let shouldThrowInConstructor = false;
+let constructorError: Error | null = null;
+
+// Mock Firestore class
+class MockFirestore {
+	collection = vi.fn();
+	doc = vi.fn();
+	batch = vi.fn();
+	runTransaction = vi.fn();
+
+	constructor(config?: any) {
+		// Track constructor calls
+		mockFirestoreConstructorSpy(config);
+
+		// Throw error if configured
+		if (shouldThrowInConstructor && constructorError) {
+			shouldThrowInConstructor = false; // Reset flag after throwing
+			const error = constructorError;
+			constructorError = null;
+			throw error;
+		}
+	}
+}
+
+// Spy for tracking constructor calls
+const mockFirestoreConstructorSpy = vi.fn();
 
 // @google-cloud/firestore のモック
 vi.mock("@google-cloud/firestore", () => {
@@ -27,7 +47,7 @@ vi.mock("@google-cloud/firestore", () => {
 	}));
 
 	return {
-		Firestore: mockFirestoreConstructor,
+		Firestore: MockFirestore,
 		Timestamp: {
 			now: mockNow,
 			fromDate: mockFromDate,
@@ -57,6 +77,10 @@ describe("firestore", () => {
 		// Clear mocks but don't reset modules to avoid import issues
 		vi.clearAllMocks();
 
+		// Reset error flags
+		shouldThrowInConstructor = false;
+		constructorError = null;
+
 		// Reset firestore instance to ensure clean state
 		if (resetFirestoreInstance) {
 			resetFirestoreInstance();
@@ -77,11 +101,11 @@ describe("firestore", () => {
 		it("シングルトンとして動作し、初回呼び出し時のみFirestoreインスタンスを作成すること", () => {
 			// 1回目の呼び出し
 			const instance1 = getFirestore();
-			expect(mockFirestoreConstructor).toHaveBeenCalledTimes(1);
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(1);
 
 			// 2回目の呼び出し
 			const instance2 = getFirestore();
-			expect(mockFirestoreConstructor).toHaveBeenCalledTimes(1); // 追加で呼ばれていないこと
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(1); // 追加で呼ばれていないこと
 
 			// 同じインスタンスが返されること
 			expect(instance1).toBe(instance2);
@@ -102,18 +126,18 @@ describe("firestore", () => {
 
 		it("resetFirestoreInstance()の後に呼び出すと新しいインスタンスが作成されること", () => {
 			// Get current call count
-			const initialCallCount = mockFirestoreConstructor.mock.calls.length;
+			const initialCallCount = mockFirestoreConstructorSpy.mock.calls.length;
 
 			// 1回目の呼び出し
 			const instance1 = getFirestore();
-			expect(mockFirestoreConstructor).toHaveBeenCalledTimes(initialCallCount + 1);
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(initialCallCount + 1);
 
 			// インスタンスをリセット
 			resetFirestoreInstance();
 
 			// リセット後の呼び出し
 			const instance2 = getFirestore();
-			expect(mockFirestoreConstructor).toHaveBeenCalledTimes(initialCallCount + 2); // 新たにインスタンスが作成されること
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(initialCallCount + 2); // 新たにインスタンスが作成されること
 
 			// 異なるインスタンスが返されること
 			expect(instance1).not.toBe(instance2);
@@ -124,7 +148,7 @@ describe("firestore", () => {
 		it("Firestoreを初期化すること", () => {
 			const instance = createFirestoreInstance();
 
-			expect(mockFirestoreConstructor).toHaveBeenCalledWith({
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledWith({
 				ignoreUndefinedProperties: true,
 			});
 			expect(mockLoggerInfo).toHaveBeenCalledWith("Firestoreクライアントが初期化されました", {
@@ -192,9 +216,9 @@ describe("firestore", () => {
 
 	describe("エラーハンドリング", () => {
 		it("Firestoreコンストラクタがエラーを投げた場合、適切に伝播されること", () => {
-			mockFirestoreConstructor.mockImplementationOnce(() => {
-				throw new Error("Firestore initialization failed");
-			});
+			// Configure constructor to throw error
+			shouldThrowInConstructor = true;
+			constructorError = new Error("Firestore initialization failed");
 
 			expect(() => createFirestoreInstance()).toThrow("Firestore initialization failed");
 		});
@@ -213,21 +237,21 @@ describe("firestore", () => {
 		it("ignoreUndefinedPropertiesオプションが有効化されること", () => {
 			createFirestoreInstance();
 
-			expect(mockFirestoreConstructor).toHaveBeenCalledWith({
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledWith({
 				ignoreUndefinedProperties: true,
 			});
 		});
 
 		it("複数回の初期化でも同じオプションが使用されること", () => {
-			const initialCallCount = mockFirestoreConstructor.mock.calls.length;
+			const initialCallCount = mockFirestoreConstructorSpy.mock.calls.length;
 
 			createFirestoreInstance();
 			resetFirestoreInstance();
 			createFirestoreInstance();
 
-			expect(mockFirestoreConstructor).toHaveBeenCalledTimes(initialCallCount + 2);
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(initialCallCount + 2);
 			// Check that the most recent calls used the right options
-			const calls = mockFirestoreConstructor.mock.calls;
+			const calls = mockFirestoreConstructorSpy.mock.calls;
 			expect(calls[calls.length - 2]).toEqual([{ ignoreUndefinedProperties: true }]);
 			expect(calls[calls.length - 1]).toEqual([{ ignoreUndefinedProperties: true }]);
 		});
@@ -235,25 +259,25 @@ describe("firestore", () => {
 
 	describe("パフォーマンス・メモリ管理", () => {
 		it("シングルトンパターンによりメモリ効率が保たれること", () => {
-			const initialCallCount = mockFirestoreConstructor.mock.calls.length;
+			const initialCallCount = mockFirestoreConstructorSpy.mock.calls.length;
 
 			// 複数回呼び出してもコンストラクタは1回のみ
 			Array.from({ length: 10 }, () => getFirestore());
 
-			expect(mockFirestoreConstructor).toHaveBeenCalledTimes(initialCallCount + 1);
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(initialCallCount + 1);
 		});
 
 		it("resetFirestoreInstance()が確実にインスタンスをクリアすること", () => {
-			const initialCallCount = mockFirestoreConstructor.mock.calls.length;
+			const initialCallCount = mockFirestoreConstructorSpy.mock.calls.length;
 
 			const instance1 = getFirestore();
-			expect(mockFirestoreConstructor).toHaveBeenCalledTimes(initialCallCount + 1);
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(initialCallCount + 1);
 
 			resetFirestoreInstance();
 
 			// リセット後は新しいインスタンスが作成される
 			const instance2 = getFirestore();
-			expect(mockFirestoreConstructor).toHaveBeenCalledTimes(initialCallCount + 2);
+			expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(initialCallCount + 2);
 
 			expect(instance1).not.toBe(instance2);
 		});
@@ -282,7 +306,7 @@ describe("firestore", () => {
 
 	describe("環境固有テスト", () => {
 		it("テスト環境でのresetFirestoreInstanceが正常に動作すること", () => {
-			const initialCallCount = mockFirestoreConstructor.mock.calls.length;
+			const initialCallCount = mockFirestoreConstructorSpy.mock.calls.length;
 
 			// NODE_ENVがtestの場合の動作確認
 			const originalEnv = process.env.NODE_ENV;
@@ -294,14 +318,14 @@ describe("firestore", () => {
 				const instance2 = getFirestore();
 
 				expect(instance1).not.toBe(instance2);
-				expect(mockFirestoreConstructor).toHaveBeenCalledTimes(initialCallCount + 2);
+				expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(initialCallCount + 2);
 			} finally {
 				process.env.NODE_ENV = originalEnv;
 			}
 		});
 
 		it("本番環境でも同様に動作すること", () => {
-			const initialCallCount = mockFirestoreConstructor.mock.calls.length;
+			const initialCallCount = mockFirestoreConstructorSpy.mock.calls.length;
 
 			const originalEnv = process.env.NODE_ENV;
 			process.env.NODE_ENV = "production";
@@ -311,7 +335,7 @@ describe("firestore", () => {
 				const instance2 = getFirestore();
 
 				expect(instance1).toBe(instance2);
-				expect(mockFirestoreConstructor).toHaveBeenCalledTimes(initialCallCount + 1);
+				expect(mockFirestoreConstructorSpy).toHaveBeenCalledTimes(initialCallCount + 1);
 			} finally {
 				process.env.NODE_ENV = originalEnv;
 			}
