@@ -214,11 +214,12 @@ export function PriceHistoryChart({
 		return `${value.toLocaleString()} ${currency}`;
 	};
 
-	const formatTooltipPrice = (value: unknown, name: string) => {
-		if (value === undefined || value === null) return ["-", name];
+	const formatTooltipPrice = (value: unknown, name?: string) => {
+		const displayName = name ?? "";
+		if (value === undefined || value === null) return ["-", displayName];
 		const numValue = Number(value);
-		if (Number.isNaN(numValue)) return ["-", name];
-		return [formatPrice(numValue), name];
+		if (Number.isNaN(numValue)) return ["-", displayName];
+		return [formatPrice(numValue), displayName];
 	};
 
 	if (chartData.length === 0) {
