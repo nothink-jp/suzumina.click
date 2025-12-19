@@ -21,6 +21,7 @@ const METADATA_COLLECTION = "youtubeMetadata";
 
 // 実行制限関連の定数
 const MAX_PAGES_PER_EXECUTION = 3; // 1回の実行での最大ページ数
+const LOCK_TIMEOUT_MS = 30 * 60 * 1000; // ロックのタイムアウト（30分）
 
 // メタデータの型定義
 interface FetchMetadata {
@@ -113,10 +114,23 @@ async function prepareExecution(): Promise<[FetchMetadata | undefined, FetchResu
 	try {
 		metadata = await getOrCreateMetadata();
 
-		// 既に実行中の場合はスキップ（二重実行防止）
+		// 既に実行中の場合のチェック（二重実行防止）
 		if (metadata.isInProgress) {
-			logger.warn("前回の実行が完了していません。処理をスキップします。");
-			return [undefined, { videoCount: 0, error: "前回の処理が完了していません" }];
+			// ロックのタイムアウトチェック
+			const lastFetchedTime = metadata.lastFetchedAt.toMillis();
+			const currentTime = Date.now();
+			const elapsedMs = currentTime - lastFetchedTime;
+
+			if (elapsedMs < LOCK_TIMEOUT_MS) {
+				// タイムアウト前：まだ処理中と判断
+				logger.warn("前回の実行が完了していません。処理をスキップします。");
+				return [undefined, { videoCount: 0, error: "前回の処理が完了していません" }];
+			}
+
+			// タイムアウト経過：ロックが古いためリセットして続行
+			logger.warn(
+				`前回の実行ロックがタイムアウトしました（${Math.round(elapsedMs / 60000)}分経過）。ロックをリセットして処理を開始します。`,
+			);
 		}
 
 		// 処理開始を記録
