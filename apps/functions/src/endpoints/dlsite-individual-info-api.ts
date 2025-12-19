@@ -31,7 +31,7 @@ const METADATA_COLLECTION = "dlsiteMetadata";
 const MAX_CONCURRENT_API_REQUESTS = 5; // 6 → 3 → 5（バッチ処理を効率化: 50件を10回の並列処理で実行）
 const API_REQUEST_DELAY = 400;
 const BATCH_SIZE = 50; // 100 → 50に削減（エラー率低下とタイムアウト回避）
-const MAX_EXECUTION_TIME = 420000; // 7分
+const MAX_EXECUTION_TIME = 270000; // 4.5分（Cloud Functions 5分タイムアウトより短く設定）
 
 // Note: CollectionMetadata type is now imported from @suzumina.click/shared-types
 
