@@ -30,7 +30,8 @@
 	"packageManager": "pnpm@10.22.0",
 	"pnpm": {
 		"overrides": {
-			"jws": "^4.0.1"
+			"jws": "^4.0.1",
+			"body-parser@>=2.2.0 <2.2.1": ">=2.2.1"
 		}
 	}
 }
