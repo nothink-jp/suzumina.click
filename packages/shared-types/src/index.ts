@@ -5,8 +5,6 @@
 
 // === API Schemas ===
 export * from "./api-schemas/dlsite-raw";
-// === Configuration ===
-export * from "./config";
 // === Core utilities ===
 export {
 	type BusinessRuleError,
@@ -49,8 +47,6 @@ export * from "./entities/user-evaluation";
 export * from "./entities/work";
 // 作品評価関連の型とスキーマのエクスポート
 export * from "./entities/work-evaluation";
-// === Migration Utilities ===
-export * from "./migrations";
 export {
 	canCreateAudioButton,
 	canCreateButton,
@@ -72,9 +68,6 @@ export {
 	isUpcoming,
 	videoOperations,
 } from "./operations/video";
-// === Functional Architecture (New) ===
-// Operations (Business Logic)
-export { workOperations } from "./operations/work";
 // === Plain Objects ===
 export * from "./plain-objects/circle-plain";
 export * from "./plain-objects/video-plain";
@@ -144,16 +137,6 @@ export { formatTimestamp, parseDurationToSeconds } from "./utils";
 // ユーティリティ関数 (from subdirectories)
 export * from "./utils/date-parser";
 export * from "./utils/number-parser";
-export {
-	canUpdateVideo,
-	type ValidationResult as VideoValidationResult,
-	validateChannelId,
-	validateVideo,
-	validateVideoId,
-	videoValidators,
-} from "./validators/video";
-// Validators
-export { workValidators } from "./validators/work";
 // === Value Objects ===
 // Export base Value Object utilities and interfaces
 export * from "./value-objects";
