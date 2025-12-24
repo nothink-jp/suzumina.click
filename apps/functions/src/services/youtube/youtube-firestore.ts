@@ -252,14 +252,16 @@ export async function deleteUnauthorizedChannelVideos(): Promise<{
 		const batchVideos = videosToDelete.slice(i, i + MAX_FIRESTORE_BATCH_SIZE);
 		const batch = firestore.batch();
 
-		for (const video of batchVideos) {
+		const batchIds = batchVideos.map((video) => {
 			const docRef = videoRef.doc(video.id);
 			batch.delete(docRef);
-			deletedVideoIds.push(video.id);
-		}
+			return video.id;
+		});
 
 		try {
 			await batch.commit();
+			// コミット成功後にIDを追加（失敗時は追加しない）
+			deletedVideoIds.push(...batchIds);
 			logger.info(
 				`バッチ削除完了: ${batchVideos.length}件 (${i + 1}-${i + batchVideos.length}/${videosToDelete.length})`,
 			);
