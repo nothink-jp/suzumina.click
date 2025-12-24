@@ -12,7 +12,7 @@ Welcome to the suzumina.click project documentation. This is the central hub for
 
 **suzumina.click** is a fan community web platform for voice actress "Suzuka Minase" (涼花みなせ).
 
-- **Status**: Production Ready v0.3.8
+- **Status**: Production Ready v0.3.11
 - **URL**: https://suzumina.click
 - **Tech Stack**: Next.js 15, TypeScript, Firestore, Cloud Functions
 - **Repository**: Private GitHub repository
@@ -45,11 +45,6 @@ Design decisions and implementation patterns:
 - [ADR-001: DDD Implementation Guidelines](decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - When to apply DDD patterns
 - [ADR-002: TypeScript Type Safety Enhancement](decisions/architecture/ADR-002-typescript-type-safety-enhancement.md) - Branded Types, Result patterns, and Zod integration
 
-### Postmortems
-Incident analysis and lessons learned:
-
-- [2025-08-12: UI Component Deletion](postmortems/2025-08-12-ui-component-deletion.md) - Accidental deletion of used components
-
 ### External API Documentation
 Integration specifications and analysis:
 
@@ -62,13 +57,7 @@ How-to guides for common tasks:
 - [Development Guide](guides/development.md) - Environment setup and development workflow
 - [Testing Guide](guides/testing.md) - Testing strategies and best practices
 - [Deployment Guide](guides/deployment.md) - Deployment procedures and infrastructure
-- [TypeScript Type Safety Migration](guides/typescript-type-safety-migration.md) - Implementation guide for type safety enhancements
-- [TypeScript Migration Checklist](guides/typescript-migration-checklist.md) - Step-by-step checklist for migration
-
-### Code Examples
-Practical implementation examples:
-
-- [TypeScript Type Safety Examples](examples/typescript-type-safety-examples.md) - Before/after comparisons and sample implementations
+- [Git Workflow Guide](guides/git-workflow.md) - Branching and commit conventions
 
 ### Operational Documentation
 Day-to-day operational information:
@@ -132,16 +121,7 @@ pnpm build                                    # Build all packages
 2. Track [TODO](operations/todo.md)
 3. Check [Monitoring](operations/monitoring.md)
 
-## 📁 Archive
-
-Completed project documentation is archived in the [archive/](archive/) directory, organized by date and project name.
-
-Recent archives:
-- [2025-07 Server Component Optimization](archive/2025-07-server-component-optimization/)
-- [2025-07 Entity System Migration](archive/2025-07-entity-system-migration/)
-- [2025-07 Audio Button Optimization](archive/2025-07-audio-button-optimization/)
-
 ---
 
-**Last Updated**: 2025-07-28  
+**Last Updated**: 2025-12-24
 **Maintained by**: suzumina.click development team

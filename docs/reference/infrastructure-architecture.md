@@ -8,7 +8,7 @@
 
 - [Architecture Decision Records](../decisions/README.md) - アーキテクチャ決定記録
 - [ADR-001: DDD実装ガイドライン](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - Entity実装の判断基準
-- [ADR-002: Entity実装の教訓](../decisions/architecture/ADR-002-entity-implementation-lessons.md) - 実装の試みと学習事項
+- [ADR-005: Entity実装の教訓](../decisions/architecture/ADR-005-entity-implementation-lessons.md) - 実装の試みと学習事項
 
 ## 概要
 

@@ -10,14 +10,14 @@
 > **重要な決定**: ⚠️ 関数型パターンへの移行を断念 (2025-08-19)
 > - Entity/PlainObjectパターンから関数型パターンへの移行を試みたが、本番環境での表示不具合が発生
 > - 現行のEntity/PlainObjectパターンを維持し、安定性を優先する方針に決定
-> - 詳細は[ADR-002: Entity実装の教訓](../decisions/architecture/ADR-002-entity-implementation-lessons.md)を参照
+> - 詳細は[ADR-005: Entity実装の教訓](../decisions/architecture/ADR-005-entity-implementation-lessons.md)を参照
 
 ## 実装前の確認事項
 
 Entity実装を開始する前に、必ず以下を確認してください：
 
 1. [ADR-001: DDD実装ガイドライン](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - 実装判断基準
-2. [ADR-002: Entity実装の教訓](../decisions/architecture/ADR-002-entity-implementation-lessons.md) - 過去の実装から学ぶ
+2. [ADR-005: Entity実装の教訓](../decisions/architecture/ADR-005-entity-implementation-lessons.md) - 過去の実装から学ぶ
 
 ## Entity実装パターン
 

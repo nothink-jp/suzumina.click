@@ -6,7 +6,7 @@ This catalog provides detailed specifications for all domain objects in the suzu
 
 - [Entity Implementation Guide](entity-implementation-guide.md) - How to implement entities
 - [ADR-001: DDD Implementation Guidelines](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md) - When to use entities
-- [ADR-002: Entity Implementation Lessons](../decisions/architecture/ADR-002-entity-implementation-lessons.md) - Learning from experience
+- [ADR-005: Entity Implementation Lessons](../decisions/architecture/ADR-005-entity-implementation-lessons.md) - Learning from experience
 - [ADR-002: TypeScript Type Safety Enhancement](../decisions/architecture/ADR-002-typescript-type-safety-enhancement.md) - Type safety patterns
 
 ## Entities

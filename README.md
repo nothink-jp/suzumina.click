@@ -1,6 +1,6 @@
 # suzumina.click
 
-[![Version](https://img.shields.io/badge/version-v0.3.4-blue)](https://suzumina.click)
+[![Version](https://img.shields.io/badge/version-v0.3.11-blue)](https://suzumina.click)
 [![Status](https://img.shields.io/badge/status-production-green)](https://suzumina.click)
 
 声優「涼花みなせ」ファンコミュニティの非公式ファンサイト
@@ -57,10 +57,11 @@ pnpm build
 
 ## ドキュメント
 
-- **開発ガイド**: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+- **開発ガイド**: [docs/guides/development.md](docs/guides/development.md)
 - **技術仕様**: [CLAUDE.md](CLAUDE.md)
-- **データベース**: [docs/FIRESTORE_STRUCTURE.md](docs/FIRESTORE_STRUCTURE.md)
+- **アーキテクチャ**: [docs/reference/architecture.md](docs/reference/architecture.md)
+- **データベース**: [docs/reference/database-schema.md](docs/reference/database-schema.md)
 
 ## ライセンス
 
-MIT License - 個人運営の非公式ファンサイト（v0.3.4）
+MIT License - 個人運営の非公式ファンサイト（v0.3.11）

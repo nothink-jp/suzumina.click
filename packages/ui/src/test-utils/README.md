@@ -190,9 +190,9 @@ if (process.env.NODE_ENV === 'development') {
 
 ## 📚 関連ドキュメント
 
-- [`docs/AUDIO_BUTTON_OPTIMIZATION.md`](../../../docs/AUDIO_BUTTON_OPTIMIZATION.md) - 最適化プロジェクト全体設計
-- [`packages/ui/src/components/custom/`](../components/custom/) - 本番使用コンポーネント
-- [`docs/DEVELOPMENT.md`](../../../docs/DEVELOPMENT.md) - 開発環境・原則
+- [UIパッケージREADME](../../README.md) - UIコンポーネントライブラリ概要
+- [カスタムコンポーネント](../components/custom/) - 本番使用コンポーネント
+- [開発ガイド](../../../../docs/guides/development.md) - 開発環境・原則
 
 ## 🎯 Phase 2完了状況
 
@@ -206,6 +206,6 @@ if (process.env.NODE_ENV === 'development') {
 
 ---
 
-**suzumina.click プロジェクト Phase 2 音声ボタンパフォーマンス最適化**  
-**更新日**: 2025-07-19  
-**バージョン**: 0.3.4
+**suzumina.click プロジェクト - テストユーティリティ**
+**更新日**: 2025-12-24
+**バージョン**: 0.3.11
