@@ -73,17 +73,6 @@ export async function isSearchEngineBot(): Promise<boolean> {
 }
 
 /**
- * Client-side bot detection (fallback)
- * @returns boolean indicating if request is from a bot
- */
-export function isClientSideBot(): boolean {
-	if (typeof navigator === "undefined") return false;
-
-	const userAgent = navigator.userAgent.toLowerCase();
-	return BOT_USER_AGENTS.some((bot) => userAgent.includes(bot));
-}
-
-/**
  * Check if current environment should skip age verification
  * Includes bots and development environment
  */
@@ -95,27 +84,4 @@ export async function shouldSkipAgeVerification(): Promise<boolean> {
 
 	// Skip for search engine bots
 	return await isSearchEngineBot();
-}
-
-/**
- * Get user agent information for debugging
- */
-export async function getUserAgentInfo() {
-	try {
-		const headersList = await headers();
-		const userAgent = headersList.get("user-agent") || "";
-		const isBot = await isSearchEngineBot();
-
-		return {
-			userAgent,
-			isBot,
-			matchedBots: BOT_USER_AGENTS.filter((bot) => userAgent.toLowerCase().includes(bot)),
-		};
-	} catch (_error) {
-		return {
-			userAgent: "unknown",
-			isBot: false,
-			matchedBots: [],
-		};
-	}
 }
