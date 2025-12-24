@@ -109,11 +109,11 @@ pnpm build
 
 ## ⚠️ IMPORTANT NOTES
 
-1. **Ubiquitous Language**: Follow terminology in [UBIQUITOUS_LANGUAGE.md](docs/UBIQUITOUS_LANGUAGE.md)
+1. **Ubiquitous Language**: Follow terminology in [ubiquitous-language.md](docs/reference/ubiquitous-language.md)
 2. **Recent Changes**: Check [CHANGELOG.md](docs/operations/changelog.md) for latest updates
 3. **Active Tasks**: Review [TODO.md](docs/operations/todo.md) for current priorities
 
 ---
 
-**Last Updated**: 2025-10-13
-**Document Version**: 4.4 (Updated to v0.3.11 with Server Actions refactoring)
+**Last Updated**: 2025-12-24
+**Document Version**: 4.5 (v0.3.11 with docs cleanup)

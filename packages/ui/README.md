@@ -1,4 +1,4 @@
-# @suzumina.click/ui v0.3.4
+# @suzumina.click/ui v0.3.11
 
 涼花みなせファンサイト用 UI コンポーネントライブラリ（Storybook統合・包括的テストスイート実装完了）
 
@@ -192,7 +192,6 @@ pnpm dlx shadcn@latest add <component>
 ## 📚 関連ドキュメント
 
 - **[プロジェクト概要](../../README.md)** - メインプロジェクト情報
-- **[詳細仕様](../../docs/README.md)** - 包括的プロジェクトドキュメント
-- **[開発ガイド](../../docs/DEVELOPMENT.md)** - 設計原則・コーディング規約
-- **[クイックリファレンス](../../docs/QUICK_REFERENCE.md)** - よく使うコマンド・即座参照
-- **[CLAUDE.md](../../CLAUDE.md)** - リポジトリ指示・開発状況
+- **[ドキュメントインデックス](../../docs/README.md)** - プロジェクトドキュメント
+- **[開発ガイド](../../docs/guides/development.md)** - 設計原則・コーディング規約
+- **[CLAUDE.md](../../CLAUDE.md)** - AI開発ガイドライン
