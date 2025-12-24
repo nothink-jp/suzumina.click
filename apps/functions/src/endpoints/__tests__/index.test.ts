@@ -10,7 +10,6 @@ vi.mock("../../../shared/logger", () => ({
 
 vi.mock("../youtube", () => ({
 	fetchYouTubeVideos: vi.fn(),
-	cleanupUnauthorizedVideos: vi.fn(),
 }));
 
 vi.mock("../dlsite-individual-info-api", () => ({

@@ -13,7 +13,7 @@ import * as logger from "../shared/logger";
 // 各モジュールから関数をインポート（統合アーキテクチャ）
 import { checkDataIntegrity } from "./data-integrity-check";
 import { fetchDLsiteUnifiedData } from "./dlsite-individual-info-api";
-import { cleanupUnauthorizedVideos, fetchYouTubeVideos } from "./youtube";
+import { fetchYouTubeVideos } from "./youtube";
 
 /**
  * アプリケーション初期化関数
@@ -49,10 +49,6 @@ interface PubsubMessage {
 functions.cloudEvent<PubsubMessage>("fetchYouTubeVideos", fetchYouTubeVideos);
 functions.cloudEvent<PubsubMessage>("fetchDLsiteUnifiedData", fetchDLsiteUnifiedData);
 functions.cloudEvent<PubsubMessage>("checkDataIntegrity", checkDataIntegrity);
-
-// スパム動画クリーンアップ用（手動トリガー）
-// 注: この関数は一時的なクリーンアップ用であり、処理完了後に削除可能
-functions.cloudEvent<PubsubMessage>("cleanupUnauthorizedVideos", cleanupUnauthorizedVideos);
 
 /**
  * プロセス終了処理

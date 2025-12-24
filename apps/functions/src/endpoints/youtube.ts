@@ -9,10 +9,7 @@ import {
 	initializeYouTubeClient,
 	searchVideos,
 } from "../services/youtube/youtube-api";
-import {
-	deleteUnauthorizedChannelVideos,
-	saveVideosToFirestore,
-} from "../services/youtube/youtube-firestore";
+import { saveVideosToFirestore } from "../services/youtube/youtube-firestore";
 import { SUZUKA_MINASE_CHANNEL_ID } from "../shared/common";
 import * as logger from "../shared/logger";
 
@@ -454,29 +451,5 @@ export const fetchYouTubeVideos = async (event: CloudEvent<PubsubMessage>): Prom
 		} catch (updateError) {
 			logger.error("エラー状態の記録に失敗しました:", updateError);
 		}
-	}
-};
-
-/**
- * 不正チャンネルの動画をクリーンアップするHTTPエンドポイント
- * （スパム動画削除用の一時的なエンドポイント）
- *
- * @param _event - Pub/SubトリガーからのCloudEvent
- * @returns Promise<void>
- */
-export const cleanupUnauthorizedVideos = async (
-	_event: CloudEvent<PubsubMessage>,
-): Promise<void> => {
-	logger.info("cleanupUnauthorizedVideos 関数を開始しました");
-
-	try {
-		const result = await deleteUnauthorizedChannelVideos();
-
-		logger.info("不正チャンネル動画のクリーンアップが完了しました", {
-			deletedCount: result.deletedCount,
-			deletedVideoIds: result.deletedVideoIds,
-		});
-	} catch (error: unknown) {
-		logger.error("cleanupUnauthorizedVideos 関数で例外が発生しました:", error);
 	}
 };
