@@ -356,24 +356,15 @@ async function main(): Promise<void> {
 
 		const detector = new RegionRestrictionDetector();
 
-		// Step 1: 制限作品検出
-		const detectionResult = await detector.detectRegionRestrictedWorks();
+		// Step 1: 制限作品検出（結果はdetectRegionRestrictedWorks内でログ出力済み）
+		await detector.detectRegionRestrictedWorks();
 
-		// Step 2: 統計情報取得
+		// Step 2: 統計情報取得・表示
 		const statistics = await detector.getRestrictionStatistics();
-		for (const [_method, count] of Object.entries(statistics.byDetectionMethod)) {
-			if (count > 0) {
-			}
-		}
+		logger.info("📊 検出方法別統計", statistics.byDetectionMethod);
 
 		if (statistics.recentDetections.length > 0) {
-		}
-
-		if (detectionResult.newlyDetected > 0) {
-			detectionResult.restrictedWorkIds
-				.filter((id) => !detectionResult.restrictedWorkIds.includes(id))
-				.slice(0, 10)
-				.forEach((_workId, _index) => {});
+			logger.info(`🕐 直近24時間の検出: ${statistics.recentDetections.length}件`);
 		}
 
 		logger.info("🎉 リージョン制限検出ツール完了");

@@ -19,12 +19,28 @@ export async function showFailureStats(): Promise<void> {
 		const totalWorks = failureStats.totalFailedWorks + failureStats.recoveredWorks;
 		const currentFailureRate =
 			totalWorks > 0 ? (failureStats.unrecoveredWorks / totalWorks) * 100 : 0;
-		Object.entries(failureStats.failureReasons).forEach(([_reason, _count]) => {});
+
+		logger.info("📈 失敗統計サマリー", {
+			totalWorks,
+			failedWorks: failureStats.totalFailedWorks,
+			recoveredWorks: failureStats.recoveredWorks,
+			unrecoveredWorks: failureStats.unrecoveredWorks,
+			currentFailureRate: `${currentFailureRate.toFixed(1)}%`,
+		});
+
+		// 失敗理由の表示
+		const reasons = Object.entries(failureStats.failureReasons);
+		if (reasons.length > 0) {
+			logger.info("📋 失敗理由内訳", Object.fromEntries(reasons));
+		}
 
 		// 単純な状況評価
 		if (currentFailureRate > 50) {
+			logger.warn("🔴 要対応: 失敗率が50%を超えています");
 		} else if (currentFailureRate > 20) {
+			logger.warn("🟡 注意: 失敗率が20%を超えています");
 		} else {
+			logger.info("🟢 良好: 失敗率は正常範囲です");
 		}
 	} catch (error) {
 		logger.error("失敗統計表示エラー:", {
@@ -78,7 +94,19 @@ function displayStatistics(stats: {
 	topFailureReasons: Array<{ reason: string; count: number }>;
 	systemStatus: string;
 }): void {
-	stats.topFailureReasons.forEach((_item, _index) => {});
+	logger.info("📊 システム統計", {
+		systemStatus: stats.systemStatus,
+		totalWorks: stats.totalWorks,
+		successRate: `${stats.successRate.toFixed(1)}%`,
+		unrecoveredWorks: stats.unrecoveredWorks,
+	});
+
+	if (stats.topFailureReasons.length > 0) {
+		logger.info(
+			"📋 主要失敗理由",
+			Object.fromEntries(stats.topFailureReasons.map((item) => [item.reason, item.count])),
+		);
+	}
 }
 
 /**
@@ -88,6 +116,9 @@ function displayImprovementSuggestions(successRate: number): void {
 	if (successRate >= 95) return;
 
 	if (successRate < 90) {
+		logger.warn("💡 改善提案: 成功率が90%未満です。失敗理由を確認してください。");
+	} else {
+		logger.info("💡 改善提案: 成功率は良好ですが、95%以上を目指しましょう。");
 	}
 }
 
@@ -164,7 +195,25 @@ export async function resetMetadata(): Promise<void> {
 /**
  * 運用ツールのヘルプ表示
  */
-export function showHelp(): void {}
+export function showHelp(): void {
+	const helpText = `
+DLsite Functions 運用ツール
+
+使用方法:
+  pnpm tools:<command>
+
+コマンド:
+  stats   失敗統計を表示
+  report  週次健全性レポートを生成
+  reset   メタデータをリセット
+  help    このヘルプを表示
+
+例:
+  pnpm tools:stats
+  pnpm tools:report
+`;
+	process.stdout.write(helpText);
+}
 
 // スクリプト実行
 if (require.main === module) {
