@@ -496,39 +496,53 @@ async function finalizeCompletedProcessing(
 }
 
 /**
+ * 新規バッチ処理の準備
+ */
+async function prepareNewBatchProcessing(metadata: CollectionMetadata): Promise<{
+	allWorkIds: string[];
+	batches: string[][];
+} | null> {
+	const currentWorkIds = await collectWorkIdsWithFallback();
+
+	// 作品数が変わっているかチェック
+	const isWorkCountChanged =
+		metadata.allWorkIds && metadata.allWorkIds.length !== currentWorkIds.length;
+
+	if (isWorkCountChanged && metadata.allWorkIds) {
+		logger.info("作品数が変更されたため新規処理として開始します", {
+			前回の作品数: metadata.allWorkIds.length,
+			現在の作品数: currentWorkIds.length,
+		});
+	}
+
+	if (currentWorkIds.length === 0) {
+		logger.error("収集対象の作品IDが見つかりません");
+		return null;
+	}
+
+	const batches = chunkArray(currentWorkIds, BATCH_SIZE);
+	await initializeNewBatchProcessing(currentWorkIds, batches);
+
+	return { allWorkIds: currentWorkIds, batches };
+}
+
+/**
  * 統合データ収集処理の実行
  */
 async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
-	const startTime = Date.now();
-
 	try {
 		// メタデータから処理状態を確認
 		const metadata = await getOrCreateUnifiedMetadata();
 
-		// 現在の作品IDリストを取得
-		const currentWorkIds = await collectWorkIdsWithFallback();
-
-		// 作品数が変わっているかチェック
-		const isWorkCountChanged =
-			metadata.allWorkIds && metadata.allWorkIds.length !== currentWorkIds.length;
-
-		if (isWorkCountChanged && metadata.allWorkIds) {
-			logger.info("作品数が変更されたため新規処理として開始します", {
-				前回の作品数: metadata.allWorkIds.length,
-				現在の作品数: currentWorkIds.length,
-			});
-		}
-
-		const continuationInfo = isWorkCountChanged
-			? { isContinuation: false as const }
-			: getContinuationInfo(metadata);
+		// 継続処理かどうかを先に判定
+		const continuationInfo = getContinuationInfo(metadata);
 
 		let allWorkIds: string[];
 		let batches: string[][];
 		let startBatch = 0;
 
 		if (continuationInfo.isContinuation === true) {
-			// 継続処理
+			// 継続処理: 保存済みの作品IDを使用（作品ID収集をスキップして時間を節約）
 			allWorkIds = continuationInfo.allWorkIds;
 			batches = chunkArray(allWorkIds, BATCH_SIZE);
 			startBatch = continuationInfo.startBatch;
@@ -536,11 +550,9 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 				`継続処理詳細: allWorkIds.length=${allWorkIds.length}, batches.length=${batches.length}, startBatch=${startBatch}`,
 			);
 		} else {
-			// 新規処理
-			allWorkIds = currentWorkIds;
-
-			if (allWorkIds.length === 0) {
-				logger.error("収集対象の作品IDが見つかりません");
+			// 新規処理: 作品IDを収集
+			const prepared = await prepareNewBatchProcessing(metadata);
+			if (!prepared) {
 				return {
 					workCount: 0,
 					apiCallCount: 0,
@@ -548,14 +560,21 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 					error: "収集対象の作品IDが見つかりません",
 				};
 			}
-
-			batches = chunkArray(allWorkIds, BATCH_SIZE);
-			await initializeNewBatchProcessing(allWorkIds, batches);
+			allWorkIds = prepared.allWorkIds;
+			batches = prepared.batches;
 		}
 
-		// 既存データの取得
-		const existingWorksMap = await getExistingWorksMap(allWorkIds);
-		logger.info(`既存作品マップ取得完了: ${existingWorksMap.size}件`);
+		// 継続処理の場合は残りのバッチの作品IDのみを対象にする
+		const remainingWorkIds = startBatch > 0 ? batches.slice(startBatch).flat() : allWorkIds;
+
+		// 既存データの取得（残りのバッチ分のみ）
+		const existingWorksMap = await getExistingWorksMap(remainingWorkIds);
+		logger.info(
+			`既存作品マップ取得完了: ${existingWorksMap.size}件（対象: ${remainingWorkIds.length}件）`,
+		);
+
+		// 準備完了後にタイマー開始（バッチ処理の実際の開始時点）
+		const startTime = Date.now();
 
 		// デバッグ: バッチ処理の状態を確認
 		logger.info(`バッチ処理開始: batches.length=${batches.length}, startBatch=${startBatch}`);
