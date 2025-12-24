@@ -33,7 +33,7 @@
 重要な技術的決定は[Architecture Decision Records (ADRs)](../decisions/README.md)に記録されています：
 
 - [ADR-001: DDD実装ガイドライン](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md)
-- [ADR-002: Entity実装の教訓](../decisions/architecture/ADR-002-entity-implementation-lessons.md)
+- [ADR-005: Entity実装の教訓](../decisions/architecture/ADR-005-entity-implementation-lessons.md)
 
 ## システム全体像
 

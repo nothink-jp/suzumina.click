@@ -152,7 +152,7 @@ packages/shared-types/src/
 
 ## 参考
 - [ADR-001: DDD実装ガイドライン](ADR-001-ddd-implementation-guidelines.md)
-- [ADR-002: Entity実装の教訓](ADR-002-entity-implementation-lessons.md)
+- [ADR-005: Entity実装の教訓](ADR-005-entity-implementation-lessons.md)
 
 ## 決定者
 - 提案者: Claude (AI Assistant)

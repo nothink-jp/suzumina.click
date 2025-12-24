@@ -92,7 +92,7 @@ User → AudioButton (作成者、お気に入り)
 - Creator エンティティ（ビジネスルールが少ない）
 - CreatorWorkMapping エンティティ（単純な関連付け）
 
-詳細は [ADR-002: Entity実装の教訓](../decisions/architecture/ADR-002-entity-implementation-lessons.md) を参照
+詳細は [ADR-005: Entity実装の教訓](../decisions/architecture/ADR-005-entity-implementation-lessons.md) を参照
 
 ## ファイル構成
 
