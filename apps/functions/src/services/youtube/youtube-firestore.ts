@@ -9,6 +9,7 @@ import type { FirestoreServerVideoData } from "@suzumina.click/shared-types";
 import { videoToFirestore } from "@suzumina.click/shared-types";
 import type { youtube_v3 } from "googleapis";
 import firestore from "../../infrastructure/database/firestore";
+import { SUZUKA_MINASE_CHANNEL_ID } from "../../shared/common";
 import * as logger from "../../shared/logger";
 import { VideoMapper } from "../mappers/video-mapper";
 
@@ -27,12 +28,49 @@ export async function saveVideosToFirestore(videos: youtube_v3.Schema$Video[]): 
 		return 0;
 	}
 
-	// チャンネルIDでグループ化
-	const videosByChannel = new Map<string, youtube_v3.Schema$Video[]>();
+	// 許可されたチャンネルIDの動画のみをフィルタリング
+	const filteredVideos: youtube_v3.Schema$Video[] = [];
+	let skippedCount = 0;
+
 	for (const video of videos) {
 		const channelId = video.snippet?.channelId;
 		if (!channelId) {
 			logger.warn("動画にチャンネルIDがありません", { videoId: video.id });
+			skippedCount++;
+			continue;
+		}
+
+		// 許可されたチャンネルIDかチェック
+		if (channelId !== SUZUKA_MINASE_CHANNEL_ID) {
+			logger.warn("許可されていないチャンネルの動画をスキップしました", {
+				videoId: video.id,
+				videoTitle: video.snippet?.title,
+				channelId,
+				expectedChannelId: SUZUKA_MINASE_CHANNEL_ID,
+			});
+			skippedCount++;
+			continue;
+		}
+
+		filteredVideos.push(video);
+	}
+
+	if (skippedCount > 0) {
+		logger.info(
+			`チャンネルIDフィルタリング完了: ${filteredVideos.length}件保存対象、${skippedCount}件スキップ`,
+		);
+	}
+
+	if (filteredVideos.length === 0) {
+		logger.warn("保存対象の動画がありません（すべてフィルタリングされました）");
+		return 0;
+	}
+
+	// チャンネルIDでグループ化（フィルタリング済みなので基本的に1チャンネルのみ）
+	const videosByChannel = new Map<string, youtube_v3.Schema$Video[]>();
+	for (const video of filteredVideos) {
+		const channelId = video.snippet?.channelId;
+		if (!channelId) {
 			continue;
 		}
 
@@ -52,11 +90,11 @@ export async function saveVideosToFirestore(videos: youtube_v3.Schema$Video[]): 
 	}
 
 	// 保存に失敗した場合のみログを出力
-	if (totalSaved < videos.length) {
+	if (totalSaved < filteredVideos.length) {
 		logger.warn("一部の動画保存に失敗", {
-			total: videos.length,
+			total: filteredVideos.length,
 			saved: totalSaved,
-			failed: videos.length - totalSaved,
+			failed: filteredVideos.length - totalSaved,
 		});
 	}
 
@@ -157,6 +195,91 @@ async function saveChannelVideos(
 	}
 
 	return { savedCount };
+}
+
+/**
+ * 許可されていないチャンネルの動画をFirestoreから削除
+ * （スパム動画のクリーンアップ用）
+ *
+ * @returns 削除された動画数と削除された動画のID一覧
+ */
+export async function deleteUnauthorizedChannelVideos(): Promise<{
+	deletedCount: number;
+	deletedVideoIds: string[];
+}> {
+	const videoRef = firestore.collection(VIDEOS_COLLECTION);
+	const deletedVideoIds: string[] = [];
+
+	// 全動画を取得してチャンネルIDをチェック
+	const snapshot = await videoRef.get();
+
+	if (snapshot.empty) {
+		logger.info("動画コレクションは空です");
+		return { deletedCount: 0, deletedVideoIds: [] };
+	}
+
+	// 削除対象の動画を収集
+	const videosToDelete: { id: string; channelId: string; title?: string }[] = [];
+
+	for (const doc of snapshot.docs) {
+		const data = doc.data();
+		const channelId = data.channelId as string | undefined;
+
+		if (!channelId || channelId !== SUZUKA_MINASE_CHANNEL_ID) {
+			videosToDelete.push({
+				id: doc.id,
+				channelId: channelId || "undefined",
+				title: data.title as string | undefined,
+			});
+		}
+	}
+
+	if (videosToDelete.length === 0) {
+		logger.info("削除対象の動画はありません");
+		return { deletedCount: 0, deletedVideoIds: [] };
+	}
+
+	logger.info(`削除対象の動画を${videosToDelete.length}件発見しました`, {
+		videos: videosToDelete.map((v) => ({
+			id: v.id,
+			channelId: v.channelId,
+			title: v.title?.substring(0, 50),
+		})),
+	});
+
+	// バッチ削除（Firestoreバッチサイズ制限を考慮）
+	for (let i = 0; i < videosToDelete.length; i += MAX_FIRESTORE_BATCH_SIZE) {
+		const batchVideos = videosToDelete.slice(i, i + MAX_FIRESTORE_BATCH_SIZE);
+		const batch = firestore.batch();
+
+		const batchIds = batchVideos.map((video) => {
+			const docRef = videoRef.doc(video.id);
+			batch.delete(docRef);
+			return video.id;
+		});
+
+		try {
+			await batch.commit();
+			// コミット成功後にIDを追加（失敗時は追加しない）
+			deletedVideoIds.push(...batchIds);
+			logger.info(
+				`バッチ削除完了: ${batchVideos.length}件 (${i + 1}-${i + batchVideos.length}/${videosToDelete.length})`,
+			);
+		} catch (error) {
+			logger.error("バッチ削除エラー", {
+				batchStart: i,
+				batchSize: batchVideos.length,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
+
+	logger.info(`不正チャンネル動画の削除完了: ${deletedVideoIds.length}件削除`);
+
+	return {
+		deletedCount: deletedVideoIds.length,
+		deletedVideoIds,
+	};
 }
 
 /**
