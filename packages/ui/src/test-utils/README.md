@@ -35,13 +35,16 @@ import {
 // ビューポートサイズをモック
 mockViewport(1440, 900);
 
-// 複数ビューポートでテスト
-testAcrossViewports(() => {
-  // テストコード
+// 複数ビューポートでテスト（Mobile, Tablet, Desktopで自動実行）
+testAcrossViewports("ボタンのタッチターゲット検証", (viewport) => {
+  // viewport.name, viewport.width, viewport.height にアクセス可能
 });
 
 // レスポンシブクラスの検証
-validateResponsiveClasses(element, ["sm:h-9", "h-11"]);
+validateResponsiveClasses(element, {
+  base: ["h-11"],
+  tablet: ["sm:h-9"],
+});
 ```
 
 ## ⚠️ 注意事項
