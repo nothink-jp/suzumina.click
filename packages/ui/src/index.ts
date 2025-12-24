@@ -10,5 +10,3 @@ export {
 	getYouTubeCategoryName,
 	isValidCategoryId,
 } from "./lib/youtube-category-utils";
-// Types
-export * from "./types";

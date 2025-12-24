@@ -36,7 +36,7 @@ export {
 } from "./configurable-list/utils/filterHelpers";
 
 // Utility components
-export { HighlightTags, HighlightText, MultiFieldHighlight } from "./highlight-text";
+export { HighlightText } from "./highlight-text";
 
 // Layout components
 export { ListPageContent, ListPageHeader, ListPageLayout } from "./list-page-layout";
@@ -56,6 +56,5 @@ export type { ValidationMessageProps } from "./validation-message";
 export { ValidationMessage, ValidationMessages } from "./validation-message";
 
 // YouTube components
-export { YouTubeAPIManager } from "./youtube-api-manager";
 export { YouTubePlayer } from "./youtube-player";
 export type { YTPlayer, YTPlayerOptions, YTPlayerQuality, YTPlayerState } from "./youtube-types";
