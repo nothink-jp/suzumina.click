@@ -1,22 +1,21 @@
 "use client";
 
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { UI_MESSAGES } from "@/constants/ui-messages";
+import { useAudioButtonStatuses } from "@/hooks/use-audio-button-statuses";
 import { AudioButtonWithPlayCount } from "./audio-button-with-play-count";
 
 interface FeaturedAudioButtonsCarouselProps {
 	audioButtons: AudioButtonPlainObject[];
-	initialLikeDislikeStatuses?: Record<string, { isLiked: boolean; isDisliked: boolean }>;
-	initialFavoriteStatuses?: Record<string, boolean>;
 }
 
-export function FeaturedAudioButtonsCarousel({
-	audioButtons,
-	initialLikeDislikeStatuses = {},
-	initialFavoriteStatuses = {},
-}: FeaturedAudioButtonsCarouselProps) {
+export function FeaturedAudioButtonsCarousel({ audioButtons }: FeaturedAudioButtonsCarouselProps) {
 	const [isMobile, setIsMobile] = useState(false);
+
+	const audioButtonIds = useMemo(() => audioButtons.map((button) => button.id), [audioButtons]);
+
+	const { likeDislikeStatuses, favoriteStatuses } = useAudioButtonStatuses(audioButtonIds);
 
 	useEffect(() => {
 		const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -36,8 +35,8 @@ export function FeaturedAudioButtonsCarousel({
 	return (
 		<div className="flex flex-wrap gap-2 sm:gap-3 items-start justify-center">
 			{audioButtons.map((audioButton) => {
-				const likeDislikeStatus = initialLikeDislikeStatuses[audioButton.id];
-				const isFavorited = initialFavoriteStatuses[audioButton.id] || false;
+				const likeDislikeStatus = likeDislikeStatuses[audioButton.id];
+				const isFavorited = favoriteStatuses[audioButton.id] || false;
 
 				return (
 					<AudioButtonWithPlayCount
