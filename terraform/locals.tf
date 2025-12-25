@@ -22,7 +22,7 @@ locals {
     }
     production = {
       # 本番環境（個人利用レベル・パフォーマンス改善）
-      cloud_run_min_instances = 0        # コールドスタート許容（ウォームアップで対応）
+      cloud_run_min_instances = 1        # LCP改善: コールドスタート排除
       cloud_run_max_instances = 2        # 最大インスタンス数を制限
       cloud_run_cpu           = "500m"   # CPU維持（0.5vCPU）
       cloud_run_memory        = "1024Mi" # メモリ増強（1GB）でGC改善

@@ -224,6 +224,26 @@ const nextConfig = {
 					},
 				],
 			},
+			// 動的ページのstale-while-revalidate（LCP改善）
+			// force-dynamicページでもブラウザキャッシュを活用
+			{
+				source: "/creators/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, s-maxage=60, stale-while-revalidate=300",
+					},
+				],
+			},
+			{
+				source: "/circles/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, s-maxage=60, stale-while-revalidate=300",
+					},
+				],
+			},
 		];
 	},
 };
