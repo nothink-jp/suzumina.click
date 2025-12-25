@@ -2,8 +2,8 @@ import { HomePage } from "@/components/home/home-page";
 import { getLatestAudioButtons, getLatestVideos, getLatestWorks } from "./actions";
 
 // Static generation with ISR for better performance
-// Start with 1 minute cache, gradually increase after testing
-export const revalidate = 60;
+// 5 minute cache to reduce Firestore queries and improve LCP
+export const revalidate = 300;
 
 // Server Component として実装し、全データを並列取得
 export default async function Home() {
