@@ -6,9 +6,11 @@
 import { lazy } from "react";
 
 // 画面外のカルーセルコンポーネントを遅延読み込み
+// LCP改善: サーバーコンポーネントではなくクライアントコンポーネントを直接使用
+// ユーザー状態（いいね・低評価・お気に入り）はクライアントサイドで非同期取得
 export const LazyFeaturedAudioButtonsCarousel = lazy(() =>
-	import("@/components/audio/featured-audio-buttons-carousel-server").then((module) => ({
-		default: module.FeaturedAudioButtonsCarouselServer,
+	import("@/components/audio/featured-audio-buttons-carousel").then((module) => ({
+		default: module.FeaturedAudioButtonsCarousel,
 	})),
 );
 
