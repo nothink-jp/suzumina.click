@@ -18,6 +18,9 @@ import { getCurrentConsentState } from "../consent/google-consent-mode";
 
 type WebVitalMetric = LCPMetric | INPMetric | CLSMetric | FCPMetric | TTFBMetric;
 
+// Guard to prevent multiple initializations
+let isInitialized = false;
+
 interface WebVitalsEventParams {
 	metric_name: string;
 	value: number;
@@ -47,6 +50,8 @@ function sendToGA4(metric: WebVitalMetric): void {
 		return;
 	}
 
+	// CLS is a fractional value (0-1), multiply by 1000 to send as integer for GA4 compatibility
+	// e.g., 0.1 → 100, 0.25 → 250
 	const eventParams: WebVitalsEventParams = {
 		metric_name: metric.name,
 		value: Math.round(metric.name === "CLS" ? metric.value * 1000 : metric.value),
@@ -67,6 +72,12 @@ export function initWebVitals(): void {
 	if (typeof window === "undefined") {
 		return;
 	}
+
+	// Prevent multiple initializations (e.g., from React StrictMode or re-renders)
+	if (isInitialized) {
+		return;
+	}
+	isInitialized = true;
 
 	onLCP(sendToGA4);
 	onINP(sendToGA4);
