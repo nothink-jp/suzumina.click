@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getLikeDislikeStatusAction } from "@/actions/dislikes";
 import { getFavoritesStatusAction } from "@/actions/favorites";
 
@@ -26,30 +26,42 @@ export function useAudioButtonStatuses(audioButtonIds: string[]): AudioButtonSta
 	const [favoriteStatuses, setFavoriteStatuses] = useState<Record<string, boolean>>({});
 	const [isLoading, setIsLoading] = useState(true);
 
-	const fetchStatuses = useCallback(async () => {
+	// 配列の内容に基づく安定したキャッシュキーを生成
+	const cacheKey = useMemo(() => [...audioButtonIds].sort().join(","), [audioButtonIds]);
+
+	// 前回のキャッシュキーを保持して不要なフェッチを防ぐ
+	const previousCacheKeyRef = useRef<string>("");
+
+	useEffect(() => {
+		// キャッシュキーが変わっていない場合はスキップ
+		if (cacheKey === previousCacheKeyRef.current) {
+			return;
+		}
+		previousCacheKeyRef.current = cacheKey;
+
 		if (audioButtonIds.length === 0) {
 			setIsLoading(false);
 			return;
 		}
 
-		try {
-			const [likeDislikeData, favoriteData] = await Promise.all([
-				getLikeDislikeStatusAction(audioButtonIds),
-				getFavoritesStatusAction(audioButtonIds),
-			]);
+		const fetchStatuses = async () => {
+			try {
+				const [likeDislikeData, favoriteData] = await Promise.all([
+					getLikeDislikeStatusAction(audioButtonIds),
+					getFavoritesStatusAction(audioButtonIds),
+				]);
 
-			setLikeDislikeStatuses(Object.fromEntries(likeDislikeData));
-			setFavoriteStatuses(Object.fromEntries(favoriteData));
-		} catch {
-			// エラー時は空のままにする（デフォルト値が使われる）
-		} finally {
-			setIsLoading(false);
-		}
-	}, [audioButtonIds]);
+				setLikeDislikeStatuses(Object.fromEntries(likeDislikeData));
+				setFavoriteStatuses(Object.fromEntries(favoriteData));
+			} catch {
+				// エラー時は空のままにする（デフォルト値が使われる）
+			} finally {
+				setIsLoading(false);
+			}
+		};
 
-	useEffect(() => {
 		fetchStatuses();
-	}, [fetchStatuses]);
+	}, [cacheKey, audioButtonIds]);
 
 	return {
 		likeDislikeStatuses,
