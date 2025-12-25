@@ -32,36 +32,52 @@ export function useAudioButtonStatuses(audioButtonIds: string[]): AudioButtonSta
 	// 前回のキャッシュキーを保持して不要なフェッチを防ぐ
 	const previousCacheKeyRef = useRef<string>("");
 
+	// アンマウント時のクリーンアップ用フラグ
+	const isMountedRef = useRef(true);
+
 	useEffect(() => {
+		isMountedRef.current = true;
+
 		// キャッシュキーが変わっていない場合はスキップ
 		if (cacheKey === previousCacheKeyRef.current) {
 			return;
 		}
 		previousCacheKeyRef.current = cacheKey;
 
-		if (audioButtonIds.length === 0) {
+		if (cacheKey === "") {
 			setIsLoading(false);
 			return;
 		}
 
 		const fetchStatuses = async () => {
 			try {
+				// cacheKey からIDリストを復元（ソート済み）
+				const ids = cacheKey.split(",");
 				const [likeDislikeData, favoriteData] = await Promise.all([
-					getLikeDislikeStatusAction(audioButtonIds),
-					getFavoritesStatusAction(audioButtonIds),
+					getLikeDislikeStatusAction(ids),
+					getFavoritesStatusAction(ids),
 				]);
+
+				// アンマウント後はステート更新しない
+				if (!isMountedRef.current) return;
 
 				setLikeDislikeStatuses(Object.fromEntries(likeDislikeData));
 				setFavoriteStatuses(Object.fromEntries(favoriteData));
 			} catch {
 				// エラー時は空のままにする（デフォルト値が使われる）
 			} finally {
-				setIsLoading(false);
+				if (isMountedRef.current) {
+					setIsLoading(false);
+				}
 			}
 		};
 
 		fetchStatuses();
-	}, [cacheKey, audioButtonIds]);
+
+		return () => {
+			isMountedRef.current = false;
+		};
+	}, [cacheKey]);
 
 	return {
 		likeDislikeStatuses,
