@@ -107,7 +107,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 							<PerformanceMonitor />
 							<PageViewTracker />
 							<SiteHeader />
-							{/* biome-ignore lint/correctness/useUniqueElementIds: main-content is a semantic accessibility landmark that should have a consistent ID */}
 							<main id="main-content" className="flex-1">
 								{children}
 							</main>

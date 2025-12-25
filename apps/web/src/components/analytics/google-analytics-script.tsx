@@ -27,7 +27,6 @@ export function GoogleAnalyticsScript() {
 				strategy="afterInteractive"
 				src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
 			/>
-			{/* biome-ignore lint/correctness/useUniqueElementIds: Google Analytics script needs consistent ID for singleton behavior */}
 			<Script
 				id="google-analytics"
 				strategy="afterInteractive"
