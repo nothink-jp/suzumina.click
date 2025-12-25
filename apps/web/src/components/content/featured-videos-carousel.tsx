@@ -41,7 +41,7 @@ export function FeaturedVideosCarousel({ videos }: FeaturedVideosCarouselProps) 
 							maxWidth: "320px",
 						}}
 					>
-						<VideoCard video={video} priority={index < 3} />
+						<VideoCard video={video} priority={index < 5} />
 					</CarouselItem>
 				))}
 			</CarouselContent>

@@ -7,10 +7,8 @@ import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-sk
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
 import { Suspense } from "react";
-import {
-	LazyFeaturedAudioButtonsCarousel,
-	LazyHomeSearchForm,
-} from "@/components/optimization/lazy-components";
+import { HomeSearchForm } from "@/components/home/home-search-form";
+import { LazyFeaturedAudioButtonsCarousel } from "@/components/optimization/lazy-components";
 import { VideosSection } from "@/components/sections/videos-section";
 import { WorksSection } from "@/components/sections/works-section";
 
@@ -55,8 +53,8 @@ export function HomePage({
 							<br />
 							あーたたちが集まる、あーたたちのためのファンサイトです
 						</p>
-						{/* 検索フォームをClient Componentに分離 - 遅延読み込み対応 */}
-						<LazyHomeSearchForm />
+						{/* 検索フォーム - LCP改善のため eager load */}
+						<HomeSearchForm />
 					</div>
 				</div>
 			</section>

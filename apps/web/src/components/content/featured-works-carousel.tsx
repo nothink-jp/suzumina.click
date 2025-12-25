@@ -43,7 +43,7 @@ export function FeaturedWorksCarousel({ works }: FeaturedWorksCarouselProps) {
 					>
 						<WorkCard
 							work={work}
-							priority={index < 3} // 最初の3つの画像のみプリロード
+							priority={index < 5} // 最初の5つの画像をプリロード（LCP改善）
 						/>
 					</CarouselItem>
 				))}
