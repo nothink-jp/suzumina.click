@@ -22,14 +22,14 @@ export function GoogleAnalyticsScript() {
 
 	return (
 		<>
-			{/* Google Analytics 4 Script - lazyOnload for better LCP */}
+			{/* Google Analytics 4 Script */}
 			<Script
-				strategy="lazyOnload"
+				strategy="afterInteractive"
 				src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
 			/>
 			<Script
 				id="google-analytics"
-				strategy="lazyOnload"
+				strategy="afterInteractive"
 				dangerouslySetInnerHTML={{
 					__html: `
 						window.dataLayer = window.dataLayer || [];
