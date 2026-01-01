@@ -292,8 +292,8 @@ importers:
         specifier: ^10.1.10
         version: 10.1.10(@types/react@19.2.7)(esbuild@0.27.2)(rollup@4.53.5)(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vite@7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       '@storybook/addon-onboarding':
-        specifier: ^10.1.10
-        version: 10.1.10(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
+        specifier: ^10.1.11
+        version: 10.1.11(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
       '@storybook/addon-vitest':
         specifier: ^10.1.10
         version: 10.1.10(@vitest/runner@4.0.16)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vitest@4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(happy-dom@20.0.11)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
@@ -1890,10 +1890,10 @@ packages:
     peerDependencies:
       storybook: ^10.1.10
 
-  '@storybook/addon-onboarding@10.1.10':
-    resolution: {integrity: sha512-CtfoHqgdm63NsGyYBcr1UhJV6m213ckU3aKTYJRS+3NLkx18BIME9biJwiTiRK4Pm4jbc69V21JzLumFcaiJbw==}
+  '@storybook/addon-onboarding@10.1.11':
+    resolution: {integrity: sha512-DNJv0IDl5XBrY+PPgwnMXLyp3omPkMOS6xe8ejG3csT71B6+3VueL6m7Qivh6739SnAV0QBU5SQlpMA0gQUcSA==}
     peerDependencies:
-      storybook: ^10.1.10
+      storybook: ^10.1.11
 
   '@storybook/addon-vitest@10.1.10':
     resolution: {integrity: sha512-dh5ZesgvZY619nkweo9fbORQQSU0hIFQnqlcnU1DrGXumt9SzVHF3/2Lxe+HGHLHK6Sk8jZp/16BjZ/zxSG61Q==}
@@ -5801,7 +5801,7 @@ snapshots:
       - vite
       - webpack
 
-  '@storybook/addon-onboarding@10.1.10(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))':
+  '@storybook/addon-onboarding@10.1.11(storybook@10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))':
     dependencies:
       storybook: 10.1.10(@testing-library/dom@10.4.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
 
