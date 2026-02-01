@@ -35,6 +35,6 @@
 		}
 	},
 	"dependencies": {
-		"react-resizable-panels": "3.0.6"
+		"react-resizable-panels": "4.5.7"
 	}
 }
