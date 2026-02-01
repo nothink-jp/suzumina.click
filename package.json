@@ -16,22 +16,25 @@
 		"clean:all": "pnpm clean && rimraf node_modules **/node_modules"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.3.10",
-		"@vitest/coverage-v8": "^4.0.16",
-		"lefthook": "^2.0.12",
+		"@biomejs/biome": "2.3.13",
+		"@vitest/coverage-v8": "^4.0.18",
+		"lefthook": "^2.0.16",
 		"rimraf": "^6.1.2",
 		"typescript": "^5.9.3",
-		"vitest": "^4.0.16"
+		"vitest": "^4.0.18"
 	},
 	"engines": {
-		"node": "22.21.1",
-		"pnpm": "10.22.0"
+		"node": "24.13.0",
+		"pnpm": "10.28.2"
 	},
-	"packageManager": "pnpm@10.22.0",
+	"packageManager": "pnpm@10.28.2",
 	"pnpm": {
 		"overrides": {
 			"jws": "^4.0.1",
 			"body-parser@>=2.2.0 <2.2.1": ">=2.2.1"
 		}
+	},
+	"dependencies": {
+		"react-resizable-panels": "3.0.6"
 	}
 }

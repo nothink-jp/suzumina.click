@@ -50,7 +50,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22.21.1'
+          node-version: '24.13.0'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -96,7 +96,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22.21.1'
+          node-version: '24.13.0'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -169,7 +169,7 @@ jobs:
             if (!pkg.engines) {
               pkg.engines = {};
             }
-            pkg.engines.node = '22';
+            pkg.engines.node = '24';
             
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
@@ -219,7 +219,7 @@ jobs:
           gcloud functions deploy fetchYouTubeVideos \
             --gen2 \
             --source ${{ env.DEPLOYMENT_SOURCE }} \
-            --runtime nodejs22 \
+            --runtime nodejs24 \
             --entry-point fetchYouTubeVideos \
             --trigger-topic youtube-video-fetch-trigger \
             --region asia-northeast1 \
@@ -236,7 +236,7 @@ jobs:
           gcloud functions deploy fetchDLsiteUnifiedData \
             --gen2 \
             --source ${{ env.DEPLOYMENT_SOURCE }} \
-            --runtime nodejs22 \
+            --runtime nodejs24 \
             --entry-point fetchDLsiteUnifiedData \
             --trigger-topic dlsite-individual-api-trigger \
             --region asia-northeast1 \
@@ -253,7 +253,7 @@ jobs:
           gcloud functions deploy checkDataIntegrity \
             --gen2 \
             --source ${{ env.DEPLOYMENT_SOURCE }} \
-            --runtime nodejs22 \
+            --runtime nodejs24 \
             --entry-point checkDataIntegrity \
             --trigger-topic data-integrity-check-trigger \
             --region asia-northeast1 \

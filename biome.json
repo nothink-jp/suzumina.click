@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.6/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.3.13/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -7,22 +7,28 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.json", "**/*.mjs", "**/*.cjs"],
-		"experimentalScannerIgnores": [
-			"**/node_modules/**",
-			"**/dist/**",
-			"**/.next/**",
-			"**/lib/**",
-			"**/storybook-static/**",
-			"**/coverage/**",
-			"**/build/**",
-			"**/*.d.ts",
-			"**/test-results/**",
-			"**/playwright-report/**",
-			"**/.vitest/**",
-			"**/.cache/**",
-			"**/.turbo/**",
-			"**/terraform/.terraform/**"
+		"includes": [
+			"**/*.js",
+			"**/*.jsx",
+			"**/*.ts",
+			"**/*.tsx",
+			"**/*.json",
+			"**/*.mjs",
+			"**/*.cjs",
+			"!!**/node_modules",
+			"!!**/dist",
+			"!!**/.next",
+			"!!**/lib",
+			"!!**/storybook-static",
+			"!!**/coverage",
+			"!!**/build",
+			"!!**/*.d.ts",
+			"!!**/test-results",
+			"!!**/playwright-report",
+			"!!**/.vitest",
+			"!!**/.cache",
+			"!!**/.turbo",
+			"!!**/terraform/.terraform"
 		],
 		"maxSize": 5242880
 	},
