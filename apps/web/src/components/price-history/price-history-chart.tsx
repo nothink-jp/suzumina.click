@@ -214,8 +214,8 @@ export function PriceHistoryChart({
 		return `${value.toLocaleString()} ${currency}`;
 	};
 
-	const formatTooltipPrice = (value: unknown, name?: string) => {
-		const displayName = name ?? "";
+	const formatTooltipPrice = (value: unknown, name?: string | number) => {
+		const displayName = String(name ?? "");
 		if (value === undefined || value === null) return ["-", displayName];
 		const numValue = Number(value);
 		if (Number.isNaN(numValue)) return ["-", displayName];
