@@ -8,6 +8,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+
 	/* OSのダークモード設定を自動検出 */
 	@media (prefers-color-scheme: dark) {
 		:root {
