@@ -306,11 +306,10 @@ function getContinuationInfo(
 		metadata.currentBatch !== undefined &&
 		metadata.totalBatches !== undefined
 	) {
-		// completedBatchesがtotalBatchesを超えている場合は新規処理として扱う
-		const completedBatchesLength = metadata.completedBatches?.length || 0;
-		if (completedBatchesLength >= metadata.totalBatches) {
+		// currentBatchがtotalBatchesに達している場合は新規処理として扱う
+		if ((metadata.currentBatch ?? 0) >= metadata.totalBatches) {
 			logger.info("前回の処理は完了済み。新規処理として開始します", {
-				completedBatchesLength,
+				currentBatch: metadata.currentBatch,
 				totalBatches: metadata.totalBatches,
 			});
 			return { isContinuation: false as const };
@@ -320,7 +319,6 @@ function getContinuationInfo(
 			currentBatch: metadata.currentBatch,
 			totalBatches: metadata.totalBatches,
 			allWorkIdsLength: metadata.allWorkIds?.length || 0,
-			completedBatchesLength,
 		});
 
 		return {
@@ -407,10 +405,12 @@ async function executeBatchLoop(
 	totalUpdated: number;
 	totalApiCalls: number;
 	completedBatches: number[];
+	allBatchesCompleted: boolean;
 }> {
 	let totalUpdated = 0;
 	let totalApiCalls = 0;
-	const completedBatches = metadata.completedBatches || [];
+	let allBatchesCompleted = true;
+	const completedBatches: number[] = [];
 
 	logger.info(
 		`executeBatchLoop開始: startBatch=${startBatch}, batches.length=${batches.length}, completedBatches=${completedBatches.length}`,
@@ -428,6 +428,7 @@ async function executeBatchLoop(
 		// 実行時間チェック
 		if (Date.now() - startTime > MAX_EXECUTION_TIME) {
 			logger.info(`実行時間制限に達しました。バッチ ${i}/${batches.length} で中断`);
+			allBatchesCompleted = false;
 
 			await updateUnifiedMetadata({
 				currentBatch: i,
@@ -468,7 +469,7 @@ async function executeBatchLoop(
 		}
 	}
 
-	return { totalUpdated, totalApiCalls, completedBatches };
+	return { totalUpdated, totalApiCalls, completedBatches, allBatchesCompleted };
 }
 
 /**
@@ -583,16 +584,13 @@ async function executeUnifiedDataCollection(): Promise<UnifiedFetchResult> {
 		}
 
 		// バッチ処理の実行
-		const { totalUpdated, totalApiCalls, completedBatches } = await executeBatchLoop(
+		const { totalUpdated, totalApiCalls, allBatchesCompleted } = await executeBatchLoop(
 			batches,
 			startBatch,
 			startTime,
 			metadata,
 			existingWorksMap,
 		);
-
-		// 処理完了チェック
-		const allBatchesCompleted = completedBatches.length === batches.length;
 
 		if (allBatchesCompleted) {
 			await finalizeCompletedProcessing(allWorkIds, totalUpdated);
