@@ -183,11 +183,10 @@ graph TD
 - **アクセス**: Staging専用URL（https://staging-${PROJECT_ID}.run.app）
 
 **Production環境:**
-`ユーザー → Cloud DNS → Cloud Run (本番) → Cloud Firestore / Cloud Storage`
+`ユーザー → Cloud DNS → Cloud Run (本番) → Cloud Firestore`
 1. ユーザーが `suzumina.click` にアクセスすると、Cloud DNSがリクエストをCloud RunでホストされているNext.jsアプリケーションにルーティングします。
 2. アプリケーションはCloud Firestoreから必要なデータを取得し、ユーザーに表示します。
-3. 音声ファイルの再生やアップロードは、Cloud Storageとの間で直接行われます。
-4. 外部へのアウトバウンド通信は、VPC内のCloud NATを経由して行われます。
+3. 外部へのアウトバウンド通信は、VPC内のCloud NATを経由して行われます。
 
 ### 4. 予算管理・監視・コスト最適化フロー
 `リソース使用量 → Budget Alerts → Pub/Sub → Email通知 + 自動コスト最適化`
