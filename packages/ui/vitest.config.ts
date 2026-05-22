@@ -1,7 +1,16 @@
+import { resolve } from "node:path";
 /// <reference types="vitest" />
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+	resolve: {
+		alias: {
+			"@suzumina.click/shared-types": resolve(
+				__dirname,
+				"../shared-types/src/index.ts",
+			),
+		},
+	},
 	test: {
 		globals: true,
 		environment: "happy-dom",

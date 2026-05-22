@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgeVerificationProvider } from "../../../contexts/age-verification-context";
+import { searchUnified } from "@/app/actions";
 import SearchPageContent from "../search-page-content";
 
 // Mock dependencies
@@ -151,6 +152,17 @@ vi.mock("@/hooks/useFavoriteStatusBulk", () => ({
 	}),
 }));
 
+// Mock searchUnified to prevent Firestore initialization in test environment
+vi.mock("@/app/actions", () => ({
+	searchUnified: vi.fn().mockResolvedValue({
+		audioButtons: [],
+		videos: [],
+		works: [],
+		totalCount: { buttons: 0, videos: 0, works: 0 },
+		hasMore: { buttons: false, videos: false, works: false },
+	}),
+}));
+
 // Test wrapper component
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 	<AgeVerificationProvider>{children}</AgeVerificationProvider>
@@ -228,7 +240,7 @@ describe("SearchPageContent", () => {
 
 			await waitFor(
 				() => {
-					expect(global.fetch).toHaveBeenCalled();
+					expect(vi.mocked(searchUnified)).toHaveBeenCalled();
 				},
 				{ timeout: 3000 },
 			);
