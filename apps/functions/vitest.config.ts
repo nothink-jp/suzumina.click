@@ -17,7 +17,6 @@ export default defineConfig({
 				external: ["googleapis"],
 				inline: [
 					"cheerio",
-					"@suzumina.click/shared-types",
 					"css-select",
 					"css-what",
 					"cheerio-select",
@@ -50,6 +49,10 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": resolve(__dirname, "./src"),
+			"@suzumina.click/shared-types": resolve(
+				__dirname,
+				"../../packages/shared-types/src/index.ts",
+			),
 		},
 	},
 });
