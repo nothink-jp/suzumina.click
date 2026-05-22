@@ -50,6 +50,10 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": resolve(__dirname, "./src"),
+			"@suzumina.click/shared-types": resolve(
+				__dirname,
+				"../../packages/shared-types/src/index.ts",
+			),
 		},
 	},
 });
