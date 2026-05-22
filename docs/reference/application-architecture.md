@@ -10,7 +10,7 @@
 
 ## アーキテクチャ概要
 
-suzumina.clickは、Next.js 15を基盤としたモダンなWebアプリケーションです。
+suzumina.clickは、Next.js 16を基盤としたモダンなWebアプリケーションです。
 
 ### 技術スタック
 

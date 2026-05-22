@@ -29,7 +29,7 @@ graph TD
 
     subgraph "外部API"
         YT[YouTube Data API v3]
-        DL[DLsite Web Scraping]
+        DL[DLsite Individual Info API]
     end
 
     subgraph "スケジュール・メッセージング"
@@ -40,6 +40,7 @@ graph TD
         PS1[Pub/Sub Topic<br/>youtube-video-fetch-trigger]
         PS2[Pub/Sub Topic<br/>dlsite-works-fetch-trigger]
         PS3[Pub/Sub Topic<br/>budget-alerts]
+        PS4[Pub/Sub Topic<br/>data-integrity-check-trigger]
     end
 
     subgraph "データ収集 (Cloud Functions v2)"
@@ -72,7 +73,7 @@ graph TD
         WIF[Workload Identity Federation]
     end
 
-    subgraph "監視・アラート・予算管理 (v11.0コスト最適化)"
+    subgraph "監視・アラート・予算管理"
         MD[Monitoring Dashboard]
         AP[Alert Policies]
         NC[Email Notification]
@@ -93,9 +94,10 @@ graph TD
     CS1 -->|毎時30分トリガー| PS1
     CS2 -->|2時間ごとトリガー| PS2
     CS3 -->|自動クリーンアップ| AR
-    CS4 -->|週次トリガー| CF3
+    CS4 -->|週次トリガー| PS4
     PS1 -->|イベント| CF1
     PS2 -->|イベント| CF2
+    PS4 -->|イベント| CF3
 
     CF1 -->|データ取得| YT
     CF1 -->|データ保存| FS
@@ -121,7 +123,7 @@ graph TD
     WIF -.->|CI/CD| AR
     GHA -.->|認証| WIF
 
-    %% Monitoring & Budget (v11.0最適化)
+    %% Monitoring & Budget
     MD -->|メトリクス| CF1
     MD -->|メトリクス| CF2
     MD -->|メトリクス| WEB_STAGING
@@ -145,7 +147,7 @@ graph TD
     class FS,CS_TFSTATE,AR storage
     class SM,FR,WIF security
     class MD,AP,NC,BUDGET,COST_OPT monitoring
-    class CS1,CS2,CS3,CS4,PS1,PS2,PS3 messaging
+    class CS1,CS2,CS3,CS4,PS1,PS2,PS3,PS4 messaging
     class VPC,SUBNET,NAT,DNS network
     class DEV,MAIN,GHA,STAGING,TAG,PROD cicd
 ```
@@ -164,8 +166,8 @@ graph TD
 6. **Git Tag作成**: セマンティックバージョニング（v1.x.x）でリリースタグ作成
 7. **Production承認デプロイ**: 手動承認後、Production環境に安全デプロイ
 
-### 2. 自動データ収集フロー（Production環境のみ - v11.0統合最適化）
-`Cloud Scheduler → Pub/Sub → Cloud Functions → External APIs → Cloud Firestore + 時系列データ基盤`
+### 2. 自動データ収集フロー（Production環境のみ）
+`Cloud Scheduler → Pub/Sub → Cloud Functions → External APIs → Cloud Firestore`
 - **YouTube動画収集**: Production環境でのみ有効。Cloud Schedulerが毎時30分（`30 * * * *`）にPub/Subトピックへメッセージを送信し、`fetchYouTubeVideos`関数をトリガーします。関数はYouTube Data APIから動画情報を取得し、Cloud Firestoreに保存します。
 - **DLsite統合データ収集**: `fetchDLsiteUnifiedData`関数が2時間ごと（`3 */2 * * *`）にトリガーされ、Individual Info APIから作品情報を取得し、`works` / `circles` / `creatorWorkMappings` / `works/{workId}/priceHistory` に保存します。
 - **データ整合性チェック**: `checkDataIntegrity`関数が毎週日曜3:00 JST（`0 3 * * 0`）に実行され、Circle/Work/Creator の相互参照整合性を検証・修正します。結果は `dlsiteMetadata/dataIntegrityCheck` に保存されます。
@@ -187,7 +189,7 @@ graph TD
 3. 音声ファイルの再生やアップロードは、Cloud Storageとの間で直接行われます。
 4. 外部へのアウトバウンド通信は、VPC内のCloud NATを経由して行われます。
 
-### 4. 予算管理・監視・コスト最適化フロー（v11.0強化）
+### 4. 予算管理・監視・コスト最適化フロー
 `リソース使用量 → Budget Alerts → Pub/Sub → Email通知 + 自動コスト最適化`
 - **予算監視**: 月次予算（Staging: 1000円、Production: 4000円）を設定
 - **自動アラート**: 予算の50%、80%、100%時点でアラート発信
@@ -205,7 +207,7 @@ graph TD
 | **Cloud NAT** | プライベートなリソースからのアウトバウンド通信を許可 | `network.tf` | ✅ |
 | **Cloud DNS** | `suzumina.click`ドメインの名前解決（Production のみ） | `dns.tf` | ❌ |
 
-### コンピュートリソース（環境別構成 - v11.0最適化）
+### コンピュートリソース（環境別構成）
 | リソース | Staging環境 | Production環境 | 実行トリガー | スケジュール |
 |---|---|---|---|---|
 | **fetchYouTubeVideos** | ❌ 無効（コスト削減） | ✅ 有効 | Pub/Sub | 毎時30分 |
@@ -222,23 +224,23 @@ graph TD
 | ~~dlsite_timeseries_raw~~ | ~~時系列生データ~~ | **削除済み** — 統合アーキテクチャへ移行 | - | - |
 | ~~dlsite_timeseries_daily~~ | ~~日次集計データ~~ | **削除済み** — 統合アーキテクチャへ移行 | - | - |
 
-### CI/CD・デプロイメント（v11.0コスト最適化対応）
-| コンポーネント | 役割 | トリガー | 対象環境 | v11.0更新内容 |
-|---|---|---|---|---|
-| **GitHub Actions (Staging)** | 自動デプロイ・テスト | main ブランチ push | Staging | - |
-| **GitHub Actions (Production)** | 本番デプロイ | Git Tag push (v*) | Production | - |
-| **GitHub Actions (Cleanup)** | 自動コスト最適化 | 毎日11:00 JST | 全環境 | v11.0新規追加 |
-| **Workload Identity Federation** | 安全なGCP認証 | CI/CD実行時 | 両環境 | - |
-| **Terraform Workspace** | 環境分離管理 | Manual/CI/CD | 両環境 | - |
+### CI/CD・デプロイメント
+| コンポーネント | 役割 | トリガー | 対象環境 |
+|---|---|---|---|
+| **GitHub Actions (Staging)** | 自動デプロイ・テスト | main ブランチ push | Staging |
+| **GitHub Actions (Production)** | 本番デプロイ | Git Tag push (v*) | Production |
+| **GitHub Actions (Cleanup)** | 自動コスト最適化 | 毎日11:00 JST | 全環境 |
+| **Workload Identity Federation** | 安全なGCP認証 | CI/CD実行時 | 両環境 |
+| **Terraform Workspace** | 環境分離管理 | Manual/CI/CD | 両環境 |
 
-### 予算・監視システム（v11.0コスト最適化強化）
-| リソース | Staging | Production | 管理ファイル | v11.0更新内容 |
-|---|---|---|---|---|
-| **予算アラート** | 月1000円制限 | 月4000円制限 | `billing.tf` | - |
-| **監視ダッシュボード** | 基本監視 | 完全監視・時系列データ監視 | `monitoring*.tf` | 時系列データメトリクス追加 |
-| **アラートポリシー** | 重要アラートのみ | 包括的アラート | `monitoring.tf` | - |
-| **ログ集約** | 基本ログ | 詳細ログ | `logging.tf` | - |
-| **コスト最適化自動化** | 軽量クリーンアップ | 完全ライフサイクル管理 | `GitHub Actions` | v11.0新規追加 |
+### 予算・監視システム
+| リソース | Staging | Production | 管理ファイル |
+|---|---|---|---|
+| **予算アラート** | 月1000円制限 | 月4000円制限 | `billing.tf` |
+| **監視ダッシュボード** | 基本監視 | 完全監視 | `monitoring*.tf` |
+| **アラートポリシー** | 重要アラートのみ | 包括的アラート | `monitoring.tf` |
+| **ログ集約** | 基本ログ | 詳細ログ | `logging.tf` |
+| **コスト最適化自動化** | 軽量クリーンアップ | 完全ライフサイクル管理 | `GitHub Actions` |
 
 ### セキュリティ・IAMアーキテクチャ
 - **Workload Identity Federation**: サービスアカウントキーを使わずに、GitHub ActionsからGCPリソースを安全に認証します。
@@ -314,82 +316,34 @@ production = {
 3. **環境別設定自動適用** → コスト・パフォーマンス最適化
 4. **予算監視自動実行** → コスト超過時の即座アラート
 
-このインフラストラクチャは、**個人開発・個人運用に最適化**された、**コスト効率と運用性を両立**した設計となっています。v11.0では、**時系列データ基盤、タイムアウト最適化、コスト最適化**を実装し、純粋なGCPサービスで構成された**自動化、品質担保、セキュリティ**を重視した堅牢な基盤を提供します。
+このインフラストラクチャは、**個人開発・個人運用に最適化**された、**コスト効率と運用性を両立**した設計となっています。純粋なGCPサービスで構成された**自動化、品質担保、セキュリティ**を重視した堅牢な基盤を提供します。
 
-## 🚀 v11.0アーキテクチャ強化ポイント
+## 🚀 現行データ収集アーキテクチャ
 
-### 1. 時系列データ基盤アーキテクチャ
+### DLsite作品データ収集フロー
 ```
-DLsite Individual Info API → fetchDLsiteWorksIndividualAPI (15分間隔)
-                                         ↓
-                           基本データ + 時系列データ同時処理
-                                         ↓
-                           ┌─ Cloud Firestore (基本データ)
-                           └─ dlsite_timeseries_raw (生データ・7日保持)
-                                         ↓
-                              日次集計処理 (自動実行)
-                                         ↓
-                           dlsite_timeseries_daily (永続保存)
-                                         ↓
-                              価格履歴API (/api/timeseries/[workId])
+Cloud Scheduler (3 */2 * * *)
+        ↓
+Pub/Sub Topic: dlsite-works-fetch-trigger
+        ↓
+fetchDLsiteUnifiedData (Cloud Functions v2)
+        ↓ Individual Info API (2時間ごと)
+DLsite Individual Info API
+        ↓
+┌─ works コレクション（基本作品データ）
+├─ circles コレクション（サークル情報）
+├─ creatorWorkMappings コレクション（クリエイター関連）
+└─ works/{workId}/priceHistory（価格履歴サブコレクション）
 ```
 
-### 2. タイムアウト最適化アーキテクチャ
-- **並列処理最適化**: 3→5並列 (67%増)
-- **API間隔短縮**: 1000ms→600ms (40%短縮)
-- **処理成功率**: 77.1%→100% (完全改善)
-- **全作品処理保証**: 1,484件完全処理
-
-### 3. コスト最適化アーキテクチャ
+### コスト最適化アーキテクチャ
 ```
 GitHub Actions (毎日11:00 JST) → Artifact Registry Cleanup
                                          ↓
-                              ┌─ Docker Image 世代管理 (10→5世代)
-                              ├─ Cloud Run Revision管理 (5→3世代)
-                              ├─ Build Cache 即座削除
-                              └─ 未使用リソース自動削除
-                                         ↓
-                              継続的コスト最適化 (月額約$300削減見込み)
+                              ┌─ Docker Image 世代管理
+                              ├─ Cloud Run Revision管理
+                              └─ Build Cache 即座削除
 ```
-
-### 4. v11.0インフラ統計
-| 指標 | v10.1 | v11.0 | 改善 |
-|------|-------|-------|------|
-| データ処理成功率 | 77.1% | 100% | +22.9pt |
-| 実行頻度 | 60分間隔 | 15分間隔 | 4倍高頻度 |
-| 時系列データ保持 | 7日間 | 永続保存 | 長期分析対応 |
-| コスト最適化 | 手動 | 自動化 | 運用効率化 |
-| インフラ可視性 | 基本監視 | 包括的監視 | 完全監視 |
-
-## ⚙️ 音声ボタン機能詳細設定
-
-### **Cloud Storage設定（音声ファイル）**
-
-| リソース | 説明 | 設定値 |
-|---------|------|--------|
-| **バケット名** | `${project_id}-audio-files` | `suzumina-click-audio-files` |
-| **ライフサイクル** | 1年後自動削除 | 365日 |
-| **ストレージクラス** | 30日→Nearline, 90日→Coldline | コスト最適化 |
-| **CORS** | Web再生用クロスオリジン設定 | `*.suzumina.click` |
-
-### **セキュリティ・権限設定**
-
-| サービスアカウント | 用途 | 権限 |
-|------------------|------|------|
-| **audio-processor** | Cloud Run Jobs実行 | Storage Admin, Firestore User |
-| **web-app-audio** | Web App音声アクセス | Storage Object Viewer |
-| **task-enqueuer** | タスク送信 | Cloud Tasks Enqueuer, Run Invoker |
-
-### **コスト最適化戦略**
-
-**Cloud Storage:**
-- **ライフサイクル管理**: 30日後Nearline（50%削減）→90日後Coldline（75%削減）
-- **自動削除**: 1年後完全削除
-- **リージョン**: us-central1（標準料金）
-
-**Next.js Server Actions:**
-- **ユーザーアップロード**: ブラウザ直接アップロード（サーバー処理最小化）
-- **ファイルサイズ制限**: 10MB（音声ファイル適正サイズ）
 
 ## 🔧 環境設定・認証ガイド
 

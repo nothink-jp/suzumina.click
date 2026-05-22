@@ -173,7 +173,10 @@ packages/shared-types/src/
 │   ├── work/          # Work関連（WorkId, WorkTitle, WorkPrice等）
 │   └── video/         # Video関連（VideoContent, VideoMetadata等）
 ├── plain-objects/      # Server Component用Plain Object型
-├── types/firestore/    # Firestoreドキュメント型
+├── types/
+│   ├── firestore/     # Firestoreドキュメント型
+│   ├── video-types.ts
+│   └── audio-button.ts # AudioButton型定義
 ├── transformers/       # Firestore ↔ 型変換
 ├── utilities/          # 変換ユーティリティ
 └── api-schemas/        # 外部APIスキーマ（DLsite等）
