@@ -1,9 +1,9 @@
 # Firestore Database Structure
 
-> **📅 最終更新**: 2025年7月24日  
-> **📝 ステータス**: v11.7 Entity/Value Object移行完了・レガシーフィールド削除  
+> **📅 最終更新**: 2026年5月22日  
+> **📝 ステータス**: v0.3.12 稼働中  
 > **🔧 対象**: suzumina.clickプロジェクトのCloud Firestoreデータベース構造
-> **🆕 更新内容**: Entity/Value Objectアーキテクチャ移行完了・レガシーフィールド削除 (totalDownloadCount, bonusContent, isExclusive, apiGenres, apiCustomGenres, apiWorkOptions, wishlistCount)
+> **🆕 更新内容**: `dlsite_timeseries_raw` / `dlsite_timeseries_daily` コレクション削除済みとして明記（統合アーキテクチャへ移行）
 
 ## 使用中のコレクション一覧
 
@@ -553,9 +553,11 @@
 - Server Actions実装完了
 - トランザクション処理実装完了
 
-### 8. `dlsite_timeseries_raw` コレクション ✅ v11.0時系列データ基盤実装完了
+### 8. `dlsite_timeseries_raw` コレクション ❌ 削除済み（統合アーキテクチャへ移行）
 
-**目的**: DLsite作品の時系列生データを保存（高頻度データ収集・日次集計の元データ）
+> **注記**: このコレクションは旧アーキテクチャのものです。現在は `works/{workId}/priceHistory` サブコレクション（セクション10参照）で価格履歴を管理しています。以下は参照用の記録として残しています。
+
+**旧目的**: DLsite作品の時系列生データを保存（高頻度データ収集・日次集計の元データ）
 
 **ドキュメントID**: `{workId}_{YYYY-MM-DD}_{HH-mm-ss}`
 
@@ -598,9 +600,11 @@
 
 **データ保持期間**: 7日間（自動削除・コスト最適化）
 
-### 9. `dlsite_timeseries_daily` コレクション ✅ v11.0日次集計システム実装完了
+### 9. `dlsite_timeseries_daily` コレクション ❌ 削除済み（統合アーキテクチャへ移行）
 
-**目的**: 時系列生データから日次集計された永続保存データ（価格履歴・ランキング推移API用）
+> **注記**: このコレクションは旧アーキテクチャのものです。参照用の記録として残しています。
+
+**旧目的**: 時系列生データから日次集計された永続保存データ（価格履歴・ランキング推移API用）
 
 **ドキュメントID**: `{workId}_{YYYY-MM-DD}`
 
@@ -1176,9 +1180,9 @@ terraform apply -target=google_firestore_index.videos_publishedat_range_desc
 
 ## データ収集パターン
 
-1. **YouTubeビデオ**: 毎時19分にCloud Scheduler → Pub/Sub → Cloud Function経由で取得
-2. **DLsite統合データ収集**: 15分間隔でCloud Scheduler → 統合データ収集Function経由で取得（v11.0タイムアウト最適化済み）
-3. **時系列データ処理**: 基本データ更新と同時実行・日次集計による永続保存・7日間生データ保持
+1. **YouTubeビデオ**: 毎時30分（`30 * * * *`）にCloud Scheduler → Pub/Sub → `fetchYouTubeVideos` Cloud Function 経由で取得
+2. **DLsite統合データ収集**: 2時間ごと（`3 */2 * * *`）にCloud Scheduler → Pub/Sub → `fetchDLsiteUnifiedData` Cloud Function 経由で取得。`works` / `circles` / `creatorWorkMappings` / `works/{workId}/priceHistory` に保存
+3. **データ整合性チェック**: 毎週日曜3:00 JST（`0 3 * * 0`）に `checkDataIntegrity` が自動実行。結果は `dlsiteMetadata/dataIntegrityCheck` に保存
 4. **データ処理**: Firestore書き込みでは500ドキュメントのバッチ操作制限を使用・チャンク分割対応
 5. **型安全性**: すべてのデータ構造でZodスキーマを使用してサーバー/クライアント形式間の変換と検証を実施
 

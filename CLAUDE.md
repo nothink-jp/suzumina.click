@@ -60,9 +60,9 @@ For detailed project documentation, see [Documentation Index](docs/README.md).
 ## 📚 REFERENCE DOCUMENTATION
 
 ### Project Information
-- **Status**: PRODUCTION READY v0.3.11
+- **Status**: PRODUCTION READY v0.3.12
 - **URL**: https://suzumina.click
-- **Tech Stack**: Next.js 15, TypeScript, Firestore, Cloud Functions
+- **Tech Stack**: Next.js 16, TypeScript, Firestore, Cloud Functions
 
 ### Key Documentation Links
 - [Project Overview](docs/README.md)
@@ -115,5 +115,5 @@ pnpm build
 
 ---
 
-**Last Updated**: 2025-12-24
-**Document Version**: 4.5 (v0.3.11 with docs cleanup)
+**Last Updated**: 2026-05-22
+**Document Version**: 4.6 (v0.3.12 docs update)

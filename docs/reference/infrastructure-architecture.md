@@ -1,7 +1,7 @@
 # suzumina.click インフラストラクチャアーキテクチャ
 
-> **📅 最終更新**: 2025年7月10日  
-> **📝 ステータス**: v11.0 タイムアウト最適化 + コスト最適化 + 時系列データ基盤実装完了  
+> **📅 最終更新**: 2026年5月22日  
+> **📝 ステータス**: v0.3.12 稼働中（時系列データコレクションは削除済み・統合アーキテクチャに移行完了）  
 > **🔧 対象**: Terraformで管理されているGoogle Cloud Platform (GCP) インフラストラクチャ
 
 ## 関連ドキュメント
@@ -12,7 +12,7 @@
 
 ## 概要
 
-suzumina.clickは、声優「涼花みなせ」のファンサイトとして、YouTubeビデオとDLsite作品情報を自動収集し、音声ボタン機能を提供するWebプラットフォームです。v11.0では、タイムアウト最適化による100%処理成功保証、コスト最適化システム、時系列データ基盤を実装し、Terraformで管理されているGoogle Cloud Platform (GCP) インフラストラクチャの全体像を図解します。
+suzumina.clickは、声優「涼花みなせ」のファンサイトとして、YouTubeビデオとDLsite作品情報を自動収集し、音声ボタン機能を提供するWebプラットフォームです。Terraformで管理されているGoogle Cloud Platform (GCP) インフラストラクチャの全体像を図解します。なお、旧 `dlsite_timeseries_raw` / `dlsite_timeseries_daily` コレクションおよびその収集 Pub/Sub トピックは統合アーキテクチャへの移行により削除済みです。
 
 ## システム全体アーキテクチャ図
 
@@ -32,19 +32,20 @@ graph TD
         DL[DLsite Web Scraping]
     end
 
-    subgraph "スケジュール・メッセージング (v11.0最適化)"
-        CS1[Cloud Scheduler<br/>YouTube収集]
-        CS2[Cloud Scheduler<br/>DLsite統合収集<br/>15分間隔実行]
+    subgraph "スケジュール・メッセージング"
+        CS1[Cloud Scheduler<br/>YouTube収集<br/>毎時30分]
+        CS2[Cloud Scheduler<br/>DLsite統合収集<br/>2時間ごと]
+        CS4[Cloud Scheduler<br/>データ整合性チェック<br/>毎週日曜3:00 JST]
         CS3[GitHub Actions<br/>自動クリーンアップ<br/>毎日11:00 JST]
         PS1[Pub/Sub Topic<br/>youtube-video-fetch-trigger]
         PS2[Pub/Sub Topic<br/>dlsite-works-fetch-trigger]
         PS3[Pub/Sub Topic<br/>budget-alerts]
     end
 
-    subgraph "データ収集 (Cloud Functions v2 - v11.0統合最適化)"
+    subgraph "データ収集 (Cloud Functions v2)"
         CF1[fetchYouTubeVideos<br/>本番のみ有効]
-        CF2[fetchDLsiteWorksIndividualAPI<br/>統合データ収集Function<br/>タイムアウト最適化済み]
-        CF3[時系列データ処理<br/>日次集計システム<br/>価格履歴分析]
+        CF2[fetchDLsiteUnifiedData<br/>統合データ収集Function<br/>Individual Info API専用]
+        CF3[checkDataIntegrity<br/>データ整合性チェック<br/>週次実行]
     end
 
     subgraph "Webアプリケーション"
@@ -59,10 +60,8 @@ graph TD
         DNS[Cloud DNS<br/>suzumina.click]
     end
 
-    subgraph "ストレージ (v11.0時系列データ対応)"
-        FS[(Cloud Firestore<br/>Native Mode<br/>時系列データ基盤)]
-        TS_RAW[(dlsite_timeseries_raw<br/>7日間保持)]
-        TS_DAILY[(dlsite_timeseries_daily<br/>永続保存)]
+    subgraph "ストレージ"
+        FS[(Cloud Firestore<br/>Native Mode)]
         CS_TFSTATE[Cloud Storage<br/>${PROJECT_ID}-tfstate]
         AR[Artifact Registry<br/>Docker Images<br/>自動ライフサイクル管理]
     end
@@ -90,26 +89,23 @@ graph TD
     TAG --> GHA
     GHA -->|手動承認| PROD
 
-    %% Data Collection Flow (Production only - v11.0最適化)
-    CS1 -->|トリガー| PS1
-    CS2 -->|15分間隔トリガー| PS2
+    %% Data Collection Flow (Production only)
+    CS1 -->|毎時30分トリガー| PS1
+    CS2 -->|2時間ごとトリガー| PS2
     CS3 -->|自動クリーンアップ| AR
+    CS4 -->|週次トリガー| CF3
     PS1 -->|イベント| CF1
     PS2 -->|イベント| CF2
 
     CF1 -->|データ取得| YT
     CF1 -->|データ保存| FS
     CF2 -->|データ取得| DL
-    CF2 -->|基本データ保存| FS
-    CF2 -->|時系列データ保存| TS_RAW
-    CF3 -->|日次集計| TS_RAW
-    CF3 -->|永続保存| TS_DAILY
+    CF2 -->|データ保存| FS
+    CF3 -->|整合性チェック・修正| FS
 
     %% Application Data Flow
     WEB_STAGING -->|データ読み書き| FS
-    WEB_STAGING -->|音声ファイル| CS_AUDIO
     WEB_PROD -->|データ読み書き| FS
-    WEB_PROD -->|音声ファイル| CS_AUDIO
 
     %% Network Flow
     CF1 -- VPC --> SUBNET
@@ -128,7 +124,6 @@ graph TD
     %% Monitoring & Budget (v11.0最適化)
     MD -->|メトリクス| CF1
     MD -->|メトリクス| CF2
-    MD -->|メトリクス| CF3
     MD -->|メトリクス| WEB_STAGING
     MD -->|メトリクス| WEB_PROD
     AP -->|アラート| NC
@@ -147,10 +142,10 @@ graph TD
 
     class YT,DL external
     class CF1,CF2,CF3,WEB_STAGING,WEB_PROD compute
-    class FS,TS_RAW,TS_DAILY,CS_AUDIO,CS_TFSTATE,AR storage
+    class FS,CS_TFSTATE,AR storage
     class SM,FR,WIF security
     class MD,AP,NC,BUDGET,COST_OPT monitoring
-    class CS1,CS2,CS3,PS1,PS2,PS3 messaging
+    class CS1,CS2,CS3,CS4,PS1,PS2,PS3 messaging
     class VPC,SUBNET,NAT,DNS network
     class DEV,MAIN,GHA,STAGING,TAG,PROD cicd
 ```
@@ -171,11 +166,11 @@ graph TD
 
 ### 2. 自動データ収集フロー（Production環境のみ - v11.0統合最適化）
 `Cloud Scheduler → Pub/Sub → Cloud Functions → External APIs → Cloud Firestore + 時系列データ基盤`
-- **YouTube動画収集**: Production環境でのみ有効。Cloud Schedulerが定刻にPub/Subトピックへメッセージを送信し、`fetchYouTubeVideos`関数をトリガーします。関数はYouTube Data APIから動画情報を取得し、Cloud Firestoreに保存します。
-- **DLsite統合データ収集**: `fetchDLsiteWorksIndividualAPI`関数が15分間隔でトリガーされ、Individual Info APIから作品情報を取得し、基本データと時系列データを同時処理します。
-- **時系列データ処理**: 取得したデータは即座に基本データとしてFirestoreに保存され、同時に時系列生データとして`dlsite_timeseries_raw`に保存されます。日次集計処理により`dlsite_timeseries_daily`に永続保存されます。
-- **タイムアウト最適化**: 並列処理パラメータ最適化により、全1,484件の100%処理完了を保証します。
+- **YouTube動画収集**: Production環境でのみ有効。Cloud Schedulerが毎時30分（`30 * * * *`）にPub/Subトピックへメッセージを送信し、`fetchYouTubeVideos`関数をトリガーします。関数はYouTube Data APIから動画情報を取得し、Cloud Firestoreに保存します。
+- **DLsite統合データ収集**: `fetchDLsiteUnifiedData`関数が2時間ごと（`3 */2 * * *`）にトリガーされ、Individual Info APIから作品情報を取得し、`works` / `circles` / `creatorWorkMappings` / `works/{workId}/priceHistory` に保存します。
+- **データ整合性チェック**: `checkDataIntegrity`関数が毎週日曜3:00 JST（`0 3 * * 0`）に実行され、Circle/Work/Creator の相互参照整合性を検証・修正します。結果は `dlsiteMetadata/dataIntegrityCheck` に保存されます。
 - **コスト最適化**: Staging環境ではCloud Functions無効化により、データ収集コストを削減します。
+- **旧時系列データ収集（廃止済み）**: `dlsite_timeseries_raw` / `dlsite_timeseries_daily` コレクションおよびその収集関数は統合アーキテクチャへの移行により削除済みです。価格履歴は `works/{workId}/priceHistory` サブコレクションで管理します。
 
 ### 3. 2環境構成Webアプリケーションフロー
 
@@ -211,22 +206,21 @@ graph TD
 | **Cloud DNS** | `suzumina.click`ドメインの名前解決（Production のみ） | `dns.tf` | ❌ |
 
 ### コンピュートリソース（環境別構成 - v11.0最適化）
-| リソース | Staging環境 | Production環境 | 実行トリガー | v11.0更新内容 |
+| リソース | Staging環境 | Production環境 | 実行トリガー | スケジュール |
 |---|---|---|---|---|
-| **fetchYouTubeVideos** | ❌ 無効（コスト削減） | ✅ 有効 | Pub/Sub | - |
-| **fetchDLsiteWorksIndividualAPI** | ❌ 無効（コスト削減） | ✅ 有効・15分間隔 | Pub/Sub | タイムアウト最適化・100%成功保証 |
-| **時系列データ処理** | ❌ 無効 | ✅ 統合実行 | 自動トリガー | 日次集計・永続保存システム |
+| **fetchYouTubeVideos** | ❌ 無効（コスト削減） | ✅ 有効 | Pub/Sub | 毎時30分 |
+| **fetchDLsiteUnifiedData** | ❌ 無効（コスト削減） | ✅ 有効 | Pub/Sub | 2時間ごと |
+| **checkDataIntegrity** | ❌ 無効 | ✅ 有効 | Pub/Sub | 毎週日曜3:00 JST |
 | **Cloud Run (Web App)** | 軽量構成（512MB/1インスタンス） | 本番構成（1GB/2インスタンス） | HTTP リクエスト | - |
 
-### ストレージシステム（共有リソース - v11.0時系列データ対応）
-| ストレージ | 用途 | 特徴 | 管理ファイル | 両環境共有 | v11.0更新内容 |
-|---|---|---|---|---|---|
-| **Cloud Firestore** | アプリケーション・時系列データ | ネイティブモード, 複合インデックス | `firestore_database.tf` | ✅ | 時系列データコレクション追加 |
-| **dlsite_timeseries_raw** | 時系列生データ | 7日間自動削除 | `firestore_indexes.tf` | ✅ | v11.0新規追加 |
-| **dlsite_timeseries_daily** | 日次集計データ | 永続保存・高速検索 | `firestore_indexes.tf` | ✅ | v11.0新規追加 |
-| **Cloud Storage (デプロイ)** | Terraform状態・アーティファクト | バージョニング, ライフサイクル管理 | `storage.tf` | ✅ | - |
-| **Cloud Storage (tfstate)** | Terraformの状態ファイル | バージョニング有効, 削除保護 | `gcs.tf` | ✅ | - |
-| **Artifact Registry** | Dockerコンテナイメージ | GitHub Actions連携・自動クリーンアップ | `artifact_registry.tf` | ✅ | 自動ライフサイクル管理 |
+### ストレージシステム（共有リソース）
+| ストレージ | 用途 | 特徴 | 管理ファイル | 両環境共有 |
+|---|---|---|---|---|
+| **Cloud Firestore** | アプリケーションデータ（works / videos / audioButtons 等） | ネイティブモード, 複合インデックス | `firestore_database.tf` | ✅ |
+| **Cloud Storage (tfstate)** | Terraformの状態ファイル | バージョニング有効, 削除保護 | `gcs.tf` | ✅ |
+| **Artifact Registry** | Dockerコンテナイメージ | GitHub Actions連携・自動クリーンアップ | `artifact_registry.tf` | ✅ |
+| ~~dlsite_timeseries_raw~~ | ~~時系列生データ~~ | **削除済み** — 統合アーキテクチャへ移行 | - | - |
+| ~~dlsite_timeseries_daily~~ | ~~日次集計データ~~ | **削除済み** — 統合アーキテクチャへ移行 | - | - |
 
 ### CI/CD・デプロイメント（v11.0コスト最適化対応）
 | コンポーネント | 役割 | トリガー | 対象環境 | v11.0更新内容 |
