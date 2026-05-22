@@ -12,9 +12,9 @@ Welcome to the suzumina.click project documentation. This is the central hub for
 
 **suzumina.click** is a fan community web platform for voice actress "Suzuka Minase" (涼花みなせ).
 
-- **Status**: Production Ready v0.3.11
+- **Status**: Production Ready v0.3.12
 - **URL**: https://suzumina.click
-- **Tech Stack**: Next.js 15, TypeScript, Firestore, Cloud Functions
+- **Tech Stack**: Next.js 16, TypeScript, Firestore, Cloud Functions
 - **Repository**: Private GitHub repository
 
 ### Core Features
@@ -123,5 +123,5 @@ pnpm build                                    # Build all packages
 
 ---
 
-**Last Updated**: 2025-12-24
+**Last Updated**: 2026-05-22
 **Maintained by**: suzumina.click development team

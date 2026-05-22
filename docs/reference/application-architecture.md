@@ -10,15 +10,19 @@
 
 ## アーキテクチャ概要
 
-suzumina.clickは、Next.js 15を基盤としたモダンなWebアプリケーションです。
+suzumina.clickは、Next.js 16を基盤としたモダンなWebアプリケーションです。
 
 ### 技術スタック
 
-- **フロントエンド**: Next.js 15 (App Router), React 19, TypeScript
-- **スタイリング**: Tailwind CSS, shadcn/ui
+- **フロントエンド**: Next.js 16 (App Router), React 19, TypeScript, React Compiler
+- **スタイリング**: Tailwind CSS v4, shadcn/ui
 - **バックエンド**: Server Actions, Cloud Functions
 - **データベース**: Cloud Firestore
-- **認証**: NextAuth.js (Discord OAuth)
+- **認証**: NextAuth.js v5 (Discord OAuth)
+- **バリデーション**: Zod v4, React Hook Form
+- **メール**: Resend
+- **チャート**: Recharts（価格履歴グラフ）
+- **同意管理**: Cookie Consent / Google Consent Mode（GDPR対応）
 
 ## レイヤードアーキテクチャ
 
@@ -72,11 +76,13 @@ packages/
 │   ├── value-objects/ # 値オブジェクト
 │   └── plain-objects/ # Server/Client境界用
 │
-├── ui/               # 共有UIコンポーネント
-│   └── components/   # shadcn/uiベース
-│
-└── functions/        # Cloud Functions
-    └── src/          # バックグラウンド処理
+└── ui/               # 共有UIコンポーネント
+    └── components/   # shadcn/uiベース
+
+apps/
+├── web/              # Next.js Webアプリケーション
+└── functions/        # Cloud Functions（バックグラウンド処理）
+    └── src/
 ```
 
 ### アプリケーション構造
@@ -182,9 +188,9 @@ Firestore
 ## Cloud Functions アーキテクチャ
 
 ### 1. データ収集関数
-- **fetchYouTubeVideos**: YouTube動画データの定期収集（1時間ごと）
-- **fetchDLsiteUnifiedData**: DLsite作品データの統合収集（2時間ごと）
-- **checkDataIntegrity**: データ整合性チェック（週次）NEW
+- **fetchYouTubeVideos**: YouTube動画データの定期収集（毎時30分: `30 * * * *`）
+- **fetchDLsiteUnifiedData**: DLsite Individual Info APIによる作品データ統合収集（2時間ごと: `3 */2 * * *`）
+- **checkDataIntegrity**: データ整合性チェック（毎週日曜3:00 JST: `0 3 * * 0`）
 
 ### 2. checkDataIntegrity関数の詳細
 - **実行タイミング**: 毎週日曜日 3:00 JST
@@ -196,18 +202,26 @@ Firestore
   - 削除されたCreator-Work関連の自動復元
 - **結果保存**: `dlsiteMetadata/dataIntegrityCheck`ドキュメント
 
+## セキュリティ・プライバシーアーキテクチャ
+
+### GDPR・Cookie同意管理
+- **Google Consent Mode v2**: プライバシー設定に応じた広告計測の調整
+- **Cookie同意バナー**: 初回訪問時のオプトイン取得
+- **Cookie設定パネル**: ユーザーが後からカテゴリ別に設定変更可能
+- **実装箇所**: `src/components/consent/`
+
+### 年齢認証ゲート
+- R18コンテンツの表示制御
+- Context API（`age-verification-context.tsx`）による状態管理
+- セッション単位での認証状態保持
+- **実装箇所**: `src/components/consent/age-verification-*.tsx`, `src/contexts/`
+
 ## 今後の方向性
 
-1. **API Routes廃止**
-   - すべてServer Actionsに移行
-   - よりシンプルなアーキテクチャ
+1. **API Routes**: `/api/auth`（NextAuth）と `/api/health`（ヘルスチェック）は引き続き稼働。それ以外は Server Actions に集約済み。
 
 2. **Entity実装の選択的適用**
    - ROIベースの判断
-   - 段階的な実装
-
-3. **リアルタイム機能**
-   - Firestore リアルタイムリスナー
-   - Server-Sent Events検討
+   - [ADR-001](../decisions/architecture/ADR-001-ddd-implementation-guidelines.md) 参照
 
 詳細な実装ガイドは各参照ドキュメントを確認してください。
