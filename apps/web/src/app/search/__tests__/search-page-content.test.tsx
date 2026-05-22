@@ -19,6 +19,17 @@ vi.mock("next/navigation", () => ({
 	}),
 }));
 
+// Mock @/app/actions to prevent Firestore initialization
+vi.mock("@/app/actions", () => ({
+	searchUnified: vi.fn().mockResolvedValue({
+		works: [],
+		videos: [],
+		audioButtons: [],
+		total: 0,
+		hasMore: false,
+	}),
+}));
+
 // Mock UI components with minimal functionality
 vi.mock("@suzumina.click/ui/components/ui/badge", () => ({
 	Badge: ({ children, onClick, className }: any) => (
