@@ -63,7 +63,7 @@ resource "cloudflare_ruleset" "cache_rules" {
   zone_id = data.cloudflare_zone.main[0].id
   name    = "suzumina.click Cache Rules"
   kind    = "zone"
-  phase   = "http_cache_settings"
+  phase   = "http_request_cache_settings"
 
   # 1. API ルート: キャッシュ完全無効（認証・動的レスポンスを保護）
   rules {
@@ -124,7 +124,7 @@ resource "cloudflare_ruleset" "cache_rules" {
         default = 300
       }
       browser_ttl {
-        mode = "respects_origin"
+        mode = "respect_origin"
       }
     }
     expression  = "(http.request.uri.path eq \"/\")"
