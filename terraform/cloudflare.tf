@@ -29,8 +29,8 @@ resource "cloudflare_zone_settings_override" "main" {
   zone_id = data.cloudflare_zone.main[0].id
 
   settings {
-    # SSL: Cloud Run のドメインマッピング証明書を信頼する
-    ssl = "full"
+    # SSL strict: Cloud Run ドメインマッピングは Google 発行の信頼済み証明書を使用
+    ssl = "strict"
 
     # HTTP → HTTPS リダイレクト
     always_use_https = "on"
@@ -46,6 +46,9 @@ resource "cloudflare_zone_settings_override" "main" {
 
     # Rocket Loader は Next.js の Script 管理と競合するため無効化
     rocket_loader = "off"
+
+    # 103 Early Hints で LCP 改善（ブラウザが HTML 受信前にリソース先読みを開始）
+    early_hints = "on"
   }
 }
 
