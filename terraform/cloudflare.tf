@@ -71,7 +71,7 @@ resource "cloudflare_ruleset" "cache_rules" {
     action_parameters {
       cache = false
     }
-    expression  = "(http.request.uri.path starts_with \"/api/\")"
+    expression  = "(starts_with(http.request.uri.path, \"/api/\"))"
     description = "API: キャッシュ無効"
     enabled     = true
   }
@@ -90,7 +90,7 @@ resource "cloudflare_ruleset" "cache_rules" {
         default = 31536000
       }
     }
-    expression  = "(http.request.uri.path starts_with \"/_next/static/\")"
+    expression  = "(starts_with(http.request.uri.path, \"/_next/static/\"))"
     description = "Next.js 静的アセット: 1年キャッシュ"
     enabled     = true
   }
@@ -109,7 +109,7 @@ resource "cloudflare_ruleset" "cache_rules" {
         default = 86400
       }
     }
-    expression  = "(http.request.uri.path starts_with \"/_next/image/\")"
+    expression  = "(starts_with(http.request.uri.path, \"/_next/image/\"))"
     description = "Next.js 画像最適化: 1日キャッシュ"
     enabled     = true
   }
