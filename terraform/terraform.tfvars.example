@@ -57,3 +57,12 @@ resend_api_key = "re_your_resend_api_key_here"
 # カンマ区切りで複数指定可能
 contact_email_recipients = "your-email@example.com,another-email@example.com"
 
+# ===========================================
+# Cloudflare設定
+# ===========================================
+
+# Cloudflare APIトークン
+# https://dash.cloudflare.com/profile/api-tokens から作成
+# 必要な権限: Zone:Read, Zone Settings:Edit, Cache Rules:Edit, DNS:Edit
+cloudflare_api_token = "your-cloudflare-api-token-here"
+

@@ -244,6 +244,34 @@ const nextConfig = {
 					},
 				],
 			},
+			// Cloudflare CDN向けキャッシュ設定
+			{
+				source: "/_next/static/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, max-age=31536000, immutable",
+					},
+				],
+			},
+			{
+				source: "/",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, s-maxage=300, stale-while-revalidate=600",
+					},
+				],
+			},
+			{
+				source: "/api/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "no-store",
+					},
+				],
+			},
 		];
 	},
 };

@@ -179,4 +179,14 @@ variable "google_tag_manager_id" {
   sensitive   = false # GTM IDは公開情報
 }
 
+# ==========================================================
+# Cloudflare設定用変数
+# ==========================================================
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare APIトークン（Zone:Read, Zone Settings:Edit, Cache Rules:Edit, DNS:Edit 権限が必要）"
+  type        = string
+  sensitive   = true
+}
+
 
