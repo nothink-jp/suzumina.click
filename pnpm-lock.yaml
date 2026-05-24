@@ -5,19 +5,12 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  jws: ^4.0.1
-  body-parser@>=2.2.0 <2.2.1: '>=2.2.1'
   protobufjs: '>=7.5.8'
   vite: '>=7.3.2'
-  picomatch: '>=4.0.4'
   path-to-regexp: '>=8.4.0'
   uuid: '>=11.1.1'
   ws: '>=8.20.1'
   '@tootallnate/once': '>=2.0.1'
-  fast-uri: '>=3.1.2'
-  postcss: '>=8.5.10'
-  brace-expansion@^2.0.2: ^2.0.3
-  brace-expansion@^5.0.2: ^5.0.6
 
 importers:
 
@@ -3371,7 +3364,7 @@ packages:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
-      picomatch: '>=4.0.4'
+      picomatch: ^3 || ^4
     peerDependenciesMeta:
       picomatch:
         optional: true
@@ -4120,7 +4113,7 @@ packages:
     engines: {node: '>= 18'}
     peerDependencies:
       jiti: '>=1.21.0'
-      postcss: '>=8.5.10'
+      postcss: '>=8.0.9'
       tsx: ^4.8.1
       yaml: ^2.4.2
     peerDependenciesMeta:
@@ -4132,6 +4125,10 @@ packages:
         optional: true
       yaml:
         optional: true
+
+  postcss@8.4.31:
+    resolution: {integrity: sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==}
+    engines: {node: ^10 || ^12 || >=14}
 
   postcss@8.5.15:
     resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
@@ -4676,7 +4673,7 @@ packages:
     peerDependencies:
       '@microsoft/api-extractor': ^7.36.0
       '@swc/core': ^1
-      postcss: '>=8.5.10'
+      postcss: ^8.4.12
       typescript: '>=4.5.0'
     peerDependenciesMeta:
       '@microsoft/api-extractor':
@@ -8183,7 +8180,7 @@ snapshots:
       '@swc/helpers': 0.5.15
       baseline-browser-mapping: 2.10.0
       caniuse-lite: 1.0.30001777
-      postcss: 8.5.15
+      postcss: 8.4.31
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
       styled-jsx: 5.1.6(@babel/core@7.29.0)(react@19.2.6)
@@ -8367,6 +8364,12 @@ snapshots:
       jiti: 2.7.0
       postcss: 8.5.15
       tsx: 4.22.3
+
+  postcss@8.4.31:
+    dependencies:
+      nanoid: 3.3.12
+      picocolors: 1.1.1
+      source-map-js: 1.2.1
 
   postcss@8.5.15:
     dependencies:

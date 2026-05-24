@@ -30,19 +30,12 @@
 	"packageManager": "pnpm@10.32.0",
 	"pnpm": {
 		"overrides": {
-			"jws": "^4.0.1",
-			"body-parser@>=2.2.0 <2.2.1": ">=2.2.1",
 			"protobufjs": ">=7.5.8",
 			"vite": ">=7.3.2",
-			"picomatch": ">=4.0.4",
 			"path-to-regexp": ">=8.4.0",
 			"uuid": ">=11.1.1",
 			"ws": ">=8.20.1",
-			"@tootallnate/once": ">=2.0.1",
-			"fast-uri": ">=3.1.2",
-			"postcss": ">=8.5.10",
-			"brace-expansion@^2.0.2": "^2.0.3",
-			"brace-expansion@^5.0.2": "^5.0.6"
+			"@tootallnate/once": ">=2.0.1"
 		}
 	}
 }
