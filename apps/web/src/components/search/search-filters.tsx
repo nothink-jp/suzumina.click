@@ -115,12 +115,7 @@ function DateRangeFilter({
 								</Button>
 							</PopoverTrigger>
 							<PopoverContent className="w-auto p-0">
-								<Calendar
-									mode="single"
-									selected={customDateFrom}
-									onSelect={setCustomDateFrom}
-									initialFocus
-								/>
+								<Calendar mode="single" selected={customDateFrom} onSelect={setCustomDateFrom} />
 							</PopoverContent>
 						</Popover>
 						<span className="flex items-center text-muted-foreground">〜</span>
@@ -142,12 +137,7 @@ function DateRangeFilter({
 								</Button>
 							</PopoverTrigger>
 							<PopoverContent className="w-auto p-0">
-								<Calendar
-									mode="single"
-									selected={customDateTo}
-									onSelect={setCustomDateTo}
-									initialFocus
-								/>
+								<Calendar mode="single" selected={customDateTo} onSelect={setCustomDateTo} />
 							</PopoverContent>
 						</Popover>
 					</div>

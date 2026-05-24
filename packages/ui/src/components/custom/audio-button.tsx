@@ -24,7 +24,6 @@ import {
 	ThumbsUp,
 	User,
 	Video,
-	Youtube,
 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { type AudioControls, AudioPlayer } from "./audio-player";
@@ -338,7 +337,7 @@ function PopoverActions({
 				className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
 				onClick={(e) => e.stopPropagation()}
 			>
-				<Youtube className="h-4 w-4" />
+				<Video className="h-4 w-4" />
 				YouTube
 			</a>
 

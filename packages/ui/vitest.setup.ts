@@ -3,7 +3,14 @@ import { vi } from "vitest";
 
 // グローバルな型定義
 declare global {
-	var mockRouter: any;
+	var mockRouter: {
+		push: ReturnType<typeof vi.fn>;
+		replace: ReturnType<typeof vi.fn>;
+		refresh: ReturnType<typeof vi.fn>;
+		back: ReturnType<typeof vi.fn>;
+		forward: ReturnType<typeof vi.fn>;
+		prefetch: ReturnType<typeof vi.fn>;
+	};
 	var mockSearchParams: URLSearchParams;
 }
 
@@ -38,6 +45,7 @@ global.IntersectionObserver = class IntersectionObserver {
 	root = null;
 	rootMargin = "";
 	thresholds = [];
+	scrollMargin = "";
 
 	observe() {}
 	unobserve() {}

@@ -42,7 +42,6 @@ import {
 	Users,
 	Video,
 	X,
-	Youtube,
 } from "lucide-react";
 
 const meta: Meta = {
@@ -109,8 +108,7 @@ const statusIcons = [
 // メディア系アイコン
 const mediaIcons = [
 	{ icon: PlayCircle, name: "PlayCircle", usage: "動画プレビュー" },
-	{ icon: Video, name: "Video", usage: "動画コンテンツ" },
-	{ icon: Youtube, name: "Youtube", usage: "YouTube連携" },
+	{ icon: Video, name: "Video", usage: "動画コンテンツ・YouTube連携" },
 	{ icon: FileText, name: "FileText", usage: "テキストコンテンツ" },
 	{ icon: Sparkles, name: "Sparkles", usage: "特別コンテンツ" },
 ];

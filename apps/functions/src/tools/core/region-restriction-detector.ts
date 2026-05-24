@@ -378,10 +378,10 @@ async function main(): Promise<void> {
 
 // 名前付きエクスポート
 export {
-	RegionRestrictionDetector,
-	type RegionRestrictedWork,
-	type RegionDifferenceReport,
 	type DetectionResult,
+	type RegionDifferenceReport,
+	type RegionRestrictedWork,
+	RegionRestrictionDetector,
 };
 
 // スクリプト実行
