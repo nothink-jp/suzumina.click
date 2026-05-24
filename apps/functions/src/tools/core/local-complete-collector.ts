@@ -487,10 +487,10 @@ async function main(): Promise<void> {
 
 // 名前付きエクスポート
 export {
-	LocalDataCollector,
 	executeCompleteLocalCollection,
-	type LocalCollectionResult,
 	type LocalCollectedWorkData,
+	type LocalCollectionResult,
+	LocalDataCollector,
 	type UploadResult,
 };
 

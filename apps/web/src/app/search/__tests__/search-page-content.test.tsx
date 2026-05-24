@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AgeVerificationProvider } from "../../../contexts/age-verification-context";
 import { searchUnified } from "@/app/actions";
+import { AgeVerificationProvider } from "../../../contexts/age-verification-context";
 import SearchPageContent from "../search-page-content";
 
 // Mock dependencies
