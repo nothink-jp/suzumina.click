@@ -4,10 +4,10 @@
 		"noImplicitReturns": true,
 		"noUnusedLocals": true,
 		"outDir": "lib",
+		"rootDir": "./src",
 		"sourceMap": true,
 		"lib": ["ES2022"],
-		"allowSyntheticDefaultImports": true,
-		"baseUrl": "."
+		"allowSyntheticDefaultImports": true
 	},
 	"compileOnSave": true,
 	"include": ["src"],
