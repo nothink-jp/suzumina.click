@@ -174,7 +174,7 @@ export function AudioButtonDetailMainContent({
 									target="_blank"
 									rel="noopener noreferrer"
 								>
-									<Youtube className="h-4 w-4 mr-2" />
+									<YoutubeIcon className="h-4 w-4 mr-2" />
 									YouTubeで開く
 								</a>
 							</Button>
