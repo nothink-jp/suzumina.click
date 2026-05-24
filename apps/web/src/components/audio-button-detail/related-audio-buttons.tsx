@@ -1,7 +1,7 @@
 import type { AudioButton } from "@suzumina.click/shared-types";
+import { YoutubeIcon } from "@suzumina.click/ui/components/custom/youtube-icon";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
-import { Youtube } from "lucide-react";
 import Link from "next/link";
 import { getAudioButtonsList } from "@/app/buttons/actions";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
@@ -40,7 +40,7 @@ export async function RelatedAudioButtons({
 					<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-lg">
-								<Youtube className="h-5 w-5 text-suzuka-600" />
+								<YoutubeIcon className="h-5 w-5 text-suzuka-600" />
 								同じ動画の音声ボタン
 							</CardTitle>
 						</CardHeader>
