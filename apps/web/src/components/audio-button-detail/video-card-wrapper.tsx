@@ -1,6 +1,6 @@
+import { YoutubeIcon } from "@suzumina.click/ui/components/custom/youtube-icon";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
-import { Youtube } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getVideoById } from "@/app/videos/actions";
@@ -50,7 +50,7 @@ export async function VideoCardWrapper({ videoId, fallbackTitle }: VideoCardWrap
 										target="_blank"
 										rel="noopener noreferrer"
 									>
-										<Youtube className="h-4 w-4 mr-1" />
+										<YoutubeIcon className="h-4 w-4 mr-1" />
 										YouTube
 									</a>
 								</Button>
@@ -102,7 +102,7 @@ export async function VideoCardWrapper({ videoId, fallbackTitle }: VideoCardWrap
 									target="_blank"
 									rel="noopener noreferrer"
 								>
-									<Youtube className="h-4 w-4 mr-1" />
+									<YoutubeIcon className="h-4 w-4 mr-1" />
 									YouTube
 								</a>
 							</Button>

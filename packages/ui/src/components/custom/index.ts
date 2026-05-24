@@ -55,6 +55,7 @@ export { TimeDisplay } from "./time-display";
 export type { ValidationMessageProps } from "./validation-message";
 export { ValidationMessage, ValidationMessages } from "./validation-message";
 
+export { YoutubeIcon } from "./youtube-icon";
 // YouTube components
 export { YouTubePlayer } from "./youtube-player";
 export type { YTPlayer, YTPlayerOptions, YTPlayerQuality, YTPlayerState } from "./youtube-types";

@@ -24,12 +24,12 @@ import {
 	ThumbsUp,
 	User,
 	Video,
-	Youtube,
 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { type AudioControls, AudioPlayer } from "./audio-player";
 import { HighlightText } from "./highlight-text";
 import { TagList } from "./tag-list";
+import { YoutubeIcon } from "./youtube-icon";
 
 interface AudioButtonProps {
 	audioButton: AudioButtonType;
@@ -338,7 +338,7 @@ function PopoverActions({
 				className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
 				onClick={(e) => e.stopPropagation()}
 			>
-				<Youtube className="h-4 w-4" />
+				<YoutubeIcon className="h-4 w-4" />
 				YouTube
 			</a>
 

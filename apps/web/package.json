@@ -33,7 +33,7 @@
 		"@hookform/resolvers": "^5.4.0",
 		"@suzumina.click/shared-types": "workspace:*",
 		"@suzumina.click/ui": "workspace:*",
-		"lucide-react": "^0.577.0",
+		"lucide-react": "^1.16.0",
 		"next": "^16.2.6",
 		"next-auth": "5.0.0-beta.30",
 		"react": "^19.2.6",

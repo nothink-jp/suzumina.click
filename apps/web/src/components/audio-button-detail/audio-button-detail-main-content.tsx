@@ -1,8 +1,9 @@
 import type { AudioButtonPlainObject } from "@suzumina.click/shared-types";
 import { TimeDisplay } from "@suzumina.click/ui/components/custom/time-display";
+import { YoutubeIcon } from "@suzumina.click/ui/components/custom/youtube-icon";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
-import { Calendar, Clock, Pencil, Youtube } from "lucide-react";
+import { Calendar, Clock, Pencil } from "lucide-react";
 import Link from "next/link";
 import type { Session } from "next-auth";
 import { AudioButtonDeleteButton } from "@/components/audio/audio-button-delete-button";
@@ -149,7 +150,7 @@ export function AudioButtonDetailMainContent({
 					{/* YouTube動画情報 */}
 					<div className="bg-gradient-to-r from-suzuka-50 to-minase-50 p-6 rounded-lg border border-suzuka-100">
 						<h3 className="font-medium text-sm text-muted-foreground mb-3 flex items-center gap-2">
-							<Youtube className="h-4 w-4" />
+							<YoutubeIcon className="h-4 w-4" />
 							切り抜き範囲
 						</h3>
 						<div className="space-y-3">
@@ -173,7 +174,7 @@ export function AudioButtonDetailMainContent({
 									target="_blank"
 									rel="noopener noreferrer"
 								>
-									<Youtube className="h-4 w-4 mr-2" />
+									<YoutubeIcon className="h-4 w-4 mr-2" />
 									YouTubeで開く
 								</a>
 							</Button>
