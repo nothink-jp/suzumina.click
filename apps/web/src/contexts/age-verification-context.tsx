@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 interface AgeVerificationContextType {
 	/** 年齢確認済みかどうか */
@@ -52,7 +52,7 @@ export function AgeVerificationProvider({ children }: AgeVerificationProviderPro
 		setIsLoading(false);
 	}, []);
 
-	const updateAgeVerification = (adult: boolean) => {
+	const updateAgeVerification = useCallback((adult: boolean) => {
 		setIsAgeVerified(true);
 		setIsAdult(adult);
 
@@ -60,22 +60,23 @@ export function AgeVerificationProvider({ children }: AgeVerificationProviderPro
 		localStorage.setItem("age-verified", "true");
 		localStorage.setItem("age-verification-date", new Date().toISOString());
 		localStorage.setItem("age-verification-adult", adult.toString());
-	};
+	}, []);
 
 	const showR18Content = isAgeVerified && isAdult;
 
+	const value = useMemo<AgeVerificationContextType>(
+		() => ({
+			isAgeVerified,
+			isAdult,
+			showR18Content,
+			updateAgeVerification,
+			isLoading,
+		}),
+		[isAgeVerified, isAdult, showR18Content, updateAgeVerification, isLoading],
+	);
+
 	return (
-		<AgeVerificationContext.Provider
-			value={{
-				isAgeVerified,
-				isAdult,
-				showR18Content,
-				updateAgeVerification,
-				isLoading,
-			}}
-		>
-			{children}
-		</AgeVerificationContext.Provider>
+		<AgeVerificationContext.Provider value={value}>{children}</AgeVerificationContext.Provider>
 	);
 }
 
