@@ -87,13 +87,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				<meta name="color-scheme" content="light dark" />
 				<meta name="supported-color-schemes" content="light dark" />
 
-				{/* DNS prefetch for external domains */}
-				<link rel="dns-prefetch" href="//www.google-analytics.com" />
-				<link rel="dns-prefetch" href="//img.dlsite.jp" />
+				{/* preconnect: TCP + TLS ハンドシェイクまで事前確立 */}
+				<link rel="preconnect" href="https://i.ytimg.com" />
+				<link rel="preconnect" href="https://img.dlsite.jp" />
+				<link rel="preconnect" href="https://www.googletagmanager.com" />
+				{/* dns-prefetch: preconnect 非対応ブラウザ向けフォールバック */}
 				<link rel="dns-prefetch" href="//i.ytimg.com" />
-
-				{/* Resource hints for performance */}
-				<link rel="prefetch" href="/api/health" />
+				<link rel="dns-prefetch" href="//img.dlsite.jp" />
 
 				<ConsentModeScript />
 				<GoogleAnalyticsScript />
