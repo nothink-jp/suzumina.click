@@ -11,7 +11,7 @@ WORKDIR /app
 # Install pnpm (use latest version 10 to match engines)
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable pnpm && corepack use pnpm@10
+RUN corepack enable pnpm && corepack use pnpm@11
 # Ensure yarn is disabled to prevent conflicts
 RUN npm config delete prefix 2>/dev/null || true
 
@@ -34,7 +34,7 @@ WORKDIR /app
 # Install pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable pnpm && corepack use pnpm@10
+RUN corepack enable pnpm && corepack use pnpm@11
 # Ensure yarn is disabled to prevent conflicts
 RUN npm config delete prefix 2>/dev/null || true
 
