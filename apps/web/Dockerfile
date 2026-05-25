@@ -4,6 +4,11 @@
 FROM node:24.16.0-alpine AS base
 RUN apk add --no-cache libc6-compat tini
 
+# pnpm v11 では非対話環境での node_modules purge が abort されるため
+# CI=true を設定して非対話モードで自動承認させる
+# https://pnpm.io/errors#err_pnpm_aborted_remove_modules_dir_no_tty
+ENV CI=true
+
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
