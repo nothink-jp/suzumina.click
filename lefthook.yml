@@ -14,7 +14,8 @@ pre-commit:
 pre-push:
   parallel: true  # 並列実行で高速化
   commands:
-    # 1. 変更影響範囲の型チェック（高速）
+    # 変更影響範囲の型チェック（高速）
+    # shared-types / ui は no-build（src 直接公開）のため事前ビルド不要
     typecheck-changed:
       glob: "*.{ts,tsx}"
       run: |
@@ -27,8 +28,3 @@ pre-push:
           fi
         done
       fail_text: "変更ファイルの型チェックに失敗しました"
-    
-    # 2. 依存関係の整合性確認（必須）
-    build-deps:
-      run: pnpm --filter @suzumina.click/shared-types build
-      fail_text: "共有型のビルドに失敗しました"

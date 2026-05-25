@@ -76,10 +76,8 @@ jobs:
       - name: Quick validation
         run: |
           echo "🧪 Running quick validation for direct push..."
-          
-          # Build dependencies
-          pnpm --filter @suzumina.click/shared-types build
-          
+
+          # shared-types は no-build（src を直接公開）のため事前ビルド不要
           # Run critical checks in parallel
           pnpm --filter @suzumina.click/web typecheck &
           TYPECHECK_PID=$!

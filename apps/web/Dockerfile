@@ -48,11 +48,8 @@ COPY --from=deps /app/packages ./packages
 COPY --from=deps /app/apps ./apps
 COPY . .
 
-# Build shared-types first (dependency for web)
-WORKDIR /app/packages/shared-types
-RUN pnpm build
-
-# UI package doesn't need build - it exports TypeScript/React components directly
+# shared-types / ui packages don't need build - they export TypeScript/React sources directly
+# (Next.js transpiles them via transpilePackages)
 
 # Build web application with Next.js cache
 WORKDIR /app/apps/web
