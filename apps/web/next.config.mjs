@@ -6,7 +6,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	transpilePackages: ["@suzumina.click/ui"],
+	transpilePackages: ["@suzumina.click/ui", "@suzumina.click/shared-types"],
 
 	// Cloud Run向けのstandaloneビルド設定
 	output: "standalone",
