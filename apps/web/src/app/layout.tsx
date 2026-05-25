@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@suzumina.click/ui/globals.css";
 import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
+import { Suspense } from "react";
 import { GoogleAnalyticsScript } from "@/components/analytics/google-analytics-script";
 import {
 	GoogleTagManager,
@@ -104,7 +105,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				<AgeVerificationProvider>
 					<SessionProvider>
 						<PerformanceMonitor />
-						<PageViewTracker />
+						{/* useSearchParams を含むため、static prerender 時の CSR bailout エラーを回避 */}
+						<Suspense fallback={null}>
+							<PageViewTracker />
+						</Suspense>
 						<SiteHeader />
 						<main id="main-content" className="flex-1">
 							{children}
