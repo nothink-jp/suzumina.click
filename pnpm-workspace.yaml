@@ -12,8 +12,8 @@ overrides:
   postcss: ">=8.5.10"
   qs: ">=6.15.2"
 
-onlyBuiltDependencies:
-  - esbuild
-  - lefthook
-  - protobufjs
-  - sharp
+allowBuilds:
+  esbuild: true
+  lefthook: true
+  protobufjs: true
+  sharp: true
