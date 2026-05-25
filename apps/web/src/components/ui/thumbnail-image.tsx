@@ -122,6 +122,16 @@ const ThumbnailImage = memo(function ThumbnailImage({
 					objectPosition: "center",
 				}}
 			/>
+			{isPlaceholderImage && (
+				<div
+					className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center"
+					aria-hidden="true"
+				>
+					<span className="rounded bg-muted/80 px-2 py-0.5 text-[10px] text-muted-foreground">
+						画像なし
+					</span>
+				</div>
+			)}
 		</div>
 	);
 });
