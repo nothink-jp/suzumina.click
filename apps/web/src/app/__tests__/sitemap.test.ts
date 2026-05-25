@@ -1,5 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// next/cache の unstable_cache は Next.js ランタイム外では
+// "Invariant: incrementalCache missing" を投げてしまうため、
+// テストではキャッシュをパススルーして毎回 inner 関数を呼ばせる。
+// 同時に登録時の cache key / revalidate / tags を捕捉して
+// 回帰検知用に検証する。clearAllMocks の影響を受けないよう
+// vi.fn ではなく素の配列に push する。
+const { unstableCacheCalls } = vi.hoisted(() => ({
+	unstableCacheCalls: [] as Array<{
+		keys?: string[];
+		options?: { revalidate?: number; tags?: string[] };
+	}>,
+}));
+
+vi.mock("next/cache", () => ({
+	unstable_cache: (
+		fn: (...args: unknown[]) => unknown,
+		keys?: string[],
+		options?: { revalidate?: number; tags?: string[] },
+	) => {
+		unstableCacheCalls.push({ keys, options });
+		return fn;
+	},
+}));
+
 vi.mock("@/lib/firestore", () => ({
 	getFirestore: vi.fn(),
 }));
@@ -30,11 +54,14 @@ function buildCollectionResolvers(
 			if (!resolver) {
 				throw new Error(`Unexpected collection: ${name}`);
 			}
+			// sitemap.ts は videos/works を `.collection().limit().get()`、
+			// audioButtons を `.collection().where().limit().get()` で呼び分ける。
+			// 両方のチェーンを同じ resolver に解決する。
+			const limitChain = { get: () => resolver() };
 			return {
+				limit: () => limitChain,
 				where: () => ({
-					limit: () => ({
-						get: () => resolver(),
-					}),
+					limit: () => limitChain,
 				}),
 			};
 		},
@@ -222,5 +249,14 @@ describe("sitemap", () => {
 		const urls = result.map((entry) => entry.url);
 
 		expect(urls).toContain("https://suzumina.click/buttons/create");
+	});
+
+	// 動的部分は unstable_cache で 1h キャッシュされる前提 (#416)。
+	// キャッシュキー / revalidate / tags が意図せず変わったら検知する。
+	it("回帰検知: unstable_cache が固定キー・revalidate=3600・tag=sitemap で登録される", () => {
+		expect(unstableCacheCalls).toContainEqual({
+			keys: ["sitemap-dynamic-pages"],
+			options: expect.objectContaining({ revalidate: 3600, tags: ["sitemap"] }),
+		});
 	});
 });

@@ -33,10 +33,10 @@ describe("robots", () => {
 		const result = robots();
 		const disallow = (result.rules as { disallow: string[] }).disallow;
 
-		expect(disallow).toContain("/admin");
-		expect(disallow).toContain("/admin/*");
-		expect(disallow).toContain("/auth");
-		expect(disallow).toContain("/auth/*");
+		// prefix match のワイルドカード表記。/admin* は /admin・/admin/* を、
+		// /auth* は /auth・/auth/* をそれぞれカバーする (#413)。
+		expect(disallow).toContain("/admin*");
+		expect(disallow).toContain("/auth*");
 		expect(disallow).toContain("/_next/");
 		expect(disallow).toContain("/api/");
 	});
