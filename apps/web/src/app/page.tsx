@@ -1,9 +1,10 @@
 import { HomePage } from "@/components/home/home-page";
 import { getLatestAudioButtons, getLatestVideos, getLatestWorks } from "./actions";
 
-// Static generation with ISR for better performance
-// 5 minute cache to reduce Firestore queries and improve LCP
-export const revalidate = 300;
+// build 時の Firestore アクセスを避けるため force-dynamic を採用 (SPR-60 follow-up)
+// CDN 側で s-maxage=300, stale-while-revalidate=600（next.config.mjs）が効くため
+// 実質的なキャッシュ挙動は ISR と同等
+export const dynamic = "force-dynamic";
 
 // Server Component として実装し、全データを並列取得
 export default async function Home() {
