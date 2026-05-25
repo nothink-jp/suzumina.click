@@ -48,9 +48,8 @@ jobs:
       - name: Check bundle size impact
         run: |
           echo "📦 Checking bundle size impact..."
-          # Build shared-types first
-          pnpm --filter @suzumina.click/shared-types build
-          
+          # shared-types は no-build（src を直接公開）のため事前ビルド不要
+
           # Build web app and check size
           cd apps/web
           pnpm build

@@ -85,42 +85,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       
-      # 並列ビルド（高速化）
-      - name: Build dependencies in parallel
-        run: |
-          echo "🔨 Building dependencies in parallel..."
-          
-          # 必要なビルドを並列実行
-          declare -a build_pids
-          
-          # shared-typesのビルド
-          if [[ "${{ needs.changes.outputs.shared-types }}" == "true" ]] || \
-             [[ "${{ needs.changes.outputs.web }}" == "true" ]] || \
-             [[ "${{ needs.changes.outputs.admin }}" == "true" ]] || \
-             [[ "${{ needs.changes.outputs.functions }}" == "true" ]]; then
-            pnpm --filter @suzumina.click/shared-types build &
-            build_pids+=("$!:shared-types")
-          fi
-          
-          # UIのビルド（必要な場合）
-          if [[ "${{ needs.changes.outputs.ui }}" == "true" ]]; then
-            pnpm --filter @suzumina.click/ui build &
-            build_pids+=("$!:ui")
-          fi
-          
-          # 全ビルドの完了を待つ
-          for pid_info in "${build_pids[@]}"
-          do
-            pid=${pid_info%%:*}
-            name=${pid_info#*:}
-            if wait $pid; then
-              echo "✅ $name build completed"
-            else
-              echo "❌ $name build failed"
-              exit 1
-            fi
-          done
-      
+      # shared-types / ui は no-build（src を直接公開）のため事前ビルド不要
       # 完全並列実行による品質チェック
       - name: Run all quality checks in parallel
         run: |
@@ -227,10 +192,8 @@ jobs:
       - name: Verify builds
         run: |
           echo "🏗️ Verifying production builds..."
-          
-          # Build shared dependencies first
-          pnpm --filter @suzumina.click/shared-types build
-          
+
+          # shared-types は no-build のため事前ビルド不要
           # Build affected apps
           if [[ "${{ needs.changes.outputs.web }}" == "true" ]]; then
             echo "Building web app..."

@@ -2,33 +2,22 @@
 	"name": "@suzumina.click/shared-types",
 	"version": "0.3.12",
 	"description": "涼花みなせウェブサイト用の共有型定義",
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
+	"private": true,
 	"exports": {
 		".": {
-			"import": {
-				"types": "./src/index.ts",
-				"default": "./src/index.ts"
-			},
-			"require": {
-				"types": "./dist/index.d.ts",
-				"default": "./dist/index.js"
-			}
+			"types": "./src/index.ts",
+			"default": "./src/index.ts"
 		}
 	},
 	"files": [
-		"dist/**/*",
 		"src/**/*"
 	],
 	"scripts": {
-		"build": "tsc",
-		"pack": "pnpm build && pnpm pack",
-		"dev": "tsc --watch",
 		"lint": "biome check ./src",
 		"format": "biome format --write ./src",
 		"check": "biome check --write ./src",
 		"typecheck": "tsc --noEmit",
-		"clean": "rimraf dist *.tgz node_modules/.cache coverage",
+		"clean": "rimraf *.tgz node_modules/.cache coverage",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage"
 	},

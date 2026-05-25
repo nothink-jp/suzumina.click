@@ -1,13 +1,7 @@
 {
 	"extends": "@suzumina.click/typescript-config/base.json",
 	"compilerOptions": {
-		"outDir": "./dist",
-		"rootDir": "./src",
-		"declaration": true,
-		"declarationMap": true,
-		"sourceMap": true,
-		"incremental": false
+		"noEmit": true
 	},
-	"include": ["src/**/*"],
-	"exclude": ["src/**/__tests__/**", "src/**/*.test.ts", "src/**/*.spec.ts"]
+	"include": ["src/**/*"]
 }

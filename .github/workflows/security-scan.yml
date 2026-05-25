@@ -99,11 +99,9 @@ jobs:
           node-version: '24.13.0'
           cache: 'pnpm'
       
-      - name: Build shared packages
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm --filter @suzumina.click/shared-types build
-      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Build Docker image
         run: |
           docker build -f apps/web/Dockerfile -t suzumina-click:latest .

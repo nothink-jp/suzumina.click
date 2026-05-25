@@ -441,9 +441,6 @@ export function fromFirestore(doc: WorkDocument): WorkPlainObject {
  * Transforms WorkPlainObject to Firestore document format
  */
 export function toFirestore(work: WorkPlainObject): WorkDocument {
-	// Remove computed properties for storage
-	const { _computed } = work;
-
 	// Return simplified mapping (as any to bypass strict typing)
 	return {
 		id: work.productId,
