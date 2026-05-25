@@ -1283,12 +1283,14 @@ export function VideoCard({ video }: { video: VideoData }) {
 **トークン構成**:
 ```text
 packages/ui/src/components/design-tokens/
-├── color-palette.stories.tsx    # ブランドカラー + セマンティックカラー
-├── typography.stories.tsx       # フォントサイズ・行間・ウェイト
-├── spacing.stories.tsx          # 4px基準のスペーシング
-├── borders-shadows.stories.tsx  # 角丸・ボーダー・シャドウ
-└── icons.stories.tsx           # Lucide Reactアイコンセット
+├── colors.mdx              # ブランドカラー（ColorPalette）
+├── typography.mdx          # フォントスケール（Typeset）
+├── spacing.mdx             # 4px基準のスペーシング
+├── borders-shadows.mdx     # 角丸・ボーダー・シャドウ
+└── icons.mdx               # Lucide Reactアイコン（IconGallery）
 ```
+
+各ファイルは Storybook addon-docs の DocBlocks（`<ColorPalette>` / `<Typeset>` / `<IconGallery>`）を利用し、`*.mdx` として記述します。トップページ（`packages/ui/src/Introduction.mdx`）もデザインシステムの概要を案内します。
 
 **使用例**:
 ```typescript
@@ -1309,14 +1311,14 @@ packages/ui/src/components/design-tokens/
 
 ### Storybook デザイントークン管理
 
-**Lint設定**: デザイントークンStorybook は `biome.json` でlint除外
-- 理由: ドキュメンテーション目的のため未使用変数が多数存在
-- 対象: `**/src/components/design-tokens/*.stories.tsx`
+**ドキュメント形式**: MDX + `@storybook/addon-docs/blocks`（`ColorPalette` / `Typeset` / `IconGallery`）を利用
+- 対象: `packages/ui/src/components/design-tokens/*.mdx`
+- MDX は biome のチェック対象外なので、lint 除外設定は不要
 
 **メンテナンス方針**:
-- デザイントークンの変更時は対応するStorybookを更新
-- 新しいカラー・スペース・アイコン追加時はStorybook反映
-- Chromaticによる視覚的回帰テスト対象
+- デザイントークンの変更時は対応する MDX を更新
+- 新しいカラー・スペース・アイコン追加時は MDX に追記
+- Chromatic による視覚的回帰テスト対象
 
 ## 📦 依存関係管理
 
