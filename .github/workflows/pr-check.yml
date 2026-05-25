@@ -30,11 +30,12 @@ jobs:
       ui: ${{ steps.changes.outputs.ui }}
       typescript-config: ${{ steps.changes.outputs.typescript-config }}
       workflows: ${{ steps.changes.outputs.workflows }}
-    
+      dependencies: ${{ steps.changes.outputs.dependencies }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
+
       - name: Detect changes
         uses: dorny/paths-filter@v3
         id: changes
@@ -54,6 +55,10 @@ jobs:
               - 'packages/typescript-config/**'
             workflows:
               - '.github/workflows/**'
+            dependencies:
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
 
   parallel-check:
     name: Parallel Quality Check
@@ -239,6 +244,40 @@ jobs:
           
           echo "✅ All builds verified successfully"
 
+  docker-build-check:
+    name: Docker Build Check (web)
+    runs-on: ubuntu-latest
+    needs: changes
+    # Dockerfile / build 依存（shared-types, ui）/ ルート依存 / ワークフロー自身が変わった PR でのみ実行
+    # （Dockerfile は apps/web/** に含まれるため web フィルタでカバー）
+    if: |
+      needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.shared-types == 'true' ||
+      needs.changes.outputs.ui == 'true' ||
+      needs.changes.outputs.dependencies == 'true' ||
+      needs.changes.outputs.workflows == 'true'
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # push せず build のみ。GHA cache を再利用して2回目以降を高速化
+      - name: Build web image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: false
+          load: false
+          tags: suzumina-web:pr-${{ github.event.pull_request.number }}
+          cache-from: type=gha,scope=web-docker-pr
+          cache-to: type=gha,scope=web-docker-pr,mode=max
+          platforms: linux/amd64
+
   security-check:
     name: Security Check
     runs-on: ubuntu-latest
@@ -269,7 +308,7 @@ jobs:
   pr-summary:
     name: PR Summary
     runs-on: ubuntu-latest
-    needs: [changes, parallel-check, build-check, security-check]
+    needs: [changes, parallel-check, build-check, docker-build-check, security-check]
     if: always()
     
     steps:
@@ -289,6 +328,7 @@ jobs:
           echo "### 🧪 Quality Checks" >> $GITHUB_STEP_SUMMARY
           echo "- Parallel Check: ${{ needs.parallel-check.result == 'success' && '✅ Passed' || needs.parallel-check.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Build Verification: ${{ needs.build-check.result == 'success' && '✅ Passed' || needs.build-check.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker Build (web): ${{ needs.docker-build-check.result == 'success' && '✅ Passed' || needs.docker-build-check.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Check: ${{ needs.security-check.result == 'success' && '✅ Passed' || needs.security-check.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
