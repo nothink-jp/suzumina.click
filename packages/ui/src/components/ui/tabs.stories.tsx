@@ -1,5 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 import { Button } from "./button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card";
 import { Input } from "./input";
@@ -107,4 +108,23 @@ export const Simple: Story = {
 			</TabsContent>
 		</Tabs>
 	),
+};
+
+export const SwitchTabsInteraction: Story = {
+	render: () => (
+		<Tabs defaultValue="tab1">
+			<TabsList>
+				<TabsTrigger value="tab1">Tab 1</TabsTrigger>
+				<TabsTrigger value="tab2">Tab 2</TabsTrigger>
+			</TabsList>
+			<TabsContent value="tab1">First panel</TabsContent>
+			<TabsContent value="tab2">Second panel</TabsContent>
+		</Tabs>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await expect(canvas.getByText("First panel")).toBeInTheDocument();
+		await userEvent.click(canvas.getByRole("tab", { name: "Tab 2" }));
+		await expect(await canvas.findByText("Second panel")).toBeInTheDocument();
+	},
 };

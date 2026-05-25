@@ -1,6 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Bell, Eye, Shield, Volume2 } from "lucide-react";
 import { useState } from "react";
+import { expect, fn, userEvent, within } from "storybook/test";
 import { Switch } from "./switch";
 
 const meta: Meta<typeof Switch> = {
@@ -60,6 +61,18 @@ export const DisabledChecked: Story = {
 	args: {
 		checked: true,
 		disabled: true,
+	},
+};
+
+export const ToggleInteraction: Story = {
+	args: {
+		onCheckedChange: fn(),
+	},
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		const sw = canvas.getByRole("switch");
+		await userEvent.click(sw);
+		await expect(args.onCheckedChange).toHaveBeenCalledWith(true);
 	},
 };
 

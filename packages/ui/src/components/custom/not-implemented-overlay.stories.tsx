@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import NotImplementedOverlay from "./not-implemented-overlay";
 
 const meta = {

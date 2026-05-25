@@ -1,5 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AlertTriangleIcon, CheckCircleIcon, InfoIcon, TrashIcon } from "lucide-react";
+import { expect, userEvent, within } from "storybook/test";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -45,6 +46,33 @@ export const Basic: Story = {
 			</AlertDialogContent>
 		</AlertDialog>
 	),
+};
+
+export const OpenInteraction: Story = {
+	render: () => (
+		<AlertDialog>
+			<AlertDialogTrigger asChild>
+				<Button variant="outline">アラートを表示</Button>
+			</AlertDialogTrigger>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>確認</AlertDialogTitle>
+					<AlertDialogDescription>本当に実行しますか？</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel>キャンセル</AlertDialogCancel>
+					<AlertDialogAction>実行</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(canvas.getByRole("button", { name: "アラートを表示" }));
+		const body = within(document.body);
+		await expect(await body.findByRole("alertdialog")).toBeInTheDocument();
+		await expect(body.getByText("本当に実行しますか？")).toBeInTheDocument();
+	},
 };
 
 export const DeleteConfirmation: Story = {

@@ -1,4 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, userEvent, within } from "storybook/test";
 import { Card, CardContent } from "./card";
 import {
 	Carousel,
@@ -207,4 +208,34 @@ export const RealWorldExample: Story = {
 			</Carousel>
 		</div>
 	),
+};
+
+export const NavigationInteraction: Story = {
+	render: () => (
+		<div className="w-full max-w-sm mx-auto">
+			<Carousel className="w-full">
+				<CarouselContent>
+					{sampleCards.slice(0, 3).map((card) => (
+						<CarouselItem key={card.id}>
+							<Card>
+								<CardContent className="flex aspect-square items-center justify-center p-6">
+									<h3 className="text-2xl font-bold">スライド {card.id}</h3>
+								</CardContent>
+							</Card>
+						</CarouselItem>
+					))}
+				</CarouselContent>
+				<CarouselPrevious />
+				<CarouselNext />
+			</Carousel>
+		</div>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const nextBtn = canvas.getByRole("button", { name: /next slide/i });
+		await expect(nextBtn).toBeEnabled();
+		await userEvent.click(nextBtn);
+		const prevBtn = canvas.getByRole("button", { name: /previous slide/i });
+		await expect(prevBtn).toBeEnabled();
+	},
 };

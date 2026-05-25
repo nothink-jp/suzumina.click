@@ -1,4 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { Button } from "./button";
 
@@ -25,7 +26,7 @@ const meta = {
 			control: { type: "boolean" },
 		},
 	},
-	args: { onClick: () => {} },
+	args: { onClick: fn() },
 } satisfies Meta<typeof Button>;
 
 export default meta;
@@ -111,5 +112,31 @@ export const CustomMinase: Story = {
 	args: {
 		children: "Minase Style",
 		className: "bg-minase-500 hover:bg-minase-600 text-white",
+	},
+};
+
+export const Interaction: Story = {
+	args: {
+		children: "Click me",
+	},
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		const button = canvas.getByRole("button", { name: "Click me" });
+		await userEvent.click(button);
+		await expect(args.onClick).toHaveBeenCalledOnce();
+	},
+};
+
+export const DisabledNotClickable: Story = {
+	args: {
+		children: "Disabled",
+		disabled: true,
+	},
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		const button = canvas.getByRole("button", { name: "Disabled" });
+		await expect(button).toBeDisabled();
+		await userEvent.click(button);
+		await expect(args.onClick).not.toHaveBeenCalled();
 	},
 };

@@ -1,5 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Home, LogOut, Menu, Settings, Users } from "lucide-react";
+import { expect, userEvent, within } from "storybook/test";
 import { Button } from "./button";
 import { Separator } from "./separator";
 import {
@@ -240,6 +241,28 @@ export const FormSheet: Story = {
 			</SheetContent>
 		</Sheet>
 	),
+};
+
+export const OpenInteraction: Story = {
+	render: () => (
+		<Sheet>
+			<SheetTrigger asChild>
+				<Button variant="outline">シートを開く</Button>
+			</SheetTrigger>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>シートのタイトル</SheetTitle>
+					<SheetDescription>シートが表示されました。</SheetDescription>
+				</SheetHeader>
+			</SheetContent>
+		</Sheet>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(canvas.getByRole("button", { name: "シートを開く" }));
+		const body = within(document.body);
+		await expect(await body.findByText("シートのタイトル")).toBeInTheDocument();
+	},
 };
 
 export const WithoutHeaderFooter: Story = {

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { HighlightTags, HighlightText, MultiFieldHighlight } from "./highlight-text";
 
 const meta = {

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { GenericCarousel } from "./generic-carousel";
 
 // Sample data for demonstrations

@@ -1,0 +1,88 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Introduction" />
+
+# suzumina.click UI Library
+
+声優・涼花みなせ様の非公式ファンサイト [suzumina.click](https://suzumina.click) で使用されている UI コンポーネントライブラリです。
+
+このパッケージ (`@suzumina.click/ui`) は、Next.js + Tailwind CSS v4 + shadcn/ui をベースに、本プロジェクト固有のカスタムコンポーネントとデザイントークンを集約しています。
+
+---
+
+## ストーリー構成
+
+| カテゴリ            | 概要                                                                            |
+| ------------------- | ------------------------------------------------------------------------------- |
+| **Design Tokens**   | カラー / タイポグラフィ / アイコン / スペーシング / ボーダー&シャドウ           |
+| **UI**              | shadcn/ui ベースの汎用プリミティブ（Button, Card, Dialog, Tabs, Sheet…）        |
+| **Custom**          | プロジェクト固有のドメインコンポーネント（AudioButton, YouTubePlayer, TagInput…） |
+
+サイドバーから各コンポーネントを選択すると、`Docs` タブで自動生成されたドキュメント、`Canvas` タブでインタラクティブなプレビューが確認できます。
+
+## デザイン哲学
+
+- **桜色 × オレンジ** — `suzuka-*`（桜色）と `minase-*`（オレンジ）の 2 系統で、涼花みなせ様のイメージカラーを表現します
+- **柔らかさ** — フォントは「M PLUS Rounded 1c」、角丸とふんわりした影で温かみのある印象を統一
+- **アクセシビリティ** — WCAG 2.1 AA 準拠のコントラスト比、44×44px 以上のタッチターゲット、`addon-a11y` による自動チェック
+- **モバイルファースト** — 4px ベースのスペーシングと段階的レスポンシブ余白
+
+## 技術スタック
+
+- **Framework**: Next.js 16, React 19
+- **Styling**: Tailwind CSS v4（PostCSS プラグイン経由）
+- **Components**: shadcn/ui + Radix UI
+- **Icons**: lucide-react（個別 import 必須）
+- **Storybook**: v10.4 / `@storybook/react-vite` / addon-docs / addon-a11y / addon-vitest
+
+## ローカル起動
+
+```bash
+pnpm --filter @suzumina.click/ui storybook
+# → http://localhost:6006
+
+pnpm --filter @suzumina.click/ui build-storybook
+# → storybook-static/
+```
+
+## ストーリー記述ガイドライン
+
+新しい Story を書くときは下記のテンプレートに従ってください。
+
+```tsx
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { fn } from "storybook/test";
+import { MyComponent } from "./my-component";
+
+const meta = {
+  title: "Custom/Category/MyComponent",
+  component: MyComponent,
+  parameters: { layout: "padded" },
+  args: { onAction: fn() },           // 全てのハンドラは fn() spies
+} satisfies Meta<typeof MyComponent>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  args: { label: "Hello" },
+};
+
+// インタラクションテスト（addon-vitest が自動実行）
+export const Clicked: Story = {
+  args: { label: "Hello" },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button"));
+  },
+};
+```
+
+- `tags: ["autodocs"]` は preview.ts でグローバル設定済みのため個別指定不要
+- ハンドラは必ず `fn()` を使用（Actions パネル & interaction test 対応）
+- ダークモードの確認は story の `globals.backgrounds.value = "dark"` で行う
+
+## 関連ドキュメント
+
+- [Project Documentation](https://github.com/nothink/suzumina.click/tree/main/docs)
+- [Storybook 公式 — Writing Stories](https://storybook.js.org/docs/writing-stories)
+- [Storybook 公式 — Doc Blocks](https://storybook.js.org/docs/writing-docs/doc-blocks)

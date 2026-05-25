@@ -1,5 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { expect, userEvent, within } from "storybook/test";
 import { TagInput, type TagSuggestion } from "./tag-input";
 
 // オートコンプリート用のモック関数
@@ -114,6 +115,24 @@ export const SmallLimit: Story = {
 		maxTags: 3,
 		maxTagLength: 10,
 		disabled: false,
+	},
+};
+
+export const AddTagInteraction: Story = {
+	render: (args) => <TagInputWrapper {...args} />,
+	args: {
+		placeholder: "タグを入力...",
+		maxTags: 10,
+		maxTagLength: 30,
+		disabled: false,
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const input = canvas.getByRole("combobox");
+		await userEvent.type(input, "テストタグ");
+		const addButton = canvas.getByRole("button", { name: "タグを追加" });
+		await userEvent.click(addButton);
+		await expect(canvas.getByText("テストタグ")).toBeInTheDocument();
 	},
 };
 

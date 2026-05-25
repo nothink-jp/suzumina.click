@@ -1,5 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { expect, fn, userEvent, within } from "storybook/test";
 import { Badge } from "../ui/badge";
 import { AutocompleteDropdown, type AutocompleteSuggestionItem } from "./autocomplete-dropdown";
 
@@ -91,10 +92,10 @@ export const Loading: Story = {
 		items: [],
 		isLoading: true,
 		isVisible: true,
-		onSelect: () => {},
-		onClose: () => {},
+		onSelect: fn(),
+		onClose: fn(),
 		highlightedIndex: -1,
-		onHighlightChange: () => {},
+		onHighlightChange: fn(),
 		renderItem: () => null,
 		loadingMessage: "検索中...",
 	},
@@ -105,10 +106,10 @@ export const Empty: Story = {
 		items: [],
 		isLoading: false,
 		isVisible: true,
-		onSelect: () => {},
-		onClose: () => {},
+		onSelect: fn(),
+		onClose: fn(),
 		highlightedIndex: -1,
-		onHighlightChange: () => {},
+		onHighlightChange: fn(),
 		renderItem: () => null,
 		emptyMessage: "候補が見つかりませんでした",
 	},
@@ -129,12 +130,30 @@ export const WithManyItems: Story = {
 			<AutocompleteDropdown
 				items={manyItems}
 				isVisible={true}
-				onSelect={() => {}}
-				onClose={() => {}}
+				onSelect={fn()}
+				onClose={fn()}
 				highlightedIndex={3}
-				onHighlightChange={() => {}}
+				onHighlightChange={fn()}
 				renderItem={renderItem}
 			/>
 		);
+	},
+};
+
+export const SelectItemInteraction: Story = {
+	args: {
+		items: sampleItems,
+		isVisible: true,
+		onSelect: fn(),
+		onClose: fn(),
+		highlightedIndex: 0,
+		onHighlightChange: fn(),
+		renderItem: (item) => <div className="px-3 py-2">{(item.value as SampleItem).text}</div>,
+	},
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		const option = canvas.getByText("挨拶");
+		await userEvent.click(option);
+		await expect(args.onSelect).toHaveBeenCalledOnce();
 	},
 };
