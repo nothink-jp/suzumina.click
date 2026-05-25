@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-types";
-import { fn } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import { AudioButton } from "./audio-button";
 
 const meta = {
@@ -126,5 +126,38 @@ export const AuthenticatedWithLikes: Story = {
 		isDisliked: false,
 		onDislikeToggle: fn(),
 		isAuthenticated: true,
+	},
+};
+
+export const FavoriteToggleInteraction: Story = {
+	args: {
+		audioButton: mockAudioButton,
+		onPlay: fn(),
+		isFavorite: false,
+		onFavoriteToggle: fn(),
+		isAuthenticated: true,
+	},
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		const favoriteBtn = canvas.getByRole("button", { name: "お気に入りに追加" });
+		await userEvent.click(favoriteBtn);
+		await expect(args.onFavoriteToggle).toHaveBeenCalledOnce();
+	},
+};
+
+export const UnauthenticatedFavoriteDisabled: Story = {
+	args: {
+		audioButton: mockAudioButton,
+		onPlay: fn(),
+		isFavorite: false,
+		onFavoriteToggle: fn(),
+		isAuthenticated: false,
+	},
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		const favoriteBtn = canvas.getByRole("button", { name: "お気に入りに追加" });
+		await expect(favoriteBtn).toBeDisabled();
+		await userEvent.click(favoriteBtn);
+		await expect(args.onFavoriteToggle).not.toHaveBeenCalled();
 	},
 };

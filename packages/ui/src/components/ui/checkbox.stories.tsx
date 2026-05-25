@@ -1,5 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { Checkbox } from "./checkbox";
 
@@ -67,5 +68,18 @@ export const WithLabel: Story = {
 				</label>
 			</div>
 		);
+	},
+};
+
+export const ToggleInteraction: Story = {
+	args: {
+		onCheckedChange: fn(),
+	},
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		const checkbox = canvas.getByRole("checkbox");
+		await expect(checkbox).not.toBeChecked();
+		await userEvent.click(checkbox);
+		await expect(args.onCheckedChange).toHaveBeenCalledWith(true);
 	},
 };

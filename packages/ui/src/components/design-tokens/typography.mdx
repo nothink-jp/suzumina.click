@@ -1,0 +1,75 @@
+import { Meta, Typeset, Title, Subtitle } from "@storybook/addon-docs/blocks";
+
+<Meta title="Design Tokens/Typography" />
+
+<Title>Typography</Title>
+<Subtitle>M PLUS Rounded 1c をベースにしたタイポグラフィシステム</Subtitle>
+
+すべての文字スタイルは Tailwind CSS のユーティリティクラスで提供され、本文は最小 16px、行間 1.5 以上で WCAG 2.1 AA 準拠です。
+
+## Font Family
+
+```css
+font-family: "M PLUS Rounded 1c", sans-serif;
+```
+
+丸みのあるサンセリフ書体。日本語と英数字の両方で柔らかい印象を与えます。
+
+## Font Scale
+
+代表的なフォントサイズ（px）を実フォントでレンダリング表示します。
+
+<Typeset
+  fontSizes={[12, 14, 16, 18, 20, 24, 30, 36]}
+  fontWeight={400}
+  sampleText="The quick brown fox jumps over the lazy dog — 涼花みなせ"
+  fontFamily="'M PLUS Rounded 1c', sans-serif"
+/>
+
+## Font Weights
+
+<Typeset
+  fontSizes={[20]}
+  fontWeight={400}
+  sampleText="Regular (400) — 標準的な本文テキスト"
+  fontFamily="'M PLUS Rounded 1c', sans-serif"
+/>
+<Typeset
+  fontSizes={[20]}
+  fontWeight={500}
+  sampleText="Medium (500) — 強調・ラベル"
+  fontFamily="'M PLUS Rounded 1c', sans-serif"
+/>
+<Typeset
+  fontSizes={[20]}
+  fontWeight={600}
+  sampleText="Semibold (600) — セクション見出し"
+  fontFamily="'M PLUS Rounded 1c', sans-serif"
+/>
+<Typeset
+  fontSizes={[20]}
+  fontWeight={700}
+  sampleText="Bold (700) — ページタイトル"
+  fontFamily="'M PLUS Rounded 1c', sans-serif"
+/>
+
+## Type Roles
+
+| ロール          | クラス                       | size / line-height | 用途                                |
+| --------------- | ---------------------------- | ------------------ | ----------------------------------- |
+| Display Large   | `text-4xl font-bold`         | 36 / 44            | ページの主要タイトル                |
+| Display Medium  | `text-3xl font-bold`         | 30 / 36            | セクションの大見出し                |
+| Display Small   | `text-2xl font-bold`         | 24 / 32            | カードタイトル                      |
+| Heading Large   | `text-xl font-semibold`      | 20 / 28            | コンポーネントタイトル              |
+| Heading Medium  | `text-lg font-semibold`      | 18 / 28            | リスト項目見出し、フォームラベル    |
+| Heading Small   | `text-base font-medium`      | 16 / 24            | カード内タイトル、ボタンテキスト    |
+| Body Large      | `text-base`                  | 16 / 24            | 標準的な本文                        |
+| Body Medium     | `text-sm`                    | 14 / 20            | 説明文・キャプション                |
+| Body Small      | `text-xs`                    | 12 / 16            | バッジ、タイムスタンプ              |
+
+## アクセシビリティ
+
+- **本文サイズ**: 最小 16px（`text-base`）を推奨
+- **行間**: 1.5 以上を維持（WCAG 2.1）
+- **iOS Zoom 防止**: フォーム入力には `fontSize: 16px` を明示
+- **コントラスト**: 背景との比率 4.5:1 以上を確保

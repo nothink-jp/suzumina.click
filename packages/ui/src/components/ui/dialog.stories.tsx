@@ -1,5 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 import { Button } from "./button";
 import {
 	Dialog,
@@ -78,4 +79,29 @@ export const Simple: Story = {
 			</DialogContent>
 		</Dialog>
 	),
+};
+
+export const Opens: Story = {
+	render: () => (
+		<Dialog>
+			<DialogTrigger asChild>
+				<Button>Open Dialog</Button>
+			</DialogTrigger>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Dialog Opened</DialogTitle>
+					<DialogDescription>The dialog is now visible.</DialogDescription>
+				</DialogHeader>
+			</DialogContent>
+		</Dialog>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const trigger = canvas.getByRole("button", { name: "Open Dialog" });
+		await userEvent.click(trigger);
+		// Dialog content is rendered to a portal, so search the document body.
+		const body = within(document.body);
+		await expect(await body.findByRole("dialog")).toBeInTheDocument();
+		await expect(body.getByText("Dialog Opened")).toBeInTheDocument();
+	},
 };

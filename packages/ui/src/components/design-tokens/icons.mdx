@@ -1,0 +1,131 @@
+import { Meta, IconGallery, IconItem, Title, Subtitle } from "@storybook/addon-docs/blocks";
+import { YoutubeIcon } from "../custom/youtube-icon";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Clock,
+  ExternalLink,
+  Eye,
+  FileText,
+  Heart,
+  Loader2,
+  LogOut,
+  Menu,
+  MoreHorizontal,
+  Pause,
+  Play,
+  PlayCircle,
+  Plus,
+  Search,
+  Share2,
+  Sparkles,
+  Star,
+  Tag,
+  TrendingUp,
+  User,
+  Users,
+  Video,
+  X,
+} from "lucide-react";
+
+<Meta title="Design Tokens/Icons" />
+
+<Title>Icons</Title>
+<Subtitle>Lucide React ベースの統一アイコンセット</Subtitle>
+
+すべてのアイコンは [lucide-react](https://lucide.dev) から個別 import して使用します。標準サイズは `h-4 w-4`（16px）。
+
+## ナビゲーション系
+
+<IconGallery>
+  <IconItem name="ChevronRight"><ChevronRight /></IconItem>
+  <IconItem name="ChevronLeft"><ChevronLeft /></IconItem>
+  <IconItem name="ChevronDown"><ChevronDown /></IconItem>
+  <IconItem name="ChevronUp"><ChevronUp /></IconItem>
+  <IconItem name="ArrowLeft"><ArrowLeft /></IconItem>
+  <IconItem name="ArrowRight"><ArrowRight /></IconItem>
+  <IconItem name="Menu"><Menu /></IconItem>
+  <IconItem name="ExternalLink"><ExternalLink /></IconItem>
+  <IconItem name="MoreHorizontal"><MoreHorizontal /></IconItem>
+</IconGallery>
+
+## アクション系
+
+<IconGallery>
+  <IconItem name="Play"><Play /></IconItem>
+  <IconItem name="Pause"><Pause /></IconItem>
+  <IconItem name="Plus"><Plus /></IconItem>
+  <IconItem name="Search"><Search /></IconItem>
+  <IconItem name="Share2"><Share2 /></IconItem>
+  <IconItem name="Heart"><Heart /></IconItem>
+  <IconItem name="Eye"><Eye /></IconItem>
+  <IconItem name="X"><X /></IconItem>
+</IconGallery>
+
+## ステータス・情報系
+
+<IconGallery>
+  <IconItem name="Tag"><Tag /></IconItem>
+  <IconItem name="Clock"><Clock /></IconItem>
+  <IconItem name="Calendar"><Calendar /></IconItem>
+  <IconItem name="Star"><Star /></IconItem>
+  <IconItem name="Loader2"><Loader2 /></IconItem>
+  <IconItem name="Check"><Check /></IconItem>
+  <IconItem name="AlertCircle"><AlertCircle /></IconItem>
+  <IconItem name="TrendingUp"><TrendingUp /></IconItem>
+</IconGallery>
+
+## メディア系
+
+<IconGallery>
+  <IconItem name="PlayCircle"><PlayCircle /></IconItem>
+  <IconItem name="Video"><Video /></IconItem>
+  <IconItem name="YoutubeIcon"><YoutubeIcon /></IconItem>
+  <IconItem name="FileText"><FileText /></IconItem>
+  <IconItem name="Sparkles"><Sparkles /></IconItem>
+</IconGallery>
+
+## ユーザー系
+
+<IconGallery>
+  <IconItem name="User"><User /></IconItem>
+  <IconItem name="Users"><Users /></IconItem>
+  <IconItem name="LogOut"><LogOut /></IconItem>
+</IconGallery>
+
+## サイズスケール
+
+| クラス        | サイズ | 用途                                       |
+| ------------- | ------ | ------------------------------------------ |
+| `h-3 w-3`     | 12px   | 統計情報、タグ内の小アイコン               |
+| `h-4 w-4`     | 16px   | 標準的なボタン内アイコン（最頻出）         |
+| `h-5 w-5`     | 20px   | 検索バー、中サイズの UI 要素               |
+| `h-6 w-6`     | 24px   | 大きなボタン、ヘッダー要素                 |
+| `h-8 w-8`     | 32px   | 強調表示、エラー状態                       |
+| `h-12 w-12`   | 48px   | 空状態、大きな表示エリア                   |
+
+## ベストプラクティス
+
+```tsx
+// 装飾的アイコン（テキストが意味を持つ場合）
+<Play className="h-4 w-4" aria-hidden="true" />
+
+// 意味のあるアイコン（単独で意味を持つ場合）
+<Search className="h-4 w-4" aria-label="検索" />
+
+// ボタン内アイコン
+<button aria-label="動画を再生">
+  <Play className="h-4 w-4" />
+</button>
+```
+
+- **個別 import** で tree-shaking を効かせる（`import * as Icons` は禁止）
+- **同機能には同アイコン**を徹底し、視覚的一貫性を保つ
+- **タッチターゲット**は最小 44×44px を確保

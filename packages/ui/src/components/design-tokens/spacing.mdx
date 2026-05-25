@@ -1,0 +1,78 @@
+import { Meta, Title, Subtitle } from "@storybook/addon-docs/blocks";
+
+<Meta title="Design Tokens/Spacing" />
+
+<Title>Spacing</Title>
+<Subtitle>4px ベースの一貫性のあるスペーシングシステム</Subtitle>
+
+Tailwind CSS のスペーシングスケールをそのまま採用しています。4 の倍数を基準にすることで、要素配置に視覚的なリズムを与えます。
+
+## Scale
+
+<div style={{ display: "grid", gap: 8, marginBottom: 24 }}>
+  {[
+    { name: "0", value: 0, class: "0" },
+    { name: "0.5", value: 2, class: "0.5" },
+    { name: "1", value: 4, class: "1" },
+    { name: "2", value: 8, class: "2" },
+    { name: "3", value: 12, class: "3" },
+    { name: "4", value: 16, class: "4" },
+    { name: "5", value: 20, class: "5" },
+    { name: "6", value: 24, class: "6" },
+    { name: "8", value: 32, class: "8" },
+    { name: "10", value: 40, class: "10" },
+    { name: "12", value: 48, class: "12" },
+    { name: "16", value: 64, class: "16" },
+    { name: "20", value: 80, class: "20" },
+    { name: "24", value: 96, class: "24" },
+  ].map((s) => (
+    <div key={s.name} style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 14 }}>
+      <code style={{ minWidth: 56, fontFamily: "monospace" }}>p-{s.class}</code>
+      <span style={{ minWidth: 56, color: "#6b7280" }}>{s.value}px</span>
+      <div style={{ width: s.value, height: 12, background: "#ff4785", borderRadius: 2 }} />
+    </div>
+  ))}
+</div>
+
+## 階層的スペーシング
+
+- **関連要素間**: `gap-1` / `gap-2` （4-8px）
+- **同一グループ内**: `gap-3` / `gap-4` （12-16px）
+- **セクション内**: `gap-6` / `gap-8` （24-32px）
+- **ページレベル**: `gap-12` / `gap-16` 以上（48px〜）
+
+## 用途別の使用例
+
+| クラス | 値    | 用途                              |
+| ------ | ----- | --------------------------------- |
+| `p-2`  | 8px   | 小さなボタン、バッジ              |
+| `p-3`  | 12px  | 標準ボタン                        |
+| `p-4`  | 16px  | カード内コンテンツ                |
+| `p-6`  | 24px  | 大きなカード・ダイアログ          |
+| `p-8`  | 32px  | ページコンテナ                    |
+| `mb-2` | 8px   | 関連テキスト間                    |
+| `mb-4` | 16px  | 段落間・標準分離                  |
+| `mb-6` | 24px  | セクション内要素分離              |
+| `mb-8` | 32px  | セクション間分離                  |
+
+## レスポンシブスペーシング
+
+画面サイズに応じて余白を段階的に増やします。
+
+```tsx
+<div className="p-4 md:p-6 lg:p-8">
+  {/* モバイル: 16px → タブレット: 24px → デスクトップ: 32px */}
+</div>
+
+<div className="space-y-4 sm:space-y-6 lg:space-y-8">
+  {/* 要素間隔も段階的に変化 */}
+</div>
+```
+
+### ブレークポイント別推奨値
+
+| 画面サイズ          | コンテナ | セクション間 | 要素間 |
+| ------------------- | -------- | ------------ | ------ |
+| Mobile (~640px)     | `p-4`    | `mb-8`       | `mb-4` |
+| Tablet (640px~)     | `p-6`    | `mb-12`      | `mb-6` |
+| Desktop (1024px~)   | `p-8`    | `mb-16`      | `mb-8` |

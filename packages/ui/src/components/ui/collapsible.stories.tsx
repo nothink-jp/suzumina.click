@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChevronDownIcon, FileIcon, FolderIcon, SettingsIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./button";

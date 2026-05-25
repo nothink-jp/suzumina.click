@@ -1,5 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CalendarIcon, InfoIcon, SettingsIcon, UserIcon } from "lucide-react";
+import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Label } from "./label";
@@ -254,6 +256,25 @@ export const WithoutPadding: Story = {
 			</PopoverContent>
 		</Popover>
 	),
+};
+
+export const OpenInteraction: Story = {
+	render: () => (
+		<Popover>
+			<PopoverTrigger asChild>
+				<Button variant="outline">ポップオーバーを開く</Button>
+			</PopoverTrigger>
+			<PopoverContent>
+				<p className="text-sm">ポップオーバーの内容</p>
+			</PopoverContent>
+		</Popover>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(canvas.getByRole("button", { name: "ポップオーバーを開く" }));
+		const body = within(document.body);
+		await expect(await body.findByText("ポップオーバーの内容")).toBeInTheDocument();
+	},
 };
 
 export const ControlledExample: Story = {
