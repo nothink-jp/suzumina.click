@@ -9,44 +9,20 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://suzumina.click";
 
-	// 静的ページ
+	// 静的ページ（公開ページのみ。要認証ページや action ページは robots.txt 側で disallow する）
+	const now = new Date();
 	const staticPages: MetadataRoute.Sitemap = [
-		{
-			url: baseUrl,
-			lastModified: new Date(),
-			changeFrequency: "daily",
-			priority: 1,
-		},
-		{
-			url: `${baseUrl}/buttons`,
-			lastModified: new Date(),
-			changeFrequency: "daily",
-			priority: 0.9,
-		},
-		{
-			url: `${baseUrl}/buttons/create`,
-			lastModified: new Date(),
-			changeFrequency: "monthly",
-			priority: 0.7,
-		},
-		{
-			url: `${baseUrl}/videos`,
-			lastModified: new Date(),
-			changeFrequency: "daily",
-			priority: 0.9,
-		},
-		{
-			url: `${baseUrl}/works`,
-			lastModified: new Date(),
-			changeFrequency: "weekly",
-			priority: 0.8,
-		},
-		{
-			url: `${baseUrl}/auth/signin`,
-			lastModified: new Date(),
-			changeFrequency: "yearly",
-			priority: 0.3,
-		},
+		{ url: baseUrl, lastModified: now, changeFrequency: "daily", priority: 1 },
+		{ url: `${baseUrl}/buttons`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+		{ url: `${baseUrl}/videos`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+		{ url: `${baseUrl}/works`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+		{ url: `${baseUrl}/circles`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+		{ url: `${baseUrl}/creators`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+		{ url: `${baseUrl}/search`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+		{ url: `${baseUrl}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+		{ url: `${baseUrl}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+		{ url: `${baseUrl}/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+		{ url: `${baseUrl}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
 	];
 
 	try {
