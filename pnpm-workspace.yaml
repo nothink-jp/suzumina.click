@@ -17,3 +17,6 @@ allowBuilds:
   lefthook: true
   protobufjs: true
   sharp: true
+
+patchedDependencies:
+  radix-ui@1.4.3: patches/radix-ui@1.4.3.patch
