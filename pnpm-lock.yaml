@@ -258,7 +258,7 @@ importers:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       radix-ui:
-        specifier: latest
+        specifier: 1.4.3
         version: 1.4.3(patch_hash=485a085c0b1ad0e53117b9bfe90784b64d918aad086e7ad7f87dfd0169f300ae)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       react:
         specifier: ^19.2.6
