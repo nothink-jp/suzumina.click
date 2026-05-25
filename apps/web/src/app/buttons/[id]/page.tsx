@@ -137,7 +137,7 @@ export default async function AudioButtonDetailPage({ params }: AudioButtonDetai
 	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-suzuka-50 via-background to-minase-50">
+		<div className="min-h-screen">
 			{/* パンくずナビゲーション */}
 			<AudioButtonDetailHeader title={audioButton.buttonText} />
 

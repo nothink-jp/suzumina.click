@@ -3,7 +3,7 @@
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { AlertTriangle, Calendar, Heart, Shield } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
 // Match the server-side list that previously lived in lib/seo/bot-detection.ts
@@ -61,6 +61,7 @@ export function AgeVerificationOverlay() {
 	const { isAgeVerified, isLoading, updateAgeVerification } = useAgeVerification();
 	const [showMinorMessage, setShowMinorMessage] = useState(false);
 	const [botChecked, setBotChecked] = useState(false);
+	const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
 		if (BOT_UA_PATTERN.test(navigator.userAgent)) {
@@ -68,6 +69,14 @@ export function AgeVerificationOverlay() {
 		}
 		setBotChecked(true);
 	}, [updateAgeVerification]);
+
+	useEffect(() => {
+		return () => {
+			if (redirectTimerRef.current !== null) {
+				clearTimeout(redirectTimerRef.current);
+			}
+		};
+	}, []);
 
 	const visible = !isLoading && botChecked && (!isAgeVerified || showMinorMessage);
 
@@ -89,7 +98,7 @@ export function AgeVerificationOverlay() {
 		}
 		updateAgeVerification(false);
 		setShowMinorMessage(true);
-		setTimeout(() => {
+		redirectTimerRef.current = setTimeout(() => {
 			window.location.href = "/";
 		}, 3000);
 	};
@@ -102,7 +111,7 @@ export function AgeVerificationOverlay() {
 				aria-labelledby="age-verification-minor-title"
 				className="fixed inset-0 z-50 flex items-center justify-center suzuka-gradient p-4"
 			>
-				<Card className="w-full max-w-md mx-auto bg-card/95 backdrop-blur-sm shadow-xl">
+				<Card className="w-full max-w-md mx-auto shadow-xl">
 					<CardHeader className="text-center pb-4">
 						<div className="mx-auto w-16 h-16 bg-suzuka-100 rounded-full flex items-center justify-center mb-4">
 							<Shield className="h-8 w-8 text-suzuka-600" />
@@ -143,7 +152,7 @@ export function AgeVerificationOverlay() {
 			aria-labelledby="age-verification-title"
 			className="fixed inset-0 z-50 flex items-center justify-center suzuka-gradient p-4"
 		>
-			<Card className="w-full max-w-md mx-auto bg-card/95 backdrop-blur-sm shadow-xl">
+			<Card className="w-full max-w-md mx-auto shadow-xl">
 				<CardHeader className="text-center pb-4">
 					<div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
 						<AlertTriangle className="h-8 w-8 text-amber-600" />
