@@ -6,8 +6,51 @@ import { AlertTriangle, Calendar, Heart, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
-const BOT_UA_PATTERN =
-	/googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|rogerbot|linkedinbot|embedly|quora link preview|showyoubot|outbrain|pinterest|slackbot|vkshare|w3c_validator|whatsapp/i;
+// Match the server-side list that previously lived in lib/seo/bot-detection.ts
+// so SEO crawlers and uptime monitors keep bypassing the overlay.
+const BOT_USER_AGENTS = [
+	// Search engines
+	"googlebot",
+	"bingbot",
+	"slurp",
+	"duckduckbot",
+	"baiduspider",
+	"yandexbot",
+	"sogou",
+	"exabot",
+	"facebot",
+	"applebot",
+	"seznambot",
+	"yisoubot",
+	// Social media crawlers
+	"facebookexternalhit",
+	"twitterbot",
+	"linkedinbot",
+	"pinterest",
+	"slackbot",
+	"telegrambot",
+	"whatsapp",
+	"discordbot",
+	"vkshare",
+	// SEO tools
+	"rogerbot",
+	"semrushbot",
+	"ahrefsbot",
+	"mj12bot",
+	"dotbot",
+	// Other crawlers
+	"embedly",
+	"quora link preview",
+	"showyoubot",
+	"outbrain",
+	"w3c_validator",
+	// Monitoring services
+	"uptimerobot",
+	"pingdom",
+	"statuscake",
+	"site24x7",
+];
+const BOT_UA_PATTERN = new RegExp(BOT_USER_AGENTS.join("|"), "i");
 
 /**
  * Client-side overlay that prompts age verification without blocking content render.
