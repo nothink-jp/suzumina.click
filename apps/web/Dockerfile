@@ -1,17 +1,17 @@
 # suzumina.click Web Application Dockerfile for Cloud Run
 # Optimized for Next.js 15 with advanced caching and monorepo structure
 
-FROM node:24.14.0-alpine AS base
+FROM node:24.16.0-alpine AS base
 RUN apk add --no-cache libc6-compat tini
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
-# Install pnpm (use latest version 10 to match engines)
+# Install pnpm (use latest version 11 to match engines)
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable pnpm && corepack use pnpm@10
+RUN corepack enable pnpm && corepack use pnpm@11
 # Ensure yarn is disabled to prevent conflicts
 RUN npm config delete prefix 2>/dev/null || true
 
@@ -34,7 +34,7 @@ WORKDIR /app
 # Install pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable pnpm && corepack use pnpm@10
+RUN corepack enable pnpm && corepack use pnpm@11
 # Ensure yarn is disabled to prevent conflicts
 RUN npm config delete prefix 2>/dev/null || true
 
