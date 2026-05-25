@@ -31,24 +31,22 @@ jobs:
     outputs:
       skip-checks: ${{ steps.check.outputs.skip-checks }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 1
-
       - name: Check if from merged PR
         id: check
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           # PRマージによるコミットの場合、すでにPRチェックで検証済み
           # 最初の行だけを取得して判定（複数行メッセージ対応）
-          COMMIT_FIRST_LINE=$(git log -1 --pretty=%s HEAD)
+          # env 経由で受け取ることで script injection を防止
+          COMMIT_FIRST_LINE=$(printf '%s' "$COMMIT_MSG" | head -n1)
           echo "Commit message: $COMMIT_FIRST_LINE"
 
           if [[ "$COMMIT_FIRST_LINE" =~ ^Merge\ pull\ request ]] || [[ "$COMMIT_FIRST_LINE" =~ \(#[0-9]+\)$ ]]; then
-            echo "skip-checks=true" >> $GITHUB_OUTPUT
+            echo "skip-checks=true" >> "$GITHUB_OUTPUT"
             echo "✅ PR already validated, skipping redundant checks"
           else
-            echo "skip-checks=false" >> $GITHUB_OUTPUT
+            echo "skip-checks=false" >> "$GITHUB_OUTPUT"
             echo "⚠️ Direct push detected, full checks required"
           fi
 
