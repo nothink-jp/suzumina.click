@@ -18,6 +18,13 @@ vi.mock("../../shared/logger", () => ({
 	error: vi.fn(),
 }));
 
+// アセット JSON のモック（esbuild bundle で inline されるため import モックで差し替え）
+vi.mock("../../../assets/dlsite-work-ids.json", () => ({
+	default: {
+		workIds: ["RJ123456", "RJ789012", "RJ111111", "RJ222222"],
+	},
+}));
+
 describe("Work ID Validator", () => {
 	describe("validateWorkIds", () => {
 		it("基本的な検証機能が動作する", () => {
@@ -111,15 +118,6 @@ describe("Work ID Validator", () => {
 	});
 
 	describe("createUnionWorkIds", () => {
-		// ファイルシステムのモック
-		vi.mock("node:fs", () => ({
-			readFileSync: vi.fn().mockReturnValue(
-				JSON.stringify({
-					workIds: ["RJ123456", "RJ789012", "RJ111111", "RJ222222"],
-				}),
-			),
-		}));
-
 		it("和集合が正しく作成される", () => {
 			const currentRegionIds = ["RJ123456", "RJ333333"];
 			const result = createUnionWorkIds(currentRegionIds);

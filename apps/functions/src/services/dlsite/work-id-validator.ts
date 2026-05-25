@@ -3,8 +3,7 @@
  * リージョン差異を考慮した柔軟な検証機能を提供
  */
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import workIdsAsset from "../../assets/dlsite-work-ids.json";
 import * as logger from "../../shared/logger";
 
 interface WorkIdValidationResult {
@@ -36,23 +35,7 @@ interface UnionWorkIdResult {
  */
 function loadExpectedWorkIds(): Set<string> {
 	try {
-		// Cloud Functionsの実行環境でのパスを想定
-		const possiblePaths = [
-			join(process.cwd(), "src/assets/dlsite-work-ids.json"),
-			join(process.cwd(), "lib/assets/dlsite-work-ids.json"),
-			join(__dirname, "../../assets/dlsite-work-ids.json"),
-		];
-
-		for (const filePath of possiblePaths) {
-			try {
-				const data = JSON.parse(readFileSync(filePath, "utf-8"));
-				return new Set(data.workIds);
-			} catch {
-				// 次のパスを試行
-			}
-		}
-
-		throw new Error("作品IDリストファイルが見つかりません");
+		return new Set(workIdsAsset.workIds);
 	} catch (error) {
 		logger.warn("作品IDリストファイルが読み込めませんでした。検証をスキップします。", { error });
 		return new Set();
