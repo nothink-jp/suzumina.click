@@ -7,7 +7,7 @@ import {
 	GoogleTagManagerNoscript,
 } from "@/components/analytics/google-tag-manager";
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
-import { AgeVerificationWrapper } from "@/components/consent/age-verification-wrapper";
+import { AgeVerificationOverlay } from "@/components/consent/age-verification-overlay";
 import { ConsentModeScript } from "@/components/consent/consent-mode-script";
 import { CookieConsentBanner } from "@/components/consent/cookie-consent-banner";
 import SiteFooter from "@/components/layout/site-footer";
@@ -102,19 +102,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			<body className="min-h-screen flex flex-col antialiased gradient-bg">
 				<GoogleTagManagerNoscript />
 				<AgeVerificationProvider>
-					<AgeVerificationWrapper>
-						<SessionProvider>
-							<PerformanceMonitor />
-							<PageViewTracker />
-							<SiteHeader />
-							<main id="main-content" className="flex-1">
-								{children}
-							</main>
-							<SiteFooter />
-							<Toaster />
-							<CookieConsentBanner />
-						</SessionProvider>
-					</AgeVerificationWrapper>
+					<SessionProvider>
+						<PerformanceMonitor />
+						<PageViewTracker />
+						<SiteHeader />
+						<main id="main-content" className="flex-1">
+							{children}
+						</main>
+						<SiteFooter />
+						<Toaster />
+						<CookieConsentBanner />
+					</SessionProvider>
+					<AgeVerificationOverlay />
 				</AgeVerificationProvider>
 			</body>
 		</html>
