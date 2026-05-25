@@ -2,6 +2,9 @@ import type { MetadataRoute } from "next";
 import { getFirestore } from "@/lib/firestore";
 import { warn as logWarn } from "@/lib/logger";
 
+// ISR: build 時の Firestore アクセスを避け、リクエスト時に Cloud Run の SA credentials で生成する (SPR-60)
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://suzumina.click";
 
