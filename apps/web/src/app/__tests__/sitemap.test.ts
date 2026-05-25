@@ -12,6 +12,7 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 import { getFirestore } from "@/lib/firestore";
+import * as logger from "@/lib/logger";
 import sitemap from "../sitemap";
 
 type SnapshotDoc = { id: string; data: () => Record<string, unknown> };
@@ -47,6 +48,7 @@ const STATIC_PATHS = [
 	"/works",
 	"/circles",
 	"/creators",
+	"/search",
 	"/about",
 	"/contact",
 	"/terms",
@@ -107,7 +109,7 @@ describe("sitemap", () => {
 		expect(urls).toContain("https://suzumina.click/videos/video-2");
 		expect(urls).toContain("https://suzumina.click/works/RJ123456");
 		expect(urls).toContain("https://suzumina.click/buttons/audio-1");
-		expect(result.length).toBe(STATIC_PATHS.length + 1 + 4);
+		expect(result.length).toBe(STATIC_PATHS.length + 4);
 	});
 
 	it("Firestore 障害時の fallback: getFirestore が throw した場合は静的ページのみを返す", async () => {
@@ -116,15 +118,21 @@ describe("sitemap", () => {
 		});
 
 		const result = await sitemap();
+		const urls = result.map((entry) => entry.url);
 
-		expect(result.length).toBeGreaterThanOrEqual(11);
+		expect(result.length).toBe(STATIC_PATHS.length);
 		for (const path of STATIC_PATHS) {
-			expect(result.map((entry) => entry.url)).toContain(`https://suzumina.click${path}`);
+			expect(urls).toContain(`https://suzumina.click${path}`);
 		}
 		// 動的 URL が混ざっていないこと
-		expect(result.every((entry) => !entry.url.match(/\/videos\/[^/]+$/))).toBe(true);
-		expect(result.every((entry) => !entry.url.match(/\/works\/[^/]+$/))).toBe(true);
-		expect(result.every((entry) => !entry.url.match(/\/buttons\/[^/]+$/))).toBe(true);
+		expect(urls.every((url) => !url.match(/\/videos\/[^/]+$/))).toBe(true);
+		expect(urls.every((url) => !url.match(/\/works\/[^/]+$/))).toBe(true);
+		expect(urls.every((url) => !url.match(/\/buttons\/[^/]+$/))).toBe(true);
+		// fallback パスを通ったことを保証
+		expect(logger.warn).toHaveBeenCalledWith(
+			"Failed to fetch dynamic content for sitemap:",
+			expect.objectContaining({ error: expect.any(Error) }),
+		);
 	});
 
 	it("個別コレクション失敗時の fallback: videos が throw しても works/audioButtons の URL は含まれる", async () => {
@@ -175,11 +183,16 @@ describe("sitemap", () => {
 		}
 	});
 
-	it("除外確認: 非公開ページが含まれないこと", async () => {
+	it("除外確認: 静的ページ・動的ページのいずれも非公開パスを生まない", async () => {
+		// 動的データを与えても、静的リストと動的 URL 生成ロジックが
+		// disallow 配下のパスを作らないことを確認する。
 		const firestoreMock = buildCollectionResolvers({
-			videos: async () => buildSnapshot([]),
-			works: async () => buildSnapshot([]),
-			audioButtons: async () => buildSnapshot([]),
+			videos: async () =>
+				buildSnapshot([{ id: "video-x", data: () => ({ updatedAt: "2024-01-01T00:00:00Z" }) }]),
+			works: async () =>
+				buildSnapshot([{ id: "RJ000001", data: () => ({ updatedAt: "2024-01-01T00:00:00Z" }) }]),
+			audioButtons: async () =>
+				buildSnapshot([{ id: "audio-x", data: () => ({ updatedAt: "2024-01-01T00:00:00Z" }) }]),
 		});
 
 		(getFirestore as any).mockReturnValue(firestoreMock);
@@ -192,5 +205,22 @@ describe("sitemap", () => {
 		expect(urls.every((url) => !url.startsWith("https://suzumina.click/admin"))).toBe(true);
 		expect(urls.every((url) => !url.startsWith("https://suzumina.click/api"))).toBe(true);
 		expect(urls.every((url) => !url.startsWith("https://suzumina.click/auth"))).toBe(true);
+	});
+
+	// 本体側で予約パスのガードを行うと挙動が変わるため、その際は本テストも見直すこと。
+	it("既知の挙動: audioButton.id が予約パスと衝突した場合は現状そのまま URL 化される", async () => {
+		const firestoreMock = buildCollectionResolvers({
+			videos: async () => buildSnapshot([]),
+			works: async () => buildSnapshot([]),
+			audioButtons: async () =>
+				buildSnapshot([{ id: "create", data: () => ({ updatedAt: "2024-01-01T00:00:00Z" }) }]),
+		});
+
+		(getFirestore as any).mockReturnValue(firestoreMock);
+
+		const result = await sitemap();
+		const urls = result.map((entry) => entry.url);
+
+		expect(urls).toContain("https://suzumina.click/buttons/create");
 	});
 });
