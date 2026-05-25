@@ -23,6 +23,9 @@ RUN npm config delete prefix 2>/dev/null || true
 # Copy package files from project root
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
+# Copy pnpm patches (referenced by pnpm-workspace.yaml patchedDependencies)
+COPY patches/ ./patches/
+
 # Copy workspace packages
 COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/ui/package.json ./packages/ui/
