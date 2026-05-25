@@ -264,6 +264,25 @@ const nextConfig = {
 				],
 			},
 			{
+				source: "/(buttons|videos|works)/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, s-maxage=120, stale-while-revalidate=300",
+					},
+				],
+			},
+			// 認証必須・セッション依存ページは CDN エッジでキャッシュさせない
+			{
+				source: "/(admin|settings|favorites|users)/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "private, no-store",
+					},
+				],
+			},
+			{
 				source: "/api/:path*",
 				headers: [
 					{
