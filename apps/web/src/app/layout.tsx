@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import "@suzumina.click/ui/globals.css";
 import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
+import { Suspense } from "react";
 import { GoogleAnalyticsScript } from "@/components/analytics/google-analytics-script";
 import {
 	GoogleTagManager,
 	GoogleTagManagerNoscript,
 } from "@/components/analytics/google-tag-manager";
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
-import { AgeVerificationWrapper } from "@/components/consent/age-verification-wrapper";
+import { AgeVerificationOverlay } from "@/components/consent/age-verification-overlay";
 import { ConsentModeScript } from "@/components/consent/consent-mode-script";
 import { CookieConsentBanner } from "@/components/consent/cookie-consent-banner";
 import SiteFooter from "@/components/layout/site-footer";
@@ -102,19 +103,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			<body className="min-h-screen flex flex-col antialiased gradient-bg">
 				<GoogleTagManagerNoscript />
 				<AgeVerificationProvider>
-					<AgeVerificationWrapper>
-						<SessionProvider>
-							<PerformanceMonitor />
+					<SessionProvider>
+						<PerformanceMonitor />
+						{/* useSearchParams を含むため、static prerender 時の CSR bailout エラーを回避 */}
+						<Suspense fallback={null}>
 							<PageViewTracker />
-							<SiteHeader />
-							<main id="main-content" className="flex-1">
-								{children}
-							</main>
-							<SiteFooter />
-							<Toaster />
-							<CookieConsentBanner />
-						</SessionProvider>
-					</AgeVerificationWrapper>
+						</Suspense>
+						<SiteHeader />
+						<main id="main-content" className="flex-1">
+							{children}
+						</main>
+						<SiteFooter />
+						<Toaster />
+						<CookieConsentBanner />
+					</SessionProvider>
+					<AgeVerificationOverlay />
 				</AgeVerificationProvider>
 			</body>
 		</html>
