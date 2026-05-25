@@ -11,3 +11,9 @@ overrides:
   "@tootallnate/once": ">=2.0.1"
   postcss: ">=8.5.10"
   qs: ">=6.15.2"
+
+onlyBuiltDependencies:
+  - esbuild
+  - lefthook
+  - protobufjs
+  - sharp
