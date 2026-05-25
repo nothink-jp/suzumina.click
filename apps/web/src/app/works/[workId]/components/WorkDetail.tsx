@@ -192,10 +192,10 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 							{isOnSale && originalPrice ? (
 								<div className="flex items-center gap-3">
 									<span className="text-3xl font-bold text-destructive">
-										¥{currentPrice.toLocaleString()}
+										¥{currentPrice.toLocaleString("ja-JP")}
 									</span>
 									<span className="text-xl text-gray-600 line-through">
-										¥{originalPrice.toLocaleString()}
+										¥{originalPrice.toLocaleString("ja-JP")}
 									</span>
 									<Badge className="bg-destructive/10 text-destructive text-lg px-3 py-1">
 										{work.price.discount}% OFF
@@ -203,7 +203,7 @@ export default function WorkDetail({ work, initialEvaluation = null }: WorkDetai
 								</div>
 							) : (
 								<span className="text-3xl font-bold text-gray-900">
-									¥{currentPrice.toLocaleString()}
+									¥{currentPrice.toLocaleString("ja-JP")}
 								</span>
 							)}
 						</div>

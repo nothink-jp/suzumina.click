@@ -167,7 +167,7 @@ export function LikeDislikeButtons({
 				<ThumbsUp
 					className={`h-4 w-4 ${isLiked ? "fill-current" : ""} ${isPending ? "animate-pulse" : ""}`}
 				/>
-				<span className="text-sm font-medium">{likeCount.toLocaleString()}</span>
+				<span className="text-sm font-medium">{likeCount.toLocaleString("ja-JP")}</span>
 			</Button>
 
 			{/* 低評価ボタン（YouTube方式：集計数は非表示） */}

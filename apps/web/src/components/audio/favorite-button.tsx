@@ -105,7 +105,7 @@ export function FavoriteButton({
 			</Button>
 			{showCount && (
 				<span className="text-sm text-muted-foreground min-w-[2rem]">
-					{favoriteCount > 0 ? favoriteCount.toLocaleString() : ""}
+					{favoriteCount > 0 ? favoriteCount.toLocaleString("ja-JP") : ""}
 				</span>
 			)}
 		</div>

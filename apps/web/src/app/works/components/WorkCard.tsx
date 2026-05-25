@@ -98,16 +98,20 @@ const PriceDisplay = ({
 	if (isOnSale && originalPrice) {
 		return (
 			<div className="flex items-center gap-2">
-				<span className="text-lg font-bold text-destructive">¥{currentPrice.toLocaleString()}</span>
+				<span className="text-lg font-bold text-destructive">
+					¥{currentPrice.toLocaleString("ja-JP")}
+				</span>
 				<span className="text-sm text-muted-foreground line-through">
-					¥{originalPrice.toLocaleString()}
+					¥{originalPrice.toLocaleString("ja-JP")}
 				</span>
 				<Badge className="bg-destructive/10 text-destructive text-xs">{discount}% OFF</Badge>
 			</div>
 		);
 	}
 	return (
-		<span className="text-lg font-bold text-foreground">¥{currentPrice.toLocaleString()}</span>
+		<span className="text-lg font-bold text-foreground">
+			¥{currentPrice.toLocaleString("ja-JP")}
+		</span>
 	);
 };
 

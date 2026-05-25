@@ -149,7 +149,7 @@ export const AudioButtonCard = memo(function AudioButtonCard({
 				<div className="mb-3 flex items-center gap-4 text-sm text-muted-foreground">
 					<div className="flex items-center gap-1">
 						<Play className="h-3 w-3" />
-						<span>{playCount?.toLocaleString() ?? formattedPlayCount}</span>
+						<span>{playCount?.toLocaleString("ja-JP") ?? formattedPlayCount}</span>
 					</div>
 					<div className="flex items-center gap-1">
 						<ThumbsUp className="h-3 w-3" />
