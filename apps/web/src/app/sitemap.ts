@@ -30,15 +30,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		const dynamicPages: MetadataRoute.Sitemap = [];
 
 		// 動画ページを追加
+		// videos コレクションには isPublic フィールドが無く、可視性は status.privacyStatus で判定する。
+		// 一覧ページ (apps/web/src/app/videos/actions.ts) と同じく、status 未設定も公開扱いする。
 		try {
-			const videosSnapshot = await firestore
-				.collection("videos")
-				.where("isPublic", "==", true)
-				.limit(1000)
-				.get();
+			const videosSnapshot = await firestore.collection("videos").limit(50000).get();
 
 			for (const doc of videosSnapshot.docs) {
 				const video = doc.data();
+				const privacyStatus = video.status?.privacyStatus;
+				if (video.status && privacyStatus !== "public") continue;
 				dynamicPages.push({
 					url: `${baseUrl}/videos/${doc.id}`,
 					lastModified: new Date(video.updatedAt || video.createdAt || Date.now()),
@@ -51,12 +51,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		}
 
 		// 作品ページを追加
+		// works コレクションには公開/非公開の概念が無く、全件が公開対象。
 		try {
-			const worksSnapshot = await firestore
-				.collection("works")
-				.where("isPublic", "==", true)
-				.limit(1000)
-				.get();
+			const worksSnapshot = await firestore.collection("works").limit(50000).get();
 
 			for (const doc of worksSnapshot.docs) {
 				const work = doc.data();
@@ -76,7 +73,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			const audioButtonsSnapshot = await firestore
 				.collection("audioButtons")
 				.where("isPublic", "==", true)
-				.limit(1000)
+				.limit(50000)
 				.get();
 
 			for (const doc of audioButtonsSnapshot.docs) {
