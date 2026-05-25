@@ -211,7 +211,7 @@ export function UserProfileContent({
 							</div>
 							<div className="text-center">
 								<div className="text-2xl font-bold text-minase-600">
-									{totalPlayCount.toLocaleString()}
+									{totalPlayCount.toLocaleString("ja-JP")}
 								</div>
 								<div className="text-sm text-muted-foreground">総再生数</div>
 							</div>
@@ -314,7 +314,7 @@ export function UserProfileContent({
 							<CardContent className="space-y-4">
 								<div className="flex justify-between">
 									<span>総再生数</span>
-									<span className="font-semibold">{totalPlayCount.toLocaleString()}</span>
+									<span className="font-semibold">{totalPlayCount.toLocaleString("ja-JP")}</span>
 								</div>
 								<div className="flex justify-between">
 									<span>平均再生数</span>
@@ -324,7 +324,9 @@ export function UserProfileContent({
 									<span>最高再生数</span>
 									<span className="font-semibold">
 										{audioButtons.length > 0
-											? Math.max(...audioButtons.map((b) => b.stats.playCount)).toLocaleString()
+											? Math.max(...audioButtons.map((b) => b.stats.playCount)).toLocaleString(
+													"ja-JP",
+												)
 											: 0}
 									</span>
 								</div>

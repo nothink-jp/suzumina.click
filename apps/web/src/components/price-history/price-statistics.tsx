@@ -45,9 +45,9 @@ export function PriceStatistics({
 
 	const formatPrice = (value: number) => {
 		if (currency === "JPY") {
-			return `¥${value.toLocaleString()}`;
+			return `¥${value.toLocaleString("ja-JP")}`;
 		}
-		return `${value.toLocaleString()} ${currency}`;
+		return `${value.toLocaleString("ja-JP")} ${currency}`;
 	};
 
 	// 価格統計を計算（通貨指定）

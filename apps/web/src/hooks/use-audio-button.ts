@@ -16,17 +16,17 @@ export function useAudioButton(audioButton: AudioButton) {
 
 	// メモ化: 再生回数のフォーマット
 	const formattedPlayCount = useMemo(() => {
-		return audioButton.stats.playCount.toLocaleString();
+		return audioButton.stats.playCount.toLocaleString("ja-JP");
 	}, [audioButton.stats.playCount]);
 
 	// メモ化: いいね数のフォーマット
 	const formattedLikeCount = useMemo(() => {
-		return audioButton.stats.likeCount.toLocaleString();
+		return audioButton.stats.likeCount.toLocaleString("ja-JP");
 	}, [audioButton.stats.likeCount]);
 
 	// メモ化: 低評価数のフォーマット
 	const formattedDislikeCount = useMemo(() => {
-		return audioButton.stats.dislikeCount.toLocaleString();
+		return audioButton.stats.dislikeCount.toLocaleString("ja-JP");
 	}, [audioButton.stats.dislikeCount]);
 
 	// メモ化: YouTube URL

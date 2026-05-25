@@ -17,8 +17,8 @@ export function AudioButtonsStats({
 	return (
 		<div className="text-center">
 			<div className="inline-block bg-white/60 backdrop-blur-sm rounded-full px-6 py-2 text-sm text-muted-foreground border border-suzuka-100">
-				{effectiveCount.toLocaleString()}件中 {startIndex.toLocaleString()}〜
-				{endIndex.toLocaleString()}件を表示
+				{effectiveCount.toLocaleString("ja-JP")}件中 {startIndex.toLocaleString("ja-JP")}〜
+				{endIndex.toLocaleString("ja-JP")}件を表示
 			</div>
 		</div>
 	);

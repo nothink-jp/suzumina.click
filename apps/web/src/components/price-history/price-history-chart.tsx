@@ -209,9 +209,9 @@ export function PriceHistoryChart({
 
 	const formatPrice = (value: number) => {
 		if (currency === "JPY") {
-			return `¥${value.toLocaleString()}`;
+			return `¥${value.toLocaleString("ja-JP")}`;
 		}
-		return `${value.toLocaleString()} ${currency}`;
+		return `${value.toLocaleString("ja-JP")} ${currency}`;
 	};
 
 	const formatTooltipPrice = (value: unknown, name?: string | number) => {
@@ -252,7 +252,7 @@ export function PriceHistoryChart({
 							// 日本円の場合は整数のみ表示
 							if (currency === "JPY") {
 								const intValue = Math.round(value);
-								return `¥${intValue.toLocaleString()}`;
+								return `¥${intValue.toLocaleString("ja-JP")}`;
 							}
 							return formatPrice(value);
 						}}

@@ -59,7 +59,7 @@ export function useVideo(video: VideoPlainObject) {
 
 	// メモ化: 視聴回数のフォーマット済み文字列
 	const formattedViewCount = useMemo(() => {
-		return video.statistics?.viewCount?.toLocaleString() || "0";
+		return video.statistics?.viewCount?.toLocaleString("ja-JP") || "0";
 	}, [video]);
 
 	// メモ化: 再生時間のフォーマット済み文字列
