@@ -381,7 +381,7 @@ const nextAuth: NextAuthResult = NextAuth({
  * @see https://authjs.dev/getting-started/installation
  */
 export const handlers = nextAuth.handlers;
-export const auth = nextAuth.auth;
+export const auth: NextAuthResult["auth"] = nextAuth.auth;
 export const signIn: NextAuthResult["signIn"] = nextAuth.signIn;
 export const signOut = nextAuth.signOut;
 

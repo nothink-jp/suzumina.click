@@ -38,6 +38,7 @@ global.IntersectionObserver = class IntersectionObserver {
 	root = null;
 	rootMargin = "";
 	thresholds = [];
+	scrollMargin = "";
 
 	observe() {}
 	unobserve() {}

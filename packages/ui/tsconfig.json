@@ -1,7 +1,6 @@
 {
 	"extends": "@suzumina.click/typescript-config/react-library.json",
 	"compilerOptions": {
-		"baseUrl": ".",
 		"paths": {
 			"@suzumina.click/ui/*": ["./src/*"]
 		},

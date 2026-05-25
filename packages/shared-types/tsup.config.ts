@@ -4,6 +4,7 @@ export default defineConfig({
 	entry: ["src/index.ts"],
 	format: ["esm", "cjs"],
 	dts: true,
+	tsconfig: "./tsconfig.dts.json",
 	splitting: true, // Enable code splitting for better tree-shaking
 	sourcemap: true,
 	clean: true,

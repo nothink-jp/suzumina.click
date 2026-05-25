@@ -1,7 +1,6 @@
 {
 	"extends": "@suzumina.click/typescript-config/nextjs.json",
 	"compilerOptions": {
-		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./src/*"],
 			"@suzumina.click/ui/*": ["../../packages/ui/src/*"]
