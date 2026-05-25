@@ -66,22 +66,11 @@ jobs:
       - name: Quick validation
         run: |
           echo "🧪 Running quick validation for direct push..."
-          
-          # Build shared-types
-          pnpm --filter=@suzumina.click/shared-types build
-          
-          # Run build and test in parallel
-          pnpm --filter=@suzumina.click/functions build &
-          BUILD_PID=$!
-          
-          # Wait for build to complete
-          if wait $BUILD_PID; then
-            echo "✅ Build completed"
-          else
-            echo "❌ Build failed"
-            exit 1
-          fi
-          
+
+          # esbuild bundle (shared-types は src から直接 inline されるので別途 build 不要)
+          pnpm --filter=@suzumina.click/functions build
+          echo "✅ Build completed"
+
           # Run critical tests
           NODE_ENV=test pnpm --filter=@suzumina.click/functions test --bail 1
           echo "✅ Critical tests passed"
@@ -109,10 +98,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
+      - name: Build functions (esbuild bundle)
         run: |
-          echo "🔨 Building packages..."
-          pnpm --filter=@suzumina.click/shared-types build
+          echo "🔨 Building Cloud Functions bundle..."
           pnpm --filter=@suzumina.click/functions build
 
       - name: Authenticate to GCP
@@ -127,68 +115,45 @@ jobs:
 
       - name: Create deployment bundle
         run: |
-          # 一時的なデプロイメントディレクトリを作成
+          # esbuild 後のバンドル lib/index.js と縮小 package.json のみをデプロイ
           mkdir -p ./deployment-temp
-          
-          # shared-typesをパッケージ化
-          cd packages/shared-types
-          pnpm pack --pack-destination ../../deployment-temp
-          
-          # パッケージファイル名を確実に取得
-          cd ../../deployment-temp
-          SHARED_TYPES_FILE=$(ls suzumina.click-shared-types-*.tgz | head -n1)
-          echo "Found shared-types package: $SHARED_TYPES_FILE"
-          
-          # functionsのビルド成果物とpackage.jsonをコピー
-          cp -r ../apps/functions/lib ./
-          cp ../apps/functions/package.json ./
-          
-          # Node.jsスクリプトでpackage.jsonを安全に変更
-          SHARED_TYPES_FILE="$SHARED_TYPES_FILE" node -e "
+          cp -r apps/functions/lib ./deployment-temp/
+          cp apps/functions/package.json ./deployment-temp/
+
+          # workspace 依存（shared-types）を削除し、dev フィールドも除去
+          cd ./deployment-temp
+          node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            
-            // workspace依存関係を実際のファイルパスに変更
-            if (pkg.dependencies && pkg.dependencies['@suzumina.click/shared-types']) {
-              pkg.dependencies['@suzumina.click/shared-types'] = 'file:./' + process.env.SHARED_TYPES_FILE;
+
+            // shared-types は esbuild で inline 済み → ランタイム依存から削除
+            if (pkg.dependencies) {
+              delete pkg.dependencies['@suzumina.click/shared-types'];
             }
-            
-            // 開発用スクリプトを削除
-            if (pkg.scripts) {
-              delete pkg.scripts.build;
-              delete pkg.scripts['build:watch'];
-              delete pkg.scripts.lint;
-              delete pkg.scripts.format;
-              delete pkg.scripts.check;
-              delete pkg.scripts.test;
-              delete pkg.scripts['test:watch'];
-              delete pkg.scripts['test:coverage'];
-            }
-            
-            // devDependenciesを削除
+
+            // 開発用スクリプト・devDependencies を削除
+            delete pkg.scripts;
             delete pkg.devDependencies;
-            
-            // Cloud Functions v2ではFunctions Frameworkが自動的に起動するため、
-            // startスクリプトは不要。mainエントリーポイントのみ設定
-            pkg.main = 'lib/endpoints/index.js';
-            
-            // enginesフィールドも確実に設定
-            if (!pkg.engines) {
-              pkg.engines = {};
-            }
+
+            // main は esbuild バンドルの単一ファイルを指す
+            pkg.main = 'lib/index.js';
+
+            // enginesフィールドを確実に設定
+            pkg.engines = pkg.engines || {};
             pkg.engines.node = '24';
-            
+
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
-          
-          # 依存関係をインストール（production用）
-          pnpm install --prod --frozen-lockfile
-          
-          # デプロイ用のzipファイルを作成（Cloud Functionsはzipを要求）
+
+          # 本番依存をインストール（workspace 依存がなくなったので標準フロー）
+          pnpm install --prod --no-frozen-lockfile
+
+          # デプロイ用のzipファイルを作成
           zip -r ../functions-deployment.zip *
           cd ..
-          
+
           echo "Deployment bundle created: functions-deployment.zip"
+          ls -lh ../functions-deployment.zip 2>/dev/null || ls -lh functions-deployment.zip
 
       - name: Upload to Cloud Storage
         run: |

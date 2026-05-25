@@ -348,10 +348,7 @@ async function collectWorkIdsWithFallback(): Promise<string[]> {
 
 		// エラー時はアセットファイルから読み込み
 		try {
-			const { readFileSync } = await import("node:fs");
-			const { join } = await import("node:path");
-			const assetPath = join(__dirname, "../assets/dlsite-work-ids.json");
-			const data = JSON.parse(readFileSync(assetPath, "utf-8"));
+			const { default: data } = await import("../assets/dlsite-work-ids.json");
 			const workIds = data.workIds || [];
 			logger.warn(`アセットファイルから${workIds.length}件の作品IDを読み込みました`);
 			return workIds;
