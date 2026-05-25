@@ -8,7 +8,7 @@ RUN apk add --no-cache libc6-compat tini
 FROM base AS deps
 WORKDIR /app
 
-# Install pnpm (use latest version 10 to match engines)
+# Install pnpm (use latest version 11 to match engines)
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable pnpm && corepack use pnpm@11
