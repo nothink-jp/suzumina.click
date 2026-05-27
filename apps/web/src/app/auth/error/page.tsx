@@ -39,7 +39,8 @@ function getErrorMessage(error: string | undefined): {
 	}
 }
 
-function ErrorContent({ error }: { error?: string }) {
+async function ErrorContent({ searchParams }: AuthErrorPageProps) {
+	const { error } = await searchParams;
 	const errorInfo = getErrorMessage(error);
 
 	return (
@@ -120,9 +121,7 @@ function ErrorContent({ error }: { error?: string }) {
 	);
 }
 
-export default async function AuthErrorPage({ searchParams }: AuthErrorPageProps) {
-	const params = await searchParams;
-
+export default function AuthErrorPage({ searchParams }: AuthErrorPageProps) {
 	return (
 		<Suspense
 			fallback={
@@ -134,7 +133,7 @@ export default async function AuthErrorPage({ searchParams }: AuthErrorPageProps
 				</div>
 			}
 		>
-			<ErrorContent error={params.error} />
+			<ErrorContent searchParams={searchParams} />
 		</Suspense>
 	);
 }

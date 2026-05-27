@@ -63,7 +63,7 @@ vi.mock("@suzumina.click/shared-types", () => ({
 
 // テスト対象のインポート（モック設定後）
 import * as actions from "../actions";
-import CreatorPage from "../page";
+import { CreatorContent } from "../page";
 
 describe("CreatorPage", () => {
 	const mockCreatorInfo = {
@@ -126,13 +126,13 @@ describe("CreatorPage", () => {
 		});
 
 		// 非同期コンポーネントの実行を待つ
-		const CreatorPageComponent = await CreatorPage({
+		const CreatorContentComponent = await CreatorContent({
 			params: Promise.resolve({ creatorId: "creator123" }),
 			searchParams: Promise.resolve({ page: "1" }),
 		});
 
 		// レンダリング
-		render(CreatorPageComponent);
+		render(CreatorContentComponent);
 
 		// 役割の表示
 		expect(screen.getByText(/声優 \/ イラスト/)).toBeInTheDocument();
@@ -150,7 +150,7 @@ describe("CreatorPage", () => {
 
 		// 非同期コンポーネントの実行を試みる
 		try {
-			await CreatorPage({
+			await CreatorContent({
 				params: Promise.resolve({ creatorId: "nonexistent" }),
 				searchParams: Promise.resolve({}),
 			});
@@ -171,13 +171,13 @@ describe("CreatorPage", () => {
 		});
 
 		// 非同期コンポーネントの実行を待つ
-		const CreatorPageComponent = await CreatorPage({
+		const CreatorContentComponent = await CreatorContent({
 			params: Promise.resolve({ creatorId: "creator123" }),
 			searchParams: Promise.resolve({ page: "1" }),
 		});
 
 		// レンダリング
-		render(CreatorPageComponent);
+		render(CreatorContentComponent);
 
 		// クリエイター名の表示確認
 		expect(screen.getByText("テストクリエイター")).toBeInTheDocument();
@@ -198,13 +198,13 @@ describe("CreatorPage", () => {
 		});
 
 		// 非同期コンポーネントの実行を待つ
-		const CreatorPageComponent = await CreatorPage({
+		const CreatorContentComponent = await CreatorContent({
 			params: Promise.resolve({ creatorId: "creator123" }),
 			searchParams: Promise.resolve({ page: "1" }),
 		});
 
 		// レンダリング
-		render(CreatorPageComponent);
+		render(CreatorContentComponent);
 
 		// クリエイター名の表示確認
 		expect(screen.getByText("テストクリエイター")).toBeInTheDocument();

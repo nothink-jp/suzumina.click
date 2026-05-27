@@ -1,11 +1,13 @@
 import type { MetadataRoute } from "next";
 import { unstable_cache } from "next/cache";
+import { connection } from "next/server";
 import { getFirestore } from "@/lib/firestore";
 import { warn as logWarn } from "@/lib/logger";
 
 // build 時の Firestore アクセスを避け、リクエスト時に Cloud Run の SA credentials で生成する (SPR-60)
 // Firestore 取得部分は unstable_cache で 1 時間キャッシュし、毎リクエストでクエリが走らないようにする
-export const dynamic = "force-dynamic";
+// cacheComponents 有効下では route segment config `dynamic` が使えないため、
+// `await connection()` でリクエストスコープに入り build-time prerender を回避する
 
 const SITEMAP_REVALIDATE_SECONDS = 3600;
 
@@ -81,6 +83,7 @@ const getDynamicSitemapPages = unstable_cache(
 );
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+	await connection();
 	const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://suzumina.click";
 
 	// 静的ページ（公開ページのみ。要認証ページや action ページは robots.txt 側で disallow する）
