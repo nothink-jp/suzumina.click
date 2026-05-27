@@ -257,11 +257,13 @@ const nextConfig = {
 				],
 			},
 			{
+				// ホームページ: PPR 動的セクションの鮮度確保 (SLA < 1 分) のため短めの TTL。
+				// Cloudflare 側 Cache Rule (terraform/cloudflare.tf) と同じ 60 秒に揃える。
 				source: "/",
 				headers: [
 					{
 						key: "Cache-Control",
-						value: "public, s-maxage=300, stale-while-revalidate=600",
+						value: "public, s-maxage=60, stale-while-revalidate=120",
 					},
 				],
 			},

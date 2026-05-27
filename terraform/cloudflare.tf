@@ -114,21 +114,26 @@ resource "cloudflare_ruleset" "cache_rules" {
     enabled     = true
   }
 
-  # 4. ホームページ: ISR の revalidate=300 に合わせた5分エッジキャッシュ
+  # 4. ホームページ: PPR の動的セクション鮮度を担保しつつ TTFB 改善のため 60 秒エッジキャッシュ
+  #
+  # SPR-4 で ISR から PPR (Cache Components) に移行した結果、`/` のレスポンスは
+  # 「静的シェル + 動的 streaming」の混在になる。CDN がレスポンス全体をキャッシュすると
+  # 動的部分も TTL 期間中固定されるため、TTL は SLA（新着コンテンツ反映遅延 < 1分）に
+  # 合わせて 60 秒に短縮する。
   rules {
     action = "set_cache_settings"
     action_parameters {
       cache = true
       edge_ttl {
         mode    = "override_origin"
-        default = 300
+        default = 60
       }
       browser_ttl {
         mode = "respect_origin"
       }
     }
     expression  = "(http.request.uri.path eq \"/\")"
-    description = "ホームページ: ISRに合わせた5分キャッシュ"
+    description = "ホームページ: PPR 動的鮮度確保のため 60 秒キャッシュ"
     enabled     = true
   }
 }
