@@ -9,84 +9,89 @@ import { VideosSection } from "@/components/sections/videos-section";
 import { WorksSection } from "@/components/sections/works-section";
 
 /**
- * Firestore データ取得を伴うホームページの動的セクション群。
- * PPR の `<Suspense>` 境界内でストリーミング配信される。
+ * 各セクションは個別の `<Suspense>` 境界配下で並列にストリーミングされる。
+ * `await connection()` は Firestore SDK 内部の同期的なランダム値参照を
+ * Cache Components の build-time prerender が検出してしまうのを回避するため、
+ * 「このコンポーネントはリクエスト時に動的レンダリングする」ことを明示する。
  */
-export async function DynamicHomeSections() {
-	// Cache Components 下で「Firestore からの uncached fetch」を実行する前に
-	// リクエストスコープに入る必要がある。これでこのコンポーネントが完全に動的扱いになる。
-	await connection();
 
-	const [audioButtons, videos, works, allAgesWorks] = await Promise.all([
-		getLatestAudioButtons(10),
-		getLatestVideos(10),
+export async function AudioButtonsSection() {
+	await connection();
+	const audioButtons = await getLatestAudioButtons(10);
+
+	return (
+		<section
+			className="py-8 sm:py-12 bg-background"
+			style={{ contentVisibility: "auto", containIntrinsicSize: "320px" }}
+		>
+			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+				<div className="flex items-center justify-between mb-6 sm:mb-8">
+					<div>
+						<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
+							🎵 新着音声ボタン
+						</h2>
+						<p className="text-sm sm:text-base text-muted-foreground">
+							最新の音声ボタンをチェック！
+						</p>
+					</div>
+					<Button asChild variant="outline">
+						<Link href="/buttons" className="font-medium">
+							すべて見る
+						</Link>
+					</Button>
+				</div>
+				<Suspense fallback={<LoadingSkeleton variant="carousel" height={280} />}>
+					<LazyFeaturedAudioButtonsCarousel audioButtons={audioButtons} />
+				</Suspense>
+			</div>
+		</section>
+	);
+}
+
+export async function VideosSectionAsync() {
+	await connection();
+	const videos = await getLatestVideos(10);
+	return <VideosSection videos={videos} loading={false} error={null} />;
+}
+
+export async function WorksSectionAsync() {
+	await connection();
+	const [works, allAgesWorks] = await Promise.all([
 		getLatestWorks(10, false),
 		getLatestWorks(10, true),
 	]);
+	return <WorksSection works={works} allAgesWorks={allAgesWorks} loading={false} error={null} />;
+}
 
+/** コミュニティ CTA は完全静的。データ取得なし。 */
+export function CommunitySection() {
 	return (
-		<>
-			{/* 新着音声ボタンセクション - 遅延読み込み最適化 */}
-			<section
-				className="py-8 sm:py-12 bg-background"
-				style={{ contentVisibility: "auto", containIntrinsicSize: "320px" }}
-			>
-				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex items-center justify-between mb-6 sm:mb-8">
-						<div>
-							<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
-								🎵 新着音声ボタン
-							</h2>
-							<p className="text-sm sm:text-base text-muted-foreground">
-								最新の音声ボタンをチェック！
-							</p>
-						</div>
-						<Button asChild variant="outline">
-							<Link href="/buttons" className="font-medium">
-								すべて見る
+		<section
+			className="py-8 sm:py-12 bg-suzuka-100"
+			style={{ contentVisibility: "auto", containIntrinsicSize: "260px" }}
+		>
+			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+				<div className="text-center mb-6 sm:mb-8">
+					<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 sm:mb-4">
+						コミュニティに参加しよう
+					</h2>
+					<p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8">
+						音声ボタンを作成・共有して、ファンコミュニティを盛り上げよう！
+					</p>
+					<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+						<Button asChild size="lg">
+							<Link href="/buttons/create" className="font-medium">
+								音声ボタンを作る
+							</Link>
+						</Button>
+						<Button asChild size="lg" variant="outline">
+							<Link href="/about" className="font-medium">
+								サイトについて
 							</Link>
 						</Button>
 					</div>
-					<Suspense fallback={<LoadingSkeleton variant="carousel" height={280} />}>
-						<LazyFeaturedAudioButtonsCarousel audioButtons={audioButtons} />
-					</Suspense>
 				</div>
-			</section>
-
-			{/* 新着動画セクション */}
-			<VideosSection videos={videos} loading={false} error={null} />
-
-			{/* 新着作品セクション */}
-			<WorksSection works={works} allAgesWorks={allAgesWorks} loading={false} error={null} />
-
-			{/* コミュニティセクション - 遅延読み込み最適化 */}
-			<section
-				className="py-8 sm:py-12 bg-suzuka-100"
-				style={{ contentVisibility: "auto", containIntrinsicSize: "260px" }}
-			>
-				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="text-center mb-6 sm:mb-8">
-						<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 sm:mb-4">
-							コミュニティに参加しよう
-						</h2>
-						<p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8">
-							音声ボタンを作成・共有して、ファンコミュニティを盛り上げよう！
-						</p>
-						<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-							<Button asChild size="lg">
-								<Link href="/buttons/create" className="font-medium">
-									音声ボタンを作る
-								</Link>
-							</Button>
-							<Button asChild size="lg" variant="outline">
-								<Link href="/about" className="font-medium">
-									サイトについて
-								</Link>
-							</Button>
-						</div>
-					</div>
-				</div>
-			</section>
-		</>
+			</div>
+		</section>
 	);
 }
