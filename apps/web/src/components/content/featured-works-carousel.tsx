@@ -9,7 +9,7 @@ import {
 import WorkCard from "@/app/works/components/WorkCard";
 import { UI_MESSAGES } from "@/constants/ui-messages";
 
-interface FeaturedWorksCarouselProps {
+export interface FeaturedWorksCarouselProps {
 	works: WorkPlainObject[];
 }
 

@@ -9,7 +9,7 @@ import {
 import VideoCard from "@/app/videos/components/VideoCard";
 import { UI_MESSAGES } from "@/constants/ui-messages";
 
-interface FeaturedVideosCarouselProps {
+export interface FeaturedVideosCarouselProps {
 	videos: VideoPlainObject[];
 }
 
