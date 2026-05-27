@@ -5,12 +5,12 @@ import {
 	NavigationMenuList,
 } from "@suzumina.click/ui/components/ui/navigation-menu";
 import Link from "next/link";
+import { Suspense } from "react";
 import { auth } from "@/auth";
 import AuthButton from "../user/auth-button";
 import MobileMenu from "./mobile-menu";
 
-export default async function SiteHeader() {
-	const session = await auth();
+export default function SiteHeader() {
 	return (
 		<>
 			{/* スキップリンク */}
@@ -52,18 +52,46 @@ export default async function SiteHeader() {
 							</NavigationMenuList>
 						</NavigationMenu>
 
+						{/* 認証関連: auth() 解決を待つ間は同サイズのプレースホルダーを表示し、
+							ヘッダー全体の高さは固定する。Suspense 境界をここに限定することで、
+							ヘッダーのレイアウト・ロゴ・ナビは即座に静的シェルとして配信される。 */}
 						<div className="flex items-center space-x-4">
-							{/* 認証ボタン */}
-							<div className="hidden md:flex">
-								<AuthButton user={session?.user} />
-							</div>
-
-							{/* モバイルメニュー */}
-							<MobileMenu user={session?.user} />
+							<Suspense fallback={<SessionControlsFallback />}>
+								<SessionAwareControls />
+							</Suspense>
 						</div>
 					</div>
 				</div>
 			</header>
+		</>
+	);
+}
+
+async function SessionAwareControls() {
+	const session = await auth();
+	return (
+		<>
+			{/* 認証ボタン */}
+			<div className="hidden md:flex">
+				<AuthButton user={session?.user} />
+			</div>
+
+			{/* モバイルメニュー */}
+			<MobileMenu user={session?.user} />
+		</>
+	);
+}
+
+/**
+ * SessionAwareControls の fallback。
+ * AuthButton (desktop, h-10/w-32 相当) と MobileMenu button (mobile, h-11/w-11) と
+ * 同じ占有面積のプレースホルダー枠で、Suspense リゾルブ時の CLS を防ぐ。
+ */
+function SessionControlsFallback() {
+	return (
+		<>
+			<div className="hidden md:flex h-10 w-32" aria-hidden />
+			<div className="md:hidden h-11 w-11" aria-hidden />
 		</>
 	);
 }
