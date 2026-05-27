@@ -125,10 +125,18 @@ export * from "./utilities/age-rating";
 export * from "./utilities/circle-conversions";
 // 共通ユーティリティと型のエクスポート
 export * from "./utilities/common";
+// Zod-free helpers extracted from entities/circle-creator (creator type labels, ID validators)
+export * from "./utilities/creator-helpers";
+// Zod-free helpers extracted from entities/user (Discord avatar, display name, role labels)
+export * from "./utilities/discord-helpers";
+// Zod-free helpers extracted from entities/user-evaluation (characteristic axes, stats calc)
+export * from "./utilities/evaluation-helpers";
 // Firestore関連のユーティリティ
 export * from "./utilities/firestore-utils";
 // 価格履歴関連の型とスキーマのエクスポート
 export * from "./utilities/price-history";
+// Zod-free helpers extracted from utilities/search-filters (filter checks, description builders)
+export * from "./utilities/search-filter-helpers";
 // 検索フィルター関連の型とスキーマのエクスポート
 export * from "./utilities/search-filters";
 // Work変換ユーティリティのエクスポート

@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-	CircleDataSchema,
 	CREATOR_TYPE_LABELS,
+	getCreatorTypeLabel,
+	isValidCircleId,
+	isValidCreatorId,
+} from "../../utilities/creator-helpers";
+import {
+	CircleDataSchema,
 	CreatorPageInfoSchema,
 	type CreatorType,
 	CreatorTypeSchema,
 	CreatorWorkMappingSchema,
-	getCreatorTypeLabel,
-	isValidCircleId,
-	isValidCreatorId,
 } from "../circle-creator";
 
 describe("CircleDataSchema", () => {
