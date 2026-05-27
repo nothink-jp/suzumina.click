@@ -4,7 +4,7 @@ import type { WorkPlainObject } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
-import { FeaturedWorksCarousel } from "@/components/content/featured-works-carousel";
+import { LazyFeaturedWorksCarousel } from "@/components/optimization/lazy-components";
 import { useAgeVerification } from "@/contexts/age-verification-context";
 
 interface WorksSectionProps {
@@ -87,7 +87,7 @@ export function WorksSection({
 						</Link>
 					</Button>
 				</div>
-				<FeaturedWorksCarousel works={worksToShow} />
+				<LazyFeaturedWorksCarousel works={worksToShow} />
 			</div>
 		</section>
 	);

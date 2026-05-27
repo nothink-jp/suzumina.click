@@ -4,7 +4,7 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
-import { FeaturedVideosCarousel } from "@/components/content/featured-videos-carousel";
+import { LazyFeaturedVideosCarousel } from "@/components/optimization/lazy-components";
 
 interface VideosSectionProps {
 	videos?: VideoPlainObject[];
@@ -69,7 +69,7 @@ export function VideosSection({ videos = [], loading = true, error = null }: Vid
 						</Link>
 					</Button>
 				</div>
-				<FeaturedVideosCarousel videos={videos} />
+				<LazyFeaturedVideosCarousel videos={videos} />
 			</div>
 		</section>
 	);

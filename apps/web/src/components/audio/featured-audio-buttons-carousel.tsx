@@ -6,7 +6,7 @@ import { UI_MESSAGES } from "@/constants/ui-messages";
 import { useAudioButtonStatuses } from "@/hooks/use-audio-button-statuses";
 import { AudioButtonWithPlayCount } from "./audio-button-with-play-count";
 
-interface FeaturedAudioButtonsCarouselProps {
+export interface FeaturedAudioButtonsCarouselProps {
 	audioButtons: AudioButtonPlainObject[];
 }
 
