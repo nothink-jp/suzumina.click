@@ -16,33 +16,41 @@ import { WorksSection } from "@/components/sections/works-section";
  */
 
 /**
+ * セクション共通の header DOM。
+ * AudioButtonsSection / AudioButtonsSectionSkeleton で共有することで DOM ドリフトを防ぐ。
+ */
+function AudioButtonsSectionHeader() {
+	return (
+		<div className="flex items-center justify-between mb-6 sm:mb-8">
+			<div>
+				<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
+					🎵 新着音声ボタン
+				</h2>
+				<p className="text-sm sm:text-base text-muted-foreground">最新の音声ボタンをチェック！</p>
+			</div>
+			<Button asChild variant="outline">
+				<Link href="/buttons" className="font-medium">
+					すべて見る
+				</Link>
+			</Button>
+		</div>
+	);
+}
+
+/**
  * AudioButtonsSection の構造的 skeleton。
  * 実セクション本体と同じ `<section>` / container / ヘッダーをレンダリングし、
  * carousel 部分のみ LoadingSkeleton で代替する。Suspense リゾルブ時に
  * section 全体の高さが変わらないため CLS が発生しない。
  */
-function AudioButtonsSectionSkeleton() {
+export function AudioButtonsSectionSkeleton() {
 	return (
 		<section
 			className="py-8 sm:py-12 bg-background"
 			style={{ contentVisibility: "auto", containIntrinsicSize: "320px" }}
 		>
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="flex items-center justify-between mb-6 sm:mb-8">
-					<div>
-						<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
-							🎵 新着音声ボタン
-						</h2>
-						<p className="text-sm sm:text-base text-muted-foreground">
-							最新の音声ボタンをチェック！
-						</p>
-					</div>
-					<Button asChild variant="outline">
-						<Link href="/buttons" className="font-medium">
-							すべて見る
-						</Link>
-					</Button>
-				</div>
+				<AudioButtonsSectionHeader />
 				<LoadingSkeleton variant="carousel" height={280} />
 			</div>
 		</section>
@@ -59,21 +67,7 @@ export async function AudioButtonsSection() {
 			style={{ contentVisibility: "auto", containIntrinsicSize: "320px" }}
 		>
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="flex items-center justify-between mb-6 sm:mb-8">
-					<div>
-						<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
-							🎵 新着音声ボタン
-						</h2>
-						<p className="text-sm sm:text-base text-muted-foreground">
-							最新の音声ボタンをチェック！
-						</p>
-					</div>
-					<Button asChild variant="outline">
-						<Link href="/buttons" className="font-medium">
-							すべて見る
-						</Link>
-					</Button>
-				</div>
+				<AudioButtonsSectionHeader />
 				<Suspense fallback={<LoadingSkeleton variant="carousel" height={280} />}>
 					<LazyFeaturedAudioButtonsCarousel audioButtons={audioButtons} />
 				</Suspense>
@@ -81,8 +75,6 @@ export async function AudioButtonsSection() {
 		</section>
 	);
 }
-
-export { AudioButtonsSectionSkeleton };
 
 export async function VideosSectionAsync() {
 	await connection();
