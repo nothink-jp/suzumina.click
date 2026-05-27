@@ -3,8 +3,9 @@ import WorkCard from "@/app/works/components/WorkCard";
 
 interface WorkListItemProps {
 	work: WorkPlainObject;
+	priority?: boolean;
 }
 
-export function WorkListItem({ work }: WorkListItemProps) {
-	return <WorkCard work={work} />;
+export function WorkListItem({ work, priority = false }: WorkListItemProps) {
+	return <WorkCard work={work} priority={priority} />;
 }

@@ -81,7 +81,7 @@ export default function WorksList({ initialData }: WorksListProps) {
 			<ConfigurableList<WorkPlainObject>
 				items={initialItems}
 				initialTotal={initialTotal}
-				renderItem={(work) => <WorkListItem work={work} />}
+				renderItem={(work, index) => <WorkListItem work={work} priority={index < 6} />}
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
 				{...DEFAULT_LIST_PROPS}
