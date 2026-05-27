@@ -1,64 +1,31 @@
-import type {
-	AudioButtonPlainObject,
-	VideoPlainObject,
-	WorkPlainObject,
-} from "@suzumina.click/shared-types";
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
-import { HomeSearchForm } from "@/components/home/home-search-form";
+import { getLatestAudioButtons, getLatestVideos, getLatestWorks } from "@/app/actions";
 import { LazyFeaturedAudioButtonsCarousel } from "@/components/optimization/lazy-components";
 import { VideosSection } from "@/components/sections/videos-section";
 import { WorksSection } from "@/components/sections/works-section";
 
-interface HomePageProps {
-	initialAudioButtons: AudioButtonPlainObject[];
-	initialVideos: VideoPlainObject[];
-	initialWorks: WorkPlainObject[];
-	initialAllAgesWorks: WorkPlainObject[];
-}
+/**
+ * Firestore データ取得を伴うホームページの動的セクション群。
+ * PPR の `<Suspense>` 境界内でストリーミング配信される。
+ */
+export async function DynamicHomeSections() {
+	// Cache Components 下で「Firestore からの uncached fetch」を実行する前に
+	// リクエストスコープに入る必要がある。これでこのコンポーネントが完全に動的扱いになる。
+	await connection();
 
-export function HomePage({
-	initialAudioButtons,
-	initialVideos,
-	initialWorks,
-	initialAllAgesWorks,
-}: HomePageProps) {
+	const [audioButtons, videos, works, allAgesWorks] = await Promise.all([
+		getLatestAudioButtons(10),
+		getLatestVideos(10),
+		getLatestWorks(10, false),
+		getLatestWorks(10, true),
+	]);
+
 	return (
-		<div>
-			{/* メインビジュアル - LCP最適化済み + suzukaブランドカラー背景 */}
-			<section className="py-12 sm:py-16 md:py-20 text-center bg-suzuka-50 critical-above-fold critical-hero">
-				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="max-w-4xl mx-auto">
-						{/* LCP要素として最適化 - 明示的サイズとフォント最適化 */}
-						<h1
-							className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6"
-							style={{
-								// LCP改善: 明示的なサイズとレイアウト
-								minHeight: "2.5rem",
-								contentVisibility: "visible",
-							}}
-						>
-							すずみなくりっく！
-						</h1>
-						<p
-							className="text-base sm:text-lg md:text-xl text-muted-foreground mb-6 sm:mb-8 px-4 sm:px-0"
-							style={{
-								// CLS防止: 明示的な高さ
-								minHeight: "3rem",
-							}}
-						>
-							涼花みなせさんのYouTube動画から、好きな場面を再生できるボタンを作ろう！
-							<br />
-							あーたたちが集まる、あーたたちのためのファンサイトです
-						</p>
-						{/* 検索フォーム - LCP改善のため eager load */}
-						<HomeSearchForm />
-					</div>
-				</div>
-			</section>
-
+		<>
 			{/* 新着音声ボタンセクション - 遅延読み込み最適化 */}
 			<section
 				className="py-8 sm:py-12 bg-background"
@@ -81,21 +48,16 @@ export function HomePage({
 						</Button>
 					</div>
 					<Suspense fallback={<LoadingSkeleton variant="carousel" height={280} />}>
-						<LazyFeaturedAudioButtonsCarousel audioButtons={initialAudioButtons} />
+						<LazyFeaturedAudioButtonsCarousel audioButtons={audioButtons} />
 					</Suspense>
 				</div>
 			</section>
 
 			{/* 新着動画セクション */}
-			<VideosSection videos={initialVideos} loading={false} error={null} />
+			<VideosSection videos={videos} loading={false} error={null} />
 
 			{/* 新着作品セクション */}
-			<WorksSection
-				works={initialWorks}
-				allAgesWorks={initialAllAgesWorks}
-				loading={false}
-				error={null}
-			/>
+			<WorksSection works={works} allAgesWorks={allAgesWorks} loading={false} error={null} />
 
 			{/* コミュニティセクション - 遅延読み込み最適化 */}
 			<section
@@ -125,6 +87,6 @@ export function HomePage({
 					</div>
 				</div>
 			</section>
-		</div>
+		</>
 	);
 }

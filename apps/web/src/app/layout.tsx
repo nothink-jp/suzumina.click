@@ -109,9 +109,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 						<Suspense fallback={null}>
 							<PageViewTracker />
 						</Suspense>
-						<SiteHeader />
+						{/* SiteHeader は auth() でセッション cookie を読むため動的。
+							Cache Components モデルでは Suspense 境界が必須 */}
+						<Suspense fallback={<div className="h-[73px] border-b" aria-hidden />}>
+							<SiteHeader />
+						</Suspense>
 						<main id="main-content" className="flex-1">
-							{children}
+							{/* Cache Components 下では、ページが動的データを参照する場合 Suspense 境界が必須。
+								個別ページで PPR したい場合はページ側でさらに細分化できる */}
+							<Suspense fallback={null}>{children}</Suspense>
 						</main>
 						<SiteFooter />
 						<Toaster />

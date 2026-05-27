@@ -1,9 +1,9 @@
 import { getCreatorTypeLabel } from "@suzumina.click/shared-types";
+import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { getCreatorInfo, getCreatorWorksList } from "./actions";
 import { CreatorPageClient } from "./components/CreatorPageClient";
-
-export const dynamic = "force-dynamic";
 
 interface CreatorPageProps {
 	params: Promise<{ creatorId: string }>;
@@ -33,7 +33,15 @@ export async function generateMetadata({ params }: { params: Promise<{ creatorId
 	};
 }
 
-export default async function CreatorPage({ params, searchParams }: CreatorPageProps) {
+export default function CreatorPage(props: CreatorPageProps) {
+	return (
+		<Suspense fallback={<LoadingSkeleton variant="card" />}>
+			<CreatorContent {...props} />
+		</Suspense>
+	);
+}
+
+export async function CreatorContent({ params, searchParams }: CreatorPageProps) {
 	const { creatorId } = await params;
 	const searchParamsData = await searchParams;
 

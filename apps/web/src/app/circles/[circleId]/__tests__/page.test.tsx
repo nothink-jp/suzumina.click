@@ -46,7 +46,7 @@ vi.mock("@suzumina.click/shared-types", () => ({
 
 // テスト対象のインポート（モック設定後）
 import * as actions from "../actions";
-import CirclePage from "../page";
+import { CircleContent } from "../page";
 
 describe("CirclePage", () => {
 	const mockCircleData = {
@@ -112,13 +112,13 @@ describe("CirclePage", () => {
 		});
 
 		// 非同期コンポーネントの実行を待つ
-		const CirclePageComponent = await CirclePage({
+		const CircleContentComponent = await CircleContent({
 			params: Promise.resolve({ circleId: "RG12345" }),
 			searchParams: Promise.resolve({ page: "1" }),
 		});
 
 		// レンダリング
-		render(CirclePageComponent);
+		render(CircleContentComponent);
 
 		// サークル名の表示確認
 		expect(screen.getByText("テストサークル")).toBeInTheDocument();
@@ -142,7 +142,7 @@ describe("CirclePage", () => {
 
 		// 非同期コンポーネントの実行を試みる
 		try {
-			await CirclePage({
+			await CircleContent({
 				params: Promise.resolve({ circleId: "RG99999" }),
 				searchParams: Promise.resolve({}),
 			});
@@ -164,13 +164,13 @@ describe("CirclePage", () => {
 		});
 
 		// 非同期コンポーネントの実行を待つ
-		const CirclePageComponent = await CirclePage({
+		const CircleContentComponent = await CircleContent({
 			params: Promise.resolve({ circleId: "RG12345" }),
 			searchParams: Promise.resolve({}),
 		});
 
 		// レンダリング
-		render(CirclePageComponent);
+		render(CircleContentComponent);
 
 		// サークル名の表示確認
 		expect(screen.getByText("テストサークル")).toBeInTheDocument();
@@ -193,13 +193,13 @@ describe("CirclePage", () => {
 		});
 
 		// 非同期コンポーネントの実行を待つ
-		const CirclePageComponent = await CirclePage({
+		const CircleContentComponent = await CircleContent({
 			params: Promise.resolve({ circleId: "RG12345" }),
 			searchParams: Promise.resolve({}),
 		});
 
 		// レンダリング
-		render(CirclePageComponent);
+		render(CircleContentComponent);
 
 		// サークル名の表示確認
 		expect(screen.getByText("テストサークル")).toBeInTheDocument();
@@ -253,7 +253,7 @@ describe("CirclePage", () => {
 			limit: "24",
 		});
 
-		await CirclePage({ params, searchParams });
+		await CircleContent({ params, searchParams });
 
 		expect(actions.getCircleWorksList).toHaveBeenCalledWith({
 			circleId: "RG12345",
@@ -275,7 +275,7 @@ describe("CirclePage", () => {
 		const params = Promise.resolve({ circleId: "RG12345" });
 		const searchParams = Promise.resolve({ q: "検索キーワード" });
 
-		await CirclePage({ params, searchParams });
+		await CircleContent({ params, searchParams });
 
 		// searchパラメータとして渡される
 		expect(actions.getCircleWorksList).toHaveBeenCalledWith(

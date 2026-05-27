@@ -1,8 +1,8 @@
+import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { getCircleInfo, getCircleWorksList } from "./actions";
 import { CirclePageClient } from "./components/CirclePageClient";
-
-export const dynamic = "force-dynamic";
 
 interface CirclePageProps {
 	params: Promise<{ circleId: string }>;
@@ -30,7 +30,15 @@ export async function generateMetadata({ params }: { params: Promise<{ circleId:
 	};
 }
 
-export default async function CirclePage({ params, searchParams }: CirclePageProps) {
+export default function CirclePage(props: CirclePageProps) {
+	return (
+		<Suspense fallback={<LoadingSkeleton variant="card" />}>
+			<CircleContent {...props} />
+		</Suspense>
+	);
+}
+
+export async function CircleContent({ params, searchParams }: CirclePageProps) {
 	const { circleId } = await params;
 	const searchParamsData = await searchParams;
 

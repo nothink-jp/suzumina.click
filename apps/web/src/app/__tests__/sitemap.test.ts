@@ -24,6 +24,16 @@ vi.mock("next/cache", () => ({
 	},
 }));
 
+// next/server.connection() は Next.js のリクエストスコープが必要。
+// テストではダイナミック化のシグナルだけ必要なので no-op に差し替える。
+vi.mock("next/server", async (importOriginal) => {
+	const actual = (await importOriginal()) as Record<string, unknown>;
+	return {
+		...actual,
+		connection: vi.fn().mockResolvedValue(undefined),
+	};
+});
+
 vi.mock("@/lib/firestore", () => ({
 	getFirestore: vi.fn(),
 }));

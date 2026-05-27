@@ -23,12 +23,14 @@ const nextConfig = {
 	// React Compiler（Next.js 16対応）
 	reactCompiler: true,
 
+	// Cache Components（Next.js 16 で PPR を置き換えた新モデル）
+	// 静的シェルは prerender し、動的部分は `<Suspense>` 境界でストリーミング
+	cacheComponents: true,
+
 	// 実験的機能・パフォーマンス最適化
 	experimental: {
 		// App Router最適化
 		optimizePackageImports: ["lucide-react", "date-fns", "zod", "react-hook-form", "sonner"],
-		// 並列レンダリング最適化
-		ppr: false, // Partial Prerendering（実験的）
 		// ダイナミックインポート最適化
 		optimizeServerReact: true,
 		// Critical CSS自動抽出（LCP改善）- 実験的機能

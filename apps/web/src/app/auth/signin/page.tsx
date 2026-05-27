@@ -5,7 +5,8 @@ interface SignInPageProps {
 	searchParams: Promise<{ callbackUrl?: string; error?: string }>;
 }
 
-function SignInForm({ callbackUrl, error }: { callbackUrl?: string; error?: string }) {
+async function SignInForm({ searchParams }: SignInPageProps) {
+	const { callbackUrl, error } = await searchParams;
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
 			<div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
@@ -84,9 +85,7 @@ function SignInForm({ callbackUrl, error }: { callbackUrl?: string; error?: stri
 	);
 }
 
-export default async function SignInPage({ searchParams }: SignInPageProps) {
-	const params = await searchParams;
-
+export default function SignInPage({ searchParams }: SignInPageProps) {
 	return (
 		<Suspense
 			fallback={
@@ -98,7 +97,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 				</div>
 			}
 		>
-			<SignInForm callbackUrl={params.callbackUrl} error={params.error} />
+			<SignInForm searchParams={searchParams} />
 		</Suspense>
 	);
 }
