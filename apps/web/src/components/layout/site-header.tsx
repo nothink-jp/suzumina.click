@@ -5,12 +5,12 @@ import {
 	NavigationMenuList,
 } from "@suzumina.click/ui/components/ui/navigation-menu";
 import Link from "next/link";
+import { Suspense } from "react";
 import { auth } from "@/auth";
 import AuthButton from "../user/auth-button";
 import MobileMenu from "./mobile-menu";
 
-export default async function SiteHeader() {
-	const session = await auth();
+export default function SiteHeader() {
 	return (
 		<>
 			{/* スキップリンク */}
@@ -52,18 +52,33 @@ export default async function SiteHeader() {
 							</NavigationMenuList>
 						</NavigationMenu>
 
-						<div className="flex items-center space-x-4">
-							{/* 認証ボタン */}
-							<div className="hidden md:flex">
-								<AuthButton user={session?.user} />
-							</div>
-
-							{/* モバイルメニュー */}
-							<MobileMenu user={session?.user} />
+						{/* 認証関連: wrapper の min-h で UserMenu (desktop ~52px) と
+							MobileMenu (mobile 44px) と同じ高さを常に確保する。これにより
+							Suspense リゾルブ前後でヘッダー全体の高さは変動せず CLS=0 を保てる。
+							fallback は枠確保不要なので null で十分。 */}
+						<div className="flex items-center space-x-4 min-h-[44px] md:min-h-[52px]">
+							<Suspense fallback={null}>
+								<SessionAwareControls />
+							</Suspense>
 						</div>
 					</div>
 				</div>
 			</header>
+		</>
+	);
+}
+
+async function SessionAwareControls() {
+	const session = await auth();
+	return (
+		<>
+			{/* 認証ボタン */}
+			<div className="hidden md:flex">
+				<AuthButton user={session?.user} />
+			</div>
+
+			{/* モバイルメニュー */}
+			<MobileMenu user={session?.user} />
 		</>
 	);
 }
