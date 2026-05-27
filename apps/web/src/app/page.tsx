@@ -1,27 +1,36 @@
-import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Suspense } from "react";
 import {
 	AudioButtonsSection,
+	AudioButtonsSectionSkeleton,
 	CommunitySection,
 	VideosSectionAsync,
 	WorksSectionAsync,
 } from "@/components/home/dynamic-home-sections";
 import { HeroSection } from "@/components/home/hero-section";
+import { VideosSection } from "@/components/sections/videos-section";
+import { WorksSection } from "@/components/sections/works-section";
 
 // Cache Components モデル: HeroSection と CommunitySection は静的シェル、
 // 各データセクションはそれぞれ個別の <Suspense> 境界で並列ストリーミングされる。
-// セクション単位のスケルトンが実コンテンツに近い高さを持つため、CLS を最小化できる。
+//
+// Suspense fallback は対応するセクションと同じ <section> / container / ヘッダー構造を持つ
+// 構造的 skeleton を使用する。これにより Suspense リゾルブ前後でセクション高さが変わらず、
+// 後続要素 (次セクション・footer) の押し下げによる CLS を回避できる。
+//
+// VideosSection / WorksSection は `loading={true}` で自身の skeleton 状態を持つため、
+// そのまま fallback として再利用する。AudioButtonsSection は専用の
+// AudioButtonsSectionSkeleton を持つ。
 export default function Home() {
 	return (
 		<div>
 			<HeroSection />
-			<Suspense fallback={<LoadingSkeleton variant="carousel" height={320} />}>
+			<Suspense fallback={<AudioButtonsSectionSkeleton />}>
 				<AudioButtonsSection />
 			</Suspense>
-			<Suspense fallback={<LoadingSkeleton variant="carousel" height={480} />}>
+			<Suspense fallback={<VideosSection loading />}>
 				<VideosSectionAsync />
 			</Suspense>
-			<Suspense fallback={<LoadingSkeleton variant="carousel" height={560} />}>
+			<Suspense fallback={<WorksSection loading />}>
 				<WorksSectionAsync />
 			</Suspense>
 			<CommunitySection />

@@ -15,6 +15,40 @@ import { WorksSection } from "@/components/sections/works-section";
  * 「このコンポーネントはリクエスト時に動的レンダリングする」ことを明示する。
  */
 
+/**
+ * AudioButtonsSection の構造的 skeleton。
+ * 実セクション本体と同じ `<section>` / container / ヘッダーをレンダリングし、
+ * carousel 部分のみ LoadingSkeleton で代替する。Suspense リゾルブ時に
+ * section 全体の高さが変わらないため CLS が発生しない。
+ */
+function AudioButtonsSectionSkeleton() {
+	return (
+		<section
+			className="py-8 sm:py-12 bg-background"
+			style={{ contentVisibility: "auto", containIntrinsicSize: "320px" }}
+		>
+			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+				<div className="flex items-center justify-between mb-6 sm:mb-8">
+					<div>
+						<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
+							🎵 新着音声ボタン
+						</h2>
+						<p className="text-sm sm:text-base text-muted-foreground">
+							最新の音声ボタンをチェック！
+						</p>
+					</div>
+					<Button asChild variant="outline">
+						<Link href="/buttons" className="font-medium">
+							すべて見る
+						</Link>
+					</Button>
+				</div>
+				<LoadingSkeleton variant="carousel" height={280} />
+			</div>
+		</section>
+	);
+}
+
 export async function AudioButtonsSection() {
 	await connection();
 	const audioButtons = await getLatestAudioButtons(10);
@@ -47,6 +81,8 @@ export async function AudioButtonsSection() {
 		</section>
 	);
 }
+
+export { AudioButtonsSectionSkeleton };
 
 export async function VideosSectionAsync() {
 	await connection();
