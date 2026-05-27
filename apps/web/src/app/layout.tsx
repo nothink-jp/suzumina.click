@@ -111,9 +111,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 						</Suspense>
 						{/* SiteHeader 自体は静的シェル。auth() 解決は内部の Suspense 境界で局所化されている */}
 						<SiteHeader />
-						<main id="main-content" className="flex-1">
+						<main id="main-content" className="flex-1 min-h-screen">
 							{/* Cache Components 下では、ページが動的データを参照する場合 Suspense 境界が必須。
-								個別ページで PPR したい場合はページ側でさらに細分化できる */}
+								個別ページで PPR したい場合はページ側でさらに細分化できる。
+								main に min-h-screen を持たせ、Suspense 解決前後で main 高さが viewport を
+								下回らないようにする。これにより footer が常に viewport 外に位置し、
+								下位セクションのストリーミングによる累積シフトが footer の CLS に
+								波及しないようにしている (SPR-9 Desktop CLS 0.486 対策) */}
 							<Suspense fallback={null}>{children}</Suspense>
 						</main>
 						<SiteFooter />

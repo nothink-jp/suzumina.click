@@ -13,10 +13,14 @@ export function GoogleTagManager() {
 
 	return (
 		<>
-			{/* Google Tag Manager Script */}
+			{/* Google Tag Manager Script
+			 * lazyOnload で `load` 後にロードし、Mobile LCP への影響を抑える (SPR-9)。
+			 * `ConsentModeScript` は useEffect で hydration 直後に
+			 * gtag('consent','default',...) を実行済みなので、GTM ロード前に
+			 * 同意状態が dataLayer に積まれる順序は維持される。 */}
 			<Script
 				id="google-tag-manager"
-				strategy="afterInteractive"
+				strategy="lazyOnload"
 				dangerouslySetInnerHTML={{
 					__html: `
 						(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
