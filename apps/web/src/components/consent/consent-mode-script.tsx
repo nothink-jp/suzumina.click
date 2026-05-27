@@ -80,9 +80,20 @@ function initializeGoogleConsent() {
 
 /**
  * Setup Google Analytics dataLayer
+ *
+ * `gtag.js` を lazyOnload で `load` 後にロードしているため、hydration 直後から
+ * `load` までの間に呼ばれる `window.gtag(...)` を取りこぼさないよう、
+ * dataLayer に積むだけの polyfill 関数を先に定義しておく。
+ * gtag.js ロード時に `window.gtag` は GA 本体の実装で上書きされ、積み残しの
+ * dataLayer は通常通り処理される。
  */
 function setupDataLayer() {
 	window.dataLayer = window.dataLayer || [];
+	if (typeof window.gtag !== "function") {
+		window.gtag = function gtag(...args: unknown[]) {
+			window.dataLayer.push(args as unknown as Parameters<typeof window.dataLayer.push>[0]);
+		};
+	}
 }
 
 /**
