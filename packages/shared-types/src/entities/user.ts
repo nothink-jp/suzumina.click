@@ -41,11 +41,6 @@ export const GuildMembershipSchema = z.object({
 });
 
 /**
- * 対象Guildの設定
- */
-export const SUZUMINA_GUILD_ID = "959095494456537158";
-
-/**
  * Firestoreに保存するユーザーデータのスキーマ
  */
 export const FirestoreUserSchema = z.object({
@@ -213,101 +208,7 @@ export type DailyButtonLimit = {
 	guildChecked: boolean;
 };
 
-/**
- * ユーザーロール表示名を取得するヘルパー関数
- */
-export function getUserRoleLabel(role: "member" | "moderator" | "admin"): string {
-	const labels = {
-		member: "メンバー",
-		moderator: "モデレーター",
-		admin: "管理者",
-	};
-	return labels[role];
-}
-
-/**
- * Discord アバターURLを生成するヘルパー関数
- */
-export function createDiscordAvatarUrl(
-	userId: string,
-	avatarHash: string | null | undefined,
-	size = 128,
-): string {
-	// ユーザーIDの検証
-	if (!userId || typeof userId !== "string") {
-		return "https://cdn.discordapp.com/embed/avatars/0.png";
-	}
-
-	if (!avatarHash) {
-		// デフォルトアバター (ユーザーIDベース)
-		const defaultAvatarIndex = Number.parseInt(userId, 10) % 5;
-		return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;
-	}
-
-	// カスタムアバター
-	const extension = avatarHash.startsWith("a_") ? "gif" : "png";
-	return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${extension}?size=${size}`;
-}
-
-/**
- * 表示名を決定するヘルパー関数
- */
-export function resolveDisplayName(
-	displayName: string | undefined,
-	globalName: string | undefined,
-	username: string,
-): string {
-	return displayName || globalName || username;
-}
-
-/**
- * Guild所属確認のヘルパー関数
- */
-export function isValidGuildMember(guildMembership: GuildMembership): boolean {
-	return guildMembership.guildId === SUZUMINA_GUILD_ID && guildMembership.isMember;
-}
-
-/**
- * 相対時間表示のヘルパー関数
- */
-export function formatRelativeTime(dateString: string): string {
-	const date = new Date(dateString);
-	const now = new Date();
-	const diffMs = now.getTime() - date.getTime();
-	const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-	if (diffDays === 0) {
-		const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-		if (diffHours === 0) {
-			const diffMinutes = Math.floor(diffMs / (1000 * 60));
-			return diffMinutes <= 1 ? "たった今" : `${diffMinutes}分前`;
-		}
-		return `${diffHours}時間前`;
-	}
-	if (diffDays === 1) {
-		return "昨日";
-	}
-	if (diffDays < 7) {
-		return `${diffDays}日前`;
-	}
-	if (diffDays < 30) {
-		const diffWeeks = Math.floor(diffDays / 7);
-		return `${diffWeeks}週間前`;
-	}
-	if (diffDays < 365) {
-		const diffMonths = Math.floor(diffDays / 30);
-		return `${diffMonths}ヶ月前`;
-	}
-	const diffYears = Math.floor(diffDays / 365);
-	return `${diffYears}年前`;
-}
-
-/**
- * メンバー期間表示のヘルパー関数
- */
-export function formatMemberSince(dateString: string): string {
-	const date = new Date(dateString);
-	const year = date.getFullYear();
-	const month = date.getMonth() + 1;
-	return `${year}年${month}月から`;
-}
+// Pure helper functions (SUZUMINA_GUILD_ID, getUserRoleLabel, createDiscordAvatarUrl,
+// resolveDisplayName, isValidGuildMember, formatRelativeTime, formatMemberSince)
+// have been moved to ../utilities/discord-helpers to keep this Zod-tainted module
+// out of client bundles when only helpers are needed.

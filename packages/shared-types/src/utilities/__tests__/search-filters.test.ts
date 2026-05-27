@@ -3,9 +3,8 @@ import {
 	getActiveFilterDescriptions,
 	getDateRangeFromPreset,
 	hasActiveFilters,
-	type UnifiedSearchFilters,
-	UnifiedSearchFiltersSchema,
-} from "../search-filters";
+} from "../search-filter-helpers";
+import { type UnifiedSearchFilters, UnifiedSearchFiltersSchema } from "../search-filters";
 
 describe("search-filters", () => {
 	describe("UnifiedSearchFiltersSchema", () => {

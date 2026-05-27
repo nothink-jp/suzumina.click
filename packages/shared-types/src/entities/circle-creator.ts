@@ -71,51 +71,5 @@ export type CreatorType = z.infer<typeof CreatorTypeSchema>;
 export type CreatorWorkMapping = z.infer<typeof CreatorWorkMappingSchema>;
 export type CreatorPageInfo = z.infer<typeof CreatorPageInfoSchema>;
 
-// 日本語ラベルマッピング
-export const CREATOR_TYPE_LABELS: Record<CreatorType, string> = {
-	voice: "声優",
-	illustration: "イラスト",
-	scenario: "シナリオ",
-	music: "音楽",
-	other: "その他",
-} as const;
-
-/**
- * クリエイタータイプのラベルを取得
- * @param types クリエイタータイプの配列
- * @returns 日本語ラベルの文字列（複数の場合は " / " で結合）
- */
-export function getCreatorTypeLabel(types: string[]): string {
-	if (types.length === 0) {
-		return "";
-	}
-	if (types.length === 1) {
-		const label = CREATOR_TYPE_LABELS[types[0] as CreatorType];
-		return label ?? types[0];
-	}
-	return types
-		.map((type) => {
-			const label = CREATOR_TYPE_LABELS[type as CreatorType];
-			return label ?? type;
-		})
-		.join(" / ");
-}
-
-// 検証用ユーティリティ
-/**
- * サークルIDの形式を検証
- * @param circleId 検証対象のサークルID
- * @returns 有効なサークルIDかどうか
- */
-export function isValidCircleId(circleId: string): boolean {
-	return /^RG\d+$/.test(circleId);
-}
-
-/**
- * クリエイターIDの形式を検証
- * @param creatorId 検証対象のクリエイターID
- * @returns 有効なクリエイターIDかどうか
- */
-export function isValidCreatorId(creatorId: string): boolean {
-	return creatorId.length > 0;
-}
+// Pure helpers (CREATOR_TYPE_LABELS, getCreatorTypeLabel, isValidCircleId, isValidCreatorId)
+// have been moved to ../utilities/creator-helpers to avoid pulling Zod into client bundles.
