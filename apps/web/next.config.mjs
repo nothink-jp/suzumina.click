@@ -257,11 +257,17 @@ const nextConfig = {
 				],
 			},
 			{
+				// ホームページ: PPR 動的セクションの鮮度確保 (SLA < 1 分) のため短めの TTL。
+				// Cloudflare 側 Cache Rule (terraform/cloudflare.tf) と同じ 60 秒に揃える。
+				// stale-while-revalidate は付けない:
+				//   - Cloudflare の Cache Rule では解釈されない (edge_ttl で別途指定済み)
+				//   - max-age がないためブラウザでも実質効かない
+				// CDN/ブラウザどちらにも明確に「60 秒で fresh、超過後は origin に問い合わせ」を伝える
 				source: "/",
 				headers: [
 					{
 						key: "Cache-Control",
-						value: "public, s-maxage=300, stale-while-revalidate=600",
+						value: "public, s-maxage=60",
 					},
 				],
 			},
