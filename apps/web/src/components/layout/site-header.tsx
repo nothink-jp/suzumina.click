@@ -52,11 +52,12 @@ export default function SiteHeader() {
 							</NavigationMenuList>
 						</NavigationMenu>
 
-						{/* 認証関連: auth() 解決を待つ間は同サイズのプレースホルダーを表示し、
-							ヘッダー全体の高さは固定する。Suspense 境界をここに限定することで、
-							ヘッダーのレイアウト・ロゴ・ナビは即座に静的シェルとして配信される。 */}
-						<div className="flex items-center space-x-4">
-							<Suspense fallback={<SessionControlsFallback />}>
+						{/* 認証関連: wrapper の min-h で UserMenu (desktop ~52px) と
+							MobileMenu (mobile 44px) と同じ高さを常に確保する。これにより
+							Suspense リゾルブ前後でヘッダー全体の高さは変動せず CLS=0 を保てる。
+							fallback は枠確保不要なので null で十分。 */}
+						<div className="flex items-center space-x-4 min-h-[44px] md:min-h-[52px]">
+							<Suspense fallback={null}>
 								<SessionAwareControls />
 							</Suspense>
 						</div>
@@ -78,20 +79,6 @@ async function SessionAwareControls() {
 
 			{/* モバイルメニュー */}
 			<MobileMenu user={session?.user} />
-		</>
-	);
-}
-
-/**
- * SessionAwareControls の fallback。
- * AuthButton (desktop, h-10/w-32 相当) と MobileMenu button (mobile, h-11/w-11) と
- * 同じ占有面積のプレースホルダー枠で、Suspense リゾルブ時の CLS を防ぐ。
- */
-function SessionControlsFallback() {
-	return (
-		<>
-			<div className="hidden md:flex h-10 w-32" aria-hidden />
-			<div className="md:hidden h-11 w-11" aria-hidden />
 		</>
 	);
 }
