@@ -3,6 +3,7 @@
 	"version": "0.3.12",
 	"description": "涼花みなせウェブサイト用の共有型定義",
 	"private": true,
+	"sideEffects": false,
 	"exports": {
 		".": {
 			"types": "./src/index.ts",
