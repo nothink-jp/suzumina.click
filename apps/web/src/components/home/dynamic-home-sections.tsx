@@ -45,10 +45,7 @@ function AudioButtonsSectionHeader() {
  */
 export function AudioButtonsSectionSkeleton() {
 	return (
-		<section
-			className="py-8 sm:py-12 bg-background"
-			style={{ contentVisibility: "auto", containIntrinsicSize: "320px" }}
-		>
+		<section className="py-8 sm:py-12 bg-background">
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 				<AudioButtonsSectionHeader />
 				<LoadingSkeleton variant="carousel" height={280} />
@@ -62,10 +59,7 @@ export async function AudioButtonsSection() {
 	const audioButtons = await getLatestAudioButtons(10);
 
 	return (
-		<section
-			className="py-8 sm:py-12 bg-background"
-			style={{ contentVisibility: "auto", containIntrinsicSize: "320px" }}
-		>
+		<section className="py-8 sm:py-12 bg-background">
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 				<AudioButtonsSectionHeader />
 				<Suspense fallback={<LoadingSkeleton variant="carousel" height={280} />}>
@@ -94,10 +88,7 @@ export async function WorksSectionAsync() {
 /** コミュニティ CTA は完全静的。データ取得なし。 */
 export function CommunitySection() {
 	return (
-		<section
-			className="py-8 sm:py-12 bg-suzuka-100"
-			style={{ contentVisibility: "auto", containIntrinsicSize: "260px" }}
-		>
+		<section className="py-8 sm:py-12 bg-suzuka-100">
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="text-center mb-6 sm:mb-8">
 					<h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 sm:mb-4">
