@@ -14,15 +14,10 @@ import { lazy } from "react";
 // 画面外のカルーセルコンポーネントを遅延読み込み
 // LCP改善: サーバーコンポーネントではなくクライアントコンポーネントを直接使用
 // ユーザー状態（いいね・低評価・お気に入り）はクライアントサイドで非同期取得
-export const LazyFeaturedAudioButtonsCarousel = dynamic(
-	() =>
-		import("@/components/audio/featured-audio-buttons-carousel").then(
-			(module) => module.FeaturedAudioButtonsCarousel,
-		),
-	{
-		loading: () => <LoadingSkeleton variant="carousel" height={280} />,
-	},
-);
+//
+// 注: FeaturedAudioButtonsCarousel は SPR-71 Workstream C で初期 bundle から完全に
+// 除外するため `audio-buttons-carousel-deferred.tsx` (React.lazy + mounted gate) に
+// 移行済み。本ファイルには定義しない。
 
 export const LazyFeaturedVideosCarousel = dynamic(
 	() =>
