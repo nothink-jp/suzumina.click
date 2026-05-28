@@ -27,37 +27,33 @@ export async function getCreators(params: {
 		// 全クリエイターを取得
 		const creatorsSnapshot = await firestore.collection("creators").get();
 
-		// CreatorPageInfoに変換
-		const allCreators: CreatorPageInfo[] = [];
+		// 各クリエイターの works サブコレクションを並列取得して N+1 直列待ちを回避
+		const allCreators: CreatorPageInfo[] = await Promise.all(
+			creatorsSnapshot.docs.map(async (doc) => {
+				const creatorData = doc.data() as CreatorDocument;
+				const worksSnapshot = await doc.ref.collection("works").get();
 
-		for (const doc of creatorsSnapshot.docs) {
-			const creatorData = doc.data() as CreatorDocument;
-
-			// worksサブコレクションから作品数と役割を取得
-			const worksSnapshot = await doc.ref.collection("works").get();
-
-			const allTypes = new Set<string>();
-			worksSnapshot.docs.forEach((workDoc) => {
-				const workRelation = workDoc.data() as CreatorWorkRelation;
-				workRelation.roles?.forEach((r) => {
-					allTypes.add(r);
+				const allTypes = new Set<string>();
+				worksSnapshot.docs.forEach((workDoc) => {
+					const workRelation = workDoc.data() as CreatorWorkRelation;
+					workRelation.roles?.forEach((r) => {
+						allTypes.add(r);
+					});
 				});
-			});
 
-			// primaryRoleが設定されていて、typesに含まれていない場合は追加
-			if (creatorData.primaryRole && !allTypes.has(creatorData.primaryRole)) {
-				allTypes.add(creatorData.primaryRole);
-			}
+				// primaryRoleが設定されていて、typesに含まれていない場合は追加
+				if (creatorData.primaryRole && !allTypes.has(creatorData.primaryRole)) {
+					allTypes.add(creatorData.primaryRole);
+				}
 
-			const creatorInfo: CreatorPageInfo = {
-				id: creatorData.creatorId,
-				name: creatorData.name,
-				types: Array.from(allTypes),
-				workCount: worksSnapshot.size,
-			};
-
-			allCreators.push(creatorInfo);
-		}
+				return {
+					id: creatorData.creatorId,
+					name: creatorData.name,
+					types: Array.from(allTypes),
+					workCount: worksSnapshot.size,
+				} satisfies CreatorPageInfo;
+			}),
+		);
 
 		// 役割でフィルタリング
 		let filteredCreators = allCreators;
