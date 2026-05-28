@@ -176,6 +176,22 @@ export async function runWeeklyReport(): Promise<void> {
 }
 
 /**
+ * Creator 集計フィールドの backfill (SPR-74 Phase B 移行用)
+ */
+export async function backfillCreators(): Promise<void> {
+	try {
+		logger.info("🔄 クリエイター集計 backfill 開始");
+		const { backfillCreatorStats } = await import("./backfill-creator-stats.js");
+		await backfillCreatorStats();
+	} catch (error) {
+		logger.error("クリエイター集計 backfill エラー:", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+		throw error;
+	}
+}
+
+/**
  * リセットツール（メタデータリセット）
  */
 export async function resetMetadata(): Promise<void> {
@@ -203,14 +219,16 @@ DLsite Functions 運用ツール
   pnpm tools:<command>
 
 コマンド:
-  stats   失敗統計を表示
-  report  週次健全性レポートを生成
-  reset   メタデータをリセット
-  help    このヘルプを表示
+  stats              失敗統計を表示
+  report             週次健全性レポートを生成
+  reset              メタデータをリセット
+  backfill-creators  Creator workCount/types を一括再計算 (SPR-74 Phase B)
+  help               このヘルプを表示
 
 例:
   pnpm tools:stats
   pnpm tools:report
+  pnpm tools:backfill-creators
 `;
 	process.stdout.write(helpText);
 }
@@ -229,6 +247,9 @@ if (require.main === module) {
 				break;
 			case "reset":
 				await resetMetadata();
+				break;
+			case "backfill-creators":
+				await backfillCreators();
 				break;
 			case "help":
 			case "--help":

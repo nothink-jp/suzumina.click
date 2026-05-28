@@ -34,10 +34,25 @@ async function fetchCreators(params: GetCreatorsParams): Promise<GetCreatorsResu
 		// 全クリエイターを取得
 		const creatorsSnapshot = await firestore.collection("creators").get();
 
-		// 各クリエイターの works サブコレクションを並列取得して N+1 直列待ちを回避
+		// SPR-74 Phase B: denormalized な workCount/types があれば subcollection 読み込みを省略。
+		// backfill 未完了の旧データは fallback で従来の Promise.all 並列読みに退避する。
 		const allCreators: CreatorPageInfo[] = await Promise.all(
 			creatorsSnapshot.docs.map(async (doc) => {
 				const creatorData = doc.data() as CreatorDocument;
+
+				if (typeof creatorData.workCount === "number" && Array.isArray(creatorData.types)) {
+					const allTypes = new Set<string>(creatorData.types);
+					if (creatorData.primaryRole && !allTypes.has(creatorData.primaryRole)) {
+						allTypes.add(creatorData.primaryRole);
+					}
+					return {
+						id: creatorData.creatorId,
+						name: creatorData.name,
+						types: Array.from(allTypes),
+						workCount: creatorData.workCount,
+					} satisfies CreatorPageInfo;
+				}
+
 				const worksSnapshot = await doc.ref.collection("works").get();
 
 				const allTypes = new Set<string>();
@@ -48,7 +63,6 @@ async function fetchCreators(params: GetCreatorsParams): Promise<GetCreatorsResu
 					});
 				});
 
-				// primaryRoleが設定されていて、typesに含まれていない場合は追加
 				if (creatorData.primaryRole && !allTypes.has(creatorData.primaryRole)) {
 					allTypes.add(creatorData.primaryRole);
 				}
