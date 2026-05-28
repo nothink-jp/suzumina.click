@@ -5,20 +5,27 @@ import type {
 	CreatorPageInfo,
 	CreatorWorkRelation,
 } from "@suzumina.click/shared-types";
+import { unstable_cache } from "next/cache";
 import { getFirestore } from "@/lib/firestore";
 
 /**
- * クリエイター一覧を取得（ConfigurableList用）
- * @param params パラメータ
- * @returns クリエイター一覧と総件数
+ * /creators の Firestore 読み込みを 60s revalidate でキャッシュ (SPR-74 Phase A)。
+ * writes は 2h ごとの DLsite 同期のみで低頻度のため鮮度問題なし。
+ * params (page/limit/sort/search/role) は unstable_cache が自動でキー化する。
  */
-export async function getCreators(params: {
+const CREATORS_REVALIDATE_SECONDS = 60;
+
+type GetCreatorsParams = {
 	page?: number;
 	limit?: number;
 	sort?: string;
 	search?: string;
 	role?: string;
-}): Promise<{ creators: CreatorPageInfo[]; totalCount: number }> {
+};
+
+type GetCreatorsResult = { creators: CreatorPageInfo[]; totalCount: number };
+
+async function fetchCreators(params: GetCreatorsParams): Promise<GetCreatorsResult> {
 	const { page = 1, limit = 12, sort = "name", search, role } = params;
 
 	try {
@@ -110,4 +117,18 @@ export async function getCreators(params: {
 		// エラー発生時は空配列を返す
 		return { creators: [], totalCount: 0 };
 	}
+}
+
+const getCreatorsCached = unstable_cache(fetchCreators, ["creators-list"], {
+	revalidate: CREATORS_REVALIDATE_SECONDS,
+	tags: ["creators-list"],
+});
+
+/**
+ * クリエイター一覧を取得（ConfigurableList用）
+ * @param params パラメータ
+ * @returns クリエイター一覧と総件数
+ */
+export async function getCreators(params: GetCreatorsParams): Promise<GetCreatorsResult> {
+	return getCreatorsCached(params);
 }
