@@ -221,6 +221,20 @@ export async function updateCreatorWorkMapping(
 			});
 		}
 
+		// SPR-74 Phase B: 影響を受けたクリエイターの workCount/types/primaryRole を再計算。
+		// マッピングの batch.commit は成功しているので、失敗しても処理結果は success のまま。
+		const affectedCreators = new Set<string>([
+			...processedCreators,
+			...Array.from(existingMappings.keys()),
+		]);
+		const results = await Promise.allSettled(
+			Array.from(affectedCreators).map((creatorId) => recomputeCreatorStats(creatorId)),
+		);
+		const failed = results.filter((r) => r.status === "rejected").length;
+		if (failed > 0) {
+			logger.warn(`クリエイター集計再計算で ${failed} 件失敗`, { workId });
+		}
+
 		return { success: true };
 	} catch (error) {
 		logger.error(`クリエイターマッピング更新エラー: ${workId}`, {
@@ -291,6 +305,63 @@ export async function getCreatorWorkCount(creatorId: string): Promise<number> {
 		});
 		return 0;
 	}
+}
+
+/**
+ * クリエイターの集計フィールド（workCount / types / primaryRole）を
+ * works サブコレクションから再計算して creator doc に書き戻す。
+ *
+ * SPR-74 Phase B で導入。/creators の読み込みパスがこれらの denormalized
+ * フィールドを使うため、書き込み時に必ず同期する必要がある。
+ *
+ * @param creatorId クリエイターID
+ */
+export async function recomputeCreatorStats(creatorId: string): Promise<void> {
+	const worksSnapshot = await firestore
+		.collection(CREATORS_COLLECTION)
+		.doc(creatorId)
+		.collection("works")
+		.get();
+
+	if (worksSnapshot.empty) {
+		await firestore.collection(CREATORS_COLLECTION).doc(creatorId).update({
+			workCount: 0,
+			types: [],
+			updatedAt: Timestamp.now(),
+		});
+		return;
+	}
+
+	const typesSet = new Set<CreatorType>();
+	const roleCount = new Map<CreatorType, number>();
+
+	worksSnapshot.docs.forEach((doc) => {
+		const relation = doc.data() as CreatorWorkRelation;
+		relation.roles?.forEach((role: CreatorType) => {
+			typesSet.add(role);
+			roleCount.set(role, (roleCount.get(role) || 0) + 1);
+		});
+	});
+
+	let primaryRole: CreatorType | undefined;
+	let maxCount = 0;
+	for (const [role, count] of roleCount) {
+		if (count > maxCount) {
+			maxCount = count;
+			primaryRole = role;
+		}
+	}
+
+	const update: Record<string, unknown> = {
+		workCount: worksSnapshot.size,
+		types: Array.from(typesSet),
+		updatedAt: Timestamp.now(),
+	};
+	if (primaryRole) {
+		update.primaryRole = primaryRole;
+	}
+
+	await firestore.collection(CREATORS_COLLECTION).doc(creatorId).update(update);
 }
 
 /**

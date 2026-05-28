@@ -30,6 +30,20 @@ export interface CreatorDocument {
 
 	/** 更新日時 */
 	updatedAt: Timestamp;
+
+	/**
+	 * 作品数（works サブコレクションのサイズを denormalize）。
+	 * SPR-74 Phase B で導入。recomputeCreatorStats / backfill で同期される。
+	 * 旧データには未設定のため optional。
+	 */
+	workCount?: number;
+
+	/**
+	 * このクリエイターが関わるすべての役割（works サブコレクションから集約）。
+	 * SPR-74 Phase B で導入。recomputeCreatorStats / backfill で同期される。
+	 * 旧データには未設定のため optional。
+	 */
+	types?: CreatorType[];
 }
 
 /**

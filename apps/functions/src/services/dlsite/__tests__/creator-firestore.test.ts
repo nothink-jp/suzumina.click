@@ -12,6 +12,7 @@ import * as logger from "../../../shared/logger";
 import {
 	getCreatorWithWorks,
 	getCreatorWorkCount,
+	recomputeCreatorStats,
 	removeCreatorMappings,
 	updateCreatorPrimaryRole,
 	updateCreatorWorkMapping,
@@ -468,6 +469,46 @@ describe("creator-firestore", () => {
 
 			expect(result.creator).toBeNull();
 			expect(result.works).toEqual([]);
+		});
+	});
+
+	describe("recomputeCreatorStats", () => {
+		it("works から workCount/types/primaryRole を計算して update する", async () => {
+			mockGet.mockResolvedValueOnce({
+				empty: false,
+				size: 3,
+				docs: [
+					{ data: () => ({ workId: "RJ001", roles: ["voice"] }) },
+					{ data: () => ({ workId: "RJ002", roles: ["voice", "other"] }) },
+					{ data: () => ({ workId: "RJ003", roles: ["illustration"] }) },
+				],
+			});
+
+			await recomputeCreatorStats("VA001");
+
+			expect(mockUpdate).toHaveBeenCalledTimes(1);
+			const updateArg = mockUpdate.mock.calls[0]?.[0] as Record<string, unknown>;
+			expect(updateArg.workCount).toBe(3);
+			expect(new Set(updateArg.types as string[])).toEqual(
+				new Set(["voice", "other", "illustration"]),
+			);
+			expect(updateArg.primaryRole).toBe("voice");
+		});
+
+		it("works が空の場合は workCount=0, types=[] で update する", async () => {
+			mockGet.mockResolvedValueOnce({
+				empty: true,
+				size: 0,
+				docs: [],
+			});
+
+			await recomputeCreatorStats("VA001");
+
+			expect(mockUpdate).toHaveBeenCalledTimes(1);
+			const updateArg = mockUpdate.mock.calls[0]?.[0] as Record<string, unknown>;
+			expect(updateArg.workCount).toBe(0);
+			expect(updateArg.types).toEqual([]);
+			expect(updateArg.primaryRole).toBeUndefined();
 		});
 	});
 });
