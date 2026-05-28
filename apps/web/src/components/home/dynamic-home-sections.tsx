@@ -1,5 +1,6 @@
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import { Button } from "@suzumina.click/ui/components/ui/button";
+import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -13,7 +14,31 @@ import { WorksSection } from "@/components/sections/works-section";
  * `await connection()` は Firestore SDK 内部の同期的なランダム値参照を
  * Cache Components の build-time prerender が検出してしまうのを回避するため、
  * 「このコンポーネントはリクエスト時に動的レンダリングする」ことを明示する。
+ *
+ * Firestore 取得は unstable_cache で 60s revalidate し、Suspense 解決時間を
+ * 短縮することで Chrome の LCP element render delay を抑制する (SPR-71 Workstream B)。
+ * Cache TTL は next.config.mjs の `/` の Cache-Control: public, s-maxage=60 と整合。
  */
+
+const HOME_REVALIDATE_SECONDS = 60;
+
+const getCachedLatestAudioButtons = unstable_cache(
+	async () => getLatestAudioButtons(10),
+	["home-latest-audio-buttons"],
+	{ revalidate: HOME_REVALIDATE_SECONDS, tags: ["home-audio-buttons"] },
+);
+
+const getCachedLatestVideos = unstable_cache(
+	async () => getLatestVideos(10),
+	["home-latest-videos"],
+	{ revalidate: HOME_REVALIDATE_SECONDS, tags: ["home-videos"] },
+);
+
+const getCachedLatestWorks = unstable_cache(
+	async (excludeR18: boolean) => getLatestWorks(10, excludeR18),
+	["home-latest-works"],
+	{ revalidate: HOME_REVALIDATE_SECONDS, tags: ["home-works"] },
+);
 
 /**
  * セクション共通の header DOM。
@@ -56,7 +81,7 @@ export function AudioButtonsSectionSkeleton() {
 
 export async function AudioButtonsSection() {
 	await connection();
-	const audioButtons = await getLatestAudioButtons(10);
+	const audioButtons = await getCachedLatestAudioButtons();
 
 	return (
 		<section className="py-8 sm:py-12 bg-background">
@@ -72,15 +97,15 @@ export async function AudioButtonsSection() {
 
 export async function VideosSectionAsync() {
 	await connection();
-	const videos = await getLatestVideos(10);
+	const videos = await getCachedLatestVideos();
 	return <VideosSection videos={videos} loading={false} error={null} />;
 }
 
 export async function WorksSectionAsync() {
 	await connection();
 	const [works, allAgesWorks] = await Promise.all([
-		getLatestWorks(10, false),
-		getLatestWorks(10, true),
+		getCachedLatestWorks(false),
+		getCachedLatestWorks(true),
 	]);
 	return <WorksSection works={works} allAgesWorks={allAgesWorks} loading={false} error={null} />;
 }
