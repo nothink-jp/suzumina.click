@@ -36,12 +36,10 @@ export default function VideoList({ initialData }: VideoListProps) {
 	}, []);
 
 	// レンダリング設定
+	// 先頭 2 件のみ priority。6 件は preload 並列で帯域競合 + TBT regression
+	// リスクがあり、LCP element は実測上いつも先頭 1 件目のため過剰。
 	const renderItem = (video: VideoPlainObject, index: number) => (
-		<VideoCard
-			video={video}
-			variant="grid"
-			priority={index < 6} // 最初の6枚をLCP最適化
-		/>
+		<VideoCard video={video} variant="grid" priority={index < 2} />
 	);
 
 	return (
