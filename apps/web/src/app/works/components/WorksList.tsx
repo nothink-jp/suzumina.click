@@ -81,7 +81,10 @@ export default function WorksList({ initialData }: WorksListProps) {
 			<ConfigurableList<WorkPlainObject>
 				items={initialItems}
 				initialTotal={initialTotal}
-				renderItem={(work, index) => <WorkListItem work={work} priority={index < 6} />}
+				// 先頭 2 件のみ priority。PR #439 で <6 を試したが /works の DLsite
+				// 画像 (~250x250) は decode コストが高く、6 並列で TBT +210ms regression
+				// (SPR-9 / 2026-05-28 PSI 3 サンプル中央値で確認) したため縮小。
+				renderItem={(work, index) => <WorkListItem work={work} priority={index < 2} />}
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
 				{...DEFAULT_LIST_PROPS}
