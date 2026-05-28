@@ -3,9 +3,8 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import { connection } from "next/server";
-import { Suspense } from "react";
 import { getLatestAudioButtons, getLatestVideos, getLatestWorks } from "@/app/actions";
-import { LazyFeaturedAudioButtonsCarousel } from "@/components/optimization/lazy-components";
+import { AudioButtonsCarouselDeferred } from "@/components/home/audio-buttons-carousel-deferred";
 import { VideosSection } from "@/components/sections/videos-section";
 import { WorksSection } from "@/components/sections/works-section";
 
@@ -87,9 +86,7 @@ export async function AudioButtonsSection() {
 		<section className="py-8 sm:py-12 bg-background">
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 				<AudioButtonsSectionHeader />
-				<Suspense fallback={<LoadingSkeleton variant="carousel" height={280} />}>
-					<LazyFeaturedAudioButtonsCarousel audioButtons={audioButtons} />
-				</Suspense>
+				<AudioButtonsCarouselDeferred audioButtons={audioButtons} />
 			</div>
 		</section>
 	);
