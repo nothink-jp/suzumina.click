@@ -109,6 +109,10 @@ const ThumbnailImage = memo(function ThumbnailImage({
 				alt={alt}
 				fill
 				priority={priority}
+				// Next.js 16 では `priority` は preload + eager の発行までで、
+				// `fetchpriority="high"` 属性は自動付与しない。LCP 画像として
+				// 明示的にブラウザへ優先度を伝えるため `fetchPriority` を渡す。
+				fetchPriority={priority ? "high" : undefined}
 				sizes={sizes}
 				loading={priority ? "eager" : loading}
 				quality={quality}
