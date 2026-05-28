@@ -33,15 +33,26 @@ resource "google_cloud_scheduler_job" "fetch_youtube_videos_hourly" {
 # ==============================================================================
 # Cloud Runウォームアップスケジューラー
 # ==============================================================================
-# 目的: コールドスタートを防ぐために定期的にヘルスチェックエンドポイントを呼び出す
+# 目的:
+#   1. コールドスタートを防ぐために定期的にエンドポイントを呼び出す
+#   2. Next.js App Router の SSR path (Server Components + Firestore unstable_cache)
+#      を実際に exercise し、V8 JIT を `/` route handler 側で warm に保つ
+#
+# `/api/health` ではなく `/` を ping する理由 (SPR-71 Workstream A):
+#   - /api/health は static JSON で Next.js app handler を warm にしない
+#   - PSI の warm sample で TTFB が間欠的に 1s 超に跳ねる現象 (sample #4) は、
+#     instance は生きているが `/` route の handler が deoptimize されている
+#     "JIT warmth degradation" が疑われたため、実 route を直接 ping する
+#   - 直 Cloud Run URL 経由なので Cloudflare CDN cache は bypass される
+#
 # 実行時間: 日中（8-20時）の5分ごと
-# コスト: 約50円/月
+# コスト: ~50円/月 (Firestore 取得は unstable_cache 60s でほぼ cache hit)
 # ==============================================================================
 resource "google_cloud_scheduler_job" "cloud_run_warmup" {
   project     = var.gcp_project_id
   region      = var.region
   name        = "cloud-run-warmup"
-  description = "Cloud Runのコールドスタートを防ぐためのウォームアップジョブ"
+  description = "Cloud Run のコールドスタート防止 + `/` route handler の JIT warmth 維持"
 
   # 日本時間8-20時の間、5分ごとに実行
   # この時間帯が主要なアクセス時間と想定
@@ -50,7 +61,8 @@ resource "google_cloud_scheduler_job" "cloud_run_warmup" {
 
   # HTTPターゲット設定
   http_target {
-    uri         = "${google_cloud_run_v2_service.nextjs_app.uri}/api/health"
+    # 実 SSR path (`/`) を ping することで Next.js handler の JIT を維持する
+    uri         = google_cloud_run_v2_service.nextjs_app.uri
     http_method = "GET"
 
     # タイムアウト設定
