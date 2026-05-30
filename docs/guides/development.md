@@ -1043,11 +1043,17 @@ docs: update api documentation
 
 ### 3. 実装後チェックリスト
 
-**必須項目（Git フック自動実行）**
+**コミット前に実行（必須）**
 
-- [ ] 包括チェック: `pnpm check` (Lint + フォーマット + 型チェック)
+- [ ] 包括チェック: `pnpm check` (Biome: Lint + フォーマット)
+- [ ] 型チェック: `pnpm typecheck`
 - [ ] テスト実行: `pnpm test`
 - [ ] ビルド確認: `pnpm build`
+
+**Git フック（Lefthook が自動実行）**
+
+- **pre-commit**: Biome 自動整形（`biome check --write`、staged ファイルのみ）+ secretlint（シークレット検出）
+- **pre-push**: 変更パッケージの型チェック（`typecheck-changed`）
 
 **品質状況**
 
