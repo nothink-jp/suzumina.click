@@ -7,13 +7,11 @@ import {
 	GoogleTagManager,
 	GoogleTagManagerNoscript,
 } from "@/components/analytics/google-tag-manager";
-import { PageViewTracker } from "@/components/analytics/page-view-tracker";
-import { AgeVerificationOverlay } from "@/components/consent/age-verification-overlay";
+import { AgeVerificationOverlayDeferred } from "@/components/consent/age-verification-overlay-deferred";
 import { ConsentModeScript } from "@/components/consent/consent-mode-script";
-import { CookieConsentBanner } from "@/components/consent/cookie-consent-banner";
 import SiteFooter from "@/components/layout/site-footer";
 import SiteHeader from "@/components/layout/site-header";
-import PerformanceMonitor from "@/components/system/performance-monitor";
+import { DeferredGlobalEffects } from "@/components/system/deferred-global-effects";
 import { SessionProvider } from "@/components/user/session-provider";
 import { AgeVerificationProvider } from "@/contexts/age-verification-context";
 
@@ -104,11 +102,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				<GoogleTagManagerNoscript />
 				<AgeVerificationProvider>
 					<SessionProvider>
-						<PerformanceMonitor />
-						{/* useSearchParams を含むため、static prerender 時の CSR bailout エラーを回避 */}
-						<Suspense fallback={null}>
-							<PageViewTracker />
-						</Suspense>
 						{/* SiteHeader 自体は静的シェル。auth() 解決は内部の Suspense 境界で局所化されている */}
 						<SiteHeader />
 						<main id="main-content" className="flex-1 min-h-screen">
@@ -122,9 +115,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 						</main>
 						<SiteFooter />
 						<Toaster />
-						<CookieConsentBanner />
+						{/* 非クリティカルな全ページ client 副作用/UI を hydration 後に遅延ロード (SPR-81 WS-A) */}
+						<DeferredGlobalEffects />
 					</SessionProvider>
-					<AgeVerificationOverlay />
+					<AgeVerificationOverlayDeferred />
 				</AgeVerificationProvider>
 			</body>
 		</html>
