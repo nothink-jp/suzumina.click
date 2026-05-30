@@ -208,7 +208,9 @@ export type DailyButtonLimit = {
 	guildChecked: boolean;
 };
 
-// Pure helper functions (SUZUMINA_GUILD_ID, getUserRoleLabel, createDiscordAvatarUrl,
-// resolveDisplayName, isValidGuildMember, formatRelativeTime, formatMemberSince)
-// have been moved to ../utilities/discord-helpers to keep this Zod-tainted module
-// out of client bundles when only helpers are needed.
+// Pure helper functions have been moved out of this Zod-tainted module to keep client
+// bundles Zod-free: createDiscordAvatarUrl → ../utilities/discord/avatar,
+// (SUZUMINA_GUILD_ID, isValidGuildMember) → ../utilities/discord/guild-membership,
+// resolveDisplayName → ../utilities/user/display-name,
+// getUserRoleLabel → ../utilities/user/role-label,
+// (formatRelativeTime, formatMemberSince) → ../utilities/formatters/relative-time.

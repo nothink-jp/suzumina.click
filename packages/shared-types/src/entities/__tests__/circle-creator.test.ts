@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-	CREATOR_TYPE_LABELS,
-	getCreatorTypeLabel,
-	isValidCircleId,
-	isValidCreatorId,
-} from "../../utilities/creator-helpers";
+import { CREATOR_TYPE_LABELS, getCreatorTypeLabel } from "../../utilities/creator/type-label";
+import { isValidCircleId, isValidCreatorId } from "../../utilities/validators/dlsite-ids";
 import {
 	CircleDataSchema,
 	CreatorPageInfoSchema,

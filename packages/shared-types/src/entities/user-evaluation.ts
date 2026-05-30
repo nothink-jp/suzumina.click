@@ -153,7 +153,7 @@ export const EvaluationStatsSchema = z.object({
 	recentEvaluations: z.array(UserWorkEvaluationSchema).max(10).default([]),
 });
 
-// CHARACTERISTIC_AXES constant moved to ../utilities/evaluation-helpers
+// CHARACTERISTIC_AXES constant moved to ../utilities/evaluation/characteristic-axes
 // to avoid pulling Zod into client bundles.
 
 // 型エクスポート
@@ -167,4 +167,4 @@ export type UserWorkEvaluation = z.infer<typeof UserWorkEvaluationSchema>;
 export type EvaluationStats = z.infer<typeof EvaluationStatsSchema>;
 
 // calculateCharacteristicAverage / calculateEvaluationStats moved to
-// ../utilities/evaluation-helpers (alongside CHARACTERISTIC_AXES).
+// ../utilities/evaluation/aggregator.

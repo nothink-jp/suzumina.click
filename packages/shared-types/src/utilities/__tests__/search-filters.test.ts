@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-	getActiveFilterDescriptions,
-	getDateRangeFromPreset,
-	hasActiveFilters,
-} from "../search-filter-helpers";
+import { getDateRangeFromPreset } from "../search/date-range-preset";
+import { getActiveFilterDescriptions } from "../search/filter-descriptors";
+import { hasActiveFilters } from "../search/filter-state";
 import { type UnifiedSearchFilters, UnifiedSearchFiltersSchema } from "../search-filters";
 
 describe("search-filters", () => {

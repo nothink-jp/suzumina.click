@@ -66,6 +66,7 @@ export type DateRangePreset = z.infer<typeof DateRangePresetSchema>;
 export type UnifiedSearchFilters = z.infer<typeof UnifiedSearchFiltersSchema>;
 export type FilterState = z.infer<typeof FilterStateSchema>;
 
-// Pure helpers (getDateRangeFromPreset, hasActiveFilters, getActiveFilterDescriptions)
-// have been moved to ./search-filter-helpers to keep this Zod-tainted module out of
-// client bundles when only helpers are needed.
+// Pure helpers have been moved out to keep this Zod-tainted module out of client bundles:
+// getDateRangeFromPreset → ./search/date-range-preset,
+// hasActiveFilters → ./search/filter-state,
+// getActiveFilterDescriptions → ./search/filter-descriptors.
