@@ -277,10 +277,38 @@ jobs:
       - name: Security audit
         run: pnpm audit --audit-level moderate
 
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    # シークレットはどのファイルにも混入しうるため、パスフィルタなしで全 PR を対象にする
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.16.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 検出時は非ゼロ終了で PR を fail させる（hard gate）
+      - name: Run secretlint
+        run: pnpm secretlint
+
   pr-summary:
     name: PR Summary
     runs-on: ubuntu-latest
-    needs: [changes, parallel-check, build-check, docker-build-check, security-check]
+    needs: [changes, parallel-check, build-check, docker-build-check, security-check, secret-scan]
     if: always()
     
     steps:
@@ -302,6 +330,7 @@ jobs:
           echo "- Build Verification: ${{ needs.build-check.result == 'success' && '✅ Passed' || needs.build-check.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Docker Build (web): ${{ needs.docker-build-check.result == 'success' && '✅ Passed' || needs.docker-build-check.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Check: ${{ needs.security-check.result == 'success' && '✅ Passed' || needs.security-check.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Secret Scan: ${{ needs.secret-scan.result == 'success' && '✅ Passed' || needs.secret-scan.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "### 💡 Optimization Benefits" >> $GITHUB_STEP_SUMMARY

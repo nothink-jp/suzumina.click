@@ -11,6 +11,12 @@ pre-commit:
       stage_fixed: true
       fail_text: "コード整形に失敗しました"
 
+    # シークレット混入チェック（検出時はコミットをブロック）
+    # secretlint はデフォルトで引数を glob 解釈するため、実パス列には --no-glob が必須
+    secretlint:
+      run: npx secretlint --no-glob {staged_files}
+      fail_text: "シークレットの混入を検出しました。コミットを中止します"
+
 pre-push:
   parallel: true  # 並列実行で高速化
   commands:
