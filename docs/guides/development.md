@@ -26,15 +26,17 @@ PORT=3001 pnpm --filter @suzumina.click/web dev
 
 ```bash
 # 📦 Setup
-pnpm install && pnpm --filter @suzumina.click/shared-types build
+pnpm install        # shared-types はソース直参照のためビルド不要
 gcloud auth application-default login
 
 # 🚀 Start development
 cd apps/web && pnpm dev
 
 # ✅ Quality checks (required before commit)
-pnpm check         # Lint + format + typecheck
-pnpm test          # Unit tests (980+ tests)
+pnpm check         # Biome: lint + format（--write で自動修正）
+pnpm typecheck     # 型チェック（tsc）
+pnpm test          # Unit tests (vitest)
+pnpm secretlint    # シークレット混入チェック
 
 # 🏗️ Production build
 pnpm build
@@ -44,20 +46,17 @@ pnpm test:coverage
 
 # 🎨 Storybook
 cd packages/ui && pnpm storybook
-
-# 🔧 Admin app
-cd apps/admin && pnpm dev
 ```
 
 ## 📋 概要
 
 suzumina.clickプロジェクトの開発ガイドライン、設計原則、コーディング規約、品質基準を定義します。  
 
-**技術スタック**: Next.js 15 App Router + TypeScript + Tailwind CSS v4 + Biome  
+**技術スタック**: Next.js 16 App Router + TypeScript + Tailwind CSS v4 + Biome 2.x（pnpm workspaces モノレポ）  
 **開発体制**: 個人開発・個人運用（本番環境のみ）  
-**バージョン**: v0.3.8 (Server Component最適化完了)  
-**テスト成果**: 980+件全通過・Entity/Value Objectアーキテクチャ移行・作品評価システム実装  
-**更新日**: 2025年7月28日
+**バージョン**: v0.3.12  
+**テスト成果**: Entity/Value Objectアーキテクチャ移行・作品評価システム実装  
+**更新日**: 2026年5月30日
 
 ## 🎯 核心設計原則 (優先度順)
 
@@ -274,7 +273,7 @@ components/
 - 適切なコメントの追加
 - 複雑なロジックの分割
 
-#### **8. Next.js 15準拠設計**
+#### **8. Next.js 16準拠設計**
 **原則**: Server Component/Client Component を適切に分離する
 
 - **Server Components**: データ取得・表示ロジック
@@ -793,7 +792,7 @@ packages/
 ├── ui/src/components/
 │   ├── alert-dialog.tsx         # kebab-case統一
 │   └── dropdown-menu.tsx
-└── eslint-config/               # パッケージ名もkebab-case
+└── typescript-config/           # パッケージ名もkebab-case
 ```
 
 #### **apps/ ディレクトリ**
@@ -1050,10 +1049,10 @@ docs: update api documentation
 - [ ] テスト実行: `pnpm test`
 - [ ] ビルド確認: `pnpm build`
 
-**品質状況（2025年6月現在）**
+**品質状況**
 
 - ✅ **Lint状態**: 全パッケージ 0エラー・0警告達成
-- ✅ **依存関係**: Biome 2.0.6、React 19等最新版
+- ✅ **依存関係**: Biome 2.4.x、React 19等最新版
 - ✅ **セキュリティ**: Firebase依存関係完全削除
 - ✅ **Git フック**: Lefthook による品質チェック自動化
 
@@ -1582,5 +1581,5 @@ graph LR
 
 ---
 
-**最終更新**: 2025年7月24日 (Entity/Value Object移行完了・インポートパス統一・Value Object活用例追加)  
-**次回レビュー予定**: 2026年1月24日
+**最終更新**: 2026年5月30日 (スタック・コマンド情報の最新化: Next.js 16 / v0.3.12 / pnpm -r / Biome 2.x / secretlint)  
+**次回レビュー予定**: 2026年11月30日
