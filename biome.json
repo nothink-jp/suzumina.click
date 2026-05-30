@@ -28,7 +28,8 @@
 			"!!**/.vitest",
 			"!!**/.cache",
 			"!!**/.turbo",
-			"!!**/terraform/.terraform"
+			"!!**/terraform/.terraform",
+			"!!**/.claude/worktrees"
 		],
 		"maxSize": 5242880
 	},

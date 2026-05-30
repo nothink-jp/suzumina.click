@@ -77,3 +77,6 @@ terraform/function-source-dummy.zip
 
 # secretlint (SARIF 出力)
 secretlint-results.sarif
+
+# Claude Code worktrees（各 worktree は独立チェックアウト / ADR-008）
+.claude/worktrees/

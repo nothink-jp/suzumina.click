@@ -1,0 +1,5 @@
+# gitignore された実行時ファイルを新規 worktree へ自動コピーする（逆 .gitignore 構文）。
+# Claude Code が worktree 作成時に読み取り、ここに列挙し かつ gitignore されたファイルのみコピーする。
+# 詳細: ADR-008 / https://code.claude.com/docs/en/worktrees
+apps/web/.env
+apps/web/.env.local
