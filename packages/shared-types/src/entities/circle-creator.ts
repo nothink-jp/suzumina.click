@@ -71,5 +71,6 @@ export type CreatorType = z.infer<typeof CreatorTypeSchema>;
 export type CreatorWorkMapping = z.infer<typeof CreatorWorkMappingSchema>;
 export type CreatorPageInfo = z.infer<typeof CreatorPageInfoSchema>;
 
-// Pure helpers (CREATOR_TYPE_LABELS, getCreatorTypeLabel, isValidCircleId, isValidCreatorId)
-// have been moved to ../utilities/creator-helpers to avoid pulling Zod into client bundles.
+// Pure helpers have been moved out to keep client bundles Zod-free:
+// (CREATOR_TYPE_LABELS, getCreatorTypeLabel) → ../utilities/creator/type-label,
+// (isValidCircleId, isValidCreatorId) → ../utilities/validators/dlsite-ids.

@@ -1,4 +1,4 @@
-import type { CreatorType } from "../entities/circle-creator";
+import type { CreatorType } from "../../entities/circle-creator";
 
 export const CREATOR_TYPE_LABELS: Record<CreatorType, string> = {
 	voice: "声優",
@@ -22,12 +22,4 @@ export function getCreatorTypeLabel(types: string[]): string {
 			return label ?? type;
 		})
 		.join(" / ");
-}
-
-export function isValidCircleId(circleId: string): boolean {
-	return /^RG\d+$/.test(circleId);
-}
-
-export function isValidCreatorId(creatorId: string): boolean {
-	return creatorId.length > 0;
 }

@@ -125,20 +125,36 @@ export * from "./utilities/age-rating";
 export * from "./utilities/circle-conversions";
 // 共通ユーティリティと型のエクスポート
 export * from "./utilities/common";
-// Zod-free helpers extracted from entities/circle-creator (creator type labels, ID validators)
-export * from "./utilities/creator-helpers";
-// Zod-free helpers extracted from entities/user (Discord avatar, display name, role labels)
-export * from "./utilities/discord-helpers";
-// Zod-free helpers extracted from entities/user-evaluation (characteristic axes, stats calc)
-export * from "./utilities/evaluation-helpers";
+// Creator type labels (extracted from entities/circle-creator)
+export * from "./utilities/creator/type-label";
+// Discord avatar URL builder (extracted from entities/user)
+export * from "./utilities/discord/avatar";
+// Discord guild membership check (extracted from entities/user)
+export * from "./utilities/discord/guild-membership";
+// Evaluation aggregation calc (extracted from entities/user-evaluation)
+export * from "./utilities/evaluation/aggregator";
+// Evaluation characteristic axes constant (extracted from entities/user-evaluation)
+export * from "./utilities/evaluation/characteristic-axes";
 // Firestore関連のユーティリティ
 export * from "./utilities/firestore-utils";
+// Relative time / member-since formatters (extracted from entities/user)
+export * from "./utilities/formatters/relative-time";
 // 価格履歴関連の型とスキーマのエクスポート
 export * from "./utilities/price-history";
-// Zod-free helpers extracted from utilities/search-filters (filter checks, description builders)
-export * from "./utilities/search-filter-helpers";
+// Search date-range preset → range (extracted from utilities/search-filters)
+export * from "./utilities/search/date-range-preset";
+// Search filter description builders (extracted from utilities/search-filters)
+export * from "./utilities/search/filter-descriptors";
+// Search filter state check (extracted from utilities/search-filters)
+export * from "./utilities/search/filter-state";
 // 検索フィルター関連の型とスキーマのエクスポート
 export * from "./utilities/search-filters";
+// User display name resolution (extracted from entities/user)
+export * from "./utilities/user/display-name";
+// User role label (extracted from entities/user)
+export * from "./utilities/user/role-label";
+// DLsite ID validators (extracted from entities/circle-creator)
+export * from "./utilities/validators/dlsite-ids";
 // Work変換ユーティリティのエクスポート
 export * from "./utilities/work-conversions";
 export { formatTimestamp, parseDurationToSeconds } from "./utils";
