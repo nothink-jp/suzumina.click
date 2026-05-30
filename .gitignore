@@ -74,3 +74,6 @@ service-account-key.json
 firebase-debug.log
 firestore-debug.log
 terraform/function-source-dummy.zip
+
+# secretlint (SARIF 出力)
+secretlint-results.sarif

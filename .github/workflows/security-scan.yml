@@ -148,13 +148,45 @@ jobs:
             trivy-output.txt
           retention-days: 7
 
+  secret-scan:
+    name: Secret Scan (SARIF)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.13.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # SARIF を必ず生成・アップロードするため、検出時もここでは fail させない
+      - name: Run secretlint (SARIF)
+        continue-on-error: true
+        run: pnpm secretlint:sarif
+
+      - name: Upload secretlint SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'secretlint-results.sarif'
+        continue-on-error: true
+
   # CodeQL Analysis - Disabled to avoid conflict with default setup
   # GitHub's default CodeQL setup is enabled in repository settings
   # This provides automatic security scanning without workflow conflicts
 
   security-summary:
     name: Security Summary
-    needs: [dependency-scan, container-scan]
+    needs: [dependency-scan, container-scan, secret-scan]
     runs-on: ubuntu-latest
     if: always()
     
@@ -175,6 +207,7 @@ jobs:
           echo "## Job Status" >> security-summary.md
           echo "- Dependency Scan: ${{ needs.dependency-scan.result }}" >> security-summary.md
           echo "- Container Scan: ${{ needs.container-scan.result }}" >> security-summary.md
+          echo "- Secret Scan: ${{ needs.secret-scan.result }}" >> security-summary.md
           echo "- CodeQL Analysis: Enabled via GitHub default setup" >> security-summary.md
           echo "" >> security-summary.md
           
