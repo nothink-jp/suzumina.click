@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@suzumina.click/ui/components/ui/card";
 import { AlertTriangle, Bug, HelpCircle, Lightbulb, MessageSquare } from "lucide-react";
 import type { Metadata } from "next";
-import { ContactForm } from "./components/ContactForm";
+import { ContactFormClient as ContactForm } from "./components/ContactFormClient";
 
 export const metadata: Metadata = {
 	title: "お問い合わせ",
