@@ -1,197 +1,91 @@
 # Git ワークフロー・ブランチ戦略
 
-suzumina.click プロジェクトのGit運用ガイド（Claude Code連携最適化）
+suzumina.click の Git 運用ガイド（Claude Code worktree 連携 / [ADR-008](../decisions/architecture/ADR-008-git-worktree-friendly-monorepo.md)）。
 
-## 🎯 Session Branch 戦略
+## 🎯 Worktree 戦略
 
-### 基本概念
-
-Claude Codeとの協働開発に最適化されたブランチ戦略。認知負荷最小で効率的な履歴管理を実現。
+Claude Code は各セッションを独立した git worktree（既定で `.claude/worktrees/<name>/`）で動かせる。worktree ごとにブランチと作業ディレクトリが分かれるため、複数タスクを衝突なく並行できる。
 
 ```text
-main ← session/YYYYMMDD-HHMM ← 開発作業
- ↓              ↓                ↓
-本番環境    セッション単位      Claude Code
-        履歴管理            作業ブランチ
+main ←── worktree-A（機能開発）
+     ←── worktree-B（バグ修正）   ← それぞれ独立した作業ディレクトリ + ブランチ
 ```
 
-### 📋 基本ワークフロー（4ステップ）
-
-#### 1. セッション開始
+### 基本ワークフロー
 
 ```bash
-./scripts/git-claude-start
-# → mainから最新取得 + session/YYYYMMDD-HHMM ブランチ作成・切り替え
-```
+# 1. worktree を作成して起動（Claude Code ネイティブ）
+claude --worktree feature-x
+#   → .claude/worktrees/feature-x/ に作成、ブランチ worktree-feature-x
+#   → SessionStart フックが mise trust + pnpm install を自動実行
+#   → .worktreeinclude に従い .env / .env.local を main から自動コピー
 
-#### 2. 開発作業指示
+# 2. 開発作業（Claude Code に指示）
 
-```text
-Claude Codeに対する指示例：
-「音声ボタンのお気に入り機能を追加して下さい」
-「管理者ダッシュボードのユーザー統計を修正して下さい」
-「TypeScriptエラーを修正して下さい」
-```
-
-#### 3. 品質確認
-
-```bash
-# Claude Code作業完了後、品質チェック実行
-pnpm check          # lint + typecheck + test
+# 3. 品質確認（コミット前に必須）
+pnpm check          # Biome lint + format（自動修正）
+pnpm typecheck      # 型チェック
+pnpm test           # ユニットテスト
 pnpm build          # ビルド確認
+
+# 4. PR 作成 → main へマージ
+gh pr create
 ```
 
-#### 4. セッション終了
+> main は ruleset で保護（squash マージのみ）。直接 push せず PR 経由でマージする。
+
+### 手動で worktree を作る場合
 
 ```bash
-./scripts/git-claude-done
-# → mainブランチに切り替え + マージ + セッションブランチ削除
-
-git push origin main
-# → リモートにpush（デプロイトリガー）
+git worktree add .claude/worktrees/feature-x -b feature-x
+cd .claude/worktrees/feature-x && claude
+#   → 初回セッションで bootstrap フックが依存インストールと .env コピーを補完
+git worktree remove .claude/worktrees/feature-x   # 後片付け
 ```
 
-## 🔧 実装機能
+自動初期化は `.claude/hooks/worktree-bootstrap.sh`（`.claude/settings.json` の SessionStart フックから起動）が担当し、`node_modules` の有無で冪等にガードされる。
 
-### Git Hooks 自動警告
-
-- mainブランチ直接push時に3秒警告
-- Session Branch戦略の推奨メッセージ表示
-
-### スクリプト詳細
-
-#### `./scripts/git-claude-start`
+### 複数 worktree を同時起動するとき
 
 ```bash
-#!/bin/bash
-# mainブランチから最新を取得
-git checkout main
-git pull origin main
-
-# セッションブランチ作成・切り替え
-session_name="session/$(date +%Y%m%d-%H%M)"
-git checkout -b "$session_name"
-
-echo "✅ Session branch created: $session_name"
-echo "🚀 Ready for Claude Code development"
-```
-
-#### `./scripts/git-claude-done`
-
-```bash
-#!/bin/bash
-# 現在のブランチ名を取得
-current_branch=$(git branch --show-current)
-
-# mainブランチに切り替え
-git checkout main
-
-# セッションブランチをマージ（--no-ff でマージコミット作成）
-git merge --no-ff "$current_branch"
-
-# セッションブランチを削除
-git branch -d "$current_branch"
-
-echo "✅ Session completed and merged to main"
-echo "💡 Don't forget: git push origin main"
+PORT=3001 pnpm --filter @suzumina.click/web dev   # next dev は PORT を尊重
 ```
 
 ## 📂 ブランチ命名規則
 
-### Session Branch (推奨)
-- **session/YYYYMMDD-HHMM**: Claude Codeセッション単位
-- 例: `session/20250705-1430`, `session/20250705-2100`
+- **worktree-[name]**: Claude Code worktree（`--worktree` で自動命名）
+- **feature/[task]**: 新機能
+- **fix/[task]**: バグ修正
+- **docs/[task]**: ドキュメント
+- **chore/[task]**: リファクタリング・設定変更
 
-### 機能ブランチ (必要時のみ)
-- **feature/[task]-YYYYMMDD-HHMM**: 新機能開発
-- **fix/[task]-YYYYMMDD-HHMM**: バグ修正
-- **docs/[task]-YYYYMMDD-HHMM**: ドキュメント更新
-- **chore/[task]-YYYYMMDD-HHMM**: その他（リファクタリング・設定変更）
+コミットは Conventional Commits（`feat:` / `fix:` / `docs:` / `refactor:` / `test:` / `chore:`）に従う。
 
-## ⚡ 高速化・最適化
+## ⚡ CI/CD 最適化
 
-### CI/CD最適化
-
-#### 問題
-- **過剰なデプロイトリガー**: packages配下の変更で全アプリがデプロイ
-- **冗長なテスト実行**: 各デプロイワークフローで同じテストを重複実行
-- **過度なセキュリティスキャン**: 個人開発には不要な毎日実行
-
-#### 解決策
-- **パス指定トリガー**: アプリ別変更検知
-- **共通テストワークフロー**: 重複削除
-- **軽量セキュリティ**: 必要最小限のスキャン
-
-### 軽量PR Workflow（任意）
-
-```bash
-# PR作成・確認（デプロイなし）
-git checkout -b review/feature-name
-git push origin review/feature-name
-# → GitHub PR作成（レビュー目的・デプロイトリガーなし）
-
-# マージ後セッション完了
-git checkout main
-git pull origin main
-git branch -d review/feature-name
-```
-
-## 🎯 Session Branch戦略の利点
-
-### 認知負荷最小化
-- ブランチ名を考える必要なし（タイムスタンプ自動生成）
-- 4ステップの単純なワークフロー
-- Claude Codeとの連携に最適
-
-### 履歴管理の改善
-- セッション単位での明確な履歴
-- ロールバックが容易
-- 作業内容の追跡可能
-
-### 運用効率化
-- 自動化スクリプトによる操作簡素化
-- 品質チェックの統合
-- デプロイタイミングの制御
-
-## 📊 効果測定
-
-### Before (mainブランチ直接開発)
-- 認知負荷: 高（ブランチ戦略なし）
-- 履歴管理: 困難（直接push）
-- ロールバック: 困難（コミット単位）
-
-### After (Session Branch戦略)
-- 認知負荷: 最小（4ステップ）
-- 履歴管理: 明確（セッション単位）
-- ロールバック: 容易（マージコミット単位）
+- **パス指定トリガー**: アプリ別に変更を検知し、必要なものだけデプロイ
+- **共通テストワークフロー**: 重複実行を削減
+- **軽量セキュリティ**: secretlint 等を必要最小限で実行
 
 ## 🚨 緊急時対応
 
-### Hot Fix (緊急修正)
+### Hotfix
 
 ```bash
-# mainブランチで直接修正（例外的）
-git checkout main
-# 緊急修正作業
-git add . && git commit -m "hotfix: 緊急修正"
-git push origin main
+git worktree add .claude/worktrees/hotfix -b fix/urgent
+cd .claude/worktrees/hotfix
+# 修正 → pnpm check → PR → squash マージ
 ```
 
 ### ロールバック
 
 ```bash
-# 前セッションの状態に戻す
-git revert -m 1 HEAD
-git push origin main
-
-# または特定コミットまで戻す
-git reset --hard <commit-hash>
-git push --force-with-lease origin main
+git revert <commit-hash>   # 履歴を残す安全な取り消し
+gh pr create               # revert も PR 経由でマージ
 ```
 
 ## 📚 関連ドキュメント
 
-- **[デプロイメントガイド](./DEPLOYMENT_GUIDE.md)** - CI/CD・本番デプロイ
-- **[開発ガイド](./DEVELOPMENT.md)** - 開発環境・品質基準
-- **[クイックリファレンス](./QUICK_REFERENCE.md)** - 日常的なコマンド
-- **[プロジェクト概要](../README.md)** - 全体構成・技術スタック
+- [開発ガイド](./development.md) - 開発環境・品質基準
+- [ADR-008: worktree フレンドリー化](../decisions/architecture/ADR-008-git-worktree-friendly-monorepo.md)
+- [プロジェクト概要](../../README.md) - 全体構成・技術スタック
