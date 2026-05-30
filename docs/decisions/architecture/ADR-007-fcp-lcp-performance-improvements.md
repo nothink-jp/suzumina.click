@@ -27,7 +27,7 @@
 | --- | --- | --- |
 | **PPR / Cache Components 採用** | `cacheComponents: true` を有効化。静的シェルを即時返却し、動的部（Firestore データ）を後から streaming。`connection()` で動的境界を明示 | SPR-4 |
 | **Cache-Control / unstable_cache 整合** | CDN の `s-maxage`/`stale-while-revalidate` と `unstable_cache` の revalidate を一致させ、エッジ + データキャッシュを二段で効かせる。auth ページは `private, no-store` | SPR-8, SPR-66 |
-| **third-party script を `lazyOnload`** | GTM/GA4 を `next/script strategy="lazyOnload"` 化し `load` 後ロードに。LCP を非ブロックに | SPR-5 |
+| **third-party script の遅延化** | SPR-5 で GTM/GA4 の script 遅延化 + preconnect を導入し、その後 `next/script strategy="lazyOnload"`（`load` 後ロード, PR #435）へ強化して LCP を非ブロックに | SPR-5, SPR-9 (#435) |
 | **AgeVerification を overlay 方式に** | 年齢確認をコンテンツブロッキングから **overlay（content 非ブロック）** へ変更。content を先に描画し overlay を後乗せ | SPR-7 |
 
 ### 3. データ取得層
@@ -98,5 +98,6 @@
 - 個別施策: SPR-2〜8, SPR-65, SPR-66, SPR-68〜70, SPR-72〜74, SPR-76
 - 調査: [SPR-21](https://linear.app/nothink/issue/SPR-21)（Next.js ベストプラクティスギャップ spike）
 - 保留: [SPR-82](https://linear.app/nothink/issue/SPR-82)（ConfigurableList server 描画化）
+- 関連（対象外）: [SPR-75](https://linear.app/nothink/issue/SPR-75)（Cloud Firestore Documents 設計見直し epic — SPR-71 に related だが perf-metric ではない別系統の設計 epic。本トラックの完了判定には含めない）
 - 関連 ADR: [ADR-003](ADR-003-firestore-query-optimization.md)（Firestore クエリ最適化）
 - 書籍: [Next.js の考え方](https://zenn.dev/akfm/books/nextjs-basic-principle)（akfm）
