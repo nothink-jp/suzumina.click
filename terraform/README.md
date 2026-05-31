@@ -73,6 +73,41 @@ gsutil rm gs://suzumina-click-tfstate/terraform/state/production.tflock
 sleep 30 && terraform apply
 ```
 
+#### 3. "Revision ... is not ready" / "Image '...web:<sha>' not found" (SPR-67)
+
+Cloud Run の image は **GitHub Actions（`deploy-web.yml`）が `gcloud run deploy` でデプロイ**し、
+Terraform は `data.google_cloud_run_v2_service.current` 経由で稼働中サービスの image を
+読み取って追従する（`terraform/cloud_run.tf`）。これにより state に古い image SHA は残らず、
+通常運用でこのエラーは発生しない。
+
+万一発生した場合（例: `-refresh=false` で apply した／state が長期間古いまま）の復旧:
+
+```bash
+# 1. state を実体に同期（最優先。これだけで解消することが多い）
+terraform apply -refresh-only
+
+# 2. 差分を確認してから適用
+terraform plan
+terraform apply
+```
+
+> ⚠️ `terraform apply -refresh=false` は state を古いままにし image 乖離を再発させるため使用しない。
+
+### 初回 apply / 災害復旧（サービス未作成）
+
+Cloud Run サービスがまだ存在しない状態では上記 data source が読めず `plan` が失敗する。
+その場合は **一度だけ** bootstrap モードで `:latest` 起動する:
+
+```bash
+# 1. サービスを :latest で新規作成
+terraform apply -var="cloud_run_bootstrap=true"
+
+# 2. GitHub Actions（Deploy Web）でアプリ image を本デプロイ
+
+# 3. 以降は通常運用（bootstrap=false がデフォルト）に戻す
+terraform plan
+```
+
 ### ログ確認方法
 ```bash
 # Cloud Storageのロックファイル確認
