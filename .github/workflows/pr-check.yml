@@ -94,72 +94,97 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       
-      # shared-types / ui は no-build（src を直接公開）のため事前ビルド不要
-      # 完全並列実行による品質チェック
+      # shared-types / ui は no-build（src を直接公開）のため事前ビルド不要。
+      # 変更されたパッケージごとに lint / typecheck / test を並列実行する。
+      # shared-types / ui はモノレポ全体の型の土台なので、変更時は依存先
+      # （web / functions）の typecheck も走らせて破壊的変更を検出する。
       - name: Run all quality checks in parallel
+        env:
+          WEB: ${{ needs.changes.outputs.web }}
+          FUNCTIONS: ${{ needs.changes.outputs.functions }}
+          SHARED_TYPES: ${{ needs.changes.outputs.shared-types }}
+          UI: ${{ needs.changes.outputs.ui }}
         run: |
+          # 各チェックは `pnpm ... | sed` のパイプで実行する。pipefail がないと
+          # pnpm 側の失敗が末尾の sed の終了コード 0 にマスクされて緑になるため、
+          # GitHub Actions のデフォルトと同じく明示的に有効化する。
+          set -eo pipefail
           echo "🧪 Running quality checks in parallel..."
-          
-          # 実行するチェックを管理
+
           declare -A checks
-          
-          # Web app checks
-          if [[ "${{ needs.changes.outputs.web }}" == "true" ]]; then
-            pnpm --filter @suzumina.click/web lint 2>&1 | sed 's/^/[web-lint] /' &
-            checks["web-lint"]=$!
-            
-            pnpm --filter @suzumina.click/web typecheck 2>&1 | sed 's/^/[web-typecheck] /' &
-            checks["web-typecheck"]=$!
-            
-            pnpm --filter @suzumina.click/web test --run --passWithNoTests 2>&1 | sed 's/^/[web-test] /' &
-            checks["web-test"]=$!
+
+          # <label> のチェックをバックグラウンドで起動し、PID を記録する。
+          run_check() {
+            local label="$1"; shift
+            "$@" 2>&1 | sed "s/^/[$label] /" &
+            checks["$label"]=$!
+          }
+
+          # --- web ---------------------------------------------------------
+          # web 変更時は web 自身を検査。web 未変更でも依存（shared-types / ui）が
+          # 変わったら typecheck だけ走らせ、破壊的変更を検出する。
+          if [[ "$WEB" == "true" ]]; then
+            run_check web-lint      pnpm --filter @suzumina.click/web lint
+            run_check web-typecheck pnpm --filter @suzumina.click/web typecheck
+            run_check web-test      pnpm --filter @suzumina.click/web test --run --passWithNoTests
+          elif [[ "$SHARED_TYPES" == "true" || "$UI" == "true" ]]; then
+            run_check web-typecheck pnpm --filter @suzumina.click/web typecheck
           fi
 
-          # Functions checks
-          if [[ "${{ needs.changes.outputs.functions }}" == "true" ]]; then
-            pnpm --filter @suzumina.click/functions build 2>&1 | sed 's/^/[functions-build] /' &
-            checks["functions-build"]=$!
-            
-            # ビルドの完了を待ってからlint/typecheck/testを実行
-            wait ${checks["functions-build"]}
-            build_result=$?
-            
-            if [ $build_result -eq 0 ]; then
+          # --- shared-types ------------------------------------------------
+          if [[ "$SHARED_TYPES" == "true" ]]; then
+            run_check shared-types-lint      pnpm --filter @suzumina.click/shared-types lint
+            run_check shared-types-typecheck pnpm --filter @suzumina.click/shared-types typecheck
+            run_check shared-types-test      pnpm --filter @suzumina.click/shared-types test
+          fi
+
+          # --- ui ----------------------------------------------------------
+          if [[ "$UI" == "true" ]]; then
+            run_check ui-lint      pnpm --filter @suzumina.click/ui lint
+            run_check ui-typecheck pnpm --filter @suzumina.click/ui typecheck
+            run_check ui-test      pnpm --filter @suzumina.click/ui test
+          fi
+
+          # --- functions ---------------------------------------------------
+          # functions は esbuild バンドルのため build を fail-fast ゲートにし、
+          # 成功後に lint / typecheck / test を並列起動する。functions 未変更でも
+          # shared-types が変わったら typecheck だけ走らせる（build 非依存）。
+          if [[ "$FUNCTIONS" == "true" ]]; then
+            if pnpm --filter @suzumina.click/functions build 2>&1 | sed 's/^/[functions-build] /'; then
               echo "✅ functions-build completed"
-              
-              pnpm --filter @suzumina.click/functions lint 2>&1 | sed 's/^/[functions-lint] /' &
-              checks["functions-lint"]=$!
-              
-              pnpm --filter @suzumina.click/functions typecheck 2>&1 | sed 's/^/[functions-typecheck] /' &
-              checks["functions-typecheck"]=$!
-              
-              pnpm --filter @suzumina.click/functions test --run 2>&1 | sed 's/^/[functions-test] /' &
-              checks["functions-test"]=$!
+              run_check functions-lint      pnpm --filter @suzumina.click/functions lint
+              run_check functions-typecheck pnpm --filter @suzumina.click/functions typecheck
+              run_check functions-test      pnpm --filter @suzumina.click/functions test --run
             else
               echo "❌ functions-build failed"
               exit 1
             fi
+          elif [[ "$SHARED_TYPES" == "true" ]]; then
+            run_check functions-typecheck pnpm --filter @suzumina.click/functions typecheck
           fi
-          
-          # 全チェックの完了を待つ
+
+          # --- 全チェックの完了を待ち、ひとつでも失敗したらジョブを fail させる ---
+          # 1 件も選ばれなければ「無検査で緑」になるので、ここで明示的に落とす。
+          if [[ ${#checks[@]} -eq 0 ]]; then
+            echo "⚠️ No quality checks were selected for the changed files"
+            exit 1
+          fi
+
           failed=false
-          for check_name in "${!checks[@]}"; do
-            if [[ $check_name != "functions-build" ]]; then  # already handled
-              if wait ${checks[$check_name]}; then
-                echo "✅ $check_name completed"
-              else
-                echo "❌ $check_name failed"
-                failed=true
-              fi
+          for label in "${!checks[@]}"; do
+            if wait "${checks[$label]}"; then
+              echo "✅ $label completed"
+            else
+              echo "❌ $label failed"
+              failed=true
             fi
           done
-          
+
           if $failed; then
             echo "❌ Some checks failed"
             exit 1
-          else
-            echo "🎉 All checks completed successfully"
           fi
+          echo "🎉 All checks completed successfully"
 
   build-check:
     name: Build Verification
