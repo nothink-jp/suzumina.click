@@ -34,7 +34,8 @@ cd apps/web && pnpm dev
 
 # ✅ Quality checks (required before commit)
 pnpm check         # Biome: lint + format（--write で自動修正）
-pnpm typecheck     # 型チェック（tsc）
+pnpm typecheck      # 型チェック（tsc, CI と同じ正のゲート）
+pnpm typecheck:fast # 型チェック（tsgo / ネイティブ版で高速・ローカル用）
 pnpm test          # Unit tests (vitest)
 pnpm secretlint    # シークレット混入チェック
 
@@ -1053,7 +1054,7 @@ docs: update api documentation
 **Git フック（Lefthook が自動実行）**
 
 - **pre-commit**: Biome 自動整形（`biome check --write`、staged ファイルのみ）+ secretlint（シークレット検出）
-- **pre-push**: 変更パッケージの型チェック（`typecheck-changed`）
+- **pre-push**: 変更パッケージの型チェック（`typecheck-changed`、tsgo で高速化。merge をブロックする正のゲートは CI の tsc）
 
 **品質状況**
 

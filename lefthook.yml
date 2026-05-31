@@ -35,4 +35,4 @@ pre-push:
           echo "▶ typecheck: $pkg"
           pnpm --filter "./$pkg" typecheck:fast
         done
-      fail_text: "変更パッケージの型チェックに失敗しました"
+      fail_text: "変更パッケージの型チェックに失敗しました（tsgo 未取得なら pnpm install を実行）"
