@@ -1,5 +1,5 @@
 # suzumina.click Web Application Dockerfile for Cloud Run
-# Optimized for Next.js 15 with advanced caching and monorepo structure
+# Optimized for Next.js with advanced caching and monorepo structure
 
 FROM node:24.16.0-alpine AS base
 RUN apk add --no-cache libc6-compat tini

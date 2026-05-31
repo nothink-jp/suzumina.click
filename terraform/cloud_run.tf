@@ -1,7 +1,7 @@
 /**
  * Cloud Run設定
  *
- * Next.js 15 App RouterアプリケーションをCloud Runにデプロイする設定
+ * Next.js App RouterアプリケーションをCloud Runにデプロイする設定
  */
 
 # Cloud Runサービス（全環境で有効）
@@ -12,7 +12,7 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
   name     = var.cloud_run_service_name
   location = var.region
 
-  description = "suzumina.click Next.js 15 Web Application"
+  description = "suzumina.click Next.js Web Application"
 
   labels = local.common_labels
 
