@@ -11,6 +11,7 @@
 		"secretlint:sarif": "secretlint --format @secretlint/secretlint-formatter-sarif --output secretlint-results.sarif \"**/*\"",
 		"typecheck": "pnpm -r typecheck",
 		"test": "pnpm -r test",
+		"verify": "pnpm lint && pnpm typecheck && pnpm test",
 		"test:coverage": "pnpm -r test:coverage",
 		"clean": "pnpm -r clean && rimraf node_modules/.cache coverage",
 		"clean:all": "pnpm clean && rimraf node_modules **/node_modules"

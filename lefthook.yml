@@ -25,12 +25,13 @@ pre-push:
     typecheck-changed:
       glob: "*.{ts,tsx}"
       run: |
-        # 変更ファイルが属するパッケージを特定して型チェック
-        for file in {staged_files}
-        do
-          if [[ $file == apps/* ]] || [[ $file == packages/* ]]; then
-            pkg_dir=$(echo $file | cut -d'/' -f1-2)
-            pnpm --filter "./$pkg_dir" typecheck 2>/dev/null || true
-          fi
+        set -e
+        # push 対象ファイルが属するパッケージを特定して型チェック（重複排除）
+        # `case` を $() 内に書くと sh(bash 互換) がパターンの ) を $( の閉じと誤認するため grep で抽出する
+        pkgs=$(printf "%s\n" {push_files} | grep -E "^(apps|packages)/" | cut -d/ -f1-2 | sort -u)
+        if [ -z "$pkgs" ]; then echo "型チェック対象のパッケージ変更なし"; exit 0; fi
+        for pkg in $pkgs; do
+          echo "▶ typecheck: $pkg"
+          pnpm --filter "./$pkg" typecheck
         done
-      fail_text: "変更ファイルの型チェックに失敗しました"
+      fail_text: "変更パッケージの型チェックに失敗しました"

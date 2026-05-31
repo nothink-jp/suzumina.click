@@ -17,9 +17,8 @@ For detailed project documentation, see [Documentation Index](docs/README.md).
 - NO automatic documentation generation (*.md, README, etc.)
 
 ### 3. TESTING REQUIREMENTS
-- **ALWAYS run tests after code changes**: `pnpm test`
-- **ALWAYS run linting**: `pnpm lint`
-- **ALWAYS run typecheck**: `pnpm typecheck`
+- **完了前に必ず `pnpm verify` を通す** - lint + typecheck + test を一括実行（ローカル pre-push / CI と同じ判定）。失敗時は非ゼロで停止する
+- 個別に確認したい場合のみ: `pnpm lint` / `pnpm typecheck` / `pnpm test`
 - **ALWAYS place test files in `__tests__` directories** - not co-located with source files
 
 ### 4. CODE QUALITY STANDARDS
@@ -80,7 +79,10 @@ For detailed project documentation, see [Documentation Index](docs/README.md).
 # Development
 pnpm --filter @suzumina.click/web dev
 
-# Testing
+# Verify (CI と同じ判定: lint + typecheck + test)
+pnpm verify
+
+# 個別実行
 pnpm test
 pnpm lint
 pnpm typecheck
