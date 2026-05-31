@@ -4,6 +4,36 @@
  * Next.js 15 App RouterアプリケーションをCloud Runにデプロイする設定
  */
 
+# 現在稼働中の Cloud Run サービスを参照し、GitHub Actions がデプロイした
+# 「実体の image」を読み取る（SPR-67 恒久対策）。
+#
+# 背景: GitHub Actions は `gcloud run deploy --image web:<sha>` で image を更新するが、
+# 以前は lifecycle.ignore_changes で image を無視していたため state に古い SHA が残り、
+# labels 等の差分契機で revision が新規作成されると、cleanup policy で既に削除済みの
+# image を参照して起動失敗していた（"Image ... not found"）。
+# この data source で実体の image を毎回読み取り resource に渡すことで、
+# Terraform 側の image を常に live へ追従させ、古い SHA が state に残らないようにする。
+#
+# 初回 apply / DR 時（サービス未作成）は var.cloud_run_bootstrap = true にして
+# data source の参照を無効化し、:latest で起動する。
+data "google_cloud_run_v2_service" "current" {
+  count = var.cloud_run_bootstrap ? 0 : 1
+
+  provider = google
+  name     = var.cloud_run_service_name
+  location = var.region
+}
+
+locals {
+  # 通常運用では live の image を踏襲し、bootstrap（count=0）時は :latest にフォールバックする。
+  # splat + one() で count=0 を null 化してフォールバックさせ、count=1 だが構造が想定外の
+  # 場合は黙殺せずエラーにする（try() のような握り潰しを避ける）。
+  cloud_run_image = coalesce(
+    one(data.google_cloud_run_v2_service.current[*].template[0].containers[0].image),
+    "${var.region}-docker.pkg.dev/${local.project_id}/${var.artifact_registry_repository_id}/web:latest"
+  )
+}
+
 # Cloud Runサービス（全環境で有効）
 resource "google_cloud_run_v2_service" "nextjs_app" {
 
@@ -30,8 +60,9 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
 
     # コンテナ設定
     containers {
-      # Artifact Registryのイメージを参照
-      image = "${var.region}-docker.pkg.dev/${local.project_id}/${var.artifact_registry_repository_id}/web:latest"
+      # 稼働中サービスの image を踏襲する（SPR-67: 古い SHA の混入防止）。
+      # 実体の追跡は data.google_cloud_run_v2_service.current 経由（local.cloud_run_image）。
+      image = local.cloud_run_image
 
       # リソース制限（環境別・コスト最適化）
       resources {
@@ -211,11 +242,12 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
 
-  # GitHub Actions からのデプロイとの競合を避けるため、
-  # 画像参照と環境変数は GitHub Actions が管理し、Terraform は無視する
+  # 環境変数は GitHub Actions の `gcloud run deploy --set-env-vars/--set-secrets` が
+  # 管理するため Terraform は無視する。
+  # image は ignore せず data source で live を追従する（SPR-67 恒久対策）。
+  # 注意: refresh を伴わない apply（-refresh=false）は state を古くするため使用しない。
   lifecycle {
     ignore_changes = [
-      template[0].containers[0].image,
       template[0].containers[0].env,
     ]
   }

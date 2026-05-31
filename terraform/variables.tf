@@ -79,6 +79,12 @@ variable "cloud_run_service_name" {
   default     = "suzumina-click-web"
 }
 
+variable "cloud_run_bootstrap" {
+  description = "初回 apply（サービス未作成）や DR 時に true。稼働中サービスの image を参照する data source を無効化し、:latest で起動する。通常運用では false。"
+  type        = bool
+  default     = false
+}
+
 # ==========================================================
 # 監視・アラート設定用変数
 # ==========================================================
