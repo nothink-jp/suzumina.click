@@ -95,7 +95,17 @@ resource "cloudflare_ruleset" "cache_rules" {
     enabled     = true
   }
 
-  # 3. Next.js 画像最適化エンドポイント: 1日キャッシュ
+  # 3. Next.js 画像最適化エンドポイント (/_next/image?url=...): 1日キャッシュ
+  #
+  # 注意1: パスは末尾スラッシュ無しの "/_next/image"。
+  #   /_next/image はクエリ string 型エンドポイント (/_next/image?url=...) のため
+  #   http.request.uri.path は "/_next/image"。"/_next/image/" だと starts_with が
+  #   false になりルールが一致せず、最適化画像がエッジ未キャッシュ (cf-cache-status: DYNAMIC) になる。
+  #   ※ rule #2 の "/_next/static/" は直後に必ずサブパスが続くため末尾スラッシュでも一致する。
+  # 注意2: optimizer は Accept で形式ネゴ (Vary: Accept → AVIF/WebP/JPEG を出し分け)。
+  #   Cloudflare は Accept-Encoding 以外の Vary をデフォルトで非キャッシュ扱いにするため、
+  #   cache_key に Accept を含めて「形式ごとに別エントリ」でキャッシュする。これが無いと
+  #   最初にキャッシュした形式 (例: AVIF) を非対応ブラウザにも返し、画像が壊れる。
   rules {
     action = "set_cache_settings"
     action_parameters {
@@ -108,9 +118,16 @@ resource "cloudflare_ruleset" "cache_rules" {
         mode    = "override_origin"
         default = 86400
       }
+      cache_key {
+        custom_key {
+          header {
+            include = ["accept"]
+          }
+        }
+      }
     }
-    expression  = "(starts_with(http.request.uri.path, \"/_next/image/\"))"
-    description = "Next.js 画像最適化: 1日キャッシュ"
+    expression  = "(starts_with(http.request.uri.path, \"/_next/image\"))"
+    description = "Next.js 画像最適化: 1日キャッシュ (Accept 変種対応)"
     enabled     = true
   }
 
