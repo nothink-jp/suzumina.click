@@ -24,7 +24,9 @@
 
 ## 技術スタック
 
-- **Frontend**: Next.js 15 + TypeScript + Tailwind CSS v4
+> 正確なバージョンは各パッケージの `package.json` を正とする（このドキュメントに版数を固定しない）。
+
+- **Frontend**: Next.js App Router + TypeScript + Tailwind CSS
 - **Backend**: Cloud Functions + Firestore
 - **Auth**: NextAuth.js + Discord OAuth
 - **Infrastructure**: Terraform + Google Cloud Platform

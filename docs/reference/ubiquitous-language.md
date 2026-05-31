@@ -223,7 +223,7 @@
 | 用語 | 定義 | 英語表記 | 技術スタック |
 |------|------|----------|-------------|
 | **Monorepo** | 複数アプリケーションを単一リポジトリで管理 | Monorepo | pnpm workspace |
-| **Server Actions** | Next.js 15のサーバーサイド処理機能 | Server Actions | フォーム処理・データ操作の主要手段 |
+| **Server Actions** | Next.jsのサーバーサイド処理機能 | Server Actions | フォーム処理・データ操作の主要手段 |
 | **Cloud Functions** | Google Cloudのサーバーレス関数実行環境 | Cloud Functions | バックエンドAPI・データ収集処理 |
 | **Firestore** | Googleのマネージドドキュメント型データベース | Cloud Firestore | メインデータストレージ |
 
