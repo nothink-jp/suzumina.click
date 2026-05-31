@@ -244,11 +244,15 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
 
   # 環境変数は GitHub Actions の `gcloud run deploy --set-env-vars/--set-secrets` が
   # 管理するため Terraform は無視する。
+  # client / client_version は gcloud run deploy が毎回付与する識別子メタデータで、
+  # Terraform config では未設定（null）。恒久的な "gcloud" -> null 差分を避けるため無視する。
   # image は ignore せず data source で live を追従する（SPR-67 恒久対策）。
   # 注意: refresh を伴わない apply（-refresh=false）は state を古くするため使用しない。
   lifecycle {
     ignore_changes = [
       template[0].containers[0].env,
+      client,
+      client_version,
     ]
   }
 
