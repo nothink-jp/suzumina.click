@@ -150,7 +150,7 @@ const nextConfig = {
 	// パフォーマンス最適化
 	compress: true,
 
-	// SWCコンパイラーはNext.js 15でデフォルト有効
+	// SWCコンパイラーはデフォルトで有効
 
 	// 静的最適化・プリロード設定
 	poweredByHeader: false,

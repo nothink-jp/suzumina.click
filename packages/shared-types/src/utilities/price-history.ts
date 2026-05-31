@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * 価格履歴ドキュメント型定義（サブコレクション方式）
- * dlsiteWorks/{workId}/priceHistory/{YYYY-MM-DD}
+ * works/{workId}/priceHistory/{YYYY-MM-DD}
  */
 export const PriceHistoryDocumentSchema = z.object({
 	/** 作品ID（親ドキュメントID） */

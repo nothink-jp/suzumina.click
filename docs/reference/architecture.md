@@ -13,7 +13,7 @@
 
 ### 🎯 [アプリケーションアーキテクチャ](application-architecture.md)
 - レイヤードアーキテクチャ設計
-- Next.js 15 App Routerの活用
+- Next.js App Routerの活用
 - Server Components/Server Actions
 - コンポーネント構成とデータフロー
 - セキュリティとパフォーマンス最適化
