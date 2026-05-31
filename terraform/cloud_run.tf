@@ -25,10 +25,11 @@ data "google_cloud_run_v2_service" "current" {
 }
 
 locals {
-  # 通常運用では live の image を踏襲し、bootstrap 時は :latest にフォールバックする。
-  # try() は count=0（bootstrap）時のインデックスエラーを捕捉するためのもの。
-  cloud_run_image = try(
-    data.google_cloud_run_v2_service.current[0].template[0].containers[0].image,
+  # 通常運用では live の image を踏襲し、bootstrap（count=0）時は :latest にフォールバックする。
+  # splat + one() で count=0 を null 化してフォールバックさせ、count=1 だが構造が想定外の
+  # 場合は黙殺せずエラーにする（try() のような握り潰しを避ける）。
+  cloud_run_image = coalesce(
+    one(data.google_cloud_run_v2_service.current[*].template[0].containers[0].image),
     "${var.region}-docker.pkg.dev/${local.project_id}/${var.artifact_registry_repository_id}/web:latest"
   )
 }
