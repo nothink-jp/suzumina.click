@@ -10,6 +10,7 @@
 		"format": "biome format --write ./src",
 		"check": "biome check --write ./src",
 		"typecheck": "tsc --noEmit --skipLibCheck",
+		"typecheck:fast": "tsgo --noEmit --skipLibCheck",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",

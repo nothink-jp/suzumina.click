@@ -9,6 +9,7 @@
 		"format": "biome format --write ./src",
 		"check": "biome check --write ./src",
 		"typecheck": "tsc --noEmit",
+		"typecheck:fast": "tsgo --noEmit",
 		"clean": "rimraf lib coverage node_modules/.cache .vitest *.tgz",
 		"test": "vitest run",
 		"test:watch": "vitest",

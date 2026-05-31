@@ -20,7 +20,8 @@ pre-commit:
 pre-push:
   parallel: true  # 並列実行で高速化
   commands:
-    # 変更影響範囲の型チェック（高速）
+    # 変更影響範囲の型チェック（tsgo = TypeScript ネイティブ版で高速化, SPR-11）
+    # ローカルの高速ゲート。merge をブロックする正のゲートは CI 側の tsc（pnpm typecheck）が担保する
     # shared-types / ui は no-build（src 直接公開）のため事前ビルド不要
     typecheck-changed:
       glob: "*.{ts,tsx}"
@@ -32,6 +33,6 @@ pre-push:
         if [ -z "$pkgs" ]; then echo "型チェック対象のパッケージ変更なし"; exit 0; fi
         for pkg in $pkgs; do
           echo "▶ typecheck: $pkg"
-          pnpm --filter "./$pkg" typecheck
+          pnpm --filter "./$pkg" typecheck:fast
         done
       fail_text: "変更パッケージの型チェックに失敗しました"
