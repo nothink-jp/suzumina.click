@@ -9,6 +9,7 @@ const mockWhere = vi.fn();
 const mockOrderBy = vi.fn();
 const mockLimit = vi.fn();
 const mockStartAfter = vi.fn();
+const mockCount = vi.fn();
 
 vi.mock("@/lib/firestore", () => ({
 	getFirestore: () => ({
@@ -36,6 +37,7 @@ describe("Video Server Actions", () => {
 			limit: mockLimit,
 			startAfter: mockStartAfter,
 			get: mockGet,
+			count: mockCount,
 		};
 
 		mockCollection.mockReturnValue(mockQuery);
@@ -43,6 +45,10 @@ describe("Video Server Actions", () => {
 		mockOrderBy.mockReturnValue(mockQuery);
 		mockLimit.mockReturnValue(mockQuery);
 		mockStartAfter.mockReturnValue(mockQuery);
+		// count() は集計クエリを返す: query.count().get() → { data: () => ({ count }) }
+		mockCount.mockReturnValue({
+			get: vi.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+		});
 	});
 
 	describe("getVideoTitles", () => {
@@ -127,6 +133,10 @@ describe("Video Server Actions", () => {
 			mockGet.mockResolvedValue({
 				docs: mockVideoDocs,
 				size: 2,
+			});
+			// デフォルトパスの総数は count() 集計から取得する（SPR-88）
+			mockCount.mockReturnValue({
+				get: vi.fn().mockResolvedValue({ data: () => ({ count: 2 }) }),
 			});
 
 			const result = await getVideoTitles();
@@ -285,6 +295,20 @@ describe("Video Server Actions", () => {
 
 			// getVideoTitlesが正しいパラメータで呼ばれることを確認
 			expect(mockGet).toHaveBeenCalled();
+		});
+
+		it("フィルタ無しのデフォルトパスは count() 集計で総数を取得する（全件スキャン回避, SPR-88）", async () => {
+			mockGet.mockResolvedValue({ docs: [], size: 0 });
+			mockCount.mockReturnValue({
+				get: vi.fn().mockResolvedValue({ data: () => ({ count: 99 }) }),
+			});
+
+			const result = await getVideosList({ page: 1, limit: 12 });
+
+			// count() + where(public) 集計が使われる
+			expect(mockWhere).toHaveBeenCalledWith("status.privacyStatus", "==", "public");
+			expect(mockCount).toHaveBeenCalled();
+			expect(result.totalCount).toBe(99);
 		});
 	});
 });

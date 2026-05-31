@@ -294,14 +294,16 @@ async function getVideosWithFiltering(
 	const plainVideos = videos; // すでにPlainObject
 	const _hasMore = snapshot.size > limit;
 
-	// publicな動画の総数を取得
-	// TODO: パフォーマンス最適化のため、メタデータコレクションでのキャッシュを検討
-	const countQuery = firestore.collection("videos");
-	const countSnapshot = await countQuery.get();
-	const total = countSnapshot.docs
-		.map((doc) => convertToVideo(doc))
-		.filter((video): video is VideoPlainObject => video !== null)
-		.filter((video) => video.status?.privacyStatus === "public" || !video.status).length;
+	// publicな動画の総数を count() 集計で取得（SPR-88: 毎リクエストの全件 .get()
+	// スキャンを回避。works/actions.ts と同じ count() パターン）。
+	// 注: 旧実装は (public || status未設定) を計上していたが、count()+where では status
+	// 未設定ドキュメントを拾えないため public のみ計上する（厳密化はメタデータ cache を検討）。
+	const countSnapshot = await firestore
+		.collection("videos")
+		.where("status.privacyStatus", "==", "public")
+		.count()
+		.get();
+	const total = countSnapshot.data().count;
 
 	return {
 		items: plainVideos,
@@ -402,18 +404,33 @@ export async function getTotalVideoCount(params?: {
 }) {
 	try {
 		const firestore = getFirestore();
-		const query = firestore.collection("videos");
 
-		// 全件を取得してメモリ上でフィルタリング（一時的な対応）
-		const snapshot = await query.get();
+		// フィルタが無い場合は count() 集計で取得し全件スキャンを回避（SPR-88）。
+		// 現状の唯一の呼び出し元 getVideosList は常にフィルタ無し ({}) で呼ぶため、
+		// この fast path が実質的なホットパス。
+		const hasFilters = !!(
+			params?.year ||
+			params?.search ||
+			params?.playlistTags?.length ||
+			params?.userTags?.length ||
+			params?.categoryNames?.length ||
+			params?.videoType
+		);
+		if (!hasFilters) {
+			const countSnapshot = await firestore
+				.collection("videos")
+				.where("status.privacyStatus", "==", "public")
+				.count()
+				.get();
+			return countSnapshot.data().count;
+		}
 
-		// Video Entityに変換してフィルタリング
+		// フィルタがある場合は全件取得してメモリ上でフィルタリング（暫定）
+		const snapshot = await firestore.collection("videos").get();
 		const videos = snapshot.docs
 			.map((doc) => convertToVideo(doc))
 			.filter((video): video is VideoPlainObject => video !== null)
 			.filter((video) => video.status?.privacyStatus === "public" || !video.status);
-
-		// フィルタリング処理をヘルパー関数に委譲
 		const filteredVideos = filterVideos(videos, params || {});
 
 		return filteredVideos.length;
