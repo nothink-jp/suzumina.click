@@ -44,13 +44,14 @@ variable "youtube_api_key" {
 
 
 variable "environment" {
-  description = "環境名（staging, production）"
+  # staging は実体のない死蔵環境（state 0 リソース）だったため SPR-100 で廃止。production を唯一の環境とする。
+  description = "環境名（production のみ）"
   type        = string
-  default     = "staging"
+  default     = "production"
 
   validation {
-    condition     = contains(["staging", "production"], var.environment)
-    error_message = "環境は staging または production である必要があります。"
+    condition     = contains(["production"], var.environment)
+    error_message = "環境は production のみ有効です（staging は SPR-100 で廃止）。"
   }
 }
 
