@@ -42,7 +42,7 @@ export default function SiteFooter() {
 					{/* 下段：サイト名と説明文 */}
 					<div className="text-center space-y-4">
 						<div>
-							<h4 className="font-bold text-lg mb-2 text-minase-50">suzumina.click</h4>
+							<h2 className="font-bold text-lg mb-2 text-minase-50">suzumina.click</h2>
 							<p className="text-minase-200 text-sm">
 								ファンによる、ファンのためのコミュニティサイト
 							</p>
