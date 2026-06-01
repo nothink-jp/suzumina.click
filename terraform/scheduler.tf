@@ -65,10 +65,8 @@ resource "google_cloud_scheduler_job" "cloud_run_warmup" {
     uri         = google_cloud_run_v2_service.nextjs_app.uri
     http_method = "GET"
 
-    # タイムアウト設定
-    headers = {
-      "User-Agent" = "Google-Cloud-Scheduler"
-    }
+    # User-Agent ヘッダは指定しない: "Google-Cloud-Scheduler" は Scheduler の既定 UA で
+    # API が headers に保存せず、明示すると毎 plan で恒久 diff になるため（ADR-009 / SPR-98）。
 
     # Cloud Runサービスへのアクセス認証
     oidc_token {

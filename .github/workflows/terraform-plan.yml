@@ -1,0 +1,93 @@
+name: Terraform Plan
+
+# ADR-010 / SPR-99 Stage 1: PR 上で terraform plan を read-only で自動実行し job summary に表示する。
+# 認証は WIF（terraform-plan-sa＝read-only）。書き込み権限・承認ゲートは持たない。
+# apply（Stage 2）は別 workflow + 強権限 SA + GitHub Environment 承認で追加する。
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-plan.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-plan-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TF_IN_AUTOMATION: 'true'
+  # --- 非機密 config（CI plan 用に明示指定）---
+  # current_env は var.environment で引かれる（locals.tf:37）。production workspace の state と揃えるため
+  # 必ず production を指定する（未指定だと default "staging" 評価で enable_custom_domain=false 等になり、
+  # 本番限定リソースを destroy 扱いする偽 plan になる）。
+  TF_VAR_environment: production
+  TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
+  TF_VAR_project_number: ${{ secrets.GCP_PROJECT_NUMBER }}
+  # default "suzumina-click" のままだと repo 名差で forces replacement の偽 plan になるため実値を渡す
+  TF_VAR_artifact_registry_repository_id: suzumina-click-web
+  TF_VAR_custom_domain: suzumina.click
+  TF_VAR_domain_name: suzumina.click
+  # --- 実値が必要な変数 ---
+  # cloudflare provider 認証（plan の cloudflare refresh に必須）/ monitoring 通知先
+  TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  TF_VAR_admin_email: ${{ secrets.ADMIN_EMAIL }}
+  # --- app 機密は Terraform 管理外（secrets.tf の ignore_changes=[secret_data]）---
+  # plan では placeholder で十分（diff に出ない）。実値は out-of-band 管理。
+  TF_VAR_youtube_api_key: 'ci-placeholder'
+  TF_VAR_discord_client_id: 'ci-placeholder'
+  TF_VAR_discord_client_secret: 'ci-placeholder'
+  TF_VAR_nextauth_secret: 'ci-placeholder'
+  TF_VAR_resend_api_key: 'ci-placeholder'
+  TF_VAR_contact_email_recipients: 'ci-placeholder@example.com'
+
+jobs:
+  plan:
+    name: terraform plan (production)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Authenticate to Google Cloud (read-only plan SA)
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'terraform-plan-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.5'
+          terraform_wrapper: false
+
+      - name: Terraform init
+        run: terraform -chdir=terraform init -input=false
+
+      - name: Select production workspace
+        run: terraform -chdir=terraform workspace select production
+
+      - name: Terraform plan (read-only)
+        id: plan
+        run: |
+          set -o pipefail
+          # -lock=false: read-only SA は lock 書き込み権限を持たないため
+          terraform -chdir=terraform plan -input=false -lock=false -no-color 2>&1 | tee /tmp/tfplan.txt
+
+      - name: Write plan to job summary
+        if: always()
+        run: |
+          {
+            echo '## Terraform Plan (production workspace)'
+            echo ''
+            echo 'read-only SA による plan。実適用は Stage 2（apply 承認制）で行う。'
+            echo ''
+            echo '```hcl'
+            # job summary 上限対策に末尾を優先表示（plan の Plan: 行は末尾付近）
+            tail -c 60000 /tmp/tfplan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

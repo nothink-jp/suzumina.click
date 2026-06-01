@@ -251,6 +251,120 @@ resource "google_project_iam_member" "github_actions_run_admin" {
 }
 
 # ------------------------------------------------------------------------------
+# Terraform CI: plan 用 read-only サービスアカウント（ADR-010 / SPR-99 Stage 1）
+# ------------------------------------------------------------------------------
+# PR 上の `terraform plan` を read-only 権限で実行する。書き込み権限も承認ゲートも持たない。
+# apply 用の強権限 SA（terraform-apply-sa）は Stage 2 で別途追加し、main 限定 + Environment 承認を課す。
+
+resource "google_service_account" "terraform_plan_sa" {
+  project      = var.gcp_project_id
+  account_id   = "terraform-plan-sa"
+  display_name = "Terraform plan (read-only) SA"
+  description  = "PR 上で terraform plan を read-only 実行するための CI サービスアカウント（ADR-010）"
+}
+
+# WIF 連携: repo 限定（任意ブランチ＝PR から assume 可。read-only なので許容）
+resource "google_service_account_iam_binding" "terraform_plan_sa_wif" {
+  service_account_id = google_service_account.terraform_plan_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+
+  members = [
+    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/nothink-jp/suzumina.click"
+  ]
+
+  depends_on = [
+    google_service_account.terraform_plan_sa,
+    google_iam_workload_identity_pool.github_pool
+  ]
+}
+
+# plan のためのプロジェクト全体 read 権限（refresh 用）
+resource "google_project_iam_member" "terraform_plan_viewer" {
+  project = var.gcp_project_id
+  role    = "roles/viewer"
+  member  = "serviceAccount:${google_service_account.terraform_plan_sa.email}"
+
+  depends_on = [google_service_account.terraform_plan_sa]
+}
+
+# plan の refresh は IAM ポリシー（getIamPolicy）も読む。roles/viewer には getIamPolicy が無く
+# google_*_iam_member / iam_binding の refresh が 403 になるため、read-only の securityReviewer を付与する。
+resource "google_project_iam_member" "terraform_plan_security_reviewer" {
+  project = var.gcp_project_id
+  role    = "roles/iam.securityReviewer"
+  member  = "serviceAccount:${google_service_account.terraform_plan_sa.email}"
+
+  depends_on = [google_service_account.terraform_plan_sa]
+}
+
+# tfstate バケットの read（state 読み取り。plan は -lock=false で lock 書き込み不要）
+resource "google_storage_bucket_iam_member" "terraform_plan_state_viewer" {
+  bucket = google_storage_bucket.tfstate.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.terraform_plan_sa.email}"
+
+  depends_on = [google_service_account.terraform_plan_sa]
+}
+
+# ------------------------------------------------------------------------------
+# Terraform CI: apply 用 強権限サービスアカウント（ADR-010 / SPR-99 Stage 2）
+# ------------------------------------------------------------------------------
+# main へ merge された terraform 変更を apply する。WIF 連携は main ブランチからの assume のみに限定し、
+# さらに GitHub Environment(production) の required reviewer 承認を必須にする（二重ゲート）。
+# read-only の plan SA とは権限を分離する。
+
+resource "google_service_account" "terraform_apply_sa" {
+  project      = var.gcp_project_id
+  account_id   = "terraform-apply-sa"
+  display_name = "Terraform apply (privileged) SA"
+  description  = "main からの terraform apply を Environment 承認下で実行する CI SA（ADR-010 Stage 2）"
+}
+
+# WIF 連携: repo 限定（provider の attribute_condition）かつ main ブランチ限定（attribute.ref == refs/heads/main）。
+# PR ブランチ（refs/pull/*/merge）からは assume できない。
+resource "google_service_account_iam_binding" "terraform_apply_sa_wif" {
+  service_account_id = google_service_account.terraform_apply_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+
+  members = [
+    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.ref/refs/heads/main"
+  ]
+
+  depends_on = [
+    google_service_account.terraform_apply_sa,
+    google_iam_workload_identity_pool.github_pool
+  ]
+}
+
+# curated strong: terraform が管理する全リソース＋その IAM をカバーする選定セット（roles/owner は回避）。
+# editor だけでは setIamPolicy（bucket/topic/secret/run/project/SA）・KMS・WIF・サービス有効化が不足するため
+# サービス別 admin を併用する。billing budget は billing.tf でコメントアウト済みのため billing 権限は不要。
+locals {
+  terraform_apply_sa_roles = [
+    "roles/editor",                          # 大半のリソース CRUD（run/scheduler/firestore/monitoring/logging/pubsub/AR/functions 等）
+    "roles/resourcemanager.projectIamAdmin", # google_project_iam_member（プロジェクト IAM、32件）
+    "roles/iam.serviceAccountAdmin",         # google_service_account + SA IAM binding
+    "roles/iam.roleAdmin",                   # google_project_iam_custom_role（カスタムロール 2件）
+    "roles/iam.workloadIdentityPoolAdmin",   # WIF pool / provider
+    "roles/storage.admin",                   # bucket IAM + lifecycle + tfstate の state 読み書き/ロック
+    "roles/pubsub.admin",                    # pubsub topic IAM
+    "roles/secretmanager.admin",             # secret 本体 + secret IAM
+    "roles/cloudkms.admin",                  # KMS keyring/key/IAM（editor 対象外）
+    "roles/run.admin",                       # Cloud Run service IAM binding（public_access）
+    "roles/serviceusage.serviceUsageAdmin",  # google_project_service の有効/無効化
+  ]
+}
+
+resource "google_project_iam_member" "terraform_apply_sa_roles" {
+  for_each = toset(local.terraform_apply_sa_roles)
+  project  = var.gcp_project_id
+  role     = each.value
+  member   = "serviceAccount:${google_service_account.terraform_apply_sa.email}"
+
+  depends_on = [google_service_account.terraform_apply_sa]
+}
+
+# ------------------------------------------------------------------------------
 # fetchYouTubeVideos関数用のサービスアカウントとIAM権限設定
 # ------------------------------------------------------------------------------
 

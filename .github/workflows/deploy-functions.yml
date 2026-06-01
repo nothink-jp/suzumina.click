@@ -176,9 +176,8 @@ jobs:
           gsutil cp functions-deployment.zip gs://$BUCKET_NAME/$ARCHIVE_NAME
           echo "✅ Uploaded: gs://$BUCKET_NAME/$ARCHIVE_NAME"
           
-          # 環境変数として保存
+          # 環境変数として保存（BUCKET_NAME の export は zip 手動 GC 撤去で不要化＝SPR-96）
           echo "DEPLOYMENT_SOURCE=gs://$BUCKET_NAME/$ARCHIVE_NAME" >> $GITHUB_ENV
-          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
       - name: Deploy functions in parallel
         run: |
@@ -263,16 +262,10 @@ jobs:
           # 一時ファイルを削除
           rm -rf ./deployment-temp
           rm -f functions-deployment.zip
-          
-          # 古いデプロイメントファイルを削除（最新5個を保持）
-          if [ ! -z "${{ env.BUCKET_NAME }}" ]; then
-            echo "Cleaning up old deployment files..."
-            gsutil ls gs://${{ env.BUCKET_NAME }}/functions-*.zip | \
-              sort -r | \
-              tail -n +6 | \
-              xargs -r gsutil rm || echo "No old files to clean up"
-          fi
-          
+
+          # デプロイ用 zip の GC は bucket lifecycle（30日, storage.tf）が正本（ADR-009 原則3 / SPR-96）。
+          # 旧「最新5個保持」の手動削除は二重管理のため撤去した。
+
           # Cloud Functions リビジョンのクリーンアップ
           echo "🧹 Cleaning up old Cloud Functions revisions..."
           
