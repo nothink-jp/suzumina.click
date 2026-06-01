@@ -5,20 +5,8 @@ locals {
   # var.gcp_project_id を参照し、他のリソース定義で利用します。
   project_id = var.gcp_project_id
 
-  # 環境固有の設定（個人開発向け2環境構成）
+  # 環境固有の設定（production 単一環境。staging は実体がなく SPR-100 で廃止）
   environment_config = {
-    staging = {
-      # テスト・プレビュー環境（超軽量・コスト重視）
-      cloud_run_min_instances = 0
-      cloud_run_max_instances = 1       # 最小限（テスト用）
-      cloud_run_cpu           = "1"     # 1vCPU（"1000m" と等価。表記を "1" に統一）
-      cloud_run_cpu_idle      = true    # コスト削減のためCPUアイドル有効
-      cloud_run_memory        = "512Mi" # 最小メモリ
-      # functions_* は ADR-009/SPR-92 で Actions 専管化。spec の正本は deploy-functions.yml
-      budget_amount        = 1000  # 約1000円（月）
-      enable_monitoring    = false # 基本監視のみ
-      enable_custom_domain = false # staging用ドメイン不要
-    }
     production = {
       # 本番環境（個人利用レベル・パフォーマンス改善）
       cloud_run_min_instances = 1        # LCP改善: コールドスタート排除
