@@ -144,6 +144,12 @@ resource "google_monitoring_alert_policy" "high_error_rate_logs" {
 
 # アプリケーションログ閲覧用のカスタムダッシュボード
 resource "google_monitoring_dashboard" "logging_dashboard" {
+  # dashboard_json は API が etag/name を付与し xPos/yPos=0 を省略するため config と恒久 diff になる（SPR-98 既知）。
+  # apply CI の承認ノイズ削減のため内容変更を無視する（更新時は一時的に ignore_changes を外す / console で編集）。
+  lifecycle {
+    ignore_changes = [dashboard_json]
+  }
+
   dashboard_json = <<EOF
 {
   "displayName": "suzumina.click ログ分析ダッシュボード",

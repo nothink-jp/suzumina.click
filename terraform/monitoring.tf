@@ -5,6 +5,13 @@
 
 # メトリクスダッシュボード
 resource "google_monitoring_dashboard" "service_overview" {
+  # dashboard_json は API が etag/name を付与し xPos/yPos=0 を省略するため config と恒久 diff になる（SPR-98 既知）。
+  # config 側では match 不能（etag/name は server 採番）なので、apply CI の承認ノイズ削減のため内容変更を無視する。
+  # ダッシュボード定義の更新時は一時的に ignore_changes を外す（または console で編集）。
+  lifecycle {
+    ignore_changes = [dashboard_json]
+  }
+
   dashboard_json = <<EOF
 {
   "displayName": "suzumina.click サービス概要ダッシュボード",

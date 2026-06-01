@@ -88,6 +88,12 @@ data "google_project" "current" {
 resource "google_monitoring_dashboard" "cost_overview" {
   count = local.current_env.enable_monitoring ? 1 : 0
 
+  # dashboard_json は API が etag/name を付与し xPos/yPos=0 を省略するため config と恒久 diff になりうる（SPR-98 既知）。
+  # apply CI の承認ノイズ削減のため内容変更を無視する（更新時は一時的に ignore_changes を外す / console で編集）。
+  lifecycle {
+    ignore_changes = [dashboard_json]
+  }
+
   dashboard_json = jsonencode({
     displayName = "${var.gcp_project_id} コスト概要ダッシュボード"
     mosaicLayout = {
