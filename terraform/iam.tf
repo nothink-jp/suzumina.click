@@ -287,6 +287,16 @@ resource "google_project_iam_member" "terraform_plan_viewer" {
   depends_on = [google_service_account.terraform_plan_sa]
 }
 
+# plan の refresh は IAM ポリシー（getIamPolicy）も読む。roles/viewer には getIamPolicy が無く
+# google_*_iam_member / iam_binding の refresh が 403 になるため、read-only の securityReviewer を付与する。
+resource "google_project_iam_member" "terraform_plan_security_reviewer" {
+  project = var.gcp_project_id
+  role    = "roles/iam.securityReviewer"
+  member  = "serviceAccount:${google_service_account.terraform_plan_sa.email}"
+
+  depends_on = [google_service_account.terraform_plan_sa]
+}
+
 # tfstate バケットの read（state 読み取り。plan は -lock=false で lock 書き込み不要）
 resource "google_storage_bucket_iam_member" "terraform_plan_state_viewer" {
   bucket = google_storage_bucket.tfstate.name
