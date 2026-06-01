@@ -8,95 +8,22 @@
 # Individual Info API専用関数の設定
 locals {
   dlsite_individual_api_function_name = "fetchDLsiteUnifiedData"
-  dlsite_individual_api_runtime       = "nodejs22"
-  dlsite_individual_api_entry_point   = "fetchDLsiteUnifiedData"
-  dlsite_individual_api_memory        = "512Mi" # Memory increased due to 260 MiB usage
-  dlsite_individual_api_timeout       = 300     # 5分タイムアウト（API集約処理最適化）
 }
 
-# Individual Info API専用作品取得関数（Gen2）
-# GitHub Actionsと連携してデプロイされる統合データ収集システム
-resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
-  # 100% API-Only アーキテクチャを有効化
-
-  project  = var.gcp_project_id
-  name     = local.dlsite_individual_api_function_name
-  location = var.region
-
-  # ビルド設定
-  build_config {
-    runtime     = local.dlsite_individual_api_runtime
-    entry_point = local.dlsite_individual_api_entry_point
-    # 初回デプロイ用にダミーのソースコードを設定
-    # GitHub Actionsによる実際のデプロイでは上書きされる
-    source {
-      storage_source {
-        bucket = google_storage_bucket.functions_deployment.name
-        object = "function-source-dummy.zip"
-      }
-    }
-  }
-
-  # サービス設定
-  service_config {
-    max_instance_count = 1 # リソース削減のため1に制限
-    min_instance_count = 0 # コールドスタートを許容
-    available_memory   = local.dlsite_individual_api_memory
-    timeout_seconds    = local.dlsite_individual_api_timeout
-
-    # 専用のサービスアカウントを使用
-    service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
-
-    # Individual Info API処理用環境変数
-    environment_variables = {
-      FUNCTION_SIGNATURE_TYPE = "cloudevent"
-      FUNCTION_TARGET         = local.dlsite_individual_api_entry_point
-
-      # Individual Info API設定
-      INDIVIDUAL_INFO_API_ENABLED = "true"
-      API_ONLY_MODE               = "true"
-      MAX_CONCURRENT_API_REQUESTS = "5"
-      API_REQUEST_DELAY_MS        = "500"
-
-      # データ品質設定
-      ENABLE_DATA_VALIDATION = "true"
-      MINIMUM_QUALITY_SCORE  = "80"
-
-      # 時系列データ統合
-      ENABLE_TIMESERIES_INTEGRATION = "true"
-
-      # ログレベル
-      LOG_LEVEL = "info"
-    }
-  }
-
-  # Pub/Subトリガー設定
-  event_trigger {
-    trigger_region        = var.region
-    event_type            = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic          = google_pubsub_topic.dlsite_individual_api_trigger.id
-    retry_policy          = "RETRY_POLICY_DO_NOT_RETRY"
-    service_account_email = google_service_account.fetch_dlsite_individual_api_sa.email
-  }
-
-  # GitHub Actions からのデプロイとの競合を避けるため、
-  # ソースコードと環境変数は GitHub Actions が管理し、Terraform は無視する
-  lifecycle {
-    ignore_changes = [
-      build_config,
-      service_config[0].environment_variables,
-    ]
-    create_before_destroy = false
-  }
-
-  depends_on = [
-    google_firestore_database.database,
-    google_pubsub_topic.dlsite_individual_api_trigger,
-    google_project_iam_member.fetch_dlsite_individual_api_firestore_user,
-    google_project_iam_member.fetch_dlsite_individual_api_log_writer,
-    google_service_account.fetch_dlsite_individual_api_sa,
-  ]
-}
+# Individual Info API専用作品取得関数 (Gen2) は GitHub Actions でデプロイされるため、
+# Terraform では google_cloudfunctions2_function リソースを管理しない（ADR-009 / SPR-92）。
+#
+# spec の正本（deploy-functions.yml の gcloud functions deploy）:
+#   runtime=nodejs24 / memory=512Mi / timeout=300s / max-instances=1
+#   entry-point=fetchDLsiteUnifiedData / trigger-topic=dlsite-individual-api-trigger
+#
+# デプロイ手順:
+#   1. terraform apply で SA / Pub/Sub トピック / Scheduler / IAM を作成
+#   2. GitHub Actions（deploy-functions.yml）が関数本体をデプロイ
+#
+# resource "google_cloudfunctions2_function" "fetch_dlsite_works_individual_api" {
+#   # GitHub Actions によるデプロイとの競合を避けるためコメントアウト（ADR-009 / SPR-92）。
+# }
 
 # Individual Info API専用のPub/Subトピック
 resource "google_pubsub_topic" "dlsite_individual_api_trigger" {

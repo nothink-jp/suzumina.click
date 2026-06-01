@@ -2,16 +2,15 @@
 # YouTube動画取得関数 (v2 - Pub/Subトリガー)
 # ==============================================================================
 # 概要: YouTubeから最新の動画情報を定期的に取得しFirestoreに保存する関数
-# GitHub Actions移行完了に伴い、ソースコード管理部分は削除済み
+#
+# ADR-009: 関数本体（spec/source/runtime/env）は GitHub Actions が正本（deploy-functions.yml）。
+# Terraform は SA / Pub/Sub / Scheduler / IAM の土台のみを管理し、
+# google_cloudfunctions2_function リソースは持たない（checkDataIntegrity 方式に統一）。
+# これにより live(540s/3) ↔ config(120s/1) の二重管理 drift を解消する（SPR-92）。
 # ==============================================================================
 
-# デプロイの共通設定
 locals {
   youtube_function_name = "fetchYouTubeVideos"
-  youtube_runtime       = "nodejs22"
-  youtube_entry_point   = "fetchYouTubeVideos" # 注: これをindex.tsで登録した関数名と一致させる
-  youtube_memory        = local.current_env.functions_memory
-  youtube_timeout       = local.current_env.functions_timeout
 
   # この関数が必要とする環境変数（シークレット）のリスト
   youtube_secrets = [
@@ -19,87 +18,20 @@ locals {
   ]
 }
 
-# YouTube動画取得関数 (v2 - Pub/Subトリガー)（環境設定により条件付き作成）
-resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
-  count = local.current_env.functions_enabled ? 1 : 0
-
-  project  = var.gcp_project_id
-  name     = local.youtube_function_name
-  location = var.region
-
-  # ビルド設定
-  build_config {
-    runtime     = local.youtube_runtime
-    entry_point = local.youtube_entry_point
-    # 初回デプロイ用にダミーのソースコードを設定
-    # GitHub Actionsによる実際のデプロイでは上書きされる
-    source {
-      storage_source {
-        bucket = google_storage_bucket.functions_deployment.name
-        object = "function-source-dummy.zip"
-      }
-    }
-  }
-
-  # サービス設定
-  service_config {
-    max_instance_count = 1 # スケジュールタスクのため低めに設定
-    min_instance_count = 0 # コールドスタートを許容
-    available_memory   = local.youtube_memory
-    timeout_seconds    = local.youtube_timeout
-    # 専用のサービスアカウントを使用
-    service_account_email = google_service_account.fetch_youtube_videos_sa.email
-
-    # シークレット環境変数を動的に設定
-    dynamic "secret_environment_variables" {
-      for_each = local.youtube_secrets
-      content {
-        key        = secret_environment_variables.value
-        secret     = google_secret_manager_secret.secrets[secret_environment_variables.value].secret_id
-        version    = "latest"
-        project_id = var.gcp_project_id
-      }
-    }
-
-    # CloudEventトリガーのための環境変数設定
-    environment_variables = {
-      FUNCTION_SIGNATURE_TYPE = "cloudevent"              # CloudEvent形式であることを明示
-      FUNCTION_TARGET         = local.youtube_entry_point # エントリポイント名を指定
-    }
-  }
-
-  # イベントトリガー設定 (Pub/Sub)
-  event_trigger {
-    trigger_region = var.region # 関数のリージョンと一致させる
-    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.youtube_video_fetch_trigger.id
-    retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
-    # トリガー用にも同じ専用サービスアカウントを使用
-    service_account_email = google_service_account.fetch_youtube_videos_sa.email
-  }
-
-  # GitHub Actions からのデプロイとの競合を避けるため、
-  # ソースコードと環境変数は GitHub Actions が管理し、Terraform は無視する
-  lifecycle {
-    ignore_changes = [
-      build_config,                            # ビルド設定全体を無視（GitHub Actionsが管理）
-      service_config[0].environment_variables, # 環境変数もGitHub Actionsが管理
-    ]
-    # 既存のリソースとの競合を避けるため、作成失敗時は手動で解決する
-    create_before_destroy = false
-  }
-
-  depends_on = [
-    # この関数に必要なFirestore DB、Pub/Subトピック、シークレット
-    google_firestore_database.database,
-    google_pubsub_topic.youtube_video_fetch_trigger,
-    google_secret_manager_secret.secrets,
-    google_project_iam_member.fetch_youtube_videos_firestore_user,
-    google_project_iam_member.fetch_youtube_videos_log_writer,
-    # サービスアカウントが存在することを確認
-    google_service_account.fetch_youtube_videos_sa,
-  ]
-}
+# YouTube動画取得関数 (Gen2) は GitHub Actions でデプロイされるため、
+# Terraform では google_cloudfunctions2_function リソースを管理しない（ADR-009 / SPR-92）。
+#
+# spec の正本（deploy-functions.yml の gcloud functions deploy）:
+#   runtime=nodejs24 / memory=256Mi / timeout=540s / max-instances=3
+#   entry-point=fetchYouTubeVideos / trigger-topic=youtube-video-fetch-trigger
+#
+# デプロイ手順:
+#   1. terraform apply で SA / Pub/Sub トピック / Scheduler / IAM を作成
+#   2. GitHub Actions（deploy-functions.yml）が関数本体をデプロイ
+#
+# resource "google_cloudfunctions2_function" "fetch_youtube_videos" {
+#   # GitHub Actions によるデプロイとの競合を避けるためコメントアウト（ADR-009 / SPR-92）。
+# }
 
 # YouTube動画取得関数用のサービスアカウントにシークレットアクセス権限を付与
 resource "google_secret_manager_secret_iam_member" "youtube_video_secret_accessor" {
@@ -118,11 +50,11 @@ resource "google_secret_manager_secret_iam_member" "youtube_video_secret_accesso
 }
 
 # Cloud Function のリソース情報を出力
+# 関数は GitHub Actions でデプロイされるため、名前のみ出力（checkDataIntegrity 方式）
 output "fetch_youtube_videos_function_info" {
-  value = local.current_env.functions_enabled ? {
-    name     = google_cloudfunctions2_function.fetch_youtube_videos[0].name
-    location = google_cloudfunctions2_function.fetch_youtube_videos[0].location
-    state    = google_cloudfunctions2_function.fetch_youtube_videos[0].state
-  } : null
+  value = {
+    name = local.youtube_function_name
+    note = "Function will be deployed via GitHub Actions (ADR-009)"
+  }
   description = "YouTube動画取得関数の情報"
 }
