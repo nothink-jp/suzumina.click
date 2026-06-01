@@ -176,9 +176,8 @@ jobs:
           gsutil cp functions-deployment.zip gs://$BUCKET_NAME/$ARCHIVE_NAME
           echo "✅ Uploaded: gs://$BUCKET_NAME/$ARCHIVE_NAME"
           
-          # 環境変数として保存
+          # 環境変数として保存（BUCKET_NAME の export は zip 手動 GC 撤去で不要化＝SPR-96）
           echo "DEPLOYMENT_SOURCE=gs://$BUCKET_NAME/$ARCHIVE_NAME" >> $GITHUB_ENV
-          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
       - name: Deploy functions in parallel
         run: |
