@@ -22,6 +22,10 @@ concurrency:
 env:
   TF_IN_AUTOMATION: 'true'
   # --- 非機密 config（CI plan 用に明示指定）---
+  # current_env は var.environment で引かれる（locals.tf:37）。production workspace の state と揃えるため
+  # 必ず production を指定する（未指定だと default "staging" 評価で enable_custom_domain=false 等になり、
+  # 本番限定リソースを destroy 扱いする偽 plan になる）。
+  TF_VAR_environment: production
   TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
   TF_VAR_project_number: ${{ secrets.GCP_PROJECT_NUMBER }}
   # default "suzumina-click" のままだと repo 名差で forces replacement の偽 plan になるため実値を渡す
