@@ -112,7 +112,7 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 						className="flex items-center whitespace-nowrap"
 					>
 						<LogIn className="h-4 w-4 mr-1" aria-hidden="true" />
-						ログインして作成
+						ログイン
 					</Link>
 				</Button>
 			</fieldset>

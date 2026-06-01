@@ -67,7 +67,7 @@ describe("VideoCardActions", () => {
 		(useSession as any).mockReturnValue(loggedOut);
 		render(<VideoCardActions video={createMockVideo()} variant="grid" />);
 
-		const loginLink = screen.getByText("ログインして作成").closest("a");
+		const loginLink = screen.getByText("ログイン").closest("a");
 		expect(loginLink).toHaveAttribute(
 			"href",
 			"/auth/signin?callbackUrl=%2Fbuttons%2Fcreate%3Fvideo_id%3Dvideo123",
