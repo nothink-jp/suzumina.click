@@ -2,6 +2,46 @@
 
 suzumina.clickプロジェクトの変更履歴
 
+## [v0.3.13] - 2026-06-01
+
+v0.3.12 以降に積み上がった改善のまとめ（カテゴリ要約）。詳細は各 PR / Linear SPR を参照。
+
+### ⚡ パフォーマンス
+- **FCP/LCP/CLS 改善（SPR-9 系）**: Cloudflare CDN を前段導入、画像 priority/`fetchpriority` 最適化、PPR（Cache Components）化、`unstable_cache` による一覧・home のキャッシュ、非クリティカル client の遅延ロード
+- **Cloud Run チューニング**: 1vCPU + `cpu_idle=false` でレスポンス遅延改善、warm-up scheduler 調整
+- **`_next/image` エッジキャッシュ（SPR-86）**、creators の N+1 解消・並列化（SPR-70/74）、videos 総数取得の `count()` 集計化（SPR-88）
+
+### 🔒 セキュリティ
+- **secretlint 導入（SPR-36）**: pre-commit / CI でシークレット混入を検出。プロジェクト固有のカスタムパターンを追加
+- 依存パッケージの脆弱性対応（Phase 1）
+
+### ⬆️ 依存・基盤更新
+- Node.js 24 LTS / pnpm 11 / TypeScript 6 / Biome 2.4 への移行
+- shared-types の no-build 化（tsc 直接消費）、functions の esbuild bundle 化
+- Next.js 16 / React 19 系を含む各種パッケージ更新
+
+### 🛠️ CI / 開発体験
+- `pnpm verify`（lint + typecheck + test 一括）新設でローカル/CI 判定を統一（SPR-77）
+- shared-types / ui 単独変更がノーチェックで緑になる穴を修正（SPR-78）、pre-push の型チェック tsgo 化
+- monorepo の git worktree フレンドリー化（SPR-62）
+
+### 🐛 修正
+- sitemap/robots の build 時 Firestore アクセス除去と isPublic フィルタ誤り修正（SPR-60）
+- DLsite バッチ処理が完了せず新作を取得できない問題を修正
+- Cloud Run / Cloudflare の Terraform state 乖離・plan 差分の解消
+
+### 📚 ドキュメント
+- ADR-007（FCP/LCP）/ ADR-008（worktree 自動化）/ ADR-009（Deploy と IaC の役割分担）を追加
+- CLAUDE.md をステートレス LLM 協働前提に再構成（SPR-63）、バージョン記述を package.json に SSOT 化（SPR-80）
+
+## [v0.3.12] - 2025-12-25
+
+### 📊 Core Web Vitals 監視
+- **web-vitals ライブラリを GA4 と統合**し Core Web Vitals を計測（#345）
+
+### ♻️ デッドコード削除
+- web / functions / shared-types / ui の各パッケージから未使用コード・関数・型・テストユーティリティを削除（#341-344）
+
 ## [v0.3.11] - 2025-10-13
 
 ### 🔧 Server Actions大規模リファクタリング

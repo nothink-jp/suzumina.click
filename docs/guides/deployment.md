@@ -37,21 +37,27 @@ Deployment is triggered automatically:
 ## Pre-deployment Checklist
 
 ```bash
-# 1. Run all quality checks
-pnpm check
-pnpm test
+# 1. Run all quality checks（CI と同一判定: lint + typecheck + test 一括）
+pnpm verify
 pnpm build
 
-# 2. Update version in package.json
-# Edit apps/web/package.json
+# 2. Update version in ALL package.json（monorepo は lockstep で揃える）
+#   package.json / apps/web / apps/functions /
+#   packages/shared-types / packages/ui / packages/typescript-config
+# 例: sed -i '' 's/"version": "0.3.12"/"version": "0.3.13"/' \
+#       package.json apps/*/package.json packages/*/package.json
+# その後 pnpm install で lockfile を同期
 
 # 3. Update CHANGELOG
-# Edit docs/operations/changelog.md
+# Edit docs/operations/changelog.md（前タグ以降の変更をカテゴリ要約で追記）
 
-# 4. Commit and push
+# 4. Commit and push（main へは PR 経由でマージ）
 git add .
-git commit -m "chore: prepare release v0.3.x"
-git push origin main
+git commit -m "chore: bump version to v0.3.x"
+git push -u origin chore/bump-v0.3.x
+
+# 5. マージ後、main で git tag を手動作成（タグは手動運用）
+git tag v0.3.x && git push origin v0.3.x
 ```
 
 ## GitHub Actions Workflow
@@ -282,12 +288,13 @@ Always review the plan before applying!
 ## Deployment Checklist
 
 ### Pre-deployment
-- [ ] All tests passing (`pnpm test`)
-- [ ] No TypeScript errors (`pnpm typecheck`)
-- [ ] No lint errors (`pnpm lint`)
-- [ ] Version updated in package.json
+- [ ] `pnpm verify` がパス（lint + typecheck + test 一括、CI と同一判定）
+- [ ] 全 package.json の version を更新（monorepo lockstep）+ `pnpm install` で lockfile 同期
 - [ ] CHANGELOG updated
 - [ ] Environment variables documented
+
+### Post-merge（リリースタグ）
+- [ ] main マージ後に `git tag v0.3.x && git push origin v0.3.x`（タグは手動運用）
 
 ### Post-deployment
 - [ ] Health check passing
