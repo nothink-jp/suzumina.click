@@ -4,6 +4,7 @@
 
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { cn } from "@suzumina.click/ui/lib/utils";
+import Link from "next/link";
 import type { MouseEvent } from "react";
 import { HighlightText } from "../highlight-text";
 
@@ -22,6 +23,8 @@ interface TagLayerProps {
 	};
 	showEmptyLayers: boolean;
 	onTagClick?: (tag: string, layer: "playlist" | "user" | "category") => void;
+	/** タグの遷移先 href ビルダー。指定時は onTagClick より優先し <Link> を描画する */
+	tagHref?: (tag: string, layer: "playlist" | "user" | "category") => string;
 	searchQuery?: string;
 	highlightClassName?: string;
 }
@@ -36,6 +39,7 @@ export function TagLayer({
 	sizeClasses,
 	showEmptyLayers,
 	onTagClick,
+	tagHref,
 	searchQuery,
 	highlightClassName,
 }: TagLayerProps) {
@@ -54,6 +58,17 @@ export function TagLayer({
 			onTagClick(tag, layerType);
 		}
 	};
+
+	const renderContent = (text: string) =>
+		searchQuery ? (
+			<HighlightText
+				text={text}
+				searchQuery={searchQuery}
+				highlightClassName={highlightClassName || "bg-yellow-200 text-yellow-900 px-1 rounded"}
+			/>
+		) : (
+			text
+		);
 
 	const getLayerDescription = () => {
 		if (layer === "playlist") {
@@ -75,30 +90,32 @@ export function TagLayer({
 				{description && <span className="text-xs text-muted-foreground ml-2">{description}</span>}
 			</h4>
 			<div className={cn("flex flex-wrap", sizeClasses.layerContainer)}>
-				{displayData.displayed.map((tag, index) => (
-					<Badge
-						key={`${tag}-${index}`}
-						className={cn(
-							sizeClasses.badge,
-							badgeClassName,
-							onTagClick && "cursor-pointer",
-							"transition-all duration-200",
-						)}
-						onClick={onTagClick ? (e) => handleTagClick(tag, layer, e) : undefined}
-					>
-						{searchQuery ? (
-							<HighlightText
-								text={tag}
-								searchQuery={searchQuery}
-								highlightClassName={
-									highlightClassName || "bg-yellow-200 text-yellow-900 px-1 rounded"
-								}
-							/>
-						) : (
-							tag
-						)}
-					</Badge>
-				))}
+				{displayData.displayed.map((tag, index) => {
+					const itemClassName = cn(
+						sizeClasses.badge,
+						badgeClassName,
+						(tagHref || onTagClick) && "cursor-pointer",
+						"transition-all duration-200",
+					);
+
+					if (tagHref) {
+						return (
+							<Badge key={`${tag}-${index}`} asChild className={itemClassName}>
+								<Link href={tagHref(tag, layer)}>{renderContent(tag)}</Link>
+							</Badge>
+						);
+					}
+
+					return (
+						<Badge
+							key={`${tag}-${index}`}
+							className={itemClassName}
+							onClick={onTagClick ? (e) => handleTagClick(tag, layer, e) : undefined}
+						>
+							{renderContent(tag)}
+						</Badge>
+					);
+				})}
 				{displayData.hasMore && (
 					<Badge
 						variant="outline"

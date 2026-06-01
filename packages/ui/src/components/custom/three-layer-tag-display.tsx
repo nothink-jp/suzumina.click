@@ -31,6 +31,8 @@ export interface VideoTagDisplayProps {
 	className?: string;
 	/** タグクリック時のコールバック */
 	onTagClick?: (tag: string, layer: "playlist" | "user" | "category") => void;
+	/** タグの遷移先 href ビルダー。指定時は onTagClick より優先し <Link> を描画する（server 化向け） */
+	tagHref?: (tag: string, layer: "playlist" | "user" | "category") => string;
 	/** 表示サイズ */
 	size?: "sm" | "default" | "lg";
 	/** 各層の最大表示タグ数（0の場合は制限なし） */
@@ -54,6 +56,7 @@ export function VideoTagDisplay({
 	highlightClassName,
 	className,
 	onTagClick,
+	tagHref,
 	size = "default",
 	maxTagsPerLayer = 0,
 	showEmptyLayers = false,
@@ -105,6 +108,7 @@ export function VideoTagDisplay({
 				allTags={allTags}
 				sizeClasses={sizeClasses}
 				onTagClick={onTagClick}
+				tagHref={tagHref}
 				searchQuery={searchQuery}
 				highlightClassName={highlightClassName}
 				className={className}
@@ -124,6 +128,7 @@ export function VideoTagDisplay({
 			sizeClasses={sizeClasses}
 			showEmptyLayers={showEmptyLayers}
 			onTagClick={onTagClick}
+			tagHref={tagHref}
 			searchQuery={searchQuery}
 			highlightClassName={highlightClassName}
 		/>
@@ -140,6 +145,7 @@ export function VideoTagDisplay({
 			sizeClasses={sizeClasses}
 			showEmptyLayers={showEmptyLayers}
 			onTagClick={onTagClick}
+			tagHref={tagHref}
 			searchQuery={searchQuery}
 			highlightClassName={highlightClassName}
 		/>
@@ -150,6 +156,7 @@ export function VideoTagDisplay({
 			categoryName={categoryName}
 			sizeClasses={sizeClasses}
 			onTagClick={onTagClick}
+			tagHref={tagHref}
 			searchQuery={searchQuery}
 			highlightClassName={highlightClassName}
 		/>
