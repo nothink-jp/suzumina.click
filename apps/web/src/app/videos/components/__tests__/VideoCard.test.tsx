@@ -1,16 +1,10 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import VideoCard from "../VideoCard";
 
-// モックの設定
-vi.mock("next/navigation", () => ({
-	useRouter: vi.fn(),
-}));
-
+// モックの設定（認証ゲートは VideoCardActions client island が useSession を使う）
 vi.mock("next-auth/react", () => ({
 	useSession: vi.fn(),
 }));
@@ -73,12 +67,8 @@ function createMockVideo(overrides?: Partial<any>): VideoPlainObject {
 }
 
 describe("VideoCard", () => {
-	const mockPush = vi.fn();
-	const mockRouter = { push: mockPush };
-
 	beforeEach(() => {
 		vi.clearAllMocks();
-		(useRouter as any).mockReturnValue(mockRouter);
 		(useSession as any).mockReturnValue({ data: null });
 	});
 
@@ -133,12 +123,12 @@ describe("VideoCard", () => {
 		expect(screen.getByText("配信アーカイブ")).toBeInTheDocument();
 	});
 
-	it("音声ボタン数が表示される", () => {
+	it("音声ボタン数バッジが一覧ページへのリンクになっている", () => {
 		const video = createMockVideo({ audioButtonCount: 5 });
 		render(<VideoCard video={video} />);
 
-		expect(screen.getByLabelText("5個の音声ボタンが作成されています")).toBeInTheDocument();
-		expect(screen.getByText("5 ボタン")).toBeInTheDocument();
+		const badgeLink = screen.getByText("5 ボタン").closest("a");
+		expect(badgeLink).toHaveAttribute("href", "/buttons?videoId=video123");
 	});
 
 	it("タグが表示される", () => {
@@ -155,8 +145,7 @@ describe("VideoCard", () => {
 		expect(screen.getByText("ユーザータグ1")).toBeInTheDocument();
 	});
 
-	it("タグクリックで検索ページに遷移する", async () => {
-		const user = userEvent.setup();
+	it("タグが検索ページへのリンクになっている", () => {
 		const video = createMockVideo({
 			tags: {
 				playlistTags: ["プレイリストタグ1"],
@@ -166,51 +155,11 @@ describe("VideoCard", () => {
 		});
 		render(<VideoCard video={video} />);
 
-		const playlistTag = screen.getByText("プレイリストタグ1");
-		await user.click(playlistTag);
-
-		expect(mockPush).toHaveBeenCalledWith(
+		const playlistTagLink = screen.getByText("プレイリストタグ1").closest("a");
+		expect(playlistTagLink).toHaveAttribute(
+			"href",
 			"/search?q=%E3%83%97%E3%83%AC%E3%82%A4%E3%83%AA%E3%82%B9%E3%83%88%E3%82%BF%E3%82%B01&type=videos&playlistTags=%E3%83%97%E3%83%AC%E3%82%A4%E3%83%AA%E3%82%B9%E3%83%88%E3%82%BF%E3%82%B01",
 		);
-	});
-
-	it("ログインしていない場合は音声ボタン作成ボタンが表示されない", () => {
-		const video = createMockVideo({
-			videoType: "archived",
-			duration: "PT2H30M", // 2時間（30分（１５分以上）
-			liveStreamingDetails: {
-				actualStartTime: "2024-01-01T00:00:00Z",
-				actualEndTime: "2024-01-01T02:30:00Z",
-			},
-		});
-		render(<VideoCard video={video} />);
-
-		expect(screen.queryByText("ボタン作成")).not.toBeInTheDocument();
-		expect(screen.getByText("詳細を見る")).toBeInTheDocument();
-	});
-
-	it("ログインしていて配信アーカイブの場合は音声ボタン作成ボタンが表示される", () => {
-		(useSession as any).mockReturnValue({
-			data: { user: { id: "user123", name: "テストユーザー" } },
-		});
-
-		const video = createMockVideo({
-			videoType: "archived",
-			duration: "PT2H30M", // 2時間（30分（１５分以上）
-			liveStreamingDetails: {
-				actualStartTime: "2024-01-01T00:00:00Z",
-				actualEndTime: "2024-01-01T02:30:00Z",
-			},
-			_computed: {
-				...createMockVideo()._computed,
-				videoType: "archived",
-				isArchived: true,
-				canCreateButton: true,
-			},
-		});
-		render(<VideoCard video={video} />);
-
-		expect(screen.getByText("ボタン作成")).toBeInTheDocument();
 	});
 
 	describe("公開日時境界テスト", () => {

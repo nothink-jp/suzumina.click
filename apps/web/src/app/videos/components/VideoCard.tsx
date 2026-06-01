@@ -1,22 +1,14 @@
-"use client";
-
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
-import {
-	canCreateAudioButton,
-	getAudioButtonCreationErrorMessage,
-} from "@suzumina.click/shared-types";
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
-import { Button } from "@suzumina.click/ui/components/ui/button";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
-import { Calendar, Clock, ExternalLink, Eye, Lock, Plus, Radio, Video } from "lucide-react";
+import { Calendar, Clock, Lock, Radio, Video } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import React, { memo, useCallback, useMemo } from "react";
+import React from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
+import VideoCardActions from "./VideoCardActions";
 
-// Helper function to get video badge information
+// 動画タイプ別バッジ情報（純関数）
 function getVideoBadgeInfo(video: VideoPlainObject) {
 	// VideoPlainObject は常に_computedプロパティを持つ
 	const { videoType } = video._computed;
@@ -66,155 +58,79 @@ function getVideoBadgeInfo(video: VideoPlainObject) {
 	}
 }
 
+// 表示日付（純関数）: ライブ配信は配信開始時間を優先し、無効なら公開時間にフォールバック
+function getDisplayDate(video: VideoPlainObject) {
+	const formatJpDate = (value: string) =>
+		new Date(value).toLocaleDateString("ja-JP", {
+			timeZone: "Asia/Tokyo",
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+		});
+
+	const streamStartTime = video.liveStreamingDetails?.actualStartTime;
+	if (streamStartTime) {
+		const date = new Date(streamStartTime);
+		if (!Number.isNaN(date.getTime())) {
+			return {
+				formattedDate: formatJpDate(streamStartTime),
+				displayLabel: "配信開始",
+				dateTimeValue: streamStartTime,
+			};
+		}
+	}
+
+	const publishedDate = new Date(video.publishedAt);
+	if (Number.isNaN(publishedDate.getTime())) {
+		// 無効な日付文字列はそのまま表示
+		return {
+			formattedDate: video.publishedAt,
+			displayLabel: "公開日",
+			dateTimeValue: video.publishedAt,
+		};
+	}
+	return {
+		formattedDate: formatJpDate(video.publishedAt),
+		displayLabel: "公開日",
+		dateTimeValue: video.publishedAt,
+	};
+}
+
+// タグ → 検索ページの href ビルダー（純関数）。層に応じたフィルターパラメータを付与する
+function buildTagSearchHref(tag: string, layer: "playlist" | "user" | "category") {
+	const params = new URLSearchParams();
+	params.set("q", tag);
+	params.set("type", "videos");
+	switch (layer) {
+		case "playlist":
+			params.set("playlistTags", tag);
+			break;
+		case "user":
+			params.set("userTags", tag);
+			break;
+		case "category":
+			params.set("categoryNames", tag);
+			break;
+	}
+	return `/search?${params.toString()}`;
+}
+
 interface VideoCardProps {
 	video: VideoPlainObject;
-	buttonCount?: number; // 従来の互換性のため残すが、video.audioButtonCountを優先
 	variant?: "grid" | "sidebar";
 	priority?: boolean; // LCP画像最適化用
 }
 
-// パフォーマンス向上: VideoCardをメモ化して不要な再レンダリングを防ぐ
-const VideoCard = memo(function VideoCard({
-	video,
-	buttonCount,
-	variant = "grid",
-	priority = false,
-}: VideoCardProps) {
-	const { data: session } = useSession();
-	const router = useRouter();
-	const isGrid = variant === "grid";
-
-	// 音声ボタン数: video.audioButtonCountを優先し、なければbuttonCountを使用
-	const actualButtonCount = video.audioButtonCount ?? buttonCount ?? 0;
-
-	// メモ化: 日付フォーマットを最適化（ライブ配信は配信開始時間を優先）
-	const { formattedDate, displayLabel, dateTimeValue } = useMemo(() => {
-		// ライブ配信アーカイブの場合は配信開始時間を使用
-		const isLiveStream = video.liveStreamingDetails?.actualStartTime;
-		const streamStartTime = video.liveStreamingDetails?.actualStartTime;
-
-		if (isLiveStream && streamStartTime) {
-			try {
-				const date = new Date(streamStartTime);
-				// Invalid Dateチェックを追加
-				if (Number.isNaN(date.getTime())) {
-					// 配信開始時間が無効な場合は公開時間にフォールバック
-				} else {
-					return {
-						formattedDate: date.toLocaleDateString("ja-JP", {
-							timeZone: "Asia/Tokyo",
-							year: "numeric",
-							month: "2-digit",
-							day: "2-digit",
-						}),
-						displayLabel: "配信開始",
-						dateTimeValue: streamStartTime,
-					};
-				}
-			} catch {
-				// 配信開始時間の解析に失敗した場合は公開時間にフォールバック
-			}
-		}
-
-		// 通常動画または配信開始時間が無効な場合は公開時間を使用
-		try {
-			const date = new Date(video.publishedAt);
-			// Invalid Dateチェックを追加
-			if (Number.isNaN(date.getTime())) {
-				return {
-					formattedDate: video.publishedAt,
-					displayLabel: "公開日",
-					dateTimeValue: video.publishedAt,
-				};
-			}
-			return {
-				formattedDate: date.toLocaleDateString("ja-JP", {
-					timeZone: "Asia/Tokyo",
-					year: "numeric",
-					month: "2-digit",
-					day: "2-digit",
-				}),
-				displayLabel: "公開日",
-				dateTimeValue: video.publishedAt,
-			};
-		} catch {
-			return {
-				formattedDate: video.publishedAt,
-				displayLabel: "公開日",
-				dateTimeValue: video.publishedAt,
-			};
-		}
-	}, [video.publishedAt, video.liveStreamingDetails?.actualStartTime]);
-
-	// メモ化: YouTubeカテゴリ名取得
-	const categoryName = useMemo(() => {
-		return getYouTubeCategoryName(video.categoryId);
-	}, [video.categoryId]);
-
-	// タグクリック時の検索ページ遷移
-	const handleTagClick = useCallback(
-		(tag: string, layer: "playlist" | "user" | "category") => {
-			const params = new URLSearchParams();
-			params.set("q", tag);
-			params.set("type", "videos");
-
-			// 層に応じたフィルターパラメータを設定
-			switch (layer) {
-				case "playlist":
-					params.set("playlistTags", tag);
-					break;
-				case "user":
-					params.set("userTags", tag);
-					break;
-				case "category":
-					params.set("categoryNames", tag);
-					break;
-			}
-
-			router.push(`/search?${params.toString()}`);
-		},
-		[router],
-	);
-
-	// メモ化: 音声ボタン作成可能判定（認証状態も考慮）
-	const canCreateButtonData = useMemo(() => {
-		// ログインしていない場合
-		if (!session?.user) {
-			return {
-				canCreate: false,
-				reason: "音声ボタンを作成するにはすずみなふぁみりーメンバーとしてログインが必要です",
-			};
-		}
-
-		// 埋め込み制限チェック
-		if (video.status?.embeddable === false) {
-			return {
-				canCreate: false,
-				reason: "この動画は埋め込みが制限されているため、音声ボタンを作成できません",
-			};
-		}
-
-		// 動画の条件をチェック
-		const videoCanCreate = canCreateAudioButton(video);
-		if (!videoCanCreate) {
-			const reason =
-				getAudioButtonCreationErrorMessage(video) ||
-				"音声ボタンを作成できるのは配信アーカイブのみです";
-			return {
-				canCreate: false,
-				reason,
-			};
-		}
-
-		return { canCreate: true, reason: undefined };
-	}, [video, session?.user]);
-
-	const canCreateButton = canCreateButtonData.canCreate;
-
-	// メモ化: 動画タイプバッジの情報
-	const videoBadgeInfo = useMemo(() => {
-		return getVideoBadgeInfo(video);
-	}, [video]);
+/**
+ * 動画カード（server shell）。
+ * 認証ゲートを伴うアクションは {@link VideoCardActions}（client island）に隔離し、
+ * 本体は純表示に徹する。WorkCard と同じ「shell + island」構造。
+ */
+function VideoCard({ video, variant = "grid", priority = false }: VideoCardProps) {
+	const actualButtonCount = video.audioButtonCount ?? 0;
+	const { formattedDate, displayLabel, dateTimeValue } = getDisplayDate(video);
+	const categoryName = getYouTubeCategoryName(video.categoryId);
+	const videoBadgeInfo = getVideoBadgeInfo(video);
 
 	return (
 		<article
@@ -255,11 +171,12 @@ const VideoCard = memo(function VideoCard({
 					{actualButtonCount > 0 && (
 						<div className="absolute top-2 left-2">
 							<Badge
+								asChild
 								variant="secondary"
-								className="bg-white/90 text-foreground"
-								aria-label={`${actualButtonCount}個の音声ボタンが作成されています`}
+								className="bg-white/90 text-foreground cursor-pointer hover:bg-white"
+								aria-label={`${actualButtonCount}個の音声ボタン一覧を見る`}
 							>
-								{actualButtonCount} ボタン
+								<Link href={`/buttons?videoId=${video.id}`}>{actualButtonCount} ボタン</Link>
 							</Badge>
 						</div>
 					)}
@@ -311,66 +228,16 @@ const VideoCard = memo(function VideoCard({
 							showEmptyLayers={false}
 							showCategory={true}
 							compact={true}
-							onTagClick={handleTagClick}
+							tagHref={buildTagSearchHref}
 						/>
 					</div>
 
-					{/* アクションボタン */}
-					{isGrid ? (
-						canCreateButton ? (
-							<fieldset className="flex gap-2" aria-label="動画アクション">
-								<Button
-									size="sm"
-									variant="outline"
-									className="flex-1 border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
-									asChild
-								>
-									<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-										<Eye className="h-4 w-4 mr-1" aria-hidden="true" />
-										詳細を見る
-									</Link>
-								</Button>
-								<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
-									<Link
-										href={`/buttons/create?video_id=${video.id}`}
-										aria-label={`${video.title}の音声ボタンを作成`}
-										className="flex items-center whitespace-nowrap"
-									>
-										<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
-										ボタン作成
-									</Link>
-								</Button>
-							</fieldset>
-						) : (
-							<Button
-								size="sm"
-								variant="outline"
-								className="w-full border text-muted-foreground hover:bg-accent min-h-[44px] text-sm"
-								asChild
-							>
-								<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-									<Eye className="h-4 w-4 mr-1" aria-hidden="true" />
-									詳細を見る
-								</Link>
-							</Button>
-						)
-					) : (
-						<Button
-							variant="outline"
-							size="sm"
-							className="w-full border text-muted-foreground hover:bg-accent min-h-[44px]"
-							asChild
-						>
-							<Link href={`/videos/${video.id}`} aria-describedby={`video-title-${video.id}`}>
-								<ExternalLink className="h-4 w-4 mr-2" aria-hidden="true" />
-								動画を見る
-							</Link>
-						</Button>
-					)}
+					{/* アクションボタン（認証ゲートは client island に隔離） */}
+					<VideoCardActions video={video} variant={variant} />
 				</div>
 			</div>
 		</article>
 	);
-});
+}
 
 export default VideoCard;

@@ -224,6 +224,7 @@ vi.mock("lucide-react", () => {
 		// Icons for VideoCard
 		Eye: createMockIcon("Eye"),
 		Radio: createMockIcon("Radio"),
+		LogIn: createMockIcon("LogIn"),
 		// Icons for UserMenu
 		LogOut: createMockIcon("LogOut"),
 		// Icons for AutocompleteDropdown and SearchInputWithAutocomplete
