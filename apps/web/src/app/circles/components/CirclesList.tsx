@@ -85,6 +85,7 @@ export default function CirclesList({ initialData }: CirclesListProps) {
 				items={initialItems}
 				initialTotal={initialTotal}
 				renderItem={(circle) => <CircleListItem circle={circle} />}
+				listHeading="サークル一覧"
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
 				{...DEFAULT_LIST_PROPS}

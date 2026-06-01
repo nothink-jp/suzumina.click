@@ -107,6 +107,7 @@ export default function CreatorsList({ initialData }: CreatorsListProps) {
 				items={initialItems}
 				initialTotal={initialTotal}
 				renderItem={(creator) => <CreatorListItem creator={creator} />}
+				listHeading="クリエイター一覧"
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
 				{...DEFAULT_LIST_PROPS}
