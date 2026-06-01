@@ -14,9 +14,7 @@ locals {
       cloud_run_cpu           = "1"     # 1vCPU（"1000m" と等価。表記を "1" に統一）
       cloud_run_cpu_idle      = true    # コスト削減のためCPUアイドル有効
       cloud_run_memory        = "512Mi" # 最小メモリ
-      functions_memory        = "256Mi" # 最小メモリ
-      functions_timeout       = 120     # 短いタイムアウト
-      functions_enabled       = false   # staging環境ではfunctions無効化（コスト削減）
+      # functions_* は ADR-009/SPR-92 で Actions 専管化。spec の正本は deploy-functions.yml
       budget_amount           = 1000    # 約1000円（月）
       enable_monitoring       = false   # 基本監視のみ
       enable_custom_domain    = false   # staging用ドメイン不要
@@ -28,9 +26,7 @@ locals {
       cloud_run_cpu           = "1"      # 1vCPU: アイドル後レスポンス遅延を改善（gcloud --cpu 1 の表記に整合）
       cloud_run_cpu_idle      = false    # CPUを常時割り当て: アイドル後のスロットリング防止
       cloud_run_memory        = "1024Mi" # メモリ増強（1GB）でGC改善
-      functions_memory        = "256Mi"  # YouTube API軽量処理用に最適化
-      functions_timeout       = 120      # API呼び出し最適化
-      functions_enabled       = true     # 本番では有効
+      # functions_* は ADR-009/SPR-92 で Actions 専管化。spec の正本は deploy-functions.yml
       budget_amount           = 5000     # 月額5000円制限
       enable_monitoring       = true     # フル監視
       enable_custom_domain    = true     # 本番ドメイン
