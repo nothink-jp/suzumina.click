@@ -251,6 +251,52 @@ resource "google_project_iam_member" "github_actions_run_admin" {
 }
 
 # ------------------------------------------------------------------------------
+# Terraform CI: plan 用 read-only サービスアカウント（ADR-010 / SPR-99 Stage 1）
+# ------------------------------------------------------------------------------
+# PR 上の `terraform plan` を read-only 権限で実行する。書き込み権限も承認ゲートも持たない。
+# apply 用の強権限 SA（terraform-apply-sa）は Stage 2 で別途追加し、main 限定 + Environment 承認を課す。
+
+resource "google_service_account" "terraform_plan_sa" {
+  project      = var.gcp_project_id
+  account_id   = "terraform-plan-sa"
+  display_name = "Terraform plan (read-only) SA"
+  description  = "PR 上で terraform plan を read-only 実行するための CI サービスアカウント（ADR-010）"
+}
+
+# WIF 連携: repo 限定（任意ブランチ＝PR から assume 可。read-only なので許容）
+resource "google_service_account_iam_binding" "terraform_plan_sa_wif" {
+  service_account_id = google_service_account.terraform_plan_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+
+  members = [
+    "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/nothink-jp/suzumina.click"
+  ]
+
+  depends_on = [
+    google_service_account.terraform_plan_sa,
+    google_iam_workload_identity_pool.github_pool
+  ]
+}
+
+# plan のためのプロジェクト全体 read 権限（refresh 用）
+resource "google_project_iam_member" "terraform_plan_viewer" {
+  project = var.gcp_project_id
+  role    = "roles/viewer"
+  member  = "serviceAccount:${google_service_account.terraform_plan_sa.email}"
+
+  depends_on = [google_service_account.terraform_plan_sa]
+}
+
+# tfstate バケットの read（state 読み取り。plan は -lock=false で lock 書き込み不要）
+resource "google_storage_bucket_iam_member" "terraform_plan_state_viewer" {
+  bucket = google_storage_bucket.tfstate.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.terraform_plan_sa.email}"
+
+  depends_on = [google_service_account.terraform_plan_sa]
+}
+
+# ------------------------------------------------------------------------------
 # fetchYouTubeVideos関数用のサービスアカウントとIAM権限設定
 # ------------------------------------------------------------------------------
 
