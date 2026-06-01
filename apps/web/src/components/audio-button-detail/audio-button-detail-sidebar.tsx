@@ -21,6 +21,8 @@ export function AudioButtonDetailSidebar({
 		<div className="lg:col-span-1">
 			<div className="space-y-6">
 				{/* 動画カード */}
+				{/* ページ h1 と VideoCard の見出し(h3)の間を埋める中間見出し（sr-only） */}
+				<h2 className="sr-only">元動画</h2>
 				<Suspense
 					fallback={
 						<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">

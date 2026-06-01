@@ -152,6 +152,11 @@ export interface ConfigurableListProps<T> {
 
 	// 初期総数（サーバーサイドレンダリング時）
 	initialTotal?: number;
+
+	// リスト本体の見出し（スクリーンリーダー向け）。
+	// ページ h1 と各カードの見出し（h3）の間を埋める中間 h2 として sr-only で描画し、
+	// 見出しレベルの skip を防ぐ。指定時のみ描画。
+	listHeading?: string;
 }
 
 /**

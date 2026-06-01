@@ -85,6 +85,7 @@ export default function WorksList({ initialData }: WorksListProps) {
 				// 画像 (~250x250) は decode コストが高く、6 並列で TBT +210ms regression
 				// (SPR-9 / 2026-05-28 PSI 3 サンプル中央値で確認) したため縮小。
 				renderItem={(work, index) => <WorkListItem work={work} priority={index < 2} />}
+				listHeading="作品一覧"
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
 				{...DEFAULT_LIST_PROPS}

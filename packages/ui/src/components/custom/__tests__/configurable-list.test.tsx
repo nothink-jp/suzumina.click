@@ -51,6 +51,19 @@ describe("ConfigurableList", () => {
 		});
 	});
 
+	it("listHeading 指定時に sr-only な h2 を描画する（見出しレベル skip 防止）", () => {
+		render(<ConfigurableList items={sampleItems} renderItem={renderItem} listHeading="動画一覧" />);
+
+		const heading = screen.getByRole("heading", { level: 2, name: "動画一覧" });
+		expect(heading.tagName).toBe("H2");
+		expect(heading).toHaveClass("sr-only");
+	});
+
+	it("listHeading 未指定時は h2 を描画しない", () => {
+		render(<ConfigurableList items={sampleItems} renderItem={renderItem} />);
+		expect(screen.queryByRole("heading", { level: 2 })).not.toBeInTheDocument();
+	});
+
 	it("filters items by category", async () => {
 		render(
 			<ConfigurableList
