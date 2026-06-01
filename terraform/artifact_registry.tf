@@ -11,6 +11,8 @@
  *   - KEEP は DELETE に優先する（両方に一致する版は「保持」される）
  *   - most_recent_versions(keep_count) は「パッケージ単位」で最新 N 版を保持する
  *   - KEEP 単体では古い版を削除しない。実削除には DELETE ポリシーが必須
+ *
+ * 方針はディスク節約優先（SPR-96）: 直近5版を下限に、7日より古い版は削除する。
  */
 
 # Artifact Registryリポジトリの作成（Cloud Run web 用）
@@ -24,11 +26,10 @@ resource "google_artifact_registry_repository" "docker_repo" {
 
   cleanup_policy_dry_run = false
 
-  # 保持方針（ロールバック前提）:
-  #   keep-recent-versions(KEEP/10) ... 直近10デプロイは経過日数に関係なく必ず保持（rollback 用の正本）
-  #   delete-old-tagged(DELETE/30日) ... 30日より古いタグ付き版を削除（直近10版は KEEP が勝つ）= 蓄積を上限化
+  # 保持方針（ディスク節約優先）:
+  #   keep-recent-versions(KEEP/5) ... 直近5デプロイは経過日数に関係なく保持（rollback 下限）
   #   keep-minimum-versions(KEEP/latest) ... 本番が指す latest タグ版を明示保護（多重防御）
-  #   delete-old-untagged(DELETE/7日) ... ビルド中間レイヤ等のタグなしを早期削除
+  #   delete-old(DELETE/7日/ANY) ... 7日より古い版（タグ付き・なし問わず）を削除。直近5版と latest は KEEP が勝つ
   cleanup_policies {
     id     = "keep-minimum-versions"
     action = "KEEP"
@@ -40,20 +41,11 @@ resource "google_artifact_registry_repository" "docker_repo" {
   }
 
   cleanup_policies {
-    id     = "delete-old-untagged"
+    id     = "delete-old"
     action = "DELETE"
     condition {
-      older_than = "604800s" # 7日 (7 * 24 * 60 * 60秒)
-      tag_state  = "UNTAGGED"
-    }
-  }
-
-  cleanup_policies {
-    id     = "delete-old-tagged"
-    action = "DELETE"
-    condition {
-      older_than            = "2592000s" # 30日 (30 * 24 * 60 * 60秒)
-      tag_state             = "TAGGED"
+      older_than            = "604800s" # 7日 (7 * 24 * 60 * 60秒)
+      tag_state             = "ANY"
       package_name_prefixes = ["web"]
     }
   }
@@ -62,7 +54,7 @@ resource "google_artifact_registry_repository" "docker_repo" {
     id     = "keep-recent-versions"
     action = "KEEP"
     most_recent_versions {
-      keep_count            = 10
+      keep_count            = 5
       package_name_prefixes = ["web"]
     }
   }
@@ -80,26 +72,16 @@ resource "google_artifact_registry_repository" "gcf_artifacts" {
 
   cleanup_policy_dry_run = false
 
-  # 保持方針（関数単位＝パッケージ単位で評価される）:
-  #   keep-recent-function-versions(KEEP/10) ... 各関数の最新10版を経過日数に関係なく保持。
+  # 保持方針（関数単位＝パッケージ単位で評価される / ディスク節約優先）:
+  #   keep-recent-function-versions(KEEP/5) ... 各関数の最新5版を経過日数に関係なく保持。
   #     稼働中の関数が参照する最新イメージは常にその関数の最新版＝必ず保持され、GC で関数が壊れない（KEEP > DELETE）
-  #   delete-old-tagged(DELETE/30日) ... 30日より古いタグ付き版を削除（各関数の直近10版は KEEP が勝つ）
-  #   delete-old-untagged(DELETE/7日) ... タグなしを早期削除
+  #   delete-old(DELETE/7日/ANY) ... 7日より古い版を削除（各関数の直近5版は KEEP が勝つ）
   cleanup_policies {
-    id     = "delete-old-untagged"
+    id     = "delete-old"
     action = "DELETE"
     condition {
       older_than = "604800s" # 7日 (7 * 24 * 60 * 60秒)
-      tag_state  = "UNTAGGED"
-    }
-  }
-
-  cleanup_policies {
-    id     = "delete-old-tagged"
-    action = "DELETE"
-    condition {
-      older_than = "2592000s" # 30日 (30 * 24 * 60 * 60秒)
-      tag_state  = "TAGGED"
+      tag_state  = "ANY"
     }
   }
 
@@ -107,7 +89,7 @@ resource "google_artifact_registry_repository" "gcf_artifacts" {
     id     = "keep-recent-function-versions"
     action = "KEEP"
     most_recent_versions {
-      keep_count = 10
+      keep_count = 5
     }
   }
 
