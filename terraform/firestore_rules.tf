@@ -9,9 +9,11 @@ resource "google_firestore_document" "firestore_rules" {
   project     = var.gcp_project_id
   collection  = "_firestore_rules"
   document_id = "firestore_rules"
+  # fields は Firestore REST API の Value 表現（camelCase）で記述する。
+  # snake_case（string_value）にすると live(stringValue) と恒久 diff になる（ADR-009 / SPR-98）。
   fields = jsonencode({
     rules = {
-      string_value = <<-EOT
+      stringValue = <<-EOT
         rules_version = '2';
         service cloud.firestore {
           // 基本設定 - デフォルトはすべての読み書きを拒否
