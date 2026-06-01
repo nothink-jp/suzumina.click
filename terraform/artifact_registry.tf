@@ -3,9 +3,17 @@
  *
  * GitHubActions等でDockerイメージを保存するための
  * Artifact Registryリポジトリを事前に作成します
+ *
+ * イメージ GC の正本はこのファイルの cleanup_policies（ADR-009 原則3: GC は Terraform ネイティブに一本化）。
+ * deploy-web.yml / deploy-functions.yml の手動 image 削除は SPR-96 で撤去し、二重管理を解消した。
+ *
+ * cleanup_policies のセマンティクス（公式仕様）:
+ *   - KEEP は DELETE に優先する（両方に一致する版は「保持」される）
+ *   - most_recent_versions(keep_count) は「パッケージ単位」で最新 N 版を保持する
+ *   - KEEP 単体では古い版を削除しない。実削除には DELETE ポリシーが必須
  */
 
-# Artifact Registryリポジトリの作成
+# Artifact Registryリポジトリの作成（Cloud Run web 用）
 resource "google_artifact_registry_repository" "docker_repo" {
   provider = google
 
@@ -14,8 +22,13 @@ resource "google_artifact_registry_repository" "docker_repo" {
   description   = "suzumina.click用のDockerイメージリポジトリ"
   format        = "DOCKER"
 
-  # イメージが削除されても30日間は保持する設定
   cleanup_policy_dry_run = false
+
+  # 保持方針（ロールバック前提）:
+  #   keep-recent-versions(KEEP/10) ... 直近10デプロイは経過日数に関係なく必ず保持（rollback 用の正本）
+  #   delete-old-tagged(DELETE/30日) ... 30日より古いタグ付き版を削除（直近10版は KEEP が勝つ）= 蓄積を上限化
+  #   keep-minimum-versions(KEEP/latest) ... 本番が指す latest タグ版を明示保護（多重防御）
+  #   delete-old-untagged(DELETE/7日) ... ビルド中間レイヤ等のタグなしを早期削除
   cleanup_policies {
     id     = "keep-minimum-versions"
     action = "KEEP"
@@ -27,7 +40,7 @@ resource "google_artifact_registry_repository" "docker_repo" {
   }
 
   cleanup_policies {
-    id     = "delete-old-versions"
+    id     = "delete-old-untagged"
     action = "DELETE"
     condition {
       older_than = "604800s" # 7日 (7 * 24 * 60 * 60秒)
@@ -36,15 +49,23 @@ resource "google_artifact_registry_repository" "docker_repo" {
   }
 
   cleanup_policies {
-    id     = "keep-recent-versions"
-    action = "KEEP"
-    most_recent_versions {
-      keep_count            = 5
+    id     = "delete-old-tagged"
+    action = "DELETE"
+    condition {
+      older_than            = "2592000s" # 30日 (30 * 24 * 60 * 60秒)
+      tag_state             = "TAGGED"
       package_name_prefixes = ["web"]
     }
   }
 
-  # 必要に応じて、VPCネットワーク設定等を追加
+  cleanup_policies {
+    id     = "keep-recent-versions"
+    action = "KEEP"
+    most_recent_versions {
+      keep_count            = 10
+      package_name_prefixes = ["web"]
+    }
+  }
 }
 
 # Cloud Functions用のArtifact Registryリポジトリ
@@ -57,10 +78,13 @@ resource "google_artifact_registry_repository" "gcf_artifacts" {
   description   = "This repository is created and used by Cloud Functions for storing function docker images."
   format        = "DOCKER"
 
-  # Cloud Functions用のクリーンアップポリシー
   cleanup_policy_dry_run = false
 
-  # 古いタグなしイメージを7日後に削除
+  # 保持方針（関数単位＝パッケージ単位で評価される）:
+  #   keep-recent-function-versions(KEEP/10) ... 各関数の最新10版を経過日数に関係なく保持。
+  #     稼働中の関数が参照する最新イメージは常にその関数の最新版＝必ず保持され、GC で関数が壊れない（KEEP > DELETE）
+  #   delete-old-tagged(DELETE/30日) ... 30日より古いタグ付き版を削除（各関数の直近10版は KEEP が勝つ）
+  #   delete-old-untagged(DELETE/7日) ... タグなしを早期削除
   cleanup_policies {
     id     = "delete-old-untagged"
     action = "DELETE"
@@ -70,12 +94,20 @@ resource "google_artifact_registry_repository" "gcf_artifacts" {
     }
   }
 
-  # 最新5バージョンを保持（Function毎）
+  cleanup_policies {
+    id     = "delete-old-tagged"
+    action = "DELETE"
+    condition {
+      older_than = "2592000s" # 30日 (30 * 24 * 60 * 60秒)
+      tag_state  = "TAGGED"
+    }
+  }
+
   cleanup_policies {
     id     = "keep-recent-function-versions"
     action = "KEEP"
     most_recent_versions {
-      keep_count = 5
+      keep_count = 10
     }
   }
 

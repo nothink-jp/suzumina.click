@@ -198,61 +198,33 @@ jobs:
             echo "Note: The deployment may still be successful. Check Cloud Run logs if needed."
           fi
       
-      # Parallel cleanup
-      - name: Cleanup old resources
+      # Cloud Run リビジョンの掃除
+      # image GC は terraform の cleanup_policies が正本（ADR-009 原則3 / SPR-96）。
+      # リビジョン GC は terraform ネイティブ手段が無いためここに残す（二重管理ではない）。
+      - name: Cleanup old revisions
         if: always()
         run: |
-          echo "🧹 Starting parallel cleanup..."
-          
-          # Cloud Run revisions cleanup (background)
-          (
-            REVISIONS=$(gcloud run revisions list \
-              --service="${{ env.SERVICE_NAME }}" \
-              --region="${{ env.REGION }}" \
-              --sort-by="~metadata.creationTimestamp" \
-              --format="value(metadata.name)" \
-              --limit=10)
-            
-            if [ -n "$REVISIONS" ]; then
-              REVISION_ARRAY=($REVISIONS)
-              TOTAL=${#REVISION_ARRAY[@]}
-              
-              if [ $TOTAL -gt 3 ]; then
-                echo "Cleaning up $((TOTAL-3)) old revisions..."
-                for ((i=3; i<TOTAL; i++)); do
-                  gcloud run revisions delete "${REVISION_ARRAY[$i]}" \
-                    --region="${{ env.REGION }}" \
-                    --quiet || true
-                done
-              fi
+          echo "🧹 Cleaning up old Cloud Run revisions..."
+
+          REVISIONS=$(gcloud run revisions list \
+            --service="${{ env.SERVICE_NAME }}" \
+            --region="${{ env.REGION }}" \
+            --sort-by="~metadata.creationTimestamp" \
+            --format="value(metadata.name)" \
+            --limit=10)
+
+          if [ -n "$REVISIONS" ]; then
+            REVISION_ARRAY=($REVISIONS)
+            TOTAL=${#REVISION_ARRAY[@]}
+
+            if [ $TOTAL -gt 3 ]; then
+              echo "Cleaning up $((TOTAL-3)) old revisions..."
+              for ((i=3; i<TOTAL; i++)); do
+                gcloud run revisions delete "${REVISION_ARRAY[$i]}" \
+                  --region="${{ env.REGION }}" \
+                  --quiet || true
+              done
             fi
-          ) &
-          REVISION_PID=$!
-          
-          # Docker images cleanup (background)
-          (
-            IMAGES=$(gcloud artifacts docker images list \
-              "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}" \
-              --sort-by="CREATE_TIME" \
-              --format="value(IMAGE)" \
-              --limit=20)
-            
-            if [ -n "$IMAGES" ]; then
-              IMAGE_ARRAY=($IMAGES)
-              TOTAL=${#IMAGE_ARRAY[@]}
-              
-              if [ $TOTAL -gt 5 ]; then
-                echo "Cleaning up $((TOTAL-5)) old images..."
-                for ((i=0; i<$((TOTAL-5)); i++)); do
-                  gcloud artifacts docker images delete "${IMAGE_ARRAY[$i]}" \
-                    --delete-tags \
-                    --quiet || true
-                done
-              fi
-            fi
-          ) &
-          IMAGE_PID=$!
-          
-          # Wait for both cleanup processes
-          wait $REVISION_PID $IMAGE_PID
-          echo "✅ Parallel cleanup completed"
+          fi
+
+          echo "✅ Revision cleanup completed"
