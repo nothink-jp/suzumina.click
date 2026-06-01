@@ -111,6 +111,13 @@ resource "google_secret_manager_secret_version" "secret_versions" {
   secret_data = each.value
 
   depends_on = [google_secret_manager_secret.secrets]
+
+  # secret 値は Terraform 管理外（bootstrap 一回化）＝ADR-010 / SPR-99。
+  # CI apply で TF_VAR が live と食い違っても誤ローテーションしないよう var 変更を無視する。
+  # 値の更新は console / `gcloud secrets versions add` で out-of-band 実施する（CI は placeholder で plan/apply 可能）。
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
 }
 
 # シークレットアクセス・管理用のカスタムロール
