@@ -9,6 +9,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { ExternalLink, Eye, LogIn, Plus } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import type { ReactNode } from "react";
 
 interface VideoCardActionsProps {
 	video: VideoPlainObject;
@@ -82,58 +83,58 @@ export default function VideoCardActions({ video, variant }: VideoCardActionsPro
 
 	const gate = evaluateButtonGate(video, Boolean(session?.user));
 
+	let createAction: ReactNode;
 	if (gate.canCreate) {
-		return (
-			<fieldset className="flex gap-2" aria-label="動画アクション">
-				{detailLink}
-				<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
-					<Link
-						href={`/buttons/create?video_id=${video.id}`}
-						aria-label={`${video.title}の音声ボタンを作成`}
-						className="flex items-center whitespace-nowrap"
-					>
-						<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
-						ボタン作成
-					</Link>
-				</Button>
-			</fieldset>
+		createAction = (
+			<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
+				<Link
+					href={`/buttons/create?video_id=${video.id}`}
+					aria-label={`${video.title}の音声ボタンを作成`}
+					className="flex items-center whitespace-nowrap"
+				>
+					<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
+					ボタン作成
+				</Link>
+			</Button>
 		);
-	}
-
-	// 未ログイン: ログイン導線を出す
-	if (gate.needsLogin) {
-		return (
-			<fieldset className="flex gap-2" aria-label="動画アクション">
-				{detailLink}
-				<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
-					<Link
-						href={`/auth/signin?callbackUrl=${encodeURIComponent(`/buttons/create?video_id=${video.id}`)}`}
-						aria-label="ログインして音声ボタンを作成"
-						className="flex items-center whitespace-nowrap"
-					>
-						<LogIn className="h-4 w-4 mr-1" aria-hidden="true" />
-						ログイン
-					</Link>
-				</Button>
-			</fieldset>
+	} else if (gate.needsLogin) {
+		// 未ログイン: ログイン導線を出す
+		createAction = (
+			<Button size="sm" variant="default" className="flex-1 min-h-[44px] text-sm" asChild>
+				<Link
+					href={`/auth/signin?callbackUrl=${encodeURIComponent(`/buttons/create?video_id=${video.id}`)}`}
+					aria-label="ログインして音声ボタンを作成"
+					className="flex items-center whitespace-nowrap"
+				>
+					<LogIn className="h-4 w-4 mr-1" aria-hidden="true" />
+					ログイン
+				</Link>
+			</Button>
 		);
-	}
-
-	// 作成不可（理由あり）: disabled ボタン + tooltip で理由を提示
-	return (
-		<fieldset className="flex gap-2" aria-label="動画アクション">
-			{detailLink}
+	} else {
+		// 作成不可（理由あり）: aria-disabled で理由を提示。
+		// native disabled は pointer-events-none で title ツールチップが出ず、
+		// フォーカスもできないため、aria-disabled でホバー/フォーカス両方に理由を届かせる。
+		createAction = (
 			<Button
+				type="button"
 				size="sm"
 				variant="default"
-				className="flex-1 min-h-[44px] text-sm"
-				disabled
+				className="flex-1 min-h-[44px] text-sm opacity-50 cursor-not-allowed hover:bg-primary"
+				aria-disabled="true"
 				title={gate.reason}
 				aria-label={`音声ボタンを作成できません: ${gate.reason}`}
 			>
 				<Plus className="h-4 w-4 mr-1" aria-hidden="true" />
 				ボタン作成
 			</Button>
+		);
+	}
+
+	return (
+		<fieldset className="flex gap-2" aria-label="動画アクション">
+			{detailLink}
+			{createAction}
 		</fieldset>
 	);
 }

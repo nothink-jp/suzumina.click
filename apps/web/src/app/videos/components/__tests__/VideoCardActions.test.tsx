@@ -75,7 +75,7 @@ describe("VideoCardActions", () => {
 		expect(screen.queryByText("ボタン作成")).not.toBeInTheDocument();
 	});
 
-	it("ログイン済みでも作成不可なら理由を tooltip に持つ disabled ボタンを表示する", () => {
+	it("ログイン済みでも作成不可なら理由を tooltip に持つ aria-disabled ボタンを表示する", () => {
 		(useSession as any).mockReturnValue(loggedIn);
 		const video = createMockVideo({
 			liveBroadcastContent: "live",
@@ -90,8 +90,12 @@ describe("VideoCardActions", () => {
 		render(<VideoCardActions video={video} variant="grid" />);
 
 		const createButton = screen.getByText("ボタン作成").closest("button");
-		expect(createButton).toBeDisabled();
+		// native disabled は pointer-events-none で tooltip が出ないため aria-disabled を使う
+		expect(createButton).toHaveAttribute("aria-disabled", "true");
+		expect(createButton).not.toBeDisabled();
 		expect(createButton).toHaveAttribute("title", "ライブ配信中は音声ボタンを作成できません");
+		// ホバー/フォーカスで理由が届くよう href を持たない（遷移しない）
+		expect(createButton).not.toHaveAttribute("href");
 	});
 
 	it("埋め込み制限がある場合は理由として埋め込み制限を表示する", () => {
@@ -100,7 +104,7 @@ describe("VideoCardActions", () => {
 		render(<VideoCardActions video={video} variant="grid" />);
 
 		const createButton = screen.getByText("ボタン作成").closest("button");
-		expect(createButton).toBeDisabled();
+		expect(createButton).toHaveAttribute("aria-disabled", "true");
 		expect(createButton).toHaveAttribute(
 			"title",
 			"この動画は埋め込みが制限されているため、音声ボタンを作成できません",
