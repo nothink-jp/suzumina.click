@@ -15,9 +15,9 @@ locals {
       cloud_run_cpu_idle      = true    # コスト削減のためCPUアイドル有効
       cloud_run_memory        = "512Mi" # 最小メモリ
       # functions_* は ADR-009/SPR-92 で Actions 専管化。spec の正本は deploy-functions.yml
-      budget_amount           = 1000    # 約1000円（月）
-      enable_monitoring       = false   # 基本監視のみ
-      enable_custom_domain    = false   # staging用ドメイン不要
+      budget_amount        = 1000  # 約1000円（月）
+      enable_monitoring    = false # 基本監視のみ
+      enable_custom_domain = false # staging用ドメイン不要
     }
     production = {
       # 本番環境（個人利用レベル・パフォーマンス改善）
@@ -27,9 +27,9 @@ locals {
       cloud_run_cpu_idle      = false    # CPUを常時割り当て: アイドル後のスロットリング防止
       cloud_run_memory        = "1024Mi" # メモリ増強（1GB）でGC改善
       # functions_* は ADR-009/SPR-92 で Actions 専管化。spec の正本は deploy-functions.yml
-      budget_amount           = 5000     # 月額5000円制限
-      enable_monitoring       = true     # フル監視
-      enable_custom_domain    = true     # 本番ドメイン
+      budget_amount        = 5000 # 月額5000円制限
+      enable_monitoring    = true # フル監視
+      enable_custom_domain = true # 本番ドメイン
     }
   }
 
