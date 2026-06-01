@@ -57,8 +57,10 @@ export function CompactTagDisplay({
 			text
 		);
 
+	if (allTags.length === 0) return null;
+
 	return (
-		<div className={cn("flex flex-wrap", sizeClasses.layerContainer, className)}>
+		<ul className={cn("flex flex-wrap", sizeClasses.layerContainer, className)} aria-label="タグ">
 			{allTags.map((tag, index) => {
 				const badgeClassName = cn(
 					sizeClasses.badge,
@@ -67,24 +69,23 @@ export function CompactTagDisplay({
 					"transition-all duration-200",
 				);
 
-				if (tagHref) {
-					return (
-						<Badge key={`${tag.type}-${tag.text}-${index}`} asChild className={badgeClassName}>
-							<Link href={tagHref(tag.text, tag.type)}>{renderContent(tag.text)}</Link>
-						</Badge>
-					);
-				}
-
 				return (
-					<Badge
-						key={`${tag.type}-${tag.text}-${index}`}
-						className={badgeClassName}
-						onClick={onTagClick ? (e) => handleTagClick(tag.text, tag.type, e) : undefined}
-					>
-						{renderContent(tag.text)}
-					</Badge>
+					<li key={`${tag.type}-${tag.text}-${index}`}>
+						{tagHref ? (
+							<Badge asChild className={badgeClassName}>
+								<Link href={tagHref(tag.text, tag.type)}>{renderContent(tag.text)}</Link>
+							</Badge>
+						) : (
+							<Badge
+								className={badgeClassName}
+								onClick={onTagClick ? (e) => handleTagClick(tag.text, tag.type, e) : undefined}
+							>
+								{renderContent(tag.text)}
+							</Badge>
+						)}
+					</li>
 				);
 			})}
-		</div>
+		</ul>
 	);
 }
