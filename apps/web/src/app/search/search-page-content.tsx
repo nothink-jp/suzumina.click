@@ -25,6 +25,7 @@ import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
+import { buildTagSearchHref } from "@/lib/tag-search";
 
 interface UnifiedSearchResult {
 	audioButtons: AudioButtonPlainObject[];
@@ -352,12 +353,8 @@ function SearchResults({
 							</div>
 							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 								{searchResult.videos.slice(0, 6).map((video) => (
-									<Link
-										key={video.id}
-										href={`/videos/${video.id}`}
-										className="group block hover:shadow-lg transition-shadow"
-									>
-										<Card className="h-full">
+									<Card key={video.id} className="h-full group hover:shadow-lg transition-shadow">
+										<Link href={`/videos/${video.id}`} className="block">
 											<div className="aspect-[16/9] relative overflow-hidden rounded-t-lg bg-black">
 												<ThumbnailImage
 													src={video.thumbnailUrl}
@@ -365,7 +362,9 @@ function SearchResults({
 													className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
 												/>
 											</div>
-											<CardContent className="p-4">
+										</Link>
+										<CardContent className="p-4">
+											<Link href={`/videos/${video.id}`} className="block">
 												<h3 className="font-medium line-clamp-2 group-hover:text-suzuka-600 transition-colors">
 													<HighlightText
 														text={video.title}
@@ -373,29 +372,30 @@ function SearchResults({
 														highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
 													/>
 												</h3>
-												<p className="text-sm text-muted-foreground mt-1">
-													{new Date(video.publishedAt).toLocaleDateString("ja-JP", {
-														timeZone: "Asia/Tokyo",
-													})}
-												</p>
-												{/* 3層タグハイライト表示 */}
-												<div className="mt-2">
-													<ThreeLayerTagDisplay
-														playlistTags={video.tags?.playlistTags || []}
-														userTags={video.tags?.userTags || []}
-														categoryId={video.categoryId}
-														categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
-														searchQuery={searchQuery}
-														highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
-														size="sm"
-														maxTagsPerLayer={3}
-														showEmptyLayers={false}
-														showCategory={true}
-													/>
-												</div>
-											</CardContent>
-										</Card>
-									</Link>
+											</Link>
+											<p className="text-sm text-muted-foreground mt-1">
+												{new Date(video.publishedAt).toLocaleDateString("ja-JP", {
+													timeZone: "Asia/Tokyo",
+												})}
+											</p>
+											{/* 3層タグハイライト表示 */}
+											<div className="mt-2">
+												<ThreeLayerTagDisplay
+													playlistTags={video.tags?.playlistTags || []}
+													userTags={video.tags?.userTags || []}
+													categoryId={video.categoryId}
+													categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
+													searchQuery={searchQuery}
+													highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+													size="sm"
+													maxTagsPerLayer={3}
+													showEmptyLayers={false}
+													showCategory={true}
+													tagHref={buildTagSearchHref}
+												/>
+											</div>
+										</CardContent>
+									</Card>
 								))}
 							</div>
 							{searchResult.hasMore.videos && (
@@ -489,12 +489,8 @@ function SearchResults({
 				<TabsContent value="videos">
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 						{searchResult.videos.map((video) => (
-							<Link
-								key={video.id}
-								href={`/videos/${video.id}`}
-								className="group block hover:shadow-lg transition-shadow"
-							>
-								<Card className="h-full">
+							<Card key={video.id} className="h-full group hover:shadow-lg transition-shadow">
+								<Link href={`/videos/${video.id}`} className="block">
 									<div className="aspect-[16/9] relative overflow-hidden rounded-t-lg bg-black">
 										<ThumbnailImage
 											src={video.thumbnailUrl}
@@ -502,7 +498,9 @@ function SearchResults({
 											className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
 										/>
 									</div>
-									<CardContent className="p-4">
+								</Link>
+								<CardContent className="p-4">
+									<Link href={`/videos/${video.id}`} className="block">
 										<h3 className="font-medium line-clamp-2 group-hover:text-suzuka-600 transition-colors">
 											<HighlightText
 												text={video.title}
@@ -510,29 +508,30 @@ function SearchResults({
 												highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
 											/>
 										</h3>
-										<p className="text-sm text-muted-foreground mt-1">
-											{new Date(video.publishedAt).toLocaleDateString("ja-JP", {
-												timeZone: "Asia/Tokyo",
-											})}
-										</p>
-										{/* 3層タグハイライト表示 */}
-										<div className="mt-2">
-											<ThreeLayerTagDisplay
-												playlistTags={video.tags?.playlistTags || []}
-												userTags={video.tags?.userTags || []}
-												categoryId={video.categoryId}
-												categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
-												searchQuery={searchQuery}
-												highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
-												size="sm"
-												maxTagsPerLayer={3}
-												showEmptyLayers={false}
-												showCategory={true}
-											/>
-										</div>
-									</CardContent>
-								</Card>
-							</Link>
+									</Link>
+									<p className="text-sm text-muted-foreground mt-1">
+										{new Date(video.publishedAt).toLocaleDateString("ja-JP", {
+											timeZone: "Asia/Tokyo",
+										})}
+									</p>
+									{/* 3層タグハイライト表示 */}
+									<div className="mt-2">
+										<ThreeLayerTagDisplay
+											playlistTags={video.tags?.playlistTags || []}
+											userTags={video.tags?.userTags || []}
+											categoryId={video.categoryId}
+											categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
+											searchQuery={searchQuery}
+											highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
+											size="sm"
+											maxTagsPerLayer={3}
+											showEmptyLayers={false}
+											showCategory={true}
+											tagHref={buildTagSearchHref}
+										/>
+									</div>
+								</CardContent>
+							</Card>
 						))}
 					</div>
 				</TabsContent>

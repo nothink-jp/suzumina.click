@@ -6,6 +6,7 @@ import { Calendar, Clock, Lock, Radio, Video } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
+import { buildTagSearchHref } from "@/lib/tag-search";
 import VideoCardActions from "./VideoCardActions";
 
 // 動画タイプ別バッジ情報（純関数）
@@ -94,25 +95,6 @@ function getDisplayDate(video: VideoPlainObject) {
 		displayLabel: "公開日",
 		dateTimeValue: video.publishedAt,
 	};
-}
-
-// タグ → 検索ページの href ビルダー（純関数）。層に応じたフィルターパラメータを付与する
-function buildTagSearchHref(tag: string, layer: "playlist" | "user" | "category") {
-	const params = new URLSearchParams();
-	params.set("q", tag);
-	params.set("type", "videos");
-	switch (layer) {
-		case "playlist":
-			params.set("playlistTags", tag);
-			break;
-		case "user":
-			params.set("userTags", tag);
-			break;
-		case "category":
-			params.set("categoryNames", tag);
-			break;
-	}
-	return `/search?${params.toString()}`;
 }
 
 interface VideoCardProps {

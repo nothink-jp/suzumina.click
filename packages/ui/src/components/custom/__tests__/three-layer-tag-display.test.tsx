@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ThreeLayerTagDisplay, VideoTagDisplay } from "../three-layer-tag-display";
@@ -258,6 +258,36 @@ describe("VideoTagDisplay", () => {
 			// ユーザータグはsuzuka-50色
 			const userBadge = screen.getByText("可愛い");
 			expect(userBadge).toHaveClass("bg-suzuka-50", "text-suzuka-700");
+		});
+
+		it("should render compact tags as a semantic list (ul/li)", () => {
+			render(
+				<VideoTagDisplay
+					playlistTags={["配信"]}
+					userTags={["可愛い"]}
+					categoryId="24"
+					categoryName="エンターテイメント"
+					compact={true}
+				/>,
+			);
+
+			const list = screen.getByRole("list", { name: "タグ" });
+			expect(list.tagName).toBe("UL");
+			expect(within(list).getAllByRole("listitem")).toHaveLength(3);
+		});
+
+		it("should render tagHref tags as links inside list items", () => {
+			render(
+				<VideoTagDisplay
+					playlistTags={["配信"]}
+					compact={true}
+					tagHref={(tag, layer) => `/search?q=${tag}&layer=${layer}`}
+				/>,
+			);
+
+			const link = screen.getByRole("link", { name: "配信" });
+			expect(link).toHaveAttribute("href", "/search?q=配信&layer=playlist");
+			expect(link.closest("li")).not.toBeNull();
 		});
 	});
 
