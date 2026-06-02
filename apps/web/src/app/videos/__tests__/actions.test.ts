@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getVideosList, getVideoTitles } from "../actions";
+import { getPopularVideoTags, getVideosList, getVideoTitles } from "../actions";
 
 // Mock Firestore
 const mockGet = vi.fn();
@@ -309,6 +309,92 @@ describe("Video Server Actions", () => {
 			expect(mockWhere).toHaveBeenCalledWith("status.privacyStatus", "==", "public");
 			expect(mockCount).toHaveBeenCalled();
 			expect(result.totalCount).toBe(99);
+		});
+	});
+
+	describe("getPopularVideoTags", () => {
+		const makeVideoDoc = (id: string, playlistTags: string[]) => ({
+			id,
+			data: () => ({
+				id,
+				videoId: id,
+				title: `動画 ${id}`,
+				description: "説明",
+				channelId: "channel-1",
+				channelTitle: "チャンネル1",
+				publishedAt: new Date("2024-01-01").toISOString(),
+				duration: "PT5M",
+				thumbnailUrl: "https://example.com/thumb.jpg",
+				thumbnails: { high: { url: "https://example.com/thumb.jpg" } },
+				viewCount: 100,
+				likeCount: 10,
+				commentCount: 5,
+				hasAudioButtons: true,
+				audioButtonCount: 0,
+				categoryId: "10",
+				status: { privacyStatus: "public", uploadStatus: "processed" },
+				contentDetails: {
+					duration: "PT5M",
+					dimension: "2d",
+					definition: "hd",
+					caption: "false",
+					licensedContent: false,
+				},
+				statistics: { viewCount: "100", likeCount: "10", commentCount: "5" },
+				// 本番 mapper はネスト tags を正本として書き込む（video-mapper.ts）。
+				// filterVideos / getPopularVideoTags はともに video.tags.playlistTags を読む。
+				tags: { playlistTags, userTags: [], contentTags: [] },
+				playlistTags,
+				userTags: [],
+				lastFetchedAt: new Date().toISOString(),
+			}),
+		});
+
+		it("playlistTags を集計し件数の多い順に返す", async () => {
+			mockGet.mockResolvedValue({
+				docs: [
+					makeVideoDoc("v1", ["挨拶", "歌"]),
+					makeVideoDoc("v2", ["歌"]),
+					makeVideoDoc("v3", ["歌", "ゲーム"]),
+				],
+			});
+
+			const result = await getPopularVideoTags();
+
+			// public のみ対象とする where 条件で集計
+			expect(mockWhere).toHaveBeenCalledWith("status.privacyStatus", "==", "public");
+			expect(result[0]).toEqual({ tag: "歌", count: 3 });
+			const tags = result.map((t) => t.tag);
+			expect(tags).toContain("挨拶");
+			expect(tags).toContain("ゲーム");
+		});
+
+		it("limit で件数を制限する", async () => {
+			mockGet.mockResolvedValue({
+				docs: [makeVideoDoc("v1", ["a", "b", "c"])],
+			});
+
+			const result = await getPopularVideoTags(2);
+
+			expect(result).toHaveLength(2);
+		});
+
+		it("空文字タグは除外する", async () => {
+			mockGet.mockResolvedValue({
+				docs: [makeVideoDoc("v1", ["", "  ", "有効"])],
+			});
+
+			const result = await getPopularVideoTags();
+
+			expect(result).toEqual([{ tag: "有効", count: 1 }]);
+		});
+
+		it("エラー時は空配列を返す", async () => {
+			mockGet.mockRejectedValue(new Error("Firestore error"));
+
+			const result = await getPopularVideoTags();
+
+			expect(result).toEqual([]);
 		});
 	});
 });
