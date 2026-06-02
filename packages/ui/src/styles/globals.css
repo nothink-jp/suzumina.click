@@ -107,7 +107,7 @@
 		--ring: 340 75% 55%; /* suzuka-500 - primary に一致（旧値は青のままだった） */
 
 		/* フォーカス状態 */
-		--focus-ring: 221.2 70% 45%; /* Updated to match new primary color */
+		--focus-ring: 340 75% 55%; /* suzuka-500 - primary/--ring に一致（旧値は青のままだった） */
 		--focus-ring-offset: 0 0% 100%;
 
 		/* Chart colors */
