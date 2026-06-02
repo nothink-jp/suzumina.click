@@ -134,12 +134,12 @@ export async function getVideosList(params: {
 		year: params.filters?.year === "all" ? undefined : (params.filters?.year as string),
 		playlistTags: toStringArray(params.filters?.playlistTags),
 		userTags: toStringArray(params.filters?.userTags),
+		// "all" は select フィルタの空値センチネルなので undefined 化。
+		// それ以外は playlistTags/userTags と同じく string/string[] を配列へ正規化する。
 		categoryNames:
 			params.filters?.categoryNames === "all"
 				? undefined
-				: params.filters?.categoryNames
-					? [params.filters.categoryNames as string]
-					: undefined,
+				: toStringArray(params.filters?.categoryNames),
 		videoType:
 			params.filters?.videoType === "all" ? undefined : (params.filters?.videoType as string),
 	};
