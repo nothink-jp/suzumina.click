@@ -2,7 +2,7 @@
 
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { ConfigurableList } from "@suzumina.click/ui/components/custom";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ListWrapper } from "@/components/list/ListWrapper";
 import {
 	DEFAULT_ITEMS_PER_PAGE_OPTIONS,
@@ -10,7 +10,7 @@ import {
 	GRID_COLUMNS_4,
 	VIDEO_SORT_OPTIONS,
 } from "@/constants/list-options";
-import { getVideosList } from "../actions";
+import { getPopularVideoTags, getVideosList } from "../actions";
 import VideoCard from "./VideoCard";
 
 interface VideoListProps {
@@ -22,6 +22,21 @@ interface VideoListProps {
 }
 
 export default function VideoList({ initialData }: VideoListProps) {
+	// タグ絞り込み用の人気タグ（playlistTags）。取得失敗してもUIは動作する。
+	const [availableTags, setAvailableTags] = useState<Array<{ value: string; label: string }>>([]);
+
+	useEffect(() => {
+		const fetchTags = async () => {
+			try {
+				const tags = await getPopularVideoTags(30);
+				setAvailableTags(tags.map((t) => ({ value: t.tag, label: `${t.tag} (${t.count})` })));
+			} catch {
+				// タグ取得に失敗しても他のフィルタ・検索は動作するため握りつぶす
+			}
+		};
+		fetchTags();
+	}, []);
+
 	// 年代選択肢を生成（2018年から現在年まで）
 	const yearOptions = useMemo(() => {
 		const currentYear = new Date().getFullYear();
@@ -76,6 +91,19 @@ export default function VideoList({ initialData }: VideoListProps) {
 						showAll: true,
 						emptyValue: "all",
 					},
+					// key は playlistTags 固定: dataAdapter なしのため params.filters.playlistTags が
+					// そのまま getVideosList に渡り、filterVideos の playlistTags フィルタが処理する。
+					// 候補タグが無い間（取得前・取得失敗）はフィルタ自体を出さない。
+					...(availableTags.length > 0
+						? {
+								playlistTags: {
+									type: "tags" as const,
+									label: "タグ",
+									placeholder: "タグを選択",
+									options: availableTags,
+								},
+							}
+						: {}),
 				}}
 				itemsPerPageOptions={DEFAULT_ITEMS_PER_PAGE_OPTIONS}
 				emptyMessage="動画がありません"

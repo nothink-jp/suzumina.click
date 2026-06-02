@@ -365,6 +365,52 @@ export async function getVideoTitles(params?: {
 }
 
 /**
+ * 動画の人気タグ（playlistTags）を集計して取得する
+ *
+ * 一覧ページのタグ絞り込みUIの選択肢に使う。tags.playlistTags を正本とし、
+ * convertToVideo 経由で PlainObject 化してから集計する（Firestore raw 構造に依存しない）。
+ * 絞り込み自体は getVideosList の playlistTags フィルタ（filterVideos）が行う。
+ */
+export async function getPopularVideoTags(limit = 30): Promise<
+	Array<{
+		tag: string;
+		count: number;
+	}>
+> {
+	try {
+		const firestore = getFirestore();
+		const snapshot = await firestore
+			.collection("videos")
+			.where("status.privacyStatus", "==", "public")
+			.get();
+
+		const tagCounts = new Map<string, number>();
+		for (const doc of snapshot.docs) {
+			const video = convertToVideo(doc);
+			const playlistTags = video?.tags?.playlistTags;
+			if (Array.isArray(playlistTags)) {
+				for (const tag of playlistTags) {
+					if (typeof tag === "string" && tag.trim() !== "") {
+						tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+					}
+				}
+			}
+		}
+
+		return Array.from(tagCounts.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, limit)
+			.map(([tag, count]) => ({ tag, count }));
+	} catch (error) {
+		logger.error("動画の人気タグ取得に失敗", {
+			action: "getPopularVideoTags",
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return [];
+	}
+}
+
+/**
  * Entity V2を使用した特定の動画IDで動画データを取得するServer Action
  * @param videoId - 動画ID
  * @returns 動画データまたはnull
