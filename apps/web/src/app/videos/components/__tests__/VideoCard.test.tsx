@@ -162,6 +162,23 @@ describe("VideoCard", () => {
 		);
 	});
 
+	it("searchQuery 指定時にタイトルのマッチ語をハイライトする", () => {
+		const video = createMockVideo();
+		const { container } = render(<VideoCard video={video} searchQuery="動画" />);
+
+		const marks = [...container.querySelectorAll("mark")];
+		expect(marks.some((m) => m.textContent === "動画")).toBe(true);
+		// ハイライトはタイトル（video-title）内に存在する
+		const titleHeading = container.querySelector('[id^="video-title-"]');
+		expect(titleHeading?.querySelector("mark")).not.toBeNull();
+	});
+
+	it("searchQuery 未指定時はタイトルをハイライトしない", () => {
+		const video = createMockVideo();
+		const { container } = render(<VideoCard video={video} />);
+		expect(container.querySelector("mark")).toBeNull();
+	});
+
 	describe("公開日時境界テスト", () => {
 		it("年末年始をまたぐ日時が正しくJSTで表示される", () => {
 			const video = createMockVideo({

@@ -1,4 +1,5 @@
 import type { VideoPlainObject } from "@suzumina.click/shared-types";
+import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-text";
 import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
@@ -101,6 +102,8 @@ interface VideoCardProps {
 	video: VideoPlainObject;
 	variant?: "grid" | "sidebar";
 	priority?: boolean; // LCP画像最適化用
+	/** 検索語。指定時はタイトル・タグでマッチ語をハイライトする（検索結果での再利用向け） */
+	searchQuery?: string;
 }
 
 /**
@@ -108,7 +111,7 @@ interface VideoCardProps {
  * 認証ゲートを伴うアクションは {@link VideoCardActions}（client island）に隔離し、
  * 本体は純表示に徹する。WorkCard と同じ「shell + island」構造。
  */
-function VideoCard({ video, variant = "grid", priority = false }: VideoCardProps) {
+function VideoCard({ video, variant = "grid", priority = false, searchQuery }: VideoCardProps) {
 	const actualButtonCount = video.audioButtonCount ?? 0;
 	const { formattedDate, displayLabel, dateTimeValue } = getDisplayDate(video);
 	const categoryName = getYouTubeCategoryName(video.categoryId);
@@ -182,7 +185,15 @@ function VideoCard({ video, variant = "grid", priority = false }: VideoCardProps
 							id={`video-title-${video.id}`}
 							className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-foreground/80 transition-colors text-foreground"
 						>
-							{video.title}
+							{searchQuery ? (
+								<HighlightText
+									text={video.title}
+									searchQuery={searchQuery}
+									highlightClassName="bg-yellow-200 text-yellow-900 px-0.5 rounded"
+								/>
+							) : (
+								video.title
+							)}
 						</h3>
 					</Link>
 					<p
@@ -211,6 +222,7 @@ function VideoCard({ video, variant = "grid", priority = false }: VideoCardProps
 							showCategory={true}
 							compact={true}
 							tagHref={buildTagSearchHref}
+							searchQuery={searchQuery}
 						/>
 					</div>
 
