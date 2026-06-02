@@ -6,8 +6,6 @@ describe("buildTagSearchHref", () => {
 
 	it("playlist 層は playlistTags フィルターを付与する", () => {
 		const params = parse(buildTagSearchHref("配信", "playlist"));
-		expect(params.get("q")).toBe("配信");
-		expect(params.get("type")).toBe("videos");
 		expect(params.get("playlistTags")).toBe("配信");
 		expect(params.get("userTags")).toBeNull();
 		expect(params.get("categoryNames")).toBeNull();
@@ -24,10 +22,10 @@ describe("buildTagSearchHref", () => {
 		expect(params.get("categoryNames")).toBe("ゲーム");
 	});
 
-	it("先頭は /search で、特殊文字はエンコードされる", () => {
+	it("先頭は /videos で、特殊文字はエンコードされる", () => {
 		const href = buildTagSearchHref("a&b c", "playlist");
-		expect(href.startsWith("/search?")).toBe(true);
+		expect(href.startsWith("/videos?")).toBe(true);
 		expect(href).not.toContain("a&b c");
-		expect(parse(href).get("q")).toBe("a&b c");
+		expect(parse(href).get("playlistTags")).toBe("a&b c");
 	});
 });

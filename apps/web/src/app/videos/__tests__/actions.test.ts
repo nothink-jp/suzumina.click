@@ -310,6 +310,55 @@ describe("Video Server Actions", () => {
 			expect(mockCount).toHaveBeenCalled();
 			expect(result.totalCount).toBe(99);
 		});
+
+		it("playlistTags が単一文字列（URL由来）でもクラッシュせず絞り込む（SPR-111: /videos タグリンク）", async () => {
+			// /videos?playlistTags=歌 のような単一文字列を ConfigurableList でなく
+			// URL 経由で受けた場合、filterVideos が string.some を呼んで落ちないことを保証する。
+			const docWithTag = {
+				id: "v-tag",
+				data: () => ({
+					id: "v-tag",
+					videoId: "v-tag",
+					title: "歌動画",
+					description: "説明",
+					channelId: "c",
+					channelTitle: "ch",
+					publishedAt: new Date("2024-01-01").toISOString(),
+					duration: "PT5M",
+					thumbnailUrl: "https://example.com/t.jpg",
+					thumbnails: { high: { url: "https://example.com/t.jpg" } },
+					viewCount: 1,
+					likeCount: 1,
+					commentCount: 1,
+					hasAudioButtons: false,
+					audioButtonCount: 0,
+					categoryId: "10",
+					status: { privacyStatus: "public", uploadStatus: "processed" },
+					contentDetails: {
+						duration: "PT5M",
+						dimension: "2d",
+						definition: "hd",
+						caption: "false",
+						licensedContent: false,
+					},
+					statistics: { viewCount: "1", likeCount: "1", commentCount: "1" },
+					tags: { playlistTags: ["歌"], userTags: [], contentTags: [] },
+					playlistTags: ["歌"],
+					userTags: [],
+					lastFetchedAt: new Date().toISOString(),
+				}),
+			};
+			mockGet.mockResolvedValue({ docs: [docWithTag], size: 1 });
+
+			const result = await getVideosList({
+				page: 1,
+				limit: 12,
+				filters: { playlistTags: "歌" },
+			});
+
+			expect(result.items).toHaveLength(1);
+			expect(result.items[0].title).toBe("歌動画");
+		});
 	});
 
 	describe("getPopularVideoTags", () => {

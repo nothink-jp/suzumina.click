@@ -155,6 +155,18 @@ const nextConfig = {
 	// 静的最適化・プリロード設定
 	poweredByHeader: false,
 
+	// 廃止した /search（SPR-111）はインデックス済みのため 404 を避けて恒久リダイレクト。
+	// 横断検索は廃止し各一覧ページの検索へ集約したため、中核コンテンツの /buttons へ送る。
+	redirects() {
+		return [
+			{
+				source: "/search",
+				destination: "/buttons",
+				permanent: true,
+			},
+		];
+	},
+
 	// ヘッダー最適化
 	headers() {
 		return [

@@ -15,6 +15,7 @@ import { useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { updateUserTagsAction } from "@/actions/user-tags";
 import { VideoTagEditor } from "@/components/video/video-tag-editor";
+import { buildTagSearchHref } from "@/lib/tag-search";
 
 interface VideoUserTagEditorProps {
 	video: VideoPlainObject;
@@ -62,27 +63,10 @@ export function VideoUserTagEditor({ video }: VideoUserTagEditorProps) {
 	// カテゴリ名取得
 	const categoryName = getYouTubeCategoryName(video.categoryId);
 
-	// タグクリック時の検索ページ遷移
+	// タグクリック時の動画一覧遷移（遷移先の正本は lib/tag-search に集約）
 	const handleTagClick = useCallback(
 		(tag: string, layer: "playlist" | "user" | "category") => {
-			const params = new URLSearchParams();
-			params.set("q", tag);
-			params.set("type", "videos");
-
-			// 層に応じたフィルターパラメータを設定
-			switch (layer) {
-				case "playlist":
-					params.set("playlistTags", tag);
-					break;
-				case "user":
-					params.set("userTags", tag);
-					break;
-				case "category":
-					params.set("categoryNames", tag);
-					break;
-			}
-
-			router.push(`/search?${params.toString()}`);
+			router.push(buildTagSearchHref(tag, layer));
 		},
 		[router],
 	);

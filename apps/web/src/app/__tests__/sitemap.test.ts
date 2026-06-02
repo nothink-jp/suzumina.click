@@ -85,7 +85,6 @@ const STATIC_PATHS = [
 	"/works",
 	"/circles",
 	"/creators",
-	"/search",
 	"/about",
 	"/contact",
 	"/terms",

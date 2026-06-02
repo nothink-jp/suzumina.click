@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getAutocompleteSuggestions } from "@/app/search/actions";
+import { getAutocompleteSuggestions } from "@/actions/autocomplete";
 import { useAutocomplete } from "../use-autocomplete";
 
 // Mock useDebounce hook to return value immediately
@@ -9,7 +9,7 @@ vi.mock("./use-debounce", () => ({
 }));
 
 // Mock Server Actions
-vi.mock("@/app/search/actions", () => ({
+vi.mock("@/actions/autocomplete", () => ({
 	getAutocompleteSuggestions: vi.fn(),
 }));
 

@@ -99,9 +99,7 @@ describe("useAudioButton", () => {
 		const { result } = renderHook(() => useAudioButton(audioButton));
 
 		const tagUrl = result.current.getTagSearchUrl("テストタグ");
-		expect(tagUrl).toBe(
-			"/search?q=%E3%83%86%E3%82%B9%E3%83%88%E3%82%BF%E3%82%B0&type=audioButtons&tags=%E3%83%86%E3%82%B9%E3%83%88%E3%82%BF%E3%82%B0",
-		);
+		expect(tagUrl).toBe("/buttons?tags=%E3%83%86%E3%82%B9%E3%83%88%E3%82%BF%E3%82%B0");
 	});
 
 	it("人気度スコアを計算する", () => {

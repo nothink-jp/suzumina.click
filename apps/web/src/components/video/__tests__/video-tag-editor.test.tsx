@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VideoTagEditor } from "../video-tag-editor";
 
 // モック
-vi.mock("@/app/search/actions", () => ({
+vi.mock("@/actions/autocomplete", () => ({
 	getAutocompleteSuggestions: vi.fn().mockResolvedValue({
 		success: true,
 		data: { suggestions: [] },

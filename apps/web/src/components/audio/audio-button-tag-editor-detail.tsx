@@ -12,8 +12,8 @@ import { cn } from "@suzumina.click/ui/lib/utils";
 import { Edit, Save, Tag, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { type AutocompleteSuggestion, getAutocompleteSuggestions } from "@/actions/autocomplete";
 import { updateAudioButtonTags } from "@/app/buttons/actions";
-import { type AutocompleteSuggestion, getAutocompleteSuggestions } from "@/app/search/actions";
 
 export interface AudioButtonTagEditorDetailProps {
 	/** 音声ボタンID */

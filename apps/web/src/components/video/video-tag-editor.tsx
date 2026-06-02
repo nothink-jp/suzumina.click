@@ -11,7 +11,7 @@ import { Button } from "@suzumina.click/ui/components/ui/button";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Edit, Save, X } from "lucide-react";
 import { useCallback, useState } from "react";
-import { type AutocompleteSuggestion, getAutocompleteSuggestions } from "@/app/search/actions";
+import { type AutocompleteSuggestion, getAutocompleteSuggestions } from "@/actions/autocomplete";
 
 export interface VideoTagEditorProps {
 	/** 動画ID */

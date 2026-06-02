@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AutocompleteSuggestion } from "@/app/search/actions";
-import { getAutocompleteSuggestions } from "@/app/search/actions";
+import type { AutocompleteSuggestion } from "@/actions/autocomplete";
+import { getAutocompleteSuggestions } from "@/actions/autocomplete";
 import { useDebounce } from "./use-debounce";
 
 interface UseAutocompleteOptions {

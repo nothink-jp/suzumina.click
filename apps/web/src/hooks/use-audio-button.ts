@@ -54,13 +54,11 @@ export function useAudioButton(audioButton: AudioButton) {
 		return audioButton.startTime !== audioButton.endTime ? `${start} - ${end}` : start;
 	}, [audioButton.startTime, audioButton.endTime]);
 
-	// コールバック: タグの検索URLを生成
+	// コールバック: タグの検索URLを生成（音声ボタン一覧のタグ絞り込みへ遷移）
 	const getTagSearchUrl = useCallback((tag: string) => {
 		const params = new URLSearchParams();
-		params.set("q", tag);
-		params.set("type", "audioButtons");
 		params.set("tags", tag);
-		return `/search?${params.toString()}`;
+		return `/buttons?${params.toString()}`;
 	}, []);
 
 	return {
