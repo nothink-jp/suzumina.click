@@ -7,17 +7,16 @@ import type {
 	WorkPlainObject,
 } from "@suzumina.click/shared-types";
 import { HighlightText } from "@suzumina.click/ui/components/custom/highlight-text";
-import { ThreeLayerTagDisplay } from "@suzumina.click/ui/components/custom/three-layer-tag-display";
 import { Badge } from "@suzumina.click/ui/components/ui/badge";
 import { Button } from "@suzumina.click/ui/components/ui/button";
 import { Card, CardContent } from "@suzumina.click/ui/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@suzumina.click/ui/components/ui/tabs";
-import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { BookOpen, ChevronRight, Filter, Loader2, Music, Search, Video, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { searchUnified } from "@/app/actions";
+import VideoCard from "@/app/videos/components/VideoCard";
 import { AudioButtonWithPlayCount } from "@/components/audio/audio-button-with-play-count";
 import { SearchFilters } from "@/components/search/search-filters";
 import { SearchInputWithAutocomplete } from "@/components/search/search-input-with-autocomplete";
@@ -25,7 +24,6 @@ import ThumbnailImage from "@/components/ui/thumbnail-image";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useFavoriteStatusBulk } from "@/hooks/useFavoriteStatusBulk";
 import { useLikeDislikeStatusBulk } from "@/hooks/useLikeDislikeStatusBulk";
-import { buildTagSearchHref } from "@/lib/tag-search";
 
 interface UnifiedSearchResult {
 	audioButtons: AudioButtonPlainObject[];
@@ -353,49 +351,7 @@ function SearchResults({
 							</div>
 							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 								{searchResult.videos.slice(0, 6).map((video) => (
-									<Card key={video.id} className="h-full group hover:shadow-lg transition-shadow">
-										<Link href={`/videos/${video.id}`} className="block">
-											<div className="aspect-[16/9] relative overflow-hidden rounded-t-lg bg-black">
-												<ThumbnailImage
-													src={video.thumbnailUrl}
-													alt={video.title}
-													className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-												/>
-											</div>
-										</Link>
-										<CardContent className="p-4">
-											<Link href={`/videos/${video.id}`} className="block">
-												<h3 className="font-medium line-clamp-2 group-hover:text-suzuka-600 transition-colors">
-													<HighlightText
-														text={video.title}
-														searchQuery={searchQuery}
-														highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
-													/>
-												</h3>
-											</Link>
-											<p className="text-sm text-muted-foreground mt-1">
-												{new Date(video.publishedAt).toLocaleDateString("ja-JP", {
-													timeZone: "Asia/Tokyo",
-												})}
-											</p>
-											{/* 3層タグハイライト表示 */}
-											<div className="mt-2">
-												<ThreeLayerTagDisplay
-													playlistTags={video.tags?.playlistTags || []}
-													userTags={video.tags?.userTags || []}
-													categoryId={video.categoryId}
-													categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
-													searchQuery={searchQuery}
-													highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
-													size="sm"
-													maxTagsPerLayer={3}
-													showEmptyLayers={false}
-													showCategory={true}
-													tagHref={buildTagSearchHref}
-												/>
-											</div>
-										</CardContent>
-									</Card>
+									<VideoCard key={video.id} video={video} searchQuery={searchQuery} />
 								))}
 							</div>
 							{searchResult.hasMore.videos && (
@@ -489,49 +445,7 @@ function SearchResults({
 				<TabsContent value="videos">
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 						{searchResult.videos.map((video) => (
-							<Card key={video.id} className="h-full group hover:shadow-lg transition-shadow">
-								<Link href={`/videos/${video.id}`} className="block">
-									<div className="aspect-[16/9] relative overflow-hidden rounded-t-lg bg-black">
-										<ThumbnailImage
-											src={video.thumbnailUrl}
-											alt={video.title}
-											className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-										/>
-									</div>
-								</Link>
-								<CardContent className="p-4">
-									<Link href={`/videos/${video.id}`} className="block">
-										<h3 className="font-medium line-clamp-2 group-hover:text-suzuka-600 transition-colors">
-											<HighlightText
-												text={video.title}
-												searchQuery={searchQuery}
-												highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
-											/>
-										</h3>
-									</Link>
-									<p className="text-sm text-muted-foreground mt-1">
-										{new Date(video.publishedAt).toLocaleDateString("ja-JP", {
-											timeZone: "Asia/Tokyo",
-										})}
-									</p>
-									{/* 3層タグハイライト表示 */}
-									<div className="mt-2">
-										<ThreeLayerTagDisplay
-											playlistTags={video.tags?.playlistTags || []}
-											userTags={video.tags?.userTags || []}
-											categoryId={video.categoryId}
-											categoryName={getYouTubeCategoryName(video.categoryId) || undefined}
-											searchQuery={searchQuery}
-											highlightClassName="bg-yellow-200 text-yellow-900 font-medium px-0.5 rounded"
-											size="sm"
-											maxTagsPerLayer={3}
-											showEmptyLayers={false}
-											showCategory={true}
-											tagHref={buildTagSearchHref}
-										/>
-									</div>
-								</CardContent>
-							</Card>
+							<VideoCard key={video.id} video={video} searchQuery={searchQuery} />
 						))}
 					</div>
 				</TabsContent>
