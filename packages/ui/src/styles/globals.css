@@ -104,7 +104,7 @@
 
 		--border: 20 6% 90%;
 		--input: 20 6% 90%;
-		--ring: 221.2 70% 45%; /* Updated to match new primary color */
+		--ring: 340 75% 55%; /* suzuka-500 - primary に一致（旧値は青のままだった） */
 
 		/* フォーカス状態 */
 		--focus-ring: 221.2 70% 45%; /* Updated to match new primary color */

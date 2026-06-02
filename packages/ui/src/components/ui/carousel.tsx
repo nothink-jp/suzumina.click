@@ -1,10 +1,10 @@
 "use client";
 
+import { Button } from "@suzumina.click/ui/components/ui/button";
 import { cn } from "@suzumina.click/ui/lib/utils";
 import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import * as React from "react";
-import { Button } from "./button";
 
 type CarouselApi = UseEmblaCarouselType[1];
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;
@@ -59,9 +59,7 @@ function Carousel({
 	const [canScrollNext, setCanScrollNext] = React.useState(false);
 
 	const onSelect = React.useCallback((api: CarouselApi) => {
-		if (!api) {
-			return;
-		}
+		if (!api) return;
 		setCanScrollPrev(api.canScrollPrev());
 		setCanScrollNext(api.canScrollNext());
 	}, []);
@@ -88,16 +86,12 @@ function Carousel({
 	);
 
 	React.useEffect(() => {
-		if (!api || !setApi) {
-			return;
-		}
+		if (!api || !setApi) return;
 		setApi(api);
 	}, [api, setApi]);
 
 	React.useEffect(() => {
-		if (!api) {
-			return;
-		}
+		if (!api) return;
 		onSelect(api);
 		api.on("reInit", onSelect);
 		api.on("select", onSelect);
@@ -120,15 +114,16 @@ function Carousel({
 				canScrollNext,
 			}}
 		>
-			<section
+			<div
 				onKeyDownCapture={handleKeyDown}
 				className={cn("relative", className)}
-				aria-label="carousel"
+				role="region"
+				aria-roledescription="carousel"
 				data-slot="carousel"
 				{...props}
 			>
 				{children}
-			</section>
+			</div>
 		</CarouselContext.Provider>
 	);
 }
