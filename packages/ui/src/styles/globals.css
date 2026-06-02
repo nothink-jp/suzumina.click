@@ -96,8 +96,8 @@
 		--muted: 60 5% 96%;
 		--muted-foreground: 25 5% 45%; /* Darkened for WCAG AA: 4.60:1 contrast ratio */
 
-		--accent: 210 40% 98%;
-		--accent-foreground: 222.2 84% 4.9%;
+		--accent: 24 6% 94%; /* 暖色ニュートラル - border(20°)/foreground(28°) と整合（旧値は青系デフォルト残り） */
+		--accent-foreground: 28 25% 8%; /* foreground と同値（旧値は青系 navy 残り） */
 
 		--destructive: 0 75% 50%; /* Updated for WCAG AA: 4.60:1 contrast ratio */
 		--destructive-foreground: 60 9% 98%;
@@ -482,8 +482,8 @@
 	/* Select component override - ensure accent colors for select items */
 	[data-slot="select-item"]:focus,
 	[data-slot="select-item"][data-highlighted] {
-		background-color: hsl(210 40% 98%) !important; /* Use neutral accent instead of CSS variable */
-		color: hsl(222.2 84% 4.9%) !important; /* Use neutral foreground instead of CSS variable */
+		background-color: hsl(var(--accent)) !important; /* accent トークンに追従（旧: 青をハードコード） */
+		color: hsl(var(--accent-foreground)) !important; /* accent-foreground トークンに追従 */
 	}
 	
 	/* Switch data-state styles for Tailwind CSS v4 compatibility */
