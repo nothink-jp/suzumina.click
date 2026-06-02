@@ -181,16 +181,12 @@ describe("useVideo", () => {
 		const { result } = renderHook(() => useVideo(video));
 
 		const playlistUrl = result.current.getTagSearchUrl("タグ1", "playlist");
-		expect(playlistUrl).toBe(
-			"/search?q=%E3%82%BF%E3%82%B01&type=videos&playlistTags=%E3%82%BF%E3%82%B01",
-		);
+		expect(playlistUrl).toBe("/videos?playlistTags=%E3%82%BF%E3%82%B01");
 
 		const userUrl = result.current.getTagSearchUrl("タグ2", "user");
-		expect(userUrl).toBe("/search?q=%E3%82%BF%E3%82%B02&type=videos&userTags=%E3%82%BF%E3%82%B02");
+		expect(userUrl).toBe("/videos?userTags=%E3%82%BF%E3%82%B02");
 
 		const categoryUrl = result.current.getTagSearchUrl("カテゴリ", "category");
-		expect(categoryUrl).toBe(
-			"/search?q=%E3%82%AB%E3%83%86%E3%82%B4%E3%83%AA&type=videos&categoryNames=%E3%82%AB%E3%83%86%E3%82%B4%E3%83%AA",
-		);
+		expect(categoryUrl).toBe("/videos?categoryNames=%E3%82%AB%E3%83%86%E3%82%B4%E3%83%AA");
 	});
 });

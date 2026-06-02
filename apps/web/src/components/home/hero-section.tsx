@@ -1,5 +1,3 @@
-import { HomeSearchForm } from "@/components/home/home-search-form";
-
 /**
  * ホームページのヒーローセクション。
  * PPR の静的シェルに含めるため、データ取得を持たない純粋なサーバーコンポーネント。
@@ -28,7 +26,6 @@ export function HeroSection() {
 						<br />
 						あーたたちが集まる、あーたたちのためのファンサイトです
 					</p>
-					<HomeSearchForm />
 				</div>
 			</div>
 		</section>

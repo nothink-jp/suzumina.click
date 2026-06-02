@@ -9,7 +9,7 @@ import { TagInput, type TagSuggestion } from "@suzumina.click/ui/components/cust
 import { cn } from "@suzumina.click/ui/lib/utils";
 import { Tag } from "lucide-react";
 import { useCallback } from "react";
-import { type AutocompleteSuggestion, getAutocompleteSuggestions } from "@/app/search/actions";
+import { type AutocompleteSuggestion, getAutocompleteSuggestions } from "@/actions/autocomplete";
 
 export interface AudioButtonTagEditorProps {
 	/** 現在のタグ配列 */

@@ -101,6 +101,17 @@ function filterVideos(videos: VideoPlainObject[], params: VideoFilterParams): Vi
 }
 
 /**
+ * フィルター値を string[] に正規化する。
+ * URL 由来の単一値は string、ConfigurableList の tags フィルタは string[] で渡るため両対応。
+ * 空（空文字・空配列）は undefined にして、filterVideos / hasFilters の誤発火を防ぐ。
+ */
+function toStringArray(value: unknown): string[] | undefined {
+	const arr = Array.isArray(value) ? value : value != null ? [value] : [];
+	const normalized = arr.filter((v): v is string => typeof v === "string" && v.trim() !== "");
+	return normalized.length > 0 ? normalized : undefined;
+}
+
+/**
  * 動画リストを取得（ConfigurableList用）
  */
 export async function getVideosList(params: {
@@ -121,14 +132,14 @@ export async function getVideosList(params: {
 		sort: params.sort,
 		search: params.search,
 		year: params.filters?.year === "all" ? undefined : (params.filters?.year as string),
-		playlistTags: params.filters?.playlistTags as string[],
-		userTags: params.filters?.userTags as string[],
+		playlistTags: toStringArray(params.filters?.playlistTags),
+		userTags: toStringArray(params.filters?.userTags),
+		// "all" は select フィルタの空値センチネルなので undefined 化。
+		// それ以外は playlistTags/userTags と同じく string/string[] を配列へ正規化する。
 		categoryNames:
 			params.filters?.categoryNames === "all"
 				? undefined
-				: params.filters?.categoryNames
-					? [params.filters.categoryNames as string]
-					: undefined,
+				: toStringArray(params.filters?.categoryNames),
 		videoType:
 			params.filters?.videoType === "all" ? undefined : (params.filters?.videoType as string),
 	};

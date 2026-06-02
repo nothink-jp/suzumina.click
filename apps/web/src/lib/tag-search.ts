@@ -1,12 +1,11 @@
 /**
- * 3層タグ → 検索ページの href ビルダー（純関数）。
+ * 3層タグ → 動画一覧ページの href ビルダー（純関数）。
  * 層に応じたフィルターパラメータを付与し、ThreeLayerTagDisplay の tagHref に渡す。
- * VideoCard・検索結果のタグ遷移先を一元化する（正本）。
+ * VideoCard・動画タグ表示のタグ遷移先を一元化する（正本）。
+ * 遷移先は /videos で、getVideosList の filterVideos が各層タグで絞り込む。
  */
 export function buildTagSearchHref(tag: string, layer: "playlist" | "user" | "category") {
 	const params = new URLSearchParams();
-	params.set("q", tag);
-	params.set("type", "videos");
 	switch (layer) {
 		case "playlist":
 			params.set("playlistTags", tag);
@@ -18,5 +17,5 @@ export function buildTagSearchHref(tag: string, layer: "playlist" | "user" | "ca
 			params.set("categoryNames", tag);
 			break;
 	}
-	return `/search?${params.toString()}`;
+	return `/videos?${params.toString()}`;
 }

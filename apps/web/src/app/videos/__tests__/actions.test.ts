@@ -310,6 +310,132 @@ describe("Video Server Actions", () => {
 			expect(mockCount).toHaveBeenCalled();
 			expect(result.totalCount).toBe(99);
 		});
+
+		it("playlistTags が単一文字列（URL由来）でもクラッシュせず絞り込む（SPR-111: /videos タグリンク）", async () => {
+			// /videos?playlistTags=歌 のような単一文字列を ConfigurableList でなく
+			// URL 経由で受けた場合、filterVideos が string.some を呼んで落ちないことを保証する。
+			const docWithTag = {
+				id: "v-tag",
+				data: () => ({
+					id: "v-tag",
+					videoId: "v-tag",
+					title: "歌動画",
+					description: "説明",
+					channelId: "c",
+					channelTitle: "ch",
+					publishedAt: new Date("2024-01-01").toISOString(),
+					duration: "PT5M",
+					thumbnailUrl: "https://example.com/t.jpg",
+					thumbnails: { high: { url: "https://example.com/t.jpg" } },
+					viewCount: 1,
+					likeCount: 1,
+					commentCount: 1,
+					hasAudioButtons: false,
+					audioButtonCount: 0,
+					categoryId: "10",
+					status: { privacyStatus: "public", uploadStatus: "processed" },
+					contentDetails: {
+						duration: "PT5M",
+						dimension: "2d",
+						definition: "hd",
+						caption: "false",
+						licensedContent: false,
+					},
+					statistics: { viewCount: "1", likeCount: "1", commentCount: "1" },
+					tags: { playlistTags: ["歌"], userTags: [], contentTags: [] },
+					playlistTags: ["歌"],
+					userTags: [],
+					lastFetchedAt: new Date().toISOString(),
+				}),
+			};
+			mockGet.mockResolvedValue({ docs: [docWithTag], size: 1 });
+
+			const result = await getVideosList({
+				page: 1,
+				limit: 12,
+				filters: { playlistTags: "歌" },
+			});
+
+			expect(result.items).toHaveLength(1);
+			expect(result.items[0].title).toBe("歌動画");
+		});
+
+		it("categoryNames は配列でも単一文字列でも正規化して絞り込む（正規化の対称化）", async () => {
+			// categoryId "10" は getYouTubeCategoryName で "音楽" に対応
+			const musicDoc = {
+				id: "v-cat",
+				data: () => ({
+					id: "v-cat",
+					videoId: "v-cat",
+					title: "音楽動画",
+					description: "説明",
+					channelId: "c",
+					channelTitle: "ch",
+					publishedAt: new Date("2024-01-01").toISOString(),
+					duration: "PT5M",
+					thumbnailUrl: "https://example.com/t.jpg",
+					thumbnails: { high: { url: "https://example.com/t.jpg" } },
+					viewCount: 1,
+					likeCount: 1,
+					commentCount: 1,
+					hasAudioButtons: false,
+					audioButtonCount: 0,
+					categoryId: "10",
+					status: { privacyStatus: "public", uploadStatus: "processed" },
+					contentDetails: {
+						duration: "PT5M",
+						dimension: "2d",
+						definition: "hd",
+						caption: "false",
+						licensedContent: false,
+					},
+					statistics: { viewCount: "1", likeCount: "1", commentCount: "1" },
+					tags: { playlistTags: [], userTags: [], contentTags: [] },
+					playlistTags: [],
+					userTags: [],
+					lastFetchedAt: new Date().toISOString(),
+				}),
+			};
+
+			// 配列形式（旧実装は [["音楽"]] と二重配列化して一致しなかったケース）
+			mockGet.mockResolvedValue({ docs: [musicDoc], size: 1 });
+			const arrRes = await getVideosList({
+				page: 1,
+				limit: 12,
+				filters: { categoryNames: ["音楽"] },
+			});
+			expect(arrRes.items).toHaveLength(1);
+
+			// 単一文字列形式（URL由来）
+			mockGet.mockResolvedValue({ docs: [musicDoc], size: 1 });
+			const strRes = await getVideosList({
+				page: 1,
+				limit: 12,
+				filters: { categoryNames: "音楽" },
+			});
+			expect(strRes.items).toHaveLength(1);
+
+			// 不一致カテゴリは除外
+			mockGet.mockResolvedValue({ docs: [musicDoc], size: 1 });
+			const noRes = await getVideosList({
+				page: 1,
+				limit: 12,
+				filters: { categoryNames: "ゲーム" },
+			});
+			expect(noRes.items).toHaveLength(0);
+
+			// "all" センチネルはフィルタ無し扱い
+			mockGet.mockResolvedValue({ docs: [musicDoc], size: 1 });
+			mockCount.mockReturnValue({
+				get: vi.fn().mockResolvedValue({ data: () => ({ count: 1 }) }),
+			});
+			const allRes = await getVideosList({
+				page: 1,
+				limit: 12,
+				filters: { categoryNames: "all" },
+			});
+			expect(allRes.items).toHaveLength(1);
+		});
 	});
 
 	describe("getPopularVideoTags", () => {

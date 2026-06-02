@@ -170,9 +170,7 @@ describe("AudioButtonCard", () => {
 		expect(tag1).toBeInTheDocument();
 
 		await user.click(tag1);
-		expect(mockPush).toHaveBeenCalledWith(
-			"/search?q=%E3%82%BF%E3%82%B01&type=audioButtons&tags=%E3%82%BF%E3%82%B01",
-		);
+		expect(mockPush).toHaveBeenCalledWith("/buttons?tags=%E3%82%BF%E3%82%B01");
 	});
 
 	it("統計情報が表示される", () => {

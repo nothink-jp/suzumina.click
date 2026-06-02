@@ -158,7 +158,7 @@ describe("VideoCard", () => {
 		const playlistTagLink = screen.getByText("プレイリストタグ1").closest("a");
 		expect(playlistTagLink).toHaveAttribute(
 			"href",
-			"/search?q=%E3%83%97%E3%83%AC%E3%82%A4%E3%83%AA%E3%82%B9%E3%83%88%E3%82%BF%E3%82%B01&type=videos&playlistTags=%E3%83%97%E3%83%AC%E3%82%A4%E3%83%AA%E3%82%B9%E3%83%88%E3%82%BF%E3%82%B01",
+			"/videos?playlistTags=%E3%83%97%E3%83%AC%E3%82%A4%E3%83%AA%E3%82%B9%E3%83%88%E3%82%BF%E3%82%B01",
 		);
 	});
 

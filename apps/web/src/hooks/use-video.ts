@@ -2,6 +2,7 @@ import type { VideoPlainObject } from "@suzumina.click/shared-types";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
 import { useCallback, useMemo } from "react";
 import { DEFAULT_THUMBNAIL_PATH } from "@/lib/constants";
+import { buildTagSearchHref } from "@/lib/tag-search";
 
 /**
  * Video PlainObject用のカスタムフック
@@ -130,26 +131,11 @@ export function useVideo(video: VideoPlainObject) {
 		return video.categoryId ? getYouTubeCategoryName(video.categoryId) : "";
 	}, [video]);
 
-	// コールバック: タグの検索URLを生成
-	const getTagSearchUrl = useCallback((tag: string, tagType: "playlist" | "user" | "category") => {
-		const params = new URLSearchParams();
-		params.set("q", tag);
-		params.set("type", "videos");
-
-		switch (tagType) {
-			case "playlist":
-				params.set("playlistTags", tag);
-				break;
-			case "user":
-				params.set("userTags", tag);
-				break;
-			case "category":
-				params.set("categoryNames", tag);
-				break;
-		}
-
-		return `/search?${params.toString()}`;
-	}, []);
+	// コールバック: タグの検索URLを生成（遷移先の正本は lib/tag-search に集約）
+	const getTagSearchUrl = useCallback(
+		(tag: string, tagType: "playlist" | "user" | "category") => buildTagSearchHref(tag, tagType),
+		[],
+	);
 
 	// メモ化: プレイリストタグの配列
 	const playlistTags = useMemo(() => video.tags?.playlistTags || video.playlistTags || [], [video]);
