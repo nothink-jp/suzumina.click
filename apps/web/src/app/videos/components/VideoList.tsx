@@ -48,6 +48,7 @@ export default function VideoList({ initialData }: VideoListProps) {
 				items={initialData.items}
 				initialTotal={initialData.totalCount}
 				renderItem={renderItem}
+				listHeading="動画一覧"
 				fetchFn={getVideosList as (params: unknown) => Promise<unknown>}
 				{...DEFAULT_LIST_PROPS}
 				layout="grid"

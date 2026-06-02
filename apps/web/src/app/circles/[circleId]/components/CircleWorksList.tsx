@@ -56,6 +56,7 @@ export default function CircleWorksList({ circleId, initialData }: CircleWorksLi
 				items={transformedInitialData?.items || []}
 				initialTotal={transformedInitialData?.total || 0}
 				renderItem={(work) => <WorkListItem work={work} />}
+				listHeading="作品一覧"
 				fetchFn={fetchFn}
 				dataAdapter={dataAdapter}
 				{...DEFAULT_LIST_PROPS}

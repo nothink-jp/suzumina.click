@@ -395,6 +395,7 @@ export function ConfigurableList<T>({
 	},
 	itemsPerPageOptions,
 	initialTotal,
+	listHeading,
 }: ConfigurableListProps<T>) {
 	// URLパラメータとの同期
 	const urlHook = useListUrl({
@@ -618,6 +619,8 @@ export function ConfigurableList<T>({
 			/>
 
 			{/* リスト本体 */}
+			{/* ページ h1 と各カード見出し(h3)の間を埋める中間見出し（sr-only）。見出しレベル skip を防ぐ */}
+			{listHeading && <h2 className="sr-only">{listHeading}</h2>}
 			{currentItems.length > 0 ? (
 				<ConfigurableListItems
 					items={currentItems}

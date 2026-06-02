@@ -21,6 +21,8 @@ export function AudioButtonDetailSidebar({
 		<div className="lg:col-span-1">
 			<div className="space-y-6">
 				{/* 動画カード */}
+				{/* ページ h1 と VideoCard の見出し(h3)の間を埋める中間見出し（sr-only） */}
+				<h2 className="sr-only">元動画</h2>
 				<Suspense
 					fallback={
 						<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">
@@ -36,6 +38,8 @@ export function AudioButtonDetailSidebar({
 				</Suspense>
 
 				{/* ユーザーカード */}
+				{/* 作成者セクションの見出し（sr-only）。UserCard 内の h3 の親見出しを補う */}
+				<h2 className="sr-only">作成者</h2>
 				<Suspense
 					fallback={
 						<Card className="bg-card/80 backdrop-blur-sm shadow-lg border-0">

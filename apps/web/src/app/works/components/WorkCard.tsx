@@ -180,14 +180,14 @@ export default function WorkCard({ work, variant = "default", priority = false }
 						className="block group"
 						aria-label={`${work.title}の詳細を見る`}
 					>
-						<h4
+						<h3
 							id={`work-title-${work.id}`}
 							className={`font-semibold mb-1 line-clamp-2 group-hover:text-foreground/80 transition-colors text-foreground ${
 								isCompact ? "text-base" : "text-sm"
 							}`}
 						>
 							{work.title}
-						</h4>
+						</h3>
 					</Link>
 					{work.circleId ? (
 						<Link
