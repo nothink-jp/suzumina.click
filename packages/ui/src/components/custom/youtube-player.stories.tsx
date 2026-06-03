@@ -7,6 +7,9 @@ const meta = {
 	component: YouTubePlayer,
 	parameters: {
 		layout: "padded",
+		// 実 YouTube iframe を埋め込むため、再生フレーム/ポスター/読み込み状態が毎回変わり
+		// Chromatic で安定したスナップショットが撮れない。視覚回帰の対象外として無効化（SPR-130）
+		chromatic: { disableSnapshot: true },
 	},
 	tags: ["autodocs"],
 } satisfies Meta<typeof YouTubePlayer>;
