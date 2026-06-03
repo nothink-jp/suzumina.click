@@ -53,7 +53,7 @@
 		--accent: 24 6% 94%; /* 暖色ニュートラル - border(20°)/foreground(28°) と整合（旧値は青系デフォルト残り） */
 		--accent-foreground: 28 25% 8%; /* foreground と同値（旧値は青系 navy 残り） */
 
-		--destructive: 0 75% 50%; /* Updated for WCAG AA: 4.60:1 contrast ratio */
+		--destructive: 0 72% 45%; /* WCAG AA: 白との相互で 4.5:1（旧 50% は 4.36 で未満。fg/bg 両用のため SPR-131 で darken） */
 		--destructive-foreground: 60 9% 98%;
 
 		--border: 20 6% 90%;

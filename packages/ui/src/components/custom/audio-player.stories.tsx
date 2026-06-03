@@ -94,21 +94,21 @@ export const WithControls: Story = {
 						<button
 							type="button"
 							onClick={() => audioRef.current?.play()}
-							className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+							className="px-3 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
 						>
 							再生
 						</button>
 						<button
 							type="button"
 							onClick={() => audioRef.current?.pause()}
-							className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+							className="px-3 py-2 bg-yellow-400 text-gray-900 rounded hover:bg-yellow-500"
 						>
 							一時停止
 						</button>
 						<button
 							type="button"
 							onClick={() => audioRef.current?.stop()}
-							className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+							className="px-3 py-2 bg-red-700 text-white rounded hover:bg-red-800"
 						>
 							停止
 						</button>

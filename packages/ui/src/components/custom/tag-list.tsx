@@ -136,8 +136,10 @@ export function TagList({
 					)}
 				</Badge>
 			))}
+			{/* secondary(オレンジ)上は secondary-foreground(暗色) を使う。text-muted-foreground だと
+				グレー文字でコントラスト 2.29 になり AA 未満（SPR-131） */}
 			{hasMoreTags && (
-				<Badge variant="secondary" className={cn(sizeClasses.badge, "text-muted-foreground")}>
+				<Badge variant="secondary" className={sizeClasses.badge}>
 					+{tags.length - maxTags}個
 				</Badge>
 			)}

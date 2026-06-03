@@ -46,6 +46,7 @@ export function ConfigurableListPagination({
 				<PaginationItem>
 					<PaginationPrevious
 						href="#"
+						aria-disabled={!hasPrev}
 						onClick={(e) => {
 							e.preventDefault();
 							if (hasPrev) {
@@ -118,6 +119,7 @@ export function ConfigurableListPagination({
 				<PaginationItem>
 					<PaginationNext
 						href="#"
+						aria-disabled={!hasNext}
 						onClick={(e) => {
 							e.preventDefault();
 							if (hasNext) {

@@ -154,7 +154,8 @@ export const CustomLabel: Story = {
 export const Styled: Story = {
 	args: {
 		time: 156.8,
-		className: "text-lg text-primary bg-primary/10 px-2 py-1 rounded",
+		// primary 文字 × primary/10 背景は 4.27（AA 未満）。文字を suzuka-700 に濃くして 4.5:1（SPR-131）
+		className: "text-lg text-suzuka-700 bg-primary/10 px-2 py-1 rounded",
 		showLabel: true,
 		label: "切り抜き時間",
 	},

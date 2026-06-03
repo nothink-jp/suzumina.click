@@ -111,7 +111,8 @@ export const CustomSuzuka: Story = {
 export const CustomMinase: Story = {
 	args: {
 		children: "Minase Style",
-		className: "bg-minase-500 hover:bg-minase-600 text-white",
+		// minase(オレンジ)は明色のため白文字は AA 未満（2.32）。暗色文字で 4.5:1 を満たす（SPR-131）
+		className: "bg-minase-500 hover:bg-minase-600 text-minase-950",
 	},
 };
 

@@ -177,9 +177,10 @@ export const ErrorState: Story = {
 				id="error-textarea"
 				placeholder="コメントを入力してください"
 				aria-invalid="true"
-				className="border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20"
+				className="border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
 			/>
-			<p className="text-sm text-red-500">このフィールドは必須です。</p>
+			{/* red-500 直書きは白背景で 3.8（AA 未満）。AA 適合の destructive トークンを使う（SPR-131） */}
+			<p className="text-sm text-destructive">このフィールドは必須です。</p>
 		</div>
 	),
 };
