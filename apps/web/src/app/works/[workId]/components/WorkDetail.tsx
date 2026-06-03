@@ -66,14 +66,10 @@ function StarRating({ rating }: { rating: number }) {
 // 価格情報を計算
 function calculatePriceInfo(work: WorkPlainObject) {
 	const currentPrice = work.price.current;
-	// 元の価格を取得、もしくは割引率から計算
-	const originalPrice =
-		work.price.original ||
-		(work.price.discount !== undefined && work.price.discount > 0
-			? Math.round(currentPrice / (1 - work.price.discount / 100))
-			: undefined);
-	// NOTE: 将来的にはWorkPrice.isDiscounted()を使用することを推奨
-	const isOnSale = work.price.discount !== undefined && work.price.discount > 0;
+	// セール判定は「実割引（current < original）」を正本とする。
+	// discount フィールドはセール終了後も古い値が残りうるため判定にも逆算にも使わない（軸3: 正本の整合性）。
+	const isOnSale = work.price.isDiscounted;
+	const originalPrice = isOnSale ? work.price.original : undefined;
 
 	return { currentPrice, originalPrice, isOnSale };
 }

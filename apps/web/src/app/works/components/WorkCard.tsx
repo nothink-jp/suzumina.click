@@ -125,8 +125,9 @@ export default function WorkCard({ work, variant = "default", priority = false }
 	// 価格表示の計算
 	const currentPrice = work.price?.current ?? 0;
 	const originalPrice = work.price?.original ?? 0;
-	// NOTE: 将来的にはWorkPrice.isDiscounted()を使用することを推奨
-	const isOnSale = work.price?.discount !== undefined && work.price.discount > 0;
+	// セール判定は「実割引（current < original）」を正本とする。
+	// discount フィールドはセール終了後も古い値が残りうるため判定に使わない（軸3: 正本の整合性）。
+	const isOnSale = work.price?.isDiscounted ?? false;
 
 	// ランキング情報は現在利用できません
 	const latestRank = undefined;
