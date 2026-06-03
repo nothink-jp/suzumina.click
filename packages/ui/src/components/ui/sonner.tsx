@@ -7,15 +7,15 @@ import {
 	OctagonXIcon,
 	TriangleAlertIcon,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
+// サイトは light-only（ADR-011: ThemeProvider 無し / darkreader-lock）。
+// next-themes の useTheme は ThemeProvider 不在で "system" を返し、OS がダークだと
+// トーストだけダーク化する不整合を生むため、theme は "light" に固定する（props で上書き可）。
 const Toaster = ({ ...props }: ToasterProps) => {
-	const { theme = "system" } = useTheme();
-
 	return (
 		<Sonner
-			theme={theme as ToasterProps["theme"]}
+			theme="light"
 			className="toaster group"
 			icons={{
 				success: <CircleCheckIcon className="size-4" />,
