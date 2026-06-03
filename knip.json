@@ -14,7 +14,7 @@
 			"ignore": ["vitest-mocks/**", "vitest.d.ts"]
 		},
 		"packages/ui": {
-			"ignore": [".storybook/mocks/**"]
+			"ignore": [".storybook/mocks/**", "src/components/custom/configurable-list.client.ts"]
 		}
 	}
 }
