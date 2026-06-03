@@ -41,14 +41,14 @@
 		--popover: 0 0% 100%;
 		--popover-foreground: 28 25% 8%;
 
-		--primary: 340 75% 55%; /* suzuka-500 - 涼花みなせメインカラー */
+		--primary: 340 75% 48%; /* suzuka(AA調整) - 白文字で 4.5:1 を満たすよう L55%→48%（SPR-129 Phase1） */
 		--primary-foreground: 60 9% 98%;
 
-		--secondary: 27 100% 59%; /* minase-500 - セカンダリーカラー */
-		--secondary-foreground: 60 9% 98%; /* 白文字 */
+		--secondary: 27 100% 59%; /* minase-500 - オレンジは不変。明色のため文字は暗色（下記）で AA を取る */
+		--secondary-foreground: 28 25% 8%; /* オレンジ上は暗色文字で AA（白文字は 2.22 で不適合のため。SPR-129 Phase1） */
 
 		--muted: 60 5% 96%;
-		--muted-foreground: 25 5% 45%; /* Darkened for WCAG AA: 4.60:1 contrast ratio */
+		--muted-foreground: 25 5% 42%; /* WCAG AA: 微淡色背景(muted/suzuka-50)上でも 4.5:1（L45%→42%。SPR-129 Phase1） */
 
 		--accent: 24 6% 94%; /* 暖色ニュートラル - border(20°)/foreground(28°) と整合（旧値は青系デフォルト残り） */
 		--accent-foreground: 28 25% 8%; /* foreground と同値（旧値は青系 navy 残り） */
@@ -58,10 +58,10 @@
 
 		--border: 20 6% 90%;
 		--input: 20 6% 90%;
-		--ring: 340 75% 55%; /* suzuka-500 - primary に一致（旧値は青のままだった） */
+		--ring: 340 75% 48%; /* primary に一致（SPR-129 Phase1 で primary を 48% に） */
 
 		/* フォーカス状態 */
-		--focus-ring: 340 75% 55%; /* suzuka-500 - primary/--ring に一致（旧値は青のままだった） */
+		--focus-ring: 340 75% 48%; /* primary/--ring に一致 */
 		--focus-ring-offset: 0 0% 100%;
 
 		/* Chart colors */
@@ -77,7 +77,7 @@
 		--suzuka-200: 340 90% 88%;   /* #ffc2d9 - 淡い桜色 */
 		--suzuka-300: 340 85% 78%;   /* #ff9ebf - 桜色 */
 		--suzuka-400: 340 80% 65%;   /* #ff6b9d - 濃い桜色 */
-		--suzuka-500: 340 75% 55%;   /* #ff4785 - 基準の桜色 */
+		--suzuka-500: 340 75% 48%;   /* #d61f5c - 基準の桜色（AA 調整: 白文字 4.5:1。直書き bg-suzuka-500 も対象） */
 		--suzuka-600: 340 70% 45%;   /* #e0266e - 濃い目の桜色 */
 		--suzuka-700: 340 65% 38%;   /* #b81d5b - より濃い桜色 */
 		--suzuka-800: 340 60% 30%;   /* #8f1447 - かなり濃い桜色 */
