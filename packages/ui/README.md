@@ -20,7 +20,7 @@
 
 ```text
 packages/ui/src/components/
-├── ui/            # shadcn/ui ベースコンポーネント (30個)
+├── ui/            # shadcn/ui ベースコンポーネント (29個)
 ├── custom/        # プロジェクト独自コンポーネント (14個)
 └── design-tokens/ # デザイントークン Storybook (MDX)
 ```
@@ -115,7 +115,7 @@ pnpm typecheck
 
 ## 📋 コンポーネント一覧
 
-### shadcn/ui (30個)
+### shadcn/ui (29個)
 
 基盤UIコンポーネント - プロジェクト間で完全再利用可能
 
@@ -168,7 +168,6 @@ pnpm exec biome check --write src/components/ui
 
 - **in-file 例外は再生成後に復元する**: `button.tsx`（モバイル touch-target・追加 size）/ `tabs.tsx`（active=ブランド色）/ `toggle.tsx`（active=ブランド色）。
   `git checkout -- <file>` で戻す。
-- **`calendar.tsx` は再生成しない**: shadcn registry が react-day-picker v9 世代のままで、pin 済み v10 と型非互換（実質ダウングレード）。
 - 新規追加時は `index.ts` の barrel export と Storybook ストーリー作成を推奨。
 - ブランド色は原則 `globals.css` の semantic トークン（`--primary`=suzuka 等）で当てる。在file 直書きは最後の手段。
 
