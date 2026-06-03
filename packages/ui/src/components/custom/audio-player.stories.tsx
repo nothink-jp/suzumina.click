@@ -15,6 +15,9 @@ const meta = {
 					"プール化された音声プレイヤー（DOM要素なし）。YouTube Player プールを使用してメモリ効率を向上させています。",
 			},
 		},
+		// ヘッドレスな音声プレイヤーで、YouTube iframe がオフスクリーンの巨大座標に描画され
+		// Chromatic のキャプチャ上限(25M px)を超える。視覚的回帰の対象として無意味なため snapshot を無効化（SPR-130）
+		chromatic: { disableSnapshot: true },
 	},
 	tags: ["autodocs"],
 } satisfies Meta<typeof AudioPlayer>;

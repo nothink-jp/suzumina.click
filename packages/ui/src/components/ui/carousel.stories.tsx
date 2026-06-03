@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { Card, CardContent } from "./card";
 import {
 	Carousel,
@@ -233,9 +233,10 @@ export const NavigationInteraction: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const nextBtn = canvas.getByRole("button", { name: /next slide/i });
-		await expect(nextBtn).toBeEnabled();
+		// embla の初期化後に canScrollNext が立ち Next が enabled になる。描画タイミングに依存するため待つ
+		await waitFor(() => expect(nextBtn).toBeEnabled());
 		await userEvent.click(nextBtn);
 		const prevBtn = canvas.getByRole("button", { name: /previous slide/i });
-		await expect(prevBtn).toBeEnabled();
+		await waitFor(() => expect(prevBtn).toBeEnabled());
 	},
 };
