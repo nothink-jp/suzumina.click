@@ -18,6 +18,9 @@ interface Product {
 	createdAt: string;
 }
 
+// 視覚回帰(Chromatic)の差分を防ぐため、乱数や現在時刻は使わず index 由来の決定論的な値で生成する
+const FIXTURE_BASE_MS = Date.parse("2024-06-01T00:00:00.000Z");
+
 // サンプルデータ生成
 const generateProducts = (count: number): Product[] => {
 	const categories = ["Electronics", "Books", "Clothing", "Food", "Toys"];
@@ -27,12 +30,12 @@ const generateProducts = (count: number): Product[] => {
 		id: i + 1,
 		name: `Product ${i + 1}`,
 		category: categories[i % categories.length],
-		price: Math.floor(Math.random() * 10000) + 1000,
-		inStock: Math.random() > 0.3,
+		price: ((i * 1373) % 9000) + 1000,
+		inStock: i % 10 < 7,
 		releaseYear: (2020 + (i % 5)).toString(),
-		rating: Math.floor(Math.random() * 5) + 1,
-		tags: tags.filter(() => Math.random() > 0.6),
-		createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+		rating: (i % 5) + 1,
+		tags: tags.filter((_, t) => (i + t) % 3 === 0),
+		createdAt: new Date(FIXTURE_BASE_MS - i * 86400000).toISOString(),
 	}));
 };
 
@@ -282,7 +285,7 @@ const generateTags = (count: number): Tag[] => {
 		id: i + 1,
 		name: categories[i % categories.length],
 		color: colors[i % colors.length],
-		count: Math.floor(Math.random() * 100) + 1,
+		count: ((i * 37) % 100) + 1,
 	}));
 };
 
