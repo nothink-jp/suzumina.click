@@ -14,6 +14,7 @@
 		"test": "pnpm -r test",
 		"verify": "pnpm lint && pnpm typecheck && pnpm test",
 		"test:coverage": "pnpm -r test:coverage",
+		"knip": "knip",
 		"clean": "pnpm -r clean && rimraf node_modules/.cache coverage",
 		"clean:all": "pnpm clean && rimraf node_modules **/node_modules"
 	},
@@ -24,6 +25,7 @@
 		"@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
 		"@typescript/native-preview": "7.0.0-dev.20260527.2",
 		"@vitest/coverage-v8": "^4.1.8",
+		"knip": "^6.15.0",
 		"lefthook": "^2.1.8",
 		"rimraf": "^6.1.3",
 		"secretlint": "^13.0.2",

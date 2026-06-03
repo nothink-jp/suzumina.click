@@ -1,0 +1,47 @@
+name: Knip (unused code)
+
+# monorepo 全体の未使用 export / ファイル / 依存を knip で棚卸しする（SPR-117）。
+# 方針: 非ブロッキング（continue-on-error）。PR を fail させず、結果はジョブログで可視化するだけ。
+# 削除判断はツール任せにせず 1 つずつ人=LLM が行う前提（CLAUDE.md 軸1/軸3）。
+# 設定は knip.json。Biome（ファイル内未使用）とは役割が異なり競合しない。
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  knip:
+    name: Unused code report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.16.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 非ブロッキング: 検出があっても PR を落とさない。結果はこのステップのログで確認する。
+      - name: Run knip
+        continue-on-error: true
+        run: pnpm knip --no-progress

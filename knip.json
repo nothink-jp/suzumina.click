@@ -1,0 +1,20 @@
+{
+	"$schema": "https://unpkg.com/knip@6/schema.json",
+	"ignore": ["terraform/**"],
+	"ignoreDependencies": [
+		"@secretlint/secretlint-formatter-sarif",
+		"@secretlint/secretlint-rule-pattern",
+		"@secretlint/secretlint-rule-preset-recommend"
+	],
+	"workspaces": {
+		"apps/functions": {
+			"entry": ["src/endpoints/index.ts"]
+		},
+		"apps/web": {
+			"ignore": ["vitest-mocks/**", "vitest.d.ts"]
+		},
+		"packages/ui": {
+			"ignore": [".storybook/mocks/**"]
+		}
+	}
+}

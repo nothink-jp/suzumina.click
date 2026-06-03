@@ -47,7 +47,29 @@ pnpm test:coverage
 
 # 🎨 Storybook
 cd packages/ui && pnpm storybook
+
+# 🧹 未使用コード棚卸し（monorepo 全体・手動）
+pnpm knip          # 未使用 export / ファイル / 依存を検出（設定: knip.json）
 ```
+
+## 🧹 未使用コード検出 (knip)
+
+手動 grep ベースの棚卸しは barrel / 直接パス import の両方を漏れなく追えず誤判定が起きやすい
+（SPR-116 で現役の `ValidationMessage` を未使用と誤判定）。これを補うため
+[knip](https://knip.dev) を導入している（SPR-117）。
+
+- **役割分担**: Biome は「ファイル内の未使用（変数・import）」、knip は
+  「**プロジェクト横断の未使用（export・ファイル・依存・devDeps）**」。両者は競合しない。
+- **実行**: `pnpm knip`（root から）。設定は [`knip.json`](../../knip.json)。
+  pnpm workspace を自動認識し、Next.js / Storybook / Vitest の規約は plugin が entry として扱う。
+- **CI**: `.github/workflows/knip.yml` が PR で実行するが **非ブロッキング**（`continue-on-error`）。
+  PR を fail させず、結果はジョブログで確認する。
+- **削除判断はツール任せにしない**: 検出はあくまで棚卸しの**補助**。特に共有ライブラリ
+  （`packages/ui`）には将来用に残す public API があり得る（軸1/軸3）。候補は 1 つずつ人=LLM が
+  「本当に未使用か（直接パス import・規約ファイル・動的参照を含め）」を確認してから削除する。
+- **誤検知の整理**: 設定ファイル/CLI 経由でのみ参照される依存（secretlint ルール等）や、
+  vite/vitest の alias 経由で参照されるモックは `knip.json` の `ignore` / `ignoreDependencies`
+  で除外済み。新たな誤検知が出たら同様に設定で整理する。
 
 ## 📋 概要
 
