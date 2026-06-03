@@ -195,6 +195,7 @@ export const Interactive: Story = {
 					<select
 						value={variant}
 						onChange={(e) => setVariant(e.target.value as "error" | "warning" | "info")}
+						aria-label="バリアント選択"
 						className="w-full p-2 border rounded"
 					>
 						<option value="error">Error</option>

@@ -121,7 +121,7 @@ export const MobileMenu: Story = {
 	render: () => (
 		<Sheet>
 			<SheetTrigger asChild>
-				<Button variant="outline" size="icon">
+				<Button variant="outline" size="icon" aria-label="メニューを開く">
 					<Menu className="h-4 w-4" />
 				</Button>
 			</SheetTrigger>

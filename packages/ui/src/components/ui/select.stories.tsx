@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
 	render: () => (
 		<Select>
-			<SelectTrigger>
+			<SelectTrigger aria-label="選択肢">
 				<SelectValue placeholder="Select a fruit" />
 			</SelectTrigger>
 			<SelectContent>
@@ -41,7 +41,7 @@ export const Default: Story = {
 export const WithDefaultValue: Story = {
 	render: () => (
 		<Select defaultValue="banana">
-			<SelectTrigger>
+			<SelectTrigger aria-label="選択肢">
 				<SelectValue placeholder="Select a fruit" />
 			</SelectTrigger>
 			<SelectContent>
@@ -58,7 +58,7 @@ export const WithDefaultValue: Story = {
 export const Disabled: Story = {
 	render: () => (
 		<Select disabled>
-			<SelectTrigger>
+			<SelectTrigger aria-label="選択肢">
 				<SelectValue placeholder="Select a fruit" />
 			</SelectTrigger>
 			<SelectContent>

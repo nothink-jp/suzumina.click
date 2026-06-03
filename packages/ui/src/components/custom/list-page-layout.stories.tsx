@@ -131,7 +131,7 @@ export const AudioButtonListExample: Story = {
 								<div className="w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
 									<Video className="h-6 w-6 text-blue-600" />
 								</div>
-								<h3 className="font-medium mb-2">音声ボタン {i + 1}</h3>
+								<h2 className="font-medium mb-2">音声ボタン {i + 1}</h2>
 								<p className="text-sm text-gray-600 mb-4">短い音声の説明</p>
 								<Button size="sm" className="w-full">
 									再生
@@ -367,7 +367,7 @@ export const ComponentsShowcase: Story = {
 			<ListPageContent>
 				<div className="space-y-8">
 					<div>
-						<h3 className="text-lg font-semibold mb-4">ListPageGrid - デフォルト設定</h3>
+						<h2 className="text-lg font-semibold mb-4">ListPageGrid - デフォルト設定</h2>
 						<ListPageGrid>
 							{Array.from({ length: 4 }, (_, i) => (
 								<div key={i} className="bg-white p-4 rounded-lg border text-center">
@@ -381,14 +381,14 @@ export const ComponentsShowcase: Story = {
 					</div>
 
 					<div>
-						<h3 className="text-lg font-semibold mb-4">ListPageStats - 統計情報</h3>
+						<h2 className="text-lg font-semibold mb-4">ListPageStats - 統計情報</h2>
 						<div className="bg-white p-4 rounded-lg border">
 							<ListPageStats currentPage={3} totalPages={12} totalCount={144} itemsPerPage={12} />
 						</div>
 					</div>
 
 					<div>
-						<h3 className="text-lg font-semibold mb-4">ListPageEmptyState - 空状態</h3>
+						<h2 className="text-lg font-semibold mb-4">ListPageEmptyState - 空状態</h2>
 						<div className="bg-white p-8 rounded-lg border">
 							<ListPageEmptyState
 								icon={<div className="text-4xl">📋</div>}

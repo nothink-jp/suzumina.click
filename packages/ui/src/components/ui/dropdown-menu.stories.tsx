@@ -272,7 +272,7 @@ export const ContextMenu: Story = {
 			<p className="text-sm text-muted-foreground">音声ボタンのコンテキストメニュー例</p>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<Button variant="outline" size="icon">
+					<Button variant="outline" size="icon" aria-label="操作メニュー">
 						<MoreHorizontal className="h-4 w-4" />
 					</Button>
 				</DropdownMenuTrigger>
