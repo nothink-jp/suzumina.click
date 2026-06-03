@@ -86,7 +86,12 @@ function CharacteristicAxisDisplay({ label, leftLabel, rightLabel, value }: Axis
 
 			{/* プログレスバー */}
 			<div className="relative">
-				<Progress value={percentage} className="h-3" style={{ opacity }} />
+				<Progress
+					value={percentage}
+					className="h-3"
+					style={{ opacity }}
+					aria-label={`${leftLabel}〜${rightLabel}の評価`}
+				/>
 				{/* 中央線 */}
 				<div className="absolute top-0 left-1/2 transform -translate-x-px h-3 w-0.5 bg-border opacity-50" />
 				{/* 値のインジケーター */}

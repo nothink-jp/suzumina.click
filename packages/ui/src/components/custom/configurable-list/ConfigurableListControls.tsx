@@ -61,7 +61,7 @@ export function ConfigurableListControls({
 				{/* ソート選択 */}
 				{sortOptions.length > 0 && (
 					<Select value={currentSort} onValueChange={onSortChange}>
-						<SelectTrigger className="h-8 w-[140px]">
+						<SelectTrigger className="h-8 w-[140px]" aria-label="並び順">
 							<SelectValue placeholder="並び順" />
 						</SelectTrigger>
 						<SelectContent>
@@ -79,7 +79,7 @@ export function ConfigurableListControls({
 					itemsPerPageOptions.length > 0 &&
 					(actualTotal > 0 || (initialTotal && initialTotal > 0)) && (
 						<Select value={currentItemsPerPage.toString()} onValueChange={onItemsPerPageChange}>
-							<SelectTrigger className="h-8 w-[140px]">
+							<SelectTrigger className="h-8 w-[140px]" aria-label="表示件数">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>

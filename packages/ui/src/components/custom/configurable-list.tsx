@@ -53,7 +53,7 @@ function SelectFilter({
 	const options = generateOptions(config);
 	return (
 		<Select value={value?.toString() || ""} onValueChange={onChange}>
-			<SelectTrigger className="w-[180px]">
+			<SelectTrigger className="w-[180px]" aria-label={config.label || "絞り込み"}>
 				<SelectValue placeholder={config.placeholder || `${config.label}を選択`} />
 			</SelectTrigger>
 			<SelectContent>
