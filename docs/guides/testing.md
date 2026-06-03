@@ -103,6 +103,22 @@ test("audio button playback", async ({ page }) => {
 });
 ```
 
+#### 本番ビルド向けスモーク（@smoke / prod-build）
+
+SPR-124 のように **`next dev` では再現せず本番ビルド（cacheComponents/PPR/React Compiler が効く）でのみ顕在化する回帰**は、dev サーバ相手の E2E では捕捉できない。これ用に `e2e/smoke.spec.ts`（`@smoke`）を **`next build && next start` に対して**実行する。
+
+```bash
+# 本番ビルドを作ってスモークを実行（chromium）
+pnpm --filter @suzumina.click/web test:smoke:prod
+# 既にビルド済みなら（CI 等）: PLAYWRIGHT_PROD=1 で next start に対して実行
+PLAYWRIGHT_PROD=1 pnpm --filter @suzumina.click/web test:e2e:smoke
+```
+
+- `playwright.config.ts` は `PLAYWRIGHT_PROD=1` のとき webServer を `next start`（本番）に切り替える。
+- CI: `.github/workflows/e2e-smoke.yml` が web/ui 変更時に `next build` → 本番起動 → スモークを実行する。
+- CI は Firestore creds を持たないため、スモークは**データ非依存の layout/ルーティング**（ヘッダー描画・各ルートが 200）に絞る。データ依存の検証は通常 E2E（dev）側で行う。
+- `@playwright/test` と `playwright` は **lockstep**（同一バージョン）。ズレると `test.describe() not expected` で起動不能になるため一致させる。
+
 ## Best Practices
 
 ### 1. Test Organization

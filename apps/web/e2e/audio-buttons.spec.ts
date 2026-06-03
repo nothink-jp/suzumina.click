@@ -93,8 +93,8 @@ test.describe("音声ボタンページ", () => {
 			// 検索ボタンまたはEnterキーで検索実行
 			await page.keyboard.press("Enter");
 
-			// 検索クエリがURLに反映されることを確認
-			await expect(page).toHaveURL(/search|query/);
+			// 検索クエリがURLに反映されることを確認（SPR-111 で /search 廃止、?q= に統一）
+			await expect(page).toHaveURL(/[?&]q=/);
 		}
 	});
 

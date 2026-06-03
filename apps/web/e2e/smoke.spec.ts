@@ -27,3 +27,22 @@ test.describe("@smoke グローバルヘッダー", () => {
 		await expect(nav.getByRole("link", { name: "動画一覧" })).toHaveAttribute("href", "/videos");
 	});
 });
+
+/**
+ * 主要ルートが本番ビルドで 200 を返し、layout（ヘッダー）が描画されることのスモーク（SPR-126）。
+ * CI は Firestore creds を持たないため、各ページの動的データは error 境界に落ちうる。
+ * よってここでは「データ非依存の layout/ルーティングが壊れていない」ことのみを検証する
+ * （ヘッダーは root layout 内なのでデータ取得が失敗しても描画される）。
+ */
+test.describe("@smoke 主要ページの描画", () => {
+	for (const path of ["/", "/videos", "/buttons", "/works"]) {
+		test(`${path} が 200 を返しヘッダーが描画される`, async ({ page }) => {
+			await page.setViewportSize({ width: 1280, height: 800 });
+			const res = await page.goto(path);
+			expect(res?.status(), `${path} should not be a server/route error`).toBeLessThan(400);
+
+			await expect(page.getByRole("banner")).toBeVisible();
+			await expect(page.getByRole("navigation", { name: "メインナビゲーション" })).toBeVisible();
+		});
+	}
+});

@@ -32,8 +32,8 @@ test.describe("ホームページ", () => {
 		const searchButton = page.getByRole("button", { name: /検索/ });
 		await searchButton.click();
 
-		// 検索結果ページに遷移することを確認
-		await expect(page).toHaveURL(/search/);
+		// SPR-111 で /search は廃止。トップ検索は選択中の対象（既定=buttons）の一覧へ ?q= 付きで遷移する。
+		await expect(page).toHaveURL(/\/buttons\?q=/);
 	});
 
 	test("レスポンシブデザインが機能する", async ({ page }) => {
