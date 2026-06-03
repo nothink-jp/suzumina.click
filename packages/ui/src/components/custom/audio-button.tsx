@@ -557,7 +557,11 @@ export function AudioButton({
 					</PopoverTrigger>
 				</div>
 
-				<PopoverContent className="w-96 p-0 border-suzuka-200" align="start">
+				<PopoverContent
+					className="w-96 p-0 border-suzuka-200"
+					align="start"
+					aria-label={`${audioButton.buttonText} の詳細`}
+				>
 					<AudioButtonPopoverContent
 						audioButton={audioButton}
 						duration={duration}
