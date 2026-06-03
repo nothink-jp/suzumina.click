@@ -58,35 +58,33 @@ export async function getAudioButtonCount(videoId: string): Promise<number> {
 /**
  * 音声ボタンの人気タグを集計する内部実装。
  * 全件 .get() を伴うため、公開 API はキャッシュ経由で呼ぶ（getPopularAudioButtonTags）。
+ *
+ * エラーはここで握りつぶさず throw する。unstable_cache は throw をキャッシュしないため、
+ * 一過性の Firestore 障害で空配列が revalidate 窓の間キャッシュされるのを避ける。
  */
 async function fetchPopularAudioButtonTags(
 	limit: number,
 ): Promise<Array<{ tag: string; count: number }>> {
-	try {
-		const firestore = getFirestore();
-		const snapshot = await firestore.collection("audioButtons").where("isPublic", "==", true).get();
+	const firestore = getFirestore();
+	const snapshot = await firestore.collection("audioButtons").where("isPublic", "==", true).get();
 
-		const tagCounts = new Map<string, number>();
+	const tagCounts = new Map<string, number>();
 
-		for (const doc of snapshot.docs) {
-			const data = doc.data();
-			if (data && Array.isArray(data.tags)) {
-				for (const tag of data.tags) {
-					if (typeof tag === "string" && tag.trim() !== "") {
-						tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
-					}
+	for (const doc of snapshot.docs) {
+		const data = doc.data();
+		if (data && Array.isArray(data.tags)) {
+			for (const tag of data.tags) {
+				if (typeof tag === "string" && tag.trim() !== "") {
+					tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
 				}
 			}
 		}
-
-		return Array.from(tagCounts.entries())
-			.sort((a, b) => b[1] - a[1])
-			.slice(0, limit)
-			.map(([tag, count]) => ({ tag, count }));
-	} catch (error) {
-		logger.error("人気タグの取得に失敗", { error });
-		return [];
 	}
+
+	return Array.from(tagCounts.entries())
+		.sort((a, b) => b[1] - a[1])
+		.slice(0, limit)
+		.map(([tag, count]) => ({ tag, count }));
 }
 
 // limit は unstable_cache が引数として自動でキー化する。
@@ -99,6 +97,7 @@ const getPopularAudioButtonTagsCached = unstable_cache(
 /**
  * 人気タグリストを取得する。
  * 一覧ページのタグ絞り込みUIの選択肢に使う。全件スキャンを避けるため revalidate キャッシュ経由。
+ * エラー時は空配列を返す（キャッシュ層には正常結果のみ載る）。
  */
 export async function getPopularAudioButtonTags(limit = 30): Promise<
 	Array<{
@@ -106,7 +105,12 @@ export async function getPopularAudioButtonTags(limit = 30): Promise<
 		count: number;
 	}>
 > {
-	return getPopularAudioButtonTagsCached(limit);
+	try {
+		return await getPopularAudioButtonTagsCached(limit);
+	} catch (error) {
+		logger.error("人気タグの取得に失敗", { error });
+		return [];
+	}
 }
 
 /**
