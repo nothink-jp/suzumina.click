@@ -4,8 +4,11 @@ import { cn } from "@suzumina.click/ui/lib/utils";
 import type * as React from "react";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+	// 横スクロール領域はキーボードでもスクロールできるよう focusable にする（a11y: scrollable-region-focusable。SPR-132）
+	// biome の noNoninteractiveTabindex と axe の scrollable-region-focusable が衝突するため、後者を優先して suppress
 	return (
-		<div data-slot="table-container" className="relative w-full overflow-x-auto">
+		// biome-ignore lint/a11y/noNoninteractiveTabindex: スクロール領域をキーボードでスクロール可能にする（axe: scrollable-region-focusable）
+		<div data-slot="table-container" className="relative w-full overflow-x-auto" tabIndex={0}>
 			<table
 				data-slot="table"
 				className={cn("w-full caption-bottom text-sm", className)}

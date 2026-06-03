@@ -11,6 +11,8 @@ const meta = {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
+	// ラベル無しの単体デモには既定のアクセシブル名を与える（a11y: button-name。SPR-132）
+	args: { "aria-label": "選択" },
 	argTypes: {
 		disabled: {
 			control: { type: "boolean" },

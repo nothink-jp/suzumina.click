@@ -10,6 +10,8 @@ const meta = {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
+	// args ベースの単体デモに既定のアクセシブル名（a11y: aria-progressbar-name。SPR-132）
+	args: { "aria-label": "進捗" },
 	argTypes: {
 		value: {
 			control: { type: "range", min: 0, max: 100, step: 1 },
@@ -39,7 +41,7 @@ export const BasicValues: Story = {
 					<span>0%</span>
 					<span>0/100</span>
 				</div>
-				<Progress value={0} />
+				<Progress aria-label="進捗" value={0} />
 			</div>
 
 			<div className="space-y-2">
@@ -47,7 +49,7 @@ export const BasicValues: Story = {
 					<span>25%</span>
 					<span>25/100</span>
 				</div>
-				<Progress value={25} />
+				<Progress aria-label="進捗" value={25} />
 			</div>
 
 			<div className="space-y-2">
@@ -55,7 +57,7 @@ export const BasicValues: Story = {
 					<span>50%</span>
 					<span>50/100</span>
 				</div>
-				<Progress value={50} />
+				<Progress aria-label="進捗" value={50} />
 			</div>
 
 			<div className="space-y-2">
@@ -63,7 +65,7 @@ export const BasicValues: Story = {
 					<span>75%</span>
 					<span>75/100</span>
 				</div>
-				<Progress value={75} />
+				<Progress aria-label="進捗" value={75} />
 			</div>
 
 			<div className="space-y-2">
@@ -71,7 +73,7 @@ export const BasicValues: Story = {
 					<span>100%</span>
 					<span>100/100</span>
 				</div>
-				<Progress value={100} />
+				<Progress aria-label="進捗" value={100} />
 			</div>
 		</div>
 	),
@@ -92,7 +94,7 @@ export const Animated: Story = {
 					<span>アニメーション付き進捗</span>
 					<span>{progress}%</span>
 				</div>
-				<Progress value={progress} />
+				<Progress aria-label="進捗" value={progress} />
 				<Button onClick={() => setProgress(Math.floor(Math.random() * 100))}>ランダムに更新</Button>
 			</div>
 		);
@@ -129,7 +131,7 @@ export const FileUploadProgress: Story = {
 						<span>sample-file.pdf</span>
 						<span>{Math.round(uploadProgress)}%</span>
 					</div>
-					<Progress value={uploadProgress} />
+					<Progress aria-label="進捗" value={uploadProgress} />
 					<div className="text-xs text-muted-foreground">
 						{isUploading
 							? "アップロード中..."
@@ -160,7 +162,7 @@ export const MultipleProgress: Story = {
 								<span>UI デザイン</span>
 								<span>90%</span>
 							</div>
-							<Progress value={90} />
+							<Progress aria-label="進捗" value={90} />
 						</div>
 
 						<div className="space-y-2">
@@ -168,7 +170,7 @@ export const MultipleProgress: Story = {
 								<span>フロントエンド開発</span>
 								<span>75%</span>
 							</div>
-							<Progress value={75} />
+							<Progress aria-label="進捗" value={75} />
 						</div>
 
 						<div className="space-y-2">
@@ -176,7 +178,7 @@ export const MultipleProgress: Story = {
 								<span>バックエンド開発</span>
 								<span>60%</span>
 							</div>
-							<Progress value={60} />
+							<Progress aria-label="進捗" value={60} />
 						</div>
 
 						<div className="space-y-2">
@@ -184,7 +186,7 @@ export const MultipleProgress: Story = {
 								<span>テスト</span>
 								<span>30%</span>
 							</div>
-							<Progress value={30} />
+							<Progress aria-label="進捗" value={30} />
 						</div>
 
 						<div className="space-y-2">
@@ -192,7 +194,7 @@ export const MultipleProgress: Story = {
 								<span>デプロイ</span>
 								<span>0%</span>
 							</div>
-							<Progress value={0} />
+							<Progress aria-label="進捗" value={0} />
 						</div>
 					</div>
 
@@ -201,7 +203,7 @@ export const MultipleProgress: Story = {
 							<span>全体進捗</span>
 							<span>51%</span>
 						</div>
-						<Progress value={51} className="mt-2" />
+						<Progress aria-label="進捗" value={51} className="mt-2" />
 					</div>
 				</div>
 			</div>
@@ -231,7 +233,7 @@ export const SkillProgress: Story = {
 								<span>{skill.name}</span>
 								<span>{skill.level}%</span>
 							</div>
-							<Progress value={skill.level} />
+							<Progress aria-label="進捗" value={skill.level} />
 						</div>
 					))}
 				</div>
@@ -280,7 +282,7 @@ export const LoadingSteps: Story = {
 						<span>{steps[currentStep]}</span>
 						<span>{Math.round(progress)}%</span>
 					</div>
-					<Progress value={progress} />
+					<Progress aria-label="進捗" value={progress} />
 					<div className="text-xs text-muted-foreground">
 						ステップ {currentStep + 1} / {steps.length}
 					</div>
@@ -299,27 +301,27 @@ export const CustomSizes: Story = {
 		<div className="w-[300px] space-y-6">
 			<div className="space-y-2">
 				<div className="text-sm font-medium">小（h-1）</div>
-				<Progress value={60} className="h-1" />
+				<Progress aria-label="進捗" value={60} className="h-1" />
 			</div>
 
 			<div className="space-y-2">
 				<div className="text-sm font-medium">デフォルト（h-2）</div>
-				<Progress value={60} />
+				<Progress aria-label="進捗" value={60} />
 			</div>
 
 			<div className="space-y-2">
 				<div className="text-sm font-medium">中（h-3）</div>
-				<Progress value={60} className="h-3" />
+				<Progress aria-label="進捗" value={60} className="h-3" />
 			</div>
 
 			<div className="space-y-2">
 				<div className="text-sm font-medium">大（h-4）</div>
-				<Progress value={60} className="h-4" />
+				<Progress aria-label="進捗" value={60} className="h-4" />
 			</div>
 
 			<div className="space-y-2">
 				<div className="text-sm font-medium">特大（h-6）</div>
-				<Progress value={60} className="h-6" />
+				<Progress aria-label="進捗" value={60} className="h-6" />
 			</div>
 		</div>
 	),
@@ -330,27 +332,43 @@ export const ColorVariants: Story = {
 		<div className="w-[300px] space-y-6">
 			<div className="space-y-2">
 				<div className="text-sm font-medium">デフォルト</div>
-				<Progress value={60} />
+				<Progress aria-label="進捗" value={60} />
 			</div>
 
 			<div className="space-y-2">
 				<div className="text-sm font-medium">成功（緑）</div>
-				<Progress value={60} className="[&>[data-slot=progress-indicator]]:bg-green-500" />
+				<Progress
+					aria-label="進捗"
+					value={60}
+					className="[&>[data-slot=progress-indicator]]:bg-green-500"
+				/>
 			</div>
 
 			<div className="space-y-2">
 				<div className="text-sm font-medium">警告（黄）</div>
-				<Progress value={60} className="[&>[data-slot=progress-indicator]]:bg-yellow-500" />
+				<Progress
+					aria-label="進捗"
+					value={60}
+					className="[&>[data-slot=progress-indicator]]:bg-yellow-500"
+				/>
 			</div>
 
 			<div className="space-y-2">
 				<div className="text-sm font-medium">エラー（赤）</div>
-				<Progress value={60} className="[&>[data-slot=progress-indicator]]:bg-red-500" />
+				<Progress
+					aria-label="進捗"
+					value={60}
+					className="[&>[data-slot=progress-indicator]]:bg-red-500"
+				/>
 			</div>
 
 			<div className="space-y-2">
 				<div className="text-sm font-medium">情報（青）</div>
-				<Progress value={60} className="[&>[data-slot=progress-indicator]]:bg-blue-500" />
+				<Progress
+					aria-label="進捗"
+					value={60}
+					className="[&>[data-slot=progress-indicator]]:bg-blue-500"
+				/>
 			</div>
 		</div>
 	),

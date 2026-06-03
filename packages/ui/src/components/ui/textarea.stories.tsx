@@ -10,6 +10,8 @@ const meta = {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
+	// ラベル無しの単体デモ（args ベース）に既定名（a11y: label。SPR-132）
+	args: { "aria-label": "テキスト入力" },
 	argTypes: {
 		placeholder: {
 			control: "text",

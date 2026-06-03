@@ -183,6 +183,7 @@ export const InFormLayout: Story = {
 					<label className="text-sm font-medium">ユーザー名</label>
 					<input
 						type="text"
+						aria-label="ユーザー名"
 						className="w-full px-3 py-2 border rounded-md text-sm"
 						defaultValue="user123"
 					/>
@@ -192,6 +193,7 @@ export const InFormLayout: Story = {
 					<label className="text-sm font-medium">メールアドレス</label>
 					<input
 						type="email"
+						aria-label="メールアドレス"
 						className="w-full px-3 py-2 border rounded-md text-sm"
 						defaultValue="user@example.com"
 					/>

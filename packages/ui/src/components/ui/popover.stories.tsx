@@ -146,7 +146,7 @@ export const InfoPopover: Story = {
 			<span>ユーザー名</span>
 			<Popover>
 				<PopoverTrigger asChild>
-					<Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+					<Button variant="ghost" size="sm" className="h-4 w-4 p-0" aria-label="詳細情報">
 						<InfoIcon className="h-3 w-3" />
 					</Button>
 				</PopoverTrigger>
@@ -264,7 +264,7 @@ export const OpenInteraction: Story = {
 			<PopoverTrigger asChild>
 				<Button variant="outline">ポップオーバーを開く</Button>
 			</PopoverTrigger>
-			<PopoverContent>
+			<PopoverContent aria-label="ポップオーバー">
 				<p className="text-sm">ポップオーバーの内容</p>
 			</PopoverContent>
 		</Popover>

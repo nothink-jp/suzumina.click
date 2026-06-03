@@ -118,6 +118,7 @@ export const WithControls: Story = {
 						<label className="block text-sm font-medium">音量</label>
 						<input
 							type="range"
+							aria-label="音量"
 							min="0"
 							max="100"
 							defaultValue="75"

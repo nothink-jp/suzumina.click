@@ -16,6 +16,8 @@ const meta: Meta<typeof Switch> = {
 		},
 	},
 	tags: ["autodocs"],
+	// ラベル無しの単体デモ（args ベース story）に既定のアクセシブル名を与える（a11y: button-name。SPR-132）
+	args: { "aria-label": "スイッチ" },
 	argTypes: {
 		checked: {
 			control: "boolean",
@@ -84,7 +86,12 @@ export const Interactive: Story = {
 		return (
 			<div className="flex flex-col gap-4">
 				<div className="flex items-center gap-3">
-					<Switch checked={checked} onCheckedChange={setChecked} id="interactive-switch" />
+					<Switch
+						aria-label="スイッチ"
+						checked={checked}
+						onCheckedChange={setChecked}
+						id="interactive-switch"
+					/>
 					<label htmlFor="interactive-switch" className="text-sm font-medium">
 						状態: {checked ? "ON" : "OFF"}
 					</label>
@@ -111,7 +118,12 @@ export const WithLabels: Story = {
 						<Bell className="h-4 w-4 text-muted-foreground" />
 						<span className="text-sm font-medium">通知を受け取る</span>
 					</div>
-					<Switch checked={notifications} onCheckedChange={setNotifications} id="notifications" />
+					<Switch
+						aria-label="スイッチ"
+						checked={notifications}
+						onCheckedChange={setNotifications}
+						id="notifications"
+					/>
 				</div>
 
 				<div className="flex items-center justify-between">
@@ -119,7 +131,7 @@ export const WithLabels: Story = {
 						<Volume2 className="h-4 w-4 text-muted-foreground" />
 						<span className="text-sm font-medium">サウンドを再生</span>
 					</div>
-					<Switch checked={sound} onCheckedChange={setSound} id="sound" />
+					<Switch aria-label="スイッチ" checked={sound} onCheckedChange={setSound} id="sound" />
 				</div>
 
 				<div className="flex items-center justify-between">
@@ -127,7 +139,12 @@ export const WithLabels: Story = {
 						<Eye className="h-4 w-4 text-muted-foreground" />
 						<span className="text-sm font-medium">公開プロフィール</span>
 					</div>
-					<Switch checked={visibility} onCheckedChange={setVisibility} id="visibility" />
+					<Switch
+						aria-label="スイッチ"
+						checked={visibility}
+						onCheckedChange={setVisibility}
+						id="visibility"
+					/>
 				</div>
 			</div>
 		);
@@ -180,7 +197,7 @@ export const MultipleStates: Story = {
 				<div className="space-y-3">
 					<p className="text-sm font-medium text-foreground">デフォルト (OFF)</p>
 					<div className="flex items-center gap-3">
-						<Switch checked={false} />
+						<Switch aria-label="スイッチ" checked={false} />
 						<span className="text-xs text-muted-foreground">グレー背景</span>
 					</div>
 				</div>
@@ -188,7 +205,7 @@ export const MultipleStates: Story = {
 				<div className="space-y-3">
 					<p className="text-sm font-medium text-foreground">チェック済み (ON)</p>
 					<div className="flex items-center gap-3">
-						<Switch checked={true} />
+						<Switch aria-label="スイッチ" checked={true} />
 						<span className="text-xs text-suzuka-600">suzuka-500 背景</span>
 					</div>
 				</div>
@@ -196,7 +213,7 @@ export const MultipleStates: Story = {
 				<div className="space-y-3">
 					<p className="text-sm font-medium text-foreground">無効化 (OFF)</p>
 					<div className="flex items-center gap-3">
-						<Switch checked={false} disabled />
+						<Switch aria-label="スイッチ" checked={false} disabled />
 						<span className="text-xs text-muted-foreground">無効状態</span>
 					</div>
 				</div>
@@ -204,7 +221,7 @@ export const MultipleStates: Story = {
 				<div className="space-y-3">
 					<p className="text-sm font-medium text-foreground">無効化 (ON)</p>
 					<div className="flex items-center gap-3">
-						<Switch checked={true} disabled />
+						<Switch aria-label="スイッチ" checked={true} disabled />
 						<span className="text-xs text-muted-foreground">無効状態</span>
 					</div>
 				</div>
@@ -225,7 +242,11 @@ export const BrandColors: Story = {
 
 				<div className="space-y-4">
 					<div className="flex items-center gap-4">
-						<Switch checked={suzukaChecked} onCheckedChange={setSuzukaChecked} />
+						<Switch
+							aria-label="スイッチ"
+							checked={suzukaChecked}
+							onCheckedChange={setSuzukaChecked}
+						/>
 						<div>
 							<span className="text-sm font-medium">suzuka-500 (Primary)</span>
 							<p className="text-xs text-muted-foreground">デフォルトのプライマリカラー</p>
@@ -234,6 +255,7 @@ export const BrandColors: Story = {
 
 					<div className="flex items-center gap-4">
 						<Switch
+							aria-label="スイッチ"
 							checked={minaseChecked}
 							onCheckedChange={setMinaseChecked}
 							className="data-[state=checked]:bg-minase-500"
