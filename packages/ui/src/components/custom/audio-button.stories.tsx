@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { AudioButton as AudioButtonType } from "@suzumina.click/shared-types";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, screen, userEvent, within } from "storybook/test";
 import { AudioButton } from "./audio-button";
 
 const meta = {
@@ -129,12 +129,9 @@ export const AuthenticatedWithLikes: Story = {
 	},
 };
 
-// FIXME(SPR-129): お気に入りボタン(FavoriteButton)は detail popover(PopoverActions)内にあり、
-// この play は「詳細を表示」を開かずに探すため見つけられず fail する。修正にはまず popover を開く必要があり、
-// radix popover は portal 描画のため within(canvasElement) では拾えず within(document.body)/screen が要る。
-// 正しいテストに直すまで CI から除外（実装/props は現存。機能欠落ではない）。
+// FavoriteButton は詳細 popover(PopoverActions)内にあるため、まず「詳細を表示」を開いてから取得する。
+// radix popover は portal 描画なので within(canvasElement) では拾えず、screen(document.body) で探す。
 export const FavoriteToggleInteraction: Story = {
-	tags: ["!test"],
 	args: {
 		audioButton: mockAudioButton,
 		onPlay: fn(),
@@ -144,16 +141,15 @@ export const FavoriteToggleInteraction: Story = {
 	},
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
-		const favoriteBtn = canvas.getByRole("button", { name: "お気に入りに追加" });
+		await userEvent.click(canvas.getByRole("button", { name: "詳細を表示" }));
+		const favoriteBtn = await screen.findByRole("button", { name: "お気に入りに追加" });
 		await userEvent.click(favoriteBtn);
 		await expect(args.onFavoriteToggle).toHaveBeenCalledOnce();
 	},
 };
 
-// FIXME(SPR-129): 同上。FavoriteButton は popover 内のため、popover を開いてから取得するよう
-// 直すまで CI から除外（機能欠落ではない）。
+// 同上。未認証時は popover 内の FavoriteButton が disabled になることを確認する。
 export const UnauthenticatedFavoriteDisabled: Story = {
-	tags: ["!test"],
 	args: {
 		audioButton: mockAudioButton,
 		onPlay: fn(),
@@ -163,7 +159,8 @@ export const UnauthenticatedFavoriteDisabled: Story = {
 	},
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
-		const favoriteBtn = canvas.getByRole("button", { name: "お気に入りに追加" });
+		await userEvent.click(canvas.getByRole("button", { name: "詳細を表示" }));
+		const favoriteBtn = await screen.findByRole("button", { name: "お気に入りに追加" });
 		await expect(favoriteBtn).toBeDisabled();
 		await userEvent.click(favoriteBtn);
 		await expect(args.onFavoriteToggle).not.toHaveBeenCalled();
