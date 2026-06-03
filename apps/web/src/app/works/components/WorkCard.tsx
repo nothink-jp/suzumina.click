@@ -5,6 +5,7 @@ import { Calendar, ExternalLink, Tag, Users } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import ThumbnailImage from "@/components/ui/thumbnail-image";
+import { normalizeJstDateString } from "@/utils/date-format";
 
 interface WorkCardProps {
 	work: WorkPlainObject;
@@ -15,27 +16,35 @@ interface WorkCardProps {
 // 発売日フォーマット関数（"YYYY/MM/DD" 表示）。
 //
 // 正本: DLsite の発売日（work.releaseDate）は JST の壁時計。表示も JST の暦日のみ。
-// したがってパースは TZ に依存してはならない。`new Date("2023-05-06 16:00:00")` のように
-// TZ 指定の無い文字列を `new Date()` に渡すと実行環境の TZ で解釈され、SSR(本番=UTC)と
-// クライアント(JST)で暦日がズレて hydration mismatch (React #418) を起こす（SPR-135）。
-// そのため Date を経由せず、文字列から直接 年/月/日 を取り出して決定論的に整形する。
+// パースは TZ に依存してはならない。`new Date("2023-05-06 16:00:00")` のように TZ 指定の
+// 無い文字列を `new Date()` に渡すと実行環境の TZ で解釈され、SSR(本番=UTC)とクライアント(JST)で
+// 暦日がズレて hydration mismatch (React #418) を起こす（SPR-135）。
+//
+// 入力解釈は date-format.ts の `normalizeJstDateString` に集約（TZ-less は JST、Z/オフセット付きは
+// 絶対時刻として尊重）。日付のみの曖昧さの無い表記（年月日・スラッシュ）は文字列から直接取り出す。
 const pad2 = (value: string | undefined) => (value ?? "").padStart(2, "0");
 
-const formatDate = (dateString: string) => {
-	// "YYYY年M月D日"
+export const formatDate = (dateString: string) => {
+	// "YYYY年M月D日"（日付のみ・曖昧さ無し）
 	const jp = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
 	if (jp) {
 		return `${jp[1]}/${pad2(jp[2])}/${pad2(jp[3])}`;
 	}
-	// "YYYY-MM-DD..."（先頭の日付部分のみ採用。時刻・TZ は表示に使わない）
-	const iso = dateString.match(/(\d{4})-(\d{2})-(\d{2})/);
-	if (iso) {
-		return `${iso[1]}/${iso[2]}/${iso[3]}`;
-	}
-	// "YYYY/M/D..."
-	const slash = dateString.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+	// "YYYY/M/D..."（日付のみ・曖昧さ無し）
+	const slash = dateString.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
 	if (slash) {
 		return `${slash[1]}/${pad2(slash[2])}/${pad2(slash[3])}`;
+	}
+	// ISO / 日時文字列。Z・オフセットの有無は date-format.ts と同一規則で解決し、
+	// JST の暦日に整形する（TZ 非依存・決定論的）。
+	const date = new Date(normalizeJstDateString(dateString));
+	if (!Number.isNaN(date.getTime())) {
+		return date.toLocaleDateString("ja-JP", {
+			timeZone: "Asia/Tokyo",
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+		});
 	}
 	// パースできない場合は元の文字列を返す
 	return dateString;

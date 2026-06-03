@@ -5,7 +5,7 @@
  */
 function validateAndParseDate(dateString: string | Date): Date | null {
 	const date =
-		typeof dateString === "string" ? new Date(normalizeDateString(dateString)) : dateString;
+		typeof dateString === "string" ? new Date(normalizeJstDateString(dateString)) : dateString;
 
 	// 無効な日付の場合
 	if (Number.isNaN(date.getTime())) {
@@ -22,11 +22,15 @@ function validateAndParseDate(dateString: string | Date): Date | null {
  * 実行環境の TZ で解釈され、SSR(本番=UTC)とクライアント(JST)で暦日がズレて
  * hydration mismatch (React #418) を起こす（SPR-135）。明示的に +09:00 を付与して
  * 実行環境に依らず同一の絶対時刻に解決させる。Z/オフセット付き・時刻なしの文字列は変更しない。
+ *
+ * 日付パースの正本。`WorkCard` の発売日表示など、DLsite 日付を扱う箇所はこの規則を共有し、
+ * 入力（TZ-less / Z付き）の解釈を統一する。
  */
-function normalizeDateString(value: string): string {
+export function normalizeJstDateString(value: string): string {
+	// 秒・小数秒は任意。空白 / "T" 区切りの両方を許容。
 	const tzLessDateTime = value
 		.trim()
-		.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)$/);
+		.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)$/);
 	if (tzLessDateTime) {
 		const [, year, month, day, time] = tzLessDateTime;
 		return `${year}-${month}-${day}T${time}+09:00`;
