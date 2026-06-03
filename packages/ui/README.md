@@ -110,8 +110,11 @@ pnpm test
 pnpm test:coverage
 
 # Storybook の story を play(interaction)/a11y テストとして browser モードで実行
-# （vitest + playwright。a11y は現状 "todo"＝可視化のみ。CI: storybook-test.yml）
+# （vitest + playwright。a11y 違反は CI fail＝"error" ゲート。CI: storybook-test.yml）
 pnpm test:storybook
+
+# Chromatic 視覚回帰（要 CHROMATIC_PROJECT_TOKEN。--only-changed で変更 story のみ）
+pnpm chromatic
 
 # 型チェック
 pnpm typecheck
@@ -209,7 +212,7 @@ pnpm exec biome check --write src/components/ui
 - **デザイントークン変更**: 対応する Storybook を必ず更新
 - **新規コンポーネント**: Storybook ストーリー作成を推奨
 - **ブランドカラー**: suzuka/minase colors の一貫性維持
-- **Chromatic**: 視覚的回帰テスト対象（段階的導入）
+- **Chromatic**: 視覚回帰を CI 導入済み（`chromatic.yml`）。ui 変更時のみ + TurboSnap(`--only-changed`) で無料枠を節約。PR では差分をレビュー（GH チェックはブロックしない段階的導入）、main push で新ベースラインを自動採用。ハード gate 化は将来 `exitZeroOnChanges` を外して切替可能
 
 ## 📚 関連ドキュメント
 
