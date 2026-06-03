@@ -23,7 +23,7 @@ export function LoadingSkeleton({
 					className={`animate-pulse w-full ${className}`}
 					data-testid="loading-skeleton-carousel"
 				>
-					{/* GenericCarouselのCarousel構造を模倣 */}
+					{/* Carousel構造を模倣 */}
 					<div className="relative">
 						{/* CarouselContentと同じマージン設定 */}
 						<div className="flex -ml-2 md:-ml-4 overflow-hidden">
@@ -32,7 +32,7 @@ export function LoadingSkeleton({
 									key={i}
 									className="pl-2 md:pl-4 min-w-0"
 									style={{
-										// GenericCarouselのCarouselItemと同じサイズ設定
+										// CarouselItemと同じサイズ設定
 										flexBasis: "clamp(240px, 45vw, 320px)",
 										maxWidth: "320px",
 									}}

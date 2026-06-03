@@ -9,7 +9,6 @@
 
 import { LoadingSkeleton } from "@suzumina.click/ui/components/custom/loading-skeleton";
 import dynamic from "next/dynamic";
-import { lazy } from "react";
 
 // 画面外のカルーセルコンポーネントを遅延読み込み
 // LCP改善: サーバーコンポーネントではなくクライアントコンポーネントを直接使用
@@ -37,16 +36,4 @@ export const LazyFeaturedWorksCarousel = dynamic(
 	{
 		loading: () => <LoadingSkeleton variant="carousel" height={350} />,
 	},
-);
-
-// ユーザーメニューの遅延読み込み
-export const LazyUserMenu = lazy(() =>
-	import("@/components/user/user-menu").then((module) => ({ default: module.default })),
-);
-
-// 管理者機能の遅延読み込み
-export const LazyAudioButtonCreator = lazy(() =>
-	import("@/components/audio/audio-button-creator").then((module) => ({
-		default: module.AudioButtonCreator,
-	})),
 );

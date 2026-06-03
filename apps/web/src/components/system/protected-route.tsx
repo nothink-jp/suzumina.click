@@ -66,29 +66,3 @@ export async function requireAuth(): Promise<UserSession> {
 
 	return session.user;
 }
-
-/**
- * 管理者権限チェック用のユーティリティ関数
- */
-export async function requireAdmin(): Promise<UserSession> {
-	const user = await requireAuth();
-
-	if (user.role !== "admin") {
-		redirect("/auth/error?error=AccessDenied");
-	}
-
-	return user;
-}
-
-/**
- * モデレーター以上の権限チェック用のユーティリティ関数
- */
-export async function requireModerator(): Promise<UserSession> {
-	const user = await requireAuth();
-
-	if (user.role !== "admin" && user.role !== "moderator") {
-		redirect("/auth/error?error=AccessDenied");
-	}
-
-	return user;
-}

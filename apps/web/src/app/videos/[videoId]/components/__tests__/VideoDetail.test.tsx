@@ -59,20 +59,6 @@ vi.mock("@/components/system/protected-route", () => ({
 		role: "member",
 		isActive: true,
 	}),
-	requireAdmin: vi.fn().mockResolvedValue({
-		id: "test-user",
-		name: "Test User",
-		email: "test@example.com",
-		role: "admin",
-		isActive: true,
-	}),
-	requireModerator: vi.fn().mockResolvedValue({
-		id: "test-user",
-		name: "Test User",
-		email: "test@example.com",
-		role: "moderator",
-		isActive: true,
-	}),
 }));
 
 // Audio button actionsのモック
