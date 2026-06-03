@@ -46,7 +46,7 @@ describe("ValidationMessage", () => {
 			const { container } = render(
 				<ValidationMessage variant="warning" message="Warning message" isVisible={true} />,
 			);
-			expect(container.firstChild).toHaveClass("text-minase-600");
+			expect(container.firstChild).toHaveClass("text-minase-700");
 		});
 
 		it("applies info variant styles", () => {
