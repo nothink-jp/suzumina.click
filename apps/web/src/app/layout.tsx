@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { M_PLUS_Rounded_1c } from "next/font/google";
 import "@suzumina.click/ui/globals.css";
 import { Toaster } from "@suzumina.click/ui/components/ui/sonner";
 import { Suspense } from "react";
@@ -14,6 +15,30 @@ import SiteHeader from "@/components/layout/site-header";
 import { DeferredGlobalEffects } from "@/components/system/deferred-global-effects";
 import { SessionProvider } from "@/components/user/session-provider";
 import { AgeVerificationProvider } from "@/contexts/age-verification-context";
+
+/**
+ * ブランドフォント M PLUS Rounded 1c（丸ゴシック）。
+ * next/font で self-host し、body に className として当てる（globals.css の既定 body フォントを上書き）。
+ * - CJK は巨大なため preload せず display:swap（初回はシステム丸ゴシックで即描画→差し替え）
+ * - weight は実使用に限定（400/500/700。600=semibold は最寄りで合成）
+ * - fallback は globals.css と同じシステム丸ゴシック系（未ロード/欠字/swap 中もブランド感を維持）
+ */
+const mPlusRounded = M_PLUS_Rounded_1c({
+	weight: ["400", "500", "700"],
+	subsets: ["latin"],
+	display: "swap",
+	preload: false,
+	adjustFontFallback: false,
+	fallback: [
+		"Hiragino Maru Gothic ProN",
+		"Meiryo",
+		"BIZ UDGothic",
+		"Hiragino Kaku Gothic ProN",
+		"YuGothic",
+		"system-ui",
+		"sans-serif",
+	],
+});
 
 export const metadata: Metadata = {
 	title: {
@@ -98,7 +123,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				<GoogleAnalyticsScript />
 				<GoogleTagManager />
 			</head>
-			<body className="min-h-screen flex flex-col antialiased gradient-bg">
+			<body
+				className={`${mPlusRounded.className} min-h-screen flex flex-col antialiased gradient-bg`}
+			>
 				<GoogleTagManagerNoscript />
 				<AgeVerificationProvider>
 					<SessionProvider>

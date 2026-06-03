@@ -1,0 +1,17 @@
+<!-- Storybook でブランドフォント M PLUS Rounded 1c を実ロードする（SPR-120）。
+     本番(apps/web)は next/font で self-host するが、Storybook は dev ツールのため CDN で読み込み、
+     Design Tokens / Typography のプレビューを実フォントと一致させる。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  /* 本番と同じく M PLUS Rounded 1c を先頭にしてプレビュー全体を実態に合わせる */
+  body {
+    font-family:
+      "M PLUS Rounded 1c", "ヒラギノ丸ゴ ProN", "Hiragino Maru Gothic ProN", "メイリオ", Meiryo,
+      "BIZ UDゴシック", "BIZ UDGothic", system-ui, sans-serif;
+  }
+</style>

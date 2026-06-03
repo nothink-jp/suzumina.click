@@ -255,8 +255,9 @@
 		color: hsl(var(--foreground));
 	}
 
-	/* 日本語システムフォントスタック */
-	/* Web Fontを使用せず帯域を節約し、各OSネイティブフォントを活用 */
+	/* 日本語フォントスタック（既定 = システム丸ゴシック）。
+	 * apps/web では body に next/font の M PLUS Rounded 1c クラスが当たり、この既定を上書きする
+	 * (SPR-120)。Storybook 等 next/font 非適用の文脈ではこのスタックがそのまま効く。 */
 	body {
 		font-family:
 			/* 丸みのあるフォント優先 (macOS/iOS) */
