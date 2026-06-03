@@ -2,9 +2,6 @@
 export { AudioButton } from "./audio-button";
 export { AudioPlayer } from "./audio-player";
 
-// Types
-export type { AutocompleteSuggestionItem } from "./autocomplete-dropdown";
-export { AutocompleteDropdown } from "./autocomplete-dropdown";
 export { ConfigurableList } from "./configurable-list";
 // List components
 export type {
