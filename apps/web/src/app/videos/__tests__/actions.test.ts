@@ -25,6 +25,12 @@ vi.mock("@/lib/logger", () => ({
 	debug: vi.fn(),
 }));
 
+// getPopularVideoTags が unstable_cache 経由になったため、Next ランタイム外では
+// ラップ対象の関数をそのまま返すパススルーにする。
+vi.mock("next/cache", () => ({
+	unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
+}));
+
 describe("Video Server Actions", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
