@@ -1,4 +1,4 @@
-# @suzumina.click/ui v0.3.11
+# @suzumina.click/ui v0.3.13
 
 涼花みなせファンサイト用 UI コンポーネントライブラリ（Storybook統合・包括的テストスイート実装完了）
 
@@ -6,13 +6,23 @@
 
 本パッケージは、suzumina.click プロジェクト専用のUIコンポーネントライブラリです。shadcn/ui ベースのデザインシステムと、涼花みなせブランドに特化したデザイントークンを提供します。
 
+## 🧱 技術スタック
+
+バージョンの正は `package.json`（ここには固定しない）。基盤は以下:
+
+- **Tailwind CSS v4**（`@theme` + CSS 変数駆動。`tailwind.config` は廃止）
+- **React 19 / Next.js 16**
+- **radix-ui 統合パッケージ**（個別 `@radix-ui/react-*` ではなく単一 `radix-ui` から import。new-york style）
+- **Storybook 10**（react-vite / a11y / vitest アドオン。a11y 違反は CI fail）
+- **shadcn/ui**（new-york / baseColor=stone）。保守方針は [ADR-011](../../docs/decisions/frontend/ADR-011-shadcn-ui-maintenance-policy.md)
+
 ## 📦 パッケージ構成
 
 ```text
 packages/ui/src/components/
-├── ui/           # shadcn/ui コンポーネント (51個)
-├── custom/       # プロジェクト独自コンポーネント
-└── design-tokens/ # デザイントークン Storybook
+├── ui/            # shadcn/ui ベースコンポーネント (30個)
+├── custom/        # プロジェクト独自コンポーネント (14個)
+└── design-tokens/ # デザイントークン Storybook (MDX)
 ```
 
 ## 🎨 デザイントークン
@@ -105,7 +115,7 @@ pnpm typecheck
 
 ## 📋 コンポーネント一覧
 
-### shadcn/ui (51個)
+### shadcn/ui (30個)
 
 基盤UIコンポーネント - プロジェクト間で完全再利用可能
 
@@ -142,16 +152,25 @@ import { AudioButton } from "@suzumina.click/ui/components/custom/audio-button";
 </Button>
 ```
 
-### 新規 shadcn/ui コンポーネント追加
+### shadcn/ui コンポーネントの追加・更新（再生成方式）
+
+[ADR-011](../../docs/decisions/frontend/ADR-011-shadcn-ui-maintenance-policy.md) の方針：**生成物は手編集せず再生成**する。手マージは行わない。
 
 ```bash
-# UI Package で実行
 cd packages/ui
-pnpm dlx shadcn@latest add <component>
-
-# 自動的に components/ui/ に配置
-# Storybook ストーリーを作成（推奨）
+# 追加・更新（更新時は --overwrite）
+pnpm dlx shadcn@latest add <component> --overwrite
+# 再整形（class 並べ替え churn は追わない）
+pnpm exec biome check --write src/components/ui
 ```
+
+更新時の注意:
+
+- **in-file 例外は再生成後に復元する**: `button.tsx`（モバイル touch-target・追加 size）/ `tabs.tsx`（active=ブランド色）/ `toggle.tsx`（active=ブランド色）。
+  `git checkout -- <file>` で戻す。
+- **`calendar.tsx` は再生成しない**: shadcn registry が react-day-picker v9 世代のままで、pin 済み v10 と型非互換（実質ダウングレード）。
+- 新規追加時は `index.ts` の barrel export と Storybook ストーリー作成を推奨。
+- ブランド色は原則 `globals.css` の semantic トークン（`--primary`=suzuka 等）で当てる。在file 直書きは最後の手段。
 
 ## ⚙️ 設定
 

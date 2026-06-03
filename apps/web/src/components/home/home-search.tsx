@@ -54,7 +54,8 @@ const HomeSearch = memo(function HomeSearch() {
 				className="grid w-full grid-cols-3"
 			>
 				{SEARCH_TARGETS.map((t) => (
-					<ToggleGroupItem key={t.value} value={t.value}>
+					// grid セル幅いっぱいに伸ばし 3 等分の segmented control にする（新 toggle-group は item を content 幅にするため）
+					<ToggleGroupItem key={t.value} value={t.value} className="w-full">
 						{t.label}
 					</ToggleGroupItem>
 				))}

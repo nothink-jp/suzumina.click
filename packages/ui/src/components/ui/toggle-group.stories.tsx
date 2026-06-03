@@ -39,9 +39,15 @@ export const FullWidth: Story = {
 			aria-label="検索対象"
 			className="grid w-full grid-cols-3"
 		>
-			<ToggleGroupItem value="buttons">音声ボタン</ToggleGroupItem>
-			<ToggleGroupItem value="videos">動画</ToggleGroupItem>
-			<ToggleGroupItem value="works">作品</ToggleGroupItem>
+			<ToggleGroupItem value="buttons" className="w-full">
+				音声ボタン
+			</ToggleGroupItem>
+			<ToggleGroupItem value="videos" className="w-full">
+				動画
+			</ToggleGroupItem>
+			<ToggleGroupItem value="works" className="w-full">
+				作品
+			</ToggleGroupItem>
 		</ToggleGroup>
 	),
 };
