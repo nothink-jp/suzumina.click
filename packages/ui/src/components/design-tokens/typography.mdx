@@ -10,10 +10,13 @@ import { Meta, Typeset, Title, Subtitle } from "@storybook/addon-docs/blocks";
 ## Font Family
 
 ```css
-font-family: "M PLUS Rounded 1c", sans-serif;
+font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", Meiryo, system-ui, sans-serif;
 ```
 
 丸みのあるサンセリフ書体。日本語と英数字の両方で柔らかい印象を与えます。
+
+本番（apps/web）では **next/font で M PLUS Rounded 1c を self-host**（weight 400/500/700・`display: swap`・CJK のため非 preload）。
+未ロード時・欠字時・swap 中は **OS のシステム丸ゴシック**（ヒラギノ丸ゴ / メイリオ / BIZ UD ゴシック等）にフォールバックする（SPR-120）。
 
 ## Font Scale
 
