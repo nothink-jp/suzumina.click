@@ -30,7 +30,7 @@ const nextConfig = {
 	// 実験的機能・パフォーマンス最適化
 	experimental: {
 		// App Router最適化
-		optimizePackageImports: ["lucide-react", "date-fns", "zod", "react-hook-form", "sonner"],
+		optimizePackageImports: ["lucide-react", "zod", "react-hook-form", "sonner"],
 		// ダイナミックインポート最適化
 		optimizeServerReact: true,
 		// Critical CSS自動抽出（LCP改善）- 実験的機能
@@ -125,13 +125,6 @@ const nextConfig = {
 				react: {
 					name: "react",
 					test: /[\\/]node_modules[\\/](react|react-dom)/,
-					chunks: "all",
-					priority: 10,
-				},
-				// date-fns を別チャンクに分離
-				dateFns: {
-					name: "date-fns",
-					test: /[\\/]node_modules[\\/]date-fns/,
 					chunks: "all",
 					priority: 10,
 				},
