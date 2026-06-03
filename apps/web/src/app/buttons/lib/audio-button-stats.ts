@@ -1,7 +1,15 @@
 "use server";
 
+import { unstable_cache } from "next/cache";
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
+
+/**
+ * 人気タグ集計は全件スキャンを伴うため、revalidate でキャッシュして
+ * ページ訪問ごとの全件 .get() を回避する（SPR-112 / SPR-88 と整合）。
+ * タグは緩やかにしか変化しないので長めの TTL を採用する。
+ */
+const POPULAR_TAGS_REVALIDATE_SECONDS = 60 * 60;
 
 /**
  * 動画の音声ボタン数を取得
@@ -48,14 +56,12 @@ export async function getAudioButtonCount(videoId: string): Promise<number> {
 }
 
 /**
- * 人気タグリストを取得する
+ * 音声ボタンの人気タグを集計する内部実装。
+ * 全件 .get() を伴うため、公開 API はキャッシュ経由で呼ぶ（getPopularAudioButtonTags）。
  */
-export async function getPopularAudioButtonTags(limit = 30): Promise<
-	Array<{
-		tag: string;
-		count: number;
-	}>
-> {
+async function fetchPopularAudioButtonTags(
+	limit: number,
+): Promise<Array<{ tag: string; count: number }>> {
 	try {
 		const firestore = getFirestore();
 		const snapshot = await firestore.collection("audioButtons").where("isPublic", "==", true).get();
@@ -81,6 +87,26 @@ export async function getPopularAudioButtonTags(limit = 30): Promise<
 		logger.error("人気タグの取得に失敗", { error });
 		return [];
 	}
+}
+
+// limit は unstable_cache が引数として自動でキー化する。
+const getPopularAudioButtonTagsCached = unstable_cache(
+	fetchPopularAudioButtonTags,
+	["popular-audio-button-tags"],
+	{ revalidate: POPULAR_TAGS_REVALIDATE_SECONDS, tags: ["popular-audio-button-tags"] },
+);
+
+/**
+ * 人気タグリストを取得する。
+ * 一覧ページのタグ絞り込みUIの選択肢に使う。全件スキャンを避けるため revalidate キャッシュ経由。
+ */
+export async function getPopularAudioButtonTags(limit = 30): Promise<
+	Array<{
+		tag: string;
+		count: number;
+	}>
+> {
+	return getPopularAudioButtonTagsCached(limit);
 }
 
 /**

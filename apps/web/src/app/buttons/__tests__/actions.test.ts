@@ -56,6 +56,9 @@ vi.mock("next/headers", () => ({
 // Mock cache revalidation
 vi.mock("next/cache", () => ({
 	revalidatePath: vi.fn(),
+	// getPopularAudioButtonTags が unstable_cache 経由になったため、テストでは
+	// ラップ対象の関数をそのまま返すパススルーにする（Next ランタイム外で動かすため）。
+	unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
 }));
 
 // Mock auth

@@ -8,8 +8,16 @@ import {
 	videoTransformers,
 } from "@suzumina.click/shared-types";
 import { getYouTubeCategoryName } from "@suzumina.click/ui/lib/youtube-category-utils";
+import { unstable_cache } from "next/cache";
 import { getFirestore } from "@/lib/firestore";
 import * as logger from "@/lib/logger";
+
+/**
+ * 人気タグ集計は全件スキャンを伴うため、revalidate でキャッシュして
+ * ページ訪問ごとの全件 .get() を回避する（SPR-112 / SPR-88 と整合）。
+ * タグは緩やかにしか変化しないので長めの TTL を採用する。
+ */
+const POPULAR_TAGS_REVALIDATE_SECONDS = 60 * 60;
 
 /**
  * ビデオフィルタリングパラメータの型
@@ -376,18 +384,15 @@ export async function getVideoTitles(params?: {
 }
 
 /**
- * 動画の人気タグ（playlistTags）を集計して取得する
+ * 動画の人気タグ（playlistTags）を集計する内部実装。
  *
- * 一覧ページのタグ絞り込みUIの選択肢に使う。tags.playlistTags を正本とし、
- * convertToVideo 経由で PlainObject 化してから集計する（Firestore raw 構造に依存しない）。
- * 絞り込み自体は getVideosList の playlistTags フィルタ（filterVideos）が行う。
+ * tags.playlistTags を正本とし、convertToVideo 経由で PlainObject 化してから集計する
+ * （Firestore raw 構造に依存しない）。絞り込み自体は getVideosList の filterVideos が行う。
+ * 全件 .get() を伴うため、公開 API はキャッシュ経由で呼ぶ（getPopularVideoTags）。
  */
-export async function getPopularVideoTags(limit = 30): Promise<
-	Array<{
-		tag: string;
-		count: number;
-	}>
-> {
+async function fetchPopularVideoTags(
+	limit: number,
+): Promise<Array<{ tag: string; count: number }>> {
 	try {
 		const firestore = getFirestore();
 		const snapshot = await firestore
@@ -419,6 +424,25 @@ export async function getPopularVideoTags(limit = 30): Promise<
 		});
 		return [];
 	}
+}
+
+// limit は unstable_cache が引数として自動でキー化する。
+const getPopularVideoTagsCached = unstable_cache(fetchPopularVideoTags, ["popular-video-tags"], {
+	revalidate: POPULAR_TAGS_REVALIDATE_SECONDS,
+	tags: ["popular-video-tags"],
+});
+
+/**
+ * 動画の人気タグ（playlistTags）を取得する。
+ * 一覧ページのタグ絞り込みUIの選択肢に使う。全件スキャンを避けるため revalidate キャッシュ経由。
+ */
+export async function getPopularVideoTags(limit = 30): Promise<
+	Array<{
+		tag: string;
+		count: number;
+	}>
+> {
+	return getPopularVideoTagsCached(limit);
 }
 
 /**
