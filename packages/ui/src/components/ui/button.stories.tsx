@@ -136,7 +136,9 @@ export const DisabledNotClickable: Story = {
 		const canvas = within(canvasElement);
 		const button = canvas.getByRole("button", { name: "Disabled" });
 		await expect(button).toBeDisabled();
-		await userEvent.click(button);
+		// disabled は pointer-events:none のため、クリック試行自体を許可（pointerEventsCheck:0）した上で
+		// onClick が発火しないことを検証する。
+		await userEvent.click(button, { pointerEventsCheck: 0 });
 		await expect(args.onClick).not.toHaveBeenCalled();
 	},
 };

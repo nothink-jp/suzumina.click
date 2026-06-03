@@ -105,9 +105,13 @@ pnpm build-storybook
 pnpm lint
 pnpm format
 
-# テスト (Vitest)
+# テスト (Vitest, happy-dom unit + coverage)
 pnpm test
 pnpm test:coverage
+
+# Storybook の story を play(interaction)/a11y テストとして browser モードで実行
+# （vitest + playwright。a11y は現状 "todo"＝可視化のみ。CI: storybook-test.yml）
+pnpm test:storybook
 
 # 型チェック
 pnpm typecheck
