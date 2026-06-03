@@ -233,6 +233,33 @@
 	--color-chart-3: hsl(var(--chart-3));
 	--color-chart-4: hsl(var(--chart-4));
 	--color-chart-5: hsl(var(--chart-5));
+
+	/* Suzuka brand palette - 涼花みなせ theme（v4 自動生成に委譲。手動ユーティリティ層は撤去済み） */
+	--color-suzuka-50: hsl(var(--suzuka-50));
+	--color-suzuka-100: hsl(var(--suzuka-100));
+	--color-suzuka-200: hsl(var(--suzuka-200));
+	--color-suzuka-300: hsl(var(--suzuka-300));
+	--color-suzuka-400: hsl(var(--suzuka-400));
+	--color-suzuka-500: hsl(var(--suzuka-500));
+	--color-suzuka-600: hsl(var(--suzuka-600));
+	--color-suzuka-700: hsl(var(--suzuka-700));
+	--color-suzuka-800: hsl(var(--suzuka-800));
+	--color-suzuka-900: hsl(var(--suzuka-900));
+	--color-suzuka-950: hsl(var(--suzuka-950));
+
+	/* Minase brand palette - 涼花みなせ サブテーマ (オレンジ・ウォーム系) */
+	--color-minase-50: hsl(var(--minase-50));
+	--color-minase-100: hsl(var(--minase-100));
+	--color-minase-200: hsl(var(--minase-200));
+	--color-minase-300: hsl(var(--minase-300));
+	--color-minase-400: hsl(var(--minase-400));
+	--color-minase-500: hsl(var(--minase-500));
+	--color-minase-600: hsl(var(--minase-600));
+	--color-minase-700: hsl(var(--minase-700));
+	--color-minase-800: hsl(var(--minase-800));
+	--color-minase-900: hsl(var(--minase-900));
+	--color-minase-950: hsl(var(--minase-950));
+
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
@@ -245,105 +272,6 @@
 	--color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
 	--color-sidebar-border: hsl(var(--sidebar-border));
 	--color-sidebar-ring: hsl(var(--sidebar-ring));
-}
-
-/* Custom color utilities for Tailwind CSS v4 compatibility */
-@layer utilities {
-	/* Minase color backgrounds */
-	.bg-minase-50 { background-color: hsl(33 100% 97%); }
-	.bg-minase-100 { background-color: hsl(31 90% 91%); }
-	.bg-minase-200 { background-color: hsl(30 85% 82%); }
-	.bg-minase-300 { background-color: hsl(29 80% 73%); }
-	.bg-minase-400 { background-color: hsl(28 75% 62%); }
-	.bg-minase-500 { background-color: hsl(27 100% 59%); }
-	.bg-minase-600 { background-color: hsl(23 89% 49%); }
-	.bg-minase-700 { background-color: hsl(23 78% 40%); }
-	.bg-minase-800 { background-color: hsl(23 75% 34%); }
-	.bg-minase-900 { background-color: hsl(23 71% 27%); }
-	.bg-minase-950 { background-color: hsl(23 69% 16%); }
-	
-	/* Minase text colors */
-	.text-minase-50 { color: hsl(33 100% 97%); }
-	.text-minase-100 { color: hsl(31 90% 91%); }
-	.text-minase-200 { color: hsl(30 85% 82%); }
-	.text-minase-300 { color: hsl(29 80% 73%); }
-	.text-minase-400 { color: hsl(28 75% 62%); }
-	.text-minase-500 { color: hsl(27 100% 59%); }
-	.text-minase-600 { color: hsl(23 89% 49%); }
-	.text-minase-700 { color: hsl(23 78% 40%); }
-	.text-minase-800 { color: hsl(23 75% 34%); }
-	.text-minase-900 { color: hsl(23 71% 27%); }
-	.text-minase-950 { color: hsl(23 69% 16%); }
-	
-	/* Suzuka color backgrounds */
-	.bg-suzuka-50 { background-color: hsl(340 100% 98%); }
-	.bg-suzuka-100 { background-color: hsl(340 95% 95%); }
-	.bg-suzuka-200 { background-color: hsl(340 90% 88%); }
-	.bg-suzuka-300 { background-color: hsl(340 85% 78%); }
-	.bg-suzuka-400 { background-color: hsl(340 80% 65%); }
-	.bg-suzuka-500 { background-color: hsl(340 75% 55%); }
-	.bg-suzuka-600 { background-color: hsl(340 70% 45%); }
-	.bg-suzuka-700 { background-color: hsl(340 65% 38%); }
-	.bg-suzuka-800 { background-color: hsl(340 60% 30%); }
-	.bg-suzuka-900 { background-color: hsl(340 55% 23%); }
-	.bg-suzuka-950 { background-color: hsl(340 50% 15%); }
-	
-	/* Suzuka text colors */
-	.text-suzuka-50 { color: hsl(340 100% 98%); }
-	.text-suzuka-100 { color: hsl(340 95% 95%); }
-	.text-suzuka-200 { color: hsl(340 90% 88%); }
-	.text-suzuka-300 { color: hsl(340 85% 78%); }
-	.text-suzuka-400 { color: hsl(340 80% 65%); }
-	.text-suzuka-500 { color: hsl(340 75% 55%); }
-	.text-suzuka-600 { color: hsl(340 70% 45%); }
-	.text-suzuka-700 { color: hsl(340 65% 38%); }
-	.text-suzuka-800 { color: hsl(340 60% 30%); }
-	.text-suzuka-900 { color: hsl(340 55% 23%); }
-	.text-suzuka-950 { color: hsl(340 50% 15%); }
-	
-	/* Suzuka border colors */
-	.border-suzuka-50 { border-color: hsl(340 100% 98%); }
-	.border-suzuka-100 { border-color: hsl(340 95% 95%); }
-	.border-suzuka-200 { border-color: hsl(340 90% 88%); }
-	.border-suzuka-300 { border-color: hsl(340 85% 78%); }
-	.border-suzuka-400 { border-color: hsl(340 80% 65%); }
-	.border-suzuka-500 { border-color: hsl(340 75% 55%); }
-	.border-suzuka-600 { border-color: hsl(340 70% 45%); }
-	.border-suzuka-700 { border-color: hsl(340 65% 38%); }
-	.border-suzuka-800 { border-color: hsl(340 60% 30%); }
-	.border-suzuka-900 { border-color: hsl(340 55% 23%); }
-	.border-suzuka-950 { border-color: hsl(340 50% 15%); }
-	
-	/* Minase border colors */
-	.border-minase-50 { border-color: hsl(33 100% 97%); }
-	.border-minase-100 { border-color: hsl(31 90% 91%); }
-	.border-minase-200 { border-color: hsl(30 85% 82%); }
-	.border-minase-300 { border-color: hsl(29 80% 73%); }
-	.border-minase-400 { border-color: hsl(28 75% 62%); }
-	.border-minase-500 { border-color: hsl(27 100% 59%); }
-	.border-minase-600 { border-color: hsl(23 89% 49%); }
-	.border-minase-700 { border-color: hsl(23 78% 40%); }
-	.border-minase-800 { border-color: hsl(23 75% 34%); }
-	.border-minase-900 { border-color: hsl(23 71% 27%); }
-	.border-minase-950 { border-color: hsl(23 69% 16%); }
-	
-	/* Gradient from/to utilities */
-	.from-minase-400 { --tw-gradient-from: hsl(28 75% 62%); --tw-gradient-to: hsl(28 75% 62% / 0); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-	.to-minase-500 { --tw-gradient-to: hsl(27 100% 59%); }
-	.from-suzuka-200 { --tw-gradient-from: hsl(340 90% 88%); --tw-gradient-to: hsl(340 90% 88% / 0); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-	.from-suzuka-500 { --tw-gradient-from: hsl(340 75% 55%); --tw-gradient-to: hsl(340 75% 55% / 0); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-	.to-suzuka-400 { --tw-gradient-to: hsl(340 80% 65%); }
-	.to-suzuka-600 { --tw-gradient-to: hsl(340 70% 45%); }
-	.to-minase-500 { --tw-gradient-to: hsl(27 100% 59%); }
-	
-	/* Color with opacity utilities */
-	.bg-suzuka-500\/20 { background-color: hsl(340 75% 55% / 0.2); }
-	.bg-suzuka-600\/20 { background-color: hsl(340 70% 45% / 0.2); }
-	
-	/* Tabs specific hover states */
-	.hover\:bg-suzuka-600:hover { background-color: hsl(340 70% 45%); }
-	.hover\:bg-suzuka-700:hover { background-color: hsl(340 65% 38%); }
-	
 }
 
 @layer base {
