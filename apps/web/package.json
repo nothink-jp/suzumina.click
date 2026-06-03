@@ -19,6 +19,8 @@
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:debug": "playwright test --debug",
+		"test:e2e:smoke": "playwright test smoke --project=chromium",
+		"test:smoke:prod": "next build && PLAYWRIGHT_PROD=1 playwright test smoke --project=chromium",
 		"clean": "rimraf .next coverage node_modules/.cache .vitest test-results playwright-report",
 		"deploy:build": "cd ../.. && docker build -f apps/web/Dockerfile -t suzumina-web .",
 		"deploy:test": "docker run --rm -p 8080:8080 suzumina-web",
@@ -49,7 +51,7 @@
 	},
 	"devDependencies": {
 		"@next/bundle-analyzer": "^16.2.6",
-		"@playwright/test": "^1.58.2",
+		"@playwright/test": "^1.60.0",
 		"@suzumina.click/typescript-config": "workspace:*",
 		"@tailwindcss/postcss": "^4.3.0",
 		"@testing-library/jest-dom": "^6.9.1",
