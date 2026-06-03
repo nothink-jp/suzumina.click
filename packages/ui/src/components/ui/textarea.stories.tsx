@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useState } from "react";
 import { Label } from "./label";
 import { Textarea } from "./textarea";
 
@@ -185,7 +186,7 @@ export const ErrorState: Story = {
 
 export const CharacterCount: Story = {
 	render: () => {
-		const [value, setValue] = React.useState("");
+		const [value, setValue] = useState("");
 		const maxLength = 200;
 
 		return (

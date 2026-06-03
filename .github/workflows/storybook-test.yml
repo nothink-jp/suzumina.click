@@ -1,0 +1,66 @@
+name: Storybook Test
+
+# packages/ui の story を play(interaction) テストとして browser モード(vitest + playwright)で実行する（SPR-121）。
+# a11y は現状 "todo"（可視化のみ・非 fail。違反修正後に "error" へ → SPR-129）。
+# 本番ビルド限定回帰は e2e-smoke.yml が担い、こちらは story 単位の振る舞いを担保する。
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      ui: ${{ steps.changes.outputs.ui }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            ui:
+              - 'packages/ui/**'
+              - 'packages/shared-types/**'
+              - 'pnpm-lock.yaml'
+              - '.github/workflows/storybook-test.yml'
+
+  storybook:
+    name: Story play tests (browser)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.16.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright (chromium)
+        run: pnpm --filter @suzumina.click/ui exec playwright install --with-deps chromium
+
+      - name: Run Storybook play tests
+        run: pnpm --filter @suzumina.click/ui test:storybook
